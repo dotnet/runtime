@@ -69,7 +69,7 @@ namespace System.Globalization.Tests
         };
         public static bool HasBadIcuTimePatterns(CultureInfo culture)
         {
-            return PlatformDetection.IsIcuGlobalizationAndNotHybridOnBrowser
+            return PlatformDetection.IsIcuGlobalization
                 && _badIcuTimePatterns.TryGetValue(culture.Name, out var version)
                 && PlatformDetection.ICUVersion < version;
         }

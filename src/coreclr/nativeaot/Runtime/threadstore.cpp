@@ -86,11 +86,6 @@ ThreadStore * ThreadStore::Create(RuntimeInstance * pRuntimeInstance)
     if (NULL == pNewThreadStore)
         return NULL;
 
-#ifdef FEATURE_HIJACK
-    if (!PalRegisterHijackCallback(Thread::HijackCallback))
-        return NULL;
-#endif
-
     pNewThreadStore->m_pRuntimeInstance = pRuntimeInstance;
 
     pNewThreadStore.SuppressRelease();

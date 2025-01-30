@@ -86,6 +86,17 @@ Alternatively, if you would rather avoid modifying your machine state, you can u
 
 This will set the `DOTNET_ROOT` and `PATH` environment variables to point to the locally acquired SDK under the `.dotnet` directory found at the root of the repo for the duration of this terminal session. Then, it will launch the Visual Studio instance that is registered for the `.sln` extension, and open the solution you passed as argument to the command-line.
 
+## Installing dependencies with winget
+
+All the tools mentioned above can be installed with the [Windows Package Manager](https://learn.microsoft.com/windows/package-manager/winget/):
+```ps1
+winget install -e --id Kitware.CMake
+winget install -e --id Python.Python.3.11
+winget install -e --id Git.Git
+winget install -e --id Ninja-build.Ninja
+winget install -e --id Microsoft.VisualStudio.2022.Community --override "--add Microsoft.VisualStudio.Workload.NativeDesktop --add Microsoft.VisualStudio.Workload.ManagedDesktop --includeRecommended"
+```
+
 ## Setting Environment Variables on Windows
 
 As mentioned in the sections above, the commands that run the development tools have to be in your `PATH` environment variable. Their installers usually have the option to do it automatically for you enabled by the default, but if for any reason you need to set them yourself, here is how you can do it. There are two options. You can make them last only for that terminal instance, or you can set them directly to the system to make them permanent.

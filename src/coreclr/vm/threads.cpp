@@ -1498,7 +1498,10 @@ Thread::Thread()
 #ifdef FEATURE_PERFTRACING
     memset(&m_activityId, 0, sizeof(m_activityId));
 #endif // FEATURE_PERFTRACING
+
+#ifdef TARGET_X86
     m_HijackReturnKind = RT_Illegal;
+#endif
 
     m_currentPrepareCodeConfig = nullptr;
     m_isInForbidSuspendForDebuggerRegion = false;
@@ -2015,10 +2018,13 @@ HANDLE Thread::CreateUtilityThread(Thread::StackSizeBucket stackSizeBucket, LPTH
     DWORD threadId;
     HANDLE hThread = CreateThread(NULL, stackSize, start, args, flags, &threadId);
 
-    SetThreadName(hThread, pName);
+    if (hThread != INVALID_HANDLE_VALUE)
+    {
+        SetThreadName(hThread, pName);
 
-    if (pThreadId)
-        *pThreadId = threadId;
+        if (pThreadId)
+            *pThreadId = threadId;
+    }
 
     return hThread;
 }

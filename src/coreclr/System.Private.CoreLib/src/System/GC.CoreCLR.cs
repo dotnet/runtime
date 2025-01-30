@@ -15,6 +15,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
+using System.Runtime.ExceptionServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
 using System.Threading;
@@ -318,7 +319,16 @@ namespace System
                 void* fptr = GetNextFinalizeableObject(ObjectHandleOnStack.Create(ref target));
                 if (fptr == null)
                     break;
-                ((delegate*<object, void>)fptr)(target!);
+
+                try
+                {
+                    ((delegate*<object, void>)fptr)(target!);
+                }
+                catch (Exception ex) when (ExceptionHandling.IsHandledByGlobalHandler(ex))
+                {
+                    // the handler returned "true" means the exception is now "handled" and we should continue.
+                }
+
                 currentThread.ResetFinalizerThread();
                 count++;
             }

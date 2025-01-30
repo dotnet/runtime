@@ -470,6 +470,7 @@ public:
 #ifdef TARGET_XARCH
         SetUseVEXEncoding(false);
         SetUseEvexEncoding(false);
+        SetUseRex2Encoding(false);
 #endif // TARGET_XARCH
 
         emitDataSecCur = nullptr;
@@ -1606,36 +1607,36 @@ protected:
 
         bool idIsBound() const
         {
-            assert(!IsAvx512OrPriorInstruction(_idIns));
+            assert(!IsSimdInstruction(_idIns));
             return _idBound != 0;
         }
         void idSetIsBound()
         {
-            assert(!IsAvx512OrPriorInstruction(_idIns));
+            assert(!IsSimdInstruction(_idIns));
             _idBound = 1;
         }
 
 #ifndef TARGET_ARMARCH
         bool idIsCallRegPtr() const
         {
-            assert(!IsAvx512OrPriorInstruction(_idIns));
+            assert(!IsSimdInstruction(_idIns));
             return _idCallRegPtr != 0;
         }
         void idSetIsCallRegPtr()
         {
-            assert(!IsAvx512OrPriorInstruction(_idIns));
+            assert(!IsSimdInstruction(_idIns));
             _idCallRegPtr = 1;
         }
 #endif // !TARGET_ARMARCH
 
         bool idIsTlsGD() const
         {
-            assert(!IsAvx512OrPriorInstruction(_idIns));
+            assert(!IsSimdInstruction(_idIns));
             return _idTlsGD != 0;
         }
         void idSetTlsGD()
         {
-            assert(!IsAvx512OrPriorInstruction(_idIns));
+            assert(!IsSimdInstruction(_idIns));
             _idTlsGD = 1;
         }
 
@@ -1644,12 +1645,12 @@ protected:
         // code, it is not necessary to generate GC info for a call so labeled.
         bool idIsNoGC() const
         {
-            assert(!IsAvx512OrPriorInstruction(_idIns));
+            assert(!IsSimdInstruction(_idIns));
             return _idNoGC != 0;
         }
         void idSetIsNoGC(bool val)
         {
-            assert(!IsAvx512OrPriorInstruction(_idIns));
+            assert(!IsSimdInstruction(_idIns));
             _idNoGC = val;
         }
 
@@ -1702,7 +1703,7 @@ protected:
 
         unsigned idGetEvexAaaContext() const
         {
-            assert(IsAvx512OrPriorInstruction(_idIns));
+            assert(IsSimdInstruction(_idIns));
             return _idEvexAaaContext;
         }
 
@@ -1718,7 +1719,7 @@ protected:
 
         bool idIsEvexZContextSet() const
         {
-            assert(IsAvx512OrPriorInstruction(_idIns));
+            assert(IsSimdInstruction(_idIns));
             return _idEvexZContext != 0;
         }
 

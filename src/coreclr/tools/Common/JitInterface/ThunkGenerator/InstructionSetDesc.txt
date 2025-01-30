@@ -70,6 +70,9 @@ instructionset     ,X86   ,VectorT512           ,        ,41 ,VectorT512        
 instructionset     ,X86   ,Apx                  ,        ,48 ,APX                   ,apx
 instructionset     ,X86   ,Avx10v2              ,        ,51 ,AVX10v2               ,avx10v2
 instructionset     ,X86   ,Avx10v2_V512         ,        ,52 ,AVX10v2_V512          ,avx10v2_v512
+instructionset     ,X86   ,Gfni                 ,        ,53 ,GFNI                  ,gfni
+instructionset     ,X86   ,Gfni_V256            ,        ,54 ,GFNI_V256             ,gfni_v256
+instructionset     ,X86   ,Gfni_V512            ,        ,55 ,GFNI_V512             ,gfni_v512
 
 instructionset64bit,X86   ,X86Base
 instructionset64bit,X86   ,SSE
@@ -98,6 +101,7 @@ instructionset64bit,X86   ,AVX10v1
 instructionset64bit,X86   ,AVX10v1_V512
 instructionset64bit,X86   ,AVX10v2
 instructionset64bit,X86   ,AVX10v2_V512
+instructionset64bit,X86   ,GFNI
 
 vectorinstructionset,X86  ,Vector128
 vectorinstructionset,X86  ,Vector256
@@ -155,6 +159,11 @@ implication        ,X86   ,PCLMULQDQ_V512       ,PCLMULQDQ_V256
 implication        ,X86   ,PCLMULQDQ_V512       ,AVX512F
 implication        ,X86   ,AVXVNNI              ,AVX2
 implication        ,X86   ,X86Serialize         ,X86Base
+implication        ,X86   ,GFNI                 ,SSE41
+implication        ,X86   ,GFNI_V256            ,GFNI
+implication        ,X86   ,GFNI_V256            ,AVX
+implication        ,X86   ,GFNI_V512            ,GFNI
+implication        ,X86   ,GFNI_V512            ,AVX512F
 
 implication        ,X86   ,AVX10v1              ,EVEX
 implication        ,X86   ,AVX10v1_V512         ,AVX10v1

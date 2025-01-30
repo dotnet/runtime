@@ -659,11 +659,21 @@ void Compiler::optAssertionInit(bool isLocalProp)
 
         if (optCrossBlockLocalAssertionProp)
         {
-            // We may need a fairly large table.
-            // Allow for roughly one assertion per local, up to the tracked limit.
-            // (empirical studies show about 0.6 asserions/local)
+            // We may need a fairly large table. Keep size a multiple of 64.
+            // Empirical studies show about 1.16 asserions/ tracked local.
             //
-            optMaxAssertionCount = (AssertionIndex)min(maxTrackedLocals, ((lvaCount / 64) + 1) * 64);
+            if (lvaTrackedCount < 24)
+            {
+                optMaxAssertionCount = 64;
+            }
+            else if (lvaTrackedCount < 64)
+            {
+                optMaxAssertionCount = 128;
+            }
+            else
+            {
+                optMaxAssertionCount = (AssertionIndex)min(maxTrackedLocals, ((3 * lvaTrackedCount / 128) + 1) * 64);
+            }
         }
         else
         {
@@ -2591,6 +2601,89 @@ AssertionIndex Compiler::optAssertionIsSubtype(GenTree* tree, GenTree* methodTab
 }
 
 //------------------------------------------------------------------------------
+// optVNBasedFoldExpr_Call_Memset: Unrolls NI_System_SpanHelpers_Fill for constant length.
+//
+// Arguments:
+//    call - NI_System_SpanHelpers_Fill call to unroll
+//
+// Return Value:
+//    Returns a new tree or nullptr if nothing is changed.
+//
+GenTree* Compiler::optVNBasedFoldExpr_Call_Memset(GenTreeCall* call)
+{
+    assert(call->IsSpecialIntrinsic(this, NI_System_SpanHelpers_Fill));
+
+    CallArg* dstArg = call->gtArgs.GetUserArgByIndex(0);
+    CallArg* lenArg = call->gtArgs.GetUserArgByIndex(1);
+    CallArg* valArg = call->gtArgs.GetUserArgByIndex(2);
+
+    var_types valType     = valArg->GetSignatureType();
+    unsigned  lengthScale = genTypeSize(valType);
+
+    if (lengthScale == 1)
+    {
+        // Lower expands it slightly better.
+        JITDUMP("...value's type is byte - leave it for lower to expand.\n");
+        return nullptr;
+    }
+
+    if (varTypeIsStruct(valType) || varTypeIsGC(valType))
+    {
+        JITDUMP("...value's type is not supported - bail out.\n");
+        return nullptr;
+    }
+
+    ValueNum lenVN = vnStore->VNConservativeNormalValue(lenArg->GetNode()->gtVNPair);
+    if (!vnStore->IsVNConstant(lenVN))
+    {
+        JITDUMP("...length is not a constant - bail out.\n");
+        return nullptr;
+    }
+
+    size_t len = vnStore->CoercedConstantValue<size_t>(lenVN);
+    if ((len > getUnrollThreshold(Memset)) ||
+        // The first condition prevents the overflow in the second condition.
+        // since both len and lengthScale are expected to be small at this point.
+        (len * lengthScale) > getUnrollThreshold(Memset))
+    {
+        JITDUMP("...length is too big to unroll - bail out.\n");
+        return nullptr;
+    }
+
+    // Some arbitrary threshold if the value is not a constant,
+    // since it is unlikely that we can optimize it further.
+    if (!valArg->GetNode()->OperIsConst() && (len >= 8))
+    {
+        JITDUMP("...length is too big to unroll for non-constant value - bail out.\n");
+        return nullptr;
+    }
+
+    // Spill the side effects directly in the args, we're going to
+    // pick them up in the following gtExtractSideEffList
+    GenTree* dst = fgMakeMultiUse(&dstArg->NodeRef());
+    GenTree* val = fgMakeMultiUse(&valArg->NodeRef());
+
+    GenTree* result = nullptr;
+    gtExtractSideEffList(call, &result, GTF_ALL_EFFECT, true);
+
+    for (size_t offset = 0; offset < len; offset++)
+    {
+        // Clone dst and add offset if necessary.
+        GenTree*         offsetNode = gtNewIconNode((ssize_t)(offset * lengthScale), TYP_I_IMPL);
+        GenTree*         currDst    = gtNewOperNode(GT_ADD, dst->TypeGet(), gtCloneExpr(dst), offsetNode);
+        GenTreeStoreInd* storeInd =
+            gtNewStoreIndNode(valType, currDst, gtCloneExpr(val), GTF_IND_UNALIGNED | GTF_IND_ALLOW_NON_ATOMIC);
+
+        // Merge with the previous result.
+        result = result == nullptr ? storeInd : gtNewOperNode(GT_COMMA, TYP_VOID, result, storeInd);
+    }
+
+    JITDUMP("...optimized into STOREIND(s):\n");
+    DISPTREE(result);
+    return result;
+}
+
+//------------------------------------------------------------------------------
 // optVNBasedFoldExpr_Call_Memmove: Unrolls NI_System_SpanHelpers_Memmove/CORINFO_HELP_MEMCPY
 //    if possible. This function effectively duplicates LowerCallMemmove.
 //    However, unlike LowerCallMemmove, it is able to optimize src into constants with help of VN.
@@ -2746,6 +2839,11 @@ GenTree* Compiler::optVNBasedFoldExpr_Call(BasicBlock* block, GenTree* parent, G
     if (call->IsSpecialIntrinsic(this, NI_System_SpanHelpers_Memmove) || call->IsHelperCall(this, CORINFO_HELP_MEMCPY))
     {
         return optVNBasedFoldExpr_Call_Memmove(call);
+    }
+
+    if (call->IsSpecialIntrinsic(this, NI_System_SpanHelpers_Fill))
+    {
+        return optVNBasedFoldExpr_Call_Memset(call);
     }
 
     return nullptr;
@@ -3623,7 +3721,17 @@ GenTree* Compiler::optAssertionProp_LclVar(ASSERT_VALARG_TP assertions, GenTreeL
         return nullptr;
     }
 
-    BitVecOps::Iter iter(apTraits, assertions);
+    // For local assertion prop we can filter the assertion set down.
+    //
+    const unsigned lclNum = tree->GetLclNum();
+
+    ASSERT_TP filteredAssertions = assertions;
+    if (optLocalAssertionProp)
+    {
+        filteredAssertions = BitVecOps::Intersection(apTraits, GetAssertionDep(lclNum), filteredAssertions);
+    }
+
+    BitVecOps::Iter iter(apTraits, filteredAssertions);
     unsigned        index = 0;
     while (iter.NextElem(&index))
     {
@@ -3672,7 +3780,7 @@ GenTree* Compiler::optAssertionProp_LclVar(ASSERT_VALARG_TP assertions, GenTreeL
         // gtFoldExpr, specifically the case of a cast, where the fold operation changes the type of the LclVar
         // node.  In such a case is not safe to perform the substitution since later on the JIT will assert mismatching
         // types between trees.
-        const unsigned lclNum = tree->GetLclNum();
+        //
         if (curAssertion->op1.lcl.lclNum == lclNum)
         {
             LclVarDsc* const lclDsc = lvaGetDesc(lclNum);
@@ -3729,7 +3837,10 @@ GenTree* Compiler::optAssertionProp_LclFld(ASSERT_VALARG_TP assertions, GenTreeL
         return nullptr;
     }
 
-    BitVecOps::Iter iter(apTraits, assertions);
+    const unsigned lclNum             = tree->GetLclNum();
+    ASSERT_TP      filteredAssertions = BitVecOps::Intersection(apTraits, GetAssertionDep(lclNum), assertions);
+
+    BitVecOps::Iter iter(apTraits, filteredAssertions);
     unsigned        index = 0;
     while (iter.NextElem(&index))
     {
@@ -3934,7 +4045,8 @@ void Compiler::optAssertionProp_RangeProperties(ASSERT_VALARG_TP assertions,
         }
 
         // First, analyze possible X ==/!= CNS assertions.
-        if (curAssertion->IsConstantInt32Assertion() && (curAssertion->op1.vn == treeVN))
+        if (curAssertion->IsConstantInt32Assertion() && (curAssertion->op1.kind == O1K_LCLVAR) &&
+            (curAssertion->op1.vn == treeVN))
         {
             if ((curAssertion->assertionKind == OAK_NOT_EQUAL) && (curAssertion->op2.u1.iconVal == 0))
             {
@@ -4272,6 +4384,44 @@ GenTree* Compiler::optAssertionPropGlobal_RelOp(ASSERT_VALARG_TP assertions, Gen
     GenTree* op1     = tree->AsOp()->gtOp1;
     GenTree* op2     = tree->AsOp()->gtOp2;
 
+    // Can we fold "X relop 0" based on assertions?
+    if (op2->IsIntegralConst(0) && tree->OperIsCmpCompare())
+    {
+        bool isNonZero, isNeverNegative;
+        optAssertionProp_RangeProperties(assertions, op1, &isNonZero, &isNeverNegative);
+
+        if (tree->OperIs(GT_GE, GT_LT) && isNeverNegative)
+        {
+            // Assertions: X >= 0
+            //
+            // X >= 0 --> true
+            // X < 0  --> false
+            newTree = tree->OperIs(GT_GE) ? gtNewTrue() : gtNewFalse();
+        }
+        else if (tree->OperIs(GT_GT, GT_LE) && isNeverNegative && isNonZero)
+        {
+            // Assertions: X > 0
+            //
+            // X > 0  --> true
+            // X <= 0 --> false
+            newTree = tree->OperIs(GT_GT) ? gtNewTrue() : gtNewFalse();
+        }
+        else if (tree->OperIs(GT_EQ, GT_NE) && isNonZero)
+        {
+            // Assertions: X != 0
+            //
+            // X != 0 --> true
+            // X == 0 --> false
+            newTree = tree->OperIs(GT_NE) ? gtNewTrue() : gtNewFalse();
+        }
+
+        if (newTree != tree)
+        {
+            newTree = gtWrapWithSideEffects(newTree, tree, GTF_ALL_EFFECT);
+            return optAssertionProp_Update(newTree, tree, stmt);
+        }
+    }
+
     // Look for assertions of the form (tree EQ/NE 0)
     AssertionIndex index = optGlobalAssertionIsEqualOrNotEqualZero(assertions, tree);
 
@@ -4292,7 +4442,6 @@ GenTree* Compiler::optAssertionPropGlobal_RelOp(ASSERT_VALARG_TP assertions, Gen
 
         newTree = curAssertion->assertionKind == OAK_EQUAL ? gtNewIconNode(0) : gtNewIconNode(1);
         newTree = gtWrapWithSideEffects(newTree, tree, GTF_ALL_EFFECT);
-        newTree = fgMorphTree(newTree);
         DISPTREE(newTree);
         return optAssertionProp_Update(newTree, tree, stmt);
     }
@@ -4629,6 +4778,19 @@ GenTree* Compiler::optAssertionProp_Cast(ASSERT_VALARG_TP assertions, GenTreeCas
     if (!lcl->OperIs(GT_LCL_VAR))
     {
         return nullptr;
+    }
+
+    // Try and see if we can make this cast into a cheaper zero-extending version
+    // if the input is known to be non-negative.
+    if (!cast->IsUnsigned() && genActualTypeIsInt(lcl) && cast->TypeIs(TYP_LONG) && (TARGET_POINTER_SIZE == 8))
+    {
+        bool isKnownNonZero;
+        bool isKnownNonNegative;
+        optAssertionProp_RangeProperties(assertions, lcl, &isKnownNonZero, &isKnownNonNegative);
+        if (isKnownNonNegative)
+        {
+            cast->SetUnsigned();
+        }
     }
 
     IntegralRange  range = IntegralRange::ForCastInput(cast);
@@ -5045,9 +5207,10 @@ bool Compiler::optNonNullAssertionProp_Ind(ASSERT_VALARG_TP assertions, GenTree*
 // Return Value:
 //    Exact type of write barrier required for the given address.
 //
-static GCInfo::WriteBarrierForm GetWriteBarrierForm(ValueNumStore* vnStore, ValueNum vn)
+static GCInfo::WriteBarrierForm GetWriteBarrierForm(Compiler* comp, ValueNum vn)
 {
-    const var_types type = vnStore->TypeOfVN(vn);
+    ValueNumStore*  vnStore = comp->vnStore;
+    const var_types type    = vnStore->TypeOfVN(vn);
     if (type == TYP_REF)
     {
         return GCInfo::WriteBarrierForm::WBF_BarrierUnchecked;
@@ -5088,18 +5251,14 @@ static GCInfo::WriteBarrierForm GetWriteBarrierForm(ValueNumStore* vnStore, Valu
             //
             if (vnStore->IsVNConstantNonHandle(funcApp.m_args[0]))
             {
-                return GetWriteBarrierForm(vnStore, funcApp.m_args[1]);
+                return GetWriteBarrierForm(comp, funcApp.m_args[1]);
             }
             if (vnStore->IsVNConstantNonHandle(funcApp.m_args[1]))
             {
-                return GetWriteBarrierForm(vnStore, funcApp.m_args[0]);
+                return GetWriteBarrierForm(comp, funcApp.m_args[0]);
             }
         }
     }
-
-    // TODO:
-    // * addr is ByRefLike - NoBarrier (https://github.com/dotnet/runtime/issues/9512)
-    //
     return GCInfo::WriteBarrierForm::WBF_BarrierUnknown;
 }
 
@@ -5153,7 +5312,7 @@ bool Compiler::optWriteBarrierAssertionProp_StoreInd(ASSERT_VALARG_TP assertions
     {
         // NOTE: we might want to inspect indirs with GTF_IND_TGT_HEAP flag as well - what if we can prove
         // that they actually need no barrier? But that comes with a TP regression.
-        barrierType = GetWriteBarrierForm(vnStore, addr->gtVNPair.GetConservative());
+        barrierType = GetWriteBarrierForm(this, addr->gtVNPair.GetConservative());
     }
 
     JITDUMP("Trying to determine the exact type of write barrier for STOREIND [%d06]: ", dspTreeID(indir));

@@ -127,6 +127,10 @@ namespace Internal.ReadyToRunConstants
                             case InstructionSet.X64_AVX10v2_X64: return ReadyToRunInstructionSet.Avx10v2;
                             case InstructionSet.X64_AVX10v2_V512: return ReadyToRunInstructionSet.Avx10v2_V512;
                             case InstructionSet.X64_AVX10v2_V512_X64: return ReadyToRunInstructionSet.Avx10v2_V512;
+                            case InstructionSet.X64_GFNI: return ReadyToRunInstructionSet.Gfni;
+                            case InstructionSet.X64_GFNI_X64: return ReadyToRunInstructionSet.Gfni;
+                            case InstructionSet.X64_GFNI_V256: return ReadyToRunInstructionSet.Gfni_V256;
+                            case InstructionSet.X64_GFNI_V512: return ReadyToRunInstructionSet.Gfni_V512;
 
                             default: throw new Exception("Unknown instruction set");
                         }
@@ -206,6 +210,10 @@ namespace Internal.ReadyToRunConstants
                             case InstructionSet.X86_AVX10v2_X64: return null;
                             case InstructionSet.X86_AVX10v2_V512: return ReadyToRunInstructionSet.Avx10v2_V512;
                             case InstructionSet.X86_AVX10v2_V512_X64: return null;
+                            case InstructionSet.X86_GFNI: return ReadyToRunInstructionSet.Gfni;
+                            case InstructionSet.X86_GFNI_X64: return null;
+                            case InstructionSet.X86_GFNI_V256: return ReadyToRunInstructionSet.Gfni_V256;
+                            case InstructionSet.X86_GFNI_V512: return ReadyToRunInstructionSet.Gfni_V512;
 
                             default: throw new Exception("Unknown instruction set");
                         }

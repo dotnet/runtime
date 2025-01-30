@@ -522,6 +522,7 @@ public:
 
     unsigned char lvIsParam           : 1; // is this a parameter?
     unsigned char lvIsRegArg          : 1; // is this an argument that was passed by register?
+    unsigned char lvIsParamRegTarget  : 1; // is this the target of a param reg to local mapping?
     unsigned char lvFramePointerBased : 1; // 0 = off of REG_SPBASE (e.g., ESP), 1 = off of REG_FPBASE (e.g., EBP)
 
     unsigned char lvOnFrame  : 1; // (part of) the variable lives on the frame
@@ -690,8 +691,8 @@ public:
     unsigned char lvSingleDefDisqualifyReason = 'H';
 #endif
 
-    unsigned char lvAllDefsAreNoGc    : 1; // For pinned locals: true if all defs of this local are no-gc
-    unsigned char lvStackAllocatedBox : 1; // Local is a stack allocated box
+    unsigned char lvAllDefsAreNoGc       : 1; // For pinned locals: true if all defs of this local are no-gc
+    unsigned char lvStackAllocatedObject : 1; // Local is a stack allocated object (class, box, array, ...)
 
 #if FEATURE_MULTIREG_ARGS
     regNumber lvRegNumForSlot(unsigned slotNum)
@@ -806,9 +807,9 @@ public:
         return lvIsMultiRegArg || lvIsMultiRegRet;
     }
 
-    bool IsStackAllocatedBox() const
+    bool IsStackAllocatedObject() const
     {
-        return lvStackAllocatedBox;
+        return lvStackAllocatedObject;
     }
 
 #if defined(DEBUG)
@@ -1541,7 +1542,9 @@ enum class PhaseChecks : unsigned int
     CHECK_LOOPS         = 1 << 4, // loop integrity/canonicalization
     CHECK_LIKELIHOODS   = 1 << 5, // profile data likelihood integrity
     CHECK_PROFILE       = 1 << 6, // profile data full integrity
-    CHECK_LINKED_LOCALS = 1 << 7, // check linked list of locals
+    CHECK_PROFILE_FLAGS = 1 << 7, // blocks with profile-derived weights have BBF_PROF_WEIGHT flag set
+    CHECK_LINKED_LOCALS = 1 << 8, // check linked list of locals
+    CHECK_FG_INIT_BLOCK = 1 << 9, // flow graph has an init block
 };
 
 inline constexpr PhaseChecks operator ~(PhaseChecks a)
@@ -1606,8 +1609,9 @@ enum class ProfileChecks : unsigned int
     CHECK_HASLIKELIHOOD = 1 << 0, // check all FlowEdges for hasLikelihood
     CHECK_LIKELIHOODSUM = 1 << 1, // check block succesor likelihoods sum to 1
     CHECK_LIKELY        = 1 << 2, // fully check likelihood based weights
-    RAISE_ASSERT        = 1 << 3, // assert on check failure
-    CHECK_ALL_BLOCKS    = 1 << 4, // check blocks even if bbHasProfileWeight is false
+    CHECK_FLAGS         = 1 << 3, // check blocks with profile-derived weights have BBF_PROF_WEIGHT flag set
+    RAISE_ASSERT        = 1 << 4, // assert on check failure
+    CHECK_ALL_BLOCKS    = 1 << 5, // check blocks even if bbHasProfileWeight is false
 };
 
 inline constexpr ProfileChecks operator ~(ProfileChecks a)
@@ -2220,9 +2224,6 @@ public:
     BasicBlockVisit VisitLoopBlocks(TFunc func);
 
     template<typename TFunc>
-    BasicBlockVisit VisitLoopBlocksLexical(TFunc func);
-
-    template<typename TFunc>
     BasicBlockVisit VisitRegularExitBlocks(TFunc func);
 
     BasicBlock* GetLexicallyTopMostBlock();
@@ -2233,11 +2234,15 @@ public:
     bool HasDef(unsigned lclNum);
 
     bool CanDuplicate(INDEBUG(const char** reason));
+    bool CanDuplicateWithEH(INDEBUG(const char** reason));
     void Duplicate(BasicBlock** insertAfter, BlockToBlockMap* map, weight_t weightScale);
+    void DuplicateWithEH(BasicBlock** insertAfter, BlockToBlockMap* map, weight_t weightScale);
 
     bool MayExecuteBlockMultipleTimesPerIteration(BasicBlock* block);
 
     bool IsPostDominatedOnLoopIteration(BasicBlock* block, BasicBlock* postDominator);
+
+    void SetEntryEdge(FlowEdge* newEdge);
 
 #ifdef DEBUG
     static void Dump(FlowGraphNaturalLoop* loop);
@@ -2557,6 +2562,55 @@ struct RelopImplicationInfo
     bool reverseSense = false;
 };
 
+//------------------------------------------------------------------------
+// CloneTryInfo
+//
+// Describes information needed to clone a try region, and information
+// produced by cloning that region
+//
+struct CloneTryInfo
+{
+    CloneTryInfo(BitVecTraits& traits);
+
+    // bbID based traits and vector
+    //
+    BitVecTraits Traits;
+    BitVec Visited;
+
+    BlockToBlockMap* Map = nullptr;
+    jitstd::vector<BasicBlock*>* BlocksToClone = nullptr;
+    weight_t ProfileScale = 0.0;
+    unsigned EHIndexShift = 0;
+    bool AddEdges = false;
+    bool ScaleOriginalBlockProfile = false;
+};
+
+//------------------------------------------------------------------------
+// ParameterRegisterLocalMapping:
+//   Contains mappings between a parameter register segment and a corresponding
+//   local. Used by the backend to know which locals are expected to contain
+//   which register parameters after the prolog.
+//
+struct ParameterRegisterLocalMapping
+{
+    const ABIPassingSegment* RegisterSegment;
+    unsigned LclNum;
+    // Offset at which the register is inserted into the local. Used e.g. for
+    // HFAs on arm64 that might have been promoted as a single local (e.g.
+    // System.Numerics.Plane is passed in 3 float regs but enregistered as
+    // TYP_SIMD12).
+    // SysV 64 also see similar situations e.g. Vector3 being passed in
+    // xmm0[0..8), xmm1[8..12), but enregistered as one register.
+    unsigned Offset;
+
+    ParameterRegisterLocalMapping(const ABIPassingSegment* segment, unsigned lclNum, unsigned offset)
+        : RegisterSegment(segment)
+        , LclNum(lclNum)
+        , Offset(offset)
+    {
+    }
+};
+
 /*
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
@@ -2814,6 +2868,7 @@ public:
 
     bool bbInCatchHandlerILRange(BasicBlock* blk);
     bool bbInFilterILRange(BasicBlock* blk);
+    bool bbInCatchHandlerBBRange(BasicBlock* blk);
     bool bbInFilterBBRange(BasicBlock* blk);
     bool bbInTryRegions(unsigned regionIndex, BasicBlock* blk);
     bool bbInExnFlowRegions(unsigned regionIndex, BasicBlock* blk);
@@ -3001,7 +3056,7 @@ public:
 
     void fgRemoveEHTableEntry(unsigned XTnum);
 
-    EHblkDsc* fgAddEHTableEntry(unsigned XTnum);
+    EHblkDsc* fgTryAddEHTableEntries(unsigned XTnum, unsigned count = 1, bool deferAdding = false);
 
     void fgSortEHTable();
 
@@ -3325,6 +3380,26 @@ public:
                                    CorInfoType simdBaseJitType,
                                    unsigned    simdSize);
 
+    GenTree* gtNewSimdIsEvenIntegerNode(var_types   type,
+                                        GenTree*    op1,
+                                        CorInfoType simdBaseJitType,
+                                        unsigned    simdSize);
+
+    GenTree* gtNewSimdIsFiniteNode(var_types   type,
+                                   GenTree*    op1,
+                                   CorInfoType simdBaseJitType,
+                                   unsigned    simdSize);
+
+    GenTree* gtNewSimdIsInfinityNode(var_types   type,
+                                     GenTree*    op1,
+                                     CorInfoType simdBaseJitType,
+                                     unsigned    simdSize);
+
+    GenTree* gtNewSimdIsIntegerNode(var_types   type,
+                                    GenTree*    op1,
+                                    CorInfoType simdBaseJitType,
+                                    unsigned    simdSize);
+
     GenTree* gtNewSimdIsNaNNode(var_types   type,
                                 GenTree*    op1,
                                 CorInfoType simdBaseJitType,
@@ -3335,6 +3410,21 @@ public:
                                      CorInfoType simdBaseJitType,
                                      unsigned    simdSize);
 
+    GenTree* gtNewSimdIsNegativeInfinityNode(var_types   type,
+                                             GenTree*    op1,
+                                             CorInfoType simdBaseJitType,
+                                             unsigned    simdSize);
+
+    GenTree* gtNewSimdIsNormalNode(var_types   type,
+                                   GenTree*    op1,
+                                   CorInfoType simdBaseJitType,
+                                   unsigned    simdSize);
+
+    GenTree* gtNewSimdIsOddIntegerNode(var_types   type,
+                                       GenTree*    op1,
+                                       CorInfoType simdBaseJitType,
+                                       unsigned    simdSize);
+
     GenTree* gtNewSimdIsPositiveNode(var_types   type,
                                      GenTree*    op1,
                                      CorInfoType simdBaseJitType,
@@ -3344,6 +3434,11 @@ public:
                                              GenTree*    op1,
                                              CorInfoType simdBaseJitType,
                                              unsigned    simdSize);
+
+    GenTree* gtNewSimdIsSubnormalNode(var_types   type,
+                                      GenTree*    op1,
+                                      CorInfoType simdBaseJitType,
+                                      unsigned    simdSize);
 
     GenTree* gtNewSimdIsZeroNode(var_types   type,
                                  GenTree*    op1,
@@ -3636,7 +3731,7 @@ public:
     // is #of nodes in subtree) of "tree" is greater than "limit".
     // (This is somewhat redundant with the "GetCostEx()/GetCostSz()" fields, but can be used
     // before they have been set.)
-    bool gtComplexityExceeds(GenTree* tree, unsigned limit);
+    bool gtComplexityExceeds(GenTree* tree, unsigned limit, unsigned* complexity = nullptr);
 
     GenTree* gtReverseCond(GenTree* tree);
 
@@ -3695,7 +3790,7 @@ public:
                                    bool         ignoreRoot       = false);
 
     bool gtSplitTree(
-        BasicBlock* block, Statement* stmt, GenTree* splitPoint, Statement** firstNewStmt, GenTree*** splitPointUse);
+        BasicBlock* block, Statement* stmt, GenTree* splitPoint, Statement** firstNewStmt, GenTree*** splitPointUse, bool early = false);
 
     bool gtStoreDefinesField(
         LclVarDsc* fieldVarDsc, ssize_t offset, unsigned size, ssize_t* pFieldStoreOffset, unsigned* pFieldStoreSize);
@@ -4232,6 +4327,8 @@ public:
 
 #ifdef TARGET_ARM
     int lvaFrameAddress(int varNum, bool mustBeFPBased, regNumber* pBaseReg, int addrModeOffset, bool isFloatUsage);
+#elif TARGET_ARM64
+    int lvaFrameAddress(int varNum, bool* pFPbased, bool suppressFPtoSPRewrite = false);
 #else
     int lvaFrameAddress(int varNum, bool* pFPbased);
 #endif
@@ -5017,6 +5114,8 @@ private:
         SpillCliqueSucc
     };
 
+    friend class SubstitutePlaceholdersAndDevirtualizeWalker;
+
     // Abstract class for receiving a callback while walking a spill clique
     class SpillCliqueWalker
     {
@@ -5129,15 +5228,13 @@ private:
     void impMarkInlineCandidate(GenTree*               call,
                                 CORINFO_CONTEXT_HANDLE exactContextHnd,
                                 bool                   exactContextNeedsRuntimeLookup,
-                                CORINFO_CALL_INFO*     callInfo,
-                                IL_OFFSET              ilOffset);
+                                CORINFO_CALL_INFO*     callInfo);
 
     void impMarkInlineCandidateHelper(GenTreeCall*           call,
                                       uint8_t                candidateIndex,
                                       CORINFO_CONTEXT_HANDLE exactContextHnd,
                                       bool                   exactContextNeedsRuntimeLookup,
                                       CORINFO_CALL_INFO*     callInfo,
-                                      IL_OFFSET              ilOffset,
                                       InlineResult*          inlineResult);
 
     bool impTailCallRetTypeCompatible(bool                     allowWidening,
@@ -5175,10 +5272,7 @@ public:
     BasicBlock* fgEntryBB = nullptr;        // For OSR, the original method's entry point
     BasicBlock* fgOSREntryBB = nullptr;     // For OSR, the logical entry point (~ patchpoint)
     BasicBlock* fgFirstFuncletBB = nullptr; // First block of outlined funclets (to allow block insertion before the funclets)
-    BasicBlock* fgFirstBBScratch = nullptr;   // Block inserted for initialization stuff. Is nullptr if no such block has been
-                                    // created.
     BasicBlockList* fgReturnBlocks = nullptr; // list of BBJ_RETURN blocks
-    unsigned        fgEdgeCount = 0;    // # of control flow edges between the BBs
     unsigned        fgBBcount = 0;      // # of BBs in the method (in the linked list that starts with fgFirstBB)
 #ifdef DEBUG
     jitstd::vector<BasicBlock*>* fgBBOrder = nullptr;          // ordered vector of BBs
@@ -5189,8 +5283,6 @@ public:
     bool         fgMightHaveNaturalLoops = false;
 
     unsigned     fgBBNumMax = 0;           // The max bbNum that has been assigned to basic blocks
-    unsigned     fgDomBBcount = 0;         // # of BBs for which we have dominator and reachability information
-    BasicBlock** fgBBReversePostorder; // Blocks in reverse postorder
 
     FlowGraphDfsTree* m_dfsTree = nullptr;
     // The next members are annotations on the flow graph used during the
@@ -5223,10 +5315,6 @@ public:
     {
         return getAllocator(cmk).allocate<T>(fgBBNumMax + 1);
     }
-
-    bool fgEnsureFirstBBisScratch();
-    bool fgFirstBBisScratch();
-    bool fgBBisScratch(BasicBlock* block);
 
     void fgExtendEHRegionBefore(BasicBlock* block);
     void fgExtendEHRegionAfter(BasicBlock* block);
@@ -5270,7 +5358,6 @@ public:
 
     bool fgModified = false;             // True if the flow graph has been modified recently
     bool fgPredsComputed = false;        // Have we computed the bbPreds list
-    bool fgOptimizedFinally = false;     // Did we optimize any try-finallys?
 
     bool fgHasSwitch = false; // any BBJ_SWITCH jumps?
 
@@ -5311,7 +5398,6 @@ public:
     // - Rationalization links all nodes into linear form which is kept until
     //   the end of compilation. The first and last nodes are stored in the block.
     NodeThreading fgNodeThreading = NodeThreading::None;
-    bool          fgCanRelocateEHRegions; // true if we are allowed to relocate the EH regions
     weight_t      fgCalledCount = BB_ZERO_WEIGHT;          // count of the number of times this method was called
                                           // This is derived from the profile data
                                           // or is BB_UNITY_WEIGHT when we don't have profile data
@@ -5352,11 +5438,19 @@ public:
 
     PhaseStatus fgRemoveEmptyTry();
 
+    PhaseStatus fgRemoveEmptyTryCatchOrTryFault();
+
     PhaseStatus fgRemoveEmptyFinally();
 
     PhaseStatus fgMergeFinallyChains();
 
     PhaseStatus fgCloneFinally();
+
+    bool fgCanCloneTryRegion(BasicBlock* tryEntry);
+
+    BasicBlock* fgCloneTryRegion(BasicBlock* tryEntry, CloneTryInfo& info, BasicBlock** insertAfter = nullptr);
+
+    void fgUpdateACDsBeforeEHTableEntryRemoval(unsigned XTnum);
 
     void fgCleanupContinuation(BasicBlock* continuation);
 
@@ -5411,8 +5505,13 @@ public:
     };
 
     PhaseStatus fgMorphBlocks();
+    BasicBlock* fgGetFirstILBlock();
     void fgMorphBlock(BasicBlock* block, MorphUnreachableInfo* unreachableInfo = nullptr);
     void fgMorphStmts(BasicBlock* block);
+
+#ifdef DEBUG
+    void fgPostGlobalMorphChecks();
+#endif
 
     void fgMergeBlockReturn(BasicBlock* block);
 
@@ -5697,7 +5796,7 @@ public:
     PhaseStatus fgSsaBuild();
 
     // Reset any data structures to the state expected by "fgSsaBuild", so it can be run again.
-    void fgResetForSsa();
+    void fgResetForSsa(bool deepClean);
 
     unsigned fgSsaPassesCompleted = 0; // Number of times fgSsaBuild has been run.
     bool     fgSsaValid = false;           // True if SSA info is valid and can be cross-checked versus IR
@@ -6012,6 +6111,9 @@ public:
     PhaseStatus fgExpandStaticInit();
     bool fgExpandStaticInitForCall(BasicBlock** pBlock, Statement* stmt, GenTreeCall* call);
 
+    PhaseStatus fgExpandStackArrayAllocations();
+    bool fgExpandStackArrayAllocation(BasicBlock* pBlock, Statement* stmt, GenTreeCall* call);
+
     PhaseStatus fgVNBasedIntrinsicExpansion();
     bool fgVNBasedIntrinsicExpansionForCall(BasicBlock** pBlock, Statement* stmt, GenTreeCall* call);
     bool fgVNBasedIntrinsicExpansionForCall_ReadUtf8(BasicBlock** pBlock, Statement* stmt, GenTreeCall* call);
@@ -6130,6 +6232,7 @@ public:
     bool fgCheckRemoveStmt(BasicBlock* block, Statement* stmt);
 
     PhaseStatus fgCanonicalizeFirstBB();
+    void fgCreateNewInitBB();
 
     void fgSetEHRegionForNewPreheaderOrExit(BasicBlock* preheader);
 
@@ -6150,6 +6253,8 @@ public:
     void fgPrepareCallFinallyRetForRemoval(BasicBlock* block);
 
     bool fgCanCompactBlock(BasicBlock* block);
+
+    bool fgCanCompactInitBlock();
 
     void fgCompactBlock(BasicBlock* block);
 
@@ -6205,8 +6310,7 @@ public:
     void fgPrintEdgeWeights();
 #endif
     PhaseStatus fgComputeBlockWeights();
-    bool fgComputeMissingBlockWeights(weight_t* returnWeight);
-    bool fgComputeCalledCount(weight_t returnWeight);
+    bool fgComputeMissingBlockWeights();
 
     bool fgReorderBlocks(bool useProfile);
     void fgDoReversePostOrderLayout();
@@ -6219,7 +6323,6 @@ public:
 
         Compiler* compiler;
         PriorityQueue<FlowEdge*, decltype(&ThreeOptLayout::EdgeCmp)> cutPoints;
-        unsigned* ordinals;
         BasicBlock** blockOrder;
         BasicBlock** tempOrder;
         unsigned numCandidateBlocks;
@@ -6230,7 +6333,8 @@ public:
 #endif // DEBUG
 
         weight_t GetCost(BasicBlock* block, BasicBlock* next);
-        bool TrySwappingPartitions(unsigned s1Start, unsigned s2Start, unsigned s3Start, unsigned s3End, unsigned s4End);
+        weight_t GetPartitionCostDelta(unsigned s1Start, unsigned s2Start, unsigned s3Start, unsigned s3End, unsigned s4End);
+        void SwapPartitions(unsigned s1Start, unsigned s2Start, unsigned s3Start, unsigned s3End, unsigned s4End);
 
         void ConsiderEdge(FlowEdge* edge);
         void AddNonFallthroughSuccs(unsigned blockPos);
@@ -6245,7 +6349,7 @@ public:
     };
 
     template <bool hasEH>
-    void fgMoveHotJumps(FlowGraphDfsTree* dfsTree);
+    void fgMoveHotJumps();
 
     bool fgFuncletsAreCold();
 
@@ -6253,7 +6357,7 @@ public:
 
     bool fgIsForwardBranch(BasicBlock* bJump, BasicBlock* bDest, BasicBlock* bSrc = nullptr);
 
-    bool fgUpdateFlowGraph(bool doTailDup = false, bool isPhase = false, bool doAggressiveCompaction = true);
+    bool fgUpdateFlowGraph(bool doTailDup = false, bool isPhase = false);
     PhaseStatus fgUpdateFlowGraphPhase();
 
     PhaseStatus fgDfsBlocksAndRemove();
@@ -6321,11 +6425,12 @@ public:
 
     static fgWalkPreFn fgStress64RsltMulCB;
     void               fgStress64RsltMul();
-    void               fgDebugCheckUpdate(const bool doAggressiveCompaction);
+    void               fgDebugCheckUpdate();
 
     void fgDebugCheckBBNumIncreasing();
     void fgDebugCheckBBlist(bool checkBBNum = false, bool checkBBRefs = true);
     void fgDebugCheckBlockLinks();
+    void fgDebugCheckInitBB();
     void fgDebugCheckLinks(bool morphTrees = false);
     void fgDebugCheckStmtsList(BasicBlock* block, bool morphTrees);
     void fgDebugCheckNodeLinks(BasicBlock* block, Statement* stmt);
@@ -6492,7 +6597,6 @@ public:
 
 
     void WalkSpanningTree(SpanningTreeVisitor* visitor);
-    void fgSetProfileWeight(BasicBlock* block, weight_t weight);
     void fgApplyProfileScale();
     bool fgHaveSufficientProfileWeights();
     bool fgHaveTrustedProfileWeights();
@@ -6512,6 +6616,7 @@ public:
     }
 
     void fgRemoveProfileData(const char* reason);
+    void fgRepairProfileCondToUncond(BasicBlock* block, FlowEdge* retainedEdge, FlowEdge* removedEdge, int* metric = nullptr);
 
 //-------- Insert a statement at the start or end of a basic block --------
 
@@ -6755,7 +6860,7 @@ private:
     void fgKillDependentAssertionsSingle(unsigned lclNum DEBUGARG(GenTree* tree));
     void fgKillDependentAssertions(unsigned lclNum DEBUGARG(GenTree* tree));
     void fgMorphTreeDone(GenTree* tree);
-    void fgMorphTreeDone(GenTree* tree, bool optAssertionPropDone, bool isMorphedTree DEBUGARG(int morphNum = 0));
+    void fgMorphTreeDone(GenTree* tree, bool optAssertionPropDone DEBUGARG(int morphNum = 0));
 
     Statement* fgMorphStmt;
     unsigned   fgBigOffsetMorphingTemps[TYP_COUNT];
@@ -7075,6 +7180,7 @@ public:
     void optCompactLoop(FlowGraphNaturalLoop* loop);
     bool optCreatePreheader(FlowGraphNaturalLoop* loop);
     void optSetWeightForPreheaderOrExit(FlowGraphNaturalLoop* loop, BasicBlock* block);
+    bool optSplitHeaderIfNecessary(FlowGraphNaturalLoop* loop);
 
     bool optCanonicalizeExits(FlowGraphNaturalLoop* loop);
     bool optCanonicalizeExit(FlowGraphNaturalLoop* loop, BasicBlock* exit);
@@ -7223,14 +7329,6 @@ protected:
     size_t              optCSEhashMaxCountBeforeResize; // Number of entries before resize
     CSEdsc**            optCSEhash;
     CSEdsc**            optCSEtab;
-
-    typedef JitHashTable<GenTree*, JitPtrKeyFuncs<GenTree>, GenTree*> NodeToNodeMap;
-
-    NodeToNodeMap* optCseCheckedBoundMap; // Maps bound nodes to ancestor compares that should be
-                                          // re-numbered with the bound to improve range check elimination
-
-    // Given a compare, look for a cse candidate checked bound feeding it and add a map entry if found.
-    void optCseUpdateCheckedBoundMap(GenTree* compare);
 
     void optCSEstop();
 
@@ -7446,6 +7544,7 @@ public:
 #define OMF_HAS_SPECIAL_INTRINSICS             0x00020000 // Method contains special intrinsics expanded in late phases
 #define OMF_HAS_RECURSIVE_TAILCALL             0x00040000 // Method contains recursive tail call
 #define OMF_HAS_EXPANDABLE_CAST                0x00080000 // Method contains casts eligible for late expansion
+#define OMF_HAS_STACK_ARRAY                    0x00100000 // Method contains stack allocated arrays
 
     // clang-format on
 
@@ -7534,6 +7633,16 @@ public:
     void setMethodHasRecursiveTailcall()
     {
         optMethodFlags |= OMF_HAS_RECURSIVE_TAILCALL;
+    }
+
+    bool doesMethodHaveStackAllocatedArray()
+    {
+        return (optMethodFlags & OMF_HAS_STACK_ARRAY) != 0;
+    }
+
+    void setMethodHasStackAllocatedArray()
+    {
+        optMethodFlags |= OMF_HAS_STACK_ARRAY;
     }
 
     void pickGDV(GenTreeCall*           call,
@@ -8039,6 +8148,7 @@ public:
     GenTree*     optVNBasedFoldExpr(BasicBlock* block, GenTree* parent, GenTree* tree);
     GenTree*     optVNBasedFoldExpr_Call(BasicBlock* block, GenTree* parent, GenTreeCall* call);
     GenTree*     optVNBasedFoldExpr_Call_Memmove(GenTreeCall* call);
+    GenTree*     optVNBasedFoldExpr_Call_Memset(GenTreeCall* call);
 
     AssertionIndex GetAssertionCount()
     {
@@ -8236,8 +8346,6 @@ protected:
     */
 
 public:
-    regNumber raUpdateRegStateForArg(RegState* regState, LclVarDsc* argDsc);
-
     void raMarkStkVars();
 
 #if FEATURE_PARTIAL_SIMD_CALLEE_SAVE
@@ -8269,8 +8377,14 @@ protected:
     bool rpMustCreateEBPFrame(INDEBUG(const char** wbReason));
 
 private:
-    Lowering*            m_pLowering;   // Lowering; needed to Lower IR that's added or modified after Lowering.
-    LinearScanInterface* m_pLinearScan; // Linear Scan allocator
+    Lowering*            m_pLowering = nullptr; // Lowering; needed to Lower IR that's added or modified after Lowering.
+    LinearScanInterface* m_pLinearScan = nullptr; // Linear Scan allocator
+
+public:
+    ArrayStack<ParameterRegisterLocalMapping>* m_paramRegLocalMappings = nullptr;
+
+    const ParameterRegisterLocalMapping* FindParameterRegisterLocalMappingByRegister(regNumber reg);
+    const ParameterRegisterLocalMapping* FindParameterRegisterLocalMappingByLocal(unsigned lclNum, unsigned offset);
 
     /*
     XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
@@ -8285,7 +8399,6 @@ private:
     XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
     */
 
-public:
     // Get handles
 
     void eeGetCallInfo(CORINFO_RESOLVED_TOKEN* pResolvedToken,
@@ -9644,7 +9757,7 @@ private:
     //
     bool isSIMDTypeLocalAligned(unsigned varNum)
     {
-#if defined(FEATURE_SIMD) && ALIGN_SIMD_TYPES
+#if defined(FEATURE_SIMD) && ALIGN_SIMD_TYPES && !defined(UNIX_X86_ABI)
         LclVarDsc* lcl = lvaGetDesc(varNum);
         if (varTypeIsSIMD(lcl))
         {
@@ -9899,6 +10012,17 @@ public:
         return (compOpportunisticallyDependsOn(InstructionSet_EVEX));
     }
 
+    //------------------------------------------------------------------------
+    // canUseRex2Encoding - Answer the question: Is Rex2 encoding supported on this target.
+    //
+    // Returns:
+    //    `true` if Rex2 encoding is supported, `false` if not.
+    //
+    bool canUseApxEncoding() const
+    {
+        return compOpportunisticallyDependsOn(InstructionSet_APX);
+    }
+
 private:
     //------------------------------------------------------------------------
     // DoJitStressEvexEncoding- Answer the question: Do we force EVEX encoding.
@@ -9913,7 +10037,7 @@ private:
         // otherwise use VEX encoding but can be EVEX encoded to use EVEX encoding
         // This requires AVX512F, AVX512BW, AVX512CD, AVX512DQ, and AVX512VL support
 
-        if (JitConfig.JitStressEvexEncoding() && IsBaselineVector512IsaSupportedOpportunistically())
+        if (JitStressEvexEncoding() && IsBaselineVector512IsaSupportedOpportunistically())
         {
             assert(compIsaSupportedDebugOnly(InstructionSet_AVX512F));
             assert(compIsaSupportedDebugOnly(InstructionSet_AVX512F_VL));
@@ -9926,10 +10050,45 @@ private:
 
             return true;
         }
-        else if (JitConfig.JitStressEvexEncoding() && compOpportunisticallyDependsOn(InstructionSet_AVX10v1))
+        else if (JitStressEvexEncoding() && compOpportunisticallyDependsOn(InstructionSet_AVX10v1))
         {
             return true;
         }
+#endif // DEBUG
+
+        return false;
+    }
+
+    //------------------------------------------------------------------------
+    // DoJitStressRex2Encoding- Answer the question: Do we force REX2 encoding.
+    //
+    // Returns:
+    //    `true` if user requests REX2 encoding.
+    //
+    bool DoJitStressRex2Encoding() const
+    {
+#ifdef DEBUG
+        if (JitConfig.JitStressRex2Encoding() && compOpportunisticallyDependsOn(InstructionSet_APX))
+        {
+            // we should make sure EVEX is also stressed when REX2 is stressed, as we will need to guarantee EGPR
+            // functionality is properly turned on for every instructions when REX2 is stress.
+            return true;
+        }
+#endif // DEBUG
+
+        return false;
+    }
+
+    //------------------------------------------------------------------------
+    // JitStressEvexEncoding- Answer the question: Is Evex stress knob set
+    //
+    // Returns:
+    //    `true` if user requests REX2 encoding.
+    //
+    bool JitStressEvexEncoding() const
+    {
+#ifdef DEBUG
+        return JitConfig.JitStressEvexEncoding() || JitConfig.JitStressRex2Encoding();
 #endif // DEBUG
 
         return false;
@@ -10570,6 +10729,7 @@ public:
         STRESS_MODE(IF_CONVERSION_INNER_LOOPS)                                                  \
         STRESS_MODE(POISON_IMPLICIT_BYREFS)                                                     \
         STRESS_MODE(STORE_BLOCK_UNROLLING)                                                      \
+        STRESS_MODE(THREE_OPT_LAYOUT)                                                           \
         STRESS_MODE(COUNT)
 
     enum                compStressArea
@@ -12263,6 +12423,13 @@ class EHClauses
 public:
     EHClauses(Compiler* comp)
         : m_begin(comp->compHndBBtab)
+        , m_end(comp->compHndBBtab + comp->compHndBBtabCount)
+    {
+        assert((m_begin != nullptr) || (m_begin == m_end));
+    }
+
+    EHClauses(Compiler* comp, EHblkDsc* begin)
+        : m_begin(begin)
         , m_end(comp->compHndBBtab + comp->compHndBBtabCount)
     {
         assert((m_begin != nullptr) || (m_begin == m_end));

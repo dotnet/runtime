@@ -312,6 +312,39 @@ namespace System.Globalization.Tests
 
         public static IEnumerable<object[]> Compare_TestData()
         {
+            #region Numeric ordering
+            var isNls = PlatformDetection.IsNlsGlobalization;
+
+            yield return new object[] { "1234567890", "1234567890", CompareOptions.NumericOrdering, 0 };
+            yield return new object[] { "1234567890", "1234567890", CompareOptions.NumericOrdering, 0 };
+
+            yield return new object[] { "02", "1", CompareOptions.NumericOrdering, -1 };
+            yield return new object[] { "a02", "a1", CompareOptions.NumericOrdering, -1 };
+            yield return new object[] { "02a", "1a", CompareOptions.NumericOrdering, -1 };
+
+            yield return new object[] { "01", "1", CompareOptions.NumericOrdering, -1 };
+            yield return new object[] { "a01", "a1", CompareOptions.NumericOrdering, -1 };
+            yield return new object[] { "01a", "1a", CompareOptions.NumericOrdering, -1 };
+
+            yield return new object[] { "1", "02", CompareOptions.NumericOrdering, 1 };
+            yield return new object[] { "02", "2", CompareOptions.NumericOrdering, -1 };
+            yield return new object[] { "2", "03", CompareOptions.NumericOrdering, 1 };
+
+            yield return new object[] { "2", "10", CompareOptions.NumericOrdering, 1 };
+            yield return new object[] { "a2", "a10", CompareOptions.NumericOrdering, 1 };
+            yield return new object[] { "2a", "10a", CompareOptions.NumericOrdering, 1 };
+
+            yield return new object[] { "1A02", "1a02", CompareOptions.NumericOrdering | CompareOptions.IgnoreCase, 0 };
+            yield return new object[] { "A1", "a2", CompareOptions.NumericOrdering, -1 };
+            yield return new object[] { "A01", "a1", CompareOptions.NumericOrdering, -1 };
+
+            yield return new object[] { "1\u00E102", "1a02", CompareOptions.NumericOrdering | CompareOptions.IgnoreNonSpace, 1 };
+            yield return new object[] { "\u00E11", "a2", CompareOptions.NumericOrdering, 1 };
+            yield return new object[] { "\u00E101", "a1", CompareOptions.NumericOrdering, 1 };
+
+            yield return new object[] { "0.1", "0.02", CompareOptions.NumericOrdering, 1 };
+            #endregion
+
             CompareOptions ignoreKanaIgnoreWidthIgnoreCase = CompareOptions.IgnoreKanaType | CompareOptions.IgnoreWidth | CompareOptions.IgnoreCase;
             yield return new object[] { "\u3042", "\u30A2", ignoreKanaIgnoreWidthIgnoreCase, -1 };
             yield return new object[] { "\u3042", "\uFF71", ignoreKanaIgnoreWidthIgnoreCase, -1 };
@@ -898,17 +931,14 @@ namespace System.Globalization.Tests
 
                 Assert.Equal(offsetResult, sourceBoundedSpan.IndexOf(valueBoundedSpan, GetStringComparison(options)));
                 Assert.Equal(offsetResult, compareInfo.IndexOf(sourceBoundedSpan, valueBoundedSpan, options));
-                if (PlatformDetection.IsNotHybridGlobalizationOnApplePlatform)
+                Assert.Equal(offsetResult, compareInfo.IndexOf(sourceBoundedSpan, valueBoundedSpan, options, out int matchLength));
+                if (offsetResult >= 0)
                 {
-                    Assert.Equal(offsetResult, compareInfo.IndexOf(sourceBoundedSpan, valueBoundedSpan, options, out int matchLength));
-                    if (offsetResult >= 0)
-                    {
-                        Assert.Equal(valueBoundedSpan.Length, matchLength); // Invariant mode should perform non-linguistic comparisons
-                    }
-                    else
-                    {
-                        Assert.Equal(0, matchLength); // not found
-                    }
+                    Assert.Equal(valueBoundedSpan.Length, matchLength); // Invariant mode should perform non-linguistic comparisons
+                }
+                else
+                {
+                    Assert.Equal(0, matchLength); // not found
                 }
             }
         }
@@ -961,17 +991,14 @@ namespace System.Globalization.Tests
 
                 Assert.Equal(result, sourceBoundedSpan.LastIndexOf(valueBoundedSpan, GetStringComparison(options)));
                 Assert.Equal(result, compareInfo.LastIndexOf(sourceBoundedSpan, valueBoundedSpan, options));
-                if (PlatformDetection.IsNotHybridGlobalizationOnApplePlatform)
+                Assert.Equal(result, compareInfo.LastIndexOf(sourceBoundedSpan, valueBoundedSpan, options, out int matchLength));
+                if (result >= 0)
                 {
-                    Assert.Equal(result, compareInfo.LastIndexOf(sourceBoundedSpan, valueBoundedSpan, options, out int matchLength));
-                    if (result >= 0)
-                    {
-                        Assert.Equal(valueBoundedSpan.Length, matchLength); // Invariant mode should perform non-linguistic comparisons
-                    }
-                    else
-                    {
-                        Assert.Equal(0, matchLength); // not found
-                    }
+                    Assert.Equal(valueBoundedSpan.Length, matchLength); // Invariant mode should perform non-linguistic comparisons
+                }
+                else
+                {
+                    Assert.Equal(0, matchLength); // not found
                 }
             }
         }
@@ -999,17 +1026,14 @@ namespace System.Globalization.Tests
 
                 Assert.Equal(result, sourceBoundedSpan.StartsWith(valueBoundedSpan, GetStringComparison(options)));
                 Assert.Equal(result, compareInfo.IsPrefix(sourceBoundedSpan, valueBoundedSpan, options));
-                if (PlatformDetection.IsNotHybridGlobalizationOnApplePlatform)
+                Assert.Equal(result, compareInfo.IsPrefix(sourceBoundedSpan, valueBoundedSpan, options, out int matchLength));
+                if (result)
                 {
-                    Assert.Equal(result, compareInfo.IsPrefix(sourceBoundedSpan, valueBoundedSpan, options, out int matchLength));
-                    if (result)
-                    {
-                        Assert.Equal(valueBoundedSpan.Length, matchLength); // Invariant mode should perform non-linguistic comparisons
-                    }
-                    else
-                    {
-                        Assert.Equal(0, matchLength); // not found
-                    }
+                    Assert.Equal(valueBoundedSpan.Length, matchLength); // Invariant mode should perform non-linguistic comparisons
+                }
+                else
+                {
+                    Assert.Equal(0, matchLength); // not found
                 }
             }
         }
@@ -1037,17 +1061,14 @@ namespace System.Globalization.Tests
 
                 Assert.Equal(result, sourceBoundedSpan.EndsWith(valueBoundedSpan, GetStringComparison(options)));
                 Assert.Equal(result, compareInfo.IsSuffix(sourceBoundedSpan, valueBoundedSpan, options));
-                if (PlatformDetection.IsNotHybridGlobalizationOnApplePlatform)
+                Assert.Equal(result, compareInfo.IsSuffix(sourceBoundedSpan, valueBoundedSpan, options, out int matchLength));
+                if (result)
                 {
-                    Assert.Equal(result, compareInfo.IsSuffix(sourceBoundedSpan, valueBoundedSpan, options, out int matchLength));
-                    if (result)
-                    {
-                        Assert.Equal(valueBoundedSpan.Length, matchLength); // Invariant mode should perform non-linguistic comparisons
-                    }
-                    else
-                    {
-                        Assert.Equal(0, matchLength); // not found
-                    }
+                    Assert.Equal(valueBoundedSpan.Length, matchLength); // Invariant mode should perform non-linguistic comparisons
+                }
+                else
+                {
+                    Assert.Equal(0, matchLength); // not found
                 }
             }
         }
