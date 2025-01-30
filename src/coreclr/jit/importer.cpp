@@ -11075,6 +11075,18 @@ bool Compiler::impReturnInstruction(int prefixFlags, OPCODE& opcode)
                             // of this return value.
                             impInlineInfo->retExprClassHnd        = returnClsHnd;
                             impInlineInfo->retExprClassHndIsExact = isExact;
+#ifdef FEATURE_COMINTEROP
+                            if (returnClsHnd != nullptr)
+                            {
+                                const char* className = eeGetClassName(returnClsHnd);
+                                if (strcmp(className, "System.Dynamic.DynamicMetaObject") == 0)
+                                {
+                                    // We don't want to set DynamicMetaObject as exact
+                                    // because of dynamic runtime binding on COM objects.
+                                    impInlineInfo->retExprClassHndIsExact = false;
+                                }
+                            }
+#endif // FEATURE_COMINTEROP
                         }
                         else if (impInlineInfo->retExprClassHnd != returnClsHnd)
                         {
