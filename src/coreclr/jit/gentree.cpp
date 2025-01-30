@@ -24728,9 +24728,6 @@ GenTree* Compiler::gtNewSimdMinNode(
  * @return A new GenTree node representing the SIMD min/max operation.
  */
 GenTree* Compiler::gtNewSimdMinMaxNode(
-    var_types type, GenTree* op1, GenTree* op2, ssize_t ctrlByte, CorInfoType simdBaseJitType, unsigned simdSize);
-
-GenTree* Compiler::gtNewSimdMinMaxNode(
     var_types type, GenTree* op1, GenTree* op2, ssize_t ctrlByte, CorInfoType simdBaseJitType, unsigned simdSize)
 {
     assert(IsBaselineSimdIsaSupportedDebugOnly());
