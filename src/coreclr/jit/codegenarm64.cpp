@@ -845,12 +845,19 @@ void CodeGen::genSaveCalleeSavedRegisterGroup(regMaskTP regsMask, int spDelta, i
 
     for (int i = 0; i < regStack.Height(); ++i)
     {
-        RegPair regPair = regStack.Bottom(i);
+        RegPair regPair = genReverseAndPairCalleeSavedRegisters ? regStack.Top(i) : regStack.Bottom(i);
         if (regPair.reg2 != REG_NA)
         {
             // We can use a STP instruction.
-            genPrologSaveRegPair(regPair.reg1, regPair.reg2, spOffset, spDelta, regPair.useSaveNextPair, REG_IP0,
-                                 nullptr);
+            if (genReverseAndPairCalleeSavedRegisters)
+            {
+                genPrologSaveRegPair(regPair.reg2, regPair.reg1, spOffset, spDelta, false, REG_IP0, nullptr);
+            }
+            else
+            {
+                genPrologSaveRegPair(regPair.reg1, regPair.reg2, spOffset, spDelta, regPair.useSaveNextPair, REG_IP0,
+                                     nullptr);
+            }
 
             spOffset += 2 * slotSize;
         }
@@ -926,8 +933,9 @@ void CodeGen::genSaveCalleeSavedRegistersHelp(regMaskTP regsToSaveMask, int lowe
 
     // Save integer registers at higher addresses than floating-point registers.
 
+    regMaskTP maskSaveRegsFrame = regsToSaveMask & (RBM_FP | RBM_LR);
     regMaskTP maskSaveRegsFloat = regsToSaveMask & RBM_ALLFLOAT;
-    regMaskTP maskSaveRegsInt   = regsToSaveMask & ~maskSaveRegsFloat;
+    regMaskTP maskSaveRegsInt   = regsToSaveMask & ~maskSaveRegsFloat & ~maskSaveRegsFrame;
 
     if (maskSaveRegsFloat != RBM_NONE)
     {
@@ -939,6 +947,13 @@ void CodeGen::genSaveCalleeSavedRegistersHelp(regMaskTP regsToSaveMask, int lowe
     if (maskSaveRegsInt != RBM_NONE)
     {
         genSaveCalleeSavedRegisterGroup(maskSaveRegsInt, spDelta, lowestCalleeSavedOffset);
+        spDelta = 0;
+        lowestCalleeSavedOffset += genCountBits(maskSaveRegsInt) * FPSAVE_REGSIZE_BYTES;
+    }
+
+    if (maskSaveRegsFrame != RBM_NONE)
+    {
+        genPrologSaveRegPair(REG_FP, REG_LR, lowestCalleeSavedOffset, spDelta, false, REG_IP0, nullptr);
         // No need to update spDelta, lowestCalleeSavedOffset since they're not used after this.
     }
 }
@@ -970,13 +985,20 @@ void CodeGen::genRestoreCalleeSavedRegisterGroup(regMaskTP regsMask, int spDelta
             stackDelta = spDelta;
         }
 
-        RegPair regPair = regStack.Top(i);
+        RegPair regPair = genReverseAndPairCalleeSavedRegisters ? regStack.Bottom(i) : regStack.Top(i);
         if (regPair.reg2 != REG_NA)
         {
             spOffset -= 2 * slotSize;
 
-            genEpilogRestoreRegPair(regPair.reg1, regPair.reg2, spOffset, stackDelta, regPair.useSaveNextPair, REG_IP1,
-                                    nullptr);
+            if (genReverseAndPairCalleeSavedRegisters)
+            {
+                genEpilogRestoreRegPair(regPair.reg2, regPair.reg1, spOffset, stackDelta, false, REG_IP1, nullptr);
+            }
+            else
+            {
+                genEpilogRestoreRegPair(regPair.reg1, regPair.reg2, spOffset, stackDelta, regPair.useSaveNextPair,
+                                        REG_IP1, nullptr);
+            }
         }
         else
         {
@@ -1043,10 +1065,18 @@ void CodeGen::genRestoreCalleeSavedRegistersHelp(regMaskTP regsToRestoreMask, in
 
     // Save integer registers at higher addresses than floating-point registers.
 
+    regMaskTP maskRestoreRegsFrame = regsToRestoreMask & (RBM_FP | RBM_LR);
     regMaskTP maskRestoreRegsFloat = regsToRestoreMask & RBM_ALLFLOAT;
-    regMaskTP maskRestoreRegsInt   = regsToRestoreMask & ~maskRestoreRegsFloat;
+    regMaskTP maskRestoreRegsInt   = regsToRestoreMask & ~maskRestoreRegsFloat & ~maskRestoreRegsFrame;
 
     // Restore in the opposite order of saving.
+
+    if (maskRestoreRegsFrame != RBM_NONE)
+    {
+        int spFrameDelta = (maskRestoreRegsFloat != RBM_NONE || maskRestoreRegsInt != RBM_NONE) ? 0 : spDelta;
+        spOffset -= 2 * REGSIZE_BYTES;
+        genEpilogRestoreRegPair(REG_FP, REG_LR, spOffset, spFrameDelta, false, REG_IP1, nullptr);
+    }
 
     if (maskRestoreRegsInt != RBM_NONE)
     {
@@ -2645,6 +2675,12 @@ void CodeGen::genCodeForBinary(GenTreeOp* tree)
                     break;
                 }
 
+                case GT_AND_NOT:
+                {
+                    ins = INS_bics;
+                    break;
+                }
+
                 default:
                 {
                     noway_assert(!"Unexpected BinaryOp with GTF_SET_FLAGS set");
@@ -3454,13 +3490,15 @@ void CodeGen::genCodeForNegNot(GenTree* tree)
 
     GenTree* operand = tree->gtGetOp1();
     // The src must be a register.
-    if (tree->OperIs(GT_NEG) && operand->isContained())
+    if (tree->OperIs(GT_NEG, GT_NOT) && operand->isContained())
     {
         genTreeOps oper = operand->OperGet();
         switch (oper)
         {
             case GT_MUL:
             {
+                assert(tree->OperIs(GT_NEG));
+
                 ins          = INS_mneg;
                 GenTree* op1 = tree->gtGetOp1();
                 GenTree* a   = op1->gtGetOp1();
@@ -3474,7 +3512,7 @@ void CodeGen::genCodeForNegNot(GenTree* tree)
             case GT_RSH:
             case GT_RSZ:
             {
-                assert(ins == INS_neg || ins == INS_negs);
+                assert(ins == INS_neg || ins == INS_negs || ins == INS_mvn);
                 assert(operand->gtGetOp2()->IsCnsIntOrI());
                 assert(operand->gtGetOp2()->isContained());
 
@@ -3665,8 +3703,7 @@ void CodeGen::genCodeForCpObj(GenTreeBlk* cpObjNode)
         sourceIsLocal = true;
     }
 
-    bool dstOnStack =
-        dstAddr->gtSkipReloadOrCopy()->OperIs(GT_LCL_ADDR) || cpObjNode->GetLayout()->IsStackOnly(compiler);
+    bool dstOnStack = cpObjNode->IsAddressNotOnHeap(compiler);
 
 #ifdef DEBUG
     assert(!dstAddr->isContained());

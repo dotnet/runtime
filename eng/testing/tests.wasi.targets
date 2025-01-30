@@ -129,6 +129,8 @@
               TargetPath="%(WasmFilesToIncludeFromPublishDir.Identity)"
               Condition="'%(WasmFilesToIncludeFromPublishDir.Identity)' != ''" />
     </ItemGroup>
+
+    <ForceMSBuildGC />
   </Target>
 
   <Target Name="_PrepareForAOTOnHelix">
