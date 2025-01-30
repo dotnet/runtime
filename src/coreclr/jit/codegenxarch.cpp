@@ -742,7 +742,7 @@ void CodeGen::genCodeForNegNot(GenTree* tree)
         regNumber   operandReg = genConsumeReg(operand);
         instruction ins        = genGetInsForOper(tree->OperGet(), targetType);
 
-        GetEmitter()->emitIns_BASE_R_R(ins, emitTypeSize(tree), targetReg, operandReg);
+        GetEmitter()->emitIns_BASE_R_R(ins, emitActualTypeSize(tree), targetReg, operandReg);
     }
 
     genProduceReg(tree);
@@ -1183,13 +1183,13 @@ void CodeGen::genCodeForBinary(GenTreeOp* treeNode)
     // try to use an inc or dec
     if (oper == GT_ADD && src->isContainedIntOrIImmed() && !treeNode->gtOverflowEx())
     {
-        if (op2->IsIntegralConst(1))
+        if (src->IsIntegralConst(1))
         {
             emit->emitIns_BASE_R_R(INS_inc, emitTypeSize(treeNode), targetReg, dst->GetRegNum());
             genProduceReg(treeNode);
             return;
         }
-        else if (op2->IsIntegralConst(-1))
+        else if (src->IsIntegralConst(-1))
         {
             emit->emitIns_BASE_R_R(INS_dec, emitTypeSize(treeNode), targetReg, dst->GetRegNum());
             genProduceReg(treeNode);
