@@ -5131,7 +5131,7 @@ void Compiler::ThreeOptLayout::ConsiderEdge(FlowEdge* edge)
     BasicBlock* const dstBlk = edge->getDestinationBlock();
 
     // Ignore cross-region branches
-    if ((srcBlk->bbTryIndex != currEHRegion) || (dstBlk->bbTryIndex != currEHRegion))
+    if (!BasicBlock::sameTryRegion(srcBlk, dstBlk))
     {
         return;
     }
@@ -5249,39 +5249,8 @@ bool Compiler::ThreeOptLayout::Run()
 
         // Repurpose 'bbPostorderNum' for the block's ordinal
         block->bbPostorderNum = i;
-
-        // While walking the span of blocks to reorder,
-        // remember where each try region ends within this span.
-        // We'll use this information to run 3-opt per region.
-        EHblkDsc* const HBtab = compiler->ehGetBlockTryDsc(block);
-        if (HBtab != nullptr)
-        {
-            HBtab->ebdTryLast = block;
-        }
     }
 
-    // Reorder try regions first
-    for (EHblkDsc* const HBtab : EHClauses(compiler))
-    {
-        // If multiple region indices map to the same region,
-        // make sure we reorder its blocks only once
-        BasicBlock* const tryBeg = HBtab->ebdTryBeg;
-        if (tryBeg->getTryIndex() != currEHRegion++)
-        {
-            continue;
-        }
-
-        // Only reorder try regions within the candidate span of blocks
-        if ((tryBeg->bbPostorderNum < numCandidateBlocks) && (blockOrder[tryBeg->bbPostorderNum] == tryBeg))
-        {
-            JITDUMP("Running 3-opt for try region #%d\n", (currEHRegion - 1));
-            RunThreeOptPass(tryBeg, HBtab->ebdTryLast);
-        }
-    }
-
-    // Finally, reorder the main method body
-    currEHRegion = 0;
-    JITDUMP("Running 3-opt for main method body\n");
     RunThreeOptPass(blockOrder[0], blockOrder[numCandidateBlocks - 1]);
 
     bool modified = false;
@@ -5302,7 +5271,13 @@ bool Compiler::ThreeOptLayout::Run()
             continue;
         }
 
-        // Don't break up call-finally pairs
+        // Don't move the entry of an EH region.
+        if (compiler->bbIsTryBeg(next) || compiler->bbIsHandlerBeg(next))
+        {
+            continue;
+        }
+
+        // Don't break up call-finally pairs.
         if (block->isBBCallFinallyPair() || next->isBBCallFinallyPairTail())
         {
             continue;
@@ -5310,7 +5285,7 @@ bool Compiler::ThreeOptLayout::Run()
 
         modified = true;
 
-        // Move call-finally pairs in tandem
+        // Move call-finally pairs in tandem.
         if (next->isBBCallFinallyPair())
         {
             BasicBlock* const callFinallyTail = next->Next();
