@@ -4454,7 +4454,6 @@ bool Compiler::fgReorderBlocks(bool useProfile)
 template <bool hasEH>
 void Compiler::fgMoveHotJumps()
 {
-    return;
 #ifdef DEBUG
     if (verbose)
     {
@@ -5290,6 +5289,7 @@ bool Compiler::ThreeOptLayout::Run()
     {
         BasicBlock* const block = blockOrder[i - 1];
         BasicBlock* const next  = blockOrder[i];
+        assert(block != next);
 
         if (block->NextIs(next))
         {
@@ -5314,8 +5314,11 @@ bool Compiler::ThreeOptLayout::Run()
         if (next->isBBCallFinallyPair())
         {
             BasicBlock* const callFinallyTail = next->Next();
-            compiler->fgUnlinkRange(next, callFinallyTail);
-            compiler->fgMoveBlocksAfter(next, callFinallyTail, block);
+            if (callFinallyTail != block)
+            {
+                compiler->fgUnlinkRange(next, callFinallyTail);
+                compiler->fgMoveBlocksAfter(next, callFinallyTail, block);
+            }
         }
         else
         {
