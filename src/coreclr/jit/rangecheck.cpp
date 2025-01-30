@@ -979,7 +979,13 @@ void RangeCheck::MergeAssertion(BasicBlock* block, GenTree* op, Range* pRange DE
     // If we have a phi arg, we can get to the block from it and use its assertion out.
     if (op->OperIs(GT_PHI_ARG))
     {
-        assertions = m_pCompiler->optGetEdgeAssertions(op->AsPhiArg()->gtPredBB, block);
+        const BasicBlock* pred = op->AsPhiArg()->gtPredBB;
+        assertions             = m_pCompiler->optGetEdgeAssertions(block, pred);
+        if (!BitVecOps::MayBeUninit(assertions))
+        {
+            JITDUMP("Merge assertions created by " FMT_BB " for " FMT_BB "\n", pred->bbNum, block->bbNum);
+            Compiler::optDumpAssertionIndices(assertions, "\n");
+        }
     }
     // Get assertions from bbAssertionIn.
     else if (op->IsLocal())

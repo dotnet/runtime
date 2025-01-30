@@ -8257,7 +8257,7 @@ public:
     bool     optNonNullAssertionProp_Ind(ASSERT_VALARG_TP assertions, GenTree* indir);
     bool     optWriteBarrierAssertionProp_StoreInd(ASSERT_VALARG_TP assertions, GenTreeStoreInd* indir);
 
-    bool optAssertionPropPhiDefNotNull(BasicBlock* block, GenTreePhi* phi);
+    bool optAssertionIsNonNullPhi(const BasicBlock* block, GenTreePhi* phi);
 
     void optAssertionProp_RangeProperties(ASSERT_VALARG_TP assertions,
                                           GenTree*         tree,
@@ -8278,7 +8278,7 @@ public:
     void optDebugCheckAssertions(AssertionIndex AssertionIndex);
 #endif
 
-    ASSERT_VALRET_TP optGetEdgeAssertions(const BasicBlock* pred, const BasicBlock* block) const;
+    ASSERT_VALRET_TP optGetEdgeAssertions(const BasicBlock* block, const BasicBlock* blockPred) const;
 
     static void optDumpAssertionIndices(const char* header, ASSERT_TP assertions, const char* footer = nullptr);
     static void optDumpAssertionIndices(ASSERT_TP assertions, const char* footer = nullptr);

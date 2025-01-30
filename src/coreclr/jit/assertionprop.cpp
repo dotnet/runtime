@@ -4367,23 +4367,34 @@ GenTree* Compiler::optAssertionProp_RelOp(ASSERT_VALARG_TP assertions, GenTree* 
     return optAssertionPropLocal_RelOp(assertions, tree, stmt);
 }
 
-bool Compiler::optAssertionPropPhiDefNotNull(BasicBlock* block, GenTreePhi* phi)
+//------------------------------------------------------------------------
+// optAssertionIsNonNullPhi: see if we can prove a GT_PHI will be non-null
+//   based on assertions
+//
+// Arguments:
+//   block - block containing the PHI
+//   phi   - PHI node to check
+//
+// Return Value:
+//   true if the tree's value will be non-null
+//
+bool Compiler::optAssertionIsNonNullPhi(const BasicBlock* block, GenTreePhi* phi)
 {
     assert(phi != nullptr);
     assert(block != nullptr);
+    assert(!optLocalAssertionProp); // PHI nodes are not present in local assertion prop.
 
     // NOTE: We might want to use VNVisitReachingVNs instead here, but we need to
     // extend it to propagate BasicBlock preds for phi args.
     // For now, we will iterate over the physical PhiArgs on the Phi node.
 
-    JITDUMP("Checking if phi [%06u] is non-null\n", phi->gtTreeID);
+    JITDUMP("Checking if PHI [%06u] is non-null\n", phi->gtTreeID);
 
     // Enumerate phi's args
     for (GenTreePhi::Use& use : phi->Uses())
     {
-        GenTreePhiArg* phiArg    = use.GetNode()->AsPhiArg();
-        BasicBlock*    argPredBb = phiArg->gtPredBB;
-        const ValueNum phiArgVN  = vnStore->VNConservativeNormalValue(phiArg->gtVNPair);
+        GenTreePhiArg* phiArg   = use.GetNode()->AsPhiArg();
+        const ValueNum phiArgVN = vnStore->VNConservativeNormalValue(phiArg->gtVNPair);
 
         // Fast path - if VN tells us this particular phiArg is non-null, then we go to the next phiArg.
         if (vnStore->IsKnownNonNull(phiArgVN))
@@ -4394,13 +4405,14 @@ bool Compiler::optAssertionPropPhiDefNotNull(BasicBlock* block, GenTreePhi* phi)
         // If this PhiArg is not known to be non-null, then maybe assertions can help.
         //
         // Find the outgoing assertion for the predecessor block that targets this block.
-        ASSERT_TP assertions = optGetEdgeAssertions(argPredBb, block);
+        ASSERT_TP assertions = optGetEdgeAssertions(block, phiArg->gtPredBB);
         if (BitVecOps::MayBeUninit(assertions) || BitVecOps::IsEmpty(apTraits, assertions))
         {
+            JITDUMP("No assertions for pred " FMT_BB " ", phiArg->gtPredBB->bbNum);
             return false;
         }
 
-        JITDUMP("Looking at assertions from pred " FMT_BB " ", argPredBb->bbNum);
+        JITDUMP("Looking at assertions from pred " FMT_BB " ", phiArg->gtPredBB->bbNum);
         optDumpAssertionIndices(assertions, "\n");
 
         // Iterate over the assertions and check if there is a "phiArgVN != null" assertion.
@@ -4410,7 +4422,7 @@ bool Compiler::optAssertionPropPhiDefNotNull(BasicBlock* block, GenTreePhi* phi)
         while (iter.NextElem(&index))
         {
             AssertionDsc* curAssertion = optGetAssertion(GetAssertionIndex(index));
-            if (curAssertion->CanPropNonNull() && curAssertion->op1.vn == phiArgVN)
+            if (curAssertion->CanPropNonNull() && (curAssertion->op1.vn == phiArgVN))
             {
                 notNull = true;
                 break;
@@ -4420,9 +4432,12 @@ bool Compiler::optAssertionPropPhiDefNotNull(BasicBlock* block, GenTreePhi* phi)
         if (!notNull)
         {
             // We can't prove that the phiArg is non-null - bail out.
+            JITDUMP("PHI's argument [%06u] is not known to be non-null - bail out.\n", phiArg->gtTreeID);
             return false;
         }
     }
+
+    JITDUMP("... all of PHI's arguments are never null!\n", phi->gtTreeID);
     return true;
 }
 
@@ -4524,7 +4539,7 @@ GenTree* Compiler::optAssertionPropGlobal_RelOp(ASSERT_VALARG_TP assertions, Gen
         return nullptr;
     }
 
-    // See if we have "PHI ==/!= null" tree. In that case, we can use optAssertionPropPhiDefNotNull
+    // See if we have "PHI ==/!= null" tree. In that case, we can use optAssertionIsNonNullPhi
     // to iterate over all the phi args and check if they are non-null. If all of them are non-null,
     // then we can fold this tree to true/false.
     if (op2->IsIntegralConst(0) && op1->TypeIs(TYP_REF) && op1->OperIs(GT_LCL_VAR) &&
@@ -4537,12 +4552,10 @@ GenTree* Compiler::optAssertionPropGlobal_RelOp(ASSERT_VALARG_TP assertions, Gen
         GenTreeLclVarCommon* node   = ssaDef->GetDefNode();
         if (node != nullptr && node->OperIs(GT_STORE_LCL_VAR) && node->Data()->OperIs(GT_PHI))
         {
-            if (optAssertionPropPhiDefNotNull(ssaDef->GetBlock(), node->Data()->AsPhi()))
+            if (optAssertionIsNonNullPhi(ssaDef->GetBlock(), node->Data()->AsPhi()))
             {
                 assert(newTree->OperIs(GT_EQ, GT_NE));
                 newTree = tree->OperIs(GT_EQ) ? gtNewIconNode(0) : gtNewIconNode(1);
-                newTree = gtWrapWithSideEffects(newTree, tree, GTF_ALL_EFFECT);
-                DISPTREE(newTree);
                 return optAssertionProp_Update(newTree, tree, stmt);
             }
         }
@@ -5895,18 +5908,30 @@ ASSERT_VALRET_TP Compiler::optGetVnMappedAssertions(ValueNum vn)
     return BitVecOps::UninitVal();
 }
 
-ASSERT_VALRET_TP Compiler::optGetEdgeAssertions(const BasicBlock* pred, const BasicBlock* block) const
+//------------------------------------------------------------------------
+// optGetEdgeAssertions: Given a block and its predecessor, get the assertions
+//                       the predecessor creates for the block.
+//
+// Arguments:
+//      block     - The block to get the assertions for.
+//      blockPred - The predecessor of the block (creating the assertions).
+//
+// Return Value:
+//      The assertions we have about the value number.
+//
+ASSERT_VALRET_TP Compiler::optGetEdgeAssertions(const BasicBlock* block, const BasicBlock* blockPred) const
 {
-    if (pred->KindIs(BBJ_COND) && pred->FalseTargetIs(block))
+    if (blockPred->KindIs(BBJ_COND) && blockPred->FalseTargetIs(block))
     {
-        return pred->bbAssertionOut;
+        return blockPred->bbAssertionOut;
     }
 
-    if ((pred->KindIs(BBJ_ALWAYS) && pred->TargetIs(block)) || (pred->KindIs(BBJ_COND) && pred->TrueTargetIs(block)))
+    if ((blockPred->KindIs(BBJ_ALWAYS) && blockPred->TargetIs(block)) ||
+        (blockPred->KindIs(BBJ_COND) && blockPred->TrueTargetIs(block)))
     {
         if (bbJtrueAssertionOut != nullptr)
         {
-            return bbJtrueAssertionOut[pred->bbNum];
+            return bbJtrueAssertionOut[blockPred->bbNum];
         }
     }
     return BitVecOps::UninitVal();
