@@ -38,7 +38,6 @@
 
     - A job can specify PublishAllPackages=true to publish all packages it produces.
       We have specific jobs that produce RID-agnostic packages or packages for multiple RIDs set this property.
-      In Source-Build scenarios, we want to publish all packages from here as source-build legs are fully self-contained.
     - For some target RIDs, we also include specific RID-agnostic packages.
   -->
   <ItemGroup>
@@ -79,7 +78,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackagesToPublishFromThisJob Include="@(OtherPackages)" Exclude="@(PackagesToPublishFromThisJob)" Condition="'$(PublishAllPackages)' == 'true' or '$(DotNetBuildSourceOnly)' == 'true'" />
+    <PackagesToPublishFromThisJob Include="@(OtherPackages)" Exclude="@(PackagesToPublishFromThisJob)" Condition="'$(PublishAllPackages)' == 'true'" />
     <PackagesToSkipFromThisJob Include="$(ArtifactsPackagesDir)**\*.nupkg" Exclude="@(PackagesToPublishFromThisJob)" />
     <!--
       In non-VMR builds, we can skip publishing RID-agnostic packages entirely when we're not the lane that is supposed to publish them.

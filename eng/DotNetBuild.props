@@ -110,6 +110,14 @@
 
       <!-- Needed until https://github.com/dotnet/runtime/issues/109329 is fixed. -->
       <InnerBuildArgs Condition="'$(NetCoreAppToolCurrentVersion)' != ''">$(InnerBuildArgs) /p:NetCoreAppToolCurrentVersion=$(NetCoreAppToolCurrentVersion)</InnerBuildArgs>
+
+      <!--
+        If we're in a full-stack VMR build or Source-Build, publish all packages.
+        ShortStack jobs should only publish their specific packages.
+        In the future, some VMR jobs may not publish all packages.
+        SourceBuild will always need to publish everything.
+      -->
+      <InnerBuildArgs Condition="'$(ShortStack)' != 'true'">$(InnerBuildArgs) /p:PublishAllPackages=true</InnerBuildArgs>
     </PropertyGroup>
   </Target>
 
