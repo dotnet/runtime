@@ -246,6 +246,7 @@ namespace System.Net.Sockets.Tests
         [ConditionalTheory]
         [InlineData(false)]
         [InlineData(true)]
+        [SkipOnPlatform(TestPlatforms.Wasi, "Wasi doesn't support PortBlocker")]
         public Task MultiConnect_KeepAliveOptionsPreserved(bool dnsConnect) => MultiConnectTestImpl(dnsConnect,
             c =>
             {
@@ -270,6 +271,7 @@ namespace System.Net.Sockets.Tests
         [ConditionalTheory]
         [InlineData(false)]
         [InlineData(true)]
+        [SkipOnPlatform(TestPlatforms.Wasi, "Wasi doesn't support PortBlocker")]
         public Task MultiConnect_LingerState_Preserved(bool dnsConnect) => MultiConnectTestImpl(dnsConnect,
             c =>
             {
@@ -284,6 +286,7 @@ namespace System.Net.Sockets.Tests
         [ConditionalTheory]
         [InlineData(false)]
         [InlineData(true)]
+        [SkipOnPlatform(TestPlatforms.Wasi, "Wasi doesn't support PortBlocker")]
         public Task MultiConnect_MiscProperties_Preserved(bool dnsConnect) => MultiConnectTestImpl(dnsConnect,
             c =>
             {
@@ -300,6 +303,7 @@ namespace System.Net.Sockets.Tests
         [ConditionalTheory]
         [InlineData(false)]
         [InlineData(true)]
+        [SkipOnPlatform(TestPlatforms.Wasi, "Wasi doesn't support PortBlocker")]
         public async Task MultiConnect_ExposeHandle_TerminatesAtFirstFailure(bool dnsConnect)
         {
             if (UsesEap && !dnsConnect)
@@ -342,6 +346,7 @@ namespace System.Net.Sockets.Tests
 
         [PlatformSpecific(TestPlatforms.AnyUnix)]
         [Fact]
+        [SkipOnPlatform(TestPlatforms.Wasi, "Wasi doesn't support PortBlocker")]
         public async Task SingleConnect_ExposeHandle_SecondAttemptThrowsPNSEOnUnix()
         {
             int port = -1;
@@ -372,6 +377,7 @@ namespace System.Net.Sockets.Tests
 
         [ConditionalFact]
         [PlatformSpecific(TestPlatforms.AnyUnix)]
+        [SkipOnPlatform(TestPlatforms.Wasi, "Wasi doesn't support PortBlocker")]
         public async Task MultiConnect_DualMode_Preserved()
         {
             if (UsesEap) throw new SkipTestException("EAP does not support IPAddress[] connect");
