@@ -46,6 +46,8 @@ Those files are for the `main` branch. The same files should be located in the s
 
 Example PRs:
 
-- https://github.com/dotnet/runtime/pull/111768
-- https://github.com/dotnet/runtime/pull/111504
-- https://github.com/dotnet/runtime/pull/110492
+- <https://github.com/dotnet/runtime/pull/111768>
+- <https://github.com/dotnet/runtime/pull/111504>
+- <https://github.com/dotnet/runtime/pull/110492>
+- <https://github.com/dotnet/dotnet-buildtools-prereqs-docker/pull/1282>
+- <https://github.com/dotnet/dotnet-buildtools-prereqs-docker/pull/1314>
