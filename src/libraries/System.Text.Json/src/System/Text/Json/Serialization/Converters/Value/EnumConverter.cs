@@ -601,7 +601,7 @@ namespace System.Text.Json.Serialization.Converters
             {
                 Debug.Assert(JsonName.Equals(other.JsonName, StringComparison.OrdinalIgnoreCase), "The conflicting entry must be equal up to case insensitivity.");
 
-                if (MatchesSupersetOf(this, other))
+                if (ConflictsWith(this, other))
                 {
                     // Silently discard if the preceding entry is the default or has identical name.
                     return;
@@ -612,7 +612,7 @@ namespace System.Text.Json.Serialization.Converters
                 // Walk the existing list to ensure we do not add duplicates.
                 foreach (EnumFieldInfo conflictingField in conflictingFields)
                 {
-                    if (MatchesSupersetOf(conflictingField, other))
+                    if (ConflictsWith(conflictingField, other))
                     {
                         return;
                     }
@@ -622,23 +622,23 @@ namespace System.Text.Json.Serialization.Converters
 
                 // Determines whether the first field info matches everything that the second field info matches,
                 // in which case the second field info is redundant and doesn't need to be added to the list.
-                static bool MatchesSupersetOf(EnumFieldInfo field1, EnumFieldInfo field2)
+                static bool ConflictsWith(EnumFieldInfo current, EnumFieldInfo other)
                 {
                     // The default name matches everything case-insensitively.
-                    if (field1.Kind is EnumFieldNameKind.Default)
+                    if (current.Kind is EnumFieldNameKind.Default)
                     {
                         return true;
                     }
 
-                    // field1 matches case-sensitively since it's not the default name.
-                    // field2 matches case-insensitively, so it matches more than field1.
-                    if (field2.Kind is EnumFieldNameKind.Default)
+                    // current matches case-sensitively since it's not the default name.
+                    // other matches case-insensitively, so it matches more than current.
+                    if (other.Kind is EnumFieldNameKind.Default)
                     {
                         return false;
                     }
 
                     // Both are case-sensitive so they need to be identical.
-                    return field1.JsonName.Equals(field2.JsonName, StringComparison.Ordinal);
+                    return current.JsonName.Equals(other.JsonName, StringComparison.Ordinal);
                 }
             }
 
