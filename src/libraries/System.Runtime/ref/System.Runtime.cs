@@ -2668,10 +2668,10 @@ namespace System
     public static partial class Environment
     {
         public static string CommandLine { get { throw null; } }
-        [System.Runtime.Versioning.SupportedOSPlatformAttribute("maccatalyst")]
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("ios")]
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("tvos")]
+        [System.Runtime.Versioning.SupportedOSPlatformAttribute("maccatalyst")] // this needs to come after the ios attribute due to limitations in the platform analyzer
         public static System.Environment.ProcessCpuUsage CpuUsage { get { throw null; } }
         public static string CurrentDirectory { get { throw null; } set { } }
         public static int CurrentManagedThreadId { get { throw null; } }
