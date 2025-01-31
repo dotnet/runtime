@@ -5,20 +5,20 @@ using System;
 
 namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 
-internal record struct ThreadStoreData(
+public record struct ThreadStoreData(
     int ThreadCount,
     TargetPointer FirstThread,
     TargetPointer FinalizerThread,
     TargetPointer GCThread);
 
-internal record struct ThreadStoreCounts(
+public record struct ThreadStoreCounts(
     int UnstartedThreadCount,
     int BackgroundThreadCount,
     int PendingThreadCount,
     int DeadThreadCount);
 
 [Flags]
-internal enum ThreadState
+public enum ThreadState
 {
     Unknown             = 0x00000000,
     Hijacked            = 0x00000080,   // Return address has been hijacked
@@ -28,7 +28,7 @@ internal enum ThreadState
     ThreadPoolWorker    = 0x01000000,   // Thread is a thread pool worker thread
 }
 
-internal record struct ThreadData(
+public record struct ThreadData(
     uint Id,
     TargetNUInt OSId,
     ThreadState State,
@@ -41,7 +41,7 @@ internal record struct ThreadData(
     TargetPointer LastThrownObjectHandle,
     TargetPointer NextThread);
 
-internal interface IThread : IContract
+public interface IThread : IContract
 {
     static string IContract.Name { get; } = nameof(Thread);
 
@@ -50,7 +50,7 @@ internal interface IThread : IContract
     public virtual ThreadData GetThreadData(TargetPointer thread) => throw new NotImplementedException();
 }
 
-internal readonly struct Thread : IThread
+public readonly struct Thread : IThread
 {
     // Everything throws NotImplementedException
 }

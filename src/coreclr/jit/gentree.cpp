@@ -17005,6 +17005,8 @@ bool Compiler::gtTreeHasSideEffects(GenTree* tree, GenTreeFlags flags /* = GTF_S
 //    firstNewStmt - [out] The first new statement that was introduced.
 //                   [firstNewStmt..stmt) are the statements added by this function.
 //    splitNodeUse - The use of the tree to split at.
+//    early        - The run is in the early phase where we still don't have valid
+//                   GTF_GLOB_REF yet.
 //
 // Notes:
 //   This method turns all non-invariant nodes that would be executed before
@@ -17025,14 +17027,19 @@ bool Compiler::gtTreeHasSideEffects(GenTree* tree, GenTreeFlags flags /* = GTF_S
 // Returns:
 //   True if any changes were made; false if nothing needed to be done to split the tree.
 //
-bool Compiler::gtSplitTree(
-    BasicBlock* block, Statement* stmt, GenTree* splitPoint, Statement** firstNewStmt, GenTree*** splitNodeUse)
+bool Compiler::gtSplitTree(BasicBlock* block,
+                           Statement*  stmt,
+                           GenTree*    splitPoint,
+                           Statement** firstNewStmt,
+                           GenTree***  splitNodeUse,
+                           bool        early)
 {
     class Splitter final : public GenTreeVisitor<Splitter>
     {
         BasicBlock* m_bb;
         Statement*  m_splitStmt;
         GenTree*    m_splitNode;
+        bool        m_early;
 
         struct UseInfo
         {
@@ -17049,11 +17056,12 @@ bool Compiler::gtSplitTree(
             UseExecutionOrder = true
         };
 
-        Splitter(Compiler* compiler, BasicBlock* bb, Statement* stmt, GenTree* splitNode)
+        Splitter(Compiler* compiler, BasicBlock* bb, Statement* stmt, GenTree* splitNode, bool early)
             : GenTreeVisitor(compiler)
             , m_bb(bb)
             , m_splitStmt(stmt)
             , m_splitNode(splitNode)
+            , m_early(early)
             , m_useStack(compiler->getAllocator(CMK_ArrayStack))
         {
         }
@@ -17195,7 +17203,8 @@ bool Compiler::gtSplitTree(
                 return;
             }
 
-            if ((*use)->OperIs(GT_LCL_VAR) && !m_compiler->lvaGetDesc((*use)->AsLclVarCommon())->IsAddressExposed())
+            if ((*use)->OperIs(GT_LCL_VAR) && !m_compiler->lvaGetDesc((*use)->AsLclVarCommon())->IsAddressExposed() &&
+                !(m_early && m_compiler->lvaGetDesc((*use)->AsLclVarCommon())->lvHasLdAddrOp))
             {
                 // The splitting we do here should always guarantee that we
                 // only introduce locals for the tree edges that overlap the
@@ -17278,7 +17287,7 @@ bool Compiler::gtSplitTree(
         }
     };
 
-    Splitter splitter(this, block, stmt, splitPoint);
+    Splitter splitter(this, block, stmt, splitPoint, early);
     splitter.WalkTree(stmt->GetRootNodePointer(), nullptr);
     *firstNewStmt = splitter.FirstStatement;
     *splitNodeUse = splitter.SplitNodeUse;

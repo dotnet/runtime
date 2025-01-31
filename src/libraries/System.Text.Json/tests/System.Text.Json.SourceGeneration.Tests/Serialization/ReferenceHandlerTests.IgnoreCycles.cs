@@ -89,6 +89,11 @@ namespace System.Text.Json.SourceGeneration.Tests
         [JsonSerializable(typeof(TreeNode<List<string>>))]
         [JsonSerializable(typeof(TreeNode<object>))]
         [JsonSerializable(typeof(int))]
+        [JsonSerializable(typeof(EmployeeLocation))]
+        [JsonSerializable(typeof(EmployeeLocation[]))]
+        [JsonSerializable(typeof(OfficeWorker))]
+        [JsonSerializable(typeof(Office))]
+        [JsonSerializable(typeof(RemoteWorker))]
         internal sealed partial class ReferenceHandlerTests_IgnoreCyclesContext_Metadata : JsonSerializerContext
         {
         }
@@ -172,6 +177,11 @@ namespace System.Text.Json.SourceGeneration.Tests
         [JsonSerializable(typeof(TreeNode<List<string>>))]
         [JsonSerializable(typeof(TreeNode<object>))]
         [JsonSerializable(typeof(int))]
+        [JsonSerializable(typeof(EmployeeLocation))]
+        [JsonSerializable(typeof(EmployeeLocation[]))]
+        [JsonSerializable(typeof(OfficeWorker))]
+        [JsonSerializable(typeof(Office))]
+        [JsonSerializable(typeof(RemoteWorker))]
         internal sealed partial class ReferenceHandlerTests_IgnoreCyclesContext_Default : JsonSerializerContext
         {
         }
