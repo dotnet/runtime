@@ -4306,29 +4306,31 @@ GenTree* Lowering::OptimizeConstCompare(GenTree* cmp)
         // operand bit size - it uses (bit_index MOD bit_size).
         //
 
-        GenTree* lshRight = cmp->gtGetOp2();
-        GenTree* lshLeft = cmp->gtGetOp1();
+        GenTree** lsh            = &cmp->AsOp()->gtOp1;
+        GenTree** op             = &cmp->AsOp()->gtOp2;
+        bool      swapCompareOps = true;
 
-        if (lshRight->OperIs(GT_LSH) && varTypeIsIntOrI(lshRight->TypeGet()) && lshRight->gtGetOp1()->IsIntegralConst(1))
+        if (!(*lsh)->OperIs(GT_LSH))
         {
-            cmp->SetOper(cmp->OperIs(GT_TEST_EQ) ? GT_BITTEST_EQ : GT_BITTEST_NE);
-            cmp->AsOp()->gtOp2 = lshRight->gtGetOp2();
-            cmp->gtGetOp2()->ClearContained();
-
-            BlockRange().Remove(lshRight->gtGetOp1());
-            BlockRange().Remove(lshRight);
-
-            return cmp->gtNext;
+            std::swap(lsh, op);
+            swapCompareOps = false;
         }
-        else if (lshLeft->OperIs(GT_LSH) && varTypeIsIntOrI(lshLeft->TypeGet()) && lshLeft->gtGetOp1()->IsIntegralConst(1))
+
+        if ((*lsh)->OperIs(GT_LSH) && varTypeIsIntOrI(*lsh) && (*lsh)->gtGetOp1()->IsIntegralConst(1))
         {
             cmp->SetOper(cmp->OperIs(GT_TEST_EQ) ? GT_BITTEST_EQ : GT_BITTEST_NE);
-            cmp->AsOp()->gtOp1 = cmp->AsOp()->gtOp2;
-            cmp->AsOp()->gtOp2 = lshLeft->gtGetOp2();
-            cmp->gtGetOp2()->ClearContained();
 
-            BlockRange().Remove(lshLeft->gtGetOp1());
-            BlockRange().Remove(lshLeft);
+            BlockRange().Remove((*lsh)->gtGetOp1());
+            BlockRange().Remove(*lsh);
+
+            *lsh = (*lsh)->gtGetOp2();
+
+            if (swapCompareOps)
+            {
+                std::swap(cmp->AsOp()->gtOp1, cmp->AsOp()->gtOp2);
+            }
+
+            cmp->gtGetOp2()->ClearContained();
 
             return cmp->gtNext;
         }
