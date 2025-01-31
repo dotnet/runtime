@@ -68,9 +68,14 @@ namespace System.Text
             return AddChar(ch, 1);
         }
 
-
         internal unsafe bool AddChar(char ch1, char ch2, int numBytes)
         {
+            if (_chars is null)
+            {
+                _charCountResult += 2;
+                return true;
+            }
+
             // Need room for 2 chars
             if (_charEnd - _chars < 2)
             {

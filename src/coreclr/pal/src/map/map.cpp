@@ -133,11 +133,6 @@ CObjectType CorUnix::otFileMapping(
                 CFileMappingImmutableDataCleanupRoutine,
                 sizeof(CFileMappingProcessLocalData),
                 NULL,   // No process local data cleanup routine
-                PAGE_READWRITE | PAGE_READONLY | PAGE_WRITECOPY,
-                CObjectType::SecuritySupported,
-                CObjectType::SecurityInfoNotPersisted,
-                CObjectType::UnnamedObject,
-                CObjectType::LocalDuplicationOnly,
                 CObjectType::UnwaitableObject,
                 CObjectType::SignalingNotApplicable,
                 CObjectType::ThreadReleaseNotApplicable,
@@ -2558,6 +2553,8 @@ BOOL MAPMarkSectionAsNotNeeded(LPCVOID lpAddress)
     }
 
     BOOL retval = TRUE;
+
+#ifndef TARGET_ANDROID
     CPalThread * pThread = InternalGetCurrentThread();
     InternalEnterCriticalSection(pThread, &mapping_critsec);
     PLIST_ENTRY pLink, pLinkNext = NULL;
@@ -2588,6 +2585,7 @@ BOOL MAPMarkSectionAsNotNeeded(LPCVOID lpAddress)
     }
 
     InternalLeaveCriticalSection(pThread, &mapping_critsec);
+#endif // TARGET_ANDROID
 
     TRACE_(LOADER)("MAPMarkSectionAsNotNeeded returning %d\n", retval);
     return retval;

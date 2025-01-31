@@ -650,6 +650,7 @@ protected:
 #if defined(TARGET_AMD64)
     void genAmd64EmitterUnitTestsSse2();
     void genAmd64EmitterUnitTestsApx();
+    void genAmd64EmitterUnitTestsAvx10v2();
 #endif
 
 #endif // defined(DEBUG)
@@ -659,6 +660,7 @@ protected:
     virtual bool IsSaveFpLrWithAllCalleeSavedRegisters() const;
     bool         genSaveFpLrWithAllCalleeSavedRegisters;
     bool         genForceFuncletFrameType5;
+    bool         genReverseAndPairCalleeSavedRegisters;
 #endif // TARGET_ARM64
 
     //-------------------------------------------------------------------------

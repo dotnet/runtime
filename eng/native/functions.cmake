@@ -678,3 +678,15 @@ function(adhoc_sign_with_entitlements targetName entitlementsFile)
         POST_BUILD
         COMMAND codesign -s - -f --entitlements ${entitlementsFile} $<TARGET_FILE:${targetName}>)
 endfunction()
+
+function(esrp_sign targetName)
+    if ("${CLR_CMAKE_ESRP_CLIENT}" STREQUAL "")
+        return()
+    endif()
+
+    add_custom_command(
+        TARGET ${targetName}
+        POST_BUILD
+        COMMAND powershell -ExecutionPolicy ByPass -NoProfile "${CMAKE_CURRENT_FUNCTION_LIST_DIR}/sign-with-dac-certificate.ps1" -esrpClient ${CLR_CMAKE_ESRP_CLIENT} $<TARGET_FILE:${targetName}>
+    )
+endfunction()

@@ -2299,6 +2299,7 @@ void Compiler::compSetProcessor()
         if (canUseApxEncoding())
         {
             codeGen->GetEmitter()->SetUseRex2Encoding(true);
+            codeGen->GetEmitter()->SetUsePromotedEVEXEncoding(true);
         }
     }
 #endif // TARGET_XARCH
@@ -4571,7 +4572,7 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     // Note: the importer is sensitive to block weights, so this has
     // to happen before importation.
     //
-    activePhaseChecks |= PhaseChecks::CHECK_PROFILE;
+    activePhaseChecks |= PhaseChecks::CHECK_PROFILE | PhaseChecks::CHECK_PROFILE_FLAGS;
     DoPhase(this, PHASE_INCPROFILE, &Compiler::fgIncorporateProfileData);
 
     activePhaseChecks |= PhaseChecks::CHECK_FG_INIT_BLOCK;
@@ -4779,11 +4780,6 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     //
     DoPhase(this, PHASE_MORPH_IMPBYREF, &Compiler::fgRetypeImplicitByRefArgs);
 
-    // Drop back to just checking profile likelihoods.
-    //
-    activePhaseChecks &= ~PhaseChecks::CHECK_PROFILE;
-    activePhaseChecks |= PhaseChecks::CHECK_LIKELIHOODS;
-
 #ifdef DEBUG
     // Now that locals have address-taken and implicit byref marked, we can safely apply stress.
     lvaStressLclFld();
@@ -4825,6 +4821,18 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
         //
         DoPhase(this, PHASE_COMPUTE_BLOCK_WEIGHTS, &Compiler::fgComputeBlockWeights);
 
+        // Try again to remove empty try finally/fault clauses
+        //
+        DoPhase(this, PHASE_EMPTY_FINALLY_2, &Compiler::fgRemoveEmptyFinally);
+
+        // Remove empty try regions (try/finally)
+        //
+        DoPhase(this, PHASE_EMPTY_TRY_2, &Compiler::fgRemoveEmptyTry);
+
+        // Remove empty try regions (try/catch/fault)
+        //
+        DoPhase(this, PHASE_EMPTY_TRY_CATCH_FAULT_2, &Compiler::fgRemoveEmptyTryCatchOrTryFault);
+
         // Invert loops
         //
         DoPhase(this, PHASE_INVERT_LOOPS, &Compiler::optInvertLoops);
@@ -4843,8 +4851,7 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
         //
         DoPhase(this, PHASE_DFS_BLOCKS3, &Compiler::fgDfsBlocksAndRemove);
 
-        // Discover and classify natural loops (e.g. mark iterative loops as such). Also marks loop blocks
-        // and sets bbWeight to the loop nesting levels.
+        // Discover and classify natural loops (e.g. mark iterative loops as such).
         //
         DoPhase(this, PHASE_FIND_LOOPS, &Compiler::optFindLoopsPhase);
 
@@ -4859,18 +4866,6 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
         // Unroll loops
         //
         DoPhase(this, PHASE_UNROLL_LOOPS, &Compiler::optUnrollLoops);
-
-        // Try again to remove empty try finally/fault clauses
-        //
-        DoPhase(this, PHASE_EMPTY_FINALLY_2, &Compiler::fgRemoveEmptyFinally);
-
-        // Remove empty try regions (try/finally)
-        //
-        DoPhase(this, PHASE_EMPTY_TRY_2, &Compiler::fgRemoveEmptyTry);
-
-        // Remove empty try regions (try/catch/fault)
-        //
-        DoPhase(this, PHASE_EMPTY_TRY_CATCH_FAULT_2, &Compiler::fgRemoveEmptyTryCatchOrTryFault);
 
         // Compute dominators and exceptional entry blocks
         //
@@ -5128,6 +5123,9 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     // Expand thread local access
     DoPhase(this, PHASE_EXPAND_TLS, &Compiler::fgExpandThreadLocalAccess);
 
+    // Expand stack allocated arrays
+    DoPhase(this, PHASE_EXPAND_STACK_ARR, &Compiler::fgExpandStackArrayAllocations);
+
     // Insert GC Polls
     DoPhase(this, PHASE_INSERT_GC_POLLS, &Compiler::fgInsertGCPolls);
 
@@ -5227,8 +5225,17 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
         if (JitConfig.JitDoReversePostOrderLayout())
         {
             auto lateLayoutPhase = [this] {
-                fgDoReversePostOrderLayout();
-                fgMoveColdBlocks();
+                // Skip preliminary reordering passes to create more work for 3-opt layout
+                if (compStressCompile(STRESS_THREE_OPT_LAYOUT, 10))
+                {
+                    m_dfsTree = fgComputeDfs</* useProfile */ true>();
+                }
+                else
+                {
+                    fgDoReversePostOrderLayout();
+                    fgMoveColdBlocks();
+                }
+
                 fgSearchImprovedLayout();
                 fgInvalidateDfsTree();
 
