@@ -187,25 +187,6 @@ internal static partial class Interop
             return count;
         }
 
-#pragma warning disable CA1823
-        private static readonly bool s_memoryDebug = GetMemoryDebug();
-#pragma warning restore CA1823
-
-        private static bool GetMemoryDebug()
-        {
-            string? value = Environment.GetEnvironmentVariable("DOTNET_OPENSSL_MEMORY_DEBUG");
-            if (int.TryParse(value, CultureInfo.InvariantCulture, out int enabled) && enabled == 1)
-            {
-                Interop.Crypto.GetOpenSslAllocationCount();
-                Interop.Crypto.GetOpenSslAllocatedMemory();
-                Interop.Crypto.ForEachTrackedAllocation((a, b, c, d) => { });
-                Interop.Crypto.EnableMemoryTracking();
-                Interop.Crypto.DisableMemoryTracking();
-            }
-
-            return enabled == 1;
-        }
-
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EnableMemoryTracking")]
         internal static unsafe partial void EnableMemoryTracking(int enable);
 

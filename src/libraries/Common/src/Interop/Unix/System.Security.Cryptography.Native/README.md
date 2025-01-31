@@ -14,7 +14,7 @@ variable must be set before launching the program (calling
 `Environment.SetEnvironmentVariable` at the start of the program is not
 sufficient). The diagnostic API is not officially exposed and needs to be
 accessed via private reflection on the `Interop.Crypto` type located in the
-`System.Net.Security` assembly. On this type, you can use following static
+`System.Security.Cryptography` assembly. On this type, you can use following static
 methods:
 
 - `int GetOpenSslAllocatedMemory()`
@@ -42,17 +42,16 @@ locks/synchronization during each allocation) and may cause performance penalty.
 ### Example usage
 
 ```cs
-var ci = typeof(SslStream).Assembly.GetTypes().First(t => t.Name == "Crypto");
-ci.InvokeMember("EnableMemoryTracking", BindingFlags.InvokeMethod | BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Static, null, null, null);
+Type cryptoInterop = typeof(RandomNumberGenerator).Assembly.GetTypes().First(t => t.Name == "Crypto");
+cryptoInterop.InvokeMember("EnableMemoryTracking", BindingFlags.InvokeMethod | BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Static, null, null, null);
 
-// do something which uses OpenSSL
 HttpClient client = new HttpClient();
 await client.GetAsync("https://www.google.com");
 
 using var process = Process.GetCurrentProcess();
 Console.WriteLine($"Bytes known to GC [{GC.GetTotalMemory(false)}], process working set [{process.WorkingSet64}]");
-Console.WriteLine("OpenSSL memory {0}", ci.InvokeMember("GetOpenSslAllocatedMemory", BindingFlags.InvokeMethod | BindingFlags.Public | BindingFlags.Static, null, null, null));
-Console.WriteLine("OpenSSL allocations {0}", ci.InvokeMember("GetOpenSslAllocationCount", BindingFlags.InvokeMethod | BindingFlags.Public | BindingFlags.Static, null, null, null));
+Console.WriteLine("OpenSSL memory {0}", cryptoInterop.InvokeMember("GetOpenSslAllocatedMemory", BindingFlags.InvokeMethod | BindingFlags.Public | BindingFlags.Static, null, null, null));
+Console.WriteLine("OpenSSL allocations {0}", cryptoInterop.InvokeMember("GetOpenSslAllocationCount", BindingFlags.InvokeMethod | BindingFlags.Public | BindingFlags.Static, null, null, null));
 
 // tally the allocations by the file+line combination
 Dictionary<(IntPtr file, int line), int> allAllocations = new Dictionary<(IntPtr file, int line), int>();
@@ -60,7 +59,7 @@ Action<IntPtr, int, IntPtr, int> callback = (ptr, size, namePtr, line) =>
 {
     CollectionsMarshal.GetValueRefOrAddDefault(allAllocations, (namePtr, line), out _) += size;
 };
-ci.InvokeMember("ForEachTrackedAllocation", BindingFlags.InvokeMethod | BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Static | BindingFlags.Instance, null, null, new object[] { callback });
+cryptoInterop.InvokeMember("ForEachTrackedAllocation", BindingFlags.InvokeMethod | BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Static | BindingFlags.Instance, null, null, new object[] { callback });
 
 // print the allocations by volume (descending)
 System.Console.WriteLine("Total allocated OpenSSL memory by location:");
