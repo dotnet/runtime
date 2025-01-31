@@ -13599,7 +13599,7 @@ GenTree* Compiler::impInlineFetchArg(InlArgInfo& argInfo, const InlLclVarInfo& l
              !argInfo.argHasSideEff && !argInfo.argHasGlobRef)
     {
         // Argument is a complex expression that we still prefer to duplicate.
-        // For example because it is an adress into a local in the caller. In
+        // For example because it is an address into a local in the caller. In
         // these cases, don't spill the byref to a local, simply clone the tree
         // and use it.
         //
