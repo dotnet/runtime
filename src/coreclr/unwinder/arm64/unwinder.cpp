@@ -258,7 +258,7 @@ do {                                                                            
 #if !defined(DEBUGGER_STRIP_PAC)
 
 // NOTE: Pointer authentication is not used by .NET, so the implementation does nothing
-#define STRIP_PAC(pointer) *pointer & 0x0000FFFFFFFFFFFF
+#define STRIP_PAC(pointer) *pointer &= 0x0000FFFFFFFFFFFF
 
 #endif
 
