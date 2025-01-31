@@ -2552,6 +2552,7 @@ BasicBlock* Compiler::fgCloneTryRegion(BasicBlock* tryEntry, CloneTryInfo& info,
     auto addBlockToClone = [=, &blocks, &visited, &numberOfBlocksToClone](BasicBlock* block, const char* msg) {
         if (!BitVecOps::TryAddElemD(traits, visited, block->bbID))
         {
+            JITDUMP("[already seen]  %s block " FMT_BB "\n", msg, block->bbNum);
             return false;
         }
 

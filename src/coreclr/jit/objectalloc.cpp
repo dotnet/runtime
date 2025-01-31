@@ -2423,8 +2423,8 @@ bool ObjectAllocator::CheckCanClone(CloneInfo* info)
     //
     CompAllocator                alloc(comp->getAllocator(CMK_ObjectAllocator));
     ArrayStack<BasicBlock*>      toVisit(alloc);
-    jitstd::vector<BasicBlock*>* visited = new (alloc) jitstd::vector<BasicBlock*>(alloc);
-    ArrayStack<BasicBlock*>      toVisitTryEntry(alloc);
+    jitstd::vector<BasicBlock*>* visited         = new (alloc) jitstd::vector<BasicBlock*>(alloc);
+    jitstd::vector<BasicBlock*>* toVisitTryEntry = new (alloc) jitstd::vector<BasicBlock*>(alloc);
 
     BitVecTraits traits(comp->compBasicBlockID, comp);
     BitVec       visitedBlocks(BitVecOps::MakeEmpty(&traits));
@@ -2680,11 +2680,11 @@ bool ObjectAllocator::CheckCanClone(CloneInfo* info)
         }
         visited->push_back(visitBlock);
 
-        // If we see try region entries here, we will handle them
+        // If we see try region entries here, we will handle them below.
         //
         if (comp->bbIsTryBeg(visitBlock))
         {
-            toVisitTryEntry.Push(visitBlock);
+            toVisitTryEntry->push_back(visitBlock);
         }
 
         JITDUMP("walking back through " FMT_BB "\n", visitBlock->bbNum);
@@ -2716,9 +2716,19 @@ bool ObjectAllocator::CheckCanClone(CloneInfo* info)
     jitstd::vector<BasicBlock*> tryBlocks(alloc);
     cloneInfo.BlocksToClone = &tryBlocks;
 
-    while (toVisitTryEntry.Height() > 0)
+    // Order the try regions to visit from outer to inner
+    //
+    struct bbTryIndexCmp
     {
-        BasicBlock* const block = toVisitTryEntry.Pop();
+        bool operator()(const BasicBlock* bb1, const BasicBlock* bb2)
+        {
+            return bb1->getTryIndex() > bb2->getTryIndex();
+        }
+    };
+    jitstd::sort(toVisitTryEntry->begin(), toVisitTryEntry->end(), bbTryIndexCmp());
+
+    for (BasicBlock* const block : *toVisitTryEntry)
+    {
         if (BitVecOps::IsMember(&traits, cloneInfo.Visited, block->bbID))
         {
             // nested region
