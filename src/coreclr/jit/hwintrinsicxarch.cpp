@@ -2424,6 +2424,11 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             {
                 if (simdSize == 16 && simdBaseType == TYP_INT && compOpportunisticallyDependsOn(InstructionSet_AVX))
                 {
+                    if (op2->TypeIs(TYP_INT))
+                    {
+                        op2 = gtNewSimdCreateBroadcastNode(op1->TypeGet(), op2, simdBaseJitType, simdSize);
+                    }
+
                     GenTree* op2Clone   = nullptr;
                     op2                 = impCloneExpr(op2, &op2Clone, CHECK_SPILL_ALL,
                                                        nullptr DEBUGARG("Clone op2 for NI_Vector128_op_Division"));
@@ -2431,8 +2436,10 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                     GenTree* denominatorZeroCond =
                         gtNewSimdCmpOpAnyNode(GT_EQ, TYP_INT, op2Clone, zeroVecCon, simdBaseJitType, simdSize);
                     GenTree* cmpZeroCond = gtNewOperNode(GT_NE, TYP_INT, denominatorZeroCond, gtNewIconNode(0));
-                    GenTree* op1Cvt = gtNewSimdHWIntrinsicNode(TYP_SIMD32, op1, NI_AVX_ConvertToVector256Double, simdBaseJitType, 32);
-                    GenTree* op2Cvt = gtNewSimdHWIntrinsicNode(TYP_SIMD32, op2, NI_AVX_ConvertToVector256Double, simdBaseJitType, 32);
+                    GenTree* op1Cvt =
+                        gtNewSimdHWIntrinsicNode(TYP_SIMD32, op1, NI_AVX_ConvertToVector256Double, simdBaseJitType, 32);
+                    GenTree* op2Cvt =
+                        gtNewSimdHWIntrinsicNode(TYP_SIMD32, op2, NI_AVX_ConvertToVector256Double, simdBaseJitType, 32);
                     GenTree* divOp = gtNewSimdBinOpNode(GT_DIV, TYP_SIMD32, op1Cvt, op2Cvt, CORINFO_TYPE_DOUBLE, 32);
                     retNode = gtNewSimdHWIntrinsicNode(retType, divOp, NI_AVX_ConvertToVector128Int32WithTruncation,
                                                        simdBaseJitType, 32);
@@ -2445,6 +2452,11 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                 }
                 if (simdSize == 32 && simdBaseType == TYP_INT && compOpportunisticallyDependsOn(InstructionSet_AVX512F))
                 {
+                    if (op2->TypeIs(TYP_INT))
+                    {
+                        op2 = gtNewSimdCreateBroadcastNode(op1->TypeGet(), op2, simdBaseJitType, simdSize);
+                    }
+
                     GenTree* op2Clone   = nullptr;
                     op2                 = impCloneExpr(op2, &op2Clone, CHECK_SPILL_ALL,
                                                        nullptr DEBUGARG("Clone op2 for NI_Vector256_op_Division"));
@@ -2452,9 +2464,11 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                     GenTree* denominatorZeroCond =
                         gtNewSimdCmpOpAnyNode(GT_EQ, TYP_INT, op2Clone, zeroVecCon, simdBaseJitType, simdSize);
                     GenTree* cmpZeroCond = gtNewOperNode(GT_NE, TYP_INT, denominatorZeroCond, gtNewIconNode(0));
-                    GenTree* op1Cvt = gtNewSimdHWIntrinsicNode(TYP_SIMD64, op1, NI_AVX512F_ConvertToVector512Double, simdBaseJitType, 64);
-                    GenTree* op2Cvt = gtNewSimdHWIntrinsicNode(TYP_SIMD64, op2, NI_AVX512F_ConvertToVector512Double, simdBaseJitType, 64);
-                    GenTree* divOp = gtNewSimdBinOpNode(GT_DIV, TYP_SIMD64, op1Cvt, op2Cvt, CORINFO_TYPE_DOUBLE, 64);
+                    GenTree* op1Cvt = gtNewSimdHWIntrinsicNode(TYP_SIMD64, op1, NI_AVX512F_ConvertToVector512Double,
+                                                               simdBaseJitType, 64);
+                    GenTree* op2Cvt = gtNewSimdHWIntrinsicNode(TYP_SIMD64, op2, NI_AVX512F_ConvertToVector512Double,
+                                                               simdBaseJitType, 64);
+                    GenTree* divOp  = gtNewSimdBinOpNode(GT_DIV, TYP_SIMD64, op1Cvt, op2Cvt, CORINFO_TYPE_DOUBLE, 64);
                     retNode = gtNewSimdHWIntrinsicNode(retType, divOp, NI_AVX512F_ConvertToVector256Int32WithTruncation,
                                                        CORINFO_TYPE_DOUBLE, 64);
                     GenTree*      fallback = gtNewHelperCallNode(CORINFO_HELP_THROWDIVZERO, TYP_VOID);
