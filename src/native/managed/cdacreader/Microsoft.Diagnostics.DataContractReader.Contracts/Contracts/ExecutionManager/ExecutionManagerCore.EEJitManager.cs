@@ -8,9 +8,9 @@ using Microsoft.Diagnostics.DataContractReader.ExecutionManagerHelpers;
 
 namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 
-internal partial class ExecutionManagerBase<T> : IExecutionManager
+internal partial class ExecutionManagerCore<T> : IExecutionManager
 {
-    private class EEJitManager : JitManager
+    private sealed class EEJitManager : JitManager
     {
         private readonly INibbleMap _nibbleMap;
         public EEJitManager(Target target, INibbleMap nibbleMap) : base(target)
