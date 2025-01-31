@@ -1154,7 +1154,7 @@ __HelperNakedFuncName SETS "$helper":CC:"Naked"
     LEAF_ENTRY JIT_PartialCompilationPatchpoint
         mov x1, x0
         mov x0, #0
-        jmp JIT_Patchpoint
+        b JIT_Patchpoint
     LEAF_END
 
 #endif ; FEATURE_TIERED_COMPILATION

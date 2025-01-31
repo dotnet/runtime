@@ -1394,29 +1394,6 @@ _OnCallCountThresholdReachedStub@0 proc public
     ret
 _OnCallCountThresholdReachedStub@0 endp
 
-_JIT_Patchpoint@0 proc public
-    STUB_PROLOG
-    mov     esi, esp
-    push    esi ; TransitionBlock *
-
-    add     x0, sp, #__PWTB_TransitionBlock ; TransitionBlock *
-    call    _JIT_PatchpointWorkerWorkerWithPolicy@4
-
-    STUB_EPILOG
-    ret
-_JIT_Patchpoint@0 endp
-
-// first arg register holds iloffset, which needs to be moved to the second register, and the first register filled with NULL
-_JIT_PartialCompilationPatchpoint@0 proc public
-    mov edx, ecx
-    xor ecx, ecx
-    jmp JIT_Patchpoint
-
-    ; This will never be executed. It is just to help out stack-walking logic
-    ; which disassembles the epilog to unwind the stack.
-    ret
-_JIT_PartialCompilationPatchpoint@0 endp
-
 endif ; FEATURE_TIERED_COMPILATION
 
     end

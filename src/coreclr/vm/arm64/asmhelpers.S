@@ -750,7 +750,7 @@ NESTED_END OnCallCountThresholdReachedStub, _TEXT
 NESTED_ENTRY JIT_Patchpoint, _TEXT, NoHandler
     PROLOG_WITH_TRANSITION_BLOCK
 
-    add     x0, sp, #__PWTB_TransitionBlock ; TransitionBlock *
+    add     x0, sp, #__PWTB_TransitionBlock // TransitionBlock *
     bl      C_FUNC(JIT_PatchpointWorkerWorkerWithPolicy)
 
     EPILOG_WITH_TRANSITION_BLOCK_RETURN
@@ -760,9 +760,8 @@ NESTED_END JIT_Patchpoint, _TEXT
 LEAF_ENTRY JIT_PartialCompilationPatchpoint, _TEXT
     mov x1, x0
     mov x0, #0
-    jmp JIT_Patchpoint
+    b JIT_Patchpoint
 LEAF_END JIT_PartialCompilationPatchpoint, _TEXT
-
 
 #endif // FEATURE_TIERED_COMPILATION
 
