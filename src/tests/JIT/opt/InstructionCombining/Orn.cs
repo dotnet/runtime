@@ -25,7 +25,12 @@ namespace TestOrn
                 fail = true;
             }
 
-            if (OrnLSLSwap(0xAB, 0xCDE) != 0xCC87FFFF)
+            if (OrnLSLSwapInt(0xAB, -0xCDE) != 0x3377FFFF)
+            {
+                fail = true;
+            }
+
+            if (OrnLSLSwapUint(0xAB, 0xCDE) != 0xCC87FFFF)
             {
                 fail = true;
             }
@@ -72,7 +77,14 @@ namespace TestOrn
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
-        static uint OrnLSLSwap(uint a, uint b)
+        static int OrnLSLSwapInt(int a, int b)
+        {
+            //ARM64-FULL-LINE: orn {{w[0-9]+}}, {{w[0-9]+}}, {{w[0-9]+}}, LSL #18
+            return ~(b<<18) | a;
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static uint OrnLSLSwapUint(uint a, uint b)
         {
             //ARM64-FULL-LINE: orn {{w[0-9]+}}, {{w[0-9]+}}, {{w[0-9]+}}, LSL #18
             return ~(b<<18) | a;

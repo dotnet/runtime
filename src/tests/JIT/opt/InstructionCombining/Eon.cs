@@ -25,7 +25,12 @@ namespace TestEon
                 fail = true;
             }
 
-            if (EonLSLSwap(0x12345678, 0xA) != -0x1236d679)
+            if (EonLSLSwapInt(0x12345678, 0xA) != -0x1236d679)
+            {
+                fail = true;
+            }
+
+            if (EonLSLSwapUint(0xFDFDFDFD, 0xB) != 0x200C202)
             {
                 fail = true;
             }
@@ -72,7 +77,14 @@ namespace TestEon
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
-        static int EonLSLSwap(int a, int b)
+        static int EonLSLSwapInt(int a, int b)
+        {
+            //ARM64-FULL-LINE: eon {{w[0-9]+}}, {{w[0-9]+}}, {{w[0-9]+}}, LSL #14
+            return ~(b<<14) ^ a;
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static uint EonLSLSwapUint(uint a, uint b)
         {
             //ARM64-FULL-LINE: eon {{w[0-9]+}}, {{w[0-9]+}}, {{w[0-9]+}}, LSL #14
             return ~(b<<14) ^ a;
