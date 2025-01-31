@@ -11089,7 +11089,7 @@ bool Compiler::impReturnInstruction(int prefixFlags, OPCODE& opcode)
                             else
                             {
                                 // Same return type, but we may need to update exactness.
-                                impInlineInfo->regExprClassHndIsExact &= isExact;
+                                impInlineInfo->retExprClassHndIsExact &= isExact;
                             }
                         }
                     }
