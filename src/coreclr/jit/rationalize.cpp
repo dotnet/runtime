@@ -44,8 +44,14 @@ void Rationalizer::RewriteNodeAsCall(GenTree**             use,
 
     if (isSpecialIntrinsic)
     {
+#if defined(TARGET_XARCH)
         // Mark this as having been a special intrinsic node
+        //
+        // This is used on xarch to track that it may need vzeroupper inserted to
+        // avoid the perf penalty on some hardware.
+
         call->gtCallMoreFlags |= GTF_CALL_M_SPECIAL_INTRINSIC;
+#endif // TARGET_XARCH
     }
 
     assert(sig != nullptr);

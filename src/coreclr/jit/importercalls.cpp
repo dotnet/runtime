@@ -9549,9 +9549,15 @@ GenTree* Compiler::impMathIntrinsic(CORINFO_METHOD_HANDLE method,
 
     if (isIntrinsicImplementedByUserCall)
     {
+#if defined(TARGET_XARCH)
         // We want to track math intrinsics implemented as user calls as special
         // to ensure we don't lose track of the fact it will call into native code
+        //
+        // This is used on xarch to track that it may need vzeroupper inserted to
+        // avoid the perf penalty on some hardware.
+
         *isSpecial = true;
+#endif // TARGET_XARCH
     }
 
 #if !defined(TARGET_X86)

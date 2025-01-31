@@ -2040,8 +2040,12 @@ bool GenTreeCall::NeedsVzeroupper(Compiler* comp)
 
             // Most other helpers are well known to not use any floating-point or SIMD logic internally, but
             // a few do exist so we need to ensure they are handled. They are identified by taking or
-            // returning a floating-point or SIMD type, regardless of how it is actually passed/returned.
-            checkSignature = !needsVzeroupper;
+            // returning a floating-point or SIMD type, regardless of how it is actually passed/returned but
+            // are excluded if we know they are implemented in managed.
+            checkSignature = !needsVzeroupper && !IsHelperCall(comp, CORINFO_HELP_DBL2INT_OVF) &&
+                             !IsHelperCall(comp, CORINFO_HELP_DBL2LNG_OVF) &&
+                             !IsHelperCall(comp, CORINFO_HELP_DBL2UINT_OVF) &&
+                             !IsHelperCall(comp, CORINFO_HELP_DBL2ULNG_OVF);
             break;
         }
 
