@@ -336,29 +336,8 @@ if defined RunCrossGen2 (
   call :TakeLock
 )
 
-@echo OFF
-setlocal enabledelayedexpansion
-if "%UseSDE%"=="1" (
-    ECHO Running With SDE
-    if "%SDEPath%"=="" (
-        ECHO SDE Path not set!
-    ) else (
-        ECHO SDE Path is %SDEPath%
-        if "%UseSDEENV%"=="1" (
-          set InvokeSDE="%SDEPath%" "-dmr" "-env" "DOTNET_ENABLEAVX10v2" "0" "--"
-          ECHO !InvokeSDE!%LAUNCHER% %ExePath% %CLRTestExecutionArguments%
-          !InvokeSDE! %LAUNCHER% %ExePath% %CLRTestExecutionArguments%
-        ) else (
-          set InvokeSDE="%SDEPath%" "-dmr" "--"
-          ECHO !InvokeSDE!%LAUNCHER% %ExePath% %CLRTestExecutionArguments%
-          !InvokeSDE! %LAUNCHER% %ExePath% %CLRTestExecutionArguments%
-        )
-    )
-) else (
-    ECHO %LAUNCHER% %ExePath% %CLRTestExecutionArguments%
-    %LAUNCHER% %ExePath% %CLRTestExecutionArguments%
-)
-endlocal
+ECHO %LAUNCHER% %ExePath% %CLRTestExecutionArguments%
+%LAUNCHER% %ExePath% %CLRTestExecutionArguments%
 set CLRTestExitCode=!ERRORLEVEL!
 if defined RunCrossGen2 (
   call :ReleaseLock
