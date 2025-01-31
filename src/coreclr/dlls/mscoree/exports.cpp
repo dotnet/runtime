@@ -652,3 +652,13 @@ void LogErrorToHost(const char* format, ...)
         va_end(args);
     }
 }
+
+#if defined(TARGET_ANDROID)
+void LogDebugToHost(const char* format, ...)
+{
+    va_list args;
+    va_start(args, format);
+    __android_log_vprint(ANDROID_LOG_DEBUG, ANDROID_LOGCAT_TAG, format, args);
+    va_end(args);
+}
+#endif
