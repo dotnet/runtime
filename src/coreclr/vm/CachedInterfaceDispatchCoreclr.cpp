@@ -11,11 +11,11 @@ bool InterfaceDispatch_InitializePal()
 // Allocate memory aligned at sizeof(void*)*2 boundaries
 void *InterfaceDispatch_AllocDoublePointerAligned(size_t size)
 {
-    return malloc(size);
+    return (void*)SystemDomain::GetGlobalLoaderAllocator()->GetHighFrequencyHeap()->AllocAlignedMem(size, sizeof(TADDR) * 2);
 }
 
 // Allocate memory aligned at at least sizeof(void*)
 void *InterfaceDispatch_AllocPointerAligned(size_t size)
 {
-    return malloc(size);
+    return (void*)SystemDomain::GetGlobalLoaderAllocator()->GetHighFrequencyHeap()->AllocAlignedMem(size, sizeof(TADDR));
 }

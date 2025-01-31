@@ -29,7 +29,7 @@ LEAF_ENTRY StubName, _TEXT
 ;EXTERN CID_g_cInterfaceDispatches : DWORD
         ;inc     [CID_g_cInterfaceDispatches]
 
-        ;; r10 currently contains the indirection cell address.
+        ;; r11 currently contains the indirection cell address.
         ;; load r10 to point to the cache block.
         mov     r10, [r11 + OFFSETOF__InterfaceDispatchCell__m_pCache]
 

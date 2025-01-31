@@ -13,9 +13,9 @@
 
 LEAF_ENTRY RhpInterfaceDispatch\entries, _TEXT
 
-        // r10 currently contains the indirection cell address.
-        // load r11 to point to the cache block.
-        mov     r11, [r10 + OFFSETOF__InterfaceDispatchCell__m_pCache]
+        // r11 currently contains the indirection cell address.
+        // load r10 to point to the cache block.
+        mov     r10, [r11 + OFFSETOF__InterfaceDispatchCell__m_pCache]
 
         // Load the MethodTable from the object instance in rdi.
         ALTERNATE_ENTRY RhpInterfaceDispatchAVLocation\entries
@@ -26,14 +26,14 @@ LEAF_ENTRY RhpInterfaceDispatch\entries, _TEXT
         // For each entry in the cache, see if its MethodTable type matches the MethodTable in rax.
         // If so, call the second cache entry.  If not, skip the InterfaceDispatchCacheEntry.
         .rept \entries
-            cmp     rax, [r11 + CurrentOffset]
+            cmp     rax, [r10 + CurrentOffset]
             jne     0f
-            jmp     [r11 + CurrentOffset + 8]
+            jmp     [r10 + CurrentOffset + 8]
         0:
             CurrentOffset = CurrentOffset + 16
         .endr
 
-        // r10 still contains the indirection cell address.
+        // r11 still contains the indirection cell address.
 
         jmp     C_FUNC(RhpInterfaceDispatchSlow)
 LEAF_END RhpInterfaceDispatch\entries, _TEXT
