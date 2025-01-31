@@ -13599,27 +13599,26 @@ GenTree* Compiler::impInlineFetchArg(InlArgInfo& argInfo, const InlLclVarInfo& l
              !argInfo.argHasSideEff && !argInfo.argHasGlobRef)
     {
         // Argument is a complex expression that we still prefer to duplicate.
-        // For example because it is an adress into a local in the caller. a
-        // by-ref address to a struct, a normed struct, or its field. In these
-        // cases, don't spill the byref to a local, simply clone the tree and
-        // use it.
+        // For example because it is an adress into a local in the caller. In
+        // these cases, don't spill the byref to a local, simply clone the tree
+        // and use it.
         //
         op1 = gtCloneExpr(argNode);
     }
     else
     {
-        /* Argument is a complex expression - it must be evaluated into a temp */
+        // Argument is a complex expression - it must be evaluated into a temp
 
         if (argInfo.argHasTmp)
         {
             assert(argInfo.argIsUsed);
             assert(argInfo.argTmpNum < lvaCount);
 
-            /* Create a new lcl var node - remember the argument lclNum */
+            // Create a new lcl var node - remember the argument lclNum
             op1 = gtNewLclvNode(argInfo.argTmpNum, genActualType(lclTyp));
 
-            /* This is the second or later use of the this argument,
-            so we have to use the temp (instead of the actual arg) */
+            // This is the second or later use of the this argument, so we have
+            // to use the temp (instead of the actual arg)
             argInfo.argBashTmpNode = nullptr;
         }
         else
@@ -13627,8 +13626,8 @@ GenTree* Compiler::impInlineFetchArg(InlArgInfo& argInfo, const InlLclVarInfo& l
             /* First time use */
             assert(!argInfo.argIsUsed);
 
-            /* Reserve a temp for the expression.
-             * Use a large size node as we may change it later */
+            // Reserve a temp for the expression. Use a large size node as we
+            // may change it later
 
             const unsigned tmpNum = lvaGrabTemp(true DEBUGARG("Inlining Arg"));
 
@@ -13685,20 +13684,20 @@ GenTree* Compiler::impInlineFetchArg(InlArgInfo& argInfo, const InlLclVarInfo& l
             if ((!varTypeIsStruct(lclTyp) && !argInfo.argHasSideEff && !argInfo.argHasGlobRef &&
                  !argInfo.argHasCallerLocalRef))
             {
-                /* Get a *LARGE* LCL_VAR node */
+                // Get a *LARGE* LCL_VAR node
                 op1 = gtNewLclLNode(tmpNum, genActualType(lclTyp));
 
-                /* Record op1 as the very first use of this argument.
-                If there are no further uses of the arg, we may be
-                able to use the actual arg node instead of the temp.
-                If we do see any further uses, we will clear this. */
+                // Record op1 as the very first use of this argument. If there
+                // are no further uses of the arg, we may be able to use the
+                // actual arg node instead of the temp. If we do see any
+                // further uses, we will clear this.
                 argInfo.argBashTmpNode = op1;
             }
             else
             {
-                /* Get a small LCL_VAR node */
+                // Get a small LCL_VAR node
                 op1 = gtNewLclvNode(tmpNum, genActualType(lclTyp));
-                /* No bashing of this argument */
+                // No bashing of this argument
                 argInfo.argBashTmpNode = nullptr;
             }
         }
