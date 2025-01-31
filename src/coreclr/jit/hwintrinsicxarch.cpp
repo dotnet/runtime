@@ -2403,7 +2403,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
             if (!varTypeIsFloating(simdBaseType))
             {
-                if (!(simdBaseType == TYP_INT && simdSize == 16))
+                if (!(simdBaseType == TYP_INT && (simdSize == 16 || simdSize == 32)))
                 {
                     break;
                 }
@@ -2436,6 +2436,27 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                     GenTree* divOp = gtNewSimdBinOpNode(GT_DIV, TYP_SIMD32, op1Cvt, op2Cvt, CORINFO_TYPE_DOUBLE, 32);
                     retNode = gtNewSimdHWIntrinsicNode(retType, divOp, NI_AVX_ConvertToVector128Int32WithTruncation,
                                                        simdBaseJitType, 32);
+                    GenTree*      fallback = gtNewHelperCallNode(CORINFO_HELP_THROWDIVZERO, TYP_VOID);
+                    GenTreeColon* colon    = gtNewColonNode(TYP_VOID, fallback, gtNewNothingNode());
+                    GenTree*      qmark    = gtNewQmarkNode(TYP_VOID, cmpZeroCond, colon);
+
+                    Statement* checkZeroStmt = gtNewStmt(qmark);
+                    impAppendStmt(checkZeroStmt);
+                }
+                if (simdSize == 32 && simdBaseType == TYP_INT && compOpportunisticallyDependsOn(InstructionSet_AVX512F))
+                {
+                    GenTree* op2Clone   = nullptr;
+                    op2                 = impCloneExpr(op2, &op2Clone, CHECK_SPILL_ALL,
+                                                       nullptr DEBUGARG("Clone op2 for NI_Vector256_op_Division"));
+                    GenTree* zeroVecCon = gtNewZeroConNode(TYP_SIMD32);
+                    GenTree* denominatorZeroCond =
+                        gtNewSimdCmpOpAnyNode(GT_EQ, TYP_INT, op2Clone, zeroVecCon, simdBaseJitType, simdSize);
+                    GenTree* cmpZeroCond = gtNewOperNode(GT_NE, TYP_INT, denominatorZeroCond, gtNewIconNode(0));
+                    GenTree* op1Cvt = gtNewSimdHWIntrinsicNode(TYP_SIMD64, op1, NI_AVX512F_ConvertToVector512Double, simdBaseJitType, 64);
+                    GenTree* op2Cvt = gtNewSimdHWIntrinsicNode(TYP_SIMD64, op2, NI_AVX512F_ConvertToVector512Double, simdBaseJitType, 64);
+                    GenTree* divOp = gtNewSimdBinOpNode(GT_DIV, TYP_SIMD64, op1Cvt, op2Cvt, CORINFO_TYPE_DOUBLE, 64);
+                    retNode = gtNewSimdHWIntrinsicNode(retType, divOp, NI_AVX512F_ConvertToVector256Int32WithTruncation,
+                                                       CORINFO_TYPE_DOUBLE, 64);
                     GenTree*      fallback = gtNewHelperCallNode(CORINFO_HELP_THROWDIVZERO, TYP_VOID);
                     GenTreeColon* colon    = gtNewColonNode(TYP_VOID, fallback, gtNewNothingNode());
                     GenTree*      qmark    = gtNewQmarkNode(TYP_VOID, cmpZeroCond, colon);
