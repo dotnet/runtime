@@ -1922,6 +1922,79 @@ PhaseStatus Compiler::optOptimizeBools()
     unsigned numPasses = 0;
     unsigned stress    = false;
 
+    bool modified = false;
+    if ((info.compRetType == TYP_UBYTE) && (genReturnBB == nullptr))
+    {
+        for (BasicBlock* block = fgFirstBB; block != nullptr; block = block->Next())
+        {
+#ifdef JIT32_GCENCODER
+            // JIT32_GCENCODER has a hard limit on the number of epilogues, let's not add more.
+            break;
+#endif
+            if (!block->KindIs(BBJ_COND))
+            {
+                continue;
+            }
+
+            BasicBlock* retTrueBb  = block->GetTrueEdge()->getDestinationBlock();
+            BasicBlock* retFalseBb = block->GetFalseEdge()->getDestinationBlock();
+            if (!retTrueBb->KindIs(BBJ_RETURN) || !retFalseBb->KindIs(BBJ_RETURN))
+            {
+                continue;
+            }
+
+            if ((retTrueBb->GetUniquePred(this) == nullptr) && (retFalseBb->GetUniquePred(this) == nullptr))
+            {
+                // Both return blocks have multiple predecessors - bail out.
+                // We don't want to introduce a new epilogue.
+                continue;
+            }
+
+            auto isReturnBool = [](const BasicBlock* block, bool value) {
+                if (block->KindIs(BBJ_RETURN) && block->hasSingleStmt() && (block->lastStmt() != nullptr))
+                {
+                    GenTree* node = block->lastStmt()->GetRootNode();
+                    return node->OperIs(GT_RETURN) && node->gtGetOp1()->IsIntegralConst(value ? 1 : 0);
+                }
+                return false;
+            };
+
+            bool retTrueFalse = isReturnBool(retTrueBb, true) && isReturnBool(retFalseBb, false);
+            bool retFalseTrue = isReturnBool(retTrueBb, false) && isReturnBool(retFalseBb, true);
+            if (!retTrueFalse && !retFalseTrue)
+            {
+                continue;
+            }
+
+            GenTree* node = block->lastStmt()->GetRootNode();
+            if (!node->gtGetOp1()->OperIsCompare())
+            {
+                continue;
+            }
+            assert(node->gtGetOp1()->TypeIs(TYP_INT));
+            assert(BasicBlock::sameEHRegion(block, retTrueBb));
+            assert(BasicBlock::sameEHRegion(block, retFalseBb));
+            fgRemoveRefPred(block->GetTrueEdge());
+            fgRemoveRefPred(block->GetFalseEdge());
+            block->SetKindAndTargetEdge(BBJ_RETURN);
+            if (retFalseTrue)
+            {
+                node->gtGetOp1()->AsOp()->SetOper(GenTree::ReverseRelop(node->gtGetOp1()->OperGet()));
+            }
+            assert(node->OperIs(GT_JTRUE));
+            node->ChangeOper(GT_RETURN);
+            node->ChangeType(TYP_INT);
+            node->gtGetOp1()->gtFlags &= ~GTF_RELOP_JMP_USED;
+            fgPgoConsistent = false;
+            fgInvalidateDfsTree();
+            modified = true;
+            gtSetStmtInfo(block->lastStmt());
+            fgSetStmtSeq(block->lastStmt());
+            gtUpdateStmtSideEffects(block->lastStmt());
+            block->bbCodeOffsEnd = max(retTrueBb->bbCodeOffsEnd, retFalseBb->bbCodeOffsEnd);
+        }
+    }
+
     do
     {
         numPasses++;
@@ -2024,6 +2097,6 @@ PhaseStatus Compiler::optOptimizeBools()
 
     JITDUMP("\noptimized %u BBJ_COND cases, %u BBJ_RETURN cases in %u passes\n", numCond, numReturn, numPasses);
 
-    const bool modified = stress || ((numCond + numReturn) > 0);
+    modified |= stress || ((numCond + numReturn) > 0);
     return modified ? PhaseStatus::MODIFIED_EVERYTHING : PhaseStatus::MODIFIED_NOTHING;
 }
