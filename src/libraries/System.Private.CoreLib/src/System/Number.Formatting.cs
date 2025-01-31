@@ -272,28 +272,28 @@ namespace System
 
         // Optimizations using "TwoDigits" inspired by:
         // https://engineering.fb.com/2013/03/15/developer-tools/three-optimization-tips-for-c/
-        private static ReadOnlySpan<byte> TwoDigitsCharsAsBytes =>
-            MemoryMarshal.AsBytes<char>("00010203040506070809" +
-                                        "10111213141516171819" +
-                                        "20212223242526272829" +
-                                        "30313233343536373839" +
-                                        "40414243444546474849" +
-                                        "50515253545556575859" +
-                                        "60616263646566676869" +
-                                        "70717273747576777879" +
-                                        "80818283848586878889" +
-                                        "90919293949596979899");
+        private const string TwoDigitsChars =
+            "00010203040506070809" +
+            "10111213141516171819" +
+            "20212223242526272829" +
+            "30313233343536373839" +
+            "40414243444546474849" +
+            "50515253545556575859" +
+            "60616263646566676869" +
+            "70717273747576777879" +
+            "80818283848586878889" +
+            "90919293949596979899";
         private static ReadOnlySpan<byte> TwoDigitsBytes =>
-                                        "00010203040506070809"u8 +
-                                        "10111213141516171819"u8 +
-                                        "20212223242526272829"u8 +
-                                        "30313233343536373839"u8 +
-                                        "40414243444546474849"u8 +
-                                        "50515253545556575859"u8 +
-                                        "60616263646566676869"u8 +
-                                        "70717273747576777879"u8 +
-                                        "80818283848586878889"u8 +
-                                        "90919293949596979899"u8;
+            "00010203040506070809"u8 +
+            "10111213141516171819"u8 +
+            "20212223242526272829"u8 +
+            "30313233343536373839"u8 +
+            "40414243444546474849"u8 +
+            "50515253545556575859"u8 +
+            "60616263646566676869"u8 +
+            "70717273747576777879"u8 +
+            "80818283848586878889"u8 +
+            "90919293949596979899"u8;
 
         public static unsafe string FormatDecimal(decimal value, ReadOnlySpan<char> format, NumberFormatInfo info)
         {
@@ -1565,15 +1565,18 @@ namespace System
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static ref byte TwoDigitsRef<TChar>() => ref typeof(TChar) == typeof(char)
+            ? ref Unsafe.As<char, byte>(ref TwoDigitsChars.GetRawStringData())
+            : ref MemoryMarshal.GetReference(TwoDigitsBytes);
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static unsafe void WriteTwoDigits<TChar>(uint value, TChar* ptr) where TChar : unmanaged, IUtfChar<TChar>
         {
             Debug.Assert(typeof(TChar) == typeof(char) || typeof(TChar) == typeof(byte));
             Debug.Assert(value <= 99);
 
-            Unsafe.CopyBlockUnaligned(
-                ref *(byte*)ptr,
-                ref Unsafe.Add(ref MemoryMarshal.GetReference(typeof(TChar) == typeof(char) ? TwoDigitsCharsAsBytes : TwoDigitsBytes), (uint)sizeof(TChar) * 2 * value),
-                (uint)sizeof(TChar) * 2);
+            ref byte valueRef = ref Unsafe.Add(ref TwoDigitsRef<TChar>(), (nuint)sizeof(TChar) * 2 * value);
+            Unsafe.CopyBlockUnaligned(ref *(byte*)ptr, ref valueRef, (uint)sizeof(TChar) * 2);
         }
 
         /// <summary>
@@ -1588,17 +1591,10 @@ namespace System
 
             (value, uint remainder) = Math.DivRem(value, 100);
 
-            ref byte charsArray = ref MemoryMarshal.GetReference(typeof(TChar) == typeof(char) ? TwoDigitsCharsAsBytes : TwoDigitsBytes);
-
-            Unsafe.CopyBlockUnaligned(
-                ref *(byte*)ptr,
-                ref Unsafe.Add(ref charsArray, (uint)sizeof(TChar) * 2 * value),
-                (uint)sizeof(TChar) * 2);
-
-            Unsafe.CopyBlockUnaligned(
-                ref *(byte*)(ptr + 2),
-                ref Unsafe.Add(ref charsArray, (uint)sizeof(TChar) * 2 * remainder),
-                (uint)sizeof(TChar) * 2);
+            ref byte valueRef1 = ref Unsafe.Add(ref TwoDigitsRef<TChar>(), (nuint)sizeof(TChar) * 2 * value);
+            ref byte valueRef2 = ref Unsafe.Add(ref TwoDigitsRef<TChar>(), (nuint)sizeof(TChar) * 2 * remainder);
+            Unsafe.CopyBlockUnaligned(ref *(byte*)(ptr + 0), ref valueRef1, (uint)sizeof(TChar) * 2);
+            Unsafe.CopyBlockUnaligned(ref *(byte*)(ptr + 2), ref valueRef2, (uint)sizeof(TChar) * 2);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
