@@ -276,8 +276,9 @@ export function end_marshal_task_to_js (args: JSMarshalerArguments, res_converte
     // get the synchronous result
     const promise = try_marshal_sync_task_to_js(res, type, res_converter);
 
-    // make sure we got the result
-    mono_assert(promise !== false, () => `Expected synchronous result, got: ${type}`);
+    if (promise === false) {
+        return marshal_task_to_js(res, type, res_converter);
+    }
 
     return promise;
 }
