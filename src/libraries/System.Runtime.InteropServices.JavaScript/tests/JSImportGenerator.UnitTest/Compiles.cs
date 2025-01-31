@@ -379,18 +379,18 @@ namespace JSImportGenerator.Unit.Tests
                                 [global::System.Diagnostics.DebuggerNonUserCode]
                                 internal static unsafe void __Wrapper_Export1_622134597(global::System.Runtime.InteropServices.JavaScript.JSMarshalerArgument* __arguments_buffer)
                                 {
-                                    __arguments_buffer[1] = __Stub(__arguments_buffer);
+                                    __Stub(__arguments_buffer, __arguments_buffer + 1);
                                     [global::System.Diagnostics.DebuggerNonUserCode]
-                                    global::System.Runtime.InteropServices.JavaScript.JSMarshalerArgument __Stub(global::System.Runtime.InteropServices.JavaScript.JSMarshalerArgument* ____arg_exception_native__param)
+                                    void __Stub(global::System.Runtime.InteropServices.JavaScript.JSMarshalerArgument* ____arg_exception_native__param, global::System.Runtime.InteropServices.JavaScript.JSMarshalerArgument* __invokeRetValUnmanaged__param)
                                     {
                                         ref global::System.Runtime.InteropServices.JavaScript.JSMarshalerArgument ____arg_exception_native = ref *____arg_exception_native__param;
-                                        global::System.Threading.Tasks.Task<int> __retVal = default;
-                                        global::System.Runtime.InteropServices.JavaScript.JSMarshalerArgument __retVal_native = default;
+                                        ref global::System.Runtime.InteropServices.JavaScript.JSMarshalerArgument __invokeRetValUnmanaged = ref *__invokeRetValUnmanaged__param;
+                                        global::System.Threading.Tasks.Task<int> __invokeRetVal = default;
                                         try
                                         {
-                                            __retVal = Basic.Export1();
+                                            __invokeRetVal = Basic.Export1();
                                             // Marshal - Convert managed data to native data.
-                                            __retVal_native.ToJS(__retVal, static (ref global::System.Runtime.InteropServices.JavaScript.JSMarshalerArgument __task_result_arg, int __task_result) =>
+                                            __invokeRetValUnmanaged.ToJS(__invokeRetVal, static (ref global::System.Runtime.InteropServices.JavaScript.JSMarshalerArgument __task_result_arg, int __task_result) =>
                                             {
                                                 __task_result_arg.ToJS(__task_result);
                                             });
@@ -399,8 +399,6 @@ namespace JSImportGenerator.Unit.Tests
                                         {
                                             ____arg_exception_native.ToJS(__arg_exception);
                                         }
-                            
-                                        return __retVal_native;
                                     }
                                 }
                             }

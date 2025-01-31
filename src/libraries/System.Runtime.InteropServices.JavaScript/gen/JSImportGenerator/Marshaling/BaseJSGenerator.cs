@@ -37,7 +37,7 @@ namespace Microsoft.Interop.JavaScript
             MarshalDirection marshalDirection = MarshallerHelpers.GetMarshalDirection(TypeInfo, CodeContext);
             if (context.CurrentStage == StubIdentifierContext.Stage.Setup
                 && marshalDirection == MarshalDirection.ManagedToUnmanaged
-                && !TypeInfo.IsNativeReturnPosition)
+                && !TypeInfo.IsManagedReturnPosition)
             {
                 var (_, js) = context.GetIdentifiers(TypeInfo);
                 return [
