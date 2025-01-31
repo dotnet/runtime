@@ -4367,6 +4367,47 @@ GenTree* Compiler::optAssertionProp_RelOp(ASSERT_VALARG_TP assertions, GenTree* 
     return optAssertionPropLocal_RelOp(assertions, tree, stmt);
 }
 
+//--------------------------------------------------------------------------------
+// optVisitReachingAssertions: given a vn, call the specified callback function on all
+//    the assertions that reach it via PHI definitions if any.
+//
+// Arguments:
+//    vn         - The vn to visit all the reaching assertions for
+//    argVisitor - The callback function to call on the vn and its reaching assertions
+//
+// Return Value:
+//    AssertVisit::Aborted  - an argVisitor returned AssertVisit::Abort, we stop the walk and return
+//    AssertVisit::Continue - all argVisitor returned AssertVisit::Continue
+//
+template <typename TAssertVisitor>
+Compiler::AssertVisit Compiler::optVisitReachingAssertions(ValueNum vn, TAssertVisitor argVisitor)
+{
+    VNPhiDef phiDef;
+    if (!vnStore->GetPhiDef(vn, &phiDef))
+    {
+        // We assume that the caller already checked assertions for the current block, so we're
+        // interested only in assertions for PHI definitions.
+        return AssertVisit::Abort;
+    }
+
+    LclSsaVarDsc*        ssaDef = lvaGetDesc(phiDef.LclNum)->GetPerSsaData(phiDef.SsaDef);
+    GenTreeLclVarCommon* node   = ssaDef->GetDefNode();
+    assert(node->IsPhiDefn());
+
+    for (GenTreePhi::Use& use : node->Data()->AsPhi()->Uses())
+    {
+        GenTreePhiArg* phiArg     = use.GetNode()->AsPhiArg();
+        const ValueNum phiArgVN   = vnStore->VNConservativeNormalValue(phiArg->gtVNPair);
+        ASSERT_TP      assertions = optGetEdgeAssertions(ssaDef->GetBlock(), phiArg->gtPredBB);
+        if (argVisitor(phiArgVN, assertions) == AssertVisit::Abort)
+        {
+            // The visitor wants to abort the walk.
+            return AssertVisit::Abort;
+        }
+    }
+    return AssertVisit::Continue;
+}
+
 //------------------------------------------------------------------------
 // optAssertionProp: try and optimize a relop via assertion propagation
 //
@@ -4380,6 +4421,8 @@ GenTree* Compiler::optAssertionProp_RelOp(ASSERT_VALARG_TP assertions, GenTree* 
 //
 GenTree* Compiler::optAssertionPropGlobal_RelOp(ASSERT_VALARG_TP assertions, GenTree* tree, Statement* stmt)
 {
+    assert(!optLocalAssertionProp);
+
     GenTree* newTree = tree;
     GenTree* op1     = tree->AsOp()->gtOp1;
     GenTree* op2     = tree->AsOp()->gtOp2;
@@ -4461,6 +4504,24 @@ GenTree* Compiler::optAssertionPropGlobal_RelOp(ASSERT_VALARG_TP assertions, Gen
     if (!op1->OperIs(GT_LCL_VAR, GT_IND))
     {
         return nullptr;
+    }
+
+    // See if we have "PHI ==/!= null" tree. If so, we iterate over all PHI's arguments,
+    // and if all of them are known to be non-null, we can bash the comparison to true/false.
+    if (op2->IsIntegralConst(0) && op1->TypeIs(TYP_REF))
+    {
+        auto visitor = [this](ValueNum reachingVN, ASSERT_TP reachingAssertions) {
+            return optAssertionVNIsNonNull(reachingVN, reachingAssertions) ? AssertVisit::Continue : AssertVisit::Abort;
+        };
+
+        ValueNum op1vn = vnStore->VNConservativeNormalValue(op1->gtVNPair);
+        if (optVisitReachingAssertions(op1vn, visitor) == AssertVisit::Continue)
+        {
+            JITDUMP("... all of PHI's arguments are never null!\n");
+            assert(newTree->OperIs(GT_EQ, GT_NE));
+            newTree = tree->OperIs(GT_EQ) ? gtNewIconNode(0) : gtNewIconNode(1);
+            return optAssertionProp_Update(newTree, tree, stmt);
+        }
     }
 
     // Find an equal or not equal assertion involving "op1" and "op2".
@@ -5083,31 +5144,19 @@ bool Compiler::optAssertionVNIsNonNull(ValueNum vn, ASSERT_VALARG_TP assertions)
         return true;
     }
 
-    // Check each assertion to find if we have a vn != null assertion.
-    //
-    BitVecOps::Iter iter(apTraits, assertions);
-    unsigned        index = 0;
-    while (iter.NextElem(&index))
+    if (!BitVecOps::MayBeUninit(assertions))
     {
-        AssertionIndex assertionIndex = GetAssertionIndex(index);
-        if (assertionIndex > optAssertionCount)
+        BitVecOps::Iter iter(apTraits, assertions);
+        unsigned        index = 0;
+        while (iter.NextElem(&index))
         {
-            break;
+            AssertionDsc* curAssertion = optGetAssertion(GetAssertionIndex(index));
+            if (curAssertion->CanPropNonNull() && curAssertion->op1.vn == vn)
+            {
+                return true;
+            }
         }
-        AssertionDsc* curAssertion = optGetAssertion(assertionIndex);
-        if (!curAssertion->CanPropNonNull())
-        {
-            continue;
-        }
-
-        if (curAssertion->op1.vn != vn)
-        {
-            continue;
-        }
-
-        return true;
     }
-
     return false;
 }
 
@@ -5808,6 +5857,30 @@ ASSERT_VALRET_TP Compiler::optGetVnMappedAssertions(ValueNum vn)
         return set;
     }
     return BitVecOps::UninitVal();
+}
+
+//------------------------------------------------------------------------
+// optGetEdgeAssertions: Given a block and its predecessor, get the assertions
+//                       the predecessor creates for the block.
+//
+// Arguments:
+//      block     - The block to get the assertions for.
+//      blockPred - The predecessor of the block (creating the assertions).
+//
+// Return Value:
+//      The assertions we have about the value number.
+//
+ASSERT_VALRET_TP Compiler::optGetEdgeAssertions(const BasicBlock* block, const BasicBlock* blockPred) const
+{
+    if ((blockPred->KindIs(BBJ_COND) && blockPred->TrueTargetIs(block)))
+    {
+        if (bbJtrueAssertionOut != nullptr)
+        {
+            return bbJtrueAssertionOut[blockPred->bbNum];
+        }
+        return BitVecOps::MakeEmpty(apTraits);
+    }
+    return blockPred->bbAssertionOut;
 }
 
 /*****************************************************************************

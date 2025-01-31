@@ -369,8 +369,9 @@ RELEASE_CONFIG_INTEGER(EnableMultiRegLocals, "EnableMultiRegLocals", 1)
 RELEASE_CONFIG_INTEGER(JitNoInline, "JitNoInline", 0)
 
 #if defined(DEBUG)
-CONFIG_INTEGER(JitStressRex2Encoding, "JitStressRex2Encoding", 0) // Enable rex2 encoding for legacy instructions.
-CONFIG_INTEGER(JitBypassAPXCheck, "JitBypassAPXCheck", 0)         // Bypass APX CPUID check.
+CONFIG_INTEGER(JitStressRex2Encoding, "JitStressRex2Encoding", 0) // Enable rex2 encoding for compatible instructions.
+CONFIG_INTEGER(JitStressPromotedEvexEncoding, "JitStressPromotedEvexEncoding", 0) // Enable promoted EVEX encoding for
+                                                                                  // compatible instructions.
 #endif
 
 // clang-format off
@@ -440,6 +441,7 @@ RELEASE_CONFIG_INTEGER(EnableArm64Sve,              "EnableArm64Sve",           
 
 RELEASE_CONFIG_INTEGER(EnableEmbeddedBroadcast,     "EnableEmbeddedBroadcast",   1) // Allows embedded broadcasts to be disabled
 RELEASE_CONFIG_INTEGER(EnableEmbeddedMasking,       "EnableEmbeddedMasking",     1) // Allows embedded masking to be disabled
+RELEASE_CONFIG_INTEGER(EnableApxNDD,                "EnableApxNDD",              0) // Allows APX NDD feature to be disabled
 
 // clang-format on
 

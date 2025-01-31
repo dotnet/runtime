@@ -63,7 +63,7 @@
         - src/mono/msbuild/apple/build/AppleBuild.targets
         - src/installer/pkg/sfx/bundle/shared-framework-distribution-template-x64.xml
         - src/installer/pkg/sfx/bundle/shared-framework-distribution-template-arm64.xml
-        - src/tasks/AotCompilerTask/MonoAOTCompiler.props
+        - src/mono/msbuild/common/MonoAOTCompiler.props
         - src/tasks/AppleAppBuilder/Xcode.cs
         - src/tasks/MobileBuildTasks/Apple/AppleProject.cs
         - https://github.com/dotnet/sdk repo > src/Installer/redist-installer/targets/GeneratePKG.targets

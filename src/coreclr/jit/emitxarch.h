@@ -134,11 +134,18 @@ static regNumber getSseShiftRegNumber(instruction ins);
 bool             HasVexEncoding(instruction ins) const;
 bool             HasEvexEncoding(instruction ins) const;
 bool             HasRex2Encoding(instruction ins) const;
+bool             HasApxNdd(instruction ins) const;
+bool             HasApxNf(instruction ins) const;
 bool             IsVexEncodableInstruction(instruction ins) const;
 bool             IsEvexEncodableInstruction(instruction ins) const;
 bool             IsRex2EncodableInstruction(instruction ins) const;
+bool             IsApxNDDEncodableInstruction(instruction ins) const;
+bool             IsApxNFEncodableInstruction(instruction ins) const;
+bool             IsApxExtendedEvexInstruction(instruction ins) const;
+bool             IsShiftInstruction(instruction ins) const;
 bool             IsLegacyMap1(code_t code) const;
 bool             IsVexOrEvexEncodableInstruction(instruction ins) const;
+bool             DoJitUseApxNDD(instruction ins) const;
 
 code_t insEncodeMIreg(const instrDesc* id, regNumber reg, emitAttr size, code_t code);
 
@@ -178,6 +185,8 @@ bool AreFlagsSetToZeroCmp(regNumber reg, emitAttr opSize, GenCondition cond);
 bool AreFlagsSetForSignJumpOpt(regNumber reg, emitAttr opSize, GenCondition cond);
 
 insOpts GetEmbRoundingMode(uint8_t mode) const;
+
+void emitHandleGCrefRegs(BYTE* dst, instrDesc* id);
 
 bool hasRexPrefix(code_t code)
 {
@@ -332,6 +341,18 @@ void SetUseRex2Encoding(bool value)
     useRex2Encodings = value;
 }
 
+// Is Promoted EVEX encoding supported.
+bool usePromotedEVEXEncodings;
+bool UsePromotedEVEXEncoding() const
+{
+    return usePromotedEVEXEncodings;
+}
+
+void SetUsePromotedEVEXEncoding(bool value)
+{
+    usePromotedEVEXEncodings = value;
+}
+
 //------------------------------------------------------------------------
 // UseSimdEncoding: Returns true if either VEX or EVEX encoding is supported
 // contains Evex prefix.
@@ -349,6 +370,7 @@ bool UseSimdEncoding() const
 #define EVEX_PREFIX_CODE 0x6200000000000000ULL
 
 bool TakesEvexPrefix(const instrDesc* id) const;
+bool TakesApxExtendedEvexPrefix(const instrDesc* id) const;
 
 //------------------------------------------------------------------------
 // hasEvexPrefix: Returns true if the instruction encoding already
@@ -405,11 +427,7 @@ code_t AddSimdPrefixIfNeeded(const instrDesc* id, code_t code, emitAttr size)
 //
 code_t AddX86PrefixIfNeeded(const instrDesc* id, code_t code, emitAttr size)
 {
-    // TODO-xarch-apx:
-    // consider refactor this part with AddSimdPrefixIfNeeded as a lot of functionality
-    // of these functions are overlapping.
-
-    if (TakesEvexPrefix(id))
+    if (TakesEvexPrefix(id) || TakesApxExtendedEvexPrefix(id))
     {
         return AddEvexPrefix(id, code, size);
     }
@@ -445,7 +463,7 @@ code_t AddX86PrefixIfNeededAndNotPresent(const instrDesc* id, code_t code, emitA
     // consider refactor this part with AddSimdPrefixIfNeeded as a lot of functionality
     // of these functions are overlapping.
 
-    if (TakesEvexPrefix(id))
+    if (TakesEvexPrefix(id) || TakesApxExtendedEvexPrefix(id))
     {
         return !hasEvexPrefix(code) ? AddEvexPrefix(id, code, size) : code;
     }
@@ -508,6 +526,48 @@ void SetEvexEmbMaskIfNeeded(instrDesc* id, insOpts instOptions)
     else
     {
         assert((instOptions & INS_OPTS_EVEX_z_MASK) == 0);
+    }
+}
+
+//------------------------------------------------------------------------
+// SetEvexNdIfNeeded: set NDD form - new data destination if needed.
+//
+// Arguments:
+//    id          - instruction descriptor
+//    instOptions - emit options
+//
+void SetEvexNdIfNeeded(instrDesc* id, insOpts instOptions)
+{
+    if ((instOptions & INS_OPTS_EVEX_nd_MASK) != 0)
+    {
+        assert(UsePromotedEVEXEncoding());
+        assert(IsApxNDDEncodableInstruction(id->idIns()));
+        id->idSetEvexNdContext();
+    }
+    else
+    {
+        assert((instOptions & INS_OPTS_EVEX_nd_MASK) == 0);
+    }
+}
+
+//------------------------------------------------------------------------
+// SetEvexNdIfNeeded: set Evex.nf on instrDesc
+//
+// Arguments:
+//    id          - instruction descriptor
+//    instOptions - emit options
+//
+void SetEvexNfIfNeeded(instrDesc* id, insOpts instOptions)
+{
+    if ((instOptions & INS_OPTS_EVEX_nf_MASK) != 0)
+    {
+        assert(UsePromotedEVEXEncoding());
+        assert(IsApxNFEncodableInstruction(id->idIns()));
+        id->idSetEvexNfContext();
+    }
+    else
+    {
+        assert((instOptions & INS_OPTS_EVEX_nf_MASK) == 0);
     }
 }
 
@@ -753,7 +813,7 @@ void emitIns_Data16();
 
 void emitIns_I(instruction ins, emitAttr attr, cnsval_ssize_t val);
 
-void emitIns_R(instruction ins, emitAttr attr, regNumber reg);
+void emitIns_R(instruction ins, emitAttr attr, regNumber reg, insOpts instOptions = INS_OPTS_NONE);
 
 void emitIns_C(instruction ins, emitAttr attr, CORINFO_FIELD_HANDLE fdlHnd, int offs);
 
@@ -762,7 +822,9 @@ void emitIns_A(instruction ins, emitAttr attr, GenTreeIndir* indir);
 void emitIns_R_I(instruction ins,
                  emitAttr    attr,
                  regNumber   reg,
-                 ssize_t val DEBUGARG(size_t targetHandle = 0) DEBUGARG(GenTreeFlags gtFlags = GTF_EMPTY));
+                 ssize_t     val,
+                 insOpts instOptions = INS_OPTS_NONE DEBUGARG(size_t targetHandle = 0)
+                     DEBUGARG(GenTreeFlags gtFlags = GTF_EMPTY));
 
 void emitIns_Mov(instruction ins, emitAttr attr, regNumber dstReg, regNumber srgReg, bool canSkip);
 
@@ -771,7 +833,7 @@ void emitIns_R_R(instruction ins, emitAttr attr, regNumber reg1, regNumber reg2,
 void emitIns_R_R_I(
     instruction ins, emitAttr attr, regNumber reg1, regNumber reg2, int ival, insOpts instOptions = INS_OPTS_NONE);
 
-void emitIns_AR(instruction ins, emitAttr attr, regNumber base, int offs);
+void emitIns_AR(instruction ins, emitAttr attr, regNumber base, int offs, insOpts instOptions = INS_OPTS_NONE);
 
 void emitIns_AR_R_R(instruction ins,
                     emitAttr    attr,
@@ -942,7 +1004,8 @@ void emitIns_R_L(instruction ins, emitAttr attr, BasicBlock* dst, regNumber reg)
 
 void emitIns_R_D(instruction ins, emitAttr attr, unsigned offs, regNumber reg);
 
-void emitIns_I_AR(instruction ins, emitAttr attr, int val, regNumber reg, int offs);
+void emitIns_I_AR(
+    instruction ins, emitAttr attr, int val, regNumber reg, int offs, insOpts instOptions = INS_OPTS_NONE);
 
 void emitIns_I_AI(instruction ins, emitAttr attr, int val, ssize_t disp);
 
@@ -953,7 +1016,12 @@ void emitIns_R_AI(instruction  ins,
                   regNumber    ireg,
                   ssize_t disp DEBUGARG(size_t targetHandle = 0) DEBUGARG(GenTreeFlags gtFlags = GTF_EMPTY));
 
-void emitIns_AR_R(instruction ins, emitAttr attr, regNumber reg, regNumber base, cnsval_ssize_t disp);
+void emitIns_AR_R(instruction    ins,
+                  emitAttr       attr,
+                  regNumber      reg,
+                  regNumber      base,
+                  cnsval_ssize_t disp,
+                  insOpts        instOptions = INS_OPTS_NONE);
 
 void emitIns_AI_R(instruction ins, emitAttr attr, regNumber ireg, ssize_t disp);
 
@@ -974,7 +1042,8 @@ void emitIns_ARX_R(instruction    ins,
                    regNumber      base,
                    regNumber      index,
                    unsigned       scale,
-                   cnsval_ssize_t disp);
+                   cnsval_ssize_t disp,
+                   insOpts        instOptions = INS_OPTS_NONE);
 
 void emitIns_I_AX(instruction ins, emitAttr attr, int val, regNumber reg, unsigned mul, int disp);
 
@@ -1121,6 +1190,13 @@ void emitIns_SIMD_R_R_R_S_I(instruction ins,
                             int         ival,
                             insOpts     instOptions);
 #endif // FEATURE_HW_INTRINSICS
+
+void emitIns_BASE_R_R(instruction ins, emitAttr attr, regNumber op1Reg, regNumber op2Reg);
+
+void emitIns_BASE_R_R_I(instruction ins, emitAttr attr, regNumber op1Reg, regNumber op2Reg, int ival);
+
+regNumber emitIns_BASE_R_R_RM(
+    instruction ins, emitAttr attr, regNumber targetReg, GenTree* treeNode, GenTree* regOp, GenTree* rmOp);
 
 enum EmitCallType
 {
