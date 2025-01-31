@@ -30,35 +30,6 @@
 // corruption. To prevent lock contention over a single list, we maintain
 // multiple lists, each with its own lock and allocate them round-robin.
 //
-// Implementation notes:
-//
-// We want to introduce as little overhead as possible. As adding (and removing)
-// Items from a linked list requires holding a lock, we want to avoid doing it
-// when free-ing memory that was not tracked in those lists in the first place
-// (memory allocated before the tracking was enabled).
-//
-// To filter out only relevant allocations, we maintain a global counter of how
-// many allocations were performed. g_trackingEnabledSince denotes the index of
-// the last NOT tracked allocation (or UINT64_MAX if not tracking). The
-// following invariant is enforced:
-//
-//     entry->index > g_trackingEnabledSince iff the entry is present in tracking lists
-//
-// This allows us to skip manipulating linked list when toggling the tracking on
-// and off. We simply orphan all the linked list entries as we will not follow
-// any of the links ever during free and don't risk accessing freed memory.
-//
-// To prevent data corruption, we need to mutually exclude following operations
-//   - check g_trackingEnabledSince and add to/remove from linked lists if needed
-//     - done by malloc routines
-//   - set g_trackingEnabledSince and reset linked lists
-//     - done by EnableMemoryTracking
-//
-// For that, we use a read-write lock, the malloc routines use the read side (so
-// there may be multiple mallocs in flight) and EnableMemoryTracking uses the
-// write side (to exclude all other accesses). The RW lock effectively protects
-// the g_trackingEnabledSince variable
-//
 
 // helper macro for getting the pointer to containing type from a pointer to a member
 #define container_of(ptr, type, member) ((type*)((char*)(ptr) - offsetof(type, member)))
@@ -75,25 +46,19 @@ typedef struct list_t
     pthread_mutex_t lock;
 } list_t;
 
-// Whether outstanding allocations should be tracked, UINT64_MAX if tracking is
-// disabled.
-static uint64_t g_trackingEnabledSince = UINT64_MAX;
+// Whether outstanding allocations should be tracked
+static int32_t g_trackingEnabled = 0;
 // Static lists of tracked allocations.
 static list_t* g_trackedMemory = NULL;
 // Number of partitions (distinct lists in g_trackedMemory) to track outstanding
 // allocations in.
 static uint32_t kPartitionCount = 32;
-// RW lock protecting g_trackingEnabledSince and g_trackedMemory.
-static pthread_rwlock_t g_trackedMemoryLock;
 
 // header for each tracked allocation
 typedef struct header_t
 {
     // link for the circular list
     struct link_t link;
-
-    // ordinal number of the allocation. Used to determine the target partition.
-    uint64_t index;
 
     // size of the allocation (of the data field)
     uint64_t size;
@@ -103,6 +68,9 @@ typedef struct header_t
 
     // line number in the file where the allocation was made
     int32_t line;
+
+    // index of the list where this entry is stored
+    uint32_t index;
 
     // the start of actual allocated memory
     __attribute__((aligned(8))) uint8_t data[];
@@ -145,15 +113,6 @@ static void list_unlink_item(link_t* item)
     list_link_init(item);
 }
 
-static void init_memory_entry(header_t* entry, size_t size, const char* file, int32_t line, uint64_t index)
-{
-    entry->size = size;
-    entry->line = line;
-    entry->file = file;
-    list_link_init(&entry->link);
-    entry->index = index;
-}
-
 static uint64_t atomic_add64(uint64_t* value, uint64_t addend, CRYPTO_RWLOCK* lock)
 {
     if (API_EXISTS(CRYPTO_atomic_add64))
@@ -167,9 +126,15 @@ static uint64_t atomic_add64(uint64_t* value, uint64_t addend, CRYPTO_RWLOCK* lo
     return __atomic_fetch_add(value, addend, __ATOMIC_SEQ_CST);
 }
 
-static int32_t should_be_tracked(header_t* entry)
+static void init_memory_entry(header_t* entry, size_t size, const char* file, int32_t line)
 {
-    return entry->index > g_trackingEnabledSince;
+    uint64_t newCount = atomic_add64(&g_allocationCount, 1, g_allocLock);
+
+    entry->size = size;
+    entry->line = line;
+    entry->file = file;
+    list_link_init(&entry->link);
+    entry->index = (uint32_t)(newCount % kPartitionCount);
 }
 
 static list_t* get_item_bucket(header_t* entry)
@@ -182,35 +147,32 @@ static void do_track_entry(header_t* entry, int32_t add)
 {
     atomic_add64(&g_allocatedMemory, (add != 0 ? entry->size : -entry->size), g_allocLock);
 
-    if (g_trackedMemory == NULL)
+    if (add != 0 && !g_trackingEnabled)
     {
-        // definitely no inidivdual allocations tracking. Early exit.
+        // don't track this (new) allocation individually
+        return;
+    }
+
+    if (add == 0 && entry->link.next == &entry->link)
+    {
+        // freeing allocation, which is not in any list, skip taking the lock
         return;
     }
 
     list_t* list = get_item_bucket(entry);
-    int res = pthread_rwlock_rdlock(&g_trackedMemoryLock);
+    int res = pthread_mutex_lock(&list->lock);
     assert (res == 0);
 
-    if (should_be_tracked(entry))
+    if (add != 0)
     {
-        res = pthread_mutex_lock(&list->lock);
-        assert (res == 0);
-
-        if (add != 0)
-        {
-            list_insert_link(&entry->link, &list->head, list->head.next);
-        }
-        else
-        {
-            list_unlink_item(&entry->link);
-        }
-
-        res = pthread_mutex_unlock(&list->lock);
-        assert (res == 0);
+        list_insert_link(&entry->link, &list->head, list->head.next);
+    }
+    else
+    {
+        list_unlink_item(&entry->link);
     }
 
-    res = pthread_rwlock_unlock(&g_trackedMemoryLock);
+    res = pthread_mutex_unlock(&list->lock);
     assert (res == 0);
 }
 
@@ -219,8 +181,7 @@ static void* mallocFunction(size_t size, const char *file, int line)
     header_t* entry = malloc(size + sizeof(header_t));
     if (entry != NULL)
     {
-        uint64_t newCount = atomic_add64(&g_allocationCount, 1, g_allocLock);
-        init_memory_entry(entry, size, file, line, newCount);
+        init_memory_entry(entry, size, file, line);
         do_track_entry(entry, 1);
     }
 
@@ -245,8 +206,7 @@ static void* reallocFunction (void *ptr, size_t size, const char *file, int line
     {
         entry = newEntry;
 
-        uint64_t newCount = atomic_add64(&g_allocationCount, 1, g_allocLock);
-        init_memory_entry(entry, size, file, line, newCount);
+        init_memory_entry(entry, size, file, line);
         toReturn = (void*)(&entry->data);
     }
 
@@ -286,23 +246,16 @@ int32_t CryptoNative_GetMemoryUse(uint64_t* totalUsed, uint64_t* allocationCount
 
 void CryptoNative_EnableMemoryTracking(int32_t enable)
 {
-    pthread_rwlock_wrlock(&g_trackedMemoryLock);
-
     if (g_trackedMemory == NULL)
     {
-        // initialize the list
-        g_trackedMemory = malloc(kPartitionCount * sizeof(list_t));
-        for (uint32_t i = 0; i < kPartitionCount; i++)
-        {
-            list_init(&g_trackedMemory[i]);
-        }
+        return;
     }
-    else
+
+    if (enable)
     {
         // Clear the lists by unlinking the list heads, any existing items in
-        // the list will become orphaned in a "floating" circular list.  We will
-        // not touch the links in those items during subsequent free calls due
-        // to setting g_trackingEnabledSince later in this function.
+        // the list will become orphaned in a "floating" circular list.
+        // we will keep removing items from the list as they are freed
         for (uint32_t i = 0; i < kPartitionCount; i++)
         {
             list_t* list = &g_trackedMemory[i];
@@ -315,27 +268,36 @@ void CryptoNative_EnableMemoryTracking(int32_t enable)
         }
     }
 
-    g_trackingEnabledSince = enable ? g_allocationCount : UINT64_MAX;
-
-    pthread_rwlock_unlock(&g_trackedMemoryLock);
+    g_trackingEnabled = enable;
 }
 
 void CryptoNative_ForEachTrackedAllocation(void (*callback)(void* ptr, uint64_t size, const char* file, int32_t line, void* ctx), void* ctx)
 {
-    if (g_trackedMemory != NULL)
+    if (g_trackedMemory == NULL)
     {
-        for (uint32_t i = 0; i < kPartitionCount; i++)
-        {
-            list_t* list = &g_trackedMemory[i];
+        return;
+    }
 
-            pthread_mutex_lock(&list->lock);
-            for (link_t* node = list->head.next; node != &list->head; node = node->next)
-            {
-                header_t* entry = container_of(node, header_t, link);
-                callback(entry->data, entry->size, entry->file, entry->line, ctx);
-            }
-            pthread_mutex_unlock(&list->lock);
+    for (uint32_t i = 0; i < kPartitionCount; i++)
+    {
+        list_t* list = &g_trackedMemory[i];
+
+        pthread_mutex_lock(&list->lock);
+        for (link_t* node = list->head.next; node != &list->head; node = node->next)
+        {
+            header_t* entry = container_of(node, header_t, link);
+            callback(entry->data, entry->size, entry->file, entry->line, ctx);
         }
+        pthread_mutex_unlock(&list->lock);
+    }
+}
+
+static void init_tracking_lists()
+{
+    g_trackedMemory = malloc(kPartitionCount * sizeof(list_t));
+    for (uint32_t i = 0; i < kPartitionCount; i++)
+    {
+        list_init(&g_trackedMemory[i]);
     }
 }
 
@@ -350,14 +312,14 @@ void InitializeMemoryDebug(void)
             // This should cover 1.1.1+
             CRYPTO_set_mem_functions(mallocFunction, reallocFunction, freeFunction);
             g_allocLock = CRYPTO_THREAD_lock_new();
-            pthread_rwlock_init(&g_trackedMemoryLock, NULL);
+            init_tracking_lists();
         }
 #elif OPENSSL_VERSION_NUMBER >= OPENSSL_VERSION_1_1_1_RTM
         // OpenSSL 1.0 has different prototypes and it is out of support so we enable this only
         // on 1.1.1+
         CRYPTO_set_mem_functions(mallocFunction, reallocFunction, freeFunction);
         g_allocLock = CRYPTO_THREAD_lock_new();
-        pthread_rwlock_init(&g_trackedMemoryLock, NULL);
+        init_tracking_lists();
 #endif
     }
 }
