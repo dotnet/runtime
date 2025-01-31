@@ -638,14 +638,26 @@ void Compiler::unwindSaveNext()
 void Compiler::unwindPacSignLR()
 {
 #if defined(FEATURE_CFI_SUPPORT)
-    // do not use unwindSaveNext when generating CFI codes as there is no code for this
-    assert(!generateCFIUnwindCodes());
+    if (generateCFIUnwindCodes())
+    {
+        FuncInfoDsc*   func     = funCurrentFunc();
+        UNATIVE_OFFSET cbProlog = 0;
+        if (compGeneratingProlog)
+        {
+            cbProlog = unwindGetCurrentOffset(func);
+        }
+
+        // DW_CFA_GNU_window_save 0x2D
+        createCfiCode(func, cbProlog, CFI_DEF_CFA_REGISTER, DWARF_REG_ILLEGAL);
+
+        return;
+    }
 #endif // FEATURE_CFI_SUPPORT
 
-    UnwindInfo* pu = &funCurrentFunc()->uwi;
+     assert(compGeneratingProlog);
 
     // pac_sign_lr: 11111100: sign the return address in lr with pacibsp
-    pu->AddCode(0xFC);
+    funCurrentFunc()->uwi.AddCode(0xFC);
 }
 
 void Compiler::unwindReturn(regNumber reg)
