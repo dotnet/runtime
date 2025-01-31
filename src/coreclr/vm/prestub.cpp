@@ -2528,9 +2528,13 @@ extern "C" size_t CallDescrWorkerInternalReturnAddressOffset;
 bool IsCallDescrWorkerInternalReturnAddress(PCODE pCode)
 {
     LIMITED_METHOD_CONTRACT;
+#ifdef FEATURE_EH_FUNCLETS
     size_t CallDescrWorkerInternalReturnAddress = (size_t)CallDescrWorkerInternal + CallDescrWorkerInternalReturnAddressOffset;
 
     return pCode == CallDescrWorkerInternalReturnAddress;
+#else // FEATURE_EH_FUNCLETS
+    return false;
+#endif // FEATURE_EH_FUNCLETS
 }
 
 //=============================================================================
@@ -3169,8 +3173,10 @@ EXTERN_C PCODE STDCALL ExternalMethodFixupWorker(TransitionBlock * pTransitionBl
 
     pEMFrame->Push(CURRENT_THREAD);         // Push the new ExternalMethodFrame onto the frame stack
 
-    INSTALL_MANAGED_EXCEPTION_DISPATCHER;
-    INSTALL_UNWIND_AND_CONTINUE_HANDLER;
+    bool propagateExceptionToNativeCode = IsCallDescrWorkerInternalReturnAddress(pTransitionBlock->m_ReturnAddress);
+
+    INSTALL_MANAGED_EXCEPTION_DISPATCHER_EX;
+    INSTALL_UNWIND_AND_CONTINUE_HANDLER_EX;
 
     bool fVirtual = false;
     MethodDesc * pMD = NULL;
@@ -3412,8 +3418,8 @@ EXTERN_C PCODE STDCALL ExternalMethodFixupWorker(TransitionBlock * pTransitionBl
     }
     // Ready to return
 
-    UNINSTALL_UNWIND_AND_CONTINUE_HANDLER;
-    UNINSTALL_MANAGED_EXCEPTION_DISPATCHER;
+    UNINSTALL_UNWIND_AND_CONTINUE_HANDLER_EX(propagateExceptionToNativeCode);
+    UNINSTALL_MANAGED_EXCEPTION_DISPATCHER_EX(propagateExceptionToNativeCode);
 
     pEMFrame->Pop(CURRENT_THREAD);          // Pop the ExternalMethodFrame from the frame stack
 
