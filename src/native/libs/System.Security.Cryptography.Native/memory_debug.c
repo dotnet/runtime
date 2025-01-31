@@ -115,35 +115,12 @@ static void list_init(list_t* list)
     assert(res == 0);
 }
 
-static list_t* get_item_bucket(link_t* item)
+static void list_insert_link(link_t* item, link_t* prev, link_t* next)
 {
-    header_t* entry = container_of(item, header_t, link);
-    uint32_t index = entry->index % kPartitionCount;
-    return &g_trackedMemory[index];
-}
-
-static int32_t should_be_tracked(header_t* entry)
-{
-    return entry->index > g_trackingEnabledSince;
-}
-
-static void track_item(link_t* item)
-{
-    list_t* list = get_item_bucket(item);
-
-    int res = pthread_mutex_lock(&list->lock);
-    assert (res == 0);
-
-    link_t* prev = &list->head;
-    link_t* next = list->head.next;
-
     next->prev = item;
     item->next = next;
     item->prev = prev;
     prev->next = item;
-
-    res = pthread_mutex_unlock(&list->lock);
-    assert (res == 0);
 }
 
 static void list_unlink_item(link_t* item)
@@ -157,114 +134,118 @@ static void list_unlink_item(link_t* item)
     list_link_init(item);
 }
 
-static void untrack_item(link_t* item)
-{
-    list_t* list = get_item_bucket(item);
-
-    int res = pthread_mutex_lock(&list->lock);
-    assert (res == 0);
-
-    list_unlink_item(item);
-
-    res = pthread_mutex_unlock(&list->lock);
-    assert (res == 0);
-
-    item->next = item;
-    item->prev = item;
-}
-
 static void init_memory_entry(header_t* entry, size_t size, const char* file, int32_t line, uint64_t index)
 {
     entry->size = size;
     entry->line = line;
     entry->file = file;
-    entry->link.next = &entry->link;
-    entry->link.prev = &entry->link;
+    list_link_init(&entry->link);
     entry->index = index;
+}
+
+static int32_t should_be_tracked(header_t* entry)
+{
+    return entry->index > g_trackingEnabledSince;
+}
+
+static list_t* get_item_bucket(header_t* entry)
+{
+    uint32_t index = entry->index % kPartitionCount;
+    return &g_trackedMemory[index];
+}
+
+static void do_track_entry(header_t* entry, int32_t add)
+{
+    atomic_add64(&g_allocatedMemory, (add != 0 ? entry->size : -entry->size), g_allocLock);
+
+    if (g_trackedMemory == NULL)
+    {
+        // definitely no inidivdual allocations tracking. Early exit.
+        return;
+    }
+
+    list_t* list = get_item_bucket(entry);
+    int res = pthread_rwlock_rdlock(&g_trackedMemoryLock);
+    assert (res == 0);
+
+    if (should_be_tracked(entry))
+    {
+        res = pthread_mutex_lock(&list->lock);
+        assert (res == 0);
+
+        if (add != 0)
+        {
+            list_insert_link(&entry->link, &list->head, list->head.next);
+        }
+        else
+        {
+            list_unlink_item(&entry->link);
+        }
+
+        res = pthread_mutex_unlock(&list->lock);
+        assert (res == 0);
+    }
+
+    res = pthread_rwlock_unlock(&g_trackedMemoryLock);
+    assert (res == 0);
 }
 
 static void* mallocFunction(size_t size, const char *file, int line)
 {
-    pthread_rwlock_rdlock(&g_trackedMemoryLock);
-
     header_t* entry = malloc(size + sizeof(header_t));
     if (entry != NULL)
     {
-        atomic_add64(&g_allocatedMemory, size, g_allocLock);
         uint64_t newCount = atomic_add64(&g_allocationCount, 1, g_allocLock);
         init_memory_entry(entry, size, file, line, newCount);
-
-        if (should_be_tracked(entry))
-        {
-            track_item(&entry->link);
-        }
+        do_track_entry(entry, 1);
     }
-
-    pthread_rwlock_unlock(&g_trackedMemoryLock);
 
     return (void*)(&entry->data);
 }
 
 static void* reallocFunction (void *ptr, size_t size, const char *file, int line)
 {
-    pthread_rwlock_rdlock(&g_trackedMemoryLock);
-
     struct header_t* entry = NULL;
 
     if (ptr != NULL)
     {
         entry = container_of(ptr, header_t, data);
 
-        // untrack the item as realloc will change ptrs and we will need to put it to the correct bucket
-        if (should_be_tracked(entry))
-        {
-            untrack_item(&entry->link);
-        }
+        // untrack the item as realloc will free the memory and copy the contents elsewhere
+        do_track_entry(entry, 0);
     }
 
     void* toReturn = NULL;
-    void* newPtr = realloc((void*)entry, size + sizeof(header_t));
-    if (newPtr != NULL)
+    header_t* newEntry = (header_t*) realloc((void*)entry, size + sizeof(header_t));
+    if (newEntry != NULL)
     {
-        uint64_t newCount = atomic_add64(&g_allocationCount, 1, g_allocLock);
-        atomic_add64(&g_allocatedMemory, size - (entry ? entry->size : 0), g_allocLock);
+        entry = newEntry;
 
-        entry = (struct header_t*)newPtr;
+        uint64_t newCount = atomic_add64(&g_allocationCount, 1, g_allocLock);
         init_memory_entry(entry, size, file, line, newCount);
         toReturn = (void*)(&entry->data);
-
     }
 
-    if (entry && should_be_tracked(entry))
+    // either track the new memory, or add back the original one if realloc failed
+    if (entry)
     {
-        track_item(&entry->link);
+        do_track_entry(entry, 1);
     }
-
-    pthread_rwlock_unlock(&g_trackedMemoryLock);
 
     return toReturn;
 }
 
 static void freeFunction(void *ptr, const char *file, int line)
 {
-    pthread_rwlock_rdlock(&g_trackedMemoryLock);
     (void)file;
     (void)line;
 
     if (ptr != NULL)
     {
         header_t* entry = container_of(ptr, header_t, data);
-        atomic_add64(&g_allocatedMemory, -entry->size, g_allocLock);
-
-        if (should_be_tracked(entry))
-        {
-            untrack_item(&entry->link);
-        }
-
+        do_track_entry(entry, 0);
         free(entry);
     }
-
-    pthread_rwlock_unlock(&g_trackedMemoryLock);
 }
 
 int32_t CryptoNative_GetMemoryUse(uint64_t* totalUsed, uint64_t* allocationCount)
