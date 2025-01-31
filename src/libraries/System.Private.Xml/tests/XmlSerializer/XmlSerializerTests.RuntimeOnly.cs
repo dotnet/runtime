@@ -885,6 +885,39 @@ public static partial class XmlSerializerTests
     }
 
     [Fact]
+    public static void Xml_TestTypeWithPrivateOrNoSetters()
+    {
+        // Private setters are a problem. Traditional XmlSerializer doesn't know what to do with them.
+        // This should fail when constructing the serializer.
+#if ReflectionOnly
+        // For the moment, the reflection-based serializer doesn't throw until it does deserialization, because
+        // it doesn't do xml/type mapping in the constructor. This should change in the future with improvements to
+        // the reflection-based serializer that frontloads more work to make the actual serialization faster.
+        var ex = Record.Exception(() => SerializeAndDeserialize<TypeWithPrivateSetters>(new TypeWithPrivateSetters(39), "", null, true));
+        ex = AssertTypeAndUnwrap<InvalidOperationException>(ex);
+#else
+        var ex = Record.Exception(() => new XmlSerializer(typeof(TypeWithPrivateSetters)));
+#endif
+        Assert.IsType<InvalidOperationException>(ex);
+        Assert.Equal("Cannot deserialize type 'SerializationTypes.TypeWithPrivateSetters' because it contains property 'PrivateSetter' which has no public setter.", ex.Message);
+
+        // If there is no setter at all though, traditional XmlSerializer just doesn't include the property in the serialization.
+        // Therefore, the following should work. Although the serialized output isn't really worth much.
+        var noSetter = new TypeWithNoSetters(25);
+        var actualNoSetter = SerializeAndDeserialize<TypeWithNoSetters>(noSetter, WithXmlHeader("<TypeWithNoSetters xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\" />"));
+        Assert.NotNull(actualNoSetter);
+        Assert.StrictEqual(25, noSetter.NoSetter);
+        Assert.StrictEqual(200, actualNoSetter.NoSetter); // 200 is what the default constructor sets it to.
+
+        // But private setters aren't a problem if the class is ISerializable.
+        var value = new TypeWithPrivateOrNoSettersButIsIXmlSerializable(32, 52);
+        var actual = SerializeAndDeserialize<TypeWithPrivateOrNoSettersButIsIXmlSerializable>(value, WithXmlHeader("<TypeWithPrivateOrNoSettersButIsIXmlSerializable>\r\n  <PrivateSetter>32</PrivateSetter>\r\n  <NoSetter>52</NoSetter>\r\n</TypeWithPrivateOrNoSettersButIsIXmlSerializable>"));
+        Assert.NotNull(actual);
+        Assert.StrictEqual(value.PrivateSetter, actual.PrivateSetter);
+        Assert.StrictEqual(value.NoSetter, actual.NoSetter);
+    }
+
+    [Fact]
     public static void Xml_TestTypeWithListPropertiesWithoutPublicSetters()
     {
         var value = new TypeWithListPropertiesWithoutPublicSetters();
@@ -915,6 +948,7 @@ public static partial class XmlSerializerTests
   <AnotherStringList>
     <string>AnotherFoo</string>
   </AnotherStringList>
+  <AlwaysNullNullableList xsi:nil=""true"" />
 </TypeWithListPropertiesWithoutPublicSetters>");
         Assert.StrictEqual(value.PropertyWithXmlElementAttribute.Count, actual.PropertyWithXmlElementAttribute.Count);
         Assert.Equal(value.PropertyWithXmlElementAttribute[0], actual.PropertyWithXmlElementAttribute[0]);
@@ -928,16 +962,23 @@ public static partial class XmlSerializerTests
         Assert.Equal(value.AnotherStringList[0], actual.AnotherStringList[0]);
         Assert.StrictEqual(value.PublicIntListField[0], actual.PublicIntListField[0]);
         Assert.StrictEqual(value.PublicIntListFieldWithXmlElementAttribute[0], actual.PublicIntListFieldWithXmlElementAttribute[0]);
+        // In an annoyingly inconsistent behavior, if a list property does not have a setter at all, the serializer is smart enough to
+        // not try to set an empty list. So the property will will be either empty or null depending on how the default constructor leaves it.
+        Assert.Null(actual.AlwaysNullList);
+        Assert.Null(actual.AlwaysNullNullableList);
+        // Fields are always settable though, so the serializer always takes that liberty. *smh*
+        Assert.Empty(actual.AlwaysNullListField);
 
         // Try with an empty list
         value = new TypeWithListPropertiesWithoutPublicSetters();
         actual = SerializeAndDeserialize<TypeWithListPropertiesWithoutPublicSetters>(value,
 @"<?xml version=""1.0""?>
 <TypeWithListPropertiesWithoutPublicSetters xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:xsd=""http://www.w3.org/2001/XMLSchema"">
-  <PublicIntListField />
-  <IntList />
-  <StringList />
-  <AnotherStringList />
+    <PublicIntListField />
+    <IntList />
+    <StringList />
+    <AnotherStringList />
+    <AlwaysNullNullableList xsi:nil=""true"" />
 </TypeWithListPropertiesWithoutPublicSetters>");
         Assert.NotNull(actual);
         Assert.Empty(actual.PublicIntListField);
@@ -945,7 +986,13 @@ public static partial class XmlSerializerTests
         Assert.Empty(actual.StringList);
         Assert.Empty(actual.AnotherStringList);
         Assert.Empty(actual.PropertyWithXmlElementAttribute);
+        // In an annoyingly inconsistent behavior, if a list property does not have a setter at all, the serializer is smart enough to
+        // not try to set an empty list. So the property will will be either empty or null depending on how the default constructor leaves it.
         Assert.Empty(actual.PublicIntListFieldWithXmlElementAttribute);
+        Assert.Null(actual.AlwaysNullList);
+        Assert.Null(actual.AlwaysNullNullableList);
+        // Fields are always settable though, so the serializer always takes that liberty. *smh*
+        Assert.Empty(actual.AlwaysNullListField);
 
         // And also try with a null list
         value = new TypeWithListPropertiesWithoutPublicSetters(createLists: false);
@@ -954,6 +1001,7 @@ public static partial class XmlSerializerTests
 <TypeWithListPropertiesWithoutPublicSetters xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:xsd=""http://www.w3.org/2001/XMLSchema"">
   <StringList xsi:nil=""true"" />
   <AnotherStringList />
+  <AlwaysNullNullableList xsi:nil=""true"" />
 </TypeWithListPropertiesWithoutPublicSetters>");
         Assert.NotNull(actual);
         Assert.Empty(actual.PublicIntListField);
@@ -961,7 +1009,87 @@ public static partial class XmlSerializerTests
         Assert.Empty(actual.StringList);
         Assert.Empty(actual.AnotherStringList);
         Assert.Empty(actual.PropertyWithXmlElementAttribute);
+        // In an annoyingly inconsistent behavior, if a list property does not have a setter at all, the serializer is smart enough to
+        // not try to set an empty list. So the property will will be either empty or null depending on how the default constructor leaves it.
         Assert.Empty(actual.PublicIntListFieldWithXmlElementAttribute);
+        Assert.Null(actual.AlwaysNullList);
+        Assert.Null(actual.AlwaysNullNullableList);
+        // Fields are always settable though, so the serializer always takes that liberty. *smh*
+        Assert.Empty(actual.AlwaysNullListField);
+
+        // And finally, a corner case where "private-setter" property is left null by the default constructor, but the serializer sees it as null
+        // and thinks it can call the private setter, so it tries to make it empty and fails. But again, note that the fields and
+        // no-setter-at-all properties that come first do not cause the failure.
+        var cannotDeserialize = new TypeWithGetOnlyListsThatDoNotInitialize();
+        var ex = Record.Exception(() =>
+        {
+            SerializeAndDeserialize<TypeWithGetOnlyListsThatDoNotInitialize>(cannotDeserialize,
+@"<?xml version=""1.0"" encoding=""UTF-8""?>
+<TypeWithGetOnlyListsThatDoNotInitialize xmlns:xsd=""http://www.w3.org/2001/XMLSchema"" xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance""/>");
+        });
+        ex = AssertTypeAndUnwrap<InvalidOperationException>(ex);
+        // Attempt by method 'Microsoft.Xml.Serialization.GeneratedAssembly.XmlSerializationReaderTypeWithGetOnlyListsThatDoNotInitialize.Read2_Item(Boolean, Boolean)' to access method 'SerializationTypes.TypeWithGetOnlyListsThatDoNotInitialize.set_AlwaysNullPropertyPrivateSetter(System.Collections.Generic.List`1<Int32>)' failed.
+        Assert.Contains("AlwaysNullPropertyPrivateSetter", ex.Message);
+    }
+
+    [Fact]
+    public static void Xml_HiddenMembersChangeMappings()
+    {
+        var baseValue = new BaseWithElementsAttributesPropertiesAndLists() { StringField = "BString", TextField = "BText", ListField = new () { "one", "two" }, ListProp = new () { "three" } };
+        var baseActual = SerializeAndDeserialize<BaseWithElementsAttributesPropertiesAndLists>(baseValue, WithXmlHeader("<BaseWithElementsAttributesPropertiesAndLists xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\" TextField=\"BText\">\r\n  <StringField>BString</StringField>\r\n  <ListField>\r\n    <string>one</string>\r\n    <string>two</string>\r\n  </ListField>\r\n  <ListProp>\r\n    <string>three</string>\r\n  </ListProp>\r\n</BaseWithElementsAttributesPropertiesAndLists>"));
+        Assert.IsType<BaseWithElementsAttributesPropertiesAndLists>(baseActual);
+        Assert.Equal(baseValue.StringField, baseActual.StringField);
+        Assert.Equal(baseValue.TextField, baseActual.TextField);
+        Assert.Equal(baseValue.ListProp.ToArray(), baseActual.ListProp.ToArray());
+        Assert.Equal(baseValue.ListField.ToArray(), baseActual.ListField.ToArray());
+
+        var value1 = new HideElementWithAttribute() { StringField = "DString" };
+        ((BaseWithElementsAttributesPropertiesAndLists)value1).Copy(baseValue);
+        var ex = Record.Exception(() => { SerializeAndDeserialize<HideElementWithAttribute>(value1, null); });
+        AssertXmlMappingException(ex, "SerializationTypes.HideElementWithAttribute", "StringField", "Member 'HideElementWithAttribute.StringField' hides inherited member 'BaseWithElementsAttributesPropertiesAndLists.StringField', but has different custom attributes.");
+
+        var value2 = new HideAttributeWithElement() { TextField = "DText" };
+        ((BaseWithElementsAttributesPropertiesAndLists)value2).Copy(baseValue);
+        ex = Record.Exception(() => { SerializeAndDeserialize<HideAttributeWithElement>(value2, null); });
+        AssertXmlMappingException(ex, "SerializationTypes.HideAttributeWithElement", "TextField", "Member 'HideAttributeWithElement.TextField' hides inherited member 'BaseWithElementsAttributesPropertiesAndLists.TextField', but has different custom attributes.");
+
+        var value3 = new HideWithNewType() { TextField = 3 };
+        ((BaseWithElementsAttributesPropertiesAndLists)value3).Copy(baseValue);
+        ex = Record.Exception(() => { SerializeAndDeserialize<HideWithNewType>(value3, null); });
+        AssertXmlMappingException(ex, "SerializationTypes.HideWithNewType", "TextField", "Member HideWithNewType.TextField of type System.Int32 hides base class member BaseWithElementsAttributesPropertiesAndLists.TextField of type System.String. Use XmlElementAttribute or XmlAttributeAttribute to specify a new name.");
+
+        var value4 = new HideWithNewName() { StringField = "DString" };
+        ((BaseWithElementsAttributesPropertiesAndLists)value4).Copy(baseValue);
+        ex = Record.Exception(() => { SerializeAndDeserialize<HideWithNewName>(value4, null); });
+        AssertXmlMappingException(ex, "SerializationTypes.HideWithNewName", "StringField", "Member 'HideWithNewName.StringField' hides inherited member 'BaseWithElementsAttributesPropertiesAndLists.StringField', but has different custom attributes.");
+
+        // Funny tricks can be played with XmlArray/Element when it comes to Lists though.
+        // Stuff kind of doesn't blow up, but hidden members still get left out.
+        var value5 = new HideArrayWithElement() { ListField = new() { "ONE", "TWO", "THREE" } };
+        ((BaseWithElementsAttributesPropertiesAndLists)value5).Copy(baseValue);
+        var actual5 = SerializeAndDeserialize<HideArrayWithElement>(value5, WithXmlHeader(
+@"<HideArrayWithElement xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:xsd=""http://www.w3.org/2001/XMLSchema"" TextField=""BText"">
+  <StringField>BString</StringField>
+  <ListField>ONE</ListField>
+  <ListField>TWO</ListField>
+  <ListField>THREE</ListField>
+  <ListProp>
+    <string>three</string>
+  </ListProp>
+</HideArrayWithElement>"));
+        Assert.IsType<HideArrayWithElement>(actual5);
+        Assert.Equal(value5.StringField, actual5.StringField);
+        Assert.Equal(value5.TextField, actual5.TextField);
+        Assert.Equal(value5.ListProp.ToArray(), actual5.ListProp.ToArray());
+        Assert.Equal(value5.ListField.ToArray(), actual5.ListField.ToArray());
+        // Not only are the hidden values not serialized, but the serialzier doesn't even try to do it's empty list thing
+        Assert.Null(((BaseWithElementsAttributesPropertiesAndLists)actual5).ListField);
+
+        // But at the end of the day, you still can't get away with changing the name of the element
+        var value6 = new HideArrayWithRenamedElement() { ListField = new() { "FOUR", "FIVE" } };
+        ((BaseWithElementsAttributesPropertiesAndLists)value6).Copy(baseValue);
+        ex = Record.Exception(() => { SerializeAndDeserialize<HideArrayWithRenamedElement>(value6, null); });
+        AssertXmlMappingException(ex, "SerializationTypes.HideArrayWithRenamedElement", "ListField", "Member 'HideArrayWithRenamedElement.ListField' hides inherited member 'BaseWithElementsAttributesPropertiesAndLists.ListField', but has different custom attributes.");
     }
 
     [Fact]

@@ -516,6 +516,31 @@ public static partial class XmlSerializerTests
         Assert.StrictEqual(value.IntProperty, actual.IntProperty);
         Assert.Equal(value.StringProperty, actual.StringProperty);
         Assert.Equal(value.ListProperty.ToArray(), actual.ListProperty.ToArray());
+
+        BaseClassWithSamePropertyName castAsBase = (BaseClassWithSamePropertyName)actual;
+        Assert.Equal(0, castAsBase.IntProperty);
+        Assert.Null(castAsBase.StringProperty);
+        Assert.Null(castAsBase.ListProperty);
+
+        // Try again with a null list to ensure the correct property is deserialized to an empty list
+        value = new DerivedClassWithSameProperty() { DateTimeProperty = new DateTime(100), IntProperty = 5, StringProperty = "TestString", ListProperty = null };
+        actual = SerializeAndDeserialize<DerivedClassWithSameProperty>(value,
+@"<?xml version=""1.0""?>
+<DerivedClassWithSameProperty xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:xsd=""http://www.w3.org/2001/XMLSchema"">
+  <StringProperty>TestString</StringProperty>
+  <IntProperty>5</IntProperty>
+  <DateTimeProperty>0001-01-01T00:00:00.00001</DateTimeProperty>
+</DerivedClassWithSameProperty>");
+
+        Assert.StrictEqual(value.DateTimeProperty, actual.DateTimeProperty);
+        Assert.StrictEqual(value.IntProperty, actual.IntProperty);
+        Assert.Equal(value.StringProperty, actual.StringProperty);
+        Assert.Empty(actual.ListProperty.ToArray());
+
+        castAsBase = (BaseClassWithSamePropertyName)actual;
+        Assert.Equal(0, castAsBase.IntProperty);
+        Assert.Null(castAsBase.StringProperty);
+        Assert.Null(castAsBase.ListProperty);
     }
 
     [Fact]
@@ -1185,6 +1210,53 @@ WithXmlHeader(@"<SimpleType xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instanc
         Assert.StrictEqual(value.IntProperty, actual.IntProperty);
         Assert.Equal(value.StringProperty, actual.StringProperty);
         Assert.Equal(value.ListProperty.ToArray(), actual.ListProperty.ToArray());
+
+        // All base properties have been hidden, so they should be default here in the base class
+        BaseClassWithSamePropertyName castAsBase = (BaseClassWithSamePropertyName)actual;
+        Assert.StrictEqual(default(DateTime), castAsBase.DateTimeProperty);
+        Assert.StrictEqual(0, castAsBase.IntProperty);
+        Assert.Null(castAsBase.StringProperty);
+        Assert.Null(castAsBase.ListProperty);
+
+        // IntProperty and StringProperty are not hidden in Derived2, so they should be set here in the middle
+        DerivedClassWithSameProperty castAsMiddle = (DerivedClassWithSameProperty)actual;
+        Assert.StrictEqual(value.IntProperty, castAsMiddle.IntProperty);
+        Assert.Equal(value.StringProperty, castAsMiddle.StringProperty);
+        // The other properties should be default
+        Assert.StrictEqual(default(DateTime), castAsMiddle.DateTimeProperty);
+        Assert.Null(castAsMiddle.ListProperty);
+
+
+        // Try again with a null list to ensure the correct property is deserialized to an empty list
+        value = new DerivedClassWithSameProperty2() { DateTimeProperty = new DateTime(100, DateTimeKind.Utc), IntProperty = 5, StringProperty = "TestString", ListProperty = null };
+
+        actual = SerializeAndDeserialize(value,
+@"<?xml version=""1.0""?>
+<DerivedClassWithSameProperty2 xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:xsd=""http://www.w3.org/2001/XMLSchema"">
+  <StringProperty>TestString</StringProperty>
+  <IntProperty>5</IntProperty>
+  <DateTimeProperty>0001-01-01T00:00:00.00001Z</DateTimeProperty>
+</DerivedClassWithSameProperty2>");
+
+        Assert.StrictEqual(value.DateTimeProperty, actual.DateTimeProperty);
+        Assert.StrictEqual(value.IntProperty, actual.IntProperty);
+        Assert.Equal(value.StringProperty, actual.StringProperty);
+        Assert.Empty(actual.ListProperty.ToArray());
+
+        // All base properties have been hidden, so they should be default here in the base class
+        castAsBase = (BaseClassWithSamePropertyName)actual;
+        Assert.StrictEqual(default(DateTime), castAsBase.DateTimeProperty);
+        Assert.StrictEqual(0, castAsBase.IntProperty);
+        Assert.Null(castAsBase.StringProperty);
+        Assert.Null(castAsBase.ListProperty);
+
+        // IntProperty and StringProperty are not hidden in Derived2, so they should be set here in the middle
+        castAsMiddle = (DerivedClassWithSameProperty)actual;
+        Assert.StrictEqual(value.IntProperty, castAsMiddle.IntProperty);
+        Assert.Equal(value.StringProperty, castAsMiddle.StringProperty);
+        // The other properties should be default
+        Assert.StrictEqual(default(DateTime), castAsMiddle.DateTimeProperty);
+        Assert.Null(castAsMiddle.ListProperty);
     }
 
     [Fact]
@@ -2526,8 +2598,24 @@ WithXmlHeader(@"<SimpleType xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instanc
         var ex = exception as Exception;
         if (message != null)
             Assert.Contains(message, ex.Message);
-        Assert.NotNull((T)ex.InnerException);
+        Assert.NotNull(ex.InnerException);
         return ex.InnerException;
+    }
+
+    private static void AssertXmlMappingException(Exception exception, string typeName, string fieldName, string msg = null)
+    {
+        var ex = exception;
+#if ReflectionOnly
+        // The ILGen Serializer does XmlMapping during serializer ctor and lets the exception out cleanly.
+        // The Reflection Serializer does XmlMapping in the Serialize() call and wraps the resulting exception
+        //      inside a catch-all IOE in Serialize().
+        ex = AssertTypeAndUnwrap<InvalidOperationException>(ex, "There was an error generating the XML document");
+#endif
+        ex = AssertTypeAndUnwrap<InvalidOperationException>(ex, $"There was an error reflecting type '{typeName}'");
+        ex = AssertTypeAndUnwrap<InvalidOperationException>(ex, $"There was an error reflecting field '{fieldName}'");
+        Assert.IsType<InvalidOperationException>(ex);
+        if (msg != null)
+            Assert.Contains(msg, ex.Message);
     }
 
     private static string Serialize<T>(T value, string baseline, Func<XmlSerializer> serializerFactory = null,
