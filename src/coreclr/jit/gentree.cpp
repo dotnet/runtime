@@ -2034,14 +2034,14 @@ bool GenTreeCall::NeedsVzeroupper(Compiler* comp)
 
         case CT_HELPER:
         {
-            // Most helpers are well known to not use any floating-point or SIMD logic internally, but
-            // a few do exist so we need to ensure they are handled. They are identified by taking or
-            // returning a floating-point or SIMD type, regardless of how it is actually passed/returned.
-            checkSignature = true;
-
-            // A few other special cases exist that can't be found by signature alone, so we handle
+            // A few special cases exist that can't be found by signature alone, so we handle
             // those explicitly here instead.
             needsVzeroupper = IsHelperCall(comp, CORINFO_HELP_BULK_WRITEBARRIER);
+
+            // Most other helpers are well known to not use any floating-point or SIMD logic internally, but
+            // a few do exist so we need to ensure they are handled. They are identified by taking or
+            // returning a floating-point or SIMD type, regardless of how it is actually passed/returned.
+            checkSignature = !needsVzeroupper;
             break;
         }
 
