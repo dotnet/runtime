@@ -34,8 +34,8 @@ Java_net_dot_MonoRunner_freeNativeResources (JNIEnv* env, jobject thiz);
 
 /********* implementation *********/
 
-static char* g_bundle_path = NULL;
-static char* g_executable_path = NULL;
+static const char* g_bundle_path = NULL;
+static const char* g_executable_path = NULL;
 static unsigned int g_coreclr_domainId = 0;
 static void* g_coreclr_handle = NULL;
 
@@ -129,7 +129,7 @@ get_tpas_from_path(const char* dir_path, const char** tpas)
 }
 
 static int
-bundle_executable_path (const char* executable, const char* bundle_path, char** executable_path)
+bundle_executable_path (const char* executable, const char* bundle_path, const char** executable_path)
 {
     size_t executable_path_len = strlen(bundle_path) + strlen(executable) + 1; // +1 for '/'
     char* temp_path = (char*)malloc(sizeof(char) * executable_path_len + 1); // +1 for '\0'
@@ -168,7 +168,7 @@ free_resources ()
 }
 
 static int 
-mono_droid_execute_assembly (const char* executable_path, int managed_argc, const char** managed_argv, void* coreclr_handle, unsigned int coreclr_domainId)
+mono_droid_execute_assembly (const char* executable_path, void* coreclr_handle, unsigned int coreclr_domainId, int managed_argc, const char** managed_argv)
 {
     unsigned int rv;
     LOG_INFO ("Calling coreclr_execute_assembly");
@@ -178,9 +178,15 @@ mono_droid_execute_assembly (const char* executable_path, int managed_argc, cons
 }
 
 static int
-mono_droid_runtime_init (const char* bundle_path, const char* executable, const char* executable_path, int local_date_time_offset)
+mono_droid_runtime_init (const char* bundle_path, const char* executable, int local_date_time_offset)
 {
     LOG_INFO ("mono_droid_runtime_init (CoreCLR) called with executable: %s", executable);
+
+    if (bundle_executable_path(executable, bundle_path, &g_executable_path) < 0)
+    {
+        LOG_ERROR("Failed to resolve full path for: %s", executable);
+        return -1;
+    }
 
     chdir (bundle_path);
 
@@ -203,7 +209,7 @@ mono_droid_runtime_init (const char* bundle_path, const char* executable, const 
 
     LOG_INFO ("Calling coreclr_initialize");
     int rv = coreclr_initialize (
-		executable_path,
+		g_executable_path,
 		executable,
 		3,
 		appctx_keys,
@@ -239,25 +245,21 @@ Java_net_dot_MonoRunner_initRuntime (JNIEnv* env, jobject thiz, jstring j_files_
     strncpy_str (env, testresults_dir, j_testresults_dir, sizeof(testresults_dir));
     strncpy_str (env, entryPointLibName, j_entryPointLibName, sizeof(entryPointLibName));
 
-    g_bundle_path = (char*)malloc(sizeof(char) * (strlen(file_dir) + 1)); // +1 for '\0'
-    if (g_bundle_path == NULL)
+    size_t file_dir_len = strlen(file_dir);
+    char* bundle_path_tmp = (char*)malloc(sizeof(char) * (file_dir_len + 1)); // +1 for '\0'
+    if (bundle_path_tmp == NULL)
     {
         LOG_ERROR("Failed to allocate memory for bundle_path");
         return -1;
     }
-    strncpy(g_bundle_path, file_dir, strlen(file_dir) + 1);
-    
-    if (bundle_executable_path(entryPointLibName, g_bundle_path, &g_executable_path) < 0)
-    {
-        LOG_ERROR("Failed to resolve full path for: %s", entryPointLibName);
-        return -1;
-    }
+    strncpy(bundle_path_tmp, file_dir, file_dir_len + 1);
+    g_bundle_path = bundle_path_tmp;
 
     setenv ("HOME", g_bundle_path, true);
     setenv ("TMPDIR", cache_dir, true);
     setenv ("TEST_RESULTS_DIR", testresults_dir, true);
 
-    return mono_droid_runtime_init (g_bundle_path, entryPointLibName, g_executable_path, current_local_time);
+    return mono_droid_runtime_init (g_bundle_path, entryPointLibName, current_local_time);
 }
 
 int
@@ -293,7 +295,7 @@ Java_net_dot_MonoRunner_execEntryPoint (JNIEnv* env, jobject thiz, jstring j_ent
         managed_argv[i + 1] = (char*)((*env)->GetStringUTFChars(env, j_arg, NULL));
     }
 
-    int rv = mono_droid_execute_assembly (g_executable_path, managed_argc, managed_argv, g_coreclr_handle, g_coreclr_domainId);
+    int rv = mono_droid_execute_assembly (g_executable_path, g_coreclr_handle, g_coreclr_domainId, managed_argc, managed_argv);
 
     for (int i = 0; i < args_len; ++i)
     {

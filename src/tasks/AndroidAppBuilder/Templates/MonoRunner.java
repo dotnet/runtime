@@ -96,6 +96,7 @@ public class MonoRunner extends Instrumentation
         if (rv != 0) {
             Log.e("DOTNET", "Failed to initialize runtime, return-code=" + rv);
             freeNativeResources();
+            System.exit(rv);
         }
     }
 

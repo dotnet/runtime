@@ -48,9 +48,9 @@ invoke_external_native_api (void (*callback)(void));
 
 /********* implementation *********/
 
-static char* g_bundle_path = NULL;
-static char* g_executable = NULL;
-
+static const char* g_bundle_path = NULL;
+static MonoDomain* g_domain = NULL;
+static MonoAssembly* g_assembly = NULL;
 
 #define LOG_INFO(fmt, ...) __android_log_print(ANDROID_LOG_DEBUG, "DOTNET", fmt, ##__VA_ARGS__)
 #define LOG_ERROR(fmt, ...) __android_log_print(ANDROID_LOG_ERROR, "DOTNET", fmt, ##__VA_ARGS__)
@@ -231,8 +231,9 @@ cleanup_runtime_config (MonovmRuntimeConfigArguments *args, void *user_data)
 }
 
 static int
-mono_droid_runtime_init (const char* bundle_path, int local_date_time_offset)
+mono_droid_runtime_init (const char* bundle_path, const char* executable, int local_date_time_offset)
 {
+    LOG_INFO ("mono_droid_runtime_init (Mono) called with executable: %s", executable);
     // NOTE: these options can be set via command line args for adb or xharness, see AndroidSampleApp.csproj
 
     // uncomment for debug output:
@@ -316,6 +317,18 @@ mono_droid_runtime_init (const char* bundle_path, int local_date_time_offset)
 #endif // FULL_AOT
 #endif // FORCE_INTERPRETER
     
+    g_domain = mono_jit_init_version ("dotnet.android", "mobile");
+    if (g_domain == NULL) {
+        LOG_ERROR ("mono_jit_init_version failed");
+        return -1;
+    }
+
+    g_assembly = mono_droid_load_assembly (executable, NULL);
+    if (g_assembly == NULL) {
+        LOG_ERROR ("mono_droid_load_assembly failed");
+        return -1;
+    }
+
     return rv;
 }
 
@@ -327,23 +340,17 @@ free_resources ()
         free (g_bundle_path);
         g_bundle_path = NULL;
     }
-    if (g_executable)
+    if (g_assembly)
     {
-        free (g_executable);
-        g_executable = NULL;
+        mono_assembly_close (g_assembly);
+        g_assembly = NULL;
     }
 }
 
 static int 
-mono_droid_execute_assembly (const char *executable, int managed_argc, char* managed_argv[])
-{    
-    MonoDomain *domain = mono_jit_init_version ("dotnet.android", "mobile");
-    assert (domain);
-
-    MonoAssembly *assembly = mono_droid_load_assembly (executable, NULL);
-    assert (assembly);
-
-    LOG_INFO ("Calling mono_jit_exec: %s", executable);
+mono_droid_execute_assembly (MonoDomain* domain, MonoAssembly* assembly, int managed_argc, char* managed_argv[])
+{
+    LOG_INFO ("Calling mono_jit_exec");
     int rv = mono_jit_exec (domain, assembly, managed_argc, managed_argv);
     LOG_INFO ("Exit code: %d.", rv);
 
@@ -386,27 +393,21 @@ Java_net_dot_MonoRunner_initRuntime (JNIEnv* env, jobject thiz, jstring j_files_
     strncpy_str (env, testresults_dir, j_testresults_dir, sizeof(testresults_dir));
     strncpy_str (env, entryPointLibName, j_entryPointLibName, sizeof(entryPointLibName));
 
-    g_bundle_path = (char*)malloc(sizeof(char) * (strlen(file_dir) + 1)); // +1 for '\0'
-    if (g_bundle_path == NULL)
+    size_t file_dir_len = strlen(file_dir);
+    char* bundle_path_tmp = (char*)malloc(sizeof(char) * (file_dir_len + 1)); // +1 for '\0'
+    if (bundle_path_tmp == NULL)
     {
         LOG_ERROR("Failed to allocate memory for bundle_path");
         return -1;
     }
-    strncpy(g_bundle_path, file_dir, strlen(file_dir) + 1);
-
-    g_executable = (char*)malloc(sizeof(char) * (strlen(entryPointLibName) + 1)); // +1 for '\0'
-    if (g_executable == NULL)
-    {
-        LOG_ERROR("Failed to allocate memory for executable");
-        return -1;
-    }
-    strncpy(g_executable, entryPointLibName, strlen(entryPointLibName) + 1);
+    strncpy(bundle_path_tmp, file_dir, file_dir_len + 1);
+    g_bundle_path = bundle_path_tmp;
 
     setenv ("HOME", g_bundle_path, true);
     setenv ("TMPDIR", cache_dir, true);
     setenv ("TEST_RESULTS_DIR", testresults_dir, true);
 
-    return mono_droid_runtime_init (g_bundle_path, current_local_time);
+    return mono_droid_runtime_init (g_bundle_path, entryPointLibName, current_local_time);
 }
 
 int
@@ -414,9 +415,15 @@ Java_net_dot_MonoRunner_execEntryPoint (JNIEnv* env, jobject thiz, jstring j_ent
 {
     LOG_INFO("Java_net_dot_MonoRunner_execEntryPoint (Mono):");
 
-    if ((g_bundle_path == NULL) || (g_executable == NULL))
+    if (g_bundle_path == NULL)
     {
         LOG_ERROR("Bundle path or executable name not set");
+        return -1;
+    }
+
+    if (g_domain == NULL || g_assembly == NULL)
+    {
+        LOG_ERROR("Mono domain or assembly not initialized");
         return -1;
     }
 
@@ -430,7 +437,7 @@ Java_net_dot_MonoRunner_execEntryPoint (JNIEnv* env, jobject thiz, jstring j_ent
         managed_argv[i + 1] = (char*)((*env)->GetStringUTFChars(env, j_arg, NULL));
     }
 
-    int rv = mono_droid_execute_assembly (g_executable, managed_argc, managed_argv);
+    int rv = mono_droid_execute_assembly (g_domain, g_assembly, managed_argc, managed_argv);
 
     for (int i = 0; i < args_len; ++i)
     {
