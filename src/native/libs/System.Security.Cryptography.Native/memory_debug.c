@@ -9,40 +9,55 @@
 #include <assert.h>
 #include <stdatomic.h>
 
-static uint64_t atomic_add64(uint64_t* value, uint64_t addend, CRYPTO_RWLOCK* lock)
-{
-    if (API_EXISTS(CRYPTO_atomic_add64))
-    {
-        uint64_t result;
-        CRYPTO_atomic_add64(value, addend, &result, lock);
-        return result;
-    }
-
-    // TODO: test other compilers, solve for 32-bit platforms.
-    return __atomic_fetch_add(value, addend, __ATOMIC_SEQ_CST);
-}
-
 //
 // OpenSSL memory tracking/debugging facilities.
 //
-// We can use CRYPTO_set_mem_functions to replace allocation routines
-// in OpenSSL. This allows us to prepend each allocated memory with a
-// header that contains the size and source of the allocation, which
-// allows us to track how much memory is OpenSSL consuming (not including
-// malloc overhead).
+// We can use CRYPTO_set_mem_functions to replace allocation routines in
+// OpenSSL. This allows us to prepend each allocated memory with a header that
+// contains the size and source of the allocation, which allows us to track how
+// much memory is OpenSSL consuming (not including malloc overhead).
 //
-// Additionally, if requested, we can track all allocations over a period
-// of time and present them to managed code for analysis (via reflection APIs).
+// Additionally, if requested, we can track all allocations over a period of
+// time and present them to managed code for analysis (via reflection APIs).
 //
-// Given that there is an overhead associated with tracking, the feature
-// is gated behind the DOTNET_SYSTEM_NET_SECURITY_OPENSSL_MEMORY_DEBUG
-// environment variable and should not be enabled by default in production.
+// Given that there is an overhead associated with tracking, the feature is
+// gated behind the DOTNET_OPENSSL_MEMORY_DEBUG environment variable and should
+// not be enabled by default in production.
 //
-// To track all allocated objects in a given period, the allocated objects
-// are stringed in a circular, doubly-linked list. This allows us to do
-// O(1) insertion and deletion. All operations are done under lock to prevent
-// data corruption. To prevent lock contention over a single list, we maintain
+// To track all allocated objects in a given period, the allocated objects are
+// stringed in a circular, doubly-linked list. This allows us to do O(1)
+// insertion and deletion. All operations are done under lock to prevent data
+// corruption. To prevent lock contention over a single list, we maintain
 // multiple lists, each with its own lock and allocate them round-robin.
+//
+// Implementation notes:
+//
+// We want to introduce as little overhead as possible. As adding (and removing)
+// Items from a linked list requires holding a lock, we want to avoid doing it
+// when free-ing memory that was not tracked in those lists in the first place
+// (memory allocated before the tracking was enabled).
+//
+// To filter out only relevant allocations, we maintain a global counter of how
+// many allocations were performed. g_trackingEnabledSince denotes the index of
+// the last NOT tracked allocation (or UINT64_MAX if not tracking). The
+// following invariant is enforced:
+//
+//     entry->index > g_trackingEnabledSince iff the entry is present in tracking lists
+//
+// This allows us to skip manipulating linked list when toggling the tracking on
+// and off. We simply orphan all the linked list entries as we will not follow
+// any of the links ever during free and don't risk accessing freed memory.
+//
+// To prevent data corruption, we need to mutually exclude following operations
+//   - check g_trackingEnabledSince and add to/remove from linked lists if needed
+//     - done by malloc routines
+//   - set g_trackingEnabledSince and reset linked lists
+//     - done by EnableMemoryTracking
+//
+// For that, we use a read-write lock, the malloc routines use the read side (so
+// there may be multiple mallocs in flight) and EnableMemoryTracking uses the
+// write side (to exclude all other accesses). The RW lock effectively protects
+// the g_trackingEnabledSince variable
 //
 
 // helper macro for getting the pointer to containing type from a pointer to a member
@@ -60,19 +75,15 @@ typedef struct list_t
     pthread_mutex_t lock;
 } list_t;
 
-// Whether outstanding allocations should be tracked, UINT_MAX if tracking is disabled.
-static uint32_t g_trackingEnabledSince = UINT_MAX;
+// Whether outstanding allocations should be tracked, UINT64_MAX if tracking is
+// disabled.
+static uint64_t g_trackingEnabledSince = UINT64_MAX;
 // Static lists of tracked allocations.
 static list_t* g_trackedMemory = NULL;
-// Number of partitions (distinct lists in g_trackedMemory) to track outstanding allocations in.
+// Number of partitions (distinct lists in g_trackedMemory) to track outstanding
+// allocations in.
 static uint32_t kPartitionCount = 32;
-// Lock to protect the above globals. We are using rwlock reduce contention. Practically, we
-// need to exclude { EnableMemoryTracking, ForEachTrackedAllocation } and { mallocFunction,
-// reallocFunction, freeFunction } from running concurrently. Specifically, prevent race between
-// disabling tracking and inserting an allocation that would not be considered tracked.
-// 
-// Since memory hooks can run in parallel (due to locks on individual lists), we can use the
-// reader side for them, and writer side of the lock for EnableMemoryTracking and ForEachTrackedAllocation.
+// RW lock protecting g_trackingEnabledSince and g_trackedMemory.
 static pthread_rwlock_t g_trackedMemoryLock;
 
 // header for each tracked allocation
@@ -141,6 +152,19 @@ static void init_memory_entry(header_t* entry, size_t size, const char* file, in
     entry->file = file;
     list_link_init(&entry->link);
     entry->index = index;
+}
+
+static uint64_t atomic_add64(uint64_t* value, uint64_t addend, CRYPTO_RWLOCK* lock)
+{
+    if (API_EXISTS(CRYPTO_atomic_add64))
+    {
+        uint64_t result;
+        CRYPTO_atomic_add64(value, addend, &result, lock);
+        return result;
+    }
+
+    // TODO: test other compilers, solve for 32-bit platforms.
+    return __atomic_fetch_add(value, addend, __ATOMIC_SEQ_CST);
 }
 
 static int32_t should_be_tracked(header_t* entry)
@@ -275,10 +299,10 @@ void CryptoNative_EnableMemoryTracking(int32_t enable)
     }
     else
     {
-        // Clear the lists by unlinking the list heads, any existing items
-        // in the list will become orphaned in a "floating" circular list.
-        // We will not touch the links in those items during subsequent free
-        // calls due to setting g_trackingEnabledSince later in this function.
+        // Clear the lists by unlinking the list heads, any existing items in
+        // the list will become orphaned in a "floating" circular list.  We will
+        // not touch the links in those items during subsequent free calls due
+        // to setting g_trackingEnabledSince later in this function.
         for (uint32_t i = 0; i < kPartitionCount; i++)
         {
             list_t* list = &g_trackedMemory[i];
@@ -291,7 +315,7 @@ void CryptoNative_EnableMemoryTracking(int32_t enable)
         }
     }
 
-    g_trackingEnabledSince = enable ? (uint32_t)g_allocationCount : UINT_MAX;
+    g_trackingEnabledSince = enable ? g_allocationCount : UINT64_MAX;
 
     pthread_rwlock_unlock(&g_trackedMemoryLock);
 }
