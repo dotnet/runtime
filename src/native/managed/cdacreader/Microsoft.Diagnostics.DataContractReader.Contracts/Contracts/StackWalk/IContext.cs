@@ -8,15 +8,23 @@ namespace Microsoft.Diagnostics.DataContractReader.Contracts.StackWalkHelpers;
 
 internal interface IContext
 {
-    public static abstract uint Size { get; }
-    public static abstract uint DefaultContextFlags { get; }
+    public abstract uint Size { get; }
+    public abstract uint DefaultContextFlags { get; }
 
     public TargetPointer StackPointer { get; set; }
     public TargetPointer InstructionPointer { get; set; }
     public TargetPointer FramePointer { get; set; }
 
     public abstract void Clear();
-    public abstract void ReadFromAddress(Target target, TargetPointer address);
+    public unsafe void ReadFromAddress(Target target, TargetPointer address)
+    {
+        Span<byte> buffer = new byte[Size];
+        target.ReadBuffer(address, buffer);
+        FillFromBuffer(buffer);
+    }
+    public abstract void FillFromBuffer(Span<byte> buffer);
+    public abstract byte[] GetBytes();
+    public abstract IContext Clone();
     public abstract void Unwind(Target target);
 
     public static IContext GetContextForPlatform(Target target)

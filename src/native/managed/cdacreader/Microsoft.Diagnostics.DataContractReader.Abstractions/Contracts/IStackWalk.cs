@@ -5,11 +5,24 @@ using System;
 
 namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 
+public interface IStackDataFrameHandle { };
+public interface IStackWalkHandle { };
+
 internal interface IStackWalk : IContract
 {
     static string IContract.Name => nameof(StackWalk);
 
-    public void TestEntry() => throw new NotImplementedException();
+    public virtual IStackWalkHandle CreateStackWalk(ThreadData threadData) => throw new NotImplementedException();
+
+    public virtual bool Next(IStackWalkHandle stackWalkHandle) => throw new NotImplementedException();
+
+    public virtual IStackDataFrameHandle GetCurrentFrame(IStackWalkHandle stackWalkHandle) => throw new NotImplementedException();
+
+    public virtual byte[] GetRawContext(IStackDataFrameHandle stackDataFrameHandle) => throw new NotImplementedException();
+
+    public virtual TargetPointer GetFrameAddress(IStackDataFrameHandle stackDataFrameHandle) => throw new NotImplementedException();
+
+    public virtual void Print(IStackWalkHandle stackWalkHandle) => throw new NotImplementedException();
 }
 
 internal struct StackWalk : IStackWalk

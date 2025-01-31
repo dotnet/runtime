@@ -29,8 +29,8 @@ internal struct AMD64Context : IContext
         CONTEXT_KERNEL_CET = CONTEXT_AMD | 0x00000080,
     }
 
-    public static uint Size => 0x4d0;
-    public static uint DefaultContextFlags => (uint)ContextFlagsValues.CONTEXT_FULL;
+    public uint Size => 0x4d0;
+    public uint DefaultContextFlags => (uint)ContextFlagsValues.CONTEXT_FULL;
 
     public TargetPointer StackPointer
     {
@@ -53,11 +53,9 @@ internal struct AMD64Context : IContext
         Unwinder.AMD64Unwind(ref this, target);
     }
 
-    public unsafe void ReadFromAddress(Target target, TargetPointer address)
+    public unsafe void FillFromBuffer(Span<byte> buffer)
     {
-        Span<byte> buffer = new byte[Size];
-        target.ReadBuffer(address, buffer);
-        Span<AMD64Context> structSpan = MemoryMarshal.CreateSpan(ref this, sizeof(AMD64Context));
+        Span<AMD64Context> structSpan = MemoryMarshal.CreateSpan(ref this, 1);
         Span<byte> byteSpan = MemoryMarshal.Cast<AMD64Context, byte>(structSpan);
         if (buffer.Length > sizeof(AMD64Context))
         {
@@ -67,6 +65,19 @@ internal struct AMD64Context : IContext
         {
             buffer.CopyTo(byteSpan);
         }
+    }
+
+    public unsafe byte[] GetBytes()
+    {
+        Span<AMD64Context> structSpan = MemoryMarshal.CreateSpan(ref this, 1);
+        Span<byte> byteSpan = MemoryMarshal.AsBytes(structSpan);
+        return byteSpan.ToArray();
+    }
+
+    public IContext Clone()
+    {
+        AMD64Context clone = this;
+        return clone;
     }
 
     public void Clear()

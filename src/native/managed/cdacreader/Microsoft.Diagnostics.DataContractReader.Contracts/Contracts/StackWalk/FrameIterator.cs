@@ -13,6 +13,40 @@ namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 
 internal sealed class FrameIterator
 {
+    private readonly Target target;
+    private readonly TargetPointer terminator;
+    private TargetPointer currentFramePointer;
+    internal Data.Frame CurrentFrame => target.ProcessedData.GetOrAdd<Data.Frame>(currentFramePointer);
+
+    public TargetPointer CurrentFrameAddress => currentFramePointer;
+
+    public FrameIterator(Target target, ThreadData threadData)
+    {
+        this.target = target;
+        terminator = new TargetPointer(target.PointerSize == 8 ? ulong.MaxValue : uint.MaxValue);
+        currentFramePointer = threadData.Frame;
+    }
+
+    public bool IsValid()
+    {
+        return currentFramePointer != terminator;
+    }
+
+    public bool Next()
+    {
+        if (currentFramePointer == terminator)
+            return false;
+
+        currentFramePointer = CurrentFrame.Next;
+        return true;
+    }
+
+
+    public bool TryUpdateContext(ref IContext context)
+    {
+        return TryUpdateContext(target, CurrentFrame, ref context);
+    }
+
     public static IEnumerable<Data.Frame> EnumerateFrames(Target target, TargetPointer framePointer)
     {
         TargetPointer terminator = new TargetPointer(target.PointerSize == 8 ? ulong.MaxValue : uint.MaxValue);
@@ -66,6 +100,16 @@ internal sealed class FrameIterator
         return false;
     }
 
+    public bool IsInlinedWithActiveCall()
+    {
+        if (CurrentFrame.Type != DataType.InlinedCallFrame)
+        {
+            return false;
+        }
+        Data.InlinedCallFrame inlinedCallFrame = target.ProcessedData.GetOrAdd<Data.InlinedCallFrame>(currentFramePointer);
+        return inlinedCallFrame.CallerReturnAddress != 0;
+    }
+
     public static void PrintFrame(Target target, Data.Frame frame)
     {
         switch (frame.Type)
@@ -94,14 +138,14 @@ internal sealed class FrameIterator
 
     public static void Print(InlinedCallFrame inlinedCallFrame)
     {
-        Console.WriteLine($"[InlinedCallFrame: IP={inlinedCallFrame.CallerReturnAddress}, SP={inlinedCallFrame.CallSiteSP}, FP={inlinedCallFrame.CalleeSavedFP}]");
+        Console.WriteLine($"[{nameof(InlinedCallFrame),-30}: Address={inlinedCallFrame.Address} IP={inlinedCallFrame.CallerReturnAddress}, SP={inlinedCallFrame.CallSiteSP}, FP={inlinedCallFrame.CalleeSavedFP}]");
     }
 
     public static void Print(Target target, SoftwareExceptionFrame softwareExceptionFrame)
     {
         IContext context = IContext.GetContextForPlatform(target);
         context.ReadFromAddress(target, softwareExceptionFrame.TargetContext);
-        Console.WriteLine($"[SoftwareExceptionFrame: IP={context.InstructionPointer.Value:x16}, SP={context.StackPointer.Value:x16}, FP={context.FramePointer.Value:x16}]");
+        Console.WriteLine($"[{nameof(SoftwareExceptionFrame),-30}: Address={softwareExceptionFrame.Address} IP={context.InstructionPointer.Value:x16}, SP={context.StackPointer.Value:x16}, FP={context.FramePointer.Value:x16}]");
     }
 
     public static void Print(HelperMethodFrame helperMethodFrame)
