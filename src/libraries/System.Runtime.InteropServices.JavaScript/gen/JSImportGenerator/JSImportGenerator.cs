@@ -201,9 +201,55 @@ namespace Microsoft.Interop.JavaScript
         {
             var diagnostics = new GeneratorDiagnosticsBag(new DescriptorProvider(), incrementalContext.DiagnosticLocation, SR.ResourceManager, typeof(FxResources.Microsoft.Interop.JavaScript.JSImportGenerator.SR));
 
+            // We need to add the implicit exception and return arguments to the signature and ensure they are initialized before we start to do any marshalling.
+            const int NumImplicitArguments = 2;
+
+            ImmutableArray<TypePositionInfo> originalElementInfo = incrementalContext.SignatureContext.SignatureContext.ElementTypeInformation;
+
+            ImmutableArray<TypePositionInfo>.Builder typeInfoBuilder = ImmutableArray.CreateBuilder<TypePositionInfo>(originalElementInfo.Length + NumImplicitArguments);
+
+            TypePositionInfo nativeOnlyParameterTemplate = new TypePositionInfo(
+                SpecialTypeInfo.Void,
+                new JSMarshallingInfo(
+                    NoMarshallingInfo.Instance,
+                    new JSInvalidTypeInfo()))
+            {
+                ManagedIndex = TypePositionInfo.UnsetIndex,
+            };
+
+            typeInfoBuilder.Add(
+                // Add the exception argument
+                nativeOnlyParameterTemplate with
+                {
+                    InstanceIdentifier = Constants.ArgumentException,
+                    NativeIndex = 0,
+                });
+
+            typeInfoBuilder.Add(
+                // Add the incoming return argument
+                nativeOnlyParameterTemplate with
+                {
+                    InstanceIdentifier = Constants.ArgumentReturn,
+                    NativeIndex = 1,
+                });
+
+            foreach (var info in originalElementInfo)
+            {
+                if (info.IsNativeReturnPosition)
+                {
+                    typeInfoBuilder.Add(info);
+                }
+                else
+                {
+                    typeInfoBuilder.Add(info with { NativeIndex = info.NativeIndex + NumImplicitArguments });
+                }
+            }
+
+            ImmutableArray<TypePositionInfo> finalElementInfo = typeInfoBuilder.ToImmutable();
+
             // Generate stub code
             var stubGenerator = new ManagedToNativeStubGenerator(
-                incrementalContext.SignatureContext.SignatureContext.ElementTypeInformation,
+                finalElementInfo,
                 setLastError: false,
                 diagnostics,
                 new CompositeMarshallingGeneratorResolver(
@@ -258,14 +304,6 @@ namespace Microsoft.Interop.JavaScript
                     Block(
                         List<StatementSyntax>(
                             [
-                                Declare(jsMarshalerArgument, Constants.ArgumentException, true),
-                                MethodInvocationStatement(
-                                    IdentifierName(Constants.ArgumentException),
-                                    IdentifierName("Initialize")),
-                                Declare(jsMarshalerArgument, Constants.ArgumentReturn, true),
-                                MethodInvocationStatement(
-                                    IdentifierName(Constants.ArgumentReturn),
-                                    IdentifierName("Initialize")),
                                 Declare(SpanOf(jsMarshalerArgument), Constants.ArgumentsBuffer,
                                     StackAllocArrayCreationExpression(
                                         ArrayType(jsMarshalerArgument)
@@ -275,12 +313,8 @@ namespace Microsoft.Interop.JavaScript
                                             InitializerExpression(
                                                 SyntaxKind.ArrayInitializerExpression,
                                                 SeparatedList(
-                                                    (IEnumerable<ExpressionSyntax>)[
-                                                        IdentifierName(Constants.ArgumentException),
-                                                        IdentifierName(Constants.ArgumentReturn),
-                                                        ..parameters.Parameters
-                                                            .Select(p => IdentifierName(p.Identifier))
-                                                    ])))),
+                                                    parameters.Parameters
+                                                            .Select(p => (ExpressionSyntax)IdentifierName(p.Identifier)))))),
                                 MethodInvocationStatement(
                                     IdentifierName(Constants.JSFunctionSignatureGlobal),
                                     IdentifierName("InvokeJS"),

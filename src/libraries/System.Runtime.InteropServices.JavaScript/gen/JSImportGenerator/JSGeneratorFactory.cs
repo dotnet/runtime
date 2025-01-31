@@ -25,6 +25,13 @@ namespace Microsoft.Interop.JavaScript
                     NotSupportedDetails = SR.InOutRefNotSupported
                 });
             }
+
+            if (MarshallerHelpers.GetMarshalDirection(info, context) != MarshalDirection.UnmanagedToManaged && info.ManagedIndex == TypePositionInfo.UnsetIndex)
+            {
+                // Use the InitOnlyJSGenerator for native-only parameters.
+                return ResolvedGenerator.Resolved(new ImplicitArgumentGenerator(info, context));
+            }
+
             return Create(info, info.MarshallingAttributeInfo as JSMarshallingInfo, context).Generator;
         }
 

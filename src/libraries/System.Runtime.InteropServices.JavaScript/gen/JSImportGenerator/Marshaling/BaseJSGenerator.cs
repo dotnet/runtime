@@ -42,12 +42,11 @@ namespace Microsoft.Interop.JavaScript
                 var (_, js) = context.GetIdentifiers(TypeInfo);
                 return [
                     ExpressionStatement(
-                        AssignmentExpression(
-                            SyntaxKind.SimpleAssignmentExpression,
-                            IdentifierName(js),
-                            LiteralExpression(SyntaxKind.DefaultLiteralExpression)
-                        )
-                    )
+                        InvocationExpression(
+                            MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
+                                IdentifierName(js),
+                                IdentifierName("Initialize")),
+                            ArgumentList()))
                 ];
             }
 
