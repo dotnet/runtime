@@ -367,7 +367,6 @@ namespace Microsoft.Interop.JavaScript
 
             const string innerWrapperName = "__Stub";
 
-            // TODO: We need to initialize __retVal_native from __arguments_buffer (or fix it up in the caller) as it comes in with some required state
             BlockSyntax wrapperToInnerStubBlock = Block(
                 CreateWrapperToInnerStubCall(signatureElements, innerWrapperName),
                 GenerateInnerLocalFunction(incrementalContext, innerWrapperName, stubGenerator));
