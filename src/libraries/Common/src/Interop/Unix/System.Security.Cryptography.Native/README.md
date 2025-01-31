@@ -42,28 +42,34 @@ locks/synchronization during each allocation) and may cause performance penalty.
 ### Example usage
 
 ```cs
-Type cryptoInterop = typeof(RandomNumberGenerator).Assembly.GetTypes().First(t => t.Name == "Crypto");
-cryptoInterop.InvokeMember("EnableMemoryTracking", BindingFlags.InvokeMethod | BindingFlags.NonPublic | BindingFlags.Static, null, null, null);
+// all above mentioned APIs are accessible via "private reflection"
+BindingFlags flags = BindingFlags.InvokeMethod | BindingFlags.NonPublic | BindingFlags.Static;
+var cryptoInterop = typeof(RandomNumberGenerator).Assembly.GetTypes().First(t => t.Name == "Crypto");
 
+// enable tracking, this clears up any previously tracked allocations
+cryptoInterop.InvokeMember("EnableMemoryTracking", flags, null, null, null);
+
+// do some work that includes OpenSSL
 HttpClient client = new HttpClient();
-await client.GetAsync("https://www.google.com");
+await client.GetAsync("https://www.microsoft.com");
+
+// stop tracking (this step is optional)
+cryptoInterop.InvokeMember("DisableMemoryTracking", flags, null, null, null);
 
 using var process = Process.GetCurrentProcess();
 Console.WriteLine($"Bytes known to GC [{GC.GetTotalMemory(false)}], process working set [{process.WorkingSet64}]");
-Console.WriteLine("OpenSSL memory {0}", cryptoInterop.InvokeMember("GetOpenSslAllocatedMemory", BindingFlags.InvokeMethod | BindingFlags.NonPublic | BindingFlags.Static, null, null, null));
-Console.WriteLine("OpenSSL allocations {0}", cryptoInterop.InvokeMember("GetOpenSslAllocationCount", BindingFlags.InvokeMethod | BindingFlags.NonPublic | BindingFlags.Static, null, null, null));
+Console.WriteLine("OpenSSL - currently allocated memory: {0} B", cryptoInterop.InvokeMember("GetOpenSslAllocatedMemory", flags, null, null, null));
+Console.WriteLine("OpenSSL - total allocations since start: {0}", cryptoInterop.InvokeMember("GetOpenSslAllocationCount", flags, null, null, null));
 
-// tally the allocations by the file+line combination
-Dictionary<(IntPtr file, int line), int> allAllocations = new Dictionary<(IntPtr file, int line), int>();
-Action<IntPtr, int, IntPtr, int> callback = (ptr, size, namePtr, line) =>
+Dictionary<(IntPtr file, int line), ulong> allAllocations = new();
+Action<IntPtr, ulong, IntPtr, int> callback = (ptr, size, namePtr, line) =>
 {
     CollectionsMarshal.GetValueRefOrAddDefault(allAllocations, (namePtr, line), out _) += size;
 };
-cryptoInterop.InvokeMember("ForEachTrackedAllocation", BindingFlags.InvokeMethod | BindingFlags.NonPublic | BindingFlags.Static | BindingFlags.Instance, null, null, new object[] { callback });
+cryptoInterop.InvokeMember("ForEachTrackedAllocation", flags, null, null, [callback]);
 
-// print the allocations by volume (descending)
-System.Console.WriteLine("Total allocated OpenSSL memory by location:");
-foreach (var ((filenameptr, line), total) in allAllocations.OrderByDescending(kvp => kvp.Value))
+Console.WriteLine("Total allocated OpenSSL memory by location");
+foreach (var ((filenameptr, line), total) in allAllocations.OrderByDescending(kvp => kvp.Value).Take(10))
 {
     string filename = Marshal.PtrToStringUTF8(filenameptr);
     Console.WriteLine($"{total:N0} B from {filename}:{line}");
