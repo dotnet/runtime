@@ -920,6 +920,7 @@ namespace System.IO.Compression.Tests
                 Assert.Equal(0x00, originalLocalVersionToExtract);
                 Assert.Equal(0x00, originalCentralDirectoryVersionToExtract);
 
+                // Write the example data to the stream. We expect to be able to read it (and the entry contents) successfully.
                 updatedStream.Write(s_inconsistentVersionToExtract);
                 updatedStream.Seek(0, SeekOrigin.Begin);
 
@@ -983,7 +984,7 @@ namespace System.IO.Compression.Tests
             0x46, 0xd7, 0x6c, 0x45,
             // compressed size
             0x0c, 0x00, 0x00, 0x00,
-            // UNcompressed size
+            // uncompressed size
             0x0a, 0x00, 0x00, 0x00,
             // file name length
             0x09, 0x00,
@@ -1012,7 +1013,7 @@ namespace System.IO.Compression.Tests
             0x46, 0xd7, 0x6c, 0x45,
             // compressed size
             0x0c, 0x00, 0x00, 0x00,
-            // UNcompressed size
+            // uncompressed size
             0x0a, 0x00, 0x00, 0x00,
             // file name length
             0x09, 0x00,
@@ -1064,7 +1065,7 @@ namespace System.IO.Compression.Tests
             0x0c, 0x7e, 0x7f, 0xd8,
             // compressed size
             0xff, 0xff, 0xff, 0xff,
-            // UNcompressed size
+            // uncompressed size
             0xff, 0xff, 0xff, 0xff,
             // file name length
             0x08, 0x00,
@@ -1115,7 +1116,7 @@ namespace System.IO.Compression.Tests
             0x0c, 0x7e, 0x7f, 0xd8,
             // 4 byte compressed size, index 120 (-1 indicates refer to Zip64 extra field)
             0xff, 0xff, 0xff, 0xff,
-            // 4 byte UNcompressed size, index 124 (-1 indicates refer to Zip64 extra field)
+            // 4 byte uncompressed size, index 124 (-1 indicates refer to Zip64 extra field)
             0xff, 0xff, 0xff, 0xff,
             // file name length
             0x08, 0x00,
@@ -1205,7 +1206,7 @@ namespace System.IO.Compression.Tests
             0x0c, 0x7e, 0x7f, 0xd8,
             // compressed size
             0xff, 0xff, 0xff, 0xff,
-            // UNcompressed size
+            // uncompressed size
             0xff, 0xff, 0xff, 0xff,
             // file name length
             
@@ -1218,7 +1219,7 @@ namespace System.IO.Compression.Tests
             0x01, 0x00,
             // size of extra field block
             0x20, 0x00,
-                    // 8 byte Zip64 UNcompressed size, index 42
+                    // 8 byte Zip64 uncompressed size, index 42
                     0x04, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
                     // 8 byte Zip64 compressed size, index 50
                     0x06, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
@@ -1261,7 +1262,7 @@ namespace System.IO.Compression.Tests
             0x0c, 0x7e, 0x7f, 0xd8,
             // 4 byte compressed size, index 120 (-1 indicates refer to Zip64 extra field)
             0xff, 0xff, 0xff, 0xff,
-            // 4 byte UNcompressed size, index 124 (-1 indicates refer to Zip64 extra field)
+            // 4 byte uncompressed size, index 124 (-1 indicates refer to Zip64 extra field)
             0xff, 0xff, 0xff, 0xff,
             // file name length
             0x08, 0x00,

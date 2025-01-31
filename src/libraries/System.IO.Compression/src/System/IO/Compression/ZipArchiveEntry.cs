@@ -53,6 +53,7 @@ namespace System.IO.Compression
             _archive = archive;
 
             _originallyInArchive = true;
+            Changes = ZipArchive.ChangeState.Unchanged;
 
             _diskNumberStart = cd.DiskNumberStart;
             _versionMadeByPlatform = (ZipVersionMadeByPlatform)cd.VersionMadeByCompatibility;
@@ -60,6 +61,8 @@ namespace System.IO.Compression
             _versionToExtract = (ZipVersionNeededValues)cd.VersionNeededToExtract;
             _generalPurposeBitFlag = (BitFlagValues)cd.GeneralPurposeBitFlag;
             _isEncrypted = (_generalPurposeBitFlag & BitFlagValues.IsEncrypted) != 0;
+            // Setting CompressionMethod can change the _versionToExtract variable, which can change the value of Changes
+            CompressionMethod = (CompressionMethodValues)cd.CompressionMethod;
             _lastModified = new DateTimeOffset(ZipHelper.DosTimeToDateTime(cd.LastModified));
             _compressedSize = cd.CompressedSize;
             _uncompressedSize = cd.UncompressedSize;
@@ -86,10 +89,6 @@ namespace System.IO.Compression
 
             _fileComment = cd.FileComment;
 
-            Changes = ZipArchive.ChangeState.Unchanged;
-
-            // Setting CompressionMethod can change the _versionToExtract variable, which can change the value of Changes
-            CompressionMethod = (CompressionMethodValues)cd.CompressionMethod;
             _compressionLevel = MapCompressionLevel(_generalPurposeBitFlag, CompressionMethod);
         }
 
