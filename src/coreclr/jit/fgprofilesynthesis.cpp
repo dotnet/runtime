@@ -33,6 +33,7 @@ void ProfileSynthesis::Run(ProfileSynthesisOption option)
     m_dfsTree             = m_comp->fgComputeDfs();
     m_loops               = FlowGraphNaturalLoops::Find(m_dfsTree);
     m_improperLoopHeaders = m_loops->ImproperLoopHeaders();
+    m_entryBlock          = m_comp->opts.IsOSR() ? m_comp->fgEntryBB : m_comp->fgFirstBB;
 
     // Retain or compute edge likelihood information
     //
@@ -71,13 +72,18 @@ void ProfileSynthesis::Run(ProfileSynthesisOption option)
             break;
     }
 
+    // Save entry block's weight.
+    // If the entry block is a loop header, its weight will be overwritten by ComputeCyclicProbabilities.
+    //
+    weight_t entryBlockWeight = m_entryBlock->bbWeight;
+
     // Determine cyclic probabilities
     //
     ComputeCyclicProbabilities();
 
     // Assign weights to entry points in the flow graph
     //
-    AssignInputWeights(option);
+    AssignInputWeights(entryBlockWeight);
 
     // Compute the block weights given the inputs and edge likelihoods
     //
@@ -108,12 +114,13 @@ void ProfileSynthesis::Run(ProfileSynthesisOption option)
         m_approximate               = false;
         m_overflow                  = false;
         m_cappedCyclicProbabilities = 0;
+        entryBlockWeight            = m_entryBlock->bbWeight;
 
         // Regularize the edge likelihoods...
         //
         BlendLikelihoods();
         ComputeCyclicProbabilities();
-        AssignInputWeights(option);
+        AssignInputWeights(entryBlockWeight);
         ComputeBlockWeights();
 
         // Increase blend factor and decrease synthetic loop likelihoods
@@ -975,7 +982,7 @@ void ProfileSynthesis::ComputeCyclicProbabilities(FlowGraphNaturalLoop* loop)
 // fgAssignInputWeights: provide initial profile weights for all blocks
 //
 // Arguments:
-//   option - profile synthesis option
+//   entryBlockWeight - total flow (including method call count) into the entry block
 //
 // Notes:
 //   For finallys we will pick up new entry weights when we process
@@ -986,20 +993,19 @@ void ProfileSynthesis::ComputeCyclicProbabilities(FlowGraphNaturalLoop* loop)
 //
 //   Some parts of the jit are sensitive to the absolute weights.
 //
-void ProfileSynthesis::AssignInputWeights(ProfileSynthesisOption option)
+void ProfileSynthesis::AssignInputWeights(weight_t entryBlockWeight)
 {
     // Determine input weight for method entry.
     // Ideally, we'd use fgCalledCount, but it may not be available yet.
     //
-    BasicBlock* const           entryBlock  = m_comp->opts.IsOSR() ? m_comp->fgEntryBB : m_comp->fgFirstBB;
-    weight_t                    entryWeight = entryBlock->bbWeight;
-    FlowGraphNaturalLoop* const loop        = m_loops->GetLoopByHeader(entryBlock);
+    weight_t                    entryWeight = entryBlockWeight;
+    FlowGraphNaturalLoop* const loop        = m_loops->GetLoopByHeader(m_entryBlock);
 
     if (loop != nullptr)
     {
         const weight_t cyclicProbability = m_cyclicProbabilities[loop->GetIndex()];
         assert(cyclicProbability != BB_ZERO_WEIGHT);
-        entryWeight *= (1.0 / cyclicProbability);
+        entryWeight /= cyclicProbability;
     }
 
     // Fall back to BB_UNITY_WEIGHT if we have zero entry weight
@@ -1018,8 +1024,8 @@ void ProfileSynthesis::AssignInputWeights(ProfileSynthesisOption option)
 
     // Set entry weight
     //
-    JITDUMP("Synthesis: entry " FMT_BB " has input weight " FMT_WT "\n", entryBlock->bbNum, entryWeight);
-    entryBlock->setBBProfileWeight(entryWeight);
+    JITDUMP("Synthesis: entry " FMT_BB " has input weight " FMT_WT "\n", m_entryBlock->bbNum, entryWeight);
+    m_entryBlock->setBBProfileWeight(entryWeight);
 
     // Determine input weight for EH regions, if any.
     //
@@ -1186,9 +1192,6 @@ void ProfileSynthesis::GaussSeidelSolver()
     bool                          checkEntryExitWeight = true;
     bool                          showDetails          = false;
 
-    // Remember the entry block
-    //
-    BasicBlock* const entryBlock = m_comp->opts.IsOSR() ? m_comp->fgEntryBB : m_comp->fgFirstBB;
     JITDUMP("Synthesis solver: flow graph has %u improper loop headers\n", m_improperLoopHeaders);
 
     // This is an iterative solver, and it may require a lot of iterations
@@ -1244,7 +1247,7 @@ void ProfileSynthesis::GaussSeidelSolver()
 
             // Some blocks have additional profile weights that don't come from flow edges.
             //
-            if (block == entryBlock)
+            if (block == m_entryBlock)
             {
                 newWeight   = block->bbWeight;
                 entryWeight = newWeight;
@@ -1435,7 +1438,7 @@ void ProfileSynthesis::GaussSeidelSolver()
             if (entryExitRelResidual > relResidual)
             {
                 relResidual      = entryExitRelResidual;
-                relResidualBlock = entryBlock;
+                relResidualBlock = m_entryBlock;
             }
         }
 
