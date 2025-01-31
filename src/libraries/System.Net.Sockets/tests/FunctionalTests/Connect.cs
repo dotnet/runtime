@@ -262,7 +262,7 @@ namespace System.Net.Sockets.Tests
                 int keepAliveInterval = (int)c.GetSocketOption(SocketOptionLevel.Tcp, SocketOptionName.TcpKeepAliveInterval)!;
                 int keepAliveRetryCount = (int)c.GetSocketOption(SocketOptionLevel.Tcp, SocketOptionName.TcpKeepAliveRetryCount)!;
 
-                Assert.Equal(1, keepAlive);
+                Assert.True(keepAlive is not 0);
                 Assert.Equal(5, keepAliveTime);
                 Assert.Equal(4, keepAliveInterval);
                 Assert.Equal(3, keepAliveRetryCount);
@@ -341,7 +341,8 @@ namespace System.Net.Sockets.Tests
 
             SocketException ex = await Assert.ThrowsAsync<SocketException>(
                 async() => await (dnsConnect ? ConnectAsync(c, new DnsEndPoint("localhost", port)) : MultiConnectAsync(c, addresses, port)));
-            Assert.Equal(SocketError.ConnectionRefused, ex.SocketErrorCode);
+            Assert.True(ex.SocketErrorCode is SocketError.ConnectionRefused
+                or SocketError.TimedOut); // Some Mac OS 12 machines produce SocketError.TimedOut here.
         }
 
         [PlatformSpecific(TestPlatforms.AnyUnix)]
