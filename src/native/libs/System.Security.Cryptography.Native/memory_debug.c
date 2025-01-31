@@ -76,7 +76,6 @@ typedef struct header_t
     __attribute__((aligned(8))) uint8_t data[];
 } header_t;
 
-static CRYPTO_RWLOCK* g_allocLock = NULL;
 static uint64_t g_allocatedMemory;
 static uint64_t g_allocationCount;
 
@@ -113,22 +112,9 @@ static void list_unlink_item(link_t* item)
     list_link_init(item);
 }
 
-static uint64_t atomic_add64(uint64_t* value, uint64_t addend, CRYPTO_RWLOCK* lock)
-{
-    if (API_EXISTS(CRYPTO_atomic_add64))
-    {
-        uint64_t result;
-        CRYPTO_atomic_add64(value, addend, &result, lock);
-        return result;
-    }
-
-    // TODO: test other compilers, solve for 32-bit platforms.
-    return __atomic_fetch_add(value, addend, __ATOMIC_SEQ_CST);
-}
-
 static void init_memory_entry(header_t* entry, size_t size, const char* file, int32_t line)
 {
-    uint64_t newCount = atomic_add64(&g_allocationCount, 1, g_allocLock);
+    uint64_t newCount = __atomic_fetch_add(&g_allocationCount, 1, __ATOMIC_SEQ_CST);
 
     entry->size = size;
     entry->line = line;
@@ -145,7 +131,7 @@ static list_t* get_item_bucket(header_t* entry)
 
 static void do_track_entry(header_t* entry, int32_t add)
 {
-    atomic_add64(&g_allocatedMemory, (add != 0 ? entry->size : -entry->size), g_allocLock);
+    __atomic_fetch_add(&g_allocatedMemory, (add != 0 ? entry->size : -entry->size), __ATOMIC_SEQ_CST);
 
     if (add != 0 && !g_trackingEnabled)
     {
@@ -307,18 +293,16 @@ void InitializeMemoryDebug(void)
     if (debug != NULL && strcmp(debug, "1") == 0)
     {
 #ifdef FEATURE_DISTRO_AGNOSTIC_SSL
-        if (API_EXISTS(CRYPTO_THREAD_lock_new))
+        if (API_EXISTS(CRYPTO_set_mem_functions))
         {
             // This should cover 1.1.1+
             CRYPTO_set_mem_functions(mallocFunction, reallocFunction, freeFunction);
-            g_allocLock = CRYPTO_THREAD_lock_new();
             init_tracking_lists();
         }
 #elif OPENSSL_VERSION_NUMBER >= OPENSSL_VERSION_1_1_1_RTM
         // OpenSSL 1.0 has different prototypes and it is out of support so we enable this only
         // on 1.1.1+
         CRYPTO_set_mem_functions(mallocFunction, reallocFunction, freeFunction);
-        g_allocLock = CRYPTO_THREAD_lock_new();
         init_tracking_lists();
 #endif
     }

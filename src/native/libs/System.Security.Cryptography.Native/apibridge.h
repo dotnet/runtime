@@ -70,10 +70,4 @@ typedef void *(*CRYPTO_malloc_fn)(size_t num, const char *file, int line);
 typedef void *(*CRYPTO_realloc_fn)(void *addr, size_t num, const char *file, int line);
 typedef void (*CRYPTO_free_fn)(void *addr, const char *file, int line);
 
-#ifndef CRYPTO_RWLOCK
-typedef void CRYPTO_RWLOCK;
-#endif
-
-CRYPTO_RWLOCK *CRYPTO_THREAD_lock_new(void);
-int CRYPTO_atomic_add64(uint64_t *val, uint64_t amount, uint64_t *ret, CRYPTO_RWLOCK *lock);
 int CRYPTO_set_mem_functions(CRYPTO_malloc_fn malloc_fn, CRYPTO_realloc_fn realloc_fn, CRYPTO_free_fn free_fn);
