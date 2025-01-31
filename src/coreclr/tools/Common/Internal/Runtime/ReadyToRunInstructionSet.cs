@@ -61,6 +61,11 @@ namespace Internal.ReadyToRunConstants
         Apx=48,
         Pclmulqdq_V256=49,
         Pclmulqdq_V512=50,
+        Avx10v2=51,
+        Avx10v2_V512=52,
+        Gfni=53,
+        Gfni_V256=54,
+        Gfni_V512=55,
 
     }
 }

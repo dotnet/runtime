@@ -6,9 +6,10 @@ using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Numerics;
 using System.Runtime.CompilerServices;
+using System.Text;
 using Moq;
 
-namespace Microsoft.Diagnostics.DataContractReader.UnitTests;
+namespace Microsoft.Diagnostics.DataContractReader.Tests;
 
 /// <summary>
 /// A mock implementation of Target that has basic implementations of getting types/globals and reading data
@@ -61,9 +62,34 @@ internal class TestPlaceholderTarget : Target
 
     public override TargetPointer ReadPointer(ulong address) => DefaultReadPointer(address);
     public override TargetCodePointer ReadCodePointer(ulong address) => DefaultReadCodePointer(address);
-    public override void ReadBuffer(ulong address, Span<byte> buffer) => throw new NotImplementedException();
+    public override void ReadBuffer(ulong address, Span<byte> buffer)
+    {
+        if (_dataReader(address, buffer) < 0)
+            throw new InvalidOperationException($"Failed to read {buffer.Length} bytes at 0x{address:x8}.");
+    }
+
     public override string ReadUtf8String(ulong address) => throw new NotImplementedException();
-    public override string ReadUtf16String(ulong address) => throw new NotImplementedException();
+    public override string ReadUtf16String(ulong address)
+    {
+        // Read characters until we find the null terminator
+        ulong end = address;
+        while (Read<char>(end) != 0)
+        {
+            end += sizeof(char);
+        }
+
+        int length = (int)(end - address);
+        if (length == 0)
+            return string.Empty;
+
+        Span<byte> span = new byte[length];
+        ReadBuffer(address, span);
+        string result = IsLittleEndian
+            ? Encoding.Unicode.GetString(span)
+            : Encoding.BigEndianUnicode.GetString(span);
+        return result;
+    }
+
     public override TargetNUInt ReadNUInt(ulong address) => DefaultReadNUInt(address);
     public override T ReadGlobal<T>(string name)
     {
@@ -204,22 +230,18 @@ internal class TestPlaceholderTarget : Target
     public override ContractRegistry Contracts => _contractRegistry;
 
     // A data cache that stores data in a dictionary and calls IData.Create to construct the data.
-    private class DefaultDataCache : Target.IDataCache
+    private sealed class DefaultDataCache : Target.IDataCache
     {
-        protected readonly Target _target;
-        protected readonly Dictionary<(ulong, Type), object?> _readDataByAddress = [];
+        private readonly Target _target;
+        private readonly Dictionary<(ulong, Type), object?> _readDataByAddress = [];
 
         public DefaultDataCache(Target target)
         {
             _target = target;
         }
 
-        public virtual T GetOrAdd<T>(TargetPointer address) where T : Data.IData<T> => DefaultGetOrAdd<T>(address);
-
-        protected T DefaultGetOrAdd<T>(TargetPointer address) where T : Data.IData<T>
+        public T GetOrAdd<T>(TargetPointer address) where T : Data.IData<T>
         {
-            if (address == TargetPointer.Null)
-                throw new ArgumentNullException(nameof(address));
             if (TryGet(address, out T? result))
                 return result;
 
@@ -234,9 +256,7 @@ internal class TestPlaceholderTarget : Target
             return result!;
         }
 
-        public virtual bool TryGet<T>(ulong address, [NotNullWhen(true)] out T? data) => DefaultTryGet<T>(address, out data);
-
-        protected bool DefaultTryGet<T>(ulong address, [NotNullWhen(true)] out T? data)
+        public bool TryGet<T>(ulong address, [NotNullWhen(true)] out T? data)
         {
             data = default;
             if (!_readDataByAddress.TryGetValue((address, typeof(T)), out object? dataObj))
@@ -248,6 +268,11 @@ internal class TestPlaceholderTarget : Target
                 return true;
             }
             return false;
+        }
+
+        public void Clear()
+        {
+            _readDataByAddress.Clear();
         }
     }
 

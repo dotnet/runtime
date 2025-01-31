@@ -4,6 +4,7 @@
 using System.Buffers;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Text;
 using System.Text.Json;
@@ -114,6 +115,35 @@ namespace System.Net.ServerSentEvents.Tests
                 yield return new SseItem<string>("data");
                 await Task.Delay(20);
                 token.ThrowIfCancellationRequested();
+            }
+        }
+
+        [Fact]
+        public static async Task WriteLargeItems_DataWrittenSuccessfully()
+        {
+            const int NumberOfItems = 10;
+            byte[] expected = Encoding.UTF8.GetBytes(string.Concat(Enumerable.Repeat("This is a test. This is only a test.", 100)));
+
+            MemoryStream memoryStream = new();
+            await SseFormatter.WriteAsync(GetBuffersAsync(), memoryStream, (item, writer) => writer.Write(item.Data));
+
+            memoryStream.Position = 0;
+            int count = 0;
+            foreach (SseItem<byte[]> item in SseParser.Create(memoryStream, (eventType, data) => data.ToArray()).Enumerate())
+            {
+                Assert.Equal(expected, item.Data);
+                count++;
+            }
+
+            Assert.Equal(NumberOfItems, count);
+
+            async IAsyncEnumerable<SseItem<byte[]>> GetBuffersAsync()
+            {
+                await Task.Yield();
+                for (int i = 0; i < NumberOfItems; i++)
+                {
+                    yield return new SseItem<byte[]>(expected);
+                }
             }
         }
 

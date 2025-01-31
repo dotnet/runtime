@@ -64,7 +64,7 @@ extends:
             - windows_x64
             jobParameters:
               templatePath: 'templates-official'
-              buildArgs: -s tools+libs -allConfigurations -c $(_BuildConfig) /p:TestAssemblies=false /p:TestPackages=true
+              buildArgs: -s tools+libs -allConfigurations -c $(_BuildConfig) /p:BuildAllConfigurations=true /p:TestAssemblies=false /p:TestPackages=true
               nameSuffix: Libraries_AllConfigurations
               isOfficialBuild: true
               postBuildSteps:

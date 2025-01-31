@@ -146,7 +146,7 @@ namespace System
                     // of __GetFieldHelper, decodes the unboxing stub pointed to by the slot to the real target
                     // (we already have that part), and calls the entrypoint that expects a byref `this`, and use the
                     // data to decide between calling fast or regular hashcode helper.
-                    var fieldValue = (ValueType)RuntimeImports.RhBox(fieldType, ref fieldData);
+                    var fieldValue = (ValueType)RuntimeExports.RhBox(fieldType, ref fieldData);
                     if (fieldValue != null)
                     {
                         hashCode.Add(fieldValue);

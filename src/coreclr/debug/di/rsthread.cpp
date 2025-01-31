@@ -4075,7 +4075,7 @@ void CordbUnmanagedThread::SetupForSkipBreakpoint(NativePatch * pNativePatch)
     if (fTrapOnSkip)
     {
         CONSISTENCY_CHECK_MSGF(false, ("The CLR is skipping a native BP at %p on thread 0x%x (%d)."
-            "\nYou're getting this notification in debug builds b/c you have com+ var 'DbgTrapOnSkip' enabled.",
+            "\nYou're getting this notification in debug builds b/c you have CLR config 'DbgTrapOnSkip' enabled.",
             pNativePatch->pAddress, this->m_id, this->m_id));
 
         // We skipped this BP b/c IsCantStop was true. For debugging convenience, call IsCantStop here

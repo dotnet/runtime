@@ -6,7 +6,7 @@ using Xunit;
 
 using Microsoft.Diagnostics.DataContractReader.ExecutionManagerHelpers;
 
-namespace Microsoft.Diagnostics.DataContractReader.UnitTests.ExecutionManager;
+namespace Microsoft.Diagnostics.DataContractReader.Tests.ExecutionManager;
 
 public class RangeSectionMapTests
 {
@@ -14,7 +14,7 @@ public class RangeSectionMapTests
     [ClassData(typeof(MockTarget.StdArch))]
     public void TestLookupFail(MockTarget.Architecture arch)
     {
-        var builder = ExecutionManagerTestBuilder.CreateRangeSection(arch);
+        var builder = MockDescriptors.ExecutionManager.CreateRangeSection(arch);
         var target = new TestPlaceholderTarget(arch, builder.GetReadContext().ReadFromTarget);
 
         var rsla = RangeSectionMap.Create(target);
@@ -28,7 +28,7 @@ public class RangeSectionMapTests
     [ClassData(typeof(MockTarget.StdArch))]
     public void TestLookupOne(MockTarget.Architecture arch)
     {
-        var builder = ExecutionManagerTestBuilder.CreateRangeSection(arch);
+        var builder = MockDescriptors.ExecutionManager.CreateRangeSection(arch);
         var inputPC = new TargetCodePointer(0x007f_0000);
         var length = 0x1000u;
         var value = 0x0a0a_0a0au;
