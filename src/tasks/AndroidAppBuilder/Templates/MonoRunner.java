@@ -102,7 +102,6 @@ public class MonoRunner extends Instrumentation
 
     public static int executeEntryPoint(String entryPointLibName, String[] args) {
         int rv = execEntryPoint(entryPointLibName, args);
-        freeNativeResources(); // Execution finished, free resources
         return rv;
     }
 
@@ -130,6 +129,14 @@ public class MonoRunner extends Instrumentation
         }
 
         finish(retcode, result);
+    }
+
+    @Override
+    public void onDestroy() {
+        Log.i("DOTNET", "MonoRunner onDestroy");
+        super.onDestroy();
+        // Cleanup native resources
+        freeNativeResources();
     }
 
     static void unzipAssets(Context context, String toPath, String zipName) {
