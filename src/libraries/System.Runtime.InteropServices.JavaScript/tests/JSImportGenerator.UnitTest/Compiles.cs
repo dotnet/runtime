@@ -93,22 +93,39 @@ namespace JSImportGenerator.Unit.Tests
                                         global::System.Runtime.InteropServices.JavaScript.JSMarshalerArgument __a14_native;
                                         global::System.Runtime.InteropServices.JavaScript.JSMarshalerArgument __a15_native;
                                         // Setup - Perform required setup.
+                                        __a15_native = default;
                                         __a15_native.Initialize();
+                                        __a14_native = default;
                                         __a14_native.Initialize();
+                                        __a13_native = default;
                                         __a13_native.Initialize();
+                                        __a12_native = default;
                                         __a12_native.Initialize();
+                                        __a11_native = default;
                                         __a11_native.Initialize();
+                                        __a10_native = default;
                                         __a10_native.Initialize();
+                                        __a9_native = default;
                                         __a9_native.Initialize();
+                                        __a8_native = default;
                                         __a8_native.Initialize();
+                                        __a7_native = default;
                                         __a7_native.Initialize();
+                                        __a6_native = default;
                                         __a6_native.Initialize();
+                                        __a5_native = default;
                                         __a5_native.Initialize();
+                                        __a4_native = default;
                                         __a4_native.Initialize();
+                                        __a3_native = default;
                                         __a3_native.Initialize();
+                                        __a2_native = default;
                                         __a2_native.Initialize();
+                                        __a1_native = default;
                                         __a1_native.Initialize();
+                                        ____arg_return_native = default;
                                         ____arg_return_native.Initialize();
+                                        ____arg_exception_native = default;
                                         ____arg_exception_native.Initialize();
                                         // Marshal - Convert managed data to native data.
                                         __a11_native.ToJS(a11);
@@ -318,7 +335,9 @@ namespace JSImportGenerator.Unit.Tests
                                         global::System.Threading.Tasks.Task<int> __retVal;
                                         global::System.Runtime.InteropServices.JavaScript.JSMarshalerArgument __retVal_native;
                                         // Setup - Perform required setup.
+                                        ____arg_return_native = default;
                                         ____arg_return_native.Initialize();
+                                        ____arg_exception_native = default;
                                         ____arg_exception_native.Initialize();
                                         {
                                             __retVal_native = __InvokeJSFunction(____arg_exception_native, ____arg_return_native);

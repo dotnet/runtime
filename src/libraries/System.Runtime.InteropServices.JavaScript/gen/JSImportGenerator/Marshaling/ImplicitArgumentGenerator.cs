@@ -19,6 +19,13 @@ namespace Microsoft.Interop.JavaScript
                 var (_, js) = context.GetIdentifiers(TypeInfo);
                 return [
                     ExpressionStatement(
+                        AssignmentExpression(
+                            SyntaxKind.SimpleAssignmentExpression,
+                            IdentifierName(js),
+                            LiteralExpression(SyntaxKind.DefaultLiteralExpression)
+                        )
+                    ),
+                    ExpressionStatement(
                         InvocationExpression(
                             MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
                                 IdentifierName(js),
