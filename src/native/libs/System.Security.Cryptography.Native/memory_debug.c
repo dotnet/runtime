@@ -101,10 +101,15 @@ static CRYPTO_RWLOCK* g_allocLock = NULL;
 static uint64_t g_allocatedMemory;
 static uint64_t g_allocationCount;
 
+static void list_link_init(link_t* link)
+{
+    link->next = link;
+    link->prev = link;
+}
+
 static void list_init(list_t* list)
 {
-    list->head.next = &list->head;
-    list->head.prev = &list->head;
+    list_link_init(&list->head);
 
     int res = pthread_mutex_init(&list->lock, NULL);
     assert(res == 0);
@@ -148,6 +153,8 @@ static void list_unlink_item(link_t* item)
 
     prev->next = next;
     next->prev = prev;
+
+    list_link_init(item);
 }
 
 static void untrack_item(link_t* item)
