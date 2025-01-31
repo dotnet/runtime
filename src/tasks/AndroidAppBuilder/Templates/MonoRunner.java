@@ -74,7 +74,7 @@ public class MonoRunner extends Instrumentation
         start();
     }
 
-    public static void initializeRuntime(Context context) {
+    public static void initializeRuntime(String entryPointLibName, Context context) {
         String filesDir = context.getFilesDir().getAbsolutePath();
         String cacheDir = context.getCacheDir().getAbsolutePath();
 
@@ -90,13 +90,19 @@ public class MonoRunner extends Instrumentation
         // unzip libs and test files to filesDir
         unzipAssets(context, filesDir, "assets.zip");
 
-        Log.i("DOTNET", "MonoRunner initializeRuntime,, entryPointLibName=" + entryPointLibName);
+        Log.i("DOTNET", "MonoRunner initializeRuntime, entryPointLibName=" + entryPointLibName);
         int localDateTimeOffset = getLocalDateTimeOffset();
-        initRuntime(filesDir, cacheDir, testResultsDir, localDateTimeOffset);
+        int rv = initRuntime(filesDir, cacheDir, testResultsDir, entryPointLibName, localDateTimeOffset);
+        if (rv != 0) {
+            Log.e("DOTNET", "Failed to initialize runtime, return-code=" + rv);
+            freeNativeResources();
+        }
     }
 
     public static int executeEntryPoint(String entryPointLibName, String[] args) {
-        return execEntryPoint(entryPointLibName, args);
+        int rv = execEntryPoint(entryPointLibName, args);
+        freeNativeResources(); // Execution finished, free resources
+        return rv;
     }
 
     @Override
@@ -109,7 +115,7 @@ public class MonoRunner extends Instrumentation
             return;
         }
 
-        initializeRuntime(getContext());
+        initializeRuntime(entryPointLibName, getContext());
         int retcode = executeEntryPoint(entryPointLibName, argsToForward);
 
         Log.i("DOTNET", "MonoRunner finished, return-code=" + retcode);
@@ -168,9 +174,11 @@ public class MonoRunner extends Instrumentation
         }
     }
 
-    static native void initRuntime(String libsDir, String cacheDir, String testResultsDir, int local_date_time_offset);
+    static native int setEnv(String key, String value);
+
+    static native int initRuntime(String libsDir, String cacheDir, String testResultsDir, String entryPointLibName, int local_date_time_offset);
 
     static native int execEntryPoint(String entryPointLibName, String[] args);
 
-    static native int setEnv(String key, String value);
+    static native void freeNativeResources();
 }

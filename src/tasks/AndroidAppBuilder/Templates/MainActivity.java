@@ -41,7 +41,7 @@ public class MainActivity extends Activity
         }
 
         final Activity ctx = this;
-        MonoRunner.initializeRuntime(ctx);
+        MonoRunner.initializeRuntime(entryPointLibName, ctx);
         new Handler(Looper.getMainLooper()).postDelayed(new Runnable() {
             @Override
             public void run() {
