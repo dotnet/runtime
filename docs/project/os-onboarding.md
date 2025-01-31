@@ -28,8 +28,7 @@ In the case that a .NET version will be EOL in <6 months, then new coverage can 
 
 ## End-of-life
 
-We will often  maintain our level of coverage when a new OS comes available by replacing an older one. This ends up being an effective stratgegy to remediating EOL OSes, ahead of time.
-
+We will often  maintain our level of coverage when a new OS comes available by replacing an older one. This ends up being an effective strategy to remediating EOL OSes, ahead of time.
 In some cases, we're required to test an OS version until the end of its life and will need to take specific action to remediate the reference.
 
 For whatever the reason, we should update references to EOL OSes if we have them.
