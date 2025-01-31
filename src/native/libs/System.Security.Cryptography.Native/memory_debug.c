@@ -214,9 +214,8 @@ static void* reallocFunction (void *ptr, size_t size, const char *file, int line
     if (ptr != NULL)
     {
         entry = container_of(ptr, header_t, data);
-        atomic_add64(&g_allocatedMemory, -entry->size, g_allocLock);
 
-        // untrack the item as realloc will change ptrs and we will need to put it to correct bucket
+        // untrack the item as realloc will change ptrs and we will need to put it to the correct bucket
         if (should_be_tracked(entry))
         {
             untrack_item(&entry->link);
@@ -227,12 +226,13 @@ static void* reallocFunction (void *ptr, size_t size, const char *file, int line
     void* newPtr = realloc((void*)entry, size + sizeof(header_t));
     if (newPtr != NULL)
     {
-        atomic_add64(&g_allocatedMemory, size, g_allocLock);
         uint64_t newCount = atomic_add64(&g_allocationCount, 1, g_allocLock);
+        atomic_add64(&g_allocatedMemory, size - (entry ? entry->size : 0), g_allocLock);
 
         entry = (struct header_t*)newPtr;
         init_memory_entry(entry, size, file, line, newCount);
         toReturn = (void*)(&entry->data);
+
     }
 
     if (entry && should_be_tracked(entry))
@@ -248,7 +248,6 @@ static void* reallocFunction (void *ptr, size_t size, const char *file, int line
 static void freeFunction(void *ptr, const char *file, int line)
 {
     pthread_rwlock_rdlock(&g_trackedMemoryLock);
-
     (void)file;
     (void)line;
 
