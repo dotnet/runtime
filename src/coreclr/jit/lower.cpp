@@ -4299,7 +4299,7 @@ GenTree* Lowering::OptimizeConstCompare(GenTree* cmp)
     if (cmp->OperIs(GT_TEST_EQ, GT_TEST_NE))
     {
         //
-        // Transform TEST_EQ|NE(x, LSH(1, y)) into BT(x, y) when possible. Using BT
+        // Transform TEST_EQ|NE(x, LSH(1, y)) or TEST_EQ|NE(LSH(1, y), x) into BT(x, y) when possible. Using BT
         // results in smaller and faster code. It also doesn't have special register
         // requirements, unlike LSH that requires the shift count to be in ECX.
         // Note that BT has the same behavior as LSH when the bit index exceeds the
