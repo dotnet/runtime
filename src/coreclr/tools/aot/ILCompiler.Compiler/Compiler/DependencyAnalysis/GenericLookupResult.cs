@@ -855,28 +855,23 @@ namespace ILCompiler.DependencyAnalysis
             TypeDesc instantiatedConstraintType = _constraintType.GetNonRuntimeDeterminedTypeFromRuntimeDeterminedSubtypeViaSubstitution(dictionary.TypeInstantiation, dictionary.MethodInstantiation);
             MethodDesc implMethod;
 
+            MethodDesc instantiatedConstrainedMethodDefinition = instantiatedConstrainedMethod.GetMethodDefinition();
+
             if (instantiatedConstrainedMethod.OwningType.IsInterface)
             {
                 if (instantiatedConstrainedMethod.Signature.IsStatic)
                 {
-                    implMethod = instantiatedConstraintType.GetClosestDefType().ResolveVariantInterfaceMethodToStaticVirtualMethodOnType(instantiatedConstrainedMethod);
+                    implMethod = instantiatedConstraintType.GetClosestDefType().ResolveVariantInterfaceMethodToStaticVirtualMethodOnType(instantiatedConstrainedMethodDefinition);
                 }
                 else
                 {
-                    implMethod = instantiatedConstraintType.GetClosestDefType().ResolveVariantInterfaceMethodToVirtualMethodOnType(instantiatedConstrainedMethod);
-
-                    // TODO: why this doesn't return an instantiated method?
-                    if (implMethod != null && implMethod.HasInstantiation)
-                    {
-                        Debug.Assert(implMethod.IsGenericMethodDefinition);
-                        implMethod = implMethod.MakeInstantiatedMethod(instantiatedConstrainedMethod.Instantiation);
-                    }
+                    implMethod = instantiatedConstraintType.GetClosestDefType().ResolveVariantInterfaceMethodToVirtualMethodOnType(instantiatedConstrainedMethodDefinition);
                 }
 
                 if (implMethod == null)
                 {
                     DefaultInterfaceMethodResolution resolution =
-                        instantiatedConstraintType.GetClosestDefType().ResolveVariantInterfaceMethodToDefaultImplementationOnType(instantiatedConstrainedMethod, out implMethod);
+                        instantiatedConstraintType.GetClosestDefType().ResolveVariantInterfaceMethodToDefaultImplementationOnType(instantiatedConstrainedMethodDefinition, out implMethod);
                     if (resolution != DefaultInterfaceMethodResolution.DefaultImplementation)
                     {
                         // TODO: diamond/reabstraction
@@ -886,7 +881,12 @@ namespace ILCompiler.DependencyAnalysis
             }
             else
             {
-                implMethod = instantiatedConstraintType.GetClosestDefType().FindVirtualFunctionTargetMethodOnObjectType(instantiatedConstrainedMethod);
+                implMethod = instantiatedConstraintType.GetClosestDefType().FindVirtualFunctionTargetMethodOnObjectType(instantiatedConstrainedMethodDefinition);
+            }
+
+            if (instantiatedConstrainedMethod != instantiatedConstrainedMethodDefinition)
+            {
+                implMethod = implMethod.MakeInstantiatedMethod(instantiatedConstrainedMethod.Instantiation);
             }
 
             // AOT use of this generic lookup is restricted to finding methods on valuetypes (runtime usage of this slot in universal generics is more flexible)

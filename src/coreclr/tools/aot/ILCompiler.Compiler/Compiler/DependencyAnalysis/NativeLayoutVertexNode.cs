@@ -1831,9 +1831,8 @@ namespace ILCompiler.DependencyAnalysis
             {
                 return (_constrainedMethod.HasInstantiation, _constrainedMethod.Signature.IsStatic) switch
                 {
-                    (true, true) => FixupSignatureKind.GenericStaticConstrainedMethod,
+                    (true, _) => FixupSignatureKind.GenericConstrainedMethod,
                     (false, true) => FixupSignatureKind.NonGenericStaticConstrainedMethod,
-                    (true, false) => FixupSignatureKind.GenericInstanceConstrainedMethod,
                     (false, false) => FixupSignatureKind.NonGenericInstanceConstrainedMethod,
                 };
             }
@@ -1875,7 +1874,7 @@ namespace ILCompiler.DependencyAnalysis
             Vertex constraintType = factory.NativeLayout.TypeSignatureVertex(_constraintType).WriteVertex(factory);
             if (_constrainedMethod.HasInstantiation)
             {
-                Debug.Assert(SignatureKind is FixupSignatureKind.GenericStaticConstrainedMethod or FixupSignatureKind.GenericInstanceConstrainedMethod);
+                Debug.Assert(SignatureKind is FixupSignatureKind.GenericConstrainedMethod);
                 Vertex constrainedMethodVertex = factory.NativeLayout.MethodLdTokenVertex(_constrainedMethod).WriteVertex(factory);
                 Vertex relativeOffsetVertex = GetNativeWriter(factory).GetRelativeOffsetSignature(constrainedMethodVertex);
                 return writer.GetTuple(constraintType, relativeOffsetVertex);

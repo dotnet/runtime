@@ -174,7 +174,7 @@ namespace Internal.Runtime.TypeLoader
         /// <summary>
         /// Used for generic static constrained Methods
         /// </summary>
-        private class GenericStaticConstrainedMethodCell : GenericDictionaryCell
+        private class GenericConstrainedMethodCell : GenericDictionaryCell
         {
             internal DefType ConstraintType;
             internal InstantiatedMethod ConstrainedMethod;
@@ -588,34 +588,20 @@ namespace Internal.Runtime.TypeLoader
                     }
                     break;
 
-                case FixupSignatureKind.GenericStaticConstrainedMethod:
-                case FixupSignatureKind.GenericInstanceConstrainedMethod:
+                case FixupSignatureKind.GenericConstrainedMethod:
                 {
                         TypeDesc constraintType = nativeLayoutInfoLoadContext.GetType(ref parser);
 
                         NativeParser ldtokenSigParser = parser.GetParserFromRelativeOffset();
                         MethodDesc constrainedMethod = nativeLayoutInfoLoadContext.GetMethod(ref ldtokenSigParser);
 
-                        string kindString = kind == FixupSignatureKind.GenericStaticConstrainedMethod ? "GenericStaticConstrainedMethod: " : "GenericInstanceConstrainedMethod: ";
+                        TypeLoaderLogger.WriteLine("GenericConstrainedMethod: " + constraintType.ToString() + " Method " + constrainedMethod.ToString());
 
-                        TypeLoaderLogger.WriteLine(kindString + constraintType.ToString() + " Method " + constrainedMethod.ToString());
-
-                        if (kind == FixupSignatureKind.GenericStaticConstrainedMethod)
+                        cell = new GenericConstrainedMethodCell()
                         {
-                            cell = new GenericStaticConstrainedMethodCell()
-                            {
-                                ConstraintType = (DefType)constraintType,
-                                ConstrainedMethod = (InstantiatedMethod)constrainedMethod,
-                            };
-                        }
-                        else
-                        {
-                            cell = new GenericStaticConstrainedMethodCell()
-                            {
-                                ConstraintType = (DefType)constraintType,
-                                ConstrainedMethod = (InstantiatedMethod)constrainedMethod,
-                            };
-                        }
+                            ConstraintType = (DefType)constraintType,
+                            ConstrainedMethod = (InstantiatedMethod)constrainedMethod,
+                        };
                     }
                     break;
 
