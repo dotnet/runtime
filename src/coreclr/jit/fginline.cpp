@@ -1871,15 +1871,10 @@ void Compiler::fgInsertInlineeArgument(
             DISPSTMT(*afterStmt);
         }
     }
-    else if (argInfo.argIsByRefToStructLocal)
-    {
-        // Do nothing. Arg was directly substituted as we read
-        // the inlinee.
-    }
     else
     {
-        // The argument is either not used or a const or lcl var
-        noway_assert(!argInfo.argIsUsed || argInfo.argIsInvariant || argInfo.argIsLclVar);
+        // The argument is either not used or of a shape we allowed to be duplicated
+        noway_assert(!argInfo.argIsUsed || argInfo.argIsInvariant || argInfo.argIsLclVar || argInfo.argDuplicateComplex);
         noway_assert((argInfo.argIsLclVar == 0) ==
                      (argNode->gtOper != GT_LCL_VAR || (argNode->gtFlags & GTF_GLOB_REF)));
 

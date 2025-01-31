@@ -653,8 +653,7 @@ struct InlArgInfo
     unsigned argHasTmp               : 1; // the argument will be evaluated to a temp
     unsigned argHasLdargaOp          : 1; // Is there LDARGA(s) operation on this argument?
     unsigned argHasStargOp           : 1; // Is there STARG(s) operation on this argument?
-    unsigned argIsByRefToStructLocal : 1; // Is this arg an address of a struct local or a normed struct local or a
-                                          // field in them?
+    unsigned argDuplicateComplex     : 1; // Is this an argument whose tree we prefer to duplicate regardless of complexity (provided it is safe)?
     unsigned argIsExact : 1;              // Is this arg of an exact class?
 };
 

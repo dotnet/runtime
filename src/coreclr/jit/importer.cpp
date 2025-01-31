@@ -12958,7 +12958,10 @@ void Compiler::impInlineRecordArgInfo(InlineInfo*   pInlineInfo,
 
         if (varTypeIsStruct(varDsc))
         {
-            argInfo->argIsByRefToStructLocal = true;
+            // Addresses of locals often can be optimized by duplicating them
+            // even when they are complex because they often end up in
+            // dereferences.
+            argInfo->argDuplicateComplex = true;
 #ifdef FEATURE_SIMD
             if (varTypeIsSIMD(varDsc))
             {
@@ -12973,11 +12976,15 @@ void Compiler::impInlineRecordArgInfo(InlineInfo*   pInlineInfo,
                (arg->GetWellKnownArg() == WellKnownArg::RetBuffer));
     }
 
-    if (curArgVal->gtFlags & GTF_ALL_EFFECT)
+    if (arg->GetWellKnownArg() == WellKnownArg::RetBuffer)
     {
-        argInfo->argHasGlobRef = (curArgVal->gtFlags & GTF_GLOB_REF) != 0;
-        argInfo->argHasSideEff = (curArgVal->gtFlags & (GTF_ALL_EFFECT & ~GTF_GLOB_REF)) != 0;
+        // Retbuffer is very often used directly in a dereference, and this
+        // generally makes it profitable to duplicate even when it is complex.
+        argInfo->argDuplicateComplex = true;
     }
+
+    argInfo->argHasGlobRef = (curArgVal->gtFlags & GTF_GLOB_REF) != 0;
+    argInfo->argHasSideEff = (curArgVal->gtFlags & (GTF_ALL_EFFECT & ~GTF_GLOB_REF)) != 0;
 
     if (curArgVal->gtOper == GT_LCL_VAR)
     {
@@ -13059,9 +13066,9 @@ void Compiler::impInlineRecordArgInfo(InlineInfo*   pInlineInfo,
         {
             printf(" has starg effect");
         }
-        if (argInfo->argIsByRefToStructLocal)
+        if (argInfo->argDuplicateComplex)
         {
-            printf(" is byref to a struct local");
+            printf(" is preferred to be duplicated");
         }
 
         printf("\n");
@@ -13115,7 +13122,7 @@ void Compiler::impInlineInitVars(InlineInfo* pInlineInfo)
     unsigned ilArgCnt = 0;
     for (CallArg& arg : call->gtArgs.Args())
     {
-        InlArgInfo* argInfo = nullptr;
+        InlArgInfo* argInfo;
         switch (arg.GetWellKnownArg())
         {
             case WellKnownArg::RetBuffer:
@@ -13520,7 +13527,7 @@ unsigned Compiler::impInlineFetchLocal(unsigned lclNum DEBUGARG(const char* reas
 //
 //    This method will side effect inlArgInfo. It should only be called
 //    for actual uses of the argument in the inlinee.
-
+//
 GenTree* Compiler::impInlineFetchArg(InlArgInfo& argInfo, const InlLclVarInfo& lclInfo)
 {
     // Cache the relevant arg and lcl info for this argument.
@@ -13588,26 +13595,14 @@ GenTree* Compiler::impInlineFetchArg(InlArgInfo& argInfo, const InlLclVarInfo& l
             }
         }
     }
-    else if (argInfo.argIsByRefToStructLocal && !argInfo.argHasStargOp)
+    else if (argInfo.argDuplicateComplex && !argCanBeModified && !argInfo.argHasCallerLocalRef && !argInfo.argHasSideEff && !argInfo.argHasGlobRef)
     {
-        /* Argument is a by-ref address to a struct, a normed struct, or its field.
-           In these cases, don't spill the byref to a local, simply clone the tree and use it.
-           This way we will increase the chance for this byref to be optimized away by
-           a subsequent "dereference" operation.
-
-           From Dev11 bug #139955: Argument node can also be TYP_I_IMPL if we've bashed the tree
-           (in impInlineInitVars()), if the arg has argHasLdargaOp as well as argIsByRefToStructLocal.
-           For example, if the caller is:
-                ldloca.s   V_1  // V_1 is a local struct
-                call       void Test.ILPart::RunLdargaOnPointerArg(int32*)
-           and the callee being inlined has:
-                .method public static void  RunLdargaOnPointerArg(int32* ptrToInts) cil managed
-                    ldarga.s   ptrToInts
-                    call       void Test.FourInts::NotInlined_SetExpectedValuesThroughPointerToPointer(int32**)
-           then we change the argument tree (of "ldloca.s V_1") to TYP_I_IMPL to match the callee signature. We'll
-           soon afterwards reject the inlining anyway, since the tree we return isn't a GT_LCL_VAR.
-        */
-        assert(argNode->TypeGet() == TYP_BYREF || argNode->TypeGet() == TYP_I_IMPL);
+        // Argument is a complex expression that we still prefer to duplicate.
+        // For example because it is an adress into a local in the caller. a
+        // by-ref address to a struct, a normed struct, or its field. In these
+        // cases, don't spill the byref to a local, simply clone the tree and
+        // use it.
+        //
         op1 = gtCloneExpr(argNode);
     }
     else
