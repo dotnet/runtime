@@ -29,8 +29,14 @@ Supported target architectures:
 #### Requirements
 
 Set the following environment variables:
-  - ANDROID_SDK_ROOT=`<full-path-to-android-sdk>` (example:`ANDROID_SDK_ROOT=/Users/<user>/Library/Android/sdk`)
-  - ANDROID_NDK_ROOT=`<full-path-to-android-ndk>` (example:`ANDROID_NDK_ROOT=/Users/<user>/Library/Android/sdk/ndk/27.2.12479018`)
+  - ANDROID_SDK_ROOT=`<full-path-to-android-sdk>`
+  - ANDROID_NDK_ROOT=`<full-path-to-android-ndk>`
+
+For example:
+  ```
+  ANDROID_SDK_ROOT=/Users/<user>/Library/Android/sdk
+  ANDROID_NDK_ROOT=/Users/<user>/Library/Android/sdk/ndk/27.2.12479018
+  ```
 
 #### Building the runtime, libraries and tools
 
@@ -161,18 +167,26 @@ To build `HelloAndroid`, run the following command from `<repo_root>`:
 make BUILD_CONFIG=<Debug|Release> TARGET_ARCH=<x64|arm64> RUNTIME_FLAVOR=CoreCLR DEPLOY_AND_RUN=false run -C src/mono/sample/Android
 ```
 
-On successful execution, the command will output the `HelloAndroid.apk` at: `artifacts/bin/AndroidSampleApp/arm64/Release/android-arm64/Bundle/bin/HelloAndroid.apk`
+On successful execution, the command will output the `HelloAndroid.apk` at:
+```
+<repo-root>artifacts/bin/AndroidSampleApp/arm64/Release/android-arm64/Bundle/bin/HelloAndroid.apk
+```
 
 ### Running HelloAndroid sample on an emulator
 
 To run the sample on an emulator, the emulator first needs to be up and running.
+
 Creating an emulator (ADV - Android Virtual Device) can be achieved through Android Studio - Device Manager: https://developer.android.com/studio/run/managing-avds
+
 After its creation, the emulator needs to be booted up and running, so that we can run the `HelloAndroid` sample on it via:
 ```
 make BUILD_CONFIG=<Debug|Release> TARGET_ARCH=<x64|arm64> RUNTIME_FLAVOR=CoreCLR DEPLOY_AND_RUN=true run -C src/mono/sample/Android
 ```
 
-NOTE: Emulators can be also started from the terminal via: `$ANDROID_SDK_ROOT/emulator/emulator -avd <emulator-name>`
+NOTE: Emulators can be also started from the terminal via:
+```
+$ANDROID_SDK_ROOT/emulator/emulator -avd <emulator-name>
+```
 
 ### Useful make commands
 
