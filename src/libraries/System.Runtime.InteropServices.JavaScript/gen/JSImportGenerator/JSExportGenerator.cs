@@ -341,6 +341,21 @@ namespace Microsoft.Interop.JavaScript
                     RefKind = RefKind.Out, // We'll treat it as a separate out parameter.
                 });
 
+            for (int i = 0; i < allElements.Length; i++)
+            {
+                if (allElements[i].IsNativeReturnPosition && allElements[i].ManagedType != SpecialTypeInfo.Void)
+                {
+                    // The runtime may partially initialize the native return value.
+                    // To preserve this information, we must pass the native return value as an out parameter.
+                    allElements = allElements.SetItem(i, allElements[i] with
+                    {
+                        ManagedIndex = TypePositionInfo.ReturnIndex,
+                        NativeIndex = allElements.Length, // Insert at the end of the argument list
+                        RefKind = RefKind.Out, // We'll treat it as a separate out parameter.
+                    });
+                }
+            }
+
             var stubGenerator = new UnmanagedToManagedStubGenerator(
                 allElements,
                 diagnostics,
@@ -352,6 +367,7 @@ namespace Microsoft.Interop.JavaScript
 
             const string innerWrapperName = "__Stub";
 
+            // TODO: We need to initialize __retVal_native from __arguments_buffer (or fix it up in the caller) as it comes in with some required state
             BlockSyntax wrapperToInnerStubBlock = Block(
                 CreateWrapperToInnerStubCall(signatureElements, innerWrapperName),
                 GenerateInnerLocalFunction(incrementalContext, innerWrapperName, stubGenerator));
@@ -394,21 +410,19 @@ namespace Microsoft.Interop.JavaScript
 
             arguments.Add(Argument(IdentifierName(Constants.ArgumentsBuffer)));
 
-            ExpressionSyntax invocation = InvocationExpression(IdentifierName(innerWrapperName))
-                        .WithArgumentList(ArgumentList(SeparatedList(arguments)));
-
-            if (!hasReturn)
+            if (hasReturn)
             {
-                return ExpressionStatement(invocation);
+                arguments.Add(
+                    Argument(
+                        BinaryExpression(
+                            SyntaxKind.AddExpression,
+                            IdentifierName(Constants.ArgumentsBuffer),
+                            LiteralExpression(SyntaxKind.NumericLiteralExpression, Literal(1)))));
             }
 
             return ExpressionStatement(
-                AssignmentExpression(SyntaxKind.SimpleAssignmentExpression,
-                    ElementAccessExpression(
-                            IdentifierName(Constants.ArgumentsBuffer),
-                            BracketedArgumentList(SingletonSeparatedList(Argument(
-                                LiteralExpression(SyntaxKind.NumericLiteralExpression, Literal(1)))))),
-                    invocation));
+                InvocationExpression(IdentifierName(innerWrapperName))
+                        .WithArgumentList(ArgumentList(SeparatedList(arguments))));
         }
 
         private static LocalFunctionStatementSyntax GenerateInnerLocalFunction(IncrementalStubGenerationContext context, string innerFunctionName, UnmanagedToManagedStubGenerator stubGenerator)

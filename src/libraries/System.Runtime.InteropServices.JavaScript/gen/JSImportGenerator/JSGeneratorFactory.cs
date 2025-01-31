@@ -17,7 +17,7 @@ namespace Microsoft.Interop.JavaScript
         public ResolvedGenerator Create(TypePositionInfo info, StubCodeContext context)
         {
             Debug.Assert(context != null);
-            if (!info.IsManagedExceptionPosition && (info.IsByRef || info.ByValueContentsMarshalKind != ByValueContentsMarshalKind.Default))
+            if (!info.IsManagedExceptionPosition && !info.IsManagedReturnPosition && (info.IsByRef || info.ByValueContentsMarshalKind != ByValueContentsMarshalKind.Default))
             {
                 // out of scope for Net7.0
                 return ResolvedGenerator.NotSupported(info, context, new(info)
