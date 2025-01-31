@@ -13595,7 +13595,8 @@ GenTree* Compiler::impInlineFetchArg(InlArgInfo& argInfo, const InlLclVarInfo& l
             }
         }
     }
-    else if (argInfo.argDuplicateComplex && !argCanBeModified && !argInfo.argHasCallerLocalRef && !argInfo.argHasSideEff && !argInfo.argHasGlobRef)
+    else if (argInfo.argDuplicateComplex && !argCanBeModified && !argInfo.argHasCallerLocalRef &&
+             !argInfo.argHasSideEff && !argInfo.argHasGlobRef)
     {
         // Argument is a complex expression that we still prefer to duplicate.
         // For example because it is an adress into a local in the caller. a
