@@ -3248,7 +3248,7 @@ void CodeGen::genCodeForCompare(GenTreeOp* tree)
             }
             else
             {
-                assert(false);
+                unreached();
             }
             emit->emitIns_R_R_I(INS_xori, EA_8BYTE, targetReg, targetReg, 1);
         }
@@ -3276,7 +3276,7 @@ void CodeGen::genCodeForCompare(GenTreeOp* tree)
             }
             else
             {
-                assert(false);
+                unreached();
             }
         }
     }
