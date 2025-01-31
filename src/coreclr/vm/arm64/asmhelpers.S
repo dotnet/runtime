@@ -760,7 +760,7 @@ NESTED_END JIT_Patchpoint, _TEXT
 LEAF_ENTRY JIT_PartialCompilationPatchpoint, _TEXT
     mov x1, x0
     mov x0, #0
-    b JIT_Patchpoint
+    b C_FUNC(JIT_Patchpoint)
 LEAF_END JIT_PartialCompilationPatchpoint, _TEXT
 
 #endif // FEATURE_TIERED_COMPILATION

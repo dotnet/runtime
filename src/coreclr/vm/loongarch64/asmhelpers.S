@@ -1102,9 +1102,9 @@ NESTED_END JIT_Patchpoint, _TEXT
 
 // first arg register holds iloffset, which needs to be moved to the second register, and the first register filled with NULL
 LEAF_ENTRY JIT_PartialCompilationPatchpoint, _TEXT
-    ori     $a1, $a0, 0
-    ori     $a0, $zero, 0
-    b JIT_Patchpoint
+    move    $a1, $a0
+    li.d    $a0, 0
+    b C_FUNC(JIT_Patchpoint)
 LEAF_END JIT_PartialCompilationPatchpoint, _TEXT
 
 #endif // FEATURE_TIERED_COMPILATION

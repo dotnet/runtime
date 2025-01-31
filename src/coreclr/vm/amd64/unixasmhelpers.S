@@ -208,7 +208,7 @@ NESTED_END JIT_Patchpoint, _TEXT
 LEAF_ENTRY JIT_PartialCompilationPatchpoint, _TEXT
         mov rsi, rdi
         xor rdi, rdi
-        jmp JIT_Patchpoint
+        jmp C_FUNC(JIT_Patchpoint)
 LEAF_END JIT_PartialCompilationPatchpoint, _TEXT
 
 #endif // FEATURE_TIERED_COMPILATION

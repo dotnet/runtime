@@ -2516,7 +2516,7 @@ extern "C" void JIT_PatchpointWorkerWorkerWithPolicy(TransitionBlock * pTransiti
         }
     }
 
-    if (osrMethodCode == NULL)
+    if (osrMethodCode == (PCODE)NULL)
     {
         MAKE_CURRENT_THREAD_AVAILABLE();
 
