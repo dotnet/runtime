@@ -907,6 +907,145 @@ namespace System.IO.Compression.Tests
             }
         }
 
+        [Fact]
+        public static void ZipArchive_InvalidVersionToExtract()
+        {
+            using (MemoryStream updatedStream = new MemoryStream())
+            {
+                int originalLocalVersionToExtract = s_inconsistentVersionToExtract[4];
+                int originalCentralDirectoryVersionToExtract = s_inconsistentVersionToExtract[57];
+
+                // The existing archive will have a "version to extract" of 0.0, but will contain entries
+                // with deflate compression (which has a minimum version to extract of 2.0.)
+                Assert.Equal(0x00, originalLocalVersionToExtract);
+                Assert.Equal(0x00, originalCentralDirectoryVersionToExtract);
+
+                updatedStream.Write(s_inconsistentVersionToExtract);
+                updatedStream.Seek(0, SeekOrigin.Begin);
+
+                using (ZipArchive originalArchive = new ZipArchive(updatedStream, ZipArchiveMode.Read, true))
+                {
+                    Assert.Equal(1, originalArchive.Entries.Count);
+
+                    ZipArchiveEntry firstEntry = originalArchive.Entries[0];
+
+                    Assert.Equal("first.bin", firstEntry.Name);
+                    Assert.Equal(10, firstEntry.Length);
+
+                    using (Stream entryStream = firstEntry.Open())
+                    {
+                        Assert.Equal(10, firstEntry.Length);
+
+                        byte[] uncompressedBytes = new byte[firstEntry.Length];
+                        int bytesRead = entryStream.Read(uncompressedBytes);
+
+                        Assert.Equal(10, bytesRead);
+
+                        Assert.Equal(new byte[] { 0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09 }, uncompressedBytes);
+                    }
+                }
+
+                updatedStream.Seek(0, SeekOrigin.Begin);
+
+                // Create a new entry, forcing the central directory headers to be rewritten. The local file header
+                // for first.bin would normally be skipped (because it hasn't changed) but it needs to be rewritten
+                // because the central directory headers will be rewritten with a valid value and the local file header
+                // needs to match.
+                using (ZipArchive updatedArchive = new ZipArchive(updatedStream, ZipArchiveMode.Update))
+                {
+                    ZipArchiveEntry newEntry = updatedArchive.CreateEntry("second.bin", CompressionLevel.NoCompression);
+                }
+
+                byte[] updatedContents = updatedStream.ToArray();
+                int updatedLocalVersionToExtract = updatedContents[4];
+                int updatedCentralDirectoryVersionToExtract = updatedContents[97];
+
+                Assert.Equal(20, updatedCentralDirectoryVersionToExtract);
+                Assert.Equal(20, updatedLocalVersionToExtract);
+            }
+        }
+
+        private static readonly byte[] s_inconsistentVersionToExtract =
+        {
+            // ===== Local file header signature 0x04034b50
+            0x50, 0x4b, 0x03, 0x04,
+            // version to extract 0.0 (invalid - this should be at least 2.0 to make use of deflate compression)
+            0x00, 0x00,
+            // general purpose flags
+            0x02, 0x00,   // 0000_0002 'for maximum-compression deflating'
+            // Deflate
+            0x08, 0x00,
+            // Last mod file time
+            0x3b, 0x33,
+            // Last mod date
+            0x3f, 0x5a,
+            // CRC32
+            0x46, 0xd7, 0x6c, 0x45,
+            // compressed size
+            0x0c, 0x00, 0x00, 0x00,
+            // UNcompressed size
+            0x0a, 0x00, 0x00, 0x00,
+            // file name length
+            0x09, 0x00,
+            // extra field length
+            0x00, 0x00,
+            // filename
+            0x66, 0x69, 0x72, 0x73, 0x74, 0x2e, 0x62, 0x69, 0x6e,
+            // -------------
+            // Data!
+            0x63, 0x60, 0x64, 0x62, 0x66, 0x61, 0x65, 0x63, 0xe7, 0xe0, 0x04, 0x00,
+            // -------- Central directory signature 0x02014b50
+            0x50, 0x4b, 0x01, 0x02,
+            // version made by 2.0
+            0x14, 0x00,
+            // version to extract 0.0 (invalid - this should be at least 2.0 to make use of deflate compression)
+            0x00, 0x00,
+            // general purpose flags
+            0x02, 0x00,
+            // Deflate
+            0x08, 0x00,
+            // Last mod file time
+            0x3b, 0x33,
+            // Last mod date
+            0x3f, 0x5a,
+            // CRC32
+            0x46, 0xd7, 0x6c, 0x45,
+            // compressed size
+            0x0c, 0x00, 0x00, 0x00,
+            // UNcompressed size
+            0x0a, 0x00, 0x00, 0x00,
+            // file name length
+            0x09, 0x00,
+            // extra field length
+            0x00, 0x00,
+            // file comment length
+            0x00, 0x00,
+            // disk number start
+            0x00, 0x00,
+            // internal file attributes
+            0x00, 0x00,
+            // external file attributes
+            0x00, 0x00, 0x00, 0x00,
+            // relative offset of local header
+            0x00, 0x00, 0x00, 0x00,
+            // file name
+            0x66, 0x69, 0x72, 0x73, 0x74, 0x2e, 0x62, 0x69, 0x6e,
+            // == 'end of CD' signature 0x06054b50
+            0x50, 0x4b, 0x05, 0x06,
+            // disk number, disk number with CD
+            0x00, 0x00,
+            0x00, 0x00,
+            // total number of entries in CD on this disk, and overall
+            0x01, 0x00,
+            0x01, 0x00,
+            // size of CD
+            0x37, 0x00, 0x00, 0x00,
+            // offset of start of CD wrt start disk
+            0x33, 0x00, 0x00, 0x00,
+            // comment length
+            0x00, 0x00
+        };
+
         private static readonly byte[] s_slightlyIncorrectZip64 =
         {
             // ===== Local file header signature 0x04034b50
