@@ -1,7 +1,6 @@
 # Experimental support of CoreCLR on Android
 
-This documentation outlines experimental support of CoreCLR on Android.
-It includes instructions on how to:
+This is the internal documentation which outlines experimental support of CoreCLR on Android and includes instructions on how to:
 - [Build CoreCLR for Android](./android.md#building-coreclr-for-android)
 - [Build and run a sample Android application with CoreCLR](./android.md#building-and-running-helloandroid-sample-app)
 - [Debug the sample app and the runtime](./android.md#debugging-the-sample-app)
@@ -151,7 +150,7 @@ TODO:
 
 ## Building and running HelloAndroid sample app
 
-To demonstrate building and running an Android sample application with CoreCLR, we will use the `HelloAndroid` sample located at: `src/mono/sample/Android/AndroidSampleApp.csproj`.
+To demonstrate building and running an Android sample application with CoreCLR, we will use the [HelloAndroid sample app](../../../../src/mono/sample/Android/AndroidSampleApp.csproj).
 A prerequisite of this step is to have CoreCLR successfully built for desired Android platform.
 
 ### Building HelloAndroid sample
@@ -162,7 +161,7 @@ To build `HelloAndroid`, run the following command from `<repo_root>`:
 make BUILD_CONFIG=<Debug|Release> TARGET_ARCH=<x64|arm64> RUNTIME_FLAVOR=CoreCLR DEPLOY_AND_RUN=false run -C src/mono/sample/Android
 ```
 
-On successful execution, the command will output the `HelloAndroid.apk` at: xxx
+On successful execution, the command will output the `HelloAndroid.apk` at: `artifacts/bin/AndroidSampleApp/arm64/Release/android-arm64/Bundle/bin/HelloAndroid.apk`
 
 ### Running HelloAndroid sample on an emulator
 
@@ -196,8 +195,15 @@ This can be achieved in `Android Studio` via `Profile or Debug APK`.
 2. Rename the debug symbols file of the runtime library from `libcoreclr.so.dbg` into `libcoreclr.so.so`, the file is located at: `<repo_root>/artifacts/bin/AndroidSampleApp/arm64/Debug/android-arm64/publish/libcoreclr.so.dbg`
 3. Open Android Studio and select `Profile or Debug APK` project.
 4. Find and select the desired `.apk` file (example: `<repo_root>/artifacts/bin/AndroidSampleApp/arm64/Release/android-arm64/Bundle/bin/HelloAndroid.apk`)
-5. In the project pane, expand `HelloAndroid->cpp->libcoreclr` and double-click `libcoreclr.so` (see: [pic1](./android-studio-coreclr-debug-symbols-adding.png))
+5. In the project pane, expand `HelloAndroid->cpp->libcoreclr` and double-click `libcoreclr.so`
+![Adding debug symbols](./android-studio-coreclr-debug-symbols-adding.png)
 6. From the `Debug Symbols` pane on the right, select `Add`
-7. Navigate to the renamed file from step 2) and select it `<repo_root>/artifacts/bin/AndroidSampleApp/arm64/Debug/android-arm64/publish/libcoreclr.so.so`
-8. Once loaded it will show all the source files under `HelloAndroid->cpp->libcoreclr` (see: [pic2](./android-studio-coreclr-debug-symbols-added.png))
-9. Find the `exports.cpp` and set a breakpoint in `coreclr_initialize` function and launch the debug session (see: [pic3](./android-studio-coreclr-debugging.png))
+7. Navigate to the renamed file from step 2. and select it `<repo_root>/artifacts/bin/AndroidSampleApp/arm64/Debug/android-arm64/publish/libcoreclr.so.so`
+8. Once loaded it will show all the source files under `HelloAndroid->cpp->libcoreclr`
+![Debug symbols loaded](./android-studio-coreclr-debug-symbols-adding.png)
+9. Find the `exports.cpp` and set a breakpoint in `coreclr_initialize` function and launch the debug session
+![Debugging CoreCLR](./android-studio-coreclr-debugging.png)
+
+## See also
+
+Similar instructions for debugging Android apps with Mono runtime can be found [here](../../debugging/mono/android-debugging.md).
