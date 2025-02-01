@@ -8168,9 +8168,6 @@ Compiler::fgWalkResult Compiler::lvaStressLclFldCB(GenTree** pTree, fgWalkData* 
             JITDUMP("Converting V%02u of type %s to %u sized block with LCL_FLD at offset (padding %u)\n", lclNum,
                     varTypeName(varType), layout->GetSize(), padding);
         }
-        else
-        {
-        }
 
         tree->gtFlags |= GTF_GLOB_REF;
 
