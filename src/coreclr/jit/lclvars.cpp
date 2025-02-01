@@ -8140,7 +8140,7 @@ Compiler::fgWalkResult Compiler::lvaStressLclFldCB(GenTree** pTree, fgWalkData* 
 #endif // defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
 
         // Also for GC types we need to round up
-        if (varTypeIsGC(varType) || varDsc->GetLayout()->HasGCPtr())
+        if (varTypeIsGC(varType) || ((varType == TYP_STRUCT) && varDsc->GetLayout()->HasGCPtr()))
         {
             padding = roundUp(padding, TARGET_POINTER_SIZE);
         }
