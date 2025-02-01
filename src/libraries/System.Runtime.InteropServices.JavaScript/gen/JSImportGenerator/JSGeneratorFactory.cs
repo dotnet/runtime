@@ -112,7 +112,7 @@ namespace Microsoft.Interop.JavaScript
                 (KnownManagedType.Double, JSTypeFlags.Number, _, _) => resolved(new PrimitiveJSGenerator(info, context, MarshalerType.Double), MarshalerType.Double),
                 (KnownManagedType.IntPtr, JSTypeFlags.Number, _, _) => resolved(new PrimitiveJSGenerator(info, context, MarshalerType.IntPtr), MarshalerType.IntPtr),
                 (KnownManagedType.DateTime, JSTypeFlags.Date, _, _) => resolved(new PrimitiveJSGenerator(info, context, MarshalerType.DateTime), MarshalerType.DateTime),
-                (KnownManagedType.DateTimeOffset, JSTypeFlags.Date, _, _) => resolved(new PrimitiveJSGenerator(info, context, MarshalerType.DateTime), MarshalerType.DateTime),
+                (KnownManagedType.DateTimeOffset, JSTypeFlags.Date, _, _) => resolved(new PrimitiveJSGenerator(info, context, MarshalerType.DateTimeOffset), MarshalerType.DateTimeOffset),
                 (KnownManagedType.Exception, JSTypeFlags.Error, _, _) => resolved(new PrimitiveJSGenerator(info, context, MarshalerType.Exception), MarshalerType.Exception),
                 (KnownManagedType.JSObject, JSTypeFlags.Object, _, _) => resolved(new PrimitiveJSGenerator(info, context, MarshalerType.JSObject), MarshalerType.JSObject),
                 (KnownManagedType.String, JSTypeFlags.String, _, _) => resolved(new PrimitiveJSGenerator(info, context, MarshalerType.String), MarshalerType.String),
@@ -149,7 +149,7 @@ namespace Microsoft.Interop.JavaScript
                 (KnownManagedType.Nullable, JSTypeFlags.Number, [KnownManagedType.Double], _) => resolved(new PrimitiveJSGenerator(info, context, MarshalerType.Double), MarshalerType.Nullable, [MarshalerType.Double]),
                 (KnownManagedType.Nullable, JSTypeFlags.Number, [KnownManagedType.IntPtr], _) => resolved(new PrimitiveJSGenerator(info, context, MarshalerType.IntPtr), MarshalerType.Nullable, [MarshalerType.IntPtr]),
                 (KnownManagedType.Nullable, JSTypeFlags.Date, [KnownManagedType.DateTime], _) => resolved(new PrimitiveJSGenerator(info, context, MarshalerType.DateTime), MarshalerType.Nullable, [MarshalerType.DateTime]),
-                (KnownManagedType.Nullable, JSTypeFlags.Date, [KnownManagedType.DateTimeOffset], _) => resolved(new PrimitiveJSGenerator(info, context, MarshalerType.DateTime), MarshalerType.Nullable, [MarshalerType.DateTime]),
+                (KnownManagedType.Nullable, JSTypeFlags.Date, [KnownManagedType.DateTimeOffset], _) => resolved(new PrimitiveJSGenerator(info, context, MarshalerType.DateTimeOffset), MarshalerType.Nullable, [MarshalerType.DateTimeOffset]),
 
                 // nullable missing
                 (KnownManagedType.Nullable, JSTypeFlags.Missing, [KnownManagedType.Boolean], _) => resolved(new PrimitiveJSGenerator(info, context, MarshalerType.Boolean), MarshalerType.Nullable, [MarshalerType.Boolean]),
@@ -182,7 +182,7 @@ namespace Microsoft.Interop.JavaScript
                 (KnownManagedType.Task, JSTypeFlags.Promise, [KnownManagedType.Double], [JSTypeFlags.Number]) => resolved(new TaskJSGenerator(info, context, MarshalerType.Double), MarshalerType.Task, [MarshalerType.Double]),
                 (KnownManagedType.Task, JSTypeFlags.Promise, [KnownManagedType.IntPtr], [JSTypeFlags.Number]) => resolved(new TaskJSGenerator(info, context, MarshalerType.IntPtr), MarshalerType.Task, [MarshalerType.IntPtr]),
                 (KnownManagedType.Task, JSTypeFlags.Promise, [KnownManagedType.DateTime], [JSTypeFlags.Date]) => resolved(new TaskJSGenerator(info, context, MarshalerType.DateTime), MarshalerType.Task, [MarshalerType.DateTime]),
-                (KnownManagedType.Task, JSTypeFlags.Promise, [KnownManagedType.DateTimeOffset], [JSTypeFlags.Date]) => resolved(new TaskJSGenerator(info, context, MarshalerType.DateTime), MarshalerType.Task, [MarshalerType.DateTime]),
+                (KnownManagedType.Task, JSTypeFlags.Promise, [KnownManagedType.DateTimeOffset], [JSTypeFlags.Date]) => resolved(new TaskJSGenerator(info, context, MarshalerType.DateTimeOffset), MarshalerType.Task, [MarshalerType.DateTimeOffset]),
                 (KnownManagedType.Task, JSTypeFlags.Promise, [KnownManagedType.Exception], [JSTypeFlags.Error]) => resolved(new TaskJSGenerator(info, context, MarshalerType.Exception), MarshalerType.Task, [MarshalerType.Exception]),
                 (KnownManagedType.Task, JSTypeFlags.Promise, [KnownManagedType.JSObject], [JSTypeFlags.Object]) => resolved(new TaskJSGenerator(info, context, MarshalerType.JSObject), MarshalerType.Task, [MarshalerType.JSObject]),
                 (KnownManagedType.Task, JSTypeFlags.Promise, [KnownManagedType.String], [JSTypeFlags.String]) => resolved(new TaskJSGenerator(info, context, MarshalerType.String), MarshalerType.Task, [MarshalerType.String]),
