@@ -152,7 +152,27 @@ Building on Windows is not directly supported yet. However it is possible to use
 
 #### WSL2
 
-TODO:
+##### Requirements
+
+1. Install the Android SDK and NDK in WSL per the [prerequisites](#prerequisite). This can be done by downloading the archives or using Android Studio:
+    - Archives:
+      - [NDK](https://developer.android.com/ndk/downloads) and [command-line tools](https://developer.android.com/studio#command-line-tools-only) (use `sdkmanager` to download the SDK)
+      - For an automated script, see in [Testing Libraries on Android](../../testing/libraries/testing-android.md#using-a-terminal)
+    - Android Studio:
+      - Make sure WSL is updated: from Windows host, `wsl --update`
+      - [Enabled systemd](https://devblogs.microsoft.com/commandline/systemd-support-is-now-available-in-wsl/#set-the-systemd-flag-set-in-your-wsl-distro-settings)
+      - `sudo snap install android-studio --classic`
+2. Set the following environment variables:
+    - ANDROID_SDK_ROOT=`<full-path-to-android-sdk>`
+    - ANDROID_NDK_ROOT=`<full-path-to-android-ndk>`
+
+#### Building the runtime, libraries and tools
+
+To build CoreCLR runtime, libraries and tools, run the following command from `<repo-root>`:
+
+```
+./build.sh clr.runtime+clr.alljits+clr.corelib+clr.nativecorelib+clr.tools+clr.packages+libs+packs -os android -arch <x64|arm64> -c <Debug|Release>
+```
 
 ## Building and running HelloAndroid sample app
 
@@ -187,6 +207,18 @@ NOTE: Emulators can be also started from the terminal via:
 ```
 $ANDROID_SDK_ROOT/emulator/emulator -avd <emulator-name>
 ```
+
+#### WSL2
+
+The app can be run on an emulator running on the Windows host.
+1. Install Android Studio on the Windows host (same versions as in [prerequisites](#prerequisite))
+2. In Windows, create and start an emulator
+3. In WSL, swap the `adb` from the Android SDK in WSL2 with that from Windows
+    - `mv $ANDROID_SDK_ROOT/platform-tools/adb $ANDROID_SDK_ROOT/platform-tools/adb-orig`
+    - `ln -s /mnt/<path-to-adb-on-host> $ANDROID_SDK_ROOT/platform-tools/adb`
+4. In WSL, Make xharness use the `adb` corresponding to the Windows host:
+    - `export ADB_EXE_PATH=$ANDROID_SDK_ROOT/platform-tools/adb`
+5. In WSL, run the `make` command as [above](#running-helloandroid-sample-on-an-emulator)
 
 ### Useful make commands
 
