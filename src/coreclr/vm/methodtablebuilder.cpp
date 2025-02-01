@@ -3709,6 +3709,11 @@ BOOL MethodTableBuilder::IsSelfReferencingStaticValueTypeField(mdToken     dwByV
 {
     STANDARD_VM_CONTRACT;
 
+    if (this->IsInterface())
+    {
+        return TRUE;
+    }
+
     if (dwByValueClassToken != this->GetCl())
     {
         return FALSE;
@@ -4042,7 +4047,7 @@ VOID    MethodTableBuilder::InitializeFieldDescs(FieldDesc *pFieldDescList,
                 // By-value class
                 BAD_FORMAT_NOTHROW_ASSERT(dwByValueClassToken != 0);
 
-                if (this->IsValueClass() && (pTokenModule == GetModule()))
+                if ((this->IsValueClass() || this->IsInterface()) && (pTokenModule == GetModule()))
                 {
                     if (TypeFromToken(dwByValueClassToken) == mdtTypeRef)
                     {
@@ -4101,7 +4106,7 @@ VOID    MethodTableBuilder::InitializeFieldDescs(FieldDesc *pFieldDescList,
                             BuildMethodTableThrowException(IDS_CLASSLOAD_VALUEINSTANCEFIELD, mdMethodDefNil);
                         }
 
-                        if (!IsValueClass())
+                        if (!IsInterface() && !IsValueClass())
                         {
                             BuildMethodTableThrowException(COR_E_BADIMAGEFORMAT, IDS_CLASSLOAD_MUST_BE_BYVAL, mdTokenNil);
                         }
@@ -4118,9 +4123,23 @@ IS_VALUETYPE:
                 // It's not self-referential so try to load it
                 if (pByValueClass == NULL)
                 {
+                    // Loading a static valuetype field on a struct could be indirectly self-referential if one of the field type's
+                    //  generic arguments is the valuetype we're currently loading.
+                    BOOL fCouldBeSelfReferentialThroughGenerics = fIsStatic && IsValueClass();
+                    if (fCouldBeSelfReferentialThroughGenerics)
+                    {
+                        SigPointer sptr(pMemberSignature, cMemberSignature);
+                        uint32_t unused;
+                        sptr.GetCallingConvInfo(&unused); // Skip calling convention, we already know it
+                        CorElementType rawElementType;
+                        sptr.PeekElemType(&rawElementType);
+                        if (rawElementType != ELEMENT_TYPE_GENERICINST) // Determine whether this valuetype is a generic instance
+                            fCouldBeSelfReferentialThroughGenerics = FALSE;
+                    }
+
                     // Loading a non-self-ref valuetype field.
                     OVERRIDE_TYPE_LOAD_LEVEL_LIMIT(CLASS_LOAD_APPROXPARENTS);
-                    if (isEnCField || fIsStatic)
+                    if ((isEnCField || fIsStatic) && !fCouldBeSelfReferentialThroughGenerics)
                     {
                         // EnCFieldDescs are not created at normal MethodTableBuilder time, and don't need to avoid recursive generic instantiation
                         pByValueClass = fsig.GetArgProps().GetTypeHandleThrowing(GetModule(),
