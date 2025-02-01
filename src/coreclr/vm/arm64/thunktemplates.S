@@ -12,9 +12,6 @@
         ldr x10, DATA_SLOT(StubPrecode, Target)
         ldr x12, DATA_SLOT(StubPrecode, MethodDesc)
         br x10
-        nop
-        nop
-        nop
     LEAF_END_MARKED StubPrecodeCode\STUB_PAGE_SIZE
 
     LEAF_ENTRY FixupPrecodeCode\STUB_PAGE_SIZE
@@ -22,8 +19,7 @@
         br  x11
         ldr x12, DATA_SLOT(FixupPrecode, MethodDesc)
         ldr x11, DATA_SLOT(FixupPrecode, PrecodeFixupThunk)
-        br  x11        
-        nop
+        br  x11
     LEAF_END_MARKED FixupPrecodeCode\STUB_PAGE_SIZE
 
     LEAF_ENTRY CallCountingStubCode\STUB_PAGE_SIZE
