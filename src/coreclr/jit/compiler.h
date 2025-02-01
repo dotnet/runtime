@@ -4765,7 +4765,8 @@ protected:
                               R2RARG(CORINFO_CONST_LOOKUP* entryPoint),
                               var_types             callType,
                               NamedIntrinsic        intrinsicName,
-                              bool                  tailCall);
+                              bool                  tailCall,
+                              bool*                 isSpecial);
     GenTree* impMinMaxIntrinsic(CORINFO_METHOD_HANDLE method,
                                 CORINFO_SIG_INFO*     sig,
                                 CorInfoType           callJitType,
