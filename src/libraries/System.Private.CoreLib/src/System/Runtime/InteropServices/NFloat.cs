@@ -1650,6 +1650,7 @@ namespace System.Runtime.InteropServices
             return TryConvertTo(value, out result);
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static bool TryConvertTo<TOther>(NFloat value, [MaybeNullWhen(false)] out TOther result)
             where TOther : INumberBase<TOther>
         {

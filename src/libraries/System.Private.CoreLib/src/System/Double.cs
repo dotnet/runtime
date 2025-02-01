@@ -1379,6 +1379,7 @@ namespace System
             return TryConvertTo(value, out result);
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static bool TryConvertTo<TOther>(double value, [MaybeNullWhen(false)] out TOther result)
             where TOther : INumberBase<TOther>
         {

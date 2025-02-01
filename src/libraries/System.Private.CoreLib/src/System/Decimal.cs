@@ -1723,6 +1723,7 @@ namespace System
             return TryConvertTo(value, out result);
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static bool TryConvertTo<TOther>(decimal value, [MaybeNullWhen(false)] out TOther result)
             where TOther : INumberBase<TOther>
         {
