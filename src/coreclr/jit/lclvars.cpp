@@ -2765,7 +2765,7 @@ void Compiler::StructPromotionHelper::PromoteStructVar(unsigned lclNum)
     if (compiler->verbose)
     {
         printf("\nPromoting struct local V%02u (%s):", lclNum,
-               compiler->eeGetClassName(varDsc->GetLayout()->GetClassHandle()));
+            varDsc->GetLayout()->GetClassNameW());
     }
 #endif
 
@@ -3368,7 +3368,7 @@ void Compiler::lvaSetStruct(unsigned varNum, ClassLayout* layout, bool unsafeVal
         assert(ClassLayout::AreCompatible(varDsc->GetLayout(), layout));
         // Inlining could replace a canon struct type with an exact one.
         varDsc->SetLayout(layout);
-        assert(layout->IsBlockLayout() || (layout->GetSize() != 0));
+        assert(layout->IsCustomLayout() || (layout->GetSize() != 0));
     }
 
     if (!layout->IsCustomLayout())
@@ -8092,7 +8092,8 @@ Compiler::fgWalkResult Compiler::lvaStressLclFldCB(GenTree** pTree, fgWalkData* 
             return WALK_CONTINUE;
         }
 
-        if (lclType == TYP_STRUCT)
+        // Structs are not currently supported
+        if (varTypeIsStruct(lclType))
         {
             varDsc->lvNoLclFldStress = true;
             return WALK_CONTINUE;
@@ -8140,7 +8141,7 @@ Compiler::fgWalkResult Compiler::lvaStressLclFldCB(GenTree** pTree, fgWalkData* 
 #endif // defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
 
         // Also for GC types we need to round up
-        if ((varType == TYP_REF) || (varType == TYP_BYREF))
+        if (varTypeIsGC(varType) || varDsc->GetLayout()->HasGCPtr())
         {
             padding = roundUp(padding, TARGET_POINTER_SIZE);
         }
@@ -8167,6 +8168,9 @@ Compiler::fgWalkResult Compiler::lvaStressLclFldCB(GenTree** pTree, fgWalkData* 
 
             JITDUMP("Converting V%02u of type %s to %u sized block with LCL_FLD at offset (padding %u)\n", lclNum,
                     varTypeName(varType), layout->GetSize(), padding);
+        }
+        else
+        {
         }
 
         tree->gtFlags |= GTF_GLOB_REF;

@@ -126,7 +126,7 @@ public:
 
     bool IsCustomLayout() const
     {
-        return (m_classHandle == NO_CLASS_HANDLE);
+        return m_classHandle == NO_CLASS_HANDLE;
     }
 
     bool IsBlockLayout() const

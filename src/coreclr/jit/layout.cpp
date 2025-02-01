@@ -203,8 +203,8 @@ private:
         else
         {
             unsigned index = 0;
-            if ((layout->IsCustomLayout() && m_customLayoutMap->Lookup(CustomLayoutKey(layout), &index)) ||
-                m_objLayoutMap->Lookup(layout->GetClassHandle(), &index))
+            if (layout->IsCustomLayout() ? m_customLayoutMap->Lookup(CustomLayoutKey(layout), &index)
+                                         : m_objLayoutMap->Lookup(layout->GetClassHandle(), &index))
             {
                 return index;
             }
