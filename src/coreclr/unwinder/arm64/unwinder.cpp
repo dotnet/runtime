@@ -171,7 +171,11 @@ typedef struct _ARM64_VFP_STATE
 #define MEMORY_READ_DWORD(params, addr)      (*dac_cast<PTR_DWORD>(addr))
 #define MEMORY_READ_QWORD(params, addr)      (*dac_cast<PTR_UINT64>(addr))
 
-#endif
+#define MEMORY_READ_SVE_PREDICATE(params, dest, src, pl) \
+                                RtlCopyMemory((dest), (src), (pl))
+
+#define MEMORY_READ_SVE_VECTOR(params, dest, src, vl) \
+                                RtlCopyMemory((dest), (src), (vl))
 
 //
 // ARM64_UNWIND_PARAMS definition. This is the kernel-specific definition,
@@ -180,8 +184,6 @@ typedef struct _ARM64_VFP_STATE
 // these fields must be wrapped in a macro so that the debugger can take
 // a direct drop of this code and use it.
 //
-
-#if !defined(DEBUGGER_UNWIND)
 
 typedef struct _ARM64_UNWIND_PARAMS
 {
@@ -231,7 +233,189 @@ do {                                                                            
     VALIDATE_STACK_ADDRESS_EX(Params, Context, (Context)->Sp, DataSize, Alignment, OutStatus)
 #endif // !defined(VALIDATE_STACK_ADDRESS)
 
+template <typename TPCONTEXT>
+NTSTATUS
+RtlpGetSveContextPointers (
+    _In_ TPCONTEXT ContextRecord,
+    _Out_ ULONG * VectorLength,
+    _Outptr_opt_result_buffer_((*VectorLength / 8) * 32) PUCHAR * PredicateRegisters,
+    _Outptr_opt_result_buffer_((*VectorLength - 16) * 32) PUCHAR * VectorRegisters,
+    _In_ PARM64_UNWIND_PARAMS UnwindParams
+    )
+
+/*++
+
+Routine Description:
+
+    This routine returns the Vector Length and pointers to the Predicate and Vector
+    registers retrived either from the environment or from the provided context record.
+
+Arguments:
+
+    ContextRecord - Supplies the address of a context record.
+
+    VectorLength - Returns the Vector Length (by reference).
+
+    PredicateRegisters - Returns (by reference) the address where the Predicate Registers
+        save area is. This parameter is optional and may be NULL, if the ContexRecord does
+        not contain any storage associated with Predicate Registers.
+
+    VectorRegisters - Returns (by reference) the address where the upper (>16) bytes of the Vector
+        Registers save area is. This parameter is optional and may be NULL, if the ContexRecord
+        does not contain any storage associated with the upper bytes of the Vector Registers or
+        if the Vector Length is not > 16 bytes (meaning all the state is saved in the canonical
+        Neon save area).
+
+    UnwindParams - Additional parameters shared with caller.
+
+Return Value:
+
+    NTSTATUS indicating the success or failure of the operation.
+
+--*/
+
+{
+
+    UNREFERENCED_PARAMETER(UnwindParams);
+
+#if defined(_M_ARM64) && !defined(VSM_ENCLAVE_RUNTIME) && !defined(TRUSTEDAPP_RUNTIME) && !defined(IUM_SECUREKERNEL)
+
+    ULONG SveVectorLength = 16;
+    UCHAR * PredicateRegisterAddress = nullptr;
+    UCHAR * VectorRegisterAddress = nullptr;
+    XSAVE_ARM64_SVE_HEADER* SveHeader;
+    bool SveChunkPresent = false;
+    CONTEXT_EX* ContextEx;
+    XSAVE_AREA_HEADER* XStateHeader;
+
+    if ((ContextRecord->ContextFlags & ARM64_CONTEXT_XSTATE) != ARM64_CONTEXT_XSTATE) {
+        goto no_sve_chunk;
+    }
+
+    ContextEx = reinterpret_cast<CONTEXT_EX *>(ContextRecord + 1);
+
+    XStateHeader = reinterpret_cast<XSAVE_AREA_HEADER *>(
+        RTL_CONTEXT_EX_CHUNK(ContextEx, ContextEx, XState));
+
+    if ((XStateHeader->Mask & XSTATE_MASK_ARM64_SVE) == 0) {
+        goto no_sve_chunk;
+    }
+
+    SveChunkPresent = true;
+
+    SveHeader = reinterpret_cast<XSAVE_ARM64_SVE_HEADER *>(
+        RtlLocateExtendedFeature(ContextEx, XSTATE_ARM64_SVE, NULL));
+
+    SveVectorLength = SveHeader->VectorLength;
+    if (!RtlIsValidSveVectorLength(SveVectorLength)) {
+        return STATUS_INVALID_PARAMETER;
+    }
+
+    PredicateRegisterAddress =
+        reinterpret_cast<UCHAR *>(SveHeader) +  SveHeader->PredicateRegisterOffset;
+
+    VectorRegisterAddress = (SveVectorLength > sizeof(ARM64_NT_NEON128)) ?
+        (reinterpret_cast<UCHAR *>(SveHeader) + SveHeader->VectorRegisterOffset) :
+        (nullptr);
+
+no_sve_chunk:
+
+    if (!SveChunkPresent) {
+        SveVectorLength = (ULONG)RtlpRdvl();
+        NT_ASSERT(RtlIsValidSveVectorLength(SveVectorLength));
+    }
+
+    *VectorLength = SveVectorLength;
+    if (PredicateRegisters != nullptr) {
+        *PredicateRegisters = PredicateRegisterAddress;
+    }
+
+    if (VectorRegisters != nullptr) {
+        *VectorRegisters = VectorRegisterAddress;
+    }
+
+    return STATUS_SUCCESS;
+
+#else  // defined(_M_ARM64) && !defined(VSM_ENCLAVE_RUNTIME) && !defined(TRUSTEDAPP_RUNTIME) && !defined(IUM_SECUREKERNEL)
+
+    UNREFERENCED_PARAMETER(ContextRecord);
+    UNREFERENCED_PARAMETER(VectorLength);
+    UNREFERENCED_PARAMETER(PredicateRegisters);
+    UNREFERENCED_PARAMETER(VectorRegisters);
+    return STATUS_NOT_IMPLEMENTED;
+
+#endif // defined(_M_ARM64) && !defined(VSM_ENCLAVE_RUNTIME) && !defined(TRUSTEDAPP_RUNTIME) && !defined(IUM_SECUREKERNEL)
+
+}
+
+template <>
+NTSTATUS
+RtlpGetSveContextPointers<CONTEXT_FOR_STACKWALK *> (
+    _In_ CONTEXT_FOR_STACKWALK * ContextRecord,
+    _Out_ ULONG * VectorLength,
+    _Outptr_opt_result_buffer_((*VectorLength / 8) * 32) PUCHAR * PredicateRegisters,
+    _Outptr_opt_result_buffer_((*VectorLength - 16) * 32) PUCHAR * VectorRegisters,
+    _In_ PARM64_UNWIND_PARAMS UnwindParams
+    )
+
+/*++
+
+Routine Description:
+
+    Template specialization for CONTEXT_FOR_STACKWALK.
+
+--*/
+
+{
+    UNREFERENCED_PARAMETER(ContextRecord);
+    UNREFERENCED_PARAMETER(UnwindParams);
+
+#if defined(_M_ARM64) && !defined(VSM_ENCLAVE_RUNTIME) && !defined(TRUSTEDAPP_RUNTIME) && !defined(IUM_SECUREKERNEL)
+
+    ULONG SveVectorLength = (ULONG)RtlpRdvl();
+    NT_ASSERT(RtlIsValidSveVectorLength(SveVectorLength));
+
+    *VectorLength = SveVectorLength;
+    if (PredicateRegisters != nullptr) {
+        *PredicateRegisters = nullptr;
+    }
+
+    if (VectorRegisters != nullptr) {
+        *VectorRegisters = nullptr;
+    }
+
+    return STATUS_SUCCESS;
+
+#else  // defined(_M_ARM64) && !defined(VSM_ENCLAVE_RUNTIME) && !defined(TRUSTEDAPP_RUNTIME) && !defined(IUM_SECUREKERNEL)
+
+    UNREFERENCED_PARAMETER(VectorLength);
+    UNREFERENCED_PARAMETER(PredicateRegisters);
+    UNREFERENCED_PARAMETER(VectorRegisters);
+    return STATUS_NOT_IMPLEMENTED;
+
+#endif // defined(_M_ARM64) && !defined(VSM_ENCLAVE_RUNTIME) && !defined(TRUSTEDAPP_RUNTIME) && !defined(IUM_SECUREKERNEL)
+
+}
+
 #else // !defined(DEBUGGER_UNWIND)
+
+#define MEMORY_READ_SVE_PREDICATE(_params, _dest, _src, _pl)    \
+{                                                               \
+    unsigned short *dest = (unsigned short *)(_dest);           \
+    unsigned short *src = (unsigned short *)(_src);             \
+    for (ULONG i = 0; i < ((_pl) / 2); i += 1) {                \
+        dest[i] = MEMORY_READ_WORD(_params, &src[i]);           \
+    }                                                           \
+}
+
+#define MEMORY_READ_SVE_VECTOR(_params, _dest, _src, _vl)       \
+{                                                               \
+    unsigned __int64 *dest = (unsigned __int64 *)(_dest);       \
+    unsigned __int64 *src = (unsigned __int64 *)(_src);         \
+    for (ULONG i = 0; i < ((_vl) / 8); i += 1) {                \
+        dest[i] = MEMORY_READ_QWORD(_params, &src[i]);          \
+    }                                                           \
+}
 
 #if !defined(UPDATE_CONTEXT_POINTERS)
 #define UPDATE_CONTEXT_POINTERS(Params, RegisterNumber, Address)
@@ -1072,14 +1256,16 @@ Return Value:
 
         return 1;
 
-    } else if (UnwindCode < 0xE0) {
+    }
+    else if (UnwindCode < 0xE0) {
         if (ARGUMENT_PRESENT(ScopeSize)) {
             *ScopeSize += 1;
         }
 
         return 2;
 
-    } else {
+    }
+    else {
         if (ARGUMENT_PRESENT(ScopeSize)) {
             *ScopeSize += UnwindCodeInstructionCountTable[UnwindCode - 0xE0];
         }
@@ -1088,7 +1274,6 @@ Return Value:
     }
 }
 
-static
 ULONG
 RtlpComputeScopeSize (
     __in ULONG_PTR UnwindCodePtr,
@@ -1156,10 +1341,10 @@ Return Value:
     return ScopeSize;
 }
 
-static
+template <typename TPCONTEXT>
 NTSTATUS
 RtlpUnwindRestoreRegisterRange (
-    _Inout_ PCONTEXT ContextRecord,
+    _Inout_ TPCONTEXT ContextRecord,
     _In_ LONG SpOffset,
     _In_range_(0, 30) ULONG FirstRegister,
     _In_range_(1, 31-FirstRegister) ULONG RegisterCount,
@@ -1216,7 +1401,7 @@ Return Value:
     }
 
     Status = STATUS_SUCCESS;
-    VALIDATE_STACK_ADDRESS(UnwindParams, ContextRecord, 8 * RegisterCount, 8, &Status);
+    VALIDATE_STACK_ADDRESS_EX(UnwindParams, ContextRecord, CurAddress, 8 * RegisterCount, 8, &Status);
     if (Status != STATUS_SUCCESS) {
         return Status;
     }
@@ -1237,10 +1422,78 @@ Return Value:
     return STATUS_SUCCESS;
 }
 
-static
+template <>
+NTSTATUS
+RtlpUnwindRestoreRegisterRange<CONTEXT_FOR_STACKWALK *> (
+    _Inout_ CONTEXT_FOR_STACKWALK *ContextRecord,
+    _In_ LONG SpOffset,
+    _In_range_(0, 30) ULONG FirstRegister,
+    _In_range_(1, 31-FirstRegister) ULONG RegisterCount,
+    _In_ PARM64_UNWIND_PARAMS UnwindParams
+    )
+
+/*++
+
+Routine Description:
+
+    Template specialization for CONTEXT_FOR_STACKWALK.
+
+--*/
+
+{
+
+    ULONG_PTR CurAddress;
+    ULONG RegIndex;
+    NTSTATUS Status;
+
+    //
+    // Validate non-overflowing register count.
+    //
+
+    if ((FirstRegister + RegisterCount) > 31) {
+        return STATUS_UNWIND_INVALID_SEQUENCE;
+    }
+
+    //
+    // Compute the source address and validate it.
+    //
+
+    CurAddress = ContextRecord->Sp;
+    if (SpOffset >= 0) {
+        CurAddress += SpOffset;
+    }
+
+    Status = STATUS_SUCCESS;
+    VALIDATE_STACK_ADDRESS_EX(UnwindParams, ContextRecord, CurAddress, 8 * RegisterCount, 8, &Status);
+    if (Status != STATUS_SUCCESS) {
+        return Status;
+    }
+
+    //
+    // Restore the registers
+    //
+
+    for (RegIndex = 0; RegIndex < RegisterCount; RegIndex++) {
+        UPDATE_CONTEXT_POINTERS(UnwindParams, FirstRegister + RegIndex, CurAddress);
+        if ((FirstRegister + RegIndex) == 29) {
+            ContextRecord->Fp = MEMORY_READ_QWORD(UnwindParams, CurAddress);
+        }
+        else if ((FirstRegister + RegIndex) == 30) {
+            ContextRecord->Lr = MEMORY_READ_QWORD(UnwindParams, CurAddress);
+        }
+        CurAddress += 8;
+    }
+    if (SpOffset < 0) {
+        ContextRecord->Sp -= SpOffset;
+    }
+
+    return STATUS_SUCCESS;
+}
+
+template <typename TPCONTEXT>
 NTSTATUS
 RtlpUnwindRestoreFpRegisterRange (
-    __inout PCONTEXT ContextRecord,
+    __inout TPCONTEXT ContextRecord,
     __in LONG SpOffset,
     __in ULONG FirstRegister,
     __in ULONG RegisterCount,
@@ -1297,7 +1550,7 @@ Return Value:
     }
 
     Status = STATUS_SUCCESS;
-    VALIDATE_STACK_ADDRESS(UnwindParams, ContextRecord, 8 * RegisterCount, 8, &Status);
+    VALIDATE_STACK_ADDRESS_EX(UnwindParams, ContextRecord, CurAddress, 8 * RegisterCount, 8, &Status);
     if (Status != STATUS_SUCCESS) {
         return Status;
     }
@@ -1318,10 +1571,71 @@ Return Value:
     return STATUS_SUCCESS;
 }
 
-static
+template <>
+NTSTATUS
+RtlpUnwindRestoreFpRegisterRange<CONTEXT_FOR_STACKWALK *> (
+    __inout CONTEXT_FOR_STACKWALK *ContextRecord,
+    __in LONG SpOffset,
+    __in ULONG FirstRegister,
+    __in ULONG RegisterCount,
+    __in PARM64_UNWIND_PARAMS UnwindParams
+    )
+
+/*++
+
+Routine Description:
+
+    Template specialization for CONTEXT_FOR_STACKWALK.
+
+--*/
+
+{
+    ULONG_PTR CurAddress;
+    ULONG RegIndex;
+    NTSTATUS Status;
+
+    //
+    // Validate non-overflowing register count.
+    //
+
+    if ((FirstRegister + RegisterCount) > 32) {
+        return STATUS_UNWIND_INVALID_SEQUENCE;
+    }
+
+    //
+    // Compute the source address and validate it.
+    //
+
+    CurAddress = ContextRecord->Sp;
+    if (SpOffset >= 0) {
+        CurAddress += SpOffset;
+    }
+
+    Status = STATUS_SUCCESS;
+    VALIDATE_STACK_ADDRESS_EX(UnwindParams, ContextRecord, CurAddress, 8 * RegisterCount, 8, &Status);
+    if (Status != STATUS_SUCCESS) {
+        return Status;
+    }
+
+    //
+    // Restore the registers
+    //
+
+    for (RegIndex = 0; RegIndex < RegisterCount; RegIndex++) {
+        UPDATE_FP_CONTEXT_POINTERS(UnwindParams, FirstRegister + RegIndex, CurAddress);
+        CurAddress += 8;
+    }
+    if (SpOffset < 0) {
+        ContextRecord->Sp -= SpOffset;
+    }
+
+    return STATUS_SUCCESS;
+}
+
+template <typename TPCONTEXT>
 NTSTATUS
 RtlpUnwindRestoreSimdRegisterRange (
-    __inout PCONTEXT ContextRecord,
+    __inout TPCONTEXT ContextRecord,
     __in LONG SpOffset,
     __in ULONG FirstRegister,
     __in ULONG RegisterCount,
@@ -1378,7 +1692,7 @@ Return Value:
     }
 
     Status = STATUS_SUCCESS;
-    VALIDATE_STACK_ADDRESS(UnwindParams, ContextRecord, 16 * RegisterCount, 16, &Status);
+    VALIDATE_STACK_ADDRESS_EX(UnwindParams, ContextRecord, CurAddress, 16 * RegisterCount, 16, &Status);
     if (Status != STATUS_SUCCESS) {
         return Status;
     }
@@ -1401,10 +1715,225 @@ Return Value:
     return STATUS_SUCCESS;
 }
 
-static
+template <>
+NTSTATUS
+RtlpUnwindRestoreSimdRegisterRange<CONTEXT_FOR_STACKWALK *> (
+    __inout CONTEXT_FOR_STACKWALK *ContextRecord,
+    __in LONG SpOffset,
+    __in ULONG FirstRegister,
+    __in ULONG RegisterCount,
+    __in PARM64_UNWIND_PARAMS UnwindParams
+    )
+
+/*++
+
+Routine Description:
+
+    Template specialization for CONTEXT_FOR_STACKWALK.
+
+--*/
+
+{
+    ULONG_PTR CurAddress;
+    ULONG RegIndex;
+    NTSTATUS Status;
+
+    //
+    // Validate non-overflowing register count.
+    //
+
+    if ((FirstRegister + RegisterCount) > 32) {
+        return STATUS_UNWIND_INVALID_SEQUENCE;
+    }
+
+    //
+    // Compute the source address and validate it.
+    //
+
+    CurAddress = ContextRecord->Sp;
+    if (SpOffset >= 0) {
+        CurAddress += SpOffset;
+    }
+
+    Status = STATUS_SUCCESS;
+    VALIDATE_STACK_ADDRESS_EX(UnwindParams, ContextRecord, CurAddress, 16 * RegisterCount, 16, &Status);
+    if (Status != STATUS_SUCCESS) {
+        return Status;
+    }
+
+    //
+    // Restore the registers
+    //
+
+    for (RegIndex = 0; RegIndex < RegisterCount; RegIndex++) {
+        UPDATE_FP_CONTEXT_POINTERS(UnwindParams, FirstRegister + RegIndex, CurAddress);
+        CurAddress += 16;
+    }
+    if (SpOffset < 0) {
+        ContextRecord->Sp -= SpOffset;
+    }
+
+    return STATUS_SUCCESS;
+}
+
+template <typename TPCONTEXT>
+NTSTATUS
+RtlpUnwindRestoreSveRegister (
+    __inout TPCONTEXT ContextRecord,
+    __in ULONG Displacement,
+    __in ULONG Register,
+    __in PARM64_UNWIND_PARAMS UnwindParams
+    )
+
+/*++
+
+Routine Description:
+
+    Restores a full SVE vector (Z8-Z23) or predicate (P4-P15) registers
+    from the stack.
+
+Arguments:
+
+    ContextRecord - Supplies the address of a context record.
+
+    Displacement - Specifies an unsigned (positive) stack offset, multiplied by the
+        size of the register to restore from where to restore the register value.
+
+    Register - Specifies the index of the register to restore.
+        If R <= 15 then the register is the vector register Z(R+8)
+        if R >= 20 and R <= 31 then the register is the predicate register P(R-16)
+        Values [16, 19] are reserved.
+
+    UnwindParams - Additional parameters shared with caller.
+
+Return Value:
+
+    NTSTATUS indicating the success or failure of the operation.
+
+--*/
+
+{
+    NTSTATUS Status = STATUS_SUCCESS;
+    ULONG SveVectorLength;
+    PUCHAR PredicateRegistersBase;
+    PUCHAR VectorRegistersBase;
+    UCHAR* SpAddress;
+    bool IsPredicate;
+    ULONG RegisterLength;
+
+
+    //
+    // Validate register range.
+    //
+
+    if ((Register > 31) ||
+        ((Register >= 16) && (Register <= 19))) {
+
+        Status = STATUS_UNWIND_INVALID_SEQUENCE;
+        goto bail_out;
+    }
+
+    Status = RtlpGetSveContextPointers (
+        ContextRecord,
+        &SveVectorLength,
+        &PredicateRegistersBase,
+        &VectorRegistersBase,
+        UnwindParams
+    );
+
+    if (!NT_SUCCESS(Status)) {
+        goto bail_out;
+    }
+
+    IsPredicate = (Register >= 20);
+    RegisterLength = IsPredicate ? (SveVectorLength / 8) : SveVectorLength;
+
+    //
+    // Compute the source address and validate it.
+    //
+
+    SpAddress =
+        reinterpret_cast<UCHAR *>(ContextRecord->Sp) +
+        (Displacement * RegisterLength);
+
+    VALIDATE_STACK_ADDRESS_EX(UnwindParams, ContextRecord, SpAddress, RegisterLength, 16, &Status);
+    if (Status != STATUS_SUCCESS) {
+        goto bail_out;
+    }
+
+    //
+    // Restore the register
+    //
+
+    if (IsPredicate) {
+        if (PredicateRegistersBase != nullptr) {
+            auto DestinationAddress =
+                PredicateRegistersBase + ((Register - 16) * RegisterLength);
+
+            MEMORY_READ_SVE_PREDICATE(
+                UnwindParams,
+                DestinationAddress,
+                SpAddress,
+                RegisterLength
+            );
+        }
+    }
+    else {
+        ContextRecord->V[Register + 8].Low = MEMORY_READ_QWORD(UnwindParams, SpAddress);
+        SpAddress += 8;
+        ContextRecord->V[Register + 8].High = MEMORY_READ_QWORD(UnwindParams, SpAddress);
+        SpAddress += 8;
+        if (VectorRegistersBase != nullptr) {
+
+            NT_ASSERT(RegisterLength > sizeof(ARM64_NT_NEON128));
+
+            auto RegisterLengthHigh = RegisterLength - sizeof(ARM64_NT_NEON128);
+            auto DestinationAddress =
+                VectorRegistersBase + ((Register + 8) * RegisterLengthHigh);
+
+            MEMORY_READ_SVE_VECTOR(
+                UnwindParams,
+                DestinationAddress,
+                SpAddress,
+                RegisterLengthHigh
+            );
+        }
+    }
+
+bail_out:
+    return Status;
+}
+
+template <>
+NTSTATUS
+RtlpUnwindRestoreSveRegister<CONTEXT_FOR_STACKWALK *> (
+    __inout CONTEXT_FOR_STACKWALK * ContextRecord,
+    __in ULONG Displacement,
+    __in ULONG Register,
+    __in PARM64_UNWIND_PARAMS UnwindParams
+    )
+
+/*++
+
+Routine Description:
+
+    Template specialization for CONTEXT_FOR_STACKWALK.
+
+--*/
+
+{
+    UNREFERENCED_PARAMETER(ContextRecord);
+    UNREFERENCED_PARAMETER(Displacement);
+    UNREFERENCED_PARAMETER(Register);
+    UNREFERENCED_PARAMETER(UnwindParams);
+
+    return STATUS_SUCCESS;
+}
+
+template <typename TPCONTEXT>
 NTSTATUS
 RtlpUnwindCustom (
-    __inout PCONTEXT ContextRecord,
+    __inout TPCONTEXT ContextRecord,
     __in BYTE Opcode,
     __in PARM64_UNWIND_PARAMS UnwindParams
     )
@@ -1466,7 +1995,7 @@ Return Value:
         }
 
         //
-        // Restore X0-X18, and D0-D7
+        // Restore X0-X18, Q0-Q31, FPCS and FPSR.
         //
 
         SourceAddress = StartingSp + FIELD_OFFSET(ARM64_KTRAP_FRAME, X);
@@ -1566,7 +2095,7 @@ Return Value:
         }
 
         //
-        // Restore X0-X28, and D0-D31
+        // Restore X0-X28, and Q0-Q31
         //
 
         SourceAddress = StartingSp + FIELD_OFFSET(ARM64_CONTEXT, X);
@@ -1636,13 +2165,199 @@ Return Value:
     return STATUS_SUCCESS;
 }
 
+template <>
+NTSTATUS
+RtlpUnwindCustom<CONTEXT_FOR_STACKWALK *> (
+    __inout CONTEXT_FOR_STACKWALK *ContextRecord,
+    __in BYTE Opcode,
+    __in PARM64_UNWIND_PARAMS UnwindParams
+    )
+
+/*++
+
+Routine Description:
+
+    Template specialization for CONTEXT_FOR_STACKWALK.
+
+--*/
+
+{
+    ULONG_PTR SourceAddress;
+    ULONG_PTR StartingSp;
+    NTSTATUS Status;
+
+    StartingSp = ContextRecord->Sp;
+    Status = STATUS_SUCCESS;
+
+    //
+    // The opcode describes the special-case stack
+    //
+
+    switch (Opcode)
+    {
+
+    //
+    // Trap frame case
+    //
+
+    case 0xe8:  // MSFT_OP_TRAP_FRAME:
+
+        //
+        // Ensure there is enough valid space for the trap frame
+        //
+
+        VALIDATE_STACK_ADDRESS(UnwindParams, ContextRecord, sizeof(ARM64_KTRAP_FRAME), 16, &Status);
+        if (!NT_SUCCESS(Status)) {
+            return Status;
+        }
+
+        //
+        // Restore FP, SP, LR, PC, and the status registers
+        //
+
+        SourceAddress = StartingSp + FIELD_OFFSET(ARM64_KTRAP_FRAME, Sp);
+        ContextRecord->Sp = MEMORY_READ_QWORD(UnwindParams, SourceAddress);
+
+        SourceAddress = StartingSp + FIELD_OFFSET(ARM64_KTRAP_FRAME, Lr);
+        ContextRecord->Lr = MEMORY_READ_QWORD(UnwindParams, SourceAddress);
+
+        SourceAddress = StartingSp + FIELD_OFFSET(ARM64_KTRAP_FRAME, Fp);
+        ContextRecord->Fp = MEMORY_READ_QWORD(UnwindParams, SourceAddress);
+
+        SourceAddress = StartingSp + FIELD_OFFSET(ARM64_KTRAP_FRAME, Pc);
+        ContextRecord->Pc = MEMORY_READ_QWORD(UnwindParams, SourceAddress);
+
+        //
+        // Set the trap frame and clear the unwound-to-call flag
+        //
+
+        UNWIND_PARAMS_SET_TRAP_FRAME(UnwindParams, StartingSp, sizeof(ARM64_KTRAP_FRAME));
+        ContextRecord->ContextFlags &= ~CONTEXT_UNWOUND_TO_CALL;
+        break;
+
+    //
+    // Machine frame case
+    //
+
+    case 0xe9:  // MSFT_OP_MACHINE_FRAME:
+
+        //
+        // Ensure there is enough valid space for the machine frame
+        //
+
+        VALIDATE_STACK_ADDRESS(UnwindParams, ContextRecord, 16, 16, &Status);
+        if (!NT_SUCCESS(Status)) {
+            return Status;
+        }
+
+        //
+        // Restore the SP and PC, and clear the unwound-to-call flag
+        //
+
+        ContextRecord->Sp = MEMORY_READ_QWORD(UnwindParams, StartingSp + 0);
+        ContextRecord->Pc = MEMORY_READ_QWORD(UnwindParams, StartingSp + 8);
+        ContextRecord->ContextFlags &= ~CONTEXT_UNWOUND_TO_CALL;
+        break;
+
+    //
+    // Context case
+    //
+
+    case 0xea:  // MSFT_OP_CONTEXT:
+
+        //
+        // Ensure there is enough valid space for the full CONTEXT structure
+        //
+
+        VALIDATE_STACK_ADDRESS(UnwindParams, ContextRecord, sizeof(ARM64_CONTEXT), 16, &Status);
+        if (!NT_SUCCESS(Status)) {
+            return Status;
+        }
+
+        //
+        // Restore SP, LR, SP, PC
+        //
+
+        SourceAddress = StartingSp + FIELD_OFFSET(ARM64_CONTEXT, Fp);
+        ContextRecord->Fp = MEMORY_READ_QWORD(UnwindParams, SourceAddress);
+
+        SourceAddress = StartingSp + FIELD_OFFSET(ARM64_CONTEXT, Lr);
+        ContextRecord->Lr = MEMORY_READ_QWORD(UnwindParams, SourceAddress);
+
+        SourceAddress = StartingSp + FIELD_OFFSET(ARM64_CONTEXT, Sp);
+        ContextRecord->Sp = MEMORY_READ_QWORD(UnwindParams, SourceAddress);
+
+        SourceAddress = StartingSp + FIELD_OFFSET(ARM64_CONTEXT, Pc);
+        ContextRecord->Pc = MEMORY_READ_QWORD(UnwindParams, SourceAddress);
+
+        //
+        // Inherit the unwound-to-call flag from this context
+        //
+
+        SourceAddress = StartingSp + FIELD_OFFSET(ARM64_CONTEXT, ContextFlags);
+        ContextRecord->ContextFlags &= ~CONTEXT_UNWOUND_TO_CALL;
+        ContextRecord->ContextFlags |=
+                        MEMORY_READ_DWORD(UnwindParams, SourceAddress) & CONTEXT_UNWOUND_TO_CALL;
+        break;
+
+    case 0xeb:  // MSFT_OP_EC_CONTEXT:
+
+        //
+        // Ensure there is enough valid space for the full CONTEXT structure
+        //
+
+        VALIDATE_STACK_ADDRESS(UnwindParams, ContextRecord, sizeof(ARM64EC_NT_CONTEXT), 16, &Status);
+        if (!NT_SUCCESS(Status)) {
+            return Status;
+        }
+
+        //
+        // Restore SP, LR, PC, and the status registers
+        //
+
+        SourceAddress = StartingSp + FIELD_OFFSET(ARM64EC_NT_CONTEXT, Fp);
+        ContextRecord->Fp = MEMORY_READ_QWORD(UnwindParams, SourceAddress);
+
+        SourceAddress = StartingSp + FIELD_OFFSET(ARM64EC_NT_CONTEXT, Lr);
+        ContextRecord->Lr = MEMORY_READ_QWORD(UnwindParams, SourceAddress);
+
+        SourceAddress = StartingSp + FIELD_OFFSET(ARM64EC_NT_CONTEXT, Sp);
+        ContextRecord->Sp = MEMORY_READ_QWORD(UnwindParams, SourceAddress);
+
+        SourceAddress = StartingSp + FIELD_OFFSET(ARM64EC_NT_CONTEXT, Pc);
+        ContextRecord->Pc = MEMORY_READ_QWORD(UnwindParams, SourceAddress);
+
+        //
+        // Inherit the unwound-to-call flag from this context
+        //
+
+        SourceAddress = StartingSp + FIELD_OFFSET(ARM64EC_NT_CONTEXT, ContextFlags);
+        ContextRecord->ContextFlags &= ~CONTEXT_UNWOUND_TO_CALL;
+        ContextRecord->ContextFlags |=
+                        MEMORY_READ_DWORD(UnwindParams, SourceAddress) & CONTEXT_UNWOUND_TO_CALL;
+
+        break;
+
+    case 0xec: // MSFT_OP_CLEAR_UNWOUND_TO_CALL
+        ContextRecord->ContextFlags &= ~CONTEXT_UNWOUND_TO_CALL;
+        ContextRecord->Pc = ContextRecord->Lr;
+        break;
+
+    default:
+        return STATUS_UNSUCCESSFUL;
+    }
+
+    return STATUS_SUCCESS;
+}
+
+template <typename TPCONTEXT>
 NTSTATUS
 RtlpUnwindFunctionFull (
     __in ULONG ControlPcRva,
     __in ULONG_PTR ImageBase,
     __in PRUNTIME_FUNCTION FunctionEntry,
     __in IMAGE_ARM64_RUNTIME_FUNCTION_ENTRY_XDATA *FunctionEntryExtended,
-    __inout PCONTEXT ContextRecord,
+    __inout TPCONTEXT ContextRecord,
     __out PULONG_PTR EstablisherFrame,
     __deref_opt_out_opt PEXCEPTION_ROUTINE *HandlerRoutine,
     __out PVOID *HandlerData,
@@ -2162,6 +2877,29 @@ ExecuteCodes:
         }
 
         //
+        // alloc_z (11011111|zzzzzzzz)
+        //
+
+        else if (CurCode == 0xdf) {
+            if (AccumulatedSaveNexts != 0) {
+                return STATUS_UNWIND_INVALID_SEQUENCE;
+            }
+            UCHAR NumVectors = MEMORY_READ_BYTE(UnwindParams, UnwindCodePtr);
+            UnwindCodePtr++;
+            ULONG VectorLength;
+            Status = RtlpGetSveContextPointers (
+                ContextRecord,
+                &VectorLength,
+                nullptr,
+                nullptr,
+                UnwindParams);
+
+            if (NT_SUCCESS(Status)) {
+                ContextRecord->Sp += VectorLength * NumVectors;
+            }
+        }
+
+        //
         // alloc_l (11100000|xxxxxxxx|xxxxxxxx|xxxxxxxx): allocate large stack with size < 256M
         //
 
@@ -2246,10 +2984,13 @@ ExecuteCodes:
         //      f: 00/01/10 - X / D / Q
         //      o: offset * 16 for x=1 or p=1 or f=Q / else offset * 8
         //
+        //      11100111 ' 0ooRrrrr ' 11oooooo
+        //      R: 0/1 - Z/P
+        //      r: register number: Z(r+8) for R=0, P(r) for R=1
+        //      o: offset * VL
+        //
 
         else if (CurCode == 0xe7) {
-            LONG SpOffset;
-            ULONG RegCount;
             union uop {
                 unsigned short val;
                 struct {
@@ -2264,6 +3005,12 @@ ExecuteCodes:
                     unsigned short p : 1;
                     unsigned short fixed : 1;
                 };
+                struct {
+                    unsigned short sveol : 6;
+                    unsigned short svef  : 2;
+                    unsigned short sver  : 5;
+                    unsigned short sveoh  : 2;
+                };
             } op;
 
             op.val2 = MEMORY_READ_BYTE(UnwindParams, UnwindCodePtr);
@@ -2271,55 +3018,70 @@ ExecuteCodes:
             op.val1 = MEMORY_READ_BYTE(UnwindParams, UnwindCodePtr);
             UnwindCodePtr += 1;
 
-            //
-            // save_next_pair only permited for pairs.
-            //
-
-            if ((op.p == 0) && (AccumulatedSaveNexts != 0)) {
-                return STATUS_UNWIND_INVALID_SEQUENCE;
-            }
-
             if (op.fixed != 0) {
                 return STATUS_UNWIND_INVALID_SEQUENCE;
             }
 
-            SpOffset = op.o + op.x;
-            SpOffset *= ((op.x == 1) || (op.f == 2) || (op.p == 1)) ? (16) : (8);
-            SpOffset *= (op.x == 1) ? (-1) : (1);
-            RegCount = 1 + op.p + (2 * AccumulatedSaveNexts);
-            switch (op.f) {
-            case 0:
-               Status = RtlpUnwindRestoreRegisterRange(
-                            ContextRecord,
-                            SpOffset,
-                            op.r,
-                            RegCount,
-                            UnwindParams);
-                break;
+            if (op.f == 3) {
+                if (AccumulatedSaveNexts != 0) {
+                    return STATUS_UNWIND_INVALID_SEQUENCE;
+                }
 
-            case 1:
-                Status = RtlpUnwindRestoreFpRegisterRange(
-                            ContextRecord,
-                            SpOffset,
-                            op.r,
-                            RegCount,
-                            UnwindParams);
-                break;
-
-            case 2:
-                Status = RtlpUnwindRestoreSimdRegisterRange(
-                            ContextRecord,
-                            SpOffset,
-                            op.r,
-                            RegCount,
-                            UnwindParams);
-                break;
-
-            default:
-                return STATUS_UNWIND_INVALID_SEQUENCE;
+                RtlpUnwindRestoreSveRegister (
+                    ContextRecord,
+                    op.sveol + (op.sveoh << 6),
+                    op.sver,
+                    UnwindParams
+                );
             }
+            else {
 
-            AccumulatedSaveNexts = 0;
+                //
+                // save_next_pair only permited for pairs.
+                //
+
+                if ((op.p == 0) && (AccumulatedSaveNexts != 0)) {
+                    return STATUS_UNWIND_INVALID_SEQUENCE;
+                }
+
+                LONG SpOffset = op.o + op.x;
+                SpOffset *= ((op.x == 1) || (op.f == 2) || (op.p == 1)) ? (16) : (8);
+                SpOffset *= (op.x == 1) ? (-1) : (1);
+                ULONG RegCount = 1 + op.p + (2 * AccumulatedSaveNexts);
+                switch (op.f) {
+                case 0:
+                Status = RtlpUnwindRestoreRegisterRange(
+                                ContextRecord,
+                                SpOffset,
+                                op.r,
+                                RegCount,
+                                UnwindParams);
+                    break;
+
+                case 1:
+                    Status = RtlpUnwindRestoreFpRegisterRange(
+                                ContextRecord,
+                                SpOffset,
+                                op.r,
+                                RegCount,
+                                UnwindParams);
+                    break;
+
+                case 2:
+                    Status = RtlpUnwindRestoreSimdRegisterRange(
+                                ContextRecord,
+                                SpOffset,
+                                op.r,
+                                RegCount,
+                                UnwindParams);
+                    break;
+
+                default:
+                    return STATUS_UNWIND_INVALID_SEQUENCE;
+                }
+
+                AccumulatedSaveNexts = 0;
+            }
         }
 
         //
@@ -2335,7 +3097,7 @@ ExecuteCodes:
         }
 
         //
-        // pac (11111100): function has pointer authentication 
+        // pac (11111100): function has pointer authentication
         //
 
         else if (CurCode == 0xfc) {
@@ -2407,12 +3169,13 @@ finished:
     return Status;
 }
 
+template <typename TPCONTEXT>
 NTSTATUS
 RtlpUnwindFunctionCompact (
     __in ULONG ControlPcRva,
     __in ULONG_PTR ImageBase,
     __in PRUNTIME_FUNCTION FunctionEntry,
-    __inout PCONTEXT ContextRecord,
+    __inout TPCONTEXT ContextRecord,
     __out PULONG_PTR EstablisherFrame,
     __deref_opt_out_opt PEXCEPTION_ROUTINE *HandlerRoutine,
     __out PVOID *HandlerData,
@@ -2468,7 +3231,7 @@ RtlpUnwindFunctionCompact (
     struct LOCAL_XDATA {
         IMAGE_ARM64_RUNTIME_FUNCTION_ENTRY_XDATA xdata;
         char ops[60];
-    } fnent_xdata = {};
+    } fnent_xdata = { 0 };
 
     fnent_xdata.xdata.CodeWords = sizeof(fnent_xdata.ops) / 4;
     RtlpExpandCompactToFull(FunctionEntry, &fnent_xdata.xdata);
@@ -2488,13 +3251,14 @@ RtlpUnwindFunctionCompact (
 
 #if !defined(DEBUGGER_UNWIND)
 
+template <typename TPCONTEXT>
 NTSTATUS
 RtlpxVirtualUnwind (
     _In_ ULONG HandlerType,
     _In_ ULONG_PTR ImageBase,
     _In_ ULONG_PTR ControlPc,
     _In_opt_ PRUNTIME_FUNCTION FunctionEntry,
-    _Inout_ PCONTEXT ContextRecord,
+    _Inout_ TPCONTEXT ContextRecord,
     _Out_ PVOID *HandlerData,
     _Out_ PULONG_PTR EstablisherFrame,
     _Inout_opt_ PKNONVOLATILE_CONTEXT_POINTERS ContextPointers,
