@@ -19,13 +19,18 @@ public class Runtime_112053
         c.G = Test(1 / x);
     }
 
-    static Guid Test(int x)
+    static RetBuf Test(int x)
     {
-        return new Guid(x, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
+        return new RetBuf();
     }
 
     class C
     {
-        public Guid G;
+        public RetBuf G;
+    }
+
+    struct RetBuf
+    {
+        public nint A, B, C, D, E, F, G, H;
     }
 }
