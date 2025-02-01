@@ -104,9 +104,9 @@ bool json_parser_t::parse_file(const pal::string_t& path)
     if (m_data == nullptr)
     {
 #ifdef _WIN32
-        // Since we can't use in-situ parsing on Windows, as JSON data is encoded in
+        // We can't use in-situ parsing on Windows, as JSON data is encoded in
         // UTF-8 and the host expects wide strings.
-        // We do not need COW and read-only mapping will be enough.
+        // We do not need copy-on-write, so read-only mapping will be enough.
         m_data = (char*)pal::mmap_read(path, &m_size);
 #else // _WIN32
         m_data = (char*)pal::mmap_copy_on_write(path, &m_size);

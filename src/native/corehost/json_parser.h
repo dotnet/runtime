@@ -53,7 +53,7 @@ class json_parser_t {
         // to UTF-16 by m_document during load.
         document_t m_document;
 
-        // If a json file is parsed from a single-file bundle, the following two fields represents
+        // If a json file is parsed from a single-file bundle, the following fields represents
         // the location of this json file within the bundle.
         const bundle::location_t* m_bundle_location;
 };
