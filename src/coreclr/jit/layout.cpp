@@ -7,7 +7,7 @@
 
 struct CustomLayoutKey
 {
-    unsigned Size;
+    unsigned    Size;
     const BYTE* GCPtrTypes;
 
     CustomLayoutKey(ClassLayout* layout)
@@ -76,7 +76,7 @@ class ClassLayoutTable
     static constexpr unsigned ZeroSizedBlockLayoutNum = TYP_UNKNOWN + 1;
     static constexpr unsigned FirstLayoutNum          = TYP_UNKNOWN + 2;
 
-    typedef JitHashTable<CustomLayoutKey, CustomLayoutKey, unsigned>               CustomLayoutIndexMap;
+    typedef JitHashTable<CustomLayoutKey, CustomLayoutKey, unsigned>                            CustomLayoutIndexMap;
     typedef JitHashTable<CORINFO_CLASS_HANDLE, JitPtrKeyFuncs<CORINFO_CLASS_STRUCT_>, unsigned> ObjLayoutIndexMap;
 
     union
@@ -87,9 +87,9 @@ class ClassLayoutTable
         // Otherwise a dynamic array is allocated and hashtables are used to map from handle/size to layout array index.
         struct
         {
-            ClassLayout**      m_layoutLargeArray;
+            ClassLayout**         m_layoutLargeArray;
             CustomLayoutIndexMap* m_customLayoutMap;
-            ObjLayoutIndexMap* m_objLayoutMap;
+            ObjLayoutIndexMap*    m_objLayoutMap;
         };
     };
     // The number of layout objects stored in this table.
@@ -203,7 +203,7 @@ private:
         else
         {
             unsigned index = 0;
-            if ((layout->IsBlockLayout() && m_customLayoutMap->Lookup(CustomLayoutKey(layout), &index)) ||
+            if ((layout->IsCustomLayout() && m_customLayoutMap->Lookup(CustomLayoutKey(layout), &index)) ||
                 m_objLayoutMap->Lookup(layout->GetClassHandle(), &index))
             {
                 return index;
@@ -224,7 +224,8 @@ private:
         {
             for (unsigned i = 0; i < m_layoutCount; i++)
             {
-                if (m_layoutArray[i]->IsCustomLayout() && CustomLayoutKey::Equals(key, CustomLayoutKey(m_layoutArray[i])))
+                if (m_layoutArray[i]->IsCustomLayout() &&
+                    CustomLayoutKey::Equals(key, CustomLayoutKey(m_layoutArray[i])))
                 {
                     return i;
                 }
@@ -305,7 +306,7 @@ private:
             if (m_layoutCount <= ArrLen(m_layoutArray))
             {
                 CustomLayoutIndexMap* customLayoutMap = new (alloc) CustomLayoutIndexMap(alloc);
-                ObjLayoutIndexMap* objLayoutMap = new (alloc) ObjLayoutIndexMap(alloc);
+                ObjLayoutIndexMap*    objLayoutMap    = new (alloc) ObjLayoutIndexMap(alloc);
 
                 for (unsigned i = 0; i < m_layoutCount; i++)
                 {
@@ -323,7 +324,7 @@ private:
                 }
 
                 m_customLayoutMap = customLayoutMap;
-                m_objLayoutMap = objLayoutMap;
+                m_objLayoutMap    = objLayoutMap;
             }
             else
             {
@@ -470,11 +471,11 @@ ClassLayout* ClassLayout::Create(Compiler* compiler, CORINFO_CLASS_HANDLE classH
 
 ClassLayout* ClassLayout::Create(Compiler* compiler, const ClassLayoutBuilder& builder)
 {
-    ClassLayout* newLayout = new (compiler, CMK_ClassLayout) ClassLayout(builder.m_size);
+    ClassLayout* newLayout  = new (compiler, CMK_ClassLayout) ClassLayout(builder.m_size);
     newLayout->m_gcPtrCount = builder.m_gcPtrCount;
 
 #ifdef DEBUG
-    newLayout->m_name = builder.m_name;
+    newLayout->m_name      = builder.m_name;
     newLayout->m_shortName = builder.m_shortName;
 #endif
 
@@ -683,18 +684,18 @@ void ClassLayoutBuilder::SetGCPtrType(unsigned slot, var_types type)
 {
     switch (type)
     {
-    case TYP_REF:
-        SetGCPtr(slot, TYPE_GC_REF);
-        break;
-    case TYP_BYREF:
-        SetGCPtr(slot, TYPE_GC_BYREF);
-        break;
-    case TYP_UNDEF:
-        SetGCPtr(slot, TYPE_GC_NONE);
-        break;
-    default:
-        assert(!"Invalid var_types passed to " __FUNCTION__);
-        break;
+        case TYP_REF:
+            SetGCPtr(slot, TYPE_GC_REF);
+            break;
+        case TYP_BYREF:
+            SetGCPtr(slot, TYPE_GC_BYREF);
+            break;
+        case TYP_UNDEF:
+            SetGCPtr(slot, TYPE_GC_NONE);
+            break;
+        default:
+            assert(!"Invalid var_types passed to " __FUNCTION__);
+            break;
     }
 }
 
@@ -710,7 +711,7 @@ void ClassLayoutBuilder::SetGCPtrs(unsigned startSlot, ClassLayout* layout)
 #ifdef DEBUG
 void ClassLayoutBuilder::SetName(const char* name, const char* shortName)
 {
-    m_name = name;
+    m_name      = name;
     m_shortName = shortName;
 }
 #endif

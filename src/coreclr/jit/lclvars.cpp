@@ -2497,9 +2497,9 @@ bool Compiler::StructPromotionHelper::CanPromoteStructVar(unsigned lclNum)
         return false;
     }
 
-    if (varDsc->GetLayout()->IsBlockLayout())
+    if (varDsc->GetLayout()->IsCustomLayout())
     {
-        JITDUMP("  struct promotion of V%02u is disabled because it has block layout\n", lclNum);
+        JITDUMP("  struct promotion of V%02u is disabled because it has custom layout\n", lclNum);
         return false;
     }
 
@@ -3371,7 +3371,7 @@ void Compiler::lvaSetStruct(unsigned varNum, ClassLayout* layout, bool unsafeVal
         assert(layout->IsBlockLayout() || (layout->GetSize() != 0));
     }
 
-    if (!layout->IsBlockLayout())
+    if (!layout->IsCustomLayout())
     {
 #ifndef TARGET_64BIT
         bool fDoubleAlignHint = false;
@@ -7638,7 +7638,7 @@ void Compiler::lvaDumpEntry(unsigned lclNum, FrameLayoutState curState, size_t r
     else if (varTypeIsStruct(varDsc->TypeGet()))
     {
         ClassLayout* layout = varDsc->GetLayout();
-        if (layout != nullptr && !layout->IsBlockLayout())
+        if (layout != nullptr)
         {
             printf(" <%s>", layout->GetClassName());
         }
@@ -8092,8 +8092,7 @@ Compiler::fgWalkResult Compiler::lvaStressLclFldCB(GenTree** pTree, fgWalkData* 
             return WALK_CONTINUE;
         }
 
-        // Can't have GC ptrs in block layouts.
-        if (!varTypeIsArithmetic(lclType))
+        if (lclType == TYP_STRUCT)
         {
             varDsc->lvNoLclFldStress = true;
             return WALK_CONTINUE;
@@ -8129,7 +8128,7 @@ Compiler::fgWalkResult Compiler::lvaStressLclFldCB(GenTree** pTree, fgWalkData* 
     else
     {
         // Do the morphing
-        noway_assert((varType == lclType) || ((varType == TYP_STRUCT) && varDsc->GetLayout()->IsBlockLayout()));
+        noway_assert((varType == lclType) || ((varType == TYP_STRUCT) && varDsc->GetLayout()->IsCustomLayout()));
 
         // Calculate padding
         unsigned padding = pComp->lvaStressLclFldPadding(lclNum);
@@ -8140,17 +8139,34 @@ Compiler::fgWalkResult Compiler::lvaStressLclFldCB(GenTree** pTree, fgWalkData* 
         padding = roundUp(padding, genTypeSize(TYP_DOUBLE));
 #endif // defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
 
+        // Also for GC types we need to round up
+        if ((varType == TYP_REF) || (varType == TYP_BYREF))
+        {
+            padding = roundUp(padding, TARGET_POINTER_SIZE);
+        }
+
         if (varType != TYP_STRUCT)
         {
             // Change the variable to a block struct
-            ClassLayout* layout =
-                pComp->typGetBlkLayout(roundUp(padding + pComp->lvaLclSize(lclNum), TARGET_POINTER_SIZE));
-            varDsc->lvType = TYP_STRUCT;
+            unsigned           size = roundUp(padding + pComp->lvaLclSize(lclNum), TARGET_POINTER_SIZE);
+            ClassLayoutBuilder builder(pComp, size);
+#ifdef DEBUG
+            builder.SetName(pComp->printfAlloc("%s_%u_Stress", varTypeName(varType), size),
+                            pComp->printfAlloc("%s_%u", varTypeName(varType), size));
+#endif
+
+            if ((varType == TYP_REF) || (varType == TYP_BYREF))
+            {
+                builder.SetGCPtrType(padding / TARGET_POINTER_SIZE, varType);
+            }
+
+            ClassLayout* layout = pComp->typGetCustomLayout(builder);
+            varDsc->lvType      = TYP_STRUCT;
             varDsc->SetLayout(layout);
             pComp->lvaSetVarAddrExposed(lclNum DEBUGARG(AddressExposedReason::STRESS_LCL_FLD));
 
-            JITDUMP("Converting V%02u to %u sized block with LCL_FLD at offset (padding %u)\n", lclNum,
-                    layout->GetSize(), padding);
+            JITDUMP("Converting V%02u of type %s to %u sized block with LCL_FLD at offset (padding %u)\n", lclNum,
+                    varTypeName(varType), layout->GetSize(), padding);
         }
 
         tree->gtFlags |= GTF_GLOB_REF;

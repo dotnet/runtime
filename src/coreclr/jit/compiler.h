@@ -9210,7 +9210,7 @@ private:
 
     bool isOpaqueSIMDType(ClassLayout* layout) const
     {
-        if (layout->IsBlockLayout())
+        if (layout->IsCustomLayout())
         {
             return true;
         }
@@ -11054,9 +11054,9 @@ public:
     // Get the layout for the specified class handle.
     ClassLayout* typGetObjLayout(CORINFO_CLASS_HANDLE classHandle);
     // Get the number of a layout for the specified class handle.
-    unsigned typGetObjLayoutNum(CORINFO_CLASS_HANDLE classHandle);
+    unsigned     typGetObjLayoutNum(CORINFO_CLASS_HANDLE classHandle);
     ClassLayout* typGetCustomLayout(const ClassLayoutBuilder& builder);
-    unsigned typGetCustomLayoutNum(const ClassLayoutBuilder& builder);
+    unsigned     typGetCustomLayoutNum(const ClassLayoutBuilder& builder);
     // Get the layout having the specified size but no class handle.
     ClassLayout* typGetBlkLayout(unsigned blockSize);
     // Get the number of a layout having the specified size but no class handle.

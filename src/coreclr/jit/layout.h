@@ -15,17 +15,17 @@ class ClassLayoutBuilder
     friend struct CustomLayoutKey;
 
     Compiler* m_compiler;
-    BYTE* m_gcPtrs = nullptr;
-    unsigned m_size;
-    unsigned m_gcPtrCount = 0;
+    BYTE*     m_gcPtrs = nullptr;
+    unsigned  m_size;
+    unsigned  m_gcPtrCount = 0;
 #ifdef DEBUG
-    const char* m_name = "";
-    const char* m_shortName = "";
+    const char* m_name      = "UNNAMED";
+    const char* m_shortName = "UNNAMED";
 #endif
 
     unsigned GetSlotCount();
-    BYTE* GetOrCreateGCPtrs();
-    void SetGCPtr(unsigned slot, CorInfoGCType type);
+    BYTE*    GetOrCreateGCPtrs();
+    void     SetGCPtr(unsigned slot, CorInfoGCType type);
 public:
     // Create a class layout builder.
     //
