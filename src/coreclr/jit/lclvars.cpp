@@ -8147,7 +8147,7 @@ Compiler::fgWalkResult Compiler::lvaStressLclFldCB(GenTree** pTree, fgWalkData* 
 
         if (varType != TYP_STRUCT)
         {
-            // Change the variable to a block struct
+            // Change the variable to a custom layout struct
             unsigned           size = roundUp(padding + pComp->lvaLclSize(lclNum), TARGET_POINTER_SIZE);
             ClassLayoutBuilder builder(pComp, size);
 #ifdef DEBUG
