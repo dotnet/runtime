@@ -8155,7 +8155,7 @@ Compiler::fgWalkResult Compiler::lvaStressLclFldCB(GenTree** pTree, fgWalkData* 
                             pComp->printfAlloc("%s_%u", varTypeName(varType), size));
 #endif
 
-            if ((varType == TYP_REF) || (varType == TYP_BYREF))
+            if (varTypeIsGC(varType))
             {
                 builder.SetGCPtrType(padding / TARGET_POINTER_SIZE, varType);
             }
