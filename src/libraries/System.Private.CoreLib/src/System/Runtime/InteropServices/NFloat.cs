@@ -1410,6 +1410,7 @@ namespace System.Runtime.InteropServices
             return TryConvertFrom(value, out result);
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static bool TryConvertFrom<TOther>(TOther value, out NFloat result)
             where TOther : INumberBase<TOther>
         {

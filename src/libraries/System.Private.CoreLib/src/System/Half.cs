@@ -1928,6 +1928,7 @@ namespace System
             return TryConvertFrom(value, out result);
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static bool TryConvertFrom<TOther>(TOther value, out Half result)
             where TOther : INumberBase<TOther>
         {
