@@ -25,9 +25,6 @@ namespace System.Threading.Tasks
         /// </remarks>
         [UnsupportedOSPlatform("browser")]
         public static IEnumerable<T> ToBlockingEnumerable<T>(this IAsyncEnumerable<T> source, CancellationToken cancellationToken = default)
-#if NET10_0_OR_GREATER
-            where T : allows ref struct
-#endif
         {
 #if TARGET_WASI
             if (OperatingSystem.IsWasi()) throw new PlatformNotSupportedException(); // TODO remove with https://github.com/dotnet/runtime/pull/107185
