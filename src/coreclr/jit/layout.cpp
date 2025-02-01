@@ -694,7 +694,7 @@ void ClassLayoutBuilder::SetGCPtrType(unsigned slot, var_types type)
             SetGCPtr(slot, TYPE_GC_NONE);
             break;
         default:
-            assert(!"Invalid var_types passed to " __FUNCTION__);
+            assert(!"Invalid var_types passed to ClassLayoutBuilder::SetGCPtrType");
             break;
     }
 }
