@@ -2093,7 +2093,7 @@ private:
     PER_HEAP_ISOLATED_METHOD void set_fgm_result (failure_get_memory f, size_t s, BOOL loh_p);
 
 #ifdef USE_REGIONS
-    PER_HEAP_ISOLATED_METHOD bool on_used_changed (uint8_t* left);
+    PER_HEAP_ISOLATED_METHOD bool on_used_changed (uint8_t* left, bool uoh_p);
 
     // new_sizes are the logical sizes of the card table elements while
     // commit_sizes are the physical sizes of the card table elements due to alignment constraints.
@@ -2102,7 +2102,7 @@ private:
                                         size_t commit_sizes[total_bookkeeping_elements],
                                         size_t new_sizes[total_bookkeeping_elements]);
 
-    PER_HEAP_ISOLATED_METHOD bool inplace_commit_card_table (uint8_t* from, uint8_t* to);
+    PER_HEAP_ISOLATED_METHOD bool inplace_commit_card_table (uint8_t* from, uint8_t* to, bool uoh_p);
 #else //USE_REGIONS
     PER_HEAP_ISOLATED_METHOD int grow_brick_card_tables (uint8_t* start,
                                 uint8_t* end,
@@ -6283,7 +6283,7 @@ enum allocate_direction
     allocate_backward = -1,
 };
 
-typedef bool (*region_allocator_callback_fn)(uint8_t*);
+typedef bool (*region_allocator_callback_fn)(uint8_t*, bool);
 
 // The big space we reserve for regions is divided into units of region_alignment.
 //
@@ -6339,7 +6339,7 @@ private:
     uint8_t* region_address_of (uint32_t* map_index);
     uint32_t* region_map_index_of (uint8_t* address);
 
-    uint8_t* allocate (uint32_t num_units, allocate_direction direction, region_allocator_callback_fn fn);
+    uint8_t* allocate (uint32_t num_units, allocate_direction direction, region_allocator_callback_fn fn, bool uoh_p);
     uint8_t* allocate_end (uint32_t num_units, allocate_direction direction);
 
     void enter_spin_lock();

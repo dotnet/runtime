@@ -4054,7 +4054,7 @@ void region_allocator::leave_spin_lock()
     region_allocator_lock.lock = -1;
 }
 
-uint8_t* region_allocator::allocate (uint32_t num_units, allocate_direction direction, region_allocator_callback_fn fn)
+uint8_t* region_allocator::allocate (uint32_t num_units, allocate_direction direction, region_allocator_callback_fn fn, bool uoh_p)
 {
     enter_spin_lock();
 
@@ -4155,7 +4155,7 @@ uint8_t* region_allocator::allocate (uint32_t num_units, allocate_direction dire
         total_free_units -= num_units;
         if (fn != nullptr)
         {
-            if (!fn (global_region_left_used))
+            if (!fn (global_region_left_used, uoh_p))
             {
                 delete_region_impl (alloc);
                 alloc = nullptr;
@@ -4186,29 +4186,32 @@ bool region_allocator::allocate_region (int gen_num, size_t size, uint8_t** star
     uint8_t* alloc = NULL;
     dprintf (REGIONS_LOG, ("----GET %u-----", num_units));
 
-    alloc = allocate (num_units, direction, fn);
+    alloc = allocate (num_units, direction, fn, (gen_num >= uoh_start_generation));
     *start = alloc;
     *end = alloc + alloc_size;
     ret = (alloc != NULL);
 
-    gc_etw_segment_type segment_type;
+    if (ret)
+    {
+        gc_etw_segment_type segment_type;
 
-    if (gen_num == loh_generation)
-    {
-        segment_type = gc_etw_segment_large_object_heap;
-    }
-    else if (gen_num == poh_generation)
-    {
-        segment_type = gc_etw_segment_pinned_object_heap;
-    }
-    else
-    {
-        segment_type = gc_etw_segment_small_object_heap;
-    }
+        if (gen_num == loh_generation)
+        {
+            segment_type = gc_etw_segment_large_object_heap;
+        }
+        else if (gen_num == poh_generation)
+        {
+            segment_type = gc_etw_segment_pinned_object_heap;
+        }
+        else
+        {
+            segment_type = gc_etw_segment_small_object_heap;
+        }
 
-    FIRE_EVENT(GCCreateSegment_V1, (alloc + sizeof (aligned_plug_and_gap)),
-                                  size - sizeof (aligned_plug_and_gap),
-                                  segment_type);
+        FIRE_EVENT(GCCreateSegment_V1, (alloc + sizeof (aligned_plug_and_gap)),
+            size - sizeof (aligned_plug_and_gap),
+            segment_type);
+    }
 
     return ret;
 }
@@ -9280,7 +9283,7 @@ void gc_heap::get_card_table_element_layout (uint8_t* start, uint8_t* end, size_
 }
 
 #ifdef USE_REGIONS
-bool gc_heap::on_used_changed (uint8_t* new_used)
+bool gc_heap::on_used_changed (uint8_t* new_used, bool uoh_p)
 {
 #if defined(WRITE_BARRIER_CHECK) && !defined (SERVER_GC)
     if (GCConfig::GetHeapVerifyLevel() & GCConfig::HEAPVERIFY_BARRIERCHECK)
@@ -9342,7 +9345,7 @@ bool gc_heap::on_used_changed (uint8_t* new_used)
             dprintf (REGIONS_LOG, ("bookkeeping_covered_committed     = %p", bookkeeping_covered_committed));
             dprintf (REGIONS_LOG, ("new_bookkeeping_covered_committed = %p", new_bookkeeping_covered_committed));
 
-            if (inplace_commit_card_table (bookkeeping_covered_committed, new_bookkeeping_covered_committed))
+            if (inplace_commit_card_table (bookkeeping_covered_committed, new_bookkeeping_covered_committed, uoh_p))
             {
                 bookkeeping_covered_committed = new_bookkeeping_covered_committed;
                 break;
@@ -9443,7 +9446,7 @@ bool gc_heap::get_card_table_commit_layout (uint8_t* from, uint8_t* to,
     return true;
 }
 
-bool gc_heap::inplace_commit_card_table (uint8_t* from, uint8_t* to)
+bool gc_heap::inplace_commit_card_table (uint8_t* from, uint8_t* to, bool uoh_p=false)
 {
     dprintf (REGIONS_LOG, ("inplace_commit_card_table(%p, %p), size = %zd", from, to, to - from));
 
@@ -9467,6 +9470,7 @@ bool gc_heap::inplace_commit_card_table (uint8_t* from, uint8_t* to)
             succeed = virtual_commit (commit_begins[i], commit_sizes[i], recorded_committed_bookkeeping_bucket);
             if (!succeed)
             {
+                set_fgm_result (fgm_commit_table, commit_sizes[i], uoh_p);
                 failed_commit = i;
                 break;
             }
@@ -15593,6 +15597,10 @@ BOOL gc_heap::grow_heap_segment (heap_segment* seg, uint8_t* high_address, bool*
                 (heap_segment_committed (seg) <= heap_segment_decommit_target (seg)));
 #endif //MULTIPLE_HEAPS && !USE_REGIONS
     }
+    else
+    {
+        fgm_result.set_fgm (fgm_commit_heap, c_size, heap_segment_uoh_p (seg));
+    }
 
     return !!ret;
 }
@@ -17139,6 +17147,24 @@ void gc_heap::handle_oom (oom_reason reason, size_t alloc_size,
     oom_info.loh_p = fgm_result.loh_p;
 
     add_to_oom_history_per_heap();
+
+#ifdef FEATURE_EVENT_TRACE
+    uint32_t memory_load = 0;
+    uint64_t available_physical = 0;
+    uint64_t available_page_file = 0;
+    get_memory_info (&memory_load, &available_physical, &available_page_file);
+
+    GCEventFireOOMDetails_V1 (
+        (uint64_t)oom_info.gc_index,
+        (uint64_t)oom_info.alloc_size,
+        (uint8_t)oom_info.reason,
+        (uint8_t)oom_info.fgm,
+        (uint64_t)oom_info.size,
+        (uint8_t)oom_info.loh_p,
+        (uint32_t)memory_load,
+        (uint64_t)(available_page_file / (1024 * 1024)));
+#endif //FEATURE_EVENT_TRACE
+
     fgm_result.fgm = fgm_no_failure;
 
     // Break early - before the more_space_lock is release so no other threads
@@ -19599,6 +19625,7 @@ BOOL gc_heap::allocate_more_space(alloc_context* acontext, size_t size,
                 alloc_heap = balance_heaps_uoh_hard_limit_retry (acontext, size, alloc_generation_number);
                 if (alloc_heap == nullptr || (retry_count++ == UOH_ALLOCATION_RETRY_MAX_COUNT))
                 {
+                    alloc_heap->handle_oom (oom_loh, size, 0, 0);
                     return false;
                 }
             }
@@ -35186,6 +35213,8 @@ heap_segment* gc_heap::allocate_new_region (gc_heap* hp, int gen_num, bool uoh_p
 
     if (!allocated_p)
     {
+        hp->fgm_result.set_fgm (fgm_reserve_segment, size, uoh_p);
+
         return 0;
     }
 
@@ -35195,6 +35224,7 @@ heap_segment* gc_heap::allocate_new_region (gc_heap* hp, int gen_num, bool uoh_p
 
     if (res == nullptr)
     {
+        hp->fgm_result.set_fgm (fgm_commit_segment_beg, SEGMENT_INITIAL_COMMIT, uoh_p);
         global_region_allocator.delete_region (start);
     }
 
