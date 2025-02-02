@@ -835,6 +835,8 @@ namespace ILCompiler
                     case ILOpcode.conv_u2:
                     case ILOpcode.conv_u4:
                     case ILOpcode.conv_u8:
+                    case ILOpcode.conv_r4:
+                    case ILOpcode.conv_r8:
                         {
                             StackEntry popped = stack.Pop();
                             if (popped.ValueKind.WithNormalizedNativeInt(context) == StackValueKind.Int32)
@@ -874,6 +876,12 @@ namespace ILCompiler
                                     case ILOpcode.conv_u8:
                                         stack.Push(StackValueKind.Int64, ValueTypeValue.FromInt64((uint)val));
                                         break;
+                                    case ILOpcode.conv_r4:
+                                        stack.Push(StackValueKind.Float, ValueTypeValue.FromSingle((float)val));
+                                        break;
+                                    case ILOpcode.conv_r8:
+                                        stack.Push(StackValueKind.Float, ValueTypeValue.FromDouble((double)val));
+                                        break;
                                     default:
                                         return Status.Fail(methodIL.OwningMethod, opcode);
                                 }
@@ -912,6 +920,12 @@ namespace ILCompiler
                                     case ILOpcode.conv_u8:
                                         stack.Push(StackValueKind.Int64, ValueTypeValue.FromInt64(val));
                                         break;
+                                    case ILOpcode.conv_r4:
+                                        stack.Push(StackValueKind.Float, ValueTypeValue.FromSingle((float)val));
+                                        break;
+                                    case ILOpcode.conv_r8:
+                                        stack.Push(StackValueKind.Float, ValueTypeValue.FromDouble((double)val));
+                                        break;
                                     default:
                                         return Status.Fail(methodIL.OwningMethod, opcode);
                                 }
@@ -921,8 +935,40 @@ namespace ILCompiler
                                 double val = popped.Value.AsDouble();
                                 switch (opcode)
                                 {
+                                    case ILOpcode.conv_i:
+                                    case ILOpcode.conv_u:
+                                        stack.Push(StackValueKind.NativeInt,
+                                            context.Target.PointerSize == 8 ? ValueTypeValue.FromInt64((long)val) : ValueTypeValue.FromInt32((int)val));
+                                        break;
+                                    case ILOpcode.conv_i1:
+                                        stack.Push(StackValueKind.Int32, ValueTypeValue.FromInt32((sbyte)val));
+                                        break;
+                                    case ILOpcode.conv_i2:
+                                        stack.Push(StackValueKind.Int32, ValueTypeValue.FromInt32((short)val));
+                                        break;
+                                    case ILOpcode.conv_i4:
+                                        stack.Push(StackValueKind.Int32, ValueTypeValue.FromInt32((int)val));
+                                        break;
                                     case ILOpcode.conv_i8:
                                         stack.Push(StackValueKind.Int64, ValueTypeValue.FromInt64((long)val));
+                                        break;
+                                    case ILOpcode.conv_u1:
+                                        stack.Push(StackValueKind.Int32, ValueTypeValue.FromInt32((byte)val));
+                                        break;
+                                    case ILOpcode.conv_u2:
+                                        stack.Push(StackValueKind.Int32, ValueTypeValue.FromInt32((ushort)val));
+                                        break;
+                                    case ILOpcode.conv_u4:
+                                        stack.Push(StackValueKind.Int32, ValueTypeValue.FromInt32((int)val));
+                                        break;
+                                    case ILOpcode.conv_u8:
+                                        stack.Push(StackValueKind.Int64, ValueTypeValue.FromInt64((long)val));
+                                        break;
+                                    case ILOpcode.conv_r4:
+                                        stack.Push(StackValueKind.Float, ValueTypeValue.FromSingle((float)val));
+                                        break;
+                                    case ILOpcode.conv_r8:
+                                        stack.Push(StackValueKind.Float, ValueTypeValue.FromDouble(val));
                                         break;
                                     default:
                                         return Status.Fail(methodIL.OwningMethod, opcode);
