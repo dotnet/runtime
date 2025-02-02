@@ -18,6 +18,16 @@ else()
     include(${CLR_SRC_NATIVE_DIR}/external/brotli.cmake)
 endif()
 
+if (STATIC_LIBS_ONLY)
+    # For every vendored library that we're actually vendoring (and not referencing the system one)
+    # mark it as "no interprocedural optimization" so that it's compatible with our NativeAOT shipping story.
+    foreach(VENDORED_LIB IN LISTS BROTLI_LIBRARIES ITEMS zlib)
+        if (TARGET ${VENDORED_LIB})
+            set_target_properties(${VENDORED_LIB} PROPERTIES INTERPROCEDURAL_OPTIMIZATION OFF)
+        endif()
+    endforeach()
+endif()
+
 configure_file(
     ${CMAKE_CURRENT_SOURCE_DIR}/../Common/pal_config.h.in
     ${CMAKE_CURRENT_BINARY_DIR}/pal_config.h)

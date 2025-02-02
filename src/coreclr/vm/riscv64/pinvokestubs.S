@@ -137,7 +137,7 @@
     // a1 = pThread
 
     // pThread->m_fPreemptiveGCDisabled = 1
-    ori  t4, x0, 1
+    li   t4, 1
     sw   t4, (Thread_m_fPreemptiveGCDisabled)(a1)
 
     // Check return trap

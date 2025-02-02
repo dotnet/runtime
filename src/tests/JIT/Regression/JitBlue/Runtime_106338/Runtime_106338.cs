@@ -22,7 +22,7 @@ public class Runtime_106338
         float vr11 = 4294967295U | vr10;
         uint result = BitConverter.SingleToUInt32Bits(vr11);
 
-        if ((RuntimeInformation.ProcessArchitecture == Architecture.Arm64) || ((RuntimeInformation.ProcessArchitecture == Architecture.X64) && Avx512F.IsSupported))
+        if ((RuntimeInformation.ProcessArchitecture == Architecture.Arm64) || (RuntimeInformation.ProcessArchitecture == Architecture.X64))
         {
             // Expected to cast ulong -> float directly
             Assert.Equal(1600094603U, result);

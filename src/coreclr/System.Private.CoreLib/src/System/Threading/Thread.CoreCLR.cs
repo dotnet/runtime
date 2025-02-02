@@ -490,5 +490,37 @@ namespace System.Threading
                 Priority = ThreadPriority.Highest;
             }
         }
+
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ThreadNative_PollGC")]
+        private static partial void ThreadNative_PollGC();
+
+        // GC Suspension is done by simply dropping into native code via p/invoke, and we reuse the p/invoke
+        // mechanism for suspension. On all architectures we should have the actual stub used for the check be implemented
+        // as a small assembly stub which checks the global g_TrapReturningThreads flag and tail-call to this helper
+        private static unsafe void PollGC()
+        {
+            NativeThreadState catchAtSafePoint = ((NativeThreadClass*)Thread.DirectOnThreadLocalData.pNativeThread)->m_State & NativeThreadState.TS_CatchAtSafePoint;
+            if (catchAtSafePoint != NativeThreadState.None)
+            {
+                ThreadNative_PollGC();
+            }
+        }
+
+        [StructLayout(LayoutKind.Sequential)]
+        private struct NativeThreadClass
+        {
+            public NativeThreadState m_State;
+        }
+
+        private enum NativeThreadState
+        {
+            None                      = 0,
+            TS_AbortRequested         = 0x00000001,    // Abort the thread
+            TS_DebugSuspendPending    = 0x00000008,    // Is the debugger suspending threads?
+            TS_GCOnTransitions        = 0x00000010,    // Force a GC on stub transitions (GCStress only)
+
+        // We require (and assert) that the following bits are less than 0x100.
+            TS_CatchAtSafePoint = (TS_AbortRequested | TS_DebugSuspendPending | TS_GCOnTransitions),
+        };
     }
 }

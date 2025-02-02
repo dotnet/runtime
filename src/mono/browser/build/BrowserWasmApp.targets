@@ -7,7 +7,7 @@
 
   <Import Project="$(WasmCommonTargetsPath)WasmApp.Common.targets" />
 
-  <UsingTask TaskName="Microsoft.WebAssembly.Build.Tasks.WasmAppBuilder" AssemblyFile="$(WasmAppBuilderTasksAssemblyPath)" />
+  <UsingTask TaskName="Microsoft.WebAssembly.Build.Tasks.WasmAppBuilder" AssemblyFile="$(WasmAppBuilderTasksAssemblyPath)" TaskFactory="TaskHostFactory" />
 
   <PropertyGroup>
     <PrepareForWasmBuildNativeDependsOn>

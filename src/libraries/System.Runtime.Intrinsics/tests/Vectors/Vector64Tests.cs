@@ -3,6 +3,7 @@
 
 using System.Numerics;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Tests;
 using Xunit;
@@ -3930,9 +3931,9 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
             };
 
             // all Vector<double> NaNs .Equals compare the same, but == compare as different
-            foreach(var i in nans)
+            foreach (var i in nans)
             {
-                foreach(var j in nans)
+                foreach (var j in nans)
                 {
                     Assert.True(Vector64.Create(i).Equals(Vector64.Create(j)));
                     Assert.False(Vector64.Create(i) == Vector64.Create(j));
@@ -3954,9 +3955,9 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
             };
 
             // all Vector<float> NaNs .Equals compare the same, but == compare as different
-            foreach(var i in nans)
+            foreach (var i in nans)
             {
-                foreach(var j in nans)
+                foreach (var j in nans)
                 {
                     Assert.True(Vector64.Create(i).Equals(Vector64.Create(j)));
                     Assert.False(Vector64.Create(i) == Vector64.Create(j));
@@ -4474,75 +4475,603 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
             AssertEqual(Vector64.Create(expectedResult), Vector64.Hypot(Vector64.Create(+y), Vector64.Create(+x)), Vector64.Create(variance));
         }
 
-        [Theory]
-        [MemberData(nameof(GenericMathTestMemberData.IsNaNDouble), MemberType = typeof(GenericMathTestMemberData))]
-        public void IsNaNDoubleTest(double value, bool expectedResult)
+        private void IsEvenInteger<T>(T value)
+            where T : INumber<T>
         {
-            Assert.Equal(expectedResult ? Vector64<double>.AllBitsSet : Vector64<double>.Zero, Vector64.IsNaN(Vector64.Create(value)));
+            Assert.Equal(T.IsEvenInteger(value) ? Vector64<T>.AllBitsSet : Vector64<T>.Zero, Vector64.IsEvenInteger(Vector64.Create(value)));
         }
 
         [Theory]
-        [MemberData(nameof(GenericMathTestMemberData.IsNaNSingle), MemberType = typeof(GenericMathTestMemberData))]
-        public void IsNaNSingleTest(float value, bool expectedResult)
+        [MemberData(nameof(GenericMathTestMemberData.IsTestByte), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsEvenIntegerByteTest(byte value) => IsEvenInteger(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestDouble), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsEvenIntegerDoubleTest(double value) => IsEvenInteger(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestInt16), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsEvenIntegerInt16Test(short value) => IsEvenInteger(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestInt32), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsEvenIntegerInt32Test(int value) => IsEvenInteger(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestInt64), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsEvenIntegerInt64Test(long value) => IsEvenInteger(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestSByte), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsEvenIntegerSByteTest(sbyte value) => IsEvenInteger(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestSingle), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsEvenIntegerSingleTest(float value) => IsEvenInteger(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestUInt16), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsEvenIntegerUInt16Test(ushort value) => IsEvenInteger(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestUInt32), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsEvenIntegerUInt32Test(uint value) => IsEvenInteger(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestUInt64), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsEvenIntegerUInt64Test(ulong value) => IsEvenInteger(value);
+
+        private void IsFinite<T>(T value)
+            where T : INumber<T>
         {
-            Assert.Equal(expectedResult ? Vector64<float>.AllBitsSet : Vector64<float>.Zero, Vector64.IsNaN(Vector64.Create(value)));
+            Assert.Equal(T.IsFinite(value) ? Vector64<T>.AllBitsSet : Vector64<T>.Zero, Vector64.IsFinite(Vector64.Create(value)));
         }
 
         [Theory]
-        [MemberData(nameof(GenericMathTestMemberData.IsNegativeDouble), MemberType = typeof(GenericMathTestMemberData))]
-        public void IsNegativeDoubleTest(double value, bool expectedResult)
+        [MemberData(nameof(GenericMathTestMemberData.IsTestByte), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsFiniteByteTest(byte value) => IsFinite(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestDouble), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsFiniteDoubleTest(double value) => IsFinite(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestInt16), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsFiniteInt16Test(short value) => IsFinite(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestInt32), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsFiniteInt32Test(int value) => IsFinite(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestInt64), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsFiniteInt64Test(long value) => IsFinite(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestSByte), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsFiniteSByteTest(sbyte value) => IsFinite(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestSingle), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsFiniteSingleTest(float value) => IsFinite(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestUInt16), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsFiniteUInt16Test(ushort value) => IsFinite(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestUInt32), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsFiniteUInt32Test(uint value) => IsFinite(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestUInt64), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsFiniteUInt64Test(ulong value) => IsFinite(value);
+
+        private void IsInfinity<T>(T value)
+            where T : INumber<T>
         {
-            Assert.Equal(expectedResult ? Vector64<double>.AllBitsSet : Vector64<double>.Zero, Vector64.IsNegative(Vector64.Create(value)));
+            Assert.Equal(T.IsInfinity(value) ? Vector64<T>.AllBitsSet : Vector64<T>.Zero, Vector64.IsInfinity(Vector64.Create(value)));
         }
 
         [Theory]
-        [MemberData(nameof(GenericMathTestMemberData.IsNegativeSingle), MemberType = typeof(GenericMathTestMemberData))]
-        public void IsNegativeSingleTest(float value, bool expectedResult)
+        [MemberData(nameof(GenericMathTestMemberData.IsTestByte), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsInfinityByteTest(byte value) => IsInfinity(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestDouble), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsInfinityDoubleTest(double value) => IsInfinity(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestInt16), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsInfinityInt16Test(short value) => IsInfinity(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestInt32), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsInfinityInt32Test(int value) => IsInfinity(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestInt64), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsInfinityInt64Test(long value) => IsInfinity(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestSByte), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsInfinitySByteTest(sbyte value) => IsInfinity(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestSingle), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsInfinitySingleTest(float value) => IsInfinity(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestUInt16), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsInfinityUInt16Test(ushort value) => IsInfinity(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestUInt32), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsInfinityUInt32Test(uint value) => IsInfinity(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestUInt64), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsInfinityUInt64Test(ulong value) => IsInfinity(value);
+
+        private void IsInteger<T>(T value)
+            where T : INumber<T>
         {
-            Assert.Equal(expectedResult ? Vector64<float>.AllBitsSet : Vector64<float>.Zero, Vector64.IsNegative(Vector64.Create(value)));
+            Assert.Equal(T.IsInteger(value) ? Vector64<T>.AllBitsSet : Vector64<T>.Zero, Vector64.IsInteger(Vector64.Create(value)));
         }
 
         [Theory]
-        [MemberData(nameof(GenericMathTestMemberData.IsPositiveDouble), MemberType = typeof(GenericMathTestMemberData))]
-        public void IsPositiveDoubleTest(double value, bool expectedResult)
+        [MemberData(nameof(GenericMathTestMemberData.IsTestByte), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsIntegerByteTest(byte value) => IsInteger(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestDouble), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsIntegerDoubleTest(double value) => IsInteger(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestInt16), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsIntegerInt16Test(short value) => IsInteger(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestInt32), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsIntegerInt32Test(int value) => IsInteger(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestInt64), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsIntegerInt64Test(long value) => IsInteger(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestSByte), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsIntegerSByteTest(sbyte value) => IsInteger(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestSingle), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsIntegerSingleTest(float value) => IsInteger(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestUInt16), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsIntegerUInt16Test(ushort value) => IsInteger(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestUInt32), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsIntegerUInt32Test(uint value) => IsInteger(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestUInt64), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsIntegerUInt64Test(ulong value) => IsInteger(value);
+
+        private void IsNaN<T>(T value)
+            where T : INumber<T>
         {
-            Assert.Equal(expectedResult ? Vector64<double>.AllBitsSet : Vector64<double>.Zero, Vector64.IsPositive(Vector64.Create(value)));
+            Assert.Equal(T.IsNaN(value) ? Vector64<T>.AllBitsSet : Vector64<T>.Zero, Vector64.IsNaN(Vector64.Create(value)));
         }
 
         [Theory]
-        [MemberData(nameof(GenericMathTestMemberData.IsPositiveSingle), MemberType = typeof(GenericMathTestMemberData))]
-        public void IsPositiveSingleTest(float value, bool expectedResult)
+        [MemberData(nameof(GenericMathTestMemberData.IsTestByte), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsNaNByteTest(byte value) => IsNaN(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestDouble), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsNaNDoubleTest(double value) => IsNaN(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestInt16), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsNaNInt16Test(short value) => IsNaN(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestInt32), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsNaNInt32Test(int value) => IsNaN(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestInt64), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsNaNInt64Test(long value) => IsNaN(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestSByte), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsNaNSByteTest(sbyte value) => IsNaN(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestSingle), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsNaNSingleTest(float value) => IsNaN(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestUInt16), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsNaNUInt16Test(ushort value) => IsNaN(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestUInt32), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsNaNUInt32Test(uint value) => IsNaN(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestUInt64), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsNaNUInt64Test(ulong value) => IsNaN(value);
+
+        private void IsNegative<T>(T value)
+            where T : INumber<T>
         {
-            Assert.Equal(expectedResult ? Vector64<float>.AllBitsSet : Vector64<float>.Zero, Vector64.IsPositive(Vector64.Create(value)));
+            Assert.Equal(T.IsNegative(value) ? Vector64<T>.AllBitsSet : Vector64<T>.Zero, Vector64.IsNegative(Vector64.Create(value)));
         }
 
         [Theory]
-        [MemberData(nameof(GenericMathTestMemberData.IsPositiveInfinityDouble), MemberType = typeof(GenericMathTestMemberData))]
-        public void IsPositiveInfinityDoubleTest(double value, bool expectedResult)
+        [MemberData(nameof(GenericMathTestMemberData.IsTestByte), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsNegativeByteTest(byte value) => IsNegative(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestDouble), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsNegativeDoubleTest(double value) => IsNegative(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestInt16), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsNegativeInt16Test(short value) => IsNegative(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestInt32), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsNegativeInt32Test(int value) => IsNegative(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestInt64), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsNegativeInt64Test(long value) => IsNegative(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestSByte), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsNegativeSByteTest(sbyte value) => IsNegative(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestSingle), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsNegativeSingleTest(float value) => IsNegative(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestUInt16), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsNegativeUInt16Test(ushort value) => IsNegative(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestUInt32), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsNegativeUInt32Test(uint value) => IsNegative(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestUInt64), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsNegativeUInt64Test(ulong value) => IsNegative(value);
+
+        private void IsNegativeInfinity<T>(T value)
+            where T : INumber<T>
         {
-            Assert.Equal(expectedResult ? Vector64<double>.AllBitsSet : Vector64<double>.Zero, Vector64.IsPositiveInfinity(Vector64.Create(value)));
+            Assert.Equal(T.IsNegativeInfinity(value) ? Vector64<T>.AllBitsSet : Vector64<T>.Zero, Vector64.IsNegativeInfinity(Vector64.Create(value)));
         }
 
         [Theory]
-        [MemberData(nameof(GenericMathTestMemberData.IsPositiveInfinitySingle), MemberType = typeof(GenericMathTestMemberData))]
-        public void IsPositiveInfinitySingleTest(float value, bool expectedResult)
+        [MemberData(nameof(GenericMathTestMemberData.IsTestByte), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsNegativeInfinityByteTest(byte value) => IsNegativeInfinity(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestDouble), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsNegativeInfinityDoubleTest(double value) => IsNegativeInfinity(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestInt16), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsNegativeInfinityInt16Test(short value) => IsNegativeInfinity(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestInt32), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsNegativeInfinityInt32Test(int value) => IsNegativeInfinity(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestInt64), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsNegativeInfinityInt64Test(long value) => IsNegativeInfinity(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestSByte), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsNegativeInfinitySByteTest(sbyte value) => IsNegativeInfinity(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestSingle), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsNegativeInfinitySingleTest(float value) => IsNegativeInfinity(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestUInt16), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsNegativeInfinityUInt16Test(ushort value) => IsNegativeInfinity(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestUInt32), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsNegativeInfinityUInt32Test(uint value) => IsNegativeInfinity(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestUInt64), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsNegativeInfinityUInt64Test(ulong value) => IsNegativeInfinity(value);
+
+        private void IsNormal<T>(T value)
+            where T : INumber<T>
         {
-            Assert.Equal(expectedResult ? Vector64<float>.AllBitsSet : Vector64<float>.Zero, Vector64.IsPositiveInfinity(Vector64.Create(value)));
+            Assert.Equal(T.IsNormal(value) ? Vector64<T>.AllBitsSet : Vector64<T>.Zero, Vector64.IsNormal(Vector64.Create(value)));
         }
 
         [Theory]
-        [MemberData(nameof(GenericMathTestMemberData.IsZeroDouble), MemberType = typeof(GenericMathTestMemberData))]
-        public void IsZeroDoubleTest(double value, bool expectedResult)
+        [MemberData(nameof(GenericMathTestMemberData.IsTestByte), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsNormalByteTest(byte value) => IsNormal(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestDouble), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsNormalDoubleTest(double value) => IsNormal(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestInt16), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsNormalInt16Test(short value) => IsNormal(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestInt32), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsNormalInt32Test(int value) => IsNormal(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestInt64), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsNormalInt64Test(long value) => IsNormal(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestSByte), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsNormalSByteTest(sbyte value) => IsNormal(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestSingle), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsNormalSingleTest(float value) => IsNormal(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestUInt16), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsNormalUInt16Test(ushort value) => IsNormal(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestUInt32), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsNormalUInt32Test(uint value) => IsNormal(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestUInt64), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsNormalUInt64Test(ulong value) => IsNormal(value);
+
+        private void IsOddInteger<T>(T value)
+            where T : INumber<T>
         {
-            Assert.Equal(expectedResult ? Vector64<double>.AllBitsSet : Vector64<double>.Zero, Vector64.IsZero(Vector64.Create(value)));
+            Assert.Equal(T.IsOddInteger(value) ? Vector64<T>.AllBitsSet : Vector64<T>.Zero, Vector64.IsOddInteger(Vector64.Create(value)));
         }
 
         [Theory]
-        [MemberData(nameof(GenericMathTestMemberData.IsZeroSingle), MemberType = typeof(GenericMathTestMemberData))]
-        public void IsZeroSingleTest(float value, bool expectedResult)
+        [MemberData(nameof(GenericMathTestMemberData.IsTestByte), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsOddIntegerByteTest(byte value) => IsOddInteger(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestDouble), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsOddIntegerDoubleTest(double value) => IsOddInteger(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestInt16), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsOddIntegerInt16Test(short value) => IsOddInteger(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestInt32), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsOddIntegerInt32Test(int value) => IsOddInteger(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestInt64), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsOddIntegerInt64Test(long value) => IsOddInteger(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestSByte), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsOddIntegerSByteTest(sbyte value) => IsOddInteger(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestSingle), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsOddIntegerSingleTest(float value) => IsOddInteger(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestUInt16), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsOddIntegerUInt16Test(ushort value) => IsOddInteger(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestUInt32), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsOddIntegerUInt32Test(uint value) => IsOddInteger(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestUInt64), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsOddIntegerUInt64Test(ulong value) => IsOddInteger(value);
+
+        private void IsPositive<T>(T value)
+            where T : INumber<T>
         {
-            Assert.Equal(expectedResult ? Vector64<float>.AllBitsSet : Vector64<float>.Zero, Vector64.IsZero(Vector64.Create(value)));
+            Assert.Equal(T.IsPositive(value) ? Vector64<T>.AllBitsSet : Vector64<T>.Zero, Vector64.IsPositive(Vector64.Create(value)));
         }
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestByte), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsPositiveByteTest(byte value) => IsPositive(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestDouble), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsPositiveDoubleTest(double value) => IsPositive(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestInt16), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsPositiveInt16Test(short value) => IsPositive(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestInt32), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsPositiveInt32Test(int value) => IsPositive(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestInt64), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsPositiveInt64Test(long value) => IsPositive(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestSByte), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsPositiveSByteTest(sbyte value) => IsPositive(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestSingle), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsPositiveSingleTest(float value) => IsPositive(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestUInt16), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsPositiveUInt16Test(ushort value) => IsPositive(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestUInt32), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsPositiveUInt32Test(uint value) => IsPositive(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestUInt64), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsPositiveUInt64Test(ulong value) => IsPositive(value);
+
+        private void IsPositiveInfinity<T>(T value)
+            where T : INumber<T>
+        {
+            Assert.Equal(T.IsPositiveInfinity(value) ? Vector64<T>.AllBitsSet : Vector64<T>.Zero, Vector64.IsPositiveInfinity(Vector64.Create(value)));
+        }
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestByte), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsPositiveInfinityByteTest(byte value) => IsPositiveInfinity(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestDouble), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsPositiveInfinityDoubleTest(double value) => IsPositiveInfinity(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestInt16), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsPositiveInfinityInt16Test(short value) => IsPositiveInfinity(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestInt32), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsPositiveInfinityInt32Test(int value) => IsPositiveInfinity(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestInt64), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsPositiveInfinityInt64Test(long value) => IsPositiveInfinity(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestSByte), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsPositiveInfinitySByteTest(sbyte value) => IsPositiveInfinity(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestSingle), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsPositiveInfinitySingleTest(float value) => IsPositiveInfinity(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestUInt16), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsPositiveInfinityUInt16Test(ushort value) => IsPositiveInfinity(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestUInt32), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsPositiveInfinityUInt32Test(uint value) => IsPositiveInfinity(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestUInt64), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsPositiveInfinityUInt64Test(ulong value) => IsPositiveInfinity(value);
+
+        private void IsSubnormal<T>(T value)
+            where T : INumber<T>
+        {
+            Assert.Equal(T.IsSubnormal(value) ? Vector64<T>.AllBitsSet : Vector64<T>.Zero, Vector64.IsSubnormal(Vector64.Create(value)));
+        }
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestByte), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsSubnormalByteTest(byte value) => IsSubnormal(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestDouble), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsSubnormalDoubleTest(double value) => IsSubnormal(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestInt16), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsSubnormalInt16Test(short value) => IsSubnormal(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestInt32), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsSubnormalInt32Test(int value) => IsSubnormal(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestInt64), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsSubnormalInt64Test(long value) => IsSubnormal(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestSByte), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsSubnormalSByteTest(sbyte value) => IsSubnormal(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestSingle), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsSubnormalSingleTest(float value) => IsSubnormal(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestUInt16), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsSubnormalUInt16Test(ushort value) => IsSubnormal(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestUInt32), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsSubnormalUInt32Test(uint value) => IsSubnormal(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestUInt64), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsSubnormalUInt64Test(ulong value) => IsSubnormal(value);
+
+        private void IsZero<T>(T value)
+            where T : INumber<T>
+        {
+            Assert.Equal(T.IsZero(value) ? Vector64<T>.AllBitsSet : Vector64<T>.Zero, Vector64.IsZero(Vector64.Create(value)));
+        }
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestByte), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsZeroByteTest(byte value) => IsZero(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestDouble), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsZeroDoubleTest(double value) => IsZero(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestInt16), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsZeroInt16Test(short value) => IsZero(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestInt32), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsZeroInt32Test(int value) => IsZero(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestInt64), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsZeroInt64Test(long value) => IsZero(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestSByte), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsZeroSByteTest(sbyte value) => IsZero(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestSingle), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsZeroSingleTest(float value) => IsZero(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestUInt16), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsZeroUInt16Test(ushort value) => IsZero(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestUInt32), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsZeroUInt32Test(uint value) => IsZero(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestUInt64), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsZeroUInt64Test(ulong value) => IsZero(value);
 
         [Theory]
         [MemberData(nameof(GenericMathTestMemberData.LerpDouble), MemberType = typeof(GenericMathTestMemberData))]
@@ -4801,5 +5330,275 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
             Vector64<float> actualResult = Vector64.Truncate(Vector64.Create(value));
             AssertEqual(Vector64.Create(expectedResult), actualResult, Vector64<float>.Zero);
         }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private void AllAnyNoneTest<T>(T value1, T value2)
+            where T : struct, INumber<T>
+        {
+            var input1 = Vector64.Create<T>(value1);
+            var input2 = Vector64.Create<T>(value2);
+
+            Assert.True(Vector64.All(input1, value1));
+            Assert.True(Vector64.All(input2, value2));
+            Assert.False(Vector64.All(input1.WithElement(0, value2), value1));
+            Assert.False(Vector64.All(input2.WithElement(0, value1), value2));
+            Assert.False(Vector64.All(input1, value2));
+            Assert.False(Vector64.All(input2, value1));
+            Assert.Equal(Vector64<T>.Count == 1, Vector64.All(input1.WithElement(0, value2), value2));
+            Assert.Equal(Vector64<T>.Count == 1, Vector64.All(input2.WithElement(0, value1), value1));
+
+            Assert.True(Vector64.Any(input1, value1));
+            Assert.True(Vector64.Any(input2, value2));
+            Assert.Equal(Vector64<T>.Count != 1, Vector64.Any(input1.WithElement(0, value2), value1));
+            Assert.Equal(Vector64<T>.Count != 1, Vector64.Any(input2.WithElement(0, value1), value2));
+            Assert.False(Vector64.Any(input1, value2));
+            Assert.False(Vector64.Any(input2, value1));
+            Assert.True(Vector64.Any(input1.WithElement(0, value2), value2));
+            Assert.True(Vector64.Any(input2.WithElement(0, value1), value1));
+
+            Assert.False(Vector64.None(input1, value1));
+            Assert.False(Vector64.None(input2, value2));
+            Assert.Equal(Vector64<T>.Count == 1, Vector64.None(input1.WithElement(0, value2), value1));
+            Assert.Equal(Vector64<T>.Count == 1, Vector64.None(input2.WithElement(0, value1), value2));
+            Assert.True(Vector64.None(input1, value2));
+            Assert.True(Vector64.None(input2, value1));
+            Assert.False(Vector64.None(input1.WithElement(0, value2), value2));
+            Assert.False(Vector64.None(input2.WithElement(0, value1), value1));
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private void AllAnyNoneTest_IFloatingPointIeee754<T>(T value)
+            where T : struct, IFloatingPointIeee754<T>
+        {
+            var input = Vector64.Create<T>(value);
+
+            Assert.False(Vector64.All(input, value));
+            Assert.False(Vector64.Any(input, value));
+            Assert.True(Vector64.None(input, value));
+        }
+
+        [Fact]
+        public void AllAnyNoneByteTest() => AllAnyNoneTest<byte>(3, 2);
+
+        [Fact]
+        public void AllAnyNoneDoubleTest() => AllAnyNoneTest<double>(3, 2);
+
+        [Fact]
+        public void AllAnyNoneDoubleTest_AllBitsSet() => AllAnyNoneTest_IFloatingPointIeee754<double>(BitConverter.Int64BitsToDouble(-1));
+
+        [Fact]
+        public void AllAnyNoneInt16Test() => AllAnyNoneTest<short>(3, 2);
+
+        [Fact]
+        public void AllAnyNoneInt32Test() => AllAnyNoneTest<int>(3, 2);
+
+        [Fact]
+        public void AllAnyNoneInt64Test() => AllAnyNoneTest<long>(3, 2);
+
+        [Fact]
+        public void AllAnyNoneSByteTest() => AllAnyNoneTest<sbyte>(3, 2);
+
+        [Fact]
+        public void AllAnyNoneSingleTest() => AllAnyNoneTest<float>(3, 2);
+
+        [Fact]
+        public void AllAnyNoneSingleTest_AllBitsSet() => AllAnyNoneTest_IFloatingPointIeee754<float>(BitConverter.Int32BitsToSingle(-1));
+
+        [Fact]
+        public void AllAnyNoneUInt16Test() => AllAnyNoneTest<ushort>(3, 2);
+
+        [Fact]
+        public void AllAnyNoneUInt32Test() => AllAnyNoneTest<uint>(3, 2);
+
+        [Fact]
+        public void AllAnyNoneUInt64Test() => AllAnyNoneTest<ulong>(3, 2);
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private void AllAnyNoneWhereAllBitsSetTest<T>(T allBitsSet, T value2)
+            where T : struct, INumber<T>
+        {
+            var input1 = Vector64.Create<T>(allBitsSet);
+            var input2 = Vector64.Create<T>(value2);
+
+            Assert.True(Vector64.AllWhereAllBitsSet(input1));
+            Assert.False(Vector64.AllWhereAllBitsSet(input2));
+            Assert.False(Vector64.AllWhereAllBitsSet(input1.WithElement(0, value2)));
+            Assert.Equal(Vector64<T>.Count == 1, Vector64.AllWhereAllBitsSet(input2.WithElement(0, allBitsSet)));
+
+            Assert.True(Vector64.AnyWhereAllBitsSet(input1));
+            Assert.False(Vector64.AnyWhereAllBitsSet(input2));
+            Assert.Equal(Vector64<T>.Count != 1, Vector64.AnyWhereAllBitsSet(input1.WithElement(0, value2)));
+            Assert.True(Vector64.AnyWhereAllBitsSet(input2.WithElement(0, allBitsSet)));
+
+            Assert.False(Vector64.NoneWhereAllBitsSet(input1));
+            Assert.True(Vector64.NoneWhereAllBitsSet(input2));
+            Assert.Equal(Vector64<T>.Count == 1, Vector64.NoneWhereAllBitsSet(input1.WithElement(0, value2)));
+            Assert.False(Vector64.NoneWhereAllBitsSet(input2.WithElement(0, allBitsSet)));
+        }
+
+        [Fact]
+        public void AllAnyNoneWhereAllBitsSetByteTest() => AllAnyNoneWhereAllBitsSetTest<byte>(byte.MaxValue, 2);
+
+        [Fact]
+        public void AllAnyNoneWhereAllBitsSetDoubleTest() => AllAnyNoneWhereAllBitsSetTest<double>(BitConverter.Int64BitsToDouble(-1), 2);
+
+        [Fact]
+        public void AllAnyNoneWhereAllBitsSetInt16Test() => AllAnyNoneWhereAllBitsSetTest<short>(-1, 2);
+
+        [Fact]
+        public void AllAnyNoneWhereAllBitsSetInt32Test() => AllAnyNoneWhereAllBitsSetTest<int>(-1, 2);
+
+        [Fact]
+        public void AllAnyNoneWhereAllBitsSetInt64Test() => AllAnyNoneWhereAllBitsSetTest<long>(-1, 2);
+
+        [Fact]
+        public void AllAnyNoneWhereAllBitsSetSByteTest() => AllAnyNoneWhereAllBitsSetTest<sbyte>(-1, 2);
+
+        [Fact]
+        public void AllAnyNoneWhereAllBitsSetSingleTest() => AllAnyNoneWhereAllBitsSetTest<float>(BitConverter.Int32BitsToSingle(-1), 2);
+
+        [Fact]
+        public void AllAnyNoneWhereAllBitsSetUInt16Test() => AllAnyNoneWhereAllBitsSetTest<ushort>(ushort.MaxValue, 2);
+
+        [Fact]
+        public void AllAnyNoneWhereAllBitsSetUInt32Test() => AllAnyNoneWhereAllBitsSetTest<uint>(uint.MaxValue, 2);
+
+        [Fact]
+        public void AllAnyNoneWhereAllBitsSetUInt64Test() => AllAnyNoneWhereAllBitsSetTest<ulong>(ulong.MaxValue, 2);
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private void CountIndexOfLastIndexOfTest<T>(T value1, T value2)
+            where T : struct, INumber<T>
+        {
+            var input1 = Vector64.Create<T>(value1);
+            var input2 = Vector64.Create<T>(value2);
+
+            Assert.Equal(Vector64<T>.Count, Vector64.Count(input1, value1));
+            Assert.Equal(Vector64<T>.Count, Vector64.Count(input2, value2));
+            Assert.Equal(Vector64<T>.Count - 1, Vector64.Count(input1.WithElement(0, value2), value1));
+            Assert.Equal(Vector64<T>.Count - 1, Vector64.Count(input2.WithElement(0, value1), value2));
+            Assert.Equal(0, Vector64.Count(input1, value2));
+            Assert.Equal(0, Vector64.Count(input2, value1));
+            Assert.Equal(1, Vector64.Count(input1.WithElement(0, value2), value2));
+            Assert.Equal(1, Vector64.Count(input2.WithElement(0, value1), value1));
+
+            Assert.Equal(0, Vector64.IndexOf(input1, value1));
+            Assert.Equal(0, Vector64.IndexOf(input2, value2));
+            Assert.Equal((Vector64<T>.Count != 1) ? 1 : -1, Vector64.IndexOf(input1.WithElement(0, value2), value1));
+            Assert.Equal((Vector64<T>.Count != 1) ? 1 : -1, Vector64.IndexOf(input2.WithElement(0, value1), value2));
+            Assert.Equal(-1, Vector64.IndexOf(input1, value2));
+            Assert.Equal(-1, Vector64.IndexOf(input2, value1));
+            Assert.Equal(0, Vector64.IndexOf(input1.WithElement(0, value2), value2));
+            Assert.Equal(0, Vector64.IndexOf(input2.WithElement(0, value1), value1));
+
+            Assert.Equal(Vector64<T>.Count - 1, Vector64.LastIndexOf(input1, value1));
+            Assert.Equal(Vector64<T>.Count - 1, Vector64.LastIndexOf(input2, value2));
+            Assert.Equal((Vector64<T>.Count != 1) ? Vector64<T>.Count - 1 : -1, Vector64.LastIndexOf(input1.WithElement(0, value2), value1));
+            Assert.Equal((Vector64<T>.Count != 1) ? Vector64<T>.Count - 1 : -1, Vector64.LastIndexOf(input2.WithElement(0, value1), value2));
+            Assert.Equal(-1, Vector64.LastIndexOf(input1, value2));
+            Assert.Equal(-1, Vector64.LastIndexOf(input2, value1));
+            Assert.Equal(0, Vector64.LastIndexOf(input1.WithElement(0, value2), value2));
+            Assert.Equal(0, Vector64.LastIndexOf(input2.WithElement(0, value1), value1));
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private void CountIndexOfLastIndexOfTest_IFloatingPointIeee754<T>(T value)
+            where T : struct, IFloatingPointIeee754<T>
+        {
+            var input = Vector64.Create<T>(value);
+
+            Assert.Equal(0, Vector64.Count(input, value));
+            Assert.Equal(-1, Vector64.IndexOf(input, value));
+            Assert.Equal(-1, Vector64.LastIndexOf(input, value));
+        }
+
+        [Fact]
+        public void CountIndexOfLastIndexOfByteTest() => CountIndexOfLastIndexOfTest<byte>(3, 2);
+
+        [Fact]
+        public void CountIndexOfLastIndexOfDoubleTest() => CountIndexOfLastIndexOfTest<double>(3, 2);
+
+        [Fact]
+        public void CountIndexOfLastIndexOfDoubleTest_AllBitsSet() => CountIndexOfLastIndexOfTest_IFloatingPointIeee754<double>(BitConverter.Int64BitsToDouble(-1));
+
+        [Fact]
+        public void CountIndexOfLastIndexOfInt16Test() => CountIndexOfLastIndexOfTest<short>(3, 2);
+
+        [Fact]
+        public void CountIndexOfLastIndexOfInt32Test() => CountIndexOfLastIndexOfTest<int>(3, 2);
+
+        [Fact]
+        public void CountIndexOfLastIndexOfInt64Test() => CountIndexOfLastIndexOfTest<long>(3, 2);
+
+        [Fact]
+        public void CountIndexOfLastIndexOfSByteTest() => CountIndexOfLastIndexOfTest<sbyte>(3, 2);
+
+        [Fact]
+        public void CountIndexOfLastIndexOfSingleTest() => CountIndexOfLastIndexOfTest<float>(3, 2);
+
+        [Fact]
+        public void CountIndexOfLastIndexOfSingleTest_AllBitsSet() => CountIndexOfLastIndexOfTest_IFloatingPointIeee754<float>(BitConverter.Int32BitsToSingle(-1));
+
+        [Fact]
+        public void CountIndexOfLastIndexOfUInt16Test() => CountIndexOfLastIndexOfTest<ushort>(3, 2);
+
+        [Fact]
+        public void CountIndexOfLastIndexOfUInt32Test() => CountIndexOfLastIndexOfTest<uint>(3, 2);
+
+        [Fact]
+        public void CountIndexOfLastIndexOfUInt64Test() => CountIndexOfLastIndexOfTest<ulong>(3, 2);
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private void CountIndexOfLastIndexOfWhereAllBitsSetTest<T>(T allBitsSet, T value2)
+            where T : struct, INumber<T>
+        {
+            var input1 = Vector64.Create<T>(allBitsSet);
+            var input2 = Vector64.Create<T>(value2);
+
+            Assert.Equal(Vector64<T>.Count, Vector64.CountWhereAllBitsSet(input1));
+            Assert.Equal(0, Vector64.CountWhereAllBitsSet(input2));
+            Assert.Equal(Vector64<T>.Count - 1, Vector64.CountWhereAllBitsSet(input1.WithElement(0, value2)));
+            Assert.Equal(1, Vector64.CountWhereAllBitsSet(input2.WithElement(0, allBitsSet)));
+
+            Assert.Equal(0, Vector64.IndexOfWhereAllBitsSet(input1));
+            Assert.Equal(-1, Vector64.IndexOfWhereAllBitsSet(input2));
+            Assert.Equal((Vector64<T>.Count != 1) ? 1 : -1, Vector64.IndexOfWhereAllBitsSet(input1.WithElement(0, value2)));
+            Assert.Equal(0, Vector64.IndexOfWhereAllBitsSet(input2.WithElement(0, allBitsSet)));
+
+            Assert.Equal(Vector64<T>.Count - 1, Vector64.LastIndexOfWhereAllBitsSet(input1));
+            Assert.Equal(-1, Vector64.LastIndexOfWhereAllBitsSet(input2));
+            Assert.Equal((Vector64<T>.Count != 1) ? Vector64<T>.Count - 1 : -1, Vector64.LastIndexOfWhereAllBitsSet(input1.WithElement(0, value2)));
+            Assert.Equal(0, Vector64.LastIndexOfWhereAllBitsSet(input2.WithElement(0, allBitsSet)));
+        }
+
+        [Fact]
+        public void CountIndexOfLastIndexOfWhereAllBitsSetByteTest() => CountIndexOfLastIndexOfWhereAllBitsSetTest<byte>(byte.MaxValue, 2);
+
+        [Fact]
+        public void CountIndexOfLastIndexOfWhereAllBitsSetDoubleTest() => CountIndexOfLastIndexOfWhereAllBitsSetTest<double>(BitConverter.Int64BitsToDouble(-1), 2);
+
+        [Fact]
+        public void CountIndexOfLastIndexOfWhereAllBitsSetInt16Test() => CountIndexOfLastIndexOfWhereAllBitsSetTest<short>(-1, 2);
+
+        [Fact]
+        public void CountIndexOfLastIndexOfWhereAllBitsSetInt32Test() => CountIndexOfLastIndexOfWhereAllBitsSetTest<int>(-1, 2);
+
+        [Fact]
+        public void CountIndexOfLastIndexOfWhereAllBitsSetInt64Test() => CountIndexOfLastIndexOfWhereAllBitsSetTest<long>(-1, 2);
+
+        [Fact]
+        public void CountIndexOfLastIndexOfWhereAllBitsSetSByteTest() => CountIndexOfLastIndexOfWhereAllBitsSetTest<sbyte>(-1, 2);
+
+        [Fact]
+        public void CountIndexOfLastIndexOfWhereAllBitsSetSingleTest() => CountIndexOfLastIndexOfWhereAllBitsSetTest<float>(BitConverter.Int32BitsToSingle(-1), 2);
+
+        [Fact]
+        public void CountIndexOfLastIndexOfWhereAllBitsSetUInt16Test() => CountIndexOfLastIndexOfWhereAllBitsSetTest<ushort>(ushort.MaxValue, 2);
+
+        [Fact]
+        public void CountIndexOfLastIndexOfWhereAllBitsSetUInt32Test() => CountIndexOfLastIndexOfWhereAllBitsSetTest<uint>(uint.MaxValue, 2);
+
+        [Fact]
+        public void CountIndexOfLastIndexOfWhereAllBitsSetUInt64Test() => CountIndexOfLastIndexOfWhereAllBitsSetTest<ulong>(ulong.MaxValue, 2);
     }
 }

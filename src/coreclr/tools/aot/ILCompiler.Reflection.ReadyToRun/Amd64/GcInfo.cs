@@ -381,8 +381,8 @@ namespace ILCompiler.Reflection.ReadyToRun.Amd64
                 uint normRangeStartOffset = normLastinterruptibleRangeStopOffset + normStartDelta;
                 uint normRangeStopOffset = normRangeStartOffset + normStopDelta;
 
-                uint rangeStartOffset = _gcInfoTypes.DenormalizeCodeOffset(normRangeStopOffset);
-                uint rangeStopOffset = _gcInfoTypes.DenormalizeCodeOffset(normRangeStartOffset);
+                uint rangeStartOffset = _gcInfoTypes.DenormalizeCodeOffset(normRangeStartOffset);
+                uint rangeStopOffset = _gcInfoTypes.DenormalizeCodeOffset(normRangeStopOffset);
                 ranges.Add(new InterruptibleRange(i, rangeStartOffset, rangeStopOffset));
 
                 normLastinterruptibleRangeStopOffset = normRangeStopOffset;

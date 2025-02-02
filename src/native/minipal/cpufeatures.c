@@ -58,6 +58,11 @@
 
 static uint32_t xmmYmmStateSupport()
 {
+#if defined(HOST_X86)
+    // We don't support saving XState context on linux-x86 platforms yet, so we
+    // need to disable any AVX support that uses the extended registers.
+    return 0;
+#else
     uint32_t eax;
     __asm("  xgetbv\n" \
         : "=a"(eax) /*output in eax*/\
@@ -66,6 +71,7 @@ static uint32_t xmmYmmStateSupport()
       );
     // check OS has enabled both XMM and YMM state support
     return ((eax & 0x06) == 0x06) ? 1 : 0;
+#endif // HOST_X86
 }
 
 #ifndef XSTATE_MASK_AVX512

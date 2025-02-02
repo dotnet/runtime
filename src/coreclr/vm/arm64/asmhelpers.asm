@@ -39,6 +39,9 @@
     IMPORT  g_pGetGCStaticBase
     IMPORT  g_pGetNonGCStaticBase
 
+    IMPORT g_pPollGC
+    IMPORT g_TrapReturningThreads
+
 #ifdef WRITE_BARRIER_CHECK
     SETALIAS g_GCShadow, ?g_GCShadow@@3PEAEEA
     SETALIAS g_GCShadowEnd, ?g_GCShadowEnd@@3PEAEEA
@@ -1178,6 +1181,17 @@ __HelperNakedFuncName SETS "$helper":CC:"Naked"
     NESTED_END
 
 #endif ; FEATURE_SPECIAL_USER_MODE_APC
+
+    LEAF_ENTRY  JIT_PollGC
+        ldr     x9, =g_TrapReturningThreads
+        ldr     w9, [x9]
+        cbnz    w9, JIT_PollGCRarePath
+        ret
+JIT_PollGCRarePath
+        ldr     x9, =g_pPollGC
+        ldr     x9, [x9]
+        br x9
+    LEAF_END
 
 
 ; Must be at very end of file

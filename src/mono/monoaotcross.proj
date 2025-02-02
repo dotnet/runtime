@@ -62,7 +62,9 @@
 
     <Message Text="Copying @(_MonoAOTCrossFiles) to $(RealRuntimeBinDir)cross\$(TargetOS)-$(TargetArchitecture.ToLower())\$(MonoAotTargetRid.ToLower())" Importance="High" />
 
-    <Copy SourceFiles="@(_MonoAOTCrossFiles)" DestinationFolder="$(RealRuntimeBinDir)cross\$(TargetOS)-$(TargetArchitecture.ToLower())\$(MonoAotTargetRid.ToLower())">
+    <Copy SourceFiles="@(_MonoAOTCrossFiles)"
+          DestinationFolder="$(RealRuntimeBinDir)cross\$(TargetOS)-$(TargetArchitecture.ToLower())\$(MonoAotTargetRid.ToLower())"
+          UseHardlinksIfPossible="true">
       <Output TaskParameter="DestinationFiles" ItemName="FileWrites"/>
     </Copy>
   </Target>

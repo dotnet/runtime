@@ -44,6 +44,9 @@ JIT_TailCallVSDLeave            TEXTEQU <_JIT_TailCallVSDLeave@0>
 JIT_TailCallHelper              TEXTEQU <_JIT_TailCallHelper@4>
 JIT_TailCallReturnFromVSD       TEXTEQU <_JIT_TailCallReturnFromVSD@0>
 
+g_pPollGC                       TEXTEQU <_g_pPollGC>
+g_TrapReturningThreads          TEXTEQU <_g_TrapReturningThreads>
+
 EXTERN  g_ephemeral_low:DWORD
 EXTERN  g_ephemeral_high:DWORD
 EXTERN  g_lowest_address:DWORD
@@ -58,6 +61,10 @@ endif
 EXTERN _g_TailCallFrameVptr:DWORD
 EXTERN @JIT_FailFast@0:PROC
 EXTERN _s_gsCookie:DWORD
+
+EXTERN g_pPollGC:DWORD
+EXTERN g_TrapReturningThreads:DWORD
+
 
 ifdef WRITE_BARRIER_CHECK
 ; Those global variables are always defined, but should be 0 for Server GC
@@ -1148,5 +1155,14 @@ PUBLIC _JIT_StackProbe_End@0
 _JIT_StackProbe_End@0 PROC
     ret
 _JIT_StackProbe_End@0 ENDP
+
+@JIT_PollGC@0 PROC public
+    cmp [g_TrapReturningThreads], 0
+    jnz JIT_PollGCRarePath
+    ret
+JIT_PollGCRarePath:
+    mov eax, g_pPollGC
+    jmp eax
+@JIT_PollGC@0 ENDP
 
     end

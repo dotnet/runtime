@@ -988,6 +988,7 @@ namespace System.Numerics.Tensors.Tests
             Assert.Equal(13, t0[1, 3]);
             Assert.Equal(14, t0[1, 4]);
         }
+
         [Fact]
         public static void TensorStackTests()
         {
@@ -1075,7 +1076,7 @@ namespace System.Numerics.Tensors.Tests
             Assert.Equal(9, resultTensor[1, 4, 0]);
             Assert.Equal(9, resultTensor[1, 4, 1]);
 
-            // stacking 2x2 tensors along dimention 1
+            // stacking 2x2 tensors along dimension 1
             Tensor<int> v1 = Tensor.Create([1, 2, 3, 4], [2, 2]);
             Tensor<int> v2 = Tensor.Create([10, 20, 30, 40], [2, 2]);
             
@@ -1095,6 +1096,26 @@ namespace System.Numerics.Tensors.Tests
             Assert.Equal(4, resultTensor[1, 0, 1]);
             Assert.Equal(30, resultTensor[1, 1, 0]);
             Assert.Equal(40, resultTensor[1, 1, 1]);
+
+            resultTensor = Tensor.StackAlongDimension(0, [v1, v2]);
+
+            Tensor<int> resultTensor2 = Tensor.Create<int>([2, 2, 2]);
+            Tensor.StackAlongDimension([v1, v2], resultTensor2, 1);
+
+            Assert.Equal(3, resultTensor2.Rank);
+            Assert.Equal(2, resultTensor2.Lengths[0]);
+            Assert.Equal(2, resultTensor2.Lengths[1]);
+            Assert.Equal(2, resultTensor2.Lengths[2]);
+
+            Assert.Equal(1, resultTensor2[0, 0, 0]);
+            Assert.Equal(2, resultTensor2[0, 0, 1]);
+            Assert.Equal(10, resultTensor2[0, 1, 0]);
+            Assert.Equal(20, resultTensor2[0, 1, 1]);
+
+            Assert.Equal(3, resultTensor2[1, 0, 0]);
+            Assert.Equal(4, resultTensor2[1, 0, 1]);
+            Assert.Equal(30, resultTensor2[1, 1, 0]);
+            Assert.Equal(40, resultTensor2[1, 1, 1]);
         }
 
         [Fact]
@@ -1103,6 +1124,15 @@ namespace System.Numerics.Tensors.Tests
             Tensor<float> t0 = Tensor.Create<float>((Enumerable.Range(0, 4).Select(i => (float)i)), [2, 2]);
 
             Assert.Equal(StdDev([0, 1, 2, 3]), Tensor.StdDev<float>(t0), .1);
+
+            // Test that non-contiguous calculations work
+            Tensor<float> fourByFour = Tensor.Create<float>([4, 4]);
+            fourByFour[[0, 0]] = 1f;
+            fourByFour[[0, 1]] = 1f;
+            fourByFour[[1, 0]] = 1f;
+            fourByFour[[1, 1]] = 1f;
+            ReadOnlyTensorSpan<float> upperLeft = fourByFour.AsReadOnlyTensorSpan().Slice([0..2, 0..2]);
+            Assert.Equal(0f, Tensor.StdDev(upperLeft));
         }
 
         public static float StdDev(float[] values)

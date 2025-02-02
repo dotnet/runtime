@@ -84,7 +84,7 @@ namespace System.Security.Cryptography.Pkcs
                     new Oid(privateKeyInfo.PrivateKeyAlgorithm.Algorithm, null),
                     privateKeyInfo.PrivateKeyAlgorithm.Parameters,
                     privateKeyInfo.PrivateKey,
-                    SignerInfo.MakeAttributeCollection(privateKeyInfo.Attributes));
+                    PkcsHelpers.MakeAttributeCollection(privateKeyInfo.Attributes));
             }
             catch (AsnContentException e)
             {
@@ -262,7 +262,7 @@ namespace System.Security.Cryptography.Pkcs
 
             if (Attributes.Count > 0)
             {
-                info.Attributes = PkcsHelpers.NormalizeAttributeSet(CmsSigner.BuildAttributes(Attributes).ToArray());
+                info.Attributes = PkcsHelpers.NormalizeAttributeSet(PkcsHelpers.BuildAttributes(Attributes).ToArray());
             }
 
             // Write in BER in case any of the provided fields was BER.

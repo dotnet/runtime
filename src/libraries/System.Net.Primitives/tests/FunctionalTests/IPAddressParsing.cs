@@ -219,6 +219,8 @@ namespace System.Net.Primitives.Functional.Tests
         [MemberData(nameof(ValidIpv4Addresses))]
         public void ParseIPv4_ValidAddress_Success(string address, string expected)
         {
+            TestIsValid(address, true);
+
             IPAddress ip = Parse(address);
 
             // Validate the ToString of the parsed address matches the expected value
@@ -443,6 +445,8 @@ namespace System.Net.Primitives.Functional.Tests
         [MemberData(nameof(ValidIpv6Addresses))]
         public void ParseIPv6_ValidAddress_RoundtripMatchesExpected(string address, string expected)
         {
+            TestIsValid(address, true);
+
             IPAddress ip = Parse(address);
 
             // Validate the ToString of the parsed address matches the expected value
@@ -467,6 +471,8 @@ namespace System.Net.Primitives.Functional.Tests
         [MemberData(nameof(ValidIpv6Addresses))]
         public void TryParseIPv6_ValidAddress_RoundtripMatchesExpected(string address, string expected)
         {
+            TestIsValid(address, true);
+
             Assert.True(TryParse(address, out IPAddress ip));
 
             // Validate the ToString of the parsed address matches the expected value
@@ -502,6 +508,7 @@ namespace System.Net.Primitives.Functional.Tests
         [MemberData(nameof(ScopeIds))]
         public void ParseIPv6_ExtractsScopeId(string address, int expectedScopeId)
         {
+            TestIsValid(address, true);
             IPAddress ip = Parse(address);
             Assert.Equal(expectedScopeId, ip.ScopeId);
         }
@@ -613,6 +620,8 @@ namespace System.Net.Primitives.Functional.Tests
 
         private void ParseInvalidAddress(string invalidAddress, bool hasInnerSocketException)
         {
+            TestIsValid(invalidAddress, false);
+
             FormatException fe = Assert.Throws<FormatException>(() => Parse(invalidAddress));
             if (hasInnerSocketException)
             {
@@ -627,6 +636,12 @@ namespace System.Net.Primitives.Functional.Tests
             IPAddress result = IPAddress.Loopback;
             Assert.False(TryParse(invalidAddress, out result));
             Assert.Null(result);
+        }
+
+        private static void TestIsValid(string address, bool expectedValid)
+        {
+            Assert.Equal(expectedValid, IPAddress.IsValid(address));
+            Assert.Equal(expectedValid, IPAddress.IsValidUtf8(Encoding.UTF8.GetBytes(address)));
         }
     }
 }

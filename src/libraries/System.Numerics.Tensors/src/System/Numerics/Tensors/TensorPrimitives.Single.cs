@@ -859,9 +859,9 @@ namespace System.Numerics.Tensors
 
             ValidateInputOutputSpanNonOverlapping(x, destination);
 
-            float expSum = Aggregate<ExpOperator_Single, AddOperator_Single>(x);
-
-            InvokeSpanScalarIntoSpan<ExpOperator_Single, DivideOperator_Single>(x, expSum, destination);
+            InvokeSpanIntoSpan<ExpOperator_Single>(x, destination);
+            float expSum = Sum(destination);
+            InvokeSpanScalarIntoSpan<DivideOperator_Single>(destination, expSum, destination);
         }
 
         /// <summary>Computes the element-wise difference between single-precision floating-point numbers in the specified tensors.</summary>

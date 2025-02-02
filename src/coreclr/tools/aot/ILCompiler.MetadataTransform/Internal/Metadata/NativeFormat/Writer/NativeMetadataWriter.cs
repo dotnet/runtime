@@ -519,7 +519,7 @@ namespace Internal.Metadata.NativeFormat.Writer
         {
             get
             {
-                return _offset & 0x00FFFFFF;
+                return _offset & 0x01FFFFFF;
             }
         }
 

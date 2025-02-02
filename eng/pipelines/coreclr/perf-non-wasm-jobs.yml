@@ -1,5 +1,82 @@
 parameters:
-  perfBranch: 'main'
+  - name: perfBranch
+    type: string
+    default: main
+  - name: crossgen
+    type: object
+    default:
+      enabled: true
+      configs:
+        - windows_x64
+        - windows_x86
+  - name: viperJitOptRepeat
+    type: object
+    default:
+      enabled: true
+      configs:
+        - windows_x64
+        - linux_x64
+  - name: viperMicro
+    type: object
+    default:
+      enabled: true
+      configs:
+        - windows_x64
+        - linux_x64
+  - name: owlMicro
+    type: object
+    default:
+      enabled: true
+      configs:
+        - windows_x64
+        - linux_x64
+  - name: tigerNoR2R
+    type: object
+    default:
+      enabled: true
+      configs:
+        - windows_x64
+        - linux_x64
+  - name: tigerNoPGO
+    type: object
+    default:
+      enabled: true
+      configs:
+        - windows_x64
+        - linux_x64
+  - name: tigerMicro
+    type: object
+    default:
+      enabled: true
+      configs:
+        - windows_x64
+        - linux_x64
+        - windown_x86
+        - linux_musl_x64
+  - name: tigerMonoAOT
+    type: object
+    default:
+      enabled: true
+      configs:
+        - linux_x64
+  - name: tigerMonoInterpreter
+    type: object
+    default:
+      enabled: true
+      configs:
+        - linux_x64
+  - name: tigerMono
+    type: object
+    default:
+      enabled: true
+      configs:
+        - linux_x64
+  - name: androidMono
+    type: object
+    default:
+      enabled: true
+      configs:
+        - android_arm64
 
 jobs:
 

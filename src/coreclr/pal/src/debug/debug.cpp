@@ -60,7 +60,9 @@ SET_DEFAULT_DEBUG_CHANNEL(DEBUG); // some headers have code with asserts, so do 
 
 #ifdef __APPLE__
 #include <mach/mach.h>
+#if defined(TARGET_OSX)
 #include <mach/mach_vm.h>
+#endif
 #endif // __APPLE__
 
 #if HAVE_MACH_EXCEPTIONS

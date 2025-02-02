@@ -83,6 +83,7 @@
     <Compile Include="Tests\System\Text\ValueStringBuilderTests.cs" />
     <Compile Include="Tests\System\Collections\Generic\ArrayBuilderTests.cs" />
     <Compile Include="Tests\System\IO\RowConfigReaderTests.cs" />
+    <Compile Include="Tests\System\Net\ArrayBufferTests.cs" />
     <Compile Include="Tests\System\Net\HttpKnownHeaderNamesTests.cs" />
     <Compile Include="Tests\System\Net\MultiArrayBufferTests.cs" />
     <Compile Include="Tests\System\Net\aspnetcore\Http2\DynamicTableTest.cs" />

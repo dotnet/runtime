@@ -4300,6 +4300,16 @@ int LinearScan::BuildReturn(GenTree* tree)
                 return 1;
             }
         }
+        else
+        {
+            // In other cases we require the incoming operand to be in the
+            // right register(s) when we build the use(s), and thus we do not
+            // need to model that as a kill. However, in this case we have a
+            // contained operand. Codegen will move it to the right return
+            // registers; thus they will be killed.
+            regMaskTP killedRegs = compiler->compRetTypeDesc.GetABIReturnRegs(compiler->info.compCallConv);
+            buildKillPositionsForNode(tree, currentLoc + 1, killedRegs);
+        }
 
     // No kills or defs.
     return 0;

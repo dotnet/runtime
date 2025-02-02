@@ -650,6 +650,7 @@ protected:
 #if defined(TARGET_AMD64)
     void genAmd64EmitterUnitTestsSse2();
     void genAmd64EmitterUnitTestsApx();
+    void genAmd64EmitterUnitTestsAvx10v2();
 #endif
 
 #endif // defined(DEBUG)
@@ -659,6 +660,7 @@ protected:
     virtual bool IsSaveFpLrWithAllCalleeSavedRegisters() const;
     bool         genSaveFpLrWithAllCalleeSavedRegisters;
     bool         genForceFuncletFrameType5;
+    bool         genReverseAndPairCalleeSavedRegisters;
 #endif // TARGET_ARM64
 
     //-------------------------------------------------------------------------
@@ -1621,11 +1623,7 @@ public:
 
     instruction ins_Copy(var_types dstType);
     instruction ins_Copy(regNumber srcReg, var_types dstType);
-#if defined(TARGET_XARCH)
-    instruction ins_FloatConv(var_types to, var_types from, emitAttr attr);
-#elif defined(TARGET_ARM)
     instruction ins_FloatConv(var_types to, var_types from);
-#endif
     instruction ins_MathOp(genTreeOps oper, var_types type);
 
     void instGen_Return(unsigned stkArgSize);

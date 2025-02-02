@@ -12,6 +12,8 @@ extern  ProfileTailcall:proc
 extern OnHijackWorker:proc
 extern JIT_RareDisableHelperWorker:proc
 
+extern g_pPollGC:QWORD
+extern g_TrapReturningThreads:DWORD
 
 ; EXTERN_C int __fastcall HelperMethodFrameRestoreState(
 ;         INDEBUG_COMMA(HelperMethodFrame *pFrame)
@@ -447,5 +449,13 @@ NESTED_END OnCallCountThresholdReachedStub, _TEXT
 
 endif ; FEATURE_TIERED_COMPILATION
 
-        end
+LEAF_ENTRY JIT_PollGC, _TEXT
+    cmp [g_TrapReturningThreads], 0
+    jnz             JIT_PollGCRarePath
+    ret
+JIT_PollGCRarePath:
+    mov rax, g_pPollGC
+    TAILJMP_RAX
+LEAF_END JIT_PollGC, _TEXT
 
+        end

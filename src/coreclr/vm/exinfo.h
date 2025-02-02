@@ -283,6 +283,14 @@ struct ExInfo : public ExceptionTrackerBase
     // Info on the last reported funclet used to report references in the parent frame
     LastReportedFuncletInfo m_lastReportedFunclet;
 
+#ifdef TARGET_WINDOWS
+    // Longjmp buffer used to restart longjmp after a block of managed frames when
+    // longjmp jumps over them. This is possible on Windows only due to the way the
+    // longjmp is implemented.
+    jmp_buf       *m_pLongJmpBuf;
+    int            m_longJmpReturnValue;
+#endif
+
 #if defined(TARGET_UNIX)
     void TakeExceptionPointersOwnership(PAL_SEHException* ex);
 #endif // TARGET_UNIX

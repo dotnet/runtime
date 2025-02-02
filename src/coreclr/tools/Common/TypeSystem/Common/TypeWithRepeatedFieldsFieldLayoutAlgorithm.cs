@@ -65,6 +65,11 @@ namespace Internal.TypeSystem
             return _fallbackAlgorithm.ComputeContainsGCPointers(((TypeWithRepeatedFields)type).MetadataType);
         }
 
+        public override bool ComputeContainsByRefs(DefType type)
+        {
+            return _fallbackAlgorithm.ComputeContainsByRefs(((TypeWithRepeatedFields)type).MetadataType);
+        }
+
         public override bool ComputeIsUnsafeValueType(DefType type)
         {
             return _fallbackAlgorithm.ComputeIsUnsafeValueType(((TypeWithRepeatedFields)type).MetadataType);

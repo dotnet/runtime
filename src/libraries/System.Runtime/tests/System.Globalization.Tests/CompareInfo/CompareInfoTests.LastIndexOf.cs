@@ -47,12 +47,18 @@ namespace System.Globalization.Tests
             yield return new object[] { s_invariantCompare, "foobardzsdzs", "rddzs", 11, 12, CompareOptions.Ordinal, -1, 0 };
 
             // Slovak
-            yield return new object[] { s_slovakCompare, "ch", "h", 0, 1, CompareOptions.None, -1, 0 };
-            // Android has its own ICU, which doesn't work well with slovak
-            if (!PlatformDetection.IsAndroid && !PlatformDetection.IsLinuxBionic && PlatformDetection.IsNotHybridGlobalizationOnApplePlatform)
+            // Apple ObjectiveC APIs do not treat "ch" as a single character in Slovak
+            if (PlatformDetection.IsNotHybridGlobalizationOnApplePlatform)
             {
-                yield return new object[] { s_slovakCompare, "hore chodit", "HO", 11, 12, CompareOptions.IgnoreCase, 0, 2 };
-            }yield return new object[] { s_slovakCompare, "chh", "h", 2, 2, CompareOptions.None, 2, 1 };
+                yield return new object[] { s_slovakCompare, "ch", "h", 0, 1, CompareOptions.None, -1, 0 };
+                yield return new object[] { s_slovakCompare, "chh", "h", 2, 2, CompareOptions.None, 2, 1 };
+
+                // Android has its own ICU, which doesn't work well with slovak
+                if (!PlatformDetection.IsAndroid && !PlatformDetection.IsLinuxBionic && PlatformDetection.IsNotHybridGlobalizationOnApplePlatform)
+                {
+                    yield return new object[] { s_slovakCompare, "hore chodit", "HO", 11, 12, CompareOptions.IgnoreCase, 0, 2 };
+                }
+            }
 
             // Turkish
             // Android has its own ICU, which doesn't work well with tr
@@ -95,7 +101,7 @@ namespace System.Globalization.Tests
             yield return new object[] { s_invariantCompare, "AA\u200DA", "\u200d", 3, 4, CompareOptions.None, 4, 0};
 
             // Ignore symbols
-            if (PlatformDetection.IsNotHybridGlobalizationOnApplePlatform)
+            if (PlatformDetection.IsNotHybridGlobalizationOnApplePlatform) // IgnoreSymbols are not supported
                 yield return new object[] { s_invariantCompare, "More Test's", "Tests", 10, 11, CompareOptions.IgnoreSymbols, 5, 6 };
             yield return new object[] { s_invariantCompare, "More Test's", "Tests", 10, 11, CompareOptions.None, -1, 0 };
             yield return new object[] { s_invariantCompare, "cbabababdbaba", "ab", 12, 13, CompareOptions.None, 10, 2 };
@@ -111,10 +117,10 @@ namespace System.Globalization.Tests
             }
 
             // Inputs where matched length does not equal value string length
+            yield return new object[] { s_germanCompare, "abc Strasse Strasse xyz", "stra\u00DFe", 22, 23, CompareOptions.IgnoreCase | CompareOptions.IgnoreNonSpace, 12, 7 };
+            yield return new object[] { s_germanCompare, "abc stra\u00DFe stra\u00DFe xyz", "Strasse", 20, 21, CompareOptions.IgnoreCase | CompareOptions.IgnoreNonSpace, 11, 6 };
             if (PlatformDetection.IsNotHybridGlobalizationOnApplePlatform)
-            {
-                yield return new object[] { s_germanCompare, "abc Strasse Strasse xyz", "stra\u00DFe", 22, 23, CompareOptions.IgnoreCase | CompareOptions.IgnoreNonSpace, 12, 7 };
-                yield return new object[] { s_germanCompare, "abc stra\u00DFe stra\u00DFe xyz", "Strasse", 20, 21, CompareOptions.IgnoreCase | CompareOptions.IgnoreNonSpace, 11, 6 };
+            {    
                 yield return new object[] { s_invariantCompare, "abcdzxyz", "\u01F3", 7, 8, CompareOptions.IgnoreNonSpace, 3, 2 };
                 yield return new object[] { s_invariantCompare, "abc\u01F3xyz", "dz", 6, 7, CompareOptions.IgnoreNonSpace, 3, 1 };
             }
@@ -244,11 +250,8 @@ namespace System.Globalization.Tests
                 valueBoundedMemory.MakeReadonly();
 
                 Assert.Equal(expected, compareInfo.LastIndexOf(sourceBoundedMemory.Span, valueBoundedMemory.Span, options));
-                if (PlatformDetection.IsNotHybridGlobalizationOnApplePlatform)
-                {
-                    Assert.Equal(expected, compareInfo.LastIndexOf(sourceBoundedMemory.Span, valueBoundedMemory.Span, options, out int actualMatchLength));
-                    Assert.Equal(expectedMatchLength, actualMatchLength);
-                }
+                Assert.Equal(expected, compareInfo.LastIndexOf(sourceBoundedMemory.Span, valueBoundedMemory.Span, options, out int actualMatchLength));
+                Assert.Equal(expectedMatchLength, actualMatchLength);
 
                 if (TryCreateRuneFrom(value, out Rune rune))
                 {
@@ -348,24 +351,12 @@ namespace System.Globalization.Tests
             AssertExtensions.Throws<ArgumentException>("options", () => s_invariantCompare.LastIndexOf("Test's", 'a', 0, 1, CompareOptions.NumericOrdering));
             AssertExtensions.Throws<ArgumentException>("options", () => s_invariantCompare.LastIndexOf("Test's", "a".AsSpan(), CompareOptions.NumericOrdering));
 
-            if (PlatformDetection.IsHybridGlobalizationOnApplePlatform)
-            {
-                Assert.Throws<PlatformNotSupportedException>(() => s_invariantCompare.LastIndexOf("Test's", "a".AsSpan(), CompareOptions.StringSort, out int matchLength));
-                Assert.Throws<PlatformNotSupportedException>(() => s_invariantCompare.LastIndexOf("Test's", "a".AsSpan(), CompareOptions.NumericOrdering, out int matchLength));
-                Assert.Throws<PlatformNotSupportedException>(() => s_invariantCompare.LastIndexOf("Test's", "a".AsSpan(), CompareOptions.Ordinal | CompareOptions.IgnoreWidth, out int matchLength));
-                Assert.Throws<PlatformNotSupportedException>(() => s_invariantCompare.LastIndexOf("Test's", "a".AsSpan(), CompareOptions.OrdinalIgnoreCase | CompareOptions.IgnoreWidth, out int matchLength));
-                Assert.Throws<PlatformNotSupportedException>(() => s_invariantCompare.LastIndexOf("Test's", "a".AsSpan(), (CompareOptions)(-1), out int matchLength));
-                Assert.Throws<PlatformNotSupportedException>(() => s_invariantCompare.LastIndexOf("Test's", "a".AsSpan(), (CompareOptions)0x11111111, out int matchLength));
-            }
-            else
-            {
-                AssertExtensions.Throws<ArgumentException>("options", () => s_invariantCompare.LastIndexOf("Test's", "a".AsSpan(), CompareOptions.StringSort, out int matchLength));
-                AssertExtensions.Throws<ArgumentException>("options", () => s_invariantCompare.LastIndexOf("Test's", "a".AsSpan(), CompareOptions.NumericOrdering, out int matchLength));
-                AssertExtensions.Throws<ArgumentException>("options", () => s_invariantCompare.LastIndexOf("Test's", "a".AsSpan(), CompareOptions.Ordinal | CompareOptions.IgnoreWidth, out int matchLength));
-                AssertExtensions.Throws<ArgumentException>("options", () => s_invariantCompare.LastIndexOf("Test's", "a".AsSpan(), CompareOptions.OrdinalIgnoreCase | CompareOptions.IgnoreWidth, out int matchLength));
-                AssertExtensions.Throws<ArgumentException>("options", () => s_invariantCompare.LastIndexOf("Test's", "a".AsSpan(), (CompareOptions)(-1), out int matchLength));
-                AssertExtensions.Throws<ArgumentException>("options", () => s_invariantCompare.LastIndexOf("Test's", "a".AsSpan(), (CompareOptions)0x11111111, out int matchLength));
-            }
+            AssertExtensions.Throws<ArgumentException>("options", () => s_invariantCompare.LastIndexOf("Test's", "a".AsSpan(), CompareOptions.StringSort, out int matchLength));
+            AssertExtensions.Throws<ArgumentException>("options", () => s_invariantCompare.LastIndexOf("Test's", "a".AsSpan(), CompareOptions.NumericOrdering, out int matchLength));
+            AssertExtensions.Throws<ArgumentException>("options", () => s_invariantCompare.LastIndexOf("Test's", "a".AsSpan(), CompareOptions.Ordinal | CompareOptions.IgnoreWidth, out int matchLength));
+            AssertExtensions.Throws<ArgumentException>("options", () => s_invariantCompare.LastIndexOf("Test's", "a".AsSpan(), CompareOptions.OrdinalIgnoreCase | CompareOptions.IgnoreWidth, out int matchLength));
+            AssertExtensions.Throws<ArgumentException>("options", () => s_invariantCompare.LastIndexOf("Test's", "a".AsSpan(), (CompareOptions)(-1), out int matchLength));
+            AssertExtensions.Throws<ArgumentException>("options", () => s_invariantCompare.LastIndexOf("Test's", "a".AsSpan(), (CompareOptions)0x11111111, out int matchLength));
 
             AssertExtensions.Throws<ArgumentException>("options", () => s_invariantCompare.LastIndexOf("Test's", "Tests", CompareOptions.Ordinal | CompareOptions.IgnoreWidth));
             AssertExtensions.Throws<ArgumentException>("options", () => s_invariantCompare.LastIndexOf("Test's", "Tests", 0, CompareOptions.Ordinal | CompareOptions.IgnoreWidth));

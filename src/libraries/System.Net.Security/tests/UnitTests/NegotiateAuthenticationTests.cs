@@ -85,6 +85,7 @@ namespace System.Net.Security.Tests
         }
 
         [ConditionalFact(nameof(IsNtlmUnavailable))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/111639", typeof(PlatformDetection), nameof(PlatformDetection.IsUbuntu24))]
         public void Package_Unsupported_NTLM()
         {
             NegotiateAuthenticationClientOptions clientOptions = new NegotiateAuthenticationClientOptions { Package = "NTLM", Credential = s_testCredentialRight, TargetName = "HTTP/foo" };
@@ -274,7 +275,7 @@ namespace System.Net.Security.Tests
             fakeNtlmServer.Unwrap(output.WrittenSpan, temp);
             Assert.Equal(s_Hello, temp);
 
-            // Test creating signature on server side and decoding it with VerifySignature on client side 
+            // Test creating signature on server side and decoding it with VerifySignature on client side
             byte[] serverSignedMessage = new byte[16 + s_Hello.Length];
             fakeNtlmServer.Wrap(s_Hello, serverSignedMessage);
             output.Clear();

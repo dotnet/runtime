@@ -5,7 +5,7 @@ using System.Collections.Generic;
 
 namespace System.Collections.Frozen
 {
-    internal sealed class OrdinalStringFrozenDictionary_FullCaseInsensitive<TValue> : OrdinalStringFrozenDictionary<TValue>
+    internal sealed partial class OrdinalStringFrozenDictionary_FullCaseInsensitive<TValue> : OrdinalStringFrozenDictionary<TValue>
     {
         private readonly ulong _lengthFilter;
 
@@ -23,7 +23,6 @@ namespace System.Collections.Frozen
 
         // See comment in OrdinalStringFrozenDictionary for why these overrides exist. Do not remove.
         private protected override ref readonly TValue GetValueRefOrNullRefCore(string key) => ref base.GetValueRefOrNullRefCore(key);
-        private protected override ref readonly TValue GetValueRefOrNullRefCore<TAlternateKey>(TAlternateKey key) => ref base.GetValueRefOrNullRefCore(key);
 
         private protected override bool Equals(string? x, string? y) => StringComparer.OrdinalIgnoreCase.Equals(x, y);
         private protected override bool Equals(ReadOnlySpan<char> x, string? y) => x.Equals(y.AsSpan(), StringComparison.OrdinalIgnoreCase);

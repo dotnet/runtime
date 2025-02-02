@@ -21,7 +21,7 @@ namespace Microsoft.Diagnostics.DataContractReader;
 /// these are throwing APIs. Any callers at the boundaries (for example, unmanaged entry points, COM)
 /// should handle any exceptions.
 /// </remarks>
-internal sealed unsafe class ContractDescriptorTarget : Target
+public sealed unsafe class ContractDescriptorTarget : Target
 {
     private const int StackAllocByteThreshold = 1024;
 
@@ -481,7 +481,7 @@ internal sealed unsafe class ContractDescriptorTarget : Target
     /// Store of addresses that have already been read into corresponding data models.
     /// This is simply used to avoid re-processing data on every request.
     /// </summary>
-    internal sealed class DataCache : Target.IDataCache
+    public sealed class DataCache : Target.IDataCache
     {
         private readonly ContractDescriptorTarget _target;
         private readonly Dictionary<(ulong, Type), object?> _readDataByAddress = [];

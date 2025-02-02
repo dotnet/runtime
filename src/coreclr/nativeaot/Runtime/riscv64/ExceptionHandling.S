@@ -328,7 +328,7 @@
 
         // Normal case where a valid return address location is hijacked
         sd    a1, 0(a3)
-        tail  ClearThreadState
+        tail  LOCAL_LABEL(ClearThreadState)
 
 LOCAL_LABEL(TailCallWasHijacked):
 

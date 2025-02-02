@@ -514,3 +514,8 @@ if (CLR_CMAKE_TARGET_ANDROID OR CLR_CMAKE_TARGET_MACCATALYST OR CLR_CMAKE_TARGET
     # - Armv6: zlib-ng has build breaks
     set(CLR_CMAKE_USE_SYSTEM_ZLIB 1)
 endif()
+
+if (NOT CLR_CMAKE_TARGET_ANDROID)
+    # opt into building tools like ildasm/ilasm
+    set(CLR_CMAKE_BUILD_TOOLS 1)
+endif()

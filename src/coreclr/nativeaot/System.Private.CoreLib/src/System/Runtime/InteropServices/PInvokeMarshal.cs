@@ -70,7 +70,7 @@ namespace System.Runtime.InteropServices
                 //
                 // Marshalling a managed delegate created from managed code into a native function pointer
                 //
-                return GetPInvokeDelegates().GetValue(del, s_AllocateThunk ??= AllocateThunk).Thunk;
+                return GetPInvokeDelegates().GetOrAdd(del, s_AllocateThunk ??= AllocateThunk).Thunk;
             }
         }
 
@@ -78,7 +78,7 @@ namespace System.Runtime.InteropServices
         /// Used to lookup whether a delegate already has thunk allocated for it
         /// </summary>
         private static ConditionalWeakTable<Delegate, PInvokeDelegateThunk> s_pInvokeDelegates;
-        private static ConditionalWeakTable<Delegate, PInvokeDelegateThunk>.CreateValueCallback s_AllocateThunk;
+        private static Func<Delegate, PInvokeDelegateThunk> s_AllocateThunk;
 
         private static ConditionalWeakTable<Delegate, PInvokeDelegateThunk> GetPInvokeDelegates()
         {

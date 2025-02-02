@@ -595,7 +595,7 @@ public:
 
 protected:
     //  Keeps track of how many bytes we've pushed on the processor's stack.
-    unsigned genStackLevel;
+    unsigned genStackLevel = 0;
 
 public:
     //--------------------------------------------

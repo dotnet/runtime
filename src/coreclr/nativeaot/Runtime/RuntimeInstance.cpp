@@ -52,9 +52,9 @@ FCIMPLEND
 
 #if TARGET_UNIX
 #include "PalCreateDump.h"
-FCIMPL2(void, RhCreateCrashDumpIfEnabled, PEXCEPTION_RECORD pExceptionRecord, PCONTEXT pExContext)
+FCIMPL1(void, RhCreateCrashDumpIfEnabled, PEXCEPTION_RECORD pExceptionRecord)
 {
-    PalCreateCrashDumpIfEnabled(pExceptionRecord, pExContext);
+    PalCreateCrashDumpIfEnabled(pExceptionRecord);
 }
 FCIMPLEND
 #endif

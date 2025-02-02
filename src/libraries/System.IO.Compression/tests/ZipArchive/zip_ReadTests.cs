@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers.Binary;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using Xunit;
@@ -271,6 +272,160 @@ namespace System.IO.Compression.Tests
             }
 
             Assert.Equal(expectedDisposeCalls, disposeCallCountingStream.NumberOfDisposeCalls);
+        }
+
+        [Fact]
+        public static void CanReadLargeCentralDirectoryHeader()
+        {
+            // A 19-character filename will result in a 65-byte central directory header. 64 of these will make the central directory
+            // read process stretch into two 4KB buffers.
+            int count = 64;
+            string entryNameFormat = "example/file-{0:00}.dat";
+
+            using (MemoryStream archiveStream = new MemoryStream())
+            {
+                using (ZipArchive creationArchive = new ZipArchive(archiveStream, ZipArchiveMode.Create, true))
+                {
+                    for (int i = 0; i < count; i++)
+                    {
+                        creationArchive.CreateEntry(string.Format(entryNameFormat, i));
+                    }
+                }
+
+                archiveStream.Seek(0, SeekOrigin.Begin);
+
+                using (ZipArchive readArchive = new ZipArchive(archiveStream, ZipArchiveMode.Read))
+                {
+                    Assert.Equal(count, readArchive.Entries.Count);
+
+                    for (int i = 0; i < count; i++)
+                    {
+                        Assert.Equal(string.Format(entryNameFormat, i), readArchive.Entries[i].FullName);
+                        Assert.Equal(0, readArchive.Entries[i].CompressedLength);
+                        Assert.Equal(0, readArchive.Entries[i].Length);
+                    }
+                }
+            }
+        }
+
+        [Fact]
+        public static void ArchivesInOffsetOrder_UpdateMode()
+        {
+            // When the ZipArchive which has been opened in Update mode is disposed of, its entries will be rewritten in order of their offset within the file.
+            // This requires the entries to be sorted when the file is opened.
+            byte[] sampleEntryContents = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19];
+            byte[] sampleZipFile = ReverseCentralDirectoryEntries(CreateZipFile(50, sampleEntryContents));
+
+            using (MemoryStream ms = new MemoryStream())
+            {
+                ms.Write(sampleZipFile);
+                ms.Seek(0, SeekOrigin.Begin);
+
+                ZipArchive source = new ZipArchive(ms, ZipArchiveMode.Update, leaveOpen: true);
+                long previousOffset = long.MinValue;
+                System.Reflection.FieldInfo offsetOfLocalHeader = typeof(ZipArchiveEntry).GetField("_offsetOfLocalHeader", System.Reflection.BindingFlags.NonPublic | Reflection.BindingFlags.Instance);
+
+                for (int i = 0; i < source.Entries.Count; i++)
+                {
+                    ZipArchiveEntry entry = source.Entries[i];
+                    long offset = (long)offsetOfLocalHeader.GetValue(entry);
+
+                    Assert.True(offset > previousOffset);
+                    previousOffset = offset;
+                }
+
+                source.Dispose();
+            }
+        }
+
+        [Fact]
+        public static void ArchivesInCentralDirectoryOrder_ReadMode()
+        {
+            // When the ZipArchive is opened in Read mode, no sort is necessary. The entries will be added to the ZipArchive in the order
+            // that they appear in the central directory (in this case, sorted by offset descending.)
+            byte[] sampleEntryContents = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19];
+            byte[] sampleZipFile = ReverseCentralDirectoryEntries(CreateZipFile(50, sampleEntryContents));
+
+            using (MemoryStream ms = new MemoryStream())
+            {
+                ms.Write(sampleZipFile);
+                ms.Seek(0, SeekOrigin.Begin);
+
+                ZipArchive source = new ZipArchive(ms, ZipArchiveMode.Read, leaveOpen: true);
+                long previousOffset = long.MaxValue;
+                System.Reflection.FieldInfo offsetOfLocalHeader = typeof(ZipArchiveEntry).GetField("_offsetOfLocalHeader", System.Reflection.BindingFlags.NonPublic | Reflection.BindingFlags.Instance);
+
+                for (int i = 0; i < source.Entries.Count; i++)
+                {
+                    ZipArchiveEntry entry = source.Entries[i];
+                    long offset = (long)offsetOfLocalHeader.GetValue(entry);
+
+                    Assert.True(offset < previousOffset);
+                    previousOffset = offset;
+                }
+
+                source.Dispose();
+            }
+        }
+
+        private static byte[] ReverseCentralDirectoryEntries(byte[] zipFile)
+        {
+            byte[] destinationBuffer = new byte[zipFile.Length];
+
+            // Inspect the "end of central directory" header. This is the final 22 bytes of the file, and it contains the offset and the size
+            // of the central directory.
+            int eocdHeaderOffset_CentralDirectoryPosition = zipFile.Length - 6;
+            int eocdHeaderOffset_CentralDirectoryLength = zipFile.Length - 10;
+            int centralDirectoryPosition = BinaryPrimitives.ReadInt32LittleEndian(zipFile.AsSpan(eocdHeaderOffset_CentralDirectoryPosition, sizeof(int)));
+            int centralDirectoryLength = BinaryPrimitives.ReadInt32LittleEndian(zipFile.AsSpan(eocdHeaderOffset_CentralDirectoryLength, sizeof(int)));
+            List<Range> centralDirectoryRanges = new List<Range>();
+
+            Assert.True(centralDirectoryPosition + centralDirectoryLength < zipFile.Length);
+
+            // With the starting position of the central directory in hand, work through each entry, recording its starting position and its length.
+            for (int currPosition = centralDirectoryPosition; currPosition < centralDirectoryPosition + centralDirectoryLength;)
+            {
+                // The length of a central directory entry is determined by the length of its static components (46 bytes), plus the length of its filename
+                // (offset 28), extra fields (offset 30) and file comment (offset 32).
+                short filenameLength = BinaryPrimitives.ReadInt16LittleEndian(zipFile.AsSpan(currPosition + 28, sizeof(short)));
+                short extraFieldLength = BinaryPrimitives.ReadInt16LittleEndian(zipFile.AsSpan(currPosition + 30, sizeof(short)));
+                short fileCommentLength = BinaryPrimitives.ReadInt16LittleEndian(zipFile.AsSpan(currPosition + 32, sizeof(short)));
+                int totalHeaderLength = 46 + filenameLength + extraFieldLength + fileCommentLength;
+
+                // The sample data generated by the tests should never have extra fields and comments.
+                Assert.True(filenameLength > 0);
+                Assert.True(extraFieldLength == 0);
+                Assert.True(fileCommentLength == 0);
+
+                centralDirectoryRanges.Add(new Range(currPosition, currPosition + totalHeaderLength));
+                currPosition += totalHeaderLength;
+            }
+
+            // Begin building the destination archive. The file contents (everything up to the central directory header) can be copied as-is.
+            zipFile.AsSpan(0, centralDirectoryPosition).CopyTo(destinationBuffer);
+
+            int cumulativeCentralDirectoryLength = 0;
+
+            // Reverse the order of the central directory entries
+            foreach (Range cdHeader in centralDirectoryRanges)
+            {
+                Span<byte> sourceSpan = zipFile.AsSpan(cdHeader);
+                Span<byte> destSpan;
+
+                cumulativeCentralDirectoryLength += sourceSpan.Length;
+                Assert.True(cumulativeCentralDirectoryLength <= centralDirectoryLength);
+
+                destSpan = destinationBuffer.AsSpan(centralDirectoryPosition + centralDirectoryLength - cumulativeCentralDirectoryLength, sourceSpan.Length);
+                sourceSpan.CopyTo(destSpan);
+            }
+
+            Assert.Equal(centralDirectoryLength, cumulativeCentralDirectoryLength);
+            Assert.Equal(22, destinationBuffer.Length - centralDirectoryPosition - centralDirectoryLength);
+
+            // Copy the "end of central directory header" entry to the destination buffer.
+            zipFile.AsSpan(zipFile.Length - 22).CopyTo(destinationBuffer.AsSpan(destinationBuffer.Length - 22));
+
+            return destinationBuffer;
         }
 
         private class DisposeCallCountingStream : MemoryStream

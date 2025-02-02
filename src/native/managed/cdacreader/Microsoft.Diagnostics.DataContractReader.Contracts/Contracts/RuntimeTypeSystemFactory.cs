@@ -5,7 +5,7 @@ using System;
 
 namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 
-internal sealed class RuntimeTypeSystemFactory : IContractFactory<IRuntimeTypeSystem>
+public sealed class RuntimeTypeSystemFactory : IContractFactory<IRuntimeTypeSystem>
 {
     IRuntimeTypeSystem IContractFactory<IRuntimeTypeSystem>.CreateContract(Target target, int version)
     {

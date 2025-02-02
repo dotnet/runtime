@@ -11,7 +11,7 @@ namespace Microsoft.Diagnostics.DataContractReader.RuntimeTypeSystemHelpers;
 // to an unmapped memory region.
 // All types here have not been validated as actually representing a MethodTable, EEClass, etc.
 // All checks are unsafe and may throw if we access an invalid address in target memory.
-internal class MethodValidation
+internal sealed class MethodValidation
 {
     internal interface IMethodTableQueries
     {
@@ -19,7 +19,7 @@ internal class MethodValidation
         bool SlotIsVtableSlot(TargetPointer methodTablePointer, uint slot);
     }
 
-    private class NIEMethodTableQueries : IMethodTableQueries
+    private sealed class NIEMethodTableQueries : IMethodTableQueries
     {
         public TargetPointer GetAddressOfMethodTableSlot(TargetPointer methodTablePointer, uint slot) =>  throw new NotImplementedException();
 

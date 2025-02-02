@@ -17,6 +17,9 @@
     <ItemGroup Condition="'$(BuildIdentityPackage)' == 'true'">
       <_projectsToBuild Include="@(Project)" Condition="'%(Project.PackageTargetRuntime)' == ''" />
     </ItemGroup>
+    <ItemGroup Condition="'$(BuildHostILTools)' == 'true' and '$(IsILToolPackage)' == 'true'">
+      <_projectsToBuild Include="@(Project)" Condition="'%(Project.PackageTargetRuntime)' == '$(NETCoreSdkRuntimeIdentifier)'" AdditionalProperties="%(Project.AdditionalProperties);PackCrossComponent=true" />
+    </ItemGroup>
 
     <ItemGroup>
       <ProjectReference Include="@(_projectsToBuild)" />

@@ -17,7 +17,7 @@
 #define GCINFODECODER_NO_EE
 #include "gcinfodecoder.cpp"
 
-#include "UnixContext.h"
+#include "NativeContext.h"
 #include "UnwindHelpers.h"
 
 #define UBF_FUNC_KIND_MASK      0x03
