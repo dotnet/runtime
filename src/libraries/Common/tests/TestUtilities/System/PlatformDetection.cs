@@ -142,8 +142,17 @@ namespace System
 
         public static bool IsStartingProcessesSupported => !IsiOS && !IstvOS;
 
-        public static bool IsSpeedOptimized => !IsSizeOptimized;
-        public static bool IsSizeOptimized => IsBrowser || IsWasi || IsAndroid || IsAppleMobile;
+        public static bool IsLinqSpeedOptimized => !IsLinqSizeOptimized;
+        public static bool IsLinqSizeOptimized => s_linqIsSizeOptimized.Value;
+        private static readonly Lazy<bool> s_linqIsSizeOptimized = new Lazy<bool>(ComputeIsLinqSizeOptimized);
+        private static bool ComputeIsLinqSizeOptimized()
+        {
+#if NET
+            return (bool)typeof(Enumerable).GetMethod("get_IsSizeOptimized", BindingFlags.NonPublic | BindingFlags.Static).Invoke(null, Array.Empty<object>());
+#else
+            return false;
+#endif
+        }
 
         public static bool IsBrowserDomSupported => IsEnvironmentVariableTrue("IsBrowserDomSupported");
         public static bool IsBrowserDomSupportedOrNotBrowser => IsNotBrowser || IsBrowserDomSupported;
@@ -169,8 +178,8 @@ namespace System
             return !(bool)typeof(LambdaExpression).GetMethod("get_CanCompileToIL").Invoke(null, Array.Empty<object>());
         }
 
-        // Drawing is not supported on non windows platforms in .NET 7.0+.
-        public static bool IsDrawingSupported => IsWindows && IsNotWindowsNanoServer && IsNotWindowsServerCore;
+        // Drawing is not supported on non windows platforms in .NET 7.0+ and on Mono.
+        public static bool IsDrawingSupported => IsWindows && IsNotWindowsNanoServer && IsNotWindowsServerCore && IsNotMonoRuntime;
 
         public static bool IsAsyncFileIOSupported => !IsBrowser && !IsWasi;
 
@@ -290,6 +299,12 @@ namespace System
         public static bool IsBrowserAndIsBuiltWithAggressiveTrimming => IsBuiltWithAggressiveTrimming && IsBrowser;
         public static bool IsTrimmedWithILLink => IsBuiltWithAggressiveTrimming && !IsNativeAot;
 
+#if NET
+        public static bool DataSetXmlSerializationIsSupported => AppContext.TryGetSwitch("System.Data.DataSet.XmlSerializationIsSupported", out bool isSupported) ? isSupported : true;
+#else
+        public static bool DataSetXmlSerializationIsSupported => true;
+#endif
+
         // Windows - Schannel supports alpn from win8.1/2012 R2 and higher.
         // Linux - OpenSsl supports alpn from openssl 1.0.2 and higher.
         // Android - Platform supports alpn from API level 29 and higher
@@ -389,17 +404,16 @@ namespace System
 
         public static bool IsInvariantGlobalization => m_isInvariant.Value;
         public static bool IsHybridGlobalization => m_isHybrid.Value;
-        public static bool IsHybridGlobalizationOnBrowser => m_isHybrid.Value && IsBrowser;
         public static bool IsHybridGlobalizationOnApplePlatform => m_isHybrid.Value && (IsMacCatalyst || IsiOS || IstvOS);
-        public static bool IsNotHybridGlobalizationOnBrowser => !IsHybridGlobalizationOnBrowser;
         public static bool IsNotInvariantGlobalization => !IsInvariantGlobalization;
         public static bool IsNotHybridGlobalization => !IsHybridGlobalization;
         public static bool IsNotHybridGlobalizationOnApplePlatform => !IsHybridGlobalizationOnApplePlatform;
 
+        // This can be removed once numeric comparisons are supported on Apple platforms
+        public static bool IsNumericComparisonSupported => !IsHybridGlobalizationOnApplePlatform;
+
         // HG on apple platforms implies ICU
         public static bool IsIcuGlobalization => !IsInvariantGlobalization && (IsHybridGlobalizationOnApplePlatform || ICUVersion > new Version(0, 0, 0, 0));
-
-        public static bool IsIcuGlobalizationAndNotHybridOnBrowser => IsIcuGlobalization && IsNotHybridGlobalizationOnBrowser;
         public static bool IsNlsGlobalization => IsNotInvariantGlobalization && !IsIcuGlobalization && !IsHybridGlobalization;
 
         public static bool IsSubstAvailable

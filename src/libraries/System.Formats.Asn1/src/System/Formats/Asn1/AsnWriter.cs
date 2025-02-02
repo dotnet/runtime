@@ -13,7 +13,7 @@ using System.Security.Cryptography;
 namespace System.Formats.Asn1
 {
     /// <summary>
-    ///   A writer for BER-, CER-, and DER-encoded ASN.1 data.
+    ///   A writer for BER-encoded, CER-encoded, and DER-encoded ASN.1 data.
     /// </summary>
     public sealed partial class AsnWriter
     {
@@ -33,7 +33,7 @@ namespace System.Formats.Asn1
         public AsnEncodingRules RuleSet { get; }
 
         /// <summary>
-        ///   Create a new <see cref="AsnWriter"/> with a given set of encoding rules.
+        ///   Creates a new <see cref="AsnWriter"/> with a given set of encoding rules.
         /// </summary>
         /// <param name="ruleSet">The encoding constraints for the writer.</param>
         /// <exception cref="ArgumentOutOfRangeException">
@@ -77,7 +77,7 @@ namespace System.Formats.Asn1
         }
 
         /// <summary>
-        ///   Reset the writer to have no data, without releasing resources.
+        ///   Resets the writer to have no data, without releasing resources.
         /// </summary>
         public void Reset()
         {
@@ -124,7 +124,7 @@ namespace System.Formats.Asn1
         /// </summary>
         /// <param name="destination">The buffer in which to write.</param>
         /// <param name="bytesWritten">
-        ///   On success, receives the number of bytes written to <paramref name="destination"/>.
+        ///   When this method returns, contains the number of bytes written to <paramref name="destination"/>.
         /// </param>
         /// <returns>
         ///   <see langword="true"/> if the encode succeeded,
@@ -183,7 +183,7 @@ namespace System.Formats.Asn1
         }
 
         /// <summary>
-        ///   Return a new array containing the encoded value.
+        ///   Returns a new array containing the encoded value.
         /// </summary>
         /// <returns>
         ///   A precisely-sized array containing the encoded value.
@@ -480,7 +480,7 @@ namespace System.Formats.Asn1
         }
 
         /// <summary>
-        ///   Copy the value of this writer into another.
+        ///   Copies the value of this writer into another.
         /// </summary>
         /// <param name="destination">The writer to receive the value.</param>
         /// <exception cref="ArgumentNullException">
@@ -521,7 +521,7 @@ namespace System.Formats.Asn1
         }
 
         /// <summary>
-        ///   Write a single value which has already been encoded.
+        ///   Writes a single value that has already been encoded.
         /// </summary>
         /// <param name="value">The value to write.</param>
         /// <remarks>
@@ -834,7 +834,7 @@ namespace System.Formats.Asn1
         /// <remarks>
         ///   Instances of this type are expected to be created from a <c>Push</c> member on <see cref="AsnWriter"/>,
         ///   not instantiated directly.
-        ///   Calling <see cref="Dispose" /> will call the corresponding <c>Pop</c> associated with the <c>Push</c>.
+        ///   Calling <see cref="Dispose" /> calls the corresponding <c>Pop</c> associated with the <c>Push</c>.
         /// </remarks>
         public readonly struct Scope : IDisposable
         {

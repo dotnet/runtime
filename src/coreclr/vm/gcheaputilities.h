@@ -4,7 +4,10 @@
 #ifndef _GCHEAPUTILITIES_H_
 #define _GCHEAPUTILITIES_H_
 
+#include "eventtracebase.h"
 #include "gcinterface.h"
+#include "math.h"
+#include <minipal/xoshiro128pp.h>
 
 // The singular heap instance.
 GPTR_DECL(IGCHeap, g_pGCHeap);
@@ -12,6 +15,8 @@ GPTR_DECL(IGCHeap, g_pGCHeap);
 #ifndef DACCESS_COMPILE
 extern "C" {
 #endif // !DACCESS_COMPILE
+
+const DWORD SamplingDistributionMean = (100 * 1024);
 
 // This struct allows adding some state that is only visible to the EE onto the standard gc_alloc_context
 struct ee_alloc_context
@@ -73,6 +78,62 @@ struct ee_alloc_context
         // activated so m_CombinedLimit is always equal to alloc_limit.
         m_CombinedLimit = m_GCAllocContext.alloc_limit;
     }
+
+    static inline bool IsRandomizedSamplingEnabled()
+    {
+#ifdef FEATURE_EVENT_TRACE
+        return ETW_TRACING_CATEGORY_ENABLED(MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_DOTNET_Context,
+                                        TRACE_LEVEL_INFORMATION,
+                                        CLR_ALLOCATIONSAMPLING_KEYWORD);
+#else
+        return false;
+#endif // FEATURE_EVENT_TRACE
+    }
+
+    inline void UpdateCombinedLimit(bool samplingEnabled)
+    {
+        if (!samplingEnabled)
+        {
+            m_CombinedLimit = m_GCAllocContext.alloc_limit;
+        }
+        else
+        {
+            // compute the next sampling budget based on a geometric distribution
+            size_t samplingBudget = ComputeGeometricRandom();
+
+            // if the sampling limit is larger than the allocation context, no sampling will occur in this AC
+            // We do Min() prior to adding to alloc_ptr to ensure alloc_ptr+samplingBudget doesn't cause an overflow.
+            size_t size = m_GCAllocContext.alloc_limit - m_GCAllocContext.alloc_ptr;
+            m_CombinedLimit = m_GCAllocContext.alloc_ptr + Min(samplingBudget, size);
+        }
+    }
+
+    static inline uint32_t ComputeGeometricRandom()
+    {
+        // compute a random sample from the Geometric distribution.
+        double probability = t_random.NextDouble();
+        uint32_t threshold = (uint32_t)(-log(1 - probability) * SamplingDistributionMean);
+        return threshold;
+    }
+
+    struct PerThreadRandom
+    {
+        minipal_xoshiro128pp random_state;
+
+        PerThreadRandom()
+        {
+            minipal_xoshiro128pp_init(&random_state, GetRandomInt(INT_MAX));
+        }
+
+        // Returns a random double in the range [0, 1).
+        double NextDouble()
+        {
+            uint32_t value = minipal_xoshiro128pp_next(&random_state);
+            return value * (1.0/(UINT32_MAX+1.0));
+        }
+    };
+
+    static thread_local PerThreadRandom t_random;
 };
 
 GPTR_DECL(uint8_t,g_lowest_address);

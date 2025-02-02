@@ -50,8 +50,6 @@ public class GenerateWasmBootJson : Task
 
     public bool LoadFullICUData { get; set; }
 
-    public bool IsHybridGlobalization { get; set; }
-
     public bool LoadCustomIcuData { get; set; }
 
     public string InvariantGlobalization { get; set; }
@@ -449,8 +447,6 @@ public class GenerateWasmBootJson : Task
     {
         if (string.Equals(InvariantGlobalization, "true", StringComparison.OrdinalIgnoreCase))
             return GlobalizationMode.Invariant;
-        else if (IsHybridGlobalization)
-            return GlobalizationMode.Hybrid;
         else if (LoadFullICUData)
             return GlobalizationMode.All;
         else if (LoadCustomIcuData)
