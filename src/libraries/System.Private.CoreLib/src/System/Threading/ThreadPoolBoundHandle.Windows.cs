@@ -113,7 +113,7 @@ namespace System.Threading
         ///     <see cref="ThreadPoolBoundHandle"/> does not take ownership of <paramref name="handle"/>,
         ///     it remains the responsibility of the caller to call <see cref="SafeHandle.Dispose()"/>.
         /// </remarks>
-        public static unsafe ThreadPoolBoundHandle BindHandle(SafeHandle handle) =>
+        public static ThreadPoolBoundHandle BindHandle(SafeHandle handle) =>
             ThreadPool.UseWindowsThreadPool ? BindHandleWindowsThreadPool(handle) : BindHandleCore(handle);
 
         /// <summary>

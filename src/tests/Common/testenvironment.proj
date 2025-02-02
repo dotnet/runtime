@@ -70,6 +70,7 @@
       DOTNET_JitRandomGuardedDevirtualization;
       DOTNET_JitRandomEdgeCounts;
       DOTNET_JitRandomOnStackReplacement;
+      DOTNET_JitRandomPartialComplation;
       DOTNET_JitRandomlyCollect64BitCounts;
       DOTNET_JitStressModeNames;
       DOTNET_JitGuardedDevirtualizationMaxTypeChecks;
@@ -225,6 +226,7 @@
     <TestEnvironment Include="jit_stress_splitting" JitFakeProcedureSplitting="1" JitStressProcedureSplitting="1" />
     <TestEnvironment Include="jitpartialcompilation" TC_PartialCompilation="1" TC_QuickJitForLoops="1" TieredCompilation="1" />
     <TestEnvironment Include="jitpartialcompilation_pgo" TC_PartialCompilation="1" TC_QuickJitForLoops="1" TieredCompilation="1" TieredPGO="1" />
+    <TestEnvironment Include="jitpartialcompilation_pgo_stress_random" TC_PartialCompilation="1" TC_QuickJitForLoops="1" TieredCompilation="1" TieredPGO="1" JitRandomPartialCompilation="15" />
     <TestEnvironment Include="jitobjectstackallocation" JitObjectStackAllocation="1" TieredCompilation="0" />
     <TestEnvironment Include="jitphysicalpromotion_only" JitStressModeNames="STRESS_NO_OLD_PROMOTION" TieredCompilation="0" />
     <TestEnvironment Include="jitphysicalpromotion_full" JitStressModeNames="STRESS_PHYSICAL_PROMOTION_COST STRESS_NO_OLD_PROMOTION" TieredCompilation="0" />

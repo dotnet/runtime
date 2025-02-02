@@ -7,7 +7,6 @@
     <ExtraFilesPath>$([MSBuild]::NormalizeDirectory($(TestRootDir), '..', 'extraFiles'))</ExtraFilesPath>
     <BaseIntermediateOutputPath>$([MSBuild]::NormalizeDirectory($(TestRootDir), '..', 'obj'))</BaseIntermediateOutputPath>
 
-    <AppleBuildDependsOn Condition="'$(EnableAggressiveTrimming)' == 'true' and '$(UseNativeAOTRuntime)' != 'true'">ConfigureTrimming;_AdjustTrimmedAssembliesToBundle;$(AppleBuildDependsOn)</AppleBuildDependsOn>
     <AppleBuildDependsOn>_PublishRuntimePack;_PrepareForAppleBuildAppOnHelix;$(AppleBuildDependsOn);_AfterAppleBuildOnHelix</AppleBuildDependsOn>
     <!-- Forced by ILLink targets -->
     <SelfContained>true</SelfContained>
@@ -71,7 +70,7 @@
 
     <ItemGroup>
       <!-- Figure out if we can support JustInterp mode -->
-      <AppleAssembliesToBundle Include="$(OriginalPublishDir)**\*.dll" Exclude="$(OriginalPublishDir)\**\*.resources.dll" />
+    <AppleAssembliesToBundle Include="$(OriginalPublishDir)\*.dll" Exclude="$(OriginalPublishDir)\*.resources.dll" />
 
       <!-- Extra files are NativeLibraries and should be excluded from AppleAssembliesToBundle -->
       <_ExtraFiles Include="$(ExtraFilesPath)**\*" />
@@ -95,14 +94,6 @@
       <RuntimeComponents Include="diagnostics_tracing" />
       <RuntimeComponents Include="marshal-ilgen" />
     </ItemGroup>
-
-    <ItemGroup Condition="'$(EnableAggressiveTrimming)' == 'true' and '$(UseNativeAOTRuntime)' != 'true'">
-       <TrimmerRootDescriptor Include="$(ExtraFilesPath)**\*.xml" />
-
-       <!-- To recreate the state of feature flags (RuntimeHostConfigurationOption) during app build-time we need to discard the default setting, coming from SDK, and used the values passed in ProxyProjectForAOTOnHelix.props -->
-       <RuntimeHostConfigurationOption Remove="@(_AppleUsedRuntimeHostConfigurationOption)" />
-       <RuntimeHostConfigurationOption Include="@(_AppleUsedRuntimeHostConfigurationOption)" />
-    </ItemGroup>
   </Target>
 
   <Target Name="_PublishRuntimePack"
@@ -115,14 +106,6 @@
 
     <Copy SourceFiles="@(_RuntimePackFiles)"
           DestinationFolder="$(OriginalPublishDir)" />
-  </Target>
-
-  <!-- Since we are reusing the 'publish' folder for different purposes (e.g., using it as a source and destination directory for trimming) we need to adjust the list of assemblies to bundle once trimming is completed. -->
-  <Target Name="_AdjustTrimmedAssembliesToBundle" DependsOnTargets="ILLink;CopyFilesToPublishDirectory">
-    <ItemGroup>
-      <AppleAssembliesToBundle Remove="@(AppleAssembliesToBundle)" />
-      <AppleAssembliesToBundle Include="$(OriginalPublishDir)**\*.dll" Exclude="$(OriginalPublishDir)\**\*.resources.dll;@(_RemovedManagedAssembly)" />
-    </ItemGroup>
   </Target>
 
   <!-- Move the app to where the xharness runner expects it. -->

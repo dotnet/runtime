@@ -409,13 +409,6 @@ public:
                                     GcSlotState slotState
                                     );
 
-
-    //------------------------------------------------------------------------
-    // ReturnKind
-    //------------------------------------------------------------------------
-
-    void SetReturnKind(ReturnKind returnKind);
-
     //------------------------------------------------------------------------
     // Miscellaneous method information
     //------------------------------------------------------------------------
@@ -468,6 +461,12 @@ public:
     //
     BYTE* Emit();
 
+    //
+    // Return the size in bytes of the constructed GC info. This is the size passed
+    // to the VM via `allocGCInfo`. It is only valid after `Emit` is called.
+    //
+    size_t GetEncodedGCInfoSize() const;
+
 private:
 
     friend struct CompareLifetimeTransitionsByOffsetThenSlot;
@@ -503,7 +502,6 @@ private:
     INT32  m_PSPSymStackSlot;
     INT32  m_GenericsInstContextStackSlot;
     GENERIC_CONTEXTPARAM_TYPE m_contextParamType;
-    ReturnKind m_ReturnKind;
     UINT32 m_CodeLength;
     UINT32 m_StackBaseRegister;
     UINT32 m_SizeOfEditAndContinuePreservedArea;
@@ -533,6 +531,8 @@ private:
     BYTE* m_pCallSiteSizes;
     UINT32 m_NumCallSites;
 #endif // PARTIALLY_INTERRUPTIBLE_GC_SUPPORTED
+
+    size_t m_BlockSize; // The byte size passed to the `allocGCInfo` call
 
     void GrowSlotTable();
 

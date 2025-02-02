@@ -28,7 +28,7 @@ namespace DotnetFuzzing.Fuzzers
             Span<byte> decoderDest = decoderDestPoisoned.Span;
 
             { // IsFinalBlock = true
-                OperationStatus status = Base64Url.EncodeToChars(input, encoderDest, out int bytesConsumed, out int bytesEncoded); 
+                OperationStatus status = Base64Url.EncodeToChars(input, encoderDest, out int bytesConsumed, out int bytesEncoded);
 
                 Assert.Equal(OperationStatus.Done, status);
                 Assert.Equal(bytes.Length, bytesConsumed);

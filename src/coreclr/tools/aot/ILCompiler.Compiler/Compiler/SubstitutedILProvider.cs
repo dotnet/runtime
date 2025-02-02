@@ -672,6 +672,7 @@ namespace ILCompiler
             if (returnType is < TypeFlags.Boolean or > TypeFlags.UInt32
                 || method.IsIntrinsic
                 || method.IsNoInlining
+                || method.IsNoOptimization
                 || _nestedILProvider.GetMethodIL(method) is not MethodIL methodIL)
             {
                 constant = 0;
@@ -748,12 +749,12 @@ namespace ILCompiler
                     {
                         BodySubstitution substitution = _substitutionProvider.GetSubstitution(method);
                         if (substitution != null && substitution.Value is int
-                            && (opcode != ILOpcode.callvirt || !method.IsVirtual))
+                            && ((opcode != ILOpcode.callvirt && !method.Signature.IsStatic) || !method.IsVirtual))
                         {
                             constant = (int)substitution.Value;
                             return true;
                         }
-                        if ((opcode != ILOpcode.callvirt || !method.IsVirtual)
+                        if (((opcode != ILOpcode.callvirt && !method.Signature.IsStatic) || !method.IsVirtual)
                             && TryGetMethodConstantValue(method, out constant))
                         {
                             return true;

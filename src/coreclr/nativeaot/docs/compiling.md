@@ -21,13 +21,13 @@ from the project's root directory. New package sources must be added after the `
 
 Once you have added the package sources, add a reference to the ILCompiler package either by running
 ```bash
-> dotnet add package Microsoft.DotNet.ILCompiler -v 9.0.0-*
+> dotnet add package Microsoft.DotNet.ILCompiler -v 10.0.0-*
 ```
 
 or by adding the following element to the project file:
 ```xml
 <ItemGroup>
-  <PackageReference Include="Microsoft.DotNet.ILCompiler" Version="9.0.0-*" />
+  <PackageReference Include="Microsoft.DotNet.ILCompiler" Version="10.0.0-*" />
 </ItemGroup>
 ```
 
@@ -54,7 +54,7 @@ For using daily builds according to the instructions above, in addition to the `
 <PackageReference Include="Microsoft.DotNet.ILCompiler; runtime.win-x64.Microsoft.DotNet.ILCompiler" Version="9.0.0-alpha.1.23456.7" />
 ```
 
-Replace `9.0.0-alpha.1.23456.7` with the latest version from the [dotnet9](https://dev.azure.com/dnceng/public/_artifacts/feed/dotnet9/NuGet/Microsoft.DotNet.ILCompiler/) feed.
+Replace `9.0.0-alpha.1.23456.7` with the latest version from the [dotnet10](https://dev.azure.com/dnceng/public/_artifacts/feed/dotnet10/NuGet/Microsoft.DotNet.ILCompiler/) feed.
 Note that it is important to use _the same version_ for both packages to avoid potential hard-to-debug issues. After adding the package reference, you may publish for win-arm64 as usual:
 ```bash
 > dotnet publish -r win-arm64

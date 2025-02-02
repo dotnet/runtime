@@ -27,7 +27,7 @@ namespace Microsoft.Extensions.Options
         /// <summary>
         /// Adds a new validation error to the builder.
         /// </summary>
-        /// <param name="error">Content of error message.</param>
+        /// <param name="error">The content of the error message.</param>
         /// <param name="propertyName">The property in the option object which contains an error.</param>
         public void AddError(string error, string? propertyName = null)
         {
@@ -97,7 +97,7 @@ namespace Microsoft.Extensions.Options
         /// <summary>
         /// Builds <see cref="ValidateOptionsResult"/> based on provided data.
         /// </summary>
-        /// <returns>New instance of <see cref="ValidateOptionsResult"/>.</returns>
+        /// <returns>A new instance of <see cref="ValidateOptionsResult"/>.</returns>
         public ValidateOptionsResult Build()
         {
             if (_errors?.Count > 0)
@@ -109,7 +109,7 @@ namespace Microsoft.Extensions.Options
         }
 
         /// <summary>
-        /// Reset the builder to the empty state
+        /// Reset the builder to the empty state.
         /// </summary>
         public void Clear() => _errors?.Clear();
 

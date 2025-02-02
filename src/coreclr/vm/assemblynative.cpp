@@ -170,8 +170,7 @@ Assembly* AssemblyNative::LoadFromPEImage(AssemblyBinder* pBinder, PEImage *pIma
     PEAssemblyHolder pPEAssembly(PEAssembly::Open(pAssembly->GetPEImage(), pAssembly));
     bindOperation.SetResult(pPEAssembly.GetValue());
 
-    DomainAssembly *pDomainAssembly = pCurDomain->LoadDomainAssembly(&spec, pPEAssembly, FILE_LOADED);
-    RETURN pDomainAssembly->GetAssembly();
+    RETURN pCurDomain->LoadAssembly(&spec, pPEAssembly, FILE_LOADED);
 }
 
 extern "C" void QCALLTYPE AssemblyNative_LoadFromPath(INT_PTR ptrNativeAssemblyBinder, LPCWSTR pwzILPath, LPCWSTR pwzNIPath, QCall::ObjectHandleOnStack retLoadedAssembly)
@@ -1090,7 +1089,7 @@ extern "C" void QCALLTYPE AssemblyNative_GetEntryPoint(QCall::AssemblyHandle pAs
     if (pMeth != NULL)
     {
         GCX_COOP();
-        retMethod.Set(pMeth->GetStubMethodInfo());
+        retMethod.Set(pMeth->AllocateStubMethodInfo());
     }
 
     END_QCALL;

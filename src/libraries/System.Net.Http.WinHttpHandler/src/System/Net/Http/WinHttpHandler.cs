@@ -87,7 +87,7 @@ namespace System.Net.Http
         private bool _tcpKeepAliveEnabled;
 
         private int _maxResponseHeadersLength = HttpHandlerDefaults.DefaultMaxResponseHeadersLength;
-        private int _maxResponseDrainSize = 64 * 1024;
+        private int _maxResponseDrainSize = HttpHandlerDefaults.DefaultMaxResponseDrainSize;
         private IDictionary<string, object>? _properties; // Only create dictionary when required.
         private volatile bool _operationStarted;
         private volatile bool _disposed;
@@ -941,7 +941,14 @@ namespace System.Net.Http
                 // will have the side-effect of WinHTTP cancelling any pending I/O and accelerating its callbacks
                 // on the handle and thus releasing the awaiting tasks in the loop below. This helps to provide
                 // a more timely, cooperative, cancellation pattern.
-                using (state.CancellationToken.Register(s => ((WinHttpRequestState)s!).RequestHandle!.Dispose(), state))
+                using (state.CancellationToken.Register(static s =>
+                {
+                    var state = (WinHttpRequestState)s!;
+                    lock (state.Lock)
+                    {
+                        state.RequestHandle?.Dispose();
+                    }
+                }, state))
                 {
                     do
                     {
