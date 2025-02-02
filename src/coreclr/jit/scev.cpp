@@ -1327,7 +1327,7 @@ bool ScalarEvolutionContext::Materialize(Scev* scev, bool createIR, GenTree** re
                 }
                 else
                 {
-                    *result = m_comp->gtNewIconNode((ssize_t)cns->Value, scev->Type);
+                    *result = m_comp->gtNewIconNode((target_ssize_t)cns->Value, scev->Type);
                 }
             }
 
