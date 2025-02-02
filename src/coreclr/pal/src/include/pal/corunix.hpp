@@ -189,24 +189,6 @@ namespace CorUnix
     // supported generic access rights (e.g., GENERIC_READ) map to the
     // specific access rights for this object type.
     //
-    // If instances of this object may have a security descriptor set on
-    // them eSecuritySupport should be set to SecuritySupported. If the OS can
-    // persist security information for the object type (as would be the case
-    // for, say, files) eSecurityPersistence should be set to
-    // OSPersistedSecurityInfo.
-    //
-    // If the object may have a name eObjectNameSupport should be
-    // ObjectCanHaveName. A named object can be opened in more than one
-    // process.
-    //
-    // If it is possible to duplicate a handle to an object across process
-    // boundaries then eHandleDuplicationSupport should be set to
-    // CrossProcessDuplicationAllowed. Note that it is possible to have
-    // an object type where eObjectNameSupport is ObjectCanHaveName and
-    // eHandleDuplicationSupport is LocalDuplicationOnly. For these object
-    // types an unnamed object instance will only have references from
-    // the creating process.
-    //
     // If the object may be waited on eSynchronizationSupport should be
     // WaitableObject. (Note that this implies that object type supports
     // the SYNCHRONIZE access right.)
@@ -232,31 +214,6 @@ namespace CorUnix
     class CObjectType
     {
     public:
-
-        enum SecuritySupport
-        {
-            SecuritySupported,
-            SecurityNotSupported
-        };
-
-        enum SecurityPersistence
-        {
-            OSPersistedSecurityInfo,
-            SecurityInfoNotPersisted
-        };
-
-        enum ObjectNameSupport
-        {
-            ObjectCanHaveName,
-            UnnamedObject
-        };
-
-        enum HandleDuplicationSupport
-        {
-            CrossProcessDuplicationAllowed,
-            LocalDuplicationOnly
-        };
-
         enum SynchronizationSupport
         {
             WaitableObject,
@@ -300,12 +257,7 @@ namespace CorUnix
         OBJECT_IMMUTABLE_DATA_CLEANUP_ROUTINE m_pImmutableDataCleanupRoutine;
         DWORD m_dwProcessLocalDataSize;
         OBJECT_PROCESS_LOCAL_DATA_CLEANUP_ROUTINE m_pProcessLocalDataCleanupRoutine;
-        DWORD m_dwSupportedAccessRights;
         // Generic access rights mapping
-        SecuritySupport m_eSecuritySupport;
-        SecurityPersistence m_eSecurityPersistence;
-        ObjectNameSupport m_eObjectNameSupport;
-        HandleDuplicationSupport m_eHandleDuplicationSupport;
         SynchronizationSupport m_eSynchronizationSupport;
         SignalingSemantics m_eSignalingSemantics;
         ThreadReleaseSemantics m_eThreadReleaseSemantics;
@@ -321,11 +273,6 @@ namespace CorUnix
             OBJECT_IMMUTABLE_DATA_CLEANUP_ROUTINE pImmutableDataCleanupRoutine,
             DWORD dwProcessLocalDataSize,
             OBJECT_PROCESS_LOCAL_DATA_CLEANUP_ROUTINE pProcessLocalDataCleanupRoutine,
-            DWORD dwSupportedAccessRights,
-            SecuritySupport eSecuritySupport,
-            SecurityPersistence eSecurityPersistence,
-            ObjectNameSupport eObjectNameSupport,
-            HandleDuplicationSupport eHandleDuplicationSupport,
             SynchronizationSupport eSynchronizationSupport,
             SignalingSemantics eSignalingSemantics,
             ThreadReleaseSemantics eThreadReleaseSemantics,
@@ -339,11 +286,6 @@ namespace CorUnix
             m_pImmutableDataCleanupRoutine(pImmutableDataCleanupRoutine),
             m_dwProcessLocalDataSize(dwProcessLocalDataSize),
             m_pProcessLocalDataCleanupRoutine(pProcessLocalDataCleanupRoutine),
-            m_dwSupportedAccessRights(dwSupportedAccessRights),
-            m_eSecuritySupport(eSecuritySupport),
-            m_eSecurityPersistence(eSecurityPersistence),
-            m_eObjectNameSupport(eObjectNameSupport),
-            m_eHandleDuplicationSupport(eHandleDuplicationSupport),
             m_eSynchronizationSupport(eSynchronizationSupport),
             m_eSignalingSemantics(eSignalingSemantics),
             m_eThreadReleaseSemantics(eThreadReleaseSemantics),
@@ -433,47 +375,7 @@ namespace CorUnix
             return m_pProcessLocalDataCleanupRoutine;
         }
 
-        DWORD
-        GetSupportedAccessRights(
-            void
-            )
-        {
-            return m_dwSupportedAccessRights;
-        };
-
         // Generic access rights mapping
-
-        SecuritySupport
-        GetSecuritySupport(
-            void
-            )
-        {
-            return  m_eSecuritySupport;
-        };
-
-        SecurityPersistence
-        GetSecurityPersistence(
-            void
-            )
-        {
-            return  m_eSecurityPersistence;
-        };
-
-        ObjectNameSupport
-        GetObjectNameSupport(
-            void
-            )
-        {
-            return  m_eObjectNameSupport;
-        };
-
-        HandleDuplicationSupport
-        GetHandleDuplicationSupport(
-            void
-            )
-        {
-            return  m_eHandleDuplicationSupport;
-        };
 
         SynchronizationSupport
         GetSynchronizationSupport(

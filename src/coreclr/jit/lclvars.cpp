@@ -341,6 +341,8 @@ void Compiler::lvaInitArgs(InitVarDscInfo* varDscInfo)
 
 #if defined(TARGET_ARM) && defined(PROFILING_SUPPORTED)
     // Prespill all argument regs on to stack in case of Arm when under profiler.
+    // We do this as the arm32 CORINFO_HELP_FCN_ENTER helper does not preserve
+    // these registers, and is called very early.
     if (compIsProfilerHookNeeded())
     {
         codeGen->regSet.rsMaskPreSpillRegArg |= RBM_ARG_REGS;
@@ -2501,9 +2503,9 @@ bool Compiler::StructPromotionHelper::CanPromoteStructVar(unsigned lclNum)
         return false;
     }
 
-    if (varDsc->lvStackAllocatedBox)
+    if (varDsc->lvStackAllocatedObject)
     {
-        JITDUMP("  struct promotion of V%02u is disabled because it is a stack allocated box\n", lclNum);
+        JITDUMP("  struct promotion of V%02u is disabled because it is a stack allocated object\n", lclNum);
         return false;
     }
 
@@ -3599,6 +3601,7 @@ void Compiler::lvaSetClass(unsigned varNum, GenTree* tree, CORINFO_CLASS_HANDLE 
 //    varNum -- number of the variable
 //    clsHnd -- class handle to use in set or update
 //    isExact -- true if class is known exactly
+//    singleDefOnly -- true if we should only update single-def locals
 //
 // Notes:
 //
@@ -3616,7 +3619,7 @@ void Compiler::lvaSetClass(unsigned varNum, GenTree* tree, CORINFO_CLASS_HANDLE 
 //    for shared code, so ensuring this is so is currently not
 //    possible.
 
-void Compiler::lvaUpdateClass(unsigned varNum, CORINFO_CLASS_HANDLE clsHnd, bool isExact)
+void Compiler::lvaUpdateClass(unsigned varNum, CORINFO_CLASS_HANDLE clsHnd, bool isExact, bool singleDefOnly)
 {
     assert(varNum < lvaCount);
 
@@ -3629,8 +3632,12 @@ void Compiler::lvaUpdateClass(unsigned varNum, CORINFO_CLASS_HANDLE clsHnd, bool
     // We should already have a class
     assert(varDsc->lvClassHnd != NO_CLASS_HANDLE);
 
-    // We should only be updating classes for single-def locals.
-    assert(varDsc->lvSingleDef);
+    // We should only be updating classes for single-def locals if requested
+    if (singleDefOnly && !varDsc->lvSingleDef)
+    {
+        assert(!"Updating class for multi-def local");
+        return;
+    }
 
     // Now see if we should update.
     //
@@ -3677,7 +3684,7 @@ void Compiler::lvaUpdateClass(unsigned varNum, CORINFO_CLASS_HANDLE clsHnd, bool
 }
 
 //------------------------------------------------------------------------
-// lvaUpdateClass: Uupdate class information for a local var from a tree
+// lvaUpdateClass: Update class information for a local var from a tree
 //  or stack type
 //
 // Arguments:
@@ -4072,6 +4079,13 @@ void Compiler::lvaSortByRefCount()
             varDsc->lvTracked = 0;
         }
 #endif
+
+        // No benefit in tracking the PSPSym (if any)
+        //
+        if (lclNum == lvaPSPSym)
+        {
+            varDsc->lvTracked = 0;
+        }
 
         //  Are we not optimizing and we have exception handlers?
         //   if so mark all args and locals "do not enregister".
@@ -4746,18 +4760,6 @@ PhaseStatus Compiler::lvaMarkLocalVars()
     }
 
 #endif // FEATURE_EH_WINDOWS_X86
-
-    // PSPSym is not used by the NativeAOT ABI
-    if (!IsTargetAbi(CORINFO_NATIVEAOT_ABI))
-    {
-        if (UsesFunclets() && ehNeedsPSPSym())
-        {
-            lvaPSPSym            = lvaGrabTempWithImplicitUse(false DEBUGARG("PSPSym"));
-            LclVarDsc* lclPSPSym = lvaGetDesc(lvaPSPSym);
-            lclPSPSym->lvType    = TYP_I_IMPL;
-            lvaSetVarDoNotEnregister(lvaPSPSym DEBUGARG(DoNotEnregisterReason::VMNeedsStackAddr));
-        }
-    }
 
 #ifdef JIT32_GCENCODER
     // LocAllocSPvar is only required by the implicit frame layout expected by the VM on x86. Whether

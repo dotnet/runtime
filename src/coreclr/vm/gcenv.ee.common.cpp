@@ -213,16 +213,14 @@ void GcReportLoaderAllocator(promote_func* fn, ScanContext* sc, LoaderAllocator 
     if (pLoaderAllocator != NULL && pLoaderAllocator->IsCollectible())
     {
         Object *refCollectionObject = OBJECTREFToObject(pLoaderAllocator->GetExposedObject());
+        if (refCollectionObject != NULL)
+        {
+            INDEBUG(Object *oldObj = refCollectionObject;)
+            fn(&refCollectionObject, sc, CHECK_APP_DOMAIN);
 
-#ifdef _DEBUG
-        Object *oldObj = refCollectionObject;
-#endif
-
-        _ASSERTE(refCollectionObject != NULL);
-        fn(&refCollectionObject, sc, CHECK_APP_DOMAIN);
-
-        // We are reporting the location of a local variable, assert it doesn't change.
-        _ASSERTE(oldObj == refCollectionObject);
+            // We are reporting the location of a local variable, assert it doesn't change.
+            _ASSERTE(oldObj == refCollectionObject);
+        }
     }
 }
 
