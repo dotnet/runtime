@@ -7,7 +7,7 @@ SET_DEFAULT_DEBUG_CHANNEL(EXCEPT); // some headers have code with asserts, so do
 extern "C" void
 DBG_DebugBreak()
 {
-    _ASSERT("DebugBreak not implemented on wasm");
+    asm volatile ("unreachable");
 }
 
 /* context */
