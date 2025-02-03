@@ -617,11 +617,10 @@ FlatImageLayout::FlatImageLayout(PEImage* pOwner)
     }
     CONTRACTL_END;
     m_pOwner=pOwner;
-
+#if !defined(TARGET_ANDROID)
     HANDLE hFile = pOwner->GetFileHandle();
     INT64 offset = pOwner->GetOffset();
     INT64 size = pOwner->GetSize();
-
 #ifdef LOGGING
     SString ownerPath{ pOwner->GetPath() };
     LOG((LF_LOADER, LL_INFO100, "PEImage: Opening flat %s\n", ownerPath.GetUTF8()));
@@ -636,12 +635,19 @@ FlatImageLayout::FlatImageLayout(PEImage* pOwner)
             ThrowLastError();
         }
     }
-
+#else // !TARGET_ANDROID
+    INT64 size = pOwner->GetSize();
+    HANDLE mapBegin = pOwner->AndroidGetDataStart();
+    if (size == 0) {
+        // TODO: throw something
+    }
+#endif // TARGET_ANDROID
     LPVOID addr = 0;
 
     // It's okay if resource files are length zero
     if (size > 0)
     {
+#if !defined(TARGET_ANDROID)
         INT64 uncompressedSize = pOwner->GetUncompressedSize();
 
         DWORD mapAccess = PAGE_READONLY;
@@ -725,6 +731,11 @@ FlatImageLayout::FlatImageLayout(PEImage* pOwner)
             ThrowHR(E_FAIL); // we don't have any indication of what kind of failure. Possibly a corrupt image.
 #endif
         }
+#else // !TARGET_ANDROID
+        m_FileMap.Assign(mapBegin);
+        m_FileView.Assign(mapBegin);
+        addr = (LPVOID)mapBegin;
+#endif // TARGET_ANDROID
     }
 
     Init(addr, (COUNT_T)size);

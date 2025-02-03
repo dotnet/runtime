@@ -1017,13 +1017,12 @@ void SystemDomain::LoadBaseSystemClasses()
 
     EX_TRY
     {
-        LogDebugToHost ("Here #00.01");
         m_pSystemPEAssembly = PEAssembly::OpenSystem();
-        LogDebugToHost ("Here #00.02");
+
         // Only partially load the system assembly. Other parts of the code will want to access
         // the globals in this function before finishing the load.
         m_pSystemAssembly = DefaultDomain()->LoadAssembly(NULL, m_pSystemPEAssembly, FILE_LOAD_BEFORE_TYPE_LOAD);
-        LogDebugToHost ("Here #00.03");
+
         // Set up binder for CoreLib
         CoreLibBinder::AttachModule(m_pSystemAssembly->GetModule());
 
