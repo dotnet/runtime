@@ -2487,33 +2487,6 @@ bool ObjectAllocator::CheckCanClone(CloneInfo* info)
 
         return false;
     }
-
-    auto latestStmt = [](Statement* stmt1, Statement* stmt2) {
-        if (stmt1 == stmt2)
-        {
-            return stmt1;
-        }
-
-        Statement* cursor1 = stmt1->GetNextStmt();
-        Statement* cursor2 = stmt2->GetNextStmt();
-
-        while (true)
-        {
-            if ((cursor1 == stmt2) || (cursor2 == nullptr))
-            {
-                return stmt2;
-            }
-
-            if ((cursor2 == stmt1) || (cursor1 == nullptr))
-            {
-                return stmt1;
-            }
-
-            cursor1 = cursor1->GetNextStmt();
-            cursor2 = cursor2->GetNextStmt();
-        }
-    };
-
     // Classify the other local appearances
     // as Ts (allocTemps) or Us (useTemps), and look for guard appearances.
     //
@@ -2555,7 +2528,7 @@ bool ObjectAllocator::CheckCanClone(CloneInfo* info)
                     ev->m_isAllocTemp      = true;
                     ev->m_isFinalAllocTemp = true;
                 }
-                else if (latestStmt(defStmt, a->m_stmt) == a->m_stmt)
+                else if (comp->gtLatestStatement(defStmt, a->m_stmt) == a->m_stmt)
                 {
                     ev->m_isUseTemp = true;
                 }
