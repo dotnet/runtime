@@ -165,7 +165,7 @@ namespace Microsoft.Interop
                 {
                     return Array.Empty<(bool, int)>();
                 }
-                return MarshallerHelpers.GetDependentElementsOfMarshallingInfo(info.MarshallingAttributeInfo)
+                return info.MarshallingAttributeInfo.ElementDependencies
                     .Select(static info => GetInfoIndex(info)).ToImmutableArray();
             }
 

@@ -235,13 +235,23 @@ namespace Microsoft.Interop.JavaScript
 
             foreach (var info in originalElementInfo)
             {
+                TypePositionInfo updatedInfo = info with
+                {
+                    MarshallingAttributeInfo = info.MarshallingAttributeInfo is JSMarshallingInfo jsInfo
+                        ? jsInfo.AddElementDependencies([typeInfoBuilder[0], typeInfoBuilder[1]])
+                        : info.MarshallingAttributeInfo,
+                };
+
                 if (info.IsNativeReturnPosition)
                 {
-                    typeInfoBuilder.Add(info);
+                    typeInfoBuilder.Add(updatedInfo);
                 }
                 else
                 {
-                    typeInfoBuilder.Add(info with { NativeIndex = info.NativeIndex + NumImplicitArguments });
+                    typeInfoBuilder.Add(updatedInfo with
+                    {
+                        NativeIndex = updatedInfo.NativeIndex + NumImplicitArguments
+                    });
                 }
             }
 

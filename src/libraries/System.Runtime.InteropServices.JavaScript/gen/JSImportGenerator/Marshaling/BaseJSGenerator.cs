@@ -7,6 +7,8 @@ using System.Runtime.InteropServices.JavaScript;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using static Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
+using static Microsoft.Interop.SyntaxFactoryExtensions;
+
 
 namespace Microsoft.Interop.JavaScript
 {
@@ -42,18 +44,9 @@ namespace Microsoft.Interop.JavaScript
                 var (_, js) = context.GetIdentifiers(TypeInfo);
                 return [
                     ExpressionStatement(
-                        AssignmentExpression(
-                            SyntaxKind.SimpleAssignmentExpression,
-                            IdentifierName(js),
-                            LiteralExpression(SyntaxKind.DefaultLiteralExpression)
-                        )
-                    ),
-                    ExpressionStatement(
-                        InvocationExpression(
-                            MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
-                                IdentifierName(js),
-                                IdentifierName("Initialize")),
-                            ArgumentList()))
+                        MethodInvocation(TypeSyntaxes.System_Runtime_CompilerServices_Unsafe, IdentifierName("SkipInit"),
+                                    Argument(IdentifierName(js))
+                                    .WithRefOrOutKeyword(Token(SyntaxKind.OutKeyword))))
                 ];
             }
 

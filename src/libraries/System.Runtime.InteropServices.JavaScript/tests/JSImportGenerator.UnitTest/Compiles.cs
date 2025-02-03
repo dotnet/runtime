@@ -93,40 +93,25 @@ namespace JSImportGenerator.Unit.Tests
                                         global::System.Runtime.InteropServices.JavaScript.JSMarshalerArgument __a14_native;
                                         global::System.Runtime.InteropServices.JavaScript.JSMarshalerArgument __a15_native;
                                         // Setup - Perform required setup.
-                                        __a15_native = default;
-                                        __a15_native.Initialize();
-                                        __a14_native = default;
-                                        __a14_native.Initialize();
-                                        __a13_native = default;
-                                        __a13_native.Initialize();
-                                        __a12_native = default;
-                                        __a12_native.Initialize();
-                                        __a11_native = default;
-                                        __a11_native.Initialize();
-                                        __a10_native = default;
-                                        __a10_native.Initialize();
-                                        __a9_native = default;
-                                        __a9_native.Initialize();
-                                        __a8_native = default;
-                                        __a8_native.Initialize();
-                                        __a7_native = default;
-                                        __a7_native.Initialize();
-                                        __a6_native = default;
-                                        __a6_native.Initialize();
-                                        __a5_native = default;
-                                        __a5_native.Initialize();
-                                        __a4_native = default;
-                                        __a4_native.Initialize();
-                                        __a3_native = default;
-                                        __a3_native.Initialize();
-                                        __a2_native = default;
-                                        __a2_native.Initialize();
-                                        __a1_native = default;
-                                        __a1_native.Initialize();
-                                        ____arg_return_native = default;
+                                        global::System.Runtime.CompilerServices.Unsafe.SkipInit(out ____arg_return_native);
                                         ____arg_return_native.Initialize();
-                                        ____arg_exception_native = default;
+                                        global::System.Runtime.CompilerServices.Unsafe.SkipInit(out ____arg_exception_native);
                                         ____arg_exception_native.Initialize();
+                                        global::System.Runtime.CompilerServices.Unsafe.SkipInit(out __a15_native);
+                                        global::System.Runtime.CompilerServices.Unsafe.SkipInit(out __a14_native);
+                                        global::System.Runtime.CompilerServices.Unsafe.SkipInit(out __a13_native);
+                                        global::System.Runtime.CompilerServices.Unsafe.SkipInit(out __a12_native);
+                                        global::System.Runtime.CompilerServices.Unsafe.SkipInit(out __a11_native);
+                                        global::System.Runtime.CompilerServices.Unsafe.SkipInit(out __a10_native);
+                                        global::System.Runtime.CompilerServices.Unsafe.SkipInit(out __a9_native);
+                                        global::System.Runtime.CompilerServices.Unsafe.SkipInit(out __a8_native);
+                                        global::System.Runtime.CompilerServices.Unsafe.SkipInit(out __a7_native);
+                                        global::System.Runtime.CompilerServices.Unsafe.SkipInit(out __a6_native);
+                                        global::System.Runtime.CompilerServices.Unsafe.SkipInit(out __a5_native);
+                                        global::System.Runtime.CompilerServices.Unsafe.SkipInit(out __a4_native);
+                                        global::System.Runtime.CompilerServices.Unsafe.SkipInit(out __a3_native);
+                                        global::System.Runtime.CompilerServices.Unsafe.SkipInit(out __a2_native);
+                                        global::System.Runtime.CompilerServices.Unsafe.SkipInit(out __a1_native);
                                         // Marshal - Convert managed data to native data.
                                         __a11_native.ToJS(a11);
                                         __a10_native.ToJS(a10);
@@ -328,21 +313,21 @@ namespace JSImportGenerator.Unit.Tests
                                     {
                                         __signature_Import1_622134597 = global::System.Runtime.InteropServices.JavaScript.JSFunctionBinding.BindJSFunction("DoesNotExist", null, [global::System.Runtime.InteropServices.JavaScript.JSMarshalerType.Task(global::System.Runtime.InteropServices.JavaScript.JSMarshalerType.Int32)]);
                                     }
-                            
+
                                     {
                                         global::System.Runtime.InteropServices.JavaScript.JSMarshalerArgument ____arg_exception_native;
                                         global::System.Runtime.InteropServices.JavaScript.JSMarshalerArgument ____arg_return_native;
                                         global::System.Threading.Tasks.Task<int> __retVal;
                                         global::System.Runtime.InteropServices.JavaScript.JSMarshalerArgument __retVal_native;
                                         // Setup - Perform required setup.
-                                        ____arg_return_native = default;
+                                        global::System.Runtime.CompilerServices.Unsafe.SkipInit(out ____arg_return_native);
                                         ____arg_return_native.Initialize();
-                                        ____arg_exception_native = default;
+                                        global::System.Runtime.CompilerServices.Unsafe.SkipInit(out ____arg_exception_native);
                                         ____arg_exception_native.Initialize();
                                         {
                                             __retVal_native = __InvokeJSFunction(____arg_exception_native, ____arg_return_native);
                                         }
-                            
+
                                         // UnmarshalCapture - Capture the native data into marshaller instances in case conversion to managed data throws an exception.
                                         __retVal_native.ToManaged(out __retVal, static (ref global::System.Runtime.InteropServices.JavaScript.JSMarshalerArgument __task_result_arg, out int __task_result) =>
                                         {
@@ -350,7 +335,7 @@ namespace JSImportGenerator.Unit.Tests
                                         });
                                         return __retVal;
                                     }
-                            
+
                                     [global::System.Diagnostics.DebuggerNonUserCode]
                                     global::System.Runtime.InteropServices.JavaScript.JSMarshalerArgument __InvokeJSFunction(global::System.Runtime.InteropServices.JavaScript.JSMarshalerArgument ____arg_exception_native, global::System.Runtime.InteropServices.JavaScript.JSMarshalerArgument ____arg_return_native)
                                     {
@@ -363,10 +348,10 @@ namespace JSImportGenerator.Unit.Tests
                                         return __arguments_buffer[1];
                                     }
                                 }
-                            
+
                                 static global::System.Runtime.InteropServices.JavaScript.JSFunctionBinding __signature_Import1_622134597;
                             }
-                            
+
                             """.ReplaceLineEndings("\r\n"), Encoding.UTF8)),
                         (typeof(Microsoft.Interop.JavaScript.JSExportGenerator),
                         "JSExports.g.cs",
@@ -383,7 +368,7 @@ namespace JSImportGenerator.Unit.Tests
                                     static internal void __TrimmingPreserve_()
                                     {
                                     }
-                            
+
                                     [global::System.Diagnostics.CodeAnalysis.DynamicDependencyAttribute("__Wrapper_Export1_622134597", "Basic", "TestProject")]
                                     static void __Register_()
                                     {
@@ -422,7 +407,7 @@ namespace JSImportGenerator.Unit.Tests
                                     }
                                 }
                             }
-                            
+
                             """.ReplaceLineEndings("\r\n"), Encoding.UTF8)),
                     }
                 },

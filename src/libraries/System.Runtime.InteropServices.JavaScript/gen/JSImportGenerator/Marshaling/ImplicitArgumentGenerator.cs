@@ -7,6 +7,8 @@ using System.Text;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using static Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
+using static Microsoft.Interop.SyntaxFactoryExtensions;
+
 
 namespace Microsoft.Interop.JavaScript
 {
@@ -19,12 +21,11 @@ namespace Microsoft.Interop.JavaScript
                 var (_, js) = context.GetIdentifiers(TypeInfo);
                 return [
                     ExpressionStatement(
-                        AssignmentExpression(
-                            SyntaxKind.SimpleAssignmentExpression,
-                            IdentifierName(js),
-                            LiteralExpression(SyntaxKind.DefaultLiteralExpression)
-                        )
-                    ),
+                        MethodInvocation(TypeSyntaxes.System_Runtime_CompilerServices_Unsafe, IdentifierName("SkipInit"),
+                                    Argument(IdentifierName(js))
+                                    .WithRefOrOutKeyword(Token(SyntaxKind.OutKeyword)))),
+                    // Unlike the other arguments, we need to initialize the implicit arguments
+                    // as they can set some ambient state necessary for the JSImport logic to function.
                     ExpressionStatement(
                         InvocationExpression(
                             MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
