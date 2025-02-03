@@ -6,12 +6,14 @@ param(
     [Parameter(ValueFromRemainingArguments=$true)][string[]]$filesToSign
 )
 
-$inputFile = Get-Content -Raw $PSScriptRoot/signing/input.template.json | ConvertFrom-Json
-$inputFile.SignBatches[0].SignRequestFiles = $filesToSign | ForEach-Object {
+[array]$signEntries = $filesToSign | ForEach-Object {
     @{
         SourceLocation = $_
     }
 }
+
+$inputFile = Get-Content -Raw $PSScriptRoot/signing/input.template.json | ConvertFrom-Json
+$inputFile.SignBatches[0].SignRequestFiles = $signEntries
 
 $inputJson = [System.IO.Path]::GetTempFileName()
 # Our JSON goes up to 6 levels deep, so we need to set the depth to 6
