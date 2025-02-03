@@ -28,6 +28,19 @@
         const capturedTestCaseNames = capturingTestCaseNames
             ? []
             : JSON.parse(localStorage.getItem("testCaseNames"));
+        paltestsLoaded = false;
+        if (capturingTestCaseNames) {
+            paltests = [];
+                    fetch('paltestlist.txt')
+                        .then(response => response.text())
+                        .then(text => {
+                            text.split(/\r?\n/).forEach(function(line) {
+                                paltests.push(line);
+                            });
+                            console.log("paltests " + paltests.length + " test name(s). ");
+                            paltestsLoaded = true;
+                        });
+        }
 
         Module = {
             arguments: capturingTestCaseNames
@@ -35,11 +48,24 @@
                 : [nextTestName],
             quit: function (code) {
                 if (capturingTestCaseNames) {
-                    capturedTestCaseNames.sort();
-                    localStorage.setItem("testCaseNames", JSON.stringify(capturedTestCaseNames));
+
+                    while (!paltestsLoaded);
+
+                    filteredTestCaseNames = capturedTestCaseNames.filter(function(testName) {
+                        return paltests.includes(testName);
+                    });
+
+                    missingTests = paltests.filter(function(testName) {
+                        return !filteredTestCaseNames.includes(testName);
+                    });
+
+                    filteredTestCaseNames.sort();
+                    localStorage.setItem("testCaseNames", JSON.stringify(filteredTestCaseNames));
+                    localStorage.setItem("missingTestNames", JSON.stringify(missingTests));
                     localStorage.setItem("passedCount", JSON.stringify(0));
                     localStorage.setItem("failedCount", JSON.stringify(0));
                     localStorage.setItem("disabledCount", JSON.stringify(0));
+                    localStorage.setItem("failedTests", JSON.stringify([]));
                     console.log("Captured " + capturedTestCaseNames.length + " test name(s). Starting test run.");
                     capturingTestCaseNames = false;
                 } else if (nextRunTimeout < 0) {
@@ -49,6 +75,9 @@
                     } else {
                         failedCount = JSON.parse(localStorage.getItem("failedCount")) + 1;
                         localStorage.setItem("failedCount", JSON.stringify(failedCount));
+                        failedTests = JSON.parse(localStorage.getItem("failedTests")) || [];
+                        failedTests.push(Module.arguments[1]);
+                        localStorage.setItem("failedTests", JSON.stringify(failedTests));
                     }
                 }
 
@@ -86,7 +115,6 @@
             do {
                 testIndex++;
                 result = capturedTestCaseNames[testIndex];
-                console.log("abc Test check '" + result + "'");
             } while (isDisabledTest(result));
 
             if (testIndex != lastIndex + 1) {
