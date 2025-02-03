@@ -287,10 +287,10 @@ namespace System.Reflection.Metadata
                             // Get the characters after that plus one for the '+' separator.
                             name = name.Slice(_declaringType._nestedNameLength + 1);
                         }
-                        else if (name.LastIndexOf('.') is int dotIndex && dotIndex >= 0)
+                        else if (TypeNameParserHelpers.IndexOfNamespaceDelimiter(name) is int idx && idx >= 0)
                         {
-                            // If the type is not nested, find the last dot in the full name and and return the substring after it.
-                            name = name.Slice(dotIndex + 1);
+                            // If the type is not nested, find the namespace delimiter in the full name and and return the substring after it.
+                            name = name.Slice(idx + 1);
                         }
                         _name = name.ToString();
                     }
@@ -331,7 +331,14 @@ namespace System.Reflection.Metadata
                         {
                             rootFullName = rootFullName.Slice(0, rootTypeName._nestedNameLength);
                         }
-                        rootTypeName._namespace = TypeNameParserHelpers.GetNamespace(rootFullName).ToString();
+                        if (TypeNameParserHelpers.IndexOfNamespaceDelimiter(rootFullName) is int idx && idx >= 0)
+                        {
+                            rootTypeName._namespace = rootFullName.Slice(0, idx).ToString();
+                        }
+                        else
+                        {
+                            rootTypeName._namespace = string.Empty;
+                        }
                     }
                     _namespace = rootTypeName._namespace;
                 }

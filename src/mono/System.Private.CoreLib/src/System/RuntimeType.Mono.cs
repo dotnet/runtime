@@ -6,6 +6,7 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Reflection;
+using System.Reflection.Metadata;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Serialization;
@@ -175,22 +176,17 @@ namespace System
                 return;
 
             // Get namespace
-            int nsDelimiter = fullname.LastIndexOf('.');
-            if (nsDelimiter != -1)
+            int nsDelimiter = TypeNameParserHelpers.IndexOfNamespaceDelimiter(fullname);
+            if (nsDelimiter > 0)
             {
                 ns = fullname.Substring(0, nsDelimiter);
-                int nameLength = fullname.Length - ns.Length - 1;
-                if (nameLength != 0)
-                    name = fullname.Substring(nsDelimiter + 1, nameLength);
-                else
-                    name = "";
+                name = fullname.Substring(nsDelimiter + 1);
                 Debug.Assert(fullname.Equals(ns + "." + name));
             }
             else
             {
                 name = fullname;
             }
-
         }
         #endregion
 
@@ -1676,7 +1672,8 @@ namespace System
 
         [Flags]
         // Types of entries cached in TypeCache
-        private enum TypeCacheEntries {
+        private enum TypeCacheEntries
+        {
             IsGenericTypeDef = 1,
             IsDelegate = 2,
             IsValueType = 4,

@@ -102,10 +102,18 @@ namespace System.Reflection.Metadata
             static bool NeedsEscaping(char c) => c is '[' or ']' or '&' or '*' or ',' or '+' or EscapeCharacter;
         }
 
-        internal static ReadOnlySpan<char> GetNamespace(ReadOnlySpan<char> fullName)
+        internal static int IndexOfNamespaceDelimiter(ReadOnlySpan<char> fullName)
         {
-            int offset = fullName.LastIndexOf('.');
-            return offset < 0 ? [] : fullName.Slice(0, offset);
+            // Matches algorithm from ns::FindSep in src\coreclr\utilcode\namespaceutil.cpp
+            // This could result in the type name beginning with a '.' character.
+            int index = fullName.LastIndexOf('.');
+
+            if (index > 0 && fullName[index - 1] == '.')
+            {
+                index--;
+            }
+
+            return index;
         }
 
         internal static string Unescape(string input)

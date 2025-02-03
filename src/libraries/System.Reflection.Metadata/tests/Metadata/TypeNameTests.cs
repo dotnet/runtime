@@ -119,6 +119,7 @@ namespace System.Reflection.Metadata.Tests
                 parsed = parsed.DeclaringType;
                 i--;
             }
+            Assert.Equal(0, i);
         }
 
         [Theory]
