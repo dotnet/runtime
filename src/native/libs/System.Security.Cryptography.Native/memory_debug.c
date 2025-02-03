@@ -278,7 +278,7 @@ void CryptoNative_ForEachTrackedAllocation(void (*callback)(void* ptr, uint64_t 
     }
 }
 
-static void init_tracking_lists()
+static void init_tracking_lists(void)
 {
     g_trackedMemory = malloc(kPartitionCount * sizeof(list_t));
     for (uint32_t i = 0; i < kPartitionCount; i++)
