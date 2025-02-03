@@ -3562,8 +3562,6 @@ void Compiler::fgFindBasicBlocks()
                         lvaSetClass(lvaInlineeReturnSpillTemp, retClassHnd);
                     }
                 }
-
-                lvaInlineeReturnSpillTempFreshlyCreated = true;
             }
         }
 
