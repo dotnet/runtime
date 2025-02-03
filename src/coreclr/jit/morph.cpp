@@ -290,38 +290,6 @@ GenTree* Compiler::fgMorphExpandCast(GenTreeCast* tree)
     var_types dstType = tree->CastToType();
     unsigned  dstSize = genTypeSize(dstType);
 
-#if defined(TARGET_AMD64)
-    // If AVX512 is present, we have intrinsic available to convert
-    // ulong directly to float. Hence, we need to combine the 2 nodes
-    // GT_CAST(GT_CAST(TYP_ULONG, TYP_DOUBLE), TYP_FLOAT) into a single
-    // node i.e. GT_CAST(TYP_ULONG, TYP_FLOAT). At this point, we already
-    // have the 2 GT_CAST nodes in the tree and we are combining them below.
-    if (oper->OperIs(GT_CAST))
-    {
-        GenTreeCast* innerCast = oper->AsCast();
-
-        if (innerCast->IsUnsigned())
-        {
-            GenTree*  innerOper    = innerCast->CastOp();
-            var_types innerSrcType = genActualType(innerOper);
-            var_types innerDstType = innerCast->CastToType();
-            unsigned  innerDstSize = genTypeSize(innerDstType);
-            innerSrcType           = varTypeToUnsigned(innerSrcType);
-
-            // Check if we are going from ulong->double->float
-            if ((innerSrcType == TYP_ULONG) && (innerDstType == TYP_DOUBLE) && (dstType == TYP_FLOAT))
-            {
-                if (canUseEvexEncoding())
-                {
-                    // One optimized (combined) cast here
-                    tree = gtNewCastNode(TYP_FLOAT, innerOper, true, TYP_FLOAT);
-                    return fgMorphTree(tree);
-                }
-            }
-        }
-    }
-#endif // TARGET_AMD64
-
     // See if the cast has to be done in two steps.  R -> I
     if (varTypeIsFloating(srcType) && varTypeIsIntegral(dstType))
     {
@@ -442,16 +410,22 @@ GenTree* Compiler::fgMorphExpandCast(GenTreeCast* tree)
     }
 #endif //! TARGET_64BIT
 
-#ifdef TARGET_ARMARCH
-    // AArch, unlike x86/amd64, has instructions that can cast directly from
-    // all integers (except for longs on AArch32 of course) to floats.
+#if defined(TARGET_ARMARCH) || defined(TARGET_XARCH)
     // Because there is no IL instruction conv.r4.un, uint/ulong -> float
     // casts are always imported as CAST(float <- CAST(double <- uint/ulong)).
-    // We can eliminate the redundant intermediate cast as an optimization.
+    // We can usually eliminate the redundant intermediate cast as an optimization.
+    // AArch and xarch+EVEX have instructions that can cast directly from
+    // all integers (except for longs on 32-bit of course) to floats.
+    // On x64, we also have the option of widening uint -> long and
+    // using the signed conversion instructions, and ulong -> float/double
+    // is handled directly in codegen, so we can allow all casts.
     else if ((dstType == TYP_FLOAT) && (srcType == TYP_DOUBLE) && oper->OperIs(GT_CAST)
-#ifdef TARGET_ARM
+#ifndef TARGET_64BIT
              && !varTypeIsLong(oper->AsCast()->CastOp())
-#endif
+#endif // !TARGET_64BIT
+#ifdef TARGET_X86
+             && canUseEvexEncoding()
+#endif // TARGET_X86
     )
     {
         oper->gtType       = TYP_FLOAT;
@@ -459,7 +433,7 @@ GenTree* Compiler::fgMorphExpandCast(GenTreeCast* tree)
 
         return fgMorphTree(oper);
     }
-#endif // TARGET_ARMARCH
+#endif // TARGET_ARMARCH || TARGET_XARCH
 
 #ifdef TARGET_ARM
     // converts long/ulong --> float/double casts into helper calls.
@@ -485,35 +459,15 @@ GenTree* Compiler::fgMorphExpandCast(GenTreeCast* tree)
 #endif // TARGET_ARM
 
 #ifdef TARGET_AMD64
-    // Do we have to do two step U4/8 -> R4/8 ?
-    // Codegen supports the following conversion as one-step operation
-    // a) Long -> R4/R8
-    // b) U8 -> R8
-    //
-    // The following conversions are performed as two-step operations using above.
-    // U4 -> R4/8 = U4-> Long -> R4/8
-    // U8 -> R4   = U8 -> R8 -> R4
+    // Do we have to do two step U4 -> R4/8 ?
+    // If we don't have the EVEX unsigned conversion instructions available,
+    // we will widen to long and use signed conversion: U4 -> Long -> R4/8.
+    // U8 -> R4/R8 is handled directly in codegen, so we ignore it here.
     else if (tree->IsUnsigned() && varTypeIsFloating(dstType))
     {
         srcType = varTypeToUnsigned(srcType);
 
-        if (srcType == TYP_ULONG && !canUseEvexEncoding())
-        {
-            if (dstType == TYP_FLOAT)
-            {
-                // Codegen can handle U8 -> R8 conversion.
-                // U8 -> R4 =  U8 -> R8 -> R4
-                // - change the dsttype to double
-                // - insert a cast from double to float
-                // - recurse into the resulting tree
-                tree->CastToType() = TYP_DOUBLE;
-                tree->gtType       = TYP_DOUBLE;
-                tree               = gtNewCastNode(TYP_FLOAT, tree, false, TYP_FLOAT);
-
-                return fgMorphTree(tree);
-            }
-        }
-        else if (srcType == TYP_UINT)
+        if (srcType == TYP_UINT && !canUseEvexEncoding())
         {
             oper = gtNewCastNode(TYP_LONG, oper, true, TYP_LONG);
             oper->gtFlags |= (tree->gtFlags & (GTF_OVERFLOW | GTF_EXCEPT));
@@ -533,7 +487,7 @@ GenTree* Compiler::fgMorphExpandCast(GenTreeCast* tree)
         {
             return fgMorphCastIntoHelper(tree, CORINFO_HELP_ULNG2DBL, oper);
         }
-        else if (srcType == TYP_UINT)
+        else if (srcType == TYP_UINT && !canUseEvexEncoding())
         {
             oper = gtNewCastNode(TYP_LONG, oper, true, TYP_LONG);
             oper->gtFlags |= (tree->gtFlags & (GTF_OVERFLOW | GTF_EXCEPT));
@@ -541,7 +495,7 @@ GenTree* Compiler::fgMorphExpandCast(GenTreeCast* tree)
             return fgMorphCastIntoHelper(tree, CORINFO_HELP_LNG2DBL, oper);
         }
     }
-    else if (((tree->gtFlags & GTF_UNSIGNED) == 0) && (srcType == TYP_LONG) && varTypeIsFloating(dstType))
+    else if (!tree->IsUnsigned() && (srcType == TYP_LONG) && varTypeIsFloating(dstType))
     {
         oper = fgMorphCastIntoHelper(tree, CORINFO_HELP_LNG2DBL, oper);
 
@@ -549,7 +503,7 @@ GenTree* Compiler::fgMorphExpandCast(GenTreeCast* tree)
         // we just use the one that converts to a TYP_DOUBLE
         // and then add a cast to TYP_FLOAT
         //
-        if ((dstType == TYP_FLOAT) && (oper->OperGet() == GT_CALL))
+        if ((dstType == TYP_FLOAT) && oper->OperIs(GT_CALL))
         {
             // Fix the return type to be TYP_DOUBLE
             //
@@ -608,7 +562,7 @@ GenTree* Compiler::fgMorphExpandCast(GenTreeCast* tree)
         // the result of an AND is bound by its smaller operand, it may be
         // possible to prove that the cast won't overflow, which will in turn
         // allow the cast's operand to be transformed.
-        if (tree->gtOverflow() && (oper->OperGet() == GT_AND))
+        if (tree->gtOverflow() && oper->OperIs(GT_AND))
         {
             GenTree* andOp2 = oper->AsOp()->gtOp2;
 
@@ -616,7 +570,7 @@ GenTree* Compiler::fgMorphExpandCast(GenTreeCast* tree)
             // than 2^{31} for a cast to int.
             int maxWidth = (dstType == TYP_UINT) ? 32 : 31;
 
-            if ((andOp2->OperGet() == GT_CNS_NATIVELONG) && ((andOp2->AsIntConCommon()->LngValue() >> maxWidth) == 0))
+            if (andOp2->OperIs(GT_CNS_NATIVELONG) && ((andOp2->AsIntConCommon()->LngValue() >> maxWidth) == 0))
             {
                 tree->ClearOverflow();
                 tree->SetAllEffectsFlags(oper);
@@ -780,6 +734,8 @@ const char* getWellKnownArgName(WellKnownArg arg)
             return "SwiftSelf";
         case WellKnownArg::X86TailCallSpecialArg:
             return "X86TailCallSpecialArg";
+        case WellKnownArg::StackArrayLocal:
+            return "StackArrayLocal";
     }
 
     return "N/A";
@@ -2337,6 +2293,15 @@ void CallArgs::DetermineNewABIInfo(Compiler* comp, GenTreeCall* call)
             ABIPassingSegment segment = ABIPassingSegment::InRegister(nonStdRegNum, 0, TARGET_POINTER_SIZE);
             arg.NewAbiInfo            = ABIPassingInformation::FromSegment(comp, segment);
         }
+
+        // TODO-Cleanup: This should be added to the new ABI info.
+        Compiler::structPassingKind passingKind = Compiler::SPK_ByValue;
+        if (argLayout != nullptr)
+        {
+            comp->getArgTypeForStruct(argSigClass, &passingKind, call->IsVarargs(), argLayout->GetSize());
+        }
+
+        arg.AbiInfo.PassedByRef = passingKind == Compiler::SPK_ByReference;
     }
 
     m_argsStackSize               = classifier.StackSize();
@@ -2506,7 +2471,35 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
         GenTree* argObj         = argx->gtEffectiveVal();
         bool     makeOutArgCopy = false;
 
-        if (isStructArg && !reMorphing && !argObj->OperIs(GT_FIELD_LIST))
+        if (argObj->OperIs(GT_FIELD_LIST))
+        {
+            // FIELD_LISTs can be created directly by physical promotion.
+            // Physical promotion will create this shape even for single-reg
+            // arguments. We strip the field list here for that case as the
+            // rest of the JIT does not expect single-reg args to be wrapped
+            // like that.
+            if (arg.NewAbiInfo.HasExactlyOneRegisterSegment())
+            {
+                GenTreeFieldList* fieldList = argObj->AsFieldList();
+                assert(fieldList->Uses().GetHead()->GetNext() == nullptr);
+                GenTree* node = fieldList->Uses().GetHead()->GetNode();
+
+                JITDUMP("Replacing single-field FIELD_LIST [%06u] by sole field [%06u]\n", dspTreeID(fieldList),
+                        dspTreeID(node));
+
+                assert(varTypeUsesSameRegType(node, arg.AbiInfo.ArgType));
+                GenTree** effectiveUse = parentArgx;
+                while ((*effectiveUse)->OperIs(GT_COMMA))
+                {
+                    effectiveUse = &(*effectiveUse)->AsOp()->gtOp2;
+                }
+                *effectiveUse = node;
+
+                argx   = *parentArgx;
+                argObj = node;
+            }
+        }
+        else if (isStructArg && !reMorphing)
         {
             unsigned originalSize;
             if (argObj->TypeIs(TYP_STRUCT))
@@ -3633,7 +3626,7 @@ GenTree* Compiler::fgMorphIndexAddr(GenTreeIndexAddr* indexAddr)
         }
 
         if (((index->gtFlags & (GTF_ASG | GTF_CALL | GTF_GLOB_REF)) != 0) ||
-            gtComplexityExceeds(index, MAX_ARR_COMPLEXITY) || index->OperIs(GT_LCL_FLD) ||
+            gtComplexityExceeds(index, MAX_INDEX_COMPLEXITY) || index->OperIs(GT_LCL_FLD) ||
             (index->OperIs(GT_LCL_VAR) && lvaIsLocalImplicitlyAccessedByRef(index->AsLclVar()->GetLclNum())))
         {
             unsigned indexTmpNum = lvaGrabTemp(true DEBUGARG("index expr"));
@@ -5019,7 +5012,7 @@ GenTree* Compiler::fgMorphPotentialTailCall(GenTreeCall* call)
 #endif
     };
 
-    if (call->gtCallMoreFlags & GTF_CALL_M_SPECIAL_INTRINSIC)
+    if (call->IsSpecialIntrinsic())
     {
         failTailCall("Might turn into an intrinsic");
         return nullptr;
@@ -5119,11 +5112,6 @@ GenTree* Compiler::fgMorphPotentialTailCall(GenTreeCall* call)
         //
         if (isImplicitOrStressTailCall)
         {
-            if (varDsc->lvHasLdAddrOp && !lvaIsImplicitByRefLocal(varNum))
-            {
-                failTailCall("Local address taken", varNum);
-                return nullptr;
-            }
             if (varDsc->IsAddressExposed())
             {
                 if (lvaIsImplicitByRefLocal(varNum))
@@ -5141,6 +5129,11 @@ GenTree* Compiler::fgMorphPotentialTailCall(GenTreeCall* call)
                     // its ref count and address-taken flag reset in fgMarkDemotedImplicitByRefArgs.
                     assert(lvaIsImplicitByRefLocal(lvaTable[varDsc->lvFieldLclStart].lvParentLcl));
                     assert(fgGlobalMorph);
+                }
+                else if (varDsc->IsStackAllocatedObject())
+                {
+                    // Stack allocated objects currently cannot be passed to callees
+                    // so won't be live at tail call sites.
                 }
 #if FEATURE_FIXED_OUT_ARGS
                 else if (varNum == lvaOutgoingArgSpaceVar)
@@ -5366,55 +5359,27 @@ GenTree* Compiler::fgMorphPotentialTailCall(GenTreeCall* call)
     //
     if (compCurBB->KindIs(BBJ_ALWAYS))
     {
+        BasicBlock* const curBlock    = compCurBB;
+        BasicBlock* const targetBlock = curBlock->GetTarget();
+
         // Flow no longer reaches the target from here.
         //
-        fgRemoveRefPred(compCurBB->GetTargetEdge());
+        fgRemoveRefPred(curBlock->GetTargetEdge());
 
-        // Adjust profile weights of the successor blocks.
+        // Adjust profile weights of the successor block.
         //
         // Note if this is a tail call to loop, further updates
         // are needed once we install the loop edge.
         //
-        BasicBlock* curBlock = compCurBB;
-        if (curBlock->hasProfileWeight())
+        if (curBlock->hasProfileWeight() && targetBlock->hasProfileWeight())
         {
-            weight_t    weightLoss = curBlock->bbWeight;
-            BasicBlock* nextBlock  = curBlock->GetTarget();
+            targetBlock->decreaseBBProfileWeight(curBlock->bbWeight);
 
-            while (nextBlock->hasProfileWeight())
+            if (targetBlock->NumSucc() > 0)
             {
-                // Since we have linear flow we can update the next block weight.
-                //
-                weight_t const nextWeight    = nextBlock->bbWeight;
-                weight_t const newNextWeight = nextWeight - weightLoss;
-
-                // If the math would result in a negative weight then there's
-                // no local repair we can do; just leave things inconsistent.
-                //
-                if (newNextWeight >= 0)
-                {
-                    // Note if we'd already morphed the IR in nextblock we might
-                    // have done something profile sensitive that we should arguably reconsider.
-                    //
-                    JITDUMP("Reducing profile weight of " FMT_BB " from " FMT_WT " to " FMT_WT "\n", nextBlock->bbNum,
-                            nextWeight, newNextWeight);
-
-                    nextBlock->setBBProfileWeight(newNextWeight);
-                }
-                else
-                {
-                    JITDUMP("Not reducing profile weight of " FMT_BB " as its weight " FMT_WT
-                            " is less than direct flow pred " FMT_BB " weight " FMT_WT "\n",
-                            nextBlock->bbNum, nextWeight, compCurBB->bbNum, weightLoss);
-                }
-
-                if (!nextBlock->KindIs(BBJ_ALWAYS))
-                {
-                    break;
-                }
-
-                curBlock  = nextBlock;
-                nextBlock = curBlock->GetTarget();
+                JITDUMP("Flow removal out of " FMT_BB " needs to be propagated. Data %s inconsistent.\n",
+                        curBlock->bbNum, fgPgoConsistent ? "is now" : "was already");
+                fgPgoConsistent = false;
             }
         }
     }
@@ -6319,7 +6284,7 @@ void Compiler::fgMorphTailCallViaJitHelper(GenTreeCall* call)
     // For the helper-assisted tail calls, we need to push all the arguments
     // into a single list, and then add a few extra at the beginning or end.
     //
-    // For x86, the tailcall helper is defined as:
+    // For Windows x86, the tailcall helper is defined as:
     //
     //      JIT_TailCall(<function args>, int numberOfOldStackArgsWords, int numberOfNewStackArgsWords, int flags, void*
     //      callTarget)
@@ -6755,12 +6720,12 @@ void Compiler::fgMorphRecursiveFastTailCallIntoLoop(BasicBlock* block, GenTreeCa
     fgRemoveStmt(block, lastStmt);
 
     // Set the loop edge.
+    BasicBlock* entryBB;
     if (opts.IsOSR())
     {
         // Todo: this may not look like a viable loop header.
         // Might need the moral equivalent of an init BB.
-        FlowEdge* const newEdge = fgAddRefPred(fgEntryBB, block);
-        block->SetKindAndTargetEdge(BBJ_ALWAYS, newEdge);
+        entryBB = fgEntryBB;
     }
     else
     {
@@ -6769,9 +6734,19 @@ void Compiler::fgMorphRecursiveFastTailCallIntoLoop(BasicBlock* block, GenTreeCa
         // TODO-Cleanup: We should really be expanding tailcalls into loops
         // much earlier than this, at a place where we do not need to have
         // hacky workarounds to figure out what the actual IL entry block is.
-        BasicBlock*     firstILBB = fgGetFirstILBlock();
-        FlowEdge* const newEdge   = fgAddRefPred(firstILBB, block);
-        block->SetKindAndTargetEdge(BBJ_ALWAYS, newEdge);
+        entryBB = fgGetFirstILBlock();
+    }
+
+    FlowEdge* const newEdge = fgAddRefPred(entryBB, block);
+    block->SetKindAndTargetEdge(BBJ_ALWAYS, newEdge);
+
+    // Update profile
+    if (block->hasProfileWeight() && entryBB->hasProfileWeight())
+    {
+        entryBB->increaseBBProfileWeight(block->bbWeight);
+        JITDUMP("Flow into entry BB " FMT_BB " increased. Data %s inconsistent.\n", entryBB->bbNum,
+                fgPgoConsistent ? "is now" : "was already");
+        fgPgoConsistent = false;
     }
 
     // Finish hooking things up.
@@ -6932,7 +6907,7 @@ GenTree* Compiler::fgMorphCall(GenTreeCall* call)
 #endif
     }
 
-    if ((call->gtCallMoreFlags & GTF_CALL_M_SPECIAL_INTRINSIC) != 0)
+    if (call->IsSpecialIntrinsic())
     {
         if (lookupNamedIntrinsic(call->AsCall()->gtCallMethHnd) ==
             NI_System_Text_UTF8Encoding_UTF8EncodingSealed_ReadUtf8)
@@ -7021,7 +6996,7 @@ GenTree* Compiler::fgMorphCall(GenTreeCall* call)
     // Morph Type.op_Equality, Type.op_Inequality, and Enum.HasFlag
     //
     // We need to do these before the arguments are morphed
-    if (!call->gtArgs.AreArgsComplete() && (call->gtCallMoreFlags & GTF_CALL_M_SPECIAL_INTRINSIC))
+    if (!call->gtArgs.AreArgsComplete() && call->IsSpecialIntrinsic())
     {
         // See if this is foldable
         GenTree* optTree = gtFoldExprCall(call);
@@ -7771,14 +7746,23 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac, bool* optA
             break;
 
         case GT_STOREIND:
-            if (op1->OperIs(GT_FIELD_ADDR) && varTypeIsGC(tree))
+            if (varTypeIsGC(tree))
             {
-                CORINFO_FIELD_HANDLE fieldHandle = op1->AsFieldAddr()->gtFldHnd;
-                if (eeIsByrefLike(info.compCompHnd->getFieldClass(fieldHandle)))
+                GenTree* addr = op1;
+                // If we're storing a reference to a field (GT_FIELD_ADDR), let's check if the field's owner is a
+                // byref-like struct.
+                while ((addr != nullptr) && addr->OperIs(GT_FIELD_ADDR))
                 {
-                    JITDUMP("Marking [%06u] STOREIND as GTF_IND_TGT_NOT_HEAP: field's owner is a byref-like struct\n",
+                    CORINFO_FIELD_HANDLE fieldHandle = addr->AsFieldAddr()->gtFldHnd;
+                    if (eeIsByrefLike(info.compCompHnd->getFieldClass(fieldHandle)))
+                    {
+                        JITDUMP(
+                            "Marking [%06u] STOREIND as GTF_IND_TGT_NOT_HEAP: field's owner is a byref-like struct\n",
                             dspTreeID(tree));
-                    tree->gtFlags |= GTF_IND_TGT_NOT_HEAP;
+                        tree->gtFlags |= GTF_IND_TGT_NOT_HEAP;
+                        break;
+                    }
+                    addr = addr->AsFieldAddr()->GetFldObj();
                 }
             }
             break;
@@ -12419,26 +12403,31 @@ void Compiler::fgAssertionGen(GenTree* tree)
     // If this tree creates an assignment of 0 or 1 to an int local, also create a [0..1] subrange
     // assertion for that local, in case this local is used as a bool.
     //
-    auto addImpliedBoolSubrangeAssertion = [=](AssertionIndex index, ASSERT_TP assertions) {
+    auto addImpliedAssertions = [=](AssertionIndex index, ASSERT_TP& assertions) {
         AssertionDsc* const assertion = optGetAssertion(index);
         if ((assertion->assertionKind == OAK_EQUAL) && (assertion->op1.kind == O1K_LCLVAR) &&
             (assertion->op2.kind == O2K_CONST_INT))
         {
-            ssize_t iconVal = assertion->op2.u1.iconVal;
-            if ((iconVal == 0) || (iconVal == 1))
-            {
-                AssertionDsc extraAssertion   = {OAK_SUBRANGE};
-                extraAssertion.op1.kind       = O1K_LCLVAR;
-                extraAssertion.op1.lcl.lclNum = assertion->op1.lcl.lclNum;
-                extraAssertion.op2.kind       = O2K_SUBRANGE;
-                extraAssertion.op2.u2         = IntegralRange(SymbolicIntegerValue::Zero, SymbolicIntegerValue::One);
+            LclVarDsc* const lclDsc = lvaGetDesc(assertion->op1.lcl.lclNum);
 
-                AssertionIndex extraIndex = optFinalizeCreatingAssertion(&extraAssertion);
-                if (extraIndex != NO_ASSERTION_INDEX)
+            if (varTypeIsIntegral(lclDsc->TypeGet()))
+            {
+                ssize_t iconVal = assertion->op2.u1.iconVal;
+                if ((iconVal == 0) || (iconVal == 1))
                 {
-                    unsigned const bvIndex = extraIndex - 1;
-                    BitVecOps::AddElemD(apTraits, assertions, bvIndex);
-                    announce(extraIndex, "[bool range] ");
+                    AssertionDsc extraAssertion   = {OAK_SUBRANGE};
+                    extraAssertion.op1.kind       = O1K_LCLVAR;
+                    extraAssertion.op1.lcl.lclNum = assertion->op1.lcl.lclNum;
+                    extraAssertion.op2.kind       = O2K_SUBRANGE;
+                    extraAssertion.op2.u2 = IntegralRange(SymbolicIntegerValue::Zero, SymbolicIntegerValue::One);
+
+                    AssertionIndex extraIndex = optFinalizeCreatingAssertion(&extraAssertion);
+                    if (extraIndex != NO_ASSERTION_INDEX)
+                    {
+                        unsigned const bvIndex = extraIndex - 1;
+                        BitVecOps::AddElemD(apTraits, assertions, bvIndex);
+                        announce(extraIndex, "[bool range] ");
+                    }
                 }
             }
         }
@@ -12492,7 +12481,7 @@ void Compiler::fgAssertionGen(GenTree* tree)
             announce(ifTrueAssertionIndex, "[if true] ");
             unsigned const bvIndex = ifTrueAssertionIndex - 1;
             BitVecOps::AddElemD(apTraits, apLocalIfTrue, bvIndex);
-            addImpliedBoolSubrangeAssertion(ifTrueAssertionIndex, apLocalIfTrue);
+            addImpliedAssertions(ifTrueAssertionIndex, apLocalIfTrue);
         }
 
         if (ifFalseAssertionIndex != NO_ASSERTION_INDEX)
@@ -12500,7 +12489,7 @@ void Compiler::fgAssertionGen(GenTree* tree)
             announce(ifFalseAssertionIndex, "[if false] ");
             unsigned const bvIndex = ifFalseAssertionIndex - 1;
             BitVecOps::AddElemD(apTraits, apLocal, ifFalseAssertionIndex - 1);
-            addImpliedBoolSubrangeAssertion(ifFalseAssertionIndex, apLocal);
+            addImpliedAssertions(ifFalseAssertionIndex, apLocal);
         }
     }
     else
@@ -12509,7 +12498,7 @@ void Compiler::fgAssertionGen(GenTree* tree)
         announce(apIndex, "");
         unsigned const bvIndex = apIndex - 1;
         BitVecOps::AddElemD(apTraits, apLocal, bvIndex);
-        addImpliedBoolSubrangeAssertion(apIndex, apLocal);
+        addImpliedAssertions(apIndex, apLocal);
     }
 }
 
@@ -12741,16 +12730,24 @@ Compiler::FoldResult Compiler::fgFoldConditional(BasicBlock* block)
             // modify the flow graph
 
             // Find the actual jump target
-            size_t     switchVal = (size_t)cond->AsIntCon()->gtIconVal;
-            unsigned   jumpCnt   = block->GetSwitchTargets()->bbsCount;
-            FlowEdge** jumpTab   = block->GetSwitchTargets()->bbsDstTab;
-            bool       foundVal  = false;
+            size_t     switchVal           = (size_t)cond->AsIntCon()->gtIconVal;
+            unsigned   jumpCnt             = block->GetSwitchTargets()->bbsCount;
+            FlowEdge** jumpTab             = block->GetSwitchTargets()->bbsDstTab;
+            bool       foundVal            = false;
+            bool       profileInconsistent = false;
 
             for (unsigned val = 0; val < jumpCnt; val++, jumpTab++)
             {
                 FlowEdge* curEdge = *jumpTab;
 
                 assert(curEdge->getDestinationBlock()->countOfInEdges() > 0);
+
+                BasicBlock* const targetBlock = curEdge->getDestinationBlock();
+                if (block->hasProfileWeight() && targetBlock->hasProfileWeight())
+                {
+                    targetBlock->decreaseBBProfileWeight(curEdge->getLikelyWeight());
+                    profileInconsistent |= (targetBlock->NumSucc() > 0);
+                }
 
                 // If val matches switchVal or we are at the last entry and
                 // we never found the switch value then set the new jump dest
@@ -12759,12 +12756,25 @@ Compiler::FoldResult Compiler::fgFoldConditional(BasicBlock* block)
                 {
                     block->SetKindAndTargetEdge(BBJ_ALWAYS, curEdge);
                     foundVal = true;
+
+                    if (block->hasProfileWeight() && targetBlock->hasProfileWeight())
+                    {
+                        targetBlock->increaseBBProfileWeight(block->bbWeight);
+                        profileInconsistent |= (targetBlock->NumSucc() > 0);
+                    }
                 }
                 else
                 {
                     // Remove 'curEdge'
                     fgRemoveRefPred(curEdge);
                 }
+            }
+
+            if (profileInconsistent)
+            {
+                JITDUMP("Flow change out of " FMT_BB " needs to be propagated. Data %s inconsistent.\n", block->bbNum,
+                        fgPgoConsistent ? "is now" : "was already");
+                fgPgoConsistent = false;
             }
 
             assert(foundVal);
@@ -13408,6 +13418,11 @@ PhaseStatus Compiler::fgMorphBlocks()
     //
     fgGlobalMorph = true;
 
+    if (fgPgoConsistent)
+    {
+        Metrics.ProfileConsistentBeforeMorph = 1;
+    }
+
     if (opts.OptimizationEnabled())
     {
         // Local assertion prop is enabled if we are optimizing.
@@ -13505,6 +13520,20 @@ PhaseStatus Compiler::fgMorphBlocks()
         fgEntryBB->bbRefs--;
         fgEntryBBExtraRefs = 0;
 
+        // The original method entry will now be checked for profile consistency.
+        // If the entry has inconsistent incoming weight, flag the profile as inconsistent.
+        //
+        if (fgEntryBB->hasProfileWeight())
+        {
+            const weight_t incomingWeight = fgEntryBB->computeIncomingWeight();
+            if (!fgProfileWeightsConsistent(incomingWeight, fgEntryBB->bbWeight))
+            {
+                JITDUMP("OSR: Original method entry " FMT_BB " has inconsistent weight. Data %s inconsistent.\n",
+                        fgEntryBB->bbNum, fgPgoConsistent ? "is now" : "was already");
+                fgPgoConsistent = false;
+            }
+        }
+
         // We don't need to remember this block anymore.
         fgEntryBB = nullptr;
     }
@@ -13543,6 +13572,11 @@ PhaseStatus Compiler::fgMorphBlocks()
     // We may have converted a tailcall into a loop, in which case the first BB
     // may no longer be canonical.
     fgCanonicalizeFirstBB();
+
+    if (fgPgoConsistent)
+    {
+        Metrics.ProfileConsistentAfterMorph = 1;
+    }
 
     INDEBUG(fgPostGlobalMorphChecks();)
 
@@ -14263,6 +14297,15 @@ bool Compiler::fgExpandQmarkStmt(BasicBlock* block, Statement* stmt)
     BasicBlock* condBlock = fgNewBBafter(BBJ_ALWAYS, block, true);
     BasicBlock* elseBlock = fgNewBBafter(BBJ_ALWAYS, condBlock, true);
 
+    // Update flowgraph
+    fgRedirectTargetEdge(block, condBlock);
+    condBlock->SetTargetEdge(fgAddRefPred(elseBlock, condBlock));
+    elseBlock->SetTargetEdge(fgAddRefPred(remainderBlock, elseBlock));
+
+    // Propagate flow from block into condBlock.
+    // Leave flow out of remainderBlock intact, as it will post-dominate block.
+    condBlock->inheritWeight(block);
+
     // These blocks are only internal if 'block' is (but they've been set as internal by fgNewBBafter).
     // If they're not internal, mark them as imported to avoid asserts about un-imported blocks.
     if (!block->HasFlag(BBF_INTERNAL))
@@ -14275,27 +14318,6 @@ bool Compiler::fgExpandQmarkStmt(BasicBlock* block, Statement* stmt)
 
     block->RemoveFlags(BBF_NEEDS_GCPOLL);
     remainderBlock->SetFlags(propagateFlagsToRemainder | propagateFlagsToAll);
-
-    condBlock->inheritWeight(block);
-
-    // Make sure remainderBlock gets exactly the same weight as block after split
-    assert(condBlock->bbWeight == remainderBlock->bbWeight);
-
-    assert(block->KindIs(BBJ_ALWAYS));
-    fgRedirectTargetEdge(block, condBlock);
-
-    {
-        FlowEdge* const newEdge = fgAddRefPred(elseBlock, condBlock);
-        condBlock->SetTargetEdge(newEdge);
-    }
-
-    {
-        FlowEdge* const newEdge = fgAddRefPred(remainderBlock, elseBlock);
-        elseBlock->SetTargetEdge(newEdge);
-    }
-
-    assert(condBlock->JumpsToNext());
-    assert(elseBlock->JumpsToNext());
 
     condBlock->SetFlags(propagateFlagsToAll);
     elseBlock->SetFlags(propagateFlagsToAll);
@@ -14311,6 +14333,7 @@ bool Compiler::fgExpandQmarkStmt(BasicBlock* block, Statement* stmt)
         //              +--->--------+
         //              bbj_cond(true)
         //
+        // TODO: Remove unnecessary condition reversal
         gtReverseCond(condExpr);
 
         thenBlock = fgNewBBafter(BBJ_ALWAYS, condBlock, true);
@@ -14324,13 +14347,12 @@ bool Compiler::fgExpandQmarkStmt(BasicBlock* block, Statement* stmt)
         const unsigned thenLikelihood = qmark->ThenNodeLikelihood();
         const unsigned elseLikelihood = qmark->ElseNodeLikelihood();
 
-        FlowEdge* const newEdge = fgAddRefPred(remainderBlock, thenBlock);
-        thenBlock->SetTargetEdge(newEdge);
+        thenBlock->SetTargetEdge(fgAddRefPred(remainderBlock, thenBlock));
 
         assert(condBlock->TargetIs(elseBlock));
-        FlowEdge* const elseEdge = fgAddRefPred(thenBlock, condBlock);
-        FlowEdge* const thenEdge = condBlock->GetTargetEdge();
-        condBlock->SetCond(thenEdge, elseEdge);
+        FlowEdge* const thenEdge = fgAddRefPred(thenBlock, condBlock);
+        FlowEdge* const elseEdge = condBlock->GetTargetEdge();
+        condBlock->SetCond(elseEdge, thenEdge);
         thenBlock->inheritWeightPercentage(condBlock, thenLikelihood);
         elseBlock->inheritWeightPercentage(condBlock, elseLikelihood);
         thenEdge->setLikelihood(thenLikelihood / 100.0);
@@ -14344,6 +14366,7 @@ bool Compiler::fgExpandQmarkStmt(BasicBlock* block, Statement* stmt)
         //              +-->-------------+
         //              bbj_cond(true)
         //
+        // TODO: Remove unnecessary condition reversal
         gtReverseCond(condExpr);
 
         const unsigned thenLikelihood = qmark->ThenNodeLikelihood();
