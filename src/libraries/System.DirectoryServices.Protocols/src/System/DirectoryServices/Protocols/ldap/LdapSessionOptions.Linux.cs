@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.ComponentModel;
+using System.IO;
 using System.Runtime.Versioning;
 
 namespace System.DirectoryServices.Protocols
@@ -19,17 +20,25 @@ namespace System.DirectoryServices.Protocols
         /// <remarks>
         /// The certificate files are looked up by the CA subject name hash value where that hash can be
         /// obtained by using, for example, <code>openssl x509 -hash -noout -in CA.crt</code>.
-        /// It is a common practice to have the file be a symbolic link to the actual certificate file.
+        /// It is a common practice to have the certificate file be a symbolic link to the actual certificate file
+        /// which can be done by using <code>openssl rehash .</code> or <code>c_rehash .</code> in the directory
+        /// containing the certificate files.
         /// </remarks>
-        [UnsupportedOSPlatform("android")]
-        [UnsupportedOSPlatform("browser")]
-        [UnsupportedOSPlatform("ios")]
-        [UnsupportedOSPlatform("tvos")]
+        /// <exception cref="DirectoryNotFoundException">The directory not exist.</exception>
         [UnsupportedOSPlatform("windows")]
         public string TrustedCertificatesDirectory
         {
             get => GetStringValueHelper(LdapOption.LDAP_OPT_X_TLS_CACERTDIR, releasePtr: true);
-            set => SetStringOptionHelper(LdapOption.LDAP_OPT_X_TLS_CACERTDIR, value);
+
+            set
+            {
+                if (!Directory.Exists(value))
+                {
+                    throw new DirectoryNotFoundException(SR.Format(SR.DirectoryNotFound, value));
+                }
+
+                SetStringOptionHelper(LdapOption.LDAP_OPT_X_TLS_CACERTDIR, value);
+            }
         }
 
         public bool SecureSocketLayer
@@ -77,10 +86,6 @@ namespace System.DirectoryServices.Protocols
         /// Create a new TLS library context.
         /// Calling this is necessary after setting TLS-based options, such as <c>TrustedCertificatesDirectory</c>.
         /// </summary>
-        [UnsupportedOSPlatform("android")]
-        [UnsupportedOSPlatform("browser")]
-        [UnsupportedOSPlatform("ios")]
-        [UnsupportedOSPlatform("tvos")]
         [UnsupportedOSPlatform("windows")]
         public void StartNewTlsSessionContext()
         {
