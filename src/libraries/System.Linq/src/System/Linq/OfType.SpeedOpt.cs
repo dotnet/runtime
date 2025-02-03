@@ -172,7 +172,7 @@ namespace System.Linq
                         new IEnumerableWhereSelectIterator<object, TResult2>(objectSource, isTResult, localSelector);
                 }
 
-                return new IteratorSelectIterator<TResult, TResult2>(this, selector);
+                return base.Select(selector);
             }
         }
     }
