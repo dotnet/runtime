@@ -25,7 +25,7 @@
         nextRunTimeout = -1;
         nextTestName = location.hash.trim().substring(1);
         capturingTestCaseNames = nextTestName.length === 0;
-        const capturedTestCaseNames = capturingTestCaseNames
+        capturedTestCaseNames = capturingTestCaseNames
             ? []
             : JSON.parse(localStorage.getItem("testCaseNames"));
         paltestsLoaded = false;
@@ -37,7 +37,6 @@
                             text.split(/\r?\n/).forEach(function(line) {
                                 paltests.push(line);
                             });
-                            console.log("paltests " + paltests.length + " test name(s). ");
                             paltestsLoaded = true;
                         });
         }
@@ -51,16 +50,19 @@
 
                     while (!paltestsLoaded);
 
-                    filteredTestCaseNames = capturedTestCaseNames.filter(function(testName) {
+                    console.log("paltests " + paltests.length + " test name(s). ");
+
+                    capturedTestCaseNames = capturedTestCaseNames.filter(function(testName) {
                         return paltests.includes(testName);
                     });
 
                     missingTests = paltests.filter(function(testName) {
-                        return !filteredTestCaseNames.includes(testName);
+                        return !capturedTestCaseNames.includes(testName);
                     });
 
-                    filteredTestCaseNames.sort();
-                    localStorage.setItem("testCaseNames", JSON.stringify(filteredTestCaseNames));
+                    capturedTestCaseNames.sort();
+                    capturedTestCaseNames = capturedTestCaseNames;
+                    localStorage.setItem("testCaseNames", JSON.stringify(capturedTestCaseNames));
                     localStorage.setItem("missingTestNames", JSON.stringify(missingTests));
                     localStorage.setItem("passedCount", JSON.stringify(0));
                     localStorage.setItem("failedCount", JSON.stringify(0));
