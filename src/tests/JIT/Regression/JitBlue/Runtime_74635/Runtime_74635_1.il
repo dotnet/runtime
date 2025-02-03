@@ -26,6 +26,11 @@
         type([TestLibrary]TestLibrary.PlatformDetection)
         string[1] ('IsAppleMobile')
     }
+    .custom instance void [Microsoft.DotNet.XUnitExtensions]Xunit.ActiveIssueAttribute::.ctor(string, class [mscorlib]System.Type, string[]) = {
+        string('https://github.com/dotnet/runtime/issues/74687')
+        type([TestLibrary]TestLibrary.PlatformDetection)
+        string[1] ('IsMonoInterpreter')
+    }
 
     .entrypoint
 
