@@ -27760,7 +27760,8 @@ bool GenTreeHWIntrinsic::OperIsCreateScalarUnsafe() const
 //
 bool GenTreeHWIntrinsic::OperIsBitwiseHWIntrinsic(genTreeOps oper)
 {
-    return (oper == GT_AND) || (oper == GT_AND_NOT) || (oper == GT_NOT) || (oper == GT_OR) || (oper == GT_XOR);
+    return (oper == GT_AND) || (oper == GT_AND_NOT) || (oper == GT_NOT) || (oper == GT_OR) || (oper == GT_OR_NOT) ||
+           (oper == GT_XOR) || (oper == GT_XOR_NOT);
 }
 
 //------------------------------------------------------------------------
@@ -31046,7 +31047,9 @@ bool GenTree::IsVectorPerElementMask(var_types simdBaseType, unsigned simdSize) 
             case GT_AND:
             case GT_AND_NOT:
             case GT_OR:
+            case GT_OR_NOT:
             case GT_XOR:
+            case GT_XOR_NOT:
             {
                 // We are a binary bitwise operation where both inputs are per-element masks
                 return intrinsic->Op(1)->IsVectorPerElementMask(simdBaseType, simdSize) &&
