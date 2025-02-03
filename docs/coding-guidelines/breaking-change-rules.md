@@ -169,8 +169,6 @@ Breaking Change Rules
 
 * Changing a `struct` type to a `ref struct` type and vice versa
 
-* Adding a `ref` or object reference field to a value type that didn't previously have either a `ref` or object reference field before (recursively)
-
 * Changing the underlying type of an enum
 
     This is a compile-time and behavioral breaking change as well as a binary breaking change which can make attribute arguments unparsable.
@@ -237,6 +235,8 @@ successfully bind to that overload, if simply passing an `int` value. However, i
 * Adding a field to a struct that previously had no state
 
     Definite assignment rules allow use of uninitialized variables so long as the variable type is a stateless struct. If the struct is made stateful, code could now end up with uninitialized data. This is both potentially a source breaking and binary breaking change.
+
+* Adding a `ref`, object reference, or generic parameter based field to a value type that didn't previously have any of these field kinds (recursively)
 
 ### Signatures
 &#10003; **Allowed**
