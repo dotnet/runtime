@@ -162,7 +162,7 @@
     <MicrosoftDotNetXHarnessTestRunnersXunitVersion>10.0.0-prerelease.24610.1</MicrosoftDotNetXHarnessTestRunnersXunitVersion>
     <MicrosoftDotNetXHarnessCLIVersion>10.0.0-prerelease.24610.1</MicrosoftDotNetXHarnessCLIVersion>
     <!-- hotreload-utils dependencies -->
-    <MicrosoftDotNetHotReloadUtilsGeneratorBuildToolVersion>10.0.0-alpha.0.25070.1</MicrosoftDotNetHotReloadUtilsGeneratorBuildToolVersion>
+    <MicrosoftDotNetHotReloadUtilsGeneratorBuildToolVersion>10.0.0-alpha.0.25077.1</MicrosoftDotNetHotReloadUtilsGeneratorBuildToolVersion>
     <!-- dotnet-optimization dependencies -->
     <optimizationwindows_ntx64MIBCRuntimeVersion>1.0.0-prerelease.25079.10</optimizationwindows_ntx64MIBCRuntimeVersion>
     <optimizationwindows_ntx86MIBCRuntimeVersion>1.0.0-prerelease.25079.10</optimizationwindows_ntx86MIBCRuntimeVersion>
@@ -219,7 +219,7 @@
     <!-- Docs -->
     <MicrosoftPrivateIntellisenseVersion>9.0.0-preview-20241010.1</MicrosoftPrivateIntellisenseVersion>
     <!-- Mono Cecil -->
-    <MicrosoftDotNetCecilVersion>0.11.5-alpha.25069.2</MicrosoftDotNetCecilVersion>
+    <MicrosoftDotNetCecilVersion>0.11.5-alpha.25078.1</MicrosoftDotNetCecilVersion>
     <!-- ICU -->
     <MicrosoftNETCoreRuntimeICUTransportVersion>10.0.0-preview.2.25074.1</MicrosoftNETCoreRuntimeICUTransportVersion>
     <!-- MsQuic -->

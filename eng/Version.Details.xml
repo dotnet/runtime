@@ -50,14 +50,14 @@
       <Sha>feb61c7f328a2401d74f4317b39d02126cfdfe24</Sha>
       <SourceBuild RepoName="command-line-api" ManagedOnly="true" />
     </Dependency>
-    <Dependency Name="Microsoft.DotNet.Cecil" Version="0.11.5-alpha.25069.2">
+    <Dependency Name="Microsoft.DotNet.Cecil" Version="0.11.5-alpha.25078.1">
       <Uri>https://github.com/dotnet/cecil</Uri>
-      <Sha>2d5c8fb9aa8bd4c7fc085a73520061075c601655</Sha>
+      <Sha>dfa03011d6474bd0e6c9d0363e4f3b18b99f2ad8</Sha>
     </Dependency>
     <!-- Intermediate is necessary for source build. -->
-    <Dependency Name="Microsoft.SourceBuild.Intermediate.cecil" Version="0.11.5-alpha.25069.2">
+    <Dependency Name="Microsoft.SourceBuild.Intermediate.cecil" Version="0.11.5-alpha.25078.1">
       <Uri>https://github.com/dotnet/cecil</Uri>
-      <Sha>2d5c8fb9aa8bd4c7fc085a73520061075c601655</Sha>
+      <Sha>dfa03011d6474bd0e6c9d0363e4f3b18b99f2ad8</Sha>
       <SourceBuild RepoName="cecil" ManagedOnly="true" />
     </Dependency>
     <Dependency Name="Microsoft.NET.Workload.Emscripten.Current.Manifest-10.0.100.Transport" Version="10.0.0-alpha.1.25059.1">
@@ -77,9 +77,9 @@
       <SourceBuild RepoName="source-build-reference-packages" ManagedOnly="true" />
     </Dependency>
     <!-- Intermediate is necessary for source build. -->
-    <Dependency Name="Microsoft.SourceBuild.Intermediate.source-build-externals" Version="10.0.607101">
+    <Dependency Name="Microsoft.SourceBuild.Intermediate.source-build-externals" Version="10.0.607901">
       <Uri>https://github.com/dotnet/source-build-externals</Uri>
-      <Sha>0c377e9585d2aeae504ff1d6529ccb1abef36172</Sha>
+      <Sha>962bb86f95ebece01c2b1de97ed7d4261e00b058</Sha>
       <SourceBuild RepoName="source-build-externals" ManagedOnly="true" />
     </Dependency>
   </ProductDependencies>
@@ -368,9 +368,9 @@
       <Uri>https://dev.azure.com/dnceng/internal/_git/dotnet-optimization</Uri>
       <Sha>9fc4fa70da875eed41d3a69a5d65c83d2e3f4b06</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.DotNet.HotReload.Utils.Generator.BuildTool" Version="10.0.0-alpha.0.25070.1">
+    <Dependency Name="Microsoft.DotNet.HotReload.Utils.Generator.BuildTool" Version="10.0.0-alpha.0.25077.1">
       <Uri>https://github.com/dotnet/hotreload-utils</Uri>
-      <Sha>a8ba820e852306e5098dce560629cd98e0eb8a4a</Sha>
+      <Sha>f30fb00238a27eff06b5a6bf11ff9c4a5e35c9ca</Sha>
     </Dependency>
     <Dependency Name="System.Runtime.Numerics.TestData" Version="10.0.0-beta.25070.2">
       <Uri>https://github.com/dotnet/runtime-assets</Uri>
