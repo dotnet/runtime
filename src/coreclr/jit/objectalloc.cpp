@@ -216,9 +216,8 @@ void ObjectAllocator::MarkEscapingVarsAndBuildConnGraph()
 
         Compiler::fgWalkResult PreOrderVisit(GenTree** use, GenTree* user)
         {
-            GenTree* const   tree   = *use;
-            unsigned const   lclNum = tree->AsLclVarCommon()->GetLclNum();
-            LclVarDsc* const varDsc = m_compiler->lvaGetDesc(lclNum);
+            GenTree* const tree   = *use;
+            unsigned const lclNum = tree->AsLclVarCommon()->GetLclNum();
 
             // If this local already escapes, no need to look further.
             //
@@ -986,7 +985,7 @@ unsigned int ObjectAllocator::MorphAllocObjNodeIntoStackAlloc(
         // Just lop off the JTRUE, the rest can clean up later
         // (eg may have side effects)
         //
-        controllingStmt->SetRootNode(controllingNode->AsOp()->gtOp1);
+        controllingStmt->SetRootNode(controllingNode->gtGetOp1());
 
         // We must remove the empty static block now too.
         assert(removedBlock->bbRefs == 0);
@@ -1781,7 +1780,7 @@ GenTree* ObjectAllocator::IsGuard(BasicBlock* block, GuardInfo* info)
         return nullptr;
     }
 
-    GenTree* const tree = jumpTree->AsOp()->gtOp1;
+    GenTree* const tree = jumpTree->gtGetOp1();
 
     // Must be an equality or inequality
     //
@@ -1791,8 +1790,8 @@ GenTree* ObjectAllocator::IsGuard(BasicBlock* block, GuardInfo* info)
         return nullptr;
     }
 
-    GenTree* op1     = tree->AsOp()->gtOp1;
-    GenTree* op2     = tree->AsOp()->gtOp2;
+    GenTree* op1     = tree->gtGetOp1();
+    GenTree* op2     = tree->gtGetOp2();
     bool     swapped = false;
 
     // gdv creates NE(hnd, indir(locl))
@@ -1861,56 +1860,50 @@ GenTree* ObjectAllocator::IsGuard(BasicBlock* block, GuardInfo* info)
 //
 bool ObjectAllocator::CheckForGuardedUse(BasicBlock* block, GenTree* tree, unsigned lclNum)
 {
-    bool isGuardedUse = false;
-
     // Find pseudo local...
     //
     unsigned pseudoLocal = BAD_VAR_NUM;
-    if (m_EnumeratorLocalToPseudoLocalMap.TryGetValue(lclNum, &pseudoLocal))
-    {
-        // Verify that this call is made under a **failing** GDV test under the same
-        // conditions tracked by pseudoLocal.
-        //
-        GuardInfo info;
-        if (IsGuarded(block, tree, &info, /* testOutcome */ false))
-        {
-            CloneInfo* pseudoGuardInfo;
-            if (m_CloneMap.Lookup(pseudoLocal, &pseudoGuardInfo))
-            {
-                if ((info.m_local == lclNum) && (pseudoGuardInfo->m_local == lclNum) &&
-                    (info.m_type == pseudoGuardInfo->m_type))
-                {
-                    // If so, track this as an assignment pseudoLocal = ...
-                    //
-                    // Later if we don't clone and split off the failing GDV paths,
-                    // we will mark pseudoLocal as escaped, and that will lead
-                    // to lclNum escaping as well.
-                    //
-                    JITDUMP("... under GDV; tracking via pseudo-local P%02u\n", pseudoLocal);
-                    AddConnGraphEdge(pseudoLocal, lclNum);
-                    isGuardedUse = true;
-                }
-                else
-                {
-                    JITDUMP("... under different guard?\n");
-                }
-            }
-            else
-            {
-                JITDUMP("... under non-gdv guard?\n");
-            }
-        }
-        else
-        {
-            JITDUMP("... not guarded?\n");
-        }
-    }
-    else
+    if (!m_EnumeratorLocalToPseudoLocalMap.TryGetValue(lclNum, &pseudoLocal))
     {
         JITDUMP("... no pseudo local?\n");
+        return false;
     }
 
-    return isGuardedUse;
+    // Verify that this call is made under a **failing** GDV test
+    //
+    GuardInfo info;
+    if (!IsGuarded(block, tree, &info, /* testOutcome */ false))
+    {
+        JITDUMP("... not guarded?\n");
+        return false;
+    }
+
+    // Find the GDV guard for the pseudo-local
+    //
+    CloneInfo* pseudoGuardInfo;
+    if (!m_CloneMap.Lookup(pseudoLocal, &pseudoGuardInfo))
+    {
+        JITDUMP("... under non-gdv guard?\n");
+        return false;
+    }
+
+    // Verify this appearance is under the same guard
+    //
+    if ((info.m_local == lclNum) && (pseudoGuardInfo->m_local == lclNum) && (info.m_type == pseudoGuardInfo->m_type))
+    {
+        // If so, track this as an assignment pseudoLocal = ...
+        //
+        // Later if we don't clone and split off the failing GDV paths,
+        // we will mark pseudoLocal as escaped, and that will lead
+        // to lclNum escaping as well.
+        //
+        JITDUMP("... under GDV; tracking via pseudo-local P%02u\n", pseudoLocal);
+        AddConnGraphEdge(pseudoLocal, lclNum);
+        return true;
+    }
+
+    JITDUMP("... under different guard?\n");
+    return false;
 }
 
 //------------------------------------------------------------------------------
@@ -2604,8 +2597,6 @@ bool ObjectAllocator::CheckCanClone(CloneInfo* info)
                 return false;
             }
         }
-
-        // todo: proper check for same block
     }
 
     // The definition block must dominate all the V and U uses.
