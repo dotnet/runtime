@@ -86,6 +86,9 @@ namespace Internal.IL
 
         private void FindBasicBlocks()
         {
+            if (_ilBytes.Length <= 0)
+                ReportZeroSizedMethod();
+
             _basicBlocks = new BasicBlock[_ilBytes.Length];
 
             CreateBasicBlock(0);
@@ -212,7 +215,13 @@ namespace Internal.IL
                                 CreateBasicBlock(target);
                             else
                                 ReportInvalidBranchTarget(target);
-                            CreateBasicBlock(_currentOffset);
+                            if ((uint)_currentOffset < (uint)_basicBlocks.Length)
+                                CreateBasicBlock(_currentOffset);
+                            else
+                            {
+                                ReportFallthroughAtEndOfMethod();
+                                return;
+                            }
                         }
                         break;
                     case ILOpcode.br:
@@ -447,8 +456,11 @@ namespace Internal.IL
                     case ILOpcode.blt_un_s:
                         {
                             int delta = (sbyte)ReadILByte();
-                            ImportBranch(opCode + (ILOpcode.br - ILOpcode.br_s),
-                                _basicBlocks[_currentOffset + delta], (opCode != ILOpcode.br_s) ? _basicBlocks[_currentOffset] : null);
+                            if (_currentOffset < _basicBlocks.Length && _currentOffset + delta < _basicBlocks.Length)
+                            {
+                                ImportBranch(opCode + (ILOpcode.br - ILOpcode.br_s),
+                                    _basicBlocks[_currentOffset + delta], (opCode != ILOpcode.br_s) ? _basicBlocks[_currentOffset] : null);
+                            }
                         }
                         EndImportingInstruction();
                         return;
