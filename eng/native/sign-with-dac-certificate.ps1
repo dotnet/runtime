@@ -7,7 +7,7 @@ param(
 )
 
 $inputFile = Get-Content -Raw $PSScriptRoot/signing/input.template.json | ConvertFrom-Json
-$inputFile.SignBatches.SignRequestFiles = $filesToSign | ForEach-Object {
+$inputFile.SignBatches[0].SignRequestFiles = $filesToSign | ForEach-Object {
     @{
         SourceLocation = $_
     }
@@ -18,7 +18,11 @@ $inputJson = [System.IO.Path]::GetTempFileName()
 # to successfully round-trip our JSON through ConvertTo-Json
 $inputFile | ConvertTo-Json -Depth 6 | Out-File -FilePath $inputJson -Encoding utf8
 
-$outputJson = Resolve-Path "$PSScriptRoot/../../artifacts/log/Release/signing-$(New-Guid).json.log"
+$outputJson = "$PSScriptRoot/../../artifacts/log/Release/signing-$(New-Guid).json.log"
+
+New-Item $outputJson -ItemType File
+
+$outputJson = Resolve-Path $outputJson
 
 Write-Host "Signing files with DAC certificate"
 Write-Host "Logging output to $outputJson"

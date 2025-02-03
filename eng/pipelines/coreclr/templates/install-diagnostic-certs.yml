@@ -1,20 +1,9 @@
 parameters:
-  isOfficialBuild:
-    type: boolean
-    displayName: 'Is Official Build'
-  certNames:
-    type: array
-    displayName: 'Certificate Name'
-  vaultName:
-    type: string
-    displayName: 'Key Vault Name'
-  azureSubscription:
-    type: string
-    displayName: 'Azure Subscription'
-  scriptRoot:
-    type: string
-    displayName: 'Script Root'
-    default: '$(Build.SourcesDirectory)'
+  isOfficialBuild: false
+  certNames: []
+  vaultName: ''
+  azureSubscription: ''
+  scriptRoot: '$(Build.SourcesDirectory)'
 
 steps:
 - ${{ if and(eq(parameters.isOfficialBuild, true), ne(variables['Build.Reason'], 'PullRequest'), or(startswith(variables['Build.SourceBranch'], 'refs/heads/release/'), startswith(variables['Build.SourceBranch'], 'refs/heads/internal/release/'), startswith(variables['Build.SourceBranch'], 'refs/heads/reltest/')), not(endsWith(variables['Build.SourceBranch'], '-staging'))) }}:
@@ -29,10 +18,11 @@ steps:
     displayName: Download ESRPClient
 
   - powershell: |
-      ${{ parameters.scriptRoot }}/eng/pipelines/install-diagnostic-certs.ps1 "${{ join(',', parameters.certNames) }}"
+      eng/pipelines/install-diagnostic-certs.ps1 "${{ join(',', parameters.certNames) }}"
       $signArgs = '/p:DotNetEsrpToolPath=$(esrpclient.toolpath)\$(esrpclient.toolname)'
       echo "##vso[task.setvariable variable=_SignDiagnosticFilesArgs;]$signArgs"
     displayName: 'Install diagnostic certificates'
+    workingDirectory: ${{ parameters.scriptRoot }}
     env:
       ${{ each cert in parameters.certNames }}:
         ${{ cert }}: $(${{ cert }})
