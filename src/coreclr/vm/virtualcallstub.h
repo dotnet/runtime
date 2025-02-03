@@ -21,6 +21,8 @@
 //#define STUB_LOGGING
 #endif
 
+bool UseCachedInterfaceDispatch();
+
 #include "stubmgr.h"
 
 /////////////////////////////////////////////////////////////////////////////////////
@@ -1652,7 +1654,7 @@ BYTE* GenerateDispatchStubCellEntrySlot(LoaderAllocator *pLoaderAllocator, TypeH
 
 
 #if defined(FEATURE_CACHED_INTERFACE_DISPATCH) && defined(FEATURE_VIRTUAL_STUB_DISPATCH)
-inline bool UseCachedInterfaceDispatch() { return true; }
+inline bool UseCachedInterfaceDispatch() { return g_pConfig->UseCachedInterfaceDispatch(); }
 #define INTERFACE_DISPATCH_CACHED_OR_VSD(cachedDispatch, vsdDispath) if (UseCachedInterfaceDispatch()) { cachedDispatch; } else { vsdDispath; }
 #elif defined(FEATURE_CACHED_INTERFACE_DISPATCH)
 inline bool UseCachedInterfaceDispatch() { return true; }
