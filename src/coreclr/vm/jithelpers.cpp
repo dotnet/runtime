@@ -2511,8 +2511,11 @@ PCODE JIT_PatchpointOptimizationPolicy(TransitionBlock* pTransitionBlock, int* c
 
                 InterlockedOr(&ppInfo->m_flags, (LONG)PerPatchpointInfo::patchpoint_invalid);
             }
-
-            *pIsNewMethod = true;
+            else
+            {
+                *pIsNewMethod = true;
+                ppInfo->m_osrMethodCode = osrMethodCode;
+            }
         }
 
         UNINSTALL_UNWIND_AND_CONTINUE_HANDLER;
