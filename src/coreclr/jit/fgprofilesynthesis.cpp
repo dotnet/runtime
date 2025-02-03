@@ -41,7 +41,9 @@ void ProfileSynthesis::Run(ProfileSynthesisOption option)
         assert(m_loops != nullptr);
     }
 
-    m_entryBlock = m_comp->opts.IsOSR() ? m_comp->fgEntryBB : m_comp->fgFirstBB;
+    // Profile synthesis can be run before or after morph, so tolerate (non-)canonical method entries
+    //
+    m_entryBlock = (m_comp->opts.IsOSR() && (m_comp->fgEntryBB != nullptr)) ? m_comp->fgEntryBB : m_comp->fgFirstBB;
 
     // Retain or compute edge likelihood information
     //
