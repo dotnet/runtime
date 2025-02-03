@@ -43,7 +43,7 @@ For example:
 To build CoreCLR runtime packages, libraries and tools, run the following command from `<repo-root>`:
 
 ```
-./build.sh clr.runtime+clr.alljits+clr.corelib+clr.nativecorelib+clr.tools+clr.packages+libs+packs -os android -arch <x64|arm64> -c <Debug|Release> -cross -bl
+./build.sh clr.runtime+clr.alljits+clr.corelib+clr.nativecorelib+clr.tools+clr.packages+libs+packs -os android -arch <x64|arm64> -c <Debug|Release> -bl
 ```
 
 NOTE: The runtime packages will be located at: `<repo-root>/artifacts/packages/<configuration>/Shipping/`
@@ -189,7 +189,7 @@ make BUILD_CONFIG=<Debug|Release> TARGET_ARCH=<x64|arm64> RUNTIME_FLAVOR=CoreCLR
 
 On successful execution, the command will output the `HelloAndroid.apk` at:
 ```
-<repo-root>artifacts/bin/AndroidSampleApp/arm64/Release/android-arm64/Bundle/bin/HelloAndroid.apk
+<repo-root>artifacts/bin/AndroidSampleApp/arm64/<Debug|Release>/android-arm64/Bundle/bin/HelloAndroid.apk
 ```
 
 ### Running HelloAndroid sample on an emulator
@@ -240,7 +240,7 @@ This can be achieved in `Android Studio` via `Profile or Debug APK`.
 1. Build the runtime and `HelloAndroid` sample app in `Debug` configuration.
 2. Rename the debug symbols file of the runtime library from `libcoreclr.so.dbg` into `libcoreclr.so.so`, the file is located at: `<repo_root>/artifacts/bin/AndroidSampleApp/arm64/Debug/android-arm64/publish/libcoreclr.so.dbg`
 3. Open Android Studio and select `Profile or Debug APK` project.
-4. Find and select the desired `.apk` file (example: `<repo_root>/artifacts/bin/AndroidSampleApp/arm64/Release/android-arm64/Bundle/bin/HelloAndroid.apk`)
+4. Find and select the desired `.apk` file (example: `<repo_root>/artifacts/bin/AndroidSampleApp/arm64/<Debug|Release>/android-arm64/Bundle/bin/HelloAndroid.apk`)
 5. In the project pane, expand `HelloAndroid->cpp->libcoreclr` and double-click `libcoreclr.so`
 ![Adding debug symbols](./android-studio-coreclr-debug-symbols-adding.png)
 6. From the `Debug Symbols` pane on the right, select `Add`
