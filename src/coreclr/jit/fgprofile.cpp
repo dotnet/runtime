@@ -4995,6 +4995,11 @@ PhaseStatus Compiler::fgRepairProfile()
         else
         {
             ProfileSynthesis::Run(this, ProfileSynthesisOption::RetainLikelihoods);
+
+            // Profile synthesis computes a profile-aware DFS tree.
+            // Note that we don't invalidate the tree here, as we opted to retain likelihoods,
+            // so the traversal order shouldn't be different after repairing the profile.
+            // Thus, future phases can reuse this tree.
             return PhaseStatus::MODIFIED_EVERYTHING;
         }
     }

@@ -32,7 +32,7 @@ void ProfileSynthesis::Run(ProfileSynthesisOption option)
 {
     if (m_dfsTree == nullptr)
     {
-        m_dfsTree             = m_comp->fgComputeDfs();
+        m_dfsTree             = m_comp->fgComputeDfs</* useProfile */ true>();
         m_loops               = FlowGraphNaturalLoops::Find(m_dfsTree);
         m_improperLoopHeaders = m_loops->ImproperLoopHeaders();
     }
