@@ -423,6 +423,30 @@ namespace System.Numerics
         [Intrinsic]
         internal static Vector2 CreateScalarUnsafe(float x) => Vector128.CreateScalarUnsafe(x).AsVector2();
 
+        /// <summary>
+        /// Returns the z-value of the cross product of two vectors.
+        /// Since the Vector2 is in the x-y plane, a 3D cross product only produces the z-value.
+        /// </summary>
+        /// <param name="value1">The first vector.</param>
+        /// <param name="value2">The second vector.</param>
+        /// <returns>The value of the z-coordinate from the cross product.</returns>
+        /// <remarks>
+        /// Return z-value = value1.X * value2.Y - value1.Y * value2.X
+        /// <see cref="Cross"/> is the same as taking the <see cref="Dot"/> with the second vector
+        /// that has been rotated 90-degrees.
+        /// </remarks>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static float Cross(Vector2 value1, Vector2 value2)
+        {
+            //return value1.X * value2.Y - value1.Y * value2.X;
+
+            Vector128<float> mul =
+                Vector128.Shuffle(value1.AsVector128Unsafe(), Vector128.Create(0, 1, 0, 1)) *
+                Vector128.Shuffle(value2.AsVector128Unsafe(), Vector128.Create(1, 0, 1, 0));
+
+            return (mul - Vector128.Shuffle(mul, Vector128.Create(1, 0, 1, 0))).ToScalar();
+        }
+
         /// <inheritdoc cref="Vector4.DegreesToRadians(Vector4)" />
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
