@@ -109,6 +109,8 @@ BOOL LoadDynamicInfoEntry(Module *currentModule,
 // The portable helper is used if the platform does not provide optimized implementation.
 //
 
+EXTERN_C FCDECL0(void, JIT_PollGC);
+
 #ifndef JIT_MonEnter
 #define JIT_MonEnter JIT_MonEnter_Portable
 #endif
@@ -230,10 +232,7 @@ extern "C" FCDECL2(VOID, JIT_CheckedWriteBarrier, Object **dst, Object *ref);
 extern "C" FCDECL2(VOID, JIT_WriteBarrier, Object **dst, Object *ref);
 extern "C" FCDECL2(VOID, JIT_WriteBarrierEnsureNonHeapTarget, Object **dst, Object *ref);
 
-extern "C" FCDECL2(Object*, ChkCastAny_NoCacheLookup, CORINFO_CLASS_HANDLE type, Object* obj);
-extern "C" FCDECL2(Object*, IsInstanceOfAny_NoCacheLookup, CORINFO_CLASS_HANDLE type, Object* obj);
-
-// ARM64 JIT_WriteBarrier uses speciall ABI and thus is not callable directly
+// ARM64 JIT_WriteBarrier uses special ABI and thus is not callable directly
 // Copied write barriers must be called at a different location
 extern "C" FCDECL2(VOID, JIT_WriteBarrier_Callable, Object **dst, Object *ref);
 
@@ -355,24 +354,19 @@ extern "C"
 {
 #ifndef FEATURE_EH_FUNCLETS
     void STDCALL JIT_EndCatch();               // JIThelp.asm/JIThelp.s
-#endif // TARGET_X86
+#endif // FEATURE_EH_FUNCLETS
 
     void STDCALL JIT_ByRefWriteBarrier();      // JIThelp.asm/JIThelp.s
 
-#if defined(TARGET_AMD64) || defined(TARGET_ARM)
-
-    FCDECL2VA(void, JIT_TailCall, PCODE copyArgs, PCODE target);
-
-#else // TARGET_AMD64 || TARGET_ARM
-
+#if defined(TARGET_X86) && !defined(UNIX_X86_ABI)
     void STDCALL JIT_TailCall();                    // JIThelp.asm
-
-#endif // TARGET_AMD64 || TARGET_ARM
+#endif // defined(TARGET_X86) && !defined(UNIX_X86_ABI)
 
     void STDMETHODCALLTYPE JIT_ProfilerEnterLeaveTailcallStub(UINT_PTR ProfilerHandle);
 #if !defined(TARGET_ARM64) && !defined(TARGET_LOONGARCH64) && !defined(TARGET_RISCV64)
+    // TODO: implement stack probing for other architectures https://github.com/dotnet/runtime/issues/13519
     void STDCALL JIT_StackProbe();
-#endif // TARGET_ARM64
+#endif // !defined(TARGET_ARM64) && !defined(TARGET_LOONGARCH64) && !defined(TARGET_RISCV64)
 };
 
 /*********************************************************************/
@@ -508,16 +502,6 @@ public:
     void setJitFlags(const CORJIT_FLAGS& jitFlags);
 
 private:
-    // Shrinking these buffers drastically reduces the amount of stack space
-    // required for each instance of the interpreter, and thereby reduces SOs.
-#ifdef FEATURE_INTERPRETER
-#define CLS_STRING_SIZE 8  // force heap allocation
-#define CLS_BUFFER_SIZE SBUFFER_PADDED_SIZE(8)
-#else
-#define CLS_STRING_SIZE MAX_CLASSNAME_LENGTH
-#define CLS_BUFFER_SIZE MAX_CLASSNAME_LENGTH
-#endif
-
 #ifdef _DEBUG
     InlineSString<MAX_CLASSNAME_LENGTH> ssClsNameBuff;
     InlineSString<MAX_CLASSNAME_LENGTH> ssClsNameBuffUTF8;
@@ -1045,10 +1029,8 @@ OBJECTHANDLE ConstructStringLiteral(CORINFO_MODULE_HANDLE scopeHnd, mdToken meta
 
 FCDECL2(Object*, JIT_Box_MP_FastPortable, CORINFO_CLASS_HANDLE type, void* data);
 FCDECL2(Object*, JIT_Box, CORINFO_CLASS_HANDLE type, void* data);
-FCDECL0(VOID, JIT_PollGC);
 
 BOOL ObjIsInstanceOf(Object *pObject, TypeHandle toTypeHnd, BOOL throwCastException = FALSE);
-BOOL ObjIsInstanceOfCore(Object* pObject, TypeHandle toTypeHnd, BOOL throwCastException = FALSE);
 
 #ifdef HOST_64BIT
 class InlinedCallFrame;

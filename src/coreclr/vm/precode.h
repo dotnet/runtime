@@ -531,7 +531,6 @@ public:
     PTR_PCODE GetTargetSlot();
 
     MethodDesc *  GetMethodDesc(BOOL fSpeculative = FALSE);
-    BOOL          IsCorrectMethodDesc(MethodDesc *  pMD);
 
     static Precode* Allocate(PrecodeType t, MethodDesc* pMD,
         LoaderAllocator *pLoaderAllocator, AllocMemTracker *pamTracker);

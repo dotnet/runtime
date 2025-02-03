@@ -602,21 +602,21 @@ inline GenTreeFlags& operator ^=(GenTreeFlags& a, GenTreeFlags b)
 //------------------------------------------------------------------------
 // GenTreeDebugFlags: a bitmask of debug-only flags for GenTree stored in gtDebugFlags
 //
-enum GenTreeDebugFlags : unsigned int
+enum GenTreeDebugFlags : unsigned short
 {
-    GTF_DEBUG_NONE              = 0x00000000, // No debug flags.
+    GTF_DEBUG_NONE              = 0x0000, // No debug flags.
 
-    GTF_DEBUG_NODE_MORPHED      = 0x00000001, // the node has been morphed (in the global morphing phase)
-    GTF_DEBUG_NODE_SMALL        = 0x00000002,
-    GTF_DEBUG_NODE_LARGE        = 0x00000004,
-    GTF_DEBUG_NODE_CG_PRODUCED  = 0x00000008, // genProduceReg has been called on this node
-    GTF_DEBUG_NODE_CG_CONSUMED  = 0x00000010, // genConsumeReg has been called on this node
-    GTF_DEBUG_NODE_LSRA_ADDED   = 0x00000020, // This node was added by LSRA
+    GTF_DEBUG_NODE_MORPHED      = 0x0001, // the node has been morphed (in the global morphing phase)
+    GTF_DEBUG_NODE_SMALL        = 0x0002,
+    GTF_DEBUG_NODE_LARGE        = 0x0004,
+    GTF_DEBUG_NODE_CG_PRODUCED  = 0x0008, // genProduceReg has been called on this node
+    GTF_DEBUG_NODE_CG_CONSUMED  = 0x0010, // genConsumeReg has been called on this node
+    GTF_DEBUG_NODE_LSRA_ADDED   = 0x0020, // This node was added by LSRA
 
-    GTF_DEBUG_NODE_MASK         = 0x0000003F, // These flags are all node (rather than operation) properties.
+    GTF_DEBUG_NODE_MASK         = 0x003F, // These flags are all node (rather than operation) properties.
 
-    GTF_DEBUG_VAR_CSE_REF       = 0x00800000, // GT_LCL_VAR -- This is a CSE LCL_VAR node
-    GTF_DEBUG_CAST_DONT_FOLD    = 0x00400000, // GT_CAST    -- Try to prevent this cast from being folded
+    GTF_DEBUG_VAR_CSE_REF       = 0x8000, // GT_LCL_VAR -- This is a CSE LCL_VAR node
+    GTF_DEBUG_CAST_DONT_FOLD    = 0x4000, // GT_CAST    -- Try to prevent this cast from being folded
 };
 
 inline constexpr GenTreeDebugFlags operator ~(GenTreeDebugFlags a)
@@ -972,7 +972,26 @@ public:
 
 #if defined(DEBUG)
     GenTreeDebugFlags gtDebugFlags;
-#endif // defined(DEBUG)
+    unsigned short    gtMorphCount;
+    void              SetMorphed(Compiler* compiler, bool doChilren = false);
+
+    bool WasMorphed() const
+    {
+        return (gtDebugFlags & GTF_DEBUG_NODE_MORPHED) != 0;
+    }
+
+    void ClearMorphed()
+    {
+        gtDebugFlags &= ~GTF_DEBUG_NODE_MORPHED;
+    }
+#else
+    void SetMorphed(Compiler* compiler, bool doChildren = false)
+    {
+    }
+    void ClearMorphed()
+    {
+    }
+#endif
 
     ValueNumPair gtVNPair;
 
@@ -2138,6 +2157,11 @@ public:
     void Clear64RsltMul()
     {
         gtFlags &= ~GTF_MUL_64RSLT;
+    }
+
+    bool IsPartOfAddressMode()
+    {
+        return OperIs(GT_ADD, GT_MUL, GT_LSH) && ((gtFlags & GTF_ADDRMODE_NO_CSE) != 0);
     }
 
     void SetAllEffectsFlags(GenTree* source)
@@ -3562,7 +3586,7 @@ private:
     }
 };
 
-// Common supertype of [STORE_]LCL_VAR, [STORE_]LCL_FLD, PHI_ARG, LCL_VAR_ADDR, LCL_FLD_ADDR.
+// Common supertype of [STORE_]LCL_VAR, [STORE_]LCL_FLD, PHI_ARG, LCL_ADDR.
 // This inherits from UnOp because lclvar stores are unary.
 //
 struct GenTreeLclVarCommon : public GenTreeUnOp
@@ -4203,6 +4227,7 @@ enum GenTreeCallFlags : unsigned int
     GTF_CALL_M_CAST_CAN_BE_EXPANDED    = 0x04000000, // this cast (helper call) can be expanded if it's profitable. To be removed.
     GTF_CALL_M_CAST_OBJ_NONNULL        = 0x08000000, // if we expand this specific cast we don't need to check the input object for null
                                                      // NOTE: if needed, this flag can be removed, and we can introduce new _NONNUL cast helpers
+    GTF_CALL_M_STACK_ARRAY             = 0x10000000, // this call is a new array helper for a stack allocated array.
 };
 
 inline constexpr GenTreeCallFlags operator ~(GenTreeCallFlags a)
@@ -4542,6 +4567,7 @@ enum class WellKnownArg : unsigned
     SwiftError,
     SwiftSelf,
     X86TailCallSpecialArg,
+    StackArrayLocal,
 };
 
 #ifdef DEBUG
@@ -7562,12 +7588,12 @@ private:
 
 public:
     GenTreeArrAddr(GenTree* addr, var_types elemType, CORINFO_CLASS_HANDLE elemClassHandle, uint8_t firstElemOffset)
-        : GenTreeUnOp(GT_ARR_ADDR, TYP_BYREF, addr DEBUGARG(/* largeNode */ false))
+        : GenTreeUnOp(GT_ARR_ADDR, addr->TypeGet(), addr DEBUGARG(/* largeNode */ false))
         , m_elemClassHandle(elemClassHandle)
         , m_elemType(elemType)
         , m_firstElemOffset(firstElemOffset)
     {
-        assert(addr->TypeIs(TYP_BYREF));
+        assert(addr->TypeIs(TYP_BYREF, TYP_I_IMPL));
         assert(((elemType == TYP_STRUCT) && (elemClassHandle != NO_CLASS_HANDLE)) ||
                (elemClassHandle == NO_CLASS_HANDLE));
     }
@@ -7917,6 +7943,7 @@ struct GenTreeIndir : public GenTreeOp
         return gtOp2;
     }
 
+    bool     IsAddressNotOnHeap(Compiler* comp);
     bool     HasBase();
     bool     HasIndex();
     GenTree* Base();

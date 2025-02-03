@@ -119,15 +119,30 @@ namespace System.Formats.Asn1
 
             ulong integralValue;
 
-            if (backingType == typeof(ulong))
+            // When widening from a signed type to a ulong it must zero extend not sign extend. Convert to unsigned
+            // types first for zero extension.
+            if (backingType == typeof(sbyte))
             {
+                integralValue = unchecked((byte)Convert.ToSByte(value));
+            }
+            else if (backingType == typeof(short))
+            {
+                integralValue = unchecked((ushort)Convert.ToInt16(value));
+            }
+            else if (backingType == typeof(int))
+            {
+                integralValue = unchecked((uint)Convert.ToInt32(value));
+            }
+            else if (backingType == typeof(ulong))
+            {
+                // long is handled in the catch all, this handles ulong specifically since it may not fit in a long.
                 integralValue = Convert.ToUInt64(value);
             }
             else
             {
-                // All other types fit in a (signed) long.
-                long numericValue = Convert.ToInt64(value);
-                integralValue = unchecked((ulong)numericValue);
+                // Other unsigned types fit in a long without concern for their sign.
+                // This also handles a signed long, which doesn't need to be widened.
+                integralValue = unchecked((ulong)Convert.ToInt64(value));
             }
 
             WriteNamedBitList(tag, integralValue);

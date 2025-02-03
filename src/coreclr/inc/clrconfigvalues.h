@@ -361,34 +361,6 @@ RETAIL_CONFIG_DWORD_INFO(INTERNAL_MultiCoreJitNoProfileGather, W("MultiCoreJitNo
 
 #endif
 
-#ifdef FEATURE_INTERPRETER
-///
-/// Interpreter
-///
-RETAIL_CONFIG_STRING_INFO(INTERNAL_Interpret, W("Interpret"), "Selectively uses the interpreter to execute the specified methods")
-RETAIL_CONFIG_STRING_INFO(INTERNAL_InterpretExclude, W("InterpretExclude"), "Excludes the specified methods from the set selected by 'Interpret'")
-RETAIL_CONFIG_DWORD_INFO(INTERNAL_InterpreterMethHashMin, W("InterpreterMethHashMin"), 0, "Only interpret methods selected by 'Interpret' whose hash is at least this value. or after nth")
-RETAIL_CONFIG_DWORD_INFO(INTERNAL_InterpreterMethHashMax, W("InterpreterMethHashMax"), UINT32_MAX, "If non-zero, only interpret methods selected by 'Interpret' whose hash is at most this value")
-RETAIL_CONFIG_DWORD_INFO(INTERNAL_InterpreterStubMin, W("InterpreterStubMin"), 0, "Only interpret methods selected by 'Interpret' whose stub num is at least this value.")
-RETAIL_CONFIG_DWORD_INFO(INTERNAL_InterpreterStubMax, W("InterpreterStubMax"), UINT32_MAX, "If non-zero, only interpret methods selected by 'Interpret' whose stub number is at most this value.")
-RETAIL_CONFIG_DWORD_INFO(INTERNAL_InterpreterJITThreshold, W("InterpreterJITThreshold"), 10, "The number of times a method should be interpreted before being JITted")
-RETAIL_CONFIG_DWORD_INFO(INTERNAL_InterpreterDoLoopMethods, W("InterpreterDoLoopMethods"), 0, "If set, don't check for loops, start by interpreting *all* methods")
-RETAIL_CONFIG_DWORD_INFO(INTERNAL_InterpreterUseCaching, W("InterpreterUseCaching"), 1, "If non-zero, use the caching mechanism.")
-RETAIL_CONFIG_DWORD_INFO(INTERNAL_InterpreterLooseRules, W("InterpreterLooseRules"), 1, "If non-zero, allow ECMA spec violations required by managed C++.")
-RETAIL_CONFIG_DWORD_INFO(INTERNAL_InterpreterPrintPostMortem, W("InterpreterPrintPostMortem"), 0, "Prints summary information about the execution to the console")
-RETAIL_CONFIG_STRING_INFO(INTERNAL_InterpreterLogFile, W("InterpreterLogFile"), "If non-null, append interpreter logging to this file, else use stdout")
-RETAIL_CONFIG_DWORD_INFO(INTERNAL_DumpInterpreterStubs, W("DumpInterpreterStubs"), 0, "Prints all interpreter stubs that are created to the console")
-RETAIL_CONFIG_DWORD_INFO(INTERNAL_TraceInterpreterEntries, W("TraceInterpreterEntries"), 0, "Logs entries to interpreted methods to the console")
-RETAIL_CONFIG_DWORD_INFO(INTERNAL_TraceInterpreterIL, W("TraceInterpreterIL"), 0, "Logs individual instructions of interpreted methods to the console")
-RETAIL_CONFIG_DWORD_INFO(INTERNAL_TraceInterpreterOstack, W("TraceInterpreterOstack"), 0, "Logs operand stack after each IL instruction of interpreted methods to the console")
-CONFIG_DWORD_INFO(INTERNAL_TraceInterpreterVerbose, W("TraceInterpreterVerbose"), 0, "Logs interpreter progress with detailed messages to the console")
-CONFIG_DWORD_INFO(INTERNAL_TraceInterpreterJITTransition, W("TraceInterpreterJITTransition"), 0, "Logs when the interpreter determines a method should be JITted")
-RETAIL_CONFIG_DWORD_INFO(INTERNAL_ForceInterpreter, W("ForceInterpreter"), 0, "If non-zero, force the interpreter to be used")
-RETAIL_CONFIG_DWORD_INFO(INTERNAL_InterpreterHWIntrinsicsIsSupportedFalse, W("InterpreterHWIntrinsicsIsSupportedFalse"), 0, "If non-zero, force get_IsSupported to return false for hardware intrinsics") // for internal testing purposes
-#endif
-// The JIT queries this ConfigDWORD but it doesn't know if FEATURE_INTERPRETER is enabled
-RETAIL_CONFIG_DWORD_INFO(INTERNAL_InterpreterFallback, W("InterpreterFallback"), 0, "Fallback to the interpreter when the JIT compiler fails")
-
 ///
 /// Loader heap
 ///
@@ -515,36 +487,6 @@ RETAIL_CONFIG_DWORD_INFO(INTERNAL_Thread_DeadThreadGCTriggerPeriodMilliseconds, 
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_Thread_UseAllCpuGroups, W("Thread_UseAllCpuGroups"), 0, "Specifies whether to query and use CPU group information for determining the processor count.")
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_Thread_AssignCpuGroups, W("Thread_AssignCpuGroups"), 1, "Specifies whether to automatically distribute threads created by the CLR across CPU Groups. Effective only when Thread_UseAllCpuGroups and GCCpuGroup are enabled.")
 RETAIL_CONFIG_DWORD_INFO_EX(EXTERNAL_ProcessorCount, W("PROCESSOR_COUNT"), 0, "Specifies the number of processors available for the process, which is returned by Environment.ProcessorCount", CLRConfig::LookupOptions::ParseIntegerAsBase10)
-
-///
-/// Threadpool
-///
-RETAIL_CONFIG_DWORD_INFO(INTERNAL_ThreadPool_ForceMinWorkerThreads, W("ThreadPool_ForceMinWorkerThreads"), 0, "Overrides the MinThreads setting for the ThreadPool worker pool")
-RETAIL_CONFIG_DWORD_INFO(INTERNAL_ThreadPool_ForceMaxWorkerThreads, W("ThreadPool_ForceMaxWorkerThreads"), 0, "Overrides the MaxThreads setting for the ThreadPool worker pool")
-RETAIL_CONFIG_DWORD_INFO(INTERNAL_ThreadPool_DisableStarvationDetection, W("ThreadPool_DisableStarvationDetection"), 0, "Disables the ThreadPool feature that forces new threads to be added when workitems run for too long")
-RETAIL_CONFIG_DWORD_INFO(INTERNAL_ThreadPool_DebugBreakOnWorkerStarvation, W("ThreadPool_DebugBreakOnWorkerStarvation"), 0, "Breaks into the debugger if the ThreadPool detects work queue starvation")
-RETAIL_CONFIG_DWORD_INFO(INTERNAL_ThreadPool_EnableWorkerTracking, W("ThreadPool_EnableWorkerTracking"), 0, "Enables extra expensive tracking of how many workers threads are working simultaneously")
-#ifdef TARGET_ARM64
-// Spinning scheme is currently different on ARM64
-RETAIL_CONFIG_DWORD_INFO(INTERNAL_ThreadPool_UnfairSemaphoreSpinLimit, W("ThreadPool_UnfairSemaphoreSpinLimit"), 0x32, "Maximum number of spins per processor a thread pool worker thread performs before waiting for work")
-#else // !TARGET_ARM64
-RETAIL_CONFIG_DWORD_INFO(INTERNAL_ThreadPool_UnfairSemaphoreSpinLimit, W("ThreadPool_UnfairSemaphoreSpinLimit"), 0x46, "Maximum number of spins a thread pool worker thread performs before waiting for work")
-#endif // TARGET_ARM64
-
-RETAIL_CONFIG_DWORD_INFO(INTERNAL_HillClimbing_Disable,                             W("HillClimbing_Disable"),                            0, "Disables hill climbing for thread adjustments in the thread pool");
-RETAIL_CONFIG_DWORD_INFO(INTERNAL_HillClimbing_WavePeriod,                          W("HillClimbing_WavePeriod"),                         4, "");
-RETAIL_CONFIG_DWORD_INFO(INTERNAL_HillClimbing_TargetSignalToNoiseRatio,            W("HillClimbing_TargetSignalToNoiseRatio"),           300, "");
-RETAIL_CONFIG_DWORD_INFO(INTERNAL_HillClimbing_ErrorSmoothingFactor,                W("HillClimbing_ErrorSmoothingFactor"),               1, "");
-RETAIL_CONFIG_DWORD_INFO(INTERNAL_HillClimbing_WaveMagnitudeMultiplier,             W("HillClimbing_WaveMagnitudeMultiplier"),            100, "");
-RETAIL_CONFIG_DWORD_INFO(INTERNAL_HillClimbing_MaxWaveMagnitude,                    W("HillClimbing_MaxWaveMagnitude"),                   20, "");
-RETAIL_CONFIG_DWORD_INFO(INTERNAL_HillClimbing_WaveHistorySize,                     W("HillClimbing_WaveHistorySize"),                    8, "");
-RETAIL_CONFIG_DWORD_INFO(INTERNAL_HillClimbing_Bias,                                W("HillClimbing_Bias"),                               15, "The 'cost' of a thread.  0 means drive for increased throughput regardless of thread count; higher values bias more against higher thread counts.");
-RETAIL_CONFIG_DWORD_INFO(INTERNAL_HillClimbing_MaxChangePerSecond,                  W("HillClimbing_MaxChangePerSecond"),                 4, "");
-RETAIL_CONFIG_DWORD_INFO(INTERNAL_HillClimbing_MaxChangePerSample,                  W("HillClimbing_MaxChangePerSample"),                 20, "");
-RETAIL_CONFIG_DWORD_INFO(INTERNAL_HillClimbing_MaxSampleErrorPercent,               W("HillClimbing_MaxSampleErrorPercent"),              15, "");
-RETAIL_CONFIG_DWORD_INFO(INTERNAL_HillClimbing_SampleIntervalLow,                   W("HillClimbing_SampleIntervalLow"),                  10, "");
-RETAIL_CONFIG_DWORD_INFO(INTERNAL_HillClimbing_SampleIntervalHigh,                  W("HillClimbing_SampleIntervalHigh"),                 200, "");
-RETAIL_CONFIG_DWORD_INFO(INTERNAL_HillClimbing_GainExponent,                        W("HillClimbing_GainExponent"),                       200, "The exponent to apply to the gain, times 100.  100 means to use linear gain, higher values will enhance large moves and damp small ones.");
 
 ///
 /// Tiered Compilation

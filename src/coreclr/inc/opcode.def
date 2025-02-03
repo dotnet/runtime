@@ -3,7 +3,7 @@
 
 /*****************************************************************************
  **                                                                         **
- ** Opcode.def - COM+ Intrinsic Opcodes and Macros.                         **
+ ** Opcode.def - CLR Intrinsic Opcodes and Macros.                         **
  **                                                                         **
  ** This is the master table from which all opcode lists                    **
  ** are derived.  New instructions must be added to this                    **
