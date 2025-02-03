@@ -190,11 +190,6 @@
     <WasmCommonTargetsPath>$([MSBuild]::NormalizeDirectory($(WasmProjectRoot), 'build'))</WasmCommonTargetsPath>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(DotNetBuildRuntimeNativeAOTRuntimePack)' == 'true'">
-    <BuildNativeAOTRuntimePack>true</BuildNativeAOTRuntimePack>
-    <SkipLibrariesNativeRuntimePackages>true</SkipLibrariesNativeRuntimePackages>
-  </PropertyGroup>
-
   <PropertyGroup Condition="'$(DotNetBuildMonoCrossAOT)' == 'true'">
     <BuildMonoAOTCrossCompilerOnly>true</BuildMonoAOTCrossCompilerOnly>
     <MonoCrossAOTTargetOS>android+browser+wasi</MonoCrossAOTTargetOS>

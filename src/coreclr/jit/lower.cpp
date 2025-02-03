@@ -2817,7 +2817,7 @@ GenTree* Lowering::LowerCall(GenTree* node)
 
 #if defined(TARGET_AMD64) || defined(TARGET_ARM64)
     GenTree* nextNode = nullptr;
-    if (call->gtCallMoreFlags & GTF_CALL_M_SPECIAL_INTRINSIC)
+    if (call->IsSpecialIntrinsic())
     {
         switch (comp->lookupNamedIntrinsic(call->gtCallMethHnd))
         {

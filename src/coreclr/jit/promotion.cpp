@@ -1491,19 +1491,15 @@ private:
 
                 flags |= AccessKindFlags::IsCallArg;
 
-#if FEATURE_MULTIREG_ARGS
                 if (!call->gtArgs.IsNewAbiInformationDetermined())
                 {
                     call->gtArgs.DetermineNewABIInfo(m_compiler, call);
                 }
 
-                if (!arg.NewAbiInfo.HasAnyStackSegment() && !arg.NewAbiInfo.HasExactlyOneRegisterSegment())
+                if (!arg.NewAbiInfo.HasAnyStackSegment() && !arg.AbiInfo.PassedByRef)
                 {
-                    // TODO-CQ: Support for other register args than multireg
-                    // args as well.
                     flags |= AccessKindFlags::IsRegCallArg;
                 }
-#endif
 
                 break;
             }
@@ -2058,7 +2054,7 @@ void ReplaceVisitor::InsertPreStatementWriteBacks()
 
                     if (m_replacer->CanReplaceCallArgWithFieldListOfReplacements(call, &arg, node->AsLclVarCommon()))
                     {
-                        // Multi-reg arg; can decompose into FIELD_LIST.
+                        // Register arg that can be decomposed into FIELD_LIST.
                         continue;
                     }
 
@@ -2175,7 +2171,7 @@ bool ReplaceVisitor::ReplaceCallArgWithFieldList(GenTreeCall* call, GenTreeLclVa
     {
         Replacement* rep = nullptr;
         if (agg->OverlappingReplacements(argNode->GetLclOffs() + seg.Offset, seg.Size, &rep, nullptr) &&
-            rep->NeedsWriteBack)
+            !rep->NeedsReadBack)
         {
             GenTreeLclVar* fieldValue = m_compiler->gtNewLclvNode(rep->LclNum, rep->AccessType);
 
@@ -2247,15 +2243,10 @@ bool ReplaceVisitor::CanReplaceCallArgWithFieldListOfReplacements(GenTreeCall*  
                                                                   CallArg*             callArg,
                                                                   GenTreeLclVarCommon* lcl)
 {
-#if !FEATURE_MULTIREG_ARGS
-    // TODO-CQ: We should do a similar thing for structs passed in a single
-    // register.
-    return false;
-#else
     // We should have computed ABI information during the costing phase.
     assert(call->gtArgs.IsNewAbiInformationDetermined());
 
-    if (callArg->NewAbiInfo.HasAnyStackSegment() || callArg->NewAbiInfo.HasExactlyOneRegisterSegment())
+    if (callArg->NewAbiInfo.HasAnyStackSegment() || callArg->AbiInfo.PassedByRef)
     {
         return false;
     }
@@ -2311,7 +2302,6 @@ bool ReplaceVisitor::CanReplaceCallArgWithFieldListOfReplacements(GenTreeCall*  
     }
 
     return anyReplacements;
-#endif
 }
 
 //------------------------------------------------------------------------
