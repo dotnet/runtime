@@ -13,9 +13,11 @@
         We have specific jobs that produce RID-agnostic packages or packages for multiple RIDs set this property.
       - For some target RIDs, we also include specific RID-agnostic packages.
 
+      VMR jobs control whether or not a vertical has EnableDefaultArtifacts set to true or false in DotNetBuild.props.
+
       Packages that do not meet the above rules are added with Vertical visibility in the VMR and excluded in non-VMR builds.
     -->
-    <EnableDefaultArtifacts>false</EnableDefaultArtifacts>
+    <EnableDefaultArtifacts Condition="'$(DotNetBuildOrchestrator)' != 'true'">false</EnableDefaultArtifacts>
   </PropertyGroup>
 
   <!--

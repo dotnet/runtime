@@ -111,7 +111,7 @@
         In the future, some full-stack VMR jobs may not publish all packages.
         SourceBuild will always need to publish everything.
       -->
-      <InnerBuildArgs Condition="'$(ShortStack)' != 'true'">$(InnerBuildArgs) /p:EnableDefaultArtifacts=true</InnerBuildArgs>
+      <InnerBuildArgs Condition="'$(ShortStack)' == 'true'">$(InnerBuildArgs) /p:EnableDefaultArtifacts=false</InnerBuildArgs>
     </PropertyGroup>
   </Target>
 
