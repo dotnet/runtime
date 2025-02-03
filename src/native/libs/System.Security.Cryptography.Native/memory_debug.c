@@ -5,6 +5,7 @@
 #include "memory_debug.h"
 
 #include <pthread.h>
+#include <string.h>
 #include <assert.h>
 #include <stdatomic.h>
 
