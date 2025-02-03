@@ -843,6 +843,17 @@ GenTree* Compiler::impStoreStruct(GenTree*         store,
             // TODO-Bug?: verify if flags matter here
             GenTreeFlags indirFlags = GTF_EMPTY;
             GenTree*     destAddr   = impGetNodeAddr(store, CHECK_SPILL_ALL, &indirFlags);
+
+            if (!impIsAddressInLocal(destAddr) && (!destAddr->OperIsScalarLocal() || (destAddr->AsLclVarCommon()->GetLclNum() != info.compRetBuffArg)))
+            {
+                unsigned tmp = lvaGrabTemp(false DEBUGARG("stack copy for value returned via return buffer"));
+                lvaSetStruct(tmp, srcCall->gtRetClsHnd, false);
+                GenTree* comma = gtNewOperNode(GT_COMMA, store->TypeGet(), gtNewStoreLclVarNode(tmp, srcCall), gtNewLclvNode(tmp, lvaGetDesc(tmp)->TypeGet()));
+                store->Data() = comma;
+                comma->AsOp()->gtOp1 = impStoreStruct(comma->gtGetOp1(), curLevel, pAfterStmt, di, block);
+                return impStoreStruct(store, curLevel, pAfterStmt, di, block);
+            }
+
             NewCallArg   newArg     = NewCallArg::Primitive(destAddr).WellKnown(wellKnownArgType);
 
             if (destAddr->OperIs(GT_LCL_ADDR))
@@ -953,6 +964,22 @@ GenTree* Compiler::impStoreStruct(GenTree*         store,
             // TODO-Bug?: verify if flags matter here
             GenTreeFlags indirFlags = GTF_EMPTY;
             GenTree*     destAddr   = impGetNodeAddr(store, CHECK_SPILL_ALL, &indirFlags);
+
+            if (!impIsAddressInLocal(destAddr) && (!destAddr->OperIsScalarLocal() || (destAddr->AsLclVarCommon()->GetLclNum() != info.compRetBuffArg)))
+            {
+                unsigned tmp = lvaGrabTemp(false DEBUGARG("stack copy for value returned via return buffer"));
+                lvaSetStruct(tmp, call->gtRetClsHnd, false);
+                destAddr = gtNewLclVarAddrNode(tmp, TYP_BYREF);
+                // Insert address of temp into existing call
+                call->gtArgs.InsertAfterThisOrFirst(this,
+                    NewCallArg::Primitive(destAddr).WellKnown(WellKnownArg::RetBuffer));
+                // Now the store needs to copy from the new temp instead.
+                store->Data() = gtNewLclvNode(tmp, lvaGetDesc(tmp)->TypeGet());
+                call->gtType = TYP_VOID;
+                src->gtType = TYP_VOID;
+                return gtNewOperNode(GT_COMMA, TYP_VOID, src, impStoreStruct(store, CHECK_SPILL_ALL, pAfterStmt, di, block));
+            }
+
             call->gtArgs.InsertAfterThisOrFirst(this,
                                                 NewCallArg::Primitive(destAddr).WellKnown(WellKnownArg::RetBuffer));
 

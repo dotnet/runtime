@@ -1466,6 +1466,16 @@ extern "C" HCIMPL2_RAW(VOID, JIT_WriteBarrierEnsureNonHeapTarget, Object **dst, 
 }
 HCIMPLEND_RAW
 
+extern "C" HCIMPL1_RAW(VOID, JIT_EnsureNonHeapTarget, void *dst)
+{
+    STATIC_CONTRACT_MODE_COOPERATIVE;
+    STATIC_CONTRACT_THROWS;
+    STATIC_CONTRACT_GC_NOTRIGGER;
+
+    _ASSERT(!GCHeapUtilities::GetGCHeap()->IsHeapPointer(dst));
+}
+HCIMPLEND_RAW
+
 // This function sets the card table with the granularity of 1 byte, to avoid ghost updates
 //    that could occur if multiple threads were trying to set different bits in the same card.
 

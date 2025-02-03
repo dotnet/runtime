@@ -131,6 +131,7 @@ namespace Internal.JitInterface
         CORINFO_HELP_ASSIGN_REF,        // universal helpers with F_CALL_CONV calling convention
         CORINFO_HELP_CHECKED_ASSIGN_REF,
         CORINFO_HELP_ASSIGN_REF_ENSURE_NONHEAP,  // Do the store, and ensure that the target was not in the heap.
+        CORINFO_HELP_ENSURE_NONHEAP,             // Ensure that the target was not in the heap.
 
         CORINFO_HELP_ASSIGN_BYREF,
         CORINFO_HELP_BULK_WRITEBARRIER,
