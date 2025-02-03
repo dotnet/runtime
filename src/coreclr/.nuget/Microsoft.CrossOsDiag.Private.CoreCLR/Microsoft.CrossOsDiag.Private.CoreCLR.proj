@@ -29,13 +29,10 @@
 
   <Target Name="BuildCrossOSDacs">
     <ItemGroup>
-      <_CrossOSDacProject Include="@(SupportedRid->'$(CoreClrProjectRoot)runtime.proj')"
+      <_CrossOSDacProject Include="@(SupportedRid->'$(RepoRoot)Build.proj')"
                           AdditionalProperties="TargetOS=%(TargetOS);
                                                 TargetArchitecture=%(TargetArchitecture);
-                                                ClrDebugSubset=true;
-                                                HostArchitecture=%(HostArch);
-                                                NoPgoOptimize=true;
-                                                CMakeArgs=$(CMakeArgs) -DCLR_CROSS_COMPONENTS_BUILD=1" />
+                                                Subset=linuxdac+alpinedac" />
       <_RuntimePrereqsProject Include="$(CoreClrProjectRoot)runtime-prereqs.proj" />
     </ItemGroup>
 
