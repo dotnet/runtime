@@ -23,9 +23,12 @@ public sealed class StressLogFactory : IContractFactory<IStressLog>
     }
 }
 
-#pragma warning disable CS9107 // Parameter 'Target target' is captured into the state of the enclosing type and its value is also passed to the base constructor. The value might be captured by the base class as well.
-// Shared portions of the contract for versions 0 through 2
-file abstract class StressLog_1_2(Target target) : IStressLog
+file interface IStressMessageReader
+{
+    StressMsgData GetStressMsgData(Data.StressMsg msg, Func<ulong, TargetPointer> getFormatPointerFromOffset);
+}
+
+file sealed class StressLogTraversal(Target target, IStressMessageReader messageReader)
 {
     private bool StressLogChunkValid(Data.StressLogChunk chunk)
     {
@@ -101,7 +104,7 @@ file abstract class StressLog_1_2(Target target) : IStressLog
         }
     }
 
-    protected TargetPointer GetFormatPointer(ulong formatOffset)
+    private TargetPointer GetFormatPointer(ulong formatOffset)
     {
         if (target.ReadGlobal<byte>(Constants.Globals.StressLogHasModuleTable) == 0)
         {
@@ -126,8 +129,6 @@ file abstract class StressLog_1_2(Target target) : IStressLog
 
         return TargetPointer.Null;
     }
-
-    protected abstract StressMsgData GetStressMsgData(Data.StressMsg msg);
 
     public IEnumerable<StressMsgData> GetStressMessages(ThreadStressLogData threadLog)
     {
@@ -208,7 +209,7 @@ file abstract class StressLog_1_2(Target target) : IStressLog
 
             // Read the message and return it to the caller.
             Data.StressMsg message = target.ProcessedData.GetOrAdd<Data.StressMsg>(readPointer);
-            StressMsgData parsedMessage = GetStressMsgData(message);
+            StressMsgData parsedMessage = messageReader.GetStressMsgData(message, GetFormatPointer);
             yield return parsedMessage;
 
             // Advance the read pointer
@@ -267,9 +268,9 @@ file abstract class StressLog_1_2(Target target) : IStressLog
     }
 }
 
-file sealed class StressLog_1(Target target) : StressLog_1_2(target)
+file sealed class SmallStressMessageReader(Target target) : IStressMessageReader
 {
-    protected override StressMsgData GetStressMsgData(Data.StressMsg msg)
+    public StressMsgData GetStressMsgData(Data.StressMsg msg, Func<ulong, TargetPointer> getFormatPointerFromOffset)
     {
         // Message header layout:
         // struct
@@ -291,15 +292,15 @@ file sealed class StressLog_1(Target target) : StressLog_1_2(target)
 
         return new StressMsgData(
             Facility: target.Read<uint>((ulong)msg.Header + 4),
-            FormatString: GetFormatPointer(((payload >> 3) & ((1 << 26) - 1))),
+            FormatString: getFormatPointerFromOffset(((payload >> 3) & ((1 << 26) - 1))),
             Timestamp: target.Read<ulong>((ulong)msg.Header + 8),
             Args: args);
     }
 }
 
-file sealed class StressLog_2(Target target) : StressLog_1_2(target)
+file sealed class LargeStressMessageReader(Target target) : IStressMessageReader
 {
-    protected override StressMsgData GetStressMsgData(Data.StressMsg msg)
+    public StressMsgData GetStressMsgData(Data.StressMsg msg, Func<ulong, TargetPointer> getFormatPointerFromOffset)
     {
         // Message header layout:
         // struct
@@ -328,8 +329,33 @@ file sealed class StressLog_2(Target target) : StressLog_1_2(target)
 
         return new StressMsgData(
             Facility: (uint)payload1,
-            FormatString: GetFormatPointer(formatOffset),
+            FormatString: getFormatPointerFromOffset(formatOffset),
             Timestamp: payload2 >> 13,
             Args: args);
     }
+}
+
+file sealed class StressLog_1(Target target) : IStressLog
+{
+    private readonly StressLogTraversal traversal = new(target, new SmallStressMessageReader(target));
+
+    public bool HasStressLog() => traversal.HasStressLog();
+    public StressLogData GetStressLogData() => traversal.GetStressLogData();
+    public StressLogData GetStressLogData(TargetPointer stressLog) => traversal.GetStressLogData(stressLog);
+    public IEnumerable<ThreadStressLogData> GetThreadStressLogs(TargetPointer Logs) => traversal.GetThreadStressLogs(Logs);
+    public IEnumerable<StressMsgData> GetStressMessages(ThreadStressLogData threadLog) => traversal.GetStressMessages(threadLog);
+    public bool IsPointerInStressLog(StressLogData stressLog, TargetPointer pointer) => traversal.IsPointerInStressLog(stressLog, pointer);
+}
+
+
+file sealed class StressLog_2(Target target) : IStressLog
+{
+    private readonly StressLogTraversal traversal = new(target, new LargeStressMessageReader(target));
+
+    public bool HasStressLog() => traversal.HasStressLog();
+    public StressLogData GetStressLogData() => traversal.GetStressLogData();
+    public StressLogData GetStressLogData(TargetPointer stressLog) => traversal.GetStressLogData(stressLog);
+    public IEnumerable<ThreadStressLogData> GetThreadStressLogs(TargetPointer Logs) => traversal.GetThreadStressLogs(Logs);
+    public IEnumerable<StressMsgData> GetStressMessages(ThreadStressLogData threadLog) => traversal.GetStressMessages(threadLog);
+    public bool IsPointerInStressLog(StressLogData stressLog, TargetPointer pointer) => traversal.IsPointerInStressLog(stressLog, pointer);
 }

@@ -22,7 +22,6 @@ public sealed class PrintfStressMessageFormatter
         string FormatStackTrace(TargetPointer pointer);
     }
 
-
     private record struct PaddingFormat(int Width, char FormatChar, int Precision = 6);
 
     private readonly Target _target;
