@@ -48,6 +48,7 @@ namespace System.Security.Cryptography.Pkcs
         public Pkcs12CertBag(System.Security.Cryptography.Oid certificateType, System.ReadOnlyMemory<byte> encodedCertificate) : base (default(string), default(System.ReadOnlyMemory<byte>), default(bool)) { }
         public System.ReadOnlyMemory<byte> EncodedCertificate { get { throw null; } }
         public bool IsX509Certificate { get { throw null; } }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public System.Security.Cryptography.X509Certificates.X509Certificate2 GetCertificate() { throw null; }
         public System.Security.Cryptography.Oid GetCertificateType() { throw null; }
     }
