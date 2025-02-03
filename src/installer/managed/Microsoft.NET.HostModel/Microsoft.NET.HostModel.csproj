@@ -23,7 +23,7 @@
     <PackageReference Include="System.Reflection.Metadata" Version="$(SystemReflectionMetadataToolsetVersion)" />
     <PackageReference Include="System.Memory" Version="$(SystemMemoryVersion)" />
 
-    <ProjectReference Include="$(LibrariesProjectRoot)System.Text.Json\src\System.Text.Json.csproj" SetConfiguration="Configuration=$(LibrariesConfiguration)" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Text.Json\src\System.Text.Json.csproj" />
   </ItemGroup>
 
   <ItemGroup>
