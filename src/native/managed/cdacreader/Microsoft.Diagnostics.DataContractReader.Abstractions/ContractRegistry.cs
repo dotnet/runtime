@@ -9,7 +9,7 @@ namespace Microsoft.Diagnostics.DataContractReader;
 /// <summary>
 /// A registry of all the contracts that may be provided by a target.
 /// </summary>
-internal abstract class ContractRegistry
+public abstract class ContractRegistry
 {
     /// <summary>
     /// Gets an instance of the Exception contract for the target.

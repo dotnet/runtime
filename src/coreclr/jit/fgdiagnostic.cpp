@@ -955,6 +955,10 @@ bool Compiler::fgDumpFlowGraph(Phases phase, PhasePosition pos)
             {
                 fprintf(fgxFile, "\n            hot=\"true\"");
             }
+            if (block->HasFlag(BBF_HAS_NEWARR))
+            {
+                fprintf(fgxFile, "\n            callsNewArr=\"true\"");
+            }
             if (block->HasFlag(BBF_HAS_NEWOBJ))
             {
                 fprintf(fgxFile, "\n            callsNew=\"true\"");
@@ -4704,6 +4708,7 @@ void Compiler::fgDebugCheckLoops()
         {
             assert(loop->EntryEdges().size() == 1);
             assert(loop->EntryEdge(0)->getSourceBlock()->KindIs(BBJ_ALWAYS));
+            assert(!bbIsTryBeg(loop->GetHeader()));
 
             loop->VisitRegularExitBlocks([=](BasicBlock* exit) {
                 for (BasicBlock* pred : exit->PredBlocks())

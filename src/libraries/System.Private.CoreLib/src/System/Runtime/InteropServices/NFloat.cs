@@ -1247,17 +1247,26 @@ namespace System.Runtime.InteropServices
         /// <inheritdoc cref="INumber{TSelf}.Clamp(TSelf, TSelf, TSelf)" />
         public static NFloat Clamp(NFloat value, NFloat min, NFloat max) => new NFloat(NativeType.Clamp(value._value, min._value, max._value));
 
+        /// <inheritdoc cref="INumber{TSelf}.Clamp(TSelf, TSelf, TSelf)" />
+        public static NFloat ClampNative(NFloat value, NFloat min, NFloat max) => new NFloat(NativeType.ClampNative(value._value, min._value, max._value));
+
         /// <inheritdoc cref="INumber{TSelf}.CopySign(TSelf, TSelf)" />
         public static NFloat CopySign(NFloat value, NFloat sign) => new NFloat(NativeType.CopySign(value._value, sign._value));
 
         /// <inheritdoc cref="INumber{TSelf}.Max(TSelf, TSelf)" />
         public static NFloat Max(NFloat x, NFloat y) => new NFloat(NativeType.Max(x._value, y._value));
 
+        /// <inheritdoc cref="INumber{TSelf}.MaxNative(TSelf, TSelf)" />
+        public static NFloat MaxNative(NFloat x, NFloat y) => new NFloat(NativeType.MaxNative(x._value, y._value));
+
         /// <inheritdoc cref="INumber{TSelf}.MaxNumber(TSelf, TSelf)" />
         public static NFloat MaxNumber(NFloat x, NFloat y) => new NFloat(NativeType.MaxNumber(x._value, y._value));
 
         /// <inheritdoc cref="INumber{TSelf}.Min(TSelf, TSelf)" />
         public static NFloat Min(NFloat x, NFloat y) => new NFloat(NativeType.Min(x._value, y._value));
+
+        /// <inheritdoc cref="INumber{TSelf}.MinNative(TSelf, TSelf)" />
+        public static NFloat MinNative(NFloat x, NFloat y) => new NFloat(NativeType.MinNative(x._value, y._value));
 
         /// <inheritdoc cref="INumber{TSelf}.MinNumber(TSelf, TSelf)" />
         public static NFloat MinNumber(NFloat x, NFloat y) => new NFloat(NativeType.MinNumber(x._value, y._value));
@@ -1401,6 +1410,7 @@ namespace System.Runtime.InteropServices
             return TryConvertFrom(value, out result);
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static bool TryConvertFrom<TOther>(TOther value, out NFloat result)
             where TOther : INumberBase<TOther>
         {
@@ -1640,6 +1650,7 @@ namespace System.Runtime.InteropServices
             return TryConvertTo(value, out result);
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static bool TryConvertTo<TOther>(NFloat value, [MaybeNullWhen(false)] out TOther result)
             where TOther : INumberBase<TOther>
         {

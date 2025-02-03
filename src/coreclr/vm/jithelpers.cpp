@@ -96,11 +96,6 @@ using std::isnan;
 #include <optsmallperfcritical.h>
 
 //
-// helper macro to multiply two 32-bit uints
-//
-#define Mul32x32To64(a, b)  ((UINT64)((UINT32)(a)) * (UINT64)((UINT32)(b)))
-
-//
 // helper macro to get high 32-bit of 64-bit int
 //
 #define Hi32Bits(a)         ((UINT32)((UINT64)(a) >> 32))
@@ -115,12 +110,6 @@ using std::isnan;
 HCIMPL2_VV(INT64, JIT_LMul, INT64 val1, INT64 val2)
 {
     FCALL_CONTRACT;
-
-    UINT32 val1High = Hi32Bits(val1);
-    UINT32 val2High = Hi32Bits(val2);
-
-    if ((val1High == 0) && (val2High == 0))
-        return Mul32x32To64(val1, val2);
 
     return (val1 * val2);
 }
@@ -936,7 +925,7 @@ HCIMPL2(Object *, JIT_StrCns, unsigned rid, CORINFO_MODULE_HANDLE scopeHnd)
 
     HELPER_METHOD_FRAME_BEGIN_RET_0();
 
-    // Retrieve the handle to the COM+ string object.
+    // Retrieve the handle to the CLR string object.
     hndStr = ConstructStringLiteral(scopeHnd, RidToToken(rid, mdtString));
     HELPER_METHOD_FRAME_END();
 
@@ -1508,61 +1497,6 @@ HCIMPL3(void, Jit_NativeMemSet, void* pDest, int value, size_t length)
 }
 HCIMPLEND
 
-NOINLINE HCIMPL1(Object*, JIT_GetRuntimeType_Framed, CORINFO_CLASS_HANDLE type)
-{
-    FCALL_CONTRACT;
-
-    TypeHandle typeHandle(type);
-
-    // Array/other type handle case.
-    OBJECTREF refType = typeHandle.GetManagedClassObjectIfExists();
-    if (refType == NULL)
-    {
-        HELPER_METHOD_FRAME_BEGIN_RET_1(refType);
-        refType = typeHandle.GetManagedClassObject();
-        HELPER_METHOD_FRAME_END();
-    }
-
-    return OBJECTREFToObject(refType);
-}
-HCIMPLEND
-
-#include <optsmallperfcritical.h>
-HCIMPL1(Object*, JIT_GetRuntimeType, CORINFO_CLASS_HANDLE type)
-{
-    FCALL_CONTRACT;
-
-    TypeHandle typeHnd(type);
-
-    if (!typeHnd.IsTypeDesc())
-    {
-        // Most common... and fastest case
-        OBJECTREF typePtr = typeHnd.AsMethodTable()->GetManagedClassObjectIfExists();
-        if (typePtr != NULL)
-        {
-            return OBJECTREFToObject(typePtr);
-        }
-    }
-
-    ENDFORBIDGC();
-    return HCCALL1(JIT_GetRuntimeType_Framed, type);
-}
-HCIMPLEND
-
-HCIMPL1(Object*, JIT_GetRuntimeType_MaybeNull, CORINFO_CLASS_HANDLE type)
-{
-    FCALL_CONTRACT;
-
-    if (type == NULL)
-        return NULL;;
-
-    ENDFORBIDGC();
-    return HCCALL1(JIT_GetRuntimeType, type);
-}
-HCIMPLEND
-#include <optdefault.h>
-
-
 // Helper for synchronized static methods in shared generics code
 #include <optsmallperfcritical.h>
 HCIMPL1(CORINFO_CLASS_HANDLE, JIT_GetClassFromMethodParam, CORINFO_METHOD_HANDLE methHnd_)
@@ -2100,31 +2034,6 @@ HCIMPLEND
 //
 //========================================================================
 
-/*********************************************************************/
-// Called by the JIT whenever a cee_break instruction should be executed.
-//
-HCIMPL0(void, JIT_UserBreakpoint)
-{
-    FCALL_CONTRACT;
-
-    HELPER_METHOD_FRAME_BEGIN_NOPOLL();    // Set up a frame
-
-#ifdef DEBUGGING_SUPPORTED
-    FrameWithCookie<DebuggerExitFrame> __def;
-
-    MethodDescCallSite debuggerBreak(METHOD__DEBUGGER__BREAK);
-
-    debuggerBreak.Call((ARG_SLOT*)NULL);
-
-    __def.Pop();
-#else // !DEBUGGING_SUPPORTED
-    _ASSERTE(!"JIT_UserBreakpoint called, but debugging support is not available in this build.");
-#endif // !DEBUGGING_SUPPORTED
-
-    HELPER_METHOD_FRAME_END_POLL();
-}
-HCIMPLEND
-
 #if defined(_MSC_VER)
 // VC++ Compiler intrinsic.
 extern "C" void * _ReturnAddress(void);
@@ -2226,100 +2135,59 @@ HRESULT EEToProfInterfaceImpl::SetEnterLeaveFunctionHooksForJit(FunctionEnter3 *
 //========================================================================
 
 /*************************************************************/
-// Slow helper to tailcall from the fast one
-NOINLINE HCIMPL0(void, JIT_PollGC_Framed)
-{
-    BEGIN_PRESERVE_LAST_ERROR;
-
-    FCALL_CONTRACT;
-    FC_GC_POLL_NOT_NEEDED();
-
-    HELPER_METHOD_FRAME_BEGIN_NOPOLL();    // Set up a frame
-#ifdef _DEBUG
-    BOOL GCOnTransition = FALSE;
-    if (g_pConfig->FastGCStressLevel()) {
-        GCOnTransition = GC_ON_TRANSITIONS (FALSE);
-    }
-#endif // _DEBUG
-    CommonTripThread();         // Indicate we are at a GC safe point
-#ifdef _DEBUG
-    if (g_pConfig->FastGCStressLevel()) {
-        GC_ON_TRANSITIONS (GCOnTransition);
-    }
-#endif // _DEBUG
-    HELPER_METHOD_FRAME_END();
-    END_PRESERVE_LAST_ERROR;
-}
-HCIMPLEND
-
-HCIMPL0(VOID, JIT_PollGC)
-{
-    FCALL_CONTRACT;
-
-    // As long as we can have GCPOLL_CALL polls, it would not hurt to check the trap flag.
-    if (!g_TrapReturningThreads)
-        return;
-
-    // Does someone want this thread stopped?
-    if (!GetThread()->CatchAtSafePoint())
-        return;
-
-    // Tailcall to the slow helper
-    ENDFORBIDGC();
-    HCCALL0(JIT_PollGC_Framed);
-}
-HCIMPLEND
-
-
-/*************************************************************/
 // This helper is similar to JIT_RareDisableHelper, but has more operations
 // tailored to the post-pinvoke operations.
-extern "C" FCDECL0(VOID, JIT_PInvokeEndRarePath);
+extern "C" VOID JIT_PInvokeEndRarePath();
 
-HCIMPL0(void, JIT_PInvokeEndRarePath)
+void JIT_PInvokeEndRarePath()
 {
     BEGIN_PRESERVE_LAST_ERROR;
-
-    FCALL_CONTRACT;
 
     Thread *thread = GetThread();
 
-    // We need to disable the implicit FORBID GC region that exists inside an FCALL
-    // in order to call RareDisablePreemptiveGC().
-    FC_CAN_TRIGGER_GC();
+    // We execute RareDisablePreemptiveGC manually before checking any abort conditions
+    // as that operation may run the allocator, etc, and we need to have handled any suspensions requested
+    // by the GC before we reach that point.
     thread->RareDisablePreemptiveGC();
-    FC_CAN_TRIGGER_GC_END();
 
-    FC_GC_POLL_NOT_NEEDED();
-
-    HELPER_METHOD_FRAME_BEGIN_NOPOLL();    // Set up a frame
-    thread->HandleThreadAbort();
-    HELPER_METHOD_FRAME_END();
+    if (thread->IsAbortRequested())
+    {
+        // This function is called after a pinvoke finishes, in the rare case that either a GC
+        // or ThreadAbort is requested. This means that the pinvoke frame is still on the stack and
+        // enabled, but the thread has been marked as returning to cooperative mode. Thus we can
+        // use that frame to provide GC suspension safety, but we need to manually call EnablePreemptiveGC
+        // and DisablePreemptiveGC to put the function in a state where the BEGIN_QCALL/END_QCALL macros
+        // will work correctly.
+        thread->EnablePreemptiveGC();
+        BEGIN_QCALL;
+        thread->HandleThreadAbort();
+        END_QCALL;
+        thread->DisablePreemptiveGC();
+    }
 
     thread->m_pFrame->Pop(thread);
 
     END_PRESERVE_LAST_ERROR;
 }
-HCIMPLEND
 
 /*************************************************************/
 // For an inlined N/Direct call (and possibly for other places that need this service)
 // we have noticed that the returning thread should trap for one reason or another.
 // ECall sets up the frame.
 
-extern "C" FCDECL0(VOID, JIT_RareDisableHelper);
+extern "C" VOID JIT_RareDisableHelper();
 
 #if defined(TARGET_ARM) || defined(TARGET_AMD64)
 // The JIT expects this helper to preserve the return value on AMD64 and ARM. We should eventually
 // switch other platforms to the same convention since it produces smaller code.
-extern "C" FCDECL0(VOID, JIT_RareDisableHelperWorker);
+extern "C" VOID JIT_RareDisableHelperWorker();
 
-HCIMPL0(void, JIT_RareDisableHelperWorker)
+void JIT_RareDisableHelperWorker()
 #else
-HCIMPL0(void, JIT_RareDisableHelper)
+void JIT_RareDisableHelper()
 #endif
 {
-    // We do this here (before we set up a frame), because the following scenario
+    // We do this here (before we enter the BEGIN_QCALL macro), because the following scenario
     // We are in the process of doing an inlined pinvoke.  Since we are in preemtive
     // mode, the thread is allowed to continue.  The thread continues and gets a context
     // switch just after it has cleared the preemptive mode bit but before it gets
@@ -2339,25 +2207,29 @@ HCIMPL0(void, JIT_RareDisableHelper)
 
     BEGIN_PRESERVE_LAST_ERROR;
 
-    FCALL_CONTRACT;
-
     Thread *thread = GetThread();
-
-    // We need to disable the implicit FORBID GC region that exists inside an FCALL
-    // in order to call RareDisablePreemptiveGC().
-    FC_CAN_TRIGGER_GC();
+    // We execute RareDisablePreemptiveGC manually before checking any abort conditions
+    // as that operation may run the allocator, etc, and we need to be have have handled any suspensions requested
+    // by the GC before we reach that point.
     thread->RareDisablePreemptiveGC();
-    FC_CAN_TRIGGER_GC_END();
 
-    FC_GC_POLL_NOT_NEEDED();
-
-    HELPER_METHOD_FRAME_BEGIN_NOPOLL();    // Set up a frame
-    thread->HandleThreadAbort();
-    HELPER_METHOD_FRAME_END();
+    if (thread->IsAbortRequested())
+    {
+        // This function is called after a pinvoke finishes, in the rare case that either a GC
+        // or ThreadAbort is requested. This means that the pinvoke frame is still on the stack and
+        // enabled, but the thread has been marked as returning to cooperative mode. Thus we can
+        // use that frame to provide GC suspension safety, but we need to manually call EnablePreemptiveGC
+        // and DisablePreemptiveGC to put the function in a state where the BEGIN_QCALL/END_QCALL macros
+        // will work correctly.
+        thread->EnablePreemptiveGC();
+        BEGIN_QCALL;
+        thread->HandleThreadAbort();
+        END_QCALL;
+        thread->DisablePreemptiveGC();
+    }
 
     END_PRESERVE_LAST_ERROR;
 }
-HCIMPLEND
 
 FCIMPL0(INT32, JIT_GetCurrentManagedThreadId)
 {

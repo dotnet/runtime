@@ -792,7 +792,7 @@ internal sealed unsafe partial class SOSDacImpl
             data->ThunkHeap = contract.GetThunkHeap(handle);
 
             Target.TypeInfo lookupMapTypeInfo = _target.GetTypeInfo(DataType.ModuleLookupMap);
-            ulong tableDataOffset = (ulong)lookupMapTypeInfo.Fields[nameof(Data.ModuleLookupMap.TableData)].Offset;
+            ulong tableDataOffset = (ulong)lookupMapTypeInfo.Fields[Constants.FieldNames.ModuleLookupMap.TableData].Offset;
 
             Contracts.ModuleLookupTables tables = contract.GetLookupTables(handle);
             data->FieldDefToDescMap = _target.ReadPointer(tables.FieldDefToDesc + tableDataOffset);
@@ -900,7 +900,7 @@ internal sealed unsafe partial class SOSDacImpl
 
             data->MethodTable = mt;
             data->Size = runtimeTypeSystemContract.GetBaseSize(handle);
-            data->dwComponentSize = runtimeTypeSystemContract.GetComponentSize(handle); ;
+            data->dwComponentSize = runtimeTypeSystemContract.GetComponentSize(handle);
 
             if (runtimeTypeSystemContract.IsFreeObjectMethodTable(handle))
             {
@@ -909,7 +909,7 @@ internal sealed unsafe partial class SOSDacImpl
                 // Free objects have their component count explicitly set at the same offset as that for arrays
                 // Update the size to include those components
                 Target.TypeInfo arrayTypeInfo = _target.GetTypeInfo(DataType.Array);
-                ulong numComponentsOffset = (ulong)_target.GetTypeInfo(DataType.Array).Fields[Data.Array.FieldNames.NumComponents].Offset;
+                ulong numComponentsOffset = (ulong)_target.GetTypeInfo(DataType.Array).Fields[Constants.FieldNames.Array.NumComponents].Offset;
                 data->Size += _target.Read<uint>(objAddr + numComponentsOffset) * data->dwComponentSize;
             }
             else if (mt == _stringMethodTable.Value)

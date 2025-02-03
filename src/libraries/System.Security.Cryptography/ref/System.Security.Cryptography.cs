@@ -1973,18 +1973,21 @@ namespace System.Security.Cryptography
     }
     public partial class Rfc2898DeriveBytes : System.Security.Cryptography.DeriveBytes
     {
-        [System.ObsoleteAttribute("The default hash algorithm and iteration counts in Rfc2898DeriveBytes constructors are outdated and insecure. Use a constructor that accepts the hash algorithm and the number of iterations.", DiagnosticId="SYSLIB0041", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
+        [System.ObsoleteAttribute("The constructors on Rfc2898DeriveBytes are obsolete. Use the static Pbkdf2 method instead.", DiagnosticId="SYSLIB0060", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
         public Rfc2898DeriveBytes(byte[] password, byte[] salt, int iterations) { }
+        [System.ObsoleteAttribute("The constructors on Rfc2898DeriveBytes are obsolete. Use the static Pbkdf2 method instead.", DiagnosticId="SYSLIB0060", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
         public Rfc2898DeriveBytes(byte[] password, byte[] salt, int iterations, System.Security.Cryptography.HashAlgorithmName hashAlgorithm) { }
-        [System.ObsoleteAttribute("The default hash algorithm and iteration counts in Rfc2898DeriveBytes constructors are outdated and insecure. Use a constructor that accepts the hash algorithm and the number of iterations.", DiagnosticId="SYSLIB0041", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
+        [System.ObsoleteAttribute("The constructors on Rfc2898DeriveBytes are obsolete. Use the static Pbkdf2 method instead.", DiagnosticId="SYSLIB0060", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
         public Rfc2898DeriveBytes(string password, byte[] salt) { }
-        [System.ObsoleteAttribute("The default hash algorithm and iteration counts in Rfc2898DeriveBytes constructors are outdated and insecure. Use a constructor that accepts the hash algorithm and the number of iterations.", DiagnosticId="SYSLIB0041", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
+        [System.ObsoleteAttribute("The constructors on Rfc2898DeriveBytes are obsolete. Use the static Pbkdf2 method instead.", DiagnosticId="SYSLIB0060", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
         public Rfc2898DeriveBytes(string password, byte[] salt, int iterations) { }
+        [System.ObsoleteAttribute("The constructors on Rfc2898DeriveBytes are obsolete. Use the static Pbkdf2 method instead.", DiagnosticId="SYSLIB0060", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
         public Rfc2898DeriveBytes(string password, byte[] salt, int iterations, System.Security.Cryptography.HashAlgorithmName hashAlgorithm) { }
-        [System.ObsoleteAttribute("The default hash algorithm and iteration counts in Rfc2898DeriveBytes constructors are outdated and insecure. Use a constructor that accepts the hash algorithm and the number of iterations.", DiagnosticId="SYSLIB0041", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
+        [System.ObsoleteAttribute("The constructors on Rfc2898DeriveBytes are obsolete. Use the static Pbkdf2 method instead.", DiagnosticId="SYSLIB0060", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
         public Rfc2898DeriveBytes(string password, int saltSize) { }
-        [System.ObsoleteAttribute("The default hash algorithm and iteration counts in Rfc2898DeriveBytes constructors are outdated and insecure. Use a constructor that accepts the hash algorithm and the number of iterations.", DiagnosticId="SYSLIB0041", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
+        [System.ObsoleteAttribute("The constructors on Rfc2898DeriveBytes are obsolete. Use the static Pbkdf2 method instead.", DiagnosticId="SYSLIB0060", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
         public Rfc2898DeriveBytes(string password, int saltSize, int iterations) { }
+        [System.ObsoleteAttribute("The constructors on Rfc2898DeriveBytes are obsolete. Use the static Pbkdf2 method instead.", DiagnosticId="SYSLIB0060", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
         public Rfc2898DeriveBytes(string password, int saltSize, int iterations, System.Security.Cryptography.HashAlgorithmName hashAlgorithm) { }
         public System.Security.Cryptography.HashAlgorithmName HashAlgorithm { get { throw null; } }
         public int IterationCount { get { throw null; } set { } }

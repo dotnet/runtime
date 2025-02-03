@@ -10142,6 +10142,8 @@ calli_end:
 							EMIT_NEW_PCONST (cfg, *sp, NULL);
 							sp++;
 						} else if (il_op == MONO_CEE_LDFLD || il_op == MONO_CEE_LDSFLD) {
+							// method_make_alwaysthrow_typeloadfailure currently doesn't work with inlining
+							INLINE_FAILURE("type load error");
 							// An object is expected here. It may be impossible to correctly infer its type,
 							// we turn this entire method into a throw.
 							method_make_alwaysthrow_typeloadfailure (cfg, klass);
@@ -11591,6 +11593,14 @@ mono_ldptr:
 
 			int dreg = alloc_preg (cfg);
 			EMIT_NEW_LOAD_MEMBASE (cfg, ins, OP_LOAD_MEMBASE, dreg, sp [0]->dreg, MONO_STRUCT_OFFSET (MonoDelegate, method_ptr));
+			*sp++ = ins;
+			break;
+		}
+		case MONO_CEE_MONO_LDVIRTFTN_DELEGATE: {
+			CHECK_STACK (2);
+			sp -= 2;
+
+			ins = mono_emit_jit_icall (cfg, mono_get_addr_compiled_method, sp);
 			*sp++ = ins;
 			break;
 		}

@@ -309,7 +309,7 @@ PhaseStatus Compiler::fgPostImportationCleanup()
     {
         // Update type of return spill temp if we have gathered
         // better info when importing the inlinee, and the return
-        // spill temp is single def.
+        // spill temp is single def or was freshly created for this inlinee
         if (fgNeedReturnSpillTemp())
         {
             CORINFO_CLASS_HANDLE retExprClassHnd = impInlineInfo->retExprClassHnd;
@@ -317,9 +317,11 @@ PhaseStatus Compiler::fgPostImportationCleanup()
             {
                 LclVarDsc* returnSpillVarDsc = lvaGetDesc(lvaInlineeReturnSpillTemp);
 
-                if ((returnSpillVarDsc->lvType == TYP_REF) && returnSpillVarDsc->lvSingleDef)
+                if (returnSpillVarDsc->lvType == TYP_REF &&
+                    (returnSpillVarDsc->lvSingleDef || lvaInlineeReturnSpillTempFreshlyCreated))
                 {
-                    lvaUpdateClass(lvaInlineeReturnSpillTemp, retExprClassHnd, impInlineInfo->retExprClassHndIsExact);
+                    lvaUpdateClass(lvaInlineeReturnSpillTemp, retExprClassHnd, impInlineInfo->retExprClassHndIsExact,
+                                   false);
                 }
             }
         }
@@ -655,7 +657,7 @@ PhaseStatus Compiler::fgPostImportationCleanup()
 
                         JITDUMP("Updating block weight for now-reachable try entry " FMT_BB " via " FMT_BB "\n",
                                 fromBlock->bbNum, fgFirstBB->bbNum);
-                        fromBlock->setBBProfileWeight(fromBlock->bbWeight + entryWeight);
+                        fromBlock->increaseBBProfileWeight(entryWeight);
 
                         // We updated the weight of fromBlock above.
                         //
@@ -1259,8 +1261,25 @@ void Compiler::fgUnreachableBlock(BasicBlock* block)
     // Mark the block as removed
     block->SetFlags(BBF_REMOVED);
 
-    // Update bbRefs and bbPreds for the blocks reached by this block
-    fgRemoveBlockAsPred(block);
+    // Update bbRefs and bbPreds for this block's successors
+    bool profileInconsistent = false;
+    for (BasicBlock* const succBlock : block->Succs(this))
+    {
+        FlowEdge* const succEdge = fgRemoveAllRefPreds(succBlock, block);
+
+        if (block->hasProfileWeight() && succBlock->hasProfileWeight())
+        {
+            succBlock->decreaseBBProfileWeight(succEdge->getLikelyWeight());
+            profileInconsistent |= (succBlock->NumSucc() > 0);
+        }
+    }
+
+    if (profileInconsistent)
+    {
+        JITDUMP("Flow removal of " FMT_BB " needs to be propagated. Data %s inconsistent.\n", block->bbNum,
+                fgPgoConsistent ? "is now" : "was already");
+        fgPgoConsistent = false;
+    }
 }
 
 //-------------------------------------------------------------
@@ -1317,30 +1336,7 @@ bool Compiler::fgOptimizeBranchToEmptyUnconditional(BasicBlock* block, BasicBloc
         }
 #endif // DEBUG
 
-        //
-        // When we optimize a branch to branch we need to update the profile weight
-        // of bDest by subtracting out the weight of the path that is being optimized.
-        //
-        if (bDest->hasProfileWeight())
-        {
-            FlowEdge* const edge = fgGetPredForBlock(bDest, block);
-            noway_assert(edge != nullptr);
-
-            const weight_t edgeWeight = edge->getLikelyWeight();
-
-            //
-            // Update the bDest->bbWeight
-            //
-            if (bDest->bbWeight > edgeWeight)
-            {
-                bDest->bbWeight -= edgeWeight;
-            }
-            else
-            {
-                bDest->bbWeight = BB_ZERO_WEIGHT;
-                bDest->SetFlags(BBF_RUN_RARELY); // Set the RarelyRun flag
-            }
-        }
+        weight_t removedWeight;
 
         // Optimize the JUMP to empty unconditional JUMP to go to the new target
         switch (block->GetKind())
@@ -1348,6 +1344,7 @@ bool Compiler::fgOptimizeBranchToEmptyUnconditional(BasicBlock* block, BasicBloc
             case BBJ_ALWAYS:
             case BBJ_CALLFINALLYRET:
             {
+                removedWeight = block->bbWeight;
                 fgRedirectTargetEdge(block, bDest->GetTarget());
                 break;
             }
@@ -1356,17 +1353,28 @@ bool Compiler::fgOptimizeBranchToEmptyUnconditional(BasicBlock* block, BasicBloc
                 if (block->TrueTargetIs(bDest))
                 {
                     assert(!block->FalseTargetIs(bDest));
+                    removedWeight = block->GetTrueEdge()->getLikelyWeight();
                     fgRedirectTrueEdge(block, bDest->GetTarget());
                 }
                 else
                 {
                     assert(block->FalseTargetIs(bDest));
+                    removedWeight = block->GetFalseEdge()->getLikelyWeight();
                     fgRedirectFalseEdge(block, bDest->GetTarget());
                 }
                 break;
 
             default:
                 unreached();
+        }
+
+        //
+        // When we optimize a branch to branch we need to update the profile weight
+        // of bDest by subtracting out the weight of the path that is being optimized.
+        //
+        if (bDest->hasProfileWeight())
+        {
+            bDest->decreaseBBProfileWeight(removedWeight);
         }
 
         return true;
@@ -1628,17 +1636,10 @@ bool Compiler::fgOptimizeSwitchBranches(BasicBlock* block)
             //
             FlowEdge* const oldEdge = *jmpTab;
 
-            if (fgIsUsingProfileWeights() && bDest->hasProfileWeight())
+            if (bDest->hasProfileWeight())
             {
                 weight_t const branchThroughWeight = oldEdge->getLikelyWeight();
-                if (bDest->bbWeight > branchThroughWeight)
-                {
-                    bDest->bbWeight -= branchThroughWeight;
-                }
-                else
-                {
-                    bDest->bbSetRunRarely();
-                }
+                bDest->decreaseBBProfileWeight(branchThroughWeight);
             }
 
             // Update the switch jump table
@@ -1676,6 +1677,11 @@ bool Compiler::fgOptimizeSwitchBranches(BasicBlock* block)
     {
         // Invalidate the set of unique targets for block, since we modified the targets
         fgInvalidateSwitchDescMapEntry(block);
+
+        JITDUMP(
+            "fgOptimizeSwitchBranches: Optimized switch flow. Profile needs to be re-propagated. Data %s consistent.\n",
+            fgPgoConsistent ? "is now" : "was already");
+        fgPgoConsistent = false;
     }
 
     Statement*  switchStmt = nullptr;
@@ -2209,27 +2215,6 @@ bool Compiler::fgOptimizeUncondBranchToSimpleCond(BasicBlock* block, BasicBlock*
     // At this point we know target is BBJ_COND.
     assert(target->KindIs(BBJ_COND));
 
-    // Bail out if OSR, as we can have unusual flow into loops. If one
-    // of target's successors is also a backedge target, this optimization
-    // may mess up loop recognition by creating too many non-loop preds.
-    //
-    if (opts.IsOSR())
-    {
-        if (target->GetFalseTarget()->HasFlag(BBF_BACKWARD_JUMP_TARGET))
-        {
-            JITDUMP("Deferring: " FMT_BB " --> " FMT_BB "; latter looks like loop top\n", target->bbNum,
-                    target->GetFalseTarget()->bbNum);
-            return false;
-        }
-
-        if (target->GetTrueTarget()->HasFlag(BBF_BACKWARD_JUMP_TARGET))
-        {
-            JITDUMP("Deferring: " FMT_BB " --> " FMT_BB "; latter looks like loop top\n", target->bbNum,
-                    target->GetTrueTarget()->bbNum);
-            return false;
-        }
-    }
-
     // See if this block assigns constant or other interesting tree to that same local.
     //
     if (!fgBlockEndFavorsTailDuplication(block, lclNum))
@@ -2277,7 +2262,7 @@ bool Compiler::fgOptimizeUncondBranchToSimpleCond(BasicBlock* block, BasicBlock*
         //
         weight_t targetWeight = target->bbWeight;
         weight_t blockWeight  = block->bbWeight;
-        target->setBBProfileWeight(max(0.0, targetWeight - blockWeight));
+        target->decreaseBBProfileWeight(blockWeight);
         JITDUMP("Decreased " FMT_BB " profile weight from " FMT_WT " to " FMT_WT "\n", target->bbNum, targetWeight,
                 target->bbWeight);
     }
@@ -2605,13 +2590,13 @@ bool Compiler::fgOptimizeBranch(BasicBlock* bJump)
         estDupCostSz += expr->GetCostSz();
     }
 
-    bool     allProfileWeightsAreValid = false;
-    weight_t weightJump                = bJump->bbWeight;
-    weight_t weightDest                = bDest->bbWeight;
-    weight_t weightNext                = bJump->Next()->bbWeight;
-    bool     rareJump                  = bJump->isRunRarely();
-    bool     rareDest                  = bDest->isRunRarely();
-    bool     rareNext                  = bJump->Next()->isRunRarely();
+    bool     haveProfileWeights = false;
+    weight_t weightJump         = bJump->bbWeight;
+    weight_t weightDest         = bDest->bbWeight;
+    weight_t weightNext         = bJump->Next()->bbWeight;
+    bool     rareJump           = bJump->isRunRarely();
+    bool     rareDest           = bDest->isRunRarely();
+    bool     rareNext           = bJump->Next()->isRunRarely();
 
     // If we have profile data then we calculate the number of time
     // the loop will iterate into loopIterations
@@ -2624,7 +2609,7 @@ bool Compiler::fgOptimizeBranch(BasicBlock* bJump)
             bDest->HasAnyFlag(BBF_PROF_WEIGHT | BBF_RUN_RARELY) &&
             bJump->Next()->HasAnyFlag(BBF_PROF_WEIGHT | BBF_RUN_RARELY))
         {
-            allProfileWeightsAreValid = true;
+            haveProfileWeights = true;
 
             if ((weightJump * 100) < weightDest)
             {
@@ -2681,9 +2666,9 @@ bool Compiler::fgOptimizeBranch(BasicBlock* bJump)
     if (verbose)
     {
         printf("\nDuplication of the conditional block " FMT_BB " (always branch from " FMT_BB
-               ") %s, because the cost of duplication (%i) is %s than %i, validProfileWeights = %s\n",
+               ") %s, because the cost of duplication (%i) is %s than %i, haveProfileWeights = %s\n",
                bDest->bbNum, bJump->bbNum, costIsTooHigh ? "not done" : "performed", estDupCostSz,
-               costIsTooHigh ? "greater" : "less or equal", maxDupCostSz, allProfileWeightsAreValid ? "true" : "false");
+               costIsTooHigh ? "greater" : "less or equal", maxDupCostSz, dspBool(haveProfileWeights));
     }
 #endif // DEBUG
 
@@ -2785,7 +2770,8 @@ bool Compiler::fgOptimizeBranch(BasicBlock* bJump)
 
     // bJump now falls through into the next block
     //
-    FlowEdge* const falseEdge = fgAddRefPred(bJump->Next(), bJump, destFalseEdge);
+    BasicBlock* const bDestFalseTarget = bJump->Next();
+    FlowEdge* const   falseEdge        = fgAddRefPred(bDestFalseTarget, bJump, destFalseEdge);
 
     // bJump now jumps to bDest's normal jump target
     //
@@ -2794,35 +2780,26 @@ bool Compiler::fgOptimizeBranch(BasicBlock* bJump)
 
     bJump->SetCond(bJump->GetTargetEdge(), falseEdge);
 
-    if (weightJump > 0)
+    // Update profile data
+    //
+    if (haveProfileWeights)
     {
-        if (allProfileWeightsAreValid)
-        {
-            if (weightDest > weightJump)
-            {
-                bDest->bbWeight = (weightDest - weightJump);
-            }
-            else if (!bDest->isRunRarely())
-            {
-                bDest->bbWeight = BB_UNITY_WEIGHT;
-            }
-        }
-        else
-        {
-            weight_t newWeightDest = 0;
+        // bJump no longer flows into bDest
+        //
+        bDest->decreaseBBProfileWeight(bJump->bbWeight);
+        bDestNormalTarget->decreaseBBProfileWeight(bJump->bbWeight * destFalseEdge->getLikelihood());
+        bDestFalseTarget->decreaseBBProfileWeight(bJump->bbWeight * destTrueEdge->getLikelihood());
 
-            if (weightDest > weightJump)
-            {
-                newWeightDest = (weightDest - weightJump);
-            }
-            if (weightDest >= (BB_LOOP_WEIGHT_SCALE * BB_UNITY_WEIGHT) / 2)
-            {
-                newWeightDest = (weightDest * 2) / (BB_LOOP_WEIGHT_SCALE * BB_UNITY_WEIGHT);
-            }
-            if (newWeightDest > 0)
-            {
-                bDest->bbWeight = newWeightDest;
-            }
+        // Propagate bJump's weight into its new successors
+        //
+        bDestNormalTarget->increaseBBProfileWeight(bJump->GetTrueEdge()->getLikelyWeight());
+        bDestFalseTarget->increaseBBProfileWeight(falseEdge->getLikelyWeight());
+
+        if ((bDestNormalTarget->NumSucc() > 0) || (bDestFalseTarget->NumSucc() > 0))
+        {
+            JITDUMP("fgOptimizeBranch: New flow out of " FMT_BB " needs to be propagated. Data %s inconsistent.\n",
+                    fgPgoConsistent ? "is now" : "was already");
+            fgPgoConsistent = false;
         }
     }
 
@@ -2944,14 +2921,17 @@ bool Compiler::fgOptimizeSwitchJumps()
 
         // Update profile data
         //
-        const weight_t fraction              = newBlock->GetSwitchTargets()->bbsDominantFraction;
-        const weight_t blockToTargetWeight   = block->bbWeight * fraction;
-        const weight_t blockToNewBlockWeight = block->bbWeight - blockToTargetWeight;
+        const weight_t fraction            = newBlock->GetSwitchTargets()->bbsDominantFraction;
+        const weight_t blockToTargetWeight = block->bbWeight * fraction;
 
-        newBlock->setBBProfileWeight(blockToNewBlockWeight);
+        newBlock->decreaseBBProfileWeight(blockToTargetWeight);
 
         blockToTargetEdge->setLikelihood(fraction);
         blockToNewBlockEdge->setLikelihood(max(0.0, 1.0 - fraction));
+
+        JITDUMP("fgOptimizeSwitchJumps: Updated flow into " FMT_BB " needs to be propagated. Data %s inconsistent.\n",
+                newBlock->bbNum, fgPgoConsistent ? "is now" : "was already");
+        fgPgoConsistent = false;
 
         // For now we leave the switch as is, since there's no way
         // to indicate that one of the cases is now unreachable.
@@ -3182,7 +3162,7 @@ bool Compiler::fgExpandRarelyRunBlocks()
         // If block is not run rarely, then check to make sure that it has
         // at least one non-rarely run block.
 
-        if (!block->isRunRarely())
+        if (!block->isRunRarely() && !block->isBBCallFinallyPairTail())
         {
             bool rare = true;
 
@@ -4842,7 +4822,7 @@ void Compiler::fgMoveColdBlocks()
         }
     };
 
-    BasicBlock* const lastMainBB = fgLastBBInMainFunction();
+    BasicBlock* lastMainBB = fgLastBBInMainFunction();
     if (lastMainBB->IsFirst())
     {
         return;
@@ -4869,15 +4849,41 @@ void Compiler::fgMoveColdBlocks()
 
     // We have moved all cold main blocks before lastMainBB to after lastMainBB.
     // If lastMainBB itself is cold, move it to the end of the method to restore its relative ordering.
+    // But first, we can't move just the tail of a call-finally pair,
+    // so point lastMainBB to the pair's head, if necessary.
     //
-    if (lastMainBB->isBBWeightCold(this) && !lastMainBB->isBBCallFinallyPairTail())
+    if (lastMainBB->isBBCallFinallyPairTail())
     {
+        lastMainBB = lastMainBB->Prev();
+    }
+
+    BasicBlock* lastHotBB = nullptr;
+    if (lastMainBB->isBBWeightCold(this))
+    {
+        // lastMainBB is cold, so the block behind it (if there is one) is the last hot block
+        //
+        lastHotBB = lastMainBB->Prev();
+
+        // Move lastMainBB
+        //
         BasicBlock* const newLastMainBB = fgLastBBInMainFunction();
         if (lastMainBB != newLastMainBB)
         {
             moveBlock(lastMainBB, newLastMainBB);
         }
     }
+    else
+    {
+        // lastMainBB isn't cold, so it (or its call-finally pair tail) the last hot block
+        //
+        lastHotBB = lastMainBB->isBBCallFinallyPair() ? lastMainBB->Next() : lastMainBB;
+    }
+
+    // Save the beginning of the cold section for later.
+    // If lastHotBB is null, there isn't a hot section,
+    // so there's no point in differentiating between sections for layout purposes.
+    //
+    fgFirstColdBlock = (lastHotBB == nullptr) ? nullptr : lastHotBB->Next();
 }
 
 //-----------------------------------------------------------------------------
@@ -4924,11 +4930,9 @@ void Compiler::fgMoveColdBlocks()
 Compiler::ThreeOptLayout::ThreeOptLayout(Compiler* comp)
     : compiler(comp)
     , cutPoints(comp->getAllocator(CMK_FlowEdge), &ThreeOptLayout::EdgeCmp)
-    , ordinals(new(comp, CMK_Generic) unsigned[comp->fgBBcount]{})
     , blockOrder(nullptr)
     , tempOrder(nullptr)
     , numCandidateBlocks(0)
-    , currEHRegion(0)
 {
 }
 
@@ -5121,12 +5125,8 @@ void Compiler::ThreeOptLayout::ConsiderEdge(FlowEdge* edge)
     BasicBlock* const srcBlk = edge->getSourceBlock();
     BasicBlock* const dstBlk = edge->getDestinationBlock();
 
-    // Any edges under consideration should be between reachable blocks
-    assert(compiler->m_dfsTree->Contains(srcBlk));
-    assert(compiler->m_dfsTree->Contains(dstBlk));
-
     // Ignore cross-region branches
-    if ((srcBlk->bbTryIndex != currEHRegion) || (dstBlk->bbTryIndex != currEHRegion))
+    if (!BasicBlock::sameTryRegion(srcBlk, dstBlk))
     {
         return;
     }
@@ -5147,13 +5147,18 @@ void Compiler::ThreeOptLayout::ConsiderEdge(FlowEdge* edge)
         return;
     }
 
-    const unsigned srcPos = ordinals[srcBlk->bbPostorderNum];
-    const unsigned dstPos = ordinals[dstBlk->bbPostorderNum];
+    const unsigned srcPos = srcBlk->bbPostorderNum;
+    const unsigned dstPos = dstBlk->bbPostorderNum;
+    assert(srcPos < compiler->m_dfsTree->GetPostOrderCount());
+    assert(dstPos < compiler->m_dfsTree->GetPostOrderCount());
 
-    // Don't consider edges from outside the hot range.
-    // If 'srcBlk' has an ordinal of zero and it isn't the first block,
-    // it's not tracked by 'ordinals', so it's not in the hot section.
-    if ((srcPos == 0) && !srcBlk->IsFirst())
+    // Don't consider edges to or from outside the hot range (i.e. ordinal doesn't match 'blockOrder' position).
+    if ((srcPos >= numCandidateBlocks) || (srcBlk != blockOrder[srcPos]))
+    {
+        return;
+    }
+
+    if ((dstPos >= numCandidateBlocks) || (dstBlk != blockOrder[dstPos]))
     {
         return;
     }
@@ -5220,25 +5225,24 @@ void Compiler::ThreeOptLayout::AddNonFallthroughPreds(unsigned blockPos)
 }
 
 //-----------------------------------------------------------------------------
-// Compiler::ThreeOptLayout::Run: Runs 3-opt for each contiguous region of the block list
-// we're interested in reordering.
+// Compiler::ThreeOptLayout::Run: Runs 3-opt on the candidate span of hot blocks.
 // We skip reordering handler regions for now, as these are assumed to be cold.
 //
 void Compiler::ThreeOptLayout::Run()
 {
-    // Walk backwards through the main method body, looking for the last hot block.
     // Since we moved all cold blocks to the end of the method already,
-    // we should have a span of hot blocks to consider reordering at the beginning of the method.
-    // While doing this, try to get as tight an upper bound for the number of hot blocks as possible.
-    // For methods without funclet regions, 'numBlocksUpperBound' is exact.
-    // Otherwise, it's off by the number of handler blocks.
-    BasicBlock* finalBlock;
-    unsigned    numBlocksUpperBound = compiler->fgBBcount;
-    for (finalBlock = compiler->fgLastBBInMainFunction();
-         !finalBlock->IsFirst() && finalBlock->isBBWeightCold(compiler); finalBlock = finalBlock->Prev())
-    {
-        numBlocksUpperBound--;
-    }
+    // we should have a span of hot blocks to consider reordering at the beginning of the method
+    // (unless none of the blocks are cold relative to the rest of the method,
+    // in which case we will reorder the whole main method body).
+    BasicBlock* const finalBlock = (compiler->fgFirstColdBlock != nullptr) ? compiler->fgFirstColdBlock->Prev()
+                                                                           : compiler->fgLastBBInMainFunction();
+
+    // Reset cold section pointer, in case we decide to do hot/cold splitting later
+    compiler->fgFirstColdBlock = nullptr;
+
+    // We better have an end block for the hot section, and it better not be the start of a call-finally pair.
+    assert(finalBlock != nullptr);
+    assert(!finalBlock->isBBCallFinallyPair());
 
     // For methods with fewer than three candidate blocks, we cannot partition anything
     if (finalBlock->IsFirst() || finalBlock->Prev()->IsFirst())
@@ -5247,82 +5251,29 @@ void Compiler::ThreeOptLayout::Run()
         return;
     }
 
-    // If only the first block of a call-finally pair is hot, include the whole pair in the hot section anyway.
-    // This ensures the call-finally pair won't be split up when swapping partitions.
-    if (finalBlock->isBBCallFinallyPair())
-    {
-        finalBlock = finalBlock->Next();
-        numBlocksUpperBound++;
-    }
-
+    // Get an upper bound on the number of hot blocks without walking the whole block list.
+    // We will only consider blocks reachable via normal flow.
+    const unsigned numBlocksUpperBound = compiler->m_dfsTree->GetPostOrderCount();
     assert(numBlocksUpperBound != 0);
-    blockOrder = new (compiler, CMK_BasicBlock) BasicBlock*[numBlocksUpperBound];
-    tempOrder  = new (compiler, CMK_BasicBlock) BasicBlock*[numBlocksUpperBound];
+    blockOrder = new (compiler, CMK_BasicBlock) BasicBlock*[numBlocksUpperBound * 2];
+    tempOrder  = (blockOrder + numBlocksUpperBound);
 
-    // Initialize the current block order.
-    // Note that we default-initialized 'ordinals' with zeros.
-    // Block reordering shouldn't change the method's entry point,
-    // so if a block has an ordinal of zero and it's not 'fgFirstBB',
-    // the block wasn't visited below, so it's not in the range of candidate blocks.
-    unsigned nextPostorderNum = compiler->m_dfsTree->GetPostOrderCount();
+    // Initialize the current block order
     for (BasicBlock* const block : compiler->Blocks(compiler->fgFirstBB, finalBlock))
     {
+        if (!compiler->m_dfsTree->Contains(block))
+        {
+            continue;
+        }
+
         assert(numCandidateBlocks < numBlocksUpperBound);
         blockOrder[numCandidateBlocks] = tempOrder[numCandidateBlocks] = block;
 
-        // Unreachable blocks should have been pushed out of the candidate set of blocks.
-        // However, the entries of unreachable EH regions are left in-place to facilitate reestablishing contiguity,
-        // so it is possible for us to encounter unreachable blocks.
-        // When we do, assign them postorder numbers that can be used as keys into 'ordinals'.
-        if (!compiler->m_dfsTree->Contains(block))
-        {
-            assert(nextPostorderNum < compiler->fgBBcount);
-            block->bbPostorderNum = nextPostorderNum++;
-        }
-
-        assert(ordinals[block->bbPostorderNum] == 0);
-        ordinals[block->bbPostorderNum] = numCandidateBlocks++;
-
-        // While walking the span of blocks to reorder,
-        // remember where each try region ends within this span.
-        // We'll use this information to run 3-opt per region.
-        EHblkDsc* const HBtab = compiler->ehGetBlockTryDsc(block);
-        if (HBtab != nullptr)
-        {
-            HBtab->ebdTryLast = block;
-        }
+        // Repurpose 'bbPostorderNum' for the block's ordinal
+        block->bbPostorderNum = numCandidateBlocks++;
     }
 
-    // Reorder try regions first
-    bool modified = false;
-    for (EHblkDsc* const HBtab : EHClauses(compiler))
-    {
-        // If multiple region indices map to the same region,
-        // make sure we reorder its blocks only once
-        BasicBlock* const tryBeg = HBtab->ebdTryBeg;
-        if (tryBeg->getTryIndex() != currEHRegion++)
-        {
-            continue;
-        }
-
-        // Ignore try regions unreachable via normal flow
-        if (!compiler->m_dfsTree->Contains(tryBeg))
-        {
-            continue;
-        }
-
-        // Only reorder try regions within the candidate span of blocks.
-        if ((ordinals[tryBeg->bbPostorderNum] != 0) || tryBeg->IsFirst())
-        {
-            JITDUMP("Running 3-opt for try region #%d\n", (currEHRegion - 1));
-            modified |= RunThreeOptPass(tryBeg, HBtab->ebdTryLast);
-        }
-    }
-
-    // Finally, reorder the main method body
-    currEHRegion = 0;
-    JITDUMP("Running 3-opt for main method body\n");
-    modified |= RunThreeOptPass(compiler->fgFirstBB, blockOrder[numCandidateBlocks - 1]);
+    const bool modified = RunThreeOptPass();
 
     if (modified)
     {
@@ -5331,14 +5282,25 @@ void Compiler::ThreeOptLayout::Run()
             BasicBlock* const block = blockOrder[i - 1];
             BasicBlock* const next  = blockOrder[i];
 
-            // Only reorder within EH regions to maintain contiguity.
-            // TODO: Allow moving blocks in different regions when 'next' is the region entry.
-            // This would allow us to move entire regions up/down because of the contiguity requirement.
-            if (!block->NextIs(next) && BasicBlock::sameEHRegion(block, next))
+            if (block->NextIs(next))
             {
-                compiler->fgUnlinkBlock(next);
-                compiler->fgInsertBBafter(block, next);
+                continue;
             }
+
+            // Only reorder within EH regions to maintain contiguity.
+            if (!BasicBlock::sameEHRegion(block, next))
+            {
+                continue;
+            }
+
+            // Don't move the entry of an EH region.
+            if (compiler->bbIsTryBeg(next) || compiler->bbIsHandlerBeg(next))
+            {
+                continue;
+            }
+
+            compiler->fgUnlinkBlock(next);
+            compiler->fgInsertBBafter(block, next);
         }
     }
 }
@@ -5386,8 +5348,8 @@ bool Compiler::ThreeOptLayout::RunGreedyThreeOptPass(unsigned startPos, unsigned
 
         BasicBlock* const srcBlk = candidateEdge->getSourceBlock();
         BasicBlock* const dstBlk = candidateEdge->getDestinationBlock();
-        const unsigned    srcPos = ordinals[srcBlk->bbPostorderNum];
-        const unsigned    dstPos = ordinals[dstBlk->bbPostorderNum];
+        const unsigned    srcPos = srcBlk->bbPostorderNum;
+        const unsigned    dstPos = dstBlk->bbPostorderNum;
 
         // This edge better be between blocks in the current region
         assert((srcPos >= startPos) && (srcPos <= endPos));
@@ -5407,7 +5369,7 @@ bool Compiler::ThreeOptLayout::RunGreedyThreeOptPass(unsigned startPos, unsigned
             continue;
         }
 
-        // Before getting any edges, make sure 'ordinals' is accurate
+        // Before getting any edges, make sure the ordinals are accurate
         assert(blockOrder[srcPos] == srcBlk);
         assert(blockOrder[dstPos] == dstBlk);
 
@@ -5483,12 +5445,6 @@ bool Compiler::ThreeOptLayout::RunGreedyThreeOptPass(unsigned startPos, unsigned
                     continue;
                 }
 
-                // Don't consider any cut points that would move try/handler entries
-                if (compiler->bbIsTryBeg(s3BlockPrev) || compiler->bbIsHandlerBeg(s3BlockPrev))
-                {
-                    continue;
-                }
-
                 // Compute the cost delta of this partition
                 const weight_t currCost = currCostBase + GetCost(s3BlockPrev, s3Block);
                 const weight_t newCost =
@@ -5519,11 +5475,11 @@ bool Compiler::ThreeOptLayout::RunGreedyThreeOptPass(unsigned startPos, unsigned
         // Update the ordinals for the blocks we moved
         for (unsigned i = s2Start; i <= endPos; i++)
         {
-            ordinals[blockOrder[i]->bbPostorderNum] = i;
+            blockOrder[i]->bbPostorderNum = i;
         }
 
         // Ensure this move created fallthrough from 'srcBlk' to 'dstBlk'
-        assert((ordinals[srcBlk->bbPostorderNum] + 1) == ordinals[dstBlk->bbPostorderNum]);
+        assert((srcBlk->bbPostorderNum + 1) == dstBlk->bbPostorderNum);
 
         // At every cut point is an opportunity to consider more candidate edges.
         // To the left of each cut point, consider successor edges that don't fall through.
@@ -5546,24 +5502,16 @@ bool Compiler::ThreeOptLayout::RunGreedyThreeOptPass(unsigned startPos, unsigned
 }
 
 //-----------------------------------------------------------------------------
-// Compiler::ThreeOptLayout::RunThreeOptPass: Runs 3-opt for the given block range.
-//
-// Parameters:
-//   startBlock - The first block of the range to reorder
-//   endBlock - The last block (inclusive) of the range to reorder
+// Compiler::ThreeOptLayout::RunThreeOptPass: Runs 3-opt on the candidate span of blocks.
 //
 // Returns:
 //   True if we reordered anything, false otherwise
 //
-bool Compiler::ThreeOptLayout::RunThreeOptPass(BasicBlock* startBlock, BasicBlock* endBlock)
+bool Compiler::ThreeOptLayout::RunThreeOptPass()
 {
-    assert(startBlock != nullptr);
-    assert(endBlock != nullptr);
-
-    const unsigned startPos  = ordinals[startBlock->bbPostorderNum];
-    const unsigned endPos    = ordinals[endBlock->bbPostorderNum];
+    const unsigned startPos  = 0;
+    const unsigned endPos    = numCandidateBlocks - 1;
     const unsigned numBlocks = (endPos - startPos + 1);
-    assert((startPos != 0) || startBlock->IsFirst());
     assert(startPos <= endPos);
 
     if (numBlocks < 3)
@@ -6122,6 +6070,15 @@ bool Compiler::fgUpdateFlowGraph(bool doTailDuplication /* = false */, bool isPh
         }
     } while (change);
 
+    // OSR entry blocks will frequently have a profile imbalance as original method execution was hijacked at them.
+    // Mark the profile as inconsistent if we might have propagated the OSR entry weight.
+    if (modified && opts.IsOSR())
+    {
+        JITDUMP("fgUpdateFlowGraph: Inconsistent OSR entry weight may have been propagated. Data %s consistent.\n",
+                fgPgoConsistent ? "is now" : "was already");
+        fgPgoConsistent = false;
+    }
+
 #ifdef DEBUG
     if (!isPhase)
     {
@@ -6633,6 +6590,13 @@ PhaseStatus Compiler::fgHeadTailMerge(bool early)
                     FlowEdge* const newEdge = fgAddRefPred(crossJumpTarget, predBlock);
                     predBlock->SetKindAndTargetEdge(BBJ_ALWAYS, newEdge);
                 }
+
+                // For tail merge we have a common successor of predBlock and
+                // crossJumpTarget, so the profile update can be done locally.
+                if (crossJumpTarget->hasProfileWeight())
+                {
+                    crossJumpTarget->increaseBBProfileWeight(predBlock->bbWeight);
+                }
             }
 
             // We changed things
@@ -6777,12 +6741,6 @@ PhaseStatus Compiler::fgHeadTailMerge(bool early)
     {
         madeChanges |= fgHeadMerge(block, early);
     }
-
-    // If we altered flow, reset fgModified. Given where we sit in the
-    // phase list, flow-dependent side data hasn't been built yet, so
-    // nothing needs invalidation.
-    //
-    fgModified = false;
 
     return madeChanges ? PhaseStatus::MODIFIED_EVERYTHING : PhaseStatus::MODIFIED_NOTHING;
 }
