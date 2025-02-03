@@ -2150,6 +2150,7 @@ namespace Internal.IL
         {
             var field = ResolveFieldToken(token);
             bool isPermanentHome = false;
+            bool isReadOnly = false;
 
             TypeDesc instance;
             if (isStatic)
@@ -2160,7 +2161,7 @@ namespace Internal.IL
                 instance = null;
 
                 if (field.IsInitOnly)
-                    Check(_method.IsStaticConstructor && field.OwningType == _method.OwningType, VerifierError.InitOnly);
+                    isReadOnly = true;
             }
             else
             {
@@ -2188,7 +2189,7 @@ namespace Internal.IL
 
             Check(_method.OwningType.CanAccess(field, instance), VerifierError.FieldAccess);
 
-            Push(StackValue.CreateByRef(field.FieldType, false, isPermanentHome));
+            Push(StackValue.CreateByRef(field.FieldType, isReadOnly, isPermanentHome));
         }
 
         void ImportStoreField(int token, bool isStatic)

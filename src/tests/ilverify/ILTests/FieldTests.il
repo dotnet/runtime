@@ -128,7 +128,7 @@
         ret
     }
 
-    .method public hidebysig instance void 'special.LdsfldInitonlyInCtor..ctor_Invalid_InitOnly'(char) cil managed { ret }
+    .method public hidebysig instance void 'special.LdsfldaInitonlyInCtor..ctor_Valid'(char) cil managed { ret }
     .method public hidebysig specialname rtspecialname instance void .ctor(char) cil managed
     {
         ldarg.0
@@ -143,6 +143,20 @@
     {
         ldsflda int32 FieldTestsType::StaticInitonlyField
         pop
+        ldc.i4.0
+        stsfld  int32 FieldTestsType::StaticInitonlyField
+        ret
+    }
+
+    .method public instance void Ldsflda.InitonlyStructFieldOutsideCCtor_Valid() cil managed
+    {
+        ldsflda int32 FieldTestsType::StaticInitonlyField
+        pop
+        ret
+    }
+
+    .method public instance void Stfld.InitonlyStructFieldRegularMethod_Invalid_InitOnly() cil managed
+    {
         ldc.i4.0
         stsfld  int32 FieldTestsType::StaticInitonlyField
         ret
