@@ -4,7 +4,6 @@
 #include "opensslshim.h"
 #include "memory_debug.h"
 
-#include <containers/dn-list.h>
 #include <pthread.h>
 #include <assert.h>
 #include <stdatomic.h>
