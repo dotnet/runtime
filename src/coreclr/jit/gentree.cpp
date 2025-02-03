@@ -2005,66 +2005,74 @@ bool GenTreeCall::NeedsVzeroupper(Compiler* comp)
     }
 
     bool needsVzeroupper = false;
+    bool checkSignature  = false;
 
-    if (IsPInvoke())
+    // The Intel optimization manual guidance in `3.11.5.3 Fixing Instruction Slowdowns` states:
+    //   Insert a VZEROUPPER to tell the hardware that the state of the higher registers is clean
+    //   between the VEX and the legacy SSE instructions. Often the best way to do this is to insert a
+    //   VZEROUPPER before returning from any function that uses VEX (that does not produce a VEX
+    //   register) and before any call to an unknown function.
+
+    switch (gtCallType)
     {
-        // The Intel optimization manual guidance in `3.11.5.3 Fixing Instruction Slowdowns` states:
-        //   Insert a VZEROUPPER to tell the hardware that the state of the higher registers is clean
-        //   between the VEX and the legacy SSE instructions. Often the best way to do this is to insert a
-        //   VZEROUPPER before returning from any function that uses VEX (that does not produce a VEX
-        //   register) and before any call to an unknown function.
-
-        switch (gtCallType)
+        case CT_USER_FUNC:
+        case CT_INDIRECT:
         {
-            case CT_USER_FUNC:
-            case CT_INDIRECT:
-            {
-                // Since P/Invokes are not compiled by the runtime, they are typically "unknown" since they
-                // may use the legacy encoding. This includes both CT_USER_FUNC and CT_INDIRECT
+            // Since P/Invokes are not compiled by the runtime, they are typically "unknown" since they
+            // may use the legacy encoding. This includes both CT_USER_FUNC and CT_INDIRECT
 
+            if (IsPInvoke())
+            {
                 needsVzeroupper = true;
-                break;
             }
-
-            case CT_HELPER:
+            else if (IsSpecialIntrinsic())
             {
-                // Most helpers are well known to not use any floating-point or SIMD logic internally, but
-                // a few do exist so we need to ensure they are handled. They are identified by taking or
-                // returning a floating-point or SIMD type, regardless of how it is actually passed/returned.
+                checkSignature = true;
+            }
+            break;
+        }
 
-                if (varTypeUsesFloatReg(this))
+        case CT_HELPER:
+        {
+            // A few special cases exist that can't be found by signature alone, so we handle
+            // those explicitly here instead.
+            needsVzeroupper = IsHelperCall(comp, CORINFO_HELP_BULK_WRITEBARRIER);
+
+            // Most other helpers are well known to not use any floating-point or SIMD logic internally, but
+            // a few do exist so we need to ensure they are handled. They are identified by taking or
+            // returning a floating-point or SIMD type, regardless of how it is actually passed/returned but
+            // are excluded if we know they are implemented in managed.
+            checkSignature = !needsVzeroupper && !IsHelperCall(comp, CORINFO_HELP_DBL2INT_OVF) &&
+                             !IsHelperCall(comp, CORINFO_HELP_DBL2LNG_OVF) &&
+                             !IsHelperCall(comp, CORINFO_HELP_DBL2UINT_OVF) &&
+                             !IsHelperCall(comp, CORINFO_HELP_DBL2ULNG_OVF);
+            break;
+        }
+
+        default:
+        {
+            unreached();
+        }
+    }
+
+    if (checkSignature)
+    {
+        if (varTypeUsesFloatReg(this))
+        {
+            needsVzeroupper = true;
+        }
+        else
+        {
+            for (CallArg& arg : gtArgs.Args())
+            {
+                if (varTypeUsesFloatReg(arg.GetSignatureType()))
                 {
                     needsVzeroupper = true;
                     break;
                 }
-                else
-                {
-                    for (CallArg& arg : gtArgs.Args())
-                    {
-                        if (varTypeUsesFloatReg(arg.GetSignatureType()))
-                        {
-                            needsVzeroupper = true;
-                            break;
-                        }
-                    }
-                }
-                break;
-            }
-
-            default:
-            {
-                unreached();
             }
         }
     }
-
-    // Other special cases
-    //
-    if (!needsVzeroupper && IsHelperCall(comp, CORINFO_HELP_BULK_WRITEBARRIER))
-    {
-        needsVzeroupper = true;
-    }
-
     return needsVzeroupper;
 }
 #endif // TARGET_XARCH
@@ -13708,7 +13716,7 @@ GenTree* Compiler::gtFoldExprCall(GenTreeCall* call)
     assert(!call->gtArgs.AreArgsComplete());
 
     // Can only fold calls to special intrinsics.
-    if ((call->gtCallMoreFlags & GTF_CALL_M_SPECIAL_INTRINSIC) == 0)
+    if (!call->IsSpecialIntrinsic())
     {
         return call;
     }
@@ -17675,7 +17683,7 @@ Compiler::TypeProducerKind Compiler::gtGetTypeProducerKind(GenTree* tree)
                 return TPK_Handle;
             }
         }
-        else if (tree->AsCall()->gtCallMoreFlags & GTF_CALL_M_SPECIAL_INTRINSIC)
+        else if (tree->AsCall()->IsSpecialIntrinsic())
         {
             if (lookupNamedIntrinsic(tree->AsCall()->gtCallMethHnd) == NI_System_Object_GetType)
             {
@@ -19135,7 +19143,7 @@ CORINFO_CLASS_HANDLE Compiler::gtGetClassHandle(GenTree* tree, bool* pIsExact, b
         case GT_CALL:
         {
             GenTreeCall* call = obj->AsCall();
-            if (call->gtCallMoreFlags & GTF_CALL_M_SPECIAL_INTRINSIC)
+            if (call->IsSpecialIntrinsic())
             {
                 NamedIntrinsic ni = lookupNamedIntrinsic(call->gtCallMethHnd);
                 if ((ni == NI_System_Array_Clone) || (ni == NI_System_Object_MemberwiseClone))

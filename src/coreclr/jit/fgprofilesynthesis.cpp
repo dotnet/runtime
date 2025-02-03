@@ -161,6 +161,20 @@ void ProfileSynthesis::Run(ProfileSynthesisOption option)
         m_comp->Metrics.ProfileInconsistentInitially++;
     }
 
+    // Derive the method's call count from the entry block's weight
+    //
+    if (m_comp->fgIsUsingProfileWeights() && !m_comp->compIsForInlining())
+    {
+        weight_t entryWeight = m_entryBlock->bbWeight;
+        for (FlowEdge* const predEdge : m_entryBlock->PredEdges())
+        {
+            entryWeight -= predEdge->getLikelyWeight();
+        }
+
+        m_comp->fgCalledCount = max(BB_ZERO_WEIGHT, entryWeight);
+        JITDUMP("fgCalledCount is " FMT_WT "\n", m_comp->fgCalledCount);
+    }
+
 #ifdef DEBUG
     // We want to assert that the profile is consistent.
     // However, we need to defer asserting since invalid IL can
