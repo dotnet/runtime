@@ -1,0 +1,87 @@
+Number of tests passed: 219 failed: 40 disabled: 69
+Test run complete
+
+Failed tests:
+
+"exception_handling/RaiseException/test1/paltest_raiseexception_test1"
+"exception_handling/RaiseException/test2/paltest_raiseexception_test2"
+"exception_handling/RaiseException/test3/paltest_raiseexception_test3"
+
+{0x60e84-0x206} ASSERT [EXCEPT ] at /Users/rodo/git/runtime-main/src/coreclr/pal/src/include/pal/context.h.1398: {0x60e84-0x206} TRACE [DEBUG  ] at DebugBreak.405: Calling DBG_DebugBreak localhost:8283:140:33
+    error http://localhost:8283/#exception_handling/RaiseException/test1/paltest_raiseexception_test1:140
+    put_char http://localhost:8283/paltests.js:1633
+    write http://localhost:8283/paltests.js:1579
+    write http://localhost:8283/paltests.js:3350
+    doWritev http://localhost:8283/paltests.js:5058
+    _fd_write http://localhost:8283/paltests.js:5072
+    __stdio_write http://localhost:8283/paltests.wasm:1559493
+    __vfprintf_internal http://localhost:8283/paltests.wasm:1583598
+    vfprintf http://localhost:8283/paltests.wasm:1587298
+    fprintf http://localhost:8283/paltests.wasm:1560483
+    DBG_printf http://localhost:8283/paltests.wasm:975982
+    DebugBreak http://localhost:8283/paltests.wasm:695144
+    AssertBreak http://localhost:8283/paltests.wasm:665747
+    paltests.wasm.CONTEXTGetPC(_CONTEXT*) http://localhost:8283/paltests.wasm:707761
+    PAL_VirtualUnwind http://localhost:8283/paltests.wasm:706341
+    RaiseException http://localhost:8283/paltests.wasm:709992
+    paltests.wasm.exception_handling_RaiseException_test1_paltest_raiseexception_test1(int, char**)::$_1::operator()(void*) const http://localhost:8283/paltests.wasm:108438
+    paltests.wasm.exception_handling_RaiseException_test1_paltest_raiseexception_test1(int, char**) http://localhost:8283/paltests.wasm:106906
+    main http://localhost:8283/paltests.wasm:10668
+    createExportWrapper http://localhost:8283/paltests.js:715
+    callMain http://localhost:8283/paltests.js:5551
+    doRun http://localhost:8283/paltests.js:5601
+    run http://localhost:8283/paltests.js:5616
+    runCaller http://localhost:8283/paltests.js:5528
+    removeRunDependency http://localhost:8283/paltests.js:639
+    receiveInstance http://localhost:8283/paltests.js:845
+    receiveInstantiationResult http://localhost:8283/paltests.js:863
+
+    this is trying to unwind and save context, which cannot work on wasm. we need to find out, whether the interpreter depends on this functionality
+
+"file_io/CopyFileA/test4/paltest_copyfilea_test4"
+
+/etc/passwd missing - we can package few files to let the tests work and test the filesystem functionality
+after I added it to packaged files, we fail in `InternalCanonicalizeRealPath` - possibly problem with realpath call on emscripten
+
+"file_io/CopyFileW/test3/paltest_copyfilew_test3"
+"file_io/GetFullPathNameA/test3/paltest_getfullpathnamea_test3"
+
+"filemapping_memmgt/ProbeMemory/ProbeMemory_neg1/paltest_probememory_probememory_neg1"
+"filemapping_memmgt/ProbeMemory/test1/paltest_probememory_test1"
+"filemapping_memmgt/VirtualAlloc/test1/paltest_virtualalloc_test1"
+"filemapping_memmgt/VirtualAlloc/test10/paltest_virtualalloc_test10"
+"filemapping_memmgt/VirtualAlloc/test11/paltest_virtualalloc_test11"
+"filemapping_memmgt/VirtualAlloc/test12/paltest_virtualalloc_test12"
+"filemapping_memmgt/VirtualAlloc/test13/paltest_virtualalloc_test13"
+"filemapping_memmgt/VirtualAlloc/test14/paltest_virtualalloc_test14"
+"filemapping_memmgt/VirtualAlloc/test15/paltest_virtualalloc_test15"
+"filemapping_memmgt/VirtualAlloc/test16/paltest_virtualalloc_test16"
+"filemapping_memmgt/VirtualAlloc/test17/paltest_virtualalloc_test17"
+"filemapping_memmgt/VirtualAlloc/test18/paltest_virtualalloc_test18"
+"filemapping_memmgt/VirtualAlloc/test19/paltest_virtualalloc_test19"
+"filemapping_memmgt/VirtualAlloc/test2/paltest_virtualalloc_test2"
+"filemapping_memmgt/VirtualAlloc/test21/paltest_virtualalloc_test21"
+"filemapping_memmgt/VirtualAlloc/test3/paltest_virtualalloc_test3"
+"filemapping_memmgt/VirtualAlloc/test4/paltest_virtualalloc_test4"
+"filemapping_memmgt/VirtualAlloc/test5/paltest_virtualalloc_test5"
+"filemapping_memmgt/VirtualAlloc/test6/paltest_virtualalloc_test6"
+"filemapping_memmgt/VirtualAlloc/test7/paltest_virtualalloc_test7"
+"filemapping_memmgt/VirtualAlloc/test8/paltest_virtualalloc_test8"
+"filemapping_memmgt/VirtualAlloc/test9/paltest_virtualalloc_test9"
+"filemapping_memmgt/VirtualFree/test1/paltest_virtualfree_test1"
+"filemapping_memmgt/VirtualProtect/test1/paltest_virtualprotect_test1"
+"filemapping_memmgt/VirtualProtect/test2/paltest_virtualprotect_test2"
+"filemapping_memmgt/VirtualProtect/test3/paltest_virtualprotect_test3"
+"filemapping_memmgt/VirtualProtect/test4/paltest_virtualprotect_test4"
+"filemapping_memmgt/VirtualProtect/test6/paltest_virtualprotect_test6"
+"filemapping_memmgt/VirtualProtect/test7/paltest_virtualprotect_test7"
+"filemapping_memmgt/VirtualQuery/test1/paltest_virtualquery_test1"
+"miscellaneous/FlushInstructionCache/test1/paltest_flushinstructioncache_test1"
+"miscellaneous/InterlockedCompareExchange/test2/paltest_interlockedcompareexchange_test2"
+"miscellaneous/InterlockedDecrement/test2/paltest_interlockeddecrement_test2"
+"miscellaneous/InterlockedIncrement/test2/paltest_interlockedincrement_test2"
+
+Missing tests:
+
+"exception_handling/pal_sxs/test1/paltest_pal_sxs_test1"
+"eventprovider/eventprovidertest"
