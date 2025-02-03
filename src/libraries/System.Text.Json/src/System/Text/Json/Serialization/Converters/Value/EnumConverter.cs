@@ -603,7 +603,7 @@ namespace System.Text.Json.Serialization.Converters
 
                 if (ConflictsWith(this, other))
                 {
-                    // Silently discard if the preceding entry is the default or has identical name.
+                    // Silently discard if the new entry conflicts with the preceding entry
                     return;
                 }
 
