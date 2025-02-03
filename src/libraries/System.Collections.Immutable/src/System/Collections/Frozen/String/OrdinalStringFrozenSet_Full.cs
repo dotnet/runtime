@@ -5,7 +5,7 @@ using System.Collections.Generic;
 
 namespace System.Collections.Frozen
 {
-    internal sealed class OrdinalStringFrozenSet_Full : OrdinalStringFrozenSet
+    internal sealed partial class OrdinalStringFrozenSet_Full : OrdinalStringFrozenSet
     {
         private readonly ulong _lengthFilter;
 
@@ -22,7 +22,6 @@ namespace System.Collections.Frozen
 
         // See comment in OrdinalStringFrozenSet for why these overrides exist. Do not remove.
         private protected override int FindItemIndex(string item) => base.FindItemIndex(item);
-        private protected override int FindItemIndex<TAlternate>(TAlternate item) => base.FindItemIndex(item);
 
         private protected override int GetHashCode(string s) => Hashing.GetHashCodeOrdinal(s.AsSpan());
         private protected override int GetHashCode(ReadOnlySpan<char> s) => Hashing.GetHashCodeOrdinal(s);
