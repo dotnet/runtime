@@ -156,7 +156,6 @@ namespace System.Numerics.Tests
             }
         }
 
-<<<<<<< HEAD
         // InlineData randomly generated using a new Random(0) and the same logic as is used in MyBigIntImp
         // When using the VerifyModPowString approach, these tests were taking over 100s to execute.
         [Theory]
@@ -182,8 +181,6 @@ namespace System.Numerics.Tests
             Assert.Equal(resultInt, BigInteger.ModPow(valueInt, exponentInt, modulusInt));
         }
 
-=======
->>>>>>> upstream/main
         [Fact]
         public static void ModPow0Power()
         {
