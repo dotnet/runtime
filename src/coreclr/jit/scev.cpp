@@ -60,6 +60,19 @@
 
 #include "jitpch.h"
 
+ScevConstant::ScevConstant(var_types type, int64_t value)
+    : Scev(ScevOper::Constant, type)
+{
+    if (genTypeSize(type) == 4)
+    {
+        Value = (int32_t)value;
+    }
+    else
+    {
+        Value = value;
+    }
+}
+
 //------------------------------------------------------------------------
 // GetConstantValue: If this SSA use refers to a constant, then fetch that
 // constant.
@@ -1327,7 +1340,7 @@ bool ScalarEvolutionContext::Materialize(Scev* scev, bool createIR, GenTree** re
                 }
                 else
                 {
-                    *result = m_comp->gtNewIconNode((target_ssize_t)cns->Value, scev->Type);
+                    *result = m_comp->gtNewIconNode((ssize_t)cns->Value, scev->Type);
                 }
             }
 
