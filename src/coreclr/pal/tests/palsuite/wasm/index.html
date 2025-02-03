@@ -6,8 +6,7 @@
 </head>
 <body>
     <h1>PAL Tests WASM</h1>
-    <pre id="log">
-    </pre>
+    <pre id="log"></pre>
     <script>
         const disabledTestNamePatterns = [
             "debug_api/", // blocks main thread; seems to depend on spawning child processes.
@@ -38,8 +37,19 @@
                 if (capturingTestCaseNames) {
                     capturedTestCaseNames.sort();
                     localStorage.setItem("testCaseNames", JSON.stringify(capturedTestCaseNames));
+                    localStorage.setItem("passedCount", JSON.stringify(0));
+                    localStorage.setItem("failedCount", JSON.stringify(0));
+                    localStorage.setItem("disabledCount", JSON.stringify(0));
                     console.log("Captured " + capturedTestCaseNames.length + " test name(s). Starting test run.");
                     capturingTestCaseNames = false;
+                } else if (nextRunTimeout < 0) {
+                    if (code == 0) {
+                        passedCount = JSON.parse(localStorage.getItem("passedCount")) + 1;
+                        localStorage.setItem("passedCount", JSON.stringify(passedCount));
+                    } else {
+                        failedCount = JSON.parse(localStorage.getItem("failedCount")) + 1;
+                        localStorage.setItem("failedCount", JSON.stringify(failedCount));
+                    }
                 }
 
                 var msg = "'" + Module.arguments[1] + "' exited with code " + code;
@@ -72,10 +82,18 @@
 
         function pickNextTest (testIndex) {
             let result = undefined;
+            var lastIndex = testIndex;
             do {
                 testIndex++;
                 result = capturedTestCaseNames[testIndex];
+                console.log("abc Test check '" + result + "'");
             } while (isDisabledTest(result));
+
+            if (testIndex != lastIndex + 1) {
+                disabledCount = JSON.parse(localStorage.getItem("disabledCount")) + testIndex - lastIndex - 1;
+                localStorage.setItem("disabledCount", JSON.stringify(disabledCount));
+            }
+
             return result;
         }
 
@@ -87,6 +105,7 @@
 
             if (nextTestName === undefined) {
                 location.hash = "";
+                console.error("Number of tests passed: " + localStorage.getItem("passedCount") + " failed: " + localStorage.getItem("failedCount") + " disabled: " + localStorage.getItem("disabledCount"));
                 console.error("Test run complete");
             } else {
                 location.hash = "#" + nextTestName;
