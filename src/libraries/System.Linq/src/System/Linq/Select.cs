@@ -62,11 +62,9 @@ namespace System.Linq
             // don't need more code, just more data structures describing the new types).
             if (ValueTypeTrimFriendlySelect && typeof(TResult).IsValueType)
             {
-#if OPTIMIZE_FOR_SIZE
-                return new IEnumerableSelectIterator<TSource, TResult>(iterator, selector);
-#else
+                if (IsSizeOptimized)
+                    return new IEnumerableSelectIterator<TSource, TResult>(iterator, selector);
                 return new IteratorSelectIterator<TSource, TResult>(iterator, selector);
-#endif
             }
 
             return iterator.Select(selector);
