@@ -2296,7 +2296,7 @@ HCIMPLEND
 //
 // Returns the address of the jitted code.
 // Returns NULL if osr method can't be created.
-static PCODE JitPatchpointWorker(MethodDesc* pMD, EECodeInfo& codeInfo, int ilOffset)
+static PCODE JitPatchpointWorker(MethodDesc* pMD, const EECodeInfo& codeInfo, int ilOffset)
 {
     STANDARD_VM_CONTRACT;
     PCODE osrVariant = (PCODE)NULL;
@@ -2341,15 +2341,314 @@ static PCODE JitPatchpointWorker(MethodDesc* pMD, EECodeInfo& codeInfo, int ilOf
     return osrVariant;
 }
 
+PCODE JIT_PatchpointOptimizationPolicy(TransitionBlock* pTransitionBlock, int* counter, int ilOffset, PerPatchpointInfo * ppInfo, const EECodeInfo& codeInfo, bool *pIsNewMethod)
+{
+    STATIC_CONTRACT_NOTHROW;
+    STATIC_CONTRACT_GC_TRIGGERS;
+    STATIC_CONTRACT_MODE_COOPERATIVE;
+
+    // See if we have an OSR method for this patchpoint.
+    PCODE osrMethodCode = ppInfo->m_osrMethodCode;
+    *pIsNewMethod = false;
+    TADDR ip = codeInfo.GetCodeAddress();
+
+    MethodDesc* pMD = codeInfo.GetMethodDesc();
+
+    // In the current implementation, counter is shared by all patchpoints
+    // in a method, so no matter what happens below, we don't want to
+    // impair those other patchpoints.
+    //
+    // One might be tempted, for instance, to set the counter for
+    // invalid or ignored patchpoints to some high value to reduce
+    // the amount of back and forth with the runtime, but this would
+    // lock out other patchpoints in the method.
+    //
+    // So we always reset the counter to the bump value.
+    //
+    // In the implementation, counter is a location in a stack frame,
+    // so we can update it without worrying about other threads.
+    const int counterBump = g_pConfig->OSR_CounterBump();
+    *counter = counterBump;
+
+#ifdef _DEBUG
+    const int ppId = ppInfo->m_patchpointId;
+#endif
+
+    if ((ppInfo->m_flags & PerPatchpointInfo::patchpoint_invalid) == PerPatchpointInfo::patchpoint_invalid)
+    {
+        LOG((LF_TIEREDCOMPILATION, LL_INFO1000, "JIT_PatchpointOptimizationPolicy: invalid patchpoint [%d] (0x%p) in Method=0x%pM (%s::%s) at offset %d\n",
+                ppId, ip, pMD, pMD->m_pszDebugClassName, pMD->m_pszDebugMethodName, ilOffset));
+
+        goto DONE;
+    }
+
+    if (osrMethodCode == (PCODE)NULL)
+    {
+        // No OSR method yet, let's see if we should create one.
+        //
+        // First, optionally ignore some patchpoints to increase
+        // coverage (stress mode).
+        //
+        // Because there are multiple patchpoints in a method, and
+        // each OSR method covers the remainder of the method from
+        // that point until the method returns, if we trigger on an
+        // early patchpoint in a method, we may never see triggers on
+        // a later one.
+
+#ifdef _DEBUG
+        const int lowId = g_pConfig->OSR_LowId();
+        const int highId = g_pConfig->OSR_HighId();
+
+        if ((ppId < lowId) || (ppId > highId))
+        {
+            LOG((LF_TIEREDCOMPILATION, LL_INFO10, "JIT_PatchpointOptimizationPolicy: ignoring patchpoint [%d] (0x%p) in Method=0x%pM (%s::%s) at offset %d\n",
+                    ppId, ip, pMD, pMD->m_pszDebugClassName, pMD->m_pszDebugMethodName, ilOffset));
+            goto DONE;
+        }
+#endif
+
+        // Second, only request the OSR method if this patchpoint has
+        // been hit often enough.
+        //
+        // Note the initial invocation of the helper depends on the
+        // initial counter value baked into jitted code (call this J);
+        // subsequent invocations depend on the counter bump (call
+        // this B).
+        //
+        // J and B may differ, so the total number of loop iterations
+        // before an OSR method is created is:
+        //
+        // J, if hitLimit <= 1;
+        // J + (hitLimit-1)* B, if hitLimit > 1;
+        //
+        // Current thinking is:
+        //
+        // J should be in the range of tens to hundreds, so that newly
+        // called Tier0 methods that already have OSR methods
+        // available can transition to OSR methods quickly, but
+        // methods called only a few times do not invoke this
+        // helper and so create PerPatchpoint runtime state.
+        //
+        // B should be in the range of hundreds to thousands, so that
+        // we're not too eager to create OSR methods (since there is
+        // some jit cost), but are eager enough to transition before
+        // we run too much Tier0 code.
+        //
+        const int hitLimit = g_pConfig->OSR_HitLimit();
+        const int hitCount = InterlockedIncrement(&ppInfo->m_patchpointCount);
+        const int hitLogLevel = (hitCount == 1) ? LL_INFO10 : LL_INFO1000;
+
+        LOG((LF_TIEREDCOMPILATION, hitLogLevel, "JIT_PatchpointOptimizationPolicy: patchpoint [%d] (0x%p) hit %d in Method=0x%pM (%s::%s) [il offset %d] (limit %d)\n",
+            ppId, ip, hitCount, pMD, pMD->m_pszDebugClassName, pMD->m_pszDebugMethodName, ilOffset, hitLimit));
+
+        // Defer, if we haven't yet reached the limit
+        if (hitCount < hitLimit)
+        {
+            goto DONE;
+        }
+
+        // Third, make sure no other thread is trying to create the OSR method.
+        LONG oldFlags = ppInfo->m_flags;
+        if ((oldFlags & PerPatchpointInfo::patchpoint_triggered) == PerPatchpointInfo::patchpoint_triggered)
+        {
+            LOG((LF_TIEREDCOMPILATION, LL_INFO1000, "JIT_PatchpointOptimizationPolicy: AWAITING OSR method for patchpoint [%d] (0x%p)\n", ppId, ip));
+            goto DONE;
+        }
+
+        LONG newFlags = oldFlags | PerPatchpointInfo::patchpoint_triggered;
+        BOOL triggerTransition = InterlockedCompareExchange(&ppInfo->m_flags, newFlags, oldFlags) == oldFlags;
+
+        if (!triggerTransition)
+        {
+            LOG((LF_TIEREDCOMPILATION, LL_INFO1000, "JIT_PatchpointOptimizationPolicy: (lost race) AWAITING OSR method for patchpoint [%d] (0x%p)\n", ppId, ip));
+            goto DONE;
+        }
+
+        MAKE_CURRENT_THREAD_AVAILABLE();
+
+    #ifdef _DEBUG
+        Thread::ObjectRefFlush(CURRENT_THREAD);
+    #endif
+
+        FrameWithCookie<DynamicHelperFrame> frame(pTransitionBlock, 0);
+        DynamicHelperFrame * pFrame = &frame;
+
+        pFrame->Push(CURRENT_THREAD);
+
+        INSTALL_MANAGED_EXCEPTION_DISPATCHER;
+        INSTALL_UNWIND_AND_CONTINUE_HANDLER;
+
+        GCX_PREEMP();
+
+        osrMethodCode = ppInfo->m_osrMethodCode;
+        if (osrMethodCode == (PCODE)NULL)
+        {
+            // Time to create the OSR method.
+            //
+            // We currently do this synchronously. We could instead queue
+            // up a request on some worker thread, like we do for
+            // rejitting, and return control to the Tier0 method. It may
+            // eventually return here, if the patchpoint is hit often
+            // enough.
+            //
+            // There is a chance the async version will create methods
+            // that are never used (just like there is a chance that Tier1
+            // methods are ever called).
+            //
+            // We want to expose bugs in the jitted code
+            // for OSR methods, so we stick with synchronous creation.
+            LOG((LF_TIEREDCOMPILATION, LL_INFO10, "JIT_PatchpointOptimizationPolicy: patchpoint [%d] (0x%p) TRIGGER at count %d\n", ppId, ip, hitCount));
+
+            // Invoke the helper to build the OSR method
+            osrMethodCode = JitPatchpointWorker(pMD, codeInfo, ilOffset);
+
+            // If that failed, mark the patchpoint as invalid.
+            if (osrMethodCode == (PCODE)NULL)
+            {
+                // Unexpected, but not fatal
+                STRESS_LOG3(LF_TIEREDCOMPILATION, LL_WARNING, "JIT_PatchpointOptimizationPolicy: patchpoint (0x%p) OSR method creation failed,"
+                    " marking patchpoint invalid for Method=0x%pM il offset %d\n", ip, pMD, ilOffset);
+
+                InterlockedOr(&ppInfo->m_flags, (LONG)PerPatchpointInfo::patchpoint_invalid);
+            }
+
+            *pIsNewMethod = true;
+        }
+
+        UNINSTALL_UNWIND_AND_CONTINUE_HANDLER;
+        UNINSTALL_MANAGED_EXCEPTION_DISPATCHER;
+
+        pFrame->Pop(CURRENT_THREAD);
+    }
+    return osrMethodCode;
+
+DONE:
+    return (PCODE)NULL;
+}
+
+PCODE JIT_PatchpointRequiredPolicy(TransitionBlock* pTransitionBlock, int* counter, int ilOffset, PerPatchpointInfo * ppInfo, const EECodeInfo& codeInfo, bool *pIsNewMethod)
+{
+    STATIC_CONTRACT_NOTHROW;
+    STATIC_CONTRACT_GC_TRIGGERS;
+    STATIC_CONTRACT_MODE_COOPERATIVE;
+
+    *pIsNewMethod = false;
+    MethodDesc* pMD = codeInfo.GetMethodDesc();
+    TADDR ip = codeInfo.GetCodeAddress();
+
+#ifdef _DEBUG
+    const int ppId = ppInfo->m_patchpointId;
+#endif
+
+    if ((ppInfo->m_flags & PerPatchpointInfo::patchpoint_invalid) == PerPatchpointInfo::patchpoint_invalid)
+    {
+        LOG((LF_TIEREDCOMPILATION, LL_FATALERROR, "JIT_PatchpointRequiredPolicy: invalid patchpoint [%d] (0x%p) in Method=0x%pM (%s::%s) at offset %d\n",
+                ppId, ip, pMD, pMD->m_pszDebugClassName, pMD->m_pszDebugMethodName, ilOffset));
+        EEPOLICY_HANDLE_FATAL_ERROR(COR_E_EXECUTIONENGINE);
+    }
+
+    MAKE_CURRENT_THREAD_AVAILABLE();
+
+#ifdef _DEBUG
+    Thread::ObjectRefFlush(CURRENT_THREAD);
+#endif
+
+    FrameWithCookie<DynamicHelperFrame> frame(pTransitionBlock, 0);
+    DynamicHelperFrame * pFrame = &frame;
+
+    pFrame->Push(CURRENT_THREAD);
+
+    INSTALL_MANAGED_EXCEPTION_DISPATCHER;
+    INSTALL_UNWIND_AND_CONTINUE_HANDLER;
+
+    {
+        GCX_PREEMP();
+
+        DWORD backoffs = 0;
+        while (ppInfo->m_osrMethodCode == (PCODE)NULL)
+        {
+            // Invalid patchpoints are fatal, for partial compilation patchpoints
+            //
+            if ((ppInfo->m_flags & PerPatchpointInfo::patchpoint_invalid) == PerPatchpointInfo::patchpoint_invalid)
+            {
+                LOG((LF_TIEREDCOMPILATION, LL_FATALERROR, "JIT_PatchpointRequiredPolicy: invalid patchpoint [%d] (0x%p) in Method=0x%pM (%s::%s) at offset %d\n",
+                        ppId, ip, pMD, pMD->m_pszDebugClassName, pMD->m_pszDebugMethodName, ilOffset));
+                EEPOLICY_HANDLE_FATAL_ERROR(COR_E_EXECUTIONENGINE);
+            }
+
+            // Make sure no other thread is trying to create the OSR method.
+            //
+            LONG oldFlags = ppInfo->m_flags;
+            if ((oldFlags & PerPatchpointInfo::patchpoint_triggered) == PerPatchpointInfo::patchpoint_triggered)
+            {
+                LOG((LF_TIEREDCOMPILATION, LL_INFO1000, "JIT_PatchpointRequiredPolicy: AWAITING OSR method for patchpoint [%d] (0x%p)\n", ppId, ip));
+                __SwitchToThread(0, backoffs++);
+                continue;
+            }
+
+            // Make sure we win the race to create the OSR method
+            //
+            LONG newFlags = ppInfo->m_flags | PerPatchpointInfo::patchpoint_triggered;
+            BOOL triggerTransition = InterlockedCompareExchange(&ppInfo->m_flags, newFlags, oldFlags) == oldFlags;
+
+            if (!triggerTransition)
+            {
+                LOG((LF_TIEREDCOMPILATION, LL_INFO1000, "JIT_PatchpointRequiredPolicy: (lost race) AWAITING OSR method for patchpoint [%d] (0x%p)\n", ppId, ip));
+                __SwitchToThread(0, backoffs++);
+                continue;
+            }
+
+            // Invoke the helper to build the OSR method
+            //
+            // TODO: may not want to optimize this part of the method, if it's truly partial compilation
+            // and can't possibly rejoin into the main flow.
+            //
+            // (but consider: throw path in method with try/catch, OSR method will contain more than just the throw?)
+            //
+            LOG((LF_TIEREDCOMPILATION, LL_INFO10, "JIT_PatchpointRequiredPolicy: patchpoint [%d] (0x%p) TRIGGER\n", ppId, ip));
+            PCODE newMethodCode = JitPatchpointWorker(pMD, codeInfo, ilOffset);
+
+            // If that failed, mark the patchpoint as invalid.
+            // This is fatal, for partial compilation patchpoints
+            //
+            if (newMethodCode == (PCODE)NULL)
+            {
+                STRESS_LOG3(LF_TIEREDCOMPILATION, LL_WARNING, "JIT_PatchpointRequiredPolicy: patchpoint (0x%p) OSR method creation failed,"
+                    " marking patchpoint invalid for Method=0x%pM il offset %d\n", ip, pMD, ilOffset);
+                InterlockedOr(&ppInfo->m_flags, (LONG)PerPatchpointInfo::patchpoint_invalid);
+                EEPOLICY_HANDLE_FATAL_ERROR(COR_E_EXECUTIONENGINE);
+                break;
+            }
+
+            // We've successfully created the osr method; make it available.
+            _ASSERTE(ppInfo->m_osrMethodCode == (PCODE)NULL);
+            ppInfo->m_osrMethodCode = newMethodCode;
+            *pIsNewMethod = true;
+        }
+    }
+
+    UNINSTALL_UNWIND_AND_CONTINUE_HANDLER;
+    UNINSTALL_MANAGED_EXCEPTION_DISPATCHER;
+
+    pFrame->Pop(CURRENT_THREAD);
+
+    // If we get here, we have code to transition to...
+    PCODE osrMethodCode = ppInfo->m_osrMethodCode;
+    _ASSERTE(osrMethodCode != (PCODE)NULL);
+
+    return osrMethodCode;
+}
+
 // Jit helper invoked at a patchpoint.
 //
 // Checks to see if this is a known patchpoint, if not,
 // an entry is added to the patchpoint table.
 //
 // When the patchpoint has been hit often enough to trigger
-// a transition, create an OSR method.
+// a transition, create an OSR method. OR if the first argument
+// is NULL, always create an OSR method and transition to it.
 //
-// Currently, counter is a pointer into the Tier0 method stack
+// Currently, counter(the first argument) is a pointer into the Tier0 method stack
 // frame so we have exclusive access.
 
 extern "C" void JIT_PatchpointWorkerWorkerWithPolicy(TransitionBlock * pTransitionBlock)
@@ -2377,243 +2676,28 @@ extern "C" void JIT_PatchpointWorkerWorkerWithPolicy(TransitionBlock * pTransiti
     OnStackReplacementManager* manager = allocator->GetOnStackReplacementManager();
     PerPatchpointInfo * ppInfo = manager->GetPerPatchpointInfo(ip);
 
-    bool isNewMethod = false;
-    PCODE osrMethodCode = (PCODE)NULL;
-
-
-    // In the current prototype, counter is shared by all patchpoints
-    // in a method, so no matter what happens below, we don't want to
-    // impair those other patchpoints.
-    //
-    // One might be tempted, for instance, to set the counter for
-    // invalid or ignored patchpoints to some high value to reduce
-    // the amount of back and forth with the runtime, but this would
-    // lock out other patchpoints in the method.
-    //
-    // So we always reset the counter to the bump value.
-    //
-    // In the prototype, counter is a location in a stack frame,
-    // so we can update it without worrying about other threads.
-    bool forceTransition = counter == NULL;
-
-    if (!forceTransition)
-    {
-        const int counterBump = g_pConfig->OSR_CounterBump();
-        *counter = counterBump;
-    }
-
 #ifdef _DEBUG
     const int ppId = ppInfo->m_patchpointId;
 #endif
 
-    // Is this a patchpoint that was previously marked as invalid? If so, just return to the Tier0 method.
-    if ((ppInfo->m_flags & PerPatchpointInfo::patchpoint_invalid) == PerPatchpointInfo::patchpoint_invalid)
-    {
-        if (!forceTransition)
-        {
-            LOG((LF_TIEREDCOMPILATION, LL_INFO1000, "Jit_Patchpoint: invalid patchpoint [%d] (0x%p) in Method=0x%pM (%s::%s) at offset %d\n",
-                    ppId, ip, pMD, pMD->m_pszDebugClassName, pMD->m_pszDebugMethodName, ilOffset));
+    bool isNewMethod = false;
+    PCODE osrMethodCode = (PCODE)NULL;
 
-            goto DONE;
-        }
-        else
-        {
-            LOG((LF_TIEREDCOMPILATION, LL_FATALERROR, "Jit_PartialCompilationPatchpoint: invalid patchpoint [%d] (0x%p) in Method=0x%pM (%s::%s) at offset %d\n",
-                    ppId, ip, pMD, pMD->m_pszDebugClassName, pMD->m_pszDebugMethodName, ilOffset));
-            EEPOLICY_HANDLE_FATAL_ERROR(COR_E_EXECUTIONENGINE);
-        }
+
+    bool patchpointMustFindOptimizedCode = counter == NULL;
+
+    if (patchpointMustFindOptimizedCode)
+    {
+        osrMethodCode = JIT_PatchpointRequiredPolicy(pTransitionBlock, counter, ilOffset, ppInfo, codeInfo, &isNewMethod);
     }
-
-    // See if we have an OSR method for this patchpoint.
-    osrMethodCode = ppInfo->m_osrMethodCode;
-
-    if (osrMethodCode == (PCODE)NULL)
+    else
     {
-        // No OSR method yet, let's see if we should create one.
-        //
-        // First, optionally ignore some patchpoints to increase
-        // coverage (stress mode).
-        //
-        // Because there are multiple patchpoints in a method, and
-        // each OSR method covers the remainder of the method from
-        // that point until the method returns, if we trigger on an
-        // early patchpoint in a method, we may never see triggers on
-        // a later one.
-
-#ifdef _DEBUG
-        const int lowId = g_pConfig->OSR_LowId();
-        const int highId = g_pConfig->OSR_HighId();
-
-        if (((ppId < lowId) || (ppId > highId)) && !forceTransition)
-        {
-            LOG((LF_TIEREDCOMPILATION, LL_INFO10, "Jit_Patchpoint: ignoring patchpoint [%d] (0x%p) in Method=0x%pM (%s::%s) at offset %d\n",
-                    ppId, ip, pMD, pMD->m_pszDebugClassName, pMD->m_pszDebugMethodName, ilOffset));
-            goto DONE;
-        }
-#endif
-
-        if (!forceTransition)
-        {
-            // Second, only request the OSR method if this patchpoint has
-            // been hit often enough.
-            //
-            // Note the initial invocation of the helper depends on the
-            // initial counter value baked into jitted code (call this J);
-            // subsequent invocations depend on the counter bump (call
-            // this B).
-            //
-            // J and B may differ, so the total number of loop iterations
-            // before an OSR method is created is:
-            //
-            // J, if hitLimit <= 1;
-            // J + (hitLimit-1)* B, if hitLimit > 1;
-            //
-            // Current thinking is:
-            //
-            // J should be in the range of tens to hundreds, so that newly
-            // called Tier0 methods that already have OSR methods
-            // available can transition to OSR methods quickly, but
-            // methods called only a few times do not invoke this
-            // helper and so create PerPatchpoint runtime state.
-            //
-            // B should be in the range of hundreds to thousands, so that
-            // we're not too eager to create OSR methods (since there is
-            // some jit cost), but are eager enough to transition before
-            // we run too much Tier0 code.
-            //
-            const int hitLimit = g_pConfig->OSR_HitLimit();
-            hitCount = InterlockedIncrement(&ppInfo->m_patchpointCount);
-            const int hitLogLevel = (hitCount == 1) ? LL_INFO10 : LL_INFO1000;
-
-            LOG((LF_TIEREDCOMPILATION, hitLogLevel, "Jit_Patchpoint: patchpoint [%d] (0x%p) hit %d in Method=0x%pM (%s::%s) [il offset %d] (limit %d)\n",
-                ppId, ip, hitCount, pMD, pMD->m_pszDebugClassName, pMD->m_pszDebugMethodName, ilOffset, hitLimit));
-
-            // Defer, if we haven't yet reached the limit
-            if (hitCount < hitLimit)
-            {
-                goto DONE;
-            }
-        }
-
-        // Third, make sure no other thread is trying to create the OSR method.
-        LONG oldFlags = ppInfo->m_flags;
-        if (!forceTransition)
-        {
-            if ((oldFlags & PerPatchpointInfo::patchpoint_triggered) == PerPatchpointInfo::patchpoint_triggered)
-            {
-                LOG((LF_TIEREDCOMPILATION, LL_INFO1000, "Jit_Patchpoint: AWAITING OSR method for patchpoint [%d] (0x%p)\n", ppId, ip));
-                goto DONE;
-            }
-
-            LONG newFlags = oldFlags | PerPatchpointInfo::patchpoint_triggered;
-            BOOL triggerTransition = InterlockedCompareExchange(&ppInfo->m_flags, newFlags, oldFlags) == oldFlags;
-
-            if (!triggerTransition)
-            {
-                LOG((LF_TIEREDCOMPILATION, LL_INFO1000, "Jit_Patchpoint: (lost race) AWAITING OSR method for patchpoint [%d] (0x%p)\n", ppId, ip));
-                goto DONE;
-            }
-        }
+        osrMethodCode = JIT_PatchpointOptimizationPolicy(pTransitionBlock, counter, ilOffset, ppInfo, codeInfo, &isNewMethod);
     }
 
     if (osrMethodCode == (PCODE)NULL)
     {
-        MAKE_CURRENT_THREAD_AVAILABLE();
-
-    #ifdef _DEBUG
-        Thread::ObjectRefFlush(CURRENT_THREAD);
-    #endif
-
-        FrameWithCookie<DynamicHelperFrame> frame(pTransitionBlock, 0);
-        DynamicHelperFrame * pFrame = &frame;
-
-        pFrame->Push(CURRENT_THREAD);
-
-        INSTALL_MANAGED_EXCEPTION_DISPATCHER;
-        INSTALL_UNWIND_AND_CONTINUE_HANDLER;
-
-        GCX_PREEMP();
-
-        osrMethodCode = ppInfo->m_osrMethodCode;
-        if ((osrMethodCode == (PCODE)NULL) && forceTransition)
-        {
-            // Another thread has already triggered the OSR method, wait until it is available, or the other thread abandons trying to JIT the OSR method
-            DWORD backoffs = 0;
-            while (osrMethodCode = ppInfo->m_osrMethodCode, osrMethodCode == (PCODE)NULL)
-            {
-                LONG oldFlags = ppInfo->m_flags;
-                if ((oldFlags & PerPatchpointInfo::patchpoint_triggered) == PerPatchpointInfo::patchpoint_triggered)
-                {
-                    LOG((LF_TIEREDCOMPILATION, LL_INFO1000, "Jit_PartialCompilationPatchpoint: AWAITING OSR method for patchpoint [%d] (0x%p)\n", ppId, ip));
-                    __SwitchToThread(0, backoffs++);
-                    continue;
-                }
-
-                LONG newFlags = ppInfo->m_flags | PerPatchpointInfo::patchpoint_triggered;
-                BOOL triggerTransition = InterlockedCompareExchange(&ppInfo->m_flags, newFlags, oldFlags) == oldFlags;
-
-                if (!triggerTransition)
-                {
-                    LOG((LF_TIEREDCOMPILATION, LL_INFO1000, "Jit_PartialCompilationPatchpoint: (lost race) AWAITING OSR method for patchpoint [%d] (0x%p)\n", ppId, ip));
-                    __SwitchToThread(0, backoffs++);
-                    continue;
-                }
-            }
-        }
-
-        if (osrMethodCode == (PCODE)NULL)
-        {
-            // Time to create the OSR method.
-            //
-            // We currently do this synchronously. We could instead queue
-            // up a request on some worker thread, like we do for
-            // rejitting, and return control to the Tier0 method. It may
-            // eventually return here, if the patchpoint is hit often
-            // enough.
-            //
-            // There is a chance the async version will create methods
-            // that are never used (just like there is a chance that Tier1
-            // methods are ever called).
-            //
-            // In this prototype we want to expose bugs in the jitted code
-            // for OSR methods, so we stick with synchronous creation.
-            LOG((LF_TIEREDCOMPILATION, LL_INFO10, "Jit_Patchpoint: patchpoint [%d] (0x%p) TRIGGER at count %d\n", ppId, ip, hitCount));
-
-            // Invoke the helper to build the OSR method
-            osrMethodCode = JitPatchpointWorker(pMD, codeInfo, ilOffset);
-
-            // If that failed, mark the patchpoint as invalid.
-            if (osrMethodCode == (PCODE)NULL)
-            {
-                // Unexpected, but not fatal
-                STRESS_LOG3(LF_TIEREDCOMPILATION, LL_WARNING, "Jit_Patchpoint: patchpoint (0x%p) OSR method creation failed,"
-                    " marking patchpoint invalid for Method=0x%pM il offset %d\n", ip, pMD, ilOffset);
-
-                InterlockedOr(&ppInfo->m_flags, (LONG)PerPatchpointInfo::patchpoint_invalid);
-
-                if (forceTransition)
-                {
-                    EEPOLICY_HANDLE_FATAL_ERROR(COR_E_EXECUTIONENGINE);
-                }
-            }
-            else
-            {
-                // We've successfully created the osr method; make it available.
-                _ASSERTE(ppInfo->m_osrMethodCode == (PCODE)NULL);
-                ppInfo->m_osrMethodCode = osrMethodCode;
-                isNewMethod = true;
-            }
-        }
-
-        UNINSTALL_UNWIND_AND_CONTINUE_HANDLER;
-        UNINSTALL_MANAGED_EXCEPTION_DISPATCHER;
-
-        pFrame->Pop(CURRENT_THREAD);
-    }
-
-    if (osrMethodCode == (PCODE)NULL)
-    {
-        _ASSERTE(!forceTransition);
+        _ASSERTE(!patchpointMustFindOptimizedCode);
         goto DONE;
     }
 
