@@ -10,7 +10,7 @@ if (NOT CLR_CMAKE_TARGET_BROWSER)
     add_compile_options(-fexceptions)
 else()
     add_compile_options(-fwasm-exceptions)
-    add_link_options(-fwasm-exceptions)
+    add_link_options(-fwasm-exceptions -sEXIT_RUNTIME=1)
 endif()
 
 add_subdirectory(src)
