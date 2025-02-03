@@ -94,6 +94,7 @@ private:
     insCflags TruthifyingFlags(GenCondition cond);
     void      ContainCheckConditionalCompare(GenTreeCCMP* ccmp);
     void      ContainCheckNeg(GenTreeOp* neg);
+    void      ContainCheckNot(GenTreeOp* notOp);
     void      TryLowerCnsIntCselToCinc(GenTreeOp* select, GenTree* cond);
     void      TryLowerCselToCSOp(GenTreeOp* select, GenTree* cond);
     bool      TryLowerAddSubToMulLongOp(GenTreeOp* op, GenTree** next);

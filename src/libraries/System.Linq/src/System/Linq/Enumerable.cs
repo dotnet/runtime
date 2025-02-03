@@ -10,6 +10,9 @@ namespace System.Linq
 {
     public static partial class Enumerable
     {
+        [FeatureSwitchDefinition("System.Linq.Enumerable.IsSizeOptimized")]
+        internal static bool IsSizeOptimized { get; } = AppContext.TryGetSwitch("System.Linq.Enumerable.IsSizeOptimized", out bool isEnabled) ? isEnabled : false;
+
         public static IEnumerable<TSource> AsEnumerable<TSource>(this IEnumerable<TSource> source) => source;
 
         /// <summary>Returns an empty <see cref="IEnumerable{TResult}"/>.</summary>
