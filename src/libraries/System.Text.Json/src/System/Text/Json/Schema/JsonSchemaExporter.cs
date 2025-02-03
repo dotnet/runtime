@@ -211,7 +211,7 @@ namespace System.Text.Json.Schema
                     JsonUnmappedMemberHandling effectiveUnmappedMemberHandling = typeInfo.UnmappedMemberHandling ?? typeInfo.Options.UnmappedMemberHandling;
                     if (effectiveUnmappedMemberHandling is JsonUnmappedMemberHandling.Disallow)
                     {
-                        additionalProperties = JsonSchema.False;
+                        additionalProperties = JsonSchema.CreateFalseSchema();
                     }
 
                     if (typeDiscriminator is { } typeDiscriminatorPair)
@@ -350,7 +350,7 @@ namespace System.Text.Json.Schema
                 default:
                     Debug.Assert(typeInfo.Kind is JsonTypeInfoKind.None);
                     // Return a `true` schema for types with user-defined converters.
-                    return CompleteSchema(ref state, JsonSchema.True);
+                    return CompleteSchema(ref state, JsonSchema.CreateTrueSchema());
             }
 
             JsonSchema CompleteSchema(ref GenerationState state, JsonSchema schema)

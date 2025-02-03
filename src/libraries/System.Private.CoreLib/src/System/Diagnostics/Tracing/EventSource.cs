@@ -7,7 +7,7 @@
 /* DESIGN NOTES DESIGN NOTES DESIGN NOTES DESIGN NOTES */
 // DESIGN NOTES
 // Over the years EventSource has become more complex and so it is important to understand
-// the basic structure of the code to insure that it does not grow more complex.
+// the basic structure of the code to ensure that it does not grow more complex.
 //
 // Basic Model
 //
@@ -399,7 +399,10 @@ namespace System.Diagnostics.Tracing
             return GetName(eventSourceType, EventManifestOptions.None);
         }
 
-        private const DynamicallyAccessedMemberTypes ManifestMemberTypes = DynamicallyAccessedMemberTypes.All;
+        private const DynamicallyAccessedMemberTypes ManifestMemberTypes =
+            DynamicallyAccessedMemberTypes.PublicMethods
+            | DynamicallyAccessedMemberTypes.NonPublicMethods
+            | DynamicallyAccessedMemberTypes.PublicNestedTypes;
 
         /// <summary>
         /// Returns a string of the XML manifest associated with the eventSourceType. The scheme for this XML is
@@ -2079,7 +2082,7 @@ namespace System.Diagnostics.Tracing
             Justification = "EnsureDescriptorsInitialized's use of GetType preserves this method which " +
                             "requires unreferenced code, but EnsureDescriptorsInitialized does not access this member and is safe to call.")]
         [RequiresUnreferencedCode(EventSourceRequiresUnreferenceMessage)]
-        private unsafe object?[] SerializeEventArgs(int eventId, object?[] args)
+        private object?[] SerializeEventArgs(int eventId, object?[] args)
         {
             Debug.Assert(m_eventData != null);
             TraceLoggingEventTypes eventTypes = m_eventData[eventId].TraceLoggingEventTypes;
@@ -2174,7 +2177,7 @@ namespace System.Diagnostics.Tracing
             DispatchToAllListeners(eventCallbackArgs);
         }
 
-        internal unsafe void DispatchToAllListeners(EventWrittenEventArgs eventCallbackArgs)
+        internal void DispatchToAllListeners(EventWrittenEventArgs eventCallbackArgs)
         {
             int eventId = eventCallbackArgs.EventId;
             Exception? lastThrownException = null;
@@ -2517,9 +2520,6 @@ namespace System.Diagnostics.Tracing
             private TraceLoggingEventTypes _traceLoggingEventTypes;
             public TraceLoggingEventTypes TraceLoggingEventTypes
             {
-                [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2112:ReflectionToRequiresUnreferencedCode",
-                    Justification = "EnsureDescriptorsInitialized's use of GetType preserves this method which " +
-                                    "requires unreferenced code, but EnsureDescriptorsInitialized does not access this member and is safe to call.")]
                 [RequiresUnreferencedCode(EventSourceRequiresUnreferenceMessage)]
                 get
                 {
@@ -5261,7 +5261,7 @@ namespace System.Diagnostics.Tracing
         internal readonly EventListener m_Listener;   // The dispatcher this entry is for
         internal bool[]? m_EventEnabled;              // For every event in a the eventSource, is it enabled?
 
-        // Only guaranteed to exist after a InsureInit()
+        // Only guaranteed to exist after a EnsureInit()
         internal EventDispatcher? m_Next;              // These form a linked list in code:EventSource.m_Dispatchers
         // Of all listeners for that eventSource.
     }

@@ -3,7 +3,7 @@
 //
 // OBJECT.INL
 //
-// Definitions inline functions of a Com+ Object
+// Definitions inline functions of a CLR Object
 //
 
 
@@ -213,18 +213,6 @@ __forceinline BOOL Nullable::IsNullableForType(TypeHandle type, MethodTable* par
     if (!type.AsMethodTable()->HasInstantiation())            // shortcut, if it is not generic it can't be Nullable<T>
         return FALSE;
     return Nullable::IsNullableForTypeHelper(type.AsMethodTable(), paramMT);
-}
-
-//===============================================================================
-// Returns true if this pMT is Nullable<T> for T == paramMT
-
-__forceinline BOOL Nullable::IsNullableForTypeNoGC(TypeHandle type, MethodTable* paramMT)
-{
-    if (type.IsTypeDesc())
-        return FALSE;
-    if (!type.AsMethodTable()->HasInstantiation())            // shortcut, if it is not generic it can't be Nullable<T>
-        return FALSE;
-    return Nullable::IsNullableForTypeHelperNoGC(type.AsMethodTable(), paramMT);
 }
 
 //===============================================================================

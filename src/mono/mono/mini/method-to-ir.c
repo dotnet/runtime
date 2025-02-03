@@ -6262,6 +6262,9 @@ method_make_alwaysthrow_typeloadfailure (MonoCompile* cfg, MonoClass* klass)
 	mono_link_bblock (cfg, bb, cfg->bb_exit);
 
 	cfg->disable_inline = TRUE;
+
+	for (guint i = 0; i < cfg->header->num_clauses; i++)
+		cfg->clause_is_dead [i] = TRUE;
 }
 
 typedef union _MonoOpcodeParameter {
@@ -10139,6 +10142,8 @@ calli_end:
 							EMIT_NEW_PCONST (cfg, *sp, NULL);
 							sp++;
 						} else if (il_op == MONO_CEE_LDFLD || il_op == MONO_CEE_LDSFLD) {
+							// method_make_alwaysthrow_typeloadfailure currently doesn't work with inlining
+							INLINE_FAILURE("type load error");
 							// An object is expected here. It may be impossible to correctly infer its type,
 							// we turn this entire method into a throw.
 							method_make_alwaysthrow_typeloadfailure (cfg, klass);
@@ -11591,6 +11596,14 @@ mono_ldptr:
 			*sp++ = ins;
 			break;
 		}
+		case MONO_CEE_MONO_LDVIRTFTN_DELEGATE: {
+			CHECK_STACK (2);
+			sp -= 2;
+
+			ins = mono_emit_jit_icall (cfg, mono_get_addr_compiled_method, sp);
+			*sp++ = ins;
+			break;
+		}
 		case MONO_CEE_MONO_CALLI_EXTRA_ARG: {
 			MonoInst *addr;
 			MonoInst *arg;
@@ -12111,13 +12124,12 @@ mono_ldptr:
 			break;
 		case MONO_CEE_INITOBJ:
 			klass = mini_get_class (method, token, generic_context);
+			--sp;
 			if (CLASS_HAS_FAILURE (klass)) {
 				HANDLE_TYPELOAD_ERROR (cfg, klass);
 				inline_costs += 10;
 				break; // reached only in AOT
 			}
-
-			--sp;
 
 			if (mini_class_is_reference (klass))
 				MONO_EMIT_NEW_STORE_MEMBASE_IMM (cfg, OP_STORE_MEMBASE_IMM, sp [0]->dreg, 0, 0);

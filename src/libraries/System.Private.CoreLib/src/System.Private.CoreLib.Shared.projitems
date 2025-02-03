@@ -16,8 +16,9 @@
     <IsMobileLike Condition="'$(TargetsBrowser)' == 'true' or '$(TargetsWasi)' == 'true' or '$(IsiOSLike)' == 'true' or '$(TargetsAndroid)' == 'true'">true</IsMobileLike>
     <SupportsArmIntrinsics Condition="'$(Platform)' == 'arm64'">true</SupportsArmIntrinsics>
     <SupportsWasmIntrinsics Condition="'$(Platform)' == 'wasm'">true</SupportsWasmIntrinsics>
-    <SupportsX86Intrinsics Condition="'$(Platform)' == 'x64' or ('$(Platform)' == 'x86' and '$(TargetsUnix)' != 'true')">true</SupportsX86Intrinsics>
-    <SupportsX86Intrinsics Condition="'$(Platform)' == 'x86' and '$(TargetsWindows)' == 'true' and '$(FeatureMono)' == 'true'">false</SupportsX86Intrinsics>
+    <SupportsX86Intrinsics Condition="'$(Platform)' == 'x64' or '$(Platform)' == 'x86'">true</SupportsX86Intrinsics>
+    <SupportsX86Intrinsics Condition="'$(Platform)' == 'x86' and '$(FeatureMono)' == 'true'">false</SupportsX86Intrinsics>
+    <NotSupportedOnMono Condition="'$(FeatureMono)' == 'true'">.PlatformNotSupported</NotSupportedOnMono>
     <ILLinkSharedDirectory>$(MSBuildThisFileDirectory)ILLink\</ILLinkSharedDirectory>
     <IsBigEndian Condition="'$(Platform)' == 's390x'">true</IsBigEndian>
     <Is64Bit Condition="'$(Platform)' == 'arm64' or '$(Platform)' == 'x64' or '$(Platform)' == 's390x' or '$(Platform)' == 'loongarch64' or '$(Platform)' == 'ppc64le' or '$(Platform)' == 'riscv64'">true</Is64Bit>
@@ -60,7 +61,6 @@
     <ILLinkSubstitutionsXmls Include="$(ILLinkSharedDirectory)ILLink.Substitutions.NoX86Intrinsics.xml" Condition="'$(SupportsX86Intrinsics)' != 'true'" />
     <ILLinkSubstitutionsXmls Include="$(ILLinkSharedDirectory)ILLink.Substitutions.NoWasmIntrinsics.xml" Condition="'$(SupportsWasmIntrinsics)' != 'true'" />
     <ILLinkSubstitutionsXmls Include="$(ILLinkSharedDirectory)ILLink.Substitutions.iOS.xml" Condition="'$(IsiOSLike)' == 'true'" />
-    <ILLinkSubstitutionsXmls Include="$(ILLinkSharedDirectory)ILLink.Substitutions.Browser.xml" Condition="'$(TargetsBrowser)' == 'true'" />
     <ILLinkLinkAttributesXmls Include="$(ILLinkSharedDirectory)ILLink.LinkAttributes.Shared.xml" />
     <ILLinkSuppressionsLibraryBuildXml Include="$(ILLinkSharedDirectory)ILLink.Suppressions.LibraryBuild.xml" />
     <ILLinkDescriptorsLibraryBuildXml Include="$(ILLinkSharedDirectory)ILLink.Descriptors.LibraryBuild.xml" />
@@ -242,6 +242,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Collections\ObjectModel\CollectionHelpers.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Collections\ObjectModel\ReadOnlyCollection.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Collections\ObjectModel\ReadOnlyDictionary.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Collections\ObjectModel\ReadOnlySet.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\ComponentModel\DefaultValueAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\ComponentModel\EditorBrowsableAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\ComponentModel\EditorBrowsableState.cs" />
@@ -335,7 +336,6 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\Calendar.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\CalendarAlgorithmType.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\CalendarData.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\CalendarData.Browser.cs" Condition="'$(TargetsBrowser)' == 'true'" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\CalendarData.iOS.cs" Condition="'$(IsiOSLike)' == 'true'" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\CalendarData.Icu.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\CalendarData.Nls.cs" />
@@ -349,7 +349,6 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\CompareInfo.Invariant.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\CompareInfo.Nls.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\CompareInfo.Utf8.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\CompareInfo.WebAssembly.cs" Condition="'$(TargetsBrowser)' == 'true'" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\CompareInfo.iOS.cs" Condition="'$(IsiOSLike)' == 'true'" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\CompareOptions.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\CultureData.cs" />
@@ -411,7 +410,6 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\TextInfo.Icu.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\TextInfo.Nls.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\TextInfo.iOS.cs" Condition="'$(IsiOSLike)' == 'true'" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\TextInfo.WebAssembly.cs" Condition="'$(TargetsBrowser)' == 'true'" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\ThaiBuddhistCalendar.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\TimeSpanFormat.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\TimeSpanParse.cs" />
@@ -917,6 +915,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\ConstrainedExecution\PrePrepareMethodAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\ConstrainedExecution\ReliabilityContractAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\ExceptionServices\ExceptionDispatchInfo.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\ExceptionServices\ExceptionHandling.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\ExceptionServices\FirstChanceExceptionEventArgs.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\ExceptionServices\HandleProcessCorruptedStateExceptionsAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\GCFrameRegistration.cs" Condition="'$(FeatureMono)' != 'true'" />
@@ -1044,6 +1043,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Intrinsics\Scalar.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Intrinsics\SimdVectorExtensions.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Intrinsics\Vector128.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Intrinsics\Vector128.Numerics.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Intrinsics\Vector128_1.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Intrinsics\Vector128DebugView_1.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Intrinsics\Vector256.cs" />
@@ -1338,17 +1338,8 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\WeakReference.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\WeakReference.T.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\ComAwareWeakReference.cs" />
-    <Compile Include="$(CommonPath)Interop\Browser\Interop.CompareInfo.cs" Condition="'$(TargetsBrowser)' == 'true'">
-      <Link>Common\Interop\Interop.CompareInfo.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)Interop\Browser\Interop.Calendar.cs" Condition="'$(TargetsBrowser)' == 'true'">
-      <Link>Common\Interop\Interop.Calendar.cs</Link>
-    </Compile>
     <Compile Include="$(CommonPath)Interop\Browser\Interop.Locale.cs" Condition="'$(TargetsBrowser)' == 'true'">
       <Link>Common\Interop\Browser\Interop.Locale.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)Interop\Browser\Interop.TextInfo.cs" Condition="'$(TargetsBrowser)' == 'true'">
-      <Link>Common\Interop\Interop.TextInfo.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)Interop\Interop.Calendar.cs">
       <Link>Common\Interop\Interop.Calendar.cs</Link>
@@ -2614,30 +2605,23 @@
   </ItemGroup>
   <ItemGroup Condition="'$(SupportsX86Intrinsics)' == 'true'">
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Intrinsics\X86\Aes.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Intrinsics\X86\Avx.cs" Condition="'$(FeatureMono)' != 'true'" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Intrinsics\X86\Avx.PlatformNotSupported.cs" Condition="'$(FeatureMono)' == 'true'" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Intrinsics\X86\Avx2.cs" Condition="'$(FeatureMono)' != 'true'" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Intrinsics\X86\Avx2.PlatformNotSupported.cs" Condition="'$(FeatureMono)' == 'true'" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Intrinsics\X86\Avx10v1.cs" Condition="'$(FeatureMono)' != 'true'" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Intrinsics\X86\Avx10v1.PlatformNotSupported.cs" Condition="'$(FeatureMono)' == 'true'" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Intrinsics\X86\Avx512BW.cs" Condition="'$(FeatureMono)' != 'true'" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Intrinsics\X86\Avx512BW.PlatformNotSupported.cs" Condition="'$(FeatureMono)' == 'true'" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Intrinsics\X86\Avx512CD.cs" Condition="'$(FeatureMono)' != 'true'" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Intrinsics\X86\Avx512CD.PlatformNotSupported.cs" Condition="'$(FeatureMono)' == 'true'" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Intrinsics\X86\Avx512DQ.cs" Condition="'$(FeatureMono)' != 'true'" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Intrinsics\X86\Avx512DQ.PlatformNotSupported.cs" Condition="'$(FeatureMono)' == 'true'" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Intrinsics\X86\Avx512F.cs" Condition="'$(FeatureMono)' != 'true'" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Intrinsics\X86\Avx512F.PlatformNotSupported.cs" Condition="'$(FeatureMono)' == 'true'" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Intrinsics\X86\Avx512Vbmi.cs" Condition="'$(FeatureMono)' != 'true'" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Intrinsics\X86\Avx512Vbmi.PlatformNotSupported.cs" Condition="'$(FeatureMono)' == 'true'" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Intrinsics\X86\AvxVnni.cs" Condition="'$(FeatureMono)' != 'true'" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Intrinsics\X86\AvxVnni.PlatformNotSupported.cs" Condition="'$(FeatureMono)' == 'true'" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Intrinsics\X86\Avx$(NotSupportedOnMono).cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Intrinsics\X86\Avx2$(NotSupportedOnMono).cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Intrinsics\X86\Avx10v1$(NotSupportedOnMono).cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Intrinsics\X86\Avx10v2$(NotSupportedOnMono).cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Intrinsics\X86\Avx512BW$(NotSupportedOnMono).cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Intrinsics\X86\Avx512CD$(NotSupportedOnMono).cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Intrinsics\X86\Avx512DQ$(NotSupportedOnMono).cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Intrinsics\X86\Avx512F$(NotSupportedOnMono).cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Intrinsics\X86\Avx512Vbmi$(NotSupportedOnMono).cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Intrinsics\X86\AvxVnni$(NotSupportedOnMono).cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Intrinsics\X86\Bmi1.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Intrinsics\X86\Bmi2.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Intrinsics\X86\Fma.cs" Condition="'$(FeatureMono)' != 'true'" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Intrinsics\X86\Fma.PlatformNotSupported.cs" Condition="'$(FeatureMono)' == 'true'" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Intrinsics\X86\Fma$(NotSupportedOnMono).cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Intrinsics\X86\Gfni$(NotSupportedOnMono).cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Intrinsics\X86\Lzcnt.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Intrinsics\X86\Pclmulqdq.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Intrinsics\X86\Pclmulqdq.Wide$(NotSupportedOnMono).cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Intrinsics\X86\Popcnt.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Intrinsics\X86\Sse.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Intrinsics\X86\Sse2.cs" />
@@ -2646,8 +2630,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Intrinsics\X86\Sse42.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Intrinsics\X86\Ssse3.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Intrinsics\X86\X86Base.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Intrinsics\X86\X86Serialize.cs" Condition="'$(FeatureMono)' != 'true'" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Intrinsics\X86\X86Serialize.PlatformNotSupported.cs" Condition="'$(FeatureMono)' == 'true'" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Intrinsics\X86\X86Serialize$(NotSupportedOnMono).cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(SupportsX86Intrinsics)' != 'true'">
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Intrinsics\X86\Aes.PlatformNotSupported.cs" />
@@ -2658,13 +2641,16 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Intrinsics\X86\Avx512DQ.PlatformNotSupported.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Intrinsics\X86\Avx512F.PlatformNotSupported.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Intrinsics\X86\Avx10v1.PlatformNotSupported.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Intrinsics\X86\Avx10v2.PlatformNotSupported.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Intrinsics\X86\Avx512Vbmi.PlatformNotSupported.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Intrinsics\X86\AvxVnni.PlatformNotSupported.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Intrinsics\X86\Bmi1.PlatformNotSupported.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Intrinsics\X86\Bmi2.PlatformNotSupported.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Intrinsics\X86\Fma.PlatformNotSupported.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Intrinsics\X86\Gfni.PlatformNotSupported.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Intrinsics\X86\Lzcnt.PlatformNotSupported.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Intrinsics\X86\Pclmulqdq.PlatformNotSupported.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Intrinsics\X86\Pclmulqdq.Wide.PlatformNotSupported.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Intrinsics\X86\Popcnt.PlatformNotSupported.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Intrinsics\X86\Sse.PlatformNotSupported.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Intrinsics\X86\Sse2.PlatformNotSupported.cs" />

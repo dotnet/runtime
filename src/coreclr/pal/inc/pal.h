@@ -541,74 +541,6 @@ CopyFileW(
 #define CopyFile CopyFileA
 #endif
 
-typedef struct _WIN32_FIND_DATAA {
-    DWORD dwFileAttributes;
-    FILETIME ftCreationTime;
-    FILETIME ftLastAccessTime;
-    FILETIME ftLastWriteTime;
-    DWORD nFileSizeHigh;
-    DWORD nFileSizeLow;
-    DWORD dwReserved0;
-    DWORD dwReserved1;
-    CHAR cFileName[ MAX_PATH_FNAME ];
-    CHAR cAlternateFileName[ 14 ];
-} WIN32_FIND_DATAA, *PWIN32_FIND_DATAA, *LPWIN32_FIND_DATAA;
-
-typedef struct _WIN32_FIND_DATAW {
-    DWORD dwFileAttributes;
-    FILETIME ftCreationTime;
-    FILETIME ftLastAccessTime;
-    FILETIME ftLastWriteTime;
-    DWORD nFileSizeHigh;
-    DWORD nFileSizeLow;
-    DWORD dwReserved0;
-    DWORD dwReserved1;
-    WCHAR cFileName[ MAX_PATH_FNAME ];
-    WCHAR cAlternateFileName[ 14 ];
-} WIN32_FIND_DATAW, *PWIN32_FIND_DATAW, *LPWIN32_FIND_DATAW;
-
-#ifdef UNICODE
-typedef WIN32_FIND_DATAW WIN32_FIND_DATA;
-typedef PWIN32_FIND_DATAW PWIN32_FIND_DATA;
-typedef LPWIN32_FIND_DATAW LPWIN32_FIND_DATA;
-#else
-typedef WIN32_FIND_DATAA WIN32_FIND_DATA;
-typedef PWIN32_FIND_DATAA PWIN32_FIND_DATA;
-typedef LPWIN32_FIND_DATAA LPWIN32_FIND_DATA;
-#endif
-
-PALIMPORT
-HANDLE
-PALAPI
-FindFirstFileW(
-           IN LPCWSTR lpFileName,
-           OUT LPWIN32_FIND_DATAW lpFindFileData);
-
-#ifdef UNICODE
-#define FindFirstFile FindFirstFileW
-#else
-#define FindFirstFile FindFirstFileA
-#endif
-
-PALIMPORT
-BOOL
-PALAPI
-FindNextFileW(
-          IN HANDLE hFindFile,
-          OUT LPWIN32_FIND_DATAW lpFindFileData);
-
-#ifdef UNICODE
-#define FindNextFile FindNextFileW
-#else
-#define FindNextFile FindNextFileA
-#endif
-
-PALIMPORT
-BOOL
-PALAPI
-FindClose(
-      IN OUT HANDLE hFindFile);
-
 PALIMPORT
 DWORD
 PALAPI
@@ -1374,12 +1306,14 @@ typedef struct _KNONVOLATILE_CONTEXT_POINTERS {
 #define XSTATE_AVX512_KMASK (5)
 #define XSTATE_AVX512_ZMM_H (6)
 #define XSTATE_AVX512_ZMM (7)
+#define XSTATE_APX (19)
 
 #define XSTATE_MASK_GSSE (UI64(1) << (XSTATE_GSSE))
 #define XSTATE_MASK_AVX (XSTATE_MASK_GSSE)
 #define XSTATE_MASK_AVX512 ((UI64(1) << (XSTATE_AVX512_KMASK)) | \
                             (UI64(1) << (XSTATE_AVX512_ZMM_H)) | \
                             (UI64(1) << (XSTATE_AVX512_ZMM)))
+#define XSTATE_MASK_APX (UI64(1) << (XSTATE_APX))
 
 typedef struct DECLSPEC_ALIGN(16) _M128A {
     ULONGLONG Low;
@@ -1616,6 +1550,27 @@ typedef struct DECLSPEC_ALIGN(16) _CONTEXT {
         M512 Zmm30;
         M512 Zmm31;
     };
+    
+    struct
+    {
+        DWORD64 Egpr16;
+        DWORD64 Egpr17;
+        DWORD64 Egpr18;
+        DWORD64 Egpr19;
+        DWORD64 Egpr20;
+        DWORD64 Egpr21;
+        DWORD64 Egpr22;
+        DWORD64 Egpr23;
+        DWORD64 Egpr24;
+        DWORD64 Egpr25;
+        DWORD64 Egpr26;
+        DWORD64 Egpr27;
+        DWORD64 Egpr28;
+        DWORD64 Egpr29;
+        DWORD64 Egpr30;
+        DWORD64 Egpr31;
+    };
+    
 } CONTEXT, *PCONTEXT, *LPCONTEXT;
 
 //
@@ -2916,14 +2871,14 @@ VirtualFree(
         IN DWORD dwFreeType);
 
 
-#if defined(HOST_OSX) && defined(HOST_ARM64)
+#if defined(HOST_APPLE) && defined(HOST_ARM64)
 
 PALIMPORT
 VOID
 PALAPI
 PAL_JitWriteProtect(bool writeEnable);
 
-#endif // defined(HOST_OSX) && defined(HOST_ARM64)
+#endif // defined(HOST_APPLE) && defined(HOST_ARM64)
 
 
 PALIMPORT

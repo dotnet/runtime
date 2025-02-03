@@ -109,7 +109,7 @@ namespace System
             RuntimeTypeHandle declaringType;
             RuntimeAugments.TypeLoaderCallbacks.GetRuntimeMethodHandleComponents(this, out declaringType, out _, out _);
 
-            return ReflectionAugments.ReflectionCoreCallbacks.GetFunctionPointer(this, declaringType);
+            return ReflectionAugments.GetFunctionPointer(this, declaringType);
         }
 
         [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
