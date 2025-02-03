@@ -108,10 +108,10 @@
       <!--
         If we're in a full-stack VMR build or Source-Build, publish all packages.
         ShortStack jobs should only publish their specific packages.
-        In the future, some VMR jobs may not publish all packages.
+        In the future, some full-stack VMR jobs may not publish all packages.
         SourceBuild will always need to publish everything.
       -->
-      <InnerBuildArgs Condition="'$(ShortStack)' != 'true'">$(InnerBuildArgs) /p:PublishAllPackages=true</InnerBuildArgs>
+      <InnerBuildArgs Condition="'$(ShortStack)' != 'true'">$(InnerBuildArgs) /p:EnableDefaultArtifacts=true</InnerBuildArgs>
     </PropertyGroup>
   </Target>
 

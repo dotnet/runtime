@@ -72,8 +72,8 @@ extends:
           variables:
             - name: _SignDiagnosticFilesArgs
               value: ''
-            - name: PublishAllPackages
-              value: $[and(eq(variables.osGroup, 'windows'), eq(variables.archType, 'x64'))]
+            - name: _EnableDefaultArtifactsArg
+              value: $[iif(and(eq(variables.osGroup, 'windows'), eq(variables.archType, 'x64')),'/p:EnableDefaultArtifacts=true','')]
           jobParameters:
             templatePath: 'templates-official'
             preBuildSteps:
@@ -86,7 +86,7 @@ extends:
                 vaultName: 'clrdiag-esrp-id'
                 azureSubscription: 'diagnostics-esrp-kvcertuser'
 
-            buildArgs: -c $(_BuildConfig) -restore -build -sign -publish /p:DotNetBuildAllRuntimePacks=true $(_SignDiagnosticFilesArgs) /p:PublishAllPackages=$(PublishAllPackages)
+            buildArgs: -c $(_BuildConfig) -restore -build -sign -publish /p:DotNetBuildAllRuntimePacks=true $(_SignDiagnosticFilesArgs) $(_EnableDefaultArtifactsArg)
             nameSuffix: AllRuntimes
             isOfficialBuild: ${{ variables.isOfficialBuild }}
             timeoutInMinutes: 120
@@ -163,7 +163,7 @@ extends:
           - windows_x64
           jobParameters:
             templatePath: 'templates-official'
-            buildArgs: -s crossdacpack -c $(_BuildConfig) -restore -build -sign -publish /p:CrossDacArtifactsDir=$(crossDacArtifactsPath) /p:PublishAllPackages=true
+            buildArgs: -s crossdacpack -c $(_BuildConfig) -restore -build -sign -publish /p:CrossDacArtifactsDir=$(crossDacArtifactsPath) /p:EnableDefaultArtifacts=true
             nameSuffix: CrossDac
             isOfficialBuild: ${{ variables.isOfficialBuild }}
             timeoutInMinutes: 120
@@ -300,7 +300,7 @@ extends:
           - windows_x64
           jobParameters:
             templatePath: 'templates-official'
-            buildArgs: -s tools+libs -restore -build -pack -sign -publish -c $(_BuildConfig) /p:TestAssemblies=false /p:TestPackages=true /p:PublishAllPackages=true
+            buildArgs: -s tools+libs -restore -build -pack -sign -publish -c $(_BuildConfig) /p:TestAssemblies=false /p:TestPackages=true /p:EnableDefaultArtifacts=true
             nameSuffix: Libraries_WithPackages
             isOfficialBuild: ${{ variables.isOfficialBuild }}
             timeoutInMinutes: 95
@@ -384,7 +384,7 @@ extends:
                   PackageArtifacts/Microsoft.NETCore.App.Runtime.win-x86*.nupkg
                   PackageArtifacts/Microsoft.NET.Sdk.WebAssembly.Pack*.nupkg
 
-            buildArgs: -s mono.workloads -c $(_BuildConfig) -restore -build -sign -publish /p:PackageSource=$(Build.SourcesDirectory)/artifacts/workloadPackages /p:WorkloadOutputPath=$(Build.SourcesDirectory)/artifacts/workloads /p:ShouldGenerateProductVersionFiles=true /p:PublishAllPackages=true
+            buildArgs: -s mono.workloads -c $(_BuildConfig) -restore -build -sign -publish /p:PackageSource=$(Build.SourcesDirectory)/artifacts/workloadPackages /p:WorkloadOutputPath=$(Build.SourcesDirectory)/artifacts/workloads /p:ShouldGenerateProductVersionFiles=true /p:EnableDefaultArtifacts=true
 
             isOfficialBuild: ${{ variables.isOfficialBuild }}
             timeoutInMinutes: 120
