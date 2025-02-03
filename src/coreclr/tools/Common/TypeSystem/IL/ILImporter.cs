@@ -254,8 +254,14 @@ namespace Internal.IL
                                 CreateBasicBlock(target);
                             else
                                 ReportInvalidBranchTarget(target);
-                            CreateBasicBlock(_currentOffset);
-                        }
+                            if ((uint)_currentOffset < (uint)_basicBlocks.Length)
+                                CreateBasicBlock(_currentOffset);
+                            else
+                            {
+                                ReportFallthroughAtEndOfMethod();
+                                return;
+                            }
+                    }
                         break;
                     case ILOpcode.switch_:
                         {
@@ -270,7 +276,13 @@ namespace Internal.IL
                                 else
                                     ReportInvalidBranchTarget(target);
                             }
-                            CreateBasicBlock(_currentOffset);
+                            if ((uint)_currentOffset < (uint)_basicBlocks.Length)
+                                CreateBasicBlock(_currentOffset);
+                            else
+                            {
+                                ReportFallthroughAtEndOfMethod();
+                                return;
+                            }
                         }
                         break;
                     default:
