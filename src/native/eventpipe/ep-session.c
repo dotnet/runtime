@@ -90,12 +90,13 @@ EP_RT_DEFINE_THREAD_FUNC (streaming_thread)
 
 static size_t streaming_loop_tick(EventPipeSession *const session) {
 	bool events_written = false;
+	bool ok;
 	if (!ep_session_get_streaming_enabled (session)){
 		session->streaming_thread = NULL;
 		return 1; // done
 	}
 	EP_GCX_PREEMP_ENTER
-	bool ok = ep_session_write_all_buffers_to_file (session, &events_written)
+	ok = ep_session_write_all_buffers_to_file (session, &events_written);
 	EP_GCX_PREEMP_EXIT
 	if (!ok) {
 		ep_disable ((EventPipeSessionID)session);
