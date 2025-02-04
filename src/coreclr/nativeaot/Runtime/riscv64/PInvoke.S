@@ -24,10 +24,12 @@ NESTED_ENTRY RhpPInvoke, _TEXT, NoHandler
         sd    t0, OFFSETOF__PInvokeTransitionFrame__m_Flags(a0)
 
         // get TLS global variable address
-        INLINE_GETTHREAD a1, t2
+        // Save MethodTable pointer. INLINE_GETTHREAD will trash a0.
+        mv               t2, a0
+        INLINE_GETTHREAD a1
 
-        sd    a1, OFFSETOF__PInvokeTransitionFrame__m_pThread(a0)
-        sd    a0, OFFSETOF__Thread__m_pTransitionFrame(a1)
+        sd    a1, OFFSETOF__PInvokeTransitionFrame__m_pThread(t2)
+        sd    t2, OFFSETOF__Thread__m_pTransitionFrame(a1)
         ret
 NESTED_END RhpPInvoke, _TEXT
 
@@ -43,6 +45,6 @@ LEAF_ENTRY RhpPInvokeReturn, _TEXT
 
 0:
         // Passing transition frame pointer in a0
-        tail    RhpWaitForGC2  // Call RhpWaitForGC2 function
+        tail    RhpWaitForGC2
 
 LEAF_END RhpPInvokeReturn, _TEXT

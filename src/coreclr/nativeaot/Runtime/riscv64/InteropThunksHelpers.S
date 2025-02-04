@@ -21,7 +21,7 @@
         // Custom calling convention:
         //      tp pointer to the current thunk's data block (data contains 2 pointer values: context + target pointers)
 
-        INLINE_GET_TLS_VAR t0, C_FUNC(tls_thunkData), t2
+        INLINE_GET_TLS_VAR t0, C_FUNC(tls_thunkData)
 
         // t0 = base address of TLS data
         // tp = address of context cell in thunk's data

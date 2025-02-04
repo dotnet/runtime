@@ -157,13 +157,11 @@ C_FUNC(\Name):
 .endm
 
 // Loads the address of a thread-local variable into the target register.
-// The target register cannot be a0. Preserves all other registers.
-.macro INLINE_GET_TLS_VAR target, var, trashReg
+// The target register cannot be a0.
+.macro INLINE_GET_TLS_VAR target, var
     .ifc \target, a0
         .error "target cannot be a0"
     .endif
-
-    mv \trashReg, a0
 
     // see https://github.com/riscv-non-isa/riscv-elf-psabi-doc/blob/eb2b2962/riscv-elf.adoc#tls-descriptors
     auipc  a0, %tlsdesc_hi(\var)
@@ -171,14 +169,11 @@ C_FUNC(\Name):
     addi   a0, a0, %tlsdesc_add_lo(\var)
     jalr  t0, 0(t0), %tlsdesc_call(\var)
     add    \target, tp, a0
-
-    mv a0, \trashReg
-
 .endm
 
 // Inlined version of RhpGetThread. Target cannot be x0.
-.macro INLINE_GETTHREAD target, trashReg
-    INLINE_GET_TLS_VAR \target, C_FUNC(tls_CurrentThread), \trashReg
+.macro INLINE_GETTHREAD target
+    INLINE_GET_TLS_VAR \target, C_FUNC(tls_CurrentThread)
 .endm
 
 .macro InterlockedOperationBarrier

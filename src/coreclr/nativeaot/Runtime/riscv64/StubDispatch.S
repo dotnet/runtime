@@ -107,10 +107,10 @@
     LEAF_ENTRY RhpInterfaceDispatchSlow, _TEXT
         // a1 contains the interface dispatch cell address.
         // Calling convention of the universal thunk is:
-        //  a2: target address for the thunk to call
-        //  a1: parameter of the thunk's target
-        PREPARE_EXTERNAL_VAR RhpCidResolve, a2
-        mv t2, a1
+        //  t0: target address for the thunk to call
+        //  t1: parameter of the thunk's target
+        PREPARE_EXTERNAL_VAR RhpCidResolve, t0
+        mv t1, a1
         tail       C_FUNC(RhpUniversalTransition_DebugStepTailCall)
     LEAF_END RhpInterfaceDispatchSlow, _TEXT
 

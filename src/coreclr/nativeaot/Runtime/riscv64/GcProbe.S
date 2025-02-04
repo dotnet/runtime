@@ -84,7 +84,7 @@
 .macro FixupHijackedCallstack
 
     // a2 <- GetThread()
-    INLINE_GETTHREAD a2, t2
+    INLINE_GETTHREAD a2
 
     // Fix the stack by restoring the original return address
     ld  ra, OFFSETOF__Thread__m_pvHijackedReturnAddress(a2)
