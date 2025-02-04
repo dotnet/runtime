@@ -19,11 +19,7 @@
     LEAF_ENTRY RhpNewFast, _TEXT
 
         // a1 = GetThread()
-#ifdef FEATURE_EMULATED_TLS
-        GETTHREAD_ETLS_1
-#else
         INLINE_GETTHREAD  a1, t2
-#endif
 
         //
         // a0 contains MethodTable pointer
@@ -123,11 +119,7 @@ LOCAL_LABEL(NewOutOfMemory):
         // a1 == element count
         // a2 == string size
 
-#ifdef FEATURE_EMULATED_TLS
-        GETTHREAD_ETLS_3
-#else
         INLINE_GETTHREAD a3, t2
-#endif
 
         // Load potential new object address into t3.
         ld   t3, OFFSETOF__Thread__m_alloc_context__alloc_ptr(a3)
@@ -189,11 +181,7 @@ LOCAL_LABEL(RhNewString_Rare):
         // a1 == element count
         // a2 == array size
 
-#ifdef FEATURE_EMULATED_TLS
-        GETTHREAD_ETLS_3
-#else
         INLINE_GETTHREAD a3, t2
-#endif
 
         // Load potential new object address into t3.
         ld   t3, OFFSETOF__Thread__m_alloc_context__alloc_ptr(a3)

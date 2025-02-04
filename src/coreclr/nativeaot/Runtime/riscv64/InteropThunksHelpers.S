@@ -21,12 +21,7 @@
         // Custom calling convention:
         //      tp pointer to the current thunk's data block (data contains 2 pointer values: context + target pointers)
 
-#ifdef FEATURE_EMULATED_TLS
-        // If using TLS emulation, fetch the TLS data block address
-        GETTHUNKDATA_ETLS_9
-#else
         INLINE_GET_TLS_VAR t0, C_FUNC(tls_thunkData), t2
-#endif
 
         // t0 = base address of TLS data
         // tp = address of context cell in thunk's data
