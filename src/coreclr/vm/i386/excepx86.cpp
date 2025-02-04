@@ -690,7 +690,7 @@ CPFH_RealFirstPassHandler(                  // ExceptionContinueSearch, etc.
     if (fIsManagedCode &&
         fPGCDisabledOnEntry &&
         (pThread->m_pFrame == FRAME_TOP ||
-         pThread->m_pFrame->GetType() != FrameIdentifier::FaultingExceptionFrame ||
+         pThread->m_pFrame->GetFrameIdentifier() != FrameIdentifier::FaultingExceptionFrame ||
          (size_t)pThread->m_pFrame > (size_t)pEstablisherFrame))
     {
         // setup interrupted frame so that GC during calls to init won't collect the frames
@@ -2167,7 +2167,7 @@ StackWalkAction COMPlusThrowCallback(       // SWA value
         if (pData->pPrevExceptionRecord) {
             // FCALLS have an extra SEH record in debug because of the desctructor
             // associated with ForbidGC checking.  This is benign, so just ignore it.
-            if (pFrame) _ASSERTE(pData->pPrevExceptionRecord < pFrame || pFrame->GetType() == FrameIdentifier::HelperMethodFrame);
+            if (pFrame) _ASSERTE(pData->pPrevExceptionRecord < pFrame || pFrame->GetFrameIdentifier() == FrameIdentifier::HelperMethodFrame);
             if (pCf->IsFrameless()) _ASSERTE((ULONG_PTR)pData->pPrevExceptionRecord <= GetRegdisplaySP(pCf->GetRegisterSet()));
         }
     }
@@ -2668,7 +2668,7 @@ StackWalkAction COMPlusUnwindCallback (CrawlFrame *pCf, ThrowCallbackType *pData
             // Make the filter as done. See comment in CallJitEHFilter
             // on why we have to do it here.
             Frame* pFilterFrame = pThread->GetFrame();
-            _ASSERTE(pFilterFrame->GetType() == FrameIdentifier::ExceptionFilterFrame);
+            _ASSERTE(pFilterFrame->GetFrameIdentifier() == FrameIdentifier::ExceptionFilterFrame);
             ((ExceptionFilterFrame*)pFilterFrame)->SetFilterDone();
 
             // Inform the profiler that we're leaving, and what pass we're on

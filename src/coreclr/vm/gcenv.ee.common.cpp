@@ -104,7 +104,7 @@ inline bool SafeToReportGenericParamContext(CrawlFrame* pCF)
 {
     LIMITED_METHOD_CONTRACT;
 
-    if (!pCF->IsFrameless() && pCF->GetFrame()->GetType() == FrameIdentifier::StubDispatchFrame)
+    if (!pCF->IsFrameless() && pCF->GetFrame()->GetFrameIdentifier() == FrameIdentifier::StubDispatchFrame)
     {
         return !((StubDispatchFrame*)pCF->GetFrame())->SuppressParamTypeArg();
     }

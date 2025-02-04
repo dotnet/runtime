@@ -39,7 +39,7 @@
 
 void Frame::GcScanRoots(promote_func *fn, ScanContext* sc)
 {
-#define FRAME_TYPE_NAME(frameType) if (this->GetType() == FrameIdentifier::frameType) { ((frameType*)this)->GcScanRoots_Impl(fn, sc); return; }
+#define FRAME_TYPE_NAME(frameType) if (this->GetFrameIdentifier() == FrameIdentifier::frameType) { ((frameType*)this)->GcScanRoots_Impl(fn, sc); return; }
 #include "FrameTypes.h"
     _ASSERTE(!"Unexpected");
     return;
@@ -48,7 +48,7 @@ void Frame::GcScanRoots(promote_func *fn, ScanContext* sc)
 
 unsigned Frame::GetFrameAttribs()
 {
-#define FRAME_TYPE_NAME(frameType) if (this->GetType() == FrameIdentifier::frameType) { return ((frameType*)this)->GetFrameAttribs_Impl(); }
+#define FRAME_TYPE_NAME(frameType) if (this->GetFrameIdentifier() == FrameIdentifier::frameType) { return ((frameType*)this)->GetFrameAttribs_Impl(); }
 #include "FrameTypes.h"
     _ASSERTE(!"Unexpected");
     return 0;
@@ -57,7 +57,7 @@ unsigned Frame::GetFrameAttribs()
 #ifndef DACCESS_COMPILE
 void Frame::ExceptionUnwind()
 {
-#define FRAME_TYPE_NAME(frameType) if (this->GetType() == FrameIdentifier::frameType) { ((frameType*)this)->ExceptionUnwind_Impl(); return; }
+#define FRAME_TYPE_NAME(frameType) if (this->GetFrameIdentifier() == FrameIdentifier::frameType) { ((frameType*)this)->ExceptionUnwind_Impl(); return; }
 #include "FrameTypes.h"
     _ASSERTE(!"Unexpected");
     return;
@@ -66,7 +66,7 @@ void Frame::ExceptionUnwind()
 #endif
 BOOL Frame::NeedsUpdateRegDisplay()
 {
-#define FRAME_TYPE_NAME(frameType) if (this->GetType() == FrameIdentifier::frameType) { return ((frameType*)this)->NeedsUpdateRegDisplay_Impl(); }
+#define FRAME_TYPE_NAME(frameType) if (this->GetFrameIdentifier() == FrameIdentifier::frameType) { return ((frameType*)this)->NeedsUpdateRegDisplay_Impl(); }
 #include "FrameTypes.h"
     _ASSERTE(!"Unexpected");
     return 0;
@@ -74,7 +74,7 @@ BOOL Frame::NeedsUpdateRegDisplay()
 
 BOOL Frame::IsTransitionToNativeFrame()
 {
-#define FRAME_TYPE_NAME(frameType) if (this->GetType() == FrameIdentifier::frameType) { return ((frameType*)this)->IsTransitionToNativeFrame_Impl(); }
+#define FRAME_TYPE_NAME(frameType) if (this->GetFrameIdentifier() == FrameIdentifier::frameType) { return ((frameType*)this)->IsTransitionToNativeFrame_Impl(); }
 #include "FrameTypes.h"
     _ASSERTE(!"Unexpected");
     return 0;
@@ -82,7 +82,7 @@ BOOL Frame::IsTransitionToNativeFrame()
 
 MethodDesc *Frame::GetFunction()
 {
-#define FRAME_TYPE_NAME(frameType) if (this->GetType() == FrameIdentifier::frameType) { return ((frameType*)this)->GetFunction_Impl(); }
+#define FRAME_TYPE_NAME(frameType) if (this->GetFrameIdentifier() == FrameIdentifier::frameType) { return ((frameType*)this)->GetFunction_Impl(); }
 #include "FrameTypes.h"
     _ASSERTE(!"Unexpected");
     return 0;
@@ -90,14 +90,14 @@ MethodDesc *Frame::GetFunction()
 
 Assembly *Frame::GetAssembly()
 {
-#define FRAME_TYPE_NAME(frameType) if (this->GetType() == FrameIdentifier::frameType) { return ((frameType*)this)->GetAssembly_Impl(); }
+#define FRAME_TYPE_NAME(frameType) if (this->GetFrameIdentifier() == FrameIdentifier::frameType) { return ((frameType*)this)->GetAssembly_Impl(); }
 #include "FrameTypes.h"
     _ASSERTE(!"Unexpected");
     return 0;
 }
 PTR_BYTE Frame::GetIP()
 {
-#define FRAME_TYPE_NAME(frameType) if (this->GetType() == FrameIdentifier::frameType) { return ((frameType*)this)->GetIP_Impl(); }
+#define FRAME_TYPE_NAME(frameType) if (this->GetFrameIdentifier() == FrameIdentifier::frameType) { return ((frameType*)this)->GetIP_Impl(); }
 #include "FrameTypes.h"
     _ASSERTE(!"Unexpected");
     return 0;
@@ -105,14 +105,14 @@ PTR_BYTE Frame::GetIP()
 
 TADDR Frame::GetReturnAddressPtr()
 {
-#define FRAME_TYPE_NAME(frameType) if (this->GetType() == FrameIdentifier::frameType) { return ((frameType*)this)->GetReturnAddressPtr_Impl(); }
+#define FRAME_TYPE_NAME(frameType) if (this->GetFrameIdentifier() == FrameIdentifier::frameType) { return ((frameType*)this)->GetReturnAddressPtr_Impl(); }
 #include "FrameTypes.h"
     _ASSERTE(!"Unexpected");
     return 0;
 }
 PCODE Frame::GetReturnAddress()
 {
-#define FRAME_TYPE_NAME(frameType) if (this->GetType() == FrameIdentifier::frameType) { return ((frameType*)this)->GetReturnAddress_Impl(); }
+#define FRAME_TYPE_NAME(frameType) if (this->GetFrameIdentifier() == FrameIdentifier::frameType) { return ((frameType*)this)->GetReturnAddress_Impl(); }
 #include "FrameTypes.h"
     _ASSERTE(!"Unexpected");
     return 0;
@@ -120,7 +120,7 @@ PCODE Frame::GetReturnAddress()
 
 void Frame::UpdateRegDisplay(const PREGDISPLAY pRegDisplay, bool updateFloats)
 {
-#define FRAME_TYPE_NAME(frameType) if (this->GetType() == FrameIdentifier::frameType) { ((frameType*)this)->UpdateRegDisplay_Impl(pRegDisplay, updateFloats); return; }
+#define FRAME_TYPE_NAME(frameType) if (this->GetFrameIdentifier() == FrameIdentifier::frameType) { ((frameType*)this)->UpdateRegDisplay_Impl(pRegDisplay, updateFloats); return; }
 #include "FrameTypes.h"
     _ASSERTE(!"Unexpected");
     return;
@@ -128,7 +128,7 @@ void Frame::UpdateRegDisplay(const PREGDISPLAY pRegDisplay, bool updateFloats)
 
 int Frame::GetFrameType()
 {
-#define FRAME_TYPE_NAME(frameType) if (this->GetType() == FrameIdentifier::frameType) { return ((frameType*)this)->GetFrameType_Impl(); }
+#define FRAME_TYPE_NAME(frameType) if (this->GetFrameIdentifier() == FrameIdentifier::frameType) { return ((frameType*)this)->GetFrameType_Impl(); }
 #include "FrameTypes.h"
     _ASSERTE(!"Unexpected");
     return 0;
@@ -136,7 +136,7 @@ int Frame::GetFrameType()
 
 Frame::ETransitionType Frame::GetTransitionType()
 {
-#define FRAME_TYPE_NAME(frameType) if (this->GetType() == FrameIdentifier::frameType) { return ((frameType*)this)->GetTransitionType_Impl(); }
+#define FRAME_TYPE_NAME(frameType) if (this->GetFrameIdentifier() == FrameIdentifier::frameType) { return ((frameType*)this)->GetTransitionType_Impl(); }
 #include "FrameTypes.h"
     _ASSERTE(!"Unexpected");
     return (ETransitionType)0;
@@ -144,7 +144,7 @@ Frame::ETransitionType Frame::GetTransitionType()
 
 Frame::Interception Frame::GetInterception()
 {
-#define FRAME_TYPE_NAME(frameType) if (this->GetType() == FrameIdentifier::frameType) { return ((frameType*)this)->GetInterception_Impl(); }
+#define FRAME_TYPE_NAME(frameType) if (this->GetFrameIdentifier() == FrameIdentifier::frameType) { return ((frameType*)this)->GetInterception_Impl(); }
 #include "FrameTypes.h"
     _ASSERTE(!"Unexpected");
     return (Interception)0;
@@ -152,7 +152,7 @@ Frame::Interception Frame::GetInterception()
 
 void Frame::GetUnmanagedCallSite(TADDR* ip, TADDR* returnIP, TADDR* returnSP)
 {
-#define FRAME_TYPE_NAME(frameType) if (this->GetType() == FrameIdentifier::frameType) { ((frameType*)this)->GetUnmanagedCallSite_Impl(ip, returnIP, returnSP); return; }
+#define FRAME_TYPE_NAME(frameType) if (this->GetFrameIdentifier() == FrameIdentifier::frameType) { ((frameType*)this)->GetUnmanagedCallSite_Impl(ip, returnIP, returnSP); return; }
 #include "FrameTypes.h"
     _ASSERTE(!"Unexpected");
     return;
@@ -160,7 +160,7 @@ void Frame::GetUnmanagedCallSite(TADDR* ip, TADDR* returnIP, TADDR* returnSP)
 
 BOOL Frame::TraceFrame(Thread *thread, BOOL fromPatch, TraceDestination *trace, REGDISPLAY *regs)
 {
-#define FRAME_TYPE_NAME(frameType) if (this->GetType() == FrameIdentifier::frameType) { return ((frameType*)this)->TraceFrame_Impl(thread, fromPatch, trace, regs); }
+#define FRAME_TYPE_NAME(frameType) if (this->GetFrameIdentifier() == FrameIdentifier::frameType) { return ((frameType*)this)->TraceFrame_Impl(thread, fromPatch, trace, regs); }
 #include "FrameTypes.h"
     _ASSERTE(!"Unexpected");
     return FALSE;
@@ -169,7 +169,7 @@ BOOL Frame::TraceFrame(Thread *thread, BOOL fromPatch, TraceDestination *trace, 
 #ifdef DACCESS_COMPILE
 void Frame::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
 {
-#define FRAME_TYPE_NAME(frameType) if (this->GetType() == FrameIdentifier::frameType) { ((frameType*)this)->EnumMemoryRegions_Impl(flags); return; }
+#define FRAME_TYPE_NAME(frameType) if (this->GetFrameIdentifier() == FrameIdentifier::frameType) { ((frameType*)this)->EnumMemoryRegions_Impl(flags); return; }
 #include "FrameTypes.h"
     _ASSERTE(!"Unexpected");
     return;
@@ -179,7 +179,7 @@ void Frame::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
 #if defined(_DEBUG) && !defined(DACCESS_COMPILE)
 BOOL Frame::Protects(OBJECTREF *ppObjectRef)
 {
-#define FRAME_TYPE_NAME(frameType) if (this->GetType() == FrameIdentifier::frameType) { return ((frameType*)this)->Protects_Impl(ppObjectRef); }
+#define FRAME_TYPE_NAME(frameType) if (this->GetFrameIdentifier() == FrameIdentifier::frameType) { return ((frameType*)this)->Protects_Impl(ppObjectRef); }
 #include "FrameTypes.h"
     _ASSERTE(!"Unexpected");
     return FALSE;
@@ -190,7 +190,7 @@ BOOL Frame::Protects(OBJECTREF *ppObjectRef)
 // TransitionFrame only apis
 TADDR TransitionFrame::GetTransitionBlock()
 {
-#define FRAME_TYPE_NAME(frameType) if (this->GetType() == FrameIdentifier::frameType) { return ((frameType*)this)->GetTransitionBlock_Impl(); }
+#define FRAME_TYPE_NAME(frameType) if (this->GetFrameIdentifier() == FrameIdentifier::frameType) { return ((frameType*)this)->GetTransitionBlock_Impl(); }
 #include "FrameTypes.h"
     _ASSERTE(!"Unexpected");
     return (TADDR)0;
@@ -198,7 +198,7 @@ TADDR TransitionFrame::GetTransitionBlock()
 
 BOOL TransitionFrame::SuppressParamTypeArg()
 {
-#define FRAME_TYPE_NAME(frameType) if (this->GetType() == FrameIdentifier::frameType) { return ((frameType*)this)->SuppressParamTypeArg_Impl(); }
+#define FRAME_TYPE_NAME(frameType) if (this->GetFrameIdentifier() == FrameIdentifier::frameType) { return ((frameType*)this)->SuppressParamTypeArg_Impl(); }
 #include "FrameTypes.h"
     _ASSERTE(!"Unexpected");
     return FALSE;
@@ -232,17 +232,17 @@ void Frame::Log() {
 
     char buff[64];
     const char* frameType;
-    if (GetType() == FrameIdentifier::PrestubMethodFrame)
+    if (GetFrameIdentifier() == FrameIdentifier::PrestubMethodFrame)
         frameType = "PreStub";
-    else if (GetType() == FrameIdentifier::PInvokeCalliFrame)
+    else if (GetFrameIdentifier() == FrameIdentifier::PInvokeCalliFrame)
     {
         sprintf_s(buff, ARRAY_SIZE(buff), "PInvoke CALLI target" FMT_ADDR,
                   DBG_ADDR(((PInvokeCalliFrame*)this)->GetPInvokeCalliTarget()));
         frameType = buff;
     }
-    else if (GetType() == FrameIdentifier::StubDispatchFrame)
+    else if (GetFrameIdentifier() == FrameIdentifier::StubDispatchFrame)
         frameType = "StubDispatch";
-    else if (GetType() == FrameIdentifier::ExternalMethodFrame)
+    else if (GetFrameIdentifier() == FrameIdentifier::ExternalMethodFrame)
         frameType = "ExternalMethod";
     else
         frameType = "Unknown";
@@ -459,7 +459,7 @@ bool Frame::HasValidVTablePtr(Frame * pFrame)
         return false;
 
 #ifndef DACCESS_COMPILE
-    FrameIdentifier vptr = pFrame->GetType();
+    FrameIdentifier vptr = pFrame->GetFrameIdentifier();
     //
     // Use a simple compare which is dependent on the tightly packed arrangement of FrameIdentifier
     //
@@ -1773,7 +1773,7 @@ void ComMethodFrame::DoSecondPassHandlerCleanup(Frame * pCurFrame)
     // Find ComMethodFrame
 
     while ((pCurFrame != FRAME_TOP) &&
-           (pCurFrame->GetType() != FrameIdentifier::ComMethodFrame))
+           (pCurFrame->GetFrameIdentifier() != FrameIdentifier::ComMethodFrame))
     {
         pCurFrame = pCurFrame->PtrNextFrame();
     }

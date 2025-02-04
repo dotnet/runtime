@@ -264,7 +264,7 @@ public:
         // Nothing to protect
     }
 
-    FrameIdentifier GetType() { LIMITED_METHOD_DAC_CONTRACT; return _frameIdentifier; }
+    FrameIdentifier GetFrameIdentifier() { LIMITED_METHOD_DAC_CONTRACT; return _frameIdentifier; }
 };
 
 //------------------------------------------------------------------------
@@ -808,7 +808,7 @@ inline BOOL ISREDIRECTEDTHREAD(Thread * thread)
 {
     WRAPPER_NO_CONTRACT;
     return (thread->GetFrame() != FRAME_TOP &&
-            thread->GetFrame()->GetType() ==
+            thread->GetFrame()->GetFrameIdentifier() ==
             FrameIdentifier::RedirectedThreadFrame);
 }
 
@@ -2656,7 +2656,7 @@ public:
         SUPPORTS_DAC;
         return pFrame &&
             pFrame != FRAME_TOP &&
-            FrameIdentifier::InlinedCallFrame == pFrame->GetType() &&
+            FrameIdentifier::InlinedCallFrame == pFrame->GetFrameIdentifier() &&
             dac_cast<TADDR>(dac_cast<PTR_InlinedCallFrame>(pFrame)->m_pCallerReturnAddress) != 0;
     }
 
@@ -2731,7 +2731,7 @@ public:
     {
         LIMITED_METHOD_CONTRACT;
         // loop through the frame chain
-        while (pFrame->GetType() != FrameIdentifier::TailCallFrame)
+        while (pFrame->GetFrameIdentifier() != FrameIdentifier::TailCallFrame)
             pFrame = pFrame->m_Next;
         return (TailCallFrame*)pFrame;
     }
