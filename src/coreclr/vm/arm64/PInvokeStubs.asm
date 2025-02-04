@@ -124,8 +124,8 @@ __PInvokeStubWorkerName SETS "$FuncPrefix":CC:"StubWorker"
             str     x9, [x0]
             add     x10, x0, SIZEOF__GSCookie
 
-            ;; set first slot to the value of InlinedCallFrame::`vftable' (checked by runtime code)
-            ldr     x9, =$InlinedCallFrame_vftable
+            ;; set first slot to the value of InlinedCallFrame identifier (checked by runtime code)
+            ldr     x9, #FRAMETYPE_InlinedCallFrame
             str     x9, [x10]
 
             str     xzr, [x10, #InlinedCallFrame__m_Datum]

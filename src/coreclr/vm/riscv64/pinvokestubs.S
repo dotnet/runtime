@@ -88,9 +88,8 @@
     addi  s1, a0, SIZEOF__GSCookie
 
     // s1 = pFrame
-    // set first slot to the value of InlinedCallFrame::`vftable' (checked by runtime code)
-    PREPARE_EXTERNAL_VAR  _ZTV16InlinedCallFrame, t0
-    addi  t4, t0, 16
+    // set first slot to the value of InlinedCallFrame identifier (checked by runtime code)
+    ld.d t4, FRAMETYPE_InlinedCallFrame
     sd  t4, 0(s1)
 
     sd  zero, (InlinedCallFrame__m_Datum)(s1)

@@ -2731,7 +2731,7 @@ public:
     {
         LIMITED_METHOD_CONTRACT;
         // loop through the frame chain
-        while (pFrame->GetVTablePtr() != TailCallFrame::GetMethodFrameVPtr())
+        while (pFrame->GetType() != FrameType::TailCallFrame)
             pFrame = pFrame->m_Next;
         return (TailCallFrame*)pFrame;
     }

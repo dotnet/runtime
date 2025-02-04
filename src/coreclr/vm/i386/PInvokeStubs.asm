@@ -41,9 +41,8 @@ _JIT_PInvokeBegin@4 PROC public
         mov             dword ptr [ecx], eax
         add             ecx, SIZEOF_GSCookie
 
-        ;; set first slot to the value of InlinedCallFrame::`vftable' (checked by runtime code)
-        lea             eax,[??_7InlinedCallFrame@@6B@]
-        mov             dword ptr [ecx], eax
+        ;; set first slot to the value of InlinedCallFrame identifier (checked by runtime code)
+        mov             dword ptr [ecx], FRAMETYPE_InlinedCallFrame
 
         mov             dword ptr [ecx + InlinedCallFrame__m_Datum], edx
 

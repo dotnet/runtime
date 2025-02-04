@@ -32,6 +32,9 @@
 #define DBG_FRE(dbg,fre) fre
 #endif
 
+#define FRAMETYPE_InlinedCallFrame 0x1
+ASMCONSTANTS_C_ASSERT(FRAMETYPE_InlinedCallFrame == (int)FrameType::InlinedCallFrame)
+
 #define INITIAL_SUCCESS_COUNT               0x100
 
 #define DynamicHelperFrameFlags_Default     0

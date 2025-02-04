@@ -143,10 +143,8 @@ NESTED_ENTRY JIT_PInvokeBegin, _TEXT, NoHandler
         mov             qword ptr [rdi], rax
         add             rdi, SIZEOF_GSCookie
 
-        // set first slot to the value of InlinedCallFrame vftable (checked by runtime code)
-        PREPARE_EXTERNAL_VAR _ZTV16InlinedCallFrame, rax
-        add             rax, 0x10
-        mov             qword ptr [rdi], rax
+        // set first slot to the value of InlinedCallFrame identifier (checked by runtime code)
+        mov             qword ptr [rdi], FRAMETYPE_InlinedCallFrame
 
         mov             qword ptr [rdi + OFFSETOF__InlinedCallFrame__m_Datum], 0
 
