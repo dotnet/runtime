@@ -2161,6 +2161,7 @@ namespace Internal.IL
                 instance = null;
 
                 if (field.IsInitOnly)
+                    // TODO: verification of readonly references https://github.com/dotnet/runtime/issues/57444
                     isReadOnly = true;
             }
             else
