@@ -19,13 +19,13 @@ internal unsafe partial class MachObjectFile
     private class CodeSignature
     {
         private const uint SpecialSlotCount = 2;
-        private const uint PageSize = 4096;
+        private const uint PageSize = MachObjectFile.PageSize;
         private const byte Log2PageSize = 12;
         private const byte DefaultHashSize = 32;
         private const HashType DefaultHashType = HashType.SHA256;
         private static IncrementalHash GetDefaultIncrementalHash() => IncrementalHash.CreateHash(HashAlgorithmName.SHA256);
 
-        private readonly long _fileOffset;
+        internal readonly long FileOffset;
         private EmbeddedSignatureHeader _embeddedSignature;
         private CodeDirectoryHeader _codeDirectoryHeader;
         private byte[] _identifier;
@@ -34,7 +34,7 @@ internal unsafe partial class MachObjectFile
         private CmsWrapperBlob _cmsWrapperBlob;
         private bool _unrecognizedFormat;
 
-        private CodeSignature(long fileOffset) { _fileOffset = fileOffset; }
+        private CodeSignature(long fileOffset) { FileOffset = fileOffset; }
 
         /// <summary>
         /// Creates a new code signature from the file.
@@ -135,7 +135,7 @@ internal unsafe partial class MachObjectFile
                 cs._unrecognizedFormat = true;
                 return cs;
             }
-            var cdOffset = cs._fileOffset + cs._embeddedSignature.CodeDirectory.Offset;
+            var cdOffset = cs.FileOffset + cs._embeddedSignature.CodeDirectory.Offset;
             file.Read(cdOffset, out cs._codeDirectoryHeader);
             if (cs._codeDirectoryHeader.Version != CodeDirectoryVersion.HighestVersion
                 || cs._codeDirectoryHeader.HashType != HashType.SHA256
@@ -154,7 +154,7 @@ internal unsafe partial class MachObjectFile
             cs._codeDirectoryHashes = new byte[(SpecialSlotCount + cs._codeDirectoryHeader.CodeSlotCount) * DefaultHashSize];
             file.ReadArray(codeHashesOffset, cs._codeDirectoryHashes, 0, cs._codeDirectoryHashes.Length);
 
-            var requirementsOffset = cs._fileOffset + cs._embeddedSignature.Requirements.Offset;
+            var requirementsOffset = cs.FileOffset + cs._embeddedSignature.Requirements.Offset;
             file.Read(requirementsOffset, out cs._requirementsBlob);
             if (!cs._requirementsBlob.Equals(RequirementsBlob.Empty))
             {
@@ -174,7 +174,7 @@ internal unsafe partial class MachObjectFile
 
         internal void WriteToFile(MemoryMappedViewAccessor file)
         {
-            long fileOffset = _fileOffset;
+            long fileOffset = FileOffset;
 
             file.Write(fileOffset, ref _embeddedSignature);
             fileOffset += sizeof(EmbeddedSignatureHeader);
@@ -192,7 +192,7 @@ internal unsafe partial class MachObjectFile
             fileOffset += sizeof(RequirementsBlob);
 
             file.Write(fileOffset, ref _cmsWrapperBlob);
-            Debug.Assert(fileOffset + sizeof(CmsWrapperBlob) == _fileOffset + _embeddedSignature.Size);
+            Debug.Assert(fileOffset + sizeof(CmsWrapperBlob) == FileOffset + _embeddedSignature.Size);
         }
 
         private static CodeDirectoryHeader CreateCodeDirectoryHeader(MachObjectFile machObject, uint signatureStart, string identifier)
