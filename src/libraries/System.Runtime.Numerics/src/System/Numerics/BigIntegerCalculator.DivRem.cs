@@ -81,7 +81,9 @@ namespace System.Numerics
                 DivideGrammarSchool(remainder, right, quotient);
             }
             else
+            {
                 DivideBurnikelZiegler(left, right, quotient, remainder);
+            }
         }
 
         public static void Divide(ReadOnlySpan<uint> left, ReadOnlySpan<uint> right, Span<uint> quotient)
@@ -111,8 +113,9 @@ namespace System.Numerics
                     ArrayPool<uint>.Shared.Return(leftCopyFromPool);
             }
             else
+            {
                 DivideBurnikelZiegler(left, right, quotient, default);
-
+            }
         }
 
         public static void Remainder(ReadOnlySpan<uint> left, ReadOnlySpan<uint> right, Span<uint> remainder)
@@ -159,6 +162,7 @@ namespace System.Numerics
             DummyForDebug(quotient);
 
             if (right.Length < DivideBurnikelZieglerThreshold || left.Length - right.Length < DivideBurnikelZieglerThreshold)
+            {
                 DivideGrammarSchool(left, right, quotient);
             else
             {
@@ -183,7 +187,9 @@ namespace System.Numerics
                                 : quotientActualFromPool = ArrayPool<uint>.Shared.Rent(quotientLength)).Slice(0, quotientLength);
                 }
                 else
+                {
                     quotientActual = quotient;
+                }
 
                 DivideBurnikelZiegler(leftCopy, right, quotientActual, left);
 
@@ -490,7 +496,9 @@ namespace System.Numerics
                     Debug.Assert(carry == 0);
                 }
                 else
+                {
                     rt.CopyTo(remainder);
+                }
             }
 
             if (rFromPool != null)
