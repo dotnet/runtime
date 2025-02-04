@@ -96,26 +96,7 @@ extends:
                 isOfficialBuild: ${{ variables.isOfficialBuild }}
 
       #
-      # Build all runtime packs
-      # Mac x64/arm64
-      # Sign and entitle createdump and corerun after native build.
-      #
-      - template: /eng/pipelines/common/platform-matrix.yml
-        parameters:
-          jobTemplate: /eng/pipelines/common/global-build-job.yml
-          buildConfig: release
-          platforms:
-          - osx_arm64
-          - osx_x64
-          jobParameters:
-            templatePath: 'templates-official'
-            buildArgs: -s -c $(_BuildConfig) -restore -build -sign -publish /p:DotNetBuildAllRuntimePacks=true
-            nameSuffix: AllRuntimes
-            isOfficialBuild: ${{ variables.isOfficialBuild }}
-            timeoutInMinutes: 120
-
-      #
-      # Build all runtime packs for Linux and Linux musl
+      # Build all runtime packs for MacOS, Linux, Linux musl, and mobile
       #
       - template: /eng/pipelines/common/platform-matrix.yml
         parameters:
@@ -128,6 +109,25 @@ extends:
           - linux_musl_x64
           - linux_musl_arm
           - linux_musl_arm64
+          - osx_arm64
+          - osx_x64
+          - android_x64
+          - android_x86
+          - android_arm
+          - android_arm64
+          - maccatalyst_x64
+          - maccatalyst_arm64
+          - tvossimulator_x64
+          - tvossimulator_arm64
+          - tvos_arm64
+          - iossimulator_x64
+          - iossimulator_arm64
+          - ios_arm64
+          - linux_bionic_x64
+          - linux_bionic_arm
+          - linux_bionic_arm64
+          - browser_wasm
+          - wasi_wasm
           jobParameters:
             templatePath: 'templates-official'
             buildArgs: -c $(_BuildConfig) -restore -build -sign -publish /p:DotNetBuildAllRuntimePacks=true
@@ -185,49 +185,6 @@ extends:
           - name: _SignDiagnosticFilesArgs
             value: ''
 
-      #
-      # Build All runtime packs for mobile platforms
-      #
-      - template: /eng/pipelines/common/platform-matrix.yml
-        parameters:
-          jobTemplate: /eng/pipelines/common/global-build-job.yml
-          buildConfig: release
-          platforms:
-          - android_x64
-          - android_x86
-          - android_arm
-          - android_arm64
-          - maccatalyst_x64
-          - maccatalyst_arm64
-          - tvossimulator_x64
-          - tvossimulator_arm64
-          - tvos_arm64
-          - iossimulator_x64
-          - iossimulator_arm64
-          - ios_arm64
-          - linux_bionic_x64
-          - linux_bionic_arm
-          - linux_bionic_arm64
-          jobParameters:
-            templatePath: 'templates-official'
-            buildArgs: -c $(_BuildConfig) -restore -build -sign -publish /p:BuildMonoAOTCrossCompiler=false /p:DotNetBuildAllRuntimePacks=true
-            nameSuffix: AllRuntimes
-            isOfficialBuild: ${{ variables.isOfficialBuild }}
-
-      - template: /eng/pipelines/common/platform-matrix.yml
-        parameters:
-          jobTemplate: /eng/pipelines/common/global-build-job.yml
-          buildConfig: release
-          runtimeFlavor: mono
-          platforms:
-          - browser_wasm
-          - wasi_wasm
-          jobParameters:
-            templatePath: 'templates-official'
-            buildArgs: -s mono+libs+host+packs -c $(_BuildConfig) -restore -build -sign -publish /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
-            nameSuffix: Mono
-            isOfficialBuild: ${{ variables.isOfficialBuild }}
-
       - template: /eng/pipelines/common/platform-matrix.yml
         parameters:
           jobTemplate: /eng/pipelines/common/global-build-job.yml
@@ -237,7 +194,7 @@ extends:
           - browser_wasm
           jobParameters:
             templatePath: 'templates-official'
-            buildArgs: -s mono+libs+host+packs -c $(_BuildConfig) -restore -build -sign -publish /p:WasmEnableThreads=true /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
+            buildArgs: -c $(_BuildConfig) -restore -build -sign -publish /p:DotNetBuildAllRuntimePacks=true /p:WasmEnableThreads=true
             nameSuffix: Mono_multithread
             isOfficialBuild: ${{ variables.isOfficialBuild }}
             runtimeVariant: multithread
