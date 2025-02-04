@@ -18,7 +18,7 @@ namespace System.Numerics
 
         public static void Divide(ReadOnlySpan<uint> left, uint right, Span<uint> quotient, out uint remainder)
         {
-            DummyForDebug(quotient);
+            InitializeForDebug(quotient);
             ulong carry = 0UL;
             Divide(left, right, quotient, ref carry);
             remainder = (uint)carry;
@@ -26,7 +26,7 @@ namespace System.Numerics
 
         public static void Divide(ReadOnlySpan<uint> left, uint right, Span<uint> quotient)
         {
-            DummyForDebug(quotient);
+            InitializeForDebug(quotient);
             ulong carry = 0UL;
             Divide(left, right, quotient, ref carry);
         }
@@ -35,7 +35,7 @@ namespace System.Numerics
         {
             Debug.Assert(left.Length >= 1);
             Debug.Assert(quotient.Length == left.Length);
-            DummyForDebug(quotient);
+            InitializeForDebug(quotient);
 
             // Executes the division for one big and one 32-bit integer.
             // Thus, we've similar code than below, but there is no loop for
@@ -72,8 +72,8 @@ namespace System.Numerics
             Debug.Assert(left.Length >= right.Length);
             Debug.Assert(quotient.Length == left.Length - right.Length + 1);
             Debug.Assert(remainder.Length == left.Length);
-            DummyForDebug(quotient);
-            DummyForDebug(remainder);
+            InitializeForDebug(quotient);
+            InitializeForDebug(remainder);
 
             if (right.Length < DivideBurnikelZieglerThreshold || left.Length - right.Length < DivideBurnikelZieglerThreshold)
             {
@@ -92,7 +92,7 @@ namespace System.Numerics
             Debug.Assert(right.Length >= 1);
             Debug.Assert(left.Length >= right.Length);
             Debug.Assert(quotient.Length == left.Length - right.Length + 1);
-            DummyForDebug(quotient);
+            InitializeForDebug(quotient);
 
             if (right.Length < DivideBurnikelZieglerThreshold || left.Length - right.Length < DivideBurnikelZieglerThreshold)
             {
@@ -124,7 +124,7 @@ namespace System.Numerics
             Debug.Assert(right.Length >= 1);
             Debug.Assert(left.Length >= right.Length);
             Debug.Assert(remainder.Length == left.Length);
-            DummyForDebug(remainder);
+            InitializeForDebug(remainder);
 
             if (right.Length < DivideBurnikelZieglerThreshold || left.Length - right.Length < DivideBurnikelZieglerThreshold)
             {
@@ -159,11 +159,12 @@ namespace System.Numerics
             Debug.Assert(left.Length >= right.Length);
             Debug.Assert(quotient.Length == left.Length - right.Length + 1
                 || quotient.Length == 0);
-            DummyForDebug(quotient);
+            InitializeForDebug(quotient);
 
             if (right.Length < DivideBurnikelZieglerThreshold || left.Length - right.Length < DivideBurnikelZieglerThreshold)
             {
                 DivideGrammarSchool(left, right, quotient);
+            }
             else
             {
                 uint[]? leftCopyFromPool = null;

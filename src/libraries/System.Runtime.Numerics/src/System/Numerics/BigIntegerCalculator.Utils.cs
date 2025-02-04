@@ -77,7 +77,7 @@ namespace System.Numerics
         }
 
         [Conditional("DEBUG")]
-        public static void DummyForDebug(Span<uint> bits)
+        public static void InitializeForDebug(Span<uint> bits)
         {
             // Reproduce the case where the return value of `stackalloc uint` is not initialized to zero.
             bits.Fill(0xCD);
