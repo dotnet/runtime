@@ -104,9 +104,9 @@ inline bool SafeToReportGenericParamContext(CrawlFrame* pCF)
 {
     LIMITED_METHOD_CONTRACT;
 
-    if (!pCF->IsFrameless() && pCF->GetFrame()->GetVTablePtr() == StubDispatchFrame::GetMethodFrameVPtr())
+    if (!pCF->IsFrameless() && pCF->GetFrame()->GetType() == FrameType::StubDispatchFrame)
     {
-        return !((StubDispatchFrame*)pCF->GetFrame())->SuppressParamTypeArg();
+        return !Frame_SuppressParamTypeArg((StubDispatchFrame*)pCF->GetFrame());
     }
 
     if (!pCF->IsFrameless() || !(pCF->IsActiveFrame() || pCF->IsInterrupted()))
@@ -370,8 +370,8 @@ StackWalkAction GcStackCrawlCallBack(CrawlFrame* pCF, VOID* pData)
 
             STRESS_LOG3(LF_GCROOTS, LL_INFO1000,
                 "Scanning ExplicitFrame %p AssocMethod = %pM frameVTable = %pV\n",
-                pFrame, pFrame->GetFunction(), *((void**) pFrame));
-            pFrame->GcScanRoots( gcctx->f, gcctx->sc);
+                pFrame, Frame_GetFunction(pFrame), *((void**) pFrame));
+            Frame_GcScanRoots(pFrame, gcctx->f, gcctx->sc);
         }
     }
     else

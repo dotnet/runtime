@@ -2385,7 +2385,7 @@ void AwareLock::Enter()
             // The best place to grab this is from the ECall frame
             Frame   *pFrame = pCurThread->GetFrame();
             int      caller = (pFrame && pFrame != FRAME_TOP
-                                ? (int)pFrame->GetReturnAddress()
+                                ? (int)Frame_GetReturnAddress(pFrame)()
                                 : -1);
             pCurThread->m_pTrackSync->EnterSync(caller, this);
 #endif
@@ -2408,7 +2408,7 @@ void AwareLock::Enter()
 #if defined(_DEBUG) && defined(TRACK_SYNC)
     // The best place to grab this is from the ECall frame
     Frame   *pFrame = pCurThread->GetFrame();
-    int      caller = (pFrame && pFrame != FRAME_TOP ? (int)pFrame->GetReturnAddress() : -1);
+    int      caller = (pFrame && pFrame != FRAME_TOP ? (int)Frame_GetReturnAddress(pFrame)() : -1);
     pCurThread->m_pTrackSync->EnterSync(caller, this);
 #endif
 }
@@ -2448,7 +2448,7 @@ BOOL AwareLock::TryEnter(INT32 timeOut)
 #if defined(_DEBUG) && defined(TRACK_SYNC)
             // The best place to grab this is from the ECall frame
             Frame   *pFrame = pCurThread->GetFrame();
-            int      caller = (pFrame && pFrame != FRAME_TOP ? (int)pFrame->GetReturnAddress() : -1);
+            int      caller = (pFrame && pFrame != FRAME_TOP ? (int)Frame_GetReturnAddress(pFrame)() : -1);
             pCurThread->m_pTrackSync->EnterSync(caller, this);
 #endif
             return true;
@@ -2474,7 +2474,7 @@ BOOL AwareLock::TryEnter(INT32 timeOut)
 #if defined(_DEBUG) && defined(TRACK_SYNC)
     // The best place to grab this is from the ECall frame
     Frame   *pFrame = pCurThread->GetFrame();
-    int      caller = (pFrame && pFrame != FRAME_TOP ? (int)pFrame->GetReturnAddress() : -1);
+    int      caller = (pFrame && pFrame != FRAME_TOP ? (int)Frame_GetReturnAddress(pFrame)() : -1);
     pCurThread->m_pTrackSync->EnterSync(caller, this);
 #endif
     return true;
@@ -2728,7 +2728,7 @@ BOOL AwareLock::EnterEpilogHelper(Thread* pCurThread, INT32 timeOut)
 #if defined(_DEBUG) && defined(TRACK_SYNC)
     // The best place to grab this is from the ECall frame
     Frame   *pFrame = pCurThread->GetFrame();
-    int      caller = (pFrame && pFrame != FRAME_TOP ? (int)pFrame->GetReturnAddress() : -1);
+    int      caller = (pFrame && pFrame != FRAME_TOP ? (int)Frame_GetReturnAddress(pFrame)() : -1);
     pCurThread->m_pTrackSync->EnterSync(caller, this);
 #endif
     return true;

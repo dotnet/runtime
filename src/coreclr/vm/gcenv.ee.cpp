@@ -190,7 +190,7 @@ static void ScanStackRoots(Thread * pThread, promote_func* fn, ScanContext* sc)
         Frame *pFrame = pThread->GetFrame();
         while (pFrame != FRAME_TOP)
         {
-            pFrame->GcScanRoots(fn, sc);
+            Frame_GcScanRoots(pFrame, fn, sc);
             pFrame = pFrame->PtrNextFrame();
         }
     }

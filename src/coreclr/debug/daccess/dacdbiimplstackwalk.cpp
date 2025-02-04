@@ -536,7 +536,7 @@ void DacDbiInterfaceImpl::EnumerateInternalFrames(VMPTR_Thread                  
 
             frameData.vmCurrentAppDomainToken.SetHostPtr(pAppDomain);
 
-            MethodDesc * pMD = pFrame->GetFunction();
+            MethodDesc * pMD = Frame_GetFunction(pFrame);
 #if defined(FEATURE_COMINTEROP)
             if (frameData.stubFrame.frameType == STUBFRAME_U2M)
             {
@@ -558,7 +558,7 @@ void DacDbiInterfaceImpl::EnumerateInternalFrames(VMPTR_Thread                  
                 // it.  In this case, pMD will remain NULL.
                 EX_TRY_ALLOW_DATATARGET_MISSING_MEMORY
                 {
-                    if (pFrame->GetVTablePtr() == ComMethodFrame::GetMethodFrameVPtr())
+                    if (pFrame->GetType() == ::FrameType::ComMethodFrame)
                     {
                         ComMethodFrame * pCOMFrame = dac_cast<PTR_ComMethodFrame>(pFrame);
                         PTR_VOID pUnkStackSlot     = pCOMFrame->GetPointerToArguments();
@@ -1111,26 +1111,26 @@ CorDebugInternalFrameType DacDbiInterfaceImpl::GetInternalFrameType(Frame * pFra
 {
     CorDebugInternalFrameType resultType = STUBFRAME_NONE;
 
-    Frame::ETransitionType tt = pFrame->GetTransitionType();
-    Frame::Interception it = pFrame->GetInterception();
-    int ft = pFrame->GetFrameType();
+    ETransitionType tt = Frame_GetTransitionType(pFrame);
+    Interception it = Frame_GetInterception(pFrame);
+    int ft = Frame_GetFrameType(pFrame);
 
     switch (tt)
     {
-        case Frame::TT_NONE:
-            if (it == Frame::INTERCEPTION_CLASS_INIT)
+        case TT_NONE:
+            if (it == INTERCEPTION_CLASS_INIT)
             {
                 resultType = STUBFRAME_CLASS_INIT;
             }
-            else if (it == Frame::INTERCEPTION_EXCEPTION)
+            else if (it == INTERCEPTION_EXCEPTION)
             {
                 resultType = STUBFRAME_EXCEPTION;
             }
-            else if (it == Frame::INTERCEPTION_SECURITY)
+            else if (it == INTERCEPTION_SECURITY)
             {
                 resultType = STUBFRAME_SECURITY;
             }
-            else if (it == Frame::INTERCEPTION_PRESTUB)
+            else if (it == INTERCEPTION_PRESTUB)
             {
                 resultType = STUBFRAME_JIT_COMPILATION;
             }
@@ -1142,7 +1142,7 @@ CorDebugInternalFrameType DacDbiInterfaceImpl::GetInternalFrameType(Frame * pFra
                 }
                 else if (ft == Frame::TYPE_EXIT)
                 {
-                    if ((pFrame->GetVTablePtr() != InlinedCallFrame::GetMethodFrameVPtr()) ||
+                    if ((pFrame->GetType() != ::FrameType::InlinedCallFrame) ||
                         InlinedCallFrame::FrameHasActiveCall(pFrame))
                     {
                         resultType = STUBFRAME_M2U;
@@ -1151,11 +1151,11 @@ CorDebugInternalFrameType DacDbiInterfaceImpl::GetInternalFrameType(Frame * pFra
             }
             break;
 
-        case Frame::TT_M2U:
+        case TT_M2U:
             // Refer to the comment in DebuggerWalkStackProc() for StubDispatchFrame.
-            if (pFrame->GetVTablePtr() != StubDispatchFrame::GetMethodFrameVPtr())
+            if (pFrame->GetType() != ::FrameType::StubDispatchFrame)
             {
-                if (it == Frame::INTERCEPTION_SECURITY)
+                if (it == INTERCEPTION_SECURITY)
                 {
                     resultType = STUBFRAME_SECURITY;
                 }
@@ -1166,16 +1166,16 @@ CorDebugInternalFrameType DacDbiInterfaceImpl::GetInternalFrameType(Frame * pFra
             }
             break;
 
-        case Frame::TT_U2M:
+        case TT_U2M:
             resultType = STUBFRAME_U2M;
             break;
 
-        case Frame::TT_AppDomain:
+        case TT_AppDomain:
             resultType = STUBFRAME_APPDOMAIN_TRANSITION;
             break;
 
-        case Frame::TT_InternalCall:
-            if (it == Frame::INTERCEPTION_EXCEPTION)
+        case TT_InternalCall:
+            if (it == INTERCEPTION_EXCEPTION)
             {
                 resultType = STUBFRAME_EXCEPTION;
             }

@@ -600,7 +600,7 @@ static StackWalkAction TAStackCrawlCallBackWorker(CrawlFrame* pCf, StackCrawlCon
     MethodDesc *pMD = pCf->GetFunction();
     Frame *pFrame = pCf->GetFrame();
     if (pMD == NULL && pFrame != NULL)
-        pMD = pFrame->GetFunction();
+        pMD = Frame_GetFunction(pFrame);
 
     // Non-method frames don't interest us.
     if (pMD == NULL)
@@ -1539,7 +1539,7 @@ Thread::UserAbort(EEPolicy::ThreadAbortTypes abortType, DWORD timeout)
 
             if (!m_fPreemptiveGCDisabled)
             {
-                if ((m_pFrame != FRAME_TOP) && m_pFrame->IsTransitionToNativeFrame()
+                if ((m_pFrame != FRAME_TOP) && Frame_IsTransitionToNativeFrame(m_pFrame)
 #if defined(TARGET_X86) && !defined(FEATURE_EH_FUNCLETS)
                     && ((size_t) GetFirstCOMPlusSEHRecord(this) > ((size_t) m_pFrame) - 20)
 #endif // TARGET_X86
@@ -2512,7 +2512,7 @@ bool ThreadStore::IsTrappingThreadsForSuspension()
 
 #ifdef FEATURE_HIJACK
 
-void RedirectedThreadFrame::ExceptionUnwind()
+void RedirectedThreadFrame::ExceptionUnwind_Impl()
 {
     CONTRACTL
     {
@@ -3766,7 +3766,7 @@ ThrowControlForThread(
     }
 
 #if defined(FEATURE_EH_FUNCLETS)
-    *(TADDR*)pfef = FaultingExceptionFrame::GetMethodFrameVPtr();
+    *(TADDR*)pfef = (TADDR)FrameType::FaultingExceptionFrame;
     *pfef->GetGSCookiePtr() = GetProcessGSCookie();
 #else // FEATURE_EH_FUNCLETS
     FrameWithCookie<FaultingExceptionFrame> fef;
@@ -4843,7 +4843,8 @@ StackWalkAction SWCB_GetExecutionState(CrawlFrame *pCF, VOID *pData)
 }
 
 HijackFrame::HijackFrame(LPVOID returnAddress, Thread *thread, HijackArgs *args)
-           : m_ReturnAddress((TADDR)returnAddress),
+           : Frame(FrameType::HijackFrame),
+             m_ReturnAddress((TADDR)returnAddress),
              m_Thread(thread),
              m_Args(args)
 {

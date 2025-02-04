@@ -911,7 +911,7 @@ void InitJITHelpers1()
 
 #ifndef UNIX_X86_ABI
     // Initialize g_TailCallFrameVptr for JIT_TailCall helper
-    g_TailCallFrameVptr = (void*)TailCallFrame::GetMethodFrameVPtr();
+    g_TailCallFrameVptr = (void*)FrameType::TailCallFrame;
 #endif // !UNIX_X86_ABI
 }
 #pragma warning (default : 4731)

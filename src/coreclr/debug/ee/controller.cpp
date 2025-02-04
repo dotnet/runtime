@@ -3774,7 +3774,7 @@ bool DebuggerController::DispatchTraceCall(Thread *thread,
                         {
                             // Make sure that the frame pointer of the active frame is actually
                             // the address of an exit frame.
-                            _ASSERTE( (static_cast<Frame*>(info.m_activeFrame.fp.GetSPValue()))->GetFrameType()
+                            _ASSERTE( Frame_GetFrameType(static_cast<Frame*>(info.m_activeFrame.fp.GetSPValue()))
                                       == Frame::TYPE_EXIT );
                             _ASSERTE(!info.GetReturnFrame().HasChainMarker());
                             fpToCheck = info.GetReturnFrame().fp;
@@ -5360,12 +5360,12 @@ bool DebuggerStepper::DetectHandleInterceptors(ControllerStackInfo *info)
     {
         if (info->m_activeFrame.frame != NULL &&
             info->m_activeFrame.frame != FRAME_TOP &&
-            info->m_activeFrame.frame->GetInterception() != Frame::INTERCEPTION_NONE)
+            Frame_GetInterception(info->m_activeFrame.frame) != INTERCEPTION_NONE)
         {
-            if (!((CorDebugIntercept)info->m_activeFrame.frame->GetInterception() & Frame::Interception(m_rgfInterceptStop)))
+            if (!((CorDebugIntercept)Frame_GetInterception(info->m_activeFrame.frame) & Interception(m_rgfInterceptStop)))
             {
                 LOG((LF_CORDB,LL_INFO10000,"DS::DHI: Stepping out b/c of excluded frame type:0x%x\n",
-                     info->m_activeFrame.frame->GetInterception()));
+                     Frame_GetInterception(info->m_activeFrame.frame)));
 
                 fAttemptStepOut = true;
             }
@@ -5381,7 +5381,7 @@ bool DebuggerStepper::DetectHandleInterceptors(ControllerStackInfo *info)
             (info->HasReturnFrame() &&
             info->GetReturnFrame().frame != NULL &&
             info->GetReturnFrame().frame != FRAME_TOP &&
-            info->GetReturnFrame().frame->GetInterception() != Frame::INTERCEPTION_NONE))
+            Frame_GetInterception(info->GetReturnFrame().frame) != INTERCEPTION_NONE))
         {
             if (m_reason == STEP_EXCEPTION_FILTER)
             {
@@ -5389,16 +5389,16 @@ bool DebuggerStepper::DetectHandleInterceptors(ControllerStackInfo *info)
                 // insert an ExceptionFrame, and hence info->GetReturnFrame().frame->GetInterception()
                 // will not be accurate. Hence we use m_reason instead
 
-                if (!(Frame::INTERCEPTION_EXCEPTION & Frame::Interception(m_rgfInterceptStop)))
+                if (!(INTERCEPTION_EXCEPTION & Interception(m_rgfInterceptStop)))
                 {
                     LOG((LF_CORDB,LL_INFO10000,"DS::DHI: Stepping out b/c of excluded INTERCEPTION_EXCEPTION\n"));
                     fAttemptStepOut = true;
                 }
             }
-            else if (!(info->GetReturnFrame().frame->GetInterception() & Frame::Interception(m_rgfInterceptStop)))
+            else if (!(Frame_GetInterception(info->GetReturnFrame().frame) & Interception(m_rgfInterceptStop)))
             {
                 LOG((LF_CORDB,LL_INFO10000,"DS::DHI: Stepping out b/c of excluded return frame type:0x%x\n",
-                     info->GetReturnFrame().frame->GetInterception()));
+                     Frame_GetInterception(info->GetReturnFrame().frame)));
 
                 fAttemptStepOut = true;
             }
@@ -6600,7 +6600,7 @@ void DebuggerStepper::TrapStepOut(ControllerStackInfo *info, bool fForceTraditio
                 // stepComplete message to the right side.</REVISIT_TODO>
                 break;
             }
-            else if (info->m_activeFrame.frame->GetFrameType() == Frame::TYPE_FUNC_EVAL)
+            else if (Frame_GetFrameType(info->m_activeFrame.frame) == Frame::TYPE_FUNC_EVAL)
             {
                 // Note: we treat walking off the top of the stack and
                 // walking off the top of a func eval the same way,
@@ -6613,8 +6613,8 @@ void DebuggerStepper::TrapStepOut(ControllerStackInfo *info, bool fForceTraditio
                 m_reason = STEP_EXIT;
                 break;
             }
-            else if (info->m_activeFrame.frame->GetFrameType() == Frame::TYPE_SECURITY &&
-                     info->m_activeFrame.frame->GetInterception() == Frame::INTERCEPTION_NONE)
+            else if (Frame_GetFrameType(info->m_activeFrame.frame) == Frame::TYPE_SECURITY &&
+                     Frame_GetInterception(info->m_activeFrame.frame) == INTERCEPTION_NONE)
             {
                 // If we're stepping out of something that was protected by (declarative) security,
                 // the security subsystem may leave a frame on the stack to cache it's computation.
@@ -8211,12 +8211,12 @@ void DebuggerJMCStepper::TriggerMethodEnter(Thread * thread,
 // The intercept value in EE Frame's is a 0-based enumeration (not a bitfield).
 // The intercept value for ICorDebug is a bitfied.
 //-----------------------------------------------------------------------------
-CorDebugIntercept ConvertFrameBitsToDbg(Frame::Interception i)
+CorDebugIntercept ConvertFrameBitsToDbg(Interception i)
 {
-    _ASSERTE(i >= 0 && i < Frame::INTERCEPTION_COUNT);
+    _ASSERTE(i >= 0 && i < INTERCEPTION_COUNT);
 
     // Since the ee frame is a 0-based enum, we can just use a map.
-    const CorDebugIntercept map[Frame::INTERCEPTION_COUNT] =
+    const CorDebugIntercept map[INTERCEPTION_COUNT] =
     {
         // ICorDebug                     EE Frame
         INTERCEPT_NONE,               // INTERCEPTION_NONE,
@@ -8299,12 +8299,12 @@ protected:
 
         // If there's an interceptor frame here, then set those
         // bits in our bitfield.
-        Frame::Interception i = Frame::INTERCEPTION_NONE;
+        Interception i = INTERCEPTION_NONE;
         Frame * pFrame = pInfo->frame;
         if ((pFrame != NULL) && (pFrame != FRAME_TOP))
         {
-            i = pFrame->GetInterception();
-            if (i != Frame::INTERCEPTION_NONE)
+            i = Frame_GetInterception(pFrame);
+            if (i != INTERCEPTION_NONE)
             {
                 pThis->m_bits |= (int) ConvertFrameBitsToDbg(i);
             }
@@ -8452,7 +8452,7 @@ TP_RESULT DebuggerThreadStarter::TriggerPatch(DebuggerControllerPatch *patch,
             CONTRACT_VIOLATION(GCViolation);
             traceOk = g_pEEInterface->TraceManager(thread, patch->trace.GetStubManager(), &trace, context, &dummy);
         }
-        else if ((patch->trace.GetTraceType() == TRACE_FRAME_PUSH) && (thread->GetFrame()->IsTransitionToNativeFrame()))
+        else if ((patch->trace.GetTraceType() == TRACE_FRAME_PUSH) && (Frame_IsTransitionToNativeFrame(thread->GetFrame())))
         {
             // If we've got a frame that is transitioning to native, there's no reason to try to keep tracing. So we
             // bail early and save ourselves some effort. This also works around a problem where we deadlock trying to

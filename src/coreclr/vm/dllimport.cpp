@@ -5859,7 +5859,7 @@ EXTERN_C LPVOID STDCALL NDirectImportWorker(NDirectMethodDesc* pMD)
         //
         INDEBUG(Thread *pThread = GetThread());
         {
-            _ASSERTE((pThread->GetFrame() != FRAME_TOP && pThread->GetFrame()->GetVTablePtr() == InlinedCallFrame::GetMethodFrameVPtr())
+            _ASSERTE((pThread->GetFrame() != FRAME_TOP && pThread->GetFrame()->GetType() == FrameType::InlinedCallFrame)
                 || pMD->ShouldSuppressGCTransition());
 
             CONSISTENCY_CHECK(pMD->IsNDirect());
@@ -5910,7 +5910,7 @@ EXTERN_C void STDCALL VarargPInvokeStubWorker(TransitionBlock * pTransitionBlock
     pFrame->Push(CURRENT_THREAD);
 
     _ASSERTE(pVASigCookie == pFrame->GetVASigCookie());
-    _ASSERTE(pMD == pFrame->GetFunction());
+    _ASSERTE(pMD == Frame_GetFunction(pFrame));
 
     GetILStubForCalli(pVASigCookie, pMD);
 

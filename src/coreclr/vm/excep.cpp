@@ -7326,8 +7326,8 @@ LONG WINAPI CLRVectoredExceptionHandlerShim(PEXCEPTION_POINTERS pExceptionInfo)
                     if (pFrame == 0 || pFrame == (Frame*) -1)
                         break;
 
-                    Frame::ETransitionType type = pFrame->GetTransitionType();
-                    if (type == Frame::TT_M2U || type == Frame::TT_InternalCall)
+                    ETransitionType type = Frame_GetTransitionType(pFrame);
+                    if (type == TT_M2U || type == TT_InternalCall)
                     {
                         stopPoint = pFrame;
                         break;
@@ -11511,7 +11511,7 @@ MethodDesc * GetUserMethodForILStub(Thread * pThread, UINT_PTR uStubSP, MethodDe
         // should be present further up the stack. Normally, the ComMethodFrame in question is
         // simply the next stack frame; however, there are situations where there may be other
         // stack frames present (such as an inlined stack frame from a QCall in the IL stub).
-        while (pCurFrame->GetVTablePtr() != ComMethodFrame::GetMethodFrameVPtr())
+        while (pCurFrame->GetType() != FrameType::ComMethodFrame)
         {
             pCurFrame = pCurFrame->PtrNextFrame();
         }
@@ -11519,7 +11519,7 @@ MethodDesc * GetUserMethodForILStub(Thread * pThread, UINT_PTR uStubSP, MethodDe
         ComMethodFrame * pComFrame = (ComMethodFrame *)pCurFrame;
         _ASSERTE((UINT_PTR)pComFrame > uStubSP);
 
-        CONSISTENCY_CHECK_MSG(pComFrame->GetVTablePtr() == ComMethodFrame::GetMethodFrameVPtr(),
+        CONSISTENCY_CHECK_MSG(pComFrame->GetType() == FrameType::ComMethodFrame,
                               "Expected to find a ComMethodFrame.");
 
         ComCallMethodDesc * pCMD = pComFrame->GetComCallMethodDesc();
@@ -11537,7 +11537,7 @@ MethodDesc * GetUserMethodForILStub(Thread * pThread, UINT_PTR uStubSP, MethodDe
 
 #ifdef FEATURE_EH_FUNCLETS
 
-void SoftwareExceptionFrame::UpdateRegDisplay(const PREGDISPLAY pRD, bool updateFloats)
+void SoftwareExceptionFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFloats)
 {
     LIMITED_METHOD_DAC_CONTRACT;
 

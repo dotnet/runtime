@@ -9,7 +9,6 @@ extern VarargPInvokeStubWorker:proc
 extern JIT_PInvokeEndRarePath:proc
 
 extern s_gsCookie:QWORD
-extern ??_7InlinedCallFrame@@6B@:QWORD
 extern g_TrapReturningThreads:DWORD
 
 ;
@@ -146,8 +145,7 @@ LEAF_ENTRY JIT_PInvokeBegin, _TEXT
         add             rcx, SIZEOF_GSCookie
 
         ;; set first slot to the value of InlinedCallFrame::`vftable' (checked by runtime code)
-        lea             rax,[??_7InlinedCallFrame@@6B@]
-        mov             qword ptr [rcx], rax
+        mov             qword ptr [rcx], FRAMETYPE_InlinedCallFrame
 
         mov             qword ptr [rcx + OFFSETOF__InlinedCallFrame__m_Datum], 0
 

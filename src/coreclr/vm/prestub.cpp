@@ -3105,7 +3105,7 @@ EXTERN_C PCODE STDCALL ExternalMethodFixupWorker(TransitionBlock * pTransitionBl
     if (pIndirection == (PCODE)NULL)
     {
         // Assume that the callsite is call [xxxxxxxx]
-        PCODE retAddr = pEMFrame->GetReturnAddress();
+        PCODE retAddr = Frame_GetReturnAddress(pEMFrame);
 #ifdef TARGET_X86
         pIndirection = *(((TADDR *)retAddr) - 1);
 #else
@@ -3302,7 +3302,7 @@ EXTERN_C PCODE STDCALL ExternalMethodFixupWorker(TransitionBlock * pTransitionBl
                 else
                     token = DispatchToken::CreateDispatchToken(slot);
 
-                StubCallSite callSite(pIndirection, pEMFrame->GetReturnAddress());
+                StubCallSite callSite(pIndirection, Frame_GetReturnAddress(pEMFrame));
                 pCode = pMgr->ResolveWorker(&callSite, protectedObj, token, STUB_CODE_BLOCK_VSD_LOOKUP_STUB);
             }
             else
@@ -4062,7 +4062,7 @@ extern "C" SIZE_T STDCALL DynamicHelperWorker(TransitionBlock * pTransitionBlock
     if (pCell == NULL)
     {
         // Assume that the callsite is call [xxxxxxxx]
-        PCODE retAddr = pFrame->GetReturnAddress();
+        PCODE retAddr = Frame_GetReturnAddress(pFrame);
 #ifdef TARGET_X86
         pCell = *(((TADDR **)retAddr) - 1);
 #else

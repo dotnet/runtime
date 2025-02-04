@@ -235,7 +235,7 @@ void  Thread::SetFrame(Frame *pFrame)
 
         _ASSERTE(IsExecutingOnAltStack() || espVal < pFrame);
         _ASSERTE(IsExecutingOnAltStack() || pFrame < m_CacheStackBase);
-        _ASSERTE(pFrame->GetFrameType() < Frame::TYPE_COUNT);
+        _ASSERTE(Frame_GetFrameType(pFrame) < Frame::TYPE_COUNT);
 
         pFrame = pFrame->m_Next;
     }
@@ -305,19 +305,19 @@ bool Thread::DetectHandleILStubsForDebugger()
         while (pFrame != FRAME_TOP)
         {
             // Check for HMF's.  See the comment at the beginning of this function.
-            if (pFrame->GetVTablePtr() == HelperMethodFrame::GetMethodFrameVPtr())
+            if (pFrame->GetType() == FrameType::HelperMethodFrame)
             {
                 break;
             }
             // If there is an entry frame (i.e. U2M managed), we should break.
-            else if (pFrame->GetFrameType() == Frame::TYPE_ENTRY)
+            else if (Frame_GetFrameType(pFrame) == Frame::TYPE_ENTRY)
             {
                 break;
             }
             // Check for M2U transition frames.  See the comment at the beginning of this function.
-            else if (pFrame->GetFrameType() == Frame::TYPE_EXIT)
+            else if (Frame_GetFrameType(pFrame) == Frame::TYPE_EXIT)
             {
-                if (pFrame->GetReturnAddress() == (PCODE)NULL)
+                if (Frame_GetReturnAddress(pFrame) == (PCODE)NULL)
                 {
                     // If the return address is NULL, then the frame has not been initialized yet.
                     // We may see InlinedCallFrame in ordinary methods as well. Have to do
@@ -6025,7 +6025,7 @@ BOOL Thread::UniqueStack(void* stackStart)
 
         pFrame->GetFunction();      // This ensures that helper frames are inited
 
-        if (pFrame->GetReturnAddress() != 0)
+        if (Frame_GetReturnAddress(pFrame)() != 0)
         {
             stopPoint = pFrame;
             break;
@@ -7457,7 +7457,7 @@ Frame * Thread::NotifyFrameChainOfExceptionUnwind(Frame* pStartFrame, LPVOID pvL
     {
         CONSISTENCY_CHECK(pFrame != PTR_NULL);
         CONSISTENCY_CHECK((pFrame) > static_cast<Frame *>((LPVOID)GetCurrentSP()));
-        pFrame->ExceptionUnwind();
+        Frame_ExceptionUnwind(pFrame);
         pFrame = pFrame->Next();
     }
 
@@ -7955,7 +7955,7 @@ Thread::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
         while (frame.IsValid() &&
                frame.GetAddr() != dac_cast<TADDR>(FRAME_TOP))
         {
-            frame->EnumMemoryRegions(flags);
+            Frame_EnumMemoryRegions(frame, flags);
             frame = frame->m_Next;
         }
     }

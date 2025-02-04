@@ -555,7 +555,7 @@ ClrDataStackWalk::RawGetFrameType(
 
     if (detailedType)
     {
-        if (m_frameIter.m_crawl.GetFrame() && m_frameIter.m_crawl.GetFrame()->GetFrameAttribs() & Frame::FRAME_ATTR_EXCEPTION)
+        if (m_frameIter.m_crawl.GetFrame() && Frame_GetFrameAttribs(m_frameIter.m_crawl.GetFrame()) & Frame::FRAME_ATTR_EXCEPTION)
             *detailedType = CLRDATA_DETFRAME_EXCEPTION_FILTER;
         else
             *detailedType = CLRDATA_DETFRAME_UNRECOGNIZED;

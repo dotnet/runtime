@@ -337,13 +337,13 @@ StackWalkAction UpdateObjectRefInResumeContextCallback(CrawlFrame* pCF, LPVOID p
     {
         Frame *pFrame = pCF->GetFrame();
 
-        if (pFrame->NeedsUpdateRegDisplay())
+        if (Frame_NeedsUpdateRegDisplay(pFrame))
         {
             CONSISTENCY_CHECK(pFrame >= pState->pHighestFrameWithRegisters);
             pState->pHighestFrameWithRegisters = pFrame;
 
             // Is this an InlinedCallFrame?
-            if (pFrame->GetVTablePtr() == InlinedCallFrame::GetMethodFrameVPtr())
+            if (pFrame->GetType() == FrameType::InlinedCallFrame)
             {
                 // If we are here, then ICF is expected to be active.
                 _ASSERTE(InlinedCallFrame::FrameHasActiveCall(pFrame));
@@ -397,7 +397,7 @@ bool ExceptionTracker::FindNonvolatileRegisterPointers(Thread* pThread, UINT_PTR
 
     while ((UINT_PTR)pFrame < uOriginalSP)
     {
-        if (pFrame->NeedsUpdateRegDisplay())
+        if (Frame_NeedsUpdateRegDisplay(pFrame))
             pHighestFrameWithRegisters = pFrame;
 
         pFrame = pFrame->Next();
@@ -869,7 +869,7 @@ static void PopExplicitFrames(Thread *pThread, void *targetSp, void *targetCalle
     Frame* pFrame = pThread->GetFrame();
     while (pFrame < targetSp)
     {
-        pFrame->ExceptionUnwind();
+        Frame_ExceptionUnwind(pFrame);
         pFrame->Pop(pThread);
         pFrame = pThread->GetFrame();
     }
@@ -898,7 +898,7 @@ static void PopExplicitFrames(Thread *pThread, void *targetSp, void *targetCalle
         if (ExecutionManager::IsReadyToRunCode(returnAddress))
 #endif
         {
-            pFrame->ExceptionUnwind();
+            Frame_ExceptionUnwind(pFrame);
             pFrame->Pop(pThread);
         }
         else
@@ -1460,9 +1460,9 @@ void ExceptionTracker::InitializeCrawlFrameForExplicitFrame(CrawlFrame* pcfThisF
     pcfThisFrame->isIPadjusted = false;
 
     pcfThisFrame->pFrame = pFrame;
-    pcfThisFrame->pFunc = pFrame->GetFunction();
+    pcfThisFrame->pFunc = Frame_GetFunction(pFrame);
 
-    if (pFrame->GetVTablePtr() == InlinedCallFrame::GetMethodFrameVPtr() &&
+    if (pFrame->GetType() == FrameType::InlinedCallFrame &&
         !InlinedCallFrame::FrameHasActiveCall(pFrame))
     {
         // Inactive ICFs in IL stubs contain the true interop MethodDesc which must be
@@ -1963,7 +1963,7 @@ CLRUnwindStatus ExceptionTracker::ProcessOSExceptionNotification(
             // the ICF immediately before and after a PInvoke in non-IL-stubs, like ReadyToRun.
             // See the usages for USE_PER_FRAME_PINVOKE_INIT for more information.
 
-            if (fTargetUnwind && (pFrame->GetVTablePtr() == InlinedCallFrame::GetMethodFrameVPtr()))
+            if (fTargetUnwind && (pFrame->GetType() == FrameType::InlinedCallFrame))
             {
                 PTR_InlinedCallFrame pICF = (PTR_InlinedCallFrame)pFrame;
                 // Does it live inside the current managed method? It will iff:
@@ -2020,7 +2020,7 @@ CLRUnwindStatus ExceptionTracker::ProcessOSExceptionNotification(
                 //
                 // notify Frame of unwind
                 //
-                pFrame->ExceptionUnwind();
+                Frame_ExceptionUnwind(pFrame);
 
                 // If we have not yet set the initial explicit frame processed by this tracker, then
                 // set it now.
@@ -2384,7 +2384,7 @@ BOOL NotifyDebuggerOfStub(Thread* pThread, Frame* pCurrentFrame)
     // w/ the ICorDebugInternalFrame stack range.
     if (CORDebuggerAttached())
     {
-        if (pCurrentFrame->GetTransitionType() == Frame::TT_M2U)
+        if (Frame_GetTransitionType(pCurrentFrame) == TT_M2U)
         {
             // Use -1 for the backing store pointer whenever we use the address of a frame as the stack pointer.
             EEToDebuggerExceptionInterfaceWrapper::FirstChanceManagedException(pThread,
@@ -2417,7 +2417,7 @@ CLRUnwindStatus ExceptionTracker::ProcessExplicitFrame(
 
     Frame* pFrame = pcfThisFrame->GetFrame();
 
-    EH_LOG((LL_INFO100, "  [ ProcessExplicitFrame: pFrame: " FMT_ADDR " pMD: " FMT_ADDR " %s PASS ]\n", DBG_ADDR(pFrame), DBG_ADDR(pFrame->GetFunction()), fIsFirstPass ? "FIRST" : "SECOND"));
+    EH_LOG((LL_INFO100, "  [ ProcessExplicitFrame: pFrame: " FMT_ADDR " pMD: " FMT_ADDR " %s PASS ]\n", DBG_ADDR(pFrame), DBG_ADDR(Frame_GetFunction(pFrame)), fIsFirstPass ? "FIRST" : "SECOND"));
 
     if (FRAME_TOP == pFrame)
     {
@@ -6122,7 +6122,7 @@ BOOL IsSafeToUnwindFrameChain(Thread* pThread, LPVOID MemoryStackFpForFrameChain
     Frame* pLastFrameOfInterest = FRAME_TOP;
     for (Frame* pf = pThread->m_pFrame; pf < MemoryStackFpForFrameChain; pf = pf->PtrNextFrame())
     {
-        PCODE retAddr = pf->GetReturnAddress();
+        PCODE retAddr = Frame_GetReturnAddress(pf);
         if (retAddr != (PCODE)NULL && ExecutionManager::IsManagedCode(retAddr))
         {
             pLastFrameOfInterest = pf;
@@ -6141,7 +6141,7 @@ BOOL IsSafeToUnwindFrameChain(Thread* pThread, LPVOID MemoryStackFpForFrameChain
     SetIP(&ctx, 0);
     SetSP(&ctx, 0);
     FillRegDisplay(&rd, &ctx);
-    pLastFrameOfInterest->UpdateRegDisplay(&rd);
+    Frame_UpdateRegDisplay(pLastFrameOfInterest, &rd);
 
     // We're safe only if the managed method will be unwound also
     LPVOID managedSP = dac_cast<PTR_VOID>(GetRegdisplaySP(&rd));
@@ -7588,7 +7588,7 @@ void ExceptionTracker::ResetThreadAbortStatus(PTR_Thread pThread, CrawlFrame *pC
 // Mark the pinvoke frame as invoking CallCatchFunclet (and similar) for collided unwind detection
 void MarkInlinedCallFrameAsFuncletCall(Frame* pFrame)
 {
-    _ASSERTE(pFrame->GetVTablePtr() == InlinedCallFrame::GetMethodFrameVPtr());
+    _ASSERTE(pFrame->GetType() == FrameType::InlinedCallFrame);
     InlinedCallFrame* pInlinedCallFrame = (InlinedCallFrame*)pFrame;
     pInlinedCallFrame->m_Datum = (PTR_NDirectMethodDesc)((TADDR)pInlinedCallFrame->m_Datum | (TADDR)InlinedCallFrameMarker::ExceptionHandlingHelper | (TADDR)InlinedCallFrameMarker::SecondPassFuncletCaller);
 }
@@ -7596,7 +7596,7 @@ void MarkInlinedCallFrameAsFuncletCall(Frame* pFrame)
 // Mark the pinvoke frame as invoking any exception handling helper
 void MarkInlinedCallFrameAsEHHelperCall(Frame* pFrame)
 {
-    _ASSERTE(pFrame->GetVTablePtr() == InlinedCallFrame::GetMethodFrameVPtr());
+    _ASSERTE(pFrame->GetType() == FrameType::InlinedCallFrame);
     InlinedCallFrame* pInlinedCallFrame = (InlinedCallFrame*)pFrame;
     pInlinedCallFrame->m_Datum = (PTR_NDirectMethodDesc)((TADDR)pInlinedCallFrame->m_Datum | (TADDR)InlinedCallFrameMarker::ExceptionHandlingHelper);
 }
@@ -8217,7 +8217,7 @@ void FailFastIfCorruptingStateException(ExInfo *pExInfo)
 
 static bool IsTopmostDebuggerU2MCatchHandlerFrame(Frame *pFrame)
 {
-    return (pFrame->GetVTablePtr() == DebuggerU2MCatchHandlerFrame::GetMethodFrameVPtr()) && (pFrame->PtrNextFrame() == FRAME_TOP);
+    return (pFrame->GetType() == FrameType::DebuggerU2MCatchHandlerFrame) && (pFrame->PtrNextFrame() == FRAME_TOP);
 }
 
 static void NotifyExceptionPassStarted(StackFrameIterator *pThis, Thread *pThread, ExInfo *pExInfo)
@@ -8291,12 +8291,12 @@ static void NotifyExceptionPassStarted(StackFrameIterator *pThis, Thread *pThrea
             {
                 Frame* pFrame = pThis->m_crawl.GetFrame();
                 // If the frame is ProtectValueClassFrame, move to the next one as we want to report the FuncEvalFrame
-                if (pFrame->GetVTablePtr() == ProtectValueClassFrame::GetMethodFrameVPtr())
+                if (pFrame->GetType() == FrameType::ProtectValueClassFrame)
                 {
                     pFrame = pFrame->PtrNextFrame();
                     _ASSERTE(pFrame != FRAME_TOP);
                 }
-                if ((pFrame->GetVTablePtr() == FuncEvalFrame::GetMethodFrameVPtr()) || IsTopmostDebuggerU2MCatchHandlerFrame(pFrame))
+                if ((pFrame->GetType() == FrameType::FuncEvalFrame) || IsTopmostDebuggerU2MCatchHandlerFrame(pFrame))
                 {
                     EEToDebuggerExceptionInterfaceWrapper::NotifyOfCHFFilter((EXCEPTION_POINTERS *)&pExInfo->m_ptrs, pFrame);
                 }
@@ -8373,7 +8373,7 @@ extern "C" bool QCALLTYPE SfiInit(StackFrameIterator* pThis, CONTEXT* pStackwalk
             Frame *pFrame = pThis->m_crawl.GetFrame();
             if (pFrame != FRAME_TOP)
             {
-                MethodDesc *pMD = pFrame->GetFunction();
+                MethodDesc *pMD = Frame_GetFunction(pFrame);
                 if (pMD != NULL)
                 {
                     GCX_COOP();
@@ -8401,9 +8401,9 @@ extern "C" bool QCALLTYPE SfiInit(StackFrameIterator* pThis, CONTEXT* pStackwalk
                 // a slightly different location in the managed code calling the pinvoke and the inlined
                 // call frame doesn't update the context pointers anyways.
                 Frame *pSkippedFrame = pThis->m_crawl.GetFrame();
-                if (pSkippedFrame->NeedsUpdateRegDisplay() && (pSkippedFrame->GetVTablePtr() != InlinedCallFrame::GetMethodFrameVPtr()))
+                if (Frame_NeedsUpdateRegDisplay(pSkippedFrame) && (pSkippedFrame->GetType() != FrameType::InlinedCallFrame))
                 {
-                    pSkippedFrame->UpdateRegDisplay(pThis->m_crawl.GetRegisterSet());
+                    Frame_UpdateRegDisplay(pSkippedFrame, pThis->m_crawl.GetRegisterSet());
                 }
             }
         }
@@ -8651,7 +8651,7 @@ extern "C" bool QCALLTYPE SfiNext(StackFrameIterator* pThis, uint* uExCollideCla
             }
             else if (pTopExInfo->m_passNumber == 1)
             {
-                pMD = pFrame->GetFunction();
+                pMD = Frame_GetFunction(pFrame);
                 if (pMD != NULL)
                 {
                     GCX_COOP();

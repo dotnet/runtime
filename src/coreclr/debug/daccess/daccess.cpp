@@ -5111,8 +5111,8 @@ ClrDataAccess::FollowStubStep(
             trace.InitForFramePush(CORDB_ADDRESS_TO_TADDR(inBuffer->u.addr));
             DacGetThreadContext(thread, &localContext);
             thread->FillRegDisplay(&regDisp, &localContext);
-            if (!thread->GetFrame()->
-                TraceFrame(thread,
+            if (!Frame_TraceFrame(thread->GetFrame(),
+                           thread,
                            TRUE,
                            &trace,
                            &regDisp))
@@ -8043,7 +8043,7 @@ StackWalkAction DacStackReferenceWalker::Callback(CrawlFrame *pCF, VOID *pData)
             }
             else
             {
-                pFrame->GcScanRoots(gcctx->f, gcctx->sc);
+                Frame_GcScanRoots(pFrame, gcctx->f, gcctx->sc);
             }
         }
     }

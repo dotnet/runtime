@@ -2167,7 +2167,7 @@ StackWalkAction COMPlusThrowCallback(       // SWA value
         if (pData->pPrevExceptionRecord) {
             // FCALLS have an extra SEH record in debug because of the desctructor
             // associated with ForbidGC checking.  This is benign, so just ignore it.
-            if (pFrame) _ASSERTE(pData->pPrevExceptionRecord < pFrame || pFrame->GetVTablePtr() == HelperMethodFrame::GetMethodFrameVPtr());
+            if (pFrame) _ASSERTE(pData->pPrevExceptionRecord < pFrame || pFrame->GetType() == FrameType::HelperMethodFrame);
             if (pCf->IsFrameless()) _ASSERTE((ULONG_PTR)pData->pPrevExceptionRecord <= GetRegdisplaySP(pCf->GetRegisterSet()));
         }
     }

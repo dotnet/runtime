@@ -5644,7 +5644,7 @@ void DacDbiInterfaceImpl::GetContext(VMPTR_Thread vmThread, DT_CONTEXT * pContex
             Frame *frame = pThread->GetFrame();
             while (frame != NULL && frame != FRAME_TOP)
             {
-                frame->UpdateRegDisplay(&tmpRd);
+                Frame_UpdateRegDisplay(frame, &tmpRd);
                 if (GetRegdisplaySP(&tmpRd) != 0 && GetControlPC(&tmpRd) != 0)
                 {
                     UpdateContextFromRegDisp(&tmpRd, &tmpContext);

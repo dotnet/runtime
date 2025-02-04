@@ -1220,7 +1220,7 @@ bool EEDbgInterfaceImpl::TraceFrame(Thread *thread,
     }
     CONTRACTL_END;
 
-    bool fResult = frame->TraceFrame(thread, fromPatch, trace, regs) != FALSE;
+    bool fResult = Frame_TraceFrame(frame, thread, fromPatch, trace, regs) != FALSE;
 
 #ifdef _DEBUG
     StubManager::DbgWriteLog("Doing TraceFrame on frame=0x%p (fromPatch=%d), yields:\n", frame, fromPatch);
