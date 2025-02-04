@@ -2488,16 +2488,16 @@ instruction CodeGen::ins_FloatConv(var_types to, var_types from)
 
             switch (to)
             {
-                    case TYP_INT:
-                        return isAvx10v2 ? INS_vcvttss2sis32 : INS_cvttss2si32;
-                    case TYP_LONG:
-                        return isAvx10v2 ? INS_vcvttss2sis64 : INS_cvttss2si64;
-                    case TYP_ULONG:
-                        return isAvx10v2 ? INS_vcvttss2usis64 : INS_vcvttss2usi64;
-                    case TYP_UINT:
-                        return isAvx10v2 ? INS_vcvttss2usis32 : INS_vcvttss2usi32;
-                    default:
-                        unreached();
+                case TYP_INT:
+                    return isAvx10v2 ? INS_vcvttss2sis32 : INS_cvttss2si32;
+                case TYP_LONG:
+                    return isAvx10v2 ? INS_vcvttss2sis64 : INS_cvttss2si64;
+                case TYP_ULONG:
+                    return isAvx10v2 ? INS_vcvttss2usis64 : INS_vcvttss2usi64;
+                case TYP_UINT:
+                    return isAvx10v2 ? INS_vcvttss2usis32 : INS_vcvttss2usi32;
+                default:
+                    unreached();
             }
             break;
 
@@ -2514,16 +2514,16 @@ instruction CodeGen::ins_FloatConv(var_types to, var_types from)
 
             switch (to)
             {
-                    case TYP_INT:
-                        return isAvx10v2 ? INS_vcvttsd2sis32 : INS_cvttsd2si32;
-                    case TYP_LONG:
-                        return isAvx10v2 ? INS_vcvttsd2sis64 : INS_cvttsd2si64;
-                    case TYP_ULONG:
-                        return isAvx10v2 ? INS_vcvttsd2usis64 : INS_vcvttsd2usi64;
-                    case TYP_UINT:
-                        return isAvx10v2 ? INS_vcvttsd2usis32 : INS_vcvttsd2usi32;
-                    default:
-                        unreached();
+                case TYP_INT:
+                    return isAvx10v2 ? INS_vcvttsd2sis32 : INS_cvttsd2si32;
+                case TYP_LONG:
+                    return isAvx10v2 ? INS_vcvttsd2sis64 : INS_cvttsd2si64;
+                case TYP_ULONG:
+                    return isAvx10v2 ? INS_vcvttsd2usis64 : INS_vcvttsd2usi64;
+                case TYP_UINT:
+                    return isAvx10v2 ? INS_vcvttsd2usis32 : INS_vcvttsd2usi32;
+                default:
+                    unreached();
             }
             break;
 
