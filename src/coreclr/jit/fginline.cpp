@@ -2046,7 +2046,7 @@ Statement* Compiler::fgInlinePrependStatements(InlineInfo* inlineInfo)
     }
 
 #ifdef DEBUG
-    if (call->gtArgs.CountArgs() > 0)
+    if (call->gtArgs.CountUserArgs() > 0)
     {
         JITDUMP("\nArguments setup:\n");
     }
