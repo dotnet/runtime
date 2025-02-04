@@ -65,7 +65,6 @@ usage()
   echo ""
 
   echo "Libraries settings:"
-  echo "  --allconfigurations        Build packages for all build configurations."
   echo "  --coverage                 Collect code coverage when testing."
   echo "  --framework (-f)           Build framework: net10.0 or net48."
   echo "                             [Default: net10.0]"
@@ -141,7 +140,7 @@ initDistroRid()
     local isCrossBuild="$3"
 
     # Only pass ROOTFS_DIR if __DoCrossArchBuild is specified and the current platform is not an Apple platform (that doesn't use rootfs)
-    if [[ $isCrossBuild == 1 && "$targetOs" != "osx" && "$targetOs" != "ios" && "$targetOs" != "iossimulator" && "$targetOs" != "tvos" && "$targetOs" != "tvossimulator" && "$targetOs" != "maccatalyst" ]]; then
+    if [[ $isCrossBuild == 1 && "$targetOs" != "osx" && "$targetOs" != "android" && "$targetOs" != "ios" && "$targetOs" != "iossimulator" && "$targetOs" != "tvos" && "$targetOs" != "tvossimulator" && "$targetOs" != "maccatalyst" ]]; then
         passedRootfsDir=${ROOTFS_DIR}
     fi
     initDistroRidGlobal "${targetOs}" "${targetArch}" "${passedRootfsDir}"
@@ -308,8 +307,8 @@ while [[ $# > 0 ]]; do
       shift 2
       ;;
 
-     -allconfigurations)
-      arguments="$arguments /p:BuildAllConfigurations=true"
+     -pack)
+      arguments="$arguments --pack /p:BuildAllConfigurations=true"
       shift 1
       ;;
 

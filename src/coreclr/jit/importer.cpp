@@ -9548,6 +9548,21 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 {
                     indirFlags |= GTF_IND_TGT_HEAP;
                 }
+                else if ((lclTyp == TYP_STRUCT) && (fieldInfo.structType != NO_CLASS_HANDLE) &&
+                         eeIsByrefLike(fieldInfo.structType))
+                {
+                    // Field's type is a byref-like struct -> address is not on the heap.
+                    indirFlags |= GTF_IND_TGT_NOT_HEAP;
+                }
+                else
+                {
+                    // Field's owner is a byref-like struct -> address is not on the heap.
+                    CORINFO_CLASS_HANDLE fldOwner = info.compCompHnd->getFieldClass(resolvedToken.hField);
+                    if ((fldOwner != NO_CLASS_HANDLE) && eeIsByrefLike(fldOwner))
+                    {
+                        indirFlags |= GTF_IND_TGT_NOT_HEAP;
+                    }
+                }
 
                 assert(varTypeIsI(op1));
                 op1 = (lclTyp == TYP_STRUCT) ? gtNewStoreBlkNode(layout, op1, op2, indirFlags)->AsIndir()
@@ -9699,6 +9714,26 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     /* Push the result of the call on the stack */
 
                     impPushOnStack(gtNewLclvNode(lclNum, TYP_REF), tiRetVal);
+
+#ifdef DEBUG
+                    // Under SPMI, look up info we might ask for if we stack allocate this array
+                    //
+                    if (JitConfig.EnableExtraSuperPmiQueries())
+                    {
+                        void* pEmbedClsHnd;
+                        info.compCompHnd->embedClassHandle(resolvedToken.hClass, &pEmbedClsHnd);
+                        CORINFO_CLASS_HANDLE elemClsHnd = NO_CLASS_HANDLE;
+                        CorInfoType elemCorType = info.compCompHnd->getChildType(resolvedToken.hClass, &elemClsHnd);
+                        var_types   elemType    = JITtype2varType(elemCorType);
+                        if (elemType == TYP_STRUCT)
+                        {
+                            typGetObjLayout(elemClsHnd);
+                            info.compCompHnd->isValueClass(elemClsHnd);
+                        }
+                        void* pIndirection;
+                        info.compCompHnd->getHelperFtn(CORINFO_HELP_MEMZERO, &pIndirection);
+                    }
+#endif
                 }
                 else
                 {
@@ -10587,7 +10622,14 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 op1 = impPopStack().val; // Ptr
                 assertImp(varTypeIsStruct(op2));
 
-                op1 = gtNewStoreValueNode(layout, op1, op2, impPrefixFlagsToIndirFlags(prefixFlags));
+                GenTreeFlags indirFlags = impPrefixFlagsToIndirFlags(prefixFlags);
+                if (eeIsByrefLike(resolvedToken.hClass))
+                {
+                    indirFlags |= GTF_IND_TGT_NOT_HEAP;
+                }
+
+                op1 = gtNewStoreValueNode(layout, op1, op2, indirFlags);
+
                 op1 = impStoreStruct(op1, CHECK_SPILL_ALL);
                 goto SPILL_APPEND;
             }
@@ -10954,7 +10996,7 @@ bool Compiler::impReturnInstruction(int prefixFlags, OPCODE& opcode)
             // Make sure the type matches the original call.
 
             var_types returnType       = genActualType(op2->gtType);
-            var_types originalCallType = inlCandInfo->fncRetType;
+            var_types originalCallType = genActualType(JITtype2varType(inlCandInfo->methInfo.args.retType));
             if ((returnType != originalCallType) && (originalCallType == TYP_STRUCT))
             {
                 originalCallType = impNormStructType(inlCandInfo->methInfo.args.retTypeClass);
@@ -11034,13 +11076,21 @@ bool Compiler::impReturnInstruction(int prefixFlags, OPCODE& opcode)
                             impInlineInfo->retExprClassHnd        = returnClsHnd;
                             impInlineInfo->retExprClassHndIsExact = isExact;
                         }
-                        else if (impInlineInfo->retExprClassHnd != returnClsHnd)
+                        else
                         {
-                            // This return site type differs from earlier seen sites,
-                            // so reset the info and we'll fall back to using the method's
-                            // declared return type for the return spill temp.
-                            impInlineInfo->retExprClassHnd        = nullptr;
-                            impInlineInfo->retExprClassHndIsExact = false;
+                            if (impInlineInfo->retExprClassHnd != returnClsHnd)
+                            {
+                                // This return site type differs from earlier seen sites,
+                                // so reset the info and we'll fall back to using the method's
+                                // declared return type for the return spill temp.
+                                impInlineInfo->retExprClassHnd        = nullptr;
+                                impInlineInfo->retExprClassHndIsExact = false;
+                            }
+                            else
+                            {
+                                // Same return type, but we may need to update exactness.
+                                impInlineInfo->retExprClassHndIsExact &= isExact;
+                            }
                         }
                     }
 
