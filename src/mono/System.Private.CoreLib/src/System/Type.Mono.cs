@@ -30,7 +30,7 @@ namespace System
         public static Type? GetType(string typeName, bool throwOnError, bool ignoreCase)
         {
             StackCrawlMark stackMark = StackCrawlMark.LookForMyCaller;
-            return RuntimeType.GetType(typeName, throwOnError, ignoreCase, ref stackMark);
+            return GetType(typeName, null, null, throwOnError, ignoreCase, ref stackMark);
         }
 
         [RequiresUnreferencedCode("The type might be removed")]
@@ -38,7 +38,7 @@ namespace System
         public static Type? GetType(string typeName, bool throwOnError)
         {
             StackCrawlMark stackMark = StackCrawlMark.LookForMyCaller;
-            return RuntimeType.GetType(typeName, throwOnError, false, ref stackMark);
+            return GetType(typeName, null, null, throwOnError, false, ref stackMark);
         }
 
         [RequiresUnreferencedCode("The type might be removed")]
@@ -46,7 +46,7 @@ namespace System
         public static Type? GetType(string typeName)
         {
             StackCrawlMark stackMark = StackCrawlMark.LookForMyCaller;
-            return RuntimeType.GetType(typeName, false, false, ref stackMark);
+            return GetType(typeName, null, null, false, false, ref stackMark);
         }
 
         [RequiresUnreferencedCode("The type might be removed")]
