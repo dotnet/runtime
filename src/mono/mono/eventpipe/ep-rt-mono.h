@@ -745,10 +745,11 @@ ep_rt_wait_event_wait (
 	bool alertable)
 {
 	//TODO, replace with low level PAL implementation.
-	EP_ASSERT (wait_event != NULL && wait_event->event != NULL);
 #ifndef PERFTRACING_DISABLE_THREADS
+	EP_ASSERT (wait_event != NULL && wait_event->event != NULL);
 	return (int32_t)mono_w32handle_wait_one (wait_event->event, timeout, alertable);
 #else
+	EP_ASSERT (wait_event != NULL && wait_event->event == INVALID_HANDLE_VALUE);
 	(void)timeout;
 	(void)alertable;
 	return (int32_t)0;
@@ -772,7 +773,7 @@ ep_rt_wait_event_is_valid (ep_rt_wait_event_handle_t *wait_event)
 #ifndef PERFTRACING_DISABLE_THREADS
 	if (wait_event == NULL || wait_event->event == NULL || wait_event->event == INVALID_HANDLE_VALUE)
 #else
-	if (wait_event == NULL || wait_event->event != INVALID_HANDLE_VALUE)
+	if (wait_event == NULL || wait_event->event == NULL || wait_event->event != INVALID_HANDLE_VALUE)
 #endif
 		return false;
 	else
