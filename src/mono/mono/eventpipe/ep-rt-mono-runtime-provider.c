@@ -1356,7 +1356,7 @@ method_enter (MonoProfiler *prof, MonoMethod *method, MonoProfilerCallContext *c
 		}
 		mono_thread_info_set_tid (&adapter, ep_rt_uint64_t_to_thread_id_t (data->thread_id));
 		uint32_t payload_data = ep_rt_val_uint32_t (data->payload_data);
-		ep_write_sample_profile_event (, _thread_time_event, &adapter, &data->stack_contents, (uint8_t *)&payload_data, sizeof (payload_data));
+		ep_write_sample_profile_event (current_sampling_thread, current_sampling_event, &adapter, &data->stack_contents, (uint8_t *)&payload_data, sizeof (payload_data));
 	}
 }
 
