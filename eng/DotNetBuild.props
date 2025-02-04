@@ -72,6 +72,7 @@
       <InnerBuildArgs Condition="'$(DotNetBuildMonoAOTEnableLLVM)' != ''">$(InnerBuildArgs) /p:MonoAOTEnableLLVM=$(DotNetBuildMonoAOTEnableLLVM)</InnerBuildArgs>
       <InnerBuildArgs Condition="'$(DotNetBuildMonoBundleLLVMOptimizer)' != ''">$(InnerBuildArgs) /p:MonoBundleLLVMOptimizer=$(DotNetBuildMonoBundleLLVMOptimizer)</InnerBuildArgs>
       <InnerBuildArgs Condition="'$(DotNetBuildAllRuntimePacks)' != ''">$(InnerBuildArgs) /p:DotNetBuildAllRuntimePacks=$(DotNetBuildAllRuntimePacks)</InnerBuildArgs>
+      <InnerBuildArgs Condition="'$(DotNetBuildPass)' != ''">$(InnerBuildArgs) /p:DotNetBuildPass=$(DotNetBuildPass)</InnerBuildArgs>
       <InnerBuildArgs Condition="'$(PgoInstrument)' == 'true'">$(InnerBuildArgs) $(FlagParameterPrefix)pgoinstrument</InnerBuildArgs>
 
       <!-- This prop needs to be passed to the inner build manually as the BaseInnerSourceBuildCommand gets overridden above -->
@@ -83,6 +84,7 @@
       <InnerBuildArgs Condition="'$(RestoreConfigFile)' != ''">$(InnerBuildArgs) /p:RestoreConfigFile=$(RestoreConfigFile)</InnerBuildArgs>
       <InnerBuildArgs Condition="'$(ForceDryRunSigning)' != ''">$(InnerBuildArgs) /p:ForceDryRunSigning=$(ForceDryRunSigning)</InnerBuildArgs>
       <InnerBuildArgs Condition="'$(DefaultArtifactVisibility)' != ''">$(InnerBuildArgs) /p:DefaultArtifactVisibility=$(DefaultArtifactVisibility)</InnerBuildArgs>
+      <InnerBuildArgs Condition="'$(DotNetEsrpToolPath)' != ''">$(InnerBuildArgs) /p:DotNetEsrpToolPath=$(DotNetEsrpToolPath)</InnerBuildArgs>
 
       <!-- Pass locations for assets, packages and symbols -->
       <InnerBuildArgs Condition="'$(SourceBuiltAssetsDir)' != ''">$(InnerBuildArgs) /p:SourceBuiltAssetsDir=$(SourceBuiltAssetsDir)</InnerBuildArgs>
