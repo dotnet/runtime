@@ -130,6 +130,25 @@ REGDEF(XMM31,  31+XMMBASE,  XMMMASK(31),  "mm31" )
 
 #endif // !TARGET_AMD64
 
+#ifdef TARGET_AMD64
+//REGDEF(K0,     0+KBASE,    KMASK(0),     "k0"   )
+REGDEF(K1,     0+KBASE,    KMASK(0),     "k1"   )
+REGDEF(K2,     1+KBASE,    KMASK(1),     "k2"   )
+REGDEF(K3,     2+KBASE,    KMASK(2),     "k3"   )
+REGDEF(K4,     3+KBASE,    KMASK(3),     "k4"   )
+REGDEF(K5,     4+KBASE,    KMASK(4),     "k5"   )
+REGDEF(K6,     5+KBASE,    KMASK(5),     "k6"   )
+REGDEF(K7,     6+KBASE,    KMASK(6),     "k7"   )
+
+#define SPLBASE 63
+#define SPLMASK(x) (1ULL << ((x)+SPLBASE))
+
+REGDEF(K0,     0+SPLBASE,    SPLMASK(0),     "k0"   )
+
+REGDEF(STK,    1+SPLBASE,    0x00000000,     "STK"  )
+
+#else // !TARGET_AMD64
+
 REGDEF(K0,     0+KBASE,    KMASK(0),     "k0"   )
 REGDEF(K1,     1+KBASE,    KMASK(1),     "k1"   )
 REGDEF(K2,     2+KBASE,    KMASK(2),     "k2"   )
@@ -140,6 +159,8 @@ REGDEF(K6,     6+KBASE,    KMASK(6),     "k6"   )
 REGDEF(K7,     7+KBASE,    KMASK(7),     "k7"   )
 
 REGDEF(STK,    8+KBASE,    0x0000,       "STK"  )
+
+#endif // !TARGET_AMD64
 
 // Ignore REG_* symbols defined in Android NDK
 #if defined(TARGET_X86)

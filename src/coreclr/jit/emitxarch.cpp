@@ -2314,6 +2314,30 @@ bool emitter::HasMaskReg(const instrDesc* id) const
     return false;
 }
 
+std::map<regNumber, unsigned> jitRegnumToRegnum = 
+{
+    {REG_K0, 0},
+    {REG_K1, 1},
+    {REG_K2, 2},
+    {REG_K3, 3},
+    {REG_K4, 4},
+    {REG_K5, 5},
+    {REG_K6, 6},
+    {REG_K7, 7}
+};
+
+std::map<unsigned, regNumber> RegnumTojitRegnum = 
+{
+    {0, REG_K0},
+    {1, REG_K1},
+    {2, REG_K2},
+    {3, REG_K3},
+    {4, REG_K4},
+    {5, REG_K5},
+    {6, REG_K6},
+    {7, REG_K7}
+};
+
 //------------------------------------------------------------------------
 // AbsRegNumber: Returns the register value to be used for encoding.
 // JIT internally represents registers using regnumber 0 - (REG_STK-1).
@@ -2329,7 +2353,7 @@ regNumber AbsRegNumber(regNumber reg)
     assert(reg < REG_STK);
     if (reg >= KBASE)
     {
-        return (regNumber)(reg - KBASE);
+        return (regNumber)jitRegnumToRegnum[reg];
     }
     else if (reg >= XMMBASE)
     {
@@ -12235,7 +12259,7 @@ void emitter::emitDispEmbMasking(instrDesc* id) const
         return;
     }
 
-    regNumber maskReg = static_cast<regNumber>(id->idGetEvexAaaContext() + KBASE);
+    regNumber maskReg = RegnumTojitRegnum[id->idGetEvexAaaContext()];// Confirm with Tanner. How many mask registers do we use currently???
 
     if (maskReg == REG_K0)
     {

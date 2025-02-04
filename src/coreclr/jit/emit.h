@@ -4,7 +4,7 @@
 
 #ifndef _EMIT_H_
 #define _EMIT_H_
-
+#include <map>
 #include "instr.h"
 
 #ifndef _GCINFO_H_

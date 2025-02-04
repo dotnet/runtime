@@ -800,6 +800,7 @@ LinearScan::LinearScan(Compiler* theCompiler)
     rbmIntCalleeTrash = compiler->rbmIntCalleeTrash;
     regIntLast        = compiler->regIntLast;
     isApxSupported    = compiler->canUseApxEncoding();
+    availableRegCount = availableRegCount - CNT_SPL_REGS;
 #endif // TARGET_AMD64
 
 #if defined(TARGET_XARCH)

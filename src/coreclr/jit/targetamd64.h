@@ -87,14 +87,16 @@
   #define REG_FP_LAST              REG_XMM31
   #define FIRST_FP_ARGREG          REG_XMM0
 
-  #define REG_MASK_FIRST           REG_K0
+  #define REG_MASK_FIRST           REG_K1
   #define REG_MASK_LAST            REG_K7
 
   #define RBM_ALLMASK_INIT         (0)
   #define RBM_ALLMASK_EVEX         (RBM_K1 | RBM_K2 | RBM_K3 | RBM_K4 | RBM_K5 | RBM_K6 | RBM_K7)
   #define RBM_ALLMASK              get_RBM_ALLMASK()
 
-  #define CNT_MASK_REGS            8
+  #define CNT_MASK_REGS            7
+
+  #define CNT_SPL_REGS             1
 
 #ifdef    UNIX_AMD64_ABI
   #define LAST_FP_ARGREG        REG_XMM7
