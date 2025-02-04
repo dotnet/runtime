@@ -4901,7 +4901,7 @@ public:
                              Statement**      pAfterStmt = nullptr,
                              const DebugInfo& di         = DebugInfo(),
                              BasicBlock*      block      = nullptr);
-    GenTree* impStoreStructPtr(GenTree* destAddr, GenTree* value, unsigned curLevel);
+    GenTree* impStoreStructPtr(GenTree* destAddr, GenTree* value, unsigned curLevel, GenTreeFlags indirFlags = GTF_EMPTY);
 
     GenTree* impGetNodeAddr(GenTree* val, unsigned curLevel, GenTreeFlags* pDerefFlags);
 
