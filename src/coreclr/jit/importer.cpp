@@ -11213,8 +11213,10 @@ bool Compiler::impReturnInstruction(int prefixFlags, OPCODE& opcode)
                 }
                 else // The struct was to be returned via a return buffer.
                 {
-                    assert(iciCall->gtArgs.HasRetBuffer());
-                    GenTree* dest = gtCloneExpr(iciCall->gtArgs.GetRetBufferArg()->GetEarlyNode());
+                    assert(iciCall->gtArgs.HasRetBuffer() && (impInlineInfo->inlRetBufferArgInfo != nullptr));
+                    InlLclVarInfo lclInfo = {};
+                    lclInfo.lclTypeInfo   = TYP_BYREF;
+                    GenTree* dest         = impInlineFetchArg(*impInlineInfo->inlRetBufferArgInfo, lclInfo);
 
                     if (fgNeedReturnSpillTemp())
                     {
@@ -12988,7 +12990,7 @@ void Compiler::impCanInlineIL(CORINFO_METHOD_HANDLE fncHandle,
 // Arguments:
 //   pInlineInfo - inline info for the inline candidate
 //   arg - the caller argument
-//   argNum - logical index of this argument
+//   argInfo - Structure to record information into
 //   inlineResult - result of ongoing inline evaluation
 //
 // Notes:
@@ -13000,12 +13002,10 @@ void Compiler::impCanInlineIL(CORINFO_METHOD_HANDLE fncHandle,
 
 void Compiler::impInlineRecordArgInfo(InlineInfo*   pInlineInfo,
                                       CallArg*      arg,
-                                      unsigned      argNum,
+                                      InlArgInfo*   argInfo,
                                       InlineResult* inlineResult)
 {
-    InlArgInfo* inlCurArgInfo = &pInlineInfo->inlArgInfo[argNum];
-
-    inlCurArgInfo->arg = arg;
+    argInfo->arg       = arg;
     GenTree* curArgVal = arg->GetNode();
 
     assert(!curArgVal->OperIs(GT_RET_EXPR));
@@ -13018,7 +13018,10 @@ void Compiler::impInlineRecordArgInfo(InlineInfo*   pInlineInfo,
 
         if (varTypeIsStruct(varDsc))
         {
-            inlCurArgInfo->argIsByRefToStructLocal = true;
+            // Addresses of locals often can be optimized by duplicating them
+            // even when they are complex because they often end up in
+            // dereferences.
+            argInfo->argDuplicateComplex = true;
 #ifdef FEATURE_SIMD
             if (varTypeIsSIMD(varDsc))
             {
@@ -13027,28 +13030,31 @@ void Compiler::impInlineRecordArgInfo(InlineInfo*   pInlineInfo,
 #endif // FEATURE_SIMD
         }
 
-        // Spilling code relies on correct aliasability annotations.
-        assert(varDsc->lvHasLdAddrOp || varDsc->IsAddressExposed());
+        // Spilling code relies on correct aliasability annotations, except for
+        // retbufs that are not actually exposed in IL.
+        assert(varDsc->lvHasLdAddrOp || varDsc->IsAddressExposed() ||
+               (arg->GetWellKnownArg() == WellKnownArg::RetBuffer));
     }
 
-    if (curArgVal->gtFlags & GTF_ALL_EFFECT)
+    if (arg->GetWellKnownArg() == WellKnownArg::RetBuffer)
     {
-        inlCurArgInfo->argHasGlobRef = (curArgVal->gtFlags & GTF_GLOB_REF) != 0;
-        inlCurArgInfo->argHasSideEff = (curArgVal->gtFlags & (GTF_ALL_EFFECT & ~GTF_GLOB_REF)) != 0;
+        // Retbuffer is very often used directly in a dereference, and this
+        // generally makes it profitable to duplicate even when it is complex.
+        argInfo->argDuplicateComplex = true;
     }
+
+    argInfo->argHasGlobRef = (curArgVal->gtFlags & GTF_GLOB_REF) != 0;
+    argInfo->argHasSideEff = (curArgVal->gtFlags & (GTF_ALL_EFFECT & ~GTF_GLOB_REF)) != 0;
 
     if (curArgVal->gtOper == GT_LCL_VAR)
     {
-        inlCurArgInfo->argIsLclVar = true;
-
-        /* Remember the "original" argument number */
-        INDEBUG(curArgVal->AsLclVar()->gtLclILoffs = argNum;)
+        argInfo->argIsLclVar = true;
     }
 
     if (impIsInvariant(curArgVal))
     {
-        inlCurArgInfo->argIsInvariant = true;
-        if (inlCurArgInfo->argIsThis && (curArgVal->gtOper == GT_CNS_INT) && (curArgVal->AsIntCon()->gtIconVal == 0))
+        argInfo->argIsInvariant = true;
+        if (argInfo->argIsThis && (curArgVal->gtOper == GT_CNS_INT) && (curArgVal->AsIntCon()->gtIconVal == 0))
         {
             // Abort inlining at this call site
             inlineResult->NoteFatal(InlineObservation::CALLSITE_ARG_HAS_NULL_THIS);
@@ -13057,13 +13063,15 @@ void Compiler::impInlineRecordArgInfo(InlineInfo*   pInlineInfo,
     }
     else if (gtIsTypeof(curArgVal))
     {
-        inlCurArgInfo->argIsInvariant = true;
-        inlCurArgInfo->argHasSideEff  = false;
+        argInfo->argIsInvariant = true;
+        argInfo->argHasSideEff  = false;
     }
 
-    bool isExact              = false;
-    bool isNonNull            = false;
-    inlCurArgInfo->argIsExact = (gtGetClassHandle(curArgVal, &isExact, &isNonNull) != NO_CLASS_HANDLE) && isExact;
+    argInfo->argIsThis = arg->GetWellKnownArg() == WellKnownArg::ThisPointer;
+
+    bool isExact        = false;
+    bool isNonNull      = false;
+    argInfo->argIsExact = (gtGetClassHandle(curArgVal, &isExact, &isNonNull) != NO_CLASS_HANDLE) && isExact;
 
     // If the arg is a local that is address-taken, we can't safely
     // directly substitute it into the inlinee.
@@ -13074,53 +13082,53 @@ void Compiler::impInlineRecordArgInfo(InlineInfo*   pInlineInfo,
     // which is safe in this case.
     //
     // Instead mark the arg as having a caller local ref.
-    if (!inlCurArgInfo->argIsInvariant && gtHasLocalsWithAddrOp(curArgVal))
+    if (!argInfo->argIsInvariant && gtHasLocalsWithAddrOp(curArgVal))
     {
-        inlCurArgInfo->argHasCallerLocalRef = true;
+        argInfo->argHasCallerLocalRef = true;
     }
 
 #ifdef DEBUG
     if (verbose)
     {
-        if (inlCurArgInfo->argIsThis)
+        if (arg->GetWellKnownArg() != WellKnownArg::None)
         {
-            printf("thisArg:");
+            printf("%s:", getWellKnownArgName(arg->GetWellKnownArg()));
         }
         else
         {
-            printf("\nArgument #%u:", argNum);
+            printf("IL argument #%u:", pInlineInfo->iciCall->gtArgs.GetUserIndex(arg));
         }
-        if (inlCurArgInfo->argIsLclVar)
+        if (argInfo->argIsLclVar)
         {
             printf(" is a local var");
         }
-        if (inlCurArgInfo->argIsInvariant)
+        if (argInfo->argIsInvariant)
         {
             printf(" is a constant or invariant");
         }
-        if (inlCurArgInfo->argHasGlobRef)
+        if (argInfo->argHasGlobRef)
         {
             printf(" has global refs");
         }
-        if (inlCurArgInfo->argHasCallerLocalRef)
+        if (argInfo->argHasCallerLocalRef)
         {
             printf(" has caller local ref");
         }
-        if (inlCurArgInfo->argHasSideEff)
+        if (argInfo->argHasSideEff)
         {
             printf(" has side effects");
         }
-        if (inlCurArgInfo->argHasLdargaOp)
+        if (argInfo->argHasLdargaOp)
         {
             printf(" has ldarga effect");
         }
-        if (inlCurArgInfo->argHasStargOp)
+        if (argInfo->argHasStargOp)
         {
             printf(" has starg effect");
         }
-        if (inlCurArgInfo->argIsByRefToStructLocal)
+        if (argInfo->argDuplicateComplex)
         {
-            printf(" is byref to a struct local");
+            printf(" is preferred to be duplicated");
         }
 
         printf("\n");
@@ -13174,46 +13182,27 @@ void Compiler::impInlineInitVars(InlineInfo* pInlineInfo)
     unsigned ilArgCnt = 0;
     for (CallArg& arg : call->gtArgs.Args())
     {
+        InlArgInfo* argInfo;
         switch (arg.GetWellKnownArg())
         {
-            case WellKnownArg::ThisPointer:
-                inlArgInfo[ilArgCnt].argIsThis = true;
-                break;
             case WellKnownArg::RetBuffer:
-                // This does not appear in the table of inline arg info; do not include them
-                continue;
+                pInlineInfo->inlRetBufferArgInfo = argInfo = new (this, CMK_Inlining) InlArgInfo{};
+                break;
             case WellKnownArg::InstParam:
-            {
-                InlArgInfo* ctxInfo  = new (this, CMK_Inlining) InlArgInfo{};
-                ctxInfo->arg         = &arg;
-                ctxInfo->argTmpNum   = BAD_VAR_NUM;
-                ctxInfo->argIsLclVar = arg.GetNode()->OperIs(GT_LCL_VAR);
-                if (arg.GetNode()->IsCnsIntOrI())
-                {
-                    ctxInfo->argIsInvariant = true;
-                }
-                else
-                {
-                    // Conservative approach
-                    ctxInfo->argHasSideEff = true;
-                    ctxInfo->argHasGlobRef = true;
-                }
-                pInlineInfo->inlInstParamArgInfo = ctxInfo;
-                continue;
-            }
+                pInlineInfo->inlInstParamArgInfo = argInfo = new (this, CMK_Inlining) InlArgInfo{};
+                break;
             default:
+                argInfo = &inlArgInfo[ilArgCnt++];
                 break;
         }
 
         arg.SetEarlyNode(gtFoldExpr(arg.GetEarlyNode()));
-        impInlineRecordArgInfo(pInlineInfo, &arg, ilArgCnt, inlineResult);
+        impInlineRecordArgInfo(pInlineInfo, &arg, argInfo, inlineResult);
 
         if (inlineResult->IsFailure())
         {
             return;
         }
-
-        ilArgCnt++;
     }
 
     /* Make sure we got the arg number right */
@@ -13598,7 +13587,7 @@ unsigned Compiler::impInlineFetchLocal(unsigned lclNum DEBUGARG(const char* reas
 //
 //    This method will side effect inlArgInfo. It should only be called
 //    for actual uses of the argument in the inlinee.
-
+//
 GenTree* Compiler::impInlineFetchArg(InlArgInfo& argInfo, const InlLclVarInfo& lclInfo)
 {
     // Cache the relevant arg and lcl info for this argument.
@@ -13666,42 +13655,30 @@ GenTree* Compiler::impInlineFetchArg(InlArgInfo& argInfo, const InlLclVarInfo& l
             }
         }
     }
-    else if (argInfo.argIsByRefToStructLocal && !argInfo.argHasStargOp)
+    else if (argInfo.argDuplicateComplex && !argCanBeModified && !argInfo.argHasCallerLocalRef &&
+             !argInfo.argHasSideEff && !argInfo.argHasGlobRef)
     {
-        /* Argument is a by-ref address to a struct, a normed struct, or its field.
-           In these cases, don't spill the byref to a local, simply clone the tree and use it.
-           This way we will increase the chance for this byref to be optimized away by
-           a subsequent "dereference" operation.
-
-           From Dev11 bug #139955: Argument node can also be TYP_I_IMPL if we've bashed the tree
-           (in impInlineInitVars()), if the arg has argHasLdargaOp as well as argIsByRefToStructLocal.
-           For example, if the caller is:
-                ldloca.s   V_1  // V_1 is a local struct
-                call       void Test.ILPart::RunLdargaOnPointerArg(int32*)
-           and the callee being inlined has:
-                .method public static void  RunLdargaOnPointerArg(int32* ptrToInts) cil managed
-                    ldarga.s   ptrToInts
-                    call       void Test.FourInts::NotInlined_SetExpectedValuesThroughPointerToPointer(int32**)
-           then we change the argument tree (of "ldloca.s V_1") to TYP_I_IMPL to match the callee signature. We'll
-           soon afterwards reject the inlining anyway, since the tree we return isn't a GT_LCL_VAR.
-        */
-        assert(argNode->TypeGet() == TYP_BYREF || argNode->TypeGet() == TYP_I_IMPL);
+        // Argument is a complex expression that we still prefer to duplicate.
+        // For example because it is an address into a local in the caller. In
+        // these cases, don't spill the byref to a local, simply clone the tree
+        // and use it.
+        //
         op1 = gtCloneExpr(argNode);
     }
     else
     {
-        /* Argument is a complex expression - it must be evaluated into a temp */
+        // Argument is a complex expression - it must be evaluated into a temp
 
         if (argInfo.argHasTmp)
         {
             assert(argInfo.argIsUsed);
             assert(argInfo.argTmpNum < lvaCount);
 
-            /* Create a new lcl var node - remember the argument lclNum */
+            // Create a new lcl var node - remember the argument lclNum
             op1 = gtNewLclvNode(argInfo.argTmpNum, genActualType(lclTyp));
 
-            /* This is the second or later use of the this argument,
-            so we have to use the temp (instead of the actual arg) */
+            // This is the second or later use of the this argument, so we have
+            // to use the temp (instead of the actual arg)
             argInfo.argBashTmpNode = nullptr;
         }
         else
@@ -13709,8 +13686,8 @@ GenTree* Compiler::impInlineFetchArg(InlArgInfo& argInfo, const InlLclVarInfo& l
             /* First time use */
             assert(!argInfo.argIsUsed);
 
-            /* Reserve a temp for the expression.
-             * Use a large size node as we may change it later */
+            // Reserve a temp for the expression. Use a large size node as we
+            // may change it later
 
             const unsigned tmpNum = lvaGrabTemp(true DEBUGARG("Inlining Arg"));
 
@@ -13767,20 +13744,20 @@ GenTree* Compiler::impInlineFetchArg(InlArgInfo& argInfo, const InlLclVarInfo& l
             if ((!varTypeIsStruct(lclTyp) && !argInfo.argHasSideEff && !argInfo.argHasGlobRef &&
                  !argInfo.argHasCallerLocalRef))
             {
-                /* Get a *LARGE* LCL_VAR node */
+                // Get a *LARGE* LCL_VAR node
                 op1 = gtNewLclLNode(tmpNum, genActualType(lclTyp));
 
-                /* Record op1 as the very first use of this argument.
-                If there are no further uses of the arg, we may be
-                able to use the actual arg node instead of the temp.
-                If we do see any further uses, we will clear this. */
+                // Record op1 as the very first use of this argument. If there
+                // are no further uses of the arg, we may be able to use the
+                // actual arg node instead of the temp. If we do see any
+                // further uses, we will clear this.
                 argInfo.argBashTmpNode = op1;
             }
             else
             {
-                /* Get a small LCL_VAR node */
+                // Get a small LCL_VAR node
                 op1 = gtNewLclvNode(tmpNum, genActualType(lclTyp));
-                /* No bashing of this argument */
+                // No bashing of this argument
                 argInfo.argBashTmpNode = nullptr;
             }
         }

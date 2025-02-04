@@ -1582,6 +1582,37 @@ unsigned CallArgs::GetIndex(CallArg* arg)
 }
 
 //---------------------------------------------------------------
+// GetIndex: Get the user arg index for the specified argument (IL index).
+//
+// Parameters:
+//   arg - The argument to obtain the index of.
+//
+// Returns:
+//   The user index.
+//
+unsigned CallArgs::GetUserIndex(CallArg* arg)
+{
+    unsigned i = 0;
+    for (CallArg& a : Args())
+    {
+        if (!a.IsUserArg())
+        {
+            continue;
+        }
+
+        if (&a == arg)
+        {
+            return i;
+        }
+
+        i++;
+    }
+
+    assert(!"Could not find argument in arg list");
+    return (unsigned)-1;
+}
+
+//---------------------------------------------------------------
 // Reverse: Reverse the specified subrange of arguments.
 //
 // Parameters:
