@@ -2056,6 +2056,7 @@ extern void ep_rt_mono_runtime_provider_thread_started_callback (MonoProfiler *p
 extern void ep_rt_mono_runtime_provider_thread_stopped_callback (MonoProfiler *prof, uintptr_t tid);
 
 extern void ep_rt_mono_sampling_provider_component_init (void);
+extern void ep_rt_mono_sampling_provider_component_fini (void);
 
 extern void ep_rt_mono_profiler_provider_component_init (void);
 extern void ep_rt_mono_profiler_provider_init (void);
