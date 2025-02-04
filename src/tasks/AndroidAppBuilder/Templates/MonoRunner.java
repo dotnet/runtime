@@ -90,9 +90,14 @@ public class MonoRunner extends Instrumentation
         // unzip libs and test files to filesDir
         unzipAssets(context, filesDir, "assets.zip");
 
+        // set environment variables
+        setEnv("HOME", filesDir);
+        setEnv("TMPDIR", cacheDir);
+        setEnv("TEST_RESULTS_DIR", testResultsDir);
+
         Log.i("DOTNET", "MonoRunner initializeRuntime, entryPointLibName=" + entryPointLibName);
         int localDateTimeOffset = getLocalDateTimeOffset();
-        int rv = initRuntime(filesDir, cacheDir, testResultsDir, entryPointLibName, localDateTimeOffset);
+        int rv = initRuntime(filesDir, entryPointLibName, localDateTimeOffset);
         if (rv != 0) {
             Log.e("DOTNET", "Failed to initialize runtime, return-code=" + rv);
             freeNativeResources();
@@ -184,7 +189,7 @@ public class MonoRunner extends Instrumentation
 
     static native int setEnv(String key, String value);
 
-    static native int initRuntime(String libsDir, String cacheDir, String testResultsDir, String entryPointLibName, int local_date_time_offset);
+    static native int initRuntime(String libsDir, String entryPointLibName, int local_date_time_offset);
 
     static native int execEntryPoint(String entryPointLibName, String[] args);
 

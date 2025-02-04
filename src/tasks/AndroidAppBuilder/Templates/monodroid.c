@@ -34,7 +34,7 @@ void
 Java_net_dot_MonoRunner_setEnv (JNIEnv* env, jobject thiz, jstring j_key, jstring j_value);
 
 int
-Java_net_dot_MonoRunner_initRuntime (JNIEnv* env, jobject thiz, jstring j_files_dir, jstring j_cache_dir, jstring j_testresults_dir, jstring j_entryPointLibName, long current_local_time);
+Java_net_dot_MonoRunner_initRuntime (JNIEnv* env, jobject thiz, jstring j_files_dir, jstring j_entryPointLibName, long current_local_time);
 
 int
 Java_net_dot_MonoRunner_execEntryPoint (JNIEnv* env, jobject thiz, jstring j_entryPointLibName, jobjectArray j_args);
@@ -231,7 +231,7 @@ cleanup_runtime_config (MonovmRuntimeConfigArguments *args, void *user_data)
 }
 
 static int
-mono_droid_runtime_init (const char* bundle_path, const char* executable, int local_date_time_offset)
+mono_droid_runtime_init (const char* executable, int local_date_time_offset)
 {
     LOG_INFO ("mono_droid_runtime_init (Mono) called with executable: %s", executable);
     // NOTE: these options can be set via command line args for adb or xharness, see AndroidSampleApp.csproj
@@ -250,7 +250,7 @@ mono_droid_runtime_init (const char* bundle_path, const char* executable, int lo
 #endif
 
     bool wait_for_debugger = false;
-    chdir (bundle_path);
+    chdir (g_bundle_path);
 
     // TODO: set TRUSTED_PLATFORM_ASSEMBLIES, APP_PATHS and NATIVE_DLL_SEARCH_DIRECTORIES
 
@@ -261,15 +261,15 @@ mono_droid_runtime_init (const char* bundle_path, const char* executable, int lo
 
     const char* appctx_values[3];
     appctx_values[0] = ANDROID_RUNTIME_IDENTIFIER;
-    appctx_values[1] = bundle_path;
+    appctx_values[1] = g_bundle_path;
     char local_date_time_offset_buffer[32];
     snprintf (local_date_time_offset_buffer, sizeof(local_date_time_offset_buffer), "%d", local_date_time_offset);
     appctx_values[2] = strdup (local_date_time_offset_buffer);
 
     char *file_name = RUNTIMECONFIG_BIN_FILE;
-    int str_len = strlen (bundle_path) + strlen (file_name) + 1; // +1 is for the "/"
+    int str_len = strlen (g_bundle_path) + strlen (file_name) + 1; // +1 is for the "/"
     char *file_path = (char *)malloc (sizeof (char) * (str_len +1)); // +1 is for the terminating null character
-    int num_char = snprintf (file_path, (str_len + 1), "%s/%s", bundle_path, file_name);
+    int num_char = snprintf (file_path, (str_len + 1), "%s/%s", g_bundle_path, file_name);
     struct stat buffer;
 
     LOG_INFO ("file_path: %s\n", file_path);
@@ -345,6 +345,13 @@ free_resources ()
         mono_assembly_close (g_assembly);
         g_assembly = NULL;
     }
+    // Free g_domain
+    if (g_domain)
+    {
+        mono_domain_set (g_domain, false);
+        mono_domain_finalize (g_domain, 0);
+        g_domain = NULL;
+    }
 }
 
 static int 
@@ -373,24 +380,25 @@ strncpy_str (JNIEnv *env, char *buff, jstring str, int nbuff)
 void
 Java_net_dot_MonoRunner_setEnv (JNIEnv* env, jobject thiz, jstring j_key, jstring j_value)
 {
+    LOG_INFO ("Java_net_dot_MonoRunner_setEnv:");
+    assert (g_domain == NULL); // setenv should be only called before the runtime is initialized
+    
     const char *key = (*env)->GetStringUTFChars(env, j_key, 0);
     const char *val = (*env)->GetStringUTFChars(env, j_value, 0);
+
+    LOG_INFO ("Setting env var: %s=%s", key, val);
     setenv (key, val, true);
     (*env)->ReleaseStringUTFChars(env, j_key, key);
     (*env)->ReleaseStringUTFChars(env, j_value, val);
 }
 
 int
-Java_net_dot_MonoRunner_initRuntime (JNIEnv* env, jobject thiz, jstring j_files_dir, jstring j_cache_dir, jstring j_testresults_dir, jstring j_entryPointLibName, long current_local_time)
+Java_net_dot_MonoRunner_initRuntime (JNIEnv* env, jobject thiz, jstring j_files_dir, jstring j_entryPointLibName, long current_local_time)
 {
     LOG_INFO ("Java_net_dot_MonoRunner_initRuntime (Mono):");
     char file_dir[2048];
-    char cache_dir[2048];
-    char testresults_dir[2048];
     char entryPointLibName[2048];
     strncpy_str (env, file_dir, j_files_dir, sizeof(file_dir));
-    strncpy_str (env, cache_dir, j_cache_dir, sizeof(cache_dir));
-    strncpy_str (env, testresults_dir, j_testresults_dir, sizeof(testresults_dir));
     strncpy_str (env, entryPointLibName, j_entryPointLibName, sizeof(entryPointLibName));
 
     size_t file_dir_len = strlen(file_dir);
@@ -403,11 +411,7 @@ Java_net_dot_MonoRunner_initRuntime (JNIEnv* env, jobject thiz, jstring j_files_
     strncpy(bundle_path_tmp, file_dir, file_dir_len + 1);
     g_bundle_path = bundle_path_tmp;
 
-    setenv ("HOME", g_bundle_path, true);
-    setenv ("TMPDIR", cache_dir, true);
-    setenv ("TEST_RESULTS_DIR", testresults_dir, true);
-
-    return mono_droid_runtime_init (g_bundle_path, entryPointLibName, current_local_time);
+    return mono_droid_runtime_init (entryPointLibName, current_local_time);
 }
 
 int
