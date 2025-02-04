@@ -6716,7 +6716,6 @@ Statement* Compiler::optVNAssertionPropCurStmt(BasicBlock* block, Statement* stm
     // anything in assertion gen.
     optAssertionPropagatedCurrentStmt = false;
 
-
     VNAssertionPropVisitorInfo data(this, block, stmt);
     fgWalkTreePost(stmt->GetRootNodePointer(), Compiler::optVNAssertionPropCurStmtVisitor, &data);
 
