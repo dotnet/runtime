@@ -1,5 +1,3 @@
-# This file will be deleted in a follow-up PR once we have changed the pipeline in Azure Pipelines to point to /eng/pipelines/performance/perf.yml
-
 parameters:
   - name: onlySanityCheck
     type: boolean
