@@ -1382,6 +1382,16 @@ ep_rt_mono_sampling_provider_component_init (void)
 }
 
 void
+ep_rt_mono_sampling_provider_component_fini (void)
+{
+#ifdef PERFTRACING_DISABLE_THREADS
+	mono_profiler_set_call_instrumentation_filter_callback (_ep_rt_mono_sampling_profiler_provider, NULL);
+	g_free (_ep_rt_mono_sampling_profiler_provider);
+	_ep_rt_mono_sampling_profiler_provider = NULL;
+#endif
+}
+
+void
 ep_rt_mono_sample_profiler_enabled (EventPipeEvent *sampling_event)
 {
 #ifdef PERFTRACING_DISABLE_THREADS
