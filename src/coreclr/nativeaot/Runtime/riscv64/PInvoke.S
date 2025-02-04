@@ -47,6 +47,6 @@ LEAF_ENTRY RhpPInvokeReturn, _TEXT
 
 0:
         // Passing transition frame pointer in a0
-        jal     RhpWaitForGC2  // Call RhpWaitForGC2 function
+        tail    RhpWaitForGC2  // Call RhpWaitForGC2 function
 
 LEAF_END RhpPInvokeReturn, _TEXT
