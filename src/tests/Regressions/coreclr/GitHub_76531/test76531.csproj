@@ -1,7 +1,5 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <!-- Needed for mechanical merging of all remaining tests, this particular project may not actually need process isolation -->
-    <RequiresProcessIsolation>true</RequiresProcessIsolation>
     <!-- This test removes one of its dependencies at runtime, so it is not compatible with AOT  -->
     <MonoAotIncompatible>true</MonoAotIncompatible>
     <NativeAotIncompatible>true</NativeAotIncompatible>
