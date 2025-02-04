@@ -910,7 +910,7 @@ bool Compiler::fgDumpFlowGraph(Phases phase, PhasePosition pos)
             // "Raw" Profile weight
             if (block->hasProfileWeight() || (JitConfig.JitSynthesizeCounts() > 0))
             {
-                fprintf(fgxFile, "\\n\\n%7.2f", (double)block->getNewBBWeight(this));
+                fprintf(fgxFile, "\\n\\n%7.2f", (double)block->getBBWeight(this));
             }
 
             // end of block label
@@ -1835,7 +1835,7 @@ void Compiler::fgTableDispBasicBlock(const BasicBlock* block,
     }
     else
     {
-        weight_t weight = block->getNewBBWeight(this);
+        weight_t weight = block->getBBWeight(this);
 
         if (weight > 999.99) // Is it going to be more than 6 characters?
         {

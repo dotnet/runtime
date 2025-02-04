@@ -771,7 +771,7 @@ public:
         if (lcl->lvIsParam || lcl->lvIsOSRLocal)
         {
             countReadBacks++;
-            countReadBacksWtd += comp->fgFirstBB->getNewBBWeight(comp);
+            countReadBacksWtd += comp->fgFirstBB->getBBWeight(comp);
         }
 
         // If the struct is stored from a call (either due to a multireg
@@ -838,7 +838,7 @@ public:
         // but will allow fully decomposing stores away.
 
         // TODO: Don't divide by entry block's normalized weight, since we're already summing normalized weights
-        weight_t cycleImprovementPerInvoc = (costWithout - costWith) / comp->fgFirstBB->getNewBBWeight(comp);
+        weight_t cycleImprovementPerInvoc = (costWithout - costWith) / comp->fgFirstBB->getBBWeight(comp);
         weight_t sizeImprovement          = sizeWithout - sizeWith;
 
         JITDUMP("  Evaluating access %s @ %03u\n", varTypeName(access.AccessType), access.Offset);
@@ -1096,7 +1096,7 @@ public:
 
                 LocalUses* uses = GetOrCreateUses(lcl->GetLclNum());
                 unsigned   offs = lcl->GetLclOffs();
-                uses->RecordAccess(offs, accessType, accessLayout, accessFlags, m_curBB->getNewBBWeight(m_compiler));
+                uses->RecordAccess(offs, accessType, accessLayout, accessFlags, m_curBB->getBBWeight(m_compiler));
             }
 
             if (tree->OperIsLocalStore() && tree->TypeIs(TYP_STRUCT))
@@ -1446,7 +1446,7 @@ private:
         }
 
         LocalUses* uses = GetOrCreateUses(lclNum);
-        uses->RecordInducedAccess(offset, type, block->getNewBBWeight(m_compiler));
+        uses->RecordInducedAccess(offset, type, block->getBBWeight(m_compiler));
     }
 
     //------------------------------------------------------------------------

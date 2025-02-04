@@ -2809,7 +2809,7 @@ bool Compiler::optCheckLoopCloningGDVTestProfitable(GenTreeOp* guard, LoopCloneV
 
     // Check for (2)
     //
-    if (loop->GetHeader()->getNewBBWeight(this) < loopFrequency)
+    if (loop->GetHeader()->getBBWeight(this) < loopFrequency)
     {
         JITDUMP("  No; loop does not iterate often enough.\n");
         return WALK_CONTINUE;

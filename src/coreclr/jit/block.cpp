@@ -1833,13 +1833,13 @@ BBehfDesc::BBehfDesc(Compiler* comp, const BBehfDesc* other)
 //    compiler - Compiler instance
 //
 // Notes:
-//   If we don't have profile data then getCalledCount will return BB_UNITY_WEIGHT (100)
+//   If we don't have profile data then getCalledCount will return BB_UNITY_WEIGHT (1.0)
 //   otherwise it returns the number of times that profile data says the method was called.
 
 // static
 weight_t BasicBlock::getCalledCount(Compiler* comp)
 {
-    // When we don't have profile data then fgCalledCount will be BB_UNITY_WEIGHT (100)
+    // When we don't have profile data then fgCalledCount will be BB_UNITY_WEIGHT
     const weight_t calledCount = comp->fgCalledCount;
     assert(calledCount != BB_ZERO_WEIGHT);
     assert((calledCount == BB_UNITY_WEIGHT) || comp->fgIsUsingProfileWeights());
@@ -1857,17 +1857,6 @@ weight_t BasicBlock::getCalledCount(Compiler* comp)
 //    one call to the method.
 //
 weight_t BasicBlock::getBBWeight(Compiler* comp) const
-{
-    weight_t calledCount = getCalledCount(comp);
-
-    // Normalize the bbWeight.
-    //
-    weight_t fullResult = (this->bbWeight / calledCount) * BB_UNITY_WEIGHT;
-
-    return fullResult;
-}
-
-weight_t BasicBlock::getNewBBWeight(Compiler* comp) const
 {
     weight_t calledCount = getCalledCount(comp);
 

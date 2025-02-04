@@ -5441,7 +5441,7 @@ bool Compiler::shouldAlignLoop(FlowGraphNaturalLoop* loop, BasicBlock* top)
 
     // Now we have an innerloop candidate that might need alignment
 
-    weight_t topWeight     = top->getNewBBWeight(this);
+    weight_t topWeight     = top->getBBWeight(this);
     weight_t compareWeight = opts.compJitAlignLoopMinBlockWeight;
     if (topWeight < compareWeight)
     {

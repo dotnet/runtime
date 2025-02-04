@@ -546,7 +546,7 @@ PhaseStatus Compiler::fgOptimizeMaskConversions()
                 if (varTypeIsSIMDOrMask(lvaGetDesc(lcl)))
                 {
                     // Parse the entire statement.
-                    MaskConversionsCheckVisitor ev(this, block->getNewBBWeight(this), &weightsTable);
+                    MaskConversionsCheckVisitor ev(this, block->getBBWeight(this), &weightsTable);
                     GenTree*                    root = stmt->GetRootNode();
                     ev.WalkTree(&root, nullptr);
                     foundConversion |= ev.foundConversions;

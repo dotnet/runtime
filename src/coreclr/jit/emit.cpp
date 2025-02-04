@@ -1476,7 +1476,7 @@ weight_t emitter::getCurrentBlockWeight()
     // If we have a non-null compCurBB, then use it to get the current block weight
     if (emitComp->compCurBB != nullptr)
     {
-        return emitComp->compCurBB->getNewBBWeight(emitComp);
+        return emitComp->compCurBB->getBBWeight(emitComp);
     }
     else // we have a null compCurBB
     {
