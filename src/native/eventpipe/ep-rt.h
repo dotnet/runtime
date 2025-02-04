@@ -206,7 +206,7 @@ ep_rt_sample_profiler_write_sampling_event_for_threads (ep_rt_thread_handle_t sa
 
 static
 void
-ep_rt_sample_profiler_enabled (void);
+ep_rt_sample_profiler_enabled (EventPipeEvent *sampling_event);
 
 static
 void
@@ -315,6 +315,12 @@ ep_rt_thread_create (
 	void *params,
 	EventPipeThreadType thread_type,
 	void *id);
+
+static
+bool
+ep_rt_event_loop_job_create (
+	void *job_func,
+	void *params);
 
 static
 void

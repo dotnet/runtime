@@ -34,18 +34,7 @@ ep_session_remove_dangling_session_states (EventPipeSession *session);
  * EventPipeSession.
  */
 
-static size_t streaming_loop_tick(EventPipeSession *const session, bool *events_written) {
-	if (!ep_session_get_streaming_enabled (session)){
-		session->streaming_thread = NULL;
-		return 1; // done
-	}
-	if (!ep_session_write_all_buffers_to_file (session, events_written)) {
-		session->streaming_thread = NULL;
-		ep_disable ((EventPipeSessionID)session);
-		return 1; // done
-	}
-	return 0; // try again
-}
+#ifndef PERFTRACING_DISABLE_THREADS
 
 EP_RT_DEFINE_THREAD_FUNC (streaming_thread)
 {
@@ -59,21 +48,24 @@ EP_RT_DEFINE_THREAD_FUNC (streaming_thread)
 	if (session->session_type != EP_SESSION_TYPE_IPCSTREAM && session->session_type != EP_SESSION_TYPE_FILESTREAM)
 		return 1;
 
-#if defined(PERFTRACING_MULTI_THREADED)
 	if (!thread_params->thread || !ep_rt_thread_has_started (thread_params->thread))
 		return 1;
-#endif
 
-	bool events_written = false;
 	session->streaming_thread = thread_params->thread;
+
+	bool success = true;
+	ep_rt_wait_event_handle_t *wait_event = ep_session_get_wait_event (session);
 
 	ep_rt_volatile_store_uint32_t (&session->started, 1);
 
-#if defined(PERFTRACING_MULTI_THREADED)
-	ep_rt_wait_event_handle_t *wait_event = ep_session_get_wait_event (session);
-
 	EP_GCX_PREEMP_ENTER
-		while (streaming_loop_tick(session, &events_written) == 0) {
+		while (ep_session_get_streaming_enabled (session)) {
+			bool events_written = false;
+			if (!ep_session_write_all_buffers_to_file (session, &events_written)) {
+				success = false;
+				break;
+			}
+
 			if (!events_written) {
 				// No events were available, sleep until more are available
 				ep_rt_wait_event_wait (wait_event, EP_INFINITE_WAIT, false);
@@ -82,16 +74,37 @@ EP_RT_DEFINE_THREAD_FUNC (streaming_thread)
 			// Wait until it's time to sample again.
 			const uint32_t timeout_ns = 100000000; // 100 msec.
 			ep_rt_thread_sleep (timeout_ns);
-
-			events_written = false;
 		}
+
+		session->streaming_thread = NULL;
 		ep_rt_wait_event_set (&session->rt_thread_shutdown_event);
 	EP_GCX_PREEMP_EXIT
+
+	if (!success)
+		ep_disable ((EventPipeSessionID)session);
+
 	return (ep_rt_thread_start_func_return_t)0;
-#else // !PERFTRACING_MULTI_THREADED
-	return (ep_rt_thread_start_func_return_t) streaming_loop_tick(session, &events_written);
-#endif // PERFTRACING_MULTI_THREADED
 }
+
+#else // PERFTRACING_DISABLE_THREADS
+
+static size_t streaming_loop_tick(EventPipeSession *const session) {
+	bool events_written = false;
+	if (!ep_session_get_streaming_enabled (session)){
+		session->streaming_thread = NULL;
+		return 1; // done
+	}
+	EP_GCX_PREEMP_ENTER
+	bool ok = ep_session_write_all_buffers_to_file (session, &events_written)
+	EP_GCX_PREEMP_EXIT
+	if (!ok) {
+		ep_disable ((EventPipeSessionID)session);
+		return 1; // done
+	}
+	return 0; // continue
+}
+
+#endif // PERFTRACING_DISABLE_THREADS
 
 static
 void
@@ -107,9 +120,14 @@ session_create_streaming_thread (EventPipeSession *session)
 	if (!ep_rt_wait_event_is_valid (&session->rt_thread_shutdown_event))
 		EP_UNREACHABLE ("Unable to create stream flushing thread shutdown event.");
 
+#ifndef PERFTRACING_DISABLE_THREADS
 	ep_rt_thread_id_t thread_id = ep_rt_uint64_t_to_thread_id_t (0);
 	if (!ep_rt_thread_create ((void *)streaming_thread, (void *)session, EP_THREAD_TYPE_SESSION, &thread_id))
 		EP_UNREACHABLE ("Unable to create stream flushing thread.");
+#else
+	ep_rt_volatile_store_uint32_t (&session->started, 1);
+	ep_rt_event_loop_job_create ((void *)streaming_loop_tick, (void *)session);
+#endif
 }
 
 static

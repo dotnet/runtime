@@ -84,7 +84,7 @@ sample_profiler_store_can_start_sampling (bool start_sampling)
 	ep_rt_volatile_store_uint32_t (&_can_start_sampling, start_sampling ? 1 : 0);
 }
 
-#if defined(PERFTRACING_MULTI_THREADED)
+#ifndef PERFTRACING_DISABLE_THREADS
 EP_RT_DEFINE_THREAD_FUNC (sampling_thread)
 {
 	EP_ASSERT (data != NULL);
@@ -194,9 +194,9 @@ sample_profiler_enable (void)
 	if (!sample_profiler_load_profiling_enabled ()) {
 		sample_profiler_store_profiling_enabled (true);
 
-		ep_rt_sample_profiler_enabled ();
+		ep_rt_sample_profiler_enabled (_thread_time_event);
 
-#if defined(PERFTRACING_MULTI_THREADED)
+#ifndef PERFTRACING_DISABLE_THREADS
 		EP_ASSERT (!ep_rt_wait_event_is_valid (&_thread_shutdown_event));
 		ep_rt_wait_event_alloc (&_thread_shutdown_event, true, false);
 		if (!ep_rt_wait_event_is_valid (&_thread_shutdown_event))
@@ -205,9 +205,6 @@ sample_profiler_enable (void)
 		ep_rt_thread_id_t thread_id = ep_rt_uint64_t_to_thread_id_t (0);
 		if (!ep_rt_thread_create ((void *)sampling_thread, NULL, EP_THREAD_TYPE_SAMPLING, &thread_id))
 			EP_UNREACHABLE ("Unable to create sample profiler thread.");
-#else
-		// once
-		ep_rt_sample_profiler_write_sampling_event_for_threads (ep_rt_thread_get_handle (), _thread_time_event);
 #endif
 
 		sample_profiler_set_time_granularity ();
@@ -300,10 +297,8 @@ ep_sample_profiler_disable (void)
 		ep_rt_sample_profiler_disabled ();
 
 		// Wait for the sampling thread to clean itself up.
-#if defined(PERFTRACING_MULTI_THREADED)
 		ep_rt_wait_event_wait (&_thread_shutdown_event, EP_INFINITE_WAIT, false);
 		ep_rt_wait_event_free (&_thread_shutdown_event);
-#endif
 
 		if (_time_period_is_set)
 			sample_profiler_reset_time_granularity ();

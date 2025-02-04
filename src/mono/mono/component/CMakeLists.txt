@@ -221,7 +221,7 @@ if (ENABLE_PERFTRACING AND "${MONO_DIAGNOSTICS_TRACING_COMPONENT_NAME}" IN_LIST 
         set_target_properties(
             eventpipe-mono-objects
             PROPERTIES
-            DISABLE_THREADS ON
+            FEATURE_PERFTRACING_DISABLE_THREADS 1
         )
     endif()
 

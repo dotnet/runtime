@@ -107,6 +107,9 @@
   <PropertyGroup>
     <NoWarn>$(NoWarn),618,67</NoWarn>
 
+    <!-- Diagnostics API for browser need to be made public for browser in future PRs, see https://github.com/dotnet/runtime/pull/111910 -->
+    <NoWarn Condition="'$(TargetsBrowser)' == 'true'">$(NoWarn);CA1416</NoWarn>
+
     <DefineConstants>$(DefineConstants);MONO_FEATURE_SRE</DefineConstants>
 
     <FeatureMono>true</FeatureMono>
@@ -135,7 +138,7 @@
     <ILLinkDescriptorsXmls Include="$(ILLinkDirectory)ILLink.Descriptors.xml" />
     <ILLinkDescriptorsXmls Include="$(ILLinkDirectory)ILLink.Descriptors.OSX.xml" Condition="'$(TargetsOSX)' == 'true' or '$(TargetsMacCatalyst)' == 'true' or '$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true'" />
     <ILLinkDescriptorsXmls Include="$(CoreLibSharedDir)ILLink\ILLink.Descriptors.Shared.xml" />
-    <ILLinkDescriptorsLibraryBuildXml Condition="'$(FeaturePerfTracing)' == 'true'" Include="$(CoreLibSharedDir)ILLink\ILLink.Descriptors.EventSource.xml" />
+    <ILLinkDescriptorsXmls Condition="'$(FeaturePerfTracing)' == 'true'" Include="$(CoreLibSharedDir)ILLink\ILLink.Descriptors.EventSource.xml" />
 
     <ILLinkSubstitutionsXmls Include="$(ILLinkDirectory)ILLink.Substitutions.$(Platform).xml" Condition="Exists('$(ILLinkDirectory)ILLink.Substitutions.$(Platform).xml')" />
     <ILLinkSubstitutionsXmls Include="$(ILLinkDirectory)ILLink.Substitutions.iOS.xml" Condition="'$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true'" />

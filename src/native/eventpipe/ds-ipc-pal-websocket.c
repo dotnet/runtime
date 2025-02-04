@@ -226,7 +226,7 @@ ds_ipc_free (DiagnosticsIpc *ipc)
 		return;
 
 	ds_ipc_close (ipc, false, NULL);
-
+	ep_rt_object_free (ipc->server_url);
 	ep_rt_object_free (ipc);
 }
 
@@ -265,6 +265,7 @@ ds_ipc_listen (
 	DiagnosticsIpc *ipc,
 	ds_ipc_error_callback_func callback)
 {
+	EP_UNREACHABLE ("Not supported by browser WebSocket");
 	// NOT SUPPORTED
 	return false;
 }
@@ -274,6 +275,7 @@ ds_ipc_accept (
 	DiagnosticsIpc *ipc,
 	ds_ipc_error_callback_func callback)
 {
+	EP_UNREACHABLE ("Not supported by browser WebSocket");
 	// NOT SUPPORTED
 	return NULL;
 }
@@ -287,7 +289,6 @@ ds_ipc_connect (
 {
 	EP_ASSERT (ipc != NULL);
 	EP_ASSERT (timed_out != NULL);
-
 
 	DiagnosticsIpcStream *stream = NULL;
 
@@ -329,12 +330,9 @@ ds_ipc_to_string (
 	ep_char8_t *buffer,
 	uint32_t buffer_len)
 {
-	EP_ASSERT (ipc != NULL);
-	EP_ASSERT (buffer != NULL);
-	EP_ASSERT (buffer_len <= DS_IPC_MAX_TO_STRING_LEN);
-
-	int32_t result = snprintf (buffer, buffer_len, "{ server_socket = %d }", (int32_t)(size_t)ipc->server_socket);
-	return (result > 0 && result < (int32_t)buffer_len) ? result : 0;
+	EP_UNREACHABLE ("Not supported by browser WebSocket");
+	// NOT SUPPORTED
+	return 0;
 }
 
 /*

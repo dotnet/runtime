@@ -21,9 +21,7 @@ endif()
 if (CLR_CMAKE_HOST_BROWSER)
   set(FEATURE_PERFTRACING_PAL_WS 1)
   set(FEATURE_PERFTRACING_DISABLE_DEFAULT_LISTEN_PORT 1)
-  if (DISABLE_THREADS)
-    set(FEATURE_PERFTRACING_SINGLE_THREADED 1)
-  endif()
+  # FEATURE_PERFTRACING_DISABLE_THREADS is set by src\mono\mono\component\CMakeLists.txt
 endif()
 
 configure_file(${CLR_SRC_NATIVE_DIR}/eventpipe/ep-shared-config.h.in ${CMAKE_CURRENT_BINARY_DIR}/ep-shared-config.h)

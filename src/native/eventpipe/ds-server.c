@@ -112,7 +112,7 @@ server_warning_callback (
 	DS_LOG_WARNING_2 ("warning (%d): %s.", code, message);
 }
 
-static size_t server_loop_tick (void) {
+static size_t server_loop_tick (void* data) {
 	if (server_volatile_load_shutting_down_state ())
 		return 1; // done
 	DiagnosticsIpcStream *stream = ds_ipc_stream_factory_get_next_available_stream (server_warning_callback);
@@ -164,9 +164,11 @@ static size_t server_loop_tick (void) {
 
 	ds_ipc_message_fini (&message);
 
+	(void)data; // unused
 	return 0; // continue
 }
 
+#ifndef PERFTRACING_DISABLE_THREADS
 EP_RT_DEFINE_THREAD_FUNC (server_thread)
 {
 	EP_ASSERT (server_volatile_load_shutting_down_state () || ds_ipc_stream_factory_has_active_ports ());
@@ -180,13 +182,11 @@ EP_RT_DEFINE_THREAD_FUNC (server_thread)
 		return 1;
 	}
 
-#if defined(PERFTRACING_MULTI_THREADED)
-	while (server_loop_tick () == 0) { }
+	while (server_loop_tick (NULL) == 0) { }
 	return (ep_rt_thread_start_func_return_t)0;
-#else // !PERFTRACING_MULTI_THREADED
-	return (ep_rt_thread_start_func_return_t)server_loop_tick ();
-#endif // PERFTRACING_MULTI_THREADED
 }
+#else // PERFTRACING_DISABLE_THREADS
+#endif // PERFTRACING_DISABLE_THREADS
 
 void
 ds_server_disable (void)
@@ -227,6 +227,7 @@ ds_server_init (void)
 		ds_rt_auto_trace_init ();
 		ds_rt_auto_trace_launch ();
 
+#ifndef PERFTRACING_DISABLE_THREADS
 		ep_rt_thread_id_t thread_id = ep_rt_uint64_t_to_thread_id_t (0);
 
 		if (!ep_rt_thread_create ((void *)server_thread, NULL, EP_THREAD_TYPE_SERVER, (void *)&thread_id)) {
@@ -237,6 +238,9 @@ ds_server_init (void)
 		} else {
 			ds_rt_auto_trace_wait ();
 		}
+#else
+		ep_rt_event_loop_job_create ((void *)server_loop_tick, NULL);
+#endif
 	}
 
 	result = true;
@@ -268,7 +272,7 @@ void
 ds_server_pause_for_diagnostics_monitor (void)
 {
 // pause is not implemented for single-threaded
-#if defined(PERFTRACING_MULTI_THREADED)
+#ifndef PERFTRACING_DISABLE_THREADS
 	_is_paused_for_startup = true;
 
 	if (ds_ipc_stream_factory_any_suspended_ports ()) {

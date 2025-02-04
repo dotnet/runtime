@@ -344,7 +344,7 @@ typedef struct {
 } DsJobRegistration;
 
 void
-mono_main_thread_schedule_ds_job (ds_job_cb cb, void* data)
+mono_schedule_ds_job (ds_job_cb cb, void* data)
 {
 	g_assert (cb);
 	DsJobRegistration* reg = g_new0 (DsJobRegistration, 1);
@@ -384,9 +384,14 @@ mono_wasm_ds_exec (void)
 		DsJobRegistration* reg = (DsJobRegistration*)cur1->data;
 		g_assert (reg->cb);
 		THREADS_DEBUG ("mono_wasm_ds_exec running job %p \n", (gpointer)cb);
-		reg->cb (reg->data);
-		THREADS_DEBUG ("mono_wasm_ds_exec done job %p \n", (gpointer)cb);
-		g_free (reg);
+		gsize done = reg->cb (reg->data);
+		if (done){
+			THREADS_DEBUG ("mono_wasm_ds_exec done job %p \n", (gpointer)cb);
+			g_free (reg);
+		} else {
+			THREADS_DEBUG ("mono_wasm_ds_exec scheduling job %p again \n", (gpointer)cb);
+			jobs_ds = g_slist_prepend (jobs_ds, (gpointer)reg);
+		}
 	}
 	g_slist_free (j1);
 	MONO_EXIT_GC_UNSAFE;
