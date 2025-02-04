@@ -40,9 +40,20 @@ DataFlow::DataFlow(Compiler* pCompiler)
 PhaseStatus Compiler::optSetBlockWeights()
 {
     noway_assert(opts.OptimizationEnabled());
+    assert(m_dfsTree != nullptr);
+    const bool usingProfileWeights = fgIsUsingProfileWeights();
+
+    // Rely on profile synthesis to propagate weights when we have PGO data.
+    // TODO: Replace optSetBlockWeights with profile synthesis entirely.
+    if (usingProfileWeights)
+    {
+        // Leave breadcrumb for loop alignment
+        fgHasLoops = m_dfsTree->HasCycle();
+        return PhaseStatus::MODIFIED_NOTHING;
+    }
+
     bool madeChanges = false;
 
-    assert(m_dfsTree != nullptr);
     if (m_domTree == nullptr)
     {
         m_domTree = FlowGraphDominatorTree::Build(m_dfsTree);
@@ -59,8 +70,7 @@ PhaseStatus Compiler::optSetBlockWeights()
         optFindAndScaleGeneralLoopBlocks();
     }
 
-    bool       firstBBDominatesAllReturns = true;
-    const bool usingProfileWeights        = fgIsUsingProfileWeights();
+    bool firstBBDominatesAllReturns = true;
 
     fgComputeReturnBlocks();
 
@@ -2230,6 +2240,8 @@ bool Compiler::optInvertWhileLoop(BasicBlock* block)
     //
     bNewCond->inheritWeight(block);
 
+    const weight_t totalWeight = bTest->bbWeight;
+
     if (haveProfileWeights)
     {
         bTest->decreaseBBProfileWeight(block->bbWeight);
@@ -2288,6 +2300,15 @@ bool Compiler::optInvertWhileLoop(BasicBlock* block)
                 assert(!"Unexpected bbKind for predecessor block");
                 break;
         }
+    }
+
+    const weight_t loopWeight    = bTest->bbWeight;
+    const weight_t nonLoopWeight = bNewCond->bbWeight;
+    if (haveProfileWeights && !fgProfileWeightsConsistent(totalWeight, loopWeight + nonLoopWeight))
+    {
+        JITDUMP("Redirecting flow from " FMT_BB " to " FMT_BB " introduced inconsistency. Data %s inconsistent.\n",
+                bTest->bbNum, bNewCond->bbNum, fgPgoConsistent ? "is now" : "was already");
+        fgPgoConsistent = false;
     }
 
 #ifdef DEBUG
