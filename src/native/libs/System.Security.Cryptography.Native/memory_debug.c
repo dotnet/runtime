@@ -218,16 +218,13 @@ static void freeFunction(void *ptr, const char *file, int line)
     }
 }
 
-int32_t CryptoNative_GetMemoryUse(uint64_t* totalUsed, uint64_t* allocationCount)
+void CryptoNative_GetMemoryUse(uint64_t* totalUsed, uint64_t* allocationCount)
 {
-    if (totalUsed == NULL || allocationCount == NULL)
-    {
-        return 0;
-    }
+    assert(totalUsed != NULL);
+    assert(allocationCount != NULL);
+
     *totalUsed = g_allocatedMemory;
     *allocationCount = g_allocationCount;
-
-    return 1;
 }
 
 void CryptoNative_EnableMemoryTracking(int32_t enable)

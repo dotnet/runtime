@@ -169,7 +169,7 @@ internal static partial class Interop
         }
 
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_GetMemoryUse")]
-        private static partial int GetMemoryUse(ref long memoryUse, ref long allocationCount);
+        private static partial void GetMemoryUse(ref long memoryUse, ref long allocationCount);
 
         internal static long GetOpenSslAllocatedMemory()
         {
