@@ -315,7 +315,7 @@ As the expected maximum number of attributes on a single item is 4, and hostile 
 ## Pkcs12LoaderLimits to PKCS#12 routines
 
 * static Defaults: Provides an immutable instance of the limits utilized when no other limits are specified.
-  * Is defined in terms of the behavior of the default constructor for the type. 
+  * Is defined in terms of the behavior of the default constructor for the type.
 * static DangerousNoLimits: Provides an immutable instance of a lack of limits. Has special ReferenceEquals semantics on Windows to jump straight to PFXImportCertStore with no .NET-side filtering.
 * MacIterationLimit: Specifies the maximum number of permissible iterations for the KDF for the PFX MAC (if present), or null for no limit.  Default is 300,000.
 * IndividualKdfIterationLimit: Specifies the maximum number of permissible iterations for the KDF to a single PKCS#8 EncryptedPrivateKey or a single encrypted SafeContents value, or null for no limit.  Default is 300,000.
