@@ -3709,11 +3709,6 @@ BOOL MethodTableBuilder::IsSelfReferencingStaticValueTypeField(mdToken     dwByV
 {
     STANDARD_VM_CONTRACT;
 
-    if (this->IsInterface())
-    {
-        return TRUE;
-    }
-
     if (dwByValueClassToken != this->GetCl())
     {
         return FALSE;
@@ -4047,7 +4042,7 @@ VOID    MethodTableBuilder::InitializeFieldDescs(FieldDesc *pFieldDescList,
                 // By-value class
                 BAD_FORMAT_NOTHROW_ASSERT(dwByValueClassToken != 0);
 
-                if ((this->IsValueClass() || this->IsInterface()) && (pTokenModule == GetModule()))
+                if (this->IsValueClass() && (pTokenModule == GetModule()))
                 {
                     if (TypeFromToken(dwByValueClassToken) == mdtTypeRef)
                     {
@@ -4106,7 +4101,7 @@ VOID    MethodTableBuilder::InitializeFieldDescs(FieldDesc *pFieldDescList,
                             BuildMethodTableThrowException(IDS_CLASSLOAD_VALUEINSTANCEFIELD, mdMethodDefNil);
                         }
 
-                        if (!IsInterface() && !IsValueClass())
+                        if (!IsValueClass())
                         {
                             BuildMethodTableThrowException(COR_E_BADIMAGEFORMAT, IDS_CLASSLOAD_MUST_BE_BYVAL, mdTokenNil);
                         }
@@ -4119,6 +4114,56 @@ VOID    MethodTableBuilder::InitializeFieldDescs(FieldDesc *pFieldDescList,
 IS_VALUETYPE:
             {
                 fIsByValue = TRUE;
+
+                // HACK: We need this flag to avoid erroneously calling IsEnum() on ourselves later when flagging the field type as self-ref
+                BOOL fIsSelfReferentialThroughInterface = FALSE;
+
+                // For an interface with a static struct-typed field, if the struct type implements the interface we will get a cycle during
+                //  type loading. To avoid this we scan the implemented interfaces of such candidate fields and treat them as self-ref
+                if (IsInterface() && fIsStatic)
+                {
+                    mdToken fieldTypeToken;
+                    uint32_t unused;
+                    CorElementType rawElementType;
+
+                    // HACK: Not legal to call GetToken
+                    // FIXME: Returns something other than the field type token
+                    // fsig.GetArgProps().PeekData(&fieldTypeToken);
+
+                    SigPointer sptr(pMemberSignature, cMemberSignature);
+                    sptr.GetCallingConvInfo(&unused); // Skip calling convention, we already know it
+                    sptr.GetElemType(&rawElementType); // Skip raw element type, it doesn't matter, we know it's either genericinst or valuetype
+                    sptr.GetToken(&fieldTypeToken);
+                    // printf("Interface typedef %x contains field with element type %x and type token %x\n", GetCl(), rawElementType, fieldTypeToken);
+
+                    // If the field type is a typeref instead of a typedef, it's probably in a different module, which means it can't be
+                    //  an indirect self reference and we don't need to check
+                    if (TypeFromToken(fieldTypeToken) == mdtTypeDef) {
+                        // Enumerate all the interfaces implemented by the field type
+                        HENUMInternalHolder hEnumInterfaceImpl(pInternalImport);
+                        hEnumInterfaceImpl.EnumInit(mdtInterfaceImpl, fieldTypeToken);
+
+                        ULONG cInterfaces = pInternalImport->EnumGetCount(&hEnumInterfaceImpl);
+                        if (cInterfaces != 0)
+                        {
+                            DWORD i;
+
+                            mdInterfaceImpl ii;
+                            for (i = 0; pInternalImport->EnumNext(&hEnumInterfaceImpl, &ii); i++)
+                            {
+                                mdTypeRef crInterface;
+                                pInternalImport->GetTypeOfInterfaceImpl(ii, &crInterface);
+                                if (crInterface == GetCl())
+                                    fIsSelfReferentialThroughInterface = TRUE;
+                            }
+                        }
+                    }
+
+                    if (fIsSelfReferentialThroughInterface)
+                    {
+                        pByValueClass = (MethodTable*)-1;
+                    }
+                }
 
                 // It's not self-referential so try to load it
                 if (pByValueClass == NULL)
@@ -4166,7 +4211,7 @@ IS_VALUETYPE:
                 }
 
                 // #FieldDescTypeMorph  IF it is an enum, strip it down to its underlying type
-                if (IsSelfRef(pByValueClass) ? IsEnum() : pByValueClass->IsEnum())
+                if (!fIsSelfReferentialThroughInterface && (IsSelfRef(pByValueClass) ? IsEnum() : pByValueClass->IsEnum()))
                 {
                     if (IsSelfRef(pByValueClass))
                     {   // It is self-referencing enum (ValueType) static field - it is forbidden in the ECMA spec, but supported by CLR since v1
