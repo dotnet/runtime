@@ -231,7 +231,7 @@ public:
 };
 typedef DPTR(FrameTypeName) PTR_FrameTypeName;
 
-enum class FrameType : TADDR
+enum class FrameIdentifier : TADDR
 {
     None = 0,
 #define FRAME_TYPE_NAME(frameType) frameType,
@@ -254,17 +254,17 @@ BOOL Frame_SuppressParamTypeArg(TransitionFrame* frame);
 
 class FrameBase
 {
-    const FrameType _frameType;
+    const FrameIdentifier _frameIdentifier;
 
 public:
-    FrameBase(FrameType frameType) : _frameType(frameType) {LIMITED_METHOD_CONTRACT; }
+    FrameBase(FrameIdentifier frameIdentifier) : _frameIdentifier(frameIdentifier) {LIMITED_METHOD_CONTRACT; }
 
     void GcScanRoots_Impl(promote_func *fn, ScanContext* sc) {
         LIMITED_METHOD_CONTRACT;
         // Nothing to protect
     }
 
-    FrameType GetType() { LIMITED_METHOD_DAC_CONTRACT; return _frameType; }
+    FrameIdentifier GetType() { LIMITED_METHOD_DAC_CONTRACT; return _frameIdentifier; }
 };
 
 //------------------------------------------------------------------------
@@ -659,8 +659,8 @@ protected:
 #ifndef DACCESS_COMPILE
     // Frame is considered an abstract class: this protected constructor
     // causes any attempt to instantiate one to fail at compile-time.
-    Frame(FrameType frameType)
-    : FrameBase(frameType), m_Next(dac_cast<PTR_Frame>(nullptr))
+    Frame(FrameIdentifier frameIdentifier)
+    : FrameBase(frameIdentifier), m_Next(dac_cast<PTR_Frame>(nullptr))
     {
         LIMITED_METHOD_CONTRACT;
     }
@@ -700,12 +700,12 @@ class ResumableFrame : public Frame
 {
 public:
 #ifndef DACCESS_COMPILE
-    ResumableFrame(T_CONTEXT* regs) : Frame(FrameType::ResumableFrame) {
+    ResumableFrame(T_CONTEXT* regs) : Frame(FrameIdentifier::ResumableFrame) {
         LIMITED_METHOD_CONTRACT;
         m_Regs = regs;
     }
 
-    ResumableFrame(FrameType frameType, T_CONTEXT* regs) : Frame(frameType) {
+    ResumableFrame(FrameIdentifier frameIdentifier, T_CONTEXT* regs) : Frame(frameIdentifier) {
         LIMITED_METHOD_CONTRACT;
         m_Regs = regs;
     }
@@ -794,7 +794,7 @@ class RedirectedThreadFrame : public ResumableFrame
 {
 public:
 #ifndef DACCESS_COMPILE
-    RedirectedThreadFrame(T_CONTEXT *regs) : ResumableFrame(FrameType::RedirectedThreadFrame, regs) {
+    RedirectedThreadFrame(T_CONTEXT *regs) : ResumableFrame(FrameIdentifier::RedirectedThreadFrame, regs) {
         LIMITED_METHOD_CONTRACT;
     }
 
@@ -809,7 +809,7 @@ inline BOOL ISREDIRECTEDTHREAD(Thread * thread)
     WRAPPER_NO_CONTRACT;
     return (thread->GetFrame() != FRAME_TOP &&
             thread->GetFrame()->GetType() ==
-            FrameType::RedirectedThreadFrame);
+            FrameIdentifier::RedirectedThreadFrame);
 }
 
 inline T_CONTEXT * GETREDIRECTEDCONTEXT(Thread * thread)
@@ -841,7 +841,7 @@ class TransitionFrame : public Frame
 {
 #ifndef DACCESS_COMPILE
 protected:
-    TransitionFrame(FrameType frameType) : Frame(frameType) {
+    TransitionFrame(FrameIdentifier frameIdentifier) : Frame(frameIdentifier) {
         LIMITED_METHOD_CONTRACT;
     }
 #endif
@@ -980,7 +980,7 @@ class FaultingExceptionFrame : public Frame
 
 public:
 #ifndef DACCESS_COMPILE
-    FaultingExceptionFrame() : Frame(FrameType::FaultingExceptionFrame) {
+    FaultingExceptionFrame() : Frame(FrameIdentifier::FaultingExceptionFrame) {
         LIMITED_METHOD_CONTRACT;
     }
 #endif
@@ -1061,7 +1061,7 @@ class SoftwareExceptionFrame : public Frame
 
 public:
 #ifndef DACCESS_COMPILE
-    SoftwareExceptionFrame() : Frame(FrameType::SoftwareExceptionFrame) {
+    SoftwareExceptionFrame() : Frame(FrameIdentifier::SoftwareExceptionFrame) {
         LIMITED_METHOD_CONTRACT;
     }
 #endif
@@ -1135,7 +1135,7 @@ class FuncEvalFrame : public Frame
 
 public:
 #ifndef DACCESS_COMPILE
-    FuncEvalFrame(DebuggerEval *pDebuggerEval, TADDR returnAddress, BOOL showFrame) : Frame(FrameType::FuncEvalFrame)
+    FuncEvalFrame(DebuggerEval *pDebuggerEval, TADDR returnAddress, BOOL showFrame) : Frame(FrameIdentifier::FuncEvalFrame)
     {
         LIMITED_METHOD_CONTRACT;
         m_pDebuggerEval = pDebuggerEval;
@@ -1202,7 +1202,7 @@ public:
     // If this is an FCall, the first param is the entry point for the FCALL.
     // The MethodDesc will be looked up form this (lazily), and this method
     // will be used in stack reporting, if this is not an FCall pass a 0
-    FORCEINLINE HelperMethodFrame(void* fCallFtnEntry, unsigned attribs = 0, FrameType frameType = FrameType::HelperMethodFrame) : Frame(frameType)
+    FORCEINLINE HelperMethodFrame(void* fCallFtnEntry, unsigned attribs = 0, FrameIdentifier frameIdentifier = FrameIdentifier::HelperMethodFrame) : Frame(frameIdentifier)
     {
         WRAPPER_NO_CONTRACT;
         // Most of the initialization is actually done in HelperMethodFrame::Push()
@@ -1371,7 +1371,7 @@ class HelperMethodFrame_1OBJ : public HelperMethodFrame
 public:
 #if !defined(DACCESS_COMPILE)
     HelperMethodFrame_1OBJ(void* fCallFtnEntry, unsigned attribs, OBJECTREF* aGCPtr1)
-        : HelperMethodFrame(fCallFtnEntry, attribs, FrameType::HelperMethodFrame_1OBJ)
+        : HelperMethodFrame(fCallFtnEntry, attribs, FrameIdentifier::HelperMethodFrame_1OBJ)
     {
             LIMITED_METHOD_CONTRACT;
             gcPtrs[0] = aGCPtr1;
@@ -1430,7 +1430,7 @@ public:
             unsigned attribs,
             OBJECTREF* aGCPtr1,
             OBJECTREF* aGCPtr2)
-        : HelperMethodFrame(fCallFtnEntry, attribs, FrameType::HelperMethodFrame_2OBJ)
+        : HelperMethodFrame(fCallFtnEntry, attribs, FrameIdentifier::HelperMethodFrame_2OBJ)
     {
             LIMITED_METHOD_CONTRACT;
         gcPtrs[0] = aGCPtr1;
@@ -1486,7 +1486,7 @@ public:
             OBJECTREF* aGCPtr1,
             OBJECTREF* aGCPtr2,
             OBJECTREF* aGCPtr3)
-        : HelperMethodFrame(fCallFtnEntry, attribs, FrameType::HelperMethodFrame_3OBJ)
+        : HelperMethodFrame(fCallFtnEntry, attribs, FrameIdentifier::HelperMethodFrame_3OBJ)
     {
         LIMITED_METHOD_CONTRACT;
         gcPtrs[0] = aGCPtr1;
@@ -1543,7 +1543,7 @@ class HelperMethodFrame_PROTECTOBJ : public HelperMethodFrame
 public:
 #if !defined(DACCESS_COMPILE)
     HelperMethodFrame_PROTECTOBJ(void* fCallFtnEntry, unsigned attribs, OBJECTREF* pObjRefs, int numObjRefs)
-        : HelperMethodFrame(fCallFtnEntry, attribs, FrameType::HelperMethodFrame_PROTECTOBJ)
+        : HelperMethodFrame(fCallFtnEntry, attribs, FrameIdentifier::HelperMethodFrame_PROTECTOBJ)
     {
         LIMITED_METHOD_CONTRACT;
         m_pObjRefs = pObjRefs;
@@ -1603,8 +1603,8 @@ protected:
 
 public:
 #ifndef DACCESS_COMPILE
-    FramedMethodFrame(FrameType frameType, TransitionBlock * pTransitionBlock, MethodDesc * pMD)
-        : TransitionFrame(frameType), m_pTransitionBlock(dac_cast<TADDR>(pTransitionBlock)), m_pMD(pMD)
+    FramedMethodFrame(FrameIdentifier frameIdentifier, TransitionBlock * pTransitionBlock, MethodDesc * pMD)
+        : TransitionFrame(frameIdentifier), m_pTransitionBlock(dac_cast<TADDR>(pTransitionBlock)), m_pMD(pMD)
     {
         LIMITED_METHOD_CONTRACT;
     }
@@ -1703,7 +1703,7 @@ class UnmanagedToManagedFrame : public Frame
 
 protected:
 #ifndef DACCESS_COMPILE
-    UnmanagedToManagedFrame(FrameType frameType) : Frame(frameType)
+    UnmanagedToManagedFrame(FrameIdentifier frameIdentifier) : Frame(frameIdentifier)
     {
         LIMITED_METHOD_CONTRACT;
     }
@@ -1805,7 +1805,7 @@ class ComMethodFrame : public UnmanagedToManagedFrame
 {
 public:
 #ifndef DACCESS_COMPILE
-    ComMethodFrame(FrameType frameType = FrameType::ComMethodFrame) : UnmanagedToManagedFrame(FrameType::ComMethodFrame)
+    ComMethodFrame(FrameIdentifier frameIdentifier = FrameIdentifier::ComMethodFrame) : UnmanagedToManagedFrame(FrameIdentifier::ComMethodFrame)
     {
         LIMITED_METHOD_CONTRACT;
     }
@@ -2339,7 +2339,7 @@ class ProtectByRefsFrame : public Frame
 public:
 #ifndef DACCESS_COMPILE
     ProtectByRefsFrame(Thread *pThread, ByRefInfo *brInfo)
-        : Frame(FrameType::ProtectByRefsFrame), m_brInfo(brInfo)
+        : Frame(FrameIdentifier::ProtectByRefsFrame), m_brInfo(brInfo)
     {
         WRAPPER_NO_CONTRACT;
         Frame::Push(pThread);
@@ -2380,14 +2380,14 @@ class ProtectValueClassFrame : public Frame
 public:
 #ifndef DACCESS_COMPILE
     ProtectValueClassFrame()
-        : Frame(FrameType::ProtectValueClassFrame), m_pVCInfo(NULL)
+        : Frame(FrameIdentifier::ProtectValueClassFrame), m_pVCInfo(NULL)
     {
         WRAPPER_NO_CONTRACT;
         Frame::Push();
     }
 
     ProtectValueClassFrame(Thread *pThread, ValueClassInfo *vcInfo)
-        : Frame(FrameType::ProtectValueClassFrame), m_pVCInfo(vcInfo)
+        : Frame(FrameIdentifier::ProtectValueClassFrame), m_pVCInfo(vcInfo)
     {
         WRAPPER_NO_CONTRACT;
         Frame::Push(pThread);
@@ -2425,7 +2425,7 @@ class DebuggerClassInitMarkFrame : public Frame
 public:
 
 #ifndef DACCESS_COMPILE
-    DebuggerClassInitMarkFrame() : Frame(FrameType::DebuggerClassInitMarkFrame)
+    DebuggerClassInitMarkFrame() : Frame(FrameIdentifier::DebuggerClassInitMarkFrame)
     {
         WRAPPER_NO_CONTRACT;
         Push();
@@ -2455,7 +2455,7 @@ class DebuggerExitFrame : public Frame
 {
 public:
 #ifndef DACCESS_COMPILE
-    DebuggerExitFrame() : Frame(FrameType::DebuggerExitFrame)
+    DebuggerExitFrame() : Frame(FrameIdentifier::DebuggerExitFrame)
     {
         WRAPPER_NO_CONTRACT;
         Push();
@@ -2507,13 +2507,13 @@ class DebuggerU2MCatchHandlerFrame : public Frame
 {
 public:
 #ifndef DACCESS_COMPILE
-    DebuggerU2MCatchHandlerFrame() : Frame(FrameType::DebuggerU2MCatchHandlerFrame)
+    DebuggerU2MCatchHandlerFrame() : Frame(FrameIdentifier::DebuggerU2MCatchHandlerFrame)
     {
         WRAPPER_NO_CONTRACT;
         Frame::Push();
     }
 
-    DebuggerU2MCatchHandlerFrame(Thread * pThread) : Frame(FrameType::DebuggerU2MCatchHandlerFrame)
+    DebuggerU2MCatchHandlerFrame(Thread * pThread) : Frame(FrameIdentifier::DebuggerU2MCatchHandlerFrame)
     {
         WRAPPER_NO_CONTRACT;
         Frame::Push(pThread);
@@ -2656,7 +2656,7 @@ public:
         SUPPORTS_DAC;
         return pFrame &&
             pFrame != FRAME_TOP &&
-            FrameType::InlinedCallFrame == pFrame->GetType() &&
+            FrameIdentifier::InlinedCallFrame == pFrame->GetType() &&
             dac_cast<TADDR>(dac_cast<PTR_InlinedCallFrame>(pFrame)->m_pCallerReturnAddress) != 0;
     }
 
@@ -2731,7 +2731,7 @@ public:
     {
         LIMITED_METHOD_CONTRACT;
         // loop through the frame chain
-        while (pFrame->GetType() != FrameType::TailCallFrame)
+        while (pFrame->GetType() != FrameIdentifier::TailCallFrame)
             pFrame = pFrame->m_Next;
         return (TailCallFrame*)pFrame;
     }
@@ -2769,7 +2769,7 @@ class ExceptionFilterFrame : public Frame
 
 public:
 #ifndef DACCESS_COMPILE
-    ExceptionFilterFrame(size_t* pShadowSP) : Frame(FrameType::ExceptionFilterFrame)
+    ExceptionFilterFrame(size_t* pShadowSP) : Frame(FrameIdentifier::ExceptionFilterFrame)
     {
         WRAPPER_NO_CONTRACT;
         m_pShadowSP = pShadowSP;
@@ -2808,7 +2808,7 @@ class AssumeByrefFromJITStack : public Frame
 {
 public:
 #ifndef DACCESS_COMPILE
-    AssumeByrefFromJITStack(OBJECTREF *pObjRef) : Frame(FrameType::AssumeByrefFromJITStack)
+    AssumeByrefFromJITStack(OBJECTREF *pObjRef) : Frame(FrameIdentifier::AssumeByrefFromJITStack)
     {
         m_pObjRef      = pObjRef;
     }

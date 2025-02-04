@@ -443,7 +443,7 @@ void StubDispatchFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool update
     RETURN;
 }
 
-PCODE StubDispatchFrame::GetReturnAddress()
+PCODE StubDispatchFrame::GetReturnAddress_Impl()
 {
     CONTRACTL
     {
@@ -604,7 +604,7 @@ void InlinedCallFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateF
 //==========================
 // Resumable Exception Frame
 //
-TADDR ResumableFrame::GetReturnAddressPtr()
+TADDR ResumableFrame::GetReturnAddressPtr_Impl()
 {
     LIMITED_METHOD_DAC_CONTRACT;
     return dac_cast<TADDR>(m_Regs) + offsetof(CONTEXT, Eip);
@@ -889,7 +889,7 @@ Stub *GenerateInitPInvokeFrameHelper()
 
     // mov [edi + FrameInfo.offsetOfFrameVptr], InlinedCallFrame::GetFrameVtable()
     psl->X86EmitOffsetModRM(0xc7, (X86Reg)0x0, kEDI, FrameInfo.offsetOfFrameVptr - negSpace);
-    psl->Emit32((DWORD)FrameType::InlinedCallFrame);
+    psl->Emit32((DWORD)FrameIdentifier::InlinedCallFrame);
 
     // mov eax, [esi + offsetof(Thread, m_pFrame)]
     // mov [edi + FrameInfo.offsetOfFrameLink], eax

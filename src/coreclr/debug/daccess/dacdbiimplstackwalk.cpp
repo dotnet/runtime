@@ -558,7 +558,7 @@ void DacDbiInterfaceImpl::EnumerateInternalFrames(VMPTR_Thread                  
                 // it.  In this case, pMD will remain NULL.
                 EX_TRY_ALLOW_DATATARGET_MISSING_MEMORY
                 {
-                    if (pFrame->GetType() == ::FrameType::ComMethodFrame)
+                    if (pFrame->GetType() == FrameIdentifier::ComMethodFrame)
                     {
                         ComMethodFrame * pCOMFrame = dac_cast<PTR_ComMethodFrame>(pFrame);
                         PTR_VOID pUnkStackSlot     = pCOMFrame->GetPointerToArguments();
@@ -1142,7 +1142,7 @@ CorDebugInternalFrameType DacDbiInterfaceImpl::GetInternalFrameType(Frame * pFra
                 }
                 else if (ft == Frame::TYPE_EXIT)
                 {
-                    if ((pFrame->GetType() != ::FrameType::InlinedCallFrame) ||
+                    if ((pFrame->GetType() != FrameIdentifier::InlinedCallFrame) ||
                         InlinedCallFrame::FrameHasActiveCall(pFrame))
                     {
                         resultType = STUBFRAME_M2U;
@@ -1153,7 +1153,7 @@ CorDebugInternalFrameType DacDbiInterfaceImpl::GetInternalFrameType(Frame * pFra
 
         case Frame::TT_M2U:
             // Refer to the comment in DebuggerWalkStackProc() for StubDispatchFrame.
-            if (pFrame->GetType() != ::FrameType::StubDispatchFrame)
+            if (pFrame->GetType() != FrameIdentifier::StubDispatchFrame)
             {
                 if (it == Frame::INTERCEPTION_SECURITY)
                 {

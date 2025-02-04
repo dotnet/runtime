@@ -3766,7 +3766,7 @@ ThrowControlForThread(
     }
 
 #if defined(FEATURE_EH_FUNCLETS)
-    *(TADDR*)pfef = (TADDR)FrameType::FaultingExceptionFrame;
+    *(TADDR*)pfef = (TADDR)FrameIdentifier::FaultingExceptionFrame;
     *pfef->GetGSCookiePtr() = GetProcessGSCookie();
 #else // FEATURE_EH_FUNCLETS
     FrameWithCookie<FaultingExceptionFrame> fef;
@@ -4843,7 +4843,7 @@ StackWalkAction SWCB_GetExecutionState(CrawlFrame *pCF, VOID *pData)
 }
 
 HijackFrame::HijackFrame(LPVOID returnAddress, Thread *thread, HijackArgs *args)
-           : Frame(FrameType::HijackFrame),
+           : Frame(FrameIdentifier::HijackFrame),
              m_ReturnAddress((TADDR)returnAddress),
              m_Thread(thread),
              m_Args(args)

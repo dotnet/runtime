@@ -454,7 +454,7 @@ bool HasExitRuntime(Frame *pFrame, DebuggerFrameData *pData, FramePointer *pPote
 
 #else // TARGET_X86
     // DebuggerExitFrame always return a NULL returnSP on x86.
-    if (pFrame->GetType() == ::FrameType::DebuggerExitFrame)
+    if (pFrame->GetType() == FrameIdentifier::DebuggerExitFrame)
     {
         if (pPotentialFP != NULL)
         {
@@ -462,7 +462,7 @@ bool HasExitRuntime(Frame *pFrame, DebuggerFrameData *pData, FramePointer *pPote
         }
         return true;
     }
-    else if (pFrame->GetType() == ::FrameType::InlinedCallFrame)
+    else if (pFrame->GetType() == FrameIdentifier::InlinedCallFrame)
     {
         InlinedCallFrame *pInlinedFrame = static_cast<InlinedCallFrame *>(pFrame);
         LPVOID sp = (LPVOID)pInlinedFrame->GetCallSiteSP();
@@ -814,7 +814,7 @@ void FrameInfo::InitForU2MInternalFrame(CrawlFrame * pCF)
     // For regular U2M PInvoke cases, we don't care about MD b/c it's just going to
     // be the next frame.
     // If we're a COM2CLR call, perhaps we can get the MD for the interface.
-    if (pFrame->GetType() == FrameType::ComMethodFrame)
+    if (pFrame->GetType() == FrameIdentifier::ComMethodFrame)
     {
         ComMethodFrame* pCOMFrame = static_cast<ComMethodFrame*> (pFrame);
         ComCallMethodDesc* pCMD = reinterpret_cast<ComCallMethodDesc *> (pCOMFrame->ComMethodFrame::GetDatum());
@@ -1190,7 +1190,7 @@ StackWalkAction TrackUMChain(CrawlFrame *pCF, DebuggerFrameData *d)
 
 #ifdef FEATURE_COMINTEROP
         if ((frame != NULL) &&
-            (frame->GetType() == FrameType::CLRToCOMMethodFrame))
+            (frame->GetType() == FrameIdentifier::CLRToCOMMethodFrame))
         {
             // This condition is part of the fix for 650903. (See
             // code:ControllerStackInfo::WalkStack and code:DebuggerStepper::TrapStepOut
@@ -1717,7 +1717,7 @@ StackWalkAction DebuggerWalkStackProc(CrawlFrame *pCF, void *data)
             // The jitted code on X64 behaves differently.
             //
             // Note that there is a corresponding change in DacDbiInterfaceImpl::GetInternalFrameType().
-            if (frame->GetType() == FrameType::StubDispatchFrame)
+            if (frame->GetType() == FrameIdentifier::StubDispatchFrame)
             {
                 use = false;
             }

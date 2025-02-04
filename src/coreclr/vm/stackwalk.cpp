@@ -1414,11 +1414,11 @@ BOOL StackFrameIterator::IsValid(void)
             _ASSERTE(GCStress<cfg_instr>::IsEnabled());
             _ASSERTE(m_pRealStartFrame != NULL);
             _ASSERTE(m_pRealStartFrame != FRAME_TOP);
-            _ASSERTE(m_pRealStartFrame->GetType() == FrameType::InlinedCallFrame);
+            _ASSERTE(m_pRealStartFrame->GetType() == FrameIdentifier::InlinedCallFrame);
             _ASSERTE(m_pThread->GetFrame() != NULL);
             _ASSERTE(m_pThread->GetFrame() != FRAME_TOP);
-            bIsRealStartFrameUnchanged = (m_pThread->GetFrame()->GetType() == FrameType::ResumableFrame)
-                || (m_pThread->GetFrame()->GetType() == FrameType::RedirectedThreadFrame);
+            bIsRealStartFrameUnchanged = (m_pThread->GetFrame()->GetType() == FrameIdentifier::ResumableFrame)
+                || (m_pThread->GetFrame()->GetType() == FrameIdentifier::RedirectedThreadFrame);
         }
 #endif // FEATURE_HIJACK
 
@@ -2365,7 +2365,7 @@ StackWalkAction StackFrameIterator::NextRaw(void)
         // make sure we're not skipping a different transition
         if (m_crawl.pFrame->NeedsUpdateRegDisplay())
         {
-            if (m_crawl.pFrame->GetType() == FrameType::InlinedCallFrame)
+            if (m_crawl.pFrame->GetType() == FrameIdentifier::InlinedCallFrame)
             {
                 // ControlPC may be different as the InlinedCallFrame stays active throughout
                 // the STOP_FOR_GC callout but we can use the stack/frame pointer for the assert.
@@ -2502,7 +2502,7 @@ StackWalkAction StackFrameIterator::NextRaw(void)
         // pushed on the stack after the frame is running
         _ASSERTE((m_crawl.pFrame == FRAME_TOP) ||
                  ((TADDR)GetRegdisplaySP(m_crawl.pRD) < dac_cast<TADDR>(m_crawl.pFrame)) ||
-                 (m_crawl.pFrame->GetType() == FrameType::FaultingExceptionFrame));
+                 (m_crawl.pFrame->GetType() == FrameIdentifier::FaultingExceptionFrame));
 #endif // !defined(ELIMINATE_FEF)
 
         // Get rid of the frame (actually, it isn't really popped)
@@ -2847,7 +2847,7 @@ void StackFrameIterator::ProcessCurrentFrame(void)
             //  the next frame is one of them, we don't want to override it.  THIS IS PROBABLY BAD!!!
             if ( (pContextSP < dac_cast<TADDR>(m_crawl.pFrame)) &&
                  ((m_crawl.GetFrame() == FRAME_TOP) ||
-                  (m_crawl.GetFrame()->GetVTablePtr() != FaultingExceptionFrame::GetMethodFrameVPtr() ) ) )
+                  (m_crawl.GetFrame()->GetType() != FrameIdentifier::FaultingExceptionFrame ) ) )
             {
                 //
                 // If the REGDISPLAY represents an unmanaged stack frame above (closer to the leaf than) an
@@ -3006,7 +3006,7 @@ BOOL StackFrameIterator::CheckForSkippedFrames(void)
         // Note that code:InlinedCallFrame.GetFunction may return NULL in this case because
         // the call is made using the CALLI instruction.
             m_crawl.pFrame != FRAME_TOP &&
-            m_crawl.pFrame->GetType() == FrameType::InlinedCallFrame &&
+            m_crawl.pFrame->GetType() == FrameIdentifier::InlinedCallFrame &&
             m_crawl.pFunc != NULL &&
             m_crawl.pFunc->IsILStub() &&
             m_crawl.pFunc->AsDynamicMethodDesc()->HasMDContextArg();

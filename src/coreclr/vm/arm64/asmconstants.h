@@ -30,7 +30,7 @@
 #endif
 
 #define FRAMETYPE_InlinedCallFrame 1
-ASMCONSTANTS_C_ASSERT(FRAMETYPE_InlinedCallFrame == (int)FrameType::InlinedCallFrame)
+ASMCONSTANTS_C_ASSERT(FRAMETYPE_InlinedCallFrame == (int)FrameIdentifier::InlinedCallFrame)
 
 #define DynamicHelperFrameFlags_Default     0
 #define DynamicHelperFrameFlags_ObjectArg   1

@@ -305,7 +305,7 @@ bool Thread::DetectHandleILStubsForDebugger()
         while (pFrame != FRAME_TOP)
         {
             // Check for HMF's.  See the comment at the beginning of this function.
-            if (pFrame->GetType() == FrameType::HelperMethodFrame)
+            if (pFrame->GetType() == FrameIdentifier::HelperMethodFrame)
             {
                 break;
             }

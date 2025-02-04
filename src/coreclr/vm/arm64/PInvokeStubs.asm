@@ -15,10 +15,6 @@
     IMPORT s_gsCookie
     IMPORT g_TrapReturningThreads
 
-    SETALIAS InlinedCallFrame_vftable, ??_7InlinedCallFrame@@6B@
-    IMPORT $InlinedCallFrame_vftable
-
-
 ; ------------------------------------------------------------------
 ; Macro to generate PInvoke Stubs.
 ; $__PInvokeStubFuncName : function which calls the actual stub obtained from VASigCookie

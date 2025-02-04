@@ -79,7 +79,7 @@ ASMCONSTANTS_C_ASSERT(SIZEOF_CalleeSavedRegisters == sizeof(CalleeSavedRegisters
 #endif
 
 #define FRAMETYPE_InlinedCallFrame 0x1
-ASMCONSTANTS_C_ASSERT(FRAMETYPE_InlinedCallFrame == (int)FrameType::InlinedCallFrame)
+ASMCONSTANTS_C_ASSERT(FRAMETYPE_InlinedCallFrame == (int)FrameIdentifier::InlinedCallFrame)
 
 #define SIZEOF_GSCookie                             0x8
 ASMCONSTANTS_C_ASSERT(SIZEOF_GSCookie == sizeof(GSCookie));

@@ -21,7 +21,6 @@
         .code
 
 extern _s_gsCookie:DWORD
-extern ??_7InlinedCallFrame@@6B@:DWORD
 extern _g_TrapReturningThreads:DWORD
 
 extern @JIT_PInvokeEndRarePath@0:proc
