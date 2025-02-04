@@ -29,6 +29,7 @@ namespace System.DirectoryServices.Protocols.Tests
         }
 
         [Theory]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/112146")]
         [PlatformSpecific(TestPlatforms.Linux)]
         [InlineData(ReferralChasingOptions.None)]
         [InlineData(ReferralChasingOptions.All)]
@@ -769,8 +770,8 @@ namespace System.DirectoryServices.Protocols.Tests
                 LdapSessionOptions options = connection.SessionOptions;
                 Assert.Null(options.TrustedCertificatesDirectory);
 
-                options.TrustedCertificatesDirectory = "CertificateDirectory";
-                Assert.Equal("CertificateDirectory", options.TrustedCertificatesDirectory);
+                options.TrustedCertificatesDirectory = ".";
+                Assert.Equal(".", options.TrustedCertificatesDirectory);
             }
         }
 
