@@ -415,12 +415,14 @@ namespace System.Numerics
                     // Left shift
                     int carryShift = 32 - sigmaSmall;
                     uint carry = 0;
+
                     for (int i = 0; i < bits.Length; i++)
                     {
                         uint carryTmp = bits[i] >> carryShift;
                         bits[i] = bits[i] << sigmaSmall | carry;
                         carry = carryTmp;
                     }
+
                     Debug.Assert(carry == 0);
                 }
             }
@@ -491,13 +493,16 @@ namespace System.Numerics
                 {
                     // Right shift
                     Debug.Assert((uint)sigmaSmall <= 32);
+
                     int carryShift = 32 - sigmaSmall;
                     uint carry = 0;
+
                     for (int i = rt.Length - 1; i >= 0; i--)
                     {
                         remainder[i] = rt[i] >> sigmaSmall | carry;
                         carry = rt[i] << carryShift;
                     }
+
                     Debug.Assert(carry == 0);
                 }
                 else
