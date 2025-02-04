@@ -151,7 +151,6 @@ extends:
 
       #
       # Build all runtime packs for Linux and Linux musl
-      # Upload CoreCLR runtime for CrossDac packaging
       #
       - template: /eng/pipelines/common/platform-matrix.yml
         parameters:
@@ -171,26 +170,10 @@ extends:
             isOfficialBuild: ${{ variables.isOfficialBuild }}
             timeoutInMinutes: 120
             postBuildSteps:
-              # Upload libcoreclr.so for CrossDac packaging
-              - task: CopyFiles@2
-                displayName: Gather runtime for CrossDac
-                inputs:
-                  SourceFolder: $(Build.SourcesDirectory)/artifacts/bin/coreclr/$(osGroup).$(archType).$(_BuildConfig)
-                  Contents: libcoreclr.so
-                  TargetFolder: $(Build.SourcesDirectory)/artifacts/CoreCLRCrossDacArtifacts/$(osGroup)$(osSubgroup).$(archType).$(_BuildConfig)/$(crossDacHostArch)
-              - task: 1ES.PublishBuildArtifacts@1
-                displayName: Publish runtime for CrossDac
-                inputs:
-                  PathtoPublish: $(Build.SourcesDirectory)/artifacts/CoreCLRCrossDacArtifacts
-                  PublishLocation: Container
-                  ArtifactName: CoreCLRCrossDacArtifacts
-
               # Upload the results.
               - template: /eng/pipelines/common/upload-intermediate-artifacts-step.yml
                 parameters:
                   name: $(osGroup)$(osSubgroup)_$(archType)
-            extraVariablesTemplates:
-              - template: /eng/pipelines/coreclr/templates/crossdac-hostarch.yml
 
       #
       # Build and Pack CrossDac
@@ -203,17 +186,21 @@ extends:
           - windows_x64
           jobParameters:
             templatePath: 'templates-official'
-            buildArgs: -s crossdacpack -c $(_BuildConfig) /p:CrossDacArtifactsDir=$(crossDacArtifactsPath)
+            buildArgs: -s crossdacpack -c $(_BuildConfig) /p:CrossRuntimeExtractionRoot=$(CrossRuntimeExtractionRoot) $(_SignDiagnosticFilesArgs)
             nameSuffix: CrossDac
             isOfficialBuild: ${{ variables.isOfficialBuild }}
             timeoutInMinutes: 120
             preBuildSteps:
-            - task: DownloadBuildArtifacts@0
-              displayName: Download Runtimes for CrossDac packaging
+            - task: DownloadPipelineArtifact@2
+              displayName: Download runtime packs for CrossDac
               inputs:
-                artifactName: $(crossDacArtifactsContainer)
-                downloadPath: $(crossDacArtifactsBasePath)
-                checkDownloadedFiles: true
+                artifact: 'IntermediateArtifacts'
+                path: $(Build.SourcesDirectory)/artifacts/RuntimeDownload
+                patterns: |
+                  IntermediateArtifacts/linux_*/Shipping/Microsoft.NETCore.App.Runtime.linux-*.nupkg
+                  !IntermediateArtifacts/linux_*/Shipping/Microsoft.NETCore.App.Runtime.linux-*.symbols.nupkg
+            - powershell: $(Build.SourcesDirectory)/eng/extract-for-crossdac.ps1 -DownloadDirectory $(Build.SourcesDirectory)/artifacts/RuntimeDownload -ExtractDirectory $(CrossRuntimeExtractionRoot)
+              displayName: Extract runtime packs
             - template: /eng/pipelines/coreclr/templates/install-diagnostic-certs.yml
               parameters:
                 isOfficialBuild: ${{ variables.isOfficialBuild }}
@@ -222,22 +209,10 @@ extends:
                 - 'dotnet-diagnostics-esrp-pki-onecert'
                 vaultName: 'clrdiag-esrp-id'
                 azureSubscription: 'diagnostics-esrp-kvcertuser'
-            - template: /eng/pipelines/common/templates/global-build-step.yml
-              parameters:
-                buildArgs: -s linuxdac+alpinedac -c $(_BuildConfig) $(_SignDiagnosticFilesArgs)
-                archParameter: -arch x64,x86,arm,arm64
+            postBuildSteps:
             - template: /eng/pipelines/coreclr/templates/remove-diagnostic-certs.yml
               parameters:
                 isOfficialBuild: ${{ variables.isOfficialBuild }}
-            - task: CopyFiles@2
-              displayName: Gather CrossDacs
-              inputs:
-                SourceFolder: $(Build.SourcesDirectory)/artifacts/bin/coreclr
-                Contents: |
-                  **
-                  !**\sharedFramework\**
-                TargetFolder: $(crossDacArtifactsPath)
-            postBuildSteps:
             # Save packages using the prepare-signed-artifacts format.
             # CrossDac packages are expected to be in the windows_x64 folder.
             - template: /eng/pipelines/common/upload-intermediate-artifacts-step.yml
@@ -251,12 +226,10 @@ extends:
             - build_linux_musl_arm_release_AllRuntimes
             - build_linux_musl_arm64_release_AllRuntimes
           variables:
-          - name: crossDacArtifactsContainer
-            value: CoreCLRCrossDacArtifacts
-          - name: crossDacArtifactsBasePath
-            value: $(Build.StagingDirectory)/CrossDac
-          - name: crossDacArtifactsPath
-            value: $(crossDacArtifactsBasePath)/$(crossDacArtifactsContainer)
+          - name: CrossRuntimeExtractionRoot
+            value: $(Build.SourcesDirectory)/artifacts/CrossDac
+          - name: _SignDiagnosticFilesArgs
+            value: ''
 
       #
       # Build All runtime packs for mobile platforms

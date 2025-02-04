@@ -1,12 +1,8 @@
+# This file will be deleted in a follow-up PR once we have changed the pipeline in Azure Pipelines to point to /eng/pipelines/performance/runtime-wasm-perf.yml
+
 # This is a wrapper yml for `perf-wasm-jobs`, which has all the perf related
 # wasm jobs. This file is essentially so we can point the pipeline in azdo
 # UI to this, and thus avoid any scheduled triggers
-
-parameters:
-- name: perfBranch
-  displayName: Performance Repo Branch
-  type: string
-  default: 'main'
 
 trigger: none
 
@@ -16,13 +12,16 @@ pr:
     - main
   paths:
     include:
-    - eng/pipelines/runtime-wasm-perf.yml
-    - eng/pipelines/coreclr/perf*.yml
-    - eng/pipelines/coreclr/templates/perf-job.yml
-    - eng/pipelines/coreclr/templates/run-perf*
-    - eng/pipelines/coreclr/templates/run-scenarios-job.yml
+    - eng/pipelines/performance/*
     - eng/testing/performance/*
     - eng/testing/BrowserVersions.props
+
+resources:
+  repositories:
+    - repository: performance
+      type: github
+      name: dotnet/performance
+      endpoint: public
 
 variables:
   - template: /eng/pipelines/common/variables.yml
@@ -33,12 +32,13 @@ extends:
     stages:
     - stage: Build
       jobs:
-      - template: /eng/pipelines/coreclr/perf-wasm-jobs.yml
+      - template: /eng/pipelines/runtime-wasm-perf-jobs.yml@performance
         parameters:
+          runtimeRepoAlias: self
+          performanceRepoAlias: performance
           runProfile: 'v8'
-          collectHelixLogsScript: ${{ variables._wasmCollectHelixLogsScript }}
-          onlySanityCheck: true
-          perfBranch: ${{ parameters.perfBranch }}
+          jobParameters:
+            onlySanityCheck: true
           #downloadSpecificBuild:
             #buildId: '1878694'
             #pipeline: 'perf-wasm'
