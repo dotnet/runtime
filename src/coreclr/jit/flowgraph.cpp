@@ -2459,12 +2459,12 @@ PhaseStatus Compiler::fgAddInternal()
 
 #if DEBUG
     // TODO: to be enabled only under jit-stress
-    // if ((info.compRetBuffArg != BAD_VAR_NUM) && !opts.IsReadyToRun())
-    // {
-    //     GenTree* retBuffAddr = gtNewLclvNode(info.compRetBuffArg, TYP_BYREF);
-    //     fgNewStmtAtBeg(fgFirstBB, gtNewHelperCallNode(CORINFO_HELP_ENSURE_NONHEAP, TYP_VOID, retBuffAddr));
-    //     madeChanges = true;
-    // }
+    if ((info.compRetBuffArg != BAD_VAR_NUM) && !opts.IsReadyToRun())
+    {
+        GenTree* retBuffAddr = gtNewLclvNode(info.compRetBuffArg, TYP_BYREF);
+        fgNewStmtAtBeg(fgFirstBB, gtNewHelperCallNode(CORINFO_HELP_ENSURE_NONHEAP, TYP_VOID, retBuffAddr));
+        madeChanges = true;
+    }
 #endif
 
     if (dbgHandle || pDbgHandle)
