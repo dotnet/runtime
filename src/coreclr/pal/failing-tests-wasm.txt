@@ -76,10 +76,18 @@ after I added it to packaged files, we fail in `InternalCanonicalizeRealPath` - 
 "filemapping_memmgt/VirtualProtect/test6/paltest_virtualprotect_test6"
 "filemapping_memmgt/VirtualProtect/test7/paltest_virtualprotect_test7"
 "filemapping_memmgt/VirtualQuery/test1/paltest_virtualquery_test1"
+
 "miscellaneous/FlushInstructionCache/test1/paltest_flushinstructioncache_test1"
+ * no cache to flush, made it no-op on wasm
+
 "miscellaneous/InterlockedCompareExchange/test2/paltest_interlockedcompareexchange_test2"
+ * threading test, creates many threads and awaits them to finish, not supported on wasm, disabled
+
 "miscellaneous/InterlockedDecrement/test2/paltest_interlockeddecrement_test2"
+ * threading test, creates many threads and awaits them to finish, not supported on wasm, disabled
+
 "miscellaneous/InterlockedIncrement/test2/paltest_interlockedincrement_test2"
+ * threading test, creates many threads and awaits them to finish, not supported on wasm, disabled
 
 Missing tests:
 

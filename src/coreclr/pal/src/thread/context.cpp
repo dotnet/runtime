@@ -2187,8 +2187,7 @@ DBG_FlushInstructionCache(
 
     syscall(__NR_riscv_flush_icache, (char *)lpBaseAddress, (char *)((INT_PTR)lpBaseAddress + dwSize), 0 /* all harts */);
 #elif defined(HOST_WASM)
-    // No need to flush the instruction cache on WebAssembly?
-    ASSERT("llvm.clear_cache is not supported on wasm");
+    // do nothing, no instruction cache to flush
 #else
     __builtin___clear_cache((char *)lpBaseAddress, (char *)((INT_PTR)lpBaseAddress + dwSize));
 #endif

@@ -109,6 +109,9 @@ This is a no-op for x86 architectures where the instruction and data
 caches are coherent in hardware. For non-X86 architectures, this call
 usually maps to a kernel API to flush the D-caches on all processors.
 
+It is also no-op on wasm. We don't have a way to flush the instruction
+cache and it is also not needed.
+
 --*/
 BOOL
 PALAPI
