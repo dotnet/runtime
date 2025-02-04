@@ -7309,7 +7309,6 @@ bool Lowering::LowerUnsignedDivOrMod(GenTreeOp* divMod)
         }
 
         const bool     requiresDividendMultiuse = !isDiv;
-        const weight_t curBBWeight              = m_block->getBBWeight(comp);
 
         if (requiresDividendMultiuse)
         {

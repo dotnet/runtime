@@ -1196,6 +1196,7 @@ public:
 
     // getBBWeight -- get the normalized weight of this block
     weight_t getBBWeight(Compiler* comp) const;
+    weight_t getNewBBWeight(Compiler* comp) const;
 
     // computeIncomingWeight -- sum the weights of the flow edges into this block
     weight_t computeIncomingWeight() const

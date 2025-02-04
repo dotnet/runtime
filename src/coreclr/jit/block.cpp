@@ -1867,6 +1867,17 @@ weight_t BasicBlock::getBBWeight(Compiler* comp) const
     return fullResult;
 }
 
+weight_t BasicBlock::getNewBBWeight(Compiler* comp) const
+{
+    weight_t calledCount = getCalledCount(comp);
+
+    // Normalize the bbWeight.
+    //
+    weight_t fullResult = this->bbWeight / calledCount;
+
+    return fullResult;
+}
+
 //------------------------------------------------------------------------
 // bbStackDepthOnEntry: return depth of IL stack at block entry
 //

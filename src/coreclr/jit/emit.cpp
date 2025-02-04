@@ -1476,12 +1476,12 @@ weight_t emitter::getCurrentBlockWeight()
     // If we have a non-null compCurBB, then use it to get the current block weight
     if (emitComp->compCurBB != nullptr)
     {
-        return emitComp->compCurBB->getBBWeight(emitComp);
+        return emitComp->compCurBB->getNewBBWeight(emitComp);
     }
     else // we have a null compCurBB
     {
-        // prolog or epilog case, so just use the standard weight
-        return BB_UNITY_WEIGHT;
+        // prolog or epilog case, so just use the method's call count
+        return BasicBlock::getCalledCount(emitComp);
     }
 }
 
@@ -4348,7 +4348,7 @@ size_t emitter::emitIssue1Instr(insGroup* ig, instrDesc* id, BYTE** dp)
 #if defined(DEBUG) || defined(LATE_DISASM)
     float insExeCost = insEvaluateExecutionCost(id);
     // All compPerfScore calculations must be performed using doubles
-    double insPerfScore = (double)(ig->igWeight / (double)BB_UNITY_WEIGHT) * insExeCost;
+    double insPerfScore = ((double)ig->igWeight) * insExeCost;
     emitComp->Metrics.PerfScore += insPerfScore;
     ig->igPerfScore += insPerfScore;
 #endif // defined(DEBUG) || defined(LATE_DISASM)

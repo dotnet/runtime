@@ -518,7 +518,7 @@ bool Compiler::optIsIVWideningProfitable(unsigned              lclNum,
         }
 
         savedSize += ExtensionSize;
-        savedCost += block->getBBWeight(this) * ExtensionCost;
+        savedCost += block->getNewBBWeight(this) * ExtensionCost;
         return true;
     };
 
@@ -531,7 +531,7 @@ bool Compiler::optIsIVWideningProfitable(unsigned              lclNum,
         // otherwise we assume that constant initialization of the narrow local
         // will be DCE'd.
         savedSize -= ExtensionSize;
-        savedCost -= initBlock->getBBWeight(this) * ExtensionCost;
+        savedCost -= initBlock->getNewBBWeight(this) * ExtensionCost;
     }
 
     // Now account for the cost of sinks.
@@ -542,13 +542,15 @@ bool Compiler::optIsIVWideningProfitable(unsigned              lclNum,
         if (optLocalIsLiveIntoBlock(lclNum, exit))
         {
             savedSize -= ExtensionSize;
-            savedCost -= exit->getBBWeight(this) * ExtensionCost;
+            savedCost -= exit->getNewBBWeight(this) * ExtensionCost;
         }
         return BasicBlockVisit::Continue;
     });
 
+    // TODO: 'savedCost' is already computed using normalized weights. Don't divide by the method entry block's weight,
+    // in case there is flow into it?
     const weight_t ALLOWED_SIZE_REGRESSION_PER_CYCLE_IMPROVEMENT = 2;
-    weight_t       cycleImprovementPerInvoc                      = savedCost / fgFirstBB->getBBWeight(this);
+    weight_t       cycleImprovementPerInvoc                      = savedCost / fgFirstBB->getNewBBWeight(this);
 
     JITDUMP("  Estimated cycle improvement: " FMT_WT " cycles per invocation\n", cycleImprovementPerInvoc);
     JITDUMP("  Estimated size improvement: %d bytes\n", savedSize);

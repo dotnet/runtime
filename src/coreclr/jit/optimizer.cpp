@@ -217,7 +217,7 @@ void Compiler::optScaleLoopBlocks(BasicBlock* begBlk, BasicBlock* endBlk)
 #ifdef DEBUG
         if (verbose)
         {
-            printf("\n    " FMT_BB "(wt=" FMT_WT ")%s", blk->bbNum, blk->getBBWeight(this), message);
+            printf("\n    " FMT_BB "(wt=" FMT_WT ")%s", blk->bbNum, blk->getNewBBWeight(this), message);
         }
 #endif // DEBUG
     };
@@ -4973,13 +4973,13 @@ void Compiler::optHoistLoopBlocks(FlowGraphNaturalLoop*    loop,
     while (!blocks->Empty())
     {
         BasicBlock* block       = blocks->Pop();
-        weight_t    blockWeight = block->getBBWeight(this);
+        weight_t    blockWeight = block->getNewBBWeight(this);
 
         JITDUMP("\n    optHoistLoopBlocks " FMT_BB " (weight=%6s) of loop " FMT_LP " (head: " FMT_BB ")\n",
                 block->bbNum, refCntWtd2str(blockWeight, /* padForDecimalPlaces */ true), loop->GetIndex(),
                 loop->GetHeader()->bbNum);
 
-        if (blockWeight < (BB_UNITY_WEIGHT / 10))
+        if (blockWeight < 0.1)
         {
             JITDUMP("      block weight is too small to perform hoisting.\n");
             continue;
