@@ -3,7 +3,7 @@
 
 .assembly extern legacy library mscorlib {}
 .assembly extern dependencytodelete {}
-.assembly 'lowlevel' {}
+.assembly 'tailcallinvoker' {}
 
 .class public sequential ansi sealed beforefieldinit TailCallInvoker
        extends [mscorlib]System.Object
