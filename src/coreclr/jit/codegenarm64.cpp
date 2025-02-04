@@ -3155,6 +3155,8 @@ void CodeGen::genLclHeap(GenTree* tree)
     noway_assert(isFramePointerUsed()); // localloc requires Frame Pointer to be established since SP changes
     noway_assert(genStackLevel == 0);   // Can't have anything on the stack
 
+    bool const initMem = compiler->info.compInitMem || (tree->gtFlags & GTF_LCLHEAP_MUSTINIT);
+
     // compute the amount of memory to allocate to properly STACK_ALIGN.
     size_t amount = 0;
     if (size->IsCnsIntOrI())
@@ -3184,7 +3186,7 @@ void CodeGen::genLclHeap(GenTree* tree)
         // Compute the size of the block to allocate and perform alignment.
         // If compInitMem=true, we can reuse targetReg as regcnt,
         // since we don't need any internal registers.
-        if (compiler->info.compInitMem)
+        if (initMem)
         {
             assert(internalRegisters.Count(tree) == 0);
             regCnt = targetReg;
@@ -3232,7 +3234,7 @@ void CodeGen::genLclHeap(GenTree* tree)
         static_assert_no_msg(STACK_ALIGN == storePairRegsWritesBytes);
         assert(amount % storePairRegsWritesBytes == 0); // stp stores two registers at a time
 
-        if (compiler->info.compInitMem)
+        if (initMem)
         {
             if (amount <= compiler->getUnrollThreshold(Compiler::UnrollKind::Memset))
             {
@@ -3303,10 +3305,10 @@ void CodeGen::genLclHeap(GenTree* tree)
         }
 
         // else, "mov regCnt, amount"
-        // If compInitMem=true, we can reuse targetReg as regcnt.
+        // If initMem=true, we can reuse targetReg as regcnt.
         // Since size is a constant, regCnt is not yet initialized.
         assert(regCnt == REG_NA);
-        if (compiler->info.compInitMem)
+        if (initMem)
         {
             assert(internalRegisters.Count(tree) == 0);
             regCnt = targetReg;
@@ -3318,7 +3320,7 @@ void CodeGen::genLclHeap(GenTree* tree)
         instGen_Set_Reg_To_Imm(((unsigned int)amount == amount) ? EA_4BYTE : EA_8BYTE, regCnt, amount);
     }
 
-    if (compiler->info.compInitMem)
+    if (initMem)
     {
         BasicBlock* loop = genCreateTempLabel();
 

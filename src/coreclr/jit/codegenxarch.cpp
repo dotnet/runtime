@@ -2870,6 +2870,8 @@ void CodeGen::genLclHeap(GenTree* tree)
     target_size_t stackAdjustment     = 0;
     target_size_t locAllocStackOffset = 0;
 
+    bool const initMem = compiler->info.compInitMem || (tree->gtFlags & GTF_LCLHEAP_MUSTINIT);
+
     // compute the amount of memory to allocate to properly STACK_ALIGN.
     size_t amount = 0;
     if (size->IsCnsIntOrI() && size->isContained())
@@ -2893,7 +2895,7 @@ void CodeGen::genLclHeap(GenTree* tree)
         // Compute the size of the block to allocate and perform alignment.
         // If compInitMem=true, we can reuse targetReg as regcnt,
         // since we don't need any internal registers.
-        if (compiler->info.compInitMem)
+        if (initMem)
         {
             assert(internalRegisters.Count(tree) == 0);
             regCnt = targetReg;
@@ -2918,7 +2920,7 @@ void CodeGen::genLclHeap(GenTree* tree)
 
         inst_RV_IV(INS_add, regCnt, STACK_ALIGN - 1, emitActualTypeSize(type));
 
-        if (compiler->info.compInitMem)
+        if (initMem)
         {
             // Convert the count from a count of bytes to a loop count. We will loop once per
             // stack alignment size, so each loop will zero 4 bytes on Windows/x86, and 16 bytes
@@ -2939,7 +2941,7 @@ void CodeGen::genLclHeap(GenTree* tree)
     }
 
     bool initMemOrLargeAlloc; // Declaration must be separate from initialization to avoid clang compiler error.
-    initMemOrLargeAlloc = compiler->info.compInitMem || (amount >= compiler->eeGetPageSize()); // must be >= not >
+    initMemOrLargeAlloc = initMem || (amount >= compiler->eeGetPageSize()); // must be >= not >
 
 #if FEATURE_FIXED_OUT_ARGS
     // If we have an outgoing arg area then we must adjust the SP by popping off the
@@ -3013,7 +3015,7 @@ void CodeGen::genLclHeap(GenTree* tree)
     // We should not have any temp registers at this point.
     assert(internalRegisters.Count(tree) == 0);
 
-    if (compiler->info.compInitMem)
+    if (initMem)
     {
         // At this point 'regCnt' is set to the number of loop iterations for this loop, if each
         // iteration zeros (and subtracts from the stack pointer) STACK_ALIGN bytes.

@@ -513,8 +513,7 @@ bool ObjectAllocator::MorphAllocObjNodes()
                         case CORINFO_HELP_NEWARR_1_DIRECT:
                         case CORINFO_HELP_NEWARR_1_ALIGN8:
                         {
-                            if ((data->AsCall()->gtArgs.CountUserArgs() == 2) &&
-                                data->AsCall()->gtArgs.GetUserArgByIndex(1)->GetNode()->IsCnsIntOrI())
+                            if (data->AsCall()->gtArgs.CountUserArgs() == 2)
                             {
                                 allocType = OAT_NEWARR;
                             }
@@ -533,6 +532,7 @@ bool ObjectAllocator::MorphAllocObjNodes()
             {
                 bool         canStack     = false;
                 bool         bashCall     = false;
+                bool         useLocalloc  = false;
                 const char*  onHeapReason = nullptr;
                 unsigned int lclNum       = stmtExpr->AsLclVar()->GetLclNum();
 
@@ -578,9 +578,9 @@ bool ObjectAllocator::MorphAllocObjNodes()
                         CORINFO_CLASS_HANDLE clsHnd =
                             comp->gtGetHelperCallClassHandle(data->AsCall(), &isExact, &isNonNull);
                         GenTree* const len = data->AsCall()->gtArgs.GetUserArgByIndex(1)->GetNode();
-
                         assert(len != nullptr);
 
+                        ssize_t      arraySize = len->IsCnsIntOrI() ? len->AsIntCon()->IconValue() : -1;
                         unsigned int blockSize = 0;
                         comp->Metrics.NewArrayHelperCalls++;
 
@@ -589,27 +589,36 @@ bool ObjectAllocator::MorphAllocObjNodes()
                             onHeapReason = "[array type is either non-exact or null]";
                             canStack     = false;
                         }
-                        else if (!len->IsCnsIntOrI())
+                        else if (!len->IsCnsIntOrI() && !m_UseLocalloc)
                         {
-                            onHeapReason = "[non-constant size]";
+                            onHeapReason = "[unknown size]";
                             canStack     = false;
                         }
-                        else if (!CanAllocateLclVarOnStack(lclNum, clsHnd, allocType, len->AsIntCon()->IconValue(),
-                                                           &blockSize, &onHeapReason))
+                        else if (!CanAllocateLclVarOnStack(lclNum, clsHnd, allocType, arraySize, &blockSize,
+                                                           &onHeapReason))
                         {
                             // reason set by the call
                             canStack = false;
                         }
                         else
                         {
-                            JITDUMP("Allocating V%02u on the stack\n", lclNum);
+                            useLocalloc = !len->IsCnsIntOrI();
+                            JITDUMP("Allocating V%02u on the stack%s\n", lclNum,
+                                    useLocalloc ? " [via localloc]" : " [via block local]");
                             canStack = true;
-                            const unsigned int stackLclNum =
+
+                            if (useLocalloc)
+                            {
+                                MorphNewArrNodeIntoLocAlloc(data->AsCall(), clsHnd, len, block, stmt);
+                            }
+                            else
+                            {
                                 MorphNewArrNodeIntoStackAlloc(data->AsCall(), clsHnd,
                                                               (unsigned int)len->AsIntCon()->IconValue(), blockSize,
                                                               block, stmt);
+                            }
 
-                            // Note we do not want to rewrite uses of the array temp, so we
+                            // Note we do not want to rewrite uses of lclNum, so we
                             // do not update m_HeapLocalToStackLocalMap.
                             //
                             comp->Metrics.StackAllocatedArrays++;
@@ -679,7 +688,11 @@ bool ObjectAllocator::MorphAllocObjNodes()
                     // We keep the set of possibly-stack-pointing pointers as a superset of the set of
                     // definitely-stack-pointing pointers. All definitely-stack-pointing pointers are in both
                     // sets.
-                    MarkLclVarAsDefinitelyStackPointing(lclNum);
+
+                    if (!useLocalloc)
+                    {
+                        MarkLclVarAsDefinitelyStackPointing(lclNum);
+                    }
                     MarkLclVarAsPossiblyStackPointing(lclNum);
 
                     // If this was conditionally escaping enumerator, establish a connection between this local
@@ -799,18 +812,15 @@ GenTree* ObjectAllocator::MorphAllocObjNodeIntoHelperCall(GenTreeAllocObj* alloc
 //    block        - a basic block where newArr is
 //    stmt         - a statement where newArr is
 //
-// Return Value:
-//    local num for the new stack allocated local
-//
 // Notes:
 //    This function can insert additional statements before stmt.
 //
-unsigned int ObjectAllocator::MorphNewArrNodeIntoStackAlloc(GenTreeCall*         newArr,
-                                                            CORINFO_CLASS_HANDLE clsHnd,
-                                                            unsigned int         length,
-                                                            unsigned int         blockSize,
-                                                            BasicBlock*          block,
-                                                            Statement*           stmt)
+void ObjectAllocator::MorphNewArrNodeIntoStackAlloc(GenTreeCall*         newArr,
+                                                    CORINFO_CLASS_HANDLE clsHnd,
+                                                    unsigned int         length,
+                                                    unsigned int         blockSize,
+                                                    BasicBlock*          block,
+                                                    Statement*           stmt)
 {
     assert(newArr != nullptr);
     assert(m_AnalysisDone);
@@ -873,8 +883,51 @@ unsigned int ObjectAllocator::MorphNewArrNodeIntoStackAlloc(GenTreeCall*        
     // Note that we have stack allocated arrays in this method
     //
     comp->setMethodHasStackAllocatedArray();
+}
 
-    return lclNum;
+//------------------------------------------------------------------------
+// MorphNewArrNodeIntoLocAlloc: Morph a newarray helper call node into a local frame allocation.
+//
+// Arguments:
+//    newArr       - GT_CALL that will be replaced by helper call.
+//    clsHnd       - class representing the type of the array
+//    length       - operand for length of the array
+//    block        - a basic block where newArr is
+//    stmt         - a statement where newArr is
+//
+void ObjectAllocator::MorphNewArrNodeIntoLocAlloc(
+    GenTreeCall* newArr, CORINFO_CLASS_HANDLE clsHnd, GenTree* length, BasicBlock* block, Statement* stmt)
+{
+    assert(newArr != nullptr);
+    assert(m_AnalysisDone);
+    assert(clsHnd != NO_CLASS_HANDLE);
+    assert(newArr->IsHelperCall());
+    assert(newArr->GetHelperNum() != CORINFO_HELP_NEWARR_1_MAYBEFROZEN);
+
+    // Get element size
+    //
+    CORINFO_CLASS_HANDLE elemClsHnd = NO_CLASS_HANDLE;
+    CorInfoType          corType    = comp->info.compCompHnd->getChildType(clsHnd, &elemClsHnd);
+    var_types            type       = JITtype2varType(corType);
+    ClassLayout*         elemLayout = type == TYP_STRUCT ? comp->typGetObjLayout(elemClsHnd) : nullptr;
+
+    const unsigned elemSize = elemLayout != nullptr ? elemLayout->GetSize() : genTypeSize(type);
+
+    // Mark the newarr call as being "on stack", and add the element size
+    // operand for the stack local as an argument
+    //
+    GenTree* const elemSizeNode = comp->gtNewIconNode(elemSize);
+    newArr->gtArgs.PushBack(comp, NewCallArg::Primitive(elemSizeNode).WellKnown(WellKnownArg::StackArrayElemSize));
+    newArr->gtCallMoreFlags |= GTF_CALL_M_STACK_ARRAY;
+
+    // Retype the call result as an unmanaged pointer
+    //
+    newArr->ChangeType(TYP_I_IMPL);
+    newArr->gtReturnType = TYP_I_IMPL;
+
+    // Note that we have stack allocated arrays in this method
+    //
+    comp->setMethodHasStackAllocatedArray();
 }
 
 //------------------------------------------------------------------------

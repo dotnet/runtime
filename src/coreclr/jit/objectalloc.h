@@ -134,6 +134,7 @@ class ObjectAllocator final : public Phase
     LocalToLocalMap     m_HeapLocalToStackLocalMap;
     BitSetShortLongRep* m_ConnGraphAdjacencyMatrix;
     unsigned int        m_StackAllocMaxSize;
+    bool                m_UseLocalloc;
 
     // Info for conditionally-escaping locals
     LocalToLocalMap m_EnumeratorLocalToPseudoLocalMap;
@@ -176,12 +177,15 @@ private:
     GenTree*     MorphAllocObjNodeIntoHelperCall(GenTreeAllocObj* allocObj);
     unsigned int MorphAllocObjNodeIntoStackAlloc(
         GenTreeAllocObj* allocObj, CORINFO_CLASS_HANDLE clsHnd, bool isValueClass, BasicBlock* block, Statement* stmt);
-    unsigned int MorphNewArrNodeIntoStackAlloc(GenTreeCall*         newArr,
-                                               CORINFO_CLASS_HANDLE clsHnd,
-                                               unsigned int         length,
-                                               unsigned int         blockSize,
-                                               BasicBlock*          block,
-                                               Statement*           stmt);
+    void MorphNewArrNodeIntoStackAlloc(GenTreeCall*         newArr,
+                                       CORINFO_CLASS_HANDLE clsHnd,
+                                       unsigned int         length,
+                                       unsigned int         blockSize,
+                                       BasicBlock*          block,
+                                       Statement*           stmt);
+    void MorphNewArrNodeIntoLocAlloc(
+        GenTreeCall* newArr, CORINFO_CLASS_HANDLE clsHnd, GenTree* length, BasicBlock* block, Statement* stmt);
+
     struct BuildConnGraphVisitorCallbackData;
     bool CanLclVarEscapeViaParentStack(ArrayStack<GenTree*>* parentStack, unsigned int lclNum, BasicBlock* block);
     void UpdateAncestorTypes(GenTree* tree, ArrayStack<GenTree*>* parentStack, var_types newType);
@@ -284,6 +288,7 @@ inline ObjectAllocator::ObjectAllocator(Compiler* comp)
     m_ConnGraphAdjacencyMatrix        = nullptr;
 
     m_StackAllocMaxSize = (unsigned)JitConfig.JitObjectStackAllocationSize();
+    m_UseLocalloc       = JitConfig.JitObjectStackAllocationLocalloc();
 }
 
 //------------------------------------------------------------------------
@@ -313,7 +318,7 @@ inline void ObjectAllocator::EnableObjectStackAllocation()
 //    lclNum   - Local variable number
 //    clsHnd   - Class/struct handle of the variable class
 //    allocType - Type of allocation (newobj or newarr)
-//    length    - Length of the array (for newarr)
+//    length    - Length of the array (for newarr), -1 for runtime determined size
 //    blockSize - [out, optional] exact size of the object
 //    reason   - [out, required] if result is false, reason why
 //    preliminaryCheck - if true, allow checking before analysis is done
@@ -353,7 +358,7 @@ inline bool ObjectAllocator::CanAllocateLclVarOnStack(unsigned int         lclNu
             return false;
         }
 
-        if ((length < 0) || (length > CORINFO_Array_MaxLength))
+        if ((length < -1) || (length > CORINFO_Array_MaxLength))
         {
             *reason = "[invalid array length]";
             return false;
@@ -370,19 +375,22 @@ inline bool ObjectAllocator::CanAllocateLclVarOnStack(unsigned int         lclNu
             return false;
         }
 
-        const unsigned elemSize = elemLayout != nullptr ? elemLayout->GetSize() : genTypeSize(type);
-
-        ClrSafeInt<unsigned> totalSize(elemSize);
-        totalSize *= static_cast<unsigned>(length);
-        totalSize += static_cast<unsigned>(OFFSETOF__CORINFO_Array__data);
-
-        if (totalSize.IsOverflow())
+        if (length != -1)
         {
-            *reason = "[overflow array length]";
-            return false;
-        }
+            const unsigned elemSize = elemLayout != nullptr ? elemLayout->GetSize() : genTypeSize(type);
 
-        classSize = totalSize.Value();
+            ClrSafeInt<unsigned> totalSize(elemSize);
+            totalSize *= static_cast<unsigned>(length);
+            totalSize += static_cast<unsigned>(OFFSETOF__CORINFO_Array__data);
+
+            if (totalSize.IsOverflow())
+            {
+                *reason = "[overflow array length]";
+                return false;
+            }
+
+            classSize = totalSize.Value();
+        }
     }
     else if (allocType == OAT_NEWOBJ)
     {

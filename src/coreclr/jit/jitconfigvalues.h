@@ -674,6 +674,7 @@ RELEASE_CONFIG_INTEGER(JitObjectStackAllocationConditionalEscape, "JitObjectStac
 CONFIG_STRING(JitObjectStackAllocationConditionalEscapeRange, "JitObjectStackAllocationConditionalEscapeRange")
 RELEASE_CONFIG_INTEGER(JitObjectStackAllocationArray, "JitObjectStackAllocationArray", 1)
 RELEASE_CONFIG_INTEGER(JitObjectStackAllocationSize, "JitObjectStackAllocationSize", 528)
+RELEASE_CONFIG_INTEGER(JitObjectStackAllocationLocalloc, "JitObjectStackAllocationLocalloc", 0);
 
 RELEASE_CONFIG_INTEGER(JitEECallTimingInfo, "JitEECallTimingInfo", 0)
 
