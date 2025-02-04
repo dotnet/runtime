@@ -5,7 +5,7 @@ using System;
 
 namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 
-internal sealed class ExceptionFactory : IContractFactory<IException>
+public sealed class ExceptionFactory : IContractFactory<IException>
 {
     IException IContractFactory<IException>.CreateContract(Target target, int version)
     {

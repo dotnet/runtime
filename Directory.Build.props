@@ -63,7 +63,7 @@
         - src/mono/msbuild/apple/build/AppleBuild.targets
         - src/installer/pkg/sfx/bundle/shared-framework-distribution-template-x64.xml
         - src/installer/pkg/sfx/bundle/shared-framework-distribution-template-arm64.xml
-        - src/tasks/AotCompilerTask/MonoAOTCompiler.props
+        - src/mono/msbuild/common/MonoAOTCompiler.props
         - src/tasks/AppleAppBuilder/Xcode.cs
         - src/tasks/MobileBuildTasks/Apple/AppleProject.cs
         - https://github.com/dotnet/sdk repo > src/Installer/redist-installer/targets/GeneratePKG.targets
@@ -188,11 +188,6 @@
     <WasmtimeDir Condition="'$(WasmtimeDir)' == ''">$([MSBuild]::NormalizeDirectory($(ArtifactsObjDir), 'wasmtime'))</WasmtimeDir>
     <InstallWasmtimeForTests Condition="'$(InstallWasmtimeForTests)' == '' and !Exists($(WasmtimeDir))">true</InstallWasmtimeForTests>
     <WasmCommonTargetsPath>$([MSBuild]::NormalizeDirectory($(WasmProjectRoot), 'build'))</WasmCommonTargetsPath>
-  </PropertyGroup>
-
-  <PropertyGroup Condition="'$(DotNetBuildRuntimeNativeAOTRuntimePack)' == 'true'">
-    <BuildNativeAOTRuntimePack>true</BuildNativeAOTRuntimePack>
-    <SkipLibrariesNativeRuntimePackages>true</SkipLibrariesNativeRuntimePackages>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(DotNetBuildMonoCrossAOT)' == 'true'">

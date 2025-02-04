@@ -29,6 +29,14 @@
 #include <sys/swap.h>
 #endif
 
+#ifdef __linux__
+#include <linux/membarrier.h>
+#include <sys/syscall.h>
+#define membarrier(...) syscall(__NR_membarrier, __VA_ARGS__)
+#elif HAVE_SYS_MEMBARRIER_H
+#include <sys/membarrier.h>
+#endif
+
 #include <sys/resource.h>
 
 #undef min
@@ -94,10 +102,6 @@ extern "C"
 #include <OS.h>
 #endif // __HAIKU__
 
-#ifdef __linux__
-#include <sys/syscall.h> // __NR_membarrier
-#endif
-
 #if HAVE_PTHREAD_NP_H
 #include <pthread_np.h>
 #endif
@@ -132,29 +136,9 @@ typedef cpuset_t cpu_set_t;
 // The cached total number of CPUs that can be used in the OS.
 static uint32_t g_totalCpuCount = 0;
 
-//
-// Helper membarrier function
-//
-#ifdef __NR_membarrier
-# define membarrier(...)  syscall(__NR_membarrier, __VA_ARGS__)
-#else
-# define membarrier(...)  -ENOSYS
-#endif
-
-enum membarrier_cmd
-{
-    MEMBARRIER_CMD_QUERY                                 = 0,
-    MEMBARRIER_CMD_GLOBAL                                = (1 << 0),
-    MEMBARRIER_CMD_GLOBAL_EXPEDITED                      = (1 << 1),
-    MEMBARRIER_CMD_REGISTER_GLOBAL_EXPEDITED             = (1 << 2),
-    MEMBARRIER_CMD_PRIVATE_EXPEDITED                     = (1 << 3),
-    MEMBARRIER_CMD_REGISTER_PRIVATE_EXPEDITED            = (1 << 4),
-    MEMBARRIER_CMD_PRIVATE_EXPEDITED_SYNC_CORE           = (1 << 5),
-    MEMBARRIER_CMD_REGISTER_PRIVATE_EXPEDITED_SYNC_CORE  = (1 << 6)
-};
-
 bool CanFlushUsingMembarrier()
 {
+#if defined(__linux__) || HAVE_SYS_MEMBARRIER_H
 
 #ifdef TARGET_ANDROID
     // Avoid calling membarrier on older Android versions where membarrier
@@ -169,15 +153,16 @@ bool CanFlushUsingMembarrier()
     // Starting with Linux kernel 4.14, process memory barriers can be generated
     // using MEMBARRIER_CMD_PRIVATE_EXPEDITED.
 
-    int mask = membarrier(MEMBARRIER_CMD_QUERY, 0);
+    int mask = membarrier(MEMBARRIER_CMD_QUERY, 0, 0);
 
     if (mask >= 0 &&
         mask & MEMBARRIER_CMD_PRIVATE_EXPEDITED &&
         // Register intent to use the private expedited command.
-        membarrier(MEMBARRIER_CMD_REGISTER_PRIVATE_EXPEDITED, 0) == 0)
+        membarrier(MEMBARRIER_CMD_REGISTER_PRIVATE_EXPEDITED, 0, 0) == 0)
     {
         return true;
     }
+#endif
 
     return false;
 }
@@ -423,12 +408,15 @@ bool GCToOSInterface::CanGetCurrentProcessorNumber()
 // Flush write buffers of processors that are executing threads of the current process
 void GCToOSInterface::FlushProcessWriteBuffers()
 {
+#if defined(__linux__) || HAVE_SYS_MEMBARRIER_H
     if (s_flushUsingMemBarrier)
     {
-        int status = membarrier(MEMBARRIER_CMD_PRIVATE_EXPEDITED, 0);
+        int status = membarrier(MEMBARRIER_CMD_PRIVATE_EXPEDITED, 0, 0);
         assert(status == 0 && "Failed to flush using membarrier");
     }
-    else if (g_helperPage != 0)
+    else
+#endif
+    if (g_helperPage != 0)
     {
         int status = pthread_mutex_lock(&g_flushProcessWriteBuffersMutex);
         assert(status == 0 && "Failed to lock the flushProcessWriteBuffersMutex lock");

@@ -615,7 +615,7 @@ static bool SwitchStackAndExecuteHandler(int code, siginfo_t *siginfo, void *con
 // Temporary locals to debug issue https://github.com/dotnet/runtime/issues/110173
 static SIZE_T stackOverflowThreadId = -1;
 static const char StackOverflowOnTheSameThreadMessage[] = "Stack overflow occurred on the same thread again!\n";
-static const char StackOverflowHandlerReturnedMessage[] = "Stack overflow handler has returned!\n";
+static const char StackOverflowHandlerReturnedMessage[] = "Stack overflow handler has returned, invoking previous action!\n";
 //
 
 /*++
@@ -669,9 +669,9 @@ static void sigsegv_handler(int code, siginfo_t *siginfo, void *context)
 
                 if (SwitchStackAndExecuteHandler(code | StackOverflowFlag, siginfo, context, (size_t)handlerStackTop))
                 {
-                    (void)!write(STDERR_FILENO, StackOverflowHandlerReturnedMessage, sizeof(StackOverflowHandlerReturnedMessage) - 1);
                     PROCAbort(SIGSEGV, siginfo);
                 }
+                (void)!write(STDERR_FILENO, StackOverflowHandlerReturnedMessage, sizeof(StackOverflowHandlerReturnedMessage) - 1);
             }
             else
             {

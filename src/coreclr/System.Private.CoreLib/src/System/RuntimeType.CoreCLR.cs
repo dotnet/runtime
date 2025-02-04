@@ -3365,6 +3365,7 @@ namespace System
 
                 Guid result;
 #if FEATURE_COMINTEROP
+                Debug.Assert(OperatingSystem.IsWindows());
                 // The fully qualified name is needed since the RuntimeType has a TypeHandle property.
                 if (System.Runtime.CompilerServices.TypeHandle.AreSameType(th, System.Runtime.CompilerServices.TypeHandle.TypeHandleOf<__ComObject>()))
                 {

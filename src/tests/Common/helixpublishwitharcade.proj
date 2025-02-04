@@ -385,8 +385,9 @@
 
     <ItemGroup Condition="'@(_MergedPayloadFiles)' != ''" >
       <!-- Remove the managed pdbs from our payloads.
-           This is for performance reasons to reduce our helix payload size  -->
-      <ReducedMergedPayloadFilesFinal Include="@(_MergedPayloadFiles)" Condition=" '%(Extension)' != '.pdb' and '%(Extension)' != '.OutOfProcessTest'" />
+           This is for performance reasons to reduce our helix payload size
+           Note: for Native AOT the pdb is the native PDB. !analyze wouldn't work without it at all so we keep it -->
+      <ReducedMergedPayloadFilesFinal Include="@(_MergedPayloadFiles)" Condition="('%(Extension)' != '.pdb' or '$(_NativeAotTest)' == 'true') and '%(Extension)' != '.OutOfProcessTest'" />
     </ItemGroup>
 
     <PropertyGroup>
@@ -448,7 +449,7 @@
       <HelixCommandLines Condition="'$(TestWrapperTargetsWindows)' != 'true'" Include="set_return %24result_exit_code" />
     </ItemGroup>
 
-    <Copy SourceFiles="@(ReducedMergedPayloadFilesFinal)" DestinationFiles="@(ReducedMergedPayloadFilesFinal->'$(MergedPayloadsRootDirectory)\$(_MergedWrapperName)\%(FileRelativeToPayloadsRootDirectory)')" Condition="'@(ReducedMergedPayloadFilesFinal)' != ''" />
+    <Copy UseHardlinksIfPossible="true"  SourceFiles="@(ReducedMergedPayloadFilesFinal)" DestinationFiles="@(ReducedMergedPayloadFilesFinal->'$(MergedPayloadsRootDirectory)\$(_MergedWrapperName)\%(FileRelativeToPayloadsRootDirectory)')" Condition="'@(ReducedMergedPayloadFilesFinal)' != ''" />
     <WriteLinesToFile File="$(MergedPayloadsRootDirectory)\$(_MergedWrapperName)\HelixCommand.txt" Lines="@(HelixCommandLines)" />
   </Target>
 

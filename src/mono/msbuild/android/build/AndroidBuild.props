@@ -1,18 +1,21 @@
 <Project>
   <PropertyGroup>
     <RuntimeIdentifier>$(TargetOS)-$(TargetArchitecture.ToLowerInvariant())</RuntimeIdentifier>
-    <UseMonoRuntime>true</UseMonoRuntime>
-    <UseMonoJustInterp Condition="'$(RunAOTCompilation)' == 'true' and '$(MonoForceInterpreter)' == 'true'">true</UseMonoJustInterp>
+    <!-- TODO: Revisit this.
+      We need to check for RuntimeFlavor setting as for runtime tests we always import CoreCLR props which force UseMonoRuntime=false (see: https://github.com/dotnet/runtime/issues/111919) -->
+    <UseMonoRuntime Condition="'$(RuntimeFlavor)' == 'coreclr'">false</UseMonoRuntime>
+    <UseMonoRuntime Condition="'$(UseMonoRuntime)' == '' or '$(RuntimeFlavor)' == 'mono'">true</UseMonoRuntime>
+    <UseMonoJustInterp Condition="'$(UseMonoRuntime)' == 'true' and '$(RunAOTCompilation)' == 'true' and '$(MonoForceInterpreter)' == 'true'">true</UseMonoJustInterp>
 
     <_HostOS Condition="$([MSBuild]::IsOSPlatform('Windows'))">windows</_HostOS>
     <_HostOS Condition="$([MSBuild]::IsOSPlatform('OSX'))">osx</_HostOS>
     <_HostOS Condition="'$(_HostOS)' == ''">linux</_HostOS>
 
-    <_IsLibraryMode Condition="'$(UseNativeAOTRuntime)' != 'true' and '$(NativeLib)' != ''">true</_IsLibraryMode>
-    <_ReadRuntimeComponentsManifestTargetName Condition="'$(UseNativeAOTRuntime)' != 'true'">_MonoReadAvailableComponentsManifest</_ReadRuntimeComponentsManifestTargetName>
+    <_IsLibraryMode Condition="'$(UseMonoRuntime)' == 'true' and '$(UseNativeAOTRuntime)' != 'true' and '$(NativeLib)' != ''">true</_IsLibraryMode>
+    <_ReadRuntimeComponentsManifestTargetName Condition="'$(UseMonoRuntime)' == 'true' and '$(UseNativeAOTRuntime)' != 'true'">_MonoReadAvailableComponentsManifest</_ReadRuntimeComponentsManifestTargetName>
 
     <AndroidBuildAfterThisTarget Condition="'$(AndroidBuildAfterThisTarget)' == ''">Publish</AndroidBuildAfterThisTarget>
-    <AndroidBuildDependsOn>
+    <AndroidBuildDependsOn Condition="'$(UseMonoRuntime)' == 'true'">
         $(_ReadRuntimeComponentsManifestTargetName);
         _InitializeCommonProperties;
         _BeforeAndroidBuild;
@@ -23,11 +26,19 @@
         _AndroidGenerateAppBundle;
         _AfterAndroidBuild
     </AndroidBuildDependsOn>
+    <AndroidBuildDependsOn Condition="'$(UseMonoRuntime)' == 'false'">
+        _InitializeCommonProperties;
+        _BeforeAndroidBuild;
+        _AndroidResolveReferences;
+        _AndroidGenerateAppBundle;
+        _AfterAndroidBuild
+    </AndroidBuildDependsOn>
 
     <!-- When building on Helix $(_CommonTargetsDir) will be properly set, otherwise we have to set it to a in-tree location -->
     <_CommonTargetsDir Condition="'$(_CommonTargetsDir)' == ''">$([MSBuild]::NormalizeDirectory($(MSBuildThisFileDirectory), '..', '..', 'common'))</_CommonTargetsDir>
   </PropertyGroup>
 
-  <Import Condition="'$(UseNativeAOTRuntime)' != 'true'" Project="$(_CommonTargetsDir)CommonMobileBuild.props" />
-  <Import Condition="'$(UseNativeAOTRuntime)' != 'true'" Project="$(_CommonTargetsDir)RuntimeComponentManifest.targets" />
+  <Import Condition="'$(UseNativeAOTRuntime)' != 'true' and '$(UseMonoRuntime)' == 'true'" Project="$(_CommonTargetsDir)CommonMobileBuild.props" />
+  <Import Condition="'$(UseNativeAOTRuntime)' != 'true' and '$(UseMonoRuntime)' == 'true'" Project="$(_CommonTargetsDir)RuntimeComponentManifest.targets" />
+  <Import Condition="'$(UseNativeAOTRuntime)' != 'true' and ('$(UseMonoRuntime)' == 'true' and '$(RunAOTCompilation)' == 'true')" Project="$(_CommonTargetsDir)MonoAOTCompiler.props" />
 </Project>

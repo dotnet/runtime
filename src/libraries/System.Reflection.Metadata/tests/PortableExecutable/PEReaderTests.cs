@@ -87,7 +87,6 @@ namespace System.Reflection.PortableExecutable.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/17088")]
         public void SubStream()
         {
             var stream = new MemoryStream();
@@ -105,7 +104,7 @@ namespace System.Reflection.PortableExecutable.Tests
             stream.Position = 1;
             var peReader2 = new PEReader(stream, PEStreamOptions.LeaveOpen | PEStreamOptions.PrefetchMetadata, Misc.Members.Length);
 
-            Assert.Equal(Misc.Members.Length, peReader2.GetEntireImage().Length);
+            // We cannot call GetEntireImage() here; we have fetched only the metadata.
             peReader2.GetMetadataReader();
             stream.Position = 1;
 

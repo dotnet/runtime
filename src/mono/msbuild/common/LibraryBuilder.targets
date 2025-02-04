@@ -33,7 +33,7 @@
       ExtraLinkerArguments="@(_ExtraLinkerArgs)"
       ExtraSources="@(_ExtraLibrarySources)"
       IsSharedLibrary="$(_IsSharedLibrary)"
-      MonoRuntimeHeaders="$(_MonoHeaderPath)"
+      MonoRuntimeHeaders="$(RuntimeHeaders)"
       Name="$(AssemblyName)"
       OutputDirectory="$(BundleDir)"
       RuntimeIdentifier="$(RuntimeIdentifier)"

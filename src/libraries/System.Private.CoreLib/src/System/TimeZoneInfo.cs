@@ -1017,7 +1017,7 @@ namespace System
             _supportsDaylightSavingTime = adjustmentRulesSupportDst && !disableDaylightSavingTime;
             _adjustmentRules = adjustmentRules;
 
-            HasIanaId = _id.Equals(UtcId, StringComparison.OrdinalIgnoreCase) ? true : hasIanaId;
+            HasIanaId = hasIanaId || _id.Equals(UtcId, StringComparison.OrdinalIgnoreCase);
         }
 
         /// <summary>

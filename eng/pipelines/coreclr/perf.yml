@@ -1,8 +1,9 @@
+# This file will be deleted in a follow-up PR once we have changed the pipeline in Azure Pipelines to point to /eng/pipelines/performance/perf.yml
+
 parameters:
-- name: perfBranch
-  displayName: Performance Repo Branch
-  type: string
-  default: 'main'
+  - name: onlySanityCheck
+    type: boolean
+    default: false
 
 trigger:
   batch: true
@@ -24,6 +25,12 @@ trigger:
     - PATENTS.TXT
     - THIRD-PARTY-NOTICES.TXT
 
+resources:
+  repositories:
+    - repository: performance
+      type: git
+      name: internal/dotnet-performance
+
 variables:
 - template: /eng/pipelines/common/variables.yml
 
@@ -43,21 +50,29 @@ schedules:
   always: true
 
 extends:
-  template:  /eng/pipelines/common/templates/pipeline-with-resources.yml
+  template: /eng/pipelines/common/templates/pipeline-with-resources.yml
   parameters:
     stages:
     - stage: Build
       jobs:
 
-      - template: /eng/pipelines/coreclr/perf-wasm-jobs.yml
+      - template: /eng/pipelines/runtime-wasm-perf-jobs.yml@performance
         parameters:
-          collectHelixLogsScript: ${{ variables._wasmCollectHelixLogsScript }}
-          perfBranch: ${{ parameters.perfBranch }}
           #${{ and(ne(variables['System.TeamProject'], 'public'), in(variables['Build.Reason'], 'Schedule')) }}:
           #  runProfile: 'non-v8'
-          ${{ if ne(variables['System.TeamProject'], 'public') }}:
+          ${{ if eq(variables['System.TeamProject'], 'internal') }}:
             runProfile: 'v8'
+          runtimeRepoAlias: self
+          performanceRepoAlias: performance
+          jobParameters:
+            ${{ if parameters.onlySanityCheck }}:
+              onlySanityCheck: true
 
-      - template: /eng/pipelines/coreclr/perf-non-wasm-jobs.yml
-        parameters:
-          perfBranch: ${{ parameters.perfBranch }}
+      - ${{ if and(ne(variables['System.TeamProject'], 'public'), notin(variables['Build.Reason'], 'Schedule')) }}:
+        - template: /eng/pipelines/runtime-perf-jobs.yml@performance
+          parameters:
+            runtimeRepoAlias: self
+            performanceRepoAlias: performance
+            jobParameters:
+              ${{ if parameters.onlySanityCheck }}:
+                onlySanityCheck: true

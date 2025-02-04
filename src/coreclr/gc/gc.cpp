@@ -53194,6 +53194,7 @@ bool GCHeap::IsConcurrentGCEnabled()
 void PopulateDacVars(GcDacVars *gcDacVars)
 {
     bool v2 = gcDacVars->minor_version_number >= 2;
+    bool v4 = gcDacVars->minor_version_number >= 4;
 
 #define DEFINE_FIELD(field_name, field_type) offsetof(CLASS_NAME, field_name),
 #define DEFINE_DPTR_FIELD(field_name, field_type) offsetof(CLASS_NAME, field_name),
@@ -53225,15 +53226,16 @@ void PopulateDacVars(GcDacVars *gcDacVars)
     // work differently than .Net SOS.  When making breaking changes here you may need to
     // find NativeAOT's equivalent of SOS_BREAKING_CHANGE_VERSION and increment it.
     gcDacVars->major_version_number = 2;
-    gcDacVars->minor_version_number = 0;
+    gcDacVars->minor_version_number = 4;
     if (v2)
     {
         gcDacVars->total_bookkeeping_elements = total_bookkeeping_elements;
         gcDacVars->card_table_info_size = sizeof(card_table_info);
     }
 
+    g_build_variant = 0;
 #ifdef USE_REGIONS
-    gcDacVars->minor_version_number |= 1;
+    g_build_variant |= build_variant_use_region;
     if (v2)
     {
         gcDacVars->count_free_region_kinds = count_free_region_kinds;
@@ -53242,8 +53244,11 @@ void PopulateDacVars(GcDacVars *gcDacVars)
     }
 #endif //USE_REGIONS
 #ifndef BACKGROUND_GC
-    gcDacVars->minor_version_number |= 2;
+    g_build_variant |= build_variant_background_gc;
 #endif //!BACKGROUND_GC
+#ifdef DYNAMIC_HEAP_COUNT
+    g_build_variant |= build_variant_dynamic_heap_count;
+#endif //DYNAMIC_HEAP_COUNT
     gcDacVars->built_with_svr = &g_built_with_svr_gc;
     gcDacVars->build_variant = &g_build_variant;
     gcDacVars->gc_structures_invalid_cnt = const_cast<int32_t*>(&GCScan::m_GcStructuresInvalidCnt);
@@ -53318,6 +53323,14 @@ void PopulateDacVars(GcDacVars *gcDacVars)
     if (v2)
     {
         gcDacVars->bookkeeping_start = &gc_heap::bookkeeping_start;
+    }
+    if (v4)
+    {
+#ifdef DYNAMIC_HEAP_COUNT
+        gcDacVars->dynamic_adaptation_mode = &gc_heap::dynamic_adaptation_mode;
+#else
+        gcDacVars->dynamic_adaptation_mode = nullptr;
+#endif //DYNAMIC_HEAP_COUNT
     }
 }
 

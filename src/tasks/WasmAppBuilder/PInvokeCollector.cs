@@ -204,8 +204,6 @@ internal sealed class PInvokeCollector {
                 .Any(d => d.AttributeType.Name == "DisableRuntimeMarshallingAttribute");
         }
 
-       value = assembly.GetCustomAttributesData().Any(d => d.AttributeType.Name == "DisableRuntimeMarshallingAttribute");
-
         return value;
     }
 }

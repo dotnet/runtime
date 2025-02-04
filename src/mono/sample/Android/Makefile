@@ -44,7 +44,7 @@ run: appbuilder
 	/p:ForceAOT=$(AOT) \
 	/p:AOTWithLibraryFiles=$(AOT_WITH_LIBRARY_FILES) \
 	/p:MonoForceInterpreter=$(INTERP) \
-	/p:UseLLVM=$(USE_LLVM) \
+	/p:MonoEnableLLVM=$(USE_LLVM) \
 	/p:RunActivity=false \
 	'/p:DiagnosticPorts="$(DIAGNOSTIC_PORTS)"' \
 	/p:RuntimeFlavor=$(RUNTIME_FLAVOR) \

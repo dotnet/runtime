@@ -800,10 +800,9 @@ void Lowering::LowerPutArgStk(GenTreePutArgStk* putArgStk)
  * GT_CAST(int16, float/double)    =   GT_CAST(GT_CAST(int16, int32), float/double)
  * GT_CAST(uint16, float/double)   =   GT_CAST(GT_CAST(uint16, int32), float/double)
  *
- * SSE2 conversion instructions operate on signed integers. casts from Uint32/Uint64
+ * Unless the EVEX conversion instructions are available, casts from Uint32
  * are morphed as follows by front-end and hence should not be seen here.
  * GT_CAST(uint32, float/double)   =   GT_CAST(GT_CAST(uint32, long), float/double)
- * GT_CAST(uint64, float)          =   GT_CAST(GT_CAST(uint64, double), float)
  *
  *
  * Similarly casts from float/double to a smaller int type are transformed as follows:
@@ -812,24 +811,14 @@ void Lowering::LowerPutArgStk(GenTreePutArgStk* putArgStk)
  * GT_CAST(float/double, int16)    =   GT_CAST(GT_CAST(double/double, int32), int16)
  * GT_CAST(float/double, uint16)   =   GT_CAST(GT_CAST(double/double, int32), uint16)
  *
- * SSE2 has instructions to convert a float/double vlaue into a signed 32/64-bit
- * integer.  The above transformations help us to leverage those instructions.
- *
  * Note that for the following conversions we still depend on helper calls and
  * don't expect to see them here.
- *  i) GT_CAST(float/double, uint64)
+ *  i) GT_CAST(float/double, uint64) when EVEX is not available
  * ii) GT_CAST(float/double, int type with overflow detection)
- *
- * TODO-XArch-CQ: (Low-pri): Jit64 generates in-line code of 8 instructions for (i) above.
- * There are hardly any occurrences of this conversion operation in platform
- * assemblies or in CQ perf benchmarks (1 occurrence in corelib, microsoft.jscript,
- * 1 occurrence in Roslyn and no occurrences in system, system.core, system.numerics
- * system.windows.forms, scimark, fractals, bio mums). If we ever find evidence that
- * doing this optimization is a win, should consider generating in-lined code.
  */
 GenTree* Lowering::LowerCast(GenTree* tree)
 {
-    assert(tree->OperGet() == GT_CAST);
+    assert(tree->OperIs(GT_CAST));
 
     GenTree*  castOp     = tree->AsCast()->CastOp();
     var_types castToType = tree->CastToType();
@@ -838,33 +827,27 @@ GenTree* Lowering::LowerCast(GenTree* tree)
     var_types tmpType    = TYP_UNDEF;
 
     // force the srcType to unsigned if GT_UNSIGNED flag is set
-    if (tree->gtFlags & GTF_UNSIGNED)
+    if (tree->IsUnsigned())
     {
         srcType = varTypeToUnsigned(srcType);
     }
 
-    // We should never see the following casts as they are expected to be lowered
-    // appropriately or converted into helper calls by front-end.
+    // We should not see the following casts unless directly supported by hardware,
+    // as they are expected to be lowered appropriately or converted into helper calls by front-end.
     //   srcType = float/double                    castToType = * and overflow detecting cast
     //       Reason: must be converted to a helper call
     //   srcType = float/double,                   castToType = ulong
     //       Reason: must be converted to a helper call
     //   srcType = uint                            castToType = float/double
     //       Reason: uint -> float/double = uint -> long -> float/double
-    //   srcType = ulong                           castToType = float
-    //       Reason: ulong -> float = ulong -> double -> float
     if (varTypeIsFloating(srcType))
     {
         noway_assert(!tree->gtOverflow());
-        assert(castToType != TYP_ULONG || comp->canUseEvexEncoding());
+        assert(castToType != TYP_ULONG || comp->canUseEvexEncodingDebugOnly());
     }
     else if (srcType == TYP_UINT)
     {
-        noway_assert(!varTypeIsFloating(castToType));
-    }
-    else if (srcType == TYP_ULONG)
-    {
-        assert(castToType != TYP_FLOAT || comp->canUseEvexEncoding());
+        assert(castToType != TYP_FLOAT || comp->canUseEvexEncodingDebugOnly());
     }
 
 #if defined(TARGET_AMD64)
@@ -984,7 +967,7 @@ GenTree* Lowering::LowerCast(GenTree* tree)
                 BlockRange().InsertAfter(newCast, newTree);
                 LowerNode(newTree);
 
-                // usage 2 --> use thecompared mask with input value and max value to blend
+                // usage 2 --> use the compared mask with input value and max value to blend
                 GenTree* control = comp->gtNewIconNode(0xCA); // (B & A) | (C & ~A)
                 BlockRange().InsertAfter(newTree, control);
                 GenTree* cndSelect = comp->gtNewSimdTernaryLogicNode(TYP_SIMD16, compMask, maxValDstType, newTree,

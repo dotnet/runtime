@@ -25,7 +25,7 @@ extern EVENTPIPE_TRACE_CONTEXT MICROSOFT_WINDOWS_DOTNETRUNTIME_RUNDOWN_PROVIDER_
 #define NUM_NANOSECONDS_IN_1_MS 1000000
 
 // Sample profiler.
-#if defined(PERFTRACING_MULTI_THREADED)
+#ifndef PERFTRACING_DISABLE_THREADS
 static GArray * _sampled_thread_callstacks = NULL;
 static uint32_t _max_sampled_thread_count = 32;
 #else
@@ -1213,7 +1213,7 @@ ep_rt_mono_walk_managed_stack_for_thread (
 	return true;
 }
 
-#if defined(PERFTRACING_MULTI_THREADED)
+#ifndef PERFTRACING_DISABLE_THREADS
 bool
 ep_rt_mono_sample_profiler_write_sampling_event_for_threads (
 	ep_rt_thread_handle_t sampling_thread,
@@ -1313,18 +1313,14 @@ ep_rt_mono_sample_profiler_write_sampling_event_for_threads (
 	return true;
 }
 
-#else // !PERFTRACING_MULTI_THREADED
+#else // PERFTRACING_DISABLE_THREADS
 
 bool
 ep_rt_mono_sample_profiler_write_sampling_event_for_threads (
 	ep_rt_thread_handle_t sampling_thread,
 	EventPipeEvent *sampling_event)
 {
-	// here we just store the context for later
-	current_sampling_event = sampling_event;
-	current_sampling_thread = sampling_thread;
-
-	return true;
+	EP_UNREACHABLE ("Not supported by single threaded runtime.");
 }
 
 static void
@@ -1360,7 +1356,7 @@ method_enter (MonoProfiler *prof, MonoMethod *method, MonoProfilerCallContext *c
 		}
 		mono_thread_info_set_tid (&adapter, ep_rt_uint64_t_to_thread_id_t (data->thread_id));
 		uint32_t payload_data = ep_rt_val_uint32_t (data->payload_data);
-		ep_write_sample_profile_event (current_sampling_thread, current_sampling_event, &adapter, &data->stack_contents, (uint8_t *)&payload_data, sizeof (payload_data));
+		ep_write_sample_profile_event (, _thread_time_event, &adapter, &data->stack_contents, (uint8_t *)&payload_data, sizeof (payload_data));
 	}
 }
 
@@ -1371,12 +1367,12 @@ method_filter (MonoProfiler *prof, MonoMethod *method)
 	return MONO_PROFILER_CALL_INSTRUMENTATION_ENTER;
 }
 
-#endif // PERFTRACING_MULTI_THREADED
+#endif // PERFTRACING_DISABLE_THREADS
 
 void
 ep_rt_mono_sampling_provider_component_init (void)
 {
-#if defined(PERFTRACING_SINGLE_THREADED)
+#ifdef PERFTRACING_DISABLE_THREADS
 	// in single-threaded mode, we install instrumentation callbacks on the mono profiler, instead of stop-the-world
 	_ep_rt_mono_sampling_profiler_provider = mono_profiler_create (NULL);
 	// this has negative performance impact even when the EP client is not connected!
@@ -1386,17 +1382,21 @@ ep_rt_mono_sampling_provider_component_init (void)
 }
 
 void
-ep_rt_mono_sample_profiler_enabled (void)
+ep_rt_mono_sample_profiler_enabled (EventPipeEvent *sampling_event)
 {
-#if defined(PERFTRACING_SINGLE_THREADED)
+#ifdef PERFTRACING_DISABLE_THREADS
+	current_sampling_event = sampling_event;
+	current_sampling_thread = ep_rt_thread_get_handle ();
 	mono_profiler_set_method_enter_callback (_ep_rt_mono_sampling_profiler_provider, method_enter);
+#else
+	(void) sampling_event;
 #endif
 }
 
 void
 ep_rt_mono_sample_profiler_disabled (void)
 {
-#if defined(PERFTRACING_SINGLE_THREADED)
+#ifdef PERFTRACING_DISABLE_THREADS
 	mono_profiler_set_method_enter_callback (_ep_rt_mono_sampling_profiler_provider, NULL);
 #endif
 }

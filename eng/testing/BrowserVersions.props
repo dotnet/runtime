@@ -4,10 +4,10 @@
     <linux_ChromeRevision>1381561</linux_ChromeRevision>
     <linux_ChromeBaseSnapshotUrl>https://storage.googleapis.com/chromium-browser-snapshots/Linux_x64/1381561</linux_ChromeBaseSnapshotUrl>
     <linux_V8Version>13.2.152</linux_V8Version>
-    <win_ChromeVersion>132.0.6834.84</win_ChromeVersion>
-    <win_ChromeRevision>1381561</win_ChromeRevision>
-    <win_ChromeBaseSnapshotUrl>https://storage.googleapis.com/chromium-browser-snapshots/Win_x64/1381570</win_ChromeBaseSnapshotUrl>
-    <win_V8Version>13.2.152</win_V8Version>
+    <win_ChromeVersion>133.0.6943.35</win_ChromeVersion>
+    <win_ChromeRevision>1402768</win_ChromeRevision>
+    <win_ChromeBaseSnapshotUrl>https://storage.googleapis.com/chromium-browser-snapshots/Win_x64/1402771</win_ChromeBaseSnapshotUrl>
+    <win_V8Version>13.3.415</win_V8Version>
     <linux_FirefoxRevision>125.0.1</linux_FirefoxRevision>
     <linux_GeckoDriverRevision>0.34.0</linux_GeckoDriverRevision>
     <win_FirefoxRevision>125.0.1</win_FirefoxRevision>

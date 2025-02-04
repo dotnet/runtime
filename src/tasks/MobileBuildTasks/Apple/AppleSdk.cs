@@ -104,7 +104,7 @@ namespace Microsoft.Apple.Build
                                                                 debugMessageImportance: MessageImportance.Low,
                                                                 label: "xcode-select");
 
-                output.Trim();
+                output = output.Trim();
                 if (Directory.Exists(output))
                 {
                     if (output.EndsWith("/Contents/Developer", StringComparison.Ordinal))

@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
@@ -9,6 +10,9 @@ namespace System.Linq
 {
     public static partial class Enumerable
     {
+        [FeatureSwitchDefinition("System.Linq.Enumerable.IsSizeOptimized")]
+        internal static bool IsSizeOptimized { get; } = AppContext.TryGetSwitch("System.Linq.Enumerable.IsSizeOptimized", out bool isEnabled) ? isEnabled : false;
+
         public static IEnumerable<TSource> AsEnumerable<TSource>(this IEnumerable<TSource> source) => source;
 
         /// <summary>Returns an empty <see cref="IEnumerable{TResult}"/>.</summary>

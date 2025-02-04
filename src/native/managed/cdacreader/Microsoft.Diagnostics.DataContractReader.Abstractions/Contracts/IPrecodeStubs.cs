@@ -5,13 +5,13 @@ using System;
 
 namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 
-internal interface IPrecodeStubs : IContract
+public interface IPrecodeStubs : IContract
 {
     static string IContract.Name { get; } = nameof(PrecodeStubs);
     TargetPointer GetMethodDescFromStubAddress(TargetCodePointer entryPoint) => throw new NotImplementedException();
 }
 
-internal readonly struct PrecodeStubs : IPrecodeStubs
+public readonly struct PrecodeStubs : IPrecodeStubs
 {
 
 }

@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Immutable;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Reflection.Internal;
 using System.Reflection.Metadata;
@@ -87,27 +88,25 @@ namespace System.Reflection.PortableExecutable
             int actualSize = StreamExtensions.GetAndValidateSize(peStream, size, nameof(peStream));
             var reader = new PEBinaryReader(peStream, actualSize);
 
-            bool isCoffOnly;
-            SkipDosHeader(ref reader, out isCoffOnly);
+            SkipDosHeader(ref reader, out bool isCoffOnly);
 
-            _coffHeaderStartOffset = reader.CurrentOffset;
+            _coffHeaderStartOffset = reader.Offset;
             _coffHeader = new CoffHeader(ref reader);
 
             if (!isCoffOnly)
             {
-                _peHeaderStartOffset = reader.CurrentOffset;
+                _peHeaderStartOffset = reader.Offset;
                 _peHeader = new PEHeader(ref reader);
             }
 
-            _sectionHeaders = this.ReadSectionHeaders(ref reader);
+            _sectionHeaders = ReadSectionHeaders(ref reader);
 
             if (!isCoffOnly)
             {
-                int offset;
-                if (TryCalculateCorHeaderOffset(out offset))
+                if (TryCalculateCorHeaderOffset(out int offset))
                 {
                     _corHeaderStartOffset = offset;
-                    reader.Seek(offset);
+                    reader.Offset = offset;
                     _corHeader = new CorHeader(ref reader);
                 }
             }
@@ -260,7 +259,7 @@ namespace System.Reflection.PortableExecutable
                 if (dosSig != 0 || reader.ReadUInt16() != 0xffff)
                 {
                     isCOFFOnly = true;
-                    reader.Seek(0);
+                    reader.Offset = 0;
                 }
                 else
                 {
@@ -276,10 +275,10 @@ namespace System.Reflection.PortableExecutable
             if (!isCOFFOnly)
             {
                 // Skip the DOS Header
-                reader.Seek(PESignatureOffsetLocation);
+                reader.Offset = PESignatureOffsetLocation;
 
                 int ntHeaderOffset = reader.ReadInt32();
-                reader.Seek(ntHeaderOffset);
+                reader.Offset = ntHeaderOffset;
 
                 // Look for PESignature "PE\0\0"
                 uint ntSignature = reader.ReadUInt32();

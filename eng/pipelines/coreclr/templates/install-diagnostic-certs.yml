@@ -1,0 +1,28 @@
+parameters:
+  isOfficialBuild: false
+  certNames: []
+  vaultName: ''
+  azureSubscription: ''
+  scriptRoot: '$(Build.SourcesDirectory)'
+
+steps:
+- ${{ if and(eq(parameters.isOfficialBuild, true), ne(variables['Build.Reason'], 'PullRequest'), or(startswith(variables['Build.SourceBranch'], 'refs/heads/release/'), startswith(variables['Build.SourceBranch'], 'refs/heads/internal/release/'), startswith(variables['Build.SourceBranch'], 'refs/heads/reltest/')), not(endsWith(variables['Build.SourceBranch'], '-staging'))) }}:
+  - task: AzureKeyVault@2
+    inputs:
+      azureSubscription: ${{ parameters.azureSubscription }}
+      KeyVaultName: ${{ parameters.vaultName }}
+      SecretsFilter: ${{ join(',', parameters.certNames) }}
+    displayName: 'Download secrets: Diagnostic Certificates'
+
+  - task: EsrpClientTool@2
+    displayName: Download ESRPClient
+
+  - powershell: |
+      eng/pipelines/install-diagnostic-certs.ps1 "${{ join(',', parameters.certNames) }}"
+      $signArgs = '/p:DotNetEsrpToolPath=$(esrpclient.toolpath)\$(esrpclient.toolname)'
+      echo "##vso[task.setvariable variable=_SignDiagnosticFilesArgs;]$signArgs"
+    displayName: 'Install diagnostic certificates'
+    workingDirectory: ${{ parameters.scriptRoot }}
+    env:
+      ${{ each cert in parameters.certNames }}:
+        ${{ cert }}: $(${{ cert }})
