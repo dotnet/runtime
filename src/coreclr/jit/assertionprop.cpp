@@ -4962,22 +4962,11 @@ GenTree* Compiler::optAssertionProp_Ind(ASSERT_VALARG_TP assertions, GenTree* tr
 // Arguments:
 //   op          - tree to check
 //   assertions  - set of live assertions
-//   pVnBased    - [out] set to true if value numbers were used
-//   pIndex      - [out] the assertion used in the proof
 //
 // Return Value:
 //   true if the tree's value will be non-null
 //
-// Notes:
-//   Sets "pVnBased" if the assertion is value number based. If no matching
-//    assertions are found from the table, then returns "NO_ASSERTION_INDEX."
-//
-//   If both VN and assertion table yield a matching assertion, "pVnBased"
-//   is only set and the return value is "NO_ASSERTION_INDEX."
-//
-bool Compiler::optAssertionIsNonNull(GenTree*                    op,
-                                     ASSERT_VALARG_TP assertions DEBUGARG(bool* pVnBased)
-                                         DEBUGARG(AssertionIndex* pIndex))
+bool Compiler::optAssertionIsNonNull(GenTree* op, ASSERT_VALARG_TP assertions)
 {
     if (op->OperIs(GT_ADD) && op->AsOp()->gtGetOp2()->IsCnsIntOrI() &&
         !fgIsBigOffset(op->AsOp()->gtGetOp2()->AsIntCon()->IconValue()))
@@ -4985,117 +4974,32 @@ bool Compiler::optAssertionIsNonNull(GenTree*                    op,
         op = op->AsOp()->gtGetOp1();
     }
 
-    bool vnBased = (!optLocalAssertionProp && vnStore->IsKnownNonNull(op->gtVNPair.GetConservative()));
-#ifdef DEBUG
-    *pIndex   = NO_ASSERTION_INDEX;
-    *pVnBased = vnBased;
-#endif
-
-    if (vnBased)
+    if (!optLocalAssertionProp && vnStore->IsKnownNonNull(op->gtVNPair.GetConservative()))
     {
         return true;
     }
 
     op = op->gtEffectiveVal();
-
     if (!op->OperIs(GT_LCL_VAR))
     {
         return false;
     }
 
-    AssertionIndex index = optAssertionIsNonNullInternal(op, assertions DEBUGARG(pVnBased));
-#ifdef DEBUG
-    *pIndex = index;
-#endif
-    return index != NO_ASSERTION_INDEX;
-}
-
-//------------------------------------------------------------------------
-// optAssertionIsNonNullInternal: see if we can prove a tree's value will
-//   be non-null based on assertions
-//
-// Arguments:
-//   op         - tree to check
-//   assertions - set of live assertions
-//   pVnBased   - [out] set to true if value numbers were used
-//
-// Return Value:
-//   index of assertion, or NO_ASSERTION_INDEX
-//
-AssertionIndex Compiler::optAssertionIsNonNullInternal(GenTree*                    op,
-                                                       ASSERT_VALARG_TP assertions DEBUGARG(bool* pVnBased))
-{
-
-#ifdef DEBUG
-    // Initialize the out param
-    //
-    *pVnBased = false;
-#endif
-
     if (!optCanPropNonNull)
     {
-        return NO_ASSERTION_INDEX;
+        return false;
     }
 
     // If local assertion prop use lcl comparison, else use VN comparison.
     if (!optLocalAssertionProp)
     {
-        if (BitVecOps::MayBeUninit(assertions) || BitVecOps::IsEmpty(apTraits, assertions))
-        {
-            return NO_ASSERTION_INDEX;
-        }
-
         // Look at both the top-level vn, and
         // the vn we get by stripping off any constant adds.
         //
-        ValueNum  vn     = vnStore->VNConservativeNormalValue(op->gtVNPair);
-        ValueNum  vnBase = vn;
-        VNFuncApp funcAttr;
-
-        while (vnStore->GetVNFunc(vnBase, &funcAttr) && (funcAttr.m_func == (VNFunc)GT_ADD))
+        ValueNum vn = vnStore->VNConservativeNormalValue(op->gtVNPair);
+        if (optAssertionVNIsNonNull(vn, assertions))
         {
-            if (vnStore->IsVNConstant(funcAttr.m_args[1]) && varTypeIsIntegral(vnStore->TypeOfVN(funcAttr.m_args[1])))
-            {
-                vnBase = funcAttr.m_args[0];
-            }
-            else if (vnStore->IsVNConstant(funcAttr.m_args[0]) &&
-                     varTypeIsIntegral(vnStore->TypeOfVN(funcAttr.m_args[0])))
-            {
-                vnBase = funcAttr.m_args[1];
-            }
-            else
-            {
-                break;
-            }
-        }
-
-        // Check each assertion to find if we have a vn != null assertion.
-        //
-        BitVecOps::Iter iter(apTraits, assertions);
-        unsigned        index = 0;
-        while (iter.NextElem(&index))
-        {
-            AssertionIndex assertionIndex = GetAssertionIndex(index);
-            if (assertionIndex > optAssertionCount)
-            {
-                break;
-            }
-            AssertionDsc* curAssertion = optGetAssertion(assertionIndex);
-            if (!curAssertion->CanPropNonNull())
-            {
-                continue;
-            }
-
-            if ((curAssertion->op1.vn != vn) && (curAssertion->op1.vn != vnBase))
-            {
-                continue;
-            }
-
-#ifdef DEBUG
-            *pVnBased = true;
-#endif
-
-            return assertionIndex;
+            return true;
         }
     }
     else
@@ -5119,11 +5023,11 @@ AssertionIndex Compiler::optAssertionIsNonNullInternal(GenTree*                 
                 (curAssertion->op2.kind == O2K_CONST_INT) &&      // op2
                 (curAssertion->op1.lcl.lclNum == lclNum) && (curAssertion->op2.u1.iconVal == 0))
             {
-                return assertionIndex;
+                return true;
             }
         }
     }
-    return NO_ASSERTION_INDEX;
+    return false;
 }
 
 //------------------------------------------------------------------------
@@ -5144,17 +5048,39 @@ bool Compiler::optAssertionVNIsNonNull(ValueNum vn, ASSERT_VALARG_TP assertions)
         return true;
     }
 
-    if (!BitVecOps::MayBeUninit(assertions))
+    if (BitVecOps::MayBeUninit(assertions))
     {
-        BitVecOps::Iter iter(apTraits, assertions);
-        unsigned        index = 0;
-        while (iter.NextElem(&index))
+        return false;
+    }
+
+    // In case if we have "op + smallCns", we're going to check asserts for both "op" and "op + smallCns".
+    ValueNum  vnBase = vn;
+    VNFuncApp funcAttr;
+    if (vnStore->GetVNFunc(vnBase, &funcAttr) && (funcAttr.m_func == (VNFunc)GT_ADD))
+    {
+        ValueNum op1 = funcAttr.m_args[0];
+        ValueNum op2 = funcAttr.m_args[1];
+        if (vnStore->IsVNConstant(op1) && !vnStore->IsVNConstant(op2))
         {
-            AssertionDsc* curAssertion = optGetAssertion(GetAssertionIndex(index));
-            if (curAssertion->CanPropNonNull() && curAssertion->op1.vn == vn)
-            {
-                return true;
-            }
+            // Normalize "cns + op" to "op + cns"
+            std::swap(op1, op2);
+        }
+        if (vnStore->IsVNConstant(op2) && varTypeIsIntegral(vnStore->TypeOfVN(op2)) &&
+            !fgIsBigOffset(vnStore->CoercedConstantValue<ssize_t>(op2)))
+        {
+            vnBase = op1;
+        }
+        // No need to accumulate the offset recursively, let some other phase fold ADD(ADD(op, cns1), cns2)
+    }
+
+    BitVecOps::Iter iter(apTraits, assertions);
+    unsigned        index = 0;
+    while (iter.NextElem(&index))
+    {
+        AssertionDsc* curAssertion = optGetAssertion(GetAssertionIndex(index));
+        if (curAssertion->CanPropNonNull() && ((curAssertion->op1.vn == vn) || (curAssertion->op1.vn == vnBase)))
+        {
+            return true;
         }
     }
     return false;
@@ -5177,20 +5103,10 @@ GenTree* Compiler::optNonNullAssertionProp_Call(ASSERT_VALARG_TP assertions, Gen
     GenTree* op1 = call->gtArgs.GetThisArg()->GetNode();
     noway_assert(op1 != nullptr);
 
-#ifdef DEBUG
-    bool           vnBased = false;
-    AssertionIndex index   = NO_ASSERTION_INDEX;
-#endif
-    if (optAssertionIsNonNull(op1, assertions DEBUGARG(&vnBased) DEBUGARG(&index)))
+    if (optAssertionIsNonNull(op1, assertions))
     {
-#ifdef DEBUG
-        if (verbose)
-        {
-            (vnBased) ? printf("\nVN based non-null prop in " FMT_BB ":\n", compCurBB->bbNum)
-                      : printf("\nNon-null prop for index #%02u in " FMT_BB ":\n", index, compCurBB->bbNum);
-            gtDispTree(call, nullptr, nullptr, true);
-        }
-#endif
+        JITDUMP("Non-null prop for [%06u] in " FMT_BB ":\n", op1->gtTreeID, compCurBB->bbNum);
+        DISPTREE(call);
         call->gtFlags &= ~GTF_CALL_NULLCHECK;
         call->gtFlags &= ~GTF_EXCEPT;
         noway_assert(call->gtFlags & GTF_SIDE_EFFECT);
@@ -5219,20 +5135,10 @@ bool Compiler::optNonNullAssertionProp_Ind(ASSERT_VALARG_TP assertions, GenTree*
         return false;
     }
 
-#ifdef DEBUG
-    bool           vnBased = false;
-    AssertionIndex index   = NO_ASSERTION_INDEX;
-#endif
-    if (optAssertionIsNonNull(indir->AsIndir()->Addr(), assertions DEBUGARG(&vnBased) DEBUGARG(&index)))
+    if (optAssertionIsNonNull(indir->AsIndir()->Addr(), assertions))
     {
-#ifdef DEBUG
-        if (verbose)
-        {
-            (vnBased) ? printf("\nVN based non-null prop in " FMT_BB ":\n", compCurBB->bbNum)
-                      : printf("\nNon-null prop for index #%02u in " FMT_BB ":\n", index, compCurBB->bbNum);
-            gtDispTree(indir, nullptr, nullptr, true);
-        }
-#endif
+        JITDUMP("Non-null prop for [%06u] in " FMT_BB ":\n", indir->AsIndir()->Addr()->gtTreeID, compCurBB->bbNum);
+        DISPTREE(indir);
         indir->gtFlags &= ~GTF_EXCEPT;
         indir->gtFlags |= GTF_IND_NONFAULTING;
 
@@ -5429,11 +5335,9 @@ GenTree* Compiler::optAssertionProp_Call(ASSERT_VALARG_TP assertions, GenTreeCal
             }
 
             // Leave a hint for fgLateCastExpansion that obj is never null.
-            INDEBUG(AssertionIndex nonNullIdx = NO_ASSERTION_INDEX);
-            INDEBUG(bool vnBased = false);
             // GTF_CALL_M_CAST_CAN_BE_EXPANDED check is to improve TP
             if (((call->gtCallMoreFlags & GTF_CALL_M_CAST_CAN_BE_EXPANDED) != 0) &&
-                optAssertionIsNonNull(objArg, assertions DEBUGARG(&vnBased) DEBUGARG(&nonNullIdx)))
+                optAssertionIsNonNull(objArg, assertions))
             {
                 call->gtCallMoreFlags |= GTF_CALL_M_CAST_OBJ_NONNULL;
                 return optAssertionProp_Update(call, call, stmt);
