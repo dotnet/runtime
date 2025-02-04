@@ -312,7 +312,17 @@ public sealed class MemberDataTest : ITestInfo
 
         using (builder.NewBracesScope())
         {
-            builder.Append(_innerTest.GenerateTestExecution(testReporterWrapper));
+            builder.AppendLine("try");
+            using (builder.NewBracesScope())
+            {
+                builder.Append(_innerTest.GenerateTestExecution(testReporterWrapper));
+            }
+            builder.AppendLine("catch (System.Exception ex)");
+
+            using (builder.NewBracesScope())
+            {
+                builder.AppendLine($@"throw new System.Exception(""Thrown during execution of the "" + {_innerTest.TestNameExpression}, ex);");
+            }
         }
         return builder;
     }
