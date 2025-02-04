@@ -2891,6 +2891,11 @@ bool Compiler::fgExpandStackArrayAllocation(BasicBlock* block, Statement* stmt, 
         GenTree* const   payloadSize   = gtNewOperNode(GT_MUL, TYP_I_IMPL, elemSize, arrayLength);
         GenTree* const   totalSize     = gtNewOperNode(GT_ADD, TYP_I_IMPL, baseSize, payloadSize);
         GenTree* const   locallocNode  = gtNewOperNode(GT_LCLHEAP, TYP_I_IMPL, totalSize);
+
+        // Allocation might fail. Codegen must zero the allocation
+        //
+        locallocNode->gtFlags &= (GTF_EXCEPT | GTF_LCLHEAP_MUSTINIT);
+
         GenTree* const   locallocStore = gtNewStoreLclVarNode(locallocTemp, locallocNode);
         Statement* const locallocStmt  = fgNewStmtFromTree(locallocStore);
 
@@ -2902,10 +2907,8 @@ bool Compiler::fgExpandStackArrayAllocation(BasicBlock* block, Statement* stmt, 
         stackLocalAddress = gtNewLclVarNode(locallocTemp);
         compLocallocUsed  = true;
 
-        // Codegen must zero out the new allocation.
+        // We now require a frame pointer
         //
-        locallocNode->gtFlags &= GTF_LCLHEAP_MUSTINIT;
-
         codeGen->setFramePointerRequired(true);
     }
     else
