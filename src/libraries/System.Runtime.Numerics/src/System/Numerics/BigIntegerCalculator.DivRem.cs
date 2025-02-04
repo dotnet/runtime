@@ -149,11 +149,15 @@ namespace System.Numerics
             }
         }
 
+        /// <summary>
+        /// Logically equivalent to the following code.
+        /// <code>
+        /// quotient = left / right;
+        /// left %= right;
+        /// </code>
+        /// </summary>
         private static void DivRem(Span<uint> left, ReadOnlySpan<uint> right, Span<uint> quotient)
         {
-            // quotient = left / right;
-            // left %= right;
-
             Debug.Assert(left.Length >= 1);
             Debug.Assert(right.Length >= 1);
             Debug.Assert(left.Length >= right.Length);
