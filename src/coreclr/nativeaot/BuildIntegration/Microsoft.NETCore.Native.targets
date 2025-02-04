@@ -131,10 +131,6 @@ The .NET Foundation licenses this file to you under the MIT license.
       <_NETCoreAppFrameworkReference Include="@(ResolvedFrameworkReference)" Condition="'%(ResolvedFrameworkReference.RuntimePackName)' == 'Microsoft.NETCore.App.Runtime.NativeAOT.$(RuntimeIdentifier)'" />
     </ItemGroup>
 
-    <PropertyGroup>
-      <IlcUseNativeAOTRuntimePackLayout Condition="'$(IlcUseNativeAOTRuntimePackLayout)' == ''">$(PublishAotUsingRuntimePack)</IlcUseNativeAOTRuntimePackLayout>
-    </PropertyGroup>
-
     <PropertyGroup Condition="'$(IlcUseNativeAOTRuntimePackLayout)' == 'true'">
       <!--
         If we're actually using the runtime pack from the ResolvedFrameworkReference, pull the path from there.
@@ -155,8 +151,7 @@ The .NET Foundation licenses this file to you under the MIT license.
     <PropertyGroup>
       <!-- Define paths used in build targets to point to the runtime-specific ILCompiler implementation -->
       <IlcToolsPath Condition="'$(IlcToolsPath)' == ''">$(IlcHostPackagePath)\tools\</IlcToolsPath>
-      <IlcMibcPath Condition="'$(IlcMibcPath)' == '' and Exists('$(RuntimePackagePath)\mibc\')">$(RuntimePackagePath)\mibc\</IlcMibcPath>
-      <IlcMibcPath Condition="'$(IlcMibcPath)' == '' and !Exists('$(RuntimePackagePath)\mibc\')">$(IlcHostPackagePath)\mibc\</IlcMibcPath>
+      <IlcMibcPath Condition="'$(IlcMibcPath)' == ''">$(RuntimePackagePath)\mibc\</IlcMibcPath>
     </PropertyGroup>
 
     <ItemGroup Condition="'$(IlcUseNativeAOTRuntimePackLayout)' == 'true'">
