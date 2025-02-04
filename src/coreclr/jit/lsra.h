@@ -1938,7 +1938,7 @@ private:
     int BuildRMWUses(
         GenTree* node, GenTree* op1, GenTree* op2, SingleTypeRegSet op1Candidates, SingleTypeRegSet op2Candidates);
     inline SingleTypeRegSet BuildEvexIncompatibleMask(GenTree* tree);
-    inline SingleTypeRegSet BuildApxIncompatibleGPRMask(GenTree* tree, SingleTypeRegSet candidates, bool isGPR = false);
+    inline SingleTypeRegSet BuildApxIncompatibleGPRMask(GenTree* tree, SingleTypeRegSet candidates = RBM_NONE, bool isGPR = false);
     inline bool             DoesThisUseGPR(GenTree* op);
 #endif // !TARGET_XARCH
     int BuildSelect(GenTreeOp* select);
@@ -2099,17 +2099,6 @@ private:
     FORCEINLINE regMaskTP get_RBM_MSK_CALLEE_TRASH() const
     {
         return this->rbmMskCalleeTrash;
-    }
-    //------------------------------------------------------------------------
-    // getLowGprRegs(): Return the set of GPR registers associated with non APX
-    // encoding only, i.e., remove the eGPR registers from the available
-    // set.
-    //
-    // Return Value:
-    // Register mask of non APX GPR registers.
-    FORCEINLINE SingleTypeRegSet getLowGprRegs() const
-    {
-        return this->lowGprRegs;
     }
 #endif // TARGET_XARCH
 

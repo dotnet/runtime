@@ -61,19 +61,11 @@ bool regMaskTP::IsRegNumInMask(regNumber reg, var_types type) const
 //  gprRegs  - Register to check
 //  availableIntRegs - RBM_ALLINT passed in at runtime
 //
-#ifdef TARGET_AMD64
-void regMaskTP::AddGprRegs(SingleTypeRegSet gprRegs, regMaskTP availableIntRegs)
+void regMaskTP::AddGprRegs(SingleTypeRegSet gprRegs DEBUG_ARG(regMaskTP availableIntRegs))
 {
     assert((gprRegs == RBM_NONE) || ((gprRegs & availableIntRegs) != RBM_NONE));
     low |= gprRegs;
 }
-#else
-void regMaskTP::AddGprRegs(SingleTypeRegSet gprRegs)
-{
-    assert((gprRegs == RBM_NONE) || ((gprRegs & RBM_ALLINT) != RBM_NONE));
-    low |= gprRegs;
-}
-#endif
 
 //------------------------------------------------------------------------
 // AddRegNum: This is similar to AddRegNumInMask(reg, regType) for all platforms

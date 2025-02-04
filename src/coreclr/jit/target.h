@@ -260,11 +260,7 @@ public:
     void RemoveRegNumFromMask(regNumber reg, var_types type);
     bool IsRegNumInMask(regNumber reg, var_types type) const;
 #endif
-#ifdef TARGET_AMD64
-    void AddGprRegs(SingleTypeRegSet gprRegs, regMaskTP availableIntRegs);
-#else
-    void AddGprRegs(SingleTypeRegSet gprRegs);
-#endif
+    void AddGprRegs(SingleTypeRegSet gprRegs DEBUG_ARG(regMaskTP availableIntRegs));
     void                       AddRegNum(regNumber reg, var_types type);
     void                       AddRegNumInMask(regNumber reg);
     void                       AddRegsetForType(SingleTypeRegSet regsToAdd, var_types type);

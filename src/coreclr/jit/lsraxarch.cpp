@@ -275,14 +275,14 @@ int LinearScan::BuildNode(GenTree* tree)
         case GT_JMPTABLE:
             srcCount = 0;
             assert(dstCount == 1);
-            BuildDef(tree, BuildApxIncompatibleGPRMask(tree, RBM_NONE));
+            BuildDef(tree, BuildApxIncompatibleGPRMask(tree));
             break;
 
         case GT_SWITCH_TABLE:
         {
             assert(dstCount == 0);
-            buildInternalIntRegisterDefForNode(tree, BuildApxIncompatibleGPRMask(tree, RBM_NONE));
-            srcCount = BuildBinaryUses(tree->AsOp(), BuildApxIncompatibleGPRMask(tree->AsOp(), RBM_NONE));
+            buildInternalIntRegisterDefForNode(tree, BuildApxIncompatibleGPRMask(tree));
+            srcCount = BuildBinaryUses(tree->AsOp(), BuildApxIncompatibleGPRMask(tree->AsOp()));
             buildInternalRegisterUses();
             assert(srcCount == 2);
         }
@@ -355,7 +355,7 @@ int LinearScan::BuildNode(GenTree* tree)
             {
                 if (varTypeUsesFloatReg(tree) && (varTypeUsesIntReg(tree->gtGetOp1())))
                 {
-                    BuildUse(tree->gtGetOp1(), getLowGprRegs());
+                    BuildUse(tree->gtGetOp1(), lowGprRegs);
                 }
                 else
                 {
@@ -371,7 +371,7 @@ int LinearScan::BuildNode(GenTree* tree)
             // TODO-Xarch-apx: Revisit once extended EVEX is available. Currently limiting high GPR for int <-> float
             if (varTypeUsesFloatReg(tree->gtGetOp1()) && (varTypeUsesIntReg(tree)))
             {
-                BuildDef(tree, getLowGprRegs());
+                BuildDef(tree, lowGprRegs);
             }
             else
             {
@@ -1636,7 +1636,7 @@ int LinearScan::BuildBlockStore(GenTreeBlk* blkNode)
     }
     else if (dstAddr->OperIsAddrMode())
     {
-        useCount += BuildAddrUses(dstAddr, BuildApxIncompatibleGPRMask(dstAddr, RBM_NONE));
+        useCount += BuildAddrUses(dstAddr, BuildApxIncompatibleGPRMask(dstAddr));
     }
 
     if (srcAddrOrFill != nullptr)
@@ -1648,7 +1648,7 @@ int LinearScan::BuildBlockStore(GenTreeBlk* blkNode)
         }
         else if (srcAddrOrFill->OperIsAddrMode())
         {
-            useCount += BuildAddrUses(srcAddrOrFill, BuildApxIncompatibleGPRMask(srcAddrOrFill, RBM_NONE));
+            useCount += BuildAddrUses(srcAddrOrFill, BuildApxIncompatibleGPRMask(srcAddrOrFill));
         }
     }
 
@@ -2241,7 +2241,7 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                 {
                     if (op1->isContained())
                     {
-                        SingleTypeRegSet apxAwareRegCandidates = BuildApxIncompatibleGPRMask(op1, RBM_NONE);
+                        SingleTypeRegSet apxAwareRegCandidates = BuildApxIncompatibleGPRMask(op1);
                         srcCount += BuildOperandUses(op1, apxAwareRegCandidates);
                     }
                     else
@@ -2293,7 +2293,7 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
 
                 if (op1->isContained())
                 {
-                    SingleTypeRegSet apxAwareRegCandidates = BuildApxIncompatibleGPRMask(op1, RBM_NONE);
+                    SingleTypeRegSet apxAwareRegCandidates = BuildApxIncompatibleGPRMask(op1);
                     srcCount += BuildOperandUses(op1, apxAwareRegCandidates);
                 }
                 else
@@ -2303,7 +2303,7 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                     // are already in an XMM/YMM register and can stay
                     // where we are.
 
-                    tgtPrefUse = BuildUse(op1, BuildApxIncompatibleGPRMask(op1, RBM_NONE));
+                    tgtPrefUse = BuildUse(op1, BuildApxIncompatibleGPRMask(op1));
                     srcCount += 1;
                 }
 
@@ -2338,7 +2338,7 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
 
                     srcCount += 1;
 
-                    SingleTypeRegSet op2RegCandidates = BuildApxIncompatibleGPRMask(op2, RBM_NONE);
+                    SingleTypeRegSet op2RegCandidates = BuildApxIncompatibleGPRMask(op2);
                     if (op2RegCandidates == RBM_NONE)
                     {
                         op2RegCandidates = BuildEvexIncompatibleMask(op2);
@@ -2413,7 +2413,7 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                 }
                 else
                 {
-                    SingleTypeRegSet apxAwareRegCandidates = BuildApxIncompatibleGPRMask(op3, RBM_NONE);
+                    SingleTypeRegSet apxAwareRegCandidates = BuildApxIncompatibleGPRMask(op3);
                     srcCount += BuildOperandUses(op3, apxAwareRegCandidates);
                 }
 
@@ -2430,7 +2430,7 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
             {
                 assert(numArgs == 2 || numArgs == 3);
                 srcCount += BuildOperandUses(op1, SRBM_EDX);
-                srcCount += BuildOperandUses(op2, BuildApxIncompatibleGPRMask(op2, RBM_NONE));
+                srcCount += BuildOperandUses(op2, BuildApxIncompatibleGPRMask(op2));
                 if (numArgs == 3)
                 {
                     // op3 reg should be different from target reg to
@@ -2577,7 +2577,7 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                     }
                     else if (op == emitOp3)
                     {
-                        SingleTypeRegSet apxAwareRegCandidates = BuildApxIncompatibleGPRMask(op, RBM_NONE);
+                        SingleTypeRegSet apxAwareRegCandidates = BuildApxIncompatibleGPRMask(op);
                         srcCount += op->isContained() ? BuildOperandUses(op, apxAwareRegCandidates)
                                                       : BuildDelayFreeUses(op, emitOp1);
                     }
@@ -2695,11 +2695,11 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                     }
                     else if (op == emitOp2)
                     {
-                        srcCount += BuildDelayFreeUses(op, emitOp1, BuildApxIncompatibleGPRMask(op, RBM_NONE));
+                        srcCount += BuildDelayFreeUses(op, emitOp1, BuildApxIncompatibleGPRMask(op));
                     }
                     else if (op == emitOp3)
                     {
-                        srcCount += op->isContained() ? BuildOperandUses(op, BuildApxIncompatibleGPRMask(op, RBM_NONE))
+                        srcCount += op->isContained() ? BuildOperandUses(op, BuildApxIncompatibleGPRMask(op))
                                                       : BuildDelayFreeUses(op, emitOp1);
                     }
                 }
@@ -2716,7 +2716,7 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                 tgtPrefUse = BuildUse(op1);
                 srcCount += 1;
                 srcCount += BuildDelayFreeUses(op2, op1);
-                srcCount += op3->isContained() ? BuildOperandUses(op3, BuildApxIncompatibleGPRMask(op3, RBM_NONE))
+                srcCount += op3->isContained() ? BuildOperandUses(op3, BuildApxIncompatibleGPRMask(op3))
                                                : BuildDelayFreeUses(op3, op1);
 
                 buildUses = false;
@@ -2730,14 +2730,14 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                 assert(!isRMW);
 
                 // Any pair of the index, mask, or destination registers should be different
-                SingleTypeRegSet op1RegCandidates = BuildApxIncompatibleGPRMask(op1, RBM_NONE);
+                SingleTypeRegSet op1RegCandidates = BuildApxIncompatibleGPRMask(op1);
                 if (op1RegCandidates == RBM_NONE)
                 {
                     op1RegCandidates = BuildEvexIncompatibleMask(op1);
                 }
                 srcCount += BuildOperandUses(op1, op1RegCandidates);
 
-                SingleTypeRegSet op2RegCandidates = BuildApxIncompatibleGPRMask(op2, RBM_NONE);
+                SingleTypeRegSet op2RegCandidates = BuildApxIncompatibleGPRMask(op2);
                 if (op2RegCandidates == RBM_NONE)
                 {
                     op2RegCandidates = BuildEvexIncompatibleMask(op2);
@@ -2760,13 +2760,13 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
             {
                 assert(!isRMW);
                 // Any pair of the index, mask, or destination registers should be different
-                SingleTypeRegSet op1RegCandidates = BuildApxIncompatibleGPRMask(op1, RBM_NONE);
+                SingleTypeRegSet op1RegCandidates = BuildApxIncompatibleGPRMask(op1);
                 if (op1RegCandidates == RBM_NONE)
                 {
                     op1RegCandidates = BuildEvexIncompatibleMask(op2);
                 }
                 srcCount += BuildOperandUses(op1, op1RegCandidates);
-                SingleTypeRegSet op2RegCandidates = BuildApxIncompatibleGPRMask(op2, RBM_NONE);
+                SingleTypeRegSet op2RegCandidates = BuildApxIncompatibleGPRMask(op2);
                 if (op2RegCandidates == RBM_NONE)
                 {
                     op2RegCandidates = BuildEvexIncompatibleMask(op2);
@@ -3317,11 +3317,15 @@ inline SingleTypeRegSet LinearScan::BuildEvexIncompatibleMask(GenTree* tree)
 inline bool LinearScan::DoesThisUseGPR(GenTree* op)
 {
     if (varTypeUsesIntReg(op->gtType))
+    {
         return true;
+    }
 
     // This always uses GPR for addressing
     if (op->isContainedIndir())
+    {
         return true;
+    }
 
 #ifdef FEATURE_HW_INTRINSICS
     if (!op->isContained() || !op->OperIsHWIntrinsic())
@@ -3365,11 +3369,11 @@ inline SingleTypeRegSet LinearScan::BuildApxIncompatibleGPRMask(GenTree*        
     {
         if (candidates == RBM_NONE)
         {
-            return getLowGprRegs();
+            return lowGprRegs;
         }
         else
         {
-            return (candidates & getLowGprRegs());
+            return (candidates & lowGprRegs);
         }
     }
 
