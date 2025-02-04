@@ -1,6 +1,6 @@
 # System.Security.Cryptography.Native
 
-This folder contains C# bindings for native shim (libSystem.Security.Cryptography.Native.Openssl.so), shimming functionality provided by the OpenSSL library.
+This folder contains C# bindings for native shim (libSystem.Security.Cryptography.Native.OpenSsl.so), shimming functionality provided by the OpenSSL library.
 
 ## Memory allocation hooks
 

@@ -259,6 +259,8 @@ void CryptoNative_EnableMemoryTracking(int32_t enable)
 
 void CryptoNative_ForEachTrackedAllocation(void (*callback)(void* ptr, uint64_t size, const char* file, int32_t line, void* ctx), void* ctx)
 {
+    assert(callback != NULL);
+
     if (g_trackedMemory == NULL)
     {
         return;
