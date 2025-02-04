@@ -32,10 +32,7 @@
   <Choose>
     <When Condition="'$(EnableDefaultArtifacts)' != 'true'">
       <ItemGroup>
-        <ThisRidPackages Include="$(ArtifactsPackagesDir)**\*.$(PackageRID).*.nupkg" />
-        <OtherPackages Include="$(ArtifactsPackagesDir)**\*.nupkg" Exclude="@(RidSpecificPackages)" />
-
-        <PackagesToPublishFromThisJob Include="@(ThisRidPackages)" />
+        <PackagesToPublishFromThisJob Include="$(ArtifactsPackagesDir)**\*.$(PackageRID).*.nupkg" />
       </ItemGroup>
 
       <ItemGroup Condition="'$(PackageRID)' == 'ios-arm64'">
