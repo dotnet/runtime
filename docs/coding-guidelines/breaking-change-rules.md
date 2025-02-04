@@ -236,6 +236,8 @@ successfully bind to that overload, if simply passing an `int` value. However, i
 
     Definite assignment rules allow use of uninitialized variables so long as the variable type is a stateless struct. If the struct is made stateful, code could now end up with uninitialized data. This is both potentially a source breaking and binary breaking change.
 
+* Adding a reference type field, a `ref` field, or a field involving a generic type parameter without the `unmanaged` constraint, to a value type that formerly had none of those field kinds. If the value type already contains at least one such field, adding another is non-breaking. This rule applies recursively to new fields that contain value types that may also introduce a new field kind.
+
 ### Signatures
 &#10003; **Allowed**
 * Adding `params` to a parameter
