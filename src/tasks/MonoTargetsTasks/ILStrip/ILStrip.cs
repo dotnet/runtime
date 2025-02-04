@@ -305,33 +305,32 @@ public class ILStrip : Microsoft.Build.Utilities.Task
     private void CreateTrimmedAssembly(PEReader peReader, string trimmedAssemblyFilePath, FileStream fs, Dictionary<int, int> methodBodyUses)
     {
         using FileStream os = File.Open(trimmedAssemblyFilePath, FileMode.Create);
+        using MemoryStream memStream = new MemoryStream((int)fs.Length);
+
+        fs.Position = 0;
+        fs.CopyTo(memStream);
+
+        foreach (var kvp in methodBodyUses)
         {
-            fs.Position = 0;
-            MemoryStream memStream = new MemoryStream((int)fs.Length);
-            fs.CopyTo(memStream);
-
-            foreach (var kvp in methodBodyUses)
+            int rva = kvp.Key;
+            int count = kvp.Value;
+            if (count == 0)
             {
-                int rva = kvp.Key;
-                int count = kvp.Value;
-                if (count == 0)
-                {
-                    int methodSize = ComputeMethodSize(peReader, rva);
-                    int actualLoc = ComputeMethodHash(peReader, rva);
-                    int headerSize = ComputeMethodHeaderSize(memStream, actualLoc);
-                    if (headerSize == 1) //Set code size to zero for TinyFormat
-                        SetCodeSizeToZeroForTiny(ref memStream, actualLoc);
-                    ZeroOutMethodBody(ref memStream, methodSize, actualLoc, headerSize);
-                }
-                else if (count < 0)
-                {
-                    Log.LogError($"Method usage count is less than zero for rva: {rva}.");
-                }
+                int methodSize = ComputeMethodSize(peReader, rva);
+                int actualLoc = ComputeMethodHash(peReader, rva);
+                int headerSize = ComputeMethodHeaderSize(memStream, actualLoc);
+                if (headerSize == 1) //Set code size to zero for TinyFormat
+                    SetCodeSizeToZeroForTiny(ref memStream, actualLoc);
+                ZeroOutMethodBody(ref memStream, methodSize, actualLoc, headerSize);
             }
-
-            memStream.Position = 0;
-            memStream.CopyTo(os);
+            else if (count < 0)
+            {
+                Log.LogError($"Method usage count is less than zero for rva: {rva}.");
+            }
         }
+
+        memStream.Position = 0;
+        memStream.CopyTo(os);
     }
 
     private static int ComputeMethodSize(PEReader peReader, int rva) => peReader.GetMethodBody(rva).Size;
