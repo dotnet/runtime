@@ -1188,8 +1188,8 @@ public:
 #define BB_ZERO_WEIGHT           0.0
 
 // TODO-BB-UNITY-WEIGHT: Consider scaling up
-#define BB_COLD_WEIGHT           0.0001  // Upper bound for cold weights; used during block layout
-#define BB_MAX_WEIGHT            FLT_MAX // maximum finite weight  -- needs rethinking.
+#define BB_COLD_WEIGHT 0.0001  // Upper bound for cold weights; used during block layout
+#define BB_MAX_WEIGHT  FLT_MAX // maximum finite weight  -- needs rethinking.
 
     weight_t bbWeight; // The dynamic execution weight of this block
 

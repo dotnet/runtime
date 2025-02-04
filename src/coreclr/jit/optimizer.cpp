@@ -4979,7 +4979,7 @@ void Compiler::optHoistLoopBlocks(FlowGraphNaturalLoop*    loop,
                 block->bbNum, refCntWtd2str(blockWeight, /* padForDecimalPlaces */ true), loop->GetIndex(),
                 loop->GetHeader()->bbNum);
 
-        if (blockWeight < 0.1)
+        if (blockWeight < (BB_UNITY_WEIGHT / 10))
         {
             JITDUMP("      block weight is too small to perform hoisting.\n");
             continue;

@@ -2284,7 +2284,7 @@ void CSE_HeuristicParameterized::CaptureLocalWeights()
         }
 
         JITDUMP("V%02u," FMT_WT "\n", m_pCompiler->lvaGetLclNum(varDsc), varDsc->lvRefCntWtd());
-        m_localWeights->push_back(varDsc->lvRefCntWtd() / BB_UNITY_WEIGHT);
+        m_localWeights->push_back(varDsc->lvRefCntWtd());
     }
 }
 
@@ -4547,7 +4547,7 @@ bool CSE_Heuristic::PromotionCheck(CSE_Candidate* candidate)
             }
 #endif // TARGET_XARCH
 
-            extra_yes_cost = (BB_UNITY_WEIGHT_UNSIGNED * spillSimdRegInProlog) * 3;
+            extra_yes_cost = spillSimdRegInProlog * 3;
         }
 #endif // FEATURE_SIMD
     }

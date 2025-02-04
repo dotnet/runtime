@@ -7308,7 +7308,7 @@ bool Lowering::LowerUnsignedDivOrMod(GenTreeOp* divMod)
 #endif
         }
 
-        const bool     requiresDividendMultiuse = !isDiv;
+        const bool requiresDividendMultiuse = !isDiv;
 
         if (requiresDividendMultiuse)
         {
