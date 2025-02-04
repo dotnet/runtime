@@ -844,15 +844,20 @@ GenTree* Compiler::impStoreStruct(GenTree*         store,
             GenTreeFlags indirFlags = GTF_EMPTY;
             GenTree*     destAddr   = impGetNodeAddr(store, CHECK_SPILL_ALL, &indirFlags);
 
+            // Make sure we don't pass something other than a local address to the return buffer arg.
+            // It is allowed to pass current's method return buffer as it is a local too.
             if (!impIsAddressInLocal(destAddr) &&
-                (!destAddr->OperIsScalarLocal() || (destAddr->AsLclVarCommon()->GetLclNum() != info.compRetBuffArg)))
+                (!destAddr->OperIsScalarLocal() ||
+                 (destAddr->AsLclVarCommon()->GetLclNum() != impInlineRoot()->info.compRetBuffArg)))
             {
                 unsigned tmp = lvaGrabTemp(false DEBUGARG("stack copy for value returned via return buffer"));
                 lvaSetStruct(tmp, srcCall->gtRetClsHnd, false);
-                GenTree* comma       = gtNewOperNode(GT_COMMA, store->TypeGet(), gtNewStoreLclVarNode(tmp, srcCall),
+
+                GenTree* spilledCall = gtNewStoreLclVarNode(tmp, srcCall);
+                GenTree* comma       = gtNewOperNode(GT_COMMA, store->TypeGet(), spilledCall,
                                                      gtNewLclvNode(tmp, lvaGetDesc(tmp)->TypeGet()));
                 store->Data()        = comma;
-                comma->AsOp()->gtOp1 = impStoreStruct(comma->gtGetOp1(), curLevel, pAfterStmt, di, block);
+                comma->AsOp()->gtOp1 = impStoreStruct(spilledCall, curLevel, pAfterStmt, di, block);
                 return impStoreStruct(store, curLevel, pAfterStmt, di, block);
             }
 
@@ -967,21 +972,28 @@ GenTree* Compiler::impStoreStruct(GenTree*         store,
             GenTreeFlags indirFlags = GTF_EMPTY;
             GenTree*     destAddr   = impGetNodeAddr(store, CHECK_SPILL_ALL, &indirFlags);
 
+            // Make sure we don't pass something other than a local address to the return buffer arg.
+            // It is allowed to pass current's method return buffer as it is a local too.
             if (!impIsAddressInLocal(destAddr) &&
-                (!destAddr->OperIsScalarLocal() || (destAddr->AsLclVarCommon()->GetLclNum() != info.compRetBuffArg)))
+                (!destAddr->OperIsScalarLocal() ||
+                 (destAddr->AsLclVarCommon()->GetLclNum() != impInlineRoot()->info.compRetBuffArg)))
             {
                 unsigned tmp = lvaGrabTemp(false DEBUGARG("stack copy for value returned via return buffer"));
                 lvaSetStruct(tmp, call->gtRetClsHnd, false);
                 destAddr = gtNewLclVarAddrNode(tmp, TYP_BYREF);
+
                 // Insert address of temp into existing call
-                call->gtArgs.InsertAfterThisOrFirst(this,
-                                                    NewCallArg::Primitive(destAddr).WellKnown(WellKnownArg::RetBuffer));
+                NewCallArg retBufArg = NewCallArg::Primitive(destAddr).WellKnown(WellKnownArg::RetBuffer);
+                call->gtArgs.InsertAfterThisOrFirst(this, retBufArg);
+
                 // Now the store needs to copy from the new temp instead.
                 store->Data() = gtNewLclvNode(tmp, lvaGetDesc(tmp)->TypeGet());
                 call->gtType  = TYP_VOID;
                 src->gtType   = TYP_VOID;
-                return gtNewOperNode(GT_COMMA, TYP_VOID, src,
-                                     impStoreStruct(store, CHECK_SPILL_ALL, pAfterStmt, di, block));
+                store         = impStoreStruct(store, CHECK_SPILL_ALL, pAfterStmt, di, block);
+
+                // Wrap with the actual call
+                return gtNewOperNode(GT_COMMA, TYP_VOID, src, store);
             }
 
             call->gtArgs.InsertAfterThisOrFirst(this,

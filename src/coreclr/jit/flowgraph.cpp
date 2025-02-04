@@ -2458,8 +2458,9 @@ PhaseStatus Compiler::fgAddInternal()
     noway_assert(!dbgHandle || !pDbgHandle);
 
 #if DEBUG
-    // TODO: to be enabled only under jit-stress
-    if ((info.compRetBuffArg != BAD_VAR_NUM) && !opts.IsReadyToRun())
+    // JitStress: Insert a helper call to ensure that the return buffer is not on the GC heap.
+    if (compStressCompile(STRESS_NONHEAP_RET_BUFFER, 50) && (info.compRetBuffArg != BAD_VAR_NUM) &&
+        !opts.IsReadyToRun())
     {
         GenTree* retBuffAddr = gtNewLclvNode(info.compRetBuffArg, TYP_BYREF);
         fgNewStmtAtBeg(fgFirstBB, gtNewHelperCallNode(CORINFO_HELP_ENSURE_NONHEAP, TYP_VOID, retBuffAddr));
