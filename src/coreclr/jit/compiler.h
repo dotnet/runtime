@@ -4091,6 +4091,8 @@ public:
     unsigned lvaInlineeReturnSpillTemp = BAD_VAR_NUM; // The temp to spill the non-VOID return expression
                                         // in case there are multiple BBJ_RETURN blocks in the inlinee
                                         // or if the inlinee has GC ref locals.
+    
+    bool lvaInlineeReturnSpillTempFreshlyCreated = false; // True if the temp was freshly created for the inlinee return
 
 #if FEATURE_FIXED_OUT_ARGS
     unsigned            lvaOutgoingArgSpaceVar = BAD_VAR_NUM;  // var that represents outgoing argument space
@@ -4355,7 +4357,7 @@ public:
     // If the local is TYP_REF, set or update the associated class information.
     void lvaSetClass(unsigned varNum, CORINFO_CLASS_HANDLE clsHnd, bool isExact = false);
     void lvaSetClass(unsigned varNum, GenTree* tree, CORINFO_CLASS_HANDLE stackHandle = nullptr);
-    void lvaUpdateClass(unsigned varNum, CORINFO_CLASS_HANDLE clsHnd, bool isExact = false);
+    void lvaUpdateClass(unsigned varNum, CORINFO_CLASS_HANDLE clsHnd, bool isExact = false, bool singleDefOnly = true);
     void lvaUpdateClass(unsigned varNum, GenTree* tree, CORINFO_CLASS_HANDLE stackHandle = nullptr);
 
 #define MAX_NumOfFieldsInPromotableStruct 4 // Maximum number of fields in promotable struct
@@ -4763,7 +4765,8 @@ protected:
                               R2RARG(CORINFO_CONST_LOOKUP* entryPoint),
                               var_types             callType,
                               NamedIntrinsic        intrinsicName,
-                              bool                  tailCall);
+                              bool                  tailCall,
+                              bool*                 isSpecial);
     GenTree* impMinMaxIntrinsic(CORINFO_METHOD_HANDLE method,
                                 CORINFO_SIG_INFO*     sig,
                                 CorInfoType           callJitType,
@@ -5398,9 +5401,9 @@ public:
     // - Rationalization links all nodes into linear form which is kept until
     //   the end of compilation. The first and last nodes are stored in the block.
     NodeThreading fgNodeThreading = NodeThreading::None;
-    weight_t      fgCalledCount = BB_ZERO_WEIGHT;          // count of the number of times this method was called
-                                          // This is derived from the profile data
-                                          // or is BB_UNITY_WEIGHT when we don't have profile data
+    weight_t      fgCalledCount = BB_UNITY_WEIGHT; // count of the number of times this method was called
+                                                   // This is derived from the profile data
+                                                   // or is BB_UNITY_WEIGHT when we don't have profile data
 
     bool fgFuncletsCreated = false; // true if the funclet creation phase has been run
 

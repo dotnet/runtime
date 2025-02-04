@@ -8271,8 +8271,8 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunBinary(
 
         if (oper != GT_NONE)
         {
-            // We shouldn't find AND_NOT nodes since it should only be produced in lowering
-            assert(oper != GT_AND_NOT);
+            // We shouldn't find AND_NOT, OR_NOT or XOR_NOT nodes since it should only be produced in lowering
+            assert((oper != GT_AND_NOT) && (oper != GT_OR_NOT) && (oper != GT_XOR_NOT));
 
             if (varTypeIsMask(type))
             {
@@ -8415,7 +8415,7 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunBinary(
         genTreeOps oper     = tree->GetOperForHWIntrinsicId(&isScalar);
 
         // We shouldn't find AND_NOT nodes since it should only be produced in lowering
-        assert(oper != GT_AND_NOT);
+        assert((oper != GT_AND_NOT) && (oper != GT_OR_NOT) && (oper != GT_XOR_NOT));
 
         if (isScalar)
         {
@@ -8903,7 +8903,7 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunBinary(
         genTreeOps oper     = tree->GetOperForHWIntrinsicId(&isScalar);
 
         // We shouldn't find AND_NOT nodes since it should only be produced in lowering
-        assert(oper != GT_AND_NOT);
+        assert((oper != GT_AND_NOT) && (oper != GT_OR_NOT) && (oper != GT_XOR_NOT));
 
         if (isScalar)
         {
