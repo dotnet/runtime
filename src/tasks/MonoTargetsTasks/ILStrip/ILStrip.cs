@@ -320,8 +320,8 @@ public class ILStrip : Microsoft.Build.Utilities.Task
                 int actualLoc = ComputeMethodHash(peReader, rva);
                 int headerSize = ComputeMethodHeaderSize(memStream, actualLoc);
                 if (headerSize == 1) //Set code size to zero for TinyFormat
-                    SetCodeSizeToZeroForTiny(ref memStream, actualLoc);
-                ZeroOutMethodBody(ref memStream, methodSize, actualLoc, headerSize);
+                    SetCodeSizeToZeroForTiny(memStream, actualLoc);
+                ZeroOutMethodBody(memStream, methodSize, actualLoc, headerSize);
             }
             else if (count < 0)
             {
@@ -350,17 +350,15 @@ public class ILStrip : Microsoft.Build.Utilities.Task
         return (headerFlag == 2 ? 1 : 4);
     }
 
-    private static void SetCodeSizeToZeroForTiny(ref MemoryStream memStream, int actualLoc)
+    private static void SetCodeSizeToZeroForTiny(MemoryStream memStream, int actualLoc)
     {
         memStream.Position = actualLoc;
-        byte[] header = {0b10};
-        memStream.Write(header, 0, 1);
+        memStream.WriteByte(0b10);
     }
 
-    private static void ZeroOutMethodBody(ref MemoryStream memStream, int methodSize, int actualLoc, int headerSize)
+    private static void ZeroOutMethodBody(MemoryStream memStream, int methodSize, int actualLoc, int headerSize)
     {
         memStream.Position = actualLoc + headerSize;
-
         byte[] zeroBuffer;
         zeroBuffer = ArrayPool<byte>.Shared.Rent(methodSize);
         Array.Clear(zeroBuffer, 0, zeroBuffer.Length);
