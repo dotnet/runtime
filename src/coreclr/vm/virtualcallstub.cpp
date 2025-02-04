@@ -4203,7 +4203,13 @@ BOOL VirtualCallStubManagerManager::CheckIsStub_Internal(
     WRAPPER_NO_CONTRACT;
     SUPPORTS_DAC;
 
-    // Forwarded to from RangeSectionStubManager
+#ifdef FEATURE_CACHED_INTERFACE_DISPATCH
+    if (UseCachedInterfaceDispatch())
+    {
+        return isCachedInterfaceDispatchStub(stubStartAddress);
+    }
+#endif
+    // Forwarded to from RangeSectionStubManager for other cases
     return FALSE;
 }
 
@@ -4216,15 +4222,21 @@ BOOL VirtualCallStubManagerManager::DoTraceStub(
 
     VirtualCallStubManager *pMgr = NULL;
 #ifdef FEATURE_CACHED_INTERFACE_DISPATCH
-    // Always use the global loader allocator, and find the correct one during the trace itself
-    pMgr = SystemDomain::GetGlobalLoaderAllocator()->GetVirtualCallStubManager();
+    if (UseCachedInterfaceDispatch())
+    {
+        // Always use the global loader allocator, and find the correct one during the trace itself
+        pMgr = SystemDomain::GetGlobalLoaderAllocator()->GetVirtualCallStubManager();
+    }
 #endif // FEATURE_CACHED_INTERFACE_DISPATCH
 
 #ifdef FEATURE_VIRTUAL_STUB_DISPATCH
-    // Find the owning manager. We should succeed, since presumably someone already
-    // called CheckIsStub on us to find out that we own the address, and already
-    // called TraceManager to initiate a trace.
-    pMgr = FindVirtualCallStubManager(stubStartAddress);
+    if (!UseCachedInterfaceDispatch())
+    {
+        // Find the owning manager. We should succeed, since presumably someone already
+        // called CheckIsStub on us to find out that we own the address, and already
+        // called TraceManager to initiate a trace.
+        pMgr = FindVirtualCallStubManager(stubStartAddress);
+    }
 #endif // FEATURE_VIRTUAL_STUB_DISPATCH
 
     CONSISTENCY_CHECK(CheckPointer(pMgr));
@@ -4289,15 +4301,25 @@ BOOL VirtualCallStubManagerManager::TraceManager(
 {
     WRAPPER_NO_CONTRACT;
 
+    VirtualCallStubManager *pMgr = NULL;
+
 #ifdef FEATURE_CACHED_INTERFACE_DISPATCH
-    // Always use the global loader allocator, and find the correct one during the trace itself
-    VirtualCallStubManager *pMgr = SystemDomain::GetGlobalLoaderAllocator()->GetVirtualCallStubManager();
-#else // FEATURE_CACHED_INTERFACE_DISPATCH
-    // Find the owning manager. We should succeed, since presumably someone already
-    // called CheckIsStub on us to find out that we own the address.
-    VirtualCallStubManager *pMgr = FindVirtualCallStubManager(GetIP(pContext));
-    CONSISTENCY_CHECK(CheckPointer(pMgr));
+    if (UseCachedInterfaceDispatch())
+    {
+        // Always use the global loader allocator, and find the correct one during the trace itself
+        pMgr = SystemDomain::GetGlobalLoaderAllocator()->GetVirtualCallStubManager();
+    }
+#endif
+
+#ifdef FEATURE_VIRTUAL_STUB_DISPATCH
+    if (!UseCachedInterfaceDispatch())
+    {
+        // Find the owning manager. We should succeed, since presumably someone already
+        // called CheckIsStub on us to find out that we own the address.
+        pMgr = FindVirtualCallStubManager(GetIP(pContext));
+    }
 #endif // FEATURE_CACHED_INTERFACE_DISPATCH
+    CONSISTENCY_CHECK(CheckPointer(pMgr));
 
     // Forward the call to the appropriate manager.
     return pMgr->TraceManager(thread, trace, pContext, pRetAddr);
