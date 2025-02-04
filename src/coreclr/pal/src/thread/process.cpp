@@ -71,6 +71,10 @@ SET_DEFAULT_DEBUG_CHANNEL(PROCESS); // some headers have code with asserts, so d
 #include <sys/membarrier.h>
 #endif
 
+#if defined(TARGET_ANDROID)
+#include <android/log.h>
+#endif
+
 #ifdef __APPLE__
 #include <pwd.h>
 #include <sys/sysctl.h>
@@ -2546,6 +2550,9 @@ PROCAbort(int signal, siginfo_t* siginfo)
     SEHCleanupSignals(false /* isChildProcess */);
 
     // Abort the process after waiting for the core dump to complete
+#if defined(TARGET_ANDROID)
+    __android_log_print (ANDROID_LOG_INFO, "CoreCLR", "Aborting in %s:%u", __FILE_NAME__, __LINE__);
+#endif
     abort();
 }
 
@@ -2822,7 +2829,7 @@ CorUnix::InitializeProcessCommandLine(
             ERROR("Invalid full path\n");
             palError = ERROR_INTERNAL_ERROR;
             goto exit;
-        }    
+        }
         lpwstr[0] = '\0';
         size_t n = PAL_wcslen(lpwstrFullPath) + 1;
 

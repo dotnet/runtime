@@ -607,6 +607,13 @@ function(add_jit jitName)
         ${JIT_ARCH_LINK_LIBRARIES}
     )
 
+    if(CLR_CMAKE_TARGET_ANDROID)
+            target_link_libraries(${jitName}
+                PRIVATE
+                log
+            )
+    endif()
+
     if (CLR_CMAKE_HOST_WIN32)
         link_natvis_sources_for_target(${jitName} PRIVATE clrjit.natvis)
     endif()
