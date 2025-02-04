@@ -2692,6 +2692,14 @@ bool Compiler::fgLateCastExpansionForCall(BasicBlock** pBlock, Statement* stmt, 
         lastBb->inheritWeight(firstBb);
     }
 
+    if (fallbackBb->KindIs(BBJ_THROW) && (fallbackBb->bbWeight != BB_ZERO_WEIGHT))
+    {
+        // This flow is disappearing.
+        JITDUMP("fgLateCastExpansionForCall: fallback " FMT_BB " throws and has flow into it. Data %s inconsistent.\n",
+                fallbackBb->bbNum, fgPgoConsistent ? "is now" : "was already");
+        fgPgoConsistent = false;
+    }
+
     //
     // Validate EH regions
     //
