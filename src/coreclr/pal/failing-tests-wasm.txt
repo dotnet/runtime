@@ -1,4 +1,4 @@
-Number of tests passed: 219 failed: 40 disabled: 69
+Number of tests passed: 221 failed: 36 disabled: 71
 Test run complete
 
 Failed tests:
@@ -47,8 +47,66 @@ after I added it to packaged files, we fail in `InternalCanonicalizeRealPath` - 
 "file_io/GetFullPathNameA/test3/paltest_getfullpathnamea_test3"
 
 "filemapping_memmgt/ProbeMemory/ProbeMemory_neg1/paltest_probememory_probememory_neg1"
+
+{0x60e64-0x206} TRACE [VIRTUAL] at VIRTUALReserveMemory.477: Reserving the memory now..
+{0x60e64-0x206} TRACE [VIRTUAL] at ReserveVirtualMemory.570: Reserving the memory now.
+warning: unsupported syscall: __syscall_madvise
+
+Entry 0 : 
+	 startBoundary 0x70000 
+	 memSize 65536 
+	 accessProtection 2 
+	 allocationType 8192 
+	 pNext 0 
+	 pLast 0 
+
+ProbeMemory for read didn't FAILED
+{0x60e64-0x206} TRACE [VIRTUAL] at VIRTUALFindRegionInformation.249: VIRTUALFindRegionInformation( 0x70000 )
+{0x60e64-0x206} TRACE [VIRTUAL] at VirtualFree.1045: Un-committing the following page(s) 458752 to 65536.
+{0x60e64-0x206} ASSERT [VIRTUAL] at /Users/rodo/git/runtime-main/src/coreclr/pal/src/map/virtual.cpp.1072: mmap() returned an abnormal value.
+
 "filemapping_memmgt/ProbeMemory/test1/paltest_probememory_test1"
+
+{0x60e64-0x206} TRACE [VIRTUAL] at VIRTUALFindRegionInformation.249: VIRTUALFindRegionInformation( 0 )
+{0x60e64-0x206} TRACE [VIRTUAL] at VIRTUALReserveMemory.477: Reserving the memory now..
+{0x60e64-0x206} TRACE [VIRTUAL] at ReserveVirtualMemory.570: Reserving the memory now.
+{0x60e64-0x206} TRACE [VIRTUAL] at VIRTUALCommitMemory.691: Reserve and commit the memory!
+ {0x60e64-0x206} TRACE [VIRTUAL] at VIRTUALFindRegionInformation.249: VIRTUALFindRegionInformation( 0x70000 )
+{0x60e64-0x206} TRACE [VIRTUAL] at VIRTUALCommitMemory.719: Committing the memory now..
+warning: unsupported syscall: __syscall_mprotect
+
+Entry 0 : 
+	 startBoundary 0x70000 
+	 memSize 65536 
+	 accessProtection 4 
+	 allocationType 4096 
+	 pNext 0 
+	 pLast 0 
+{0x60e64-0x206} TRACE [VIRTUAL] at VIRTUALFindRegionInformation.249: VIRTUALFindRegionInformation( 0x70000 )
+{0x60e64-0x206} TRACE [VIRTUAL] at VirtualFree.1045: Un-committing the following page(s) 458752 to 65536.
+{0x60e64-0x206} ASSERT [VIRTUAL] at /Users/rodo/git/runtime-main/src/coreclr/pal/src/map/virtual.cpp.1072: mmap() returned an abnormal value.
+
 "filemapping_memmgt/VirtualAlloc/test1/paltest_virtualalloc_test1"
+
+{0x60e64-0x206} TRACE [VIRTUAL] at VIRTUALFindRegionInformation.249: VIRTUALFindRegionInformation( 0 )
+{0x60e64-0x206} TRACE [VIRTUAL] at VIRTUALReserveMemory.477: Reserving the memory now..
+{0x60e64-0x206} TRACE [VIRTUAL] at ReserveVirtualMemory.570: Reserving the memory now.
+{0x60e64-0x206} TRACE [VIRTUAL] at VIRTUALCommitMemory.691: Reserve and commit the memory!
+ {0x60e64-0x206} TRACE [VIRTUAL] at VIRTUALFindRegionInformation.249: VIRTUALFindRegionInformation( 0x70000 )
+{0x60e64-0x206} TRACE [VIRTUAL] at VIRTUALCommitMemory.719: Committing the memory now..
+warning: unsupported syscall: __syscall_mprotect
+
+Entry 0 : 
+	 startBoundary 0x70000 
+	 memSize 65536 
+	 accessProtection 2 
+	 allocationType 4096 
+	 pNext 0 
+	 pLast 0 
+{0x60e64-0x206} TRACE [VIRTUAL] at VIRTUALFindRegionInformation.249: VIRTUALFindRegionInformation( 0x70000 )
+{0x60e64-0x206} TRACE [VIRTUAL] at VirtualFree.1045: Un-committing the following page(s) 458752 to 65536.
+{0x60e64-0x206} ASSERT [VIRTUAL] at /Users/rodo/git/runtime-main/src/coreclr/pal/src/map/virtual.cpp.1072: mmap() returned an abnormal value.
+
 "filemapping_memmgt/VirtualAlloc/test10/paltest_virtualalloc_test10"
 "filemapping_memmgt/VirtualAlloc/test11/paltest_virtualalloc_test11"
 "filemapping_memmgt/VirtualAlloc/test12/paltest_virtualalloc_test12"
@@ -93,3 +151,7 @@ Missing tests:
 
 "exception_handling/pal_sxs/test1/paltest_pal_sxs_test1"
 "eventprovider/eventprovidertest"
+
+Notes:
+
+check debug_api/OutputDebugStringW/test1/paltest_outputdebugstringw_test1 it should output to stderr and it currently doesn't
