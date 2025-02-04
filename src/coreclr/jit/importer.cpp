@@ -12980,6 +12980,8 @@ void Compiler::impInlineRecordArgInfo(InlineInfo*   pInlineInfo,
         argInfo->argIsLclVar = true;
     }
 
+    argInfo->argIsThis = arg->GetWellKnownArg() == WellKnownArg::ThisPointer;
+
     if (impIsInvariant(curArgVal))
     {
         argInfo->argIsInvariant = true;
@@ -12995,8 +12997,6 @@ void Compiler::impInlineRecordArgInfo(InlineInfo*   pInlineInfo,
         argInfo->argIsInvariant = true;
         argInfo->argHasSideEff  = false;
     }
-
-    argInfo->argIsThis = arg->GetWellKnownArg() == WellKnownArg::ThisPointer;
 
     bool isExact        = false;
     bool isNonNull      = false;
@@ -13114,10 +13114,6 @@ void Compiler::impInlineInitVars(InlineInfo* pInlineInfo)
         InlArgInfo* argInfo;
         switch (arg.GetWellKnownArg())
         {
-            case WellKnownArg::ThisPointer:
-                argInfo            = &inlArgInfo[ilArgCnt++];
-                argInfo->argIsThis = true;
-                break;
             case WellKnownArg::RetBuffer:
                 // This does not appear in the table of inline arg info; do not include them
                 continue;
