@@ -987,13 +987,11 @@ GenTree* Compiler::impStoreStruct(GenTree*         store,
                 call->gtArgs.InsertAfterThisOrFirst(this, retBufArg);
 
                 // Now the store needs to copy from the new temp instead.
-                store->Data() = gtNewLclvNode(tmp, lvaGetDesc(tmp)->TypeGet());
-                call->gtType  = TYP_VOID;
-                src->gtType   = TYP_VOID;
-                store         = impStoreStruct(store, CHECK_SPILL_ALL, pAfterStmt, di, block);
-
-                // Wrap with the actual call
-                return gtNewOperNode(GT_COMMA, TYP_VOID, src, store);
+                call->gtType      = TYP_VOID;
+                src->gtType       = TYP_VOID;
+                var_types tmpType = lvaGetDesc(tmp)->TypeGet();
+                store->Data()     = gtNewOperNode(GT_COMMA, tmpType, src, gtNewLclvNode(tmp, tmpType));
+                return impStoreStruct(store, CHECK_SPILL_ALL, pAfterStmt, di, block);
             }
 
             call->gtArgs.InsertAfterThisOrFirst(this,
