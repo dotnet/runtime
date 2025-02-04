@@ -660,8 +660,12 @@ namespace Microsoft.Extensions.Caching.Memory
         /// </summary>
         private sealed class CoherentState
         {
+#if NETCOREAPP
+            private readonly ConcurrentDictionary<string, CacheEntry> _stringEntries = [];
+#else
             private readonly ConcurrentDictionary<string, CacheEntry> _stringEntries = new ConcurrentDictionary<string, CacheEntry>(StringKeyComparer.Instance);
-            private readonly ConcurrentDictionary<object, CacheEntry> _nonStringEntries = new ConcurrentDictionary<object, CacheEntry>();
+#endif
+            private readonly ConcurrentDictionary<object, CacheEntry> _nonStringEntries = [];
             internal long _cacheSize;
 
             internal bool TryGetValue(object key, [NotNullWhen(true)] out CacheEntry? entry)
@@ -704,27 +708,19 @@ namespace Microsoft.Extensions.Caching.Memory
                 }
             }
 
-            private ICollection<KeyValuePair<string, CacheEntry>> StringEntriesCollection => _stringEntries;
-            private ICollection<KeyValuePair<object, CacheEntry>> NonStringEntriesCollection => _nonStringEntries;
-
             internal int Count => _stringEntries.Count + _nonStringEntries.Count;
 
             internal long Size => Volatile.Read(ref _cacheSize);
 
             internal void RemoveEntry(CacheEntry entry, MemoryCacheOptions options)
             {
-                if (entry.Key is string s)
-                {
-                    if (StringEntriesCollection.Remove(new KeyValuePair<string, CacheEntry>(s, entry)))
-                    {
-                        if (options.SizeLimit.HasValue)
-                        {
-                            Interlocked.Add(ref _cacheSize, -entry.Size);
-                        }
-                        entry.InvokeEvictionCallbacks();
-                    }
-                }
-                else if (NonStringEntriesCollection.Remove(new KeyValuePair<object, CacheEntry>(entry.Key, entry)))
+#if NET
+                if (entry.Key is string s ? _stringEntries.TryRemove(KeyValuePair.Create(s, entry))
+                    : _nonStringEntries.TryRemove(KeyValuePair.Create(entry.Key, entry)))
+#else
+                if (entry.Key is string s ? ((ICollection<KeyValuePair<string, CacheEntry>>)_stringEntries).Remove(new KeyValuePair<string, CacheEntry>(s, entry))
+                    : ((ICollection<KeyValuePair<object, CacheEntry>>)_nonStringEntries).Remove(new KeyValuePair<object, CacheEntry>(entry.Key, entry)))
+#endif
                 {
                     if (options.HasSizeLimit)
                     {
@@ -734,13 +730,8 @@ namespace Microsoft.Extensions.Caching.Memory
                 }
             }
 
-#if NETCOREAPP
-            // on .NET Core, the inbuilt comparer has Marvin built in; no need to intercept
-            private static class StringKeyComparer
-            {
-                internal static IEqualityComparer<string> Instance => EqualityComparer<string>.Default;
-            }
-#else
+#if !NETCOREAPP
+            // on .NET Core, the inbuilt comparer has Marvin built in;
             // otherwise, we need a custom comparer that manually implements Marvin
             private sealed class StringKeyComparer : IEqualityComparer<string>, IEqualityComparer
             {
