@@ -2570,33 +2570,17 @@ static PCODE PreStubWorker_Preemptive(
     // No GC frame is needed here since there should be no OBJECTREFs involved
     // in this call due to UnmanagedCallersOnlyAttribute semantics.
 
-    EX_TRY
-    {
-        bool propagateExceptionToNativeCode = IsCallDescrWorkerInternalReturnAddress(pTransitionBlock->m_ReturnAddress);
-        INSTALL_MANAGED_EXCEPTION_DISPATCHER_EX;
-        INSTALL_UNWIND_AND_CONTINUE_HANDLER_EX;
+    INSTALL_MANAGED_EXCEPTION_DISPATCHER;
+    INSTALL_UNWIND_AND_CONTINUE_HANDLER;
 
-        // Make sure the method table is restored, and method instantiation if present
-        pMD->CheckRestore();
-        CONSISTENCY_CHECK(GetAppDomain()->CheckCanExecuteManagedCode(pMD));
+    // Make sure the method table is restored, and method instantiation if present
+    pMD->CheckRestore();
+    CONSISTENCY_CHECK(GetAppDomain()->CheckCanExecuteManagedCode(pMD));
 
-        pbRetVal = pMD->DoPrestub(NULL, CallerGCMode::Preemptive);
+    pbRetVal = pMD->DoPrestub(NULL, CallerGCMode::Preemptive);
 
-        UNINSTALL_UNWIND_AND_CONTINUE_HANDLER_EX(propagateExceptionToNativeCode);
-        UNINSTALL_MANAGED_EXCEPTION_DISPATCHER_EX(propagateExceptionToNativeCode);
-    }
-    EX_CATCH
-    {
-        GCX_COOP();
-        if (g_isNewExceptionHandlingEnabled)
-        {
-            OBJECTHANDLE ohThrowable = currentThread->LastThrownObjectHandle();
-            _ASSERTE(ohThrowable);
-            StackTraceInfo::AppendElement(ohThrowable, 0, (UINT_PTR)pTransitionBlock, pMD, NULL);
-        }
-        EX_RETHROW;
-    }
-    EX_END_CATCH(SwallowAllExceptions)
+    UNINSTALL_UNWIND_AND_CONTINUE_HANDLER;
+    UNINSTALL_MANAGED_EXCEPTION_DISPATCHER;
 
     {
         HardwareExceptionHolder;
