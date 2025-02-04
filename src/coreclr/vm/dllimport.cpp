@@ -5910,7 +5910,7 @@ EXTERN_C void STDCALL VarargPInvokeStubWorker(TransitionBlock * pTransitionBlock
     pFrame->Push(CURRENT_THREAD);
 
     _ASSERTE(pVASigCookie == pFrame->GetVASigCookie());
-    _ASSERTE(pMD == Frame_GetFunction(pFrame));
+    _ASSERTE(pMD == pFrame->GetFunction());
 
     GetILStubForCalli(pVASigCookie, pMD);
 

@@ -7326,8 +7326,8 @@ LONG WINAPI CLRVectoredExceptionHandlerShim(PEXCEPTION_POINTERS pExceptionInfo)
                     if (pFrame == 0 || pFrame == (Frame*) -1)
                         break;
 
-                    ETransitionType type = Frame_GetTransitionType(pFrame);
-                    if (type == TT_M2U || type == TT_InternalCall)
+                    Frame::ETransitionType type = pFrame->GetTransitionType();
+                    if (type == Frame::TT_M2U || type == Frame::TT_InternalCall)
                     {
                         stopPoint = pFrame;
                         break;

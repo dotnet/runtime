@@ -37,139 +37,139 @@
 
 #define CHECK_APP_DOMAIN    0
 
-void Frame_GcScanRoots(FrameBase *frame, promote_func *fn, ScanContext* sc)
+void Frame::GcScanRoots(promote_func *fn, ScanContext* sc)
 {
-#define FRAME_TYPE_NAME(frameType) if (frame->GetType() == FrameType::frameType) { ((frameType*)frame)->GcScanRoots_Impl(fn, sc); return; }
+#define FRAME_TYPE_NAME(frameType) if (this->GetType() == FrameType::frameType) { ((frameType*)this)->GcScanRoots_Impl(fn, sc); return; }
 #include "FrameTypes.h"
     _ASSERTE(!"Unexpected");
     return;
 }
 
 
-unsigned Frame_GetFrameAttribs(FrameBase *frame)
+unsigned Frame::GetFrameAttribs()
 {
-#define FRAME_TYPE_NAME(frameType) if (frame->GetType() == FrameType::frameType) { return ((frameType*)frame)->GetFrameAttribs_Impl(); }
+#define FRAME_TYPE_NAME(frameType) if (this->GetType() == FrameType::frameType) { return ((frameType*)this)->GetFrameAttribs_Impl(); }
 #include "FrameTypes.h"
     _ASSERTE(!"Unexpected");
     return 0;
 }
 
 #ifndef DACCESS_COMPILE
-void Frame_ExceptionUnwind(FrameBase *frame)
+void Frame::ExceptionUnwind()
 {
-#define FRAME_TYPE_NAME(frameType) if (frame->GetType() == FrameType::frameType) { ((frameType*)frame)->ExceptionUnwind_Impl(); return; }
+#define FRAME_TYPE_NAME(frameType) if (this->GetType() == FrameType::frameType) { ((frameType*)this)->ExceptionUnwind_Impl(); return; }
 #include "FrameTypes.h"
     _ASSERTE(!"Unexpected");
     return;
 }
 
 #endif
-BOOL Frame_NeedsUpdateRegDisplay(FrameBase *frame)
+BOOL Frame::NeedsUpdateRegDisplay()
 {
-#define FRAME_TYPE_NAME(frameType) if (frame->GetType() == FrameType::frameType) { return ((frameType*)frame)->NeedsUpdateRegDisplay_Impl(); }
+#define FRAME_TYPE_NAME(frameType) if (this->GetType() == FrameType::frameType) { return ((frameType*)this)->NeedsUpdateRegDisplay_Impl(); }
 #include "FrameTypes.h"
     _ASSERTE(!"Unexpected");
     return 0;
 }
 
-BOOL Frame_IsTransitionToNativeFrame(FrameBase *frame)
+BOOL Frame::IsTransitionToNativeFrame()
 {
-#define FRAME_TYPE_NAME(frameType) if (frame->GetType() == FrameType::frameType) { return ((frameType*)frame)->IsTransitionToNativeFrame_Impl(); }
+#define FRAME_TYPE_NAME(frameType) if (this->GetType() == FrameType::frameType) { return ((frameType*)this)->IsTransitionToNativeFrame_Impl(); }
 #include "FrameTypes.h"
     _ASSERTE(!"Unexpected");
     return 0;
 }
 
-MethodDesc *Frame_GetFunction(FrameBase* frame)
+MethodDesc *Frame::GetFunction()
 {
-#define FRAME_TYPE_NAME(frameType) if (frame->GetType() == FrameType::frameType) { return ((frameType*)frame)->GetFunction_Impl(); }
+#define FRAME_TYPE_NAME(frameType) if (this->GetType() == FrameType::frameType) { return ((frameType*)this)->GetFunction_Impl(); }
 #include "FrameTypes.h"
     _ASSERTE(!"Unexpected");
     return 0;
 }
 
-Assembly *Frame_GetAssembly(FrameBase* frame)
+Assembly *Frame::GetAssembly()
 {
-#define FRAME_TYPE_NAME(frameType) if (frame->GetType() == FrameType::frameType) { return ((frameType*)frame)->GetAssembly_Impl(); }
+#define FRAME_TYPE_NAME(frameType) if (this->GetType() == FrameType::frameType) { return ((frameType*)this)->GetAssembly_Impl(); }
 #include "FrameTypes.h"
     _ASSERTE(!"Unexpected");
     return 0;
 }
-PTR_BYTE Frame_GetIP(FrameBase* frame)
+PTR_BYTE Frame::GetIP()
 {
-#define FRAME_TYPE_NAME(frameType) if (frame->GetType() == FrameType::frameType) { return ((frameType*)frame)->GetIP_Impl(); }
-#include "FrameTypes.h"
-    _ASSERTE(!"Unexpected");
-    return 0;
-}
-
-TADDR Frame_GetReturnAddressPtr(FrameBase* frame)
-{
-#define FRAME_TYPE_NAME(frameType) if (frame->GetType() == FrameType::frameType) { return ((frameType*)frame)->GetReturnAddressPtr_Impl(); }
-#include "FrameTypes.h"
-    _ASSERTE(!"Unexpected");
-    return 0;
-}
-PCODE Frame_GetReturnAddress(FrameBase* frame)
-{
-#define FRAME_TYPE_NAME(frameType) if (frame->GetType() == FrameType::frameType) { return ((frameType*)frame)->GetReturnAddress_Impl(); }
+#define FRAME_TYPE_NAME(frameType) if (this->GetType() == FrameType::frameType) { return ((frameType*)this)->GetIP_Impl(); }
 #include "FrameTypes.h"
     _ASSERTE(!"Unexpected");
     return 0;
 }
 
-void Frame_UpdateRegDisplay(FrameBase* frame, const PREGDISPLAY pRegDisplay, bool updateFloats)
+TADDR Frame::GetReturnAddressPtr()
 {
-#define FRAME_TYPE_NAME(frameType) if (frame->GetType() == FrameType::frameType) { ((frameType*)frame)->UpdateRegDisplay_Impl(pRegDisplay, updateFloats); return; }
+#define FRAME_TYPE_NAME(frameType) if (this->GetType() == FrameType::frameType) { return ((frameType*)this)->GetReturnAddressPtr_Impl(); }
+#include "FrameTypes.h"
+    _ASSERTE(!"Unexpected");
+    return 0;
+}
+PCODE Frame::GetReturnAddress()
+{
+#define FRAME_TYPE_NAME(frameType) if (this->GetType() == FrameType::frameType) { return ((frameType*)this)->GetReturnAddress_Impl(); }
+#include "FrameTypes.h"
+    _ASSERTE(!"Unexpected");
+    return 0;
+}
+
+void Frame::UpdateRegDisplay(const PREGDISPLAY pRegDisplay, bool updateFloats)
+{
+#define FRAME_TYPE_NAME(frameType) if (this->GetType() == FrameType::frameType) { ((frameType*)this)->UpdateRegDisplay_Impl(pRegDisplay, updateFloats); return; }
 #include "FrameTypes.h"
     _ASSERTE(!"Unexpected");
     return;
 }
 
-int Frame_GetFrameType(FrameBase* frame)
+int Frame::GetFrameType()
 {
-#define FRAME_TYPE_NAME(frameType) if (frame->GetType() == FrameType::frameType) { return ((frameType*)frame)->GetFrameType_Impl(); }
+#define FRAME_TYPE_NAME(frameType) if (this->GetType() == FrameType::frameType) { return ((frameType*)this)->GetFrameType_Impl(); }
 #include "FrameTypes.h"
     _ASSERTE(!"Unexpected");
     return 0;
 }
 
-ETransitionType Frame_GetTransitionType(FrameBase* frame)
+Frame::ETransitionType Frame::GetTransitionType()
 {
-#define FRAME_TYPE_NAME(frameType) if (frame->GetType() == FrameType::frameType) { return ((frameType*)frame)->GetTransitionType_Impl(); }
+#define FRAME_TYPE_NAME(frameType) if (this->GetType() == FrameType::frameType) { return ((frameType*)this)->GetTransitionType_Impl(); }
 #include "FrameTypes.h"
     _ASSERTE(!"Unexpected");
     return (ETransitionType)0;
 }
 
-Interception Frame_GetInterception(FrameBase* frame)
+Frame::Interception Frame::GetInterception()
 {
-#define FRAME_TYPE_NAME(frameType) if (frame->GetType() == FrameType::frameType) { return ((frameType*)frame)->GetInterception_Impl(); }
+#define FRAME_TYPE_NAME(frameType) if (this->GetType() == FrameType::frameType) { return ((frameType*)this)->GetInterception_Impl(); }
 #include "FrameTypes.h"
     _ASSERTE(!"Unexpected");
     return (Interception)0;
 }
 
-void Frame_GetUnmanagedCallSite(FrameBase* frame, TADDR* ip, TADDR* returnIP, TADDR* returnSP)
+void Frame::GetUnmanagedCallSite(TADDR* ip, TADDR* returnIP, TADDR* returnSP)
 {
-#define FRAME_TYPE_NAME(frameType) if (frame->GetType() == FrameType::frameType) { ((frameType*)frame)->GetUnmanagedCallSite_Impl(ip, returnIP, returnSP); return; }
+#define FRAME_TYPE_NAME(frameType) if (this->GetType() == FrameType::frameType) { ((frameType*)this)->GetUnmanagedCallSite_Impl(ip, returnIP, returnSP); return; }
 #include "FrameTypes.h"
     _ASSERTE(!"Unexpected");
     return;
 }
 
-BOOL Frame_TraceFrame(FrameBase* frame, Thread *thread, BOOL fromPatch, TraceDestination *trace, REGDISPLAY *regs)
+BOOL Frame::TraceFrame(Thread *thread, BOOL fromPatch, TraceDestination *trace, REGDISPLAY *regs)
 {
-#define FRAME_TYPE_NAME(frameType) if (frame->GetType() == FrameType::frameType) { return ((frameType*)frame)->TraceFrame_Impl(thread, fromPatch, trace, regs); }
+#define FRAME_TYPE_NAME(frameType) if (this->GetType() == FrameType::frameType) { return ((frameType*)this)->TraceFrame_Impl(thread, fromPatch, trace, regs); }
 #include "FrameTypes.h"
     _ASSERTE(!"Unexpected");
     return FALSE;
 }
 
 #ifdef DACCESS_COMPILE
-void Frame_EnumMemoryRegions(FrameBase* frame, CLRDataEnumMemoryFlags flags)
+void Frame::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
 {
-#define FRAME_TYPE_NAME(frameType) if (frame->GetType() == FrameType::frameType) { ((frameType*)frame)->EnumMemoryRegions_Impl(flags); return; }
+#define FRAME_TYPE_NAME(frameType) if (this->GetType() == FrameType::frameType) { ((frameType*)this)->EnumMemoryRegions_Impl(flags); return; }
 #include "FrameTypes.h"
     _ASSERTE(!"Unexpected");
     return;
@@ -177,9 +177,9 @@ void Frame_EnumMemoryRegions(FrameBase* frame, CLRDataEnumMemoryFlags flags)
 
 #endif // DACCESS_COMPILE
 #if defined(_DEBUG) && !defined(DACCESS_COMPILE)
-BOOL Frame_Protects(FrameBase* frame, OBJECTREF *ppObjectRef)
+BOOL Frame::Protects(OBJECTREF *ppObjectRef)
 {
-#define FRAME_TYPE_NAME(frameType) if (frame->GetType() == FrameType::frameType) { return ((frameType*)frame)->Protects_Impl(ppObjectRef); }
+#define FRAME_TYPE_NAME(frameType) if (this->GetType() == FrameType::frameType) { return ((frameType*)this)->Protects_Impl(ppObjectRef); }
 #include "FrameTypes.h"
     _ASSERTE(!"Unexpected");
     return FALSE;
@@ -188,18 +188,17 @@ BOOL Frame_Protects(FrameBase* frame, OBJECTREF *ppObjectRef)
 #endif // defined(_DEBUG) && !defined(DACCESS_COMPILE)
 
 // TransitionFrame only apis
-class TransitionFrame;
-TADDR Frame_GetTransitionBlock(TransitionFrame* frame)
+TADDR TransitionFrame::GetTransitionBlock()
 {
-#define FRAME_TYPE_NAME(frameType) if (frame->GetType() == FrameType::frameType) { return ((frameType*)frame)->GetTransitionBlock_Impl(); }
+#define FRAME_TYPE_NAME(frameType) if (this->GetType() == FrameType::frameType) { return ((frameType*)this)->GetTransitionBlock_Impl(); }
 #include "FrameTypes.h"
     _ASSERTE(!"Unexpected");
     return (TADDR)0;
 }
 
-BOOL Frame_SuppressParamTypeArg(TransitionFrame* frame)
+BOOL TransitionFrame::SuppressParamTypeArg()
 {
-#define FRAME_TYPE_NAME(frameType) if (frame->GetType() == FrameType::frameType) { return ((frameType*)frame)->SuppressParamTypeArg_Impl(); }
+#define FRAME_TYPE_NAME(frameType) if (this->GetType() == FrameType::frameType) { return ((frameType*)this)->SuppressParamTypeArg_Impl(); }
 #include "FrameTypes.h"
     _ASSERTE(!"Unexpected");
     return FALSE;
@@ -227,7 +226,7 @@ void Frame::Log() {
         dbgStubCtr++;      // basicly a nop to put a breakpoint on.
     }
 
-    MethodDesc* method = Frame_GetFunction(this);
+    MethodDesc* method = GetFunction();
 
     STRESS_LOG3(LF_STUBS, LL_INFO1000000, "STUBS: In Stub with Frame %p assoc Method %pM FrameType = %pV\n", this, method, *((void**) this));
 
@@ -255,12 +254,12 @@ void Frame::Log() {
              method->m_pszDebugClassName,
              method->m_pszDebugMethodName,
              method->m_pszDebugMethodSignature,
-             DBG_ADDR(Frame_GetReturnAddressPtr(this))));
+             DBG_ADDR(GetReturnAddressPtr())));
     else
         LOG((LF_STUBS, LL_INFO1000000,
              "IN %s Stub Method UNKNOWN ESP of return" FMT_ADDR "\n",
              frameType,
-             DBG_ADDR(Frame_GetReturnAddressPtr(this)) ));
+             DBG_ADDR(GetReturnAddressPtr()) ));
 
     _ASSERTE(GetThread()->PreemptiveGCDisabled());
 }
@@ -645,7 +644,7 @@ PTR_VOID TransitionFrame::GetParamTypeArg()
     // may be another option.
     ENABLE_FORBID_GC_LOADER_USE_IN_THIS_SCOPE();
 
-    MethodDesc *pFunction = Frame_GetFunction(this);
+    MethodDesc *pFunction = GetFunction();
     _ASSERTE (pFunction->RequiresInstArg());
 
     MetaSig msig(pFunction);
@@ -653,14 +652,14 @@ PTR_VOID TransitionFrame::GetParamTypeArg()
 
     INT offs = argit.GetParamTypeArgOffset();
 
-    TADDR taParamTypeArg = *PTR_TADDR(Frame_GetTransitionBlock(this) + offs);
+    TADDR taParamTypeArg = *PTR_TADDR(GetTransitionBlock() + offs);
     return PTR_VOID(taParamTypeArg);
 }
 
 TADDR TransitionFrame::GetAddrOfThis()
 {
     WRAPPER_NO_CONTRACT;
-    return Frame_GetTransitionBlock(this) + ArgIterator::GetThisOffset();
+    return GetTransitionBlock() + ArgIterator::GetThisOffset();
 }
 
 VASigCookie * TransitionFrame::GetVASigCookie()
@@ -672,10 +671,10 @@ VASigCookie * TransitionFrame::GetVASigCookie()
         sizeof(TransitionBlock)));
 #else
     WRAPPER_NO_CONTRACT;
-    MetaSig msig(Frame_GetFunction(this));
+    MetaSig msig(GetFunction());
     ArgIterator argit(&msig);
     return PTR_VASigCookie(
-        *dac_cast<PTR_TADDR>(Frame_GetTransitionBlock(this) + argit.GetVASigCookieOffset()));
+        *dac_cast<PTR_TADDR>(GetTransitionBlock() + argit.GetVASigCookieOffset()));
 #endif
 }
 
@@ -706,7 +705,7 @@ BOOL PrestubMethodFrame::TraceFrame_Impl(Thread *thread, BOOL fromPatch,
         // native code versions, even if they aren't the one that was reported by this trace, see
         // DebuggerController::PatchTrace() under case TRACE_MANAGED. This alleviates the StubManager from having to prevent the
         // race that occurs here.
-        trace->InitForStub(Frame_GetFunction(this)->GetMethodEntryPointIfExists());
+        trace->InitForStub(GetFunction()->GetMethodEntryPointIfExists());
     }
     else
     {
@@ -871,7 +870,7 @@ BOOL StubDispatchFrame::TraceFrame_Impl(Thread *thread, BOOL fromPatch,
     return FALSE;
 }
 
-Interception StubDispatchFrame::GetInterception_Impl()
+Frame::Interception StubDispatchFrame::GetInterception_Impl()
 {
     LIMITED_METHOD_CONTRACT;
 
@@ -951,14 +950,14 @@ PTR_BYTE ExternalMethodFrame::GetGCRefMap()
     return pGCRefMap;
 }
 
-Interception ExternalMethodFrame::GetInterception_Impl()
+Frame::Interception ExternalMethodFrame::GetInterception_Impl()
 {
     LIMITED_METHOD_CONTRACT;
 
     return INTERCEPTION_NONE;
 }
 
-Interception PrestubMethodFrame::GetInterception_Impl()
+Frame::Interception PrestubMethodFrame::GetInterception_Impl()
 {
     LIMITED_METHOD_DAC_CONTRACT;
 
@@ -993,11 +992,11 @@ void DynamicHelperFrame::GcScanRoots_Impl(promote_func *fn, ScanContext* sc)
 
     FramedMethodFrame::GcScanRoots_Impl(fn, sc);
 
-    PTR_PTR_Object pArgumentRegisters = dac_cast<PTR_PTR_Object>(Frame_GetTransitionBlock(this) + TransitionBlock::GetOffsetOfArgumentRegisters());
+    PTR_PTR_Object pArgumentRegisters = dac_cast<PTR_PTR_Object>(GetTransitionBlock() + TransitionBlock::GetOffsetOfArgumentRegisters());
 
     if (m_dynamicHelperFrameFlags & DynamicHelperFrameFlags_ObjectArg)
     {
-        TADDR pArgument = Frame_GetTransitionBlock(this) + TransitionBlock::GetOffsetOfArgumentRegisters();
+        TADDR pArgument = GetTransitionBlock() + TransitionBlock::GetOffsetOfArgumentRegisters();
 #ifdef TARGET_X86
         // x86 is special as always
         pArgument += offsetof(ArgumentRegisters, ECX);
@@ -1007,7 +1006,7 @@ void DynamicHelperFrame::GcScanRoots_Impl(promote_func *fn, ScanContext* sc)
 
     if (m_dynamicHelperFrameFlags & DynamicHelperFrameFlags_ObjectArg2)
     {
-        TADDR pArgument = Frame_GetTransitionBlock(this) + TransitionBlock::GetOffsetOfArgumentRegisters();
+        TADDR pArgument = GetTransitionBlock() + TransitionBlock::GetOffsetOfArgumentRegisters();
 #ifdef TARGET_X86
         // x86 is special as always
         pArgument += offsetof(ArgumentRegisters, EDX);
@@ -1275,7 +1274,7 @@ static StackWalkAction IsProtectedByGCFrameStackWalkFramesCallback(
     IsProtectedByGCFrameStruct *pd = (IsProtectedByGCFrameStruct*)pData;
     Frame *pFrame = pCF->GetFrame();
     if (pFrame) {
-        if (Frame_Protects(pFrame, pd->ppObjectRef)) {
+        if (pFrame->Protects(pd->ppObjectRef)) {
             pd->count++;
         }
     }
@@ -1447,7 +1446,7 @@ void TransitionFrame::PromoteCallerStack(promote_func* fn, ScanContext* sc)
 
     // We're going to have to look at the signature to determine
     // which arguments a are pointers....First we need the function
-    pFunction = Frame_GetFunction(this);
+    pFunction = GetFunction();
     if (pFunction == NULL)
         return;
 
@@ -1472,7 +1471,7 @@ void TransitionFrame::PromoteCallerStack(promote_func* fn, ScanContext* sc)
         if (fCtorOfVariableSizedObject)
             msig.ClearHasThis();
 
-        if (pFunction->RequiresInstArg() && !Frame_SuppressParamTypeArg(this))
+        if (pFunction->RequiresInstArg() && !SuppressParamTypeArg())
             msig.SetHasParamTypeArg();
 
         PromoteCallerStackHelper (fn, sc, pFunction, &msig);
@@ -1506,7 +1505,7 @@ void TransitionFrame::PromoteCallerStackHelper(promote_func* fn, ScanContext* sc
 
     ArgIterator argit(pmsig);
 
-    TADDR pTransitionBlock = Frame_GetTransitionBlock(this);
+    TADDR pTransitionBlock = GetTransitionBlock();
 
     // promote 'this' for non-static methods
     if (argit.HasThis() && pFunction != NULL)
@@ -1571,7 +1570,7 @@ void TransitionFrame::PromoteCallerStackUsingGCRefMap(promote_func* fn, ScanCont
     decoder.ReadStackPop();
 #endif
 
-    TADDR pTransitionBlock = Frame_GetTransitionBlock(this);
+    TADDR pTransitionBlock = GetTransitionBlock();
 
     while (!decoder.AtEnd())
     {
@@ -1683,7 +1682,7 @@ void CLRToCOMMethodFrame::GcScanRoots_Impl(promote_func* fn, ScanContext* sc)
 
 
     // Promote the returned object
-    MethodDesc* methodDesc = Frame_GetFunction(this);
+    MethodDesc* methodDesc = GetFunction();
     ReturnKind returnKind = methodDesc->GetReturnKind();
     if (returnKind == RT_Object)
     {
@@ -1734,7 +1733,7 @@ BOOL TransitionFrame::Protects_Impl(OBJECTREF * ppORef)
     IsObjRefProtectedScanContext sc (ppORef);
     // Set the stack limit for the scan to the SP of the managed frame above the transition frame
     sc.stack_limit = GetSP();
-    Frame_GcScanRoots (this, IsObjRefProtected, &sc);
+    GcScanRoots (IsObjRefProtected, &sc);
     return sc.oref_protected;
 }
 #endif //defined (_DEBUG) && !defined (DACCESS_COMPILE)
@@ -1791,7 +1790,7 @@ void ComMethodFrame::DoSecondPassHandlerCleanup(Frame * pCurFrame)
     pCurFrame = pThread->GetFrame();
     while ((pCurFrame != NULL) && (pCurFrame <= pComMethodFrame))
     {
-        Frame_ExceptionUnwind(pCurFrame);
+        pCurFrame->ExceptionUnwind();
         pCurFrame = pCurFrame->PtrNextFrame();
     }
 
@@ -2057,7 +2056,7 @@ PCODE UnmanagedToManagedFrame::GetReturnAddress_Impl()
     PCODE pRetAddr = Frame::GetReturnAddress_Impl();
 
     if (InlinedCallFrame::FrameHasActiveCall(m_Next) &&
-        pRetAddr == Frame_GetReturnAddress(m_Next))
+        pRetAddr == m_Next->GetReturnAddress())
     {
         // there's actually no unmanaged code involved - we were called directly
         // from managed code using an InlinedCallFrame
@@ -2393,4 +2392,3 @@ void ComputeCallRefMap(MethodDesc* pMD,
 }
 
 #endif // !DACCESS_COMPILE
-

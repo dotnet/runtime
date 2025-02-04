@@ -337,7 +337,7 @@ StackWalkAction UpdateObjectRefInResumeContextCallback(CrawlFrame* pCF, LPVOID p
     {
         Frame *pFrame = pCF->GetFrame();
 
-        if (Frame_NeedsUpdateRegDisplay(pFrame))
+        if (pFrame->NeedsUpdateRegDisplay())
         {
             CONSISTENCY_CHECK(pFrame >= pState->pHighestFrameWithRegisters);
             pState->pHighestFrameWithRegisters = pFrame;
@@ -397,7 +397,7 @@ bool ExceptionTracker::FindNonvolatileRegisterPointers(Thread* pThread, UINT_PTR
 
     while ((UINT_PTR)pFrame < uOriginalSP)
     {
-        if (Frame_NeedsUpdateRegDisplay(pFrame))
+        if (pFrame->NeedsUpdateRegDisplay())
             pHighestFrameWithRegisters = pFrame;
 
         pFrame = pFrame->Next();
@@ -869,7 +869,7 @@ static void PopExplicitFrames(Thread *pThread, void *targetSp, void *targetCalle
     Frame* pFrame = pThread->GetFrame();
     while (pFrame < targetSp)
     {
-        Frame_ExceptionUnwind(pFrame);
+        pFrame->ExceptionUnwind();
         pFrame->Pop(pThread);
         pFrame = pThread->GetFrame();
     }
@@ -898,7 +898,7 @@ static void PopExplicitFrames(Thread *pThread, void *targetSp, void *targetCalle
         if (ExecutionManager::IsReadyToRunCode(returnAddress))
 #endif
         {
-            Frame_ExceptionUnwind(pFrame);
+            pFrame->ExceptionUnwind();
             pFrame->Pop(pThread);
         }
         else
@@ -1460,7 +1460,7 @@ void ExceptionTracker::InitializeCrawlFrameForExplicitFrame(CrawlFrame* pcfThisF
     pcfThisFrame->isIPadjusted = false;
 
     pcfThisFrame->pFrame = pFrame;
-    pcfThisFrame->pFunc = Frame_GetFunction(pFrame);
+    pcfThisFrame->pFunc = pFrame->GetFunction();
 
     if (pFrame->GetType() == FrameType::InlinedCallFrame &&
         !InlinedCallFrame::FrameHasActiveCall(pFrame))
@@ -2020,7 +2020,7 @@ CLRUnwindStatus ExceptionTracker::ProcessOSExceptionNotification(
                 //
                 // notify Frame of unwind
                 //
-                Frame_ExceptionUnwind(pFrame);
+                pFrame->ExceptionUnwind();
 
                 // If we have not yet set the initial explicit frame processed by this tracker, then
                 // set it now.
@@ -2384,7 +2384,7 @@ BOOL NotifyDebuggerOfStub(Thread* pThread, Frame* pCurrentFrame)
     // w/ the ICorDebugInternalFrame stack range.
     if (CORDebuggerAttached())
     {
-        if (Frame_GetTransitionType(pCurrentFrame) == TT_M2U)
+        if (pCurrentFrame->GetTransitionType() == Frame::TT_M2U)
         {
             // Use -1 for the backing store pointer whenever we use the address of a frame as the stack pointer.
             EEToDebuggerExceptionInterfaceWrapper::FirstChanceManagedException(pThread,
@@ -2417,7 +2417,7 @@ CLRUnwindStatus ExceptionTracker::ProcessExplicitFrame(
 
     Frame* pFrame = pcfThisFrame->GetFrame();
 
-    EH_LOG((LL_INFO100, "  [ ProcessExplicitFrame: pFrame: " FMT_ADDR " pMD: " FMT_ADDR " %s PASS ]\n", DBG_ADDR(pFrame), DBG_ADDR(Frame_GetFunction(pFrame)), fIsFirstPass ? "FIRST" : "SECOND"));
+    EH_LOG((LL_INFO100, "  [ ProcessExplicitFrame: pFrame: " FMT_ADDR " pMD: " FMT_ADDR " %s PASS ]\n", DBG_ADDR(pFrame), DBG_ADDR(pFrame->GetFunction()), fIsFirstPass ? "FIRST" : "SECOND"));
 
     if (FRAME_TOP == pFrame)
     {
@@ -6122,7 +6122,7 @@ BOOL IsSafeToUnwindFrameChain(Thread* pThread, LPVOID MemoryStackFpForFrameChain
     Frame* pLastFrameOfInterest = FRAME_TOP;
     for (Frame* pf = pThread->m_pFrame; pf < MemoryStackFpForFrameChain; pf = pf->PtrNextFrame())
     {
-        PCODE retAddr = Frame_GetReturnAddress(pf);
+        PCODE retAddr = pf->GetReturnAddress();
         if (retAddr != (PCODE)NULL && ExecutionManager::IsManagedCode(retAddr))
         {
             pLastFrameOfInterest = pf;
@@ -6141,7 +6141,7 @@ BOOL IsSafeToUnwindFrameChain(Thread* pThread, LPVOID MemoryStackFpForFrameChain
     SetIP(&ctx, 0);
     SetSP(&ctx, 0);
     FillRegDisplay(&rd, &ctx);
-    Frame_UpdateRegDisplay(pLastFrameOfInterest, &rd);
+    pLastFrameOfInterest->UpdateRegDisplay(&rd);
 
     // We're safe only if the managed method will be unwound also
     LPVOID managedSP = dac_cast<PTR_VOID>(GetRegdisplaySP(&rd));
@@ -8373,7 +8373,7 @@ extern "C" bool QCALLTYPE SfiInit(StackFrameIterator* pThis, CONTEXT* pStackwalk
             Frame *pFrame = pThis->m_crawl.GetFrame();
             if (pFrame != FRAME_TOP)
             {
-                MethodDesc *pMD = Frame_GetFunction(pFrame);
+                MethodDesc *pMD = pFrame->GetFunction();
                 if (pMD != NULL)
                 {
                     GCX_COOP();
@@ -8401,9 +8401,9 @@ extern "C" bool QCALLTYPE SfiInit(StackFrameIterator* pThis, CONTEXT* pStackwalk
                 // a slightly different location in the managed code calling the pinvoke and the inlined
                 // call frame doesn't update the context pointers anyways.
                 Frame *pSkippedFrame = pThis->m_crawl.GetFrame();
-                if (Frame_NeedsUpdateRegDisplay(pSkippedFrame) && (pSkippedFrame->GetType() != FrameType::InlinedCallFrame))
+                if (pSkippedFrame->NeedsUpdateRegDisplay() && (pSkippedFrame->GetType() != FrameType::InlinedCallFrame))
                 {
-                    Frame_UpdateRegDisplay(pSkippedFrame, pThis->m_crawl.GetRegisterSet());
+                    pSkippedFrame->UpdateRegDisplay(pThis->m_crawl.GetRegisterSet());
                 }
             }
         }
@@ -8651,7 +8651,7 @@ extern "C" bool QCALLTYPE SfiNext(StackFrameIterator* pThis, uint* uExCollideCla
             }
             else if (pTopExInfo->m_passNumber == 1)
             {
-                pMD = Frame_GetFunction(pFrame);
+                pMD = pFrame->GetFunction();
                 if (pMD != NULL)
                 {
                     GCX_COOP();

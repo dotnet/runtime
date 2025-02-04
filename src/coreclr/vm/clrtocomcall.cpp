@@ -340,7 +340,7 @@ UINT32 CLRToCOMEventCallWorker(CLRToCOMMethodFrame* pFrame, CLRToCOMCallMethodDe
         MethodDescCallSite eventProvider(pEvProvMD, &gc.EventProviderObj);
 
         // Retrieve the event handler passed in.
-        OBJECTREF EventHandlerObj = *(OBJECTREF*)(Frame_GetTransitionBlock(pFrame) + ArgItr.GetNextOffset());
+        OBJECTREF EventHandlerObj = *(OBJECTREF*)(pFrame->GetTransitionBlock() + ArgItr.GetNextOffset());
 
         ARG_SLOT EventMethArgs[] =
         {
@@ -375,7 +375,7 @@ static CallsiteDetails CreateCallsiteDetails(_In_ FramedMethodFrame *pFrame)
     }
     CONTRACTL_END;
 
-    MethodDesc *pMD = Frame_GetFunction(pFrame);
+    MethodDesc *pMD = pFrame->GetFunction();
     _ASSERTE(!pMD->ContainsGenericVariables() && pMD->IsRuntimeMethodHandle());
 
     const BOOL fIsDelegate = pMD->GetMethodTable()->IsDelegate();
@@ -780,7 +780,7 @@ TADDR CLRToCOMCall::GetFrameCallIP(FramedMethodFrame *frame)
     }
     CONTRACT_END;
 
-    CLRToCOMCallMethodDesc *pCMD = dac_cast<PTR_CLRToCOMCallMethodDesc>(Frame_GetFunction(frame));
+    CLRToCOMCallMethodDesc *pCMD = dac_cast<PTR_CLRToCOMCallMethodDesc>(frame->GetFunction());
     MethodTable *pItfMT = pCMD->GetInterfaceMethodTable();
     TADDR ip = NULL;
 #ifndef DACCESS_COMPILE
@@ -909,7 +909,7 @@ BOOL CLRToCOMMethodFrame::TraceFrame_Impl(Thread *thread, BOOL fromPatch,
 #endif // HOST_64BIT
 
     TADDR ip, returnIP, returnSP;
-    Frame_GetUnmanagedCallSite(this, &ip, &returnIP, &returnSP);
+    GetUnmanagedCallSite(&ip, &returnIP, &returnSP);
 
     //
     // If we've already made the call, we can't trace any more.

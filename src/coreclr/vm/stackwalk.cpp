@@ -37,7 +37,7 @@ Assembly* CrawlFrame::GetAssembly()
     Frame *pF = GetFrame();
 
     if (pF != NULL)
-        pAssembly = Frame_GetAssembly(pF);
+        pAssembly = pF->GetAssembly();
 
     if (pAssembly == NULL && pFunc != NULL)
         pAssembly = pFunc->GetModule()->GetAssembly();
@@ -1245,7 +1245,7 @@ BOOL StackFrameIterator::ResetRegDisp(PREGDISPLAY pRegDisp,
             {
 #if defined(TARGET_X86)
                 // check the IP
-                if (m_crawl.Frame_GetReturnAddress(pFrame)() != curPc)
+                if (m_crawl.pFrame->GetReturnAddress() != curPc)
                 {
                     break;
                 }
@@ -1265,10 +1265,10 @@ BOOL StackFrameIterator::ResetRegDisp(PREGDISPLAY pRegDisp,
 
             // if the REGDISPLAY represents the managed stack frame at a M2U transition boundary,
             // update the flags on the CrawlFrame and the REGDISPLAY
-            PCODE frameRetAddr = Frame_GetReturnAddress(m_crawl.pFrame);
+            PCODE frameRetAddr = m_crawl.pFrame->GetReturnAddress();
             if (frameRetAddr == curPc)
             {
-                unsigned uFrameAttribs = Frame_GetFrameAttribs(m_crawl.pFrame);
+                unsigned uFrameAttribs = m_crawl.pFrame->GetFrameAttribs();
 
                 m_crawl.isFirst       = ((uFrameAttribs & Frame::FRAME_ATTR_RESUMABLE) != 0);
                 m_crawl.isInterrupted = ((uFrameAttribs & Frame::FRAME_ATTR_EXCEPTION) != 0);
@@ -1279,7 +1279,7 @@ BOOL StackFrameIterator::ResetRegDisp(PREGDISPLAY pRegDisp,
                     m_crawl.isIPadjusted = false;
                 }
 
-                Frame_UpdateRegDisplay(m_crawl.pFrame, m_crawl.pRD, m_flags & UNWIND_FLOATS);
+                m_crawl.pFrame->UpdateRegDisplay(m_crawl.pRD, m_flags & UNWIND_FLOATS);
                 _ASSERTE(curPc == GetControlPC(m_crawl.pRD));
             }
 
@@ -2363,7 +2363,7 @@ StackWalkAction StackFrameIterator::NextRaw(void)
     {
 #if !defined(TARGET_X86) && defined(_DEBUG)
         // make sure we're not skipping a different transition
-        if (Frame_NeedsUpdateRegDisplay(m_crawl.pFrame))
+        if (m_crawl.pFrame->NeedsUpdateRegDisplay())
         {
             if (m_crawl.pFrame->GetType() == FrameType::InlinedCallFrame)
             {
@@ -2375,7 +2375,7 @@ StackWalkAction StackFrameIterator::NextRaw(void)
             }
             else
             {
-                CONSISTENCY_CHECK(GetControlPC(m_crawl.pRD) == Frame_GetReturnAddress(m_crawl.pFrame));
+                CONSISTENCY_CHECK(GetControlPC(m_crawl.pRD) == m_crawl.pFrame->GetReturnAddress());
             }
         }
 #endif // !defined(TARGET_X86) && defined(_DEBUG)
@@ -2590,7 +2590,7 @@ StackWalkAction StackFrameIterator::NextRaw(void)
             pInlinedFrame = m_crawl.pFrame;
         }
 
-        unsigned uFrameAttribs = Frame_GetFrameAttribs(m_crawl.pFrame);
+        unsigned uFrameAttribs = m_crawl.pFrame->GetFrameAttribs();
 
         // Special resumable frames make believe they are on top of the stack.
         m_crawl.isFirst = (uFrameAttribs & Frame::FRAME_ATTR_RESUMABLE) != 0;
@@ -2605,7 +2605,7 @@ StackWalkAction StackFrameIterator::NextRaw(void)
             m_crawl.isIPadjusted = false;
         }
 
-        PCODE adr = Frame_GetReturnAddress(m_crawl.pFrame);
+        PCODE adr = m_crawl.pFrame->GetReturnAddress();
         _ASSERTE(adr != (PCODE)POISONC);
 
         _ASSERTE(!pInlinedFrame || adr);
@@ -2618,7 +2618,7 @@ StackWalkAction StackFrameIterator::NextRaw(void)
 
             if (m_crawl.isFrameless)
             {
-                Frame_UpdateRegDisplay(m_crawl.pFrame, m_crawl.pRD, m_flags & UNWIND_FLOATS);
+                m_crawl.pFrame->UpdateRegDisplay(m_crawl.pRD, m_flags & UNWIND_FLOATS);
 
 #if defined(RECORD_RESUMABLE_FRAME_SP)
                 CONSISTENCY_CHECK(NULL == m_pvResumableFrameTargetSP);
@@ -2938,7 +2938,7 @@ void StackFrameIterator::ProcessCurrentFrame(void)
 
             _ASSERTE(m_crawl.pFrame != FRAME_TOP);
 
-            m_crawl.pFunc = Frame_GetFunction(m_crawl.pFrame);
+            m_crawl.pFunc = m_crawl.pFrame->GetFunction();
 
             m_frameState = SFITER_FRAME_FUNCTION;
         }
@@ -3044,7 +3044,7 @@ BOOL StackFrameIterator::CheckForSkippedFrames(void)
             }
             else
             {
-                m_crawl.pFunc = Frame_GetFunction(m_crawl.pFrame);
+                m_crawl.pFunc = m_crawl.pFrame->GetFunction();
             }
 
             INDEBUG(m_crawl.pThread->DebugLogStackWalkInfo(&m_crawl, "CONSIDER", m_uFramesProcessed));
@@ -3288,7 +3288,7 @@ void SetUpRegdisplayForStackWalk(Thread * pThread, T_CONTEXT * pContext, REGDISP
 
         if (ISREDIRECTEDTHREAD(pThread))
         {
-            Frame_UpdateRegDisplay(pThread->GetFrame(), pRegdisplay);
+            pThread->GetFrame()->UpdateRegDisplay(pRegdisplay);
         }
     }
 }

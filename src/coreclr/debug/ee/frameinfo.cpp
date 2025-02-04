@@ -416,7 +416,7 @@ bool HasExitRuntime(Frame *pFrame, DebuggerFrameData *pData, FramePointer *pPote
         NOTHROW;
         GC_NOTRIGGER; // Callers demand this function be GC_NOTRIGGER.
         MODE_ANY;
-        PRECONDITION(Frame_GetFrameType(pFrame) == Frame::TYPE_EXIT);
+        PRECONDITION(pFrame->GetFrameType() == Frame::TYPE_EXIT);
     }
     CONTRACTL_END;
 
@@ -787,9 +787,9 @@ void FrameInfo::InitForM2UInternalFrame(CrawlFrame * pCF)
 {
     // For a M2U call, there's a managed method wrapping the unmanaged call. Use that.
     Frame * pFrame = pCF->GetFrame();
-    _ASSERTE(Frame_GetTransitionType(pFrame) == TT_M2U);
+    _ASSERTE(pFrame->GetTransitionType() == Frame::TT_M2U);
     FramedMethodFrame * pM2U = static_cast<FramedMethodFrame*> (pFrame);
-    MethodDesc * pMDWrapper = Frame_GetFunction(pM2U);
+    MethodDesc * pMDWrapper = pM2U->GetFunction();
 
     // Soem M2U transitions may not have a function associated w/ them,
     // so pMDWrapper may be NULL. PInvokeCalliFrame is an example.
@@ -836,7 +836,7 @@ void FrameInfo::InitForADTransition(CrawlFrame * pCF)
 {
     Frame * pFrame;
     pFrame = pCF->GetFrame();
-    _ASSERTE(Frame_GetTransitionType(pFrame) == TT_AppDomain);
+    _ASSERTE(pFrame->GetTransitionType() == Frame::TT_AppDomain);
     MethodDesc * pMDWrapper = NULL;
 
     InitFromStubHelper(pCF, pMDWrapper, STUBFRAME_APPDOMAIN_TRANSITION);
@@ -956,7 +956,7 @@ StackWalkAction TrackUMChain(CrawlFrame *pCF, DebuggerFrameData *d)
     // If we encounter an ExitFrame out in the wild, then we'll convert it to an UM chain.
     if (!d->IsTrackingUMChain())
     {
-        if ((frame != NULL) && (frame != FRAME_TOP) && (Frame_GetFrameType(frame) == Frame::TYPE_EXIT))
+        if ((frame != NULL) && (frame != FRAME_TOP) && (frame->GetFrameType() == Frame::TYPE_EXIT))
         {
             LOG((LF_CORDB, LL_EVERYTHING, "DWSP. ExitFrame while not tracking\n"));
             REGDISPLAY* pRDSrc = pCF->GetRegisterSet();
@@ -988,14 +988,14 @@ StackWalkAction TrackUMChain(CrawlFrame *pCF, DebuggerFrameData *d)
         d->SetUMChainEnd(FramePointer::MakeFramePointer((LPVOID)(frame)));
 
 
-        ETransitionType t = Frame_GetTransitionType(frame);
-        int ft      = Frame_GetFrameType(frame);
+        Frame::ETransitionType t = frame->GetTransitionType();
+        int ft      = frame->GetFrameType();
 
 
         // Sometimes we may not want to show an UM chain b/c we know it's just
         // code inside of mscorwks. (Eg: Funcevals & AD transitions both fall into this category).
         // These are perfectly valid UM chains and we could give them if we wanted to.
-        if ((t == TT_AppDomain) || (ft == Frame::TYPE_FUNC_EVAL))
+        if ((t == Frame::TT_AppDomain) || (ft == Frame::TYPE_FUNC_EVAL))
         {
             d->CancelUMChain();
             return SWA_CONTINUE;
@@ -1003,7 +1003,7 @@ StackWalkAction TrackUMChain(CrawlFrame *pCF, DebuggerFrameData *d)
 
         // If we hit an M2U frame, then go ahead and dispatch the UM chain now.
         // This will likely also be an exit frame.
-        if (t == TT_M2U)
+        if (t == Frame::TT_M2U)
         {
             fDispatchUMChain = true;
         }
@@ -1085,7 +1085,7 @@ StackWalkAction TrackUMChain(CrawlFrame *pCF, DebuggerFrameData *d)
         // UM chain must still be in CLR internal code.
         // Either way, this UM chain has ended (and some new chain based off the frame has started)
         // so we need to either Cancel the chain or dispatch it.
-        if (Frame_GetInterception(frame) != INTERCEPTION_NONE)
+        if (frame->GetInterception() != Frame::INTERCEPTION_NONE)
         {
             // Interceptors may contain calls out to unmanaged code (such as unmanaged dllmain when
             // loading a new dll), so we need to dispatch these.
@@ -1216,8 +1216,8 @@ StackWalkAction TrackUMChain(CrawlFrame *pCF, DebuggerFrameData *d)
         if (d->ShouldProvideInternalFrames() && (frame != NULL) && (frame != FRAME_TOP))
         {
             // We want to dispatch a M2U transition right after we dispatch the UM chain.
-            ETransitionType t = Frame_GetTransitionType(frame);
-            if (t == TT_M2U)
+            Frame::ETransitionType t = frame->GetTransitionType();
+            if (t == Frame::TT_M2U)
             {
                 // Frame for a M2U transition.
                 FrameInfo fM2U;
@@ -1496,7 +1496,7 @@ StackWalkAction DebuggerWalkStackProc(CrawlFrame *pCF, void *data)
         d->info.fIsLeaf = true;
     }
     else if ( (pPrevFrame != NULL) &&
-              (Frame_GetFrameType(pPrevFrame) == Frame::TYPE_EXIT) &&
+              (pPrevFrame->GetFrameType() == Frame::TYPE_EXIT) &&
               !HasExitRuntime(pPrevFrame, d, NULL) )
     {
         // This is for the inlined NDirectMethodFrameGeneric case.  We have not exit the runtime yet, so the current
@@ -1629,27 +1629,27 @@ StackWalkAction DebuggerWalkStackProc(CrawlFrame *pCF, void *data)
         // CHAIN_CONTEXT_SWITCH    - not used
         // CHAIN_FUNC_EVAL         - funceval
 
-        switch (Frame_GetInterception(frame))
+        switch (frame->GetInterception())
         {
-        case INTERCEPTION_CLASS_INIT:
+        case Frame::INTERCEPTION_CLASS_INIT:
             //
             // Fall through
             //
 
         // V2 assumes that the only thing the prestub intercepts is the class constructor
-        case INTERCEPTION_PRESTUB:
+        case Frame::INTERCEPTION_PRESTUB:
             d->info.chainReason = CHAIN_CLASS_INIT;
             break;
 
-        case INTERCEPTION_EXCEPTION:
+        case Frame::INTERCEPTION_EXCEPTION:
             d->info.chainReason = CHAIN_EXCEPTION_FILTER;
             break;
 
-        case INTERCEPTION_CONTEXT:
+        case Frame::INTERCEPTION_CONTEXT:
             d->info.chainReason = CHAIN_CONTEXT_POLICY;
             break;
 
-        case INTERCEPTION_SECURITY:
+        case Frame::INTERCEPTION_SECURITY:
             d->info.chainReason = CHAIN_SECURITY;
             break;
 
@@ -1663,7 +1663,7 @@ StackWalkAction DebuggerWalkStackProc(CrawlFrame *pCF, void *data)
 
         LOG((LF_CORDB, LL_INFO100000, "DWSP: Chain reason is 0x%X.\n", d->info.chainReason));
 
-        switch (Frame_GetFrameType(frame))
+        switch (frame->GetFrameType())
         {
         case Frame::TYPE_ENTRY: // We now ignore entry + exit frames.
         case Frame::TYPE_EXIT:
@@ -1768,17 +1768,17 @@ StackWalkAction DebuggerWalkStackProc(CrawlFrame *pCF, void *data)
     // These callbacks are dispatched out of band.
     if (d->ShouldProvideInternalFrames() && (frame != NULL) && (frame != FRAME_TOP))
     {
-        ETransitionType t = Frame_GetTransitionType(frame);
+        Frame::ETransitionType t = frame->GetTransitionType();
         FrameInfo f;
         bool fUse = false;
 
-        if (t == TT_U2M)
+        if (t == Frame::TT_U2M)
         {
             // We can invoke the Internal U2M frame now.
             f.InitForU2MInternalFrame(pCF);
             fUse = true;
         }
-        else if (t == TT_AppDomain)
+        else if (t == Frame::TT_AppDomain)
         {
             // Internal frame for an Appdomain transition.
             // We used to ignore frames for ADs which we hadn't sent a Create event for yet.  In V3 we send AppDomain
@@ -1846,7 +1846,7 @@ StackWalkAction DebuggerWalkStackProc(CrawlFrame *pCF, void *data)
     if (!pCF->IsFrameless())
     {
         LOG((LF_CORDB, LL_INFO100000, "DWSP: updating regdisplay.\n"));
-        Frame_UpdateRegDisplay(pCF->GetFrame(), &d->regDisplay);
+        pCF->GetFrame()->UpdateRegDisplay(&d->regDisplay);
     }
 
     return SWA_CONTINUE;

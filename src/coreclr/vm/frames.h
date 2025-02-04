@@ -241,54 +241,6 @@ enum class FrameType : TADDR
 
 class FrameBase;
 
-enum ETransitionType
-{
-    TT_NONE,
-    TT_M2U, // we can safely cast to a FramedMethodFrame
-    TT_U2M, // we can safely cast to a UnmanagedToManagedFrame
-    TT_AppDomain, // transitioniting between AppDomains.
-    TT_InternalCall, // calling into the CLR (ecall/fcall).
-};
-
-enum Interception
-{
-    INTERCEPTION_NONE,
-    INTERCEPTION_CLASS_INIT,
-    INTERCEPTION_EXCEPTION,
-    INTERCEPTION_CONTEXT,
-    INTERCEPTION_SECURITY,
-    INTERCEPTION_PRESTUB,
-    INTERCEPTION_OTHER,
-
-    INTERCEPTION_COUNT
-};
-
-
-void Frame_GcScanRoots(FrameBase *frame, promote_func *fn, ScanContext* sc);
-unsigned Frame_GetFrameAttribs(FrameBase *frame);
-#ifndef DACCESS_COMPILE
-void Frame_ExceptionUnwind(FrameBase *frame);
-#endif
-BOOL Frame_NeedsUpdateRegDisplay(FrameBase *frame);
-BOOL Frame_IsTransitionToNativeFrame(FrameBase *frame);
-MethodDesc *Frame_GetFunction(FrameBase* frame);
-Assembly *Frame_GetAssembly(FrameBase* frame);
-PTR_BYTE Frame_GetIP(FrameBase* frame);
-TADDR Frame_GetReturnAddressPtr(FrameBase* frame);
-PCODE Frame_GetReturnAddress(FrameBase* frame);
-void Frame_UpdateRegDisplay(FrameBase* frame, const PREGDISPLAY, bool updateFloats = false);
-int Frame_GetFrameType(FrameBase* frame);
-ETransitionType Frame_GetTransitionType(FrameBase* frame);
-Interception Frame_GetInterception(FrameBase* frame);
-void Frame_GetUnmanagedCallSite(FrameBase* frame, TADDR* ip, TADDR* returnIP, TADDR* returnSP);
-BOOL Frame_TraceFrame(FrameBase* frame, Thread *thread, BOOL fromPatch, TraceDestination *trace, REGDISPLAY *regs);
-#ifdef DACCESS_COMPILE
-void Frame_EnumMemoryRegions(FrameBase* frame, CLRDataEnumMemoryFlags flags);
-#endif // DACCESS_COMPILE
-#if defined(_DEBUG) && !defined(DACCESS_COMPILE)
-BOOL Frame_Protects(FrameBase* frame, OBJECTREF *ppObjectRef);
-#endif // defined(_DEBUG) && !defined(DACCESS_COMPILE)
-
 // TransitionFrame only apis
 class TransitionFrame;
 TADDR Frame_GetTransitionBlock(TransitionFrame* frame);
@@ -328,6 +280,52 @@ class Frame : public FrameBase
 #endif
 
 public:
+    enum ETransitionType
+    {
+        TT_NONE,
+        TT_M2U, // we can safely cast to a FramedMethodFrame
+        TT_U2M, // we can safely cast to a UnmanagedToManagedFrame
+        TT_AppDomain, // transitioniting between AppDomains.
+        TT_InternalCall, // calling into the CLR (ecall/fcall).
+    };
+
+    enum Interception
+    {
+        INTERCEPTION_NONE,
+        INTERCEPTION_CLASS_INIT,
+        INTERCEPTION_EXCEPTION,
+        INTERCEPTION_CONTEXT,
+        INTERCEPTION_SECURITY,
+        INTERCEPTION_PRESTUB,
+        INTERCEPTION_OTHER,
+
+        INTERCEPTION_COUNT
+    };
+
+    void GcScanRoots(promote_func *fn, ScanContext* sc);
+    unsigned GetFrameAttribs();
+#ifndef DACCESS_COMPILE
+    void ExceptionUnwind();
+#endif
+    BOOL NeedsUpdateRegDisplay();
+    BOOL IsTransitionToNativeFrame();
+    MethodDesc *GetFunction();
+    Assembly *GetAssembly();
+    PTR_BYTE GetIP();
+    TADDR GetReturnAddressPtr();
+    PCODE GetReturnAddress();
+    void UpdateRegDisplay(const PREGDISPLAY, bool updateFloats = false);
+    int GetFrameType();
+    ETransitionType GetTransitionType();
+    Interception GetInterception();
+    void GetUnmanagedCallSite(TADDR* ip, TADDR* returnIP, TADDR* returnSP);
+    BOOL TraceFrame(Thread *thread, BOOL fromPatch, TraceDestination *trace, REGDISPLAY *regs);
+#ifdef DACCESS_COMPILE
+    void EnumMemoryRegions(CLRDataEnumMemoryFlags flags);
+#endif // DACCESS_COMPILE
+#if defined(_DEBUG) && !defined(DACCESS_COMPILE)
+    BOOL Protects(OBJECTREF *ppObjectRef);
+#endif // defined(_DEBUG) && !defined(DACCESS_COMPILE)
 
     // Should only be called on Frames that derive from TransitionFrame
     TADDR GetTransitionBlock_Impl()
@@ -397,7 +395,7 @@ public:
     Assembly *GetAssembly_Impl()
     {
         WRAPPER_NO_CONTRACT;
-        MethodDesc *pMethod = Frame_GetFunction(this);
+        MethodDesc *pMethod = GetFunction();
         if (pMethod != NULL)
             return pMethod->GetModule()->GetAssembly();
         else
@@ -424,7 +422,7 @@ public:
     DISABLE_ASAN PCODE GetReturnAddress_Impl()
     {
         WRAPPER_NO_CONTRACT;
-        TADDR ptr = Frame_GetReturnAddressPtr(this);
+        TADDR ptr = GetReturnAddressPtr();
         return (ptr != 0) ? *PTR_PCODE(ptr) : 0;
     }
 
@@ -433,7 +431,7 @@ public:
     void DISABLE_ASAN SetReturnAddress(TADDR val)
     {
         WRAPPER_NO_CONTRACT;
-        TADDR ptr = Frame_GetReturnAddressPtr(this);
+        TADDR ptr = GetReturnAddressPtr();
         _ASSERTE(ptr != (TADDR)NULL);
         *(TADDR*)ptr = val;
     }
@@ -476,7 +474,7 @@ public:
     ETransitionType GetTransitionType_Impl()
     {
         LIMITED_METHOD_DAC_CONTRACT;
-        return ETransitionType::TT_NONE;
+        return TT_NONE;
     }
 
     enum
@@ -556,7 +554,7 @@ public:
 
         // Many frames store a MethodDesc pointer in m_Datum
         // so pick that up automatically.
-        MethodDesc* func = Frame_GetFunction(this);
+        MethodDesc* func = GetFunction();
         if (func)
         {
             func->EnumMemoryRegions(flags);
@@ -849,12 +847,16 @@ protected:
 #endif
 
 public:
+
+    TADDR GetTransitionBlock();
+    BOOL SuppressParamTypeArg();
+
     // DACCESS: GetReturnAddressPtr should return the
     // target address of the return address in the frame.
     TADDR GetReturnAddressPtr_Impl()
     {
         LIMITED_METHOD_DAC_CONTRACT;
-        return Frame_GetTransitionBlock(this) + TransitionBlock::GetOffsetOfReturnAddress();
+        return GetTransitionBlock() + TransitionBlock::GetOffsetOfReturnAddress();
     }
 
     //---------------------------------------------------------------
@@ -904,20 +906,20 @@ public:
     {
         LIMITED_METHOD_DAC_CONTRACT;
         return dac_cast<PTR_CalleeSavedRegisters>(
-            Frame_GetTransitionBlock(this) + TransitionBlock::GetOffsetOfCalleeSavedRegisters());
+            GetTransitionBlock() + TransitionBlock::GetOffsetOfCalleeSavedRegisters());
     }
 
     ArgumentRegisters *GetArgumentRegisters()
     {
         LIMITED_METHOD_DAC_CONTRACT;
         return dac_cast<PTR_ArgumentRegisters>(
-            Frame_GetTransitionBlock(this) + TransitionBlock::GetOffsetOfArgumentRegisters());
+            GetTransitionBlock() + TransitionBlock::GetOffsetOfArgumentRegisters());
     }
 
     TADDR GetSP()
     {
         LIMITED_METHOD_DAC_CONTRACT;
-        return Frame_GetTransitionBlock(this) + sizeof(TransitionBlock);
+        return GetTransitionBlock() + sizeof(TransitionBlock);
     }
 
     BOOL NeedsUpdateRegDisplay_Impl()
@@ -1249,7 +1251,7 @@ public:
     {
         WRAPPER_NO_CONTRACT;
         LIMITED_METHOD_DAC_CONTRACT;
-        if (Frame_GetFrameAttribs(this) & FRAME_ATTR_EXCEPTION)
+        if (GetFrameAttribs() & FRAME_ATTR_EXCEPTION)
             return(INTERCEPTION_EXCEPTION);
         return(INTERCEPTION_NONE);
     }
@@ -1673,9 +1675,9 @@ public:
     {
         LIMITED_METHOD_DAC_CONTRACT;
 #ifdef COM_STUBS_SEPARATE_FP_LOCATIONS
-        TADDR p = Frame_GetTransitionBlock(this) + GetFPArgOffset(0);
+        TADDR p = GetTransitionBlock() + GetFPArgOffset(0);
 #else
-        TADDR p = Frame_GetTransitionBlock(this) - TransitionBlock::GetNegSpaceSize();
+        TADDR p = GetTransitionBlock() - TransitionBlock::GetNegSpaceSize();
 #endif
         // Return value is right before the transition block (or floating point spill area on AMD64) for frames that need it
         // (code:TPMethodFrame and code:CLRToCOMMethodFrame)
@@ -2105,7 +2107,7 @@ public:
         //
         // See code:getMethodSigInternal
         //
-        assert(Frame_GetFunction(this)->GetMethodTable()->IsInterface());
+        assert(GetFunction()->GetMethodTable()->IsInterface());
         return TRUE;
     }
 
@@ -2957,7 +2959,7 @@ public:
     void Pop() { WRAPPER_NO_CONTRACT; m_frame.Pop(); }
     void Push(Thread * pThread) { WRAPPER_NO_CONTRACT; m_frame.Push(pThread); }
     void Pop(Thread * pThread) { WRAPPER_NO_CONTRACT; m_frame.Pop(pThread); }
-    PCODE GetReturnAddress() { WRAPPER_NO_CONTRACT; return Frame_GetReturnAddress(&m_frame); }
+    PCODE GetReturnAddress() { WRAPPER_NO_CONTRACT; return m_frame.GetReturnAddress(); }
     T_CONTEXT * GetContext() { WRAPPER_NO_CONTRACT; return m_frame.GetContext(); }
     FrameType* operator&() { LIMITED_METHOD_CONTRACT; return &m_frame; }
     LazyMachState * MachineState() { WRAPPER_NO_CONTRACT; return m_frame.MachineState(); }

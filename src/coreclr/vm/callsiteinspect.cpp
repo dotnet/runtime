@@ -71,7 +71,7 @@ namespace
                 if (!fIsByRef
                     && (ELEMENT_TYPE_R4 == eType || ELEMENT_TYPE_R8 == eType)
                     && frame != nullptr
-                    && !TransitionBlock::IsStackArgumentOffset(static_cast<int>((TADDR) val - Frame_GetTransitionBlock(frame))))
+                    && !TransitionBlock::IsStackArgumentOffset(static_cast<int>((TADDR) val - frame->GetTransitionBlock())))
                 {
                     if (ELEMENT_TYPE_R4 == eType)
                         *(UINT32*)pDest = (UINT32)FPSpillToR4(val);
@@ -349,7 +349,7 @@ void CallsiteInspect::GetCallsiteArgs(
         for (int index = 0; index < numArgs; index++)
         {
             ArgDetails details = GetArgDetails(callsite.Frame, iter);
-            PVOID addr = (LPBYTE)Frame_GetTransitionBlock(callsite.Frame) + details.Offset;
+            PVOID addr = (LPBYTE)callsite.Frame->GetTransitionBlock() + details.Offset;
 
             // How do we handle pointer types?
             _ASSERTE(details.ElementType != ELEMENT_TYPE_PTR);
@@ -423,7 +423,7 @@ void CallsiteInspect::PropagateOutParametersBackToCallsite(
                 // Copy from RetVal into the retBuff.
                 INT64 retVal =  CopyOBJECTREFToStack(
                                     &gc.RetVal,
-                                    *(void**)(Frame_GetTransitionBlock(frame) + argit.GetRetBuffArgOffset()),
+                                    *(void**)(frame->GetTransitionBlock() + argit.GetRetBuffArgOffset()),
                                     pSig->GetReturnType(),
                                     TypeHandle{},
                                     pSig,
@@ -488,7 +488,7 @@ void CallsiteInspect::PropagateOutParametersBackToCallsite(
                     if (typ != ELEMENT_TYPE_BYREF)
                         continue;
 
-                    argAddr = reinterpret_cast<PVOID *>(Frame_GetTransitionBlock(frame) + argit.GetNextOffset());
+                    argAddr = reinterpret_cast<PVOID *>(frame->GetTransitionBlock() + argit.GetNextOffset());
                 }
                 else
                 {
@@ -499,7 +499,7 @@ void CallsiteInspect::PropagateOutParametersBackToCallsite(
                     if (argit.GetArgType() != ELEMENT_TYPE_BYREF)
                         continue;
 
-                    argAddr = reinterpret_cast<PVOID *>(Frame_GetTransitionBlock(frame) + ofs);
+                    argAddr = reinterpret_cast<PVOID *>(frame->GetTransitionBlock() + ofs);
                 }
 
                 TypeHandle ty;

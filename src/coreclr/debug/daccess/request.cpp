@@ -1393,7 +1393,7 @@ ClrDataAccess::GetMethodDescPtrFromFrame(CLRDATA_ADDRESS frameAddr, CLRDATA_ADDR
     SOSDacEnter();
 
     Frame *pFrame = PTR_Frame(TO_TADDR(frameAddr));
-    CLRDATA_ADDRESS methodDescAddr = HOST_CDADDR(Frame_GetFunction(pFrame));
+    CLRDATA_ADDRESS methodDescAddr = HOST_CDADDR(pFrame->GetFunction());
     if ((methodDescAddr == (CLRDATA_ADDRESS)NULL) || !DacValidateMD(PTR_MethodDesc(TO_TADDR(methodDescAddr))))
     {
         hr = E_INVALIDARG;

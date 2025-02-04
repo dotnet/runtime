@@ -600,7 +600,7 @@ static StackWalkAction TAStackCrawlCallBackWorker(CrawlFrame* pCf, StackCrawlCon
     MethodDesc *pMD = pCf->GetFunction();
     Frame *pFrame = pCf->GetFrame();
     if (pMD == NULL && pFrame != NULL)
-        pMD = Frame_GetFunction(pFrame);
+        pMD = pFrame->GetFunction();
 
     // Non-method frames don't interest us.
     if (pMD == NULL)
@@ -1539,7 +1539,7 @@ Thread::UserAbort(EEPolicy::ThreadAbortTypes abortType, DWORD timeout)
 
             if (!m_fPreemptiveGCDisabled)
             {
-                if ((m_pFrame != FRAME_TOP) && Frame_IsTransitionToNativeFrame(m_pFrame)
+                if ((m_pFrame != FRAME_TOP) && m_pFrame->IsTransitionToNativeFrame()
 #if defined(TARGET_X86) && !defined(FEATURE_EH_FUNCLETS)
                     && ((size_t) GetFirstCOMPlusSEHRecord(this) > ((size_t) m_pFrame) - 20)
 #endif // TARGET_X86

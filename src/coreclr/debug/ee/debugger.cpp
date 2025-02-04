@@ -7946,8 +7946,8 @@ LONG Debugger::NotifyOfCHFFilter(EXCEPTION_POINTERS* pExceptionPointers, PVOID p
             // Calling a virtual method will enforce that we have a valid Frame. ;)
             // If we got passed in a random catch address, then when we cast to a Frame
             // the vtable pointer will be bogus and this call will AV.
-            ETransitionType e;
-            e = Frame_GetTransitionType(pFrame);
+            Frame::ETransitionType e;
+            e = pFrame->GetTransitionType();
         }
 #endif
     }
@@ -12552,7 +12552,7 @@ bool Debugger::IsThreadAtSafePlaceWorker(Thread *thread)
 
         if (ISREDIRECTEDTHREAD(thread))
         {
-            Frame_UpdateRegDisplay(thread->GetFrame(), &rd);
+            thread->GetFrame()->UpdateRegDisplay(&rd);
         }
     }
 
@@ -16669,7 +16669,7 @@ Debugger::EnumMemoryRegionsIfFuncEvalFrame(CLRDataEnumMemoryFlags flags, Frame *
 {
     SUPPORTS_DAC;
 
-    if ((pFrame != NULL) && (Frame_GetFrameType(pFrame) == Frame::TYPE_FUNC_EVAL))
+    if ((pFrame != NULL) && (pFrame->GetFrameType() == Frame::TYPE_FUNC_EVAL))
     {
         FuncEvalFrame * pFEF = dac_cast<PTR_FuncEvalFrame>(pFrame);
         DebuggerEval * pDE = pFEF->GetDebuggerEval();

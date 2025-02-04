@@ -536,7 +536,7 @@ void DacDbiInterfaceImpl::EnumerateInternalFrames(VMPTR_Thread                  
 
             frameData.vmCurrentAppDomainToken.SetHostPtr(pAppDomain);
 
-            MethodDesc * pMD = Frame_GetFunction(pFrame);
+            MethodDesc * pMD = pFrame->GetFunction();
 #if defined(FEATURE_COMINTEROP)
             if (frameData.stubFrame.frameType == STUBFRAME_U2M)
             {
@@ -1111,26 +1111,26 @@ CorDebugInternalFrameType DacDbiInterfaceImpl::GetInternalFrameType(Frame * pFra
 {
     CorDebugInternalFrameType resultType = STUBFRAME_NONE;
 
-    ETransitionType tt = Frame_GetTransitionType(pFrame);
-    Interception it = Frame_GetInterception(pFrame);
-    int ft = Frame_GetFrameType(pFrame);
+    Frame::ETransitionType tt = pFrame->GetTransitionType();
+    Frame::Interception it = pFrame->GetInterception();
+    int ft = pFrame->GetFrameType();
 
     switch (tt)
     {
-        case TT_NONE:
-            if (it == INTERCEPTION_CLASS_INIT)
+        case Frame::TT_NONE:
+            if (it == Frame::INTERCEPTION_CLASS_INIT)
             {
                 resultType = STUBFRAME_CLASS_INIT;
             }
-            else if (it == INTERCEPTION_EXCEPTION)
+            else if (it == Frame::INTERCEPTION_EXCEPTION)
             {
                 resultType = STUBFRAME_EXCEPTION;
             }
-            else if (it == INTERCEPTION_SECURITY)
+            else if (it == Frame::INTERCEPTION_SECURITY)
             {
                 resultType = STUBFRAME_SECURITY;
             }
-            else if (it == INTERCEPTION_PRESTUB)
+            else if (it == Frame::INTERCEPTION_PRESTUB)
             {
                 resultType = STUBFRAME_JIT_COMPILATION;
             }
@@ -1151,11 +1151,11 @@ CorDebugInternalFrameType DacDbiInterfaceImpl::GetInternalFrameType(Frame * pFra
             }
             break;
 
-        case TT_M2U:
+        case Frame::TT_M2U:
             // Refer to the comment in DebuggerWalkStackProc() for StubDispatchFrame.
             if (pFrame->GetType() != ::FrameType::StubDispatchFrame)
             {
-                if (it == INTERCEPTION_SECURITY)
+                if (it == Frame::INTERCEPTION_SECURITY)
                 {
                     resultType = STUBFRAME_SECURITY;
                 }
@@ -1166,16 +1166,16 @@ CorDebugInternalFrameType DacDbiInterfaceImpl::GetInternalFrameType(Frame * pFra
             }
             break;
 
-        case TT_U2M:
+        case Frame::TT_U2M:
             resultType = STUBFRAME_U2M;
             break;
 
-        case TT_AppDomain:
+        case Frame::TT_AppDomain:
             resultType = STUBFRAME_APPDOMAIN_TRANSITION;
             break;
 
-        case TT_InternalCall:
-            if (it == INTERCEPTION_EXCEPTION)
+        case Frame::TT_InternalCall:
+            if (it == Frame::INTERCEPTION_EXCEPTION)
             {
                 resultType = STUBFRAME_EXCEPTION;
             }

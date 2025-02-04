@@ -2870,7 +2870,7 @@ VOID ETW::ExceptionLog::ExceptionThrown(CrawlFrame  *pCf, BOOL bIsReThrownExcept
         }
         else
         {
-            exceptionEIP = (PVOID)(Frame_GetIP(pCf->GetFrame()));
+            exceptionEIP = (PVOID)(pCf->GetFrame()->GetIP());
         }
 
         // On platforms other than IA64, we are at the instruction after the faulting instruction

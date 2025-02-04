@@ -235,7 +235,7 @@ void  Thread::SetFrame(Frame *pFrame)
 
         _ASSERTE(IsExecutingOnAltStack() || espVal < pFrame);
         _ASSERTE(IsExecutingOnAltStack() || pFrame < m_CacheStackBase);
-        _ASSERTE(Frame_GetFrameType(pFrame) < Frame::TYPE_COUNT);
+        _ASSERTE(pFrame->GetFrameType() < Frame::TYPE_COUNT);
 
         pFrame = pFrame->m_Next;
     }
@@ -310,14 +310,14 @@ bool Thread::DetectHandleILStubsForDebugger()
                 break;
             }
             // If there is an entry frame (i.e. U2M managed), we should break.
-            else if (Frame_GetFrameType(pFrame) == Frame::TYPE_ENTRY)
+            else if (pFrame->GetFrameType() == Frame::TYPE_ENTRY)
             {
                 break;
             }
             // Check for M2U transition frames.  See the comment at the beginning of this function.
-            else if (Frame_GetFrameType(pFrame) == Frame::TYPE_EXIT)
+            else if (pFrame->GetFrameType() == Frame::TYPE_EXIT)
             {
-                if (Frame_GetReturnAddress(pFrame) == (PCODE)NULL)
+                if (pFrame->GetReturnAddress() == (PCODE)NULL)
                 {
                     // If the return address is NULL, then the frame has not been initialized yet.
                     // We may see InlinedCallFrame in ordinary methods as well. Have to do
@@ -6025,7 +6025,7 @@ BOOL Thread::UniqueStack(void* stackStart)
 
         pFrame->GetFunction();      // This ensures that helper frames are inited
 
-        if (Frame_GetReturnAddress(pFrame)() != 0)
+        if (pFrame->GetReturnAddress() != 0)
         {
             stopPoint = pFrame;
             break;
@@ -7457,7 +7457,7 @@ Frame * Thread::NotifyFrameChainOfExceptionUnwind(Frame* pStartFrame, LPVOID pvL
     {
         CONSISTENCY_CHECK(pFrame != PTR_NULL);
         CONSISTENCY_CHECK((pFrame) > static_cast<Frame *>((LPVOID)GetCurrentSP()));
-        Frame_ExceptionUnwind(pFrame);
+        pFrame->ExceptionUnwind();
         pFrame = pFrame->Next();
     }
 
@@ -7955,7 +7955,7 @@ Thread::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
         while (frame.IsValid() &&
                frame.GetAddr() != dac_cast<TADDR>(FRAME_TOP))
         {
-            Frame_EnumMemoryRegions(frame, flags);
+            frame->EnumMemoryRegions(flags);
             frame = frame->m_Next;
         }
     }

@@ -1382,7 +1382,7 @@ PCODE VSD_ResolveWorker(TransitionBlock * pTransitionBlock,
     if (pSDFrame->GetGCRefMap() != NULL)
     {
         GCX_PREEMP();
-        _ASSERTE(CheckGCRefMapEqual(pSDFrame->GetGCRefMap(), Frame_GetFunction(pSDFrame), true));
+        _ASSERTE(CheckGCRefMapEqual(pSDFrame->GetGCRefMap(), pSDFrame->GetFunction(), true));
     }
 #endif // _DEBUG
 

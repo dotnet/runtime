@@ -66,14 +66,14 @@ void TransitionFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFl
     if (updateFloats)
     {
         UpdateFloatingPointRegisters(pRD);
-        _ASSERTE(pRD->pCurrentContext->Rip == Frame_GetReturnAddress(this));
+        _ASSERTE(pRD->pCurrentContext->Rip == GetReturnAddress());
     }
 #endif // DACCESS_COMPILE
 
     pRD->IsCallerContextValid = FALSE;
     pRD->IsCallerSPValid      = FALSE;        // Don't add usage of this field.  This is only temporary.
 
-    pRD->pCurrentContext->Rip = Frame_GetReturnAddress(this);
+    pRD->pCurrentContext->Rip = GetReturnAddress();
     pRD->pCurrentContext->Rsp = GetSP();
 
     UpdateRegDisplayFromCalleeSavedRegisters(pRD, GetCalleeSavedRegisters());
