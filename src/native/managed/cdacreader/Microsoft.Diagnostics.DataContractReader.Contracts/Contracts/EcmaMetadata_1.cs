@@ -10,7 +10,7 @@ using System.Runtime.InteropServices;
 
 namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 
-internal class EcmaMetadata_1(Target target) : IEcmaMetadata
+internal sealed class EcmaMetadata_1(Target target) : IEcmaMetadata
 {
     private Dictionary<ModuleHandle, MetadataReaderProvider?> _metadata = new();
 
@@ -246,7 +246,7 @@ internal class EcmaMetadata_1(Target target) : IEcmaMetadata
         public readonly bool VariableSizedColumnsAreAll4BytesLong;
     }
 
-    private class TargetEcmaMetadata
+    private sealed class TargetEcmaMetadata
     {
         public TargetEcmaMetadata(EcmaMetadataSchema schema,
                             TargetSpan[] tables,
