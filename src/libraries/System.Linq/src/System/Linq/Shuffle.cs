@@ -25,12 +25,6 @@ namespace System.Linq
                 return [];
             }
 
-            if (source is ShuffleIterator<TSource> shuffleIterator)
-            {
-                // Shuffling again won't impact anything.
-                return shuffleIterator;
-            }
-
             return new ShuffleIterator<TSource>(source);
         }
 
