@@ -188,6 +188,10 @@ mono_wasm_load_runtime (int debug_level)
 	runtime_initialized = 1;
 	const char *interp_opts = "";
 
+#ifndef DISABLE_THREADS
+	mono_memory_barrier ();
+#endif /* DISABLE_THREADS */
+
 #ifndef INVARIANT_GLOBALIZATION
 	mono_wasm_link_icu_shim ();
 #endif
@@ -230,6 +234,11 @@ mono_wasm_load_runtime (int debug_level)
 	root_domain = mono_wasm_load_runtime_common (debug_level, wasm_trace_logger, interp_opts);
 
 	bindings_initialize_internals();
+
+#ifndef DISABLE_THREADS
+	mono_memory_barrier ();
+#endif /* DISABLE_THREADS */
+
 }
 
 int initialize_runtime()

@@ -41,9 +41,6 @@ mono_memory_barrier (void)
 static inline void
 mono_memory_barrier (void)
 {
-#if defined(HOST_BROWSER)
-	emscripten_atomic_fence();
-#endif
 	__sync_synchronize ();
 }
 
