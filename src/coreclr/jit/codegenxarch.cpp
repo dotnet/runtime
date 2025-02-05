@@ -7249,7 +7249,7 @@ void CodeGen::genFloatToFloatCast(GenTree* treeNode)
         bool isRMW = !compiler->canUseVexEncoding();
         if (ins == INS_movss)
         {
-            //Specially, movss does not have equivalent form of ins src1, src1, src2
+            // Specially, movss does not have equivalent form of ins src1, src1, src2
             inst_RV_TT(ins, emitTypeSize(dstType), targetReg, op1);
         }
         else
