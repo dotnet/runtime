@@ -1311,7 +1311,6 @@ namespace System.Text.RegularExpressions
             FindLeadingOrTrailingAnchor(node, leading: false);
 
         /// <summary>Computes the leading or trailing anchor of a node.</summary>
-        /// <summary>Computes the leading or trailing anchor of a node.</summary>
         private static RegexNodeKind FindLeadingOrTrailingAnchor(RegexNode node, bool leading)
         {
             if (!StackHelper.TryEnsureSufficientExecutionStack())

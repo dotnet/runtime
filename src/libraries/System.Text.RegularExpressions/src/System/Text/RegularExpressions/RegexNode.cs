@@ -1107,8 +1107,8 @@ namespace System.Text.RegularExpressions
                         case RegexNodeKind.One or RegexNodeKind.Notone or RegexNodeKind.Set:
                         case RegexNodeKind.Oneloopatomic or RegexNodeKind.Notoneloopatomic or RegexNodeKind.Setloopatomic:
                         case RegexNodeKind.Oneloop or RegexNodeKind.Notoneloop or RegexNodeKind.Setloop or RegexNodeKind.Onelazy or RegexNodeKind.Notonelazy or RegexNodeKind.Setlazy when required.M == required.N:
-                        case RegexNodeKind.Beginning or RegexNodeKind.Bol or RegexNodeKind.Start
-                             or RegexNodeKind.End or RegexNodeKind.EndZ
+                        case RegexNodeKind.Beginning or RegexNodeKind.Start or RegexNodeKind.Bol
+                             or RegexNodeKind.End or RegexNodeKind.EndZ or RegexNodeKind.Eol
                              or RegexNodeKind.Boundary or RegexNodeKind.ECMABoundary
                              or RegexNodeKind.NonBoundary or RegexNodeKind.NonECMABoundary:
                             break;
