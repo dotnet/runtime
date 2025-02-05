@@ -1040,8 +1040,14 @@ add_parameter_object_to_array (MonoMethod *method, MonoObjectHandle member, int 
 
 			blob_type.type = MONO_TYPE_VALUETYPE;
 			m_type_data_set_klass_unchecked (&blob_type, mono_class_from_mono_type_internal (sig_param));
-		} else
+		} else {
+			// HACK: Necessary for the (incorrect?) mono_class_from_mono_type_internal call on &blob_type to not crash. -kg
+			// We previously had a set_klass_unchecked with NULL above but in debug/checked builds that will potentially fail.
+			blob_type.data__.klass = NULL;
+			// FIXME: Should this be called on sig_param, not &blob_type? The other similar if/elseif/else chain in the codebase doesn't match this.
+			// See icall.c mono_type_from_blob_type
 			m_type_data_set_klass (&blob_type, mono_class_from_mono_type_internal (&blob_type));
+		}
 
 		def_value = mono_get_object_from_blob (&blob_type, blob, MONO_HANDLE_NEW (MonoString, NULL), error);
 		goto_if_nok (error, leave);
