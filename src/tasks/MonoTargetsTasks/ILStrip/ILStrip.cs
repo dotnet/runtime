@@ -305,10 +305,10 @@ public class ILStrip : Microsoft.Build.Utilities.Task
     private void CreateTrimmedAssembly(PEReader peReader, string trimmedAssemblyFilePath, FileStream fs, Dictionary<int, int> methodBodyUses)
     {
         using FileStream os = File.Open(trimmedAssemblyFilePath, FileMode.Create);
-        using MemoryStream memStream = new MemoryStream((int)fs.Length);
 
         fs.Position = 0;
-        fs.CopyTo(memStream);
+        fs.CopyTo(os);
+        fs.Flush();
 
         foreach (var kvp in methodBodyUses)
         {
@@ -318,19 +318,16 @@ public class ILStrip : Microsoft.Build.Utilities.Task
             {
                 int methodSize = ComputeMethodSize(peReader, rva);
                 int actualLoc = ComputeMethodHash(peReader, rva);
-                int headerSize = ComputeMethodHeaderSize(memStream, actualLoc);
+                int headerSize = ComputeMethodHeaderSize(fs, actualLoc);
                 if (headerSize == 1) //Set code size to zero for TinyFormat
-                    SetCodeSizeToZeroForTiny(memStream, actualLoc);
-                ZeroOutMethodBody(memStream, methodSize, actualLoc, headerSize);
+                    SetCodeSizeToZeroForTiny(os, actualLoc);
+                ZeroOutMethodBody(os, methodSize, actualLoc, headerSize);
             }
             else if (count < 0)
             {
                 Log.LogError($"Method usage count is less than zero for rva: {rva}.");
             }
         }
-
-        memStream.Position = 0;
-        memStream.CopyTo(os);
     }
 
     private static int ComputeMethodSize(PEReader peReader, int rva) => peReader.GetMethodBody(rva).Size;
@@ -342,27 +339,29 @@ public class ILStrip : Microsoft.Build.Utilities.Task
         return (peReader.PEHeaders.SectionHeaders[sectionIndex].PointerToRawData + relativeOffset);
     }
 
-    private static int ComputeMethodHeaderSize(MemoryStream memStream, int actualLoc)
+    private static int ComputeMethodHeaderSize(Stream stream, int actualLoc)
     {
-        memStream.Position = actualLoc;
-        int firstbyte = memStream.ReadByte();
+        stream.Position = actualLoc;
+        int firstbyte = stream.ReadByte();
         int headerFlag = firstbyte & 0b11;
         return (headerFlag == 2 ? 1 : 4);
     }
 
-    private static void SetCodeSizeToZeroForTiny(MemoryStream memStream, int actualLoc)
+    private static void SetCodeSizeToZeroForTiny(Stream stream, int actualLoc)
     {
-        memStream.Position = actualLoc;
-        memStream.WriteByte(0b10);
+        stream.Position = actualLoc;
+        stream.WriteByte(0b10);
+        stream.Flush();
     }
 
-    private static void ZeroOutMethodBody(MemoryStream memStream, int methodSize, int actualLoc, int headerSize)
+    private static void ZeroOutMethodBody(Stream stream, int methodSize, int actualLoc, int headerSize)
     {
-        memStream.Position = actualLoc + headerSize;
+        stream.Position = actualLoc + headerSize;
         byte[] zeroBuffer;
-        zeroBuffer = ArrayPool<byte>.Shared.Rent(methodSize);
+        zeroBuffer = ArrayPool<byte>.Shared.Rent(methodSize - headerSize);
         Array.Clear(zeroBuffer, 0, zeroBuffer.Length);
-        memStream.Write(zeroBuffer, 0, methodSize - headerSize);
+        stream.Write(zeroBuffer, 0, zeroBuffer.Length);
+        stream.Flush();
         ArrayPool<byte>.Shared.Return(zeroBuffer);
     }
 
