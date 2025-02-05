@@ -982,11 +982,13 @@ endif()
 
 # Ensure other tools are present
 if (CLR_CMAKE_HOST_WIN32)
-    if(CLR_CMAKE_HOST_ARCH_ARM OR CLR_CMAKE_HOST_ARCH_ARM64)
+    if(CLR_CMAKE_HOST_ARCH_ARM64)
       enable_language(ASM_MARMASM)
-      # CMake before 3.29 passes defines down to the Microsoft ARMASM compiler, which is not supported.
-      # We need to remove the defines from the command line.
-      set(CMAKE_ASM_MARMASM_COMPILE_OBJECT "<CMAKE_ASM_MARMASM_COMPILER> <INCLUDES> <FLAGS> -o <OBJECT> <SOURCE>")
+      if (CMAKE_VERSION VERSION_LESS 3.29)
+        # CMake before 3.29 passes defines down to the Microsoft ARMASM compiler, which is not supported.
+        # We need to remove the defines from the command line.
+        set(CMAKE_ASM_MARMASM_COMPILE_OBJECT "<CMAKE_ASM_MARMASM_COMPILER> <INCLUDES> <FLAGS> -o <OBJECT> <SOURCE>")
+      endif()
       # Add debug info options here as we can't specify separate debug info formats through the CMake abstraction
       # and -g in MARMASM is technically Embedded mode (which we don't want for our C or C++ code)
       add_compile_options($<$<COMPILE_LANGUAGE:ASM_MARMASM>:-g>)
