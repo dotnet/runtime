@@ -7247,7 +7247,15 @@ void CodeGen::genFloatToFloatCast(GenTree* treeNode)
         // floating-point conversions all have RMW semantics if VEX support is not available
 
         bool isRMW = !compiler->canUseVexEncoding();
-        inst_RV_RV_TT(ins, emitTypeSize(dstType), targetReg, targetReg, op1, isRMW, INS_OPTS_NONE);
+        if (ins == INS_movss)
+        {
+            //Specially, movss does not have equivalent form of ins src1, src1, src2
+            inst_RV_TT(ins, emitTypeSize(dstType), targetReg, op1);
+        }
+        else
+        {
+            inst_RV_RV_TT(ins, emitTypeSize(dstType), targetReg, targetReg, op1, isRMW, INS_OPTS_NONE);
+        }
     }
 
     genProduceReg(treeNode);
