@@ -73,7 +73,7 @@ public class SatelliteLoadingTests : WasmTemplateTestsBase
         projectReference.Remove();
 
         var reference = new XElement("Reference");
-        reference.SetAttributeValue("Include", "..\\ResourceLibrary\\bin\\Release\\net9.0\\ResourceLibrary.dll");
+        reference.SetAttributeValue("Include", $"..\\ResourceLibrary\\bin\\Release\\{DefaultTargetFramework}\\ResourceLibrary.dll");
         itemGroup.Add(reference);
 
         appCsproj.Save(appCsprojPath);

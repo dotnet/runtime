@@ -140,7 +140,6 @@ include_directories("../Common")
 
 if (GEN_SHARED_LIB)
     if (CLR_CMAKE_TARGET_APPLE)
-        include(CMakeFindFrameworks)
         find_library(FOUNDATION Foundation REQUIRED)
     endif()
 

@@ -31,6 +31,7 @@ namespace System.StubHelpers
         internal static unsafe byte ConvertToNative(char managedChar, bool fBestFit, bool fThrowOnUnmappableChar)
         {
             int cbAllocLength = (1 + 1) * Marshal.SystemMaxDBCSCharSize;
+            Debug.Assert(cbAllocLength <= 512); // Some arbitrary upper limit, in most cases SystemMaxDBCSCharSize is expected to be 1 or 2.
             byte* bufferPtr = stackalloc byte[cbAllocLength];
 
             int cbLength = Marshal.StringToAnsiString(managedChar.ToString(), bufferPtr, cbAllocLength, fBestFit, fThrowOnUnmappableChar);
@@ -504,7 +505,7 @@ namespace System.StubHelpers
 
     internal sealed class HandleMarshaler
     {
-        internal static unsafe IntPtr ConvertSafeHandleToNative(SafeHandle? handle, ref CleanupWorkListElement? cleanupWorkList)
+        internal static IntPtr ConvertSafeHandleToNative(SafeHandle? handle, ref CleanupWorkListElement? cleanupWorkList)
         {
             if (Unsafe.IsNullRef(ref cleanupWorkList))
             {
@@ -516,12 +517,12 @@ namespace System.StubHelpers
             return StubHelpers.AddToCleanupList(ref cleanupWorkList, handle);
         }
 
-        internal static unsafe void ThrowSafeHandleFieldChanged()
+        internal static void ThrowSafeHandleFieldChanged()
         {
             throw new NotSupportedException(SR.Interop_Marshal_CannotCreateSafeHandleField);
         }
 
-        internal static unsafe void ThrowCriticalHandleFieldChanged()
+        internal static void ThrowCriticalHandleFieldChanged()
         {
             throw new NotSupportedException(SR.Interop_Marshal_CannotCreateCriticalHandleField);
         }
@@ -797,7 +798,7 @@ namespace System.StubHelpers
 
     internal static unsafe partial class MngdRefCustomMarshaler
     {
-        internal static unsafe void ConvertContentsToNative(ICustomMarshaler marshaler, in object pManagedHome, IntPtr* pNativeHome)
+        internal static void ConvertContentsToNative(ICustomMarshaler marshaler, in object pManagedHome, IntPtr* pNativeHome)
         {
             // COMPAT: We never pass null to MarshalManagedToNative.
             if (pManagedHome is null)

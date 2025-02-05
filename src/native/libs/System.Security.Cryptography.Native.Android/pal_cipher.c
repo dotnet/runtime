@@ -305,7 +305,7 @@ int32_t AndroidCryptoNative_AeadCipherFinalEx(CipherCtx* ctx, uint8_t* outm, int
     if (!ctx)
         return FAIL;
 
-    abort_if_invalid_pointer_argument(outm);
+    // outm is allowed to be NULL
     abort_if_invalid_pointer_argument(outl);
     abort_if_invalid_pointer_argument(authTagMismatch);
 
@@ -335,7 +335,12 @@ int32_t AndroidCryptoNative_AeadCipherFinalEx(CipherCtx* ctx, uint8_t* outm, int
 
     jsize outBytesLen = (*env)->GetArrayLength(env, outBytes);
     *outl = outBytesLen;
-    (*env)->GetByteArrayRegion(env, outBytes, 0, outBytesLen, (jbyte*) outm);
+
+    if (outBytesLen > 0)
+    {
+        abort_if_invalid_pointer_argument(outm);
+        (*env)->GetByteArrayRegion(env, outBytes, 0, outBytesLen, (jbyte*) outm);
+    }
 
     (*env)->DeleteLocalRef(env, outBytes);
     return CheckJNIExceptions(env) ? FAIL : SUCCESS;

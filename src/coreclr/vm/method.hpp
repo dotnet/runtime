@@ -1861,8 +1861,8 @@ public:
 public:
     MethodDesc *GetInterfaceMD();
 
-// StubMethodInfo for use in creating RuntimeMethodHandles
-    REFLECTMETHODREF GetStubMethodInfo();
+    // StubMethodInfo for use in creating RuntimeMethodHandles
+    REFLECTMETHODREF AllocateStubMethodInfo();
 
     PrecodeType GetPrecodeType();
 
@@ -2371,8 +2371,6 @@ inline MethodDescChunk *MethodDesc::GetMethodDescChunk() const
 }
 
 MethodDesc* NonVirtualEntry2MethodDesc(PCODE entryPoint);
-// convert an entry point into a MethodDesc
-MethodDesc* Entry2MethodDesc(PCODE entryPoint, MethodTable *pMT);
 
 
 typedef DPTR(class StoredSigMethodDesc) PTR_StoredSigMethodDesc;

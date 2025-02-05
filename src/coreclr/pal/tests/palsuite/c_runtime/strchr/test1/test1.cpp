@@ -62,7 +62,7 @@ PALTEST(c_runtime_strchr_test1_paltest_strchr_test1, "c_runtime/strchr/test1/pal
        result = strchr(testCases[i].string,testCases[i].character);
        if (result==NULL)
        {
-          if (testCases[i].result != (int) NULL)
+          if (testCases[i].result != 0)
           {
               Fail("Expected strchr() to return \"%s\" instead of NULL!\n",
                    testCases[i].string + testCases[i].result);

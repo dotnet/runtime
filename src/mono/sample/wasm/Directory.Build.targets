@@ -31,7 +31,6 @@
       Outputs="
       bin/$(Configuration)/AppBundle/dotnet.native.wasm;
       bin/$(Configuration)/AppBundle/dotnet.native.js;
-      bin/$(Configuration)/AppBundle/dotnet.globalization.js;
       bin/$(Configuration)/AppBundle/$(_WasmMainJSFileName);
       ">
     <PropertyGroup>
@@ -43,11 +42,9 @@
     </PropertyGroup>
     <ItemGroup>
       <NestedBuildProperty Include="RunAOTCompilation" />
-      <NestedBuildProperty Include="HybridGlobalization" />
       <NestedBuildProperty Include="InvariantGlobalization" />
       <NestedBuildProperty Include="UsingNativeAOT" />
       <NestedBuildProperty Include="WasmEnableThreads" />
-      <NestedBuildProperty Include="MonoDiagnosticsMock" />
       <NestedBuildPropertyValue Include="/p:%(NestedBuildProperty.Identity)=$(%(NestedBuildProperty.Identity))" Condition="'$(%(NestedBuildProperty.Identity))' != '%(NestedBuildProperty.DefaultValue)'" />
     </ItemGroup>
     <Exec Command="$(_Dotnet) publish -bl:publish-browser.binlog /p:Configuration=$(Configuration) /p:TargetArchitecture=wasm /p:TargetOS=browser @(NestedBuildPropertyValue, ' ') $(_SampleProject) $(BuildAdditionalArgs)" />

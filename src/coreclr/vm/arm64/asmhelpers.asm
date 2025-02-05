@@ -39,6 +39,9 @@
     IMPORT  g_pGetGCStaticBase
     IMPORT  g_pGetNonGCStaticBase
 
+    IMPORT g_pPollGC
+    IMPORT g_TrapReturningThreads
+
 #ifdef WRITE_BARRIER_CHECK
     SETALIAS g_GCShadow, ?g_GCShadow@@3PEAEEA
     SETALIAS g_GCShadowEnd, ?g_GCShadowEnd@@3PEAEEA
@@ -1136,6 +1139,24 @@ __HelperNakedFuncName SETS "$helper":CC:"Naked"
         EPILOG_BRANCH_REG x9
     NESTED_END
 
+    IMPORT JIT_PatchpointWorkerWorkerWithPolicy
+
+    NESTED_ENTRY JIT_Patchpoint
+        PROLOG_WITH_TRANSITION_BLOCK
+
+        add     x0, sp, #__PWTB_TransitionBlock ; TransitionBlock *
+        bl      JIT_PatchpointWorkerWorkerWithPolicy
+
+        EPILOG_WITH_TRANSITION_BLOCK_RETURN
+    NESTED_END
+
+    // first arg register holds iloffset, which needs to be moved to the second register, and the first register filled with NULL
+    LEAF_ENTRY JIT_PartialCompilationPatchpoint
+        mov x1, x0
+        mov x0, #0
+        b JIT_Patchpoint
+    LEAF_END
+
 #endif ; FEATURE_TIERED_COMPILATION
 
     LEAF_ENTRY  JIT_ValidateIndirectCall
@@ -1178,6 +1199,17 @@ __HelperNakedFuncName SETS "$helper":CC:"Naked"
     NESTED_END
 
 #endif ; FEATURE_SPECIAL_USER_MODE_APC
+
+    LEAF_ENTRY  JIT_PollGC
+        ldr     x9, =g_TrapReturningThreads
+        ldr     w9, [x9]
+        cbnz    w9, JIT_PollGCRarePath
+        ret
+JIT_PollGCRarePath
+        ldr     x9, =g_pPollGC
+        ldr     x9, [x9]
+        br x9
+    LEAF_END
 
 
 ; Must be at very end of file
