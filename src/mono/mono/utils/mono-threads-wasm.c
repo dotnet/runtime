@@ -311,6 +311,9 @@ mono_threads_platform_in_critical_region (THREAD_INFO_TYPE *info)
 void
 mono_memory_barrier_process_wide (void)
 {
+#ifdef __EMSCRIPTEN_PTHREADS__
+	mono_memory_barrier ();
+#endif
 }
 
 #ifdef HOST_BROWSER
