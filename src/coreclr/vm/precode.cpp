@@ -191,7 +191,7 @@ static TADDR GetMethodDescFromPrecodeData(TADDR methodDesc)
         return methodDesc;
     }
 
-    PTR_CodeHeader pCodeHeader = PTR_CodeHeader((methodDesc & ~(TADDR)1) - sizeof(CodeHeader));
+    PTR_CodeHeader pCodeHeader = PTR_CodeHeader(EEJitManager::GetCodeHeaderFromStartAddress(methodDesc & ~InterpretedCodeAddressFlag));
     return dac_cast<TADDR>(pCodeHeader->GetMethodDesc());
 }
 
