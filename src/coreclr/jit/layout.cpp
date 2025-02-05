@@ -5,6 +5,7 @@
 #include "layout.h"
 #include "compiler.h"
 
+// Key used in ClassLayoutTable's hash table for custom layouts.
 struct CustomLayoutKey
 {
     unsigned    Size;
@@ -413,6 +414,16 @@ ClassLayout* Compiler::typGetBlkLayout(unsigned blockSize)
     return typGetCustomLayout(ClassLayoutBuilder(this, blockSize));
 }
 
+//------------------------------------------------------------------------
+// Create: Create a ClassLayout from an EE side class handle.
+//
+// Parameters:
+//   compiler    - The Compiler object
+//   classHandle - The class handle
+//
+// Return value:
+//   New layout representing an EE side class.
+//
 ClassLayout* ClassLayout::Create(Compiler* compiler, CORINFO_CLASS_HANDLE classHandle)
 {
     bool     isValueClass = compiler->eeIsValueClass(classHandle);
@@ -469,6 +480,16 @@ ClassLayout* ClassLayout::Create(Compiler* compiler, CORINFO_CLASS_HANDLE classH
     return layout;
 }
 
+//------------------------------------------------------------------------
+// Create: Create a ClassLayout from a ClassLayoutBuilder.
+//
+// Parameters:
+//   compiler - The Compiler object
+//   builder  - Builder representing the layout
+//
+// Return value:
+//   New layout representing a custom (JIT internal) class layout.
+//
 ClassLayout* ClassLayout::Create(Compiler* compiler, const ClassLayoutBuilder& builder)
 {
     ClassLayout* newLayout  = new (compiler, CMK_ClassLayout) ClassLayout(builder.m_size);
@@ -640,17 +661,26 @@ bool ClassLayout::AreCompatible(const ClassLayout* layout1, const ClassLayout* l
     return true;
 }
 
+//------------------------------------------------------------------------
+// ClassLayoutbuilder: Construct a new builder for a class layout of the
+// specified size.
+//
+// Arguments:
+//    compiler - Compiler instance
+//    size     - Size of the layout
+//
 ClassLayoutBuilder::ClassLayoutBuilder(Compiler* compiler, unsigned size)
     : m_compiler(compiler)
     , m_size(size)
 {
 }
 
-unsigned ClassLayoutBuilder::GetSlotCount()
-{
-    return (m_size + TARGET_POINTER_SIZE - 1) / TARGET_POINTER_SIZE;
-}
-
+//------------------------------------------------------------------------
+// GetOrCreateGCPtrs: Get or create the array indicating GC pointer types.
+//
+// Returns:
+//   The array of CorInfoGCType.
+//
 BYTE* ClassLayoutBuilder::GetOrCreateGCPtrs()
 {
     assert(m_size % TARGET_POINTER_SIZE == 0);
@@ -663,10 +693,23 @@ BYTE* ClassLayoutBuilder::GetOrCreateGCPtrs()
     return m_gcPtrs;
 }
 
+//------------------------------------------------------------------------
+// SetGCPtr: Set a slot to have specified GC pointer type.
+//
+// Arguments:
+//   slot - The GC pointer slot. The slot number corresponds to offset slot * TARGET_POINTER_SIZE.
+//   type - Type of GC pointer that this slot contains.
+//
+// Remarks:
+//   GC pointer information can only be set in layouts of size divisible by
+//   TARGET_POINTER_SIZE.
+//
 void ClassLayoutBuilder::SetGCPtr(unsigned slot, CorInfoGCType type)
 {
-    assert(slot < GetSlotCount());
     BYTE* ptrs = GetOrCreateGCPtrs();
+
+    assert(slot * TARGET_POINTER_SIZE < m_size);
+
     if (ptrs[slot] != TYPE_GC_NONE)
     {
         m_gcPtrCount--;
@@ -680,6 +723,17 @@ void ClassLayoutBuilder::SetGCPtr(unsigned slot, CorInfoGCType type)
     }
 }
 
+//------------------------------------------------------------------------
+// SetGCPtrType: Set a slot to have specified type.
+//
+// Arguments:
+//   slot - The GC pointer slot. The slot number corresponds to offset slot * TARGET_POINTER_SIZE.
+//   type - Type that this slot contains. Must be TYP_REF, TYP_BYREF or TYP_I_IMPL.
+//
+// Remarks:
+//   GC pointer information can only be set in layouts of size divisible by
+//   TARGET_POINTER_SIZE.
+//
 void ClassLayoutBuilder::SetGCPtrType(unsigned slot, var_types type)
 {
     switch (type)
@@ -694,21 +748,41 @@ void ClassLayoutBuilder::SetGCPtrType(unsigned slot, var_types type)
             SetGCPtr(slot, TYPE_GC_NONE);
             break;
         default:
-            assert(!"Invalid var_types passed to ClassLayoutBuilder::SetGCPtrType");
+            assert(!"Invalid type passed to ClassLayoutBuilder::SetGCPtrType");
             break;
     }
 }
 
-void ClassLayoutBuilder::SetGCPtrs(unsigned startSlot, ClassLayout* layout)
+//------------------------------------------------------------------------
+// CopyInfoFrom: Copy GC pointers from another layout.
+//
+// Arguments:
+//   offset - Offset in this builder to start copy information into.
+//   layout - Layout to get information from.
+//
+void ClassLayoutBuilder::CopyInfoFrom(unsigned offset, ClassLayout* layout)
 {
-    assert(startSlot + layout->GetSlotCount() <= m_size / TARGET_POINTER_SIZE);
-    for (unsigned slot = 0; slot < layout->GetSlotCount(); slot++)
+    assert(offset + layout->GetSize() <= m_size);
+
+    if (layout->GetGCPtrCount() > 0)
     {
-        SetGCPtr(startSlot + slot, layout->GetGCPtr(slot));
+        assert(offset % TARGET_POINTER_SIZE == 0);
+        unsigned startSlot = offset / TARGET_POINTER_SIZE;
+        for (unsigned slot = 0; slot < layout->GetSlotCount(); slot++)
+        {
+            SetGCPtr(startSlot + slot, layout->GetGCPtr(slot));
+        }
     }
 }
 
 #ifdef DEBUG
+//------------------------------------------------------------------------
+// SetName: Set the long and short name of the layout.
+//
+// Arguments:
+//   name      - The long name
+//   shortName - The short name
+//
 void ClassLayoutBuilder::SetName(const char* name, const char* shortName)
 {
     m_name      = name;

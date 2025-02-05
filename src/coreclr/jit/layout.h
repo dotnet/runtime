@@ -23,16 +23,15 @@ class ClassLayoutBuilder
     const char* m_shortName = "UNNAMED";
 #endif
 
-    unsigned GetSlotCount();
-    BYTE*    GetOrCreateGCPtrs();
-    void     SetGCPtr(unsigned slot, CorInfoGCType type);
+    BYTE* GetOrCreateGCPtrs();
+    void  SetGCPtr(unsigned slot, CorInfoGCType type);
 public:
     // Create a class layout builder.
     //
     ClassLayoutBuilder(Compiler* compiler, unsigned size);
 
     void SetGCPtrType(unsigned slot, var_types type);
-    void SetGCPtrs(unsigned startSlot, ClassLayout* layout);
+    void CopyInfoFrom(unsigned offset, ClassLayout* layout);
 
 #ifdef DEBUG
     void SetName(const char* name, const char* shortName);
