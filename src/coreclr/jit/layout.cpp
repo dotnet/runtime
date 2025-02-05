@@ -595,13 +595,14 @@ const SegmentList& ClassLayout::GetNonPadding(Compiler* comp)
         return *m_nonPadding;
     }
 
-    assert(!IsCustomLayout() || (m_size == 0));
     m_nonPadding = new (comp, CMK_ClassLayout) SegmentList(comp->getAllocator(CMK_ClassLayout));
 
     if (m_size == 0)
     {
         return *m_nonPadding;
     }
+
+    assert(!IsCustomLayout());
 
     CORINFO_TYPE_LAYOUT_NODE nodes[256];
     size_t                   numNodes = ArrLen(nodes);
@@ -808,7 +809,7 @@ void ClassLayoutBuilder::SetGCPtrType(unsigned slot, var_types type)
 }
 
 //------------------------------------------------------------------------
-// CopyInfoFrom: Copy GC pointers from another layout.
+// CopyInfoFrom: Copy GC pointers and padding information from another layout.
 //
 // Arguments:
 //   offset - Offset in this builder to start copy information into.
