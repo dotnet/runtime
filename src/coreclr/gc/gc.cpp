@@ -13254,7 +13254,24 @@ void region_free_list::sort_by_committed_and_age()
 
 void gc_heap::age_free_regions (const char* msg)
 {
-    bool age_all_region_kinds = (settings.condemned_generation == max_generation);
+    // If we are doing an ephemeral GC as a precursor to a BGC, then we will age all of the region
+    // kinds during the ephemeral GC and skip the call to age_free_regions during the BGC itself.
+    bool age_all_region_kinds = (settings.condemned_generation == max_generation) || is_bgc_in_progress();
+
+    if (!age_all_region_kinds)
+    {
+#ifdef MULTIPLE_HEAPS
+        gc_heap* hp = g_heaps[0];
+#else //MULTIPLE_HEAPS
+        gc_heap* hp = pGenGCHeap;
+#endif //MULTIPLE_HEAPS
+        age_all_region_kinds = (hp->current_bgc_state == bgc_initialized);
+    }
+    
+    if (age_all_region_kinds)
+    {
+        global_free_huge_regions.age_free_regions();
+    }
 
 #ifdef MULTIPLE_HEAPS
     for (int i = 0; i < n_heaps; i++)
