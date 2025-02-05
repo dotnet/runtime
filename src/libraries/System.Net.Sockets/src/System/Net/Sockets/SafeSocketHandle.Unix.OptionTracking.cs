@@ -141,7 +141,7 @@ namespace System.Net.Sockets
             SO_RCVTIMEO
         }
 
-        internal static int TrackableOptionCount => (int)TrackableSocketOptions.SO_RCVTIMEO;
+        internal const int TrackableOptionCount = (int)TrackableSocketOptions.SO_RCVTIMEO;
 
         private static TrackableSocketOptions ToTrackableSocketOptions(SocketOptionName name, SocketOptionLevel level)
             => ((int)name, level) switch

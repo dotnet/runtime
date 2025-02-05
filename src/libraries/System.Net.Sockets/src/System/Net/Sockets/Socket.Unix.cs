@@ -138,7 +138,7 @@ namespace System.Net.Sockets
             Span<int> optionValues = stackalloc int[SafeSocketHandle.TrackableOptionCount];
             _handle.GetTrackedSocketOptions(optionValues, out LingerOption? lingerOption);
 
-            // TReplace the handle with a new one.
+            // Replace the handle with a new one.
             SafeSocketHandle oldHandle = _handle;
             SocketError errorCode = SocketPal.CreateSocket(_addressFamily, _socketType, _protocolType, out SafeSocketHandle newHandle);
             Volatile.Write(ref _handle, newHandle);
