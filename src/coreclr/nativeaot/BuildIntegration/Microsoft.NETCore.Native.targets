@@ -131,25 +131,36 @@ The .NET Foundation licenses this file to you under the MIT license.
       <_NETCoreAppFrameworkReference Include="@(ResolvedFrameworkReference)" Condition="'%(ResolvedFrameworkReference.RuntimePackName)' == 'Microsoft.NETCore.App.Runtime.NativeAOT.$(RuntimeIdentifier)'" />
     </ItemGroup>
 
+    <PropertyGroup Condition="'$(IlcUseNativeAOTRuntimePackLayout)' == 'true'">
+      <!--
+        If we're actually using the runtime pack from the ResolvedFrameworkReference, pull the path from there.
+        Otherwise pull it from the RuntimePackagePath.
+      -->
+      <_NETCoreAppRuntimePackPath Condition="'$(PublishAotUsingRuntimePack)' == 'true'">%(_NETCoreAppFrameworkReference.RuntimePackPath)/runtimes/$(RuntimeIdentifier)/</_NETCoreAppRuntimePackPath>
+      <_NETCoreAppRuntimePackPath Condition="'$(PublishAotUsingRuntimePack)' != 'true'">$(RuntimePackagePath)/runtimes/$(RuntimeIdentifier)/</_NETCoreAppRuntimePackPath>
+      <IlcFrameworkNativePath Condition="'$(IlcFrameworkNativePath)' == ''">$(_NETCoreAppRuntimePackPath)\native\</IlcFrameworkNativePath>
+      <IlcSdkPath Condition="'$(IlcSdkPath)' == ''">$(IlcFrameworkNativePath)</IlcSdkPath>
+    </PropertyGroup>
+
+    <PropertyGroup Condition="'$(IlcUseNativeAOTRuntimePackLayout)' != 'true'">
+      <IlcFrameworkPath Condition="'$(IlcFrameworkPath)' == ''">$(RuntimePackagePath)\framework\</IlcFrameworkPath>
+      <IlcFrameworkNativePath Condition="'$(IlcFrameworkNativePath)' == ''">$(RuntimePackagePath)\framework\</IlcFrameworkNativePath>
+      <IlcSdkPath Condition="'$(IlcSdkPath)' == ''">$(RuntimePackagePath)\sdk\</IlcSdkPath>
+    </PropertyGroup>
+
     <PropertyGroup>
       <!-- Define paths used in build targets to point to the runtime-specific ILCompiler implementation -->
       <IlcToolsPath Condition="'$(IlcToolsPath)' == ''">$(IlcHostPackagePath)\tools\</IlcToolsPath>
-      <IlcFrameworkPath Condition="'$(IlcFrameworkPath)' == '' and '$(PublishAotUsingRuntimePack)' != 'true'">$(RuntimePackagePath)\framework\</IlcFrameworkPath>
-      <_NETCoreAppRuntimePackPath>%(_NETCoreAppFrameworkReference.RuntimePackPath)/runtimes/$(RuntimeIdentifier)/</_NETCoreAppRuntimePackPath>
-      <IlcFrameworkNativePath Condition="'$(IlcFrameworkNativePath)' == '' and '$(PublishAotUsingRuntimePack)' == 'true'">$(_NETCoreAppRuntimePackPath)\native\</IlcFrameworkNativePath>
-      <IlcFrameworkNativePath Condition="'$(IlcFrameworkNativePath)' == '' and '$(PublishAotUsingRuntimePack)' != 'true'">$(RuntimePackagePath)\framework\</IlcFrameworkNativePath>
-      <IlcSdkPath Condition="'$(IlcSdkPath)' == '' and '$(PublishAotUsingRuntimePack)' == 'true'">$(IlcFrameworkNativePath)</IlcSdkPath>
-      <IlcSdkPath Condition="'$(IlcSdkPath)' == '' and '$(PublishAotUsingRuntimePack)' != 'true'">$(RuntimePackagePath)\sdk\</IlcSdkPath>
       <IlcMibcPath Condition="'$(IlcMibcPath)' == ''">$(RuntimePackagePath)\mibc\</IlcMibcPath>
     </PropertyGroup>
 
-    <ItemGroup Condition="'$(PublishAotUsingRuntimePack)' == 'true'">
+    <ItemGroup Condition="'$(IlcUseNativeAOTRuntimePackLayout)' == 'true'">
       <PrivateSdkAssemblies Include="$(IlcSdkPath)*.dll"/>
       <FrameworkAssemblies Include="@(RuntimePackAsset)" Condition="'%(Extension)' == '.dll'" />
       <DefaultFrameworkAssemblies Include="@(FrameworkAssemblies)" />
     </ItemGroup>
 
-    <ItemGroup Condition="'$(PublishAotUsingRuntimePack)' != 'true'">
+    <ItemGroup Condition="'$(IlcUseNativeAOTRuntimePackLayout)' != 'true'">
       <PrivateSdkAssemblies Include="$(IlcSdkPath)*.dll"/>
       <!-- Exclude unmanaged dlls -->
       <FrameworkAssemblies Include="$(IlcFrameworkPath)*.dll" Exclude="$(IlcFrameworkPath)*.Native.dll;$(IlcFrameworkPath)msquic.dll" />

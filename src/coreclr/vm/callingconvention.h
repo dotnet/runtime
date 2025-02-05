@@ -2209,4 +2209,28 @@ inline BOOL IsRetBuffPassedAsFirstArg()
 #endif
 }
 
+inline TADDR GetFirstArgumentRegisterValuePtr(TransitionBlock * pTransitionBlock)
+{
+    TADDR pArgument = (TADDR)pTransitionBlock + TransitionBlock::GetOffsetOfArgumentRegisters();
+#ifdef TARGET_X86
+    // x86 is special as always
+    pArgument += offsetof(ArgumentRegisters, ECX);
+#endif
+
+    return pArgument;
+}
+
+inline TADDR GetSecondArgumentRegisterValuePtr(TransitionBlock * pTransitionBlock)
+{
+    TADDR pArgument = (TADDR)pTransitionBlock + TransitionBlock::GetOffsetOfArgumentRegisters();
+#ifdef TARGET_X86
+    // x86 is special as always
+    pArgument += offsetof(ArgumentRegisters, EDX);
+#else
+    pArgument += sizeof(TADDR);
+#endif
+
+    return pArgument;
+}
+
 #endif // __CALLING_CONVENTION_INCLUDED
