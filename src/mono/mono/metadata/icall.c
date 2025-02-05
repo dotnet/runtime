@@ -6577,7 +6577,6 @@ static void
 mono_type_from_blob_type (MonoType *type, MonoTypeEnum blob_type, MonoType *real_type)
 {
 	type->type = blob_type;
-	m_type_data_set_klass (type, NULL);
 	if (blob_type == MONO_TYPE_CLASS)
 		m_type_data_set_klass_unchecked (type, mono_defaults.object_class);
 	else if (real_type->type == MONO_TYPE_VALUETYPE && m_class_is_enumtype (m_type_data_get_klass_unchecked (real_type))) {

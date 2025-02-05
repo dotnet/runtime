@@ -1345,7 +1345,7 @@ m_type_data_is_klass_valid (const MonoType *type) {
  * m_type_data_xxx_method is legal for \c MONO_TYPE_FNPTR.
  * m_type_data_xxx_generic_class is legal for \c MONO_TYPE_GENERICINST.
  */
-#define DEFINE_TYPE_DATA_MEMBER(field_type, field_name, predicate) \
+#define DEFINE_TYPE_DATA_MEMBER_CHECKED_ACCESSORS(field_type, field_name, predicate) \
 	static inline field_type \
 	m_type_data_get_ ## field_name (const MonoType *type) \
 	{ \
@@ -1355,11 +1355,6 @@ m_type_data_is_klass_valid (const MonoType *type) {
 		return NULL; \
 	} \
 	\
-	static inline field_type \
-	m_type_data_get_ ## field_name ## _unchecked (const MonoType *type) \
-	{ \
-		return type->data__.field_name; \
-	} \
 	static inline void \
 	m_type_data_set_ ## field_name (MonoType *type, field_type value) \
 	{ \
@@ -1367,13 +1362,39 @@ m_type_data_is_klass_valid (const MonoType *type) {
 			m_type_invalid_access (__func__, type->type); \
 		else \
 			type->data__.field_name = value; \
+	}
+
+#if (defined(ENABLE_CHECKED_BUILD) || defined(_DEBUG) || defined(DEBUG))
+
+#define DEFINE_TYPE_DATA_MEMBER(field_type, field_name, predicate) \
+	DEFINE_TYPE_DATA_MEMBER_CHECKED_ACCESSORS(field_type, field_name, predicate) \
+	static inline field_type \
+	m_type_data_get_ ## field_name ## _unchecked (const MonoType *type) \
+	{ \
+		return m_type_data_get_ ## field_name (type); \
 	} \
-	\
+	static inline void \
+	m_type_data_set_ ## field_name ## _unchecked (MonoType *type, field_type value) \
+	{ \
+		m_type_data_set_ ## field_name (type, value); \
+	}
+
+#else // ENABLE_CHECKED_BUILD || _DEBUG || DEBUG
+
+#define DEFINE_TYPE_DATA_MEMBER(field_type, field_name, predicate) \
+	DEFINE_TYPE_DATA_MEMBER_CHECKED_ACCESSORS(field_type, field_name, predicate) \
+	static inline field_type \
+	m_type_data_get_ ## field_name ## _unchecked (const MonoType *type) \
+	{ \
+		return type->data__.field_name; \
+	} \
 	static inline void \
 	m_type_data_set_ ## field_name ## _unchecked (MonoType *type, field_type value) \
 	{ \
 		type->data__.field_name = value; \
 	}
+
+#endif // ENABLE_CHECKED_BUILD || _DEBUG || DEBUG
 
 DEFINE_TYPE_DATA_MEMBER(MonoClass *, klass, (m_type_data_is_klass_valid (type)));
 DEFINE_TYPE_DATA_MEMBER(MonoGenericParam *, generic_param, ((type->type == MONO_TYPE_VAR) || (type->type == MONO_TYPE_MVAR)));
@@ -1382,6 +1403,7 @@ DEFINE_TYPE_DATA_MEMBER(MonoType *, type, (type->type == MONO_TYPE_PTR));
 DEFINE_TYPE_DATA_MEMBER(MonoMethodSignature *, method, (type->type == MONO_TYPE_FNPTR));
 DEFINE_TYPE_DATA_MEMBER(MonoGenericClass *, generic_class, (type->type == MONO_TYPE_GENERICINST));
 
+#undef DEFINE_TYPE_DATA_MEMBER_CHECKED_ACCESSORS
 #undef DEFINE_TYPE_DATA_MEMBER
 
 /**
