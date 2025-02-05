@@ -255,13 +255,99 @@ do {                                                                            
 // Macros for stripping pointer authentication (PAC) bits.
 //
 
-#if !defined(DEBUGGER_STRIP_PAC)
+#if !defined(DACCESS_COMPILE)
 
-// NOTE: Pointer authentication is not used by .NET, so the implementation does nothing
-#define STRIP_PAC(pointer) *pointer &= 0x0000FFFFFFFFFFFF
+#define STRIP_PAC(Params, pointer)    RtlStripPacOnline(pointer)
+//FORCEINLINE
+//VOID
+//RtlStripPacOnline (
+//    _Inout_ PULONG64 Pointer
+//    )
+//
+///*++
+//
+//Routine Description:
+//
+//    This routine strips the ARM64 Pointer Authentication Code (PAC) from a
+//    pointer using the ARM64-native xpaci intrinsic directly. Hence this should
+//    only be called when stripping a pointer at runtime (not debugger)
+//
+//Arguments:
+//
+//    Pointer - Supplies a pointer to the pointer whose PAC will be stripped.
+//
+//Return Value:
+//
+//    None.
+//
+//--*/
+//
+//{
+//    ULONG64 StrippedPointer;
+//
+//    StrippedPointer = *Pointer;
+//    StrippedPointer = (ULONG64)__xpaci((PVOID)StrippedPointer);
+//    *Pointer = StrippedPointer;
+//    return;
+//}
 
-#endif
+#else
 
+#define STRIP_PAC(Params, pointer)    RtlStripPacManual(pointer)
+
+FORCEINLINE
+VOID
+RtlStripPacManual(
+    _Inout_ PULONG64 Pointer
+)
+/*++
+
+Routine Description:
+
+    This routine manually strips the ARM64 Pointer Authentication Code (PAC)
+    from a pointer. This is functionally similar to the XPAC family of
+    instructions.
+
+    N.B. Even though PAC is only supported on ARM64, this routine is available
+         on all architectures to conveniently enable scenarios such as the
+         Debugger.
+
+Arguments:
+
+    Pointer - Supplies a pointer to the pointer whose PAC will be stripped.
+
+Return Value:
+
+    None.
+
+--*/
+{
+    ULONG64 StrippedPointer;
+
+    // For now hard code to mask everything but the bottom 55 bits
+    ULONG64 PointerAuthMask = (1ull << 55) - 1;
+
+    StrippedPointer = *Pointer;
+
+    //
+    // Strip the pointer manually. Bit 55 of the pointer is replicated across
+    // the "unused" bits (if bit 55 is 1, all unused bits should be 1; if bit
+    // 55 is 0, all unused bits should be 0).
+    //
+
+    if (((StrippedPointer >> 55) & 0x1) == 0) {
+        StrippedPointer &= ~PointerAuthMask;
+
+    } else {
+        StrippedPointer |= PointerAuthMask;
+    }
+
+    *Pointer = StrippedPointer;
+
+    return;
+}
+
+#endif // !defined(DACCESS_COMPILE)
 //
 // Macros to clarify opcode parsing
 //
