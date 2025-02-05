@@ -1027,7 +1027,7 @@ namespace System.Reflection.Metadata.Tests
         {
             Assert.Equal(type.AssemblyQualifiedName, typeName.AssemblyQualifiedName);
             Assert.Equal(type.FullName, typeName.FullName);
-            if (type.IsNested)
+            if (GetSimpleAncestor(typeName).IsNested)
             {
                 Assert.Throws<InvalidOperationException>(() => typeName.Namespace);
             }
@@ -1045,6 +1045,15 @@ namespace System.Reflection.Metadata.Tests
             Assert.Equal(type.IsByRef, typeName.IsByRef);
             Assert.Equal(type.IsConstructedGenericType, typeName.IsConstructedGenericType);
             Assert.Equal(type.IsNested, typeName.IsNested);
+
+            static TypeName GetSimpleAncestor(TypeName typeName)
+            {
+                while (!typeName.IsSimple)
+                {
+                    typeName = typeName.IsConstructedGenericType ? typeName.GetGenericTypeDefinition() : typeName.GetElementType();
+                }
+                return typeName;
+            }
         }
 
         public class NestedNonGeneric_0

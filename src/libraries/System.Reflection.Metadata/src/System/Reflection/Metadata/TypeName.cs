@@ -308,17 +308,17 @@ namespace System.Reflection.Metadata
         {
             get
             {
-                if (IsNested)
-                {
-                    TypeNameParserHelpers.ThrowInvalidOperation_NestedTypeNamespace();
-                }
-
                 if (_namespace is null)
                 {
                     TypeName rootTypeName = this;
                     while (!rootTypeName.IsSimple)
                     {
                         rootTypeName = rootTypeName._elementOrGenericType;
+                    }
+
+                    if (rootTypeName.IsNested)
+                    {
+                        TypeNameParserHelpers.ThrowInvalidOperation_NestedTypeNamespace();
                     }
 
                     // By setting the namespace field at the root type name, we avoid recomputing it for all derived names.
