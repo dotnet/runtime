@@ -18,8 +18,8 @@ statscmd="$scriptroot/stats.sh"
 
 $statscmd &
 
-# export DOTNET_GCHighMemPercent="10"
-# export DOTNET_GCHeapHardLimitPercent="20"
+export DOTNET_GCHighMemPercent="10"
+export DOTNET_GCHeapHardLimitPercent="20"
 
 usage()
 {
