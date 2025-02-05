@@ -653,6 +653,15 @@
         <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/StaticVirtualMethods/DiamondShape/svm_diamondshape_r/*">
             <Issue>https://github.com/dotnet/runtime/issues/72589</Issue>
         </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/MethodImpl/self_override2/*">
+            <Issue>https://github.com/dotnet/runtime/issues/111991</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/MethodImpl/self_override5/*">
+            <Issue>https://github.com/dotnet/runtime/issues/111991</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/methodoverriding/regressions/576621/VSW576621/*">
+            <Issue>https://github.com/dotnet/runtime/issues/111991</Issue>
+        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/StaticVirtualMethods/NegativeTestCases/**">
             <Issue>https://github.com/dotnet/runtimelab/issues/155: Compatible TypeLoadException for invalid inputs</Issue>
         </ExcludeList>
@@ -1172,9 +1181,6 @@
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/StaticVirtualMethods/Reabstraction/**">
             <Issue>https://github.com/dotnet/runtime/issues/88775</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/StaticVirtualMethods/InterfaceVariance/**">
-            <Issue>https://github.com/dotnet/runtime/issues/88689</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/Regressions/coreclr/GitHub_85240/test85240/**">
             <Issue>https://github.com/dotnet/runtime/issues/90308</Issue>
@@ -1826,12 +1832,6 @@
         <ExcludeList Include="$(XunitTestBinBase)/Interop/PInvoke/BestFitMapping/Assembly_True_False/Assembly_True_False/*">
             <Issue>Mono doesn't support interop BestFitMapping and ThrowOnUnmappableChar attributes</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/JitBlue/Runtime_70259/Runtime_70259/*">
-            <Issue>https://github.com/dotnet/runtime/issues/70279</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/JitBlue/Runtime_68568/Runtime_68568/*">
-            <Issue>Tests coreclr's handling of switches on natively sized integers</Issue>
-        </ExcludeList>
         <ExcludeList Include = "$(XunitTestBinBase)/JIT/opt/OSR/pinnedlocal/**">
             <Issue>https://github.com/dotnet/runtime/issues/70820</Issue>
         </ExcludeList>
@@ -2097,9 +2097,6 @@
         </ExcludeList>
         <ExcludeList Include = "$(XunitTestBinBase)/JIT/Regression/JitBlue/Runtime_64125/Runtime_64125/**">
             <Issue>needs triage</Issue>
-        </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Regression/JitBlue/Runtime_74635/Runtime_74635_1/**">
-            <Issue>https://github.com/dotnet/runtime/issues/74687</Issue>
         </ExcludeList>
         <ExcludeList Include = "$(XUnitTestBinBase)/JIT/Directed/Arrays/nintindexoutofrange/**">
             <Issue>https://github.com/dotnet/runtime/issues/71656</Issue>

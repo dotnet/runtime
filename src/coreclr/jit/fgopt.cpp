@@ -309,7 +309,7 @@ PhaseStatus Compiler::fgPostImportationCleanup()
     {
         // Update type of return spill temp if we have gathered
         // better info when importing the inlinee, and the return
-        // spill temp is single def.
+        // spill temp is single def or was freshly created for this inlinee
         if (fgNeedReturnSpillTemp())
         {
             CORINFO_CLASS_HANDLE retExprClassHnd = impInlineInfo->retExprClassHnd;
@@ -317,9 +317,11 @@ PhaseStatus Compiler::fgPostImportationCleanup()
             {
                 LclVarDsc* returnSpillVarDsc = lvaGetDesc(lvaInlineeReturnSpillTemp);
 
-                if ((returnSpillVarDsc->lvType == TYP_REF) && returnSpillVarDsc->lvSingleDef)
+                if (returnSpillVarDsc->lvType == TYP_REF &&
+                    (returnSpillVarDsc->lvSingleDef || lvaInlineeReturnSpillTempFreshlyCreated))
                 {
-                    lvaUpdateClass(lvaInlineeReturnSpillTemp, retExprClassHnd, impInlineInfo->retExprClassHndIsExact);
+                    lvaUpdateClass(lvaInlineeReturnSpillTemp, retExprClassHnd, impInlineInfo->retExprClassHndIsExact,
+                                   false);
                 }
             }
         }
@@ -4691,7 +4693,23 @@ void Compiler::ThreeOptLayout::ConsiderEdge(FlowEdge* edge)
     BasicBlock* const dstBlk = edge->getDestinationBlock();
 
     // Ignore cross-region branches
-    if (!BasicBlock::sameEHRegion(srcBlk, dstBlk))
+    if (!BasicBlock::sameTryRegion(srcBlk, dstBlk))
+    {
+        return;
+    }
+
+    // Don't waste time reordering within handler regions.
+    // Note that if a finally region is sufficiently hot,
+    // we should have cloned it into the main method body already.
+    if (srcBlk->hasHndIndex() || dstBlk->hasHndIndex())
+    {
+        return;
+    }
+
+    // For backward jumps, we will consider partitioning before 'srcBlk'.
+    // If 'srcBlk' is a BBJ_CALLFINALLYRET, this partition will split up a call-finally pair.
+    // Thus, don't consider edges out of BBJ_CALLFINALLYRET blocks.
+    if (srcBlk->KindIs(BBJ_CALLFINALLYRET))
     {
         return;
     }
@@ -4774,8 +4792,7 @@ void Compiler::ThreeOptLayout::AddNonFallthroughPreds(unsigned blockPos)
 }
 
 //-----------------------------------------------------------------------------
-// Compiler::ThreeOptLayout::Run: Runs 3-opt for each contiguous region of the block list
-// we're interested in reordering.
+// Compiler::ThreeOptLayout::Run: Runs 3-opt on the candidate span of hot blocks.
 // We skip reordering handler regions for now, as these are assumed to be cold.
 //
 // Returns:
@@ -4800,7 +4817,7 @@ bool Compiler::ThreeOptLayout::Run()
     assert((numCandidateBlocks + numColdBlocks) == compiler->m_dfsTree->GetPostOrderCount());
     memcpy(tempOrder + numCandidateBlocks, blockOrder + numCandidateBlocks, sizeof(BasicBlock*) * numColdBlocks);
 
-    RunThreeOptPass(blockOrder[0], blockOrder[numCandidateBlocks - 1]);
+    RunThreeOptPass();
 
     // Reorder the block list
     bool modified = false;
@@ -4839,8 +4856,6 @@ bool Compiler::ThreeOptLayout::Run()
             continue;
         }
 
-        modified = true;
-
         // Move call-finally pairs in tandem.
         if (next->isBBCallFinallyPair())
         {
@@ -4849,12 +4864,14 @@ bool Compiler::ThreeOptLayout::Run()
             {
                 compiler->fgUnlinkRange(next, callFinallyTail);
                 compiler->fgMoveBlocksAfter(next, callFinallyTail, block);
+                modified = true;
             }
         }
         else
         {
             compiler->fgUnlinkBlock(next);
             compiler->fgInsertBBafter(block, next);
+            modified = true;
         }
     }
 
@@ -4995,6 +5012,12 @@ bool Compiler::ThreeOptLayout::RunGreedyThreeOptPass(unsigned startPos, unsigned
                 BasicBlock* const s3Block     = blockOrder[position];
                 BasicBlock* const s3BlockPrev = blockOrder[position - 1];
 
+                // Don't consider any cut points that would break up call-finally pairs
+                if (s3Block->KindIs(BBJ_CALLFINALLYRET))
+                {
+                    continue;
+                }
+
                 // Compute the cost delta of this partition
                 const weight_t currCost = currCostBase + GetCost(s3BlockPrev, s3Block);
                 const weight_t newCost =
@@ -5052,19 +5075,12 @@ bool Compiler::ThreeOptLayout::RunGreedyThreeOptPass(unsigned startPos, unsigned
 }
 
 //-----------------------------------------------------------------------------
-// Compiler::ThreeOptLayout::RunThreeOptPass: Runs 3-opt for the given block range.
+// Compiler::ThreeOptLayout::RunThreeOptPass: Runs 3-opt on the candidate span of blocks.
 //
-// Parameters:
-//   startBlock - The first block of the range to reorder
-//   endBlock - The last block (inclusive) of the range to reorder
-//
-void Compiler::ThreeOptLayout::RunThreeOptPass(BasicBlock* startBlock, BasicBlock* endBlock)
+void Compiler::ThreeOptLayout::RunThreeOptPass()
 {
-    assert(startBlock != nullptr);
-    assert(endBlock != nullptr);
-
-    const unsigned startPos  = startBlock->bbPostorderNum;
-    const unsigned endPos    = endBlock->bbPostorderNum;
+    const unsigned startPos  = 0;
+    const unsigned endPos    = numCandidateBlocks - 1;
     const unsigned numBlocks = (endPos - startPos + 1);
     assert(startPos <= endPos);
 
