@@ -308,7 +308,6 @@ public class ILStrip : Microsoft.Build.Utilities.Task
 
         fs.Position = 0;
         fs.CopyTo(os);
-        fs.Flush();
 
         foreach (var kvp in methodBodyUses)
         {
@@ -351,7 +350,6 @@ public class ILStrip : Microsoft.Build.Utilities.Task
     {
         stream.Position = actualLoc;
         stream.WriteByte(0b10);
-        stream.Flush();
     }
 
     private static void ZeroOutMethodBody(Stream stream, int methodSize, int actualLoc, int headerSize)
@@ -361,7 +359,6 @@ public class ILStrip : Microsoft.Build.Utilities.Task
         zeroBuffer = ArrayPool<byte>.Shared.Rent(methodSize - headerSize);
         Array.Clear(zeroBuffer, 0, zeroBuffer.Length);
         stream.Write(zeroBuffer, 0, zeroBuffer.Length);
-        stream.Flush();
         ArrayPool<byte>.Shared.Return(zeroBuffer);
     }
 
