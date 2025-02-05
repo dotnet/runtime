@@ -2011,6 +2011,7 @@ encode_cattr_value (MonoAssembly *assembly, char *buffer, char *p, char **retbuf
 		argval = (const char*)mono_object_get_data (arg);
 	simple_type = type->type;
 handle_enum:
+	// Because simple_type != type->type after a goto targeting handle_enum, we have to use checked m_type_data accessors inside this switch
 	switch (simple_type) {
 	case MONO_TYPE_BOOLEAN:
 	case MONO_TYPE_U1:
