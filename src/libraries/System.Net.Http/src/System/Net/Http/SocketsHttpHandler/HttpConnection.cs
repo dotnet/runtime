@@ -68,6 +68,7 @@ namespace System.Net.Http
         private bool _connectionClose; // Connection: close was seen on last response
 
         private volatile bool _disposed;
+        private volatile bool _canceled;
 
         public HttpConnection(
             HttpConnectionPool pool,
@@ -858,7 +859,7 @@ namespace System.Net.Http
                     LogExceptions(_readAheadTask.AsTask());
                 }
 
-                if (NetEventSource.Log.IsEnabled()) Trace($"Error sending request: {error}");
+                if (NetEventSource.Log.IsEnabled()) Trace($"Error sending request. _canceled:{_canceled}, error: {error}, inner: {error.InnerException}");
 
                 // In the rare case where Expect: 100-continue was used and then processing
                 // of the response headers encountered an error such that we weren't able to
@@ -961,6 +962,7 @@ namespace System.Net.Http
             {
                 var connection = (HttpConnection)s!;
                 if (NetEventSource.Log.IsEnabled()) connection.Trace("Cancellation requested. Disposing of the connection.");
+                connection._canceled = true;
                 connection.Dispose();
             }, this);
         }

@@ -30,69 +30,69 @@ extends:
     stages:
     - stage: Build
       jobs:
-      - job: linux
-        displayName: Docker Linux
-        timeoutInMinutes: 240
-        variables:
-          DUMPS_SHARE_MOUNT_ROOT: "/dumps-share"
-          DUMPS_SHARE: "$(Build.ArtifactStagingDirectory)/dumps/"
-        pool:
-          name: $(DncEngPublicBuildPool)
-          demands: ImageOverride -equals Build.Ubuntu.2204.Amd64.Open
+      # - job: linux
+      #   displayName: Docker Linux
+      #   timeoutInMinutes: 240
+      #   variables:
+      #     DUMPS_SHARE_MOUNT_ROOT: "/dumps-share"
+      #     DUMPS_SHARE: "$(Build.ArtifactStagingDirectory)/dumps/"
+      #   pool:
+      #     name: $(DncEngPublicBuildPool)
+      #     demands: ImageOverride -equals Build.Ubuntu.2204.Amd64.Open
 
-        steps:
-        - checkout: self
-          clean: true
-          fetchDepth: 5
+      #   steps:
+      #   - checkout: self
+      #     clean: true
+      #     fetchDepth: 5
 
-        - bash: |
-            $(dockerfilesFolder)/build-docker-sdk.sh -t $(sdkBaseImage) -c $(BUILD_CONFIGURATION) && \
-            echo "##vso[task.setvariable variable=succeeded;isOutput=true]true"
-          name: buildRuntime
-          displayName: Build CLR and Libraries
+      #   - bash: |
+      #       $(dockerfilesFolder)/build-docker-sdk.sh -t $(sdkBaseImage) -c $(BUILD_CONFIGURATION) && \
+      #       echo "##vso[task.setvariable variable=succeeded;isOutput=true]true"
+      #     name: buildRuntime
+      #     displayName: Build CLR and Libraries
 
-        - bash: |
-            $(httpStressProject)/run-docker-compose.sh -o -c $(BUILD_CONFIGURATION) -t $(sdkBaseImage) && \
-            echo "##vso[task.setvariable variable=succeeded;isOutput=true]true"
-          name: buildStress
-          displayName: Build HttpStress
+      #   - bash: |
+      #       $(httpStressProject)/run-docker-compose.sh -o -c $(BUILD_CONFIGURATION) -t $(sdkBaseImage) && \
+      #       echo "##vso[task.setvariable variable=succeeded;isOutput=true]true"
+      #     name: buildStress
+      #     displayName: Build HttpStress
 
-        - bash: |
-            cd '$(httpStressProject)'
-            export STRESS_CLIENT_ARGS="$HTTPSTRESS_CLIENT_ARGS -http 3.0"
-            export STRESS_SERVER_ARGS="$HTTPSTRESS_SERVER_ARGS -http 3.0"
-            mkdir -p $DUMPS_SHARE
-            docker-compose up --abort-on-container-exit --no-color
-          timeoutInMinutes: 35 # In case the HTTP/3.0 run hangs, we timeout shortly after the expected 30 minute run
-          displayName: Run HttpStress - HTTP 3.0
-          condition: and(eq(variables['buildRuntime.succeeded'], 'true'), eq(variables['buildStress.succeeded'], 'true'))
+      #   - bash: |
+      #       cd '$(httpStressProject)'
+      #       export STRESS_CLIENT_ARGS="$HTTPSTRESS_CLIENT_ARGS -http 3.0"
+      #       export STRESS_SERVER_ARGS="$HTTPSTRESS_SERVER_ARGS -http 3.0"
+      #       mkdir -p $DUMPS_SHARE
+      #       docker-compose up --abort-on-container-exit --no-color
+      #     timeoutInMinutes: 35 # In case the HTTP/3.0 run hangs, we timeout shortly after the expected 30 minute run
+      #     displayName: Run HttpStress - HTTP 3.0
+      #     condition: and(eq(variables['buildRuntime.succeeded'], 'true'), eq(variables['buildStress.succeeded'], 'true'))
 
-        - bash: |
-            cd '$(httpStressProject)'
-            export STRESS_CLIENT_ARGS="$HTTPSTRESS_CLIENT_ARGS -http 2.0"
-            export STRESS_SERVER_ARGS="$HTTPSTRESS_SERVER_ARGS -http 2.0"
-            mkdir -p $DUMPS_SHARE
-            docker-compose up --abort-on-container-exit --no-color
-          displayName: Run HttpStress - HTTP 2.0
-          condition: and(eq(variables['buildRuntime.succeeded'], 'true'), eq(variables['buildStress.succeeded'], 'true'))
+      #   - bash: |
+      #       cd '$(httpStressProject)'
+      #       export STRESS_CLIENT_ARGS="$HTTPSTRESS_CLIENT_ARGS -http 2.0"
+      #       export STRESS_SERVER_ARGS="$HTTPSTRESS_SERVER_ARGS -http 2.0"
+      #       mkdir -p $DUMPS_SHARE
+      #       docker-compose up --abort-on-container-exit --no-color
+      #     displayName: Run HttpStress - HTTP 2.0
+      #     condition: and(eq(variables['buildRuntime.succeeded'], 'true'), eq(variables['buildStress.succeeded'], 'true'))
 
-        - bash: |
-            cd '$(httpStressProject)'
-            export STRESS_CLIENT_ARGS="$HTTPSTRESS_CLIENT_ARGS -http 1.1"
-            export STRESS_SERVER_ARGS="$HTTPSTRESS_SERVER_ARGS -http 1.1"
-            mkdir -p $DUMPS_SHARE
-            docker-compose up --abort-on-container-exit --no-color
-          displayName: Run HttpStress - HTTP 1.1
-          condition: and(eq(variables['buildRuntime.succeeded'], 'true'), eq(variables['buildStress.succeeded'], 'true'))
+      #   - bash: |
+      #       cd '$(httpStressProject)'
+      #       export STRESS_CLIENT_ARGS="$HTTPSTRESS_CLIENT_ARGS -http 1.1"
+      #       export STRESS_SERVER_ARGS="$HTTPSTRESS_SERVER_ARGS -http 1.1"
+      #       mkdir -p $DUMPS_SHARE
+      #       docker-compose up --abort-on-container-exit --no-color
+      #     displayName: Run HttpStress - HTTP 1.1
+      #     condition: and(eq(variables['buildRuntime.succeeded'], 'true'), eq(variables['buildStress.succeeded'], 'true'))
 
-        - bash: |
-            sudo chown -R $(id -u):$(id -g) $(Build.ArtifactStagingDirectory)/dumps
-          displayName: Own shared dumps and files
-          condition: failed()
+      #   - bash: |
+      #       sudo chown -R $(id -u):$(id -g) $(Build.ArtifactStagingDirectory)/dumps
+      #     displayName: Own shared dumps and files
+      #     condition: failed()
 
-        - publish: $(Build.ArtifactStagingDirectory)/dumps
-          artifact: DumpsLinux
-          condition: failed()
+      #   - publish: $(Build.ArtifactStagingDirectory)/dumps
+      #     artifact: DumpsLinux
+      #     condition: failed()
 
       - job: windows
         displayName: Docker NanoServer
@@ -129,27 +129,27 @@ extends:
           name: disableFirewall
           displayName: Disable Firewall
 
-        - powershell: |
-            cd '$(httpStressProject)'
-            $env:STRESS_CLIENT_ARGS = "$env:HTTPSTRESS_CLIENT_ARGS -http 3.0"
-            $env:STRESS_SERVER_ARGS = "$env:HTTPSTRESS_SERVER_ARGS -http 3.0"
-            New-Item -Force $env:DUMPS_SHARE -ItemType Directory
-            docker compose up --abort-on-container-exit --no-color
-          displayName: Run HttpStress - HTTP 3.0
-          condition: and(eq(variables['buildRuntime.succeeded'], 'true'), eq(variables['buildStress.succeeded'], 'true'))
+        # - powershell: |
+        #     cd '$(httpStressProject)'
+        #     $env:STRESS_CLIENT_ARGS = "$env:HTTPSTRESS_CLIENT_ARGS -http 3.0"
+        #     $env:STRESS_SERVER_ARGS = "$env:HTTPSTRESS_SERVER_ARGS -http 3.0"
+        #     New-Item -Force $env:DUMPS_SHARE -ItemType Directory
+        #     docker compose up --abort-on-container-exit --no-color
+        #   displayName: Run HttpStress - HTTP 3.0
+        #   condition: and(eq(variables['buildRuntime.succeeded'], 'true'), eq(variables['buildStress.succeeded'], 'true'))
+
+        # - powershell: |
+        #     cd '$(httpStressProject)'
+        #     $env:STRESS_CLIENT_ARGS = "$env:HTTPSTRESS_CLIENT_ARGS -http 2.0"
+        #     $env:STRESS_SERVER_ARGS = "$env:HTTPSTRESS_SERVER_ARGS -http 2.0"
+        #     New-Item -Force $env:DUMPS_SHARE -ItemType Directory
+        #     docker compose up --abort-on-container-exit --no-color
+        #   displayName: Run HttpStress - HTTP 2.0
+        #   condition: and(eq(variables['buildRuntime.succeeded'], 'true'), eq(variables['buildStress.succeeded'], 'true'))
 
         - powershell: |
             cd '$(httpStressProject)'
-            $env:STRESS_CLIENT_ARGS = "$env:HTTPSTRESS_CLIENT_ARGS -http 2.0"
-            $env:STRESS_SERVER_ARGS = "$env:HTTPSTRESS_SERVER_ARGS -http 2.0"
-            New-Item -Force $env:DUMPS_SHARE -ItemType Directory
-            docker compose up --abort-on-container-exit --no-color
-          displayName: Run HttpStress - HTTP 2.0
-          condition: and(eq(variables['buildRuntime.succeeded'], 'true'), eq(variables['buildStress.succeeded'], 'true'))
-
-        - powershell: |
-            cd '$(httpStressProject)'
-            $env:STRESS_CLIENT_ARGS = "$env:HTTPSTRESS_CLIENT_ARGS -http 1.1"
+            $env:STRESS_CLIENT_ARGS = "-maxExecutionTime 5 -displayInterval 60 -http 1.1 -trace"
             $env:STRESS_SERVER_ARGS = "$env:HTTPSTRESS_SERVER_ARGS -http 1.1"
             New-Item -Force $env:DUMPS_SHARE -ItemType Directory
             docker compose up --abort-on-container-exit --no-color
@@ -158,7 +158,7 @@ extends:
 
         - publish: $(Build.ArtifactStagingDirectory)/dumps
           artifact: DumpsWindows
-          condition: failed()
+          # condition: failed()
 
         - powershell: |
             Set-NetFirewallProfile -Profile Domain, Public, Private -Enabled True
