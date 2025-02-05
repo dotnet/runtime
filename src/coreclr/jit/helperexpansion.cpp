@@ -2847,8 +2847,8 @@ bool Compiler::fgExpandStackArrayAllocation(BasicBlock* block, Statement* stmt, 
     //
     // Note we may have figured out the array length after we did the
     // escape analysis (that is, lengthArg might be a constant), so we
-    // could change this from a localloc to a fixed alloc, if we
-    // introduced a new block lcl var.
+    // could possibly change this from a localloc to a fixed alloc,
+    // if we could show that was sound.
     //
     bool const isLocAlloc = (elemSizeArg != nullptr);
 
@@ -2886,11 +2886,11 @@ bool Compiler::fgExpandStackArrayAllocation(BasicBlock* block, Statement* stmt, 
         unsigned const locallocTemp   = lvaGrabTemp(true DEBUGARG("localloc stack address"));
         lvaTable[locallocTemp].lvType = TYP_I_IMPL;
 
-        GenTree* const   arrayLength   = gtCloneExpr(lengthArg);
-        GenTree* const   baseSize      = gtNewIconNode(OFFSETOF__CORINFO_Array__data, TYP_I_IMPL);
-        GenTree* const   payloadSize   = gtNewOperNode(GT_MUL, TYP_I_IMPL, elemSize, arrayLength);
-        GenTree* const   totalSize     = gtNewOperNode(GT_ADD, TYP_I_IMPL, baseSize, payloadSize);
-        GenTree* const   locallocNode  = gtNewOperNode(GT_LCLHEAP, TYP_I_IMPL, totalSize);
+        GenTree* const arrayLength  = gtCloneExpr(lengthArg);
+        GenTree* const baseSize     = gtNewIconNode(OFFSETOF__CORINFO_Array__data, TYP_I_IMPL);
+        GenTree* const payloadSize  = gtNewOperNode(GT_MUL, TYP_I_IMPL, elemSize, arrayLength);
+        GenTree* const totalSize    = gtNewOperNode(GT_ADD, TYP_I_IMPL, baseSize, payloadSize);
+        GenTree* const locallocNode = gtNewOperNode(GT_LCLHEAP, TYP_I_IMPL, totalSize);
 
         // Allocation might fail. Codegen must zero the allocation
         //

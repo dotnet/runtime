@@ -543,7 +543,7 @@ bool ObjectAllocator::MorphAllocObjNodes()
                     onHeapReason = "[object stack allocation disabled]";
                     canStack     = false;
                 }
-                else if (basicBlockHasBackwardJump)
+                else if (basicBlockHasBackwardJump && !((allocType == OAT_NEWARR) && m_UseLocallocInLoop))
                 {
                     onHeapReason = "[alloc in loop]";
                     canStack     = false;
@@ -602,7 +602,7 @@ bool ObjectAllocator::MorphAllocObjNodes()
                         }
                         else
                         {
-                            useLocalloc = !len->IsCnsIntOrI();
+                            useLocalloc = !len->IsCnsIntOrI() || basicBlockHasBackwardJump;
                             JITDUMP("Allocating V%02u on the stack%s\n", lclNum,
                                     useLocalloc ? " [via localloc]" : " [via block local]");
                             canStack = true;
@@ -928,6 +928,10 @@ void ObjectAllocator::MorphNewArrNodeIntoLocAlloc(
     // Note that we have stack allocated arrays in this method
     //
     comp->setMethodHasStackAllocatedArray();
+
+    // Notify the compiler; this disables fast tail calls (for now)
+    //
+    comp->compLocallocUsed = true;
 }
 
 //------------------------------------------------------------------------

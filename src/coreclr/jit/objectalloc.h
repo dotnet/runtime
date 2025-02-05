@@ -135,6 +135,7 @@ class ObjectAllocator final : public Phase
     BitSetShortLongRep* m_ConnGraphAdjacencyMatrix;
     unsigned int        m_StackAllocMaxSize;
     bool                m_UseLocalloc;
+    bool                m_UseLocallocInLoop;
 
     // Info for conditionally-escaping locals
     LocalToLocalMap m_EnumeratorLocalToPseudoLocalMap;
@@ -288,7 +289,11 @@ inline ObjectAllocator::ObjectAllocator(Compiler* comp)
     m_ConnGraphAdjacencyMatrix        = nullptr;
 
     m_StackAllocMaxSize = (unsigned)JitConfig.JitObjectStackAllocationSize();
-    m_UseLocalloc       = JitConfig.JitObjectStackAllocationLocalloc();
+
+    // OSR does not support localloc (though seems like late-introduced localloc might be ok)
+    //
+    m_UseLocalloc       = JitConfig.JitObjectStackAllocationLocalloc() && !comp->opts.IsOSR();
+    m_UseLocallocInLoop = m_UseLocalloc && JitConfig.JitObjectStackAllocationInLoop();
 }
 
 //------------------------------------------------------------------------
