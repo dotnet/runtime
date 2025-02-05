@@ -68,7 +68,8 @@ The textual encoding loaders will ignore any text outside the relevant envelope,
 IETF RFC 7292 describes the file format for a PKCS#12 PFX.
 This format has a number of visible aspects that increase the cost of work, a few non-obvious aspects that increase the cost of work, and a few items that manifest as "quirks" on Windows.
 The general stance of `X509CertificateLoader` is to allow the caller to specify limits on anything that controls the amount of work that will be done while loading the PKCS#12 PFX, other than the length of the payload itself (which is already available to the caller).
-As most callers will have no real idea as to what these limits should be, the default experience when using this API will be to utilize system defaults.
+As most callers will have no real idea as to what these limits should be, the default experience when using this API will be to make use of the limits represented in `Pkcs12LoaderLimits.Default`.
+These defaults are a balance of retaining support for expected "normal" inputs and constraining work to reduce the impact of malicious inputs, and may change over time.
 
 The `Pkcs12LoaderLimits` class, the mechanism that allows callers to control the amount of work performed, exposes a special sentinel value, `DangerousNoLimits`.
 If the caller provides the `DangerousNoLimits` value then .NET's PFX loader is bypassed, and the contents are sent directly to `PFXImportCertStore` (on Windows).
@@ -199,17 +200,17 @@ When this attribute is present, Windows assigns the value to the `CERT_FRIENDLY_
   * Any call to cert.GetRSAPrivateKey() (or other algorithms) will keep the key alive in memory until the returned object is disposed or finalized, otherwise
   * The key is erased from memory when the certificate is disposed or finalized.
   * This mode is selected when the caller specifies `X509KeyStorageFlags.EphemeralKeySet`
-  * This mode is always used on Linux and Android, as there is no key persistence model there.
-  * This mode does not work on macOS, iOS, or other Apple OSes (exception when requested)
+  * This mode is always used on Linux, iOS, and Android, as there is no key persistence model there.
+  * This mode does not work on macOS (exception when requested).
 * **Persisted**: The key is written to disk, and stays written until manually (or externally) removed.
   * This mode is selected when the caller specifies `X509KeyStorageFlags.PersistKeySet`
-  * This mode is not supported on Linux (option is ignored) or Android (exception when requested).
+  * This mode is not supported on Linux (option is ignored), iOS (exception when requested), or Android (exception when requested).
   * On macOS this causes keys to be written into the user's default keychain instead of a temporary keychain.
-* **Default**, also known as Temporary, also known as Ephemerally-Persisted, also known as "Perphemeral": The key is written to disk. then cleaned up as part of garbage collection.
+* **Default**, also known as Temporary, also known as Ephemerally-Persisted, also known as "Perphemeral": The key is written to disk, then cleaned up as part of garbage collection.
   * Key cleanup requires that the certificate instance is either disposed or finalized.
     * As .NET Core / .NET 5+ does not guarantee finalization of objects between Main exiting and process termination, key cleanup is not guaranteed.
     * Pending key cleanup will not occur if the process terminates abnormally, including full system/kernel panic and power-loss.
-  * On Linux and Android this mode does not exist, they use Ephemeral by default.
+  * On Linux, iOS, and Android this mode does not exist, they always use Ephemeral.
   * This mode is selected when neither `EphemeralKeySet` nor `PersistedKeySet` are specified.
 
 In .NET 8 and older on Windows, key cleanup was sometimes tracked by the managed instance (`X509Certificate(2)` constructor) and sometimes by a property associated with the underlying `CERT_CONTEXT` value (`X509Certificate(2)Collection.Import`).
@@ -228,7 +229,32 @@ or (if no certificates had associated private keys) the first instance,
 or (if there were no certificates at all) the method throws an exception.
 
 Unless importing with `EphemeralKeySet`, this may result in multiple keys being written to disk.
-Any such keys that were not associated with the return value will be erased before the method returns.
+Any such keys that were not associated with the return value will be erased from disk before the method returns.
+
+### KDF Iteration Limits vs. Unreferenced Keys
+
+`X509CertificateLoader` follows the "lazy decryption" scheme utilized by Windows 10 PFXImportCertStore.
+If a PKCS#12 PFX contains one CertBag value and two PKCS8ShroudedKeyBag values, and the CertBag shares a PKCS#9 LocalKeyId value with only one of the PKCS8ShroudedKeyBag values (and the private key contained therein is properly matched to the public key embedded in the certificate), then the second encrypted key will never be decrypted.
+However, the presence of this key counts against both the `IndividualKdfIterationLimit` and the `TotalKdfIterationLimit`, as the work-counting phase is done before key-matching or key-decryption. 
+
+### Zero-Length Passwords
+
+The KDF defined for PKCS#12 makes a distinction between a null password and an empty password, where most callers fail to see a distinction (particularly when the password is presented as `ReadOnlySpan<char>`).
+As such, most API that deals with reading from a PKCS#12 PFX (e.g. the now-legacy constructors, Windows' PFXImportCertStore, and OpenSSL's PKCS12_parse) will use whichever of the two versions works first.
+
+`X509CertificateLoader` handles this state by always trying the input as-provided first, then will make one allowance that the file was built using the other zero-length password.
+In the event of this password mulligan, the first work done with the wrong password is not counted toward "total" work limits.
+
+If a PKCS#12 PFX has been created with password-based integrity (the optional MAC, which is applied by almost every PFX generator) then whichever of the two zero-length forms validates the MAC will be used for the remainder of the import process.
+Thus, when a MAC is present, the decryption work is still bounded by `TotalKdfIterationLimit` but the MAC work is bounded by `2 * MacIterationLimit`.
+
+If a PKCS#12 PFX lacks a MAC, but has one or more encrypted SafeContents values within the PFX AuthenticatedSafe; then decryption of the first AuthenticatedSafe will try both passwords (assuming the first one fails).
+If neither zero-length password works the import process will fail, but if the second one succeeded the import process will continue.
+In the event that the second password worked, the decryption phase is bounded by `TotalKdfIterationLimit + IndividualKdfIterationLimit`, because `TotalKdfIterationLimit` represents the ideal interpretation of the file, not the actual work done.
+
+In the degenerate case where a PKCS#12 PFX lack a MAC, has only unencrypted SafeContents values, and contains PKCS8ShroudedKeyBag values; the total KDF iteration count instead becomes bounded by `2 * TotalKdfIterationLimit`.
+While the expected upper bound is `TotalKdfIterationLimit + IndividualKdfIterationLimit`, the PKCS8ShroudedKeyBag values may be provided as-is to a backend PKCS#12 importer (such as Windows' PFXImportCertStore), and .NET cannot guarantee that the backend performs a single global fallback versus attempting both passwords for every single encrypted item.
+Callers which are unwilling to accept work up to double `TotalKdfIterationLimit` for a single import need to either reject zero-length passwords, or inspect the contents of the PKCS#12 PFX manually (such as via the `Pkcs12Info` class) to ensure that it is not in this degenerate state.
 
 ## Loading From Files
 
@@ -263,6 +289,7 @@ Modification to the data concurrent with the import process has no defined behav
 ### Caller-checked Lengths
 
 Even linear work is eventually expensive, so callers are expected to have reasonable ingestion size limits in place for potentially hostile data.
+This includes both the length of the data to interpret (or the size of the file when specified by path), and of a password provided for importing a PKCS#12 PFX.
 
 ### Underlying Performance
 
