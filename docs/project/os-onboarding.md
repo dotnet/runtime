@@ -1,4 +1,5 @@
-# OS Onboarding Guide
+# Onboarding Guide for Testing of New OS Versions
+
 
 Adding support for new operating systems (largely just new versions) is a frequent need. This guide describes how we do that, including policies we use.
 
@@ -9,7 +10,8 @@ References:
 
 ## Context
 
-In most cases, we find that new OSes _may_  uncover problems in dotnet/runtime and once resolved don't affect up-stack components or apps. This is because nearly all the APIs that touch native code (networking, cryptography) and deal with standard formats (time zones, ASN.1) are in dotnet/runtime. In many cases, we only see test breaks.
+In most cases, we find that new OS versions _may_  uncover problems in dotnet/runtime and once resolved don't affect up-stack components or apps. This is because nearly all the APIs that touch native code (networking, cryptography) and deal with standard formats (time zones, ASN.1) are in dotnet/runtime. In many cases, we only see test breaks.
+
 
 Our testing philosophy is based on risk and past experience. The effective test matrix is huge, the product of OSes \* supported versions \* architectures.  We try to make smart choices to skip testing most of the matrix while retaining much of the practical coverage. We also know where we tend to get bitten most when we don't pay sufficient attention. For example, our bug risk across Linux, macOS, and Windows is not uniform.
 
@@ -35,7 +37,8 @@ For whatever the reason, we should update references to EOL OSes if we have them
 
 ## Mechanics
 
-Most of our testing is done in container images. New images need to be created for each new version in the [dotnet/dotnet-buildtools-prereqs-docker](https://github.com/dotnet/dotnet-buildtools-prereqs-docker) repo. The repo is self-service and largely self-explanatory. One typically creates a new image using the pattern demonstrated by the previous version.
+Linux testing is done in container images. New images need to be created for each new version in the [dotnet/dotnet-buildtools-prereqs-docker](https://github.com/dotnet/dotnet-buildtools-prereqs-docker) repo. The repo is self-service and largely self-explanatory. One typically creates a new image using the pattern demonstrated by the previous version.
+
 
 These images are referenced in our pipeline files:
 
