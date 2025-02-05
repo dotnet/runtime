@@ -1044,6 +1044,9 @@ VirtualFree(
         TRACE( "Un-committing the following page(s) %d to %d.\n",
                StartBoundary, MemSize );
 
+        // mmap support on wasm is very limited and doesn't support location hints
+        // (when address is not null)
+#ifndef __wasm__
         // Explicitly calling mmap instead of mprotect here makes it
         // that much more clear to the operating system that we no
         // longer need these pages.
@@ -1074,6 +1077,7 @@ VirtualFree(
             pthrCurrent->SetLastError( ERROR_INTERNAL_ERROR );
             goto VirtualFreeExit;
         }
+#endif // __wasm__
     }
 
     if ( dwFreeType & MEM_RELEASE )

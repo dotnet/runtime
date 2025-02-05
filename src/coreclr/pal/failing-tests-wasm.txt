@@ -1,4 +1,4 @@
-Number of tests passed: 221 failed: 36 disabled: 71
+Number of tests passed: 249 failed: 8 disabled: 71
 Test run complete
 
 Failed tests:
@@ -86,54 +86,9 @@ Entry 0 :
 {0x60e64-0x206} TRACE [VIRTUAL] at VirtualFree.1045: Un-committing the following page(s) 458752 to 65536.
 {0x60e64-0x206} ASSERT [VIRTUAL] at /Users/rodo/git/runtime-main/src/coreclr/pal/src/map/virtual.cpp.1072: mmap() returned an abnormal value.
 
-"filemapping_memmgt/VirtualAlloc/test1/paltest_virtualalloc_test1"
-
-{0x60e64-0x206} TRACE [VIRTUAL] at VIRTUALFindRegionInformation.249: VIRTUALFindRegionInformation( 0 )
-{0x60e64-0x206} TRACE [VIRTUAL] at VIRTUALReserveMemory.477: Reserving the memory now..
-{0x60e64-0x206} TRACE [VIRTUAL] at ReserveVirtualMemory.570: Reserving the memory now.
-{0x60e64-0x206} TRACE [VIRTUAL] at VIRTUALCommitMemory.691: Reserve and commit the memory!
- {0x60e64-0x206} TRACE [VIRTUAL] at VIRTUALFindRegionInformation.249: VIRTUALFindRegionInformation( 0x70000 )
-{0x60e64-0x206} TRACE [VIRTUAL] at VIRTUALCommitMemory.719: Committing the memory now..
-warning: unsupported syscall: __syscall_mprotect
-
-Entry 0 : 
-	 startBoundary 0x70000 
-	 memSize 65536 
-	 accessProtection 2 
-	 allocationType 4096 
-	 pNext 0 
-	 pLast 0 
-{0x60e64-0x206} TRACE [VIRTUAL] at VIRTUALFindRegionInformation.249: VIRTUALFindRegionInformation( 0x70000 )
-{0x60e64-0x206} TRACE [VIRTUAL] at VirtualFree.1045: Un-committing the following page(s) 458752 to 65536.
-{0x60e64-0x206} ASSERT [VIRTUAL] at /Users/rodo/git/runtime-main/src/coreclr/pal/src/map/virtual.cpp.1072: mmap() returned an abnormal value.
-
-"filemapping_memmgt/VirtualAlloc/test10/paltest_virtualalloc_test10"
-"filemapping_memmgt/VirtualAlloc/test11/paltest_virtualalloc_test11"
-"filemapping_memmgt/VirtualAlloc/test12/paltest_virtualalloc_test12"
-"filemapping_memmgt/VirtualAlloc/test13/paltest_virtualalloc_test13"
-"filemapping_memmgt/VirtualAlloc/test14/paltest_virtualalloc_test14"
-"filemapping_memmgt/VirtualAlloc/test15/paltest_virtualalloc_test15"
-"filemapping_memmgt/VirtualAlloc/test16/paltest_virtualalloc_test16"
-"filemapping_memmgt/VirtualAlloc/test17/paltest_virtualalloc_test17"
-"filemapping_memmgt/VirtualAlloc/test18/paltest_virtualalloc_test18"
-"filemapping_memmgt/VirtualAlloc/test19/paltest_virtualalloc_test19"
-"filemapping_memmgt/VirtualAlloc/test2/paltest_virtualalloc_test2"
 "filemapping_memmgt/VirtualAlloc/test21/paltest_virtualalloc_test21"
-"filemapping_memmgt/VirtualAlloc/test3/paltest_virtualalloc_test3"
-"filemapping_memmgt/VirtualAlloc/test4/paltest_virtualalloc_test4"
-"filemapping_memmgt/VirtualAlloc/test5/paltest_virtualalloc_test5"
-"filemapping_memmgt/VirtualAlloc/test6/paltest_virtualalloc_test6"
-"filemapping_memmgt/VirtualAlloc/test7/paltest_virtualalloc_test7"
-"filemapping_memmgt/VirtualAlloc/test8/paltest_virtualalloc_test8"
-"filemapping_memmgt/VirtualAlloc/test9/paltest_virtualalloc_test9"
-"filemapping_memmgt/VirtualFree/test1/paltest_virtualfree_test1"
-"filemapping_memmgt/VirtualProtect/test1/paltest_virtualprotect_test1"
-"filemapping_memmgt/VirtualProtect/test2/paltest_virtualprotect_test2"
-"filemapping_memmgt/VirtualProtect/test3/paltest_virtualprotect_test3"
-"filemapping_memmgt/VirtualProtect/test4/paltest_virtualprotect_test4"
-"filemapping_memmgt/VirtualProtect/test6/paltest_virtualprotect_test6"
-"filemapping_memmgt/VirtualProtect/test7/paltest_virtualprotect_test7"
-"filemapping_memmgt/VirtualQuery/test1/paltest_virtualquery_test1"
+
+* many mmap related tests were failing because of limited mmap support in emscripten. the WebAssembly doesn't have virtual memory and so many mmap features are missing
 
 "miscellaneous/FlushInstructionCache/test1/paltest_flushinstructioncache_test1"
  * no cache to flush, made it no-op on wasm
