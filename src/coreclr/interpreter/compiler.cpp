@@ -520,6 +520,9 @@ int InterpCompiler::GenerateCode(CORINFO_METHOD_INFO* methodInfo)
         uint8_t opcode = *ip;
         switch (opcode)
         {
+            case CEE_NOP:
+                ip++;
+                break;
             case CEE_LDC_I4_M1:
             case CEE_LDC_I4_0:
             case CEE_LDC_I4_1:
