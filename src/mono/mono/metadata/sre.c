@@ -2229,7 +2229,7 @@ MONO_RESTORE_WARNING
 static void
 encode_field_or_prop_type (MonoType *type, char *p, char **retp)
 {
-	if (type->type == MONO_TYPE_VALUETYPE && m_type_data_get_klass (type)->enumtype) {
+	if (type->type == MONO_TYPE_VALUETYPE && m_type_data_get_klass_unchecked (type)->enumtype) {
 		char *str = type_get_qualified_name (type, NULL);
 		size_t slen = strlen (str);
 
@@ -2251,7 +2251,7 @@ encode_field_or_prop_type (MonoType *type, char *p, char **retp)
 		mono_metadata_encode_value (type->type, p, &p);
 		if (type->type == MONO_TYPE_SZARRAY)
 			/* See the examples in Partition VI, Annex B */
-			encode_field_or_prop_type (m_class_get_byval_arg (m_type_data_get_klass (type)), p, &p);
+			encode_field_or_prop_type (m_class_get_byval_arg (m_type_data_get_klass_unchecked (type)), p, &p);
 	}
 
 	*retp = p;
@@ -2266,12 +2266,12 @@ encode_named_val (MonoReflectionAssembly *assembly, char *buffer, char *p, char 
 	error_init (error);
 
 	/* Preallocate a large enough buffer */
-	if (type->type == MONO_TYPE_VALUETYPE && m_type_data_get_klass (type)->enumtype) {
+	if (type->type == MONO_TYPE_VALUETYPE && m_type_data_get_klass_unchecked (type)->enumtype) {
 		char *str = type_get_qualified_name (type, NULL);
 		len = strlen (str);
 		g_free (str);
-	} else if (type->type == MONO_TYPE_SZARRAY && m_type_data_get_klass (type)->enumtype) {
-		char *str = type_get_qualified_name (m_class_get_byval_arg (m_type_data_get_klass (type)), NULL);
+	} else if (type->type == MONO_TYPE_SZARRAY && m_type_data_get_klass_unchecked (type)->enumtype) {
+		char *str = type_get_qualified_name (m_class_get_byval_arg (m_type_data_get_klass_unchecked (type)), NULL);
 		len = strlen (str);
 		g_free (str);
 	} else {
@@ -3019,10 +3019,10 @@ reflection_methodbuilder_to_mono_method (MonoClass *klass,
 		for (gint32 i = 0; i < m->signature->param_count; ++i) {
 			MonoType *t = m->signature->params [i];
 			if (t->type == MONO_TYPE_MVAR) {
-				MonoGenericParam *gparam =  m_type_data_get_generic_param (t);
+				MonoGenericParam *gparam =  m_type_data_get_generic_param_unchecked (t);
 				if (gparam->num < count) {
 					m->signature->params [i] = mono_metadata_type_dup (image, m->signature->params [i]);
-					m_type_data_set_generic_param (m->signature->params [i], mono_generic_container_get_param (container, gparam->num));
+					m_type_data_set_generic_param_unchecked (m->signature->params [i], mono_generic_container_get_param (container, gparam->num));
 				}
 
 			}
@@ -3722,7 +3722,7 @@ remove_instantiations_of_and_ensure_contents (gpointer key,
 	ERROR_DECL (lerror);
 	MonoError *error = already_failed ? lerror : data->error;
 
-	if ((type->type == MONO_TYPE_GENERICINST) && (m_type_data_get_generic_class (type)->container_class == klass)) {
+	if ((type->type == MONO_TYPE_GENERICINST) && (m_type_data_get_generic_class_unchecked (type)->container_class == klass)) {
 		MonoClass *inst_klass = mono_class_from_mono_type_internal (type);
 		//Ensure it's safe to use it.
 		if (!fix_partial_generic_class (inst_klass, error)) {

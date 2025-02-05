@@ -10544,8 +10544,8 @@ calli_end:
 					int ro_type = ftype->type;
 					if (!addr)
 						addr = mono_static_field_get_addr (vtable, field);
-					if (ro_type == MONO_TYPE_VALUETYPE && m_class_is_enumtype (m_type_data_get_klass (ftype))) {
-						ro_type = mono_class_enum_basetype_internal (m_type_data_get_klass (ftype))->type;
+					if (ro_type == MONO_TYPE_VALUETYPE && m_class_is_enumtype (m_type_data_get_klass_unchecked (ftype))) {
+						ro_type = mono_class_enum_basetype_internal (m_type_data_get_klass_unchecked (ftype))->type;
 					}
 
 					GSHAREDVT_FAILURE (il_op);

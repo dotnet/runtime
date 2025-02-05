@@ -3619,8 +3619,8 @@ is_async_method (MonoMethod *method)
 	/* Do less expensive checks first */
 	sig = mono_method_signature_internal (method);
 	if (attr_class && sig && ((sig->ret->type == MONO_TYPE_VOID) ||
-				(sig->ret->type == MONO_TYPE_CLASS && !strcmp (m_class_get_name (m_type_data_get_generic_class (sig->ret)->container_class), "Task")) ||
-				(sig->ret->type == MONO_TYPE_GENERICINST && !strcmp (m_class_get_name (m_type_data_get_generic_class (sig->ret)->container_class), "Task`1")))) {
+				(sig->ret->type == MONO_TYPE_CLASS && !strcmp (m_class_get_name (m_type_data_get_klass_unchecked (sig->ret)), "Task")) ||
+				(sig->ret->type == MONO_TYPE_GENERICINST && !strcmp (m_class_get_name (m_type_data_get_generic_class_unchecked (sig->ret)->container_class), "Task`1")))) {
 		//printf ("X: %s\n", mono_method_full_name (method, TRUE));
 		cattr = mono_custom_attrs_from_method_checked (method, error);
 		if (!is_ok (error)) {
