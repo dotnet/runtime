@@ -2529,7 +2529,7 @@ DONE:
     return (PCODE)NULL;
 }
 
-PCODE PatchpointRequiredPolicy(TransitionBlock* pTransitionBlock, int* counter, int ilOffset, PerPatchpointInfo * ppInfo, const EECodeInfo& codeInfo, bool *pIsNewMethod)
+static PCODE PatchpointRequiredPolicy(TransitionBlock* pTransitionBlock, int* counter, int ilOffset, PerPatchpointInfo * ppInfo, const EECodeInfo& codeInfo, bool *pIsNewMethod)
 {
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_TRIGGERS;
