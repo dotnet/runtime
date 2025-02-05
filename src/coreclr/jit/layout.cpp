@@ -833,7 +833,7 @@ void ClassLayoutBuilder::CopyInfoFrom(unsigned offset, ClassLayout* layout)
 
     for (const SegmentList::Segment& nonPadding : layout->GetNonPadding(m_compiler))
     {
-        RemovePadding(nonPadding);
+        RemovePadding(SegmentList::Segment(offset + nonPadding.Start, offset + nonPadding.End));
     }
 }
 
