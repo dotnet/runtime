@@ -1639,7 +1639,7 @@ void SharedMemoryManager::AddUserScopeUidCreationDeletionLockFD(uid_t userScopeU
     {
         int newCapacity = capacity == 0 ? 1 : capacity * 2;
         if (newCapacity <= capacity ||
-            newCapacity * sizeof(UserScopeUidAndFileDescriptor) / sizeof(UserScopeUidAndFileDescriptor) != newCapacity)
+            newCapacity * sizeof(UserScopeUidAndFileDescriptor) / sizeof(UserScopeUidAndFileDescriptor) != (SIZE_T)newCapacity)
         {
             throw SharedMemoryException(static_cast<DWORD>(SharedMemoryError::OutOfMemory));
         }
