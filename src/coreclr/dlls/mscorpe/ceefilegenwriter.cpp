@@ -482,6 +482,11 @@ HRESULT CeeFileGenWriter::getFileTimeStamp(DWORD *pTimeStamp)
     return getPEWriter().getFileTimeStamp(pTimeStamp);
 } // HRESULT CeeFileGenWriter::getFileTimeStamp()
 
+void CeeFileGenWriter::setFileHeaderTimeStamp(DWORD timeStamp)
+{
+    return getPEWriter().setFileHeaderTimeStamp(timeStamp);
+} // void CeeFileGenWriter::setFileHeaderTimeStamp()
+
 HRESULT CeeFileGenWriter::setAddrReloc(UCHAR *instrAddr, DWORD value)
 {
     *(DWORD *)instrAddr = VAL32(value);
@@ -490,11 +495,7 @@ HRESULT CeeFileGenWriter::setAddrReloc(UCHAR *instrAddr, DWORD value)
 
 HRESULT CeeFileGenWriter::addAddrReloc(CeeSection &thisSection, UCHAR *instrAddr, DWORD offset, CeeSection *targetSection)
 {
-    if (!targetSection) {
-        thisSection.addBaseReloc(offset, srRelocHighLow);
-    } else {
-        thisSection.addSectReloc(offset, *targetSection, srRelocHighLow);
-    }
+    thisSection.addSectReloc(offset, *targetSection, srRelocHighLow);
     return S_OK;
 } // HRESULT CeeFileGenWriter::addAddrReloc()
 

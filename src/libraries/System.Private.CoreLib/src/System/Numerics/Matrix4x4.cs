@@ -224,7 +224,7 @@ namespace System.Numerics
         public static Matrix4x4 Add(Matrix4x4 value1, Matrix4x4 value2)
             => (value1.AsImpl() + value2.AsImpl()).AsM4x4();
 
-        /// <summary>Creates a spherical billboard that rotates around a specified object position.</summary>
+        /// <summary>Creates a right-handed spherical billboard matrix that rotates around a specified object position.</summary>
         /// <param name="objectPosition">The position of the object that the billboard will rotate around.</param>
         /// <param name="cameraPosition">The position of the camera.</param>
         /// <param name="cameraUpVector">The up vector of the camera.</param>
@@ -233,7 +233,16 @@ namespace System.Numerics
         public static Matrix4x4 CreateBillboard(Vector3 objectPosition, Vector3 cameraPosition, Vector3 cameraUpVector, Vector3 cameraForwardVector)
             => Impl.CreateBillboard(in objectPosition, in cameraPosition, in cameraUpVector, in cameraForwardVector).AsM4x4();
 
-        /// <summary>Creates a cylindrical billboard that rotates around a specified axis.</summary>
+        /// <summary>Creates a left-handed spherical billboard matrix that rotates around a specified object position.</summary>
+        /// <param name="objectPosition">The position of the object that the billboard will rotate around.</param>
+        /// <param name="cameraPosition">The position of the camera.</param>
+        /// <param name="cameraUpVector">The up vector of the camera.</param>
+        /// <param name="cameraForwardVector">The forward vector of the camera.</param>
+        /// <returns>The created billboard.</returns>
+        public static Matrix4x4 CreateBillboardLeftHanded(Vector3 objectPosition, Vector3 cameraPosition, Vector3 cameraUpVector, Vector3 cameraForwardVector)
+            => Impl.CreateBillboardLeftHanded(in objectPosition, in cameraPosition, in cameraUpVector, in cameraForwardVector).AsM4x4();
+
+        /// <summary>Creates a right-handed cylindrical billboard matrix that rotates around a specified axis.</summary>
         /// <param name="objectPosition">The position of the object that the billboard will rotate around.</param>
         /// <param name="cameraPosition">The position of the camera.</param>
         /// <param name="rotateAxis">The axis to rotate the billboard around.</param>
@@ -242,6 +251,16 @@ namespace System.Numerics
         /// <returns>The billboard matrix.</returns>
         public static Matrix4x4 CreateConstrainedBillboard(Vector3 objectPosition, Vector3 cameraPosition, Vector3 rotateAxis, Vector3 cameraForwardVector, Vector3 objectForwardVector)
             => Impl.CreateConstrainedBillboard(in objectPosition, in cameraPosition, in rotateAxis, in cameraForwardVector, in objectForwardVector).AsM4x4();
+
+        /// <summary>Creates a left-handed cylindrical billboard matrix that rotates around a specified axis.</summary>
+        /// <param name="objectPosition">The position of the object that the billboard will rotate around.</param>
+        /// <param name="cameraPosition">The position of the camera.</param>
+        /// <param name="rotateAxis">The axis to rotate the billboard around.</param>
+        /// <param name="cameraForwardVector">The forward vector of the camera.</param>
+        /// <param name="objectForwardVector">The forward vector of the object.</param>
+        /// <returns>The billboard matrix.</returns>
+        public static Matrix4x4 CreateConstrainedBillboardLeftHanded(Vector3 objectPosition, Vector3 cameraPosition, Vector3 rotateAxis, Vector3 cameraForwardVector, Vector3 objectForwardVector)
+            => Impl.CreateConstrainedBillboardLeftHanded(in objectPosition, in cameraPosition, in rotateAxis, in cameraForwardVector, in objectForwardVector).AsM4x4();
 
         /// <summary>Creates a matrix that rotates around an arbitrary vector.</summary>
         /// <param name="axis">The axis to rotate around.</param>

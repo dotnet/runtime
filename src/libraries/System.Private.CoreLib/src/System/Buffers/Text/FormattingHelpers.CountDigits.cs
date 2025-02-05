@@ -25,7 +25,7 @@ namespace System.Buffers.Text
             Debug.Assert(log2ToPow10.Length == 64);
 
             // TODO: Replace with log2ToPow10[BitOperations.Log2(value)] once https://github.com/dotnet/runtime/issues/79257 is fixed
-            uint index = Unsafe.Add(ref MemoryMarshal.GetReference(log2ToPow10), BitOperations.Log2(value));
+            nint elementOffset = Unsafe.Add(ref MemoryMarshal.GetReference(log2ToPow10), BitOperations.Log2(value));
 
             // Read the associated power of 10.
             ReadOnlySpan<ulong> powersOf10 =
@@ -52,13 +52,13 @@ namespace System.Buffers.Text
                 1000000000000000000,
                 10000000000000000000,
             ];
-            Debug.Assert((index + 1) <= powersOf10.Length);
-            ulong powerOf10 = Unsafe.Add(ref MemoryMarshal.GetReference(powersOf10), index);
+            Debug.Assert((elementOffset + 1) <= powersOf10.Length);
+            ulong powerOf10 = Unsafe.Add(ref MemoryMarshal.GetReference(powersOf10), elementOffset);
 
             // Return the number of digits based on the power of 10, shifted by 1
             // if it falls below the threshold.
-            bool lessThan = value < powerOf10;
-            return (int)(index - Unsafe.As<bool, byte>(ref lessThan)); // while arbitrary bools may be non-0/1, comparison operators are expected to return 0/1
+            int index = (int)elementOffset;
+            return index - (value < powerOf10 ? 1 : 0);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

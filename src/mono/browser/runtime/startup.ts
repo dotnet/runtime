@@ -32,7 +32,6 @@ import { localHeapViewU8, malloc } from "./memory";
 import { assertNoProxies } from "./gc-handles";
 import { runtimeList } from "./exports";
 import { nativeAbort, nativeExit } from "./run";
-import { mono_wasm_init_diagnostics } from "./diagnostics";
 import { replaceEmscriptenPThreadInit } from "./pthreads/worker-thread";
 
 export async function configureRuntimeStartup (module: DotnetModuleInternal): Promise<void> {
@@ -546,11 +545,6 @@ export async function start_runtime () {
 
         if (runtimeHelpers.config.logProfilerOptions)
             mono_wasm_init_log_profiler(runtimeHelpers.config.logProfilerOptions);
-
-        if (WasmEnableThreads) {
-            // this is not mono-attached thread, so we can start it earlier
-            await mono_wasm_init_diagnostics();
-        }
 
         mono_wasm_load_runtime();
 

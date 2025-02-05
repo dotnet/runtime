@@ -4,8 +4,8 @@ permissions:
   pull-requests: read
 
 on:
-  pull_request:
-    types: [opened, edited, reopened, labeled, unlabeled, synchronize]
+  pull_request_target:
+    types: [labeled, unlabeled]
     branches:
       - 'release/**'
 
@@ -15,7 +15,7 @@ jobs:
     steps:
     - name: Check 'Servicing-approved' label
       run: |
-        echo "Merging permission is enabled for servicing PRs when the `Servicing-approved` label is applied."
+        echo "Merging permission is enabled for servicing PRs when the 'Servicing-approved' label is applied."
         if [ "${{ contains(github.event.pull_request.labels.*.name, 'Servicing-approved') }}" = "true" ]; then
           exit 0
         else

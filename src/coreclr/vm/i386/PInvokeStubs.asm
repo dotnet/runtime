@@ -23,7 +23,7 @@
 extern _s_gsCookie:DWORD
 extern _g_TrapReturningThreads:DWORD
 
-extern @JIT_PInvokeEndRarePath@0:proc
+extern _JIT_PInvokeEndRarePath@0:proc
 
 .686P
 .XMM
@@ -101,7 +101,7 @@ _JIT_PInvokeEnd@4 PROC public
         ret
 
 RarePath:
-        jmp             @JIT_PInvokeEndRarePath@0
+        jmp             _JIT_PInvokeEndRarePath@0
 
 _JIT_PInvokeEnd@4 ENDP
 
