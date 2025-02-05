@@ -877,7 +877,7 @@ namespace ILCompiler
                                         stack.Push(StackValueKind.Int64, ValueTypeValue.FromInt64((uint)val));
                                         break;
                                     case ILOpcode.conv_r4:
-                                        stack.Push(StackValueKind.Float, ValueTypeValue.FromSingle((float)val));
+                                        stack.Push(StackValueKind.Float, ValueTypeValue.FromDouble((float)val));
                                         break;
                                     case ILOpcode.conv_r8:
                                         stack.Push(StackValueKind.Float, ValueTypeValue.FromDouble((double)val));
@@ -921,7 +921,7 @@ namespace ILCompiler
                                         stack.Push(StackValueKind.Int64, ValueTypeValue.FromInt64(val));
                                         break;
                                     case ILOpcode.conv_r4:
-                                        stack.Push(StackValueKind.Float, ValueTypeValue.FromSingle((float)val));
+                                        stack.Push(StackValueKind.Float, ValueTypeValue.FromDouble((float)val));
                                         break;
                                     case ILOpcode.conv_r8:
                                         stack.Push(StackValueKind.Float, ValueTypeValue.FromDouble((double)val));
@@ -965,7 +965,7 @@ namespace ILCompiler
                                         stack.Push(StackValueKind.Int64, ValueTypeValue.FromInt64((long)val));
                                         break;
                                     case ILOpcode.conv_r4:
-                                        stack.Push(StackValueKind.Float, ValueTypeValue.FromSingle((float)val));
+                                        stack.Push(StackValueKind.Float, ValueTypeValue.FromDouble((float)val));
                                         break;
                                     case ILOpcode.conv_r8:
                                         stack.Push(StackValueKind.Float, ValueTypeValue.FromDouble(val));
@@ -1436,6 +1436,10 @@ namespace ILCompiler
                             StackEntry value = stack.Pop();
                             if (value.ValueKind == StackValueKind.Int32)
                                 stack.Push(StackValueKind.Int32, ValueTypeValue.FromInt32(-value.Value.AsInt32()));
+                            else if (value.ValueKind == StackValueKind.Int64)
+                                stack.Push(StackValueKind.Int64, ValueTypeValue.FromInt64(-value.Value.AsInt64()));
+                            else if (value.ValueKind == StackValueKind.Float)
+                                stack.Push(StackValueKind.Float, ValueTypeValue.FromDouble(-value.Value.AsDouble()));
                             else
                                 return Status.Fail(methodIL.OwningMethod, opcode);
                         }
