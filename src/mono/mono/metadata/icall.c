@@ -6592,7 +6592,7 @@ ves_icall_property_info_get_default_value (MonoReflectionPropertyHandle property
 {
 	MonoReflectionProperty* property = MONO_HANDLE_RAW (property_handle);
 
-	MonoType blob_type;
+	MonoType blob_type = { 0 };
 	MonoProperty *prop = property->property;
 	MonoType *type = get_property_type (prop);
 	MonoTypeEnum def_type;
