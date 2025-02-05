@@ -153,30 +153,9 @@ namespace JSImportGenerator.Unit.Tests
                                     }
 
                                     [global::System.Diagnostics.DebuggerNonUserCode]
-                                    global::System.Runtime.InteropServices.JavaScript.JSMarshalerArgument __InvokeJSFunction(global::System.Runtime.InteropServices.JavaScript.JSMarshalerArgument ____arg_exception_native, global::System.Runtime.InteropServices.JavaScript.JSMarshalerArgument ____arg_return_native, global::System.Runtime.InteropServices.JavaScript.JSMarshalerArgument __a1_native, global::System.Runtime.InteropServices.JavaScript.JSMarshalerArgument __a2_native, global::System.Runtime.InteropServices.JavaScript.JSMarshalerArgument __a3_native, global::System.Runtime.InteropServices.JavaScript.JSMarshalerArgument __a4_native, global::System.Runtime.InteropServices.JavaScript.JSMarshalerArgument __a5_native, global::System.Runtime.InteropServices.JavaScript.JSMarshalerArgument __a6_native, global::System.Runtime.InteropServices.JavaScript.JSMarshalerArgument __a7_native, global::System.Runtime.InteropServices.JavaScript.JSMarshalerArgument __a8_native, global::System.Runtime.InteropServices.JavaScript.JSMarshalerArgument __a9_native, global::System.Runtime.InteropServices.JavaScript.JSMarshalerArgument __a10_native, global::System.Runtime.InteropServices.JavaScript.JSMarshalerArgument __a11_native, global::System.Runtime.InteropServices.JavaScript.JSMarshalerArgument __a12_native, global::System.Runtime.InteropServices.JavaScript.JSMarshalerArgument __a13_native, global::System.Runtime.InteropServices.JavaScript.JSMarshalerArgument __a14_native, global::System.Runtime.InteropServices.JavaScript.JSMarshalerArgument __a15_native)
+                                    void __InvokeJSFunction(global::System.Runtime.InteropServices.JavaScript.JSMarshalerArgument ____arg_exception_native, global::System.Runtime.InteropServices.JavaScript.JSMarshalerArgument ____arg_return_native, global::System.Runtime.InteropServices.JavaScript.JSMarshalerArgument __a1_native, global::System.Runtime.InteropServices.JavaScript.JSMarshalerArgument __a2_native, global::System.Runtime.InteropServices.JavaScript.JSMarshalerArgument __a3_native, global::System.Runtime.InteropServices.JavaScript.JSMarshalerArgument __a4_native, global::System.Runtime.InteropServices.JavaScript.JSMarshalerArgument __a5_native, global::System.Runtime.InteropServices.JavaScript.JSMarshalerArgument __a6_native, global::System.Runtime.InteropServices.JavaScript.JSMarshalerArgument __a7_native, global::System.Runtime.InteropServices.JavaScript.JSMarshalerArgument __a8_native, global::System.Runtime.InteropServices.JavaScript.JSMarshalerArgument __a9_native, global::System.Runtime.InteropServices.JavaScript.JSMarshalerArgument __a10_native, global::System.Runtime.InteropServices.JavaScript.JSMarshalerArgument __a11_native, global::System.Runtime.InteropServices.JavaScript.JSMarshalerArgument __a12_native, global::System.Runtime.InteropServices.JavaScript.JSMarshalerArgument __a13_native, global::System.Runtime.InteropServices.JavaScript.JSMarshalerArgument __a14_native, global::System.Runtime.InteropServices.JavaScript.JSMarshalerArgument __a15_native)
                                     {
-                                        global::System.Span<global::System.Runtime.InteropServices.JavaScript.JSMarshalerArgument> __arguments_buffer = stackalloc global::System.Runtime.InteropServices.JavaScript.JSMarshalerArgument[]
-                                        {
-                                            ____arg_exception_native,
-                                            ____arg_return_native,
-                                            __a1_native,
-                                            __a2_native,
-                                            __a3_native,
-                                            __a4_native,
-                                            __a5_native,
-                                            __a6_native,
-                                            __a7_native,
-                                            __a8_native,
-                                            __a9_native,
-                                            __a10_native,
-                                            __a11_native,
-                                            __a12_native,
-                                            __a13_native,
-                                            __a14_native,
-                                            __a15_native
-                                        };
-                                        global::System.Runtime.InteropServices.JavaScript.JSFunctionBinding.InvokeJS(__signature_Annotated_1583225186, __arguments_buffer);
-                                        return __arguments_buffer[1];
+                                        global::System.Runtime.InteropServices.JavaScript.JSFunctionBinding.InvokeJS(__signature_Annotated_1583225186, [____arg_exception_native, ____arg_return_native, __a1_native, __a2_native, __a3_native, __a4_native, __a5_native, __a6_native, __a7_native, __a8_native, __a9_native, __a10_native, __a11_native, __a12_native, __a13_native, __a14_native, __a15_native]);
                                     }
                                 }
 
@@ -339,11 +318,7 @@ namespace JSImportGenerator.Unit.Tests
                                     [global::System.Diagnostics.DebuggerNonUserCode]
                                     global::System.Runtime.InteropServices.JavaScript.JSMarshalerArgument __InvokeJSFunction(global::System.Runtime.InteropServices.JavaScript.JSMarshalerArgument ____arg_exception_native, global::System.Runtime.InteropServices.JavaScript.JSMarshalerArgument ____arg_return_native)
                                     {
-                                        global::System.Span<global::System.Runtime.InteropServices.JavaScript.JSMarshalerArgument> __arguments_buffer = stackalloc global::System.Runtime.InteropServices.JavaScript.JSMarshalerArgument[]
-                                        {
-                                            ____arg_exception_native,
-                                            ____arg_return_native
-                                        };
+                                        global::System.Span<global::System.Runtime.InteropServices.JavaScript.JSMarshalerArgument> __arguments_buffer = [____arg_exception_native, ____arg_return_native];
                                         global::System.Runtime.InteropServices.JavaScript.JSFunctionBinding.InvokeJS(__signature_Import1_622134597, __arguments_buffer);
                                         return __arguments_buffer[1];
                                     }

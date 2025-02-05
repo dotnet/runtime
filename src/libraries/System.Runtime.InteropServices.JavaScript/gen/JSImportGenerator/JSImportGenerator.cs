@@ -233,6 +233,8 @@ namespace Microsoft.Interop.JavaScript
                     NativeIndex = 1,
                 });
 
+            bool hasReturn = false;
+
             foreach (var info in originalElementInfo)
             {
                 TypePositionInfo updatedInfo = info with
@@ -245,6 +247,7 @@ namespace Microsoft.Interop.JavaScript
                 if (info.IsNativeReturnPosition)
                 {
                     typeInfoBuilder.Add(updatedInfo);
+                    hasReturn = true;
                 }
                 else
                 {
@@ -276,7 +279,7 @@ namespace Microsoft.Interop.JavaScript
                 incrementalContext.SignatureContext,
                 SignatureBindingHelpers.CreateSignaturesArgument(incrementalContext.SignatureContext.SignatureContext.ElementTypeInformation, StubCodeContext.DefaultManagedToNativeStub));
 
-            LocalFunctionStatementSyntax localFunction = GenerateInvokeFunction(LocalFunctionName, incrementalContext.SignatureContext, stubGenerator);
+            LocalFunctionStatementSyntax localFunction = GenerateInvokeFunction(LocalFunctionName, incrementalContext.SignatureContext, stubGenerator, hasReturn);
 
             return (PrintGeneratedSource(incrementalContext.StubMethodSyntaxTemplate, incrementalContext.SignatureContext, incrementalContext.ContainingSyntaxContext, Block(bindStatement, code, localFunction)), incrementalContext.Diagnostics.Array.AddRange(diagnostics.Diagnostics));
         }
@@ -302,40 +305,51 @@ namespace Microsoft.Interop.JavaScript
                                             .WithArgumentList(ArgumentList(SeparatedList(bindingParameters))))))));
         }
 
-        private static LocalFunctionStatementSyntax GenerateInvokeFunction(string functionName, JSSignatureContext signatureContext, ManagedToNativeStubGenerator stubGenerator)
+        private static LocalFunctionStatementSyntax GenerateInvokeFunction(string functionName, JSSignatureContext signatureContext, ManagedToNativeStubGenerator stubGenerator, bool hasReturn)
         {
             var (parameters, returnType, _) = stubGenerator.GenerateTargetMethodSignatureData();
             TypeSyntax jsMarshalerArgument = ParseTypeName(Constants.JSMarshalerArgumentGlobal);
 
+            LocalDeclarationStatementSyntax argumentsBuffer = CollectionExpression(
+                SeparatedList<CollectionElementSyntax>(
+                    parameters.Parameters
+                        .Select(p => ExpressionElement(IdentifierName(p.Identifier)))));
+
+            List<StatementSyntax> statements = [];
+
+            if (hasReturn)
+            {
+                statements.AddRange([
+                    Declare(
+                        SpanOf(jsMarshalerArgument),
+                        Constants.ArgumentsBuffer,
+                        CargumentsBuffer),
+                    MethodInvocationStatement(
+                        IdentifierName(Constants.JSFunctionSignatureGlobal),
+                        IdentifierName("InvokeJS"),
+                        Argument(IdentifierName(signatureContext.BindingName)),
+                        Argument(IdentifierName(Constants.ArgumentsBuffer))),
+                    ReturnStatement(
+                    ElementAccessExpression(
+                    IdentifierName(Constants.ArgumentsBuffer),
+                    BracketedArgumentList(SingletonSeparatedList(Argument(
+                        LiteralExpression(SyntaxKind.NumericLiteralExpression, Literal(1)))))))
+                ]);
+            }
+            else
+            {
+                statements.Add(
+                    MethodInvocationStatement(
+                        IdentifierName(Constants.JSFunctionSignatureGlobal),
+                        IdentifierName("InvokeJS"),
+                        Argument(IdentifierName(signatureContext.BindingName)),
+                        Argument(argumentsBuffer)));
+            }
+
             return LocalFunctionStatement(
-                jsMarshalerArgument,
+                hasReturn ? jsMarshalerArgument : PredefinedType(Token(SyntaxKind.VoidKeyword)),
                 functionName)
-                .WithBody(
-                    Block(
-                        List<StatementSyntax>(
-                            [
-                                Declare(SpanOf(jsMarshalerArgument), Constants.ArgumentsBuffer,
-                                    StackAllocArrayCreationExpression(
-                                        ArrayType(jsMarshalerArgument)
-                                            .WithRankSpecifiers(SingletonList(ArrayRankSpecifier(SingletonSeparatedList<ExpressionSyntax>(
-                                                OmittedArraySizeExpression())))))
-                                        .WithInitializer(
-                                            InitializerExpression(
-                                                SyntaxKind.ArrayInitializerExpression,
-                                                SeparatedList(
-                                                    parameters.Parameters
-                                                            .Select(p => (ExpressionSyntax)IdentifierName(p.Identifier)))))),
-                                MethodInvocationStatement(
-                                    IdentifierName(Constants.JSFunctionSignatureGlobal),
-                                    IdentifierName("InvokeJS"),
-                                    Argument(IdentifierName(signatureContext.BindingName)),
-                                    Argument(IdentifierName(Constants.ArgumentsBuffer))),
-                                ReturnStatement(
-                                    ElementAccessExpression(
-                                    IdentifierName(Constants.ArgumentsBuffer),
-                                    BracketedArgumentList(SingletonSeparatedList(Argument(
-                                        LiteralExpression(SyntaxKind.NumericLiteralExpression, Literal(1)))))))
-                            ])))
+                .WithBody(Block(statements))
                 .WithParameterList(parameters)
                 .WithAttributeLists(SingletonList(AttributeList(SingletonSeparatedList(
                     Attribute(IdentifierName(Constants.DebuggerNonUserCodeAttribute))))));
