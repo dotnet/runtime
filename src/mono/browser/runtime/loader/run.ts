@@ -10,7 +10,7 @@ import { ENVIRONMENT_IS_WEB, ENVIRONMENT_IS_WORKER, emscriptenModule, exportedRu
 import { deep_merge_config, deep_merge_module, mono_wasm_load_config } from "./config";
 import { installUnhandledErrorHandler, mono_exit, registerEmscriptenExitHandlers } from "./exit";
 import { setup_proxy_console, mono_log_info, mono_log_debug } from "./logging";
-import { mono_download_assets, preloadWorkers, prepareAssets, prepareAssetsWorker, resolve_single_asset_path, streamingCompileWasm } from "./assets";
+import { mono_download_assets, preloadWorkers, prepareAssets, prepareAssetsWorker, resolve_single_asset_path, streamingCompileWasm, try_resolve_single_asset_path } from "./assets";
 import { detect_features_and_polyfill } from "./polyfills";
 import { runtimeHelpers, loaderHelpers } from "./globals";
 import { init_globalization } from "./icu";
@@ -440,7 +440,6 @@ let jsModuleDiagPromise: Promise<DiagModuleExportsInternal>;
 function importModules () {
     const jsModuleRuntimeAsset = resolve_single_asset_path("js-module-runtime");
     const jsModuleNativeAsset = resolve_single_asset_path("js-module-native");
-    const jsModuleDiagAsset = resolve_single_asset_path("js-module-diag");
     if (jsModuleRuntimePromise && jsModuleNativePromise) {
         return [jsModuleRuntimePromise, jsModuleNativePromise, jsModuleDiagPromise];
     }
@@ -459,6 +458,7 @@ function importModules () {
         jsModuleNativePromise = import(/*! webpackIgnore: true */jsModuleNativeAsset.resolvedUrl!);
     }
 
+    const jsModuleDiagAsset = try_resolve_single_asset_path("js-module-diag");
     if (jsModuleDiagAsset) {
         if (typeof jsModuleDiagAsset.moduleExports === "object") {
             jsModuleDiagPromise = jsModuleDiagAsset.moduleExports;

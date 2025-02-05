@@ -120,15 +120,9 @@ function set_single_asset (asset: AssetEntryInternal) {
     }
 }
 
-function get_single_asset (behavior: SingleAssetBehaviors): AssetEntryInternal {
+export function try_resolve_single_asset_path (behavior: SingleAssetBehaviors): AssetEntryInternal|undefined {
     mono_assert(singleAssetTypes[behavior], `Unknown single asset behavior ${behavior}`);
     const asset = singleAssets.get(behavior);
-    mono_assert(asset, `Single asset for ${behavior} not found`);
-    return asset;
-}
-
-export function resolve_single_asset_path (behavior: SingleAssetBehaviors): AssetEntryInternal {
-    const asset = get_single_asset(behavior);
     if (asset && !asset.resolvedUrl) {
         asset.resolvedUrl = loaderHelpers.locateFile(asset.name);
 
@@ -145,6 +139,12 @@ export function resolve_single_asset_path (behavior: SingleAssetBehaviors): Asse
             throw new Error(`Unknown single asset behavior ${behavior}`);
         }
     }
+    return asset;
+}
+
+export function resolve_single_asset_path (behavior: SingleAssetBehaviors): AssetEntryInternal {
+    const asset = try_resolve_single_asset_path(behavior);
+    mono_assert(asset, `Single asset for ${behavior} not found`);
     return asset;
 }
 
