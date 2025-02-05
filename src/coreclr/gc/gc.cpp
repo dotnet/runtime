@@ -13256,7 +13256,7 @@ void gc_heap::age_free_regions (const char* msg)
 {
     // If we are doing an ephemeral GC as a precursor to a BGC, then we will age all of the region
     // kinds during the ephemeral GC and skip the call to age_free_regions during the BGC itself.
-    bool age_all_region_kinds = (settings.condemned_generation == max_generation) || is_bgc_in_progress();
+    bool age_all_region_kinds = (settings.condemned_generation == max_generation);
 
     if (!age_all_region_kinds)
     {
@@ -13267,7 +13267,7 @@ void gc_heap::age_free_regions (const char* msg)
 #endif //MULTIPLE_HEAPS
         age_all_region_kinds = (hp->current_bgc_state == bgc_initialized);
     }
-    
+
     if (age_all_region_kinds)
     {
         global_free_huge_regions.age_free_regions();
