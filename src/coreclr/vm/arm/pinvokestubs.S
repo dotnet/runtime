@@ -93,7 +93,7 @@
         // r4 = pFrame
 
         // set first slot to the value of InlinedCallFrame identifier (checked by runtime code)
-        ldr     r1, #FRAMETYPE_InlinedCallFrame
+        mov     r1, #FRAMETYPE_InlinedCallFrame
         str     r1, [r4]
 
         mov     r1, 0

@@ -99,7 +99,7 @@ LOCAL_LABEL(\__PInvokeStubFuncName\()_0):
         // x19 = pFrame
 
         // set first slot to the value of InlinedCallFrame identifier (checked by runtime code)
-        ldr     x9, #FRAMETYPE_InlinedCallFrame
+        mov     x9, #FRAMETYPE_InlinedCallFrame
         str     x9, [x19]
 
         str     xzr, [x19, #InlinedCallFrame__m_Datum]

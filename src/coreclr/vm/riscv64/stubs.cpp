@@ -661,7 +661,7 @@ void InlinedCallFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateF
 }
 
 #ifdef FEATURE_HIJACK
-TADDR ResumableFrame::GetReturnAddressPtr(void)
+TADDR ResumableFrame::GetReturnAddressPtr_Impl(void)
 {
     LIMITED_METHOD_DAC_CONTRACT;
     return dac_cast<TADDR>(m_Regs) + offsetof(T_CONTEXT, Pc);
