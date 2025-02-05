@@ -5693,8 +5693,8 @@ decode_value_compute_size (MonoType *t, int type, MonoDomain *domain, guint8 *bu
 				goto end;
 			}
 		} else if ((t->type == MONO_TYPE_GENERICINST) &&
-					mono_metadata_generic_class_is_valuetype (m_type_data_get_generic_class (t)) &&
-					m_class_is_enumtype (m_type_data_get_generic_class (t)->container_class)){
+					mono_metadata_generic_class_is_valuetype (m_type_data_get_generic_class_unchecked (t)) &&
+					m_class_is_enumtype (m_type_data_get_generic_class_unchecked (t)->container_class)){
 			ret += decode_vtype_compute_size (t, domain, buf, &buf, limit, from_by_ref_value_type);
 		} else {
 			NOT_IMPLEMENTED;
@@ -5916,8 +5916,8 @@ decode_value_internal (MonoType *t, int type, MonoDomain *domain, guint8 *addr, 
 				return ERR_INVALID_ARGUMENT;
 			}
 		} else if ((t->type == MONO_TYPE_GENERICINST) &&
-					mono_metadata_generic_class_is_valuetype (m_type_data_get_generic_class (t)) &&
-					m_class_is_enumtype (m_type_data_get_generic_class (t)->container_class)){
+					mono_metadata_generic_class_is_valuetype (m_type_data_get_generic_class_unchecked (t)) &&
+					m_class_is_enumtype (m_type_data_get_generic_class_unchecked (t)->container_class)){
 			err = decode_vtype (t, domain, addr, buf, &buf, limit, check_field_datatype, extra_space, from_by_ref_value_type);
 			if (err != ERR_NONE)
 				return err;
@@ -5944,7 +5944,7 @@ decode_value (MonoType *t, MonoDomain *domain, gpointer void_addr, gpointer void
 	int type = decode_byte (buf, &buf, limit);
 
 	if (t->type == MONO_TYPE_GENERICINST && mono_class_is_nullable (mono_class_from_mono_type_internal (t))) {
-		MonoType *targ = m_type_data_get_generic_class (t)->context.class_inst->type_argv [0];
+		MonoType *targ = m_type_data_get_generic_class_unchecked (t)->context.class_inst->type_argv [0];
 		guint8 *nullable_buf;
 
 		/*
@@ -8628,10 +8628,10 @@ type_commands_internal (int command, MonoClass *klass, MonoDomain *domain, guint
 		{
 			if (type->type == MONO_TYPE_FNPTR)
 			{
-				buffer_add_int (buf, 1 + m_type_data_get_method (type)->param_count);
-				buffer_add_typeid (buf, domain, mono_class_from_mono_type_internal (m_type_data_get_method (type)->ret));
-				for (int j = 0; j < m_type_data_get_method (type)->param_count; ++j) {
-					buffer_add_typeid (buf, domain, mono_class_from_mono_type_internal (m_type_data_get_method (type)->params[j]));
+				buffer_add_int (buf, 1 + m_type_data_get_method_unchecked (type)->param_count);
+				buffer_add_typeid (buf, domain, mono_class_from_mono_type_internal (m_type_data_get_method_unchecked (type)->ret));
+				for (int j = 0; j < m_type_data_get_method_unchecked (type)->param_count; ++j) {
+					buffer_add_typeid (buf, domain, mono_class_from_mono_type_internal (m_type_data_get_method_unchecked (type)->params[j]));
 				}
 			} else {
 				buffer_add_int (buf, 0);
@@ -9683,9 +9683,9 @@ method_commands_internal (int command, MonoMethod *method, MonoDomain *domain, g
 			MonoGenericContext *context;
 			GString *res;
 			res = g_string_new ("");
-			mono_type_get_desc (res, m_class_get_byval_arg (m_type_data_get_generic_class (type)->container_class), TRUE);
+			mono_type_get_desc (res, m_class_get_byval_arg (m_type_data_get_generic_class_unchecked (type)->container_class), TRUE);
 			buffer_add_string (buf, (g_string_free (res, FALSE)));
-			context = &m_type_data_get_generic_class (type)->context;
+			context = &m_type_data_get_generic_class_unchecked (type)->context;
 			if (context->class_inst)
 				buffer_add_int (buf, context->class_inst->type_argc);
 			else
@@ -10699,7 +10699,7 @@ set_field_value:
 		break;
 	case MDBGPROT_CMD_OBJECT_IS_DELEGATE: {
 		MonoType *type = m_class_get_byval_arg (obj_type);
-		if (m_class_is_delegate (obj_type) || (type->type == MONO_TYPE_GENERICINST && m_class_is_delegate (m_type_data_get_generic_class (type)->container_class)))
+		if (m_class_is_delegate (obj_type) || (type->type == MONO_TYPE_GENERICINST && m_class_is_delegate (m_type_data_get_generic_class_unchecked (type)->container_class)))
 			buffer_add_byte (buf, TRUE);
 		else
 			buffer_add_byte (buf, FALSE);

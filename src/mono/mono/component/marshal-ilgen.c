@@ -2628,7 +2628,7 @@ emit_marshal_ilgen (EmitMarshalContext *m, int argnum, MonoType *t,
 
 	switch (t->type) {
 	case MONO_TYPE_VALUETYPE:
-		if (m_type_data_get_klass (t) == cb_to_mono->class_try_get_handleref_class ())
+		if (m_type_data_get_klass_unchecked (t) == cb_to_mono->class_try_get_handleref_class ())
 			return emit_marshal_handleref_ilgen (m, argnum, t, spec, conv_arg, conv_arg_type, action);
 
 		return emit_marshal_vtype_ilgen (m, argnum, t, spec, conv_arg, conv_arg_type, action);
@@ -2636,8 +2636,8 @@ emit_marshal_ilgen (EmitMarshalContext *m, int argnum, MonoType *t,
 		return emit_marshal_string_ilgen (m, argnum, t, spec, conv_arg, conv_arg_type, action);
 	case MONO_TYPE_CLASS:
 	case MONO_TYPE_OBJECT:
-		if (cb_to_mono->try_get_safehandle_class () != NULL && m_type_data_get_klass (t) &&
-		    cb_to_mono->is_subclass_of_internal (m_type_data_get_klass (t),  cb_to_mono->try_get_safehandle_class (), FALSE))
+		if (cb_to_mono->try_get_safehandle_class () != NULL && m_type_data_get_klass_unchecked (t) &&
+		    cb_to_mono->is_subclass_of_internal (m_type_data_get_klass_unchecked (t),  cb_to_mono->try_get_safehandle_class (), FALSE))
 			return emit_marshal_safehandle_ilgen (m, argnum, t, spec, conv_arg, conv_arg_type, action);
 
 		return emit_marshal_object_ilgen (m, argnum, t, spec, conv_arg, conv_arg_type, action);
