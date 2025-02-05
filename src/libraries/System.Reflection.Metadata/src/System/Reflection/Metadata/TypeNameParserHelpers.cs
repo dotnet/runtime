@@ -203,6 +203,44 @@ namespace System.Reflection.Metadata
             return builder.ToString();
         }
 
+        internal static void AppendReversedRankOrModifierStringRepresentation(int rankOrModifier, ref ValueStringBuilder builder)
+        {
+            if (rankOrModifier == ByRef)
+            {
+                builder.Append('&');
+            }
+            else if (rankOrModifier == Pointer)
+            {
+                builder.Append('*');
+            }
+            else
+            {
+                builder.Append(']');
+
+                if (rankOrModifier == 1)
+                {
+                    builder.Append("*");
+                }
+                else if (rankOrModifier != SZArray)
+                {
+                    Debug.Assert(rankOrModifier >= 2);
+
+                    // O(rank) work, so we have to assume the rank is trusted. We don't put a hard cap on this,
+                    // but within the TypeName parser, we do require the input string to contain the correct number
+                    // of commas. This forces the input string to have at least O(rank) length, so there's no
+                    // alg. complexity attack possible here. Callers can of course pass any arbitrary value to
+                    // TypeName.MakeArrayTypeName, but per first sentence in this comment, we have to assume any
+                    // such arbitrary value which is programmatically fed in originates from a trustworthy source.
+
+
+                    builder.Append(',', rankOrModifier - 1);
+
+                }
+
+                builder.Append('[');
+            }
+        }
+
         /// <summary>
         /// Are there any captured generic args? We'll look for "[[" and "[" that is not followed by "]", "*" and ",".
         /// </summary>

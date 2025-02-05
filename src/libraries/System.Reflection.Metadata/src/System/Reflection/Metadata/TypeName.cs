@@ -142,47 +142,103 @@ namespace System.Reflection.Metadata
         {
             get
             {
-                // This is a recursive method over potentially hostile input. Protection against DoS is offered
-                // via the [Try]Parse method and TypeNameParserOptions.MaxNodes property at construction time.
-                // This FullName property getter and related methods assume that this TypeName instance has an
-                // acceptable node count.
-                //
-                // The node count controls the total amount of work performed by this method, including:
-                // - The max possible stack depth due to the recursive methods calls; and
-                // - The total number of bytes allocated by this function. For a deeply-nested TypeName
-                //   object, the total allocation across the full object graph will be
-                //   O(FullName.Length * GetNodeCount()).
-
-                if (_fullName is null)
+                if (_fullName is not null) // Simple types
                 {
-                    if (IsConstructedGenericType)
+                    if (_nestedNameLength > 0 && _fullName.Length > _nestedNameLength) // Declaring types
                     {
-                        _fullName = TypeNameParserHelpers.GetGenericTypeFullName(GetGenericTypeDefinition().FullName.AsSpan(),
+                        // Stored fullName represents the full name of the nested type.
+                        // Example: Namespace.Declaring+Nested
+                        _fullName = _fullName.Substring(0, _nestedNameLength);
+                    }
+
+                    return _fullName;
+                }
+
+                List<NameAndDetails> stack = new();
+                ValueStringBuilder builder = new(stackalloc char[128]);
+                NameAndDetails currentDetails = new(this, Details.None);
+
+                while (true)
+                {
+                    TypeName current = currentDetails.typeName;
+
+                    if (current.IsConstructedGenericType)
+                    {
+                        builder.Append(']');
+                        stack.Add(new(current.GetGenericTypeDefinition(), Details.GenericTypeDefinition));
+
+                        ReadOnlySpan<TypeName> genericArguments =
 #if SYSTEM_PRIVATE_CORELIB
-                            CollectionsMarshal.AsSpan(_genericArguments));
+                            CollectionsMarshal.AsSpan(current._genericArguments);
 #else
-                            _genericArguments.AsSpan());
+                            current._genericArguments.AsSpan();
 #endif
+                        for (int i = 0; i < genericArguments.Length; i++)
+                        {
+                            stack.Add(new(genericArguments[i], i == 0 ? Details.FirstGenericArg : Details.NextGenericArg));
+                        }
                     }
-                    else if (IsArray || IsPointer || IsByRef)
+                    else if (current.IsArray || current.IsPointer || current.IsByRef)
                     {
-                        ValueStringBuilder builder = new(stackalloc char[128]);
-                        builder.Append(GetElementType().FullName);
-                        _fullName = TypeNameParserHelpers.GetRankOrModifierStringRepresentation(_rankOrModifier, ref builder);
+                        TypeNameParserHelpers.AppendReversedRankOrModifierStringRepresentation(current._rankOrModifier, ref builder);
+                        stack.Add(new(current.GetElementType(), currentDetails.details));
                     }
-                    else
+                    else if (current._fullName is not null)
                     {
-                        Debug.Fail("Pre-allocated full name should have been provided in the ctor");
+                        if (currentDetails.details == Details.GenericTypeDefinition)
+                        {
+                            builder.Append('[');
+                        }
+                        else if (currentDetails.details is Details.FirstGenericArg or Details.NextGenericArg)
+                        {
+                            builder.Append(']');
+                            if (current.AssemblyName is not null)
+                            {
+                                AppendInReverseOrder(ref builder, current.AssemblyName.FullName.AsSpan());
+                                builder.Append(" ,");
+                            }
+                        }
+
+                        int length = current._fullName.Length;
+                        if (current._nestedNameLength > 0 && current._fullName.Length > current._nestedNameLength) // Declaring types
+                        {
+                            // Stored fullName represents the full name of the nested type.
+                            // Example: Namespace.Declaring+Nested
+                            length = current._nestedNameLength;
+                        }
+                        AppendInReverseOrder(ref builder, current._fullName.AsSpan(0, length));
+
+                        if (currentDetails.details == Details.NextGenericArg)
+                        {
+                            builder.Append("[,");
+                        }
+                        else if (currentDetails.details == Details.FirstGenericArg)
+                        {
+                            builder.Append('[');
+                        }
                     }
-                }
-                else if (_nestedNameLength > 0 && _fullName.Length > _nestedNameLength) // Declaring types
-                {
-                    // Stored fullName represents the full name of the nested type.
-                    // Example: Namespace.Declaring+Nested
-                    _fullName = _fullName.Substring(0, _nestedNameLength);
+
+                    if (stack.Count == 0)
+                    {
+                        break;
+                    }
+                    currentDetails = stack[stack.Count - 1];
+                    stack.RemoveAt(stack.Count - 1);
                 }
 
-                return _fullName!;
+                Span<char> characters = builder.RawChars.Slice(0, builder.Length);
+                characters.Reverse();
+                _fullName = characters.ToString();
+                builder.Dispose();
+                return _fullName;
+
+                static void AppendInReverseOrder(ref ValueStringBuilder builder, ReadOnlySpan<char> value)
+                {
+                    for (int i = value.Length - 1; i >= 0; i--)
+                    {
+                        builder.Append(value[i]);
+                    }
+                }
             }
         }
 
@@ -537,5 +593,15 @@ namespace System.Reflection.Metadata
                 genericTypeArguments: ImmutableArray<TypeName>.Empty,
                 rankOrModifier: rankOrModifier);
 #endif
+
+        private record struct NameAndDetails(TypeName typeName, Details details);
+
+        private enum Details : byte
+        {
+            None,
+            NextGenericArg,
+            FirstGenericArg,
+            GenericTypeDefinition,
+        }
     }
 }
