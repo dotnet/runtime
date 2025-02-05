@@ -936,9 +936,12 @@ namespace ILCompiler
                                 switch (opcode)
                                 {
                                     case ILOpcode.conv_i:
-                                    case ILOpcode.conv_u:
                                         stack.Push(StackValueKind.NativeInt,
                                             context.Target.PointerSize == 8 ? ValueTypeValue.FromInt64((long)val) : ValueTypeValue.FromInt32((int)val));
+                                        break;
+                                    case ILOpcode.conv_u:
+                                        stack.Push(StackValueKind.NativeInt,
+                                            context.Target.PointerSize == 8 ? ValueTypeValue.FromInt64((long)(ulong)val) : ValueTypeValue.FromInt32((int)(uint)val));
                                         break;
                                     case ILOpcode.conv_i1:
                                         stack.Push(StackValueKind.Int32, ValueTypeValue.FromInt32((sbyte)val));
@@ -959,10 +962,10 @@ namespace ILCompiler
                                         stack.Push(StackValueKind.Int32, ValueTypeValue.FromInt32((ushort)val));
                                         break;
                                     case ILOpcode.conv_u4:
-                                        stack.Push(StackValueKind.Int32, ValueTypeValue.FromInt32((int)val));
+                                        stack.Push(StackValueKind.Int32, ValueTypeValue.FromInt32((int)(uint)val));
                                         break;
                                     case ILOpcode.conv_u8:
-                                        stack.Push(StackValueKind.Int64, ValueTypeValue.FromInt64((long)val));
+                                        stack.Push(StackValueKind.Int64, ValueTypeValue.FromInt64((long)(ulong)val));
                                         break;
                                     case ILOpcode.conv_r4:
                                         stack.Push(StackValueKind.Float, ValueTypeValue.FromDouble((float)val));
