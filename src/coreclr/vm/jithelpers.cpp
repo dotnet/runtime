@@ -2505,7 +2505,7 @@ static PCODE PatchpointOptimizationPolicy(TransitionBlock* pTransitionBlock, int
             // If that failed, mark the patchpoint as invalid.
             if (osrMethodCode == (PCODE)NULL)
             {
-                // Unexpected, but not fatal, unless forced to transition
+                // Unexpected, but not fatal
                 STRESS_LOG3(LF_TIEREDCOMPILATION, LL_WARNING, "PatchpointOptimizationPolicy: patchpoint (0x%p) OSR method creation failed,"
                     " marking patchpoint invalid for Method=0x%pM il offset %d\n", ip, pMD, ilOffset);
 
