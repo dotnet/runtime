@@ -236,12 +236,12 @@ Any such keys that were not associated with the return value will be erased from
 
 `X509CertificateLoader` follows the "lazy decryption" scheme utilized by Windows 10 PFXImportCertStore.
 If a PKCS#12 PFX contains one CertBag value and two PKCS8ShroudedKeyBag values, and the CertBag shares a PKCS#9 LocalKeyId value with only one of the PKCS8ShroudedKeyBag values (and the private key contained therein is properly matched to the public key embedded in the certificate), then the second encrypted key will never be decrypted.
-However, the presence of this key counts against both the `IndividualKdfIterationLimit` and the `TotalKdfIterationLimit`, as the work-counting phase is done before key-matching or key-decryption. 
+However, the presence of this key counts against both the `IndividualKdfIterationLimit` and the `TotalKdfIterationLimit`, as the work-counting phase is done before key-matching or key-decryption.
 
 ### Zero-Length Passwords
 
 The KDF defined for PKCS#12 makes a distinction between a null password and an empty password, where most callers fail to see a distinction (particularly when the password is presented as `ReadOnlySpan<char>`).
-As such, most API that deals with reading from a PKCS#12 PFX (e.g. the now-legacy constructors, Windows' PFXImportCertStore, and OpenSSL's PKCS12_parse) will use whichever of the two versions works first.
+As such, most API that deals with reading from a PKCS#12 PFX (e.g. the now-legacy constructors, Windows' PFXImportCertStore, and OpenSSL's `PKCS12_parse`) will use whichever of the two versions works first.
 
 `X509CertificateLoader` handles this state by always trying the input as-provided first, then will make one allowance that the file was built using the other zero-length password.
 In the event of this password mulligan, the first work done with the wrong password is not counted toward "total" work limits.
