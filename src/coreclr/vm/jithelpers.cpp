@@ -2341,7 +2341,7 @@ static PCODE JitPatchpointWorker(MethodDesc* pMD, const EECodeInfo& codeInfo, in
     return osrVariant;
 }
 
-PCODE PatchpointOptimizationPolicy(TransitionBlock* pTransitionBlock, int* counter, int ilOffset, PerPatchpointInfo * ppInfo, const EECodeInfo& codeInfo, bool *pIsNewMethod)
+static PCODE PatchpointOptimizationPolicy(TransitionBlock* pTransitionBlock, int* counter, int ilOffset, PerPatchpointInfo * ppInfo, const EECodeInfo& codeInfo, bool *pIsNewMethod)
 {
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_TRIGGERS;
@@ -2505,7 +2505,7 @@ PCODE PatchpointOptimizationPolicy(TransitionBlock* pTransitionBlock, int* count
             // If that failed, mark the patchpoint as invalid.
             if (osrMethodCode == (PCODE)NULL)
             {
-                // Unexpected, but not fatal
+                // Unexpected, but not fatal, unless forced to transition
                 STRESS_LOG3(LF_TIEREDCOMPILATION, LL_WARNING, "PatchpointOptimizationPolicy: patchpoint (0x%p) OSR method creation failed,"
                     " marking patchpoint invalid for Method=0x%pM il offset %d\n", ip, pMD, ilOffset);
 
