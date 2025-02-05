@@ -364,8 +364,8 @@
       <EmscriptenEnvVars Include="ENABLE_JS_INTEROP_BY_VALUE=0" Condition="'$(WasmEnableJsInteropByValue)' != 'true'" />
       <EmscriptenEnvVars Include="WASM_ENABLE_SIMD=1" Condition="'$(WasmEnableSIMD)' != 'false'" />
       <EmscriptenEnvVars Include="WASM_ENABLE_SIMD=0" Condition="'$(WasmEnableSIMD)' == 'false'" />
-      <EmscriptenEnvVars Include="FEATURE_PERFTRACING=1" Condition="'$(FeaturePerfTracing)' != 'false'" />
-      <EmscriptenEnvVars Include="FEATURE_PERFTRACING=0" Condition="'$(FeaturePerfTracing)' == 'false'" />
+      <EmscriptenEnvVars Include="FEATURE_PERFTRACING=1" Condition="'$(FeaturePerfTracing)' == 'true'" />
+      <EmscriptenEnvVars Include="FEATURE_PERFTRACING=0" Condition="'$(FeaturePerfTracing)' != 'true'" />
       <EmscriptenEnvVars Include="WASM_ENABLE_EH=1" Condition="'$(WasmEnableExceptionHandling)' != 'false'" />
       <EmscriptenEnvVars Include="WASM_ENABLE_EH=0" Condition="'$(WasmEnableExceptionHandling)' == 'false'" />
       <EmscriptenEnvVars Include="ENABLE_AOT_PROFILER=$([System.Convert]::ToInt32($(WasmProfilers.Contains('aot'))))" />
@@ -438,6 +438,13 @@
       <_EmccExportedRuntimeMethods>"[@(EmccExportedRuntimeMethod -> '%27%(Identity)%27', ',')]"</_EmccExportedRuntimeMethods>
       <_EmccExportedFunctions>@(EmccExportedFunction -> '%(Identity)',',')</_EmccExportedFunctions>
     </PropertyGroup>
+
+    <ItemGroup>
+      <_MonoRuntimeComponentDontLink Include="wasm-bundled-timezones.a" Condition="'$(InvariantTimezone)' == 'true'"/>
+      <_MonoRuntimeComponentDontLink Include="libmono-component-diagnostics_tracing-static.a" Condition="'$(FeaturePerfTracing)' != 'true'" />
+      <_MonoRuntimeComponentDontLink Include="libmono-component-diagnostics_tracing-stub-static.lib" Condition="'$(FeaturePerfTracing)' == 'true'" />
+    </ItemGroup>
+
     <ItemGroup>
       <!-- order matters -->
       <!-- some flags will be duplicated on the commandline and in the .rsp file. The last wins. -->
