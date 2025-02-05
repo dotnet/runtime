@@ -16,7 +16,7 @@ namespace System.IO
         // Checks if the given path is available for use.
         private static bool ExistsCore(string fullPath, out bool isDirectory)
         {
-            bool result = Interop.Sys.LStat(fullPath, out Interop.Sys.FileStatus fileInfo) == Interop.Errors.ERROR_SUCCESS;
+            bool result = Interop.Sys.LStatWrap(fullPath, out Interop.Sys.FileStatus fileInfo) == Interop.Errors.ERROR_SUCCESS;
             isDirectory = result && (fileInfo.Mode & Interop.Sys.FileTypes.S_IFMT) == Interop.Sys.FileTypes.S_IFDIR;
 
             return result;

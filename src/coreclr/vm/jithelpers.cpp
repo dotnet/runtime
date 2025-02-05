@@ -25,6 +25,10 @@
 #include "dynamicinterfacecastable.h"
 #include "comsynchronizable.h"
 
+#if defined(TARGET_ANDROID)
+#include <android/log.h>
+#endif
+
 #ifndef TARGET_UNIX
 // Included for referencing __report_gsfailure
 #include "process.h"
@@ -2014,7 +2018,9 @@ void DoJITFailFast ()
                        COR_E_EXECUTIONENGINE,
                        GetClrInstanceId());
     }
-
+#if defined(TARGET_ANDROID)
+    __android_log_print (ANDROID_LOG_INFO, "CoreCLR", "End process at %s:%u", __FILE_NAME__, __LINE__);
+#endif
     CrashDumpAndTerminateProcess(STATUS_STACK_BUFFER_OVERRUN);
 #endif // !TARGET_UNIX
 }

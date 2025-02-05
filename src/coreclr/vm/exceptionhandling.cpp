@@ -21,6 +21,10 @@
 #include "exinfo.h"
 #include "configuration.h"
 
+#if defined(TARGET_ANDROID)
+#include <android/log.h>
+#endif
+
 #if defined(TARGET_X86)
 #define USE_CURRENT_CONTEXT_IN_FILTER
 #endif // TARGET_X86
@@ -4905,6 +4909,9 @@ VOID DECLSPEC_NORETURN UnwindManagedExceptionPass1(PAL_SEHException& ex, CONTEXT
                     LONG disposition = InternalUnhandledExceptionFilter_Worker(&ex.ExceptionPointers);
                     _ASSERTE(disposition == EXCEPTION_CONTINUE_SEARCH);
                 }
+#if defined(TARGET_ANDROID)
+                __android_log_print (ANDROID_LOG_INFO, "CoreCLR", "End process at %s:%u", __FILE_NAME__, __LINE__);
+#endif
                 CrashDumpAndTerminateProcess(1);
             }
             else
@@ -4964,6 +4971,9 @@ VOID DECLSPEC_NORETURN UnwindManagedExceptionPass1(PAL_SEHException& ex, CONTEXT
                     LONG disposition = InternalUnhandledExceptionFilter_Worker(&ex.ExceptionPointers);
                     _ASSERTE(disposition == EXCEPTION_CONTINUE_SEARCH);
                 }
+#if defined(TARGET_ANDROID)
+                __android_log_print (ANDROID_LOG_INFO, "CoreCLR", "End process at %s:%u", __FILE_NAME__, __LINE__);
+#endif
                 CrashDumpAndTerminateProcess(1);
                 UNREACHABLE();
             }
@@ -5032,6 +5042,9 @@ VOID DECLSPEC_NORETURN DispatchManagedException(PAL_SEHException& ex, bool isHar
                     // There are no managed frames on the stack, so the exception was not handled
                     LONG disposition = InternalUnhandledExceptionFilter_Worker(&ex.ExceptionPointers);
                     _ASSERTE(disposition == EXCEPTION_CONTINUE_SEARCH);
+#if defined(TARGET_ANDROID)
+                    __android_log_print (ANDROID_LOG_INFO, "CoreCLR", "End process at %s:%u", __FILE_NAME__, __LINE__);
+#endif
                     CrashDumpAndTerminateProcess(1);
                     UNREACHABLE();
                 }
@@ -5910,7 +5923,7 @@ void FixupDispatcherContext(DISPATCHER_CONTEXT* pDispatcherContext, CONTEXT* pCo
     }
 
     pDispatcherContext->ControlPc = (UINT_PTR) GetIP(pDispatcherContext->ContextRecord);
-    
+
 #if defined(TARGET_ARM64)
     // Since this routine is used to fixup contexts for async exceptions,
     // clear the CONTEXT_UNWOUND_TO_CALL flag since, semantically, frames
@@ -8498,6 +8511,9 @@ extern "C" bool QCALLTYPE SfiInit(StackFrameIterator* pThis, CONTEXT* pStackwalk
         GetThread()->SetThreadStateNC(Thread::TSNC_ProcessedUnhandledException);
         RaiseException(pExInfo->m_ExceptionCode, EXCEPTION_NONCONTINUABLE_EXCEPTION, pExInfo->m_ptrs.ExceptionRecord->NumberParameters, pExInfo->m_ptrs.ExceptionRecord->ExceptionInformation);
 #else
+#if defined(TARGET_ANDROID)
+        __android_log_print (ANDROID_LOG_INFO, "CoreCLR", "End process at %s:%u", __FILE_NAME__, __LINE__);
+#endif
         CrashDumpAndTerminateProcess(pExInfo->m_ExceptionCode);
 #endif
     }
@@ -8617,6 +8633,9 @@ extern "C" bool QCALLTYPE SfiNext(StackFrameIterator* pThis, uint* uExCollideCla
                     GetThread()->SetThreadStateNC(Thread::TSNC_ProcessedUnhandledException);
                     RaiseException(pTopExInfo->m_ExceptionCode, EXCEPTION_NONCONTINUABLE_EXCEPTION, pTopExInfo->m_ptrs.ExceptionRecord->NumberParameters, pTopExInfo->m_ptrs.ExceptionRecord->ExceptionInformation);
 #else
+#if defined(TARGET_ANDROID)
+                    __android_log_print (ANDROID_LOG_INFO, "CoreCLR", "End process at %s:%u", __FILE_NAME__, __LINE__);
+#endif
                     CrashDumpAndTerminateProcess(pTopExInfo->m_ExceptionCode);
 #endif
                 }

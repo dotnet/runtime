@@ -133,6 +133,7 @@
     <Reference Include="System.Runtime.InteropServices" />
     <Reference Include="System.Threading" />
     <Reference Include="System.Threading.Thread" />
+    <Reference Include="System.Diagnostics.StackTrace" />
   </ItemGroup>
 
 </Project>

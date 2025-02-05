@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Diagnostics;
 using System.Runtime.InteropServices;
 using Microsoft.Win32.SafeHandles;
 
@@ -63,5 +64,15 @@ internal static partial class Interop
 
         [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_LStat", StringMarshalling = StringMarshalling.Utf8, SetLastError = true)]
         internal static partial int LStat(string path, out FileStatus output);
+
+        [LibraryImport("log", EntryPoint="__android_log_write", StringMarshalling = StringMarshalling.Utf8, SetLastError = false)]
+        static partial void AndroidLog (int prio, string tag, string message);
+
+        internal static int LStatWrap(string path, out FileStatus output)
+        {
+            AndroidLog (4, "CoreCLR", $"LStat (\"{path}\"");
+            AndroidLog (4, "CoreCLR", new StackTrace (false).ToString ());
+            return LStat (path, out output);
+        }
     }
 }

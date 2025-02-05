@@ -46,7 +46,7 @@ namespace System.IO
             // See http://pubs.opengroup.org/onlinepubs/009695399/basedefs/xbd_chap04.html#tag_04_11 for details.
             fullPath = Path.TrimEndingDirectorySeparator(fullPath);
 
-            if (Interop.Sys.LStat(fullPath, out fileinfo) < 0)
+            if (Interop.Sys.LStatWrap(fullPath.ToString (), out fileinfo) < 0)
             {
                 errorInfo = Interop.Sys.GetLastErrorInfo();
                 return false;

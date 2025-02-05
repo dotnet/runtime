@@ -387,6 +387,7 @@
     <Reference Include="System.Threading" />
     <Reference Include="System.Threading.Thread" />
     <Reference Include="System.Threading.ThreadPool" />
+    <Reference Include="System.Diagnostics.StackTrace" />
   </ItemGroup>
 
 </Project>

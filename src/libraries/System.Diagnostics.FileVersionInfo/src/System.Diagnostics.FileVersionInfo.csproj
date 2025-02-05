@@ -57,6 +57,7 @@
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'unix'">
     <Reference Include="System.Collections.Immutable" />
     <Reference Include="System.Reflection.Metadata" />
+    <Reference Include="System.Diagnostics.StackTrace" />
   </ItemGroup>
 
 </Project>

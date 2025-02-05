@@ -20,6 +20,10 @@
 #include "dwreport.h"
 #endif // !TARGET_UNIX
 
+#if defined(TARGET_ANDROID)
+#include <android/log.h>
+#endif
+
 #include "eventtrace.h"
 #undef ExitProcess
 
@@ -58,7 +62,9 @@ void SafeExitProcess(UINT exitCode, ShutdownCompleteAction sca = SCA_ExitProcess
     {
         // disabled because if we fault in this code path we will trigger our Watson code
         CONTRACT_VIOLATION(ThrowsViolation);
-
+#if defined(TARGET_ANDROID)
+    __android_log_print (ANDROID_LOG_INFO, "CoreCLR", "End process at %s:%u", __FILE_NAME__, __LINE__);
+#endif
         CrashDumpAndTerminateProcess(exitCode);
     }
     else if (sca == SCA_ExitProcessWhenShutdownComplete)
@@ -734,7 +740,9 @@ void DECLSPEC_NORETURN EEPolicy::HandleFatalStackOverflow(EXCEPTION_POINTERS *pE
         WatsonLastChance(pThread, pExceptionInfo,
             (fTreatAsNativeUnhandledException == FALSE)? TypeOfReportedError::UnhandledException: TypeOfReportedError::NativeThreadUnhandledException);
     }
-
+#if defined(TARGET_ANDROID)
+    __android_log_print (ANDROID_LOG_INFO, "CoreCLR", "End process at %s:%u", __FILE_NAME__, __LINE__);
+#endif
     CrashDumpAndTerminateProcess(COR_E_STACKOVERFLOW);
     UNREACHABLE();
 }

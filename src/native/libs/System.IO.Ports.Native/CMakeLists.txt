@@ -22,6 +22,13 @@ if (GEN_SHARED_LIB)
             -lnetwork
         )
     endif()
+
+    if (CLR_CMAKE_TARGET_ANDROID)
+        target_link_libraries(System.IO.Ports.Native
+            PRIVATE
+            log
+        )
+    endif()
 endif()
 
 add_library(System.IO.Ports.Native-Static
