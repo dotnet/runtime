@@ -50,7 +50,7 @@
       <HelixArchiveRunOnlyAppsDir>$([MSBuild]::NormalizeDirectory($(HelixArchiveRunOnlyRoot), $(OSPlatformConfig), $(WasmHelixTestAppRelativeDir)))</HelixArchiveRunOnlyAppsDir>
       <ZippedApp>$(OutputPath)$(AssemblyName).zip</ZippedApp>
     </PropertyGroup>
-    <ZipDirectoryEx SourceDirectory="$(WasmAppDir)" DestinationFile="$(ZippedApp)" />
+    <ZipDirectory SourceDirectory="$(WasmAppDir)" DestinationFile="$(ZippedApp)" />
     <Copy SourceFiles="$(ZippedApp)" DestinationFolder="$(HelixArchiveRunOnlyAppsDir)" />
   </Target>
 </Project>
