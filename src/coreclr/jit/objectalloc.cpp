@@ -483,6 +483,7 @@ bool ObjectAllocator::MorphAllocObjNodes()
         const bool basicBlockHasNewObj       = block->HasFlag(BBF_HAS_NEWOBJ);
         const bool basicBlockHasNewArr       = block->HasFlag(BBF_HAS_NEWARR);
         const bool basicBlockHasBackwardJump = block->HasFlag(BBF_BACKWARD_JUMP);
+        const bool basicBlockInHandler       = block->hasHndIndex();
 
         if (!basicBlockHasNewObj && !basicBlockHasNewArr)
         {
@@ -592,6 +593,11 @@ bool ObjectAllocator::MorphAllocObjNodes()
                         else if (!len->IsCnsIntOrI() && !m_UseLocalloc)
                         {
                             onHeapReason = "[unknown size]";
+                            canStack     = false;
+                        }
+                        else if (!len->IsCnsIntOrI() && basicBlockInHandler)
+                        {
+                            onHeapReason = "[unknown size, in handler]";
                             canStack     = false;
                         }
                         else if (!CanAllocateLclVarOnStack(lclNum, clsHnd, allocType, arraySize, &blockSize,
@@ -916,7 +922,7 @@ void ObjectAllocator::MorphNewArrNodeIntoLocAlloc(
     // Mark the newarr call as being "on stack", and add the element size
     // operand for the stack local as an argument
     //
-    GenTree* const elemSizeNode = comp->gtNewIconNode(elemSize);
+    GenTree* const elemSizeNode = comp->gtNewIconNode(elemSize, TYP_I_IMPL);
     newArr->gtArgs.PushBack(comp, NewCallArg::Primitive(elemSizeNode).WellKnown(WellKnownArg::StackArrayElemSize));
     newArr->gtCallMoreFlags |= GTF_CALL_M_STACK_ARRAY;
 
