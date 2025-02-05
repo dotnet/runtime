@@ -9,7 +9,7 @@ namespace System.IO.Compression.Tests;
 [Collection(nameof(DisableParallelization))]
 public class zip_LargeFiles : ZipFileTestBase
 {
-    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsSpeedOptimized), nameof(PlatformDetection.Is64BitProcess))] // don't run it on slower runtimes
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMobile), nameof(PlatformDetection.Is64BitProcess))] // don't run it on slower runtimes
     [OuterLoop("It requires almost 12 GB of free disk space")]
     public static void UnzipOver4GBZipFile()
     {
@@ -49,7 +49,7 @@ public class zip_LargeFiles : ZipFileTestBase
         Random.Shared.NextBytes(buffer);
     }
 
-    [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsSpeedOptimized), nameof(PlatformDetection.Is64BitProcess))] // don't run it on slower runtimes
+    [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMobile), nameof(PlatformDetection.Is64BitProcess))] // don't run it on slower runtimes
     [OuterLoop("It requires 5~6 GB of free disk space and a lot of CPU time for compressed tests")]
     [InlineData(false)]
     [InlineData(true)]

@@ -5,7 +5,7 @@ using System;
 
 namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 
-internal interface IObject : IContract
+public interface IObject : IContract
 {
     static string IContract.Name { get; } = nameof(Object);
     public virtual TargetPointer GetMethodTableAddress(TargetPointer address) => throw new NotImplementedException();
@@ -14,7 +14,7 @@ internal interface IObject : IContract
     public virtual bool GetBuiltInComData(TargetPointer address, out TargetPointer rcw, out TargetPointer ccw) => throw new NotImplementedException();
 }
 
-internal readonly struct Object : IObject
+public readonly struct Object : IObject
 {
     // Everything throws NotImplementedException
 }
