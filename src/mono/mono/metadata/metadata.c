@@ -7007,18 +7007,21 @@ handle_enum:
 		}
 	case MONO_TYPE_PTR: return MONO_NATIVE_UINT;
 	case MONO_TYPE_VALUETYPE: /*FIXME*/
+	{
 		if (mspec && mspec->native == MONO_NATIVE_CUSTOM)
 			return MONO_NATIVE_CUSTOM;
 
-		if (m_class_is_enumtype (m_type_data_get_klass (type))) {
-			t = mono_class_enum_basetype_internal (m_type_data_get_klass (type))->type;
+		MonoClass *type_klass = m_type_data_get_klass (type);
+		if (m_class_is_enumtype (type_klass)) {
+			t = mono_class_enum_basetype_internal (type_klass)->type;
 			goto handle_enum;
 		}
-		if (m_type_data_get_klass (type) == mono_class_try_get_handleref_class ()){
+		if (type_klass == mono_class_try_get_handleref_class ()){
 			*conv = MONO_MARSHAL_CONV_HANDLEREF;
 			return MONO_NATIVE_INT;
 		}
 		return MONO_NATIVE_STRUCT;
+	}
 	case MONO_TYPE_SZARRAY:
 	case MONO_TYPE_ARRAY:
 		if (mspec) {
@@ -7076,13 +7079,16 @@ handle_enum:
 				*conv = MONO_MARSHAL_CONV_OBJECT_IUNKNOWN;
 				return MONO_NATIVE_IUNKNOWN;
 			case MONO_NATIVE_FUNC:
-				if (t == MONO_TYPE_CLASS && (m_type_data_get_klass (type) == mono_defaults.multicastdelegate_class ||
-											 m_type_data_get_klass (type) == mono_defaults.delegate_class ||
-							     				m_class_get_parent (m_type_data_get_klass (type)) == mono_defaults.multicastdelegate_class)) {
+			{
+				MonoClass *type_klass = m_type_data_get_klass (type);
+				if (t == MONO_TYPE_CLASS && (type_klass == mono_defaults.multicastdelegate_class ||
+								 type_klass == mono_defaults.delegate_class ||
+								m_class_get_parent (type_klass) == mono_defaults.multicastdelegate_class)) {
 					*conv = MONO_MARSHAL_CONV_DEL_FTN;
 					return MONO_NATIVE_FUNC;
 				}
 				/* Fall through */
+			}
 			default:
 				g_error ("cant marshal object as native type %02x", mspec->native);
 			}
