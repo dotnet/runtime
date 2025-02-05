@@ -244,10 +244,14 @@ namespace Microsoft.Interop.JavaScript
                         : info.MarshallingAttributeInfo,
                 };
 
+                if (info.IsManagedReturnPosition)
+                {
+                    hasReturn = info.ManagedType != SpecialTypeInfo.Void;
+                }
+
                 if (info.IsNativeReturnPosition)
                 {
                     typeInfoBuilder.Add(updatedInfo);
-                    hasReturn = true;
                 }
                 else
                 {
