@@ -89,7 +89,7 @@
 
     // s1 = pFrame
     // set first slot to the value of InlinedCallFrame identifier (checked by runtime code)
-    ld.d t4, FRAMETYPE_InlinedCallFrame
+    ld  t4, FRAMETYPE_InlinedCallFrame
     sd  t4, 0(s1)
 
     sd  zero, (InlinedCallFrame__m_Datum)(s1)

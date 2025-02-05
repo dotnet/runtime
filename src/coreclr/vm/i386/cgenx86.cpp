@@ -399,7 +399,7 @@ void ExternalMethodFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool upda
 
     UpdateRegDisplayHelper(pRD, CbStackPopUsingGCRefMap(GetGCRefMap()));
 
-    LOG((LF_GCROOTS, LL_INFO100000, "STACKWALK    ExternalMethodFrane::UpdateRegDisplay(ip:%p, sp:%p)\n", pRD->ControlPC, pRD->SP));
+    LOG((LF_GCROOTS, LL_INFO100000, "STACKWALK    ExternalMethodFrane::UpdateRegDisplay_Impl(ip:%p, sp:%p)\n", pRD->ControlPC, pRD->SP));
 
     RETURN;
 }
@@ -452,7 +452,7 @@ PCODE StubDispatchFrame::GetReturnAddress_Impl()
     }
     CONTRACTL_END;
 
-    PCODE retAddress = FramedMethodFrame::GetReturnAddress();
+    PCODE retAddress = FramedMethodFrame::GetReturnAddress_Impl();
     if (GetFunction() == NULL && GetGCRefMap() == NULL)
     {
         // See comment in code:StubDispatchFrame::UpdateRegDisplay
