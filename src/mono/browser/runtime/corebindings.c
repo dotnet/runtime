@@ -256,55 +256,55 @@ void mono_wasm_install_js_worker_interop_wrapper (int context_gc_handle, void* b
 	before_sync_js_import = beforeSyncJSImport;
 	after_sync_js_import = afterSyncJSImport;
 	synchronization_context_pump_handler = pumpHandler;
-	mono_memory_barrier ();
+	__sync_synchronize ();
 	mono_wasm_install_js_worker_interop (context_gc_handle);
 }
 
 // async
 void mono_wasm_release_cs_owned_object_post (pthread_t target_tid, int js_handle)
 {
-	mono_memory_barrier ();
+	__sync_synchronize ();
 	mono_threads_wasm_async_run_in_target_thread_vi (target_tid, (void (*) (gpointer))mono_wasm_release_cs_owned_object, (gpointer)js_handle);
 }
 
 // async
 void mono_wasm_resolve_or_reject_promise_post (pthread_t target_tid, void* args)
 {
-	mono_memory_barrier ();
+	__sync_synchronize ();
 	mono_threads_wasm_async_run_in_target_thread_vi (target_tid, (void (*) (gpointer))mono_wasm_resolve_or_reject_promise, (gpointer)args);
 }
 
 // async
 void mono_wasm_cancel_promise_post (pthread_t target_tid, int task_holder_gc_handle)
 {
-	mono_memory_barrier ();
+	__sync_synchronize ();
 	mono_threads_wasm_async_run_in_target_thread_vi (target_tid, (void (*) (gpointer))mono_wasm_cancel_promise, (gpointer)task_holder_gc_handle);
 }
 
 // async
 void mono_wasm_invoke_jsimport_async_post (pthread_t target_tid, void* signature, void* args)
 {
-	mono_memory_barrier ();
+	__sync_synchronize ();
 	mono_threads_wasm_async_run_in_target_thread_vii (target_tid, (void (*) (gpointer, gpointer))mono_wasm_invoke_jsimport_MT_barrier, (gpointer)signature, (gpointer)args);
 }
 
 // sync
 void mono_wasm_invoke_jsimport_sync_send (pthread_t target_tid, void* signature, void* args)
 {
-	mono_memory_barrier ();
+	__sync_synchronize ();
 	mono_threads_wasm_sync_run_in_target_thread_vii (target_tid, (void (*) (gpointer, gpointer))mono_wasm_invoke_jsimport_MT_barrier, (gpointer)signature, (gpointer)args);
 }
 
 // sync
 void mono_wasm_invoke_js_function_send (pthread_t target_tid, int function_js_handle, void *args)
 {
-	mono_memory_barrier ();
+	__sync_synchronize ();
 	mono_threads_wasm_sync_run_in_target_thread_vii (target_tid, (void (*) (gpointer, gpointer))mono_wasm_invoke_js_function, (gpointer)function_js_handle, (gpointer)args);
 }
 
 void mono_wasm_invoke_jsimport_MT_barrier (void* signature, void* args)
 {
-	mono_memory_barrier ();
+	__sync_synchronize ();
 	mono_wasm_invoke_jsimport_MT (signature, args);
 }
 

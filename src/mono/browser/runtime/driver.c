@@ -189,7 +189,7 @@ mono_wasm_load_runtime (int debug_level)
 	const char *interp_opts = "";
 
 #ifndef DISABLE_THREADS
-	mono_memory_barrier ();
+	__sync_synchronize ();
 #endif /* DISABLE_THREADS */
 
 #ifndef INVARIANT_GLOBALIZATION
@@ -236,7 +236,7 @@ mono_wasm_load_runtime (int debug_level)
 	bindings_initialize_internals();
 
 #ifndef DISABLE_THREADS
-	mono_memory_barrier ();
+	__sync_synchronize ();
 #endif /* DISABLE_THREADS */
 
 }
@@ -292,7 +292,7 @@ mono_wasm_print_thread_dump (void)
 static void
 mono_wasm_invoke_jsexport_async_post_cb (MonoMethod *method, void* args)
 {
-	mono_memory_barrier ();
+	__sync_synchronize ();
 	mono_wasm_invoke_jsexport (method, args);
 	if (args) {
 		MonoBoolean *is_receiver_should_free = (MonoBoolean *)(((char *) args) + 20/*JSMarshalerArgumentOffsets.ReceiverShouldFree*/);
@@ -306,7 +306,7 @@ mono_wasm_invoke_jsexport_async_post_cb (MonoMethod *method, void* args)
 EMSCRIPTEN_KEEPALIVE void
 mono_wasm_invoke_jsexport_async_post (void* target_thread, MonoMethod *method, void* args /*JSMarshalerArguments*/)
 {
-	mono_memory_barrier ();
+	__sync_synchronize ();
 	mono_threads_wasm_async_run_in_target_thread_vii(target_thread, (void (*)(gpointer, gpointer))mono_wasm_invoke_jsexport_async_post_cb, method, args);
 }
 
@@ -321,7 +321,7 @@ extern sync_context_pump synchronization_context_pump_handler;
 EMSCRIPTEN_KEEPALIVE void
 mono_wasm_invoke_jsexport_sync (MonoMethod *method, void* args)
 {
-	mono_memory_barrier ();
+	__sync_synchronize ();
 	before_sync_js_import (args);
 	mono_wasm_invoke_jsexport (method, args);
 	after_sync_js_import (args);
@@ -331,7 +331,7 @@ mono_wasm_invoke_jsexport_sync (MonoMethod *method, void* args)
 EMSCRIPTEN_KEEPALIVE void
 mono_wasm_invoke_jsexport_sync_send (void* target_thread, MonoMethod *method, void* args /*JSMarshalerArguments*/)
 {
-	mono_memory_barrier ();
+	__sync_synchronize ();
 	mono_threads_wasm_sync_run_in_target_thread_vii (target_thread, (void (*)(gpointer, gpointer))mono_wasm_invoke_jsexport_sync, method, args);
 }
 

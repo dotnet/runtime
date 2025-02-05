@@ -311,7 +311,7 @@ mono_threads_platform_in_critical_region (THREAD_INFO_TYPE *info)
 void
 mono_memory_barrier_process_wide (void)
 {
-#ifdef __EMSCRIPTEN_PTHREADS__
+#ifndef DISABLE_THREADS
 	mono_memory_barrier ();
 #endif
 }
