@@ -133,7 +133,7 @@ namespace System.Text.RegularExpressions
         /// and compares it to the current input position. If the loop's inner expression has consumed input (non-empty match), it
         /// pushes updated state (saving the old mark and the current position) and jumps back (via the jump offset in operand 0)
         /// to repeat the loop. If no progress has been made (empty match), it records state for backtracking and proceeds.
-        /// This opcode is used for greedy (non–lazy) quantified loops when no explicit counter is needed.
+        /// This opcode is used for greedy (non-lazy) quantified loops when no explicit counter is needed.
         /// </remarks>
         Branchmark = 24,
 
@@ -141,7 +141,7 @@ namespace System.Text.RegularExpressions
         /// <remarks>
         /// Similar in spirit to <see cref="Branchmark"/>, this opcode is used for lazy loops.
         /// It initially does not jump back to repeat the loop, preferring to let the overall match continue.
-        /// However, it saves the loop state so that if subsequent matching fails, backtracking will reenter the loop body.
+        /// However, it saves the loop state so that if subsequent matching fails, backtracking will re-enter the loop body.
         /// Special care is taken to handle empty matches so as to avoid infinite loops.
         /// </remarks>
         Lazybranchmark = 25,
@@ -149,7 +149,7 @@ namespace System.Text.RegularExpressions
         /// <summary>Initialize the loop counter for a quantifier when the minimum repetition is zero.</summary>
         /// <remarks>
         /// For quantified constructs with a minimum of zero (<see cref="RegexNode.M"/> == 0), this opcode pushes a counter
-        /// value (–1) along with a marker (implicitly indicating no match so far) onto the grouping stack. The operand (always 0
+        /// value (-1) along with a marker (implicitly indicating no match so far) onto the grouping stack. The operand (always 0
         /// in this case) is used in later comparisons within a <see cref="Branchcount"/> or <see cref="Lazybranchcount"/> opcode.
         /// </remarks>
         Nullcount = 26,
@@ -157,7 +157,7 @@ namespace System.Text.RegularExpressions
         /// <summary>Initialize the loop counter for a quantifier with a positive minimum.</summary>
         /// <remarks>
         /// When the quantifier requires at least one match (M > 0), this opcode pushes the current input position as a marker and a
-        /// counter value computed as (1 – M) onto the grouping stack. This counter will be adjusted in subsequent loop iterations
+        /// counter value computed as (1 - M) onto the grouping stack. This counter will be adjusted in subsequent loop iterations
         /// (via <see cref="Branchcount"/> or <see cref="Lazybranchcount"/>) to decide whether the loop should continue.
         /// </remarks>
         Setcount = 27,
@@ -178,21 +178,21 @@ namespace System.Text.RegularExpressions
         /// This opcode is the lazy counterpart to <see cref="Branchcount"/>. It is used in quantified loops that use a counter and prefer
         /// to exit the loop as early as possible. On initial execution it will choose the straight path (i.e. not repeating the loop) if
         /// the counter is nonnegative, but if the inner expression consumed input and the counter is below the maximum (given in operand 1),
-        /// it will reenter the loop on backtracking.
+        /// it will re-enter the loop on backtracking.
         /// </remarks>
         Lazybranchcount = 29,
 
         /// <summary>Push a null marker into the grouping stack for quantifiers with a minimum of zero when no explicit counter is needed.</summary>
         /// <remarks>
         /// This opcode is similar to <see cref="Nullcount"/> but is used in cases where the quantified construct does not require counting;
-        /// it pushes a marker value (–1) onto the grouping stack to record the starting position. On backtracking, the marker is simply removed.
+        /// it pushes a marker value (-1) onto the grouping stack to record the starting position. On backtracking, the marker is simply removed.
         /// </remarks>
         Nullmark = 30,
 
         /// <summary>Push the current input position onto the grouping stack.</summary>
         /// <remarks>
         /// Used by grouping constructs (for capturing or to detect empty matches in loops), this opcode saves the current input position
-        /// so that later the interpreter can compare it to the current position to decide whether progress was made. It is the non–counting
+        /// so that later the interpreter can compare it to the current position to decide whether progress was made. It is the non-counting
         /// counterpart to <see cref="Setcount"/>.
         /// </remarks>
         Setmark = 31,
@@ -200,7 +200,7 @@ namespace System.Text.RegularExpressions
         /// <summary>Completes a capturing group.</summary>
         /// <remarks>
         /// When executed, this opcode pops a previously saved marker (the start position of the group) from the grouping stack and uses the
-        /// current input position as the end position. Operand 0 specifies the capture slot number. If operand 1 is not –1 then a prior capture
+        /// current input position as the end position. Operand 0 specifies the capture slot number. If operand 1 is not -1 then a prior capture
         /// must have been made and a transfer of capture is performed. On backtracking, the capture is undone.
         /// </remarks>
         Capturemark = 32,
@@ -209,26 +209,26 @@ namespace System.Text.RegularExpressions
         /// <remarks>
         /// This opcode restores the input position from a marker saved on the grouping stack (typically via a <see cref="Setmark"/> or
         /// <see cref="Nullmark"/>). It is used in lookaround constructs to revert the input position to the point where the lookaround began.
-        /// On backtracking, the marker is re–pushed onto the grouping stack.
+        /// On backtracking, the marker is re-pushed onto the grouping stack.
         /// </remarks>
         Getmark = 33,
 
-        /// <summary>Mark the beginning of a non–backtracking / atomic region.</summary>
+        /// <summary>Mark the beginning of a non-backtracking / atomic region.</summary>
         /// <remarks>
-        /// This opcode is used at the start of constructs that must not be re–entered on backtracking (such as lookahead/lookbehind or atomic groups).
+        /// This opcode is used at the start of constructs that must not be re-entered on backtracking (such as lookahead/lookbehind or atomic groups).
         /// It saves the current backtracking state (including the current tracking and crawl positions) onto the grouping stack.
         /// When the region is later exited (by <see cref="Forejump"/>) the saved state is used to prevent further backtracking into the region.
         /// </remarks>
         Setjump = 34,
 
-        /// <summary>Restore state for a non–backtracking / atomic region on backtracking.</summary>
+        /// <summary>Restore state for a non-backtracking / atomic region on backtracking.</summary>
         /// <remarks>
         /// Used in negative lookaround constructs, this opcode pops the saved backtracking and capture state (stored by a prior <see cref="Setjump"/>)
-        /// and erases any changes made within the non–backtracking region. It thereby restores the state to what it was before entering the region.
+        /// and erases any changes made within the non-backtracking region. It thereby restores the state to what it was before entering the region.
         /// </remarks>
         Backjump = 35,
 
-        /// <summary>Finalize a non–backtracking / atomic region.</summary>
+        /// <summary>Finalize a non-backtracking / atomic region.</summary>
         /// <remarks>
         /// This opcode is used at the end of lookaround or atomic group constructs to commit to the current matching path.
         /// It pops the saved state from the grouping stack (stored by <see cref="Setjump"/>), updates the tracking pointer (thereby
@@ -275,7 +275,7 @@ namespace System.Text.RegularExpressions
         /// In patterns with alternations or complex quantifiers, multiple backtracking paths may be available.
         /// This flag marks opcodes that are being processed on an alternate (or secondary) branch during backtracking,
         /// as opposed to the primary branch. The interpreter uses this flag to apply specialized state restoration
-        /// or branch–selection logic when reverting from one branch to another.
+        /// or branch-selection logic when reverting from one branch to another.
         /// </remarks>
         BacktrackingSecond = 256,
 
