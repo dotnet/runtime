@@ -477,7 +477,7 @@ namespace Microsoft.Extensions.Caching.Memory
             // If there is already a thread that is running compact - do nothing
             if (Interlocked.CompareExchange(ref lockFlag, 1, 0) == 0)
                 // Spawn background thread for compaction
-                ThreadPool.UnsafeQueueUserWorkItem(s =>
+                ThreadPool.UnsafeQueueUserWorkItem(static s =>
                 {
                     try
                     {
@@ -485,7 +485,7 @@ namespace Microsoft.Extensions.Caching.Memory
                     }
                     finally
                     {
-                        lockFlag = 0; // Release the lock
+                        ((MemoryCache)s!).lockFlag = 0; // Release the lock
                     }
                 }, this);
         }
@@ -660,7 +660,7 @@ namespace Microsoft.Extensions.Caching.Memory
         /// </summary>
         private sealed class CoherentState
         {
-#if NETCOREAPP
+#if NET
             private readonly ConcurrentDictionary<string, CacheEntry> _stringEntries = [];
 #else
             private readonly ConcurrentDictionary<string, CacheEntry> _stringEntries = new ConcurrentDictionary<string, CacheEntry>(StringKeyComparer.Instance);
@@ -730,7 +730,7 @@ namespace Microsoft.Extensions.Caching.Memory
                 }
             }
 
-#if !NETCOREAPP
+#if !NET
             // on .NET Core, the inbuilt comparer has Marvin built in;
             // otherwise, we need a custom comparer that manually implements Marvin
             private sealed class StringKeyComparer : IEqualityComparer<string>, IEqualityComparer
