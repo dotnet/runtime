@@ -42,13 +42,14 @@ Callers implementing a protocol or file format where the trailing data is unacce
 
 Each file format uses the binary encoding most appropriate to that format.
 For example, ITU-T X.509 and IETF RFC 3280 both indicate that the `Certificate` data type must always use the ASN.1 Distinguished Encoding Rules (DER) restrictions; therefore `LoadCertificate` requires a DER encoding.
-Alternatively, IETF RFC 7292 describes PKCS#12 PFX as being in the relaxed Basic Encoding Rules (BER) form, so `LoadPkcs12` only requires BER.
+Alternatively, IETF RFC 7292 describes PKCS#12 PFX as being in the relaxed Basic Encoding Rules (BER) form, so `LoadPkcs12` only requires BER (whenever a nested structure within the PKCS#12 PFX requires a DER encoding, the DER encoding will be used).
 
 Callers implementing a protocol or file format where either Canonical Encoding Rules (CER) or DER are required where the format is specified only as BER will need to perform their own restricted-encoding validation.
 
 ### Textual Encoding
 
 For each file format that has a textual encoding, once `X509CertificateLoader` has moved into loading the textual form it does so by treating the input as ASCII and finding the first validly encoded PEM envelope with a label appropriate to the data type.
+A PEM envelope's validity is determined by the IETF RFC 7468 "lax" profile, which does not permit attributes.
 
 So, `LoadCertificate` will skip over the PKCS7 content and only try loading the CERTIFICATE content in a payload like
 
