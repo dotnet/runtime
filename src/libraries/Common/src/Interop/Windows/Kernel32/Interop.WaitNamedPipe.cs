@@ -9,6 +9,6 @@ internal static partial class Interop
     {
         [LibraryImport(Libraries.Kernel32, EntryPoint = "WaitNamedPipeW", SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
         [return: MarshalAs(UnmanagedType.Bool)]
-        internal static partial bool WaitNamedPipe(string? name, int timeout);
+        internal static partial bool WaitNamedPipe(string name, int timeout);
     }
 }
