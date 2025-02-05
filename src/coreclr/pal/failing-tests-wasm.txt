@@ -7,6 +7,8 @@ Failed tests:
 "exception_handling/RaiseException/test2/paltest_raiseexception_test2"
 "exception_handling/RaiseException/test3/paltest_raiseexception_test3"
 
+ * we don't have unwind available on wasm, because of implicit stack. that can change once we start generating code. disable these now. it is possible that there still might be some work to do for the interpreter, if we run into part of CoreCLR code which might be using it
+
 {0x60e84-0x206} ASSERT [EXCEPT ] at /Users/rodo/git/runtime-main/src/coreclr/pal/src/include/pal/context.h.1398: {0x60e84-0x206} TRACE [DEBUG  ] at DebugBreak.405: Calling DBG_DebugBreak localhost:8283:140:33
     error http://localhost:8283/#exception_handling/RaiseException/test1/paltest_raiseexception_test1:140
     put_char http://localhost:8283/paltests.js:1633
@@ -88,7 +90,7 @@ Entry 0 :
 
 "filemapping_memmgt/VirtualAlloc/test21/paltest_virtualalloc_test21"
 
-* many mmap related tests were failing because of limited mmap support in emscripten. the WebAssembly doesn't have virtual memory and so many mmap features are missing
+ * many mmap related tests were failing because of limited mmap support in emscripten. the WebAssembly doesn't have virtual memory and so many mmap features are missing
 
 "miscellaneous/FlushInstructionCache/test1/paltest_flushinstructioncache_test1"
  * no cache to flush, made it no-op on wasm
