@@ -310,7 +310,7 @@ namespace Microsoft.Interop.JavaScript
             var (parameters, returnType, _) = stubGenerator.GenerateTargetMethodSignatureData();
             TypeSyntax jsMarshalerArgument = ParseTypeName(Constants.JSMarshalerArgumentGlobal);
 
-            LocalDeclarationStatementSyntax argumentsBuffer = CollectionExpression(
+            CollectionExpressionSyntax argumentsBuffer = CollectionExpression(
                 SeparatedList<CollectionElementSyntax>(
                     parameters.Parameters
                         .Select(p => ExpressionElement(IdentifierName(p.Identifier)))));
@@ -323,7 +323,7 @@ namespace Microsoft.Interop.JavaScript
                     Declare(
                         SpanOf(jsMarshalerArgument),
                         Constants.ArgumentsBuffer,
-                        CargumentsBuffer),
+                        argumentsBuffer),
                     MethodInvocationStatement(
                         IdentifierName(Constants.JSFunctionSignatureGlobal),
                         IdentifierName("InvokeJS"),
