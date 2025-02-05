@@ -3296,7 +3296,7 @@ void Compiler::fgMakeOutgoingStructArgCopy(GenTreeCall* call, CallArg* arg)
         found = ForEachHbvBitSet(*fgAvailableOutgoingArgTemps, [&](indexType lclNum) {
             LclVarDsc*   varDsc = lvaGetDesc((unsigned)lclNum);
             ClassLayout* layout = varDsc->GetLayout();
-            if (!layout->IsBlockLayout() && (layout->GetClassHandle() == copyBlkClass))
+            if (!layout->IsCustomLayout() && (layout->GetClassHandle() == copyBlkClass))
             {
                 tmp = (unsigned)lclNum;
                 JITDUMP("reusing outgoing struct arg V%02u\n", tmp);
