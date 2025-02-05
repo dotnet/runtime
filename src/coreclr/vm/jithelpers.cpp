@@ -2341,7 +2341,7 @@ static PCODE JitPatchpointWorker(MethodDesc* pMD, const EECodeInfo& codeInfo, in
     return osrVariant;
 }
 
-PCODE JIT_PatchpointOptimizationPolicy(TransitionBlock* pTransitionBlock, int* counter, int ilOffset, PerPatchpointInfo * ppInfo, const EECodeInfo& codeInfo, bool *pIsNewMethod)
+PCODE PatchpointOptimizationPolicy(TransitionBlock* pTransitionBlock, int* counter, int ilOffset, PerPatchpointInfo * ppInfo, const EECodeInfo& codeInfo, bool *pIsNewMethod)
 {
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_TRIGGERS;
@@ -2376,7 +2376,7 @@ PCODE JIT_PatchpointOptimizationPolicy(TransitionBlock* pTransitionBlock, int* c
 
     if ((ppInfo->m_flags & PerPatchpointInfo::patchpoint_invalid) == PerPatchpointInfo::patchpoint_invalid)
     {
-        LOG((LF_TIEREDCOMPILATION, LL_INFO1000, "JIT_PatchpointOptimizationPolicy: invalid patchpoint [%d] (0x%p) in Method=0x%pM (%s::%s) at offset %d\n",
+        LOG((LF_TIEREDCOMPILATION, LL_INFO1000, "PatchpointOptimizationPolicy: invalid patchpoint [%d] (0x%p) in Method=0x%pM (%s::%s) at offset %d\n",
                 ppId, ip, pMD, pMD->m_pszDebugClassName, pMD->m_pszDebugMethodName, ilOffset));
 
         goto DONE;
@@ -2401,7 +2401,7 @@ PCODE JIT_PatchpointOptimizationPolicy(TransitionBlock* pTransitionBlock, int* c
 
         if ((ppId < lowId) || (ppId > highId))
         {
-            LOG((LF_TIEREDCOMPILATION, LL_INFO10, "JIT_PatchpointOptimizationPolicy: ignoring patchpoint [%d] (0x%p) in Method=0x%pM (%s::%s) at offset %d\n",
+            LOG((LF_TIEREDCOMPILATION, LL_INFO10, "PatchpointOptimizationPolicy: ignoring patchpoint [%d] (0x%p) in Method=0x%pM (%s::%s) at offset %d\n",
                     ppId, ip, pMD, pMD->m_pszDebugClassName, pMD->m_pszDebugMethodName, ilOffset));
             goto DONE;
         }
@@ -2438,7 +2438,7 @@ PCODE JIT_PatchpointOptimizationPolicy(TransitionBlock* pTransitionBlock, int* c
         const int hitCount = InterlockedIncrement(&ppInfo->m_patchpointCount);
         const int hitLogLevel = (hitCount == 1) ? LL_INFO10 : LL_INFO1000;
 
-        LOG((LF_TIEREDCOMPILATION, hitLogLevel, "JIT_PatchpointOptimizationPolicy: patchpoint [%d] (0x%p) hit %d in Method=0x%pM (%s::%s) [il offset %d] (limit %d)\n",
+        LOG((LF_TIEREDCOMPILATION, hitLogLevel, "PatchpointOptimizationPolicy: patchpoint [%d] (0x%p) hit %d in Method=0x%pM (%s::%s) [il offset %d] (limit %d)\n",
             ppId, ip, hitCount, pMD, pMD->m_pszDebugClassName, pMD->m_pszDebugMethodName, ilOffset, hitLimit));
 
         // Defer, if we haven't yet reached the limit
@@ -2451,7 +2451,7 @@ PCODE JIT_PatchpointOptimizationPolicy(TransitionBlock* pTransitionBlock, int* c
         LONG oldFlags = ppInfo->m_flags;
         if ((oldFlags & PerPatchpointInfo::patchpoint_triggered) == PerPatchpointInfo::patchpoint_triggered)
         {
-            LOG((LF_TIEREDCOMPILATION, LL_INFO1000, "JIT_PatchpointOptimizationPolicy: AWAITING OSR method for patchpoint [%d] (0x%p)\n", ppId, ip));
+            LOG((LF_TIEREDCOMPILATION, LL_INFO1000, "PatchpointOptimizationPolicy: AWAITING OSR method for patchpoint [%d] (0x%p)\n", ppId, ip));
             goto DONE;
         }
 
@@ -2460,7 +2460,7 @@ PCODE JIT_PatchpointOptimizationPolicy(TransitionBlock* pTransitionBlock, int* c
 
         if (!triggerTransition)
         {
-            LOG((LF_TIEREDCOMPILATION, LL_INFO1000, "JIT_PatchpointOptimizationPolicy: (lost race) AWAITING OSR method for patchpoint [%d] (0x%p)\n", ppId, ip));
+            LOG((LF_TIEREDCOMPILATION, LL_INFO1000, "PatchpointOptimizationPolicy: (lost race) AWAITING OSR method for patchpoint [%d] (0x%p)\n", ppId, ip));
             goto DONE;
         }
 
@@ -2497,7 +2497,7 @@ PCODE JIT_PatchpointOptimizationPolicy(TransitionBlock* pTransitionBlock, int* c
             //
             // We want to expose bugs in the jitted code
             // for OSR methods, so we stick with synchronous creation.
-            LOG((LF_TIEREDCOMPILATION, LL_INFO10, "JIT_PatchpointOptimizationPolicy: patchpoint [%d] (0x%p) TRIGGER at count %d\n", ppId, ip, hitCount));
+            LOG((LF_TIEREDCOMPILATION, LL_INFO10, "PatchpointOptimizationPolicy: patchpoint [%d] (0x%p) TRIGGER at count %d\n", ppId, ip, hitCount));
 
             // Invoke the helper to build the OSR method
             osrMethodCode = JitPatchpointWorker(pMD, codeInfo, ilOffset);
@@ -2506,7 +2506,7 @@ PCODE JIT_PatchpointOptimizationPolicy(TransitionBlock* pTransitionBlock, int* c
             if (osrMethodCode == (PCODE)NULL)
             {
                 // Unexpected, but not fatal
-                STRESS_LOG3(LF_TIEREDCOMPILATION, LL_WARNING, "JIT_PatchpointOptimizationPolicy: patchpoint (0x%p) OSR method creation failed,"
+                STRESS_LOG3(LF_TIEREDCOMPILATION, LL_WARNING, "PatchpointOptimizationPolicy: patchpoint (0x%p) OSR method creation failed,"
                     " marking patchpoint invalid for Method=0x%pM il offset %d\n", ip, pMD, ilOffset);
 
                 InterlockedOr(&ppInfo->m_flags, (LONG)PerPatchpointInfo::patchpoint_invalid);
@@ -2529,7 +2529,7 @@ DONE:
     return (PCODE)NULL;
 }
 
-PCODE JIT_PatchpointRequiredPolicy(TransitionBlock* pTransitionBlock, int* counter, int ilOffset, PerPatchpointInfo * ppInfo, const EECodeInfo& codeInfo, bool *pIsNewMethod)
+PCODE PatchpointRequiredPolicy(TransitionBlock* pTransitionBlock, int* counter, int ilOffset, PerPatchpointInfo * ppInfo, const EECodeInfo& codeInfo, bool *pIsNewMethod)
 {
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_TRIGGERS;
@@ -2545,7 +2545,7 @@ PCODE JIT_PatchpointRequiredPolicy(TransitionBlock* pTransitionBlock, int* count
 
     if ((ppInfo->m_flags & PerPatchpointInfo::patchpoint_invalid) == PerPatchpointInfo::patchpoint_invalid)
     {
-        LOG((LF_TIEREDCOMPILATION, LL_FATALERROR, "JIT_PatchpointRequiredPolicy: invalid patchpoint [%d] (0x%p) in Method=0x%pM (%s::%s) at offset %d\n",
+        LOG((LF_TIEREDCOMPILATION, LL_FATALERROR, "PatchpointRequiredPolicy: invalid patchpoint [%d] (0x%p) in Method=0x%pM (%s::%s) at offset %d\n",
                 ppId, ip, pMD, pMD->m_pszDebugClassName, pMD->m_pszDebugMethodName, ilOffset));
         EEPOLICY_HANDLE_FATAL_ERROR(COR_E_EXECUTIONENGINE);
     }
@@ -2574,7 +2574,7 @@ PCODE JIT_PatchpointRequiredPolicy(TransitionBlock* pTransitionBlock, int* count
             //
             if ((ppInfo->m_flags & PerPatchpointInfo::patchpoint_invalid) == PerPatchpointInfo::patchpoint_invalid)
             {
-                LOG((LF_TIEREDCOMPILATION, LL_FATALERROR, "JIT_PatchpointRequiredPolicy: invalid patchpoint [%d] (0x%p) in Method=0x%pM (%s::%s) at offset %d\n",
+                LOG((LF_TIEREDCOMPILATION, LL_FATALERROR, "PatchpointRequiredPolicy: invalid patchpoint [%d] (0x%p) in Method=0x%pM (%s::%s) at offset %d\n",
                         ppId, ip, pMD, pMD->m_pszDebugClassName, pMD->m_pszDebugMethodName, ilOffset));
                 EEPOLICY_HANDLE_FATAL_ERROR(COR_E_EXECUTIONENGINE);
             }
@@ -2584,7 +2584,7 @@ PCODE JIT_PatchpointRequiredPolicy(TransitionBlock* pTransitionBlock, int* count
             LONG oldFlags = ppInfo->m_flags;
             if ((oldFlags & PerPatchpointInfo::patchpoint_triggered) == PerPatchpointInfo::patchpoint_triggered)
             {
-                LOG((LF_TIEREDCOMPILATION, LL_INFO1000, "JIT_PatchpointRequiredPolicy: AWAITING OSR method for patchpoint [%d] (0x%p)\n", ppId, ip));
+                LOG((LF_TIEREDCOMPILATION, LL_INFO1000, "PatchpointRequiredPolicy: AWAITING OSR method for patchpoint [%d] (0x%p)\n", ppId, ip));
                 __SwitchToThread(0, backoffs++);
                 continue;
             }
@@ -2596,7 +2596,7 @@ PCODE JIT_PatchpointRequiredPolicy(TransitionBlock* pTransitionBlock, int* count
 
             if (!triggerTransition)
             {
-                LOG((LF_TIEREDCOMPILATION, LL_INFO1000, "JIT_PatchpointRequiredPolicy: (lost race) AWAITING OSR method for patchpoint [%d] (0x%p)\n", ppId, ip));
+                LOG((LF_TIEREDCOMPILATION, LL_INFO1000, "PatchpointRequiredPolicy: (lost race) AWAITING OSR method for patchpoint [%d] (0x%p)\n", ppId, ip));
                 __SwitchToThread(0, backoffs++);
                 continue;
             }
@@ -2608,7 +2608,7 @@ PCODE JIT_PatchpointRequiredPolicy(TransitionBlock* pTransitionBlock, int* count
             //
             // (but consider: throw path in method with try/catch, OSR method will contain more than just the throw?)
             //
-            LOG((LF_TIEREDCOMPILATION, LL_INFO10, "JIT_PatchpointRequiredPolicy: patchpoint [%d] (0x%p) TRIGGER\n", ppId, ip));
+            LOG((LF_TIEREDCOMPILATION, LL_INFO10, "PatchpointRequiredPolicy: patchpoint [%d] (0x%p) TRIGGER\n", ppId, ip));
             PCODE newMethodCode = JitPatchpointWorker(pMD, codeInfo, ilOffset);
 
             // If that failed, mark the patchpoint as invalid.
@@ -2616,7 +2616,7 @@ PCODE JIT_PatchpointRequiredPolicy(TransitionBlock* pTransitionBlock, int* count
             //
             if (newMethodCode == (PCODE)NULL)
             {
-                STRESS_LOG3(LF_TIEREDCOMPILATION, LL_WARNING, "JIT_PatchpointRequiredPolicy: patchpoint (0x%p) OSR method creation failed,"
+                STRESS_LOG3(LF_TIEREDCOMPILATION, LL_WARNING, "PatchpointRequiredPolicy: patchpoint (0x%p) OSR method creation failed,"
                     " marking patchpoint invalid for Method=0x%pM il offset %d\n", ip, pMD, ilOffset);
                 InterlockedOr(&ppInfo->m_flags, (LONG)PerPatchpointInfo::patchpoint_invalid);
                 EEPOLICY_HANDLE_FATAL_ERROR(COR_E_EXECUTIONENGINE);
@@ -2652,7 +2652,7 @@ PCODE JIT_PatchpointRequiredPolicy(TransitionBlock* pTransitionBlock, int* count
 // is NULL, always create an OSR method and transition to it.
 //
 // Currently, counter(the first argument) is a pointer into the Tier0 method stack
-// frame so we have exclusive access.
+// frame if it exists so we have exclusive access.
 
 extern "C" void JIT_PatchpointWorkerWorkerWithPolicy(TransitionBlock * pTransitionBlock)
 {
@@ -2691,11 +2691,11 @@ extern "C" void JIT_PatchpointWorkerWorkerWithPolicy(TransitionBlock * pTransiti
 
     if (patchpointMustFindOptimizedCode)
     {
-        osrMethodCode = JIT_PatchpointRequiredPolicy(pTransitionBlock, counter, ilOffset, ppInfo, codeInfo, &isNewMethod);
+        osrMethodCode = PatchpointRequiredPolicy(pTransitionBlock, counter, ilOffset, ppInfo, codeInfo, &isNewMethod);
     }
     else
     {
-        osrMethodCode = JIT_PatchpointOptimizationPolicy(pTransitionBlock, counter, ilOffset, ppInfo, codeInfo, &isNewMethod);
+        osrMethodCode = PatchpointOptimizationPolicy(pTransitionBlock, counter, ilOffset, ppInfo, codeInfo, &isNewMethod);
     }
 
     if (osrMethodCode == (PCODE)NULL)
@@ -2837,7 +2837,7 @@ extern "C" void JIT_PatchpointWorkerWorkerWithPolicy(TransitionBlock * pTransiti
 
 #else
 
-void JIT_Patchpoint(int* counter, int ilOffset)
+HCIMPL2(void, JIT_Patchpoint, int* counter, int ilOffset)
 {
     // Stub version if OSR feature is disabled
     //
@@ -2845,6 +2845,7 @@ void JIT_Patchpoint(int* counter, int ilOffset)
 
     UNREACHABLE();
 }
+HCIMPLEND
 
 HCIMPL1(VOID, JIT_PartialCompilationPatchpoint, int ilOffset)
 {
