@@ -494,6 +494,7 @@ ClassLayout* ClassLayout::Create(Compiler* compiler, const ClassLayoutBuilder& b
 {
     ClassLayout* newLayout  = new (compiler, CMK_ClassLayout) ClassLayout(builder.m_size);
     newLayout->m_gcPtrCount = builder.m_gcPtrCount;
+    newLayout->m_nonPadding = builder.m_nonPadding;
 
 #ifdef DEBUG
     newLayout->m_name      = builder.m_name;
@@ -573,6 +574,52 @@ bool ClassLayout::IntersectsGCPtr(unsigned offset, unsigned size) const
     }
 
     return false;
+}
+
+//------------------------------------------------------------------------
+// GetNonPadding:
+//   Get a SegmentList containing segments for all the non-padding in the
+//   layout. This is generally the areas of the layout covered by fields, but
+//   in some cases may also include other parts.
+//
+// Parameters:
+//   comp - Compiler instance
+//
+// Return value:
+//   A segment list.
+//
+const SegmentList& ClassLayout::GetNonPadding(Compiler* comp)
+{
+    if (m_nonPadding != nullptr)
+    {
+        return *m_nonPadding;
+    }
+
+    assert(!IsCustomLayout());
+    m_nonPadding = new (comp, CMK_ClassLayout) SegmentList(comp->getAllocator(CMK_ClassLayout));
+
+    CORINFO_TYPE_LAYOUT_NODE nodes[256];
+    size_t                   numNodes = ArrLen(nodes);
+    GetTypeLayoutResult      result   = comp->info.compCompHnd->getTypeLayout(GetClassHandle(), nodes, &numNodes);
+
+    if (result != GetTypeLayoutResult::Success)
+    {
+        m_nonPadding->Add(SegmentList::Segment(0, GetSize()));
+    }
+    else
+    {
+        for (size_t i = 0; i < numNodes; i++)
+        {
+            const CORINFO_TYPE_LAYOUT_NODE& node = nodes[i];
+            if ((node.type != CORINFO_TYPE_VALUECLASS) || (node.simdTypeHnd != NO_CLASS_HANDLE) ||
+                node.hasSignificantPadding)
+            {
+                m_nonPadding->Add(SegmentList::Segment(node.offset, node.offset + node.size));
+            }
+        }
+    }
+
+    return *m_nonPadding;
 }
 
 //------------------------------------------------------------------------
@@ -663,7 +710,7 @@ bool ClassLayout::AreCompatible(const ClassLayout* layout1, const ClassLayout* l
 
 //------------------------------------------------------------------------
 // ClassLayoutbuilder: Construct a new builder for a class layout of the
-// specified size.
+// specified size, with all data being considered as non-padding.
 //
 // Arguments:
 //    compiler - Compiler instance
@@ -673,6 +720,8 @@ ClassLayoutBuilder::ClassLayoutBuilder(Compiler* compiler, unsigned size)
     : m_compiler(compiler)
     , m_size(size)
 {
+    m_nonPadding = new (compiler, CMK_ClassLayout) SegmentList(compiler->getAllocator(CMK_ClassLayout));
+    m_nonPadding->Add(SegmentList::Segment(0, size));
 }
 
 //------------------------------------------------------------------------
@@ -773,6 +822,45 @@ void ClassLayoutBuilder::CopyInfoFrom(unsigned offset, ClassLayout* layout)
             SetGCPtr(startSlot + slot, layout->GetGCPtr(slot));
         }
     }
+
+    AddPadding(SegmentList::Segment(offset, offset + layout->GetSize()));
+
+    for (const SegmentList::Segment& nonPadding : layout->GetNonPadding(m_compiler))
+    {
+        RemovePadding(nonPadding);
+    }
+}
+
+//------------------------------------------------------------------------
+// AddPadding: Mark that part of the layout has padding.
+//
+// Arguments:
+//   padding - The segment to mark as being padding.
+//
+// Remarks:
+//   The ClassLayoutBuilder starts out with the entire layout being considered
+//   to NOT be padding.
+//
+void ClassLayoutBuilder::AddPadding(const SegmentList::Segment& padding)
+{
+    assert((padding.Start <= padding.End) && (padding.End <= m_size));
+    m_nonPadding->Subtract(padding);
+}
+
+//------------------------------------------------------------------------
+// RemovePadding: Mark that part of the layout does not have padding.
+//
+// Arguments:
+//   nonPadding - The segment to mark as having significant data.
+//
+// Remarks:
+//   The ClassLayoutBuilder starts out with the entire layout being considered
+//   to NOT be padding.
+//
+void ClassLayoutBuilder::RemovePadding(const SegmentList::Segment& nonPadding)
+{
+    assert((nonPadding.Start <= nonPadding.End) && (nonPadding.End <= m_size));
+    m_nonPadding->Add(nonPadding);
 }
 
 #ifdef DEBUG
