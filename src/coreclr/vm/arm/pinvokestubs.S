@@ -79,16 +79,7 @@
 
         PROLOG_PUSH  "{r4, lr}"
 
-#if defined(__clang__)
-        ldr     r1, =s_gsCookie-(1f+4)
-1:
-        add     r1, pc
-#else
-        ldr     r1, =s_gsCookie
-#endif
-        ldr     r1, [r1]
-        str     r1, [r0]
-        add     r4, r0, SIZEOF__GSCookie
+        mov     r4, r0
 
         // r4 = pFrame
 
@@ -132,7 +123,6 @@
 //
     LEAF_ENTRY JIT_PInvokeEnd, _TEXT
 
-        add     r0, r0, SIZEOF__GSCookie
         ldr     r1, [r0, #InlinedCallFrame__m_pThread]
 
         // r0 = pFrame

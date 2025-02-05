@@ -713,7 +713,7 @@ UINT32 STDCALL CLRToCOMWorker(TransitionBlock * pTransitionBlock, CLRToCOMCallMe
 
     MAKE_CURRENT_THREAD_AVAILABLE();
 
-    FrameWithCookie<CLRToCOMMethodFrame> frame(pTransitionBlock, pMD);
+    CLRToCOMMethodFrame frame(pTransitionBlock, pMD);
     CLRToCOMMethodFrame * pFrame = &frame;
 
     //we need to zero out the return value buffer because we will report it during GC

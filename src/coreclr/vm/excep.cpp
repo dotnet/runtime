@@ -6258,11 +6258,8 @@ void HandleManagedFaultNew(EXCEPTION_RECORD* pExceptionRecord, CONTEXT* pContext
 {
     WRAPPER_NO_CONTRACT;
 
-    FrameWithCookie<FaultingExceptionFrame> frameWithCookie;
-    FaultingExceptionFrame *frame = &frameWithCookie;
-#if defined(FEATURE_EH_FUNCLETS)
-    *frame->GetGSCookiePtr() = GetProcessGSCookie();
-#endif // FEATURE_EH_FUNCLETS
+    FaultingExceptionFrame fef;
+    FaultingExceptionFrame *frame = &fef;
     frame->InitAndLink(pContext);
 
     Thread *pThread = GetThread();
@@ -6297,11 +6294,8 @@ void HandleManagedFault(EXCEPTION_RECORD* pExceptionRecord, CONTEXT* pContext)
     WRAPPER_NO_CONTRACT;
 
     // Ok.  Now we have a brand new fault in jitted code.
-    FrameWithCookie<FaultingExceptionFrame> frameWithCookie;
-    FaultingExceptionFrame *frame = &frameWithCookie;
-#if defined(FEATURE_EH_FUNCLETS)
-    *frame->GetGSCookiePtr() = GetProcessGSCookie();
-#endif // FEATURE_EH_FUNCLETS
+    FaultingExceptionFrame fef;
+    FaultingExceptionFrame *frame = &fef;
     frame->InitAndLink(pContext);
 
     HandleManagedFaultFilterParam param;
@@ -6527,7 +6521,7 @@ VEH_ACTION WINAPI CLRVectoredExceptionHandler(PEXCEPTION_POINTERS pExceptionInfo
         // That IP is an interruptible safe point, so we can suspend right there.
         interruptedContext->Rip = (uintptr_t)pThread->GetHijackedReturnAddress();
 
-        FrameWithCookie<ResumableFrame> frame(pExceptionInfo->ContextRecord);
+        ResumableFrame frame(pExceptionInfo->ContextRecord);
         frame.Push(pThread);
         CommonTripThread();
         frame.Pop(pThread);

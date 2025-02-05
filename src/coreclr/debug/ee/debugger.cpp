@@ -13475,10 +13475,7 @@ void Debugger::UnhandledHijackWorker(CONTEXT * pContext, EXCEPTION_RECORD * pRec
          fSOException))
     {
 
-        FrameWithCookie<FaultingExceptionFrame> fef;
-#if defined(FEATURE_EH_FUNCLETS)
-        *((&fef)->GetGSCookiePtr()) = GetProcessGSCookie();
-#endif // FEATURE_EH_FUNCLETS
+        FaultingExceptionFrame fef;
         if ((pContext != NULL) && fSOException)
         {
             GCX_COOP();     // Must be cooperative to modify frame chain.

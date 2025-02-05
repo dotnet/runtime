@@ -432,7 +432,7 @@ NoFloatingPointRetVal
     GBLA ComCallPreStub_ErrorReturnOffset
     GBLA ComCallPreStub_FirstStackAdjust
 
-ComCallPreStub_FrameSize         SETA (SIZEOF__GSCookie + SIZEOF__ComMethodFrame)
+ComCallPreStub_FrameSize         SETA (SIZEOF__ComMethodFrame)
 ComCallPreStub_FirstStackAdjust  SETA (8 + SIZEOF__ArgumentRegisters + 2 * 8) ; x8, reg args , fp & lr already pushed
 ComCallPreStub_StackAlloc        SETA ComCallPreStub_FrameSize - ComCallPreStub_FirstStackAdjust
 ComCallPreStub_StackAlloc        SETA ComCallPreStub_StackAlloc + SIZEOF__FloatArgumentRegisters + 8; 8 for ErrorReturn
@@ -502,7 +502,7 @@ ComCallPreStub_ErrorExit
     GBLA GenericComCallStub_FrameOffset
     GBLA GenericComCallStub_FirstStackAdjust
 
-GenericComCallStub_FrameSize         SETA (SIZEOF__GSCookie + SIZEOF__ComMethodFrame)
+GenericComCallStub_FrameSize         SETA (SIZEOF__ComMethodFrame)
 GenericComCallStub_FirstStackAdjust  SETA (8 + SIZEOF__ArgumentRegisters + 2 * 8)
 GenericComCallStub_StackAlloc        SETA GenericComCallStub_FrameSize - GenericComCallStub_FirstStackAdjust
 GenericComCallStub_StackAlloc        SETA GenericComCallStub_StackAlloc + SIZEOF__FloatArgumentRegisters
@@ -513,7 +513,7 @@ GenericComCallStub_StackAlloc     SETA GenericComCallStub_StackAlloc + 8
 
 GenericComCallStub_FrameOffset       SETA (GenericComCallStub_StackAlloc - (SIZEOF__ComMethodFrame - GenericComCallStub_FirstStackAdjust))
 
-    IF (GenericComCallStub_FirstStackAdjust):MOD:16 != 0
+    IF (GenericComCallStu_bFirstStackAdjust):MOD:16 != 0
 GenericComCallStub_FirstStackAdjust     SETA GenericComCallStub_FirstStackAdjust + 8
     ENDIF
 
@@ -762,8 +762,8 @@ COMToCLRDispatchHelper_RegSetup
         GBLA FaultingExceptionFrame_StackAlloc
         GBLA FaultingExceptionFrame_FrameOffset
 
-FaultingExceptionFrame_StackAlloc         SETA (SIZEOF__GSCookie + SIZEOF__FaultingExceptionFrame)
-FaultingExceptionFrame_FrameOffset        SETA  SIZEOF__GSCookie
+FaultingExceptionFrame_StackAlloc         SETA (SIZEOF__FaultingExceptionFrame)
+FaultingExceptionFrame_FrameOffset        SETA  0
 
         MACRO
         GenerateRedirectedStubWithFrame $STUB, $TARGET

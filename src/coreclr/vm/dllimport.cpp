@@ -5904,7 +5904,7 @@ EXTERN_C void STDCALL VarargPInvokeStubWorker(TransitionBlock * pTransitionBlock
     Thread::ObjectRefFlush(CURRENT_THREAD);
 #endif
 
-    FrameWithCookie<PrestubMethodFrame> frame(pTransitionBlock, pMD);
+    PrestubMethodFrame frame(pTransitionBlock, pMD);
     PrestubMethodFrame * pFrame = &frame;
 
     pFrame->Push(CURRENT_THREAD);
@@ -5934,7 +5934,7 @@ EXTERN_C void STDCALL GenericPInvokeCalliStubWorker(TransitionBlock * pTransitio
     Thread::ObjectRefFlush(CURRENT_THREAD);
 #endif
 
-    FrameWithCookie<PInvokeCalliFrame> frame(pTransitionBlock, pVASigCookie, pUnmanagedTarget);
+    PInvokeCalliFrame frame(pTransitionBlock, pVASigCookie, pUnmanagedTarget);
     PInvokeCalliFrame * pFrame = &frame;
 
     pFrame->Push(CURRENT_THREAD);

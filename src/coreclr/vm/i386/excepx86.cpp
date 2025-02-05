@@ -651,7 +651,7 @@ CPFH_RealFirstPassHandler(                  // ExceptionContinueSearch, etc.
 
 #if defined(USE_FEF)
     BOOL bPopFaultingExceptionFrame = FALSE;
-    FrameWithCookie<FaultingExceptionFrame> faultingExceptionFrame;
+    FaultingExceptionFrame faultingExceptionFrame;
 #endif // USE_FEF
     ExInfo* pExInfo = &(pThread->GetExceptionState()->m_currentExInfo);
 
@@ -3115,7 +3115,7 @@ int CallJitEHFilter(CrawlFrame* pCf, BYTE* startPC, EE_ILEXCEPTION_CLAUSE *EHCla
     // GC holes. The stack would be in inconsistent state when we trigger gc just before
     // returning from UnwindFrames.
 
-    FrameWithCookie<ExceptionFilterFrame> exceptionFilterFrame(pShadowSP);
+    ExceptionFilterFrame exceptionFilterFrame(pShadowSP);
 
     ETW::ExceptionLog::ExceptionFilterBegin(pCf->GetCodeInfo()->GetMethodDesc(), (PVOID)pCf->GetCodeInfo()->GetStartAddress());
 

@@ -2699,7 +2699,7 @@ void __stdcall Thread::RedirectedHandledJITCase(RedirectReason reason)
     INDEBUG(Thread::ObjectRefFlush(pThread));
 
     // Create a frame on the stack
-    FrameWithCookie<RedirectedThreadFrame> frame(pCtx);
+    RedirectedThreadFrame frame(pCtx);
 
     STRESS_LOG5(LF_SYNC, LL_INFO1000, "In RedirectedHandledJITcase reason 0x%x pFrame = %p pc = %p sp = %p fp = %p", reason, &frame, GetIP(pCtx), GetSP(pCtx), GetFP(pCtx));
 
@@ -3767,9 +3767,8 @@ ThrowControlForThread(
 
 #if defined(FEATURE_EH_FUNCLETS)
     *(TADDR*)pfef = (TADDR)FrameIdentifier::FaultingExceptionFrame;
-    *pfef->GetGSCookiePtr() = GetProcessGSCookie();
 #else // FEATURE_EH_FUNCLETS
-    FrameWithCookie<FaultingExceptionFrame> fef;
+    FaultingExceptionFrame fef;
     FaultingExceptionFrame *pfef = &fef;
 #endif // FEATURE_EH_FUNCLETS
     pfef->InitAndLink(pThread->m_OSContext);
@@ -4880,7 +4879,7 @@ void STDCALL OnHijackWorker(HijackArgs * pArgs)
 
     // Build a frame so that stack crawling can proceed from here back to where
     // we will resume execution.
-    FrameWithCookie<HijackFrame> frame((void *)pArgs->ReturnAddress, thread, pArgs);
+    HijackFrame frame((void *)pArgs->ReturnAddress, thread, pArgs);
 
 #ifdef _DEBUG
     BOOL GCOnTransition = FALSE;
@@ -5806,7 +5805,7 @@ void HandleSuspensionForInterruptedThread(CONTEXT *interruptedContext)
     {
         // If the thread is at a GC safe point, push a RedirectedThreadFrame with
         // the interrupted context and pulse the GC mode so that GC can proceed.
-        FrameWithCookie<RedirectedThreadFrame> frame(interruptedContext);
+        RedirectedThreadFrame frame(interruptedContext);
 
         frame.Push(pThread);
 

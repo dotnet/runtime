@@ -20,7 +20,6 @@
         option  casemap:none
         .code
 
-extern _s_gsCookie:DWORD
 extern _g_TrapReturningThreads:DWORD
 
 extern _JIT_PInvokeEndRarePath@0:proc
@@ -35,10 +34,6 @@ extern _JIT_PInvokeEndRarePath@0:proc
 ; StackArgumentsSize (edx) = Number of argument bytes pushed on the stack, which will be popped by the callee
 ;
 _JIT_PInvokeBegin@4 PROC public
-
-        mov             eax, dword ptr [_s_gsCookie]
-        mov             dword ptr [ecx], eax
-        add             ecx, SIZEOF_GSCookie
 
         ;; set first slot to the value of InlinedCallFrame identifier (checked by runtime code)
         mov             dword ptr [ecx], FRAMETYPE_InlinedCallFrame
@@ -78,8 +73,6 @@ _JIT_PInvokeBegin@4 ENDP
 ;
 ;
 _JIT_PInvokeEnd@4 PROC public
-
-        add             ecx, SIZEOF_GSCookie
 
         ;; edx = GetThread(). Trashes eax
         INLINE_GETTHREAD edx, eax

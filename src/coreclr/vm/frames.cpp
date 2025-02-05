@@ -280,14 +280,6 @@ void __stdcall Frame::LogTransition(Frame* frame)
         GC_NOTRIGGER;
     } CONTRACTL_END;
 
-#ifdef TARGET_X86
-    // On x86, StubLinkerCPU::EmitMethodStubProlog calls Frame::LogTransition
-    // but the caller of EmitMethodStubProlog sets the GSCookie later on.
-    // So the cookie is not initialized by the point we get here.
-#else
-    _ASSERTE(*frame->GetGSCookiePtr() == GetProcessGSCookie());
-#endif
-
     if (Frame::ShouldLogTransitions())
         frame->Log();
 } // void Frame::Log()
@@ -469,26 +461,6 @@ bool Frame::HasValidVTablePtr(Frame * pFrame)
 #endif
 }
 
-// Returns the location of the expected GSCookie,
-// Return NULL if the frame's vtable pointer is corrupt
-//
-// Note that Frame::GetGSCookiePtr is a virtual method,
-// and so it cannot be used without first checking if
-// the vtable is valid.
-
-// static
-PTR_GSCookie Frame::SafeGetGSCookiePtr(Frame * pFrame)
-{
-    WRAPPER_NO_CONTRACT;
-
-    _ASSERTE(pFrame != FRAME_TOP);
-
-    if (Frame::HasValidVTablePtr(pFrame))
-        return pFrame->GetGSCookiePtr();
-    else
-        return NULL;
-}
-
 //-----------------------------------------------------------------------
 #ifndef DACCESS_COMPILE
 //-----------------------------------------------------------------------
@@ -518,8 +490,6 @@ VOID Frame::Push(Thread *pThread)
     }
     CONTRACTL_END;
 
-    _ASSERTE(*GetGSCookiePtr() == GetProcessGSCookie());
-
     m_Next = pThread->GetFrame();
 
     // GetOsPageSize() is used to relax the assert for cases where two Frames are
@@ -539,7 +509,7 @@ VOID Frame::Push(Thread *pThread)
              // during stack-walking.
              !g_pConfig->fAssertOnFailFast() ||
              (m_Next == FRAME_TOP) ||
-             (*m_Next->GetGSCookiePtr() == GetProcessGSCookie()));
+             (Frame::HasValidVTablePtr(m_Next)));
 
     pThread->SetFrame(this);
 }
@@ -568,7 +538,6 @@ VOID Frame::Pop(Thread *pThread)
     CONTRACTL_END;
 
     _ASSERTE(pThread->GetFrame() == this && "Popping a frame out of order ?");
-    _ASSERTE(*GetGSCookiePtr() == GetProcessGSCookie());
     _ASSERTE(// If AssertOnFailFast is set, the test expects to do stack overrun
              // corruptions. In that case, the Frame chain may be corrupted,
              // and the rest of the assert is not valid.
@@ -576,7 +545,7 @@ VOID Frame::Pop(Thread *pThread)
              // during stack-walking.
              !g_pConfig->fAssertOnFailFast() ||
              (m_Next == FRAME_TOP) ||
-             (*m_Next->GetGSCookiePtr() == GetProcessGSCookie()));
+             (Frame::HasValidVTablePtr(m_Next)));
 
     pThread->SetFrame(m_Next);
     m_Next = NULL;
@@ -1035,7 +1004,6 @@ ComPrestubMethodFrame::Init()
     // at offset 0 for a class not using MI, but this is no different
     // than the assumption that COM Classic makes.
     *((TADDR*)this) = (TADDR)FrameIdentifier::ComPrestubMethodFrame;
-    *GetGSCookiePtr() = GetProcessGSCookie();
 }
 #endif // FEATURE_COMINTEROP
 
@@ -1822,11 +1790,6 @@ void HelperMethodFrame::Push()
     // Finish initialization
     //
 
-    // Compiler would not inline GetGSCookiePtr() because of it is virtual method.
-    // Inline it manually and verify that it gives same result.
-    _ASSERTE(GetGSCookiePtr() == (((GSCookie *)(this)) - 1));
-    *(((GSCookie *)(this)) - 1) = GetProcessGSCookie();
-
     _ASSERTE(!m_MachState.isValid());
 
     Thread * pThread = ::GetThread();
@@ -2024,12 +1987,6 @@ VOID InlinedCallFrame::Init()
     WRAPPER_NO_CONTRACT;
 
     *((TADDR *)this) = (TADDR)FrameIdentifier::InlinedCallFrame;
-
-    // GetGSCookiePtr contains a virtual call and this is a perf critical method so we don't want to call it in ret builds
-    GSCookie *ptrGS = (GSCookie *)((BYTE *)this - sizeof(GSCookie));
-    _ASSERTE(ptrGS == GetGSCookiePtr());
-
-    *ptrGS = GetProcessGSCookie();
 
     m_Datum = NULL;
     m_pCallSiteSP = NULL;

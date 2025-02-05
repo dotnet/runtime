@@ -437,20 +437,7 @@ public:
     }
 #endif // #ifndef DACCESS_COMPILE
 
-    PTR_GSCookie GetGSCookiePtr()
-    {
-        WRAPPER_NO_CONTRACT;
-        return dac_cast<PTR_GSCookie>(dac_cast<TADDR>(this) + GetOffsetOfGSCookie());
-    }
-
-    static int GetOffsetOfGSCookie()
-    {
-        LIMITED_METHOD_DAC_CONTRACT;
-        return -(int)sizeof(GSCookie);
-    }
-
     static bool HasValidVTablePtr(Frame * pFrame);
-    static PTR_GSCookie SafeGetGSCookiePtr(Frame * pFrame);
     static void Init();
 
     // Callers, note that the REGDISPLAY parameter is actually in/out. While
@@ -559,12 +546,6 @@ public:
         {
             func->EnumMemoryRegions(flags);
         }
-
-        // Include the NegSpace
-        GSCookie * pGSCookie = GetGSCookiePtr();
-        _ASSERTE(FitsIn<ULONG32>(PBYTE(pGSCookie) - PBYTE(this)));
-        ULONG32 negSpaceSize = static_cast<ULONG32>(PBYTE(pGSCookie) - PBYTE(this));
-        DacEnumMemoryRegion(dac_cast<TADDR>(this) - negSpaceSize, negSpaceSize);
     }
 #endif
 
@@ -2825,169 +2806,6 @@ private:
 
 #endif //_DEBUG
 
-//-----------------------------------------------------------------------------
-// FrameWithCookie is used to declare a Frame in source code with a cookie
-// immediately preceding it.
-// This is just a specialized version of GSCookieFor<T>
-//
-// For Frames that are set up by stubs, the stub is responsible for setting up
-// the GSCookie.
-//
-// Note that we have to play all these games for the GSCookie as the GSCookie
-// needs to precede the vtable pointer, so that the GSCookie is guaranteed to
-// catch any stack-buffer-overrun corruptions that overwrite the Frame data.
-//
-//-----------------------------------------------------------------------------
-
-class DebuggerEval;
-
-class GCSafeCollection;
-
-template <typename FrameType>
-class FrameWithCookie
-{
-protected:
-
-    GSCookie        m_gsCookie;
-    FrameType       m_frame;
-
-public:
-
-    //
-    // Overload all the required constructors
-    //
-
-    FrameWithCookie() :
-        m_gsCookie(GetProcessGSCookie()), m_frame() { WRAPPER_NO_CONTRACT; }
-
-    FrameWithCookie(Thread * pThread) :
-        m_gsCookie(GetProcessGSCookie()), m_frame(pThread) { WRAPPER_NO_CONTRACT; }
-
-    FrameWithCookie(T_CONTEXT * pContext) :
-        m_gsCookie(GetProcessGSCookie()), m_frame(pContext) { WRAPPER_NO_CONTRACT; }
-
-    FrameWithCookie(TransitionBlock * pTransitionBlock) :
-        m_gsCookie(GetProcessGSCookie()), m_frame(pTransitionBlock) { WRAPPER_NO_CONTRACT; }
-
-    FrameWithCookie(TransitionBlock * pTransitionBlock, MethodDesc * pMD) :
-        m_gsCookie(GetProcessGSCookie()), m_frame(pTransitionBlock, pMD) { WRAPPER_NO_CONTRACT; }
-
-    FrameWithCookie(TransitionBlock * pTransitionBlock, VASigCookie * pVASigCookie, PCODE pUnmanagedTarget) :
-        m_gsCookie(GetProcessGSCookie()), m_frame(pTransitionBlock, pVASigCookie, pUnmanagedTarget) { WRAPPER_NO_CONTRACT; }
-
-    FrameWithCookie(TransitionBlock * pTransitionBlock, int frameFlags) :
-        m_gsCookie(GetProcessGSCookie()), m_frame(pTransitionBlock, frameFlags) { WRAPPER_NO_CONTRACT; }
-
-
-    // GCFrame
-    FrameWithCookie(Thread * pThread, OBJECTREF *pObjRefs, UINT numObjRefs, BOOL maybeInterior) :
-        m_gsCookie(GetProcessGSCookie()), m_frame(pThread, pObjRefs, numObjRefs, maybeInterior) { WRAPPER_NO_CONTRACT; }
-
-    FrameWithCookie(OBJECTREF *pObjRefs, UINT numObjRefs, BOOL maybeInterior) :
-        m_gsCookie(GetProcessGSCookie()), m_frame(pObjRefs, numObjRefs, maybeInterior) { WRAPPER_NO_CONTRACT; }
-
-    // GCSafeCollectionFrame
-    FrameWithCookie(GCSafeCollection *gcSafeCollection) :
-        m_gsCookie(GetProcessGSCookie()), m_frame(gcSafeCollection) { WRAPPER_NO_CONTRACT; }
-
-    // HijackFrame
-    FrameWithCookie(LPVOID returnAddress, Thread *thread, HijackArgs *args) :
-        m_gsCookie(GetProcessGSCookie()), m_frame(returnAddress, thread, args) { WRAPPER_NO_CONTRACT; }
-
-#ifdef DEBUGGING_SUPPORTED
-    // FuncEvalFrame
-    FrameWithCookie(DebuggerEval *pDebuggerEval, TADDR returnAddress, BOOL showFrame) :
-        m_gsCookie(GetProcessGSCookie()), m_frame(pDebuggerEval, returnAddress, showFrame) { WRAPPER_NO_CONTRACT; }
-#endif // DEBUGGING_SUPPORTED
-
-#ifndef DACCESS_COMPILE
-    // GSCookie for HelperMethodFrames is initialized in a common HelperMethodFrame init method
-
-    // HelperMethodFrame
-    FORCEINLINE FrameWithCookie(void* fCallFtnEntry, unsigned attribs = 0) :
-        m_frame(fCallFtnEntry, attribs) { WRAPPER_NO_CONTRACT; }
-
-    // HelperMethodFrame_1OBJ
-    FORCEINLINE FrameWithCookie(void* fCallFtnEntry, unsigned attribs, OBJECTREF * aGCPtr1) :
-        m_frame(fCallFtnEntry, attribs, aGCPtr1) { WRAPPER_NO_CONTRACT; }
-
-    // HelperMethodFrame_2OBJ
-    FORCEINLINE FrameWithCookie(void* fCallFtnEntry, unsigned attribs, OBJECTREF * aGCPtr1, OBJECTREF * aGCPtr2) :
-        m_frame(fCallFtnEntry, attribs, aGCPtr1, aGCPtr2) { WRAPPER_NO_CONTRACT; }
-
-    // HelperMethodFrame_3OBJ
-    FORCEINLINE FrameWithCookie(void* fCallFtnEntry, unsigned attribs, OBJECTREF * aGCPtr1, OBJECTREF * aGCPtr2, OBJECTREF * aGCPtr3) :
-        m_frame(fCallFtnEntry, attribs, aGCPtr1, aGCPtr2, aGCPtr3) { WRAPPER_NO_CONTRACT; }
-
-    // HelperMethodFrame_PROTECTOBJ
-    FORCEINLINE FrameWithCookie(void* fCallFtnEntry, unsigned attribs, OBJECTREF* pObjRefs, int numObjRefs) :
-        m_frame(fCallFtnEntry, attribs, pObjRefs, numObjRefs) { WRAPPER_NO_CONTRACT; }
-
-#endif // DACCESS_COMPILE
-
-    // ProtectByRefsFrame
-    FrameWithCookie(Thread * pThread, ByRefInfo * pByRefs) :
-        m_gsCookie(GetProcessGSCookie()), m_frame(pThread, pByRefs) { WRAPPER_NO_CONTRACT; }
-
-    // ProtectValueClassFrame
-    FrameWithCookie(Thread * pThread, ValueClassInfo * pValueClasses) :
-        m_gsCookie(GetProcessGSCookie()), m_frame(pThread, pValueClasses) { WRAPPER_NO_CONTRACT; }
-
-    // ExceptionFilterFrame
-    FrameWithCookie(size_t* pShadowSP) :
-        m_gsCookie(GetProcessGSCookie()), m_frame(pShadowSP) { WRAPPER_NO_CONTRACT; }
-
-#ifdef _DEBUG
-    // AssumeByrefFromJITStack
-    FrameWithCookie(OBJECTREF *pObjRef) :
-        m_gsCookie(GetProcessGSCookie()), m_frame(pObjRef) { WRAPPER_NO_CONTRACT; }
-
-    void SetAddrOfHaveCheckedRestoreState(BOOL* pDoneCheck)
-    {
-        WRAPPER_NO_CONTRACT;
-        m_frame.SetAddrOfHaveCheckedRestoreState(pDoneCheck);
-    }
-
-#endif //_DEBUG
-
-    //
-    // Overload some common Frame methods for easy redirection
-    //
-
-    void Push() { WRAPPER_NO_CONTRACT; m_frame.Push(); }
-    void Pop() { WRAPPER_NO_CONTRACT; m_frame.Pop(); }
-    void Push(Thread * pThread) { WRAPPER_NO_CONTRACT; m_frame.Push(pThread); }
-    void Pop(Thread * pThread) { WRAPPER_NO_CONTRACT; m_frame.Pop(pThread); }
-    PCODE GetReturnAddress() { WRAPPER_NO_CONTRACT; return m_frame.GetReturnAddress(); }
-    T_CONTEXT * GetContext() { WRAPPER_NO_CONTRACT; return m_frame.GetContext(); }
-    FrameType* operator&() { LIMITED_METHOD_CONTRACT; return &m_frame; }
-    LazyMachState * MachineState() { WRAPPER_NO_CONTRACT; return m_frame.MachineState(); }
-    Thread * GetThread() { WRAPPER_NO_CONTRACT; return m_frame.GetThread(); }
-    BOOL EnsureInit(struct MachState* unwindState)
-        { WRAPPER_NO_CONTRACT; return m_frame.EnsureInit(unwindState); }
-    void Poll() { WRAPPER_NO_CONTRACT; m_frame.Poll(); }
-    void SetStackPointerPtr(TADDR sp) { WRAPPER_NO_CONTRACT; m_frame.SetStackPointerPtr(sp); }
-    void InitAndLink(T_CONTEXT *pContext) { WRAPPER_NO_CONTRACT; m_frame.InitAndLink(pContext); }
-    void InitAndLink(Thread *pThread) { WRAPPER_NO_CONTRACT; m_frame.InitAndLink(pThread); }
-    void Init(Thread *pThread, OBJECTREF *pObjRefs, UINT numObjRefs, BOOL maybeInterior)
-        { WRAPPER_NO_CONTRACT; m_frame.Init(pThread, pObjRefs, numObjRefs, maybeInterior); }
-    ValueClassInfo ** GetValueClassInfoList() { WRAPPER_NO_CONTRACT; return m_frame.GetValueClassInfoList(); }
-
-#if 0
-    //
-    // Access to the underlying Frame
-    // You should only need to use this if none of the above overloads work for you
-    // Consider adding the required overload to the list above
-    //
-
-    FrameType& operator->() { LIMITED_METHOD_CONTRACT; return m_frame; }
-#endif
-
-    // Since the "&" operator is overloaded, use this function to get to the
-    // address of FrameWithCookie, rather than that of FrameWithCookie::m_frame.
-    GSCookie * GetGSCookiePtr() { LIMITED_METHOD_CONTRACT; return &m_gsCookie; }
-};
-
 //------------------------------------------------------------------------
 // These macros GC-protect OBJECTREF pointers on the EE's behalf.
 // In between these macros, the GC can move but not discard the protected
@@ -3124,7 +2942,7 @@ public:
                 /*pointer points to GC heap, the FCall still needs to protect it explicitly */             \
                 ASSERT_ADDRESS_IN_STACK (__objRef);                                      \
                 do {                                                                     \
-                FrameWithCookie<AssumeByrefFromJITStack> __dummyAssumeByrefFromJITStack ((__objRef));       \
+                AssumeByrefFromJITStack __dummyAssumeByrefFromJITStack ((__objRef));       \
                 __dummyAssumeByrefFromJITStack.Push ();                                  \
                 /* work around unreachable code warning */                               \
                 if (true) { DEBUG_ASSURE_NO_RETURN_BEGIN(GC_PROTECT)

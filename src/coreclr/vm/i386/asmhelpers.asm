@@ -1222,14 +1222,12 @@ _GenericComCallStub@0 proc public
     push        edi
 
     push        eax         ; UnmanagedToManagedFrame::m_pvDatum = ComCallMethodDesc*
-    sub         esp, (SIZEOF_GSCookie + OFFSETOF__UnmanagedToManagedFrame__m_pvDatum)
+    sub         esp, OFFSETOF__UnmanagedToManagedFrame__m_pvDatum
 
-    lea         eax, [esp+SIZEOF_GSCookie]
-
-    push        eax
+    push        esp
     call        _COMToCLRWorker@4
 
-    add         esp, (SIZEOF_GSCookie + OFFSETOF__UnmanagedToManagedFrame__m_pvDatum)
+    add         esp, OFFSETOF__UnmanagedToManagedFrame__m_pvDatum
 
     ; pop the ComCallMethodDesc*
     pop         ecx
@@ -1272,7 +1270,7 @@ _ComCallPreStub@0 proc public
     push        edi
 
     push        eax         ; ComCallMethodDesc*
-    sub         esp, 5*4    ; next, vtable, gscookie, 64-bit error return
+    sub         esp, 4*4    ; next, vtable, 64-bit error return
 
     lea     edi, [esp]
     lea     esi, [esp+3*4]

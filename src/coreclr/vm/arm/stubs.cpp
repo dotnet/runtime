@@ -1139,10 +1139,6 @@ Stub *GenerateInitPInvokeFrameHelper()
     for (int reg = 0; reg < 4; reg++)
         psl->ThumbEmitLoadRegIndirect(ThumbReg(reg), thumbRegSp, offsetof(ArgumentRegisters, r) + sizeof(*ArgumentRegisters::r) * reg);
 
-    // mov [regFrame + FrameInfo.offsetOfGSCookie], GetProcessGSCookie()
-    psl->ThumbEmitMovConstant(regScratch, GetProcessGSCookie());
-    psl->ThumbEmitStoreRegIndirect(regScratch, regFrame, FrameInfo.offsetOfGSCookie - negSpace);
-
     // mov [regFrame + FrameInfo.offsetOfFrameVptr], FrameIdentifier::InlinedCallFrame
     psl->ThumbEmitMovConstant(regScratch, (DWORD)FrameIdentifier::InlinedCallFrame);
     psl->ThumbEmitStoreRegIndirect(regScratch, regFrame, FrameInfo.offsetOfFrameVptr - negSpace);

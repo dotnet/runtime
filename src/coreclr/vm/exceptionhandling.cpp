@@ -1900,11 +1900,6 @@ CLRUnwindStatus ExceptionTracker::ProcessOSExceptionNotification(
         MethodDesc *pMD = cfThisFrame.GetFunction();
 
         Frame*  pFrame = GetLimitFrame(); // next frame to process
-        if (pFrame != FRAME_TOP)
-        {
-            // The following function call sets the GS cookie pointers and checks the cookie.
-            cfThisFrame.SetCurGSCookie(Frame::SafeGetGSCookiePtr(pFrame));
-        }
 
         while (((UINT_PTR)pFrame) < uCallerSP)
         {
@@ -5516,8 +5511,7 @@ BOOL HandleHardwareException(PAL_SEHException* ex)
 #endif // TARGET_AMD64 || TARGET_X86
 
         // Create frame necessary for the exception handling
-        FrameWithCookie<FaultingExceptionFrame> fef;
-        *((&fef)->GetGSCookiePtr()) = GetProcessGSCookie();
+        FaultingExceptionFrame fef;
         {
             GCX_COOP();     // Must be cooperative to modify frame chain.
 

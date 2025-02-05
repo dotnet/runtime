@@ -1826,8 +1826,7 @@ HCIMPL1(void, IL_Throw,  Object* obj)
     {
         Thread *pThread = GetThread();
 
-        FrameWithCookie<SoftwareExceptionFrame> exceptionFrame;
-        *(&exceptionFrame)->GetGSCookiePtr() = GetProcessGSCookie();
+        SoftwareExceptionFrame exceptionFrame;
         RtlCaptureContext(exceptionFrame.GetContext());
         exceptionFrame.InitAndLink(pThread);
 
@@ -1917,8 +1916,7 @@ HCIMPL0(void, IL_Rethrow)
     {
         Thread *pThread = GetThread();
 
-        FrameWithCookie<SoftwareExceptionFrame> exceptionFrame;
-        *(&exceptionFrame)->GetGSCookiePtr() = GetProcessGSCookie();
+        SoftwareExceptionFrame exceptionFrame;
         RtlCaptureContext(exceptionFrame.GetContext());
         exceptionFrame.InitAndLink(pThread);
 
