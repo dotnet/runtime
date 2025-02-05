@@ -5529,6 +5529,8 @@ public:
 
     FoldResult fgFoldConditional(BasicBlock* block);
 
+    bool fgFoldCondToReturnBlock(BasicBlock* block);
+
     struct MorphUnreachableInfo
     {
         MorphUnreachableInfo(Compiler* comp);
@@ -6390,6 +6392,8 @@ public:
     bool fgFuncletsAreCold();
 
     PhaseStatus fgDetermineFirstColdBlock();
+
+    bool fgDedupReturnComparison(BasicBlock* block);
 
     bool fgIsForwardBranch(BasicBlock* bJump, BasicBlock* bDest, BasicBlock* bSrc = nullptr);
 
