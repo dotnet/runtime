@@ -190,9 +190,6 @@ internal static partial class Interop
         [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
         public static partial int ldap_control_free(IntPtr control);
 
-        [LibraryImport("Crypt32.dll", EntryPoint = "CertFreeCRLContext")]
-        public static partial int CertFreeCRLContext(IntPtr certContext);
-
         [LibraryImport(Libraries.Wldap32, EntryPoint = "ldap_result2error")]
         [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
         public static partial int ldap_result2error(ConnectionHandle ldapHandle, IntPtr result, int freeIt);
