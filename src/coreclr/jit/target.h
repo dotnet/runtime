@@ -1153,7 +1153,7 @@ inline bool isFloatRegType(var_types type)
 // Some sanity checks on some of the register masks
 // Stack pointer is never part of RBM_ALLINT
 #if defined(TARGET_AMD64)
-C_ASSERT((RBM_ALLINT_STATIC_ALL & RBM_SPBASE) == RBM_NONE);
+C_ASSERT((RBM_ALLINT_ALL & RBM_SPBASE) == RBM_NONE);
 #else
 C_ASSERT((RBM_ALLINT & RBM_SPBASE) == RBM_NONE);
 #endif
@@ -1162,7 +1162,7 @@ C_ASSERT((RBM_INT_CALLEE_SAVED & RBM_SPBASE) == RBM_NONE);
 #if ETW_EBP_FRAMED
 // Frame pointer isn't either if we're supporting ETW frame chaining
 #if defined(TARGET_AMD64)
-C_ASSERT((RBM_ALLINT_STATIC_ALL & RBM_FPBASE) == RBM_NONE);
+C_ASSERT((RBM_ALLINT_ALL & RBM_FPBASE) == RBM_NONE);
 #else
 C_ASSERT((RBM_ALLINT & RBM_FPBASE) == RBM_NONE);
 #endif
