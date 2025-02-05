@@ -59,6 +59,7 @@
     <Compile Include="SequenceEqualTests.cs" />
     <Compile Include="ShortCircuitingTests.cs" />
     <Compile Include="Shuffler.cs" />
+    <Compile Include="ShuffleTests.cs" />
     <Compile Include="SingleOrDefaultTests.cs" />
     <Compile Include="SingleTests.cs" />
     <Compile Include="SkipLastTests.cs" />
