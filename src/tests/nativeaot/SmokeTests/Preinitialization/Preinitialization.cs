@@ -1711,6 +1711,12 @@ static class Assert
             throw new Exception();
     }
 
+    public static unsafe void AreEqual(ulong v1, ulong v2)
+    {
+        if (v1 != v2)
+            throw new Exception();
+    }
+
     public static unsafe void AreEqual(float v1, float v2)
     {
         if (v1 != v2)
@@ -1718,6 +1724,18 @@ static class Assert
     }
 
     public static unsafe void AreEqual(double v1, double v2)
+    {
+        if (v1 != v2)
+            throw new Exception();
+    }
+
+    public static unsafe void AreEqual(nint v1, nint v2)
+    {
+        if (v1 != v2)
+            throw new Exception();
+    }
+
+    public static unsafe void AreEqual(nuint v1, nuint v2)
     {
         if (v1 != v2)
             throw new Exception();
