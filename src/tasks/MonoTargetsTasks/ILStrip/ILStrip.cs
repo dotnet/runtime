@@ -15,7 +15,6 @@ using CilStrip.Mono.Cecil.Metadata;
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
 using System.Reflection.PortableExecutable;
-using System.Buffers;
 using System.Collections.Concurrent;
 
 public class ILStrip : Microsoft.Build.Utilities.Task
@@ -355,11 +354,10 @@ public class ILStrip : Microsoft.Build.Utilities.Task
     private static void ZeroOutMethodBody(Stream stream, int methodSize, int actualLoc, int headerSize)
     {
         stream.Position = actualLoc + headerSize;
-        byte[] zeroBuffer;
-        zeroBuffer = ArrayPool<byte>.Shared.Rent(methodSize - headerSize);
-        Array.Clear(zeroBuffer, 0, zeroBuffer.Length);
-        stream.Write(zeroBuffer, 0, zeroBuffer.Length);
-        ArrayPool<byte>.Shared.Return(zeroBuffer);
+        for (int i = 0; i < methodSize - headerSize; i++)
+        {
+            stream.WriteByte(0);
+        }
     }
 
     private static TaskItem GetTrimmedAssemblyItem(ITaskItem assemblyItem, string trimmedAssemblyFilePath, string originAssemblyFilePath)
