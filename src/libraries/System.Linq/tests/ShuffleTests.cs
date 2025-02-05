@@ -29,6 +29,11 @@ namespace System.Linq.Tests
                 IEnumerable<int> shuffled = source.Shuffle();
                 Assert.Equal(length, shuffled.Count());
                 Assert.Equal(length, shuffled.Count());
+
+                Assert.Equal(length, source.Shuffle().Take(length).Count());
+                Assert.Equal(Math.Min(length, 1), source.Shuffle().Take(1).Count());
+                Assert.Equal(Math.Min(length, 1), source.Shuffle().Take(2).Take(1).Count());
+                Assert.Equal(Math.Min(length, 1), source.Shuffle().Take(1).Take(2).Count());
             });
         }
 
@@ -42,12 +47,16 @@ namespace System.Linq.Tests
         {
             Assert.All(CreateSources(Enumerable.Range(0, length)), source =>
             {
-                List<int> shuffled = [];
-                foreach (int i in source.Shuffle())
-                {
-                    shuffled.Add(i);
-                }
+                List<int> shuffled;
 
+                shuffled = [];
+                foreach (int i in source.Shuffle()) shuffled.Add(i);
+                Assert.Equal(length, shuffled.Count);
+                shuffled.Sort();
+                Assert.Equal(Enumerable.Range(0, length), shuffled);
+
+                shuffled = [];
+                foreach (int i in source.Shuffle().Take(length)) shuffled.Add(i);
                 Assert.Equal(length, shuffled.Count);
                 shuffled.Sort();
                 Assert.Equal(Enumerable.Range(0, length), shuffled);
@@ -64,7 +73,14 @@ namespace System.Linq.Tests
         {
             Assert.All(CreateSources(Enumerable.Range(0, length)), source =>
             {
-                int[] shuffled = source.Shuffle().ToArray();
+                int[] shuffled;
+
+                shuffled = source.Shuffle().ToArray();
+                Assert.Equal(length, shuffled.Length);
+                Array.Sort(shuffled);
+                Assert.Equal(Enumerable.Range(0, length), shuffled);
+
+                shuffled = source.Shuffle().Take(length).ToArray();
                 Assert.Equal(length, shuffled.Length);
                 Array.Sort(shuffled);
                 Assert.Equal(Enumerable.Range(0, length), shuffled);
@@ -81,7 +97,14 @@ namespace System.Linq.Tests
         {
             Assert.All(CreateSources(Enumerable.Range(0, length)), source =>
             {
-                List<int> shuffled = source.Shuffle().ToList();
+                List<int> shuffled;
+
+                shuffled = source.Shuffle().ToList();
+                Assert.Equal(length, shuffled.Count);
+                shuffled.Sort();
+                Assert.Equal(Enumerable.Range(0, length), shuffled);
+
+                shuffled = source.Shuffle().Take(length).ToList();
                 Assert.Equal(length, shuffled.Count);
                 shuffled.Sort();
                 Assert.Equal(Enumerable.Range(0, length), shuffled);
@@ -95,19 +118,34 @@ namespace System.Linq.Tests
             int length = 1000;
             Assert.All(CreateSources(Enumerable.Range(0, length)), source =>
             {
-                List<int> first = [], second = [];
-                foreach (int i in source.Shuffle())
-                {
-                    first.Add(i);
-                }
-                foreach (int i in source.Shuffle())
-                {
-                    second.Add(i);
-                }
+                List<int> first, second;
 
+                first = [];
+                second = [];
+                foreach (int i in source.Shuffle()) first.Add(i);
+                foreach (int i in source.Shuffle()) second.Add(i);
                 Assert.Equal(length, first.Count);
                 Assert.Equal(length, second.Count);
                 Assert.NotEqual(first, second);
+
+                foreach (int takeCount in new[] { length - 1, length + 1 })
+                {
+                    first = [];
+                    second = [];
+                    foreach (int i in source.Shuffle().Take(takeCount)) first.Add(i);
+                    foreach (int i in source.Shuffle().Take(takeCount)) second.Add(i);
+                    Assert.Equal(Math.Min(takeCount, length), first.Count);
+                    Assert.Equal(Math.Min(takeCount, length), second.Count);
+                    Assert.NotEqual(first, second);
+
+                    first = [];
+                    second = [];
+                    foreach (int i in source.Shuffle().Take(takeCount + 1).Take(takeCount)) first.Add(i);
+                    foreach (int i in source.Shuffle().Take(takeCount + 1).Take(takeCount)) second.Add(i);
+                    Assert.Equal(Math.Min(takeCount, length), first.Count);
+                    Assert.Equal(Math.Min(takeCount, length), second.Count);
+                    Assert.NotEqual(first, second);
+                }
             });
         }
 
@@ -118,10 +156,35 @@ namespace System.Linq.Tests
             int length = 1000;
             Assert.All(CreateSources(Enumerable.Range(0, length)), source =>
             {
-                int[] first = source.Shuffle().ToArray(), second = source.Shuffle().ToArray();
-                Assert.Equal(length, first.Length);
-                Assert.Equal(length, second.Length);
-                Assert.NotEqual(first, second);
+                try
+                {
+                    int[] first, second;
+
+                    first = source.Shuffle().ToArray();
+                    second = source.Shuffle().ToArray();
+                    Assert.Equal(length, first.Length);
+                    Assert.Equal(length, second.Length);
+                    Assert.NotEqual(first, second);
+
+                    foreach (int takeCount in new[] { length - 1, length + 1 })
+                    {
+                        first = source.Shuffle().Take(takeCount).ToArray();
+                        second = source.Shuffle().Take(takeCount).ToArray();
+                        Assert.Equal(Math.Min(takeCount, length), first.Length);
+                        Assert.Equal(Math.Min(takeCount, length), second.Length);
+                        Assert.NotEqual(first, second);
+
+                        first = source.Shuffle().Take(takeCount + 1).Take(takeCount).ToArray();
+                        second = source.Shuffle().Take(takeCount + 1).Take(takeCount).ToArray();
+                        Assert.Equal(Math.Min(takeCount, length), first.Length);
+                        Assert.Equal(Math.Min(takeCount, length), second.Length);
+                        Assert.NotEqual(first, second);
+                    }
+                }
+                catch (Exception e)
+                {
+                    throw new Exception(source.GetType().ToString(), e);
+                }
             });
         }
 
@@ -132,19 +195,46 @@ namespace System.Linq.Tests
             int length = 1000;
             Assert.All(CreateSources(Enumerable.Range(0, length)), source =>
             {
-                List<int> first = source.Shuffle().ToList(), second = source.Shuffle().ToList();
+                List<int> first, second;
+
+                first = source.Shuffle().ToList();
+                second = source.Shuffle().ToList();
                 Assert.Equal(length, first.Count);
                 Assert.Equal(length, second.Count);
                 Assert.NotEqual(first, second);
+
+                foreach (int takeCount in new[] { length - 1, length + 1 })
+                {
+                    first = source.Shuffle().Take(takeCount).ToList();
+                    second = source.Shuffle().Take(takeCount).ToList();
+                    Assert.Equal(Math.Min(takeCount, length), first.Count);
+                    Assert.Equal(Math.Min(takeCount, length), second.Count);
+                    Assert.NotEqual(first, second);
+
+                    first = source.Shuffle().Take(takeCount + 1).Take(takeCount).ToList();
+                    second = source.Shuffle().Take(takeCount + 1).Take(takeCount).ToList();
+                    Assert.Equal(Math.Min(takeCount, length), first.Count);
+                    Assert.Equal(Math.Min(takeCount, length), second.Count);
+                    Assert.NotEqual(first, second);
+                }
             });
         }
 
         [Fact]
         public void ForcedToEnumeratorDoesntEnumerate()
         {
-            var iterator = NumberRangeGuaranteedNotCollectionType(0, 3).Reverse();
             // Don't insist on this behaviour, but check it's correct if it happens
+
+            var iterator = NumberRangeGuaranteedNotCollectionType(0, 3).Shuffle();
             var en = iterator as IEnumerator<int>;
+            Assert.False(en is not null && en.MoveNext());
+
+            iterator = NumberRangeGuaranteedNotCollectionType(0, 3).Shuffle().Take(1);
+            en = iterator as IEnumerator<int>;
+            Assert.False(en is not null && en.MoveNext());
+
+            iterator = NumberRangeGuaranteedNotCollectionType(0, 3).Shuffle().Take(2).Take(1);
+            en = iterator as IEnumerator<int>;
             Assert.False(en is not null && en.MoveNext());
         }
 
@@ -155,11 +245,23 @@ namespace System.Linq.Tests
             {
                 Assert.Throws<InvalidOperationException>(() => source.Shuffle().First());
                 Assert.Throws<InvalidOperationException>(() => source.Shuffle().Last());
+                Assert.Throws<InvalidOperationException>(() => source.Shuffle().Take(1).First());
+                Assert.Throws<InvalidOperationException>(() => source.Shuffle().Take(1).Last());
 
                 Assert.Null(source.Shuffle().ElementAtOrDefault(1));
                 Assert.Null(source.Shuffle().ElementAtOrDefault(-1));
                 Assert.Null(source.Shuffle().FirstOrDefault());
                 Assert.Null(source.Shuffle().LastOrDefault());
+
+                Assert.Null(source.Shuffle().Take(1).ElementAtOrDefault(1));
+                Assert.Null(source.Shuffle().Take(1).ElementAtOrDefault(-1));
+                Assert.Null(source.Shuffle().Take(1).FirstOrDefault());
+                Assert.Null(source.Shuffle().Take(1).LastOrDefault());
+
+                Assert.Null(source.Shuffle().Take(3).Take(1).ElementAtOrDefault(1));
+                Assert.Null(source.Shuffle().Take(3).Take(1).ElementAtOrDefault(-1));
+                Assert.Null(source.Shuffle().Take(3).Take(1).FirstOrDefault());
+                Assert.Null(source.Shuffle().Take(3).Take(1).LastOrDefault());
             });
         }
 
@@ -171,6 +273,14 @@ namespace System.Linq.Tests
                 Assert.InRange(source.Shuffle().First(), 0, 9);
                 Assert.InRange(source.Shuffle().Last(), 0, 9);
                 Assert.InRange(source.Shuffle().ElementAt(5), 0, 9);
+
+                Assert.InRange(source.Shuffle().Take(1).First(), 0, 9);
+                Assert.InRange(source.Shuffle().Take(1).Last(), 0, 9);
+                Assert.InRange(source.Shuffle().Take(8).ElementAt(5), 0, 9);
+
+                Assert.InRange(source.Shuffle().Take(3).Take(2).First(), 0, 9);
+                Assert.InRange(source.Shuffle().Take(3).Take(2).Last(), 0, 9);
+                Assert.InRange(source.Shuffle().Take(8).Take(7).ElementAt(5), 0, 9);
             });
         }
 
@@ -182,6 +292,14 @@ namespace System.Linq.Tests
                 AssertRetry(() => source.Shuffle().First() != source.Shuffle().First());
                 AssertRetry(() => source.Shuffle().Last() != source.Shuffle().Last());
                 AssertRetry(() => source.Shuffle().ElementAt(5) != source.Shuffle().ElementAt(5));
+
+                AssertRetry(() => source.Shuffle().Take(10).First() != source.Shuffle().Take(10).First());
+                AssertRetry(() => source.Shuffle().Take(10).Last() != source.Shuffle().Take(10).Last());
+                AssertRetry(() => source.Shuffle().Take(10).ElementAt(5) != source.Shuffle().Take(10).ElementAt(5));
+
+                AssertRetry(() => source.Shuffle().Take(10).Take(5).First() != source.Shuffle().Take(10).Take(5).First());
+                AssertRetry(() => source.Shuffle().Take(10).Take(5).Last() != source.Shuffle().Take(10).Take(5).Last());
+                AssertRetry(() => source.Shuffle().Take(10).Take(5).ElementAt(3) != source.Shuffle().Take(10).Take(5).ElementAt(3));
             });
 
             static void AssertRetry(Func<bool> predicate)
