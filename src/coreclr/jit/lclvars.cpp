@@ -8111,6 +8111,13 @@ Compiler::fgWalkResult Compiler::lvaStressLclFldCB(GenTree** pTree, fgWalkData* 
             return WALK_CONTINUE;
         }
 
+        // Pinned locals would not remain pinned if we did this transformation.
+        if (varDsc->lvPinned)
+        {
+            varDsc->lvNoLclFldStress = true;
+            return WALK_CONTINUE;
+        }
+
         // Weed out "small" types like TYP_BYTE as we don't mark the GT_LCL_VAR
         // node with the accurate small type. If we bash lvaTable[].lvType,
         // then there will be no indication that it was ever a small type.
