@@ -1,4 +1,6 @@
 <Project>
+  <UsingTask TaskName="Microsoft.Build.Tasks.ZipDirectory" Override="true" AssemblyName="Microsoft.Build.Tasks.Core" TaskFactory="TaskHostFactory" />
+
   <PropertyGroup>
     <RunScriptWindowsCmd Condition="'$(TargetOS)' == 'windows' and '$(RunScriptWindowsCmd)' == ''">true</RunScriptWindowsCmd>
     <RunScriptWindowsCmd Condition="'$(TargetOS)' != 'windows' and '$(RunScriptWindowsCmd)' == ''">false</RunScriptWindowsCmd>

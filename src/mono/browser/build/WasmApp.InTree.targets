@@ -3,6 +3,7 @@
   <UsingTask TaskName="MonoAOTCompiler" AssemblyFile="$(MonoAOTCompilerTasksAssemblyPath)" TaskFactory="TaskHostFactory" />
   <UsingTask TaskName="ILStrip" AssemblyFile="$(MonoTargetsTasksAssemblyPath)" TaskFactory="TaskHostFactory" />
   <UsingTask TaskName="RuntimeConfigParserTask" AssemblyFile="$(MonoTargetsTasksAssemblyPath)" TaskFactory="TaskHostFactory" />
+  <UsingTask TaskName="Microsoft.Build.Tasks.ZipDirectory" Override="true" AssemblyName="Microsoft.Build.Tasks.Core" TaskFactory="TaskHostFactory" />
 
   <!-- TODO: this breaks runtime tests on Helix due to the file not being there for some reason. Once this is fixed we can remove the UpdateRuntimePack target here -->
   <Import Project="$(RepositoryEngineeringDir)targetingpacks.targets" Condition="'$(TargetingpacksTargetsImported)' != 'true' and '$(ImportTargetingPacksTargetsInWasmAppTargets)' == 'true'"/>
@@ -49,12 +50,7 @@
       <HelixArchiveRunOnlyAppsDir>$([MSBuild]::NormalizeDirectory($(HelixArchiveRunOnlyRoot), $(OSPlatformConfig), $(WasmHelixTestAppRelativeDir)))</HelixArchiveRunOnlyAppsDir>
       <ZippedApp>$(OutputPath)$(AssemblyName).zip</ZippedApp>
     </PropertyGroup>
-    <MSBuild Projects="$(MSBuildProjectFile)" Targets="CopyAppZipToHelixTestDirEx"
-      Properties="WasmAppDir=$(WasmAppDir);ZippedApp=$(ZippedApp);HelixArchiveRunOnlyAppsDir=$(HelixArchiveRunOnlyAppsDir)" />
-  </Target>
-  <Target Name="CopyAppZipToHelixTestDirEx">
-    <Delete Condition="Exists('$(ZippedApp)') == 'true'"  Files="$(ZippedApp)" ContinueOnError="true"/>
-    <ZipDirectory SourceDirectory="$(WasmAppDir)" DestinationFile="$(ZippedApp)" />
+    <ZipDirectoryEx SourceDirectory="$(WasmAppDir)" DestinationFile="$(ZippedApp)" />
     <Copy SourceFiles="$(ZippedApp)" DestinationFolder="$(HelixArchiveRunOnlyAppsDir)" />
   </Target>
 </Project>
