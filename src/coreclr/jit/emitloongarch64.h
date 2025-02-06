@@ -170,40 +170,10 @@ static bool isValidSimm12(ssize_t value)
     return -(((int)1) << 11) <= value && value < (((int)1) << 11);
 };
 
-// Returns true if 'value' is a legal signed immediate 16 bit encoding.
-static bool isValidSimm16(ssize_t value)
-{
-    return -(((int)1) << 15) <= value && value < (((int)1) << 15);
-};
-
-// Returns true if 'value' is a legal unsigned immediate 16 bit encoding.
-static bool isValidUimm16(ssize_t value)
-{
-    return (0 == (value >> 16));
-};
-
-// Returns true if 'value' is a legal signed immediate 18 bit encoding.
-static bool isValidSimm18(ssize_t value)
-{
-    return -(((int)1) << 17) <= value && value < (((int)1) << 17);
-};
-
 // Returns true if 'value' is a legal signed immediate 20 bit encoding.
 static bool isValidSimm20(ssize_t value)
 {
     return -(((int)1) << 19) <= value && value < (((int)1) << 19);
-};
-
-// Returns true if 'value' is a legal signed immediate 28 bit encoding.
-static bool isValidSimm28(ssize_t value)
-{
-    return -(((int)1) << 27) <= value && value < (((int)1) << 27);
-};
-
-// Returns true if 'value' is a legal signed immediate 38 bit encoding.
-static bool isValidSimm38(ssize_t value)
-{
-    return -(((ssize_t)1) << 37) <= value && value < (((ssize_t)1) << 37);
 };
 
 // Returns the number of bits used by the given 'size'.
