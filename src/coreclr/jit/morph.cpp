@@ -13962,7 +13962,7 @@ void Compiler::fgSetOptions()
     // get here, leaving no EH clauses left, and thus no requirement
     // to use a frame pointer because of EH. But until all the code uses
     // the same test, leave info.compXcptnsCount here.
-    if (info.compXcptnsCount > 0)
+    if (info.compXcptnsCount > 0 || (info.compFlags & CORINFO_FLG_SYNCH))
     {
         codeGen->setFramePointerRequiredEH(true);
 
