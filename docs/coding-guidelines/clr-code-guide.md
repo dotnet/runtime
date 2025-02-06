@@ -508,7 +508,7 @@ The following shows explicit backout vs. holders:
 
 The difference is that hFile is now a HandleHolder rather than a HANDLE and that there are no more explicit CloseHandle calls. That call is now implicit in the holder's destructor and executes no matter how control leaves the scope.
 
-HandleHolder exposes operator overloads so it can be passed to APIs expecting HANDLEs without casting and be compared to INVALID_HANDLE_VALUE. The wrapper knows that INVALID_HANDLE_VALUE is special and won't attempt to close it. The holder also has some safety features. If you declare it without initializing it, it will be autoinitialized to INVALID_HANDLE_VALUE. If you assign a new value to the holder, the current value will be destroyed before it is overwritten.
+HandleHolder exposes operator overloads so it can be passed to APIs expecting HANDLEs without casting and be compared to INVALID_HANDLE_VALUE. The wrapper knows that INVALID_HANDLE_VALUE is special and won't attempt to close it. The holder also has some safety features. If you declare it without initializing it, it will be autoinitialized to INVALID_HANDLE_VALUE. If you assign a new value to the holder, the current value will be destructed before it is overwritten.
 
 Suppose you want to auto-close the handle if an error occurs but keep the handle otherwise? Call SuppressRelease() on the holder object. The underlying handle can still be pulled out of the holder but the destructor will no longer close it.
 
