@@ -17018,7 +17018,6 @@ void FuncEvalFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFloa
     pRD->pCurrentContextPointers->S6 = &(pDE->m_context.S6);
     pRD->pCurrentContextPointers->S7 = &(pDE->m_context.S7);
     pRD->pCurrentContextPointers->S8 = &(pDE->m_context.S8);
-    pRD->pCurrentContextPointers->Tp = &(pDE->m_context.Tp);
     pRD->pCurrentContextPointers->Fp = &(pDE->m_context.Fp);
     pRD->pCurrentContextPointers->Ra = &(pDE->m_context.Ra);
 

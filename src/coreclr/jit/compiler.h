@@ -43,7 +43,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #include "valuenum.h"
 #include "scev.h"
 #include "namedintrinsiclist.h"
-#include "structsegments.h"
+#include "segmentlist.h"
 #ifdef LATE_DISASM
 #include "disasm.h"
 #endif
@@ -5782,11 +5782,6 @@ public:
         }
         return m_signatureToLookupInfoMap;
     }
-
-    const StructSegments& GetSignificantSegments(ClassLayout* layout);
-
-    typedef JitHashTable<ClassLayout*, JitPtrKeyFuncs<ClassLayout>, class StructSegments*> ClassLayoutStructSegmentsMap;
-    ClassLayoutStructSegmentsMap* m_significantSegmentsMap = nullptr;
 
 #ifdef SWIFT_SUPPORT
     typedef JitHashTable<CORINFO_CLASS_HANDLE, JitPtrKeyFuncs<struct CORINFO_CLASS_STRUCT_>, CORINFO_SWIFT_LOWERING*> SwiftLoweringMap;
