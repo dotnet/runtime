@@ -1,6 +1,8 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections;
+using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 
 namespace System.Text.RegularExpressions
@@ -103,7 +105,7 @@ namespace System.Text.RegularExpressions
         ///
         /// This type is a ref struct since it stores the input span as a field in order to be able to lazily iterate over it.
         /// </remarks>
-        public ref struct ValueMatchEnumerator
+        public ref struct ValueMatchEnumerator : IEnumerator<ValueMatch>
         {
             private readonly Regex _regex;
             private readonly ReadOnlySpan<char> _input;
@@ -157,6 +159,10 @@ namespace System.Text.RegularExpressions
             /// </summary>
             /// <exception cref="InvalidOperationException">Enumeration has either not started or has already finished.</exception>
             public readonly ValueMatch Current => _current;
+
+            readonly object IEnumerator.Current => throw new NotSupportedException();
+            void IEnumerator.Reset() => throw new NotSupportedException();
+            void IDisposable.Dispose() { }
         }
     }
 }
