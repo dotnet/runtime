@@ -19,7 +19,7 @@ namespace System.Reflection
         private bool _throwOnError;
         private bool _ignoreCase;
         private bool _extensibleParser;
-        private void* _stackMark;
+        private ref StackCrawlMark _stackMark;
 
         [RequiresUnreferencedCode("The type might be removed")]
         internal static Type? GetType(
@@ -55,7 +55,7 @@ namespace System.Reflection
                 _throwOnError = throwOnError,
                 _ignoreCase = ignoreCase,
                 _extensibleParser = extensibleParser,
-                _stackMark = Unsafe.AsPointer(ref stackMark)
+                _stackMark = ref stackMark
             }.Resolve(parsed);
         }
 
@@ -72,11 +72,9 @@ namespace System.Reflection
             }
             else
             {
-                ref StackCrawlMark stackMark = ref Unsafe.AsRef<StackCrawlMark>(_stackMark);
-
                 if (_throwOnError)
                 {
-                    assembly = Assembly.Load(name, ref stackMark, null);
+                    assembly = Assembly.Load(name, ref _stackMark, null);
                 }
                 else
                 {
@@ -84,7 +82,7 @@ namespace System.Reflection
                     // Other exceptions like BadImangeFormatException should still fly.
                     try
                     {
-                        assembly = Assembly.Load(name, ref stackMark, null);
+                        assembly = Assembly.Load(name, ref _stackMark, null);
                     }
                     catch (FileNotFoundException)
                     {
@@ -127,9 +125,7 @@ namespace System.Reflection
             {
                 if (assembly is null)
                 {
-                    ref StackCrawlMark stackMark = ref Unsafe.AsRef<StackCrawlMark>(_stackMark);
-
-                    type = RuntimeType.GetType(escapedTypeName, _throwOnError, _ignoreCase, ref stackMark);
+                    type = RuntimeType.GetType(escapedTypeName, _throwOnError, _ignoreCase, ref _stackMark);
                 }
                 else
                 {

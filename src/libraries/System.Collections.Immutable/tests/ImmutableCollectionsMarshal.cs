@@ -135,6 +135,59 @@ namespace System.Collections.Immutable.Tests
             Test<UnmanagedCustomStruct?>();
         }
 
+        [Fact]
+        public void AsMemoryFromNullBuilder()
+        {
+            Memory<Guid> m = ImmutableCollectionsMarshal.AsMemory<Guid>(null);
+            Assert.True(m.IsEmpty);
+            Assert.True(MemoryMarshal.TryGetArray(m, out ArraySegment<Guid> segment));
+            Assert.NotNull(segment.Array);
+            Assert.Equal(0, segment.Array.Length);
+            Assert.Equal(0, segment.Offset);
+            Assert.Equal(0, segment.Count);
+        }
+
+        [Fact]
+        public void AsMemoryFromEmptyBuilder()
+        {
+            Memory<string> m = ImmutableCollectionsMarshal.AsMemory(ImmutableArray.CreateBuilder<string>());
+            Assert.True(m.IsEmpty);
+            Assert.True(MemoryMarshal.TryGetArray(m, out ArraySegment<string> segment));
+            Assert.NotNull(segment.Array);
+            Assert.Equal(0, segment.Offset);
+            Assert.Equal(0, segment.Count);
+        }
+
+        [Fact]
+        public void AsMemoryFromNonEmptyBuilder()
+        {
+            ImmutableArray<int>.Builder builder = ImmutableArray.CreateBuilder<int>(1);
+            builder.Add(42);
+            builder.Add(43);
+            builder.Add(44);
+
+            Memory<int> m1 = ImmutableCollectionsMarshal.AsMemory(builder);
+            Assert.Equal(3, m1.Length);
+
+            Assert.True(MemoryMarshal.TryGetArray(m1, out ArraySegment<int> segment1));
+            Assert.NotNull(segment1.Array);
+            Assert.Equal(0, segment1.Offset);
+            Assert.Equal(3, segment1.Count);
+
+            Span<int> span = m1.Span;
+            Assert.Equal(42, span[0]);
+            Assert.Equal(43, span[1]);
+            Assert.Equal(44, span[2]);
+
+            Memory<int> m2 = ImmutableCollectionsMarshal.AsMemory(builder);
+            Assert.Equal(3, m2.Length);
+            Assert.True(MemoryMarshal.TryGetArray(m2, out ArraySegment<int> segment2));
+
+            Assert.Same(segment1.Array, segment2.Array);
+            Assert.Equal(segment1.Offset, segment2.Offset);
+            Assert.Equal(segment1.Count, segment2.Count);
+        }
+
         public class CustomClass
         {
             public object Foo;
