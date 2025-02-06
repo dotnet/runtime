@@ -63,6 +63,9 @@ namespace System.Threading
     // that were used. Using the constructor indicates WasSpecified=true, and 'default' indicates WasSpecified=false.
     internal readonly struct NamedWaitHandleOptionsInternal
     {
+        public const string CurrentSessionPrefix = @"Local\";
+        public const string AllSessionsPrefix = @"Global\";
+
         private readonly NamedWaitHandleOptions _options;
         private readonly bool _wasSpecified;
 
@@ -91,9 +94,6 @@ namespace System.Threading
         }
 
         public bool WasSpecified => _wasSpecified;
-
-        private const string CurrentSessionPrefix = @"Local\";
-        private const string AllSessionsPrefix = @"Global\";
 
         public string GetNameWithSessionPrefix(string name)
         {

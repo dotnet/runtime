@@ -21,10 +21,17 @@ namespace System.Threading
                 if (options.WasSpecified)
                 {
                     name = options.GetNameWithSessionPrefix(name);
-                    if (options.CurrentUserOnly)
-                    {
-                        name = @"User\" + name;
-                    }
+                }
+
+                if (name.StartsWith(NamedWaitHandleOptionsInternal.CurrentSessionPrefix) &&
+                    name.Length > NamedWaitHandleOptionsInternal.CurrentSessionPrefix.Length)
+                {
+                    name = name.Substring(NamedWaitHandleOptionsInternal.CurrentSessionPrefix.Length);
+                }
+
+                if (options.WasSpecified && options.CurrentUserOnly)
+                {
+                    name = @"User\" + name;
                 }
 
                 SafeWaitHandle? safeWaitHandle = WaitSubsystem.CreateNamedMutex(initiallyOwned, name, out createdNew);
@@ -50,10 +57,17 @@ namespace System.Threading
             if (options.WasSpecified)
             {
                 name = options.GetNameWithSessionPrefix(name);
-                if (options.CurrentUserOnly)
-                {
-                    name = @"User\" + name;
-                }
+            }
+
+            if (name.StartsWith(NamedWaitHandleOptionsInternal.CurrentSessionPrefix) &&
+                name.Length > NamedWaitHandleOptionsInternal.CurrentSessionPrefix.Length)
+            {
+                name = name.Substring(NamedWaitHandleOptionsInternal.CurrentSessionPrefix.Length);
+            }
+
+            if (options.WasSpecified && options.CurrentUserOnly)
+            {
+                name = @"User\" + name;
             }
 
             OpenExistingResult status = WaitSubsystem.OpenNamedMutex(name, out SafeWaitHandle? safeWaitHandle);
