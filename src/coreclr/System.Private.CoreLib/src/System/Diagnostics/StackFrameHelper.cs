@@ -177,7 +177,7 @@ namespace System.Diagnostics
 
         public bool IsLastFrameFromForeignExceptionStackTrace(int i)
         {
-            return (rgiLastFrameFromForeignExceptionStackTrace == null) ? false : rgiLastFrameFromForeignExceptionStackTrace[i];
+            return rgiLastFrameFromForeignExceptionStackTrace != null && rgiLastFrameFromForeignExceptionStackTrace[i];
         }
 
         public int GetNumberOfFrames() { return iFrameCount; }
