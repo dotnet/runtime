@@ -149,7 +149,7 @@ extends:
 
         - powershell: |
             cd '$(httpStressProject)'
-            $env:STRESS_CLIENT_ARGS = "-maxExecutionTime 3 -displayInterval 60 -http 1.1 -trace"
+            $env:STRESS_CLIENT_ARGS = "-maxExecutionTime 180 -displayInterval 60 -http 1.1 -trace"
             $env:STRESS_SERVER_ARGS = "$env:HTTPSTRESS_SERVER_ARGS -http 1.1"
             New-Item -Force $env:DUMPS_SHARE -ItemType Directory
             docker compose up --abort-on-container-exit --no-color
