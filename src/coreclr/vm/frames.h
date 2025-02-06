@@ -239,40 +239,17 @@ enum class FrameIdentifier : TADDR
     CountPlusOne
 };
 
-class FrameBase;
-
 // TransitionFrame only apis
 class TransitionFrame;
 TADDR Frame_GetTransitionBlock(TransitionFrame* frame);
 BOOL Frame_SuppressParamTypeArg(TransitionFrame* frame);
-
-//-----------------------------------------------------------------------------
-// Frame depends on the location of its vtable within the object. This
-// superclass ensures that the vtable for Frame objects is in the same
-// location under both MSVC and GCC.
-//-----------------------------------------------------------------------------
-
-class FrameBase
-{
-    const FrameIdentifier _frameIdentifier;
-
-public:
-    FrameBase(FrameIdentifier frameIdentifier) : _frameIdentifier(frameIdentifier) {LIMITED_METHOD_CONTRACT; }
-
-    void GcScanRoots_Impl(promote_func *fn, ScanContext* sc) {
-        LIMITED_METHOD_CONTRACT;
-        // Nothing to protect
-    }
-
-    FrameIdentifier GetFrameIdentifier() { LIMITED_METHOD_DAC_CONTRACT; return _frameIdentifier; }
-};
 
 //------------------------------------------------------------------------
 // Frame defines methods common to all frame types. There are no actual
 // instances of root frames.
 //------------------------------------------------------------------------
 
-class Frame : public FrameBase
+class Frame
 {
     friend class CheckAsmOffsets;
 #ifdef DACCESS_COMPILE
@@ -280,6 +257,8 @@ class Frame : public FrameBase
 #endif
 
 public:
+    FrameIdentifier GetFrameIdentifier() { LIMITED_METHOD_DAC_CONTRACT; return _frameIdentifier; }
+
     enum ETransitionType
     {
         TT_NONE,
@@ -326,6 +305,11 @@ public:
 #if defined(_DEBUG) && !defined(DACCESS_COMPILE)
     BOOL Protects(OBJECTREF *ppObjectRef);
 #endif // defined(_DEBUG) && !defined(DACCESS_COMPILE)
+
+    void GcScanRoots_Impl(promote_func *fn, ScanContext* sc) {
+        LIMITED_METHOD_CONTRACT;
+        // Nothing to protect
+    }
 
     // Should only be called on Frames that derive from TransitionFrame
     TADDR GetTransitionBlock_Impl()
@@ -593,9 +577,10 @@ public:
 #endif
 
 private:
-    // Pointer to the next frame up the stack.
+    FrameIdentifier _frameIdentifier;
 
 protected:
+    // Pointer to the next frame up the stack.
     PTR_Frame m_Next;        // offset +4
 
 public:
@@ -640,7 +625,7 @@ protected:
     // Frame is considered an abstract class: this protected constructor
     // causes any attempt to instantiate one to fail at compile-time.
     Frame(FrameIdentifier frameIdentifier)
-    : FrameBase(frameIdentifier), m_Next(dac_cast<PTR_Frame>(nullptr))
+    : _frameIdentifier(frameIdentifier), m_Next(dac_cast<PTR_Frame>(nullptr))
     {
         LIMITED_METHOD_CONTRACT;
     }
