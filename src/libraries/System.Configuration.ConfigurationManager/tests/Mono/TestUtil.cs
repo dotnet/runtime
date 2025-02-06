@@ -58,8 +58,10 @@ namespace MonoTests.System.Configuration.Util
         {
             get
             {
-                return Path.Combine(AppDomain.CurrentDomain.BaseDirectory,
-                    Assembly.GetEntryAssembly().ManifestModule.Name);
+                Assembly assembly = Assembly.GetEntryAssembly();
+                string directory = Path.GetDirectoryName(assembly.Location);
+                string fileName = assembly.ManifestModule.Name;
+                return Path.Combine(directory, fileName);
             }
         }
 
