@@ -203,6 +203,7 @@ function_name() to call the system's implementation
 // https://gcc.gnu.org/ml/libstdc++/2016-01/msg00025.html
 #define _GLIBCXX_INCLUDE_NEXT_C_HEADERS 1
 
+#include <minipal/utils.h>
 #ifdef __APPLE__
 
 #undef GetCurrentThread
