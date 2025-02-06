@@ -23,9 +23,10 @@
 #ifndef DISABLE_THREADS
 #include <emscripten/threading.h>
 #include <mono/metadata/threads-types.h>
+#endif
+
 uintptr_t get_wasm_stack_high(void);
 uintptr_t get_wasm_stack_low(void);
-#endif
 
 #endif
 
