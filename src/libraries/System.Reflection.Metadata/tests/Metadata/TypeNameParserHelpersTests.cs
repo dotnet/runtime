@@ -80,10 +80,7 @@ namespace System.Reflection.Metadata.Tests
         [InlineData(typeof(ValueTuple<bool, short, int, DateTime, char, ushort, long, sbyte>))]
         public void GetGenericTypeFullNameReturnsSameStringAsTypeAPI(Type genericType)
         {
-            TypeName openGenericTypeName = TypeName.Parse(genericType.GetGenericTypeDefinition().FullName.AsSpan());
-            ReadOnlySpan<TypeName> genericArgNames = genericType.GetGenericArguments().Select(arg => TypeName.Parse(arg.AssemblyQualifiedName.AsSpan())).ToArray();
-
-            Assert.Equal(genericType.FullName, TypeNameParserHelpers.GetGenericTypeFullName(openGenericTypeName.FullName.AsSpan(), genericArgNames));
+            Assert.Equal(genericType.FullName, TypeName.Parse(genericType.FullName.AsSpan()).FullName);
         }
 
         [Theory]
