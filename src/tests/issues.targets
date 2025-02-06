@@ -1155,6 +1155,9 @@
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/CLR-x86-JIT/V1.2-M01/b08046cs/b08046cs/**">
             <Issue>https://github.com/dotnet/runtime/issues/112228</Issue>
         </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/CLR-x86-JIT/v2.1/DDB/b202743/b202743/**">
+            <Issue>https://github.com/dotnet/runtime/issues/112251</Issue>
+        </ExcludeList>
     </ItemGroup>
 
     <!-- NativeAOT ControlFlowGuard specific -->
