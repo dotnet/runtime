@@ -88,16 +88,12 @@ inline void PEImage::SetModuleFileNameHintForDAC()
     }
 }
 
-#ifdef DACCESS_COMPILE
 inline const SString &PEImage::GetModuleFileNameHintForDAC()
 {
     LIMITED_METHOD_CONTRACT;
 
     return m_sModuleFileNameHintUsedByDac;
 }
-#endif
-
-
 
 inline BOOL PEImage::IsFile()
 {

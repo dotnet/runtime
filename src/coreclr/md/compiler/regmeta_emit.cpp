@@ -1202,7 +1202,7 @@ HRESULT RegMeta::_SetImplements(        // S_OK or error.
 
         i++;
 
-        IfFailGo(UpdateENCLog(TokenFromRid(mdtInterfaceImpl, iInterfaceImpl)));
+        IfFailGo(UpdateENCLog(TokenFromRid(iInterfaceImpl, mdtInterfaceImpl)));
     }
 ErrExit:
 

@@ -13,4 +13,8 @@
     <ProjectReference Include="..\..\managed\Microsoft.NET.HostModel\Microsoft.NET.HostModel.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.HostModel.TestData" Version="$(MicrosoftNETHostModelTestDataVersion)" />
+  </ItemGroup>
+
 </Project>

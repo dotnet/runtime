@@ -37,14 +37,14 @@
         fst.d  $f29, $sp, 0x38
         fst.d  $f30, $sp, 0x40
         fst.d  $f31, $sp, 0x48
-        PROLOG_SAVE_REG_PAIR_INDEXED  22, 1, 0x70
+        PROLOG_SAVE_REG_PAIR_INDEXED  22, 1, 0x68
         st.d  $zero, $sp, 0x10 // locations reserved for return value, not used for exception handling
         st.d  $zero, $sp, 0x18
         PROLOG_SAVE_REG_PAIR  23, 24, 0x20
         PROLOG_SAVE_REG_PAIR  25, 26, 0x30
         PROLOG_SAVE_REG_PAIR  27, 28, 0x40
         PROLOG_SAVE_REG_PAIR  29, 30, 0x50
-        PROLOG_SAVE_REG_PAIR  31,  2, 0x60
+        PROLOG_SAVE_REG       31,     0x60
         // } end PAL_LIMITED_CONTEXT
 
         PROLOG_STACK_ALLOC STACKSIZEOF_ExInfo
@@ -61,12 +61,12 @@
         // sp in fp. If sp is saved in fp in prolog then it is not expected that fp can change in the body
         // of method. However, this method needs to be able to change fp before calling funclet.
         // This is required to access locals in funclet.
-        PROLOG_SAVE_REG_PAIR_NO_FP_INDEXED  22, 1, 0x60
+        PROLOG_SAVE_REG_PAIR_NO_FP_INDEXED  22, 1, 0x58
         PROLOG_SAVE_REG_PAIR  23, 24, 0x10
         PROLOG_SAVE_REG_PAIR  25, 26, 0x20
         PROLOG_SAVE_REG_PAIR  27, 28, 0x30
         PROLOG_SAVE_REG_PAIR  29, 30, 0x40
-        PROLOG_SAVE_REG_PAIR  31,  2, 0x50
+        PROLOG_SAVE_REG       31,     0x50
         ori  $fp, $sp, 0
         .cfi_def_cfa_register  22 //fp
 
@@ -91,8 +91,8 @@
         EPILOG_RESTORE_REG_PAIR  25, 26, 0x20
         EPILOG_RESTORE_REG_PAIR  27, 28, 0x30
         EPILOG_RESTORE_REG_PAIR  29, 30, 0x40
-        EPILOG_RESTORE_REG_PAIR  31,  2, 0x50
-        EPILOG_RESTORE_REG_PAIR_INDEXED  22, 1, 0x60
+        EPILOG_RESTORE_REG       31,     0x50
+        EPILOG_RESTORE_REG_PAIR_INDEXED  22, 1, 0x58
    .endm
 
 
@@ -512,7 +512,7 @@ LOCAL_LABEL(DonePopping):
 
         PREPARE_EXTERNAL_VAR_INDIRECT_W RhpTrapThreads, $a3
 
-        andi  $t7, $a3, TrapThreadsFlags_AbortInProgress_Bit
+        bstrpick.d  $t7, $a3, TrapThreadsFlags_AbortInProgress_Bit, TrapThreadsFlags_AbortInProgress_Bit
         beq  $t7, $zero, LOCAL_LABEL(NoAbort)
 
         ld.d  $a3, $sp, rsp_offset_is_not_handling_thread_abort

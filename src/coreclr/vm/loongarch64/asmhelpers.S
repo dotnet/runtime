@@ -937,8 +937,11 @@ LEAF_ENTRY JIT_GetDynamicNonGCStaticBase_SingleAppDomain, _TEXT
     jirl $r0, $ra, 0
 
 LOCAL_LABEL(JIT_GetDynamicNonGCStaticBase_SingleAppDomain_CallHelper):
-    // Tail call JIT_GetDynamicNonGCStaticBase_Portable
-    b JIT_GetDynamicNonGCStaticBase_Portable
+    // Tail call GetNonGCStaticBase
+    ld.d $a0, $a0, OFFSETOF__DynamicStaticsInfo__m_pMethodTable
+    PREPARE_EXTERNAL_VAR g_pGetNonGCStaticBase, $t4
+    ld.d $t4, $t4, 0
+    EPILOG_BRANCH_REG        $t4
 LEAF_END JIT_GetDynamicNonGCStaticBase_SingleAppDomain, _TEXT
 
 // ------------------------------------------------------------------
@@ -953,8 +956,11 @@ LEAF_ENTRY JIT_GetDynamicGCStaticBase_SingleAppDomain, _TEXT
     jirl $r0, $ra, 0
 
 LOCAL_LABEL(JIT_GetDynamicGCStaticBase_SingleAppDomain_CallHelper):
-    // Tail call JIT_GetDynamicGCStaticBase_Portable
-    b JIT_GetDynamicGCStaticBase_Portable
+    // Tail call GetGCStaticBase
+    ld.d $a0, $a0, OFFSETOF__DynamicStaticsInfo__m_pMethodTable
+    PREPARE_EXTERNAL_VAR g_pGetGCStaticBase, $t4
+    ld.d $t4, $t4, 0
+    EPILOG_BRANCH_REG        $t4
 LEAF_END JIT_GetDynamicGCStaticBase_SingleAppDomain, _TEXT
 
 #ifdef FEATURE_READYTORUN
@@ -973,7 +979,6 @@ C_FUNC(DelayLoad_MethodCall):
     ori  $t4,$a0,0
 
     EPILOG_WITH_TRANSITION_BLOCK_TAILCALL
-    PATCH_LABEL ExternalMethodFixupPatchLabel
     EPILOG_BRANCH_REG   $t4
 NESTED_END DelayLoad_MethodCall_FakeProlog, _TEXT
 
@@ -1080,6 +1085,22 @@ NESTED_ENTRY OnCallCountThresholdReachedStub, _TEXT, NoHandler
     EPILOG_BRANCH_REG $t4
 NESTED_END OnCallCountThresholdReachedStub, _TEXT
 
+NESTED_ENTRY JIT_Patchpoint, _TEXT, NoHandler
+    PROLOG_WITH_TRANSITION_BLOCK
+
+    addi.d  $a0, $sp, __PWTB_TransitionBlock // TransitionBlock *
+    bl      C_FUNC(JIT_PatchpointWorkerWorkerWithPolicy)
+
+    EPILOG_WITH_TRANSITION_BLOCK_RETURN
+NESTED_END JIT_Patchpoint, _TEXT
+
+// first arg register holds iloffset, which needs to be moved to the second register, and the first register filled with NULL
+LEAF_ENTRY JIT_PartialCompilationPatchpoint, _TEXT
+    move    $a1, $a0
+    li.d    $a0, 0
+    b C_FUNC(JIT_Patchpoint)
+LEAF_END JIT_PartialCompilationPatchpoint, _TEXT
+
 #endif // FEATURE_TIERED_COMPILATION
 
 // ------------------------------------------------------------------
@@ -1110,3 +1131,14 @@ LEAF_ENTRY GetTLSResolverAddress, _TEXT
         EPILOG_RETURN
 LEAF_END GetTLSResolverAddress, _TEXT
 // ------------------------------------------------------------------
+
+LEAF_ENTRY JIT_PollGC, _TEXT
+        PREPARE_EXTERNAL_VAR g_TrapReturningThreads, $t0
+        ld.w    $t0, $t0, 0
+        bne     $t0, $zero, LOCAL_LABEL(JIT_PollGCRarePath)
+        jirl $r0, $ra, 0
+LOCAL_LABEL(JIT_PollGCRarePath):
+        PREPARE_EXTERNAL_VAR g_pPollGC, $t0
+        ld.d    $t0, $t0, 0
+        EPILOG_BRANCH_REG $t0
+LEAF_END JIT_PollGC, _TEXT

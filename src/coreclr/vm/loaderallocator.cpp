@@ -1174,10 +1174,6 @@ void LoaderAllocator::Init(BYTE *pExecutableHeapMemory)
     if (IsCollectible())
         m_pLowFrequencyHeap = m_pHighFrequencyHeap;
 
-#if defined(_DEBUG) && defined(STUBLINKER_GENERATES_UNWIND_INFO)
-    m_pHighFrequencyHeap->m_fPermitStubsWithUnwindInfo = TRUE;
-#endif
-
     if (dwStaticsHeapReserveSize != 0)
     {
         m_pStaticsHeap = new (&m_StaticsHeapInstance) LoaderHeap(STATIC_FIELD_HEAP_RESERVE_SIZE,
@@ -1200,10 +1196,6 @@ void LoaderAllocator::Init(BYTE *pExecutableHeapMemory)
                                                        UnlockedLoaderHeap::HeapKind::Executable);
 
     initReservedMem += dwStubHeapReserveSize;
-
-#if defined(_DEBUG) && defined(STUBLINKER_GENERATES_UNWIND_INFO)
-    m_pStubHeap->m_fPermitStubsWithUnwindInfo = TRUE;
-#endif
 
     m_pPrecodeHeap = new (&m_PrecodeHeapInstance) CodeFragmentHeap(this, STUB_CODE_BLOCK_PRECODE);
 
@@ -1387,20 +1379,12 @@ void LoaderAllocator::Terminate()
 
     if (m_pHighFrequencyHeap != NULL)
     {
-#ifdef STUBLINKER_GENERATES_UNWIND_INFO
-        UnregisterUnwindInfoInLoaderHeap(m_pHighFrequencyHeap);
-#endif
-
         m_pHighFrequencyHeap->~LoaderHeap();
         m_pHighFrequencyHeap = NULL;
     }
 
     if (m_pStubHeap != NULL)
     {
-#ifdef STUBLINKER_GENERATES_UNWIND_INFO
-        UnregisterUnwindInfoInLoaderHeap(m_pStubHeap);
-#endif
-
         m_pStubHeap->~LoaderHeap();
         m_pStubHeap = NULL;
     }
@@ -2157,17 +2141,17 @@ void LoaderAllocator::AssociateMemoryWithLoaderAllocator(BYTE *start, const BYTE
 }
 
 /* static */
-PTR_LoaderAllocator LoaderAllocator::GetAssociatedLoaderAllocator_Unsafe(TADDR ptr)
+void LoaderAllocator::GcReportAssociatedLoaderAllocators_Unsafe(TADDR ptr, promote_func* fn, ScanContext* sc)
 {
     LIMITED_METHOD_CONTRACT;
 
     GlobalLoaderAllocator* pGlobalAllocator = (GlobalLoaderAllocator*)SystemDomain::GetGlobalLoaderAllocator();
-    LoaderAllocator* pLoaderAllocator;
-    if (pGlobalAllocator->m_memoryAssociations.IsInRangeWorker_Unlocked(ptr, reinterpret_cast<TADDR *>(&pLoaderAllocator)))
-    {
-        return pLoaderAllocator;
-    }
-    return NULL;
+    pGlobalAllocator->m_memoryAssociations.ForEachInRangeWorker_Unlocked(ptr,
+        [fn, sc](TADDR laAddr)
+        {
+            GcReportLoaderAllocator(fn, sc, (LoaderAllocator*)laAddr);
+        }
+    );
 }
 
 

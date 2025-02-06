@@ -3,7 +3,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -2658,8 +2657,14 @@ namespace System.Numerics.Tensors
 
                 if (dimensions.IsEmpty)
                 {
-                    lengths = tensor._lengths.Reverse().ToArray();
-                    permutation = Enumerable.Range(0, tensor.Rank).Reverse().ToArray();
+                    int[] tempPermutation = new int[tensor.Rank];
+                    for (int i = 0; i < tensor.Rank; i++)
+                    {
+                        lengths[i] = tensor._lengths[tensor.Rank - 1 - i];
+                        tempPermutation[i] = tensor.Rank - 1 - i;
+                    }
+
+                    permutation = tempPermutation;
                 }
                 else
                 {
@@ -3456,7 +3461,7 @@ namespace System.Numerics.Tensors
             Tensor<T>[] outputs = new Tensor<T>[tensors.Length];
             for (int i = 0; i < tensors.Length; i++)
             {
-                outputs[i] = Tensor.Unsqueeze(tensors[0], dimension);
+                outputs[i] = Tensor.Unsqueeze(tensors[i], dimension);
             }
             return Tensor.ConcatenateOnDimension<T>(dimension, outputs);
         }
@@ -3494,9 +3499,9 @@ namespace System.Numerics.Tensors
             Tensor<T>[] outputs = new Tensor<T>[tensors.Length];
             for (int i = 0; i < tensors.Length; i++)
             {
-                outputs[i] = Tensor.Unsqueeze(tensors[0], dimension);
+                outputs[i] = Tensor.Unsqueeze(tensors[i], dimension);
             }
-            return ref Tensor.ConcatenateOnDimension<T>(dimension, tensors, destination);
+            return ref Tensor.ConcatenateOnDimension<T>(dimension, outputs, destination);
         }
         #endregion
 
@@ -3507,16 +3512,15 @@ namespace System.Numerics.Tensors
         /// <param name="x">The <see cref="TensorSpan{T}"/> to take the standard deviation of.</param>
         /// <returns><typeparamref name="T"/> representing the standard deviation.</returns>
         public static T StdDev<T>(in ReadOnlyTensorSpan<T> x)
-            where T : IFloatingPoint<T>, IPowerFunctions<T>, IAdditionOperators<T, T, T>, IAdditiveIdentity<T, T>
+            where T : IFloatingPoint<T>, IAdditionOperators<T, T, T>, IAdditiveIdentity<T, T>, IRootFunctions<T>
         {
             T mean = Average(x);
-            Span<T> span = MemoryMarshal.CreateSpan(ref x._reference, (int)x._shape._memoryLength);
-            Span<T> output = new T[x.FlattenedLength];
-            TensorPrimitives.Subtract(span, mean, output);
-            TensorPrimitives.Abs(output, output);
-            TensorPrimitives.Pow((ReadOnlySpan<T>)output, T.CreateChecked(2), output);
-            T sum = TensorPrimitives.Sum((ReadOnlySpan<T>)output);
-            return T.CreateChecked(sum / T.CreateChecked(x._shape._memoryLength));
+            Tensor<T> temp = CreateUninitialized<T>(x.Lengths);
+            Subtract(x, mean, temp);
+            Abs<T>(temp, temp);
+            T sum = SumOfSquares<T>(temp);
+            T variance = sum / T.CreateChecked(x.FlattenedLength);
+            return T.Sqrt(variance);
         }
         #endregion
 
@@ -3527,7 +3531,8 @@ namespace System.Numerics.Tensors
         /// <param name="tensor">The <see cref="TensorSpan{T}"/> you want to represent as a string.</param>
         /// <param name="maximumLengths">Maximum Length of each dimension</param>
         /// <returns>A <see cref="string"/> representation of the <paramref name="tensor"/></returns>
-        public static string ToString<T>(this in TensorSpan<T> tensor, params ReadOnlySpan<nint> maximumLengths) => ((ReadOnlyTensorSpan<T>)tensor).ToString(maximumLengths);
+        public static string ToString<T>(this in TensorSpan<T> tensor, params ReadOnlySpan<nint> maximumLengths) =>
+            ((ReadOnlyTensorSpan<T>)tensor).ToString(maximumLengths);
 
         /// <summary>
         /// Creates a <see cref="string"/> representation of the <see cref="ReadOnlyTensorSpan{T}"/>."/>
@@ -3537,11 +3542,16 @@ namespace System.Numerics.Tensors
         /// <param name="maximumLengths">Maximum Length of each dimension</param>
         public static string ToString<T>(this in ReadOnlyTensorSpan<T> tensor, params ReadOnlySpan<nint> maximumLengths)
         {
+            StringBuilder sb = new();
+            ToString(in tensor, sb, maximumLengths);
+            return sb.ToString();
+        }
 
+        internal static void ToString<T>(this in ReadOnlyTensorSpan<T> tensor, StringBuilder sb, params ReadOnlySpan<nint> maximumLengths)
+        {
             if (maximumLengths.Length != tensor.Rank)
                 ThrowHelper.ThrowArgument_DimensionsNotSame(nameof(tensor));
 
-            var sb = new StringBuilder();
             scoped Span<nint> curIndexes;
             nint[]? curIndexesArray;
             if (tensor.Rank > 6)
@@ -3573,8 +3583,6 @@ namespace System.Numerics.Tensors
 
             if (curIndexesArray != null)
                 ArrayPool<nint>.Shared.Return(curIndexesArray);
-
-            return sb.ToString();
         }
 
         /// <summary>
@@ -3596,11 +3604,15 @@ namespace System.Numerics.Tensors
         {
             if (tensor.Lengths.Length < 2)
                 ThrowHelper.ThrowArgument_TransposeTooFewDimensions();
-            int[] dimension = Enumerable.Range(0, tensor.Rank).ToArray();
+
+            Span<int> dimension = tensor.Rank <= TensorShape.MaxInlineRank ? stackalloc int[tensor.Rank] : new int[tensor.Rank];
+            TensorSpanHelpers.FillRange(dimension);
+
             int temp = dimension[tensor.Rank - 1];
             dimension[tensor.Rank - 1] = dimension[tensor.Rank - 2];
             dimension[tensor.Rank - 2] = temp;
-            return PermuteDimensions(tensor, dimension.AsSpan());
+
+            return PermuteDimensions(tensor, dimension);
         }
         #endregion
 
@@ -3660,15 +3672,28 @@ namespace System.Numerics.Tensors
             if (dimension < 0)
                 dimension = tensor.Rank - dimension;
 
-            List<nint> tempLengths = tensor._lengths.ToList();
-            tempLengths.Insert(dimension, 1);
-            nint[] lengths = [.. tempLengths];
-            List<nint> tempStrides = tensor.Strides.ToArray().ToList();
+            Span<nint> lengths = tensor._lengths.Length + 1 <= TensorShape.MaxInlineRank ?
+                stackalloc nint[tensor._lengths.Length + 1] :
+                new nint[tensor._lengths.Length + 1];
+            tensor._lengths.AsSpan(0, dimension).CopyTo(lengths);
+            tensor._lengths.AsSpan(dimension).CopyTo(lengths.Slice(dimension + 1));
+            lengths[dimension] = 1;
+
+            Span<nint> strides = tensor.Strides.Length + 1 <= TensorShape.MaxInlineRank ?
+                stackalloc nint[tensor.Strides.Length + 1] :
+                new nint[tensor.Strides.Length + 1];
             if (dimension == tensor.Rank)
-                tempStrides.Add(tensor.Strides[dimension - 1]);
+            {
+                tensor.Strides.CopyTo(strides);
+                strides[dimension] = tensor.Strides[dimension - 1];
+            }
             else
-                tempStrides.Insert(dimension, tensor.Strides[dimension] * tensor.Lengths[dimension]);
-            nint[] strides = [.. tempStrides];
+            {
+                tensor.Strides.Slice(0, dimension).CopyTo(strides);
+                tensor.Strides.Slice(dimension).CopyTo(strides.Slice(dimension + 1));
+                strides[dimension] = tensor.Strides[dimension] * tensor.Lengths[dimension];
+            }
+
             return new Tensor<T>(tensor._values, lengths, strides);
         }
 
@@ -3684,15 +3709,28 @@ namespace System.Numerics.Tensors
             if (dimension < 0)
                 dimension = tensor.Rank - dimension;
 
-            List<nint> tempLengths = tensor.Lengths.ToArray().ToList();
-            tempLengths.Insert(dimension, 1);
-            nint[] lengths = [.. tempLengths];
-            List<nint> tempStrides = tensor.Strides.ToArray().ToList();
+            Span<nint> lengths = tensor.Lengths.Length + 1 <= TensorShape.MaxInlineRank ?
+                stackalloc nint[tensor.Lengths.Length + 1] :
+                new nint[tensor.Lengths.Length + 1];
+            tensor.Lengths.Slice(0, dimension).CopyTo(lengths);
+            tensor.Lengths.Slice(dimension).CopyTo(lengths.Slice(dimension + 1));
+            lengths[dimension] = 1;
+
+            Span<nint> strides = tensor.Strides.Length + 1 <= TensorShape.MaxInlineRank ?
+                stackalloc nint[tensor.Strides.Length + 1] :
+                new nint[tensor.Strides.Length + 1];
             if (dimension == tensor.Rank)
-                tempStrides.Add(tensor.Strides[dimension - 1]);
+            {
+                tensor.Strides.CopyTo(strides);
+                strides[dimension] = tensor.Strides[dimension - 1];
+            }
             else
-                tempStrides.Insert(dimension, tensor.Strides[dimension] * tensor.Lengths[dimension]);
-            nint[] strides = [.. tempStrides];
+            {
+                tensor.Strides.Slice(0, dimension).CopyTo(strides);
+                tensor.Strides.Slice(dimension).CopyTo(strides.Slice(dimension + 1));
+                strides[dimension] = tensor.Strides[dimension] * tensor.Lengths[dimension];
+            }
+
             return new TensorSpan<T>(ref tensor._reference, lengths, strides, tensor._shape._memoryLength);
         }
 
@@ -3708,15 +3746,28 @@ namespace System.Numerics.Tensors
             if (dimension < 0)
                 dimension = tensor.Rank - dimension;
 
-            List<nint> tempLengths = tensor.Lengths.ToArray().ToList();
-            tempLengths.Insert(dimension, 1);
-            nint[] lengths = [.. tempLengths];
-            List<nint> tempStrides = tensor.Strides.ToArray().ToList();
+            Span<nint> lengths = tensor.Lengths.Length + 1 <= TensorShape.MaxInlineRank ?
+                stackalloc nint[tensor.Lengths.Length + 1] :
+                new nint[tensor.Lengths.Length + 1];
+            tensor.Lengths.Slice(0, dimension).CopyTo(lengths);
+            tensor.Lengths.Slice(dimension).CopyTo(lengths.Slice(dimension + 1));
+            lengths[dimension] = 1;
+
+            Span<nint> strides = tensor.Strides.Length + 1 <= TensorShape.MaxInlineRank ?
+                stackalloc nint[tensor.Strides.Length + 1] :
+                new nint[tensor.Strides.Length + 1];
             if (dimension == tensor.Rank)
-                tempStrides.Add(tensor.Strides[dimension - 1]);
+            {
+                tensor.Strides.CopyTo(strides);
+                strides[dimension] = tensor.Strides[dimension - 1];
+            }
             else
-                tempStrides.Insert(dimension, tensor.Strides[dimension] * tensor.Lengths[dimension]);
-            nint[] strides = [.. tempStrides];
+            {
+                tensor.Strides.Slice(0, dimension).CopyTo(strides);
+                tensor.Strides.Slice(dimension).CopyTo(strides.Slice(dimension + 1));
+                strides[dimension] = tensor.Strides[dimension] * tensor.Lengths[dimension];
+            }
+
             return new ReadOnlyTensorSpan<T>(ref tensor._reference, lengths, strides, tensor._shape._memoryLength);
         }
         #endregion
@@ -6599,6 +6650,19 @@ namespace System.Numerics.Tensors
             where T : IAdditionOperators<T, T, T>, IAdditiveIdentity<T, T>
         {
             return TensorPrimitivesHelperSpanInTOut(x, TensorPrimitives.Sum);
+        }
+        #endregion
+
+        #region SumOfSquares
+        /// <summary>
+        /// Sums the squared elements of the specified tensor.
+        /// </summary>
+        /// <param name="x">Tensor to sum squares of</param>
+        /// <returns></returns>
+        internal static T SumOfSquares<T>(scoped in ReadOnlyTensorSpan<T> x)
+            where T : IAdditionOperators<T, T, T>, IAdditiveIdentity<T, T>, IMultiplyOperators<T, T, T>
+        {
+            return TensorPrimitivesHelperSpanInTOut(x, TensorPrimitives.SumOfSquares);
         }
         #endregion
 

@@ -267,15 +267,21 @@ FlowEdge* Compiler::BlockPredsWithEH(BasicBlock* blk)
 //   'blk'.
 //
 // Arguments:
-//    blk - Block to get dominance predecessors for.
+//   blk - Block to get dominance predecessors for.
 //
 // Returns:
-//    List of edges.
+//   List of edges.
 //
 // Remarks:
-//    Differs from BlockPredsWithEH only in the treatment of handler blocks;
-//    enclosed blocks are never dominance preds, while all predecessors of
-//    blocks in the 'try' are (currently only the first try block expected).
+//   Differs from BlockPredsWithEH only in the treatment of handler blocks;
+//   enclosed blocks are never dominance preds, while all predecessors of
+//   blocks in the 'try' are (currently only the first try block expected).
+//
+//   There are additional complications due to spurious flow because of
+//   two-pass EH. In the flow graph with EH edges we can see entries into the
+//   try from filters outside the try, to blocks other than the "try-begin"
+//   block. Hence we need to consider the full set of blocks in the try region
+//   when considering the block dominance preds.
 //
 FlowEdge* Compiler::BlockDominancePreds(BasicBlock* blk)
 {
@@ -284,14 +290,6 @@ FlowEdge* Compiler::BlockDominancePreds(BasicBlock* blk)
         return blk->bbPreds;
     }
 
-    EHblkDsc* ehblk = ehGetBlockHndDsc(blk);
-    if (!ehblk->HasFinallyOrFaultHandler() || (ehblk->ebdHndBeg != blk))
-    {
-        return ehblk->ebdTryBeg->bbPreds;
-    }
-
-    // Finally/fault handlers can be preceded by enclosing filters due to 2
-    // pass EH, so add those and keep them cached.
     BlockToFlowEdgeMap* domPreds = GetDominancePreds();
     FlowEdge*           res;
     if (domPreds->Lookup(blk, &res))
@@ -299,33 +297,69 @@ FlowEdge* Compiler::BlockDominancePreds(BasicBlock* blk)
         return res;
     }
 
-    res = ehblk->ebdTryBeg->bbPreds;
-    if (ehblk->HasFinallyOrFaultHandler() && (ehblk->ebdHndBeg == blk))
+    EHblkDsc* ehblk = ehGetBlockHndDsc(blk);
+    res             = BlockPredsWithEH(blk);
+    for (BasicBlock* predBlk : ehblk->ebdTryBeg->PredBlocks())
     {
-        // block is a finally or fault handler; all enclosing filters are predecessors
-        unsigned enclosing = ehblk->ebdEnclosingTryIndex;
-        while (enclosing != EHblkDsc::NO_ENCLOSING_INDEX)
-        {
-            EHblkDsc* enclosingDsc = ehGetDsc(enclosing);
-            if (enclosingDsc->HasFilter())
-            {
-                for (BasicBlock* filterBlk = enclosingDsc->ebdFilter; filterBlk != enclosingDsc->ebdHndBeg;
-                     filterBlk             = filterBlk->Next())
-                {
-                    res = new (this, CMK_FlowEdge) FlowEdge(filterBlk, blk, res);
-
-                    assert(filterBlk->VisitEHEnclosedHandlerSecondPassSuccs(this, [blk](BasicBlock* succ) {
-                        return succ == blk ? BasicBlockVisit::Abort : BasicBlockVisit::Continue;
-                    }) == BasicBlockVisit::Abort);
-                }
-            }
-
-            enclosing = enclosingDsc->ebdEnclosingTryIndex;
-        }
+        res = new (this, CMK_FlowEdge) FlowEdge(predBlk, blk, res);
     }
 
     domPreds->Set(blk, res);
     return res;
+}
+
+//------------------------------------------------------------------------
+// IsInsertedSsaLiveIn: See if a local is marked as being live-in to a block in
+// the side table with locals inserted into SSA.
+//
+// Arguments:
+//   block - The block
+//   lclNum - The local
+//
+// Returns:
+//    True if the local is marked as live-in to that block
+//
+bool Compiler::IsInsertedSsaLiveIn(BasicBlock* block, unsigned lclNum)
+{
+    assert(lvaGetDesc(lclNum)->lvInSsa);
+
+    if (m_insertedSsaLocalsLiveIn == nullptr)
+    {
+        return false;
+    }
+
+    return m_insertedSsaLocalsLiveIn->Lookup(BasicBlockLocalPair(block, lclNum));
+}
+
+//------------------------------------------------------------------------
+// AddInsertedSsaLiveIn: Mark as local that was inserted into SSA as being
+// live-in to a block.
+//
+// Arguments:
+//   block - The block
+//   lclNum - The local
+//
+// Returns:
+//    True if this was added anew; false if the local was already marked as such.
+//
+bool Compiler::AddInsertedSsaLiveIn(BasicBlock* block, unsigned lclNum)
+{
+    // SSA-inserted locals always have explicit reaching defs for all uses, so
+    // it never makes sense for them to be live into the first block.
+    assert(block != fgFirstBB);
+
+    if (m_insertedSsaLocalsLiveIn == nullptr)
+    {
+        m_insertedSsaLocalsLiveIn = new (this, CMK_SSA) BasicBlockLocalPairSet(getAllocator(CMK_SSA));
+    }
+
+    if (m_insertedSsaLocalsLiveIn->Set(BasicBlockLocalPair(block, lclNum), true, BasicBlockLocalPairSet::Overwrite))
+    {
+        return false;
+    }
+
+    JITDUMP("Marked V%02u as live into " FMT_BB "\n", lclNum, block->bbNum);
+    return true;
 }
 
 //------------------------------------------------------------------------
@@ -370,7 +404,7 @@ bool BasicBlock::IsFirstColdBlock(Compiler* compiler) const
 bool BasicBlock::CanRemoveJumpToNext(Compiler* compiler) const
 {
     assert(KindIs(BBJ_ALWAYS));
-    return JumpsToNext() && (bbNext != compiler->fgFirstColdBlock);
+    return JumpsToNext() && !IsLastHotBlock(compiler);
 }
 
 //------------------------------------------------------------------------
@@ -387,7 +421,7 @@ bool BasicBlock::CanRemoveJumpToTarget(BasicBlock* target, Compiler* compiler) c
 {
     assert(KindIs(BBJ_COND));
     assert(TrueTargetIs(target) || FalseTargetIs(target));
-    return NextIs(target) && !compiler->fgInDifferentRegions(this, target);
+    return NextIs(target) && !IsLastHotBlock(compiler);
 }
 
 #ifdef DEBUG
@@ -462,7 +496,6 @@ void BasicBlock::dspFlags() const
         {BBF_REMOVED, "del"},
         {BBF_DONT_REMOVE, "keep"},
         {BBF_INTERNAL, "internal"},
-        {BBF_FAILED_VERIFICATION, "failV"},
         {BBF_HAS_SUPPRESSGC_CALL, "sup-gc"},
         {BBF_LOOP_HEAD, "loophead"},
         {BBF_HAS_LABEL, "label"},
@@ -474,6 +507,7 @@ void BasicBlock::dspFlags() const
         {BBF_HAS_IDX_LEN, "idxlen"},
         {BBF_HAS_MD_IDX_LEN, "mdidxlen"},
         {BBF_HAS_NEWOBJ, "newobj"},
+        {BBF_HAS_NEWARR, "newarr"},
         {BBF_HAS_NULLCHECK, "nullcheck"},
         {BBF_BACKWARD_JUMP, "bwd"},
         {BBF_BACKWARD_JUMP_TARGET, "bwd-target"},
@@ -564,8 +598,7 @@ void BasicBlock::dspSuccs(Compiler* compiler)
     // compute it ourselves here.
     if (bbKind == BBJ_SWITCH)
     {
-        // Create a set with all the successors. Don't use BlockSet, so we don't need to worry
-        // about the BlockSet epoch.
+        // Create a set with all the successors.
         unsigned     bbNumMax = compiler->fgBBNumMax;
         BitVecTraits bitVecTraits(bbNumMax + 1, compiler);
         BitVec       uniqueSuccBlocks(BitVecOps::MakeEmpty(&bitVecTraits));
@@ -983,10 +1016,10 @@ unsigned JitPtrKeyFuncs<BasicBlock>::GetHashCode(const BasicBlock* ptr)
     unsigned hash = SsaStressHashHelper();
     if (hash != 0)
     {
-        return (hash ^ (ptr->bbNum << 16) ^ ptr->bbNum);
+        return (hash ^ (ptr->bbID << 16) ^ ptr->bbID);
     }
 #endif
-    return ptr->bbNum;
+    return ptr->bbID;
 }
 
 //------------------------------------------------------------------------
@@ -1889,4 +1922,135 @@ StackEntry* BasicBlock::bbStackOnEntry() const
 {
     assert(bbEntryState);
     return bbEntryState->esStack;
+}
+
+//------------------------------------------------------------------------
+// StatementCount: number of statements in the block.
+//
+// Returns:
+//   count of statements
+//
+// Notes:
+//   If you are calling this in order to compare the statement count
+//   against a limit, use StatementCountExceeds as it may do less work.
+//
+unsigned BasicBlock::StatementCount()
+{
+    unsigned count = 0;
+
+    for (Statement* const stmt : Statements())
+    {
+        count++;
+    }
+
+    return count;
+}
+
+//------------------------------------------------------------------------
+// StatementCountExceeds: check if the number of statements in the block
+//   exceeds some limit
+//
+// Arguments:
+//    limit  - limit on the number of statements
+//    count  - [out, optional] actual number of statements (if less than or equal to limit)
+//
+// Returns:
+//   true if the number of statements is greater than limit
+//
+bool BasicBlock::StatementCountExceeds(unsigned limit, unsigned* count /* = nullptr */)
+{
+    unsigned localCount = 0;
+    bool     overLimit  = false;
+
+    for (Statement* const stmt : Statements())
+    {
+        if (++localCount > limit)
+        {
+            overLimit = true;
+            break;
+        }
+    }
+
+    if (count != nullptr)
+    {
+        *count = localCount;
+    }
+
+    return overLimit;
+}
+
+//------------------------------------------------------------------------
+// ComplexityExceeds: check if the number of nodes in the trees in the block
+//   exceeds some limit
+//
+// Arguments:
+//    comp   - compiler instance
+//    limit  - limit on the number of nodes
+//    count  - [out, optional] actual number of nodes (if less than or equal to limit)
+//
+// Returns:
+//   true if the number of nodes is greater than limit
+//
+bool BasicBlock::ComplexityExceeds(Compiler* comp, unsigned limit, unsigned* count /* = nullptr */)
+{
+    unsigned localCount = 0;
+    bool     overLimit  = false;
+
+    for (Statement* const stmt : Statements())
+    {
+        unsigned slack  = limit - localCount;
+        unsigned actual = 0;
+        if (comp->gtComplexityExceeds(stmt->GetRootNode(), slack, &actual))
+        {
+            overLimit = true;
+            break;
+        }
+
+        localCount += actual;
+    }
+
+    if (count != nullptr)
+    {
+        *count = localCount;
+    }
+
+    return overLimit;
+}
+
+//------------------------------------------------------------------------
+// ComplexityExceeds: check if the number of nodes in the trees in the blocks
+//   in the range exceeds some limit
+//
+// Arguments:
+//    comp   - compiler instance
+//    limit  - limit on the number of nodes
+//    count  - [out, optional] actual number of nodes (if less than or equal to limit)
+//
+// Returns:
+//   true if the number of nodes is greater than limit
+//
+bool BasicBlockRangeList::ComplexityExceeds(Compiler* comp, unsigned limit, unsigned* count /* = nullptr */)
+{
+    unsigned localCount = 0;
+    bool     overLimit  = false;
+
+    for (BasicBlock* const block : *this)
+    {
+        unsigned slack  = limit - localCount;
+        unsigned actual = 0;
+        if (block->ComplexityExceeds(comp, slack, &actual))
+        {
+            overLimit = true;
+            break;
+        }
+
+        localCount += actual;
+    }
+
+    if (count != nullptr)
+    {
+        *count = localCount;
+    }
+
+    return overLimit;
 }

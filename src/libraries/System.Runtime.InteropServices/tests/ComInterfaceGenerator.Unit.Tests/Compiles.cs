@@ -341,6 +341,10 @@ namespace ComInterfaceGenerator.Unit.Tests
             yield return new object[] { ID(), codeSnippets.DerivedComInterfaceTypeTwoLevelShadows};
             yield return new object[] { ID(), codeSnippets.DerivedWithParametersDeclaredInOtherNamespace };
             yield return new object[] { ID(), codeSnippets.ComInterfaceParameters };
+            yield return new object[] { ID(), codeSnippets.ForwarderWithPreserveSigAndRefKind("ref") };
+            yield return new object[] { ID(), codeSnippets.ForwarderWithPreserveSigAndRefKind("ref readonly") };
+            yield return new object[] { ID(), codeSnippets.ForwarderWithPreserveSigAndRefKind("in") };
+            yield return new object[] { ID(), codeSnippets.ForwarderWithPreserveSigAndRefKind("out") };
         }
 
         public static IEnumerable<object[]> ManagedToUnmanagedComInterfaceSnippetsToCompile()

@@ -58,11 +58,11 @@
 #include <mono/utils/mono-compiler.h>
 #include <mono/utils/mono-time.h>
 #include <mono/utils/mono-mmap.h>
-#include <mono/utils/mono-rand.h>
 #include <mono/utils/json.h>
 #include <mono/utils/mono-threads-coop.h>
 #include <mono/profiler/aot.h>
 #include <mono/utils/w32api.h>
+#include <minipal/random.h>
 
 #include "aot-compiler.h"
 #include "aot-runtime.h"
@@ -11567,16 +11567,8 @@ emit_extra_methods (MonoAotCompile *acfg)
 static void
 generate_aotid (guint8* aotid)
 {
-	gpointer rand_handle;
-	ERROR_DECL (error);
-
-	mono_rand_open ();
-	rand_handle = mono_rand_init (NULL, 0);
-
-	mono_rand_try_get_bytes (&rand_handle, aotid, 16, error);
-	mono_error_assert_ok (error);
-
-	mono_rand_close (rand_handle);
+	int status = minipal_get_cryptographically_secure_random_bytes (aotid, 16);
+	g_assert (status == 0);
 }
 
 static void

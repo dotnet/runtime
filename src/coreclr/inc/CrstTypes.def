@@ -256,7 +256,7 @@ End
 Crst Interop
     AcquiredBefore PinnedHeapHandleTable AvailableParamTypes ClassInit DeadlockDetection GenericDictionaryExpansion
                    HandleTable InstMethodHashTable InteropData LoaderHeap SigConvert
-                   StubDispatchCache StubUnwindInfoHeapSegments SyncBlockCache TypeIDMap UnresolvedClassLock
+                   StubDispatchCache SyncBlockCache TypeIDMap UnresolvedClassLock
                    PendingTypeLoadEntry
 End
 
@@ -339,7 +339,7 @@ Crst PendingTypeLoadEntry
                    FusionAppCtx GlobalStrLiteralMap HandleTable IbcProfile
                    IJWFixupData IJWHash ISymUnmanagedReader Jit JumpStubCache LoaderHeap
                    Module ModuleLookupTable PEImage
-                   SigConvert SingleUseLock StubDispatchCache StubUnwindInfoHeapSegments
+                   SigConvert SingleUseLock StubDispatchCache
                    SyncBlockCache SystemDomain ThreadIdDispenser ThreadStore TypeIDMap UnresolvedClassLock
     SameLevelAs PendingTypeLoadEntry
 End
@@ -399,7 +399,7 @@ Crst SingleUseLock
 End
 
 Crst UnwindInfoTableLock
-    AcquiredAfter StubUnwindInfoHeapSegments SingleUseLock
+    AcquiredAfter SingleUseLock
     AcquiredBefore StressLog
 End
 
@@ -412,10 +412,6 @@ Crst CodeFragmentHeap
 End
 
 Crst StubDispatchCache
-End
-
-Crst StubUnwindInfoHeapSegments
-    AcquiredAfter StubCache
 End
 
 Crst SyncBlockCache

@@ -23,6 +23,7 @@
 #include <openssl/md5.h>
 #include <openssl/objects.h>
 #include <openssl/ocsp.h>
+#include <openssl/opensslconf.h>
 #include <openssl/pem.h>
 #include <openssl/pkcs12.h>
 #include <openssl/pkcs7.h>
@@ -31,6 +32,7 @@
 #include <openssl/sha.h>
 #include <openssl/ssl.h>
 #include <openssl/tls1.h>
+#include <openssl/ui.h>
 #include <openssl/x509.h>
 #include <openssl/x509v3.h>
 
@@ -59,6 +61,14 @@
 #else
 #define HAVE_OPENSSL_SET_CIPHERSUITES 0
 #endif
+
+// Defined by opensslconf.h if OpenSSL was build with -no-rc2
+#ifndef OPENSSL_NO_RC2
+#define HAVE_OPENSSL_RC2 1
+#else
+#define HAVE_OPENSSL_RC2 0
+#endif
+
 
 #if OPENSSL_VERSION_NUMBER < OPENSSL_VERSION_1_1_0_RTM
 
@@ -231,6 +241,12 @@ EVP_PKEY *ENGINE_load_public_key(ENGINE *e, const char *key_id,
 
 #endif
 
+#if !HAVE_OPENSSL_RC2
+#undef HAVE_OPENSSL_RC2
+#define HAVE_OPENSSL_RC2 1
+const EVP_CIPHER* EVP_rc2_ecb(void);
+const EVP_CIPHER* EVP_rc2_cbc(void);
+#endif
 
 #define API_EXISTS(fn) (fn != NULL)
 
@@ -487,8 +503,8 @@ extern bool g_libSslUses32BitTime;
     FALLBACK_FUNCTION(EVP_PKEY_up_ref) \
     REQUIRED_FUNCTION(EVP_PKEY_verify) \
     REQUIRED_FUNCTION(EVP_PKEY_verify_init) \
-    REQUIRED_FUNCTION(EVP_rc2_cbc) \
-    REQUIRED_FUNCTION(EVP_rc2_ecb) \
+    LIGHTUP_FUNCTION(EVP_rc2_cbc) \
+    LIGHTUP_FUNCTION(EVP_rc2_ecb) \
     REQUIRED_FUNCTION(EVP_sha1) \
     REQUIRED_FUNCTION(EVP_sha256) \
     REQUIRED_FUNCTION(EVP_sha384) \
@@ -684,6 +700,8 @@ extern bool g_libSslUses32BitTime;
     LIGHTUP_FUNCTION(SSL_verify_client_post_handshake) \
     LIGHTUP_FUNCTION(SSL_set_post_handshake_auth) \
     REQUIRED_FUNCTION(SSL_version) \
+    REQUIRED_FUNCTION(UI_create_method) \
+    REQUIRED_FUNCTION(UI_destroy_method) \
     FALLBACK_FUNCTION(X509_check_host) \
     REQUIRED_FUNCTION(X509_check_purpose) \
     REQUIRED_FUNCTION(X509_cmp_time) \
@@ -1234,6 +1252,8 @@ extern TYPEOF(OPENSSL_gmtime)* OPENSSL_gmtime_ptr;
 #define SSL_set_post_handshake_auth SSL_set_post_handshake_auth_ptr
 #define SSL_version SSL_version_ptr
 #define TLS_method TLS_method_ptr
+#define UI_create_method UI_create_method_ptr
+#define UI_destroy_method UI_destroy_method_ptr
 #define X509_check_host X509_check_host_ptr
 #define X509_check_purpose X509_check_purpose_ptr
 #define X509_cmp_time X509_cmp_time_ptr

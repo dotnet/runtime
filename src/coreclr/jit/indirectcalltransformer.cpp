@@ -754,8 +754,21 @@ private:
         //
         void SpillArgToTempBeforeGuard(CallArg* arg)
         {
-            unsigned   tmpNum    = compiler->lvaGrabTemp(true DEBUGARG("guarded devirt arg temp"));
-            GenTree*   store     = compiler->gtNewTempStore(tmpNum, arg->GetNode());
+            unsigned       tmpNum  = compiler->lvaGrabTemp(true DEBUGARG("guarded devirt arg temp"));
+            GenTree* const argNode = arg->GetNode();
+            GenTree*       store   = compiler->gtNewTempStore(tmpNum, argNode);
+
+            if (argNode->TypeIs(TYP_REF))
+            {
+                bool                 isExact   = false;
+                bool                 isNonNull = false;
+                CORINFO_CLASS_HANDLE cls       = compiler->gtGetClassHandle(argNode, &isExact, &isNonNull);
+                if (cls != NO_CLASS_HANDLE)
+                {
+                    compiler->lvaSetClass(tmpNum, cls, isExact);
+                }
+            }
+
             Statement* storeStmt = compiler->fgNewStmtFromTree(store, stmt->GetDebugInfo());
             compiler->fgInsertStmtAtEnd(checkBlock, storeStmt);
 
@@ -893,6 +906,22 @@ private:
             // special candidate helper and we need to use the new 'this'.
             GenTreeCall* call = compiler->gtCloneCandidateCall(origCall);
             call->gtArgs.GetThisArg()->SetEarlyNode(compiler->gtNewLclvNode(thisTemp, TYP_REF));
+
+            // If the original call was flagged as one that might inspire enumerator de-abstraction
+            // cloning, move the flag to the devirtualized call.
+            //
+            if (compiler->hasImpEnumeratorGdvLocalMap())
+            {
+                Compiler::NodeToUnsignedMap* const map           = compiler->getImpEnumeratorGdvLocalMap();
+                unsigned                           enumeratorLcl = BAD_VAR_NUM;
+                if (map->Lookup(origCall, &enumeratorLcl))
+                {
+                    JITDUMP("Flagging [%06u] for enumerator cloning via V%02u\n", compiler->dspTreeID(call),
+                            enumeratorLcl);
+                    map->Remove(origCall);
+                    map->Set(call, enumeratorLcl);
+                }
+            }
 
             INDEBUG(call->SetIsGuarded());
 

@@ -392,19 +392,13 @@ interface IMDInternalImport* DacDbiInterfaceImpl::GetMDImport(
 
     // Go to DBI to find the metadata.
     IMDInternalImport * pInternal = NULL;
-    bool isILMetaDataForNI = false;
     EX_TRY
     {
-        // If test needs it in the future, prop isILMetaDataForNI back up to
-        // ClrDataAccess.m_mdImports.Add() call.
-        // example in code:ClrDataAccess::GetMDImport
-        // CordbModule::GetMetaDataInterface also looks up MetaData and would need attention.
-
         // This is the new codepath that uses ICorDebugMetaDataLookup.
         // To get the old codepath that uses the v2 metadata lookup methods,
         // you'd have to load DAC only and then you'll get ClrDataAccess's implementation
         // of this function.
-        pInternal = pLookup->LookupMetaData(vmPEAssembly, isILMetaDataForNI);
+        pInternal = pLookup->LookupMetaData(vmPEAssembly);
     }
     EX_CATCH
     {
@@ -1225,7 +1219,6 @@ mdSignature DacDbiInterfaceImpl::GetILCodeAndSigHelper(Module *       pModule,
 bool DacDbiInterfaceImpl::GetMetaDataFileInfoFromPEFile(VMPTR_PEAssembly vmPEAssembly,
                                                         DWORD &dwTimeStamp,
                                                         DWORD &dwSize,
-                                                        bool  &isNGEN,
                                                         IStringHolder* pStrFilename)
 {
     DD_ENTER_MAY_THROW;
@@ -1244,23 +1237,11 @@ bool DacDbiInterfaceImpl::GetMetaDataFileInfoFromPEFile(VMPTR_PEAssembly vmPEAss
                                                             dwSize,
                                                             dwDataSize,
                                                             dwRvaHint,
-                                                            isNGEN,
                                                             wszFilePath,
                                                             cchFilePath);
 
     pStrFilename->AssignCopy(wszFilePath);
     return ret;
-}
-
-
-bool DacDbiInterfaceImpl::GetILImageInfoFromNgenPEFile(VMPTR_PEAssembly vmPEAssembly,
-                                                       DWORD &dwTimeStamp,
-                                                       DWORD &dwSize,
-                                                       IStringHolder* pStrFilename)
-{
-
-    return false;
-
 }
 
 // Get start addresses and sizes for hot and cold regions for a native code blob.
@@ -4123,17 +4104,6 @@ NoFileName:
     return FALSE;
 }
 
-// Get the full path and file name to the ngen image for the module (if any).
-BOOL DacDbiInterfaceImpl::GetModuleNGenPath(VMPTR_Module vmModule,
-                                            IStringHolder *  pStrFilename)
-{
-    DD_ENTER_MAY_THROW;
-
-    // no ngen filename
-    IfFailThrow(pStrFilename->AssignCopy(W("")));
-    return FALSE;
-}
-
 // Implementation of IDacDbiInterface::GetModuleSimpleName
 void DacDbiInterfaceImpl::GetModuleSimpleName(VMPTR_Module vmModule, IStringHolder * pStrFilename)
 {
@@ -6518,10 +6488,11 @@ HRESULT DacHeapWalker::Init(CORDB_ADDRESS start, CORDB_ADDRESS end)
                 j++;
             }
         }
-        if ((&g_global_alloc_context)->alloc_ptr != nullptr)
+        gc_alloc_context globalCtx = ((ee_alloc_context)g_global_alloc_context).m_GCAllocContext;
+        if (globalCtx.alloc_ptr != nullptr)
         {
-            mAllocInfo[j].Ptr = (CORDB_ADDRESS)(&g_global_alloc_context)->alloc_ptr;
-            mAllocInfo[j].Limit = (CORDB_ADDRESS)(&g_global_alloc_context)->alloc_limit;
+            mAllocInfo[j].Ptr = (CORDB_ADDRESS)globalCtx.alloc_ptr;
+            mAllocInfo[j].Limit = (CORDB_ADDRESS)globalCtx.alloc_limit;
         }
 
         mThreadCount = j;
@@ -7313,11 +7284,11 @@ HRESULT DacDbiInterfaceImpl::GetActiveRejitILCodeVersionNode(VMPTR_Module vmModu
     // Be careful, there are two different definitions of 'active' being used here
     // For the CodeVersionManager, the active IL version is whatever one should be used in the next invocation of the method
     // 'rejit active' narrows that to only include rejit IL bodies where the profiler has already provided the definition
-    // for the new IL (ilCodeVersion.GetRejitState()==ILCodeVersion::kStateActive). It is possible that the code version
+    // for the new IL (ilCodeVersion.GetRejitState()==RejitFlags::kStateActive). It is possible that the code version
     // manager's active IL version hasn't yet asked the profiler for the IL body to use, in which case we want to filter it
     //  out from the return in this method.
     ILCodeVersion activeILVersion = pCodeVersionManager->GetActiveILCodeVersion(pModule, methodTk);
-    if (activeILVersion.IsNull() || activeILVersion.IsDefaultVersion() || activeILVersion.GetRejitState() != ILCodeVersion::kStateActive)
+    if (activeILVersion.IsNull() || activeILVersion.IsDefaultVersion() || activeILVersion.GetRejitState() != RejitFlags::kStateActive)
     {
         pVmILCodeVersionNode->SetDacTargetPtr(0);
     }
@@ -7419,7 +7390,7 @@ HRESULT DacDbiInterfaceImpl::GetILCodeVersionNodeData(VMPTR_ILCodeVersionNode vm
     DD_ENTER_MAY_THROW;
 #ifdef FEATURE_REJIT
     ILCodeVersion ilCode(vmILCodeVersionNode.GetDacPtr());
-    pData->m_state = ilCode.GetRejitState();
+    pData->m_state = static_cast<DWORD>(ilCode.GetRejitState());
     pData->m_pbIL = PTR_TO_CORDB_ADDRESS(dac_cast<TADDR>(ilCode.GetIL()));
     pData->m_dwCodegenFlags = ilCode.GetJitFlags();
     const InstrumentedILOffsetMapping* pMapping = ilCode.GetInstrumentedILMap();

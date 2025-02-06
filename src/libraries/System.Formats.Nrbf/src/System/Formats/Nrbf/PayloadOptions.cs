@@ -6,7 +6,7 @@ using System.Reflection.Metadata;
 namespace System.Formats.Nrbf;
 
 /// <summary>
-/// Defines a variety of configuration options for decoding NRBF payloads.
+/// Defines configuration options for decoding NRBF payloads.
 /// </summary>
 public sealed class PayloadOptions
 {
@@ -21,9 +21,9 @@ public sealed class PayloadOptions
     public TypeNameParseOptions? TypeNameParseOptions { get; set; }
 
     /// <summary>
-    /// Gets or sets a value that indicates whether type name truncation is undone.
+    /// Gets or sets a value that indicates whether type-name truncation is undone.
     /// </summary>
-    /// <value><see langword="true" /> if truncated type names should be reassembled; otherwise, <see langword="false" />.</value>
+    /// <value><see langword="true" /> if truncated type names should be reassembled; otherwise, <see langword="false" />. The default value is <see langword="false" />.</value>
     /// <remarks>
     /// <para>
     /// Example:
@@ -35,7 +35,6 @@ public sealed class PayloadOptions
     /// Setting this to <see langword="true" /> can render <see cref="NrbfDecoder"/> susceptible to Denial of Service
     /// attacks when parsing or handling malicious input.
     /// </para>
-    /// <para>The default value is <see langword="false" />.</para>
     /// </remarks>
     public bool UndoTruncatedTypeNames { get; set; }
 }

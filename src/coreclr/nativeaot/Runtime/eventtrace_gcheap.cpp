@@ -232,13 +232,13 @@ void ETW::GCLog::MovedReference(
 #ifdef PROFILING_SUPPORTED
     // ProfAPI
     {
-        BEGIN_PIN_PROFILER(CORProfilerTrackGC());
+        BEGIN_PROFILER_CALLBACK(CORProfilerTrackGC());
         g_profControlBlock.pProfInterface->MovedReference(pbMemBlockStart,
             pbMemBlockEnd,
             cbRelocDistance,
             &(pCtxForEtwAndProfapi->pctxProfAPI),
             fCompacting);
-        END_PIN_PROFILER();
+        END_PROFILER_CALLBACK();
     }
 #endif // PROFILING_SUPPORTED
 
@@ -358,9 +358,9 @@ void ETW::GCLog::EndMovedReferences(size_t profilingContext,
 #ifdef PROFILING_SUPPORTED
     // ProfAPI
     {
-        BEGIN_PIN_PROFILER(CORProfilerTrackGC());
+        BEGIN_PROFILER_CALLBACK(CORProfilerTrackGC());
         g_profControlBlock.pProfInterface->EndMovedReferences(&(pCtxForEtwAndProfapi->pctxProfAPI));
-        END_PIN_PROFILER();
+        END_PROFILER_CALLBACK();
     }
 #endif //PROFILING_SUPPORTED
 

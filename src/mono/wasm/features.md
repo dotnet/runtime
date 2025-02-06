@@ -75,6 +75,9 @@ To set the maximum memory size, include the MSBuild property like `<EmccMaximumH
 
 This property requires the [wasm-tools workload](#wasm-tools-workload) to be installed.
 
+Recommended size of the memory used by dotnet applications in the desktop browsers is between 256MB and 512MB.
+If you are using more than 1GB, please make sure that you test it properly. Using more than 2GB is experimental.
+
 ### JITerpreter
 The JITerpreter is a browser-specific compiler which will optimize frequently executed code when running in interpreted (non-AOT) mode. While this significantly improves application performance, it will cause increased memory usage. You can disable it via `<BlazorWebAssemblyJiterpreter>false</BlazorWebAssemblyJiterpreter>`, and configure it in more detail via the use of runtime options.
 
@@ -256,8 +259,6 @@ For some use cases, you may wish to override this behavior or create a custom IC
 
 There are also rare use cases where your application does not rely on the contents of the ICU databases. In those scenarios, you can make your application smaller by enabling Invariant Globalization via the `<InvariantGlobalization>true</InvariantGlobalization>` msbuild property. For more details see [globalization-invariant-mode.md](../../../docs/design/features/globalization-invariant-mode.md).
 
-We are currently developing a third approach for locales where we offer a more limited feature set by relying on browser APIs, called "Hybrid Globalization". This provides more functionality than Invariant Culture mode without the need to ship the ICU library or its databases, which improves startup time. You can use the msbuild property `<HybridGlobalization>true</HybridGlobalization>` to test this in-development feature, but be aware that it is currently incomplete and may have performance issues. For more details see [globalization-hybrid-mode.md](../../../docs/design/features/globalization-hybrid-mode.md).
-
 Customized globalization settings require [wasm-tools workload](#wasm-tools-workload) to be installed.
 
 ### Timezones
@@ -415,7 +416,7 @@ In simple browser template, you can add following to your `main.js`
 
 ```javascript
 import { dotnet } from './dotnet.js'
-await dotnet.withConfig({ 
+await dotnet.withConfig({
     logProfilerOptions: {
         takeHeapshot: "MyApp.Profiling::TakeHeapshot",
         configuration: "log:alloc,output=output.mlpd"
