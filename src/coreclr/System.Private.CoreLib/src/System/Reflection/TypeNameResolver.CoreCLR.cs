@@ -227,7 +227,7 @@ namespace System.Reflection
                     {
                         if (_throwOnError)
                         {
-                            throw new TypeLoadException(SR.Format(SR.TypeLoad_ResolveType, escapedTypeName), typeName: escapedTypeName);
+                            throw new TypeLoadException(SR.Format(SR.TypeLoad_ResolveType, escapedTypeName)) { TypeName = escapedTypeName };
                         }
                         return null;
                     }
