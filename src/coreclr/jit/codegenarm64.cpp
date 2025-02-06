@@ -272,9 +272,7 @@ void CodeGen::genPopCalleeSavedRegistersAndFreeLclFrame(bool jmpEpilog)
         compiler->unwindAllocStack(spAdjust);
     }
 
-    // TODO-PAC: emit autiasp
-    GetEmitter()->emitIns(INS_autiaz);
-    compiler->unwindPacSignLR();
+    GetEmitter()->emitPacInEpilog();
 }
 
 //------------------------------------------------------------------------
@@ -662,6 +660,10 @@ void CodeGen::genEpilogRestoreRegPair(regNumber reg1,
         {
             compiler->unwindSaveRegPair(reg1, reg2, spOffset);
         }
+    }
+    if (reg2 == REG_LR)
+    {
+        compiler->unwindPacSignLR();
     }
 }
 
@@ -1406,10 +1408,7 @@ void CodeGen::genFuncletProlog(BasicBlock* block)
     gcInfo.gcResetForBB();
 
     compiler->unwindBegProlog();
-
-    // Sign LR as part of Pointer Authentication (PAC) support
-    GetEmitter()->emitIns(INS_paciaz);
-    compiler->unwindPacSignLR();
+    GetEmitter()->emitPacInProlog();
 
     regMaskTP maskSaveRegsFloat = genFuncletInfo.fiSaveRegs & RBM_ALLFLOAT;
     regMaskTP maskSaveRegsInt   = genFuncletInfo.fiSaveRegs & ~maskSaveRegsFloat;
@@ -1734,9 +1733,7 @@ void CodeGen::genFuncletEpilog()
         }
     }
 
-    // TODO-PAC: emit autiasp
-    GetEmitter()->emitIns(INS_autiaz);
-    compiler->unwindPacSignLR();
+    GetEmitter()->emitPacInEpilog();
 
     inst_RV(INS_ret, REG_LR, TYP_I_IMPL);
     compiler->unwindReturn(REG_LR);

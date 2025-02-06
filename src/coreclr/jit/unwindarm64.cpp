@@ -637,6 +637,10 @@ void Compiler::unwindSaveNext()
 
 void Compiler::unwindPacSignLR()
 {
+    if (JitConfig.JitPacEnabled() == 0)
+    {
+        return;
+    }
 #if defined(FEATURE_CFI_SUPPORT)
     if (generateCFIUnwindCodes())
     {
