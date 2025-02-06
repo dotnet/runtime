@@ -416,7 +416,7 @@ extern "C" void QCALLTYPE RuntimeMethodHandle_InvokeMethod(
 
     GCStress<cfg_any>::MaybeTrigger();
 
-    FrameWithCookie<ProtectValueClassFrame> *pProtectValueClassFrame = NULL;
+    ProtectValueClassFrame *pProtectValueClassFrame = NULL;
     ValueClassInfo *pValueClasses = NULL;
 
     // if we have the magic Value Class return, we need to allocate that class
@@ -565,8 +565,8 @@ extern "C" void QCALLTYPE RuntimeMethodHandle_InvokeMethod(
 
     if (pValueClasses != NULL)
     {
-        pProtectValueClassFrame = new (_alloca (sizeof (FrameWithCookie<ProtectValueClassFrame>)))
-            FrameWithCookie<ProtectValueClassFrame>(pThread, pValueClasses);
+        pProtectValueClassFrame = new (_alloca (sizeof (ProtectValueClassFrame)))
+            ProtectValueClassFrame(pThread, pValueClasses);
     }
 
     // Call the method

@@ -864,7 +864,7 @@ void DoGcStress (PCONTEXT regs, NativeCodeVersion nativeCodeVersion)
     // If we redirect for gc stress, we don't need this frame on the stack,
     // the redirection will push a resumable frame.
     //
-    FrameWithCookie<ResumableFrame> frame(regs);
+    ResumableFrame frame(regs);
     if (!Thread::UseRedirectForGcStress())
     {
         frame.Push(pThread);
@@ -1179,7 +1179,7 @@ void DoGcStress (PCONTEXT regs, NativeCodeVersion nativeCodeVersion)
     // If we redirect for gc stress, we don't need this frame on the stack,
     // the redirection will push a resumable frame.
     //
-    FrameWithCookie<ResumableFrame> frame(regs);
+    ResumableFrame frame(regs);
     if (!Thread::UseRedirectForGcStress())
     {
         frame.Push(pThread);
