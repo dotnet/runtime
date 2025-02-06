@@ -274,7 +274,7 @@ void CodeGen::genPopCalleeSavedRegistersAndFreeLclFrame(bool jmpEpilog)
 
     // TODO-PAC: emit autiasp
     GetEmitter()->emitIns(INS_autiaz);
-   //compiler->unwindPacSignLR();
+    compiler->unwindPacSignLR();
 }
 
 //------------------------------------------------------------------------
@@ -1736,7 +1736,7 @@ void CodeGen::genFuncletEpilog()
 
     // TODO-PAC: emit autiasp
     GetEmitter()->emitIns(INS_autiaz);
-   //compiler->unwindPacSignLR();
+    compiler->unwindPacSignLR();
 
     inst_RV(INS_ret, REG_LR, TYP_I_IMPL);
     compiler->unwindReturn(REG_LR);

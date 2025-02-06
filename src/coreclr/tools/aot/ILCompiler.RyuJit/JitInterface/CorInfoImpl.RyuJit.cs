@@ -173,6 +173,9 @@ namespace Internal.JitInterface
                             }
                         }
                         break;
+                    case CFI_OPCODE.CFI_NEGATE_RA_STATE:
+                        // Nothing to compress here. It just has the code.
+                        break;
                 }
             }
 

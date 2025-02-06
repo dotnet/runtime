@@ -647,17 +647,19 @@ void Compiler::unwindPacSignLR()
             cbProlog = unwindGetCurrentOffset(func);
         }
 
-        // DW_CFA_GNU_window_save 0x2D
-        createCfiCode(func, cbProlog, CFI_DEF_CFA_REGISTER, DWARF_REG_ILLEGAL);
+        // Maps to DW_CFA_AARCH64_negate_ra_state
+        createCfiCode(func, cbProlog, CFI_NEGATE_RA_STATE, DWARF_REG_ILLEGAL);
 
         return;
     }
 #endif // FEATURE_CFI_SUPPORT
 
-     assert(compGeneratingProlog);
-
-    // pac_sign_lr: 11111100: sign the return address in lr with pacibsp
-    funCurrentFunc()->uwi.AddCode(0xFC);
+    if (compGeneratingProlog)
+    {
+        // pac_sign_lr: 11111100: sign the return address in lr with pacibsp
+        // needed only for prolog
+        funCurrentFunc()->uwi.AddCode(0xFC);
+    }
 }
 
 void Compiler::unwindReturn(regNumber reg)

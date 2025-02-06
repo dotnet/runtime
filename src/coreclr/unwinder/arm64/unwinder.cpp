@@ -257,7 +257,7 @@ do {                                                                            
 
 #if !defined(DACCESS_COMPILE)
 
-#define STRIP_PAC(Params, pointer)    RtlStripPacOnline(pointer)
+#define STRIP_PAC(pointer)    RtlStripPacOnline(pointer)
 //FORCEINLINE
 //VOID
 //RtlStripPacOnline (
@@ -293,7 +293,7 @@ do {                                                                            
 
 #else
 
-#define STRIP_PAC(Params, pointer)    RtlStripPacManual(pointer)
+#define STRIP_PAC(pointer)    RtlStripPacManual(pointer)
 
 FORCEINLINE
 VOID
