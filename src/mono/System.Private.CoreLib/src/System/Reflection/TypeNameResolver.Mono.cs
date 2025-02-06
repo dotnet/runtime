@@ -18,6 +18,7 @@ namespace System.Reflection
         private Func<Assembly?, string, bool, Type?>? _typeResolver;
         private bool _throwOnError;
         private bool _ignoreCase;
+        private bool _extensibleParser;
         private void* _stackMark;
 
         [RequiresUnreferencedCode("The type might be removed")]
@@ -27,6 +28,7 @@ namespace System.Reflection
             Func<Assembly?, string, bool, Type?>? typeResolver,
             bool throwOnError,
             bool ignoreCase,
+            bool extensibleParser,
             ref StackCrawlMark stackMark)
         {
             ArgumentNullException.ThrowIfNull(typeName);
@@ -52,6 +54,7 @@ namespace System.Reflection
                 _typeResolver = typeResolver,
                 _throwOnError = throwOnError,
                 _ignoreCase = ignoreCase,
+                _extensibleParser = extensibleParser,
                 _stackMark = Unsafe.AsPointer(ref stackMark)
             }.Resolve(parsed);
         }
@@ -144,7 +147,16 @@ namespace System.Reflection
                 if (_ignoreCase)
                     bindingFlags |= BindingFlags.IgnoreCase;
 
-                type = type.GetNestedType(nestedTypeNames[i], bindingFlags);
+                if (type is RuntimeType rt)
+                {
+                    // Compat: Non-extensible parser allows ambiguous matches with ignore case lookup
+                    bool ignoreAmbiguousMatch = !_extensibleParser && _ignoreCase;
+                    type = rt.GetNestedType(nestedTypeNames[i], bindingFlags, ignoreAmbiguousMatch);
+                }
+                else
+                {
+                    type = type.GetNestedType(nestedTypeNames[i], bindingFlags);
+                }
 
                 if (type is null)
                 {

@@ -1000,12 +1000,12 @@ namespace System
         }
 
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicNestedTypes | DynamicallyAccessedMemberTypes.NonPublicNestedTypes)]
-        public override Type? GetNestedType(string name, BindingFlags bindingAttr)
+        internal Type? GetNestedType([MaybeNull] string name, BindingFlags bindingAttr, bool ignoreAmbiguousMatch)
         {
             ArgumentNullException.ThrowIfNull(name);
 
             bindingAttr &= ~BindingFlags.Static;
-            FilterHelper(bindingAttr, ref name!, out _, out MemberListType listType);
+            FilterHelper(bindingAttr, ref name, out _, out MemberListType listType);
             RuntimeType[] cache = GetNestedTypes_internal(name, bindingAttr, listType);
             RuntimeType? match = null;
 
@@ -1018,10 +1018,19 @@ namespace System
                         throw ThrowHelper.GetAmbiguousMatchException(match);
 
                     match = nestedType;
+
+                    if (ignoreAmbiguousMatch)
+                        break;
                 }
             }
 
             return match;
+        }
+
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicNestedTypes | DynamicallyAccessedMemberTypes.NonPublicNestedTypes)]
+        public override Type? GetNestedType(string name, BindingFlags bindingAttr)
+        {
+            return GetNestedType(name, bindingAttr, ignoreAmbiguousMatch: false);
         }
 
         [DynamicallyAccessedMembers(GetAllMembers)]
