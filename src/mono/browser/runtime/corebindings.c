@@ -38,6 +38,8 @@ void mono_wasm_assembly_get_entry_point (char *assembly_name, int auto_insert_br
 void mono_wasm_get_assembly_export (char *assembly_name, char *namespace, char *classname, char *methodname, int signature_hash, MonoMethod **method_out);
 
 #ifndef DISABLE_THREADS
+void wasm_atomic_fence(void);
+
 void mono_wasm_release_cs_owned_object_post (pthread_t target_tid, int js_handle);
 void mono_wasm_resolve_or_reject_promise_post (pthread_t target_tid, void *args);
 void mono_wasm_cancel_promise_post (pthread_t target_tid, int task_holder_gc_handle);
@@ -257,6 +259,7 @@ void mono_wasm_install_js_worker_interop_wrapper (int context_gc_handle, void* b
 	after_sync_js_import = afterSyncJSImport;
 	synchronization_context_pump_handler = pumpHandler;
 	__sync_synchronize ();
+	wasm_atomic_fence ();
 	mono_wasm_install_js_worker_interop (context_gc_handle);
 }
 
@@ -264,6 +267,7 @@ void mono_wasm_install_js_worker_interop_wrapper (int context_gc_handle, void* b
 void mono_wasm_release_cs_owned_object_post (pthread_t target_tid, int js_handle)
 {
 	__sync_synchronize ();
+	wasm_atomic_fence ();
 	mono_threads_wasm_async_run_in_target_thread_vi (target_tid, (void (*) (gpointer))mono_wasm_release_cs_owned_object, (gpointer)js_handle);
 }
 
@@ -271,6 +275,7 @@ void mono_wasm_release_cs_owned_object_post (pthread_t target_tid, int js_handle
 void mono_wasm_resolve_or_reject_promise_post (pthread_t target_tid, void* args)
 {
 	__sync_synchronize ();
+	wasm_atomic_fence ();
 	mono_threads_wasm_async_run_in_target_thread_vi (target_tid, (void (*) (gpointer))mono_wasm_resolve_or_reject_promise, (gpointer)args);
 }
 
@@ -278,6 +283,7 @@ void mono_wasm_resolve_or_reject_promise_post (pthread_t target_tid, void* args)
 void mono_wasm_cancel_promise_post (pthread_t target_tid, int task_holder_gc_handle)
 {
 	__sync_synchronize ();
+	wasm_atomic_fence ();
 	mono_threads_wasm_async_run_in_target_thread_vi (target_tid, (void (*) (gpointer))mono_wasm_cancel_promise, (gpointer)task_holder_gc_handle);
 }
 
@@ -285,6 +291,7 @@ void mono_wasm_cancel_promise_post (pthread_t target_tid, int task_holder_gc_han
 void mono_wasm_invoke_jsimport_async_post (pthread_t target_tid, void* signature, void* args)
 {
 	__sync_synchronize ();
+	wasm_atomic_fence ();
 	mono_threads_wasm_async_run_in_target_thread_vii (target_tid, (void (*) (gpointer, gpointer))mono_wasm_invoke_jsimport_MT_barrier, (gpointer)signature, (gpointer)args);
 }
 
@@ -292,6 +299,7 @@ void mono_wasm_invoke_jsimport_async_post (pthread_t target_tid, void* signature
 void mono_wasm_invoke_jsimport_sync_send (pthread_t target_tid, void* signature, void* args)
 {
 	__sync_synchronize ();
+	wasm_atomic_fence ();
 	mono_threads_wasm_sync_run_in_target_thread_vii (target_tid, (void (*) (gpointer, gpointer))mono_wasm_invoke_jsimport_MT_barrier, (gpointer)signature, (gpointer)args);
 }
 
@@ -299,12 +307,14 @@ void mono_wasm_invoke_jsimport_sync_send (pthread_t target_tid, void* signature,
 void mono_wasm_invoke_js_function_send (pthread_t target_tid, int function_js_handle, void *args)
 {
 	__sync_synchronize ();
+	wasm_atomic_fence ();
 	mono_threads_wasm_sync_run_in_target_thread_vii (target_tid, (void (*) (gpointer, gpointer))mono_wasm_invoke_js_function, (gpointer)function_js_handle, (gpointer)args);
 }
 
 void mono_wasm_invoke_jsimport_MT_barrier (void* signature, void* args)
 {
 	__sync_synchronize ();
+	wasm_atomic_fence ();
 	mono_wasm_invoke_jsimport_MT (signature, args);
 }
 

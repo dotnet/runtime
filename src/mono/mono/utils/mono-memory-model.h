@@ -13,6 +13,10 @@
 
 #include <config.h>
 
+#ifdef HOST_BROWSER
+void wasm_atomic_fence(void);
+#endif
+
 #if _MSC_VER
 #ifndef WIN32_LEAN_AND_MEAN
 #define WIN32_LEAN_AND_MEAN
@@ -41,6 +45,9 @@ mono_memory_barrier (void)
 static inline void
 mono_memory_barrier (void)
 {
+#ifdef HOST_BROWSER
+	wasm_atomic_fence ();
+#endif
 	__sync_synchronize ();
 }
 
