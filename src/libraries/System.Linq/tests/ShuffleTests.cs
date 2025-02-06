@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Runtime.InteropServices;
 using Xunit;
 
 namespace System.Linq.Tests
@@ -126,6 +127,8 @@ namespace System.Linq.Tests
                 foreach (int i in source.Shuffle()) second.Add(i);
                 Assert.Equal(length, first.Count);
                 Assert.Equal(length, second.Count);
+                Assert.Equal(length, first.Distinct().Count());
+                Assert.Equal(length, second.Distinct().Count());
                 Assert.NotEqual(first, second);
 
                 foreach (int takeCount in new[] { length - 1, length + 1 })
@@ -136,6 +139,8 @@ namespace System.Linq.Tests
                     foreach (int i in source.Shuffle().Take(takeCount)) second.Add(i);
                     Assert.Equal(Math.Min(takeCount, length), first.Count);
                     Assert.Equal(Math.Min(takeCount, length), second.Count);
+                    Assert.Equal(Math.Min(takeCount, length), first.Distinct().Count());
+                    Assert.Equal(Math.Min(takeCount, length), second.Distinct().Count());
                     Assert.NotEqual(first, second);
 
                     first = [];
@@ -144,6 +149,8 @@ namespace System.Linq.Tests
                     foreach (int i in source.Shuffle().Take(takeCount + 1).Take(takeCount)) second.Add(i);
                     Assert.Equal(Math.Min(takeCount, length), first.Count);
                     Assert.Equal(Math.Min(takeCount, length), second.Count);
+                    Assert.Equal(Math.Min(takeCount, length), first.Distinct().Count());
+                    Assert.Equal(Math.Min(takeCount, length), second.Distinct().Count());
                     Assert.NotEqual(first, second);
                 }
             });
@@ -164,6 +171,8 @@ namespace System.Linq.Tests
                     second = source.Shuffle().ToArray();
                     Assert.Equal(length, first.Length);
                     Assert.Equal(length, second.Length);
+                    Assert.Equal(length, first.Distinct().Count());
+                    Assert.Equal(length, second.Distinct().Count());
                     Assert.NotEqual(first, second);
 
                     foreach (int takeCount in new[] { length - 1, length + 1 })
@@ -172,12 +181,16 @@ namespace System.Linq.Tests
                         second = source.Shuffle().Take(takeCount).ToArray();
                         Assert.Equal(Math.Min(takeCount, length), first.Length);
                         Assert.Equal(Math.Min(takeCount, length), second.Length);
+                        Assert.Equal(Math.Min(takeCount, length), first.Distinct().Count());
+                        Assert.Equal(Math.Min(takeCount, length), second.Distinct().Count());
                         Assert.NotEqual(first, second);
 
                         first = source.Shuffle().Take(takeCount + 1).Take(takeCount).ToArray();
                         second = source.Shuffle().Take(takeCount + 1).Take(takeCount).ToArray();
                         Assert.Equal(Math.Min(takeCount, length), first.Length);
                         Assert.Equal(Math.Min(takeCount, length), second.Length);
+                        Assert.Equal(Math.Min(takeCount, length), first.Distinct().Count());
+                        Assert.Equal(Math.Min(takeCount, length), second.Distinct().Count());
                         Assert.NotEqual(first, second);
                     }
                 }
@@ -201,6 +214,8 @@ namespace System.Linq.Tests
                 second = source.Shuffle().ToList();
                 Assert.Equal(length, first.Count);
                 Assert.Equal(length, second.Count);
+                Assert.Equal(length, first.Distinct().Count());
+                Assert.Equal(length, second.Distinct().Count());
                 Assert.NotEqual(first, second);
 
                 foreach (int takeCount in new[] { length - 1, length + 1 })
@@ -209,12 +224,16 @@ namespace System.Linq.Tests
                     second = source.Shuffle().Take(takeCount).ToList();
                     Assert.Equal(Math.Min(takeCount, length), first.Count);
                     Assert.Equal(Math.Min(takeCount, length), second.Count);
+                    Assert.Equal(Math.Min(takeCount, length), first.Distinct().Count());
+                    Assert.Equal(Math.Min(takeCount, length), second.Distinct().Count());
                     Assert.NotEqual(first, second);
 
                     first = source.Shuffle().Take(takeCount + 1).Take(takeCount).ToList();
                     second = source.Shuffle().Take(takeCount + 1).Take(takeCount).ToList();
                     Assert.Equal(Math.Min(takeCount, length), first.Count);
                     Assert.Equal(Math.Min(takeCount, length), second.Count);
+                    Assert.Equal(Math.Min(takeCount, length), first.Distinct().Count());
+                    Assert.Equal(Math.Min(takeCount, length), second.Distinct().Count());
                     Assert.NotEqual(first, second);
                 }
             });
@@ -310,6 +329,58 @@ namespace System.Linq.Tests
                 }
 
                 Assert.Fail("Predicate was true for 10 iterations");
+            }
+        }
+
+        [OuterLoop]
+        [Theory]
+        [InlineData(0)]
+        [InlineData(1)]
+        [InlineData(2)]
+        public void ValidateShuffleTakeRandomDistribution(int mode)
+        {
+            const int InputLength = 10;
+            const int Iterations = 100_000;
+            const double Expected = Iterations / (double)InputLength;
+
+            IEnumerable<int> ints = Enumerable.Range(0, InputLength);
+            IEnumerable<int>[] sources = [ints, ints.ToList(), ForceNotCollection(ints)];
+
+            foreach (IEnumerable<int> source in sources)
+            {
+                IEnumerable<int> selected = source.Shuffle().Take(1);
+
+                Dictionary<int, int> counts = new();
+                for (int i = 0; i < Iterations; i++)
+                {
+                    int value = 0;
+                    switch (mode)
+                    {
+                        case 0:
+                            using (IEnumerator<int> e = selected.GetEnumerator())
+                            {
+                                e.MoveNext();
+                                value = e.Current;
+                            }
+                            break;
+
+                        case 1:
+                            value = selected.First();
+                            break;
+
+                        case 2:
+                            value = selected.ToArray()[0];
+                            break;
+
+                        default:
+                            Assert.Fail("Invalid mode");
+                            break;
+                    }
+
+                    CollectionsMarshal.GetValueRefOrAddDefault(counts, value, out _)++;
+                }
+
+                Assert.All(counts, kvp => Assert.InRange(kvp.Value, Expected * 0.85, Expected * 1.15));
             }
         }
     }

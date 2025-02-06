@@ -58,11 +58,11 @@ namespace System.Linq
                 }
                 else if (index >= 0)
                 {
-                    TSource[] array = _source.ToArray();
-                    if (index < array.Length)
+                    List<TSource>? sample = ShuffleTakeIterator<TSource>.SampleToList(_source, 1, out long totalElementCount);
+                    if (sample is not null && index < totalElementCount)
                     {
                         found = true;
-                        return array[Random.Shared.Next(0, array.Length)];
+                        return sample[0];
                     }
                 }
 
@@ -80,17 +80,17 @@ namespace System.Linq
 
                 // Otherwise, we either don't know how many elements are in the source, or we know it's more than count.
                 // Try to optimize by using reservoir sampling to get a random sample of count elements.
-                return new TakeShuffleIterator<TSource>(_source, count);
+                return new ShuffleTakeIterator<TSource>(_source, count);
             }
         }
 
-        private sealed partial class TakeShuffleIterator<TSource> : Iterator<TSource>
+        private sealed partial class ShuffleTakeIterator<TSource> : Iterator<TSource>
         {
             private readonly IEnumerable<TSource> _source;
             private readonly int _takeCount;
             private List<TSource>? _buffer;
 
-            public TakeShuffleIterator(IEnumerable<TSource> source, int takeCount)
+            public ShuffleTakeIterator(IEnumerable<TSource> source, int takeCount)
             {
                 Debug.Assert(source is not null);
                 Debug.Assert(takeCount > 0);
@@ -99,7 +99,7 @@ namespace System.Linq
                 _takeCount = takeCount;
             }
 
-            private protected override Iterator<TSource> Clone() => new TakeShuffleIterator<TSource>(_source, _takeCount);
+            private protected override Iterator<TSource> Clone() => new ShuffleTakeIterator<TSource>(_source, _takeCount);
 
             public override bool MoveNext()
             {
@@ -121,7 +121,7 @@ namespace System.Linq
                 }
                 else if (state == 1)
                 {
-                    List<TSource>? buffer = SampleToList(_source, _takeCount);
+                    List<TSource>? buffer = SampleToList(_source, _takeCount, out _);
                     if (buffer is not null)
                     {
                         _buffer = buffer;
@@ -140,89 +140,13 @@ namespace System.Linq
                 base.Dispose();
             }
 
-            /// <summary>Uses reservoir sampling to randomly select <paramref name="takeCount"/> elements from <paramref name="source"/>.</summary>
-            private static List<TSource>? SampleToList(IEnumerable<TSource> source, int takeCount)
-            {
-                List<TSource>? reservoir = null;
+            public override TSource[] ToArray() => SampleToList(_source, _takeCount, out _)?.ToArray() ?? [];
 
-                if (source is IList<TSource> list)
-                {
-                    int listCount = list.Count;
-                    Debug.Assert(listCount > takeCount, "Known listCount <= takeCount should have been handled by Iterator.Take override");
-
-                    reservoir = new(takeCount);
-                    for (int i = 0; i < listCount; i++)
-                    {
-                        if (i < takeCount)
-                        {
-                            // Fill the reservoir with the first takeCount elements from the source.
-                            reservoir.Add(list[i]);
-                        }
-                        else
-                        {
-                            // For each subsequent element in the source, randomly replace an element in the
-                            // reservoir with a decreasing probability.
-                            int r = Random.Shared.Next(i + 1);
-                            if (r < takeCount)
-                            {
-                                reservoir[r] = list[i];
-                            }
-                        }
-                    }
-                }
-                else
-                {
-                    using IEnumerator<TSource> e = source.GetEnumerator();
-                    if (e.MoveNext())
-                    {
-                        reservoir = [e.Current];
-
-                        // Fill the reservoir with the first takeCount elements from the source.
-                        // If we can't fill it, just return what we get.
-                        while (reservoir.Count < takeCount)
-                        {
-                            if (!e.MoveNext())
-                            {
-                                goto ReturnReservoir;
-                            }
-
-                            reservoir.Add(e.Current);
-                        }
-
-                        // For each subsequent element in the source, randomly replace an element in the
-                        // reservoir with a decreasing probability.
-                        long totalElementsSeen = reservoir.Count;
-                        while (e.MoveNext())
-                        {
-                            long r = Random.Shared.NextInt64(totalElementsSeen);
-                            if (r < reservoir.Count)
-                            {
-                                reservoir[(int)r] = e.Current;
-                            }
-                        }
-                    }
-                }
-
-            ReturnReservoir:
-                if (reservoir is not null)
-                {
-                    // Ensure that elements in the reservoir are in random order. The sampling helped
-                    // to ensure we got a uniform distribution from the source into the reservoir, but
-                    // it didn't randomize the order of the reservoir itself; this is especially relevant
-                    // to the elements initially added into the reservoir.
-                    Random.Shared.Shuffle(CollectionsMarshal.AsSpan(reservoir));
-                }
-
-                return reservoir;
-            }
-
-            public override TSource[] ToArray() => SampleToList(_source, _takeCount)?.ToArray() ?? [];
-
-            public override List<TSource> ToList() => SampleToList(_source, _takeCount) ?? [];
+            public override List<TSource> ToList() => SampleToList(_source, _takeCount, out _) ?? [];
 
             public override int GetCount(bool onlyIfCheap) =>
-                !onlyIfCheap ? Math.Min(_takeCount, _source.Count()) :
                 TryGetNonEnumeratedCount(_source, out int count) ? Math.Min(_takeCount, count) :
+                !onlyIfCheap ? Math.Min(_takeCount, _source.Take(_takeCount).Count()) :
                 -1;
 
             public override TSource? TryGetFirst(out bool found) =>
@@ -253,11 +177,11 @@ namespace System.Linq
                 }
                 else if (index >= 0)
                 {
-                    TSource[] array = _source.ToArray();
-                    if (index < Math.Min(_takeCount, array.Length))
+                    List<TSource>? sample = SampleToList(_source, 1, out long totalElementCount);
+                    if (sample is not null && index < Math.Min(_takeCount, totalElementCount))
                     {
                         found = true;
-                        return array[Random.Shared.Next(0, array.Length)];
+                        return sample[0];
                     }
                 }
 
@@ -266,7 +190,91 @@ namespace System.Linq
             }
 
             public override Iterator<TSource>? Take(int count) =>
-                _takeCount <= count ? this : new TakeShuffleIterator<TSource>(_source, count);
+                _takeCount <= count ? this : new ShuffleTakeIterator<TSource>(_source, count);
+
+            /// <summary>Uses reservoir sampling to randomly select <paramref name="takeCount"/> elements from <paramref name="source"/>.</summary>
+            internal static List<TSource>? SampleToList(IEnumerable<TSource> source, int takeCount, out long totalElementCount)
+            {
+                List<TSource>? reservoir = null;
+
+                if (source is IList<TSource> list)
+                {
+                    int listCount = list.Count;
+                    Debug.Assert(listCount > takeCount, "Known listCount <= takeCount should have been handled by Iterator.Take override");
+
+                    reservoir = new(takeCount);
+
+                    // Fill the reservoir with the first takeCount elements from the source.
+                    for (int i = 0; i < takeCount; i++)
+                    {
+                        reservoir.Add(list[i]);
+                    }
+
+                    // For each subsequent element in the source, randomly replace an element in the
+                    // reservoir with a decreasing probability.
+                    for (int i = takeCount; i < listCount; i++)
+                    {
+                        int r = Random.Shared.Next(i + 1);
+                        if (r < takeCount)
+                        {
+                            reservoir[r] = list[i];
+                        }
+                    }
+
+                    totalElementCount = listCount;
+                }
+                else
+                {
+                    using IEnumerator<TSource> e = source.GetEnumerator();
+                    if (e.MoveNext())
+                    {
+                        // Fill the reservoir with the first takeCount elements from the source.
+                        // If we can't fill it, just return what we get.
+                        reservoir = new List<TSource>(Math.Min(takeCount, 4)) { e.Current };
+                        while (reservoir.Count < takeCount)
+                        {
+                            if (!e.MoveNext())
+                            {
+                                totalElementCount = reservoir.Count;
+                                goto ReturnReservoir;
+                            }
+
+                            reservoir.Add(e.Current);
+                        }
+
+                        // For each subsequent element in the source, randomly replace an element in the
+                        // reservoir with a decreasing probability.
+                        long i = takeCount;
+                        while (e.MoveNext())
+                        {
+                            i++;
+                            long r = Random.Shared.NextInt64(i);
+                            if (r < takeCount)
+                            {
+                                reservoir[(int)r] = e.Current;
+                            }
+                        }
+
+                        totalElementCount = i;
+                    }
+                    else
+                    {
+                        totalElementCount = 0;
+                    }
+                }
+
+            ReturnReservoir:
+                if (reservoir is not null)
+                {
+                    // Ensure that elements in the reservoir are in random order. The sampling helped
+                    // to ensure we got a uniform distribution from the source into the reservoir, but
+                    // it didn't randomize the order of the reservoir itself; this is especially relevant
+                    // to the elements initially added into the reservoir.
+                    Random.Shared.Shuffle(CollectionsMarshal.AsSpan(reservoir));
+                }
+
+                return reservoir;
+            }
         }
     }
 }
