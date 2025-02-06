@@ -20,7 +20,7 @@ namespace System.Reflection.Tests
         [Fact]
         public static void ConstructorInvoke()
         {
-            ConstructorInfo c = typeof(TestClass).GetConstructor(BindingFlags.Public|BindingFlags.Instance, null, Type.EmptyTypes, null);
+            ConstructorInfo c = typeof(TestClass).GetConstructor(BindingFlags.Public | BindingFlags.Instance, null, Type.EmptyTypes, null);
             TestDoNotWrap<MyException2>((bf) => c.Invoke(bf, null, Array.Empty<object>(), null));
         }
 

@@ -143,7 +143,7 @@ namespace System.Reflection
         {
             if (paramInfo.DefaultValue == DBNull.Value)
             {
-                throw new ArgumentException(SR.Arg_VarMissNull, "parameters");
+                ThrowHelperArgumentExceptionVariableMissing();
             }
 
             object? arg = paramInfo.DefaultValue;
@@ -165,17 +165,43 @@ namespace System.Reflection
             return arg;
         }
 
-        [Flags]
-        internal enum InvokerStrategy : int
+        [DoesNotReturn]
+        internal static void ThrowHelperArgumentExceptionVariableMissing() =>
+            throw new ArgumentException(SR.Arg_VarMissNull, "parameters");
+
+        internal enum InvokerStrategy
         {
-            HasBeenInvoked_ObjSpanArgs = 0x1,
-            StrategyDetermined_ObjSpanArgs = 0x2,
+            Uninitialized = 0,
 
-            HasBeenInvoked_Obj4Args = 0x4,
-            StrategyDetermined_Obj4Args = 0x8,
+            /// <summary>
+            /// Optimized for no arguments.
+            /// </summary>
+            Obj0 = 1,
 
-            HasBeenInvoked_RefArgs = 0x10,
-            StrategyDetermined_RefArgs = 0x20,
+            /// <summary>
+            /// Optimized for 1 argument.
+            /// </summary>
+            Obj1 = 2,
+
+            /// <summary>
+            /// Optimized for 4 arguments or less.
+            /// </summary>
+            Obj4 = 3,
+
+            /// <summary>
+            /// Optimized for 5 arguments or more.
+            /// </summary>
+            ObjSpan = 4,
+
+            /// <summary>
+            /// Slower approach for the interpreted path case or to support copy back for 4 arguments or less.
+            /// </summary>
+            Ref4 = 5,
+
+            /// <summary>
+            /// Slower approach for the interpreted path case or to support copy back for 5+ arguments.
+            /// </summary>
+            RefMany = 6,
         }
 
         [Flags]
@@ -183,7 +209,8 @@ namespace System.Reflection
         {
             IsValueType = 0x1,
             IsValueType_ByRef_Or_Pointer = 0x2,
-            IsNullableOfT = 0x4,
+            IsByRefForValueType = 0x4,
+            IsNullableOfT = 0x8,
         }
 
         [InlineArray(MaxStackAllocArgCount)]
