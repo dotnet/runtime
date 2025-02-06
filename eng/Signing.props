@@ -17,6 +17,10 @@
       Packages that do not meet the above rules are added with Vertical visibility in the VMR and excluded in non-VMR builds.
     -->
     <EnableDefaultArtifacts Condition="'$(DotNetBuildOrchestrator)' != 'true'">false</EnableDefaultArtifacts>
+    <EnableBlobArtifacts>true</EnableBlobArtifacts>
+    <EnableBlobArtifacts Condition="'$(MonoEnableLLVM)' == 'true'">false</EnableBlobArtifacts>
+
+    <UseDotNetCertificate>true</UseDotNetCertificate>
   </PropertyGroup>
 
   <ItemGroup>
@@ -57,14 +61,7 @@
     <FileExtensionSignInfo Include=".deb;.rpm" CertificateName="LinuxSign" />
   </ItemGroup>
 
-  <!-- Update existing defaults from arcade that were using Microsoft400 to use the .NET-specific cert -->
-  <ItemGroup>
-    <FileExtensionSignInfo Update="@(FileExtensionSignInfo->WithMetadataValue('CertificateName','Microsoft400'))" CertificateName="MicrosoftDotNet500" />
-    <StrongNameSignInfo Update="@(StrongNameSignInfo->WithMetadataValue('CertificateName','Microsoft400'))" CertificateName="MicrosoftDotNet500" />
-    <FileSignInfo Update="@(FileSignInfo->WithMetadataValue('CertificateName','Microsoft400'))" CertificateName="MicrosoftDotNet500" />
-  </ItemGroup>
-
-  <ItemGroup>
+  <ItemGroup Condition="'$(EnableBlobArtifacts)' == 'true'">
     <Artifact Include="$(ArtifactsPackagesDir)**\*.tar.gz;
                        $(ArtifactsPackagesDir)**\*.zip;
                        $(ArtifactsPackagesDir)**\*.deb;
@@ -90,12 +87,37 @@
     Every job will publish their RID-specific packages.
     For non-RID-specific packages, we have various rules:
 
-    - A job can specify PublishAllPackages=true as a global property to publish all packages it produces.
+    - A job can specify EnableDefaultArtifacts=true as a global property to publish all packages it produces.
       We have specific jobs that produce RID-agnostic packages or packages for multiple RIDs set this property.
     - For some target RIDs, we also include specific RID-agnostic packages.
+    - For LLVM builds, we only publish LLVM-specific packages.
   -->
   <Choose>
-    <When Condition="'$(EnableDefaultArtifacts)' != 'true'">
+    <When Condition="'$(EnableDefaultArtifacts)' == 'true'">
+      <!--
+        Mark host-RID-targeting assets as Vertical visibility when building in the VMR
+      -->
+      <ItemGroup Condition="'$(DotNetBuildOrchestrator)' == 'true' and '$(OutputRID)' != '$(NETCoreSdkRuntimeIdentifier)'">
+        <Artifact Update="$(ArtifactsPackagesDir)**\runtime.$(NETCoreSdkRuntimeIdentifier).Microsoft.NETCore.ILAsm.*.nupkg"
+                  Visibility="Vertical"
+                  IsShipping="false" />
+        <Artifact Update="$(ArtifactsPackagesDir)**\runtime.$(NETCoreSdkRuntimeIdentifier).Microsoft.NETCore.ILDAsm.*.nupkg"
+                  Visibility="Vertical"
+                  IsShipping="false" />
+        <Artifact Update="$(ArtifactsPackagesDir)**\Microsoft.NETCore.App.Crossgen2.$(NETCoreSdkRuntimeIdentifier).*.nupkg"
+                  Visibility="Vertical"
+                  IsShipping="false" />
+        <Artifact Update="$(ArtifactsPackagesDir)**\runtime.$(NETCoreSDKRuntimeIdentifier).Microsoft.DotNet.ILCompiler.*.nupkg"
+                  Visibility="Vertical"
+                  IsShipping="false" />
+      </ItemGroup>
+    </When>
+    <When Condition="'$(MonoEnableLLVM)' == 'true'">
+      <ItemGroup>
+        <PackageArtifacts Include="$(ArtifactsPackagesDir)**\*.$(PackageRID).*.LLVM.*.nupkg" />
+      </ItemGroup>
+    </When>
+    <Otherwise>
       <ItemGroup>
         <PackageArtifacts Include="$(ArtifactsPackagesDir)**\*.$(PackageRID).*.nupkg" />
       </ItemGroup>
@@ -145,25 +167,6 @@
                   Visibility="Vertical"
                   Kind="Package"
                   Condition="'$(DotNetBuildOrchestrator)' == 'true'" />
-      </ItemGroup>
-    </When>
-    <Otherwise>
-      <!--
-        Mark host-RID-targeting assets as Vertical visibility when building in the VMR
-      -->
-      <ItemGroup Condition="'$(DotNetBuildOrchestrator)' == 'true' and '$(OutputRID)' != '$(NETCoreSdkRuntimeIdentifier)'">
-        <Artifact Update="$(ArtifactsPackagesDir)**\runtime.$(NETCoreSdkRuntimeIdentifier).Microsoft.NETCore.ILAsm.*.nupkg"
-                  Visibility="Vertical"
-                  IsShipping="false" />
-        <Artifact Update="$(ArtifactsPackagesDir)**\runtime.$(NETCoreSdkRuntimeIdentifier).Microsoft.NETCore.ILDAsm.*.nupkg"
-                  Visibility="Vertical"
-                  IsShipping="false" />
-        <Artifact Update="$(ArtifactsPackagesDir)**\Microsoft.NETCore.App.Crossgen2.$(NETCoreSdkRuntimeIdentifier).*.nupkg"
-                  Visibility="Vertical"
-                  IsShipping="false" />
-        <Artifact Update="$(ArtifactsPackagesDir)**\runtime.$(NETCoreSDKRuntimeIdentifier).Microsoft.DotNet.ILCompiler.*.nupkg"
-                  Visibility="Vertical"
-                  IsShipping="false" />
       </ItemGroup>
     </Otherwise>
   </Choose>
