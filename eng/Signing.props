@@ -115,6 +115,9 @@
     <When Condition="'$(MonoEnableLLVM)' == 'true'">
       <ItemGroup>
         <PackageArtifacts Include="$(ArtifactsPackagesDir)**\*.$(PackageRID).*.LLVM.*.nupkg" />
+        <Artifact Include="@(PackageArtifacts)"
+                  IsShipping="$([System.String]::Copy('%(RecursiveDir)').StartsWith('Shipping'))"
+                  Kind="Package" />
       </ItemGroup>
     </When>
     <Otherwise>
