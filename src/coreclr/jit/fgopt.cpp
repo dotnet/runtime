@@ -4800,84 +4800,127 @@ void Compiler::ThreeOptLayout::AddNonFallthroughPreds(unsigned blockPos)
 //
 bool Compiler::ThreeOptLayout::Run()
 {
-    // For methods with fewer than three candidate blocks, we cannot partition anything
-    if (numCandidateBlocks < 3)
-    {
-        JITDUMP("Not enough blocks to partition anything. Skipping reordering.\n");
-        return false;
-    }
+    assert(numCandidateBlocks > 0);
 
     // Initialize ordinals for the hot blocks
     for (unsigned i = 0; i < numCandidateBlocks; i++)
     {
         BasicBlock* const block = blockOrder[i];
-        tempOrder[i]            = block;
+        assert(!block->isBBWeightCold(compiler));
+        assert(!block->hasHndIndex());
 
         // Repurpose 'bbPostorderNum' for the block's ordinal
         block->bbPostorderNum = i;
     }
 
-    // Copy cold block layout over to 'tempOrder' so we don't lose it
-    const unsigned numColdBlocks = compiler->m_dfsTree->GetPostOrderCount() - numCandidateBlocks;
-    assert((numCandidateBlocks + numColdBlocks) == compiler->m_dfsTree->GetPostOrderCount());
-    memcpy(tempOrder + numCandidateBlocks, blockOrder + numCandidateBlocks, sizeof(BasicBlock*) * numColdBlocks);
-
     RunThreeOpt();
+
+    BasicBlock** const lastHotBlocks = new (compiler, CMK_BasicBlock) BasicBlock*[compiler->compHndBBtabCount + 1];
+    lastHotBlocks[0] = compiler->fgFirstBB;
+
+    for (EHblkDsc* const HBtab : EHClauses(compiler))
+    {
+        lastHotBlocks[HBtab->ebdTryBeg->bbTryIndex] = HBtab->ebdTryBeg;
+    }
 
     // Reorder the block list
     bool modified = false;
-    for (unsigned i = 1; i < compiler->m_dfsTree->GetPostOrderCount(); i++)
+    for (unsigned i = 1; i < numCandidateBlocks; i++)
     {
         BasicBlock* const block = blockOrder[i - 1];
         BasicBlock* const next  = blockOrder[i];
-        assert(block != next);
-
-        if (block->NextIs(next))
-        {
-            continue;
-        }
+        lastHotBlocks[block->bbTryIndex] = block;
 
         // Only reorder within EH regions to maintain contiguity.
-        if (!BasicBlock::sameEHRegion(block, next))
+        if (compiler->bbIsTryBeg(next))
         {
             continue;
         }
 
-        // Don't move the entry of an EH region.
-        if (compiler->bbIsTryBeg(next) || compiler->bbIsHandlerBeg(next))
+        BasicBlock* insertionPoint = lastHotBlocks[next->bbTryIndex];
+        assert((block == insertionPoint) || !BasicBlock::sameTryRegion(block, next));
+
+        if (insertionPoint->NextIs(next))
         {
             continue;
         }
 
-        // Don't reorder filter regions.
-        if (block->hasHndIndex() && compiler->ehGetDsc(block->getHndIndex())->HasFilter())
+        if (insertionPoint->isBBCallFinallyPair())
         {
-            continue;
-        }
-
-        // Don't break up call-finally pairs.
-        if (block->isBBCallFinallyPair() || next->isBBCallFinallyPairTail())
-        {
-            continue;
+            insertionPoint = insertionPoint->Next();
+            assert(insertionPoint != next);
         }
 
         // Move call-finally pairs in tandem.
         if (next->isBBCallFinallyPair())
         {
             BasicBlock* const callFinallyTail = next->Next();
-            if (callFinallyTail != block)
+            if (callFinallyTail != insertionPoint)
             {
                 compiler->fgUnlinkRange(next, callFinallyTail);
-                compiler->fgMoveBlocksAfter(next, callFinallyTail, block);
+                compiler->fgMoveBlocksAfter(next, callFinallyTail, insertionPoint);
+                modified = true;
+            }
+        }
+        else if (next->isBBCallFinallyPairTail())
+        {
+            BasicBlock* const callFinally = next->Prev();
+            if (callFinally != insertionPoint)
+            {
+                compiler->fgUnlinkRange(callFinally, next);
+                compiler->fgMoveBlocksAfter(callFinally, next, insertionPoint);
                 modified = true;
             }
         }
         else
         {
             compiler->fgUnlinkBlock(next);
-            compiler->fgInsertBBafter(block, next);
+            compiler->fgInsertBBafter(insertionPoint, next);
             modified = true;
         }
+    }
+
+    lastHotBlocks[blockOrder[numCandidateBlocks - 1]->bbTryIndex] = blockOrder[numCandidateBlocks - 1];
+
+    if (compiler->compHndBBtabCount > 0)
+    {
+        if (modified)
+        {
+            compiler->fgFindEHRegionEnds();
+        }
+
+        // bool findEHRegions = false;
+        // for (EHblkDsc* const HBtab : EHClauses(compiler))
+        // {
+        //     BasicBlock* const tryBeg = HBtab->ebdTryBeg;
+        //     if ((tryBeg->bbPostorderNum >= numCandidateBlocks) || (blockOrder[tryBeg->bbPostorderNum] != tryBeg) || tryBeg->IsFirst())
+        //     {
+        //         continue;
+        //     }
+
+        //     BasicBlock* const tryLast = HBtab->ebdTryLast;
+        //     BasicBlock* insertionPoint = blockOrder[tryBeg->bbPostorderNum - 1];
+        //     unsigned parentIndex = insertionPoint->hasTryIndex() ? insertionPoint->getTryIndex() : EHblkDsc::NO_ENCLOSING_INDEX;
+
+        //     // Can we move this try to after 'insertionPoint' without breaking EH nesting invariants?
+        //     if (parentIndex != HBtab->ebdEnclosingTryIndex)
+        //     {
+        //         parentIndex = (HBtab->ebdEnclosingTryIndex != EHblkDsc::NO_ENCLOSING_INDEX) ? (HBtab->ebdEnclosingTryIndex + 1) : 0;
+        //         insertionPoint = lastHotBlocks[parentIndex];
+        //     }
+
+        //     compiler->fgUnlinkRange(tryBeg, tryLast);
+        //     compiler->fgMoveBlocksAfter(tryBeg, tryLast, insertionPoint);
+        //     modified = true;
+
+        //     // If this try region has a parent region, we will need to find EH region ends again.
+        //     findEHRegions = (HBtab->ebdEnclosingTryIndex != EHblkDsc::NO_ENCLOSING_INDEX);
+        // }
+
+        // if (findEHRegions)
+        // {
+        //     compiler->fgFindEHRegionEnds();
+        // }
     }
 
     return modified;
@@ -5084,8 +5127,13 @@ bool Compiler::ThreeOptLayout::RunGreedyThreeOptPass(unsigned startPos, unsigned
 //
 void Compiler::ThreeOptLayout::RunThreeOpt()
 {
-    // We better have enough blocks to create partitions
-    assert(numCandidateBlocks > 2);
+    // For methods with fewer than three candidate blocks, we cannot partition anything
+    if (numCandidateBlocks < 3)
+    {
+        JITDUMP("Not enough blocks to partition anything. Skipping reordering.\n");
+        return;
+    }
+
     const unsigned startPos = 0;
     const unsigned endPos   = numCandidateBlocks - 1;
 
@@ -5125,16 +5173,24 @@ PhaseStatus Compiler::fgSearchImprovedLayout()
     }
 #endif // DEBUG
 
-    // Before running 3-opt, compute a loop-aware RPO to get a sensible starting layout.
-    m_dfsTree                        = fgComputeDfs</* useProfile */ true>();
-    m_loops                          = FlowGraphNaturalLoops::Find(m_dfsTree);
+    // Before running 3-opt, compute a loop-aware RPO (if not already available) to get a sensible starting layout.
+    if (m_dfsTree == nullptr)
+    {
+        m_dfsTree = fgComputeDfs</* useProfile */ true>();
+        m_loops   = FlowGraphNaturalLoops::Find(m_dfsTree);
+    }
+    else
+    {
+        assert(m_loops != nullptr);
+    }
+
     BasicBlock** const initialLayout = new (this, CMK_BasicBlock) BasicBlock*[m_dfsTree->GetPostOrderCount()];
 
     // When walking the RPO-based layout, compact the hot blocks, and remember the end of the hot section.
     // We don't want to waste time running 3-opt on cold blocks.
     unsigned numHotBlocks  = 0;
     auto     addToSequence = [this, initialLayout, &numHotBlocks](BasicBlock* block) {
-        if (!block->isBBWeightCold(this) || block->IsFirst())
+        if (!block->isBBWeightCold(this) && !block->hasHndIndex())
         {
             initialLayout[numHotBlocks++] = block;
         }
@@ -5151,26 +5207,17 @@ PhaseStatus Compiler::fgSearchImprovedLayout()
     else
     {
         fgVisitBlocksInLoopAwareRPO(m_dfsTree, m_loops, addToSequence);
-
-        // Add the cold blocks to the end of the initial layout in RPO.
-        unsigned nextColdIndex = numHotBlocks;
-        for (unsigned i = m_dfsTree->GetPostOrderCount(); nextColdIndex < m_dfsTree->GetPostOrderCount(); i--)
-        {
-            assert(i != 0);
-            BasicBlock* const block = m_dfsTree->GetPostOrder(i - 1);
-            if (block->isBBWeightCold(this) && !block->IsFirst())
-            {
-                initialLayout[nextColdIndex++] = block;
-            }
-        }
     }
 
-    ThreeOptLayout layoutRunner(this, initialLayout, numHotBlocks);
-    const bool modified = layoutRunner.Run();
-
-    if (modified && (compHndBBtabCount > 0))
+    bool modified = false;
+    if (numHotBlocks > 0)
     {
-        fgFindEHRegionEnds();
+        ThreeOptLayout layoutRunner(this, initialLayout, numHotBlocks);
+        modified = layoutRunner.Run();
+    }
+    else
+    {
+        JITDUMP("No hot blocks found. Skipping reordering.\n");
     }
 
     fgInvalidateDfsTree();
