@@ -1183,7 +1183,7 @@ int LinearScan::BuildNode(GenTree* tree)
                     {
                         // Need no internal registers
                     }
-                    else if (!compiler->info.compInitMem)
+                    else if (!(compiler->info.compInitMem || (tree->gtFlags & GTF_LCLHEAP_MUSTINIT)))
                     {
                         // No need to initialize allocated stack space.
                         if (sizeVal < compiler->eeGetPageSize())
@@ -1202,7 +1202,7 @@ int LinearScan::BuildNode(GenTree* tree)
             else
             {
                 srcCount = 1;
-                if (!compiler->info.compInitMem)
+                if (!(compiler->info.compInitMem || (tree->gtFlags & GTF_LCLHEAP_MUSTINIT)))
                 {
                     buildInternalIntRegisterDefForNode(tree);
                     buildInternalIntRegisterDefForNode(tree);

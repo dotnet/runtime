@@ -2894,7 +2894,7 @@ bool Compiler::fgExpandStackArrayAllocation(BasicBlock* block, Statement* stmt, 
 
         // Allocation might fail. Codegen must zero the allocation
         //
-        locallocNode->gtFlags &= (GTF_EXCEPT | GTF_LCLHEAP_MUSTINIT);
+        locallocNode->gtFlags |= (GTF_EXCEPT | GTF_LCLHEAP_MUSTINIT);
 
         GenTree* const   locallocStore = gtNewStoreLclVarNode(locallocTemp, locallocNode);
         Statement* const locallocStmt  = fgNewStmtFromTree(locallocStore);
