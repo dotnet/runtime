@@ -103,7 +103,14 @@ namespace System.Threading
             bool hasPrefix = name.Contains('\\');
             if (!hasPrefix)
             {
-                if (!CurrentSessionOnly)
+                if (CurrentSessionOnly)
+                {
+#if TARGET_WINDOWS
+                    // Services use the global namespace by default, so always include a prefix on Windows
+                    name = CurrentSessionPrefix + name;
+#endif
+                }
+                else
                 {
                     name = AllSessionsPrefix + name;
                 }
