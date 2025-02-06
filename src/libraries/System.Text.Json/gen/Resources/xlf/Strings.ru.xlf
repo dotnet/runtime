@@ -142,6 +142,16 @@
         <target state="translated">Тип содержит несколько элементов, помеченных с помощью JsonExtensionDataAttribute.</target>
         <note />
       </trans-unit>
+      <trans-unit id="TypeContainsRefLikeMemberFormat">
+        <source>The type '{0}' includes the ref like property, field or constructor parameter '{1}'. No source code will be generated for the property, field or constructor.</source>
+        <target state="translated">Тип "{0}" содержит ссылку, например свойство, поле или параметр конструктора "{1}". Для свойства, поля или конструктора не будет создан исходный код.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="TypeContainsRefLikeMemberTitle">
+        <source>Type includes ref like property, field or constructor parameter.</source>
+        <target state="translated">Тип содержит ссылку, например свойство, поле или параметр конструктора.</target>
+        <note />
+      </trans-unit>
       <trans-unit id="TypeNotSupportedMessageFormat">
         <source>Did not generate serialization metadata for type '{0}'.</source>
         <target state="translated">Метаданные сериализации для типа "{0}" не сформированы.</target>
