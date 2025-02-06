@@ -337,9 +337,9 @@ NESTED_ENTRY InterpreterStub, _TEXT, NoHandler
         PROLOG_WITH_TRANSITION_BLOCK 8, 0, 0, 0, 0
         mov             [rsp], rax // Return buffer in Swift calling convention
 
-        ;
-        ; call ExecuteInterpretedMethod
-        ;
+        #
+        # call ExecuteInterpretedMethod
+        #
         lea             rdi, [rsp + __PWTB_TransitionBlock]     // pTransitionBlock*
         mov             rsi, METHODDESC_REGISTER
         call            C_FUNC(ExecuteInterpretedMethod)
