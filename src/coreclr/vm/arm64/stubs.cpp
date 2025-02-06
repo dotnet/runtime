@@ -865,7 +865,7 @@ EXTERN_C void JIT_UpdateWriteBarrierState(bool skipEphemeralCheck, size_t writea
 extern "C" void STDCALL JIT_PatchedCodeStart();
 extern "C" void STDCALL JIT_PatchedCodeLast();
 
-static void UpdateWriteBarrierState(bool skipEphemeralCheck)
+static void UpdateWriteBarrierState()
 {
     BYTE *writeBarrierCodeStart = GetWriteBarrierCodeLocation((void*)JIT_PatchedCodeStart);
     BYTE *writeBarrierCodeStartRW = writeBarrierCodeStart;
@@ -875,7 +875,15 @@ static void UpdateWriteBarrierState(bool skipEphemeralCheck)
         writeBarrierWriterHolder.AssignExecutableWriterHolder(writeBarrierCodeStart, (BYTE*)JIT_PatchedCodeLast - (BYTE*)JIT_PatchedCodeStart);
         writeBarrierCodeStartRW = writeBarrierWriterHolder.GetRW();
     }
-    JIT_UpdateWriteBarrierState(GCHeapUtilities::IsServerHeap(), writeBarrierCodeStartRW - writeBarrierCodeStart);
+
+    // Skip ephemeral checks for regionless server GC
+    bool skipEphemeralCheck = false;
+    if (GCHeapUtilities::IsServerHeap() && g_region_to_generation_table == nullptr)
+    {
+        skipEphemeralCheck = true;
+    }
+
+    JIT_UpdateWriteBarrierState(skipEphemeralCheck, writeBarrierCodeStartRW - writeBarrierCodeStart);
 }
 
 void InitJITHelpers1()
@@ -904,12 +912,12 @@ void InitJITHelpers1()
         }
     }
 
-    UpdateWriteBarrierState(GCHeapUtilities::IsServerHeap());
+    UpdateWriteBarrierState();
 }
 
 
 #else
-void UpdateWriteBarrierState(bool) {}
+void UpdateWriteBarrierState() {}
 #endif // !defined(DACCESS_COMPILE)
 
 #ifdef TARGET_WINDOWS
@@ -1074,26 +1082,26 @@ void FlushWriteBarrierInstructionCache()
 
 int StompWriteBarrierEphemeral(bool isRuntimeSuspended)
 {
-    UpdateWriteBarrierState(GCHeapUtilities::IsServerHeap());
+    UpdateWriteBarrierState();
     return SWB_PASS;
 }
 
 int StompWriteBarrierResize(bool isRuntimeSuspended, bool bReqUpperBoundsCheck)
 {
-    UpdateWriteBarrierState(GCHeapUtilities::IsServerHeap());
+    UpdateWriteBarrierState();
     return SWB_PASS;
 }
 
 #ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
 int SwitchToWriteWatchBarrier(bool isRuntimeSuspended)
 {
-    UpdateWriteBarrierState(GCHeapUtilities::IsServerHeap());
+    UpdateWriteBarrierState();
     return SWB_PASS;
 }
 
 int SwitchToNonWriteWatchBarrier(bool isRuntimeSuspended)
 {
-    UpdateWriteBarrierState(GCHeapUtilities::IsServerHeap());
+    UpdateWriteBarrierState();
     return SWB_PASS;
 }
 #endif // FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
