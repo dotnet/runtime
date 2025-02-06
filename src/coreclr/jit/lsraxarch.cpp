@@ -1812,14 +1812,15 @@ int LinearScan::BuildLclHeap(GenTree* tree)
         size_t sizeVal = AlignUp((size_t)size->AsIntCon()->gtIconVal, STACK_ALIGN);
 
         // Explicitly zeroed LCLHEAP also needs a regCnt in case of x86 or large page
-        if ((TARGET_POINTER_SIZE == 4) || (sizeVal >= compiler->eeGetPageSize()))
+        if ((TARGET_POINTER_SIZE == 4) || (sizeVal >= compiler->eeGetPageSize()) ||
+            (tree->gtFlags & GTF_LCLHEAP_MUSTINIT))
         {
             buildInternalIntRegisterDefForNode(tree);
         }
     }
     else
     {
-        if (!compiler->info.compInitMem)
+        if (!(compiler->info.compInitMem || (tree->gtFlags & GTF_LCLHEAP_MUSTINIT)))
         {
             // For regCnt
             buildInternalIntRegisterDefForNode(tree);
