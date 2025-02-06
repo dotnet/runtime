@@ -27,7 +27,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 /*****************************************************************************/
 
 const instruction emitJumpKindInstructions[] = {
-    INS_nop,
+    //INS_nop,
 
 #define JMP_SMALL(en, rev, ins) INS_##ins,
 #include "emitjmps.h"
@@ -3296,7 +3296,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
         case INS_OPTS_C:
             dst  = emitOutputInstr_OptsC(dst, id, ig, &sz);
             dst2 = dst;
-            ins  = INS_nop;
+            ins  = INS_nop; // ???
             break;
         default: // case INS_OPTS_NONE:
             dst += emitOutput_Instr(dst, id->idAddr()->iiaGetInstrEncode());
@@ -3351,31 +3351,6 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             if (vt == TYP_REF || vt == TYP_BYREF)
                 emitGCvarDeadUpd(adr + ofs, dst2 DEBUG_ARG(varNum));
         }
-        // if (emitInsWritesToLclVarStackLocPair(id))
-        //{
-        //    unsigned ofs2 = ofs + TARGET_POINTER_SIZE;
-        //    if (id->idGCrefReg2() != GCT_NONE)
-        //    {
-        //        emitGCvarLiveUpd(adr + ofs2, varNum, id->idGCrefReg2(), *dp);
-        //    }
-        //    else
-        //    {
-        //        // If the type of the local is a gc ref type, update the liveness.
-        //        var_types vt;
-        //        if (varNum >= 0)
-        //        {
-        //            // "Regular" (non-spill-temp) local.
-        //            vt = var_types(emitComp->lvaTable[varNum].lvType);
-        //        }
-        //        else
-        //        {
-        //            TempDsc* tmpDsc = codeGen->regSet.tmpFindNum(varNum);
-        //            vt              = tmpDsc->tdTempType();
-        //        }
-        //        if (vt == TYP_REF || vt == TYP_BYREF)
-        //            emitGCvarDeadUpd(adr + ofs2, *dp);
-        //    }
-        //}
     }
 
 #ifdef DEBUG
