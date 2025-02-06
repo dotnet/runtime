@@ -722,9 +722,9 @@ VSDHelperLabel:
 ; m_regs
 ; m_CallerAddress
 ; m_pThread
-; vtbl
+; frame identifier
 ; &VSDHelperLabel
-OffsetOfTailCallFrame = 8
+OffsetOfTailCallFrame = 4 ; Offset to start of TailCallFrame, includes only the &VSDHelperLabel
 
 ; ebx = pThread
 

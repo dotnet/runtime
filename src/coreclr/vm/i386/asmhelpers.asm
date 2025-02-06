@@ -1272,8 +1272,8 @@ _ComCallPreStub@0 proc public
     push        eax         ; ComCallMethodDesc*
     sub         esp, 4*4    ; next, vtable, 64-bit error return
 
-    lea     edi, [esp]
-    lea     esi, [esp+3*4]
+    lea     edi, [esp]      ; Point at the 64-bit error return
+    lea     esi, [esp+2*4]  ; Leave space for the 64-bit error return
 
     push    edi                 ; pErrorReturn
     push    esi                 ; pFrame
@@ -1283,7 +1283,7 @@ _ComCallPreStub@0 proc public
     cmp eax, 0
     je nostub                   ; oops we could not create a stub
 
-    add     esp, 6*4
+    add     esp, 5*4            ; Pop off 64-bit error return, vtable, next and ComCallMethodDesc*
 
     ; pop CalleeSavedRegisters
     pop edi
@@ -1306,7 +1306,7 @@ nostub:
     mov     eax, [edi]
     mov     edx, [edi+4]
 
-    add     esp, 6*4
+    add     esp, 5*4            ; Pop off 64-bit error return, vtable, next and ComCallMethodDesc*
 
     ; pop CalleeSavedRegisters
     pop edi
