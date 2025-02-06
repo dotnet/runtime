@@ -4663,10 +4663,6 @@ void Compiler::fgDoReversePostOrderLayout()
     }
 #endif // DEBUG
 
-    // Compute DFS of all blocks in the method, using profile data to determine the order successors are visited in.
-    //
-    m_dfsTree = fgComputeDfs</* useProfile */ true>();
-
     // If LSRA didn't create any new blocks, we can reuse its loop-aware RPO traversal,
     // which is cached in Compiler::fgBBs.
     // If the cache isn't available, we need to recompute the loop-aware RPO.
@@ -4675,14 +4671,20 @@ void Compiler::fgDoReversePostOrderLayout()
 
     if (rpoSequence == nullptr)
     {
-        rpoSequence                        = new (this, CMK_BasicBlock) BasicBlock*[m_dfsTree->GetPostOrderCount()];
+        assert(m_dfsTree == nullptr);
+        m_dfsTree                          = fgComputeDfs</* useProfile */ true>();
         FlowGraphNaturalLoops* const loops = FlowGraphNaturalLoops::Find(m_dfsTree);
-        unsigned                     index = 0;
-        auto                         addToSequence = [rpoSequence, &index](BasicBlock* block) {
+        rpoSequence                        = new (this, CMK_BasicBlock) BasicBlock*[m_dfsTree->GetPostOrderCount()];
+        unsigned index                     = 0;
+        auto     addToSequence             = [rpoSequence, &index](BasicBlock* block) {
             rpoSequence[index++] = block;
         };
 
         fgVisitBlocksInLoopAwareRPO(m_dfsTree, loops, addToSequence);
+    }
+    else
+    {
+        assert(m_dfsTree != nullptr);
     }
 
     // Fast path: We don't have any EH regions, so just reorder the blocks
