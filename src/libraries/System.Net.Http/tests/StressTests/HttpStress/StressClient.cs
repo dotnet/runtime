@@ -27,13 +27,15 @@ namespace HttpStress
         private readonly CancellationTokenSource _cts = new CancellationTokenSource();
         private Task? _clientTask;
         private EventListener? _eventListener;
+        private TaskCompletionSource<bool> _globalTcs;
 
         public long TotalErrorCount => _aggregator.TotalErrorCount;
 
-        public StressClient((string name, Func<RequestContext, Task> operation)[] clientOperations, Configuration configuration)
+        public StressClient((string name, Func<RequestContext, Task> operation)[] clientOperations, Configuration configuration, TaskCompletionSource<bool> globalTcs)
         {
             _clientOperations = clientOperations;
             _config = configuration;
+            _globalTcs = globalTcs;
             _baseAddress = new Uri(configuration.ServerUri);
             _aggregator = new StressResultAggregator(clientOperations);
 
@@ -206,6 +208,11 @@ namespace HttpStress
                         await func(requestContext);
 
                         _aggregator.RecordSuccess(opIndex, stopwatch.Elapsed);
+                    }
+                    catch (HttpRequestException e) when (e.InnerException is ObjectDisposedException ode && ode.ObjectName is "System.Net.Security.SslStream")
+                    {
+                        _aggregator.RecordFailure(e, opIndex, stopwatch.Elapsed, requestContext.IsCancellationRequested, taskNum: taskNum, iteration: i);
+                        Console.WriteLine("Caught SslStream disposal, aborting");
                     }
                     catch (OperationCanceledException) when (requestContext.IsCancellationRequested || _cts.IsCancellationRequested)
                     {

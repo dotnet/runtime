@@ -195,17 +195,20 @@ namespace HttpStress
                 Console.WriteLine($"Server started at {server.ServerUri}");
             }
 
+            TaskCompletionSource<bool> taskCompletionSource = WaitUntilMaxExecutionTimeElapsedOrKeyboardInterrupt(config.MaximumExecutionTime);
             StressClient? client = null;
             if (config.RunMode.HasFlag(RunMode.client))
             {
                 // Start the client.
                 Console.WriteLine($"Starting {config.ConcurrentRequests} client workers.");
 
-                client = new StressClient(usedClientOperations, config);
+                client = new StressClient(usedClientOperations, config, taskCompletionSource);
                 client.Start();
             }
 
-            await WaitUntilMaxExecutionTimeElapsedOrKeyboardInterrupt(config.MaximumExecutionTime);
+            
+
+            await taskCompletionSource.Task;
 
             client?.Stop();
             client?.PrintFinalReport();
@@ -214,7 +217,7 @@ namespace HttpStress
             return client?.TotalErrorCount == 0 ? ExitCode.Success : ExitCode.StressError;
         }
 
-        private static async Task WaitUntilMaxExecutionTimeElapsedOrKeyboardInterrupt(TimeSpan? maxExecutionTime = null)
+        private static TaskCompletionSource<bool> WaitUntilMaxExecutionTimeElapsedOrKeyboardInterrupt(TimeSpan? maxExecutionTime = null)
         {
             var tcs = new TaskCompletionSource<bool>();
             Console.CancelKeyPress += (sender, args) => { Console.Error.WriteLine("Keyboard interrupt"); args.Cancel = true; tcs.TrySetResult(false); };
@@ -225,7 +228,7 @@ namespace HttpStress
                 cts.Token.Register(() => { Console.WriteLine("Max execution time elapsed"); tcs.TrySetResult(false); });
             }
 
-            await tcs.Task;
+            return tcs;
         }
 
         private static S? Select<T, S>(this T? value, Func<T, S> mapper) where T : struct where S : struct
