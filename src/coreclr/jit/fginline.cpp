@@ -495,6 +495,8 @@ private:
             return false;
         }
 
+        JITDUMP("Inlinee tree can be inserted mid-statement\n");
+
         if (*use == nullptr)
         {
             *use = m_compiler->gtNewNothingNode();
@@ -522,6 +524,15 @@ private:
         {
             return false;
         }
+
+        JITDUMP("Inlinee does not have control flow; inserting mid-block\n");
+
+#ifdef DEBUG
+        for (Statement* stmt = inlineeComp->fgFirstBB->bbStmtList; stmt != nullptr; stmt = stmt->GetNextStmt())
+        {
+            DISPSTMT(stmt);
+        }
+#endif
 
         m_compiler->fgInsertStmtListBefore(block, stmt, inlineeComp->fgFirstBB->bbStmtList);
 
@@ -583,8 +594,6 @@ private:
     //
     GenTree* StoreStructInlineeToVar(GenTree* inlinee, CORINFO_CLASS_HANDLE retClsHnd)
     {
-        assert(!inlinee->OperIs(GT_RET_EXPR));
-
         unsigned   lclNum = m_compiler->lvaGrabTemp(false DEBUGARG("RetBuf for struct inline return candidates."));
         LclVarDsc* varDsc = m_compiler->lvaGetDesc(lclNum);
         m_compiler->lvaSetStruct(lclNum, retClsHnd, false);
