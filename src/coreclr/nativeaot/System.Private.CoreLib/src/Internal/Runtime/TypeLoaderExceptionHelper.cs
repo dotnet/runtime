@@ -26,12 +26,12 @@ namespace Internal.Runtime
 
         public static Exception CreateTypeLoadException(ExceptionStringID id, string typeName, string moduleName)
         {
-            return new TypeLoadException(SR.Format(GetFormatString(id), typeName, moduleName), typeName);
+            return new TypeLoadException(SR.Format(GetFormatString(id), typeName, moduleName)) { TypeName = typeName };
         }
 
         public static Exception CreateTypeLoadException(ExceptionStringID id, string typeName, string moduleName, string messageArg)
         {
-            return new TypeLoadException(SR.Format(GetFormatString(id), typeName, moduleName, messageArg), typeName);
+            return new TypeLoadException(SR.Format(GetFormatString(id), typeName, moduleName, messageArg)) { TypeName = typeName };
         }
 
         public static Exception CreateMissingFieldException(ExceptionStringID id, string fieldName)

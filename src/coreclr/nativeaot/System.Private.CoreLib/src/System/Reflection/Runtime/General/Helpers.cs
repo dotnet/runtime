@@ -78,7 +78,7 @@ namespace System.Reflection.Runtime.General
         public static TypeLoadException CreateTypeLoadException(string typeName, string assemblyName)
         {
             string message = SR.Format(SR.TypeLoad_ResolveTypeFromAssembly, typeName, assemblyName);
-            return new TypeLoadException(message, typeName);
+            return new TypeLoadException(message) { TypeName = typeName };
         }
 
         // Escape identifiers as described in "Specifying Fully Qualified Type Names" on msdn.
