@@ -286,8 +286,6 @@ namespace Internal.IL
         /// </summary>
         private void InitialPass()
         {
-            FatalCheck(_ilBytes.Length > 0, VerifierError.CodeSizeZero);
-
             _modifiesThisPtr = false;
             _validTargetOffsets = new bool[_ilBytes.Length];
 
@@ -2757,6 +2755,12 @@ namespace Internal.IL
         void ReportFallthroughAtEndOfMethod()
         {
             VerificationError(VerifierError.MethodFallthrough);
+        }
+
+        void ReportZeroSizedMethod()
+        {
+            VerificationError(VerifierError.CodeSizeZero);
+            AbortMethodVerification();
         }
 
         void ReportMethodEndInsideInstruction()
