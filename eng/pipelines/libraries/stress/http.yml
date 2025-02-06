@@ -96,7 +96,7 @@ extends:
 
       - job: windows
         displayName: Docker NanoServer
-        timeoutInMinutes: 150
+        timeoutInMinutes: 250
         variables:
           DUMPS_SHARE_MOUNT_ROOT: "C:/dumps-share"
           DUMPS_SHARE: "$(Build.ArtifactStagingDirectory)/dumps/"
@@ -149,7 +149,7 @@ extends:
 
         - powershell: |
             cd '$(httpStressProject)'
-            $env:STRESS_CLIENT_ARGS = "-maxExecutionTime 5 -displayInterval 60 -http 1.1 -trace"
+            $env:STRESS_CLIENT_ARGS = "-maxExecutionTime 180 -displayInterval 60 -http 1.1 -trace"
             $env:STRESS_SERVER_ARGS = "$env:HTTPSTRESS_SERVER_ARGS -http 1.1"
             New-Item -Force $env:DUMPS_SHARE -ItemType Directory
             docker compose up --abort-on-container-exit --no-color
