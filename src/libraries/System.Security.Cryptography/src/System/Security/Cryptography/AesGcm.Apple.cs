@@ -11,21 +11,27 @@ namespace System.Security.Cryptography
     {
         private FixedMemoryKeyBox _keyBox;
 
-        // CryptoKit added AES.GCM in macOS 10.15, which is lower than our minimum target for macOS/MacCatalyst. On iOS/tvOS, it was added in 13.0.
-        public static bool IsSupported => OperatingSystem.IsMacOS() || OperatingSystem.IsMacCatalyst() || OperatingSystem.IsIOSVersionAtLeast(13) || OperatingSystem.IsTvOSVersionAtLeast(13);
-
         // CryptoKit only supports 16 byte tags.
-        public static KeySizes TagByteSizes { get; } = new KeySizes(16, 16, 1);
+        private static readonly KeySizes s_tagByteSizes = new KeySizes(16, 16, 1);
+
+        // CryptoKit added AES.GCM in macOS 10.15, which is lower than our minimum target for macOS/MacCatalyst. On iOS/tvOS, it was added in 13.0.
+        public static partial bool IsSupported =>
+            OperatingSystem.IsMacOS() ||
+            OperatingSystem.IsMacCatalyst() ||
+            OperatingSystem.IsIOSVersionAtLeast(13) ||
+            OperatingSystem.IsTvOSVersionAtLeast(13);
+
+        public static partial KeySizes TagByteSizes => s_tagByteSizes;
 
         [MemberNotNull(nameof(_keyBox))]
-        private void ImportKey(ReadOnlySpan<byte> key)
+        private partial void ImportKey(ReadOnlySpan<byte> key)
         {
             // We should only be calling this in the constructor, so there shouldn't be a previous key.
             Debug.Assert(_keyBox is null);
             _keyBox = new FixedMemoryKeyBox(key);
         }
 
-        private void EncryptCore(
+        private partial void EncryptCore(
             ReadOnlySpan<byte> nonce,
             ReadOnlySpan<byte> plaintext,
             Span<byte> ciphertext,
@@ -54,7 +60,7 @@ namespace System.Security.Cryptography
             }
         }
 
-        private void DecryptCore(
+        private partial void DecryptCore(
             ReadOnlySpan<byte> nonce,
             ReadOnlySpan<byte> ciphertext,
             ReadOnlySpan<byte> tag,
@@ -83,6 +89,6 @@ namespace System.Security.Cryptography
             }
         }
 
-        public void Dispose() => _keyBox.Dispose();
+        public partial void Dispose() => _keyBox.Dispose();
     }
 }
