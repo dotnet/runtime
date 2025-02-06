@@ -4817,7 +4817,7 @@ bool Compiler::ThreeOptLayout::Run()
     assert((numCandidateBlocks + numColdBlocks) == compiler->m_dfsTree->GetPostOrderCount());
     memcpy(tempOrder + numCandidateBlocks, blockOrder + numCandidateBlocks, sizeof(BasicBlock*) * numColdBlocks);
 
-    RunThreeOptPass();
+    RunThreeOpt();
 
     // Reorder the block list
     bool modified = false;
@@ -5075,16 +5075,14 @@ bool Compiler::ThreeOptLayout::RunGreedyThreeOptPass(unsigned startPos, unsigned
 }
 
 //-----------------------------------------------------------------------------
-// Compiler::ThreeOptLayout::RunThreeOptPass: Runs 3-opt on the candidate span of blocks.
+// Compiler::ThreeOptLayout::RunThreeOpt: Runs 3-opt on the candidate span of blocks.
 //
-void Compiler::ThreeOptLayout::RunThreeOptPass()
+void Compiler::ThreeOptLayout::RunThreeOpt()
 {
-    const unsigned startPos  = 0;
-    const unsigned endPos    = numCandidateBlocks - 1;
-    const unsigned numBlocks = (endPos - startPos + 1);
-    assert(startPos <= endPos);
+    const unsigned startPos = 0;
+    const unsigned endPos   = numCandidateBlocks - 1;
 
-    if (numBlocks < 3)
+    if (numCandidateBlocks < 3)
     {
         JITDUMP("Not enough blocks to partition anything. Skipping reordering.\n");
         return;
@@ -5093,10 +5091,8 @@ void Compiler::ThreeOptLayout::RunThreeOptPass()
     JITDUMP("Initial layout cost: %f\n", GetLayoutCost(startPos, endPos));
     const bool modified = RunGreedyThreeOptPass(startPos, endPos);
 
-    // Write back to 'tempOrder' so changes to this region aren't lost next time we swap 'tempOrder' and 'blockOrder'
     if (modified)
     {
-        memcpy(tempOrder + startPos, blockOrder + startPos, sizeof(BasicBlock*) * numBlocks);
         JITDUMP("Final layout cost: %f\n", GetLayoutCost(startPos, endPos));
     }
     else

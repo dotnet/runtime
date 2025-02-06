@@ -6366,7 +6366,7 @@ public:
         void AddNonFallthroughPreds(unsigned blockPos);
         bool RunGreedyThreeOptPass(unsigned startPos, unsigned endPos);
 
-        void RunThreeOptPass();
+        void RunThreeOpt();
 
     public:
         ThreeOptLayout(Compiler* comp, BasicBlock** initialLayout, unsigned numHotBlocks);
