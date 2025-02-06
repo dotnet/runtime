@@ -182,56 +182,25 @@ PCODE Precode::TryToSkipFixupPrecode(PCODE addr)
     return 0;
 }
 
-#ifdef FEATURE_INTERPRETER
-static TADDR GetMethodDescFromPrecodeData(TADDR methodDesc)
-{
-    LIMITED_METHOD_CONTRACT;
-    if ((methodDesc & InterpretedCodeAddressFlag) == 0)
-    {
-        return methodDesc;
-    }
-
-    PTR_CodeHeader pCodeHeader = PTR_CodeHeader(EEJitManager::GetCodeHeaderFromStartAddress(methodDesc & ~InterpretedCodeAddressFlag));
-    return dac_cast<TADDR>(pCodeHeader->GetMethodDesc());
-}
-
-static PCODE GetTargetFromPrecodeData(TADDR methodDesc, PCODE target)
-{
-    LIMITED_METHOD_CONTRACT;
-    if ((methodDesc & InterpretedCodeAddressFlag) == 0)
-    {
-        return target;
-    }
-
-    return dac_cast<PCODE>(methodDesc);
-}
-
-TADDR FixupPrecode::GetMethodDesc()
-{
-    LIMITED_METHOD_CONTRACT;
-    return GetMethodDescFromPrecodeData(dac_cast<TADDR>(GetData()->MethodDesc));
-}
-
-PCODE FixupPrecode::GetTarget()
-{
-    LIMITED_METHOD_DAC_CONTRACT;
-    return GetTargetFromPrecodeData(dac_cast<TADDR>(GetData()->MethodDesc), GetData()->Target);
-}
-
-TADDR StubPrecode::GetMethodDesc()
-{
-    LIMITED_METHOD_CONTRACT;
-    return GetMethodDescFromPrecodeData(dac_cast<TADDR>(GetData()->MethodDesc));
-}
-
-PCODE StubPrecode::GetTarget()
-{
-    LIMITED_METHOD_DAC_CONTRACT;
-    return GetTargetFromPrecodeData(dac_cast<TADDR>(GetData()->MethodDesc), GetData()->Target);
-}
-#endif // FEATURE_INTERPRETER
-
 #ifndef DACCESS_COMPILE
+
+InterpreterPrecode* Precode::AllocateInterpreterPrecode(PCODE byteCode,
+                                                        LoaderAllocator *  pLoaderAllocator,
+                                                        AllocMemTracker *  pamTracker)
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_NOTRIGGER;
+        MODE_ANY;
+    }
+    CONTRACTL_END;
+
+    SIZE_T size = sizeof(InterpreterPrecode);
+    InterpreterPrecode* pPrecode = (InterpreterPrecode*)pamTracker->Track(pLoaderAllocator->GetNewStubPrecodeHeap()->AllocAlignedMem(size, 1));
+    pPrecode->Init(pPrecode, byteCode);
+    return pPrecode;
+}
 
 Precode* Precode::Allocate(PrecodeType t, MethodDesc* pMD,
                            LoaderAllocator *  pLoaderAllocator,
@@ -327,7 +296,7 @@ void Precode::ResetTargetInterlocked()
     // interlocked operation above (see ClrFlushInstructionCache())
 }
 
-BOOL Precode::SetTargetInterlocked(PCODE target, BOOL fOnlyRedirectFromPrestub, BOOL fInterpreter)
+BOOL Precode::SetTargetInterlocked(PCODE target, BOOL fOnlyRedirectFromPrestub)
 {
     WRAPPER_NO_CONTRACT;
     _ASSERTE(!IsPointingToPrestub(target));
@@ -342,18 +311,17 @@ BOOL Precode::SetTargetInterlocked(PCODE target, BOOL fOnlyRedirectFromPrestub, 
     switch (precodeType)
     {
     case PRECODE_STUB:
-        ret = AsStubPrecode()->SetTargetInterlocked(target, expected, fInterpreter);
+        ret = AsStubPrecode()->SetTargetInterlocked(target, expected);
         break;
 
 #ifdef HAS_FIXUP_PRECODE
     case PRECODE_FIXUP:
-        ret = AsFixupPrecode()->SetTargetInterlocked(target, expected, fInterpreter);
+        ret = AsFixupPrecode()->SetTargetInterlocked(target, expected);
         break;
 #endif // HAS_FIXUP_PRECODE
 
 #ifdef HAS_THISPTR_RETBUF_PRECODE
     case PRECODE_THISPTR_RETBUF:
-        _ASSERTE(!fInterpreter);
         ret = AsThisPtrRetBufPrecode()->SetTargetInterlocked(target, expected);
         ClrFlushInstructionCache(this, sizeof(ThisPtrRetBufPrecode), /* hasCodeExecutedBefore */ true);
         break;
@@ -434,7 +402,7 @@ void StubPrecode::Init(StubPrecode* pPrecodeRX, MethodDesc* pMD, LoaderAllocator
         pStubData->Target = target;
     }
 
-    pStubData->MethodDesc = (TADDR)pMD;
+    pStubData->MethodDesc = pMD;
     pStubData->Type = type;
 }
 
@@ -533,6 +501,16 @@ BOOL StubPrecode::IsStubPrecodeByASM(PCODE addr)
 #endif // TARGET_X86
 }
 
+void InterpreterPrecode::Init(InterpreterPrecode* pPrecodeRX, TADDR byteCodeAddr)
+{
+    WRAPPER_NO_CONTRACT;
+    InterpreterPrecodeData *pStubData = GetData();
+
+    pStubData->Target = (PCODE)InterpreterStub;
+    pStubData->ByteCodeAddr = byteCodeAddr;
+    pStubData->Type = InterpreterPrecode::Type;
+}
+
 #ifdef HAS_NDIRECT_IMPORT_PRECODE
 
 void NDirectImportPrecode::Init(NDirectImportPrecode* pPrecodeRX, MethodDesc* pMD, LoaderAllocator *pLoaderAllocator)
@@ -551,7 +529,7 @@ void FixupPrecode::Init(FixupPrecode* pPrecodeRX, MethodDesc* pMD, LoaderAllocat
     _ASSERTE(pPrecodeRX == this);
 
     FixupPrecodeData *pData = GetData();
-    pData->MethodDesc = (TADDR)pMD;
+    pData->MethodDesc = pMD;
 
     _ASSERTE(GetMethodDesc() == (TADDR)pMD);
 

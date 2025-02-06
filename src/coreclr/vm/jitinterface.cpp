@@ -13143,11 +13143,6 @@ PCODE UnsafeJitFunction(PrepareCodeConfig* config,
         ret |= THUMB_CODE;
 #endif
 
-        if (config->IsInterpreterCode())
-        {
-            ret |= InterpretedCodeAddressFlag;
-        }
-
         // We are done
         break;
     }

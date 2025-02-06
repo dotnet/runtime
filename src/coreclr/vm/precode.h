@@ -76,7 +76,7 @@ struct InvalidPrecode
 
 struct StubPrecodeData
 {
-    TADDR MethodDesc; // MethodDesc pointer or interpreted code address or-ed with the InterpretedCodeAddressFlag
+    PTR_MethodDesc MethodDesc;
     PCODE Target;
     BYTE Type;
 };
@@ -133,26 +133,18 @@ struct StubPrecode
     }
 
     TADDR GetMethodDesc()
-#ifdef FEATURE_INTERPRETER
-    ;
-#else
     {
         LIMITED_METHOD_DAC_CONTRACT;
 
         return dac_cast<TADDR>(GetData()->MethodDesc);
     }
-#endif
 
     PCODE GetTarget()
-#ifdef FEATURE_INTERPRETER
-    ;
-#else
     {
         LIMITED_METHOD_DAC_CONTRACT;
 
         return GetData()->Target;
     }
-#endif
 
     BYTE GetType()
     {
@@ -175,7 +167,7 @@ struct StubPrecode
         InterlockedExchangeT<PCODE>(&pData->Target, GetPreStubEntryPoint());
     }
 
-    BOOL SetTargetInterlocked(TADDR target, TADDR expected, BOOL fInterpreter)
+    BOOL SetTargetInterlocked(TADDR target, TADDR expected)
     {
         CONTRACTL
         {
@@ -184,12 +176,6 @@ struct StubPrecode
         }
         CONTRACTL_END;
 
-#ifdef FEATURE_INTERPRETER
-        if (fInterpreter)
-        {
-            target = (PCODE)InterpreterStub;
-        }
-#endif
         StubPrecodeData *pData = GetData();
         return InterlockedCompareExchangeT<PCODE>(&pData->Target, (PCODE)target, (PCODE)expected) == expected;
   }
@@ -222,13 +208,42 @@ typedef DPTR(NDirectImportPrecode) PTR_NDirectImportPrecode;
 
 #endif // HAS_NDIRECT_IMPORT_PRECODE
 
+struct InterpreterPrecodeData
+{
+    TADDR ByteCodeAddr;
+    PCODE Target;
+    BYTE Type;
+};
+
+typedef DPTR(InterpreterPrecodeData) PTR_InterpreterPrecodeData;
+
+struct InterpreterPrecode
+{
+    static const int Type = 0x06;
+
+    BYTE m_code[StubPrecode::CodeSize];
+
+    void Init(InterpreterPrecode* pPrecodeRX, TADDR byteCodeAddr);
+
+    PTR_InterpreterPrecodeData GetData() const
+    {
+        LIMITED_METHOD_CONTRACT;
+        return dac_cast<PTR_InterpreterPrecodeData>(dac_cast<TADDR>(this) + GetStubCodePageSize());
+    }
+
+    PCODE GetEntryPoint()
+    {
+        LIMITED_METHOD_CONTRACT;
+        return PINSTRToPCODE(dac_cast<TADDR>(this));
+    }
+};
 
 #ifdef HAS_FIXUP_PRECODE
 
 struct FixupPrecodeData
 {
     PCODE Target;
-    TADDR MethodDesc;  // MethodDesc pointer or interpreted code address or-ed with the InterpretedCodeAddressFlag
+    class MethodDesc *MethodDesc;
     PCODE PrecodeFixupThunk;
 };
 
@@ -289,23 +304,16 @@ struct FixupPrecode
     }
 
     TADDR GetMethodDesc()
-#ifdef FEATURE_INTERPRETER
-    ;
-#else
     {
+        LIMITED_METHOD_CONTRACT;
         return (TADDR)GetData()->MethodDesc;
     }
-#endif
 
     PCODE GetTarget()
-#ifdef FEATURE_INTERPRETER
-    ;
-#else
     {
         LIMITED_METHOD_DAC_CONTRACT;
         return GetData()->Target;
     }
-#endif
 
     PCODE *GetTargetSlot()
     {
@@ -331,7 +339,7 @@ struct FixupPrecode
         InterlockedExchangeT<PCODE>(&GetData()->Target, target);
     }
 
-    BOOL SetTargetInterlocked(TADDR target, TADDR expected, BOOL fInterpreter)
+    BOOL SetTargetInterlocked(TADDR target, TADDR expected)
     {
         CONTRACTL
         {
@@ -340,15 +348,6 @@ struct FixupPrecode
         }
         CONTRACTL_END;
 
-#ifdef FEATURE_INTERPRETER
-        if (fInterpreter)
-        {
-            _ASSERTE(IS_ALIGNED(&GetData()->PrecodeFixupThunk, sizeof(SIZE_T)));
-            _ASSERTE((PCODE)GetData()->Target == ((PCODE)this + FixupCodeOffset));
-            PCODE oldTarget = (PCODE)GetData()->PrecodeFixupThunk;
-            return InterlockedCompareExchangeT<PCODE>(&GetData()->PrecodeFixupThunk, (PCODE)InterpreterStub, (PCODE)oldTarget) == (PCODE)oldTarget;
-        }
-#endif
         PCODE oldTarget = (PCODE)GetData()->Target;
         if (oldTarget != ((PCODE)this + FixupCodeOffset))
         {
@@ -381,6 +380,7 @@ typedef DPTR(class Precode) PTR_Precode;
 enum PrecodeType {
     PRECODE_INVALID         = InvalidPrecode::Type,
     PRECODE_STUB            = StubPrecode::Type,
+    PRECODE_INTERPRETER     = InterpreterPrecode::Type,
 #ifdef HAS_NDIRECT_IMPORT_PRECODE
     PRECODE_NDIRECT_IMPORT  = NDirectImportPrecode::Type,
 #endif // HAS_NDIRECT_IMPORT_PRECODE
@@ -568,11 +568,15 @@ public:
 
     static Precode* Allocate(PrecodeType t, MethodDesc* pMD,
         LoaderAllocator *pLoaderAllocator, AllocMemTracker *pamTracker);
+
+    static InterpreterPrecode* AllocateInterpreterPrecode(PCODE byteCode,
+        LoaderAllocator *  pLoaderAllocator, AllocMemTracker *  pamTracker);
+
     void Init(Precode* pPrecodeRX, PrecodeType t, MethodDesc* pMD, LoaderAllocator *pLoaderAllocator);
 
 #ifndef DACCESS_COMPILE
     void ResetTargetInterlocked();
-    BOOL SetTargetInterlocked(PCODE target, BOOL fOnlyRedirectFromPrestub = TRUE, BOOL fInterpreter = FALSE);
+    BOOL SetTargetInterlocked(PCODE target, BOOL fOnlyRedirectFromPrestub = TRUE);
 
     // Reset precode to point to prestub
     void Reset();

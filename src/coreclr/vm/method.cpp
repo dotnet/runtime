@@ -3044,7 +3044,7 @@ void MethodDesc::TrySetInitialCodeEntryPointForVersionableMethod(
     else
     {
         _ASSERTE(IsVersionableWithPrecode());
-        GetOrCreatePrecode()->SetTargetInterlocked(entryPoint, TRUE /* fOnlyRedirectFromPrestub */, (entryPoint & InterpretedCodeAddressFlag) /* fInterpreter */);
+        GetOrCreatePrecode()->SetTargetInterlocked(entryPoint, TRUE /* fOnlyRedirectFromPrestub */);
     }
 }
 

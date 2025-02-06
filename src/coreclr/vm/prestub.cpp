@@ -426,9 +426,14 @@ PCODE MethodDesc::PrepareILBasedCode(PrepareCodeConfig* pConfig)
         LOG((LF_CLASSLOADER, LL_INFO1000000,
             "    In PrepareILBasedCode, calling JitCompileCode\n"));
         pCode = JitCompileCode(pConfig);
+
         if (pConfig->IsInterpreterCode())
         {
-            pCode |= InterpretedCodeAddressFlag;
+            AllocMemTracker amt;
+            InterpreterPrecode* pPrecode = Precode::AllocateInterpreterPrecode(pCode, GetLoaderAllocator(), &amt);
+            amt.SuppressRelease();
+            pCode = PINSTRToPCODE(pPrecode->GetEntryPoint());
+            SetNativeCodeInterlocked(pCode);
         }
     }
     else
@@ -2691,7 +2696,6 @@ extern "C" PCODE STDCALL PreStubWorker(TransitionBlock* pTransitionBlock, Method
 #ifdef FEATURE_INTERPRETER
 extern "C" void STDCALL ExecuteInterpretedMethod(TransitionBlock* pTransitionBlock, TADDR byteCodeAddr)
 {
-    byteCodeAddr &= ~InterpretedCodeAddressFlag;
     CodeHeader* pCodeHeader = EEJitManager::GetCodeHeaderFromStartAddress(byteCodeAddr);
 
     EEJitManager *pManager = ExecutionManager::GetEEJitManager();
