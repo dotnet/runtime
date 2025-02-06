@@ -1381,16 +1381,8 @@ namespace System.Net.Http.Functional.Tests
             var request = new HttpRequestMessage(HttpMethod.Get, server);
             request.Version = new Version(2, 0);
 
-            request.Headers.TryAddWithoutValidation("User-Agent",
-                "Mozilla/5.0 (Windows NT 10.0; Win64; x64) " +
-                "AppleWebKit/537.36 (KHTML, like Gecko) " +
-                "Chrome/90.0.4430.93 Safari/537.36");
-
             using (HttpClient client = CreateHttpClient())
             {
-                client.DefaultRequestHeaders.UserAgent.ParseAdd("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 " +
-                                                                    "(KHTML, like Gecko) Chrome/90.0.4430.93 Safari/537.36");
-
                 using (HttpResponseMessage response = await client.SendAsync(TestAsync, request))
                 {
                     Assert.Equal(HttpStatusCode.OK, response.StatusCode);
