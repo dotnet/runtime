@@ -120,6 +120,7 @@ namespace System.Reflection.Metadata.Tests
                 i--;
             }
             Assert.Equal(0, i);
+            Assert.Equal(0, i);
         }
 
         [Theory]
