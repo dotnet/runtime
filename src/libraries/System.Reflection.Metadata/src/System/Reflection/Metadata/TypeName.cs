@@ -142,7 +142,7 @@ namespace System.Reflection.Metadata
         {
             get
             {
-                if (_fullName is not null) // Simple types
+                if (_fullName is not null) // Fast path for already computed FullName and nested types
                 {
                     if (_nestedNameLength > 0 && _fullName.Length > _nestedNameLength) // Declaring types
                     {
@@ -154,76 +154,84 @@ namespace System.Reflection.Metadata
                     return _fullName;
                 }
 
-                List<NameAndDetails> stack = new();
+                // We need a Stack<T> to avoid recursion, but use just List<T> as Stack<T> is not a part of CoreLib.
+                List<NameInfo> stack = [new(this, NameFlags.None)];
+                // Since we start from "this" which is the leaf node of the tree,
+                // we append all the information in a reverse order and then reverse the string at the end.
                 ValueStringBuilder builder = new(stackalloc char[128]);
-                NameAndDetails currentDetails = new(this, Details.None);
-
-                while (true)
+                while (stack.Count > 0)
                 {
-                    TypeName current = currentDetails.typeName;
+                    NameInfo currentInfo = stack[stack.Count - 1];
+                    stack.RemoveAt(stack.Count - 1);
+                    TypeName current = currentInfo.typeName;
 
+                    // For a generic type, we push its definition and all args to the stack.
+                    // Definition`2[[Arg1],[Arg2]]
                     if (current.IsConstructedGenericType)
                     {
-                        builder.Append(']');
-                        stack.Add(new(current.GetGenericTypeDefinition(), Details.GenericTypeDefinition));
-
-                        ReadOnlySpan<TypeName> genericArguments =
-#if SYSTEM_PRIVATE_CORELIB
-                            CollectionsMarshal.AsSpan(current._genericArguments);
-#else
-                            current._genericArguments.AsSpan();
-#endif
+                        stack.Add(new(current.GetGenericTypeDefinition(), NameFlags.GenericTypeDefinition | currentInfo.flags));
+                        var genericArguments = current.GetGenericArguments();
                         for (int i = 0; i < genericArguments.Length; i++)
                         {
-                            stack.Add(new(genericArguments[i], i == 0 ? Details.FirstGenericArg : Details.NextGenericArg));
+                            // TypeName is unaware whether it is a generic argument or not, we need to track it.
+                            NameFlags flag = NameFlags.GenericArg;
+                            if (i == 0)
+                            {
+                                flag |= NameFlags.FirstGenericArg;
+                            }
+                            if (i == genericArguments.Length - 1)
+                            {
+                                flag |= NameFlags.LastGenericArg;
+                            }
+                            stack.Add(new(genericArguments[i], flag));
                         }
                     }
-                    else if (current.IsArray || current.IsPointer || current.IsByRef)
+
+                    // Append the closing braces and assembly name
+                    // Generic`1[[ArgTypeName, ThisAssemblyNamePart]]
+                    if ((currentInfo.flags & NameFlags.GenericArg) != 0)
                     {
-                        TypeNameParserHelpers.AppendReversedRankOrModifierStringRepresentation(current._rankOrModifier, ref builder);
-                        stack.Add(new(current.GetElementType(), currentDetails.details));
-                    }
-                    else if (current._fullName is not null)
-                    {
-                        if (currentDetails.details == Details.GenericTypeDefinition)
+                        if ((currentInfo.flags & (NameFlags.GenericTypeDefinition | NameFlags.SuffixAlreadyPrinted)) == 0)
                         {
-                            builder.Append('[');
-                        }
-                        else if (currentDetails.details is Details.FirstGenericArg or Details.NextGenericArg)
-                        {
-                            builder.Append(']');
-                            if (current.AssemblyName is not null)
+                            builder.Append(']'); // every generic arg ends with ']'
+                            if ((currentInfo.flags & NameFlags.LastGenericArg) != 0)
+                            {
+                                builder.Append(']'); // the last generic arg ends with ']]'
+                            }
+
+                            if (current.AssemblyName is not null) // generic arg is always fully qualified
                             {
                                 AppendInReverseOrder(ref builder, current.AssemblyName.FullName.AsSpan());
                                 builder.Append(" ,");
                             }
                         }
+                    }
 
-                        int length = current._fullName.Length;
-                        if (current._nestedNameLength > 0 && current._fullName.Length > current._nestedNameLength) // Declaring types
+                    if (current.IsArray || current.IsPointer || current.IsByRef)
+                    {
+                        TypeNameParserHelpers.AppendReversedRankOrModifierStringRepresentation(current._rankOrModifier, ref builder);
+                        stack.Add(new(current.GetElementType(), currentInfo.flags | NameFlags.SuffixAlreadyPrinted));
+                    }
+                    else if (current.IsSimple && current._fullName is not null)
+                    {
+                        if ((currentInfo.flags & NameFlags.GenericTypeDefinition) != 0)
                         {
-                            // Stored fullName represents the full name of the nested type.
-                            // Example: Namespace.Declaring+Nested
-                            length = current._nestedNameLength;
+                            builder.Append('['); // generic type definition is followed with '[': "List`1["
                         }
+
+                        int length = current._nestedNameLength > 0 ? current._nestedNameLength : current._fullName.Length;
                         AppendInReverseOrder(ref builder, current._fullName.AsSpan(0, length));
 
-                        if (currentDetails.details == Details.NextGenericArg)
+                        if ((currentInfo.flags & NameFlags.GenericArg) != 0)
                         {
-                            builder.Append("[,");
-                        }
-                        else if (currentDetails.details == Details.FirstGenericArg)
-                        {
-                            builder.Append('[');
-                        }
-                    }
+                            builder.Append('['); // every generic arg starts with '['
 
-                    if (stack.Count == 0)
-                    {
-                        break;
+                            if ((currentInfo.flags & NameFlags.FirstGenericArg) == 0)
+                            {
+                                builder.Append(','); // every generic arg except the first one is followed with ','
+                            }
+                        }
                     }
-                    currentDetails = stack[stack.Count - 1];
-                    stack.RemoveAt(stack.Count - 1);
                 }
 
                 Span<char> characters = builder.RawChars.Slice(0, builder.Length);
@@ -594,14 +602,17 @@ namespace System.Reflection.Metadata
                 rankOrModifier: rankOrModifier);
 #endif
 
-        private record struct NameAndDetails(TypeName typeName, Details details);
+        private record struct NameInfo(TypeName typeName, NameFlags flags);
 
-        private enum Details : byte
+        [Flags]
+        private enum NameFlags : byte
         {
-            None,
-            NextGenericArg,
-            FirstGenericArg,
-            GenericTypeDefinition,
+            None = 0,
+            GenericTypeDefinition = 1,
+            FirstGenericArg = 2,
+            GenericArg = 4,
+            LastGenericArg = 8,
+            SuffixAlreadyPrinted = 16
         }
     }
 }
