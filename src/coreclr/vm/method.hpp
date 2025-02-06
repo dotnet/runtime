@@ -2372,7 +2372,6 @@ inline MethodDescChunk *MethodDesc::GetMethodDescChunk() const
 
 MethodDesc* NonVirtualEntry2MethodDesc(PCODE entryPoint);
 
-
 typedef DPTR(class StoredSigMethodDesc) PTR_StoredSigMethodDesc;
 class StoredSigMethodDesc : public MethodDesc
 {

@@ -3613,14 +3613,18 @@ ClrDataAccess::TraverseVirtCallStubHeap(CLRDATA_ADDRESS pAppDomain, VCSHeapType 
                 break;
 
             case CacheEntryHeap:
+#ifdef FEATURE_VIRTUAL_STUB_DISPATCH
                 pLoaderHeap = pVcsMgr->cache_entry_heap;
+#else
+                hr = S_OK;
+#endif
                 break;
 
             default:
                 hr = E_INVALIDARG;
         }
 
-        if (SUCCEEDED(hr))
+        if (SUCCEEDED(hr) && (pLoaderHeap != NULL))
         {
             hr = TraverseLoaderHeapBlock(pLoaderHeap->m_pFirstBlock, pFunc);
         }
@@ -3663,7 +3667,9 @@ static const char *LoaderAllocatorLoaderHeapNames[] =
     "FixupPrecodeHeap",
     "NewStubPrecodeHeap",
     "IndcellHeap",
+#ifdef FEATURE_VIRTUAL_STUB_DISPATCH
     "CacheEntryHeap",
+#endif
 };
 
 
@@ -3707,7 +3713,9 @@ HRESULT ClrDataAccess::GetLoaderAllocatorHeaps(CLRDATA_ADDRESS loaderAllocatorAd
             else
             {
                 pLoaderHeaps[i++] = HOST_CDADDR(pVcsMgr->indcell_heap);
+#ifdef FEATURE_VIRTUAL_STUB_DISPATCH
                 pLoaderHeaps[i++] = HOST_CDADDR(pVcsMgr->cache_entry_heap);
+#endif
             }
 
             // All of the above are "LoaderHeap" and not the ExplicitControl version.

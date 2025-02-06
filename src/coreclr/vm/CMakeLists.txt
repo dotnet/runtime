@@ -1,10 +1,13 @@
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
+set(SHARED_RUNTIME_DIR ../shared_runtime)
+
 # Needed due to the cmunged files being in the binary folders, the set(CMAKE_INCLUDE_CURRENT_DIR ON) is not enough
 include_directories(BEFORE ${CMAKE_CURRENT_SOURCE_DIR})
 include_directories(${ARCH_SOURCES_DIR})
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../interop/inc)
 include_directories(${CLR_SRC_NATIVE_DIR})
+include_directories(${SHARED_RUNTIME_DIR})
 
 # needed when zLib compression is used
 include_directories(${CLR_SRC_NATIVE_DIR}/libs/System.IO.Compression.Native)
@@ -40,6 +43,14 @@ if(FEATURE_PERFTRACING)
     set(CORECLR_USEREVENTS_SHIM_DIR ${CMAKE_CURRENT_SOURCE_DIR}/eventing/userevents)
     include_directories(${CORECLR_USEREVENTS_SHIM_DIR})
 endif(FEATURE_PERFTRACING)
+
+if(FEATURE_CORECLR_CACHED_INTERFACE_DISPATCH)
+    add_definitions(-DFEATURE_CACHED_INTERFACE_DISPATCH)
+endif(FEATURE_CORECLR_CACHED_INTERFACE_DISPATCH)
+
+if(FEATURE_CORECLR_VIRTUAL_STUB_DISPATCH)
+    add_definitions(-DFEATURE_VIRTUAL_STUB_DISPATCH)
+endif(FEATURE_CORECLR_VIRTUAL_STUB_DISPATCH)
 
 set(VM_SOURCES_DAC_AND_WKS_COMMON
     appdomain.cpp
@@ -373,6 +384,13 @@ set(VM_SOURCES_WKS
     ${VM_SOURCES_GDBJIT}
 )
 
+if(FEATURE_CORECLR_CACHED_INTERFACE_DISPATCH)
+    list(APPEND VM_SOURCES_WKS
+        ${SHARED_RUNTIME_DIR}/CachedInterfaceDispatch.cpp
+        CachedInterfaceDispatchCoreclr.cpp
+    )
+endif(FEATURE_CORECLR_CACHED_INTERFACE_DISPATCH)
+
 # coreclr needs to compile codeman.cpp differently depending on flavor (i.e. dll vs. static lib))
 list(REMOVE_ITEM VM_SOURCES_WKS codeman.cpp)
 
@@ -626,8 +644,19 @@ if(CLR_CMAKE_TARGET_ARCH_AMD64)
         ${ARCH_SOURCES_DIR}/Context.asm
         ${ARCH_SOURCES_DIR}/ExternalMethodFixupThunk.asm
         ${ARCH_SOURCES_DIR}/UMThunkStub.asm
-        ${ARCH_SOURCES_DIR}/VirtualCallStubAMD64.asm
     )
+
+    if(FEATURE_CORECLR_VIRTUAL_STUB_DISPATCH)
+        list(APPEND VM_SOURCES_WKS_ARCH_ASM
+            ${ARCH_SOURCES_DIR}/VirtualCallStubAMD64.asm
+        )
+    endif(FEATURE_CORECLR_VIRTUAL_STUB_DISPATCH)
+
+    if(FEATURE_CORECLR_CACHED_INTERFACE_DISPATCH)
+        list(APPEND VM_SOURCES_WKS_ARCH_ASM
+            ${ARCH_SOURCES_DIR}/CachedInterfaceDispatchCoreCLR.asm
+    )
+    endif(FEATURE_CORECLR_CACHED_INTERFACE_DISPATCH)
 
     set(VM_HEADERS_WKS_ARCH_ASM
         ${ARCH_SOURCES_DIR}/asmconstants.h
@@ -654,11 +683,18 @@ elseif(CLR_CMAKE_TARGET_ARCH_ARM64)
         ${ARCH_SOURCES_DIR}/thunktemplates.asm
     )
 
+    if(FEATURE_CORECLR_CACHED_INTERFACE_DISPATCH)
+        list(APPEND VM_SOURCES_WKS_ARCH_ASM
+            ${ARCH_SOURCES_DIR}/CachedInterfaceDispatchCoreCLR.asm
+        )
+    endif(FEATURE_CORECLR_CACHED_INTERFACE_DISPATCH)
+
     set(VM_HEADERS_WKS_ARCH_ASM
         ${ARCH_SOURCES_DIR}/asmconstants.h
     )
 endif()
 
+    set(ASM_SUFFIX asm)
 else(CLR_CMAKE_TARGET_WIN32)
 
     if(CLR_CMAKE_TARGET_ARCH_AMD64)
@@ -679,8 +715,20 @@ else(CLR_CMAKE_TARGET_WIN32)
             ${ARCH_SOURCES_DIR}/Context.S
             ${ARCH_SOURCES_DIR}/unixasmhelpers.S
             ${ARCH_SOURCES_DIR}/umthunkstub.S
-            ${ARCH_SOURCES_DIR}/virtualcallstubamd64.S
         )
+
+        if(FEATURE_CORECLR_VIRTUAL_STUB_DISPATCH)
+            list(APPEND VM_SOURCES_WKS_ARCH_ASM
+                ${ARCH_SOURCES_DIR}/virtualcallstubamd64.S
+            )
+        endif(FEATURE_CORECLR_VIRTUAL_STUB_DISPATCH)
+
+        if(FEATURE_CORECLR_CACHED_INTERFACE_DISPATCH)
+            list(APPEND VM_SOURCES_WKS_ARCH_ASM
+                ${ARCH_SOURCES_DIR}/CachedInterfaceDispatchCoreCLR.S
+        )
+        endif(FEATURE_CORECLR_CACHED_INTERFACE_DISPATCH)
+
     elseif(CLR_CMAKE_TARGET_ARCH_I386)
         set(VM_SOURCES_WKS_ARCH_ASM
             ${ARCH_SOURCES_DIR}/ehhelpers.S
@@ -707,6 +755,11 @@ else(CLR_CMAKE_TARGET_WIN32)
             ${ARCH_SOURCES_DIR}/pinvokestubs.S
             ${ARCH_SOURCES_DIR}/thunktemplates.S
         )
+        if(FEATURE_CORECLR_CACHED_INTERFACE_DISPATCH)
+            list(APPEND VM_SOURCES_WKS_ARCH_ASM
+                ${ARCH_SOURCES_DIR}/CachedInterfaceDispatchCoreCLR.S
+            )
+        endif(FEATURE_CORECLR_CACHED_INTERFACE_DISPATCH)
     elseif(CLR_CMAKE_TARGET_ARCH_LOONGARCH64)
         set(VM_SOURCES_WKS_ARCH_ASM
             ${ARCH_SOURCES_DIR}/asmhelpers.S
@@ -723,8 +776,15 @@ else(CLR_CMAKE_TARGET_WIN32)
         )
     endif()
 
+    set(ASM_SUFFIX S)
 endif(CLR_CMAKE_TARGET_WIN32)
 
+if(FEATURE_CORECLR_CACHED_INTERFACE_DISPATCH)
+    set(VM_SOURCES_WKS_ARCH_ASM
+        ${VM_SOURCES_WKS_ARCH_ASM}
+        ${SHARED_RUNTIME_DIR}/${ARCH_SOURCES_DIR}/StubDispatch.${ASM_SUFFIX}
+    )
+endif(FEATURE_CORECLR_CACHED_INTERFACE_DISPATCH)
 
 if(CLR_CMAKE_TARGET_ARCH_AMD64)
     set(VM_SOURCES_DAC_AND_WKS_ARCH
