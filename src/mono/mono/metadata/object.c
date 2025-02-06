@@ -2624,7 +2624,7 @@ mono_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObject **
 	MonoMethodSignature *sig = mono_method_signature_internal (method);
 	for (int i = 0; i < sig->param_count; i++) {
 		MonoType *t = sig->params [i];
-		if (t->type == MONO_TYPE_GENERICINST && t->data.generic_class->container_class == mono_defaults.generic_nullable_class) {
+		if (t->type == MONO_TYPE_GENERICINST && m_type_data_get_generic_class_unchecked (t)->container_class == mono_defaults.generic_nullable_class) {
 			MonoClass *klass = mono_class_from_mono_type_internal (t);
 			MonoObject *boxed_vt = (MonoObject*)params [i];
 			gpointer nullable_vt = g_alloca (mono_class_value_size (klass, NULL));
@@ -2667,7 +2667,7 @@ mono_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObject **
 		// to return it as boxed vt or NULL
 		for (int i = 0; i < sig->param_count; i++) {
 			MonoType *t = sig->params [i];
-			if (t->type == MONO_TYPE_GENERICINST && m_type_is_byref (t) && t->data.generic_class->container_class == mono_defaults.generic_nullable_class) {
+			if (t->type == MONO_TYPE_GENERICINST && m_type_is_byref (t) && m_type_data_get_generic_class_unchecked (t)->container_class == mono_defaults.generic_nullable_class) {
 				MonoClass *klass = mono_class_from_mono_type_internal (t);
 				gpointer nullable_vt = params_arg [i];
 				params [i] = mono_nullable_box (nullable_vt, klass, error);
@@ -2950,8 +2950,8 @@ handle_enum:
 	}
 	case MONO_TYPE_VALUETYPE:
 		/* note that 't' and 'type->type' can be different */
-		if (type->type == MONO_TYPE_VALUETYPE && m_class_is_enumtype (type->data.klass)) {
-			t = mono_class_enum_basetype_internal (type->data.klass)->type;
+		if (type->type == MONO_TYPE_VALUETYPE && m_class_is_enumtype (m_type_data_get_klass (type))) {
+			t = mono_class_enum_basetype_internal (m_type_data_get_klass (type))->type;
 			goto handle_enum;
 		} else {
 			MonoClass *klass = mono_class_from_mono_type_internal (type);
@@ -2963,7 +2963,7 @@ handle_enum:
 		}
 		return;
 	case MONO_TYPE_GENERICINST:
-		t = m_class_get_byval_arg (type->data.generic_class->container_class)->type;
+		t = m_class_get_byval_arg (m_type_data_get_generic_class (type)->container_class)->type;
 		goto handle_enum;
 	default:
 		g_error ("got type %x", type->type);
@@ -4985,9 +4985,9 @@ again:
 			break;
 		case MONO_TYPE_GENERICINST:
 			if (m_type_is_byref (t))
-				t = m_class_get_this_arg (t->data.generic_class->container_class);
+				t = m_class_get_this_arg (m_type_data_get_generic_class_unchecked (t)->container_class);
 			else
-				t = m_class_get_byval_arg (t->data.generic_class->container_class);
+				t = m_class_get_byval_arg (m_type_data_get_generic_class_unchecked (t)->container_class);
 			goto again;
 		case MONO_TYPE_PTR: {
 			MonoObject *arg;
@@ -5106,7 +5106,7 @@ mono_runtime_invoke_array (MonoMethod *method, void *obj, MonoArray *params,
 		// to return it as boxed vt or NULL
 		for (int i = 0; i < param_count; i++) {
 			MonoType *t = sig->params [i];
-			if (t->type == MONO_TYPE_GENERICINST && m_type_is_byref (t) && t->data.generic_class->container_class == mono_defaults.generic_nullable_class) {
+			if (t->type == MONO_TYPE_GENERICINST && m_type_is_byref (t) && m_type_data_get_generic_class_unchecked (t)->container_class == mono_defaults.generic_nullable_class) {
 				MonoClass *klass = mono_class_from_mono_type_internal (t);
 				MonoObject *boxed_vt = mono_nullable_box (pa [i], klass, error);
 				goto_if_nok (error, return_error);
@@ -5160,9 +5160,9 @@ again:
 			break;
 		case MONO_TYPE_GENERICINST:
 			if (m_type_is_byref (t))
-				t = m_class_get_this_arg (t->data.generic_class->container_class);
+				t = m_class_get_this_arg (m_type_data_get_generic_class_unchecked (t)->container_class);
 			else
-				t = m_class_get_byval_arg (t->data.generic_class->container_class);
+				t = m_class_get_byval_arg (m_type_data_get_generic_class_unchecked (t)->container_class);
 			goto again;
 		case MONO_TYPE_PTR:
 		case MONO_TYPE_FNPTR:
