@@ -196,7 +196,7 @@ Note that we didn't similarly protect 'b" because the caller has no use for "b" 
 
 Having said that, no one should complain if you play it safe and GCPROTECT "b" as well. You never know when someone might add code later that makes the protection necessary.
 
-Every GCPROTECT_BEGIN must have a matching GCPROTECT_END, which terminates the protected status of "a". As an additional safeguard, GCPROTECT_END overwrites "a" with garbage so that any attempt to use "a" afterward will fail. GCPROTECT_BEGIN introduces a new C scoping level that GCPROTECT_END closes, so if you use one without the other, you'll probably experience severe build errors.
+Every GCPROTECT_BEGIN must have a matching GCPROTECT_END, which terminates the protected status of "a". As an additional safeguard, GCPROTECT_END overwrites "a" with garbage so that any attempt to use "a" afterward will fault. GCPROTECT_BEGIN introduces a new C scoping level that GCPROTECT_END closes, so if you use one without the other, you'll probably experience severe build errors.
 
 ### <a name="2.1.4"></a>2.1.4 Don't do nonlocal returns from within GCPROTECT blocks
 
