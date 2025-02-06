@@ -26,7 +26,7 @@ namespace HttpStress
         private readonly Stopwatch _stopwatch = new Stopwatch();
         private readonly CancellationTokenSource _cts = new CancellationTokenSource();
         private Task? _clientTask;
-        private EventListener? _eventListener;
+        private LogHttpEventListener? _eventListener;
         private TaskCompletionSource<bool> _globalTcs;
 
         public long TotalErrorCount => _aggregator.TotalErrorCount;
@@ -213,6 +213,7 @@ namespace HttpStress
                     {
                         _aggregator.RecordFailure(e, opIndex, stopwatch.Elapsed, requestContext.IsCancellationRequested, taskNum: taskNum, iteration: i);
                         Console.WriteLine("Caught SslStream disposal, aborting");
+                        _eventListener?.Write($"ODE request: {requestContext.RequestHashCode}");
                         _globalTcs.SetResult(false);
                     }
                     catch (OperationCanceledException) when (requestContext.IsCancellationRequested || _cts.IsCancellationRequested)

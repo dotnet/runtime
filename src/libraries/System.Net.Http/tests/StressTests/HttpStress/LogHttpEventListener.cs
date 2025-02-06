@@ -114,6 +114,11 @@ namespace HttpStress
             _stringBuilderPool.Return(sb);
         }
 
+        public void Write(string message)
+        {
+            _messagesChannel.Writer.TryWrite($"** {DateTime.Now:HH:mm:ss.fffffff} ** {message}");
+        }
+
         public override void Dispose()
         {
             base.Dispose();
