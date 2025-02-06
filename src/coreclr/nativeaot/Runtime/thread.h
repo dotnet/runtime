@@ -16,7 +16,7 @@ class Thread;
 class TypeManager;
 
 #ifdef TARGET_UNIX
-#include "UnixContext.h"
+#include "NativeContext.h"
 #endif
 
 // The offsets of some fields in the thread (in particular, m_pTransitionFrame) are known to the compiler and get
@@ -138,7 +138,6 @@ struct RuntimeThreadLocals
     PInvokeTransitionFrame* m_pDeferredTransitionFrame;             // see Thread::EnablePreemptiveMode
     PInvokeTransitionFrame* m_pCachedTransitionFrame;
     PTR_Thread              m_pNext;                                // used by ThreadStore's SList<Thread>
-    HANDLE                  m_hPalThread;                           // WARNING: this may legitimately be INVALID_HANDLE_VALUE
 #ifdef FEATURE_HIJACK
     void **                 m_ppvHijackedReturnAddressLocation;
     void *                  m_pvHijackedReturnAddress;
@@ -149,6 +148,11 @@ struct RuntimeThreadLocals
     uintptr_t               m_uHijackedReturnValueFlags;
     PCODE                   m_LastRedirectIP;
     uint64_t                m_SpinCount;
+#endif
+#ifdef TARGET_WINDOWS
+    HANDLE                  m_hOSThread;                           // WARNING: this may legitimately be INVALID_HANDLE_VALUE
+#else
+    pthread_t               m_hOSThread;
 #endif
     Object*                 m_pThreadLocalStatics;
     InlinedThreadStaticRoot* m_pInlinedThreadLocalStatics;
@@ -218,8 +222,6 @@ private:
     bool IsStateSet(ThreadStateFlags flags);
 
 #ifdef FEATURE_HIJACK
-    static void HijackCallback(NATIVE_CONTEXT* pThreadContext, void* pThreadToHijack);
-
     void HijackReturnAddress(PAL_LIMITED_CONTEXT* pSuspendCtx, HijackFunc* pfnHijackFunction);
     void HijackReturnAddress(NATIVE_CONTEXT* pSuspendCtx, HijackFunc* pfnHijackFunction);
     void HijackReturnAddressWorker(StackFrameIterator* frameIterator, HijackFunc* pfnHijackFunction);
@@ -275,6 +277,8 @@ public:
     bool                IsHijacked();
     void*               GetHijackedReturnAddress();
     static bool         IsHijackTarget(void * address);
+
+    static void HijackCallback(NATIVE_CONTEXT* pThreadContext, Thread* pThreadToHijack);
 #else // FEATURE_HIJACK
     void                Unhijack() { }
     bool                IsHijacked() { return false; }
@@ -372,6 +376,12 @@ public:
 
     bool                IsActivationPending();
     void                SetActivationPending(bool isPending);
+
+#ifdef TARGET_WINDOWS
+    HANDLE              GetOSThreadHandle() { return m_hOSThread; }
+#else
+    pthread_t           GetOSThreadHandle() { return m_hOSThread; }
+#endif
 
 #ifdef TARGET_X86
     void                SetPendingRedirect(PCODE eip);

@@ -701,6 +701,13 @@ namespace System.Runtime.InteropServices
             }
         }
 
+        // Custom type instead of a value tuple to avoid rooting 'ITuple' and other value tuple stuff
+        private struct GetOrCreateComInterfaceForObjectParameters
+        {
+            public ComWrappers? This;
+            public CreateComInterfaceFlags Flags;
+        }
+
         /// <summary>
         /// Create a COM representation of the supplied object that can be passed to a non-managed environment.
         /// </summary>
@@ -716,18 +723,12 @@ namespace System.Runtime.InteropServices
         {
             ArgumentNullException.ThrowIfNull(instance);
 
-            ManagedObjectWrapperHolder? managedObjectWrapper;
-            if (_managedObjectWrapperTable.TryGetValue(instance, out managedObjectWrapper))
+            ManagedObjectWrapperHolder managedObjectWrapper = _managedObjectWrapperTable.GetOrAdd(instance, static (c, items) =>
             {
-                managedObjectWrapper.AddRef();
-                return managedObjectWrapper.ComIp;
-            }
-
-            managedObjectWrapper = _managedObjectWrapperTable.GetValue(instance, (c) =>
-            {
-                ManagedObjectWrapper* value = CreateManagedObjectWrapper(c, flags);
+                ManagedObjectWrapper* value = items.This!.CreateManagedObjectWrapper(c, items.Flags);
                 return new ManagedObjectWrapperHolder(value, c);
-            });
+            }, new GetOrCreateComInterfaceForObjectParameters { This = this, Flags = flags });
+
             managedObjectWrapper.AddRef();
             return managedObjectWrapper.ComIp;
         }
@@ -1069,15 +1070,11 @@ namespace System.Runtime.InteropServices
             Debug.Assert(wrapper.ProxyHandle.Target == comProxy);
             Debug.Assert(wrapper.IsUniqueInstance || _rcwCache.FindProxyForComInstance(wrapper.ExternalComObject) == comProxy);
 
-            if (s_nativeObjectWrapperTable.TryGetValue(comProxy, out NativeObjectWrapper? registeredWrapper)
-                && registeredWrapper != wrapper)
-            {
-                Debug.Assert(registeredWrapper.ExternalComObject != wrapper.ExternalComObject);
-                wrapper.Release();
-                throw new NotSupportedException();
-            }
+            // Add the input wrapper bound to the COM proxy, if there isn't one already. If another thread raced
+            // against this one and this lost, we'd get the wrapper added from that thread instead.
+            NativeObjectWrapper registeredWrapper = s_nativeObjectWrapperTable.GetOrAdd(comProxy, wrapper);
 
-            registeredWrapper = GetValueFromRcwTable(comProxy, wrapper);
+            // We lost the race, so we cannot register the incoming wrapper with the target object
             if (registeredWrapper != wrapper)
             {
                 Debug.Assert(registeredWrapper.ExternalComObject != wrapper.ExternalComObject);
@@ -1091,9 +1088,6 @@ namespace System.Runtime.InteropServices
             // TrackerObjectManager and we could end up missing a section of the object graph.
             // This cache deduplicates, so it is okay that the wrapper will be registered multiple times.
             AddWrapperToReferenceTrackerHandleCache(registeredWrapper);
-
-            // Separate out into a local function to avoid the closure and delegate allocation unless we need it.
-            static NativeObjectWrapper GetValueFromRcwTable(object userObject, NativeObjectWrapper newWrapper) => s_nativeObjectWrapperTable.GetValue(userObject, _ => newWrapper);
         }
 
         private static void AddWrapperToReferenceTrackerHandleCache(NativeObjectWrapper wrapper)

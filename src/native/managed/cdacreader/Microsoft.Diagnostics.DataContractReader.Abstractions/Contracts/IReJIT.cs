@@ -12,7 +12,7 @@ public enum RejitState
     Active
 }
 
-internal interface IReJIT : IContract
+public interface IReJIT : IContract
 {
     static string IContract.Name { get; } = nameof(ReJIT);
 
@@ -23,7 +23,7 @@ internal interface IReJIT : IContract
     TargetNUInt GetRejitId(ILCodeVersionHandle codeVersionHandle) => throw new NotImplementedException();
 }
 
-internal readonly struct ReJIT : IReJIT
+public readonly struct ReJIT : IReJIT
 {
 
 }

@@ -13,12 +13,12 @@
 #cmakedefine01 HAVE_CRT_EXTERNS_H
 #cmakedefine01 HAVE_SYS_TIME_H
 #cmakedefine01 HAVE_PTHREAD_NP_H
+#cmakedefine01 HAVE_SYS_MEMBARRIER_H
 #cmakedefine01 HAVE_SYS_LWP_H
 #cmakedefine01 HAVE_LWP_H
 #cmakedefine01 HAVE_RUNETYPE_H
 #cmakedefine01 HAVE_GNU_LIBNAMES_H
 #cmakedefine01 HAVE_PRCTL_H
-#cmakedefine01 HAVE_PTHREAD_NP_H
 #cmakedefine01 HAVE_AUXV_HWCAP_H
 #cmakedefine01 HAVE_SYS_PTRACE_H
 #cmakedefine01 HAVE_SYS_UCONTEXT_H

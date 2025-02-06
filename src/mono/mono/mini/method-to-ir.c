@@ -10142,6 +10142,8 @@ calli_end:
 							EMIT_NEW_PCONST (cfg, *sp, NULL);
 							sp++;
 						} else if (il_op == MONO_CEE_LDFLD || il_op == MONO_CEE_LDSFLD) {
+							// method_make_alwaysthrow_typeloadfailure currently doesn't work with inlining
+							INLINE_FAILURE("type load error");
 							// An object is expected here. It may be impossible to correctly infer its type,
 							// we turn this entire method into a throw.
 							method_make_alwaysthrow_typeloadfailure (cfg, klass);

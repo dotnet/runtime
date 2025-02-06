@@ -447,6 +447,25 @@ NESTED_ENTRY OnCallCountThresholdReachedStub, _TEXT
         TAILJMP_RAX
 NESTED_END OnCallCountThresholdReachedStub, _TEXT
 
+extern JIT_PatchpointWorkerWorkerWithPolicy:proc
+
+NESTED_ENTRY JIT_Patchpoint, _TEXT
+        PROLOG_WITH_TRANSITION_BLOCK
+
+        lea     rcx, [rsp + __PWTB_TransitionBlock] ; TransitionBlock *
+        call    JIT_PatchpointWorkerWorkerWithPolicy
+
+        EPILOG_WITH_TRANSITION_BLOCK_RETURN
+        TAILJMP_RAX
+NESTED_END JIT_Patchpoint, _TEXT
+
+; first arg register holds iloffset, which needs to be moved to the second register, and the first register filled with NULL
+LEAF_ENTRY JIT_PartialCompilationPatchpoint, _TEXT
+        mov rdx, rcx
+        xor rcx, rcx
+        jmp JIT_Patchpoint
+LEAF_END JIT_PartialCompilationPatchpoint, _TEXT
+
 endif ; FEATURE_TIERED_COMPILATION
 
 LEAF_ENTRY JIT_PollGC, _TEXT

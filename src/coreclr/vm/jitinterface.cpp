@@ -10150,7 +10150,7 @@ void InlinedCallFrame::GetEEInfo(CORINFO_EE_INFO::InlinedCallFrameInfo *pInfo)
 
 CORINFO_OS getClrVmOs()
 {
-#ifdef TARGET_OSX
+#ifdef TARGET_APPLE
     return CORINFO_APPLE;
 #elif defined(TARGET_UNIX)
     return CORINFO_UNIX;
@@ -14537,7 +14537,7 @@ TADDR EECodeInfo::GetSavedMethodCode()
     return GetStartAddress();
 }
 
-TADDR EECodeInfo::GetStartAddress()
+TADDR EECodeInfo::GetStartAddress() const
 {
     CONTRACTL {
         NOTHROW;
@@ -14548,7 +14548,7 @@ TADDR EECodeInfo::GetStartAddress()
     return m_pJM->JitTokenToStartAddress(m_methodToken);
 }
 
-NativeCodeVersion EECodeInfo::GetNativeCodeVersion()
+NativeCodeVersion EECodeInfo::GetNativeCodeVersion() const
 {
     CONTRACTL
     {
