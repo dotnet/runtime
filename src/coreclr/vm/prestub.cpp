@@ -426,6 +426,16 @@ PCODE MethodDesc::PrepareILBasedCode(PrepareCodeConfig* pConfig)
         LOG((LF_CLASSLOADER, LL_INFO1000000,
             "    In PrepareILBasedCode, calling JitCompileCode\n"));
         pCode = JitCompileCode(pConfig);
+#ifdef FEATURE_INTERPRETER
+        if (pConfig->IsInterpreterCode())
+        {
+            AllocMemTracker amt;
+            InterpreterPrecode* pPrecode = Precode::AllocateInterpreterPrecode(pCode, GetLoaderAllocator(), &amt);
+            amt.SuppressRelease();
+            pCode = PINSTRToPCODE(pPrecode->GetEntryPoint());
+            SetNativeCodeInterlocked(pCode);
+        }
+#endif // FEATURE_INTERPRETER
     }
     else
     {
@@ -1837,6 +1847,9 @@ PrepareCodeConfig::PrepareCodeConfig(NativeCodeVersion codeVersion, BOOL needsMu
 #ifdef FEATURE_TIERED_COMPILATION
     m_jitSwitchedToOptimized(false),
 #endif
+#ifdef FEATURE_INTERPRETER
+    m_isInterpreterCode(false),
+#endif
     m_nextInSameThread(nullptr)
 {}
 
@@ -2689,6 +2702,20 @@ extern "C" PCODE STDCALL PreStubWorker(TransitionBlock* pTransitionBlock, Method
 
     return pbRetVal;
 }
+
+#ifdef FEATURE_INTERPRETER
+extern "C" void STDCALL ExecuteInterpretedMethod(TransitionBlock* pTransitionBlock, TADDR byteCodeAddr)
+{
+    CodeHeader* pCodeHeader = EEJitManager::GetCodeHeaderFromStartAddress(byteCodeAddr);
+
+    EEJitManager *pManager = ExecutionManager::GetEEJitManager();
+    MethodDesc *pMD = pCodeHeader->GetMethodDesc();
+
+    // TODO-Interp: call the interpreter method execution entry point
+    // Argument registers are in the TransitionBlock
+    // The stack arguments are right after the pTransitionBlock
+}
+#endif // FEATURE_INTERPRETER
 
 #ifdef _DEBUG
 //
