@@ -21,7 +21,7 @@ namespace System.Net.Test.Common
 
             // This server doesn't use HTTP/2 server push (push promise) feature. Some HttpClient implementations
             // don't support servers that use push right now.
-            public static string Http2NoPushHost => GetValue("DOTNET_TEST_HTTP2NOPUSHHOST", "www.microsoft.com");
+            public static string Http2NoPushHost => GetValue("DOTNET_TEST_HTTP2NOPUSHHOST", "httpbin.org/get");
 
             // Domain server environment.
             public static string DomainJoinedHttpHost => GetValue("DOTNET_TEST_DOMAINJOINED_HTTPHOST");
