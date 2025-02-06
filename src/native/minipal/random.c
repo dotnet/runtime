@@ -21,7 +21,60 @@
 #include <CommonCrypto/CommonRandom.h>
 #endif
 
+#if HAVE_GETRANDOM
+#include <sys/random.h>
+#endif
+
 #include "random.h"
+
+static int minipal_getrandom_fill(uint8_t* buffer, int32_t bufferLength)
+{
+#if HAVE_GETRANDOM
+    static bool sMissingGetRandomSysCall = false;
+
+    if (!sMissingGetRandomSysCall)
+    {
+        ssize_t written = 0;
+
+        while (written < bufferLength)
+        {
+            ssize_t getrandomret = getrandom(buffer + written, (size_t)bufferLength - written, GRND_NONBLOCK);
+
+            if (getrandomret == -1)
+            {
+                switch (errno)
+                {
+                    case EAGAIN:
+                        // Older linuxes may do this if they believe the pool is not properly seeded yet.
+                        // In this case, we go back to the file-based random. Eventually the pool should be
+                        // properly seeded and the fallback should not be taken anymore.
+                        return -1;
+                    case EINTR:
+                        continue;
+                    case EPERM:
+                        // Can occur if the syscall is blocked. Some older linuxes also return this instead of ENOSYS.
+                        // Let this fall through to ENOSYS and treat the syscall as missing.
+                    case ENOSYS:
+                        sMissingGetRandomSysCall = true;
+                        assert(written == 0); // The syscall shouldn't magically disappear.
+                        return -1;
+                    default:
+                        return -1;
+                }
+            }
+            else
+            {
+                written += getrandomret;
+            }
+        }
+
+        assert(written == bufferLength);
+        return 0;
+    }
+#endif
+
+    return -1;
+}
 
 /*
 
@@ -99,6 +152,13 @@ int32_t minipal_get_cryptographically_secure_random_bytes(uint8_t* buffer, int32
     NTSTATUS status = BCryptGenRandom(NULL, buffer, (ULONG)bufferLength, BCRYPT_USE_SYSTEM_PREFERRED_RNG);
     return BCRYPT_SUCCESS(status) ? 0 : -1;
 #else
+
+    int getrandomResult = minipal_getrandom_fill(buffer, bufferLength);
+
+    if (getrandomResult == 0)
+    {
+        return 0;
+    }
 
     static volatile int rand_des = -1;
     static bool sMissingDevURandom;
