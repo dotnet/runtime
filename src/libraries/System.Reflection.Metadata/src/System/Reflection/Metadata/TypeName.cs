@@ -142,47 +142,111 @@ namespace System.Reflection.Metadata
         {
             get
             {
-                // This is a recursive method over potentially hostile input. Protection against DoS is offered
-                // via the [Try]Parse method and TypeNameParserOptions.MaxNodes property at construction time.
-                // This FullName property getter and related methods assume that this TypeName instance has an
-                // acceptable node count.
-                //
-                // The node count controls the total amount of work performed by this method, including:
-                // - The max possible stack depth due to the recursive methods calls; and
-                // - The total number of bytes allocated by this function. For a deeply-nested TypeName
-                //   object, the total allocation across the full object graph will be
-                //   O(FullName.Length * GetNodeCount()).
+                if (_fullName is not null) // Fast path for already computed FullName and nested types
+                {
+                    if (_nestedNameLength > 0 && _fullName.Length > _nestedNameLength) // Declaring types
+                    {
+                        // Stored fullName represents the full name of the nested type.
+                        // Example: Namespace.Declaring+Nested
+                        _fullName = _fullName.Substring(0, _nestedNameLength);
+                    }
 
-                if (_fullName is null)
-                {
-                    if (IsConstructedGenericType)
-                    {
-                        _fullName = TypeNameParserHelpers.GetGenericTypeFullName(GetGenericTypeDefinition().FullName.AsSpan(),
-#if SYSTEM_PRIVATE_CORELIB
-                            CollectionsMarshal.AsSpan(_genericArguments));
-#else
-                            _genericArguments.AsSpan());
-#endif
-                    }
-                    else if (IsArray || IsPointer || IsByRef)
-                    {
-                        ValueStringBuilder builder = new(stackalloc char[128]);
-                        builder.Append(GetElementType().FullName);
-                        _fullName = TypeNameParserHelpers.GetRankOrModifierStringRepresentation(_rankOrModifier, ref builder);
-                    }
-                    else
-                    {
-                        Debug.Fail("Pre-allocated full name should have been provided in the ctor");
-                    }
-                }
-                else if (_nestedNameLength > 0 && _fullName.Length > _nestedNameLength) // Declaring types
-                {
-                    // Stored fullName represents the full name of the nested type.
-                    // Example: Namespace.Declaring+Nested
-                    _fullName = _fullName.Substring(0, _nestedNameLength);
+                    return _fullName;
                 }
 
-                return _fullName!;
+                // We need a Stack<T> to avoid recursion, but use just List<T> as Stack<T> is not a part of CoreLib.
+                List<NameInfo> stack = [new(this, NameFlags.None)];
+                // Since we start from "this" which is the leaf node of the tree,
+                // we append all the information in a reverse order and then reverse the string at the end.
+                ValueStringBuilder builder = new(stackalloc char[128]);
+                while (stack.Count > 0)
+                {
+                    NameInfo currentInfo = stack[stack.Count - 1];
+                    stack.RemoveAt(stack.Count - 1);
+                    TypeName current = currentInfo.typeName;
+
+                    // For a generic type, we push its definition and all args to the stack.
+                    // Definition`2[[Arg1],[Arg2]]
+                    if (current.IsConstructedGenericType)
+                    {
+                        stack.Add(new(current.GetGenericTypeDefinition(), NameFlags.GenericTypeDefinition | currentInfo.flags));
+                        var genericArguments = current.GetGenericArguments();
+                        for (int i = 0; i < genericArguments.Length; i++)
+                        {
+                            // TypeName is unaware whether it is a generic argument or not, we need to track it.
+                            NameFlags flag = NameFlags.GenericArg;
+                            if (i == 0)
+                            {
+                                flag |= NameFlags.FirstGenericArg;
+                            }
+                            if (i == genericArguments.Length - 1)
+                            {
+                                flag |= NameFlags.LastGenericArg;
+                            }
+                            stack.Add(new(genericArguments[i], flag));
+                        }
+                    }
+
+                    // Append the closing braces and assembly name
+                    // Generic`1[[ArgTypeName, ThisAssemblyNamePart]]
+                    if ((currentInfo.flags & NameFlags.GenericArg) != 0)
+                    {
+                        if ((currentInfo.flags & (NameFlags.GenericTypeDefinition | NameFlags.SuffixAlreadyPrinted)) == 0)
+                        {
+                            builder.Append(']'); // every generic arg ends with ']'
+                            if ((currentInfo.flags & NameFlags.LastGenericArg) != 0)
+                            {
+                                builder.Append(']'); // the last generic arg ends with ']]'
+                            }
+
+                            if (current.AssemblyName is not null) // generic arg is always fully qualified
+                            {
+                                AppendInReverseOrder(ref builder, current.AssemblyName.FullName.AsSpan());
+                                builder.Append(" ,");
+                            }
+                        }
+                    }
+
+                    if (current.IsArray || current.IsPointer || current.IsByRef)
+                    {
+                        TypeNameParserHelpers.AppendReversedRankOrModifierStringRepresentation(current._rankOrModifier, ref builder);
+                        stack.Add(new(current.GetElementType(), currentInfo.flags | NameFlags.SuffixAlreadyPrinted));
+                    }
+                    else if (current.IsSimple && current._fullName is not null)
+                    {
+                        if ((currentInfo.flags & NameFlags.GenericTypeDefinition) != 0)
+                        {
+                            builder.Append('['); // generic type definition is followed with '[': "List`1["
+                        }
+
+                        int length = current._nestedNameLength > 0 ? current._nestedNameLength : current._fullName.Length;
+                        AppendInReverseOrder(ref builder, current._fullName.AsSpan(0, length));
+
+                        if ((currentInfo.flags & NameFlags.GenericArg) != 0)
+                        {
+                            builder.Append('['); // every generic arg starts with '['
+
+                            if ((currentInfo.flags & NameFlags.FirstGenericArg) == 0)
+                            {
+                                builder.Append(','); // every generic arg except the first one is followed with ','
+                            }
+                        }
+                    }
+                }
+
+                Span<char> characters = builder.RawChars.Slice(0, builder.Length);
+                characters.Reverse();
+                _fullName = characters.ToString();
+                builder.Dispose();
+                return _fullName;
+
+                static void AppendInReverseOrder(ref ValueStringBuilder builder, ReadOnlySpan<char> value)
+                {
+                    for (int i = value.Length - 1; i >= 0; i--)
+                    {
+                        builder.Append(value[i]);
+                    }
+                }
             }
         }
 
@@ -537,5 +601,18 @@ namespace System.Reflection.Metadata
                 genericTypeArguments: ImmutableArray<TypeName>.Empty,
                 rankOrModifier: rankOrModifier);
 #endif
+
+        private record struct NameInfo(TypeName typeName, NameFlags flags);
+
+        [Flags]
+        private enum NameFlags : byte
+        {
+            None = 0,
+            GenericTypeDefinition = 1,
+            FirstGenericArg = 2,
+            GenericArg = 4,
+            LastGenericArg = 8,
+            SuffixAlreadyPrinted = 16
+        }
     }
 }

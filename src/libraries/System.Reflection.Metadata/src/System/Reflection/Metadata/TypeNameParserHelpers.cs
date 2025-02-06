@@ -20,26 +20,6 @@ namespace System.Reflection.Metadata
         private static readonly SearchValues<char> s_endOfFullTypeNameDelimitersSearchValues = SearchValues.Create("[]&*,+\\");
 #endif
 
-        internal static string GetGenericTypeFullName(ReadOnlySpan<char> fullTypeName, ReadOnlySpan<TypeName> genericArgs)
-        {
-            Debug.Assert(genericArgs.Length > 0);
-
-            ValueStringBuilder result = new(stackalloc char[128]);
-            result.Append(fullTypeName);
-
-            result.Append('[');
-            foreach (TypeName genericArg in genericArgs)
-            {
-                result.Append('[');
-                result.Append(genericArg.AssemblyQualifiedName); // see recursion comments in TypeName.FullName
-                result.Append(']');
-                result.Append(',');
-            }
-            result[result.Length - 1] = ']'; // replace ',' with ']'
-
-            return result.ToString();
-        }
-
         /// <returns>Positive length or negative value for invalid name</returns>
         internal static int GetFullTypeNameLength(ReadOnlySpan<char> input, out bool isNestedType)
         {
@@ -201,6 +181,35 @@ namespace System.Reflection.Metadata
             }
 
             return builder.ToString();
+        }
+
+        internal static void AppendReversedRankOrModifierStringRepresentation(int rankOrModifier, ref ValueStringBuilder builder)
+        {
+            if (rankOrModifier == ByRef)
+            {
+                builder.Append('&');
+            }
+            else if (rankOrModifier == Pointer)
+            {
+                builder.Append('*');
+            }
+            else
+            {
+                builder.Append(']');
+
+                if (rankOrModifier == 1)
+                {
+                    builder.Append("*");
+                }
+                else if (rankOrModifier != SZArray)
+                {
+                    Debug.Assert(rankOrModifier >= 2);
+
+                    builder.Append(',', rankOrModifier - 1);
+                }
+
+                builder.Append('[');
+            }
         }
 
         /// <summary>
