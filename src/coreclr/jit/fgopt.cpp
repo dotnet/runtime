@@ -5357,6 +5357,11 @@ bool Compiler::ThreeOptLayout::RunThreeOptPass()
 //
 bool Compiler::ThreeOptLayout::CompactHotJumps()
 {
+    if (!compiler->m_dfsTree->HasCycle())
+    {
+        return false;
+    }
+
     JITDUMP("Compacting hot jumps\n");
     bool modified = false;
 
@@ -5408,6 +5413,12 @@ bool Compiler::ThreeOptLayout::CompactHotJumps()
             s2Start = srcPos + 1;
             s3Start = dstPos;
             s3End   = dstPos;
+
+            // Call-finally pairs need to stick together, so include the tail in the partition
+            if (target->isBBCallFinallyPair())
+            {
+                s3End++;
+            }
         }
         else
         {
