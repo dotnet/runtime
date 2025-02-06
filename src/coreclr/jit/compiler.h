@@ -6360,14 +6360,16 @@ public:
 #endif // DEBUG
 
         weight_t GetCost(BasicBlock* block, BasicBlock* next);
-        weight_t GetPartitionCostDelta(unsigned s1Start, unsigned s2Start, unsigned s3Start, unsigned s3End, unsigned s4End);
+        weight_t GetPartitionCostDelta(unsigned s2Start, unsigned s3Start, unsigned s3End, unsigned s4End);
         void SwapPartitions(unsigned s1Start, unsigned s2Start, unsigned s3Start, unsigned s3End, unsigned s4End);
 
-        void ConsiderEdge(FlowEdge* edge);
+        template <bool addToQueue = true>
+        bool ConsiderEdge(FlowEdge* edge);
         void AddNonFallthroughSuccs(unsigned blockPos);
         void AddNonFallthroughPreds(unsigned blockPos);
         bool RunGreedyThreeOptPass(unsigned startPos, unsigned endPos);
 
+        bool CompactHotJumps();
         bool RunThreeOptPass();
 
     public:

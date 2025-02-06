@@ -4456,6 +4456,7 @@ bool Compiler::fgReorderBlocks(bool useProfile)
 template <bool hasEH>
 void Compiler::fgMoveHotJumps()
 {
+    return;
 #ifdef DEBUG
     if (verbose)
     {
@@ -4998,7 +4999,6 @@ weight_t Compiler::ThreeOptLayout::GetCost(BasicBlock* block, BasicBlock* next)
 // and the cost of swapping S2 and S3, returning the difference between them.
 //
 // Parameters:
-//   s1Start - The starting position of the first partition
 //   s2Start - The starting position of the second partition
 //   s3Start - The starting position of the third partition
 //   s3End - The ending position (inclusive) of the third partition
@@ -5008,8 +5008,10 @@ weight_t Compiler::ThreeOptLayout::GetCost(BasicBlock* block, BasicBlock* next)
 //   The difference in cost between the current and proposed layouts.
 //   A negative delta indicates the proposed layout is an improvement.
 //
-weight_t Compiler::ThreeOptLayout::GetPartitionCostDelta(
-    unsigned s1Start, unsigned s2Start, unsigned s3Start, unsigned s3End, unsigned s4End)
+weight_t Compiler::ThreeOptLayout::GetPartitionCostDelta(unsigned s2Start,
+                                                         unsigned s3Start,
+                                                         unsigned s3End,
+                                                         unsigned s4End)
 {
     BasicBlock* const s2Block     = blockOrder[s2Start];
     BasicBlock* const s2BlockPrev = blockOrder[s2Start - 1];
@@ -5088,6 +5090,12 @@ void Compiler::ThreeOptLayout::SwapPartitions(
 
     std::swap(blockOrder, tempOrder);
 
+    // Update the ordinals for the blocks we moved
+    for (unsigned i = s2Start; i <= s4End; i++)
+    {
+        blockOrder[i]->bbPostorderNum = i;
+    }
+
 #ifdef DEBUG
     // Don't bother checking if the cost improved for exceptionally costly layouts.
     // Imprecision from summing large floating-point values can falsely trigger the below assert.
@@ -5111,15 +5119,22 @@ void Compiler::ThreeOptLayout::SwapPartitions(
 // Parameters:
 //   edge - The branch to consider creating fallthrough for
 //
-void Compiler::ThreeOptLayout::ConsiderEdge(FlowEdge* edge)
+// Template parameters:
+//   addToQueue - If true, adds valid edges to the 'cutPoints' queue
+//
+// Returns:
+//   True if 'edge' can be considered for aligning, false otherwise
+//
+template <bool addToQueue>
+bool Compiler::ThreeOptLayout::ConsiderEdge(FlowEdge* edge)
 {
     assert(edge != nullptr);
 
     // Don't add an edge that we've already considered
     // (For exceptionally branchy methods, we want to avoid exploding 'cutPoints' in size)
-    if (edge->visited())
+    if (addToQueue && edge->visited())
     {
-        return;
+        return false;
     }
 
     BasicBlock* const srcBlk = edge->getSourceBlock();
@@ -5128,7 +5143,7 @@ void Compiler::ThreeOptLayout::ConsiderEdge(FlowEdge* edge)
     // Ignore cross-region branches
     if (!BasicBlock::sameTryRegion(srcBlk, dstBlk))
     {
-        return;
+        return false;
     }
 
     // Don't waste time reordering within handler regions.
@@ -5136,7 +5151,7 @@ void Compiler::ThreeOptLayout::ConsiderEdge(FlowEdge* edge)
     // we should have cloned it into the main method body already.
     if (srcBlk->hasHndIndex() || dstBlk->hasHndIndex())
     {
-        return;
+        return false;
     }
 
     // For backward jumps, we will consider partitioning before 'srcBlk'.
@@ -5144,7 +5159,7 @@ void Compiler::ThreeOptLayout::ConsiderEdge(FlowEdge* edge)
     // Thus, don't consider edges out of BBJ_CALLFINALLYRET blocks.
     if (srcBlk->KindIs(BBJ_CALLFINALLYRET))
     {
-        return;
+        return false;
     }
 
     const unsigned srcPos = srcBlk->bbPostorderNum;
@@ -5155,29 +5170,34 @@ void Compiler::ThreeOptLayout::ConsiderEdge(FlowEdge* edge)
     // Don't consider edges to or from outside the hot range (i.e. ordinal doesn't match 'blockOrder' position).
     if ((srcPos >= numCandidateBlocks) || (srcBlk != blockOrder[srcPos]))
     {
-        return;
+        return false;
     }
 
     if ((dstPos >= numCandidateBlocks) || (dstBlk != blockOrder[dstPos]))
     {
-        return;
+        return false;
     }
 
     // Don't consider edges to blocks outside the hot range (i.e. ordinal number isn't set),
     // or backedges to the first block in a region; we don't want to change the entry point.
     if ((dstPos == 0) || compiler->bbIsTryBeg(dstBlk))
     {
-        return;
+        return false;
     }
 
     // Don't consider backedges for single-block loops
     if (srcPos == dstPos)
     {
-        return;
+        return false;
     }
 
-    edge->markVisited();
-    cutPoints.Push(edge);
+    if (addToQueue)
+    {
+        edge->markVisited();
+        cutPoints.Push(edge);
+    }
+
+    return true;
 }
 
 //-----------------------------------------------------------------------------
@@ -5273,7 +5293,8 @@ void Compiler::ThreeOptLayout::Run()
         block->bbPostorderNum = numCandidateBlocks++;
     }
 
-    const bool modified = RunThreeOptPass();
+    bool modified = CompactHotJumps();
+    modified |= RunThreeOptPass();
 
     if (modified)
     {
@@ -5398,7 +5419,7 @@ bool Compiler::ThreeOptLayout::RunGreedyThreeOptPass(unsigned startPos, unsigned
             s2Start    = srcPos + 1;
             s3Start    = dstPos;
             s3End      = endPos;
-            costChange = GetPartitionCostDelta(startPos, s2Start, s3Start, s3End, endPos);
+            costChange = GetPartitionCostDelta(s2Start, s3Start, s3End, endPos);
         }
         else
         {
@@ -5472,12 +5493,6 @@ bool Compiler::ThreeOptLayout::RunGreedyThreeOptPass(unsigned startPos, unsigned
 
         SwapPartitions(startPos, s2Start, s3Start, s3End, endPos);
 
-        // Update the ordinals for the blocks we moved
-        for (unsigned i = s2Start; i <= endPos; i++)
-        {
-            blockOrder[i]->bbPostorderNum = i;
-        }
-
         // Ensure this move created fallthrough from 'srcBlk' to 'dstBlk'
         assert((srcBlk->bbPostorderNum + 1) == dstBlk->bbPostorderNum);
 
@@ -5532,6 +5547,100 @@ bool Compiler::ThreeOptLayout::RunThreeOptPass()
     else
     {
         JITDUMP("No changes made.\n");
+    }
+
+    return modified;
+}
+
+//-----------------------------------------------------------------------------
+// Compiler::ThreeOptLayout::CompactHotJumps: Move blocks in the candidate span
+// closer to their most-likely successors.
+//
+// Returns:
+//   True if we reordered anything, false otherwise
+//
+bool Compiler::ThreeOptLayout::CompactHotJumps()
+{
+    JITDUMP("Compacting hot jumps\n");
+    bool modified = false;
+
+    for (unsigned i = 0; i < numCandidateBlocks; i++)
+    {
+        BasicBlock* const block = blockOrder[i];
+        FlowEdge*         edge;
+
+        if (block->KindIs(BBJ_ALWAYS))
+        {
+            edge = block->GetTargetEdge();
+        }
+        else if (block->KindIs(BBJ_COND))
+        {
+            // Consider conditional block's most likely branch for moving
+            edge = (block->GetTrueEdge()->getLikelihood() > 0.5) ? block->GetTrueEdge() : block->GetFalseEdge();
+        }
+        else
+        {
+            // Don't consider other block kinds
+            continue;
+        }
+
+        // Ensure we won't break any ordering invariants by creating fallthrough on this edge
+        if (!ConsiderEdge</* addToQueue */ false>(edge))
+        {
+            continue;
+        }
+
+        BasicBlock* const target = edge->getDestinationBlock();
+        const unsigned    srcPos = block->bbPostorderNum;
+        const unsigned    dstPos = target->bbPostorderNum;
+
+        // We don't need to do anything if this edge already falls through
+        if ((srcPos + 1) == dstPos)
+        {
+            continue;
+        }
+
+        const bool     isForwardJump = (srcPos < dstPos);
+        const unsigned startPos      = 0;
+        const unsigned endPos        = numCandidateBlocks - 1;
+        unsigned       s2Start, s3Start, s3End;
+
+        if (isForwardJump)
+        {
+            // Before swap: | ..srcBlk | ... | dstBlk | ... |
+            // After swap:  | ..srcBlk | dstBlk | ... |
+            s2Start = srcPos + 1;
+            s3Start = dstPos;
+            s3End   = dstPos;
+        }
+        else
+        {
+            // Before swap: | ... | dstBlk.. | srcBlk | ... |
+            // After swap:  | ... | srcBlk | dstBlk.. | ... |
+            s2Start = dstPos;
+            s3Start = srcPos;
+            s3End   = srcPos;
+        }
+
+        // Don't align this branch if it isn't profitable
+        const weight_t costChange = GetPartitionCostDelta(s2Start, s3Start, s3End, endPos);
+        if ((costChange >= BB_ZERO_WEIGHT) || Compiler::fgProfileWeightsEqual(costChange, BB_ZERO_WEIGHT, 0.001))
+        {
+            continue;
+        }
+
+        JITDUMP("Swapping partitions [" FMT_BB ", " FMT_BB "] and [" FMT_BB ", " FMT_BB "] (cost change = %f)\n",
+                blockOrder[s2Start]->bbNum, blockOrder[s3Start - 1]->bbNum, blockOrder[s3Start]->bbNum,
+                blockOrder[s3End]->bbNum, costChange);
+
+        SwapPartitions(startPos, s2Start, s3Start, s3End, endPos);
+        modified = true;
+    }
+
+    // Write back to 'tempOrder' so the changes made above aren't lost next time we swap 'tempOrder' and 'blockOrder'
+    if (modified)
+    {
+        memcpy(tempOrder, blockOrder, sizeof(BasicBlock*) * numCandidateBlocks);
     }
 
     return modified;
