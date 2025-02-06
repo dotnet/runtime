@@ -178,10 +178,11 @@ namespace System.Linq.Tests
 
             yield return WrapArgs(0, Enumerable.Empty<string>());
 
-            if (PlatformDetection.IsSpeedOptimized)
+            yield return WrapArgs(100, Enumerable.Range(1, 100));
+            yield return WrapArgs(80, Enumerable.Repeat(1, 80));
+
+            if (PlatformDetection.IsLinqSpeedOptimized)
             {
-                yield return WrapArgs(100, Enumerable.Range(1, 100));
-                yield return WrapArgs(80, Enumerable.Repeat(1, 80));
                 yield return WrapArgs(50, Enumerable.Range(1, 50).Select(x => x + 1));
                 yield return WrapArgs(4, new int[] { 1, 2, 3, 4 }.Select(x => x + 1));
                 yield return WrapArgs(50, Enumerable.Range(1, 50).Select(x => x + 1).Select(x => x - 1));
@@ -200,10 +201,8 @@ namespace System.Linq.Tests
             yield return WrapArgs(new Stack<int>([1, 2, 3, 4]).Select(x => x + 1));
             yield return WrapArgs(Enumerable.Range(1, 100).Distinct());
 
-            if (!PlatformDetection.IsSpeedOptimized)
+            if (!PlatformDetection.IsLinqSpeedOptimized)
             {
-                yield return WrapArgs(Enumerable.Range(1, 100));
-                yield return WrapArgs(Enumerable.Repeat(1, 80));
                 yield return WrapArgs(Enumerable.Range(1, 50).Select(x => x + 1));
                 yield return WrapArgs(new int[] { 1, 2, 3, 4 }.Select(x => x + 1));            
                 yield return WrapArgs(Enumerable.Range(1, 50).Select(x => x + 1).Select(x => x - 1));

@@ -60,6 +60,9 @@ namespace System
         private static readonly TimeZoneInfo s_utcTimeZone = CreateUtcTimeZone();
         private static CachedData s_cachedData = new CachedData();
 
+        [FeatureSwitchDefinition("System.TimeZoneInfo.Invariant")]
+        internal static bool Invariant { get; } = AppContextConfigHelper.GetBooleanConfig("System.TimeZoneInfo.Invariant", "DOTNET_SYSTEM_TIMEZONE_INVARIANT");
+
         //
         // All cached data are encapsulated in a helper class to allow consistent view even when the data are refreshed using ClearCachedData()
         //
@@ -1014,7 +1017,7 @@ namespace System
             _supportsDaylightSavingTime = adjustmentRulesSupportDst && !disableDaylightSavingTime;
             _adjustmentRules = adjustmentRules;
 
-            HasIanaId = _id.Equals(UtcId, StringComparison.OrdinalIgnoreCase) ? true : hasIanaId;
+            HasIanaId = hasIanaId || _id.Equals(UtcId, StringComparison.OrdinalIgnoreCase);
         }
 
         /// <summary>
@@ -2054,6 +2057,12 @@ namespace System
             TimeZoneInfoResult result = TimeZoneInfoResult.Success;
             e = null;
 
+            if (Invariant && !cachedData._allSystemTimeZonesRead)
+            {
+                PopulateAllSystemTimeZones(cachedData);
+                cachedData._allSystemTimeZonesRead = true;
+            }
+
             // check the cache
             if (cachedData._systemTimeZones != null)
             {
@@ -2067,6 +2076,12 @@ namespace System
 
                     return result;
                 }
+            }
+
+            if (Invariant)
+            {
+                value = null;
+                return TimeZoneInfoResult.TimeZoneNotFoundException;
             }
 
             if (cachedData._timeZonesUsingAlternativeIds != null)
@@ -2105,6 +2120,8 @@ namespace System
 
         private static TimeZoneInfoResult TryGetTimeZoneFromLocalMachine(string id, bool dstDisabled, out TimeZoneInfo? value, out Exception? e, CachedData cachedData)
         {
+            Debug.Assert(!Invariant);
+
             TimeZoneInfoResult result;
 
             result = TryGetTimeZoneFromLocalMachine(id, out value, out e);
