@@ -30,7 +30,7 @@ set(utils_unix_sources
 
 if(HOST_WIN32)
     set(utils_platform_sources ${utils_win32_sources})
-elseif(HOST_WASM)
+elseif(HOST_WASM AND NOT DISABLE_THREADS)
     set(utils_platform_sources ${utils_unix_sources} mono-threads-wasm.S)
 else()
     set(utils_platform_sources ${utils_unix_sources})
