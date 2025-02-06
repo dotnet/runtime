@@ -4429,6 +4429,10 @@ GenTree* Lowering::LowerCompare(GenTree* cmp)
     }
 #endif
 
+    JITDUMP("Lowering compare\n");
+    DISPTREERANGE(BlockRange(), cmp);
+    JITDUMP("\n");
+
     if (cmp->gtGetOp2()->IsIntegralConst() && !comp->opts.MinOpts())
     {
         GenTree* next = OptimizeConstCompare(cmp);
@@ -4457,6 +4461,45 @@ GenTree* Lowering::LowerCompare(GenTree* cmp)
         }
     }
 #endif // TARGET_XARCH
+
+#ifdef TARGET_ARM64
+    // Check to see if we have a relopOp1 that supports setting flags e.g. AND & relopOp2 is 0.
+    // We can then set flags on relopOp1, remove relopOp2 & cmp and insert a SETCC node after Op1.
+    GenTreeOp* relop    = cmp->AsOp();
+    GenTree*   relopOp1 = relop->gtGetOp1();
+    GenTree*   relopOp2 = relop->gtGetOp2();
+    GenTree*   parent   = relop->gtGetParent(nullptr);
+    if (parent && parent->OperIsSimple() && comp->opts.OptimizationEnabled() && relop->OperIs(GT_EQ, GT_NE) &&
+        relopOp2->IsIntegralConst(0) && relopOp1->SupportsSettingZeroFlag() && IsInvariantInRange(relopOp1, parent))
+    {
+        // Update relopOp1 flags and remove cmp & relopOp2
+        relopOp1->gtFlags |= GTF_SET_FLAGS;
+        relopOp1->SetUnusedValue();
+        BlockRange().Remove(relopOp1);
+        BlockRange().InsertBefore(relop, relopOp1);
+        BlockRange().Remove(relop);
+        BlockRange().Remove(relopOp2);
+
+        // Insert a SETCC node after Op1
+        GenCondition cmpCondition = GenCondition::FromRelop(relop);
+        GenTreeCC*   setcc        = comp->gtNewCC(GT_SETCC, TYP_INT, cmpCondition);
+        BlockRange().InsertAfter(relopOp1, setcc);
+
+        // Update the parent op with the new SETCC node
+        GenTreeOp* parentOp = parent->AsOp();
+        if (parentOp->gtOp1 == relop)
+        {
+            parentOp->gtOp1 = setcc;
+        }
+        else
+        {
+            assert(parentOp->gtOp2 == relop);
+            parentOp->gtOp2 = setcc;
+        }
+        return setcc;
+    }
+#endif
+
     ContainCheckCompare(cmp->AsOp());
     return cmp->gtNext;
 }
