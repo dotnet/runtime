@@ -1,4 +1,4 @@
-Number of tests passed: 249 failed: 8 disabled: 71
+Number of tests passed: 249 failed: 4 disabled: 75
 Test run complete
 
 Failed tests:
@@ -49,6 +49,8 @@ after I added it to packaged files, we fail in `InternalCanonicalizeRealPath` - 
 "file_io/GetFullPathNameA/test3/paltest_getfullpathnamea_test3"
 
 "filemapping_memmgt/ProbeMemory/ProbeMemory_neg1/paltest_probememory_probememory_neg1"
+
+ * we cannot reserve memory on wasm, so let disable this test too. this test reserves the memory and then tries to read it
 
 {0x60e64-0x206} TRACE [VIRTUAL] at VIRTUALReserveMemory.477: Reserving the memory now..
 {0x60e64-0x206} TRACE [VIRTUAL] at ReserveVirtualMemory.570: Reserving the memory now.

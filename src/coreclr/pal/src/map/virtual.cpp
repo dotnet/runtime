@@ -1044,7 +1044,7 @@ VirtualFree(
         TRACE( "Un-committing the following page(s) %d to %d.\n",
                StartBoundary, MemSize );
 
-        // mmap support on wasm is very limited and doesn't support location hints
+        // mmap support on emscripten/wasm is very limited and doesn't support location hints
         // (when address is not null)
 #ifndef __wasm__
         // Explicitly calling mmap instead of mprotect here makes it
