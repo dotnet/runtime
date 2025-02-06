@@ -62,8 +62,8 @@ set(ILDASM_LINK_LIBRARIES
     mdcompiler_wks
     mdruntime_wks
     mdruntimerw_wks
-    # These libraries that have circular references
-    $<LINK_GROUP:RESCAN,utilcodestaticnohost,mdstaticapi>
+    mdstaticapi
+    utilcodestaticnohost
     corguids
 )
 
