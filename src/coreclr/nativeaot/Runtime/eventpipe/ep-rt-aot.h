@@ -515,6 +515,26 @@ ep_rt_sample_profiler_write_sampling_event_for_threads (
 static
 inline
 void
+ep_rt_sample_profiler_enabled (EventPipeEvent *sampling_event)
+{
+    STATIC_CONTRACT_NOTHROW;
+    (void) sampling_event;
+    // no-op
+}
+
+static
+inline
+void
+ep_rt_sample_profiler_disabled (void)
+{
+    STATIC_CONTRACT_NOTHROW;
+
+    // no-op
+}
+
+static
+inline
+void
 ep_rt_notify_profiler_provider_created (EventPipeProvider *provider)
 {
     // Following mono's path of no-op
@@ -742,6 +762,15 @@ ep_rt_thread_create (
     void *id);
 
     return ep_rt_aot_thread_create(thread_func, params, thread_type, id);
+}
+
+static
+bool
+ep_rt_event_loop_job_create (
+	void *job_func,
+	void *params)
+{
+    EP_UNREACHABLE ("Not implemented in NativeAOT");
 }
 
 static
