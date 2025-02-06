@@ -114,7 +114,10 @@ namespace ILCompiler.DependencyAnalysis
 
             // Reflection might need to create boxed instances of valuetypes as part of reflection invocation.
             // Non-valuetypes are only needed for the purposes of casting/type checks.
-            if (isOut && !type.IsGCPointer)
+            // If this is a non-exact type, we need the type loader template to get the type handle.
+            if (type.IsCanonicalSubtype(CanonicalFormKind.Any))
+                GenericTypesTemplateMap.GetTemplateTypeDependencies(ref dependencies, factory, type.NormalizeInstantiation());
+            else if (isOut && !type.IsGCPointer)
                 dependencies.Add(factory.MaximallyConstructableType(type.NormalizeInstantiation()), reason);
             else
                 dependencies.Add(factory.NecessaryTypeSymbol(type.NormalizeInstantiation()), reason);
