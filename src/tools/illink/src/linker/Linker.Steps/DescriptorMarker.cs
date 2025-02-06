@@ -103,6 +103,18 @@ namespace Mono.Linker.Steps
 		protected override TypeDefinition? ProcessExportedType (ExportedType exported, AssemblyDefinition assembly, XPathNavigator nav)
 		{
 			_context.MarkingHelpers.MarkExportedType (exported, assembly.MainModule, new DependencyInfo (DependencyKind.XmlDescriptor, _xmlDocumentLocation), GetMessageOriginForPosition (nav));
+
+			// If a nested exported type is marked, then the declaring type must also be marked otherwise cecil will write out an invalid exported type table
+			// and anything that tries to read the assembly with cecil will crash
+			if (exported.DeclaringType != null) {
+				var currentType = exported.DeclaringType;
+				while (currentType != null) {
+					var parent = currentType.DeclaringType;
+					_context.MarkingHelpers.MarkExportedType (currentType, assembly.MainModule, new DependencyInfo(DependencyKind.DeclaringType, currentType), GetMessageOriginForPosition (nav));
+					currentType = parent;
+				}
+			}
+
 			return base.ProcessExportedType (exported, assembly, nav);
 		}
 

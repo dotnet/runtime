@@ -667,6 +667,9 @@ public:
 
     unsigned char lvRedefinedInEmbeddedStatement : 1; // Local has redefinitions inside embedded statements that
                                                       // disqualify it from local copy prop.
+
+    unsigned char lvIsEnumerator : 1; // Local is assigned exact class where : IEnumerable<T> via GDV
+
 private:
     unsigned char lvIsNeverNegative : 1; // The local is known to be never negative
 
@@ -1935,12 +1938,16 @@ class FlowGraphDfsTree
     // Whether the DFS that produced the tree found any backedges.
     bool m_hasCycle;
 
+    // Whether the DFS that produced the tree used edge likelihoods to influence successor visitation order.
+    bool m_profileAware;
+
 public:
-    FlowGraphDfsTree(Compiler* comp, BasicBlock** postOrder, unsigned postOrderCount, bool hasCycle)
+    FlowGraphDfsTree(Compiler* comp, BasicBlock** postOrder, unsigned postOrderCount, bool hasCycle, bool profileAware)
         : m_comp(comp)
         , m_postOrder(postOrder)
         , m_postOrderCount(postOrderCount)
         , m_hasCycle(hasCycle)
+        , m_profileAware(profileAware)
     {
     }
 
@@ -1973,6 +1980,11 @@ public:
     bool HasCycle() const
     {
         return m_hasCycle;
+    }
+
+    bool IsProfileAware() const
+    {
+        return m_profileAware;
     }
 
 #ifdef DEBUG
@@ -3711,6 +3723,8 @@ public:
         return gtNewStmt(exprClone, stmt->GetDebugInfo());
     }
 
+    Statement* gtLatestStatement(Statement* stmt1, Statement* stmt2);
+
     // Internal helper for cloning a call
     GenTreeCall* gtCloneExprCallHelper(GenTreeCall* call);
 
@@ -4606,6 +4620,26 @@ protected:
 
     unsigned impStkSize; // Size of the full stack
 
+    // Enumerator de-abstraction support
+    //
+    typedef JitHashTable<GenTree*, JitPtrKeyFuncs<GenTree>, unsigned> NodeToUnsignedMap;
+
+    // Map is only set on the root instance.
+    //
+    NodeToUnsignedMap* impEnumeratorGdvLocalMap = nullptr;
+    bool hasImpEnumeratorGdvLocalMap() { return impInlineRoot()->impEnumeratorGdvLocalMap != nullptr; }
+    NodeToUnsignedMap* getImpEnumeratorGdvLocalMap()
+    {
+        Compiler* compiler = impInlineRoot();
+        if (compiler->impEnumeratorGdvLocalMap == nullptr)
+        {
+            CompAllocator alloc(compiler->getAllocator(CMK_Generic));
+            compiler->impEnumeratorGdvLocalMap = new (alloc) NodeToUnsignedMap(alloc);
+        }
+        
+        return compiler->impEnumeratorGdvLocalMap;
+    }
+
 #define SMALL_STACK_SIZE 16 // number of elements in impSmallStack
 
     struct SavedStack // used to save/restore stack contents.
@@ -5213,7 +5247,7 @@ private:
                            InlineCandidateInfo**  ppInlineCandidateInfo,
                            InlineResult*          inlineResult);
 
-    void impInlineRecordArgInfo(InlineInfo* pInlineInfo, CallArg* arg, unsigned argNum, InlineResult* inlineResult);
+    void impInlineRecordArgInfo(InlineInfo* pInlineInfo, CallArg* arg, InlArgInfo* argInfo, InlineResult* inlineResult);
 
     void impInlineInitVars(InlineInfo* pInlineInfo);
 
@@ -6343,7 +6377,7 @@ public:
         void AddNonFallthroughPreds(unsigned blockPos);
         bool RunGreedyThreeOptPass(unsigned startPos, unsigned endPos);
 
-        bool RunThreeOptPass();
+        bool RunThreeOpt();
 
     public:
         ThreeOptLayout(Compiler* comp);
@@ -9221,7 +9255,7 @@ private:
 
     bool isOpaqueSIMDType(ClassLayout* layout) const
     {
-        if (layout->IsBlockLayout())
+        if (layout->IsCustomLayout())
         {
             return true;
         }
@@ -11079,14 +11113,16 @@ public:
     ClassLayout* typGetLayoutByNum(unsigned layoutNum);
     // Get the layout number of the specified layout.
     unsigned typGetLayoutNum(ClassLayout* layout);
+    // Get the layout for the specified class handle.
+    ClassLayout* typGetObjLayout(CORINFO_CLASS_HANDLE classHandle);
+    // Get the number of a layout for the specified class handle.
+    unsigned     typGetObjLayoutNum(CORINFO_CLASS_HANDLE classHandle);
+    ClassLayout* typGetCustomLayout(const ClassLayoutBuilder& builder);
+    unsigned     typGetCustomLayoutNum(const ClassLayoutBuilder& builder);
     // Get the layout having the specified size but no class handle.
     ClassLayout* typGetBlkLayout(unsigned blockSize);
     // Get the number of a layout having the specified size but no class handle.
     unsigned typGetBlkLayoutNum(unsigned blockSize);
-    // Get the layout for the specified class handle.
-    ClassLayout* typGetObjLayout(CORINFO_CLASS_HANDLE classHandle);
-    // Get the number of a layout for the specified class handle.
-    unsigned typGetObjLayoutNum(CORINFO_CLASS_HANDLE classHandle);
 
     var_types TypeHandleToVarType(CORINFO_CLASS_HANDLE handle, ClassLayout** pLayout = nullptr);
     var_types TypeHandleToVarType(CorInfoType jitType, CORINFO_CLASS_HANDLE handle, ClassLayout** pLayout = nullptr);
@@ -11676,8 +11712,6 @@ public:
         }
         return compRoot->m_fieldSeqStore;
     }
-
-    typedef JitHashTable<GenTree*, JitPtrKeyFuncs<GenTree>, unsigned> NodeToUnsignedMap;
 
     NodeToUnsignedMap* m_memorySsaMap[MemoryKindCount];
 
