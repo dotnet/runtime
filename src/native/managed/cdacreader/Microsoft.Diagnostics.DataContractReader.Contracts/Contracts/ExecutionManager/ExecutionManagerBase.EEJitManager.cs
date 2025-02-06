@@ -13,9 +13,11 @@ internal partial class ExecutionManagerBase<T> : IExecutionManager
     private class EEJitManager : JitManager
     {
         private readonly INibbleMap _nibbleMap;
+        private readonly RuntimeFunctionLookup _runtimeFunctions;
         public EEJitManager(Target target, INibbleMap nibbleMap) : base(target)
         {
             _nibbleMap = nibbleMap;
+            _runtimeFunctions = RuntimeFunctionLookup.Create(target);
         }
 
         public override bool GetMethodInfo(RangeSection rangeSection, TargetCodePointer jittedCodeAddress, [NotNullWhen(true)] out CodeBlock? info)
@@ -58,10 +60,6 @@ internal partial class ExecutionManagerBase<T> : IExecutionManager
             if (!GetRealCodeHeader(rangeSection, codeStart, out Data.RealCodeHeader? realCodeHeader))
                 return TargetPointer.Null;
 
-            if (Target.GetTypeInfo(DataType.RuntimeFunction).Size is not uint runtimeFunctionSize)
-            {
-                throw new InvalidOperationException("Unable to get RuntimeFunction size");
-            }
             if (realCodeHeader.NumUnwindInfos is not uint numUnwindInfos)
             {
                 throw new InvalidOperationException("Unable to get NumUnwindInfos");
@@ -76,21 +74,15 @@ internal partial class ExecutionManagerBase<T> : IExecutionManager
                 return TargetPointer.Null;
             }
 
-            ulong imageBase = rangeSection.Data.RangeBegin;
-            TargetPointer prevUnwindInfoAddress = unwindInfos;
-            TargetPointer currUnwindInfoAddress;
-            for (ulong i = 1; i < numUnwindInfos; i++)
-            {
-                currUnwindInfoAddress = unwindInfos + (i * runtimeFunctionSize);
-                Data.RuntimeFunction nextRuntimeFunction = Target.ProcessedData.GetOrAdd<Data.RuntimeFunction>(currUnwindInfoAddress);
-                if (nextRuntimeFunction.BeginAddress + imageBase > jittedCodeAddress.Value)
-                {
-                    return prevUnwindInfoAddress;
-                }
-                prevUnwindInfoAddress = currUnwindInfoAddress;
-            }
+            // Find the relative address that we are looking for
+            TargetPointer addr = CodePointerUtils.AddressFromCodePointer(jittedCodeAddress, Target);
+            TargetPointer imageBase = rangeSection.Data.RangeBegin;
+            TargetPointer relativeAddr = addr - imageBase;
 
-            return prevUnwindInfoAddress;
+            if (!_runtimeFunctions.TryGetRuntimeFunctionIndexForAddress(unwindInfos, numUnwindInfos, relativeAddr, out uint index))
+                return TargetPointer.Null;
+
+            return _runtimeFunctions.GetRuntimeFunctionAddress(unwindInfos, index);
         }
 
         private TargetPointer FindMethodCode(RangeSection rangeSection, TargetCodePointer jittedCodeAddress)

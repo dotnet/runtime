@@ -9,7 +9,11 @@
 #include "baseunwinder.h"
 
 #ifdef FEATURE_CDAC_UNWINDER
-EXTERN_C __declspec(dllexport) BOOL amd64Unwind(void* pContext, ReadCallback readCallback, GetAllocatedBuffer getAllocatedBuffer, GetStackWalkInfo getStackWalkInfo);
+EXTERN_C __declspec(dllexport) BOOL amd64Unwind(void* pContext,
+                                                ReadFromTarget readFromTarget,
+                                                GetAllocatedBuffer getAllocatedBuffer,
+                                                GetStackWalkInfo getStackWalkInfo,
+                                                void* callbackContext);
 #endif // FEATURE_CDAC_UNWINDER
 
 //---------------------------------------------------------------------------------------
@@ -21,8 +25,8 @@ class OOPStackUnwinderAMD64 : public OOPStackUnwinder
 {
 #ifdef FEATURE_CDAC_UNWINDER
 public:
-    OOPStackUnwinderAMD64(ReadCallback readCallback, GetAllocatedBuffer getAllocatedBuffer, GetStackWalkInfo getStackWalkInfo)
-        : OOPStackUnwinder(readCallback, getAllocatedBuffer, getStackWalkInfo)
+    OOPStackUnwinderAMD64(ReadFromTarget readFromTarget, GetAllocatedBuffer getAllocatedBuffer, GetStackWalkInfo getStackWalkInfo, void* callbackContext)
+        : OOPStackUnwinder(readFromTarget, getAllocatedBuffer, getStackWalkInfo, callbackContext)
     { }
 #endif // FEATURE_CDAC_UNWINDER
 
@@ -74,8 +78,8 @@ protected:
 
     UNWIND_INFO * GetUnwindInfo(TADDR taUnwindInfo);
 
-public:
     ULONG64 MemoryRead64(PULONG64 addr);
+
     M128A MemoryRead128(PM128A addr);
 };
 

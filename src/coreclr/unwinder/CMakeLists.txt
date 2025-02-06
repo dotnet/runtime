@@ -1,9 +1,5 @@
 set(UNWINDER_SOURCES
     baseunwinder.cpp
-)
-
-# Include platform specific unwinder for applicable (native and cross-target) builds.
-list(APPEND UNWINDER_SOURCES
     ${ARCH_SOURCES_DIR}/unwinder.cpp
 )
 
@@ -37,18 +33,7 @@ target_include_directories(unwinder_dac PRIVATE ${ARCH_SOURCES_DIR})
 set_target_properties(unwinder_dac PROPERTIES DAC_COMPONENT TRUE)
 target_compile_definitions(unwinder_dac PRIVATE FEATURE_NO_HOST)
 
-# add_library_clr(unwinder_cdac SHARED ${UNWINDER_SOURCES})
-# add_dependencies(unwinder_cdac eventing_headers)
-# target_link_libraries(unwinder_cdac PRIVATE  ${STATIC_MT_CRT_LIB} ${STATIC_MT_VCRT_LIB})
-# target_compile_definitions(unwinder_cdac PRIVATE FEATURE_NO_HOST FEATURE_CDAC_UNWINDER)
-# install_clr(TARGETS unwinder_cdac DESTINATIONS cdaclibs COMPONENT debug INSTALL_ALL_ARTIFACTS)
-
-# add_library_clr(unwinder_cdac_static ${UNWINDER_SOURCES})
-# add_dependencies(unwinder_cdac_static eventing_headers)
-# target_link_libraries(unwinder_cdac_static PRIVATE  ${STATIC_MT_CRT_LIB} ${STATIC_MT_VCRT_LIB})
-# target_compile_definitions(unwinder_cdac_static PRIVATE FEATURE_NO_HOST FEATURE_CDAC_UNWINDER)
-# install_clr(TARGETS unwinder_cdac_static DESTINATIONS cdaclibs COMPONENT debug)
-
+# Helper function for platform specific cDAC uwninder builds.
 function(create_platform_unwinder)
   set(oneValueArgs TARGET ARCH)
   set(multiValueArgs DESTINATIONS)
@@ -70,8 +55,6 @@ function(create_platform_unwinder)
     baseunwinder.cpp
     ${ARCH_SOURCES_DIR}/unwinder.cpp
   )
-
-  message("${UNWINDER_SOURCES}")
 
   convert_to_absolute_path(UNWINDER_SOURCES ${UNWINDER_SOURCES})
 
@@ -97,11 +80,10 @@ function(create_platform_unwinder)
   # add the install targets
   install_clr(TARGETS ${TARGETDETAILS_TARGET} DESTINATIONS ${TARGETDETAILS_DESTINATIONS} COMPONENT debug INSTALL_ALL_ARTIFACTS)
 
-
+  # Set the target to be built for the specified OS and ARCH
   set_target_definitions_to_custom_os_and_arch(TARGET ${TARGETDETAILS_TARGET} OS win ARCH ${TARGETDETAILS_ARCH})
 
   target_compile_definitions(${TARGETDETAILS_TARGET} PRIVATE FEATURE_NO_HOST FEATURE_CDAC_UNWINDER)
-  # target_compile_definitions(${TARGETDETAILS_TARGET} PRIVATE SELF_NO_HOST)
 endfunction()
 
 create_platform_unwinder(TARGET unwinder_cdac_amd64 ARCH x64 DESTINATIONS cdaclibs)

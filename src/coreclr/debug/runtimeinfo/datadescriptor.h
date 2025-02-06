@@ -595,30 +595,6 @@ CDAC_TYPE_FIELD(SoftwareExceptionFrame, /*pointer*/, ReturnAddress, cdac_data<So
 CDAC_TYPE_END(SoftwareExceptionFrame)
 #endif // FEATURE_EH_FUNCLETS
 
-#define DEFINE_FRAME_TYPE(frameType) \
-    CDAC_TYPE_BEGIN(frameType) \
-    CDAC_TYPE_SIZE(sizeof(frameType)) \
-    CDAC_TYPE_FIELD(frameType, /*uint32*/, FrameAttributes, cdac_data<frameType>::FrameAttributes) \
-    CDAC_TYPE_FIELD(frameType, /*pointer*/, FCallEntry, cdac_data<frameType>::FCallEntry) \
-    CDAC_TYPE_FIELD(frameType, /*LazyMachState*/, LazyMachState, cdac_data<frameType>::LazyMachState) \
-    CDAC_TYPE_END(frameType)
-
-DEFINE_FRAME_TYPE(HelperMethodFrame)
-DEFINE_FRAME_TYPE(HelperMethodFrame_1OBJ)
-DEFINE_FRAME_TYPE(HelperMethodFrame_2OBJ)
-DEFINE_FRAME_TYPE(HelperMethodFrame_3OBJ)
-DEFINE_FRAME_TYPE(HelperMethodFrame_PROTECTOBJ)
-#undef DEFINE_FRAME_TYPE
-
-#ifdef TARGET_AMD64
-CDAC_TYPE_BEGIN(LazyMachState)
-CDAC_TYPE_SIZE(sizeof(LazyMachState))
-CDAC_TYPE_FIELD(LazyMachState, /*pointer*/, InstructionPointer, cdac_data<LazyMachState>::InstructionPointer)
-CDAC_TYPE_FIELD(LazyMachState, /*pointer*/, StackPointer, cdac_data<LazyMachState>::StackPointer)
-CDAC_TYPE_FIELD(LazyMachState, /*pointer*/, ReturnAddress, cdac_data<LazyMachState>::ReturnAddress)
-CDAC_TYPE_END(LazyMachState)
-#endif // TARGET_AMD64
-
 CDAC_TYPES_END()
 
 CDAC_GLOBALS_BEGIN()

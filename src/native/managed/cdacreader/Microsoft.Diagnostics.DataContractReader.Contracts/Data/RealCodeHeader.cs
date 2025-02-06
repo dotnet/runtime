@@ -13,9 +13,11 @@ internal sealed class RealCodeHeader : IData<RealCodeHeader>
         Target.TypeInfo type = target.GetTypeInfo(DataType.RealCodeHeader);
         MethodDesc = target.ReadPointer(address + (ulong)type.Fields[nameof(MethodDesc)].Offset);
 
+        // Only available if FEATURE_EH_FUNCLETS is enabled.
         if (type.Fields.ContainsKey(nameof(NumUnwindInfos)))
             NumUnwindInfos = target.Read<uint>(address + (ulong)type.Fields[nameof(NumUnwindInfos)].Offset);
 
+        // Only available if FEATURE_EH_FUNCLETS is enabled.
         if (type.Fields.ContainsKey(nameof(UnwindInfos)))
             UnwindInfos = address + (ulong)type.Fields[nameof(UnwindInfos)].Offset;
     }

@@ -110,7 +110,7 @@ internal readonly struct StackWalk_1 : IStackWalk
                 break;
             case StackWalkState.SW_FRAME:
                 handle.frameIter.TryUpdateContext(ref handle.context);
-                if (!handle.frameIter.IsInlinedWithActiveCall())
+                if (!handle.frameIter.IsInlineCallFrameWithActiveCall())
                 {
                     handle.frameIter.Next();
                 }
@@ -167,29 +167,6 @@ internal readonly struct StackWalk_1 : IStackWalk
             return handle.FrameAddress;
         }
         return TargetPointer.Null;
-    }
-
-    void IStackWalk.Print(IStackWalkHandle stackWalkHandle)
-    {
-        StackWalkHandle handle = AssertCorrectHandle(stackWalkHandle);
-        IExecutionManager eman = _target.Contracts.ExecutionManager;
-
-        TargetCodePointer ip = CodePointerUtils.CodePointerFromAddress(handle.context.InstructionPointer, _target);
-        if (eman.GetCodeBlockHandle(ip) is CodeBlockHandle cbh)
-        {
-            TargetPointer methodDesc = eman.GetMethodDesc(cbh);
-            TargetPointer moduleBase = eman.GetModuleBaseAddress(cbh);
-            Console.WriteLine($"[{handle.context.GetType().Name}] State={handle.state,-20} SP={handle.context.StackPointer.Value:x16} IP={handle.context.InstructionPointer.Value:x16} MethodDesc={methodDesc.Value:x16} BaseAddress={moduleBase.Value:x16}");
-        }
-        else
-        {
-            Console.WriteLine($"[{handle.context.GetType().Name}] State={handle.state,-20} SP={handle.context.StackPointer.Value:x16} IP={handle.context.InstructionPointer.Value:x16} Unmanaged");
-        }
-
-        if (handle.frameIter.IsValid())
-        {
-            FrameIterator.PrintFrame(_target, handle.frameIter.CurrentFrame);
-        }
     }
 
     private bool IsManaged(TargetPointer ip, [NotNullWhen(true)] out CodeBlockHandle? codeBlockHandle)

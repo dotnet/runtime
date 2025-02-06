@@ -54,18 +54,16 @@ internal sealed class RuntimeFunctionLookup
 
         bool Match(uint index)
         {
-            // Entries are terminated by a sentinel value of -1, so we can index one past the end safely.
-            // Read as a runtime function, its begin address is 0xffffffff (always > relative address).
-            // See RuntimeFunctionsTableNode.GetData in RuntimeFunctionsTableNode.cs
-            Data.RuntimeFunction nextFunc = GetRuntimeFunction(runtimeFunctions, index + 1);
-            if (relativeAddress >= nextFunc.BeginAddress)
-                return false;
+            // If there is a next Unwind Info, check if the address is in the next Unwind Info.
+            if (index < numRuntimeFunctions - 1)
+            {
+                Data.RuntimeFunction nextFunc = GetRuntimeFunction(runtimeFunctions, index + 1);
+                if (relativeAddress >= nextFunc.BeginAddress)
+                    return false;
+            }
 
             Data.RuntimeFunction func = GetRuntimeFunction(runtimeFunctions, index);
-            if (relativeAddress >= func.BeginAddress)
-                return true;
-
-            return false;
+            return relativeAddress >= func.BeginAddress;
         }
     }
 

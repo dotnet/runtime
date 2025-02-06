@@ -10,11 +10,6 @@ internal sealed class Frame : IData<Frame>
 {
     private static readonly List<DataType> SupportedFrameTypes = [
         DataType.InlinedCallFrame,
-        DataType.HelperMethodFrame,
-        DataType.HelperMethodFrame_1OBJ,
-        DataType.HelperMethodFrame_2OBJ,
-        DataType.HelperMethodFrame_3OBJ,
-        DataType.HelperMethodFrame_PROTECTOBJ,
         DataType.SoftwareExceptionFrame,
 
         DataType.ResumableFrame,
@@ -42,6 +37,11 @@ internal sealed class Frame : IData<Frame>
         DataType.TailCallFrame,
         DataType.ExceptionFilterFrame,
         DataType.AssumeByrefFromJITStack,
+        DataType.HelperMethodFrame,
+        DataType.HelperMethodFrame_1OBJ,
+        DataType.HelperMethodFrame_2OBJ,
+        DataType.HelperMethodFrame_3OBJ,
+        DataType.HelperMethodFrame_PROTECTOBJ,
     ];
 
     static Frame IData<Frame>.Create(Target target, TargetPointer address)
@@ -66,14 +66,13 @@ internal sealed class Frame : IData<Frame>
             {
                 // not all Frames are in all builds, so we need to catch the exception
                 typeVptr = target.ReadGlobalPointer(frameType.ToString() + "VPtr");
+                if (instanceVptr == typeVptr)
+                {
+                    return frameType;
+                }
             }
             catch (InvalidOperationException)
             {
-                continue;
-            }
-            if (instanceVptr == typeVptr)
-            {
-                return frameType;
             }
         }
 

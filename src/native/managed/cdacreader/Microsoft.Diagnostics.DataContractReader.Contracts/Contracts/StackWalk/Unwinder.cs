@@ -9,150 +9,136 @@ using System.Collections.Generic;
 namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 internal static unsafe partial class Unwinder
 {
-    // ReadCallback allows the unwinder to read memory from the target process
-    // into an allocated buffer. This buffer is either allocated by the unwinder
-    // with its lifetime managed by the unwinder or allocated through GetAllocatedBuffer.
-    // In the latter case, the unwinder can only use the buffer for the duration of the
-    // unwind call. Once the call is over the cDAC will free all allocated buffers.
-    public delegate int ReadCallback(ulong address, void* buffer, int bufferSize);
-    public delegate int GetAllocatedBuffer(int bufferSize, void** buffer);
-
-    // cDAC version of GetRuntimeStackWalkInfo defined in codeman.cpp
-    // To maintain the same signature as the original function, we return void.
-    // If the moduleBase or funcEntry can not be found, both will be 0.
-    public delegate void GetStackWalkInfo(ulong controlPC, void* pModuleBase, void* pFuncEntry);
-
     [LibraryImport("unwinder_cdac_arm64", EntryPoint = "arm64Unwind")]
     private static partial int ARM64Unwind(
         ref ARM64Context context,
-        [MarshalAs(UnmanagedType.FunctionPtr)] ReadCallback readCallback,
-        [MarshalAs(UnmanagedType.FunctionPtr)] GetAllocatedBuffer getAllocatedBuffer,
-        [MarshalAs(UnmanagedType.FunctionPtr)] GetStackWalkInfo getStackWalkInfo);
-
-    [LibraryImport("unwinder_cdac_amd64", EntryPoint = "amd64Unwind")]
-    private static partial int AMD64Unwind(
-        ref AMD64Context context,
-        [MarshalAs(UnmanagedType.FunctionPtr)] ReadCallback readCallback,
-        [MarshalAs(UnmanagedType.FunctionPtr)] GetAllocatedBuffer getAllocatedBuffer,
-        [MarshalAs(UnmanagedType.FunctionPtr)] GetStackWalkInfo getStackWalkInfo);
-
-    public static int AMD64Unwind(
-        ref AMD64Context context,
-        Target target)
-    {
-        ReadCallback readCallback;
-        GetAllocatedBuffer getAllocatedBuffer;
-        GetStackWalkInfo getStackWalkInfo;
-
-        // Move to IDisposable for freeing
-        List<IntPtr> allocatedRegions = [];
-
-        readCallback = (address, pBuffer, bufferSize) =>
-        {
-            Span<byte> span = new Span<byte>(pBuffer, bufferSize);
-            target.ReadBuffer(address, span);
-            return 0;
-        };
-        getAllocatedBuffer = (bufferSize, ppBuffer) =>
-        {
-            *ppBuffer = NativeMemory.Alloc((nuint)bufferSize);
-            IntPtr pBuffer = new(*ppBuffer);
-            //Console.WriteLine($"Allocating buffer at {pBuffer:x16}");
-            allocatedRegions.Add(pBuffer);
-            return 0;
-        };
-        getStackWalkInfo = (controlPC, pModuleBase, pFuncEntry) =>
-        {
-            IExecutionManager eman = target.Contracts.ExecutionManager;
-
-            if ((nuint)pModuleBase != 0) *(nuint*)pModuleBase = 0;
-            if ((nuint)pFuncEntry != 0) *(nuint*)pFuncEntry = 0;
-
-            try
-            {
-                if (eman.GetCodeBlockHandle(controlPC) is CodeBlockHandle cbh)
-                {
-                    TargetPointer methodDesc = eman.GetMethodDesc(cbh);
-                    TargetPointer moduleBase = eman.GetModuleBaseAddress(cbh);
-                    TargetPointer unwindInfo = eman.GetUnwindInfo(cbh, controlPC);
-                    if ((nuint)pModuleBase != 0) *(nuint*)pModuleBase = (nuint)moduleBase.Value;
-                    if ((nuint)pFuncEntry != 0) *(nuint*)pFuncEntry = (nuint)unwindInfo.Value;
-                }
-            }
-            catch (System.Exception ex)
-            {
-                Console.WriteLine($"GetStackWalkInfo failed: {ex}");
-            }
-        };
-
-        int ret = AMD64Unwind(ref context, readCallback, getAllocatedBuffer, getStackWalkInfo);
-
-        foreach (IntPtr ptr in allocatedRegions)
-        {
-            //Console.WriteLine($"Freeing buffer at {ptr:x16}");
-            NativeMemory.Free(ptr.ToPointer());
-        }
-
-        return ret;
-    }
+        delegate* unmanaged<ulong, void*, int, void*, int> readFromTarget,
+        delegate* unmanaged<int, void**, void*, int> getAllocatedBuffer,
+        delegate* unmanaged<ulong, void*, void*, void*, void> getStackWalkInfo,
+        void* callbackContext);
 
     public static int ARM64Unwind(
         ref ARM64Context context,
         Target target)
     {
-        ReadCallback readCallback;
-        GetAllocatedBuffer getAllocatedBuffer;
-        GetStackWalkInfo getStackWalkInfo;
+        using CallbackContext callbackContext = new(target);
 
-        // Move to IDisposable for freeing
-        List<IntPtr> allocatedRegions = [];
-
-        readCallback = (address, pBuffer, bufferSize) =>
-        {
-            Span<byte> span = new Span<byte>(pBuffer, bufferSize);
-            target.ReadBuffer(address, span);
-            return 0;
-        };
-        getAllocatedBuffer = (bufferSize, ppBuffer) =>
-        {
-            *ppBuffer = NativeMemory.Alloc((nuint)bufferSize);
-            IntPtr pBuffer = new(*ppBuffer);
-            //Console.WriteLine($"Allocating buffer at {pBuffer:x16}");
-            allocatedRegions.Add(pBuffer);
-            return 0;
-        };
-        getStackWalkInfo = (controlPC, pModuleBase, pFuncEntry) =>
-        {
-            IExecutionManager eman = target.Contracts.ExecutionManager;
-
-            if ((nuint)pModuleBase != 0) *(nuint*)pModuleBase = 0;
-            if ((nuint)pFuncEntry != 0) *(nuint*)pFuncEntry = 0;
-
-            try
-            {
-                if (eman.GetCodeBlockHandle(controlPC) is CodeBlockHandle cbh)
-                {
-                    TargetPointer methodDesc = eman.GetMethodDesc(cbh);
-                    TargetPointer moduleBase = eman.GetModuleBaseAddress(cbh);
-                    TargetPointer unwindInfo = eman.GetUnwindInfo(cbh, controlPC);
-                    if ((nuint)pModuleBase != 0) *(nuint*)pModuleBase = (nuint)moduleBase.Value;
-                    if ((nuint)pFuncEntry != 0) *(nuint*)pFuncEntry = (nuint)unwindInfo.Value;
-                }
-            }
-            catch (System.Exception ex)
-            {
-                Console.WriteLine($"GetStackWalkInfo failed: {ex}");
-            }
-        };
-
-        int ret = ARM64Unwind(ref context, readCallback, getAllocatedBuffer, getStackWalkInfo);
-
-        foreach (IntPtr ptr in allocatedRegions)
-        {
-            //Console.WriteLine($"Freeing buffer at {ptr:x16}");
-            NativeMemory.Free(ptr.ToPointer());
-        }
+        GCHandle handle = GCHandle.Alloc(callbackContext);
+        int ret = ARM64Unwind(ref context, &ReadFromTarget, &GetAllocatedBuffer, &GetStackWalkInfo, GCHandle.ToIntPtr(handle).ToPointer());
+        handle.Free();
 
         return ret;
+    }
+
+    [LibraryImport("unwinder_cdac_amd64", EntryPoint = "amd64Unwind")]
+    private static partial int AMD64Unwind(
+        ref AMD64Context context,
+        delegate* unmanaged<ulong, void*, int, void*, int> readFromTarget,
+        delegate* unmanaged<int, void**, void*, int> getAllocatedBuffer,
+        delegate* unmanaged<ulong, void*, void*, void*, void> getStackWalkInfo,
+        void* callbackContext);
+
+    public static int AMD64Unwind(
+        ref AMD64Context context,
+        Target target)
+    {
+        using CallbackContext callbackContext = new(target);
+
+        GCHandle handle = GCHandle.Alloc(callbackContext);
+        int ret = AMD64Unwind(ref context, &ReadFromTarget, &GetAllocatedBuffer, &GetStackWalkInfo, GCHandle.ToIntPtr(handle).ToPointer());
+        handle.Free();
+
+        return ret;
+    }
+
+    private sealed class CallbackContext(Target target) : IDisposable
+    {
+        private bool disposed;
+        public Target Target { get; } = target;
+        public List<IntPtr> AllocatedRegions { get; } = [];
+
+        public void Dispose()
+        {
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+
+        private void Dispose(bool disposing)
+        {
+            if (disposed) return;
+
+            if (disposing)
+            {
+                foreach (IntPtr ptr in AllocatedRegions)
+                {
+                    NativeMemory.Free(ptr.ToPointer());
+                }
+            }
+            disposed = true;
+        }
+    }
+
+    // ReadFromTarget allows the unwinder to read memory from the target process
+    // into an allocated buffer. This buffer is either allocated by the unwinder
+    // with its lifetime managed by the unwinder or allocated through GetAllocatedBuffer.
+    // In the latter case, the unwinder can only use the buffer for the duration of the
+    // unwind call. Once the call is over the cDAC will free all allocated buffers.
+    [UnmanagedCallersOnly]
+    private static unsafe int ReadFromTarget(ulong address, void* pBuffer, int bufferSize, void* context)
+    {
+        if (GCHandle.FromIntPtr((IntPtr)context).Target is not CallbackContext callbackContext)
+        {
+            return -1;
+        }
+        Span<byte> span = new Span<byte>(pBuffer, bufferSize);
+        callbackContext.Target.ReadBuffer(address, span);
+        return 0;
+    }
+
+    // GetAllocatedBuffer allows the unwinder to allocate a buffer that will be freed
+    // once the unwinder call is complete.
+    // Freeing is handeled in the Dispose method of CallbackContext.
+    [UnmanagedCallersOnly]
+    private static unsafe int GetAllocatedBuffer(int bufferSize, void** ppBuffer, void* context)
+    {
+        if (GCHandle.FromIntPtr((IntPtr)context).Target is not CallbackContext callbackContext)
+        {
+            return -1;
+        }
+        *ppBuffer = NativeMemory.Alloc((nuint)bufferSize);
+        callbackContext.AllocatedRegions.Add((IntPtr)(*ppBuffer));
+        return 0;
+    }
+
+    // cDAC version of GetRuntimeStackWalkInfo defined in codeman.cpp
+    // To maintain the same signature as the original function, this returns void.
+    // If the moduleBase or funcEntry can not be found, both will be 0.
+    [UnmanagedCallersOnly]
+    private static unsafe void GetStackWalkInfo(ulong controlPC, void* pModuleBase, void* pFuncEntry, void* context)
+    {
+        if ((nuint)pModuleBase != 0) *(nuint*)pModuleBase = 0;
+        if ((nuint)pFuncEntry != 0) *(nuint*)pFuncEntry = 0;
+
+        if (GCHandle.FromIntPtr((IntPtr)context).Target is not CallbackContext callbackContext)
+        {
+            return;
+        }
+
+        IExecutionManager eman = callbackContext.Target.Contracts.ExecutionManager;
+        try
+        {
+            if (eman.GetCodeBlockHandle(controlPC) is CodeBlockHandle cbh)
+            {
+                TargetPointer methodDesc = eman.GetMethodDesc(cbh);
+                TargetPointer moduleBase = eman.GetModuleBaseAddress(cbh);
+                TargetPointer unwindInfo = eman.GetUnwindInfo(cbh, controlPC);
+                if ((nuint)pModuleBase != 0) *(nuint*)pModuleBase = (nuint)moduleBase.Value;
+                if ((nuint)pFuncEntry != 0) *(nuint*)pFuncEntry = (nuint)unwindInfo.Value;
+            }
+        }
+        catch (System.Exception ex)
+        {
+            Console.WriteLine($"GetStackWalkInfo failed: {ex}");
+        }
     }
 }

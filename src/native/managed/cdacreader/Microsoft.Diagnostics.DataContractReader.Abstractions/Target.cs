@@ -33,7 +33,7 @@ internal abstract class Target
         CORDB_PLATFORM_POSIX_ARM = 10,
         CORDB_PLATFORM_POSIX_ARM64 = 11,
         CORDB_PLATFORM_POSIX_LOONGARCH64 = 12,
-        CORDB_PLATFORM_POSIX_RISCV64 = 12
+        CORDB_PLATFORM_POSIX_RISCV64 = 13,
     }
 
     /// <summary>
@@ -45,8 +45,21 @@ internal abstract class Target
     /// </summary>
     public abstract bool IsLittleEndian { get; }
 
-    public abstract int GetThreadContext(uint threadId, uint contextFlags, uint contextSize, Span<byte> bufferToFill);
-    public abstract int GetPlatform(out CorDebugPlatform platform);
+    /// <summary>
+    /// Platform of the target
+    /// </summary>
+    public abstract CorDebugPlatform Platform { get; }
+
+    /// <summary>
+    /// Fills a buffer with the context of the given thread
+    /// </summary>
+    /// <param name="threadId">The identifier of the thread whose context is to be retrieved. The identifier is defined by the operating system.</param>
+    /// <param name="contextFlags">A bitwise combination of platform-dependent flags that indicate which portions of the context should be read.</param>
+    /// <param name="contextSize">Size of <paramref name="buffer"/>.</param>
+    /// <param name="buffer">Buffer filled with thread context.</param>
+    /// <returns>HResult</returns>
+    public abstract int GetThreadContext(uint threadId, uint contextFlags, uint contextSize, Span<byte> buffer);
+
 
     /// <summary>
     /// Reads a well-known global pointer value from the target process

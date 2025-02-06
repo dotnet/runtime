@@ -3,7 +3,6 @@
 
 using System;
 using System.Diagnostics;
-using System.IO;
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.Marshalling;
 using Microsoft.Diagnostics.DataContractReader.Contracts;
@@ -68,11 +67,6 @@ internal sealed unsafe partial class ClrDataStackWalk : IXCLRDataStackWalk
 #endif
 
         return HResults.S_OK;
-
-        // if (_legacyImpl is not null)
-        // {
-        //     _legacyImpl.GetContext(contextFlags, contextBufSize, contextSize, contextBuf);
-        // }
     }
 
     int IXCLRDataStackWalk.GetFrame(void** frame)
@@ -105,10 +99,6 @@ internal sealed unsafe partial class ClrDataStackWalk : IXCLRDataStackWalk
     }
     int IXCLRDataStackWalk.Request(uint reqCode, uint inBufferSize, byte* inBuffer, uint outBufferSize, byte* outBuffer)
     {
-        string outputhPath = "C:\\Users\\maxcharlamb\\OneDrive - Microsoft\\Desktop\\out.txt";
-        using StreamWriter writer = new StreamWriter(outputhPath, true);
-        Console.SetOut(writer);
-
         const uint DACSTACKPRIV_REQUEST_FRAME_DATA = 0xf0000000;
 
         int hr = HResults.S_OK;
@@ -143,13 +133,10 @@ internal sealed unsafe partial class ClrDataStackWalk : IXCLRDataStackWalk
 
             for (int i = 0; i < outBufferSize; i++)
             {
-                // Console.WriteLine($"cDAC: {outBuffer[i]:x}, DAC: {localOutBuffer[i]:x}");
                 Debug.Assert(localOutBuffer[i] == outBuffer[i], $"cDAC: {outBuffer[i]:x}, DAC: {localOutBuffer[i]:x}");
             }
         }
 #endif
-        writer.Close();
-
         return hr;
     }
     int IXCLRDataStackWalk.SetContext(uint contextSize, [In, MarshalUsing(CountElementName = "contextSize")] byte[] context)

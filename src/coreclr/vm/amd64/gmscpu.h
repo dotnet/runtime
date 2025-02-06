@@ -115,16 +115,6 @@ struct LazyMachState : public MachState
     //
     ULONG64 m_CaptureRip;
     ULONG64 m_CaptureRsp;
-
-    friend struct ::cdac_data<LazyMachState>;
-};
-
-template<>
-struct cdac_data<LazyMachState>
-{
-    static constexpr size_t InstructionPointer = offsetof(LazyMachState, m_Rip);
-    static constexpr size_t StackPointer = offsetof(LazyMachState, m_Rsp);
-    static constexpr size_t ReturnAddress = offsetof(LazyMachState, _pRetAddr);
 };
 
 inline void LazyMachState::setLazyStateFromUnwind(MachState* copy)

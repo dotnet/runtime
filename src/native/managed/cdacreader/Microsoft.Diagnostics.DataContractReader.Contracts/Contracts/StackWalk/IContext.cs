@@ -29,8 +29,7 @@ internal interface IContext
 
     public static IContext GetContextForPlatform(Target target)
     {
-        target.GetPlatform(out Target.CorDebugPlatform platform);
-        switch (platform)
+        switch (target.Platform)
         {
             case Target.CorDebugPlatform.CORDB_PLATFORM_WINDOWS_AMD64:
             case Target.CorDebugPlatform.CORDB_PLATFORM_POSIX_AMD64:
@@ -42,7 +41,7 @@ internal interface IContext
                 ARM64Context arm64Context = default;
                 return arm64Context;
             default:
-                throw new ArgumentOutOfRangeException(nameof(platform), platform, null);
+                throw new InvalidOperationException($"Unsupported platform {target.Platform}");
         }
     }
 }

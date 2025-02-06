@@ -555,6 +555,7 @@ function(install_clr)
     endif()
 
     foreach(destination ${destinations})
+        # Install the export libraries for static libraries.
       if (${INSTALL_CLR_INSTALL_ALL_ARTIFACTS})
         install(TARGETS ${targetName} DESTINATION ${destination} COMPONENT ${INSTALL_CLR_COMPONENT})
       else()

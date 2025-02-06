@@ -11,14 +11,14 @@ internal class SoftwareExceptionFrame : IData<SoftwareExceptionFrame>
     public SoftwareExceptionFrame(Target target, TargetPointer address)
     {
         // TypeInfo will only exist if FEATURE_EH_FUNCLETS is enabled.
-        // If it doesn't exist, then this type of frame is not present.
+        // If it doesn't exist, then this type of frame is not present in target.
         Target.TypeInfo type = target.GetTypeInfo(DataType.SoftwareExceptionFrame);
         Address = address;
         TargetContext = address + (ulong)type.Fields[nameof(TargetContext)].Offset;
         ReturnAddress = target.ReadPointer(address + (ulong)type.Fields[nameof(ReturnAddress)].Offset);
     }
 
-    public TargetPointer Address { get;}
+    public TargetPointer Address { get; }
     public TargetPointer TargetContext { get; }
     public TargetPointer ReturnAddress { get; }
 }

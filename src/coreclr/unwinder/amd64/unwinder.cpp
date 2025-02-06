@@ -52,7 +52,7 @@ M128A OOPStackUnwinderAMD64::MemoryRead128(PM128A addr)
 {
     return *dac_cast<PTR_M128A>((TADDR)addr);
 }
-#endif // !FEATURE_CDAC_UNWINDER
+#endif // FEATURE_CDAC_UNWINDER
 
 #ifdef DACCESS_COMPILE
 
@@ -262,7 +262,28 @@ BOOL OOPStackUnwinderAMD64::Unwind(CONTEXT * pContext)
 
 #elif defined(FEATURE_CDAC_UNWINDER)
 
+// TODO: add asserts on cDAC build without importing more headers.
 #define UNWINDER_ASSERT(x)
+
+// Read 64 bit unsigned value from the specified addres when the unwinder is build
+// for the cDAC. This triggers a callback to the cDAC host to read the memory from
+// the target process.
+ULONG64 OOPStackUnwinderAMD64::MemoryRead64(PULONG64 addr)
+{
+    ULONG64 value;
+    readFromTarget((uint64_t)addr, &value, sizeof(value), callbackContext);
+    return value;
+}
+
+// Read 128 bit value from the specified addres when the unwinder is build
+// for the cDAC. This triggers a callback to the cDAC host to read the memory from
+// the target process.
+M128A OOPStackUnwinderAMD64::MemoryRead128(PM128A addr)
+{
+    M128A value;
+    readFromTarget((uint64_t)addr, &value, sizeof(value), callbackContext);
+    return value;
+}
 
 //---------------------------------------------------------------------------------------
 //
@@ -277,15 +298,16 @@ class InstructionBuffer
     SIZE_T m_address;
     UCHAR m_buffer[32];
 
-    ReadCallback readCallback;
+    ReadFromTarget readFromTarget;
+    void* callbackContext;
 
     // Load the instructions from the target process being debugged
     HRESULT Load()
     {
-        HRESULT hr = readCallback(m_address, m_buffer, sizeof(m_buffer));
+        HRESULT hr = readFromTarget(m_address, m_buffer, sizeof(m_buffer), callbackContext);
         if (SUCCEEDED(hr))
         {
-            // TODO: Implement for cDAC
+            // TODO: Implement breakpoint patching for cDAC
 
             // On X64, we need to replace any patches which are within the requested memory range.
             // This is because the X64 unwinder needs to disassemble the native instructions in order to determine
@@ -298,10 +320,11 @@ class InstructionBuffer
 public:
 
     // Construct the InstructionBuffer for the given address in the target process
-    InstructionBuffer(SIZE_T address, ReadCallback readCallback)
+    InstructionBuffer(SIZE_T address, ReadFromTarget readFromTarget, void* callbackContext)
       : m_offset(0),
         m_address(address),
-        readCallback(readCallback)
+        readFromTarget(readFromTarget),
+        callbackContext(callbackContext)
     {
         HRESULT hr = Load();
         if (FAILED(hr))
@@ -348,11 +371,11 @@ public:
     }
 };
 
-BOOL amd64Unwind(void* pContext, ReadCallback readCallback, GetAllocatedBuffer getAllocatedBuffer, GetStackWalkInfo getStackWalkInfo)
+BOOL amd64Unwind(void* pContext, ReadFromTarget readFromTarget, GetAllocatedBuffer getAllocatedBuffer, GetStackWalkInfo getStackWalkInfo, void* callbackContext)
 {
     HRESULT hr = E_FAIL;
 
-    OOPStackUnwinderAMD64 unwinder { readCallback, getAllocatedBuffer, getStackWalkInfo };
+    OOPStackUnwinderAMD64 unwinder { readFromTarget, getAllocatedBuffer, getStackWalkInfo, callbackContext };
     hr = unwinder.Unwind((CONTEXT*) pContext);
 
     return (hr == S_OK);
@@ -390,7 +413,7 @@ BOOL OOPStackUnwinderAMD64::Unwind(CONTEXT * pContext)
 UNWIND_INFO * OOPStackUnwinderAMD64::GetUnwindInfo(TADDR taUnwindInfo)
 {
     UNWIND_INFO unwindInfo;
-    if(readCallback((uint64_t)taUnwindInfo, &unwindInfo, sizeof(unwindInfo)) != S_OK)
+    if(readFromTarget((uint64_t)taUnwindInfo, &unwindInfo, sizeof(unwindInfo), callbackContext) != S_OK)
     {
         return NULL;
     }
@@ -409,13 +432,15 @@ UNWIND_INFO * OOPStackUnwinderAMD64::GetUnwindInfo(TADDR taUnwindInfo)
         cbUnwindInfo += sizeof(T_RUNTIME_FUNCTION);
     }
 
+    // Allocate a buffer for the unwind info from cDAC callback.
+    // This buffer will be freed by the cDAC host once unwinding is done.
     UNWIND_INFO* pUnwindInfo;
-    if(getAllocatedBuffer(cbUnwindInfo, (void**)&pUnwindInfo) != S_OK)
+    if(getAllocatedBuffer(cbUnwindInfo, (void**)&pUnwindInfo, callbackContext) != S_OK)
     {
         return NULL;
     }
 
-    if(readCallback(taUnwindInfo, pUnwindInfo, cbUnwindInfo) != S_OK)
+    if(readFromTarget(taUnwindInfo, pUnwindInfo, cbUnwindInfo, callbackContext) != S_OK)
     {
         return NULL;
     }
@@ -423,21 +448,7 @@ UNWIND_INFO * OOPStackUnwinderAMD64::GetUnwindInfo(TADDR taUnwindInfo)
     return pUnwindInfo;
 }
 
-ULONG64 OOPStackUnwinderAMD64::MemoryRead64(PULONG64 addr)
-{
-    ULONG64 value;
-    readCallback((uint64_t)addr, &value, sizeof(value));
-    return value;
-}
-
-M128A OOPStackUnwinderAMD64::MemoryRead128(PM128A addr)
-{
-    M128A value;
-    readCallback((uint64_t)addr, &value, sizeof(value));
-    return value;
-}
-
-#else // DACCESS_COMPILE
+#else // !DACCESS_COMPILE && !FEATURE_CDAC_UNWINDER
 
 // Report failure in the unwinder if the condition is FALSE
 #define UNWINDER_ASSERT _ASSERTE
@@ -455,7 +466,6 @@ UNWIND_INFO * OOPStackUnwinderAMD64::GetUnwindInfo(TADDR taUnwindInfo)
     return (UNWIND_INFO *)taUnwindInfo;
 }
 
-#ifndef FEATURE_CDAC_UNWINDER
 //---------------------------------------------------------------------------------------
 //
 // This function behaves like the RtlVirtualUnwind in Windows.
@@ -530,9 +540,8 @@ PEXCEPTION_ROUTINE RtlVirtualUnwind_Unsafe(
 
     return handlerRoutine;
 }
-#endif // FEATURE_CDAC_UNWINDER
 
-#endif // DACCESS_COMPILE
+#endif // !DACCESS_COMPILE && !FEATURE_CDAC_UNWINDER
 
 //
 //
@@ -1390,8 +1399,8 @@ Arguments:
     if (UnwindVersion < 2) {
 #ifndef FEATURE_CDAC_UNWINDER
         InstructionBuffer InstrBuffer = (InstructionBuffer)ControlPc;
-#else // !FEATURE_CDAC_UNWINDER
-        InstructionBuffer InstrBuffer(ControlPc, readCallback);
+#else // FEATURE_CDAC_UNWINDER
+        InstructionBuffer InstrBuffer(ControlPc, readFromTarget, callbackContext);
 #endif // FEATURE_CDAC_UNWINDER
         InstructionBuffer NextByte = InstrBuffer;
 

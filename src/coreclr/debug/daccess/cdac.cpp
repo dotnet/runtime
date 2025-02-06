@@ -25,6 +25,10 @@ namespace
         iter++;
         path.Truncate(iter);
         path.Append(CDAC_LIB_NAME);
+
+        // LOAD_LIBRARY_SEARCH_DLL_LOAD_DIR loads dependencies from the same
+        // directory as cdacreader.dll. Once the native portions of the cDAC
+        // are statically linked, this won't be required.
         *phCDAC = CLRLoadLibraryEx(path.GetUnicode(), NULL, LOAD_LIBRARY_SEARCH_DLL_LOAD_DIR);
         if (*phCDAC == NULL)
             return false;
@@ -55,7 +59,11 @@ namespace
     int GetPlatform(uint32_t* platform, void* context)
     {
         ICorDebugDataTarget* target = reinterpret_cast<ICorDebugDataTarget*>(context);
-        return target->GetPlatform((CorDebugPlatform*)platform);
+        HRESULT hr = target->GetPlatform((CorDebugPlatform*)platform);
+        if (FAILED(hr))
+            return hr;
+
+        return S_OK;
     }
 }
 

@@ -4,11 +4,9 @@
 //
 
 #include "stdafx.h"
-
 #ifndef FEATURE_CDAC_UNWINDER
 #include "utilcode.h"
 #endif // FEATURE_CDAC_UNWINDER
-
 #include "crosscomp.h"
 
 #include "unwinder.h"
@@ -177,7 +175,7 @@ typedef struct _ARM64_VFP_STATE
 #if !defined(DEBUGGER_UNWIND) && !defined(FEATURE_CDAC_UNWINDER)
 
 #define MEMORY_READ_BYTE(params, addr)       (*dac_cast<PTR_BYTE>(addr))
-#define MEMORY_READ_WORD(params, addr)      (*dac_cast<PTR_WORD>(addr))
+#define MEMORY_READ_WORD(params, addr)       (*dac_cast<PTR_WORD>(addr))
 #define MEMORY_READ_DWORD(params, addr)      (*dac_cast<PTR_DWORD>(addr))
 #define MEMORY_READ_QWORD(params, addr)      (*dac_cast<PTR_UINT64>(addr))
 
@@ -186,13 +184,13 @@ template<typename T>
 T cdacRead(uint64_t addr)
 {
     T t;
-    g_pUnwinder->readCallback(addr, &t, sizeof(t));
+    g_pUnwinder->readFromTarget(addr, &t, sizeof(t), g_pUnwinder->callbackContext);
     return t;
 }
-#define MEMORY_READ_BYTE(params, addr) (cdacRead<BYTE>(addr))
-#define MEMORY_READ_WORD(params, addr) (cdacRead<WORD>(addr))
-#define MEMORY_READ_DWORD(params, addr) (cdacRead<DWORD>(addr))
-#define MEMORY_READ_QWORD(params, addr) (cdacRead<UINT64>(addr))
+#define MEMORY_READ_BYTE(params, addr)       (cdacRead<BYTE>(addr))
+#define MEMORY_READ_WORD(params, addr)       (cdacRead<WORD>(addr))
+#define MEMORY_READ_DWORD(params, addr)      (cdacRead<DWORD>(addr))
+#define MEMORY_READ_QWORD(params, addr)      (cdacRead<UINT64>(addr))
 #endif
 
 //
@@ -2797,15 +2795,13 @@ BOOL DacUnwindStackFrame(T_CONTEXT *pContext, T_KNONVOLATILE_CONTEXT_POINTERS* p
 
     return res;
 }
-#endif // DACCESS_COMPILE
-
-#ifdef FEATURE_CDAC_UNWINDER
+#elif defined(FEATURE_CDAC_UNWINDER)
 OOPStackUnwinderArm64* g_pUnwinder;
-BOOL arm64Unwind(void* pContext, ReadCallback readCallback, GetAllocatedBuffer getAllocatedBuffer, GetStackWalkInfo getStackWalkInfo)
+BOOL arm64Unwind(void* pContext, ReadFromTarget readFromTarget, GetAllocatedBuffer getAllocatedBuffer, GetStackWalkInfo getStackWalkInfo, void* callbackContext)
 {
     HRESULT hr = E_FAIL;
 
-    OOPStackUnwinderArm64 unwinder { readCallback, getAllocatedBuffer, getStackWalkInfo };
+    OOPStackUnwinderArm64 unwinder { readFromTarget, getAllocatedBuffer, getStackWalkInfo, callbackContext };
     g_pUnwinder = &unwinder;
     hr = unwinder.Unwind((T_CONTEXT*) pContext);
 
@@ -2813,7 +2809,7 @@ BOOL arm64Unwind(void* pContext, ReadCallback readCallback, GetAllocatedBuffer g
 
     return (hr == S_OK);
 }
-#endif
+#endif // FEATURE_CDAC_UNWINDER
 
 #if defined(HOST_UNIX)
 

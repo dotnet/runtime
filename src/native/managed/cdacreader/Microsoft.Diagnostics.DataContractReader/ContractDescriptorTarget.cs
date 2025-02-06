@@ -44,19 +44,16 @@ internal sealed unsafe class ContractDescriptorTarget : Target
 
     public delegate int ReadFromTargetDelegate(ulong address, Span<byte> bufferToFill);
     public delegate int GetTargetThreadContextDelegate(uint threadId, uint contextFlags, uint contextSize, Span<byte> bufferToFill);
-    public delegate int GetTargetPlatform(out int platform);
-
-    public GetTargetThreadContextDelegate? getThreadContext;
-    public GetTargetPlatform? getTargetPlatform;
+    public delegate int GetTargetPlatformDelegate(out int platform);
 
     public static bool TryCreate(
         ulong contractDescriptor,
         ReadFromTargetDelegate readFromTarget,
         GetTargetThreadContextDelegate getThreadContext,
-        GetTargetPlatform getTargetPlatform,
+        GetTargetPlatformDelegate getTargetPlatform,
         out ContractDescriptorTarget? target)
     {
-        Reader reader = new Reader(readFromTarget);
+        Reader reader = new Reader(readFromTarget, getThreadContext, getTargetPlatform);
         if (TryReadContractDescriptor(
             contractDescriptor,
             reader,
@@ -65,8 +62,6 @@ internal sealed unsafe class ContractDescriptorTarget : Target
             out TargetPointer[] pointerData))
         {
             target = new ContractDescriptorTarget(config, descriptor!, pointerData, reader);
-            target.getThreadContext = getThreadContext;
-            target.getTargetPlatform = getTargetPlatform;
             return true;
         }
 
@@ -82,6 +77,12 @@ internal sealed unsafe class ContractDescriptorTarget : Target
         _reader = reader;
 
         _contracts = descriptor.Contracts ?? [];
+
+        if (_reader.GetTargetPlatform(out int platform) < 0)
+        {
+            throw new InvalidOperationException($"Unable to read target platform.");
+        }
+        Platform = (CorDebugPlatform)platform;
 
         // Read types and map to known data types
         if (descriptor.Types is not null)
@@ -229,23 +230,11 @@ internal sealed unsafe class ContractDescriptorTarget : Target
 
     public override int PointerSize => _config.PointerSize;
     public override bool IsLittleEndian => _config.IsLittleEndian;
+    public override CorDebugPlatform Platform { get; }
 
-    public override int GetThreadContext(uint threadId, uint contextFlags, uint contextSize, Span<byte> bufferToFill)
+    public override int GetThreadContext(uint threadId, uint contextFlags, uint contextSize, Span<byte> buffer)
     {
-        if (getThreadContext is null)
-            throw new InvalidOperationException("GetThreadContext is not available");
-
-        int hr = getThreadContext(threadId, contextFlags, contextSize, bufferToFill);
-        return hr;
-    }
-
-    public override int GetPlatform(out CorDebugPlatform platform)
-    {
-        if (getTargetPlatform is null)
-            throw new InvalidOperationException("GetTargetPlatform is not available");
-        int hr = getTargetPlatform(out int platformInt);
-        platform = (CorDebugPlatform)platformInt;
-        return hr;
+        return _reader.GetThreadContext(threadId, contextFlags, contextSize, buffer);
     }
 
     /// <summary>
@@ -561,7 +550,10 @@ internal sealed unsafe class ContractDescriptorTarget : Target
         }
     }
 
-    private readonly struct Reader(ReadFromTargetDelegate readFromTarget)
+    private readonly struct Reader(
+        ReadFromTargetDelegate readFromTarget,
+        GetTargetThreadContextDelegate getThreadContext,
+        GetTargetPlatformDelegate getTargetPlatform)
     {
         public int ReadFromTarget(ulong address, Span<byte> buffer)
         {
@@ -570,5 +562,15 @@ internal sealed unsafe class ContractDescriptorTarget : Target
 
         public int ReadFromTarget(ulong address, byte* buffer, uint bytesToRead)
             => readFromTarget(address, new Span<byte>(buffer, checked((int)bytesToRead)));
+
+        public int GetTargetPlatform(out int platform)
+        {
+            return getTargetPlatform(out platform);
+        }
+
+        public int GetThreadContext(uint threadId, uint contextFlags, uint contextSize, Span<byte> buffer)
+        {
+            return getThreadContext(threadId, contextFlags, contextSize, buffer);
+        }
     }
 }
