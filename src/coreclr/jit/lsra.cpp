@@ -947,13 +947,16 @@ void LinearScan::setBlockSequence()
     bbVisitedSet = BitVecOps::MakeEmpty(traits);
 
     assert((blockSequence == nullptr) && (bbSeqCount == 0));
-    FlowGraphDfsTree* const dfsTree = compiler->fgComputeDfs</* useProfile */ true>();
+
+    compiler->m_dfsTree             = compiler->fgComputeDfs</* useProfile */ true>();
+    FlowGraphDfsTree* const dfsTree = compiler->m_dfsTree;
     blockSequence                   = new (compiler, CMK_LSRA) BasicBlock*[compiler->fgBBcount];
 
     if (compiler->opts.OptimizationEnabled() && dfsTree->HasCycle())
     {
-        // Ensure loop bodies are compact in the visitation order
-        FlowGraphNaturalLoops* const loops = FlowGraphNaturalLoops::Find(dfsTree);
+        // Ensure loop bodies are compact in the visitation order.
+        compiler->m_loops                  = FlowGraphNaturalLoops::Find(dfsTree);
+        FlowGraphNaturalLoops* const loops = compiler->m_loops;
         unsigned                     index = 0;
 
         auto addToSequence = [this, &index](BasicBlock* block) {
@@ -1308,6 +1311,19 @@ PhaseStatus LinearScan::doLinearScan()
 #endif
 
     compiler->compLSRADone = true;
+
+    // If edge resolution didn't create new blocks,
+    // cache the block sequence so it can be used as an initial layout during block reordering.
+    if (compiler->fgBBcount == bbSeqCount)
+    {
+        compiler->fgBBs = blockSequence;
+    }
+    else
+    {
+        assert(compiler->fgBBcount > bbSeqCount);
+        compiler->fgBBs = nullptr;
+        compiler->fgInvalidateDfsTree();
+    }
 
     return PhaseStatus::MODIFIED_EVERYTHING;
 }

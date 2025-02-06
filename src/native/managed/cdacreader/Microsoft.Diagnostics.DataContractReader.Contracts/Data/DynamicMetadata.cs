@@ -3,7 +3,7 @@
 
 namespace Microsoft.Diagnostics.DataContractReader.Data;
 
-internal class DynamicMetadata : IData<DynamicMetadata>
+internal sealed class DynamicMetadata : IData<DynamicMetadata>
 {
     static DynamicMetadata IData<DynamicMetadata>.Create(Target target, TargetPointer address) => new DynamicMetadata(target, address);
     public DynamicMetadata(Target target, TargetPointer address)

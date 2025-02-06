@@ -82,33 +82,27 @@ namespace System.Linq.Tests
         [Fact]
         public void Repeat_NotEnumerateAfterEnd()
         {
-            using (var repeatEnum = Enumerable.Repeat(1, 1).GetEnumerator())
-            {
-                Assert.True(repeatEnum.MoveNext());
-                Assert.False(repeatEnum.MoveNext());
-                Assert.False(repeatEnum.MoveNext());
-            }
+            using var repeatEnum = Enumerable.Repeat(1, 1).GetEnumerator();
+            Assert.True(repeatEnum.MoveNext());
+            Assert.False(repeatEnum.MoveNext());
+            Assert.False(repeatEnum.MoveNext());
         }
 
         [Fact]
         public void Repeat_EnumerableAndEnumeratorAreSame()
         {
             var repeatEnumerable = Enumerable.Repeat(1, 1);
-            using (var repeatEnumerator = repeatEnumerable.GetEnumerator())
-            {
-                Assert.Same(repeatEnumerable, repeatEnumerator);
-            }
+            using var repeatEnumerator = repeatEnumerable.GetEnumerator();
+            Assert.Same(repeatEnumerable, repeatEnumerator);
         }
 
         [Fact]
         public void Repeat_GetEnumeratorReturnUniqueInstances()
         {
             var repeatEnumerable = Enumerable.Repeat(1, 1);
-            using (var enum1 = repeatEnumerable.GetEnumerator())
-            using (var enum2 = repeatEnumerable.GetEnumerator())
-            {
-                Assert.NotSame(enum1, enum2);
-            }
+            using var enum1 = repeatEnumerable.GetEnumerator();
+            using var enum2 = repeatEnumerable.GetEnumerator();
+            Assert.NotSame(enum1, enum2);
         }
 
         [Fact]
@@ -126,7 +120,7 @@ namespace System.Linq.Tests
         [Fact]
         public void CountOneSingleResult()
         {
-            int[] expected = { -15 };
+            int[] expected = [-15];
 
             Assert.Equal(expected, Enumerable.Repeat(-15, 1));
         }
@@ -134,7 +128,7 @@ namespace System.Linq.Tests
         [Fact]
         public void RepeatArbitraryCorrectResults()
         {
-            int[] expected = { 12, 12, 12, 12, 12, 12, 12, 12 };
+            int[] expected = [12, 12, 12, 12, 12, 12, 12, 12];
 
             Assert.Equal(expected, Enumerable.Repeat(12, 8));
         }
@@ -142,7 +136,7 @@ namespace System.Linq.Tests
         [Fact]
         public void RepeatNull()
         {
-            int?[] expected = { null, null, null, null };
+            int?[] expected = [null, null, null, null];
 
             Assert.Equal(expected, Enumerable.Repeat((int?)null, 4));
         }
@@ -174,10 +168,10 @@ namespace System.Linq.Tests
         [Fact]
         public void TakeCanOnlyBeOne()
         {
-            Assert.Equal(new[] { 1 }, Enumerable.Repeat(1, 10).Take(1));
-            Assert.Equal(new[] { 1 }, Enumerable.Repeat(1, 10).Skip(1).Take(1));
-            Assert.Equal(new[] { 1 }, Enumerable.Repeat(1, 10).Take(3).Skip(2));
-            Assert.Equal(new[] { 1 }, Enumerable.Repeat(1, 10).Take(3).Take(1));
+            Assert.Equal([1], Enumerable.Repeat(1, 10).Take(1));
+            Assert.Equal([1], Enumerable.Repeat(1, 10).Skip(1).Take(1));
+            Assert.Equal([1], Enumerable.Repeat(1, 10).Take(3).Skip(2));
+            Assert.Equal([1], Enumerable.Repeat(1, 10).Take(3).Take(1));
         }
 
         [Fact]
@@ -240,11 +234,11 @@ namespace System.Linq.Tests
             Assert.Equal(42, Enumerable.Repeat("Test", 42).Count());
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsSpeedOptimized))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsLinqSpeedOptimized))]
         public void ICollectionImplementationIsValid()
         {
-            Validate(Enumerable.Repeat(42, 10), new[] { 42, 42, 42, 42, 42, 42, 42, 42, 42, 42 });
-            Validate(Enumerable.Repeat(42, 10).Skip(3).Take(4), new[] { 42, 42, 42, 42 });
+            Validate(Enumerable.Repeat(42, 10), [42, 42, 42, 42, 42, 42, 42, 42, 42, 42]);
+            Validate(Enumerable.Repeat(42, 10).Skip(3).Take(4), [42, 42, 42, 42]);
 
             static void Validate(IEnumerable<int> e, int[] expected)
             {

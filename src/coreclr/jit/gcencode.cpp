@@ -3709,15 +3709,6 @@ public:
         }
     }
 
-    void SetReturnKind(ReturnKind returnKind)
-    {
-        m_gcInfoEncoder->SetReturnKind(returnKind);
-        if (m_doLogging)
-        {
-            printf("Set ReturnKind to %s.\n", ReturnKindToString(returnKind));
-        }
-    }
-
     void SetStackBaseRegister(UINT32 registerNumber)
     {
         m_gcInfoEncoder->SetStackBaseRegister(registerNumber);
@@ -3831,8 +3822,6 @@ void GCInfo::gcInfoBlockHdrSave(GcInfoEncoder* gcInfoEncoder, unsigned methodSiz
     // Can't create tables if we've not saved code.
 
     gcInfoEncoderWithLog->SetCodeLength(methodSize);
-
-    gcInfoEncoderWithLog->SetReturnKind(getReturnKind());
 
     if (compiler->isFramePointerUsed())
     {
@@ -4064,14 +4053,7 @@ void GCInfo::gcMakeRegPtrTable(
 {
     GCENCODER_WITH_LOGGING(gcInfoEncoderWithLog, gcInfoEncoder);
 
-    // TODO: Decide on whether we should enable this optimization for all
-    // targets: https://github.com/dotnet/runtime/issues/103917
-#ifdef TARGET_XARCH
-    const bool noTrackedGCSlots =
-        compiler->opts.MinOpts() && !compiler->opts.jitFlags->IsSet(JitFlags::JIT_FLAG_PREJIT);
-#else
-    const bool noTrackedGCSlots = false;
-#endif
+    const bool noTrackedGCSlots = compiler->opts.MinOpts();
 
     if (mode == MAKE_REG_PTR_MODE_ASSIGN_SLOTS)
     {
