@@ -7,20 +7,19 @@
 
 #include <palsuite.h>
 
-const char *const SessionPrefix = "Local\\";
-const char *const GlobalPrefix = "Global\\";
+const char CurrentSessionOnlyPrefix[] = "Local\\";
+const char AllSessionsPrefix[] = "Global\\";
 
-const char *const NamePrefix = "paltest_namedmutex_test1_";
-const char *const TempNamePrefix = "paltest_namedmutex_test1_temp_";
-const char *const InvalidNamePrefix0 = "paltest\\namedmutex_";
-const char *const InvalidNamePrefix1 = "paltest/namedmutex_";
-const char *const ParentEventNamePrefix0 = "paltest_namedmutex_test1_pe0_";
-const char *const ParentEventNamePrefix1 = "paltest_namedmutex_test1_pe1_";
-const char *const ChildEventNamePrefix0 = "paltest_namedmutex_test1_ce0_";
-const char *const ChildEventNamePrefix1 = "paltest_namedmutex_test1_ce1_";
-const char *const ChildRunningEventNamePrefix = "paltest_namedmutex_test1_cr_";
-
-const char *const GlobalShmFilePathPrefix = "/tmp/.dotnet/shm/global/";
+const char NamePrefix[] = "paltest_namedmutex_test1_";
+const char TempNamePrefix[] = "paltest_namedmutex_test1_temp_";
+const char HeaderMismatchTestsNamePrefix[] = "paltest_namedmutex_test1_headermismatchtests_";
+const char InvalidNamePrefix0[] = "paltest\\namedmutex_";
+const char InvalidNamePrefix1[] = "paltest/namedmutex_";
+const char ParentEventNamePrefix0[] = "paltest_namedmutex_test1_pe0_";
+const char ParentEventNamePrefix1[] = "paltest_namedmutex_test1_pe1_";
+const char ChildEventNamePrefix0[] = "paltest_namedmutex_test1_ce0_";
+const char ChildEventNamePrefix1[] = "paltest_namedmutex_test1_ce1_";
+const char ChildRunningEventNamePrefix[] = "paltest_namedmutex_test1_cr_";
 
 #define MaxPathSize 200
 const DWORD PollLoopSleepMilliseconds = 100;
@@ -28,6 +27,8 @@ const DWORD FailTimeoutMilliseconds = 30000;
 DWORD g_expectedTimeoutMilliseconds = 500;
 
 bool g_isParent = true;
+bool g_currentUserOnly = true;
+bool g_currentSessionOnly = true;
 bool g_isStress = false;
 #define MaxProcessPathSize 4096
 char g_processPath[MaxProcessPathSize], g_processCommandLinePath[MaxProcessPathSize];
@@ -41,13 +42,15 @@ extern int (*test_sscanf)(const char *str, const char *format, ...);
 extern int(*test_close)(int fd);
 extern int (*test_unlink)(const char *pathname);
 extern unsigned int test_getpid();
+extern unsigned int test_getsid();
+extern unsigned int test_geteuid();
 extern int test_kill(unsigned int pid);
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Test helpers
 
 extern bool TestFileExists(const char *path);
-extern bool WriteHeaderInfo(const char *path, char sharedMemoryType, char version, int *fdRef);
+extern bool WriteHeaderInfo(const char *path, bool currentUserOnly, char sharedMemoryType, char version, int *fdRef);
 
 #define TestAssert(expression) \
     do \
@@ -56,56 +59,76 @@ extern bool WriteHeaderInfo(const char *path, char sharedMemoryType, char versio
         { \
             if (!g_isParent) \
             { \
-                Trace("'paltest_namedmutex_test1' child process failed at line %u. Expression: " #expression "\n", __LINE__); \
+                Trace( \
+                    "'paltest_namedmutex_test1' child process failed at line %u. CurrentUserOnly: %d, CurrentSessionOnly: %d. Expression: " #expression "\n", \
+                    __LINE__, \
+                    (int)g_currentUserOnly, \
+                    (int)g_currentSessionOnly); \
             } \
             else \
             { \
-                Trace("'paltest_namedmutex_test1' failed at line %u. Expression: " #expression "\n", __LINE__); \
+                Trace( \
+                    "'paltest_namedmutex_test1' failed at line %u. CurrentUserOnly: %d, CurrentSessionOnly: %d. Expression: " #expression "\n", \
+                    __LINE__, \
+                    (int)g_currentUserOnly, \
+                    (int)g_currentSessionOnly); \
             } \
             fflush(stdout); \
             return false; \
         } \
     } while(false)
 
-char *BuildName(const char *testName, char *buffer, const char *prefix0, const char *prefix1 = nullptr)
+char *BuildName(const char *testName, char *buffer, const char *namePrefix = nullptr)
 {
     size_t nameLength = 0;
-    const char *prefixes[] = {prefix0, prefix1};
-    for (int i = 0; i < 2; ++i)
+    if (!g_currentSessionOnly)
     {
-        const char *prefix = prefixes[i];
-        if (prefix == nullptr)
-        {
-            break;
-        }
-        test_strcpy(&buffer[nameLength], prefix);
-        nameLength += test_strlen(prefix);
+        test_strcpy(&buffer[nameLength], AllSessionsPrefix);
+        nameLength += STRING_LENGTH(AllSessionsPrefix);
+    }
+
+    if (namePrefix != nullptr)
+    {
+        nameLength += test_snprintf(&buffer[nameLength], MaxPathSize - nameLength, "%s", namePrefix);
     }
 
     if (g_isStress)
     {
         // Append the test name so that tests can run in parallel
-        nameLength += test_snprintf(&buffer[nameLength], MaxPathSize - nameLength, "%s", testName);
-        buffer[nameLength++] = '_';
+        nameLength += test_snprintf(&buffer[nameLength], MaxPathSize - nameLength, "%s_", testName);
     }
 
     nameLength += test_snprintf(&buffer[nameLength], MaxPathSize - nameLength, "%u", g_parentPid);
     return buffer;
 }
 
-char *BuildGlobalShmFilePath(const char *testName, char *buffer, const char *namePrefix)
+char *BuildShmFilePath(const char *testName, char *buffer, const char *namePrefix)
 {
     size_t pathLength = 0;
-    test_strcpy(&buffer[pathLength], GlobalShmFilePathPrefix);
-    pathLength += test_strlen(GlobalShmFilePathPrefix);
-    test_strcpy(&buffer[pathLength], namePrefix);
-    pathLength += test_strlen(namePrefix);
+    if (g_currentUserOnly)
+    {
+        pathLength += test_snprintf(&buffer[pathLength], MaxPathSize - pathLength, "/tmp/.dotnet-uid%u/shm/", test_geteuid());
+    }
+    else
+    {
+        pathLength += test_snprintf(&buffer[pathLength], MaxPathSize - pathLength, "%s", "/tmp/.dotnet/shm/");
+    }
+
+    if (g_currentSessionOnly)
+    {
+        pathLength += test_snprintf(&buffer[pathLength], MaxPathSize - pathLength, "session%u/", test_getsid());
+    }
+    else
+    {
+        pathLength += test_snprintf(&buffer[pathLength], MaxPathSize - pathLength, "%s", "global/");
+    }
+
+    pathLength += test_snprintf(&buffer[pathLength], MaxPathSize - pathLength, "%s", namePrefix);
 
     if (g_isStress)
     {
         // Append the test name so that tests can run in parallel
-        pathLength += test_snprintf(&buffer[pathLength], MaxPathSize - pathLength, "%s", testName);
-        buffer[pathLength++] = '_';
+        pathLength += test_snprintf(&buffer[pathLength], MaxPathSize - pathLength, "%s_", testName);
     }
 
     pathLength += test_snprintf(&buffer[pathLength], MaxPathSize - pathLength, "%u", g_parentPid);
@@ -175,37 +198,33 @@ void TestCreateMutex(AutoCloseMutexHandle &m, const char *name, bool initiallyOw
 {
     m.Close();
     LPWSTR nameW = convert(name);
-    m = CreateMutex(nullptr, initiallyOwned, nameW);
+    m = PAL_CreateMutexW(initiallyOwned, nameW, g_currentUserOnly, nullptr, 0);
     free(nameW);
 }
 
 HANDLE TestOpenMutex(const char *name)
 {
-    return OpenMutexA(SYNCHRONIZE, false, name);
+    LPWSTR nameW = convert(name);
+    HANDLE h = PAL_OpenMutexW(nameW, g_currentUserOnly, nullptr, 0);
+    free(nameW);
+    return h;
 }
 
 bool StartProcess(const char *funcName)
 {
-    // Command line format: <processPath> <parentPid> <testFunctionName> [stress]
-
-    size_t processCommandLinePathLength = 0;
-    g_processCommandLinePath[processCommandLinePathLength++] = '\"';
-    test_strcpy(&g_processCommandLinePath[processCommandLinePathLength], g_processPath);
-    processCommandLinePathLength += test_strlen(g_processPath);
-    g_processCommandLinePath[processCommandLinePathLength++] = '\"';
-    g_processCommandLinePath[processCommandLinePathLength++] = ' ';
-    const char* testname = "threading/NamedMutex/test1/paltest_namedmutex_test1";
-    processCommandLinePathLength += test_snprintf(&g_processCommandLinePath[processCommandLinePathLength], MaxProcessPathSize - processCommandLinePathLength, "%s ", testname);
-    processCommandLinePathLength += test_snprintf(&g_processCommandLinePath[processCommandLinePathLength], MaxProcessPathSize - processCommandLinePathLength, "%u", g_parentPid);
-    g_processCommandLinePath[processCommandLinePathLength++] = ' ';
-    test_strcpy(&g_processCommandLinePath[processCommandLinePathLength], funcName);
-    processCommandLinePathLength += test_strlen(funcName);
-
-    if (g_isStress)
-    {
-        test_strcpy(&g_processCommandLinePath[processCommandLinePathLength], " stress");
-        processCommandLinePathLength += STRING_LENGTH("stress");
-    }
+    // Command line format:
+    //   <processPath> <testName> <parentPid> <testFunctionName> <0|1> /* currentUserOnly */ <0|1> /* currentSessionOnly */ [stress]
+    test_snprintf(
+        g_processCommandLinePath,
+        MaxProcessPathSize,
+        "\"%s\" %s %u %s %u %u%s",
+        g_processPath,
+        "threading/NamedMutex/test1/paltest_namedmutex_test1",
+        g_parentPid,
+        funcName,
+        g_currentUserOnly ? 1 : 0,
+        g_currentSessionOnly ? 1 : 0,
+        g_isStress ? " stress" : "");
 
     STARTUPINFO si;
     memset(&si, 0, sizeof(si));
@@ -247,7 +266,7 @@ bool StartThread(LPTHREAD_START_ROUTINE func, void *arg = nullptr, HANDLE *threa
 bool WaitForMutexToBeCreated(const char *testName, AutoCloseMutexHandle &m, const char *eventNamePrefix)
 {
     char eventName[MaxPathSize];
-    BuildName(testName, eventName, GlobalPrefix, eventNamePrefix);
+    BuildName(testName, eventName, eventNamePrefix);
     DWORD startTime = GetTickCount();
     while (true)
     {
@@ -276,7 +295,7 @@ bool WaitForMutexToBeCreated(const char *testName, AutoCloseMutexHandle &m, cons
 bool AcquireChildRunningEvent(const char *testName, AutoCloseMutexHandle &childRunningEvent)
 {
     char name[MaxPathSize];
-    TestCreateMutex(childRunningEvent, BuildName(testName, name, GlobalPrefix, ChildRunningEventNamePrefix));
+    TestCreateMutex(childRunningEvent, BuildName(testName, name, ChildRunningEventNamePrefix));
     TestAssert(WaitForSingleObject(childRunningEvent, FailTimeoutMilliseconds) == WAIT_OBJECT_0);
     return true;
 }
@@ -289,7 +308,7 @@ bool InitializeParent(const char *testName, AutoCloseMutexHandle parentEvents[2]
     {
         TestCreateMutex(
             parentEvents[i],
-            BuildName(testName, name, GlobalPrefix, i == 0 ? ParentEventNamePrefix0 : ParentEventNamePrefix1),
+            BuildName(testName, name, i == 0 ? ParentEventNamePrefix0 : ParentEventNamePrefix1),
             true);
         TestAssert(parentEvents[i] != nullptr);
         TestAssert(GetLastError() != ERROR_ALREADY_EXISTS);
@@ -332,7 +351,7 @@ bool InitializeChild(
     {
         TestCreateMutex(
             childEvents[i],
-            BuildName(testName, name, GlobalPrefix, i == 0 ? ChildEventNamePrefix0 : ChildEventNamePrefix1),
+            BuildName(testName, name, i == 0 ? ChildEventNamePrefix0 : ChildEventNamePrefix1),
             true);
         TestAssert(childEvents[i] != nullptr);
         TestAssert(GetLastError() != ERROR_ALREADY_EXISTS);
@@ -400,17 +419,24 @@ bool NameTests()
     TestAssert(m != nullptr);
 
     // Normal name
-    TestCreateMutex(m, BuildName(testName, name, NamePrefix));
+    BuildName(testName, name, NamePrefix);
+    TestCreateMutex(m, name);
     TestAssert(m != nullptr);
-    TestAssert(AutoCloseMutexHandle(TestOpenMutex(BuildName(testName, name, NamePrefix))) != nullptr);
-    TestCreateMutex(m, BuildName(testName, name, SessionPrefix, NamePrefix));
-    TestAssert(m != nullptr);
-    TestAssert(AutoCloseMutexHandle(TestOpenMutex(BuildName(testName, name, SessionPrefix, NamePrefix))) != nullptr);
-    TestCreateMutex(m, BuildName(testName, name, GlobalPrefix, NamePrefix));
-    TestAssert(m != nullptr);
-    TestAssert(AutoCloseMutexHandle(TestOpenMutex(BuildName(testName, name, GlobalPrefix, NamePrefix))) != nullptr);
+    TestAssert(AutoCloseMutexHandle(TestOpenMutex(name)) != nullptr);
+    if (g_currentSessionOnly)
+    {
+        // When creating or opening a mutex scoped to the current session, the prefix ("Local\") is optional
+        char nameWithExplicitPrefix[MaxPathSize];
+        test_strcpy(nameWithExplicitPrefix, CurrentSessionOnlyPrefix);
+        BuildName(testName, &nameWithExplicitPrefix[STRING_LENGTH(CurrentSessionOnlyPrefix)], NamePrefix);
+        TestAssert(AutoCloseMutexHandle(TestOpenMutex(nameWithExplicitPrefix)) != nullptr);
+        TestCreateMutex(m, nameWithExplicitPrefix);
+        TestAssert(m != nullptr);
+        TestAssert(AutoCloseMutexHandle(TestOpenMutex(name)) != nullptr);
+    }
 
-    // Name too long. The maximum allowed length depends on the file system, so we're not checking for that.
+    // Name too long. The maximum allowed path length depends on the file system, so we're not checking for that.
+    if(g_currentSessionOnly)
     {
         char name[257];
         memset(name, 'a', STRING_LENGTH(name));
@@ -420,36 +446,49 @@ bool NameTests()
         TestAssert(GetLastError() == ERROR_FILENAME_EXCED_RANGE);
         TestAssert(AutoCloseMutexHandle(TestOpenMutex(name)) == nullptr);
         TestAssert(GetLastError() == ERROR_FILENAME_EXCED_RANGE);
+
+        name[STRING_LENGTH(name) - 1] = '\0';
+        TestCreateMutex(m, name);
+        TestAssert(m != nullptr);
+    }
+    else
+    {
+        char name[STRING_LENGTH(AllSessionsPrefix) + 257];
+        test_strcpy(name, AllSessionsPrefix);
+        memset(&name[STRING_LENGTH(AllSessionsPrefix)], 'a', STRING_LENGTH(name) - STRING_LENGTH(AllSessionsPrefix));
+        name[STRING_LENGTH(name)] = '\0';
+        TestCreateMutex(m, name);
+        TestAssert(m == nullptr);
+        TestAssert(GetLastError() == ERROR_FILENAME_EXCED_RANGE);
+        TestAssert(AutoCloseMutexHandle(TestOpenMutex(name)) == nullptr);
+        TestAssert(GetLastError() == ERROR_FILENAME_EXCED_RANGE);
+
+        name[STRING_LENGTH(name) - 1] = '\0';
+        TestCreateMutex(m, name);
+        TestAssert(m != nullptr);
     }
 
     // Invalid characters in name
-    TestCreateMutex(m, BuildName(testName, name, InvalidNamePrefix0));
+    BuildName(testName, name, InvalidNamePrefix0);
+    TestCreateMutex(m, name);
     TestAssert(m == nullptr);
     TestAssert(GetLastError() == ERROR_INVALID_NAME);
-    TestAssert(AutoCloseMutexHandle(TestOpenMutex(BuildName(testName, name, InvalidNamePrefix0))) == nullptr);
+    TestAssert(AutoCloseMutexHandle(TestOpenMutex(name)) == nullptr);
     TestAssert(GetLastError() == ERROR_INVALID_NAME);
-    TestCreateMutex(m, BuildName(testName, name, InvalidNamePrefix1));
+    BuildName(testName, name, InvalidNamePrefix1);
+    TestCreateMutex(m, name);
     TestAssert(m == nullptr);
     TestAssert(GetLastError() == ERROR_INVALID_NAME);
-    TestAssert(AutoCloseMutexHandle(TestOpenMutex(BuildName(testName, name, InvalidNamePrefix1))) == nullptr);
-    TestAssert(GetLastError() == ERROR_INVALID_NAME);
-    TestCreateMutex(m, BuildName(testName, name, SessionPrefix, InvalidNamePrefix0));
-    TestAssert(m == nullptr);
-    TestAssert(GetLastError() == ERROR_INVALID_NAME);
-    TestAssert(AutoCloseMutexHandle(TestOpenMutex(BuildName(testName, name, SessionPrefix, InvalidNamePrefix0))) == nullptr);
-    TestAssert(GetLastError() == ERROR_INVALID_NAME);
-    TestCreateMutex(m, BuildName(testName, name, GlobalPrefix, InvalidNamePrefix1));
-    TestAssert(m == nullptr);
-    TestAssert(GetLastError() == ERROR_INVALID_NAME);
-    TestAssert(AutoCloseMutexHandle(TestOpenMutex(BuildName(testName, name, GlobalPrefix, InvalidNamePrefix1))) == nullptr);
+    TestAssert(AutoCloseMutexHandle(TestOpenMutex(name)) == nullptr);
     TestAssert(GetLastError() == ERROR_INVALID_NAME);
 
     // Creating a second reference to the same named mutex yields an error indicating that it was opened, not created
     {
-        TestCreateMutex(m, BuildName(testName, name, NamePrefix));
+        BuildName(testName, name, NamePrefix);
+        TestCreateMutex(m, name);
         TestAssert(m != nullptr);
         AutoCloseMutexHandle m2;
-        TestCreateMutex(m2, BuildName(testName, name, NamePrefix));
+        TestCreateMutex(m2, name);
         TestAssert(m2 != nullptr);
         TestAssert(GetLastError() == ERROR_ALREADY_EXISTS);
     }
@@ -462,28 +501,32 @@ bool HeaderMismatchTests()
     const char *testName = "HeaderMismatchTests";
 
     AutoCloseMutexHandle m, m2;
-    char name[MaxPathSize];
+    char name[MaxPathSize], path[MaxPathSize];
     int fd;
 
     // Create and hold onto a mutex during this test to create the shared memory directory
-    TestCreateMutex(m2, BuildName(testName, name, GlobalPrefix, TempNamePrefix));
+    TestCreateMutex(m2, BuildName(testName, name, TempNamePrefix));
     TestAssert(m2 != nullptr);
 
+    // Init name and path for the remaining tests
+    BuildName(testName, name, HeaderMismatchTestsNamePrefix);
+    BuildShmFilePath(testName, path, HeaderMismatchTestsNamePrefix);
+
     // Unknown shared memory type
-    TestAssert(WriteHeaderInfo(BuildGlobalShmFilePath(testName, name, NamePrefix), -1, 1, &fd));
-    TestCreateMutex(m, BuildName(testName, name, GlobalPrefix, NamePrefix));
+    TestAssert(WriteHeaderInfo(path, g_currentUserOnly, -1, 1, &fd));
+    TestCreateMutex(m, name);
     TestAssert(m == nullptr);
     TestAssert(GetLastError() == ERROR_INVALID_HANDLE);
     TestAssert(test_close(fd) == 0);
-    TestAssert(test_unlink(BuildGlobalShmFilePath(testName, name, NamePrefix)) == 0);
+    TestAssert(test_unlink(path) == 0);
 
     // Mismatched version
-    TestAssert(WriteHeaderInfo(BuildGlobalShmFilePath(testName, name, NamePrefix), 0, -1, &fd));
-    TestCreateMutex(m, BuildName(testName, name, GlobalPrefix, NamePrefix));
+    TestAssert(WriteHeaderInfo(path, g_currentUserOnly, 0, -1, &fd));
+    TestCreateMutex(m, name);
     TestAssert(m == nullptr);
     TestAssert(GetLastError() == ERROR_INVALID_HANDLE);
     TestAssert(test_close(fd) == 0);
-    TestAssert(test_unlink(BuildGlobalShmFilePath(testName, name, NamePrefix)) == 0);
+    TestAssert(test_unlink(path) == 0);
 
     return true;
 }
@@ -498,7 +541,7 @@ bool MutualExclusionTests_Parent()
     char name[MaxPathSize];
     AutoCloseMutexHandle m;
 
-    TestCreateMutex(m, BuildName(testName, name, GlobalPrefix, NamePrefix));
+    TestCreateMutex(m, BuildName(testName, name, NamePrefix));
     TestAssert(m != nullptr);
 
     // Recursive locking with various timeouts
@@ -539,7 +582,7 @@ DWORD PALAPI MutualExclusionTests_Child(void *arg = nullptr)
         char name[MaxPathSize];
         AutoCloseMutexHandle m;
 
-        TestCreateMutex(m, BuildName(testName, name, GlobalPrefix, NamePrefix));
+        TestCreateMutex(m, BuildName(testName, name, NamePrefix));
         TestAssert(m != nullptr);
         TestAssert(WaitForSingleObject(m, 0) == WAIT_OBJECT_0); // lock the mutex
         YieldToParent(parentEvents, childEvents, ei); // parent attempts to lock/release, and fails
@@ -611,23 +654,23 @@ bool LifetimeTests_Parent()
     char name[MaxPathSize];
     AutoCloseMutexHandle m;
 
-    TestCreateMutex(m, BuildName(testName, name, GlobalPrefix, NamePrefix)); // create first reference to mutex
+    TestCreateMutex(m, BuildName(testName, name, NamePrefix)); // create first reference to mutex
     TestAssert(m != nullptr);
-    TestAssert(TestFileExists(BuildGlobalShmFilePath(testName, name, NamePrefix)));
+    TestAssert(TestFileExists(BuildShmFilePath(testName, name, NamePrefix)));
     TestAssert(YieldToChild(parentEvents, childEvents, ei)); // child creates second reference to mutex using CreateMutex
     m.Close(); // close first reference
-    TestAssert(TestFileExists(BuildGlobalShmFilePath(testName, name, NamePrefix)));
+    TestAssert(TestFileExists(BuildShmFilePath(testName, name, NamePrefix)));
     TestAssert(YieldToChild(parentEvents, childEvents, ei)); // child closes second reference
-    TestAssert(!TestFileExists(BuildGlobalShmFilePath(testName, name, NamePrefix)));
+    TestAssert(!TestFileExists(BuildShmFilePath(testName, name, NamePrefix)));
 
-    TestCreateMutex(m, BuildName(testName, name, GlobalPrefix, NamePrefix)); // create first reference to mutex
+    TestCreateMutex(m, BuildName(testName, name, NamePrefix)); // create first reference to mutex
     TestAssert(m != nullptr);
-    TestAssert(TestFileExists(BuildGlobalShmFilePath(testName, name, NamePrefix)));
+    TestAssert(TestFileExists(BuildShmFilePath(testName, name, NamePrefix)));
     TestAssert(YieldToChild(parentEvents, childEvents, ei)); // child creates second reference to mutex using OpenMutex
     m.Close(); // close first reference
-    TestAssert(TestFileExists(BuildGlobalShmFilePath(testName, name, NamePrefix)));
+    TestAssert(TestFileExists(BuildShmFilePath(testName, name, NamePrefix)));
     TestAssert(YieldToChild(parentEvents, childEvents, ei)); // child closes second reference
-    TestAssert(!TestFileExists(BuildGlobalShmFilePath(testName, name, NamePrefix)));
+    TestAssert(!TestFileExists(BuildShmFilePath(testName, name, NamePrefix)));
 
     TestAssert(UninitializeParent(testName, parentEvents));
     return true;
@@ -646,13 +689,13 @@ DWORD PALAPI LifetimeTests_Child(void *arg = nullptr)
         AutoCloseMutexHandle m;
 
         // ... parent creates first reference to mutex
-        TestCreateMutex(m, BuildName(testName, name, GlobalPrefix, NamePrefix)); // create second reference to mutex using CreateMutex
+        TestCreateMutex(m, BuildName(testName, name, NamePrefix)); // create second reference to mutex using CreateMutex
         TestAssert(m != nullptr);
         TestAssert(YieldToParent(parentEvents, childEvents, ei)); // parent closes first reference
         m.Close(); // close second reference
 
         TestAssert(YieldToParent(parentEvents, childEvents, ei)); // parent verifies, and creates first reference to mutex again
-        m = TestOpenMutex(BuildName(testName, name, GlobalPrefix, NamePrefix)); // create second reference to mutex using OpenMutex
+        m = TestOpenMutex(BuildName(testName, name, NamePrefix)); // create second reference to mutex using OpenMutex
         TestAssert(m != nullptr);
         TestAssert(YieldToParent(parentEvents, childEvents, ei)); // parent closes first reference
         m.Close(); // close second reference
@@ -673,11 +716,11 @@ bool LifetimeTests()
         char name[MaxPathSize];
 
         // Shm file should be created and deleted
-        TestCreateMutex(m, BuildName(testName, name, GlobalPrefix, NamePrefix));
+        TestCreateMutex(m, BuildName(testName, name, NamePrefix));
         TestAssert(m != nullptr);
-        TestAssert(TestFileExists(BuildGlobalShmFilePath(testName, name, NamePrefix)));
+        TestAssert(TestFileExists(BuildShmFilePath(testName, name, NamePrefix)));
         m.Close();
-        TestAssert(!TestFileExists(BuildGlobalShmFilePath(testName, name, NamePrefix)));
+        TestAssert(!TestFileExists(BuildShmFilePath(testName, name, NamePrefix)));
     }
 
     // Shm file should not be deleted until last reference is released
@@ -702,7 +745,7 @@ bool AbandonTests_Parent()
         TestAssert(InitializeParent(testName, parentEvents, childEvents));
         int ei = 0;
 
-        TestCreateMutex(m, BuildName(testName, name, GlobalPrefix, NamePrefix));
+        TestCreateMutex(m, BuildName(testName, name, NamePrefix));
         TestAssert(m != nullptr);
         TestAssert(YieldToChild(parentEvents, childEvents, ei)); // child locks mutex
         TestAssert(parentEvents[0].Release());
@@ -746,13 +789,13 @@ bool AbandonTests_Parent()
     while (true)
     {
         m.Close();
-        if (!TestFileExists(BuildGlobalShmFilePath(testName, name, NamePrefix)))
+        if (!TestFileExists(BuildShmFilePath(testName, name, NamePrefix)))
         {
             break;
         }
 
         TestAssert(GetTickCount() - startTime < FailTimeoutMilliseconds);
-        m = TestOpenMutex(BuildName(testName, name, GlobalPrefix, NamePrefix));
+        m = TestOpenMutex(BuildName(testName, name, NamePrefix));
     }
 
     return true;
@@ -771,7 +814,7 @@ DWORD PALAPI AbandonTests_Child_GracefulExit_Close(void *arg = nullptr)
         AutoCloseMutexHandle m;
 
         // ... parent waits for child to lock mutex
-        TestCreateMutex(m, BuildName(testName, name, GlobalPrefix, NamePrefix));
+        TestCreateMutex(m, BuildName(testName, name, NamePrefix));
         TestAssert(m != nullptr);
         TestAssert(WaitForSingleObject(m, 0) == WAIT_OBJECT_0);
         TestAssert(YieldToParent(parentEvents, childEvents, ei)); // parent waits on mutex
@@ -800,7 +843,7 @@ DWORD AbandonTests_Child_GracefulExit_NoClose(void *arg = nullptr)
         AutoCloseMutexHandle m;
 
         // ... parent waits for child to lock mutex
-        TestCreateMutex(m, BuildName(testName, name, GlobalPrefix, NamePrefix));
+        TestCreateMutex(m, BuildName(testName, name, NamePrefix));
         TestAssert(m != nullptr);
         TestAssert(WaitForSingleObject(m, 0) == WAIT_OBJECT_0);
         TestAssert(YieldToParent(parentEvents, childEvents, ei)); // parent waits on mutex
@@ -829,7 +872,7 @@ DWORD AbandonTests_Child_AbruptExit(void *arg = nullptr)
             AutoCloseMutexHandle m;
 
             // ... parent waits for child to lock mutex
-            TestCreateMutex(m, BuildName(testName, name, GlobalPrefix, NamePrefix));
+            TestCreateMutex(m, BuildName(testName, name, NamePrefix));
             TestAssert(m != nullptr);
             TestAssert(WaitForSingleObject(m, 0) == WAIT_OBJECT_0);
             TestAssert(YieldToParent(parentEvents, childEvents, ei)); // parent waits on mutex
@@ -859,7 +902,7 @@ DWORD AbandonTests_Child_FileLocksNotInherited_Parent_AbruptExit(void *arg = nul
         AutoCloseMutexHandle m;
 
         // ... root parent waits for child to lock mutex
-        TestCreateMutex(m, BuildName(testName, name, GlobalPrefix, NamePrefix));
+        TestCreateMutex(m, BuildName(testName, name, NamePrefix));
         TestAssert(m != nullptr);
         TestAssert(WaitForSingleObject(m, 0) == WAIT_OBJECT_0);
 
@@ -893,7 +936,7 @@ DWORD AbandonTests_Child_FileLocksNotInherited_Child_AbruptExit(void *arg = null
         AutoCloseMutexHandle m;
 
         // ... immediate parent expects child to wait on mutex
-        TestCreateMutex(m, BuildName(testName, name, GlobalPrefix, NamePrefix));
+        TestCreateMutex(m, BuildName(testName, name, NamePrefix));
         TestAssert(m != nullptr);
         TestAssert(WaitForSingleObject(m, FailTimeoutMilliseconds) == WAIT_ABANDONED_0); // attempt to lock and see abandoned mutex
         TestAssert(YieldToParent(parentEvents, childEvents, ei)); // root parent waits on mutex
@@ -918,7 +961,7 @@ DWORD PALAPI AbandonTests_Child_TryLock(void *arg)
         AutoCloseMutexHandle m;
 
         // ... parent waits for child to lock mutex
-        TestCreateMutex(m, BuildName(testName, name, GlobalPrefix, NamePrefix));
+        TestCreateMutex(m, BuildName(testName, name, NamePrefix));
         TestAssert(m != nullptr);
         TestAssert(WaitForSingleObject(m, 0) == WAIT_TIMEOUT); // try to lock the mutex while the parent holds the lock
         TestAssert(WaitForSingleObject(m, g_expectedTimeoutMilliseconds) == WAIT_TIMEOUT);
@@ -960,7 +1003,7 @@ bool LockAndCloseWithoutThreadExitTests_Parent_CloseOnSameThread()
     char name[MaxPathSize];
     AutoCloseMutexHandle m;
 
-    TestCreateMutex(m, BuildName(testName, name, GlobalPrefix, NamePrefix));
+    TestCreateMutex(m, BuildName(testName, name, NamePrefix));
     TestAssert(m != nullptr);
 
     TestAssert(YieldToChild(parentEvents, childEvents, ei)); // child locks mutex and closes second reference to mutex on lock-owner thread
@@ -971,9 +1014,9 @@ bool LockAndCloseWithoutThreadExitTests_Parent_CloseOnSameThread()
     TestAssert(m.Release());
 
     TestAssert(YieldToChild(parentEvents, childEvents, ei)); // child exits
-    TestAssert(TestFileExists(BuildGlobalShmFilePath(testName, name, NamePrefix)));
+    TestAssert(TestFileExists(BuildShmFilePath(testName, name, NamePrefix)));
     m.Close();
-    TestAssert(!TestFileExists(BuildGlobalShmFilePath(testName, name, NamePrefix)));
+    TestAssert(!TestFileExists(BuildShmFilePath(testName, name, NamePrefix)));
 
     TestAssert(UninitializeParent(testName, parentEvents));
     return true;
@@ -991,10 +1034,10 @@ DWORD PALAPI LockAndCloseWithoutThreadExitTests_Child_CloseOnSameThread(void *ar
     char name[MaxPathSize];
 
     // ... parent waits for child to lock and close second reference to mutex
-    AutoCloseMutexHandle m(TestOpenMutex(BuildName(testName, name, GlobalPrefix, NamePrefix)));
+    AutoCloseMutexHandle m(TestOpenMutex(BuildName(testName, name, NamePrefix)));
     TestAssert(m != nullptr);
     TestAssert(WaitForSingleObject(m, 0) == WAIT_OBJECT_0);
-    TestAssert(AutoCloseMutexHandle(TestOpenMutex(BuildName(testName, name, GlobalPrefix, NamePrefix))) != nullptr);
+    TestAssert(AutoCloseMutexHandle(TestOpenMutex(BuildName(testName, name, NamePrefix))) != nullptr);
     TestAssert(YieldToParent(parentEvents, childEvents, ei)); // parent waits for child to close last reference to mutex
 
     m.Close(); // close mutex on lock-owner thread without releasing lock
@@ -1016,7 +1059,7 @@ bool LockAndCloseWithoutThreadExitTests_Parent_CloseOnDifferentThread()
     char name[MaxPathSize];
     AutoCloseMutexHandle m;
 
-    TestCreateMutex(m, BuildName(testName, name, GlobalPrefix, NamePrefix));
+    TestCreateMutex(m, BuildName(testName, name, NamePrefix));
     TestAssert(m != nullptr);
 
     TestAssert(YieldToChild(parentEvents, childEvents, ei)); // child locks mutex and closes second reference to mutex on lock-owner thread
@@ -1025,7 +1068,7 @@ bool LockAndCloseWithoutThreadExitTests_Parent_CloseOnDifferentThread()
     TestAssert(YieldToChild(parentEvents, childEvents, ei)); // child closes last reference to mutex on non-lock-owner thread
     TestAssert(WaitForSingleObject(m, 0) == WAIT_TIMEOUT); // attempt to lock and fail
     m.Close();
-    m = TestOpenMutex(BuildName(testName, name, GlobalPrefix, NamePrefix));
+    m = TestOpenMutex(BuildName(testName, name, NamePrefix));
     TestAssert(m != nullptr); // child has implicit reference to mutex
 
     TestAssert(YieldToChild(parentEvents, childEvents, ei)); // child closes new reference to mutex on lock-owner thread
@@ -1033,9 +1076,9 @@ bool LockAndCloseWithoutThreadExitTests_Parent_CloseOnDifferentThread()
     TestAssert(m.Release());
 
     TestAssert(YieldToChild(parentEvents, childEvents, ei)); // child exits
-    TestAssert(TestFileExists(BuildGlobalShmFilePath(testName, name, NamePrefix)));
+    TestAssert(TestFileExists(BuildShmFilePath(testName, name, NamePrefix)));
     m.Close();
-    TestAssert(!TestFileExists(BuildGlobalShmFilePath(testName, name, NamePrefix)));
+    TestAssert(!TestFileExists(BuildShmFilePath(testName, name, NamePrefix)));
 
     TestAssert(UninitializeParent(testName, parentEvents));
     return true;
@@ -1053,10 +1096,10 @@ DWORD PALAPI LockAndCloseWithoutThreadExitTests_Child_CloseOnDifferentThread(voi
     char name[MaxPathSize];
 
     // ... parent waits for child to lock and close second reference to mutex
-    AutoCloseMutexHandle m(TestOpenMutex(BuildName(testName, name, GlobalPrefix, NamePrefix)));
+    AutoCloseMutexHandle m(TestOpenMutex(BuildName(testName, name, NamePrefix)));
     TestAssert(m != nullptr);
     TestAssert(WaitForSingleObject(m, 0) == WAIT_OBJECT_0);
-    TestAssert(AutoCloseMutexHandle(TestOpenMutex(BuildName(testName, name, GlobalPrefix, NamePrefix))) != nullptr);
+    TestAssert(AutoCloseMutexHandle(TestOpenMutex(BuildName(testName, name, NamePrefix))) != nullptr);
     TestAssert(YieldToParent(parentEvents, childEvents, ei)); // parent waits for child to close last reference to mutex
 
     // Close the mutex on a thread that is not the lock-owner thread, without releasing the lock
@@ -1068,7 +1111,7 @@ DWORD PALAPI LockAndCloseWithoutThreadExitTests_Child_CloseOnDifferentThread(voi
     m.Abandon(); // mutex is already closed, don't close it again
     TestAssert(YieldToParent(parentEvents, childEvents, ei)); // parent verifies while this lock-owner thread is still active
 
-    m = TestOpenMutex(BuildName(testName, name, GlobalPrefix, NamePrefix));
+    m = TestOpenMutex(BuildName(testName, name, NamePrefix));
     TestAssert(m != nullptr);
     m.Close(); // close mutex on lock-owner thread without releasing lock
     TestAssert(YieldToParent(parentEvents, childEvents, ei)); // parent verifies while this thread is still active
@@ -1110,14 +1153,24 @@ bool (*const TestList[])() =
 
 bool RunTests()
 {
+    const bool Bools[] = {false, true};
     bool allPassed = true;
-    for (SIZE_T i = 0; i < ARRAY_SIZE(TestList); ++i)
+    for (int i = 0; i < ARRAY_SIZE(TestList); i++)
     {
-        if (!TestList[i]())
+        for (int j = 0; j < ARRAY_SIZE(Bools); j++)
         {
-            allPassed = false;
+            g_currentUserOnly = Bools[j];
+            for (int k = 0; k < ARRAY_SIZE(Bools); k++)
+            {
+                g_currentSessionOnly = Bools[k];
+                if (!TestList[i]())
+                {
+                    allPassed = false;
+                }
+            }
         }
     }
+
     return allPassed;
 }
 
@@ -1189,7 +1242,7 @@ bool StressTests(DWORD durationMinutes)
 
 PALTEST(threading_NamedMutex_test1_paltest_namedmutex_test1, "threading/NamedMutex/test1/paltest_namedmutex_test1")
 {
-    if (argc < 1 || argc > 4)
+    if (argc < 1 || argc > 6)
     {
         return FAIL;
     }
@@ -1228,9 +1281,16 @@ PALTEST(threading_NamedMutex_test1_paltest_namedmutex_test1, "threading/NamedMut
         return result;
     }
 
-    // Child test process arguments: <processPath> <parentPid> <testFunctionName> [stress]
+    // Child test process arguments:
+    //   <processPath> <parentPid> <testFunctionName> <0|1> /* currentUserOnly */ <0|1> /* currentSessionOnly */ [stress]
 
     g_isParent = false;
+
+    if (argc < 5)
+    {
+        ExitProcess(FAIL);
+        return FAIL;
+    }
 
     // Get parent process' ID from argument
     if (test_sscanf(argv[1], "%u", &g_parentPid) != 1)
@@ -1239,7 +1299,19 @@ PALTEST(threading_NamedMutex_test1_paltest_namedmutex_test1, "threading/NamedMut
         return FAIL;
     }
 
-    if (argc >= 4 && test_strcmp(argv[3], "stress") == 0)
+    // Get the current-user-only and current-session-only args
+    if ((argv[3][0] != '0' && argv[3][0] != '1') ||
+        argv[3][1] != '\0' ||
+        (argv[4][0] != '0' && argv[4][0] != '1') ||
+        argv[4][1] != '\0')
+    {
+        ExitProcess(FAIL);
+        return FAIL;
+    }
+    g_currentUserOnly = argv[3][0] != '0';
+    g_currentSessionOnly = argv[4][0] != '0';
+
+    if (argc >= 6 && test_strcmp(argv[5], "stress") == 0)
     {
         g_isStress = true;
     }
