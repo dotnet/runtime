@@ -475,15 +475,19 @@ namespace System.Numerics
             AssertValid();
         }
 
-        internal BigInteger(int n, uint[]? rgu)
+        /// <summary>
+        /// Create a BigInteger directly from inner components (sign and bits).
+        /// The caller must ensure the parameters are valid.
+        /// </summary>
+        /// <param name="sign">the sign field</param>
+        /// <param name="bits">the bits field</param>
+        internal BigInteger(int sign, uint[]? bits)
         {
-            if ((rgu is not null) && (rgu.Length > MaxLength))
-            {
-                ThrowHelper.ThrowOverflowException();
-            }
+            // Runtime check is converted to assertions because only one call from TryParseBigIntegerHexOrBinaryNumberStyle may fail the length check.
+            // Validation in TryParseBigIntegerHexOrBinaryNumberStyle is also added in the accompanying PR.
 
-            _sign = n;
-            _bits = rgu;
+            _sign = sign;
+            _bits = bits;
 
             AssertValid();
         }
@@ -715,7 +719,8 @@ namespace System.Numerics
 
         public static BigInteger Abs(BigInteger value)
         {
-            return (value >= Zero) ? value : -value;
+            value.AssertValid();
+            return new BigInteger(unchecked((int)NumericsHelpers.Abs(value._sign)), value._bits);
         }
 
         public static BigInteger Add(BigInteger left, BigInteger right)
@@ -1701,7 +1706,7 @@ namespace System.Numerics
             }
 
             if (bitsFromPool != null)
-                    ArrayPool<uint>.Shared.Return(bitsFromPool);
+                ArrayPool<uint>.Shared.Return(bitsFromPool);
 
             return result;
         }
@@ -2636,7 +2641,7 @@ namespace System.Numerics
 
             if (zdFromPool != null)
                 ArrayPool<uint>.Shared.Return(zdFromPool);
-        exit:
+            exit:
             if (xdFromPool != null)
                 ArrayPool<uint>.Shared.Return(xdFromPool);
 
@@ -4104,20 +4109,8 @@ namespace System.Numerics
             x.AssertValid();
             y.AssertValid();
 
-            BigInteger ax = Abs(x);
-            BigInteger ay = Abs(y);
-
-            if (ax > ay)
-            {
-                return x;
-            }
-
-            if (ax == ay)
-            {
-                return IsNegative(x) ? y : x;
-            }
-
-            return y;
+            int compareResult = Abs(x).CompareTo(Abs(y));
+            return compareResult > 0 || (compareResult == 0 && IsPositive(x)) ? x : y;
         }
 
         /// <inheritdoc cref="INumberBase{TSelf}.MaxMagnitudeNumber(TSelf, TSelf)" />
@@ -4129,20 +4122,8 @@ namespace System.Numerics
             x.AssertValid();
             y.AssertValid();
 
-            BigInteger ax = Abs(x);
-            BigInteger ay = Abs(y);
-
-            if (ax < ay)
-            {
-                return x;
-            }
-
-            if (ax == ay)
-            {
-                return IsNegative(x) ? x : y;
-            }
-
-            return y;
+            int compareResult = Abs(x).CompareTo(Abs(y));
+            return compareResult < 0 || (compareResult == 0 && IsNegative(x)) ? x : y;
         }
 
         /// <inheritdoc cref="INumberBase{TSelf}.MinMagnitudeNumber(TSelf, TSelf)" />
