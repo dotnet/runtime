@@ -596,13 +596,15 @@ const SegmentList& ClassLayout::GetNonPadding(Compiler* comp)
     }
 
     m_nonPadding = new (comp, CMK_ClassLayout) SegmentList(comp->getAllocator(CMK_ClassLayout));
-
-    if (m_size == 0)
+    if (IsCustomLayout())
     {
+        if (m_size > 0)
+        {
+            m_nonPadding->Add(SegmentList::Segment(0, GetSize()));
+        }
+
         return *m_nonPadding;
     }
-
-    assert(!IsCustomLayout());
 
     CORINFO_TYPE_LAYOUT_NODE nodes[256];
     size_t                   numNodes = ArrLen(nodes);
@@ -726,8 +728,6 @@ ClassLayoutBuilder::ClassLayoutBuilder(Compiler* compiler, unsigned size)
     : m_compiler(compiler)
     , m_size(size)
 {
-    m_nonPadding = new (compiler, CMK_ClassLayout) SegmentList(compiler->getAllocator(CMK_ClassLayout));
-    m_nonPadding->Add(SegmentList::Segment(0, size));
 }
 
 //------------------------------------------------------------------------
@@ -812,10 +812,11 @@ void ClassLayoutBuilder::SetGCPtrType(unsigned slot, var_types type)
 // CopyInfoFrom: Copy GC pointers and padding information from another layout.
 //
 // Arguments:
-//   offset - Offset in this builder to start copy information into.
-//   layout - Layout to get information from.
+//   offset      - Offset in this builder to start copy information into.
+//   layout      - Layout to get information from.
+//   copyPadding - Whether padding info should also be copied from the layout.
 //
-void ClassLayoutBuilder::CopyInfoFrom(unsigned offset, ClassLayout* layout)
+void ClassLayoutBuilder::CopyInfoFrom(unsigned offset, ClassLayout* layout, bool copyPadding)
 {
     assert(offset + layout->GetSize() <= m_size);
 
@@ -829,12 +830,34 @@ void ClassLayoutBuilder::CopyInfoFrom(unsigned offset, ClassLayout* layout)
         }
     }
 
-    AddPadding(SegmentList::Segment(offset, offset + layout->GetSize()));
-
-    for (const SegmentList::Segment& nonPadding : layout->GetNonPadding(m_compiler))
+    if (copyPadding)
     {
-        RemovePadding(SegmentList::Segment(offset + nonPadding.Start, offset + nonPadding.End));
+        AddPadding(SegmentList::Segment(offset, offset + layout->GetSize()));
+
+        for (const SegmentList::Segment& nonPadding : layout->GetNonPadding(m_compiler))
+        {
+            RemovePadding(SegmentList::Segment(offset + nonPadding.Start, offset + nonPadding.End));
+        }
     }
+}
+
+//------------------------------------------------------------------------
+// GetOrCreateNonPadding: Get the non padding segment list, or create it if it
+// does not exist.
+//
+// Remarks:
+//   The ClassLayoutBuilder starts out with the entire layout being considered
+//   to NOT be padding.
+//
+SegmentList* ClassLayoutBuilder::GetOrCreateNonPadding()
+{
+    if (m_nonPadding == nullptr)
+    {
+        m_nonPadding = new (m_compiler, CMK_ClassLayout) SegmentList(m_compiler->getAllocator(CMK_ClassLayout));
+        m_nonPadding->Add(SegmentList::Segment(0, m_size));
+    }
+
+    return m_nonPadding;
 }
 
 //------------------------------------------------------------------------
@@ -850,7 +873,7 @@ void ClassLayoutBuilder::CopyInfoFrom(unsigned offset, ClassLayout* layout)
 void ClassLayoutBuilder::AddPadding(const SegmentList::Segment& padding)
 {
     assert((padding.Start <= padding.End) && (padding.End <= m_size));
-    m_nonPadding->Subtract(padding);
+    GetOrCreateNonPadding()->Subtract(padding);
 }
 
 //------------------------------------------------------------------------
@@ -866,7 +889,7 @@ void ClassLayoutBuilder::AddPadding(const SegmentList::Segment& padding)
 void ClassLayoutBuilder::RemovePadding(const SegmentList::Segment& nonPadding)
 {
     assert((nonPadding.Start <= nonPadding.End) && (nonPadding.End <= m_size));
-    m_nonPadding->Add(nonPadding);
+    GetOrCreateNonPadding()->Add(nonPadding);
 }
 
 #ifdef DEBUG

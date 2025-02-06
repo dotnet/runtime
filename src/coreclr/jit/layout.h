@@ -19,21 +19,22 @@ class ClassLayoutBuilder
     BYTE*        m_gcPtrs = nullptr;
     unsigned     m_size;
     unsigned     m_gcPtrCount = 0;
-    SegmentList* m_nonPadding;
+    SegmentList* m_nonPadding = nullptr;
 #ifdef DEBUG
     const char* m_name      = "UNNAMED";
     const char* m_shortName = "UNNAMED";
 #endif
 
-    BYTE* GetOrCreateGCPtrs();
-    void  SetGCPtr(unsigned slot, CorInfoGCType type);
+    BYTE*        GetOrCreateGCPtrs();
+    void         SetGCPtr(unsigned slot, CorInfoGCType type);
+    SegmentList* GetOrCreateNonPadding();
 public:
     // Create a class layout builder.
     //
     ClassLayoutBuilder(Compiler* compiler, unsigned size);
 
     void SetGCPtrType(unsigned slot, var_types type);
-    void CopyInfoFrom(unsigned offset, ClassLayout* layout);
+    void CopyInfoFrom(unsigned offset, ClassLayout* layout, bool copyPadding);
     void AddPadding(const SegmentList::Segment& padding);
     void RemovePadding(const SegmentList::Segment& nonPadding);
 
