@@ -836,7 +836,7 @@ namespace System.Numerics
         }
 
         /// <inheritdoc cref="IBinaryNumber{TSelf}.Log2(TSelf)" />
-        public static BFloat16 Log2(BFloat16 value) => (BFloat16)MathF.Log2((float)value);
+        public static BFloat16 Log2(BFloat16 value) => (BFloat16)float.Log2((float)value);
 
         //
         // IBitwiseOperators
@@ -890,7 +890,7 @@ namespace System.Numerics
         //
 
         /// <inheritdoc cref="IExponentialFunctions{TSelf}.Exp" />
-        public static BFloat16 Exp(BFloat16 x) => (BFloat16)MathF.Exp((float)x);
+        public static BFloat16 Exp(BFloat16 x) => (BFloat16)float.Exp((float)x);
 
         /// <inheritdoc cref="IExponentialFunctions{TSelf}.ExpM1(TSelf)" />
         public static BFloat16 ExpM1(BFloat16 x) => (BFloat16)float.ExpM1((float)x);
@@ -912,25 +912,25 @@ namespace System.Numerics
         //
 
         /// <inheritdoc cref="IFloatingPoint{TSelf}.Ceiling(TSelf)" />
-        public static BFloat16 Ceiling(BFloat16 x) => (BFloat16)MathF.Ceiling((float)x);
+        public static BFloat16 Ceiling(BFloat16 x) => (BFloat16)float.Ceiling((float)x);
 
         /// <inheritdoc cref="IFloatingPoint{TSelf}.Floor(TSelf)" />
-        public static BFloat16 Floor(BFloat16 x) => (BFloat16)MathF.Floor((float)x);
+        public static BFloat16 Floor(BFloat16 x) => (BFloat16)float.Floor((float)x);
 
         /// <inheritdoc cref="IFloatingPoint{TSelf}.Round(TSelf)" />
-        public static BFloat16 Round(BFloat16 x) => (BFloat16)MathF.Round((float)x);
+        public static BFloat16 Round(BFloat16 x) => (BFloat16)float.Round((float)x);
 
         /// <inheritdoc cref="IFloatingPoint{TSelf}.Round(TSelf, int)" />
-        public static BFloat16 Round(BFloat16 x, int digits) => (BFloat16)MathF.Round((float)x, digits);
+        public static BFloat16 Round(BFloat16 x, int digits) => (BFloat16)float.Round((float)x, digits);
 
         /// <inheritdoc cref="IFloatingPoint{TSelf}.Round(TSelf, MidpointRounding)" />
-        public static BFloat16 Round(BFloat16 x, MidpointRounding mode) => (BFloat16)MathF.Round((float)x, mode);
+        public static BFloat16 Round(BFloat16 x, MidpointRounding mode) => (BFloat16)float.Round((float)x, mode);
 
         /// <inheritdoc cref="IFloatingPoint{TSelf}.Round(TSelf, int, MidpointRounding)" />
-        public static BFloat16 Round(BFloat16 x, int digits, MidpointRounding mode) => (BFloat16)MathF.Round((float)x, digits, mode);
+        public static BFloat16 Round(BFloat16 x, int digits, MidpointRounding mode) => (BFloat16)float.Round((float)x, digits, mode);
 
         /// <inheritdoc cref="IFloatingPoint{TSelf}.Truncate(TSelf)" />
-        public static BFloat16 Truncate(BFloat16 x) => (BFloat16)MathF.Truncate((float)x);
+        public static BFloat16 Truncate(BFloat16 x) => (BFloat16)float.Truncate((float)x);
 
         /// <inheritdoc cref="IFloatingPoint{TSelf}.GetExponentByteCount()" />
         int IFloatingPoint<BFloat16>.GetExponentByteCount() => sizeof(sbyte);
@@ -1031,7 +1031,7 @@ namespace System.Numerics
         public static BFloat16 NegativeZero => new BFloat16(NegativeZeroBits);
 
         /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.Atan2(TSelf, TSelf)" />
-        public static BFloat16 Atan2(BFloat16 y, BFloat16 x) => (BFloat16)MathF.Atan2((float)y, (float)x);
+        public static BFloat16 Atan2(BFloat16 y, BFloat16 x) => (BFloat16)float.Atan2((float)y, (float)x);
 
         /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.Atan2Pi(TSelf, TSelf)" />
         public static BFloat16 Atan2Pi(BFloat16 y, BFloat16 x) => (BFloat16)float.Atan2Pi((float)y, (float)x);
@@ -1103,10 +1103,10 @@ namespace System.Numerics
         }
 
         /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.FusedMultiplyAdd(TSelf, TSelf, TSelf)" />
-        public static BFloat16 FusedMultiplyAdd(BFloat16 left, BFloat16 right, BFloat16 addend) => (BFloat16)MathF.FusedMultiplyAdd((float)left, (float)right, (float)addend);
+        public static BFloat16 FusedMultiplyAdd(BFloat16 left, BFloat16 right, BFloat16 addend) => (BFloat16)float.FusedMultiplyAdd((float)left, (float)right, (float)addend);
 
         /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.Ieee754Remainder(TSelf, TSelf)" />
-        public static BFloat16 Ieee754Remainder(BFloat16 left, BFloat16 right) => (BFloat16)MathF.IEEERemainder((float)left, (float)right);
+        public static BFloat16 Ieee754Remainder(BFloat16 left, BFloat16 right) => (BFloat16)float.Ieee754Remainder((float)left, (float)right);
 
         /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.ILogB(TSelf)" />
         public static int ILogB(BFloat16 x)
@@ -1140,38 +1140,38 @@ namespace System.Numerics
         public static BFloat16 Lerp(BFloat16 value1, BFloat16 value2, BFloat16 amount) => (BFloat16)float.Lerp((float)value1, (float)value2, (float)amount);
 
         /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.ReciprocalEstimate(TSelf)" />
-        public static BFloat16 ReciprocalEstimate(BFloat16 x) => (BFloat16)MathF.ReciprocalEstimate((float)x);
+        public static BFloat16 ReciprocalEstimate(BFloat16 x) => (BFloat16)float.ReciprocalEstimate((float)x);
 
         /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.ReciprocalSqrtEstimate(TSelf)" />
-        public static BFloat16 ReciprocalSqrtEstimate(BFloat16 x) => (BFloat16)MathF.ReciprocalSqrtEstimate((float)x);
+        public static BFloat16 ReciprocalSqrtEstimate(BFloat16 x) => (BFloat16)float.ReciprocalSqrtEstimate((float)x);
 
         /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.ScaleB(TSelf, int)" />
-        public static BFloat16 ScaleB(BFloat16 x, int n) => (BFloat16)MathF.ScaleB((float)x, n);
+        public static BFloat16 ScaleB(BFloat16 x, int n) => (BFloat16)float.ScaleB((float)x, n);
 
         // /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.Compound(TSelf, TSelf)" />
-        // public static BFloat16 Compound(BFloat16 x, BFloat16 n) => (BFloat16)MathF.Compound((float)x, (float)n);
+        // public static BFloat16 Compound(BFloat16 x, BFloat16 n) => (BFloat16)float.Compound((float)x, (float)n);
 
         //
         // IHyperbolicFunctions
         //
 
         /// <inheritdoc cref="IHyperbolicFunctions{TSelf}.Acosh(TSelf)" />
-        public static BFloat16 Acosh(BFloat16 x) => (BFloat16)MathF.Acosh((float)x);
+        public static BFloat16 Acosh(BFloat16 x) => (BFloat16)float.Acosh((float)x);
 
         /// <inheritdoc cref="IHyperbolicFunctions{TSelf}.Asinh(TSelf)" />
-        public static BFloat16 Asinh(BFloat16 x) => (BFloat16)MathF.Asinh((float)x);
+        public static BFloat16 Asinh(BFloat16 x) => (BFloat16)float.Asinh((float)x);
 
         /// <inheritdoc cref="IHyperbolicFunctions{TSelf}.Atanh(TSelf)" />
-        public static BFloat16 Atanh(BFloat16 x) => (BFloat16)MathF.Atanh((float)x);
+        public static BFloat16 Atanh(BFloat16 x) => (BFloat16)float.Atanh((float)x);
 
         /// <inheritdoc cref="IHyperbolicFunctions{TSelf}.Cosh(TSelf)" />
-        public static BFloat16 Cosh(BFloat16 x) => (BFloat16)MathF.Cosh((float)x);
+        public static BFloat16 Cosh(BFloat16 x) => (BFloat16)float.Cosh((float)x);
 
         /// <inheritdoc cref="IHyperbolicFunctions{TSelf}.Sinh(TSelf)" />
-        public static BFloat16 Sinh(BFloat16 x) => (BFloat16)MathF.Sinh((float)x);
+        public static BFloat16 Sinh(BFloat16 x) => (BFloat16)float.Sinh((float)x);
 
         /// <inheritdoc cref="IHyperbolicFunctions{TSelf}.Tanh(TSelf)" />
-        public static BFloat16 Tanh(BFloat16 x) => (BFloat16)MathF.Tanh((float)x);
+        public static BFloat16 Tanh(BFloat16 x) => (BFloat16)float.Tanh((float)x);
 
         //
         // IIncrementOperators
@@ -1190,13 +1190,13 @@ namespace System.Numerics
         //
 
         /// <inheritdoc cref="ILogarithmicFunctions{TSelf}.Log(TSelf)" />
-        public static BFloat16 Log(BFloat16 x) => (BFloat16)MathF.Log((float)x);
+        public static BFloat16 Log(BFloat16 x) => (BFloat16)float.Log((float)x);
 
         /// <inheritdoc cref="ILogarithmicFunctions{TSelf}.Log(TSelf, TSelf)" />
-        public static BFloat16 Log(BFloat16 x, BFloat16 newBase) => (BFloat16)MathF.Log((float)x, (float)newBase);
+        public static BFloat16 Log(BFloat16 x, BFloat16 newBase) => (BFloat16)float.Log((float)x, (float)newBase);
 
         /// <inheritdoc cref="ILogarithmicFunctions{TSelf}.Log10(TSelf)" />
-        public static BFloat16 Log10(BFloat16 x) => (BFloat16)MathF.Log10((float)x);
+        public static BFloat16 Log10(BFloat16 x) => (BFloat16)float.Log10((float)x);
 
         /// <inheritdoc cref="ILogarithmicFunctions{TSelf}.LogP1(TSelf)" />
         public static BFloat16 LogP1(BFloat16 x) => (BFloat16)float.LogP1((float)x);
@@ -1249,7 +1249,7 @@ namespace System.Numerics
         }
 
         /// <inheritdoc cref="INumber{TSelf}.Max(TSelf, TSelf)" />
-        public static BFloat16 Max(BFloat16 x, BFloat16 y) => (BFloat16)MathF.Max((float)x, (float)y);
+        public static BFloat16 Max(BFloat16 x, BFloat16 y) => (BFloat16)float.Max((float)x, (float)y);
 
         /// <inheritdoc cref="INumber{TSelf}.MaxNumber(TSelf, TSelf)" />
         public static BFloat16 MaxNumber(BFloat16 x, BFloat16 y)
@@ -1274,7 +1274,7 @@ namespace System.Numerics
         }
 
         /// <inheritdoc cref="INumber{TSelf}.Min(TSelf, TSelf)" />
-        public static BFloat16 Min(BFloat16 x, BFloat16 y) => (BFloat16)MathF.Min((float)x, (float)y);
+        public static BFloat16 Min(BFloat16 x, BFloat16 y) => (BFloat16)float.Min((float)x, (float)y);
 
         /// <inheritdoc cref="INumber{TSelf}.MinNumber(TSelf, TSelf)" />
         public static BFloat16 MinNumber(BFloat16 x, BFloat16 y)
@@ -1427,7 +1427,7 @@ namespace System.Numerics
         static bool INumberBase<BFloat16>.IsZero(BFloat16 value) => IsZero(value);
 
         /// <inheritdoc cref="INumberBase{TSelf}.MaxMagnitude(TSelf, TSelf)" />
-        public static BFloat16 MaxMagnitude(BFloat16 x, BFloat16 y) => (BFloat16)MathF.MaxMagnitude((float)x, (float)y);
+        public static BFloat16 MaxMagnitude(BFloat16 x, BFloat16 y) => (BFloat16)float.MaxMagnitude((float)x, (float)y);
 
         /// <inheritdoc cref="INumberBase{TSelf}.MaxMagnitudeNumber(TSelf, TSelf)" />
         public static BFloat16 MaxMagnitudeNumber(BFloat16 x, BFloat16 y)
@@ -1455,7 +1455,7 @@ namespace System.Numerics
         }
 
         /// <inheritdoc cref="INumberBase{TSelf}.MinMagnitude(TSelf, TSelf)" />
-        public static BFloat16 MinMagnitude(BFloat16 x, BFloat16 y) => (BFloat16)MathF.MinMagnitude((float)x, (float)y);
+        public static BFloat16 MinMagnitude(BFloat16 x, BFloat16 y) => (BFloat16)float.MinMagnitude((float)x, (float)y);
 
         /// <inheritdoc cref="INumberBase{TSelf}.MinMagnitudeNumber(TSelf, TSelf)" />
         public static BFloat16 MinMagnitudeNumber(BFloat16 x, BFloat16 y)
@@ -1814,14 +1814,14 @@ namespace System.Numerics
         //
 
         /// <inheritdoc cref="IPowerFunctions{TSelf}.Pow(TSelf, TSelf)" />
-        public static BFloat16 Pow(BFloat16 x, BFloat16 y) => (BFloat16)MathF.Pow((float)x, (float)y);
+        public static BFloat16 Pow(BFloat16 x, BFloat16 y) => (BFloat16)float.Pow((float)x, (float)y);
 
         //
         // IRootFunctions
         //
 
         /// <inheritdoc cref="IRootFunctions{TSelf}.Cbrt(TSelf)" />
-        public static BFloat16 Cbrt(BFloat16 x) => (BFloat16)MathF.Cbrt((float)x);
+        public static BFloat16 Cbrt(BFloat16 x) => (BFloat16)float.Cbrt((float)x);
 
         /// <inheritdoc cref="IRootFunctions{TSelf}.Hypot(TSelf, TSelf)" />
         public static BFloat16 Hypot(BFloat16 x, BFloat16 y) => (BFloat16)float.Hypot((float)x, (float)y);
@@ -1830,7 +1830,7 @@ namespace System.Numerics
         public static BFloat16 RootN(BFloat16 x, int n) => (BFloat16)float.RootN((float)x, n);
 
         /// <inheritdoc cref="IRootFunctions{TSelf}.Sqrt(TSelf)" />
-        public static BFloat16 Sqrt(BFloat16 x) => (BFloat16)MathF.Sqrt((float)x);
+        public static BFloat16 Sqrt(BFloat16 x) => (BFloat16)float.Sqrt((float)x);
 
         //
         // ISignedNumber
@@ -1861,25 +1861,25 @@ namespace System.Numerics
         //
 
         /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.Acos(TSelf)" />
-        public static BFloat16 Acos(BFloat16 x) => (BFloat16)MathF.Acos((float)x);
+        public static BFloat16 Acos(BFloat16 x) => (BFloat16)float.Acos((float)x);
 
         /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.AcosPi(TSelf)" />
         public static BFloat16 AcosPi(BFloat16 x) => (BFloat16)float.AcosPi((float)x);
 
         /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.Asin(TSelf)" />
-        public static BFloat16 Asin(BFloat16 x) => (BFloat16)MathF.Asin((float)x);
+        public static BFloat16 Asin(BFloat16 x) => (BFloat16)float.Asin((float)x);
 
         /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.AsinPi(TSelf)" />
         public static BFloat16 AsinPi(BFloat16 x) => (BFloat16)float.AsinPi((float)x);
 
         /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.Atan(TSelf)" />
-        public static BFloat16 Atan(BFloat16 x) => (BFloat16)MathF.Atan((float)x);
+        public static BFloat16 Atan(BFloat16 x) => (BFloat16)float.Atan((float)x);
 
         /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.AtanPi(TSelf)" />
         public static BFloat16 AtanPi(BFloat16 x) => (BFloat16)float.AtanPi((float)x);
 
         /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.Cos(TSelf)" />
-        public static BFloat16 Cos(BFloat16 x) => (BFloat16)MathF.Cos((float)x);
+        public static BFloat16 Cos(BFloat16 x) => (BFloat16)float.Cos((float)x);
 
         /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.CosPi(TSelf)" />
         public static BFloat16 CosPi(BFloat16 x) => (BFloat16)float.CosPi((float)x);
@@ -1903,12 +1903,12 @@ namespace System.Numerics
         }
 
         /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.Sin(TSelf)" />
-        public static BFloat16 Sin(BFloat16 x) => (BFloat16)MathF.Sin((float)x);
+        public static BFloat16 Sin(BFloat16 x) => (BFloat16)float.Sin((float)x);
 
         /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.SinCos(TSelf)" />
         public static (BFloat16 Sin, BFloat16 Cos) SinCos(BFloat16 x)
         {
-            var (sin, cos) = MathF.SinCos((float)x);
+            var (sin, cos) = float.SinCos((float)x);
             return ((BFloat16)sin, (BFloat16)cos);
         }
 
@@ -1923,7 +1923,7 @@ namespace System.Numerics
         public static BFloat16 SinPi(BFloat16 x) => (BFloat16)float.SinPi((float)x);
 
         /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.Tan(TSelf)" />
-        public static BFloat16 Tan(BFloat16 x) => (BFloat16)MathF.Tan((float)x);
+        public static BFloat16 Tan(BFloat16 x) => (BFloat16)float.Tan((float)x);
 
         /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.TanPi(TSelf)" />
         public static BFloat16 TanPi(BFloat16 x) => (BFloat16)float.TanPi((float)x);
