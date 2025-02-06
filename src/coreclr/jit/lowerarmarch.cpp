@@ -304,7 +304,7 @@ bool Lowering::IsContainableUnaryOrBinaryOp(GenTree* parentNode, GenTree* childN
             }
         }
 
-        if (childNode->OperIs(GT_LSH, GT_RSH, GT_RSZ) && parentNode->OperIs(GT_NOT, GT_AND_NOT))
+        if (childNode->OperIs(GT_LSH, GT_RSH, GT_RSZ) && parentNode->OperIs(GT_NOT, GT_AND_NOT, GT_OR_NOT, GT_XOR_NOT))
         {
             return true;
         }
@@ -650,6 +650,37 @@ GenTree* Lowering::LowerBinaryArithmetic(GenTreeOp* binOp)
             if (TryLowerAddSubToMulLongOp(binOp, &next))
             {
                 return next;
+            }
+        }
+
+        if (binOp->OperIs(GT_OR, GT_XOR))
+        {
+            GenTree* opNode  = nullptr;
+            GenTree* notNode = nullptr;
+            if (binOp->gtGetOp1()->OperIs(GT_NOT))
+            {
+                notNode = binOp->gtGetOp1();
+                opNode  = binOp->gtGetOp2();
+            }
+            else if (binOp->gtGetOp2()->OperIs(GT_NOT))
+            {
+                notNode = binOp->gtGetOp2();
+                opNode  = binOp->gtGetOp1();
+            }
+
+            if (notNode != nullptr)
+            {
+                binOp->gtOp1 = opNode;
+                binOp->gtOp2 = notNode->AsUnOp()->gtGetOp1();
+                if (binOp->OperIs(GT_OR))
+                {
+                    binOp->ChangeOper(GT_OR_NOT);
+                }
+                else
+                {
+                    binOp->ChangeOper(GT_XOR_NOT);
+                }
+                BlockRange().Remove(notNode);
             }
         }
 #endif
