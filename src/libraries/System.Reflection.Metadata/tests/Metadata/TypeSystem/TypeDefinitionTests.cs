@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Reflection.Metadata.Ecma335;
 using Xunit;
 
 namespace System.Reflection.Metadata.Tests
@@ -38,14 +39,18 @@ namespace System.Reflection.Metadata.Tests
         {
             var reader = MetadataReaderTests.GetMetadataReader(Misc.Members);
 
+            Assert.NotEmpty(reader.GetTypesWithEvents());
+            Assert.NotEmpty(reader.GetTypesWithProperties());
+
             foreach (var typeDefHandle in reader.TypeDefinitions)
             {
                 var typeDef = reader.GetTypeDefinition(typeDefHandle);
-                foreach (var nestedTypeHandle in typeDef.GetNestedTypes())
-                {
-                    var nestedType = reader.GetTypeDefinition(nestedTypeHandle);
-                    Assert.Equal(typeDefHandle, nestedType.GetDeclaringType());
-                }
+                // The assembly does not declare any nested types yet.
+                // foreach (var nestedTypeHandle in typeDef.GetNestedTypes())
+                // {
+                //     var nestedType = reader.GetTypeDefinition(nestedTypeHandle);
+                //     Assert.Equal(typeDefHandle, nestedType.GetDeclaringType());
+                // }
                 foreach (var fieldHandle in typeDef.GetFields())
                 {
                     var field = reader.GetFieldDefinition(fieldHandle);
