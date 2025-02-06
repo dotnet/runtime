@@ -194,7 +194,6 @@
     <Reference Include="Microsoft.Win32.Primitives" />
     <Reference Include="System.Net.Primitives" />
     <Reference Include="System.Net.Sockets" />
-    <Reference Include="System.Diagnostics.StackTrace" />
   </ItemGroup>
 
 </Project>

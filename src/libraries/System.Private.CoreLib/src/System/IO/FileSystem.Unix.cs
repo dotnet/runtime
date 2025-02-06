@@ -123,7 +123,7 @@ namespace System.IO
         {
             // Unix rename works in more cases, we limit to what is allowed by Windows File.Replace.
             // These checks are not atomic, the file could change after a check was performed and before it is renamed.
-            Interop.CheckIo(Interop.Sys.LStatWrap(sourceFullPath, out Interop.Sys.FileStatus sourceStat), sourceFullPath);
+            Interop.CheckIo(Interop.Sys.LStat(sourceFullPath, out Interop.Sys.FileStatus sourceStat), sourceFullPath);
 
             // Check source is not a directory.
             if ((sourceStat.Mode & Interop.Sys.FileTypes.S_IFMT) == Interop.Sys.FileTypes.S_IFDIR)
@@ -132,7 +132,7 @@ namespace System.IO
             }
 
             Interop.Sys.FileStatus destStat;
-            if (Interop.Sys.LStatWrap(destFullPath, out destStat) == 0)
+            if (Interop.Sys.LStat(destFullPath, out destStat) == 0)
             {
                 // Check destination is not a directory.
                 if ((destStat.Mode & Interop.Sys.FileTypes.S_IFMT) == Interop.Sys.FileTypes.S_IFDIR)
@@ -222,8 +222,8 @@ namespace System.IO
             // link/unlink approach and generating any exceptional messages from there as necessary.
 
             Interop.Sys.FileStatus sourceStat, destStat;
-            if (Interop.Sys.LStatWrap(sourceFullPath, out sourceStat) == 0 && // source file exists
-                (Interop.Sys.LStatWrap(destFullPath, out destStat) != 0 || // dest file does not exist
+            if (Interop.Sys.LStat(sourceFullPath, out sourceStat) == 0 && // source file exists
+                (Interop.Sys.LStat(destFullPath, out destStat) != 0 || // dest file does not exist
                  (sourceStat.Dev == destStat.Dev && // source and dest are on the same device
                   sourceStat.Ino == destStat.Ino)) && // source and dest are the same file on that device
                 Interop.Sys.Rename(sourceFullPath, destFullPath) == 0) // try the rename
@@ -411,12 +411,12 @@ namespace System.IO
 
             // The destination must not exist (unless it is a case-sensitive rename).
             // On Unix 'rename' will overwrite the destination file if it already exists, we need to manually check.
-            if (!isCaseSensitiveRename && Interop.Sys.LStatWrap(destNoDirectorySeparator.ToString (), out Interop.Sys.FileStatus destFileStatus) >= 0)
+            if (!isCaseSensitiveRename && Interop.Sys.LStat(destNoDirectorySeparator, out Interop.Sys.FileStatus destFileStatus) >= 0)
             {
                 // Maintain order of exceptions as on Windows.
 
                 // Throw if the source doesn't exist.
-                if (Interop.Sys.LStatWrap(srcNoDirectorySeparator.ToString (), out Interop.Sys.FileStatus sourceFileStatus) < 0)
+                if (Interop.Sys.LStat(srcNoDirectorySeparator, out Interop.Sys.FileStatus sourceFileStatus) < 0)
                 {
                     throw new DirectoryNotFoundException(SR.Format(SR.IO_PathNotFound_Path, sourceFullPath));
                 }

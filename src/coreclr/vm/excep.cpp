@@ -25,10 +25,6 @@
 #include "virtualcallstub.h"
 #include "typestring.h"
 
-#if defined(TARGET_ANDROID)
-#include <android/log.h>
-#endif
-
 #ifndef TARGET_UNIX
 #include "dwreport.h"
 #endif // !TARGET_UNIX
@@ -3949,9 +3945,6 @@ void CrashDumpAndTerminateProcess(UINT exitCode)
 #ifdef HOST_WINDOWS
     CreateCrashDumpIfEnabled(exitCode == COR_E_STACKOVERFLOW);
 #endif
-#if defined(TARGET_ANDROID)
-    __android_log_print (ANDROID_LOG_INFO, "CoreCLR", "End process at %s:%u", __FILE_NAME__, __LINE__);
-#endif
     TerminateProcess(GetCurrentProcess(), exitCode);
 }
 
@@ -4081,9 +4074,6 @@ LONG UserBreakpointFilter(EXCEPTION_POINTERS* pEP)
     }
 
     // Otherwise, we terminate the process.
-#if defined(TARGET_ANDROID)
-    __android_log_print (ANDROID_LOG_INFO, "CoreCLR", "End process at %s:%u", __FILE_NAME__, __LINE__);
-#endif
     CrashDumpAndTerminateProcess(STATUS_BREAKPOINT);
 
     // Shouldn't get here ...

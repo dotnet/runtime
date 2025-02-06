@@ -1153,9 +1153,6 @@ ExitProcess(
         else
         {
             WARN("thread re-called ExitProcess\n");
-#if defined(TARGET_ANDROID)
-            __android_log_print (ANDROID_LOG_INFO, "CoreCLR", "End process at %s:%u", __FILE_NAME__, __LINE__);
-#endif
             PROCEndProcess(GetCurrentProcess(), uExitCode, FALSE);
         }
     }
@@ -1180,9 +1177,6 @@ ExitProcess(
     */
     if (PALInitLock() && PALIsInitialized())
     {
-#if defined(TARGET_ANDROID)
-        __android_log_print (ANDROID_LOG_INFO, "CoreCLR", "End process at %s:%u", __FILE_NAME__, __LINE__);
-#endif
         PROCEndProcess(GetCurrentProcess(), uExitCode, FALSE);
 
         /* Should not get here, because we terminate the current process */
@@ -1220,9 +1214,7 @@ TerminateProcess(
 
     PERF_ENTRY(TerminateProcess);
     ENTRY("TerminateProcess(hProcess=%p, uExitCode=%u)\n",hProcess, uExitCode );
-#if defined(TARGET_ANDROID)
-    __android_log_print (ANDROID_LOG_INFO, "CoreCLR", "End process at %s:%u", __FILE_NAME__, __LINE__);
-#endif
+
     ret = PROCEndProcess(hProcess, uExitCode, TRUE);
 
     LOGEXIT("TerminateProcess returns BOOL %d\n", ret);
@@ -1247,9 +1239,6 @@ RaiseFailFastException(
     PERF_ENTRY(RaiseFailFastException);
     ENTRY("RaiseFailFastException");
 
-#if defined(TARGET_ANDROID)
-    __android_log_print (ANDROID_LOG_INFO, "CoreCLR", "About to abort at %s:%u", __FILE_NAME__, __LINE__);
-#endif
     TerminateCurrentProcessNoExit(TRUE);
     for (;;) PROCAbort();
 
@@ -1329,9 +1318,6 @@ static BOOL PROCEndProcess(HANDLE hProcess, UINT uExitCode, BOOL bTerminateUncon
             // (2) can invoke CrashReporter or produce a coredump, which is appropriate for TerminateProcess calls
             // TerminationRequestHandlingRoutine in synchmanager.cpp sets the exit code to this special value. The
             // Watson analyzer needs to know that the process was terminated with a SIGTERM.
-#if defined(TARGET_ANDROID)
-            __android_log_print (ANDROID_LOG_INFO, "CoreCLR", "About to abort in %s:%u", __FILE_NAME__, __LINE__);
-#endif
             PROCAbort(uExitCode == (128 + SIGTERM) ? SIGTERM : SIGABRT);
         }
         else
@@ -2634,18 +2620,12 @@ InitializeFlushProcessWriteBuffers()
 #endif // TARGET_APPLE
 }
 
-#if defined(TARGET_ANDROID)
-#define FATAL_ASSERT_PRINT(msg) __android_log_print (ANDROID_LOG_INFO, "CoreCLR", "About to abort in %s:%u. %s", __FILE_NAME__, __LINE__, (msg))
-#else
-#define FATAL_ASSERT_PRINT(msg) fprintf(stderr, "FATAL ERROR: " msg)
-#endif
-
 #define FATAL_ASSERT(e, msg) \
     do \
     { \
         if (!(e)) \
         { \
-            FATAL_ASSERT_PRINT(msg); \
+            fprintf(stderr, "FATAL ERROR: " msg); \
             PROCAbort(); \
         } \
     } \

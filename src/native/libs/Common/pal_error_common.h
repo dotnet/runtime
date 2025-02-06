@@ -145,9 +145,6 @@ typedef enum
 
 inline static int32_t ConvertErrorPlatformToPal(int32_t platformErrno)
 {
-#if defined(TARGET_ANDROID)
-    __android_log_print (ANDROID_LOG_INFO, "CoreCLR", "%s at %s:%d. platformErrno == %d", __PRETTY_FUNCTION__, __FILE_NAME__, __LINE__, platformErrno);
-#endif
     switch (platformErrno)
     {
         case 0:

@@ -260,9 +260,6 @@ int32_t SystemNative_FStat(intptr_t fd, FileStatus* output)
 
 int32_t SystemNative_LStat(const char* path, FileStatus* output)
 {
-#if defined(TARGET_ANDROID)
-    __android_log_print (ANDROID_LOG_INFO, "CoreCLR", "%s at %s:%d. path == '%s'", __PRETTY_FUNCTION__, __FILE_NAME__, __LINE__, path);
-#endif
     struct stat_ result;
     int ret = lstat_(path, &result);
 
@@ -402,7 +399,7 @@ int32_t SystemNative_IsMemfdSupported(void)
     }
 #endif
 
-    // Note that the name has no affect on file descriptor behavior. From linux manpage:
+    // Note that the name has no affect on file descriptor behavior. From linux manpage: 
     //   Names do not affect the behavior of the file descriptor, and as such multiple files can have the same name without any side effects.
     int32_t fd = (int32_t)syscall(__NR_memfd_create, "test", MFD_CLOEXEC | MFD_ALLOW_SEALING);
     if (fd < 0) return 0;
@@ -1979,7 +1976,7 @@ static int GetAllowedVectorCount(IOVector* vectors, int32_t vectorCount)
     // For macOS preadv and pwritev can fail with EINVAL when the total length
     // of all vectors overflows a 32-bit integer.
     size_t totalLength = 0;
-    for (int i = 0; i < allowedCount; i++)
+    for (int i = 0; i < allowedCount; i++) 
     {
         assert(INT_MAX >= vectors[i].Count);
 
