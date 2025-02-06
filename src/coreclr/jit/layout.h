@@ -41,6 +41,8 @@ public:
 #ifdef DEBUG
     void SetName(const char* name, const char* shortName);
 #endif
+
+    static ClassLayoutBuilder BuildArray(Compiler* compiler, CORINFO_CLASS_HANDLE arrayType, unsigned length);
 };
 
 // Encapsulates layout information about a class (typically a value class but this can also be
