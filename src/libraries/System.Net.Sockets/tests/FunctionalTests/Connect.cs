@@ -301,6 +301,44 @@ namespace System.Net.Sockets.Tests
 
         [PlatformSpecific(TestPlatforms.AnyUnix)]
         [ConditionalTheory]
+        [InlineData("single")]
+        [InlineData("multi")]
+        [InlineData("dns")]
+        [SkipOnPlatform(TestPlatforms.Wasi, "Wasi doesn't support PortBlocker")]
+        public async Task Connect_ExposeHandle_FirstAttemptSucceeds(string connectMode)
+        {
+            if (UsesEap && connectMode is "multi")
+            {
+                throw new SkipTestException("EAP does not support IPAddress[] connect");
+            }
+
+            IPAddress address = (await Dns.GetHostAddressesAsync("localhost"))[0];
+
+            int port = -1;
+            using PortBlocker portBlocker = new PortBlocker(() =>
+            {
+                Socket s = new Socket(address.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
+                port = s.BindToAnonymousPort(address);
+                return s;
+            });
+            Socket listeningSocket = portBlocker.MainSocket;
+            listeningSocket.Listen();
+            _ = listeningSocket.AcceptAsync();
+
+            using Socket c = new Socket(address.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
+            _ = c.SafeHandle; // Expose the handle.
+
+            await (connectMode switch
+            {
+                "single" => ConnectAsync(c, listeningSocket.LocalEndPoint),
+                "multi" => MultiConnectAsync(c, [address], port),
+                _ => ConnectAsync(c, new DnsEndPoint("localhost", port))
+            });
+            Assert.True(c.Connected);
+        }
+
+        [PlatformSpecific(TestPlatforms.AnyUnix)]
+        [ConditionalTheory]
         [InlineData(false)]
         [InlineData(true)]
         [SkipOnPlatform(TestPlatforms.Wasi, "Wasi doesn't support PortBlocker")]
