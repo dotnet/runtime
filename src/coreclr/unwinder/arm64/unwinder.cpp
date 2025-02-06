@@ -254,45 +254,83 @@ do {                                                                            
 //
 // Macros for stripping pointer authentication (PAC) bits.
 //
-
-#if !defined(DACCESS_COMPILE)
-
-#define STRIP_PAC(pointer)    RtlStripPacOnline(pointer)
-
-FORCEINLINE
-VOID
-RtlStripPacOnline (
-    _Inout_ PULONG64 Pointer
-    )
-
-/*++
-
-Routine Description:
-
-    This routine strips the ARM64 Pointer Authentication Code (PAC) from a
-    pointer using the ARM64-native xpaci intrinsic directly. Hence this should
-    only be called when stripping a pointer at runtime (not debugger)
-
-Arguments:
-
-    Pointer - Supplies a pointer to the pointer whose PAC will be stripped.
-
-Return Value:
-
-    None.
-
---*/
-
-{
-    ULONG64 StrippedPointer;
-
-    StrippedPointer = *Pointer;
-    StrippedPointer = (ULONG64)__xpaci((PVOID)StrippedPointer);
-    *Pointer = StrippedPointer;
-    return;
-}
-
-#else
+//
+//#if !defined(DACCESS_COMPILE)
+//
+//#define STRIP_PAC(pointer)    RtlStripPacOnline(pointer)
+//
+//
+//FORCEINLINE
+////VOID RtlStripPacOnline(_Inout_ PULONG64 Pointer)
+//VOID RtlStripPacOnline(void** Pointer)
+//
+///*++
+//
+//Routine Description:
+//
+//    This routine strips the ARM64 Pointer Authentication Code (PAC) from a
+//    pointer using the ARM64-native xpaci intrinsic directly. Hence this should
+//    only be called when stripping a pointer at runtime (not debugger)
+//
+//Arguments:
+//
+//    Pointer - Supplies a pointer to the pointer whose PAC will be stripped.
+//
+//Return Value:
+//
+//    None.
+//
+//--*/
+//
+//{
+//    // This is a key step: The pointer is passed as a reference to be modified.
+//    unsigned int key = 12345;  // Example key (not used for XPACI, but for PAC authentication)
+//
+//    // Inline assembly to invoke the `xpaci` instruction.
+//    // The pointer is passed as an argument and modified in-place.
+//    asm volatile (
+//        "xpaci %[Pointer]"            // Strip the Pointer Authentication Code (PAC) from the pointer
+//        : [Pointer] "+r" (Pointer)       // The pointer is modified in-place
+//        :                         // No input operands needed (beyond the pointer)
+//        : "memory"                // Memory is affected, prevent reordering
+//    );
+//}
+//
+////
+////FORCEINLINE
+////VOID
+////RtlStripPacOnline (
+////    _Inout_ PULONG64 Pointer
+////    )
+////
+/////*++
+////
+////Routine Description:
+////
+////    This routine strips the ARM64 Pointer Authentication Code (PAC) from a
+////    pointer using the ARM64-native xpaci intrinsic directly. Hence this should
+////    only be called when stripping a pointer at runtime (not debugger)
+////
+////Arguments:
+////
+////    Pointer - Supplies a pointer to the pointer whose PAC will be stripped.
+////
+////Return Value:
+////
+////    None.
+////
+////--*/
+////
+////{
+////    ULONG64 StrippedPointer = CONTEXT_GetSveLengthFromOS();
+////
+////    StrippedPointer = *Pointer;
+////    StrippedPointer = (ULONG64)__xpaci((PVOID)StrippedPointer);
+////    *Pointer = StrippedPointer;
+////    return;
+////}
+//
+//#else
 
 #define STRIP_PAC(pointer)    RtlStripPacManual(pointer)
 
@@ -348,7 +386,9 @@ Return Value:
     return;
 }
 
-#endif // !defined(DACCESS_COMPILE)
+//#endif // !defined(DACCESS_COMPILE)
+
+
 //
 // Macros to clarify opcode parsing
 //
