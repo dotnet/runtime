@@ -8,7 +8,7 @@ namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 public interface IStackWalkHandle { };
 public interface IStackDataFrameHandle { };
 
-internal interface IStackWalk : IContract
+public interface IStackWalk : IContract
 {
     static string IContract.Name => nameof(StackWalk);
 
@@ -19,7 +19,7 @@ internal interface IStackWalk : IContract
     public virtual TargetPointer GetFrameAddress(IStackDataFrameHandle stackDataFrameHandle) => throw new NotImplementedException();
 }
 
-internal struct StackWalk : IStackWalk
+public struct StackWalk : IStackWalk
 {
     // Everything throws NotImplementedException
 }

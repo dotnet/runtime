@@ -6,7 +6,7 @@ using System.Runtime.InteropServices;
 
 namespace Microsoft.Diagnostics.DataContractReader.Contracts.StackWalkHelpers;
 
-internal interface IContext
+public interface IContext
 {
     public abstract uint Size { get; }
     public abstract uint DefaultContextFlags { get; }

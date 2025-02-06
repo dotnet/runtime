@@ -5,7 +5,7 @@ using System;
 
 namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 
-internal sealed class StackWalkFactory : IContractFactory<IStackWalk>
+public sealed class StackWalkFactory : IContractFactory<IStackWalk>
 {
     IStackWalk IContractFactory<IStackWalk>.CreateContract(Target target, int version)
     {
