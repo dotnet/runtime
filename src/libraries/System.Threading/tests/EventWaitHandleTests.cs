@@ -299,7 +299,8 @@ namespace System.Threading.Tests
                 new EventWaitHandle(
                     initialState: false,
                     EventResetMode.AutoReset,
-                    name, openOptions,
+                    name,
+                    openOptions,
                     out bool createdNew).Dispose();
                 Assert.Equal(expectedCreatedNew, createdNew);
 
