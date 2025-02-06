@@ -1234,24 +1234,6 @@ namespace System.Reflection.Metadata.Ecma335
                 return default(TypeDefinitionHandle);
             }
 
-            int value = this.GetEventListStartFor(row);
-            if (value == eventRowId)
-            {
-                while (row < numOfRows)
-                {
-                    int newRow = row + 1;
-                    value = this.GetEventListStartFor(newRow);
-                    if (value == eventRowId)
-                    {
-                        row = newRow;
-                    }
-                    else
-                    {
-                        break;
-                    }
-                }
-            }
-
             return GetParentType(row);
         }
     }
@@ -1403,24 +1385,6 @@ namespace System.Reflection.Metadata.Ecma335
                 }
 
                 return default(TypeDefinitionHandle);
-            }
-
-            int value = this.GetPropertyListStartFor(row);
-            if (value == propertyRowId)
-            {
-                while (row < numOfRows)
-                {
-                    int newRow = row + 1;
-                    value = this.GetPropertyListStartFor(newRow);
-                    if (value == propertyRowId)
-                    {
-                        row = newRow;
-                    }
-                    else
-                    {
-                        break;
-                    }
-                }
             }
 
             return GetParentType(row);
