@@ -113,7 +113,7 @@ namespace ILCompiler.ObjectWriter
                         cfaOffset = cfiOffset;
                         cfiCodeOffset += DwarfHelper.WriteULEB128(cfiCode.AsSpan(cfiCodeOffset), (uint)cfaOffset);
                         break;
-                    case CFI_NEGATE_RA_STATE:
+                    case CFI_OPCODE.CFI_NEGATE_RA_STATE:
                         cfiCode[cfiCodeOffset++] = DW_CFA_restore_state;
                         break;
                 }
