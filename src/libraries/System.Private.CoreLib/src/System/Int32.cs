@@ -939,6 +939,12 @@ namespace System
                 result = checked((int)actualValue);
                 return true;
             }
+            else if (typeof(TOther) == typeof(BFloat16))
+            {
+                BFloat16 actualValue = (BFloat16)(object)value;
+                result = checked((int)actualValue);
+                return true;
+            }
             else if (typeof(TOther) == typeof(short))
             {
                 short actualValue = (short)(object)value;
@@ -1011,6 +1017,13 @@ namespace System
                 Half actualValue = (Half)(object)value;
                 result = (actualValue == Half.PositiveInfinity) ? MaxValue :
                          (actualValue == Half.NegativeInfinity) ? MinValue : (int)actualValue;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(BFloat16))
+            {
+                BFloat16 actualValue = (BFloat16)(object)value;
+                result = (actualValue >= new BFloat16(0x4F00)) ? MaxValue :
+                         (actualValue <= new BFloat16(0xBF00)) ? MinValue : (int)actualValue;
                 return true;
             }
             else if (typeof(TOther) == typeof(short))
@@ -1089,6 +1102,13 @@ namespace System
                 Half actualValue = (Half)(object)value;
                 result = (actualValue == Half.PositiveInfinity) ? MaxValue :
                          (actualValue == Half.NegativeInfinity) ? MinValue : (int)actualValue;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(BFloat16))
+            {
+                BFloat16 actualValue = (BFloat16)(object)value;
+                result = (actualValue >= new BFloat16(0x4F00)) ? MaxValue :
+                         (actualValue <= new BFloat16(0xBF00)) ? MinValue : (int)actualValue;
                 return true;
             }
             else if (typeof(TOther) == typeof(short))

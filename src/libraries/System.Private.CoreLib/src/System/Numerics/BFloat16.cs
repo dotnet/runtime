@@ -1503,6 +1503,7 @@ namespace System.Numerics
             return TryConvertFrom(value, out result);
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static bool TryConvertFrom<TOther>(TOther value, out BFloat16 result)
             where TOther : INumberBase<TOther>
         {
@@ -1688,6 +1689,7 @@ namespace System.Numerics
             return TryConvertTo(value, out result);
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static bool TryConvertTo<TOther>(BFloat16 value, [MaybeNullWhen(false)] out TOther result)
             where TOther : INumberBase<TOther>
         {
