@@ -443,14 +443,15 @@ void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
 
         ClassLayout* layout               = blkNode->GetLayout();
         bool         doCpObj              = layout->HasGCPtr();
-        unsigned     copyBlockUnrollLimit = comp->getUnrollThreshold(Compiler::UnrollKind::Memcpy, false);
+        bool         isLocal              = dstAddr->OperIs(GT_LCL_ADDR) || layout->IsStackOnly(comp);
+        bool         canUseSimd           = !doCpObj || isLocal;
+        unsigned     copyBlockUnrollLimit = comp->getUnrollThreshold(Compiler::UnrollKind::Memcpy, canUseSimd);
 
 #ifndef JIT32_GCENCODER
         if (doCpObj && (size <= copyBlockUnrollLimit))
         {
             // No write barriers are needed on the stack.
-            // If the layout is byref-like, then we know it must live on the stack.
-            if (dstAddr->OperIs(GT_LCL_ADDR) || layout->IsStackOnly(comp))
+            if (isLocal)
             {
                 // If the size is small enough to unroll then we need to mark the block as non-interruptible
                 // to actually allow unrolling. The generated code does not report GC references loaded in the
@@ -515,7 +516,7 @@ void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
             }
         }
         else if (blkNode->OperIs(GT_STORE_BLK) &&
-                 (size <= comp->getUnrollThreshold(Compiler::UnrollKind::Memcpy, !layout->HasGCPtr())))
+                 (size <= comp->getUnrollThreshold(Compiler::UnrollKind::Memcpy, canUseSimd)))
         {
             blkNode->gtBlkOpKind = GenTreeBlk::BlkOpKindUnroll;
 
