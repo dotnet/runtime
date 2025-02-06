@@ -142,5 +142,8 @@ namespace System.Text.Json
 
             return (T?)value;
         }
+
+        internal static bool IsValueConverterStrategy(ConverterStrategy strategy) =>
+            (strategy & (ConverterStrategy.SimpleValue | ConverterStrategy.SegmentableValue)) != 0;
     }
 }
