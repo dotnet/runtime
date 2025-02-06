@@ -83,7 +83,7 @@ namespace System.Diagnostics.Tracing
 
     internal static partial class EventPipeInternal
     {
-#if FEATURE_EVENT_TRACE
+#if FEATURE_PERFTRACING
         private unsafe struct EventPipeProviderConfigurationNative
         {
             private char* m_pProviderName;
@@ -162,6 +162,6 @@ namespace System.Diagnostics.Tracing
             return 0;
         }
 #pragma warning restore IDE0060
-#endif //FEATURE_EVENT_TRACE
+#endif //FEATURE_PERFTRACING
     }
 }
