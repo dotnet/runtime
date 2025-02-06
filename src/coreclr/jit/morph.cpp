@@ -3296,7 +3296,7 @@ void Compiler::fgMakeOutgoingStructArgCopy(GenTreeCall* call, CallArg* arg)
         found = ForEachHbvBitSet(*fgAvailableOutgoingArgTemps, [&](indexType lclNum) {
             LclVarDsc*   varDsc = lvaGetDesc((unsigned)lclNum);
             ClassLayout* layout = varDsc->GetLayout();
-            if (!layout->IsBlockLayout() && (layout->GetClassHandle() == copyBlkClass))
+            if (!layout->IsCustomLayout() && (layout->GetClassHandle() == copyBlkClass))
             {
                 tmp = (unsigned)lclNum;
                 JITDUMP("reusing outgoing struct arg V%02u\n", tmp);
@@ -9915,8 +9915,8 @@ GenTree* Compiler::fgOptimizeHWIntrinsic(GenTreeHWIntrinsic* node)
             genTreeOps actualOper = node->GetOperForHWIntrinsicId(&isScalar);
             genTreeOps oper       = actualOper;
 
-            // We shouldn't find AND_NOT nodes since it should only be produced in lowering
-            assert(oper != GT_AND_NOT);
+            // We shouldn't find AND_NOT, OR_NOT or XOR_NOT nodes since it should only be produced in lowering
+            assert((oper != GT_AND_NOT) && (oper != GT_OR_NOT) && (oper != GT_XOR_NOT));
 
             if (GenTreeHWIntrinsic::OperIsBitwiseHWIntrinsic(oper))
             {
