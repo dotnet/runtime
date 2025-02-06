@@ -2676,7 +2676,54 @@ interp_handle_intrinsics (TransformData *td, MonoMethod *target_method, MonoClas
 				!strncmp ("Vector", klass_name, 6) &&
 				!strcmp (tm, "get_IsHardwareAccelerated"))) {
 		*op = MINT_LDC_I4_0;
-	}
+	} else if ((target_method->klass == mono_defaults.double_class) || (target_method->klass == mono_defaults.single_class)) {
+		MonoGenericContext *method_context = mono_method_get_context (target_method);
+		bool isDouble = target_method->klass == mono_defaults.double_class;
+		if (!strcmp (tm, "ConvertToIntegerNative") &&
+				method_context != NULL &&
+				method_context->method_inst->type_argc == 1) {
+			MonoTypeEnum tto_type = method_context->method_inst->type_argv [0]->type;
+			switch (tto_type) {
+				case MONO_TYPE_I1:
+					*op = isDouble ? MINT_CONV_I1_R8 : MINT_CONV_I1_R4;
+					break;
+				case MONO_TYPE_I2:
+					*op = isDouble ? MINT_CONV_I2_R8 : MINT_CONV_I2_R4;
+					break;
+#if TARGET_SIZEOF_VOID_P == 4
+				case MONO_TYPE_I:
+#endif
+				case MONO_TYPE_I4:
+					*op = isDouble ? MINT_CONV_I4_R8 : MINT_CONV_I4_R4;
+					break;
+#if TARGET_SIZEOF_VOID_P == 8
+				case MONO_TYPE_I:
+#endif
+				case MONO_TYPE_I8:
+					*op = isDouble ? MINT_CONV_I8_R8 : MINT_CONV_I8_R4;
+					break;
+				case MONO_TYPE_U1:
+					*op = isDouble ? MINT_CONV_U1_R8 : MINT_CONV_U1_R4;
+					break;
+				case MONO_TYPE_U2:
+					*op = isDouble ? MINT_CONV_U2_R8 : MINT_CONV_U2_R4;
+					break;
+#if TARGET_SIZEOF_VOID_P == 4
+				case MONO_TYPE_U:
+#endif
+				case MONO_TYPE_U4:
+					*op = isDouble ? MINT_CONV_U4_R8 : MINT_CONV_U4_R4;
+					break;
+#if TARGET_SIZEOF_VOID_P == 8
+				case MONO_TYPE_U:
+#endif
+				case MONO_TYPE_U8:
+					*op = isDouble ? MINT_CONV_U8_R8 : MINT_CONV_U8_R4;
+					break;
+				default: return FALSE;
+			}
+		}
+	} 
 
 	return FALSE;
 }
