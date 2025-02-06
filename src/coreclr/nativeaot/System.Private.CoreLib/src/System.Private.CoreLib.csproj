@@ -582,11 +582,6 @@
     <Compile Include="@(EventingSourceFile)" />
   </ItemGroup>
 
-  <PropertyGroup>
-    <FeatureEventTrace>true</FeatureEventTrace>
-    <DefineConstants Condition="'$(FeatureEventTrace)' == 'true'">$(DefineConstants);FEATURE_EVENT_TRACE</DefineConstants>
-  </PropertyGroup>
-
   <Target Name="GenerateEventingFiles"
           Inputs="@(EventingGenerationScript);@(EventManifestFile);@(EventingInclusionList)"
           Outputs="@(EventingSourceFile)"

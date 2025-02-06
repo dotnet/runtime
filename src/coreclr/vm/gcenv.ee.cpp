@@ -1724,7 +1724,7 @@ void GCToEEInterface::AnalyzeSurvivorsFinished(size_t gcIndex, int condemnedGene
         {
             if (gcGenAnalysisTrace)
             {
-#ifdef FEATURE_EVENT_TRACE
+#ifdef FEATURE_PERFTRACING
                 EventPipeAdapter::ResumeSession(gcGenAnalysisEventPipeSession);
                 FireEtwGenAwareBegin((int)gcIndex, GetClrInstanceId());
                 s_forcedGCInProgress = true;
@@ -1733,7 +1733,7 @@ void GCToEEInterface::AnalyzeSurvivorsFinished(size_t gcIndex, int condemnedGene
                 reportGenerationBounds();
                 FireEtwGenAwareEnd((int)gcIndex, GetClrInstanceId());
                 EventPipeAdapter::PauseSession(gcGenAnalysisEventPipeSession);
-#endif //FEATURE_EVENT_TRACE
+#endif //FEATURE_PERFTRACING
             }
             if (gcGenAnalysisDump)
             {
