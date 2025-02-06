@@ -151,6 +151,9 @@
     <CopyLocalLockFileAssemblies>false</CopyLocalLockFileAssemblies>
     <UseAppHost>false</UseAppHost>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+
+    <!-- The test tree doesn't use globalization, so we can save compilation time (for AOT) and startup time (ICU initialization). -->
+    <InvariantGlobalization>true</InvariantGlobalization>
   </PropertyGroup>
 
   <!-- Set arch specific properties -->
