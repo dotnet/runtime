@@ -508,6 +508,39 @@ void StackFrameIterator::InternalInit(Thread * pThreadToWalk, PTR_PAL_LIMITED_CO
     m_RegDisplay.pR4 = (PTR_uintptr_t)PTR_TO_MEMBER_TADDR(PAL_LIMITED_CONTEXT, pCtx, R4);
     m_RegDisplay.pR5 = (PTR_uintptr_t)PTR_TO_MEMBER_TADDR(PAL_LIMITED_CONTEXT, pCtx, R5);
 
+#elif defined(TARGET_RISCV64)
+    //
+    // preserved regs
+    //
+    m_RegDisplay.pS1 = (PTR_uintptr_t)PTR_TO_MEMBER_TADDR(PAL_LIMITED_CONTEXT, pCtx, S1);
+    m_RegDisplay.pS2 = (PTR_uintptr_t)PTR_TO_MEMBER_TADDR(PAL_LIMITED_CONTEXT, pCtx, S2);
+    m_RegDisplay.pS3 = (PTR_uintptr_t)PTR_TO_MEMBER_TADDR(PAL_LIMITED_CONTEXT, pCtx, S3);
+    m_RegDisplay.pS4 = (PTR_uintptr_t)PTR_TO_MEMBER_TADDR(PAL_LIMITED_CONTEXT, pCtx, S4);
+    m_RegDisplay.pS5 = (PTR_uintptr_t)PTR_TO_MEMBER_TADDR(PAL_LIMITED_CONTEXT, pCtx, S5);
+    m_RegDisplay.pS6 = (PTR_uintptr_t)PTR_TO_MEMBER_TADDR(PAL_LIMITED_CONTEXT, pCtx, S6);
+    m_RegDisplay.pS7 = (PTR_uintptr_t)PTR_TO_MEMBER_TADDR(PAL_LIMITED_CONTEXT, pCtx, S7);
+    m_RegDisplay.pS8 = (PTR_uintptr_t)PTR_TO_MEMBER_TADDR(PAL_LIMITED_CONTEXT, pCtx, S8);
+    m_RegDisplay.pS9 = (PTR_uintptr_t)PTR_TO_MEMBER_TADDR(PAL_LIMITED_CONTEXT, pCtx, S9);
+    m_RegDisplay.pS10 = (PTR_uintptr_t)PTR_TO_MEMBER_TADDR(PAL_LIMITED_CONTEXT, pCtx, S10);
+    m_RegDisplay.pS11 = (PTR_uintptr_t)PTR_TO_MEMBER_TADDR(PAL_LIMITED_CONTEXT, pCtx, S11);
+    m_RegDisplay.pFP = (PTR_uintptr_t)PTR_TO_MEMBER_TADDR(PAL_LIMITED_CONTEXT, pCtx, FP);
+    m_RegDisplay.pRA = (PTR_uintptr_t)PTR_TO_MEMBER_TADDR(PAL_LIMITED_CONTEXT, pCtx, RA);
+
+    //
+    // preserved floating-point registers
+    //
+    int32_t preservedFpIndices[] = {8, 9, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27};
+    for (int i = 0; i < sizeof(preservedFpIndices) / sizeof(preservedFpIndices[0]); i++)
+    {
+        m_RegDisplay.F[preservedFpIndices[i]] = pCtx->F[preservedFpIndices[i]];
+    }
+
+    //
+    // scratch regs
+    //
+    m_RegDisplay.pA0 = (PTR_uintptr_t)PTR_TO_MEMBER_TADDR(PAL_LIMITED_CONTEXT, pCtx, A0);
+    m_RegDisplay.pA1 = (PTR_uintptr_t)PTR_TO_MEMBER_TADDR(PAL_LIMITED_CONTEXT, pCtx, A1);
+
 #elif defined(UNIX_AMD64_ABI)
     //
     // preserved regs
@@ -776,7 +809,7 @@ void StackFrameIterator::InternalInit(Thread * pThreadToWalk, NATIVE_CONTEXT* pC
     m_RegDisplay.pS9 = (PTR_uintptr_t)PTR_TO_REG(pCtx, S9);
     m_RegDisplay.pS10 = (PTR_uintptr_t)PTR_TO_REG(pCtx, S10);
     m_RegDisplay.pS11 = (PTR_uintptr_t)PTR_TO_REG(pCtx, S11);
- 
+
     //
     // scratch regs
     //
@@ -1007,7 +1040,7 @@ void StackFrameIterator::UnwindFuncletInvokeThunk()
 #if defined(USE_PORTABLE_HELPERS) // @TODO: Currently no funclet invoke defined in a portable way
     return;
 #else // defined(USE_PORTABLE_HELPERS)
-    ASSERT((CategorizeUnadjustedReturnAddress(m_ControlPC) == InFuncletInvokeThunk) || 
+    ASSERT((CategorizeUnadjustedReturnAddress(m_ControlPC) == InFuncletInvokeThunk) ||
            (CategorizeUnadjustedReturnAddress(m_ControlPC) == InFilterFuncletInvokeThunk));
 
     PTR_uintptr_t SP;
