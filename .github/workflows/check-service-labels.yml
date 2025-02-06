@@ -11,6 +11,7 @@ on:
 
 jobs:
   check-labels:
+    if: github.repository == 'dotnet/runtime'
     runs-on: ubuntu-latest
     steps:
     - name: Check 'Servicing-approved' label
