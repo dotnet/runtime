@@ -1582,6 +1582,37 @@ unsigned CallArgs::GetIndex(CallArg* arg)
 }
 
 //---------------------------------------------------------------
+// GetIndex: Get the user arg index for the specified argument (IL index).
+//
+// Parameters:
+//   arg - The argument to obtain the index of.
+//
+// Returns:
+//   The user index.
+//
+unsigned CallArgs::GetUserIndex(CallArg* arg)
+{
+    unsigned i = 0;
+    for (CallArg& a : Args())
+    {
+        if (!a.IsUserArg())
+        {
+            continue;
+        }
+
+        if (&a == arg)
+        {
+            return i;
+        }
+
+        i++;
+    }
+
+    assert(!"Could not find argument in arg list");
+    return (unsigned)-1;
+}
+
+//---------------------------------------------------------------
 // Reverse: Reverse the specified subrange of arguments.
 //
 // Parameters:
@@ -32679,3 +32710,42 @@ void GenTree::SetMorphed(Compiler* compiler, bool doChildren /* = false */)
     }
 }
 #endif
+
+//------------------------------------------------------------------------
+// gtLatestStmt: determine which of two statements happens later
+//
+// Arguments:
+//    stmt1 - first statement to consider
+//    stmt2 - second statement to consider
+//
+// Returns:
+//    either stmt1 or stmt2, whichever happens later in the block
+//
+Statement* Compiler::gtLatestStatement(Statement* stmt1, Statement* stmt2)
+{
+    if (stmt1 == stmt2)
+    {
+        return stmt1;
+    }
+
+    Statement* cursor1 = stmt1->GetNextStmt();
+    Statement* cursor2 = stmt2->GetNextStmt();
+
+    while (true)
+    {
+        if ((cursor1 == stmt2) || (cursor2 == nullptr))
+        {
+            return stmt2;
+        }
+
+        if ((cursor2 == stmt1) || (cursor1 == nullptr))
+        {
+            return stmt1;
+        }
+
+        cursor1 = cursor1->GetNextStmt();
+        cursor2 = cursor2->GetNextStmt();
+    }
+
+    assert(!"could not determine latest stmt");
+}
