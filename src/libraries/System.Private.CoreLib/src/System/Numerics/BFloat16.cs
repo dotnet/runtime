@@ -230,7 +230,7 @@ namespace System.Numerics
         /// </summary>
         /// <param name="s">The input to be parsed.</param>
         /// <returns>The equivalent <see cref="BFloat16"/> value representing the input string. If the input exceeds BFloat16's range, a <see cref="PositiveInfinity"/> or <see cref="NegativeInfinity"/> is returned. </returns>
-        public static BFloat16 Parse(string s) => Parse(s, NumberStyles.Float | NumberStyles.AllowThousands, provider: null);
+        public static BFloat16 Parse(string s) => Parse(s, DefaultParseStyle, provider: null);
 
         /// <summary>
         /// Parses a <see cref="BFloat16"/> from a <see cref="string"/> in the given <see cref="NumberStyles"/>.
@@ -246,7 +246,7 @@ namespace System.Numerics
         /// <param name="s">The input to be parsed.</param>
         /// <param name="provider">A format provider.</param>
         /// <returns>The equivalent <see cref="BFloat16"/> value representing the input string. If the input exceeds BFloat16's range, a <see cref="PositiveInfinity"/> or <see cref="NegativeInfinity"/> is returned. </returns>
-        public static BFloat16 Parse(string s, IFormatProvider? provider) => Parse(s, NumberStyles.Float | NumberStyles.AllowThousands, provider);
+        public static BFloat16 Parse(string s, IFormatProvider? provider) => Parse(s, DefaultParseStyle, provider);
 
         /// <summary>
         /// Parses a <see cref="BFloat16"/> from a <see cref="string"/> with the given <see cref="NumberStyles"/> and <see cref="IFormatProvider"/>.
@@ -283,7 +283,7 @@ namespace System.Numerics
         /// <param name="s">The input to be parsed.</param>
         /// <param name="result">The equivalent <see cref="BFloat16"/> value representing the input string if the parse was successful. If the input exceeds BFloat16's range, a <see cref="PositiveInfinity"/> or <see cref="NegativeInfinity"/> is returned. If the parse was unsuccessful, a default <see cref="BFloat16"/> value is returned.</param>
         /// <returns><see langword="true" /> if the parse was successful, <see langword="false" /> otherwise.</returns>
-        public static bool TryParse([NotNullWhen(true)] string? s, out BFloat16 result) => TryParse(s, NumberStyles.Float | NumberStyles.AllowThousands, provider: null, out result);
+        public static bool TryParse([NotNullWhen(true)] string? s, out BFloat16 result) => TryParse(s, DefaultParseStyle, provider: null, out result);
 
         /// <summary>
         /// Tries to parse a <see cref="BFloat16"/> from a <see cref="ReadOnlySpan{Char}"/> in the default parse style.
@@ -291,13 +291,13 @@ namespace System.Numerics
         /// <param name="s">The input to be parsed.</param>
         /// <param name="result">The equivalent <see cref="BFloat16"/> value representing the input string if the parse was successful. If the input exceeds BFloat16's range, a <see cref="PositiveInfinity"/> or <see cref="NegativeInfinity"/> is returned. If the parse was unsuccessful, a default <see cref="BFloat16"/> value is returned.</param>
         /// <returns><see langword="true" /> if the parse was successful, <see langword="false" /> otherwise.</returns>
-        public static bool TryParse(ReadOnlySpan<char> s, out BFloat16 result) => TryParse(s, NumberStyles.Float | NumberStyles.AllowThousands, provider: null, out result);
+        public static bool TryParse(ReadOnlySpan<char> s, out BFloat16 result) => TryParse(s, DefaultParseStyle, provider: null, out result);
 
         /// <summary>Tries to convert a UTF-8 character span containing the string representation of a number to its <see cref="BFloat16"/> number equivalent.</summary>
         /// <param name="utf8Text">A read-only UTF-8 character span that contains the number to convert.</param>
         /// <param name="result">When this method returns, contains a <see cref="BFloat16"/> number equivalent of the numeric value or symbol contained in <paramref name="utf8Text" /> if the conversion succeeded or zero if the conversion failed. The conversion fails if the <paramref name="utf8Text" /> is <see cref="ReadOnlySpan{T}.Empty" /> or is not in a valid format. This parameter is passed uninitialized; any value originally supplied in result will be overwritten.</param>
         /// <returns><c>true</c> if <paramref name="utf8Text" /> was converted successfully; otherwise, false.</returns>
-        public static bool TryParse(ReadOnlySpan<byte> utf8Text, out BFloat16 result) => TryParse(utf8Text, NumberStyles.Float | NumberStyles.AllowThousands, provider: null, out result);
+        public static bool TryParse(ReadOnlySpan<byte> utf8Text, out BFloat16 result) => TryParse(utf8Text, DefaultParseStyle, provider: null, out result);
 
         /// <summary>
         /// Tries to parse a <see cref="BFloat16"/> from a <see cref="string"/> with the given <see cref="NumberStyles"/> and <see cref="IFormatProvider"/>.
@@ -1945,7 +1945,7 @@ namespace System.Numerics
         //
 
         /// <inheritdoc cref="INumberBase{TSelf}.Parse(ReadOnlySpan{byte}, NumberStyles, IFormatProvider?)" />
-        public static BFloat16 Parse(ReadOnlySpan<byte> utf8Text, NumberStyles style = NumberStyles.Float | NumberStyles.AllowThousands, IFormatProvider? provider = null)
+        public static BFloat16 Parse(ReadOnlySpan<byte> utf8Text, NumberStyles style = DefaultParseStyle, IFormatProvider? provider = null)
         {
             NumberFormatInfo.ValidateParseStyleInteger(style);
             return Number.ParseFloat<byte, BFloat16>(utf8Text, style, NumberFormatInfo.GetInstance(provider));
@@ -1959,10 +1959,10 @@ namespace System.Numerics
         }
 
         /// <inheritdoc cref="IUtf8SpanParsable{TSelf}.Parse(ReadOnlySpan{byte}, IFormatProvider?)" />
-        public static BFloat16 Parse(ReadOnlySpan<byte> utf8Text, IFormatProvider? provider) => Parse(utf8Text, NumberStyles.Float | NumberStyles.AllowThousands, provider);
+        public static BFloat16 Parse(ReadOnlySpan<byte> utf8Text, IFormatProvider? provider) => Parse(utf8Text, DefaultParseStyle, provider);
 
         /// <inheritdoc cref="IUtf8SpanParsable{TSelf}.TryParse(ReadOnlySpan{byte}, IFormatProvider?, out TSelf)" />
-        public static bool TryParse(ReadOnlySpan<byte> utf8Text, IFormatProvider? provider, out BFloat16 result) => TryParse(utf8Text, NumberStyles.Float | NumberStyles.AllowThousands, provider, out result);
+        public static bool TryParse(ReadOnlySpan<byte> utf8Text, IFormatProvider? provider, out BFloat16 result) => TryParse(utf8Text, DefaultParseStyle, provider, out result);
 
         //
         // IBinaryFloatParseAndFormatInfo
