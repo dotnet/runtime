@@ -234,7 +234,7 @@ LOCAL_LABEL(NotInHeap):
         addi    t3, t3, 8
 
         // Jump to the return address in a1 for the tailcall.
-        jalr x0, 0(a1)
+        jr a1
 
 LEAF_END RhpCheckedAssignRef, _TEXT
 
@@ -253,14 +253,16 @@ LEAF_END RhpCheckedAssignRef, _TEXT
 LEAF_ENTRY RhpAssignRefRiscV64, _TEXT
 
     ALTERNATE_ENTRY RhpAssignRefAVLocation
+        mv    t5, a1
+        mv    a1, t3
         sd    t4, 0(t3)
 
         INSERT_UNCHECKED_WRITE_BARRIER_CORE t3, t4
 
         addi  t3, t3, 8
 
-        // Jump to the return address in a1 for the tailcall.
-        jalr x0, 0(a1)
+        // Jump to the return address in t5 (previously a1) for the tailcall.
+        jr t5
 
 LEAF_END RhpAssignRefRiscV64, _TEXT
 

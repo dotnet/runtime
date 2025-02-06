@@ -20,7 +20,7 @@
         // Load the target address from the cache entry
         ld    t0, (OFFSETOF__InterfaceDispatchCache__m_rgEntries + (\entry * 16) + 8)(t0)
 
-        // Jump to the address in t6
+        // Jump to the address in t0
         jr  t0
 
     0:
@@ -33,8 +33,8 @@
 
         NESTED_ENTRY RhpInterfaceDispatch\entries, _TEXT, NoHandler
 
-            // t0 holds the indirection cell address. Load the cache pointer.
-            ld  t0, OFFSETOF__InterfaceDispatchCell__m_pCache(a1)  // Using a1 as an alternative base register
+            // t5 holds the indirection cell address. Load the cache pointer.
+            ld  t0, OFFSETOF__InterfaceDispatchCell__m_pCache(t5)  // Using a1 as an alternative base register
 
             // Load the MethodTable from the object instance in a0.
             ALTERNATE_ENTRY RhpInterfaceDispatchAVLocation\entries
@@ -105,12 +105,12 @@
     // Use universal transition helper to allow an exception to flow out of resolution.
     //
     LEAF_ENTRY RhpInterfaceDispatchSlow, _TEXT
-        // a1 contains the interface dispatch cell address.
+        // t5 contains the interface dispatch cell address.
         // Calling convention of the universal thunk is:
         //  t0: target address for the thunk to call
         //  t1: parameter of the thunk's target
         PREPARE_EXTERNAL_VAR RhpCidResolve, t0
-        mv t1, a1
+        mv t1, t5
         tail       C_FUNC(RhpUniversalTransition_DebugStepTailCall)
     LEAF_END RhpInterfaceDispatchSlow, _TEXT
 

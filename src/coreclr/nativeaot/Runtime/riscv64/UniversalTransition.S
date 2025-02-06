@@ -12,6 +12,9 @@
     .global RhpFpTrashValues
 #endif // TRASH_SAVED_ARGUMENT_REGISTERS
 
+// Padding to account for the odd number of saved integer registers
+#define ALIGNMENT_PADDING_SIZE (8)
+
 #define COUNT_ARG_REGISTERS (8)
 #define INTEGER_REGISTER_SIZE (8)
 #define ARGUMENT_REGISTERS_SIZE (COUNT_ARG_REGISTERS * INTEGER_REGISTER_SIZE)
@@ -20,7 +23,7 @@
 #define RETURN_BLOCK_SIZE (32)
 
 #define COUNT_FLOAT_ARG_REGISTERS (8)
-#define FLOAT_REGISTER_SIZE (16)
+#define FLOAT_REGISTER_SIZE (8)
 #define FLOAT_ARG_REGISTERS_SIZE (COUNT_FLOAT_ARG_REGISTERS * FLOAT_REGISTER_SIZE)
 
 #define PUSHED_RA_SIZE (8)
@@ -28,6 +31,7 @@
 
 // From CallerSP to ChildSP, the stack frame is composed of the following adjacent regions:
 //
+//      ALIGNMENT_PADDING_SIZE
 //      ARGUMENT_REGISTERS_SIZE
 //      RETURN_BLOCK_SIZE
 //      FLOAT_ARG_REGISTERS_SIZE
@@ -37,7 +41,7 @@
 
 #define DISTANCE_FROM_CHILDSP_TO_RETURN_BLOCK (PUSHED_FP_SIZE + PUSHED_RA_SIZE + FLOAT_ARG_REGISTERS_SIZE)
 
-#define STACK_SIZE (ARGUMENT_REGISTERS_SIZE + RETURN_BLOCK_SIZE + FLOAT_ARG_REGISTERS_SIZE + PUSHED_RA_SIZE + PUSHED_FP_SIZE)
+#define STACK_SIZE (ALIGNMENT_PADDING_SIZE + ARGUMENT_REGISTERS_SIZE + RETURN_BLOCK_SIZE + FLOAT_ARG_REGISTERS_SIZE + PUSHED_RA_SIZE + PUSHED_FP_SIZE)
 
 #define FLOAT_ARG_OFFSET (PUSHED_FP_SIZE + PUSHED_RA_SIZE)
 #define ARGUMENT_REGISTERS_OFFSET (FLOAT_ARG_OFFSET + FLOAT_ARG_REGISTERS_SIZE + RETURN_BLOCK_SIZE)
@@ -88,9 +92,8 @@
 
         # FP and RA registers
         addi        sp, sp, -STACK_SIZE
-        sd          s0, STACK_SIZE - 8(sp)    # Save frame pointer
-        sd          ra, STACK_SIZE - 16(sp)   # Save return address
-        mv          s0, sp                    # Set frame pointer
+        sd          s0, 0x0(sp)       # Save frame pointer
+        sd          ra, 0x08(sp)      # Save return address
 
         # Floating point registers
         fsd         fa0, FLOAT_ARG_OFFSET(sp)
@@ -144,7 +147,7 @@ ALTERNATE_ENTRY ReturnFrom\FunctionName
 
         # Move the result (the target address) to a2 so it doesn't get overridden when we restore the
         # argument registers.
-        mv          a2, a0
+        mv          t2, a0
 
         # Restore floating point registers
         fld         fa0, FLOAT_ARG_OFFSET(sp)
@@ -167,12 +170,12 @@ ALTERNATE_ENTRY ReturnFrom\FunctionName
         ld          a7, ARGUMENT_REGISTERS_OFFSET + 0x38(sp)
 
         # Restore FP and RA registers, and free the allocated stack block
-        ld          s0, STACK_SIZE - 8(sp)
-        ld          ra, STACK_SIZE - 16(sp)
+        ld          ra, 0x08(sp)
+        ld          s0, 0x0(sp)
         addi        sp, sp, STACK_SIZE
 
         # Tailcall to the target address.
-        jalr        zero, a2, 0
+        jr          t2
 
     NESTED_END Rhp\FunctionName, _TEXT
 

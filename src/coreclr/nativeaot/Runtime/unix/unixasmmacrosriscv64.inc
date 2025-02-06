@@ -167,7 +167,7 @@ C_FUNC(\Name):
     auipc  a0, %tlsdesc_hi(\var)
     lw     t0, %tlsdesc_load_lo(\var)(a0)
     addi   a0, a0, %tlsdesc_add_lo(\var)
-    jalr  t0, 0(t0), %tlsdesc_call(\var)
+    jalr   t0, 0(t0), %tlsdesc_call(\var)
     add    \target, tp, a0
 .endm
 
