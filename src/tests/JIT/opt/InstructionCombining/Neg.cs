@@ -168,8 +168,8 @@ namespace TestNeg
         [MethodImpl(MethodImplOptions.NoInlining)]
         static int NegsLSR(uint a)
         {
-            // Not working
-            //AR M64-FULL-LINE: negs {{w[0-9]+}}, {{w[0-9]+}}, LSR #3
+            //ARM64-FULL-LINE: lsr {{w[0-9]+}}, {{w[0-9]+}}, #3
+            //AR M64-FULL-LINE: negs {{w[0-9]+}}, {{w[0-9]+}}
             if (-(a>>3) != 0) {
                 return 1;
             }
@@ -189,8 +189,8 @@ namespace TestNeg
         [MethodImpl(MethodImplOptions.NoInlining)]
         static int NegsLargeShift(uint a)
         {
-            // Doesn't work
-            //AR M64-FULL-LINE: negs {{w[0-9]+}}, {{w[0-9]+}}, LSL #4
+            //ARM64-FULL-LINE: lsl  {{w[0-9]+}}, {{w[0-9]+}}, #4
+            //ARM64-FULL-LINE: negs {{x[0-9]+}}, {{x[0-9]+}}
             if (-(a<<100) != 0) {
                 return 1;
             }
