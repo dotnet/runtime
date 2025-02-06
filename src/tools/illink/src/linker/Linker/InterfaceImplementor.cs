@@ -9,7 +9,7 @@ using Mono.Cecil;
 
 namespace Mono.Linker
 {
-	public class InterfaceImplementor
+	public class InterfaceImplementor : IEquatable<InterfaceImplementor>
 	{
 		/// <summary>
 		/// The type that implements <see cref="InterfaceImplementor.InterfaceType"/>.
@@ -55,5 +55,20 @@ namespace Mono.Linker
 			}
 			throw new InvalidOperationException ($"Type '{implementor.FullName}' does not implement interface '{interfaceType.FullName}' directly or through any interfaces");
 		}
+
+		public bool Equals (InterfaceImplementor? other)
+		{
+			if (other is null)
+				return false;
+
+			if (ReferenceEquals (this, other))
+				return true;
+
+			return Implementor == other.Implementor && InterfaceImplementation == other.InterfaceImplementation && InterfaceType == other.InterfaceType;
+		}
+
+		public override bool Equals (object? obj) => obj is InterfaceImplementor other && Equals (other);
+
+		public override int GetHashCode () => HashCode.Combine (Implementor, InterfaceImplementation, InterfaceType);
 	}
 }
