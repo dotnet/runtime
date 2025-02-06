@@ -5,6 +5,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Configuration;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
@@ -137,6 +138,10 @@ public abstract class BlazorWasmTestBase : WasmTemplateTestsBase
         {
             if (publishOptions != _defaultBlazorPublishOptions)
                 publishOptions = publishOptions with { ExtraMSBuildArgs = $"{_blazorExtraMSBuildArgs} {publishOptions.ExtraMSBuildArgs}" };
+
+            if (config == Configuration.Debug)
+                publishOptions = publishOptions with { PerfTracingEnabled = true };
+
             (string projectDir, string buildOutput) = PublishProject(
                 info,
                 config,

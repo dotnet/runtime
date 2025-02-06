@@ -66,7 +66,7 @@ public class AssetsComputingHelper
             ".dat" when IsDefaultIcuMode() && !(icuShardsFromRuntimePack.Any(f => f == fileName)) => "automatic icu shard selection, based on application culture, is enabled",
             ".json" when fromMonoPackage && (fileName == "wasm-props" || fileName == "package") => $"{fileName}{extension} is not used by Blazor",
             ".ts" when fromMonoPackage && fileName == "dotnet.d" => "dotnet type definition is not used by Blazor",
-            ".map" when !emitSourceMap && fromMonoPackage && (fileName == "dotnet.js" || fileName == "dotnet.runtime.js") => "source map file is not published",
+            ".map" when !emitSourceMap && fromMonoPackage && (fileName == "dotnet.js" || fileName == "dotnet.runtime.js" || fileName == "dotnet.diag.js") => "source map file is not published",
             ".ts" when fromMonoPackage && fileName == "dotnet-legacy.d" => "dotnet type definition is not used by Blazor",
             ".js" when assetType == "native" && !dotnetJsSingleThreadNames.Contains(fileName) => $"{fileName}{extension} is not used by Blazor",
             ".mjs" when assetType == "native" && !(enableThreads && fileName == "dotnet.native.worker") => $"{fileName}{extension} is not used by Blazor",

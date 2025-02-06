@@ -508,7 +508,7 @@ public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string?
             .Union(bootJson.resources.wasmNative.Keys)
             .Union(bootJson.resources.jsModuleRuntime.Keys)
             .Union(bootJson.resources.jsModuleWorker?.Keys ?? Enumerable.Empty<string>())
-            .Union(bootJson.resources.jsModuleGlobalization?.Keys ?? Enumerable.Empty<string>())
+            .Union(bootJson.resources.jsModuleDiag?.Keys ?? Enumerable.Empty<string>())
             .Union(bootJson.resources.wasmSymbols?.Keys ?? Enumerable.Empty<string>())
             .ToArray();
 

@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <Import Project="..\DefaultBrowserSample.targets" />
+  <PropertyGroup>
+    <WasmBuildNative>true</WasmBuildNative>
+    <EventSourceSupport>true</EventSourceSupport>
+    <EnableAggressiveTrimming>false</EnableAggressiveTrimming>
+    <PublishTrimmed>false</PublishTrimmed>
+    <InvariantTimezone>true</InvariantTimezone>
+    <InvariantGlobalization>true</InvariantGlobalization>
+  </PropertyGroup>
+  <ItemGroup>
+    <WasmExtraFilesToDeploy Include="main.js" />
+  </ItemGroup>
+</Project>
