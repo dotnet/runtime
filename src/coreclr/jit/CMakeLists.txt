@@ -65,7 +65,7 @@ function(create_standalone_jit)
   target_compile_definitions(${TARGETDETAILS_TARGET} PRIVATE FEATURE_NO_HOST)
   target_compile_definitions(${TARGETDETAILS_TARGET} PRIVATE SELF_NO_HOST)
 
-  if ((TARGETDETAILS_ARCH STREQUAL "x64") OR (TARGETDETAILS_ARCH STREQUAL "arm64") OR ((TARGETDETAILS_ARCH STREQUAL "x86") AND NOT (TARGETDETAILS_OS STREQUAL "unix")))
+  if ((TARGETDETAILS_ARCH STREQUAL "x64") OR (TARGETDETAILS_ARCH STREQUAL "arm64") OR (TARGETDETAILS_ARCH STREQUAL "x86"))
     target_compile_definitions(${TARGETDETAILS_TARGET} PRIVATE FEATURE_SIMD)
     target_compile_definitions(${TARGETDETAILS_TARGET} PRIVATE FEATURE_HW_INTRINSICS)
     target_compile_definitions(${TARGETDETAILS_TARGET} PRIVATE FEATURE_MASKED_HW_INTRINSICS)
@@ -167,6 +167,7 @@ set( JIT_SOURCES
   regset.cpp
   scev.cpp
   scopeinfo.cpp
+  segmentlist.cpp
   sideeffects.cpp
   sm.cpp
   smdata.cpp
@@ -174,7 +175,6 @@ set( JIT_SOURCES
   ssabuilder.cpp
   ssarenamestate.cpp
   stacklevelsetter.cpp
-  structsegments.cpp
   switchrecognition.cpp
   treelifeupdater.cpp
   unwind.cpp
@@ -362,6 +362,7 @@ set( JIT_HEADERS
   register.h
   regset.h
   scev.h
+  segmentlist.h
   sideeffects.h
   simd.h
   sm.h
@@ -372,7 +373,6 @@ set( JIT_HEADERS
   ssaconfig.h
   ssarenamestate.h
   stacklevelsetter.h
-  structsegments.h
   target.h
   targetx86.h
   targetamd64.h
