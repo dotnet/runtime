@@ -25,7 +25,7 @@ namespace HttpStress
         private readonly HttpClient _client;
         private readonly CancellationToken _globalToken;
         private readonly Configuration _config;
-
+        public int RequestHashCode { get; set; }
         public RequestContext(Configuration config, HttpClient httpClient, Random random, CancellationToken globalToken, int taskNum)
         {
             Debug.Assert(httpClient.BaseAddress != null);
@@ -56,6 +56,7 @@ namespace HttpStress
         {
             request.Version = HttpVersion;
             request.VersionPolicy = VersionPolicy;
+            RequestHashCode = request.GetHashCode();
 
             if (token != null)
             {

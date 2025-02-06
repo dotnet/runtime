@@ -9,6 +9,11 @@ $env:DOTNET_DbgMiniDumpName = "$env:DUMPS_SHARE_MOUNT_ROOT/$env:STRESS_ROLE/core
 
 $ExitCode = $LASTEXITCODE
 
+if ($env:DUMPS_SHARE_MOUNT_ROOT) {
+    Write-Host "copy logs"
+    Copy-Item -Recurse C:/app/logs/ $env:DUMPS_SHARE_MOUNT_ROOT/
+}
+
 if ($ExitCode -ne 0) {
     Write-Host "HttpStress failed, copying artifacts for investigation"
 
