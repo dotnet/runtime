@@ -6,6 +6,11 @@
 #ifndef __unwinder_h__
 #define __unwinder_h__
 
+#ifdef FEATURE_CDAC_UNWINDER
+using ReadFromTarget = int (*)(uint64_t addr, void* pBuffer, int bufferSize, void* callbackContext);
+using GetAllocatedBuffer = int (*)(int bufferSize, void** ppBuffer, void* callbackContext);
+using GetStackWalkInfo = void (*)(uint64_t controlPC, UINT_PTR* pModuleBase, UINT_PTR* pFuncEntry, void* callbackContext);
+#endif // FEATURE_CDAC_UNWINDER
 
 //---------------------------------------------------------------------------------------
 //
@@ -28,13 +33,38 @@ protected:
 
     // Given a control PC, return the base of the module it is in.  For jitted managed code, this is the
     // start of the code heap.
-    static HRESULT GetModuleBase(      DWORD64  address,
+    HRESULT GetModuleBase(             DWORD64  address,
                                  _Out_ PDWORD64 pdwBase);
 
     // Given a control PC, return the function entry of the functoin it is in.
-    static HRESULT GetFunctionEntry(                       DWORD64 address,
+    HRESULT GetFunctionEntry(                              DWORD64 address,
                                     _Out_writes_(cbBuffer) PVOID   pBuffer,
                                                            DWORD   cbBuffer);
+
+#ifdef FEATURE_CDAC_UNWINDER
+protected:
+
+    OOPStackUnwinder(ReadFromTarget readFromTarget,
+                     GetAllocatedBuffer getAllocatedBuffer,
+                     GetStackWalkInfo getStackWalkInfo,
+                     void* callbackContext)
+        : readFromTarget(readFromTarget),
+          getAllocatedBuffer(getAllocatedBuffer),
+          getStackWalkInfo(getStackWalkInfo),
+          callbackContext(callbackContext)
+    { }
+
+
+public:
+    // These functions pointers are marked public because they are called using
+    // a global instance of OOPStackUnwinder in the ARM64 implementation.
+    ReadFromTarget readFromTarget;
+    GetAllocatedBuffer getAllocatedBuffer;
+    GetStackWalkInfo getStackWalkInfo;
+
+    void* callbackContext;
+
+#endif // FEATURE_CDAC_UWNINDER
 };
 
 #endif // __unwinder_h__

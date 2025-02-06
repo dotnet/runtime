@@ -122,6 +122,10 @@
         <IncludeSubFolders>True</IncludeSubFolders>
       </RunTimeArtifactsIncludeFolders>
 
+      <RuntimeArtifactsIncludeFolders Include="cdaclibs/" TargetDir="/">
+        <IncludeSubFolders>True</IncludeSubFolders>
+      </RuntimeArtifactsIncludeFolders>
+
       <!-- XUnit runner harness assemblies that we don't want to mix in with the framework in Core_Root -->
       <RunTimeArtifactsIncludeFolders Include="xunit/" TargetDir="xunit/" />
     </ItemGroup>

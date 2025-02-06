@@ -759,8 +759,15 @@ protected:
 
     void PopIfChained();
 #endif // TARGET_UNIX && !DACCESS_COMPILE
+
+    friend struct ::cdac_data<Frame>;
 };
 
+template<>
+struct cdac_data<Frame>
+{
+    static constexpr size_t Next = offsetof(Frame, m_Next);
+};
 
 //-----------------------------------------------------------------------------
 // This frame provides a context for a code location at which
@@ -1199,10 +1206,18 @@ public:
 
     virtual void UpdateRegDisplay(const PREGDISPLAY, bool updateFloats = false);
 
+    friend struct ::cdac_data<SoftwareExceptionFrame>;
+
     // Keep as last entry in class
     DEFINE_VTABLE_GETTER_AND_DTOR(SoftwareExceptionFrame)
 };
 
+template<>
+struct cdac_data<SoftwareExceptionFrame>
+{
+    static constexpr size_t TargetContext = offsetof(SoftwareExceptionFrame, m_Context);
+    static constexpr size_t ReturnAddress = offsetof(SoftwareExceptionFrame, m_ReturnAddress);
+};
 #endif // FEATURE_EH_FUNCLETS
 
 //-----------------------------------------------------------------------

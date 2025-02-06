@@ -32,6 +32,14 @@
   </ItemGroup>
 
   <ItemGroup>
+    <!-- TODO: Link libraries on non-windows platforms. -->
+    <DirectPInvoke Include="unwinder_cdac_amd64" />
+    <NativeLibrary Include="$(CoreCLRArtifactsPath)cdaclibs\unwinder_cdac_amd64.lib" Condition="'$(TargetsWindows)' == 'true'" />
+    <DirectPInvoke Include="unwinder_cdac_arm64" />
+    <NativeLibrary Include="$(CoreCLRArtifactsPath)cdaclibs\unwinder_cdac_arm64.lib" Condition="'$(TargetsWindows)' == 'true'" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\Microsoft.Diagnostics.DataContractReader\Microsoft.Diagnostics.DataContractReader.csproj" />
   </ItemGroup>
 
