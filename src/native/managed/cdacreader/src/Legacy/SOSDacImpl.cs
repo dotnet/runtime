@@ -1194,8 +1194,23 @@ internal sealed unsafe partial class SOSDacImpl
         => _legacyImpl is not null ? _legacyImpl.GetStackLimits(threadPtr, lower, upper, fp) : HResults.E_NOTIMPL;
     int ISOSDacInterface.GetStackReferences(int osThreadID, void** ppEnum)
         => _legacyImpl is not null ? _legacyImpl.GetStackReferences(osThreadID, ppEnum) : HResults.E_NOTIMPL;
+
     int ISOSDacInterface.GetStressLogAddress(ulong* stressLog)
-        => _legacyImpl is not null ? _legacyImpl.GetStressLogAddress(stressLog) : HResults.E_NOTIMPL;
+    {
+        ulong stressLogAddress = _target.ReadGlobalPointer(Constants.Globals.StressLog);
+
+#if DEBUG
+        if (_legacyImpl is not null)
+        {
+            ulong legacyStressLog;
+            Debug.Assert(HResults.S_OK == _legacyImpl.GetStressLogAddress(&legacyStressLog));
+            Debug.Assert(legacyStressLog == stressLogAddress);
+        }
+#endif
+        *stressLog = stressLogAddress;
+        return HResults.S_OK;
+    }
+
     int ISOSDacInterface.GetSyncBlockCleanupData(ulong addr, void* data)
         => _legacyImpl is not null ? _legacyImpl.GetSyncBlockCleanupData(addr, data) : HResults.E_NOTIMPL;
     int ISOSDacInterface.GetSyncBlockData(uint number, void* data)
