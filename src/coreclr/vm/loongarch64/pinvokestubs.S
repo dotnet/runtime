@@ -86,7 +86,7 @@ NESTED_ENTRY JIT_PInvokeBegin, _TEXT, NoHandler
     //                $s0=23.
     PROLOG_SAVE_REG    23, 16           //the stack slot at $sp+24 is empty for 16 byte alignment
 
-    mv.d  $s0, $a0
+    move  $s0, $a0
 
     // s0 = pFrame
     // set first slot to the value of InlinedCallFrame identifier (checked by runtime code)

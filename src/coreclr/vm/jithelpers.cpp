@@ -2468,7 +2468,7 @@ static PCODE PatchpointOptimizationPolicy(TransitionBlock* pTransitionBlock, int
         Thread::ObjectRefFlush(CURRENT_THREAD);
     #endif
 
-        FrameWithCookie<DynamicHelperFrame> frame(pTransitionBlock, 0);
+        DynamicHelperFrame frame(pTransitionBlock, 0);
         DynamicHelperFrame * pFrame = &frame;
 
         pFrame->Push(CURRENT_THREAD);
@@ -2554,7 +2554,7 @@ static PCODE PatchpointRequiredPolicy(TransitionBlock* pTransitionBlock, int* co
     Thread::ObjectRefFlush(CURRENT_THREAD);
 #endif
 
-    FrameWithCookie<DynamicHelperFrame> frame(pTransitionBlock, 0);
+    DynamicHelperFrame frame(pTransitionBlock, 0);
     DynamicHelperFrame * pFrame = &frame;
 
     pFrame->Push(CURRENT_THREAD);
