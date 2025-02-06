@@ -147,7 +147,7 @@ namespace System.Reflection
                         throw new TypeLoadException(assembly is null ?
                             SR.Format(SR.TypeLoad_ResolveType, escapedTypeName) :
                             SR.Format(SR.TypeLoad_ResolveTypeFromAssembly, escapedTypeName, assembly.FullName))
-                        { TypeNameResolver = escapedTypeName };
+                        { TypeName = escapedTypeName };
                     }
                     return null;
                 }
