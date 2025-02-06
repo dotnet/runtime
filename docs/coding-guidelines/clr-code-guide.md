@@ -473,7 +473,7 @@ Way back in V1, error paths were _ad-hoc._ Typically, they flowed through "fail:
 
 Due to the no-compromise robustness requirements that the CLR Hosting model (with SQL Server as the initial customer) imposed on us in the .NET Framework v2 release, we have since become much more formal about backout. One reason is that we like to write backout that will execute if you leave the scope because of an exception. We also want to centralize policy regarding exceptions occurring inside backout. Finally, we want an infrastructure that will discourage developer errors from introducing backout bugs in the first place.
 
-Thus, we have centralized cleanup around C++ destructor technology. Instead of declaring a HANDLE, you declare a HandleHolder. The holder wraps a HANDLE and its destructor closes the handle no matter how control leaves the scope. We have already implemented standard holders for common resources (arrays, memory allocated with C++, new Win32 handles, and locks.) The Holder mechanism is extensible so you can add new types of holders as you need them.
+Thus, we have centralized cleanup around C++ destructor technology. Instead of declaring a HANDLE, you declare a HandleHolder. The holder wraps a HANDLE and its destructor closes the handle no matter how control leaves the scope. We have already implemented standard holders for common resources (arrays, memory allocated with C++ new, Win32 handles, and locks.) The Holder mechanism is extensible so you can add new types of holders as you need them.
 
 ### <a name="2.2.2"></a>2.2.2 An example of holder usage
 
