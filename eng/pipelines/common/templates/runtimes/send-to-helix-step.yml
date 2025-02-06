@@ -57,7 +57,6 @@ steps:
       _TieringTest: ${{ parameters.tieringTest }}
       _HotColdSplitting: ${{ parameters.hotColdSplitting }}
       _NativeAotTest: ${{ parameters.nativeAotTest }}
-      # DOTNET_ThreadPool_ForceMaxWorkerThreads: 1
       _LongRunningGcTests: ${{ parameters.longRunningGcTests }}
       _GcSimulatorTests: ${{ parameters.gcSimulatorTests }}
       _Scenarios: ${{ join(',', parameters.scenarios) }}
