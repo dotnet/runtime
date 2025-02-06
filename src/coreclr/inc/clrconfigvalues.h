@@ -383,6 +383,7 @@ RETAIL_CONFIG_DWORD_INFO(INTERNAL_LogToConsole, W("LogToConsole"), 0 , "Writes t
 CONFIG_DWORD_INFO(INTERNAL_LogToDebugger, W("LogToDebugger"), 0 , "Writes the CLR log to debugger (OutputDebugStringA).")
 CONFIG_DWORD_INFO(INTERNAL_LogToFile, W("LogToFile"), 0 , "Writes the CLR log to a file.")
 CONFIG_DWORD_INFO(INTERNAL_LogWithPid, W("LogWithPid"), FALSE, "Appends pid to filename for the CLR log.")
+CONFIG_DWORD_INFO(INTERNAL_LogToAndroid, W("LogToAndroid"), 0 , "Writes the CLR log to android logcat")
 
 ///
 /// MetaData
