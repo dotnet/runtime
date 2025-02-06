@@ -426,7 +426,7 @@ PCODE MethodDesc::PrepareILBasedCode(PrepareCodeConfig* pConfig)
         LOG((LF_CLASSLOADER, LL_INFO1000000,
             "    In PrepareILBasedCode, calling JitCompileCode\n"));
         pCode = JitCompileCode(pConfig);
-
+#ifdef FEATURE_INTERPRETER
         if (pConfig->IsInterpreterCode())
         {
             AllocMemTracker amt;
@@ -435,6 +435,7 @@ PCODE MethodDesc::PrepareILBasedCode(PrepareCodeConfig* pConfig)
             pCode = PINSTRToPCODE(pPrecode->GetEntryPoint());
             SetNativeCodeInterlocked(pCode);
         }
+#endif // FEATURE_INTERPRETER
     }
     else
     {
@@ -1839,7 +1840,9 @@ PrepareCodeConfig::PrepareCodeConfig(NativeCodeVersion codeVersion, BOOL needsMu
 #ifdef FEATURE_TIERED_COMPILATION
     m_jitSwitchedToOptimized(false),
 #endif
+#ifdef FEATURE_INTERPRETER
     m_isInterpreterCode(false),
+#endif
     m_nextInSameThread(nullptr)
 {}
 

@@ -11,7 +11,9 @@ extern  ProfileLeave:proc
 extern  ProfileTailcall:proc
 extern OnHijackWorker:proc
 extern JIT_RareDisableHelperWorker:proc
+ifdef FEATURE_INTERPRETER
 extern ExecuteInterpretedMethod:proc
+endif
 
 extern g_pPollGC:QWORD
 extern g_TrapReturningThreads:DWORD
@@ -459,6 +461,7 @@ JIT_PollGCRarePath:
     TAILJMP_RAX
 LEAF_END JIT_PollGC, _TEXT
 
+ifdef FEATURE_INTERPRETER
 NESTED_ENTRY InterpreterStub, _TEXT
 
         PROLOG_WITH_TRANSITION_BLOCK
@@ -473,5 +476,6 @@ NESTED_ENTRY InterpreterStub, _TEXT
         EPILOG_WITH_TRANSITION_BLOCK_RETURN
 
 NESTED_END InterpreterStub, _TEXT
+endif ; FEATURE_INTERPRETER
 
         end

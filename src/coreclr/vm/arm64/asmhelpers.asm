@@ -21,7 +21,9 @@
 #endif
     IMPORT HijackHandler
     IMPORT ThrowControlForThread
+#ifdef FEATURE_INTERPRETER
     IMPORT ExecuteInterpretedMethod
+#endif
 
 #ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
     IMPORT  g_sw_ww_table
@@ -1194,6 +1196,7 @@ JIT_PollGCRarePath
         br x9
     LEAF_END
 
+#ifdef FEATURE_INTERPRETER
     NESTED_ENTRY InterpreterStub
 
         PROLOG_WITH_TRANSITION_BLOCK
@@ -1206,6 +1209,7 @@ JIT_PollGCRarePath
         EPILOG_WITH_TRANSITION_BLOCK_RETURN
 
     NESTED_END
+#endif // FEATURE_INTERPRETER
 
 ; Must be at very end of file
     END

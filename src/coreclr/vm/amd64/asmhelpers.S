@@ -331,6 +331,7 @@ LOCAL_LABEL(JIT_PollGCRarePath):
         jmp     rax
 LEAF_END  JIT_PollGC, _TEXT
 
+#ifdef FEATURE_INTERPRETER
 NESTED_ENTRY InterpreterStub, _TEXT, NoHandler
 
         PROLOG_WITH_TRANSITION_BLOCK 8, 0, 0, 0, 0
@@ -347,3 +348,4 @@ NESTED_ENTRY InterpreterStub, _TEXT, NoHandler
         EPILOG_WITH_TRANSITION_BLOCK_RETURN
 
 NESTED_END InterpreterStub, _TEXT
+#endif // FEATURE_INTERPRETER

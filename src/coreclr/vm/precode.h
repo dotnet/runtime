@@ -208,6 +208,7 @@ typedef DPTR(NDirectImportPrecode) PTR_NDirectImportPrecode;
 
 #endif // HAS_NDIRECT_IMPORT_PRECODE
 
+#ifdef FEATURE_INTERPRETER
 struct InterpreterPrecodeData
 {
     TADDR ByteCodeAddr;
@@ -237,6 +238,7 @@ struct InterpreterPrecode
         return PINSTRToPCODE(dac_cast<TADDR>(this));
     }
 };
+#endif // FEATURE_INTERPRETER
 
 #ifdef HAS_FIXUP_PRECODE
 
@@ -380,7 +382,9 @@ typedef DPTR(class Precode) PTR_Precode;
 enum PrecodeType {
     PRECODE_INVALID         = InvalidPrecode::Type,
     PRECODE_STUB            = StubPrecode::Type,
+#ifdef FEATURE_INTERPRETER
     PRECODE_INTERPRETER     = InterpreterPrecode::Type,
+#endif // FEATURE_INTERPRETER
 #ifdef HAS_NDIRECT_IMPORT_PRECODE
     PRECODE_NDIRECT_IMPORT  = NDirectImportPrecode::Type,
 #endif // HAS_NDIRECT_IMPORT_PRECODE
@@ -568,10 +572,10 @@ public:
 
     static Precode* Allocate(PrecodeType t, MethodDesc* pMD,
         LoaderAllocator *pLoaderAllocator, AllocMemTracker *pamTracker);
-
+#ifdef FEATURE_INTERPRETER
     static InterpreterPrecode* AllocateInterpreterPrecode(PCODE byteCode,
         LoaderAllocator *  pLoaderAllocator, AllocMemTracker *  pamTracker);
-
+#endif // FEATURE_INTERPRETER
     void Init(Precode* pPrecodeRX, PrecodeType t, MethodDesc* pMD, LoaderAllocator *pLoaderAllocator);
 
 #ifndef DACCESS_COMPILE
