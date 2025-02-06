@@ -8292,7 +8292,7 @@ const StructSegments& Compiler::GetSignificantSegments(ClassLayout* layout)
 
     StructSegments* newSegments = new (this, CMK_Promotion) StructSegments(getAllocator(CMK_Promotion));
 
-    if (layout->IsBlockLayout())
+    if (layout->IsCustomLayout())
     {
         newSegments->Add(StructSegments::Segment(0, layout->GetSize()));
     }

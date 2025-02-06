@@ -3558,17 +3558,6 @@ static PCODE getHelperForStaticBase(Module * pModule, CORCOMPILE_FIXUP_BLOB_KIND
     return pHelper;
 }
 
-TADDR GetFirstArgumentRegisterValuePtr(TransitionBlock * pTransitionBlock)
-{
-    TADDR pArgument = (TADDR)pTransitionBlock + TransitionBlock::GetOffsetOfArgumentRegisters();
-#ifdef TARGET_X86
-    // x86 is special as always
-    pArgument += offsetof(ArgumentRegisters, ECX);
-#endif
-
-    return pArgument;
-}
-
 void ProcessDynamicDictionaryLookup(TransitionBlock *           pTransitionBlock,
                                     Module *                    pModule,
                                     ModuleBase *                pInfoModule,

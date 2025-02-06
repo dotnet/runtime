@@ -1840,7 +1840,7 @@ GenTree* ObjectAllocator::IsGuard(BasicBlock* block, GuardInfo* info)
     info->m_local  = addr->AsLclVar()->GetLclNum();
     bool isNonNull = false;
     bool isExact   = false;
-    info->m_type   = (CORINFO_CLASS_HANDLE)op2->AsIntCon()->gtIconVal;
+    info->m_type   = (CORINFO_CLASS_HANDLE)op2->AsIntCon()->gtCompileTimeHandle;
 
     JITDUMP("... " FMT_BB " is guard for V%02u\n", block->bbNum, info->m_local);
     return tree;
@@ -2347,10 +2347,10 @@ bool ObjectAllocator::CheckCanClone(CloneInfo* info)
     // object in the blocks we intend to clone (and beyond). Verify those have the
     // expected def-use behavior.
     //
-    // The goal of all this is to try and ensure that if we rewrite all the T,V,U appeances
+    // The goal of all this is to try and ensure that if we rewrite all the T,V,U appearances
     // to new locals in the cloned code we get proper behavior.
     //
-    // There is one distingushed local V (info.m_local) that holds the result of the
+    // There is one distinguished local V (info.m_local) that holds the result of the
     // initial GDV and is the local tested in subsequent GDVs. It must have a single def.
     //
     // The other locals are either temps T that refer to the allocated object between
@@ -2373,7 +2373,7 @@ bool ObjectAllocator::CheckCanClone(CloneInfo* info)
     // Tv's use should be at the def of V.
     //
     // For the U's: all Ui appearances should be dominated by the def of V; all Ui defs
-    // should have another Ui or V as their source. (We should also verfy each Ui is
+    // should have another Ui or V as their source. (We should also verify each Ui is
     // single-def and the def dominates all the Ui uses, but this may not work out...?)
     //
     // Also we do not expect any Ti or Ui use to be a GDV guard. U's typically arise from
@@ -2422,45 +2422,50 @@ bool ObjectAllocator::CheckCanClone(CloneInfo* info)
     BitVecTraits traits(comp->compBasicBlockID, comp);
     BitVec       visitedBlocks(BitVecOps::MakeEmpty(&traits));
     toVisit.Push(allocBlock);
+    BitVecOps::AddElemD(&traits, visitedBlocks, allocBlock->bbID);
 
-    // todo -- some kind of runaway size limit
+    // We don't expect to have to search very far
     //
+    unsigned       searchCount = 0;
+    unsigned const searchLimit = 25;
+
     while (toVisit.Height() > 0)
     {
-        BasicBlock* const visitBlock = toVisit.Pop();
-        if (!BitVecOps::TryAddElemD(&traits, visitedBlocks, visitBlock->bbID))
+        BasicBlock* const block = toVisit.Pop();
+
+        if (searchCount > searchLimit)
         {
-            continue;
+            JITDUMP("Too many blocks between alloc and def block\n");
+            return false;
         }
 
-        if (visitBlock != allocBlock)
+        if (block != allocBlock)
         {
-            visited->push_back(visitBlock);
+            visited->push_back(block);
         }
 
         // We expect this stretch of blocks to all be in the same EH region.
         //
-        if (!BasicBlock::sameEHRegion(allocBlock, visitBlock))
+        if (!BasicBlock::sameEHRegion(allocBlock, block))
         {
-            JITDUMP("Unexpected: new EH region at " FMT_BB "\n", visitBlock->bbNum);
+            JITDUMP("Unexpected: new EH region at " FMT_BB "\n", block->bbNum);
             return false;
         }
 
-        if (visitBlock == defBlock)
+        if (block == defBlock)
         {
             continue;
         }
 
-        JITDUMP("walking through " FMT_BB "\n", visitBlock->bbNum);
+        JITDUMP("walking through " FMT_BB "\n", block->bbNum);
 
-        for (BasicBlock* const succ : visitBlock->Succs())
-        {
-            if (BitVecOps::IsMember(&traits, visitedBlocks, succ->bbID))
+        block->VisitRegularSuccs(comp, [&](BasicBlock* succ) {
+            if (BitVecOps::TryAddElemD(&traits, visitedBlocks, succ->bbID))
             {
-                continue;
+                toVisit.Push(succ);
             }
-            toVisit.Push(succ);
-        }
+            return BasicBlockVisit::Continue;
+        });
     }
 
     JITDUMP("def block " FMT_BB " post-dominates allocation site " FMT_BB "\n", defBlock->bbNum, allocBlock->bbNum);
@@ -2617,14 +2622,18 @@ bool ObjectAllocator::CheckCanClone(CloneInfo* info)
 
         for (EnumeratorVarAppearance* const a : *(ev->m_appearances))
         {
-            if (!comp->m_domTree->Dominates(defBlock, a->m_block))
+            BasicBlock* const aBlock = a->m_block;
+            if (!comp->m_domTree->Dominates(defBlock, aBlock))
             {
                 JITDUMP("%sV%02u %s in " FMT_BB " not dominated by def " FMT_BB "\n", ev->m_isUseTemp ? "Use temp" : "",
                         lclNum, a->m_isDef ? "def" : "use", a->m_block->bbNum, defBlock->bbNum);
                 return false;
             }
 
-            toVisit.Push(a->m_block);
+            if (BitVecOps::TryAddElemD(&traits, visitedBlocks, aBlock->bbID))
+            {
+                toVisit.Push(aBlock);
+            }
         }
     }
 
@@ -2637,23 +2646,19 @@ bool ObjectAllocator::CheckCanClone(CloneInfo* info)
     //
     while (toVisit.Height() > 0)
     {
-        BasicBlock* const visitBlock = toVisit.Pop();
-        if (!BitVecOps::TryAddElemD(&traits, visitedBlocks, visitBlock->bbID))
-        {
-            continue;
-        }
-        visited->push_back(visitBlock);
+        BasicBlock* const block = toVisit.Pop();
+        visited->push_back(block);
 
         // If we see try region entries here, we will handle them below.
         //
-        if (comp->bbIsTryBeg(visitBlock))
+        if (comp->bbIsTryBeg(block))
         {
-            toVisitTryEntry->push_back(visitBlock);
+            toVisitTryEntry->push_back(block);
         }
 
-        JITDUMP("walking back through " FMT_BB "\n", visitBlock->bbNum);
+        JITDUMP("walking back through " FMT_BB "\n", block->bbNum);
 
-        for (FlowEdge* predEdge = comp->BlockPredsWithEH(visitBlock); predEdge != nullptr;
+        for (FlowEdge* predEdge = comp->BlockPredsWithEH(block); predEdge != nullptr;
              predEdge           = predEdge->getNextPredEdge())
         {
             BasicBlock* const predBlock = predEdge->getSourceBlock();
@@ -2662,11 +2667,10 @@ bool ObjectAllocator::CheckCanClone(CloneInfo* info)
             // (consider eh paths?)
             //
             assert(comp->m_domTree->Dominates(defBlock, predBlock));
-            if (BitVecOps::IsMember(&traits, visitedBlocks, predBlock->bbID))
+            if (BitVecOps::TryAddElemD(&traits, visitedBlocks, predBlock->bbID))
             {
-                continue;
+                toVisit.Push(predBlock);
             }
-            toVisit.Push(predBlock);
         }
     }
 
@@ -2753,8 +2757,6 @@ bool ObjectAllocator::CheckCanClone(CloneInfo* info)
             defBlock->bbWeight, scaleFactor);
 
     // Save off blocks that we need to clone
-    //
-    // TODO: use postorder nums to keeping the vector and bitvec?
     //
     info->m_blocksToClone = visited;
     info->m_blocks        = visitedBlocks;
