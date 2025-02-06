@@ -4446,6 +4446,205 @@ bool Compiler::fgReorderBlocks(bool useProfile)
 #endif
 
 //-----------------------------------------------------------------------------
+// fgMoveHotJumps: Try to move jumps to fall into their successors, if the jump is sufficiently hot.
+//
+// Template parameters:
+//    hasEH - If true, method has EH regions, so check that we don't try to move blocks in different regions
+//
+template <bool hasEH>
+void Compiler::fgMoveHotJumps()
+{
+#ifdef DEBUG
+    if (verbose)
+    {
+        printf("*************** In fgMoveHotJumps()\n");
+
+        printf("\nInitial BasicBlocks");
+        fgDispBasicBlocks(verboseTrees);
+        printf("\n");
+    }
+#endif // DEBUG
+
+    assert(m_dfsTree != nullptr);
+    BitVecTraits traits(m_dfsTree->PostOrderTraits());
+    BitVec       visitedBlocks = BitVecOps::MakeEmpty(&traits);
+
+    // If we have a funclet region, don't bother reordering anything in it.
+    //
+    BasicBlock* next;
+    for (BasicBlock* block = fgFirstBB; block != fgFirstFuncletBB; block = next)
+    {
+        next = block->Next();
+        if (!m_dfsTree->Contains(block))
+        {
+            continue;
+        }
+
+        BitVecOps::AddElemD(&traits, visitedBlocks, block->bbPostorderNum);
+
+        // Don't bother trying to move cold blocks
+        //
+        if (block->isBBWeightCold(this))
+        {
+            continue;
+        }
+
+        FlowEdge* targetEdge;
+        FlowEdge* unlikelyEdge;
+
+        if (block->KindIs(BBJ_ALWAYS))
+        {
+            targetEdge   = block->GetTargetEdge();
+            unlikelyEdge = nullptr;
+        }
+        else if (block->KindIs(BBJ_COND))
+        {
+            // Consider conditional block's most likely branch for moving
+            //
+            if (block->GetTrueEdge()->getLikelihood() > 0.5)
+            {
+                targetEdge   = block->GetTrueEdge();
+                unlikelyEdge = block->GetFalseEdge();
+            }
+            else
+            {
+                targetEdge   = block->GetFalseEdge();
+                unlikelyEdge = block->GetTrueEdge();
+            }
+
+            // If we aren't sure which successor is hotter, and we already fall into one of them,
+            // do nothing
+            if ((unlikelyEdge->getLikelihood() == 0.5) && block->NextIs(unlikelyEdge->getDestinationBlock()))
+            {
+                continue;
+            }
+        }
+        else
+        {
+            // Don't consider other block kinds
+            //
+            continue;
+        }
+
+        BasicBlock* target         = targetEdge->getDestinationBlock();
+        bool        isBackwardJump = BitVecOps::IsMember(&traits, visitedBlocks, target->bbPostorderNum);
+        assert(m_dfsTree->Contains(target));
+
+        if (isBackwardJump)
+        {
+            // We don't want to change the first block, so if block is a backward jump to the first block,
+            // don't try moving block before it.
+            //
+            if (target->IsFirst())
+            {
+                continue;
+            }
+
+            if (block->KindIs(BBJ_COND))
+            {
+                // This could be a loop exit, so don't bother moving this block up.
+                // Instead, try moving the unlikely target up to create fallthrough.
+                //
+                targetEdge     = unlikelyEdge;
+                target         = targetEdge->getDestinationBlock();
+                isBackwardJump = BitVecOps::IsMember(&traits, visitedBlocks, target->bbPostorderNum);
+                assert(m_dfsTree->Contains(target));
+
+                if (isBackwardJump)
+                {
+                    continue;
+                }
+            }
+            // Check for single-block loop case
+            //
+            else if (block == target)
+            {
+                continue;
+            }
+        }
+
+        // Check if block already falls into target
+        //
+        if (block->NextIs(target))
+        {
+            continue;
+        }
+
+        if (target->isBBWeightCold(this))
+        {
+            // If target is block's most-likely successor, and block is not rarely-run,
+            // perhaps the profile data is misleading, and we need to run profile repair?
+            //
+            continue;
+        }
+
+        if (hasEH)
+        {
+            // Don't move blocks in different EH regions
+            //
+            if (!BasicBlock::sameEHRegion(block, target))
+            {
+                continue;
+            }
+
+            if (isBackwardJump)
+            {
+                // block and target are in the same try/handler regions, and target is behind block,
+                // so block cannot possibly be the start of the region.
+                //
+                assert(!bbIsTryBeg(block) && !bbIsHandlerBeg(block));
+
+                // Don't change the entry block of an EH region
+                //
+                if (bbIsTryBeg(target) || bbIsHandlerBeg(target))
+                {
+                    continue;
+                }
+            }
+            else
+            {
+                // block and target are in the same try/handler regions, and block is behind target,
+                // so target cannot possibly be the start of the region.
+                //
+                assert(!bbIsTryBeg(target) && !bbIsHandlerBeg(target));
+            }
+        }
+
+        // If moving block will break up existing fallthrough behavior into target, make sure it's worth it
+        //
+        FlowEdge* const fallthroughEdge = fgGetPredForBlock(target, target->Prev());
+        if ((fallthroughEdge != nullptr) && (fallthroughEdge->getLikelyWeight() >= targetEdge->getLikelyWeight()))
+        {
+            continue;
+        }
+
+        if (isBackwardJump)
+        {
+            // Move block to before target
+            //
+            fgUnlinkBlock(block);
+            fgInsertBBbefore(target, block);
+        }
+        else if (hasEH && target->isBBCallFinallyPair())
+        {
+            // target is a call-finally pair, so move the pair up to block
+            //
+            fgUnlinkRange(target, target->Next());
+            fgMoveBlocksAfter(target, target->Next(), block);
+            next = target->Next();
+        }
+        else
+        {
+            // Move target up to block
+            //
+            fgUnlinkBlock(target);
+            fgInsertBBafter(block, target);
+            next = target;
+        }
+    }
+}
+
+//-----------------------------------------------------------------------------
 // fgDoReversePostOrderLayout: Reorder blocks using a greedy RPO traversal,
 // taking care to keep loop bodies compact.
 //
@@ -4499,6 +4698,8 @@ void Compiler::fgDoReversePostOrderLayout()
                 fgInsertBBafter(block, blockToMove);
             }
         }
+
+        fgMoveHotJumps</* hasEH */ false>();
 
         return;
     }
@@ -4570,6 +4771,8 @@ void Compiler::fgDoReversePostOrderLayout()
         fgUnlinkBlock(pair.callFinallyRet);
         fgInsertBBafter(pair.callFinally, pair.callFinallyRet);
     }
+
+    fgMoveHotJumps</* hasEH */ true>();
 }
 
 //-----------------------------------------------------------------------------

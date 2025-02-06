@@ -6348,6 +6348,9 @@ public:
         void Run();
     };
 
+    template <bool hasEH>
+    void fgMoveHotJumps();
+
     bool fgFuncletsAreCold();
 
     PhaseStatus fgDetermineFirstColdBlock();
