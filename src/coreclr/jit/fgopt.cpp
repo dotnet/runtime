@@ -4800,7 +4800,12 @@ void Compiler::ThreeOptLayout::AddNonFallthroughPreds(unsigned blockPos)
 //
 bool Compiler::ThreeOptLayout::Run()
 {
-    assert(numCandidateBlocks > 0);
+    // For methods with fewer than three candidate blocks, we cannot partition anything
+    if (numCandidateBlocks < 3)
+    {
+        JITDUMP("Not enough blocks to partition anything. Skipping reordering.\n");
+        return false;
+    }
 
     // Initialize ordinals for the hot blocks
     for (unsigned i = 0; i < numCandidateBlocks; i++)
@@ -5079,14 +5084,10 @@ bool Compiler::ThreeOptLayout::RunGreedyThreeOptPass(unsigned startPos, unsigned
 //
 void Compiler::ThreeOptLayout::RunThreeOpt()
 {
+    // We better have enough blocks to create partitions
+    assert(numCandidateBlocks > 2);
     const unsigned startPos = 0;
     const unsigned endPos   = numCandidateBlocks - 1;
-
-    if (numCandidateBlocks < 3)
-    {
-        JITDUMP("Not enough blocks to partition anything. Skipping reordering.\n");
-        return;
-    }
 
     JITDUMP("Initial layout cost: %f\n", GetLayoutCost(startPos, endPos));
     const bool modified = RunGreedyThreeOptPass(startPos, endPos);
@@ -5164,20 +5165,12 @@ PhaseStatus Compiler::fgSearchImprovedLayout()
         }
     }
 
-    bool modified = false;
-    if (numHotBlocks > 0)
-    {
-        ThreeOptLayout layoutRunner(this, initialLayout, numHotBlocks);
-        modified = layoutRunner.Run();
+    ThreeOptLayout layoutRunner(this, initialLayout, numHotBlocks);
+    const bool modified = layoutRunner.Run();
 
-        if (compHndBBtabCount > 0)
-        {
-            fgFindEHRegionEnds();
-        }
-    }
-    else
+    if (modified && (compHndBBtabCount > 0))
     {
-        JITDUMP("No hot blocks found. Skipping block reordering.\n");
+        fgFindEHRegionEnds();
     }
 
     fgInvalidateDfsTree();
