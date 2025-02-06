@@ -15,6 +15,9 @@
 
 #ifndef DACCESS_COMPILE
 
+#if defined(TARGET_ANDROID)
+#include <android/log.h>
+#endif
 
 thread_local size_t t_ThreadType;
 
@@ -179,8 +182,13 @@ void PrintToStdErrA(const char *pszString) {
 
     HANDLE  Handle = GetStdHandle(STD_ERROR_HANDLE);
 
+#if defined(TARGET_ANDROID)
+    // TODO: make priority configurable?
+    __android_log_write(ANDROID_LOG_INFO, "CoreCLR", pszString);
+#else
     size_t len = strlen(pszString);
     NPrintToHandleA(Handle, pszString, len);
+#endif
 }
 
 void PrintToStdErrW(const WCHAR *pwzString)
