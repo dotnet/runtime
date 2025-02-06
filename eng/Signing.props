@@ -18,7 +18,7 @@
     -->
     <EnableDefaultArtifacts Condition="'$(DotNetBuildOrchestrator)' != 'true'">false</EnableDefaultArtifacts>
     <EnableBlobArtifacts>true</EnableBlobArtifacts>
-    <EnableBlobArtifacts Condition="'$(MonoEnableLLVM)' == 'true'">false</EnableBlobArtifacts>
+    <EnableBlobArtifacts Condition="'$(MonoAOTEnableLLVM)' == 'true'">false</EnableBlobArtifacts>
 
     <UseDotNetCertificate>true</UseDotNetCertificate>
   </PropertyGroup>
@@ -112,9 +112,9 @@
                   IsShipping="false" />
       </ItemGroup>
     </When>
-    <When Condition="'$(MonoEnableLLVM)' == 'true'">
+    <When Condition="'$(MonoAOTEnableLLVM)' == 'true'">
       <ItemGroup>
-        <PackageArtifacts Include="$(ArtifactsPackagesDir)**\*.$(PackageRID).*.LLVM.*.nupkg" />
+        <PackageArtifacts Include="$(ArtifactsPackagesDir)**\*.LLVM.AOT.$(PackageRID).*.nupkg" />
         <Artifact Include="@(PackageArtifacts)"
                   IsShipping="$([System.String]::Copy('%(RecursiveDir)').StartsWith('Shipping'))"
                   Kind="Package" />
