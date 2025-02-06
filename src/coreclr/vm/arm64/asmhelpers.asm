@@ -513,7 +513,7 @@ GenericComCallStub_StackAlloc     SETA GenericComCallStub_StackAlloc + 8
 
 GenericComCallStub_FrameOffset       SETA (GenericComCallStub_StackAlloc - (SIZEOF__ComMethodFrame - GenericComCallStub_FirstStackAdjust))
 
-    IF (GenericComCallStu_bFirstStackAdjust):MOD:16 != 0
+    IF (GenericComCallStub_FirstStackAdjust):MOD:16 != 0
 GenericComCallStub_FirstStackAdjust     SETA GenericComCallStub_FirstStackAdjust + 8
     ENDIF
 
