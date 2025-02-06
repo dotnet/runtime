@@ -2314,6 +2314,54 @@ bool emitter::HasMaskReg(const instrDesc* id) const
     return false;
 }
 
+std::map<regNumber, unsigned> jitRegnumToRegnum = 
+{
+    {REG_K0, 0},
+    {REG_K1, 1},
+    {REG_K2, 2},
+    {REG_K3, 3},
+    {REG_K4, 4},
+    {REG_K5, 5},
+    {REG_K6, 6},
+    {REG_K7, 7}
+};
+
+std::map<unsigned, regNumber> RegnumTojitRegnum = 
+{
+    {0, REG_K0},
+    {1, REG_K1},
+    {2, REG_K2},
+    {3, REG_K3},
+    {4, REG_K4},
+    {5, REG_K5},
+    {6, REG_K6},
+    {7, REG_K7}
+};
+
+//------------------------------------------------------------------------
+// AbsRegNumber: Returns the register value to be used for encoding.
+// JIT internally represents registers using regnumber 0 - (REG_STK-1).
+// For encoding, we need to separate out GPR, SIMD and K registers.
+//
+// Arguments:
+// reg -- The register being encoded.
+//
+// Return Value:
+// The register value to be used for encoding.
+regNumber AbsRegNumber(regNumber reg)
+{
+    assert(reg < REG_STK);
+    if (reg >= KBASE)
+    {
+        return (regNumber)jitRegnumToRegnum[reg];
+    }
+    else if (reg >= XMMBASE)
+    {
+        return (regNumber)(reg - XMMBASE);
+    }
+    return reg;
+}
+
 // Returns true if using this register will require a REX.* prefix.
 // Since XMM registers overlap with YMM registers, this routine
 // can also be used to know whether a YMM register if the
@@ -2321,8 +2369,7 @@ bool emitter::HasMaskReg(const instrDesc* id) const
 bool IsExtendedReg(regNumber reg)
 {
 #ifdef TARGET_AMD64
-    // TODO-XArch-apx: extend the gpr test, extended gprs should be from r8 to r31 after apx.
-    return ((reg >= REG_R8) && (reg <= REG_R15)) || ((reg >= REG_XMM8) && (reg <= REG_XMM31));
+    return ((reg >= REG_R8) && (reg <= REG_R23)) || ((reg >= REG_XMM8) && (reg <= REG_XMM31));
 #else
     // X86 JIT operates in 32-bit mode and hence extended reg are not available.
     return false;
@@ -2340,10 +2387,12 @@ bool emitter::IsExtendedGPReg(regNumber reg) const
         return false;
     }
 
-    // TODO-XArch-APX:
-    // we will eventually check EGPRs here: (reg >= REG_R16) && (reg <= REG_R31).
-    // revisit this part when LSRA is updated.
-    return false;
+    if (isHighGPReg(reg))
+    {
+        // TODO-XArch-APX: Once eEVEX is supported, this should be 'if APX anabled machine'
+        assert(UseRex2Encoding());
+        return true;
+    }
 #endif
     return false;
 }
@@ -2414,14 +2463,14 @@ bool IsXMMReg(regNumber reg)
 unsigned HighAwareRegEncoding(regNumber reg)
 {
     static_assert((REG_XMM0 & 0x7) == 0, "bad XMMBASE");
-    return (unsigned)(reg & 0xF);
+    return (unsigned)(AbsRegNumber(reg) & 0xF);
 }
 
 // Returns bits to be encoded in instruction for the given register.
 unsigned RegEncoding(regNumber reg)
 {
     static_assert((REG_XMM0 & 0x7) == 0, "bad XMMBASE");
-    return (unsigned)(reg & 0x7);
+    return (unsigned)(AbsRegNumber(reg) & 0x7);
 }
 
 // Utility routines that abstract the logic of adding REX.W, REX.R, REX.X, REX.B and REX prefixes
@@ -4107,11 +4156,11 @@ inline unsigned emitter::insEncodeReg012(const instrDesc* id, regNumber reg, emi
         {
             *code = AddRexXPrefix(id, *code); // EVEX.X
         }
-        if (reg & 0x8)
+        if (AbsRegNumber(reg) & 0x8)
         {
             *code = AddRexBPrefix(id, *code); // REX.B
         }
-        if (false /*reg >= REG_R16 && reg <= REG_R31*/)
+        if (IsExtendedGPReg(reg))
         {
             // Seperate the encoding for REX2.B3/B4, REX2.B3 will be handled in `AddRexBPrefix`.
             assert(TakesRex2Prefix(id));
@@ -4156,11 +4205,11 @@ inline unsigned emitter::insEncodeReg345(const instrDesc* id, regNumber reg, emi
         {
             *code = AddEvexRPrimePrefix(*code); // EVEX.R'
         }
-        if (reg & 0x8)
+        if (AbsRegNumber(reg) & 0x8)
         {
             *code = AddRexRPrefix(id, *code); // REX.R
         }
-        if (false /*reg >= REG_R16 && reg <= REG_R31*/)
+        if (IsExtendedGPReg(reg))
         {
             // Seperate the encoding for REX2.R3/R4, REX2.R3 will be handled in `AddRexRPrefix`.
             assert(TakesRex2Prefix(id));
@@ -4286,11 +4335,11 @@ inline unsigned emitter::insEncodeRegSIB(const instrDesc* id, regNumber reg, cod
         {
             *code = AddEvexVPrimePrefix(*code); // EVEX.X
         }
-        if (reg & 0x8)
+        if (AbsRegNumber(reg) & 0x8)
         {
             *code = AddRexXPrefix(id, *code); // REX.X
         }
-        if (false /*reg >= REG_R16 && reg <= REG_R31*/)
+        if (IsExtendedGPReg(reg))
         {
             // Separate the encoding for REX2.X3/X4, REX2.X3 will be handled in `AddRexXPrefix`.
             assert(TakesRex2Prefix(id));
@@ -4950,7 +4999,7 @@ inline UNATIVE_OFFSET emitter::emitInsSizeSV(instrDesc* id, code_t code, int var
 static bool baseRegisterRequiresSibByte(regNumber base)
 {
 #ifdef TARGET_AMD64
-    return base == REG_ESP || base == REG_R12;
+    return base == REG_ESP || base == REG_R12 || base == REG_R20;
 #else
     return base == REG_ESP;
 #endif
@@ -4959,7 +5008,7 @@ static bool baseRegisterRequiresSibByte(regNumber base)
 static bool baseRegisterRequiresDisplacement(regNumber base)
 {
 #ifdef TARGET_AMD64
-    return base == REG_EBP || base == REG_R13;
+    return base == REG_EBP || base == REG_R13 || base == REG_R21;
 #else
     return base == REG_EBP;
 #endif
@@ -6531,7 +6580,12 @@ void emitter::emitIns_R(instruction ins, emitAttr attr, regNumber reg, insOpts i
     noway_assert(emitVerifyEncodable(ins, size, reg));
 
     UNATIVE_OFFSET sz;
-    instrDesc*     id = emitNewInstrSmall(attr);
+    instrDesc*     id  = emitNewInstrSmall(attr);
+    insFormat      fmt = emitInsModeFormat(ins, IF_RRD);
+
+    id->idIns(ins);
+    id->idInsFmt(fmt);
+    id->idReg1(reg);
 
     switch (ins)
     {
@@ -6593,11 +6647,6 @@ void emitter::emitIns_R(instruction ins, emitAttr attr, regNumber reg, insOpts i
                 break;
             }
     }
-    insFormat fmt = emitInsModeFormat(ins, IF_RRD);
-
-    id->idIns(ins);
-    id->idInsFmt(fmt);
-    id->idReg1(reg);
 
     SetEvexNfIfNeeded(id, instOptions);
 
@@ -12210,7 +12259,7 @@ void emitter::emitDispEmbMasking(instrDesc* id) const
         return;
     }
 
-    regNumber maskReg = static_cast<regNumber>(id->idGetEvexAaaContext() + KBASE);
+    regNumber maskReg = RegnumTojitRegnum[id->idGetEvexAaaContext()];// Confirm with Tanner. How many mask registers do we use currently???
 
     if (maskReg == REG_K0)
     {
