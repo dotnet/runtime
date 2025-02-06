@@ -85,16 +85,11 @@ public enum DataType
 
     Frame,
     InlinedCallFrame,
-    HelperMethodFrame,
-    HelperMethodFrame_1OBJ,
-    HelperMethodFrame_2OBJ,
-    HelperMethodFrame_3OBJ,
-    HelperMethodFrame_PROTECTOBJ,
+    SoftwareExceptionFrame,
 
     ResumableFrame,
     RedirectedTHreadFrame,
     FaultingExceptionFrame,
-    SoftwareExceptionFrame,
     FuncEvalFrame,
     UnmanagedToManagedFrame,
     ComMethodFrame,
@@ -117,6 +112,9 @@ public enum DataType
     TailCallFrame,
     ExceptionFilterFrame,
     AssumeByrefFromJITStack,
-
-    LazyMachState,
+    HelperMethodFrame,
+    HelperMethodFrame_1OBJ,
+    HelperMethodFrame_2OBJ,
+    HelperMethodFrame_3OBJ,
+    HelperMethodFrame_PROTECTOBJ,
 }
