@@ -9,10 +9,12 @@
   .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
   .ver 4:0:0:0
 }
+.assembly extern TestLibrary { .ver 0:0:0:0 }
+.assembly extern Microsoft.DotNet.XUnitExtensions { .publickeytoken = (31 BF 38 56 AD 36 4E 35 ) }
 .assembly 'b108366'{}
 
 .class public _div {
-//-- 
+//--
 .method public static	int32 _div(float64,float64,float64) {
 .maxstack		3
 	// -- load args _and divide
@@ -71,11 +73,11 @@ try_start:
 	pop
 	leave.s	try_end
 try_end:
-// -- our result is a finite number.  
+// -- our result is a finite number.
 	ldc.i4		0x0
 	br			FINISH
 ae:
-// -- our result is NaN, +inf, _or -inf.  Find out which one. 
+// -- our result is NaN, +inf, _or -inf.  Find out which one.
 	isinst		[mscorlib]System.OverflowException
 	stloc	0
 	leave			HEnd
@@ -119,6 +121,11 @@ FINISH:
 .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
     01 00 00 00
 )
+.custom instance void [Microsoft.DotNet.XUnitExtensions]Xunit.ActiveIssueAttribute::.ctor(string, class [mscorlib]System.Type, string[]) = {
+    string('https://github.com/dotnet/runtime/issues/54393')
+    type([TestLibrary]TestLibrary.PlatformDetection)
+    string[1] ('IsAppleMobile')
+}
 .entrypoint
 .maxstack		20
 br START

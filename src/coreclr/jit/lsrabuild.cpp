@@ -863,7 +863,7 @@ regMaskTP LinearScan::getKillSetForCall(GenTreeCall* call)
 #ifdef TARGET_ARM
     if (call->IsVirtualStub())
     {
-        killMask.AddGprRegs(compiler->virtualStubParamInfo->GetRegMask().GetIntRegSet());
+        killMask.AddGprRegs(compiler->virtualStubParamInfo->GetRegMask().GetIntRegSet() DEBUG_ARG(RBM_ALLINT));
     }
 #else  // !TARGET_ARM
     // Verify that the special virtual stub call registers are in the kill mask.
@@ -879,7 +879,7 @@ regMaskTP LinearScan::getKillSetForCall(GenTreeCall* call)
     // so don't use the register post-call until it is consumed by SwiftError.
     if (call->HasSwiftErrorHandling())
     {
-        killMask.AddGprRegs(RBM_SWIFT_ERROR.GetIntRegSet());
+        killMask.AddGprRegs(RBM_SWIFT_ERROR.GetIntRegSet() DEBUG_ARG(RBM_ALLINT));
     }
 #endif // SWIFT_SUPPORT
 
@@ -915,7 +915,7 @@ regMaskTP LinearScan::getKillSetForBlockStore(GenTreeBlk* blkNode)
             if (isCopyBlk)
             {
                 // rep movs kills RCX, RDI and RSI
-                killMask.AddGprRegs(SRBM_RCX | SRBM_RDI | SRBM_RSI);
+                killMask.AddGprRegs(SRBM_RCX | SRBM_RDI | SRBM_RSI DEBUG_ARG(RBM_ALLINT));
             }
             else
             {
@@ -923,7 +923,7 @@ regMaskTP LinearScan::getKillSetForBlockStore(GenTreeBlk* blkNode)
                 // (Note that the Data() node, if not constant, will be assigned to
                 // RCX, but it's find that this kills it, as the value is not available
                 // after this node in any case.)
-                killMask.AddGprRegs(SRBM_RDI | SRBM_RCX);
+                killMask.AddGprRegs(SRBM_RDI | SRBM_RCX DEBUG_ARG(RBM_ALLINT));
             }
             break;
 #endif
@@ -2148,6 +2148,15 @@ void LinearScan::buildIntervals()
     // remove the frame pointer from the masks.
     setFrameType();
 
+    // Updating lowGprRegs with final value
+#if defined(TARGET_XARCH)
+#if defined(TARGET_AMD64)
+    lowGprRegs = (availableIntRegs & RBM_LOWINT.GetIntRegSet());
+#else
+    lowGprRegs = availableIntRegs;
+#endif // TARGET_AMD64
+#endif // TARGET_XARCH
+
     DBEXEC(VERBOSE, TupleStyleDump(LSRA_DUMP_PRE));
 
     // second part:
@@ -2275,7 +2284,7 @@ void LinearScan::buildIntervals()
     // If there is a secret stub param, it is also live in
     if (compiler->info.compPublishStubParam)
     {
-        intRegState->rsCalleeRegArgMaskLiveIn.AddGprRegs(RBM_SECRET_STUB_PARAM.GetIntRegSet());
+        intRegState->rsCalleeRegArgMaskLiveIn.AddGprRegs(RBM_SECRET_STUB_PARAM.GetIntRegSet() DEBUG_ARG(RBM_ALLINT));
 
         LclVarDsc* stubParamDsc = compiler->lvaGetDesc(compiler->lvaStubArgumentVar);
         if (isCandidateVar(stubParamDsc))
@@ -3794,21 +3803,50 @@ int LinearScan::BuildBinaryUses(GenTreeOp* node, SingleTypeRegSet candidates)
 {
     GenTree* op1 = node->gtGetOp1();
     GenTree* op2 = node->gtGetOp2IfPresent();
-
 #ifdef TARGET_XARCH
     if (node->OperIsBinary() && isRMWRegOper(node))
     {
         assert(op2 != nullptr);
-        return BuildRMWUses(node, op1, op2, candidates);
+        if (candidates == RBM_NONE && varTypeUsesFloatReg(node) && (op1->isContainedIndir() || op2->isContainedIndir()))
+        {
+            if (op1->isContainedIndir())
+            {
+                return BuildRMWUses(node, op1, op2, lowGprRegs, candidates);
+            }
+            else
+            {
+                return BuildRMWUses(node, op1, op2, candidates, lowGprRegs);
+            }
+        }
+        return BuildRMWUses(node, op1, op2, candidates, candidates);
     }
 #endif // TARGET_XARCH
     int srcCount = 0;
     if (op1 != nullptr)
     {
-        srcCount += BuildOperandUses(op1, candidates);
+#ifdef TARGET_XARCH
+        // BSWAP creates movbe
+        if (op1->isContainedIndir() &&
+            ((varTypeUsesFloatReg(node) || node->OperGet() == GT_BSWAP || node->OperGet() == GT_BSWAP16)) &&
+            candidates == RBM_NONE)
+        {
+            srcCount += BuildOperandUses(op1, lowGprRegs);
+        }
+        else
+#endif
+        {
+            srcCount += BuildOperandUses(op1, candidates);
+        }
     }
     if (op2 != nullptr)
     {
+
+#ifdef TARGET_XARCH
+        if (op2->isContainedIndir() && varTypeUsesFloatReg(op1) && candidates == RBM_NONE)
+        {
+            candidates = lowGprRegs;
+        }
+#endif
         srcCount += BuildOperandUses(op2, candidates);
     }
     return srcCount;
@@ -3865,6 +3903,8 @@ void LinearScan::BuildStoreLocDef(GenTreeLclVarCommon* storeLoc,
     assert(varDsc->lvTracked);
     unsigned  varIndex       = varDsc->lvVarIndex;
     Interval* varDefInterval = getIntervalForLocalVar(varIndex);
+
+    GenTree* op1 = storeLoc->gtGetOp1();
     if (!storeLoc->IsLastUse(index))
     {
         VarSetOps::AddElemD(compiler, currentLiveVars, varIndex);
@@ -3904,6 +3944,14 @@ void LinearScan::BuildStoreLocDef(GenTreeLclVarCommon* storeLoc,
 #else
     defCandidates = allRegs(type);
 #endif // TARGET_X86
+
+#ifdef TARGET_AMD64
+    if (op1->isContained() && op1->OperIs(GT_BITCAST) && varTypeUsesIntReg(varDsc->GetRegisterType(storeLoc)))
+    {
+        defCandidates = lowGprRegs;
+    }
+
+#endif // TARGET_AMD64
 
     RefPosition* def = newRefPosition(varDefInterval, currentLoc + 1, RefTypeDef, storeLoc, defCandidates, index);
     if (varDefInterval->isWriteThru)
@@ -3987,6 +4035,7 @@ int LinearScan::BuildMultiRegStoreLoc(GenTreeLclVar* storeLoc)
         }
         assert(isCandidateVar(fieldVarDsc));
         BuildStoreLocDef(storeLoc, fieldVarDsc, singleUseRef, i);
+
         if (isMultiRegSrc && (i < (dstCount - 1)))
         {
             currentLoc += 2;
@@ -4067,9 +4116,20 @@ int LinearScan::BuildStoreLoc(GenTreeLclVarCommon* storeLoc)
     }
     else if (op1->isContained() && op1->OperIs(GT_BITCAST))
     {
-        GenTree*     bitCastSrc   = op1->gtGetOp1();
-        RegisterType registerType = regType(bitCastSrc->TypeGet());
-        singleUseRef              = BuildUse(bitCastSrc, allRegs(registerType));
+        GenTree*         bitCastSrc   = op1->gtGetOp1();
+        RegisterType     registerType = regType(bitCastSrc->TypeGet());
+        SingleTypeRegSet candidates   = RBM_NONE;
+#ifdef TARGET_AMD64
+        if (registerType == IntRegisterType)
+        {
+            candidates = lowGprRegs;
+        }
+        else
+#endif // TARGET_AMD64
+        {
+            candidates = allRegs(registerType);
+        }
+        singleUseRef = BuildUse(bitCastSrc, candidates);
 
         Interval* srcInterval = singleUseRef->getInterval();
         assert(regType(srcInterval->registerType) == registerType);
@@ -4151,7 +4211,16 @@ int LinearScan::BuildSimple(GenTree* tree)
     }
     if (tree->IsValue())
     {
-        BuildDef(tree);
+#ifdef TARGET_AMD64
+        if ((tree->OperGet() == GT_BSWAP || tree->OperGet() == GT_BSWAP16) && varTypeUsesIntReg(tree))
+        {
+            BuildDef(tree, lowGprRegs);
+        }
+        else
+#endif // TARGET_AMD64
+        {
+            BuildDef(tree);
+        }
     }
     return srcCount;
 }
@@ -4568,6 +4637,19 @@ int LinearScan::BuildCmpOperands(GenTree* tree)
         }
     }
 #endif // TARGET_X86
+
+#ifdef TARGET_AMD64
+    if (op2->isContainedIndir() && varTypeUsesFloatReg(op1) && op2Candidates == RBM_NONE)
+    {
+        // We only use RSI and RDI for EnC code, so we don't want to favor callee-save regs.
+        op2Candidates = lowGprRegs;
+    }
+    if (op1->isContainedIndir() && varTypeUsesFloatReg(op2) && op1Candidates == RBM_NONE)
+    {
+        // We only use RSI and RDI for EnC code, so we don't want to favor callee-save regs.
+        op1Candidates = lowGprRegs;
+    }
+#endif // TARGET_AMD64
 
     int srcCount = BuildOperandUses(op1, op1Candidates);
     srcCount += BuildOperandUses(op2, op2Candidates);
