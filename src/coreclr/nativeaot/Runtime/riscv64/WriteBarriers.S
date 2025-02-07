@@ -233,8 +233,7 @@ LOCAL_LABEL(NotInHeap):
         sd      t4, 0(t3)
         addi    t3, t3, 8
 
-        // TODO-RISCV64: Jump to the return address in a1 for the tailcall. This should be revert to ret instead of jr once JIT is fixed
-        jr a1
+        ret
 
 LEAF_END RhpCheckedAssignRef, _TEXT
 
@@ -261,8 +260,7 @@ LEAF_ENTRY RhpAssignRefRiscV64, _TEXT
 
         addi  t3, t3, 8
 
-        // TODO-RISCV64: Jump to the return address in t5 (previously a1) for the tailcall. This should be revert to ret instead of jr once JIT is fixed
-        jr t5
+        ret
 
 LEAF_END RhpAssignRefRiscV64, _TEXT
 
