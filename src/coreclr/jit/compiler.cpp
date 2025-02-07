@@ -5227,13 +5227,6 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
             DoPhase(this, PHASE_OPTIMIZE_LAYOUT, &Compiler::fgSearchImprovedLayout);
         }
 
-        // 3-opt will mess with post-order numbers regardless of whether it modifies anything,
-        // so we always need to invalidate the flowgraph annotations after.
-        // If we didn't run 3-opt, we might still have a profile-aware DFS tree computed during LSRA available.
-        // This tree's presence can trigger asserts if pre/postorder numbers are recomputed,
-        // so invalidate the tree in both cases.
-        fgInvalidateDfsTree();
-
         // Now that the flowgraph is finalized, run post-layout optimizations.
         //
         DoPhase(this, PHASE_OPTIMIZE_POST_LAYOUT, &Compiler::optOptimizePostLayout);
