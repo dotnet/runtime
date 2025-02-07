@@ -33,9 +33,8 @@ static void FailingFunction(volatile int *p)
     *p = 1;          // Causes an access violation exception
 }
 
-// temporarily make these static to make it build, we should disable these on wasm as we don't support shared libraries
-static BOOL bTry    = FALSE;
-static BOOL bExcept = FALSE;
+BOOL bTry    = FALSE;
+BOOL bExcept = FALSE;
 
 extern "C"
 int
