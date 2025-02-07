@@ -5295,9 +5295,6 @@ PhaseStatus Compiler::fgSearchImprovedLayout()
         JITDUMP("No hot blocks found. Skipping reordering.\n");
     }
 
-    // 3-opt will mess with post-order numbers regardless of whether it modifies anything,
-    // so we always need to invalidate the flowgraph annotations after.
-    fgInvalidateDfsTree();
     return modified ? PhaseStatus::MODIFIED_EVERYTHING : PhaseStatus::MODIFIED_NOTHING;
 }
 
