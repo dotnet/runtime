@@ -44,7 +44,7 @@ void Frame::GcScanRoots(promote_func *fn, ScanContext* sc)
 #define FRAME_TYPE_NAME(frameType) case FrameIdentifier::frameType: { return dac_cast<PTR_##frameType>(this)->GcScanRoots_Impl(fn, sc); }
 #include "FrameTypes.h"
     default:
-        _ASSERTE(!"Unexpected");
+        UNREACHABLE();
         return;
     }
 }
@@ -57,7 +57,7 @@ unsigned Frame::GetFrameAttribs()
 #define FRAME_TYPE_NAME(frameType) case FrameIdentifier::frameType: { return dac_cast<PTR_##frameType>(this)->GetFrameAttribs_Impl(); }
 #include "FrameTypes.h"
     default:
-        _ASSERTE(!"Unexpected");
+        UNREACHABLE();
         return 0;
     }
 }
@@ -70,7 +70,7 @@ void Frame::ExceptionUnwind()
 #define FRAME_TYPE_NAME(frameType) case FrameIdentifier::frameType: { return dac_cast<PTR_##frameType>(this)->ExceptionUnwind_Impl(); }
 #include "FrameTypes.h"
     default:
-        _ASSERTE(!"Unexpected");
+        UNREACHABLE();
         return;
     }
 }
@@ -83,7 +83,7 @@ BOOL Frame::NeedsUpdateRegDisplay()
 #define FRAME_TYPE_NAME(frameType) case FrameIdentifier::frameType: { return dac_cast<PTR_##frameType>(this)->NeedsUpdateRegDisplay_Impl(); }
 #include "FrameTypes.h"
     default:
-        _ASSERTE(!"Unexpected");
+        UNREACHABLE();
         return FALSE;
     }
 }
@@ -95,7 +95,7 @@ BOOL Frame::IsTransitionToNativeFrame()
 #define FRAME_TYPE_NAME(frameType) case FrameIdentifier::frameType: { return dac_cast<PTR_##frameType>(this)->IsTransitionToNativeFrame_Impl(); }
 #include "FrameTypes.h"
     default:
-        _ASSERTE(!"Unexpected");
+        UNREACHABLE();
         return FALSE;
     }
 }
@@ -107,7 +107,7 @@ MethodDesc *Frame::GetFunction()
 #define FRAME_TYPE_NAME(frameType) case FrameIdentifier::frameType: { return dac_cast<PTR_##frameType>(this)->GetFunction_Impl(); }
 #include "FrameTypes.h"
     default:
-        _ASSERTE(!"Unexpected");
+        UNREACHABLE();
         return NULL;
     }
 }
@@ -119,7 +119,7 @@ Assembly *Frame::GetAssembly()
 #define FRAME_TYPE_NAME(frameType) case FrameIdentifier::frameType: { return dac_cast<PTR_##frameType>(this)->GetAssembly_Impl(); }
 #include "FrameTypes.h"
     default:
-        _ASSERTE(!"Unexpected");
+        UNREACHABLE();
         return NULL;
     }
 }
@@ -130,7 +130,7 @@ PTR_BYTE Frame::GetIP()
 #define FRAME_TYPE_NAME(frameType) case FrameIdentifier::frameType: { return dac_cast<PTR_##frameType>(this)->GetIP_Impl(); }
 #include "FrameTypes.h"
     default:
-        _ASSERTE(!"Unexpected");
+        UNREACHABLE();
         return NULL;
     }
 }
@@ -142,7 +142,7 @@ TADDR Frame::GetReturnAddressPtr()
 #define FRAME_TYPE_NAME(frameType) case FrameIdentifier::frameType: { return dac_cast<PTR_##frameType>(this)->GetReturnAddressPtr_Impl(); }
 #include "FrameTypes.h"
     default:
-        _ASSERTE(!"Unexpected");
+        UNREACHABLE();
         return (TADDR)0;
     }
 }
@@ -153,7 +153,7 @@ PCODE Frame::GetReturnAddress()
 #define FRAME_TYPE_NAME(frameType) case FrameIdentifier::frameType: { return dac_cast<PTR_##frameType>(this)->GetReturnAddress_Impl(); }
 #include "FrameTypes.h"
     default:
-        _ASSERTE(!"Unexpected");
+        UNREACHABLE();
         return (PCODE)NULL;
     }
 }
@@ -165,7 +165,7 @@ void Frame::UpdateRegDisplay(const PREGDISPLAY pRegDisplay, bool updateFloats)
 #define FRAME_TYPE_NAME(frameType) case FrameIdentifier::frameType: { return dac_cast<PTR_##frameType>(this)->UpdateRegDisplay_Impl(pRegDisplay, updateFloats); }
 #include "FrameTypes.h"
     default:
-        _ASSERTE(!"Unexpected");
+        UNREACHABLE();
         return;
     }
 }
@@ -177,7 +177,7 @@ int Frame::GetFrameType()
 #define FRAME_TYPE_NAME(frameType) case FrameIdentifier::frameType: { return dac_cast<PTR_##frameType>(this)->GetFrameType_Impl(); }
 #include "FrameTypes.h"
     default:
-        _ASSERTE(!"Unexpected");
+        UNREACHABLE();
         return 0;
     }
 }
@@ -189,7 +189,7 @@ Frame::ETransitionType Frame::GetTransitionType()
 #define FRAME_TYPE_NAME(frameType) case FrameIdentifier::frameType: { return dac_cast<PTR_##frameType>(this)->GetTransitionType_Impl(); }
 #include "FrameTypes.h"
     default:
-        _ASSERTE(!"Unexpected");
+        UNREACHABLE();
         return (ETransitionType)0;
     }
 }
@@ -201,7 +201,7 @@ Frame::Interception Frame::GetInterception()
 #define FRAME_TYPE_NAME(frameType) case FrameIdentifier::frameType: { return dac_cast<PTR_##frameType>(this)->GetInterception_Impl(); }
 #include "FrameTypes.h"
     default:
-        _ASSERTE(!"Unexpected");
+        UNREACHABLE();
         return (Interception)0;
     }
 }
@@ -213,7 +213,7 @@ void Frame::GetUnmanagedCallSite(TADDR* ip, TADDR* returnIP, TADDR* returnSP)
 #define FRAME_TYPE_NAME(frameType) case FrameIdentifier::frameType: { return dac_cast<PTR_##frameType>(this)->GetUnmanagedCallSite_Impl(ip, returnIP, returnSP); }
 #include "FrameTypes.h"
     default:
-        _ASSERTE(!"Unexpected");
+        UNREACHABLE();
         return;
     }
 }
@@ -225,7 +225,7 @@ BOOL Frame::TraceFrame(Thread *thread, BOOL fromPatch, TraceDestination *trace, 
 #define FRAME_TYPE_NAME(frameType) case FrameIdentifier::frameType: { return dac_cast<PTR_##frameType>(this)->TraceFrame_Impl(thread, fromPatch, trace, regs); }
 #include "FrameTypes.h"
     default:
-        _ASSERTE(!"Unexpected");
+        UNREACHABLE();
         return FALSE;
     }
 }
@@ -238,7 +238,7 @@ void Frame::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
 #define FRAME_TYPE_NAME(frameType) case FrameIdentifier::frameType: { return dac_cast<PTR_##frameType>(this)->EnumMemoryRegions_Impl(flags); }
 #include "FrameTypes.h"
     default:
-        _ASSERTE(!"Unexpected");
+        UNREACHABLE();
         return;
     }
 }
@@ -252,7 +252,7 @@ BOOL Frame::Protects(OBJECTREF *ppObjectRef)
 #define FRAME_TYPE_NAME(frameType) case FrameIdentifier::frameType: { return dac_cast<PTR_##frameType>(this)->Protects_Impl(ppObjectRef); }
 #include "FrameTypes.h"
     default:
-        _ASSERTE(!"Unexpected");
+        UNREACHABLE();
         return FALSE;
     }
 }
@@ -267,7 +267,7 @@ TADDR TransitionFrame::GetTransitionBlock()
 #define FRAME_TYPE_NAME(frameType) case FrameIdentifier::frameType: { return dac_cast<PTR_##frameType>(this)->GetTransitionBlock_Impl(); }
 #include "FrameTypes.h"
     default:
-        _ASSERTE(!"Unexpected");
+        UNREACHABLE();
         return (TADDR)0;
     }
 }
@@ -279,7 +279,7 @@ BOOL TransitionFrame::SuppressParamTypeArg()
 #define FRAME_TYPE_NAME(frameType) case FrameIdentifier::frameType: { return dac_cast<PTR_##frameType>(this)->SuppressParamTypeArg_Impl(); }
 #include "FrameTypes.h"
     default:
-        _ASSERTE(!"Unexpected");
+        UNREACHABLE();
         return FALSE;
     }
 }
