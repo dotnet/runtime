@@ -798,10 +798,17 @@ BOOL DacUnwindStackFrame(T_CONTEXT *pContext, T_KNONVOLATILE_CONTEXT_POINTERS* p
 
     if (res && pContextPointers)
     {
-        for (int i = 0; i < 11; i++)
-        {
-            *(&pContextPointers->S1 + i) = &pContext->S1 + i;
-        }
+        pContextPointers->S1 = &pContext->S1;
+        pContextPointers->S2 = &pContext->S2;
+        pContextPointers->S3 = &pContext->S3;
+        pContextPointers->S4 = &pContext->S4;
+        pContextPointers->S5 = &pContext->S5;
+        pContextPointers->S6 = &pContext->S6;
+        pContextPointers->S7 = &pContext->S7;
+        pContextPointers->S8 = &pContext->S8;
+        pContextPointers->S9 = &pContext->S9;
+        pContextPointers->S10 = &pContext->S10;
+        pContextPointers->S11 = &pContext->S11;
         pContextPointers->Fp = &pContext->Fp;
         pContextPointers->Ra = &pContext->Ra;
     }
