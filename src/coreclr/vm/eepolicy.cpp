@@ -671,6 +671,9 @@ void DECLSPEC_NORETURN EEPolicy::HandleFatalStackOverflow(EXCEPTION_POINTERS *pE
             // Wait for the stack trace logging completion
             DWORD res = WaitForSingleObject(stackDumpThreadHandle, INFINITE);
             _ASSERTE(res == WAIT_OBJECT_0);
+ #ifdef _DEBUG
+            PrintToStdErrA("Stack trace printing helper thread exited.\n");
+ #endif    
         }
 
         g_stackOverflowCallStackLogged = 2;
@@ -701,6 +704,9 @@ void DECLSPEC_NORETURN EEPolicy::HandleFatalStackOverflow(EXCEPTION_POINTERS *pE
         if (pThread)
         {
             GCX_COOP();
+#ifdef _DEBUG
+            PrintToStdErrA("Setting throwable.\n");
+#endif    
             // If we had a SO before preallocated exception objects are initialized, we will AV here. This can happen
             // during the initialization of SystemDomain during EEStartup. Thus, setup the SO throwable only if its not
             // NULL.
@@ -734,10 +740,15 @@ void DECLSPEC_NORETURN EEPolicy::HandleFatalStackOverflow(EXCEPTION_POINTERS *pE
         }
 #endif // !TARGET_UNIX
 
+#ifdef _DEBUG
+        PrintToStdErrA("Calling WatsonLastChance.\n");
+#endif    
         WatsonLastChance(pThread, pExceptionInfo,
             (fTreatAsNativeUnhandledException == FALSE)? TypeOfReportedError::UnhandledException: TypeOfReportedError::NativeThreadUnhandledException);
     }
-
+#ifdef _DEBUG
+    PrintToStdErrA("Terminating the process.\n");
+#endif    
     CrashDumpAndTerminateProcess(COR_E_STACKOVERFLOW);
     UNREACHABLE();
 }
