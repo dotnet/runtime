@@ -52,8 +52,6 @@ GenericComCallStub_STACK_FRAME_SIZE = 0
 GenericComCallStub_STACK_FRAME_SIZE = GenericComCallStub_STACK_FRAME_SIZE + (SIZEOF__ComMethodFrame - 8)
 GenericComCallStub_ComMethodFrame_NEGOFFSET = GenericComCallStub_STACK_FRAME_SIZE
 
-GenericComCallStub_STACK_FRAME_SIZE = GenericComCallStub_STACK_FRAME_SIZE
-
 ; Ensure that the offset of the XMM save area will be 16-byte aligned.
 if ((GenericComCallStub_STACK_FRAME_SIZE + 8) MOD 16) ne 0
 GenericComCallStub_STACK_FRAME_SIZE = GenericComCallStub_STACK_FRAME_SIZE + 8

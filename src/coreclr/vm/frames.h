@@ -2719,6 +2719,8 @@ bool isRetAddr(TADDR retAddr, TADDR* whereCalled);
 // as tail calls on interface calls are uncommon.
 //------------------------------------------------------------------------
 
+typedef DPTR(class TailCallFrame) PTR_TailCallFrame;
+
 class TailCallFrame : public Frame
 {
     TADDR           m_CallerAddress;    // the address the tailcall was initiated from

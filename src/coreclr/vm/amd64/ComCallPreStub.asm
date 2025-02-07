@@ -26,8 +26,8 @@ NESTED_ENTRY ComCallPreStub, _TEXT
 ; ComPrestubMethodFrame::m_ReturnAddress
 ; ComPrestubMethodFrame::m_pFuncDesc
 ; Frame::m_Next
-; __VFN_table                                   <-- rsp + ComCallPreStub_ComPrestubMethodFrame_OFFSET
-; HRESULT                                       <-- rsp + ComCallPreStub_HRESULT_OFFSET
+; FrameIdentifier::ComPrestubMethodFrame        <-- rsp + ComCallPreStub_ComPrestubMethodFrame_OFFSET
+; HRESULT                                       <-- rsp + ComCallPreStub_ERRORRETVAL_OFFSET
 ; (optional padding to qword align xmm save area)
 ; xmm3
 ; xmm2

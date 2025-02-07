@@ -5,8 +5,6 @@
 #include "unixasmmacros.inc"
 #include "asmconstants.h"
 
-#define FaultingExceptionFrame_StackAlloc (SIZEOF__FaultingExceptionFrame)
-#define FaultingExceptionFrame_FrameOffset 0
 #define OFFSET_OF_FRAME 0
 
 .macro GenerateRedirectedStubWithFrame stub, target
