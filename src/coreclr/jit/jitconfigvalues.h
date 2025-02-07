@@ -121,7 +121,7 @@ CONFIG_INTEGER(JitInlineDepth, "JITInlineDepth", DEFAULT_MAX_INLINE_DEPTH)
 CONFIG_INTEGER(JitForceInlineDepth, "JITForceInlineDepth", DEFAULT_MAX_FORCE_INLINE_DEPTH)
 CONFIG_INTEGER(JitLongAddress, "JitLongAddress", 0) // Force using the large pseudo instruction form for long address
 CONFIG_INTEGER(JitMaxUncheckedOffset, "JitMaxUncheckedOffset", 8)
-CONFIG_INTEGER(JitPacEnabled, "JitPacEnabled", 1)
+RELEASE_CONFIG_INTEGER(JitPacEnabled, "JitPacEnabled", 1)
 
 //
 // MinOpts
