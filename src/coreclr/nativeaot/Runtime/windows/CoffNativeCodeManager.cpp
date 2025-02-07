@@ -29,10 +29,6 @@
 #define CONTRACTL_END
 #define NOTHROW
 #define GC_NOTRIGGER
-#define WRAPPER_NO_CONTRACT
-#define CONTRACT(x)
-#define CONTRACT_END
-#define RETURN return
 
 #include "../../inc/gcdecoder.cpp"
 #include "../../inc/gc_unwind_x86.h"
