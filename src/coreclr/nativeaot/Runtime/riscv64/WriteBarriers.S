@@ -252,8 +252,6 @@ LEAF_END RhpCheckedAssignRef, _TEXT
 LEAF_ENTRY RhpAssignRefRiscV64, _TEXT
 
     ALTERNATE_ENTRY RhpAssignRefAVLocation
-        mv    t5, a1
-        mv    a1, t3
         sd    t4, 0(t3)
 
         INSERT_UNCHECKED_WRITE_BARRIER_CORE t3, t4
