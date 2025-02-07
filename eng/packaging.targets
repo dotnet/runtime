@@ -122,7 +122,7 @@
       <TfmSpecificPackageFile Include="@(TfmRuntimeSpecificPackageFile)"
                               PackagePath="runtimes\$(_packageTargetRuntime)\$(BuildOutputTargetFolder)\$(_targetFrameworkWithoutSuffix)\" />
       <!-- Create the item and use its metadata separately to avoid MSB4120. See https://aka.ms/msbuild/metadata-self-ref for more info. -->
-      <_RuntimeSymbolPath Include="$(RuntimeSymbolPath)" />
+      <_RuntimeSymbolPath Include="@(TfmRuntimeSpecificPackageFile->'%(RootDir)%(Directory)%(FileName).pdb')" Condition="'%(TfmRuntimeSpecificPackageFile.Extension)' == '.dll'" KeepMetadata="None" />
       <TfmSpecificDebugSymbolsFile Include="@(_RuntimeSymbolPath)"
                                    TargetPath="/runtimes/$(_packageTargetRuntime)/$(BuildOutputTargetFolder)/$(_targetFrameworkWithoutSuffix)/%(_RuntimeSymbolPath.Filename)%(_RuntimeSymbolPath.Extension)"
                                    TargetFramework="$(_targetFrameworkWithoutSuffix)"

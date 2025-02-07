@@ -93,11 +93,6 @@ namespace Internal.Reflection.Augments
             return TypeCode.Object;
         }
 
-        public static TypeLoadException CreateTypeLoadException(string message, string typeName)
-        {
-            return new TypeLoadException(message, typeName);
-        }
-
         public static Assembly Load(AssemblyName assemblyRef, bool throwOnFileNotFound)
         {
             ArgumentNullException.ThrowIfNull(assemblyRef);

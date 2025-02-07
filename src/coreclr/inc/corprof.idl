@@ -2717,8 +2717,7 @@ interface ICorProfilerInfo : IUnknown
      * TO WORK, GetEventMask2 PROVIDES MORE FUNCTIONALITY.
      *
      * The code profiler calls GetEventMask to obtain the current event
-     * categories for which it is to receive event notifications from the COM+
-     * Runtime.
+     * categories for which it is to receive event notifications from the CLR
      */
     HRESULT GetEventMask(
                 [out] DWORD *pdwEvents);

@@ -2819,10 +2819,10 @@ int UnwindCursor<A, R>::stepThroughSigReturn(Registers_riscv &) {
   const pint_t kOffsetSpToSigcontext = 128 + 8 + 8 + 24 + 8 + 128;
 
   const pint_t sigctx = _registers.getSP() + kOffsetSpToSigcontext;
-  _registers.setIP(_addressSpace.get64(sigctx));
+  _registers.setIP(_addressSpace.get64(sigctx), 0);
   for (int i = UNW_RISCV_X1; i <= UNW_RISCV_X31; ++i) {
     uint64_t value = _addressSpace.get64(sigctx + static_cast<pint_t>(i * 8));
-    _registers.setRegister(i, value);
+    _registers.setRegister(i, value, 0);
   }
   _isSignalFrame = true;
   return UNW_STEP_SUCCESS;

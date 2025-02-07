@@ -129,7 +129,7 @@ murmur3_scan_forward (const uint8_t *ptr)
 {
 	// TODO: On wasm we could do a single u32 load then scan the bytes,
 	//  as long as we're sure ptr isn't up against the end of memory
-	murmur3_scan_result_t result = { 0, };
+	murmur3_scan_result_t result = { };
 
 	// I tried to get a loop to auto-unroll, but GCC only unrolls at O3 and MSVC never does.
 #define SCAN_1(i) \

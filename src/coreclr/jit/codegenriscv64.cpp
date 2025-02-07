@@ -2153,8 +2153,7 @@ void CodeGen::genCodeForCpObj(GenTreeBlk* cpObjNode)
         sourceIsLocal = true;
     }
 
-    bool dstOnStack =
-        dstAddr->gtSkipReloadOrCopy()->OperIs(GT_LCL_ADDR) || cpObjNode->GetLayout()->IsStackOnly(compiler);
+    bool dstOnStack = cpObjNode->IsAddressNotOnHeap(compiler);
 
 #ifdef DEBUG
     assert(!dstAddr->isContained());
@@ -4665,8 +4664,6 @@ void CodeGen::genSetGSSecurityCookie(regNumber initReg, bool* pInitRegZeroed)
 void CodeGen::genEmitGSCookieCheck(bool pushReg)
 {
     noway_assert(compiler->gsGlobalSecurityCookieAddr || compiler->gsGlobalSecurityCookieVal);
-
-    assert(GetEmitter()->emitGCDisabled());
 
     // We need two temporary registers, to load the GS cookie values and compare them. We can't use
     // any argument registers if 'pushReg' is true (meaning we have a JMP call). They should be

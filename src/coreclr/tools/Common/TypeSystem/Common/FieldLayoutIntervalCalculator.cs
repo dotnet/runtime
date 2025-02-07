@@ -55,7 +55,7 @@ namespace Internal.TypeSystem
             PointerSize = pointerSize;
         }
 
-        protected abstract bool NeedsRecursiveLayout(int offset, TypeDesc fieldType);
+        protected abstract bool NeedsRecursiveLayout(TypeDesc fieldType);
 
         protected abstract TIntervalTag GetIntervalDataForType(int offset, TypeDesc fieldType);
 
@@ -84,7 +84,7 @@ namespace Internal.TypeSystem
 
         public void AddToFieldLayout(int offset, TypeDesc fieldType, bool addTrailingEmptyInterval)
         {
-            if (NeedsRecursiveLayout(offset, fieldType))
+            if (NeedsRecursiveLayout(fieldType))
             {
                 if (fieldType is MetadataType { IsInlineArray: true } mdType)
                 {
@@ -126,7 +126,7 @@ namespace Internal.TypeSystem
 
         private void AddToFieldLayout(List<FieldLayoutInterval> fieldLayout, int offset, TypeDesc fieldType)
         {
-            if (NeedsRecursiveLayout(offset, fieldType))
+            if (NeedsRecursiveLayout(fieldType))
             {
                 if (fieldType is MetadataType { IsInlineArray: true } mdType)
                 {

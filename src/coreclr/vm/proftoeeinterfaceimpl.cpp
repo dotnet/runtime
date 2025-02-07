@@ -8201,11 +8201,11 @@ static BOOL EnsureFrameInitialized(Frame * pFrame)
 
     HelperMethodFrame * pHMF = (HelperMethodFrame *) pFrame;
 
-    if (pHMF->InsureInit(
+    if (pHMF->EnsureInit(
         NULL                        // unwindState
         ) != NULL)
     {
-        // InsureInit() succeeded and found the return address
+        // EnsureInit() succeeded and found the return address
         return TRUE;
     }
 

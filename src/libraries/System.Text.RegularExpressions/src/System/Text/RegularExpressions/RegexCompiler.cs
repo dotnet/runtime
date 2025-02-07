@@ -2400,18 +2400,8 @@ namespace System.Text.RegularExpressions
                 Ldloc(pos);
                 Stloc(startingPos);
 
-                RegexNode child = node.Child(0);
-
-                if (uncapnum != -1)
-                {
-                    // if (!IsMatched(uncapnum)) goto doneLabel;
-                    Ldthis();
-                    Ldc(uncapnum);
-                    Call(IsMatchedMethod);
-                    BrfalseFar(doneLabel);
-                }
-
                 // Emit child node.
+                RegexNode child = node.Child(0);
                 Label originalDoneLabel = doneLabel;
                 EmitNode(child, subsequent);
                 bool childBacktracks = doneLabel != originalDoneLabel;
@@ -2431,6 +2421,12 @@ namespace System.Text.RegularExpressions
                 }
                 else
                 {
+                    // if (!IsMatched(uncapnum)) goto doneLabel;
+                    Ldthis();
+                    Ldc(uncapnum);
+                    Call(IsMatchedMethod);
+                    BrfalseFar(doneLabel);
+
                     // TransferCapture(capnum, uncapnum, startingPos, pos);
                     Ldthis();
                     Ldc(capnum);

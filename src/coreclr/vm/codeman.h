@@ -12,7 +12,7 @@ Module Name:
 
 Abstract:
 
-    Wrapper to facilitate multiple JITcompiler support in the COM+ Runtime
+    Wrapper to facilitate multiple JITcompiler support in the CLR
 
     The ExecutionManager is responsible for managing the RangeSections.
     Given an IP, it can find the RangeSection which holds that IP.
@@ -2477,7 +2477,7 @@ public:
 
     TADDR       GetSavedMethodCode();
 
-    TADDR       GetStartAddress();
+    TADDR       GetStartAddress() const;
 
     BOOL        IsValid()
     {
@@ -2505,15 +2505,15 @@ public:
     }
 
     // This returns a pointer to the start of an instruction; conceptually, a PINSTR.
-    TADDR       GetCodeAddress()
+    TADDR       GetCodeAddress() const
     {
         LIMITED_METHOD_DAC_CONTRACT;
         return PCODEToPINSTR(m_codeAddress);
     }
 
-    NativeCodeVersion GetNativeCodeVersion();
+    NativeCodeVersion GetNativeCodeVersion() const;
 
-    MethodDesc * GetMethodDesc()
+    MethodDesc * GetMethodDesc() const
     {
         LIMITED_METHOD_DAC_CONTRACT;
         return m_pMD;

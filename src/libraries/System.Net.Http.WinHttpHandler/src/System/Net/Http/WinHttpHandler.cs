@@ -90,7 +90,7 @@ namespace System.Net.Http
         private int _maxResponseDrainSize = HttpHandlerDefaults.DefaultMaxResponseDrainSize;
         private IDictionary<string, object>? _properties; // Only create dictionary when required.
         private volatile bool _operationStarted;
-        private volatile bool _disposed;
+        private volatile int _disposed;
         private SafeWinHttpHandle? _sessionHandle;
         private readonly WinHttpAuthHelper _authHelper = new WinHttpAuthHelper();
 
@@ -539,13 +539,11 @@ namespace System.Net.Http
 
         protected override void Dispose(bool disposing)
         {
-            if (!_disposed)
+            if (Interlocked.CompareExchange(ref _disposed, 1, 0) == 0)
             {
-                _disposed = true;
-
                 if (disposing && _sessionHandle != null)
                 {
-                    SafeWinHttpHandle.DisposeAndClearHandle(ref _sessionHandle);
+                    _sessionHandle.Dispose();
                 }
             }
 
@@ -941,7 +939,14 @@ namespace System.Net.Http
                 // will have the side-effect of WinHTTP cancelling any pending I/O and accelerating its callbacks
                 // on the handle and thus releasing the awaiting tasks in the loop below. This helps to provide
                 // a more timely, cooperative, cancellation pattern.
-                using (state.CancellationToken.Register(s => ((WinHttpRequestState)s!).RequestHandle!.Dispose(), state))
+                using (state.CancellationToken.Register(static s =>
+                {
+                    var state = (WinHttpRequestState)s!;
+                    lock (state.Lock)
+                    {
+                        state.RequestHandle?.Dispose();
+                    }
+                }, state))
                 {
                     do
                     {
@@ -1026,7 +1031,7 @@ namespace System.Net.Http
             }
             finally
             {
-                SafeWinHttpHandle.DisposeAndClearHandle(ref connectHandle);
+                connectHandle?.Dispose();
 
                 try
                 {
@@ -1613,7 +1618,7 @@ namespace System.Net.Http
 
         private void CheckDisposed()
         {
-            if (_disposed)
+            if (_disposed == 1)
             {
                 throw new ObjectDisposedException(GetType().FullName);
             }

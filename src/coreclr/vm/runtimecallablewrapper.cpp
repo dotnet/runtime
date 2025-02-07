@@ -253,7 +253,7 @@ IUnknown *ComClassFactory::CreateInstanceFromClassFactory(IClassFactory *pClassF
 
 //-------------------------------------------------------------
 // ComClassFactory::CreateAggregatedInstance(MethodTable* pMTClass)
-// create a COM+ instance that aggregates a COM instance
+// create a CLR instance that aggregates a COM instance
 
 OBJECTREF ComClassFactory::CreateAggregatedInstance(MethodTable* pMTClass, BOOL ForManaged)
 {

@@ -5,6 +5,8 @@
     <MainLibraryFileName>$(AssemblyName).dll</MainLibraryFileName>
     <WasmMainAssemblyFileName>$(AssemblyName).dll</WasmMainAssemblyFileName>
     <TestFramework>GeneratedRunner</TestFramework>
+    <!-- Don't treat linker warnings as errors for our tests. -->
+    <ILLinkTreatWarningsAsErrors>false</ILLinkTreatWarningsAsErrors>
   </PropertyGroup>
 
   <Target Name="_AddRuntimeLibsToPublishAssets" BeforeTargets="PrepareForPublish" DependsOnTargets="ResolveLibrariesRuntimeFilesFromLocalBuild;ResolveRuntimeFilesFromLocalBuild">

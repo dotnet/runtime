@@ -385,11 +385,7 @@ void MethodDesc::PitchNativeCode()
     }
     else
     {
-#ifdef FEATURE_INTERPRETER
-        SetNativeCodeInterlocked(NULL, NULL, FALSE);
-#else
         SetNativeCodeInterlocked(NULL, NULL);
-#endif
     }
 
     _ASSERTE(!HasNativeCode());

@@ -1,7 +1,6 @@
 <Project>
   <PropertyGroup>
-    <IlcToolsPath>$(CoreCLRILCompilerDir)</IlcToolsPath>
-    <IlcToolsPath Condition="'$(TargetArchitecture)' != '$(BuildArchitecture)' or '$(EnableNativeSanitizers)' != ''">$(CoreCLRCrossILCompilerDir)</IlcToolsPath>
+    <IlcToolsPath>$(CoreCLRCrossILCompilerDir)</IlcToolsPath>
   </PropertyGroup>
 
   <ItemGroup>

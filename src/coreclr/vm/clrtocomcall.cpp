@@ -808,7 +808,7 @@ TADDR CLRToCOMCall::GetFrameCallIP(FramedMethodFrame *frame)
     {
         //
         // This is being called from the debug helper thread.
-        // Unfortunately this doesn't bode well for the COM+ IP
+        // Unfortunately this doesn't bode well for the CLR IP
         // mapping code - it expects to be called from the appropriate
         // context.
         //

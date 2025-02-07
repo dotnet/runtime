@@ -2418,7 +2418,7 @@ HRESULT Assembly::GetDebuggingCustomAttributes(DWORD *pdwFlags)
     ULONG size;
     BYTE *blob;
     IMDInternalImport* mdImport = GetPEAssembly()->GetMDImport();
-    mdAssembly asTK = TokenFromRid(mdtAssembly, 1);
+    mdAssembly asTK = TokenFromRid(1, mdtAssembly);
 
     HRESULT hr = mdImport->GetCustomAttributeByName(asTK,
                                             DEBUGGABLE_ATTRIBUTE_TYPE,

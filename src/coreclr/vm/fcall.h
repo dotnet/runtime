@@ -793,9 +793,9 @@ LPVOID __FCThrow(LPVOID me, enum RuntimeExceptionKind reKind, UINT resID, LPCWST
 #define HELPER_METHOD_POLL()            { __helperframe.Poll(); INCONTRACT(__fCallCheck.SetDidPoll()); }
 
 // The HelperMethodFrame knows how to get its return address.  Let other code get at it, too.
-//  (Uses comma operator to call InsureInit & discard result.
+//  (Uses comma operator to call EnsureInit & discard result.
 #define HELPER_METHOD_FRAME_GET_RETURN_ADDRESS()                                        \
-    ( static_cast<UINT_PTR>( (__helperframe.InsureInit(NULL)), (__helperframe.MachineState()->GetRetAddr()) ) )
+    ( static_cast<UINT_PTR>( (__helperframe.EnsureInit(NULL)), (__helperframe.MachineState()->GetRetAddr()) ) )
 
     // Very short routines, or routines that are guaranteed to force GC or EH
     // don't need to poll the GC.  USE VERY SPARINGLY!!!

@@ -5,6 +5,7 @@ using System.Diagnostics;
 using System.Collections.Generic;
 using System.Collections.Concurrent;
 using System.Collections.ObjectModel;
+using System.Security.Cryptography;
 using System.Security.Authentication;
 using System.Net.Security;
 using System.Security.Cryptography.X509Certificates;
@@ -53,13 +54,13 @@ internal static partial class MsQuicConfiguration
 
         public CacheKey(QUIC_SETTINGS settings, QUIC_CREDENTIAL_FLAGS flags, X509Certificate? certificate, ReadOnlyCollection<X509Certificate2>? intermediates, List<SslApplicationProtocol> alpnProtocols, QUIC_ALLOWED_CIPHER_SUITE_FLAGS allowedCipherSuites)
         {
-            CertificateThumbprints = certificate == null ? new List<byte[]>() : new List<byte[]> { certificate.GetCertHash() };
+            CertificateThumbprints = certificate == null ? new List<byte[]>() : new List<byte[]> { certificate.GetCertHash(HashAlgorithmName.SHA512) };
 
             if (intermediates != null)
             {
                 foreach (X509Certificate2 intermediate in intermediates)
                 {
-                    CertificateThumbprints.Add(intermediate.GetCertHash());
+                    CertificateThumbprints.Add(intermediate.GetCertHash(HashAlgorithmName.SHA512));
                 }
             }
 

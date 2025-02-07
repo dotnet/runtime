@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
     <DebuggerSupport Condition="'$(DebuggerSupport)' == '' and '$(TargetOS)' == 'browser'">true</DebuggerSupport>
@@ -58,7 +58,7 @@
     <Compile Include="SelectTests.cs" />
     <Compile Include="SequenceEqualTests.cs" />
     <Compile Include="ShortCircuitingTests.cs" />
-    <Compile Include="Shuffler.cs" />
+    <Compile Include="ShuffleTests.cs" />
     <Compile Include="SingleOrDefaultTests.cs" />
     <Compile Include="SingleTests.cs" />
     <Compile Include="SkipLastTests.cs" />
@@ -79,10 +79,8 @@
     <Compile Include="UnionTests.cs" />
     <Compile Include="WhereTests.cs" />
     <Compile Include="ZipTests.cs" />
-    <Compile Include="$(CommonTestPath)System\Linq\SkipTakeData.cs"
-             Link="Common\System\Linq\SkipTakeData.cs" />
-    <Compile Include="$(CommonTestPath)System\Diagnostics\DebuggerAttributes.cs"
-             Link="Common\System\Diagnostics\DebuggerAttributes.cs" />
+    <Compile Include="$(CommonTestPath)System\Linq\SkipTakeData.cs" Link="Common\System\Linq\SkipTakeData.cs" />
+    <Compile Include="$(CommonTestPath)System\Diagnostics\DebuggerAttributes.cs" Link="Common\System\Diagnostics\DebuggerAttributes.cs" />
     <Compile Include="GroupByTests.DebuggerAttributes.cs" />
     <Compile Include="ToLookupTests.DebuggerAttributes.cs" />
     <Compile Include="EnumerableDebugViewTests.cs" />

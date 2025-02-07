@@ -19,7 +19,7 @@ public:
         JIT_FLAG_OSR                     = 7, // Generate alternate version for On Stack Replacement
         JIT_FLAG_ALT_JIT                 = 8, // JIT should consider itself an ALT_JIT
         JIT_FLAG_FROZEN_ALLOC_ALLOWED    = 9, // JIT is allowed to use *_MAYBEFROZEN allocators
-        JIT_FLAG_MAKEFINALCODE           = 10, // Use the final code generator, i.e., not the interpreter.
+        // JIT_FLAG_UNUSED               = 10,
         JIT_FLAG_READYTORUN              = 11, // Use version-resilient code generation
         JIT_FLAG_PROF_ENTERLEAVE         = 12, // Instrument prologues/epilogues
         JIT_FLAG_PROF_NO_PINVOKE_INLINE  = 13, // Disables PInvoke inlining
@@ -123,7 +123,6 @@ public:
         FLAGS_EQUAL(CORJIT_FLAGS::CORJIT_FLAG_OSR, JIT_FLAG_OSR);
         FLAGS_EQUAL(CORJIT_FLAGS::CORJIT_FLAG_ALT_JIT, JIT_FLAG_ALT_JIT);
         FLAGS_EQUAL(CORJIT_FLAGS::CORJIT_FLAG_FROZEN_ALLOC_ALLOWED, JIT_FLAG_FROZEN_ALLOC_ALLOWED);
-        FLAGS_EQUAL(CORJIT_FLAGS::CORJIT_FLAG_MAKEFINALCODE, JIT_FLAG_MAKEFINALCODE);
         FLAGS_EQUAL(CORJIT_FLAGS::CORJIT_FLAG_READYTORUN, JIT_FLAG_READYTORUN);
         FLAGS_EQUAL(CORJIT_FLAGS::CORJIT_FLAG_PROF_ENTERLEAVE, JIT_FLAG_PROF_ENTERLEAVE);
         FLAGS_EQUAL(CORJIT_FLAGS::CORJIT_FLAG_PROF_NO_PINVOKE_INLINE, JIT_FLAG_PROF_NO_PINVOKE_INLINE);

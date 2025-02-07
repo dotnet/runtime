@@ -5,7 +5,7 @@
 //
 
 //
-// Header file for Runtime Controller classes of the COM+ Debugging Services.
+// Header file for Runtime Controller classes of the CLR Debugging Services.
 //
 //*****************************************************************************
 
@@ -3994,6 +3994,8 @@ HANDLE OpenWin32EventOrThrow(
 // Returns true if the specified IL offset has a special meaning (eg. prolog, etc.)
 bool DbgIsSpecialILOffset(DWORD offset);
 
+#if defined(TARGET_WINDOWS)
 void FixupDispatcherContext(T_DISPATCHER_CONTEXT* pDispatcherContext, T_CONTEXT* pContext, PEXCEPTION_ROUTINE pUnwindPersonalityRoutine = NULL);
+#endif
 
 #endif /* DEBUGGER_H_ */

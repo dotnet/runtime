@@ -12,7 +12,7 @@
 #ifndef __excepx86_h__
 #define __excepx86_h__
 
-#include "corerror.h"  // HResults for the COM+ Runtime
+#include "corerror.h"
 
 #include "../dlls/mscorrc/resource.h"
 
@@ -89,9 +89,6 @@ EXTERN_C LPVOID STDCALL COMPlusEndCatch(LPVOID ebp, DWORD ebx, DWORD edi, DWORD 
 // RedirectedHandledJITCaseForXXX_Stub's.
 //
 PTR_CONTEXT GetCONTEXTFromRedirectedStubStackFrame(CONTEXT * pContext);
-#ifdef FEATURE_EH_FUNCLETS
-PTR_CONTEXT GetCONTEXTFromRedirectedStubStackFrame(T_DISPATCHER_CONTEXT * pDispatcherContext);
-#endif // FEATURE_EH_FUNCLETS
 
 // Determine the address of the instruction that made the current call.
 inline

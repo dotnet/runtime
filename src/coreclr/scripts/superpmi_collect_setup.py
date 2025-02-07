@@ -405,7 +405,7 @@ def setup_benchmark(workitem_directory, arch):
             return
 
         run_command(
-            get_python_name() + [dotnet_install_script, "install", "--channels", "9.0", "--architecture", arch, "--install-dir",
+            get_python_name() + [dotnet_install_script, "install", "--channels", "10.0", "--architecture", arch, "--install-dir",
                                  dotnet_directory, "--verbose"])
 
 

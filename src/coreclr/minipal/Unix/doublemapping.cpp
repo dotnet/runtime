@@ -18,15 +18,18 @@
 #include <linux/memfd.h>
 #include <sys/syscall.h> // __NR_memfd_create
 #define memfd_create(...) syscall(__NR_memfd_create, __VA_ARGS__)
+#elif defined(TARGET_ANDROID)
+#include <sys/syscall.h> // __NR_memfd_create
+#define memfd_create(...) syscall(__NR_memfd_create, __VA_ARGS__)
 #endif // TARGET_LINUX && !MFD_CLOEXEC
 #include "minipal.h"
 #include "minipal/cpufeatures.h"
 
-#ifdef TARGET_OSX
+#ifdef TARGET_APPLE
 
 #include <mach/mach.h>
 
-#else // TARGET_OSX
+#else // TARGET_APPLE
 
 #ifdef TARGET_64BIT
 static const off_t MaxDoubleMappedSize = 2048ULL*1024*1024*1024;
@@ -34,7 +37,7 @@ static const off_t MaxDoubleMappedSize = 2048ULL*1024*1024*1024;
 static const off_t MaxDoubleMappedSize = UINT_MAX;
 #endif
 
-#endif // TARGET_OSX
+#endif // TARGET_APPLE
 
 bool VMToOSInterface::CreateDoubleMemoryMapper(void** pHandle, size_t *pMaxExecutableCodeSize)
 {
@@ -44,16 +47,17 @@ bool VMToOSInterface::CreateDoubleMemoryMapper(void** pHandle, size_t *pMaxExecu
         return false;
     }
 
-#ifndef TARGET_OSX
+#ifndef TARGET_APPLE
 
 #ifdef TARGET_FREEBSD
     int fd = shm_open(SHM_ANON, O_RDWR | O_CREAT, S_IRWXU);
-#elif defined(TARGET_LINUX)
+#elif defined(TARGET_LINUX) || defined(TARGET_ANDROID)
     int fd = memfd_create("doublemapper", MFD_CLOEXEC);
 #else
     int fd = -1;
-#endif
 
+#ifndef TARGET_ANDROID
+    // Bionic doesn't have shm_{open,unlink}
     // POSIX fallback
     if (fd == -1)
     {
@@ -64,11 +68,13 @@ bool VMToOSInterface::CreateDoubleMemoryMapper(void** pHandle, size_t *pMaxExecu
         fd = shm_open(name, O_RDWR | O_CREAT | O_EXCL | O_NOFOLLOW, 0600);
         shm_unlink(name);
     }
+#endif // !TARGET_ANDROID
 
     if (fd == -1)
     {
         return false;
     }
+#endif
 
     if (ftruncate(fd, MaxDoubleMappedSize) == -1)
     {
@@ -78,25 +84,25 @@ bool VMToOSInterface::CreateDoubleMemoryMapper(void** pHandle, size_t *pMaxExecu
 
     *pMaxExecutableCodeSize = MaxDoubleMappedSize;
     *pHandle = (void*)(size_t)fd;
-#else // !TARGET_OSX
+#else // !TARGET_APPLE
 
     *pMaxExecutableCodeSize = SIZE_MAX;
     *pHandle = NULL;
-#endif // !TARGET_OSX
+#endif // !TARGET_APPLE
 
     return true;
 }
 
 void VMToOSInterface::DestroyDoubleMemoryMapper(void *mapperHandle)
 {
-#ifndef TARGET_OSX
+#ifndef TARGET_APPLE
     close((int)(size_t)mapperHandle);
 #endif
 }
 
 extern "C" void* PAL_VirtualReserveFromExecutableMemoryAllocatorWithinRange(const void* lpBeginAddress, const void* lpEndAddress, size_t dwSize, int fStoreAllocationInfo);
 
-#ifdef TARGET_OSX
+#ifdef TARGET_APPLE
 bool IsMapJitFlagNeeded()
 {
     static volatile int isMapJitFlagNeeded = -1;
@@ -127,7 +133,7 @@ bool IsMapJitFlagNeeded()
 
     return (bool)isMapJitFlagNeeded;
 }
-#endif // TARGET_OSX
+#endif // TARGET_APPLE
 
 void* VMToOSInterface::ReserveDoubleMappedMemory(void *mapperHandle, size_t offset, size_t size, const void *rangeStart, const void* rangeEnd)
 {
@@ -141,7 +147,7 @@ void* VMToOSInterface::ReserveDoubleMappedMemory(void *mapperHandle, size_t offs
     }
 
     void* result = PAL_VirtualReserveFromExecutableMemoryAllocatorWithinRange(rangeStart, rangeEnd, size, 0 /* fStoreAllocationInfo */);
-#ifndef TARGET_OSX
+#ifndef TARGET_APPLE
     int mmapFlags = MAP_SHARED;
 #ifdef TARGET_HAIKU
     mmapFlags |= MAP_NORESERVE;
@@ -156,7 +162,7 @@ void* VMToOSInterface::ReserveDoubleMappedMemory(void *mapperHandle, size_t offs
             result = NULL;
         }
     }
-#endif // TARGET_OSX
+#endif // TARGET_APPLE
 
     // For requests with limited range, don't try to fall back to reserving at any address
     if ((result != NULL) || !isUnlimitedRange)
@@ -164,7 +170,7 @@ void* VMToOSInterface::ReserveDoubleMappedMemory(void *mapperHandle, size_t offs
         return result;
     }
 
-#ifndef TARGET_OSX
+#ifndef TARGET_APPLE
     result = mmap(NULL, size, PROT_NONE, mmapFlags, fd, offset);
 #else
     int mmapFlags = MAP_ANON | MAP_PRIVATE;
@@ -194,20 +200,20 @@ void *VMToOSInterface::CommitDoubleMappedMemory(void* pStart, size_t size, bool 
 
 bool VMToOSInterface::ReleaseDoubleMappedMemory(void *mapperHandle, void* pStart, size_t offset, size_t size)
 {
-#ifndef TARGET_OSX
+#ifndef TARGET_APPLE
     int fd = (int)(size_t)mapperHandle;
     if (mmap(pStart, size, PROT_READ | PROT_WRITE, MAP_SHARED | MAP_FIXED, fd, offset) == MAP_FAILED)
     {
         return false;
     }
     memset(pStart, 0, size);
-#endif // TARGET_OSX
+#endif // TARGET_APPLE
     return munmap(pStart, size) != -1;
 }
 
 void* VMToOSInterface::GetRWMapping(void *mapperHandle, void* pStart, size_t offset, size_t size)
 {
-#ifndef TARGET_OSX
+#ifndef TARGET_APPLE
     int fd = (int)(size_t)mapperHandle;
     void* result = mmap(NULL, size, PROT_READ | PROT_WRITE, MAP_SHARED, fd, offset);
     if (result == MAP_FAILED)
@@ -215,7 +221,7 @@ void* VMToOSInterface::GetRWMapping(void *mapperHandle, void* pStart, size_t off
         result = NULL;
     }
     return result;
-#else // TARGET_OSX
+#else // TARGET_APPLE
 #ifdef TARGET_AMD64
     vm_address_t startRW;
     vm_prot_t curProtection, maxProtection;
@@ -240,7 +246,7 @@ void* VMToOSInterface::GetRWMapping(void *mapperHandle, void* pStart, size_t off
     assert(false);
     return NULL;
 #endif // TARGET_AMD64
-#endif // TARGET_OSX
+#endif // TARGET_APPLE
 }
 
 bool VMToOSInterface::ReleaseRWMapping(void* pStart, size_t size)

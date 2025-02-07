@@ -1,4 +1,8 @@
 <Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <CLRTestTargetUnsupported Condition="'$(TargetsWindows)' != 'true'">true</CLRTestTargetUnsupported>
+  </PropertyGroup>
+
   <ItemGroup>
     <MergedWrapperProjectReference Include="mcc/**/*.??proj" />
   </ItemGroup>

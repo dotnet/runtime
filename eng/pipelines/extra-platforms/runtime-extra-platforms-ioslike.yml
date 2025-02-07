@@ -39,9 +39,9 @@ jobs:
       isExtraPlatforms: ${{ parameters.isExtraPlatformsBuild }}
       # Don't trim tests on rolling builds
       ${{ if eq(variables['isRollingBuild'], true) }}:
-        buildArgs: -s mono+libs+libs.tests -c $(_BuildConfig) /p:ArchiveTests=true /p:DevTeamProvisioning=- /p:RunAOTCompilation=true $(_runSmokeTestsOnlyArg) /p:BuildTestsOnHelix=true /p:EnableAdditionalTimezoneChecks=true /p:UsePortableRuntimePack=true /p:BuildDarwinFrameworks=true /p:IsManualOrRollingBuild=true /p:EnableAggressiveTrimming=false
+        buildArgs: -s mono+libs+libs.tests -c $(_BuildConfig) /p:ArchiveTests=true /p:DevTeamProvisioning=- /p:RunAOTCompilation=true $(_runSmokeTestsOnlyArg) /p:BuildTestsOnHelix=true /p:EnableAdditionalTimezoneChecks=true /p:UsePortableRuntimePack=false /p:BuildDarwinFrameworks=true /p:IsManualOrRollingBuild=true /p:EnableAggressiveTrimming=false
       ${{ else }}:
-        buildArgs: -s mono+libs+libs.tests -c $(_BuildConfig) /p:ArchiveTests=true /p:DevTeamProvisioning=- /p:RunAOTCompilation=true $(_runSmokeTestsOnlyArg) /p:BuildTestsOnHelix=true /p:EnableAdditionalTimezoneChecks=true /p:UsePortableRuntimePack=true /p:BuildDarwinFrameworks=true /p:IsManualOrRollingBuild=true /p:EnableAggressiveTrimming=true
+        buildArgs: -s mono+libs+libs.tests -c $(_BuildConfig) /p:ArchiveTests=true /p:DevTeamProvisioning=- /p:RunAOTCompilation=true $(_runSmokeTestsOnlyArg) /p:BuildTestsOnHelix=true /p:EnableAdditionalTimezoneChecks=true /p:UsePortableRuntimePack=false /p:BuildDarwinFrameworks=true /p:IsManualOrRollingBuild=true /p:EnableAggressiveTrimming=true
       timeoutInMinutes: 480
       # extra steps, run tests
       postBuildSteps:
@@ -91,9 +91,8 @@ jobs:
         - template: /eng/pipelines/common/templates/runtimes/build-runtime-tests-and-send-to-helix.yml
           parameters:
             creator: dotnet-bot
+            testBuildArgs: /p:DevTeamProvisioning=- /p:RunAOTCompilation=true /p:MonoForceInterpreter=true /p:BuildTestsOnHelix=true
             compileOnHelix: true
-            interpreter: true
-            testBuildArgs: /p:ArchiveTests=true /p:DevTeamProvisioning=- /p:RunAOTCompilation=true /p:MonoForceInterpreter=true /p:BuildTestsOnHelix=true
             testRunNamePrefixSuffix: Mono_$(_BuildConfig)
             extraHelixArguments: /p:NeedsToBuildAppsOnHelix=true
 

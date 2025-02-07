@@ -78,7 +78,7 @@ namespace Internal.Cryptography.Pal.AnyOS
 
             if (unprotectedAttributes != null && unprotectedAttributes.Count > 0)
             {
-                List<AttributeAsn> attrList = CmsSigner.BuildAttributes(unprotectedAttributes);
+                List<AttributeAsn> attrList = PkcsHelpers.BuildAttributes(unprotectedAttributes);
 
                 envelopedData.UnprotectedAttributes = PkcsHelpers.NormalizeAttributeSet(attrList.ToArray());
             }

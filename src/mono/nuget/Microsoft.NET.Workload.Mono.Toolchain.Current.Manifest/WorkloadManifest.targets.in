@@ -138,7 +138,7 @@
     Condition="'$(TargetsNet7)' == 'true' and '$(RuntimeIdentifier)' == 'browser-wasm' and
     '$(BrowserWorkloadDisabled)' != 'true' and '$(WasmEnableThreads)' == 'true' and '$(WasmEnablePerfTrace)' == 'true'"
     BeforeTargets="Build">
-    <Error Text="WebAssembly workloads can only support one active threading mode at a time. Either set WasmEnableThreads or WasmEnablePerfTracing to true, but not both." />
+    <Error Text="WebAssembly workloads can only support one active threading mode at a time. Either set WasmEnableThreads to true, but not both." />
   </Target>
 
   <Target Name="_SuggestWasmWorkloadForBlazor" BeforeTargets="Publish">

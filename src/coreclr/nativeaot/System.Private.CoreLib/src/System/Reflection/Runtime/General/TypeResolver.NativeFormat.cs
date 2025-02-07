@@ -195,7 +195,7 @@ namespace System.Reflection.Runtime.General
                 Type? resolvedType = outerTypeInfo.GetNestedType(name, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.DeclaredOnly);
                 if (resolvedType == null)
                 {
-                    exception = Helpers.CreateTypeLoadException(outerTypeInfo.FullName + "+" + name, outerTypeInfo.Assembly);
+                    exception = Helpers.CreateTypeLoadException(outerTypeInfo.FullName + "+" + name, outerTypeInfo.Assembly.FullName);
                     return null;
                 }
                 return resolvedType.ToRuntimeTypeInfo();

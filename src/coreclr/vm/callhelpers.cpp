@@ -20,7 +20,7 @@
 
 void AssertMulticoreJitAllowedModule(PCODE pTarget)
 {
-    MethodDesc* pMethod = Entry2MethodDesc(pTarget, NULL);
+    MethodDesc* pMethod = NonVirtualEntry2MethodDesc(pTarget);
 
     Module * pModule = pMethod->GetModule();
 
@@ -95,11 +95,6 @@ void CallDescrWorker(CallDescrData * pCallDescrData)
 
     static_assert_no_msg(sizeof(curThread->dangerousObjRefs) == sizeof(ObjRefTable));
     memcpy(ObjRefTable, curThread->dangerousObjRefs, sizeof(ObjRefTable));
-
-#ifndef FEATURE_INTERPRETER
-    // When the interpreter is used, this mayb be called from preemptive code.
-    _ASSERTE(curThread->PreemptiveGCDisabled());  // Jitted code expects to be in cooperative mode
-#endif
 
     // If the current thread owns spinlock or unbreakable lock, it cannot call managed code.
     _ASSERTE(!curThread->HasUnbreakableLock() &&
@@ -275,11 +270,7 @@ void FillInRegTypeMap(int argOffset, CorElementType typ, BYTE * pMap)
 #endif // CALLDESCR_REGTYPEMAP
 
 //*******************************************************************************
-#ifdef FEATURE_INTERPRETER
-void MethodDescCallSite::CallTargetWorker(const ARG_SLOT *pArguments, ARG_SLOT *pReturnValue, int cbReturnValue, bool transitionToPreemptive)
-#else
 void MethodDescCallSite::CallTargetWorker(const ARG_SLOT *pArguments, ARG_SLOT *pReturnValue, int cbReturnValue)
-#endif
 {
     //
     // WARNING WARNING WARNING WARNING WARNING WARNING WARNING WARNING
@@ -335,10 +326,8 @@ void MethodDescCallSite::CallTargetWorker(const ARG_SLOT *pArguments, ARG_SLOT *
         //
         ENABLE_FORBID_GC_LOADER_USE_IN_THIS_SCOPE();
 
-#ifndef FEATURE_INTERPRETER
         _ASSERTE(isCallConv(m_methodSig.GetCallingConvention(), IMAGE_CEE_CS_CALLCONV_DEFAULT));
         _ASSERTE(!(m_methodSig.GetCallingConventionInfo() & CORINFO_CALLCONV_PARAMTYPE));
-#endif
 
 #ifdef DEBUGGING_SUPPORTED
         if (CORDebuggerTraceCall())
@@ -408,37 +397,12 @@ void MethodDescCallSite::CallTargetWorker(const ARG_SLOT *pArguments, ARG_SLOT *
             *((LPVOID*)(pTransitionBlock + m_argIt.GetRetBuffArgOffset())) = ArgSlotToPtr(pArguments[arg++]);
         }
 #ifdef FEATURE_HFA
-#ifdef FEATURE_INTERPRETER
-        // Something is necessary for HFA's, but what's below (in the FEATURE_INTERPRETER ifdef)
-        // doesn't seem to do the proper test.  It fires,
-        // incorrectly, for a one-word struct that *doesn't* have a ret buff.  So we'll try this, instead:
-        // We're here because it doesn't have a ret buff.  If it would, except that the struct being returned
-        // is an HFA, *then* assume the invoker made this slot a ret buff pointer.
-        // It's an HFA if the return type is a struct, but it has a non-zero FP return size.
-        // (If it were an HFA, but had a ret buff because it was varargs, then we wouldn't be here.
-        // Also this test won't work for float enums.
-        else if (m_methodSig.GetReturnType() == ELEMENT_TYPE_VALUETYPE
-                  && m_argIt.GetFPReturnSize() > 0)
-#else  // FEATURE_INTERPRETER
         else if (ELEMENT_TYPE_VALUETYPE == m_methodSig.GetReturnTypeNormalized())
-#endif // FEATURE_INTERPRETER
         {
             pvRetBuff = ArgSlotToPtr(pArguments[arg++]);
         }
 #endif // FEATURE_HFA
 
-
-#ifdef FEATURE_INTERPRETER
-        if (m_argIt.IsVarArg())
-        {
-            *((LPVOID*)(pTransitionBlock + m_argIt.GetVASigCookieOffset())) = ArgSlotToPtr(pArguments[arg++]);
-        }
-
-        if (m_argIt.HasParamType())
-        {
-            *((LPVOID*)(pTransitionBlock + m_argIt.GetParamTypeArgOffset())) = ArgSlotToPtr(pArguments[arg++]);
-        }
-#endif
 
         int ofs;
         for (; TransitionBlock::InvalidOffset != (ofs = m_argIt.GetNextOffset()); arg++)
@@ -569,17 +533,7 @@ void MethodDescCallSite::CallTargetWorker(const ARG_SLOT *pArguments, ARG_SLOT *
     callDescrData.fpReturnSize = fpReturnSize;
     callDescrData.pTarget = m_pCallTarget;
 
-#ifdef FEATURE_INTERPRETER
-    if (transitionToPreemptive)
-    {
-        GCPreemp transitionIfILStub(transitionToPreemptive);
-        CallDescrWorkerInternal(&callDescrData);
-    }
-    else
-#endif // FEATURE_INTERPRETER
-    {
-        CallDescrWorkerWithHandler(&callDescrData);
-    }
+    CallDescrWorkerWithHandler(&callDescrData);
 
 #ifdef FEATURE_HFA
     if (pvRetBuff != NULL)

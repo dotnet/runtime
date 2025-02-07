@@ -15,7 +15,9 @@ namespace System.Globalization
             Debug.Assert(!GlobalizationMode.Invariant);
             Debug.Assert(!GlobalizationMode.UseNls);
             Debug.Assert(!source.IsEmpty);
+#pragma warning disable CA1416 // FormKC and FormKD are unsupported on browser, ValidateArguments is throwing PlatformNotSupportedException in that case so suppressing the warning here
             Debug.Assert(normalizationForm is NormalizationForm.FormC or NormalizationForm.FormD or NormalizationForm.FormKC or NormalizationForm.FormKD);
+#pragma warning restore CA1416
 
             ValidateArguments(source, normalizationForm, nameof(source));
 

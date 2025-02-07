@@ -34,7 +34,7 @@
 //  Cast operations: requires a QI, unless a QI for that interface was done previously
 //
 //  Threading : apartment model COM objects have thread affinity
-//              choices: COM+ can guarantee thread affinity by making sure
+//              choices: CLR can guarantee thread affinity by making sure
 //                       the calls are always made on the right thread
 //              Advantanges: avoid an extra marshalling
 //              Dis.Advt.  : need to make sure legacy apartment semantics are preserved
@@ -741,7 +741,7 @@ protected :
 private:
     //-------------------------------------------------------------
     // ComClassFactory::CreateAggregatedInstance(MethodTable* pMTClass)
-    // create a COM+ instance that aggregates a COM instance
+    // create a CLR instance that aggregates a COM instance
     OBJECTREF CreateAggregatedInstance(MethodTable* pMTClass, BOOL ForManaged);
 
     //--------------------------------------------------------------

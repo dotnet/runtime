@@ -139,7 +139,7 @@ FORCEINLINE LONG FastInterlockedCompareExchangeRelease(
 // Destroying the heap frees all blocks allocated from the heap.
 // Blocks cannot be freed individually.
 //
-// The heap uses COM+ exceptions to report errors.
+// The heap uses exceptions to report errors.
 //
 // The heap does not use any internal synchronization so it is not
 // multithreadsafe.

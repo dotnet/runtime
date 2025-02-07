@@ -175,77 +175,6 @@ C_FUNC(\Name):
     INLINE_GET_TLS_VAR  \target, C_FUNC(tls_CurrentThread)
 .endm
 
-// Do not use these ETLS macros in functions that already create a stack frame.
-// Creating two stack frames in one function can confuse the unwinder/debugger
-
-.macro GETTHREAD_ETLS_1
-    PROLOG_SAVE_REG_PAIR_INDEXED   22, 1, 32          // ;; Push down stack pointer and store FP and RA
-    st.d  $a0, $sp, 0x10
-
-    bl  C_FUNC(RhpGetThread)
-    ori  $a1, $a0, 0
-
-    ld.d  $a0, $sp, 0x10
-    EPILOG_RESTORE_REG_PAIR_INDEXED   22, 1, 32
-.endm
-
-.macro GETTHREAD_ETLS_2
-    PROLOG_SAVE_REG_PAIR_INDEXED  22, 1, 32           // ;; Push down stack pointer and store FP and RA
-    st.d  $a0, $sp, 0x10
-    st.d  $a1, $sp, 0x18
-
-    bl  C_FUNC(RhpGetThread)
-    ori  $a2, $a0, 0
-
-    ld.d  $a0, $sp, 0x10
-    ld.d  $a1, $sp, 0x18
-    EPILOG_RESTORE_REG_PAIR_INDEXED  22, 1, 32
-.endm
-
-.macro GETTHREAD_ETLS_3
-    PROLOG_SAVE_REG_PAIR_INDEXED  22, 1, 48           // ;; Push down stack pointer and store FP and RA
-    st.d  $a0, $sp, 0x10
-    st.d  $a1, $sp, 0x18
-    st.d  $a2, $sp, 0x20
-
-    bl  C_FUNC(RhpGetThread)
-    ori  $a3, $a0, 0
-
-    ld.d  $a0, $sp, 0x10
-    ld.d  $a1, $sp, 0x18
-    ld.d  $a2, $sp, 0x20
-    EPILOG_RESTORE_REG_PAIR_INDEXED  22, 1, 48
-.endm
-
-.macro GETTHUNKDATA_ETLS_9
-    PROLOG_SAVE_REG_PAIR_INDEXED  22, 1, 96           // ;; Push down stack pointer and store FP and RA
-    st.d  $a0, $sp, 0x10
-    st.d  $a1, $sp, 0x18
-    st.d  $a2, $sp, 0x20
-    st.d  $a3, $sp, 0x28
-    st.d  $a4, $sp, 0x30
-    st.d  $a5, $sp, 0x38
-    st.d  $a6, $sp, 0x40
-    st.d  $a7, $sp, 0x48
-    st.d  $t6, $sp, 0x50
-    st.d  $t7, $sp, 0x58
-
-    bl  RhpGetThunkData
-    ori  $t0, $a0, 0
-
-    ld.d  $a0, $sp, 0x10
-    ld.d  $a1, $sp, 0x18
-    ld.d  $a2, $sp, 0x20
-    ld.d  $a3, $sp, 0x28
-    ld.d  $a4, $sp, 0x30
-    ld.d  $a5, $sp, 0x38
-    ld.d  $a6, $sp, 0x40
-    ld.d  $a7, $sp, 0x48
-    ld.d  $t6, $sp, 0x50
-    ld.d  $t7, $sp, 0x58
-    EPILOG_RESTORE_REG_PAIR_INDEXED  22, 1, 96
-.endm
-
 .macro  InterlockedOperationBarrier
     dbar  0
 .endm
@@ -269,6 +198,7 @@ C_FUNC(\Name):
 #define PTFF_SAVE_R4            0x00000800
 #define PTFF_SAVE_R5            0x00001000
 #define PTFF_SAVE_ALL_PRESERVED 0x000001FF // NOTE: r23-r31
+#define PTFF_THREAD_HIJACK_HI   0x00000002 // upper 32 bits of the PTFF_THREAD_HIJACK
 
 #define DEFAULT_FRAME_SAVE_FLAGS (PTFF_SAVE_ALL_PRESERVED + PTFF_SAVE_SP)
 

@@ -43,7 +43,7 @@ struct IEnumConnectionPoints;
 
 // IUnknown is part of IDispatch
 // Common vtables for well-known COM interfaces
-// shared by all COM+ callable wrappers.
+// shared by all CLR callable wrappers.
 
 //-------------------------------------------------------------------------
 // IUnknown methods
@@ -236,7 +236,7 @@ ULONG STDMETHODCALLTYPE Unknown_ReleaseSpecial_IErrorInfo(IUnknown* pUnk)
 // ---------------------------------------------------------------------------
 //  Interface IDispatch
 //
-//      IDispatch methods for COM+ objects. These methods dispatch's to the
+//      IDispatch methods for CLR objects. These methods dispatch's to the
 //      appropriate implementation based on the flags of the class that
 //      implements them.
 
@@ -856,7 +856,7 @@ namespace
 
 
     //------------------------------------------------------------------------------------------
-    //      IObjectSafety methods for COM+ objects
+    //      IObjectSafety methods for CLR objects
 
     HRESULT STDMETHODCALLTYPE ObjectSafety_GetInterfaceSafetyOptions_Wrapper(IUnknown* pUnk, REFIID riid,
                                                    DWORD *pdwSupportedOptions, DWORD *pdwEnabledOptions)
@@ -895,10 +895,10 @@ namespace
     }
 }
 
-// All Com+ created vtables have well known IUnknown methods, which is used to identify
+// All CLR created vtables have well known IUnknown methods, which is used to identify
 // the type of the interface
-// For e.g. all com+ created tear-offs have the same QI method in their IUnknown portion
-//          Unknown_QueryInterface is the QI method for all the tear-offs created from COM+
+// For e.g. all CLR created tear-offs have the same QI method in their IUnknown portion
+//          Unknown_QueryInterface is the QI method for all the tear-offs created from CLR
 //
 //  Tearoff interfaces created for std. interfaces such as IProvideClassInfo, IErrorInfo etc.
 //  have the AddRef & Release function point to Unknown_AddRefSpecial & Unknown_ReleaseSpecial

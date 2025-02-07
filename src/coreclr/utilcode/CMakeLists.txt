@@ -23,7 +23,6 @@ set(UTILCODE_COMMON_SOURCES
   check.cpp
   log.cpp
   arraylist.cpp
-  bitvector.cpp
   comex.cpp
   guidfromname.cpp
   memorypool.cpp

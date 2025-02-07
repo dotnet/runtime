@@ -54,10 +54,10 @@ Copyright (c) .NET Foundation. All rights reserved.
     <DisableBuildCompression Condition="'$(WasmBuildingForNestedPublish)' == 'true'">true</DisableBuildCompression>
   </PropertyGroup>
 
-  <UsingTask TaskName="Microsoft.NET.Sdk.WebAssembly.GenerateWasmBootJson" AssemblyFile="$(_WebAssemblySdkTasksAssembly)" />
-  <UsingTask TaskName="Microsoft.NET.Sdk.WebAssembly.ComputeWasmBuildAssets" AssemblyFile="$(_WebAssemblySdkTasksAssembly)" />
-  <UsingTask TaskName="Microsoft.NET.Sdk.WebAssembly.ComputeWasmPublishAssets" AssemblyFile="$(_WebAssemblySdkTasksAssembly)" />
-  <UsingTask TaskName="Microsoft.NET.Sdk.WebAssembly.ConvertDllsToWebCil" AssemblyFile="$(_WebAssemblySdkTasksAssembly)" />
+  <UsingTask TaskName="Microsoft.NET.Sdk.WebAssembly.GenerateWasmBootJson" AssemblyFile="$(_WebAssemblySdkTasksAssembly)" TaskFactory="TaskHostFactory" />
+  <UsingTask TaskName="Microsoft.NET.Sdk.WebAssembly.ComputeWasmBuildAssets" AssemblyFile="$(_WebAssemblySdkTasksAssembly)" TaskFactory="TaskHostFactory" />
+  <UsingTask TaskName="Microsoft.NET.Sdk.WebAssembly.ComputeWasmPublishAssets" AssemblyFile="$(_WebAssemblySdkTasksAssembly)" TaskFactory="TaskHostFactory" />
+  <UsingTask TaskName="Microsoft.NET.Sdk.WebAssembly.ConvertDllsToWebCil" AssemblyFile="$(_WebAssemblySdkTasksAssembly)" TaskFactory="TaskHostFactory" />
 
   <PropertyGroup>
     <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>

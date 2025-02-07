@@ -80,6 +80,7 @@
       System.IO.Pipelines;
       System.IO.UnmanagedMemoryStream;
       System.Linq;
+      System.Linq.AsyncEnumerable;
       System.Linq.Expressions;
       System.Linq.Parallel;
       System.Linq.Queryable;

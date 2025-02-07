@@ -932,6 +932,22 @@ namespace System.Runtime.CompilerServices
         }
     }
 
+    // Subset of src\vm\typedesc.h
+    [StructLayout(LayoutKind.Sequential)]
+    internal unsafe struct TypeDesc
+    {
+        private uint _typeAndFlags;
+        private nint _exposedClassObject;
+
+        public RuntimeType? ExposedClassObject
+        {
+            get
+            {
+                return *(RuntimeType*)Unsafe.AsPointer(ref _exposedClassObject);
+            }
+        }
+    }
+
     [StructLayout(LayoutKind.Sequential)]
     internal unsafe ref struct DynamicStaticsInfo
     {
@@ -1088,6 +1104,18 @@ namespace System.Runtime.CompilerServices
             Debug.Assert(!IsTypeDesc);
 
             return (MethodTable*)m_asTAddr;
+        }
+
+        /// <summary>
+        /// Gets the <see cref="TypeDesc"/> pointer wrapped by the current instance.
+        /// </summary>
+        /// <remarks>This is only safe to call if <see cref="IsTypeDesc"/> returned <see langword="true"/>.</remarks>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public TypeDesc* AsTypeDesc()
+        {
+            Debug.Assert(IsTypeDesc);
+
+            return (TypeDesc*)((nint)m_asTAddr & ~2); // Drop the second lowest bit.
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

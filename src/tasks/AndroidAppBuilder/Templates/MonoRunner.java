@@ -74,7 +74,7 @@ public class MonoRunner extends Instrumentation
         start();
     }
 
-    public static int initialize(String entryPointLibName, String[] args, Context context) {
+    public static void initializeRuntime(String entryPointLibName, Context context) {
         String filesDir = context.getFilesDir().getAbsolutePath();
         String cacheDir = context.getCacheDir().getAbsolutePath();
 
@@ -90,9 +90,24 @@ public class MonoRunner extends Instrumentation
         // unzip libs and test files to filesDir
         unzipAssets(context, filesDir, "assets.zip");
 
-        Log.i("DOTNET", "MonoRunner initialize,, entryPointLibName=" + entryPointLibName);
+        // set environment variables
+        setEnv("HOME", filesDir);
+        setEnv("TMPDIR", cacheDir);
+        setEnv("TEST_RESULTS_DIR", testResultsDir);
+
+        Log.i("DOTNET", "MonoRunner initializeRuntime, entryPointLibName=" + entryPointLibName);
         int localDateTimeOffset = getLocalDateTimeOffset();
-        return initRuntime(filesDir, cacheDir, testResultsDir, entryPointLibName, args, localDateTimeOffset);
+        int rv = initRuntime(filesDir, entryPointLibName, localDateTimeOffset);
+        if (rv != 0) {
+            Log.e("DOTNET", "Failed to initialize runtime, return-code=" + rv);
+            freeNativeResources();
+            System.exit(rv);
+        }
+    }
+
+    public static int executeEntryPoint(String entryPointLibName, String[] args) {
+        int rv = execEntryPoint(entryPointLibName, args);
+        return rv;
     }
 
     @Override
@@ -104,7 +119,9 @@ public class MonoRunner extends Instrumentation
             finish(1, null);
             return;
         }
-        int retcode = initialize(entryPointLibName, argsToForward, getContext());
+
+        initializeRuntime(entryPointLibName, getContext());
+        int retcode = executeEntryPoint(entryPointLibName, argsToForward);
 
         Log.i("DOTNET", "MonoRunner finished, return-code=" + retcode);
         result.putInt("return-code", retcode);
@@ -117,6 +134,14 @@ public class MonoRunner extends Instrumentation
         }
 
         finish(retcode, result);
+    }
+
+    @Override
+    public void onDestroy() {
+        Log.i("DOTNET", "MonoRunner onDestroy");
+        super.onDestroy();
+        // Cleanup native resources
+        freeNativeResources();
     }
 
     static void unzipAssets(Context context, String toPath, String zipName) {
@@ -162,7 +187,11 @@ public class MonoRunner extends Instrumentation
         }
     }
 
-    static native int initRuntime(String libsDir, String cacheDir, String testResultsDir, String entryPointLibName, String[] args, int local_date_time_offset);
-
     static native int setEnv(String key, String value);
+
+    static native int initRuntime(String libsDir, String entryPointLibName, int local_date_time_offset);
+
+    static native int execEntryPoint(String entryPointLibName, String[] args);
+
+    static native void freeNativeResources();
 }

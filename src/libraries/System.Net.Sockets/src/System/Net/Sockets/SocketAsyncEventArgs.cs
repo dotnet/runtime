@@ -789,10 +789,18 @@ namespace System.Net.Sockets
                         // If the operation was canceled, simulate the appropriate SocketError.
                         if (cancellationToken.IsCancellationRequested)
                         {
-                            throw new SocketException((int)SocketError.OperationAborted);
+                            lastError = SocketError.OperationAborted;
+                            break;
                         }
 
                         lastError = internalArgs.SocketError;
+
+                        // If multi-connect is no longer possible, terminate propagating the last error.
+                        if (!attemptSocket.CanProceedWithMultiConnect)
+                        {
+                            break;
+                        }
+
                         internalArgs.Reset();
                     }
 

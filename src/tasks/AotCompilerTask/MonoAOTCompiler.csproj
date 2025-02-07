@@ -23,11 +23,6 @@
     <Compile Include="..\Common\IsExternalInit.cs" Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'" />
     <Compile Include="$(RepoRoot)src\libraries\System.Private.CoreLib\src\System\Diagnostics\CodeAnalysis\NullableAttributes.cs" Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'" />
   </ItemGroup>
-  <ItemGroup>
-    <Content Include="MonoAOTCompiler.props">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-  </ItemGroup>
 
   <!-- GetFilesToPackage assists to place `MonoAOTCompiler.dll` in a NuGet package in Microsoft.NET.Runtime.MonoAOTCompiler.Task.pkgproj for external use -->
   <Target Name="GetFilesToPackage" Returns="@(FilesToPackage)">

@@ -94,16 +94,28 @@ FORCEINLINE int64_t PalInterlockedCompareExchange64(_Inout_ int64_t volatile *pD
     return result;
 }
 
-#if defined(HOST_AMD64) || defined(HOST_ARM64)
+#if defined(HOST_64BIT)
 FORCEINLINE uint8_t PalInterlockedCompareExchange128(_Inout_ int64_t volatile *pDst, int64_t iValueHigh, int64_t iValueLow, int64_t *pComparandAndResult)
 {
     __int128_t iComparand = ((__int128_t)pComparandAndResult[1] << 64) + (uint64_t)pComparandAndResult[0];
+
+    // TODO-LOONGARCH64: the 128-bit CAS is supported starting from the 3A6000 CPU (ISA1.1).
+    // When running on older hardware that doesn't support native CAS-128, the system falls back
+    // to a mutex-based approach via libatomic, which is not suitable for runtime requirements.
+    //
+    // TODO-RISCV64: double-check if libatomic's emulated CAS-128 works as expected once AOT applications are
+    // functional on linux-riscv64: https://github.com/dotnet/runtime/issues/106223.
+    // CAS-128 is natively supported starting with the Zacas extension in Linux 6.8; however, hardware support
+    // for RVA23 profile is not available at the time of writing.
+    //
+    // See https://github.com/dotnet/runtime/issues/109276.
+
     __int128_t iResult = __sync_val_compare_and_swap((__int128_t volatile*)pDst, iComparand, ((__int128_t)iValueHigh << 64) + (uint64_t)iValueLow);
     PalInterlockedOperationBarrier();
     pComparandAndResult[0] = (int64_t)iResult; pComparandAndResult[1] = (int64_t)(iResult >> 64);
     return iComparand == iResult;
 }
-#endif // HOST_AMD64
+#endif // HOST_64BIT
 
 #ifdef HOST_64BIT
 

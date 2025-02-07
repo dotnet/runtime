@@ -766,7 +766,7 @@ TypeHandle FieldDesc::GetExactFieldType(TypeHandle owner)
 }
 
 #if !defined(DACCESS_COMPILE)
-REFLECTFIELDREF FieldDesc::GetStubFieldInfo()
+REFLECTFIELDREF FieldDesc::AllocateStubFieldInfo()
 {
     CONTRACTL
     {

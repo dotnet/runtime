@@ -405,7 +405,7 @@ GPTR_DECL(StressLog, g_pStressLog);
 
 
 //
-// Support for the COM+ Debugger.
+// Support for the CLR Debugger.
 //
 GPTR_DECL(DebugInterface,     g_pDebugInterface);
 GVAL_DECL(DWORD,              g_CORDebuggerControlFlags);

@@ -187,6 +187,7 @@ System.IO.Pipes|4.3.0
 System.IO.Pipes.AccessControl|5.0.0
 System.IO.UnmanagedMemoryStream|4.3.0
 System.Linq|4.3.0
+System.Linq.AsyncEnumerable|${ProductVersion}
 System.Linq.Expressions|4.3.0
 System.Linq.Parallel|4.3.0
 System.Linq.Queryable|4.3.0

@@ -14,9 +14,6 @@
 #include "eeconfig.h"
 #include "dbginterface.h"
 #include "generics.h"
-#ifdef FEATURE_INTERPRETER
-#include "interpreter.h"
-#endif // FEATURE_INTERPRETER
 
 #include "gcinfodecoder.h"
 #ifdef FEATURE_EH_FUNCLETS
@@ -51,57 +48,8 @@ Assembly* CrawlFrame::GetAssembly()
 BOOL CrawlFrame::IsInCalleesFrames(LPVOID stackPointer)
 {
     LIMITED_METHOD_CONTRACT;
-#ifdef FEATURE_INTERPRETER
-    Frame* pFrm = GetFrame();
-    if (pFrm != NULL && pFrm->GetVTablePtr() == InterpreterFrame::GetMethodFrameVPtr())
-    {
-#ifdef DACCESS_COMPILE
-        // TBD: DACize the interpreter.
-        return NULL;
-#else
-        return dac_cast<PTR_InterpreterFrame>(pFrm)->GetInterpreter()->IsInCalleesFrames(stackPointer);
-#endif
-    }
-    else if (pFunc != NULL)
-    {
-        return ::IsInCalleesFrames(GetRegisterSet(), stackPointer);
-    }
-    else
-    {
-        return FALSE;
-    }
-#else
     return ::IsInCalleesFrames(GetRegisterSet(), stackPointer);
-#endif
 }
-
-#ifdef FEATURE_INTERPRETER
-MethodDesc* CrawlFrame::GetFunction()
-{
-    LIMITED_METHOD_DAC_CONTRACT;
-    if (pFunc != NULL)
-    {
-        return pFunc;
-    }
-    else
-    {
-        Frame* pFrm = GetFrame();
-        if (pFrm != NULL && pFrm->GetVTablePtr() == InterpreterFrame::GetMethodFrameVPtr())
-        {
-#ifdef DACCESS_COMPILE
-            // TBD: DACize the interpreter.
-            return NULL;
-#else
-            return dac_cast<PTR_InterpreterFrame>(pFrm)->GetInterpreter()->GetMethodDesc();
-#endif
-        }
-        else
-        {
-            return NULL;
-        }
-    }
-}
-#endif // FEATURE_INTERPRETER
 
 OBJECTREF CrawlFrame::GetThisPointer()
 {
@@ -195,19 +143,6 @@ PTR_VOID CrawlFrame::GetParamTypeArg()
     }
     else
     {
-#ifdef FEATURE_INTERPRETER
-        if (pFrame != NULL && pFrame->GetVTablePtr() == InterpreterFrame::GetMethodFrameVPtr())
-        {
-#ifdef DACCESS_COMPILE
-            // TBD: DACize the interpreter.
-            return NULL;
-#else
-            return dac_cast<PTR_InterpreterFrame>(pFrame)->GetInterpreter()->GetParamTypeArg();
-#endif
-        }
-        // Otherwise...
-#endif // FEATURE_INTERPRETER
-
         if (!pFunc || !pFunc->RequiresInstArg())
         {
             return NULL;

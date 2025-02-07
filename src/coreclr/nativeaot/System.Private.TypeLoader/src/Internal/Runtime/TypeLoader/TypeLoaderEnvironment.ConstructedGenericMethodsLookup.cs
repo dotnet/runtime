@@ -258,8 +258,17 @@ namespace Internal.Runtime.TypeLoader
                 }
             }
 
+            InstantiatedMethod nonTemplateMethod = method;
+
+            // Templates are always unboxing stubs for valuetype instance methods
+            if (!method.UnboxingStub && method.OwningType.IsValueType && !IsStaticMethodSignature(method.NameAndSignature))
+            {
+                // Make it an unboxing stub, note the first parameter which is true
+                nonTemplateMethod = (InstantiatedMethod)method.Context.ResolveGenericMethodInstantiation(true, (DefType)method.OwningType, method.NameAndSignature, method.Instantiation);
+            }
+
             // If we cannot find an exact method entry point, look for an equivalent template and compute the generic dictionary
-            InstantiatedMethod templateMethod = TemplateLocator.TryGetGenericMethodTemplate(method, out _, out _);
+            InstantiatedMethod templateMethod = TemplateLocator.TryGetGenericMethodTemplate(nonTemplateMethod, out _, out _);
             if (templateMethod == null)
             {
                 methodPointer = default;

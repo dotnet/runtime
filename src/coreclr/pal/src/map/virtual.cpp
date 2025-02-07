@@ -39,6 +39,7 @@ SET_DEFAULT_DEBUG_CHANNEL(VIRTUAL); // some headers have code with asserts, so d
 #include <string.h>
 #include <unistd.h>
 #include <limits.h>
+#include <dlfcn.h>
 
 #if HAVE_VM_ALLOCATE
 #include <mach/vm_map.h>
@@ -53,6 +54,11 @@ CRITICAL_SECTION virtual_critsec;
 static PCMI pVirtualMemory;
 
 static size_t s_virtualPageSize = 0;
+
+#if defined(HOST_APPLE) && defined(HOST_ARM64) && !defined(HOST_OSX)
+void (*jit_write_protect_np)(int enabled);
+#define pthread_jit_write_protect_np jit_write_protect_np
+#endif // defined(HOST_APPLE) && defined(HOST_ARM64) && !defined(HOST_OSX)
 
 /* We need MAP_ANON. However on some platforms like HP-UX, it is defined as MAP_ANONYMOUS */
 #if !defined(MAP_ANON) && defined(MAP_ANONYMOUS)
@@ -177,6 +183,15 @@ VIRTUALInitialize(bool initializeExecutableMemoryAllocator)
     {
         g_executableMemoryAllocator.Initialize();
     }
+
+#if defined(HOST_APPLE) && defined(HOST_ARM64) && !defined(HOST_OSX)
+    jit_write_protect_np = (void (*)(int))dlsym(RTLD_DEFAULT, "pthread_jit_write_protect_np");
+    if (jit_write_protect_np == NULL)
+    {
+        ERROR("pthread_jit_write_protect_np not available.\n");
+        return FALSE;
+    }
+#endif // defined(HOST_APPLE) && defined(HOST_ARM64) && !defined(HOST_OSX)
 
     return TRUE;
 }
@@ -1234,7 +1249,7 @@ ExitVirtualProtect:
     return bRetVal;
 }
 
-#if defined(HOST_OSX) && defined(HOST_ARM64)
+#if defined(HOST_APPLE) && defined(HOST_ARM64)
 PALAPI VOID PAL_JitWriteProtect(bool writeEnable)
 {
     thread_local int enabledCount = 0;
@@ -1254,7 +1269,7 @@ PALAPI VOID PAL_JitWriteProtect(bool writeEnable)
         _ASSERTE(enabledCount >= 0);
     }
 }
-#endif // HOST_OSX && HOST_ARM64
+#endif // HOST_APPLE && HOST_ARM64
 
 #if HAVE_VM_ALLOCATE
 //---------------------------------------------------------------------------------------

@@ -2381,7 +2381,7 @@ mono_class_layout_fields (MonoClass *klass, int base_instance_size, int packing_
 			}
 			ftype = mono_type_get_underlying_type (field->type);
 			ftype = mono_type_get_basic_type_from_generic (ftype);
-			if (type_has_references (klass, ftype) || m_type_is_byref (ftype)) {
+			if (type_has_references (klass, ftype) || type_has_ref_fields (ftype) || m_type_is_byref (ftype)) {
 				if (field_offsets [i] % TARGET_SIZEOF_VOID_P) {
 					mono_class_set_type_load_failure (klass, "Reference typed field '%s' has explicit offset that is not pointer-size aligned.", field->name);
 				}

@@ -19,12 +19,6 @@ inline void PalDeleteCriticalSection(CRITICAL_SECTION * arg1)
     DeleteCriticalSection(arg1);
 }
 
-extern "C" UInt32_BOOL __stdcall DuplicateHandle(HANDLE, HANDLE, HANDLE, HANDLE *, uint32_t, UInt32_BOOL, uint32_t);
-inline UInt32_BOOL PalDuplicateHandle(HANDLE arg1, HANDLE arg2, HANDLE arg3, HANDLE * arg4, uint32_t arg5, UInt32_BOOL arg6, uint32_t arg7)
-{
-    return DuplicateHandle(arg1, arg2, arg3, arg4, arg5, arg6, arg7);
-}
-
 extern "C" void __stdcall EnterCriticalSection(CRITICAL_SECTION *);
 inline void PalEnterCriticalSection(CRITICAL_SECTION * arg1)
 {
@@ -37,22 +31,10 @@ inline void PalFlushProcessWriteBuffers()
     FlushProcessWriteBuffers();
 }
 
-extern "C" HANDLE __stdcall GetCurrentProcess();
-inline HANDLE PalGetCurrentProcess()
-{
-    return GetCurrentProcess();
-}
-
 extern "C" uint32_t __stdcall GetCurrentProcessId();
 inline uint32_t PalGetCurrentProcessId()
 {
     return GetCurrentProcessId();
-}
-
-extern "C" HANDLE __stdcall GetCurrentThread();
-inline HANDLE PalGetCurrentThread()
-{
-    return GetCurrentThread();
 }
 
 #ifdef UNICODE

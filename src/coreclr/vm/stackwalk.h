@@ -79,16 +79,11 @@ public:
     /* Returns either a MethodDesc* or NULL for "non-function" frames */
             //<TODO>@TODO: what will it return for transition frames?</TODO>
 
-#ifdef FEATURE_INTERPRETER
-    MethodDesc *GetFunction();
-#else // FEATURE_INTERPRETER
     inline MethodDesc *GetFunction()
     {
         LIMITED_METHOD_DAC_CONTRACT;
         return pFunc;
     }
-#endif
-
 
     Assembly *GetAssembly();
 

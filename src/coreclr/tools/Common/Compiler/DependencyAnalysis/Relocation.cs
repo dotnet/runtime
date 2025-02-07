@@ -469,7 +469,7 @@ namespace ILCompiler.DependencyAnalysis
         private static unsafe void PutRiscV64PC(uint* pCode, long imm32)
         {
             // Verify that we got a valid offset
-            Debug.Assert((int)imm32 == imm32);
+            Debug.Assert((imm32 >= (long)-0x80000000 - 0x800) && (imm32 < (long)0x80000000 - 0x800));
 
             int doff = (int)(imm32 & 0xfff);
             uint auipcInstr = *pCode;

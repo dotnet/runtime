@@ -60,10 +60,6 @@
 #include "dynamicinterfacecastable.h"
 #include "frozenobjectheap.h"
 
-#ifdef FEATURE_INTERPRETER
-#include "interpreter.h"
-#endif // FEATURE_INTERPRETER
-
 #ifndef DACCESS_COMPILE
 
 // Typedef for string comparison functions.
@@ -533,7 +529,7 @@ PTR_MethodTable InterfaceInfo_t::GetApproxMethodTable(Module * pContainingModule
         RETURN(implTypeHandle.GetMethodTable()->GetMethodDescForInterfaceMethod(ownerType, pItfMD, TRUE /* throwOnConflict */));
     }
 
-    // Handle pure COM+ types.
+    // Handle pure CLR types.
     RETURN (pServerMT->GetMethodDescForInterfaceMethod(ownerType, pItfMD, TRUE /* throwOnConflict */));
 }
 
@@ -6200,19 +6196,6 @@ MethodDesc* MethodTable::GetMethodDescForSlotAddress(PCODE addr, BOOL fSpeculati
     {
         goto lExit;
     }
-
-#ifdef FEATURE_INTERPRETER
-    // I don't really know why this helps.  Figure it out.
-#ifndef DACCESS_COMPILE
-    // If we didn't find it above, try as an Interpretation stub...
-    pMethodDesc = Interpreter::InterpretationStubToMethodInfo(addr);
-
-    if (NULL != pMethodDesc)
-    {
-        goto lExit;
-    }
-#endif
-#endif // FEATURE_INTERPRETER
 
     // Is it an FCALL?
     pMethodDesc = ECall::MapTargetBackToMethod(addr);

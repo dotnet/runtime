@@ -97,7 +97,6 @@ FCFuncStart(gCOMTypeHandleFuncs)
     FCFuncElement("ContainsGenericVariables", RuntimeTypeHandle::ContainsGenericVariables)
     FCFuncElement("IsUnmanagedFunctionPointer", RuntimeTypeHandle::IsUnmanagedFunctionPointer)
     FCFuncElement("CompareCanonicalHandles", RuntimeTypeHandle::CompareCanonicalHandles)
-    FCFuncElement("GetRuntimeTypeFromHandleIfExists", RuntimeTypeHandle::GetRuntimeTypeFromHandleIfExists)
 FCFuncEnd()
 
 FCFuncStart(gMetaDataImport)

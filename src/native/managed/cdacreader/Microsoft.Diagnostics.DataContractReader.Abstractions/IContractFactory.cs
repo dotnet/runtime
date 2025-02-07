@@ -5,7 +5,7 @@ using System;
 
 namespace Microsoft.Diagnostics.DataContractReader;
 
-internal interface IContractFactory<out TContract> where TContract : Contracts.IContract
+public interface IContractFactory<out TContract> where TContract : Contracts.IContract
 {
     TContract CreateContract(Target target, int version);
 }

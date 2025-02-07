@@ -907,28 +907,6 @@ public:
         Emit16((WORD) (0x0b00 | ((dest & 0xf) << 12) | (abs(offset)>>2)));
     }
 
-#ifdef FEATURE_INTERPRETER
-    void ThumbEmitStoreMultipleVFPDoubleReg(ThumbVFPDoubleReg source, ThumbReg dest, unsigned numRegs)
-    {
-        _ASSERTE((numRegs + source) <= 16);
-
-        // The third nibble is 0x8; the 0x4 bit (D) is zero because the source reg number must be less
-        // than 16 for double registers.
-        Emit16((WORD) (0xec80 | 0x80 | dest));
-        Emit16((WORD) (((source & 0xf) << 12) | 0xb00 | numRegs));
-    }
-
-    void ThumbEmitLoadMultipleVFPDoubleReg(ThumbVFPDoubleReg dest, ThumbReg source, unsigned numRegs)
-    {
-        _ASSERTE((numRegs + dest) <= 16);
-
-        // The third nibble is 0x8; the 0x4 bit (D) is zero because the source reg number must be less
-        // than 16 for double registers.
-        Emit16((WORD) (0xec90 | 0x80 | source));
-        Emit16((WORD) (((dest & 0xf) << 12) | 0xb00 | numRegs));
-    }
-#endif // FEATURE_INTERPRETER
-
     // Scratches r12.
     void ThumbEmitTailCallManagedMethod(MethodDesc *pMD);
 

@@ -3,7 +3,7 @@
 //
 // OBJECT.INL
 //
-// Definitions inline functions of a Com+ Object
+// Definitions inline functions of a CLR Object
 //
 
 

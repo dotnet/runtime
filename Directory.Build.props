@@ -63,7 +63,7 @@
         - src/mono/msbuild/apple/build/AppleBuild.targets
         - src/installer/pkg/sfx/bundle/shared-framework-distribution-template-x64.xml
         - src/installer/pkg/sfx/bundle/shared-framework-distribution-template-arm64.xml
-        - src/tasks/AotCompilerTask/MonoAOTCompiler.props
+        - src/mono/msbuild/common/MonoAOTCompiler.props
         - src/tasks/AppleAppBuilder/Xcode.cs
         - src/tasks/MobileBuildTasks/Apple/AppleProject.cs
         - https://github.com/dotnet/sdk repo > src/Installer/redist-installer/targets/GeneratePKG.targets
@@ -190,11 +190,6 @@
     <WasmCommonTargetsPath>$([MSBuild]::NormalizeDirectory($(WasmProjectRoot), 'build'))</WasmCommonTargetsPath>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(DotNetBuildRuntimeNativeAOTRuntimePack)' == 'true'">
-    <BuildNativeAOTRuntimePack>true</BuildNativeAOTRuntimePack>
-    <SkipLibrariesNativeRuntimePackages>true</SkipLibrariesNativeRuntimePackages>
-  </PropertyGroup>
-
   <PropertyGroup Condition="'$(DotNetBuildMonoCrossAOT)' == 'true'">
     <BuildMonoAOTCrossCompilerOnly>true</BuildMonoAOTCrossCompilerOnly>
     <MonoCrossAOTTargetOS>android+browser+wasi</MonoCrossAOTTargetOS>
@@ -231,7 +226,7 @@
   <PropertyGroup Label="CalculatePackageRID">
     <_packageOS>$(_portableOS)</_packageOS>
 
-    <_packageOS Condition="'$(CrossBuild)' == 'true' and '$(_portableOS)' != 'linux-musl' and '$(_portableOS)' != 'linux-bionic'">$(_hostOS)</_packageOS>
+    <_packageOS Condition="'$(CrossBuild)' == 'true' and '$(_portableOS)' != 'linux-musl' and '$(_portableOS)' != 'linux-bionic' and '$(_portableOS)' != 'android'">$(_hostOS)</_packageOS>
 
     <!-- source-build sets PackageOS to build with non-portable rid packages that were source-built previously. -->
     <PackageRID Condition="'$(PackageOS)' != ''">$(PackageOS)-$(TargetArchitecture)</PackageRID>

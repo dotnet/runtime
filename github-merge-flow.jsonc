@@ -11,19 +11,9 @@
             "MergeToBranch": "release/8.0-staging",
             "ExtraSwitches": "-QuietComments"
         },
-        // Automate merging runtime release/8.0-rc branches back to release/8.0
-        "release/8.0-rc":{
-            "MergeToBranch": "release/8.0",
-            "ExtraSwitches": "-QuietComments"
-        },
-        // Automate merging runtime release/9.0-rc1 branch back to release/9.0
-        "release/9.0-rc1":{
-            "MergeToBranch": "release/9.0",
-            "ExtraSwitches": "-QuietComments"
-        },
-        // Automate merging runtime release/9.0-rc2 branch back to release/9.0
-        "release/9.0-rc2":{
-            "MergeToBranch": "release/9.0",
+        // Automate merging runtime release/9.0 branch back to release/9.0-staging
+        "release/9.0":{
+            "MergeToBranch": "release/9.0-staging",
             "ExtraSwitches": "-QuietComments"
         }
     }

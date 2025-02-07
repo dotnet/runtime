@@ -53,7 +53,7 @@ handle_arguments_local() {
             __RequestedBuildComponents="$__RequestedBuildComponents $2"
             __ShiftArgs=1
             ;;
-        
+
         subdir|-subdir)
             __SubDir="$2"
             __ShiftArgs=1
@@ -122,11 +122,6 @@ __ArtifactsIntermediatesDir="$__ArtifactsObjDir/coreclr"
 __IntermediatesDir="$__ArtifactsIntermediatesDir/$__ConfigTriplet"
 
 export __IntermediatesDir __ArtifactsIntermediatesDir
-
-if [[ "$__ExplicitHostArch" == 1 ]]; then
-    __IntermediatesDir="$__IntermediatesDir/$__HostArch"
-    __BinDir="$__BinDir/$__HostArch"
-fi
 
 if [[ -n "$__SubDir" ]]; then
     __IntermediatesDir="$__IntermediatesDir/$__SubDir"

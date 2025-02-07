@@ -157,17 +157,6 @@ extern "C" void QCALLTYPE RuntimeTypeHandle_GetRuntimeTypeFromHandleSlow(
     END_QCALL;
 }
 
-FCIMPL1(ReflectClassBaseObject*, RuntimeTypeHandle::GetRuntimeTypeFromHandleIfExists, EnregisteredTypeHandle th)
-{
-    FCALL_CONTRACT;
-
-    _ASSERTE(th != NULL);
-
-    TypeHandle typeHandle = TypeHandle::FromPtr(th);
-    return (ReflectClassBaseObject*)OBJECTREFToObject(typeHandle.GetManagedClassObjectIfExists());
-}
-FCIMPLEND
-
 #ifdef FEATURE_TYPEEQUIVALENCE
 extern "C" BOOL QCALLTYPE RuntimeTypeHandle_IsEquivalentTo(QCall::TypeHandle rtType1, QCall::TypeHandle rtType2)
 {
@@ -2312,7 +2301,7 @@ extern "C" void QCALLTYPE ModuleHandle_ResolveField(QCall::ModuleHandle pModule,
     SigTypeContext typeContext(Instantiation(typeArgs, typeArgsCount), Instantiation(methodArgs, methodArgsCount));
     pField = MemberLoader::GetFieldDescFromMemberDefOrRef(pModule, tkMemberRef, &typeContext, FALSE);
     GCX_COOP();
-    retField.Set(pField->GetStubFieldInfo());
+    retField.Set(pField->AllocateStubFieldInfo());
 
     END_QCALL;
 

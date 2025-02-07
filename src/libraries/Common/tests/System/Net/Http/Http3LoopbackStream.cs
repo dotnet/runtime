@@ -423,9 +423,9 @@ namespace System.Net.Test.Common
             }
         }
 
-        public void Abort(long errorCode)
+        public void Abort(long errorCode, QuicAbortDirection direction = QuicAbortDirection.Both)
         {
-            _stream.Abort(QuicAbortDirection.Both, errorCode);
+            _stream.Abort(direction, errorCode);
         }
 
         public async Task<(long? frameType, byte[] payload)> ReadFrameAsync()

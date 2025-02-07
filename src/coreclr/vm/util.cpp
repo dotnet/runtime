@@ -45,7 +45,7 @@ thread_local size_t t_CantStopCount;
 // Destroying the heap frees all blocks allocated from the heap.
 // Blocks cannot be freed individually.
 //
-// The heap uses COM+ exceptions to report errors.
+// The heap uses CLR exceptions to report errors.
 //
 // The heap does not use any internal synchronization so it is not
 // multithreadsafe.
@@ -373,7 +373,7 @@ SIZE_T GetRegOffsInCONTEXT(ICorDebugInfo::RegNum regNum)
     {
     case ICorDebugInfo::REGNUM_R0: return offsetof(T_CONTEXT, R0);
     case ICorDebugInfo::REGNUM_RA: return offsetof(T_CONTEXT, Ra);
-    case ICorDebugInfo::REGNUM_TP: return offsetof(T_CONTEXT, Tp);
+    //case ICorDebugInfo::REGNUM_TP: return offsetof(T_CONTEXT, Tp);
     case ICorDebugInfo::REGNUM_SP: return offsetof(T_CONTEXT, Sp);
     case ICorDebugInfo::REGNUM_A0: return offsetof(T_CONTEXT, A0);
     case ICorDebugInfo::REGNUM_A1: return offsetof(T_CONTEXT, A1);

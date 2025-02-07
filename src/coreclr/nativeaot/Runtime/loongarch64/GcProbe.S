@@ -102,11 +102,7 @@
 .macro FixupHijackedCallstack
 
     // a2 <- GetThread()
-#ifdef FEATURE_EMULATED_TLS
-    GETTHREAD_ETLS_2
-#else
     INLINE_GETTHREAD  $a2
-#endif
 
     //
     // Fix the stack by restoring the original return address
@@ -134,8 +130,8 @@ NESTED_ENTRY RhpGcProbeHijack, _TEXT, NoHandler
     jirl  $r0, $ra, 0
 
 LOCAL_LABEL(WaitForGC):
-    lu12i.w  $t3, ((DEFAULT_FRAME_SAVE_FLAGS + PTFF_SAVE_R4 + PTFF_SAVE_R5 + PTFF_THREAD_HIJACK) >> 12) & 0xfffff
-    ori  $t3, $t3, (DEFAULT_FRAME_SAVE_FLAGS + PTFF_SAVE_R4 + PTFF_SAVE_R5 + PTFF_THREAD_HIJACK) & 0xfff
+    lu12i.w  $t3, ((DEFAULT_FRAME_SAVE_FLAGS + PTFF_SAVE_R4 + PTFF_SAVE_R5 + PTFF_THREAD_HIJACK_HI) >> 12) & 0xfffff
+    ori  $t3, $t3, (DEFAULT_FRAME_SAVE_FLAGS + PTFF_SAVE_R4 + PTFF_SAVE_R5 + PTFF_THREAD_HIJACK_HI) & 0xfff
     b  C_FUNC(RhpWaitForGC)
 NESTED_END RhpGcProbeHijack
 

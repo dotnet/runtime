@@ -5,7 +5,7 @@
       Name, used to generate the bundle upgrade code. Must stay the same to allow bundles in a given
       product band to upgrade in place.
     -->
-    <SkipBuild Condition="'$(RuntimeFlavor)' != '$(PrimaryRuntimeFlavor)' or '$(TargetsMobile)' == 'true'">true</SkipBuild>
+    <SkipBuild Condition="'$(DotNetBuildAllRuntimePacks)' != 'true' and ('$(RuntimeFlavor)' != '$(PrimaryRuntimeFlavor)' or '$(TargetsMobile)' == 'true')">true</SkipBuild>
     <IsShipping Condition="'$(PgoInstrument)' == 'true'">false</IsShipping>
     <BundleInstallerUpgradeCodeSeed>.NET Core Shared Framework Bundle Installer</BundleInstallerUpgradeCodeSeed>
     <BundleThemeDirectory>$(MSBuildProjectDirectory)</BundleThemeDirectory>
@@ -24,7 +24,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <BundleComponentReference Include="../Microsoft.NETCore.App/Microsoft.NETCore.App.Runtime.sfxproj" />
+    <BundleComponentReference Include="../Microsoft.NETCore.App/Microsoft.NETCore.App.Runtime.CoreCLR.sfxproj" Condition="'$(RuntimeFlavor)' == 'CoreCLR' and '$(TargetsLinuxBionic)' != 'true'" />
+    <BundleComponentReference Include="../Microsoft.NETCore.App/Microsoft.NETCore.App.Runtime.Mono.sfxproj" Condition="'$(RuntimeFlavor)' == 'Mono' or '$(TargetsLinuxBionic)' == 'true'" />
     <BundleComponentReference Include="../installers/dotnet-hostfxr.proj" Condition="'$(TestReadyToRun)' != 'true'" />
     <BundleComponentReference Include="../installers/dotnet-host.proj" Condition="'$(TestReadyToRun)' != 'true'" />
   </ItemGroup>

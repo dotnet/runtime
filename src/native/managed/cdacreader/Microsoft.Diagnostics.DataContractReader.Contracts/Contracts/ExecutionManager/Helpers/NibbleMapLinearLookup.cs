@@ -55,7 +55,7 @@ namespace Microsoft.Diagnostics.DataContractReader.ExecutionManagerHelpers;
 // We will then align the map index to the start of the current map unit (map index 8) and move back to the previous map unit (map index 7)
 // At that point, we scan backwards for non-zero map units. Since there are none, we return null.
 
-internal class NibbleMapLinearLookup : INibbleMap
+internal sealed class NibbleMapLinearLookup : INibbleMap
 {
     private readonly Target _target;
 

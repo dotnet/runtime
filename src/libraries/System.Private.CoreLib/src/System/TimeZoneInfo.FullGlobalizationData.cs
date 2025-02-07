@@ -13,7 +13,8 @@ namespace System
             windowsId = null;
             return false;
 #else
-            if (GlobalizationMode.Invariant ||
+            if (Invariant ||
+                GlobalizationMode.Invariant ||
                 GlobalizationMode.UseNls ||
                 ianaId is null ||
                 ianaId.AsSpan().ContainsAny('\\', '\n', '\r')) // ICU uses these characters as a separator

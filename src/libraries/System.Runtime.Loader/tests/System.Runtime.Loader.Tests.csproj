@@ -13,6 +13,7 @@
 
     <!-- disabled due to https://github.com/dotnet/runtime/issues/65672 -->
     <XUnitUseRandomizedTestOrderer>false</XUnitUseRandomizedTestOrderer>
+    <MetadataUpdaterSupport>true</MetadataUpdaterSupport>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="ApplyUpdateTest.cs" />

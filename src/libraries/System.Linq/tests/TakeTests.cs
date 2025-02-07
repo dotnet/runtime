@@ -1079,7 +1079,7 @@ namespace System.Linq.Tests
             Assert.Equal(taken5, taken5);
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsSpeedOptimized))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsLinqSpeedOptimized))]
         [InlineData(1000)]
         [InlineData(1000000)]
         [InlineData(int.MaxValue)]
@@ -2033,7 +2033,7 @@ namespace System.Linq.Tests
             Assert.Empty(EnumerablePartitionOrEmpty(source).Take(^6..^7));
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsSpeedOptimized))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsLinqSpeedOptimized))]
         public void SkipTakeOnIListIsIList()
         {
             IList<int> list = new ReadOnlyCollection<int>(Enumerable.Range(0, 100).ToList());

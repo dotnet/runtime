@@ -1410,7 +1410,7 @@ VOID EnsureComStarted(BOOL fCoInitCurrentThread)
 
         // Attempt to set the thread's apartment model (to MTA by default). May not
         // succeed (if someone beat us to the punch). That doesn't matter (since
-        // COM+ objects are now apartment agile), we only care that a CoInitializeEx
+        // CLR objects are now apartment agile), we only care that a CoInitializeEx
         // has been performed on this thread by us.
         if (fCoInitCurrentThread)
             GetThread()->SetApartment(Thread::AS_InMTA);
@@ -3022,7 +3022,7 @@ static OBJECTREF ConvertEnumVariantToMngEnum(IEnumVARIANT* pNativeEnum)
 
 //--------------------------------------------------------------------------------
 // InvokeDispMethod will convert a set of managed objects and call IDispatch.  The
-// result will be returned as a CLR Variant pointed to by pRetVal.
+// result will be returned as a CLR object pointed to by pRetVal.
 void IUInvokeDispMethod(
     REFLECTCLASSBASEREF* pRefClassObj,
     OBJECTREF* pTarget,
@@ -3388,7 +3388,7 @@ void IUInvokeDispMethod(
                 DispParams.cNamedArgs = cNamedArgs;
                 DispParams.rgdispidNamedArgs = (cNamedArgs == 0) ? NULL : &aDispID[1];
 
-                // Convert the named arguments from COM+ to OLE. These arguments are in the same order
+                // Convert the named arguments from CLR to OLE. These arguments are in the same order
                 // on both sides.
                 for (i = 0; i < cNamedArgs; i++)
                 {
@@ -3423,7 +3423,7 @@ void IUInvokeDispMethod(
                 TmpObj = ((OBJECTREF*)(*pArrArgs)->GetDataPtr())[iSrcArg];
                 DispInvokeConvertObjectToVariant(&TmpObj, &DispParams.rgvarg[iDestArg], &aByrefArgInfos[iSrcArg]);
 
-                // Convert the named arguments from COM+ to OLE. These arguments are in the same order
+                // Convert the named arguments from CLR to OLE. These arguments are in the same order
                 // on both sides.
                 for (i = 0; i < cNamedArgs; i++)
                 {
@@ -3509,7 +3509,7 @@ void IUInvokeDispMethod(
         }
         else
         {
-            // Convert the return variant to a COR variant.
+            // Convert the return variant to a CLR object.
             OleVariant::MarshalObjectForOleVariant(&VarResult, pRetVal);
         }
     }

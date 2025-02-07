@@ -160,7 +160,7 @@ C_FUNC(\Name\()_End):
         PROLOG_SAVE_REG_PAIR 25, 26, \ofs + 32
         PROLOG_SAVE_REG_PAIR 27, 28, \ofs + 48
         PROLOG_SAVE_REG_PAIR 29, 30, \ofs + 64
-        PROLOG_SAVE_REG_PAIR 31, 2,  \ofs + 80
+        PROLOG_SAVE_REG      31,     \ofs + 80
 
 .endm
 
@@ -235,8 +235,7 @@ C_FUNC(\Name\()_End):
 
 .macro RESTORE_CALLEESAVED_REGISTERS reg, ofs
 
-        EPILOG_RESTORE_REG_PAIR 31, 2   \ofs + 80
-
+        EPILOG_RESTORE_REG      31,     \ofs + 80
         EPILOG_RESTORE_REG_PAIR 29, 30, \ofs + 64
         EPILOG_RESTORE_REG_PAIR 27, 28, \ofs + 48
         EPILOG_RESTORE_REG_PAIR 25, 26, \ofs + 32
@@ -322,7 +321,6 @@ C_FUNC(\Name\()_End):
 //            GPR_a0
 //
 // General Registers:
-//            GPR_tp
 //            GPR_s8
 //            GPR_s7
 //            GPR_s6
@@ -366,7 +364,7 @@ C_FUNC(\Name\()_End):
         __PWTB_CalleeSavedRegisters = __PWTB_TransitionBlock
         __PWTB_ArgumentRegisters = __PWTB_TransitionBlock + 96
 
-        // Including fp, ra, s0-s8, tp, and (a0-a7)arguments. (1+1+9+1)*8 + 8*8.
+        // Including fp, ra, s0-s8, padding, and (a0-a7)arguments. (1+1+9+1)*8 + 8*8.
         __PWTB_StackAlloc = __PWTB_TransitionBlock + 96 + 64
         PROLOG_STACK_ALLOC __PWTB_StackAlloc
         //                   $fp,$ra

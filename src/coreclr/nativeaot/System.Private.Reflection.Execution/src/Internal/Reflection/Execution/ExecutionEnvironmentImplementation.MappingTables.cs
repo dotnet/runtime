@@ -719,7 +719,7 @@ namespace Internal.Reflection.Execution
                 QTypeDefinition qTypeDefinition = GetMetadataForNamedType(declaringTypeHandleDefinition);
 
                 MethodHandle nativeFormatMethodHandle =
-                    (((int)HandleType.Method << 24) | (int)entryMethodHandleOrNameAndSigRaw).AsMethodHandle();
+                    (((int)HandleType.Method << 25) | (int)entryMethodHandleOrNameAndSigRaw).AsMethodHandle();
 
                 methodHandle = new QMethodDefinition(qTypeDefinition.NativeFormatReader, nativeFormatMethodHandle);
             }

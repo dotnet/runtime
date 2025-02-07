@@ -305,7 +305,7 @@ BOOL MethodNeedsReverseComStub(MethodDesc *pMD);
 
 //--------------------------------------------------------------------------------
 // InvokeDispMethod will convert a set of managed objects and call IDispatch.  The
-// result will be returned as a COM+ Variant pointed to by pRetVal.
+// result will be returned as a CLR object pointed to by pRetVal.
 void IUInvokeDispMethod(
     REFLECTCLASSBASEREF* pRefClassObj,
     OBJECTREF* pTarget,

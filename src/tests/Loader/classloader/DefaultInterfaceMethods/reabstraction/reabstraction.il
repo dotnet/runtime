@@ -4,6 +4,8 @@
 
 .assembly extern mscorlib { }
 .assembly extern xunit.core {}
+.assembly extern Microsoft.DotNet.XUnitExtensions { .publickeytoken = (31 BF 38 56 AD 36 4E 35 ) }
+.assembly extern TestLibrary { .ver 0:0:0:0 }
 .assembly extern System.Runtime { .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A ) }
 
 .assembly reabstraction { }
@@ -143,9 +145,12 @@
 {
   .method public hidebysig static int32 Main() cil managed
   {
-    .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
-        01 00 00 00
-    )
+    .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = {}
+    .custom instance void [Microsoft.DotNet.XUnitExtensions]Xunit.ActiveIssueAttribute::.ctor(string, class [mscorlib]System.Type, string[]) = {
+        string('https://github.com/dotnet/runtime/issues/91923')
+        type([TestLibrary]TestLibrary.PlatformDetection)
+        string[1] ('IsAppleMobile')
+    }
     .entrypoint
 
     .try
