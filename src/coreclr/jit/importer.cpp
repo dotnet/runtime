@@ -846,9 +846,7 @@ GenTree* Compiler::impStoreStruct(GenTree*         store,
 
             // Make sure we don't pass something other than a local address to the return buffer arg.
             // It is allowed to pass current's method return buffer as it is a local too.
-            if (!impIsAddressInLocal(destAddr) &&
-                (!destAddr->OperIsScalarLocal() ||
-                 (destAddr->AsLclVarCommon()->GetLclNum() != impInlineRoot()->info.compRetBuffArg)))
+            if (!impIsAddressInLocal(destAddr) && !eeIsByrefLike(srcCall->gtRetClsHnd))
             {
                 unsigned tmp = lvaGrabTemp(false DEBUGARG("stack copy for value returned via return buffer"));
                 lvaSetStruct(tmp, srcCall->gtRetClsHnd, false);
@@ -974,9 +972,7 @@ GenTree* Compiler::impStoreStruct(GenTree*         store,
 
             // Make sure we don't pass something other than a local address to the return buffer arg.
             // It is allowed to pass current's method return buffer as it is a local too.
-            if (!impIsAddressInLocal(destAddr) &&
-                (!destAddr->OperIsScalarLocal() ||
-                 (destAddr->AsLclVarCommon()->GetLclNum() != impInlineRoot()->info.compRetBuffArg)))
+            if (!impIsAddressInLocal(destAddr) && !eeIsByrefLike(call->gtRetClsHnd))
             {
                 unsigned tmp = lvaGrabTemp(false DEBUGARG("stack copy for value returned via return buffer"));
                 lvaSetStruct(tmp, call->gtRetClsHnd, false);
@@ -12685,6 +12681,11 @@ bool Compiler::impIsAddressInLocal(const GenTree* tree, GenTree** lclVarTreeOut)
             *lclVarTreeOut = const_cast<GenTree*>(op);
         }
 
+        return true;
+    }
+
+    if (op->OperIsScalarLocal() && (op->AsLclVarCommon()->GetLclNum() == impInlineRoot()->info.compRetBuffArg))
+    {
         return true;
     }
 
