@@ -1056,6 +1056,24 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
                 break;
             }
 
+            case CEE_UNBOX:
+            case CEE_UNBOX_ANY:
+            {
+                if (makeInlineObservations)
+                {
+                    FgStack::FgSlot slot = pushedStack.Top();
+                    if (FgStack::IsExactArgument(slot, impInlineInfo))
+                    {
+                        compInlineResult->Note(InlineObservation::CALLSITE_UNBOX_EXACT_ARG);
+                    }
+                    else if (FgStack::IsArgument(slot))
+                    {
+                        compInlineResult->Note(InlineObservation::CALLEE_UNBOX_ARG);
+                    }
+                }
+                break;
+            }
+
             case CEE_CASTCLASS:
             case CEE_ISINST:
             {
