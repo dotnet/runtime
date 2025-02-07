@@ -13963,9 +13963,9 @@ void Compiler::fgSetOptions()
     // to use a frame pointer because of EH. But until all the code uses
     // the same test, leave info.compXcptnsCount here. Also test for
     // CORINFO_FLG_SYNCH methods which are converted into try-finally
-    // with Monitor helper calls and need to be treated as methods with
-    // EH.
-    if (info.compXcptnsCount > 0 || (info.compFlags & CORINFO_FLG_SYNCH))
+    // with Monitor helper calls in funclet ABI and need to be treated
+    // as methods with EH.
+    if (info.compXcptnsCount > 0 || (UsesFunclets() && (info.compFlags & CORINFO_FLG_SYNCH)))
     {
         codeGen->setFramePointerRequiredEH(true);
 
