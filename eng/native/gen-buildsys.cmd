@@ -88,7 +88,7 @@ if /i "%__Os%" == "android" (
         exit /B 1
     )
 
-    set __ExtraCmakeParams=!__ExtraCmakeParams! "-DCMAKE_TOOLCHAIN_FILE=%ANDROID_NDK_ROOT:/=\%/build/cmake/android.toolchain.cmake"
+    set __ExtraCmakeParams=!__ExtraCmakeParams! "-DCMAKE_TOOLCHAIN_FILE=""%ANDROID_NDK_ROOT:/=\%/build/cmake/android.toolchain.cmake"""
     set __ExtraCmakeParams=!__ExtraCmakeParams! "-DANDROID_BUILD=1" "-C %__repoRoot%/eng/native/tryrun.cmake" "-DANDROID_CPP_FEATURES='no-rtti exceptions'"
     set __ExtraCmakeParams=!__ExtraCmakeParams! "-DANDROID_PLATFORM=android-!__ANDROID_API_LEVEL!" "-DANDROID_NATIVE_API_LEVEL=!__ANDROID_API_LEVEL!"
 

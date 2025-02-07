@@ -56,6 +56,7 @@
       Minimum target OS versions, keep in sync with:
         - eng/native/configurecompiler.cmake
         - eng/native/build-commons.sh
+        - eng/native/gen-buildsys.cmd
         - src/native/libs/build-native.sh
         - src/coreclr/tools/aot/ILCompiler.Compiler/Compiler/ObjectWriter/MachObjectWriter.cs
         - src/coreclr/nativeaot/BuildIntegration/Microsoft.NETCore.Native.Unix.targets
