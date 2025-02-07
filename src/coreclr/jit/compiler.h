@@ -6377,6 +6377,8 @@ public:
 
         void RunThreeOpt();
 
+        bool ReorderBlockList();
+
     public:
         ThreeOptLayout(Compiler* comp, BasicBlock** initialLayout, unsigned numHotBlocks);
         bool Run();
