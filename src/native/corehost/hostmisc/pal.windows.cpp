@@ -404,20 +404,28 @@ bool pal::get_default_installation_dir_for_arch(pal::architecture arch, pal::str
         return false;
 
     const pal::char_t* program_files_dir;
-    if (is_current_arch && pal::is_running_in_wow64())
+    if (is_current_arch)
     {
-        // Running x86 on x64, looking for x86 install
-        program_files_dir = _X("ProgramFiles(x86)");
+        program_files_dir = _X("ProgramFiles");
     }
 #if defined(TARGET_AMD64)
-    else if (!is_current_arch && arch == pal::architecture::x86)
+    else if (arch == pal::architecture::x86)
     {
         // Running x64, looking for x86 install
         program_files_dir = _X("ProgramFiles(x86)");
     }
 #endif
+#if defined(TARGET_X86)
+    else if (pal::is_running_in_wow64() && arch == pal::architecture::x64)
+    {
+        // Running x86 on x64, looking for x64 install
+        program_files_dir = _X("ProgramW6432");
+    }
+#endif
     else
     {
+        // Running arm64/x64, looking for x64/arm64.
+        // Other cases should have bailed out based on is_supported_multi_arch_install
         program_files_dir = _X("ProgramFiles");
     }
 
@@ -890,8 +898,12 @@ bool pal::realpath(pal::string_t* path, bool skip_error_logging)
                 }
             }
 
-            // Remove the \\?\ prefix, unless it is necessary or was already there
-            if (LongFile::IsExtended(str) && !LongFile::IsExtended(*path) &&
+            // Remove the UNC extended prefix (\\?\UNC\) or extended prefix (\\?\) unless it is necessary or was already there
+            if (LongFile::IsUNCExtended(str) && !LongFile::IsUNCExtended(*path) && str.length() < MAX_PATH)
+            {
+                str.replace(0, LongFile::UNCExtendedPathPrefix.size(), LongFile::UNCPathPrefix);
+            }
+            else if (LongFile::IsExtended(str) && !LongFile::IsExtended(*path) &&
                 !LongFile::ShouldNormalize(str.substr(LongFile::ExtendedPrefix.size())))
             {
                 str.erase(0, LongFile::ExtendedPrefix.size());

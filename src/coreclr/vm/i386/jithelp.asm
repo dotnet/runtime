@@ -36,7 +36,6 @@ JIT_LLsh                        TEXTEQU <_JIT_LLsh@0>
 JIT_LRsh                        TEXTEQU <_JIT_LRsh@0>
 JIT_LRsz                        TEXTEQU <_JIT_LRsz@0>
 JIT_LMul                        TEXTEQU <@JIT_LMul@16>
-JIT_InternalThrowFromHelper     TEXTEQU <@JIT_InternalThrowFromHelper@4>
 JIT_WriteBarrierReg_PreGrow     TEXTEQU <_JIT_WriteBarrierReg_PreGrow@0>
 JIT_WriteBarrierReg_PostGrow    TEXTEQU <_JIT_WriteBarrierReg_PostGrow@0>
 JIT_TailCall                    TEXTEQU <_JIT_TailCall@0>
@@ -44,6 +43,9 @@ JIT_TailCallLeave               TEXTEQU <_JIT_TailCallLeave@0>
 JIT_TailCallVSDLeave            TEXTEQU <_JIT_TailCallVSDLeave@0>
 JIT_TailCallHelper              TEXTEQU <_JIT_TailCallHelper@4>
 JIT_TailCallReturnFromVSD       TEXTEQU <_JIT_TailCallReturnFromVSD@0>
+
+g_pPollGC                       TEXTEQU <_g_pPollGC>
+g_TrapReturningThreads          TEXTEQU <_g_TrapReturningThreads>
 
 EXTERN  g_ephemeral_low:DWORD
 EXTERN  g_ephemeral_high:DWORD
@@ -53,13 +55,16 @@ EXTERN  g_card_table:DWORD
 ifdef _DEBUG
 EXTERN  WriteBarrierAssert:PROC
 endif ; _DEBUG
-EXTERN  JIT_InternalThrowFromHelper:PROC
 ifdef FEATURE_HIJACK
 EXTERN  JIT_TailCallHelper:PROC
 endif
 EXTERN _g_TailCallFrameVptr:DWORD
 EXTERN @JIT_FailFast@0:PROC
 EXTERN _s_gsCookie:DWORD
+
+EXTERN g_pPollGC:DWORD
+EXTERN g_TrapReturningThreads:DWORD
+
 
 ifdef WRITE_BARRIER_CHECK
 ; Those global variables are always defined, but should be 0 for Server GC
@@ -1150,5 +1155,14 @@ PUBLIC _JIT_StackProbe_End@0
 _JIT_StackProbe_End@0 PROC
     ret
 _JIT_StackProbe_End@0 ENDP
+
+@JIT_PollGC@0 PROC public
+    cmp [g_TrapReturningThreads], 0
+    jnz JIT_PollGCRarePath
+    ret
+JIT_PollGCRarePath:
+    mov eax, g_pPollGC
+    jmp eax
+@JIT_PollGC@0 ENDP
 
     end

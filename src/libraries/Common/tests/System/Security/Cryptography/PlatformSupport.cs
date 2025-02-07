@@ -12,6 +12,32 @@ namespace Test.Cryptography
     internal static class PlatformSupport
     {
         private static readonly Dictionary<CngAlgorithm, bool> s_platformCryptoSupportedAlgorithms = new();
+        private static readonly Lazy<bool> s_lazyIsRC2Supported = new Lazy<bool>(() =>
+        {
+            if (PlatformDetection.IsAndroid)
+            {
+                return false;
+            }
+
+            if (PlatformDetection.IsLinux)
+            {
+                try
+                {
+                    using (RC2 rc2 = RC2.Create())
+                    using (rc2.CreateEncryptor())
+                    {
+                    }
+
+                    return true;
+                }
+                catch (PlatformNotSupportedException)
+                {
+                    return false;
+                }
+            }
+
+            return true;
+        });
 
         private static bool PlatformCryptoProviderFunctional(CngAlgorithm algorithm)
         {
@@ -89,7 +115,7 @@ namespace Test.Cryptography
         internal const TestPlatforms OpenSSL = TestPlatforms.AnyUnix & ~(AppleCrypto | TestPlatforms.Android | TestPlatforms.Browser);
 
         // Whether or not the current platform supports RC2
-        internal static readonly bool IsRC2Supported = !PlatformDetection.IsAndroid;
+        internal static bool IsRC2Supported => s_lazyIsRC2Supported.Value;
 
 #if NET
         internal static readonly bool IsAndroidVersionAtLeast31 = OperatingSystem.IsAndroidVersionAtLeast(31);

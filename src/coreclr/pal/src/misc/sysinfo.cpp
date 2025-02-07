@@ -58,13 +58,18 @@ Revision History:
 #include <machine/vmparam.h>
 #endif  // HAVE_MACHINE_VMPARAM_H
 
-#if defined(TARGET_OSX)
+#if defined(__APPLE__)
 #include <mach/vm_statistics.h>
 #include <mach/mach_types.h>
 #include <mach/mach_init.h>
 #include <mach/mach_host.h>
-#endif // defined(TARGET_OSX)
+#endif // defined(__APPLE__)
 
+#ifdef __HAIKU__
+#include <OS.h>
+#endif // __HAIKU__
+
+#ifdef __FreeBSD__
 // On some platforms sys/user.h ends up defining _DEBUG; if so
 // remove the definition before including the header and put
 // back our definition afterwards
@@ -78,6 +83,7 @@ Revision History:
 #define _DEBUG OLD_DEBUG
 #undef OLD_DEBUG
 #endif
+#endif // __FreeBSD__
 
 #include "pal/dbgmsg.h"
 #include "pal/process.h"
@@ -211,6 +217,10 @@ GetSystemInfo(
     lpSystemInfo->lpMaximumApplicationAddress = (PVOID) (1ull << 47);
 #elif defined(__sun)
     lpSystemInfo->lpMaximumApplicationAddress = (PVOID) 0xfffffd7fffe00000ul;
+#elif defined(VM_MAX_PAGE_ADDRESS)
+    lpSystemInfo->lpMaximumApplicationAddress = (PVOID) VM_MAX_PAGE_ADDRESS;
+#elif defined(__HAIKU__)
+    lpSystemInfo->lpMaximumApplicationAddress = (PVOID) 0x7fffffe00000ul;
 #elif defined(USERLIMIT)
     lpSystemInfo->lpMaximumApplicationAddress = (PVOID) USERLIMIT;
 #elif defined(HOST_64BIT)

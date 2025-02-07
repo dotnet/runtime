@@ -137,6 +137,19 @@ namespace ILCompiler
 
         ILScanResults IILScanner.Scan()
         {
+            _dependencyGraph.AddRoot(GetHelperEntrypoint(ReadyToRunHelper.BulkWriteBarrier), "Not tracked by scanner");
+            _dependencyGraph.AddRoot(GetHelperEntrypoint(ReadyToRunHelper.MemCpy), "Not tracked by scanner");
+            _dependencyGraph.AddRoot(GetHelperEntrypoint(ReadyToRunHelper.MemSet), "Not tracked by scanner");
+            _dependencyGraph.AddRoot(GetHelperEntrypoint(ReadyToRunHelper.MemZero), "Not tracked by scanner");
+            _dependencyGraph.AddRoot(GetHelperEntrypoint(ReadyToRunHelper.CheckCastAny), "Not tracked by scanner");
+            _dependencyGraph.AddRoot(GetHelperEntrypoint(ReadyToRunHelper.CheckCastInterface), "Not tracked by scanner");
+            _dependencyGraph.AddRoot(GetHelperEntrypoint(ReadyToRunHelper.CheckCastClass), "Not tracked by scanner");
+            _dependencyGraph.AddRoot(GetHelperEntrypoint(ReadyToRunHelper.CheckCastClassSpecial), "Not tracked by scanner");
+            _dependencyGraph.AddRoot(GetHelperEntrypoint(ReadyToRunHelper.CheckInstanceAny), "Not tracked by scanner");
+            _dependencyGraph.AddRoot(GetHelperEntrypoint(ReadyToRunHelper.CheckInstanceInterface), "Not tracked by scanner");
+            _dependencyGraph.AddRoot(GetHelperEntrypoint(ReadyToRunHelper.CheckInstanceClass), "Not tracked by scanner");
+            _dependencyGraph.AddRoot(GetHelperEntrypoint(ReadyToRunHelper.IsInstanceOfException), "Not tracked by scanner");
+
             _dependencyGraph.ComputeMarkedNodes();
 
             _nodeFactory.SetMarkingComplete();
@@ -384,7 +397,7 @@ namespace ILCompiler
                     // only exists in the compiler's graph. That's the place to focus the investigation on.
                     // Use the ILCompiler-DependencyGraph-Viewer tool to investigate.
                     Debug.Assert(false);
-                    throw new ScannerFailedException($"A dictionary layout was not computed by the IL scanner.");
+                    throw new ScannerFailedException($"Dictionary layout of '{methodOrType}' was not computed by the IL scanner.");
                 }
                 return new PrecomputedDictionaryLayoutNode(methodOrType, layout.Slots, layout.DiscardedSlots);
             }
@@ -428,7 +441,7 @@ namespace ILCompiler
             private HashSet<TypeDesc> _unsealedTypes = new HashSet<TypeDesc>();
             private Dictionary<TypeDesc, HashSet<TypeDesc>> _implementators = new();
             private HashSet<TypeDesc> _disqualifiedTypes = new();
-            private HashSet<MethodDesc> _overridenMethods = new();
+            private HashSet<MethodDesc> _overriddenMethods = new();
             private HashSet<MethodDesc> _generatedVirtualMethods = new();
 
             public ScannedDevirtualizationManager(NodeFactory factory, ImmutableArray<DependencyNodeCore<NodeFactory>> markedNodes)
@@ -541,16 +554,27 @@ namespace ILCompiler
                             }
 
                             TypeDesc canonType = type.ConvertToCanonForm(CanonicalFormKind.Specific);
+                            TypeDesc baseType;
 
-                            if (!canonType.IsDefType || !((MetadataType)canonType).IsAbstract)
+                            if (canonType is not MetadataType { IsAbstract: true })
+                            {
                                 _canonConstructedTypes.Add(canonType.GetClosestDefType());
+                                baseType = canonType.BaseType;
+                                while (baseType != null)
+                                {
+                                    baseType = baseType.ConvertToCanonForm(CanonicalFormKind.Specific);
+                                    if (!_canonConstructedTypes.Add(baseType))
+                                        break;
+                                    baseType = baseType.BaseType;
+                                }
+                            }
 
-                            TypeDesc baseType = canonType.BaseType;
-                            bool added = true;
-                            while (baseType != null && added)
+                            baseType = canonType.BaseType;
+                            while (baseType != null)
                             {
                                 baseType = baseType.ConvertToCanonForm(CanonicalFormKind.Specific);
-                                added = _unsealedTypes.Add(baseType);
+                                if (!_unsealedTypes.Add(baseType))
+                                    break;
                                 baseType = baseType.BaseType;
                             }
 
@@ -559,7 +583,7 @@ namespace ILCompiler
                                 if (currentType == null)
                                     return vtable;
 
-                                BuildVTable(factory, currentType.BaseType?.ConvertToCanonForm(CanonicalFormKind.Specific), implType, vtable);
+                                BuildVTable(factory, currentType.BaseType, implType, vtable);
 
                                 IReadOnlyList<MethodDesc> slice = factory.VTable(currentType).Slots;
                                 foreach (MethodDesc decl in slice)
@@ -571,19 +595,19 @@ namespace ILCompiler
                                 return vtable;
                             }
 
-                            baseType = canonType.BaseType?.ConvertToCanonForm(CanonicalFormKind.Specific);
-                            if (!canonType.IsArray && baseType != null)
+                            baseType = type.BaseType;
+                            if (!type.IsArray && baseType != null)
                             {
                                 if (!vtables.TryGetValue(baseType, out List<MethodDesc> baseVtable))
                                     vtables.Add(baseType, baseVtable = BuildVTable(factory, baseType, baseType, new List<MethodDesc>()));
 
-                                if (!vtables.TryGetValue(canonType, out List<MethodDesc> vtable))
-                                    vtables.Add(canonType, vtable = BuildVTable(factory, canonType, canonType, new List<MethodDesc>()));
+                                if (!vtables.TryGetValue(type, out List<MethodDesc> vtable))
+                                    vtables.Add(type, vtable = BuildVTable(factory, type, type, new List<MethodDesc>()));
 
                                 for (int i = 0; i < baseVtable.Count; i++)
                                 {
                                     if (baseVtable[i] != vtable[i])
-                                        _overridenMethods.Add(baseVtable[i]);
+                                        _overriddenMethods.Add(baseVtable[i].GetCanonMethodTarget(CanonicalFormKind.Specific));
                                 }
                             }
                         }
@@ -681,25 +705,21 @@ namespace ILCompiler
                     return false;
 
                 // If we haven't seen any other method override this, this method is sealed
-                return !_overridenMethods.Contains(canonMethod);
+                return !_overriddenMethods.Contains(canonMethod);
             }
 
             protected override MethodDesc ResolveVirtualMethod(MethodDesc declMethod, DefType implType, out CORINFO_DEVIRTUALIZATION_DETAIL devirtualizationDetail)
             {
-                MethodDesc result = base.ResolveVirtualMethod(declMethod, implType, out devirtualizationDetail);
-                if (result != null)
+                // If we would resolve into a type that wasn't seen as allocated, don't allow devirtualization.
+                // It would go past what we scanned in the scanner and that doesn't lead to good things.
+                if (!_canonConstructedTypes.Contains(implType.ConvertToCanonForm(CanonicalFormKind.Specific)))
                 {
-                    // If we would resolve into a type that wasn't seen as allocated, don't allow devirtualization.
-                    // It would go past what we scanned in the scanner and that doesn't lead to good things.
-                    if (!_canonConstructedTypes.Contains(result.OwningType.ConvertToCanonForm(CanonicalFormKind.Specific)))
-                    {
-                        // FAILED_BUBBLE_IMPL_NOT_REFERENCEABLE is close enough...
-                        devirtualizationDetail = CORINFO_DEVIRTUALIZATION_DETAIL.CORINFO_DEVIRTUALIZATION_FAILED_BUBBLE_IMPL_NOT_REFERENCEABLE;
-                        return null;
-                    }
+                    // FAILED_BUBBLE_IMPL_NOT_REFERENCEABLE is close enough...
+                    devirtualizationDetail = CORINFO_DEVIRTUALIZATION_DETAIL.CORINFO_DEVIRTUALIZATION_FAILED_BUBBLE_IMPL_NOT_REFERENCEABLE;
+                    return null;
                 }
 
-                return result;
+                return base.ResolveVirtualMethod(declMethod, implType, out devirtualizationDetail);
             }
 
             public override bool CanReferenceConstructedMethodTable(TypeDesc type)

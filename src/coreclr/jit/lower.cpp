@@ -511,6 +511,11 @@ GenTree* Lowering::LowerNode(GenTree* node)
         }
 #endif
         break;
+        case GT_NOT:
+#ifdef TARGET_ARM64
+            ContainCheckNot(node->AsOp());
+#endif
+            break;
         case GT_SELECT:
             return LowerSelect(node->AsConditional());
 
@@ -1066,11 +1071,11 @@ GenTree* Lowering::LowerSwitch(GenTree* node)
         for (unsigned i = 0; i < jumpCnt - 1; ++i)
         {
             assert(currentBlock != nullptr);
-            BasicBlock* const targetBlock = jumpTab[i]->getDestinationBlock();
 
             // Remove the switch from the predecessor list of this case target's block.
             // We'll add the proper new predecessor edge later.
-            FlowEdge* const oldEdge = jumpTab[i];
+            FlowEdge* const   oldEdge     = jumpTab[i];
+            BasicBlock* const targetBlock = oldEdge->getDestinationBlock();
 
             // Compute the likelihood that this test is successful.
             // Divide by number of cases still sharing this edge (reduces likelihood)
@@ -1131,8 +1136,9 @@ GenTree* Lowering::LowerSwitch(GenTree* node)
                 {
                     BasicBlock* const newBlock = comp->fgNewBBafter(BBJ_ALWAYS, currentBlock, true);
                     FlowEdge* const   newEdge  = comp->fgAddRefPred(newBlock, currentBlock);
-                    currentBlock               = newBlock;
-                    currentBBRange             = &LIR::AsRange(currentBlock);
+                    newBlock->inheritWeight(currentBlock);
+                    currentBlock   = newBlock;
+                    currentBBRange = &LIR::AsRange(currentBlock);
                     afterDefaultCondBlock->SetKindAndTargetEdge(BBJ_ALWAYS, newEdge);
                 }
 
@@ -1207,6 +1213,25 @@ GenTree* Lowering::LowerSwitch(GenTree* node)
             currentBlock->RemoveFlags(BBF_DONT_REMOVE);
             comp->fgRemoveBlock(currentBlock, /* unreachable */ false); // It's an empty block.
         }
+
+        // Update flow into switch targets
+        if (afterDefaultCondBlock->hasProfileWeight())
+        {
+            bool profileInconsistent = false;
+            for (unsigned i = 0; i < jumpCnt - 1; i++)
+            {
+                BasicBlock* const targetBlock = jumpTab[i]->getDestinationBlock();
+                targetBlock->setBBProfileWeight(targetBlock->computeIncomingWeight());
+                profileInconsistent |= (targetBlock->NumSucc() > 0);
+            }
+
+            if (profileInconsistent)
+            {
+                JITDUMP("Switch lowering: Flow out of " FMT_BB " needs to be propagated. Data %s inconsistent.\n",
+                        afterDefaultCondBlock->bbNum, comp->fgPgoConsistent ? "is now" : "was already");
+                comp->fgPgoConsistent = false;
+            }
+        }
     }
     else
     {
@@ -1260,11 +1285,28 @@ GenTree* Lowering::LowerSwitch(GenTree* node)
                 JITDUMP("Zero weight switch block " FMT_BB ", distributing likelihoods equally per case\n",
                         afterDefaultCondBlock->bbNum);
                 // jumpCnt-1 here because we peeled the default after copying this value.
-                weight_t const newLikelihood = 1.0 / (jumpCnt - 1);
+                weight_t const newLikelihood       = 1.0 / (jumpCnt - 1);
+                bool           profileInconsistent = false;
                 for (unsigned i = 0; i < successors.numDistinctSuccs; i++)
                 {
-                    FlowEdge* const edge = successors.nonDuplicates[i];
+                    FlowEdge* const edge          = successors.nonDuplicates[i];
+                    weight_t const  oldEdgeWeight = edge->getLikelyWeight();
                     edge->setLikelihood(newLikelihood * edge->getDupCount());
+                    weight_t const newEdgeWeight = edge->getLikelyWeight();
+
+                    if (afterDefaultCondBlock->hasProfileWeight())
+                    {
+                        BasicBlock* const targetBlock = edge->getDestinationBlock();
+                        targetBlock->increaseBBProfileWeight(newEdgeWeight - oldEdgeWeight);
+                        profileInconsistent |= (targetBlock->NumSucc() > 0);
+                    }
+                }
+
+                if (profileInconsistent)
+                {
+                    JITDUMP("Switch lowering: Flow out of " FMT_BB " needs to be propagated. Data %s inconsistent.\n",
+                            afterDefaultCondBlock->bbNum, comp->fgPgoConsistent ? "is now" : "was already");
+                    comp->fgPgoConsistent = false;
                 }
             }
             else
@@ -1315,7 +1357,7 @@ GenTree* Lowering::LowerSwitch(GenTree* node)
 //    true if the switch has been lowered to a bit test
 //
 // Notes:
-//    If the jump table contains less than 32 (64 on 64 bit targets) entries and there
+//    If the jump table contains less than 32 (64 on 64-bit targets) entries and there
 //    are at most 2 distinct jump targets then the jump table can be converted to a word
 //    of bits where a 0 bit corresponds to one jump target and a 1 bit corresponds to the
 //    other jump target. Instead of the indirect jump a BT-JCC sequence is used to jump
@@ -1398,17 +1440,6 @@ bool Lowering::TryLowerSwitchToBitTest(FlowEdge*   jumpTable[],
     BasicBlock* bbCase0 = case0Edge->getDestinationBlock();
     BasicBlock* bbCase1 = case1Edge->getDestinationBlock();
 
-    //
-    // One of the case blocks has to follow the switch block. This requirement could be avoided
-    // by adding a BBJ_ALWAYS block after the switch block but doing that sometimes negatively
-    // impacts register allocation.
-    //
-
-    if (!bbSwitch->NextIs(bbCase0) && !bbSwitch->NextIs(bbCase1))
-    {
-        return false;
-    }
-
     JITDUMP("Lowering switch " FMT_BB " to bit test\n", bbSwitch->bbNum);
 
 #if defined(TARGET_64BIT) && defined(TARGET_XARCH)
@@ -1428,10 +1459,9 @@ bool Lowering::TryLowerSwitchToBitTest(FlowEdge*   jumpTable[],
 #endif
 
     //
-    // Rewire the blocks as needed and figure out the condition to use for JCC.
+    // Rewire the blocks as needed.
     //
 
-    GenCondition bbSwitchCondition;
     comp->fgRemoveAllRefPreds(bbCase1, bbSwitch);
     comp->fgRemoveAllRefPreds(bbCase0, bbSwitch);
 
@@ -1457,19 +1487,22 @@ bool Lowering::TryLowerSwitchToBitTest(FlowEdge*   jumpTable[],
         case1Edge->setLikelihood(0.5);
     }
 
-    if (bbSwitch->NextIs(bbCase0))
-    {
-        // GenCondition::C generates JC so we jump to bbCase1 when the bit is set
-        bbSwitchCondition = GenCondition::C;
-        bbSwitch->SetCond(case1Edge, case0Edge);
-    }
-    else
-    {
-        assert(bbSwitch->NextIs(bbCase1));
+    bbSwitch->SetCond(case1Edge, case0Edge);
 
-        // GenCondition::NC generates JNC so we jump to bbCase0 when the bit is not set
-        bbSwitchCondition = GenCondition::NC;
-        bbSwitch->SetCond(case0Edge, case1Edge);
+    //
+    // Update profile
+    //
+    if (bbSwitch->hasProfileWeight())
+    {
+        bbCase0->setBBProfileWeight(bbCase0->computeIncomingWeight());
+        bbCase1->setBBProfileWeight(bbCase1->computeIncomingWeight());
+
+        if ((bbCase0->NumSucc() > 0) || (bbCase1->NumSucc() > 0))
+        {
+            JITDUMP("TryLowerSwitchToBitTest: Flow out of " FMT_BB " needs to be propagated. Data %s inconsistent.\n",
+                    bbSwitch->bbNum, comp->fgPgoConsistent ? "is now" : "was already");
+            comp->fgPgoConsistent = false;
+        }
     }
 
     var_types bitTableType = (bitCount <= (genTypeSize(TYP_INT) * 8)) ? TYP_INT : TYP_LONG;
@@ -1481,13 +1514,13 @@ bool Lowering::TryLowerSwitchToBitTest(FlowEdge*   jumpTable[],
     //
     GenTree* bitTest = comp->gtNewOperNode(GT_BT, TYP_VOID, bitTableIcon, switchValue);
     bitTest->gtFlags |= GTF_SET_FLAGS;
-    GenTreeCC* jcc = comp->gtNewCC(GT_JCC, TYP_VOID, bbSwitchCondition);
+    GenTreeCC* jcc = comp->gtNewCC(GT_JCC, TYP_VOID, GenCondition::C);
     LIR::AsRange(bbSwitch).InsertAfter(switchValue, bitTableIcon, bitTest, jcc);
 #else  // TARGET_XARCH
     //
     // Fallback to AND(RSZ(bitTable, switchValue), 1)
     //
-    GenTree* tstCns = comp->gtNewIconNode(bbSwitch->NextIs(bbCase0) ? 1 : 0, bitTableType);
+    GenTree* tstCns = comp->gtNewIconNode(1, bitTableType);
     GenTree* shift  = comp->gtNewOperNode(GT_RSZ, bitTableType, bitTableIcon, switchValue);
     GenTree* one    = comp->gtNewIconNode(1, bitTableType);
     GenTree* andOp  = comp->gtNewOperNode(GT_AND, bitTableType, shift, one);
@@ -2784,7 +2817,7 @@ GenTree* Lowering::LowerCall(GenTree* node)
 
 #if defined(TARGET_AMD64) || defined(TARGET_ARM64)
     GenTree* nextNode = nullptr;
-    if (call->gtCallMoreFlags & GTF_CALL_M_SPECIAL_INTRINSIC)
+    if (call->IsSpecialIntrinsic())
     {
         switch (comp->lookupNamedIntrinsic(call->gtCallMethHnd))
         {
@@ -3436,7 +3469,7 @@ void Lowering::RehomeArgForFastTailCall(unsigned int lclNum,
 //------------------------------------------------------------------------
 // LowerTailCallViaJitHelper: lower a call via the tailcall JIT helper. Morph
 // has already inserted tailcall helper special arguments. This function inserts
-// actual data for some placeholders. This function is only used on x86.
+// actual data for some placeholders. This function is only used on Windows x86.
 //
 // Lower
 //      tail.call(<function args>, int numberOfOldStackArgs, int dummyNumberOfNewStackArgs, int flags, void* dummyArg)
@@ -4319,23 +4352,31 @@ GenTree* Lowering::OptimizeConstCompare(GenTree* cmp)
     if (cmp->OperIs(GT_TEST_EQ, GT_TEST_NE))
     {
         //
-        // Transform TEST_EQ|NE(x, LSH(1, y)) into BT(x, y) when possible. Using BT
+        // Transform TEST_EQ|NE(x, LSH(1, y)) or TEST_EQ|NE(LSH(1, y), x) into BT(x, y) when possible. Using BT
         // results in smaller and faster code. It also doesn't have special register
         // requirements, unlike LSH that requires the shift count to be in ECX.
         // Note that BT has the same behavior as LSH when the bit index exceeds the
         // operand bit size - it uses (bit_index MOD bit_size).
         //
 
-        GenTree* lsh = cmp->gtGetOp2();
+        GenTree* lsh = cmp->AsOp()->gtOp1;
+        GenTree* op  = cmp->AsOp()->gtOp2;
 
-        if (lsh->OperIs(GT_LSH) && varTypeIsIntOrI(lsh->TypeGet()) && lsh->gtGetOp1()->IsIntegralConst(1))
+        if (!lsh->OperIs(GT_LSH))
+        {
+            std::swap(lsh, op);
+        }
+
+        if (lsh->OperIs(GT_LSH) && varTypeIsIntOrI(lsh) && lsh->gtGetOp1()->IsIntegralConst(1))
         {
             cmp->SetOper(cmp->OperIs(GT_TEST_EQ) ? GT_BITTEST_EQ : GT_BITTEST_NE);
-            cmp->AsOp()->gtOp2 = lsh->gtGetOp2();
-            cmp->gtGetOp2()->ClearContained();
 
             BlockRange().Remove(lsh->gtGetOp1());
             BlockRange().Remove(lsh);
+
+            cmp->AsOp()->gtOp1 = op;
+            cmp->AsOp()->gtOp2 = lsh->gtGetOp2();
+            cmp->gtGetOp2()->ClearContained();
 
             return cmp->gtNext;
         }
@@ -5881,9 +5922,6 @@ void Lowering::InsertPInvokeMethodProlog()
 
     JITDUMP("======= Inserting PInvoke method prolog\n");
 
-    // The first BB must be a scratch BB in order for us to be able to safely insert the P/Invoke prolog.
-    assert(comp->fgFirstBBisScratch());
-
     LIR::Range& firstBlockRange = LIR::AsRange(comp->fgFirstBB);
 
     const CORINFO_EE_INFO*                       pInfo         = comp->eeGetEEInfo();
@@ -6998,20 +7036,72 @@ GenTree* Lowering::LowerAdd(GenTreeOp* node)
             return next;
         }
 
-        // Fold ADD(CNS1, CNS2). We mainly target a very specific pattern - byref ADD(frozen_handle, cns_offset)
-        // We could do this folding earlier, but that is not trivial as we'll have to introduce a way to restore
-        // the original object from a byref constant for optimizations.
-        if (comp->opts.OptimizationEnabled() && op1->IsCnsIntOrI() && op2->IsCnsIntOrI() && !node->gtOverflow() &&
-            (op1->IsIconHandle(GTF_ICON_OBJ_HDL) || op2->IsIconHandle(GTF_ICON_OBJ_HDL)) &&
-            !op1->AsIntCon()->ImmedValNeedsReloc(comp) && !op2->AsIntCon()->ImmedValNeedsReloc(comp))
+        if (comp->opts.OptimizationEnabled())
         {
-            assert(node->TypeIs(TYP_I_IMPL, TYP_BYREF));
+            // Fold (x + c1) + c2
+            while (op1->OperIs(GT_ADD) && op2->IsIntegralConst() && op1->gtGetOp2()->IsIntegralConst() &&
+                   !node->gtOverflow() && !op1->gtOverflow())
+            {
+                GenTreeIntConCommon* cns1 = op1->gtGetOp2()->AsIntConCommon();
+                GenTreeIntConCommon* cns2 = op2->AsIntConCommon();
 
-            // TODO-CQ: we should allow this for AOT too. For that we need to guarantee that the new constant
-            // will be lowered as the original handle with offset in a reloc.
-            BlockRange().Remove(op1);
-            BlockRange().Remove(op2);
-            node->BashToConst(op1->AsIntCon()->IconValue() + op2->AsIntCon()->IconValue(), node->TypeGet());
+                if (cns1->ImmedValNeedsReloc(comp) || cns2->ImmedValNeedsReloc(comp))
+                {
+                    break;
+                }
+
+                if (varTypeIsGC(cns1) || (cns1->TypeGet() != cns2->TypeGet()))
+                {
+                    break;
+                }
+
+                JITDUMP("Folding (x + c1) + c2. Before:\n");
+                DISPTREERANGE(BlockRange(), node);
+
+                int64_t c1 = cns1->IntegralValue();
+                int64_t c2 = cns2->IntegralValue();
+
+                int64_t result;
+                if (genTypeSize(node) == sizeof(int64_t))
+                {
+                    result = c1 + c2;
+                }
+                else
+                {
+                    result = static_cast<int32_t>(c1) + static_cast<int32_t>(c2);
+                }
+
+                cns2->SetIntegralValue(result);
+                node->gtOp1 = op1->gtGetOp1();
+
+                BlockRange().Remove(cns1);
+                BlockRange().Remove(op1);
+
+                op1 = node->gtGetOp1();
+
+                // We will recompute containment/reg optionality below.
+                op1->ClearRegOptional();
+                op1->ClearContained();
+
+                JITDUMP("\nAfter:\n");
+                DISPTREERANGE(BlockRange(), node);
+            }
+
+            // Fold ADD(CNS1, CNS2). We mainly target a very specific pattern - byref ADD(frozen_handle, cns_offset)
+            // We could do this folding earlier, but that is not trivial as we'll have to introduce a way to restore
+            // the original object from a byref constant for optimizations.
+            if (op1->IsCnsIntOrI() && op2->IsCnsIntOrI() && !node->gtOverflow() &&
+                (op1->IsIconHandle(GTF_ICON_OBJ_HDL) || op2->IsIconHandle(GTF_ICON_OBJ_HDL)) &&
+                !op1->AsIntCon()->ImmedValNeedsReloc(comp) && !op2->AsIntCon()->ImmedValNeedsReloc(comp))
+            {
+                assert(node->TypeIs(TYP_I_IMPL, TYP_BYREF));
+
+                // TODO-CQ: we should allow this for AOT too. For that we need to guarantee that the new constant
+                // will be lowered as the original handle with offset in a reloc.
+                BlockRange().Remove(op1);
+                BlockRange().Remove(op2);
+                node->BashToConst(op1->AsIntCon()->IconValue() + op2->AsIntCon()->IconValue(), node->TypeGet());
+            }
         }
 
 #ifdef TARGET_XARCH
@@ -7826,6 +7916,11 @@ PhaseStatus Lowering::DoPhase()
         LowerBlock(block);
     }
 
+    if (comp->opts.OptimizationEnabled())
+    {
+        MapParameterRegisterLocals();
+    }
+
 #ifdef DEBUG
     JITDUMP("Lower has completed modifying nodes.\n");
     if (VERBOSE)
@@ -7858,9 +7953,7 @@ PhaseStatus Lowering::DoPhase()
 
         comp->fgLocalVarLiveness();
         // local var liveness can delete code, which may create empty blocks
-        // Don't churn the flowgraph with aggressive compaction since we've already run block layout
-        bool modified = comp->fgUpdateFlowGraph(/* doTailDuplication */ false, /* isPhase */ false,
-                                                /* doAggressiveCompaction */ false);
+        bool modified = comp->fgUpdateFlowGraph(/* doTailDuplication */ false, /* isPhase */ false);
 
         if (modified)
         {
@@ -7878,6 +7971,84 @@ PhaseStatus Lowering::DoPhase()
     comp->fgInvalidateDfsTree();
 
     return PhaseStatus::MODIFIED_EVERYTHING;
+}
+
+//------------------------------------------------------------------------
+// Lowering::MapParameterRegisterLocals:
+//   Create mappings between parameter registers and locals corresponding to
+//   them.
+//
+void Lowering::MapParameterRegisterLocals()
+{
+    comp->m_paramRegLocalMappings =
+        new (comp, CMK_ABI) ArrayStack<ParameterRegisterLocalMapping>(comp->getAllocator(CMK_ABI));
+
+    // Create initial mappings for promotions.
+    for (unsigned lclNum = 0; lclNum < comp->info.compArgsCount; lclNum++)
+    {
+        LclVarDsc*                   lclDsc  = comp->lvaGetDesc(lclNum);
+        const ABIPassingInformation& abiInfo = comp->lvaGetParameterABIInfo(lclNum);
+
+        if (comp->lvaGetPromotionType(lclDsc) != Compiler::PROMOTION_TYPE_INDEPENDENT)
+        {
+            // If not promoted, then we do not need to create any mappings.
+            // If dependently promoted then the fields are never enregistered
+            // by LSRA, so no reason to try to create any mappings.
+            continue;
+        }
+
+        if (!abiInfo.HasAnyRegisterSegment())
+        {
+            // If the parameter is not passed in any registers, then there are
+            // no mappings to create.
+            continue;
+        }
+
+        // Currently we do not support promotion of split parameters, so we
+        // should not see any split parameters here.
+        assert(!abiInfo.IsSplitAcrossRegistersAndStack());
+
+        for (int i = 0; i < lclDsc->lvFieldCnt; i++)
+        {
+            unsigned   fieldLclNum = lclDsc->lvFieldLclStart + i;
+            LclVarDsc* fieldDsc    = comp->lvaGetDesc(fieldLclNum);
+
+            for (const ABIPassingSegment& segment : abiInfo.Segments())
+            {
+                if (segment.Offset + segment.Size <= fieldDsc->lvFldOffset)
+                {
+                    // This register does not map to this field (ends before the field starts)
+                    continue;
+                }
+
+                if (fieldDsc->lvFldOffset + fieldDsc->lvExactSize() <= segment.Offset)
+                {
+                    // This register does not map to this field (starts after the field ends)
+                    continue;
+                }
+
+                comp->m_paramRegLocalMappings->Emplace(&segment, fieldLclNum, segment.Offset - fieldDsc->lvFldOffset);
+            }
+
+            LclVarDsc* fieldLclDsc = comp->lvaGetDesc(fieldLclNum);
+            assert(!fieldLclDsc->lvIsParamRegTarget);
+            fieldLclDsc->lvIsParamRegTarget = true;
+        }
+    }
+
+#ifdef DEBUG
+    if (comp->verbose)
+    {
+        printf("%d parameter register to local mappings\n", comp->m_paramRegLocalMappings->Height());
+        for (int i = 0; i < comp->m_paramRegLocalMappings->Height(); i++)
+        {
+            const ParameterRegisterLocalMapping& mapping = comp->m_paramRegLocalMappings->BottomRef(i);
+            printf("  ");
+            mapping.RegisterSegment->Dump();
+            printf(" -> V%02u\n", mapping.LclNum);
+        }
+    }
+#endif
 }
 
 #ifdef DEBUG
@@ -8732,19 +8903,17 @@ void Lowering::LowerBlockStoreAsHelperCall(GenTreeBlk* blkNode)
         BlockRange().Remove(dataPlaceholder);
     }
 
-// Wrap with memory barriers on weak memory models
-// if the block store was volatile
-#ifndef TARGET_XARCH
+    // Wrap with memory barriers if the block store was volatile
+    // Note: on XARCH these half-barriers only have optimization inhibiting effects, and do not emit anything
     if (isVolatile)
     {
-        GenTree* firstBarrier  = comp->gtNewMemoryBarrier();
-        GenTree* secondBarrier = comp->gtNewMemoryBarrier(/*loadOnly*/ true);
+        GenTree* firstBarrier  = comp->gtNewMemoryBarrier(BARRIER_STORE_ONLY);
+        GenTree* secondBarrier = comp->gtNewMemoryBarrier(BARRIER_LOAD_ONLY);
         BlockRange().InsertBefore(call, firstBarrier);
         BlockRange().InsertAfter(call, secondBarrier);
         LowerNode(firstBarrier);
         LowerNode(secondBarrier);
     }
-#endif
 }
 
 //------------------------------------------------------------------------
@@ -9044,8 +9213,9 @@ void Lowering::LowerStoreIndirCoalescing(GenTreeIndir* ind)
         }
 
         // Since we're merging two stores of the same type, the new type is twice wider.
-        var_types oldType = ind->TypeGet();
-        var_types newType;
+        var_types oldType             = ind->TypeGet();
+        var_types newType             = TYP_UNDEF;
+        bool      tryReusingPrevValue = false;
         switch (oldType)
         {
             case TYP_BYTE:
@@ -9097,7 +9267,8 @@ void Lowering::LowerStoreIndirCoalescing(GenTreeIndir* ind)
                     newType = TYP_SIMD32;
                     break;
                 }
-                return;
+                tryReusingPrevValue = true;
+                break;
 
             case TYP_SIMD32:
                 if (comp->getPreferredVectorByteLength() >= 64)
@@ -9105,8 +9276,14 @@ void Lowering::LowerStoreIndirCoalescing(GenTreeIndir* ind)
                     newType = TYP_SIMD64;
                     break;
                 }
-                return;
-#endif // TARGET_AMD64
+                tryReusingPrevValue = true;
+                break;
+#elif defined(TARGET_ARM64) // TARGET_AMD64
+            case TYP_SIMD16:
+                tryReusingPrevValue = true;
+                break;
+
+#endif // TARGET_ARM64
 #endif // FEATURE_HW_INTRINSICS
 #endif // TARGET_64BIT
 
@@ -9118,6 +9295,27 @@ void Lowering::LowerStoreIndirCoalescing(GenTreeIndir* ind)
             default:
                 return;
         }
+
+        // If we can't merge these two stores into a single store, we can at least
+        // cache prevData.value to a local and reuse it in currData.
+        // Normally, LSRA is expected to do this for us, but it's not always the case for SIMD.
+        if (tryReusingPrevValue)
+        {
+#if defined(FEATURE_HW_INTRINSICS)
+            LIR::Use use;
+            if (currData.value->OperIs(GT_CNS_VEC) && GenTree::Compare(prevData.value, currData.value) &&
+                BlockRange().TryGetUse(prevData.value, &use))
+            {
+                GenTree* prevValueTmp = comp->gtNewLclvNode(use.ReplaceWithLclVar(comp), prevData.value->TypeGet());
+                BlockRange().InsertBefore(currData.value, prevValueTmp);
+                BlockRange().Remove(currData.value);
+                ind->Data() = prevValueTmp;
+            }
+#endif // FEATURE_HW_INTRINSICS
+            return;
+        }
+
+        assert(newType != TYP_UNDEF);
 
         // We should not be here for stores requiring write barriers.
         assert(!comp->codeGen->gcInfo.gcIsWriteBarrierStoreIndNode(ind->AsStoreInd()));

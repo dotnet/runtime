@@ -272,7 +272,7 @@ The control flow when helper-based tailcalls are performed is non-standard.
 Specifically, there are two possible paths of execution when a tailcall is
 performed, depending on whether returning goes to an existing dispatcher. Due to
 this the debugger requires special support to give users a good experience when
-stepping in code involving heper-based tailcalls.
+stepping in code involving helper-based tailcalls.
 
 The debugger by default ignores IL stubs and implement stepping-in in a way that
 makes the above work in both scenarios. It turns out that the only problematic

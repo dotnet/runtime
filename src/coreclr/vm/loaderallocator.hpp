@@ -67,7 +67,7 @@ public:
     ~CodeRangeMapRangeList()
     {
         LIMITED_METHOD_CONTRACT;
-        RemoveRangesWorker(_id, NULL, NULL);
+        RemoveRangesWorker(_id);
     }
 
     StubCodeBlockKind GetCodeBlockKind()
@@ -132,7 +132,7 @@ protected:
 #endif // DACCESS_COMPILE
     }
 
-    virtual void RemoveRangesWorker(void *id, const BYTE *start, const BYTE *end)
+    virtual void RemoveRangesWorker(void *id)
     {
         CONTRACTL
         {
@@ -142,10 +142,6 @@ protected:
         CONTRACTL_END;
 
 #ifndef DACCESS_COMPILE
-        // This implementation only works for the case where the RangeList is used in a single LoaderHeap
-        _ASSERTE(start == NULL);
-        _ASSERTE(end == NULL);
-        
         SimpleWriteLockHolder lh(&_RangeListRWLock);
         _ASSERTE(id == _id || (_id == NULL && _starts.IsEmpty()));
 
@@ -163,7 +159,7 @@ protected:
 #endif // DACCESS_COMPILE
     }
 
-    virtual BOOL IsInRangeWorker(TADDR address, TADDR *pID = NULL)
+    virtual BOOL IsInRangeWorker(TADDR address)
     {
         WRAPPER_NO_CONTRACT;
         RangeSection *pRS = ExecutionManager::FindCodeRange(address, ExecutionManager::ScanReaderLock);
@@ -574,7 +570,7 @@ public:
 
     // This function may only be called while the runtime is suspended
     // As it does not lock around access to a RangeList
-    static PTR_LoaderAllocator GetAssociatedLoaderAllocator_Unsafe(TADDR ptr);
+    static void GcReportAssociatedLoaderAllocators_Unsafe(TADDR ptr, promote_func* fn, ScanContext* sc);
 
     static void AssociateMemoryWithLoaderAllocator(BYTE *start, const BYTE *end, LoaderAllocator* pLoaderAllocator);
     static void RemoveMemoryToLoaderAllocatorAssociation(LoaderAllocator* pLoaderAllocator);
@@ -766,7 +762,7 @@ public:
     static BOOL Destroy(QCall::LoaderAllocatorHandle pLoaderAllocator);
 
     //****************************************************************************************
-    // Methods to retrieve a pointer to the COM+ string STRINGREF for a string constant.
+    // Methods to retrieve a pointer to the CLR string STRINGREF for a string constant.
     // If the string is not currently in the hash table it will be added and if the
     // copy string flag is set then the string will be copied before it is inserted.
     STRINGREF *GetStringObjRefPtrFromUnicodeString(EEStringData *pStringData, void** ppPinnedString = nullptr);

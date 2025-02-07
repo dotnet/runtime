@@ -33,10 +33,6 @@ class ComCallMethodDesc;
 // CPU-dependent functions
 Stub * GenerateInitPInvokeFrameHelper();
 
-#ifdef FEATURE_STUBS_AS_IL
-EXTERN_C void SinglecastDelegateInvokeStub();
-#endif // FEATURE_STUBS_AS_IL
-
 #define GetEEFuncEntryPoint(pfn) GFN_TADDR(pfn)
 
 #define COMMETHOD_PREPAD                        8   // # extra bytes to allocate in addition to sizeof(ComCallMethodDesc)

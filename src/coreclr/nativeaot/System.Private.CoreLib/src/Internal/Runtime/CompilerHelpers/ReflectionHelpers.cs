@@ -30,7 +30,7 @@ namespace Internal.Runtime.CompilerHelpers
         // This supports Assembly.GetExecutingAssembly() intrinsic expansion in the compiler
         public static Assembly GetExecutingAssembly(RuntimeTypeHandle typeHandle)
         {
-            return ReflectionAugments.ReflectionCoreCallbacks.GetAssemblyForHandle(typeHandle);
+            return ReflectionAugments.GetAssemblyForHandle(typeHandle);
         }
 
         // This supports MethodBase.GetCurrentMethod() intrinsic expansion in the compiler

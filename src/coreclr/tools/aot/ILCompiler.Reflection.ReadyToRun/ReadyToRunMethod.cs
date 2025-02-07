@@ -110,7 +110,7 @@ namespace ILCompiler.Reflection.ReadyToRun
         /// <summary>
         /// The size of the code block in bytes
         /// </summary>
-        /// /// <remarks>
+        /// <remarks>
         /// The EndAddress field in the runtime functions section is conditional on machine type
         /// Size is -1 for images without the EndAddress field
         /// </remarks>

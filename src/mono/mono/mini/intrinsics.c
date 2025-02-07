@@ -1959,6 +1959,12 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 			}
 		}
 
+		if (strcmp (cmethod->name, "ReadBarrier") == 0 && fsig->param_count == 0) {
+			return mini_emit_memory_barrier (cfg, MONO_MEMORY_BARRIER_ACQ);
+		} else if (strcmp (cmethod->name, "WriteBarrier") == 0 && fsig->param_count == 0) {
+			return mini_emit_memory_barrier (cfg, MONO_MEMORY_BARRIER_REL);
+		}
+
 		if (ins)
 			return ins;
 	} else if (in_corlib &&
@@ -2218,11 +2224,7 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 			}
 		}
 		return NULL;
-	} else if (((!strcmp (cmethod_klass_image->assembly->aname.name, "Xamarin.iOS") ||
-				 !strcmp (cmethod_klass_image->assembly->aname.name, "Xamarin.TVOS") ||
-				 !strcmp (cmethod_klass_image->assembly->aname.name, "Xamarin.MacCatalyst") ||
-				 !strcmp (cmethod_klass_image->assembly->aname.name, "Xamarin.Mac") ||
-				 !strcmp (cmethod_klass_image->assembly->aname.name, "Microsoft.iOS") ||
+	} else if (((!strcmp (cmethod_klass_image->assembly->aname.name, "Microsoft.iOS") ||
 				 !strcmp (cmethod_klass_image->assembly->aname.name, "Microsoft.tvOS") ||
 				 !strcmp (cmethod_klass_image->assembly->aname.name, "Microsoft.MacCatalyst") ||
 				 !strcmp (cmethod_klass_image->assembly->aname.name, "Microsoft.macOS")) &&

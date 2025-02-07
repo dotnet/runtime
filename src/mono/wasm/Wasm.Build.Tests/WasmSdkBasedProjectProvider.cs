@@ -15,27 +15,29 @@ namespace Wasm.Build.Tests;
 
 public class WasmSdkBasedProjectProvider : ProjectProviderBase
 {
-    public WasmSdkBasedProjectProvider(ITestOutputHelper _testOutput, string? _projectDir = null)
+    private readonly string _defaultTargetFramework;
+    public WasmSdkBasedProjectProvider(ITestOutputHelper _testOutput, string defaultTargetFramework, string? _projectDir = null)
             : base(_testOutput, _projectDir)
     {
-        IsFingerprintingSupported = true;
+        _defaultTargetFramework = defaultTargetFramework;
     }
 
-    protected override IReadOnlyDictionary<string, bool> GetAllKnownDotnetFilesToFingerprintMap(AssertBundleOptionsBase assertOptions)
+    protected override string BundleDirName { get { return "wwwroot"; } }
+
+    protected override IReadOnlyDictionary<string, bool> GetAllKnownDotnetFilesToFingerprintMap(AssertBundleOptions assertOptions)
         => new SortedDictionary<string, bool>()
             {
                { "dotnet.js", false },
                { "dotnet.js.map", false },
                { "dotnet.native.js", true },
                { "dotnet.native.js.symbols", false },
-               { "dotnet.globalization.js", true },
                { "dotnet.native.wasm", true },
                { "dotnet.native.worker.mjs", true },
                { "dotnet.runtime.js", true },
                { "dotnet.runtime.js.map", false },
             };
 
-    protected override IReadOnlySet<string> GetDotNetFilesExpectedSet(AssertBundleOptionsBase assertOptions)
+    protected override IReadOnlySet<string> GetDotNetFilesExpectedSet(AssertBundleOptions assertOptions)
     {
         SortedSet<string> res = new()
         {
@@ -44,16 +46,12 @@ public class WasmSdkBasedProjectProvider : ProjectProviderBase
            "dotnet.native.js",
            "dotnet.runtime.js",
         };
-        if (assertOptions.RuntimeType is RuntimeVariant.MultiThreaded)
+        if (assertOptions.BuildOptions.RuntimeType is RuntimeVariant.MultiThreaded)
         {
             res.Add("dotnet.native.worker.mjs");
         }
-        if (assertOptions.GlobalizationMode is GlobalizationMode.Hybrid)
-        {
-            res.Add("dotnet.globalization.js");
-        }
 
-        if (!assertOptions.IsPublish)
+        if (!assertOptions.BuildOptions.IsPublish)
         {
             res.Add("dotnet.js.map");
             res.Add("dotnet.runtime.js.map");
@@ -65,26 +63,36 @@ public class WasmSdkBasedProjectProvider : ProjectProviderBase
         return res;
     }
 
+    public NativeFilesType GetExpectedFileType(Configuration config, bool isAOT, bool isPublish, bool isUsingWorkloads, bool? isNativeBuild=null) =>
+        isNativeBuild == true ? NativeFilesType.Relinked : // precedence over build/publish check: build with -p:WasmBuildNative=true should use relinked
+        !isPublish ? NativeFilesType.FromRuntimePack : // precedence over AOT check: build with AOT should use runtime pack
+        isAOT ? NativeFilesType.AOT : // precedence over -p:WasmBuildNative=false check: publish with AOT relinks regardless of WasmBuildNative value
+        isNativeBuild == false ? NativeFilesType.FromRuntimePack :
+        (config == Configuration.Release) ? NativeFilesType.Relinked :
+        NativeFilesType.FromRuntimePack;
 
-    public void AssertBundle(BuildArgs buildArgs, BuildProjectOptions buildProjectOptions)
+    public void AssertBundle(Configuration config, MSBuildOptions buildOptions, bool isUsingWorkloads, bool? isNativeBuild = null)
     {
-        AssertBundle(new(
-            Config: buildArgs.Config,
-            IsPublish: buildProjectOptions.Publish,
-            TargetFramework: buildProjectOptions.TargetFramework,
-            BinFrameworkDir: buildProjectOptions.BinFrameworkDir ?? FindBinFrameworkDir(buildArgs.Config, buildProjectOptions.Publish, buildProjectOptions.TargetFramework),
-            PredefinedIcudt: buildProjectOptions.PredefinedIcudt,
-            GlobalizationMode: buildProjectOptions.GlobalizationMode,
-            AssertSymbolsFile: false,
-            ExpectedFileType: buildProjectOptions.Publish && buildArgs.Config == "Release" ? NativeFilesType.Relinked : NativeFilesType.FromRuntimePack
+        string frameworkDir = string.IsNullOrEmpty(buildOptions.NonDefaultFrameworkDir) ?
+            GetBinFrameworkDir(config, buildOptions.IsPublish, _defaultTargetFramework) :
+            buildOptions.NonDefaultFrameworkDir;
+
+        AssertBundle(new AssertBundleOptions(
+            config,
+            BuildOptions: buildOptions,
+            ExpectedFileType: GetExpectedFileType(config, buildOptions.AOT, buildOptions.IsPublish, isUsingWorkloads, isNativeBuild),
+            BinFrameworkDir: frameworkDir,
+            ExpectSymbolsFile: true,
+            AssertIcuAssets: true,
+            AssertSymbolsFile: false
         ));
     }
 
-    public void AssertBundle(AssertWasmSdkBundleOptions assertOptions)
+    private void AssertBundle(AssertBundleOptions assertOptions)
     {
         IReadOnlyDictionary<string, DotNetFileName> actualDotnetFiles = AssertBasicBundle(assertOptions);
 
-        if (assertOptions.IsPublish)
+        if (assertOptions.BuildOptions.IsPublish)
         {
             string publishPath = Path.GetFullPath(Path.Combine(assertOptions.BinFrameworkDir, "..", ".."));
             Assert.Equal("publish", Path.GetFileName(publishPath));
@@ -100,26 +108,23 @@ public class WasmSdkBasedProjectProvider : ProjectProviderBase
             return;
 
         // Compare files with the runtime pack
-        string objBuildDir = Path.Combine(ProjectDir!, "obj", assertOptions.Config, assertOptions.TargetFramework, "wasm", assertOptions.IsPublish ? "for-publish" : "for-build");
+        string objBuildDir = Path.Combine(ProjectDir!, "obj", assertOptions.Configuration.ToString(), assertOptions.BuildOptions.TargetFramework, "wasm", assertOptions.BuildOptions.IsPublish ? "for-publish" : "for-build");
 
-        string runtimeNativeDir = BuildTestBase.s_buildEnv.GetRuntimeNativeDir(assertOptions.TargetFramework, assertOptions.RuntimeType);
+        string runtimeNativeDir = BuildTestBase.s_buildEnv.GetRuntimeNativeDir(assertOptions.BuildOptions.TargetFramework, assertOptions.BuildOptions.RuntimeType);
 
         string srcDirForNativeFileToCompareAgainst = assertOptions.ExpectedFileType switch
         {
             NativeFilesType.FromRuntimePack => runtimeNativeDir,
             NativeFilesType.Relinked => objBuildDir,
             NativeFilesType.AOT => objBuildDir,
-            _ => throw new ArgumentOutOfRangeException(nameof(assertOptions.ExpectedFileType))
+            _ => throw new ArgumentOutOfRangeException(nameof(assertOptions.BuildOptions.ExpectedFileType))
         };
-        string buildType = assertOptions.IsPublish ? "publish" : "build";
+
+        string buildType = assertOptions.BuildOptions.IsPublish ? "publish" : "build";
         var nativeFilesToCheck = new List<string>() { "dotnet.native.wasm", "dotnet.native.js" };
-        if (assertOptions.RuntimeType == RuntimeVariant.MultiThreaded)
+        if (assertOptions.BuildOptions.RuntimeType == RuntimeVariant.MultiThreaded)
         {
             nativeFilesToCheck.Add("dotnet.native.worker.mjs");
-        }
-        if (assertOptions.GlobalizationMode == GlobalizationMode.Hybrid)
-        {
-            nativeFilesToCheck.Add("dotnet.globalization.js");
         }
 
         foreach (string nativeFilename in nativeFilesToCheck)
@@ -133,7 +138,7 @@ public class WasmSdkBasedProjectProvider : ProjectProviderBase
                            actualDotnetFiles[nativeFilename].ActualPath,
                            buildType);
 
-            if (assertOptions.ExpectedFileType != NativeFilesType.FromRuntimePack)
+            if (assertOptions.BuildOptions.ExpectedFileType != NativeFilesType.FromRuntimePack)
             {
                 if (nativeFilename == "dotnet.native.worker.mjs")
                 {
@@ -146,5 +151,38 @@ public class WasmSdkBasedProjectProvider : ProjectProviderBase
                                    buildType);
             }
         }
+    }
+
+    public void AssertWasmSdkBundle(Configuration config, MSBuildOptions buildOptions, bool isUsingWorkloads, bool? isNativeBuild = null, string? buildOutput = null)
+    {
+        if (isUsingWorkloads && buildOutput is not null)
+        {
+            // In no-workload case, the path would be from a restored nuget
+            ProjectProviderBase.AssertRuntimePackPath(buildOutput, buildOptions.TargetFramework ?? _defaultTargetFramework, buildOptions.RuntimeType);
+        }
+        AssertBundle(config, buildOptions, isUsingWorkloads, isNativeBuild);
+    }
+
+    public BuildPaths GetBuildPaths(Configuration configuration, bool forPublish)
+    {
+        Assert.NotNull(ProjectDir);
+        string configStr = configuration.ToString();
+        string objDir = Path.Combine(ProjectDir, "obj", configStr, _defaultTargetFramework);
+        string binDir = Path.Combine(ProjectDir, "bin", configStr, _defaultTargetFramework);
+        string binFrameworkDir = GetBinFrameworkDir(configuration, forPublish, _defaultTargetFramework);
+
+        string objWasmDir = Path.Combine(objDir, "wasm", forPublish ? "for-publish" : "for-build");
+        // for build: we should take from runtime pack?
+        return new BuildPaths(objWasmDir, objDir, binDir, binFrameworkDir);
+    }
+
+    public override string GetBinFrameworkDir(Configuration config, bool forPublish, string framework, string? projectDir = null)
+    {
+        EnsureProjectDirIsSet();
+        string basePath = Path.Combine(projectDir ?? ProjectDir!, "bin", config.ToString(), framework);
+        if (forPublish)
+            basePath = Path.Combine(basePath, "publish");
+
+        return Path.Combine(basePath, BundleDirName, "_framework");
     }
 }

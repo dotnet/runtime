@@ -350,7 +350,8 @@ inline const char *ReturnKindToString(ReturnKind returnKind)
 #ifdef TARGET_X86
 
 #include <stdlib.h>     // For memcmp()
-#include "bitvector.h"  // for ptrArgTP
+
+#define MAX_PTRARG_OFS 1024
 
 #ifndef FASTCALL
 #define FASTCALL __fastcall
@@ -637,8 +638,6 @@ void FASTCALL decodeCallPattern(int         pattern,
 #define SECURITY_OBJECT_STACK_SLOT_ENCBASE 6
 #define GS_COOKIE_STACK_SLOT_ENCBASE 6
 #define CODE_LENGTH_ENCBASE 8
-#define SIZE_OF_RETURN_KIND_IN_SLIM_HEADER 2
-#define SIZE_OF_RETURN_KIND_IN_FAT_HEADER  4
 #define STACK_BASE_REGISTER_ENCBASE 3
 #define SIZE_OF_STACK_AREA_ENCBASE 3
 #define SIZE_OF_EDIT_AND_CONTINUE_PRESERVED_AREA_ENCBASE 4
@@ -679,8 +678,8 @@ void FASTCALL decodeCallPattern(int         pattern,
 #define NORMALIZE_SIZE_OF_STACK_AREA(x) ((x)>>2)
 #define DENORMALIZE_SIZE_OF_STACK_AREA(x) ((x)<<2)
 #define CODE_OFFSETS_NEED_NORMALIZATION 1
-#define NORMALIZE_CODE_OFFSET(x) (x)   // Instructions are 2/4 bytes long in Thumb/ARM states,
-#define DENORMALIZE_CODE_OFFSET(x) (x) // but the safe-point offsets are encoded with a -1 adjustment.
+#define NORMALIZE_CODE_OFFSET(x) ((x)>>1)   // Instructions are 2/4 bytes long in Thumb/ARM states,
+#define DENORMALIZE_CODE_OFFSET(x) ((x)<<1)
 #define NORMALIZE_REGISTER(x) (x)
 #define DENORMALIZE_REGISTER(x) (x)
 #define NORMALIZE_NUM_SAFE_POINTS(x) (x)
@@ -695,8 +694,6 @@ void FASTCALL decodeCallPattern(int         pattern,
 #define SECURITY_OBJECT_STACK_SLOT_ENCBASE 5
 #define GS_COOKIE_STACK_SLOT_ENCBASE 5
 #define CODE_LENGTH_ENCBASE 7
-#define SIZE_OF_RETURN_KIND_IN_SLIM_HEADER 2
-#define SIZE_OF_RETURN_KIND_IN_FAT_HEADER  2
 #define STACK_BASE_REGISTER_ENCBASE 1
 #define SIZE_OF_STACK_AREA_ENCBASE 3
 #define SIZE_OF_EDIT_AND_CONTINUE_PRESERVED_AREA_ENCBASE 3
@@ -735,9 +732,9 @@ void FASTCALL decodeCallPattern(int         pattern,
 #define DENORMALIZE_STACK_BASE_REGISTER(x) ((x)^29)
 #define NORMALIZE_SIZE_OF_STACK_AREA(x) ((x)>>3)
 #define DENORMALIZE_SIZE_OF_STACK_AREA(x) ((x)<<3)
-#define CODE_OFFSETS_NEED_NORMALIZATION 0
-#define NORMALIZE_CODE_OFFSET(x) (x)   // Instructions are 4 bytes long, but the safe-point
-#define DENORMALIZE_CODE_OFFSET(x) (x) // offsets are encoded with a -1 adjustment.
+#define CODE_OFFSETS_NEED_NORMALIZATION 1
+#define NORMALIZE_CODE_OFFSET(x) ((x)>>2)   // Instructions are 4 bytes long
+#define DENORMALIZE_CODE_OFFSET(x) ((x)<<2)
 #define NORMALIZE_REGISTER(x) (x)
 #define DENORMALIZE_REGISTER(x) (x)
 #define NORMALIZE_NUM_SAFE_POINTS(x) (x)
@@ -750,8 +747,6 @@ void FASTCALL decodeCallPattern(int         pattern,
 #define SECURITY_OBJECT_STACK_SLOT_ENCBASE 6
 #define GS_COOKIE_STACK_SLOT_ENCBASE 6
 #define CODE_LENGTH_ENCBASE 8
-#define SIZE_OF_RETURN_KIND_IN_SLIM_HEADER 2
-#define SIZE_OF_RETURN_KIND_IN_FAT_HEADER  4
 #define STACK_BASE_REGISTER_ENCBASE 2 // FP encoded as 0, SP as 2.
 #define SIZE_OF_STACK_AREA_ENCBASE 3
 #define SIZE_OF_EDIT_AND_CONTINUE_PRESERVED_AREA_ENCBASE 4
@@ -790,9 +785,9 @@ void FASTCALL decodeCallPattern(int         pattern,
 #define DENORMALIZE_STACK_BASE_REGISTER(x) ((x) == 0 ? 22 : 3)
 #define NORMALIZE_SIZE_OF_STACK_AREA(x) ((x)>>3)
 #define DENORMALIZE_SIZE_OF_STACK_AREA(x) ((x)<<3)
-#define CODE_OFFSETS_NEED_NORMALIZATION 0
-#define NORMALIZE_CODE_OFFSET(x) (x)   // Instructions are 4 bytes long, but the safe-point
-#define DENORMALIZE_CODE_OFFSET(x) (x) // offsets are encoded with a -1 adjustment.
+#define CODE_OFFSETS_NEED_NORMALIZATION 1
+#define NORMALIZE_CODE_OFFSET(x) ((x)>>2)   // Instructions are 4 bytes long
+#define DENORMALIZE_CODE_OFFSET(x) ((x)<<2)
 #define NORMALIZE_REGISTER(x) (x)
 #define DENORMALIZE_REGISTER(x) (x)
 #define NORMALIZE_NUM_SAFE_POINTS(x) (x)
@@ -805,8 +800,6 @@ void FASTCALL decodeCallPattern(int         pattern,
 #define SECURITY_OBJECT_STACK_SLOT_ENCBASE 6
 #define GS_COOKIE_STACK_SLOT_ENCBASE 6
 #define CODE_LENGTH_ENCBASE 8
-#define SIZE_OF_RETURN_KIND_IN_SLIM_HEADER 2
-#define SIZE_OF_RETURN_KIND_IN_FAT_HEADER  4
 // FP/SP encoded as 0 or 1.
 #define STACK_BASE_REGISTER_ENCBASE 2
 #define SIZE_OF_STACK_AREA_ENCBASE 3
@@ -845,9 +838,9 @@ void FASTCALL decodeCallPattern(int         pattern,
 #define DENORMALIZE_STACK_BASE_REGISTER(x) ((x) == 0 ? 8 : 2)
 #define NORMALIZE_SIZE_OF_STACK_AREA(x) ((x)>>3)
 #define DENORMALIZE_SIZE_OF_STACK_AREA(x) ((x)<<3)
-#define CODE_OFFSETS_NEED_NORMALIZATION 0
-#define NORMALIZE_CODE_OFFSET(x) (x)   // Instructions are 4 bytes long, but the safe-point
-#define DENORMALIZE_CODE_OFFSET(x) (x) // offsets are encoded with a -1 adjustment.
+#define CODE_OFFSETS_NEED_NORMALIZATION 1
+#define NORMALIZE_CODE_OFFSET(x) ((x)>>2)   // Instructions are 4 bytes long
+#define DENORMALIZE_CODE_OFFSET(x) ((x)<<2)
 #define NORMALIZE_REGISTER(x) (x)
 #define DENORMALIZE_REGISTER(x) (x)
 #define NORMALIZE_NUM_SAFE_POINTS(x) (x)
@@ -860,8 +853,6 @@ void FASTCALL decodeCallPattern(int         pattern,
 #define SECURITY_OBJECT_STACK_SLOT_ENCBASE 6
 #define GS_COOKIE_STACK_SLOT_ENCBASE 6
 #define CODE_LENGTH_ENCBASE 8
-#define SIZE_OF_RETURN_KIND_IN_SLIM_HEADER 2
-#define SIZE_OF_RETURN_KIND_IN_FAT_HEADER  4
 #define STACK_BASE_REGISTER_ENCBASE 2
 // FP encoded as 0, SP as 1
 #define SIZE_OF_STACK_AREA_ENCBASE 3
@@ -924,8 +915,6 @@ PORTABILITY_WARNING("Please specialize these definitions for your platform!")
 #define SECURITY_OBJECT_STACK_SLOT_ENCBASE 6
 #define GS_COOKIE_STACK_SLOT_ENCBASE 6
 #define CODE_LENGTH_ENCBASE 6
-#define SIZE_OF_RETURN_KIND_IN_SLIM_HEADER 2
-#define SIZE_OF_RETURN_KIND_IN_FAT_HEADER  2
 #define STACK_BASE_REGISTER_ENCBASE 3
 #define SIZE_OF_STACK_AREA_ENCBASE 6
 #define SIZE_OF_EDIT_AND_CONTINUE_PRESERVED_AREA_ENCBASE 3

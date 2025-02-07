@@ -206,7 +206,7 @@ namespace System.Security.Cryptography.Pkcs
                 // If the content type is otherwise not-data we need to record it as the content-type attr.
                 if (SignedAttributes?.Count > 0 || contentTypeOid != Oids.Pkcs7Data)
                 {
-                    List<AttributeAsn> signedAttrs = BuildAttributes(SignedAttributes);
+                    List<AttributeAsn> signedAttrs = PkcsHelpers.BuildAttributes(SignedAttributes);
 
                     AsnWriter writer = new AsnWriter(AsnEncodingRules.DER);
                     writer.WriteOctetString(dataHash);
@@ -281,7 +281,7 @@ namespace System.Security.Cryptography.Pkcs
 
             if (UnsignedAttributes != null && UnsignedAttributes.Count > 0)
             {
-                List<AttributeAsn> attrs = BuildAttributes(UnsignedAttributes);
+                List<AttributeAsn> attrs = PkcsHelpers.BuildAttributes(UnsignedAttributes);
 
                 newSignerInfo.UnsignedAttributes = PkcsHelpers.NormalizeAttributeSet(attrs.ToArray());
             }
@@ -390,34 +390,6 @@ namespace System.Security.Cryptography.Pkcs
 
             chainCerts = certs;
             return newSignerInfo;
-        }
-
-        internal static List<AttributeAsn> BuildAttributes(CryptographicAttributeObjectCollection? attributes)
-        {
-            List<AttributeAsn> signedAttrs = new List<AttributeAsn>();
-
-            if (attributes == null || attributes.Count == 0)
-            {
-                return signedAttrs;
-            }
-
-            foreach (CryptographicAttributeObject attributeObject in attributes)
-            {
-                AttributeAsn newAttr = new AttributeAsn
-                {
-                    AttrType = attributeObject.Oid!.Value!,
-                    AttrValues = new ReadOnlyMemory<byte>[attributeObject.Values.Count],
-                };
-
-                for (int i = 0; i < attributeObject.Values.Count; i++)
-                {
-                    newAttr.AttrValues[i] = attributeObject.Values[i].RawData;
-                }
-
-                signedAttrs.Add(newAttr);
-            }
-
-            return signedAttrs;
         }
     }
 }

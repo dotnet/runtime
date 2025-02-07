@@ -379,7 +379,7 @@ inline void SyncRegDisplayToCurrentContext(REGDISPLAY* pRD)
 
 #if defined(TARGET_64BIT)
     pRD->SP         = (INT_PTR)GetSP(pRD->pCurrentContext);
-    pRD->ControlPC  = INT_PTR(GetIP(pRD->pCurrentContext));
+    pRD->ControlPC  = (INT_PTR)GetIP(pRD->pCurrentContext);
 #elif defined(TARGET_ARM)
     pRD->SP         = (DWORD)GetSP(pRD->pCurrentContext);
     pRD->ControlPC  = (DWORD)GetIP(pRD->pCurrentContext);
@@ -421,7 +421,6 @@ inline void FillContextPointers(PT_KNONVOLATILE_CONTEXT_POINTERS pCtxPtrs, PT_CO
     *(&pCtxPtrs->S6) = &pCtx->S6;
     *(&pCtxPtrs->S7) = &pCtx->S7;
     *(&pCtxPtrs->S8) = &pCtx->S8;
-    *(&pCtxPtrs->Tp) = &pCtx->Tp;
     *(&pCtxPtrs->Fp) = &pCtx->Fp;
     *(&pCtxPtrs->Ra) = &pCtx->Ra;
 #elif defined(TARGET_ARM) // TARGET_LOONGARCH64

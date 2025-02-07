@@ -7,7 +7,7 @@ using Microsoft.Extensions.Configuration;
 namespace Microsoft.Extensions.Logging.Console
 {
     /// <summary>
-    /// Options for the built-in json console log formatter.
+    /// Options for the built-in JSON console log formatter.
     /// </summary>
     public class JsonConsoleFormatterOptions : ConsoleFormatterOptions
     {

@@ -150,23 +150,6 @@ MethodDesc* Precode::GetMethodDesc(BOOL fSpeculative /*= FALSE*/)
     return (PTR_MethodDesc)pMD;
 }
 
-BOOL Precode::IsCorrectMethodDesc(MethodDesc *  pMD)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-    MethodDesc * pMDfromPrecode = GetMethodDesc(TRUE);
-
-    if (pMDfromPrecode == pMD)
-        return TRUE;
-
-    return FALSE;
-}
-
 BOOL Precode::IsPointingToPrestub(PCODE target)
 {
     CONTRACTL
@@ -200,6 +183,26 @@ PCODE Precode::TryToSkipFixupPrecode(PCODE addr)
 }
 
 #ifndef DACCESS_COMPILE
+
+#ifdef FEATURE_INTERPRETER
+InterpreterPrecode* Precode::AllocateInterpreterPrecode(PCODE byteCode,
+                                                        LoaderAllocator *  pLoaderAllocator,
+                                                        AllocMemTracker *  pamTracker)
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_NOTRIGGER;
+        MODE_ANY;
+    }
+    CONTRACTL_END;
+
+    SIZE_T size = sizeof(InterpreterPrecode);
+    InterpreterPrecode* pPrecode = (InterpreterPrecode*)pamTracker->Track(pLoaderAllocator->GetNewStubPrecodeHeap()->AllocAlignedMem(size, 1));
+    pPrecode->Init(pPrecode, byteCode);
+    return pPrecode;
+}
+#endif // FEATURE_INTERPRETER
 
 Precode* Precode::Allocate(PrecodeType t, MethodDesc* pMD,
                            LoaderAllocator *  pLoaderAllocator,
@@ -500,6 +503,18 @@ BOOL StubPrecode::IsStubPrecodeByASM(PCODE addr)
 #endif // TARGET_X86
 }
 
+#ifdef FEATURE_INTERPRETER
+void InterpreterPrecode::Init(InterpreterPrecode* pPrecodeRX, TADDR byteCodeAddr)
+{
+    WRAPPER_NO_CONTRACT;
+    InterpreterPrecodeData *pStubData = GetData();
+
+    pStubData->Target = (PCODE)InterpreterStub;
+    pStubData->ByteCodeAddr = byteCodeAddr;
+    pStubData->Type = InterpreterPrecode::Type;
+}
+#endif // FEATURE_INTERPRETER
+
 #ifdef HAS_NDIRECT_IMPORT_PRECODE
 
 void NDirectImportPrecode::Init(NDirectImportPrecode* pPrecodeRX, MethodDesc* pMD, LoaderAllocator *pLoaderAllocator)
@@ -662,4 +677,37 @@ BOOL DoesSlotCallPrestub(PCODE pCode)
     return FALSE;
 }
 
+void PrecodeMachineDescriptor::Init(PrecodeMachineDescriptor *dest)
+{
+    dest->OffsetOfPrecodeType = OFFSETOF_PRECODE_TYPE;
+    // cDAC will do (where N = 8*ReadWidthOfPrecodeType):
+    //   uintN_t PrecodeType = *(uintN_t*)(pPrecode + OffsetOfPrecodeType);
+    //   PrecodeType >>= ShiftOfPrecodeType;
+    //   return (byte)PrecodeType;
+#ifdef TARGET_LOONGARCH64
+    dest->ReadWidthOfPrecodeType = 2;
+#else
+    dest->ReadWidthOfPrecodeType = 1;
+#endif
+#if defined(SHIFTOF_PRECODE_TYPE)
+    dest->ShiftOfPrecodeType = SHIFTOF_PRECODE_TYPE;
+#else
+    dest->ShiftOfPrecodeType = 0;
+#endif
+
+    dest->InvalidPrecodeType = InvalidPrecode::Type;
+    dest->StubPrecodeType = StubPrecode::Type;
+#ifdef HAS_NDIRECT_IMPORT_PRECODE
+    dest->PInvokeImportPrecodeType = NDirectImportPrecode::Type;
+#endif // HAS_NDIRECT_IMPORT_PRECODE
+#ifdef HAS_FIXUP_PRECODE
+    dest->FixupPrecodeType = FixupPrecode::Type;
+#endif
+#ifdef HAS_THISPTR_RETBUF_PRECODE
+    dest->ThisPointerRetBufPrecodeType = ThisPtrRetBufPrecode::Type;
+#endif
+    dest->StubCodePageSize = GetStubCodePageSize();
+}
+
 #endif // !DACCESS_COMPILE
+

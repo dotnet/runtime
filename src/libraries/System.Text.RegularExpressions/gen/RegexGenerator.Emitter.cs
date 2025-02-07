@@ -2553,18 +2553,8 @@ namespace System.Text.RegularExpressions.Generator
                 }
                 writer.WriteLine();
 
-                RegexNode child = node.Child(0);
-
-                if (uncapnum != -1)
-                {
-                    using (EmitBlock(writer, $"if (!base.IsMatched({uncapnum}))"))
-                    {
-                        Goto(doneLabel);
-                    }
-                    writer.WriteLine();
-                }
-
                 // Emit child node.
+                RegexNode child = node.Child(0);
                 string originalDoneLabel = doneLabel;
                 EmitNode(child, subsequent);
                 bool childBacktracks = doneLabel != originalDoneLabel;
@@ -2577,6 +2567,12 @@ namespace System.Text.RegularExpressions.Generator
                 }
                 else
                 {
+                    using (EmitBlock(writer, $"if (!base.IsMatched({uncapnum}))"))
+                    {
+                        Goto(doneLabel);
+                    }
+
+                    writer.WriteLine();
                     writer.WriteLine($"base.TransferCapture({capnum}, {uncapnum}, {startingPos}, pos);");
                 }
 
@@ -4083,11 +4079,13 @@ namespace System.Text.RegularExpressions.Generator
 
                     // If we're able to vectorize the search, do so. Otherwise, fall back to a loop.
                     // For the loop, we're validating that each char matches the target node.
-                    // For IndexOf, we're looking for the first thing that _doesn't_ match the target node,
+                    // For Contains{Any}, we're looking for the first thing that _doesn't_ match the target node,
                     // and thus similarly validating that everything does.
                     if (TryEmitIndexOf(requiredHelpers, node, useLast: false, negate: true, out _, out string? indexOfExpr))
                     {
-                        using (EmitBlock(writer, $"if ({sliceSpan}.Slice({sliceStaticPos}, {iterations}).{indexOfExpr} >= 0)"))
+                        string containsExpr = indexOfExpr.Replace("IndexOf", "Contains");
+
+                        using (EmitBlock(writer, $"if ({sliceSpan}.Slice({sliceStaticPos}, {iterations}).{containsExpr})"))
                         {
                             Goto(doneLabel);
                         }
