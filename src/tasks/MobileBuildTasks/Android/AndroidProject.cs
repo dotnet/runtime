@@ -33,7 +33,7 @@ namespace Microsoft.Android.Build
 
         public AndroidProject(string projectName, string runtimeIdentifier, string androidNdkPath, TaskLoggingHelper logger)
         {
-            androidToolchainPath = Path.Combine(androidNdkPath, "build", "cmake", "android.toolchain.cmake");
+            androidToolchainPath = Path.Combine(androidNdkPath, "build", "cmake", "android.toolchain.cmake").Replace('\\', '/');
             abi = DetermineAbi(runtimeIdentifier);
             targetArchitecture = GetTargetArchitecture(runtimeIdentifier);
 

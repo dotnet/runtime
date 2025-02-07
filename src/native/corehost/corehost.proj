@@ -13,7 +13,7 @@
     <IntermediateOutputRootPath>$(ArtifactsObjDir)$(OutputRID).$(Configuration)\</IntermediateOutputRootPath>
     <!-- Global location for version files -->
     <NativeVersionFile Condition="$([MSBuild]::IsOsPlatform(Windows))">$(ArtifactsObjDir)_version.h</NativeVersionFile>
-    <NativeVersionFile Condition="!$([MSBuild]::IsOsPlatform(Windows))">$(ArtifactsObjDir)_version.c</NativeVersionFile>
+    <NativeVersionFile Condition="!$([MSBuild]::IsOsPlatform(Windows)) or '$(TargetsAndroid)' == 'true'">$(ArtifactsObjDir)_version.c</NativeVersionFile>
   </PropertyGroup>
 
   <Target Name="CopySingleFileHost" AfterTargets="Build">

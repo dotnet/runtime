@@ -4,6 +4,7 @@
 using System;
 using System.IO;
 using System.Linq;
+using System.Runtime.InteropServices;
 
 internal sealed class AndroidSdkHelper
 {
@@ -43,7 +44,7 @@ internal sealed class AndroidSdkHelper
     public string AndroidJarPath => Path.Combine(_androidSdkPath, "platforms", $"android-{_buildApiLevel}", "android.jar");
 
     public bool HasD8 => File.Exists(D8Path);
-    public string D8Path => getToolPath("d8");
+    public string D8Path => Utils.IsWindows() ? getToolPath("d8.bat") : getToolPath("d8");
     public string DxPath => getToolPath("dx");
 
     private string getToolPath(string tool)

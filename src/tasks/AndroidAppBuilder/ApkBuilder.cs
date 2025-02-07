@@ -233,18 +233,20 @@ public partial class ApkBuilder
             File.Copy(aotlib, Path.Combine(assetsToZipDirectory, Path.GetFileName(aotlib)));
         }
 
+        bool isWindows = Utils.IsWindows();
         // tools:
         string dx = Path.Combine(buildToolsFolder, "dx");
-        string d8 = Path.Combine(buildToolsFolder, "d8");
-        string aapt = Path.Combine(buildToolsFolder, "aapt");
-        string zipalign = Path.Combine(buildToolsFolder, "zipalign");
-        string apksigner = Path.Combine(buildToolsFolder, "apksigner");
+        string d8 = Path.Combine(buildToolsFolder, isWindows ? "d8.bat" : "d8");
+        string aapt = Path.Combine(buildToolsFolder, isWindows ? "aapt.exe" : "aapt");
+        string zipalign = Path.Combine(buildToolsFolder, isWindows ? "zipalign.exe" : "zipalign");
+        string apksigner = Path.Combine(buildToolsFolder, isWindows ? "apksigner.bat" : "apksigner");
         string androidJar = Path.Combine(AndroidSdk, "platforms", "android-" + BuildApiLevel, "android.jar");
         string androidToolchain = Path.Combine(AndroidNdk, "build", "cmake", "android.toolchain.cmake");
         string javac = "javac";
-        string zip = "zip";
 
-        Utils.RunProcess(logger, zip, workingDir: assetsToZipDirectory, args: "-q -r ../assets/assets.zip .");
+        var (zip, zipArgs) = GetZipToolWithArgs(Path.Combine("..", "assets", "assets.zip"));
+
+        Utils.RunProcess(logger, zip, workingDir: assetsToZipDirectory, args: zipArgs);
         Directory.Delete(assetsToZipDirectory, true);
 
         if (!File.Exists(androidJar))
@@ -615,6 +617,25 @@ public partial class ApkBuilder
 
         // we need to re-sign the apk
         SignApk(apkPath, apksigner);
+    }
+
+    private static (string, string) GetZipToolWithArgs(string destZipPath)
+    {
+        string zipTool;
+        string zipArgs;
+
+        if (Utils.IsWindows())
+        {
+            zipTool = "powershell";
+            zipArgs = $"-C \"Compress-Archive -Path * -DestinationPath {destZipPath}\"";
+        }
+        else
+        {
+            zipTool = "zip";
+            zipArgs = $"-q -r {destZipPath} .";
+        }
+
+        return (zipTool, zipArgs);
     }
 
     /// <summary>

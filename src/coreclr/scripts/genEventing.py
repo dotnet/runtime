@@ -872,8 +872,8 @@ def getKeywordsMaskCombined(keywords, keywordsToMask):
 
     return mask
 
-def updateclreventsfile(write_xplatheader, target_cpp, runtimeFlavor, eventpipe_trace_context_typedef, dotnet_trace_context_typedef_windows, user_events_trace_context_typedef, tree, clrallevents, inclusion_list, generatedFileType, user_events):
-    is_windows = os.name == 'nt'
+def updateclreventsfile(write_xplatheader, target_cpp, runtimeFlavor, targetOS, eventpipe_trace_context_typedef, dotnet_trace_context_typedef_windows, user_events_trace_context_typedef, tree, clrallevents, inclusion_list, generatedFileType, user_events):
+    is_windows = targetOS == "windows"
     with open_for_update(clrallevents) as Clrallevents:
         Clrallevents.write(stdprolog)
         if generatedFileType=="header-impl":
@@ -944,7 +944,7 @@ def updateclreventsfile(write_xplatheader, target_cpp, runtimeFlavor, eventpipe_
         if generatedFileType == "header":
             Clrallevents.write("#endif // __CLR_ETW_ALL_MAIN_H__\n")
 
-def generatePlatformIndependentFiles(sClrEtwAllMan, incDir, etmDummyFile, extern, write_xplatheader, target_cpp, runtimeFlavor, inclusion_list, user_events):
+def generatePlatformIndependentFiles(sClrEtwAllMan, incDir, etmDummyFile, extern, write_xplatheader, target_cpp, runtimeFlavor, targetOS, inclusion_list, user_events):
 
     generateEtmDummyHeader(sClrEtwAllMan,etmDummyFile)
     tree           = DOM.parse(sClrEtwAllMan)
@@ -1014,16 +1014,16 @@ typedef struct _DOTNET_TRACE_CONTEXT
 #endif // DOTNET_TRACE_CONTEXT_DEF
 """
 
-    is_windows = os.name == 'nt'
+    is_windows = targetOS == "windows"
 
     # Write the main source(s) for FireETW* functions
     # nativeaot requires header and source file to be separated as well as a noop implementation
     if runtimeFlavor.nativeaot:
-        updateclreventsfile(write_xplatheader, target_cpp, runtimeFlavor, eventpipe_trace_context_typedef, dotnet_trace_context_typedef_windows, user_events_trace_context_typedef, tree, os.path.join(incDir, "clretwallmain.cpp"), inclusion_list, "source-impl", user_events)
-        updateclreventsfile(write_xplatheader, target_cpp, runtimeFlavor, eventpipe_trace_context_typedef, dotnet_trace_context_typedef_windows, user_events_trace_context_typedef, tree, os.path.join(incDir, "clretwallmain.h"), inclusion_list, "header", user_events)
-        updateclreventsfile(write_xplatheader, target_cpp, runtimeFlavor, eventpipe_trace_context_typedef, dotnet_trace_context_typedef_windows, user_events_trace_context_typedef, tree, os.path.join(incDir, "disabledclretwallmain.cpp"), inclusion_list, "source-impl-noop", user_events)
+        updateclreventsfile(write_xplatheader, target_cpp, runtimeFlavor, targetOS, eventpipe_trace_context_typedef, dotnet_trace_context_typedef_windows, user_events_trace_context_typedef, tree, os.path.join(incDir, "clretwallmain.cpp"), inclusion_list, "source-impl", user_events)
+        updateclreventsfile(write_xplatheader, target_cpp, runtimeFlavor, targetOS, eventpipe_trace_context_typedef, dotnet_trace_context_typedef_windows, user_events_trace_context_typedef, tree, os.path.join(incDir, "clretwallmain.h"), inclusion_list, "header", user_events)
+        updateclreventsfile(write_xplatheader, target_cpp, runtimeFlavor, targetOS, eventpipe_trace_context_typedef, dotnet_trace_context_typedef_windows, user_events_trace_context_typedef, tree, os.path.join(incDir, "disabledclretwallmain.cpp"), inclusion_list, "source-impl-noop", user_events)
     else:
-        updateclreventsfile(write_xplatheader, target_cpp, runtimeFlavor, eventpipe_trace_context_typedef, dotnet_trace_context_typedef_windows, user_events_trace_context_typedef, tree, os.path.join(incDir, "clretwallmain.h"), inclusion_list, "header-impl", user_events)
+        updateclreventsfile(write_xplatheader, target_cpp, runtimeFlavor, targetOS, eventpipe_trace_context_typedef, dotnet_trace_context_typedef_windows, user_events_trace_context_typedef, tree, os.path.join(incDir, "clretwallmain.h"), inclusion_list, "header-impl", user_events)
 
     if write_xplatheader:
         clrproviders = os.path.join(incDir, "clrproviders.h")
@@ -1143,7 +1143,8 @@ def main(argv):
     required.add_argument('--dummy',  type=str,default=None,
                                     help='full path to file that will have dummy definitions of FireEtw functions')
     required.add_argument('--runtimeflavor', type=str,default="CoreCLR",
-                                    help='runtime flavor')
+                                    help='runtime flavor'),
+    required.add_argument('--targetos', type=str,default=None),
     required.add_argument('--nonextern', action='store_true',
                                     help='if specified, will not generated extern function stub headers' )
     required.add_argument('--noxplatheader', action='store_true',
@@ -1163,6 +1164,7 @@ def main(argv):
     extern            = not args.nonextern
     write_xplatheader = not args.noxplatheader
     user_events       = args.userevents
+    targetOS          = args.targetos
 
     target_cpp = True
     if runtimeFlavor.mono:
@@ -1172,7 +1174,7 @@ def main(argv):
 
     inclusion_list = parseInclusionList(inclusion_filename)
 
-    generatePlatformIndependentFiles(sClrEtwAllMan, incdir, etmDummyFile, extern, write_xplatheader, target_cpp, runtimeFlavor, inclusion_list, user_events)
+    generatePlatformIndependentFiles(sClrEtwAllMan, incdir, etmDummyFile, extern, write_xplatheader, target_cpp, runtimeFlavor, targetOS, inclusion_list, user_events)
 
 if __name__ == '__main__':
     return_code = main(sys.argv[1:])
