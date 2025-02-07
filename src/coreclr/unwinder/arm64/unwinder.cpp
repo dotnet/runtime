@@ -332,7 +332,8 @@ do {                                                                            
 //
 //#else
 
-#define STRIP_PAC(pointer)    RtlStripPacManual(pointer)
+//#define STRIP_PAC(pointer)    RtlStripPacManual(pointer)
+#define STRIP_PAC(pointer)  *pointer &= 0x0000FFFFFFFFFFFF
 
 FORCEINLINE
 VOID
