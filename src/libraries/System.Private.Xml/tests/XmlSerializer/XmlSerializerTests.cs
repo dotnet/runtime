@@ -518,7 +518,7 @@ public static partial class XmlSerializerTests
         Assert.Equal(value.ListProperty.ToArray(), actual.ListProperty.ToArray());
 
         BaseClassWithSamePropertyName castAsBase = (BaseClassWithSamePropertyName)actual;
-        Assert.Equal(0, castAsBase.IntProperty);
+        Assert.Equal(default(int), castAsBase.IntProperty);
         Assert.Null(castAsBase.StringProperty);
         Assert.Null(castAsBase.ListProperty);
 
@@ -538,7 +538,7 @@ public static partial class XmlSerializerTests
         Assert.Empty(actual.ListProperty.ToArray());
 
         castAsBase = (BaseClassWithSamePropertyName)actual;
-        Assert.Equal(0, castAsBase.IntProperty);
+        Assert.Equal(default(int), castAsBase.IntProperty);
         Assert.Null(castAsBase.StringProperty);
         Assert.Null(castAsBase.ListProperty);
     }
@@ -1214,7 +1214,7 @@ WithXmlHeader(@"<SimpleType xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instanc
         // All base properties have been hidden, so they should be default here in the base class
         BaseClassWithSamePropertyName castAsBase = (BaseClassWithSamePropertyName)actual;
         Assert.StrictEqual(default(DateTime), castAsBase.DateTimeProperty);
-        Assert.StrictEqual(0, castAsBase.IntProperty);
+        Assert.StrictEqual(default(int), castAsBase.IntProperty);
         Assert.Null(castAsBase.StringProperty);
         Assert.Null(castAsBase.ListProperty);
 
@@ -1246,7 +1246,7 @@ WithXmlHeader(@"<SimpleType xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instanc
         // All base properties have been hidden, so they should be default here in the base class
         castAsBase = (BaseClassWithSamePropertyName)actual;
         Assert.StrictEqual(default(DateTime), castAsBase.DateTimeProperty);
-        Assert.StrictEqual(0, castAsBase.IntProperty);
+        Assert.StrictEqual(default(int), castAsBase.IntProperty);
         Assert.Null(castAsBase.StringProperty);
         Assert.Null(castAsBase.ListProperty);
 

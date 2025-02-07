@@ -1648,16 +1648,21 @@ namespace System.Xml.Serialization
                         var isList = mapping.TypeDesc.IsArrayLike && !mapping.TypeDesc.IsArray;
                         var pi = member.Mapping.MemberInfo as PropertyInfo;
 
-                        // Old serializers would trip over private property setters. Except for lists, which get special treatment.
-                        // So do the same here, even though this serializer is more capable of handling private setters. *sigh*
-                        // Do note that this still allows Lists with private setters to utilize that capability of a reflection serializer.
+                        // Here we have to deal with some special cases for property members. The old serializers would trip over
+                        // private property setters generally - except in the case of list-like properties. Because lists get special
+                        // treatment, a private setter for a list property would only be a problem if the default constructor didn't
+                        // already create a list instance for the property. If it does create a list, then the serializer can still
+                        // populate it. Try to emulate the old serializer behavior here.
+
+                        // First, for non-list properties, private setters are always a problem.
                         if (!isList && pi != null && pi.SetMethod != null && !pi.SetMethod.IsPublic)
                         {
                             member.Source = (value) => throw new InvalidOperationException(SR.Format(SR.XmlReadOnlyPropertyError, pi.Name, pi.DeclaringType!.FullName));
                         }
 
-                        // If a list doesn't have a setter, or only has a private setter, we shouldn't just ignore it, because the default
-                        // constructor for the type might have created a list we can use.
+                        // Next, for list properties, we need to handle not only the private setter case, but also the case where
+                        // there is no setter at all. Because we need to give the default constructor a chance to create the list
+                        // first before we make noise about not being able to set a list property.
                         else if (isList && pi != null && (pi.SetMethod == null || !pi.SetMethod.IsPublic))
                         {
                             var addMethod = mapping.TypeDesc.Type!.GetMethod("Add");
@@ -1669,7 +1674,7 @@ namespace System.Xml.Serialization
                                     var getOnlyList = pi.GetValue(o)!;
                                     if (getOnlyList == null)
                                     {
-                                        // No-setter lists should just be ignored if they weren't created by constructor. Private-setter lists are the exception.
+                                        // No-setter lists should just be ignored if they weren't created by constructor. Private-setter lists are the noisy exception.
                                         if (pi.SetMethod != null && !pi.SetMethod.IsPublic)
                                             throw new InvalidOperationException(SR.Format(SR.XmlReadOnlyPropertyError, pi.Name, pi.DeclaringType!.FullName));
                                     }
@@ -1684,7 +1689,7 @@ namespace System.Xml.Serialization
                             }
                         }
 
-                        // Otherwise, just carry on as normal
+                        // For all other members (fields, public setter properties, etc), just carry on as normal
                         else
                         {
                             if (member.Mapping.Xmlns != null)

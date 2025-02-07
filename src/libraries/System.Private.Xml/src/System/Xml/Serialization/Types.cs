@@ -1033,7 +1033,7 @@ namespace System.Xml.Serialization
 
         internal static void GetAllMembers(StructMapping mapping, List<MemberMapping> list)
         {
-            // Order matters. Legacy behavior gives defference to base mappings. So we start there.
+            // Order matters. Legacy behavior gives deference to base mappings. So we start there.
             // But we want to replace base mappings with overrides from the derived class.
             if (mapping.BaseMapping != null)
             {

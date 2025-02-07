@@ -963,7 +963,7 @@ public static partial class XmlSerializerTests
         Assert.StrictEqual(value.PublicIntListField[0], actual.PublicIntListField[0]);
         Assert.StrictEqual(value.PublicIntListFieldWithXmlElementAttribute[0], actual.PublicIntListFieldWithXmlElementAttribute[0]);
         // In an annoyingly inconsistent behavior, if a list property does not have a setter at all, the serializer is smart enough to
-        // not try to set an empty list. So the property will will be either empty or null depending on how the default constructor leaves it.
+        // not try to set an empty list. So the property will be either empty or null depending on how the default constructor leaves it.
         Assert.Null(actual.AlwaysNullList);
         Assert.Null(actual.AlwaysNullNullableList);
         // Fields are always settable though, so the serializer always takes that liberty. *smh*
@@ -987,7 +987,7 @@ public static partial class XmlSerializerTests
         Assert.Empty(actual.AnotherStringList);
         Assert.Empty(actual.PropertyWithXmlElementAttribute);
         // In an annoyingly inconsistent behavior, if a list property does not have a setter at all, the serializer is smart enough to
-        // not try to set an empty list. So the property will will be either empty or null depending on how the default constructor leaves it.
+        // not try to set an empty list. So the property will be either empty or null depending on how the default constructor leaves it.
         Assert.Empty(actual.PublicIntListFieldWithXmlElementAttribute);
         Assert.Null(actual.AlwaysNullList);
         Assert.Null(actual.AlwaysNullNullableList);
@@ -1010,7 +1010,7 @@ public static partial class XmlSerializerTests
         Assert.Empty(actual.AnotherStringList);
         Assert.Empty(actual.PropertyWithXmlElementAttribute);
         // In an annoyingly inconsistent behavior, if a list property does not have a setter at all, the serializer is smart enough to
-        // not try to set an empty list. So the property will will be either empty or null depending on how the default constructor leaves it.
+        // not try to set an empty list. So the property will be either empty or null depending on how the default constructor leaves it.
         Assert.Empty(actual.PublicIntListFieldWithXmlElementAttribute);
         Assert.Null(actual.AlwaysNullList);
         Assert.Null(actual.AlwaysNullNullableList);

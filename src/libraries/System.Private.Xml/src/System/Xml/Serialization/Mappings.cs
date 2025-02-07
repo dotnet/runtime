@@ -992,7 +992,7 @@ namespace System.Xml.Serialization
             var baseMember = mapping.MemberInfo;
             var derivedMember = this.MemberInfo;
 
-            // Similarly, if neither mapping has any MemberInfo, then its not appropriate to say that one hides the other.
+            // Similarly, if either mapping (or both) lacks MemberInfo, then its not appropriate to say that one hides the other.
             if (baseMember == null || derivedMember == null)
                 return false;
 
