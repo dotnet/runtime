@@ -10,6 +10,8 @@ namespace System.Threading
 {
     public sealed partial class Mutex
     {
+        private void CreateMutexCore(bool initiallyOwned) => SafeWaitHandle = WaitSubsystem.NewMutex(initiallyOwned);
+
         private void CreateMutexCore(
             bool initiallyOwned,
             string? name,

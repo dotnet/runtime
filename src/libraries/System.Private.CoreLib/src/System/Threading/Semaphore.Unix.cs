@@ -10,6 +10,12 @@ namespace System.Threading
 {
     public sealed partial class Semaphore
     {
+        private void CreateSemaphoreCore(int initialCount, int maximumCount)
+        {
+            ValidateArguments(initialCount, maximumCount);
+            SafeWaitHandle = WaitSubsystem.NewSemaphore(initialCount, maximumCount);
+        }
+
 #pragma warning disable IDE0060 // Unused parameter
         private void CreateSemaphoreCore(
             int initialCount,
@@ -18,13 +24,7 @@ namespace System.Threading
             NamedWaitHandleOptionsInternal options,
             out bool createdNew)
         {
-            ArgumentOutOfRangeException.ThrowIfNegative(initialCount);
-            ArgumentOutOfRangeException.ThrowIfNegativeOrZero(maximumCount);
-
-            if (initialCount > maximumCount)
-            {
-                throw new ArgumentException(SR.Argument_SemaphoreInitialMaximum);
-            }
+            ValidateArguments(initialCount, maximumCount);
 
             if (name != null)
             {

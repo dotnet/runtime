@@ -14,6 +14,25 @@ namespace System.Threading
     /// </summary>
     public sealed partial class Mutex : WaitHandle
     {
+        private unsafe void CreateMutexCore(bool initiallyOwned)
+        {
+            SafeWaitHandle handle =
+                CreateMutex(
+                    initiallyOwned,
+                    name: null,
+                    currentUserOnly: false,
+                    systemCallErrors: null,
+                    systemCallErrorsBufferSize: 0);
+            if (handle.IsInvalid)
+            {
+                int errorCode = Marshal.GetLastPInvokeError();
+                handle.SetHandleAsInvalid();
+                throw Win32Marshal.GetExceptionForWin32Error(errorCode);
+            }
+
+            SafeWaitHandle = handle;
+        }
+
         private void CreateMutexCore(
             bool initiallyOwned,
             string? name,

@@ -14,7 +14,7 @@ namespace System.Threading
         // Win32 only takes maximum count of int.MaxValue
         public Semaphore(int initialCount, int maximumCount)
         {
-            CreateSemaphoreCore(initialCount, maximumCount, name: null, options: default, out _);
+            CreateSemaphoreCore(initialCount, maximumCount);
         }
 
         /// <summary>
@@ -72,6 +72,17 @@ namespace System.Threading
         public Semaphore(int initialCount, int maximumCount, string? name, out bool createdNew)
         {
             CreateSemaphoreCore(initialCount, maximumCount, name, options: default, out createdNew);
+        }
+
+        private static void ValidateArguments(int initialCount, int maximumCount)
+        {
+            ArgumentOutOfRangeException.ThrowIfNegative(initialCount);
+            ArgumentOutOfRangeException.ThrowIfNegativeOrZero(maximumCount);
+
+            if (initialCount > maximumCount)
+            {
+                throw new ArgumentException(SR.Argument_SemaphoreInitialMaximum);
+            }
         }
 
         /// <summary>

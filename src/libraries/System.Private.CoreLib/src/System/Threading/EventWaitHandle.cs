@@ -12,7 +12,7 @@ namespace System.Threading
     {
         public EventWaitHandle(bool initialState, EventResetMode mode)
         {
-            CreateEventCore(initialState, mode, name: null, options: default, out _);
+            CreateEventCore(initialState, mode);
         }
 
         /// <summary>
@@ -62,6 +62,14 @@ namespace System.Threading
         public EventWaitHandle(bool initialState, EventResetMode mode, string? name, out bool createdNew)
         {
             CreateEventCore(initialState, mode, name, options: default, out createdNew);
+        }
+
+        private static void ValidateMode(EventResetMode mode)
+        {
+            if (mode != EventResetMode.AutoReset && mode != EventResetMode.ManualReset)
+            {
+                throw new ArgumentException(SR.Argument_InvalidFlag, nameof(mode));
+            }
         }
 
         /// <summary>

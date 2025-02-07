@@ -10,6 +10,12 @@ namespace System.Threading
 {
     public partial class EventWaitHandle
     {
+        private void CreateEventCore(bool initialState, EventResetMode mode)
+        {
+            ValidateMode(mode);
+            SafeWaitHandle = WaitSubsystem.NewEvent(initialState, mode);
+        }
+
 #pragma warning disable IDE0060 // Unused parameter
         private void CreateEventCore(
             bool initialState,
@@ -18,10 +24,7 @@ namespace System.Threading
             NamedWaitHandleOptionsInternal options,
             out bool createdNew)
         {
-            if (mode != EventResetMode.AutoReset && mode != EventResetMode.ManualReset)
-            {
-                throw new ArgumentException(SR.Argument_InvalidFlag, nameof(mode));
-            }
+            ValidateMode(mode);
 
             if (name != null)
             {

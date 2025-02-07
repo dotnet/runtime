@@ -22,6 +22,24 @@ namespace System.Threading
             SafeWaitHandle = handle;
         }
 
+        private unsafe void CreateEventCore(bool initialState, EventResetMode mode)
+        {
+            ValidateMode(mode);
+
+            uint flags = initialState ? Interop.Kernel32.CREATE_EVENT_INITIAL_SET : 0;
+            if (mode == EventResetMode.ManualReset)
+                flags |= Interop.Kernel32.CREATE_EVENT_MANUAL_RESET;
+            SafeWaitHandle handle = Interop.Kernel32.CreateEventEx(lpSecurityAttributes: 0, name: null, flags, AccessRights);
+            if (handle.IsInvalid)
+            {
+                int errorCode = Marshal.GetLastPInvokeError();
+                handle.SetHandleAsInvalid();
+                throw Win32Marshal.GetExceptionForWin32Error(errorCode);
+            }
+
+            SafeWaitHandle = handle;
+        }
+
         private unsafe void CreateEventCore(
             bool initialState,
             EventResetMode mode,
@@ -29,10 +47,7 @@ namespace System.Threading
             NamedWaitHandleOptionsInternal options,
             out bool createdNew)
         {
-            if (mode != EventResetMode.AutoReset && mode != EventResetMode.ManualReset)
-            {
-                throw new ArgumentException(SR.Argument_InvalidFlag, nameof(mode));
-            }
+            ValidateMode(mode);
 
 #if !TARGET_WINDOWS
             if (name != null)

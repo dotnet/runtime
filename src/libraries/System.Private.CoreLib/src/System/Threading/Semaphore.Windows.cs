@@ -22,6 +22,28 @@ namespace System.Threading
             SafeWaitHandle = handle;
         }
 
+        private void CreateSemaphoreCore(int initialCount, int maximumCount)
+        {
+            ValidateArguments(initialCount, maximumCount);
+
+            SafeWaitHandle handle =
+                Interop.Kernel32.CreateSemaphoreEx(
+                    lpSecurityAttributes: 0,
+                    initialCount,
+                    maximumCount,
+                    name: null,
+                    flags: 0,
+                    AccessRights);
+            if (handle.IsInvalid)
+            {
+                int errorCode = Marshal.GetLastPInvokeError();
+                handle.SetHandleAsInvalid();
+                throw Win32Marshal.GetExceptionForWin32Error(errorCode);
+            }
+
+            SafeWaitHandle = handle;
+        }
+
         private unsafe void CreateSemaphoreCore(
             int initialCount,
             int maximumCount,
@@ -29,13 +51,7 @@ namespace System.Threading
             NamedWaitHandleOptionsInternal options,
             out bool createdNew)
         {
-            ArgumentOutOfRangeException.ThrowIfNegative(initialCount);
-            ArgumentOutOfRangeException.ThrowIfNegativeOrZero(maximumCount);
-
-            if (initialCount > maximumCount)
-            {
-                throw new ArgumentException(SR.Argument_SemaphoreInitialMaximum);
-            }
+            ValidateArguments(initialCount, maximumCount);
 
 #if !TARGET_WINDOWS
             if (name != null)
@@ -77,11 +93,13 @@ namespace System.Threading
 
                 if (myHandle.IsInvalid)
                 {
-                    myHandle.Dispose();
+                    myHandle.SetHandleAsInvalid();
 
                     if (!string.IsNullOrEmpty(name) && errorCode == Interop.Errors.ERROR_INVALID_HANDLE)
+                    {
                         throw new WaitHandleCannotBeOpenedException(
                             SR.Format(SR.Threading_WaitHandleCannotBeOpenedException_InvalidHandle, name));
+                    }
 
                     throw Win32Marshal.GetExceptionForWin32Error(errorCode, name);
                 }
