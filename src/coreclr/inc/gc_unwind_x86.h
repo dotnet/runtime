@@ -66,7 +66,7 @@ class ptrArgTP
         unsigned m_encodedLength;         // An encoding of the current length of the 'm_chunks' array
         ChunkType m_chunks[VALS_COUNT];
 
-        BOOL isBig() const
+        bool isBig() const
         {
             return ((m_encodedLength & IS_BIG) != 0);
         }
@@ -101,18 +101,16 @@ class ptrArgTP
         Vals      m_vals;    // if m_val bit 1 is true, then use Vals
     };
 
-    BOOL isBig() const
+    bool isBig() const
     {
-        LIMITED_METHOD_CONTRACT;
-        SUPPORTS_DAC;
+        LIMITED_METHOD_DAC_CONTRACT;
 
         return ((m_val & IS_BIG) != 0);
     }
 
     void toBig()
     {
-        LIMITED_METHOD_CONTRACT;
-        SUPPORTS_DAC;
+        LIMITED_METHOD_DAC_CONTRACT;
 
         if (!isBig())
         {
@@ -122,8 +120,7 @@ class ptrArgTP
 
     ChunkType smallBits() const
     {
-        LIMITED_METHOD_CONTRACT;
-        SUPPORTS_DAC;
+        LIMITED_METHOD_DAC_CONTRACT;
 
         _ASSERTE(!isBig());
         return (m_val >> 1);
@@ -136,22 +133,20 @@ class ptrArgTP
     void doBigDiffAssign(const ptrArgTP&);
     void doBigAndAssign(const ptrArgTP&);
     void doBigOrAssign(const ptrArgTP& arg);
-    BOOL doBigEquals(const ptrArgTP&) const;
-    BOOL doBigIntersect(const ptrArgTP&) const;
+    bool doBigEquals(const ptrArgTP&) const;
+    bool doBigIntersect(const ptrArgTP&) const;
 
 public:
     ptrArgTP()
     {
-        LIMITED_METHOD_CONTRACT;
-        SUPPORTS_DAC;
+        LIMITED_METHOD_DAC_CONTRACT;
 
         m_val = 0;
     }
 
     explicit ptrArgTP(ChunkType arg)
     {
-        WRAPPER_NO_CONTRACT;
-        SUPPORTS_DAC;
+        LIMITED_METHOD_DAC_CONTRACT;
 
         if (arg > MaxVal)
         {
@@ -165,8 +160,7 @@ public:
 
     ptrArgTP(ChunkType arg, UINT shift)
     {
-        WRAPPER_NO_CONTRACT;
-        SUPPORTS_DAC;
+        LIMITED_METHOD_DAC_CONTRACT;
 
         if ((arg > MaxVal) || (shift >= SMALL_BITS) || (arg > (MaxVal >> shift)))
         {
@@ -181,18 +175,16 @@ public:
 
     ptrArgTP operator &(const ptrArgTP& arg) const
     {
-        WRAPPER_NO_CONTRACT;
-        SUPPORTS_DAC;
+        LIMITED_METHOD_DAC_CONTRACT;
 
         ptrArgTP ret = *this;
         ret &= arg;
         return ret;
     }
 
-    BOOL operator ==(const ptrArgTP& arg) const
+    bool operator ==(const ptrArgTP& arg) const
     {
-        WRAPPER_NO_CONTRACT;
-        SUPPORTS_DAC;
+        LIMITED_METHOD_DAC_CONTRACT;
 
         if ((m_val | arg.m_val) & IS_BIG)
         {
@@ -204,18 +196,16 @@ public:
         }
     }
 
-    BOOL operator !=(const ptrArgTP& arg) const
+    bool operator !=(const ptrArgTP& arg) const
     {
-        WRAPPER_NO_CONTRACT;
-        SUPPORTS_DAC;
+        LIMITED_METHOD_DAC_CONTRACT;
 
         return !(*this == arg);
     }
 
     void operator <<=(unsigned shift)
     {
-        WRAPPER_NO_CONTRACT;
-        SUPPORTS_DAC;
+        LIMITED_METHOD_DAC_CONTRACT;
 
         if ((m_val == 0) || (shift == 0))     // Zero is a special case, don't need to do anything
             return;
@@ -232,8 +222,7 @@ public:
 
     void operator >>=(unsigned shift)
     {
-        WRAPPER_NO_CONTRACT;
-        SUPPORTS_DAC;
+        LIMITED_METHOD_DAC_CONTRACT;
 
         if (isBig())
         {
@@ -248,8 +237,7 @@ public:
 
     void operator |=(const ptrArgTP& arg)
     {
-        WRAPPER_NO_CONTRACT;
-        SUPPORTS_DAC;
+        LIMITED_METHOD_DAC_CONTRACT;
 
         if (((m_val | arg.m_val) & IS_BIG) != 0)
         {
@@ -263,8 +251,7 @@ public:
 
     void operator &=(const ptrArgTP& arg)
     {
-        WRAPPER_NO_CONTRACT;
-        SUPPORTS_DAC;
+        LIMITED_METHOD_DAC_CONTRACT;
 
         if (((m_val | arg.m_val) & IS_BIG) != 0)
         {
@@ -276,18 +263,16 @@ public:
         }
     }
 
-    friend BOOL isZero(const ptrArgTP& arg)
+    friend bool isZero(const ptrArgTP& arg)
     {
-        WRAPPER_NO_CONTRACT;
-        SUPPORTS_DAC;
+        LIMITED_METHOD_DAC_CONTRACT;
 
         return arg.m_val == 0;
     }
 
-    friend BOOL intersect(const ptrArgTP& arg1, const ptrArgTP& arg2)
+    friend bool intersect(const ptrArgTP& arg1, const ptrArgTP& arg2)
     {
-        WRAPPER_NO_CONTRACT;
-        SUPPORTS_DAC;
+        LIMITED_METHOD_DAC_CONTRACT;
 
         if (((arg1.m_val | arg2.m_val) & IS_BIG) != 0)
         {
@@ -301,8 +286,7 @@ public:
 
     friend void setDiff(ptrArgTP& target, const ptrArgTP& arg)
     {
-        WRAPPER_NO_CONTRACT;
-        SUPPORTS_DAC;
+        LIMITED_METHOD_DAC_CONTRACT;
 
         if (((target.m_val | arg.m_val) & IS_BIG) != 0)
         {
@@ -316,8 +300,7 @@ public:
 
     friend ChunkType toUnsigned(const ptrArgTP& arg)
     {
-        WRAPPER_NO_CONTRACT;
-        SUPPORTS_DAC;
+        LIMITED_METHOD_DAC_CONTRACT;
 
         if (arg.isBig())
         {

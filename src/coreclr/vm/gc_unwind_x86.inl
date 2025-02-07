@@ -3827,8 +3827,7 @@ bool EnumGcRefsX86(PREGDISPLAY     pContext,
 
 void ptrArgTP::doBigInit(ChunkType arg)
 {
-    WRAPPER_NO_CONTRACT;
-    SUPPORTS_DAC;
+    LIMITED_METHOD_DAC_CONTRACT;
 
     m_vals.m_chunks[0] = arg;
     m_vals.SetLength(1);
@@ -3836,8 +3835,7 @@ void ptrArgTP::doBigInit(ChunkType arg)
 
 void ptrArgTP::doBigInit(const ptrArgTP& arg)
 {
-    WRAPPER_NO_CONTRACT;
-    SUPPORTS_DAC;
+    LIMITED_METHOD_DAC_CONTRACT;
 
     if (arg.isBig())
     {
@@ -3852,11 +3850,7 @@ void ptrArgTP::doBigInit(const ptrArgTP& arg)
 
 void ptrArgTP::doBigLeftShiftAssign(unsigned shift)
 {
-    CONTRACTL {
-        NOTHROW;
-        GC_NOTRIGGER;
-        SUPPORTS_DAC;
-    } CONTRACTL_END;
+    LIMITED_METHOD_DAC_CONTRACT;
 
     if ((m_val == 0) || (shift == 0))     // Zero is a special case, don't need to do anything
         return;
@@ -3910,11 +3904,7 @@ void ptrArgTP::doBigLeftShiftAssign(unsigned shift)
 
 void ptrArgTP::doBigRightShiftAssign(unsigned shift)
 {
-    CONTRACTL {
-        NOTHROW;
-        GC_NOTRIGGER;
-        SUPPORTS_DAC;
-    } CONTRACTL_END;
+    LIMITED_METHOD_DAC_CONTRACT;
 
     if ((m_val == 0) || (shift == 0))     // Zero is a special case, don't need to do anything
         return;
@@ -3971,11 +3961,7 @@ void ptrArgTP::doBigRightShiftAssign(unsigned shift)
 
 void ptrArgTP::doBigAndAssign(const ptrArgTP& arg)
 {
-    CONTRACTL {
-        NOTHROW;
-        GC_NOTRIGGER;
-        SUPPORTS_DAC;
-    } CONTRACTL_END;
+    LIMITED_METHOD_DAC_CONTRACT;
 
     //
     // Change to Big representation
@@ -4017,11 +4003,7 @@ void ptrArgTP::doBigAndAssign(const ptrArgTP& arg)
 
 void ptrArgTP::doBigOrAssign(const ptrArgTP& arg)
 {
-    CONTRACTL {
-        NOTHROW;
-        GC_NOTRIGGER;
-        SUPPORTS_DAC;
-    } CONTRACTL_END;
+    LIMITED_METHOD_DAC_CONTRACT;
 
     //
     // Change to Big representation
@@ -4054,11 +4036,7 @@ void ptrArgTP::doBigOrAssign(const ptrArgTP& arg)
 
 void ptrArgTP::doBigDiffAssign(const ptrArgTP& arg)
 {
-    CONTRACTL {
-        NOTHROW;
-        GC_NOTRIGGER;
-        SUPPORTS_DAC;
-    } CONTRACTL_END;
+    LIMITED_METHOD_DAC_CONTRACT;
 
     //
     // Change to Big representation
@@ -4094,15 +4072,9 @@ void ptrArgTP::doBigDiffAssign(const ptrArgTP& arg)
     }
 }
 
-BOOL ptrArgTP::doBigEquals(const ptrArgTP& arg) const
+bool ptrArgTP::doBigEquals(const ptrArgTP& arg) const
 {
-    CONTRACT(BOOL)
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        SUPPORTS_DAC;
-    }
-    CONTRACT_END;
+    LIMITED_METHOD_DAC_CONTRACT;
 
     unsigned myLen  = m_vals.GetLength();
     unsigned argLen = arg.m_vals.GetLength();
@@ -4128,20 +4100,15 @@ BOOL ptrArgTP::doBigEquals(const ptrArgTP& arg) const
         }
 
         if (myVal != argVal)
-            RETURN false;
+            return false;
     }
-    RETURN true;
+
+    return true;
 }
 
-BOOL ptrArgTP::doBigIntersect(const ptrArgTP& arg) const
+bool ptrArgTP::doBigIntersect(const ptrArgTP& arg) const
 {
-    CONTRACT(BOOL)
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        SUPPORTS_DAC;
-    }
-    CONTRACT_END;
+    LIMITED_METHOD_DAC_CONTRACT;
 
     unsigned myLen  = m_vals.GetLength();
     unsigned argLen = arg.m_vals.GetLength();
@@ -4167,7 +4134,8 @@ BOOL ptrArgTP::doBigIntersect(const ptrArgTP& arg) const
         }
 
         if ((myVal & argVal) != 0)
-            RETURN true;
+            return true;
     }
-    RETURN false;
+
+    return false;
 }
