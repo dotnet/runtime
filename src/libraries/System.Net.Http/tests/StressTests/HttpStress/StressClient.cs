@@ -213,7 +213,7 @@ namespace HttpStress
                     {
                         _aggregator.RecordFailure(e, opIndex, stopwatch.Elapsed, requestContext.IsCancellationRequested, taskNum: taskNum, iteration: i);
                         Console.WriteLine("Caught SslStream disposal, aborting");
-                        _eventListener?.Write($"ODE request: {requestContext.RequestHashCode}");
+                        _eventListener?.WriteLine($"ODE request: {requestContext.RequestHashCode}");
                         _globalTcs.SetResult(false);
                     }
                     catch (OperationCanceledException) when (requestContext.IsCancellationRequested || _cts.IsCancellationRequested)

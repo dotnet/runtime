@@ -73,6 +73,7 @@ namespace System.Net.Http
                     finally
                     {
                         ctr.Dispose();
+                        if (NetEventSource.Log.IsEnabled()) connection.Trace($"Killed CTR {ctr.GetHashCode()}");
                     }
                 }
 
@@ -129,6 +130,7 @@ namespace System.Net.Http
                 finally
                 {
                     ctr.Dispose();
+                    if (NetEventSource.Log.IsEnabled()) connection.Trace($"Killed CTR {ctr.GetHashCode()}");
                 }
 
                 // If cancellation is requested and tears down the connection, it could cause the copy
@@ -220,6 +222,7 @@ namespace System.Net.Http
                 finally
                 {
                     ctr.Dispose();
+                    if (NetEventSource.Log.IsEnabled()) connection.Trace($"Killed CTR {ctr.GetHashCode()}");
                 }
             }
         }

@@ -91,6 +91,7 @@ namespace System.Net.Http
                     finally
                     {
                         ctr.Dispose();
+                        if (NetEventSource.Log.IsEnabled()) _connection.Trace($"Killed CTR {ctr.GetHashCode()}");
                     }
                 }
 
@@ -156,6 +157,7 @@ namespace System.Net.Http
                 finally
                 {
                     ctr.Dispose();
+                    if (NetEventSource.Log.IsEnabled()) _connection.Trace($"Killed CTR {ctr.GetHashCode()}");
                 }
 
                 Finish();

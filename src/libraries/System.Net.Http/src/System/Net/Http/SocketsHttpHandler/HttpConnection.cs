@@ -774,6 +774,7 @@ namespace System.Net.Http
                 // here (if an exception has occurred or does occur while creating/returning the stream,
                 // we'll still dispose of it in the catch below as part of Dispose'ing the connection).
                 cancellationRegistration.Dispose();
+                if (NetEventSource.Log.IsEnabled()) Trace($"Killed CTR {cancellationRegistration.GetHashCode()}");
                 CancellationHelper.ThrowIfCancellationRequested(cancellationToken); // in case cancellation may have disposed of the stream
 
                 // Create the response stream.
@@ -844,6 +845,7 @@ namespace System.Net.Http
             {
                 // Clean up the cancellation registration in case we're still registered.
                 cancellationRegistration.Dispose();
+                if (NetEventSource.Log.IsEnabled()) Trace($"Killed CTR {cancellationRegistration.GetHashCode()}");
 
                 // Make sure to complete the allowExpect100ToContinue task if it exists.
                 if (allowExpect100ToContinue is not null && !allowExpect100ToContinue.TrySetResult(false))
@@ -859,7 +861,7 @@ namespace System.Net.Http
                     LogExceptions(_readAheadTask.AsTask());
                 }
 
-                if (NetEventSource.Log.IsEnabled()) Trace($"Error sending request. _canceled:{_canceled}, error: {error}, inner: {error.InnerException}");
+                if (NetEventSource.Log.IsEnabled()) Trace($"Error sending request. _canceled:{_canceled}, cancellationToken.IsCancellationRequested:{cancellationToken.IsCancellationRequested}, sendRequestContentTask?.IsCompletedSuccessfully:[{sendRequestContentTask?.IsCompletedSuccessfully}], error: {error}, inner: {error.InnerException}");
 
                 // In the rare case where Expect: 100-continue was used and then processing
                 // of the response headers encountered an error such that we weren't able to
@@ -950,22 +952,29 @@ namespace System.Net.Http
             return requestContentStream;
         }
 
-        private CancellationTokenRegistration RegisterCancellation(CancellationToken cancellationToken)
+        private CancellationTokenRegistration RegisterCancellation(CancellationToken cancellationToken, [CallerMemberName] string? caller = null)
         {
+            CtrTracker tracker = new CtrTracker { Connection = this };
             // Cancellation design:
             // - We register with the SendAsync CancellationToken for the duration of the SendAsync operation.
             // - We register with the Read/Write/CopyToAsync methods on the response stream for each such individual operation.
             // - The registration disposes of the connection, tearing it down and causing any pending operations to wake up.
             // - Because such a tear down can result in a variety of different exception types, we check for a cancellation
             //   request and prioritize that over other exceptions, wrapping the actual exception as an inner of an OCE.
-            return cancellationToken.Register(static s =>
+            CancellationTokenRegistration ctr = cancellationToken.Register(static s =>
             {
-                var connection = (HttpConnection)s!;
-                if (NetEventSource.Log.IsEnabled()) connection.Trace("Cancellation requested. Disposing of the connection.");
+                CtrTracker t = (CtrTracker)s!;
+                HttpConnection connection = t.Connection!;
+                if (NetEventSource.Log.IsEnabled()) connection.Trace($"Cancellation requested by {t.CtrId}. Disposing of the connection.");
                 connection._canceled = true;
                 connection.Dispose();
-            }, this);
+            }, tracker);
+            tracker.CtrId = ctr.GetHashCode();
+            if (NetEventSource.Log.IsEnabled()) Trace($"{caller} registered CTR {tracker.CtrId}");
+            return ctr;
         }
+
+        private sealed class CtrTracker { public HttpConnection? Connection; public int CtrId; }
 
         private async ValueTask SendRequestContentAsync(HttpRequestMessage request, HttpContentWriteStream stream, bool async, CancellationToken cancellationToken)
         {

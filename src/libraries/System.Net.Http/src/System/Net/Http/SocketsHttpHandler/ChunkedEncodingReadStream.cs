@@ -238,6 +238,7 @@ namespace System.Net.Http
                 finally
                 {
                     ctr.Dispose();
+                    if (NetEventSource.Log.IsEnabled()) _connection.Trace($"Killed CTR {ctr.GetHashCode()}");
                 }
             }
 
@@ -283,6 +284,7 @@ namespace System.Net.Http
                 finally
                 {
                     ctr.Dispose();
+                    if (NetEventSource.Log.IsEnabled()) _connection.Trace($"Killed CTR {ctr.GetHashCode()}");
                 }
             }
 
@@ -406,6 +408,7 @@ namespace System.Net.Http
                                 // we then return a connection to the pool that has been or will be disposed
                                 // (e.g. if a timer is used and has already queued its callback but the
                                 // callback hasn't yet run).
+                                if (NetEventSource.Log.IsEnabled()) _connection.Trace($"Killed CTR {cancellationRegistration.GetHashCode()}");
                                 cancellationRegistration.Dispose();
                                 CancellationHelper.ThrowIfCancellationRequested(cancellationRegistration.Token);
 
