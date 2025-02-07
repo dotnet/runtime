@@ -11,8 +11,16 @@ if(CLR_CMAKE_TARGET_WIN32)
   set(JITINTERFACE_RESOURCES Native.rc)
 endif()
 
+if(CLR_CMAKE_TARGET_BROWSER)
+  set(LIBRARY_TYPE STATIC)
+else()
+  set(LIBRARY_TYPE SHARED)
+endif()
+
+message("library type: ${LIBRARY_TYPE}")
+
 add_library_clr(jitinterface_${ARCH_HOST_NAME}
-    SHARED
+    ${LIBRARY_TYPE}
     ${NATIVE_SOURCES}
     ${JITINTERFACE_RESOURCES}
 )
