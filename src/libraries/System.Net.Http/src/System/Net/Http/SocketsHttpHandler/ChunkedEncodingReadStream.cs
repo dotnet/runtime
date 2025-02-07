@@ -164,8 +164,8 @@ namespace System.Net.Http
                 // Should only be called if ReadChunksFromConnectionBuffer returned 0.
 
                 Debug.Assert(_connection != null);
-
-                CancellationTokenRegistration ctr = _connection.RegisterCancellation(cancellationToken);
+                HttpConnection connection = _connection;
+                CancellationTokenRegistration ctr = connection.RegisterCancellation(cancellationToken);
                 try
                 {
                     while (true)
@@ -238,7 +238,7 @@ namespace System.Net.Http
                 finally
                 {
                     ctr.Dispose();
-                    if (NetEventSource.Log.IsEnabled()) _connection.Trace($"Killed CTR {ctr.GetHashCode()}");
+                    if (NetEventSource.Log.IsEnabled()) connection.Trace($"Killed CTR {ctr.GetHashCode()}");
                 }
             }
 
@@ -254,7 +254,8 @@ namespace System.Net.Http
 
             private async Task CopyToAsyncCore(Stream destination, CancellationToken cancellationToken)
             {
-                CancellationTokenRegistration ctr = _connection!.RegisterCancellation(cancellationToken);
+                HttpConnection connection = _connection!;
+                CancellationTokenRegistration ctr = connection.RegisterCancellation(cancellationToken);
                 try
                 {
                     while (true)
@@ -284,7 +285,7 @@ namespace System.Net.Http
                 finally
                 {
                     ctr.Dispose();
-                    if (NetEventSource.Log.IsEnabled()) _connection.Trace($"Killed CTR {ctr.GetHashCode()}");
+                    if (NetEventSource.Log.IsEnabled()) connection.Trace($"Killed CTR {ctr.GetHashCode()}");
                 }
             }
 
@@ -315,6 +316,8 @@ namespace System.Net.Http
             private ReadOnlyMemory<byte>? ReadChunkFromConnectionBuffer(int maxBytesToRead, CancellationTokenRegistration cancellationRegistration)
             {
                 Debug.Assert(_connection != null);
+
+                HttpConnection connection = _connection;
 
                 try
                 {
@@ -408,7 +411,7 @@ namespace System.Net.Http
                                 // we then return a connection to the pool that has been or will be disposed
                                 // (e.g. if a timer is used and has already queued its callback but the
                                 // callback hasn't yet run).
-                                if (NetEventSource.Log.IsEnabled()) _connection.Trace($"Killed CTR {cancellationRegistration.GetHashCode()}");
+                                if (NetEventSource.Log.IsEnabled()) connection.Trace($"Killed CTR {cancellationRegistration.GetHashCode()}");
                                 cancellationRegistration.Dispose();
                                 CancellationHelper.ThrowIfCancellationRequested(cancellationRegistration.Token);
 

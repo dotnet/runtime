@@ -79,6 +79,7 @@ namespace System.Net.Http
                 }
                 else
                 {
+                    HttpConnection connection = _connection;
                     CancellationTokenRegistration ctr = _connection.RegisterCancellation(cancellationToken);
                     try
                     {
@@ -91,7 +92,7 @@ namespace System.Net.Http
                     finally
                     {
                         ctr.Dispose();
-                        if (NetEventSource.Log.IsEnabled()) _connection.Trace($"Killed CTR {ctr.GetHashCode()}");
+                        if (NetEventSource.Log.IsEnabled()) connection.Trace($"Killed CTR {ctr.GetHashCode()}");
                     }
                 }
 
@@ -145,6 +146,7 @@ namespace System.Net.Http
             private async Task CompleteCopyToAsync(Task copyTask, CancellationToken cancellationToken)
             {
                 Debug.Assert(_connection != null);
+                HttpConnection connection = _connection;
                 CancellationTokenRegistration ctr = _connection.RegisterCancellation(cancellationToken);
                 try
                 {
@@ -157,7 +159,7 @@ namespace System.Net.Http
                 finally
                 {
                     ctr.Dispose();
-                    if (NetEventSource.Log.IsEnabled()) _connection.Trace($"Killed CTR {ctr.GetHashCode()}");
+                    if (NetEventSource.Log.IsEnabled()) connection.Trace($"Killed CTR {ctr.GetHashCode()}");
                 }
 
                 Finish();
