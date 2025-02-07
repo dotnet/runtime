@@ -7,6 +7,7 @@ using System.IO;
 using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 using Microsoft.DotNet.RemoteExecutor;
+using Microsoft.Win32.SafeHandles;
 using Xunit;
 
 namespace System.Threading.Tests
@@ -943,6 +944,30 @@ namespace System.Threading.Tests
             }
         }
 
+        [Fact]
+        [PlatformSpecific(TestPlatforms.Windows)]
+        public void CheckWhichWindowsVersionsDistinguishLocalAndGlobalNamespaces()
+        {
+            const int MAXIMUM_ALLOWED = 0x02000000;
+            const int SYNCHRONIZE = 0x00100000;
+            const int MUTEX_MODIFY_STATE = 0x00000001;
+            const int MutexAccessRights = MAXIMUM_ALLOWED | SYNCHRONIZE | MUTEX_MODIFY_STATE;
+
+            const int ERROR_ALREADY_EXISTS = 0xB7;
+
+            string name = Guid.NewGuid().ToString("N");
+
+            using SafeWaitHandle m = CreateMutexEx(lpMutexAttributes: 0, @"Local\" + name, flags: 0, MutexAccessRights);
+            int errorCode = Marshal.GetLastPInvokeError();
+            Assert.False(m.IsInvalid);
+            Assert.NotEqual(ERROR_ALREADY_EXISTS, errorCode);
+
+            using SafeWaitHandle m2 = CreateMutexEx(lpMutexAttributes: 0, @"Global\" + name, flags: 0, MutexAccessRights);
+            errorCode = Marshal.GetLastPInvokeError();
+            Assert.False(m2.IsInvalid);
+            Assert.NotEqual(ERROR_ALREADY_EXISTS, errorCode);
+        }
+
         public static TheoryData<string> GetValidNames()
         {
             var names  =  new TheoryData<string>() { Guid.NewGuid().ToString("N") };
@@ -952,6 +977,9 @@ namespace System.Threading.Tests
 
             return names;
         }
+
+        [DllImport("kernel32.dll", EntryPoint = "CreateMutexExW", SetLastError = true, CharSet = CharSet.Unicode)]
+        private static extern SafeWaitHandle CreateMutexEx(nint lpMutexAttributes, string? name, uint flags, uint desiredAccess);
 
         private static IEnumerable<string> GetNamePrefixes()
         {
