@@ -63,6 +63,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				t_IteratorWithCorrectDataflow.RequiresAll ();
 			}
 
+			[UnexpectedWarning ("IL2062", Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/runtime/issues/110553", CompilerGeneratedCode = true)]
 			public static IEnumerable<int> IteratorWithIntegerDataflow ()
 			{
 				int integerLocal = 0;

@@ -2805,7 +2805,7 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
     }
     else
     {
-        // Currently dstCount = 2 is only used for DivRem, which has special constriants and handled above
+        // Currently dstCount = 2 is only used for DivRem, which has special constraints and is handled above
         assert((dstCount == 0) ||
                ((dstCount == 2) && ((intrinsicId == NI_X86Base_DivRem) || (intrinsicId == NI_X86Base_X64_DivRem))));
     }
@@ -2828,14 +2828,13 @@ int LinearScan::BuildCast(GenTreeCast* cast)
 {
     GenTree* src = cast->gtGetOp1();
 
-    const var_types srcType  = genActualType(src->TypeGet());
+    const var_types srcType  = src->TypeGet();
     const var_types castType = cast->gtCastType;
 
-    if ((srcType == TYP_LONG) && (castType == TYP_DOUBLE) &&
-        !compiler->compOpportunisticallyDependsOn(InstructionSet_AVX512F))
+    if (cast->IsUnsigned() && varTypeIsLong(srcType) && varTypeIsFloating(castType) && !compiler->canUseEvexEncoding())
     {
-        // We need two extra temp regs for LONG->DOUBLE cast
-        // if we don't have AVX512F available.
+        // We need two extra temp regs for ULONG->DOUBLE/FLOAT cast
+        // if we don't have EVEX unsigned conversions available.
         buildInternalIntRegisterDefForNode(cast);
         buildInternalIntRegisterDefForNode(cast);
     }
@@ -3090,7 +3089,7 @@ void LinearScan::SetContainsAVXFlags(unsigned sizeOfSIMDVector /* = 0*/)
 
     if (sizeOfSIMDVector >= 32)
     {
-        assert((sizeOfSIMDVector == 32) || ((sizeOfSIMDVector == 64) && compiler->canUseEvexEncoding()));
+        assert((sizeOfSIMDVector == 32) || ((sizeOfSIMDVector == 64) && compiler->canUseEvexEncodingDebugOnly()));
         compiler->GetEmitter()->SetContains256bitOrMoreAVX(true);
     }
 }

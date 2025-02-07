@@ -3445,6 +3445,21 @@ void Compiler::impImportAndPushBox(CORINFO_RESOLVED_TOKEN* pResolvedToken)
         {
             GenTreeCall* const call = exprToBox->AsRetExpr()->gtInlineCandidate->AsCall();
 
+            // If the call was flagged for possible enumerator cloning, flag the allocation as well.
+            //
+            if (compIsForInlining() && hasImpEnumeratorGdvLocalMap())
+            {
+                NodeToUnsignedMap* const map           = getImpEnumeratorGdvLocalMap();
+                unsigned                 enumeratorLcl = BAD_VAR_NUM;
+                GenTreeCall* const       call          = impInlineInfo->iciCall;
+                if (map->Lookup(call, &enumeratorLcl))
+                {
+                    JITDUMP("Flagging [%06u] for enumerator cloning via V%02u\n", dspTreeID(op1), enumeratorLcl);
+                    map->Remove(call);
+                    map->Set(op1, enumeratorLcl);
+                }
+            }
+
             if (call->ShouldHaveRetBufArg())
             {
                 JITDUMP("Must insert newobj stmts for box before call [%06u]\n", dspTreeID(call));
@@ -6740,6 +6755,26 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     {
                         lvaUpdateClass(lclNum, op1, tiRetVal.GetClassHandleForObjRef());
                     }
+
+                    // If we see a local being assigned the result of a GDV-inlineable
+                    // IEnumerable<T>.GetEnumerator, keep track of both the local and the call.
+                    //
+                    if (op1->OperIs(GT_RET_EXPR))
+                    {
+                        JITDUMP(".... checking for GDV of IEnumerable<T>...\n");
+
+                        GenTreeCall* const   call = op1->AsRetExpr()->gtInlineCandidate;
+                        NamedIntrinsic const ni   = lookupNamedIntrinsic(call->gtCallMethHnd);
+
+                        if (ni == NI_System_Collections_Generic_IEnumerable_GetEnumerator)
+                        {
+                            JITDUMP("V%02u value is GDV of IEnumerable<T>.GetEnumerator\n", lclNum);
+                            lvaTable[lclNum].lvIsEnumerator = true;
+                            JITDUMP("Flagging [%06u] for enumerator cloning via V%02u\n", dspTreeID(call), lclNum);
+                            getImpEnumeratorGdvLocalMap()->Set(call, lclNum);
+                            Metrics.EnumeratorGDV++;
+                        }
+                    }
                 }
 
                 /* Filter out simple stores to itself */
@@ -7613,64 +7648,8 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                         fgRemoveRefPred(removedEdge);
                         block->SetKindAndTargetEdge(BBJ_ALWAYS, retainedEdge);
                         Metrics.ImporterBranchFold++;
-
-                        // If we removed an edge carrying profile, try to do a local repair.
-                        //
-                        if (block->hasProfileWeight())
-                        {
-                            bool           repairWasComplete = true;
-                            weight_t const weight            = removedEdge->getLikelyWeight();
-
-                            if (weight > 0)
-                            {
-                                // Target block weight will increase.
-                                //
-                                BasicBlock* const target = block->GetTarget();
-                                assert(target->hasProfileWeight());
-                                target->setBBProfileWeight(target->bbWeight + weight);
-
-                                // Alternate weight will decrease
-                                //
-                                BasicBlock* const alternate = removedEdge->getDestinationBlock();
-                                assert(alternate->hasProfileWeight());
-                                weight_t const alternateNewWeight = alternate->bbWeight - weight;
-
-                                // If profile weights are consistent, expect at worst a slight underflow.
-                                //
-                                if (fgPgoConsistent && (alternateNewWeight < 0))
-                                {
-                                    assert(fgProfileWeightsEqual(alternateNewWeight, 0));
-                                }
-                                alternate->setBBProfileWeight(max(0.0, alternateNewWeight));
-
-                                // This will affect profile transitively, so in general
-                                // the profile will become inconsistent.
-                                //
-                                repairWasComplete = false;
-
-                                // But we can check for the special case where the
-                                // block's postdominator is target's target (simple
-                                // if/then/else/join).
-                                //
-                                if (target->KindIs(BBJ_ALWAYS))
-                                {
-                                    repairWasComplete = alternate->KindIs(BBJ_ALWAYS) &&
-                                                        (alternate->GetTarget() == target->GetTarget());
-                                }
-                            }
-
-                            if (!repairWasComplete)
-                            {
-                                JITDUMP("Profile data could not be locally repaired. Data %s inconsistent.\n",
-                                        fgPgoConsistent ? "is now" : "was already");
-
-                                if (fgPgoConsistent)
-                                {
-                                    Metrics.ProfileInconsistentImporterBranchFold++;
-                                    fgPgoConsistent = false;
-                                }
-                            }
-                        }
+                        fgRepairProfileCondToUncond(block, retainedEdge, removedEdge,
+                                                    &Metrics.ProfileInconsistentImporterBranchFold);
                     }
 
                     if (!op1->OperIs(GT_CNS_INT))
@@ -8894,6 +8873,23 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                             op1->gtFlags |= GTF_ALLOCOBJ_EMPTY_STATIC;
                         }
 
+                        // If the method being imported is an inlinee, and the original call was flagged
+                        // for possible enumerator cloning, flag the allocation as well.
+                        //
+                        if (compIsForInlining() && hasImpEnumeratorGdvLocalMap())
+                        {
+                            NodeToUnsignedMap* const map           = getImpEnumeratorGdvLocalMap();
+                            unsigned                 enumeratorLcl = BAD_VAR_NUM;
+                            GenTreeCall* const       call          = impInlineInfo->iciCall;
+                            if (map->Lookup(call, &enumeratorLcl))
+                            {
+                                JITDUMP("Flagging [%06u] for enumerator cloning via V%02u\n", dspTreeID(op1),
+                                        enumeratorLcl);
+                                map->Remove(call);
+                                map->Set(op1, enumeratorLcl);
+                            }
+                        }
+
                         // Remember that this basic block contains 'new' of an object
                         block->SetFlags(BBF_HAS_NEWOBJ);
                         optMethodFlags |= OMF_HAS_NEWOBJ;
@@ -9604,6 +9600,21 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 {
                     indirFlags |= GTF_IND_TGT_HEAP;
                 }
+                else if ((lclTyp == TYP_STRUCT) && (fieldInfo.structType != NO_CLASS_HANDLE) &&
+                         eeIsByrefLike(fieldInfo.structType))
+                {
+                    // Field's type is a byref-like struct -> address is not on the heap.
+                    indirFlags |= GTF_IND_TGT_NOT_HEAP;
+                }
+                else
+                {
+                    // Field's owner is a byref-like struct -> address is not on the heap.
+                    CORINFO_CLASS_HANDLE fldOwner = info.compCompHnd->getFieldClass(resolvedToken.hField);
+                    if ((fldOwner != NO_CLASS_HANDLE) && eeIsByrefLike(fldOwner))
+                    {
+                        indirFlags |= GTF_IND_TGT_NOT_HEAP;
+                    }
+                }
 
                 assert(varTypeIsI(op1));
                 op1 = (lclTyp == TYP_STRUCT) ? gtNewStoreBlkNode(layout, op1, op2, indirFlags)->AsIndir()
@@ -9735,10 +9746,52 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
                 // Remember that this function contains 'new' of an SD array.
                 optMethodFlags |= OMF_HAS_NEWARRAY;
+                block->SetFlags(BBF_HAS_NEWARR);
 
-                /* Push the result of the call on the stack */
+                if (opts.OptimizationEnabled())
+                {
+                    // We assign the newly allocated object (by a GT_CALL to newarr node)
+                    // to a temp. Note that the pattern "temp = allocArr" is required
+                    // by ObjectAllocator phase to be able to determine newarr nodes
+                    // without exhaustive walk over all expressions.
+                    lclNum = lvaGrabTemp(true DEBUGARG("NewArr temp"));
 
-                impPushOnStack(op1, tiRetVal);
+                    impStoreToTemp(lclNum, op1, CHECK_SPILL_ALL);
+
+                    assert(lvaTable[lclNum].lvSingleDef == 0);
+                    lvaTable[lclNum].lvSingleDef = 1;
+                    JITDUMP("Marked V%02u as a single def local\n", lclNum);
+                    lvaSetClass(lclNum, resolvedToken.hClass, true /* is Exact */);
+
+                    /* Push the result of the call on the stack */
+
+                    impPushOnStack(gtNewLclvNode(lclNum, TYP_REF), tiRetVal);
+
+#ifdef DEBUG
+                    // Under SPMI, look up info we might ask for if we stack allocate this array
+                    //
+                    if (JitConfig.EnableExtraSuperPmiQueries())
+                    {
+                        void* pEmbedClsHnd;
+                        info.compCompHnd->embedClassHandle(resolvedToken.hClass, &pEmbedClsHnd);
+                        CORINFO_CLASS_HANDLE elemClsHnd = NO_CLASS_HANDLE;
+                        CorInfoType elemCorType = info.compCompHnd->getChildType(resolvedToken.hClass, &elemClsHnd);
+                        var_types   elemType    = JITtype2varType(elemCorType);
+                        if (elemType == TYP_STRUCT)
+                        {
+                            typGetObjLayout(elemClsHnd);
+                            info.compCompHnd->isValueClass(elemClsHnd);
+                        }
+                        void* pIndirection;
+                        info.compCompHnd->getHelperFtn(CORINFO_HELP_MEMZERO, &pIndirection);
+                    }
+#endif
+                }
+                else
+                {
+                    /* Push the result of the call on the stack */
+                    impPushOnStack(op1, tiRetVal);
+                }
 
                 callTyp = TYP_REF;
             }
@@ -10621,7 +10674,14 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 op1 = impPopStack().val; // Ptr
                 assertImp(varTypeIsStruct(op2));
 
-                op1 = gtNewStoreValueNode(layout, op1, op2, impPrefixFlagsToIndirFlags(prefixFlags));
+                GenTreeFlags indirFlags = impPrefixFlagsToIndirFlags(prefixFlags);
+                if (eeIsByrefLike(resolvedToken.hClass))
+                {
+                    indirFlags |= GTF_IND_TGT_NOT_HEAP;
+                }
+
+                op1 = gtNewStoreValueNode(layout, op1, op2, indirFlags);
+
                 op1 = impStoreStruct(op1, CHECK_SPILL_ALL);
                 goto SPILL_APPEND;
             }
@@ -10988,7 +11048,7 @@ bool Compiler::impReturnInstruction(int prefixFlags, OPCODE& opcode)
             // Make sure the type matches the original call.
 
             var_types returnType       = genActualType(op2->gtType);
-            var_types originalCallType = inlCandInfo->fncRetType;
+            var_types originalCallType = genActualType(JITtype2varType(inlCandInfo->methInfo.args.retType));
             if ((returnType != originalCallType) && (originalCallType == TYP_STRUCT))
             {
                 originalCallType = impNormStructType(inlCandInfo->methInfo.args.retTypeClass);
@@ -11068,13 +11128,21 @@ bool Compiler::impReturnInstruction(int prefixFlags, OPCODE& opcode)
                             impInlineInfo->retExprClassHnd        = returnClsHnd;
                             impInlineInfo->retExprClassHndIsExact = isExact;
                         }
-                        else if (impInlineInfo->retExprClassHnd != returnClsHnd)
+                        else
                         {
-                            // This return site type differs from earlier seen sites,
-                            // so reset the info and we'll fall back to using the method's
-                            // declared return type for the return spill temp.
-                            impInlineInfo->retExprClassHnd        = nullptr;
-                            impInlineInfo->retExprClassHndIsExact = false;
+                            if (impInlineInfo->retExprClassHnd != returnClsHnd)
+                            {
+                                // This return site type differs from earlier seen sites,
+                                // so reset the info and we'll fall back to using the method's
+                                // declared return type for the return spill temp.
+                                impInlineInfo->retExprClassHnd        = nullptr;
+                                impInlineInfo->retExprClassHndIsExact = false;
+                            }
+                            else
+                            {
+                                // Same return type, but we may need to update exactness.
+                                impInlineInfo->retExprClassHndIsExact &= isExact;
+                            }
                         }
                     }
 
@@ -12920,7 +12988,7 @@ void Compiler::impCanInlineIL(CORINFO_METHOD_HANDLE fncHandle,
 // Arguments:
 //   pInlineInfo - inline info for the inline candidate
 //   arg - the caller argument
-//   argNum - logical index of this argument
+//   argInfo - Structure to record information into
 //   inlineResult - result of ongoing inline evaluation
 //
 // Notes:
@@ -12932,12 +13000,10 @@ void Compiler::impCanInlineIL(CORINFO_METHOD_HANDLE fncHandle,
 
 void Compiler::impInlineRecordArgInfo(InlineInfo*   pInlineInfo,
                                       CallArg*      arg,
-                                      unsigned      argNum,
+                                      InlArgInfo*   argInfo,
                                       InlineResult* inlineResult)
 {
-    InlArgInfo* inlCurArgInfo = &pInlineInfo->inlArgInfo[argNum];
-
-    inlCurArgInfo->arg = arg;
+    argInfo->arg       = arg;
     GenTree* curArgVal = arg->GetNode();
 
     assert(!curArgVal->OperIs(GT_RET_EXPR));
@@ -12950,7 +13016,7 @@ void Compiler::impInlineRecordArgInfo(InlineInfo*   pInlineInfo,
 
         if (varTypeIsStruct(varDsc))
         {
-            inlCurArgInfo->argIsByRefToStructLocal = true;
+            argInfo->argIsByRefToStructLocal = true;
 #ifdef FEATURE_SIMD
             if (varTypeIsSIMD(varDsc))
             {
@@ -12965,22 +13031,21 @@ void Compiler::impInlineRecordArgInfo(InlineInfo*   pInlineInfo,
 
     if (curArgVal->gtFlags & GTF_ALL_EFFECT)
     {
-        inlCurArgInfo->argHasGlobRef = (curArgVal->gtFlags & GTF_GLOB_REF) != 0;
-        inlCurArgInfo->argHasSideEff = (curArgVal->gtFlags & (GTF_ALL_EFFECT & ~GTF_GLOB_REF)) != 0;
+        argInfo->argHasGlobRef = (curArgVal->gtFlags & GTF_GLOB_REF) != 0;
+        argInfo->argHasSideEff = (curArgVal->gtFlags & (GTF_ALL_EFFECT & ~GTF_GLOB_REF)) != 0;
     }
 
     if (curArgVal->gtOper == GT_LCL_VAR)
     {
-        inlCurArgInfo->argIsLclVar = true;
-
-        /* Remember the "original" argument number */
-        INDEBUG(curArgVal->AsLclVar()->gtLclILoffs = argNum;)
+        argInfo->argIsLclVar = true;
     }
+
+    argInfo->argIsThis = arg->GetWellKnownArg() == WellKnownArg::ThisPointer;
 
     if (impIsInvariant(curArgVal))
     {
-        inlCurArgInfo->argIsInvariant = true;
-        if (inlCurArgInfo->argIsThis && (curArgVal->gtOper == GT_CNS_INT) && (curArgVal->AsIntCon()->gtIconVal == 0))
+        argInfo->argIsInvariant = true;
+        if (argInfo->argIsThis && (curArgVal->gtOper == GT_CNS_INT) && (curArgVal->AsIntCon()->gtIconVal == 0))
         {
             // Abort inlining at this call site
             inlineResult->NoteFatal(InlineObservation::CALLSITE_ARG_HAS_NULL_THIS);
@@ -12989,13 +13054,13 @@ void Compiler::impInlineRecordArgInfo(InlineInfo*   pInlineInfo,
     }
     else if (gtIsTypeof(curArgVal))
     {
-        inlCurArgInfo->argIsInvariant = true;
-        inlCurArgInfo->argHasSideEff  = false;
+        argInfo->argIsInvariant = true;
+        argInfo->argHasSideEff  = false;
     }
 
-    bool isExact              = false;
-    bool isNonNull            = false;
-    inlCurArgInfo->argIsExact = (gtGetClassHandle(curArgVal, &isExact, &isNonNull) != NO_CLASS_HANDLE) && isExact;
+    bool isExact        = false;
+    bool isNonNull      = false;
+    argInfo->argIsExact = (gtGetClassHandle(curArgVal, &isExact, &isNonNull) != NO_CLASS_HANDLE) && isExact;
 
     // If the arg is a local that is address-taken, we can't safely
     // directly substitute it into the inlinee.
@@ -13006,51 +13071,51 @@ void Compiler::impInlineRecordArgInfo(InlineInfo*   pInlineInfo,
     // which is safe in this case.
     //
     // Instead mark the arg as having a caller local ref.
-    if (!inlCurArgInfo->argIsInvariant && gtHasLocalsWithAddrOp(curArgVal))
+    if (!argInfo->argIsInvariant && gtHasLocalsWithAddrOp(curArgVal))
     {
-        inlCurArgInfo->argHasCallerLocalRef = true;
+        argInfo->argHasCallerLocalRef = true;
     }
 
 #ifdef DEBUG
     if (verbose)
     {
-        if (inlCurArgInfo->argIsThis)
+        if (arg->GetWellKnownArg() != WellKnownArg::None)
         {
-            printf("thisArg:");
+            printf("%s:", getWellKnownArgName(arg->GetWellKnownArg()));
         }
         else
         {
-            printf("\nArgument #%u:", argNum);
+            printf("IL argument #%u:", pInlineInfo->iciCall->gtArgs.GetUserIndex(arg));
         }
-        if (inlCurArgInfo->argIsLclVar)
+        if (argInfo->argIsLclVar)
         {
             printf(" is a local var");
         }
-        if (inlCurArgInfo->argIsInvariant)
+        if (argInfo->argIsInvariant)
         {
             printf(" is a constant or invariant");
         }
-        if (inlCurArgInfo->argHasGlobRef)
+        if (argInfo->argHasGlobRef)
         {
             printf(" has global refs");
         }
-        if (inlCurArgInfo->argHasCallerLocalRef)
+        if (argInfo->argHasCallerLocalRef)
         {
             printf(" has caller local ref");
         }
-        if (inlCurArgInfo->argHasSideEff)
+        if (argInfo->argHasSideEff)
         {
             printf(" has side effects");
         }
-        if (inlCurArgInfo->argHasLdargaOp)
+        if (argInfo->argHasLdargaOp)
         {
             printf(" has ldarga effect");
         }
-        if (inlCurArgInfo->argHasStargOp)
+        if (argInfo->argHasStargOp)
         {
             printf(" has starg effect");
         }
-        if (inlCurArgInfo->argIsByRefToStructLocal)
+        if (argInfo->argIsByRefToStructLocal)
         {
             printf(" is byref to a struct local");
         }
@@ -13106,50 +13171,28 @@ void Compiler::impInlineInitVars(InlineInfo* pInlineInfo)
     unsigned ilArgCnt = 0;
     for (CallArg& arg : call->gtArgs.Args())
     {
+        InlArgInfo* argInfo;
         switch (arg.GetWellKnownArg())
         {
-            case WellKnownArg::ThisPointer:
-                inlArgInfo[ilArgCnt].argIsThis = true;
-                break;
             case WellKnownArg::RetBuffer:
                 // This does not appear in the table of inline arg info; do not include them
                 continue;
             case WellKnownArg::InstParam:
-            {
-                InlArgInfo* ctxInfo  = new (this, CMK_Inlining) InlArgInfo{};
-                ctxInfo->arg         = &arg;
-                ctxInfo->argTmpNum   = BAD_VAR_NUM;
-                ctxInfo->argIsLclVar = arg.GetNode()->OperIs(GT_LCL_VAR);
-                if (arg.GetNode()->IsCnsIntOrI())
-                {
-                    ctxInfo->argIsInvariant = true;
-                }
-                else
-                {
-                    // Conservative approach
-                    ctxInfo->argHasSideEff = true;
-                    ctxInfo->argHasGlobRef = true;
-                }
-                pInlineInfo->inlInstParamArgInfo = ctxInfo;
-                continue;
-            }
+                pInlineInfo->inlInstParamArgInfo = argInfo = new (this, CMK_Inlining) InlArgInfo{};
+                break;
             default:
+                argInfo = &inlArgInfo[ilArgCnt++];
                 break;
         }
 
         arg.SetEarlyNode(gtFoldExpr(arg.GetEarlyNode()));
-        impInlineRecordArgInfo(pInlineInfo, &arg, ilArgCnt, inlineResult);
+        impInlineRecordArgInfo(pInlineInfo, &arg, argInfo, inlineResult);
 
         if (inlineResult->IsFailure())
         {
             return;
         }
-
-        ilArgCnt++;
     }
-
-    /* Make sure we got the arg number right */
-    assert(ilArgCnt == methInfo->args.totalILArgs());
 
 #ifdef FEATURE_SIMD
     bool foundSIMDType = pInlineInfo->hasSIMDTypeArgLocalOrReturn;
@@ -13530,7 +13573,7 @@ unsigned Compiler::impInlineFetchLocal(unsigned lclNum DEBUGARG(const char* reas
 //
 //    This method will side effect inlArgInfo. It should only be called
 //    for actual uses of the argument in the inlinee.
-
+//
 GenTree* Compiler::impInlineFetchArg(InlArgInfo& argInfo, const InlLclVarInfo& lclInfo)
 {
     // Cache the relevant arg and lcl info for this argument.

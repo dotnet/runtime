@@ -19,9 +19,9 @@ namespace System.Globalization
             const int StackallocThreshold = 512;
             // Each unicode character is represented by up to 3 ASCII chars
             // and the whole string is prefixed by "xn--" (length 4)
-            int estimatedLength = (int)Math.Min(count * 3L + 4, StackallocThreshold);
+            int estimatedLength = (int)Math.Min(checked(count * 3L + 4), StackallocThreshold);
             int actualLength;
-            if (estimatedLength < StackallocThreshold)
+            if ((uint)estimatedLength < StackallocThreshold)
             {
                 char* outputStack = stackalloc char[estimatedLength];
                 actualLength = Interop.Globalization.ToAscii(flags, unicode, count, outputStack, estimatedLength);
@@ -61,7 +61,7 @@ namespace System.Globalization
             CheckInvalidIdnCharacters(ascii, count, flags, nameof(ascii));
 
             const int StackAllocThreshold = 512;
-            if (count < StackAllocThreshold)
+            if ((uint)count < StackAllocThreshold)
             {
                 char* output = stackalloc char[count];
                 return IcuGetUnicodeCore(asciiString, ascii, count, flags, output, count, reattempt: true);

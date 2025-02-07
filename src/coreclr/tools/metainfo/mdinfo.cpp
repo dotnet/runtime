@@ -2539,7 +2539,7 @@ void MDInfo::DisplayPinvokeInfo(mdToken inToken)
 /////////////////////////////////////////////////////////////////////////
 // void DisplaySignature(PCCOR_SIGNATURE pbSigBlob, ULONG ulSigBlob);
 //
-// Display COM+ signature -- taken from cordump.cpp's DumpSignature
+// Display signature -- taken from cordump.cpp's DumpSignature
 /////////////////////////////////////////////////////////////////////////
 void MDInfo::DisplaySignature(PCCOR_SIGNATURE pbSigBlob, ULONG ulSigBlob, const char *preFix)
 {

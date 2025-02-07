@@ -18,6 +18,10 @@ internal sealed class MethodDesc : IData<MethodDesc>
         Flags3AndTokenRemainder = target.Read<ushort>(address + (ulong)type.Fields[nameof(Flags3AndTokenRemainder)].Offset);
         EntryPointFlags = target.Read<byte>(address + (ulong)type.Fields[nameof(EntryPointFlags)].Offset);
         CodeData = target.ReadPointer(address + (ulong)type.Fields[nameof(CodeData)].Offset);
+        if (type.Fields.ContainsKey(nameof(GCCoverageInfo)))
+        {
+            GCCoverageInfo = target.ReadPointer(address + (ulong)type.Fields[nameof(GCCoverageInfo)].Offset);
+        }
     }
 
     public byte ChunkIndex { get; init; }
@@ -26,7 +30,9 @@ internal sealed class MethodDesc : IData<MethodDesc>
     public ushort Flags3AndTokenRemainder { get; init; }
     public byte EntryPointFlags { get; init; }
 
-    public TargetPointer CodeData { get; set; }
+    public TargetPointer CodeData { get; init; }
+
+    public TargetPointer? GCCoverageInfo { get; init; }
 }
 
 internal sealed class InstantiatedMethodDesc : IData<InstantiatedMethodDesc>

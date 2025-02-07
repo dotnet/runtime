@@ -175,6 +175,12 @@ PhaseStatus Compiler::fgRemoveEmptyFinally()
                     currentBlock->SetKind(BBJ_ALWAYS);
                     currentBlock->RemoveFlags(BBF_RETLESS_CALL); // no longer a BBJ_CALLFINALLY
 
+                    // Update profile data into postTryFinallyBlock
+                    if (currentBlock->hasProfileWeight())
+                    {
+                        postTryFinallyBlock->increaseBBProfileWeight(currentBlock->bbWeight);
+                    }
+
                     // Cleanup the postTryFinallyBlock
                     fgCleanupContinuation(postTryFinallyBlock);
 
@@ -297,18 +303,15 @@ void Compiler::fgUpdateACDsBeforeEHTableEntryRemoval(unsigned XTnum)
         //
         AddCodeDscKey oldKey(add);
 
-        const bool inHnd = add->acdHndIndex > 0;
-        const bool inTry = add->acdTryIndex > 0;
-        const bool inThisHnd =
-            inHnd && ((unsigned)(add->acdHndIndex - 1) == XTnum) && (add->acdKeyDsg == AcdKeyDesignator::KD_HND);
-        const bool inThisFlt =
-            inHnd && ((unsigned)(add->acdHndIndex - 1) == XTnum) && (add->acdKeyDsg == AcdKeyDesignator::KD_FLT);
-        const bool inThisTry =
-            inTry && ((unsigned)(add->acdTryIndex - 1) == XTnum) && (add->acdKeyDsg == AcdKeyDesignator::KD_TRY);
+        const bool inHnd     = add->acdHndIndex > 0;
+        const bool inTry     = add->acdTryIndex > 0;
+        const bool inThisHnd = inHnd && ((unsigned)(add->acdHndIndex - 1) == XTnum);
+        const bool inThisFlt = inHnd && ((unsigned)(add->acdHndIndex - 1) == XTnum);
+        const bool inThisTry = inTry && ((unsigned)(add->acdTryIndex - 1) == XTnum);
 
         // If this ACD is in the filter of this region, it is no longer needed
         //
-        if (inThisFlt)
+        if (inThisFlt && (add->acdKeyDsg == AcdKeyDesignator::KD_FLT))
         {
             bool const removed = map->Remove(oldKey);
             assert(removed);
@@ -326,6 +329,8 @@ void Compiler::fgUpdateACDsBeforeEHTableEntryRemoval(unsigned XTnum)
             continue;
         }
 
+        bool rekey = false;
+
         // If this ACD is in the handler of this region, update the
         // enclosing handler index.
         //
@@ -339,6 +344,8 @@ void Compiler::fgUpdateACDsBeforeEHTableEntryRemoval(unsigned XTnum)
             {
                 add->acdHndIndex = ebd->ebdEnclosingHndIndex + 1;
             }
+
+            rekey = (add->acdKeyDsg == AcdKeyDesignator::KD_HND);
         }
 
         // If this ACD is in the try of this region, update the
@@ -354,6 +361,17 @@ void Compiler::fgUpdateACDsBeforeEHTableEntryRemoval(unsigned XTnum)
             {
                 add->acdTryIndex = ebd->ebdEnclosingTryIndex + 1;
             }
+            rekey = (add->acdKeyDsg == AcdKeyDesignator::KD_TRY);
+        }
+
+        if (!rekey)
+        {
+            // If we didn't change the enclosing region for the ACD,
+            // the modifications above didn't change the key.
+            //
+            JITDUMP("ACD%u non-enclosing region updated; key remains the same\n", add->acdNum);
+            JITDUMPEXEC(add->Dump());
+            continue;
         }
 
         // Update the ACD key designator (note it may change).
@@ -388,7 +406,7 @@ void Compiler::fgUpdateACDsBeforeEHTableEntryRemoval(unsigned XTnum)
         {
             // If not, re-enter this ACD in the map with the updated key
             //
-            JITDUMP("ACD%u updated\n", add->acdNum);
+            JITDUMP("ACD%u updated with new key\n", add->acdNum);
             map->Set(newKey, add);
             JITDUMPEXEC(add->Dump());
         }
@@ -596,9 +614,14 @@ PhaseStatus Compiler::fgRemoveEmptyTry()
             {
                 assert(block->isBBCallFinallyPair());
 
+                // In some cases we may have unreachable callfinallys.
+                // If so, skip the optimization; a later pass can catch this
+                // once unreachable blocks have been pruned.
+                //
                 if (block != callFinally)
                 {
-                    JITDUMP("EH#%u found unexpected callfinally " FMT_BB "; skipping.\n", XTnum, block->bbNum);
+                    JITDUMP("EH#%u found unexpected (likely unreachable) callfinally " FMT_BB "; skipping.\n", XTnum,
+                            block->bbNum);
                     verifiedSingleCallfinally = false;
                     break;
                 }
@@ -609,7 +632,6 @@ PhaseStatus Compiler::fgRemoveEmptyTry()
         {
             JITDUMP("EH#%u -- unexpectedly -- has multiple callfinallys; skipping.\n", XTnum);
             XTnum++;
-            assert(verifiedSingleCallfinally);
             continue;
         }
 
@@ -656,12 +678,6 @@ PhaseStatus Compiler::fgRemoveEmptyTry()
         fgPrepareCallFinallyRetForRemoval(leave);
         fgRemoveBlock(leave, /* unreachable */ true);
 
-        // Remove profile weight into the continuation block
-        if (continuation->hasProfileWeight())
-        {
-            continuation->setBBProfileWeight(max(0.0, continuation->bbWeight - leave->bbWeight));
-        }
-
         // (3) Convert the callfinally to a normal jump to the handler
         assert(callFinally->HasInitializedTarget());
         callFinally->SetKind(BBJ_ALWAYS);
@@ -705,7 +721,7 @@ PhaseStatus Compiler::fgRemoveEmptyTry()
                     // Propagate profile weight into the continuation block
                     if (continuation->hasProfileWeight())
                     {
-                        continuation->setBBProfileWeight(continuation->bbWeight + block->bbWeight);
+                        continuation->increaseBBProfileWeight(block->bbWeight);
                     }
                 }
             }
@@ -766,29 +782,29 @@ PhaseStatus Compiler::fgRemoveEmptyTry()
 }
 
 //------------------------------------------------------------------------
-// fgRemoveEmptyTryCatch: Optimize try/catch where the try is empty,
-//    or cannot throw any exceptions
+// fgRemoveEmptyTryCatchOrTryFault: Optimize try/catch or try/fault where
+//    the try is empty, or cannot throw any exceptions
 //
 // Returns:
 //    PhaseStatus indicating what, if anything, was changed.
 //
-PhaseStatus Compiler::fgRemoveEmptyTryCatch()
+PhaseStatus Compiler::fgRemoveEmptyTryCatchOrTryFault()
 {
-    JITDUMP("\n*************** In fgRemoveEmptyTryCatch()\n");
+    JITDUMP("\n*************** In fgRemoveEmptyTryCatchOrTryFault()\n");
 
     // We need to do this transformation before funclets are created.
     assert(!fgFuncletsCreated);
 
-    bool enableRemoveEmptyTryCatch = true;
+    bool enableRemoveEmptyTryCatchOrTryFault = true;
 
 #ifdef DEBUG
     // Allow override to enable/disable.
-    enableRemoveEmptyTryCatch = (JitConfig.JitEnableRemoveEmptyTryCatch() == 1);
+    enableRemoveEmptyTryCatchOrTryFault = (JitConfig.JitEnableRemoveEmptyTryCatchOrTryFault() == 1);
 #endif // DEBUG
 
-    if (!enableRemoveEmptyTryCatch)
+    if (!enableRemoveEmptyTryCatchOrTryFault)
     {
-        JITDUMP("Empty try/catch removal disabled.\n");
+        JITDUMP("Empty try/catch/fault removal disabled.\n");
         return PhaseStatus::MODIFIED_NOTHING;
     }
 
@@ -813,7 +829,7 @@ PhaseStatus Compiler::fgRemoveEmptyTryCatch()
 #ifdef DEBUG
     if (verbose)
     {
-        printf("\n*************** Before fgRemoveEmptyTryCatch()\n");
+        printf("\n*************** Before fgRemoveEmptyTryCatchOrTryFault()\n");
         fgDispBasicBlocks();
         fgDispHandlerTab();
         printf("\n");
@@ -828,9 +844,9 @@ PhaseStatus Compiler::fgRemoveEmptyTryCatch()
         EHblkDsc* const HBtab = &compHndBBtab[XTnum];
 
         // Check if this is a try/catch.
-        if (HBtab->HasFinallyOrFaultHandler())
+        if (HBtab->HasFinallyHandler())
         {
-            JITDUMP("EH#%u is not a try-catch; skipping.\n", XTnum);
+            JITDUMP("EH#%u is not a try-catch or try-fault; skipping.\n", XTnum);
             XTnum++;
             continue;
         }
@@ -1025,9 +1041,13 @@ PhaseStatus Compiler::fgRemoveEmptyTryCatch()
         //
         fgRemoveEHTableEntry(XTnum);
 
-        // (6) The old try entry no longer needs special protection.
+        // (6) The old try entry may no longer need special protection.
+        // (it may still be an entry of an enclosing try)
         //
-        firstTryBlock->RemoveFlags(BBF_DONT_REMOVE);
+        if (!bbIsTryBeg(firstTryBlock))
+        {
+            firstTryBlock->RemoveFlags(BBF_DONT_REMOVE);
+        }
 
         // Another one bites the dust...
         emptyCount++;
@@ -1035,7 +1055,7 @@ PhaseStatus Compiler::fgRemoveEmptyTryCatch()
 
     if (emptyCount > 0)
     {
-        JITDUMP("fgRemoveEmptyTryCatch() optimized %u empty-try catch clauses\n", emptyCount);
+        JITDUMP("fgRemoveEmptyTryCatchOrTryFault() optimized %u empty-try catch/fault clauses\n", emptyCount);
         fgInvalidateDfsTree();
         return PhaseStatus::MODIFIED_EVERYTHING;
     }
@@ -1182,7 +1202,6 @@ PhaseStatus Compiler::fgCloneFinally()
         unsigned    regionBBCount   = 0;
         unsigned    regionStmtCount = 0;
         bool        hasFinallyRet   = false;
-        bool        isAllRare       = true;
         bool        hasSwitch       = false;
 
         for (BasicBlock* const block : Blocks(firstBlock, lastBlock))
@@ -1203,7 +1222,6 @@ PhaseStatus Compiler::fgCloneFinally()
             }
 
             hasFinallyRet = hasFinallyRet || block->KindIs(BBJ_EHFINALLYRET);
-            isAllRare     = isAllRare && block->isRunRarely();
         }
 
         // Skip cloning if the finally has a switch.
@@ -1217,13 +1235,6 @@ PhaseStatus Compiler::fgCloneFinally()
         if (!hasFinallyRet)
         {
             JITDUMP("Finally in EH#%u does not return; skipping.\n", XTnum);
-            continue;
-        }
-
-        // Skip cloning if the finally is rarely run code.
-        if (isAllRare)
-        {
-            JITDUMP("Finally in EH#%u is run rarely; skipping.\n", XTnum);
             continue;
         }
 
@@ -1660,6 +1671,16 @@ PhaseStatus Compiler::fgCloneFinally()
                     clonedBlock->setBBProfileWeight(blockWeight * clonedScale);
                     JITDUMP("Set weight of " FMT_BB " to " FMT_WT "\n", clonedBlock->bbNum, clonedBlock->bbWeight);
                 }
+            }
+        }
+
+        // Update flow into normalCallFinallyReturn
+        if (normalCallFinallyReturn->hasProfileWeight())
+        {
+            normalCallFinallyReturn->bbWeight = BB_ZERO_WEIGHT;
+            for (FlowEdge* const predEdge : normalCallFinallyReturn->PredEdges())
+            {
+                normalCallFinallyReturn->increaseBBProfileWeight(predEdge->getLikelyWeight());
             }
         }
 
@@ -2201,16 +2222,12 @@ bool Compiler::fgRetargetBranchesToCanonicalCallFinally(BasicBlock*      block,
         //
         if (callFinally->hasProfileWeight())
         {
-            weight_t const newCallFinallyWeight =
-                callFinally->bbWeight > block->bbWeight ? callFinally->bbWeight - block->bbWeight : BB_ZERO_WEIGHT;
-            callFinally->setBBProfileWeight(newCallFinallyWeight);
+            callFinally->decreaseBBProfileWeight(block->bbWeight);
         }
 
         if (leaveBlock->hasProfileWeight())
         {
-            weight_t const newLeaveWeight =
-                leaveBlock->bbWeight > block->bbWeight ? leaveBlock->bbWeight - block->bbWeight : BB_ZERO_WEIGHT;
-            leaveBlock->setBBProfileWeight(newLeaveWeight);
+            leaveBlock->decreaseBBProfileWeight(block->bbWeight);
         }
     }
 
@@ -2326,7 +2343,6 @@ PhaseStatus Compiler::fgTailMergeThrows()
     // The second pass modifies flow so that predecessors of
     // non-canonical throw blocks now transfer control to the
     // appropriate canonical block.
-    unsigned numCandidates = 0;
 
     // First pass
     //
@@ -2390,7 +2406,6 @@ PhaseStatus Compiler::fgTailMergeThrows()
             // Yes, this one can be optimized away...
             JITDUMP("    in " FMT_BB " can be dup'd to canonical " FMT_BB "\n", block->bbNum, canonicalBlock->bbNum);
             blockMap.Set(block, canonicalBlock);
-            numCandidates++;
         }
         else
         {
@@ -2400,9 +2415,8 @@ PhaseStatus Compiler::fgTailMergeThrows()
         }
     }
 
-    assert(numCandidates <= optNoReturnCallCount);
-
     // Bail if no candidates were found
+    const unsigned numCandidates = blockMap.GetCount();
     if (numCandidates == 0)
     {
         JITDUMP("\n*************** no throws can be tail merged, sorry\n");
@@ -2410,66 +2424,768 @@ PhaseStatus Compiler::fgTailMergeThrows()
     }
 
     JITDUMP("\n*** found %d merge candidates, rewriting flow\n\n", numCandidates);
+    bool modifiedProfile = false;
 
     // Second pass.
     //
     // We walk the map rather than the block list, to save a bit of time.
-    unsigned updateCount = 0;
-
     for (BlockToBlockMap::Node* const iter : BlockToBlockMap::KeyValueIteration(&blockMap))
     {
         BasicBlock* const nonCanonicalBlock = iter->GetKey();
         BasicBlock* const canonicalBlock    = iter->GetValue();
-        FlowEdge*         nextPredEdge      = nullptr;
-        bool              updated           = false;
+        weight_t          removedWeight     = BB_ZERO_WEIGHT;
 
         // Walk pred list of the non canonical block, updating flow to target
         // the canonical block instead.
-        for (BasicBlock* const predBlock : nonCanonicalBlock->PredBlocksEditing())
+        for (FlowEdge* const predEdge : nonCanonicalBlock->PredEdgesEditing())
         {
-            switch (predBlock->GetKind())
-            {
-                case BBJ_ALWAYS:
-                case BBJ_COND:
-                case BBJ_SWITCH:
-                {
-                    JITDUMP("*** " FMT_BB " now branching to " FMT_BB "\n", predBlock->bbNum, canonicalBlock->bbNum);
-                    fgReplaceJumpTarget(predBlock, nonCanonicalBlock, canonicalBlock);
-                    updated = true;
-                }
-                break;
+            removedWeight += predEdge->getLikelyWeight();
+            BasicBlock* const predBlock = predEdge->getSourceBlock();
+            JITDUMP("*** " FMT_BB " now branching to " FMT_BB "\n", predBlock->bbNum, canonicalBlock->bbNum);
+            fgReplaceJumpTarget(predBlock, nonCanonicalBlock, canonicalBlock);
+        }
 
-                default:
-                    // We don't expect other kinds of preds, and it is safe to ignore them
-                    // as flow is still correct, just not as optimized as it could be.
-                    break;
+        if (canonicalBlock->hasProfileWeight())
+        {
+            canonicalBlock->increaseBBProfileWeight(removedWeight);
+            modifiedProfile = true;
+
+            // Don't bother updating flow into nonCanonicalBlock, since it is now unreachable
+        }
+    }
+
+    // In practice, when we have true profile data, we can repair it locally above, since the no-return
+    // calls mean that there is no contribution from the throw blocks to any of their successors.
+    // However, these blocks won't be morphed into BBJ_THROW blocks until later,
+    // so mark profile data as inconsistent for now.
+    if (modifiedProfile)
+    {
+        JITDUMP(
+            "fgTailMergeThrows: Modified flow into no-return blocks that still have successors. Data %s inconsistent.\n",
+            fgPgoConsistent ? "is now" : "was already");
+        fgPgoConsistent = false;
+    }
+
+    // Update the count of noreturn call sites
+    //
+    JITDUMP("Made %u updates\n", numCandidates);
+    assert(numCandidates < optNoReturnCallCount);
+    optNoReturnCallCount -= numCandidates;
+
+    return PhaseStatus::MODIFIED_EVERYTHING;
+}
+
+//------------------------------------------------------------------------
+// fgCloneTryRegion: clone a try region
+//
+// Arguments:
+//    tryEntry     -- try entry block
+//    info         -- [in, out] information about the cloning
+//    insertAfter  -- [in, out] pointer to block to insert new blocks after
+//
+// Returns:
+//    If insertAfter == nullptr, check if cloning is possible
+//      return nullptr if not, tryEntry if so
+//    else
+//      Return the cloned try entry, or nullptr if cloning failed
+//         cloned blocks will be created and scaled by profile weight
+//         and if info.AddEdges is true have proper bbkinds and flow edges
+//      info data will be updated:
+//         Map will be modified to contain keys and for the blocks cloned
+//         Visited will include bits for each newly cloned block
+//         m_ehRegionShift will describe number of EH regions added
+//      insertAfter will point at the lexcially last block cloned
+//
+// Notes:
+//   * if insertAfter is non null, map must also be non null
+//
+//   * If info.Map is not nullptr, it is not modified unless cloning succeeds
+//     When cloning succeeds, entries for the try blocks and related blocks
+//     (handler, filter, callfinally) will be updated; other map entries will
+//     be left as they were
+//
+//   * the insertion point must be lexically after the original try region
+//     and be a block in the enclosing region for the original try.
+//
+//   * If cloning and adding edges,
+//     The new try region entry will not be reachable by any uncloned block.
+//     The new try region exits will target the same uncloned blocks as the original,
+//       or as directed by pre-existing map entries.
+//
+BasicBlock* Compiler::fgCloneTryRegion(BasicBlock* tryEntry, CloneTryInfo& info, BasicBlock** insertAfter)
+{
+    assert(bbIsTryBeg(tryEntry));
+    bool const deferCloning = (insertAfter == nullptr);
+    assert(deferCloning || ((*insertAfter != nullptr) && (info.Map != nullptr)));
+    INDEBUG(const char* msg = deferCloning ? "Checking if it is possible to clone" : "Cloning";)
+    JITDUMP("%s the try region EH#%02u headed by " FMT_BB "\n", msg, tryEntry->getTryIndex(), tryEntry->bbNum);
+
+    // Determine the extent of cloning.
+    //
+    // We need to clone to the entire try region plus any
+    // enclosed regions and any enclosing mutual protect regions,
+    // plus all the the associated handlers and filters and any
+    // regions they enclose, plus any callfinallies that follow.
+    //
+    // This is necessary because try regions can't have multiple entries, or
+    // share parts in any meaningful way.
+    //
+    CompAllocator        alloc = getAllocator(CMK_TryRegionClone);
+    ArrayStack<unsigned> regionsToProcess(alloc);
+    unsigned const       tryIndex              = tryEntry->getTryIndex();
+    unsigned             numberOfBlocksToClone = 0;
+
+    // Track blocks to clone for caller, or if we are cloning and
+    // caller doesn't care.
+    //
+    jitstd::vector<BasicBlock*>* blocks = info.BlocksToClone;
+    if (!deferCloning && (blocks == nullptr))
+    {
+        blocks = new (alloc) jitstd::vector<BasicBlock*>(alloc);
+    }
+
+    unsigned               regionCount = 0;
+    BitVecTraits* const    traits      = &info.Traits;
+    BitVec&                visited     = info.Visited;
+    BlockToBlockMap* const map         = info.Map;
+
+    auto addBlockToClone = [=, &blocks, &visited, &numberOfBlocksToClone](BasicBlock* block, const char* msg) {
+        if (!BitVecOps::TryAddElemD(traits, visited, block->bbID))
+        {
+            JITDUMP("[already seen]  %s block " FMT_BB "\n", msg, block->bbNum);
+            return false;
+        }
+
+        JITDUMP("  %s block " FMT_BB "\n", msg, block->bbNum);
+
+        numberOfBlocksToClone++;
+
+        if (blocks != nullptr)
+        {
+            blocks->push_back(block);
+        }
+        return true;
+    };
+
+    JITDUMP("==> try EH#%02u\n", tryIndex);
+    regionsToProcess.Push(tryIndex);
+
+    // Walk through each try region
+    //
+    while (regionsToProcess.Height() > 0)
+    {
+        regionCount++;
+        unsigned const  regionIndex = regionsToProcess.Pop();
+        EHblkDsc* const ebd         = ehGetDsc(regionIndex);
+        JITDUMP("== processing try EH#%02u\n", regionIndex);
+
+        // Walk the try region
+        //
+        BasicBlock* const firstTryBlock = ebd->ebdTryBeg;
+        BasicBlock* const lastTryBlock  = ebd->ebdTryLast;
+
+        if (BitVecOps::IsMember(traits, visited, firstTryBlock->bbID))
+        {
+            JITDUMP("already walked try region for EH#%02u\n", regionIndex);
+            assert(BitVecOps::IsMember(traits, visited, lastTryBlock->bbID));
+        }
+        else
+        {
+            JITDUMP("walking try region for EH#%02u\n", regionIndex);
+            for (BasicBlock* const block : Blocks(firstTryBlock, lastTryBlock))
+            {
+                bool added = addBlockToClone(block, "try region");
+                if (bbIsTryBeg(block) && (block != ebd->ebdTryBeg))
+                {
+                    assert(added);
+                    JITDUMP("==> found try EH#%02u nested in try EH#%02u region at " FMT_BB "\n", block->getTryIndex(),
+                            regionIndex, block->bbNum);
+                    regionsToProcess.Push(block->getTryIndex());
+                }
             }
         }
 
-        if (updated)
+        // Walk the callfinally region
+        //
+        if (ebd->HasFinallyHandler())
         {
-            updateCount++;
+            BasicBlock* firstCallFinallyRangeBlock = nullptr;
+            BasicBlock* lastCallFinallyRangeBlock  = nullptr;
+            ehGetCallFinallyBlockRange(regionIndex, &firstCallFinallyRangeBlock, &lastCallFinallyRangeBlock);
+
+            // Note this range is potentially quite broad...
+            // Instead perhaps just walk preds of the handler?
+            //
+            JITDUMP("walking callfinally region for EH#%02u [" FMT_BB " ... " FMT_BB "]\n", regionIndex,
+                    firstCallFinallyRangeBlock->bbNum, lastCallFinallyRangeBlock->bbNum);
+
+            for (BasicBlock* const block : Blocks(firstCallFinallyRangeBlock, lastCallFinallyRangeBlock))
+            {
+                if (block->KindIs(BBJ_CALLFINALLY) && block->TargetIs(ebd->ebdHndBeg))
+                {
+                    addBlockToClone(block, "callfinally");
+                }
+                else if (block->KindIs(BBJ_CALLFINALLYRET) && block->Prev()->TargetIs(ebd->ebdHndBeg))
+                {
+                    addBlockToClone(block, "callfinallyret");
+
+#if defined(FEATURE_EH_WINDOWS_X86)
+
+                    // For non-funclet X86 we must also clone the next block after the callfinallyret.
+                    // (it will contain an END_LFIN). But if this block is also a CALLFINALLY we
+                    // bail out, since we can't clone it in isolation, but we need to clone it.
+                    // (a proper fix would be to split the block, perhaps).
+                    //
+                    if (!UsesFunclets())
+                    {
+                        BasicBlock* const lfin = block->GetTarget();
+
+                        if (lfin->KindIs(BBJ_CALLFINALLY))
+                        {
+                            JITDUMP("Can't clone, as an END_LFIN is contained in CALLFINALLY block " FMT_BB "\n",
+                                    lfin->bbNum);
+                            return nullptr;
+                        }
+                        addBlockToClone(lfin, "lfin-continuation");
+                    }
+#endif
+                }
+            }
+        }
+
+        // Walk the filter region
+        //
+        if (ebd->HasFilter())
+        {
+            BasicBlock* const firstFltBlock = ebd->ebdFilter;
+            BasicBlock* const lastFltBlock  = ebd->BBFilterLast();
+
+            if (BitVecOps::IsMember(traits, visited, firstFltBlock->bbID))
+            {
+                JITDUMP("already walked filter region for EH#%02u\n", regionIndex);
+                assert(BitVecOps::IsMember(traits, visited, lastFltBlock->bbID));
+            }
+            else
+            {
+                JITDUMP("walking filter region for EH#%02u\n", regionIndex);
+                for (BasicBlock* const block : Blocks(firstFltBlock, lastFltBlock))
+                {
+                    // A filter cannot enclose another EH region
+                    //
+                    assert(!bbIsTryBeg(block));
+                    addBlockToClone(block, "filter region");
+                }
+            }
+        }
+
+        // Walk the handler region
+        //
+        BasicBlock* const firstHndBlock = ebd->ebdHndBeg;
+        BasicBlock* const lastHndBlock  = ebd->ebdHndLast;
+
+        if (BitVecOps::IsMember(traits, visited, firstHndBlock->bbID))
+        {
+            JITDUMP("already walked handler region for EH#%02u\n", regionIndex);
+            assert(BitVecOps::IsMember(traits, visited, lastHndBlock->bbID));
+        }
+        else
+        {
+            JITDUMP("walking handler region for EH#%02u\n", regionIndex);
+            for (BasicBlock* const block : Blocks(firstHndBlock, lastHndBlock))
+            {
+                bool added = addBlockToClone(block, "handler region");
+                if (bbIsTryBeg(block))
+                {
+                    assert(added);
+                    JITDUMP("==> found try entry for EH#%02u nested in handler at " FMT_BB "\n", block->bbNum,
+                            block->getTryIndex());
+                    regionsToProcess.Push(block->getTryIndex());
+                }
+            }
+        }
+
+        // If there is an enclosing mutual-protect region, process it as well
+        //
+        unsigned const enclosingTryIndex = ebd->ebdEnclosingTryIndex;
+        if (enclosingTryIndex != EHblkDsc::NO_ENCLOSING_INDEX)
+        {
+            EHblkDsc* const enclosingTryEbd = ehGetDsc(enclosingTryIndex);
+
+            if (EHblkDsc::ebdIsSameTry(ebd, enclosingTryEbd))
+            {
+                JITDUMP("==> found mutual-protect try EH#%02u for EH#%02u\n", enclosingTryIndex, regionIndex);
+                regionsToProcess.Push(enclosingTryIndex);
+            }
+        }
+
+        JITDUMP("<== finished try EH#%02u\n", regionIndex);
+    }
+
+    // Find the outermost mutual-protect try region that begins at tryEntry
+    //
+    EHblkDsc* const tryEbd            = ehGetDsc(tryIndex);
+    unsigned        outermostTryIndex = tryIndex;
+    unsigned        enclosingTryIndex = EHblkDsc::NO_ENCLOSING_INDEX;
+    {
+        EHblkDsc* outermostEbd = ehGetDsc(outermostTryIndex);
+        while (true)
+        {
+            enclosingTryIndex = outermostEbd->ebdEnclosingTryIndex;
+            if (enclosingTryIndex == EHblkDsc::NO_ENCLOSING_INDEX)
+            {
+                break;
+            }
+            outermostEbd = ehGetDsc(enclosingTryIndex);
+            if (!EHblkDsc::ebdIsSameILTry(outermostEbd, tryEbd))
+            {
+                break;
+            }
+            outermostTryIndex = enclosingTryIndex;
         }
     }
 
-    if (updateCount == 0)
+    unsigned enclosingHndIndex = EHblkDsc::NO_ENCLOSING_INDEX;
+    if (tryEntry->hasHndIndex())
     {
-        return PhaseStatus::MODIFIED_NOTHING;
+        enclosingHndIndex = tryEntry->getHndIndex();
     }
 
-    // TODO: Update the count of noreturn call sites -- this feeds a heuristic in morph
-    // to determine if these noreturn calls should be tail called.
+    // Now blocks contains an entry for each block to clone.
     //
-    // Updating the count does not lead to better results, so deferring for now.
-    //
-    JITDUMP("Made %u updates\n", updateCount);
-    assert(updateCount < optNoReturnCallCount);
+    JITDUMP("Will need to clone %u EH regions (outermost: EH#%02u) and %u blocks\n", regionCount, outermostTryIndex,
+            numberOfBlocksToClone);
 
-    // If we altered flow, reset fgModified. Given where we sit in the
-    // phase list, flow-dependent side data hasn't been built yet, so
-    // nothing needs invalidation.
+    // Allocate the new EH clauses. First, find the enclosing EH clause, if any...
+    // we will want to allocate the new clauses just "before" this point.
     //
-    assert(fgModified);
-    fgModified = false;
-    return PhaseStatus::MODIFIED_EVERYTHING;
+    // If the region we're cloning is not enclosed, we put it at the end of the table;
+    // this is cheaper than any other insertion point, as no existing regions get renumbered.
+    //
+    unsigned insertBeforeIndex = enclosingTryIndex;
+    if ((enclosingTryIndex == EHblkDsc::NO_ENCLOSING_INDEX) && (enclosingHndIndex == EHblkDsc::NO_ENCLOSING_INDEX))
+    {
+        JITDUMP("No enclosing EH region; cloned EH clauses will go at the end of the EH table\n");
+        insertBeforeIndex = compHndBBtabCount;
+    }
+    else if ((enclosingTryIndex == EHblkDsc::NO_ENCLOSING_INDEX) || (enclosingHndIndex < enclosingTryIndex))
+    {
+        JITDUMP("Cloned EH clauses will go before enclosing handler region EH#%02u\n", enclosingHndIndex);
+        insertBeforeIndex = enclosingHndIndex;
+    }
+    else
+    {
+        JITDUMP("Cloned EH clauses will go before enclosing try region EH#%02u\n", enclosingTryIndex);
+        assert(insertBeforeIndex == enclosingTryIndex);
+    }
+
+    // Once we call fgTryAddEHTableEntries with deferCloning = false,
+    // all the EH indicies at or above insertBeforeIndex will shift,
+    // and the EH table may reallocate.
+    //
+    // This addition may also fail, if the table would become too large...
+    //
+    EHblkDsc* const clonedOutermostEbd =
+        fgTryAddEHTableEntries(insertBeforeIndex, regionCount, /* deferAdding */ deferCloning);
+
+    if (clonedOutermostEbd == nullptr)
+    {
+        JITDUMP("fgCloneTryRegion: unable to expand EH table\n");
+        return nullptr;
+    }
+
+    if (deferCloning)
+    {
+        JITDUMP("fgCloneTryRegion: cloning is possible\n");
+        return tryEntry;
+    }
+
+    // None of the EH regions we're cloning should have been renumbered,
+    // though their clauses may have been moved to a new table..
+    //
+    EHblkDsc* const oldTryEbd = ehGetDsc(outermostTryIndex);
+    assert(oldTryEbd->ebdTryBeg == tryEntry);
+
+    // Callers will see enclosing EH region indices shift by this much
+    //
+    info.EHIndexShift = regionCount;
+
+    // The EH table now looks like the following, for a middle insertion:
+    //
+    // ===================
+    // EH 0                     -- unrelated regions
+    // ...
+    // ---------------
+    // EH x                     -- innermost region to clone
+    // ...
+    // EH x + regionCount - 1   -- outermost region to clone
+    // ---------------
+    // ---------------
+    // EH x + regionCount       -- innermost cloned region
+    // ...
+    // EH x + 2*regionCount - 1 -- outermost cloned region
+    // ---------------
+    // ...
+    // EH k -- enclosing try / hnd regions (if any), or other regions
+    //
+    // ===================
+    //
+    // And like this, for an end insertion:
+    //
+    // ===================
+    // EH 0                     -- unrelated regions
+    // ...
+    // ---------------
+    // EH x                     -- innermost region to clone
+    // ...
+    // EH x + regionCount - 1   -- outermost region to clone
+    // ---------------
+    // ...
+    // EH k                     -- unrelated regions
+    // ...
+    // ---------------
+    // EH c                     -- innermost cloned region
+    // ...
+    // EH c + regionCount - 1   -- outermost cloned region
+    // ---------------
+    // ===================
+    //
+    // So the cloned clauses will have higher indices, and each cloned clause
+    // should be the same distance from its original, but that distance
+    // depends on the kind of insertion.
+    //
+    // Compute that distance as `indexShift`.
+    //
+    unsigned const clonedOutermostRegionIndex = ehGetIndex(clonedOutermostEbd);
+    assert(clonedOutermostRegionIndex > outermostTryIndex);
+    unsigned const indexShift = clonedOutermostRegionIndex - outermostTryIndex;
+
+    // Copy over the EH table entries and adjust their enclosing indicies.
+    // We will adjust the block references below.
+    //
+    unsigned const clonedLowestRegionIndex = clonedOutermostRegionIndex - regionCount + 1;
+    JITDUMP("New EH regions are EH#%02u ... EH#%02u\n", clonedLowestRegionIndex, clonedOutermostRegionIndex);
+    for (unsigned XTnum = clonedLowestRegionIndex; XTnum <= clonedOutermostRegionIndex; XTnum++)
+    {
+        unsigned originalXTnum = XTnum - indexShift;
+        compHndBBtab[XTnum]    = compHndBBtab[originalXTnum];
+        EHblkDsc* const ebd    = &compHndBBtab[XTnum];
+
+        // Note the outermost region enclosing indices stay the same, because the original
+        // clause entries got adjusted when we inserted the new clauses.
+        //
+        if (ebd->ebdEnclosingTryIndex != EHblkDsc::NO_ENCLOSING_INDEX)
+        {
+            if (XTnum < clonedOutermostRegionIndex)
+            {
+                ebd->ebdEnclosingTryIndex += (unsigned short)indexShift;
+            }
+            JITDUMP("EH#%02u now enclosed in try EH#%02u\n", XTnum, ebd->ebdEnclosingTryIndex);
+        }
+        else
+        {
+            JITDUMP("EH#%02u not enclosed in any try\n", XTnum);
+        }
+
+        if (ebd->ebdEnclosingHndIndex != EHblkDsc::NO_ENCLOSING_INDEX)
+        {
+            if (XTnum < clonedOutermostRegionIndex)
+            {
+                ebd->ebdEnclosingHndIndex += (unsigned short)indexShift;
+            }
+            JITDUMP("EH#%02u now enclosed in handler EH#%02u\n", XTnum, ebd->ebdEnclosingHndIndex);
+        }
+        else
+        {
+            JITDUMP("EH#%02u not enclosed in any handler\n", XTnum);
+        }
+    }
+
+    // Clone the blocks.
+    //
+    // All blocks are initially put into the enclosing EH region, and it is not
+    // extended to cover them all. The step below puts the blocks into the
+    // appropriate cloned region and fixes up region extents.
+    //
+    JITDUMP("Cloning blocks for try...\n");
+    for (BasicBlock* const block : *blocks)
+    {
+        BasicBlock* const newBlock = fgNewBBafter(BBJ_ALWAYS, *insertAfter, /* extendRegion */ false);
+        JITDUMP("Adding " FMT_BB " (copy of " FMT_BB ") after " FMT_BB "\n", newBlock->bbNum, block->bbNum,
+                (*insertAfter)->bbNum);
+        map->Set(block, newBlock, BlockToBlockMap::SetKind::Overwrite);
+        BasicBlock::CloneBlockState(this, newBlock, block);
+        newBlock->scaleBBWeight(info.ProfileScale);
+
+        if (info.ScaleOriginalBlockProfile)
+        {
+            weight_t originalScale = max(0.0, 1.0 - info.ProfileScale);
+            block->scaleBBWeight(originalScale);
+        }
+
+        *insertAfter = newBlock;
+    }
+    JITDUMP("Done cloning blocks for try...\n");
+
+    // Update the cloned block regions and impacted EH clauses
+    //
+    // Here we are assuming that the cloned try is always placed lexically *after* thge
+    // original, so that if the original try ended at the same point as an enclosing try,
+    // the new end point of the enclosing try is in the cloned try.
+    //
+    JITDUMP("Fixing region indices...\n");
+    for (BasicBlock* const block : *blocks)
+    {
+        BasicBlock* newBlock = nullptr;
+        bool        found    = map->Lookup(block, &newBlock);
+        assert(found);
+
+        // Update block references in the EH table
+        //
+        // `region` is the index of a cloned EH clause that may still refer to `block`.
+        // Update these block references and those of enclosing regions to refer to `newBlock`.
+        //
+        auto updateBlockReferences = [=](unsigned region) {
+            while (true)
+            {
+                EHblkDsc* const ebd = ehGetDsc(region);
+
+                if (ebd->ebdTryBeg == block)
+                {
+                    ebd->ebdTryBeg = newBlock;
+                    JITDUMP("Try begin for EH#%02u is " FMT_BB "\n", region, newBlock->bbNum);
+                }
+
+                if (ebd->ebdTryLast == block)
+                {
+                    fgSetTryEnd(ebd, newBlock);
+                }
+
+                if (ebd->ebdHndBeg == block)
+                {
+                    ebd->ebdHndBeg = newBlock;
+                    JITDUMP("Handler begin for EH#%02u is " FMT_BB "\n", region, newBlock->bbNum);
+                }
+
+                if (ebd->ebdHndLast == block)
+                {
+                    fgSetHndEnd(ebd, newBlock);
+                }
+
+                if (ebd->HasFilter() && (ebd->ebdFilter == block))
+                {
+                    ebd->ebdFilter = newBlock;
+                    JITDUMP("Filter begin for EH#%02u is " FMT_BB "\n", region, newBlock->bbNum);
+                }
+
+                bool inTry = false;
+                region     = ehGetEnclosingRegionIndex(region, &inTry);
+
+                if (region == EHblkDsc::NO_ENCLOSING_INDEX)
+                {
+                    break;
+                }
+            }
+        };
+
+        // Fix the EH regions for each cloned block, and the block
+        // references in the EH table entries.
+        //
+        // If the block's try index was outside of the original try region
+        // (say a handler for the try) then it is already properly adjusted.
+        //
+        if (block->hasTryIndex())
+        {
+            const unsigned originalTryIndex = block->getTryIndex();
+            unsigned       cloneTryIndex    = originalTryIndex;
+
+            if (originalTryIndex < enclosingTryIndex)
+            {
+                cloneTryIndex += indexShift;
+            }
+
+            newBlock->setTryIndex(cloneTryIndex);
+            updateBlockReferences(cloneTryIndex);
+        }
+
+        if (block->hasHndIndex())
+        {
+            const unsigned originalHndIndex = block->getHndIndex();
+            unsigned       cloneHndIndex    = originalHndIndex;
+
+            if (originalHndIndex < enclosingHndIndex)
+            {
+                cloneHndIndex += indexShift;
+            }
+
+            newBlock->setHndIndex(cloneHndIndex);
+            updateBlockReferences(cloneHndIndex);
+
+            // Handler and filter entries also have an
+            // additional artificial reference count.
+            //
+            if (bbIsHandlerBeg(newBlock))
+            {
+                newBlock->bbRefs++;
+            }
+        }
+    }
+    JITDUMP("Done fixing region indices\n");
+
+    // Redirect any branches within the newly-cloned blocks or
+    // from cloned blocks to non-cloned blocks
+    //
+    if (info.AddEdges)
+    {
+        JITDUMP("Adding edges in the newly cloned try\n");
+        for (BasicBlock* const block : BlockToBlockMap::KeyIteration(map))
+        {
+            BasicBlock* newBlock = (*map)[block];
+            // Jump kind/target should not be set yet
+            assert(newBlock->KindIs(BBJ_ALWAYS));
+            assert(!newBlock->HasInitializedTarget());
+            optSetMappedBlockTargets(block, newBlock, map);
+        }
+    }
+    else
+    {
+        JITDUMP("Not adding edges in the newly cloned try\n");
+    }
+
+    // If the original regions had any ACDs, create equivalent
+    // ones for the cloned regions
+    //
+    if (fgHasAddCodeDscMap())
+    {
+        AddCodeDscMap* const    map = fgGetAddCodeDscMap();
+        ArrayStack<AddCodeDsc*> cloned(getAllocator(CMK_TryRegionClone));
+
+        assert(clonedLowestRegionIndex >= indexShift);
+        assert(clonedOutermostRegionIndex >= indexShift);
+
+        unsigned const originalLowestRegionIndex    = clonedLowestRegionIndex - indexShift;
+        unsigned const originalOutermostRegionIndex = clonedOutermostRegionIndex - indexShift;
+
+        for (AddCodeDsc* const add : AddCodeDscMap::ValueIteration(map))
+        {
+            bool needsCloningForTry = false;
+            bool needsCloningForHnd = false;
+            bool inTry              = add->acdTryIndex > 0;
+            bool inHnd              = add->acdHndIndex > 0;
+
+            // acd region numbers are shifted up by one so
+            // that a value of zero means "not in an EH region"
+            //
+            if (inTry)
+            {
+                unsigned const trueAcdTryIndex = add->acdTryIndex - 1;
+
+                if ((trueAcdTryIndex >= originalLowestRegionIndex) && (trueAcdTryIndex <= originalOutermostRegionIndex))
+                {
+                    needsCloningForTry = true;
+                }
+            }
+
+            if (inHnd)
+            {
+                unsigned const trueAcdHndIndex = add->acdHndIndex - 1;
+
+                if ((trueAcdHndIndex >= originalLowestRegionIndex) && (trueAcdHndIndex <= originalOutermostRegionIndex))
+                {
+                    needsCloningForHnd = true;
+                }
+            }
+
+            if (!needsCloningForTry && !needsCloningForHnd)
+            {
+                continue;
+            }
+
+            JITDUMP("Will need to clone: ");
+            JITDUMPEXEC(add->Dump());
+
+            AddCodeDsc* clone = new (this, CMK_Unknown) AddCodeDsc;
+            clone->acdDstBlk  = nullptr;
+
+            if (needsCloningForTry)
+            {
+                clone->acdTryIndex = (unsigned short)(add->acdTryIndex + indexShift);
+            }
+            else if (inTry)
+            {
+                clone->acdTryIndex = add->acdTryIndex;
+            }
+            else
+            {
+                clone->acdTryIndex = 0;
+            }
+
+            if (needsCloningForHnd)
+            {
+                clone->acdHndIndex = (unsigned short)(add->acdHndIndex + indexShift);
+            }
+            else if (inHnd)
+            {
+                clone->acdHndIndex = add->acdHndIndex;
+            }
+            else
+            {
+                clone->acdHndIndex = 0;
+            }
+
+            clone->acdKeyDsg = add->acdKeyDsg;
+            clone->acdKind   = add->acdKind;
+            clone->acdUsed   = false;
+
+#if !FEATURE_FIXED_OUT_ARGS
+            clone->acdStkLvl     = 0;
+            clone->acdStkLvlInit = false;
+#endif // !FEATURE_FIXED_OUT_ARGS
+            INDEBUG(clone->acdNum = acdCount++);
+            cloned.Push(clone);
+        }
+
+        while (cloned.Height() > 0)
+        {
+            AddCodeDsc* const clone = cloned.Pop();
+            AddCodeDscKey     key(clone);
+            map->Set(key, clone);
+            JITDUMP("Added clone: ");
+            JITDUMPEXEC(clone->Dump());
+        }
+    }
+
+    BasicBlock* const clonedTryEntry = (*map)[tryEntry];
+    JITDUMP("Done cloning, cloned try entry is " FMT_BB "\n", clonedTryEntry->bbNum);
+    return clonedTryEntry;
+}
+
+//------------------------------------------------------------------------
+// fgCanCloneTryRegion: see if a try region can be cloned
+//
+// Arguments:
+//    tryEntry - try entry block
+//
+// Returns:
+//    true if try region is clonable
+//
+bool Compiler::fgCanCloneTryRegion(BasicBlock* tryEntry)
+{
+    assert(bbIsTryBeg(tryEntry));
+
+    BitVecTraits      traits(compBasicBlockID, this);
+    CloneTryInfo      info(traits);
+    BasicBlock* const result = fgCloneTryRegion(tryEntry, info);
+    return result != nullptr;
+}
+
+//------------------------------------------------------------------------
+// CloneTryInfo::CloneTryInfo: construct an object for cloning a try region
+//
+// Arguments:
+//    traits - bbID based traits to use for the Visited set
+//
+CloneTryInfo::CloneTryInfo(BitVecTraits& traits)
+    : Traits(traits)
+    , Visited(BitVecOps::MakeEmpty(&Traits))
+{
 }
