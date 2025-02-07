@@ -2,8 +2,44 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 #include "jitpch.h"
-#include "structsegments.h"
+#include "segmentlist.h"
 #include "promotion.h"
+
+//------------------------------------------------------------------------
+// BinarySearchEnd:
+//   Binary search the ends of segments stored.
+//
+// Parameters:
+//   vec    - The vector to binary search in
+//   offset - The offset to search for
+//
+// Returns:
+//    Index of the first entry with an equal 'End' offset, or bitwise complement of
+//    first entry with a higher 'End' offset.
+//
+size_t SegmentList::BinarySearchEnd(unsigned offset) const
+{
+    size_t min = 0;
+    size_t max = m_segments.size();
+    while (min < max)
+    {
+        size_t mid = min + (max - min) / 2;
+        if (m_segments[mid].End == offset)
+        {
+            return mid;
+        }
+        if (m_segments[mid].End < offset)
+        {
+            min = mid + 1;
+        }
+        else
+        {
+            max = mid;
+        }
+    }
+
+    return ~min;
+}
 
 //------------------------------------------------------------------------
 // IntersectsOrAdjacent:
@@ -15,7 +51,7 @@
 // Returns:
 //    True if so.
 //
-bool StructSegments::Segment::IntersectsOrAdjacent(const Segment& other) const
+bool SegmentList::Segment::IntersectsOrAdjacent(const Segment& other) const
 {
     if (End < other.Start)
     {
@@ -40,7 +76,7 @@ bool StructSegments::Segment::IntersectsOrAdjacent(const Segment& other) const
 // Returns:
 //    True if so.
 //
-bool StructSegments::Segment::Intersects(const Segment& other) const
+bool SegmentList::Segment::Intersects(const Segment& other) const
 {
     if (End <= other.Start)
     {
@@ -65,7 +101,7 @@ bool StructSegments::Segment::Intersects(const Segment& other) const
 // Returns:
 //    True if so.
 //
-bool StructSegments::Segment::Contains(const Segment& other) const
+bool SegmentList::Segment::Contains(const Segment& other) const
 {
     return (other.Start >= Start) && (other.End <= End);
 }
@@ -77,7 +113,7 @@ bool StructSegments::Segment::Contains(const Segment& other) const
 // Parameters:
 //   other - The other segment.
 //
-void StructSegments::Segment::Merge(const Segment& other)
+void SegmentList::Segment::Merge(const Segment& other)
 {
     Start = min(Start, other.Start);
     End   = max(End, other.End);
@@ -90,9 +126,9 @@ void StructSegments::Segment::Merge(const Segment& other)
 // Parameters:
 //   segment - The segment to add.
 //
-void StructSegments::Add(const Segment& segment)
+void SegmentList::Add(const Segment& segment)
 {
-    size_t index = Promotion::BinarySearch<Segment, &Segment::End>(m_segments, segment.Start);
+    size_t index = BinarySearchEnd(segment.Start);
 
     if ((ssize_t)index < 0)
     {
@@ -121,9 +157,9 @@ void StructSegments::Add(const Segment& segment)
 // Parameters:
 //   segment - The segment to subtract.
 //
-void StructSegments::Subtract(const Segment& segment)
+void SegmentList::Subtract(const Segment& segment)
 {
-    size_t index = Promotion::BinarySearch<Segment, &Segment::End>(m_segments, segment.Start);
+    size_t index = BinarySearchEnd(segment.Start);
     if ((ssize_t)index < 0)
     {
         index = ~index;
@@ -183,7 +219,7 @@ void StructSegments::Subtract(const Segment& segment)
         index++;
     }
 
-    size_t endIndex = Promotion::BinarySearch<Segment, &Segment::End>(m_segments, segment.End);
+    size_t endIndex = BinarySearchEnd(segment.End);
     if ((ssize_t)endIndex >= 0)
     {
         m_segments.erase(m_segments.begin() + index, m_segments.begin() + endIndex + 1);
@@ -212,7 +248,7 @@ void StructSegments::Subtract(const Segment& segment)
 // Returns:
 //   True if so.
 //
-bool StructSegments::IsEmpty() const
+bool SegmentList::IsEmpty() const
 {
     return m_segments.size() == 0;
 }
@@ -227,7 +263,7 @@ bool StructSegments::IsEmpty() const
 // Returns:
 //   True if this segment tree was non-empty; otherwise false.
 //
-bool StructSegments::CoveringSegment(Segment* result) const
+bool SegmentList::CoveringSegment(Segment* result) const
 {
     if (m_segments.size() == 0)
     {
@@ -250,9 +286,9 @@ bool StructSegments::CoveringSegment(Segment* result) const
 //   True if the input segment intersects with any segment in the tree;
 //   otherwise false.
 //
-bool StructSegments::Intersects(const Segment& segment) const
+bool SegmentList::Intersects(const Segment& segment) const
 {
-    size_t index = Promotion::BinarySearch<Segment, &Segment::End>(m_segments, segment.Start);
+    size_t index = BinarySearchEnd(segment.Start);
     if ((ssize_t)index < 0)
     {
         index = ~index;
@@ -284,7 +320,7 @@ bool StructSegments::Intersects(const Segment& segment) const
 // Dump:
 //   Dump a string representation of the segment tree to stdout.
 //
-void StructSegments::Dump()
+void SegmentList::Dump()
 {
     if (m_segments.size() == 0)
     {
