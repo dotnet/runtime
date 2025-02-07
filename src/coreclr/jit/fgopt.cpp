@@ -4675,9 +4675,9 @@ void Compiler::fgDoReversePostOrderLayout()
         assert(m_loops != nullptr);
     }
 
-    BasicBlock** const rpoSequence = new (this, CMK_BasicBlock) BasicBlock*[m_dfsTree->GetPostOrderCount()];
-    unsigned numBlocks             = 0;
-    auto     addToSequence         = [rpoSequence, &numBlocks](BasicBlock* block) {
+    BasicBlock** const rpoSequence   = new (this, CMK_BasicBlock) BasicBlock*[m_dfsTree->GetPostOrderCount()];
+    unsigned           numBlocks     = 0;
+    auto               addToSequence = [rpoSequence, &numBlocks](BasicBlock* block) {
         // Exclude handler regions from being reordered.
         //
         if (!block->hasHndIndex())
@@ -4692,7 +4692,7 @@ void Compiler::fgDoReversePostOrderLayout()
     //
     for (unsigned i = 1; i < numBlocks; i++)
     {
-        BasicBlock* block             = rpoSequence[i - 1];
+        BasicBlock*       block       = rpoSequence[i - 1];
         BasicBlock* const blockToMove = rpoSequence[i];
 
         if (block->NextIs(blockToMove))
@@ -5099,14 +5099,6 @@ void Compiler::ThreeOptLayout::ConsiderEdge(FlowEdge* edge)
         return;
     }
 
-    // Don't waste time reordering within handler regions.
-    // Note that if a finally region is sufficiently hot,
-    // we should have cloned it into the main method body already.
-    if (srcBlk->hasHndIndex() || dstBlk->hasHndIndex())
-    {
-        return;
-    }
-
     // For backward jumps, we will consider partitioning before 'srcBlk'.
     // If 'srcBlk' is a BBJ_CALLFINALLYRET, this partition will split up a call-finally pair.
     // Thus, don't consider edges out of BBJ_CALLFINALLYRET blocks.
@@ -5222,7 +5214,8 @@ void Compiler::ThreeOptLayout::Run()
     // Initialize the current block order
     for (BasicBlock* const block : compiler->Blocks(compiler->fgFirstBB, finalBlock))
     {
-        if (!compiler->m_dfsTree->Contains(block))
+        // Exclude unreachable blocks and handler blocks from being reordered
+        if (!compiler->m_dfsTree->Contains(block) || block->hasHndIndex())
         {
             continue;
         }
@@ -5255,14 +5248,14 @@ void Compiler::ThreeOptLayout::Run()
                 continue;
             }
 
-            // Only reorder within EH regions to maintain contiguity.
-            if (!BasicBlock::sameEHRegion(block, next))
+            // Only reorder within try regions to maintain contiguity.
+            if (!BasicBlock::sameTryRegion(block, next))
             {
                 continue;
             }
 
-            // Don't move the entry of an EH region.
-            if (compiler->bbIsTryBeg(next) || compiler->bbIsHandlerBeg(next))
+            // Don't move the entry of a try region.
+            if (compiler->bbIsTryBeg(next))
             {
                 continue;
             }
