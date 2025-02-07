@@ -5860,11 +5860,11 @@ void emitter::emitIns_R_R_I(instruction     ins,
         else
         {
             assert(isGeneralRegisterOrSP(reg1));
-            assert(isGeneralRegisterOrSP(reg2));
 
             // Is it just a mov?
             if (imm == 0)
             {
+                assert(isGeneralRegisterOrSP(reg2));
                 emitIns_Mov(INS_mov, attr, reg1, reg2, /* canSkip */ true);
                 return;
             }
@@ -5874,6 +5874,9 @@ void emitter::emitIns_R_R_I(instruction     ins,
             {
                 return;
             }
+
+            // reg2 can be alread encoded to zero
+            assert(isGeneralRegisterOrSP(reg2) || (reg2 == REG_ZR));
 
             reg1 = encodingSPtoZR(reg1);
             reg2 = encodingSPtoZR(reg2);
