@@ -61,7 +61,7 @@ docker run --rm \
   -w /runtime \
   -e ROOTFS_DIR=/crossrootfs/x64/ \
   mcr.microsoft.com/dotnet-buildtools/prereqs:azurelinux-3.0-net10.0-cross-amd64 \
-  ./build.sh --s clr --cross --c Checked
+  ./build.sh -s clr --cross -c Checked
 ```
 
 Now, dissecting the command:
@@ -71,7 +71,7 @@ Now, dissecting the command:
 - `-w /runtime`: Start the container in the `/runtime` directory.
 - `-e ROOTFS_DIR=/crossrootfs/x64/` sets up the environment variable for crossbuilding.
 - `mcr.microsoft.com/dotnet-buildtools/prereqs:azurelinux-3.0-net10.0-cross-amd64`: The fully qualified name of the Docker image to download. In this case, we want to use an *Azure Linux* image to target the *x64* architecture.
-- `./build.sh --s clr --cross --c Checked`: The build command to run in the repo. In this case, we want to build the *Clr* subset in the *Checked* configuration with the cross compilation option.
+- `./build.sh -s clr --cross -c Checked`: The build command to run in the repo. In this case, we want to build the *Clr* subset in the *Checked* configuration with the cross compilation option.
 
 You might also want to interact with the container directly for a myriad of reasons, like running multiple builds in different paths for example. In this case, instead of passing the build script command to the `docker` command-line, pass the flag `-it`. When you do this, you will get access to a small shell within the container, which allows you to explore it, run builds manually, and so on, like you would on a regular terminal in your machine. Note that the containers' shell's built-in tools are very limited in comparison to the ones you probably have on your machine, so don't expect to be able to do full work there.
 
