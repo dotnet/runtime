@@ -27,7 +27,11 @@
 
 uintptr_t get_wasm_stack_high(void);
 uintptr_t get_wasm_stack_low(void);
-
+#else
+void
+wasm_atomic_fence (void)
+{
+}
 #endif
 
 
