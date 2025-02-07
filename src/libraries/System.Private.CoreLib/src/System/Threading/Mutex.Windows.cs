@@ -19,6 +19,20 @@ namespace System.Threading
         private const int CurrentUserOnlyAceRights =
             Interop.Kernel32.STANDARD_RIGHTS_REQUIRED | Interop.Kernel32.SYNCHRONIZE | Interop.Kernel32.MUTEX_MODIFY_STATE;
 
+        private void CreateMutexCore(bool initiallyOwned)
+        {
+            uint flags = initiallyOwned ? Interop.Kernel32.CREATE_MUTEX_INITIAL_OWNER : 0;
+            SafeWaitHandle handle = Interop.Kernel32.CreateMutexEx(lpMutexAttributes: 0, name: null, flags, AccessRights);
+            if (handle.IsInvalid)
+            {
+                int errorCode = Marshal.GetLastPInvokeError();
+                handle.SetHandleAsInvalid();
+                throw Win32Marshal.GetExceptionForWin32Error(errorCode);
+            }
+
+            SafeWaitHandle = handle;
+        }
+
         private unsafe void CreateMutexCore(
             bool initiallyOwned,
             string? name,

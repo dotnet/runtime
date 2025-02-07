@@ -82,12 +82,12 @@ namespace System.Threading
 
         public Mutex(bool initiallyOwned)
         {
-            CreateMutexCore(initiallyOwned, name: null, options: default, createdNew: out _);
+            CreateMutexCore(initiallyOwned);
         }
 
         public Mutex()
         {
-            CreateMutexCore(initiallyOwned: false, name: null, options: default, createdNew: out _);
+            CreateMutexCore(initiallyOwned: false);
         }
 
         private Mutex(SafeWaitHandle handle)
