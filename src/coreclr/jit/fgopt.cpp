@@ -5246,13 +5246,6 @@ void Compiler::ThreeOptLayout::Run()
     assert(finalBlock != nullptr);
     assert(!finalBlock->isBBCallFinallyPair());
 
-    // For methods with fewer than three candidate blocks, we cannot partition anything
-    if (finalBlock->IsFirst() || finalBlock->Prev()->IsFirst())
-    {
-        JITDUMP("Not enough blocks to partition anything. Skipping 3-opt.\n");
-        return;
-    }
-
     // Get an upper bound on the number of hot blocks without walking the whole block list.
     // We will only consider blocks reachable via normal flow.
     const unsigned numBlocksUpperBound = compiler->m_dfsTree->GetPostOrderCount();
@@ -5269,13 +5262,20 @@ void Compiler::ThreeOptLayout::Run()
         }
 
         assert(numCandidateBlocks < numBlocksUpperBound);
-        blockOrder[numCandidateBlocks] = tempOrder[numCandidateBlocks] = block;
+        blockOrder[numCandidateBlocks] = block;
 
         // Repurpose 'bbPostorderNum' for the block's ordinal
         block->bbPostorderNum = numCandidateBlocks++;
     }
 
-    const bool modified = RunThreeOptPass();
+    // For methods with fewer than three candidate blocks, we cannot partition anything
+    if (numCandidateBlocks < 3)
+    {
+        JITDUMP("Not enough blocks to partition anything. Skipping reordering.\n");
+        return;
+    }
+
+    const bool modified = RunThreeOpt();
 
     if (modified)
     {
@@ -5343,7 +5343,8 @@ bool Compiler::ThreeOptLayout::RunGreedyThreeOptPass(unsigned startPos, unsigned
     // and before the destination block, and swap the partitions to create fallthrough.
     // If it is, do the swap, and for the blocks before/after each cut point that lost fallthrough,
     // consider adding their successors/predecessors to 'cutPoints'.
-    while (!cutPoints.Empty())
+    unsigned numSwaps = 0;
+    while (!cutPoints.Empty() && (numSwaps < maxSwaps))
     {
         FlowEdge* const candidateEdge = cutPoints.Pop();
         candidateEdge->markUnvisited();
@@ -5498,37 +5499,31 @@ bool Compiler::ThreeOptLayout::RunGreedyThreeOptPass(unsigned startPos, unsigned
         }
 
         modified = true;
+        numSwaps++;
     }
 
+    cutPoints.Clear();
     return modified;
 }
 
 //-----------------------------------------------------------------------------
-// Compiler::ThreeOptLayout::RunThreeOptPass: Runs 3-opt on the candidate span of blocks.
+// Compiler::ThreeOptLayout::RunThreeOpt: Runs 3-opt on the candidate span of blocks.
 //
 // Returns:
 //   True if we reordered anything, false otherwise
 //
-bool Compiler::ThreeOptLayout::RunThreeOptPass()
+bool Compiler::ThreeOptLayout::RunThreeOpt()
 {
-    const unsigned startPos  = 0;
-    const unsigned endPos    = numCandidateBlocks - 1;
-    const unsigned numBlocks = (endPos - startPos + 1);
-    assert(startPos <= endPos);
-
-    if (numBlocks < 3)
-    {
-        JITDUMP("Not enough blocks to partition anything. Skipping reordering.\n");
-        return false;
-    }
+    // We better have enough blocks to create partitions
+    assert(numCandidateBlocks > 2);
+    const unsigned startPos = 0;
+    const unsigned endPos   = numCandidateBlocks - 1;
 
     JITDUMP("Initial layout cost: %f\n", GetLayoutCost(startPos, endPos));
     const bool modified = RunGreedyThreeOptPass(startPos, endPos);
 
-    // Write back to 'tempOrder' so changes to this region aren't lost next time we swap 'tempOrder' and 'blockOrder'
     if (modified)
     {
-        memcpy(tempOrder + startPos, blockOrder + startPos, sizeof(BasicBlock*) * numBlocks);
         JITDUMP("Final layout cost: %f\n", GetLayoutCost(startPos, endPos));
     }
     else
