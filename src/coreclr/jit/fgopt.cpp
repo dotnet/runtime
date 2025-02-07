@@ -5257,7 +5257,8 @@ PhaseStatus Compiler::fgSearchImprovedLayout()
     // We don't want to waste time running 3-opt on cold blocks, or on handler sections.
     unsigned numHotBlocks  = 0;
     auto     addToSequence = [this, initialLayout, &numHotBlocks](BasicBlock* block) {
-        if (!block->isBBWeightCold(this) && !block->hasHndIndex())
+        // The first block really shouldn't be cold, but if it is, ensure it's still placed first.
+        if (!block->hasHndIndex() && (!block->isBBWeightCold(this) || block->IsFirst()))
         {
             initialLayout[numHotBlocks++] = block;
         }
