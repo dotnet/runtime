@@ -21203,19 +21203,23 @@ GenTree* Compiler::gtNewSimdBinOpNode(
             {
                 assert(compOpportunisticallyDependsOn(InstructionSet_AVX) ||
                        compOpportunisticallyDependsOn(InstructionSet_AVX512F));
-                GenTree* op2Clone   = nullptr;
-                op2                 = impCloneExpr(op2, &op2Clone, CHECK_SPILL_ALL,
-                                                   nullptr DEBUGARG("Clone op2 for vector integer division HWIntrinsic"));
-                // GenTree* zeroVecCon = gtNewZeroConNode(op1->TypeGet());
-                // GenTree* denominatorZeroCond =
-                //     gtNewSimdCmpOpAnyNode(GT_EQ, simdBaseType, op2Clone, zeroVecCon, simdBaseJitType, simdSize);
-                // GenTree*      cmpZeroCond = gtNewOperNode(GT_NE, TYP_INT, denominatorZeroCond, gtNewIconNode(0));
-                // GenTree*      fallback    = gtNewHelperCallNode(CORINFO_HELP_THROWDIVZERO, TYP_VOID);
-                // GenTreeColon* colon       = gtNewColonNode(TYP_VOID, fallback, gtNewNothingNode());
-                // GenTree*      qmark       = gtNewQmarkNode(TYP_VOID, cmpZeroCond, colon);
 
-                // Statement* checkZeroStmt = gtNewStmt(qmark);
-                // impAppendStmt(checkZeroStmt);
+                if (simdSize == 64)
+                {
+                    GenTree* op1Dup = fgMakeMultiUse(&op1);
+                    GenTree* op2Dup = fgMakeMultiUse(&op2);
+                    GenTree* op1Lower = gtNewSimdGetLowerNode(TYP_SIMD32, op1, simdBaseJitType, simdSize);
+                    GenTree* op1Upper = gtNewSimdGetUpperNode(TYP_SIMD32, op1Dup, simdBaseJitType, simdSize);
+                    GenTree* op2Lower = gtNewSimdGetLowerNode(TYP_SIMD32, op2, simdBaseJitType, simdSize);
+                    GenTree* op2Upper = gtNewSimdGetUpperNode(TYP_SIMD32, op2Dup, simdBaseJitType, simdSize);
+                    GenTree* divLower = gtNewSimdBinOpNode(op, TYP_SIMD32, op1Lower, op2Lower, simdBaseJitType, 32);
+                    GenTree* divUpper = gtNewSimdBinOpNode(op, TYP_SIMD32, op1Upper, op2Upper, simdBaseJitType, 32);
+                    return gtNewSimdWithUpperNode(type, divLower, divUpper, simdBaseJitType, simdSize);
+                }
+
+                assert(simdSize == 16 || simdSize == 32);
+
+                GenTree* op2Clone = fgMakeMultiUse(&op2);
 
                 NamedIntrinsic intToFloatConvertIntrinsic =
                     simdSize == 16 ? NI_AVX_ConvertToVector256Double : NI_AVX512F_ConvertToVector512Double;
@@ -21228,14 +21232,13 @@ GenTree* Compiler::gtNewSimdBinOpNode(
 
                 GenTree* op1Cvt = gtNewSimdHWIntrinsicNode(intToFloatConvertType, op1, intToFloatConvertIntrinsic,
                                                            simdBaseJitType, divideOpSimdSize);
-                GenTree* op2Cvt = gtNewSimdHWIntrinsicNode(intToFloatConvertType, op2, intToFloatConvertIntrinsic,
+                GenTree* op2Cvt = gtNewSimdHWIntrinsicNode(intToFloatConvertType, op2Clone, intToFloatConvertIntrinsic,
                                                            simdBaseJitType, divideOpSimdSize);
                 GenTree* divOp  = gtNewSimdBinOpNode(GT_DIV, intToFloatConvertType, op1Cvt, op2Cvt, CORINFO_TYPE_DOUBLE,
                                                      divideOpSimdSize);
                 GenTree* divOpCvt       = gtNewSimdHWIntrinsicNode(type, divOp, floatToIntConvertIntrinsic,
                                                                    floatToIntConvertType, divideOpSimdSize);
-                GenTree* hwIntrinsicChk = gtNewSIMDDivByZeroCheck(op2Clone, TYP_INT, simdBaseJitType, simdSize);
-                // new (this, GT_SIMD_DIV_BY_ZERO_CHECK) GenTreeSIMDDivByZeroChk(op2Clone, SCK_DIV_BY_ZERO);
+                GenTree* hwIntrinsicChk = gtNewSIMDDivByZeroCheck(op2, TYP_INT, simdBaseJitType, simdSize);
                 return gtNewOperNode(GT_COMMA, type, hwIntrinsicChk, divOpCvt);
             }
 #endif // TARGET_XARCH

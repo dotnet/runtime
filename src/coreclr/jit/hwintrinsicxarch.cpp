@@ -2406,7 +2406,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                 // Check to see if it is possible to emulate the integer division
                 if (!(simdBaseType == TYP_INT &&
                       ((simdSize == 16 && compOpportunisticallyDependsOn(InstructionSet_AVX)) ||
-                       (simdSize == 32 && compOpportunisticallyDependsOn(InstructionSet_AVX512F)))))
+                       ((simdSize == 32 || simdSize == 64) && compOpportunisticallyDependsOn(InstructionSet_AVX512F)))))
                 {
                     break;
                 }
