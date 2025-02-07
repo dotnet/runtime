@@ -69,7 +69,7 @@
     <DefaultSubsets Condition="'$(DotNetBuildMonoCrossAOT)' == 'true'">mono+packs</DefaultSubsets>
 
     <!-- In the Win-x86 BuildPass2 job in the VMR, we want to build the cross-OS DACs and pack them. -->
-    <DefaultSubsets Condition="'$(DotNetBuildPass)' == '2' and '$(TargetRid)' == 'win-x86'">crossdacpack</DefaultSubsets>
+    <DefaultSubsets Condition="'$(DotNetBuildPass)' == '2' and '$(TargetOS)' == 'windows' and '$(TargetArchitecture)' == 'x86'">crossdacpack</DefaultSubsets>
   </PropertyGroup>
 
   <PropertyGroup>
