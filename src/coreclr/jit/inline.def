@@ -106,6 +106,7 @@ INLINE_OBSERVATION(NUMBER_OF_ARGUMENTS,       int,    "number of arguments",    
 INLINE_OBSERVATION(NUMBER_OF_BASIC_BLOCKS,    int,    "number of basic blocks",               INFORMATION, CALLEE)
 INLINE_OBSERVATION(NUMBER_OF_LOCALS,          int,    "number of locals",                     INFORMATION, CALLEE)
 INLINE_OBSERVATION(RANDOM_ACCEPT,             bool,   "random accept",                        INFORMATION, CALLEE)
+INLINE_OBSERVATION(UNBOX_ARG,                 int,    "callee unboxes arg",                   INFORMATION, CALLEE)
 INLINE_OBSERVATION(UNSUPPORTED_OPCODE,        bool,   "unsupported opcode",                   INFORMATION, CALLEE)
 
 // ------ Caller Correctness -------
@@ -194,6 +195,7 @@ INLINE_OBSERVATION(LOG_REPLAY_ACCEPT,         bool,   "accepted by log replay", 
 INLINE_OBSERVATION(PROFILE_FREQUENCY,         double, "frequency from profile data",          INFORMATION, CALLSITE)
 INLINE_OBSERVATION(RANDOM_ACCEPT,             bool,   "random accept",                        INFORMATION, CALLSITE)
 INLINE_OBSERVATION(WEIGHT,                    int,    "frequency from block weight",          INFORMATION, CALLSITE)
+INLINE_OBSERVATION(UNBOX_EXACT_ARG,           int,    "unbox of arg with exact class",        INFORMATION, CALLSITE)
 
 // ------ Final Sentinel -------
 
