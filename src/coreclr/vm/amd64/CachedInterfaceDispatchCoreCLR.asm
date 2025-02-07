@@ -4,6 +4,8 @@
 include <AsmMacros.inc>
 include AsmConstants.inc
 
+ifdef FEATURE_CACHED_INTERFACE_DISPATCH
+
         extern  CID_ResolveWorker:proc
         extern  CID_VirtualOpenDelegateDispatchWorker:proc
 
@@ -68,5 +70,7 @@ NESTED_ENTRY CID_VirtualOpenDelegateDispatch, _TEXT
         TAILJMP_RAX
 
 NESTED_END CID_VirtualOpenDelegateDispatch, _TEXT
+
+endif ;; FEATURE_CACHED_INTERFACE_DISPATCH
 
         end

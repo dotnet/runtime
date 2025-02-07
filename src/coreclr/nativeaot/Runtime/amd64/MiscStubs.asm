@@ -3,9 +3,6 @@
 
 include AsmMacros.inc
 
-EXTERN RhpCidResolve : PROC
-EXTERN RhpUniversalTransition_DebugStepTailCall : PROC
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; The following helper will access ("probe") a word on each page of the stack
 ; starting with the page right beneath rsp down to the one pointed to by r11.

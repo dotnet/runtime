@@ -42,16 +42,17 @@ endif(CLR_CMAKE_TARGET_WIN32)
 
 # Enable cached interface dispatch so that we can test/debug it more easily on non-embedded scenarios (set DOTNET_UseCachedInterfaceDispatch=1)
 # Only enable in chk/debug builds as this support isn't intended for retail use elsewhere
-if (((CMAKE_BUILD_TYPE STREQUAL "Debug") OR (CMAKE_BUILD_TYPE STREQUAL "Checked")) AND (CLR_CMAKE_TARGET_ARCH_AMD64 OR CLR_CMAKE_TARGET_ARCH_ARM64))
-  if (CLR_CMAKE_HOST_UNIX AND CLR_CMAKE_HOST_ARCH_AMD64)
-    # Allow 16 byte compare-exchange (cmpxchg16b)
-    add_compile_options(-mcx16)
-  endif()
-  set(FEATURE_CORECLR_CACHED_INTERFACE_DISPATCH 1)
+if (CLR_CMAKE_TARGET_ARCH_AMD64 OR CLR_CMAKE_TARGET_ARCH_ARM64)
+  set(FEATURE_CORECLR_CACHED_INTERFACE_DISPATCH $<IF:$<CONFIG:Debug,Checked>,1,0>)
 endif()
 
 if (CLR_CMAKE_TARGET_MACCATALYST OR CLR_CMAKE_TARGET_IOS OR CLR_CMAKE_TARGET_TVOS)
   set(FEATURE_CORECLR_CACHED_INTERFACE_DISPATCH 1)
 else()
   set(FEATURE_CORECLR_VIRTUAL_STUB_DISPATCH 1)
+endif()
+
+if (CLR_CMAKE_HOST_UNIX AND CLR_CMAKE_HOST_ARCH_AMD64)
+  # Allow 16 byte compare-exchange (cmpxchg16b)
+  add_compile_options($<${FEATURE_CORECLR_CACHED_INTERFACE_DISPATCH}:-mcx16>)
 endif()

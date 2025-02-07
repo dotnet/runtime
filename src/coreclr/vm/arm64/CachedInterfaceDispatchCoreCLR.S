@@ -4,6 +4,8 @@
 #include "asmconstants.h"
 #include "unixasmmacros.inc"
 
+#ifdef FEATURE_CACHED_INTERFACE_DISPATCH
+
 //
 // Stub dispatch routine for dispatch to a vtable slot
 //
@@ -69,3 +71,5 @@
         EPILOG_WITH_TRANSITION_BLOCK_TAILCALL
         EPILOG_BRANCH_REG  x9
     NESTED_END CID_VirtualOpenDelegateDispatch, _TEXT
+
+#endif // FEATURE_CACHED_INTERFACE_DISPATCH

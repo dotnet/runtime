@@ -250,7 +250,7 @@ public:
     PCODE GetVTableCallStub(DWORD slot);
 #endif // FEATURE_VIRTUAL_STUB_DISPATCH
 
-    static DispatchToken GetTokenFromFromOwnerAndSlot(TypeHandle ownerType, uint32_t slot);
+    static DispatchToken GetTokenFromOwnerAndSlot(TypeHandle ownerType, uint32_t slot);
 
     // Generate an fresh indirection cell.
     BYTE* GenerateStubIndirection(PCODE stub, DispatchToken token, BOOL fUseRecycledCell = FALSE);

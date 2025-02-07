@@ -134,7 +134,7 @@ BYTE* GenerateDispatchStubCellEntrySlot(LoaderAllocator *pLoaderAllocator, TypeH
     // We indirect through a cell so that updates can take place atomically.
     // The call stub and the indirection cell have the same lifetime as the dictionary itself, i.e.
     // are allocated in the domain of the dicitonary.
-    DispatchToken token = VirtualCallStubManager::GetTokenFromFromOwnerAndSlot(ownerType, methodSlot);
+    DispatchToken token = VirtualCallStubManager::GetTokenFromOwnerAndSlot(ownerType, methodSlot);
 
     PCODE addr;
     INTERFACE_DISPATCH_CACHED_OR_VSD(addr = (PCODE)RhpInitialInterfaceDispatch, addr = pMgr->GetCallStub(token))
@@ -1087,7 +1087,7 @@ BOOL VirtualCallStubManager::TraceManager(Thread *thread,
 
 #ifndef DACCESS_COMPILE
 
-DispatchToken VirtualCallStubManager::GetTokenFromFromOwnerAndSlot(TypeHandle ownerType, uint32_t slot)
+DispatchToken VirtualCallStubManager::GetTokenFromOwnerAndSlot(TypeHandle ownerType, uint32_t slot)
 {
     CONTRACTL
     {
@@ -1122,7 +1122,7 @@ PCODE VirtualCallStubManager::GetCallStub(TypeHandle ownerType, MethodDesc *pMD)
         INJECT_FAULT(COMPlusThrowOM(););
     } CONTRACTL_END;
 
-    DispatchToken token = GetTokenFromFromOwnerAndSlot(ownerType, pMD->GetSlot());
+    DispatchToken token = GetTokenFromOwnerAndSlot(ownerType, pMD->GetSlot());
 
     return GetCallStub(token);
 }
@@ -1557,7 +1557,7 @@ extern "C" PCODE CID_VirtualOpenDelegateDispatchWorker(TransitionBlock * pTransi
 
     GCStress<vsd_on_resolve>::MaybeTriggerAndProtect(pObj);
 
-    DispatchToken token = VirtualCallStubManager::GetTokenFromFromOwnerAndSlot(TypeHandle(pTargetMD->GetMethodTable()), pTargetMD->GetSlot());
+    DispatchToken token = VirtualCallStubManager::GetTokenFromOwnerAndSlot(TypeHandle(pTargetMD->GetMethodTable()), pTargetMD->GetSlot());
     target = CachedInterfaceDispatchResolveWorker(NULL, protectedObj, token);
 
 #if _DEBUG

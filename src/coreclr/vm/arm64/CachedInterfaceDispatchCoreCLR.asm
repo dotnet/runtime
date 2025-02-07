@@ -5,6 +5,8 @@
 #include "asmconstants.h"
 #include "asmmacros.h"
 
+#ifdef FEATURE_CACHED_INTERFACE_DISPATCH
+
     TEXTAREA
 
     EXTERN CID_ResolveWorker
@@ -75,5 +77,7 @@
         EPILOG_WITH_TRANSITION_BLOCK_TAILCALL
         EPILOG_BRANCH_REG  x9
     NESTED_END CID_VirtualOpenDelegateDispatch
+
+#ifdef ;; FEATURE_CACHED_INTERFACE_DISPATCH
 
     END

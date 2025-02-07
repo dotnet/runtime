@@ -3314,7 +3314,7 @@ EXTERN_C PCODE STDCALL ExternalMethodFixupWorker(TransitionBlock * pTransitionBl
                 {
                     // The entry is aligned and the size is correct, so we can use the cached interface dispatch mechanism
                     // to speed up further uses of this interface dispatch slot
-                    DispatchToken token = VirtualCallStubManager::GetTokenFromFromOwnerAndSlot(pMT, slot);
+                    DispatchToken token = VirtualCallStubManager::GetTokenFromOwnerAndSlot(pMT, slot);
 
                     uintptr_t addr = (uintptr_t)RhpInitialInterfaceDispatch;
                     uintptr_t pCache = (uintptr_t)DispatchToken::ToCachedInterfaceDispatchToken(token);

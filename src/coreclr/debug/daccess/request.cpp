@@ -3615,9 +3615,7 @@ ClrDataAccess::TraverseVirtCallStubHeap(CLRDATA_ADDRESS pAppDomain, VCSHeapType 
             case CacheEntryHeap:
 #ifdef FEATURE_VIRTUAL_STUB_DISPATCH
                 pLoaderHeap = pVcsMgr->cache_entry_heap;
-#else
-                hr = S_OK;
-#endif
+#endif // FEATURE_VIRTUAL_STUB_DISPATCH
                 break;
 
             default:

@@ -5,6 +5,8 @@
 #include "unixasmmacros.inc"
 #include "asmconstants.h"
 
+#ifdef FEATURE_CACHED_INTERFACE_DISPATCH
+
 // Stub dispatch routine for dispatch to a vtable slot
 LEAF_ENTRY RhpVTableOffsetDispatch, _TEXT
         // r11 currently contains the indirection cell address.
@@ -65,3 +67,5 @@ NESTED_ENTRY CID_VirtualOpenDelegateDispatch, _TEXT, NoHandler
         TAILJMP_RAX
 
 NESTED_END CID_VirtualOpenDelegateDispatch, _TEXT
+
+#endif // FEATURE_CACHED_INTERFACE_DISPATCH
