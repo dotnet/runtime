@@ -185,15 +185,7 @@ namespace System.Runtime.CompilerServices
 
             lock (_lock)
             {
-                bool found = _container.Remove(key, out object? valueObject);
-
-                // We can safely suppress the nullability warning here, because if we did find the key,
-                // the retrieved value is guaranteed to not be null. The 'Remove' method on the container
-                // doesn't have that annotation just because it's looking for an index, not a boolean,
-                // and there's no way to express something like '[MaybeNullWhen(!= 1)]'.
-                value = Unsafe.As<TValue>(valueObject!);
-
-                return found;
+                return _container.Remove(key, out value);
             }
         }
 
@@ -728,17 +720,19 @@ namespace System.Runtime.CompilerServices
             }
 
             /// <summary>Removes the specified key from the table, if it exists.</summary>
-            internal bool Remove(TKey key, out object? value)
+            internal bool Remove(TKey key, [MaybeNullWhen(false)] out TValue value)
             {
                 VerifyIntegrity();
 
-                int entryIndex = FindEntry(key, out value);
+                int entryIndex = FindEntry(key, out object? valueObject);
                 if (entryIndex != -1)
                 {
                     RemoveIndex(entryIndex);
+                    value = Unsafe.As<TValue>(valueObject);
                     return true;
                 }
 
+                value = null;
                 return false;
             }
 
