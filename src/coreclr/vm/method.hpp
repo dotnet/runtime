@@ -371,8 +371,6 @@ public:
     // True if the declaring type or instantiation of method (if any) contains formal generic type parameters
     BOOL ContainsGenericVariables();
 
-    Module* GetDefiningModuleForOpenMethod();
-
     // True if this is a class and method instantiation that on <__Canon,...,__Canon>
     BOOL IsTypicalSharedInstantiation();
 
@@ -503,10 +501,6 @@ public:
     MethodDescBackpatchInfoTracker* GetBackpatchInfoTracker();
 
     PTR_LoaderAllocator GetLoaderAllocator();
-
-    // GetDomainSpecificLoaderAllocator returns the collectable loader allocator for collectable types
-    // and the loader allocator in the current domain for non-collectable types
-    LoaderAllocator * GetDomainSpecificLoaderAllocator();
 
     Module* GetLoaderModule();
 
@@ -819,8 +813,6 @@ public:
         LIMITED_METHOD_DAC_CONTRACT;
         return IsEEImpl() || IsArray() || IsNoMetadata();
     }
-
-    PCCOR_SIGNATURE GetSig();
 
     void GetSig(PCCOR_SIGNATURE *ppSig, DWORD *pcSig);
     SigParser GetSigParser();
@@ -1666,20 +1658,6 @@ private:
     //================================================================
     // The actual data stored in a MethodDesc follows.
 
-#ifdef _DEBUG
-public:
-    // These are set only for MethodDescs but every time we want to use the debugger
-    // to examine these fields, the code has the thing stored in a MethodDesc*.
-    // So...
-    LPCUTF8         m_pszDebugMethodName;
-    LPCUTF8         m_pszDebugClassName;
-    LPCUTF8         m_pszDebugMethodSignature;
-    PTR_MethodTable m_pDebugMethodTable;
-
-    PTR_GCCoverageInfo m_GcCover;
-
-#endif // _DEBUG
-
 protected:
     enum {
         // There are flags available for use here (currently 4 flags bits are available); however, new bits are hard to come by, so any new flags bits should
@@ -1709,6 +1687,20 @@ protected:
     WORD m_wSlotNumber; // The slot number of this MethodDesc in the vtable array.
     WORD m_wFlags; // See MethodDescFlags
     PTR_MethodDescCodeData m_codeData;
+
+#ifdef _DEBUG
+public:
+    // These are set only for MethodDescs but every time we want to use the debugger
+    // to examine these fields, the code has the thing stored in a MethodDesc*.
+    // So...
+    LPCUTF8         m_pszDebugMethodName;
+    LPCUTF8         m_pszDebugClassName;
+    LPCUTF8         m_pszDebugMethodSignature;
+    PTR_MethodTable m_pDebugMethodTable;
+
+    PTR_GCCoverageInfo m_GcCover;
+
+#endif // _DEBUG
 
 public:
 #ifdef DACCESS_COMPILE
@@ -1861,18 +1853,16 @@ public:
     //
     // Optional MethodDesc slots appear after the end of base MethodDesc in this order:
     //
-
-    // class MethodImpl;                            // Present if HasMethodImplSlot() is true
-
     typedef PCODE NonVtableSlot;   // Present if HasNonVtableSlot() is true
+    // class MethodImpl;           // Present if HasMethodImplSlot() is true
     typedef PCODE NativeCodeSlot;  // Present if HasNativeCodeSlot() is true
 
 // Stub Dispatch code
 public:
     MethodDesc *GetInterfaceMD();
 
-// StubMethodInfo for use in creating RuntimeMethodHandles
-    REFLECTMETHODREF GetStubMethodInfo();
+    // StubMethodInfo for use in creating RuntimeMethodHandles
+    REFLECTMETHODREF AllocateStubMethodInfo();
 
     PrecodeType GetPrecodeType();
 
@@ -1907,7 +1897,7 @@ public:
     static void Init();
 #endif
 
-    template<typename T> friend struct ::cdac_data;
+    friend struct ::cdac_data<MethodDesc>;
 };
 
 template<> struct cdac_data<MethodDesc>
@@ -1916,6 +1906,8 @@ template<> struct cdac_data<MethodDesc>
     static constexpr size_t Slot = offsetof(MethodDesc, m_wSlotNumber);
     static constexpr size_t Flags = offsetof(MethodDesc, m_wFlags);
     static constexpr size_t Flags3AndTokenRemainder = offsetof(MethodDesc, m_wFlags3AndTokenRemainder);
+    static constexpr size_t EntryPointFlags = offsetof(MethodDesc, m_bFlags4);
+    static constexpr size_t CodeData = offsetof(MethodDesc, m_codeData);
 };
 
 #ifndef DACCESS_COMPILE
@@ -2068,6 +2060,20 @@ public:
         m_jitSwitchedToMinOpt = true;
     }
 
+#ifdef FEATURE_INTERPRETER
+    void SetIsInterpreterCode()
+    {
+        LIMITED_METHOD_CONTRACT;
+        m_isInterpreterCode = true;
+    }
+
+    bool IsInterpreterCode() const
+    {
+        LIMITED_METHOD_CONTRACT;
+        return m_isInterpreterCode;
+    }
+#endif // FEATURE_INTERPRETER
+
 #ifdef FEATURE_TIERED_COMPILATION
 public:
     bool JitSwitchedToOptimized() const
@@ -2136,6 +2142,9 @@ private:
 #ifdef FEATURE_TIERED_COMPILATION
     bool m_jitSwitchedToOptimized; // when a different tier was requested
 #endif
+#ifdef FEATURE_INTERPRETER
+    bool m_isInterpreterCode; // The generated code is interpreter IR
+#endif // FEATURE_INTERPRETER
     PrepareCodeConfig *m_nextInSameThread;
 };
 
@@ -2349,7 +2358,7 @@ private:
 
     // Followed by array of method descs...
 
-    template<typename T> friend struct ::cdac_data;
+    friend struct ::cdac_data<MethodDescChunk>;
 };
 
 template<>
@@ -2379,8 +2388,6 @@ inline MethodDescChunk *MethodDesc::GetMethodDescChunk() const
 }
 
 MethodDesc* NonVirtualEntry2MethodDesc(PCODE entryPoint);
-// convert an entry point into a MethodDesc
-MethodDesc* Entry2MethodDesc(PCODE entryPoint, MethodTable *pMT);
 
 
 typedef DPTR(class StoredSigMethodDesc) PTR_StoredSigMethodDesc;
@@ -2436,7 +2443,7 @@ public:
 #ifdef DACCESS_COMPILE
     void EnumMemoryRegions(CLRDataEnumMemoryFlags flags);
 #endif
-    template<typename T> friend struct ::cdac_data;
+    friend struct ::cdac_data<StoredSigMethodDesc>;
 };
 
 template<>
@@ -2512,6 +2519,9 @@ public:
         StubTailCallCallTarget,
 
         StubVirtualStaticMethodDispatch,
+        StubDelegateShuffleThunk,
+
+        StubDelegateInvokeMethod,
 
         StubLast
     };
@@ -2660,6 +2670,12 @@ public:
         _ASSERTE(IsILStub());
         return GetILStubType() == DynamicMethodDesc::StubMulticastDelegate;
     }
+    bool IsDelegateInvokeMethodStub() const
+    {
+        LIMITED_METHOD_DAC_CONTRACT;
+        _ASSERTE(IsILStub());
+        return GetILStubType() == DynamicMethodDesc::StubDelegateInvokeMethod;
+    }
     bool IsWrapperDelegateStub() const
     {
         LIMITED_METHOD_DAC_CONTRACT;
@@ -2674,6 +2690,12 @@ public:
         return GetILStubType() == DynamicMethodDesc::StubUnboxingIL;
     }
 #endif
+    bool IsDelegateShuffleThunk() const
+    {
+        LIMITED_METHOD_DAC_CONTRACT;
+        _ASSERTE(IsILStub());
+        return GetILStubType() == DynamicMethodDesc::StubDelegateShuffleThunk;
+    }
 
     // Whether the stub takes a context argument that is an interop MethodDesc.
     bool HasMDContextArg() const
@@ -2686,7 +2708,7 @@ public:
     // following implementations defined in DynamicMethod.cpp
     //
     void Destroy();
-    template<typename T> friend struct ::cdac_data;
+    friend struct ::cdac_data<DynamicMethodDesc>;
 };
 
 template<>
@@ -3445,7 +3467,7 @@ private:
                                                              MethodDesc* pSharedMDescForStub,
                                                              Instantiation methodInst,
                                                              BOOL getSharedNotStub);
-    template<typename T> friend struct ::cdac_data;
+    friend struct ::cdac_data<InstantiatedMethodDesc>;
 };
 
 template<> struct cdac_data<InstantiatedMethodDesc>

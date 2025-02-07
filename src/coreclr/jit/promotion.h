@@ -46,7 +46,7 @@ struct AggregateInfo
     jitstd::vector<Replacement> Replacements;
     unsigned                    LclNum;
     // Unpromoted parts of the struct local.
-    StructSegments Unpromoted;
+    SegmentList Unpromoted;
     // Min offset in the struct local of the unpromoted part.
     unsigned UnpromotedMin = 0;
     // Max offset in the struct local of the unpromoted part.
@@ -98,7 +98,7 @@ class Promotion
     friend class PromotionLiveness;
     friend class ReplaceVisitor;
     friend class DecompositionPlan;
-    friend class StructSegments;
+    friend class SegmentList;
 
     void            ExplicitlyZeroInitReplacementLocals(unsigned                           lclNum,
                                                         const jitstd::vector<Replacement>& replacements,
@@ -290,6 +290,7 @@ private:
     bool VisitOverlappingReplacements(unsigned lcl, unsigned offs, unsigned size, Func func);
 
     void      InsertPreStatementReadBacks();
+    void      InsertPreStatementReadBackIfNecessary(unsigned aggLclNum, Replacement& rep);
     void      InsertPreStatementWriteBacks();
     GenTree** InsertMidTreeReadBacks(GenTree** use);
 

@@ -140,7 +140,6 @@ include_directories("../Common")
 
 if (GEN_SHARED_LIB)
     if (CLR_CMAKE_TARGET_APPLE)
-        include(CMakeFindFrameworks)
         find_library(FOUNDATION Foundation REQUIRED)
     endif()
 
@@ -212,16 +211,7 @@ if(CLR_CMAKE_TARGET_WIN32)
             STATIC
             ${NATIVEGLOBALIZATION_SOURCES}
         )
-        set_target_properties(System.Globalization.Native.Aot PROPERTIES CLR_CONTROL_FLOW_GUARD OFF)
         set_target_properties(System.Globalization.Native.Aot PROPERTIES INTERPROCEDURAL_OPTIMIZATION OFF)
-
-        add_library(System.Globalization.Native.Aot.GuardCF
-            STATIC
-            ${NATIVEGLOBALIZATION_SOURCES}
-        )
-        set_target_properties(System.Globalization.Native.Aot.GuardCF PROPERTIES INTERPROCEDURAL_OPTIMIZATION OFF)
-
         install_static_library(System.Globalization.Native.Aot aotsdk nativeaot)
-        install_static_library(System.Globalization.Native.Aot.GuardCF aotsdk nativeaot)
     endif()
 endif()

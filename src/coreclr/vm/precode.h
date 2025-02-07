@@ -43,6 +43,7 @@ EXTERN_C VOID STDCALL PrecodeRemotingThunk();
 
 #define SIZEOF_PRECODE_BASE         CODE_SIZE_ALIGN
 #define OFFSETOF_PRECODE_TYPE       0
+#define SHIFTOF_PRECODE_TYPE        5
 
 #elif defined(TARGET_RISCV64)
 
@@ -85,6 +86,10 @@ typedef DPTR(StubPrecodeData) PTR_StubPrecodeData;
 #if !(defined(TARGET_ARM64) && defined(TARGET_UNIX))
 extern "C" void StubPrecodeCode();
 extern "C" void StubPrecodeCode_End();
+#endif
+
+#ifdef FEATURE_INTERPRETER
+extern "C" void InterpreterStub();
 #endif
 
 // Regular precode
@@ -203,6 +208,37 @@ typedef DPTR(NDirectImportPrecode) PTR_NDirectImportPrecode;
 
 #endif // HAS_NDIRECT_IMPORT_PRECODE
 
+#ifdef FEATURE_INTERPRETER
+struct InterpreterPrecodeData
+{
+    TADDR ByteCodeAddr;
+    PCODE Target;
+    BYTE Type;
+};
+
+typedef DPTR(InterpreterPrecodeData) PTR_InterpreterPrecodeData;
+
+struct InterpreterPrecode
+{
+    static const int Type = 0x06;
+
+    BYTE m_code[StubPrecode::CodeSize];
+
+    void Init(InterpreterPrecode* pPrecodeRX, TADDR byteCodeAddr);
+
+    PTR_InterpreterPrecodeData GetData() const
+    {
+        LIMITED_METHOD_CONTRACT;
+        return dac_cast<PTR_InterpreterPrecodeData>(dac_cast<TADDR>(this) + GetStubCodePageSize());
+    }
+
+    PCODE GetEntryPoint()
+    {
+        LIMITED_METHOD_CONTRACT;
+        return PINSTRToPCODE(dac_cast<TADDR>(this));
+    }
+};
+#endif // FEATURE_INTERPRETER
 
 #ifdef HAS_FIXUP_PRECODE
 
@@ -346,6 +382,9 @@ typedef DPTR(class Precode) PTR_Precode;
 enum PrecodeType {
     PRECODE_INVALID         = InvalidPrecode::Type,
     PRECODE_STUB            = StubPrecode::Type,
+#ifdef FEATURE_INTERPRETER
+    PRECODE_INTERPRETER     = InterpreterPrecode::Type,
+#endif // FEATURE_INTERPRETER
 #ifdef HAS_NDIRECT_IMPORT_PRECODE
     PRECODE_NDIRECT_IMPORT  = NDirectImportPrecode::Type,
 #endif // HAS_NDIRECT_IMPORT_PRECODE
@@ -438,12 +477,16 @@ public:
 
 #if defined(TARGET_LOONGARCH64)
         assert(0 == OFFSETOF_PRECODE_TYPE);
+        static_assert(5 == SHIFTOF_PRECODE_TYPE, "expected shift of 5");
         short type = *((short*)m_data);
-        type >>= 5;
+        type >>= SHIFTOF_PRECODE_TYPE;
 #elif defined(TARGET_RISCV64)
         assert(0 == OFFSETOF_PRECODE_TYPE);
         BYTE type = *((BYTE*)m_data + OFFSETOF_PRECODE_TYPE);
 #else
+#if defined(SHIFTOF_PRECODE_TYPE)
+#error "did not expect SHIFTOF_PRECODE_TYPE to be defined"
+#endif
         BYTE type = m_data[OFFSETOF_PRECODE_TYPE];
 #endif
 
@@ -526,10 +569,13 @@ public:
     PTR_PCODE GetTargetSlot();
 
     MethodDesc *  GetMethodDesc(BOOL fSpeculative = FALSE);
-    BOOL          IsCorrectMethodDesc(MethodDesc *  pMD);
 
     static Precode* Allocate(PrecodeType t, MethodDesc* pMD,
         LoaderAllocator *pLoaderAllocator, AllocMemTracker *pamTracker);
+#ifdef FEATURE_INTERPRETER
+    static InterpreterPrecode* AllocateInterpreterPrecode(PCODE byteCode,
+        LoaderAllocator *  pLoaderAllocator, AllocMemTracker *  pamTracker);
+#endif // FEATURE_INTERPRETER
     void Init(Precode* pPrecodeRX, PrecodeType t, MethodDesc* pMD, LoaderAllocator *pLoaderAllocator);
 
 #ifndef DACCESS_COMPILE
@@ -596,4 +642,41 @@ static_assert_no_msg(NDirectImportPrecode::Type != ThisPtrRetBufPrecode::Type);
 static_assert_no_msg(sizeof(Precode) <= sizeof(NDirectImportPrecode));
 static_assert_no_msg(sizeof(Precode) <= sizeof(FixupPrecode));
 static_assert_no_msg(sizeof(Precode) <= sizeof(ThisPtrRetBufPrecode));
+
+#ifndef DACCESS_COMPILE
+// A summary of the precode layout for diagnostic purposes
+struct PrecodeMachineDescriptor
+{
+    uint32_t StubCodePageSize;
+
+    uint8_t OffsetOfPrecodeType;
+    // cDAC will do (where N = 8*ReadWidthOfPrecodeType):
+    //   uintN_t PrecodeType = *(uintN_t*)(pPrecode + OffsetOfPrecodeType);
+    //   PrecodeType >>= ShiftOfPrecodeType;
+    //   return (byte)PrecodeType;
+    uint8_t ReadWidthOfPrecodeType;
+    uint8_t ShiftOfPrecodeType;
+
+    uint8_t InvalidPrecodeType;
+    uint8_t StubPrecodeType;
+#ifdef HAS_NDIRECT_IMPORT_PRECODE
+    uint8_t PInvokeImportPrecodeType;
+#endif
+
+#ifdef HAS_FIXUP_PRECODE
+    uint8_t FixupPrecodeType;
+#endif
+
+#ifdef HAS_THISPTR_RETBUF_PRECODE
+    uint8_t ThisPointerRetBufPrecodeType;
+#endif
+
+public:
+    PrecodeMachineDescriptor() = default;
+    PrecodeMachineDescriptor(const PrecodeMachineDescriptor&) = delete;
+    PrecodeMachineDescriptor& operator=(const PrecodeMachineDescriptor&) = delete;
+    static void Init(PrecodeMachineDescriptor* dest);
+};
+#endif //DACCESS_COMPILE
+
 #endif // __PRECODE_H__

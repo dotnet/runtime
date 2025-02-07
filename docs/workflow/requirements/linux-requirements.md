@@ -1,111 +1,126 @@
-# Requirements to build dotnet/runtime on Linux
+# Requirements to Set Up the Build Environment on Linux
 
-* [Docker](#docker)
-* [Environment](#environment)
-  * [Debian-based / Ubuntu](#debian-based--ubuntu)
-    * [Additional Requirements for Cross-Building](#additional-requirements-for-cross-building)
-  * [Fedora](#fedora)
-  * [Gentoo](#gentoo)
+- [Using your Linux Environment](#using-your-linux-environment)
+  - [Debian and Ubuntu](#debian-and-ubuntu)
+    - [CMake on Older Versions of Ubuntu and Debian](#cmake-on-older-versions-of-ubuntu-and-debian)
+    - [Clang for WASM](#clang-for-wasm)
+    - [Additional Tools for Cross Building](#additional-tools-for-cross-building)
+  - [Fedora](#fedora)
+  - [Gentoo](#gentoo)
+- [Using Docker](#using-docker)
 
-This guide will walk you through the requirements to build _dotnet/runtime_ on Linux. Before building there is environment setup that needs to happen to pull in all the dependencies required by the build.
+There are two ways to build the runtime repo on *Linux*: Set up your environment in your Linux machine, or use the Docker images that are used in the official builds. This guide will cover both of these approaches. Using Docker allows you to leverage our existing images which already have an environment set up, while using your own environment grants you better flexibility on having other tools at hand you might need.
 
-There are two suggested ways to go about doing this. You can use the Docker images used in the official builds, or you can set up the environment yourself. The documentation will go over both ways. Using Docker allows you to leverage our existing images which already have an environment set up, while using your own environment grants you better flexibility on having other tools at hand you might need.
+**NOTE:** If you're using WSL, then follow the instructions for the distro you have installed there.
 
-## Docker
+## Using your Linux Environment
 
-Install Docker. For further installation instructions, see [here](https://docs.docker.com/install/). Details on the images used by the official builds can be found in the [Linux building instructions doc](/docs/workflow/building/coreclr/linux-instructions.md#docker-images). All the required build tools are included in the Docker images used to do the build, so no additional setup is required.
+The following sections describe the requirements for different kinds of Linux distros. Pull Requests are welcome to add documentation regarding environments and distros currently not described here.
 
-## Environment
+The minimum required RAM is 1GB (builds are known to fail on 512MB VM's (https://github.com/dotnet/runtime/issues/4069), although more is recommended, as the builds can take a long time otherwise.
 
-Below are the requirements for toolchain setup, depending on your environment. Pull Requests are welcome to address other environments.
-
-Minimum RAM required to build is 1GB. The build is known to fail on 512 MB VMs ([dotnet/runtime#4069](https://github.com/dotnet/runtime/issues/4069)).
-
-You can use this helper script to install dependencies on some platforms:
+To get started, you can use this helper script to install dependencies on some platforms, or you can install them yourself following the instructions in the next sections. If you opt to try this script, make sure to run it as `sudo` if you don't have root privileges:
 
 ```bash
-sudo eng/install-native-dependencies.sh
-# or without 'sudo' if you are root
+# requires sudo for non-root user
+eng/common/native/install-dependencies.sh
 ```
 
-### Debian-based / Ubuntu
+Note that it is always a good idea to manually double check that all the dependencies were installed correctly if you opt to use the script.
 
-These instructions are written assuming the current Ubuntu LTS.
+### Debian and Ubuntu
 
-Install the following packages for the toolchain:
+These instructions are written assuming the current *Ubuntu LTS*.
 
-* CMake 3.20 or newer
-* llvm
-* lld
-* clang (for WASM 16 or newer)
-* build-essential
-* python-is-python3
-* curl
-* git
-* lldb
-* libicu-dev
-* liblttng-ust-dev
-* libssl-dev
-* libkrb5-dev
-* zlib1g-dev
-* ninja-build (optional, enables building native code with ninja instead of make)
+The packages you need to install are shown in the following list:
 
-**NOTE**: If you have an Ubuntu version older than 22.04 LTS, or Debian version older than 12, don't install `cmake` using `apt` directly. Follow the note written down below.
+- `build-essential`
+- `clang` (see the [Clang for WASM](#clang-for-wasm) section if you plan on doing work on *Web Assembly (Wasm)*)
+- `cmake` (version 3.20 or newer)
+- `cpio`
+- `curl`
+- `git`
+- `libicu-dev`
+- `libkrb5-dev`
+- `liblttng-ust-dev`
+- `libssl-dev`
+- `lld`
+- `lldb`
+- `llvm`
+- `ninja-build` (Optional. Enables building native code using `ninja` instead of `make`)
+- `pigz` (Optional. Enables parallel gzip compression for tarball creation in `packs` subset)
+- `python-is-python3`
+
+**NOTE:** If you are running on *Ubuntu* older than version *22.04 LTS*, or *Debian* older than version 12, then don't install `cmake` using `apt` directly. Follow the instructions in the [CMake on Older Versions of Ubuntu and Debian section](#cmake-on-older-versions-of-ubuntu-and-debian) later down in this doc.
 
 ```bash
-sudo apt install -y cmake llvm lld clang build-essential \
+# requires sudo for non-root user
+apt install -y cmake llvm lld clang build-essential \
   python-is-python3 curl git lldb libicu-dev liblttng-ust-dev \
-  libssl-dev libkrb5-dev zlib1g-dev ninja-build
+  libssl-dev libkrb5-dev ninja-build pigz cpio
 ```
 
-**NOTE**: As of now, Ubuntu's `apt` only has until CMake version 3.16.3 if you're using Ubuntu 20.04 LTS (less in older Ubuntu versions), and version 3.18.4 in Debian 11 (less in older Debian versions). This is lower than the required 3.20, which in turn makes it incompatible with the repo. For this case, we can use the `snap` package manager or the _Kitware APT feed_ to get a new enough version of CMake.
-**NOTE**: If you have Ubuntu 22.04 LTS and older and your `apt` does not have clang version 16, you can add `"deb http://apt.llvm.org/$(lsb_release -s -c)/ llvm-toolchain-$(lsb_release -s -c)-18 main"` repository to your `apt`. See how we do it for linux-based containers [here](./../../../.devcontainer/Dockerfile).
+#### CMake on Older Versions of Ubuntu and Debian
 
-For snap:
+As of now, Ubuntu's `apt` only has until *CMake* version 3.16.3 if you're using *Ubuntu 20.04 LTS* (less in older Ubuntu versions), and version 3.18.4 in *Debian 11* (less in older Debian versions). This is lower than the required 3.20, which in turn makes it incompatible with the runtime repo. To get around this, there are two options you can choose: Use the `snap` package manager, which has a more recent version of *CMake*, or directly use the *Kitware APT Feed*.
+
+To use `snap`, run the following command:
 
 ```bash
-sudo snap install cmake
+# requires sudo for non-root user
+snap install cmake
 ```
 
-For the _Kitware APT feed_, follow its [instructions here](https://apt.kitware.com/).
+To use the *Kitware APT feed*, follow their official instructions [in this link](https://apt.kitware.com/).
 
-You now have all the required components.
+#### Clang for WASM
 
-#### Additional Requirements for Cross-Building
+As of now, *WASM* builds have a minimum requirement of `Clang` version 16 or later (version 18 is the latest at the time of writing this doc). If you're using *Ubuntu 22.04 LTS* or older, then you will have to add an additional repository to `apt` to be able to get said version. Run the following commands on your terminal to do this:
 
-If you are planning to use your Linux environment to do cross-building for other architectures (e.g. Arm32, Arm64) and/or other operating systems (e.g. Alpine, FreeBSD), you need to install these additional dependencies:
+```bash
+# requires sudo for non-root user
+add-apt-repository -y "deb http://apt.llvm.org/$(lsb_release -s -c)/ llvm-toolchain-$(lsb_release -s -c)-18 main"
+apt update -y
+apt install -y clang-18
+```
 
-* qemu
-* qemu-user-static
-* binfmt-support
-* debootstrap
+You can also take a look at the Linux-based *Dockerfile* [over here](/.devcontainer/Dockerfile) for another example.
 
-**NOTE**: These dependencies are used to build the `crossrootfs`, not the runtime itself.
+#### Additional Tools for Cross Building
+
+If you're planning to use your environment to do Linux cross-building to other architectures (e.g. Arm32, Arm64), and/or other operating systems (e.g. Alpine, FreeBSD), you'll need to install a few additional dependencies. It is worth mentioning these other packages are required to build the `crossrootfs`, which is used to effectively do the cross-compilation, not to build the runtime itself.
+
+- `binfmt-support`
+- `debootstrap`
+- `qemu`
+- `qemu-user-static`
 
 ### Fedora
 
-These instructions are written assuming Fedora 40.
+These instructions are written assuming *Fedora 40*.
 
 Install the following packages for the toolchain:
 
-* cmake
-* llvm
-* lld
-* lldb
-* clang
-* python
-* curl
-* git
-* libicu-devel
-* openssl-devel
-* krb5-devel
-* zlib-devel
-* lttng-ust-devel
-* ninja-build (optional, enables building native code with ninja instead of make)
+- `clang`
+- `cmake`
+- `cpio`
+- `curl`
+- `git`
+- `krb5-devel`
+- `libicu-devel`
+- `lld`
+- `lldb`
+- `llvm`
+- `lttng-ust-devel`
+- `ninja-build` (Optional. Enables building native code using `ninja` instead of `make`)
+- `openssl-devel`
+- `pigz` (Optional. Enables parallel gzip compression for tarball creation in `packs` subset)
+- `python`
 
 ```bash
-sudo dnf install -y cmake llvm lld lldb clang python curl git libicu-devel openssl-devel \
-  krb5-devel zlib-devel lttng-ust-devel ninja-build
+# requires sudo for non-root user
+dnf install -y cmake llvm lld lldb clang python curl git \
+  libicu-devel openssl-devel krb5-devel lttng-ust-devel ninja-build pigz cpio
 ```
 
 ### Gentoo
@@ -115,3 +130,9 @@ In case you have Gentoo you can run following command:
 ```bash
 emerge --ask clang dev-util/lttng-ust app-crypt/mit-krb5
 ```
+
+## Using Docker
+
+As mentioned at the beginning of this doc, the other method to build the runtime repo for Linux is to use the prebuilt Docker images that our official builds use. In order to be able to run them, you first need to download and install the Docker Engine. The binaries needed and installation instructions can be found at the Docker official site [in this link](https://docs.docker.com/get-started/get-docker).
+
+Once you have the Docker Engine up and running, you can follow our docker building instructions [over here](/docs/workflow/using-docker.md).

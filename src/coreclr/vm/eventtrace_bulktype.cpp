@@ -513,16 +513,15 @@ void BulkStaticsLogger::LogAllStatics()
         AppDomain *domain = ::GetAppDomain(); // There is only 1 AppDomain, so no iterator here.
 
         AppDomain::AssemblyIterator assemblyIter = domain->IterateAssembliesEx((AssemblyIterationFlags)(kIncludeLoaded|kIncludeExecution));
-        CollectibleAssemblyHolder<DomainAssembly *> pDomainAssembly;
-        while (assemblyIter.Next(pDomainAssembly.This()))
+        CollectibleAssemblyHolder<Assembly *> pAssembly;
+        while (assemblyIter.Next(pAssembly.This()))
         {
             // Make sure the assembly is loaded.
-            CollectibleAssemblyHolder<Assembly *> pAssembly = pDomainAssembly->GetAssembly();
             if (!pAssembly->IsLoaded())
                 continue;
 
             // Get the domain module from the module/appdomain pair.
-            Module *module = pDomainAssembly->GetModule();
+            Module *module = pAssembly->GetModule();
             if (module == NULL)
                 continue;
 

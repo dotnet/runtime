@@ -234,7 +234,7 @@ void PromotionLiveness::MarkUseDef(Statement* stmt, GenTreeLclVarCommon* lcl, Bi
             }
 
             bool isFullDefOfRemainder = isDef && (agg->UnpromotedMin >= offs) && (agg->UnpromotedMax <= (offs + size));
-            bool isUseOfRemainder     = isUse && agg->Unpromoted.Intersects(StructSegments::Segment(offs, offs + size));
+            bool isUseOfRemainder     = isUse && agg->Unpromoted.Intersects(SegmentList::Segment(offs, offs + size));
             MarkIndex(baseIndex, isUseOfRemainder, isFullDefOfRemainder, useSet, defSet);
         }
     }
@@ -580,7 +580,7 @@ void PromotionLiveness::FillInLiveness(BitVec& life, BitVec volatileVars, Statem
             {
                 BitVecOps::AddElemD(&aggTraits, aggDeaths, 0);
 
-                if (isUse && agg->Unpromoted.Intersects(StructSegments::Segment(offs, offs + size)))
+                if (isUse && agg->Unpromoted.Intersects(SegmentList::Segment(offs, offs + size)))
                 {
                     BitVecOps::AddElemD(m_bvTraits, life, baseIndex);
                 }

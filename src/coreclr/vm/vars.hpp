@@ -405,12 +405,18 @@ GPTR_DECL(StressLog, g_pStressLog);
 
 
 //
-// Support for the COM+ Debugger.
+// Support for the CLR Debugger.
 //
 GPTR_DECL(DebugInterface,     g_pDebugInterface);
 GVAL_DECL(DWORD,              g_CORDebuggerControlFlags);
 #ifdef DEBUGGING_SUPPORTED
 GPTR_DECL(EEDbgInterfaceImpl, g_pEEDbgInterfaceImpl);
+
+#ifndef DACCESS_COMPILE
+GVAL_DECL(DWORD, g_multicastDelegateTraceActiveCount);
+GVAL_DECL(DWORD, g_externalMethodFixupTraceActiveCount);
+#endif // DACCESS_COMPILE
+
 #endif // DEBUGGING_SUPPORTED
 
 #ifdef PROFILING_SUPPORTED

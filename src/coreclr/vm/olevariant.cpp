@@ -2468,7 +2468,7 @@ void OleVariant::MarshalObjectForOleVariant(const VARIANT * pOle, OBJECTREF * co
                                 AllocateObject(CoreLibBinder::GetElementType(ELEMENT_TYPE_U1)) );
             *(BYTE*)((*pObj)->GetData()) = *(V_UI1REF(pOle));
             break;
-            
+
         case VT_I8:
             SetObjectReference( pObj,
                                 AllocateObject(CoreLibBinder::GetElementType(ELEMENT_TYPE_I8)) );

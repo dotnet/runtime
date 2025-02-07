@@ -16,7 +16,6 @@
 #include "gcheaputilities.h"
 #include "field.h"
 #include "eeconfig.h"
-#include "runtimehandles.h" // for SignatureNative
 #include "winwrap.h"
 #include <formattype.h>
 #include "sigbuilder.h"
@@ -3667,7 +3666,7 @@ ErrExit:
 #endif //!DACCESS_COMPILE
 } // CompareTypeTokens
 
-static void ConsumeCustomModifiers(PCCOR_SIGNATURE& pSig, PCCOR_SIGNATURE pEndSig)
+void MetaSig::ConsumeCustomModifiers(PCCOR_SIGNATURE& pSig, PCCOR_SIGNATURE pEndSig)
 {
     mdToken tk;
     void* ptr;
@@ -5146,12 +5145,9 @@ void PromoteCarefully(promote_func   fn,
 
     if (sc->promotion)
     {
-        LoaderAllocator*pLoaderAllocator = LoaderAllocator::GetAssociatedLoaderAllocator_Unsafe(PTR_TO_TADDR(*ppObj));
-        if (pLoaderAllocator != NULL)
-        {
-            GcReportLoaderAllocator(fn, sc, pLoaderAllocator);
-        }
+        LoaderAllocator::GcReportAssociatedLoaderAllocators_Unsafe(PTR_TO_TADDR(*ppObj), fn, sc);
     }
+
 #endif // !defined(DACCESS_COMPILE)
 
     (*fn) (ppObj, sc, flags);
@@ -5415,7 +5411,7 @@ void MetaSig::EnsureSigValueTypesLoaded(MethodDesc *pMD)
     // The signature format is approximately:
     // CallingConvention   NumberOfArguments    ReturnType   Arg1  ...
     // There is also a blob length at pSig-1.
-    SigPointer ptr(pMD->GetSig());
+    SigPointer ptr = pMD->GetSigPointer();
 
     // Skip over calling convention.
     IfFailThrowBF(ptr.GetCallingConv(NULL), BFA_BAD_SIGNATURE, pModule);
@@ -5454,7 +5450,7 @@ void MetaSig::CheckSigTypesCanBeLoaded(MethodDesc * pMD)
     // The signature format is approximately:
     // CallingConvention   NumberOfArguments    ReturnType   Arg1  ...
     // There is also a blob length at pSig-1.
-    SigPointer ptr(pMD->GetSig());
+    SigPointer ptr = pMD->GetSigPointer();
 
     // Skip over calling convention.
     IfFailThrowBF(ptr.GetCallingConv(NULL), BFA_BAD_SIGNATURE, pModule);

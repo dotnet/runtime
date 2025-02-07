@@ -180,8 +180,8 @@
   <data name="MarshallerEntryPointTypeMustMatchArity" xml:space="preserve">
     <value>The marshaller entry point type '{0}' for managed type '{1}' must have an arity of one greater than the managed type.</value>
   </data>
-  <data name="MarshallerInNativeReturnPositionMustMatchNativeReturnType" xml:space="preserve">
-    <value>All marshallers for values that are passed as the unmanaged return value must have the same unmanaged type.</value>
+  <data name="MarshallerInOverlappingNativePositionMustMatchNativeType" xml:space="preserve">
+    <value>All marshallers for values that are passed as the unmanaged return value or parameter must have the same unmanaged type.</value>
   </data>
   <data name="ContainingTypeAccessibilityDetails" xml:space="preserve">
     <value>Containing type '{0}' has accessibility '{1}'.</value>

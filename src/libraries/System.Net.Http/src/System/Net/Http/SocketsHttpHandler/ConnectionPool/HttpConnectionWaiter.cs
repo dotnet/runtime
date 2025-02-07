@@ -75,7 +75,7 @@ namespace System.Net.Http
             }
         }
 
-        public void CancelIfNecessary(HttpConnectionPool pool, bool requestCancelled)
+        public void SetTimeoutToPendingConnectionAttempt(HttpConnectionPool pool, bool requestCancelled)
         {
             int timeout = GlobalHttpSettings.SocketsHttpHandler.PendingConnectionTimeoutOnRequestCompletion;
             if (ConnectionCancellationTokenSource is null ||

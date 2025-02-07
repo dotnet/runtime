@@ -1080,7 +1080,7 @@ namespace System.Security.Cryptography.X509Certificates
         [UnsupportedOSPlatform("browser")]
         public static X509Certificate2 CreateFromPem(ReadOnlySpan<char> certPem)
         {
-            foreach ((ReadOnlySpan<char> contents, PemFields fields) in new PemEnumerator(certPem))
+            foreach ((ReadOnlySpan<char> contents, PemFields fields) in PemEnumerator.Utf16(certPem))
             {
                 ReadOnlySpan<char> label = contents[fields.Label];
 
@@ -1432,7 +1432,7 @@ namespace System.Security.Cryptography.X509Certificates
             Func<TAlg> factory,
             Func<TAlg, X509Certificate2> import) where TAlg : AsymmetricAlgorithm
         {
-            foreach ((ReadOnlySpan<char> contents, PemFields fields) in new PemEnumerator(keyPem))
+            foreach ((ReadOnlySpan<char> contents, PemFields fields) in PemEnumerator.Utf16(keyPem))
             {
                 ReadOnlySpan<char> label = contents[fields.Label];
 
@@ -1466,7 +1466,7 @@ namespace System.Security.Cryptography.X509Certificates
             Func<TAlg> factory,
             Func<TAlg, X509Certificate2> import) where TAlg : AsymmetricAlgorithm
         {
-            foreach ((ReadOnlySpan<char> contents, PemFields fields) in new PemEnumerator(keyPem))
+            foreach ((ReadOnlySpan<char> contents, PemFields fields) in PemEnumerator.Utf16(keyPem))
             {
                 ReadOnlySpan<char> label = contents[fields.Label];
 
@@ -1496,7 +1496,7 @@ namespace System.Security.Cryptography.X509Certificates
         internal static X509Extension? CreateCustomExtensionIfAny(string? oidValue) =>
             oidValue switch
             {
-                Oids.BasicConstraints => X509Pal.Instance.SupportsLegacyBasicConstraintsExtension ? new X509BasicConstraintsExtension() : null,
+                Oids.BasicConstraints => LegacyBasicConstraintsDecoder.IsSupported ? new X509BasicConstraintsExtension() : null,
                 Oids.BasicConstraints2 => new X509BasicConstraintsExtension(),
                 Oids.KeyUsage => new X509KeyUsageExtension(),
                 Oids.EnhancedKeyUsage => new X509EnhancedKeyUsageExtension(),

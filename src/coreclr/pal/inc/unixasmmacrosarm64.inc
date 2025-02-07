@@ -126,7 +126,7 @@ C_FUNC(\Name\()_End):
 .endm
 
 .macro EMIT_BREAKPOINT
-        brk #0
+        brk #0xf000
 .endm
 
 //-----------------------------------------------------------------------------
@@ -211,7 +211,7 @@ C_FUNC(\Name\()_End):
 // base address to be passed in $reg
 //
 
-// Reserve 64 bytes of memory before calling  SAVE_ARGUMENT_REGISTERS
+// Reserve 72 bytes of memory before calling  SAVE_ARGUMENT_REGISTERS
 .macro SAVE_ARGUMENT_REGISTERS reg, ofs
 
         str                    x8, [\reg, #(\ofs)]

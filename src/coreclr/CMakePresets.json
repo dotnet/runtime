@@ -31,6 +31,36 @@
       }
     },
     {
+      "name": "osx-base",
+      "hidden": true,
+      "inherits": "base",
+      "cacheVariables": {
+        "CLR_CMAKE_TARGET_OS": "darwin"
+      },
+      "vendor": {
+        "microsoft.com/VisualStudioSettings/CMake/1.0": {
+          "hostOS": [
+            "macOS"
+          ]
+        }
+      }
+    },
+    {
+      "name": "linux-base",
+      "hidden": true,
+      "inherits": "base",
+      "cacheVariables": {
+        "CLR_CMAKE_TARGET_OS": "linux"
+      },
+      "vendor": {
+        "microsoft.com/VisualStudioSettings/CMake/1.0": {
+          "hostOS": [
+            "Linux"
+          ]
+        }
+      }
+    },
+    {
       "name": "Debug",
       "hidden": true,
       "cacheVariables": {
@@ -161,6 +191,114 @@
       "displayName": "windows.arm64.Checked",
       "inherits": [
         "windows-base",
+        "Checked",
+        "ARM64"
+      ]
+    },
+    {
+      "name": "osx.x64.Debug",
+      "displayName": "osx.x64.Debug",
+      "inherits": [
+        "osx-base",
+        "Debug",
+        "x64"
+      ]
+    },
+    {
+      "name": "osx.x64.Release",
+      "displayName": "osx.x64.Release",
+      "inherits": [
+        "osx-base",
+        "Release",
+        "x64"
+      ]
+    },
+    {
+      "name": "osx.x64.Checked",
+      "displayName": "osx.x64.Checked",
+      "inherits": [
+        "osx-base",
+        "Checked",
+        "x64"
+      ]
+    },
+    {
+      "name": "osx.arm64.Debug",
+      "displayName": "osx.arm64.Debug",
+      "inherits": [
+        "osx-base",
+        "Debug",
+        "ARM64"
+      ]
+    },
+    {
+      "name": "osx.arm64.Release",
+      "displayName": "osx.arm64.Release",
+      "inherits": [
+        "osx-base",
+        "Release",
+        "ARM64"
+      ]
+    },
+    {
+      "name": "osx.arm64.Checked",
+      "displayName": "osx.arm64.Checked",
+      "inherits": [
+        "osx-base",
+        "Checked",
+        "ARM64"
+      ]
+    },
+    {
+      "name": "linux.x64.Debug",
+      "displayName": "linux.x64.Debug",
+      "inherits": [
+        "linux-base",
+        "Debug",
+        "x64"
+      ]
+    },
+    {
+      "name": "linux.x64.Release",
+      "displayName": "linux.x64.Release",
+      "inherits": [
+        "linux-base",
+        "Release",
+        "x64"
+      ]
+    },
+    {
+      "name": "linux.x64.Checked",
+      "displayName": "linux.x64.Checked",
+      "inherits": [
+        "linux-base",
+        "Checked",
+        "x64"
+      ]
+    },
+    {
+      "name": "linux.arm64.Debug",
+      "displayName": "linux.arm64.Debug",
+      "inherits": [
+        "linux-base",
+        "Debug",
+        "ARM64"
+      ]
+    },
+    {
+      "name": "linux.arm64.Release",
+      "displayName": "linux.arm64.Release",
+      "inherits": [
+        "linux-base",
+        "Release",
+        "ARM64"
+      ]
+    },
+    {
+      "name": "linux.arm64.Checked",
+      "displayName": "linux.arm64.Checked",
+      "inherits": [
+        "linux-base",
         "Checked",
         "ARM64"
       ]

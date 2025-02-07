@@ -210,6 +210,7 @@ namespace System.Tests
         [InlineData("Hello", 'e', StringComparison.CurrentCulture, true)]
         [InlineData("Hello", 'E', StringComparison.CurrentCulture, false)]
         [InlineData("", 'H', StringComparison.CurrentCulture, false)]
+        [InlineData("", '\u0301', StringComparison.CurrentCulture, false)] // Using non-ASCII character to test ICU path
         // CurrentCultureIgnoreCase
         [InlineData("Hello", 'H', StringComparison.CurrentCultureIgnoreCase, true)]
         [InlineData("Hello", 'Z', StringComparison.CurrentCultureIgnoreCase, false)]
@@ -781,21 +782,17 @@ namespace System.Tests
             {
                 yield return new object[] { "abc", "abc" + SoftHyphen, "def", StringComparison.InvariantCultureIgnoreCase, "def" };
 
-                // https://github.com/dotnet/runtime/issues/95503
-                if (!PlatformDetection.IsHybridGlobalizationOnBrowser)
-                {
-                    string turkishSource = "\u0069\u0130";
+                string turkishSource = "\u0069\u0130";
 
-                    yield return new object[] { turkishSource, "\u0069", "a", StringComparison.Ordinal, "a\u0130" };
-                    yield return new object[] { turkishSource, "\u0069", "a", StringComparison.OrdinalIgnoreCase, "a\u0130" };
-                    yield return new object[] { turkishSource, "\u0130", "a", StringComparison.Ordinal, "\u0069a" };
-                    yield return new object[] { turkishSource, "\u0130", "a", StringComparison.OrdinalIgnoreCase, "\u0069a" };
+                yield return new object[] { turkishSource, "\u0069", "a", StringComparison.Ordinal, "a\u0130" };
+                yield return new object[] { turkishSource, "\u0069", "a", StringComparison.OrdinalIgnoreCase, "a\u0130" };
+                yield return new object[] { turkishSource, "\u0130", "a", StringComparison.Ordinal, "\u0069a" };
+                yield return new object[] { turkishSource, "\u0130", "a", StringComparison.OrdinalIgnoreCase, "\u0069a" };
 
-                    yield return new object[] { turkishSource, "\u0069", "a", StringComparison.InvariantCulture, "a\u0130" };
-                    yield return new object[] { turkishSource, "\u0069", "a", StringComparison.InvariantCultureIgnoreCase, "a\u0130" };
-                    yield return new object[] { turkishSource, "\u0130", "a", StringComparison.InvariantCulture, "\u0069a" };
-                    yield return new object[] { turkishSource, "\u0130", "a", StringComparison.InvariantCultureIgnoreCase, "\u0069a" };
-                }
+                yield return new object[] { turkishSource, "\u0069", "a", StringComparison.InvariantCulture, "a\u0130" };
+                yield return new object[] { turkishSource, "\u0069", "a", StringComparison.InvariantCultureIgnoreCase, "a\u0130" };
+                yield return new object[] { turkishSource, "\u0130", "a", StringComparison.InvariantCulture, "\u0069a" };
+                yield return new object[] { turkishSource, "\u0130", "a", StringComparison.InvariantCultureIgnoreCase, "\u0069a" };
             }
 
             // To catch regressions when dealing with zero-length "this" inputs
@@ -804,16 +801,15 @@ namespace System.Tests
             yield return new object[] { "", "\0", "y", StringComparison.InvariantCulture, "" };
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotHybridGlobalizationOnBrowser), nameof(PlatformDetection.IsNotHybridGlobalizationOnApplePlatform))]
-        [MemberData(nameof(Replace_StringComparison_TestData))]        
+        [Theory]
+        [MemberData(nameof(Replace_StringComparison_TestData))]
         public void Replace_StringComparison_ReturnsExpected(string original, string oldValue, string newValue, StringComparison comparisonType, string expected)
         {
             Assert.Equal(expected, original.Replace(oldValue, newValue, comparisonType));
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotInvariantGlobalization), nameof(PlatformDetection.IsNotHybridGlobalizationOnApplePlatform))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotInvariantGlobalization))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/60568", TestPlatforms.Android | TestPlatforms.LinuxBionic)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/95503", typeof(PlatformDetection), nameof(PlatformDetection.IsHybridGlobalizationOnBrowser))]
         public void Replace_StringComparison_TurkishI()
         {
             const string Source = "\u0069\u0130";
@@ -871,9 +867,8 @@ namespace System.Tests
             }
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotHybridGlobalizationOnApplePlatform))]
+        [Theory]
         [MemberData(nameof(Replace_StringComparisonCulture_TestData))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/95503", typeof(PlatformDetection), nameof(PlatformDetection.IsHybridGlobalizationOnBrowser))]
         public void Replace_StringComparisonCulture_ReturnsExpected(string original, string oldValue, string newValue, bool ignoreCase, CultureInfo culture, string expected)
         {
             Assert.Equal(expected, original.Replace(oldValue, newValue, ignoreCase, culture));
@@ -897,7 +892,7 @@ namespace System.Tests
             AssertExtensions.Throws<ArgumentException>("oldValue", () => "abc".Replace("", "def", true, CultureInfo.CurrentCulture));
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotInvariantGlobalization), nameof(PlatformDetection.IsNotHybridGlobalizationOnBrowser), nameof(PlatformDetection.IsNotHybridGlobalizationOnApplePlatform))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotInvariantGlobalization))]
         public void Replace_StringComparison_WeightlessOldValue_WithOrdinalComparison_Succeeds()
         {
             Assert.Equal("abcdef", ("abc" + ZeroWidthJoiner).Replace(ZeroWidthJoiner, "def"));
@@ -905,7 +900,7 @@ namespace System.Tests
             Assert.Equal("abcdef", ("abc" + ZeroWidthJoiner).Replace(ZeroWidthJoiner, "def", StringComparison.OrdinalIgnoreCase));
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotInvariantGlobalization), nameof(PlatformDetection.IsNotHybridGlobalizationOnBrowser), nameof(PlatformDetection.IsNotHybridGlobalizationOnApplePlatform))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotInvariantGlobalization))]
         public void Replace_StringComparison_WeightlessOldValue_WithLinguisticComparison_TerminatesReplacement()
         {
             Assert.Equal("abc" + ZeroWidthJoiner + "def", ("abc" + ZeroWidthJoiner + "def").Replace(ZeroWidthJoiner, "xyz", StringComparison.CurrentCulture));
