@@ -1,7 +1,7 @@
 <Project>
     <PropertyGroup>
         <FeatureCoreCLR>true</FeatureCoreCLR>
-        <FeaturePerfTracing>true</FeaturePerfTracing>
+        <FeaturePerfTracing>false</FeaturePerfTracing>
         <ProfilingSupportedBuild>true</ProfilingSupportedBuild>
     </PropertyGroup>
 
