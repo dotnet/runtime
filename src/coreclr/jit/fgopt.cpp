@@ -309,7 +309,7 @@ PhaseStatus Compiler::fgPostImportationCleanup()
     {
         // Update type of return spill temp if we have gathered
         // better info when importing the inlinee, and the return
-        // spill temp is single def.
+        // spill temp is single def or was freshly created for this inlinee
         if (fgNeedReturnSpillTemp())
         {
             CORINFO_CLASS_HANDLE retExprClassHnd = impInlineInfo->retExprClassHnd;
@@ -317,9 +317,11 @@ PhaseStatus Compiler::fgPostImportationCleanup()
             {
                 LclVarDsc* returnSpillVarDsc = lvaGetDesc(lvaInlineeReturnSpillTemp);
 
-                if ((returnSpillVarDsc->lvType == TYP_REF) && returnSpillVarDsc->lvSingleDef)
+                if (returnSpillVarDsc->lvType == TYP_REF &&
+                    (returnSpillVarDsc->lvSingleDef || lvaInlineeReturnSpillTempFreshlyCreated))
                 {
-                    lvaUpdateClass(lvaInlineeReturnSpillTemp, retExprClassHnd, impInlineInfo->retExprClassHndIsExact);
+                    lvaUpdateClass(lvaInlineeReturnSpillTemp, retExprClassHnd, impInlineInfo->retExprClassHndIsExact,
+                                   false);
                 }
             }
         }
@@ -4661,10 +4663,6 @@ void Compiler::fgDoReversePostOrderLayout()
     }
 #endif // DEBUG
 
-    // Compute DFS of all blocks in the method, using profile data to determine the order successors are visited in.
-    //
-    m_dfsTree = fgComputeDfs</* useProfile */ true>();
-
     // If LSRA didn't create any new blocks, we can reuse its loop-aware RPO traversal,
     // which is cached in Compiler::fgBBs.
     // If the cache isn't available, we need to recompute the loop-aware RPO.
@@ -4673,14 +4671,20 @@ void Compiler::fgDoReversePostOrderLayout()
 
     if (rpoSequence == nullptr)
     {
-        rpoSequence                        = new (this, CMK_BasicBlock) BasicBlock*[m_dfsTree->GetPostOrderCount()];
+        assert(m_dfsTree == nullptr);
+        m_dfsTree                          = fgComputeDfs</* useProfile */ true>();
         FlowGraphNaturalLoops* const loops = FlowGraphNaturalLoops::Find(m_dfsTree);
-        unsigned                     index = 0;
-        auto                         addToSequence = [rpoSequence, &index](BasicBlock* block) {
+        rpoSequence                        = new (this, CMK_BasicBlock) BasicBlock*[m_dfsTree->GetPostOrderCount()];
+        unsigned index                     = 0;
+        auto     addToSequence             = [rpoSequence, &index](BasicBlock* block) {
             rpoSequence[index++] = block;
         };
 
         fgVisitBlocksInLoopAwareRPO(m_dfsTree, loops, addToSequence);
+    }
+    else
+    {
+        assert(m_dfsTree != nullptr);
     }
 
     // Fast path: We don't have any EH regions, so just reorder the blocks
@@ -4931,7 +4935,6 @@ Compiler::ThreeOptLayout::ThreeOptLayout(Compiler* comp)
     , blockOrder(nullptr)
     , tempOrder(nullptr)
     , numCandidateBlocks(0)
-    , currEHRegion(0)
 {
 }
 
@@ -5125,7 +5128,7 @@ void Compiler::ThreeOptLayout::ConsiderEdge(FlowEdge* edge)
     BasicBlock* const dstBlk = edge->getDestinationBlock();
 
     // Ignore cross-region branches
-    if ((srcBlk->bbTryIndex != currEHRegion) || (dstBlk->bbTryIndex != currEHRegion))
+    if (!BasicBlock::sameTryRegion(srcBlk, dstBlk))
     {
         return;
     }
@@ -5224,8 +5227,7 @@ void Compiler::ThreeOptLayout::AddNonFallthroughPreds(unsigned blockPos)
 }
 
 //-----------------------------------------------------------------------------
-// Compiler::ThreeOptLayout::Run: Runs 3-opt for each contiguous region of the block list
-// we're interested in reordering.
+// Compiler::ThreeOptLayout::Run: Runs 3-opt on the candidate span of hot blocks.
 // We skip reordering handler regions for now, as these are assumed to be cold.
 //
 void Compiler::ThreeOptLayout::Run()
@@ -5244,13 +5246,6 @@ void Compiler::ThreeOptLayout::Run()
     assert(finalBlock != nullptr);
     assert(!finalBlock->isBBCallFinallyPair());
 
-    // For methods with fewer than three candidate blocks, we cannot partition anything
-    if (finalBlock->IsFirst() || finalBlock->Prev()->IsFirst())
-    {
-        JITDUMP("Not enough blocks to partition anything. Skipping 3-opt.\n");
-        return;
-    }
-
     // Get an upper bound on the number of hot blocks without walking the whole block list.
     // We will only consider blocks reachable via normal flow.
     const unsigned numBlocksUpperBound = compiler->m_dfsTree->GetPostOrderCount();
@@ -5267,45 +5262,20 @@ void Compiler::ThreeOptLayout::Run()
         }
 
         assert(numCandidateBlocks < numBlocksUpperBound);
-        blockOrder[numCandidateBlocks] = tempOrder[numCandidateBlocks] = block;
+        blockOrder[numCandidateBlocks] = block;
 
         // Repurpose 'bbPostorderNum' for the block's ordinal
         block->bbPostorderNum = numCandidateBlocks++;
-
-        // While walking the span of blocks to reorder,
-        // remember where each try region ends within this span.
-        // We'll use this information to run 3-opt per region.
-        EHblkDsc* const HBtab = compiler->ehGetBlockTryDsc(block);
-        if (HBtab != nullptr)
-        {
-            HBtab->ebdTryLast = block;
-        }
     }
 
-    // Reorder try regions first
-    bool modified = false;
-    for (EHblkDsc* const HBtab : EHClauses(compiler))
+    // For methods with fewer than three candidate blocks, we cannot partition anything
+    if (numCandidateBlocks < 3)
     {
-        // If multiple region indices map to the same region,
-        // make sure we reorder its blocks only once
-        BasicBlock* const tryBeg = HBtab->ebdTryBeg;
-        if (tryBeg->getTryIndex() != currEHRegion++)
-        {
-            continue;
-        }
-
-        // Only reorder try regions within the candidate span of blocks
-        if ((tryBeg->bbPostorderNum < numCandidateBlocks) && (blockOrder[tryBeg->bbPostorderNum] == tryBeg))
-        {
-            JITDUMP("Running 3-opt for try region #%d\n", (currEHRegion - 1));
-            modified |= RunThreeOptPass(tryBeg, HBtab->ebdTryLast);
-        }
+        JITDUMP("Not enough blocks to partition anything. Skipping reordering.\n");
+        return;
     }
 
-    // Finally, reorder the main method body
-    currEHRegion = 0;
-    JITDUMP("Running 3-opt for main method body\n");
-    modified |= RunThreeOptPass(compiler->fgFirstBB, blockOrder[numCandidateBlocks - 1]);
+    const bool modified = RunThreeOpt();
 
     if (modified)
     {
@@ -5314,14 +5284,25 @@ void Compiler::ThreeOptLayout::Run()
             BasicBlock* const block = blockOrder[i - 1];
             BasicBlock* const next  = blockOrder[i];
 
-            // Only reorder within EH regions to maintain contiguity.
-            // TODO: Allow moving blocks in different regions when 'next' is the region entry.
-            // This would allow us to move entire regions up/down because of the contiguity requirement.
-            if (!block->NextIs(next) && BasicBlock::sameEHRegion(block, next))
+            if (block->NextIs(next))
             {
-                compiler->fgUnlinkBlock(next);
-                compiler->fgInsertBBafter(block, next);
+                continue;
             }
+
+            // Only reorder within EH regions to maintain contiguity.
+            if (!BasicBlock::sameEHRegion(block, next))
+            {
+                continue;
+            }
+
+            // Don't move the entry of an EH region.
+            if (compiler->bbIsTryBeg(next) || compiler->bbIsHandlerBeg(next))
+            {
+                continue;
+            }
+
+            compiler->fgUnlinkBlock(next);
+            compiler->fgInsertBBafter(block, next);
         }
     }
 }
@@ -5466,12 +5447,6 @@ bool Compiler::ThreeOptLayout::RunGreedyThreeOptPass(unsigned startPos, unsigned
                     continue;
                 }
 
-                // Don't consider any cut points that would disturb other EH regions
-                if (!BasicBlock::sameEHRegion(s2Block, s3Block))
-                {
-                    continue;
-                }
-
                 // Compute the cost delta of this partition
                 const weight_t currCost = currCostBase + GetCost(s3BlockPrev, s3Block);
                 const weight_t newCost =
@@ -5529,38 +5504,23 @@ bool Compiler::ThreeOptLayout::RunGreedyThreeOptPass(unsigned startPos, unsigned
 }
 
 //-----------------------------------------------------------------------------
-// Compiler::ThreeOptLayout::RunThreeOptPass: Runs 3-opt for the given block range.
-//
-// Parameters:
-//   startBlock - The first block of the range to reorder
-//   endBlock - The last block (inclusive) of the range to reorder
+// Compiler::ThreeOptLayout::RunThreeOpt: Runs 3-opt on the candidate span of blocks.
 //
 // Returns:
 //   True if we reordered anything, false otherwise
 //
-bool Compiler::ThreeOptLayout::RunThreeOptPass(BasicBlock* startBlock, BasicBlock* endBlock)
+bool Compiler::ThreeOptLayout::RunThreeOpt()
 {
-    assert(startBlock != nullptr);
-    assert(endBlock != nullptr);
-
-    const unsigned startPos  = startBlock->bbPostorderNum;
-    const unsigned endPos    = endBlock->bbPostorderNum;
-    const unsigned numBlocks = (endPos - startPos + 1);
-    assert(startPos <= endPos);
-
-    if (numBlocks < 3)
-    {
-        JITDUMP("Not enough blocks to partition anything. Skipping reordering.\n");
-        return false;
-    }
+    // We better have enough blocks to create partitions
+    assert(numCandidateBlocks > 2);
+    const unsigned startPos = 0;
+    const unsigned endPos   = numCandidateBlocks - 1;
 
     JITDUMP("Initial layout cost: %f\n", GetLayoutCost(startPos, endPos));
     const bool modified = RunGreedyThreeOptPass(startPos, endPos);
 
-    // Write back to 'tempOrder' so changes to this region aren't lost next time we swap 'tempOrder' and 'blockOrder'
     if (modified)
     {
-        memcpy(tempOrder + startPos, blockOrder + startPos, sizeof(BasicBlock*) * numBlocks);
         JITDUMP("Final layout cost: %f\n", GetLayoutCost(startPos, endPos));
     }
     else

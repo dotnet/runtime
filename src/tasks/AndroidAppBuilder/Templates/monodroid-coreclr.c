@@ -24,12 +24,21 @@ void
 Java_net_dot_MonoRunner_setEnv (JNIEnv* env, jobject thiz, jstring j_key, jstring j_value);
 
 int
-Java_net_dot_MonoRunner_initRuntime (JNIEnv* env, jobject thiz, jstring j_files_dir, jstring j_cache_dir, jstring j_testresults_dir, jstring j_entryPointLibName, jobjectArray j_args, long current_local_time);
+Java_net_dot_MonoRunner_initRuntime (JNIEnv* env, jobject thiz, jstring j_files_dir, jstring j_entryPointLibName, long current_local_time);
+
+int
+Java_net_dot_MonoRunner_execEntryPoint (JNIEnv* env, jobject thiz, jstring j_entryPointLibName, jobjectArray j_args);
+
+void
+Java_net_dot_MonoRunner_freeNativeResources (JNIEnv* env, jobject thiz);
 
 /********* implementation *********/
 
-static char *bundle_path;
-static char *executable;
+static const char* g_bundle_path = NULL;
+static const char* g_executable_path = NULL;
+static unsigned int g_coreclr_domainId = 0;
+static void* g_coreclr_handle = NULL;
+
 
 #define LOG_INFO(fmt, ...) __android_log_print(ANDROID_LOG_DEBUG, "DOTNET", fmt, ##__VA_ARGS__)
 #define LOG_ERROR(fmt, ...) __android_log_print(ANDROID_LOG_ERROR, "DOTNET", fmt, ##__VA_ARGS__)
@@ -54,19 +63,9 @@ strncpy_str (JNIEnv *env, char *buff, jstring str, int nbuff)
     jboolean isCopy = 0;
     const char *copy_buff = (*env)->GetStringUTFChars (env, str, &isCopy);
     strncpy (buff, copy_buff, nbuff);
+    buff[nbuff - 1] = '\0'; // ensure '\0' terminated
     if (isCopy)
         (*env)->ReleaseStringUTFChars (env, str, copy_buff);
-}
-
-void
-Java_net_dot_MonoRunner_setEnv (JNIEnv* env, jobject thiz, jstring j_key, jstring j_value)
-{
-    LOG_INFO ("Java_net_dot_MonoRunner_setEnv:");
-    const char *key = (*env)->GetStringUTFChars(env, j_key, 0);
-    const char *val = (*env)->GetStringUTFChars(env, j_value, 0);
-    setenv (key, val, true);
-    (*env)->ReleaseStringUTFChars(env, j_key, key);
-    (*env)->ReleaseStringUTFChars(env, j_value, val);
 }
 
 /*
@@ -130,11 +129,67 @@ get_tpas_from_path(const char* dir_path, const char** tpas)
 }
 
 static int
-mono_droid_runtime_init (const char* executable, int managed_argc, char* managed_argv[], int local_date_time_offset)
+bundle_executable_path (const char* executable, const char* bundle_path, const char** executable_path)
 {
-    LOG_INFO ("mono_droid_runtime_init called with executable: %s", executable);
+    size_t executable_path_len = strlen(bundle_path) + strlen(executable) + 1; // +1 for '/'
+    char* temp_path = (char*)malloc(sizeof(char) * (executable_path_len + 1)); // +1 for '\0'
+    if (temp_path == NULL)
+    {
+        return -1;
+    }
 
-    chdir (bundle_path);
+    size_t res = snprintf(temp_path, (executable_path_len + 1), "%s/%s", bundle_path, executable);
+    if (res < 0 || res != executable_path_len)
+    {
+        return -1;
+    }
+    *executable_path = temp_path;
+    return executable_path_len;
+}
+
+static void
+free_resources ()
+{
+    if (g_bundle_path)
+    {
+        free (g_bundle_path);
+        g_bundle_path = NULL;
+    }
+    if (g_executable_path)
+    {
+        free (g_executable_path);
+        g_executable_path = NULL;
+    }
+    if (g_coreclr_handle)
+    {
+        // Clean up some coreclr resources. This doesn't make coreclr unloadable.
+        coreclr_shutdown (g_coreclr_handle, g_coreclr_domainId);
+        g_coreclr_handle = NULL;
+    }
+}
+
+static int 
+mono_droid_execute_assembly (const char* executable_path, void* coreclr_handle, unsigned int coreclr_domainId, int managed_argc, const char** managed_argv)
+{
+    unsigned int rv;
+    LOG_INFO ("Calling coreclr_execute_assembly");
+    coreclr_execute_assembly (coreclr_handle, coreclr_domainId, managed_argc, managed_argv, executable_path, &rv);
+    LOG_INFO ("Exit code: %u.", rv);
+    return rv;
+}
+
+static int
+mono_droid_runtime_init (const char* executable)
+{
+    LOG_INFO ("mono_droid_runtime_init (CoreCLR) called with executable: %s", executable);
+
+    if (bundle_executable_path(executable, g_bundle_path, &g_executable_path) < 0)
+    {
+        LOG_ERROR("Failed to resolve full path for: %s", executable);
+        return -1;
+    }
+
+    chdir (g_bundle_path);
 
     // TODO: set TRUSTED_PLATFORM_ASSEMBLIES, APP_PATHS and NATIVE_DLL_SEARCH_DIRECTORIES
 
@@ -145,78 +200,99 @@ mono_droid_runtime_init (const char* executable, int managed_argc, char* managed
 
     const char* appctx_values[3];
     appctx_values[0] = ANDROID_RUNTIME_IDENTIFIER;
-    appctx_values[1] = bundle_path;
-    size_t tpas_len = get_tpas_from_path(bundle_path, &appctx_values[2]);
+    appctx_values[1] = g_bundle_path;
+    size_t tpas_len = get_tpas_from_path(g_bundle_path, &appctx_values[2]);
     if (tpas_len < 1)
     {
-        LOG_ERROR("Failed to get trusted assemblies from path: %s", bundle_path);
+        LOG_ERROR("Failed to get trusted assemblies from path: %s", g_bundle_path);
         return -1;
     }
-
-    size_t executable_path_len = strlen(bundle_path) + strlen(executable) + 2; // +2 for '/' and '\0'
-    char* executable_path = (char*)malloc(executable_path_len);
-    size_t res = sprintf (executable_path, "%s/%s", bundle_path, executable);
-    if (res != executable_path_len - 1)
-    {
-        LOG_ERROR("Failed to resolve full path for: %s", executable);
-        return -1;
-    }
-    executable_path[res] = '\0';
-
-    unsigned int coreclr_domainId = 0;
-    void *coreclr_handle = NULL;
 
     LOG_INFO ("Calling coreclr_initialize");
     int rv = coreclr_initialize (
-		executable_path,
+		g_executable_path,
 		executable,
 		3,
 		appctx_keys,
 		appctx_values,
-		&coreclr_handle,
-		&coreclr_domainId
+		&g_coreclr_handle,
+		&g_coreclr_domainId
 		);
     LOG_INFO ("coreclr_initialize returned %d", rv);
-
-    LOG_INFO ("Calling coreclr_execute_assembly");
-    coreclr_execute_assembly (coreclr_handle, coreclr_domainId, managed_argc, managed_argv, executable_path, &rv);
-
-    LOG_INFO ("Exit code: %d.", rv);
     return rv;
 }
 
-int
-Java_net_dot_MonoRunner_initRuntime (JNIEnv* env, jobject thiz, jstring j_files_dir, jstring j_cache_dir, jstring j_testresults_dir, jstring j_entryPointLibName, jobjectArray j_args, long current_local_time)
+void
+Java_net_dot_MonoRunner_setEnv (JNIEnv* env, jobject thiz, jstring j_key, jstring j_value)
 {
-    LOG_INFO ("Java_net_dot_MonoRunner_initRuntime:");
+    LOG_INFO ("Java_net_dot_MonoRunner_setEnv:");
+    assert (g_coreclr_handle == NULL); // setenv should be only called before the runtime is initialized
+
+    const char *key = (*env)->GetStringUTFChars(env, j_key, 0);
+    const char *val = (*env)->GetStringUTFChars(env, j_value, 0);
+     
+    LOG_INFO ("Setting env: %s=%s", key, val);
+    setenv (key, val, true);
+    (*env)->ReleaseStringUTFChars(env, j_key, key);
+    (*env)->ReleaseStringUTFChars(env, j_value, val);
+}
+
+int
+Java_net_dot_MonoRunner_initRuntime (JNIEnv* env, jobject thiz, jstring j_files_dir, jstring j_entryPointLibName, long current_local_time)
+{
+    LOG_INFO ("Java_net_dot_MonoRunner_initRuntime (CoreCLR):");
     char file_dir[2048];
-    char cache_dir[2048];
-    char testresults_dir[2048];
     char entryPointLibName[2048];
     strncpy_str (env, file_dir, j_files_dir, sizeof(file_dir));
-    strncpy_str (env, cache_dir, j_cache_dir, sizeof(cache_dir));
-    strncpy_str (env, testresults_dir, j_testresults_dir, sizeof(testresults_dir));
     strncpy_str (env, entryPointLibName, j_entryPointLibName, sizeof(entryPointLibName));
 
-    bundle_path = file_dir;
-    executable = entryPointLibName;
+    size_t file_dir_len = strlen(file_dir);
+    char* bundle_path_tmp = (char*)malloc(sizeof(char) * (file_dir_len + 1)); // +1 for '\0'
+    if (bundle_path_tmp == NULL)
+    {
+        LOG_ERROR("Failed to allocate memory for bundle_path");
+        return -1;
+    }
+    strncpy(bundle_path_tmp, file_dir, file_dir_len + 1);
+    g_bundle_path = bundle_path_tmp;
 
-    setenv ("HOME", bundle_path, true);
-    setenv ("TMPDIR", cache_dir, true);
-    setenv ("TEST_RESULTS_DIR", testresults_dir, true);
+    return mono_droid_runtime_init (entryPointLibName);
+}
 
-    int args_len = (*env)->GetArrayLength(env, j_args);
+int
+Java_net_dot_MonoRunner_execEntryPoint (JNIEnv* env, jobject thiz, jstring j_entryPointLibName, jobjectArray j_args)
+{
+    LOG_INFO("Java_net_dot_MonoRunner_execEntryPoint (CoreCLR):");
+    
+    if ((g_bundle_path == NULL) || (g_executable_path == NULL))
+    {
+        LOG_ERROR("Bundle path or executable path not set");
+        return -1;
+    }
+
+    if ((g_coreclr_handle == NULL) || (g_coreclr_domainId == 0))
+    {
+        LOG_ERROR("CoreCLR not initialized");
+        return -1;
+    }
+
+    int args_len = (*env)->GetArrayLength (env, j_args);
     int managed_argc = args_len + 1;
-    char** managed_argv = (char**)malloc(managed_argc * sizeof(char*));
+    const char** managed_argv = (const char**)malloc (managed_argc * sizeof(char*));
+    if (managed_argv == NULL)
+    {
+        LOG_ERROR("Failed to allocate memory for managed_argv");
+        return -1;
+    }
 
-    managed_argv[0] = bundle_path;
+    managed_argv[0] = g_bundle_path;
     for (int i = 0; i < args_len; ++i)
     {
         jstring j_arg = (*env)->GetObjectArrayElement(env, j_args, i);
         managed_argv[i + 1] = (char*)((*env)->GetStringUTFChars(env, j_arg, NULL));
     }
 
-    int res = mono_droid_runtime_init (executable, managed_argc, managed_argv, current_local_time);
+    int rv = mono_droid_execute_assembly (g_executable_path, g_coreclr_handle, g_coreclr_domainId, managed_argc, managed_argv);
 
     for (int i = 0; i < args_len; ++i)
     {
@@ -225,6 +301,12 @@ Java_net_dot_MonoRunner_initRuntime (JNIEnv* env, jobject thiz, jstring j_files_
     }
 
     free(managed_argv);
-    return res;
+    return rv;
 }
 
+void
+Java_net_dot_MonoRunner_freeNativeResources (JNIEnv* env, jobject thiz)
+{
+    LOG_INFO ("Java_net_dot_MonoRunner_freeNativeResources (CoreCLR):");
+    free_resources ();
+}

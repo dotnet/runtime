@@ -720,9 +720,9 @@ public:
                         return true;
                     }
 
-                    const StructSegments& significantSegments = comp->GetSignificantSegments(otherAccess.Layout);
+                    const SegmentList& significantSegments = otherAccess.Layout->GetNonPadding(comp);
                     if (!significantSegments.Intersects(
-                            StructSegments::Segment(layoutOffset + accessSize, layoutOffset + TARGET_POINTER_SIZE)))
+                            SegmentList::Segment(layoutOffset + accessSize, layoutOffset + TARGET_POINTER_SIZE)))
                     {
                         return true;
                     }
@@ -1296,17 +1296,17 @@ public:
             }
 #endif
 
-            agg->Unpromoted = m_compiler->GetSignificantSegments(m_compiler->lvaGetDesc(agg->LclNum)->GetLayout());
+            agg->Unpromoted = m_compiler->lvaGetDesc(agg->LclNum)->GetLayout()->GetNonPadding(m_compiler);
             for (Replacement& rep : reps)
             {
-                agg->Unpromoted.Subtract(StructSegments::Segment(rep.Offset, rep.Offset + genTypeSize(rep.AccessType)));
+                agg->Unpromoted.Subtract(SegmentList::Segment(rep.Offset, rep.Offset + genTypeSize(rep.AccessType)));
             }
 
             JITDUMP("  Unpromoted remainder: ");
             DBEXEC(m_compiler->verbose, agg->Unpromoted.Dump());
             JITDUMP("\n\n");
 
-            StructSegments::Segment unpromotedSegment;
+            SegmentList::Segment unpromotedSegment;
             if (agg->Unpromoted.CoveringSegment(&unpromotedSegment))
             {
                 agg->UnpromotedMin = unpromotedSegment.Start;
@@ -1491,19 +1491,15 @@ private:
 
                 flags |= AccessKindFlags::IsCallArg;
 
-#if FEATURE_MULTIREG_ARGS
                 if (!call->gtArgs.IsNewAbiInformationDetermined())
                 {
                     call->gtArgs.DetermineNewABIInfo(m_compiler, call);
                 }
 
-                if (!arg.NewAbiInfo.HasAnyStackSegment() && !arg.NewAbiInfo.HasExactlyOneRegisterSegment())
+                if (!arg.NewAbiInfo.HasAnyStackSegment() && !arg.AbiInfo.PassedByRef)
                 {
-                    // TODO-CQ: Support for other register args than multireg
-                    // args as well.
                     flags |= AccessKindFlags::IsRegCallArg;
                 }
-#endif
 
                 break;
             }
@@ -2058,7 +2054,7 @@ void ReplaceVisitor::InsertPreStatementWriteBacks()
 
                     if (m_replacer->CanReplaceCallArgWithFieldListOfReplacements(call, &arg, node->AsLclVarCommon()))
                     {
-                        // Multi-reg arg; can decompose into FIELD_LIST.
+                        // Register arg that can be decomposed into FIELD_LIST.
                         continue;
                     }
 
@@ -2175,7 +2171,7 @@ bool ReplaceVisitor::ReplaceCallArgWithFieldList(GenTreeCall* call, GenTreeLclVa
     {
         Replacement* rep = nullptr;
         if (agg->OverlappingReplacements(argNode->GetLclOffs() + seg.Offset, seg.Size, &rep, nullptr) &&
-            rep->NeedsWriteBack)
+            !rep->NeedsReadBack)
         {
             GenTreeLclVar* fieldValue = m_compiler->gtNewLclvNode(rep->LclNum, rep->AccessType);
 
@@ -2247,15 +2243,10 @@ bool ReplaceVisitor::CanReplaceCallArgWithFieldListOfReplacements(GenTreeCall*  
                                                                   CallArg*             callArg,
                                                                   GenTreeLclVarCommon* lcl)
 {
-#if !FEATURE_MULTIREG_ARGS
-    // TODO-CQ: We should do a similar thing for structs passed in a single
-    // register.
-    return false;
-#else
     // We should have computed ABI information during the costing phase.
     assert(call->gtArgs.IsNewAbiInformationDetermined());
 
-    if (callArg->NewAbiInfo.HasAnyStackSegment() || callArg->NewAbiInfo.HasExactlyOneRegisterSegment())
+    if (callArg->NewAbiInfo.HasAnyStackSegment() || callArg->AbiInfo.PassedByRef)
     {
         return false;
     }
@@ -2290,7 +2281,7 @@ bool ReplaceVisitor::CanReplaceCallArgWithFieldListOfReplacements(GenTreeCall*  
             // the remainder is a different promotion we will return false when
             // the replacement is visited in this callback.
             if ((repSize < seg.Size) &&
-                agg->Unpromoted.Intersects(StructSegments::Segment(rep.Offset + repSize, rep.Offset + seg.Size)))
+                agg->Unpromoted.Intersects(SegmentList::Segment(rep.Offset + repSize, rep.Offset + seg.Size)))
             {
                 return false;
             }
@@ -2311,7 +2302,6 @@ bool ReplaceVisitor::CanReplaceCallArgWithFieldListOfReplacements(GenTreeCall*  
     }
 
     return anyReplacements;
-#endif
 }
 
 //------------------------------------------------------------------------

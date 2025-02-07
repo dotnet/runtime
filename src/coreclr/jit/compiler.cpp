@@ -2299,6 +2299,7 @@ void Compiler::compSetProcessor()
         if (canUseApxEncoding())
         {
             codeGen->GetEmitter()->SetUseRex2Encoding(true);
+            codeGen->GetEmitter()->SetUsePromotedEVEXEncoding(true);
         }
     }
 #endif // TARGET_XARCH
@@ -3390,11 +3391,24 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
     rbmFltCalleeTrash   = RBM_FLT_CALLEE_TRASH_INIT;
     cntCalleeTrashFloat = CNT_CALLEE_TRASH_FLOAT_INIT;
 
+    rbmAllInt         = RBM_ALLINT_INIT;
+    rbmIntCalleeTrash = RBM_INT_CALLEE_TRASH_INIT;
+    cntCalleeTrashInt = CNT_CALLEE_TRASH_INT_INIT;
+    regIntLast        = REG_R15;
+
     if (canUseEvexEncoding())
     {
         rbmAllFloat |= RBM_HIGHFLOAT;
         rbmFltCalleeTrash |= RBM_HIGHFLOAT;
         cntCalleeTrashFloat += CNT_CALLEE_TRASH_HIGHFLOAT;
+    }
+
+    if (canUseApxEncoding())
+    {
+        rbmAllInt |= RBM_HIGHINT;
+        rbmIntCalleeTrash |= RBM_HIGHINT;
+        cntCalleeTrashInt += CNT_CALLEE_TRASH_HIGHINT;
+        regIntLast = REG_R23;
     }
 #endif // TARGET_AMD64
 
@@ -4871,11 +4885,6 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
         DoPhase(this, PHASE_COMPUTE_DOMINATORS, &Compiler::fgComputeDominators);
     }
 
-    // Drop back to just checking profile likelihoods.
-    //
-    activePhaseChecks &= ~PhaseChecks::CHECK_PROFILE;
-    activePhaseChecks |= PhaseChecks::CHECK_LIKELIHOODS;
-
 #ifdef DEBUG
     fgDebugCheckLinks();
 #endif
@@ -5155,11 +5164,6 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
         //
         DoPhase(this, PHASE_SWITCH_RECOGNITION, &Compiler::optSwitchRecognition);
     }
-
-    // Drop back to just checking profile likelihoods.
-    //
-    activePhaseChecks &= ~PhaseChecks::CHECK_PROFILE;
-    activePhaseChecks |= PhaseChecks::CHECK_LIKELIHOODS;
 
 #ifdef DEBUG
     // Stash the current estimate of the function's size if necessary.
@@ -6341,6 +6345,11 @@ int Compiler::compCompile(CORINFO_MODULE_HANDLE classPtr,
             instructionSetFlags.AddInstructionSet(InstructionSet_AVX10v1);
             instructionSetFlags.AddInstructionSet(InstructionSet_AVX10v1_V512);
             instructionSetFlags.AddInstructionSet(InstructionSet_EVEX);
+        }
+
+        if (JitConfig.EnableAPX() != 0)
+        {
+            instructionSetFlags.AddInstructionSet(InstructionSet_APX);
         }
 #endif
 
@@ -8278,67 +8287,6 @@ void Compiler::TransferTestDataToNode(GenTree* from, GenTree* to)
 
 #endif // DEBUG
 
-//------------------------------------------------------------------------
-// GetSignificantSegments:
-//   Compute a segment tree containing all significant (non-padding) segments
-//   for the specified class layout.
-//
-// Parameters:
-//   layout - The layout
-//
-// Returns:
-//   Segment tree containing all significant parts of the layout.
-//
-const StructSegments& Compiler::GetSignificantSegments(ClassLayout* layout)
-{
-    StructSegments* cached;
-    if ((m_significantSegmentsMap != nullptr) && m_significantSegmentsMap->Lookup(layout, &cached))
-    {
-        return *cached;
-    }
-
-    COMP_HANDLE compHnd = info.compCompHnd;
-
-    StructSegments* newSegments = new (this, CMK_Promotion) StructSegments(getAllocator(CMK_Promotion));
-
-    if (layout->IsBlockLayout())
-    {
-        newSegments->Add(StructSegments::Segment(0, layout->GetSize()));
-    }
-    else
-    {
-        CORINFO_TYPE_LAYOUT_NODE nodes[256];
-        size_t                   numNodes = ArrLen(nodes);
-        GetTypeLayoutResult      result   = compHnd->getTypeLayout(layout->GetClassHandle(), nodes, &numNodes);
-
-        if (result != GetTypeLayoutResult::Success)
-        {
-            newSegments->Add(StructSegments::Segment(0, layout->GetSize()));
-        }
-        else
-        {
-            for (size_t i = 0; i < numNodes; i++)
-            {
-                const CORINFO_TYPE_LAYOUT_NODE& node = nodes[i];
-                if ((node.type != CORINFO_TYPE_VALUECLASS) || (node.simdTypeHnd != NO_CLASS_HANDLE) ||
-                    node.hasSignificantPadding)
-                {
-                    newSegments->Add(StructSegments::Segment(node.offset, node.offset + node.size));
-                }
-            }
-        }
-    }
-
-    if (m_significantSegmentsMap == nullptr)
-    {
-        m_significantSegmentsMap = new (this, CMK_Promotion) ClassLayoutStructSegmentsMap(getAllocator(CMK_Promotion));
-    }
-
-    m_significantSegmentsMap->Set(layout, newSegments);
-
-    return *newSegments;
-}
-
 /*
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
@@ -10165,7 +10113,7 @@ JITDBGAPI void __cdecl cTreeFlags(Compiler* comp, GenTree* tree)
                     {
                         chars += printf("[CALL_M_NOGCCHECK]");
                     }
-                    if (call->gtCallMoreFlags & GTF_CALL_M_SPECIAL_INTRINSIC)
+                    if (call->IsSpecialIntrinsic())
                     {
                         chars += printf("[CALL_M_SPECIAL_INTRINSIC]");
                     }
