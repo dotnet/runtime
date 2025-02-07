@@ -63,8 +63,6 @@ function(create_platform_unwinder)
     ${UNWINDER_SOURCES}
   )
 
-  add_dependencies(${TARGETDETAILS_TARGET} eventing_headers)
-
   target_include_directories(${TARGETDETAILS_TARGET} BEFORE PRIVATE ${VM_DIR})
   target_include_directories(${TARGETDETAILS_TARGET} BEFORE PRIVATE ${VM_DIR}/${ARCH_SOURCES_DIR})
   target_include_directories(${TARGETDETAILS_TARGET} BEFORE PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
