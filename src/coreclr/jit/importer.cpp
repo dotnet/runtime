@@ -976,7 +976,7 @@ GenTree* Compiler::impStoreStruct(GenTree*         store,
             {
                 unsigned tmp = lvaGrabTemp(false DEBUGARG("stack copy for value returned via return buffer"));
                 lvaSetStruct(tmp, call->gtRetClsHnd, false);
-                destAddr = gtNewLclVarAddrNode(tmp, TYP_BYREF);
+                destAddr = gtNewLclVarAddrNode(tmp, TYP_I_IMPL);
 
                 // Insert address of temp into existing call
                 NewCallArg retBufArg = NewCallArg::Primitive(destAddr).WellKnown(WellKnownArg::RetBuffer);
