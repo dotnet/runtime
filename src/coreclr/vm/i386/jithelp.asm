@@ -58,7 +58,6 @@ endif ; _DEBUG
 ifdef FEATURE_HIJACK
 EXTERN  JIT_TailCallHelper:PROC
 endif
-EXTERN _g_TailCallFrameVptr:DWORD
 EXTERN @JIT_FailFast@0:PROC
 
 EXTERN g_pPollGC:DWORD
@@ -945,9 +944,8 @@ VSDSpaceForFrameChecked:
         ; At this point, we have enough space on the stack for the TailCallFrame,
         ; and we may already have slided down the arguments
 
-        mov     eax, _g_TailCallFrameVptr       ; vptr
         mov     edx, dword ptr [esp+OrigRetAddr]        ; orig return address
-        mov     dword ptr [edi], eax            ; TailCallFrame::vptr
+        mov     dword ptr [edi], FRAMETYPE_TailCallFrame  ; FrameIdentifier::TailCallFrame
         mov     dword ptr [edi+28], edx         ; TailCallFrame::m_ReturnAddress
 
         mov     eax, dword ptr [esp+CallersEdi]         ; restored edi

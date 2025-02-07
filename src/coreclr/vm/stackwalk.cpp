@@ -696,13 +696,13 @@ void Thread::DebugLogStackWalkInfo(CrawlFrame* pCF, _In_z_ LPCSTR pszTag, UINT32
     }
     else
     {
-        LOG((LF_GCROOTS, LL_INFO10000, "STACKWALK: [%03x] %s: EXPLICIT : PC=" FMT_ADDR " SP=" FMT_ADDR " Frame=" FMT_ADDR" vtbl=" FMT_ADDR "\n",
+        LOG((LF_GCROOTS, LL_INFO10000, "STACKWALK: [%03x] %s: EXPLICIT : PC=" FMT_ADDR " SP=" FMT_ADDR " Frame=" FMT_ADDR" FrameId=" FMT_ADDR "\n",
             uFramesProcessed,
             pszTag,
             DBG_ADDR(GetControlPC(pCF->pRD)),
             DBG_ADDR(GetRegdisplaySP(pCF->pRD)),
             DBG_ADDR(pCF->pFrame),
-            DBG_ADDR((pCF->pFrame != FRAME_TOP) ? pCF->pFrame->GetVTablePtr() : (TADDR)NULL)));
+            DBG_ADDR((pCF->pFrame != FRAME_TOP) ? (TADDR)pCF->pFrame->GetFrameIdentifier() : (TADDR)NULL)));
     }
 }
 #endif // _DEBUG

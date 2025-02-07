@@ -5861,7 +5861,7 @@ GenTree* Lowering::CreateFrameLinkUpdate(FrameLinkAction action)
     if (action == PushFrame)
     {
         // Thread->m_pFrame = &inlinedCallFrame;
-        data = comp->gtNewLclAddrNode(comp->lvaInlinedPInvokeFrameVar, callFrameInfo.offsetOfFrameVptr);
+        data = comp->gtNewLclVarAddrNode(comp->lvaInlinedPInvokeFrameVar);
     }
     else
     {
@@ -5889,7 +5889,7 @@ GenTree* Lowering::CreateFrameLinkUpdate(FrameLinkAction action)
 //  64-bit  32-bit                                    CORINFO_EE_INFO
 //  offset  offset  field name                        offset                  when set
 //  -----------------------------------------------------------------------------------------
-//  +00h    +00h    vptr for class InlinedCallFrame   offsetOfFrameVptr       method prolog
+//  +00h    +00h    _frameIdentifier                  0                       method prolog
 //  +08h    +04h    m_Next                            offsetOfFrameLink       method prolog
 //  +10h    +08h    m_Datum                           offsetOfCallTarget      call site
 //  +18h    +0Ch    m_pCallSiteSP                     offsetOfCallSiteSP      x86: call site, and zeroed in method
@@ -5945,7 +5945,7 @@ void Lowering::InsertPInvokeMethodProlog()
 
     // Call runtime helper to fill in our InlinedCallFrame and push it on the Frame list:
     //     TCB = CORINFO_HELP_INIT_PINVOKE_FRAME(&symFrameStart);
-    GenTree*   frameAddr    = comp->gtNewLclAddrNode(comp->lvaInlinedPInvokeFrameVar, callFrameInfo.offsetOfFrameVptr);
+    GenTree*   frameAddr    = comp->gtNewLclVarAddrNode(comp->lvaInlinedPInvokeFrameVar);
     NewCallArg frameAddrArg = NewCallArg::Primitive(frameAddr).WellKnown(WellKnownArg::PInvokeFrame);
 
     GenTreeCall* call = comp->gtNewHelperCallNode(CORINFO_HELP_INIT_PINVOKE_FRAME, TYP_I_IMPL);

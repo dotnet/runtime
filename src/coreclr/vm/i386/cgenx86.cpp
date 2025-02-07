@@ -877,26 +877,25 @@ Stub *GenerateInitPInvokeFrameHelper()
     CORINFO_EE_INFO::InlinedCallFrameInfo FrameInfo;
     InlinedCallFrame::GetEEInfo(&FrameInfo);
 
-    // EDI contains address of the frame on stack (the frame ptr, not its negspace)
-    unsigned negSpace = FrameInfo.offsetOfFrameVptr;
+    // EDI contains address of the frame on stack
 
     // mov esi, GetThread()
     psl->X86EmitCurrentThreadFetch(kESI, (1 << kEDI) | (1 << kEBX) | (1 << kECX) | (1 << kEDX));
 
-    // mov [edi + FrameInfo.offsetOfFrameVptr], InlinedCallFrame::GetFrameVtable()
-    psl->X86EmitOffsetModRM(0xc7, (X86Reg)0x0, kEDI, FrameInfo.offsetOfFrameVptr - negSpace);
+    // mov [edi], InlinedCallFrame::GetFrameVtable()
+    psl->X86EmitOffsetModRM(0xc7, (X86Reg)0x0, kEDI, 0);
     psl->Emit32((DWORD)FrameIdentifier::InlinedCallFrame);
 
     // mov eax, [esi + offsetof(Thread, m_pFrame)]
     // mov [edi + FrameInfo.offsetOfFrameLink], eax
     psl->X86EmitIndexRegLoad(kEAX, kESI, offsetof(Thread, m_pFrame));
-    psl->X86EmitIndexRegStore(kEDI, FrameInfo.offsetOfFrameLink - negSpace, kEAX);
+    psl->X86EmitIndexRegStore(kEDI, FrameInfo.offsetOfFrameLink, kEAX);
 
     // mov [edi + FrameInfo.offsetOfCalleeSavedEbp], ebp
-    psl->X86EmitIndexRegStore(kEDI, FrameInfo.offsetOfCalleeSavedFP - negSpace, kEBP);
+    psl->X86EmitIndexRegStore(kEDI, FrameInfo.offsetOfCalleeSavedFP, kEBP);
 
     // mov [edi + FrameInfo.offsetOfReturnAddress], 0
-    psl->X86EmitOffsetModRM(0xc7, (X86Reg)0x0, kEDI, FrameInfo.offsetOfReturnAddress - negSpace);
+    psl->X86EmitOffsetModRM(0xc7, (X86Reg)0x0, kEDI, FrameInfo.offsetOfReturnAddress);
     psl->Emit32(0);
 
     // mov [esi + offsetof(Thread, m_pFrame)], edi

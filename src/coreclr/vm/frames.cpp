@@ -359,19 +359,19 @@ const size_t FRAME_TYPES_COUNT =
 //-----------------------------------------------------------------------
 // Implementation of the global table of names.  On the DAC side, just the global pointer.
 //  On the runtime side, the array of names.
-    #define FRAME_TYPE_NAME(x) {(TADDR)FrameIdentifier::x, #x} ,
+    #define FRAME_TYPE_NAME(x) {FrameIdentifier::x, #x} ,
     static FrameTypeName FrameTypeNameTable[] = {
     #include "frames.h"
     };
 
 
 /* static */
-PTR_CSTR Frame::GetFrameTypeName(TADDR vtbl)
+PTR_CSTR Frame::GetFrameTypeName(FrameIdentifier frameIdentifier)
 {
     LIMITED_METHOD_CONTRACT;
     for (size_t i=0; i<FRAME_TYPES_COUNT; ++i)
     {
-        if (vtbl == FrameTypeNameTable[(int)i].vtbl)
+        if (frameIdentifier == FrameTypeNameTable[(int)i].id)
         {
             return FrameTypeNameTable[(int)i].name;
         }
@@ -391,13 +391,13 @@ void Frame::LogFrame(
     char        buf[32];
     const char  *pFrameType;
 
-    pFrameType = GetFrameTypeName(GetVTablePtr());
+    pFrameType = GetFrameTypeName(GetFrameIdentifier());
 
     if (pFrameType == NULL)
     {
         _ASSERTE(!"New Frame type needs to be added to FrameTypeName()");
         // Pointer is up to 17chars + vtbl@ = 22 chars
-        sprintf_s(buf, ARRAY_SIZE(buf), "vtbl@%p", (VOID *)GetVTablePtr());
+        sprintf_s(buf, ARRAY_SIZE(buf), "frameIdentifier@%p", (VOID *)GetFrameIdentifier());
         pFrameType = buf;
     }
 
@@ -427,15 +427,10 @@ void Frame::LogFrameChain(
 #ifndef DACCESS_COMPILE
 
 // static
-void Frame::Init()
+void Frame::Init(FrameIdentifier frameIdentifier)
 {
-    CONTRACTL
-    {
-        THROWS;
-        GC_NOTRIGGER;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
+    LIMITED_METHOD_CONTRACT;
+    _frameIdentifier = frameIdentifier;
 } // void Frame::Init()
 
 #endif // DACCESS_COMPILE
@@ -443,22 +438,18 @@ void Frame::Init()
 // Returns true if the Frame's VTablePtr is valid
 
 // static
-bool Frame::HasValidVTablePtr(Frame * pFrame)
+bool Frame::HasFrameIdentifier(Frame * pFrame)
 {
     WRAPPER_NO_CONTRACT;
 
     if (pFrame == NULL || pFrame == FRAME_TOP)
         return false;
 
-#ifndef DACCESS_COMPILE
     FrameIdentifier vptr = pFrame->GetFrameIdentifier();
     //
     // Use a simple compare which is dependent on the tightly packed arrangement of FrameIdentifier
     //
     return (((TADDR)vptr > (TADDR)FrameIdentifier::None) && ((TADDR)vptr < (TADDR)FrameIdentifier::CountPlusOne));
-#else
-    return true;
-#endif
 }
 
 //-----------------------------------------------------------------------
@@ -509,7 +500,7 @@ VOID Frame::Push(Thread *pThread)
              // during stack-walking.
              !g_pConfig->fAssertOnFailFast() ||
              (m_Next == FRAME_TOP) ||
-             (Frame::HasValidVTablePtr(m_Next)));
+             (Frame::HasFrameIdentifier(m_Next)));
 
     pThread->SetFrame(this);
 }
@@ -545,7 +536,7 @@ VOID Frame::Pop(Thread *pThread)
              // during stack-walking.
              !g_pConfig->fAssertOnFailFast() ||
              (m_Next == FRAME_TOP) ||
-             (Frame::HasValidVTablePtr(m_Next)));
+             (Frame::HasFrameIdentifier(m_Next)));
 
     pThread->SetFrame(m_Next);
     m_Next = NULL;
@@ -1000,10 +991,8 @@ ComPrestubMethodFrame::Init()
 {
     WRAPPER_NO_CONTRACT;
 
-    // Initializes the frame's VPTR. This assumes C++ puts the vptr
-    // at offset 0 for a class not using MI, but this is no different
-    // than the assumption that COM Classic makes.
-    *((TADDR*)this) = (TADDR)FrameIdentifier::ComPrestubMethodFrame;
+    // Initializes the frame's identifier.
+    Frame::Init(FrameIdentifier::ComPrestubMethodFrame);
 }
 #endif // FEATURE_COMINTEROP
 
@@ -1986,7 +1975,7 @@ VOID InlinedCallFrame::Init()
 {
     WRAPPER_NO_CONTRACT;
 
-    *((TADDR *)this) = (TADDR)FrameIdentifier::InlinedCallFrame;
+    Frame::Init(FrameIdentifier::InlinedCallFrame);
 
     m_Datum = NULL;
     m_pCallSiteSP = NULL;

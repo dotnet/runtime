@@ -10135,8 +10135,6 @@ void InlinedCallFrame::GetEEInfo(CORINFO_EE_INFO::InlinedCallFrameInfo *pInfo)
     pInfo->size                          = sizeof(InlinedCallFrame);
     pInfo->sizeWithSecretStubArg         = sizeof(InlinedCallFrame) + sizeof(PTR_VOID);
 
-    pInfo->offsetOfGSCookie              = 0; // We no longer have a GS Cookie on coreclr for InlinedCallFrame
-    pInfo->offsetOfFrameVptr             = 0;
     pInfo->offsetOfFrameLink             = Frame::GetOffsetOfNextLink();
     pInfo->offsetOfCallSiteSP            = offsetof(InlinedCallFrame, m_pCallSiteSP);
     pInfo->offsetOfCalleeSavedFP         = offsetof(InlinedCallFrame, m_pCalleeSavedFP);

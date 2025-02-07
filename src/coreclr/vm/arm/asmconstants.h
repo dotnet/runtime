@@ -82,9 +82,6 @@ ASMCONSTANTS_C_ASSERT(PtrArray__m_Array == offsetof(PtrArray, m_Array));
 
 #define TypeHandle_CanCast 0x1 // TypeHandle::CanCast
 
-#define SIZEOF__GSCookie              0x4
-ASMCONSTANTS_C_ASSERT(SIZEOF__GSCookie == sizeof(GSCookie));
-
 #define SIZEOF__Frame                 0x8
 ASMCONSTANTS_C_ASSERT(SIZEOF__Frame == sizeof(Frame));
 

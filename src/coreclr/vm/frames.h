@@ -221,15 +221,6 @@ class ComCallMethodDesc;
 #define FRAME_TOP_VALUE  ~0     // we want to say -1 here, but gcc has trouble with the signed value
 #define FRAME_TOP (PTR_Frame(FRAME_TOP_VALUE))
 
-//-----------------------------------------------------------------------------
-// For reporting on types of frames at runtime.
-class FrameTypeName
-{
-public:
-    TADDR vtbl;
-    PTR_CSTR name;
-};
-typedef DPTR(FrameTypeName) PTR_FrameTypeName;
 
 enum class FrameIdentifier : TADDR
 {
@@ -238,6 +229,16 @@ enum class FrameIdentifier : TADDR
 #include "FrameTypes.h"    
     CountPlusOne
 };
+
+//-----------------------------------------------------------------------------
+// For reporting on types of frames at runtime.
+class FrameTypeName
+{
+public:
+    FrameIdentifier id;
+    PTR_CSTR name;
+};
+typedef DPTR(FrameTypeName) PTR_FrameTypeName;
 
 // TransitionFrame only apis
 class TransitionFrame;
@@ -421,8 +422,8 @@ public:
     }
 #endif // #ifndef DACCESS_COMPILE
 
-    static bool HasValidVTablePtr(Frame * pFrame);
-    static void Init();
+    static bool HasFrameIdentifier(Frame * pFrame);
+    void Init(FrameIdentifier frameIdentifier);
 
     // Callers, note that the REGDISPLAY parameter is actually in/out. While
     // UpdateRegDisplay is generally used to fill out the REGDISPLAY parameter, some
@@ -544,13 +545,6 @@ public:
         return (BYTE)ofs;
     }
 
-    // get your VTablePointer (can be used to check what type the frame is)
-    TADDR GetVTablePtr()
-    {
-        LIMITED_METHOD_DAC_CONTRACT;
-        return VPTR_HOST_VTABLE_TO_TADDR(*(LPVOID*)this);
-    }
-
 #if defined(_DEBUG) && !defined(DACCESS_COMPILE)
     BOOL Protects_Impl(OBJECTREF *ppObjectRef)
     {
@@ -573,7 +567,7 @@ public:
     static void __stdcall LogTransition(Frame* frame);
     void LogFrame(int LF, int LL);       // General purpose logging.
     void LogFrameChain(int LF, int LL);  // Log the whole chain.
-    static PTR_CSTR GetFrameTypeName(TADDR vtbl);
+    static PTR_CSTR GetFrameTypeName(FrameIdentifier frameIdentifier);
 #endif
 
 private:
@@ -801,6 +795,8 @@ inline CONTEXT * GETREDIRECTEDCONTEXT(Thread * thread) { LIMITED_METHOD_CONTRACT
 // frame in order to prevent the frameless methods inbetween from
 // getting lost.
 //------------------------------------------------------------------------
+
+typedef DPTR(class TransitionFrame) PTR_TransitionFrame;
 
 class TransitionFrame : public Frame
 {
@@ -2698,7 +2694,7 @@ public:
         // loop through the frame chain
         while (pFrame->GetFrameIdentifier() != FrameIdentifier::TailCallFrame)
             pFrame = pFrame->m_Next;
-        return (TailCallFrame*)pFrame;
+        return dac_cast<PTR_TailCallFrame>(pFrame);
     }
 
     TADDR GetCallerAddress()

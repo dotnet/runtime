@@ -2671,7 +2671,7 @@ void Thread::RestoreContextSimulated(Thread* pThread, CONTEXT* pCtx, void* pFram
         RaiseException(EXCEPTION_HIJACK, 0, 0, NULL);
     }
     __except (++filter_count == 1
-            ? RedirectedHandledJITCaseExceptionFilter(GetExceptionInformation(), (RedirectedThreadFrame*)pFrame, pCtx, dwLastError)
+            ? RedirectedHandledJITCaseExceptionFilter(GetExceptionInformation(), dac_cast<PTR_RedirectedThreadFrame>(pFrame), pCtx, dwLastError)
             : EXCEPTION_CONTINUE_SEARCH)
     {
         _ASSERTE(!"Reached body of __except in Thread::RedirectedHandledJITCase");
@@ -3766,7 +3766,7 @@ ThrowControlForThread(
     }
 
 #if defined(FEATURE_EH_FUNCLETS)
-    *(TADDR*)pfef = (TADDR)FrameIdentifier::FaultingExceptionFrame;
+    ((Frame*)pfef)->Init(FrameIdentifier::FaultingExceptionFrame);
 #else // FEATURE_EH_FUNCLETS
     FaultingExceptionFrame fef;
     FaultingExceptionFrame *pfef = &fef;

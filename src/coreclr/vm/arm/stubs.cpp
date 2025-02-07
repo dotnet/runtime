@@ -1119,9 +1119,6 @@ Stub *GenerateInitPInvokeFrameHelper()
     CORINFO_EE_INFO::InlinedCallFrameInfo FrameInfo;
     InlinedCallFrame::GetEEInfo(&FrameInfo);
 
-    // R4 contains address of the frame on stack (the frame ptr, not its neg space)
-    unsigned negSpace = FrameInfo.offsetOfFrameVptr;
-
     ThumbReg regFrame   = ThumbReg(4);
     ThumbReg regThread  = ThumbReg(5);
     ThumbReg regScratch = ThumbReg(6);
@@ -1139,28 +1136,28 @@ Stub *GenerateInitPInvokeFrameHelper()
     for (int reg = 0; reg < 4; reg++)
         psl->ThumbEmitLoadRegIndirect(ThumbReg(reg), thumbRegSp, offsetof(ArgumentRegisters, r) + sizeof(*ArgumentRegisters::r) * reg);
 
-    // mov [regFrame + FrameInfo.offsetOfFrameVptr], FrameIdentifier::InlinedCallFrame
+    // mov [regFrame], FrameIdentifier::InlinedCallFrame
     psl->ThumbEmitMovConstant(regScratch, (DWORD)FrameIdentifier::InlinedCallFrame);
-    psl->ThumbEmitStoreRegIndirect(regScratch, regFrame, FrameInfo.offsetOfFrameVptr - negSpace);
+    psl->ThumbEmitStoreRegIndirect(regScratch, regFrame, 0);
 
     // ldr regScratch, [regThread + offsetof(Thread, m_pFrame)]
     // str regScratch, [regFrame + FrameInfo.offsetOfFrameLink]
     psl->ThumbEmitLoadRegIndirect(regScratch, regThread, offsetof(Thread, m_pFrame));
-    psl->ThumbEmitStoreRegIndirect(regScratch, regFrame, FrameInfo.offsetOfFrameLink - negSpace);
+    psl->ThumbEmitStoreRegIndirect(regScratch, regFrame, FrameInfo.offsetOfFrameLink);
 
     // str FP, [regFrame + FrameInfo.offsetOfCalleeSavedFP]
-    psl->ThumbEmitStoreRegIndirect(thumbRegFp, regFrame, FrameInfo.offsetOfCalleeSavedFP - negSpace);
+    psl->ThumbEmitStoreRegIndirect(thumbRegFp, regFrame, FrameInfo.offsetOfCalleeSavedFP);
 
     // str R9, [regFrame + FrameInfo.offsetOfSPAfterProlog]
-    psl->ThumbEmitStoreRegIndirect(regR9, regFrame, FrameInfo.offsetOfSPAfterProlog - negSpace);
+    psl->ThumbEmitStoreRegIndirect(regR9, regFrame, FrameInfo.offsetOfSPAfterProlog);
 
     // mov [regFrame + FrameInfo.offsetOfReturnAddress], 0
     psl->ThumbEmitMovConstant(regScratch, 0);
-    psl->ThumbEmitStoreRegIndirect(regScratch, regFrame, FrameInfo.offsetOfReturnAddress - negSpace);
+    psl->ThumbEmitStoreRegIndirect(regScratch, regFrame, FrameInfo.offsetOfReturnAddress);
 
     DWORD cbSavedRegs = sizeof(ArgumentRegisters) + 2 * 4; // r0-r3, r4, lr
     psl->ThumbEmitAdd(regScratch, thumbRegSp, cbSavedRegs);
-    psl->ThumbEmitStoreRegIndirect(regScratch, regFrame, FrameInfo.offsetOfCallSiteSP - negSpace);
+    psl->ThumbEmitStoreRegIndirect(regScratch, regFrame, FrameInfo.offsetOfCallSiteSP);
 
     // mov [regThread + offsetof(Thread, m_pFrame)], regFrame
     psl->ThumbEmitStoreRegIndirect(regFrame, regThread, offsetof(Thread, m_pFrame));

@@ -464,7 +464,7 @@ bool HasExitRuntime(Frame *pFrame, DebuggerFrameData *pData, FramePointer *pPote
     }
     else if (pFrame->GetFrameIdentifier() == FrameIdentifier::InlinedCallFrame)
     {
-        InlinedCallFrame *pInlinedFrame = static_cast<InlinedCallFrame *>(pFrame);
+        InlinedCallFrame *pInlinedFrame = dac_cast<PTR_InlinedCallFrame>(pFrame);
         LPVOID sp = (LPVOID)pInlinedFrame->GetCallSiteSP();
 
         // The sp returned below is the sp of the caller, which is either an IL stub in the normal case
@@ -485,7 +485,7 @@ bool HasExitRuntime(Frame *pFrame, DebuggerFrameData *pData, FramePointer *pPote
     {
         // It'll be nice if there's a way to assert that the current frame is indeed of a
         // derived class of TransitionFrame.
-        TransitionFrame *pTransFrame = static_cast<TransitionFrame*>(pFrame);
+        TransitionFrame *pTransFrame = dac_cast<PTR_TransitionFrame>(pFrame);
         LPVOID sp = (LPVOID)pTransFrame->GetSP();
 
         // The sp returned below is the sp of the caller, which is either an IL stub in the normal case
@@ -788,7 +788,7 @@ void FrameInfo::InitForM2UInternalFrame(CrawlFrame * pCF)
     // For a M2U call, there's a managed method wrapping the unmanaged call. Use that.
     Frame * pFrame = pCF->GetFrame();
     _ASSERTE(pFrame->GetTransitionType() == Frame::TT_M2U);
-    FramedMethodFrame * pM2U = static_cast<FramedMethodFrame*> (pFrame);
+    FramedMethodFrame * pM2U = dac_cast<PTR_FramedMethodFrame> (pFrame);
     MethodDesc * pMDWrapper = pM2U->GetFunction();
 
     // Soem M2U transitions may not have a function associated w/ them,
@@ -816,7 +816,7 @@ void FrameInfo::InitForU2MInternalFrame(CrawlFrame * pCF)
     // If we're a COM2CLR call, perhaps we can get the MD for the interface.
     if (pFrame->GetFrameIdentifier() == FrameIdentifier::ComMethodFrame)
     {
-        ComMethodFrame* pCOMFrame = static_cast<ComMethodFrame*> (pFrame);
+        ComMethodFrame* pCOMFrame = dac_cast<PTR_ComMethodFrame> (pFrame);
         ComCallMethodDesc* pCMD = reinterpret_cast<ComCallMethodDesc *> (pCOMFrame->ComMethodFrame::GetDatum());
         pMDHint = pCMD->GetInterfaceMethodDesc();
 
@@ -1739,7 +1739,7 @@ StackWalkAction DebuggerWalkStackProc(CrawlFrame *pCF, void *data)
 
             {
                 // We only show a FuncEvalFrame if the funceval is not trying to abort the thread.
-                FuncEvalFrame *pFuncEvalFrame = static_cast<FuncEvalFrame *>(frame);
+                FuncEvalFrame *pFuncEvalFrame = dac_cast<PTR_FuncEvalFrame>(frame);
                 use = pFuncEvalFrame->ShowFrame() ? true : false;
             }
 
