@@ -4815,6 +4815,7 @@ protected:
     GenTree* addRangeCheckIfNeeded(
         NamedIntrinsic intrinsic, GenTree* immOp, int immLowerBound, int immUpperBound);
     GenTree* addRangeCheckForHWIntrinsic(GenTree* immOp, int immLowerBound, int immUpperBound);
+    GenTree* gtNewSIMDDivByZeroCheck(GenTree* op, var_types type, CorInfoType simdBaseJitType, unsigned int simdSize);
 
     void getHWIntrinsicImmOps(NamedIntrinsic    intrinsic,
                               CORINFO_SIG_INFO* sig,
@@ -12005,6 +12006,7 @@ public:
             case GT_ARR_ADDR:
             case GT_KEEPALIVE:
             case GT_INC_SATURATE:
+            case GT_SIMD_DIV_BY_ZERO_CHECK:
             {
                 GenTreeUnOp* const unOp = node->AsUnOp();
                 if (unOp->gtOp1 != nullptr)

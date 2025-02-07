@@ -248,6 +248,7 @@ void GenTree::InitNodeSize()
     GenTree::s_gtNodeSizes[GT_BOX]           = TREE_NODE_SZ_LARGE;
     GenTree::s_gtNodeSizes[GT_INDEX_ADDR]    = TREE_NODE_SZ_LARGE;
     GenTree::s_gtNodeSizes[GT_BOUNDS_CHECK]  = TREE_NODE_SZ_SMALL;
+    GenTree::s_gtNodeSizes[GT_SIMD_DIV_BY_ZERO_CHECK]  = TREE_NODE_SZ_SMALL;
     GenTree::s_gtNodeSizes[GT_ARR_ELEM]      = TREE_NODE_SZ_LARGE;
     GenTree::s_gtNodeSizes[GT_RET_EXPR]      = TREE_NODE_SZ_LARGE;
     GenTree::s_gtNodeSizes[GT_FIELD_ADDR]    = TREE_NODE_SZ_LARGE;
@@ -3432,6 +3433,10 @@ AGAIN:
                 // For the ones below no extra argument matters for comparison.
                 case GT_BOX:
                 case GT_ARR_ADDR:
+                    break;
+
+                case GT_SIMD_DIV_BY_ZERO_CHECK:
+                    hash = genTreeHashAdd(hash, tree->AsSIMDDivByZeroChk()->gtThrowKind);
                     break;
 
                 default:
@@ -6717,6 +6722,7 @@ bool GenTree::TryGetUse(GenTree* operand, GenTree*** pUse)
         case GT_BSWAP16:
         case GT_KEEPALIVE:
         case GT_INC_SATURATE:
+        case GT_SIMD_DIV_BY_ZERO_CHECK:
             if (operand == this->AsUnOp()->gtOp1)
             {
                 *pUse = &this->AsUnOp()->gtOp1;
@@ -7232,6 +7238,9 @@ ExceptionSetFlags GenTree::OperExceptions(Compiler* comp)
 
             return ExceptionSetFlags::None;
         }
+
+        case GT_SIMD_DIV_BY_ZERO_CHECK:
+            return ExceptionSetFlags::DivideByZeroException;
 #endif // FEATURE_HW_INTRINSICS
 
         default:
@@ -10311,6 +10320,7 @@ GenTreeUseEdgeIterator::GenTreeUseEdgeIterator(GenTree* node)
         case GT_BSWAP16:
         case GT_KEEPALIVE:
         case GT_INC_SATURATE:
+        case GT_SIMD_DIV_BY_ZERO_CHECK:
 #if FEATURE_ARG_SPLIT
         case GT_PUTARG_SPLIT:
 #endif // FEATURE_ARG_SPLIT
@@ -21172,6 +21182,65 @@ GenTree* Compiler::gtNewSimdBinOpNode(
             }
         }
 #endif // TARGET_XARCH
+        case GT_DIV:
+        {
+#if defined(TARGET_XARCH)
+            // We can emulate SIMD integer division by converting the 32-bit integer -> 64-bit double,
+            // perform a 64-bit double divide, then convert back to a 32-bit integer. This is generating
+            // something similar to the following managed code:
+            //      if (Vector128.EqualsAny(op2, Vector128<int>.Zero))
+            //      {
+            //          throw new DivideByZeroException();
+            //      }
+            //
+            //      Vector256<double> op1_f64 = Vector256.ConvertToDouble(Vector256.WidenLower(Vector128.ToVector256Unsafe(op1))));
+            //      Vector256<double> op2_f64 = Vector256.ConvertToDouble(Vector256.WidenLower(Vector128.ToVector256Unsafe(op2))));
+            //      Vector256<double> div_f64 = op1_f64 / op2_f64;
+            //      Vector256<long>   div_i64 = Vector256.ConvertToInt64(div_f64);
+            //      Vector128<int> div_i32 = Vector256.Narrow(div_i64.GetLower(), div_i64.GetUpper());
+            //      return div_i32;
+            if (simdBaseType == TYP_INT)
+            {
+                assert(compOpportunisticallyDependsOn(InstructionSet_AVX) ||
+                       compOpportunisticallyDependsOn(InstructionSet_AVX512F));
+                GenTree* op2Clone   = nullptr;
+                op2                 = impCloneExpr(op2, &op2Clone, CHECK_SPILL_ALL,
+                                                   nullptr DEBUGARG("Clone op2 for vector integer division HWIntrinsic"));
+                // GenTree* zeroVecCon = gtNewZeroConNode(op1->TypeGet());
+                // GenTree* denominatorZeroCond =
+                //     gtNewSimdCmpOpAnyNode(GT_EQ, simdBaseType, op2Clone, zeroVecCon, simdBaseJitType, simdSize);
+                // GenTree*      cmpZeroCond = gtNewOperNode(GT_NE, TYP_INT, denominatorZeroCond, gtNewIconNode(0));
+                // GenTree*      fallback    = gtNewHelperCallNode(CORINFO_HELP_THROWDIVZERO, TYP_VOID);
+                // GenTreeColon* colon       = gtNewColonNode(TYP_VOID, fallback, gtNewNothingNode());
+                // GenTree*      qmark       = gtNewQmarkNode(TYP_VOID, cmpZeroCond, colon);
+
+                // Statement* checkZeroStmt = gtNewStmt(qmark);
+                // impAppendStmt(checkZeroStmt);
+
+                NamedIntrinsic intToFloatConvertIntrinsic =
+                    simdSize == 16 ? NI_AVX_ConvertToVector256Double : NI_AVX512F_ConvertToVector512Double;
+                NamedIntrinsic floatToIntConvertIntrinsic = simdSize == 16
+                                                                ? NI_AVX_ConvertToVector128Int32WithTruncation
+                                                                : NI_AVX512F_ConvertToVector256Int32WithTruncation;
+                var_types      intToFloatConvertType      = simdSize == 16 ? TYP_SIMD32 : TYP_SIMD64;
+                CorInfoType    floatToIntConvertType      = simdSize == 16 ? simdBaseJitType : CORINFO_TYPE_DOUBLE;
+                unsigned int   divideOpSimdSize           = simdSize * 2;
+
+                GenTree* op1Cvt = gtNewSimdHWIntrinsicNode(intToFloatConvertType, op1, intToFloatConvertIntrinsic,
+                                                           simdBaseJitType, divideOpSimdSize);
+                GenTree* op2Cvt = gtNewSimdHWIntrinsicNode(intToFloatConvertType, op2, intToFloatConvertIntrinsic,
+                                                           simdBaseJitType, divideOpSimdSize);
+                GenTree* divOp  = gtNewSimdBinOpNode(GT_DIV, intToFloatConvertType, op1Cvt, op2Cvt, CORINFO_TYPE_DOUBLE,
+                                                     divideOpSimdSize);
+                GenTree* divOpCvt       = gtNewSimdHWIntrinsicNode(type, divOp, floatToIntConvertIntrinsic,
+                                                                   floatToIntConvertType, divideOpSimdSize);
+                GenTree* hwIntrinsicChk = gtNewSIMDDivByZeroCheck(op2Clone, TYP_INT, simdBaseJitType, simdSize);
+                // new (this, GT_SIMD_DIV_BY_ZERO_CHECK) GenTreeSIMDDivByZeroChk(op2Clone, SCK_DIV_BY_ZERO);
+                return gtNewOperNode(GT_COMMA, type, hwIntrinsicChk, divOpCvt);
+            }
+#endif // TARGET_XARCH
+            unreached();
+        }
 
         case GT_MUL:
         {
@@ -28987,26 +29056,33 @@ NamedIntrinsic GenTreeHWIntrinsic::GetHWIntrinsicIdForBinOp(Compiler*  comp,
 
         case GT_DIV:
         {
+#if defined(TARGET_XARCH)
+            assert(varTypeIsFloating(simdBaseType) || varTypeIsInt(simdBaseType));
+#else
             assert(varTypeIsFloating(simdBaseType));
+#endif
             assert(op2->TypeIs(simdType));
 
 #if defined(TARGET_XARCH)
-            if (simdSize == 64)
+            if (varTypeIsFloating(simdBaseType))
             {
-                id = NI_AVX512F_Divide;
-            }
-            else if (simdSize == 32)
-            {
-                id = NI_AVX_Divide;
-            }
-            else if (simdBaseType == TYP_FLOAT)
-            {
-                id = isScalar ? NI_SSE_DivideScalar : NI_SSE_Divide;
-            }
-            else
-            {
-                assert(comp->compIsaSupportedDebugOnly(InstructionSet_SSE2));
-                id = isScalar ? NI_SSE2_DivideScalar : NI_SSE2_Divide;
+                if (simdSize == 64)
+                {
+                    id = NI_AVX512F_Divide;
+                }
+                else if (simdSize == 32)
+                {
+                    id = NI_AVX_Divide;
+                }
+                else if (simdBaseType == TYP_FLOAT)
+                {
+                    id = isScalar ? NI_SSE_DivideScalar : NI_SSE_Divide;
+                }
+                else
+                {
+                    assert(comp->compIsaSupportedDebugOnly(InstructionSet_SSE2));
+                    id = isScalar ? NI_SSE2_DivideScalar : NI_SSE2_Divide;
+                }
             }
 #elif defined(TARGET_ARM64)
             if ((simdSize == 8) && (isScalar || (simdBaseType == TYP_DOUBLE)))

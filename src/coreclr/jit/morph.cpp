@@ -8700,6 +8700,11 @@ DONE_MORPHING_CHILDREN:
             fgAddCodeRef(compCurBB, tree->AsBoundsChk()->gtThrowKind);
             break;
 
+        case GT_SIMD_DIV_BY_ZERO_CHECK:
+
+            fgAddCodeRef(compCurBB, tree->AsSIMDDivByZeroChk()->gtThrowKind);
+            break;
+
         case GT_IND:
         {
             if (op1->IsIconHandle())

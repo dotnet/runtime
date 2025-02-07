@@ -3082,7 +3082,7 @@ struct GenTreeOp : public GenTreeUnOp
         , gtOp2(nullptr)
     {
         // Unary operators with optional arguments:
-        assert(oper == GT_RETURN || oper == GT_RETFILT || OperIsBlk(oper));
+        assert(oper == GT_RETURN || oper == GT_RETFILT || OperIsBlk(oper) || oper == GT_SIMD_DIV_BY_ZERO_CHECK);
     }
 
     // returns true if we will use the division by constant optimization for this node.
@@ -7782,6 +7782,33 @@ struct GenTreeBoundsChk : public GenTreeOp
     {
         return gtOp2;
     }
+};
+
+// This takes:
+// - a SIMD node
+// - the label to jump to if the index is out of range.
+// - the "kind" of the throw block to branch to on failure
+// It generates no result.
+//
+struct GenTreeSIMDDivByZeroChk : public GenTreeOp
+{
+    BasicBlock*     gtIndRngFailBB; // Basic block to jump to for index-out-of-range
+    SpecialCodeKind gtThrowKind;    // Kind of throw block to branch to on failure
+
+    GenTreeSIMDDivByZeroChk(GenTree* simdOp, SpecialCodeKind kind)
+        : GenTreeOp(GT_SIMD_DIV_BY_ZERO_CHECK, TYP_VOID, simdOp, nullptr)
+        , gtIndRngFailBB(nullptr)
+        , gtThrowKind(kind)
+    {
+        gtFlags |= GTF_EXCEPT;
+        gtOp1 = simdOp;
+    }
+#if DEBUGGABLE_GENTREE
+    GenTreeSIMDDivByZeroChk()
+        : GenTreeOp()
+    {
+    }
+#endif
 };
 
 // GenTreeArrElem - bounds checked address (byref) of a general array element,

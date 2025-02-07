@@ -105,6 +105,7 @@ private:
     void genLockedInstructions(GenTreeOp* node);
 #ifdef TARGET_XARCH
     void genCodeForLockAdd(GenTreeOp* node);
+    void genSIMDDivByZeroCheck(GenTree* node);
 #endif
 
 #ifdef REG_OPT_RSVD

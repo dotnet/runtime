@@ -10448,7 +10448,7 @@ static genTreeOps genTreeOpsIllegalAsVNFunc[] = {GT_IND, // When we do heap memo
                                                  GT_STORE_LCL_FLD, GT_STOREIND, GT_STORE_BLK,
                                                  // These need special semantics:
                                                  GT_COMMA, // == second argument (but with exception(s) from first).
-                                                 GT_ARR_ADDR, GT_BOUNDS_CHECK,
+                                                 GT_ARR_ADDR, GT_BOUNDS_CHECK, GT_SIMD_DIV_BY_ZERO_CHECK,
                                                  GT_BLK,      // May reference heap memory.
                                                  GT_INIT_VAL, // Not strictly a pass-through.
                                                  GT_MDARR_LENGTH,

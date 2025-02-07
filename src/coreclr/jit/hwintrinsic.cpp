@@ -1409,6 +1409,18 @@ GenTree* Compiler::addRangeCheckForHWIntrinsic(GenTree* immOp, int immLowerBound
     return gtNewOperNode(GT_COMMA, immOp->TypeGet(), hwIntrinsicChk, immOp);
 }
 
+GenTree* Compiler::gtNewSIMDDivByZeroCheck(GenTree* op, var_types type, CorInfoType simdBaseJitType, unsigned int simdSize)
+{
+    assert(type == TYP_INT);
+    GenTree* zeroVecCon = gtNewZeroConNode(op->TypeGet());
+    GenTree* denominatorZeroCond =
+        gtNewSimdCmpOpAnyNode(GT_EQ, type, op, zeroVecCon, simdBaseJitType, simdSize);
+    // GenTree*      cmpZeroCond = gtNewOperNode(GT_NE, TYP_INT, denominatorZeroCond, gtNewIconNode(0));
+    GenTreeSIMDDivByZeroChk* hwIntrinsicChk =
+        new (this, GT_SIMD_DIV_BY_ZERO_CHECK) GenTreeSIMDDivByZeroChk(denominatorZeroCond, SCK_DIV_BY_ZERO);
+    return hwIntrinsicChk;
+}
+
 //------------------------------------------------------------------------
 // compSupportsHWIntrinsic: check whether a given instruction is enabled via configuration
 //

@@ -113,6 +113,7 @@ private:
     void ContainCheckBinary(GenTreeOp* node);
     void ContainCheckBoundsChk(GenTreeBoundsChk* node);
 #ifdef TARGET_XARCH
+    void ContainCheckSIMDDivByZeroChk(GenTreeSIMDDivByZeroChk* node);
     void ContainCheckFloatBinary(GenTreeOp* node);
     void ContainCheckIntrinsic(GenTreeOp* node);
 #endif // TARGET_XARCH

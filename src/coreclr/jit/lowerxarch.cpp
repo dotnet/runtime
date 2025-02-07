@@ -9035,6 +9035,11 @@ void Lowering::ContainCheckBinary(GenTreeOp* node)
     }
 }
 
+void Lowering::ContainCheckSIMDDivByZeroChk(GenTreeSIMDDivByZeroChk* node)
+{
+    assert(node->OperIs(GT_SIMD_DIV_BY_ZERO_CHECK));
+}
+
 //------------------------------------------------------------------------
 // ContainCheckBoundsChk: determine whether any source of a bounds check node should be contained.
 //

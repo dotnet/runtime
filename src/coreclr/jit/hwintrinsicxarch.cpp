@@ -2423,49 +2423,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             argType = JITtype2varType(strip(info.compCompHnd->getArgType(sig, arg1, &argClass)));
             op1     = getArgForHWIntrinsic(argType, argClass);
 
-            if (simdBaseType == TYP_INT)
-            {
-                if (op2->TypeIs(TYP_INT))
-                {
-                    op2 = gtNewSimdCreateBroadcastNode(op1->TypeGet(), op2, simdBaseJitType, simdSize);
-                }
-
-                GenTree* op2Clone   = nullptr;
-                op2                 = impCloneExpr(op2, &op2Clone, CHECK_SPILL_ALL,
-                                                   nullptr DEBUGARG("Clone op2 for vector integer division HWIntrinsic"));
-                GenTree* zeroVecCon = gtNewZeroConNode(op1->TypeGet());
-                GenTree* denominatorZeroCond =
-                    gtNewSimdCmpOpAnyNode(GT_EQ, simdBaseType, op2Clone, zeroVecCon, simdBaseJitType, simdSize);
-                GenTree*      cmpZeroCond = gtNewOperNode(GT_NE, TYP_INT, denominatorZeroCond, gtNewIconNode(0));
-                GenTree*      fallback    = gtNewHelperCallNode(CORINFO_HELP_THROWDIVZERO, TYP_VOID);
-                GenTreeColon* colon       = gtNewColonNode(TYP_VOID, fallback, gtNewNothingNode());
-                GenTree*      qmark       = gtNewQmarkNode(TYP_VOID, cmpZeroCond, colon);
-
-                Statement* checkZeroStmt = gtNewStmt(qmark);
-                impAppendStmt(checkZeroStmt);
-
-                NamedIntrinsic intToFloatConvertIntrinsic =
-                    simdSize == 16 ? NI_AVX_ConvertToVector256Double : NI_AVX512F_ConvertToVector512Double;
-                NamedIntrinsic floatToIntConvertIntrinsic = simdSize == 16
-                                                                ? NI_AVX_ConvertToVector128Int32WithTruncation
-                                                                : NI_AVX512F_ConvertToVector256Int32WithTruncation;
-                var_types      intToFloatConvertType      = simdSize == 16 ? TYP_SIMD32 : TYP_SIMD64;
-                CorInfoType    floatToIntConvertType      = simdSize == 16 ? simdBaseJitType : CORINFO_TYPE_DOUBLE;
-                unsigned int   divideOpSimdSize           = simdSize * 2;
-
-                GenTree* op1Cvt = gtNewSimdHWIntrinsicNode(intToFloatConvertType, op1, intToFloatConvertIntrinsic,
-                                                           simdBaseJitType, divideOpSimdSize);
-                GenTree* op2Cvt = gtNewSimdHWIntrinsicNode(intToFloatConvertType, op2, intToFloatConvertIntrinsic,
-                                                           simdBaseJitType, divideOpSimdSize);
-                GenTree* divOp  = gtNewSimdBinOpNode(GT_DIV, intToFloatConvertType, op1Cvt, op2Cvt, CORINFO_TYPE_DOUBLE,
-                                                     divideOpSimdSize);
-                retNode = gtNewSimdHWIntrinsicNode(retType, divOp, floatToIntConvertIntrinsic, floatToIntConvertType,
-                                                   divideOpSimdSize);
-            }
-            else
-            {
-                retNode = gtNewSimdBinOpNode(GT_DIV, retType, op1, op2, simdBaseJitType, simdSize);
-            }
+            retNode = gtNewSimdBinOpNode(GT_DIV, retType, op1, op2, simdBaseJitType, simdSize);
 
             break;
         }

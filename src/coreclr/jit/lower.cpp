@@ -553,6 +553,12 @@ GenTree* Lowering::LowerNode(GenTree* node)
             break;
 #endif // defined(TARGET_XARCH) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
 
+#if defined(TARGET_XARCH)
+        case GT_SIMD_DIV_BY_ZERO_CHECK:
+            ContainCheckSIMDDivByZeroChk(node->AsSIMDDivByZeroChk());
+            break;
+#endif
+
         case GT_ROL:
         case GT_ROR:
             LowerRotate(node);
