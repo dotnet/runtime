@@ -145,8 +145,8 @@ namespace System.Runtime.CompilerServices
         }
 
         /// <summary>Removes a key and its value from the table.</summary>
-        /// <param name="key">key to remove. May not be null.</param>
-        /// <returns>true if the key is found and removed. Returns false if the key was not in the dictionary.</returns>
+        /// <param name="key">The key to remove.</param>
+        /// <returns><see langword="true"/> if the key is found and removed; otherwise, <see langword="false"/>.</returns>
         /// <exception cref="ArgumentNullException"><paramref name="key"/> is <see langword="null"/>.</exception>
         /// <remarks>
         /// The key may get garbage collected during the <see cref="Remove(TKey)"/> operation. If so,
@@ -167,9 +167,9 @@ namespace System.Runtime.CompilerServices
         }
 
         /// <summary>Removes a key and its value from the table, and returns the removed value if it was present.</summary>
-        /// <param name="key">key to remove. May not be null.</param>
+        /// <param name="key">The key to remove.</param>
         /// <param name="value">value removed from the table, if it was present.</param>
-        /// <returns>true if the key is found and removed. Returns false if the key was not in the dictionary.</returns>
+        /// <returns><see langword="true"/> if the key is found and removed; otherwise, <see langword="false"/>.</returns>
         /// <exception cref="ArgumentNullException"><paramref name="key"/> is <see langword="null"/>.</exception>
         /// <remarks>
         /// The key may get garbage collected during the <see cref="Remove(TKey, out TValue)"/> operation. If so,
