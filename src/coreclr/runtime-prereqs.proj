@@ -14,6 +14,12 @@
   <Import Project="$(RepositoryEngineeringDir)nativepgo.targets" />
 
   <Target Name="BuildPrereqs" BeforeTargets="Build" DependsOnTargets="GenerateRuntimeVersionFile;GenerateNativeSourcelinkFile;OutputPgoPathForCI" />
+  
+  <!-- 
+    This is a workaround when cross-compiling on Windows for Android. 
+
+    https://github.com/dotnet/arcade/issues/15496
+  -->
   <Target Name="_BeforeAndroidNativeVersionFile" BeforeTargets="GenerateNativeVersionFile" Condition="$([MSBuild]::IsOsPlatform(Windows)) and '$(TargetsAndroid)' == 'true'">
     <PropertyGroup>
       <NativeVersionFile>$(ArtifactsObjDir)_version.h</NativeVersionFile>
