@@ -13,7 +13,7 @@
 
 #include <config.h>
 
-#ifdef HOST_BROWSER
+#ifdef HOST_WASI
 void wasm_atomic_fence(void);
 #endif
 
@@ -45,7 +45,7 @@ mono_memory_barrier (void)
 static inline void
 mono_memory_barrier (void)
 {
-#ifdef HOST_BROWSER
+#ifdef HOST_WASI
 	wasm_atomic_fence ();
 #endif
 	__sync_synchronize ();

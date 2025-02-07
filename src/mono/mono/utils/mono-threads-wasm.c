@@ -24,9 +24,6 @@
 #include <emscripten/threading.h>
 #include <mono/metadata/threads-types.h>
 #endif
-
-uintptr_t get_wasm_stack_high(void);
-uintptr_t get_wasm_stack_low(void);
 #else
 void
 wasm_atomic_fence (void)
@@ -34,6 +31,8 @@ wasm_atomic_fence (void)
 }
 #endif
 
+uintptr_t get_wasm_stack_high(void);
+uintptr_t get_wasm_stack_low(void);
 
 static int
 wasm_get_stack_size (void)
