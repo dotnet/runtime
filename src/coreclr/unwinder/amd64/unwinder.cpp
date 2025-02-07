@@ -308,6 +308,7 @@ class InstructionBuffer
         if (SUCCEEDED(hr))
         {
             // TODO: Implement breakpoint patching for cDAC
+            // https://github.com/dotnet/runtime/issues/112273#issue-2838620747
 
             // On X64, we need to replace any patches which are within the requested memory range.
             // This is because the X64 unwinder needs to disassemble the native instructions in order to determine

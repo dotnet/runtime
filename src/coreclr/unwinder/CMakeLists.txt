@@ -86,5 +86,9 @@ function(create_platform_unwinder)
   target_compile_definitions(${TARGETDETAILS_TARGET} PRIVATE FEATURE_NO_HOST FEATURE_CDAC_UNWINDER)
 endfunction()
 
-create_platform_unwinder(TARGET unwinder_cdac_amd64 ARCH x64 DESTINATIONS cdaclibs)
-create_platform_unwinder(TARGET unwinder_cdac_arm64 ARCH arm64 DESTINATIONS cdaclibs)
+# TODO: Support building cDAC unwinders on other platforms
+# https://github.com/dotnet/runtime/issues/112272#issue-2838611496
+if(CLR_CMAKE_TARGET_WIN32 AND CLR_CMAKE_TARGET_ARCH_AMD64)
+  create_platform_unwinder(TARGET unwinder_cdac_amd64 ARCH x64 DESTINATIONS cdaclibs)
+  create_platform_unwinder(TARGET unwinder_cdac_arm64 ARCH arm64 DESTINATIONS cdaclibs)
+endif(CLR_CMAKE_TARGET_WIN32 AND CLR_CMAKE_TARGET_ARCH_AMD64)
