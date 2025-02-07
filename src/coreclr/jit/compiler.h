@@ -6352,6 +6352,7 @@ public:
     class ThreeOptLayout
     {
         static bool EdgeCmp(const FlowEdge* left, const FlowEdge* right);
+        static constexpr unsigned maxSwaps = 1000;
 
         Compiler* compiler;
         PriorityQueue<FlowEdge*, decltype(&ThreeOptLayout::EdgeCmp)> cutPoints;

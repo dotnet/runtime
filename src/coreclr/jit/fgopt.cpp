@@ -5343,7 +5343,8 @@ bool Compiler::ThreeOptLayout::RunGreedyThreeOptPass(unsigned startPos, unsigned
     // and before the destination block, and swap the partitions to create fallthrough.
     // If it is, do the swap, and for the blocks before/after each cut point that lost fallthrough,
     // consider adding their successors/predecessors to 'cutPoints'.
-    while (!cutPoints.Empty())
+    unsigned numSwaps = 0;
+    while (!cutPoints.Empty() && (numSwaps < maxSwaps))
     {
         FlowEdge* const candidateEdge = cutPoints.Pop();
         candidateEdge->markUnvisited();
@@ -5498,8 +5499,10 @@ bool Compiler::ThreeOptLayout::RunGreedyThreeOptPass(unsigned startPos, unsigned
         }
 
         modified = true;
+        numSwaps++;
     }
 
+    cutPoints.Clear();
     return modified;
 }
 
