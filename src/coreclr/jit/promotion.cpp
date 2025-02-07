@@ -720,9 +720,9 @@ public:
                         return true;
                     }
 
-                    const StructSegments& significantSegments = comp->GetSignificantSegments(otherAccess.Layout);
+                    const SegmentList& significantSegments = otherAccess.Layout->GetNonPadding(comp);
                     if (!significantSegments.Intersects(
-                            StructSegments::Segment(layoutOffset + accessSize, layoutOffset + TARGET_POINTER_SIZE)))
+                            SegmentList::Segment(layoutOffset + accessSize, layoutOffset + TARGET_POINTER_SIZE)))
                     {
                         return true;
                     }
@@ -1296,17 +1296,17 @@ public:
             }
 #endif
 
-            agg->Unpromoted = m_compiler->GetSignificantSegments(m_compiler->lvaGetDesc(agg->LclNum)->GetLayout());
+            agg->Unpromoted = m_compiler->lvaGetDesc(agg->LclNum)->GetLayout()->GetNonPadding(m_compiler);
             for (Replacement& rep : reps)
             {
-                agg->Unpromoted.Subtract(StructSegments::Segment(rep.Offset, rep.Offset + genTypeSize(rep.AccessType)));
+                agg->Unpromoted.Subtract(SegmentList::Segment(rep.Offset, rep.Offset + genTypeSize(rep.AccessType)));
             }
 
             JITDUMP("  Unpromoted remainder: ");
             DBEXEC(m_compiler->verbose, agg->Unpromoted.Dump());
             JITDUMP("\n\n");
 
-            StructSegments::Segment unpromotedSegment;
+            SegmentList::Segment unpromotedSegment;
             if (agg->Unpromoted.CoveringSegment(&unpromotedSegment))
             {
                 agg->UnpromotedMin = unpromotedSegment.Start;
@@ -2281,7 +2281,7 @@ bool ReplaceVisitor::CanReplaceCallArgWithFieldListOfReplacements(GenTreeCall*  
             // the remainder is a different promotion we will return false when
             // the replacement is visited in this callback.
             if ((repSize < seg.Size) &&
-                agg->Unpromoted.Intersects(StructSegments::Segment(rep.Offset + repSize, rep.Offset + seg.Size)))
+                agg->Unpromoted.Intersects(SegmentList::Segment(rep.Offset + repSize, rep.Offset + seg.Size)))
             {
                 return false;
             }
