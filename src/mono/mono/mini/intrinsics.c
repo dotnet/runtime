@@ -2377,7 +2377,7 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 				int ireg = mono_alloc_ireg (cfg);
 				EMIT_NEW_UNALU (cfg, ins, opcode, ireg, args [0]->dreg);
 				ins->type = tto_stack;
-				return ins;
+				return mono_decompose_opcode(cfg, ins);
 			}
 		}
 	}
