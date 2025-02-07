@@ -1,5 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
+    <!-- Required for the ability to disable the test for WASM via issues.targets  -->
+    <RequiresProcessIsolation>true</RequiresProcessIsolation>
     <!-- This test removes one of its dependencies at runtime, so it is not compatible with AOT  -->
     <MonoAotIncompatible>true</MonoAotIncompatible>
     <NativeAotIncompatible>true</NativeAotIncompatible>
