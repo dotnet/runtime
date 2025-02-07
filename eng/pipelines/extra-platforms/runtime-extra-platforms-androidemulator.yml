@@ -142,7 +142,7 @@ jobs:
       testGroup: innerloop
       nameSuffix: AllSubsets_CoreCLR
       isExtraPlatforms: ${{ parameters.isExtraPlatformsBuild }}
-      buildArgs: -s clr.runtime+clr.alljits+clr.corelib+clr.nativecorelib+clr.tools+clr.packages+libs+libs.tests -cross -c $(_BuildConfig) /p:ArchiveTests=true $(_runSmokeTestsOnlyArg)
+      buildArgs: -s clr.runtime+clr.alljits+clr.corelib+clr.nativecorelib+clr.tools+clr.packages+libs+libs.tests -c $(_BuildConfig) /p:ArchiveTests=true $(_runSmokeTestsOnlyArg)
       timeoutInMinutes: 180
       # extra steps, run tests
       postBuildSteps:
