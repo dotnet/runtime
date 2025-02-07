@@ -4938,7 +4938,7 @@ public:
                              Statement**      pAfterStmt = nullptr,
                              const DebugInfo& di         = DebugInfo(),
                              BasicBlock*      block      = nullptr);
-    GenTree* impStoreStructPtr(GenTree* destAddr, GenTree* value, unsigned curLevel);
+    GenTree* impStoreStructPtr(GenTree* destAddr, GenTree* value, unsigned curLevel, GenTreeFlags indirFlags = GTF_EMPTY);
 
     GenTree* impGetNodeAddr(GenTree* val, unsigned curLevel, GenTreeFlags* pDerefFlags);
 
@@ -10788,6 +10788,7 @@ public:
         STRESS_MODE(POISON_IMPLICIT_BYREFS)                                                     \
         STRESS_MODE(STORE_BLOCK_UNROLLING)                                                      \
         STRESS_MODE(THREE_OPT_LAYOUT)                                                           \
+        STRESS_MODE(NONHEAP_RET_BUFFER)                                                         \
         STRESS_MODE(COUNT)
 
     enum                compStressArea
