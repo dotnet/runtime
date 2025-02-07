@@ -655,6 +655,8 @@ protected:
 #ifdef FEATURE_HIJACK
 //-----------------------------------------------------------------------------
 
+typedef DPTR(class ResumableFrame) PTR_ResumableFrame;
+
 class ResumableFrame : public Frame
 {
 public:
@@ -916,6 +918,7 @@ public:
 
 // The define USE_FEF controls how this class is used.  Look for occurrences
 //  of USE_FEF.
+typedef DPTR(class FaultingExceptionFrame) PTR_FaultingExceptionFrame;
 
 class FaultingExceptionFrame : public Frame
 {
@@ -1013,6 +1016,8 @@ public:
 };
 
 #ifdef FEATURE_EH_FUNCLETS
+
+typedef DPTR(class SoftwareExceptionFrame) PTR_SoftwareExceptionFrame;
 
 class SoftwareExceptionFrame : public Frame
 {
@@ -1153,6 +1158,8 @@ typedef DPTR(FuncEvalFrame) PTR_FuncEvalFrame;
 // It does NOT protect arguments; you must use GCPROTECT or one of the HelperMethodFrame
 // subclases. (see JitInterface for sample use, YOU CAN'T RETURN WHILE IN THE PROTECTED STATE!)
 //----------------------------------------------------------------------------------------------
+
+typedef DPTR(class HelperMethodFrame) PTR_HelperMethodFrame;
 
 class HelperMethodFrame : public Frame
 {
@@ -1327,6 +1334,8 @@ inline void DoPromote(promote_func *fn, ScanContext* sc, OBJECTREF *address, BOO
 // a HelplerMethodFrames that also report additional object references
 //-----------------------------------------------------------------------------
 
+typedef DPTR(class HelperMethodFrame_1OBJ) PTR_HelperMethodFrame_1OBJ;
+
 class HelperMethodFrame_1OBJ : public HelperMethodFrame
 {
 public:
@@ -1382,6 +1391,8 @@ private:
 // HelperMethodFrame_2OBJ
 //-----------------------------------------------------------------------------
 
+typedef DPTR(class HelperMethodFrame_2OBJ) PTR_HelperMethodFrame_2OBJ;
+
 class HelperMethodFrame_2OBJ : public HelperMethodFrame
 {
 public:
@@ -1436,6 +1447,8 @@ private:
 //-----------------------------------------------------------------------------
 // HelperMethodFrame_3OBJ
 //-----------------------------------------------------------------------------
+
+typedef DPTR(class HelperMethodFrame_3OBJ) PTR_HelperMethodFrame_3OBJ;
 
 class HelperMethodFrame_3OBJ : public HelperMethodFrame
 {
@@ -1498,6 +1511,8 @@ private:
 //-----------------------------------------------------------------------------
 // HelperMethodFrame_PROTECTOBJ
 //-----------------------------------------------------------------------------
+
+typedef DPTR(class HelperMethodFrame_PROTECTOBJ) PTR_HelperMethodFrame_PROTECTOBJ;
 
 class HelperMethodFrame_PROTECTOBJ : public HelperMethodFrame
 {
@@ -1794,6 +1809,8 @@ typedef DPTR(class ComMethodFrame) PTR_ComMethodFrame;
 // This represents a generic call from CLR to COM
 //------------------------------------------------------------------------
 
+typedef DPTR(class CLRToCOMMethodFrame) PTR_CLRToCOMMethodFrame;
+
 class CLRToCOMMethodFrame : public FramedMethodFrame
 {
 public:
@@ -1826,6 +1843,8 @@ public:
 //------------------------------------------------------------------------
 // This represents a call from a helper to GetILStubForCalli
 //------------------------------------------------------------------------
+
+typedef DPTR(class PInvokeCalliFrame) PTR_PInvokeCalliFrame;
 
 class PInvokeCalliFrame : public FramedMethodFrame
 {
@@ -1890,6 +1909,9 @@ public:
 // it gets us back to where the return should have gone (and eventually will
 // go).
 //------------------------------------------------------------------------
+
+typedef DPTR(class HijackFrame) PTR_HijackFrame;
+
 class HijackFrame : public Frame
 {
 public:
@@ -1945,6 +1967,8 @@ protected:
 // can do gc and throw exceptions while building the replacement
 // stub, we need this frame to keep things straight.
 //------------------------------------------------------------------------
+
+typedef DPTR(class PrestubMethodFrame) PTR_PrestubMethodFrame;
 
 class PrestubMethodFrame : public FramedMethodFrame
 {
@@ -2078,6 +2102,8 @@ private:
 
 typedef DPTR(class StubDispatchFrame) PTR_StubDispatchFrame;
 
+typedef DPTR(class CallCountingHelperFrame) PTR_CallCountingHelperFrame;
+
 class CallCountingHelperFrame : public FramedMethodFrame
 {
 public:
@@ -2181,6 +2207,9 @@ typedef DPTR(class DynamicHelperFrame) PTR_DynamicHelperFrame;
 // which pinvoke-inlined a call to a COM interface, which happenned to be
 // implemented by a managed function via COM-interop.
 //------------------------------------------------------------------------
+
+typedef DPTR(class ComPrestubMethodFrame) PTR_ComPrestubMethodFrame;
+
 class ComPrestubMethodFrame : public ComMethodFrame
 {
     friend class CheckAsmOffsets;
@@ -2295,6 +2324,8 @@ struct ByRefInfo
 // ProtectByRefsFrame
 //-----------------------------------------------------------------------------
 
+typedef DPTR(class ProtectByRefsFrame) PTR_ProtectByRefsFrame;
+
 class ProtectByRefsFrame : public Frame
 {
 public:
@@ -2335,6 +2366,7 @@ struct ValueClassInfo
 // ProtectValueClassFrame
 //-----------------------------------------------------------------------------
 
+typedef DPTR(class ProtectValueClassFrame) PTR_ProtectValueClassFrame;
 
 class ProtectValueClassFrame : public Frame
 {
@@ -2381,6 +2413,8 @@ BOOL IsProtectedByGCFrame(OBJECTREF *ppObjectRef);
 // GetFrameType and GetInterception.
 //------------------------------------------------------------------------
 
+typedef DPTR(class DebuggerClassInitMarkFrame) PTR_DebuggerClassInitMarkFrame;
+
 class DebuggerClassInitMarkFrame : public Frame
 {
 public:
@@ -2411,6 +2445,8 @@ public:
 // life is to mark for the debugger that there is an exit transition on
 // the stack.
 //------------------------------------------------------------------------
+
+typedef DPTR(class DebuggerExitFrame) PTR_DebuggerExitFrame;
 
 class DebuggerExitFrame : public Frame
 {
@@ -2463,6 +2499,8 @@ public:
 // Notes:
 //    Currently this frame is only used in code:DispatchInfo.InvokeMember, which is an U2M transition.
 //
+
+typedef DPTR(class DebuggerU2MCatchHandlerFrame) PTR_DebuggerU2MCatchHandlerFrame;
 
 class DebuggerU2MCatchHandlerFrame : public Frame
 {
@@ -2724,6 +2762,8 @@ public:
 // life is to set SHADOW_SP_FILTER_DONE during unwind from exception filter.
 //------------------------------------------------------------------------
 
+typedef DPTR(class ExceptionFilterFrame) PTR_ExceptionFilterFrame;
+
 class ExceptionFilterFrame : public Frame
 {
     size_t* m_pShadowSP;
@@ -2763,13 +2803,16 @@ public:
 #ifdef _DEBUG
 // We use IsProtectedByGCFrame to check if some OBJECTREF pointers are protected
 // against GC. That function doesn't know if a byref is from managed stack thus
-// protected by JIT. AssumeByrefFromJITStack is used to bypass that check if an
+// protected by JIT. AssumeByrefFromJITStackFrame is used to bypass that check if an
 // OBJECTRef pointer is passed from managed code to an FCall and it's in stack.
-class AssumeByrefFromJITStack : public Frame
+
+typedef DPTR(class AssumeByrefFromJITStackFrame) PTR_AssumeByrefFromJITStackFrame;
+
+class AssumeByrefFromJITStackFrame : public Frame
 {
 public:
 #ifndef DACCESS_COMPILE
-    AssumeByrefFromJITStack(OBJECTREF *pObjRef) : Frame(FrameIdentifier::AssumeByrefFromJITStack)
+    AssumeByrefFromJITStackFrame(OBJECTREF *pObjRef) : Frame(FrameIdentifier::AssumeByrefFromJITStackFrame)
     {
         m_pObjRef      = pObjRef;
     }
@@ -2783,7 +2826,7 @@ public:
 
 private:
     OBJECTREF *m_pObjRef;
-}; //AssumeByrefFromJITStack
+}; //AssumeByrefFromJITStackFrame
 
 #endif //_DEBUG
 
@@ -2923,14 +2966,14 @@ private:
                 /*pointer points to GC heap, the FCall still needs to protect it explicitly */             \
                 ASSERT_ADDRESS_IN_STACK (__objRef);                                      \
                 do {                                                                     \
-                AssumeByrefFromJITStack __dummyAssumeByrefFromJITStack ((__objRef));       \
-                __dummyAssumeByrefFromJITStack.Push ();                                  \
+                AssumeByrefFromJITStackFrame __dummyAssumeByrefFromJITStackFrame ((__objRef));       \
+                __dummyAssumeByrefFromJITStackFrame.Push ();                                  \
                 /* work around unreachable code warning */                               \
                 if (true) { DEBUG_ASSURE_NO_RETURN_BEGIN(GC_PROTECT)
 
 #define ASSUME_BYREF_FROM_JIT_STACK_END()                                          \
                 DEBUG_ASSURE_NO_RETURN_END(GC_PROTECT) }                                            \
-                __dummyAssumeByrefFromJITStack.Pop(); } while(0)
+                __dummyAssumeByrefFromJITStackFrame.Pop(); } while(0)
 #else //defined (_DEBUG) && !defined (DACCESS_COMPILE)
 #define ASSUME_BYREF_FROM_JIT_STACK_BEGIN(__objRef)
 #define ASSUME_BYREF_FROM_JIT_STACK_END()
