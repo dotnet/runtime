@@ -37,6 +37,7 @@
       DOTNET_EnableSSE41;
       DOTNET_EnableSSE42;
       DOTNET_EnableSSSE3;
+      DOTNET_EnableAPX;
       DOTNET_JitStressEvexEncoding;
       DOTNET_PreferredVectorBitWidth;
       DOTNET_MaxVectorTBitWidth;

@@ -3391,11 +3391,24 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
     rbmFltCalleeTrash   = RBM_FLT_CALLEE_TRASH_INIT;
     cntCalleeTrashFloat = CNT_CALLEE_TRASH_FLOAT_INIT;
 
+    rbmAllInt         = RBM_ALLINT_INIT;
+    rbmIntCalleeTrash = RBM_INT_CALLEE_TRASH_INIT;
+    cntCalleeTrashInt = CNT_CALLEE_TRASH_INT_INIT;
+    regIntLast        = REG_R15;
+
     if (canUseEvexEncoding())
     {
         rbmAllFloat |= RBM_HIGHFLOAT;
         rbmFltCalleeTrash |= RBM_HIGHFLOAT;
         cntCalleeTrashFloat += CNT_CALLEE_TRASH_HIGHFLOAT;
+    }
+
+    if (canUseApxEncoding())
+    {
+        rbmAllInt |= RBM_HIGHINT;
+        rbmIntCalleeTrash |= RBM_HIGHINT;
+        cntCalleeTrashInt += CNT_CALLEE_TRASH_HIGHINT;
+        regIntLast = REG_R23;
     }
 #endif // TARGET_AMD64
 
@@ -6332,6 +6345,11 @@ int Compiler::compCompile(CORINFO_MODULE_HANDLE classPtr,
             instructionSetFlags.AddInstructionSet(InstructionSet_AVX10v1);
             instructionSetFlags.AddInstructionSet(InstructionSet_AVX10v1_V512);
             instructionSetFlags.AddInstructionSet(InstructionSet_EVEX);
+        }
+
+        if (JitConfig.EnableAPX() != 0)
+        {
+            instructionSetFlags.AddInstructionSet(InstructionSet_APX);
         }
 #endif
 
