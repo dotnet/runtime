@@ -219,7 +219,7 @@ public class WasmTemplateTestsBase : BuildTestBase
     protected void DeleteFile(string pathRelativeToProjectDir)
     {
         var deletedFilePath = Path.Combine(_projectDir, pathRelativeToProjectDir);
-        if(File.Exists(deletedFilePath))
+        if (File.Exists(deletedFilePath))
         {
             File.Delete(deletedFilePath);
         }

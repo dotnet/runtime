@@ -551,7 +551,7 @@ class Tests
 	public static int test_0_multidym_array_with_negative_lower_bound () {
 		int[,] x = (int[,]) Array.CreateInstance(typeof (int), new int[] { 2, 2 }, new int[] { -2, -3 });
 
-		if(x.GetLowerBound (0) != -2)
+		if (x.GetLowerBound (0) != -2)
 			return 1;
 		if (x.GetLowerBound (1) != -3)
 			return 2;

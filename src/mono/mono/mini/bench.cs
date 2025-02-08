@@ -83,7 +83,7 @@ class Tests {
 
 		// First set of tests.
 		for(iter = 0; iter < 2000000; ++iter) {
-			if((flag1 || flag2) && (flag3 || flag4) &&
+			if ((flag1 || flag2) && (flag3 || flag4) &&
 			   (flag5 || flag6 || flag7))
 				{
 				flag8 = !flag8;
