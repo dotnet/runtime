@@ -1,5 +1,5 @@
 set(GC_DIR ../../gc)
-set(SHARED_RUNTIME_DIR ../../shared_runtime)
+set(SHARED_RUNTIME_DIR ../../runtime)
 
 set(COMMON_RUNTIME_SOURCES
     allocheap.cpp
