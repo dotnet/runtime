@@ -13,6 +13,18 @@ namespace System
             _assemblyName = assemblyName;
         }
 
+        // Because the Mono runtime has a dependency to a (string, string) constructor overload,
+        // we add a dummy parameter with a default value to minimize native code changes.
+        // In order to use this overload, callers should either pass three arguments, or specify
+        // one of the parameters by name.
+        internal TypeLoadException(string message, string typeName, bool useMessageTypeNameOverload = true)
+            : base(message)
+        {
+            _ = useMessageTypeNameOverload;
+            HResult = HResults.COR_E_TYPELOAD;
+            _className = typeName;
+        }
+
         private void SetMessageField()
         {
             if (_message != null)

@@ -29,6 +29,15 @@ namespace System
             HResult = HResults.COR_E_TYPELOAD;
         }
 
+#if !MONO
+        internal TypeLoadException(string message, string typeName)
+            : base(message)
+        {
+            HResult = HResults.COR_E_TYPELOAD;
+            _className = typeName;
+        }
+#endif
+
         public override string Message
         {
             get
@@ -38,13 +47,7 @@ namespace System
             }
         }
 
-        public string TypeName
-        {
-            get => _className ?? string.Empty;
-            // This is an init-only property, because a (string message, string typeName) constructor
-            // would conflict with Mono's (string typeName, string assemblyName) constructor.
-            internal init => _className = value;
-        }
+        public string TypeName => _className ?? string.Empty;
 
         [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         [EditorBrowsable(EditorBrowsableState.Never)]
