@@ -470,7 +470,7 @@ class Tests
 	public static int test_0_bug_71454 () {
 		int[,] a = new int[4,4];
 		int[,] b = new int[4,4];
-		for(int i = 0; i < 4; ++i) {
+		for (int i = 0; i < 4; ++i) {
 			b[0,0] = a[0,i % 4];
 		}
 		return 0;
@@ -762,7 +762,7 @@ class Tests
 	public static int test_0_ldelema_2_64bit () {
         bool[,] test = new bool[201,201];
         int x,y;
-        for(x=-100;x<100;x++) for(y=-100;y<100;y++){
+        for (x=-100;x<100;x++) for (y=-100;y<100;y++){
             test[x+100,y+100] = true;
         }
 		return 0;
