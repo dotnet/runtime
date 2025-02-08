@@ -1468,7 +1468,7 @@ namespace Microsoft.WebAssembly.Diagnostics
         {
             try {
                 var retStackTrace = new JArray();
-                foreach(var call in context.CallStack)
+                foreach (var call in context.CallStack)
                 {
                     if (call.Id < scopeId)
                         continue;
