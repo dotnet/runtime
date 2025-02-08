@@ -4300,6 +4300,22 @@ int LinearScan::BuildReturn(GenTree* tree)
                 return 1;
             }
         }
+        else if (!tree->TypeIs(TYP_VOID) && op1->OperIsFieldList())
+        {
+            const ReturnTypeDesc& retDesc = compiler->compRetTypeDesc;
+
+            unsigned regIndex = 0;
+            for (const GenTreeFieldList::Use& use : op1->AsFieldList()->Uses())
+            {
+                GenTree*  tree   = use.GetNode();
+                regNumber retReg = retDesc.GetABIReturnReg(regIndex, compiler->info.compCallConv);
+                BuildUse(tree, retReg);
+
+                regIndex++;
+            }
+
+            return regIndex;
+        }
         else
         {
             // In other cases we require the incoming operand to be in the

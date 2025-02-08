@@ -8525,6 +8525,11 @@ GenTreeConditional* Compiler::gtNewConditionalNode(
     return node;
 }
 
+GenTreeFieldList* Compiler::gtNewFieldList()
+{
+    return new (this, GT_FIELD_LIST) GenTreeFieldList();
+}
+
 GenTreeLclFld* Compiler::gtNewLclFldNode(unsigned lnum, var_types type, unsigned offset, ClassLayout* layout)
 {
     GenTreeLclFld* node = new (this, GT_LCL_FLD) GenTreeLclFld(GT_LCL_FLD, type, lnum, offset, layout);
@@ -30463,6 +30468,19 @@ void ReturnTypeDesc::InitializeReturnType(Compiler*                comp,
 
         INDEBUG(m_inited = true);
     }
+}
+
+unsigned ReturnTypeDesc::GetReturnFieldOffset(unsigned index) const
+{
+    assert(m_regType[index] != TYP_UNKNOWN);
+#if defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64)
+    return m_fieldOffset[index];
+#else
+    unsigned offset = 0;
+    for (unsigned i = 0; i < index; i++)
+        offset += genTypeSize(m_regType[i]);
+    return offset;
+#endif
 }
 
 //-------------------------------------------------------------------

@@ -7295,6 +7295,11 @@ bool CodeGen::isStructReturn(GenTree* treeNode)
         return false;
     }
 
+    if (!treeNode->TypeIs(TYP_VOID) && treeNode->AsOp()->GetReturnValue()->OperIsFieldList())
+    {
+        return true;
+    }
+
 #if defined(TARGET_AMD64) && !defined(UNIX_AMD64_ABI)
     assert(!varTypeIsStruct(treeNode));
     return false;
@@ -7323,6 +7328,13 @@ void CodeGen::genStructReturn(GenTree* treeNode)
     GenTree* actualOp1 = op1->gtSkipReloadOrCopy();
 
     genConsumeRegs(op1);
+
+    if (op1->OperIsFieldList())
+    {
+        // Simply consuming them should be enough as we constrain LSRA to put
+        // the uses into the right registers.
+        return;
+    }
 
     ReturnTypeDesc retTypeDesc = compiler->compRetTypeDesc;
     const unsigned regCount    = retTypeDesc.GetReturnRegCount();
