@@ -214,14 +214,72 @@ internal static class Utils
         return (process.ExitCode, outputBuilder.ToString().Trim('\r', '\n'));
     }
 
+    private static bool CompareFiles(string filePath1, string filePath2)
+    {
+        const int bufferSize = 8192;
+        byte[] bufferA = new byte[bufferSize];
+        byte[] bufferB = new byte[bufferSize];
+
+        using (FileStream fsA = new FileStream(filePath1, FileMode.Open, FileAccess.Read, FileShare.Read, bufferSize, FileOptions.SequentialScan))
+        using (FileStream fsB = new FileStream(filePath2, FileMode.Open, FileAccess.Read, FileShare.Read, bufferSize, FileOptions.SequentialScan))
+        {
+            int readA = 0;
+            int readB = 0;
+            int consumedA = 0;
+            int consumedB = 0;
+
+            while (true)
+            {
+                if (consumedA == readA)
+                {
+                    readA = fsA.Read(bufferA, 0, bufferSize);
+                    consumedA = 0;
+                }
+
+                if (consumedB == readB)
+                {
+                    readB = fsB.Read(bufferB, 0, bufferSize);
+                    consumedB = 0;
+                }
+
+                if (readA == 0 && readB == 0)
+                    return true;
+
+                if (readA == 0 || readB == 0)
+                    return false;
+
+                int overlap = Math.Min(readA - consumedA, readB - consumedB);
+                if (!SequenceEqual(bufferA, consumedA, bufferB, consumedB, overlap))
+                    return false;
+
+                consumedA += overlap;
+                consumedB += overlap;
+            }
+        }
+    }
+
+    private static bool SequenceEqual(byte[] arrayA, int offsetA, byte[] arrayB, int offsetB, int count)
+    {
+#if NET || NETCOREAPP
+        return arrayA.AsSpan(offsetA, count).SequenceEqual(arrayB.AsSpan(offsetB, count));
+#else
+        for (int i = 0; i < count; i++)
+        {
+            if (arrayA[offsetA + i] != arrayB[offsetB + i])
+                return false;
+        }
+        return true;
+#endif
+    }
+
+#pragma warning disable IDE0060 // Remove unused parameter
     public static bool CopyIfDifferent(string src, string dst, bool useHash)
+#pragma warning restore IDE0060 // Remove unused parameter
     {
         if (!File.Exists(src))
             throw new ArgumentException($"Cannot find {src} file to copy", nameof(src));
 
-        bool areDifferent = !File.Exists(dst) ||
-                                (useHash && ComputeHash(src) != ComputeHash(dst)) ||
-                                (File.ReadAllText(src) != File.ReadAllText(dst));
+        bool areDifferent = !File.Exists(dst) || !CompareFiles(src, dst);
 
         if (areDifferent)
             File.Copy(src, dst, true);
