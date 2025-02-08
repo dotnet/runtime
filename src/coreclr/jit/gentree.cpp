@@ -30470,6 +30470,17 @@ void ReturnTypeDesc::InitializeReturnType(Compiler*                comp,
     }
 }
 
+//-------------------------------------------------------------------
+// GetReturnFieldOffset:
+//   For the N'th returned register, identified by "index", returns the
+//   starting offset in the struct return type of the data being returned.
+//
+// Arguments:
+//     index - The register whose offset to get
+//
+// Return Value:
+//     Starting offset of data returned in that register.
+//
 unsigned ReturnTypeDesc::GetReturnFieldOffset(unsigned index) const
 {
     assert(m_regType[index] != TYP_UNKNOWN);
