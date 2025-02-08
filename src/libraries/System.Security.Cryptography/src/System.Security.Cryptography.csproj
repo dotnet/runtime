@@ -1863,7 +1863,7 @@
     <Reference Include="System.Threading.Thread" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(TargetPlatformIdentifier)' != '' and '$(TargetPlatformIdentifier)' != 'windows' and '$(TargetPlatformIdentifier' != 'browser'">
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' != '' and '$(TargetPlatformIdentifier)' != 'windows' and '$(TargetPlatformIdentifier)' != 'browser'">
     <Reference Include="System.Console" Condition="'$(Configuration)' == 'Debug'" />
   </ItemGroup>
 
