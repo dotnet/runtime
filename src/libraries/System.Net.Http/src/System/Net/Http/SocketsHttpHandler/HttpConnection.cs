@@ -960,6 +960,7 @@ namespace System.Net.Http
         private CancellationTokenRegistration RegisterCancellation(CancellationToken cancellationToken, [CallerMemberName] string? caller = null)
         {
             CtrTracker tracker = new CtrTracker(this, _currentRequest);
+            if (NetEventSource.Log.IsEnabled()) Trace($"Created tracker:{tracker}, caller:{caller}, _currentRequest:{_currentRequest?.GetHashCode()}");
             // Cancellation design:
             // - We register with the SendAsync CancellationToken for the duration of the SendAsync operation.
             // - We register with the Read/Write/CopyToAsync methods on the response stream for each such individual operation.
