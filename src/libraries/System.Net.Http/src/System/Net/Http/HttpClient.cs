@@ -532,7 +532,15 @@ namespace System.Net.Http
                             responseContentTelemetryStarted = true;
                         }
 
+                        if (NetEventSource.Log.IsEnabled())
+                        {
+                            NetEventSource.Log.HandlerMessage(0, 0, request.GetHashCode(), "HttpClient.SendAsync.Core", "LoadIntoBufferAsync started.");
+                        }
                         await response.Content.LoadIntoBufferAsync(_maxResponseContentBufferSize, cts.Token).ConfigureAwait(false);
+                        if (NetEventSource.Log.IsEnabled())
+                        {
+                            NetEventSource.Log.HandlerMessage(0, 0, request.GetHashCode(), "HttpClient.SendAsync.Core", "LoadIntoBufferAsync finished.");
+                        }
                     }
 
                     return response;
