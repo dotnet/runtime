@@ -300,14 +300,14 @@ internal static class Utils
         }
     }
 
-    private static bool SequenceEqual<T>(T[] arrayA, int offsetA, T[] arrayB, int offsetB, int count) : where T : IEquatable<T>
+    private static bool SequenceEqual<T>(T[] arrayA, int offsetA, T[] arrayB, int offsetB, int count) where T : IEquatable<T>
     {
 #if NET
         return arrayA.AsSpan(offsetA, count).SequenceEqual(arrayB.AsSpan(offsetB, count));
 #else
         for (int i = 0; i < count; i++)
         {
-            if (arrayA[offsetA + i] != arrayB[offsetB + i])
+            if (arrayA[offsetA + i].Equals (arrayB[offsetB + i]))
                 return false;
         }
         return true;
