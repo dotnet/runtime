@@ -19,6 +19,7 @@ namespace System.Net.Http
         private const int MessageAlreadySent = 1;
         private const int MessageIsRedirect = 2;
         private const int MessageDisposed = 4;
+        private const int MessageCompleted = 8;
 
         // Track whether the message has been sent.
         // The message shouldn't be sent again if this field is equal to MessageAlreadySent.
@@ -175,6 +176,10 @@ namespace System.Net.Http
         internal void MarkAsRedirected() => _sendStatus |= MessageIsRedirect;
 
         internal bool WasRedirected() => (_sendStatus & MessageIsRedirect) != 0;
+
+        internal void MarkAsCompleted() => _sendStatus |= MessageCompleted;
+
+        internal bool WasCompleted() => (_sendStatus & MessageCompleted) != 0;
 
         private bool Disposed
         {

@@ -532,6 +532,11 @@ namespace System.Net.Http
 
         public async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, bool async, CancellationToken cancellationToken)
         {
+            if (_currentRequest is not null)
+            {
+                throw new InvalidOperationException($"Expected null {nameof(_currentRequest)}.");
+            }
+
             Debug.Assert(_currentRequest == null, $"Expected null {nameof(_currentRequest)}.");
             Debug.Assert(_readBuffer.ActiveLength == 0, "Unexpected data in read buffer");
             Debug.Assert(_readAheadTaskStatus != ReadAheadTask_Started,
@@ -954,7 +959,7 @@ namespace System.Net.Http
 
         private CancellationTokenRegistration RegisterCancellation(CancellationToken cancellationToken, [CallerMemberName] string? caller = null)
         {
-            CtrTracker tracker = new CtrTracker { Connection = this };
+            CtrTracker tracker = new CtrTracker(this, _currentRequest);
             // Cancellation design:
             // - We register with the SendAsync CancellationToken for the duration of the SendAsync operation.
             // - We register with the Read/Write/CopyToAsync methods on the response stream for each such individual operation.
@@ -964,17 +969,23 @@ namespace System.Net.Http
             CancellationTokenRegistration ctr = cancellationToken.Register(static s =>
             {
                 CtrTracker t = (CtrTracker)s!;
-                HttpConnection connection = t.Connection!;
-                if (NetEventSource.Log.IsEnabled()) connection.Trace($"Cancellation requested by {t.CtrId}. Disposing of the connection.");
+                HttpConnection connection = t.Connection;
+                HttpRequestMessage? r = t.Request;
+
+                if (NetEventSource.Log.IsEnabled())
+                    connection.Trace($"Cancellation requested by {t.CtrId} tracker:{t.GetHashCode()} originating req:{r} comp:{r?.WasCompleted()}. Disposing of the connection.");
                 connection._canceled = true;
                 connection.Dispose();
             }, tracker);
             tracker.CtrId = ctr.GetHashCode();
-            if (NetEventSource.Log.IsEnabled()) Trace($"{caller} registered CTR {tracker.CtrId}");
+            if (NetEventSource.Log.IsEnabled()) Trace($"{caller} registered CTR {tracker.CtrId} tracker:{tracker.GetHashCode()}");
             return ctr;
         }
 
-        private sealed class CtrTracker { public HttpConnection? Connection; public int CtrId; }
+        private sealed record class CtrTracker(HttpConnection Connection, HttpRequestMessage? Request)
+        {
+            public int CtrId = -42;
+        }
 
         private async ValueTask SendRequestContentAsync(HttpRequestMessage request, HttpContentWriteStream stream, bool async, CancellationToken cancellationToken)
         {
@@ -2044,11 +2055,13 @@ namespace System.Net.Http
             _detachedFromPool = true;
         }
 
-        private void CompleteResponse()
+        private void CompleteResponse([CallerMemberName]string? caller = null)
         {
             Debug.Assert(_currentRequest != null, "Expected the connection to be associated with a request.");
             Debug.Assert(_writeBuffer.ActiveLength == 0, "Everything in write buffer should have been flushed.");
 
+            if (NetEventSource.Log.IsEnabled()) Trace($"{caller} completed response.");
+            _currentRequest.MarkAsCompleted();
             // Disassociate the connection from a request.
             _currentRequest = null;
 
