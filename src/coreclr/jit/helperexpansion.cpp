@@ -2840,17 +2840,28 @@ bool Compiler::fgExpandStackArrayAllocation(BasicBlock* block, Statement* stmt, 
             return false;
     }
 
-    // If this is a local array, the new helper will have an arg for the array's address
+    // If this is a local array, the new helper will have an arg for the array's address or an arg
+    // for the array element size
     //
     CallArg* const stackLocalAddressArg = call->gtArgs.FindWellKnownArg(WellKnownArg::StackArrayLocal);
+    CallArg* const elemSizeArg          = call->gtArgs.FindWellKnownArg(WellKnownArg::StackArrayElemSize);
 
-    if (stackLocalAddressArg == nullptr)
+    if ((stackLocalAddressArg == nullptr) && (elemSizeArg == nullptr))
     {
         return false;
     }
 
-    JITDUMP("Expanding new array helper for stack allocated array at [%06d] in " FMT_BB ":\n", dspTreeID(call),
-            block->bbNum);
+    // If we have an elem size arg, this is intended to be a localloc
+    //
+    // Note we may have figured out the array length after we did the
+    // escape analysis (that is, lengthArg might be a constant), so we
+    // could possibly change this from a localloc to a fixed alloc,
+    // if we could show that was sound.
+    //
+    bool const isLocAlloc = (elemSizeArg != nullptr);
+
+    JITDUMP("Expanding new array helper for stack allocated array at [%06d] %sin " FMT_BB ":\n", dspTreeID(call),
+            isLocAlloc ? " into localloc " : "", block->bbNum);
     DISPTREE(call);
     JITDUMP("\n");
 
@@ -2867,7 +2878,56 @@ bool Compiler::fgExpandStackArrayAllocation(BasicBlock* block, Statement* stmt, 
         }
     }
 
-    GenTree* const stackLocalAddress = stackLocalAddressArg->GetNode();
+    GenTree* const lengthArg         = call->gtArgs.GetArgByIndex(lengthArgIndex)->GetNode();
+    GenTree*       stackLocalAddress = nullptr;
+
+    // Todo -- clone and leave option to make a helper call under some runtime check
+    // for sufficient stack.
+    //
+    if (isLocAlloc)
+    {
+        assert(elemSizeArg != nullptr);
+        assert(stackLocalAddressArg == nullptr);
+        GenTree* const elemSize = elemSizeArg->GetNode();
+        assert(elemSize->IsCnsIntOrI());
+
+        unsigned const locallocTemp   = lvaGrabTemp(true DEBUGARG("localloc stack address"));
+        lvaTable[locallocTemp].lvType = TYP_I_IMPL;
+
+        GenTree* const arrayLength  = gtCloneExpr(lengthArg);
+        GenTree* const baseSize     = gtNewIconNode(OFFSETOF__CORINFO_Array__data, TYP_I_IMPL);
+        GenTree* const payloadSize  = gtNewOperNode(GT_MUL, TYP_I_IMPL, elemSize, arrayLength);
+        GenTree* const totalSize    = gtNewOperNode(GT_ADD, TYP_I_IMPL, baseSize, payloadSize);
+        GenTree* const locallocNode = gtNewOperNode(GT_LCLHEAP, TYP_I_IMPL, totalSize);
+
+        // Allocation might fail. Codegen must zero the allocation
+        //
+        locallocNode->gtFlags |= (GTF_EXCEPT | GTF_LCLHEAP_MUSTINIT);
+
+        GenTree* const   locallocStore = gtNewStoreLclVarNode(locallocTemp, locallocNode);
+        Statement* const locallocStmt  = fgNewStmtFromTree(locallocStore);
+
+        gtUpdateStmtSideEffects(locallocStmt);
+        fgInsertStmtBefore(block, stmt, locallocStmt);
+
+        // Array address is the result of the localloc
+        //
+        stackLocalAddress = gtNewLclVarNode(locallocTemp);
+        compLocallocUsed  = true;
+
+        // We now require a frame pointer
+        //
+        codeGen->setFramePointerRequired(true);
+    }
+    else
+    {
+        assert(elemSizeArg == nullptr);
+        assert(stackLocalAddressArg != nullptr);
+
+        // Array address is the block local we created earlier
+        //
+        stackLocalAddress = stackLocalAddressArg->GetNode();
+    }
 
     // Initialize the array method table pointer.
     //
@@ -2881,7 +2941,6 @@ bool Compiler::fgExpandStackArrayAllocation(BasicBlock* block, Statement* stmt, 
 
     // Initialize the array length.
     //
-    GenTree* const   lengthArg     = call->gtArgs.GetArgByIndex(lengthArgIndex)->GetNode();
     GenTree* const   lengthArgInt  = fgOptimizeCast(gtNewCastNode(TYP_INT, lengthArg, false, TYP_INT));
     GenTree* const   lengthAddress = gtNewOperNode(GT_ADD, TYP_I_IMPL, gtCloneExpr(stackLocalAddress),
                                                    gtNewIconNode(OFFSETOF__CORINFO_Array__length, TYP_I_IMPL));
