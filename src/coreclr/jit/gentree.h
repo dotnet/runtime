@@ -4914,6 +4914,7 @@ public:
     CallArg* GetArgByIndex(unsigned index);
     CallArg* GetUserArgByIndex(unsigned index);
     unsigned GetIndex(CallArg* arg);
+    unsigned GetUserIndex(CallArg* arg);
 
     bool IsEmpty() const
     {

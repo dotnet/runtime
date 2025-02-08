@@ -21,11 +21,7 @@
     LEAF_ENTRY RhpNewFast, _TEXT
 
         // a1 = GetThread()
-#ifdef FEATURE_EMULATED_TLS
-        GETTHREAD_ETLS_1
-#else
         INLINE_GETTHREAD  $a1
-#endif
 
         //
         // a0 contains MethodTable pointer
@@ -125,11 +121,7 @@ LOCAL_LABEL(NewOutOfMemory):
         // a1 == element count
         // a2 == string size
 
-#ifdef FEATURE_EMULATED_TLS
-        GETTHREAD_ETLS_3
-#else
         INLINE_GETTHREAD $a3
-#endif
 
         // Load potential new object address into t3.
         ld.d  $t3, $a3, OFFSETOF__Thread__m_alloc_context__alloc_ptr
