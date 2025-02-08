@@ -3152,7 +3152,7 @@ namespace Internal.JitInterface
 
                         // Currently, the only place we are using a token here is for a COM-to-CLR exception-to-HRESULT
                         // mapping catch clause.  We want this catch clause to catch all exceptions, so we override the
-                        // token to be mdTypeRefNil, which used by the EH system to mean catch(...)
+                        // token to be mdTypeRefNil, which used by the EH system to mean catch (...)
                         Debug.Assert(clauseType.IsObject);
                         clause.ClassTokenOrOffset = 0;
                     }
