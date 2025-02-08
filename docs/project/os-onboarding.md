@@ -25,7 +25,6 @@ Our rule is that we declare support (for all [supported .NET releases](https://g
 
 Our testing philosophy is based on perceived risk and past experience. The effective test matrix is huge, the product of OSes \* supported versions \* architectures.  We try to make smart choices to skip testing most of the matrix while retaining much of the practical coverage. We also know where we tend to get bitten most when we don't pay sufficient attention. For example, our bug risk across Linux, macOS, and Windows is not uniform.
 
-
 We  use pragmatism and efficiency to drive our decision making. All things being equal, we'll choose the lowest cost approach.
 
 ## Testing
@@ -35,7 +34,6 @@ Testing is the bread and butter of OS onboarding, particularly for a mature runt
 Linux, Wasm, and some Windows testing is done in container images. This approach enables us to test many and regularly changing OS versions in a fixed/limited VM environment. The container image creation/update process is self-service (discussed later).
 
 We use VMs (Linux and Windows) and raw metal hardware (Apple) in cases where containers are not practical or where direct testing is desired. This is the primary model for Apple and Windows OSes. The VMs and Apple hardware are relatively slow to change and require support from dnceng (discussed later).
-
 
 ### Adding coverage
 
@@ -60,7 +58,6 @@ We should remediate any EOL OS references in our codebase. They don't serve any 
 
 In the case that a .NET version will be EOL in <6 (and certainly <3) months, new coverage can typically be skipped. We may even be able to skip remediating EOL OS references. We often opt to stop updating [supported OSes](https://github.com/dotnet/core/blob/main/os-lifecycle-policy.md) late in support period for related reasons. A lazy approach is often the best approach late in the game. Don't upset what's working.
 
-
 ## Building
 
 Our [build methodology](https://github.com/dotnet/runtime/blob/main/docs/project/linux-build-methodology.md) is oriented around cross-compiling, enabling us to target an old OS version and run on newer ones. It is uncommon for us to need to make changes to the build to address new OS versions, however, there are [rare cases where we need to make adjustments](https://github.com/dotnet/runtime/issues/101944).
@@ -73,10 +70,15 @@ Our Linux build containers are based on Azure Linux. We [typically need to updat
 
 For Apple, we likely need to make an adjustment at each macOS or iOS release to account for an Xcode version no longer being supported.
 
+## Environments
 
-## Prereqs containers
+We rely on a set of standard environments for building and testing. These environments are managed with a "config as code" paradigm in our source code. This approach delivers CI reliability -- which we greatly value -- but also comes with the tedious cost of needing to regularly update various reference strings in several files. Updating version strings almost always requires sorting through build breaks, which is a reminder of why we value our approach.
 
-New images need to be created for each new OS version in the [dotnet/dotnet-buildtools-prereqs-docker](https://github.com/dotnet/dotnet-buildtools-prereqs-docker) repo, for testing. We also need to create and update images for Linux and Wasm build environments.
+We may use multiple environments for building and testing a given OS.
+
+### Containers
+
+New container images need to be created for each new OS version in the [dotnet/dotnet-buildtools-prereqs-docker](https://github.com/dotnet/dotnet-buildtools-prereqs-docker) repo. These are used for building and testing Android, Linux, Wasm, and Windows OSes/targets.
 
 The repo is self-service and largely self-explanatory. One typically creates a new image using the pattern demonstrated by the previous version. Look at commits and [blame](https://github.com/dotnet/dotnet-buildtools-prereqs-docker/blame/776324ff16d38e22fd9f06c9842ec338a4b98489/src/alpine/3.20/helix/Dockerfile) to find people who are best suited to help.
 
@@ -103,8 +105,16 @@ Example PRs:
 
 ### VMs
 
-VMs and raw metal environments are used for Linux, macOS, and Windows. They need to be [requested from dnceng](https://github.com/dotnet/dnceng/issues/4307). The turnaround can be long so put in your request before you need it.
+VMs and raw metal environments are used for Android, Apple, Linux, and Windows OSes. They need to be [requested from dnceng](https://github.com/dotnet/dnceng/issues/4307). The turnaround can be long so put in your request before you need it.
 
+- Android: Raw metal hosts for some forms of Android testing.
+- Apple: Raw metal hosts for all forms of Apple testing.
 - Linux: All Linux VMs are moving to Azure Linux as a container host.
-- macOS: Raw metal hosts for all forms of Apple testing.
 - Windows: Windows Client and Server VMs
+
+### Other
+
+Other environments are typically use a custom process.
+
+- [Browser Wasm](https://github.com/dotnet/runtime/pull/112066)
+
