@@ -230,6 +230,61 @@ protected:
 
     void genExitCode(BasicBlock* block);
 
+#if defined(TARGET_ARM64)
+    BasicBlock* genGetThrowHelper(SpecialCodeKind codeKind);
+
+    // genEmitInlineThrow: Generate code for an inline exception.
+    void genEmitInlineThrow(SpecialCodeKind codeKind)
+    {
+        genEmitHelperCall(compiler->acdHelper(codeKind), 0, EA_UNKNOWN);
+    }
+
+    // throwCodeFn callback follows concept -> void(*)(BasicBlock* target, bool isInline)
+    //
+    // For conditional jumps:
+    //     If `isInline`, invert the condition for throw and fall into the exception block.
+    //     Otherwise emit compare and jump with the normal throw condition.
+    // For unconditional jumps:
+    //     Only emit the unconditional jump when `isInline == false`.
+    //     When `isInline == true` the code will fallthrough to throw without any jump added.
+    //
+    // Parameter `target` gives a label to jump to, which is the throw block if
+    // `isInline == false`, else the continuation.
+    template <typename throwCodeFn>
+    void genJumpToThrowHlpBlk(SpecialCodeKind codeKind, throwCodeFn emitJumpCode, BasicBlock* throwBlock = nullptr)
+    {
+        if (!throwBlock)
+        {
+            // If caller didn't supply a target block, then try to find a helper block.
+            throwBlock = genGetThrowHelper(codeKind);
+        }
+
+        if (throwBlock)
+        {
+            // check:
+            //   if (checkPassed)
+            //     goto throw;
+            //   ...
+            // throw:
+            //   throw();
+            emitJumpCode(throwBlock, false);
+        }
+        else
+        {
+            // check:
+            //   if (!checkPassed)
+            //     goto continue;
+            //   throw();
+            // continue:
+            //   ...
+            BasicBlock* over = genCreateTempLabel();
+            emitJumpCode(over, true);
+            genEmitInlineThrow(codeKind);
+            genDefineTempLabel(over);
+        }
+    }
+#endif
+
     void genJumpToThrowHlpBlk(emitJumpKind jumpKind, SpecialCodeKind codeKind, BasicBlock* failBlk = nullptr);
 
 #if defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
@@ -652,6 +707,7 @@ protected:
 #if defined(TARGET_AMD64)
     void genAmd64EmitterUnitTestsSse2();
     void genAmd64EmitterUnitTestsApx();
+    void genAmd64EmitterUnitTestsAvx10v2();
 #endif
 
 #endif // defined(DEBUG)
@@ -661,6 +717,7 @@ protected:
     virtual bool IsSaveFpLrWithAllCalleeSavedRegisters() const;
     bool         genSaveFpLrWithAllCalleeSavedRegisters;
     bool         genForceFuncletFrameType5;
+    bool         genReverseAndPairCalleeSavedRegisters;
 #endif // TARGET_ARM64
 
     //-------------------------------------------------------------------------
@@ -1285,6 +1342,8 @@ protected:
 #endif
 #if defined(TARGET_ARM64)
     void genCodeForJumpCompare(GenTreeOpCC* tree);
+    void genCompareImmAndJump(
+        GenCondition::Code cond, regNumber reg, ssize_t compareImm, emitAttr size, BasicBlock* target);
     void genCodeForBfiz(GenTreeOp* tree);
 #endif // TARGET_ARM64
 
@@ -1623,11 +1682,7 @@ public:
 
     instruction ins_Copy(var_types dstType);
     instruction ins_Copy(regNumber srcReg, var_types dstType);
-#if defined(TARGET_XARCH)
-    instruction ins_FloatConv(var_types to, var_types from, emitAttr attr);
-#elif defined(TARGET_ARM)
     instruction ins_FloatConv(var_types to, var_types from);
-#endif
     instruction ins_MathOp(genTreeOps oper, var_types type);
 
     void instGen_Return(unsigned stkArgSize);

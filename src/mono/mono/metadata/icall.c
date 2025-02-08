@@ -1705,7 +1705,7 @@ ves_icall_System_RuntimeTypeHandle_internal_from_name (char *name,
 
 	if (!(*res)) {
 		if (throwOnError) {
-			char *tname = info.name_space ? g_strdup_printf ("%s.%s", info.name_space, info.name) : g_strdup (info.name);
+			char *tname = (info.name_space && *info.name_space) ? g_strdup_printf ("%s.%s", info.name_space, info.name) : g_strdup (info.name);
 			char *aname;
 			if (info.assembly.name)
 				aname = mono_stringify_assembly_name (&info.assembly);
@@ -3425,6 +3425,8 @@ static void
 init_io_stream_slots (void)
 {
 	MonoClass* klass = mono_class_try_get_stream_class ();
+	g_assert(klass);
+
 	mono_class_setup_vtable (klass);
 	MonoMethod **klass_methods = m_class_get_methods (klass);
 	if (!klass_methods) {

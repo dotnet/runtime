@@ -7,17 +7,17 @@
 //
 // This header file exposes mechanisms to:
 //
-//    1. Throw COM+ exceptions using the COMPlusThrow() function
+//    1. Throw CLR exceptions using the COMPlusThrow() function
 //    2. Guard a block of code using EX_TRY, and catch
-//       COM+ exceptions using EX_CATCH
+//       CLR exceptions using EX_CATCH
 //
 // from the *unmanaged* portions of the EE. Much of the EE runs
 // in a hybrid state where it runs like managed code but the code
 // is produced by a classic unmanaged-code C++ compiler.
 //
-// THROWING A COM+ EXCEPTION
+// THROWING A CLR EXCEPTION
 // -------------------------
-// To throw a COM+ exception, call the function:
+// To throw a CLR exception, call the function:
 //
 //      COMPlusThrow(OBJECTREF pThrowable);
 //
@@ -41,7 +41,7 @@
 // You can also add a descriptive error string as follows:
 //
 //    - Add a descriptive error string and resource id to
-//      COM99\src\dlls\mscorrc\resource.h and mscorrc.rc.
+//      src\coreclr\dlls\mscorrc\resource.h and mscorrc.rc.
 //      Embed "%1", "%2" or "%3" to leave room for runtime string
 //      inserts.
 //
@@ -53,7 +53,7 @@
 //
 //
 //
-// TO CATCH COMPLUS EXCEPTIONS:
+// TO CATCH CLR EXCEPTIONS:
 // ----------------------------
 //
 // Use the following syntax:
@@ -81,10 +81,10 @@
 // of a EX_TRY block. Under _DEBUG, COMPlusThrow() will assert
 // if you call it out of scope. This implies that just about every
 // external entrypoint into the EE has to have a EX_TRY, in order
-// to convert uncaught COM+ exceptions into some error mechanism
-// more understandable to its non-COM+ caller.
+// to convert uncaught CLR exceptions into some error mechanism
+// more understandable to its non-CLR caller.
 //
-// Any function that can throw a COM+ exception out to its caller
+// Any function that can throw a CLR exception out to its caller
 // has the same requirement. ALL such functions should be tagged
 // with THROWS in CONTRACT. Aside from making the code
 // self-document its contract, the checked version of this will fire
@@ -103,7 +103,7 @@
 //       has the potential not to return. So be wary of allocating
 //       non-gc'd objects around such calls because ensuring cleanup
 //       of these things is not simple (you can wrap another EX_TRY
-//       around the call to simulate a COM+ "try-finally" but EX_TRY
+//       around the call to simulate a CLR "try-finally" but EX_TRY
 //       is relatively expensive compared to the real thing.)
 //
 //
@@ -208,7 +208,7 @@ VOID DECLSPEC_NORETURN RealCOMPlusThrowOM();
     funcname(pExceptionRecord, pEstablisherFrame, pContext, pDispatcherContext)
 
 //==========================================================================
-// Declares a COM+ frame handler that can be used to make sure that
+// Declares a CLR frame handler that can be used to make sure that
 // exceptions that should be handled from within managed code
 // are handled within and don't leak out to give other handlers a
 // chance at them.
@@ -277,15 +277,22 @@ VOID DECLSPEC_NORETURN UnwindAndContinueRethrowHelperAfterCatch(Frame* pEntryFra
 #ifdef TARGET_UNIX
 VOID DECLSPEC_NORETURN DispatchManagedException(PAL_SEHException& ex, bool isHardwareException);
 
-#define INSTALL_MANAGED_EXCEPTION_DISPATCHER        \
+#define INSTALL_MANAGED_EXCEPTION_DISPATCHER_EX     \
         PAL_SEHException exCopy;                    \
         bool hasCaughtException = false;            \
         try {
 
-#define UNINSTALL_MANAGED_EXCEPTION_DISPATCHER      \
+#define INSTALL_MANAGED_EXCEPTION_DISPATCHER        \
+        INSTALL_MANAGED_EXCEPTION_DISPATCHER_EX
+
+#define UNINSTALL_MANAGED_EXCEPTION_DISPATCHER_EX(nativeRethrow) \
         }                                           \
         catch (PAL_SEHException& ex)                \
         {                                           \
+            if (nativeRethrow)                      \
+            {                                       \
+                throw;                              \
+            }                                       \
             exCopy = std::move(ex);                 \
             hasCaughtException = true;              \
         }                                           \
@@ -293,6 +300,9 @@ VOID DECLSPEC_NORETURN DispatchManagedException(PAL_SEHException& ex, bool isHar
         {                                           \
             DispatchManagedException(exCopy, false);\
         }
+
+#define UNINSTALL_MANAGED_EXCEPTION_DISPATCHER      \
+    UNINSTALL_MANAGED_EXCEPTION_DISPATCHER_EX(false)
 
 // Install trap that catches unhandled managed exception and dumps its stack
 #define INSTALL_UNHANDLED_MANAGED_EXCEPTION_TRAP                                            \
@@ -315,7 +325,9 @@ VOID DECLSPEC_NORETURN DispatchManagedException(PAL_SEHException& ex, bool isHar
 #else // TARGET_UNIX
 
 #define INSTALL_MANAGED_EXCEPTION_DISPATCHER
+#define INSTALL_MANAGED_EXCEPTION_DISPATCHER_EX
 #define UNINSTALL_MANAGED_EXCEPTION_DISPATCHER
+#define UNINSTALL_MANAGED_EXCEPTION_DISPATCHER_EX
 
 #define INSTALL_UNHANDLED_MANAGED_EXCEPTION_TRAP
 #define UNINSTALL_UNHANDLED_MANAGED_EXCEPTION_TRAP
@@ -401,12 +413,12 @@ VOID DECLSPEC_NORETURN DispatchManagedException(PAL_SEHException& ex, bool isHar
 
 
 //==========================================================================
-// Declares that a function can throw a COM+ exception.
+// Declares that a function can throw a CLR exception.
 //==========================================================================
 #if defined(ENABLE_CONTRACTS) && !defined(DACCESS_COMPILE)
 
 //==========================================================================
-// Declares that a function cannot throw a COM+ exception.
+// Declares that a function cannot throw a CLR exception.
 // Adds a record to the contract chain.
 //==========================================================================
 

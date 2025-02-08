@@ -3,7 +3,10 @@
 
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
+
+#if SYSTEM_PRIVATE_CORELIB
 using System.Runtime.Intrinsics;
+#endif
 
 namespace System.Text.Unicode
 {
@@ -277,6 +280,7 @@ namespace System.Text.Unicode
             return (differentBits & indicator) == 0;
         }
 
+#if SYSTEM_PRIVATE_CORELIB
         /// <summary>
         /// Returns true iff the TVector represents ASCII UTF-16 characters in machine endianness.
         /// </summary>
@@ -286,5 +290,6 @@ namespace System.Text.Unicode
         {
             return (vec & TVector.Create(unchecked((ushort)~0x007F))).Equals(TVector.Zero);
         }
+#endif
     }
 }

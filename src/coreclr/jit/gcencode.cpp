@@ -4053,14 +4053,7 @@ void GCInfo::gcMakeRegPtrTable(
 {
     GCENCODER_WITH_LOGGING(gcInfoEncoderWithLog, gcInfoEncoder);
 
-    // TODO: Decide on whether we should enable this optimization for all
-    // targets: https://github.com/dotnet/runtime/issues/103917
-#ifdef TARGET_XARCH
-    const bool noTrackedGCSlots =
-        compiler->opts.MinOpts() && !compiler->opts.jitFlags->IsSet(JitFlags::JIT_FLAG_PREJIT);
-#else
-    const bool noTrackedGCSlots = false;
-#endif
+    const bool noTrackedGCSlots = compiler->opts.MinOpts();
 
     if (mode == MAKE_REG_PTR_MODE_ASSIGN_SLOTS)
     {
