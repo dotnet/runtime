@@ -2217,7 +2217,7 @@ bool ReplaceVisitor::ReplaceReturnedStructLocal(GenTreeOp* ret, GenTreeLclVarCom
 
     unsigned startOffset     = value->GetLclOffs();
     unsigned returnValueSize = layout->GetSize();
-    if (agg->Unpromoted.Intersects(StructSegments::Segment(startOffset, startOffset + returnValueSize)))
+    if (agg->Unpromoted.Intersects(SegmentList::Segment(startOffset, startOffset + returnValueSize)))
     {
         // TODO-CQ: We could handle cases where the intersected remainder is simple
         return false;
