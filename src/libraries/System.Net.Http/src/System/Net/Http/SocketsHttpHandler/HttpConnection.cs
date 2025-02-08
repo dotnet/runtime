@@ -973,7 +973,7 @@ namespace System.Net.Http
                 HttpRequestMessage? r = t.Request;
 
                 if (NetEventSource.Log.IsEnabled())
-                    connection.Trace($"Cancellation requested by {t.CtrId} tracker:{t.GetHashCode()} originating req:{r.GetHashCode()} comp:{r?.WasCompleted()}. Disposing of the connection.");
+                    connection.Trace($"Cancellation requested by {t.CtrId} tracker:{t.GetHashCode()} originating req:{r?.GetHashCode()} comp:{r?.WasCompleted()}. Disposing of the connection.");
                 connection._canceled = true;
                 connection.Dispose();
             }, tracker);
