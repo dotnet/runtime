@@ -1166,6 +1166,10 @@ def main(argv):
     user_events       = args.userevents
     targetOS          = args.targetos
 
+    if targetOS is None:
+        if os.name == "nt":
+            targetOS = "windows"
+
     target_cpp = True
     if runtimeFlavor.mono:
         extern = False
