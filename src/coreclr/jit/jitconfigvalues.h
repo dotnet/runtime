@@ -801,6 +801,12 @@ RELEASE_CONFIG_INTEGER(JitEnableCrossBlockLocalAssertionProp, "JitEnableCrossBlo
 // Do greedy RPO-based layout in Compiler::fgReorderBlocks.
 RELEASE_CONFIG_INTEGER(JitDoReversePostOrderLayout, "JitDoReversePostOrderLayout", 1);
 
+// Output flowgraph in a format consumable by TSPLIB-based optimizers
+CONFIG_INTEGER(JitDumpFlowGraphToTSPFile, "JitDumpFlowGraphToTSPFile", 0);
+
+// Configure TSPLIB parameter file to save the TSP optimizer's best tour
+CONFIG_INTEGER(JitOutputTSPTourFile, "JitOutputTSPTourFile", 0);
+
 // Enable strength reduction
 RELEASE_CONFIG_INTEGER(JitEnableStrengthReduction, "JitEnableStrengthReduction", 1)
 
