@@ -594,8 +594,6 @@ enum CorInfoHelpFunc
     CORINFO_HELP_VALIDATE_INDIRECT_CALL,    // CFG: Validate function pointer
     CORINFO_HELP_DISPATCH_INDIRECT_CALL,    // CFG: Validate and dispatch to pointer
 
-    CORINFO_HELP_ENSURE_NONHEAP,            // Ensure that the target was not in the heap.
-
     CORINFO_HELP_COUNT,
 };
 

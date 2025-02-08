@@ -1770,7 +1770,6 @@ void HelperCallProperties::init()
                 isNoGC = true;
                 FALLTHROUGH;
             case CORINFO_HELP_ASSIGN_REF_ENSURE_NONHEAP:
-            case CORINFO_HELP_ENSURE_NONHEAP:
             case CORINFO_HELP_BULK_WRITEBARRIER:
                 mutatesHeap = true;
                 break;

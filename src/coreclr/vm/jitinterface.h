@@ -235,7 +235,6 @@ extern "C" FCDECL2(VOID, JIT_CheckedWriteBarrier, Object **dst, Object *ref);
 
 extern "C" FCDECL2(VOID, JIT_WriteBarrier, Object **dst, Object *ref);
 extern "C" FCDECL2(VOID, JIT_WriteBarrierEnsureNonHeapTarget, Object **dst, Object *ref);
-extern "C" FCDECL1(VOID, JIT_EnsureNonHeapTarget, void *dst);
 
 // ARM64 JIT_WriteBarrier uses special ABI and thus is not callable directly
 // Copied write barriers must be called at a different location

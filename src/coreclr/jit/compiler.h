@@ -10795,7 +10795,6 @@ public:
         STRESS_MODE(POISON_IMPLICIT_BYREFS)                                                     \
         STRESS_MODE(STORE_BLOCK_UNROLLING)                                                      \
         STRESS_MODE(THREE_OPT_LAYOUT)                                                           \
-        STRESS_MODE(NONHEAP_RET_BUFFER)                                                         \
         STRESS_MODE(COUNT)
 
     enum                compStressArea
