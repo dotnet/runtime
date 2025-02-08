@@ -215,7 +215,7 @@ namespace Internal.JitInterface
                         {
                             derivesFromTypeDefinition = currentType.GetTypeDefinition() == tokenOnlyOwningType;
                             currentType = currentType.BaseType;
-                        } while(currentType != null && !derivesFromTypeDefinition);
+                        } while (currentType != null && !derivesFromTypeDefinition);
 
                         if (derivesFromTypeDefinition)
                         {

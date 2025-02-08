@@ -212,7 +212,7 @@ class Tests {
 
 		int iterations = 1;
 		
-		while(iterations-- > 0) {
+		while (iterations-- > 0) {
 
 			// Draw fake picture
 			for (int i = 0; i < size; i++) {
