@@ -68,7 +68,7 @@ namespace System.Collections.Frozen
                     }
                 }
 
-                int maxAllowedLength = (int)Math.Min((long)count * LengthToCountFactor, int.MaxValue);
+                long maxAllowedLength = Math.Min((long)count * LengthToCountFactor, Array.MaxLength);
                 long length = (long)max - min + 1;
                 if (length <= maxAllowedLength)
                 {
