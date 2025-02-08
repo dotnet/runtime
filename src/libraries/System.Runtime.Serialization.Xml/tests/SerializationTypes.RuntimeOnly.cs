@@ -1586,7 +1586,9 @@ namespace SerializationTypes
         public List<int> AlwaysNullList { get; }
         [XmlArray(IsNullable = true)]
         public List<int> AlwaysNullNullableList { get; }
-        public List<int> AlwaysNullListField;
+        [XmlElement("FieldWithXmlElementAttrAlwaysNull")]
+        public List<int> AlwaysNullIntListFieldWithXmlElementAttribute;
+        public List<string> AlwaysNullStringListField;
 
         // Try some things with list fields
         private List<int> PrivateIntListField;

@@ -1633,6 +1633,11 @@ namespace System.Xml.Serialization
                     {
                         if (member.Source == null && mapping.TypeDesc.IsArrayLike && !(mapping.Elements!.Length == 1 && mapping.Elements[0].Mapping is ArrayMapping))
                         {
+                            // Always create a collection for (non-array) collection-like types, even if the XML data says the collection should be null.
+                            if (!mapping.TypeDesc.IsArray)
+                            {
+                                member.Collection ??= new CollectionMember();
+                            }
                             member.Source = (item) =>
                             {
                                 member.Collection ??= new CollectionMember();

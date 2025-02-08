@@ -967,7 +967,8 @@ public static partial class XmlSerializerTests
         Assert.Null(actual.AlwaysNullList);
         Assert.Null(actual.AlwaysNullNullableList);
         // Fields are always settable though, so the serializer always takes that liberty. *smh*
-        Assert.Empty(actual.AlwaysNullListField);
+        Assert.Empty(actual.AlwaysNullStringListField);
+        Assert.Empty(actual.AlwaysNullIntListFieldWithXmlElementAttribute);
 
         // Try with an empty list
         value = new TypeWithListPropertiesWithoutPublicSetters();
@@ -981,6 +982,8 @@ public static partial class XmlSerializerTests
     <AlwaysNullNullableList xsi:nil=""true"" />
 </TypeWithListPropertiesWithoutPublicSetters>");
         Assert.NotNull(actual);
+        // List fields with a setter - public or not - are always initialized to an empty list before populating them.
+        // So list fields that are not in the xml or are explicitly 'nil' will still be empty here if they have a setter.
         Assert.Empty(actual.PublicIntListField);
         Assert.Empty(actual.IntList);
         Assert.Empty(actual.StringList);
@@ -992,7 +995,8 @@ public static partial class XmlSerializerTests
         Assert.Null(actual.AlwaysNullList);
         Assert.Null(actual.AlwaysNullNullableList);
         // Fields are always settable though, so the serializer always takes that liberty. *smh*
-        Assert.Empty(actual.AlwaysNullListField);
+        Assert.Empty(actual.AlwaysNullStringListField);
+        Assert.Empty(actual.AlwaysNullIntListFieldWithXmlElementAttribute);
 
         // And also try with a null list
         value = new TypeWithListPropertiesWithoutPublicSetters(createLists: false);
@@ -1015,7 +1019,8 @@ public static partial class XmlSerializerTests
         Assert.Null(actual.AlwaysNullList);
         Assert.Null(actual.AlwaysNullNullableList);
         // Fields are always settable though, so the serializer always takes that liberty. *smh*
-        Assert.Empty(actual.AlwaysNullListField);
+        Assert.Empty(actual.AlwaysNullStringListField);
+        Assert.Empty(actual.AlwaysNullIntListFieldWithXmlElementAttribute);
 
         // And finally, a corner case where "private-setter" property is left null by the default constructor, but the serializer sees it as null
         // and thinks it can call the private setter, so it tries to make it empty and fails. But again, note that the fields and
