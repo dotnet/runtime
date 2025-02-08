@@ -26,10 +26,14 @@ namespace
         path.Truncate(iter);
         path.Append(CDAC_LIB_NAME);
 
-        // LOAD_LIBRARY_SEARCH_DLL_LOAD_DIR loads dependencies from the same
-        // directory as cdacreader.dll. Once the native portions of the cDAC
+#ifdef HOST_WINDOWS
+        // LOAD_LIBRARY_SEARCH_DLL_LOAD_DIR tells the native windows loader to load dependencies
+        // from the same directory as cdacreader.dll. Once the native portions of the cDAC
         // are statically linked, this won't be required.
         *phCDAC = CLRLoadLibraryEx(path.GetUnicode(), NULL, LOAD_LIBRARY_SEARCH_DLL_LOAD_DIR);
+#else // !HOST_WINDOWS
+        *phCDAC = CLRLoadLibrary(path.GetUnicode());
+#endif // HOST_WINDOWS
         if (*phCDAC == NULL)
             return false;
 
