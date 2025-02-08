@@ -5860,11 +5860,11 @@ void emitter::emitIns_R_R_I(instruction     ins,
         else
         {
             assert(isGeneralRegisterOrSP(reg1));
+            assert(isGeneralRegisterOrSP(reg2));
 
             // Is it just a mov?
             if (imm == 0)
             {
-                assert(isGeneralRegisterOrSP(reg2));
                 emitIns_Mov(INS_mov, attr, reg1, reg2, /* canSkip */ true);
                 return;
             }
@@ -5874,9 +5874,6 @@ void emitter::emitIns_R_R_I(instruction     ins,
             {
                 return;
             }
-
-            // reg2 can be alread encoded to zero
-            assert(isGeneralRegisterOrSP(reg2) || (reg2 == REG_ZR));
 
             reg1 = encodingSPtoZR(reg1);
             reg2 = encodingSPtoZR(reg2);
@@ -8015,7 +8012,7 @@ void emitter::emitIns_R_S(instruction ins, emitAttr attr, regNumber reg1, int va
                 regNumber rsvdReg = codeGen->rsGetRsvdReg();
 
                 // add rsvd, fp, #imm
-                emitIns_R_R_Imm(INS_add, EA_8BYTE, rsvdReg, reg2, imm);
+                emitIns_R_R_Imm(INS_add, EA_8BYTE, rsvdReg, encodingZRtoSP(reg2), imm);
                 // str p0, [rsvd, #0, mul vl]
                 emitIns_R_R_I(ins, attr, reg1, rsvdReg, 0);
 
@@ -8288,7 +8285,7 @@ void emitter::emitIns_S_R(instruction ins, emitAttr attr, regNumber reg1, int va
                 regNumber rsvdReg = codeGen->rsGetRsvdReg();
 
                 // add rsvd, fp, #imm
-                emitIns_R_R_Imm(INS_add, EA_8BYTE, rsvdReg, reg2, imm);
+                emitIns_R_R_Imm(INS_add, EA_8BYTE, rsvdReg, encodingZRtoSP(reg2), imm);
                 // str p0, [rsvd, #0, mul vl]
                 emitIns_R_R_I(ins, attr, reg1, rsvdReg, 0);
 
