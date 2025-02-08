@@ -3278,15 +3278,6 @@ EXTERN_C PCODE STDCALL ExternalMethodFixupWorker(TransitionBlock * pTransitionBl
                 goto VirtualEntry;
             }
 
-        case ENCODE_VIRTUAL_ENTRY_SLOT:
-            {
-                slot = CorSigUncompressData(pBlob);
-                pMT =  ZapSig::DecodeType(pModule, pInfoModule, pBlob).GetMethodTable();
-
-                fVirtual = true;
-                break;
-            }
-
         default:
             _ASSERTE(!"Unexpected CORCOMPILE_FIXUP_BLOB_KIND");
             ThrowHR(COR_E_BADIMAGEFORMAT);

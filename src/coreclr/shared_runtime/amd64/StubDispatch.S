@@ -4,6 +4,8 @@
 .intel_syntax noprefix
 #include "AsmMacros_Shared.h"
 
+#ifdef FEATURE_CACHED_INTERFACE_DISPATCH
+
 // trick to avoid PLT relocation at runtime which corrupts registers
 #define REL_C_FUNC(name) C_FUNC(name)@gotpcrel
 
@@ -74,3 +76,4 @@ ALTERNATE_ENTRY RhpInitialDynamicInterfaceDispatch
 LEAF_END RhpInitialInterfaceDispatch, _TEXT
 
 
+#endif // FEATURE_CACHED_INTERFACE_DISPATCH

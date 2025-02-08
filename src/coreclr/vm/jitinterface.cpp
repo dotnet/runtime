@@ -13655,31 +13655,6 @@ BOOL LoadDynamicInfoEntry(Module *currentModule,
         }
         break;
 
-    case ENCODE_VIRTUAL_ENTRY_SLOT:
-        {
-            DWORD slot = CorSigUncompressData(pBlob);
-
-            TypeHandle ownerType = ZapSig::DecodeType(currentModule, pInfoModule, pBlob);
-
-            LOG((LF_ZAP, LL_INFO100000, "     Fixup stub dispatch\n"));
-
-            VirtualCallStubManager * pMgr = currentModule->GetLoaderAllocator()->GetVirtualCallStubManager();
-
-            // <REVISIT_TODO>
-            // We should be generating a stub indirection here, but the zapper already uses one level
-            // of indirection, i.e. we would have to return IAT_PPVALUE to the JIT, and on the whole the JITs
-            // aren't quite set up to accept that. Furthermore the call sequences would be different - at
-            // the moment an indirection cell uses "call [cell-addr]" on x86, and instead we would want the
-            // euqivalent of "call [[call-addr]]".  This could perhaps be implemented as "call [eax]" </REVISIT_TODO>
-            DispatchToken token = VirtualCallStubManager::GetTokenFromOwnerAndSlot(ownerType, slot);
-
-            INTERFACE_DISPATCH_CACHED_OR_VSD(
-                return FALSE; // R2R interface dispatch currently only supports fixups with a single pointer, return FALSE to skip using the method
-                ,
-                result = pMgr->GetCallStub(token);
-            );
-        }
-        break;
 #ifdef FEATURE_READYTORUN
     case ENCODE_READYTORUN_HELPER:
         {
