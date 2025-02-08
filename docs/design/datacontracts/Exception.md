@@ -50,7 +50,7 @@ ExceptionData GetExceptionData(TargetPointer exceptionAddr)
         target.ReadPointer(exceptionAddr + /* Exception::StackTraceString offset */),
         target.ReadPointer(exceptionAddr + /* Exception::RemoteStackTraceString offset */),
         target.Read<int>(exceptionAddr + /* Exception::HResult offset */),
-        target.Read<int>(exceptionAddr + /* Exception::Xcode offset */),
+        target.Read<int>(exceptionAddr + /* Exception::XCode offset */),
     );
 }
 ```
