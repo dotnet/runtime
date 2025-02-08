@@ -4949,6 +4949,14 @@ void Lowering::LowerRet(GenTreeOp* ret)
     ContainCheckRet(ret);
 }
 
+//----------------------------------------------------------------------------------------------
+// LowerRetFieldList:
+//   Lower a returned FIELD_LIST node.
+//
+// Arguments:
+//     ret       - The return node
+//     fieldList - The field list
+//
 void Lowering::LowerRetFieldList(GenTreeOp* ret, GenTreeFieldList* fieldList)
 {
     const ReturnTypeDesc& retDesc = comp->compRetTypeDesc;
@@ -5002,6 +5010,18 @@ void Lowering::LowerRetFieldList(GenTreeOp* ret, GenTreeFieldList* fieldList)
     }
 }
 
+//----------------------------------------------------------------------------------------------
+// IsFieldListCompatibleWithReturn:
+//   Check if the fields of a FIELD_LIST are compatible with the registers
+//   being returned.
+//
+// Arguments:
+//   fieldList - The FIELD_LIST node
+//
+// Returns:
+//   True if the fields of the FIELD_LIST map cleanly to the ABI returned
+//   registers. Insertions of bitcasts may still be required.
+//
 bool Lowering::IsFieldListCompatibleWithReturn(GenTreeFieldList* fieldList)
 {
     JITDUMP("Checking if field list [%06u] is compatible with return ABI: ", Compiler::dspTreeID(fieldList));
