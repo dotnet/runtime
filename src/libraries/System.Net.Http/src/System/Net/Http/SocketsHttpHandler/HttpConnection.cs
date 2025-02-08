@@ -973,18 +973,20 @@ namespace System.Net.Http
                 HttpRequestMessage? r = t.Request;
 
                 if (NetEventSource.Log.IsEnabled())
-                    connection.Trace($"Cancellation requested by {t.CtrId} tracker:{t.GetHashCode()} originating req:{r?.GetHashCode()} comp:{r?.WasCompleted()}. Disposing of the connection.");
+                    connection.Trace($"Cancellation requested by {t.CtrId} tracker:{t} originating req:{r?.GetHashCode()} comp:{r?.WasCompleted()}. Disposing of the connection.");
                 connection._canceled = true;
                 connection.Dispose();
             }, tracker);
             tracker.CtrId = ctr.GetHashCode();
-            if (NetEventSource.Log.IsEnabled()) Trace($"{caller} registered CTR {tracker.CtrId} tracker:{tracker.GetHashCode()}");
+            if (NetEventSource.Log.IsEnabled()) Trace($"{caller} registered CTR {tracker.CtrId} tracker:{tracker}");
             return ctr;
         }
 
         private sealed record class CtrTracker(HttpConnection Connection, HttpRequestMessage? Request)
         {
+            public long Id = Random.Shared.NextInt64();
             public int CtrId = -42;
+            public override string ToString() => Id.ToString();
         }
 
         private async ValueTask SendRequestContentAsync(HttpRequestMessage request, HttpContentWriteStream stream, bool async, CancellationToken cancellationToken)
