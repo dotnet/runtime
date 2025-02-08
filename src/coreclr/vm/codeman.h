@@ -2479,7 +2479,7 @@ public:
 
     TADDR       GetSavedMethodCode();
 
-    TADDR       GetStartAddress();
+    TADDR       GetStartAddress() const;
 
     BOOL        IsValid()
     {
@@ -2507,15 +2507,15 @@ public:
     }
 
     // This returns a pointer to the start of an instruction; conceptually, a PINSTR.
-    TADDR       GetCodeAddress()
+    TADDR       GetCodeAddress() const
     {
         LIMITED_METHOD_DAC_CONTRACT;
         return PCODEToPINSTR(m_codeAddress);
     }
 
-    NativeCodeVersion GetNativeCodeVersion();
+    NativeCodeVersion GetNativeCodeVersion() const;
 
-    MethodDesc * GetMethodDesc()
+    MethodDesc * GetMethodDesc() const
     {
         LIMITED_METHOD_DAC_CONTRACT;
         return m_pMD;

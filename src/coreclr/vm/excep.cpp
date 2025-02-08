@@ -3053,14 +3053,17 @@ void StackTraceInfo::AppendElement(OBJECTHANDLE hThrowable, UINT_PTR currentIP, 
     // This is a workaround to fix the generation of stack traces from exception objects so that
     // they point to the line that actually generated the exception instead of the line
     // following.
-    if (pCf->IsIPadjusted())
+    if (pCf != NULL)
     {
-        stackTraceElem.flags |= STEF_IP_ADJUSTED;
-    }
-    else if (!pCf->HasFaulted() && stackTraceElem.ip != 0)
-    {
-        stackTraceElem.ip -= STACKWALK_CONTROLPC_ADJUST_OFFSET;
-        stackTraceElem.flags |= STEF_IP_ADJUSTED;
+        if (pCf->IsIPadjusted())
+        {
+            stackTraceElem.flags |= STEF_IP_ADJUSTED;
+        }
+        else if (!pCf->HasFaulted() && stackTraceElem.ip != 0)
+        {
+            stackTraceElem.ip -= STACKWALK_CONTROLPC_ADJUST_OFFSET;
+            stackTraceElem.flags |= STEF_IP_ADJUSTED;
+        }
     }
 
 #ifndef TARGET_UNIX // Watson is supported on Windows only

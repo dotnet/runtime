@@ -1663,6 +1663,7 @@ extern "C" PCODE CID_ResolveWorker(TransitionBlock * pTransitionBlock,
     return target;
 }
 #endif // FEATURE_CACHED_INTERFACE_DISPATCH
+bool IsCallDescrWorkerInternalReturnAddress(PCODE pCode);
 
 /* Resolve to a method and return its address or NULL if there is none.
    Our return value is the target address that control should continue to.  Our caller will
@@ -1712,14 +1713,16 @@ PCODE VSD_ResolveWorker(TransitionBlock * pTransitionBlock,
 
     PCODE target = (PCODE)NULL;
 
+    bool propagateExceptionToNativeCode = IsCallDescrWorkerInternalReturnAddress(pTransitionBlock->m_ReturnAddress);
+
     if (pObj == NULL) {
         pSDFrame->SetForNullReferenceException();
         pSDFrame->Push(CURRENT_THREAD);
-        INSTALL_MANAGED_EXCEPTION_DISPATCHER;
-        INSTALL_UNWIND_AND_CONTINUE_HANDLER;
+        INSTALL_MANAGED_EXCEPTION_DISPATCHER_EX;
+        INSTALL_UNWIND_AND_CONTINUE_HANDLER_EX;
         COMPlusThrow(kNullReferenceException);
-        UNINSTALL_UNWIND_AND_CONTINUE_HANDLER;
-        UNINSTALL_MANAGED_EXCEPTION_DISPATCHER;
+        UNINSTALL_UNWIND_AND_CONTINUE_HANDLER_EX(propagateExceptionToNativeCode);
+        UNINSTALL_MANAGED_EXCEPTION_DISPATCHER_EX(propagateExceptionToNativeCode);
         _ASSERTE(!"Throw returned");
     }
 
@@ -1754,8 +1757,9 @@ PCODE VSD_ResolveWorker(TransitionBlock * pTransitionBlock,
 
     pSDFrame->SetRepresentativeSlot(pRepresentativeMT, representativeToken.GetSlotNumber());
     pSDFrame->Push(CURRENT_THREAD);
-    INSTALL_MANAGED_EXCEPTION_DISPATCHER;
-    INSTALL_UNWIND_AND_CONTINUE_HANDLER;
+
+    INSTALL_MANAGED_EXCEPTION_DISPATCHER_EX;
+    INSTALL_UNWIND_AND_CONTINUE_HANDLER_EX;
 
     // For Virtual Delegates the m_siteAddr is a field of a managed object
     // Thus we have to report it as an interior pointer,
@@ -1791,8 +1795,8 @@ PCODE VSD_ResolveWorker(TransitionBlock * pTransitionBlock,
 
     GCPROTECT_END();
 
-    UNINSTALL_UNWIND_AND_CONTINUE_HANDLER;
-    UNINSTALL_MANAGED_EXCEPTION_DISPATCHER;
+    UNINSTALL_UNWIND_AND_CONTINUE_HANDLER_EX(propagateExceptionToNativeCode);
+    UNINSTALL_MANAGED_EXCEPTION_DISPATCHER_EX(propagateExceptionToNativeCode);
     pSDFrame->Pop(CURRENT_THREAD);
 
     return target;
