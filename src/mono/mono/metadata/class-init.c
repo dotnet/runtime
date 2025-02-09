@@ -3734,6 +3734,41 @@ mono_class_setup_properties (MonoClass *klass)
 					break;
 				}
 			}
+
+			// Lookup getter/setter when getter and setter are inherited from base class but just a setter/getter is overridden on a sub type.
+			if ((properties [i - first].get != NULL && properties [i - first].set == NULL && m_method_is_virtual(properties [i - first].get))
+				|| (properties [i - first].set != NULL && properties [i - first].get == NULL && m_method_is_virtual(properties [i - first].set)))
+			{
+				MonoClass *base_type = m_class_get_parent(klass);
+
+				while ((properties [i - first].set == NULL || properties [i - first].get == NULL) && base_type != NULL)
+				{
+					mono_class_setup_properties(base_type);
+
+					MonoClassPropertyInfo *base_properties_bag = mono_class_get_property_info (base_type);
+
+					for (guint32 j = 0; j < base_properties_bag->count; j++)
+					{
+						MonoProperty base_property_candidate = base_properties_bag->properties[j];
+
+						if (strcmp(base_property_candidate.name, properties [i - first].name) == 0)
+						{
+							if (base_property_candidate.set != NULL && properties [i - first].set == NULL)
+							{
+								properties [i - first].set = base_property_candidate.set;
+							}
+							else if (base_property_candidate.get != NULL && properties [i - first].get == NULL)
+							{
+								properties [i - first].get = base_property_candidate.get;
+							}
+
+							break;
+						}
+					}
+
+					base_type = m_class_get_parent(base_type);
+				}
+			}
 		}
 	}
 
