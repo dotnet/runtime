@@ -51,9 +51,11 @@ unsigned Compiler::fgCheckInlineDepthAndRecursion(InlineInfo* inlineInfo)
         }
         else if (triviallyRecursive)
         {
-            // Reject inline if trivially recursive inline is too deep
+            // Reject if trivially recursive inline is too deep,
+            // unless the callee is marked as FORCE_INLINE
             //
-            if (++recursiveDepth > JitConfig.JitInlineRecursionDepth())
+            if (++recursiveDepth > JitConfig.JitInlineRecursionDepth() &&
+                inlineContext->GetObservation() != InlineObservation::CALLEE_IS_FORCE_INLINE)
             {
                 inlineResult->NoteFatal(InlineObservation::CALLSITE_IS_RECURSIVE);
                 return depth;
