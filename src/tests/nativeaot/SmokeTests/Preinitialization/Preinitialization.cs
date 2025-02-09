@@ -1732,13 +1732,13 @@ static class Assert
     public static unsafe void AreEqual(nint v1, nint v2, [CallerLineNumber] int line = 0)
     {
         if (v1 != v2)
-            throw new Exception($"Expect True, but get {v}. At line {line}.");
+            throw new Exception($"Expect {v1}, but get {v2}. At line {line}.");
     }
 
     public static unsafe void AreEqual(nuint v1, nuint v2, [CallerLineNumber] int line = 0)
     {
         if (v1 != v2)
-            throw new Exception($"Expect True, but get {v}. At line {line}.");
+            throw new Exception($"Expect {v1}, but get {v2}. At line {line}.");
     }
 
     public static void True(bool v, [CallerLineNumber] int line = 0)
