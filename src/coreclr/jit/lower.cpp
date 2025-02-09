@@ -4975,6 +4975,7 @@ void Lowering::LowerRetFieldList(GenTreeOp* ret, GenTreeFieldList* fieldList)
     {
         JITDUMP("Spilling field list [%06u] to stack\n", Compiler::dspTreeID(fieldList));
         unsigned lclNum = comp->lvaGrabTemp(true DEBUGARG("Spilled local for return value"));
+        LclVarDsc* varDsc = comp->lvaGetDesc(lclNum);
         comp->lvaSetStruct(lclNum, comp->info.compMethodInfo->args.retTypeClass, false);
         comp->lvaSetVarDoNotEnregister(lclNum DEBUGARG(DoNotEnregisterReason::BlockOpRet));
 
@@ -4985,7 +4986,7 @@ void Lowering::LowerRetFieldList(GenTreeOp* ret, GenTreeFieldList* fieldList)
             LowerNode(store);
         }
 
-        GenTree* retValue = comp->gtNewLclvNode(lclNum, comp->lvaGetDesc(lclNum)->TypeGet());
+        GenTree* retValue = comp->gtNewLclvNode(lclNum, varDsc->TypeGet());
         ret->SetReturnValue(retValue);
         BlockRange().InsertBefore(ret, retValue);
         LowerNode(retValue);
@@ -4997,6 +4998,10 @@ void Lowering::LowerRetFieldList(GenTreeOp* ret, GenTreeFieldList* fieldList)
             var_types nativeReturnType = comp->info.compRetNativeType;
             ret->ChangeType(genActualType(nativeReturnType));
             LowerRetSingleRegStructLclVar(ret);
+        }
+        else
+        {
+            varDsc->lvIsMultiRegRet = true;
         }
 
         return;
@@ -5053,11 +5058,11 @@ bool Lowering::IsFieldListCompatibleWithReturn(GenTreeFieldList* fieldList)
             return false;
         }
 
+        var_types fieldType = genActualType(use.GetNode());
         var_types regType = retDesc.GetReturnRegType(regIndex);
-        if (genTypeSize(use.GetType()) != genTypeSize(regType))
+        if (genTypeSize(fieldType) != genTypeSize(regType))
         {
-            JITDUMP("it is not; field %u register has type %s but field has type %s\n", varTypeName(use.GetType()),
-                    varTypeName(regType));
+            JITDUMP("it is not; field %u register has type %s but field has type %s\n", regIndex, varTypeName(regType), varTypeName(fieldType));
             return false;
         }
 

@@ -4378,7 +4378,7 @@ int LinearScan::BuildReturn(GenTree* tree)
             {
                 GenTree*  tree   = use.GetNode();
                 regNumber retReg = retDesc.GetABIReturnReg(regIndex, compiler->info.compCallConv);
-                BuildUse(tree, retReg);
+                BuildUse(tree, genSingleTypeRegMask(retReg));
 
                 regIndex++;
             }
