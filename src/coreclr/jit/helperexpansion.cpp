@@ -2389,7 +2389,8 @@ bool Compiler::fgLateCastExpansionForCall(BasicBlock** pBlock, Statement* stmt, 
     BasicBlock* castSucceedsFinalBb = nullptr;
     BasicBlock* castFailsFinalBb    = nullptr;
     if (block->KindIs(BBJ_COND) && (block->lastStmt() == stmt) &&
-        (typeCheckPassedAction == TypeCheckPassedAction::ReturnObj))
+        (typeCheckPassedAction == TypeCheckPassedAction::ReturnObj) &&
+        (typeCheckFailedAction != TypeCheckFailedAction::CallHelper_AlwaysThrows))
     {
         GenTree* rootNode = block->lastStmt()->GetRootNode();
         if (rootNode->OperIs(GT_JTRUE) && rootNode->gtGetOp1()->OperIs(GT_NE, GT_EQ))
@@ -2770,7 +2771,7 @@ bool Compiler::fgLateCastExpansionForCall(BasicBlock** pBlock, Statement* stmt, 
     }
 
     // Bonus step: merge prevBb with nullcheckBb as they are likely to be mergeable
-    if (fgCanCompactBlock(firstBb))
+    while (fgCanCompactBlock(firstBb))
     {
         fgCompactBlock(firstBb);
     }
