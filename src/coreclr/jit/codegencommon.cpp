@@ -7329,15 +7329,26 @@ void CodeGen::genStructReturn(GenTree* treeNode)
 
     genConsumeRegs(op1);
 
+    const ReturnTypeDesc& retTypeDesc = compiler->compRetTypeDesc;
+    const unsigned        regCount    = retTypeDesc.GetReturnRegCount();
+
     if (op1->OperIsFieldList())
     {
-        // Simply consuming them should be enough as we constrain LSRA to put
-        // the uses into the right registers.
+        // We have constrained the reg in LSRA, but due to def-use conflicts we
+        // may still need a move here.
+        unsigned regIndex = 0;
+        for (GenTreeFieldList::Use& use : op1->AsFieldList()->Uses())
+        {
+            GenTree*  fieldNode = use.GetNode();
+            regNumber sourceReg = fieldNode->GetRegNum();
+            regNumber destReg   = retTypeDesc.GetABIReturnReg(regIndex, compiler->info.compCallConv);
+            var_types type      = retTypeDesc.GetReturnRegType(regIndex);
+            inst_Mov(type, destReg, sourceReg, /* canSkip */ true, emitActualTypeSize(type));
+        }
+
         return;
     }
 
-    ReturnTypeDesc retTypeDesc = compiler->compRetTypeDesc;
-    const unsigned regCount    = retTypeDesc.GetReturnRegCount();
     assert(regCount <= MAX_RET_REG_COUNT);
 
 #if FEATURE_MULTIREG_RET
