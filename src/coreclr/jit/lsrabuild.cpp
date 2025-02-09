@@ -4486,7 +4486,7 @@ int LinearScan::BuildPutArgReg(GenTreeUnOp* node)
     SingleTypeRegSet argMask = genSingleTypeRegMask(argReg);
     RefPosition*     use     = BuildUse(op1, argMask);
 
-    // Record that this register is occupied by a register now.
+    // Record that this register is occupied by an argument now.
     placedArgRegs.AddRegNumInMask(argReg);
 
     if (supportsSpecialPutArg() && isCandidateLocalRef(op1) && ((op1->gtFlags & GTF_VAR_DEATH) == 0))
