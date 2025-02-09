@@ -34,12 +34,8 @@
     <ShortStack Condition="'$(TargetOS)' == 'maccatalyst'">true</ShortStack>
     <ShortStack Condition="'$(TargetOS)' == 'android'">true</ShortStack>
     <ShortStack Condition="'$(TargetOS)' == 'linux-bionic'">true</ShortStack>
-    <!-- NativeAOT builds are short -->
-    <ShortStack Condition="'$(DotNetBuildRuntimeNativeAOTRuntimePack)' == 'true'">true</ShortStack>
     <!-- Mono LLVM builds are short -->
-    <ShortStack Condition="'$(MonoEnableLLVM)' == 'true' or '$(MonoAOTEnableLLVM)' == 'true'">true</ShortStack>
-    <!-- Mono AOT cross compiler builds are short -->
-    <ShortStack Condition="'$(DotNetBuildMonoCrossAOT)' == 'true'">true</ShortStack>
+    <ShortStack Condition="'$(DotNetBuildMonoEnableLLVM)' == 'true' or '$(DotNetBuildMonoAOTEnableLLVM)' == 'true'">true</ShortStack>
   </PropertyGroup>
 
   <Target Name="GetRuntimeSourceBuildCommandConfiguration"
@@ -72,12 +68,11 @@
       <InnerBuildArgs>$(InnerBuildArgs) /p:AdditionalRuntimeIdentifierParent=$(BaseOS) /p:BaseOS=$(BaseOS)</InnerBuildArgs>
       <!-- Pass through special build modes controlled by properties -->
       <InnerBuildArgs Condition="'$(DotNetBuildRuntimeWasmEnableThreads)' == 'true'">$(InnerBuildArgs) /p:WasmEnableThreads=true</InnerBuildArgs>
-      <InnerBuildArgs Condition="'$(DotNetBuildRuntimeNativeAOTRuntimePack)' != ''">$(InnerBuildArgs) /p:DotNetBuildRuntimeNativeAOTRuntimePack=$(DotNetBuildRuntimeNativeAOTRuntimePack)</InnerBuildArgs>
       <InnerBuildArgs Condition="'$(DotNetBuildMonoEnableLLVM)' != ''">$(InnerBuildArgs) /p:MonoEnableLLVM=$(DotNetBuildMonoEnableLLVM)</InnerBuildArgs>
       <InnerBuildArgs Condition="'$(DotNetBuildMonoAOTEnableLLVM)' != ''">$(InnerBuildArgs) /p:MonoAOTEnableLLVM=$(DotNetBuildMonoAOTEnableLLVM)</InnerBuildArgs>
       <InnerBuildArgs Condition="'$(DotNetBuildMonoBundleLLVMOptimizer)' != ''">$(InnerBuildArgs) /p:MonoBundleLLVMOptimizer=$(DotNetBuildMonoBundleLLVMOptimizer)</InnerBuildArgs>
-      <InnerBuildArgs Condition="'$(DotNetBuildMonoCrossAOT)' != ''">$(InnerBuildArgs) /p:DotNetBuildMonoCrossAOT=$(DotNetBuildMonoCrossAOT)</InnerBuildArgs>
       <InnerBuildArgs Condition="'$(DotNetBuildAllRuntimePacks)' != ''">$(InnerBuildArgs) /p:DotNetBuildAllRuntimePacks=$(DotNetBuildAllRuntimePacks)</InnerBuildArgs>
+      <InnerBuildArgs Condition="'$(DotNetBuildPass)' != ''">$(InnerBuildArgs) /p:DotNetBuildPass=$(DotNetBuildPass)</InnerBuildArgs>
       <InnerBuildArgs Condition="'$(PgoInstrument)' == 'true'">$(InnerBuildArgs) $(FlagParameterPrefix)pgoinstrument</InnerBuildArgs>
 
       <!-- This prop needs to be passed to the inner build manually as the BaseInnerSourceBuildCommand gets overridden above -->
@@ -88,6 +83,8 @@
       <InnerBuildArgs Condition="'$(PortableBuild)' != ''">$(InnerBuildArgs) /p:PortableBuild=$(PortableBuild)</InnerBuildArgs>
       <InnerBuildArgs Condition="'$(RestoreConfigFile)' != ''">$(InnerBuildArgs) /p:RestoreConfigFile=$(RestoreConfigFile)</InnerBuildArgs>
       <InnerBuildArgs Condition="'$(ForceDryRunSigning)' != ''">$(InnerBuildArgs) /p:ForceDryRunSigning=$(ForceDryRunSigning)</InnerBuildArgs>
+      <InnerBuildArgs Condition="'$(DefaultArtifactVisibility)' != ''">$(InnerBuildArgs) /p:DefaultArtifactVisibility=$(DefaultArtifactVisibility)</InnerBuildArgs>
+      <InnerBuildArgs Condition="'$(DotNetEsrpToolPath)' != ''">$(InnerBuildArgs) /p:DotNetEsrpToolPath=$(DotNetEsrpToolPath)</InnerBuildArgs>
 
       <!-- Pass locations for assets, packages and symbols -->
       <InnerBuildArgs Condition="'$(SourceBuiltAssetsDir)' != ''">$(InnerBuildArgs) /p:SourceBuiltAssetsDir=$(SourceBuiltAssetsDir)</InnerBuildArgs>

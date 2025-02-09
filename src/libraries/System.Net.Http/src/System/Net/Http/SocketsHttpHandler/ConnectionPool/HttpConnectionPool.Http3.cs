@@ -527,7 +527,7 @@ namespace System.Net.Http
         [SupportedOSPlatform("windows")]
         [SupportedOSPlatform("linux")]
         [SupportedOSPlatform("macos")]
-        public void InvalidateHttp3Connection(Http3Connection connection)
+        public void InvalidateHttp3Connection(Http3Connection connection, bool dispose = true)
         {
             Debug.Assert(IsHttp3Supported());
 
@@ -554,7 +554,7 @@ namespace System.Net.Http
 
             // If we found the connection in the available list, then dispose it now.
             // Otherwise, when we try to put it back in the pool, we will see it is shut down and dispose it (and adjust connection counts).
-            if (found)
+            if (found && dispose)
             {
                 connection.Dispose();
             }

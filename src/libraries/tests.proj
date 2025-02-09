@@ -256,6 +256,14 @@
 
     <!-- https://github.com/dotnet/runtime/issues/50493 -->
     <ProjectExclusions Include="$(RepoRoot)\src\tests\FunctionalTests\Android\Device_Emulator\AOT\Android.Device_Emulator.Aot.Test.csproj" />
+
+    <!-- https://github.com/dotnet/runtime/issues/111699 -->
+    <ProjectExclusions Include="$(RepoRoot)\src\tests\FunctionalTests\Android\Device_Emulator\LibraryMode_AOT_LLVM\Android.Device_Emulator.LibraryMode_Aot_Llvm.Test.csproj" />
+  </ItemGroup>
+
+  <ItemGroup Condition="('$(TargetOS)' == 'android' or '$(TargetsLinuxBionic)' == 'true') and '$(TargetArchitecture)' == 'arm' and '$(RunDisabledAndroidTests)' != 'true'">
+    <!-- https://github.com/dotnet/runtime/issues/111699 -->
+    <ProjectExclusions Include="$(RepoRoot)\src\tests\FunctionalTests\Android\Device_Emulator\LibraryMode_AOT_LLVM\Android.Device_Emulator.LibraryMode_Aot_Llvm.Test.csproj" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetOS)' == 'ios' and '$(RunDisablediOSTests)' != 'true'">

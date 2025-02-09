@@ -19,10 +19,7 @@ trigger:
     - LICENSE.TXT
     - PATENTS.TXT
     - THIRD-PARTY-NOTICES.TXT
-    - eng/pipelines/coreclr/perf*yml
-    - eng/pipelines/coreclr/templates/build-perf*
-    - eng/pipelines/coreclr/templates/perf-job.yml
-    - eng/pipelines/coreclr/templates/run-perf*
+    - eng/pipelines/performance/*
     - eng/testing/performance/*
 
 schedules:
@@ -436,7 +433,7 @@ extends:
                 eq(variables['isRollingBuild'], true))
 
       #
-      # Build CoreCLR with no R2R
+      # Build CoreCLR and run crossgen on S.P.CoreLib
       #
       - template: /eng/pipelines/common/platform-matrix.yml
         parameters:
@@ -448,8 +445,8 @@ extends:
           - linux_x86
           jobParameters:
             testScope: innerloop
-            nameSuffix: CoreCLR_NoR2R
-            buildArgs: -s clr.runtime+clr.jit+clr.iltools+clr.spmi+clr.corelib -c $(_BuildConfig)
+            nameSuffix: CoreCLR
+            buildArgs: -s clr.runtime+clr.jit+clr.iltools+clr.spmi+clr.corelib+clr.nativecorelib -c $(_BuildConfig)
             timeoutInMinutes: 120
             condition: >-
               or(
@@ -492,9 +489,27 @@ extends:
           - linux_loongarch64
           jobParameters:
             testScope: innerloop
-            nameSuffix: CoreCLR
-            buildArgs: -s clr+libs+host -c $(_BuildConfig) -rc Checked
+            nameSuffix: CoreCLR_TwoStage
+            buildArgs: -s clr+libs+host -c $(_BuildConfig) -rc Checked -p:StageOneBuild=true
             timeoutInMinutes: 120
+            postBuildSteps:
+              - script: |
+                  echo Running $(Build.SourcesDirectory)/build$(scriptExt)  \
+                    ${{ variables.debugOnPrReleaseOnRolling }}              \
+                    -s clr.tools+packs -rc Checked -cross                   \
+                    -os $(osGroup)                                          \
+                    -a $(archType)                                          \
+                    -c $(_BuildConfig)                                      \
+                    -p:StageTwoBuild=true
+
+                  $(Build.SourcesDirectory)/build$(scriptExt)  \
+                    ${{ variables.debugOnPrReleaseOnRolling }} \
+                    -s clr.tools+packs -rc Checked -cross      \
+                    -os $(osGroup)                             \
+                    -a $(archType)                             \
+                    -c $(_BuildConfig)                         \
+                    -p:StageTwoBuild=true
+                displayName: Build clr.tools and packs
             condition: >-
               or(
                 eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
