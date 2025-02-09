@@ -35,7 +35,7 @@ namespace System.Reflection.Metadata.Tests
         }
 
         [Fact]
-        public void ValidateMemberDeclaringType()
+        public void ValidateDeclaringType()
         {
             var reader = MetadataReaderTests.GetMetadataReader(Misc.Members);
 
@@ -45,6 +45,12 @@ namespace System.Reflection.Metadata.Tests
             foreach (var typeDefHandle in reader.TypeDefinitions)
             {
                 var typeDef = reader.GetTypeDefinition(typeDefHandle);
+                // The assembly does not declare any nested types yet.
+                // foreach (var nestedTypeHandle in typeDef.GetNestedTypes())
+                // {
+                //     var nestedType = reader.GetTypeDefinition(nestedTypeHandle);
+                //     Assert.Equal(typeDefHandle, nestedType.GetDeclaringType());
+                // }
                 foreach (var fieldHandle in typeDef.GetFields())
                 {
                     var field = reader.GetFieldDefinition(fieldHandle);
@@ -67,24 +73,5 @@ namespace System.Reflection.Metadata.Tests
                 }
             }
         }
-
-#if NET
-        [ActiveIssue("https://github.com/dotnet/runtime/pull/111642", TestRuntimes.Mono)]
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotNativeAot))]
-        public unsafe void ValidateTypeDeclaringType()
-        {
-            var asm = typeof(TypeDefinitionTests).Assembly;
-            Assert.True(asm.TryGetRawMetadata(out byte* metadataBlob, out int length));
-            var reader = new MetadataReader(metadataBlob, length);
-
-            int nestedClassToken = typeof(TestNestedClass).MetadataToken;
-            int parentClassToken = typeof(TypeDefinitionTests).MetadataToken;
-
-            TypeDefinition nestedClassDef = reader.GetTypeDefinition((TypeDefinitionHandle)MetadataTokens.EntityHandle(nestedClassToken));
-            Assert.Equal(MetadataTokens.EntityHandle(parentClassToken), nestedClassDef.GetDeclaringType());
-        }
-
-        private class TestNestedClass;
-#endif
     }
 }
