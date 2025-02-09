@@ -56,7 +56,7 @@ namespace System.Reflection
             {
                 Type? baseDeclaredType = declaredType.BaseType;
 
-                while ((m_getterMethod == null || m_setterMethod == null) && baseDeclaredType is RuntimeType baseDeclaredRuntimeType)
+                while ((m_getterMethod is null || m_setterMethod is null) && baseDeclaredType is RuntimeType baseDeclaredRuntimeType)
                 {
                     RuntimeModule baseModule = baseDeclaredRuntimeType.GetRuntimeModule();
                     MetadataImport baseScope = baseModule.MetadataImport;
