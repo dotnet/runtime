@@ -14396,6 +14396,8 @@ void Compiler::fgValueNumberAddExceptionSetForIndirection(GenTree* tree, GenTree
     ValueNum     baseLVN = baseVNP.GetLiberal();
     ValueNum     baseCVN = baseVNP.GetConservative();
 
+    assert(baseVNP.BothDefined());
+
     target_ssize_t offsetL;
     vnStore->PeelOffsets(&baseLVN, &offsetL);
     if (fgIsBigOffset(offsetL))
@@ -15154,7 +15156,11 @@ void ValueNumStore::PeelOffsets(ValueNum* vn, target_ssize_t* offset)
 {
 #ifdef DEBUG
     var_types vnType = TypeOfVN(*vn);
-    assert((vnType == TYP_I_IMPL) || (vnType == TYP_REF) || (vnType == TYP_BYREF));
+    if (!((vnType == TYP_I_IMPL) || (vnType == TYP_REF) || (vnType == TYP_BYREF)))
+    {
+        printf("PeelOffsets: unexpected type %s\n", varTypeName(vnType));
+        unreached();
+    }
 #endif
 
     *offset = 0;
