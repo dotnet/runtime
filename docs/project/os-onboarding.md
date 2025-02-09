@@ -9,7 +9,7 @@ This witticism is the underlying philosophy of our approach. By actively maintai
 > Users are best served when we act _quickly_ not _exhaustively_.
 
 
-This double meaning is instructing us to be boldly pragmatic. Each new OS release brings a certain risk of breakage. The risk is far from uniform across the various repos and components that we maintain. Users are best served when we we've developed 80% confidence and to leave the remaining 20% to bug reports. Exhaustive testing serves no one. 
+This double meaning is instructing us to be boldly pragmatic. Each new OS release brings a certain risk of breakage. The risk is far from uniform across the various repos and components that we maintain. Users are best served when we've developed 80% confidence and to leave the remaining (potential) 20% to bug reports. Exhaustive testing serves no one. We've also found that are users do a great job finding corner cases and enthusiastically participate in the process by opening issues in the appropriate repo.
 
 Continuing with the idea of pragmatism, if you only read this far, you've got the basic idea. The rest of the doc describes more context and mechanics.
 
