@@ -214,104 +214,96 @@ internal static class Utils
         return (process.ExitCode, outputBuilder.ToString().Trim('\r', '\n'));
     }
 
-    private static bool FilesTextEqual(string filePath1, string filePath2)
+    internal abstract class Readable<TContent, TReader> :
+    IDisposable
+    where TContent : IEquatable<TContent>
+    where TReader : IDisposable
     {
-        const int bufferSize = 4096;
-        char[] bufferA = new char[bufferSize];
-        char[] bufferB = new char[bufferSize];
+        protected abstract int Read(TContent[] buffer, int offset, int count);
+        protected TReader _reader;
+        protected Readable(TReader reader) => _reader = reader;
+        public void Dispose() => _reader.Dispose();
 
-        using StreamReader srA = new StreamReader(filePath1, Encoding.UTF8, true, bufferSize);
-        using StreamReader srB = new StreamReader(filePath2, Encoding.UTF8, true, bufferSize);
-
-        int readA = 0;
-        int readB = 0;
-        int consumedA = 0;
-        int consumedB = 0;
-
-        while (true)
+        protected static bool ContentEqual(Readable<TContent, TReader> streamA, Readable<TContent, TReader> streamB, int bufferSize)
         {
-            if (consumedA == readA)
+            TContent[] bufferA = new TContent[bufferSize];
+            TContent[] bufferB = new TContent[bufferSize];
+
+            int readA = 0;
+            int readB = 0;
+            int consumedA = 0;
+            int consumedB = 0;
+
+            while (true)
             {
-                readA = srA.Read(bufferA, 0, bufferSize);
-                consumedA = 0;
+                if (consumedA == readA)
+                {
+                    readA = streamA.Read(bufferA, 0, bufferSize);
+                    consumedA = 0;
+                }
+
+                if (consumedB == readB)
+                {
+                    readB = streamB.Read(bufferB, 0, bufferSize);
+                    consumedB = 0;
+                }
+
+                if (readA == 0 && readB == 0)
+                    return true;
+
+                if (readA == 0 || readB == 0)
+                    return false;
+
+                int overlap = Math.Min(readA - consumedA, readB - consumedB);
+                if (!SequenceEqual(bufferA, consumedA, bufferB, consumedB, overlap))
+                    return false;
+
+                consumedA += overlap;
+                consumedB += overlap;
             }
 
-            if (consumedB == readB)
+            static bool SequenceEqual(TContent[] bufferA, int offsetA, TContent[] bufferB, int offsetB, int count)
             {
-                readB = srB.Read(bufferB, 0, bufferSize);
-                consumedB = 0;
-            }
-
-            if (readA == 0 && readB == 0)
-                return true;
-
-            if (readA == 0 || readB == 0)
-                return false;
-
-            int overlap = Math.Min(readA - consumedA, readB - consumedB);
-            if (!SequenceEqual(bufferA, consumedA, bufferB, consumedB, overlap))
-                return false;
-
-            consumedA += overlap;
-            consumedB += overlap;
-        }
-    }
-
-    private static bool FilesEqual(string filePath1, string filePath2)
-    {
-        const int bufferSize = 8192;
-        byte[] bufferA = new byte[bufferSize];
-        byte[] bufferB = new byte[bufferSize];
-
-        using FileStream fsA = new FileStream(filePath1, FileMode.Open, FileAccess.Read, FileShare.Read, bufferSize, FileOptions.SequentialScan);
-        using FileStream fsB = new FileStream(filePath2, FileMode.Open, FileAccess.Read, FileShare.Read, bufferSize, FileOptions.SequentialScan);
-
-        int readA = 0;
-        int readB = 0;
-        int consumedA = 0;
-        int consumedB = 0;
-
-        while (true)
-        {
-            if (consumedA == readA)
-            {
-                readA = fsA.Read(bufferA, 0, bufferSize);
-                consumedA = 0;
-            }
-
-            if (consumedB == readB)
-            {
-                readB = fsB.Read(bufferB, 0, bufferSize);
-                consumedB = 0;
-            }
-
-            if (readA == 0 && readB == 0)
-                return true;
-
-            if (readA == 0 || readB == 0)
-                return false;
-
-            int overlap = Math.Min(readA - consumedA, readB - consumedB);
-            if (!SequenceEqual(bufferA, consumedA, bufferB, consumedB, overlap))
-                return false;
-
-            consumedA += overlap;
-            consumedB += overlap;
-        }
-    }
-
-    private static bool SequenceEqual<T>(T[] arrayA, int offsetA, T[] arrayB, int offsetB, int count) where T : IEquatable<T>
-    {
 #if NET
-        return arrayA.AsSpan(offsetA, count).SequenceEqual(arrayB.AsSpan(offsetB, count));
+                return bufferA.AsSpan(offsetA, count).SequenceEqual(bufferB.AsSpan(offsetB, count));
 #else
-        for (int i = 0; i < count; i++)
-        {
-            if (arrayA[offsetA + i].Equals (arrayB[offsetB + i]))
-                return false;
-        }
-        return true;
+                for (int i = 0; i < count; i++)
+                {
+                    if (!bufferA[offsetA + i].Equals(bufferB[offsetB + i]))
+                        return false;
+                }
+
+                return true;
 #endif
+            }
+        }
+    }
+
+    private sealed class TextFileComparer : Readable<char, StreamReader>
+    {
+        private const int _charCount = 4096;
+        private TextFileComparer(string path) : base(new StreamReader(path, Encoding.UTF8, true, _charCount)) { }
+        protected override int Read(char[] buffer, int offset, int count) => _reader.Read(buffer, offset, count);
+        public static bool ContentEqual(string filePath1, string filePath2)
+        {
+            using var streamA = new TextFileComparer(filePath1);
+            using var streamB = new TextFileComparer(filePath2);
+            return ContentEqual(streamA, streamB, bufferSize: _charCount);
+        }
+    }
+
+    private sealed class BinaryFileComparer : Readable<byte, FileStream>
+    {
+        private const int _byteCount = 8192;
+        private BinaryFileComparer(string path) : base (new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read,
+                bufferSize: _byteCount, FileOptions.SequentialScan)) {}
+        protected override int Read(byte[] buffer, int offset, int count) => _reader.Read(buffer, offset, count);
+        public static bool ContentEqual(string filePath1, string filePath2)
+        {
+            using var streamA = new BinaryFileComparer(filePath1);
+            using var streamB = new BinaryFileComparer(filePath2);
+            return ContentEqual(streamA, streamB, bufferSize: _byteCount);
+        }
     }
 
     public static bool CopyIfDifferent(string src, string dst, bool useHash)
@@ -319,7 +311,7 @@ internal static class Utils
         if (!File.Exists(src))
             throw new ArgumentException($"Cannot find {src} file to copy", nameof(src));
 
-        bool areDifferent = !File.Exists(dst) || (useHash && !FilesEqual(src, dst)) || !FilesTextEqual(src, dst);
+        bool areDifferent = !File.Exists(dst) || (useHash && !BinaryFileComparer.ContentEqual(src, dst)) || (!useHash && !TextFileComparer.ContentEqual(src, dst));
 
         if (areDifferent)
             File.Copy(src, dst, true);
