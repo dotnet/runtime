@@ -7343,6 +7343,7 @@ void CodeGen::genStructReturn(GenTree* treeNode)
             // We have constrained the reg in LSRA, but due to def-use
             // conflicts we may still need a move here.
             inst_Mov(type, destReg, sourceReg, /* canSkip */ true, emitActualTypeSize(type));
+            regIndex++;
         }
 
         return;
