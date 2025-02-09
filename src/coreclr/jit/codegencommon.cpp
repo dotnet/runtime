@@ -7327,22 +7327,21 @@ void CodeGen::genStructReturn(GenTree* treeNode)
     GenTree* op1       = treeNode->AsOp()->GetReturnValue();
     GenTree* actualOp1 = op1->gtSkipReloadOrCopy();
 
-    genConsumeRegs(op1);
-
     const ReturnTypeDesc& retTypeDesc = compiler->compRetTypeDesc;
     const unsigned        regCount    = retTypeDesc.GetReturnRegCount();
 
     if (op1->OperIsFieldList())
     {
-        // We have constrained the reg in LSRA, but due to def-use conflicts we
-        // may still need a move here.
         unsigned regIndex = 0;
         for (GenTreeFieldList::Use& use : op1->AsFieldList()->Uses())
         {
             GenTree*  fieldNode = use.GetNode();
-            regNumber sourceReg = fieldNode->GetRegNum();
+            regNumber sourceReg = genConsumeReg(fieldNode);
             regNumber destReg   = retTypeDesc.GetABIReturnReg(regIndex, compiler->info.compCallConv);
             var_types type      = retTypeDesc.GetReturnRegType(regIndex);
+
+            // We have constrained the reg in LSRA, but due to def-use
+            // conflicts we may still need a move here.
             inst_Mov(type, destReg, sourceReg, /* canSkip */ true, emitActualTypeSize(type));
         }
 
