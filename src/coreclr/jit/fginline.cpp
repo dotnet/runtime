@@ -31,13 +31,15 @@ unsigned Compiler::fgCheckInlineDepthAndRecursion(InlineInfo* inlineInfo)
     // There should be a context for all candidates.
     assert(inlineContext != nullptr);
 
-    int depth = 0;
+    int  depth              = 0;
+    int  recursiveDepth     = 0;
+    bool triviallyRecursive = false;
 
     for (; inlineContext != nullptr; inlineContext = inlineContext->GetParent())
     {
         depth++;
 
-        if (IsDisallowedRecursiveInline(inlineContext, inlineInfo))
+        if (IsDisallowedRecursiveInline(inlineContext, inlineInfo, &triviallyRecursive))
         {
             // This is a recursive inline
             //
@@ -46,6 +48,16 @@ unsigned Compiler::fgCheckInlineDepthAndRecursion(InlineInfo* inlineInfo)
             // No need to note CALLSITE_DEPTH since we're already rejecting this candidate
             //
             return depth;
+        }
+        else if (triviallyRecursive)
+        {
+            // Reject inline if trivially recursive inline is too deep
+            //
+            if (++recursiveDepth > JitConfig.JitInlineRecursionDepth())
+            {
+                inlineResult->NoteFatal(InlineObservation::CALLSITE_IS_RECURSIVE);
+                return depth;
+            }
         }
 
         if (depth > InlineStrategy::IMPLEMENTATION_MAX_INLINE_DEPTH)
@@ -65,15 +77,18 @@ unsigned Compiler::fgCheckInlineDepthAndRecursion(InlineInfo* inlineInfo)
 // Return Value:
 //    True if the inline is recursive and should be disallowed.
 //
-bool Compiler::IsDisallowedRecursiveInline(InlineContext* ancestor, InlineInfo* inlineInfo)
+bool Compiler::IsDisallowedRecursiveInline(InlineContext* ancestor, InlineInfo* inlineInfo, bool* triviallyRecursive)
 {
-    // We disallow inlining the exact same instantiation.
+    // We allow inlining the exact same instantiation in a limited way.
     if ((ancestor->GetCallee() == inlineInfo->fncHandle) &&
         (ancestor->GetRuntimeContext() == inlineInfo->inlineCandidateInfo->exactContextHandle))
     {
         JITDUMP("Call site is trivially recursive\n");
-        return true;
+        *triviallyRecursive = true;
+        return false;
     }
+
+    *triviallyRecursive = false;
 
     // None of the inline heuristics take into account that inlining will cause
     // type/method loading for generic contexts. When polymorphic recursion is

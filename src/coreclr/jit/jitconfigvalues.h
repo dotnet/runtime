@@ -550,6 +550,7 @@ CONFIG_INTEGER(JitEnregStats, "JitEnregStats", 0) // Display JIT enregistration 
 RELEASE_CONFIG_INTEGER(JitAggressiveInlining, "JitAggressiveInlining", 0) // Aggressive inlining of all methods
 RELEASE_CONFIG_INTEGER(JitELTHookEnabled, "JitELTHookEnabled", 0)         // If 1, emit Enter/Leave/TailCall callbacks
 RELEASE_CONFIG_INTEGER(JitInlineSIMDMultiplier, "JitInlineSIMDMultiplier", 3)
+RELEASE_CONFIG_INTEGER(JitInlineRecursionDepth, "JitInlineRecursionDepth", 4)
 
 // Ex lclMAX_TRACKED constant.
 RELEASE_CONFIG_INTEGER(JitMaxLocalsToTrack, "JitMaxLocalsToTrack", 0x400)
