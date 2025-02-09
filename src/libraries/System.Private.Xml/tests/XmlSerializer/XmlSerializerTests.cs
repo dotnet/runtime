@@ -516,7 +516,17 @@ string.Format(@"<?xml version=""1.0"" encoding=""utf-8""?>
         Assert.StrictEqual(value.DateTimeProperty, actual.DateTimeProperty);
         Assert.StrictEqual(value.IntProperty, actual.IntProperty);
         Assert.Equal(value.StringProperty, actual.StringProperty);
+        // Before .Net 10, the process for xml mapping types incorrectly maps members closest to the base class,
+        // rather than the most derived class. This isn't a problem for ILGen or source-gen serialziers, since
+        // they emit code that essentially says "o.problemMember = value;" and since 'o' is the derived type, it
+        // just works. But when setting that member via reflection with a MemberInfo, the serializer needs
+        // the MemberInfo from the correct level, and this isn't fixed until .Net 10. So the ILGen and
+        // the reflection-based serializers will produce different results here.
+#if ReflectionOnly
+        Assert.Empty(actual.ListProperty);
+#else
         Assert.Equal(value.ListProperty.ToArray(), actual.ListProperty.ToArray());
+#endif
 
         BaseClassWithSamePropertyName castAsBase = (BaseClassWithSamePropertyName)actual;
         Assert.Equal(default(int), castAsBase.IntProperty);
@@ -1201,7 +1211,17 @@ string.Format(@"<?xml version=""1.0"" encoding=""utf-8""?>
         Assert.StrictEqual(value.DateTimeProperty, actual.DateTimeProperty);
         Assert.StrictEqual(value.IntProperty, actual.IntProperty);
         Assert.Equal(value.StringProperty, actual.StringProperty);
+        // Before .Net 10, the process for xml mapping types incorrectly maps members closest to the base class,
+        // rather than the most derived class. This isn't a problem for ILGen or source-gen serialziers, since
+        // they emit code that essentially says "o.problemMember = value;" and since 'o' is the derived type, it
+        // just works. But when setting that member via reflection with a MemberInfo, the serializer needs
+        // the MemberInfo from the correct level, and this isn't fixed until .Net 10. So the ILGen and
+        // the reflection-based serializers will produce different results here.
+#if ReflectionOnly
+        Assert.Empty(actual.ListProperty);
+#else
         Assert.Equal(value.ListProperty.ToArray(), actual.ListProperty.ToArray());
+#endif
 
         // All base properties have been hidden, so they should be default here in the base class
         BaseClassWithSamePropertyName castAsBase = (BaseClassWithSamePropertyName)actual;

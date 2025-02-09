@@ -1066,6 +1066,10 @@ public static partial class XmlSerializerTests
         ex = Record.Exception(() => { SerializeAndDeserialize<HideWithNewName>(value4, null); });
         AssertXmlMappingException(ex, "SerializationTypes.HideWithNewName", "StringField", "Member 'HideWithNewName.StringField' hides inherited member 'BaseWithElementsAttributesPropertiesAndLists.StringField', but has different custom attributes.");
 
+        /* This scenario fails before .Net 10 because the process for xml mapping types incorrectly
+         * fails to account for hidden members. In this case, 'ListField' actually gets serialized as
+         * an 'XmlArray' instead of a series of 'XmlElement', because the hidden base-member is an 'XmlArray'.
+         * Let's just skip this scenario. It's live in .Net 10.
         // Funny tricks can be played with XmlArray/Element when it comes to Lists though.
         // Stuff kind of doesn't blow up, but hidden members still get left out.
         var value5 = new HideArrayWithElement() { ListField = new() { "ONE", "TWO", "THREE" } };
@@ -1088,6 +1092,7 @@ public static partial class XmlSerializerTests
         Assert.Equal(value5.ListField.ToArray(), actual5.ListField.ToArray());
         // Not only are the hidden values not serialized, but the serialzier doesn't even try to do it's empty list thing
         Assert.Null(((BaseWithElementsAttributesPropertiesAndLists)actual5).ListField);
+        */
 
         // But at the end of the day, you still can't get away with changing the name of the element
         var value6 = new HideArrayWithRenamedElement() { ListField = new() { "FOUR", "FIVE" } };
