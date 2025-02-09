@@ -4974,7 +4974,7 @@ void Lowering::LowerRetFieldList(GenTreeOp* ret, GenTreeFieldList* fieldList)
     if (!isCompatible)
     {
         JITDUMP("Spilling field list [%06u] to stack\n", Compiler::dspTreeID(fieldList));
-        unsigned lclNum = comp->lvaGrabTemp(true DEBUGARG("Spilled local for return value"));
+        unsigned   lclNum = comp->lvaGrabTemp(true DEBUGARG("Spilled local for return value"));
         LclVarDsc* varDsc = comp->lvaGetDesc(lclNum);
         comp->lvaSetStruct(lclNum, comp->info.compMethodInfo->args.retTypeClass, false);
         comp->lvaSetVarDoNotEnregister(lclNum DEBUGARG(DoNotEnregisterReason::BlockOpRet));
@@ -5059,10 +5059,11 @@ bool Lowering::IsFieldListCompatibleWithReturn(GenTreeFieldList* fieldList)
         }
 
         var_types fieldType = genActualType(use.GetNode());
-        var_types regType = retDesc.GetReturnRegType(regIndex);
+        var_types regType   = retDesc.GetReturnRegType(regIndex);
         if (genTypeSize(fieldType) != genTypeSize(regType))
         {
-            JITDUMP("it is not; field %u register has type %s but field has type %s\n", regIndex, varTypeName(regType), varTypeName(fieldType));
+            JITDUMP("it is not; field %u register has type %s but field has type %s\n", regIndex, varTypeName(regType),
+                    varTypeName(fieldType));
             return false;
         }
 

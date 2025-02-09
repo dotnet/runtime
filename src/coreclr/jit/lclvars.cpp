@@ -99,12 +99,14 @@ void Compiler::lvaInitTypeRef()
     if (verbose)
     {
         CORINFO_CLASS_HANDLE retClass = info.compMethodInfo->args.retTypeClass;
-        printf("%u return registers for return type %s %s\n", returnRegCount, varTypeName(info.compRetType), varTypeIsStruct(info.compRetType) ? eeGetClassName(retClass) : "");
+        printf("%u return registers for return type %s %s\n", returnRegCount, varTypeName(info.compRetType),
+               varTypeIsStruct(info.compRetType) ? eeGetClassName(retClass) : "");
         for (unsigned i = 0; i < returnRegCount; i++)
         {
             unsigned offset = compRetTypeDesc.GetReturnFieldOffset(i);
-            unsigned size = genTypeSize(compRetTypeDesc.GetReturnRegType(i));
-            printf("  [%02u..%02u) reg %s\n", offset, offset + size, getRegName(compRetTypeDesc.GetABIReturnReg(i, info.compCallConv)));
+            unsigned size   = genTypeSize(compRetTypeDesc.GetReturnRegType(i));
+            printf("  [%02u..%02u) reg %s\n", offset, offset + size,
+                   getRegName(compRetTypeDesc.GetABIReturnReg(i, info.compCallConv)));
         }
     }
 #endif
