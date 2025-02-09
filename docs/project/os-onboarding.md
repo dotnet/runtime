@@ -1,8 +1,17 @@
 # Onboarding Guide for New Operating System Versions
 
-Adding support for new operating systems versions is a frequent need. This guide describes how we do that, including policies we use.
+Adding support for new operating systems versions is a frequent need. This guide describes how we do that, including the policies we use.
 
-[Porting .NET to a new operating system or architecture](../design/coreclr/botr/guide-for-porting.md) is a related task. The following patterns likely apply, but the overall task is much larger in scope.
+> Being _active_ in `main` enables being _lazy_ in `release/`.
+
+This witticism is the underlying philosophy of our approach. By actively maintaining OS versions in our active coding branch, we get the double benefit of bleeding-edge coverage and (in many cases) can avoid EOL remediation cost in `release/` branches. Spending time on avoidable work is a failure of planning.
+
+> Users are best served when we act _quickly_ not _exhaustively_.
+
+
+This double meaning is instructing us to be boldly pragmatic. Each new OS release brings a certain risk of breakage. The risk is far from uniform across the various repos and components that we maintain. Users are best served when we we've developed 80% confidence and to leave the remaining 20% to bug reports. Exhaustive testing serves no one. 
+
+Continuing with the idea of pragmatism, if you only read this far, you've got the basic idea. The rest of the doc describes more context and mechanics.
 
 References:
 
@@ -23,7 +32,9 @@ Nearly all the APIs that touch native code (networking, cryptography) and deal w
 
 Our rule is that we declare support (for all [supported .NET releases](https://github.com/dotnet/core/blob/main/releases.md)) for a new OS version after it is validated in dotnet/runtime `main`. We will only hold support on additional testing in special cases (which are uncommon).
 
-Our testing philosophy is based on perceived risk and past experience. The effective test matrix is huge, the product of OSes \* supported versions \* architectures.  We try to make smart choices to skip testing most of the matrix while retaining much of the practical coverage. We also know where we tend to get bitten most when we don't pay sufficient attention. For example, our bug risk across Linux, macOS, and Windows is not uniform.
+We aim to have "day of" support for about half the OSes we support, including Azure Linux, Ubuntu LTS, and Windows. This means we need to perform ahead-of-time signoff on non-final builds.
+
+Our testing philosophy is based on perceived risk and past experience. The effective test matrix is huge, the product of OSes \* supported versions \* architectures.  We try to make smart choices to **skip testing most of the matrix** while retaining much of the **practical coverage**. We also know where we tend to get bitten most when we don't pay sufficient attention. For example, our bug risk across Linux, macOS, and Windows is not uniform.
 
 We  use pragmatism and efficiency to drive our decision making. All things being equal, we'll choose the lowest cost approach.
 
@@ -33,7 +44,7 @@ Testing is the bread and butter of OS onboarding, particularly for a mature runt
 
 Linux, Wasm, and some Windows testing is done in container images. This approach enables us to test many and regularly changing OS versions in a fixed/limited VM environment. The container image creation/update process is self-service (discussed later).
 
-We use VMs (Linux and Windows) and raw metal hardware (Apple) in cases where containers are not practical or where direct testing is desired. This is the primary model for Apple and Windows OSes. The VMs and Apple hardware are relatively slow to change and require support from dnceng (discussed later).
+We use VMs (Linux and Windows) and raw metal hardware (Android and Apple) in cases where containers are not practical or where direct testing is desired. This is the primary model for Apple and Windows OSes. The VMs and mobile/Apple hardware are relatively slow to change and require support from dnceng (discussed later).
 
 ### Adding coverage
 
@@ -41,20 +52,19 @@ New OS coverage should be added/tested first in `main`. If changes are required,
 
 There are multiple reasons to add a new OS reference in a release branch:
 
-
 - Known product (as opposed to test) breaks that require validation and regression testing.
 - Past experience suggests that coverage is required to protect against risk.
 - OS version is or [will soon go EOL](https://github.com/dotnet/runtime/issues/111818#issuecomment-2613642202) and should be replaced by a newer version.
 
 For example, we frequently need to backport Alpine updates to release branches to avoid EOL references but less commonly for Ubuntu, given the vast difference in support length.
 
-A good strategy is to keep `main` at the bleeding edge of new OS versions. That way those references have a decent chance of never needing remediation once they end up in release branches. Being _active_ in `main` enables being _lazy_ in `release/`.
+A good strategy is to keep `main` at the bleeding edge of new OS versions. That way those references have a decent chance of never needing remediation once they end up in release branches.
 
 ### Updating or removing coverage
 
 We will often replace an older OS version with a new one, when it comes available. This approach is an effective strategy of maintaining the same level of coverage and of remediating EOL OSes ahead of time. For the most part, we don't need to care about a specific version. We just want coverage for the OS, like Alpine.
 
-We should remediate any EOL OS references in our codebase. They don't serve any benefit and come with some risk.
+We should remediate any EOL OS references in our codebase. They don't serve any benefit and come with some risk. They are also likely to result in compliance tickets (that come with a deadline) that we want to avoid.
 
 In the case that a .NET version will be EOL in <6 (and certainly <3) months, new coverage can typically be skipped. We may even be able to skip remediating EOL OS references. We often opt to stop updating [supported OSes](https://github.com/dotnet/core/blob/main/os-lifecycle-policy.md) late in support period for related reasons. A lazy approach is often the best approach late in the game. Don't upset what's working.
 
@@ -118,3 +128,6 @@ Other environments are typically use a custom process.
 
 - [Browser Wasm](https://github.com/dotnet/runtime/pull/112066)
 
+## Porting
+
+[Porting .NET to a new operating system or architecture](../design/coreclr/botr/guide-for-porting.md) is a related task. The same patterns likely apply, but the overall task is much larger in scope.
