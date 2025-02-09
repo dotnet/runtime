@@ -14398,20 +14398,25 @@ void Compiler::fgValueNumberAddExceptionSetForIndirection(GenTree* tree, GenTree
 
     assert(baseVNP.BothDefined());
 
-    target_ssize_t offsetL;
-    vnStore->PeelOffsets(&baseLVN, &offsetL);
-    if (fgIsBigOffset(offsetL))
-    {
-        // Reset baseLVN back to the full address expression
-        baseLVN = baseVNP.GetLiberal();
-    }
+    target_ssize_t offsetL = 0;
+    target_ssize_t offsetC = 0;
 
-    target_ssize_t offsetC;
-    vnStore->PeelOffsets(&baseCVN, &offsetC);
-    if (fgIsBigOffset(offsetC))
+    // baseAddr could be a SIMD for certain implicit indirs, e.g. GatherVector API.
+    if (!varTypeIsSIMD(baseAddr))
     {
-        // Reset baseCVN back to the full address expression
-        baseCVN = baseVNP.GetConservative();
+        vnStore->PeelOffsets(&baseLVN, &offsetL);
+        if (fgIsBigOffset(offsetL))
+        {
+            // Reset baseLVN back to the full address expression
+            baseLVN = baseVNP.GetLiberal();
+        }
+
+        vnStore->PeelOffsets(&baseCVN, &offsetC);
+        if (fgIsBigOffset(offsetC))
+        {
+            // Reset baseCVN back to the full address expression
+            baseCVN = baseVNP.GetConservative();
+        }
     }
 
     // The exceptions in "baseVNP" should have been added to the "tree"'s set already.
@@ -15156,11 +15161,7 @@ void ValueNumStore::PeelOffsets(ValueNum* vn, target_ssize_t* offset)
 {
 #ifdef DEBUG
     var_types vnType = TypeOfVN(*vn);
-    if (!((vnType == TYP_I_IMPL) || (vnType == TYP_REF) || (vnType == TYP_BYREF)))
-    {
-        printf("PeelOffsets: unexpected type %s\n", varTypeName(vnType));
-        unreached();
-    }
+    assert((vnType == TYP_I_IMPL) || (vnType == TYP_REF) || (vnType == TYP_BYREF));
 #endif
 
     *offset = 0;
