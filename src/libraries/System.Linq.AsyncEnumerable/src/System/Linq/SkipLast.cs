@@ -26,6 +26,7 @@ namespace System.Linq
             ThrowHelper.ThrowIfNull(source);
 
             return
+                source.IsEmpty() ? Empty<TSource>() :
                 count <= 0 ? source :
                 TakeRangeFromEndIterator(source, isStartIndexFromEnd: false, startIndex: 0, isEndIndexFromEnd: true, endIndex: count, default);
         }

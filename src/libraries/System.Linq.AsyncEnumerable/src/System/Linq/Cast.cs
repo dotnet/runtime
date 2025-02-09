@@ -26,8 +26,9 @@ namespace System.Linq
         {
             ThrowHelper.ThrowIfNull(source);
 
-            return source is IAsyncEnumerable<TResult> result ?
-                result :
+            return
+                source.IsEmpty() ? Empty<TResult>() :
+                source as IAsyncEnumerable<TResult> ??
                 Impl(source, default);
 
             static async IAsyncEnumerable<TResult> Impl(

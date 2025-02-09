@@ -16,7 +16,11 @@ namespace System.Linq
         /// <returns>An empty <see cref="IAsyncEnumerable{T}"/> whose type argument is <typeparamref name="TResult"/>.</returns>
         public static IAsyncEnumerable<TResult> Empty<TResult>() => EmptyAsyncEnumerable<TResult>.Instance;
 
-        private sealed class EmptyAsyncEnumerable<TResult> : IAsyncEnumerable<TResult>, IAsyncEnumerator<TResult>
+        /// <summary>Determines whether <paramref name="source"/> is known to be an always-empty enumerable.</summary>
+        private static bool IsEmpty<TResult>(this IAsyncEnumerable<TResult> source) => source is EmptyAsyncEnumerable<TResult>;
+
+        private sealed class EmptyAsyncEnumerable<TResult> :
+            IAsyncEnumerable<TResult>, IAsyncEnumerator<TResult>, IOrderedAsyncEnumerable<TResult>
         {
             public static EmptyAsyncEnumerable<TResult> Instance { get; } = new EmptyAsyncEnumerable<TResult>();
 
@@ -27,6 +31,18 @@ namespace System.Linq
             public TResult Current => default!;
 
             public ValueTask DisposeAsync() => default;
+
+            public IOrderedAsyncEnumerable<TResult> CreateOrderedAsyncEnumerable<TKey>(Func<TResult, TKey> keySelector, IComparer<TKey>? comparer, bool descending)
+            {
+                ThrowHelper.ThrowIfNull(keySelector);
+                return this;
+            }
+
+            public IOrderedAsyncEnumerable<TResult> CreateOrderedAsyncEnumerable<TKey>(Func<TResult, CancellationToken, ValueTask<TKey>> keySelector, IComparer<TKey>? comparer, bool descending)
+            {
+                ThrowHelper.ThrowIfNull(keySelector);
+                return this;
+            }
         }
     }
 }

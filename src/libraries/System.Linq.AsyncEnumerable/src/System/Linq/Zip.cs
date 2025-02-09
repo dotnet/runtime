@@ -33,7 +33,9 @@ namespace System.Linq
             ThrowHelper.ThrowIfNull(second);
             ThrowHelper.ThrowIfNull(resultSelector);
 
-            return Impl(first, second, resultSelector, default);
+            return
+                first.IsEmpty() || second.IsEmpty() ? Empty<TResult>() :
+                Impl(first, second, resultSelector, default);
 
             static async IAsyncEnumerable<TResult> Impl(
                 IAsyncEnumerable<TFirst> first,
@@ -88,7 +90,9 @@ namespace System.Linq
             ThrowHelper.ThrowIfNull(second);
             ThrowHelper.ThrowIfNull(resultSelector);
 
-            return Impl(first, second, resultSelector, default);
+            return
+                first.IsEmpty() || second.IsEmpty() ? Empty<TResult>() :
+                Impl(first, second, resultSelector, default);
 
             static async IAsyncEnumerable<TResult> Impl(
                 IAsyncEnumerable<TFirst> first,
@@ -135,7 +139,9 @@ namespace System.Linq
             ThrowHelper.ThrowIfNull(first);
             ThrowHelper.ThrowIfNull(second);
 
-            return Impl(first, second, default);
+            return
+                first.IsEmpty() || second.IsEmpty() ? Empty<(TFirst, TSecond)>() :
+                Impl(first, second, default);
 
             static async IAsyncEnumerable<(TFirst First, TSecond Second)> Impl(
                 IAsyncEnumerable<TFirst> first,
@@ -186,7 +192,9 @@ namespace System.Linq
             ThrowHelper.ThrowIfNull(second);
             ThrowHelper.ThrowIfNull(third);
 
-            return Impl(first, second, third, default);
+            return
+                first.IsEmpty() || second.IsEmpty() || third.IsEmpty() ? Empty<(TFirst, TSecond, TThird)>() :
+                Impl(first, second, third, default);
 
             static async IAsyncEnumerable<(TFirst First, TSecond Second, TThird)> Impl(
                 IAsyncEnumerable<TFirst> first, IAsyncEnumerable<TSecond> second, IAsyncEnumerable<TThird> third, [EnumeratorCancellation] CancellationToken cancellationToken)
