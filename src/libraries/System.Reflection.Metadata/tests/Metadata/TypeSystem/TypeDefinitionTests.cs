@@ -45,12 +45,11 @@ namespace System.Reflection.Metadata.Tests
             foreach (var typeDefHandle in reader.TypeDefinitions)
             {
                 var typeDef = reader.GetTypeDefinition(typeDefHandle);
-                // The assembly does not declare any nested types yet.
-                // foreach (var nestedTypeHandle in typeDef.GetNestedTypes())
-                // {
-                //     var nestedType = reader.GetTypeDefinition(nestedTypeHandle);
-                //     Assert.Equal(typeDefHandle, nestedType.GetDeclaringType());
-                // }
+                foreach (var nestedTypeHandle in typeDef.GetNestedTypes())
+                {
+                    var nestedType = reader.GetTypeDefinition(nestedTypeHandle);
+                    Assert.Equal(typeDefHandle, nestedType.GetDeclaringType());
+                }
                 foreach (var fieldHandle in typeDef.GetFields())
                 {
                     var field = reader.GetFieldDefinition(fieldHandle);
