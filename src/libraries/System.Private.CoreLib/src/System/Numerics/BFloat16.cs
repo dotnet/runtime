@@ -545,20 +545,10 @@ namespace System.Numerics
         public static explicit operator BFloat16(float value)
         {
             uint bits = BitConverter.SingleToUInt32Bits(value);
-            uint upper = bits >> 16;
-            // Only do rounding for finite numbers
-            if (float.IsFinite(value))
-            {
-                uint lower = (ushort)bits;
-                // Determine the increment for rounding
-                // When upper is even, midpoint (0x8000) will tie to no increment, which is effectively a decrement of lower
-                uint lowerShift = (~upper) & (lower >> 15) & 1; // Upper is even & lower>=0x8000 (not 0)
-                lower -= lowerShift;
-                uint increment = lower >> 15;
-                // Do the increment, MaxValue will be correctly increased to Infinity
-                upper += increment;
-            }
-            return new BFloat16((ushort)upper);
+            uint roundedBits = RoundMidpointToEven(bits, 16);
+
+            // Only do rounding for non-NaN
+            return new BFloat16((ushort)(!float.IsNaN(value) ? roundedBits : (bits >> 16)));
         }
 
         /// <summary>Explicitly converts a <see cref="ushort" /> value to its nearest representable <see cref="BFloat16"/> value.</summary>
@@ -567,11 +557,52 @@ namespace System.Numerics
         [CLSCompliant(false)]
         public static explicit operator BFloat16(ushort value) => (BFloat16)(float)value;
 
+        /// <summary>
+        /// Rounds a number to shorter length with the midpoint-to-even rule.
+        /// </summary>
+        /// <typeparam name="TInteger">The unsigned integer type to operate with.</typeparam>
+        /// <param name="value">The payload number. Can be either actual unsigned integer, or (non-NaN) IEEE754 binary fp type.</param>
+        /// <param name="trailingLength">The length of trailing bits to round up. Should be constant.</param>
+        /// <returns>Rounded payload bits, right shifted by <paramref name="trailingLength"/> and aligns to LSB.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static TInteger RoundMidpointToEven<TInteger>(TInteger value, int trailingLength)
+            where TInteger : unmanaged, IBinaryInteger<TInteger>, IUnsignedNumber<TInteger>
+        {
+            TInteger lower = value & ((TInteger.One << trailingLength) - TInteger.One);
+            TInteger upper = value >>> trailingLength;
+
+            // Determine the increment for rounding
+            // When upper is even, midpoint will tie to no increment, which is effectively a decrement of lower
+            TInteger lowerShift = (~upper) & (lower >> (trailingLength - 1)) & TInteger.One; // Upper is even & lower>=midpoint (not 0)
+            lower -= lowerShift;
+            TInteger increment = lower >> (trailingLength - 1);
+            // Do the increment, MaxValue will be correctly increased to Infinity
+            upper += increment;
+
+            return upper;
+        }
+
         /// <summary>Explicitly converts a <see cref="uint" /> value to its nearest representable <see cref="BFloat16"/> value.</summary>
         /// <param name="value">The value to convert.</param>
         /// <returns><paramref name="value" /> converted to its nearest representable <see cref="BFloat16"/> value.</returns>
         [CLSCompliant(false)]
-        public static explicit operator BFloat16(uint value) => (BFloat16)(float)value;
+        public static explicit operator BFloat16(uint value)
+        {
+            uint scale = uint.LeadingZeroCount(value);
+            uint alignedValue = value << (int)scale;
+            uint significandBits = RoundMidpointToEven(alignedValue, 32 - SignificandLength);
+
+            // Leverage FPU to calculate the value significandBits * 2^(32-SignificandLength-scale), for proper handling of 0 and carrying
+            // Use int->float conversion which usually has better FPU support
+            float significand = (float)(int)significandBits;
+            // Craft the value 2^(32-SignificandLength-scale)
+            float scaleFactor = Half.CreateSingle(false, (byte)(32 - SignificandLength - scale + float.ExponentBias), 0);
+            float roundedValue = significand * scaleFactor;
+
+            uint roundedValueBits = BitConverter.SingleToUInt32Bits(roundedValue);
+            Debug.Assert((ushort)roundedValueBits == 0); // The value should be properly rounded
+            return new BFloat16((ushort)(roundedValueBits >> 16));
+        }
 
         /// <summary>Explicitly converts a <see cref="ulong" /> value to its nearest representable <see cref="BFloat16"/> value.</summary>
         /// <param name="value">The value to convert.</param>
