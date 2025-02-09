@@ -159,6 +159,27 @@ string.Format(@"<?xml version=""1.0"" encoding=""utf-8""?>
         Assert.Equal(x.F2, y.F2);
         Utils.Equal<SimpleType>(x.P1, y.P1, (a, b) => { return SimpleType.AreEqual(a, b); });
         Assert.Equal(x.P2, y.P2);
+
+        // Do it again with null and empty arrays
+        x = new TypeWithGetSetArrayMembers
+        {
+            F1 = null,
+            F2 = new int[] { },
+            P1 = new SimpleType[] { },
+            P2 = null
+        };
+        y = SerializeAndDeserialize<TypeWithGetSetArrayMembers>(x,
+@"<?xml version=""1.0""?>
+<TypeWithGetSetArrayMembers xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:xsd=""http://www.w3.org/2001/XMLSchema"">
+  <F2 />
+  <P1 />
+</TypeWithGetSetArrayMembers>");
+
+        Assert.NotNull(y);
+        Assert.Null(y.F1);  // Arrays stay null
+        Assert.Empty(y.F2);
+        Assert.Empty(y.P1);
+        Assert.Null(y.P2);  // Arrays stay null
     }
 
     [Fact]
@@ -170,13 +191,55 @@ string.Format(@"<?xml version=""1.0"" encoding=""utf-8""?>
         x.P2[0] = -1;
         x.P2[1] = 3;
 
-        TypeWithGetOnlyArrayProperties y = SerializeAndDeserialize<TypeWithGetOnlyArrayProperties>(x,
-@"<?xml version=""1.0""?>
-<TypeWithGetOnlyArrayProperties xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:xsd=""http://www.w3.org/2001/XMLSchema"" />");
+        TypeWithGetOnlyArrayProperties y = SerializeAndDeserialize<TypeWithGetOnlyArrayProperties>(x, @"<?xml version=""1.0""?><TypeWithGetOnlyArrayProperties xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:xsd=""http://www.w3.org/2001/XMLSchema"" />");
 
         Assert.NotNull(y);
         // XmlSerializer seems not complain about missing public setter of Array property
         // However, it does not serialize the property. So for this test case, I'll use it to verify there are no complaints about missing public setter
+    }
+
+    [Fact]
+    public static void Xml_ArraylikeMembers()
+    {
+        var assertEqual = (TypeWithArraylikeMembers a, TypeWithArraylikeMembers b) => {
+            Assert.Equal(a.IntAField, b.IntAField);
+            Assert.Equal(a.NIntAField, b.NIntAField);
+            Assert.Equal(a.IntLField, b.IntLField);
+            Assert.Equal(a.NIntLField, b.NIntLField);
+            Assert.Equal(a.IntAProp, b.IntAProp);
+            Assert.Equal(a.NIntAProp, b.NIntAProp);
+            Assert.Equal(a.IntLProp, b.IntLProp);
+            Assert.Equal(a.NIntLProp, b.NIntLProp);
+        };
+
+        // Populated array-like members
+        var x = TypeWithArraylikeMembers.CreateWithPopulatedMembers();
+        var y = SerializeAndDeserialize<TypeWithArraylikeMembers>(x, null /* Just checking the input and output objects is good enough here */, null, true);
+        Assert.NotNull(y);
+        assertEqual(x, y);
+
+        // Empty array-like members
+        x = TypeWithArraylikeMembers.CreateWithEmptyMembers();
+        y = SerializeAndDeserialize<TypeWithArraylikeMembers>(x, "<?xml version=\"1.0\"?><TypeWithArraylikeMembers xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\">\r\n  <IntAField />\r\n  <NIntAField />\r\n  <IntLField />\r\n  <NIntLField />\r\n  <IntAProp />\r\n  <NIntAProp />\r\n  <IntLProp />\r\n  <NIntLProp />\r\n</TypeWithArraylikeMembers>");
+        Assert.NotNull(y);
+        assertEqual(x, y);
+        Assert.Empty(y.IntAField);  // Check on a couple fields to be sure they are empty and not null.
+        Assert.Empty(y.NIntLProp);
+
+        // Null array-like members
+        // Null arrays and collections are omitted from xml output (or set to 'nil'). But they differ in deserialization.
+        // Null arrays are deserialized as null as expected. Null collections are unintuitively deserialized as empty collections. This behavior is preserved for compatibility with NetFx.
+        x = TypeWithArraylikeMembers.CreateWithNullMembers();
+        y = SerializeAndDeserialize<TypeWithArraylikeMembers>(x, "<?xml version=\"1.0\"?><TypeWithArraylikeMembers xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\">\r\n  <NIntLField xsi:nil=\"true\" />\r\n  <NIntAProp xsi:nil=\"true\" />\r\n</TypeWithArraylikeMembers>");
+        Assert.NotNull(y);
+        Assert.Null(y.IntAField);
+        Assert.Null(y.NIntAField);
+        Assert.Empty(y.IntLField);
+        Assert.Empty(y.NIntLField);
+        Assert.Null(y.IntAProp);
+        Assert.Null(y.NIntAProp);
+        Assert.Empty(y.IntLProp);
+        Assert.Empty(y.NIntLProp);
     }
 
     [Fact]
@@ -454,6 +517,31 @@ string.Format(@"<?xml version=""1.0"" encoding=""utf-8""?>
         Assert.StrictEqual(value.IntProperty, actual.IntProperty);
         Assert.Equal(value.StringProperty, actual.StringProperty);
         Assert.Equal(value.ListProperty.ToArray(), actual.ListProperty.ToArray());
+
+        BaseClassWithSamePropertyName castAsBase = (BaseClassWithSamePropertyName)actual;
+        Assert.Equal(default(int), castAsBase.IntProperty);
+        Assert.Null(castAsBase.StringProperty);
+        Assert.Null(castAsBase.ListProperty);
+
+        // Try again with a null list to ensure the correct property is deserialized to an empty list
+        value = new DerivedClassWithSameProperty() { DateTimeProperty = new DateTime(100), IntProperty = 5, StringProperty = "TestString", ListProperty = null };
+        actual = SerializeAndDeserialize<DerivedClassWithSameProperty>(value,
+@"<?xml version=""1.0""?>
+<DerivedClassWithSameProperty xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:xsd=""http://www.w3.org/2001/XMLSchema"">
+  <StringProperty>TestString</StringProperty>
+  <IntProperty>5</IntProperty>
+  <DateTimeProperty>0001-01-01T00:00:00.00001</DateTimeProperty>
+</DerivedClassWithSameProperty>");
+
+        Assert.StrictEqual(value.DateTimeProperty, actual.DateTimeProperty);
+        Assert.StrictEqual(value.IntProperty, actual.IntProperty);
+        Assert.Equal(value.StringProperty, actual.StringProperty);
+        Assert.Empty(actual.ListProperty.ToArray());
+
+        castAsBase = (BaseClassWithSamePropertyName)actual;
+        Assert.Equal(default(int), castAsBase.IntProperty);
+        Assert.Null(castAsBase.StringProperty);
+        Assert.Null(castAsBase.ListProperty);
     }
 
     [Fact]
@@ -1114,6 +1202,53 @@ string.Format(@"<?xml version=""1.0"" encoding=""utf-8""?>
         Assert.StrictEqual(value.IntProperty, actual.IntProperty);
         Assert.Equal(value.StringProperty, actual.StringProperty);
         Assert.Equal(value.ListProperty.ToArray(), actual.ListProperty.ToArray());
+
+        // All base properties have been hidden, so they should be default here in the base class
+        BaseClassWithSamePropertyName castAsBase = (BaseClassWithSamePropertyName)actual;
+        Assert.StrictEqual(default(DateTime), castAsBase.DateTimeProperty);
+        Assert.StrictEqual(default(int), castAsBase.IntProperty);
+        Assert.Null(castAsBase.StringProperty);
+        Assert.Null(castAsBase.ListProperty);
+
+        // IntProperty and StringProperty are not hidden in Derived2, so they should be set here in the middle
+        DerivedClassWithSameProperty castAsMiddle = (DerivedClassWithSameProperty)actual;
+        Assert.StrictEqual(value.IntProperty, castAsMiddle.IntProperty);
+        Assert.Equal(value.StringProperty, castAsMiddle.StringProperty);
+        // The other properties should be default
+        Assert.StrictEqual(default(DateTime), castAsMiddle.DateTimeProperty);
+        Assert.Null(castAsMiddle.ListProperty);
+
+
+        // Try again with a null list to ensure the correct property is deserialized to an empty list
+        value = new DerivedClassWithSameProperty2() { DateTimeProperty = new DateTime(100, DateTimeKind.Utc), IntProperty = 5, StringProperty = "TestString", ListProperty = null };
+
+        actual = SerializeAndDeserialize(value,
+@"<?xml version=""1.0""?>
+<DerivedClassWithSameProperty2 xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:xsd=""http://www.w3.org/2001/XMLSchema"">
+  <StringProperty>TestString</StringProperty>
+  <IntProperty>5</IntProperty>
+  <DateTimeProperty>0001-01-01T00:00:00.00001Z</DateTimeProperty>
+</DerivedClassWithSameProperty2>");
+
+        Assert.StrictEqual(value.DateTimeProperty, actual.DateTimeProperty);
+        Assert.StrictEqual(value.IntProperty, actual.IntProperty);
+        Assert.Equal(value.StringProperty, actual.StringProperty);
+        Assert.Empty(actual.ListProperty.ToArray());
+
+        // All base properties have been hidden, so they should be default here in the base class
+        castAsBase = (BaseClassWithSamePropertyName)actual;
+        Assert.StrictEqual(default(DateTime), castAsBase.DateTimeProperty);
+        Assert.StrictEqual(default(int), castAsBase.IntProperty);
+        Assert.Null(castAsBase.StringProperty);
+        Assert.Null(castAsBase.ListProperty);
+
+        // IntProperty and StringProperty are not hidden in Derived2, so they should be set here in the middle
+        castAsMiddle = (DerivedClassWithSameProperty)actual;
+        Assert.StrictEqual(value.IntProperty, castAsMiddle.IntProperty);
+        Assert.Equal(value.StringProperty, castAsMiddle.StringProperty);
+        // The other properties should be default
+        Assert.StrictEqual(default(DateTime), castAsMiddle.DateTimeProperty);
+        Assert.Null(castAsMiddle.ListProperty);
     }
 
     [Fact]
@@ -1380,6 +1515,12 @@ string.Format(@"<?xml version=""1.0"" encoding=""utf-8""?>
         Assert.NotNull(actual.ManyChoices);
         Assert.Equal(value.ManyChoices.Length, actual.ManyChoices.Length);
         Assert.True(Enumerable.SequenceEqual(value.ManyChoices, actual.ManyChoices));
+
+        // Try again with a null array
+        value = new TypeWithArrayPropertyHavingChoice() { ManyChoices = null, ChoiceArray = itemChoices };
+        actual = SerializeAndDeserialize(value, "<?xml version=\"1.0\"?><TypeWithArrayPropertyHavingChoice xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\" />");
+        Assert.NotNull(actual);
+        Assert.Null(actual.ManyChoices);   // Arrays keep null-ness
     }
 
     [Fact]
@@ -2448,8 +2589,24 @@ string.Format(@"<?xml version=""1.0"" encoding=""utf-8""?>
         var ex = exception as Exception;
         if (message != null)
             Assert.Contains(message, ex.Message);
-        Assert.NotNull((T)ex.InnerException);
+        Assert.NotNull(ex.InnerException);
         return ex.InnerException;
+    }
+
+    private static void AssertXmlMappingException(Exception exception, string typeName, string fieldName, string msg = null)
+    {
+        var ex = exception;
+#if ReflectionOnly
+        // The ILGen Serializer does XmlMapping during serializer ctor and lets the exception out cleanly.
+        // The Reflection Serializer does XmlMapping in the Serialize() call and wraps the resulting exception
+        //      inside a catch-all IOE in Serialize().
+        ex = AssertTypeAndUnwrap<InvalidOperationException>(ex, "There was an error generating the XML document");
+#endif
+        ex = AssertTypeAndUnwrap<InvalidOperationException>(ex, $"There was an error reflecting type '{typeName}'");
+        ex = AssertTypeAndUnwrap<InvalidOperationException>(ex, $"There was an error reflecting field '{fieldName}'");
+        Assert.IsType<InvalidOperationException>(ex);
+        if (msg != null)
+            Assert.Contains(msg, ex.Message);
     }
 
     private static string Serialize<T>(T value, string baseline, Func<XmlSerializer> serializerFactory = null,
