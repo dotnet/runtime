@@ -350,7 +350,8 @@ inline const char *ReturnKindToString(ReturnKind returnKind)
 #ifdef TARGET_X86
 
 #include <stdlib.h>     // For memcmp()
-#include "bitvector.h"  // for ptrArgTP
+
+#define MAX_PTRARG_OFS 1024
 
 #ifndef FASTCALL
 #define FASTCALL __fastcall

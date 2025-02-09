@@ -2668,10 +2668,10 @@ namespace System
     public static partial class Environment
     {
         public static string CommandLine { get { throw null; } }
-        [System.Runtime.Versioning.SupportedOSPlatformAttribute("maccatalyst")]
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("ios")]
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("tvos")]
+        [System.Runtime.Versioning.SupportedOSPlatformAttribute("maccatalyst")] // this needs to come after the ios attribute due to limitations in the platform analyzer
         public static System.Environment.ProcessCpuUsage CpuUsage { get { throw null; } }
         public static string CurrentDirectory { get { throw null; } set { } }
         public static int CurrentManagedThreadId { get { throw null; } }
@@ -13298,6 +13298,7 @@ namespace System.Runtime.CompilerServices
         public System.Runtime.CompilerServices.ConfiguredValueTaskAwaitable DisposeAsync() { throw null; }
     }
     public readonly partial struct ConfiguredCancelableAsyncEnumerable<T>
+        where T : allows ref struct
     {
         private readonly object _dummy;
         private readonly int _dummyPrimitive;
@@ -15983,10 +15984,10 @@ namespace System.Threading.Tasks
     public static partial class TaskAsyncEnumerableExtensions
     {
         public static System.Runtime.CompilerServices.ConfiguredAsyncDisposable ConfigureAwait(this System.IAsyncDisposable source, bool continueOnCapturedContext) { throw null; }
-        public static System.Runtime.CompilerServices.ConfiguredCancelableAsyncEnumerable<T> ConfigureAwait<T>(this System.Collections.Generic.IAsyncEnumerable<T> source, bool continueOnCapturedContext) { throw null; }
+        public static System.Runtime.CompilerServices.ConfiguredCancelableAsyncEnumerable<T> ConfigureAwait<T>(this System.Collections.Generic.IAsyncEnumerable<T> source, bool continueOnCapturedContext) where T : allows ref struct { throw null; }
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public static System.Collections.Generic.IEnumerable<T> ToBlockingEnumerable<T>(this System.Collections.Generic.IAsyncEnumerable<T> source, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
-        public static System.Runtime.CompilerServices.ConfiguredCancelableAsyncEnumerable<T> WithCancellation<T>(this System.Collections.Generic.IAsyncEnumerable<T> source, System.Threading.CancellationToken cancellationToken) { throw null; }
+        public static System.Runtime.CompilerServices.ConfiguredCancelableAsyncEnumerable<T> WithCancellation<T>(this System.Collections.Generic.IAsyncEnumerable<T> source, System.Threading.CancellationToken cancellationToken) where T : allows ref struct { throw null; }
     }
     public partial class TaskCanceledException : System.OperationCanceledException
     {

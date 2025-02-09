@@ -55,12 +55,6 @@ jobs:
       runAOT: true
       alwaysRun: true
 
-  # Disabled for now
-  #- template: /eng/pipelines/coreclr/perf-wasm-jobs.yml
-    #parameters:
-      #runProfile: 'v8'
-      #onlySanityCheck: true
-
 #
 # ********** For !rolling builds, IOW - PR builds *************
 # - run everything, if relevant paths changed
@@ -196,12 +190,6 @@ jobs:
       extraBuildArgs: /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
       isExtraPlatformsBuild: ${{ parameters.isExtraPlatformsBuild }}
       isWasmOnlyBuild: ${{ parameters.isWasmOnlyBuild }}
-
-  # Disable for now
-  #- template: /eng/pipelines/coreclr/perf-wasm-jobs.yml
-    #parameters:
-      #runProfile: 'v8'
-      #onlySanityCheck: true
 
 - ${{ if and(ne(parameters.isRollingBuild, true), ne(parameters.excludeOptional, true)) }}:
   - template: /eng/pipelines/common/templates/wasm-library-tests.yml
