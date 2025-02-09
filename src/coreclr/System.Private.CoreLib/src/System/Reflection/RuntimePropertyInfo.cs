@@ -70,7 +70,7 @@ namespace System.Reflection
 
                         if (Name.Equals(baseTkPropertyName.ToString()))
                         {
-                            if (m_setterMethod == null)
+                            if (m_setterMethod is null)
                             {
                                 Associates.AssignAssociates(baseScope, baseTkProperty, baseDeclaredRuntimeType, reflectedRuntimeType,
                                     out _, out _, out _,
