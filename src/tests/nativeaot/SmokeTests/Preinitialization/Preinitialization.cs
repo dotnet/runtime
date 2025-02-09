@@ -1669,87 +1669,87 @@ static class Assert
         return type.GetConstructor(BindingFlags.NonPublic | BindingFlags.Static, null, Type.EmptyTypes, null) != null;
     }
 
-    public static void IsPreinitialized(Type type)
+    public static void IsPreinitialized(Type type, [CallerLineNumber] int line = 0)
     {
         if (HasCctor(type))
-            throw new Exception();
+            throw new Exception($"{type} is not preinitialized. At line {line}.");
     }
 
-    public static void IsLazyInitialized(Type type)
+    public static void IsLazyInitialized(Type type, [CallerLineNumber] int line = 0)
     {
         if (!HasCctor(type))
-            throw new Exception();
+            throw new Exception($"{type} is not lazy initialized. At line {line}.");
     }
 
-    public static unsafe void AreEqual(void* v1, void* v2)
+    public static unsafe void AreEqual(void* v1, void* v2, [CallerLineNumber] int line = 0)
     {
         if (v1 != v2)
-            throw new Exception();
+            throw new Exception($"Expect {(nint)v1}, but get {(nint)v2}. At line {line}.");
     }
 
-    public static unsafe void AreEqual(bool v1, bool v2)
+    public static unsafe void AreEqual(bool v1, bool v2, [CallerLineNumber] int line = 0)
     {
         if (v1 != v2)
-            throw new Exception();
+            throw new Exception($"Expect {v1}, but get {v2}. At line {line}.");
     }
 
-    public static unsafe void AreEqual(int v1, int v2)
+    public static unsafe void AreEqual(int v1, int v2, [CallerLineNumber] int line = 0)
     {
         if (v1 != v2)
-            throw new Exception();
+            throw new Exception($"Expect {v1}, but get {v2}. At line {line}.");
     }
 
-    public static void AreEqual(string v1, string v2)
+    public static void AreEqual(string v1, string v2, [CallerLineNumber] int line = 0)
     {
         if (v1 != v2)
-            throw new Exception();
+            throw new Exception($"Expect {v1}, but get {v2}. At line {line}.");
     }
 
-    public static unsafe void AreEqual(long v1, long v2)
+    public static unsafe void AreEqual(long v1, long v2, [CallerLineNumber] int line = 0)
     {
         if (v1 != v2)
-            throw new Exception();
+            throw new Exception($"Expect {v1}, but get {v2}. At line {line}.");
     }
 
-    public static unsafe void AreEqual(ulong v1, ulong v2)
+    public static unsafe void AreEqual(ulong v1, ulong v2, [CallerLineNumber] int line = 0)
     {
         if (v1 != v2)
-            throw new Exception();
+            throw new Exception($"Expect {v1}, but get {v2}. At line {line}.");
     }
 
-    public static unsafe void AreEqual(float v1, float v2)
+    public static unsafe void AreEqual(float v1, float v2, [CallerLineNumber] int line = 0)
     {
         if (v1 != v2)
-            throw new Exception();
+            throw new Exception($"Expect {v1}, but get {v2}. At line {line}.");
     }
 
-    public static unsafe void AreEqual(double v1, double v2)
+    public static unsafe void AreEqual(double v1, double v2, [CallerLineNumber] int line = 0)
     {
         if (v1 != v2)
-            throw new Exception();
+            throw new Exception($"Expect {v1}, but get {v2}. At line {line}.");
     }
 
-    public static unsafe void AreEqual(nint v1, nint v2)
+    public static unsafe void AreEqual(nint v1, nint v2, [CallerLineNumber] int line = 0)
     {
         if (v1 != v2)
-            throw new Exception();
+            throw new Exception($"Expect True, but get {v}. At line {line}.");
     }
 
-    public static unsafe void AreEqual(nuint v1, nuint v2)
+    public static unsafe void AreEqual(nuint v1, nuint v2, [CallerLineNumber] int line = 0)
     {
         if (v1 != v2)
-            throw new Exception();
+            throw new Exception($"Expect True, but get {v}. At line {line}.");
     }
 
-    public static void True(bool v)
+    public static void True(bool v, [CallerLineNumber] int line = 0)
     {
         if (!v)
-            throw new Exception();
+            throw new Exception($"Expect True, but get {v}. At line {line}.");
     }
 
-    public static void AreSame<T>(T v1, T v2) where T : class
+    public static void AreSame<T>(T v1, T v2, [CallerLineNumber] int line = 0) where T : class
     {
         if (v1 != v2)
-            throw new Exception();
+            throw new Exception($"{v1} and {v2} is not the same. At line {line}.");
     }
 }
