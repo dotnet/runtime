@@ -2399,6 +2399,7 @@ bool Compiler::fgLateCastExpansionForCall(BasicBlock** pBlock, Statement* stmt, 
             {
                 castSucceedsFinalBb = cmp->OperIs(GT_NE) ? block->GetTrueTarget() : block->GetFalseTarget();
                 castFailsFinalBb    = cmp->OperIs(GT_NE) ? block->GetFalseTarget() : block->GetTrueTarget();
+                fgPgoConsistent     = false;
             }
         }
     }
