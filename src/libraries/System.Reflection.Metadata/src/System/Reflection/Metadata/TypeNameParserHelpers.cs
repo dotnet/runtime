@@ -129,7 +129,7 @@ namespace System.Reflection.Metadata
 
             static string UnescapeToBuilder(string name, int indexOfEscapeCharacter)
             {
-                // this code path is executed very rarely (IL Emit or pure IL with chars not allowed in C# or F#)
+                // This code path is executed very rarely (IL Emit or pure IL with chars not allowed in C# or F#).
                 var sb = new ValueStringBuilder(stackalloc char[64]);
                 sb.EnsureCapacity(name.Length);
                 sb.Append(name.AsSpan(0, indexOfEscapeCharacter));
