@@ -12123,27 +12123,14 @@ bool Compiler::GetObjectHandleAndOffset(GenTree* tree, ssize_t* byteOffset, CORI
         return false;
     }
 
-    ValueNum       treeVN = tree->gtVNPair.GetLiberal();
-    VNFuncApp      funcApp;
-    target_ssize_t offset = 0;
-    while (vnStore->GetVNFunc(treeVN, &funcApp) && (funcApp.m_func == (VNFunc)GT_ADD))
+    ValueNum treeVN = tree->gtVNPair.GetLiberal();
+    if (treeVN == ValueNumStore::NoVN)
     {
-        if (vnStore->IsVNConstantNonHandle(funcApp.m_args[0]) && (vnStore->TypeOfVN(funcApp.m_args[0]) == TYP_I_IMPL))
-        {
-            offset += vnStore->ConstantValue<target_ssize_t>(funcApp.m_args[0]);
-            treeVN = funcApp.m_args[1];
-        }
-        else if (vnStore->IsVNConstantNonHandle(funcApp.m_args[1]) &&
-                 (vnStore->TypeOfVN(funcApp.m_args[1]) == TYP_I_IMPL))
-        {
-            offset += vnStore->ConstantValue<target_ssize_t>(funcApp.m_args[1]);
-            treeVN = funcApp.m_args[0];
-        }
-        else
-        {
-            return false;
-        }
+        return false;
     }
+
+    target_ssize_t offset = 0;
+    vnStore->PeelOffsets(&treeVN, &offset);
 
     if (vnStore->IsVNObjHandle(treeVN))
     {
@@ -15247,12 +15234,12 @@ void ValueNumStore::PeelOffsets(ValueNum* vn, target_ssize_t* offset)
     VNFuncApp app;
     while (GetVNFunc(*vn, &app) && (app.m_func == VNF_ADD))
     {
-        if (IsVNConstantNonHandle(app.m_args[0]))
+        if (IsVNConstantNonHandle(app.m_args[0]) && (app.m_args[0] != VNForNull()))
         {
             *offset += ConstantValue<target_ssize_t>(app.m_args[0]);
             *vn = app.m_args[1];
         }
-        else if (IsVNConstantNonHandle(app.m_args[1]))
+        else if (IsVNConstantNonHandle(app.m_args[1]) && (app.m_args[1] != VNForNull()))
         {
             *offset += ConstantValue<target_ssize_t>(app.m_args[1]);
             *vn = app.m_args[0];
