@@ -12269,7 +12269,7 @@ bool Compiler::fgValueNumberConstLoad(GenTreeIndir* tree)
     }
     else if (funcApp.m_func == (VNFunc)GT_ADD)
     {
-        ssize_t dataOffset = 0;
+        target_ssize_t dataOffset = 0;
         vnStore->PeelOffsets(&addrVN, &dataOffset);
         ValueNum baseVN = addrVN;
 
