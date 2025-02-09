@@ -4352,23 +4352,31 @@ GenTree* Lowering::OptimizeConstCompare(GenTree* cmp)
     if (cmp->OperIs(GT_TEST_EQ, GT_TEST_NE))
     {
         //
-        // Transform TEST_EQ|NE(x, LSH(1, y)) into BT(x, y) when possible. Using BT
+        // Transform TEST_EQ|NE(x, LSH(1, y)) or TEST_EQ|NE(LSH(1, y), x) into BT(x, y) when possible. Using BT
         // results in smaller and faster code. It also doesn't have special register
         // requirements, unlike LSH that requires the shift count to be in ECX.
         // Note that BT has the same behavior as LSH when the bit index exceeds the
         // operand bit size - it uses (bit_index MOD bit_size).
         //
 
-        GenTree* lsh = cmp->gtGetOp2();
+        GenTree* lsh = cmp->AsOp()->gtOp1;
+        GenTree* op  = cmp->AsOp()->gtOp2;
 
-        if (lsh->OperIs(GT_LSH) && varTypeIsIntOrI(lsh->TypeGet()) && lsh->gtGetOp1()->IsIntegralConst(1))
+        if (!lsh->OperIs(GT_LSH))
+        {
+            std::swap(lsh, op);
+        }
+
+        if (lsh->OperIs(GT_LSH) && varTypeIsIntOrI(lsh) && lsh->gtGetOp1()->IsIntegralConst(1))
         {
             cmp->SetOper(cmp->OperIs(GT_TEST_EQ) ? GT_BITTEST_EQ : GT_BITTEST_NE);
-            cmp->AsOp()->gtOp2 = lsh->gtGetOp2();
-            cmp->gtGetOp2()->ClearContained();
 
             BlockRange().Remove(lsh->gtGetOp1());
             BlockRange().Remove(lsh);
+
+            cmp->AsOp()->gtOp1 = op;
+            cmp->AsOp()->gtOp2 = lsh->gtGetOp2();
+            cmp->gtGetOp2()->ClearContained();
 
             return cmp->gtNext;
         }

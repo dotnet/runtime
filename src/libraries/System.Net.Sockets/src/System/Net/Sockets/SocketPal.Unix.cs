@@ -1422,7 +1422,7 @@ namespace System.Net.Sockets
         {
             if (err == Interop.Error.SUCCESS)
             {
-                handle.TrackOption(optionLevel, optionName);
+                handle.TrackSocketOption(optionLevel, optionName);
                 return SocketError.Success;
             }
             return GetSocketErrorForErrorCode(err);
