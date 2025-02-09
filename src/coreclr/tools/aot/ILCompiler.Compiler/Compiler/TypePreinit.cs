@@ -1437,10 +1437,10 @@ namespace ILCompiler
                     case ILOpcode.neg:
                         {
                             StackEntry value = stack.Pop();
-                            if (value.ValueKind == StackValueKind.Int32)
-                                stack.Push(StackValueKind.Int32, ValueTypeValue.FromInt32(-value.Value.AsInt32()));
-                            else if (value.ValueKind == StackValueKind.Int64)
-                                stack.Push(StackValueKind.Int64, ValueTypeValue.FromInt64(-value.Value.AsInt64()));
+                            if (value.ValueKind.WithNormalizedNativeInt(context) == StackValueKind.Int32)
+                                stack.Push(value.ValueKind == StackValueKind.NativeInt ? StackValueKind.NativeInt : StackValueKind.Int32, ValueTypeValue.FromInt32(-value.Value.AsInt32()));
+                            else if (value.ValueKind.WithNormalizedNativeInt(context) == StackValueKind.Int64)
+                                stack.Push(value.ValueKind == StackValueKind.NativeInt ? StackValueKind.NativeInt : StackValueKind.Int64, ValueTypeValue.FromInt64(-value.Value.AsInt64()));
                             else if (value.ValueKind == StackValueKind.Float)
                                 stack.Push(StackValueKind.Float, ValueTypeValue.FromDouble(-value.Value.AsDouble()));
                             else
