@@ -459,7 +459,7 @@ int LinearScan::BuildPutArgSplit(GenTreePutArgSplit* argNode)
             {
                 if (sourceRegCount < argNode->gtNumRegs)
                 {
-                    regNumber nextArgReg = (regNumber)((unsigned)argReg + sourceRegCount);
+                    regNumber        nextArgReg = (regNumber)((unsigned)argReg + sourceRegCount);
                     SingleTypeRegSet sourceMask = genSingleTypeRegMask(nextArgReg);
                     BuildUse(node, sourceMask, regIndex);
                     placedArgRegs.AddRegNumInMask(nextArgReg);
