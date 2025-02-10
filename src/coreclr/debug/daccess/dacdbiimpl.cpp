@@ -3546,7 +3546,7 @@ void DacDbiInterfaceImpl::EnumerateMemRangesForLoaderAllocator(PTR_LoaderAllocat
         if (pVcsMgr->indcell_heap != NULL) heapsToEnumerate.Push(pVcsMgr->indcell_heap);
 #ifdef FEATURE_VIRTUAL_STUB_DISPATCH
         if (pVcsMgr->cache_entry_heap != NULL) heapsToEnumerate.Push(pVcsMgr->cache_entry_heap);
-#endif
+#endif // FEATURE_VIRTUAL_STUB_DISPATCH
     }
 
     TADDR rangeAccumAsTaddr = TO_TADDR(rangeAcummulator);

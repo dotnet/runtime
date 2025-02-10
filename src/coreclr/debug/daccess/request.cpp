@@ -3614,6 +3614,9 @@ ClrDataAccess::TraverseVirtCallStubHeap(CLRDATA_ADDRESS pAppDomain, VCSHeapType 
 
             case CacheEntryHeap:
 #ifdef FEATURE_VIRTUAL_STUB_DISPATCH
+                // The existence of the CacheEntryHeap is part of the SOS api surface, but currently
+                // when FEATURE_VIRTUAL_STUB_DISPATCH is not defined, the CacheEntryHeap is not created
+                // so its commented out in that situation, but is not considered to be a E_INVALIDARG.
                 pLoaderHeap = pVcsMgr->cache_entry_heap;
 #endif // FEATURE_VIRTUAL_STUB_DISPATCH
                 break;
@@ -3667,7 +3670,7 @@ static const char *LoaderAllocatorLoaderHeapNames[] =
     "IndcellHeap",
 #ifdef FEATURE_VIRTUAL_STUB_DISPATCH
     "CacheEntryHeap",
-#endif
+#endif // FEATURE_VIRTUAL_STUB_DISPATCH
 };
 
 
@@ -3713,7 +3716,7 @@ HRESULT ClrDataAccess::GetLoaderAllocatorHeaps(CLRDATA_ADDRESS loaderAllocatorAd
                 pLoaderHeaps[i++] = HOST_CDADDR(pVcsMgr->indcell_heap);
 #ifdef FEATURE_VIRTUAL_STUB_DISPATCH
                 pLoaderHeaps[i++] = HOST_CDADDR(pVcsMgr->cache_entry_heap);
-#endif
+#endif // FEATURE_VIRTUAL_STUB_DISPATCH
             }
 
             // All of the above are "LoaderHeap" and not the ExplicitControl version.

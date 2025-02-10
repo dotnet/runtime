@@ -26,10 +26,11 @@ void *InterfaceDispatch_AllocDoublePointerAligned(size_t size)
     return g_pAllocHeap->AllocAligned(size, sizeof(void*) * 2);
 }
 
-// Allocate memory aligned at at least sizeof(void*)
+// Allocate memory aligned at sizeof(void*) boundaries
+
 void *InterfaceDispatch_AllocPointerAligned(size_t size)
 {
-    return g_pAllocHeap->Alloc(size);
+    return g_pAllocHeap->AllocAligned(size, sizeof(void*));
 }
 
 FCIMPL4(PCODE, RhpUpdateDispatchCellCache, InterfaceDispatchCell * pCell, PCODE pTargetCode, MethodTable* pInstanceType, DispatchCellInfo *pNewCellInfo)

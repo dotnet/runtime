@@ -14,7 +14,8 @@ void *InterfaceDispatch_AllocDoublePointerAligned(size_t size)
     return (void*)SystemDomain::GetGlobalLoaderAllocator()->GetHighFrequencyHeap()->AllocAlignedMem(size, sizeof(TADDR) * 2);
 }
 
-// Allocate memory aligned at at least sizeof(void*)
+// Allocate memory aligned at sizeof(void*) boundaries
+
 void *InterfaceDispatch_AllocPointerAligned(size_t size)
 {
     return (void*)SystemDomain::GetGlobalLoaderAllocator()->GetHighFrequencyHeap()->AllocAlignedMem(size, sizeof(TADDR));

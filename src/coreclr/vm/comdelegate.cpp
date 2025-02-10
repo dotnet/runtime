@@ -1877,7 +1877,7 @@ MethodDesc *COMDelegate::GetMethodDesc(OBJECTREF orDelegate)
         }
 
         if (fOpenVirtualDelegate)
-            pMethodHandle = (MethodDesc*)thisDel->GetInvocationCount();
+            pMethodHandle = GetMethodDescForOpenVirtualDelegate(thisDel);
         else
             pMethodHandle = FindDelegateInvokeMethod(thisDel->GetMethodTable());
     }

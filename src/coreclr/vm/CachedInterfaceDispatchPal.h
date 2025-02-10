@@ -13,14 +13,15 @@ bool InterfaceDispatch_InitializePal();
 
 // Allocate memory aligned at sizeof(void*)*2 boundaries
 void *InterfaceDispatch_AllocDoublePointerAligned(size_t size);
-// Allocate memory aligned at at least sizeof(void*)
+// Allocate memory aligned at sizeof(void*) boundaries
+
 void *InterfaceDispatch_AllocPointerAligned(size_t size);
 
 enum Flags
 {
     // The low 2 bits of the m_pCache pointer are treated specially so that we can avoid the need for
     // extra fields on this type.
-    // OR if the m_pCache value is less than 0x1000 then this it is a vtable offset and should be used as such
+    // OR if the m_pCache value is less than 0x1000 then this is a vtable offset and should be used as such
     IDC_CachePointerPointsIsVTableOffset = 0x2,
     IDC_CachePointerPointsAtCache = 0x0,
     IDC_CachePointerMask = 0x3,
@@ -128,7 +129,7 @@ struct InterfaceDispatchCell
     // synchronization requirements of the code that updates these at runtime and the instructions generated
     // by the binder for interface call sites.
     TADDR      m_pStub;    // Call this code to execute the interface dispatch
-    volatile TADDR m_pCache;   // Context used by the stub above (one or both of the low two bits are set
+    Volatile<TADDR> m_pCache;   // Context used by the stub above (one or both of the low two bits are set
                                     // for initial dispatch, and if not set, using this as a cache pointer or
                                     // as a vtable offset.)
     DispatchCellInfo GetDispatchCellInfo()
@@ -155,14 +156,7 @@ struct InterfaceDispatchCell
 
     static bool IsCache(TADDR value)
     {
-        if ((value & IDC_CachePointerMask) != 0)
-        {
-            return false;
-        }
-        else
-        {
-            return true;
-        }
+        return (value & IDC_CachePointerMask) == 0;
     }
 
     static bool IsVTableOffset(TADDR value)
@@ -181,7 +175,7 @@ struct InterfaceDispatchCell
         }
         else
         {
-            return 0;
+            return nullptr;
         }
     }
 };

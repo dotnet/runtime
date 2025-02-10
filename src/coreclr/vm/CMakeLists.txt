@@ -1,13 +1,13 @@
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
-set(SHARED_RUNTIME_DIR ../runtime)
+set(RUNTIME_DIR ../runtime)
 
 # Needed due to the cmunged files being in the binary folders, the set(CMAKE_INCLUDE_CURRENT_DIR ON) is not enough
 include_directories(BEFORE ${CMAKE_CURRENT_SOURCE_DIR})
 include_directories(${ARCH_SOURCES_DIR})
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../interop/inc)
 include_directories(${CLR_SRC_NATIVE_DIR})
-include_directories(${SHARED_RUNTIME_DIR})
+include_directories(${RUNTIME_DIR})
 
 # needed when zLib compression is used
 include_directories(${CLR_SRC_NATIVE_DIR}/libs/System.IO.Compression.Native)
@@ -295,7 +295,7 @@ set(VM_SOURCES_WKS
     assemblynative.cpp
     assemblyspec.cpp
     baseassemblyspec.cpp
-    ${SHARED_RUNTIME_DIR}/CachedInterfaceDispatch.cpp
+    ${RUNTIME_DIR}/CachedInterfaceDispatch.cpp
     CachedInterfaceDispatchCoreclr.cpp
     cachelinealloc.cpp
     callconvbuilder.cpp
@@ -378,7 +378,7 @@ set(VM_SOURCES_WKS
     typeparse.cpp
     weakreferencenative.cpp
     yieldprocessornormalized.cpp
-${VM_SOURCES_GDBJIT}
+    ${VM_SOURCES_GDBJIT}
 )
 
 # coreclr needs to compile codeman.cpp differently depending on flavor (i.e. dll vs. static lib))
@@ -630,7 +630,7 @@ if(CLR_CMAKE_TARGET_ARCH_AMD64)
         ${ARCH_SOURCES_DIR}/patchedcode.asm
         ${ARCH_SOURCES_DIR}/PInvokeStubs.asm
         ${ARCH_SOURCES_DIR}/RedirectedHandledJITCase.asm
-        ${SHARED_RUNTIME_DIR}/${ARCH_SOURCES_DIR}/StubDispatch.asm
+        ${RUNTIME_DIR}/${ARCH_SOURCES_DIR}/StubDispatch.asm
         ${ARCH_SOURCES_DIR}/ThePreStubAMD64.asm
         ${ARCH_SOURCES_DIR}/thunktemplates.asm
         ${ARCH_SOURCES_DIR}/Context.asm
@@ -661,7 +661,7 @@ elseif(CLR_CMAKE_TARGET_ARCH_ARM64)
         ${ARCH_SOURCES_DIR}/CallDescrWorkerARM64.asm
         ${ARCH_SOURCES_DIR}/patchedcode.asm
         ${ARCH_SOURCES_DIR}/PInvokeStubs.asm
-        ${SHARED_RUNTIME_DIR}/${ARCH_SOURCES_DIR}/StubDispatch.asm
+        ${RUNTIME_DIR}/${ARCH_SOURCES_DIR}/StubDispatch.asm
         ${ARCH_SOURCES_DIR}/thunktemplates.asm
         ${ARCH_SOURCES_DIR}/CachedInterfaceDispatchCoreCLR.asm
     )
@@ -688,7 +688,7 @@ else(CLR_CMAKE_TARGET_WIN32)
             ${ARCH_SOURCES_DIR}/patchedcode.S
             ${ARCH_SOURCES_DIR}/pinvokestubs.S
             ${ARCH_SOURCES_DIR}/redirectedhandledjitcase.S
-            ${SHARED_RUNTIME_DIR}/${ARCH_SOURCES_DIR}/StubDispatch.S
+            ${RUNTIME_DIR}/${ARCH_SOURCES_DIR}/StubDispatch.S
             ${ARCH_SOURCES_DIR}/theprestubamd64.S
             ${ARCH_SOURCES_DIR}/thunktemplates.S
             ${ARCH_SOURCES_DIR}/Context.S
@@ -721,7 +721,7 @@ else(CLR_CMAKE_TARGET_WIN32)
             ${ARCH_SOURCES_DIR}/calldescrworkerarm64.S
             ${ARCH_SOURCES_DIR}/patchedcode.S
             ${ARCH_SOURCES_DIR}/pinvokestubs.S
-            ${SHARED_RUNTIME_DIR}/${ARCH_SOURCES_DIR}/StubDispatch.S
+            ${RUNTIME_DIR}/${ARCH_SOURCES_DIR}/StubDispatch.S
             ${ARCH_SOURCES_DIR}/thunktemplates.S
         )
     elseif(CLR_CMAKE_TARGET_ARCH_LOONGARCH64)

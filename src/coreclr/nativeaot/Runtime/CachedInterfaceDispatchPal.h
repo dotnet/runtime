@@ -31,7 +31,8 @@ bool InterfaceDispatch_InitializePal();
 
 // Allocate memory aligned at sizeof(void*)*2 boundaries
 void *InterfaceDispatch_AllocDoublePointerAligned(size_t size);
-// Allocate memory aligned at at least sizeof(void*)
+// Allocate memory aligned at sizeof(void*) boundaries
+
 void *InterfaceDispatch_AllocPointerAligned(size_t size);
 
 #endif // __CACHEDINTERFACEDISPATCHPAL_H__

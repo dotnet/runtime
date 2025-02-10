@@ -546,8 +546,6 @@ ASMCONSTANTS_C_ASSERT(OFFSETOF__InterfaceDispatchCache__m_rgEntries == offsetof(
 ASMCONSTANTS_C_ASSERT(OFFSETOF__InterfaceDispatchCell__m_pCache == offsetof(InterfaceDispatchCell, m_pCache))
 #endif // FEATURE_CACHED_INTERFACE_DISPATCH
 
-//ASM_SIZEOF(    8,    10, InterfaceDispatchCacheEntry)
-
 #ifdef PROFILING_SUPPORTED
 #define PROFILE_ENTER        0x1
 #define PROFILE_LEAVE        0x2
