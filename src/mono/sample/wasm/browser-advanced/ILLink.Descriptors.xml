@@ -5,4 +5,12 @@
         <method signature="System.Void .ctor(System.String)" />
     </type>
   </assembly>
+  <assembly fullname="System.Private.CoreLib">
+    <type fullname="System.Collections.IEnumerable" />
+    <type fullname="System.Threading.Tasks.Sources.IValueTaskSource`1" />
+    <type fullname="System.Threading.Tasks.ValueTask`1" />
+  </assembly>
+  <assembly fullname="System.Threading.Channels">
+    <type fullname="System.Threading.Channels.AsyncOperation" />
+  </assembly>
 </linker>

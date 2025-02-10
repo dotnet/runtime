@@ -260,6 +260,7 @@ export type AOTProfilerOptions = {
 
 export type BrowserProfilerOptions = {
     sampleIntervalMs?: number, // default: 1000
+    callSpec?: number, // see callspec in https://github.com/dotnet/runtime/blob/main/docs/design/mono/diagnostics-tracing.md#trace-monovm-profiler-events-during-startup
 }
 
 export type LogProfilerOptions = {

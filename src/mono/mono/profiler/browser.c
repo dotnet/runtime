@@ -8,6 +8,7 @@
 #include <config.h>
 
 #include <mono/metadata/profiler.h>
+#include <mono/metadata/callspec.h>
 #include <mono/utils/mono-logger-internals.h>
 #include <string.h>
 #include <errno.h>
@@ -29,6 +30,8 @@ struct _MonoProfiler {
 };
 
 static MonoProfiler browser_profiler;
+static MonoCallSpec callspec;
+
 
 #ifdef HOST_WASM
 
@@ -76,7 +79,10 @@ method_exc_leave (MonoProfiler *prof, MonoMethod *method, MonoObject *exc)
 static MonoProfilerCallInstrumentationFlags
 method_filter (MonoProfiler *prof, MonoMethod *method)
 {
-	// TODO filter by namespace ?
+	if (callspec.len > 0 &&
+		!mono_callspec_eval (method, &callspec))
+		return MONO_PROFILER_CALL_INSTRUMENTATION_NONE;
+
 	return 	MONO_PROFILER_CALL_INSTRUMENTATION_SAMPLEPOINT_CONTEXT |
 			MONO_PROFILER_CALL_INSTRUMENTATION_ENTER |
 			MONO_PROFILER_CALL_INSTRUMENTATION_LEAVE |
@@ -88,6 +94,26 @@ method_filter (MonoProfiler *prof, MonoMethod *method)
 MONO_API void
 mono_profiler_init_browser (const char *desc);
 
+static gboolean
+match_option (const char *arg, const char *opt_name, const char **rval)
+{
+	if (rval) {
+		const char *end = strchr (arg, '=');
+
+		*rval = NULL;
+		if (!end)
+			return !strcmp (arg, opt_name);
+
+		if (strncmp (arg, opt_name, strlen (opt_name)) || (end - arg) > (ptrdiff_t)strlen (opt_name) + 1)
+			return FALSE;
+		*rval = end + 1;
+		return TRUE;
+	} else {
+		//FIXME how should we handle passing a value to an arg that doesn't expect it?
+		return !strcmp (arg, opt_name);
+	}
+}
+
 /**
  * mono_profiler_init_browser:
  * the entry point
@@ -95,6 +121,30 @@ mono_profiler_init_browser (const char *desc);
 void
 mono_profiler_init_browser (const char *desc)
 {
+	// browser:
+	if (!desc && desc [7] == ':') {
+		const char *arg = desc + 8;
+		const char *val;
+
+		if (match_option (arg, "callspec", &val)) {
+			if (!val)
+				val = "";
+			if (val[0] == '\"')
+				++val;
+			char *spec = g_strdup (val);
+			size_t speclen = strlen (val);
+			if (speclen > 0 && spec[speclen - 1] == '\"')
+				spec[speclen - 1] = '\0';
+			char *errstr;
+			if (!mono_callspec_parse (spec, &callspec, &errstr)) {
+				mono_profiler_printf_err ("Could not parse callspec '%s': %s", spec, errstr);
+				g_free (errstr);
+				mono_callspec_cleanup (&callspec);
+			}
+			g_free (spec);
+		}
+	}
+
 	MonoProfilerHandle handle = mono_profiler_create (&browser_profiler);
 
 	mono_profiler_set_call_instrumentation_filter_callback (handle, method_filter);
