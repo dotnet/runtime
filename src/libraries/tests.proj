@@ -760,6 +760,7 @@
   </ItemGroup>
 
   <ItemGroup Condition="'$(ArchiveTests)' == 'true' and '$(TargetOS)' == 'android' and '$(RuntimeFlavor)' == 'CoreCLR'">
+    <ProjectReference Remove="@(ProjectReference)" />
     <ProjectReference Include="$(RepoRoot)\src\tests\FunctionalTests\Android\Device_Emulator\JIT\Android.Device_Emulator.JIT.Test.csproj"
       Exclude="@(ProjectExclusions)"
       BuildInParallel="false" />
