@@ -939,11 +939,16 @@ bool Compiler::fgAddrCouldBeNull(GenTree* addr)
 //
 bool Compiler::fgAddrCouldBeHeap(GenTree* addr)
 {
-    const GenTree* op = addr;
+    GenTree* op = addr;
     while (op->OperIs(GT_FIELD_ADDR) && op->AsFieldAddr()->IsInstance())
     {
         op = op->AsFieldAddr()->GetFldObj();
     }
+
+    target_ssize_t offset;
+    gtPeelOffsets(&op, &offset);
+
+    // Ignore the offset for locals
 
     if (op->OperIs(GT_LCL_ADDR))
     {
@@ -954,18 +959,6 @@ bool Compiler::fgAddrCouldBeHeap(GenTree* addr)
     {
         // RetBuf is known to be on the stack
         return false;
-    }
-
-    if (op->OperIs(GT_ADD))
-    {
-        // If we have (base + offset), inspect the base. We assume someone else normalized the tree
-        // so the constant offset is always on the right.
-        GenTree* op2 = op->gtGetOp2();
-        if (op2->TypeIs(TYP_I_IMPL) && op2->IsCnsIntOrI() && !op2->IsIconHandle() &&
-            !fgIsBigOffset(op2->AsIntCon()->IconValue()))
-        {
-            return fgAddrCouldBeHeap(op->gtGetOp1());
-        }
     }
 
     return true;
