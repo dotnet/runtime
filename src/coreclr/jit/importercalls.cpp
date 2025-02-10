@@ -957,7 +957,7 @@ DEVIRT:
     // See if we can devirt if we aren't probing.
     if (!probing && opts.OptimizationEnabled())
     {
-        if (call->AsCall()->IsVirtual() || callInfo->kind == CORINFO_VIRTUALCALL_LDVIRTFTN)
+        if (call->AsCall()->IsVirtual() || call->AsCall()->IsGenericVirtual())
         {
             // only true object pointers can be virtual
             assert(call->AsCall()->gtArgs.HasThisPointer() &&
