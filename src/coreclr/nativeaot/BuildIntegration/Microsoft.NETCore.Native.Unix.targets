@@ -179,7 +179,6 @@ The .NET Foundation licenses this file to you under the MIT license.
       <NativeLibrary Include="$(IlcFrameworkNativePath)libbrotlicommon.a" />
     </ItemGroup>
 
-
     <ItemGroup Condition="'$(StaticICULinking)' == 'true' and '$(NativeLib)' != 'Static' and '$(InvariantGlobalization)' != 'true'">
       <NativeLibrary Include="$(IntermediateOutputPath)libs/System.Globalization.Native/build/libSystem.Globalization.Native.a" />
       <DirectPInvoke Include="libSystem.Globalization.Native" />
@@ -222,6 +221,8 @@ The .NET Foundation licenses this file to you under the MIT license.
       <NativeSystemLibrary Include="log" Condition="'$(_linuxLibcFlavor)' == 'bionic'" />
       <NativeSystemLibrary Include="icucore" Condition="'$(_IsApplePlatform)' == 'true'" />
       <NativeSystemLibrary Include="m" />
+      <!-- See the comment in PalInterlockedCompareExchange128 for details. -->
+      <NativeSystemLibrary Include="atomic" Condition="'$(_targetArchitecture)' == 'riscv64'" />
     </ItemGroup>
 
     <ItemGroup>

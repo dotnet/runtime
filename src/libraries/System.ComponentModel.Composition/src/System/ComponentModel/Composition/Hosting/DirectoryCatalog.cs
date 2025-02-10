@@ -637,7 +637,7 @@ namespace System.ComponentModel.Composition.Hosting
                         // Lastly complete any changes added to the atomicComposition during the change event
                         atomicComposition.Complete();
 
-                        // Break out of the while(true)
+                        // Break out of the while (true)
                         break;
                     } // WriteLock
                 } // AtomicComposition

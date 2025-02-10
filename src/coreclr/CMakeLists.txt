@@ -59,7 +59,7 @@ include(components.cmake)
 #---------------------------
 # Build the single file host
 #---------------------------
-if(NOT CLR_CROSS_COMPONENTS_BUILD)
+if(NOT CLR_CROSS_COMPONENTS_BUILD AND NOT CLR_CMAKE_TARGET_MACCATALYST AND NOT CLR_CMAKE_TARGET_IOS AND NOT CLR_CMAKE_TARGET_TVOS)
   set(CLR_SINGLE_FILE_HOST_ONLY 1)
   add_subdirectory(${CLR_SRC_NATIVE_DIR}/corehost/apphost/static Corehost.Static)
   add_dependencies(runtime singlefilehost)
@@ -75,9 +75,9 @@ endif()
 # Include libraries native shims
 #-------------------------------
 if(NOT CLR_CROSS_COMPONENTS_BUILD)
-    set(STATIC_LIBS_ONLY 1)
-    add_subdirectory(${CLR_SRC_NATIVE_DIR}/libs libs-native)
-endif(NOT CLR_CROSS_COMPONENTS_BUILD)
+  set(STATIC_LIBS_ONLY 1)
+  add_subdirectory(${CLR_SRC_NATIVE_DIR}/libs libs-native)
+endif()
 
 #-----------------------------------------
 # Add Projects
@@ -101,8 +101,10 @@ if(CLR_CMAKE_HOST_UNIX)
       add_linker_flag(-Wl,-z,notext)
     endif()
 
-    if(NOT CLR_CMAKE_HOST_MACCATALYST AND NOT CLR_CMAKE_HOST_IOS AND NOT CLR_CMAKE_HOST_TVOS)
+    if(NOT CLR_CMAKE_HOST_TVOS)
       add_subdirectory(pal)
+    endif()
+    if(NOT CLR_CMAKE_HOST_MACCATALYST AND NOT CLR_CMAKE_HOST_IOS AND NOT CLR_CMAKE_HOST_TVOS)
       add_subdirectory(hosts)
     endif()
 else()
@@ -129,7 +131,7 @@ add_subdirectory(${CLR_SRC_NATIVE_DIR}/containers containers)
 add_subdirectory(${CLR_SRC_NATIVE_DIR}/eventpipe eventpipe)
 add_subdirectory(${CLR_SRC_NATIVE_DIR}/minipal shared_minipal)
 
-if(NOT CLR_CMAKE_HOST_MACCATALYST AND NOT CLR_CMAKE_HOST_IOS AND NOT CLR_CMAKE_HOST_TVOS)
+if(NOT CLR_CMAKE_HOST_TVOS)
   add_subdirectory(debug/debug-pal)
 endif()
 
@@ -170,10 +172,7 @@ endif(CLR_CMAKE_HOST_WIN32)
 #----------------------------------
 include(clrdefinitions.cmake)
 
-if(FEATURE_STANDALONE_GC)
-  add_definitions(-DFEATURE_STANDALONE_GC)
-  add_subdirectory(gc)
-endif(FEATURE_STANDALONE_GC)
+add_subdirectory(gc)
 
 if (CLR_CMAKE_HOST_UNIX)
   include_directories("pal/inc")
@@ -246,12 +245,14 @@ if(CLR_CMAKE_HOST_UNIX)
   add_subdirectory(nativeresources)
 endif(CLR_CMAKE_HOST_UNIX)
 
-if(NOT CLR_CMAKE_HOST_MACCATALYST AND NOT CLR_CMAKE_HOST_IOS AND NOT CLR_CMAKE_HOST_TVOS)
+if(NOT CLR_CMAKE_HOST_TVOS)
   add_subdirectory(utilcode)
   add_subdirectory(inc)
 
-  add_subdirectory(ilasm)
-  add_subdirectory(ildasm)
+  if (CLR_CMAKE_BUILD_TOOLS)
+    add_subdirectory(ilasm)
+    add_subdirectory(ildasm)
+  endif(CLR_CMAKE_BUILD_TOOLS)
   add_subdirectory(gcinfo)
   add_subdirectory(jit)
   add_subdirectory(vm)
@@ -260,19 +261,14 @@ if(NOT CLR_CMAKE_HOST_MACCATALYST AND NOT CLR_CMAKE_HOST_IOS AND NOT CLR_CMAKE_H
   add_subdirectory(binder)
   add_subdirectory(classlibnative)
   add_subdirectory(dlls)
-  add_subdirectory(tools)
   add_subdirectory(unwinder)
   add_subdirectory(interop)
+endif()
 
-  if(CLR_CMAKE_HOST_WIN32)
-    add_subdirectory(hosts)
-  endif(CLR_CMAKE_HOST_WIN32)
+if(NOT CLR_CMAKE_HOST_MACCATALYST AND NOT CLR_CMAKE_HOST_IOS AND NOT CLR_CMAKE_HOST_TVOS)
+  add_subdirectory(tools)
 endif(NOT CLR_CMAKE_HOST_MACCATALYST AND NOT CLR_CMAKE_HOST_IOS AND NOT CLR_CMAKE_HOST_TVOS)
 
-#----------------------------------------------------
-# Cross target Component install configuration
-#----------------------------------------------------
-if(CLR_CROSS_COMPONENTS_BUILD)
-  include(crosscomponents.cmake)
-endif(CLR_CROSS_COMPONENTS_BUILD)
-
+if(CLR_CMAKE_HOST_WIN32)
+  add_subdirectory(hosts)
+endif(CLR_CMAKE_HOST_WIN32)
