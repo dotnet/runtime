@@ -132,6 +132,16 @@
         <target state="translated">Múltiplos campos encontrados do tipo Microsoft.Extensions.Logging.ILogger</target>
         <note>{Locked="Microsoft.Extensions.Logging.ILogger"}</note>
       </trans-unit>
+      <trans-unit id="PrimaryConstructorParameterLoggerHiddenMessage">
+        <source>Class '{0}' has a primary constructor parameter of type Microsoft.Extensions.Logging.ILogger that is hidden by a field in the class or a base class, preventing its use</source>
+        <target state="translated">A classe "{0}" tem um parâmetro de construtor primário do tipo Microsoft.Extensions.Logging.ILogger que está oculto por um campo na classe ou uma classe base, impedindo o seu uso</target>
+        <note>{Locked="Microsoft.Extensions.Logging.ILogger"}</note>
+      </trans-unit>
+      <trans-unit id="PrimaryConstructorParameterLoggerHiddenTitle">
+        <source>Primary constructor parameter of type Microsoft.Extensions.Logging.ILogger is hidden by a field</source>
+        <target state="translated">O parâmetro primário de construtor do tipo Microsoft.Extensions.Logging.ILogger está oculto por um campo</target>
+        <note>{Locked="Microsoft.Extensions.Logging.ILogger"}</note>
+      </trans-unit>
       <trans-unit id="RedundantQualifierInMessageMessage">
         <source>Remove redundant qualifier (Info:, Warning:, Error:, etc) from the logging message since it is implicit in the specified log level.</source>
         <target state="translated">Remova o qualificador redundante (Info:, Aviso:, Erro:, etc) da mensagem de log, pois está implícito no nível de log especificado.</target>
