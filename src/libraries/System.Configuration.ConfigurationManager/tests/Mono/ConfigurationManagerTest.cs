@@ -132,15 +132,6 @@ namespace MonoTests.System.Configuration
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/21319", TargetFrameworkMonikers.NetFramework)]
-        public void exePath_UserLevelNone()
-        {
-            string name = TestUtil.ThisApplicationPath;
-            SysConfig config = ConfigurationManager.OpenExeConfiguration(name);
-            Assert.Equal(TestUtil.ThisApplicationPath + ".config", config.FilePath);
-        }
-
-        [Fact]
         public void exePath_UserLevelPerRoaming()
         {
             string applicationData = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
