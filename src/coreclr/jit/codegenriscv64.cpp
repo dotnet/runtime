@@ -1010,8 +1010,7 @@ BasicBlock* CodeGen::genCallFinally(BasicBlock* block)
             // TODO-RISCV64-CQ: Can we get rid of this instruction, and just have the call return directly
             // to the next instruction? This would depend on stack walking from within the finally
             // handler working without this instruction being in this special EH region.
-            // instGen(INS_nop);
-            // We dont need to generate no-op instruction. It's pointless.
+            instGen(INS_nop);
         }
         else
         {
@@ -5867,6 +5866,14 @@ void CodeGen::genCodeForInitBlkLoop(GenTreeBlk* initBlkNode)
 void CodeGen::genCall(GenTreeCall* call)
 {
     genCallPlaceRegArgs(call);
+
+    // Insert a null check on "this" pointer if asked.
+    if (call->NeedsNullCheck())
+    {
+        const regNumber regThis = genGetThisArgReg(call);
+
+        GetEmitter()->emitIns_R_R_I(INS_lw, EA_4BYTE, REG_R0, regThis, 0);
+    }
 
     // If fast tail call, then we are done here, we just have to load the call
     // target into the right registers. We ensure in RA that target is loaded

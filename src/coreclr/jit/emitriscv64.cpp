@@ -27,8 +27,6 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 /*****************************************************************************/
 
 const instruction emitJumpKindInstructions[] = {
-// INS_nop,
-
 #define JMP_SMALL(en, rev, ins) INS_##ins,
 #include "emitjmps.h"
 };
