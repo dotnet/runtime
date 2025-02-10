@@ -5062,12 +5062,22 @@ void Compiler::fgVisitBlocksInLoopAwareRPO(FlowGraphDfsTree* dfsTree, FlowGraphN
         }
     };
 
-    LoopAwareVisitor visitor(dfsTree, loops, func);
-
-    for (unsigned i = dfsTree->GetPostOrderCount(); i != 0; i--)
+    if (loops->NumLoops() == 0)
     {
-        BasicBlock* const block = dfsTree->GetPostOrder(i - 1);
-        visitor.VisitBlock(block);
+        for (unsigned i = dfsTree->GetPostOrderCount(); i != 0; i--)
+        {
+            BasicBlock* const block = dfsTree->GetPostOrder(i - 1);
+            func(block);
+        }
+    }
+    else
+    {
+        LoopAwareVisitor visitor(dfsTree, loops, func);
+        for (unsigned i = dfsTree->GetPostOrderCount(); i != 0; i--)
+        {
+            BasicBlock* const block = dfsTree->GetPostOrder(i - 1);
+            visitor.VisitBlock(block);
+        }
     }
 }
 
