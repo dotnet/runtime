@@ -3527,6 +3527,10 @@ public:
                                  ssize_t     ctrlByte,
                                  CorInfoType simdBaseJitType,
                                  unsigned    simdSize);
+    
+    uint8_t gtMinMaxControlByte(bool   isMax       = false,
+                                bool   isMagnitude = false,
+                                bool   isNumber    = false);
 
     GenTree* gtNewSimdTernaryLogicNode(var_types   type,
                                        GenTree*    op1,

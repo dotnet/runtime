@@ -24406,7 +24406,7 @@ GenTree* Compiler::gtNewSimdMaxNode(
     {
         if (compOpportunisticallyDependsOn(InstructionSet_AVX10v2) || canUseAVX10v2())
         {
-            return gtNewSimdMinMaxNode(type, op1, op2, 5, simdBaseJitType, simdSize);
+            return gtNewSimdMinMaxNode(type, op1, op2, gtMinMaxControlByte(true), simdBaseJitType, simdSize);
         }
         else
         {
@@ -24672,7 +24672,7 @@ GenTree* Compiler::gtNewSimdMinNode(
     {
         if (compOpportunisticallyDependsOn(InstructionSet_AVX10v2) || canUseAVX10v2())
         {
-            return gtNewSimdMinMaxNode(type, op1, op2, 0x04, simdBaseJitType, simdSize);
+            return gtNewSimdMinMaxNode(type, op1, op2, gtMinMaxControlByte(), simdBaseJitType, simdSize);
         }
         else
         {
@@ -24745,6 +24745,94 @@ GenTree* Compiler::gtNewSimdMinMaxNode(
     NamedIntrinsic minMaxIntrinsic = (simdSize == 64) ? NI_AVX10v2_V512_MinMax : NI_AVX10v2_MinMax;
     return gtNewSimdHWIntrinsicNode(type, op1, op2, gtNewIconNode(ctrlByte), minMaxIntrinsic, simdBaseJitType, simdSize);
 }
+
+/**
+ * @brief Generates a control byte for a SIMD Min/Max operation.
+ *
+ * This function constructs a control byte (imm8) for Min/Max SIMD operations based on the provided flags.
+ * The control byte defines the operation type (e.g., Min or Max), and whether the operation should consider
+ * the magnitude or numerical values (NaN-aware comparisons).
+ *
+ * @param isMax Specifies if the operation is Max (true) or Min (false).
+ *              - If true, the operation is Max.
+ *              - If false, the operation is Min.
+ * @param isNumber Specifies if the operation should be NaN-aware (true) or not (false).
+ *              - If true, NaN values are considered in the comparison, producing NaN if one of the operands is NaN.
+ *              - If false, NaN values are ignored, and the result is based on the non-NaN operand.
+ * @param isMagnitude Specifies if the operation is based on the magnitude of the values (true) or not (false).
+ *              - If true, comparisons are performed based on the absolute value of the operands.
+ *              - If false, comparisons are performed on the actual values, including the sign.
+ *
+ * @return A `uint8_t` value representing the control byte (imm8) for the specified operation.
+ *         The returned value can be directly used in SIMD Min/Max instructions.
+ */
+uint8_t Compiler::gtMinMaxControlByte(bool isMax, bool isMagnitude, bool isNumber)
+{
+    /**
+     * ctrlByte   A control byte (imm8) that specifies the type of min/max operation and sign behavior:
+     *            - Bits [1:0] (Op-select): Determines the operation performed:
+     *              - 0b00: minimum - Returns x if x ≤ y, otherwise y; NaN handling applies.
+     *              - 0b01: maximum - Returns x if x ≥ y, otherwise y; NaN handling applies.
+     *              - 0b10: minimumMagnitude - Compares absolute values, returns the smaller magnitude.
+     *              - 0b11: maximumMagnitude - Compares absolute values, returns the larger magnitude.
+     *            - Bit  [4] (min/max mode): Determines whether the instruction follows IEEE-compliant NaN handling:
+     *              - 0: Standard min/max (propagates NaNs).
+     *              - 1: Number-preferential min/max (ignores signaling NaNs).
+     *            - Bits [3:2] (Sign control): Defines how the result’s sign is determined:
+     *              - 0b00: Select sign from the first operand (src1).
+     *              - 0b01: Select sign from the comparison result.
+     *              - 0b10: Force result sign to 0 (positive).
+     *              - 0b11: Force result sign to 1 (negative).
+     */
+    uint8_t ctrlByte;
+
+    if (isMax)
+    {
+        if (isMagnitude)
+        {
+            if (isNumber)
+            {
+                ctrlByte = 0x17;
+            }
+            else
+            {
+                ctrlByte = 0x07;
+            }
+        }
+        else if (isNumber)
+        {
+            ctrlByte = 0x15;
+        }
+        else
+        {
+            ctrlByte = 0x05;
+        }
+    }
+    else
+    {
+        if (isMagnitude)
+        {
+            if (isNumber)
+            {
+                ctrlByte = 0x16;
+            }
+            else
+            {
+                ctrlByte = 0x06;
+            }
+        }
+        else if (isNumber)
+        {
+            ctrlByte = 0x14;
+        }
+        else
+        {
+            ctrlByte = 0x04;
+        }
+    }
+    return ctrlByte;
+}
+
 #endif // TARGET_XARCH
 
 GenTree* Compiler::gtNewSimdMinNativeNode(
