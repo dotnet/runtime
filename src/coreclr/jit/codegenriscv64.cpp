@@ -1693,7 +1693,6 @@ void CodeGen::genLclHeap(GenTree* tree)
         // case SP is on the last byte of the guard page.  Thus you must
         // touch SP-0 first not SP-0x1000.
         //
-        // This is similar to the prolog code in CodeGen::genAllocLclFrame().
         //
         // Note that we go through a few hoops so that SP never points to
         // illegal pages at any time during the tickling process.
