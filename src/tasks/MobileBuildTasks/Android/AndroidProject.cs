@@ -95,30 +95,30 @@ namespace Microsoft.Android.Build
         {
             StringBuilder ret = new StringBuilder();
 
-            foreach(string compilerArg in buildOptions.CompilerArguments)
+            foreach (string compilerArg in buildOptions.CompilerArguments)
             {
                 ret.Append(compilerArg);
                 ret.Append(' ');
             }
 
-            foreach(string includeDir in buildOptions.IncludePaths)
+            foreach (string includeDir in buildOptions.IncludePaths)
             {
                 ret.Append($"-I {includeDir} ");
             }
 
-            foreach(string linkerArg in buildOptions.LinkerArguments)
+            foreach (string linkerArg in buildOptions.LinkerArguments)
             {
                 ret.Append($"-Xlinker {linkerArg} ");
             }
 
-            foreach(string source in buildOptions.Sources)
+            foreach (string source in buildOptions.Sources)
             {
                 ret.Append(source);
                 ret.Append(' ');
             }
 
             HashSet<string> libDirs = new HashSet<string>();
-            foreach(string lib in buildOptions.NativeLibraryPaths)
+            foreach (string lib in buildOptions.NativeLibraryPaths)
             {
                 string rootPath = Path.GetDirectoryName(lib)!;
                 string libName = Path.GetFileName(lib);

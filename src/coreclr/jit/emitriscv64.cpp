@@ -1624,8 +1624,8 @@ unsigned emitter::emitOutputCall(const insGroup* ig, BYTE* dst, instrDesc* id, c
 
         size_t addr = (size_t)(id->idAddr()->iiaAddr); // get addr.
 
-        int reg2 = ((int)addr & 1) + 10;
-        addr     = addr ^ 1;
+        int reg2 = (int)(addr & 1);
+        addr -= reg2;
 
         if (!emitComp->opts.compReloc)
         {

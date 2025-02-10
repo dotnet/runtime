@@ -48,7 +48,10 @@ public partial class ApkBuilder
     public ITaskItem[] ExtraLinkerArguments { get; set; } = Array.Empty<ITaskItem>();
     public string[] NativeDependencies { get; set; } = Array.Empty<string>();
     public string RuntimeFlavor { get; set; } = nameof(RuntimeFlavorEnum.Mono);
+
     private RuntimeFlavorEnum parsedRuntimeFlavor;
+    private bool IsMono => parsedRuntimeFlavor == RuntimeFlavorEnum.Mono;
+    private bool IsCoreCLR => parsedRuntimeFlavor == RuntimeFlavorEnum.CoreCLR;
 
     private TaskLoggingHelper logger;
 
@@ -62,6 +65,11 @@ public partial class ApkBuilder
         string mainLibraryFileName,
         string runtimeHeaders)
     {
+        if (!Enum.TryParse(RuntimeFlavor, true, out parsedRuntimeFlavor))
+        {
+            throw new ArgumentException($"Unknown RuntimeFlavor value: {RuntimeFlavor}. '{nameof(RuntimeFlavor)}' must be one of: {string.Join(",", Enum.GetNames(typeof(RuntimeFlavorEnum)))}");
+        }
+
         if (string.IsNullOrEmpty(AppDir) || !Directory.Exists(AppDir))
         {
             throw new ArgumentException($"AppDir='{AppDir}' is empty or doesn't exist");
@@ -106,9 +114,14 @@ public partial class ApkBuilder
             throw new InvalidOperationException("Interpreter and AOT cannot be enabled at the same time");
         }
 
-        if (!string.IsNullOrEmpty(DiagnosticPorts) && !Array.Exists(RuntimeComponents, runtimeComponent => string.Equals(runtimeComponent, "diagnostics_tracing", StringComparison.OrdinalIgnoreCase)))
+        if (IsMono && !string.IsNullOrEmpty(DiagnosticPorts) && !Array.Exists(RuntimeComponents, runtimeComponent => string.Equals(runtimeComponent, "diagnostics_tracing", StringComparison.OrdinalIgnoreCase)))
         {
-            throw new ArgumentException($"Using DiagnosticPorts requires diagnostics_tracing runtime component, which was not included in 'RuntimeComponents' item group. @RuntimeComponents: '{string.Join(", ", RuntimeComponents)}'");
+            throw new ArgumentException($"Using DiagnosticPorts targeting Mono requires diagnostics_tracing runtime component, which was not included in 'RuntimeComponents' item group. @RuntimeComponents: '{string.Join(", ", RuntimeComponents)}'");
+        }
+
+        if (IsCoreCLR && StaticLinkedRuntime)
+        {
+            throw new ArgumentException("Static linking is not supported for CoreCLR runtime");
         }
 
         // Try to get the latest build-tools version if not specified
@@ -146,11 +159,6 @@ public partial class ApkBuilder
         if (!Directory.Exists(buildToolsFolder))
         {
             throw new ArgumentException($"{buildToolsFolder} was not found.");
-        }
-
-        if (!Enum.TryParse(RuntimeFlavor, true, out parsedRuntimeFlavor))
-        {
-            throw new ArgumentException($"Unknown RuntimeFlavor value: {RuntimeFlavor}. '{nameof(RuntimeFlavor)}' must be one of: {string.Join(",", Enum.GetNames(typeof(RuntimeFlavorEnum)))}");
         }
 
         var assemblerFiles = new StringBuilder();
@@ -260,22 +268,17 @@ public partial class ApkBuilder
         else
         {
             string runtimeLib = "";
-            if (parsedRuntimeFlavor == RuntimeFlavorEnum.CoreCLR)
+            if (StaticLinkedRuntime && IsMono)
             {
-                if (StaticLinkedRuntime)
-                    throw new ArgumentException("Static linking is not supported for CoreCLR runtime");
-                runtimeLib = Path.Combine(AppDir, "libcoreclr.so");
+                runtimeLib = Path.Combine(AppDir, "libmonosgen-2.0.a");
             }
-            else
+            else if (IsMono)
             {
-                if (StaticLinkedRuntime)
-                {
-                    runtimeLib = Path.Combine(AppDir, "libmonosgen-2.0.a");
-                }
-                else
-                {
-                    runtimeLib = Path.Combine(AppDir, "libmonosgen-2.0.so");
-                }
+                runtimeLib = Path.Combine(AppDir, "libmonosgen-2.0.so");
+            }
+            else if (IsCoreCLR)
+            {
+                runtimeLib = Path.Combine(AppDir, "libcoreclr.so");
             }
 
             if (!File.Exists(runtimeLib))
@@ -332,7 +335,7 @@ public partial class ApkBuilder
         nativeLibraries += assemblerFilesToLink.ToString();
 
         string aotSources = assemblerFiles.ToString();
-        string monodroidSource = (parsedRuntimeFlavor == RuntimeFlavorEnum.CoreCLR) ?
+        string monodroidSource = IsCoreCLR ?
             "monodroid-coreclr.c" : (IsLibraryMode) ? "monodroid-librarymode.c" : "monodroid.c";
 
         string cmakeLists = Utils.GetEmbeddedResource("CMakeLists-android.txt")

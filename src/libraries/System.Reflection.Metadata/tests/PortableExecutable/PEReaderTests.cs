@@ -245,7 +245,7 @@ namespace System.Reflection.PortableExecutable.Tests
             {
                 0x00, 0x20, 0x00, 0x00,
                 0x0C, 0x00, 0x00, 0x00,
-                0xD0, 0x38, 0x00, 0x00
+                0x00, 0x39, 0x00, 0x00
             }, relocBlob1);
 
             AssertEx.Equal(relocBlob1, relocBlob2);

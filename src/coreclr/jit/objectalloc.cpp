@@ -828,7 +828,7 @@ unsigned int ObjectAllocator::MorphNewArrNodeIntoStackAlloc(GenTreeCall*        
         blockSize = AlignUp(blockSize, 8);
     }
 
-    comp->lvaSetStruct(lclNum, comp->typGetBlkLayout(blockSize), /* unsafeValueClsCheck */ false);
+    comp->lvaSetStruct(lclNum, comp->typGetArrayLayout(clsHnd, length), /* unsafe */ false);
     lclDsc->lvStackAllocatedObject = true;
 
     // Initialize the object memory if necessary.

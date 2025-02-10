@@ -2527,10 +2527,23 @@ public:
 private:
 #if defined(TARGET_AMD64)
     regMaskTP rbmFltCalleeTrash;
+    regMaskTP rbmAllInt;
 
     FORCEINLINE regMaskTP get_RBM_FLT_CALLEE_TRASH() const
     {
         return this->rbmFltCalleeTrash;
+    }
+
+    regMaskTP rbmIntCalleeTrash;
+
+    FORCEINLINE regMaskTP get_RBM_INT_CALLEE_TRASH() const
+    {
+        return this->rbmIntCalleeTrash;
+    }
+
+    FORCEINLINE regMaskTP get_RBM_ALLINT() const
+    {
+        return this->rbmAllInt;
     }
 #endif // TARGET_AMD64
 

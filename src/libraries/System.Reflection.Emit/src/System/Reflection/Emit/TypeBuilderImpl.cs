@@ -993,7 +993,7 @@ namespace System.Reflection.Emit
 
             List<Type> interfaces = _interfaces ?? [];
 
-            if(_typeParent != null)
+            if (_typeParent != null)
             {
                 interfaces.AddRange(_typeParent.GetInterfaces());
             }

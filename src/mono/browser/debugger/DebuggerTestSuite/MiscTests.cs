@@ -1166,7 +1166,7 @@ namespace DebuggerTests
         public static TheoryData<int> CountToTen()
         {
             var data = new TheoryData<int>();
-            for(int i=0;i<10;i++)
+            for (int i=0;i<10;i++)
             {
                 data.Add(i);
             }

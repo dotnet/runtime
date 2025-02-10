@@ -123,9 +123,9 @@ namespace System.Collections.Frozen
             if (typeof(TKey).IsValueType && ReferenceEquals(comparer, EqualityComparer<TKey>.Default))
             {
 #if NET
-                if (DenseIntegralFrozenDictionary.TryCreate(source, out FrozenDictionary<TKey, TValue>? result))
+                if (DenseIntegralFrozenDictionary.CreateIfValid(source) is { } denseResult)
                 {
-                    return result;
+                    return denseResult;
                 }
 #endif
 

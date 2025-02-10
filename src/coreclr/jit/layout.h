@@ -5,6 +5,7 @@
 #define LAYOUT_H
 
 #include "jit.h"
+#include "segmentlist.h"
 
 // Builder for class layouts
 //
@@ -14,28 +15,34 @@ class ClassLayoutBuilder
     friend class ClassLayoutTable;
     friend struct CustomLayoutKey;
 
-    Compiler* m_compiler;
-    BYTE*     m_gcPtrs = nullptr;
-    unsigned  m_size;
-    unsigned  m_gcPtrCount = 0;
+    Compiler*    m_compiler;
+    BYTE*        m_gcPtrs = nullptr;
+    unsigned     m_size;
+    unsigned     m_gcPtrCount = 0;
+    SegmentList* m_nonPadding = nullptr;
 #ifdef DEBUG
     const char* m_name      = "UNNAMED";
     const char* m_shortName = "UNNAMED";
 #endif
 
-    BYTE* GetOrCreateGCPtrs();
-    void  SetGCPtr(unsigned slot, CorInfoGCType type);
+    BYTE*        GetOrCreateGCPtrs();
+    void         SetGCPtr(unsigned slot, CorInfoGCType type);
+    SegmentList* GetOrCreateNonPadding();
 public:
     // Create a class layout builder.
     //
     ClassLayoutBuilder(Compiler* compiler, unsigned size);
 
     void SetGCPtrType(unsigned slot, var_types type);
-    void CopyInfoFrom(unsigned offset, ClassLayout* layout);
+    void CopyInfoFrom(unsigned offset, ClassLayout* layout, bool copyPadding);
+    void AddPadding(const SegmentList::Segment& padding);
+    void RemovePadding(const SegmentList::Segment& nonPadding);
 
 #ifdef DEBUG
     void SetName(const char* name, const char* shortName);
 #endif
+
+    static ClassLayoutBuilder BuildArray(Compiler* compiler, CORINFO_CLASS_HANDLE arrayType, unsigned length);
 };
 
 // Encapsulates layout information about a class (typically a value class but this can also be
@@ -67,6 +74,8 @@ private:
         BYTE* m_gcPtrs;
         BYTE  m_gcPtrsArray[sizeof(BYTE*)];
     };
+
+    class SegmentList* m_nonPadding = nullptr;
 
     // The normalized type to use in IR for block nodes with this layout.
     const var_types m_type;
@@ -246,6 +255,8 @@ public:
     }
 
     bool IntersectsGCPtr(unsigned offset, unsigned size) const;
+
+    const SegmentList& GetNonPadding(Compiler* comp);
 
     static bool AreCompatible(const ClassLayout* layout1, const ClassLayout* layout2);
 
