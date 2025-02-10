@@ -15,6 +15,8 @@ let testAbort = true;
 let testError = true;
 
 try {
+    console.log(`crossOriginIsolated: ${globalThis.crossOriginIsolated}`);
+
     const originalFetch = globalThis.fetch;
     globalThis.fetch = (url, fetchArgs) => {
         console.log("fetching " + url);
@@ -50,7 +52,9 @@ try {
                 console.log('user code Module.onConfigLoaded');
                 // config is loaded and could be tweaked before the rest of the runtime startup sequence
                 config.environmentVariables["MONO_LOG_LEVEL"] = "debug";
-                config.browserProfilerOptions = {};
+                config.browserProfilerOptions = {
+                    sampleIntervalMs: 1
+                };
             },
             preInit: () => { console.log('user code Module.preInit'); },
             preRun: () => { console.log('user code Module.preRun'); },
