@@ -50,6 +50,7 @@ namespace System.Reflection
             }
         }
 
+        protected sealed override bool IsValueTypeImpl() => _genericTypeDefinition.IsValueType;
         internal sealed override SignatureType? ElementType => null;
         public sealed override int GetArrayRank() => throw new ArgumentException(SR.Argument_HasToBeArrayClass);
         public sealed override Type GetGenericTypeDefinition() => _genericTypeDefinition;

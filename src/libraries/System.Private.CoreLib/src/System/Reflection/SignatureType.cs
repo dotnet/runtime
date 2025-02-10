@@ -198,7 +198,7 @@ namespace System.Reflection
         [Obsolete(Obsoletions.LegacyFormatterMessage, DiagnosticId = Obsoletions.LegacyFormatterDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public sealed override bool IsSerializable => throw new NotSupportedException(SR.NotSupported_SignatureType);
         public sealed override bool IsSubclassOf(Type c) => throw new NotSupportedException(SR.NotSupported_SignatureType);
-        protected sealed override bool IsValueTypeImpl() => throw new NotSupportedException(SR.NotSupported_SignatureType);
+        protected abstract override bool IsValueTypeImpl();
 
         public sealed override StructLayoutAttribute StructLayoutAttribute => throw new NotSupportedException(SR.NotSupported_SignatureType);
 
