@@ -142,38 +142,11 @@ namespace System.Reflection.Metadata
         {
             get
             {
-                // This is a recursive method over potentially hostile input. Protection against DoS is offered
-                // via the [Try]Parse method and TypeNameParserOptions.MaxNodes property at construction time.
-                // This FullName property getter and related methods assume that this TypeName instance has an
-                // acceptable node count.
-                //
-                // The node count controls the total amount of work performed by this method, including:
-                // - The max possible stack depth due to the recursive methods calls; and
-                // - The total number of bytes allocated by this function. For a deeply-nested TypeName
-                //   object, the total allocation across the full object graph will be
-                //   O(FullName.Length * GetNodeCount()).
-
                 if (_fullName is null)
                 {
-                    if (IsConstructedGenericType)
-                    {
-                        _fullName = TypeNameParserHelpers.GetGenericTypeFullName(GetGenericTypeDefinition().FullName.AsSpan(),
-#if SYSTEM_PRIVATE_CORELIB
-                            CollectionsMarshal.AsSpan(_genericArguments));
-#else
-                            _genericArguments.AsSpan());
-#endif
-                    }
-                    else if (IsArray || IsPointer || IsByRef)
-                    {
-                        ValueStringBuilder builder = new(stackalloc char[128]);
-                        builder.Append(GetElementType().FullName);
-                        _fullName = TypeNameParserHelpers.GetRankOrModifierStringRepresentation(_rankOrModifier, ref builder);
-                    }
-                    else
-                    {
-                        Debug.Fail("Pre-allocated full name should have been provided in the ctor");
-                    }
+                    ValueStringBuilder builder = new(stackalloc char[128]);
+                    AppendFullName(ref builder);
+                    _fullName = builder.ToString();
                 }
                 else if (_nestedNameLength > 0 && _fullName.Length > _nestedNameLength) // Declaring types
                 {
@@ -183,6 +156,60 @@ namespace System.Reflection.Metadata
                 }
 
                 return _fullName!;
+            }
+        }
+
+        internal void AppendFullName(ref ValueStringBuilder builder)
+        {
+            // This is a recursive method over potentially hostile input. Protection against DoS is offered
+            // via the [Try]Parse method and TypeNameParserOptions.MaxNodes property at construction time.
+            // This FullName property getter and related methods assume that this TypeName instance has an
+            // acceptable node count.
+            //
+            // The node count controls the total amount of work performed by this method, including:
+            // - The max possible stack depth due to the recursive methods calls.
+
+            if (_fullName is null)
+            {
+                if (IsConstructedGenericType)
+                {
+                    GetGenericTypeDefinition().AppendFullName(ref builder);
+                    builder.Append('[');
+                    foreach (TypeName genericArg in GetGenericArguments())
+                    {
+                        builder.Append('[');
+                        genericArg.AppendFullName(ref builder);
+                        // generic arguments need to be always fully qualified
+                        if (genericArg.AssemblyName is not null)
+                        {
+                            builder.Append(',');
+                            builder.Append(' ');
+                            genericArg.AssemblyName.AppendFullName(ref builder);
+                        }
+                        builder.Append(']');
+                        builder.Append(',');
+                    }
+                    builder[builder.Length - 1] = ']'; // replace ',' with ']'
+                }
+                else if (IsArray || IsPointer || IsByRef)
+                {
+                    GetElementType().AppendFullName(ref builder);
+                    TypeNameParserHelpers.AppendRankOrModifierStringRepresentation(_rankOrModifier, ref builder);
+                }
+                else
+                {
+                    Debug.Fail("Pre-allocated full name should have been provided in the ctor");
+                }
+            }
+            else if (_nestedNameLength > 0 && _fullName.Length > _nestedNameLength) // Declaring types
+            {
+                // Stored fullName represents the full name of the nested type.
+                // Example: Namespace.Declaring+Nested
+                builder.Append(_fullName.AsSpan(0, _nestedNameLength));
+            }
+            else
+            {
+                builder.Append(_fullName);
             }
         }
 
@@ -268,7 +295,8 @@ namespace System.Reflection.Metadata
                     {
                         ValueStringBuilder builder = new(stackalloc char[64]);
                         builder.Append(GetElementType().Name);
-                        _name = TypeNameParserHelpers.GetRankOrModifierStringRepresentation(_rankOrModifier, ref builder);
+                        TypeNameParserHelpers.AppendRankOrModifierStringRepresentation(_rankOrModifier, ref builder);
+                        _name = builder.ToString();
                     }
                     else if (_nestedNameLength > 0 && _fullName is not null)
                     {
