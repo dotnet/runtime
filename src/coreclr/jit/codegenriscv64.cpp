@@ -1090,29 +1090,44 @@ void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, GenTre
             emitAttr size       = emitActualTypeSize(tree);
             double   constValue = tree->AsDblCon()->DconValue();
 
-            // Make sure we use "fmv.w.x reg, zero" only for positive zero (0.0)
-            // and not for negative zero (-0.0)
+            assert(emitter::isFloatReg(targetReg));
+
+            // Make sure we use "fmv.w.x reg, zero" only for positive zero (0.0) and not for negative zero (-0.0)
             if (FloatingPointUtils::isPositiveZero(constValue))
             {
                 // A faster/smaller way to generate 0.0
-                // We will just zero out the entire vector register for both float and double
+                // We will just zero out the entire register for both float and double
                 emit->emitIns_R_R(size == EA_4BYTE ? INS_fmv_w_x : INS_fmv_d_x, size, targetReg, REG_R0);
+                break;
             }
-            else
+
+            int64_t bits =
+                (size == EA_4BYTE)
+                    ? (int32_t)BitOperations::SingleToUInt32Bits(FloatingPointUtils::convertToSingle(constValue))
+                    : (int64_t)BitOperations::DoubleToUInt64Bits(constValue);
+            bool fitsInLui = ((bits & 0xfff) == 0) && emitter::isValidSimm20(bits >> 12);
+            if (fitsInLui || emitter::isValidSimm12(bits)) // can we synthesize bits with a single instruction?
             {
-                // Get a temp integer register to compute long address.
-                // regNumber addrReg = internalRegisters.GetSingle(tree);
+                regNumber temp = internalRegisters.GetSingle(tree);
+                if (fitsInLui)
+                {
+                    emit->emitIns_R_I(INS_lui, size, temp, bits >> 12);
+                }
+                else
+                {
+                    emit->emitIns_R_R_I(INS_addi, size, temp, REG_ZERO, bits);
+                }
 
-                // We must load the FP constant from the constant pool
-                // Emit a data section constant for the float or double constant.
-                CORINFO_FIELD_HANDLE hnd = emit->emitFltOrDblConst(constValue, size);
-
-                // Load the FP constant.
-                assert(emit->isFloatReg(targetReg));
-
-                // Compute the address of the FP constant and load the data.
-                emit->emitIns_R_C(size == EA_4BYTE ? INS_flw : INS_fld, size, targetReg, REG_NA, hnd, 0);
+                emit->emitIns_R_R(size == EA_4BYTE ? INS_fmv_w_x : INS_fmv_d_x, size, targetReg, temp);
+                break;
             }
+
+            // We must load the FP constant from the constant pool
+            // Emit a data section constant for the float or double constant.
+            CORINFO_FIELD_HANDLE hnd = emit->emitFltOrDblConst(constValue, size);
+
+            // Compute the address of the FP constant and load the data.
+            emit->emitIns_R_C(size == EA_4BYTE ? INS_flw : INS_fld, size, targetReg, REG_NA, hnd, 0);
         }
         break;
 
@@ -3581,7 +3596,24 @@ void CodeGen::genCodeForJumpCompare(GenTreeOpCC* tree)
                     unreached();
             }
 
-            emit->emitLoadImmediate(EA_PTRSIZE, REG_RA, imm);
+            GenTreeIntCon* con = op2->AsIntCon();
+
+            emitAttr attr = emitActualTypeSize(op2Type);
+            // TODO-CQ: Currently we cannot do this for all handles because of
+            // https://github.com/dotnet/runtime/issues/60712
+            if (con->ImmedValNeedsReloc(compiler))
+            {
+                attr = EA_SET_FLG(attr, EA_CNS_RELOC_FLG);
+            }
+
+            if (op2Type == TYP_BYREF)
+            {
+                attr = EA_SET_FLG(attr, EA_BYREF_FLG);
+            }
+
+            instGen_Set_Reg_To_Imm(attr, REG_RA, imm,
+                                   INS_FLAGS_DONT_CARE DEBUGARG(con->gtTargetHandle) DEBUGARG(con->gtFlags));
+            regSet.verifyRegUsed(REG_RA);
             regs = (int)REG_RA << 5;
         }
         else
