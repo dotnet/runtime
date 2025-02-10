@@ -24408,27 +24408,24 @@ GenTree* Compiler::gtNewSimdMaxNode(
         {
             return gtNewSimdMinMaxNode(type, op1, op2, gtMinMaxControlByte(true), simdBaseJitType, simdSize);
         }
-        else
-        {
-            GenTree* op1Dup1 = fgMakeMultiUse(&op1);
-            GenTree* op1Dup2 = gtCloneExpr(op1Dup1);
-            GenTree* op1Dup3 = gtCloneExpr(op1Dup2);
+        GenTree* op1Dup1 = fgMakeMultiUse(&op1);
+        GenTree* op1Dup2 = gtCloneExpr(op1Dup1);
+        GenTree* op1Dup3 = gtCloneExpr(op1Dup2);
 
-            GenTree* op2Dup1 = fgMakeMultiUse(&op2);
-            GenTree* op2Dup2 = gtCloneExpr(op2Dup1);
-            GenTree* op2Dup3 = gtCloneExpr(op2Dup2);
+        GenTree* op2Dup1 = fgMakeMultiUse(&op2);
+        GenTree* op2Dup2 = gtCloneExpr(op2Dup1);
+        GenTree* op2Dup3 = gtCloneExpr(op2Dup2);
 
-            GenTree* equalsMask     = gtNewSimdCmpOpNode(GT_EQ, type, op1, op2, simdBaseJitType, simdSize);
-            GenTree* isNegativeMask = gtNewSimdIsNegativeNode(type, op2Dup1, simdBaseJitType, simdSize);
-            GenTree* isNaNMask      = gtNewSimdIsNaNNode(type, op1Dup1, simdBaseJitType, simdSize);
-            GenTree* lessThanMask   = gtNewSimdCmpOpNode(GT_LT, type, op2Dup2, op1Dup2, simdBaseJitType, simdSize);
+        GenTree* equalsMask     = gtNewSimdCmpOpNode(GT_EQ, type, op1, op2, simdBaseJitType, simdSize);
+        GenTree* isNegativeMask = gtNewSimdIsNegativeNode(type, op2Dup1, simdBaseJitType, simdSize);
+        GenTree* isNaNMask      = gtNewSimdIsNaNNode(type, op1Dup1, simdBaseJitType, simdSize);
+        GenTree* lessThanMask   = gtNewSimdCmpOpNode(GT_LT, type, op2Dup2, op1Dup2, simdBaseJitType, simdSize);
 
-            GenTree* mask = gtNewSimdBinOpNode(GT_AND, type, equalsMask, isNegativeMask, simdBaseJitType, simdSize);
-            mask          = gtNewSimdBinOpNode(GT_OR, type, mask, isNaNMask, simdBaseJitType, simdSize);
-            mask          = gtNewSimdBinOpNode(GT_OR, type, mask, lessThanMask, simdBaseJitType, simdSize);
+        GenTree* mask = gtNewSimdBinOpNode(GT_AND, type, equalsMask, isNegativeMask, simdBaseJitType, simdSize);
+        mask          = gtNewSimdBinOpNode(GT_OR, type, mask, isNaNMask, simdBaseJitType, simdSize);
+        mask          = gtNewSimdBinOpNode(GT_OR, type, mask, lessThanMask, simdBaseJitType, simdSize);
 
-            return gtNewSimdCndSelNode(type, mask, op1Dup3, op2Dup3, simdBaseJitType, simdSize);
-        }
+        return gtNewSimdCndSelNode(type, mask, op1Dup3, op2Dup3, simdBaseJitType, simdSize);
     }
 #endif // TARGET_XARCH
 
@@ -24674,27 +24671,24 @@ GenTree* Compiler::gtNewSimdMinNode(
         {
             return gtNewSimdMinMaxNode(type, op1, op2, gtMinMaxControlByte(), simdBaseJitType, simdSize);
         }
-        else
-        {
-            GenTree* op1Dup1 = fgMakeMultiUse(&op1);
-            GenTree* op1Dup2 = gtCloneExpr(op1Dup1);
-            GenTree* op1Dup3 = gtCloneExpr(op1Dup2);
-            GenTree* op1Dup4 = gtCloneExpr(op1Dup3);
+        GenTree* op1Dup1 = fgMakeMultiUse(&op1);
+        GenTree* op1Dup2 = gtCloneExpr(op1Dup1);
+        GenTree* op1Dup3 = gtCloneExpr(op1Dup2);
+        GenTree* op1Dup4 = gtCloneExpr(op1Dup3);
 
-            GenTree* op2Dup1 = fgMakeMultiUse(&op2);
-            GenTree* op2Dup2 = gtCloneExpr(op2Dup1);
+        GenTree* op2Dup1 = fgMakeMultiUse(&op2);
+        GenTree* op2Dup2 = gtCloneExpr(op2Dup1);
 
-            GenTree* equalsMask     = gtNewSimdCmpOpNode(GT_EQ, type, op1, op2, simdBaseJitType, simdSize);
-            GenTree* isNegativeMask = gtNewSimdIsNegativeNode(type, op1Dup1, simdBaseJitType, simdSize);
-            GenTree* isNaNMask      = gtNewSimdIsNaNNode(type, op1Dup2, simdBaseJitType, simdSize);
-            GenTree* lessThanMask   = gtNewSimdCmpOpNode(GT_LT, type, op1Dup3, op2Dup1, simdBaseJitType, simdSize);
+        GenTree* equalsMask     = gtNewSimdCmpOpNode(GT_EQ, type, op1, op2, simdBaseJitType, simdSize);
+        GenTree* isNegativeMask = gtNewSimdIsNegativeNode(type, op1Dup1, simdBaseJitType, simdSize);
+        GenTree* isNaNMask      = gtNewSimdIsNaNNode(type, op1Dup2, simdBaseJitType, simdSize);
+        GenTree* lessThanMask   = gtNewSimdCmpOpNode(GT_LT, type, op1Dup3, op2Dup1, simdBaseJitType, simdSize);
 
-            GenTree* mask = gtNewSimdBinOpNode(GT_AND, type, equalsMask, isNegativeMask, simdBaseJitType, simdSize);
-            mask          = gtNewSimdBinOpNode(GT_OR, type, mask, isNaNMask, simdBaseJitType, simdSize);
-            mask          = gtNewSimdBinOpNode(GT_OR, type, mask, lessThanMask, simdBaseJitType, simdSize);
+        GenTree* mask = gtNewSimdBinOpNode(GT_AND, type, equalsMask, isNegativeMask, simdBaseJitType, simdSize);
+        mask          = gtNewSimdBinOpNode(GT_OR, type, mask, isNaNMask, simdBaseJitType, simdSize);
+        mask          = gtNewSimdBinOpNode(GT_OR, type, mask, lessThanMask, simdBaseJitType, simdSize);
 
-            return gtNewSimdCndSelNode(type, mask, op1Dup4, op2Dup2, simdBaseJitType, simdSize);
-        }
+        return gtNewSimdCndSelNode(type, mask, op1Dup4, op2Dup2, simdBaseJitType, simdSize);
     }
 #endif // TARGET_XARCH
 
