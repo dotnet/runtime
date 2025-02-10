@@ -1474,6 +1474,23 @@ void CodeGen::genRangeCheck(GenTree* oper)
         src1    = arrLen;
         src2    = arrIndex;
         jmpKind = EJ_ls;
+
+#if defined(TARGET_ARM64)
+        if (arrIndex->IsIntegralConst(0))
+        {
+            assert(!arrLen->isContained());
+            // For (index == 0), we can just test if (length == 0) as this is the only case that would throw.
+            // This may lead to an optimization by using cbz/tbnz.
+            genJumpToThrowHlpBlk(
+                bndsChk->gtThrowKind,
+                [&](BasicBlock* target, bool isInline) {
+                genCompareImmAndJump(isInline ? GenCondition::NE : GenCondition::EQ, arrLen->GetRegNum(), 0,
+                                     emitActualTypeSize(arrLen), target);
+            },
+                bndsChk->gtIndRngFailBB);
+            return;
+        }
+#endif
     }
     else
     {

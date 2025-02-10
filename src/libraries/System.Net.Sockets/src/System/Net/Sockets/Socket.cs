@@ -850,11 +850,11 @@ namespace System.Net.Sockets
 
             if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"DST:{remoteEP}");
 
+            ValidateForMultiConnect(); // needs to come before CanTryAddressFamily call
+
             DnsEndPoint? dnsEP = remoteEP as DnsEndPoint;
             if (dnsEP != null)
             {
-                ValidateForMultiConnect(isMultiEndpoint: true); // needs to come before CanTryAddressFamily call
-
                 if (dnsEP.AddressFamily != AddressFamily.Unspecified && !CanTryAddressFamily(dnsEP.AddressFamily))
                 {
                     throw new NotSupportedException(SR.net_invalidversion);
@@ -863,8 +863,6 @@ namespace System.Net.Sockets
                 Connect(dnsEP.Host, dnsEP.Port);
                 return;
             }
-
-            ValidateForMultiConnect(isMultiEndpoint: false);
 
             SocketAddress socketAddress = Serialize(ref remoteEP);
             _pendingConnectRightEndPoint = remoteEP;
@@ -887,7 +885,7 @@ namespace System.Net.Sockets
 
             ThrowIfConnectedStreamSocket();
 
-            ValidateForMultiConnect(isMultiEndpoint: false); // needs to come before CanTryAddressFamily call
+            ValidateForMultiConnect(); // needs to come before CanTryAddressFamily call
 
             if (!CanTryAddressFamily(address.AddressFamily))
             {
@@ -951,7 +949,7 @@ namespace System.Net.Sockets
 
             ThrowIfConnectedStreamSocket();
 
-            ValidateForMultiConnect(isMultiEndpoint: true); // needs to come before CanTryAddressFamily call
+            ValidateForMultiConnect(); // needs to come before CanTryAddressFamily call
 
             ExceptionDispatchInfo? lastex = null;
             foreach (IPAddress address in addresses)
@@ -964,7 +962,7 @@ namespace System.Net.Sockets
                         lastex = null;
                         break;
                     }
-                    catch (Exception ex) when (!ExceptionCheck.IsFatal(ex))
+                    catch (Exception ex) when (CanProceedWithMultiConnect && !ExceptionCheck.IsFatal(ex))
                     {
                         lastex = ExceptionDispatchInfo.Capture(ex);
                     }
@@ -2897,6 +2895,7 @@ namespace System.Net.Sockets
             }
 
             ThrowIfConnectedStreamSocket();
+            ValidateForMultiConnect(); // needs to come before CanTryAddressFamily call
 
             // Prepare SocketAddress.
             EndPoint? endPointSnapshot = e.RemoteEndPoint;
@@ -2905,8 +2904,6 @@ namespace System.Net.Sockets
             if (dnsEP != null)
             {
                 if (NetEventSource.Log.IsEnabled()) NetEventSource.ConnectedAsyncDns(this);
-
-                ValidateForMultiConnect(isMultiEndpoint: true); // needs to come before CanTryAddressFamily call
 
                 if (dnsEP.AddressFamily != AddressFamily.Unspecified && !CanTryAddressFamily(dnsEP.AddressFamily))
                 {
@@ -2927,8 +2924,6 @@ namespace System.Net.Sockets
             }
             else
             {
-                ValidateForMultiConnect(isMultiEndpoint: false); // needs to come before CanTryAddressFamily call
-
                 // Throw if remote address family doesn't match socket.
                 if (!CanTryAddressFamily(e.RemoteEndPoint.AddressFamily))
                 {
@@ -3985,7 +3980,7 @@ namespace System.Net.Sockets
         // a previous call failed and the platform does not support that.  In some cases,
         // the call may also be able to "fix" the Socket to continue working, even if the
         // platform wouldn't otherwise support it.  Windows always supports this.
-        partial void ValidateForMultiConnect(bool isMultiEndpoint);
+        partial void ValidateForMultiConnect();
 
         // Helper for SendFile implementations
         private static SafeFileHandle? OpenFileHandle(string? name) => string.IsNullOrEmpty(name) ? null : File.OpenHandle(name, FileMode.Open, FileAccess.Read);

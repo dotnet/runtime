@@ -88,6 +88,10 @@ extern "C" void StubPrecodeCode();
 extern "C" void StubPrecodeCode_End();
 #endif
 
+#ifdef FEATURE_INTERPRETER
+extern "C" void InterpreterStub();
+#endif
+
 // Regular precode
 struct StubPrecode
 {
@@ -204,6 +208,37 @@ typedef DPTR(NDirectImportPrecode) PTR_NDirectImportPrecode;
 
 #endif // HAS_NDIRECT_IMPORT_PRECODE
 
+#ifdef FEATURE_INTERPRETER
+struct InterpreterPrecodeData
+{
+    TADDR ByteCodeAddr;
+    PCODE Target;
+    BYTE Type;
+};
+
+typedef DPTR(InterpreterPrecodeData) PTR_InterpreterPrecodeData;
+
+struct InterpreterPrecode
+{
+    static const int Type = 0x06;
+
+    BYTE m_code[StubPrecode::CodeSize];
+
+    void Init(InterpreterPrecode* pPrecodeRX, TADDR byteCodeAddr);
+
+    PTR_InterpreterPrecodeData GetData() const
+    {
+        LIMITED_METHOD_CONTRACT;
+        return dac_cast<PTR_InterpreterPrecodeData>(dac_cast<TADDR>(this) + GetStubCodePageSize());
+    }
+
+    PCODE GetEntryPoint()
+    {
+        LIMITED_METHOD_CONTRACT;
+        return PINSTRToPCODE(dac_cast<TADDR>(this));
+    }
+};
+#endif // FEATURE_INTERPRETER
 
 #ifdef HAS_FIXUP_PRECODE
 
@@ -347,6 +382,9 @@ typedef DPTR(class Precode) PTR_Precode;
 enum PrecodeType {
     PRECODE_INVALID         = InvalidPrecode::Type,
     PRECODE_STUB            = StubPrecode::Type,
+#ifdef FEATURE_INTERPRETER
+    PRECODE_INTERPRETER     = InterpreterPrecode::Type,
+#endif // FEATURE_INTERPRETER
 #ifdef HAS_NDIRECT_IMPORT_PRECODE
     PRECODE_NDIRECT_IMPORT  = NDirectImportPrecode::Type,
 #endif // HAS_NDIRECT_IMPORT_PRECODE
@@ -534,6 +572,10 @@ public:
 
     static Precode* Allocate(PrecodeType t, MethodDesc* pMD,
         LoaderAllocator *pLoaderAllocator, AllocMemTracker *pamTracker);
+#ifdef FEATURE_INTERPRETER
+    static InterpreterPrecode* AllocateInterpreterPrecode(PCODE byteCode,
+        LoaderAllocator *  pLoaderAllocator, AllocMemTracker *  pamTracker);
+#endif // FEATURE_INTERPRETER
     void Init(Precode* pPrecodeRX, PrecodeType t, MethodDesc* pMD, LoaderAllocator *pLoaderAllocator);
 
 #ifndef DACCESS_COMPILE

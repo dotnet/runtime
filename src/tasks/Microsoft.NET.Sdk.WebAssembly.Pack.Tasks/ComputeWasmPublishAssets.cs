@@ -340,7 +340,6 @@ public class ComputeWasmPublishAssets : Task
             if (newAssetFingerprintedFileName != assetFileNameToFingerprint)
             {
                 newAssetItemSpec = $"{assetDirectory}/{newAssetFingerprintedFileName}";
-                newAssetRelativePath = newAssetRelativePath.Replace(assetFileNameToFingerprint, newAssetFingerprintedFileName);
             }
         }
 

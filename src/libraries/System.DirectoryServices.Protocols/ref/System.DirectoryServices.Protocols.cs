@@ -382,6 +382,8 @@ namespace System.DirectoryServices.Protocols
         internal LdapSessionOptions() { }
         public bool AutoReconnect { get { throw null; } set { } }
         public string DomainName { get { throw null; } set { } }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("windows")]
+        public string TrustedCertificatesDirectory { get { throw null; } set { } }
         public string HostName { get { throw null; } set { } }
         public bool HostReachable { get { throw null; } }
         public System.DirectoryServices.Protocols.LocatorFlags LocatorFlag { get { throw null; } set { } }
@@ -402,6 +404,8 @@ namespace System.DirectoryServices.Protocols
         public bool Signing { get { throw null; } set { } }
         public System.DirectoryServices.Protocols.SecurityPackageContextConnectionInformation SslInformation { get { throw null; } }
         public int SspiFlag { get { throw null; } set { } }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("windows")]
+        public void StartNewTlsSessionContext() { }
         public bool TcpKeepAlive { get { throw null; } set { } }
         public System.DirectoryServices.Protocols.VerifyServerCertificateCallback VerifyServerCertificate { get { throw null; } set { } }
         public void FastConcurrentBind() { }

@@ -96,8 +96,8 @@ C_FUNC(\Name):
 .endm
 
 .macro PROLOG_SAVE_REG_PAIR_INDEXED reg1, reg2, ssize, __def_cfa_save=1
-    addi  sp, sp, -\ssize
-    //.cfi_adjust_cfa_offset  \ssize
+    addi  sp, sp, \ssize
+    .cfi_adjust_cfa_offset  -\ssize
     .cfi_def_cfa  sp, \ssize
 
     sd  \reg1, 0(sp)
@@ -145,7 +145,7 @@ C_FUNC(\Name):
 .endm
 
 .macro EPILOG_RETURN
-        jalr x0, ra
+        ret
 .endm
 
 .macro EMIT_BREAKPOINT
@@ -156,103 +156,69 @@ C_FUNC(\Name):
         jalr \reg
 .endm
 
-// Loads the address of a thread-local variable into the target register,
-// which cannot be x0. Preserves all other registers.
+// Loads the address of a thread-local variable into the target register.
+// The target register cannot be a0.
 .macro INLINE_GET_TLS_VAR target, var
-    .ifc \target, x0
-        .error "target cannot be x0"
+    .ifc \target, a0
+        .error "target cannot be a0"
     .endif
 
-    sd    x0, -16(sp)
-    sd    ra, -8(sp)
-    
-    // RISC-V does not have a direct equivalent to Apple's or GNU's TLS
-    // handling, so we'll use an indirect approach and inline assembly 
-    // if needed.
-    lui   t0, %hi(\var)
-    addi  t0, t0, %lo(\var)
-    ld    \target, 0(t0)
-    
-    // This sequence is a placeholder; actual TLS handling may require
-    // platform-specific instructions or further customization.
-    
-    ld    ra, -8(sp)
-    ld    x0, -16(sp)
+    addi sp, sp, -48
+    sd ra,  40(sp)
+    sd t1,  32(sp)
+    sd a1,  24(sp)
+    sd a2,  16(sp)
+    sd a3,   8(sp)
+    sd a4,   0(sp)
+
+    // global dynamic TLS, see https://github.com/riscv-non-isa/riscv-elf-psabi-doc/blob/eb2b2962/riscv-elf.adoc#global-dynamic
+    la.tls.gd a0, \var
+    call C_FUNC(__tls_get_addr)
+
+    ld ra,  40(sp)
+    ld t1,  32(sp)
+    ld a1,  24(sp)
+    ld a2,  16(sp)
+    ld a3,   8(sp)
+    ld a4,   0(sp)
+    addi sp, sp, 48
+
+    mv \target, a0
+
+    /*
+    In the future we should switch to TLS descriptors. The support was added in 2024 in glibc, musl, llvm, gcc and binutils,
+    so its support is currently unavailable on majority devices. See https://maskray.me/blog/2024-01-23-riscv-tlsdesc-works
+
+    When the support for TLS descriptors is available in NativeAOT baseline, actions to perform:
+    * Apply this patch:
+        ```
+        --- a/src/coreclr/nativeaot/CMakeLists.txt
+        +++ b/src/coreclr/nativeaot/CMakeLists.txt
+        @@ -30,6 +30,8 @@ endif (CLR_CMAKE_HOST_UNIX)
+
+        if(CLR_CMAKE_TARGET_ANDROID)
+            add_definitions(-DFEATURE_EMULATED_TLS)
+        +elseif(CLR_CMAKE_TARGET_ARCH_RISCV64)
+        +    add_definitions(-mtls-dialect=desc)
+        endif()
+
+        add_subdirectory(Bootstrap)
+        ```
+    * Uncomment the following code and remove these comments.
+
+    // TLS descriptor, see https://github.com/riscv-non-isa/riscv-elf-psabi-doc/blob/eb2b2962/riscv-elf.adoc#tls-descriptors
+    auipc  a0, %tlsdesc_hi(\var)
+    lw     t0, %tlsdesc_load_lo(\var)(a0)
+    addi   a0, a0, %tlsdesc_add_lo(\var)
+    jalr   t0, 0(t0), %tlsdesc_call(\var)
+    add    \target, tp, a0
+
+    */
 .endm
+
 // Inlined version of RhpGetThread. Target cannot be x0.
 .macro INLINE_GETTHREAD target
     INLINE_GET_TLS_VAR \target, C_FUNC(tls_CurrentThread)
-.endm
-
-// Do not use these ETLS macros in functions that already create a stack frame.
-// Creating two stack frames in one function can confuse the unwinder/debugger
-
-.macro GETTHREAD_ETLS_1
-    PROLOG_SAVE_REG_PAIR_INDEXED   fp, ra, -32           // Push down stack pointer and store FP and RA
-    sd x0,  16(sp)
-
-    call C_FUNC(RhpGetThread)
-    mv x1, x0
-
-    ld x0,  16(sp)
-    EPILOG_RESTORE_REG_PAIR_INDEXED   fp, ra, 32
-.endm
-
-.macro GETTHREAD_ETLS_2
-    PROLOG_SAVE_REG_PAIR_INDEXED   fp, ra, -32           // Push down stack pointer and store FP and RA
-    sd x0,  16(sp)
-    sd x1,  24(sp)
-
-    call C_FUNC(RhpGetThread)
-    mv x2, x0
-
-    ld x0,  16(sp)
-    ld x1,  24(sp)
-    EPILOG_RESTORE_REG_PAIR_INDEXED   fp, ra, 32
-.endm
-
-.macro GETTHREAD_ETLS_3
-    PROLOG_SAVE_REG_PAIR_INDEXED   fp, ra, -48           // Push down stack pointer and store FP and RA
-    sd x0,  16(sp)
-    sd x1,  24(sp)
-    sd x2,  32(sp)
-
-    call C_FUNC(RhpGetThread)
-    mv x3, x0
-
-    ld x0,  16(sp)
-    ld x1,  24(sp)
-    ld x2,  32(sp)
-    EPILOG_RESTORE_REG_PAIR_INDEXED   fp, ra, 48
-.endm
-
-.macro GETTHUNKDATA_ETLS_9
-    PROLOG_SAVE_REG_PAIR_INDEXED   fp, ra, -96           // Push down stack pointer and store FP and RA
-    sd x0,  16(sp)
-    sd x1,  24(sp)
-    sd x2,  32(sp)
-    sd x3,  40(sp)
-    sd x4,  48(sp)
-    sd x5,  56(sp)
-    sd x6,  64(sp)
-    sd x7,  72(sp)
-    sd x8,  80(sp)
-    sd x9,  88(sp)
-
-    call C_FUNC(RhpGetThunkData)
-    mv x10, x0
-
-    ld x0,  16(sp)
-    ld x1,  24(sp)
-    ld x2,  32(sp)
-    ld x3,  40(sp)
-    ld x4,  48(sp)
-    ld x5,  56(sp)
-    ld x6,  64(sp)
-    ld x7,  72(sp)
-    ld x8,  80(sp)
-    ld x9,  88(sp)
-    EPILOG_RESTORE_REG_PAIR_INDEXED   fp, ra, 96
 .endm
 
 .macro InterlockedOperationBarrier
@@ -283,36 +249,36 @@ C_FUNC(\Name):
 #define DEFAULT_FRAME_SAVE_FLAGS PTFF_SAVE_ALL_PRESERVED + PTFF_SAVE_SP
 
 .macro PUSH_COOP_PINVOKE_FRAME trashReg
-    PROLOG_SAVE_REG_PAIR_INDEXED   fp, ra, -0x80      // Push down stack pointer and store FP and RA
+    PROLOG_SAVE_REG_PAIR_INDEXED   s0, ra, -128      // Push down stack pointer and store s0 (fp) and RA
 
-    // 0x10 bytes reserved for Thread* and flags
+    // 16 bytes reserved for Thread* and flags
 
     // Save callee saved registers
-    PROLOG_SAVE_REG_PAIR   x19, x20, 0x20
-    PROLOG_SAVE_REG_PAIR   x21, x22, 0x30
-    PROLOG_SAVE_REG_PAIR   x23, x24, 0x40
-    PROLOG_SAVE_REG_PAIR   x25, x26, 0x50
-    PROLOG_SAVE_REG_PAIR   x27, x28, 0x60
+    PROLOG_SAVE_REG_PAIR   s1, s2, 32
+    PROLOG_SAVE_REG_PAIR   s3, s4, 48
+    PROLOG_SAVE_REG_PAIR   s5, s6, 64
+    PROLOG_SAVE_REG_PAIR   s7, s8, 80
+    PROLOG_SAVE_REG_PAIR   s9, s10, 96
 
     // Save the value of SP before stack allocation to the last slot in the frame (slot #15)
-    add \trashReg, sp, 0x80
-    sd \trashReg, 0x70(sp)
+    add \trashReg, sp, 128
+    sd \trashReg, 112(sp)
 
     // Record the bitmask of saved registers in the frame (slot #3)
     li \trashReg, DEFAULT_FRAME_SAVE_FLAGS
-    sd \trashReg, 0x18(sp)
+    sd \trashReg, 24(sp)
 
     mv \trashReg, sp
 .endm
 
 // Pop the frame and restore register state preserved by PUSH_COOP_PINVOKE_FRAME
 .macro POP_COOP_PINVOKE_FRAME
-    EPILOG_RESTORE_REG_PAIR   x19, x20, 0x20
-    EPILOG_RESTORE_REG_PAIR   x21, x22, 0x30
-    EPILOG_RESTORE_REG_PAIR   x23, x24, 0x40
-    EPILOG_RESTORE_REG_PAIR   x25, x26, 0x50
-    EPILOG_RESTORE_REG_PAIR   x27, x28, 0x60
-    EPILOG_RESTORE_REG_PAIR_INDEXED   fp, ra, 0x80
+    EPILOG_RESTORE_REG_PAIR   s1, s2, 32
+    EPILOG_RESTORE_REG_PAIR   s3, s4, 48
+    EPILOG_RESTORE_REG_PAIR   s5, s6, 64
+    EPILOG_RESTORE_REG_PAIR   s7, s8, 80
+    EPILOG_RESTORE_REG_PAIR   s9, s10, 96
+    EPILOG_RESTORE_REG_PAIR_INDEXED   s0, ra, 128
 .endm
 
 // Bit position for the flags above, to be used with tbz / tbnz instructions

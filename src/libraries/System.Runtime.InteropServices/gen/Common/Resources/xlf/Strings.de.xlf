@@ -842,9 +842,9 @@
         <target state="translated">Der Marshaller-Einstiegspunkttyp "{0}" für den verwalteten Typ "{1}" muss eine Stelligkeit aufweisen, die größer als der verwaltete Typ ist.</target>
         <note />
       </trans-unit>
-      <trans-unit id="MarshallerInNativeReturnPositionMustMatchNativeReturnType">
-        <source>All marshallers for values that are passed as the unmanaged return value must have the same unmanaged type.</source>
-        <target state="translated">Alle Marshaller für Werte, die als nicht verwalteter Rückgabewert übergeben werden, müssen denselben nicht verwalteten Typ aufweisen.</target>
+      <trans-unit id="MarshallerInOverlappingNativePositionMustMatchNativeType">
+        <source>All marshallers for values that are passed as the unmanaged return value or parameter must have the same unmanaged type.</source>
+        <target state="new">All marshallers for values that are passed as the unmanaged return value or parameter must have the same unmanaged type.</target>
         <note />
       </trans-unit>
       <trans-unit id="MarshallerTypeMustBeClosedOrMatchArityDescription">
