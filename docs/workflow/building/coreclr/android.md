@@ -7,9 +7,16 @@ This is the internal documentation which outlines experimental support of CoreCL
 
 ## Prerequisite
 
-Download and install `Android Studio` and the following:
+Download and install [Android Studio](https://developer.android.com/studio/install) and the following:
   - Android SDK (minimum supported API level is 21)
   - Android NDK r27
+
+> [!NOTE]
+> Prerequisites can also be downloaded and installed manually:
+> - by running the automated script as described in [Testing Libraries on Android](../../testing/libraries/testing-android.md#using-a-terminal)
+> - by downloading the archives:
+>   - Android SDK - Download [command-line tools](https://developer.android.com/studio#command-line-tools-only) and use `sdkmanager` to download the SDK.
+>   - Android NDK - Download [NDK](https://developer.android.com/ndk/downloads)
 
 ## Building CoreCLR for Android
 
@@ -46,7 +53,8 @@ To build CoreCLR runtime NuGet packages, run the following command from `<repo-r
 ./build.sh clr.runtime+clr.alljits+clr.corelib+clr.nativecorelib+clr.tools+clr.packages+libs+host+packs -os android -arch <x64|arm64> -c <Debug|Release>
 ```
 
-NOTE: The runtime packages will be located at: `<repo-root>/artifacts/packages/<configuration>/Shipping/`
+> [!NOTE]
+> The runtime packages will be located at: `<repo-root>/artifacts/packages/<configuration>/Shipping/`
 
 ### Windows
 
@@ -56,14 +64,11 @@ Building on Windows is not directly supported yet. However it is possible to use
 
 ##### Requirements
 
-1. Install the Android SDK and NDK in WSL per the [prerequisites](#prerequisite). This can be done by downloading the archives or using Android Studio:
-    - Archives:
-      - [NDK](https://developer.android.com/ndk/downloads) and [command-line tools](https://developer.android.com/studio#command-line-tools-only) (use `sdkmanager` to download the SDK)
-      - For an automated script, see in [Testing Libraries on Android](../../testing/libraries/testing-android.md#using-a-terminal)
-    - Android Studio:
-      - Make sure WSL is updated: from Windows host, `wsl --update`
-      - [Enabled systemd](https://devblogs.microsoft.com/commandline/systemd-support-is-now-available-in-wsl/#set-the-systemd-flag-set-in-your-wsl-distro-settings)
-      - `sudo snap install android-studio --classic`
+1. Install the Android SDK and NDK in WSL per the [prerequisites](#prerequisite). This can be done by downloading the archives or using Android Studio.
+- In case of Android Studio:
+    - Make sure WSL is updated: from Windows host, `wsl --update`
+    - [Enabled systemd](https://devblogs.microsoft.com/commandline/systemd-support-is-now-available-in-wsl/#set-the-systemd-flag-set-in-your-wsl-distro-settings)
+    - `sudo snap install android-studio --classic`
 2. Set the following environment variables:
     - ANDROID_SDK_ROOT=`<full-path-to-android-sdk>`
     - ANDROID_NDK_ROOT=`<full-path-to-android-ndk>`
@@ -108,10 +113,12 @@ After its creation, the emulator needs to be booted up and running, so that we c
 make BUILD_CONFIG=<Debug|Release> TARGET_ARCH=<x64|arm64> RUNTIME_FLAVOR=CoreCLR DEPLOY_AND_RUN=true run -C src/mono/sample/Android
 ```
 
-NOTE: Emulators can be also started from the terminal via:
-```
-$ANDROID_SDK_ROOT/emulator/emulator -avd <emulator-name>
-```
+
+> [!NOTE]
+> Emulators can be also started from the terminal via:
+> ```
+> $ANDROID_SDK_ROOT/emulator/emulator -avd <emulator-name>
+> ```
 
 #### WSL2
 
@@ -135,7 +142,8 @@ To build and run a functional test on Android with CoreCLR, run the following co
 ./dotnet.sh build -c Release src/tests/FunctionalTests/Android/Device_Emulator/JIT/Android.Device_Emulator.JIT.Test.csproj /p:TargetOS=android /p:TargetArchitecture=arm64 /t:Test /p:RuntimeFlavor=coreclr
 ```
 
-NOTE: Similarly to the `HelloAndroid` sample the emulator needs to be up and running.
+> [!NOTE]
+> Similarly to the `HelloAndroid` sample the emulator needs to be up and running.
 
 ### Useful make commands
 
@@ -166,6 +174,13 @@ This can be achieved in `Android Studio` via `Profile or Debug APK`.
 ![Debug symbols loaded](./android-studio-coreclr-debug-symbols-adding.png)
 9. Find the `exports.cpp` and set a breakpoint in `coreclr_initialize` function and launch the debug session
 ![Debugging CoreCLR](./android-studio-coreclr-debugging.png)
+
+> [!NOTE]
+> Steps 5) through 8) can be omitted if the runtime is built without stripping debug symbols to a separate file (e.g., `libcoreclr.so.dbg`).
+> This can be achieved by including `-keepnativesymbols true` option when building the runtime, e.g.,:
+> ```
+> ./build.sh clr.runtime+clr.alljits+clr.corelib+clr.nativecorelib+clr.tools+clr.packages+libs -os android -arch <x64|arm64> -c Debug -keepnativesymbols true
+> ```
 
 ## See also
 
