@@ -5006,11 +5006,6 @@ bool Compiler::optAssertionIsNonNull(GenTree* op, ASSERT_VALARG_TP assertions)
         ValueNum       vnBase = vn;
         target_ssize_t offset = 0;
         vnStore->PeelOffsets(&vnBase, &offset);
-        if (fgIsBigOffset((size_t)offset))
-        {
-            // Give up on big offsets
-            vnBase = vn;
-        }
 
         // Check each assertion to find if we have a vn != null assertion.
         //
