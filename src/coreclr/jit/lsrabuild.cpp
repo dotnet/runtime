@@ -2200,9 +2200,6 @@ void LinearScan::buildIntervals()
             const ParameterRegisterLocalMapping* mapping =
                 compiler->FindParameterRegisterLocalMappingByRegister(seg.GetRegister());
 
-            JITDUMP("Arg V%02u in reg %s\n", mapping != nullptr ? mapping->LclNum : lclNum,
-                    getRegName(seg.GetRegister()));
-
             bool isParameterLive = !lcl->lvTracked || compiler->compJmpOpUsed || (lcl->lvRefCnt() != 0);
             bool isLive;
             if (mapping != nullptr)
@@ -2223,6 +2220,9 @@ void LinearScan::buildIntervals()
             {
                 isLive = isParameterLive;
             }
+
+            JITDUMP("Arg V%02u is %s in reg %s\n", mapping != nullptr ? mapping->LclNum : lclNum,
+                    isLive ? "live" : "dead", getRegName(seg.GetRegister()));
 
             if (isLive)
             {
