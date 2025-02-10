@@ -87,6 +87,7 @@ export function endMeasure (start: TimeStamp, block: string, id?: string) {
 
 let desiredSampleIntervalMs = 10;// ms
 let lastSampleTime = 0;
+let prevskipsPerPeriod = 1;
 let skipsPerPeriod = 1;
 let sampleSkipCounter = 0;
 const stackFrames: number[] = [];
@@ -156,7 +157,8 @@ function skipSample ():boolean {
         const msSinceLastSample = now - lastSampleTime;
         const skipsPerMs = sampleSkipCounter / msSinceLastSample;
         const newSkipsPerPeriod = (skipsPerMs * desiredSampleIntervalMs);
-        skipsPerPeriod = ((newSkipsPerPeriod + skipsPerPeriod) / 2) | 0;
+        skipsPerPeriod = ((newSkipsPerPeriod + sampleSkipCounter + prevskipsPerPeriod) / 3) | 0;
+        prevskipsPerPeriod = sampleSkipCounter;
     } else {
         skipsPerPeriod = 0;
     }
