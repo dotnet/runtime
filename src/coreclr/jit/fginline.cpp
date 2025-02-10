@@ -39,7 +39,7 @@ unsigned Compiler::fgCheckInlineDepthAndRecursion(InlineInfo* inlineInfo)
     {
         depth++;
 
-        if (IsDisallowedRecursiveInline(inlineContext, inlineInfo, &triviallyRecursive))
+        if (IsDisallowedRecursiveInline(inlineContext, inlineInfo))
         {
             // This is a recursive inline
             //
@@ -49,12 +49,16 @@ unsigned Compiler::fgCheckInlineDepthAndRecursion(InlineInfo* inlineInfo)
             //
             return depth;
         }
-        else if (triviallyRecursive)
+
+        // We allow inlining the exact same instantiation in a limited way.
+        if ((inlineContext->GetCallee() == inlineInfo->fncHandle) &&
+            (inlineContext->GetRuntimeContext() == inlineInfo->inlineCandidateInfo->exactContextHandle))
         {
-            // Reject if trivially recursive inline is too deep,
-            // unless the method is marked as aggressive inlining.
+            JITDUMP("Call site is trivially recursive\n");
+
+            // Only allow trivially recursive inlines if the method is marked as force inlining.
             //
-            if (++recursiveDepth > JitConfig.JitInlineRecursionDepth() &&
+            if (++recursiveDepth > JitConfig.JitInlineRecursionDepth() ||
                 inlineContext->GetObservation() != InlineObservation::CALLEE_IS_FORCE_INLINE)
             {
                 inlineResult->NoteFatal(InlineObservation::CALLSITE_IS_RECURSIVE);
@@ -79,19 +83,8 @@ unsigned Compiler::fgCheckInlineDepthAndRecursion(InlineInfo* inlineInfo)
 // Return Value:
 //    True if the inline is recursive and should be disallowed.
 //
-bool Compiler::IsDisallowedRecursiveInline(InlineContext* ancestor, InlineInfo* inlineInfo, bool* triviallyRecursive)
+bool Compiler::IsDisallowedRecursiveInline(InlineContext* ancestor, InlineInfo* inlineInfo)
 {
-    // We allow inlining the exact same instantiation in a limited way.
-    if ((ancestor->GetCallee() == inlineInfo->fncHandle) &&
-        (ancestor->GetRuntimeContext() == inlineInfo->inlineCandidateInfo->exactContextHandle))
-    {
-        JITDUMP("Call site is trivially recursive\n");
-        *triviallyRecursive = true;
-        return false;
-    }
-
-    *triviallyRecursive = false;
-
     // None of the inline heuristics take into account that inlining will cause
     // type/method loading for generic contexts. When polymorphic recursion is
     // involved this can quickly consume a large amount of resources, so try to
