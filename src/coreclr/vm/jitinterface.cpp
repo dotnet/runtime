@@ -8778,7 +8778,7 @@ bool CEEInfo::resolveVirtualMethodHelper(CORINFO_DEVIRTUALIZATION_INFO * info)
 
     if (!isArray && pDevirtMD->HasMethodInstantiation())
     {
-        pDevirtMD = pDevirtMD->FindOrCreateAssociatedMethodDesc(pDevirtMD, pDevirtMD->GetMethodTable(), false, pBaseMD->GetMethodInstantiation(), false);
+        pDevirtMD = pDevirtMD->FindOrCreateAssociatedMethodDesc(pDevirtMD, pExactMT, false, pBaseMD->GetMethodInstantiation(), false);
     }
 
     // Success! Pass back the results.
