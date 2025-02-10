@@ -7349,6 +7349,8 @@ void CodeGen::genStructReturn(GenTree* treeNode)
         return;
     }
 
+    genConsumeRegs(op1);
+
     assert(regCount <= MAX_RET_REG_COUNT);
 
 #if FEATURE_MULTIREG_RET
