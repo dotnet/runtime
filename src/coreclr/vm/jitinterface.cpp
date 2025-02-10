@@ -8748,11 +8748,6 @@ bool CEEInfo::resolveVirtualMethodHelper(CORINFO_DEVIRTUALIZATION_INFO * info)
         }
     }
 
-    if (pDevirtMD->HasMethodInstantiation())
-    {
-        pDevirtMD = pDevirtMD->FindOrCreateAssociatedMethodDesc(pDevirtMD, pDevirtMD->GetMethodTable(), false, pBaseMD->GetMethodInstantiation(), false);
-    }
-
     // Determine the exact class.
     //
     // We may fail to get an exact context if the method is a default
@@ -8779,6 +8774,11 @@ bool CEEInfo::resolveVirtualMethodHelper(CORINFO_DEVIRTUALIZATION_INFO * info)
     else
     {
         pExactMT = pDevirtMD->GetExactDeclaringType(pObjMT);
+    }
+
+    if (!isArray && pDevirtMD->HasMethodInstantiation())
+    {
+        pDevirtMD = pDevirtMD->FindOrCreateAssociatedMethodDesc(pDevirtMD, pDevirtMD->GetMethodTable(), false, pBaseMD->GetMethodInstantiation(), false);
     }
 
     // Success! Pass back the results.
