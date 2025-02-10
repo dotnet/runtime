@@ -27,7 +27,7 @@ namespace System.Linq
             ThrowHelper.ThrowIfNull(source);
 
             return
-                source.IsEmpty() || count <= 0 ? Empty<TSource>() :
+                source.IsKnownEmpty() || count <= 0 ? Empty<TSource>() :
                 Impl(source, count, default);
 
             static async IAsyncEnumerable<TSource> Impl(
@@ -63,7 +63,7 @@ namespace System.Linq
         {
             ThrowHelper.ThrowIfNull(source);
 
-            if (source.IsEmpty())
+            if (source.IsKnownEmpty())
             {
                 return Empty<TSource>();
             }

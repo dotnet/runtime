@@ -17,7 +17,7 @@ namespace System.Linq
         public static IAsyncEnumerable<TResult> Empty<TResult>() => EmptyAsyncEnumerable<TResult>.Instance;
 
         /// <summary>Determines whether <paramref name="source"/> is known to be an always-empty enumerable.</summary>
-        private static bool IsEmpty<TResult>(this IAsyncEnumerable<TResult> source) =>
+        private static bool IsKnownEmpty<TResult>(this IAsyncEnumerable<TResult> source) =>
             ReferenceEquals(source, EmptyAsyncEnumerable<TResult>.Instance);
 
         private sealed class EmptyAsyncEnumerable<TResult> :

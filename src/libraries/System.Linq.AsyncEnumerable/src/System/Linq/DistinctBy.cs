@@ -33,7 +33,7 @@ namespace System.Linq
             ThrowHelper.ThrowIfNull(keySelector);
 
             return
-                source.IsEmpty() ? Empty<TSource>() :
+                source.IsKnownEmpty() ? Empty<TSource>() :
                 Impl(source, keySelector, comparer, default);
 
             static async IAsyncEnumerable<TSource> Impl(
@@ -89,7 +89,7 @@ namespace System.Linq
             ThrowHelper.ThrowIfNull(keySelector);
 
             return
-                source.IsEmpty() ? Empty<TSource>() :
+                source.IsKnownEmpty() ? Empty<TSource>() :
                 Impl(source, keySelector, comparer, default);
 
             static async IAsyncEnumerable<TSource> Impl(

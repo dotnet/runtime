@@ -27,7 +27,7 @@ namespace System.Linq
             ThrowHelper.ThrowIfNull(second);
 
             return
-                first.IsEmpty() ? Empty<TSource>() :
+                first.IsKnownEmpty() ? Empty<TSource>() :
                 Impl(first, second, comparer, default);
 
             async static IAsyncEnumerable<TSource> Impl(

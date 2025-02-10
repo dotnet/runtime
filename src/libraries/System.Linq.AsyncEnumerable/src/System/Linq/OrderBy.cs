@@ -39,7 +39,7 @@ namespace System.Linq
             ThrowHelper.ThrowIfNull(keySelector);
 
             return
-                source.IsEmpty() ? EmptyAsyncEnumerable<TSource>.Instance :
+                source.IsKnownEmpty() ? EmptyAsyncEnumerable<TSource>.Instance :
                 new OrderedIterator<TSource, TKey>(source, keySelector, comparer, false, null);
         }
 
@@ -61,7 +61,7 @@ namespace System.Linq
             ThrowHelper.ThrowIfNull(keySelector);
 
             return
-                source.IsEmpty() ? EmptyAsyncEnumerable<TSource>.Instance :
+                source.IsKnownEmpty() ? EmptyAsyncEnumerable<TSource>.Instance :
                 new OrderedIterator<TSource, TKey>(source, keySelector, comparer, false, null);
         }
 
@@ -94,7 +94,7 @@ namespace System.Linq
             ThrowHelper.ThrowIfNull(keySelector);
 
             return
-                source.IsEmpty() ? EmptyAsyncEnumerable<TSource>.Instance :
+                source.IsKnownEmpty() ? EmptyAsyncEnumerable<TSource>.Instance :
                 new OrderedIterator<TSource, TKey>(source, keySelector, comparer, true, null);
         }
 
@@ -116,7 +116,7 @@ namespace System.Linq
             ThrowHelper.ThrowIfNull(keySelector);
 
             return
-                source.IsEmpty() ? EmptyAsyncEnumerable<TSource>.Instance :
+                source.IsKnownEmpty() ? EmptyAsyncEnumerable<TSource>.Instance :
                 new OrderedIterator<TSource, TKey>(source, keySelector, comparer, true, null);
         }
 

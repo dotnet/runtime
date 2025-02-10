@@ -31,7 +31,7 @@ namespace System.Linq
             ThrowHelper.ThrowIfNegativeOrZero(size);
 
             return
-                source.IsEmpty() ? Empty<TSource[]>() :
+                source.IsKnownEmpty() ? Empty<TSource[]>() :
                 Chunk(source, size, default);
 
             async static IAsyncEnumerable<TSource[]> Chunk(

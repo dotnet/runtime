@@ -43,7 +43,7 @@ namespace System.Linq
             ThrowHelper.ThrowIfNull(func);
 
             return
-                source.IsEmpty() ? Empty<KeyValuePair<TKey, TAccumulate>>() :
+                source.IsKnownEmpty() ? Empty<KeyValuePair<TKey, TAccumulate>>() :
                 Impl(source, keySelector, seed, func, keyComparer, default);
 
             static async IAsyncEnumerable<KeyValuePair<TKey, TAccumulate>> Impl(
@@ -120,7 +120,7 @@ namespace System.Linq
             ThrowHelper.ThrowIfNull(func);
 
             return
-                source.IsEmpty() ? Empty<KeyValuePair<TKey, TAccumulate>>() :
+                source.IsKnownEmpty() ? Empty<KeyValuePair<TKey, TAccumulate>>() :
                 Impl(source, keySelector, seed, func, keyComparer, default);
 
             static async IAsyncEnumerable<KeyValuePair<TKey, TAccumulate>> Impl(
@@ -193,7 +193,7 @@ namespace System.Linq
             ThrowHelper.ThrowIfNull(func);
 
             return
-                source.IsEmpty() ? Empty<KeyValuePair<TKey, TAccumulate>>() :
+                source.IsKnownEmpty() ? Empty<KeyValuePair<TKey, TAccumulate>>() :
                 Impl(source, keySelector, seedSelector, func, keyComparer, default);
 
             static async IAsyncEnumerable<KeyValuePair<TKey, TAccumulate>> Impl(
@@ -271,7 +271,7 @@ namespace System.Linq
             ThrowHelper.ThrowIfNull(func);
 
             return
-                source.IsEmpty() ? Empty<KeyValuePair<TKey, TAccumulate>>() :
+                source.IsKnownEmpty() ? Empty<KeyValuePair<TKey, TAccumulate>>() :
                 Impl(source, keySelector, seedSelector, func, keyComparer, default);
 
             static async IAsyncEnumerable<KeyValuePair<TKey, TAccumulate>> Impl(

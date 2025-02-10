@@ -34,7 +34,7 @@ namespace System.Linq
             ThrowHelper.ThrowIfNull(resultSelector);
 
             return
-                first.IsEmpty() || second.IsEmpty() ? Empty<TResult>() :
+                first.IsKnownEmpty() || second.IsKnownEmpty() ? Empty<TResult>() :
                 Impl(first, second, resultSelector, default);
 
             static async IAsyncEnumerable<TResult> Impl(
@@ -91,7 +91,7 @@ namespace System.Linq
             ThrowHelper.ThrowIfNull(resultSelector);
 
             return
-                first.IsEmpty() || second.IsEmpty() ? Empty<TResult>() :
+                first.IsKnownEmpty() || second.IsKnownEmpty() ? Empty<TResult>() :
                 Impl(first, second, resultSelector, default);
 
             static async IAsyncEnumerable<TResult> Impl(
@@ -140,7 +140,7 @@ namespace System.Linq
             ThrowHelper.ThrowIfNull(second);
 
             return
-                first.IsEmpty() || second.IsEmpty() ? Empty<(TFirst, TSecond)>() :
+                first.IsKnownEmpty() || second.IsKnownEmpty() ? Empty<(TFirst, TSecond)>() :
                 Impl(first, second, default);
 
             static async IAsyncEnumerable<(TFirst First, TSecond Second)> Impl(
@@ -193,7 +193,7 @@ namespace System.Linq
             ThrowHelper.ThrowIfNull(third);
 
             return
-                first.IsEmpty() || second.IsEmpty() || third.IsEmpty() ? Empty<(TFirst, TSecond, TThird)>() :
+                first.IsKnownEmpty() || second.IsKnownEmpty() || third.IsKnownEmpty() ? Empty<(TFirst, TSecond, TThird)>() :
                 Impl(first, second, third, default);
 
             static async IAsyncEnumerable<(TFirst First, TSecond Second, TThird)> Impl(

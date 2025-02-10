@@ -48,7 +48,7 @@ namespace System.Linq
             ThrowHelper.ThrowIfNull(resultSelector);
 
             return
-                outer.IsEmpty() ? Empty<TResult>() :
+                outer.IsKnownEmpty() ? Empty<TResult>() :
                 Impl(outer, inner, outerKeySelector, innerKeySelector, resultSelector, comparer, default);
 
             static async IAsyncEnumerable<TResult> Impl(
@@ -119,7 +119,7 @@ namespace System.Linq
             ThrowHelper.ThrowIfNull(resultSelector);
 
             return
-                outer.IsEmpty() ? Empty<TResult>() :
+                outer.IsKnownEmpty() ? Empty<TResult>() :
                 Impl(outer, inner, outerKeySelector, innerKeySelector, resultSelector, comparer, default);
 
             static async IAsyncEnumerable<TResult> Impl(

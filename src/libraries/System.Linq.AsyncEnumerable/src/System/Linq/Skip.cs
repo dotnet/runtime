@@ -22,7 +22,7 @@ namespace System.Linq
             ThrowHelper.ThrowIfNull(source);
 
             return
-                source.IsEmpty() ? Empty<TSource>() :
+                source.IsKnownEmpty() ? Empty<TSource>() :
                 count <= 0 ? source :
                 Impl(source, count, default);
 

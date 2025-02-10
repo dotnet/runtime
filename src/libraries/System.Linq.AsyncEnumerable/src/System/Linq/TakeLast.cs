@@ -19,7 +19,7 @@ namespace System.Linq
             ThrowHelper.ThrowIfNull(source);
 
             return
-                source.IsEmpty() || count <= 0 ? Empty<TSource>() :
+                source.IsKnownEmpty() || count <= 0 ? Empty<TSource>() :
                 TakeRangeFromEndIterator(source, isStartIndexFromEnd: true, startIndex: count, isEndIndexFromEnd: true, endIndex: 0, default);
         }
     }

@@ -20,7 +20,7 @@ namespace System.Linq
             ThrowHelper.ThrowIfNull(source);
 
             return
-                source.IsEmpty() ? Empty<TSource>() :
+                source.IsKnownEmpty() ? Empty<TSource>() :
                 Impl(source, default);
 
             static async IAsyncEnumerable<TSource> Impl(

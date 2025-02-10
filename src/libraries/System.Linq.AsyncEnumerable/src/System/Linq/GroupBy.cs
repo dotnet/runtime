@@ -33,7 +33,7 @@ namespace System.Linq
             ThrowHelper.ThrowIfNull(keySelector);
 
             return
-                source.IsEmpty() ? Empty<IGrouping<TKey, TSource>>() :
+                source.IsKnownEmpty() ? Empty<IGrouping<TKey, TSource>>() :
                 Impl(source, keySelector, comparer, default);
 
             static async IAsyncEnumerable<IGrouping<TKey, TSource>> Impl(
@@ -70,7 +70,7 @@ namespace System.Linq
             ThrowHelper.ThrowIfNull(keySelector);
 
             return
-                source.IsEmpty() ? Empty<IGrouping<TKey, TSource>>() :
+                source.IsKnownEmpty() ? Empty<IGrouping<TKey, TSource>>() :
                 Impl(source, keySelector, comparer, default);
 
             static async IAsyncEnumerable<IGrouping<TKey, TSource>> Impl(
@@ -116,7 +116,7 @@ namespace System.Linq
             ThrowHelper.ThrowIfNull(elementSelector);
 
             return
-                source.IsEmpty() ? Empty<IGrouping<TKey, TElement>>() :
+                source.IsKnownEmpty() ? Empty<IGrouping<TKey, TElement>>() :
                 Impl(source, keySelector, elementSelector, comparer, default);
 
             static async IAsyncEnumerable<IGrouping<TKey, TElement>> Impl(
@@ -163,7 +163,7 @@ namespace System.Linq
             ThrowHelper.ThrowIfNull(elementSelector);
 
             return
-                source.IsEmpty() ? Empty<IGrouping<TKey, TElement>>() :
+                source.IsKnownEmpty() ? Empty<IGrouping<TKey, TElement>>() :
                 Impl(source, keySelector, elementSelector, comparer, default);
 
             static async IAsyncEnumerable<IGrouping<TKey, TElement>> Impl(
@@ -209,7 +209,7 @@ namespace System.Linq
             ThrowHelper.ThrowIfNull(resultSelector);
 
             return
-                source.IsEmpty() ? Empty<TResult>() :
+                source.IsKnownEmpty() ? Empty<TResult>() :
                 Impl(source, keySelector, resultSelector, comparer, default);
 
             static async IAsyncEnumerable<TResult> Impl(
@@ -258,7 +258,7 @@ namespace System.Linq
             ThrowHelper.ThrowIfNull(resultSelector);
 
             return
-                source.IsEmpty() ? Empty<TResult>() :
+                source.IsKnownEmpty() ? Empty<TResult>() :
                 Impl(source, keySelector, resultSelector, comparer, default);
 
             static async IAsyncEnumerable<TResult> Impl(
@@ -311,7 +311,7 @@ namespace System.Linq
             ThrowHelper.ThrowIfNull(resultSelector);
 
             return
-                source.IsEmpty() ? Empty<TResult>() :
+                source.IsKnownEmpty() ? Empty<TResult>() :
                 Impl(source, keySelector, elementSelector, resultSelector, comparer, default);
 
             static async IAsyncEnumerable<TResult> Impl(
@@ -365,7 +365,7 @@ namespace System.Linq
             ThrowHelper.ThrowIfNull(resultSelector);
 
             return
-                source.IsEmpty() ? Empty<TResult>() :
+                source.IsKnownEmpty() ? Empty<TResult>() :
                 Impl(source, keySelector, elementSelector, resultSelector, comparer, default);
 
             static async IAsyncEnumerable<TResult> Impl(

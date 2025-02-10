@@ -21,7 +21,7 @@ namespace System.Linq
             ThrowHelper.ThrowIfNull(source);
 
             return
-                source.IsEmpty() ? Empty<(int Index, TSource Item)>() :
+                source.IsKnownEmpty() ? Empty<(int Index, TSource Item)>() :
                 Impl(source, default);
 
             static async IAsyncEnumerable<(int Index, TSource Item)> Impl(
