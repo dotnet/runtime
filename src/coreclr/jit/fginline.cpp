@@ -39,17 +39,6 @@ unsigned Compiler::fgCheckInlineDepthAndRecursion(InlineInfo* inlineInfo)
     {
         depth++;
 
-        if (IsDisallowedRecursiveInline(inlineContext, inlineInfo))
-        {
-            // This is a recursive inline
-            //
-            inlineResult->NoteFatal(InlineObservation::CALLSITE_IS_RECURSIVE);
-
-            // No need to note CALLSITE_DEPTH since we're already rejecting this candidate
-            //
-            return depth;
-        }
-
         // We allow inlining the exact same instantiation in a limited way.
         if ((inlineContext->GetCallee() == inlineInfo->fncHandle) &&
             (inlineContext->GetRuntimeContext() == inlineInfo->inlineCandidateInfo->exactContextHandle))
@@ -64,6 +53,16 @@ unsigned Compiler::fgCheckInlineDepthAndRecursion(InlineInfo* inlineInfo)
                 inlineResult->NoteFatal(InlineObservation::CALLSITE_IS_RECURSIVE);
                 return depth;
             }
+        }
+        else if (IsDisallowedRecursiveInline(inlineContext, inlineInfo))
+        {
+            // This is a recursive inline
+            //
+            inlineResult->NoteFatal(InlineObservation::CALLSITE_IS_RECURSIVE);
+
+            // No need to note CALLSITE_DEPTH since we're already rejecting this candidate
+            //
+            return depth;
         }
 
         if (depth > InlineStrategy::IMPLEMENTATION_MAX_INLINE_DEPTH)
