@@ -51,9 +51,6 @@
                 : [nextTestName],
             onExit: function (code) {
                 if (capturingTestCaseNames) {
-
-                    while (!paltestsLoaded);
-
                     console.log("paltests " + paltests.length + " test name(s). ");
 
                     capturedTestCaseNames = capturedTestCaseNames.filter(function(testName) {
