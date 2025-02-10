@@ -18,6 +18,9 @@ namespace Microsoft.Diagnostics.DataContractReader;
 /// </remarks>
 public abstract class Target
 {
+    /// <summary>
+    /// CorDebugPlatform represents the platform of the target.
+    /// </summary>
     public enum CorDebugPlatform : int
     {
         CORDB_PLATFORM_WINDOWS_X86 = 0,

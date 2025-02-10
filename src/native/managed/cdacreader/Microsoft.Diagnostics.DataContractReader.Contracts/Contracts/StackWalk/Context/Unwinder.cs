@@ -51,6 +51,9 @@ internal static unsafe partial class Unwinder
         return ret;
     }
 
+    /// <summary>
+    /// Used to inject target into unwinder callbacks and track memory allocated for native unwinder.
+    /// </summary>
     private sealed class CallbackContext(Target target) : IDisposable
     {
         private bool disposed;

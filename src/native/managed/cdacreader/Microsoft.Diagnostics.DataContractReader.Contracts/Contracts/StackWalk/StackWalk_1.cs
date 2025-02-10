@@ -62,32 +62,6 @@ internal readonly struct StackWalk_1 : IStackWalk
         return new StackWalkHandle(context, new(_target, threadData), state);
     }
 
-    private void UpdateState(StackWalkHandle handle)
-    {
-        // If we are complete or in a bad state, no updating is required.
-        if (handle.state is StackWalkState.SW_ERROR or StackWalkState.SW_COMPLETE)
-        {
-            return;
-        }
-
-        bool isManaged = IsManaged(handle.context.InstructionPointer, out _);
-        bool validFrame = handle.frameIter.IsValid();
-
-        if (isManaged)
-        {
-            handle.state = StackWalkState.SW_FRAMELESS;
-            if (CheckForSkippedFrames(handle))
-            {
-                handle.state = StackWalkState.SW_SKIPPED_FRAME;
-                return;
-            }
-        }
-        else
-        {
-            handle.state = validFrame ? StackWalkState.SW_FRAME : StackWalkState.SW_COMPLETE;
-        }
-    }
-
     bool IStackWalk.Next(IStackWalkHandle stackWalkHandle)
     {
         StackWalkHandle handle = AssertCorrectHandle(stackWalkHandle);
@@ -124,15 +98,30 @@ internal readonly struct StackWalk_1 : IStackWalk
         return handle.state is not (StackWalkState.SW_ERROR or StackWalkState.SW_COMPLETE);
     }
 
-    IStackDataFrameHandle IStackWalk.GetCurrentFrame(IStackWalkHandle stackWalkHandle)
+    private void UpdateState(StackWalkHandle handle)
     {
-        StackWalkHandle handle = AssertCorrectHandle(stackWalkHandle);
-        return new StackDataFrameHandle
+        // If we are complete or in a bad state, no updating is required.
+        if (handle.state is StackWalkState.SW_ERROR or StackWalkState.SW_COMPLETE)
         {
-            Context = handle.context.Clone(),
-            State = handle.state,
-            FrameAddress = handle.frameIter.CurrentFrameAddress,
-        };
+            return;
+        }
+
+        bool isManaged = IsManaged(handle.context.InstructionPointer, out _);
+        bool validFrame = handle.frameIter.IsValid();
+
+        if (isManaged)
+        {
+            handle.state = StackWalkState.SW_FRAMELESS;
+            if (CheckForSkippedFrames(handle))
+            {
+                handle.state = StackWalkState.SW_SKIPPED_FRAME;
+                return;
+            }
+        }
+        else
+        {
+            handle.state = validFrame ? StackWalkState.SW_FRAME : StackWalkState.SW_COMPLETE;
+        }
     }
 
     private bool CheckForSkippedFrames(StackWalkHandle handle)
@@ -151,6 +140,17 @@ internal readonly struct StackWalk_1 : IStackWalk
         parentContext.Unwind(_target);
 
         return handle.frameIter.CurrentFrameAddress.Value < parentContext.StackPointer.Value;
+    }
+
+    IStackDataFrameHandle IStackWalk.GetCurrentFrame(IStackWalkHandle stackWalkHandle)
+    {
+        StackWalkHandle handle = AssertCorrectHandle(stackWalkHandle);
+        return new StackDataFrameHandle
+        {
+            Context = handle.context.Clone(),
+            State = handle.state,
+            FrameAddress = handle.frameIter.CurrentFrameAddress,
+        };
     }
 
     byte[] IStackWalk.GetRawContext(IStackDataFrameHandle stackDataFrameHandle)
@@ -182,6 +182,19 @@ internal readonly struct StackWalk_1 : IStackWalk
         return false;
     }
 
+    private unsafe void FillContextFromThread(ref IPlatformAgnosticContext refContext, ThreadData threadData)
+    {
+        byte[] bytes = new byte[refContext.Size];
+        Span<byte> buffer = new Span<byte>(bytes);
+        int hr = _target.GetThreadContext((uint)threadData.OSId.Value, refContext.DefaultContextFlags, refContext.Size, buffer);
+        if (hr != 0)
+        {
+            throw new InvalidOperationException($"GetThreadContext failed with hr={hr}");
+        }
+
+        refContext.FillFromBuffer(buffer);
+    }
+
     private static StackWalkHandle AssertCorrectHandle(IStackWalkHandle stackWalkHandle)
     {
         if (stackWalkHandle is not StackWalkHandle handle)
@@ -200,18 +213,5 @@ internal readonly struct StackWalk_1 : IStackWalk
         }
 
         return handle;
-    }
-
-    private unsafe void FillContextFromThread(ref IPlatformAgnosticContext refContext, ThreadData threadData)
-    {
-        byte[] bytes = new byte[refContext.Size];
-        Span<byte> buffer = new Span<byte>(bytes);
-        int hr = _target.GetThreadContext((uint)threadData.OSId.Value, refContext.DefaultContextFlags, refContext.Size, buffer);
-        if (hr != 0)
-        {
-            throw new InvalidOperationException($"GetThreadContext failed with hr={hr}");
-        }
-
-        refContext.FillFromBuffer(buffer);
     }
 };
