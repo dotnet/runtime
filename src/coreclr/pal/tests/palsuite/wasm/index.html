@@ -49,7 +49,7 @@
             arguments: capturingTestCaseNames
                 ? ["PrintPalTests"]
                 : [nextTestName],
-            quit: function (code) {
+            onExit: function (code) {
                 if (capturingTestCaseNames) {
 
                     while (!paltestsLoaded);
@@ -96,7 +96,7 @@
                 else
                     console.log(msg);
 
-                if (nextRunTimeout < 0)
+                if (nextRunTimeout < 0 && capturedTestCaseNames !== null)
                     nextRunTimeout = window.setTimeout(performNextRun, nextRunDelay);
             },
         };
