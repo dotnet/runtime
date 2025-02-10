@@ -27,9 +27,37 @@ InterpThreadContext* InterpGetThreadContext()
     }
 }
 
+#define LOCAL_VAR_ADDR(offset,type) ((type*)(stack + (offset)))
+#define LOCAL_VAR(offset,type) (*LOCAL_VAR_ADDR(offset, type))
+
 void InterpExecMethod(InterpMethodContextFrame *pFrame, InterpThreadContext *pThreadContext)
 {
-    // TODO
+    const int32_t *ip;
+    int8_t *stack;
+
+    pThreadContext->pStackPointer = pFrame->pStack + pFrame->pMethod->allocaSize;
+    ip = pFrame->pMethod->pCode;
+    stack = pFrame->pStack;
+
+    while (true)
+    {
+        switch (*ip)
+        {
+            case INTOP_LDC_I4:
+                LOCAL_VAR(ip[1], int32_t) = ip[2];
+                ip += 3;
+                break;
+            case INTOP_RET:
+                // Return stack slot sized value
+                *(int64_t*)pFrame->pRetVal = LOCAL_VAR(ip[1], int64_t);
+                goto EXIT_FRAME;
+            case INTOP_RET_VOID:
+                goto EXIT_FRAME;
+        }
+    }
+
+EXIT_FRAME:
+    pThreadContext->pStackPointer = pFrame->pStack;
 }
 
 #endif // FEATURE_INTERPRETER

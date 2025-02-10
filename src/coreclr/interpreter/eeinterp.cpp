@@ -96,8 +96,12 @@ CorJitResult CILInterp::compileMethod(ICorJitInfo*         compHnd,
     }
 
     InterpMethod *pMethod = InterpGetInterpMethod(methodInfo->ftn);
-    pMethod->compiled = true;
-
+    if (!pMethod->compiled)
+    {
+        InterpCompiler compiler(compHnd, methodInfo);
+        compiler.CompileMethod(pMethod);
+    }
+ 
     // FIXME this shouldn't be here
     compHnd->setMethodAttribs(methodInfo->ftn, CORINFO_FLG_INTERPRETER);
 

@@ -8,6 +8,19 @@
 
 #define INTERP_STACK_SIZE 1024*1024
 
+struct StackVal
+{
+    union
+    {
+        int32_t i;
+        int64_t l;
+        float f;
+        double d;
+        void *o;
+        void *p;
+    } data;
+};
+
 struct InterpMethodContextFrame
 {
     InterpMethodContextFrame *pParent;

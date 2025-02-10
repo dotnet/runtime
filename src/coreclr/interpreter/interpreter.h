@@ -21,4 +21,7 @@
 #include "corjit.h"
 
 #include "interpretershared.h"
+#include "compiler.h"
+
+#define ALIGN_UP_TO(val,align) ((((size_t)val) + (size_t)((align) - 1)) & (~((size_t)(align - 1))))
 
