@@ -82,9 +82,9 @@ struct _MonitorArray {
 	MonoThreadsSync monitors [MONO_ZERO_LEN_ARRAY];
 };
 
-#define mono_monitor_allocator_lock() mono_os_mutex_lock (&monitor_mutex)
-#define mono_monitor_allocator_unlock() mono_os_mutex_unlock (&monitor_mutex)
-static mono_mutex_t monitor_mutex;
+#define mono_monitor_allocator_lock() mono_coop_mutex_lock (&monitor_mutex)
+#define mono_monitor_allocator_unlock() mono_coop_mutex_unlock (&monitor_mutex)
+static MonoCoopMutex monitor_mutex;
 static MonoThreadsSync *monitor_freelist;
 static MonitorArray *monitor_allocated;
 static int array_size = 16;
@@ -255,7 +255,7 @@ lock_word_new_flat (gint32 owner)
 void
 mono_monitor_init (void)
 {
-	mono_os_mutex_init_recursive (&monitor_mutex);
+	mono_coop_mutex_init_recursive (&monitor_mutex);
 }
 
 static int
