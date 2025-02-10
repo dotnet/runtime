@@ -7145,7 +7145,7 @@ void Compiler::considerGuardedDevirtualization(GenTreeCall*            call,
                 }
 
                 addGuardedDevirtualizationCandidate(call, exactMethod, exactCls, exactContext, exactMethodAttrs,
-                                                    clsAttrs, likelyHood, dvInfo.wasArrayInterfaceOrGVMDevirt,
+                                                    clsAttrs, likelyHood, dvInfo.wasArrayInterfaceOrGvmDevirt,
                                                     dvInfo.isInstantiatingStub, originalContext);
             }
 
@@ -7217,7 +7217,7 @@ void Compiler::considerGuardedDevirtualization(GenTreeCall*            call,
 
             likelyContext     = dvInfo.exactContext;
             likelyMethod      = dvInfo.devirtualizedMethod;
-            arrayInterface    = dvInfo.wasArrayInterfaceOrGVMDevirt;
+            arrayInterface    = dvInfo.wasArrayInterfaceOrGvmDevirt;
             instantiatingStub = dvInfo.isInstantiatingStub;
         }
         else
@@ -8206,14 +8206,14 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
 
         if (((size_t)exactContext & CORINFO_CONTEXTFLAGS_MASK) == CORINFO_CONTEXTFLAGS_CLASS)
         {
-            assert(!dvInfo.wasArrayInterfaceOrGVMDevirt);
+            assert(!dvInfo.wasArrayInterfaceOrGvmDevirt);
             derivedClass = (CORINFO_CLASS_HANDLE)((size_t)exactContext & ~CORINFO_CONTEXTFLAGS_MASK);
         }
         else
         {
             // Array interface devirt can return a nonvirtual generic method of the non-generic SZArrayHelper class.
             //
-            assert(dvInfo.wasArrayInterfaceOrGVMDevirt);
+            assert(dvInfo.wasArrayInterfaceOrGvmDevirt);
             assert(((size_t)exactContext & CORINFO_CONTEXTFLAGS_MASK) == CORINFO_CONTEXTFLAGS_METHOD);
             derivedClass = info.compCompHnd->getMethodClass(derivedMethod);
         }
@@ -8236,7 +8236,7 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
     {
         // We should only end up with generic methods for array interface devirt.
         //
-        assert(dvInfo.wasArrayInterfaceOrGVMDevirt);
+        assert(dvInfo.wasArrayInterfaceOrGvmDevirt);
 
         // We don't expect NAOT to end up here, since it has Array<T>
         // and normal devirtualization.

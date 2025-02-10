@@ -8568,7 +8568,7 @@ bool CEEInfo::resolveVirtualMethodHelper(CORINFO_DEVIRTUALIZATION_INFO * info)
     memset(&info->resolvedTokenDevirtualizedMethod, 0, sizeof(info->resolvedTokenDevirtualizedMethod));
     memset(&info->resolvedTokenDevirtualizedUnboxedMethod, 0, sizeof(info->resolvedTokenDevirtualizedUnboxedMethod));
     info->isInstantiatingStub = false;
-    info->wasArrayInterfaceOrGVMDevirt = false;
+    info->wasArrayInterfaceOrGvmDevirt = false;
 
     MethodDesc* pBaseMD = GetMethod(info->virtualMethod);
     MethodTable* pBaseMT = pBaseMD->GetMethodTable();
@@ -8780,19 +8780,19 @@ bool CEEInfo::resolveVirtualMethodHelper(CORINFO_DEVIRTUALIZATION_INFO * info)
         //
         info->isInstantiatingStub = pDevirtMD->IsInstantiatingStub();
         info->exactContext = MAKE_METHODCONTEXT((CORINFO_METHOD_HANDLE) pDevirtMD);
-        info->wasArrayInterfaceOrGVMDevirt = true;
+        info->wasArrayInterfaceOrGvmDevirt = true;
     }
     else
     {
         if (pDevirtMD->HasMethodInstantiation())
         {
             info->exactContext = MAKE_METHODCONTEXT((CORINFO_METHOD_HANDLE) pDevirtMD);
-            info->wasArrayInterfaceOrGVMDevirt = true;
+            info->wasArrayInterfaceOrGvmDevirt = true;
         }
         else
         {
             info->exactContext = MAKE_CLASSCONTEXT((CORINFO_CLASS_HANDLE) pExactMT);
-            info->wasArrayInterfaceOrGVMDevirt = false;
+            info->wasArrayInterfaceOrGvmDevirt = false;
         }
         info->isInstantiatingStub = false;
     }

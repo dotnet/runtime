@@ -1456,16 +1456,7 @@ namespace Internal.JitInterface
             info->detail = CORINFO_DEVIRTUALIZATION_DETAIL.CORINFO_DEVIRTUALIZATION_SUCCESS;
             info->devirtualizedMethod = ObjectToHandle(impl);
             info->isInstantiatingStub = false;
-
-            if (decl.HasInstantiation)
-            {
-                info->exactContext = contextFromMethod(impl);
-                info->wasArrayInterfaceOrGvmDevirt = true;
-            }
-            else
-            {
-                info->exactContext = contextFromType(owningType);
-            }
+            info->exactContext = contextFromType(owningType);
 
             return true;
 
