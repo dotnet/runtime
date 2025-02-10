@@ -1605,7 +1605,7 @@ PhaseStatus Compiler::fgVNBasedIntrinsicExpansion()
 //
 bool Compiler::fgVNBasedIntrinsicExpansionForCall(BasicBlock** pBlock, Statement* stmt, GenTreeCall* call)
 {
-    if ((call->gtCallMoreFlags & GTF_CALL_M_SPECIAL_INTRINSIC) == 0)
+    if (!call->IsSpecialIntrinsic())
     {
         return false;
     }
@@ -2727,6 +2727,14 @@ bool Compiler::fgLateCastExpansionForCall(BasicBlock** pBlock, Statement* stmt, 
                 block->setBBProfileWeight(block->computeIncomingWeight());
             }
         }
+    }
+
+    if (fallbackBb->KindIs(BBJ_THROW) && (fallbackBb->bbWeight != BB_ZERO_WEIGHT))
+    {
+        // This flow is disappearing.
+        JITDUMP("fgLateCastExpansionForCall: fallback " FMT_BB " throws and has flow into it. Data %s inconsistent.\n",
+                fallbackBb->bbNum, fgPgoConsistent ? "is now" : "was already");
+        fgPgoConsistent = false;
     }
 
     // Bonus step: merge prevBb with nullcheckBb as they are likely to be mergeable

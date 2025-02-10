@@ -8296,7 +8296,7 @@ const StructSegments& Compiler::GetSignificantSegments(ClassLayout* layout)
 
     StructSegments* newSegments = new (this, CMK_Promotion) StructSegments(getAllocator(CMK_Promotion));
 
-    if (layout->IsBlockLayout())
+    if (layout->IsCustomLayout())
     {
         newSegments->Add(StructSegments::Segment(0, layout->GetSize()));
     }
@@ -10160,7 +10160,7 @@ JITDBGAPI void __cdecl cTreeFlags(Compiler* comp, GenTree* tree)
                     {
                         chars += printf("[CALL_M_NOGCCHECK]");
                     }
-                    if (call->gtCallMoreFlags & GTF_CALL_M_SPECIAL_INTRINSIC)
+                    if (call->IsSpecialIntrinsic())
                     {
                         chars += printf("[CALL_M_SPECIAL_INTRINSIC]");
                     }
