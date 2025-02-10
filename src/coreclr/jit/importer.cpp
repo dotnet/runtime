@@ -656,14 +656,15 @@ Statement* Compiler::impAppendTree(GenTree* tree, unsigned chkLevel, const Debug
  *
  *  Append a store of the given value to a temp to the current tree list.
  *  curLevel is the stack level for which the spill to the temp is being done.
+ *  Return the created store node.
  */
 
-void Compiler::impStoreToTemp(unsigned         lclNum,
-                              GenTree*         val,
-                              unsigned         curLevel,
-                              Statement**      pAfterStmt, /* = NULL */
-                              const DebugInfo& di,         /* = DebugInfo() */
-                              BasicBlock*      block       /* = NULL */
+GenTree* Compiler::impStoreToTemp(unsigned         lclNum,
+                                  GenTree*         val,
+                                  unsigned         curLevel,
+                                  Statement**      pAfterStmt, /* = NULL */
+                                  const DebugInfo& di,         /* = DebugInfo() */
+                                  BasicBlock*      block       /* = NULL */
 )
 {
     GenTree* store = gtNewTempStore(lclNum, val, curLevel, pAfterStmt, di, block);
@@ -681,6 +682,8 @@ void Compiler::impStoreToTemp(unsigned         lclNum,
             impAppendTree(store, curLevel, impCurStmtDI);
         }
     }
+
+    return store;
 }
 
 static bool TypeIs(var_types type1, var_types type2)

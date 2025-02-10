@@ -1025,6 +1025,26 @@ void Compiler::fgMorphCallInline(GenTreeCall* call, InlineResult* inlineResult)
         {
             setMethodHasNoReturnCalls();
         }
+
+        // If we failed to inline a generic virtual call,
+        // we need to replace the call with the original indirect call.
+        if (call->IsGenericVirtual() && call->gtCallType != CT_INDIRECT)
+        {
+            // Failed to inline a generic virtual call, we need to replace
+            // the call with the original indirect call.
+            // TODO-VM: Support generic virtual method in stub dispatch.
+            call->ReplaceWith(call->gtOrigGvmCall, this);
+            JITDUMP("Failed to inline a generic virtual call, bash to the original calli:\n");
+            DISPTREE(call);
+        }
+    }
+    else
+    {
+        // We successfully inlined the call, remove the unnecessary LDVIRTFTN.
+        if (call->IsGenericVirtual() && call->gtCallType != CT_INDIRECT)
+        {
+            call->gtOrigGvmCallAddrStore->gtBashToNOP();
+        }
     }
 }
 
