@@ -386,7 +386,7 @@ namespace Mono.Linker
 			Annotations.SetAction (assembly, action);
 		}
 #endif
-		public AssemblyAction CalculateAssemblyAction (AssemblyDefinition assembly)
+		public virtual AssemblyAction CalculateAssemblyAction (AssemblyDefinition assembly)
 		{
 			if (_actions.TryGetValue (assembly.Name.Name, out AssemblyAction action)) {
 				if (IsCPPCLIAssembly (assembly.MainModule) && action != AssemblyAction.Copy && action != AssemblyAction.Skip) {

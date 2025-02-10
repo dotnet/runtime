@@ -4222,19 +4222,9 @@ PhaseStatus Compiler::fgComputeBlockWeights()
 
     if (fgIsUsingProfileWeights())
     {
-        // Compute fgCalledCount by subtracting any non-entry flow into fgFirstBB from its weight
-        fgCalledCount = fgFirstBB->bbWeight;
-        for (FlowEdge* const predEdge : fgFirstBB->PredEdges())
-        {
-            fgCalledCount = max(BB_ZERO_WEIGHT, fgCalledCount - predEdge->getLikelyWeight());
-        }
-
-        JITDUMP("We are using the profile weights and fgCalledCount is " FMT_WT "\n", fgCalledCount);
         return PhaseStatus::MODIFIED_NOTHING;
     }
 
-    JITDUMP(" -- no profile data, so using default called count\n");
-    fgCalledCount = BB_UNITY_WEIGHT;
     return fgComputeMissingBlockWeights() ? PhaseStatus::MODIFIED_EVERYTHING : PhaseStatus::MODIFIED_NOTHING;
 }
 

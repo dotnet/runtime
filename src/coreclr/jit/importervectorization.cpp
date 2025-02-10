@@ -351,7 +351,7 @@ GenTreeStrCon* Compiler::impGetStrConFromSpan(GenTree* span)
         argCall = span->AsCall();
     }
 
-    if ((argCall != nullptr) && ((argCall->gtCallMoreFlags & GTF_CALL_M_SPECIAL_INTRINSIC) != 0))
+    if ((argCall != nullptr) && argCall->IsSpecialIntrinsic())
     {
         const NamedIntrinsic ni = lookupNamedIntrinsic(argCall->gtCallMethHnd);
         if ((ni == NI_System_MemoryExtensions_AsSpan) || (ni == NI_System_String_op_Implicit))
