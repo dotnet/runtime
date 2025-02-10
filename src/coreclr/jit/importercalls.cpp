@@ -8352,12 +8352,15 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
 
     if (call->IsGenericVirtual())
     {
-        call->gtOrigGvmCall = gtCloneExpr(call)->AsCall();
+        // We managed to devirtualize a generic virtual call.
+        // Bash the original LDVIRTFTN to NOP.
+        call->gtOrigGvmCallAddrStore->gtBashToNOP();
     }
 
     // Make the updates.
     call->gtFlags &= ~GTF_CALL_VIRT_VTABLE;
     call->gtFlags &= ~GTF_CALL_VIRT_STUB;
+    call->gtCallMoreFlags &= ~GTF_CALL_M_GENERIC_VIRTUAL;
     call->gtCallMethHnd = derivedMethod;
     call->gtCallType    = CT_USER_FUNC;
     call->gtControlExpr = nullptr;

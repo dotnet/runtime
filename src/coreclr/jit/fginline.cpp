@@ -859,15 +859,6 @@ PhaseStatus Compiler::fgInline()
                         continue;
                     }
                 }
-                else if (call->IsGenericVirtual() && call->gtCallType != CT_INDIRECT)
-                {
-                    // Failed to inline a generic virtual call, we need to replace
-                    // the call with the original indirect call.
-                    // TODO-VM: Support generic virtual method in stub dispatch.
-                    call->ReplaceWith(call->gtOrigGvmCall, this);
-                    JITDUMP("Failed to inline a generic virtual call, bash to the original calli:\n");
-                    DISPTREE(call);
-                }
             }
 
             // See if stmt is of the form GT_COMMA(call, nop)
@@ -1024,26 +1015,6 @@ void Compiler::fgMorphCallInline(GenTreeCall* call, InlineResult* inlineResult)
         if (call->IsNoReturn())
         {
             setMethodHasNoReturnCalls();
-        }
-
-        // If we failed to inline a generic virtual call,
-        // we need to replace the call with the original indirect call.
-        if (call->IsGenericVirtual() && call->gtCallType != CT_INDIRECT)
-        {
-            // Failed to inline a generic virtual call, we need to replace
-            // the call with the original indirect call.
-            // TODO-VM: Support generic virtual method in stub dispatch.
-            call->ReplaceWith(call->gtOrigGvmCall, this);
-            JITDUMP("Failed to inline a generic virtual call, bash to the original calli:\n");
-            DISPTREE(call);
-        }
-    }
-    else
-    {
-        // We successfully inlined the call, remove the unnecessary LDVIRTFTN.
-        if (call->IsGenericVirtual() && call->gtCallType != CT_INDIRECT)
-        {
-            call->gtOrigGvmCallAddrStore->gtBashToNOP();
         }
     }
 }
