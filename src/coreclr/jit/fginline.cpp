@@ -31,9 +31,8 @@ unsigned Compiler::fgCheckInlineDepthAndRecursion(InlineInfo* inlineInfo)
     // There should be a context for all candidates.
     assert(inlineContext != nullptr);
 
-    int  depth              = 0;
-    int  recursiveDepth     = 0;
-    bool triviallyRecursive = false;
+    int depth          = 0;
+    int recursiveDepth = 0;
 
     for (; inlineContext != nullptr; inlineContext = inlineContext->GetParent())
     {
