@@ -289,7 +289,7 @@ namespace System.Reflection.Metadata
                         }
                         else if (TypeNameParserHelpers.IndexOfNamespaceDelimiter(name) is int idx && idx >= 0)
                         {
-                            // If the type is not nested, find the namespace delimiter in the full name and and return the substring after it.
+                            // If the type is not nested, find the namespace delimiter in the full name and return the substring after it.
                             name = name.Slice(idx + 1);
                         }
                         _name = name.ToString();
