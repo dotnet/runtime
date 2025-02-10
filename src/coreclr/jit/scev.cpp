@@ -60,6 +60,19 @@
 
 #include "jitpch.h"
 
+ScevConstant::ScevConstant(var_types type, int64_t value)
+    : Scev(ScevOper::Constant, type)
+{
+    if (genTypeSize(type) == 4)
+    {
+        Value = (int32_t)value;
+    }
+    else
+    {
+        Value = value;
+    }
+}
+
 //------------------------------------------------------------------------
 // GetConstantValue: If this SSA use refers to a constant, then fetch that
 // constant.
