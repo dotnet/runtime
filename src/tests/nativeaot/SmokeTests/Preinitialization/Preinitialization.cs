@@ -1459,11 +1459,11 @@ class TestConversions
             s_short = unchecked((short)GetInt());
             s_ushort = unchecked((ushort)GetInt());
             s_uint = unchecked((uint)GetInt());
-            s_long = GetInt();
+            s_long = unchecked((long)GetInt());
             s_ulong = unchecked((ulong)GetInt());
             s_float = unchecked((float)GetInt());
             s_double = unchecked(GetInt());
-            s_nint = GetInt();
+            s_nint = unchecked((nint)GetInt());
             s_nuint = unchecked((nuint)GetInt());
         }
     }
@@ -1492,7 +1492,7 @@ class TestConversions
             s_uint = unchecked((uint)GetLong());
             s_ulong = unchecked((ulong)GetLong());
             s_float = unchecked((float)GetLong());
-            s_double = unchecked(GetLong());
+            s_double = unchecked((double)GetLong());
             s_nint = unchecked((nint)GetLong());
             s_nuint = unchecked((nuint)GetLong());
         }
@@ -1514,17 +1514,17 @@ class TestConversions
 
         static FloatConversions()
         {
-            s_byte = (byte)GetFloat();
-            s_sbyte = (sbyte)GetFloat();
-            s_short = (short)GetFloat();
-            s_ushort = (ushort)GetFloat();
-            s_int = (int)GetFloat();
-            s_uint = (uint)GetFloat();
-            s_long = (long)GetFloat();
-            s_ulong = (ulong)GetFloat();
-            s_double = GetFloat();
-            s_nint = (nint)GetFloat();
-            s_nuint = (nuint)GetFloat();
+            s_byte = unchecked((byte)GetFloat());
+            s_sbyte = unchecked((sbyte)GetFloat());
+            s_short = unchecked((short)GetFloat());
+            s_ushort = unchecked((ushort)GetFloat());
+            s_int = unchecked((int)GetFloat());
+            s_uint = unchecked((uint)GetFloat());
+            s_long = unchecked((long)GetFloat());
+            s_ulong = unchecked((ulong)GetFloat());
+            s_double = unchecked((double)GetFloat());
+            s_nint = unchecked((nint)GetFloat());
+            s_nuint = unchecked((nuint)GetFloat());
         }
     }
 
@@ -1570,7 +1570,6 @@ class TestConversions
         internal static ulong s_ulong;
         internal static float s_float;
         internal static double s_double;
-        internal static decimal s_decimal;
         internal static nuint s_nuint;
 
         static NativeIntConversions()
@@ -1585,7 +1584,6 @@ class TestConversions
             s_ulong = unchecked((ulong)GetNativeInt());
             s_float = unchecked((float)GetNativeInt());
             s_double = unchecked((double)GetNativeInt());
-            s_decimal = unchecked((decimal)GetNativeInt());
             s_nuint = unchecked((nuint)GetNativeInt());
         }
     }
