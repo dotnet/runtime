@@ -182,7 +182,7 @@ namespace System.Threading
 
             if (stackSize <= 0)
             {
-                stackSize = _stackSizeFromConfig;
+                stackSize = GetDefaultStackSize();
             }
 
             if ((0 < stackSize) && (stackSize < AllocationGranularity))

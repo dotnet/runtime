@@ -483,8 +483,6 @@ namespace System.Threading
             }
         }
 
-        private static int _stackSizeFromConfig = GetDefaultStackSize();
-
         internal static int GetDefaultStackSize()
         {
             // Keep the same arbitrary minimum and maximum from the coreclr\vm layer.
@@ -492,9 +490,9 @@ namespace System.Threading
             // This is checked by the value being parsed into an int32.
             const uint minStack = 0x10000;     // 64K
 
-            int sizeFromConfig = AppContextConfigHelper.GetInt32Config(
+            int sizeFromConfig = AppContextConfigHelper.GetInt32ComPlusOrDotNetConfig(
                 "System.Threading.DefaultStackSize",
-                "DOTNET_Threading_DefaultStackSize",
+                "Threading_DefaultStackSize",
                 0,
                 false);
 
