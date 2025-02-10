@@ -35,7 +35,7 @@ internal readonly struct StackWalk_1 : IStackWalk
 
     internal struct StackDataFrameHandle : IStackDataFrameHandle
     {
-        internal IContext Context { get; init; }
+        internal IPlatformAgnosticContext Context { get; init; }
         internal StackWalkState State { get; init; }
         internal TargetPointer FrameAddress { get; init; }
     }
@@ -43,10 +43,10 @@ internal readonly struct StackWalk_1 : IStackWalk
     internal class StackWalkHandle : IStackWalkHandle
     {
         public StackWalkState state;
-        public IContext context;
+        public IPlatformAgnosticContext context;
         public FrameIterator frameIter;
 
-        public StackWalkHandle(IContext context, FrameIterator frameIter, StackWalkState state)
+        public StackWalkHandle(IPlatformAgnosticContext context, FrameIterator frameIter, StackWalkState state)
         {
             this.context = context;
             this.frameIter = frameIter;
@@ -56,7 +56,7 @@ internal readonly struct StackWalk_1 : IStackWalk
 
     IStackWalkHandle IStackWalk.CreateStackWalk(ThreadData threadData)
     {
-        IContext context = IContext.GetContextForPlatform(_target);
+        IPlatformAgnosticContext context = IPlatformAgnosticContext.GetContextForPlatform(_target);
         FillContextFromThread(ref context, threadData);
         StackWalkState state = IsManaged(context.InstructionPointer, out _) ? StackWalkState.SW_FRAMELESS : StackWalkState.SW_FRAME;
         return new StackWalkHandle(context, new(_target, threadData), state);
@@ -147,7 +147,7 @@ internal readonly struct StackWalk_1 : IStackWalk
         }
 
         // get the caller context
-        IContext parentContext = handle.context.Clone();
+        IPlatformAgnosticContext parentContext = handle.context.Clone();
         parentContext.Unwind(_target);
 
         return handle.frameIter.CurrentFrameAddress.Value < parentContext.StackPointer.Value;
@@ -202,7 +202,7 @@ internal readonly struct StackWalk_1 : IStackWalk
         return handle;
     }
 
-    private unsafe void FillContextFromThread(ref IContext refContext, ThreadData threadData)
+    private unsafe void FillContextFromThread(ref IPlatformAgnosticContext refContext, ThreadData threadData)
     {
         byte[] bytes = new byte[refContext.Size];
         Span<byte> buffer = new Span<byte>(bytes);

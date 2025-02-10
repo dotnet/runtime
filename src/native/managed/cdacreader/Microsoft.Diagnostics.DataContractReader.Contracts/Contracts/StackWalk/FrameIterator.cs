@@ -1,13 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
-using System.Collections;
-using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
-using System.IO;
 using Microsoft.Diagnostics.DataContractReader.Contracts.StackWalkHelpers;
-using Microsoft.Diagnostics.DataContractReader.Data;
 
 namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 
@@ -42,7 +36,7 @@ internal sealed class FrameIterator
         return true;
     }
 
-    public bool TryUpdateContext(ref IContext context)
+    public bool TryUpdateContext(ref IPlatformAgnosticContext context)
     {
         switch (CurrentFrame.Type)
         {

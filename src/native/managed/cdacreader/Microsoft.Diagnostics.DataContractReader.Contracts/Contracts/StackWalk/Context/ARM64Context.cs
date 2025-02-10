@@ -2,9 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Reflection;
 using System.Runtime.InteropServices;
-using System.Text;
 
 namespace Microsoft.Diagnostics.DataContractReader.Contracts.StackWalkHelpers;
 
@@ -12,7 +10,7 @@ namespace Microsoft.Diagnostics.DataContractReader.Contracts.StackWalkHelpers;
 /// ARM64-specific thread context.
 /// </summary>
 [StructLayout(LayoutKind.Explicit, Pack = 1)]
-internal struct ARM64Context : IContext
+internal struct ARM64Context : IPlatformContext
 {
     [Flags]
     public enum ContextFlagsValues : uint
@@ -27,9 +25,9 @@ internal struct ARM64Context : IContext
         CONTEXT_ALL = CONTEXT_CONTROL | CONTEXT_INTEGER | CONTEXT_FLOATING_POINT | CONTEXT_DEBUG_REGISTERS | CONTEXT_X18,
     }
 
-    public uint Size => 0x390;
+    public readonly uint Size => 0x390;
 
-    public uint DefaultContextFlags => (uint)ContextFlagsValues.CONTEXT_FULL;
+    public readonly uint DefaultContextFlags => (uint)ContextFlagsValues.CONTEXT_FULL;
 
     public TargetPointer StackPointer
     {
@@ -50,61 +48,6 @@ internal struct ARM64Context : IContext
     public void Unwind(Target target)
     {
         Unwinder.ARM64Unwind(ref this, target);
-    }
-
-    public void Clear()
-    {
-        this = default;
-    }
-    public unsafe void FillFromBuffer(Span<byte> buffer)
-    {
-        Span<ARM64Context> structSpan = MemoryMarshal.CreateSpan(ref this, 1);
-        Span<byte> byteSpan = MemoryMarshal.Cast<ARM64Context, byte>(structSpan);
-        if (buffer.Length > sizeof(ARM64Context))
-        {
-            buffer.Slice(0, sizeof(ARM64Context)).CopyTo(byteSpan);
-        }
-        else
-        {
-            buffer.CopyTo(byteSpan);
-        }
-    }
-
-    public unsafe byte[] GetBytes()
-    {
-        Span<ARM64Context> structSpan = MemoryMarshal.CreateSpan(ref this, 1);
-        Span<byte> byteSpan = MemoryMarshal.AsBytes(structSpan);
-        return byteSpan.ToArray();
-    }
-
-    public IContext Clone()
-    {
-        ARM64Context clone = this;
-        return clone;
-    }
-
-    public override string ToString()
-    {
-        StringBuilder sb = new();
-        foreach (FieldInfo fieldInfo in typeof(ARM64Context).GetFields())
-        {
-            switch (fieldInfo.GetValue(this))
-            {
-                case ulong v:
-                    sb.AppendLine($"{fieldInfo.Name} = {v:x16}");
-                    break;
-                case uint v:
-                    sb.AppendLine($"{fieldInfo.Name} = {v:x8}");
-                    break;
-                case ushort v:
-                    sb.AppendLine($"{fieldInfo.Name} = {v:x4}");
-                    break;
-                default:
-                    sb.AppendLine($"{fieldInfo.Name} = {fieldInfo.GetValue(this)}");
-                    continue;
-            }
-        }
-        return sb.ToString();
     }
 
     // Control flags

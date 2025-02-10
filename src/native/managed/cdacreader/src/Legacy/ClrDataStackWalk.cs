@@ -55,8 +55,8 @@ internal sealed unsafe partial class ClrDataStackWalk : IXCLRDataStackWalk
             int hrLocal = _legacyImpl.GetContext(contextFlags, contextBufSize, null, localContextBuf);
             Debug.Assert(hrLocal == hr, $"cDAC: {hr:x}, DAC: {hrLocal:x}");
 
-            IContext contextStruct = IContext.GetContextForPlatform(_target);
-            IContext localContextStruct = IContext.GetContextForPlatform(_target);
+            IPlatformAgnosticContext contextStruct = IPlatformAgnosticContext.GetContextForPlatform(_target);
+            IPlatformAgnosticContext localContextStruct = IPlatformAgnosticContext.GetContextForPlatform(_target);
             contextStruct.FillFromBuffer(contextBuf);
             localContextStruct.FillFromBuffer(localContextBuf);
 
