@@ -7330,6 +7330,8 @@ void CodeGen::genStructReturn(GenTree* treeNode)
     const ReturnTypeDesc& retTypeDesc = compiler->compRetTypeDesc;
     const unsigned        regCount    = retTypeDesc.GetReturnRegCount();
 
+    assert(regCount <= MAX_RET_REG_COUNT);
+
     if (op1->OperIsFieldList())
     {
         unsigned regIndex = 0;
@@ -7350,8 +7352,6 @@ void CodeGen::genStructReturn(GenTree* treeNode)
     }
 
     genConsumeRegs(op1);
-
-    assert(regCount <= MAX_RET_REG_COUNT);
 
 #if FEATURE_MULTIREG_RET
     // Right now the only enregisterable structs supported are SIMD vector types.
