@@ -45,7 +45,7 @@
 
 void Frame::GcScanRoots(promote_func *fn, ScanContext* sc)
 {
-    switch (this->GetFrameIdentifier())
+    switch (GetFrameIdentifier())
     {
 #define FRAME_TYPE_NAME(frameType) case FrameIdentifier::frameType: { return dac_cast<PTR_##frameType>(this)->GcScanRoots_Impl(fn, sc); }
 #include "FrameTypes.h"
@@ -55,10 +55,9 @@ void Frame::GcScanRoots(promote_func *fn, ScanContext* sc)
     }
 }
 
-
 unsigned Frame::GetFrameAttribs()
 {
-    switch (this->GetFrameIdentifier())
+    switch (GetFrameIdentifier())
     {
 #define FRAME_TYPE_NAME(frameType) case FrameIdentifier::frameType: { return dac_cast<PTR_##frameType>(this)->GetFrameAttribs_Impl(); }
 #include "FrameTypes.h"
@@ -71,7 +70,7 @@ unsigned Frame::GetFrameAttribs()
 #ifndef DACCESS_COMPILE
 void Frame::ExceptionUnwind()
 {
-    switch (this->GetFrameIdentifier())
+    switch (GetFrameIdentifier())
     {
 #define FRAME_TYPE_NAME(frameType) case FrameIdentifier::frameType: { return dac_cast<PTR_##frameType>(this)->ExceptionUnwind_Impl(); }
 #include "FrameTypes.h"
@@ -80,11 +79,11 @@ void Frame::ExceptionUnwind()
         return;
     }
 }
-
 #endif
+
 BOOL Frame::NeedsUpdateRegDisplay()
 {
-    switch (this->GetFrameIdentifier())
+    switch (GetFrameIdentifier())
     {
 #define FRAME_TYPE_NAME(frameType) case FrameIdentifier::frameType: { return dac_cast<PTR_##frameType>(this)->NeedsUpdateRegDisplay_Impl(); }
 #include "FrameTypes.h"
@@ -96,7 +95,7 @@ BOOL Frame::NeedsUpdateRegDisplay()
 
 BOOL Frame::IsTransitionToNativeFrame()
 {
-    switch (this->GetFrameIdentifier())
+    switch (GetFrameIdentifier())
     {
 #define FRAME_TYPE_NAME(frameType) case FrameIdentifier::frameType: { return dac_cast<PTR_##frameType>(this)->IsTransitionToNativeFrame_Impl(); }
 #include "FrameTypes.h"
@@ -108,7 +107,7 @@ BOOL Frame::IsTransitionToNativeFrame()
 
 MethodDesc *Frame::GetFunction()
 {
-    switch (this->GetFrameIdentifier())
+    switch (GetFrameIdentifier())
     {
 #define FRAME_TYPE_NAME(frameType) case FrameIdentifier::frameType: { return dac_cast<PTR_##frameType>(this)->GetFunction_Impl(); }
 #include "FrameTypes.h"
@@ -120,7 +119,7 @@ MethodDesc *Frame::GetFunction()
 
 Assembly *Frame::GetAssembly()
 {
-    switch (this->GetFrameIdentifier())
+    switch (GetFrameIdentifier())
     {
 #define FRAME_TYPE_NAME(frameType) case FrameIdentifier::frameType: { return dac_cast<PTR_##frameType>(this)->GetAssembly_Impl(); }
 #include "FrameTypes.h"
@@ -129,9 +128,10 @@ Assembly *Frame::GetAssembly()
         return NULL;
     }
 }
+
 PTR_BYTE Frame::GetIP()
 {
-    switch (this->GetFrameIdentifier())
+    switch (GetFrameIdentifier())
     {
 #define FRAME_TYPE_NAME(frameType) case FrameIdentifier::frameType: { return dac_cast<PTR_##frameType>(this)->GetIP_Impl(); }
 #include "FrameTypes.h"
@@ -143,7 +143,7 @@ PTR_BYTE Frame::GetIP()
 
 TADDR Frame::GetReturnAddressPtr()
 {
-    switch (this->GetFrameIdentifier())
+    switch (GetFrameIdentifier())
     {
 #define FRAME_TYPE_NAME(frameType) case FrameIdentifier::frameType: { return dac_cast<PTR_##frameType>(this)->GetReturnAddressPtr_Impl(); }
 #include "FrameTypes.h"
@@ -152,9 +152,10 @@ TADDR Frame::GetReturnAddressPtr()
         return (TADDR)0;
     }
 }
+
 PCODE Frame::GetReturnAddress()
 {
-    switch (this->GetFrameIdentifier())
+    switch (GetFrameIdentifier())
     {
 #define FRAME_TYPE_NAME(frameType) case FrameIdentifier::frameType: { return dac_cast<PTR_##frameType>(this)->GetReturnAddress_Impl(); }
 #include "FrameTypes.h"
@@ -166,7 +167,7 @@ PCODE Frame::GetReturnAddress()
 
 void Frame::UpdateRegDisplay(const PREGDISPLAY pRegDisplay, bool updateFloats)
 {
-    switch (this->GetFrameIdentifier())
+    switch (GetFrameIdentifier())
     {
 #define FRAME_TYPE_NAME(frameType) case FrameIdentifier::frameType: { return dac_cast<PTR_##frameType>(this)->UpdateRegDisplay_Impl(pRegDisplay, updateFloats); }
 #include "FrameTypes.h"
@@ -178,7 +179,7 @@ void Frame::UpdateRegDisplay(const PREGDISPLAY pRegDisplay, bool updateFloats)
 
 int Frame::GetFrameType()
 {
-    switch (this->GetFrameIdentifier())
+    switch (GetFrameIdentifier())
     {
 #define FRAME_TYPE_NAME(frameType) case FrameIdentifier::frameType: { return dac_cast<PTR_##frameType>(this)->GetFrameType_Impl(); }
 #include "FrameTypes.h"
@@ -190,7 +191,7 @@ int Frame::GetFrameType()
 
 Frame::ETransitionType Frame::GetTransitionType()
 {
-    switch (this->GetFrameIdentifier())
+    switch (GetFrameIdentifier())
     {
 #define FRAME_TYPE_NAME(frameType) case FrameIdentifier::frameType: { return dac_cast<PTR_##frameType>(this)->GetTransitionType_Impl(); }
 #include "FrameTypes.h"
@@ -202,7 +203,7 @@ Frame::ETransitionType Frame::GetTransitionType()
 
 Frame::Interception Frame::GetInterception()
 {
-    switch (this->GetFrameIdentifier())
+    switch (GetFrameIdentifier())
     {
 #define FRAME_TYPE_NAME(frameType) case FrameIdentifier::frameType: { return dac_cast<PTR_##frameType>(this)->GetInterception_Impl(); }
 #include "FrameTypes.h"
@@ -214,7 +215,7 @@ Frame::Interception Frame::GetInterception()
 
 void Frame::GetUnmanagedCallSite(TADDR* ip, TADDR* returnIP, TADDR* returnSP)
 {
-    switch (this->GetFrameIdentifier())
+    switch (GetFrameIdentifier())
     {
 #define FRAME_TYPE_NAME(frameType) case FrameIdentifier::frameType: { return dac_cast<PTR_##frameType>(this)->GetUnmanagedCallSite_Impl(ip, returnIP, returnSP); }
 #include "FrameTypes.h"
@@ -226,7 +227,7 @@ void Frame::GetUnmanagedCallSite(TADDR* ip, TADDR* returnIP, TADDR* returnSP)
 
 BOOL Frame::TraceFrame(Thread *thread, BOOL fromPatch, TraceDestination *trace, REGDISPLAY *regs)
 {
-    switch (this->GetFrameIdentifier())
+    switch (GetFrameIdentifier())
     {
 #define FRAME_TYPE_NAME(frameType) case FrameIdentifier::frameType: { return dac_cast<PTR_##frameType>(this)->TraceFrame_Impl(thread, fromPatch, trace, regs); }
 #include "FrameTypes.h"
@@ -239,7 +240,7 @@ BOOL Frame::TraceFrame(Thread *thread, BOOL fromPatch, TraceDestination *trace, 
 #ifdef DACCESS_COMPILE
 void Frame::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
 {
-    switch (this->GetFrameIdentifier())
+    switch (GetFrameIdentifier())
     {
 #define FRAME_TYPE_NAME(frameType) case FrameIdentifier::frameType: { return dac_cast<PTR_##frameType>(this)->EnumMemoryRegions_Impl(flags); }
 #include "FrameTypes.h"
@@ -248,12 +249,12 @@ void Frame::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
         return;
     }
 }
-
 #endif // DACCESS_COMPILE
+
 #if defined(_DEBUG) && !defined(DACCESS_COMPILE)
 BOOL Frame::Protects(OBJECTREF *ppObjectRef)
 {
-    switch (this->GetFrameIdentifier())
+    switch (GetFrameIdentifier())
     {
 #define FRAME_TYPE_NAME(frameType) case FrameIdentifier::frameType: { return dac_cast<PTR_##frameType>(this)->Protects_Impl(ppObjectRef); }
 #include "FrameTypes.h"
@@ -262,13 +263,12 @@ BOOL Frame::Protects(OBJECTREF *ppObjectRef)
         return FALSE;
     }
 }
-
 #endif // defined(_DEBUG) && !defined(DACCESS_COMPILE)
 
 // TransitionFrame only apis
 TADDR TransitionFrame::GetTransitionBlock()
 {
-    switch (this->GetFrameIdentifier())
+    switch (GetFrameIdentifier())
     {
 #define FRAME_TYPE_NAME(frameType) case FrameIdentifier::frameType: { return dac_cast<PTR_##frameType>(this)->GetTransitionBlock_Impl(); }
 #include "FrameTypes.h"
@@ -280,7 +280,7 @@ TADDR TransitionFrame::GetTransitionBlock()
 
 BOOL TransitionFrame::SuppressParamTypeArg()
 {
-    switch (this->GetFrameIdentifier())
+    switch (GetFrameIdentifier())
     {
 #define FRAME_TYPE_NAME(frameType) case FrameIdentifier::frameType: { return dac_cast<PTR_##frameType>(this)->SuppressParamTypeArg_Impl(); }
 #include "FrameTypes.h"
@@ -289,8 +289,6 @@ BOOL TransitionFrame::SuppressParamTypeArg()
         return FALSE;
     }
 }
-
-
 
 //-----------------------------------------------------------------------
 #if _DEBUG
@@ -433,20 +431,13 @@ bool isLegalManagedCodeCaller(PCODE retAddr) {
 #endif //0
 
 
-//-----------------------------------------------------------------------
-// Count of the number of frame types
-const size_t FRAME_TYPES_COUNT =
-#define FRAME_TYPE_NAME(frameType) +1
-#include "frames.h"
-;
-
 #if defined (_DEBUG_IMPL)   // _DEBUG and !DAC
 
 //-----------------------------------------------------------------------
 // Implementation of the global table of names.  On the DAC side, just the global pointer.
 //  On the runtime side, the array of names.
-    #define FRAME_TYPE_NAME(x) {FrameIdentifier::x, #x} ,
-    static FrameTypeName FrameTypeNameTable[] = {
+    #define FRAME_TYPE_NAME(x) #x,
+    static PTR_CSTR FrameTypeNameTable[] = {
     #include "frames.h"
     };
 
@@ -455,15 +446,11 @@ const size_t FRAME_TYPES_COUNT =
 PTR_CSTR Frame::GetFrameTypeName(FrameIdentifier frameIdentifier)
 {
     LIMITED_METHOD_CONTRACT;
-    for (size_t i=0; i<FRAME_TYPES_COUNT; ++i)
+    if ((frameIdentifier == FrameIdentifier::None) || frameIdentifier >= FrameIdentifier::CountPlusOne)
     {
-        if (frameIdentifier == FrameTypeNameTable[(int)i].id)
-        {
-            return FrameTypeNameTable[(int)i].name;
-        }
+        return NULL;
     }
-
-    return NULL;
+    return FrameTypeNameTable[(int)frameIdentifier - 1];
 } // char* Frame::FrameTypeName()
 
 
@@ -512,7 +499,6 @@ void Frame::LogFrameChain(
 
 #ifndef DACCESS_COMPILE
 
-// static
 void Frame::Init(FrameIdentifier frameIdentifier)
 {
     LIMITED_METHOD_CONTRACT;
@@ -521,10 +507,10 @@ void Frame::Init(FrameIdentifier frameIdentifier)
 
 #endif // DACCESS_COMPILE
 
-// Returns true if the Frame's VTablePtr is valid
+// Returns true if the Frame has a valid FrameIdentifier
 
 // static
-bool Frame::HasFrameIdentifier(Frame * pFrame)
+bool Frame::HasValidFrameIdentifier(Frame * pFrame)
 {
     WRAPPER_NO_CONTRACT;
 
@@ -586,7 +572,7 @@ VOID Frame::Push(Thread *pThread)
              // during stack-walking.
              !g_pConfig->fAssertOnFailFast() ||
              (m_Next == FRAME_TOP) ||
-             (Frame::HasFrameIdentifier(m_Next)));
+             (Frame::HasValidFrameIdentifier(m_Next)));
 
     pThread->SetFrame(this);
 }
@@ -622,7 +608,7 @@ VOID Frame::Pop(Thread *pThread)
              // during stack-walking.
              !g_pConfig->fAssertOnFailFast() ||
              (m_Next == FRAME_TOP) ||
-             (Frame::HasFrameIdentifier(m_Next)));
+             (Frame::HasValidFrameIdentifier(m_Next)));
 
     pThread->SetFrame(m_Next);
     m_Next = NULL;

@@ -230,16 +230,6 @@ enum class FrameIdentifier : TADDR
     CountPlusOne
 };
 
-//-----------------------------------------------------------------------------
-// For reporting on types of frames at runtime.
-class FrameTypeName
-{
-public:
-    FrameIdentifier id;
-    PTR_CSTR name;
-};
-typedef DPTR(FrameTypeName) PTR_FrameTypeName;
-
 // TransitionFrame only apis
 class TransitionFrame;
 TADDR Frame_GetTransitionBlock(TransitionFrame* frame);
@@ -422,7 +412,7 @@ public:
     }
 #endif // #ifndef DACCESS_COMPILE
 
-    static bool HasFrameIdentifier(Frame * pFrame);
+    static bool HasValidFrameIdentifier(Frame * pFrame);
     void Init(FrameIdentifier frameIdentifier);
 
     // Callers, note that the REGDISPLAY parameter is actually in/out. While
