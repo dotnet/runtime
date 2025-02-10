@@ -418,8 +418,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
                 // Now make an indirect call through the function pointer
 
                 unsigned lclNum = lvaGrabTemp(true DEBUGARG("VirtualCall through function pointer"));
-                call->AsCall()->gtOrigGvmCallAddrStore = impStoreToTemp(lclNum, fptr, CHECK_SPILL_ALL);
-
+                impStoreToTemp(lclNum, fptr, CHECK_SPILL_ALL);
                 fptr = gtNewLclvNode(lclNum, TYP_I_IMPL);
 
                 call->AsCall()->gtCallAddr = fptr;
@@ -8349,13 +8348,6 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
     Metrics.DevirtualizedCall++;
 
     JITDUMP("    %s; can devirtualize\n", note);
-
-    if (call->IsGenericVirtual())
-    {
-        // We managed to devirtualize a generic virtual call.
-        // Bash the original LDVIRTFTN to NOP.
-        call->gtOrigGvmCallAddrStore->gtBashToNOP();
-    }
 
     // Make the updates.
     call->gtFlags &= ~GTF_CALL_VIRT_VTABLE;

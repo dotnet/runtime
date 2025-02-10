@@ -4922,12 +4922,12 @@ public:
     void impAppendStmt(Statement* stmt);
     void impInsertStmtBefore(Statement* stmt, Statement* stmtBefore);
     Statement* impAppendTree(GenTree* tree, unsigned chkLevel, const DebugInfo& di, bool checkConsumedDebugInfo = true);
-    GenTree* impStoreToTemp(unsigned         lclNum,
-                            GenTree*         val,
-                            unsigned         curLevel,
-                            Statement**      pAfterStmt = nullptr,
-                            const DebugInfo& di         = DebugInfo(),
-                            BasicBlock*      block      = nullptr);
+    void impStoreToTemp(unsigned         lclNum,
+                        GenTree*         val,
+                        unsigned         curLevel,
+                        Statement**      pAfterStmt = nullptr,
+                        const DebugInfo& di         = DebugInfo(),
+                        BasicBlock*      block      = nullptr);
     Statement* impExtractLastStmt();
     GenTree* impCloneExpr(GenTree*             tree,
                           GenTree**            clone,

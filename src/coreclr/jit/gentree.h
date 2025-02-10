@@ -5777,9 +5777,6 @@ struct GenTreeCall final : public GenTree
         GenTree*              gtCallAddr;    // CT_INDIRECT
     };
 
-    // The store to generic virtual method address that is used to make the call.
-    GenTree* gtOrigGvmCallAddrStore;
-
 #ifdef FEATURE_READYTORUN
     // Call target lookup info for method call from a Ready To Run module
     CORINFO_CONST_LOOKUP gtEntryPoint;
