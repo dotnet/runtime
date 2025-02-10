@@ -509,6 +509,53 @@ namespace System.Numerics
             return new BFloat16((ushort)bitValue);
         }
 
+        /// <summary>
+        /// Rounds a number to shorter length with the midpoint-to-even rule.
+        /// </summary>
+        /// <typeparam name="TInteger">The integer type to operate with.</typeparam>
+        /// <param name="value">The payload number. Can be either actual unsigned integer, or (non-NaN) IEEE754 binary fp type.</param>
+        /// <param name="trailingLength">The length of trailing bits to round up. Should be constant.</param>
+        /// <returns>Rounded payload bits, right shifted by <paramref name="trailingLength"/> and aligns to LSB.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static TInteger RoundMidpointToEven<TInteger>(TInteger value, int trailingLength)
+            where TInteger : unmanaged, IBinaryInteger<TInteger>
+        {
+            TInteger lower = value & ((TInteger.One << trailingLength) - TInteger.One);
+            TInteger upper = value >>> trailingLength;
+
+            // Determine the increment for rounding
+            // When upper is even, midpoint will tie to no increment, which is effectively a decrement of lower
+            TInteger lowerShift = (~upper) & (lower >>> (trailingLength - 1)) & TInteger.One; // Upper is even & lower>=midpoint (not 0)
+            lower -= lowerShift;
+            TInteger increment = lower >>> (trailingLength - 1);
+            // Do the increment, MaxValue will be correctly increased to Infinity
+            upper += increment;
+
+            return upper;
+        }
+
+        private static unsafe BFloat16 RoundFromSigned<TInteger>(TInteger value)
+            where TInteger : unmanaged, IBinaryInteger<TInteger>, ISignedNumber<TInteger>
+        {
+            bool sign = TInteger.IsNegative(value);
+            TInteger abs = TInteger.IsNegative(value) ? -value : value;
+
+            int scale = int.CreateTruncating(TInteger.LeadingZeroCount(abs));
+            TInteger alignedValue = abs << scale;
+            TInteger significandBits = RoundMidpointToEven(alignedValue, sizeof(TInteger) * 8 - SignificandLength);
+
+            // Leverage FPU to calculate the value significandBits * 2^(32-SignificandLength-scale), for proper handling of 0 and carrying
+            // Use int->float conversion which usually has better FPU support
+            float significand = (float)int.CreateTruncating(significandBits);
+            // Craft the value 2^(32-SignificandLength-scale)
+            float scaleFactor = Half.CreateSingle(sign, (byte)(sizeof(TInteger) * 8 - SignificandLength - scale + float.ExponentBias), 0);
+            float roundedValue = significand * scaleFactor;
+
+            uint roundedValueBits = BitConverter.SingleToUInt32Bits(roundedValue);
+            Debug.Assert((ushort)roundedValueBits == 0); // The value should be properly rounded
+            return new BFloat16((ushort)(roundedValueBits >> 16));
+        }
+
         /// <summary>Explicitly converts a <see cref="short" /> value to its nearest representable <see cref="BFloat16"/> value.</summary>
         /// <param name="value">The value to convert.</param>
         /// <returns><paramref name="value" /> converted to its nearest representable <see cref="BFloat16"/> value.</returns>
@@ -522,22 +569,22 @@ namespace System.Numerics
         /// <summary>Explicitly converts a <see cref="int" /> value to its nearest representable <see cref="BFloat16"/> value.</summary>
         /// <param name="value">The value to convert.</param>
         /// <returns><paramref name="value" /> converted to its nearest representable <see cref="BFloat16"/> value.</returns>
-        public static explicit operator BFloat16(int value) => (BFloat16)(float)value;
+        public static explicit operator BFloat16(int value) => RoundFromSigned(value);
 
         /// <summary>Explicitly converts a <see cref="long" /> value to its nearest representable <see cref="BFloat16"/> value.</summary>
         /// <param name="value">The value to convert.</param>
         /// <returns><paramref name="value" /> converted to its nearest representable <see cref="BFloat16"/> value.</returns>
-        public static explicit operator BFloat16(long value) => (BFloat16)(float)value;
+        public static explicit operator BFloat16(long value) => RoundFromSigned(value);
 
         /// <summary>Explicitly converts a <see cref="Int128" /> value to its nearest representable <see cref="BFloat16"/> value.</summary>
         /// <param name="value">The value to convert.</param>
         /// <returns><paramref name="value" /> converted to its nearest representable <see cref="BFloat16"/> value.</returns>
-        public static explicit operator BFloat16(Int128 value) => (BFloat16)(float)value;
+        public static explicit operator BFloat16(Int128 value) => RoundFromSigned(value);
 
         /// <summary>Explicitly converts a <see cref="nint" /> value to its nearest representable <see cref="BFloat16"/> value.</summary>
         /// <param name="value">The value to convert.</param>
         /// <returns><paramref name="value" /> converted to its nearest representable <see cref="BFloat16"/> value.</returns>
-        public static explicit operator BFloat16(nint value) => (BFloat16)(float)value;
+        public static explicit operator BFloat16(nint value) => RoundFromSigned(value);
 
         /// <summary>Explicitly converts a <see cref="float" /> value to its nearest representable <see cref="BFloat16"/> value.</summary>
         /// <param name="value">The value to convert.</param>
@@ -551,52 +598,18 @@ namespace System.Numerics
             return new BFloat16((ushort)(!float.IsNaN(value) ? roundedBits : (bits >> 16)));
         }
 
-        /// <summary>Explicitly converts a <see cref="ushort" /> value to its nearest representable <see cref="BFloat16"/> value.</summary>
-        /// <param name="value">The value to convert.</param>
-        /// <returns><paramref name="value" /> converted to its nearest representable <see cref="BFloat16"/> value.</returns>
-        [CLSCompliant(false)]
-        public static explicit operator BFloat16(ushort value) => (BFloat16)(float)value;
-
-        /// <summary>
-        /// Rounds a number to shorter length with the midpoint-to-even rule.
-        /// </summary>
-        /// <typeparam name="TInteger">The unsigned integer type to operate with.</typeparam>
-        /// <param name="value">The payload number. Can be either actual unsigned integer, or (non-NaN) IEEE754 binary fp type.</param>
-        /// <param name="trailingLength">The length of trailing bits to round up. Should be constant.</param>
-        /// <returns>Rounded payload bits, right shifted by <paramref name="trailingLength"/> and aligns to LSB.</returns>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static TInteger RoundMidpointToEven<TInteger>(TInteger value, int trailingLength)
+        private static unsafe BFloat16 RoundFromUnsigned<TInteger>(TInteger value)
             where TInteger : unmanaged, IBinaryInteger<TInteger>, IUnsignedNumber<TInteger>
         {
-            TInteger lower = value & ((TInteger.One << trailingLength) - TInteger.One);
-            TInteger upper = value >>> trailingLength;
-
-            // Determine the increment for rounding
-            // When upper is even, midpoint will tie to no increment, which is effectively a decrement of lower
-            TInteger lowerShift = (~upper) & (lower >> (trailingLength - 1)) & TInteger.One; // Upper is even & lower>=midpoint (not 0)
-            lower -= lowerShift;
-            TInteger increment = lower >> (trailingLength - 1);
-            // Do the increment, MaxValue will be correctly increased to Infinity
-            upper += increment;
-
-            return upper;
-        }
-
-        /// <summary>Explicitly converts a <see cref="uint" /> value to its nearest representable <see cref="BFloat16"/> value.</summary>
-        /// <param name="value">The value to convert.</param>
-        /// <returns><paramref name="value" /> converted to its nearest representable <see cref="BFloat16"/> value.</returns>
-        [CLSCompliant(false)]
-        public static explicit operator BFloat16(uint value)
-        {
-            uint scale = uint.LeadingZeroCount(value);
-            uint alignedValue = value << (int)scale;
-            uint significandBits = RoundMidpointToEven(alignedValue, 32 - SignificandLength);
+            int scale = int.CreateTruncating(TInteger.LeadingZeroCount(value));
+            TInteger alignedValue = value << scale;
+            TInteger significandBits = RoundMidpointToEven(alignedValue, sizeof(TInteger) * 8 - SignificandLength);
 
             // Leverage FPU to calculate the value significandBits * 2^(32-SignificandLength-scale), for proper handling of 0 and carrying
             // Use int->float conversion which usually has better FPU support
-            float significand = (float)(int)significandBits;
+            float significand = (float)int.CreateTruncating(significandBits);
             // Craft the value 2^(32-SignificandLength-scale)
-            float scaleFactor = Half.CreateSingle(false, (byte)(32 - SignificandLength - scale + float.ExponentBias), 0);
+            float scaleFactor = Half.CreateSingle(false, (byte)(sizeof(TInteger) * 8 - SignificandLength - scale + float.ExponentBias), 0);
             float roundedValue = significand * scaleFactor;
 
             uint roundedValueBits = BitConverter.SingleToUInt32Bits(roundedValue);
@@ -604,23 +617,35 @@ namespace System.Numerics
             return new BFloat16((ushort)(roundedValueBits >> 16));
         }
 
+        /// <summary>Explicitly converts a <see cref="ushort" /> value to its nearest representable <see cref="BFloat16"/> value.</summary>
+        /// <param name="value">The value to convert.</param>
+        /// <returns><paramref name="value" /> converted to its nearest representable <see cref="BFloat16"/> value.</returns>
+        [CLSCompliant(false)]
+        public static explicit operator BFloat16(ushort value) => RoundFromUnsigned(value);
+
+        /// <summary>Explicitly converts a <see cref="uint" /> value to its nearest representable <see cref="BFloat16"/> value.</summary>
+        /// <param name="value">The value to convert.</param>
+        /// <returns><paramref name="value" /> converted to its nearest representable <see cref="BFloat16"/> value.</returns>
+        [CLSCompliant(false)]
+        public static explicit operator BFloat16(uint value) => RoundFromUnsigned(value);
+
         /// <summary>Explicitly converts a <see cref="ulong" /> value to its nearest representable <see cref="BFloat16"/> value.</summary>
         /// <param name="value">The value to convert.</param>
         /// <returns><paramref name="value" /> converted to its nearest representable <see cref="BFloat16"/> value.</returns>
         [CLSCompliant(false)]
-        public static explicit operator BFloat16(ulong value) => (BFloat16)(float)value;
+        public static explicit operator BFloat16(ulong value) => RoundFromUnsigned(value);
 
         /// <summary>Explicitly converts a <see cref="nuint" /> value to its nearest representable <see cref="BFloat16"/> value.</summary>
         /// <param name="value">The value to convert.</param>
         /// <returns><paramref name="value" /> converted to its nearest representable <see cref="BFloat16"/> value.</returns>
         [CLSCompliant(false)]
-        public static explicit operator BFloat16(nuint value) => (BFloat16)(float)value;
+        public static explicit operator BFloat16(nuint value) => RoundFromUnsigned(value);
 
         /// <summary>Explicitly converts a <see cref="UInt128" /> value to its nearest representable <see cref="BFloat16"/> value.</summary>
         /// <param name="value">The value to convert.</param>
         /// <returns><paramref name="value" /> converted to its nearest representable <see cref="BFloat16"/> value.</returns>
         [CLSCompliant(false)]
-        public static explicit operator BFloat16(UInt128 value) => (BFloat16)(float)value;
+        public static explicit operator BFloat16(UInt128 value) => RoundFromUnsigned(value);
 
         //
         // Explicit Convert From BFloat16
