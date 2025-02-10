@@ -2085,7 +2085,7 @@ namespace System.Net.Http
 
             // If the connection is no longer in use (i.e. for NT authentication), then we can return it to the pool now.
             // Otherwise, it will be returned when the connection is no longer in use (i.e. Release above is called).
-            if (!_inUse)
+            if (!_inUse && !_disposed)
             {
                 ReturnConnectionToPool();
             }
