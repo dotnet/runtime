@@ -8234,17 +8234,17 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
 
     if (dvInfo.isInstantiatingStub)
     {
-        // We should only end up with generic methods for array interface devirt.
+        // We should only end up with generic methods for array interface or GVM devirt.
         //
         assert(dvInfo.wasArrayInterfaceOrGvmDevirt);
 
         // We don't expect NAOT to end up here, since it has Array<T>
-        // and normal devirtualization.
+        // and normal devirtualization, and it does not (yet) support GVM devirtualization.
         //
         assert(!IsTargetAbi(CORINFO_NATIVEAOT_ABI));
 
         // We don't expect R2R to end up here, since it does not (yet) support
-        // array interface devirtualization.
+        // array interface or GVM devirtualization.
         //
         assert(!opts.IsReadyToRun());
 

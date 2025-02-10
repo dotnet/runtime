@@ -8750,7 +8750,7 @@ bool CEEInfo::resolveVirtualMethodHelper(CORINFO_DEVIRTUALIZATION_INFO * info)
 
     if (pDevirtMD->HasMethodInstantiation())
     {
-        pDevirtMD = pDevirtMD->FindOrCreateAssociatedMethodDesc(pDevirtMD, pDevirtMD->GetMethodTable(), false, pBaseMD->GetMethodInstantiation(), true);
+        pDevirtMD = pDevirtMD->FindOrCreateAssociatedMethodDesc(pDevirtMD, pDevirtMD->GetMethodTable(), false, pBaseMD->GetMethodInstantiation(), false);
     }
 
     // Determine the exact class.
@@ -8783,7 +8783,7 @@ bool CEEInfo::resolveVirtualMethodHelper(CORINFO_DEVIRTUALIZATION_INFO * info)
 
     // Success! Pass back the results.
     //
-    if (isArray)
+    if (isArray || pDevirtMD->HasMethodInstantiation())
     {
         // Note if array devirtualization produced an instantiation stub
         // so jit can try and inline it.
@@ -8794,16 +8794,8 @@ bool CEEInfo::resolveVirtualMethodHelper(CORINFO_DEVIRTUALIZATION_INFO * info)
     }
     else
     {
-        if (pDevirtMD->HasMethodInstantiation())
-        {
-            info->exactContext = MAKE_METHODCONTEXT((CORINFO_METHOD_HANDLE) pDevirtMD);
-            info->wasArrayInterfaceOrGvmDevirt = true;
-        }
-        else
-        {
-            info->exactContext = MAKE_CLASSCONTEXT((CORINFO_CLASS_HANDLE) pExactMT);
-            info->wasArrayInterfaceOrGvmDevirt = false;
-        }
+        info->exactContext = MAKE_CLASSCONTEXT((CORINFO_CLASS_HANDLE) pExactMT);
+        info->wasArrayInterfaceOrGvmDevirt = false;
         info->isInstantiatingStub = false;
     }
 
