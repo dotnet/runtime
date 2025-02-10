@@ -8750,7 +8750,7 @@ bool CEEInfo::resolveVirtualMethodHelper(CORINFO_DEVIRTUALIZATION_INFO * info)
 
     if (pDevirtMD->HasMethodInstantiation())
     {
-        pDevirtMD = pDevirtMD->FindOrCreateAssociatedMethodDesc(pDevirtMD, pObjMT, false, pBaseMD->GetMethodInstantiation(), true);
+        pDevirtMD = pDevirtMD->FindOrCreateAssociatedMethodDesc(pDevirtMD, pDevirtMD->GetMethodTable(), false, pBaseMD->GetMethodInstantiation(), true);
     }
 
     // Determine the exact class.
