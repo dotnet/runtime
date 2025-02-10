@@ -5777,10 +5777,8 @@ struct GenTreeCall final : public GenTree
         GenTree*              gtCallAddr;    // CT_INDIRECT
     };
 
-    // Original indirect call before any devirtualization and its addr store.
-    // TODO-VM: Implement stub dispatch for GVM so that we can remove this.
-    GenTreeCall* gtOrigGvmCall;
-    GenTree*     gtOrigGvmCallAddrStore;
+    // The store to generic virtual method address that is used to make the call.
+    GenTree* gtOrigGvmCallAddrStore;
 
 #ifdef FEATURE_READYTORUN
     // Call target lookup info for method call from a Ready To Run module
