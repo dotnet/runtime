@@ -23,6 +23,10 @@
 #include "virtualcallstub.h"
 #include "../debug/ee/debugger.h"
 
+#ifdef FEATURE_INTERPRETER
+#include "interpexec.h"
+#endif
+
 #ifdef FEATURE_COMINTEROP
 #include "clrtocomcall.h"
 #endif
@@ -2738,14 +2742,25 @@ extern "C" PCODE STDCALL PreStubWorker(TransitionBlock* pTransitionBlock, Method
 #ifdef FEATURE_INTERPRETER
 extern "C" void STDCALL ExecuteInterpretedMethod(TransitionBlock* pTransitionBlock, TADDR byteCodeAddr)
 {
+    // Argument registers are in the TransitionBlock
+    // The stack arguments are right after the pTransitionBlock
     CodeHeader* pCodeHeader = EEJitManager::GetCodeHeaderFromStartAddress(byteCodeAddr);
 
     EEJitManager *pManager = ExecutionManager::GetEEJitManager();
     MethodDesc *pMD = pCodeHeader->GetMethodDesc();
 
-    // TODO-Interp: call the interpreter method execution entry point
-    // Argument registers are in the TransitionBlock
-    // The stack arguments are right after the pTransitionBlock
+    InterpMethod *pMethod = (InterpMethod*)pManager->m_interpreter->GetInterpMethod((CORINFO_METHOD_HANDLE)pMD);
+    assert(pMethod && pMethod->compiled);
+
+    InterpThreadContext *threadContext = InterpGetThreadContext();
+    int8_t *sp = threadContext->pStackPointer;
+
+    InterpMethodContextFrame interpFrame = {0};
+    interpFrame.pMethod = pMethod;
+    interpFrame.pStack = sp;
+    interpFrame.pRetVal = sp;
+
+    InterpExecMethod(&interpFrame, threadContext);
 }
 #endif // FEATURE_INTERPRETER
 
