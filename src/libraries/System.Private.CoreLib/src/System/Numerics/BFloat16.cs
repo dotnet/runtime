@@ -548,7 +548,7 @@ namespace System.Numerics
             // Use int->float conversion which usually has better FPU support
             float significand = (float)int.CreateTruncating(significandBits);
             // Craft the value 2^(32-SignificandLength-scale)
-            float scaleFactor = Half.CreateSingle(sign, (byte)(sizeof(TInteger) * 8 - SignificandLength - scale + float.ExponentBias), 0);
+            float scaleFactor = Math.CreateSingle(sign, (byte)(sizeof(TInteger) * 8 - SignificandLength - scale + float.ExponentBias), 0);
             float roundedValue = significand * scaleFactor;
 
             uint roundedValueBits = BitConverter.SingleToUInt32Bits(roundedValue);
@@ -609,7 +609,7 @@ namespace System.Numerics
             // Use int->float conversion which usually has better FPU support
             float significand = (float)int.CreateTruncating(significandBits);
             // Craft the value 2^(32-SignificandLength-scale)
-            float scaleFactor = Half.CreateSingle(false, (byte)(sizeof(TInteger) * 8 - SignificandLength - scale + float.ExponentBias), 0);
+            float scaleFactor = Math.CreateSingle(false, (byte)(sizeof(TInteger) * 8 - SignificandLength - scale + float.ExponentBias), 0);
             float roundedValue = significand * scaleFactor;
 
             uint roundedValueBits = BitConverter.SingleToUInt32Bits(roundedValue);

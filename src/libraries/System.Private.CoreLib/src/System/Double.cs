@@ -1248,7 +1248,7 @@ namespace System
                 result = (double)actualValue;
                 return true;
             }
-            if (typeof(TOther) == typeof(BFloat16))
+            else if (typeof(TOther) == typeof(BFloat16))
             {
                 BFloat16 actualValue = (BFloat16)(object)value;
                 result = (double)actualValue;

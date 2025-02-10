@@ -1604,8 +1604,8 @@ namespace System
             else if (typeof(TOther) == typeof(BFloat16))
             {
                 BFloat16 actualValue = (BFloat16)(object)value;
-                result = (actualValue >= new BFloat16(0x7F00)) ? MaxValue :
-                         (actualValue <= new BFloat16(0xFF00)) ? MinValue : (Int128)actualValue;
+                result = (actualValue >= BitConverter.UInt16BitsToBFloat16(0x7F00)) ? MaxValue :
+                         (actualValue <= BitConverter.UInt16BitsToBFloat16(0xFF00)) ? MinValue : (Int128)actualValue;
                 return true;
             }
             else if (typeof(TOther) == typeof(short))
@@ -1686,8 +1686,8 @@ namespace System
             else if (typeof(TOther) == typeof(BFloat16))
             {
                 BFloat16 actualValue = (BFloat16)(object)value;
-                result = (actualValue >= new BFloat16(0x7F00)) ? MaxValue :
-                         (actualValue <= new BFloat16(0xFF00)) ? MinValue : (Int128)actualValue;
+                result = (actualValue >= BitConverter.UInt16BitsToBFloat16(0x7F00)) ? MaxValue :
+                         (actualValue <= BitConverter.UInt16BitsToBFloat16(0xFF00)) ? MinValue : (Int128)actualValue;
                 return true;
             }
             else if (typeof(TOther) == typeof(short))
