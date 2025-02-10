@@ -66,7 +66,7 @@ internal sealed unsafe partial class ClrDataStackWalk : IXCLRDataStackWalk
         }
 #endif
 
-        return HResults.S_OK;
+        return hr;
     }
 
     int IXCLRDataStackWalk.GetFrame(void** frame)
