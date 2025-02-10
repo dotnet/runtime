@@ -5249,6 +5249,13 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
 
             DoPhase(this, PHASE_OPTIMIZE_LAYOUT, lateLayoutPhase);
         }
+        else
+        {
+            // If we didn't run 3-opt, we might still have a profile-aware DFS tree computed during LSRA available.
+            // This tree's presence can trigger asserts if pre/postorder numbers are recomputed,
+            // so invalidate the tree either way.
+            fgInvalidateDfsTree();
+        }
 
         // Now that the flowgraph is finalized, run post-layout optimizations.
         //
