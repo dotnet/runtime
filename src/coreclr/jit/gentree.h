@@ -4228,6 +4228,7 @@ enum GenTreeCallFlags : unsigned int
     GTF_CALL_M_CAST_OBJ_NONNULL        = 0x08000000, // if we expand this specific cast we don't need to check the input object for null
                                                      // NOTE: if needed, this flag can be removed, and we can introduce new _NONNUL cast helpers
     GTF_CALL_M_STACK_ARRAY             = 0x10000000, // this call is a new array helper for a stack allocated array.
+    GTF_CALL_M_GENERIC_VIRTUAL         = 0x20000000, // this call is a generic virtual call
 };
 
 inline constexpr GenTreeCallFlags operator ~(GenTreeCallFlags a)
@@ -5334,6 +5335,10 @@ struct GenTreeCall final : public GenTree
     {
         return (gtFlags & GTF_CALL_VIRT_KIND_MASK) != GTF_CALL_NONVIRT;
     }
+    bool IsGenericVirtual() const
+    {
+        return (gtCallMoreFlags & GTF_CALL_M_GENERIC_VIRTUAL) == GTF_CALL_M_GENERIC_VIRTUAL;
+    }
     bool IsVirtualStub() const
     {
         return (gtFlags & GTF_CALL_VIRT_KIND_MASK) == GTF_CALL_VIRT_STUB;
@@ -5771,6 +5776,10 @@ struct GenTreeCall final : public GenTree
         CORINFO_METHOD_HANDLE gtCallMethHnd; // CT_USER_FUNC or CT_HELPER
         GenTree*              gtCallAddr;    // CT_INDIRECT
     };
+
+    // Original indirect call before any devirtualization.
+    // TODO-VM: Implement stub dispatch for GVM so that we can remove this.
+    GenTreeCall* gtOrigGvmCall;
 
 #ifdef FEATURE_READYTORUN
     // Call target lookup info for method call from a Ready To Run module

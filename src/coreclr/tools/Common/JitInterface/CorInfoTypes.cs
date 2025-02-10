@@ -1053,6 +1053,7 @@ namespace Internal.JitInterface
         CORINFO_DEVIRTUALIZATION_FAILED_CAST,                          // object class could not be cast to interface class
         CORINFO_DEVIRTUALIZATION_FAILED_LOOKUP,                        // interface method could not be found
         CORINFO_DEVIRTUALIZATION_FAILED_DIM,                           // interface method was default interface method
+        CORINFO_DEVIRTUALIZATION_FAILED_GVM,                           // Support for generic virtual method in devirtualization is not yet implemented in crossgen2
         CORINFO_DEVIRTUALIZATION_FAILED_SUBCLASS,                      // object not subclass of base class
         CORINFO_DEVIRTUALIZATION_FAILED_SLOT,                          // virtual method installed via explicit override
         CORINFO_DEVIRTUALIZATION_FAILED_BUBBLE,                        // devirtualization crossed version bubble
@@ -1094,8 +1095,8 @@ namespace Internal.JitInterface
         public CORINFO_RESOLVED_TOKEN resolvedTokenDevirtualizedUnboxedMethod;
         public byte _isInstantiatingStub;
         public bool isInstantiatingStub { get { return _isInstantiatingStub != 0; } set { _isInstantiatingStub = value ? (byte)1 : (byte)0; } }
-        public byte _wasArrayInterfaceDevirt;
-        public bool wasArrayInterfaceDevirt { get { return _wasArrayInterfaceDevirt != 0; } set { _wasArrayInterfaceDevirt = value ? (byte)1 : (byte)0; } }
+        public byte _wasArrayInterfaceOrGvmDevirt;
+        public bool wasArrayInterfaceOrGvmDevirt { get { return _wasArrayInterfaceOrGvmDevirt != 0; } set { _wasArrayInterfaceOrGvmDevirt = value ? (byte)1 : (byte)0; } }
     }
 
     //----------------------------------------------------------------------------

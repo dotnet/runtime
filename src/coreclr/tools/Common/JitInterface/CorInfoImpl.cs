@@ -1303,7 +1303,7 @@ namespace Internal.JitInterface
             info->exactContext = null;
             info->detail = CORINFO_DEVIRTUALIZATION_DETAIL.CORINFO_DEVIRTUALIZATION_UNKNOWN;
             info->isInstantiatingStub = false;
-            info->wasArrayInterfaceDevirt = false;
+            info->wasArrayInterfaceOrGvmDevirt = false;
 
             TypeDesc objType = HandleToObject(info->objClass);
 
@@ -1319,7 +1319,12 @@ namespace Internal.JitInterface
             // Transform from the unboxing thunk to the normal method
             decl = decl.IsUnboxingThunk() ? decl.GetUnboxedMethod() : decl;
 
-            Debug.Assert(!decl.HasInstantiation);
+            if (decl.HasInstantiation)
+            {
+                // We can't devirtualize methods with instantiation
+                info->detail = CORINFO_DEVIRTUALIZATION_DETAIL.CORINFO_DEVIRTUALIZATION_FAILED_GVM;
+                return false;
+            }
 
             if ((info->context != null) && decl.OwningType.IsInterface)
             {
@@ -1451,7 +1456,16 @@ namespace Internal.JitInterface
             info->detail = CORINFO_DEVIRTUALIZATION_DETAIL.CORINFO_DEVIRTUALIZATION_SUCCESS;
             info->devirtualizedMethod = ObjectToHandle(impl);
             info->isInstantiatingStub = false;
-            info->exactContext = contextFromType(owningType);
+
+            if (decl.HasInstantiation)
+            {
+                info->exactContext = contextFromMethod(impl);
+                info->wasArrayInterfaceOrGvmDevirt = true;
+            }
+            else
+            {
+                info->exactContext = contextFromType(owningType);
+            }
 
             return true;
 

@@ -422,6 +422,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
                 fptr = gtNewLclvNode(lclNum, TYP_I_IMPL);
 
                 call->AsCall()->gtCallAddr = fptr;
+                call->AsCall()->gtCallMoreFlags |= GTF_CALL_M_GENERIC_VIRTUAL;
                 call->gtFlags |= GTF_EXCEPT | (fptr->gtFlags & GTF_GLOB_EFFECT);
 
                 if ((sig->sigInst.methInstCount != 0) && IsTargetAbi(CORINFO_NATIVEAOT_ABI))
@@ -441,7 +442,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
                 // Sine we are jumping over some code, check that its OK to skip that code
                 assert((sig->callConv & CORINFO_CALLCONV_MASK) != CORINFO_CALLCONV_VARARG &&
                        (sig->callConv & CORINFO_CALLCONV_MASK) != CORINFO_CALLCONV_NATIVEVARARG);
-                goto DONE;
+                goto DEVIRT;
             }
 
             case CORINFO_CALL:
@@ -947,13 +948,15 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
         }
     }
 
+DEVIRT:
+
     bool probing;
     probing = impConsiderCallProbe(call->AsCall(), rawILOffset);
 
     // See if we can devirt if we aren't probing.
     if (!probing && opts.OptimizationEnabled())
     {
-        if (call->AsCall()->IsVirtual())
+        if (call->AsCall()->IsVirtual() || callInfo->kind == CORINFO_VIRTUALCALL_LDVIRTFTN)
         {
             // only true object pointers can be virtual
             assert(call->AsCall()->gtArgs.HasThisPointer() &&
@@ -7141,7 +7144,7 @@ void Compiler::considerGuardedDevirtualization(GenTreeCall*            call,
                 }
 
                 addGuardedDevirtualizationCandidate(call, exactMethod, exactCls, exactContext, exactMethodAttrs,
-                                                    clsAttrs, likelyHood, dvInfo.wasArrayInterfaceDevirt,
+                                                    clsAttrs, likelyHood, dvInfo.wasArrayInterfaceOrGVMDevirt,
                                                     dvInfo.isInstantiatingStub, originalContext);
             }
 
@@ -7213,7 +7216,7 @@ void Compiler::considerGuardedDevirtualization(GenTreeCall*            call,
 
             likelyContext     = dvInfo.exactContext;
             likelyMethod      = dvInfo.devirtualizedMethod;
-            arrayInterface    = dvInfo.wasArrayInterfaceDevirt;
+            arrayInterface    = dvInfo.wasArrayInterfaceOrGVMDevirt;
             instantiatingStub = dvInfo.isInstantiatingStub;
         }
         else
@@ -8019,9 +8022,9 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
     assert(methodFlags != nullptr);
     assert(pContextHandle != nullptr);
 
-    // This should be a virtual vtable or virtual stub call.
+    // This should be a virtual vtable or virtual stub call, or a generic virtual call.
     //
-    assert(call->IsVirtual());
+    assert(call->IsVirtual() || call->IsGenericVirtual());
     assert(opts.OptimizationEnabled());
 
 #if defined(DEBUG)
@@ -8202,14 +8205,14 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
 
         if (((size_t)exactContext & CORINFO_CONTEXTFLAGS_MASK) == CORINFO_CONTEXTFLAGS_CLASS)
         {
-            assert(!dvInfo.wasArrayInterfaceDevirt);
+            assert(!dvInfo.wasArrayInterfaceOrGVMDevirt);
             derivedClass = (CORINFO_CLASS_HANDLE)((size_t)exactContext & ~CORINFO_CONTEXTFLAGS_MASK);
         }
         else
         {
             // Array interface devirt can return a nonvirtual generic method of the non-generic SZArrayHelper class.
             //
-            assert(dvInfo.wasArrayInterfaceDevirt);
+            assert(dvInfo.wasArrayInterfaceOrGVMDevirt);
             assert(((size_t)exactContext & CORINFO_CONTEXTFLAGS_MASK) == CORINFO_CONTEXTFLAGS_METHOD);
             derivedClass = info.compCompHnd->getMethodClass(derivedMethod);
         }
@@ -8232,7 +8235,7 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
     {
         // We should only end up with generic methods for array interface devirt.
         //
-        assert(dvInfo.wasArrayInterfaceDevirt);
+        assert(dvInfo.wasArrayInterfaceOrGVMDevirt);
 
         // We don't expect NAOT to end up here, since it has Array<T>
         // and normal devirtualization.
@@ -8345,6 +8348,11 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
     Metrics.DevirtualizedCall++;
 
     JITDUMP("    %s; can devirtualize\n", note);
+
+    if (call->IsGenericVirtual())
+    {
+        call->gtOrigGvmCall = gtCloneExpr(call)->AsCall();
+    }
 
     // Make the updates.
     call->gtFlags &= ~GTF_CALL_VIRT_VTABLE;
