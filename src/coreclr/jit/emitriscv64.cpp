@@ -3296,7 +3296,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
         case INS_OPTS_C:
             dst  = emitOutputInstr_OptsC(dst, id, ig, &sz);
             dst2 = dst;
-            ins  = INS_nop; // ???
+            ins  = INS_nop;
             break;
         default: // case INS_OPTS_NONE:
             dst += emitOutput_Instr(dst, id->idAddr()->iiaGetInstrEncode());

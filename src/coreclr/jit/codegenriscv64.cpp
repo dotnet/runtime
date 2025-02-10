@@ -1010,7 +1010,8 @@ BasicBlock* CodeGen::genCallFinally(BasicBlock* block)
             // TODO-RISCV64-CQ: Can we get rid of this instruction, and just have the call return directly
             // to the next instruction? This would depend on stack walking from within the finally
             // handler working without this instruction being in this special EH region.
-            instGen(INS_nop);
+            // instGen(INS_nop);
+            // We dont need to generate no-op instruction. It's pointless.
         }
         else
         {
@@ -1620,9 +1621,6 @@ void CodeGen::genLclHeap(GenTree* tree)
             // The SP might already be in the guard page, so we must touch it BEFORE
             // the alloc, not after.
 
-            // ld_w r0, 0(SP)
-            // emit->emitIns_R_R_I(INS_lw, EA_4BYTE, REG_R0, REG_SP, 0);
-
             lastTouchDelta = amount;
             imm            = -(ssize_t)amount;
             if (emitter::isValidSimm12(imm))
@@ -1733,9 +1731,6 @@ void CodeGen::genLclHeap(GenTree* tree)
         emit->emitIns_R_I(INS_lui, EA_PTRSIZE, rPageSize, pageSize >> 12);
 
         // genDefineTempLabel(loop);
-
-        // tickle the page - Read from the updated SP - this triggers a page fault when on the guard page
-        //emit->emitIns_R_R_I(INS_lw, EA_4BYTE, REG_R0, REG_SPBASE, 0);
 
         // decrement SP by eeGetPageSize()
         emit->emitIns_R_R_R(INS_sub, EA_PTRSIZE, tempReg, REG_SPBASE, rPageSize);
@@ -5872,15 +5867,6 @@ void CodeGen::genCodeForInitBlkLoop(GenTreeBlk* initBlkNode)
 void CodeGen::genCall(GenTreeCall* call)
 {
     genCallPlaceRegArgs(call);
-
-    // Insert a null check on "this" pointer if asked.
-    // is it needed?
-    // if (call->NeedsNullCheck())
-    // {
-    //     const regNumber regThis = genGetThisArgReg(call);
-
-    //     GetEmitter()->emitIns_R_R_I(INS_lw, EA_4BYTE, REG_R0, regThis, 0);
-    // }
 
     // If fast tail call, then we are done here, we just have to load the call
     // target into the right registers. We ensure in RA that target is loaded
