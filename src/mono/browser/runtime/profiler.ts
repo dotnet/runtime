@@ -30,6 +30,9 @@ export function mono_wasm_init_browser_profiler (options: BrowserProfilerOptions
     mono_assert(runtimeHelpers.emscriptenBuildOptions.enableBrowserProfiler, "Browser profiler is not enabled, please use <WasmProfilers>browser;</WasmProfilers> in your project file.");
     if (options == null)
         options = {};
+    if (typeof options.sampleIntervalMs === "number") {
+        desiredSampleIntervalMs = options.sampleIntervalMs!;
+    }
     const arg = "browser:";
     cwraps.mono_wasm_profiler_init_browser(arg);
 }
@@ -82,26 +85,79 @@ export function endMeasure (start: TimeStamp, block: string, id?: string) {
     }
 }
 
+let desiredSampleIntervalMs = 10;// ms
+let lastSampleTime = 0;
+let skipsPerPeriod = 1;
+let sampleSkipCounter = 0;
 const stackFrames: number[] = [];
+const stackFramesSkip: boolean[] = [];
+
 export function mono_wasm_profiler_enter (): void {
-    if (runtimeHelpers.enablePerfMeasure) {
-        stackFrames.push(globalThis.performance.now());
+    if (!runtimeHelpers.enablePerfMeasure) {
+        return;
     }
+
+    stackFrames.push(globalThis.performance.now());
+    stackFramesSkip.push(true);
 }
 
 const methodNames: Map<number, string> = new Map();
 export function mono_wasm_profiler_leave (method: MonoMethod): void {
-    if (runtimeHelpers.enablePerfMeasure) {
-        const start = stackFrames.pop();
-        const options = ENVIRONMENT_IS_WEB
-            ? { start: start }
-            : { startTime: start };
-        let methodName = methodNames.get(method as any);
-        if (!methodName) {
-            const chars = cwraps.mono_wasm_method_get_name(method);
-            methodName = utf8ToString(chars);
-            methodNames.set(method as any, methodName);
-        }
-        globalThis.performance.measure(methodName, options);
+    if (!runtimeHelpers.enablePerfMeasure) {
+        return;
     }
+
+    const start = stackFrames.pop();
+    const skip = stackFramesSkip.pop();
+
+    // no sample point and skip also now
+    if (skip && skipSample()) {
+        return;
+    }
+
+    // propagate !skip to parent
+    stackFramesSkip[stackFramesSkip.length - 1] = false;
+
+    const options = ENVIRONMENT_IS_WEB
+        ? { start: start }
+        : { startTime: start };
+    let methodName = methodNames.get(method as any);
+    if (!methodName) {
+        const chars = cwraps.mono_wasm_method_get_name(method);
+        methodName = utf8ToString(chars);
+        methodNames.set(method as any, methodName);
+    }
+    globalThis.performance.measure(methodName, options);
+}
+
+export function mono_wasm_profiler_samplepoint (): void {
+    if (!runtimeHelpers.enablePerfMeasure || skipSample()) {
+        return;
+    }
+
+    // mark the current frame to record the stack frame
+    stackFramesSkip[stackFramesSkip.length - 1] = false;
+}
+
+function skipSample ():boolean {
+    sampleSkipCounter++;
+    if (sampleSkipCounter < skipsPerPeriod) {
+        return true;
+    }
+
+    // timer resolution in non-isolated contexts: 100 microseconds (decimal number)
+    const now = globalThis.performance.now();
+
+    if (desiredSampleIntervalMs > 0) {
+        // recalculate ideal number of skips per period
+        const msSinceLastSample = now - lastSampleTime;
+        const skipsPerMs = skipsPerPeriod / msSinceLastSample;
+        const newSkipsPerPeriod = (skipsPerMs * desiredSampleIntervalMs) | 0;
+        skipsPerPeriod = (newSkipsPerPeriod + skipsPerPeriod) / 2;
+        lastSampleTime = now;
+    } else {
+        skipsPerPeriod = 0;
+    }
+
+    return false;
 }

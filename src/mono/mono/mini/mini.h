@@ -2124,6 +2124,7 @@ mono_bb_last_inst (MonoBasicBlock *bb, int filter)
 
 /* profiler support */
 void        mini_add_profiler_argument (const char *desc);
+void        mini_profiler_emit_samplepoint (MonoCompile *cfg);
 void        mini_profiler_emit_enter (MonoCompile *cfg);
 void        mini_profiler_emit_leave (MonoCompile *cfg, MonoInst *ret);
 void        mini_profiler_emit_tail_call (MonoCompile *cfg, MonoMethod *target);

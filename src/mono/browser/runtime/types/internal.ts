@@ -259,6 +259,7 @@ export type AOTProfilerOptions = {
 }
 
 export type BrowserProfilerOptions = {
+    sampleIntervalMs?: number, // default: 1000
 }
 
 export type LogProfilerOptions = {

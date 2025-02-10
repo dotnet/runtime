@@ -7607,6 +7607,26 @@ MINT_IN_CASE(MINT_BRTRUE_I8_SP) ZEROP_SP(gint64, !=); MINT_IN_BREAK;
 			ip += 3;
 			MINT_IN_BREAK;
 		}
+		MINT_IN_CASE(MINT_PROF_SAMPLEPOINT) {
+			guint16 flag = ip [1];
+			ip += 2;
+
+			if ((flag & TRACING_FLAG) || ((flag & PROFILING_FLAG) && MONO_PROFILER_ENABLED (method_samplepoint) &&
+					(frame->imethod->prof_flags & MONO_PROFILER_CALL_INSTRUMENTATION_SAMPLEPOINT_CONTEXT))) {
+				MonoProfilerCallContext *prof_ctx = g_new0 (MonoProfilerCallContext, 1);
+				prof_ctx->interp_frame = frame;
+				prof_ctx->method = frame->imethod->method;
+				// FIXME push/pop LMF
+				if (flag & TRACING_FLAG)
+					mono_trace_samplepoint_method (frame->imethod->method, frame->imethod->jinfo, prof_ctx);
+				if (flag & PROFILING_FLAG)
+					MONO_PROFILER_RAISE (method_samplepoint, (frame->imethod->method, prof_ctx));
+				g_free (prof_ctx);
+			} else if ((flag & PROFILING_FLAG) && MONO_PROFILER_ENABLED (method_samplepoint)) {
+				MONO_PROFILER_RAISE (method_samplepoint, (frame->imethod->method, NULL));
+			}
+			MINT_IN_BREAK;
+		}
 		MINT_IN_CASE(MINT_PROF_ENTER) {
 			guint16 flag = ip [1];
 			ip += 2;
@@ -7654,7 +7674,7 @@ MINT_IN_CASE(MINT_BRTRUE_I8_SP) ZEROP_SP(gint64, !=); MINT_IN_BREAK;
 				if (flag & PROFILING_FLAG)
 					MONO_PROFILER_RAISE (method_leave, (frame->imethod->method, prof_ctx));
 				g_free (prof_ctx);
-			} else if ((flag & PROFILING_FLAG) && MONO_PROFILER_ENABLED (method_enter)) {
+			} else if ((flag & PROFILING_FLAG) && MONO_PROFILER_ENABLED (method_leave)) {
 				MONO_PROFILER_RAISE (method_leave, (frame->imethod->method, NULL));
 			}
 

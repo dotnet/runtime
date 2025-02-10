@@ -7458,6 +7458,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			if (cfg->gshared && mono_method_check_context_used (cmethod))
 				GENERIC_SHARING_FAILURE (CEE_JMP);
 
+			mini_profiler_emit_samplepoint (cfg);
 			mini_profiler_emit_tail_call (cfg, cmethod);
 
 			fsig = mono_method_signature_internal (cmethod);
@@ -8310,6 +8311,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					for (i = 0; i < n; ++i)
 						EMIT_NEW_ARGSTORE (cfg, ins, i, sp [i]);
 
+					mini_profiler_emit_samplepoint (cfg);
 					mini_profiler_emit_tail_call (cfg, cmethod);
 
 					MONO_INST_NEW (cfg, ins, OP_BR);
@@ -8691,8 +8693,10 @@ calli_end:
 			break;
 		}
 		case MONO_CEE_RET:
-			if (!detached_before_ret)
+			if (!detached_before_ret) {
+				mini_profiler_emit_samplepoint (cfg);
 				mini_profiler_emit_leave (cfg, sig->ret->type != MONO_TYPE_VOID ? sp [-1] : NULL);
+			}
 
 			g_assert (!method_does_not_return (method));
 
@@ -11223,6 +11227,7 @@ field_access_end:
 					 * Emit instrumentation code before linking the basic blocks below as this
 					 * will alter cfg->cbb.
 					 */
+					mini_profiler_emit_samplepoint (cfg);
 					mini_profiler_emit_call_finally (cfg, header, ip, leave->index, clause);
 
 					tblock = cfg->cil_offset_to_bb [clause->handler_offset];
@@ -11317,6 +11322,7 @@ field_access_end:
 			} else {
 				if (token == MONO_JIT_ICALL_mono_threads_detach_coop) {
 					/* can't emit profiling code after a detach, so emit it now */
+					mini_profiler_emit_samplepoint (cfg);
 					mini_profiler_emit_leave (cfg, NULL);
 					detached_before_ret = TRUE;
 				}
@@ -11484,8 +11490,10 @@ mono_ldptr:
 			if (sp != stack_start)
 				UNVERIFIED;
 
-			if (!detached_before_ret)
+			if (!detached_before_ret) {
+				mini_profiler_emit_samplepoint (cfg);
 				mini_profiler_emit_leave (cfg, sp [0]);
+			}
 
 			MONO_INST_NEW (cfg, ins, OP_BR);
 			ins->inst_target_bb = end_bblock;
@@ -12351,6 +12359,7 @@ all_bbs_done:
 	/* emit profiler enter code after a jit attach if there is one */
 	cfg->cbb = init_localsbb2;
 	mini_profiler_emit_enter (cfg);
+	mini_profiler_emit_samplepoint (cfg);
 	cfg->cbb = init_localsbb;
 
 	if (seq_points) {

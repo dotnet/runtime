@@ -38,10 +38,19 @@ mono_wasm_profiler_enter ();
 void
 mono_wasm_profiler_leave (MonoMethod *method);
 
+void
+mono_wasm_profiler_samplepoint ();
+
 static void
 method_enter (MonoProfiler *prof, MonoMethod *method, MonoProfilerCallContext *ctx)
 {
 	mono_wasm_profiler_enter ();
+}
+
+static void
+method_samplepoint (MonoProfiler *prof, MonoMethod *method, MonoProfilerCallContext *ctx)
+{
+	mono_wasm_profiler_samplepoint ();
 }
 
 static void
@@ -68,10 +77,11 @@ static MonoProfilerCallInstrumentationFlags
 method_filter (MonoProfiler *prof, MonoMethod *method)
 {
 	// TODO filter by namespace ?
-	return MONO_PROFILER_CALL_INSTRUMENTATION_ENTER |
-	       MONO_PROFILER_CALL_INSTRUMENTATION_LEAVE |
-	       MONO_PROFILER_CALL_INSTRUMENTATION_TAIL_CALL |
-	       MONO_PROFILER_CALL_INSTRUMENTATION_EXCEPTION_LEAVE;
+	return 	MONO_PROFILER_CALL_INSTRUMENTATION_SAMPLEPOINT_CONTEXT |
+			MONO_PROFILER_CALL_INSTRUMENTATION_ENTER |
+			MONO_PROFILER_CALL_INSTRUMENTATION_LEAVE |
+			MONO_PROFILER_CALL_INSTRUMENTATION_TAIL_CALL |
+			MONO_PROFILER_CALL_INSTRUMENTATION_EXCEPTION_LEAVE;
 }
 
 
@@ -95,6 +105,7 @@ mono_profiler_init_browser (const char *desc)
 
 #ifdef HOST_WASM
 	// install this only in production run, not in AOT run
+	mono_profiler_set_method_samplepoint_callback (handle, method_samplepoint);
 	mono_profiler_set_method_enter_callback (handle, method_enter);
 	mono_profiler_set_method_leave_callback (handle, method_leave);
 	mono_profiler_set_method_tail_call_callback (handle, tail_call);

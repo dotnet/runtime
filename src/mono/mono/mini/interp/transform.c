@@ -734,6 +734,18 @@ handle_branch (TransformData *td, int long_op, int offset)
 		g_assert_not_reached ();
 	/* Add exception checkpoint or safepoint for backward branches */
 	if (offset < 0) {
+
+		InterpMethod *rtm = td->rtm;
+		guint16 samplepoint_profiling = 0;
+		if (mono_jit_trace_calls != NULL && mono_trace_eval (rtm->method))
+			samplepoint_profiling |= TRACING_FLAG;
+		if (rtm->prof_flags & MONO_PROFILER_CALL_INSTRUMENTATION_SAMPLEPOINT_CONTEXT)
+			samplepoint_profiling |= PROFILING_FLAG;
+		if (samplepoint_profiling) {
+			interp_add_ins (td, MINT_PROF_SAMPLEPOINT);
+			td->last_ins->data [0] = samplepoint_profiling;
+		}
+
 		if (mono_threads_are_safepoints_enabled ())
 			interp_add_ins (td, MINT_SAFEPOINT);
 	}
@@ -5325,6 +5337,16 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 		if (enter_profiling) {
 			interp_add_ins (td, MINT_PROF_ENTER);
 			td->last_ins->data [0] = enter_profiling;
+		}
+
+		guint16 samplepoint_profiling = 0;
+		if (mono_jit_trace_calls != NULL && mono_trace_eval (method))
+			samplepoint_profiling |= TRACING_FLAG;
+		if (rtm->prof_flags & MONO_PROFILER_CALL_INSTRUMENTATION_SAMPLEPOINT_CONTEXT)
+			samplepoint_profiling |= PROFILING_FLAG;
+		if (samplepoint_profiling) {
+			interp_add_ins (td, MINT_PROF_SAMPLEPOINT);
+			td->last_ins->data [0] = samplepoint_profiling;
 		}
 
 		/*

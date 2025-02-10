@@ -77,6 +77,7 @@ MONO_PROFILER_EVENT_2(method_exception_leave, MethodExceptionLeave, MonoMethod *
 MONO_PROFILER_EVENT_1(method_free, MethodFree, MonoMethod *, method)
 MONO_PROFILER_EVENT_1(method_begin_invoke, MethodBeginInvoke, MonoMethod *, method)
 MONO_PROFILER_EVENT_1(method_end_invoke, MethodEndInvoke, MonoMethod *, method)
+MONO_PROFILER_EVENT_2(method_samplepoint, MethodSamplepoint, MonoMethod *, method, MonoProfilerCallContext *, context)
 
 MONO_PROFILER_EVENT_1(exception_throw, ExceptionThrow, MonoObject *, exception)
 MONO_PROFILER_EVENT_4(exception_clause, ExceptionClause, MonoMethod *, method, uint32_t, index, MonoExceptionEnum, type, MonoObject *, exception)
