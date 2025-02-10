@@ -32,9 +32,9 @@ Get-Content $filename | ForEach-Object {
     # Only process the entries that begin with "#"
     if ($line -match '^#.*$') {
         $line = $line -replace '^#', ''
-        Write-Host "LEAF_ENTRY ${prefix1}${line}, _TEXT"
-        Write-Host "    ${jump} EXTERNAL_C_FUNC(${prefix2}${line})"
-        Write-Host "LEAF_END ${prefix1}${line}, _TEXT"
-        Write-Host ""
+        Write-Output "LEAF_ENTRY ${prefix1}${line}, _TEXT"
+        Write-Output "    ${jump} EXTERNAL_C_FUNC(${prefix2}${line})"
+        Write-Output "LEAF_END ${prefix1}${line}, _TEXT"
+        Write-Output ""
     }
 }
