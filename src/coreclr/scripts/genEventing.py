@@ -467,7 +467,7 @@ def parseTemplateNodes(templateNodes):
 
     return allTemplates
 
-def generateClrallEvents(eventNodes, allTemplates, target_cpp, runtimeFlavor, write_xplatheader, providerName, inclusionList, generatedFileType, user_events):
+def generateClrallEvents(eventNodes, allTemplates, target_cpp, runtimeFlavor, is_windows, write_xplatheader, providerName, inclusionList, generatedFileType, user_events):
     clrallEvents = []
     for eventNode in eventNodes:
         eventName = eventNode.getAttribute('symbol')
@@ -495,7 +495,7 @@ def generateClrallEvents(eventNodes, allTemplates, target_cpp, runtimeFlavor, wr
                 clrallEvents.append("EventPipeEventEnabled" + eventName + "()")
 
                 if runtimeFlavor.coreclr or write_xplatheader or runtimeFlavor.nativeaot:
-                    if os.name == 'posix':
+                    if not is_windows:
                         if user_events and runtimeFlavor.coreclr:
                             clrallEvents.append(" || UserEventsEventEnabled" + eventName + "()")
                         # native AOT does not support non-windows eventing other than via event pipe
@@ -929,7 +929,7 @@ def updateclreventsfile(write_xplatheader, target_cpp, runtimeFlavor, targetOS, 
             eventNodes = providerNode.getElementsByTagName('event')
 
             #vm header:
-            Clrallevents.write(generateClrallEvents(eventNodes, allTemplates, target_cpp, runtimeFlavor, write_xplatheader, providerName, inclusion_list, generatedFileType, user_events))
+            Clrallevents.write(generateClrallEvents(eventNodes, allTemplates, target_cpp, runtimeFlavor, is_windows, write_xplatheader, providerName, inclusion_list, generatedFileType, user_events))
 
             providerName = providerNode.getAttribute('name')
             providerSymbol = providerNode.getAttribute('symbol')
