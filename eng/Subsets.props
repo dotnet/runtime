@@ -194,6 +194,7 @@
     <!-- Mono -->
     <SubsetName Include="Mono" Description="The Mono runtime and CoreLib. Equivalent to: $(DefaultMonoSubsets)" />
     <SubsetName Include="Mono.Runtime" Description="The Mono .NET runtime." />
+    <SubsetName Include="Mono.EmSDK" Description="The emsdk provisioning." />
     <SubsetName Include="Mono.AotCross" Description="The cross-compiler runtime for Mono AOT." />
     <SubsetName Include="Mono.CoreLib" Description="The managed System.Private.CoreLib library for Mono." />
     <SubsetName Include="Mono.Manifests" Description="The NuGet packages with manifests defining the mobile and Blazor workloads." />
@@ -469,6 +470,10 @@
 
   <ItemGroup Condition="$(_subset.Contains('+mono.runtime+'))">
     <ProjectToBuild Include="$(MonoProjectRoot)mono.proj" AdditionalProperties="%(AdditionalProperties);MonoMsCorDbi=$(_subset.Contains('+mono.mscordbi+'))" Category="mono" />
+  </ItemGroup>
+
+  <ItemGroup Condition="$(_subset.Contains('+mono.emsdk+'))">
+    <ProjectToBuild Include="$(MonoProjectRoot)mono.proj" AdditionalProperties="%(AdditionalProperties);ProvisionEmscriptenOnly=true" Category="mono" />
   </ItemGroup>
 
   <ItemGroup Condition="$(_subset.Contains('+mono.aotcross+'))">
