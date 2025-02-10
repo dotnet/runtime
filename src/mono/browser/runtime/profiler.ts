@@ -131,11 +131,14 @@ export function mono_wasm_profiler_leave (method: MonoMethod): void {
 }
 
 export function mono_wasm_profiler_samplepoint (): void {
-    if (!runtimeHelpers.enablePerfMeasure || skipSample()) {
+    if (!runtimeHelpers.enablePerfMeasure) {
+        return;
+    }
+    if (!stackFramesSkip[stackFramesSkip.length - 1] || skipSample()) {
         return;
     }
 
-    // mark the current frame to record the stack frame
+    // mark the current frame to not skip
     stackFramesSkip[stackFramesSkip.length - 1] = false;
 }
 
@@ -148,16 +151,17 @@ function skipSample ():boolean {
     // timer resolution in non-isolated contexts: 100 microseconds (decimal number)
     const now = globalThis.performance.now();
 
-    if (desiredSampleIntervalMs > 0) {
+    if (desiredSampleIntervalMs > 0 && lastSampleTime != 0) {
         // recalculate ideal number of skips per period
         const msSinceLastSample = now - lastSampleTime;
-        const skipsPerMs = skipsPerPeriod / msSinceLastSample;
-        const newSkipsPerPeriod = (skipsPerMs * desiredSampleIntervalMs) | 0;
-        skipsPerPeriod = (newSkipsPerPeriod + skipsPerPeriod) / 2;
-        lastSampleTime = now;
+        const skipsPerMs = sampleSkipCounter / msSinceLastSample;
+        const newSkipsPerPeriod = (skipsPerMs * desiredSampleIntervalMs);
+        skipsPerPeriod = ((newSkipsPerPeriod + skipsPerPeriod) / 2) | 0;
     } else {
         skipsPerPeriod = 0;
     }
+    lastSampleTime = now;
+    sampleSkipCounter = 0;
 
     return false;
 }
