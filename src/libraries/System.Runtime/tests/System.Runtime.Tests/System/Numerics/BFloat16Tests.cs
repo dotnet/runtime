@@ -8,6 +8,7 @@ using System.Tests;
 using System.Text;
 using Xunit;
 using Xunit.Sdk;
+using static System.Tests.CreateDelegateTests;
 
 namespace System.Numerics.Tests
 {
@@ -629,6 +630,72 @@ namespace System.Numerics.Tests
         public static void ExplicitConversion_FromDouble(double d, BFloat16 expected) // Check the underlying bits for verifying NaNs
         {
             BFloat16 b16 = (BFloat16)d;
+            AssertEqual(expected, b16);
+        }
+
+        public static IEnumerable<object[]> ExplicitConversion_FromInt32_TestData()
+        {
+            (int, BFloat16)[] data =
+            {
+                (-0x103_0001, UInt16BitsToBFloat16(0xCB82)), // -16973824 - 1 rounds lower
+                (-0x103_0000, UInt16BitsToBFloat16(0xCB82)), // -16973824 rounds to even
+                (-0x102_FFFF, UInt16BitsToBFloat16(0xCB81)), // -16973824 + 1 rounds higher
+                (-0x101_0001, UInt16BitsToBFloat16(0xCB81)), // -16842752 - 1 rounds lower
+                (-0x101_0000, UInt16BitsToBFloat16(0xCB80)), // -16842752 rounds to even
+                (-0x100_FFFF, UInt16BitsToBFloat16(0xCB80)), // -16842752 + 1 rounds higher
+                (0, BFloat16.Zero),
+                (0x100_FFFF, UInt16BitsToBFloat16(0x4B80)), // 16842752 - 1 rounds lower
+                (0x101_0000, UInt16BitsToBFloat16(0x4B80)), // 16842752 rounds to even
+                (0x101_0001, UInt16BitsToBFloat16(0x4B81)), // 16842752 + 1 rounds higher
+                (0x102_FFFF, UInt16BitsToBFloat16(0x4B81)), // 16973824 - 1 rounds lower
+                (0x103_0000, UInt16BitsToBFloat16(0x4B82)), // 16973824 rounds to even
+                (0x103_0001, UInt16BitsToBFloat16(0x4B82)), // 16973824 + 1 rounds higher
+                (int.MinValue, UInt16BitsToBFloat16(0xCF00)),
+            };
+
+            foreach ((int original, BFloat16 expected) in data)
+            {
+                yield return new object[] { original, expected };
+            }
+        }
+
+        [MemberData(nameof(ExplicitConversion_FromInt32_TestData))]
+        [Theory]
+        public static void ExplicitConversion_FromInt32(int i, BFloat16 expected)
+        {
+            BFloat16 b16 = (BFloat16)i;
+            AssertEqual(expected, b16);
+        }
+
+        public static IEnumerable<object[]> ExplicitConversion_FromUInt32_TestData()
+        {
+            (uint, BFloat16)[] data =
+            {
+                (0, BFloat16.Zero),
+                (0x100_FFFF, UInt16BitsToBFloat16(0x4B80)), // 16842752 - 1 rounds lower
+                (0x101_0000, UInt16BitsToBFloat16(0x4B80)), // 16842752 rounds to even
+                (0x101_0001, UInt16BitsToBFloat16(0x4B81)), // 16842752 + 1 rounds higher
+                (0x102_FFFF, UInt16BitsToBFloat16(0x4B81)), // 16973824 - 1 rounds lower
+                (0x103_0000, UInt16BitsToBFloat16(0x4B82)), // 16973824 rounds to even
+                (0x103_0001, UInt16BitsToBFloat16(0x4B82)), // 16973824 + 1 rounds higher
+                (0x8000_0000, UInt16BitsToBFloat16(0x4F00)),
+                (0xFF7F_FFFF, UInt16BitsToBFloat16(0x4F7F)), // 4286578688 - 1 rounds lower
+                (0xFF80_0000, UInt16BitsToBFloat16(0x4F80)), // 4286578688 rounds to even
+                (0xFF80_0001, UInt16BitsToBFloat16(0x4F80)), // 4286578688 + 1 rounds higher
+                (0xFFFF_FFFF, UInt16BitsToBFloat16(0x4F80)),
+            };
+
+            foreach ((uint original, BFloat16 expected) in data)
+            {
+                yield return new object[] { original, expected };
+            }
+        }
+
+        [MemberData(nameof(ExplicitConversion_FromUInt32_TestData))]
+        [Theory]
+        public static void ExplicitConversion_FromUInt32(uint i, BFloat16 expected)
+        {
+            BFloat16 b16 = (BFloat16)i;
             AssertEqual(expected, b16);
         }
 
