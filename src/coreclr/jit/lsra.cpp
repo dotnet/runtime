@@ -972,7 +972,7 @@ void LinearScan::setBlockSequence()
     FlowGraphDfsTree* const dfsTree = compiler->m_dfsTree;
     blockSequence                   = new (compiler, CMK_LSRA) BasicBlock*[compiler->fgBBcount];
 
-    if (compiler->opts.OptimizationEnabled() && dfsTree->HasCycle())
+    if (compiler->opts.OptimizationEnabled())
     {
         // Ensure loop bodies are compact in the visitation order.
         compiler->m_loops                  = FlowGraphNaturalLoops::Find(dfsTree);
@@ -1333,15 +1333,10 @@ PhaseStatus LinearScan::doLinearScan()
     compiler->compLSRADone = true;
 
     // If edge resolution didn't create new blocks,
-    // cache the block sequence so it can be used as an initial layout during block reordering.
-    if (compiler->fgBBcount == bbSeqCount)
-    {
-        compiler->fgBBs = blockSequence;
-    }
-    else
+    // we can reuse the current flowgraph annotations during block layout.
+    if (compiler->fgBBcount != bbSeqCount)
     {
         assert(compiler->fgBBcount > bbSeqCount);
-        compiler->fgBBs = nullptr;
         compiler->fgInvalidateDfsTree();
     }
 
