@@ -255,33 +255,18 @@ internal static class Utils
                     return false;
 
                 int overlap = Math.Min(readA - consumedA, readB - consumedB);
-                if (!SequenceEqual(bufferA, consumedA, bufferB, consumedB, overlap))
+                if (!bufferA.AsSpan(consumedA, overlap).SequenceEqual(bufferB.AsSpan(consumedB, overlap)))
                     return false;
 
                 consumedA += overlap;
                 consumedB += overlap;
-            }
-
-            static bool SequenceEqual(TContent[] bufferA, int offsetA, TContent[] bufferB, int offsetB, int count)
-            {
-#if NET
-                return bufferA.AsSpan(offsetA, count).SequenceEqual(bufferB.AsSpan(offsetB, count));
-#else
-                for (int i = 0; i < count; i++)
-                {
-                    if (!bufferA[offsetA + i].Equals(bufferB[offsetB + i]))
-                        return false;
-                }
-
-                return true;
-#endif
             }
         }
     }
 
     private sealed class TextFileComparer : Readable<char, StreamReader>
     {
-        private const int _charCount = 4096;
+        private const int _charCount = 8192 / sizeof(char);
         private TextFileComparer(string path) : base(new StreamReader(path, Encoding.UTF8, true, _charCount)) { }
         protected override int Read(char[] buffer, int offset, int count) => _reader.Read(buffer, offset, count);
         public static bool ContentEqual(string filePath1, string filePath2)
