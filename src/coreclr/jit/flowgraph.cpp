@@ -929,6 +929,49 @@ bool Compiler::fgAddrCouldBeNull(GenTree* addr)
 }
 
 //------------------------------------------------------------------------------
+// fgAddrCouldBeHeap: Check whether the address tree may represent a heap address.
+//
+// Arguments:
+//    addr - Address to check
+//
+// Return Value:
+//    True if address could be a heap address; false otherwise (i.e. stack, native memory, etc.)
+//
+bool Compiler::fgAddrCouldBeHeap(GenTree* addr)
+{
+    const GenTree* op = addr;
+    while (op->OperIs(GT_FIELD_ADDR) && op->AsFieldAddr()->IsInstance())
+    {
+        op = op->AsFieldAddr()->GetFldObj();
+    }
+
+    if (op->OperIs(GT_LCL_ADDR))
+    {
+        return false;
+    }
+
+    if (op->OperIsScalarLocal() && (op->AsLclVarCommon()->GetLclNum() == impInlineRoot()->info.compRetBuffArg))
+    {
+        // RetBuf is known to be on the stack
+        return false;
+    }
+
+    if (op->OperIs(GT_ADD))
+    {
+        // If we have (base + offset), inspect the base. We assume someone else normalized the tree
+        // so the constant offset is always on the right.
+        GenTree* op2 = op->gtGetOp2();
+        if (op2->TypeIs(TYP_I_IMPL) && op2->IsCnsIntOrI() && !op2->IsIconHandle() &&
+            !fgIsBigOffset(op2->AsIntCon()->IconValue()))
+        {
+            return fgAddrCouldBeHeap(op->gtGetOp1());
+        }
+    }
+
+    return true;
+}
+
+//------------------------------------------------------------------------------
 // fgOptimizeDelegateConstructor: try and optimize construction of a delegate
 //
 // Arguments:
