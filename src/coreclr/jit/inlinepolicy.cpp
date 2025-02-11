@@ -454,7 +454,7 @@ void DefaultPolicy::NoteBool(InlineObservation obs, bool value)
 
             case InlineObservation::CALLSITE_RECURSIVE:
                 m_RecursiveCallsites++;
-                if (m_RecursiveCallsites > JitConfig.JitInlineRecursiveCallsites())
+                if (m_RecursiveCallsites > (unsigned)JitConfig.JitInlineRecursiveCallsites())
                 {
                     SetFailure(InlineObservation::CALLSITE_IS_DISALLOWED_RECURSIVE);
                     return;
@@ -1381,7 +1381,7 @@ void ExtendedDefaultPolicy::NoteBool(InlineObservation obs, bool value)
 
         case InlineObservation::CALLSITE_RECURSIVE:
             m_RecursiveCallsites++;
-            if (m_RecursiveCallsites > JitConfig.JitInlineRecursiveCallsites())
+            if (m_RecursiveCallsites > (unsigned)JitConfig.JitInlineRecursiveCallsites())
             {
                 SetFailure(InlineObservation::CALLSITE_IS_DISALLOWED_RECURSIVE);
                 return;
