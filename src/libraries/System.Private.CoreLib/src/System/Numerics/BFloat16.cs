@@ -467,7 +467,7 @@ namespace System.Numerics
             const ulong SingleBiasedExponentMask = double.BiasedExponentMask;
             // Exponent displacement #2
             const ulong Exponent45 = 0x02D0_0000_0000_0000u;
-            // The value above BFloat16.MaxValue
+            // The maximum infinitely precise value that will round down to MaxValue
             const double BFloat16AboveMaxValue = 3.39617752923046E+38;
             // Mask for exponent bits in BFloat16
             const ulong ExponentMask = BiasedExponentMask;

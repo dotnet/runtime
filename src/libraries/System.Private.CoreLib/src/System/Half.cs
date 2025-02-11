@@ -738,7 +738,7 @@ namespace System
             const uint SingleBiasedExponentMask = float.BiasedExponentMask;
             // Exponent displacement #2
             const uint Exponent13 = 0x0680_0000u;
-            // The value above Half.MaxValue
+            // The maximum infinitely precise value that will round down to MaxValue
             const float HalfAboveMaxValue = 65520.0f;
             // Mask for exponent bits in Half
             const uint ExponentMask = BiasedExponentMask;

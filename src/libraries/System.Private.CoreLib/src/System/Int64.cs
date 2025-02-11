@@ -1019,8 +1019,8 @@ namespace System
             else if (typeof(TOther) == typeof(BFloat16))
             {
                 BFloat16 actualValue = (BFloat16)(object)value;
-                result = (actualValue >= BitConverter.UInt16BitsToBFloat16(0x5F00)) ? MaxValue :
-                         (actualValue <= BitConverter.UInt16BitsToBFloat16(0xCF00)) ? MinValue : (long)actualValue;
+                result = (actualValue >= BitConverter.UInt16BitsToBFloat16(0x5F00)) /* (BFloat16)MaxValue */ ? MaxValue :
+                         (actualValue <= BitConverter.UInt16BitsToBFloat16(0xCF00)) /* (BFloat16)MinValue */ ? MinValue : (long)actualValue;
                 return true;
             }
             else if (typeof(TOther) == typeof(short))
