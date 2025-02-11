@@ -23,12 +23,6 @@ extern "C" {
 //
 #define C_ASSERT(e) static_assert(e, #e)
 
-//
-// CPP_ASSERT() can be used within a class definition, to perform a
-// compile-time assertion involving private names within the class.
-//
-#define CPP_ASSERT(n, e) static_assert(e, #e)
-
 #endif // __cplusplus
 
 #ifndef _ASSERTE
