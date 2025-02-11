@@ -132,11 +132,12 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
+        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.MacCatalyst | TestPlatforms.tvOS, "The PKCS#12 Exportable flag is not supported on iOS/MacCatalyst/tvOS")]
         public static void ExportPkcs12_Simple()
         {
             const string password = "PLACEHOLDER";
 
-            using (X509Certificate2 cert = new(TestData.PfxData, TestData.PfxDataPassword))
+            using (X509Certificate2 cert = new(TestData.PfxData, TestData.PfxDataPassword, X509KeyStorageFlags.Exportable))
             {
                 byte[] pkcs12 = cert.ExportPkcs12(Pkcs12ExportPbeParameters.Pkcs12TripleDesSha1, password);
                 VerifyPkcs12(
