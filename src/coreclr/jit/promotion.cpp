@@ -2308,27 +2308,27 @@ bool ReplaceVisitor::ReplaceReturnedStructLocal(GenTreeOp* ret, GenTreeLclVarCom
     GenTreeFieldList* fieldList = m_compiler->gtNewFieldList();
 
     auto addField = [=](Replacement& rep) {
+        GenTree* fieldValue;
         if (!rep.NeedsReadBack)
         {
-            GenTreeLclVar* fieldValue = m_compiler->gtNewLclvNode(rep.LclNum, rep.AccessType);
+            fieldValue = m_compiler->gtNewLclvNode(rep.LclNum, rep.AccessType);
 
             assert(deaths.IsReplacementDying(static_cast<unsigned>(&rep - agg->Replacements.data())));
             fieldValue->gtFlags |= GTF_VAR_DEATH;
             CheckForwardSubForLastUse(rep.LclNum);
-            fieldList->AddField(m_compiler, fieldValue, rep.Offset, rep.AccessType);
         }
         else
         {
             // Replacement local is not up to date.
-            var_types type       = rep.AccessType;
-            GenTree*  fieldValue = m_compiler->gtNewLclFldNode(value->GetLclNum(), rep.AccessType, rep.Offset);
-            fieldList->AddField(m_compiler, fieldValue, rep.Offset - value->GetLclOffs(), rep.AccessType);
+            fieldValue = m_compiler->gtNewLclFldNode(value->GetLclNum(), rep.AccessType, rep.Offset);
 
             if (!m_compiler->lvaGetDesc(value->GetLclNum())->lvDoNotEnregister)
             {
                 m_compiler->lvaSetVarDoNotEnregister(value->GetLclNum() DEBUGARG(DoNotEnregisterReason::LocalField));
             }
         }
+
+        fieldList->AddField(m_compiler, fieldValue, rep.Offset - startOffset, rep.AccessType);
 
         return true;
     };
