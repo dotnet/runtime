@@ -844,7 +844,7 @@
       </trans-unit>
       <trans-unit id="MarshallerInNativeReturnPositionMustMatchNativeReturnType">
         <source>All marshallers for values that are passed as the unmanaged return value must have the same unmanaged type.</source>
-        <target state="translated">Todos los serializadores para los valores que se pasan como valor devuelto no administrado deberán tener el mismo tipo no administrado.</target>
+        <target state="new">All marshallers for values that are passed as the unmanaged return value must have the same unmanaged type.</target>
         <note />
       </trans-unit>
       <trans-unit id="MarshallerTypeMustBeClosedOrMatchArityDescription">
