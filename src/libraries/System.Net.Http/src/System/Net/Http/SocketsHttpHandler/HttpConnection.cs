@@ -2102,6 +2102,7 @@ namespace System.Net.Http
 
         private void ReturnConnectionToPool()
         {
+            Debug.Assert(!_disposed, "Connection should not be disposed.");
             Debug.Assert(_currentRequest == null, "Connection should no longer be associated with a request.");
             Debug.Assert(_readAheadTask == default, "Expected a previous initial read to already be consumed.");
             Debug.Assert(_readAheadTaskStatus == ReadAheadTask_NotStarted, "Expected SendAsync to reset the read-ahead task status.");
