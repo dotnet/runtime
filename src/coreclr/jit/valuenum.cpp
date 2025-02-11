@@ -12742,13 +12742,11 @@ void Compiler::fgValueNumberTree(GenTree* tree)
                     case GT_SIMD_DIV_BY_ZERO_CHECK:
                     {
                         ValueNumPair vnpSimdOp  = tree->AsSIMDDivByZeroChk()->gtGetOp1()->gtVNPair;
-                        ValueNumPair vnpZeroOp = tree->AsSIMDDivByZeroChk()->gtGetOp2()->gtVNPair;
 
                         ValueNumPair vnpExcSet = ValueNumStore::VNPForEmptyExcSet();
 
                         // And collect the exceptions  from SimdOp and ZeroOp
                         vnpExcSet = vnStore->VNPUnionExcSet(vnpSimdOp, vnpExcSet);
-                        vnpExcSet = vnStore->VNPUnionExcSet(vnpZeroOp, vnpExcSet);
 
                         // A SIMD div-by-zero check node has no value, but may throw exceptions.
                         tree->gtVNPair = vnStore->VNPWithExc(vnStore->VNPForVoid(), vnpExcSet);

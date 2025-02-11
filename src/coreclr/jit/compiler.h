@@ -12011,9 +12011,9 @@ public:
             case GT_ARR_ADDR:
             case GT_KEEPALIVE:
             case GT_INC_SATURATE:
-// #if defined(TARGET_XARCH) && defined(FEATURE_HW_INTRINSICS)
-//             case GT_SIMD_DIV_BY_ZERO_CHECK:
-// #endif // defined(TARGET_XARCH) && defined(FEATURE_HW_INTRINSICS)
+#if defined(TARGET_XARCH) && defined(FEATURE_HW_INTRINSICS)
+            case GT_SIMD_DIV_BY_ZERO_CHECK:
+#endif // defined(TARGET_XARCH) && defined(FEATURE_HW_INTRINSICS)
             {
                 GenTreeUnOp* const unOp = node->AsUnOp();
                 if (unOp->gtOp1 != nullptr)

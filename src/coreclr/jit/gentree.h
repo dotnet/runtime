@@ -7800,13 +7800,12 @@ struct GenTreeSIMDDivByZeroChk : public GenTreeOp
     BasicBlock*     gtIndRngFailBB; // Basic block to jump to for index-out-of-range
     SpecialCodeKind gtThrowKind;    // Kind of throw block to branch to on failure
 
-    GenTreeSIMDDivByZeroChk(GenTree* simdOp, GenTree* zeroOp, SpecialCodeKind kind)
-        : GenTreeOp(GT_SIMD_DIV_BY_ZERO_CHECK, TYP_VOID, simdOp, zeroOp)
+    GenTreeSIMDDivByZeroChk(GenTree* simdOp, SpecialCodeKind kind)
+        : GenTreeOp(GT_SIMD_DIV_BY_ZERO_CHECK, TYP_VOID, simdOp, nullptr)
         , gtIndRngFailBB(nullptr)
         , gtThrowKind(kind)
     {
         gtFlags |= GTF_EXCEPT;
-        // gtOp1 = simdOp;
     }
 #if DEBUGGABLE_GENTREE
     GenTreeSIMDDivByZeroChk()

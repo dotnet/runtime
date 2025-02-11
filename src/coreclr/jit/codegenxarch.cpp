@@ -4586,15 +4586,11 @@ void CodeGen::genSIMDDivByZeroCheck(GenTree* oper)
     GenTreeSIMDDivByZeroChk* divByZeroChk = oper->AsSIMDDivByZeroChk();
 
     GenTree* simdOp = oper->gtGetOp1();
-    GenTree* zeroOp = oper->gtGetOp2();
 
     genConsumeRegs(simdOp);
-    genConsumeRegs(zeroOp);
 
     // Current codegen pattern cannot support ZMM registers since vptest only uses XMM/YMM registers
     noway_assert(simdOp->TypeGet() == TYP_SIMD16 || simdOp->TypeGet() == TYP_SIMD32);
-    noway_assert(zeroOp->TypeGet() == TYP_SIMD16 || zeroOp->TypeGet() == TYP_SIMD32);
-    noway_assert(simdOp->TypeGet() == zeroOp->TypeGet());
 
     GetEmitter()->emitIns_R_R(INS_ptest, emitTypeSize(simdOp->TypeGet()), simdOp->GetRegNum(), simdOp->GetRegNum());
     genJumpToThrowHlpBlk(EJ_jne, divByZeroChk->gtThrowKind, divByZeroChk->gtIndRngFailBB);

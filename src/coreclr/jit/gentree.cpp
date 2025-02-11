@@ -3484,12 +3484,6 @@ AGAIN:
                     hash = genTreeHashAdd(hash, tree->AsBoundsChk()->gtThrowKind);
                     break;
 
-#if defined(FEATURE_HW_INTRINSICS) && defined (TARGET_XARCH)
-                case GT_SIMD_DIV_BY_ZERO_CHECK:
-                    hash = genTreeHashAdd(hash, tree->AsSIMDDivByZeroChk()->gtThrowKind);
-                    break;
-#endif // defined(FEATURE_HW_INTRINSICS) && defined (TARGET_XARCH)
-
                 // For the ones below no extra argument matters for comparison.
                 case GT_QMARK:
                 case GT_INDEX_ADDR:
@@ -6732,9 +6726,9 @@ bool GenTree::TryGetUse(GenTree* operand, GenTree*** pUse)
         case GT_BSWAP16:
         case GT_KEEPALIVE:
         case GT_INC_SATURATE:
-// #if defined(TARGET_XARCH) && defined(FEATURE_HW_INTRINSICS)
-//         case GT_SIMD_DIV_BY_ZERO_CHECK:
-// #endif // defined(TARGET_XARCH) && defined(FEATURE_HW_INTRINSICS)
+#if defined(TARGET_XARCH) && defined(FEATURE_HW_INTRINSICS)
+        case GT_SIMD_DIV_BY_ZERO_CHECK:
+#endif // defined(TARGET_XARCH) && defined(FEATURE_HW_INTRINSICS)
             if (operand == this->AsUnOp()->gtOp1)
             {
                 *pUse = &this->AsUnOp()->gtOp1;
@@ -10334,9 +10328,9 @@ GenTreeUseEdgeIterator::GenTreeUseEdgeIterator(GenTree* node)
         case GT_BSWAP16:
         case GT_KEEPALIVE:
         case GT_INC_SATURATE:
-// #if defined(TARGET_XARCH) && defined(FEATURE_HW_INTRINSICS)
-//         case GT_SIMD_DIV_BY_ZERO_CHECK:
-// #endif // defined(TARGET_XARCH) && defined(FEATURE_HW_INTRINSICS)
+#if defined(TARGET_XARCH) && defined(FEATURE_HW_INTRINSICS)
+        case GT_SIMD_DIV_BY_ZERO_CHECK:
+#endif // defined(TARGET_XARCH) && defined(FEATURE_HW_INTRINSICS)
 #if FEATURE_ARG_SPLIT
         case GT_PUTARG_SPLIT:
 #endif // FEATURE_ARG_SPLIT

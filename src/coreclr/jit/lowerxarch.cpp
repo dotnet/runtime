@@ -9040,7 +9040,6 @@ void Lowering::ContainCheckSIMDDivByZeroChk(GenTreeSIMDDivByZeroChk* node)
 {
     assert(node->OperIs(GT_SIMD_DIV_BY_ZERO_CHECK));
     // TryMakeSrcContainedOrRegOptional(node, node->gtGetOp1());
-    // TryMakeSrcContainedOrRegOptional(node, node->gtGetOp2());
 }
 #endif // defined(TARGET_XARCH) && defined(FEATURE_HW_INTRINSICS)
 
