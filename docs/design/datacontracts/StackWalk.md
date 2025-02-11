@@ -128,7 +128,7 @@ This could take multible iterations, but would end up with context `<C>` which h
 
 #### Stackwalking Algorithm
 The actual implementation is a little more complex because:
-* It requires pausing to return the context and Frame at certain points.
+* It requires pausing to return the current context and Frame at certain points.
 * Handles checking for "skipped frames". This can occur if an explicit frame is allocated in a managed stack frame (e.g. an inlined pinvoke call).
 
 1. Read thread context. Fetched as part of the [ICorDebugDataTarget](https://learn.microsoft.com/en-us/dotnet/framework/unmanaged-api/debugging/icordebugdatatarget-getthreadcontext-method) COM interface.
