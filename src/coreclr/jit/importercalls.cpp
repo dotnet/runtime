@@ -187,12 +187,6 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
                 compInlineResult->NoteFatal(InlineObservation::CALLEE_HAS_MANAGED_VARARGS);
                 return TYP_UNDEF;
             }
-
-            if ((mflags & CORINFO_FLG_VIRTUAL) && (sig->sigInst.methInstCount != 0) && (opcode == CEE_CALLVIRT))
-            {
-                compInlineResult->NoteFatal(InlineObservation::CALLEE_IS_GENERIC_VIRTUAL);
-                return TYP_UNDEF;
-            }
         }
 
         clsHnd = pResolvedToken->hClass;
@@ -967,7 +961,7 @@ DEVIRT:
                                 // inlinees.
                                 rawILOffset);
 
-            const bool wasDevirtualized = !call->AsCall()->IsVirtual();
+            const bool wasDevirtualized = !call->AsCall()->IsVirtual() && !call->AsCall()->IsGenericVirtual();
 
             if (wasDevirtualized)
             {
@@ -8344,8 +8338,6 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
 
     JITDUMP("    %s; can devirtualize\n", note);
 
-    INDEBUG(const bool isGenericVirtual = call->IsGenericVirtual());
-
     // Make the updates.
     call->gtFlags &= ~GTF_CALL_VIRT_VTABLE;
     call->gtFlags &= ~GTF_CALL_VIRT_STUB;
@@ -8364,7 +8356,6 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
             // Runtime lookup is needed for the instantiating stub.
             // We need to clone the runtime lookup node from LDVIRTFTN.
             //
-            INDEBUG(assert(isGenericVirtual));
             assert(call->gtLdvirtftn->IsHelperCall(this, CORINFO_HELP_VIRTUAL_FUNC_PTR));
             GenTree* methCtx = call->gtLdvirtftn->gtArgs.GetArgByIndex(2)->GetNode();
             assert(methCtx->OperIs(GT_RUNTIMELOOKUP));
