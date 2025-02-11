@@ -4720,6 +4720,10 @@ protected:
 
     GenTree* impThrowIfNull(GenTreeCall* call);
 
+#ifdef TARGET_ARM64
+    void impImportDivision(bool isSigned);
+#endif
+
 #ifdef DEBUG
     var_types impImportJitTestLabelMark(int numArgs);
 #endif // DEBUG
