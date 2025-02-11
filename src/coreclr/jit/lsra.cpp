@@ -1484,7 +1484,8 @@ void LinearScan::identifyCandidatesExceptionDataflow()
 
         assert(varDsc->lvLiveInOutOfHndlr);
 
-        if (varTypeIsGC(varDsc) && VarSetOps::IsMember(compiler, finallyVars, varIndex) && !varDsc->lvIsParam)
+        if (varTypeIsGC(varDsc) && VarSetOps::IsMember(compiler, finallyVars, varIndex) && !varDsc->lvIsParam &&
+            !varDsc->lvIsParamRegTarget)
         {
             assert(varDsc->lvMustInit);
         }
