@@ -142,6 +142,16 @@
         <target state="translated">Der Typ enthält mehrere Elemente, die mit dem JsonExtensionDataAttribute versehen sind.</target>
         <note />
       </trans-unit>
+      <trans-unit id="TypeContainsRefLikeMemberFormat">
+        <source>The type '{0}' includes the ref like property, field or constructor parameter '{1}'. No source code will be generated for the property, field or constructor.</source>
+        <target state="translated">Der Typ „{0}“ enthält die Verweise wie Eigenschaft, Feld oder Konstruktorparameter „{1}“. Für die Eigenschaft, das Feld oder den Konstruktor wird kein Quellcode generiert.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="TypeContainsRefLikeMemberTitle">
+        <source>Type includes ref like property, field or constructor parameter.</source>
+        <target state="translated">Der Typ enthält Verweise wie Eigenschaft, Feld oder Konstruktorparameter.</target>
+        <note />
+      </trans-unit>
       <trans-unit id="TypeNotSupportedMessageFormat">
         <source>Did not generate serialization metadata for type '{0}'.</source>
         <target state="translated">Die Serialisierungsmetadaten für den Typ "{0}" wurden nicht generiert.</target>
