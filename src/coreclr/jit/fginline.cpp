@@ -47,9 +47,10 @@ unsigned Compiler::fgCheckInlineDepthAndRecursion(InlineInfo* inlineInfo)
             // Only allow trivially recursive inlines if the method is marked as force inlining.
             //
             if (++recursiveDepth > JitConfig.JitInlineRecursionDepth() ||
-                inlineContext->GetObservation() != InlineObservation::CALLEE_IS_FORCE_INLINE)
+                inlineContext->GetObservation() != InlineObservation::CALLEE_IS_FORCE_INLINE ||
+                inlineContext->GetRecursiveCallsiteCount() >= JitConfig.JitInlineRecursiveCallsites())
             {
-                inlineResult->NoteFatal(InlineObservation::CALLSITE_IS_RECURSIVE);
+                inlineResult->NoteFatal(InlineObservation::CALLSITE_IS_DISALLOWED_RECURSIVE);
                 return depth;
             }
         }
@@ -57,7 +58,7 @@ unsigned Compiler::fgCheckInlineDepthAndRecursion(InlineInfo* inlineInfo)
         {
             // This is a recursive inline
             //
-            inlineResult->NoteFatal(InlineObservation::CALLSITE_IS_RECURSIVE);
+            inlineResult->NoteFatal(InlineObservation::CALLSITE_IS_DISALLOWED_RECURSIVE);
 
             // No need to note CALLSITE_DEPTH since we're already rejecting this candidate
             //
@@ -70,6 +71,7 @@ unsigned Compiler::fgCheckInlineDepthAndRecursion(InlineInfo* inlineInfo)
         }
     }
 
+    inlineResult->NoteBool(InlineObservation::CALLSITE_RECURSIVE, recursiveDepth > 0);
     inlineResult->NoteInt(InlineObservation::CALLSITE_DEPTH, depth);
     return depth;
 }

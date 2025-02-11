@@ -452,6 +452,15 @@ void DefaultPolicy::NoteBool(InlineObservation obs, bool value)
                 m_InsideThrowBlock = value;
                 break;
 
+            case InlineObservation::CALLSITE_RECURSIVE:
+                m_RecursiveCallsites++;
+                if (m_RecursiveCallsites > JitConfig.JitInlineRecursiveCallsites())
+                {
+                    SetFailure(InlineObservation::CALLSITE_IS_DISALLOWED_RECURSIVE);
+                    return;
+                }
+                break;
+
             default:
                 // Ignore the remainder for now
                 break;
@@ -1360,6 +1369,15 @@ void ExtendedDefaultPolicy::NoteBool(InlineObservation obs, bool value)
 
         case InlineObservation::CALLSITE_IN_NORETURN_REGION:
             m_IsCallsiteInNoReturnRegion = value;
+            break;
+
+        case InlineObservation::CALLSITE_RECURSIVE:
+            m_RecursiveCallsites++;
+            if (m_RecursiveCallsites > JitConfig.JitInlineRecursiveCallsites())
+            {
+                SetFailure(InlineObservation::CALLSITE_IS_DISALLOWED_RECURSIVE);
+                return;
+            }
             break;
 
         default:
