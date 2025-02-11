@@ -653,12 +653,12 @@ private:
                         }
 
                         call->GetSingleInlineCandidateInfo()->exactContextHandle = context;
-#ifdef DEBUG
-                        // Update inline context for Debug.
-                        call->gtInlineContext = call->GetSingleInlineCandidateInfo()->inlinersContext;
-                        DebugInfo debugInfo(call->gtInlineContext, ILLocation(call->gtRawILOffset, false, true));
+
+                        // Update inline context and DebugInfo for the new inline candidate.
+                        InlineContext* inlineContext = call->GetSingleInlineCandidateInfo()->inlinersContext;
+                        INDEBUG(call->gtInlineContext = inlineContext);
+                        DebugInfo debugInfo(inlineContext, inlineContext->GetLocation());
                         m_curStmt->SetDebugInfo(debugInfo);
-#endif
 
                         JITDUMP("New inline candidate due to late devirtualization:\n");
                         DISPTREE(call);
