@@ -24786,19 +24786,27 @@ uint8_t Compiler::gtMinMaxControlByte(bool isMax, bool isMagnitude, bool isNumbe
         {
             if (isNumber)
             {
+                // min/max mode  | sign control | Op-select
+                // 0001 0000     | 0000 0100    | 0000 0011
                 ctrlByte = 0x17;
             }
             else
             {
+                // min/max mode  | sign control | Op-select
+                // 0000 0000     | 0000 0100    | 0000 0011
                 ctrlByte = 0x07;
             }
         }
         else if (isNumber)
         {
+            // min/max mode  | sign control | Op-select
+            // 0001 0000     | 0000 0100    | 0000 0001
             ctrlByte = 0x15;
         }
         else
         {
+            // min/max mode  | sign control | Op-select
+            // 0000 0000     | 0000 0100    | 0000 0001
             ctrlByte = 0x05;
         }
     }
@@ -24808,19 +24816,27 @@ uint8_t Compiler::gtMinMaxControlByte(bool isMax, bool isMagnitude, bool isNumbe
         {
             if (isNumber)
             {
+                // min/max mode  | sign control | Op-select
+                // 0001 0000     | 0000 0100    | 0000 0010
                 ctrlByte = 0x16;
             }
             else
             {
+                // min/max mode  | sign control | Op-select
+                // 0000 0000     | 0000 0100    | 0000 0010
                 ctrlByte = 0x06;
             }
         }
         else if (isNumber)
         {
+            // min/max mode  | sign control | Op-select
+            // 0001 0000     | 0000 0100    | 0000 0000
             ctrlByte = 0x14;
         }
         else
         {
+            // min/max mode  | sign control | Op-select
+            // 0000 0000     | 0000 0100    | 0000 0000
             ctrlByte = 0x04;
         }
     }
