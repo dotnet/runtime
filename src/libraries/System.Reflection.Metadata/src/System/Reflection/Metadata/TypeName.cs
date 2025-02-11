@@ -179,15 +179,13 @@ namespace System.Reflection.Metadata
                     {
                         builder.Append('[');
                         genericArg.AppendFullName(ref builder);
-                        // generic arguments need to be always fully qualified
+                        // Generic arguments need to be always fully qualified.
                         if (genericArg.AssemblyName is not null)
                         {
-                            builder.Append(',');
-                            builder.Append(' ');
+                            builder.Append(", ");
                             genericArg.AssemblyName.AppendFullName(ref builder);
                         }
-                        builder.Append(']');
-                        builder.Append(',');
+                        builder.Append("],");
                     }
                     builder[builder.Length - 1] = ']'; // replace ',' with ']'
                 }
