@@ -397,10 +397,12 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
                 thisPtr =
                     impCloneExpr(thisPtr, &thisPtrCopy, CHECK_SPILL_ALL, nullptr DEBUGARG("LDVIRTFTN this pointer"));
 
-                GenTree* fptr = impImportLdvirtftn(thisPtr, pResolvedToken, callInfo);
+                GenTree* runtimeLookup = nullptr;
+                GenTree* fptr          = impImportLdvirtftn(thisPtr, pResolvedToken, callInfo, &runtimeLookup);
                 assert(fptr != nullptr);
+                assert(!callInfo->exactContextNeedsRuntimeLookup || runtimeLookup != nullptr);
 
-                call->AsCall()->gtLdvirtftn = fptr->AsCall();
+                call->AsCall()->gtLdvirtftnHnd = runtimeLookup;
                 call->AsCall()
                     ->gtArgs.PushFront(this, NewCallArg::Primitive(thisPtrCopy).WellKnown(WellKnownArg::ThisPointer));
 
@@ -8354,12 +8356,9 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
         if (dvInfo.needRuntimeLookup)
         {
             // Runtime lookup is needed for the instantiating stub.
-            // We need to clone the runtime lookup node from LDVIRTFTN.
             //
-            assert(call->gtLdvirtftn->IsHelperCall(this, CORINFO_HELP_VIRTUAL_FUNC_PTR));
-            GenTree* methCtx = call->gtLdvirtftn->gtArgs.GetArgByIndex(2)->GetNode();
-            assert(methCtx->OperIs(GT_RUNTIMELOOKUP));
-            call->gtArgs.InsertInstParam(this, gtCloneExpr(methCtx));
+            assert(call->gtLdvirtftnHnd->OperIs(GT_RUNTIMELOOKUP));
+            call->gtArgs.InsertInstParam(this, gtCloneExpr(call->gtLdvirtftnHnd));
         }
         else
         {
