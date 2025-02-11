@@ -5,6 +5,29 @@
     <AutoGenerateSymbolPackages>false</AutoGenerateSymbolPackages>
   </PropertyGroup>
 
+    <!--
+      Mark host-RID-targeting assets as Vertical visibility when building in the VMR.
+      We can't use NETCoreSdkRuntimeIdentifier here as the Arcade SDK projects don't import the .NET SDK.
+      Instead, just make sure we include the assets targeting "not the output rid", which will catch the host assets.
+    -->
+    <ItemGroup Condition="'$(EnableDefaultArtifacts)' == 'true' and '$(DotNetBuildOrchestrator)' == 'true'">
+      <_HostArtifact Include="$(ArtifactsPackagesDir)**\runtime.*.Microsoft.NETCore.ILAsm.*.nupkg"
+                      Exclude="$(ArtifactsPackagesDir)**\runtime.$(OutputRID).Microsoft.NETCore.ILAsm.*.nupkg" />
+
+      <_HostArtifact Include="$(ArtifactsPackagesDir)**\runtime.*.Microsoft.NETCore.ILDAsm.*.nupkg"
+                      Exclude="$(ArtifactsPackagesDir)**\runtime.$(OutputRID).Microsoft.NETCore.ILDAsm.*.nupkg" />
+
+      <_HostArtifact Include="$(ArtifactsPackagesDir)**\runtime.*.Microsoft.DotNet.ILCompiler.*.nupkg"
+                      Exclude="$(ArtifactsPackagesDir)**\runtime.$(OutputRID).Microsoft.DotNet.ILCompiler.*.nupkg" />
+
+      <_HostArtifact Include="$(ArtifactsPackagesDir)**\Microsoft.NETCore.App.Crossgen2.*.nupkg"
+                      Exclude="$(ArtifactsPackagesDir)**\Microsoft.NETCore.App.Crossgen2.$(OutputRID).*.nupkg" />
+
+      <Artifact Update="@(_HostArtifact)"
+                Visibility="Vertical"
+                IsShipping="false" />
+    </ItemGroup>
+
   <Target Name="GetNonStableProductVersion">
     <!-- Retrieve the non-stable runtime pack product version.
          Don't stabilize the package version in order to retrieve the VersionSuffix. -->

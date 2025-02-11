@@ -93,30 +93,6 @@
     - For LLVM builds, we only publish LLVM-specific packages.
   -->
   <Choose>
-    <When Condition="'$(EnableDefaultArtifacts)' == 'true'">
-      <!--
-        Mark host-RID-targeting assets as Vertical visibility when building in the VMR.
-        We can't use NETCoreSdkRuntimeIdentifier here as the Arcade SDK projects don't import the .NET SDK.
-        Instead, just make sure we include the assets targeting "not the output rid", which will catch the host assets.
-      -->
-      <ItemGroup Condition="'$(DotNetBuildOrchestrator)' == 'true'">
-        <_HostArtifact Include="$(ArtifactsPackagesDir)**\runtime.*.Microsoft.NETCore.ILAsm.*.nupkg"
-                       Exclude="$(ArtifactsPackagesDir)**\runtime.$(OutputRID).Microsoft.NETCore.ILAsm.*.nupkg" />
-
-        <_HostArtifact Include="$(ArtifactsPackagesDir)**\runtime.*.Microsoft.NETCore.ILDAsm.*.nupkg"
-                       Exclude="$(ArtifactsPackagesDir)**\runtime.$(OutputRID).Microsoft.NETCore.ILDAsm.*.nupkg" />
-
-        <_HostArtifact Include="$(ArtifactsPackagesDir)**\runtime.*.Microsoft.DotNet.ILCompiler.*.nupkg"
-                       Exclude="$(ArtifactsPackagesDir)**\runtime.$(OutputRID).Microsoft.DotNet.ILCompiler.*.nupkg" />
-
-        <_HostArtifact Include="$(ArtifactsPackagesDir)**\Microsoft.NETCore.App.Crossgen2.*.nupkg"
-                       Exclude="$(ArtifactsPackagesDir)**\Microsoft.NETCore.App.Crossgen2.$(OutputRID).*.nupkg" />
-
-        <Artifact Update="@(_HostArtifact)"
-                  Visibility="Vertical"
-                  IsShipping="false" />
-      </ItemGroup>
-    </When>
     <When Condition="'$(MonoAOTEnableLLVM)' == 'true'">
       <ItemGroup>
         <PackageArtifacts Include="$(ArtifactsPackagesDir)**\*.LLVM.AOT.$(PackageRID).*.nupkg" />
@@ -125,7 +101,7 @@
                   Kind="Package" />
       </ItemGroup>
     </When>
-    <Otherwise>
+    <When Condition="'$(EnableDefaultArtifacts)' != 'true'">
       <ItemGroup>
         <PackageArtifacts Include="$(ArtifactsPackagesDir)**\*.$(PackageRID).*.nupkg" />
       </ItemGroup>
@@ -176,6 +152,8 @@
                   Kind="Package"
                   Condition="'$(DotNetBuildOrchestrator)' == 'true'" />
       </ItemGroup>
+    </When>
+    <Otherwise>
     </Otherwise>
   </Choose>
 </Project>
