@@ -2256,7 +2256,9 @@ bool ReplaceVisitor::ReplaceReturnedStructLocal(GenTreeOp* ret, GenTreeLclVarCom
         JITDUMP("Replacing merged return by store to merged return local\n");
         // If we have merged returns then replace with a store to the return
         // local, and switch out the GT_RETURN to return that local.
-        m_currentStmt->SetRootNode(m_compiler->gtNewNothingNode());
+        GenTree* sideEffects = nullptr;
+        m_compiler->gtExtractSideEffList(ret, &sideEffects, GTF_SIDE_EFFECT, true);
+        m_currentStmt->SetRootNode(sideEffects == nullptr ? m_compiler->gtNewNothingNode() : sideEffects);
         DISPSTMT(m_currentStmt);
         m_madeChanges = true;
 
