@@ -27,7 +27,7 @@ namespace System.Reflection
         public sealed override bool IsGenericTypeParameter => false;
         public sealed override bool IsGenericMethodParameter => false;
         public sealed override bool ContainsGenericParameters => _elementType.ContainsGenericParameters;
-        protected sealed override bool IsValueTypeImpl() => _elementType.IsValueType;
+        protected sealed override bool IsValueTypeImpl() => false;
 
         internal sealed override SignatureType? ElementType => _elementType;
         public abstract override int GetArrayRank();

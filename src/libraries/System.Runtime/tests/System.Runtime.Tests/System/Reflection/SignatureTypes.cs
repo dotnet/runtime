@@ -10,24 +10,18 @@ namespace System.Reflection.Tests
 {
     public static class SignatureTypeTests
     {
-        [Fact]
-        public static void IsSignatureType()
+        [Theory]
+        [MemberData(nameof(IsSignatureTypeTestData))]
+        public static void IsSignatureType(Type type, bool expected)
         {
-            // Executing [Theory] logic manually. Signature Types cannot be used in theory data because Xunit preemptively invokes an unguarded
-            // System.Type pretty printer that invokes members that Signature Types don't support.
-            foreach (object[] pair in IsSignatureTypeTestData)
-            {
-                Type type = (Type)(pair[0]);
-                bool expected = (bool)(pair[1]);
-
-                Assert.Equal(expected, type.IsSignatureType);
-            }
+            Assert.Equal(expected, type.IsSignatureType);
         }
 
         public static IEnumerable<object[]> IsSignatureTypeTestData
         {
             get
             {
+                // Standard reflection used as baseline.
                 yield return new object[] { typeof(int), false };
                 yield return new object[] { typeof(int).MakeArrayType(), false };
                 yield return new object[] { typeof(int).MakeArrayType(1), false };
@@ -37,6 +31,7 @@ namespace System.Reflection.Tests
                 yield return new object[] { typeof(List<>).MakeGenericType(typeof(int)), false };
                 yield return new object[] { typeof(List<>).GetGenericArguments()[0], false };
 
+                // SignatureTypes.
                 Type sigType = Type.MakeGenericMethodParameter(2);
 
                 yield return new object[] { sigType, true };
@@ -48,9 +43,52 @@ namespace System.Reflection.Tests
                 yield return new object[] { typeof(List<>).MakeGenericType(sigType), true };
 
                 yield return new object[] { Type.MakeGenericSignatureType(typeof(List<>), typeof(int)), true };
+                yield return new object[] { Type.MakeGenericSignatureType(typeof(List<>), typeof(int)).GetGenericArguments()[0], false };
                 yield return new object[] { Type.MakeGenericSignatureType(typeof(List<>), sigType), true };
+                yield return new object[] { Type.MakeGenericSignatureType(typeof(List<>), sigType).GetGenericArguments()[0], true };
             }
         }
+
+        [Theory]
+        [MemberData(nameof(IsValueTypeTestData))]
+        public static void IsValueType(Type type, bool expected)
+        {
+            Assert.Equal(expected, type.IsValueType);
+        }
+
+        public static IEnumerable<object[]> IsValueTypeTestData
+        {
+            get
+            {
+                // Standard reflection used as baseline.
+                yield return new object[] { typeof(int), true };
+                yield return new object[] { typeof(object), false };
+                yield return new object[] { typeof(int).MakeArrayType(), false };
+                yield return new object[] { typeof(int).MakeByRefType(), false };
+                yield return new object[] { typeof(int).MakePointerType(), false };
+                yield return new object[] { typeof(List<>).GetGenericArguments()[0], false };
+                yield return new object[] { typeof(List<>).MakeGenericType(typeof(int)), false };
+                yield return new object[] { typeof(List<>).MakeGenericType(typeof(object)), false };
+                yield return new object[] { typeof(SignatureTypeTests).GetMethod(nameof(MyGenericValueTypeMethod), BindingFlags.NonPublic | BindingFlags.Static).GetGenericArguments()[0], true };
+                yield return new object[] { typeof(SignatureTypeTests).GetMethod(nameof(MyGenericRefTypeMethod), BindingFlags.NonPublic | BindingFlags.Static).GetGenericArguments()[0], false };
+                yield return new object[] { typeof(List<>).MakeGenericType(typeof(int)).GetGenericArguments()[0], true };
+                yield return new object[] { typeof(List<>).MakeGenericType(typeof(object)).GetGenericArguments()[0], false };
+
+                // SignatureTypes.
+                Type sigType = Type.MakeGenericMethodParameter(2);
+
+                yield return new object[] { sigType.MakeArrayType(), false };
+                yield return new object[] { sigType.MakeByRefType(), false };
+                yield return new object[] { sigType.MakePointerType(), false };
+
+                // These have normal generic argument types, not SignatureTypes.
+                yield return new object[] { Type.MakeGenericSignatureType(typeof(List<>), typeof(int)).GetGenericArguments()[0], true };
+                yield return new object[] { Type.MakeGenericSignatureType(typeof(List<>), typeof(object)).GetGenericArguments()[0], false };
+            }
+        }
+
+        private static void MyGenericValueTypeMethod<T>() where T : struct { }
+        private static void MyGenericRefTypeMethod<T>() where T : class { }
 
         [Fact]
         public static void GetMethodWithGenericParameterCount()
@@ -211,6 +249,7 @@ namespace System.Reflection.Tests
             Assert.False(t.IsGenericTypeParameter);
             Assert.True(t.IsGenericMethodParameter);
             Assert.Equal(position, t.GenericParameterPosition);
+            Assert.Throws<NotSupportedException>(() => t.IsValueType);
             TestSignatureTypeInvariants(t);
         }
 
@@ -237,6 +276,7 @@ namespace System.Reflection.Tests
             Assert.True(et.IsGenericParameter);
             Assert.False(et.IsGenericTypeParameter);
             Assert.True(et.IsGenericMethodParameter);
+            Assert.Throws<NotSupportedException>(() => et.IsValueType);
             Assert.Equal(5, et.GenericParameterPosition);
 
             TestSignatureTypeInvariants(t);
@@ -312,6 +352,7 @@ namespace System.Reflection.Tests
                     Assert.False(et.IsGenericTypeParameter);
                     Assert.True(et.IsGenericMethodParameter);
                     Assert.Equal(5, et.GenericParameterPosition);
+                    Assert.Throws<NotSupportedException>(() => et.IsValueType);
 
                     TestSignatureTypeInvariants(t);
                 });
