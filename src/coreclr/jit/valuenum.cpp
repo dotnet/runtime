@@ -10451,7 +10451,7 @@ static genTreeOps genTreeOpsIllegalAsVNFunc[] = {GT_IND, // When we do heap memo
                                                  GT_ARR_ADDR, GT_BOUNDS_CHECK,
 #if defined(TARGET_XARCH) && defined(FEATURE_HW_INTRINSICS)
                                                  GT_SIMD_DIV_BY_ZERO_CHECK,
-#endif 
+#endif
                                                  GT_BLK,      // May reference heap memory.
                                                  GT_INIT_VAL, // Not strictly a pass-through.
                                                  GT_MDARR_LENGTH,
@@ -12741,7 +12741,7 @@ void Compiler::fgValueNumberTree(GenTree* tree)
 #if defined(FEATURE_HW_INTRINSICS) && defined(TARGET_XARCH)
                     case GT_SIMD_DIV_BY_ZERO_CHECK:
                     {
-                        ValueNumPair vnpSimdOp  = tree->AsSIMDDivByZeroChk()->gtGetOp1()->gtVNPair;
+                        ValueNumPair vnpSimdOp = tree->AsSIMDDivByZeroChk()->gtGetOp1()->gtVNPair;
 
                         ValueNumPair vnpExcSet = ValueNumStore::VNPForEmptyExcSet();
 
@@ -14782,7 +14782,7 @@ void Compiler::fgValueNumberAddExceptionSetForSIMDDivByZeroCheck(GenTree* tree)
     vnStore->VNPUnpackExc(tree->gtVNPair, &vnpTreeNorm, &vnpTreeExc);
 
     // Construct the exception set for div-by-zero check
-    ValueNumPair divByZeroChkExcSet = 
+    ValueNumPair divByZeroChkExcSet =
         vnStore->VNPExcSetSingleton(vnStore->VNPairForFunc(TYP_REF, VNF_DivideByZeroExc, vnpTreeNorm));
 
     // Combine the new DivideByZero exception with the original exception set of tree

@@ -21203,8 +21203,10 @@ GenTree* Compiler::gtNewSimdBinOpNode(
             //          throw new DivideByZeroException();
             //      }
             //
-            //      Vector256<double> op1_f64 = Vector256.ConvertToDouble(Vector256.WidenLower(Vector128.ToVector256Unsafe(op1))));
-            //      Vector256<double> op2_f64 = Vector256.ConvertToDouble(Vector256.WidenLower(Vector128.ToVector256Unsafe(op2))));
+            //      Vector256<double> op1_f64 =
+            //          Vector256.ConvertToDouble(Vector256.WidenLower(Vector128.ToVector256Unsafe(op1))));
+            //      Vector256<double> op2_f64 =
+            //          Vector256.ConvertToDouble(Vector256.WidenLower(Vector128.ToVector256Unsafe(op2))));
             //      Vector256<double> div_f64 = op1_f64 / op2_f64;
             //      Vector256<long>   div_i64 = Vector256.ConvertToInt64(div_f64);
             //      Vector128<int> div_i32 = Vector256.Narrow(div_i64.GetLower(), div_i64.GetUpper());
