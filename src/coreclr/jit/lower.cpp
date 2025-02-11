@@ -5059,7 +5059,7 @@ bool Lowering::IsFieldListCompatibleWithReturn(GenTreeFieldList* fieldList)
         }
 
         var_types fieldType = genActualType(use.GetNode());
-        var_types regType   = genActualType(retDesc.GetReturnRegType(regIndex));
+        var_types regType   = retDesc.GetReturnRegType(regIndex);
         if (genTypeSize(fieldType) != genTypeSize(regType))
         {
             JITDUMP("it is not; field %u register has type %s but field has type %s\n", regIndex, varTypeName(regType),
