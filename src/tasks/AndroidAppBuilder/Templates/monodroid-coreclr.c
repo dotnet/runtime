@@ -183,6 +183,13 @@ mono_droid_runtime_init (const char* executable)
 {
     LOG_INFO ("mono_droid_runtime_init (CoreCLR) called with executable: %s", executable);
 
+    // build using DiagnosticPorts property in AndroidAppBuilder
+    // or set DOTNET_DiagnosticPorts env via adb, xharness when undefined.
+    // NOTE, using DOTNET_DiagnosticPorts requires app build using AndroidAppBuilder and RuntimeComponents to include 'diagnostics_tracing' component
+#ifdef DIAGNOSTIC_PORTS
+    setenv ("DOTNET_DiagnosticPorts", DIAGNOSTIC_PORTS, true);
+#endif
+
     if (bundle_executable_path(executable, g_bundle_path, &g_executable_path) < 0)
     {
         LOG_ERROR("Failed to resolve full path for: %s", executable);

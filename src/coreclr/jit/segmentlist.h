@@ -6,12 +6,14 @@
 #include "alloc.h"
 #include "jitstd/vector.h"
 
-// Represents significant segments of a struct operation.
+// Represents a list of segments.
 //
 // Essentially a segment tree (but not stored as a tree) that supports boolean
 // Add/Subtract operations of segments. Used to compute the remainder after
-// replacements have been handled as part of a decomposed block operation.
-class StructSegments
+// replacements have been handled as part of a decomposed block operation in
+// physical promotion. Also used to store non-padding of class layouts.
+//
+class SegmentList
 {
 public:
     struct Segment
@@ -38,8 +40,9 @@ public:
 private:
     jitstd::vector<Segment> m_segments;
 
+    size_t BinarySearchEnd(unsigned offset) const;
 public:
-    explicit StructSegments(CompAllocator allocator)
+    explicit SegmentList(CompAllocator allocator)
         : m_segments(allocator)
     {
     }
@@ -49,6 +52,26 @@ public:
     bool IsEmpty() const;
     bool CoveringSegment(Segment* result) const;
     bool Intersects(const Segment& segment) const;
+
+    jitstd::vector<Segment>::iterator begin()
+    {
+        return m_segments.begin();
+    }
+
+    jitstd::vector<Segment>::iterator end()
+    {
+        return m_segments.end();
+    }
+
+    jitstd::vector<Segment>::const_iterator begin() const
+    {
+        return m_segments.begin();
+    }
+
+    jitstd::vector<Segment>::const_iterator end() const
+    {
+        return m_segments.end();
+    }
 
 #ifdef DEBUG
     void Dump();

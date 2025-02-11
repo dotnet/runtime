@@ -32,6 +32,15 @@ namespace System.Linq.Tests
             AssertExtensions.Throws<ArgumentNullException>("func", () => AsyncEnumerable.AggregateBy(AsyncEnumerable.Empty<int>(), async (x, ct) => x, async (x, ct) => x, (Func<int, int, CancellationToken, ValueTask<int>>)null));
         }
 
+        [Fact]
+        public void Empty_ProducesEmpty() // validating an optimization / implementation detail
+        {
+            Assert.Same(AsyncEnumerable.Empty<KeyValuePair<int, int>>(), AsyncEnumerable.Empty<int>().AggregateBy(x => x, x => x, (x, y) => x + y));
+            Assert.Same(AsyncEnumerable.Empty<KeyValuePair<int, int>>(), AsyncEnumerable.Empty<int>().AggregateBy(x => x, 42, (x, y) => x + y));
+            Assert.Same(AsyncEnumerable.Empty<KeyValuePair<int, int>>(), AsyncEnumerable.Empty<int>().AggregateBy(async (x, ct) => x, async (x, ct) => x, async (x, y, ct) => x + y));
+            Assert.Same(AsyncEnumerable.Empty<KeyValuePair<int, int>>(), AsyncEnumerable.Empty<int>().AggregateBy(async (x, ct) => x, 42, async (x, y, ct) => x + y));
+        }
+
         public static IEnumerable<object[]> VariousValues_MatchesEnumerable_String_MemberData()
         {
             yield return new object[] { new string[0] };
