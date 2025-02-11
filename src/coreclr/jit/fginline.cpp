@@ -656,7 +656,7 @@ private:
 #ifdef DEBUG
                         // Update inline context for Debug.
                         call->gtInlineContext = call->GetSingleInlineCandidateInfo()->inlinersContext;
-                        DebugInfo debugInfo(call->gtInlineContext, m_curStmt->GetDebugInfo().GetLocation());
+                        DebugInfo debugInfo(call->gtInlineContext, ILLocation(call->gtRawILOffset, false, true));
                         m_curStmt->SetDebugInfo(debugInfo);
 #endif
 
