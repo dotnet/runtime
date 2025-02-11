@@ -4982,7 +4982,7 @@ void Lowering::LowerRetFieldList(GenTreeOp* ret, GenTreeFieldList* fieldList)
         for (GenTreeFieldList::Use& use : fieldList->Uses())
         {
             GenTree* store = comp->gtNewStoreLclFldNode(lclNum, use.GetType(), use.GetOffset(), use.GetNode());
-            BlockRange().InsertBefore(ret, store);
+            BlockRange().InsertAfter(use.GetNode(), store);
             LowerNode(store);
         }
 
