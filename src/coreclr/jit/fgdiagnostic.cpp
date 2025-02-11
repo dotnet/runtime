@@ -4742,15 +4742,30 @@ void Compiler::fgDebugCheckFlowGraphAnnotations()
         return;
     }
 
-    unsigned count = fgRunDfs(
-        [](BasicBlock* block, unsigned preorderNum) {
+    auto visitPreorder = [](BasicBlock* block, unsigned preorderNum) {
         assert(block->bbPreorderNum == preorderNum);
-    },
-        [=](BasicBlock* block, unsigned postorderNum) {
+    };
+
+    auto visitPostorder = [=](BasicBlock* block, unsigned postorderNum) {
         assert(block->bbPostorderNum == postorderNum);
         assert(m_dfsTree->GetPostOrder(postorderNum) == block);
-    },
-        [](BasicBlock* block, BasicBlock* succ) {});
+    };
+
+    auto visitEdge = [](BasicBlock* block, BasicBlock* succ) {};
+
+    unsigned count;
+    if (m_dfsTree->IsProfileAware())
+    {
+        count = fgRunDfs<decltype(visitPreorder), decltype(visitPostorder), decltype(visitEdge), true>(visitPreorder,
+                                                                                                       visitPostorder,
+                                                                                                       visitEdge);
+    }
+    else
+    {
+        count = fgRunDfs<decltype(visitPreorder), decltype(visitPostorder), decltype(visitEdge), false>(visitPreorder,
+                                                                                                        visitPostorder,
+                                                                                                        visitEdge);
+    }
 
     assert(m_dfsTree->GetPostOrderCount() == count);
 

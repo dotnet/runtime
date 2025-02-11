@@ -2322,6 +2322,64 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 				return ins;
 			}
 		}
+	} else if ((cmethod->klass == mono_defaults.double_class) || (cmethod->klass == mono_defaults.single_class)) {
+		MonoGenericContext *method_context = mono_method_get_context (cmethod);
+		bool isDouble = cmethod->klass == mono_defaults.double_class;
+		if (!strcmp (cmethod->name, "ConvertToIntegerNative") &&
+				method_context != NULL &&
+				method_context->method_inst->type_argc == 1) {
+			int opcode = 0;
+			MonoTypeEnum tto_type = method_context->method_inst->type_argv [0]->type;
+			MonoStackType tto_stack = STACK_I4;
+			switch (tto_type) {
+				case MONO_TYPE_I1:
+					opcode = isDouble ? OP_FCONV_TO_I1 : OP_RCONV_TO_I1;
+					break;
+				case MONO_TYPE_I2:
+					opcode = isDouble ? OP_FCONV_TO_I2 : OP_RCONV_TO_I2;
+					break;
+#if TARGET_SIZEOF_VOID_P == 4
+				case MONO_TYPE_I:
+#endif
+				case MONO_TYPE_I4:
+					opcode = isDouble ? OP_FCONV_TO_I4 : OP_RCONV_TO_I4;
+					break;
+#if TARGET_SIZEOF_VOID_P == 8
+				case MONO_TYPE_I:
+#endif
+				case MONO_TYPE_I8:
+					opcode = isDouble ? OP_FCONV_TO_I8 : OP_RCONV_TO_I8;
+					tto_stack = STACK_I8;
+					break;
+				case MONO_TYPE_U1:
+					opcode = isDouble ? OP_FCONV_TO_U1 : OP_RCONV_TO_U1;
+					break;
+				case MONO_TYPE_U2:
+					opcode = isDouble ? OP_FCONV_TO_U2 : OP_RCONV_TO_U2;
+					break;
+#if TARGET_SIZEOF_VOID_P == 4
+				case MONO_TYPE_U:
+#endif
+				case MONO_TYPE_U4:
+					opcode = isDouble ? OP_FCONV_TO_U4 : OP_RCONV_TO_U4;
+					break;
+#if TARGET_SIZEOF_VOID_P == 8
+				case MONO_TYPE_U:
+#endif
+				case MONO_TYPE_U8:
+					opcode = isDouble ? OP_FCONV_TO_U8 : OP_RCONV_TO_U8;
+					tto_stack = STACK_I8;
+					break;
+				default: return NULL;
+			}
+			
+			if (opcode != 0) {
+				int ireg = mono_alloc_ireg (cfg);
+				EMIT_NEW_UNALU (cfg, ins, opcode, ireg, args [0]->dreg);
+				ins->type = tto_stack;
+				return mono_decompose_opcode(cfg, ins);
+			}
+		}
 	}
 
 	ins = mono_emit_simd_intrinsics (cfg, cmethod, fsig, args);
