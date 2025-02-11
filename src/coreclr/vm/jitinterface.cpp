@@ -8579,6 +8579,7 @@ bool CEEInfo::resolveVirtualMethodHelper(CORINFO_DEVIRTUALIZATION_INFO * info)
     memset(&info->resolvedTokenDevirtualizedUnboxedMethod, 0, sizeof(info->resolvedTokenDevirtualizedUnboxedMethod));
     info->isInstantiatingStub = false;
     info->wasArrayInterfaceOrGvmDevirt = false;
+    info->needRuntimeLookup = false;
 
     MethodDesc* pBaseMD = GetMethod(info->virtualMethod);
     MethodTable* pBaseMT = pBaseMD->GetMethodTable();
@@ -8780,13 +8781,9 @@ bool CEEInfo::resolveVirtualMethodHelper(CORINFO_DEVIRTUALIZATION_INFO * info)
     if (pBaseMD->HasMethodInstantiation())
     {
         pDevirtMD = pDevirtMD->FindOrCreateAssociatedMethodDesc(pDevirtMD, pExactMT, false, pBaseMD->GetMethodInstantiation(), false);
-        // The devirtualized generic method must not contain any canonical instantiations,
-        // as we don't support dispatching generic method with InstParam yet.
-        // TODO: We should be able to support this case.
         if (ClassLoader::IsTypicalSharedInstantiation(pDevirtMD->GetMethodInstantiation()))
         {
-            info->detail = CORINFO_DEVIRTUALIZATION_FAILED_LOOKUP;
-            return false;
+            info->needRuntimeLookup = true;
         }
     }
 

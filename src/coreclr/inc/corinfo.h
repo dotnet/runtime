@@ -1515,6 +1515,7 @@ struct CORINFO_DEVIRTUALIZATION_INFO
     // - isInstantiatingStub is set to TRUE if the devirtualized method is a generic method instantiating stub
     // - wasArrayInterfaceOrGvmDevirt is set TRUE for array interface method devirtualization
     //     (in which case the method handle and context will be a generic method)
+    // - needRuntimeLookup is set to TRUE if runtime lookup is required to get the exact method context
     //
     CORINFO_METHOD_HANDLE           devirtualizedMethod;
     CORINFO_CONTEXT_HANDLE          exactContext;
@@ -1523,6 +1524,7 @@ struct CORINFO_DEVIRTUALIZATION_INFO
     CORINFO_RESOLVED_TOKEN          resolvedTokenDevirtualizedUnboxedMethod;
     bool                            isInstantiatingStub;
     bool                            wasArrayInterfaceOrGvmDevirt;
+    bool                            needRuntimeLookup;
 };
 
 //----------------------------------------------------------------------------

@@ -1304,6 +1304,7 @@ namespace Internal.JitInterface
             info->detail = CORINFO_DEVIRTUALIZATION_DETAIL.CORINFO_DEVIRTUALIZATION_UNKNOWN;
             info->isInstantiatingStub = false;
             info->wasArrayInterfaceOrGvmDevirt = false;
+            info->needRuntimeLookup = false;
 
             TypeDesc objType = HandleToObject(info->objClass);
 

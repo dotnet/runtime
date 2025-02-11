@@ -1097,6 +1097,8 @@ namespace Internal.JitInterface
         public bool isInstantiatingStub { get { return _isInstantiatingStub != 0; } set { _isInstantiatingStub = value ? (byte)1 : (byte)0; } }
         public byte _wasArrayInterfaceOrGvmDevirt;
         public bool wasArrayInterfaceOrGvmDevirt { get { return _wasArrayInterfaceOrGvmDevirt != 0; } set { _wasArrayInterfaceOrGvmDevirt = value ? (byte)1 : (byte)0; } }
+        public byte _needRuntimeLookup;
+        public bool needRuntimeLookup { get { return _needRuntimeLookup != 0; } set { _needRuntimeLookup = value ? (byte)1 : (byte)0; } }
     }
 
     //----------------------------------------------------------------------------

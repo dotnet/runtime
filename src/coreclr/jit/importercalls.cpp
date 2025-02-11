@@ -386,12 +386,6 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
 
             case CORINFO_VIRTUALCALL_LDVIRTFTN:
             {
-                if (compIsForInlining())
-                {
-                    compInlineResult->NoteFatal(InlineObservation::CALLSITE_HAS_CALL_VIA_LDVIRTFTN);
-                    return TYP_UNDEF;
-                }
-
                 assert(!(mflags & CORINFO_FLG_STATIC)); // can't call a static method
                 assert(!(clsFlags & CORINFO_FLG_VALUECLASS));
                 // OK, We've been told to call via LDVIRTFTN, so just
@@ -412,6 +406,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
                 GenTree* fptr = impImportLdvirtftn(thisPtr, pResolvedToken, callInfo);
                 assert(fptr != nullptr);
 
+                call->AsCall()->gtLdvirtftn = fptr->AsCall();
                 call->AsCall()
                     ->gtArgs.PushFront(this, NewCallArg::Primitive(thisPtrCopy).WellKnown(WellKnownArg::ThisPointer));
 
@@ -8349,6 +8344,8 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
 
     JITDUMP("    %s; can devirtualize\n", note);
 
+    INDEBUG(const bool isGenericVirtual = call->IsGenericVirtual());
+
     // Make the updates.
     call->gtFlags &= ~GTF_CALL_VIRT_VTABLE;
     call->gtFlags &= ~GTF_CALL_VIRT_STUB;
@@ -8362,12 +8359,26 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
     {
         // Pass the instantiating stub method desc as the inst param arg.
         //
-        // Note different embedding would be needed for NAOT/R2R,
-        // but we have ruled those out above.
-        //
-        GenTree* const instParam =
-            gtNewIconEmbHndNode(instantiatingStub, nullptr, GTF_ICON_METHOD_HDL, instantiatingStub);
-        call->gtArgs.InsertInstParam(this, instParam);
+        if (dvInfo.needRuntimeLookup)
+        {
+            // Runtime lookup is needed for the instantiating stub.
+            // We need to clone the runtime lookup node from LDVIRTFTN.
+            //
+            INDEBUG(assert(isGenericVirtual));
+            assert(call->gtLdvirtftn->gtArgs.CountArgs() == 3);
+            GenTree* methCtx = call->gtLdvirtftn->gtArgs.GetArgByIndex(2)->GetNode();
+            assert(methCtx->OperIs(GT_RUNTIMELOOKUP));
+            call->gtArgs.InsertInstParam(this, gtCloneExpr(methCtx));
+        }
+        else
+        {
+            // Note different embedding would be needed for NAOT/R2R,
+            // but we have ruled those out above.
+            //
+            GenTree* const instParam =
+                gtNewIconEmbHndNode(instantiatingStub, nullptr, GTF_ICON_METHOD_HDL, instantiatingStub);
+            call->gtArgs.InsertInstParam(this, instParam);
+        }
     }
 
     // Virtual calls include an implicit null check, which we may

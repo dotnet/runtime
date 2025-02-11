@@ -5768,6 +5768,9 @@ struct GenTreeCall final : public GenTree
         void*                  gtDirectCallAddress; // Used to pass direct call address between lower and codegen
     };
 
+    // the helper call to resolve generic virtual method
+    GenTreeCall* gtLdvirtftn;
+
     // expression evaluated after args are placed which determines the control target
     GenTree* gtControlExpr;
 
