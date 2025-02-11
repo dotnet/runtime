@@ -105,6 +105,10 @@
 
       <!-- Needed until https://github.com/dotnet/runtime/issues/109329 is fixed. -->
       <InnerBuildArgs Condition="'$(NetCoreAppToolCurrentVersion)' != ''">$(InnerBuildArgs) /p:NetCoreAppToolCurrentVersion=$(NetCoreAppToolCurrentVersion)</InnerBuildArgs>
+
+      <!-- Two-stage build is for live runtime packs; apphost, crossgen2 and ilcompiler. It is typically (but not limited to be) used for community-supported platform builds. -->
+      <InnerBuildArgs Condition="'$(StageOneBuild)' != ''">$(InnerBuildArgs) /p:StageOneBuild=$(StageOneBuild) /p:Subset=clr+libs+host</InnerBuildArgs>
+      <InnerBuildArgs Condition="'$(StageTwoBuild)' != ''">$(InnerBuildArgs) /p:StageTwoBuild=$(StageTwoBuild) /p:Subset=clr.tools+packs</InnerBuildArgs>
     </PropertyGroup>
   </Target>
 
