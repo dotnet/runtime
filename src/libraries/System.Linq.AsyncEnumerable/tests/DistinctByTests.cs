@@ -20,6 +20,13 @@ namespace System.Linq.Tests
             AssertExtensions.Throws<ArgumentNullException>("keySelector", () => AsyncEnumerable.DistinctBy(AsyncEnumerable.Empty<int>(), (Func<int, CancellationToken, ValueTask<int>>)null));
         }
 
+        [Fact]
+        public void Empty_ProducesEmpty() // validating an optimization / implementation detail
+        {
+            Assert.Same(AsyncEnumerable.Empty<int>(), AsyncEnumerable.Empty<int>().DistinctBy(i => i));
+            Assert.Same(AsyncEnumerable.Empty<int>(), AsyncEnumerable.Empty<int>().DistinctBy(async (i, ct) => i));
+        }
+
 #if NET
         [Theory]
         [InlineData(new int[0])]

@@ -56,7 +56,7 @@ namespace System.CommandLine
 
         public static TargetOS GetTargetOS(string token)
         {
-            if(string.IsNullOrEmpty(token))
+            if (string.IsNullOrEmpty(token))
             {
                 if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
                     return TargetOS.Windows;
@@ -87,7 +87,7 @@ namespace System.CommandLine
 
         public static TargetArchitecture GetTargetArchitecture(string token)
         {
-            if(string.IsNullOrEmpty(token))
+            if (string.IsNullOrEmpty(token))
             {
                 return RuntimeInformation.ProcessArchitecture switch
                 {

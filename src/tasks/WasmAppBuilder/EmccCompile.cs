@@ -137,7 +137,7 @@ namespace Microsoft.WebAssembly.Build.Tasks
                     if (be9 is not null)
                         allowedParallelism = be9.RequestCores(allowedParallelism);
                 }
-                catch(NotImplementedException)
+                catch (NotImplementedException)
                 {
                     // RequestCores is not implemented in TaskHostFactory
                     be9 = null;

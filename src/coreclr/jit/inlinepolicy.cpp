@@ -1371,6 +1371,14 @@ void ExtendedDefaultPolicy::NoteBool(InlineObservation obs, bool value)
             m_IsCallsiteInNoReturnRegion = value;
             break;
 
+        case InlineObservation::CALLEE_UNBOX_ARG:
+            m_ArgUnbox++;
+            break;
+
+        case InlineObservation::CALLSITE_UNBOX_EXACT_ARG:
+            m_ArgUnboxExact++;
+            break;
+
         case InlineObservation::CALLSITE_RECURSIVE:
             m_RecursiveCallsites++;
             if (m_RecursiveCallsites > JitConfig.JitInlineRecursiveCallsites())
@@ -1732,6 +1740,30 @@ double ExtendedDefaultPolicy::DetermineMultiplier()
     {
         multiplier += 3.0;
         JITDUMP("\nPrejit root candidate has arg that feeds a conditional.  Multiplier increased to %g.", multiplier);
+    }
+
+    if (m_ArgUnboxExact > 0)
+    {
+        // Callee has unbox(arg), caller supplies exact type (a box)
+        // We can likely optimize
+        multiplier += 4.0;
+        JITDUMP("\nInline candidate has %d exact arg unboxes.  Multiplier increased to %g.", m_ArgUnboxExact,
+                multiplier);
+    }
+
+    if (m_ArgUnbox > 0)
+    {
+        // Callee has unbox(arg), caller arg not known type
+        if (m_IsPrejitRoot)
+        {
+            // Assume these might be met with exact type args
+            multiplier += 4.0;
+        }
+        else
+        {
+            multiplier += 1.0;
+        }
+        JITDUMP("\nInline candidate has %d arg unboxes.  Multiplier increased to %g.", m_ArgUnboxExact, multiplier);
     }
 
     switch (m_CallsiteFrequency)
