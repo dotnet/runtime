@@ -508,8 +508,8 @@ NESTED_ENTRY TheUMEntryPrestub, _TEXT, UnhandledExceptionHandlerUnix
 NESTED_END TheUMEntryPrestub, _TEXT
 
 // Make sure the `FaultingExceptionFrame_StackAlloc` is 16-byte aligned.
-#define FaultingExceptionFrame_StackAlloc (SIZEOF__GSCookie + SIZEOF__FaultingExceptionFrame + 0x8)
-#define FaultingExceptionFrame_FrameOffset SIZEOF__GSCookie
+#define FaultingExceptionFrame_StackAlloc (SIZEOF__FaultingExceptionFrame)
+#define FaultingExceptionFrame_FrameOffset 0
 
 .macro GenerateRedirectedStubWithFrame stub, target
 
@@ -957,6 +957,22 @@ NESTED_ENTRY OnCallCountThresholdReachedStub, _TEXT, NoHandler
     EPILOG_WITH_TRANSITION_BLOCK_TAILCALL
     EPILOG_BRANCH_REG t4
 NESTED_END OnCallCountThresholdReachedStub, _TEXT
+
+NESTED_ENTRY JIT_Patchpoint, _TEXT, NoHandler
+    PROLOG_WITH_TRANSITION_BLOCK
+
+    addi  a0, sp, __PWTB_TransitionBlock // TransitionBlock *
+    call  C_FUNC(JIT_PatchpointWorkerWorkerWithPolicy)
+
+    EPILOG_WITH_TRANSITION_BLOCK_RETURN
+NESTED_END JIT_Patchpoint, _TEXT
+
+// first arg register holds iloffset, which needs to be moved to the second register, and the first register filled with NULL
+LEAF_ENTRY JIT_PartialCompilationPatchpoint, _TEXT
+    mv    a1, a0
+    li    a0, 0
+    j C_FUNC(JIT_Patchpoint)
+LEAF_END JIT_PartialCompilationPatchpoint, _TEXT
 
 #endif // FEATURE_TIERED_COMPILATION
 

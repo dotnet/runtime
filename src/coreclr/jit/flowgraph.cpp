@@ -4353,7 +4353,7 @@ FlowGraphDfsTree* Compiler::fgComputeDfs()
         fgRunDfs<decltype(visitPreorder), decltype(visitPostorder), decltype(visitEdge), useProfile>(visitPreorder,
                                                                                                      visitPostorder,
                                                                                                      visitEdge);
-    return new (this, CMK_DepthFirstSearch) FlowGraphDfsTree(this, postOrder, numBlocks, hasCycle);
+    return new (this, CMK_DepthFirstSearch) FlowGraphDfsTree(this, postOrder, numBlocks, hasCycle, useProfile);
 }
 
 // Add explicit instantiations.

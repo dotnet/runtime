@@ -24,6 +24,15 @@ namespace System.Linq.Tests
             AssertExtensions.Throws<ArgumentNullException>("selector", () => AsyncEnumerable.Select(AsyncEnumerable.Empty<int>(), (Func<int, int, CancellationToken, ValueTask<string>>)null));
         }
 
+        [Fact]
+        public void Empty_ProducesEmpty() // validating an optimization / implementation detail
+        {
+            Assert.Same(AsyncEnumerable.Empty<string>(), AsyncEnumerable.Empty<string>().Select(s => s));
+            Assert.Same(AsyncEnumerable.Empty<string>(), AsyncEnumerable.Empty<string>().Select((s, index) => s));
+            Assert.Same(AsyncEnumerable.Empty<string>(), AsyncEnumerable.Empty<string>().Select(async (string s, CancellationToken ct) => s));
+            Assert.Same(AsyncEnumerable.Empty<string>(), AsyncEnumerable.Empty<string>().Select(async (string s, int index, CancellationToken ct) => s));
+        }
+
         [Theory]
         [InlineData(new int[0])]
         [InlineData(new int[] { 42 })]
