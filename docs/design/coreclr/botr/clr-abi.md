@@ -816,7 +816,7 @@ Therefore it will expand all indirect calls via the validation helper and a manu
 ## CFG details for x64
 
 On x64, `CORINFO_HELP_VALIDATE_INDIRECT_CALL` takes the call address in `rcx`.
-In addition to the usual registers it also preserves all float registers and `r10`; furthermore, shadow stack space is not required to be allocated.
+In addition to the usual registers it also preserves all float registers, `rcx`, and `r10`; furthermore, shadow stack space is not required to be allocated.
 
 `CORINFO_HELP_DISPATCH_INDIRECT_CALL` takes the call address in `rax` and it reserves the right to use and trash `r10` and `r11`.
 The JIT uses the dispatch helper on x64 whenever possible as it is expected that the code size benefits outweighs the less accurate branch prediction.
