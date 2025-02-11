@@ -720,7 +720,6 @@ private:
     friend class TailCallFrame;
     friend class AppDomain;
     friend VOID RealCOMPlusThrow(OBJECTREF);
-
 #ifdef _DEBUG
     friend LONG WINAPI CLRVectoredExceptionHandlerShim(PEXCEPTION_POINTERS pExceptionInfo);
 #endif
@@ -844,7 +843,7 @@ public:
             Object** firstIntReg = (Object**)&this->GetContext()->X0;
             Object** lastIntReg  = (Object**)&this->GetContext()->X28;
 #elif defined(TARGET_LOONGARCH64)
-            Object** firstIntReg = (Object**)&this->GetContext()->Tp;
+            Object** firstIntReg = (Object**)&this->GetContext()->A0;
             Object** lastIntReg  = (Object**)&this->GetContext()->S8;
 #elif defined(TARGET_RISCV64)
             Object** firstIntReg = (Object**)&this->GetContext()->Gp;

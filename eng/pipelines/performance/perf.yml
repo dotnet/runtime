@@ -1,0 +1,76 @@
+parameters:
+  - name: onlySanityCheck
+    type: boolean
+    default: false
+
+trigger:
+  batch: true
+  branches:
+    include:
+    - main
+    - release/9.0
+    - release/8.0
+  paths:
+    include:
+    - '*'
+    - src/libraries/System.Private.CoreLib/*
+    exclude:
+    - '**.md'
+    - .devcontainer/*
+    - .github/*
+    - docs/*
+    - LICENSE.TXT
+    - PATENTS.TXT
+    - THIRD-PARTY-NOTICES.TXT
+
+resources:
+  repositories:
+    - repository: performance
+      type: git
+      name: internal/dotnet-performance
+
+variables:
+- template: /eng/pipelines/common/variables.yml
+
+#
+# For the 'schedule' case, only wasm/jsc perf jobs are run.
+# And the rest are build jobs - wasm, mono, coreclr, and libraries.
+#
+# Since, we are not running *any* perf jobs, none of these builds are needed,
+# thus the whole scheduled run can be disabled.
+#
+schedules:
+- cron: "0 0 * * 1"
+  displayName: Weekly Monday 12am UTC Build
+  branches:
+    include:
+    - main
+  always: true
+
+extends:
+  template: /eng/pipelines/common/templates/pipeline-with-resources.yml
+  parameters:
+    stages:
+    - stage: Build
+      jobs:
+
+      - template: /eng/pipelines/runtime-wasm-perf-jobs.yml@performance
+        parameters:
+          #${{ and(ne(variables['System.TeamProject'], 'public'), in(variables['Build.Reason'], 'Schedule')) }}:
+          #  runProfile: 'non-v8'
+          ${{ if eq(variables['System.TeamProject'], 'internal') }}:
+            runProfile: 'v8'
+          runtimeRepoAlias: self
+          performanceRepoAlias: performance
+          jobParameters:
+            ${{ if parameters.onlySanityCheck }}:
+              onlySanityCheck: true
+
+      - ${{ if and(ne(variables['System.TeamProject'], 'public'), notin(variables['Build.Reason'], 'Schedule')) }}:
+        - template: /eng/pipelines/runtime-perf-jobs.yml@performance
+          parameters:
+            runtimeRepoAlias: self
+            performanceRepoAlias: performance
+            jobParameters:
+              ${{ if parameters.onlySanityCheck }}:
+                onlySanityCheck: true

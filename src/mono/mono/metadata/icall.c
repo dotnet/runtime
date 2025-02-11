@@ -3425,6 +3425,8 @@ static void
 init_io_stream_slots (void)
 {
 	MonoClass* klass = mono_class_try_get_stream_class ();
+	g_assert(klass);
+
 	mono_class_setup_vtable (klass);
 	MonoMethod **klass_methods = m_class_get_methods (klass);
 	if (!klass_methods) {

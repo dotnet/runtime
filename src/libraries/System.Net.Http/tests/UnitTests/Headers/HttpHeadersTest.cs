@@ -2494,7 +2494,7 @@ namespace System.Net.Http.Tests
                     static headers => headers.TryAddWithoutValidation("h", new[] { "i", "j" }),
                 };
 
-                foreach (Action<HttpRequestHeaders> action in actions.OrderBy(_ => Random.Shared.Next()))
+                foreach (Action<HttpRequestHeaders> action in actions.Shuffle())
                 {
                     action(headers);
                 }

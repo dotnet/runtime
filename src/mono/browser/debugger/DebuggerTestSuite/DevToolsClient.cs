@@ -51,7 +51,7 @@ namespace DebuggerTests
         protected async Task<ClientWebSocket> ConnectToWebServer(Uri uri, CancellationToken token)
         {
             // connects to the webserver to start the proxy
-            ClientWebSocket clientSocket = new ();
+            ClientWebSocket clientSocket = new();
             clientSocket.Options.KeepAliveInterval = Timeout.InfiniteTimeSpan;
             logger.LogDebug("Client connecting to {0}", uri);
             await clientSocket.ConnectAsync(uri, token);
