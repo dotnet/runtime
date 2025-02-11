@@ -2404,7 +2404,7 @@ void emitter::emitIns_Call(EmitCallType          callType,
 
     // Our stack level should be always greater than the bytes of arguments we push. Just
     // a sanity test.
-    assert((unsigned)abs(argSize) <= codeGen->genStackLevel);
+    assert((unsigned)std::abs(argSize) <= codeGen->genStackLevel);
 
     // Trim out any callee-trashed registers from the live set.
     regMaskTP savedSet = emitGetGCRegsSavedOrModified(methHnd);
@@ -4002,7 +4002,7 @@ void emitter::emitDisInsName(code_t code, const BYTE* addr, instrDesc* id)
     int       tmp;
 
     instruction ins = INS_invalid;
-    for (int i = 1; i < INS_count; i++)
+    for (uint32_t i = 1; i < INS_count; i++)
     {
         if ((code & emitGetInsMask(i)) == emitInsCode((instruction)i))
         {
