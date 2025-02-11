@@ -277,6 +277,12 @@
       <Link>Common\System\Security\Cryptography\Asn1\Pkcs12\SecretBagAsn.xml.cs</Link>
       <DependentUpon>Common\System\Security\Cryptography\Asn1\Pkcs12\SecretBagAsn.xml</DependentUpon>
     </Compile>
+    <AsnXml Include="$(CommonPath)System\Security\Cryptography\Asn1\Pkcs7\CertificateChoiceAsn.xml">
+      <Link>Common\System\Security\Cryptography\Asn1\Pkcs7\CertificateChoiceAsn.xml</Link>
+    </AsnXml>
+    <Compile Include="$(CommonPath)System\Security\Cryptography\Asn1\Pkcs7\CertificateChoiceAsn.xml.cs">
+      <DependentUpon>Common\System\Security\Cryptography\Asn1\Pkcs7\CertificateChoiceAsn.xml</DependentUpon>
+    </Compile>
     <AsnXml Include="$(CommonPath)System\Security\Cryptography\Asn1\Pkcs7\ContentInfoAsn.xml">
       <Link>Common\System\Security\Cryptography\Asn1\Pkcs7\ContentInfoAsn.xml</Link>
     </AsnXml>
@@ -297,6 +303,42 @@
     <Compile Include="$(CommonPath)System\Security\Cryptography\Asn1\Pkcs7\EncryptedDataAsn.xml.cs">
       <Link>Common\System\Security\Cryptography\Asn1\Pkcs7\EncryptedDataAsn.xml.cs</Link>
       <DependentUpon>Common\System\Security\Cryptography\Asn1\Pkcs7\EncryptedDataAsn.xml</DependentUpon>
+    </Compile>
+    <AsnXml Include="$(CommonPath)System\Security\Cryptography\Asn1\Pkcs7\EncapsulatedContentInfoAsn.xml">
+      <Link>Common\System\Security\Cryptography\Asn1\Pkcs7\EncapsulatedContentInfoAsn.xml</Link>
+    </AsnXml>
+    <Compile Include="$(CommonPath)System\Security\Cryptography\Asn1\Pkcs7\EncapsulatedContentInfoAsn.xml.cs">
+      <DependentUpon>Common\System\Security\Cryptography\Asn1\Pkcs7\EncapsulatedContentInfoAsn.xml</DependentUpon>
+    </Compile>
+    <AsnXml Include="$(CommonPath)System\Security\Cryptography\Asn1\Pkcs7\IssuerAndSerialNumberAsn.xml">
+      <Link>Common\System\Security\Cryptography\Asn1\Pkcs7\IssuerAndSerialNumberAsn.xml</Link>
+    </AsnXml>
+    <Compile Include="$(CommonPath)System\Security\Cryptography\Asn1\Pkcs7\IssuerAndSerialNumberAsn.xml.cs">
+      <DependentUpon>Common\System\Security\Cryptography\Asn1\Pkcs7\IssuerAndSerialNumberAsn.xml</DependentUpon>
+    </Compile>
+    <AsnXml Include="$(CommonPath)System\Security\Cryptography\Asn1\Pkcs7\OtherCertificateFormat.xml">
+      <Link>Common\System\Security\Cryptography\Asn1\Pkcs7\OtherCertificateFormat.xml</Link>
+    </AsnXml>
+    <Compile Include="$(CommonPath)System\Security\Cryptography\Asn1\Pkcs7\OtherCertificateFormat.xml.cs">
+      <DependentUpon>Common\System\Security\Cryptography\Asn1\Pkcs7\OtherCertificateFormat.xml</DependentUpon>
+    </Compile>
+    <AsnXml Include="$(CommonPath)System\Security\Cryptography\Asn1\Pkcs7\SignedDataAsn.xml">
+      <Link>Common\System\Security\Cryptography\Asn1\Pkcs7\SignedDataAsn.xml</Link>
+    </AsnXml>
+    <Compile Include="$(CommonPath)System\Security\Cryptography\Asn1\Pkcs7\SignedDataAsn.xml.cs">
+      <DependentUpon>Common\System\Security\Cryptography\Asn1\Pkcs7\SignedDataAsn.xml</DependentUpon>
+    </Compile>
+    <AsnXml Include="$(CommonPath)System\Security\Cryptography\Asn1\Pkcs7\SignerInfoAsn.xml">
+      <Link>Common\System\Security\Cryptography\Asn1\Pkcs7\SignerInfoAsn.xml</Link>
+    </AsnXml>
+    <Compile Include="$(CommonPath)System\Security\Cryptography\Asn1\Pkcs7\SignerInfoAsn.xml.cs">
+      <DependentUpon>Common\System\Security\Cryptography\Asn1\Pkcs7\SignerInfoAsn.xml</DependentUpon>
+    </Compile>
+    <AsnXml Include="$(CommonPath)System\Security\Cryptography\Asn1\Pkcs7\SignerIdentifierAsn.xml">
+      <Link>Common\System\Security\Cryptography\Asn1\Pkcs7\SignerIdentifierAsn.xml</Link>
+    </AsnXml>
+    <Compile Include="$(CommonPath)System\Security\Cryptography\Asn1\Pkcs7\SignerIdentifierAsn.xml.cs">
+      <DependentUpon>Common\System\Security\Cryptography\Asn1\Pkcs7\SignerIdentifierAsn.xml</DependentUpon>
     </Compile>
     <Compile Include="$(CommonPath)System\Security\Cryptography\CryptographicAttributeObject.cs"
              Link="Common\System\Security\Cryptography\CryptographicAttributeObject.cs" />
@@ -364,6 +406,10 @@
              Link="Common\System\Security\Cryptography\Pkcs\Pkcs12CertBag.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\Pkcs\Pkcs12ConfidentialityMode.cs"
              Link="Common\System\Security\Cryptography\Pkcs\Pkcs12ConfidentialityMode.cs" />
+    <Compile Include="$(CommonPath)System\Security\Cryptography\Pkcs\Pkcs12Info.cs"
+             Link="Common\System\Security\Cryptography\Pkcs\Pkcs12Info.cs" />
+    <Compile Include="$(CommonPath)System\Security\Cryptography\Pkcs\Pkcs12IntegrityMode.cs"
+             Link="Common\System\Security\Cryptography\Pkcs\Pkcs12IntegrityMode.cs"/>
     <Compile Include="$(CommonPath)System\Security\Cryptography\Pkcs\Pkcs12KeyBag.cs"
              Link="Common\System\Security\Cryptography\Pkcs\Pkcs12KeyBag.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\Pkcs\Pkcs12SafeBag.cs"
@@ -376,6 +422,8 @@
              Link="Common\System\Security\Cryptography\Pkcs\Pkcs12SecretBag.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\Pkcs\Pkcs12ShroudedKeyBag.cs"
              Link="Common\System\Security\Cryptography\Pkcs\Pkcs12ShroudedKeyBag.cs" />
+    <Compile Include="$(CommonPath)System\Security\Cryptography\Pkcs\Pkcs8PrivateKeyInfo.cs"
+             Link="Common\System\Security\Cryptography\Pkcs\Pkcs8PrivateKeyInfo.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\X509Certificates\Pkcs12LoaderLimits.cs"
              Link="Common\System\Security\Cryptography\X509Certificates\Pkcs12LoaderLimits.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\X509Certificates\Pkcs12LoadLimitExceededException.cs"
@@ -1649,10 +1697,12 @@
              Link="Common\Interop\Windows\Crypt32\Interop.PfxCertStoreFlags.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.PFXExportFlags.cs"
              Link="Common\Interop\Windows\Crypt32\Interop.PFXExportFlags.cs" />
-    <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.PFXExportCertStore.cs"
-             Link="Common\Interop\Windows\Crypt32\Interop.PFXExportCertStore.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.PFXExportCertStoreEx.cs"
+             Link="Common\Interop\Windows\Crypt32\Interop.PFXExportCertStoreEx.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.PFXImportCertStore.cs"
              Link="Common\Interop\Windows\Crypt32\Interop.PFXImportCertStore.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.PKCS12_PBES2_EXPORT_PARAMS.cs"
+             Link="Common\Interop\Windows\Crypt32\Interop.PKCS12_PBES2_EXPORT_PARAMS.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.X509KeyUsageFlags.cs"
              Link="Common\Interop\Windows\Crypt32\Interop.X509KeyUsageFlags.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Interop.Libraries.cs"
