@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Runtime.InteropServices;
 
 namespace System.Linq
 {
@@ -148,6 +149,17 @@ namespace System.Linq
 
             private static void Fill(IList<TSource> source, Span<TSource> destination, int sourceIndex)
             {
+                if (source is TSource[] sourceArray)
+                {
+                    sourceArray.AsSpan(sourceIndex, destination.Length).CopyTo(destination);
+                    return;
+                }
+                else if (source is List<TSource> sourceList)
+                {
+                    CollectionsMarshal.AsSpan(sourceList).Slice(sourceIndex, destination.Length).CopyTo(destination);
+                    return;
+                }
+
                 for (int i = 0; i < destination.Length; i++, sourceIndex++)
                 {
                     destination[i] = source[sourceIndex];
