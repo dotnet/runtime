@@ -485,7 +485,7 @@ void Compiler::lvaInitRetBuffArg(InitVarDscInfo* varDscInfo, bool useFixedRetBuf
         info.compRetBuffArg = varDscInfo->varNum;
 
         LclVarDsc* varDsc  = varDscInfo->varDsc;
-        varDsc->lvType     = TYP_BYREF;
+        varDsc->lvType     = TYP_I_IMPL;
         varDsc->lvIsParam  = 1;
         varDsc->lvIsRegArg = 0;
 
