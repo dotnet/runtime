@@ -8,8 +8,8 @@
         <note />
       </trans-unit>
       <trans-unit id="AddGeneratedComClassAttributeDescription">
-        <source>This type implements at least one type with the 'GeneratedComInterfaceAttribute' attribute or its base type has the 'GeneratedComClassAttribute' attribute. Add the 'GeneratedComClassAttribute' to enable passing this type to COM and exposing the COM interfaces for the types with the 'GeneratedComInterfaceAttribute' from objects of this type.</source>
-        <target state="translated">Этот тип реализует по крайней мере один тип с атрибутом "GeneratedComInterfaceAttribute", или его базовый тип содержит атрибут "GeneratedComClassAttribute". Добавьте "GeneratedComClassAttribute", чтобы разрешить передачу этого типа в COM и предоставление COM-интерфейсов для типов с "GeneratedComInterfaceAttribute" из объектов этого типа.</target>
+        <source>This type implements at least one type with the 'GeneratedComInterfaceAttribute' attribute. Add the 'GeneratedComClassAttribute' to enable passing this type to COM and exposing the COM interfaces for the types with the 'GeneratedComInterfaceAttribute' from objects of this type.</source>
+        <target state="new">This type implements at least one type with the 'GeneratedComInterfaceAttribute' attribute. Add the 'GeneratedComClassAttribute' to enable passing this type to COM and exposing the COM interfaces for the types with the 'GeneratedComInterfaceAttribute' from objects of this type.</target>
         <note />
       </trans-unit>
       <trans-unit id="AddGeneratedComClassAttributeMessage">
@@ -65,16 +65,6 @@
       <trans-unit id="BaseInterfaceCannotBeGeneratedTitle">
         <source>The base COM interface failed to generate source. Code will not be generated for this interface.</source>
         <target state="translated">Базовому COM-интерфейсу не удалось создать источник. Код не будет создан для этого интерфейса.</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="BaseInterfaceDefinedInOtherAssemblyMessage">
-        <source>The type '{0}' has a base interface '{1}' defined in a different assembly. This can cause a variety of difficult to diagnose issues in some scenarios</source>
-        <target state="translated">Тип "{0}" использует базовый интерфейс "{1}", определенный в другой сборке. Это может вызвать множество сложностей при диагностике проблем в некоторых сценариях</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="BaseInterfaceDefinedInOtherAssemblyTitle">
-        <source>Specifying 'GeneratedComInterfaceAttribute' on an interface that has a base interface defined in another assembly is not supported</source>
-        <target state="translated">Указание "GeneratedComInterfaceAttribute" в интерфейсе, для которого базовый интерфейс определен в другой сборке, не поддерживается</target>
         <note />
       </trans-unit>
       <trans-unit id="BaseInterfaceMustGenerateAtLeastSameWrappers">
@@ -502,11 +492,6 @@
         <target state="translated">Атрибуты [In] и [Out]</target>
         <note />
       </trans-unit>
-      <trans-unit id="InVariantShouldBeRef">
-        <source>Objects marshalled from VARIANTs as 'in' parameters in unmanaged-to-managed calls will not propagate back the updated result, even if the VARIANT is a VT_BYREF variant. Use a 'ref' parameter instead of an 'in' parameter to propagate the updated value back to the caller.</source>
-        <target state="translated">Объекты, маршалированные из VARIANT в качестве параметров "in" в вызовах с переходом от неуправляемых к управляемым, не будут распространяться обратно на обновленный результат, даже если VARIANT является вариантом VT_BYREF. Используйте параметр "ref" вместо параметра "in", чтобы распространить обновленное значение обратно на вызывающую сторону.</target>
-        <note />
-      </trans-unit>
       <trans-unit id="InstanceEventDeclaredInInterfaceDescription">
         <source>Events are not a concept in COM, so no interop code will be source generated for instance events on source-generated COM interfaces.</source>
         <target state="translated">События не являются концепцией в COM, поэтому источник не будет генерировать код взаимодействия для событий экземпляра в COM-интерфейсах, создаваемых источником.</target>
@@ -842,9 +827,9 @@
         <target state="translated">Тип точки входа маршаллера "{0}" для управляемого типа "{1}" должен иметь более высокую арность, чем управляемый тип.</target>
         <note />
       </trans-unit>
-      <trans-unit id="MarshallerInOverlappingNativePositionMustMatchNativeType">
-        <source>All marshallers for values that are passed as the unmanaged return value or parameter must have the same unmanaged type.</source>
-        <target state="new">All marshallers for values that are passed as the unmanaged return value or parameter must have the same unmanaged type.</target>
+      <trans-unit id="MarshallerInNativeReturnPositionMustMatchNativeReturnType">
+        <source>All marshallers for values that are passed as the unmanaged return value must have the same unmanaged type.</source>
+        <target state="new">All marshallers for values that are passed as the unmanaged return value must have the same unmanaged type.</target>
         <note />
       </trans-unit>
       <trans-unit id="MarshallerTypeMustBeClosedOrMatchArityDescription">
@@ -1035,6 +1020,11 @@
       <trans-unit id="RuntimeMarshallingMustBeDisabled">
         <source>Runtime marshalling must be disabled in this project by applying the 'System.Runtime.CompilerServices.DisableRuntimeMarshallingAttribute' to the assembly to enable marshalling this type.</source>
         <target state="translated">В этом проекте следует отключить маршализацию среды выполнения путем применения к сборке атрибута \"System.Runtime.CompilerServices.DisableRuntimeMarshallingAttribute\" для включения маршализации этого типа.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="SafeHandleByRefMustBeConcrete">
+        <source>An abstract type derived from 'SafeHandle' cannot be marshalled by reference. The provided type must be concrete.</source>
+        <target state="new">An abstract type derived from 'SafeHandle' cannot be marshalled by reference. The provided type must be concrete.</target>
         <note />
       </trans-unit>
       <trans-unit id="SizeOfCollectionMustBeKnownAtMarshalTimeMessageOutParam">
