@@ -2910,7 +2910,7 @@ namespace System.Security.Cryptography.X509Certificates
     public enum Pkcs12ExportPbeParameters
     {
         Default = 0,
-        Pbes2TripleDesSha1 = 1,
+        Pkcs12TripleDesSha1 = 1,
         Pbes2Aes256Sha256 = 2,
     }
     public sealed partial class Pkcs12LoaderLimits

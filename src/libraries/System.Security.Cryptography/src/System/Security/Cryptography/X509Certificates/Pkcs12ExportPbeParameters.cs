@@ -17,7 +17,7 @@ namespace System.Security.Cryptography.X509Certificates
         /// <summary>
         /// Uses PBE with Triple-DES and SHA-1.
         /// </summary>
-        Pbes2TripleDesSha1 = 1,
+        Pkcs12TripleDesSha1 = 1,
 
         /// <summary>
         /// Uses PBE with AES-256 and SHA-256.

@@ -138,7 +138,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
 
             using (X509Certificate2 cert = new(TestData.PfxData, TestData.PfxDataPassword))
             {
-                byte[] pkcs12 = cert.ExportPkcs12(Pkcs12ExportPbeParameters.Pbes2TripleDesSha1, password);
+                byte[] pkcs12 = cert.ExportPkcs12(Pkcs12ExportPbeParameters.Pkcs12TripleDesSha1, password);
                 VerifyPkcs12(
                     pkcs12,
                     password,

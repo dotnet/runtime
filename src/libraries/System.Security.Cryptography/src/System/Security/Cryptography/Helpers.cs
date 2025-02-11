@@ -399,8 +399,8 @@ namespace Internal.Cryptography
         {
             return exportParameters switch
             {
-                Pkcs12ExportPbeParameters.Default or Pkcs12ExportPbeParameters.Pbes2TripleDesSha1 => Windows3desPbe,
-                Pkcs12ExportPbeParameters.Pbes2Aes256Sha256 => WindowsAesPbe,
+                Pkcs12ExportPbeParameters.Pkcs12TripleDesSha1 => Windows3desPbe,
+                Pkcs12ExportPbeParameters.Default or Pkcs12ExportPbeParameters.Pbes2Aes256Sha256 => WindowsAesPbe,
                 _ => throw new CryptographicException(),
             };
         }
