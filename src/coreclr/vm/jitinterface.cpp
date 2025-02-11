@@ -8779,6 +8779,13 @@ bool CEEInfo::resolveVirtualMethodHelper(CORINFO_DEVIRTUALIZATION_INFO * info)
     if (!isArray && pDevirtMD->HasMethodInstantiation())
     {
         pDevirtMD = pDevirtMD->FindOrCreateAssociatedMethodDesc(pDevirtMD, pExactMT, false, pBaseMD->GetMethodInstantiation(), false);
+        // The devirtualized generic method must not contain any canonical instantiations,
+        // as we don't support generic method with InstParam yet.
+        if (ClassLoader::IsTypicalSharedInstantiation(pDevirtMD->GetMethodInstantiation()))
+        {
+            info->detail = CORINFO_DEVIRTUALIZATION_FAILED_LOOKUP;
+            return false;
+        }
     }
 
     // Success! Pass back the results.
