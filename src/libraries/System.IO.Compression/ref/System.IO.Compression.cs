@@ -51,7 +51,7 @@ namespace System.IO.Compression
         public override void Write(byte[] buffer, int offset, int count) { }
         public override void Write(System.ReadOnlySpan<byte> buffer) { }
         public override System.Threading.Tasks.Task WriteAsync(byte[] buffer, int offset, int count, System.Threading.CancellationToken cancellationToken) { throw null; }
-        public override System.Threading.Tasks.ValueTask WriteAsync(System.ReadOnlyMemory<byte> buffer, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+        public override System.Threading.Tasks.ValueTask WriteAsync(System.ReadOnlyMemory<byte> buffer, System.Threading.CancellationToken cancellationToken) { throw null; }
         public override void WriteByte(byte value) { }
     }
     public partial class GZipStream : System.IO.Stream
@@ -131,10 +131,11 @@ namespace System.IO.Compression
         Create = 1,
         Update = 2,
     }
-    public sealed class ZLibCompressionOptions
+    public sealed partial class ZLibCompressionOptions
     {
-        public int CompressionLevel { get; set; }
-        public ZLibCompressionStrategy CompressionStrategy { get; set; }
+        public ZLibCompressionOptions() { }
+        public int CompressionLevel { get { throw null; } set { } }
+        public System.IO.Compression.ZLibCompressionStrategy CompressionStrategy { get { throw null; } set { } }
     }
     public enum ZLibCompressionStrategy
     {
@@ -142,7 +143,18 @@ namespace System.IO.Compression
         Filtered = 1,
         HuffmanOnly = 2,
         RunLengthEncoding = 3,
-        Fixed = 4
+        Fixed = 4,
+    }
+    public partial class ZLibException : System.IO.IOException, System.Runtime.Serialization.ISerializable
+    {
+        public ZLibException() { }
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId="SYSLIB0051", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
+        protected ZLibException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
+        public ZLibException(string? message, System.Exception? innerException) { }
+        public ZLibException(string? message, string? zlibErrorContext, int zlibErrorCode, string? zlibErrorMessage) { }
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId="SYSLIB0051", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
+        void System.Runtime.Serialization.ISerializable.GetObjectData(System.Runtime.Serialization.SerializationInfo si, System.Runtime.Serialization.StreamingContext context) { }
     }
     public sealed partial class ZLibStream : System.IO.Stream
     {
