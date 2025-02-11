@@ -590,6 +590,7 @@ private:
 #endif // DEBUG
 
                 CORINFO_CONTEXT_HANDLE context                = nullptr;
+                InlineContext*         inlinersContext        = m_compiler->compInlineContext;
                 CORINFO_METHOD_HANDLE  method                 = call->gtCallMethHnd;
                 unsigned               methodFlags            = 0;
                 const bool             isLateDevirtualization = true;
@@ -597,7 +598,8 @@ private:
 
                 if ((call->gtCallMoreFlags & GTF_CALL_M_HAS_LATE_DEVIRT_INFO) != 0)
                 {
-                    context = call->gtLateDevirtualizationInfo->exactContextHnd;
+                    context         = call->gtLateDevirtualizationInfo->exactContextHnd;
+                    inlinersContext = call->gtLateDevirtualizationInfo->inlinersContext;
                     // Note: we might call this multiple times for the same trees.
                     // If the devirtualization below succeeds, the call becomes
                     // non-virtual and we won't get here again. If it does not
@@ -613,9 +615,11 @@ private:
                 if (!call->IsVirtual())
                 {
                     assert(context != nullptr);
-                    CORINFO_CALL_INFO callInfo = {};
-                    callInfo.hMethod           = method;
-                    callInfo.methodFlags       = methodFlags;
+                    assert(inlinersContext != nullptr);
+                    m_compiler->compInlineContext = inlinersContext;
+                    CORINFO_CALL_INFO callInfo    = {};
+                    callInfo.hMethod              = method;
+                    callInfo.methodFlags          = methodFlags;
                     m_compiler->impMarkInlineCandidate(call, context, false, &callInfo);
 
                     if (call->IsInlineCandidate())
@@ -653,12 +657,6 @@ private:
                         }
 
                         call->GetSingleInlineCandidateInfo()->exactContextHandle = context;
-
-                        // Update inline context and DebugInfo for the new inline candidate.
-                        InlineContext* inlineContext = call->GetSingleInlineCandidateInfo()->inlinersContext;
-                        INDEBUG(call->gtInlineContext = inlineContext);
-                        DebugInfo debugInfo(inlineContext, inlineContext->GetLocation());
-                        m_curStmt->SetDebugInfo(debugInfo);
 
                         JITDUMP("New inline candidate due to late devirtualization:\n");
                         DISPTREE(call);
