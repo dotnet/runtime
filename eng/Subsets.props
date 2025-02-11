@@ -263,6 +263,11 @@
     </ProjectToBuild>
   </ItemDefinitionGroup>
 
+  <!-- emscripten provisioning, needs to be placed before runtime projects -->
+  <ItemGroup Condition="$(_subset.Contains('+mono.emsdk+'))">
+    <ProjectToBuild Include="$(MonoProjectRoot)mono.proj" AdditionalProperties="%(AdditionalProperties);ProvisionEmscriptenOnly=true" Category="mono" />
+  </ItemGroup>
+
   <!-- CoreClr sets -->
   <ItemGroup Condition="$(_subset.Contains('+clr.corelib+'))">
     <ProjectToBuild Include="$(CoreClrProjectRoot)System.Private.CoreLib\System.Private.CoreLib.csproj" Category="clr" />
@@ -506,10 +511,6 @@
 
   <ItemGroup Condition="$(_subset.Contains('+mono.runtime+'))">
     <ProjectToBuild Include="$(MonoProjectRoot)mono.proj" AdditionalProperties="%(AdditionalProperties);MonoMsCorDbi=$(_subset.Contains('+mono.mscordbi+'))" Category="mono" />
-  </ItemGroup>
-
-  <ItemGroup Condition="$(_subset.Contains('+mono.emsdk+'))">
-    <ProjectToBuild Include="$(MonoProjectRoot)mono.proj" AdditionalProperties="%(AdditionalProperties);ProvisionEmscriptenOnly=true" Category="mono" />
   </ItemGroup>
 
   <ItemGroup Condition="$(_subset.Contains('+mono.aotcross+'))">
