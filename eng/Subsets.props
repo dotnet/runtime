@@ -320,7 +320,7 @@
     The cross tools are used as part of the build process with the downloaded build tools, so we need to build them for the host architecture and build them as unsanitized binaries.
     -->
   <PropertyGroup>
-    <_BuildAnyCrossArch Condition="'$(CrossBuild)' == 'true' or '$(BuildArchitecture)' != '$(TargetArchitecture)' or '$(HostOS)' != '$(TargetOS)' or '$(EnableNativeSanitizers)' != ''">true</_BuildAnyCrossArch>
+    <_BuildAnyCrossArch Condition="('$(CrossBuild)' == 'true' or '$(BuildArchitecture)' != '$(TargetArchitecture)' or '$(HostOS)' != '$(TargetOS)' or '$(EnableNativeSanitizers)' != '') and '$(TargetArchitecture)' != 'wasm'">true</_BuildAnyCrossArch>
     <_BuildCrossComponents Condition="$(_subset.Contains('+clr.crossarchtools+'))">true</_BuildCrossComponents>
     <_BuildCrossComponents Condition="'$(ClrRuntimeBuildSubsets)' != '' and ('$(PrimaryRuntimeFlavor)' == 'CoreCLR' or '$(TargetsMobile)' == 'true')">true</_BuildCrossComponents>
     <_CrossBitwidthBuild Condition="'$(BuildArchitecture)' == 'x64' and ('$(TargetArchitecture)' == 'x86' or '$(TargetArchitecture)' == 'arm')">true</_CrossBitwidthBuild>
