@@ -4202,7 +4202,7 @@ public:
 
 #ifdef DEBUG
     void lvaDumpRegLocation(unsigned lclNum);
-    void lvaDumpFrameLocation(unsigned lclNum);
+    void lvaDumpFrameLocation(unsigned lclNum, int minLength);
     void lvaDumpEntry(unsigned lclNum, FrameLayoutState curState, size_t refCntWtdWidth = 6);
     void lvaTableDump(FrameLayoutState curState = NO_FRAME_LAYOUT); // NO_FRAME_LAYOUT means use the current frame
                                                                     // layout state defined by lvaDoneFrameLayout
@@ -6352,6 +6352,7 @@ public:
     class ThreeOptLayout
     {
         static bool EdgeCmp(const FlowEdge* left, const FlowEdge* right);
+        static constexpr unsigned maxSwaps = 1000;
 
         Compiler* compiler;
         PriorityQueue<FlowEdge*, decltype(&ThreeOptLayout::EdgeCmp)> cutPoints;
@@ -8246,10 +8247,8 @@ public:
     // Used for respective assertion propagations.
     AssertionIndex optAssertionIsSubrange(GenTree* tree, IntegralRange range, ASSERT_VALARG_TP assertions);
     AssertionIndex optAssertionIsSubtype(GenTree* tree, GenTree* methodTableArg, ASSERT_VALARG_TP assertions);
-    AssertionIndex optAssertionIsNonNullInternal(GenTree* op, ASSERT_VALARG_TP assertions DEBUGARG(bool* pVnBased));
     bool           optAssertionVNIsNonNull(ValueNum vn, ASSERT_VALARG_TP assertions);
-    bool           optAssertionIsNonNull(GenTree*                    op,
-                                         ASSERT_VALARG_TP assertions DEBUGARG(bool* pVnBased) DEBUGARG(AssertionIndex* pIndex));
+    bool           optAssertionIsNonNull(GenTree* op, ASSERT_VALARG_TP assertions);
 
     AssertionIndex optGlobalAssertionIsEqualOrNotEqual(ASSERT_VALARG_TP assertions, GenTree* op1, GenTree* op2);
     AssertionIndex optGlobalAssertionIsEqualOrNotEqualZero(ASSERT_VALARG_TP assertions, GenTree* op1);
@@ -10372,8 +10371,14 @@ public:
             // On these platforms we assume the register that the target is
             // passed in is preserved by the validator and take care to get the
             // target from the register for the call (even in debug mode).
+            // RBM_INT_CALLEE_TRASH is not known at compile time on TARGET_AMD64 since it's dependent on APX support.
+#if defined(TARGET_AMD64)
+            static_assert_no_msg(
+                (RBM_VALIDATE_INDIRECT_CALL_TRASH_ALL & regMaskTP(1 << REG_VALIDATE_INDIRECT_CALL_ADDR)) == RBM_NONE);
+#else
             static_assert_no_msg((RBM_VALIDATE_INDIRECT_CALL_TRASH & regMaskTP(1 << REG_VALIDATE_INDIRECT_CALL_ADDR)) ==
                                  RBM_NONE);
+#endif
             if (JitConfig.JitForceControlFlowGuard())
                 return true;
 
@@ -11118,6 +11123,10 @@ public:
     ClassLayout* typGetBlkLayout(unsigned blockSize);
     // Get the number of a layout having the specified size but no class handle.
     unsigned typGetBlkLayoutNum(unsigned blockSize);
+    // Get the layout for the specified array of known length
+    ClassLayout* typGetArrayLayout(CORINFO_CLASS_HANDLE classHandle, unsigned length);
+    // Get the number of a layout for the specified array of known length
+    unsigned typGetArrayLayoutNum(CORINFO_CLASS_HANDLE classHandle, unsigned length);
 
     var_types TypeHandleToVarType(CORINFO_CLASS_HANDLE handle, ClassLayout** pLayout = nullptr);
     var_types TypeHandleToVarType(CorInfoType jitType, CORINFO_CLASS_HANDLE handle, ClassLayout** pLayout = nullptr);
@@ -11810,6 +11819,10 @@ private:
     regMaskTP rbmFltCalleeTrash;
     unsigned  cntCalleeTrashFloat;
 
+    regMaskTP rbmAllInt;
+    regMaskTP rbmIntCalleeTrash;
+    unsigned  cntCalleeTrashInt;
+    regNumber regIntLast;
 public:
     FORCEINLINE regMaskTP get_RBM_ALLFLOAT() const
     {
@@ -11824,6 +11837,27 @@ public:
         return this->cntCalleeTrashFloat;
     }
 
+    FORCEINLINE regMaskTP get_RBM_ALLINT() const
+    {
+        return this->rbmAllInt;
+    }
+    FORCEINLINE regMaskTP get_RBM_INT_CALLEE_TRASH() const
+    {
+        return this->rbmIntCalleeTrash;
+    }
+    FORCEINLINE unsigned get_CNT_CALLEE_TRASH_INT() const
+    {
+        return this->cntCalleeTrashInt;
+    }
+    FORCEINLINE regNumber get_REG_INT_LAST() const
+    {
+        return this->regIntLast;
+    }
+#else
+    FORCEINLINE regNumber get_REG_INT_LAST() const
+    {
+        return REG_INT_LAST;
+    }
 #endif // TARGET_AMD64
 
 #if defined(TARGET_XARCH)

@@ -609,7 +609,6 @@ extends:
           - osx_x64
           - linux_arm64
           - windows_arm64
-          - osx_arm64
           variables:
           - name: timeoutPerTestInMinutes
             value: 60

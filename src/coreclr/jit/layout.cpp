@@ -414,6 +414,18 @@ ClassLayout* Compiler::typGetBlkLayout(unsigned blockSize)
     return typGetCustomLayout(ClassLayoutBuilder(this, blockSize));
 }
 
+unsigned Compiler::typGetArrayLayoutNum(CORINFO_CLASS_HANDLE classHandle, unsigned length)
+{
+    ClassLayoutBuilder b = ClassLayoutBuilder::BuildArray(this, classHandle, length);
+    return typGetCustomLayoutNum(b);
+}
+
+ClassLayout* Compiler::typGetArrayLayout(CORINFO_CLASS_HANDLE classHandle, unsigned length)
+{
+    ClassLayoutBuilder b = ClassLayoutBuilder::BuildArray(this, classHandle, length);
+    return typGetCustomLayout(b);
+}
+
 //------------------------------------------------------------------------
 // Create: Create a ClassLayout from an EE side class handle.
 //
@@ -717,8 +729,8 @@ bool ClassLayout::AreCompatible(const ClassLayout* layout1, const ClassLayout* l
 }
 
 //------------------------------------------------------------------------
-// ClassLayoutbuilder: Construct a new builder for a class layout of the
-// specified size, with all data being considered as non-padding.
+// ClassLayoutBuilder: Construct a new builder for a class layout of the
+// specified size.
 //
 // Arguments:
 //    compiler - Compiler instance
@@ -728,6 +740,80 @@ ClassLayoutBuilder::ClassLayoutBuilder(Compiler* compiler, unsigned size)
     : m_compiler(compiler)
     , m_size(size)
 {
+}
+
+//------------------------------------------------------------------------
+// BuildArray: Construct a builder for an array layout
+//
+// Arguments:
+//    compiler      - Compiler instance
+//    arrayHandle   - class handle for array
+//    length        - array length (in elements)
+//
+// Note:
+//    For arrays of structs we currently do not copy any struct padding,
+//    with the presumption that it is unlikely we will ever promote array elements.
+//
+ClassLayoutBuilder ClassLayoutBuilder::BuildArray(Compiler* compiler, CORINFO_CLASS_HANDLE arrayHandle, unsigned length)
+{
+    assert(length <= CORINFO_Array_MaxLength);
+    assert(arrayHandle != NO_CLASS_HANDLE);
+
+    CORINFO_CLASS_HANDLE elemClsHnd = NO_CLASS_HANDLE;
+    CorInfoType          corType    = compiler->info.compCompHnd->getChildType(arrayHandle, &elemClsHnd);
+    var_types            type       = JITtype2varType(corType);
+
+    ClassLayout* elementLayout = nullptr;
+    unsigned     elementSize   = 0;
+
+    if (type == TYP_STRUCT)
+    {
+        elementLayout = compiler->typGetObjLayout(elemClsHnd);
+        elementSize   = elementLayout->GetSize();
+    }
+    else
+    {
+        elementSize = genTypeSize(type);
+    }
+
+    ClrSafeInt<unsigned> totalSize(elementSize);
+    totalSize *= static_cast<unsigned>(length);
+    totalSize += static_cast<unsigned>(OFFSETOF__CORINFO_Array__data);
+    assert(!totalSize.IsOverflow());
+
+    ClassLayoutBuilder builder(compiler, totalSize.Value());
+
+    if (elementLayout != nullptr)
+    {
+        if (elementLayout->HasGCPtr())
+        {
+            unsigned offset = OFFSETOF__CORINFO_Array__data;
+            for (unsigned i = 0; i < length; i++)
+            {
+                builder.CopyInfoFrom(offset, elementLayout, /* copy padding */ false);
+                offset += elementSize;
+            }
+        }
+    }
+    else if (varTypeIsGC(type))
+    {
+        unsigned offset = OFFSETOF__CORINFO_Array__data;
+        for (unsigned i = 0; i < length; i++)
+        {
+            assert((offset % TARGET_POINTER_SIZE) == 0);
+            unsigned const slot = offset / TARGET_POINTER_SIZE;
+            builder.SetGCPtrType(slot, type);
+            offset += elementSize;
+        }
+    }
+
+#ifdef DEBUG
+    const char* className      = compiler->eeGetClassName(arrayHandle);
+    const char* shortClassName = compiler->eeGetShortClassName(arrayHandle);
+    builder.SetName(className, shortClassName);
+#endif
+
+    return builder;
 }
 
 //------------------------------------------------------------------------

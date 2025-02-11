@@ -1489,9 +1489,6 @@
     <Compile Include="$(LibrariesProjectRoot)System.Reflection.Metadata\src\System\Reflection\Metadata\TypeName.cs">
       <Link>Common\System\Reflection\Metadata\TypeName.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)System\Reflection\Metadata\TypeNameHelpers.cs">
-      <Link>Common\System\Reflection\Metadata\TypeNameHelpers.cs</Link>
-    </Compile>
     <Compile Include="$(LibrariesProjectRoot)System.Reflection.Metadata\src\System\Reflection\Metadata\TypeNameParser.cs">
       <Link>Common\System\Reflection\Metadata\TypeNameParser.cs</Link>
     </Compile>

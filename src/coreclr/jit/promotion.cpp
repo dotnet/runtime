@@ -767,11 +767,33 @@ public:
 
         unsigned countReadBacks    = 0;
         weight_t countReadBacksWtd = 0;
-        // For parameters or OSR locals we always need one read back.
-        if (lcl->lvIsParam || lcl->lvIsOSRLocal)
+
+        // For OSR locals we always need one read back.
+        if (lcl->lvIsOSRLocal)
         {
             countReadBacks++;
             countReadBacksWtd += comp->fgFirstBB->getBBWeight(comp);
+        }
+        else if (lcl->lvIsParam)
+        {
+            // For parameters, the backend may be able to map it directly from a register.
+            if (MapsToRegister(comp, access, lclNum))
+            {
+                // No promotion will result in a store to stack in the prolog.
+                costWithout += COST_STRUCT_ACCESS_CYCLES * comp->fgFirstBB->getBBWeight(comp);
+                sizeWithout += COST_STRUCT_ACCESS_SIZE;
+
+                // Promotion we cost like the normal reg accesses above
+                costWith += COST_REG_ACCESS_CYCLES * comp->fgFirstBB->getBBWeight(comp);
+                sizeWith += COST_REG_ACCESS_SIZE;
+            }
+            else
+            {
+                // Otherwise we expect no prolog work to be required if we
+                // don't promote, and we need a read back from the stack.
+                countReadBacks++;
+                countReadBacksWtd += comp->fgFirstBB->getBBWeight(comp);
+            }
         }
 
         // If the struct is stored from a call (either due to a multireg
@@ -999,6 +1021,46 @@ private:
         } while ((index < m_accesses.size()) && (m_accesses[index].Offset == offs));
 
         return nullptr;
+    }
+
+    //------------------------------------------------------------------------
+    // MapsToRegister:
+    //   Check if a specific access in the specified parameter local is
+    //   expected to map to a register.
+    //
+    // Parameters:
+    //   comp   - Compiler instance
+    //   access - Access in the local
+    //   lclNum - Parameter lcl num
+    //
+    // Returns:
+    //   Pointer to a matching access, or nullptr if no match was found.
+    //
+    bool MapsToRegister(Compiler* comp, const Access& access, unsigned lclNum)
+    {
+        assert(lclNum < comp->info.compArgsCount);
+
+        if (comp->lvaIsImplicitByRefLocal(lclNum))
+        {
+            return false;
+        }
+
+        const ABIPassingInformation& abiInfo = comp->lvaGetParameterABIInfo(lclNum);
+        if (abiInfo.HasAnyStackSegment())
+        {
+            return false;
+        }
+
+        for (const ABIPassingSegment& seg : abiInfo.Segments())
+        {
+            if ((access.Offset == seg.Offset) && (genTypeSize(access.AccessType) == seg.Size) &&
+                (varTypeUsesIntReg(access.AccessType) == genIsValidIntReg(seg.GetRegister())))
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 };
 
