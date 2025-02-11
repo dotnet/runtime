@@ -656,8 +656,6 @@ private:
                             *pTree = retExpr;
                         }
 
-                        call->GetSingleInlineCandidateInfo()->exactContextHandle = context;
-
                         JITDUMP("New inline candidate due to late devirtualization:\n");
                         DISPTREE(call);
                     }
