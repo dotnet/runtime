@@ -1015,7 +1015,7 @@ namespace System
                 exp -= 1;
             }
 
-            return Math.CreateDouble(sign, (ushort)(exp + 0x3F0), (ulong)sig << 42);
+            return double.CreateDouble(sign, (ushort)(exp + 0x3F0), (ulong)sig << 42);
         }
 
         /// <summary>Explicitly converts a half-precision floating-point value to its nearest representable <see cref="float" /> value.</summary>

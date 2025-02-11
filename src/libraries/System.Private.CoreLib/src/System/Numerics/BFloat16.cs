@@ -544,11 +544,11 @@ namespace System.Numerics
             TInteger alignedValue = abs << scale;
             TInteger significandBits = RoundMidpointToEven(alignedValue, sizeof(TInteger) * 8 - SignificandLength);
 
-            // Leverage FPU to calculate the value significandBits * 2^(32-SignificandLength-scale), for proper handling of 0 and carrying
+            // Leverage FPU to calculate the value significandBits * 2^(size-SignificandLength-scale), for proper handling of 0 and carrying
             // Use int->float conversion which usually has better FPU support
             float significand = (float)int.CreateTruncating(significandBits);
-            // Craft the value 2^(32-SignificandLength-scale)
-            float scaleFactor = Math.CreateSingle(sign, (byte)(sizeof(TInteger) * 8 - SignificandLength - scale + float.ExponentBias), 0);
+            // Craft the value 2^(size-SignificandLength-scale)
+            float scaleFactor = float.CreateSingle(sign, (byte)(sizeof(TInteger) * 8 - SignificandLength - scale + float.ExponentBias), 0);
             float roundedValue = significand * scaleFactor;
 
             uint roundedValueBits = BitConverter.SingleToUInt32Bits(roundedValue);
@@ -605,11 +605,11 @@ namespace System.Numerics
             TInteger alignedValue = value << scale;
             TInteger significandBits = RoundMidpointToEven(alignedValue, sizeof(TInteger) * 8 - SignificandLength);
 
-            // Leverage FPU to calculate the value significandBits * 2^(32-SignificandLength-scale), for proper handling of 0 and carrying
+            // Leverage FPU to calculate the value significandBits * 2^(size-SignificandLength-scale), for proper handling of 0 and carrying
             // Use int->float conversion which usually has better FPU support
             float significand = (float)int.CreateTruncating(significandBits);
-            // Craft the value 2^(32-SignificandLength-scale)
-            float scaleFactor = Math.CreateSingle(false, (byte)(sizeof(TInteger) * 8 - SignificandLength - scale + float.ExponentBias), 0);
+            // Craft the value 2^(size-SignificandLength-scale)
+            float scaleFactor = float.CreateSingle(false, (byte)(sizeof(TInteger) * 8 - SignificandLength - scale + float.ExponentBias), 0);
             float roundedValue = significand * scaleFactor;
 
             uint roundedValueBits = BitConverter.SingleToUInt32Bits(roundedValue);
@@ -621,7 +621,7 @@ namespace System.Numerics
         /// <param name="value">The value to convert.</param>
         /// <returns><paramref name="value" /> converted to its nearest representable <see cref="BFloat16"/> value.</returns>
         [CLSCompliant(false)]
-        public static explicit operator BFloat16(ushort value) => RoundFromUnsigned(value);
+        public static explicit operator BFloat16(ushort value) => (BFloat16)(float)value;
 
         /// <summary>Explicitly converts a <see cref="uint" /> value to its nearest representable <see cref="BFloat16"/> value.</summary>
         /// <param name="value">The value to convert.</param>
