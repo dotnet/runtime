@@ -2003,13 +2003,15 @@ emit_marshal_safehandle_ilgen (EmitMarshalContext *m, int argnum, MonoType *t,
 		MonoMethod *ctor = NULL;
 		int intptr_handle_slot;
 
-		if (mono_class_is_abstract (m_type_data_get_klass (t))) {
+		MonoClass *klass_of_t = m_type_data_get_klass (t);
+
+		if (mono_class_is_abstract (klass_of_t)) {
 			cb_to_mono->methodBuilder.emit_byte (mb, CEE_POP);
 			cb_to_mono->methodBuilder.emit_exception_marshal_directive (mb, g_strdup ("Returned SafeHandles should not be abstract"));
 			break;
 		}
 
-		ctor = mono_class_get_method_from_name_checked (m_type_data_get_klass (t), ".ctor", 0, 0, error);
+		ctor = mono_class_get_method_from_name_checked (klass_of_t, ".ctor", 0, 0, error);
 		if (ctor == NULL || !is_ok (error)){
 			mono_error_cleanup (error);
 			cb_to_mono->methodBuilder.emit_byte (mb, CEE_POP);

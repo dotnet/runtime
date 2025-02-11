@@ -390,15 +390,16 @@ handle_enum:
 		*end = p + 8;
 		return val;
 	}
-	case MONO_TYPE_VALUETYPE:
-		if (m_class_is_enumtype (m_type_data_get_klass (t))) {
-			type = mono_class_enum_basetype_internal (m_type_data_get_klass (t))->type;
+	case MONO_TYPE_VALUETYPE: {
+		MonoClass *klass_of_t = m_type_data_get_klass (t);
+		if (m_class_is_enumtype (klass_of_t)) {
+			type = mono_class_enum_basetype_internal (klass_of_t)->type;
 			goto handle_enum;
 		} else {
-			g_error ("generic valutype %s not handled in custom attr value decoding", m_class_get_name (m_type_data_get_klass (t)));
+			g_error ("generic valutype %s not handled in custom attr value decoding", m_class_get_name (klass_of_t));
 		}
 		break;
-
+	}
 	case MONO_TYPE_STRING: {
 		if (!bcheck_blob (p, 0, boundp, error))
 			return NULL;
@@ -722,14 +723,16 @@ handle_enum:
 		result->value.primitive = val;
 		return result;
 	}
-	case MONO_TYPE_VALUETYPE:
-		if (m_class_is_enumtype (m_type_data_get_klass (t))) {
-			type = mono_class_enum_basetype_internal (m_type_data_get_klass (t))->type;
+	case MONO_TYPE_VALUETYPE: {
+		MonoClass *klass_of_t = m_type_data_get_klass (t);
+		if (m_class_is_enumtype (klass_of_t)) {
+			type = mono_class_enum_basetype_internal (klass_of_t)->type;
 			goto handle_enum;
 		} else {
-			g_error ("generic valutype %s not handled in custom attr value decoding", m_class_get_name (m_type_data_get_klass (t)));
+			g_error ("generic valutype %s not handled in custom attr value decoding", m_class_get_name (klass_of_t));
 		}
 		break;
+	}
 
 	case MONO_TYPE_STRING: {
 		const char *start = p;

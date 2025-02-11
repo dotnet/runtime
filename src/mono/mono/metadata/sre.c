@@ -2039,14 +2039,16 @@ handle_enum:
 		swap_with_size (p, argval, 8, 1);
 		p += 8;
 		break;
-	case MONO_TYPE_VALUETYPE:
-		if (m_type_data_get_klass (type)->enumtype) {
-			simple_type = mono_class_enum_basetype_internal (m_type_data_get_klass (type))->type;
+	case MONO_TYPE_VALUETYPE: {
+		MonoClass *klass_of_type = m_type_data_get_klass (type);
+		if (klass_of_type->enumtype) {
+			simple_type = mono_class_enum_basetype_internal (klass_of_type)->type;
 			goto handle_enum;
 		} else {
-			g_warning ("generic valuetype %s not handled in custom attr value decoding", m_type_data_get_klass (type)->name);
+			g_warning ("generic valuetype %s not handled in custom attr value decoding", klass_of_type->name);
 		}
 		break;
+	}
 	case MONO_TYPE_STRING: {
 		char *str;
 		size_t slen;

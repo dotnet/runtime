@@ -857,7 +857,7 @@ inflate_generic_type (MonoImage *image, MonoType *type, MonoGenericContext *cont
 
 		nt = mono_metadata_type_dup (image, type);
 		nt->type = MONO_TYPE_GENERICINST;
-		m_type_data_set_generic_class (nt, gclass);
+		m_type_data_set_generic_class_unchecked (nt, gclass);
 		return nt;
 	}
 	case MONO_TYPE_PTR: {

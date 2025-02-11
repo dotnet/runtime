@@ -7080,7 +7080,7 @@ handle_enum:
 				return MONO_NATIVE_IUNKNOWN;
 			case MONO_NATIVE_FUNC:
 			{
-				MonoClass *type_klass = m_type_data_get_klass (type);
+				MonoClass *type_klass = (t == MONO_TYPE_CLASS) ? m_type_data_get_klass (type) : NULL;
 				if (t == MONO_TYPE_CLASS && (type_klass == mono_defaults.multicastdelegate_class ||
 								 type_klass == mono_defaults.delegate_class ||
 								m_class_get_parent (type_klass) == mono_defaults.multicastdelegate_class)) {
@@ -7093,19 +7093,23 @@ handle_enum:
 				g_error ("cant marshal object as native type %02x", mspec->native);
 			}
 		}
-		if (t == MONO_TYPE_CLASS && (m_type_data_get_klass (type) == mono_defaults.multicastdelegate_class ||
-					     m_type_data_get_klass (type) == mono_defaults.delegate_class ||
-					     m_class_get_parent (m_type_data_get_klass (type)) == mono_defaults.multicastdelegate_class)) {
-			*conv = MONO_MARSHAL_CONV_DEL_FTN;
-			return MONO_NATIVE_FUNC;
+
+		{
+			MonoClass *type_klass = (t == MONO_TYPE_CLASS) ? m_type_data_get_klass (type) : NULL;
+			if (t == MONO_TYPE_CLASS && (type_klass == mono_defaults.multicastdelegate_class ||
+						type_klass == mono_defaults.delegate_class ||
+						m_class_get_parent (type_klass) == mono_defaults.multicastdelegate_class)) {
+				*conv = MONO_MARSHAL_CONV_DEL_FTN;
+				return MONO_NATIVE_FUNC;
+			}
+			if (mono_class_try_get_safehandle_class () && type_klass != NULL &&
+				mono_class_is_subclass_of_internal (type_klass,  mono_class_try_get_safehandle_class (), FALSE)){
+				*conv = MONO_MARSHAL_CONV_SAFEHANDLE;
+				return MONO_NATIVE_INT;
+			}
+			*conv = MONO_MARSHAL_CONV_OBJECT_STRUCT;
+			return MONO_NATIVE_STRUCT;
 		}
-		if (mono_class_try_get_safehandle_class () && m_type_data_get_klass (type) != NULL &&
-			mono_class_is_subclass_of_internal (m_type_data_get_klass (type),  mono_class_try_get_safehandle_class (), FALSE)){
-			*conv = MONO_MARSHAL_CONV_SAFEHANDLE;
-			return MONO_NATIVE_INT;
-		}
-		*conv = MONO_MARSHAL_CONV_OBJECT_STRUCT;
-		return MONO_NATIVE_STRUCT;
 	}
 	case MONO_TYPE_FNPTR: return MONO_NATIVE_FUNC;
 	case MONO_TYPE_GENERICINST:
