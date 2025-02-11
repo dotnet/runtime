@@ -4955,8 +4955,8 @@ void Compiler::lvaComputeRefCounts(bool isRecompute, bool setSlotNumbers)
         // that was set by past phases.
         if (!isRecompute)
         {
-            varDsc->lvSingleDef             = varDsc->lvIsParam;
-            varDsc->lvSingleDefRegCandidate = varDsc->lvIsParam;
+            varDsc->lvSingleDef             = varDsc->lvIsParam || varDsc->lvIsParamRegTarget;
+            varDsc->lvSingleDefRegCandidate = varDsc->lvIsParam || varDsc->lvIsParamRegTarget;
 
             varDsc->lvAllDefsAreNoGc = (varDsc->lvImplicitlyReferenced == false);
         }
@@ -5048,6 +5048,11 @@ void Compiler::lvaComputeRefCounts(bool isRecompute, bool setSlotNumbers)
             {
                 varDsc->incRefCnts(BB_UNITY_WEIGHT, this);
             }
+        }
+        else if (varDsc->lvIsParamRegTarget && (varDsc->lvRefCnt() > 0))
+        {
+            varDsc->incRefCnts(BB_UNITY_WEIGHT, this);
+            varDsc->incRefCnts(BB_UNITY_WEIGHT, this);
         }
 
         // If we have JMP, all arguments must have a location
@@ -7386,7 +7391,7 @@ void Compiler::lvaDumpRegLocation(unsigned lclNum)
  *  in its home location.
  */
 
-void Compiler::lvaDumpFrameLocation(unsigned lclNum)
+void Compiler::lvaDumpFrameLocation(unsigned lclNum, int minLength)
 {
     int       offset;
     regNumber baseReg;
@@ -7399,7 +7404,12 @@ void Compiler::lvaDumpFrameLocation(unsigned lclNum)
     baseReg = EBPbased ? REG_FPBASE : REG_SPBASE;
 #endif
 
-    printf("[%2s%1s0x%02X] ", getRegName(baseReg), (offset < 0 ? "-" : "+"), (offset < 0 ? -offset : offset));
+    int printed =
+        printf("[%2s%1s0x%02X] ", getRegName(baseReg), (offset < 0 ? "-" : "+"), (offset < 0 ? -offset : offset));
+    if ((printed >= 0) && (printed < minLength))
+    {
+        printf("%*s", minLength - printed, "");
+    }
 }
 
 /*****************************************************************************
@@ -7490,7 +7500,7 @@ void Compiler::lvaDumpEntry(unsigned lclNum, FrameLayoutState curState, size_t r
             // location. Otherwise, it's always on the stack.
             if (lvaDoneFrameLayout != NO_FRAME_LAYOUT)
             {
-                lvaDumpFrameLocation(lclNum);
+                lvaDumpFrameLocation(lclNum, (int)strlen("zero-ref   "));
             }
         }
     }

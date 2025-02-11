@@ -704,7 +704,7 @@ namespace System.Numerics.Tensors
         internal TensorSpan<T> Slice(params scoped ReadOnlySpan<nint> lengths)
         {
             NRange[] ranges = new NRange[lengths.Length];
-            for(int i = 0; i < lengths.Length; i++)
+            for (int i = 0; i < lengths.Length; i++)
             {
                 ranges[i] = new NRange(0, lengths[i]);
             }
