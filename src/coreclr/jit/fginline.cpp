@@ -590,7 +590,6 @@ private:
 #endif // DEBUG
 
                 CORINFO_CONTEXT_HANDLE context                = nullptr;
-                InlineContext*         inlinersContext        = nullptr;
                 CORINFO_METHOD_HANDLE  method                 = call->gtCallMethHnd;
                 unsigned               methodFlags            = 0;
                 const bool             isLateDevirtualization = true;
@@ -598,8 +597,7 @@ private:
 
                 if ((call->gtCallMoreFlags & GTF_CALL_M_HAS_LATE_DEVIRT_INFO) != 0)
                 {
-                    context         = call->gtLateDevirtualizationInfo->exactContextHnd;
-                    inlinersContext = call->gtLateDevirtualizationInfo->inlinersContext;
+                    context = call->gtLateDevirtualizationInfo->exactContextHnd;
                     // Note: we might call this multiple times for the same trees.
                     // If the devirtualization below succeeds, the call becomes
                     // non-virtual and we won't get here again. If it does not
@@ -655,7 +653,7 @@ private:
                         }
 
                         call->GetSingleInlineCandidateInfo()->exactContextHandle = context;
-                        call->GetSingleInlineCandidateInfo()->inlinersContext    = inlinersContext;
+                        INDEBUG(call->gtInlineContext = call->GetSingleInlineCandidateInfo()->inlinersContext);
 
                         JITDUMP("New inline candidate due to late devirtualization:\n");
                         DISPTREE(call);

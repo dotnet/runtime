@@ -1444,7 +1444,6 @@ DONE_CALL:
                     origCall->gtCallMoreFlags |= GTF_CALL_M_HAS_LATE_DEVIRT_INFO;
                     LateDevirtualizationInfo* const info = new (this, CMK_Inlining) LateDevirtualizationInfo;
                     info->exactContextHnd                = exactContextHnd;
-                    info->inlinersContext                = compInlineContext;
                     origCall->gtLateDevirtualizationInfo = info;
                 }
 
