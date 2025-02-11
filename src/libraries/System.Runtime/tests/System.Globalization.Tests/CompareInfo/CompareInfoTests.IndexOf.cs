@@ -22,7 +22,10 @@ namespace System.Globalization.Tests
             yield return new object[] { s_germanCompare, "foo", "", 0, 3, CompareOptions.None, 0, 0 };
             yield return new object[] { s_germanCompare, "foo", "", 2, 1, CompareOptions.None, 2, 0 };
             yield return new object[] { s_germanCompare, "", "", 0, 0, CompareOptions.None, 0, 0 };
-            yield return new object[] { s_germanCompare, "", "foo", 0, 0, CompareOptions.None, -1, 0 };
+            if (!PlatformDetection.IsHybridGlobalizationOnBrowser)
+            {
+                yield return new object[] { s_germanCompare, "", "foo", 0, 0, CompareOptions.None, -1, 0 };
+            }
 
             // OrdinalIgnoreCase
             yield return new object[] { s_invariantCompare, "Hello", "l", 0, 5, CompareOptions.OrdinalIgnoreCase, 2, 1 };
