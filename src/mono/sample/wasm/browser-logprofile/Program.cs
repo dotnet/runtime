@@ -21,7 +21,7 @@ namespace Sample
         [JSExport]
         public static int TestMeaning()
         {
-            for(int i=0; i<100; i++){
+            for (int i=0; i<100; i++){
                 var r = new int[1000];
             }
  

@@ -6387,7 +6387,12 @@ bool Compiler::impCanPInvokeInline()
 //    unmanaged code, we cannot reuse the inlined stub (we still need
 //    the original state until we are in the catch handler)
 //
-//    * We disable pinvoke inlining inside handlers since the GSCookie
+//    TODO-CQ: The inlining frame no longer has a GSCookie, so the common on this
+//             restriction is out of date. However, given that there is a comment
+//             about protecting the framelet, I'm not confident about what this
+//             is actually protecteing, so I don't want to remove this
+//             restriction without further analysis analysis.
+//    * We disable pinvoke inlini1ng inside handlers since the GSCookie
 //    is in the inlined Frame (see
 //    CORINFO_EE_INFO::InlinedCallFrameInfo::offsetOfGSCookie), but
 //    this would not protect framelets/return-address of handlers.

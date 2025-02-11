@@ -353,8 +353,8 @@ handle_enum:
 	case MONO_TYPE_R8:
 		return OP_STORER8_MEMBASE_REG;
 	case MONO_TYPE_VALUETYPE:
-		if (m_class_is_enumtype (type->data.klass)) {
-			type = mono_class_enum_basetype_internal (type->data.klass);
+		if (m_class_is_enumtype (m_type_data_get_klass_unchecked (type))) {
+			type = mono_class_enum_basetype_internal (m_type_data_get_klass_unchecked (type));
 			goto handle_enum;
 		}
 		if (mini_class_is_simd (cfg, mono_class_from_mono_type_internal (type)))
@@ -365,7 +365,7 @@ handle_enum:
 	case MONO_TYPE_GENERICINST:
 		if (mini_class_is_simd (cfg, mono_class_from_mono_type_internal (type)))
 			return OP_STOREX_MEMBASE;
-		type = m_class_get_byval_arg (type->data.generic_class->container_class);
+		type = m_class_get_byval_arg (m_type_data_get_generic_class_unchecked (type)->container_class);
 		goto handle_enum;
 	case MONO_TYPE_VAR:
 	case MONO_TYPE_MVAR:
@@ -1058,6 +1058,8 @@ mono_allocate_stack_slots2 (MonoCompile *cfg, gboolean backward, guint32 *stack_
 		if (cfg->disable_reuse_stack_slots)
 			reuse_slot = FALSE;
 
+		MonoClass *class_of_t = NULL;
+
 		t = mini_get_underlying_type (t);
 		switch (t->type) {
 		case MONO_TYPE_GENERICINST:
@@ -1070,8 +1072,9 @@ mono_allocate_stack_slots2 (MonoCompile *cfg, gboolean backward, guint32 *stack_
 			if (!vtype_stack_slots)
 				vtype_stack_slots = (StackSlotInfo *)mono_mempool_alloc0 (cfg->mempool, sizeof (StackSlotInfo) * vtype_stack_slots_size);
 			int i;
+			class_of_t = mono_class_from_mono_type_internal (t);
 			for (i = 0; i < nvtypes; ++i)
-				if (t->data.klass == vtype_stack_slots [i].vtype)
+				if (class_of_t == vtype_stack_slots [i].vtype)
 					break;
 			if (i < nvtypes)
 				slot_info = &vtype_stack_slots [i];
@@ -1085,7 +1088,7 @@ mono_allocate_stack_slots2 (MonoCompile *cfg, gboolean backward, guint32 *stack_
 					vtype_stack_slots = new_slots;
 					vtype_stack_slots_size = new_slots_size;
 				}
-				vtype_stack_slots [nvtypes].vtype = t->data.klass;
+				vtype_stack_slots [nvtypes].vtype = class_of_t;
 				slot_info = &vtype_stack_slots [nvtypes];
 				nvtypes ++;
 			}
@@ -1369,6 +1372,8 @@ mono_allocate_stack_slots (MonoCompile *cfg, gboolean backward, guint32 *stack_s
 		if (cfg->disable_reuse_stack_slots)
 			reuse_slot = FALSE;
 
+		MonoClass *class_of_t = NULL;
+
 		t = mini_get_underlying_type (t);
 		switch (t->type) {
 		case MONO_TYPE_GENERICINST:
@@ -1381,8 +1386,9 @@ mono_allocate_stack_slots (MonoCompile *cfg, gboolean backward, guint32 *stack_s
 			if (!vtype_stack_slots)
 				vtype_stack_slots = (StackSlotInfo *)mono_mempool_alloc0 (cfg->mempool, sizeof (StackSlotInfo) * vtype_stack_slots_size);
 			int i;
+			class_of_t = mono_class_from_mono_type_internal (t);
 			for (i = 0; i < nvtypes; ++i)
-				if (t->data.klass == vtype_stack_slots [i].vtype)
+				if (class_of_t == vtype_stack_slots [i].vtype)
 					break;
 			if (i < nvtypes)
 				slot_info = &vtype_stack_slots [i];
@@ -1396,7 +1402,7 @@ mono_allocate_stack_slots (MonoCompile *cfg, gboolean backward, guint32 *stack_s
 					vtype_stack_slots = new_slots;
 					vtype_stack_slots_size = new_slots_size;
 				}
-				vtype_stack_slots [nvtypes].vtype = t->data.klass;
+				vtype_stack_slots [nvtypes].vtype = class_of_t;
 				slot_info = &vtype_stack_slots [nvtypes];
 				nvtypes ++;
 			}
