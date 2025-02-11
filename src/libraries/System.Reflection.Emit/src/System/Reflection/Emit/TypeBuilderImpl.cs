@@ -734,7 +734,7 @@ namespace System.Reflection.Emit
 
                 if (argType.IsArray != paramType.IsArray ||
                     argType.IsByRef != paramType.IsByRef ||
-                    argType.IsPointer != argType.IsPointer)
+                    argType.IsPointer != paramType.IsPointer)
                 {
                     return false;
                 }
