@@ -851,15 +851,6 @@ GenTree* Compiler::impStoreStruct(GenTree*         store,
                 unsigned tmp = lvaGrabTemp(false DEBUGARG("stack copy for value returned via return buffer"));
                 lvaSetStruct(tmp, srcCall->gtRetClsHnd, false);
 
-                // Make sure the address is evaluated first if needed.
-                if (store->OperIs(GT_STOREIND, GT_STORE_BLK) &&
-                    ((store->AsIndir()->Addr()->gtFlags & GTF_ALL_EFFECT) != 0))
-                {
-                    unsigned lclNum = lvaGrabTemp(true DEBUGARG("fgMakeTemp is creating a new local variable"));
-                    impStoreToTemp(lclNum, store->AsIndir()->Addr(), curLevel, pAfterStmt, di, block);
-                    store->AsIndir()->Addr() = gtNewLclvNode(lclNum, genActualType(store->AsIndir()->Addr()));
-                }
-
                 GenTree* spilledCall = gtNewStoreLclVarNode(tmp, srcCall);
                 spilledCall          = impStoreStruct(spilledCall, curLevel, pAfterStmt, di, block);
                 store->Data()        = gtNewOperNode(GT_COMMA, store->TypeGet(), spilledCall,
