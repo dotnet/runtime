@@ -85,7 +85,7 @@ namespace System.Xml
                 XmlNode n = LoadNode(true)!;
 
                 // Move to the next node
-                if (n.NodeType != XmlNodeType.Attribute)
+                if (n != null && n.NodeType != XmlNodeType.Attribute)
                     reader.Read();
 
                 return n;
