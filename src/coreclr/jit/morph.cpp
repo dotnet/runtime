@@ -8700,10 +8700,12 @@ DONE_MORPHING_CHILDREN:
             fgAddCodeRef(compCurBB, tree->AsBoundsChk()->gtThrowKind);
             break;
 
+#if defined(TARGET_XARCH) && defined(FEATURE_HW_INTRINSICS)
         case GT_SIMD_DIV_BY_ZERO_CHECK:
 
             fgAddCodeRef(compCurBB, tree->AsSIMDDivByZeroChk()->gtThrowKind);
             break;
+#endif // defined(TARGET_XARCH) && defined(FEATURE_HW_INTRINSICS)
 
         case GT_IND:
         {

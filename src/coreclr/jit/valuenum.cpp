@@ -10448,7 +10448,10 @@ static genTreeOps genTreeOpsIllegalAsVNFunc[] = {GT_IND, // When we do heap memo
                                                  GT_STORE_LCL_FLD, GT_STOREIND, GT_STORE_BLK,
                                                  // These need special semantics:
                                                  GT_COMMA, // == second argument (but with exception(s) from first).
-                                                 GT_ARR_ADDR, GT_BOUNDS_CHECK, GT_SIMD_DIV_BY_ZERO_CHECK,
+                                                 GT_ARR_ADDR, GT_BOUNDS_CHECK,
+#if defined(TARGET_XARCH) && defined(FEATURE_HW_INTRINSICS)
+                                                 GT_SIMD_DIV_BY_ZERO_CHECK,
+#endif 
                                                  GT_BLK,      // May reference heap memory.
                                                  GT_INIT_VAL, // Not strictly a pass-through.
                                                  GT_MDARR_LENGTH,
@@ -12735,6 +12738,27 @@ void Compiler::fgValueNumberTree(GenTree* tree)
                     }
                     break;
 
+#if defined(FEATURE_HW_INTRINSICS) && defined(TARGET_XARCH)
+                    case GT_SIMD_DIV_BY_ZERO_CHECK:
+                    {
+                        ValueNumPair vnpSimdOp  = tree->AsSIMDDivByZeroChk()->gtGetOp1()->gtVNPair;
+                        ValueNumPair vnpZeroOp = tree->AsSIMDDivByZeroChk()->gtGetOp2()->gtVNPair;
+
+                        ValueNumPair vnpExcSet = ValueNumStore::VNPForEmptyExcSet();
+
+                        // And collect the exceptions  from SimdOp and ZeroOp
+                        vnpExcSet = vnStore->VNPUnionExcSet(vnpSimdOp, vnpExcSet);
+                        vnpExcSet = vnStore->VNPUnionExcSet(vnpZeroOp, vnpExcSet);
+
+                        // A SIMD div-by-zero check node has no value, but may throw exceptions.
+                        tree->gtVNPair = vnStore->VNPWithExc(vnStore->VNPForVoid(), vnpExcSet);
+
+                        // next add the div-by-zero check exception set for the current tree node
+                        fgValueNumberAddExceptionSet(tree);
+                    }
+                    break;
+#endif // defined(FEATURE_HW_INTRINSICS) && defined(TARGET_XARCH)
+
                     case GT_XORR: // Binop
                     case GT_XAND: // Binop
                     case GT_XADD: // Binop
@@ -14736,6 +14760,48 @@ void Compiler::fgValueNumberAddExceptionSetForOverflow(GenTree* tree)
     }
 }
 
+#if defined(FEATURE_HW_INTRINSICS) && defined(TARGET_XARCH)
+//--------------------------------------------------------------------------------
+// fgValueNumberAddExceptionSetForSIMDDivByZeroCheck
+//          - Adds the exception set for the current tree node
+//            which is performing a SIMD div-by-zero check
+//
+// Arguments:
+//    tree  - The current GenTree node,
+//            It must be a node that performs a SIMD div-by-zero check operation
+//
+// Return Value:
+//          - The tree's gtVNPair is updated to include the
+//            VNF_DivideByZeroExc exception set.
+//
+void Compiler::fgValueNumberAddExceptionSetForSIMDDivByZeroCheck(GenTree* tree)
+{
+    GenTreeSIMDDivByZeroChk* node = tree->AsSIMDDivByZeroChk();
+    assert(node != nullptr);
+
+    ValueNumPair vnpSimdOp  = node->gtGetOp1()->gtVNPair;
+    ValueNumPair vnpZeroOp = node->gtGetOp2()->gtVNPair;
+
+    // Unpack, Norm,Exc for the tree's VN
+    //
+    ValueNumPair vnpTreeNorm;
+    ValueNumPair vnpTreeExc;
+
+    vnStore->VNPUnpackExc(tree->gtVNPair, &vnpTreeNorm, &vnpTreeExc);
+
+    // Construct the exception set for div-by-zero check
+    ValueNumPair divByZeroChkExcSet = 
+        vnStore->VNPExcSetSingleton(vnStore->VNPairForFunc(TYP_REF, VNF_DivideByZeroExc, vnpTreeNorm));
+
+    // Combine the new DivideByZero exception with the original exception set of tree
+    ValueNumPair newExcSet = vnStore->VNPExcSetUnion(vnpTreeExc, divByZeroChkExcSet);
+
+    // Update the VN for the tree it, the updated VN for tree
+    // now includes the DivideByZero exception.
+    tree->gtVNPair = vnStore->VNPWithExc(vnpTreeNorm, newExcSet);
+}
+#endif // defined(FEATURE_HW_INTRINSICS) && defined(TARGET_XARCH)
+
 //--------------------------------------------------------------------------------
 // fgValueNumberAddExceptionSetForBoundsCheck
 //          - Adds the exception set for the current tree node
@@ -14855,6 +14921,12 @@ void Compiler::fgValueNumberAddExceptionSet(GenTree* tree)
             case GT_BOUNDS_CHECK:
                 fgValueNumberAddExceptionSetForBoundsCheck(tree);
                 break;
+
+#if defined(FEATURE_HW_INTRINSICS) && defined(TARGET_XARCH)
+            case GT_SIMD_DIV_BY_ZERO_CHECK:
+                fgValueNumberAddExceptionSetForSIMDDivByZeroCheck(tree);
+                break;
+#endif // defined(FEATURE_HW_INTRINSICS) && defined(TARGET_XARCH)
 
             case GT_LCLHEAP:
                 // It is not necessary to model the StackOverflow exception for GT_LCLHEAP

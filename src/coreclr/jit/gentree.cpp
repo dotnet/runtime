@@ -248,7 +248,9 @@ void GenTree::InitNodeSize()
     GenTree::s_gtNodeSizes[GT_BOX]           = TREE_NODE_SZ_LARGE;
     GenTree::s_gtNodeSizes[GT_INDEX_ADDR]    = TREE_NODE_SZ_LARGE;
     GenTree::s_gtNodeSizes[GT_BOUNDS_CHECK]  = TREE_NODE_SZ_SMALL;
+#if defined(TARGET_XARCH) && defined(FEATURE_HW_INTRINSICS)
     GenTree::s_gtNodeSizes[GT_SIMD_DIV_BY_ZERO_CHECK]  = TREE_NODE_SZ_SMALL;
+#endif // defined(TARGET_XARCH) && defined(FEATURE_HW_INTRINSICS)
     GenTree::s_gtNodeSizes[GT_ARR_ELEM]      = TREE_NODE_SZ_LARGE;
     GenTree::s_gtNodeSizes[GT_RET_EXPR]      = TREE_NODE_SZ_LARGE;
     GenTree::s_gtNodeSizes[GT_FIELD_ADDR]    = TREE_NODE_SZ_LARGE;
@@ -3435,9 +3437,11 @@ AGAIN:
                 case GT_ARR_ADDR:
                     break;
 
+#if defined(TARGET_XARCH) && defined(FEATURE_HW_INTRINSICS)
                 case GT_SIMD_DIV_BY_ZERO_CHECK:
                     hash = genTreeHashAdd(hash, tree->AsSIMDDivByZeroChk()->gtThrowKind);
                     break;
+#endif // defined(TARGET_XARCH) && defined(FEATURE_HW_INTRINSICS)
 
                 default:
                     assert(!"unexpected unary ExOp operator");
@@ -3479,6 +3483,12 @@ AGAIN:
                 case GT_BOUNDS_CHECK:
                     hash = genTreeHashAdd(hash, tree->AsBoundsChk()->gtThrowKind);
                     break;
+
+#if defined(FEATURE_HW_INTRINSICS) && defined (TARGET_XARCH)
+                case GT_SIMD_DIV_BY_ZERO_CHECK:
+                    hash = genTreeHashAdd(hash, tree->AsSIMDDivByZeroChk()->gtThrowKind);
+                    break;
+#endif // defined(FEATURE_HW_INTRINSICS) && defined (TARGET_XARCH)
 
                 // For the ones below no extra argument matters for comparison.
                 case GT_QMARK:
@@ -6722,7 +6732,9 @@ bool GenTree::TryGetUse(GenTree* operand, GenTree*** pUse)
         case GT_BSWAP16:
         case GT_KEEPALIVE:
         case GT_INC_SATURATE:
-        case GT_SIMD_DIV_BY_ZERO_CHECK:
+// #if defined(TARGET_XARCH) && defined(FEATURE_HW_INTRINSICS)
+//         case GT_SIMD_DIV_BY_ZERO_CHECK:
+// #endif // defined(TARGET_XARCH) && defined(FEATURE_HW_INTRINSICS)
             if (operand == this->AsUnOp()->gtOp1)
             {
                 *pUse = &this->AsUnOp()->gtOp1;
@@ -7239,8 +7251,10 @@ ExceptionSetFlags GenTree::OperExceptions(Compiler* comp)
             return ExceptionSetFlags::None;
         }
 
+#ifdef TARGET_XARCH
         case GT_SIMD_DIV_BY_ZERO_CHECK:
             return ExceptionSetFlags::DivideByZeroException;
+#endif // TARGET_XARCH
 #endif // FEATURE_HW_INTRINSICS
 
         default:
@@ -10320,7 +10334,9 @@ GenTreeUseEdgeIterator::GenTreeUseEdgeIterator(GenTree* node)
         case GT_BSWAP16:
         case GT_KEEPALIVE:
         case GT_INC_SATURATE:
-        case GT_SIMD_DIV_BY_ZERO_CHECK:
+// #if defined(TARGET_XARCH) && defined(FEATURE_HW_INTRINSICS)
+//         case GT_SIMD_DIV_BY_ZERO_CHECK:
+// #endif // defined(TARGET_XARCH) && defined(FEATURE_HW_INTRINSICS)
 #if FEATURE_ARG_SPLIT
         case GT_PUTARG_SPLIT:
 #endif // FEATURE_ARG_SPLIT
@@ -21182,9 +21198,9 @@ GenTree* Compiler::gtNewSimdBinOpNode(
             }
         }
 #endif // TARGET_XARCH
+#if defined(TARGET_XARCH) && defined(FEATURE_HW_INTRINSICS)
         case GT_DIV:
         {
-#if defined(TARGET_XARCH)
             // We can emulate SIMD integer division by converting the 32-bit integer -> 64-bit double,
             // perform a 64-bit double divide, then convert back to a 32-bit integer. This is generating
             // something similar to the following managed code:
@@ -21203,19 +21219,6 @@ GenTree* Compiler::gtNewSimdBinOpNode(
             {
                 assert(compOpportunisticallyDependsOn(InstructionSet_AVX) ||
                        compOpportunisticallyDependsOn(InstructionSet_AVX512F));
-
-                if (simdSize == 64)
-                {
-                    GenTree* op1Dup = fgMakeMultiUse(&op1);
-                    GenTree* op2Dup = fgMakeMultiUse(&op2);
-                    GenTree* op1Lower = gtNewSimdGetLowerNode(TYP_SIMD32, op1, simdBaseJitType, simdSize);
-                    GenTree* op1Upper = gtNewSimdGetUpperNode(TYP_SIMD32, op1Dup, simdBaseJitType, simdSize);
-                    GenTree* op2Lower = gtNewSimdGetLowerNode(TYP_SIMD32, op2, simdBaseJitType, simdSize);
-                    GenTree* op2Upper = gtNewSimdGetUpperNode(TYP_SIMD32, op2Dup, simdBaseJitType, simdSize);
-                    GenTree* divLower = gtNewSimdBinOpNode(op, TYP_SIMD32, op1Lower, op2Lower, simdBaseJitType, 32);
-                    GenTree* divUpper = gtNewSimdBinOpNode(op, TYP_SIMD32, op1Upper, op2Upper, simdBaseJitType, 32);
-                    return gtNewSimdWithUpperNode(type, divLower, divUpper, simdBaseJitType, simdSize);
-                }
 
                 assert(simdSize == 16 || simdSize == 32);
 
@@ -21241,9 +21244,9 @@ GenTree* Compiler::gtNewSimdBinOpNode(
                 GenTree* hwIntrinsicChk = gtNewSIMDDivByZeroCheck(op2, TYP_INT, simdBaseJitType, simdSize);
                 return gtNewOperNode(GT_COMMA, type, hwIntrinsicChk, divOpCvt);
             }
-#endif // TARGET_XARCH
             unreached();
         }
+#endif // defined(TARGET_XARCH) && defined(FEATURE_HW_INTRINSICS)
 
         case GT_MUL:
         {

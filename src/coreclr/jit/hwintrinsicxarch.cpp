@@ -2403,13 +2403,17 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
             if (!varTypeIsFloating(simdBaseType))
             {
+#if defined(TARGET_XARCH) && defined(FEATURE_HW_INTRINSICS)
                 // Check to see if it is possible to emulate the integer division
                 if (!(simdBaseType == TYP_INT &&
                       ((simdSize == 16 && compOpportunisticallyDependsOn(InstructionSet_AVX)) ||
-                       ((simdSize == 32 || simdSize == 64) && compOpportunisticallyDependsOn(InstructionSet_AVX512F)))))
+                       (simdSize == 32 && compOpportunisticallyDependsOn(InstructionSet_AVX512F)))))
                 {
                     break;
                 }
+#else
+                break;
+#endif // defined(TARGET_XARCH) && defined(FEATURE_HW_INTRINSICS)
             }
 
             CORINFO_ARG_LIST_HANDLE arg1     = sig->args;

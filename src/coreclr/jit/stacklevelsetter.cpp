@@ -206,6 +206,12 @@ void StackLevelSetter::SetThrowHelperBlocks(GenTree* node, BasicBlock* block)
         }
         break;
 
+#if defined(FEATURE_HW_INTRINSICS) && defined(TARGET_XARCH)
+        case GT_SIMD_DIV_BY_ZERO_CHECK:
+            SetThrowHelperBlock(node->AsSIMDDivByZeroChk()->gtThrowKind, block);
+            break;
+#endif // defined(FEATURE_HW_INTRINSICS) && defined(TARGET_XARCH)
+
         case GT_INDEX_ADDR:
         case GT_ARR_ELEM:
             SetThrowHelperBlock(SCK_RNGCHK_FAIL, block);

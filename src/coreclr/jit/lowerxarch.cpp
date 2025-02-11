@@ -9035,10 +9035,14 @@ void Lowering::ContainCheckBinary(GenTreeOp* node)
     }
 }
 
+#if defined(TARGET_XARCH) && defined(FEATURE_HW_INTRINSICS)
 void Lowering::ContainCheckSIMDDivByZeroChk(GenTreeSIMDDivByZeroChk* node)
 {
     assert(node->OperIs(GT_SIMD_DIV_BY_ZERO_CHECK));
+    // TryMakeSrcContainedOrRegOptional(node, node->gtGetOp1());
+    // TryMakeSrcContainedOrRegOptional(node, node->gtGetOp2());
 }
+#endif // defined(TARGET_XARCH) && defined(FEATURE_HW_INTRINSICS)
 
 //------------------------------------------------------------------------
 // ContainCheckBoundsChk: determine whether any source of a bounds check node should be contained.

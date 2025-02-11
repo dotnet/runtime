@@ -542,9 +542,12 @@ int LinearScan::BuildNode(GenTree* tree)
             srcCount += BuildOperandUses(tree->AsBoundsChk()->GetArrayLength());
             break;
 
+#if defined(TARGET_XARCH) && defined(FEATURE_HW_INTRINSICS)
         case GT_SIMD_DIV_BY_ZERO_CHECK:
             srcCount = BuildOperandUses(tree->AsSIMDDivByZeroChk()->gtGetOp1());
+            srcCount += BuildOperandUses(tree->AsSIMDDivByZeroChk()->gtGetOp2());
             break;
+#endif // defined(TARGET_XARCH) && defined(FEATURE_HW_INTRINSICS)
 
         case GT_ARR_ELEM:
             // These must have been lowered

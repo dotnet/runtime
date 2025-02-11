@@ -2153,9 +2153,11 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             genRangeCheck(treeNode);
             break;
 
+#if defined(TARGET_XARCH) && defined(FEATURE_HW_INTRINSICS)
         case GT_SIMD_DIV_BY_ZERO_CHECK:
             genSIMDDivByZeroCheck(treeNode);
             break;
+#endif // defined(TARGET_XARCH) && defined(FEATURE_HW_INTRINSICS)
 
         case GT_PHYSREG:
             genCodeForPhysReg(treeNode->AsPhysReg());
@@ -4577,18 +4579,27 @@ void CodeGen::genCodeForCmpXchg(GenTreeCmpXchg* tree)
     genProduceReg(tree);
 }
 
+#if defined(TARGET_XARCH) && defined(FEATURE_HW_INTRINSICS)
 void CodeGen::genSIMDDivByZeroCheck(GenTree* oper)
 {
     noway_assert(oper->OperIs(GT_SIMD_DIV_BY_ZERO_CHECK));
     GenTreeSIMDDivByZeroChk* divByZeroChk = oper->AsSIMDDivByZeroChk();
 
-    GenTree* op = oper->gtGetOp1();
+    GenTree* simdOp = oper->gtGetOp1();
+    GenTree* zeroOp = oper->gtGetOp2();
 
-    genConsumeRegs(op);
+    genConsumeRegs(simdOp);
+    genConsumeRegs(zeroOp);
 
-    GetEmitter()->emitInsBinary(INS_test, emitTypeSize(op->TypeGet()), op, op);
+    // Current codegen pattern cannot support ZMM registers since vptest only uses XMM/YMM registers
+    noway_assert(simdOp->TypeGet() == TYP_SIMD16 || simdOp->TypeGet() == TYP_SIMD32);
+    noway_assert(zeroOp->TypeGet() == TYP_SIMD16 || zeroOp->TypeGet() == TYP_SIMD32);
+    noway_assert(simdOp->TypeGet() == zeroOp->TypeGet());
+
+    GetEmitter()->emitIns_R_R(INS_ptest, emitTypeSize(simdOp->TypeGet()), simdOp->GetRegNum(), simdOp->GetRegNum());
     genJumpToThrowHlpBlk(EJ_jne, divByZeroChk->gtThrowKind, divByZeroChk->gtIndRngFailBB);
 }
+#endif // defined(TARGET_XARCH) && defined(FEATURE_HW_INTRINSICS)
 
 // generate code for BoundsCheck nodes
 void CodeGen::genRangeCheck(GenTree* oper)
