@@ -107,8 +107,8 @@ void DoCompileTimeCheckOnDbgIpcEventTypes()
 
     // Make sure all values are subset of the bits specified by DB_IPCE_TYPE_MASK
     #define IPC_EVENT_TYPE0(type, val)
-    #define IPC_EVENT_TYPE1(type, val)  C_ASSERT((val & e_DB_IPCE_TYPE_MASK) == val);
-    #define IPC_EVENT_TYPE2(type, val)  C_ASSERT((val & e_DB_IPCE_TYPE_MASK) == val);
+    #define IPC_EVENT_TYPE1(type, val)  static_assert_no_msg((val & e_DB_IPCE_TYPE_MASK) == val);
+    #define IPC_EVENT_TYPE2(type, val)  static_assert_no_msg((val & e_DB_IPCE_TYPE_MASK) == val);
     #include "dbgipceventtypes.h"
     #undef IPC_EVENT_TYPE2
     #undef IPC_EVENT_TYPE1
@@ -116,8 +116,8 @@ void DoCompileTimeCheckOnDbgIpcEventTypes()
 
     // Make sure that no value is DB_IPCE_INVALID_EVENT
     #define IPC_EVENT_TYPE0(type, val)
-    #define IPC_EVENT_TYPE1(type, val)  C_ASSERT(val != e_DB_IPCE_INVALID_EVENT);
-    #define IPC_EVENT_TYPE2(type, val)  C_ASSERT(val != e_DB_IPCE_INVALID_EVENT);
+    #define IPC_EVENT_TYPE1(type, val)  static_assert_no_msg(val != e_DB_IPCE_INVALID_EVENT);
+    #define IPC_EVENT_TYPE2(type, val)  static_assert_no_msg(val != e_DB_IPCE_INVALID_EVENT);
     #include "dbgipceventtypes.h"
     #undef IPC_EVENT_TYPE2
     #undef IPC_EVENT_TYPE1
@@ -135,8 +135,8 @@ void DoCompileTimeCheckOnDbgIpcEventTypes()
     // Make sure values are in the proper ranges
     // Type1 should be in the Runtime range, Type2 in the Debugger range.
     #define IPC_EVENT_TYPE0(type, val)
-    #define IPC_EVENT_TYPE1(type, val)  C_ASSERT((e_DB_IPCE_RUNTIME_FIRST <= val) && (val < e_DB_IPCE_RUNTIME_LAST));
-    #define IPC_EVENT_TYPE2(type, val)  C_ASSERT((e_DB_IPCE_DEBUGGER_FIRST <= val) && (val < e_DB_IPCE_DEBUGGER_LAST));
+    #define IPC_EVENT_TYPE1(type, val)  static_assert_no_msg((e_DB_IPCE_RUNTIME_FIRST <= val) && (val < e_DB_IPCE_RUNTIME_LAST));
+    #define IPC_EVENT_TYPE2(type, val)  static_assert_no_msg((e_DB_IPCE_DEBUGGER_FIRST <= val) && (val < e_DB_IPCE_DEBUGGER_LAST));
     #include "dbgipceventtypes.h"
     #undef IPC_EVENT_TYPE2
     #undef IPC_EVENT_TYPE1
