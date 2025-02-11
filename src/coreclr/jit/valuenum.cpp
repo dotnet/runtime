@@ -14774,12 +14774,6 @@ void Compiler::fgValueNumberAddExceptionSetForOverflow(GenTree* tree)
 //
 void Compiler::fgValueNumberAddExceptionSetForSIMDDivByZeroCheck(GenTree* tree)
 {
-    GenTreeSIMDDivByZeroChk* node = tree->AsSIMDDivByZeroChk();
-    assert(node != nullptr);
-
-    ValueNumPair vnpSimdOp  = node->gtGetOp1()->gtVNPair;
-    ValueNumPair vnpZeroOp = node->gtGetOp2()->gtVNPair;
-
     // Unpack, Norm,Exc for the tree's VN
     //
     ValueNumPair vnpTreeNorm;
