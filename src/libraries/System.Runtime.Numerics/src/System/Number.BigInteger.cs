@@ -748,7 +748,6 @@ namespace System
         {
             Debug.Assert(formatString == null || formatString.Length == formatSpan.Length);
 
-            const uint TenPowMaxPartial = PowersOf1e9.TenPowMaxPartial;
             const int MaxPartialDigits = PowersOf1e9.MaxPartialDigits;
 
             int digits = 0;
@@ -795,30 +794,8 @@ namespace System
                 stackalloc uint[cuMax] :
                 (bufferToReturn = ArrayPool<uint>.Shared.Rent(cuMax));
 
-            int cuDst = 0;
-
-            for (int iuSrc = cuSrc; --iuSrc >= 0;)
-            {
-                uint uCarry = value._bits[iuSrc];
-                for (int iuDst = 0; iuDst < cuDst; iuDst++)
-                {
-                    Debug.Assert(base1E9Buffer[iuDst] < TenPowMaxPartial);
-
-                    // Use X86Base.DivRem when stable
-                    ulong uuRes = NumericsHelpers.MakeUInt64(base1E9Buffer[iuDst], uCarry);
-                    (ulong quo, ulong rem) = Math.DivRem(uuRes, TenPowMaxPartial);
-                    uCarry = (uint)quo;
-                    base1E9Buffer[iuDst] = (uint)rem;
-                }
-                if (uCarry != 0)
-                {
-                    (uCarry, base1E9Buffer[cuDst++]) = Math.DivRem(uCarry, TenPowMaxPartial);
-                    if (uCarry != 0)
-                        base1E9Buffer[cuDst++] = uCarry;
-                }
-            }
-
-            ReadOnlySpan<uint> base1E9Value = base1E9Buffer[..cuDst];
+            BigIntegerToBase1E9(value._bits, base1E9Buffer, out int base1E9Written);
+            ReadOnlySpan<uint> base1E9Value = base1E9Buffer[..base1E9Written];
 
             int valueDigits = (base1E9Value.Length - 1) * MaxPartialDigits + FormattingHelpers.CountDigits(base1E9Value[^1]);
 
@@ -918,6 +895,37 @@ namespace System
             }
 
             return strResult;
+        }
+
+        private static void BigIntegerToBase1E9(ReadOnlySpan<uint> bits, Span<uint> base1E9Buffer, out int leadingWritten)
+        {
+            leadingWritten = 0;
+
+            for (int iuSrc = bits.Length; --iuSrc >= 0;)
+            {
+                uint uCarry = bits[iuSrc];
+                for (int iuDst = 0; iuDst < leadingWritten; iuDst++)
+                {
+                    Debug.Assert(base1E9Buffer[iuDst] < PowersOf1e9.TenPowMaxPartial);
+
+                    (uCarry, base1E9Buffer[iuDst]) = DivRemTenPowMaxPartial(base1E9Buffer[iuDst], uCarry);
+                }
+                if (uCarry != 0)
+                {
+                    (uCarry, base1E9Buffer[leadingWritten++]) = Math.DivRem(uCarry, PowersOf1e9.TenPowMaxPartial);
+                    if (uCarry != 0)
+                        base1E9Buffer[leadingWritten++] = uCarry;
+                }
+            }
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            static (uint, uint) DivRemTenPowMaxPartial(uint hi, uint lo)
+            {
+                // Use X86Base.DivRem when stable
+                ulong v = NumericsHelpers.MakeUInt64(hi, lo);
+                (ulong quo, ulong rem) = Math.DivRem(v, PowersOf1e9.TenPowMaxPartial);
+                return ((uint)quo, (uint)rem);
+            }
         }
 
         private static unsafe TChar* BigIntegerToDecChars<TChar>(TChar* bufferEnd, ReadOnlySpan<uint> base1E9Value, int digits)
