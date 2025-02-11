@@ -386,7 +386,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
 
             case CORINFO_VIRTUALCALL_LDVIRTFTN:
             {
-                if (compIsForInlining())
+                if (compIsForInlining() && !IsTargetAbi(CORINFO_NATIVEAOT_ABI))
                 {
                     compInlineResult->NoteFatal(InlineObservation::CALLSITE_HAS_CALL_VIA_LDVIRTFTN);
                     return TYP_UNDEF;
@@ -430,7 +430,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
                     addFatPointerCandidate(call->AsCall());
                 }
 #ifdef FEATURE_READYTORUN
-                if (opts.IsReadyToRun())
+                if (opts.IsReadyToRun() && !IsTargetAbi(CORINFO_NATIVEAOT_ABI))
                 {
                     // Null check is needed for ready to run to handle
                     // non-virtual <-> virtual changes between versions
