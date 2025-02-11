@@ -8365,7 +8365,7 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
             // We need to clone the runtime lookup node from LDVIRTFTN.
             //
             INDEBUG(assert(isGenericVirtual));
-            assert(call->gtLdvirtftn->gtArgs.CountArgs() == 3);
+            assert(call->gtLdvirtftn->IsHelperCall(this, CORINFO_HELP_VIRTUAL_FUNC_PTR));
             GenTree* methCtx = call->gtLdvirtftn->gtArgs.GetArgByIndex(2)->GetNode();
             assert(methCtx->OperIs(GT_RUNTIMELOOKUP));
             call->gtArgs.InsertInstParam(this, gtCloneExpr(methCtx));
