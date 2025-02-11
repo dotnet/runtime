@@ -2363,12 +2363,12 @@ bool ReplaceVisitor::IsReturnProfitableAsFieldList(GenTreeLclVarCommon* value)
     // efficiently return them. Otherwise they will be spilled, and we are
     // better off decomposing the store here.
     auto fieldMapsCleanly = [=](Replacement& rep) {
-        const ReturnTypeDesc& retDesc = m_compiler->compRetTypeDesc;
-        unsigned fieldOffset = rep.Offset - value->GetLclOffs();
-        unsigned numRegs = retDesc.GetReturnRegCount();
+        const ReturnTypeDesc& retDesc     = m_compiler->compRetTypeDesc;
+        unsigned              fieldOffset = rep.Offset - value->GetLclOffs();
+        unsigned              numRegs     = retDesc.GetReturnRegCount();
         for (unsigned i = 0; i < numRegs; i++)
         {
-            unsigned offset = retDesc.GetReturnFieldOffset(i);
+            unsigned  offset  = retDesc.GetReturnFieldOffset(i);
             var_types regType = retDesc.GetReturnRegType(i);
             if ((fieldOffset == offset) && (genTypeSize(rep.AccessType) == genTypeSize(regType)))
             {
@@ -2377,7 +2377,7 @@ bool ReplaceVisitor::IsReturnProfitableAsFieldList(GenTreeLclVarCommon* value)
         }
 
         return false;
-        };
+    };
 
     unsigned size = value->GetLayout(m_compiler)->GetSize();
     if (!VisitOverlappingReplacements(value->GetLclNum(), value->GetLclOffs(), size, fieldMapsCleanly))
