@@ -506,6 +506,15 @@ private:
                 return;
             }
 
+            // Bail on CT_INDIRECT for now
+            //
+            if (origCall->gtCallType == CT_INDIRECT)
+            {
+                JITDUMP("*** %s Bailing on [%06u] -- can't handle CT_INDIRECT yet\n", Name(), compiler->dspTreeID(origCall));
+                ClearFlag();
+                return;
+            }
+
             likelihood = origCall->GetGDVCandidateInfo(0)->likelihood;
             assert((likelihood >= 0) && (likelihood <= 100));
             JITDUMP("Likelihood of correct guess is %u\n", likelihood);
