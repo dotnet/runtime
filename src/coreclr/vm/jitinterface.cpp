@@ -8776,7 +8776,8 @@ bool CEEInfo::resolveVirtualMethodHelper(CORINFO_DEVIRTUALIZATION_INFO * info)
         pExactMT = pDevirtMD->GetExactDeclaringType(pObjMT);
     }
 
-    if (!isArray && pDevirtMD->HasMethodInstantiation())
+    // This is generic virtual method devirtualization.
+    if (pBaseMD->HasMethodInstantiation())
     {
         pDevirtMD = pDevirtMD->FindOrCreateAssociatedMethodDesc(pDevirtMD, pExactMT, false, pBaseMD->GetMethodInstantiation(), false);
         // The devirtualized generic method must not contain any canonical instantiations,
@@ -8790,7 +8791,7 @@ bool CEEInfo::resolveVirtualMethodHelper(CORINFO_DEVIRTUALIZATION_INFO * info)
 
     // Success! Pass back the results.
     //
-    if (isArray || pDevirtMD->HasMethodInstantiation())
+    if (isArray || pBaseMD->HasMethodInstantiation())
     {
         // Note if array devirtualization produced an instantiation stub
         // so jit can try and inline it.
