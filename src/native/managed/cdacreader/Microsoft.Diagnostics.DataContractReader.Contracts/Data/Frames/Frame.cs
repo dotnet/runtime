@@ -8,11 +8,6 @@ namespace Microsoft.Diagnostics.DataContractReader.Data;
 
 internal sealed class Frame : IData<Frame>
 {
-    private static readonly List<DataType> SupportedFrameTypes = [
-        DataType.InlinedCallFrame,
-        DataType.SoftwareExceptionFrame,
-    ];
-
     static Frame IData<Frame>.Create(Target target, TargetPointer address)
         => new Frame(target, address);
 
@@ -21,34 +16,10 @@ internal sealed class Frame : IData<Frame>
         Address = address;
         Target.TypeInfo type = target.GetTypeInfo(DataType.Frame);
         Next = target.ReadPointer(address + (ulong)type.Fields[nameof(Next)].Offset);
-        Type = FindType(target, address);
-    }
-
-    private static DataType FindType(Target target, TargetPointer address)
-    {
-        TargetPointer instanceVptr = target.ReadPointer(address);
-
-        foreach (DataType frameType in SupportedFrameTypes)
-        {
-            TargetPointer typeVptr;
-            try
-            {
-                // not all Frames are in all builds, so we need to catch the exception
-                typeVptr = target.ReadGlobalPointer(frameType.ToString() + "VPtr");
-                if (instanceVptr == typeVptr)
-                {
-                    return frameType;
-                }
-            }
-            catch (InvalidOperationException)
-            {
-            }
-        }
-
-        return DataType.Unknown;
+        VPtr = target.ReadPointer(address);
     }
 
     public TargetPointer Address { get; init; }
+    public TargetPointer VPtr { get; init; }
     public TargetPointer Next { get; init; }
-    public DataType Type { get; init; }
 }

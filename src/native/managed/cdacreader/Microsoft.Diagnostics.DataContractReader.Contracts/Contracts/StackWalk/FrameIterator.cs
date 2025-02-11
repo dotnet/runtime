@@ -1,12 +1,19 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
 using Microsoft.Diagnostics.DataContractReader.Contracts.StackWalkHelpers;
 
 namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 
 internal sealed class FrameIterator
 {
+    private static readonly DataType[] SupportedFrameTypes =
+    [
+        DataType.InlinedCallFrame,
+        DataType.SoftwareExceptionFrame
+    ];
+
     private readonly Target target;
     private readonly TargetPointer terminator;
     private TargetPointer currentFramePointer;
@@ -38,7 +45,7 @@ internal sealed class FrameIterator
 
     public bool TryUpdateContext(ref IPlatformAgnosticContext context)
     {
-        switch (CurrentFrame.Type)
+        switch (GetFrameType(CurrentFrame))
         {
             case DataType.InlinedCallFrame:
                 Data.InlinedCallFrame inlinedCallFrame = target.ProcessedData.GetOrAdd<Data.InlinedCallFrame>(CurrentFrame.Address);
@@ -58,11 +65,33 @@ internal sealed class FrameIterator
 
     public bool IsInlineCallFrameWithActiveCall()
     {
-        if (CurrentFrame.Type != DataType.InlinedCallFrame)
+        if (GetFrameType(CurrentFrame) != DataType.InlinedCallFrame)
         {
             return false;
         }
         Data.InlinedCallFrame inlinedCallFrame = target.ProcessedData.GetOrAdd<Data.InlinedCallFrame>(currentFramePointer);
         return inlinedCallFrame.CallerReturnAddress != 0;
+    }
+
+    private DataType GetFrameType(Data.Frame frame)
+    {
+        foreach (DataType frameType in SupportedFrameTypes)
+        {
+            TargetPointer typeVptr;
+            try
+            {
+                // not all Frames are in all builds, so we need to catch the exception
+                typeVptr = target.ReadGlobalPointer(frameType.ToString() + "VPtr");
+                if (frame.VPtr == typeVptr)
+                {
+                    return frameType;
+                }
+            }
+            catch (InvalidOperationException)
+            {
+            }
+        }
+
+        return DataType.Unknown;
     }
 }
