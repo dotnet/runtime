@@ -93,7 +93,7 @@ System.Resources.Extensions.PreserializedResourceWriter</PackageDescription>
           Inputs="$(MSBuildAllProjects)"
           Outputs="$(SuggestedBindingRedirectsPackageFile)"
           AfterTargets="CoreCompile"
-          Condition="'$(TargetFramework)' == '$(NetCoreAppMinimum)'">
+          Condition="'$(TargetFramework)' == '$(NetFrameworkMinimum)'">
     <PropertyGroup>
       <SuggestedBindingRedirectsPackageFileContent><![CDATA[<Project>
   <!-- ResolveAssemblyReferences will never see the assembly reference embedded in the resources type,
