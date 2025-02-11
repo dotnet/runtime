@@ -6,7 +6,7 @@ using System.Runtime.InteropServices;
 
 namespace Microsoft.Diagnostics.DataContractReader.Contracts.StackWalkHelpers;
 
-public class ContnextHolder<T> : IPlatformAgnosticContext where T : struct, IPlatformContext
+public class CotnextHolder<T> : IPlatformAgnosticContext where T : unmanaged, IPlatformContext
 {
     public T Context;
 
@@ -25,7 +25,7 @@ public class ContnextHolder<T> : IPlatformAgnosticContext where T : struct, IPla
     }
     public unsafe void FillFromBuffer(Span<byte> buffer)
     {
-        Span<T> structSpan = MemoryMarshal.CreateSpan(ref Context, 1);
+        Span<T> structSpan = new(ref Context);
         Span<byte> byteSpan = MemoryMarshal.Cast<T, byte>(structSpan);
         if (buffer.Length > sizeof(T))
         {
@@ -42,7 +42,7 @@ public class ContnextHolder<T> : IPlatformAgnosticContext where T : struct, IPla
         Span<byte> byteSpan = MemoryMarshal.AsBytes(structSpan);
         return byteSpan.ToArray();
     }
-    public IPlatformAgnosticContext Clone() => new ContnextHolder<T>() { Context = Context };
+    public IPlatformAgnosticContext Clone() => new CotnextHolder<T>() { Context = Context };
     public void Clear() => Context = default;
     public void Unwind(Target target) => Context.Unwind(target);
 }

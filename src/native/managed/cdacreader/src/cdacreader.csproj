@@ -33,6 +33,7 @@
 
   <ItemGroup>
     <!-- TODO: Link libraries on non-windows platforms. -->
+    <!-- https://github.com/dotnet/runtime/issues/112416 -->
     <DirectPInvoke Include="unwinder_cdac_amd64" />
     <NativeLibrary Include="$(CoreCLRArtifactsPath)cdaclibs\unwinder_cdac_amd64.lib" Condition="'$(TargetsWindows)' == 'true'" />
     <DirectPInvoke Include="unwinder_cdac_arm64" />
