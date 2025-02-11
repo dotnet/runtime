@@ -544,7 +544,7 @@ int LinearScan::BuildNode(GenTree* tree)
 
 #if defined(TARGET_XARCH) && defined(FEATURE_HW_INTRINSICS)
         case GT_SIMD_DIV_BY_ZERO_CHECK:
-            srcCount = BuildOperandUses(tree->AsSIMDDivByZeroChk()->gtGetOp1());
+            srcCount = BuildOperandUses(tree->AsSIMDDivByZeroChk()->gtGetOp1(), lowSIMDRegs());
             break;
 #endif // defined(TARGET_XARCH) && defined(FEATURE_HW_INTRINSICS)
 
