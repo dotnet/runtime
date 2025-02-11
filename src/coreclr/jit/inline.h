@@ -870,16 +870,6 @@ public:
     }
 #endif
 
-    void AddRecursiveCallsite()
-    {
-        m_RecursiveCallsites++;
-    }
-
-    unsigned GetRecursiveCallsiteCount() const
-    {
-        return m_RecursiveCallsites;
-    }
-
 private:
     InlineContext(InlineStrategy* strategy);
 
@@ -898,7 +888,6 @@ private:
     int                    m_CodeSizeEstimate;   // in bytes * 10
     unsigned               m_Ordinal;            // Ordinal number of this inline
     bool                   m_Success : 1;        // true if this was a successful inline
-    unsigned               m_RecursiveCallsites; // number of allowed recursive callsites
 
 #if defined(DEBUG)
 
