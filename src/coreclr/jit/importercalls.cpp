@@ -8083,7 +8083,7 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
     //
     if ((baseMethodAttribs & CORINFO_FLG_VIRTUAL) == 0)
     {
-        assert(call->IsVirtualStub());
+        assert(call->IsVirtualStub() || call->IsGenericVirtual());
         assert(opts.IsReadyToRun());
         JITDUMP("\nimpDevirtualizeCall: [R2R] base method not virtual, sorry\n");
         return;
