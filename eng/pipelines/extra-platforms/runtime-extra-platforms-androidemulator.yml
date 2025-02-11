@@ -149,4 +149,4 @@ jobs:
         - template: /eng/pipelines/libraries/helix.yml
           parameters:
             creator: dotnet-bot
-            testRunNamePrefixSuffix: Mono_$(_BuildConfig)
+            testRunNamePrefixSuffix: CoreCLR_$(_BuildConfig)
