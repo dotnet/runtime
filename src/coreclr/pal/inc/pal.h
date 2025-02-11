@@ -85,7 +85,6 @@ extern "C" {
 
 #include <pal_error.h>
 #include <pal_mstypes.h>
-#include <minipal/utils.h>
 
 // Native system libray handle.
 // On Unix systems, NATIVE_LIBRARY_HANDLE type represents a library handle not registered with the PAL.
