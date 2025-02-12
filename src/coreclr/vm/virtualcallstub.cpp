@@ -1298,7 +1298,7 @@ PCODE VSD_ResolveWorker(TransitionBlock * pTransitionBlock,
     Thread::ObjectRefFlush(CURRENT_THREAD);
 #endif
 
-    FrameWithCookie<StubDispatchFrame> frame(pTransitionBlock);
+    StubDispatchFrame frame(pTransitionBlock);
     StubDispatchFrame * pSDFrame = &frame;
 
     PCODE returnAddress = pSDFrame->GetUnadjustedReturnAddress();
