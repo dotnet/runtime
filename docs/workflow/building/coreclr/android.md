@@ -7,7 +7,8 @@ This is the internal documentation which outlines experimental support of CoreCL
 
 ## Prerequisite
 
-Download and install [Android Studio](https://developer.android.com/studio/install) and the following:
+- Download and install [OpenJDK 23](https://openjdk.org/projects/jdk/23/)
+- Download and install [Android Studio](https://developer.android.com/studio/install) and the following:
   - Android SDK (minimum supported API level is 21)
   - Android NDK r27
 
@@ -185,3 +186,24 @@ This can be achieved in `Android Studio` via `Profile or Debug APK`.
 ## See also
 
 Similar instructions for debugging Android apps with Mono runtime can be found [here](../../debugging/mono/android-debugging.md).
+
+## Troubleshooting
+
+### Multiple JDKs installed on the system
+
+If multiple Java SDK versions are installed, you may encounter the following error:
+
+```
+`src/mono/msbuild/android/build/AndroidBuild.targets(237,5): error MSB4018: java.lang.NullPointerException: Cannot invoke String.length() because <parameter1> is null
+```
+
+To resolve this:
+1. Remove older JDK versions
+2. Install [OpenJDK 23](https://openjdk.org/projects/jdk/23/)
+3. Make sure OpenJDK 23 binaries are added to the path via:
+```
+$> java -version
+openjdk version "23.0.1" 2024-10-15
+OpenJDK Runtime Environment Homebrew (build 23.0.1)
+OpenJDK 64-Bit Server VM Homebrew (build 23.0.1, mixed mode, sharing)
+```
