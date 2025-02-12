@@ -2721,7 +2721,7 @@ bool Compiler::fgSimpleLowerCastOfSmpOp(LIR::Range& range, GenTreeCast* cast)
         return false;
 
     // These are the only safe ops where the CAST is not necessary for the inputs.
-    if (castOp->OperIs(GT_ADD, GT_SUB, GT_MUL, GT_AND, GT_XOR, GT_OR, GT_NOT, GT_NEG))
+    if (castOp->OperIs(GT_ADD, GT_SUB, GT_MUL, GT_AND, GT_XOR, GT_OR, GT_NOT, GT_NEG, GT_BSWAP16))
     {
         bool madeChanges = false;
 
