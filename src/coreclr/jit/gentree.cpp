@@ -10016,6 +10016,8 @@ GenTreeCall* Compiler::gtCloneExprCallHelper(GenTreeCall* tree)
     copy->gtCallType   = tree->gtCallType;
     copy->gtReturnType = tree->gtReturnType;
 
+    copy->gtLdvirtftnHnd = tree->gtLdvirtftnHnd;
+
 #if FEATURE_MULTIREG_RET
     copy->gtReturnTypeDesc = tree->gtReturnTypeDesc;
 #endif
