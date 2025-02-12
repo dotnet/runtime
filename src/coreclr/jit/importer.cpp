@@ -970,9 +970,9 @@ GenTree* Compiler::impStoreStruct(GenTree*         store,
         GenTree* sideEffectAddressStore = nullptr;
         if (store->OperIs(GT_STORE_BLK, GT_STOREIND) && ((store->AsIndir()->Addr()->gtFlags & GTF_ALL_EFFECT) != 0))
         {
-            TempInfo addrikTmp       = fgMakeTemp(store->AsIndir()->Addr());
-            sideEffectAddressStore   = addrikTmp.store;
-            store->AsIndir()->Addr() = addrikTmp.load;
+            TempInfo addrTmp         = fgMakeTemp(store->AsIndir()->Addr());
+            sideEffectAddressStore   = addrTmp.store;
+            store->AsIndir()->Addr() = addrTmp.load;
         }
 
         if (pAfterStmt)
