@@ -62,7 +62,6 @@ const fn_signatures: SigLine[] = [
     [() => !runtimeHelpers.emscriptenBuildOptions.enableAotProfiler, "mono_wasm_profiler_init_aot", "void", ["string"]],
     [() => !runtimeHelpers.emscriptenBuildOptions.enableBrowserProfiler, "mono_wasm_profiler_init_browser", "void", ["string"]],
     [() => !runtimeHelpers.emscriptenBuildOptions.enableLogProfiler, "mono_wasm_profiler_init_log", "void", ["string"]],
-    [true, "mono_wasm_profiler_init_browser", "void", ["number"]],
     [false, "mono_wasm_exec_regression", "number", ["number", "string"]],
     [false, "mono_wasm_invoke_jsexport", "void", ["number", "number"]],
     [true, "mono_wasm_write_managed_pointer_unsafe", "void", ["number", "number"]],

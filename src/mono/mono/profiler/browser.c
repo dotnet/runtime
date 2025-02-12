@@ -122,7 +122,7 @@ void
 mono_profiler_init_browser (const char *desc)
 {
 	// browser:
-	if (!desc && desc [7] == ':') {
+	if (desc && desc [7] == ':') {
 		const char *arg = desc + 8;
 		const char *val;
 
