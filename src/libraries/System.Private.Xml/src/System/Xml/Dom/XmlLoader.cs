@@ -86,7 +86,7 @@ namespace System.Xml
                 Debug.Assert(n != null);
 
                 // Move to the next node
-                if (n != null && n.NodeType != XmlNodeType.Attribute)
+                if (n.NodeType != XmlNodeType.Attribute)
                     reader.Read();
 
                 return n;
