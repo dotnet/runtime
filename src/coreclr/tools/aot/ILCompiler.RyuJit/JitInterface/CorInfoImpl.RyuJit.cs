@@ -1590,8 +1590,7 @@ namespace Internal.JitInterface
             else if ((flags & CORINFO_CALLINFO_FLAGS.CORINFO_CALLINFO_LDFTN) == 0
                 && targetMethod.OwningType.IsInterface)
             {
-                pResult->kind = CORINFO_CALL_KIND.CORINFO_VIRTUALCALL_LDVIRTFTN;
-                //pResult->kind = CORINFO_CALL_KIND.CORINFO_VIRTUALCALL_STUB;
+                pResult->kind = CORINFO_CALL_KIND.CORINFO_VIRTUALCALL_STUB;
 
                 if (pResult->exactContextNeedsRuntimeLookup)
                 {
@@ -1605,8 +1604,7 @@ namespace Internal.JitInterface
                 else
                 {
                     pResult->codePointerOrStubLookup.lookupKind.needsRuntimeLookup = false;
-                    pResult->codePointerOrStubLookup.constLookup.accessType = InfoAccessType.IAT_VALUE;
-                    //pResult->codePointerOrStubLookup.constLookup.accessType = InfoAccessType.IAT_PVALUE;
+                    pResult->codePointerOrStubLookup.constLookup.accessType = InfoAccessType.IAT_PVALUE;
 #pragma warning disable SA1001, SA1113, SA1115 // Commas should be spaced correctly
                     pResult->codePointerOrStubLookup.constLookup.addr = (void*)ObjectToHandle(
                         _compilation.NodeFactory.InterfaceDispatchCell(targetMethod
