@@ -32,13 +32,6 @@ const WCHAR *g_dacVtStrings[] =
 #undef VPTR_CLASS
 };
 
-const WCHAR *g_dacFrameStrings[] =
-{
-#define FRAME_TYPE_NAME(name) W(#name),
-#include "FrameTypes.h"
-#undef FRAME_TYPE_NAME
-};
-
 DacHostVtPtrs g_dacHostVtPtrs;
 
 HRESULT
@@ -51,6 +44,13 @@ DacGetHostVtPtrs(void)
 
     return S_OK;
 }
+
+const WCHAR *g_dacFrameStrings[] =
+{
+#define FRAME_TYPE_NAME(name) W(#name),
+#include "FrameTypes.h"
+#undef FRAME_TYPE_NAME
+};
 
 bool
 DacExceptionFilter(Exception* ex, ClrDataAccess* access,
