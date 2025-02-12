@@ -58,16 +58,25 @@ Contracts used:
 | `Thread` |
 
 
-### Simplified Stackwalking Algorithm
-The intuition for walking a managed stack is relatively simply: unwind managed portions of the stack until we hit native code then use capital "F" Frames as checkpoints to get into new sections of managed code. Because Frames are added at each point before managed code (higher SP value) calls native code (lower SP values), we are guarenteed that a Frame exists at the top (lower SP value) of each managed call frame run.
+### Stackwalk Algorithm
+The intuition for walking a managed stack is relatively simply: unwind managed portions of the stack until we hit native code then use capital "F" Frames as checkpoints to get into new sections of managed code. Because Frames are added at each point before managed code (higher SP value) calls native code (lower SP values), we are guaranteed that a Frame exists at the top (lower SP value) of each managed call frame run.
+
+In reality, the actual algorithm is a little more complex fow two reasons. It requires pausing to return the current context and Frame at certain points and it checks for "skipped Frames" which can occur if an capital "F" Frame is allocated in a managed stack frame (e.g. an inlined P/Invoke call).
+
 
 1. Read the thread context. Fetched as part of the [ICorDebugDataTarget](https://learn.microsoft.com/en-us/dotnet/framework/unmanaged-api/debugging/icordebugdatatarget-getthreadcontext-method) COM interface.
-2. If the current IP is in managed code, use Windows style unwinding until the IP is not in managed code.
-3. For each captial "F" Frame on the linked list:
-    1. If the Frame can update the context, update the context.
-    2. If the context was updated and the new IP is in managed code, use Windows style unwinding until the IP is not in managed code.
+2. If the current IP is in managed code, use Windows style unwinding iteratively, returning the updated context at each iteration, until the IP is not in managed code.
+3. Iterate each Frame in the linked list:
+    1. Check the current Frame, if it can update the context, do so.
+    2. For all Frame except `InlinedCallFrame` with an active call, go to the next the Frame.
+    3. Return the current context.
+    4. Check for skipped Frames by comparing the address of the current Frame (allocated on the stack) with the caller of the current context's stack pointer (found by unwinding current context one iteration).
+    If the address of the Frame is less than the caller's stack pointer, go to the next Frame, return the current context and repeat this step.
+    5. If the context was updated and the new IP is in managed code, use Windows style unwinding iteratively, returning a new context each iteration, until the IP is not in managed code.
 
-#### Example
+#### Simple Example
+
+In this example we walk through the algorithm without instances of skipped Frames.
 
 Given the following call stack and capital "F" Frames linked list, we can apply the above algorithm.
 <table>
@@ -103,19 +112,19 @@ Given the following call stack and capital "F" Frames linked list, we can apply 
 <td>
 
 ```
-InlinedCallFrame
-(Context = <B>)
+SoftwareExceptionFrame
+   (Context = <B>)
 
-       ||
-       \/
+          ||
+          \/
 
-InlinedCallFrame
-(Context = <D>)
+SoftwareExceptionFrame
+   (Context = <D>)
 
-       ||
-       \/
+          ||
+          \/
 
-      NULL
+   NULL TERMINATOR
 ```
 
 </td>
@@ -125,30 +134,21 @@ InlinedCallFrame
 * (1) We fetch the initial thread context `<A>`, with SP pointing to the top of the call stack.
 * (2) In our example we can see that `<A>`'s SP is pointing to a native frame on the stack. Therefore context `<A>` is not pointing to managed code and we don't unwind.
 In actuality, this is checked through the [ExecutionManager](./ExecutionManager.md) contract.
-* (3.1) We look at the first Frame, an InlinedCallFrame with attatched context `<B>`. Update our working context to `<B>`.
-* (3.2) Since we updated our context and our new context is in managed code, we use the Windows unwinding tool to iteratively unwind until the context is no longer managed.
-This could take multible iterations, but would end up with context `<C>` which has the first SP pointing to a native portion of the stack.
-* (3.1) We look at the next Frame, an InlinedCallFrame with attatched context `<D>`. Update our working context to `<D>`.
-* (3.2) Again, our updated context is in managed code. We will use the Windows unwinding tool to iteratively unwind until the context is no longer managed. This yields context `<E>`.
-* Since we are at a native context and have no more capital "F" Frames to process, the managed stack walk is complete.
-
-### Stackwalking Algorithm
-In reality, the actual algorithm is a little more complex because:
-* It requires pausing to return the current context and Frame at certain points.
-* Handles checking for "skipped frames" which can occur if an explicit frame is allocated in a managed stack frame (e.g. an inlined pinvoke call).
-
-1. Read the thread context. Fetched as part of the [ICorDebugDataTarget](https://learn.microsoft.com/en-us/dotnet/framework/unmanaged-api/debugging/icordebugdatatarget-getthreadcontext-method) COM interface.
-2. If the current IP is in managed code, use Windows style unwinding iteratively, returning a new context each iteration, until the IP is not in managed code.
-3. Iterate each Frame in the linked list:
-    1. Check the current Frame, if it can update the context, do so.
-    2. For all Frame except `InlinedCallFrame` with an active call, go to the next the Frame.
-    3. Return the current context.
-    4. Check for skipped frames by comparing the address of the current Frame (allocated on the stack) with the caller of the current context's stack pointer (found by unwinding current context one iteration).
-    If the address of the Frame is less than the caller's stack pointer, go to the next Frame, return the current context and repeat this step.
-    5. If the context was updated and the new IP is in managed code, use Windows style unwinding iteratively, returning a new context each iteration, until the IP is not in managed code.
+* (3.1) We look at the current (first) Frame, a SoftwareExceptionFrame with attached context `<B>`. Update our working context to `<B>`.
+* (3.2) Since the current Frame is not an InlinedCallFrame, set the current Frame to the next Frame on the chain.
+* (3.3) Return the current context and Frame.
+* (3.4) The example has no skipped Frames so we skip this step.
+* (3.5) Since we updated our context and our new context is in managed code, we use the Windows style unwinding tool to iteratively unwind until the context is no longer managed.
+This could take multiple iterations, each time returning a new context to the caller. We end up with context `<C>` which is the first context inside of a native call frame.
+* (3.1) We look at the current Frame, another SoftwareExceptionFrame with attached context `<D>`. Update our working context to `<D>`.
+* (3.2) Since the current Frame is not an InlinedCallFrame, set the current Frame to the next Frame (`NULL TERMINATOR`) on the chain.
+* (3.3) Return the current context and Frame.
+* (3.4) The example has no skipped Frames so we skip this step.
+* (3.5) Again, we updated our context and our new context is in managed code. Therefore, we use the Windows style unwinding tool to iteratively unwind until the context is no longer managed.
+This could take multiple iterations, each time returning a new context to the caller. We end up with context `<E>` which is the first context inside of a native call frame.
+* (3) Since our current context is in native code and the current Frame is the `NULL TERMINATOR`, we are done.
 
 ### APIs
-
 
 The majority of the contract's complexity comes from the stack walking algorithm implementation which is implemented and controlled through the following APIs.
 These handle setting up and iterating the stackwalk state according to the algorithm detailed above.
@@ -166,7 +166,7 @@ IStackDataFrameHandle GetCurrentFrame(IStackWalkHandle stackWalkHandle);
 ```
 
 `GetRawContext` Retrieves the raw Windows thread context of the current frame as a byte array. The size and shape of the context is platform dependent. See [CONTEXT structure](https://learn.microsoft.com/en-us/windows/win32/api/winnt/ns-winnt-context) for more info.
-This context is not guarenteed to be complete. Not all capital "F" Frames store the entire context, some only store the IP/SP/FP. Therefore, at points where the context is based on these Frames it will be incomplete.
+This context is not guaranteed to be complete. Not all capital "F" Frames store the entire context, some only store the IP/SP/FP. Therefore, at points where the context is based on these Frames it will be incomplete.
 ```csharp
 byte[] GetRawContext(IStackDataFrameHandle stackDataFrameHandle);
 ```
