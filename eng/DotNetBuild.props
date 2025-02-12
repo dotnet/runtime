@@ -108,7 +108,7 @@
 
       <!-- Two-stage build is for live runtime packs; apphost, crossgen2 and ilcompiler. It is typically (but not limited to be) used for community-supported platform builds. -->
       <InnerBuildArgs Condition="'$(StageOneBuild)' != ''">$(InnerBuildArgs) /p:StageOneBuild=$(StageOneBuild) /p:Subset=clr+libs+host</InnerBuildArgs>
-      <InnerBuildArgs Condition="'$(StageTwoBuild)' != ''">$(InnerBuildArgs) /p:StageTwoBuild=$(StageTwoBuild) /p:Subset=clr.tools+packs</InnerBuildArgs>
+      <InnerBuildArgs Condition="'$(StageTwoBuild)' != ''">$(InnerBuildArgs) /p:StageTwoBuild=$(StageTwoBuild) /p:Subset=clr.tools+tools.illink+packs</InnerBuildArgs>
     </PropertyGroup>
   </Target>
 
