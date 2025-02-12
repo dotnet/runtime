@@ -739,7 +739,7 @@ namespace System
         //
         // This is an intrinsic function so that the JIT can recognise it specially
         // and eliminate checks on character fetches in a loop like:
-        //        for(int i = 0; i < str.Length; i++) str[i]
+        //        for (int i = 0; i < str.Length; i++) str[i]
         // The actual code generated for this will be one instruction and will be inlined.
         //
         public int Length
