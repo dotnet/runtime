@@ -189,13 +189,15 @@ Similar instructions for debugging Android apps with Mono runtime can be found [
 
 ## Troubleshooting
 
-### Multiple JDKs installed on the system
+### Android samples or functional tests fail to build
 
 If multiple JDKs are installed on your system, you may encounter the following error:
 
 ```
 `src/mono/msbuild/android/build/AndroidBuild.targets(237,5): error MSB4018: java.lang.NullPointerException: Cannot invoke String.length() because <parameter1> is null
 ```
+
+when building the Android samples or functional tests.
 
 To resolve this:
 1. Remove older JDK versions
