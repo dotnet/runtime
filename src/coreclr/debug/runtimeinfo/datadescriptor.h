@@ -602,9 +602,9 @@ CDAC_GLOBAL_POINTER(ThreadStore, &ThreadStore::s_pThreadStore)
 CDAC_GLOBAL_POINTER(FinalizerThread, &::g_pFinalizerThread)
 CDAC_GLOBAL_POINTER(GCThread, &::g_pSuspensionThread)
 
-// Add VPtr for all defined Frame types. Used to differentiate Frame objects.
+// Add FrameIdentifier for all defined Frame types. Used to differentiate Frame objects.
 #define FRAME_TYPE_NAME(frameType) \
-    CDAC_GLOBAL_POINTER(frameType##VPtr, frameType::GetMethodFrameVPtr())
+    CDAC_GLOBAL_POINTER(frameType##Identifier, FrameIdentifier::frameType)
 
     #include "frames.h"
 #undef FRAME_TYPE_NAME
