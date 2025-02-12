@@ -19,6 +19,7 @@ namespace System.Reflection
         protected sealed override bool IsArrayImpl() => false;
         protected sealed override bool IsByRefImpl() => false;
         public sealed override bool IsByRefLike => false;
+        public sealed override bool IsEnum => throw new NotSupportedException(SR.NotSupported_SignatureType);
         protected sealed override bool IsPointerImpl() => false;
         public sealed override bool IsSZArray => false;
         public sealed override bool IsVariableBoundArray => false;

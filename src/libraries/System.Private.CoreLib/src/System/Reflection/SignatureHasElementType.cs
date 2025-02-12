@@ -19,6 +19,7 @@ namespace System.Reflection
         protected abstract override bool IsArrayImpl();
         protected abstract override bool IsByRefImpl();
         public sealed override bool IsByRefLike => false;
+        public sealed override bool IsEnum => false;
         protected abstract override bool IsPointerImpl();
         public abstract override bool IsSZArray { get; }
         public abstract override bool IsVariableBoundArray { get; }

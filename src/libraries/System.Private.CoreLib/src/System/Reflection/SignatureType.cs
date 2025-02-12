@@ -188,7 +188,7 @@ namespace System.Reflection
         public sealed override Type[] FindInterfaces(TypeFilter filter, object? filterCriteria) => throw new NotSupportedException(SR.NotSupported_SignatureType);
         public sealed override InterfaceMapping GetInterfaceMap([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods | DynamicallyAccessedMemberTypes.NonPublicMethods)] Type interfaceType) => throw new NotSupportedException(SR.NotSupported_SignatureType);
         protected sealed override bool IsContextfulImpl() => throw new NotSupportedException(SR.NotSupported_SignatureType);
-        public sealed override bool IsEnum => throw new NotSupportedException(SR.NotSupported_SignatureType);
+        public abstract override bool IsEnum { get; }
         public sealed override bool IsEquivalentTo([NotNullWhen(true)] Type? other) => throw new NotSupportedException(SR.NotSupported_SignatureType);
         public sealed override bool IsInstanceOfType([NotNullWhen(true)] object? o) => throw new NotSupportedException(SR.NotSupported_SignatureType);
         protected sealed override bool IsMarshalByRefImpl() => throw new NotSupportedException(SR.NotSupported_SignatureType);
