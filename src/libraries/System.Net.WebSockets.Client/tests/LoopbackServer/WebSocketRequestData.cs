@@ -10,7 +10,7 @@ namespace System.Net.WebSockets.Client.Tests
     public class WebSocketRequestData
     {
         public Dictionary<string, string?> Headers { get; set; } = new Dictionary<string, string?>();
-        public Stream? WebSocketStream { get; set; }
+        public Stream? TransportStream { get; set; }
 
         public Version HttpVersion { get; set; }
         public LoopbackServer.Connection? Http11Connection { get; set; }

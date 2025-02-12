@@ -121,7 +121,7 @@ namespace System.Net.WebSockets.Client.Tests
                         (wsData, ct) =>
                         {
                             var wsOptions = new WebSocketCreationOptions { IsServer = true };
-                            serverWebSocket = WebSocket.CreateFromStream(wsData.WebSocketStream, wsOptions);
+                            serverWebSocket = WebSocket.CreateFromStream(wsData.TransportStream, wsOptions);
 
                             return serverEosType == ServerEosType.AfterSomeData
                                 ? VerifySendReceiveAsync(serverWebSocket, serverMsg, clientMsg, serverAckTcs, clientAckTcs.Task, ct)

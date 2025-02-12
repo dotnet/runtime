@@ -90,7 +90,7 @@ namespace System.Net.WebSockets.Client.Tests
             CancellationToken cancellationToken)
         {
             var wsOptions = new WebSocketCreationOptions { IsServer = true };
-            var serverWebSocket = WebSocket.CreateFromStream(requestData.WebSocketStream, wsOptions);
+            var serverWebSocket = WebSocket.CreateFromStream(requestData.TransportStream, wsOptions);
 
             await serverWebSocketFunc(serverWebSocket, cancellationToken).ConfigureAwait(false);
 
