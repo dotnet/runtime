@@ -2025,7 +2025,7 @@ void CallArgs::Remove(CallArg* arg)
 //   arg - The arg to remove.
 //
 // Remarks:
-//   This can be used to use arguments after ABI determination and after morph.
+//   This can be used to remove arguments after ABI determination and after morph.
 //   It removes the argument from both the early and late list. However, no ABI
 //   information is updated. Caller needs to know what they are doing.
 //
