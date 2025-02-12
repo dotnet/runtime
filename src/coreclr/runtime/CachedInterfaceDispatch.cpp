@@ -8,30 +8,7 @@
 // ============================================================================
 #include "common.h"
 #ifdef FEATURE_CACHED_INTERFACE_DISPATCH
-
-#include "CommonTypes.h"
-#include "CommonMacros.h"
-#include "daccess.h"
-#include "DebugMacrosExt.h"
-#include "PalRedhawkCommon.h"
-#include "PalRedhawk.h"
-#include "rhassert.h"
-#include "slist.h"
-#include "holder.h"
-#include "Crst.h"
-#include "RedhawkWarnings.h"
-#include "TargetPtrs.h"
-#include "MethodTable.h"
-#include "Range.h"
-#include "allocheap.h"
-#include "rhbinder.h"
-#include "ObjectLayout.h"
-#include "shash.h"
-#include "TypeManager.h"
-#include "RuntimeInstance.h"
-#include "MethodTable.inl"
-#include "CommonMacros.inl"
-
+#include "CachedInterfaceDispatchPal.h"
 #include "CachedInterfaceDispatch.h"
 
 // We always allocate cache sizes with a power of 2 number of entries. We have a maximum size we support,
@@ -212,9 +189,6 @@ static InterfaceDispatchCache * g_rgFreeLists[CID_MAX_CACHE_SIZE_LOG2 + 1];
 // it imposes too much space overhead on list entries on 64-bit (each is actually 16 bytes).
 static CrstStatic g_sListLock;
 
-// The base memory allocator.
-static AllocHeap * g_pAllocHeap = NULL;
-
 // Each cache size has an associated stub used to perform lookup over that cache.
 extern "C" void RhpInterfaceDispatch1();
 extern "C" void RhpInterfaceDispatch2();
@@ -269,10 +243,9 @@ static uintptr_t AllocateCache(uint32_t cCacheEntries, InterfaceDispatchCache * 
 {
     if (pNewCellInfo->CellType == DispatchCellType::VTableOffset)
     {
-        ASSERT(pNewCellInfo->VTableOffset < InterfaceDispatchCell::IDC_MaxVTableOffsetPlusOne);
         *ppStub = (void *)&RhpVTableOffsetDispatch;
-        ASSERT(!InterfaceDispatchCell::IsCache(pNewCellInfo->VTableOffset));
-        return pNewCellInfo->VTableOffset;
+        ASSERT(!InterfaceDispatchCell::IsCache(pNewCellInfo->GetVTableOffset()));
+        return pNewCellInfo->GetVTableOffset();
     }
 
     ASSERT((cCacheEntries >= 1) && (cCacheEntries <= CID_MAX_CACHE_SIZE));
@@ -299,9 +272,8 @@ static uintptr_t AllocateCache(uint32_t cCacheEntries, InterfaceDispatchCache * 
     if (pCache == NULL)
     {
         // No luck with the free list, allocate the cache from via the AllocHeap.
-        pCache = (InterfaceDispatchCache*)g_pAllocHeap->AllocAligned(sizeof(InterfaceDispatchCache) +
-                                                                     (sizeof(InterfaceDispatchCacheEntry) * cCacheEntries),
-                                                                     sizeof(void*) * 2);
+        pCache = (InterfaceDispatchCache*)InterfaceDispatch_AllocDoublePointerAligned(sizeof(InterfaceDispatchCache) +
+                                                                     (sizeof(InterfaceDispatchCacheEntry) * cCacheEntries));
         if (pCache == NULL)
             return (uintptr_t)NULL;
 
@@ -342,7 +314,7 @@ static uintptr_t AllocateCache(uint32_t cCacheEntries, InterfaceDispatchCache * 
 
 // Discards a cache by adding it to a list of caches that may still be in use but will be made available for
 // re-allocation at the next GC.
-static void DiscardCache(InterfaceDispatchCache * pCache)
+void InterfaceDispatch_DiscardCache(InterfaceDispatchCache * pCache)
 {
     CID_COUNTER_INC(CacheDiscards);
 
@@ -365,7 +337,7 @@ static void DiscardCache(InterfaceDispatchCache * pCache)
     if (pDiscardedCacheBlock != NULL)
         g_pDiscardedCacheFree = pDiscardedCacheBlock->m_pNext;
     else
-        pDiscardedCacheBlock = (DiscardedCacheBlock *)g_pAllocHeap->Alloc(sizeof(DiscardedCacheBlock));
+        pDiscardedCacheBlock = (DiscardedCacheBlock *)InterfaceDispatch_AllocPointerAligned(sizeof(DiscardedCacheBlock));
 
     if (pDiscardedCacheBlock != NULL) // if we did NOT get the memory, we leak the discarded block
     {
@@ -379,7 +351,7 @@ static void DiscardCache(InterfaceDispatchCache * pCache)
 
 // Called during a GC to empty the list of discarded caches (which we can now guarantee aren't being accessed)
 // and sort the results into the free lists we maintain for each cache size.
-void ReclaimUnusedInterfaceDispatchCaches()
+void InterfaceDispatch_ReclaimUnusedInterfaceDispatchCaches()
 {
     // No need for any locks, we're not racing with any other threads any more.
 
@@ -431,13 +403,9 @@ void ReclaimUnusedInterfaceDispatchCaches()
 }
 
 // One time initialization of interface dispatch.
-bool InitializeInterfaceDispatch()
+bool InterfaceDispatch_Initialize()
 {
-    g_pAllocHeap = new (nothrow) AllocHeap();
-    if (g_pAllocHeap == NULL)
-        return false;
-
-    if (!g_pAllocHeap->Init())
+    if (!InterfaceDispatch_InitializePal())
         return false;
 
     g_sListLock.Init(CrstInterfaceDispatchGlobalLists, CRST_DEFAULT);
@@ -445,7 +413,7 @@ bool InitializeInterfaceDispatch()
     return true;
 }
 
-FCIMPL4(PCODE, RhpUpdateDispatchCellCache, InterfaceDispatchCell * pCell, PCODE pTargetCode, MethodTable* pInstanceType, DispatchCellInfo *pNewCellInfo)
+PCODE InterfaceDispatch_UpdateDispatchCellCache(InterfaceDispatchCell * pCell, PCODE pTargetCode, MethodTable* pInstanceType, DispatchCellInfo *pNewCellInfo)
 {
     // Attempt to update the cache with this new mapping (if we have any cache at all, the initial state
     // is none).
@@ -511,35 +479,9 @@ FCIMPL4(PCODE, RhpUpdateDispatchCellCache, InterfaceDispatchCell * pCell, PCODE 
     // value or the cache we just allocated (another thread performed an update first).
     InterfaceDispatchCache * pDiscardedCache = UpdateCellStubAndCache(pCell, pStub, newCacheValue);
     if (pDiscardedCache)
-        DiscardCache(pDiscardedCache);
+        InterfaceDispatch_DiscardCache(pDiscardedCache);
 
     return (PCODE)pTargetCode;
 }
-FCIMPLEND
-
-FCIMPL2(PCODE, RhpSearchDispatchCellCache, InterfaceDispatchCell * pCell, MethodTable* pInstanceType)
-{
-    // This function must be implemented in native code so that we do not take a GC while walking the cache
-    InterfaceDispatchCache * pCache = (InterfaceDispatchCache*)pCell->GetCache();
-    if (pCache != NULL)
-    {
-        InterfaceDispatchCacheEntry * pCacheEntry = pCache->m_rgEntries;
-        for (uint32_t i = 0; i < pCache->m_cEntries; i++, pCacheEntry++)
-            if (pCacheEntry->m_pInstanceType == pInstanceType)
-                return pCacheEntry->m_pTargetCode;
-    }
-
-    return (PCODE)nullptr;
-}
-FCIMPLEND
-
-// Given a dispatch cell, get the type and slot associated with it. This function MUST be implemented
-// in cooperative native code, as the m_pCache field on the cell is unsafe to access from managed
-// code due to its use of the GC state as a lock, and as lifetime control
-FCIMPL2(void, RhpGetDispatchCellInfo, InterfaceDispatchCell * pCell, DispatchCellInfo* pDispatchCellInfo)
-{
-    *pDispatchCellInfo = pCell->GetDispatchCellInfo();
-}
-FCIMPLEND
 
 #endif // FEATURE_CACHED_INTERFACE_DISPATCH
