@@ -214,90 +214,60 @@ internal static class Utils
         return (process.ExitCode, outputBuilder.ToString().Trim('\r', '\n'));
     }
 
-    internal abstract class Readable<TContent, TReader> :
-    IDisposable
-    where TContent : IEquatable<TContent>
-    where TReader : IDisposable
+    private static bool ContentEqual(string fileA, string fileB)
     {
-        protected abstract int Read(TContent[] buffer, int offset, int count);
-        protected TReader _reader;
-        protected Readable(TReader reader) => _reader = reader;
-        public void Dispose() => _reader.Dispose();
+        const int bufferSize = 8192;
+        FileStream streamA = new(fileA, FileMode.Open, FileAccess.Read, FileShare.Read, bufferSize: bufferSize, FileOptions.SequentialScan);
+        FileStream streamB = new(fileB, FileMode.Open, FileAccess.Read, FileShare.Read, bufferSize: bufferSize, FileOptions.SequentialScan);
 
-        protected static bool ContentEqual(Readable<TContent, TReader> streamA, Readable<TContent, TReader> streamB, int bufferSize)
+        if (streamA.Length != streamB.Length)
+            return false;
+
+        byte[] bufferA = new byte[bufferSize];
+        byte[] bufferB = new byte[bufferSize];
+
+        int readA = 0;
+        int readB = 0;
+        int consumedA = 0;
+        int consumedB = 0;
+
+        while (true)
         {
-            TContent[] bufferA = new TContent[bufferSize];
-            TContent[] bufferB = new TContent[bufferSize];
-
-            int readA = 0;
-            int readB = 0;
-            int consumedA = 0;
-            int consumedB = 0;
-
-            while (true)
+            if (consumedA == readA)
             {
-                if (consumedA == readA)
-                {
-                    readA = streamA.Read(bufferA, 0, bufferSize);
-                    consumedA = 0;
-                }
-
-                if (consumedB == readB)
-                {
-                    readB = streamB.Read(bufferB, 0, bufferSize);
-                    consumedB = 0;
-                }
-
-                if (readA == 0 && readB == 0)
-                    return true;
-
-                if (readA == 0 || readB == 0)
-                    return false;
-
-                int overlap = Math.Min(readA - consumedA, readB - consumedB);
-                if (!bufferA.AsSpan(consumedA, overlap).SequenceEqual(bufferB.AsSpan(consumedB, overlap)))
-                    return false;
-
-                consumedA += overlap;
-                consumedB += overlap;
+                readA = streamA.Read(bufferA, 0, bufferSize);
+                consumedA = 0;
             }
+
+            if (consumedB == readB)
+            {
+                readB = streamB.Read(bufferB, 0, bufferSize);
+                consumedB = 0;
+            }
+
+            if (readA == 0 && readB == 0)
+                return true;
+
+            if (readA == 0 || readB == 0)
+                return false;
+
+            int overlap = Math.Min(readA - consumedA, readB - consumedB);
+            if (!bufferA.AsSpan(consumedA, overlap).SequenceEqual(bufferB.AsSpan(consumedB, overlap)))
+                return false;
+
+            consumedA += overlap;
+            consumedB += overlap;
         }
     }
 
-    private sealed class TextFileComparer : Readable<char, StreamReader>
-    {
-        private const int _charCount = 8192 / sizeof(char);
-        private TextFileComparer(string path) : base(new StreamReader(path, Encoding.UTF8, true, _charCount)) { }
-        protected override int Read(char[] buffer, int offset, int count) => _reader.Read(buffer, offset, count);
-        public static bool ContentEqual(string filePath1, string filePath2)
-        {
-            using var streamA = new TextFileComparer(filePath1);
-            using var streamB = new TextFileComparer(filePath2);
-            return ContentEqual(streamA, streamB, bufferSize: _charCount);
-        }
-    }
-
-    private sealed class BinaryFileComparer : Readable<byte, FileStream>
-    {
-        private const int _byteCount = 8192;
-        private BinaryFileComparer(string path) : base (new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read,
-                bufferSize: _byteCount, FileOptions.SequentialScan)) {}
-        protected override int Read(byte[] buffer, int offset, int count) => _reader.Read(buffer, offset, count);
-        public static bool ContentEqual(string filePath1, string filePath2)
-        {
-            using var streamA = new BinaryFileComparer(filePath1);
-            using var streamB = new BinaryFileComparer(filePath2);
-            return ContentEqual(streamA, streamB, bufferSize: _byteCount);
-        }
-    }
-
+#pragma warning disable  IDE0060 // Remove unused parameter
     public static bool CopyIfDifferent(string src, string dst, bool useHash)
+#pragma warning restore  IDE0060 // Remove unused parameter
     {
         if (!File.Exists(src))
             throw new ArgumentException($"Cannot find {src} file to copy", nameof(src));
 
-        bool areDifferent = !File.Exists(dst) || (useHash && !BinaryFileComparer.ContentEqual(src, dst)) || (!useHash && !TextFileComparer.ContentEqual(src, dst));
-
+        bool areDifferent = !File.Exists(dst) || !ContentEqual(src, dst);
         if (areDifferent)
             File.Copy(src, dst, true);
 
@@ -327,41 +297,24 @@ internal static class Utils
 
     private static byte[] ComputeHashFromStream(Stream stream, HashAlgorithmType algorithm)
     {
-        if (algorithm == HashAlgorithmType.SHA512)
+        using HashAlgorithm hash = algorithm switch
         {
-            using HashAlgorithm hashAlgorithm = SHA512.Create();
-            return hashAlgorithm.ComputeHash(stream);
-        }
-        else if (algorithm == HashAlgorithmType.SHA384)
-        {
-            using HashAlgorithm hashAlgorithm = SHA384.Create();
-            return hashAlgorithm.ComputeHash(stream);
-        }
-        else if (algorithm == HashAlgorithmType.SHA256)
-        {
-            using HashAlgorithm hashAlgorithm = SHA256.Create();
-            return hashAlgorithm.ComputeHash(stream);
-        }
-        else
-        {
-            throw new ArgumentException($"Unsupported hash algorithm: {algorithm}");
-        }
+            HashAlgorithmType.SHA512 => SHA512.Create(),
+            HashAlgorithmType.SHA384 => SHA384.Create(),
+            HashAlgorithmType.SHA256 => SHA256.Create(),
+            _ => throw new ArgumentException($"Unsupported hash algorithm: {algorithm}")
+        };
+        return hash.ComputeHash(stream);
     }
 
     private static string EncodeHash(byte[] data, HashEncodingType encoding)
     {
-        if (encoding == HashEncodingType.Base64)
+        return encoding switch
         {
-            return Convert.ToBase64String(data);
-        }
-        else if (encoding == HashEncodingType.Base64Safe)
-        {
-            return ToBase64SafeString(data);
-        }
-        else
-        {
-            throw new ArgumentException($"Unsupported hash encoding: {encoding}");
-        }
+            HashEncodingType.Base64 => Convert.ToBase64String(data),
+            HashEncodingType.Base64Safe => ToBase64SafeString(data),
+            _ => throw new ArgumentException($"Unsupported hash encoding: {encoding}")
+        };
     }
 
     public static string ComputeHash(string filepath)
