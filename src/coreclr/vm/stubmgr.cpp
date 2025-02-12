@@ -992,7 +992,6 @@ void PrecodeStubManager::Init()
 
 #endif // #ifndef DACCESS_COMPILE
 
-/* static */
 BOOL PrecodeStubManager::CheckIsStub_Internal(PCODE stubStartAddress)
 {
     CONTRACTL
@@ -1015,7 +1014,10 @@ BOOL PrecodeStubManager::CheckIsStub_Internal(PCODE stubStartAddress)
         {
             case PRECODE_STUB:
             case PRECODE_NDIRECT_IMPORT:
+            case PRECODE_UMENTRY_THUNK:
                 return TRUE;
+            default:
+                return FALSE;
         }
     }
     return FALSE;

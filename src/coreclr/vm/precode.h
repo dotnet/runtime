@@ -212,8 +212,9 @@ struct StubPrecode
     {
         CONTRACTL
         {
-            THROWS;
+            NOTHROW;
             GC_NOTRIGGER;
+            MODE_ANY;
         }
         CONTRACTL_END;
 

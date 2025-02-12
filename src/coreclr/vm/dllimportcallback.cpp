@@ -252,6 +252,7 @@ UMEntryThunk* UMEntryThunk::CreateUMEntryThunk()
         p = (UMEntryThunk*)pamTracker->Track(pLoaderAllocator->GetNewStubPrecodeHeap()->AllocAlignedMem(size, 1));
         pData->m_pUMEntryThunk = p;
         p->Init(p, dac_cast<TADDR>(pData), NULL, dac_cast<TADDR>(PRECODE_UMENTRY_THUNK));
+        pamTracker->SuppressRelease();
     }
 
     RETURN p;
