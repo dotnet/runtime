@@ -9439,8 +9439,15 @@ void Lowering::LowerStoreIndirCoalescing(GenTreeIndir* ind)
         //
         // IND<byte> is always fine (and all IND<X> created here from such)
         // IND<simd> is not required to be atomic per our Memory Model
-        const bool allowsNonAtomic =
+        bool allowsNonAtomic =
             ((ind->gtFlags & GTF_IND_ALLOW_NON_ATOMIC) != 0) && ((prevInd->gtFlags & GTF_IND_ALLOW_NON_ATOMIC) != 0);
+
+        if (!allowsNonAtomic && currData.baseAddr->OperIs(GT_LCL_VAR) &&
+            (currData.baseAddr->AsLclVar()->GetLclNum() == comp->info.compRetBuffArg))
+        {
+            // RetBuf is a private stack memory, so we don't need to worry about atomicity.
+            allowsNonAtomic = true;
+        }
 
         if (!allowsNonAtomic && (genTypeSize(ind) > 1) && !varTypeIsSIMD(ind))
         {
