@@ -114,7 +114,7 @@ void ProfileSynthesis::Run(ProfileSynthesisOption option)
     // belief that the profile should be somewhat flatter.
     //
     unsigned retries = 0;
-    while (m_approximate && (retries < maxRepairRetries))
+    while ((option != ProfileSynthesisOption::RetainLikelihoods) && m_approximate && (retries < maxRepairRetries))
     {
         JITDUMP("\n\n[%d] Retrying reconstruction with blend factor " FMT_WT ", because %s\n", retries, m_blendFactor,
                 m_cappedCyclicProbabilities ? "capped cyclic probabilities" : "solver failed to converge");
