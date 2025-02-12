@@ -32515,9 +32515,6 @@ void gc_heap::process_remaining_regions (int current_plan_gen_num, generation* c
         size_t gen1_pins_left = 0;
         size_t total_space_to_skip = 0;
 
-        // just need to go through each remaining gen1 regions (heap_segment_non_sip regions, the SIP regions's pinned surv should be 0 anyway because pinned_survived_region
-        // simply doesn't get updated and remains 0) and get their pinned surv.
-        //
         while (current_region)
         {
             int gen_num = heap_segment_gen_num (current_region);
@@ -32525,8 +32522,11 @@ void gc_heap::process_remaining_regions (int current_plan_gen_num, generation* c
             {
                 assert (gen_num == (max_generation - 1));
 
-                gen1_pins_left += heap_segment_pinned_survived (current_region);
-                total_space_to_skip += get_region_size (current_region);
+                if (!heap_segment_swept_in_plan (current_region))
+                {
+                    gen1_pins_left += heap_segment_pinned_survived (current_region);
+                    total_space_to_skip += get_region_size (current_region);
+                }
             }
             else
             {
@@ -32536,15 +32536,18 @@ void gc_heap::process_remaining_regions (int current_plan_gen_num, generation* c
             current_region = heap_segment_next (current_region);
         }
 
-        // note total_space_to_skip can be 0 because we could have already consumed all the pins before current_region.
         float pin_frag_ratio = 0.0;
-        float pin_no_es_frag_ratio = 0.0;
-        float pin_surv_ratio = (float)gen1_pins_left / (float)(dd_survived_size (dynamic_data_of (max_generation - 1)));
+        float pin_surv_ratio = 0.0;
 
         if (total_space_to_skip)
         {
-            pin_frag_ratio = (float)gen1_pins_left / (float)total_space_to_skip;
-            actual_promote_gen1_pins_p = decide_on_gen1_pin_promotion (pin_frag_ratio, pin_surv_ratio);
+            size_t gen1_surv = dd_survived_size (dynamic_data_of (max_generation - 1));
+            if (gen1_surv)
+            {
+                pin_frag_ratio = (float)gen1_pins_left / (float)total_space_to_skip;
+                pin_surv_ratio = (float)gen1_pins_left / (float)gen1_surv;
+                actual_promote_gen1_pins_p = decide_on_gen1_pin_promotion (pin_frag_ratio, pin_surv_ratio);
+            }
         }
 
 #ifdef SIMPLE_DPRINTF
@@ -32583,8 +32586,6 @@ void gc_heap::process_remaining_regions (int current_plan_gen_num, generation* c
                 generation_allocation_pointer (consing_gen),
                 heap_segment_plan_gen_num (nseg),
                 current_plan_gen_num));
-
-            assert (!heap_segment_swept_in_plan (nseg));
 
             heap_segment_plan_allocated (nseg) = generation_allocation_pointer (consing_gen);
             decide_on_demotion_pin_surv (nseg, &to_be_empty_regions, actual_promote_gen1_pins_p, large_pins_p);
