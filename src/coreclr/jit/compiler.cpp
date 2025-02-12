@@ -5262,6 +5262,13 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
 
             DoPhase(this, PHASE_OPTIMIZE_LAYOUT, lateLayoutPhase);
         }
+        else
+        {
+            // If we didn't run 3-opt, we might still have a profile-aware DFS tree computed during LSRA available.
+            // This tree's presence can trigger asserts if pre/postorder numbers are recomputed,
+            // so invalidate the tree either way.
+            fgInvalidateDfsTree();
+        }
 
         // Now that the flowgraph is finalized, run post-layout optimizations.
         //
@@ -10412,7 +10419,7 @@ JITDBGAPI void __cdecl dVN(ValueNum vn)
     cVN(JitTls::GetCompiler(), vn);
 }
 
-JITDBGAPI void __cdecl dRegMask(regMaskTP mask)
+JITDBGAPI void __cdecl dRegMask(const regMaskTP& mask)
 {
     static unsigned sequenceNumber = 0; // separate calls with a number to indicate this function has been called
     printf("===================================================================== dRegMask %u\n", sequenceNumber++);

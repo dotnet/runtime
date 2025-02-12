@@ -1672,7 +1672,7 @@ namespace System.Diagnostics.Tracing
                 // Register the provider with ETW
                 Func<EventSource?> eventSourceFactory = () => this;
                 OverrideEventProvider? etwProvider = EventSourceInitHelper.TryGetPreregisteredEtwProvider(eventSourceGuid);
-                if(etwProvider == null)
+                if (etwProvider == null)
                 {
                     etwProvider = new OverrideEventProvider(eventSourceFactory, EventProviderType.ETW);
                     etwProvider.Register(eventSourceGuid, eventSourceName);
@@ -3879,7 +3879,7 @@ namespace System.Diagnostics.Tracing
 #endif
         internal static void InitializeDefaultEventSources()
         {
-            if(!EventSource.IsSupported)
+            if (!EventSource.IsSupported)
             {
                 return;
             }

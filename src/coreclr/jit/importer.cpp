@@ -843,7 +843,23 @@ GenTree* Compiler::impStoreStruct(GenTree*         store,
             // TODO-Bug?: verify if flags matter here
             GenTreeFlags indirFlags = GTF_EMPTY;
             GenTree*     destAddr   = impGetNodeAddr(store, CHECK_SPILL_ALL, &indirFlags);
-            NewCallArg   newArg     = NewCallArg::Primitive(destAddr).WellKnown(wellKnownArgType);
+
+            // Make sure we don't pass something other than a local address to the return buffer arg.
+            // It is allowed to pass current's method return buffer as it is a local too.
+            if (fgAddrCouldBeHeap(destAddr) && !eeIsByrefLike(srcCall->gtRetClsHnd))
+            {
+                unsigned tmp = lvaGrabTemp(false DEBUGARG("stack copy for value returned via return buffer"));
+                lvaSetStruct(tmp, srcCall->gtRetClsHnd, false);
+
+                GenTree* spilledCall = gtNewStoreLclVarNode(tmp, srcCall);
+                spilledCall          = impStoreStruct(spilledCall, curLevel, pAfterStmt, di, block);
+                store->Data()        = gtNewOperNode(GT_COMMA, store->TypeGet(), spilledCall,
+                                                     gtNewLclvNode(tmp, lvaGetDesc(tmp)->TypeGet()));
+
+                return impStoreStruct(store, curLevel, pAfterStmt, di, block);
+            }
+
+            NewCallArg newArg = NewCallArg::Primitive(destAddr).WellKnown(wellKnownArgType);
 
             if (destAddr->OperIs(GT_LCL_ADDR))
             {
@@ -953,6 +969,27 @@ GenTree* Compiler::impStoreStruct(GenTree*         store,
             // TODO-Bug?: verify if flags matter here
             GenTreeFlags indirFlags = GTF_EMPTY;
             GenTree*     destAddr   = impGetNodeAddr(store, CHECK_SPILL_ALL, &indirFlags);
+
+            // Make sure we don't pass something other than a local address to the return buffer arg.
+            // It is allowed to pass current's method return buffer as it is a local too.
+            if (fgAddrCouldBeHeap(destAddr) && !eeIsByrefLike(call->gtRetClsHnd))
+            {
+                unsigned tmp = lvaGrabTemp(false DEBUGARG("stack copy for value returned via return buffer"));
+                lvaSetStruct(tmp, call->gtRetClsHnd, false);
+                destAddr = gtNewLclVarAddrNode(tmp, TYP_I_IMPL);
+
+                // Insert address of temp into existing call
+                NewCallArg retBufArg = NewCallArg::Primitive(destAddr).WellKnown(WellKnownArg::RetBuffer);
+                call->gtArgs.InsertAfterThisOrFirst(this, retBufArg);
+
+                // Now the store needs to copy from the new temp instead.
+                call->gtType      = TYP_VOID;
+                src->gtType       = TYP_VOID;
+                var_types tmpType = lvaGetDesc(tmp)->TypeGet();
+                store->Data()     = gtNewOperNode(GT_COMMA, tmpType, src, gtNewLclvNode(tmp, tmpType));
+                return impStoreStruct(store, CHECK_SPILL_ALL, pAfterStmt, di, block);
+            }
+
             call->gtArgs.InsertAfterThisOrFirst(this,
                                                 NewCallArg::Primitive(destAddr).WellKnown(WellKnownArg::RetBuffer));
 
@@ -967,9 +1004,24 @@ GenTree* Compiler::impStoreStruct(GenTree*         store,
     }
     else if (src->OperIs(GT_COMMA))
     {
+        GenTree* sideEffectAddressStore = nullptr;
+        if (store->OperIs(GT_STORE_BLK, GT_STOREIND) && ((store->AsIndir()->Addr()->gtFlags & GTF_ALL_EFFECT) != 0))
+        {
+            TempInfo addrTmp         = fgMakeTemp(store->AsIndir()->Addr());
+            sideEffectAddressStore   = addrTmp.store;
+            store->AsIndir()->Addr() = addrTmp.load;
+        }
+
         if (pAfterStmt)
         {
             // Insert op1 after '*pAfterStmt'
+            if (sideEffectAddressStore != nullptr)
+            {
+                Statement* addrStmt = gtNewStmt(sideEffectAddressStore, usedDI);
+                fgInsertStmtAfter(block, *pAfterStmt, addrStmt);
+                *pAfterStmt = addrStmt;
+            }
+
             Statement* newStmt = gtNewStmt(src->AsOp()->gtOp1, usedDI);
             fgInsertStmtAfter(block, *pAfterStmt, newStmt);
             *pAfterStmt = newStmt;
@@ -977,6 +1029,10 @@ GenTree* Compiler::impStoreStruct(GenTree*         store,
         else if (impLastStmt != nullptr)
         {
             // Do the side-effect as a separate statement.
+            if (sideEffectAddressStore != nullptr)
+            {
+                impAppendTree(sideEffectAddressStore, curLevel, usedDI);
+            }
             impAppendTree(src->AsOp()->gtOp1, curLevel, usedDI);
         }
         else
@@ -989,6 +1045,10 @@ GenTree* Compiler::impStoreStruct(GenTree*         store,
             gtUpdateNodeSideEffects(store);
             src->SetAllEffectsFlags(src->AsOp()->gtOp1, src->AsOp()->gtOp2);
 
+            if (sideEffectAddressStore != nullptr)
+            {
+                src = gtNewOperNode(GT_COMMA, src->TypeGet(), sideEffectAddressStore, src);
+            }
             return src;
         }
 
@@ -1010,9 +1070,10 @@ GenTree* Compiler::impStoreStruct(GenTree*         store,
 // impStoreStructPtr: Store (copy) the structure from 'src' to 'destAddr'.
 //
 // Arguments:
-//    destAddr - address of the destination of the store
-//    value    - value to store
-//    curLevel - stack level for which a spill may be being done
+//    destAddr   - address of the destination of the store
+//    value      - value to store
+//    curLevel   - stack level for which a spill may be being done
+//    indirFlags - flags to be used on the store node
 //
 // Return Value:
 //    The tree that should be appended to the statement list that represents the store.
@@ -1020,11 +1081,11 @@ GenTree* Compiler::impStoreStruct(GenTree*         store,
 // Notes:
 //    Temp stores may be appended to impStmtList if spilling is necessary.
 //
-GenTree* Compiler::impStoreStructPtr(GenTree* destAddr, GenTree* value, unsigned curLevel)
+GenTree* Compiler::impStoreStructPtr(GenTree* destAddr, GenTree* value, unsigned curLevel, GenTreeFlags indirFlags)
 {
     var_types    type   = value->TypeGet();
     ClassLayout* layout = (type == TYP_STRUCT) ? value->GetLayout(this) : nullptr;
-    GenTree*     store  = gtNewStoreValueNode(type, layout, destAddr, value);
+    GenTree*     store  = gtNewStoreValueNode(type, layout, destAddr, value, indirFlags);
     store               = impStoreStruct(store, curLevel);
 
     return store;
@@ -11247,18 +11308,19 @@ bool Compiler::impReturnInstruction(int prefixFlags, OPCODE& opcode)
 
     if (info.compRetBuffArg != BAD_VAR_NUM)
     {
+        var_types retBuffType = lvaGetDesc(info.compRetBuffArg)->TypeGet();
         // Assign value to return buff (first param)
         GenTree* retBuffAddr =
-            gtNewLclvNode(info.compRetBuffArg, TYP_BYREF DEBUGARG(impCurStmtDI.GetLocation().GetOffset()));
+            gtNewLclvNode(info.compRetBuffArg, retBuffType DEBUGARG(impCurStmtDI.GetLocation().GetOffset()));
 
-        op2 = impStoreStructPtr(retBuffAddr, op2, CHECK_SPILL_ALL);
+        op2 = impStoreStructPtr(retBuffAddr, op2, CHECK_SPILL_ALL, GTF_IND_TGT_NOT_HEAP);
         impAppendTree(op2, CHECK_SPILL_NONE, impCurStmtDI);
 
         // There are cases where the address of the implicit RetBuf should be returned explicitly.
         //
         if (compMethodReturnsRetBufAddr())
         {
-            op1 = gtNewOperNode(GT_RETURN, TYP_BYREF, gtNewLclvNode(info.compRetBuffArg, TYP_BYREF));
+            op1 = gtNewOperNode(GT_RETURN, retBuffType, gtNewLclvNode(info.compRetBuffArg, retBuffType));
         }
         else
         {

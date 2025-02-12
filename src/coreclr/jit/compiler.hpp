@@ -4260,8 +4260,9 @@ inline void Compiler::CLR_API_Leave(API_ICorJitInfo_Names ename)
 bool Compiler::fgVarIsNeverZeroInitializedInProlog(unsigned varNum)
 {
     LclVarDsc* varDsc = lvaGetDesc(varNum);
-    bool       result = varDsc->lvIsParam || lvaIsOSRLocal(varNum) || (varNum == lvaGSSecurityCookie) ||
-                  (varNum == lvaInlinedPInvokeFrameVar) || (varNum == lvaStubArgumentVar) || (varNum == lvaRetAddrVar);
+    bool       result = varDsc->lvIsParam || varDsc->lvIsParamRegTarget || lvaIsOSRLocal(varNum) ||
+                  (varNum == lvaGSSecurityCookie) || (varNum == lvaInlinedPInvokeFrameVar) ||
+                  (varNum == lvaStubArgumentVar) || (varNum == lvaRetAddrVar);
 
 #ifdef TARGET_ARM64
     result = result || (varNum == lvaFfrRegister);
@@ -5062,12 +5063,22 @@ void Compiler::fgVisitBlocksInLoopAwareRPO(FlowGraphDfsTree* dfsTree, FlowGraphN
         }
     };
 
-    LoopAwareVisitor visitor(dfsTree, loops, func);
-
-    for (unsigned i = dfsTree->GetPostOrderCount(); i != 0; i--)
+    if (loops->NumLoops() == 0)
     {
-        BasicBlock* const block = dfsTree->GetPostOrder(i - 1);
-        visitor.VisitBlock(block);
+        for (unsigned i = dfsTree->GetPostOrderCount(); i != 0; i--)
+        {
+            BasicBlock* const block = dfsTree->GetPostOrder(i - 1);
+            func(block);
+        }
+    }
+    else
+    {
+        LoopAwareVisitor visitor(dfsTree, loops, func);
+        for (unsigned i = dfsTree->GetPostOrderCount(); i != 0; i--)
+        {
+            BasicBlock* const block = dfsTree->GetPostOrder(i - 1);
+            visitor.VisitBlock(block);
+        }
     }
 }
 

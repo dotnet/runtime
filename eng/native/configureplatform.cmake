@@ -368,6 +368,11 @@ if(CLR_CMAKE_HOST_LINUX_MUSL OR CLR_CMAKE_TARGET_OS STREQUAL alpine)
     set(CLR_CMAKE_TARGET_LINUX_MUSL 1)
 endif(CLR_CMAKE_HOST_LINUX_MUSL OR CLR_CMAKE_TARGET_OS STREQUAL alpine)
 
+macro(set_cache_value)
+  set(${ARGV0} ${ARGV1} CACHE STRING "Result from TRY_RUN" FORCE)
+  set(${ARGV0}__TRYRUN_OUTPUT "dummy output" CACHE STRING "Output from TRY_RUN" FORCE)
+endmacro()
+
 if(CLR_CMAKE_TARGET_OS STREQUAL android)
     set(CLR_CMAKE_TARGET_UNIX 1)
     set(CLR_CMAKE_TARGET_LINUX 1)
@@ -471,7 +476,7 @@ if(CLR_CMAKE_TARGET_OS STREQUAL windows)
 endif()
 
 # check if host & target os/arch combination are valid
-if (NOT (CLR_CMAKE_TARGET_OS STREQUAL CLR_CMAKE_HOST_OS) AND NOT CLR_CMAKE_TARGET_WASI)
+if (NOT (CLR_CMAKE_TARGET_OS STREQUAL CLR_CMAKE_HOST_OS) AND NOT CLR_CMAKE_TARGET_WASI AND NOT CLR_CMAKE_TARGET_ANDROID)
     if(NOT (CLR_CMAKE_HOST_OS STREQUAL windows))
         message(FATAL_ERROR "Invalid host and target os/arch combination. Host OS: ${CLR_CMAKE_HOST_OS}")
     endif()

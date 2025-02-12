@@ -82,7 +82,7 @@ namespace MonoTargetsTasks
             MetadataReader mdtReader = peReader.GetMetadataReader();
             string assyName = mdtReader.GetString(mdtReader.GetAssemblyDefinition().Name);
             HashSet<string> inconclusiveTypes = mmtcp.GetInconclusiveTypesForAssembly(assyName);
-            if(inconclusiveTypes.Count == 0)
+            if (inconclusiveTypes.Count == 0)
                 return;
 
             SignatureDecoder<Compatibility, object> decoder = new(mmtcp, mdtReader, null!);
@@ -113,18 +113,18 @@ namespace MonoTargetsTasks
 
             MetadataReader mdtReader = peReader.GetMetadataReader();
 
-            foreach(CustomAttributeHandle attrHandle in mdtReader.CustomAttributes)
+            foreach (CustomAttributeHandle attrHandle in mdtReader.CustomAttributes)
             {
                 CustomAttribute attr = mdtReader.GetCustomAttribute(attrHandle);
 
-                if(attr.Constructor.Kind == HandleKind.MethodDefinition)
+                if (attr.Constructor.Kind == HandleKind.MethodDefinition)
                 {
                     MethodDefinitionHandle mdh = (MethodDefinitionHandle)attr.Constructor;
                     MethodDefinition md = mdtReader.GetMethodDefinition(mdh);
                     TypeDefinitionHandle tdh = md.GetDeclaringType();
                     TypeDefinition td = mdtReader.GetTypeDefinition(tdh);
 
-                    if(mdtReader.GetString(td.Namespace) == "System.Runtime.CompilerServices" &&
+                    if (mdtReader.GetString(td.Namespace) == "System.Runtime.CompilerServices" &&
                         mdtReader.GetString(td.Name) == "DisableRuntimeMarshallingAttribute")
                         return false;
                 }
@@ -136,17 +136,17 @@ namespace MonoTargetsTasks
                 string ns = mdtReader.GetString(typeDef.Namespace);
                 string name = mdtReader.GetString(typeDef.Name);
 
-                foreach(MethodDefinitionHandle mthDefHandle in typeDef.GetMethods())
+                foreach (MethodDefinitionHandle mthDefHandle in typeDef.GetMethods())
                 {
                     MethodDefinition mthDef = mdtReader.GetMethodDefinition(mthDefHandle);
-                    if(!mthDef.Attributes.HasFlag(MethodAttributes.PinvokeImpl))
+                    if (!mthDef.Attributes.HasFlag(MethodAttributes.PinvokeImpl))
                         continue;
 
                     BlobReader sgnBlobReader = mdtReader.GetBlobReader(mthDef.Signature);
                     SignatureDecoder<Compatibility, object> decoder = new(mmtcp, mdtReader, null!);
 
                     MethodSignature<Compatibility> sgn = decoder.DecodeMethodSignature(ref sgnBlobReader);
-                    if(sgn.ReturnType == Compatibility.Incompatible || sgn.ParameterTypes.Any(p => p == Compatibility.Incompatible))
+                    if (sgn.ReturnType == Compatibility.Incompatible || sgn.ParameterTypes.Any(p => p == Compatibility.Incompatible))
                     {
                         Log.LogMessage(MessageImportance.Low, string.Format("Assembly {0} requires marshal-ilgen for method {1}.{2}:{3} (first pass).",
                             assyPath, ns, name, mdtReader.GetString(mthDef.Name)));

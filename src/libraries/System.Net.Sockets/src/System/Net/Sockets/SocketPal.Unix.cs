@@ -1073,7 +1073,7 @@ namespace System.Net.Sockets
 
         public static SocketError SetBlocking(SafeSocketHandle handle, bool shouldBlock, out bool willBlock)
         {
-            if(OperatingSystem.IsWasi() && shouldBlock) throw new PlatformNotSupportedException();
+            if (OperatingSystem.IsWasi() && shouldBlock) throw new PlatformNotSupportedException();
 
             handle.IsNonBlocking = !shouldBlock;
             willBlock = shouldBlock;

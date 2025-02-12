@@ -2066,7 +2066,7 @@ void LinearScan::insertZeroInitRefPositions()
         while (iter.NextElem(&varIndex))
         {
             LclVarDsc* varDsc = compiler->lvaGetDescByTrackedIndex(varIndex);
-            if (!varDsc->lvIsParam && isCandidateVar(varDsc))
+            if (!varDsc->lvIsParam && !varDsc->lvIsParamRegTarget && isCandidateVar(varDsc))
             {
                 JITDUMP("V%02u is a finally var:", compiler->lvaTrackedIndexToLclNum(varIndex));
                 Interval* interval = getIntervalForLocalVar(varIndex);
@@ -2188,6 +2188,7 @@ void LinearScan::buildIntervals()
     // locals we are expecting to store the registers into in the prolog.
     for (unsigned lclNum = 0; lclNum < compiler->info.compArgsCount; lclNum++)
     {
+        LclVarDsc*                   lcl     = compiler->lvaGetDesc(lclNum);
         const ABIPassingInformation& abiInfo = compiler->lvaGetParameterABIInfo(lclNum);
         for (const ABIPassingSegment& seg : abiInfo.Segments())
         {
@@ -2199,18 +2200,35 @@ void LinearScan::buildIntervals()
             const ParameterRegisterLocalMapping* mapping =
                 compiler->FindParameterRegisterLocalMappingByRegister(seg.GetRegister());
 
-            unsigned mappedLclNum = mapping != nullptr ? mapping->LclNum : lclNum;
-            JITDUMP("Arg V%02u in reg %s\n", mappedLclNum, getRegName(seg.GetRegister()));
-            LclVarDsc* argDsc = compiler->lvaGetDesc(mappedLclNum);
-            if (argDsc->lvTracked && !compiler->compJmpOpUsed && (argDsc->lvRefCnt() == 0) &&
-                !compiler->opts.compDbgCode)
+            bool isParameterLive = !lcl->lvTracked || compiler->compJmpOpUsed || (lcl->lvRefCnt() != 0);
+            bool isLive;
+            if (mapping != nullptr)
             {
-                // Not live
-                continue;
+                LclVarDsc* mappedLcl = compiler->lvaGetDesc(mapping->LclNum);
+                bool isMappedLclLive = !mappedLcl->lvTracked || compiler->compJmpOpUsed || (mappedLcl->lvRefCnt() != 0);
+                if (mappedLcl->lvIsStructField)
+                {
+                    // Struct fields are not saved into their parameter local
+                    isLive = isMappedLclLive;
+                }
+                else
+                {
+                    isLive = isParameterLive || isMappedLclLive;
+                }
+            }
+            else
+            {
+                isLive = isParameterLive;
             }
 
-            RegState* regState = genIsValidFloatReg(seg.GetRegister()) ? floatRegState : intRegState;
-            regState->rsCalleeRegArgMaskLiveIn |= seg.GetRegisterMask();
+            JITDUMP("Arg V%02u is %s in reg %s\n", mapping != nullptr ? mapping->LclNum : lclNum,
+                    isLive ? "live" : "dead", getRegName(seg.GetRegister()));
+
+            if (isLive)
+            {
+                RegState* regState = genIsValidFloatReg(seg.GetRegister()) ? floatRegState : intRegState;
+                regState->rsCalleeRegArgMaskLiveIn |= seg.GetRegisterMask();
+            }
         }
     }
 
@@ -4468,7 +4486,7 @@ int LinearScan::BuildPutArgReg(GenTreeUnOp* node)
     SingleTypeRegSet argMask = genSingleTypeRegMask(argReg);
     RefPosition*     use     = BuildUse(op1, argMask);
 
-    // Record that this register is occupied by a register now.
+    // Record that this register is occupied by an argument now.
     placedArgRegs.AddRegNumInMask(argReg);
 
     if (supportsSpecialPutArg() && isCandidateLocalRef(op1) && ((op1->gtFlags & GTF_VAR_DEATH) == 0))

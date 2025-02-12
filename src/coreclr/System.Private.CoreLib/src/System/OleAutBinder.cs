@@ -70,7 +70,7 @@ namespace System
                 return RetObj;
             }
 #if DISPLAY_DEBUG_INFO
-            catch(NotSupportedException e)
+            catch (NotSupportedException e)
 #else
             catch (NotSupportedException)
 #endif

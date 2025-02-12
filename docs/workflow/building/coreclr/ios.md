@@ -20,7 +20,7 @@ Build and run the sample app with
 ./dotnet.sh publish src/mono/sample/iOS/Program.csproj -c Release /p:TargetOS=iossimulator /p:TargetArchitecture=arm64 /p:DeployAndRun=true /p:UseMonoRuntime=false /p:RunAOTCompilation=false /p:MonoForceInterpreter=false
 ```
 
-The command also produces an XCode project that can be opened with `open ./src/mono/sample/iOS/bin/iossimulator-arm64/Bundle/HelloiOS/HelloiOS.xcodeproj` and debugged in Xcode.
+The command also produces an Xcode project that can be opened with `open ./src/mono/sample/iOS/bin/iossimulator-arm64/Bundle/HelloiOS/HelloiOS.xcodeproj` and debugged in Xcode.
 
 ## Running the runtime tests
 

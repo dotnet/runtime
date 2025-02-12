@@ -4663,120 +4663,86 @@ void Compiler::fgDoReversePostOrderLayout()
     }
 #endif // DEBUG
 
-    // If LSRA didn't create any new blocks, we can reuse its loop-aware RPO traversal,
-    // which is cached in Compiler::fgBBs.
-    // If the cache isn't available, we need to recompute the loop-aware RPO.
+    // If LSRA didn't create any new blocks, we can reuse its flowgraph annotations.
     //
-    BasicBlock** rpoSequence = fgBBs;
-
-    if (rpoSequence == nullptr)
+    if (m_dfsTree == nullptr)
     {
-        assert(m_dfsTree == nullptr);
-        m_dfsTree                          = fgComputeDfs</* useProfile */ true>();
-        FlowGraphNaturalLoops* const loops = FlowGraphNaturalLoops::Find(m_dfsTree);
-        rpoSequence                        = new (this, CMK_BasicBlock) BasicBlock*[m_dfsTree->GetPostOrderCount()];
-        unsigned index                     = 0;
-        auto     addToSequence             = [rpoSequence, &index](BasicBlock* block) {
-            rpoSequence[index++] = block;
-        };
-
-        fgVisitBlocksInLoopAwareRPO(m_dfsTree, loops, addToSequence);
+        m_dfsTree = fgComputeDfs</* useProfile */ true>();
+        m_loops   = FlowGraphNaturalLoops::Find(m_dfsTree);
     }
     else
     {
-        assert(m_dfsTree != nullptr);
+        assert(m_loops != nullptr);
     }
 
-    // Fast path: We don't have any EH regions, so just reorder the blocks
-    //
-    if (compHndBBtabCount == 0)
-    {
-        for (unsigned i = 1; i < m_dfsTree->GetPostOrderCount(); i++)
-        {
-            BasicBlock* const block       = rpoSequence[i - 1];
-            BasicBlock* const blockToMove = rpoSequence[i];
-
-            if (!block->NextIs(blockToMove))
-            {
-                fgUnlinkBlock(blockToMove);
-                fgInsertBBafter(block, blockToMove);
-            }
-        }
-
-        fgMoveHotJumps</* hasEH */ false>();
-
-        return;
-    }
-
-    // The RPO will break up call-finally pairs, so save them before re-ordering
-    //
-    struct CallFinallyPair
-    {
-        BasicBlock* callFinally;
-        BasicBlock* callFinallyRet;
-
-        // Constructor provided so we can call ArrayStack::Emplace
+    BasicBlock** const rpoSequence   = new (this, CMK_BasicBlock) BasicBlock*[m_dfsTree->GetPostOrderCount()];
+    unsigned           numBlocks     = 0;
+    auto               addToSequence = [rpoSequence, &numBlocks](BasicBlock* block) {
+        // Exclude handler regions from being reordered.
         //
-        CallFinallyPair(BasicBlock* first, BasicBlock* second)
-            : callFinally(first)
-            , callFinallyRet(second)
+        if (!block->hasHndIndex())
         {
+            rpoSequence[numBlocks++] = block;
         }
     };
 
-    ArrayStack<CallFinallyPair> callFinallyPairs(getAllocator());
+    fgVisitBlocksInLoopAwareRPO(m_dfsTree, m_loops, addToSequence);
 
-    for (EHblkDsc* const HBtab : EHClauses(this))
-    {
-        if (HBtab->HasFinallyHandler())
-        {
-            for (BasicBlock* const pred : HBtab->ebdHndBeg->PredBlocks())
-            {
-                assert(pred->KindIs(BBJ_CALLFINALLY));
-                if (pred->isBBCallFinallyPair())
-                {
-                    callFinallyPairs.Emplace(pred, pred->Next());
-                }
-            }
-        }
-    }
-
-    // Reorder blocks
+    // Reorder blocks.
     //
-    for (unsigned i = 1; i < m_dfsTree->GetPostOrderCount(); i++)
+    for (unsigned i = 1; i < numBlocks; i++)
     {
-        BasicBlock* const block       = rpoSequence[i - 1];
+        BasicBlock*       block       = rpoSequence[i - 1];
         BasicBlock* const blockToMove = rpoSequence[i];
 
-        // Only reorder blocks within the same EH region -- we don't want to make them non-contiguous
-        //
-        if (BasicBlock::sameEHRegion(block, blockToMove))
+        if (block->NextIs(blockToMove))
         {
-            // Don't reorder EH regions with filter handlers -- we want the filter to come first
-            //
-            if (block->hasHndIndex() && ehGetDsc(block->getHndIndex())->HasFilter())
-            {
-                continue;
-            }
+            continue;
+        }
 
-            if (!block->NextIs(blockToMove))
-            {
-                fgUnlinkBlock(blockToMove);
-                fgInsertBBafter(block, blockToMove);
-            }
+        // Only reorder blocks within the same try region. We don't want to make them non-contiguous.
+        //
+        if (!BasicBlock::sameTryRegion(block, blockToMove))
+        {
+            continue;
+        }
+
+        // Don't move call-finally pair tails independently.
+        // When we encounter the head, we will move the entire pair.
+        //
+        if (blockToMove->isBBCallFinallyPairTail())
+        {
+            continue;
+        }
+
+        // Don't break up call-finally pairs by inserting something in the middle.
+        //
+        if (block->isBBCallFinallyPair())
+        {
+            block = block->Next();
+        }
+
+        if (blockToMove->isBBCallFinallyPair())
+        {
+            BasicBlock* const callFinallyRet = blockToMove->Next();
+            fgUnlinkRange(blockToMove, callFinallyRet);
+            fgMoveBlocksAfter(blockToMove, callFinallyRet, block);
+        }
+        else
+        {
+            fgUnlinkBlock(blockToMove);
+            fgInsertBBafter(block, blockToMove);
         }
     }
 
-    // Fix up call-finally pairs
-    //
-    for (int i = 0; i < callFinallyPairs.Height(); i++)
+    if (compHndBBtabCount == 0)
     {
-        const CallFinallyPair& pair = callFinallyPairs.BottomRef(i);
-        fgUnlinkBlock(pair.callFinallyRet);
-        fgInsertBBafter(pair.callFinally, pair.callFinallyRet);
+        fgMoveHotJumps</* hasEH */ false>();
     }
-
-    fgMoveHotJumps</* hasEH */ true>();
+    else
+    {
+        fgMoveHotJumps</* hasEH */ true>();
+    }
 }
 
 //-----------------------------------------------------------------------------
@@ -5133,14 +5099,6 @@ void Compiler::ThreeOptLayout::ConsiderEdge(FlowEdge* edge)
         return;
     }
 
-    // Don't waste time reordering within handler regions.
-    // Note that if a finally region is sufficiently hot,
-    // we should have cloned it into the main method body already.
-    if (srcBlk->hasHndIndex() || dstBlk->hasHndIndex())
-    {
-        return;
-    }
-
     // For backward jumps, we will consider partitioning before 'srcBlk'.
     // If 'srcBlk' is a BBJ_CALLFINALLYRET, this partition will split up a call-finally pair.
     // Thus, don't consider edges out of BBJ_CALLFINALLYRET blocks.
@@ -5256,7 +5214,8 @@ void Compiler::ThreeOptLayout::Run()
     // Initialize the current block order
     for (BasicBlock* const block : compiler->Blocks(compiler->fgFirstBB, finalBlock))
     {
-        if (!compiler->m_dfsTree->Contains(block))
+        // Exclude unreachable blocks and handler blocks from being reordered
+        if (!compiler->m_dfsTree->Contains(block) || block->hasHndIndex())
         {
             continue;
         }
@@ -5289,14 +5248,14 @@ void Compiler::ThreeOptLayout::Run()
                 continue;
             }
 
-            // Only reorder within EH regions to maintain contiguity.
-            if (!BasicBlock::sameEHRegion(block, next))
+            // Only reorder within try regions to maintain contiguity.
+            if (!BasicBlock::sameTryRegion(block, next))
             {
                 continue;
             }
 
-            // Don't move the entry of an EH region.
-            if (compiler->bbIsTryBeg(next) || compiler->bbIsHandlerBeg(next))
+            // Don't move the entry of a try region.
+            if (compiler->bbIsTryBeg(next))
             {
                 continue;
             }

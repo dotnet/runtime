@@ -485,7 +485,7 @@ void Compiler::lvaInitRetBuffArg(InitVarDscInfo* varDscInfo, bool useFixedRetBuf
         info.compRetBuffArg = varDscInfo->varNum;
 
         LclVarDsc* varDsc  = varDscInfo->varDsc;
-        varDsc->lvType     = TYP_BYREF;
+        varDsc->lvType     = TYP_I_IMPL;
         varDsc->lvIsParam  = 1;
         varDsc->lvIsRegArg = 0;
 
@@ -863,7 +863,7 @@ void Compiler::lvaInitUserArgs(InitVarDscInfo* varDscInfo, unsigned skipArgs, un
             if (lowering->numLoweredElements == 1)
                 assert(varDsc->lvExactSize() <= argSize);
 
-            cSlotsToEnregister  = lowering->numLoweredElements;
+            cSlotsToEnregister  = static_cast<unsigned>(lowering->numLoweredElements);
             argRegTypeInStruct1 = JITtype2varType(lowering->loweredElements[0]);
             if (lowering->numLoweredElements == 2)
                 argRegTypeInStruct2 = JITtype2varType(lowering->loweredElements[1]);
@@ -872,7 +872,7 @@ void Compiler::lvaInitUserArgs(InitVarDscInfo* varDscInfo, unsigned skipArgs, un
             assert(floatNum > 0);
 
             canPassArgInRegisters = varDscInfo->canEnreg(TYP_DOUBLE, floatNum);
-            if (canPassArgInRegisters && (floatNum < lowering->numLoweredElements))
+            if (canPassArgInRegisters && ((unsigned)floatNum < lowering->numLoweredElements))
             {
                 assert(floatNum == 1);
                 assert(lowering->numLoweredElements == 2);
@@ -1600,13 +1600,6 @@ void Compiler::lvaInitVarDsc(LclVarDsc*              varDsc,
         compFloatingPointUsed = true;
     }
 
-#if FEATURE_IMPLICIT_BYREFS
-    varDsc->lvIsImplicitByRef = 0;
-#endif // FEATURE_IMPLICIT_BYREFS
-#if defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
-    varDsc->lvIsSplit = 0;
-#endif // TARGET_LOONGARCH64 || TARGET_RISCV64
-
     // Set the lvType (before this point it is TYP_UNDEF).
 
     if (GlobalJitOptions::compFeatureHfa)
@@ -1677,6 +1670,10 @@ void Compiler::lvaClassifyParameterABI(Classifier& classifier)
 #endif
 
         lvaParameterPassingInfo[i] = classifier.Classify(this, dsc->TypeGet(), structLayout, wellKnownArg);
+
+#if FEATURE_IMPLICIT_BYREFS
+        dsc->lvIsImplicitByRef = lvaParameterPassingInfo[i].IsPassedByReference();
+#endif // FEATURE_IMPLICIT_BYREFS
 
 #ifdef DEBUG
         if (verbose)
@@ -3327,22 +3324,6 @@ void Compiler::lvaSetStruct(unsigned varNum, ClassLayout* layout, bool unsafeVal
         {
             varDsc->lvType = layout->GetType();
 
-#if FEATURE_IMPLICIT_BYREFS
-            // Mark implicit byref struct parameters
-            if (varDsc->lvIsParam && !varDsc->lvIsStructField)
-            {
-                structPassingKind howToReturnStruct;
-                getArgTypeForStruct(layout->GetClassHandle(), &howToReturnStruct, info.compIsVarArgs,
-                                    varDsc->lvExactSize());
-
-                if (howToReturnStruct == SPK_ByReference)
-                {
-                    JITDUMP("Marking V%02i as a byref parameter\n", varNum);
-                    varDsc->lvIsImplicitByRef = 1;
-                }
-            }
-#endif // FEATURE_IMPLICIT_BYREFS
-
             // For structs that are small enough, we check and set HFA element type
             if (GlobalJitOptions::compFeatureHfa && (layout->GetSize() <= MAX_PASS_MULTIREG_BYTES))
             {
@@ -4939,8 +4920,8 @@ void Compiler::lvaComputeRefCounts(bool isRecompute, bool setSlotNumbers)
         // that was set by past phases.
         if (!isRecompute)
         {
-            varDsc->lvSingleDef             = varDsc->lvIsParam;
-            varDsc->lvSingleDefRegCandidate = varDsc->lvIsParam;
+            varDsc->lvSingleDef             = varDsc->lvIsParam || varDsc->lvIsParamRegTarget;
+            varDsc->lvSingleDefRegCandidate = varDsc->lvIsParam || varDsc->lvIsParamRegTarget;
 
             varDsc->lvAllDefsAreNoGc = (varDsc->lvImplicitlyReferenced == false);
         }
@@ -5032,6 +5013,11 @@ void Compiler::lvaComputeRefCounts(bool isRecompute, bool setSlotNumbers)
             {
                 varDsc->incRefCnts(BB_UNITY_WEIGHT, this);
             }
+        }
+        else if (varDsc->lvIsParamRegTarget && (varDsc->lvRefCnt() > 0))
+        {
+            varDsc->incRefCnts(BB_UNITY_WEIGHT, this);
+            varDsc->incRefCnts(BB_UNITY_WEIGHT, this);
         }
 
         // If we have JMP, all arguments must have a location
@@ -7370,7 +7356,7 @@ void Compiler::lvaDumpRegLocation(unsigned lclNum)
  *  in its home location.
  */
 
-void Compiler::lvaDumpFrameLocation(unsigned lclNum)
+void Compiler::lvaDumpFrameLocation(unsigned lclNum, int minLength)
 {
     int       offset;
     regNumber baseReg;
@@ -7383,7 +7369,12 @@ void Compiler::lvaDumpFrameLocation(unsigned lclNum)
     baseReg = EBPbased ? REG_FPBASE : REG_SPBASE;
 #endif
 
-    printf("[%2s%1s0x%02X] ", getRegName(baseReg), (offset < 0 ? "-" : "+"), (offset < 0 ? -offset : offset));
+    int printed =
+        printf("[%2s%1s0x%02X] ", getRegName(baseReg), (offset < 0 ? "-" : "+"), (offset < 0 ? -offset : offset));
+    if ((printed >= 0) && (printed < minLength))
+    {
+        printf("%*s", minLength - printed, "");
+    }
 }
 
 /*****************************************************************************
@@ -7474,7 +7465,7 @@ void Compiler::lvaDumpEntry(unsigned lclNum, FrameLayoutState curState, size_t r
             // location. Otherwise, it's always on the stack.
             if (lvaDoneFrameLayout != NO_FRAME_LAYOUT)
             {
-                lvaDumpFrameLocation(lclNum);
+                lvaDumpFrameLocation(lclNum, (int)strlen("zero-ref   "));
             }
         }
     }

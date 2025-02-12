@@ -25,7 +25,7 @@ namespace Microsoft.WebAssembly.Diagnostics
         internal string CachePathSymbolServer { get; private set; }
         private readonly HashSet<SessionId> sessions = new HashSet<SessionId>();
         private static readonly string[] s_executionContextIndependentCDPCommandNames = { "DotnetDebugger.setDebuggerProperty", "DotnetDebugger.runTests" };
-        internal ConcurrentExecutionContextDictionary Contexts = new ();
+        internal ConcurrentExecutionContextDictionary Contexts = new();
 
         public static HttpClient HttpClient => new HttpClient();
 
@@ -1468,7 +1468,7 @@ namespace Microsoft.WebAssembly.Diagnostics
         {
             try {
                 var retStackTrace = new JArray();
-                foreach(var call in context.CallStack)
+                foreach (var call in context.CallStack)
                 {
                     if (call.Id < scopeId)
                         continue;

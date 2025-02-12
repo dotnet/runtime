@@ -185,6 +185,20 @@ namespace Server.Contract
     }
 
     [ComVisible(true)]
+    [Guid("4242A2F9-995D-4302-A722-02058CF58158")]
+    [InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+    public interface IInterface1
+    {
+    }
+
+    [ComVisible(true)]
+    [Guid("7AC820FE-E227-4C4D-A8B0-FCA68C459B43")]
+    [InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+    public interface IInterface2 : IInterface1
+    {
+    }
+
+    [ComVisible(true)]
     [Guid("7FBB8677-BDD0-4E5A-B38B-CA92A4555466")]
     [InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
     public interface IMiscTypesTesting
@@ -195,6 +209,9 @@ namespace Server.Contract
         object Marshal_Instance_Variant([MarshalAs(UnmanagedType.LPWStr)] string init);
 
         void Marshal_ByRefVariant(ref object result, object value);
+
+        [return: MarshalAs(UnmanagedType.Interface)]
+        IInterface2 Marshal_Interface([MarshalAs(UnmanagedType.Interface)] object inst);
     }
 
     public struct HResult

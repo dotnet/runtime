@@ -41,7 +41,9 @@ namespace System.Linq
             ThrowHelper.ThrowIfNull(innerKeySelector);
             ThrowHelper.ThrowIfNull(resultSelector);
 
-            return Impl(outer, inner, outerKeySelector, innerKeySelector, resultSelector, comparer, default);
+            return
+                outer.IsKnownEmpty() ? Empty<TResult>() :
+                Impl(outer, inner, outerKeySelector, innerKeySelector, resultSelector, comparer, default);
 
             static async IAsyncEnumerable<TResult> Impl(
                 IAsyncEnumerable<TOuter> outer, IAsyncEnumerable<TInner> inner,
@@ -116,7 +118,9 @@ namespace System.Linq
             ThrowHelper.ThrowIfNull(innerKeySelector);
             ThrowHelper.ThrowIfNull(resultSelector);
 
-            return Impl(outer, inner, outerKeySelector, innerKeySelector, resultSelector, comparer, default);
+            return
+                outer.IsKnownEmpty() ? Empty<TResult>() :
+                Impl(outer, inner, outerKeySelector, innerKeySelector, resultSelector, comparer, default);
 
             static async IAsyncEnumerable<TResult> Impl(
                 IAsyncEnumerable<TOuter> outer,

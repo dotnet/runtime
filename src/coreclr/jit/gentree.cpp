@@ -18301,7 +18301,7 @@ bool GenTreeIndir::IsAddressNotOnHeap(Compiler* comp)
         return true;
     }
 
-    if (HasBase() && Base()->gtSkipReloadOrCopy()->OperIs(GT_LCL_ADDR))
+    if (HasBase() && !comp->fgAddrCouldBeHeap(Base()->gtSkipReloadOrCopy()))
     {
         return true;
     }

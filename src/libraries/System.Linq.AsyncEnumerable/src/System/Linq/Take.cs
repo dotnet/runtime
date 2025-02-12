@@ -26,8 +26,8 @@ namespace System.Linq
         {
             ThrowHelper.ThrowIfNull(source);
 
-            return count <= 0 ?
-                Empty<TSource>() :
+            return
+                source.IsKnownEmpty() || count <= 0 ? Empty<TSource>() :
                 Impl(source, count, default);
 
             static async IAsyncEnumerable<TSource> Impl(
@@ -63,6 +63,11 @@ namespace System.Linq
         {
             ThrowHelper.ThrowIfNull(source);
 
+            if (source.IsKnownEmpty())
+            {
+                return Empty<TSource>();
+            }
+
             Index start = range.Start, end = range.End;
             bool isStartIndexFromEnd = start.IsFromEnd, isEndIndexFromEnd = end.IsFromEnd;
             int startIndex = start.Value, endIndex = end.Value;
@@ -78,8 +83,8 @@ namespace System.Linq
             }
             else if (!isEndIndexFromEnd)
             {
-                return startIndex >= endIndex ?
-                    Empty<TSource>() :
+                return
+                    startIndex >= endIndex ? Empty<TSource>() :
                     Impl(source, startIndex, endIndex, default);
             }
 

@@ -32,7 +32,8 @@
       <_CrossOSDacProject Include="@(SupportedRid->'$(RepoRoot)Build.proj')"
                           AdditionalProperties="TargetOS=%(TargetOS);
                                                 TargetArchitecture=%(TargetArchitecture);
-                                                Subset=linuxdac+alpinedac" />
+                                                Subset=linuxdac+alpinedac;
+                                                BuildHostTools=false" />
       <_RuntimePrereqsProject Include="$(CoreClrProjectRoot)runtime-prereqs.proj" />
     </ItemGroup>
 

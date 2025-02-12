@@ -23,7 +23,10 @@ namespace System.Linq
             ThrowHelper.ThrowIfNull(first);
             ThrowHelper.ThrowIfNull(second);
 
-            return Impl(first, second, default);
+            return
+                first.IsKnownEmpty() ? second :
+                second.IsKnownEmpty() ? first :
+                Impl(first, second, default);
 
             static async IAsyncEnumerable<TSource> Impl(
                 IAsyncEnumerable<TSource> first,
