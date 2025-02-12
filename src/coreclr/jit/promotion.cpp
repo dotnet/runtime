@@ -772,7 +772,7 @@ public:
         if (lcl->lvIsOSRLocal)
         {
             countReadBacks++;
-            countReadBacksWtd += comp->fgFirstBB->getBBWeight(comp);
+            countReadBacksWtd += BasicBlock::getCalledCount(comp);
         }
         else if (lcl->lvIsParam)
         {
