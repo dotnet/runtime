@@ -3750,6 +3750,41 @@ emit_gc_safepoint_poll (MonoLLVMModule *module, LLVMModuleRef lmodule, MonoCompi
 }
 
 static void
+emit_raise_method_samplepoint (MonoCompile *cfg, EmitContext *ctx, MonoBasicBlock *bb)
+{
+	printf ("emit_raise_method_samplepoint %s\n", cfg->llvm_method_name);
+
+	g_assert (cfg->compile_aot); // other is not implemented
+
+	LLVMBuilderRef builder;
+	LLVMValueRef callee, call, args [3];
+	LLVMBasicBlockRef sample_bb;
+	static LLVMTypeRef sample_point_sig;
+
+	// (MonoProfiler *prof, MonoMethod *method, MonoProfilerCallContext *ctx)
+	if (!sample_point_sig)
+		sample_point_sig = LLVMFunctionType3 (LLVMVoidType (), IntPtrType (), IntPtrType (), IntPtrType(), FALSE);
+
+	sample_bb = gen_bb (ctx, "SAMPLE_BB");
+
+	// TODO
+	args [0] = LLVMConstNull (IntPtrType ());
+	args [1] = LLVMConstNull (IntPtrType ());
+	args [2] = LLVMConstNull (IntPtrType ());
+
+	ctx->builder = builder = create_builder (ctx);
+
+	callee = get_callee (ctx, sample_point_sig, MONO_PATCH_INFO_JIT_ICALL_ID, GUINT_TO_POINTER (MONO_JIT_ICALL_mono_profiler_raise_method_samplepoint));
+	call = LLVMBuildCall2 (builder, sample_point_sig, callee, args, 3, "");
+	set_call_cold_cconv (call);
+	LLVMBuildBr (builder, sample_bb);
+
+	ctx->builder = builder = create_builder (ctx);
+	LLVMPositionBuilderAtEnd (builder, sample_bb);
+	ctx->bblocks [bb->block_num].end_bblock = sample_bb;
+}
+
+static void
 emit_llvm_code_end (MonoLLVMModule *module)
 {
 	LLVMModuleRef lmodule = module->lmodule;
@@ -7791,6 +7826,10 @@ MONO_RESTORE_WARNING
 			break;
 #endif
 
+			break;
+		}
+		case OP_GC_SAMPLE_POINT: {
+			emit_raise_method_samplepoint (cfg, ctx, bb);
 			break;
 		}
 		case OP_GC_SAFE_POINT: {
@@ -13159,9 +13198,13 @@ emit_method_inner (EmitContext *ctx)
 				LLVMSetGC (method, "coreclr");
 		}
 	}
-	LLVMSetLinkage (method, LLVMPrivateLinkage);
 
-	// TODO emit samplepoint
+	if (requires_safepoint && MONO_CFG_PROFILE (cfg, SAMPLEPOINT_CONTEXT)) {
+		printf("TODO: %s \n", ctx->method_name);
+		//emit_raise_method_samplepoint (cfg, ctx, bb);
+	}
+
+	LLVMSetLinkage (method, LLVMPrivateLinkage);
 
 	mono_llvm_add_func_attr (method, LLVM_ATTR_UW_TABLE);
 
