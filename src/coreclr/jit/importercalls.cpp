@@ -1242,28 +1242,18 @@ DONE:
         // Is it an inline candidate?
         impMarkInlineCandidate(call, exactContextHnd, exactContextNeedsRuntimeLookup, callInfo);
 
-        const bool isInlineCandidate                  = call->AsCall()->IsInlineCandidate();
-        const bool isGuardedDevirtualizationCandidate = call->AsCall()->IsGuardedDevirtualizationCandidate();
-
-        if (!isInlineCandidate && !isGuardedDevirtualizationCandidate)
+        // If the call is virtual, record the inliner's context for possible use during late devirt inlining.
+        // Also record the generics context if there is any.
+        //
+        if (call->AsCall()->IsVirtual() && (call->AsCall()->gtCallType != CT_INDIRECT))
         {
-            // If the call is virtual, and is not going to have a class probe, record the inliner's context
-            // for possible use during late devirt inlining. Also record the generics context if any.
-            //
-            // If we ever want to devirt at Tier0, and/or see issues where OSR methods under PGO lose
-            // important devirtualizations, we'll want to allow both a class probe and a captured context.
-            //
-            if (call->AsCall()->IsVirtual() && (call->AsCall()->gtCallType != CT_INDIRECT) &&
-                (call->AsCall()->gtHandleHistogramProfileCandidateInfo == nullptr))
-            {
-                JITDUMP("\nSaving generic context %p and inline context %p for call [%06u]\n", dspPtr(exactContextHnd),
-                        dspPtr(compInlineContext), dspTreeID(call->AsCall()));
-                call->AsCall()->gtCallMoreFlags |= GTF_CALL_M_HAS_LATE_DEVIRT_INFO;
-                LateDevirtualizationInfo* const info       = new (this, CMK_Inlining) LateDevirtualizationInfo;
-                info->exactContextHnd                      = exactContextHnd;
-                info->inlinersContext                      = compInlineContext;
-                call->AsCall()->gtLateDevirtualizationInfo = info;
-            }
+            JITDUMP("\nSaving generic context %p and inline context %p for call [%06u]\n", dspPtr(exactContextHnd),
+                    dspPtr(compInlineContext), dspTreeID(call->AsCall()));
+            call->AsCall()->gtCallMoreFlags |= GTF_CALL_M_HAS_LATE_DEVIRT_INFO;
+            LateDevirtualizationInfo* const info       = new (this, CMK_Inlining) LateDevirtualizationInfo;
+            info->exactContextHnd                      = exactContextHnd;
+            info->inlinersContext                      = compInlineContext;
+            call->AsCall()->gtLateDevirtualizationInfo = info;
         }
     }
 
