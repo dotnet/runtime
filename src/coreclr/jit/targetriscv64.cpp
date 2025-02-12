@@ -83,7 +83,7 @@ ABIPassingInformation RiscV64Classifier::Classify(Compiler*    comp,
                     floatFields += (unsigned)varTypeIsFloating(type);
                     INDEBUG(debugIntFields += (unsigned)varTypeIsIntegralOrI(type);)
                 }
-                intFields = lowering->numLoweredElements - floatFields;
+                intFields = static_cast<unsigned>(lowering->numLoweredElements) - floatFields;
                 assert(debugIntFields == intFields);
             }
         }
