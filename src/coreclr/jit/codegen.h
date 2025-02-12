@@ -442,6 +442,8 @@ protected:
     void      genPopFltRegs(regMaskTP regMask);
     regMaskTP genStackAllocRegisterMask(unsigned frameSize, regMaskTP maskCalleeSavedFloat);
 
+    regMaskTP genPrespilledUnmappedRegs();
+
     regMaskTP genJmpCallArgMask();
 
     void genFreeLclFrame(unsigned           frameSize,

@@ -359,30 +359,8 @@ inline bool ObjectAllocator::CanAllocateLclVarOnStack(unsigned int         lclNu
             return false;
         }
 
-        CORINFO_CLASS_HANDLE elemClsHnd = NO_CLASS_HANDLE;
-        CorInfoType          corType    = comp->info.compCompHnd->getChildType(clsHnd, &elemClsHnd);
-        var_types            type       = JITtype2varType(corType);
-        ClassLayout*         elemLayout = type == TYP_STRUCT ? comp->typGetObjLayout(elemClsHnd) : nullptr;
-
-        if (varTypeIsGC(type) || ((elemLayout != nullptr) && elemLayout->HasGCPtr()))
-        {
-            *reason = "[array contains gc refs]";
-            return false;
-        }
-
-        const unsigned elemSize = elemLayout != nullptr ? elemLayout->GetSize() : genTypeSize(type);
-
-        ClrSafeInt<unsigned> totalSize(elemSize);
-        totalSize *= static_cast<unsigned>(length);
-        totalSize += static_cast<unsigned>(OFFSETOF__CORINFO_Array__data);
-
-        if (totalSize.IsOverflow())
-        {
-            *reason = "[overflow array length]";
-            return false;
-        }
-
-        classSize = totalSize.Value();
+        ClassLayout* const layout = comp->typGetArrayLayout(clsHnd, (unsigned)length);
+        classSize                 = layout->GetSize();
     }
     else if (allocType == OAT_NEWOBJ)
     {

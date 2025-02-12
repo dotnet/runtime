@@ -4260,8 +4260,9 @@ inline void Compiler::CLR_API_Leave(API_ICorJitInfo_Names ename)
 bool Compiler::fgVarIsNeverZeroInitializedInProlog(unsigned varNum)
 {
     LclVarDsc* varDsc = lvaGetDesc(varNum);
-    bool       result = varDsc->lvIsParam || lvaIsOSRLocal(varNum) || (varNum == lvaGSSecurityCookie) ||
-                  (varNum == lvaInlinedPInvokeFrameVar) || (varNum == lvaStubArgumentVar) || (varNum == lvaRetAddrVar);
+    bool       result = varDsc->lvIsParam || varDsc->lvIsParamRegTarget || lvaIsOSRLocal(varNum) ||
+                  (varNum == lvaGSSecurityCookie) || (varNum == lvaInlinedPInvokeFrameVar) ||
+                  (varNum == lvaStubArgumentVar) || (varNum == lvaRetAddrVar);
 
 #ifdef TARGET_ARM64
     result = result || (varNum == lvaFfrRegister);
@@ -4639,15 +4640,25 @@ inline char* regMaskToString(regMaskTP mask, Compiler* context)
 
 inline void printRegMaskInt(regMaskTP mask)
 {
+    // RBM_ALLINT is not known at compile time on TARGET_AMD64 since it's dependent on APX support. These are used by GC
+    // exclusively
+#if defined(TARGET_AMD64)
+    printf(REG_MASK_INT_FMT, (mask & RBM_ALLINT_ALL).getLow());
+#else  // !TARGET_X86
     printf(REG_MASK_INT_FMT, (mask & RBM_ALLINT).getLow());
+#endif // !TARGET_X86
 }
 
 inline char* regMaskIntToString(regMaskTP mask, Compiler* context)
 {
     const size_t cchRegMask = 24;
     char*        regmask    = new (context, CMK_Unknown) char[cchRegMask];
-
+    // RBM_ALLINT is not known at compile time on TARGET_AMD64 since it's dependent on APX support. Deprecated????
+#if defined(TARGET_AMD64)
+    sprintf_s(regmask, cchRegMask, REG_MASK_INT_FMT, (mask & RBM_ALLINT_ALL).getLow());
+#else  // !TARGET_X86
     sprintf_s(regmask, cchRegMask, REG_MASK_INT_FMT, (mask & RBM_ALLINT).getLow());
+#endif // !TARGET_X86
 
     return regmask;
 }
@@ -5052,12 +5063,22 @@ void Compiler::fgVisitBlocksInLoopAwareRPO(FlowGraphDfsTree* dfsTree, FlowGraphN
         }
     };
 
-    LoopAwareVisitor visitor(dfsTree, loops, func);
-
-    for (unsigned i = dfsTree->GetPostOrderCount(); i != 0; i--)
+    if (loops->NumLoops() == 0)
     {
-        BasicBlock* const block = dfsTree->GetPostOrder(i - 1);
-        visitor.VisitBlock(block);
+        for (unsigned i = dfsTree->GetPostOrderCount(); i != 0; i--)
+        {
+            BasicBlock* const block = dfsTree->GetPostOrder(i - 1);
+            func(block);
+        }
+    }
+    else
+    {
+        LoopAwareVisitor visitor(dfsTree, loops, func);
+        for (unsigned i = dfsTree->GetPostOrderCount(); i != 0; i--)
+        {
+            BasicBlock* const block = dfsTree->GetPostOrder(i - 1);
+            visitor.VisitBlock(block);
+        }
     }
 }
 
