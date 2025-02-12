@@ -178,7 +178,6 @@ mini_emit_call_args (MonoCompile *cfg, MonoMethodSignature *sig,
 	}
 
 	if (tailcall) {
-		mini_profiler_emit_samplepoint (cfg);
 		mini_profiler_emit_tail_call (cfg, target);
 		mini_emit_tailcall_parameters (cfg, sig);
 		MONO_INST_NEW_CALL (cfg, call, calli ? OP_TAILCALL_REG : virtual_ ? OP_TAILCALL_MEMBASE : OP_TAILCALL);

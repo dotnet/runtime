@@ -102,7 +102,7 @@ export function mono_wasm_profiler_enter (): void {
     }
 
     stackFrames.push(globalThis.performance.now());
-    stackFramesSkip.push(true);
+    stackFramesSkip.push(skipSample());
 }
 
 const methodNames: Map<number, string> = new Map();
