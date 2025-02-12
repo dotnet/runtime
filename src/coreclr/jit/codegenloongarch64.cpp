@@ -1933,7 +1933,7 @@ void CodeGen::genCodeForBswap(GenTree* tree)
     GenTree* operand = tree->gtGetOp1();
     assert(!operand->isContained());
     // The src must be a register.
-    regNumber operandReg = genConsumeReg(operand);
+    regNumber   operandReg = genConsumeReg(operand);
     instruction ins;
 
     if (tree->OperIs(GT_BSWAP16))
