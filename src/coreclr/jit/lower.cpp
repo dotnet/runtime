@@ -3766,8 +3766,9 @@ void Lowering::LowerCFGCall(GenTreeCall* call)
 
             // Set up ABI information for this arg.
             targetArg->NewAbiInfo =
-                ABIPassingInformation::FromSegment(comp, ABIPassingSegment::InRegister(REG_DISPATCH_INDIRECT_CALL_ADDR,
-                                                                                       0, TARGET_POINTER_SIZE));
+                ABIPassingInformation::FromSegmentByValue(comp,
+                                                          ABIPassingSegment::InRegister(REG_DISPATCH_INDIRECT_CALL_ADDR,
+                                                                                        0, TARGET_POINTER_SIZE));
             targetArg->AbiInfo.ArgType = callTarget->TypeGet();
             targetArg->AbiInfo.SetRegNum(0, REG_DISPATCH_INDIRECT_CALL_ADDR);
             targetArg->AbiInfo.NumRegs  = 1;
