@@ -191,7 +191,7 @@ Similar instructions for debugging Android apps with Mono runtime can be found [
 
 ### Multiple JDKs installed on the system
 
-If multiple Java SDK versions are installed, you may encounter the following error:
+If multiple JDKs are installed on your system, you may encounter the following error:
 
 ```
 `src/mono/msbuild/android/build/AndroidBuild.targets(237,5): error MSB4018: java.lang.NullPointerException: Cannot invoke String.length() because <parameter1> is null
@@ -200,10 +200,11 @@ If multiple Java SDK versions are installed, you may encounter the following err
 To resolve this:
 1. Remove older JDK versions
 2. Install [OpenJDK 23](https://openjdk.org/projects/jdk/23/)
-3. Make sure OpenJDK 23 binaries are added to the path via:
-```
-$> java -version
-openjdk version "23.0.1" 2024-10-15
-OpenJDK Runtime Environment Homebrew (build 23.0.1)
-OpenJDK 64-Bit Server VM Homebrew (build 23.0.1, mixed mode, sharing)
-```
+3. Make sure OpenJDK 23 binaries are added to the path.
+  - On Unix system this can be verifed via:
+  ```
+  $> java -version
+  openjdk version "23.0.1" 2024-10-15
+  OpenJDK Runtime Environment Homebrew (build 23.0.1)
+  OpenJDK 64-Bit Server VM Homebrew (build 23.0.1, mixed mode, sharing)
+  ```
