@@ -616,11 +616,10 @@ private:
                 {
                     assert(context != nullptr);
                     assert(inlinersContext != nullptr);
-                    m_compiler->compInlineContext = inlinersContext;
-                    CORINFO_CALL_INFO callInfo    = {};
-                    callInfo.hMethod              = method;
-                    callInfo.methodFlags          = methodFlags;
-                    m_compiler->impMarkInlineCandidate(call, context, false, &callInfo);
+                    CORINFO_CALL_INFO callInfo = {};
+                    callInfo.hMethod           = method;
+                    callInfo.methodFlags       = methodFlags;
+                    m_compiler->impMarkInlineCandidate(call, context, false, &callInfo, inlinersContext);
 
                     if (call->IsInlineCandidate())
                     {
