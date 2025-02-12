@@ -44,10 +44,9 @@ unsigned Compiler::fgCheckInlineDepthAndRecursion(InlineInfo* inlineInfo)
         {
             JITDUMP("Call site is trivially recursive\n");
 
-            // Only allow trivially recursive inlines if the method is marked as force inlining.
+            // Only allow trivially recursive inlines in a limited way.
             //
-            if (++recursiveDepth > JitConfig.JitInlineRecursionDepth() ||
-                inlineContext->GetObservation() != InlineObservation::CALLEE_IS_FORCE_INLINE)
+            if (++recursiveDepth > JitConfig.JitInlineRecursionDepth())
             {
                 inlineResult->NoteFatal(InlineObservation::CALLSITE_IS_DISALLOWED_RECURSIVE);
                 return depth;
