@@ -33,7 +33,7 @@ namespace Microsoft.Android.Build
 
         public AndroidProject(string projectName, string runtimeIdentifier, string androidNdkPath, TaskLoggingHelper logger)
         {
-            androidToolchainPath = Path.Combine(androidNdkPath, "build", "cmake", "android.toolchain.cmake");
+            androidToolchainPath = Path.Combine(androidNdkPath, "build", "cmake", "android.toolchain.cmake").Replace('\\', '/');
             abi = DetermineAbi(runtimeIdentifier);
             targetArchitecture = GetTargetArchitecture(runtimeIdentifier);
 
@@ -57,7 +57,9 @@ namespace Microsoft.Android.Build
 
         public void GenerateCMake(string workingDir, string apiLevel = DefaultMinApiLevel, bool stripDebugSymbols = false)
         {
-            string cmakeGenArgs = $"-DCMAKE_TOOLCHAIN_FILE={androidToolchainPath} -DANDROID_ABI=\"{Abi}\" -DANDROID_STL=none -DTARGETS_ANDROID=1 " +
+            // force ninja generator on Windows, the VS generator causes issues with the built-in Android support in VS
+            var generator = Utils.IsWindows() ? "-G Ninja" : "";
+            string cmakeGenArgs = $"{generator} -DCMAKE_TOOLCHAIN_FILE={androidToolchainPath} -DANDROID_ABI=\"{Abi}\" -DANDROID_STL=none -DTARGETS_ANDROID=1 " +
                 $"-DANDROID_PLATFORM=android-{apiLevel} -B {projectName}";
 
             if (stripDebugSymbols)

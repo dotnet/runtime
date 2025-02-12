@@ -338,39 +338,66 @@ function(generate_exports_file)
   list(GET INPUT_LIST -1 outputFilename)
   list(REMOVE_AT INPUT_LIST -1)
 
-  if(CLR_CMAKE_TARGET_APPLE)
-    set(SCRIPT_NAME generateexportedsymbols.sh)
+  # Win32 may be false when cross compiling
+  if (CMAKE_HOST_SYSTEM_NAME STREQUAL "Windows")
+    set(SCRIPT_NAME ${CLR_ENG_NATIVE_DIR}/generateversionscript.ps1)
+
+    add_custom_command(
+      OUTPUT ${outputFilename}
+      COMMAND powershell -NoProfile -ExecutionPolicy ByPass -File "${SCRIPT_NAME}" ${INPUT_LIST} >${outputFilename}
+      DEPENDS ${INPUT_LIST} ${SCRIPT_NAME}
+      COMMENT "Generating exports file ${outputFilename}"
+    )
   else()
-    set(SCRIPT_NAME generateversionscript.sh)
+    if(CLR_CMAKE_TARGET_APPLE)
+      set(SCRIPT_NAME ${CLR_ENG_NATIVE_DIR}/generateexportedsymbols.sh)
+    else()
+      set(SCRIPT_NAME ${CLR_ENG_NATIVE_DIR}/generateversionscript.sh)
+    endif()
+
+    add_custom_command(
+      OUTPUT ${outputFilename}
+      COMMAND ${SCRIPT_NAME} ${INPUT_LIST} >${outputFilename}
+      DEPENDS ${INPUT_LIST} ${SCRIPT_NAME}
+      COMMENT "Generating exports file ${outputFilename}"
+    )
   endif()
 
-  add_custom_command(
-    OUTPUT ${outputFilename}
-    COMMAND ${CLR_ENG_NATIVE_DIR}/${SCRIPT_NAME} ${INPUT_LIST} >${outputFilename}
-    DEPENDS ${INPUT_LIST} ${CLR_ENG_NATIVE_DIR}/${SCRIPT_NAME}
-    COMMENT "Generating exports file ${outputFilename}"
-  )
   set_source_files_properties(${outputFilename}
                               PROPERTIES GENERATED TRUE)
 endfunction()
 
 function(generate_exports_file_prefix inputFilename outputFilename prefix)
-
   if(CMAKE_SYSTEM_NAME STREQUAL Darwin)
     set(SCRIPT_NAME generateexportedsymbols.sh)
   else()
-    set(SCRIPT_NAME generateversionscript.sh)
+    # Win32 may be false when cross compiling
+    if (CMAKE_HOST_SYSTEM_NAME STREQUAL "Windows")
+      set(SCRIPT_NAME ${CLR_ENG_NATIVE_DIR}/generateversionscript.ps1)
+    else()
+      set(SCRIPT_NAME ${CLR_ENG_NATIVE_DIR}/generateversionscript.sh)
+    endif()
+
     if (NOT ${prefix} STREQUAL "")
         set(EXTRA_ARGS ${prefix})
     endif()
   endif(CMAKE_SYSTEM_NAME STREQUAL Darwin)
 
-  add_custom_command(
-    OUTPUT ${outputFilename}
-    COMMAND ${CLR_ENG_NATIVE_DIR}/${SCRIPT_NAME} ${inputFilename} ${EXTRA_ARGS} >${outputFilename}
-    DEPENDS ${inputFilename} ${CLR_ENG_NATIVE_DIR}/${SCRIPT_NAME}
-    COMMENT "Generating exports file ${outputFilename}"
-  )
+  if (CMAKE_HOST_SYSTEM_NAME STREQUAL "Windows")
+    add_custom_command(
+      OUTPUT ${outputFilename}
+      COMMAND powershell -NoProfile -ExecutionPolicy ByPass -File \"${SCRIPT_NAME}\" ${inputFilename} ${EXTRA_ARGS} >${outputFilename}
+      DEPENDS ${inputFilename} ${SCRIPT_NAME}
+      COMMENT "Generating exports file ${outputFilename}"
+    )
+  else()
+    add_custom_command(
+      OUTPUT ${outputFilename}
+      COMMAND ${SCRIPT_NAME} ${inputFilename} ${EXTRA_ARGS} >${outputFilename}
+      DEPENDS ${inputFilename} ${SCRIPT_NAME}
+      COMMENT "Generating exports file ${outputFilename}"
+    )
+  endif()
   set_source_files_properties(${outputFilename}
                               PROPERTIES GENERATED TRUE)
 endfunction()
@@ -445,16 +472,28 @@ function(strip_symbols targetName outputFilename)
         COMMAND ${strip_command}
         )
     else (CLR_CMAKE_TARGET_APPLE)
-
-      add_custom_command(
-        TARGET ${targetName}
-        POST_BUILD
-        VERBATIM
-        COMMAND sh -c "echo Stripping symbols from $(basename '${strip_source_file}') into $(basename '${strip_destination_file}')"
-        COMMAND ${CMAKE_OBJCOPY} --only-keep-debug ${strip_source_file} ${strip_destination_file}
-        COMMAND ${CMAKE_OBJCOPY} --strip-debug --strip-unneeded ${strip_source_file}
-        COMMAND ${CMAKE_OBJCOPY} --add-gnu-debuglink=${strip_destination_file} ${strip_source_file}
+      # Win32 may be false when cross compiling
+      if (CMAKE_HOST_SYSTEM_NAME STREQUAL "Windows")
+        add_custom_command(
+          TARGET ${targetName}
+          POST_BUILD
+          VERBATIM
+          COMMAND powershell -C "echo Stripping symbols from $(Split-Path -Path '${strip_source_file}' -Leaf) into $(Split-Path -Path '${strip_destination_file}' -Leaf)"
+          COMMAND ${CMAKE_OBJCOPY} --only-keep-debug ${strip_source_file} ${strip_destination_file}
+          COMMAND ${CMAKE_OBJCOPY} --strip-debug --strip-unneeded ${strip_source_file}
+          COMMAND ${CMAKE_OBJCOPY} --add-gnu-debuglink=${strip_destination_file} ${strip_source_file}
         )
+      else()
+        add_custom_command(
+          TARGET ${targetName}
+          POST_BUILD
+          VERBATIM
+          COMMAND sh -c "echo Stripping symbols from $(basename '${strip_source_file}') into $(basename '${strip_destination_file}')"
+          COMMAND ${CMAKE_OBJCOPY} --only-keep-debug ${strip_source_file} ${strip_destination_file}
+          COMMAND ${CMAKE_OBJCOPY} --strip-debug --strip-unneeded ${strip_source_file}
+          COMMAND ${CMAKE_OBJCOPY} --add-gnu-debuglink=${strip_destination_file} ${strip_source_file}
+        )
+      endif()
     endif (CLR_CMAKE_TARGET_APPLE)
   endif(CLR_CMAKE_HOST_UNIX)
 endfunction()
