@@ -3376,61 +3376,61 @@ gc_heap::dt_low_ephemeral_space_p (gc_tuning_point tp)
 
 BOOL
 gc_heap::dt_high_frag_p (gc_tuning_point tp,
-    int gen_number,
-    BOOL elevate_p)
+                         int gen_number,
+                         BOOL elevate_p)
 {
     BOOL ret = FALSE;
 
     switch (tp)
     {
-    case tuning_deciding_condemned_gen:
-    {
-        dynamic_data* dd = dynamic_data_of (gen_number);
-        float fragmentation_burden = 0;
+        case tuning_deciding_condemned_gen:
+        {
+            dynamic_data* dd = dynamic_data_of (gen_number);
+            float fragmentation_burden = 0;
 
-        if (elevate_p)
-        {
-            ret = (dd_fragmentation (dynamic_data_of (max_generation)) >= dd_max_size(dd));
-            if (ret)
+            if (elevate_p)
             {
-                dprintf (6666, ("h%d: frag is %zd, max size is %zd",
-                    heap_number, dd_fragmentation (dd), dd_max_size(dd)));
-            }
-        }
-        else
-        {
-#ifndef MULTIPLE_HEAPS
-            if (gen_number == max_generation)
-            {
-                size_t maxgen_size = generation_size (max_generation);
-                float frag_ratio = (maxgen_size ? ((float)dd_fragmentation (dynamic_data_of (max_generation)) / (float)maxgen_size) : 0.0f);
-                if (frag_ratio > 0.65)
+                ret = (dd_fragmentation (dynamic_data_of (max_generation)) >= dd_max_size(dd));
+                if (ret)
                 {
-                    dprintf (GTC_LOG, ("g2 FR: %d%%", (int)(frag_ratio*100)));
-                    return TRUE;
+                    dprintf (6666, ("h%d: frag is %zd, max size is %zd",
+                        heap_number, dd_fragmentation (dd), dd_max_size(dd)));
                 }
             }
+            else
+            {
+#ifndef MULTIPLE_HEAPS
+                if (gen_number == max_generation)
+                {
+                    size_t maxgen_size = generation_size (max_generation);
+                    float frag_ratio = (maxgen_size ? ((float)dd_fragmentation (dynamic_data_of (max_generation)) / (float)maxgen_size) : 0.0f);
+                    if (frag_ratio > 0.65)
+                    {
+                        dprintf (GTC_LOG, ("g2 FR: %d%%", (int)(frag_ratio*100)));
+                        return TRUE;
+                    }
+                }
 #endif //!MULTIPLE_HEAPS
-            size_t fr = generation_unusable_fragmentation (generation_of (gen_number), heap_number);
-            ret = (fr > dd_fragmentation_limit(dd));
-            if (ret)
-            {
-                size_t gen_size = generation_size (gen_number);
-                fragmentation_burden = (gen_size ? ((float)fr / (float)gen_size) : 0.0f);
-                ret = (fragmentation_burden > dd_v_fragmentation_burden_limit (dd));
+                size_t fr = generation_unusable_fragmentation (generation_of (gen_number), heap_number);
+                ret = (fr > dd_fragmentation_limit(dd));
+                if (ret)
+                {
+                    size_t gen_size = generation_size (gen_number);
+                    fragmentation_burden = (gen_size ? ((float)fr / (float)gen_size) : 0.0f);
+                    ret = (fragmentation_burden > dd_v_fragmentation_burden_limit (dd));
+                }
+                if (ret)
+                {
+                    dprintf (6666, ("h%d: gen%d, frag is %zd, alloc effi: %zu%%, unusable frag is %zd, ratio is %d",
+                        heap_number, gen_number, dd_fragmentation (dd),
+                        generation_allocator_efficiency_percent (generation_of (gen_number)),
+                        fr, (int)(fragmentation_burden * 100)));
+                }
             }
-            if (ret)
-            {
-                dprintf (6666, ("h%d: gen%d, frag is %zd, alloc effi: %zu%%, unusable frag is %zd, ratio is %d",
-                    heap_number, gen_number, dd_fragmentation (dd),
-                    generation_allocator_efficiency_percent (generation_of (gen_number)),
-                    fr, (int)(fragmentation_burden * 100)));
-            }
+            break;
         }
-        break;
-    }
-    default:
-        break;
+        default:
+            break;
     }
 
     return ret;
@@ -32584,6 +32584,8 @@ void gc_heap::process_remaining_regions (int current_plan_gen_num, generation* c
                 heap_segment_plan_gen_num (nseg),
                 current_plan_gen_num));
 
+            assert (!heap_segment_swept_in_plan (nseg));
+
             heap_segment_plan_allocated (nseg) = generation_allocation_pointer (consing_gen);
             decide_on_demotion_pin_surv (nseg, &to_be_empty_regions, actual_promote_gen1_pins_p, large_pins_p);
 
@@ -34121,9 +34123,9 @@ void gc_heap::plan_phase (int condemned_gen_number)
         }
 
         dprintf (2, ("older gen's free alloc: %zd->%zd, seg alloc: %zd->%zd, condemned alloc: %zd->%zd",
-            r_older_gen_free_list_allocated, generation_free_list_allocated (older_gen),
-            r_older_gen_end_seg_allocated, generation_end_seg_allocated (older_gen),
-            r_older_gen_condemned_allocated, generation_condemned_allocated (older_gen)));
+                    r_older_gen_free_list_allocated, generation_free_list_allocated (older_gen),
+                    r_older_gen_end_seg_allocated, generation_end_seg_allocated (older_gen),
+                    r_older_gen_condemned_allocated, generation_condemned_allocated (older_gen)));
 
         dprintf (2, ("this GC did %zd free list alloc(%zd bytes free space rejected)",
             free_list_allocated, rejected_free_space));
