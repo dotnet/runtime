@@ -964,7 +964,7 @@ extends:
                     eq(variables['isRollingBuild'], true))
 
       #
-      # Android devices
+      # Android arm64 devices and x64 emulators
       # Build the whole product using CoreCLR and run libraries tests
       #
       - template: /eng/pipelines/common/platform-matrix.yml
