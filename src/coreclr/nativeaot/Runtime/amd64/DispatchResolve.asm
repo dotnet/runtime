@@ -19,24 +19,24 @@ LEAF_ENTRY RhpResolveInterfaceMethodFast, _TEXT
         ;; to a NullReferenceException at the callsite.
         mov     r9, [rcx]
 
-        ;; r10 currently contains the indirection cell address.
-        ;; load r10 to point to the cache block.
-        mov     r10, [r10 + OFFSETOF__InterfaceDispatchCell__m_pCache]
-        test    r10b, IDC_CACHE_POINTER_MASK
+        ;; rdx currently contains the indirection cell address.
+        ;; load r8 to point to the cache block.
+        mov     r8, [rdx + OFFSETOF__InterfaceDispatchCell__m_pCache]
+        test    r8b, IDC_CACHE_POINTER_MASK
         jne     RhpResolveInterfaceMethodFast_SlowPath
 
-        lea     rax, [r10 + OFFSETOF__InterfaceDispatchCache__m_rgEntries]
+        lea     rax, [r8 + OFFSETOF__InterfaceDispatchCache__m_rgEntries]
         cmp     qword ptr [rax], r9
         jne     RhpResolveInterfaceMethodFast_Polymorphic
         mov     rax, qword ptr [rax + 8]
         ret
 
       RhpResolveInterfaceMethodFast_Polymorphic:
-        mov     r10d, dword ptr [r10 + OFFSETOF__InterfaceDispatchCache__m_cEntries]
+        mov     r8d, dword ptr [r8 + OFFSETOF__InterfaceDispatchCache__m_cEntries]
 
       RhpResolveInterfaceMethodFast_NextEntry:
         add     rax, SIZEOF__InterfaceDispatchCacheEntry
-        dec     r10d
+        dec     r8d
         jz      RhpResolveInterfaceMethodFast_SlowPath
 
         cmp     qword ptr [rax], r9
