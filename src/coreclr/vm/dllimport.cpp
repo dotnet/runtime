@@ -1970,7 +1970,7 @@ void NDirectStubLinker::Begin(DWORD dwStubFlags)
 
             EmitLoadStubContext(m_pcsDispatch, dwStubFlags); // load UMEntryThunk*
 
-            m_pcsDispatch->EmitLDC(offsetof(UMEntryThunk, m_pObjectHandle));
+            m_pcsDispatch->EmitLDC(offsetof(UMEntryThunkData, m_pObjectHandle));
             m_pcsDispatch->EmitADD();
             m_pcsDispatch->EmitLDIND_I();      // get OBJECTHANDLE
             m_pcsDispatch->EmitLDIND_REF();    // get Delegate object
@@ -2141,7 +2141,7 @@ void NDirectStubLinker::DoNDirect(ILCodeStream *pcsEmit, DWORD dwStubFlags, Meth
             int tokDelegate_methodPtr = pcsEmit->GetToken(CoreLibBinder::GetField(FIELD__DELEGATE__METHOD_PTR));
 
             EmitLoadStubContext(pcsEmit, dwStubFlags);
-            pcsEmit->EmitLDC(offsetof(UMEntryThunk, m_pObjectHandle));
+            pcsEmit->EmitLDC(offsetof(UMEntryThunkData, m_pObjectHandle));
             pcsEmit->EmitADD();
             pcsEmit->EmitLDIND_I();                    // Get OBJECTHANDLE
             pcsEmit->EmitLDIND_REF();                  // Get Delegate object
@@ -2157,8 +2157,8 @@ void NDirectStubLinker::DoNDirect(ILCodeStream *pcsEmit, DWORD dwStubFlags, Meth
         else // direct reverse P/Invoke (CoreCLR hosting)
         {
             EmitLoadStubContext(pcsEmit, dwStubFlags);
-            CONSISTENCY_CHECK(0 == offsetof(UMEntryThunk, m_pManagedTarget)); // if this changes, just add back the EmitLDC/EmitADD below
-            // pcsEmit->EmitLDC(offsetof(UMEntryThunk, m_pManagedTarget));
+            CONSISTENCY_CHECK(0 == offsetof(UMEntryThunkData, m_pManagedTarget)); // if this changes, just add back the EmitLDC/EmitADD below
+            // pcsEmit->EmitLDC(offsetof(UMEntryThunkData, m_pManagedTarget));
             // pcsEmit->EmitADD();
             pcsEmit->EmitLDIND_I();  // Get UMEntryThunk::m_pManagedTarget
         }

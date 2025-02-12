@@ -76,9 +76,9 @@ struct InvalidPrecode
 
 struct StubPrecodeData
 {
-    PTR_MethodDesc MethodDesc;
+    TADDR SecretParam;
     PCODE Target;
-    BYTE Type;
+    TADDR Type;
 };
 
 typedef DPTR(StubPrecodeData) PTR_StubPrecodeData;
@@ -91,6 +91,10 @@ extern "C" void StubPrecodeCode_End();
 #ifdef FEATURE_INTERPRETER
 extern "C" void InterpreterStub();
 #endif
+
+class UMEntryThunk;
+typedef DPTR(class UMEntryThunk) PTR_UMEntryThunk;
+#define PRECODE_UMENTRY_THUNK_VALUE 0x7 // Define the value here and not in UMEntryThunk to avoid circular dependency with the dllimportcallback.h header
 
 // Regular precode
 struct StubPrecode
@@ -122,7 +126,7 @@ struct StubPrecode
     static void (*StubPrecodeCode_End)();
 #endif
 
-    void Init(StubPrecode* pPrecodeRX, MethodDesc* pMD, LoaderAllocator *pLoaderAllocator = NULL, BYTE type = StubPrecode::Type, TADDR target = 0);
+    void Init(StubPrecode* pPrecodeRX, TADDR secretParam, LoaderAllocator *pLoaderAllocator = NULL, TADDR type = StubPrecode::Type, TADDR target = 0);
 
     static void StaticInitialize();
 
@@ -136,7 +140,28 @@ struct StubPrecode
     {
         LIMITED_METHOD_DAC_CONTRACT;
 
-        return dac_cast<TADDR>(GetData()->MethodDesc);
+        if (GetType() == PRECODE_UMENTRY_THUNK_VALUE)
+        {
+            return 0;
+        }
+
+        return GetSecretParam();
+    }
+
+#ifndef DACCESS_COMPILE
+    void SetSecretParam(TADDR secretParam)
+    {
+        LIMITED_METHOD_CONTRACT;
+
+        GetData()->SecretParam = secretParam;
+    }
+#endif // DACCESS_COMPILE
+
+    TADDR GetSecretParam() const
+    {
+        LIMITED_METHOD_CONTRACT;
+
+        return GetData()->SecretParam;
     }
 
     PCODE GetTarget()
@@ -148,7 +173,10 @@ struct StubPrecode
 
     BYTE GetType()
     {
-        return GetData()->Type;
+        LIMITED_METHOD_DAC_CONTRACT;
+        TADDR type = GetData()->Type;
+
+        return (BYTE)type;
     }
 
 #ifndef DACCESS_COMPILE
@@ -178,7 +206,20 @@ struct StubPrecode
 
         StubPrecodeData *pData = GetData();
         return InterlockedCompareExchangeT<PCODE>(&pData->Target, (PCODE)target, (PCODE)expected) == expected;
-  }
+    }
+
+    void SetTargetUnconditional(TADDR target)
+    {
+        CONTRACTL
+        {
+            THROWS;
+            GC_NOTRIGGER;
+        }
+        CONTRACTL_END;
+
+        StubPrecodeData *pData = GetData();
+        pData->Target = (PCODE)target;
+    }
 
     static void GenerateCodePage(BYTE* pageBase, BYTE* pageBaseRX, SIZE_T size);
 
@@ -394,6 +435,7 @@ enum PrecodeType {
 #ifdef HAS_THISPTR_RETBUF_PRECODE
     PRECODE_THISPTR_RETBUF  = ThisPtrRetBufPrecode::Type,
 #endif // HAS_THISPTR_RETBUF_PRECODE
+    PRECODE_UMENTRY_THUNK   = PRECODE_UMENTRY_THUNK_VALUE, // Set the value here and not in UMEntryThunk to avoid circular dependency
 };
 
 // For more details see. file:../../doc/BookOfTheRuntime/ClassLoader/MethodDescDesign.doc
@@ -401,6 +443,9 @@ class Precode {
 
     BYTE m_data[SIZEOF_PRECODE_BASE];
 
+public:
+    UMEntryThunk* AsUMEntryThunk();
+private:
     StubPrecode* AsStubPrecode()
     {
         LIMITED_METHOD_CONTRACT;
