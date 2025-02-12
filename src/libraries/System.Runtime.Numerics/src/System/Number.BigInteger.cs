@@ -780,8 +780,21 @@ namespace System
                 }
             }
 
-            // The Ratio is calculated as: log_{10^9}(2^32)
-            const double digitRatio = 1.0703288734719332;
+            // The Ratio is calculated as: log_{10^9}(2^32) = 1.0703288734719332
+            // value._bits.Length represents the number of digits when considering value
+            // in base 2^32. This means it satisfies the inequality:
+            // value._bits.Length - 1 <= log_{2^32}(value) < value._bits.Length
+            //
+            // When converting value to a decimal string, it is first converted to
+            // base 1,000,000,000.
+            //
+            // Dividing the equation by log_{2^32}(10^9),which is equivalent to
+            // multiplying by log_{10^9}(2^32), and using the base change formula,
+            // we get:
+            // M - log_{10^9}(2^32) <= log_{10^9}(value) < M <= Ceiling(M)
+            // where M is log_{10^9}(2^32)*value._bits.Length.
+            // In other words, the number of digits of value in base 1,000,000,000 is at most Ceiling(M).
+            const double digitRatio = 1.070328873472;
             Debug.Assert(BigInteger.MaxLength * digitRatio + 1 < Array.MaxLength); // won't overflow
 
             int base1E9BufferLength = (int)(value._bits.Length * digitRatio) + 1;
