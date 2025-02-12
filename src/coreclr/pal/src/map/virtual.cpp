@@ -1057,7 +1057,7 @@ VirtualFree(
         }
 
         TRACE( "Un-committing the following page(s) %d to %d.\n",
-               StartBoundary, MemSize );
+               StartBoundary, StartBoundary + MemSize );
 
         // mmap support on emscripten/wasm is very limited and doesn't support location hints
         // (when address is not null)
@@ -1092,6 +1092,12 @@ VirtualFree(
             pthrCurrent->SetLastError( ERROR_INTERNAL_ERROR );
             goto VirtualFreeExit;
         }
+#else // __wasm__
+        // We can't decommit the mapping (MAP_FIXED doesn't work in emscripten), and we can't
+        //  MADV_DONTNEED it (madvise doesn't work in emscripten), but we can at least zero
+        //  the memory so that if an attempt is made to reuse it later, the memory will be
+        //  empty as PAL tests expect it to be.
+        ZeroMemory((LPVOID) StartBoundary, MemSize);
 #endif // __wasm__
     }
 
