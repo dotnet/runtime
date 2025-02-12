@@ -11,6 +11,7 @@
     <PackageOverridesInputPath>$(InstallerProjectRoot)pkg\sfx\Microsoft.NETCore.App\PackageOverrides.txt</PackageOverridesInputPath>
     <PackageOverridesOutputPath>$(MicrosoftNetCoreAppRefPackDataDir)PackageOverrides.txt</PackageOverridesOutputPath>
   </PropertyGroup>
+
   <ItemGroup>
     <ProjectReference Include="sfx-src.proj" OutputItemType="SharedFrameworkAssembly" />
     <ProjectReference Include="sfx-gen.proj" OutputItemType="SharedFrameworkAnalyzerAssembly" />
