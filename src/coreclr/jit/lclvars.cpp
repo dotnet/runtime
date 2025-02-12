@@ -485,7 +485,7 @@ void Compiler::lvaInitRetBuffArg(InitVarDscInfo* varDscInfo, bool useFixedRetBuf
         info.compRetBuffArg = varDscInfo->varNum;
 
         LclVarDsc* varDsc  = varDscInfo->varDsc;
-        varDsc->lvType     = TYP_BYREF;
+        varDsc->lvType     = TYP_I_IMPL;
         varDsc->lvIsParam  = 1;
         varDsc->lvIsRegArg = 0;
 
@@ -863,7 +863,7 @@ void Compiler::lvaInitUserArgs(InitVarDscInfo* varDscInfo, unsigned skipArgs, un
             if (lowering->numLoweredElements == 1)
                 assert(varDsc->lvExactSize() <= argSize);
 
-            cSlotsToEnregister  = lowering->numLoweredElements;
+            cSlotsToEnregister  = static_cast<unsigned>(lowering->numLoweredElements);
             argRegTypeInStruct1 = JITtype2varType(lowering->loweredElements[0]);
             if (lowering->numLoweredElements == 2)
                 argRegTypeInStruct2 = JITtype2varType(lowering->loweredElements[1]);
@@ -872,7 +872,7 @@ void Compiler::lvaInitUserArgs(InitVarDscInfo* varDscInfo, unsigned skipArgs, un
             assert(floatNum > 0);
 
             canPassArgInRegisters = varDscInfo->canEnreg(TYP_DOUBLE, floatNum);
-            if (canPassArgInRegisters && (floatNum < lowering->numLoweredElements))
+            if (canPassArgInRegisters && ((unsigned)floatNum < lowering->numLoweredElements))
             {
                 assert(floatNum == 1);
                 assert(lowering->numLoweredElements == 2);
@@ -2497,15 +2497,15 @@ bool Compiler::StructPromotionHelper::CanPromoteStructVar(unsigned lclNum)
         return false;
     }
 
-    if (varDsc->GetLayout()->IsBlockLayout())
+    if (varDsc->GetLayout()->IsCustomLayout())
     {
-        JITDUMP("  struct promotion of V%02u is disabled because it has block layout\n", lclNum);
+        JITDUMP("  struct promotion of V%02u is disabled because it has custom layout\n", lclNum);
         return false;
     }
 
-    if (varDsc->lvStackAllocatedBox)
+    if (varDsc->lvStackAllocatedObject)
     {
-        JITDUMP("  struct promotion of V%02u is disabled because it is a stack allocated box\n", lclNum);
+        JITDUMP("  struct promotion of V%02u is disabled because it is a stack allocated object\n", lclNum);
         return false;
     }
 
@@ -2764,8 +2764,7 @@ void Compiler::StructPromotionHelper::PromoteStructVar(unsigned lclNum)
 #ifdef DEBUG
     if (compiler->verbose)
     {
-        printf("\nPromoting struct local V%02u (%s):", lclNum,
-               compiler->eeGetClassName(varDsc->GetLayout()->GetClassHandle()));
+        printf("\nPromoting struct local V%02u (%s):", lclNum, varDsc->GetLayout()->GetClassName());
     }
 #endif
 
@@ -3368,10 +3367,10 @@ void Compiler::lvaSetStruct(unsigned varNum, ClassLayout* layout, bool unsafeVal
         assert(ClassLayout::AreCompatible(varDsc->GetLayout(), layout));
         // Inlining could replace a canon struct type with an exact one.
         varDsc->SetLayout(layout);
-        assert(layout->IsBlockLayout() || (layout->GetSize() != 0));
+        assert(layout->IsCustomLayout() || (layout->GetSize() != 0));
     }
 
-    if (!layout->IsBlockLayout())
+    if (!layout->IsCustomLayout())
     {
 #ifndef TARGET_64BIT
         bool fDoubleAlignHint = false;
@@ -3601,6 +3600,7 @@ void Compiler::lvaSetClass(unsigned varNum, GenTree* tree, CORINFO_CLASS_HANDLE 
 //    varNum -- number of the variable
 //    clsHnd -- class handle to use in set or update
 //    isExact -- true if class is known exactly
+//    singleDefOnly -- true if we should only update single-def locals
 //
 // Notes:
 //
@@ -3618,7 +3618,7 @@ void Compiler::lvaSetClass(unsigned varNum, GenTree* tree, CORINFO_CLASS_HANDLE 
 //    for shared code, so ensuring this is so is currently not
 //    possible.
 
-void Compiler::lvaUpdateClass(unsigned varNum, CORINFO_CLASS_HANDLE clsHnd, bool isExact)
+void Compiler::lvaUpdateClass(unsigned varNum, CORINFO_CLASS_HANDLE clsHnd, bool isExact, bool singleDefOnly)
 {
     assert(varNum < lvaCount);
 
@@ -3631,8 +3631,12 @@ void Compiler::lvaUpdateClass(unsigned varNum, CORINFO_CLASS_HANDLE clsHnd, bool
     // We should already have a class
     assert(varDsc->lvClassHnd != NO_CLASS_HANDLE);
 
-    // We should only be updating classes for single-def locals.
-    assert(varDsc->lvSingleDef);
+    // We should only be updating classes for single-def locals if requested
+    if (singleDefOnly && !varDsc->lvSingleDef)
+    {
+        assert(!"Updating class for multi-def local");
+        return;
+    }
 
     // Now see if we should update.
     //
@@ -3679,7 +3683,7 @@ void Compiler::lvaUpdateClass(unsigned varNum, CORINFO_CLASS_HANDLE clsHnd, bool
 }
 
 //------------------------------------------------------------------------
-// lvaUpdateClass: Uupdate class information for a local var from a tree
+// lvaUpdateClass: Update class information for a local var from a tree
 //  or stack type
 //
 // Arguments:
@@ -4935,8 +4939,8 @@ void Compiler::lvaComputeRefCounts(bool isRecompute, bool setSlotNumbers)
         // that was set by past phases.
         if (!isRecompute)
         {
-            varDsc->lvSingleDef             = varDsc->lvIsParam;
-            varDsc->lvSingleDefRegCandidate = varDsc->lvIsParam;
+            varDsc->lvSingleDef             = varDsc->lvIsParam || varDsc->lvIsParamRegTarget;
+            varDsc->lvSingleDefRegCandidate = varDsc->lvIsParam || varDsc->lvIsParamRegTarget;
 
             varDsc->lvAllDefsAreNoGc = (varDsc->lvImplicitlyReferenced == false);
         }
@@ -5028,6 +5032,11 @@ void Compiler::lvaComputeRefCounts(bool isRecompute, bool setSlotNumbers)
             {
                 varDsc->incRefCnts(BB_UNITY_WEIGHT, this);
             }
+        }
+        else if (varDsc->lvIsParamRegTarget && (varDsc->lvRefCnt() > 0))
+        {
+            varDsc->incRefCnts(BB_UNITY_WEIGHT, this);
+            varDsc->incRefCnts(BB_UNITY_WEIGHT, this);
         }
 
         // If we have JMP, all arguments must have a location
@@ -5641,7 +5650,9 @@ void Compiler::lvaFixVirtualFrameOffsets()
 #endif
 
     // The delta to be added to virtual offset to adjust it relative to frame pointer or SP
-    int delta = 0;
+    int delta            = 0;
+    int frameLocalsDelta = 0;
+    int frameBoundary    = 0;
 
 #ifdef TARGET_XARCH
     delta += REGSIZE_BYTES; // pushed PC (return address) for x86/x64
@@ -5666,7 +5677,25 @@ void Compiler::lvaFixVirtualFrameOffsets()
         // We set FP to be after LR, FP
         delta += 2 * REGSIZE_BYTES;
     }
-#elif defined(TARGET_AMD64) || defined(TARGET_ARM64)
+#elif defined(TARGET_ARM64)
+    else
+    {
+        // FP is used.
+        delta += codeGen->genTotalFrameSize() - codeGen->genSPtoFPdelta();
+
+        // If we placed FP/LR at the bottom of the frame we need to shift all the variables
+        // on the new frame to account for it. See lvaAssignVirtualFrameOffsetsToLocals.
+        if (!codeGen->IsSaveFpLrWithAllCalleeSavedRegisters())
+        {
+            // We set FP to be after LR, FP
+            frameLocalsDelta = 2 * REGSIZE_BYTES;
+            frameBoundary    = opts.IsOSR() ? -info.compPatchpointInfo->TotalFrameSize() : 0;
+            if (info.compIsVarArgs)
+                frameBoundary -= MAX_REG_ARG * REGSIZE_BYTES;
+        }
+        JITDUMP("--- delta bump %d for FP frame, %d inside frame for FP/LR relocation\n", delta, frameLocalsDelta);
+    }
+#elif defined(TARGET_AMD64)
     else
     {
         // FP is used.
@@ -5734,7 +5763,7 @@ void Compiler::lvaFixVirtualFrameOffsets()
 
 #if defined(TARGET_X86)
             // On x86, we set the stack offset for a promoted field
-            // to match a struct parameter in lvAssignFrameOffsetsToPromotedStructs.
+            // to match a struct parameter in lvaAssignFrameOffsetsToPromotedStructs.
             if ((!varDsc->lvIsParam || parentvarDsc->lvIsParam) && promotionType == PROMOTION_TYPE_DEPENDENT)
 #else
             if (!varDsc->lvIsParam && promotionType == PROMOTION_TYPE_DEPENDENT)
@@ -5754,15 +5783,23 @@ void Compiler::lvaFixVirtualFrameOffsets()
 
         if (doAssignStkOffs)
         {
-            JITDUMP("-- V%02u was %d, now %d\n", lclNum, varDsc->GetStackOffset(), varDsc->GetStackOffset() + delta);
-            varDsc->SetStackOffset(varDsc->GetStackOffset() + delta);
+            int localDelta = delta;
+
+            if (frameLocalsDelta != 0 && varDsc->GetStackOffset() < frameBoundary)
+            {
+                localDelta += frameLocalsDelta;
+            }
+
+            JITDUMP("-- V%02u was %d, now %d\n", lclNum, varDsc->GetStackOffset(),
+                    varDsc->GetStackOffset() + localDelta);
+            varDsc->SetStackOffset(varDsc->GetStackOffset() + localDelta);
 
 #if DOUBLE_ALIGN
             if (genDoubleAlign() && !codeGen->isFramePointerUsed())
             {
                 if (varDsc->lvFramePointerBased)
                 {
-                    varDsc->SetStackOffset(varDsc->GetStackOffset() - delta);
+                    varDsc->SetStackOffset(varDsc->GetStackOffset() - localDelta);
 
                     // We need to re-adjust the offsets of the parameters so they are EBP
                     // relative rather than stack/frame pointer relative
@@ -5784,9 +5821,13 @@ void Compiler::lvaFixVirtualFrameOffsets()
     assert(codeGen->regSet.tmpAllFree());
     for (TempDsc* temp = codeGen->regSet.tmpListBeg(); temp != nullptr; temp = codeGen->regSet.tmpListNxt(temp))
     {
-        temp->tdAdjustTempOffs(delta);
+        temp->tdAdjustTempOffs(delta + frameLocalsDelta);
     }
 
+    if (lvaCachedGenericContextArgOffs < frameBoundary)
+    {
+        lvaCachedGenericContextArgOffs += frameLocalsDelta;
+    }
     lvaCachedGenericContextArgOffs += delta;
 
 #if FEATURE_FIXED_OUT_ARGS
@@ -6042,30 +6083,6 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
         codeGen->setFramePointerUsed(codeGen->isFramePointerRequired());
     }
 
-#ifdef TARGET_ARM64
-    // Decide where to save FP and LR registers. We store FP/LR registers at the bottom of the frame if there is
-    // a frame pointer used (so we get positive offsets from the frame pointer to access locals), but not if we
-    // need a GS cookie AND localloc is used, since we need the GS cookie to protect the saved return value,
-    // and also the saved frame pointer. See CodeGen::genPushCalleeSavedRegisters() for more details about the
-    // frame types. Since saving FP/LR at high addresses is a relatively rare case, force using it during stress.
-    // (It should be legal to use these frame types for every frame).
-
-    if (opts.compJitSaveFpLrWithCalleeSavedRegisters == 0)
-    {
-        // Default configuration
-        codeGen->SetSaveFpLrWithAllCalleeSavedRegisters((getNeedsGSSecurityCookie() && compLocallocUsed) ||
-                                                        opts.compDbgEnC || compStressCompile(STRESS_GENERIC_VARN, 20));
-    }
-    else if (opts.compJitSaveFpLrWithCalleeSavedRegisters == 1)
-    {
-        codeGen->SetSaveFpLrWithAllCalleeSavedRegisters(false); // Disable using new frames
-    }
-    else if ((opts.compJitSaveFpLrWithCalleeSavedRegisters == 2) || (opts.compJitSaveFpLrWithCalleeSavedRegisters == 3))
-    {
-        codeGen->SetSaveFpLrWithAllCalleeSavedRegisters(true); // Force using new frames
-    }
-#endif // TARGET_ARM64
-
 #ifdef TARGET_XARCH
     // On x86/amd64, the return address has already been pushed by the call instruction in the caller.
     stkOffs -= TARGET_POINTER_SIZE; // return address;
@@ -6114,9 +6131,13 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
 #endif // !TARGET_ARM
 
 #ifdef TARGET_ARM64
-    // If the frame pointer is used, then we'll save FP/LR at the bottom of the stack.
-    // Otherwise, we won't store FP, and we'll store LR at the top, with the other callee-save
-    // registers (if any).
+    // If the frame pointer is used, then we'll save FP/LR either at the bottom of the stack
+    // or at the top of the stack depending on frame type. We make the decision after assigning
+    // the variables on the frame and then fix up the offsets in lvaFixVirtualFrameOffsets.
+    // For now, we proceed as if FP/LR were saved with the callee registers. If we later
+    // decide to move the FP/LR to the bottom of the frame it shifts all the assigned
+    // variables and temporaries by 16 bytes. The largest alignment we currently make is 16
+    // bytes for SIMD.
 
     int initialStkOffs = 0;
     if (info.compIsVarArgs)
@@ -6127,17 +6148,7 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
         stkOffs -= initialStkOffs;
     }
 
-    if (codeGen->IsSaveFpLrWithAllCalleeSavedRegisters() || !isFramePointerUsed()) // Note that currently we always have
-                                                                                   // a frame pointer
-    {
-        stkOffs -= compCalleeRegsPushed * REGSIZE_BYTES;
-    }
-    else
-    {
-        // Subtract off FP and LR.
-        assert(compCalleeRegsPushed >= 2);
-        stkOffs -= (compCalleeRegsPushed - 2) * REGSIZE_BYTES;
-    }
+    stkOffs -= compCalleeRegsPushed * REGSIZE_BYTES;
 
 #elif defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
 
@@ -6807,15 +6818,6 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
     }
 #endif // TARGET_AMD64
 
-#ifdef TARGET_ARM64
-    if (!codeGen->IsSaveFpLrWithAllCalleeSavedRegisters() && isFramePointerUsed()) // Note that currently we always have
-                                                                                   // a frame pointer
-    {
-        // Create space for saving FP and LR.
-        stkOffs -= 2 * REGSIZE_BYTES;
-    }
-#endif // TARGET_ARM64
-
 #if FEATURE_FIXED_OUT_ARGS
     if (lvaOutgoingArgSpaceSize > 0)
     {
@@ -6853,6 +6855,44 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
 
     noway_assert(compLclFrameSize + originalFrameSize ==
                  (unsigned)-(stkOffs + (pushedCount * (int)TARGET_POINTER_SIZE)));
+
+#ifdef TARGET_ARM64
+    // Decide where to save FP and LR registers. We store FP/LR registers at the bottom of the frame if there is
+    // a frame pointer used (so we get positive offsets from the frame pointer to access locals), but not if we
+    // need a GS cookie AND localloc is used, since we need the GS cookie to protect the saved return value,
+    // and also the saved frame pointer. See CodeGen::genPushCalleeSavedRegisters() for more details about the
+    // frame types. Since saving FP/LR at high addresses is a relatively rare case, force using it during stress.
+    // (It should be legal to use these frame types for every frame).
+    //
+    // For Apple NativeAOT ABI we try to save the FP/LR registers on top to get canonical frame layout that can
+    // be represented with compact unwinding information. In order to maintain code quality we only do it when
+    // we can use SP-based addressing (!isFramePointerRequired) through lvaFrameAddress optimization, or if the
+    // whole frame is small enough that the negative FP-based addressing can address the whole frame.
+
+    if (opts.compJitSaveFpLrWithCalleeSavedRegisters == 0)
+    {
+        if (IsTargetAbi(CORINFO_NATIVEAOT_ABI) && TargetOS::IsApplePlatform &&
+            (!codeGen->isFramePointerRequired() || codeGen->genTotalFrameSize() < 0x100))
+        {
+            codeGen->SetSaveFpLrWithAllCalleeSavedRegisters(true);
+        }
+        else
+        {
+            // Default configuration
+            codeGen->SetSaveFpLrWithAllCalleeSavedRegisters((getNeedsGSSecurityCookie() && compLocallocUsed) ||
+                                                            opts.compDbgEnC ||
+                                                            compStressCompile(Compiler::STRESS_GENERIC_VARN, 20));
+        }
+    }
+    else if (opts.compJitSaveFpLrWithCalleeSavedRegisters == 1)
+    {
+        codeGen->SetSaveFpLrWithAllCalleeSavedRegisters(false); // Disable using new frames
+    }
+    else if ((opts.compJitSaveFpLrWithCalleeSavedRegisters == 2) || (opts.compJitSaveFpLrWithCalleeSavedRegisters == 3))
+    {
+        codeGen->SetSaveFpLrWithAllCalleeSavedRegisters(true); // Force using new frames
+    }
+#endif // TARGET_ARM64
 }
 
 //------------------------------------------------------------------------
@@ -7335,7 +7375,7 @@ void Compiler::lvaDumpRegLocation(unsigned lclNum)
  *  in its home location.
  */
 
-void Compiler::lvaDumpFrameLocation(unsigned lclNum)
+void Compiler::lvaDumpFrameLocation(unsigned lclNum, int minLength)
 {
     int       offset;
     regNumber baseReg;
@@ -7348,7 +7388,12 @@ void Compiler::lvaDumpFrameLocation(unsigned lclNum)
     baseReg = EBPbased ? REG_FPBASE : REG_SPBASE;
 #endif
 
-    printf("[%2s%1s0x%02X] ", getRegName(baseReg), (offset < 0 ? "-" : "+"), (offset < 0 ? -offset : offset));
+    int printed =
+        printf("[%2s%1s0x%02X] ", getRegName(baseReg), (offset < 0 ? "-" : "+"), (offset < 0 ? -offset : offset));
+    if ((printed >= 0) && (printed < minLength))
+    {
+        printf("%*s", minLength - printed, "");
+    }
 }
 
 /*****************************************************************************
@@ -7439,7 +7484,7 @@ void Compiler::lvaDumpEntry(unsigned lclNum, FrameLayoutState curState, size_t r
             // location. Otherwise, it's always on the stack.
             if (lvaDoneFrameLayout != NO_FRAME_LAYOUT)
             {
-                lvaDumpFrameLocation(lclNum);
+                lvaDumpFrameLocation(lclNum, (int)strlen("zero-ref   "));
             }
         }
     }
@@ -7607,7 +7652,7 @@ void Compiler::lvaDumpEntry(unsigned lclNum, FrameLayoutState curState, size_t r
     else if (varTypeIsStruct(varDsc->TypeGet()))
     {
         ClassLayout* layout = varDsc->GetLayout();
-        if (layout != nullptr && !layout->IsBlockLayout())
+        if (layout != nullptr)
         {
             printf(" <%s>", layout->GetClassName());
         }
@@ -8061,8 +8106,8 @@ Compiler::fgWalkResult Compiler::lvaStressLclFldCB(GenTree** pTree, fgWalkData* 
             return WALK_CONTINUE;
         }
 
-        // Can't have GC ptrs in block layouts.
-        if (!varTypeIsArithmetic(lclType))
+        // Structs are not currently supported
+        if (varTypeIsStruct(lclType))
         {
             varDsc->lvNoLclFldStress = true;
             return WALK_CONTINUE;
@@ -8071,6 +8116,13 @@ Compiler::fgWalkResult Compiler::lvaStressLclFldCB(GenTree** pTree, fgWalkData* 
         // The noway_assert in the second pass below, requires that these types match
         //
         if (varType != lclType)
+        {
+            varDsc->lvNoLclFldStress = true;
+            return WALK_CONTINUE;
+        }
+
+        // Pinned locals would not remain pinned if we did this transformation.
+        if (varDsc->lvPinned)
         {
             varDsc->lvNoLclFldStress = true;
             return WALK_CONTINUE;
@@ -8098,7 +8150,7 @@ Compiler::fgWalkResult Compiler::lvaStressLclFldCB(GenTree** pTree, fgWalkData* 
     else
     {
         // Do the morphing
-        noway_assert((varType == lclType) || ((varType == TYP_STRUCT) && varDsc->GetLayout()->IsBlockLayout()));
+        noway_assert((varType == lclType) || ((varType == TYP_STRUCT) && varDsc->GetLayout()->IsCustomLayout()));
 
         // Calculate padding
         unsigned padding = pComp->lvaStressLclFldPadding(lclNum);
@@ -8109,17 +8161,34 @@ Compiler::fgWalkResult Compiler::lvaStressLclFldCB(GenTree** pTree, fgWalkData* 
         padding = roundUp(padding, genTypeSize(TYP_DOUBLE));
 #endif // defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
 
+        // Also for GC types we need to round up
+        if (varTypeIsGC(varType) || ((varType == TYP_STRUCT) && varDsc->GetLayout()->HasGCPtr()))
+        {
+            padding = roundUp(padding, TARGET_POINTER_SIZE);
+        }
+
         if (varType != TYP_STRUCT)
         {
-            // Change the variable to a block struct
-            ClassLayout* layout =
-                pComp->typGetBlkLayout(roundUp(padding + pComp->lvaLclSize(lclNum), TARGET_POINTER_SIZE));
-            varDsc->lvType = TYP_STRUCT;
+            // Change the variable to a custom layout struct
+            unsigned           size = roundUp(padding + pComp->lvaLclSize(lclNum), TARGET_POINTER_SIZE);
+            ClassLayoutBuilder builder(pComp, size);
+#ifdef DEBUG
+            builder.SetName(pComp->printfAlloc("%s_%u_Stress", varTypeName(varType), size),
+                            pComp->printfAlloc("%s_%u", varTypeName(varType), size));
+#endif
+
+            if (varTypeIsGC(varType))
+            {
+                builder.SetGCPtrType(padding / TARGET_POINTER_SIZE, varType);
+            }
+
+            ClassLayout* layout = pComp->typGetCustomLayout(builder);
+            varDsc->lvType      = TYP_STRUCT;
             varDsc->SetLayout(layout);
             pComp->lvaSetVarAddrExposed(lclNum DEBUGARG(AddressExposedReason::STRESS_LCL_FLD));
 
-            JITDUMP("Converting V%02u to %u sized block with LCL_FLD at offset (padding %u)\n", lclNum,
-                    layout->GetSize(), padding);
+            JITDUMP("Converting V%02u of type %s to %u sized block with LCL_FLD at offset (padding %u)\n", lclNum,
+                    varTypeName(varType), layout->GetSize(), padding);
         }
 
         tree->gtFlags |= GTF_GLOB_REF;
