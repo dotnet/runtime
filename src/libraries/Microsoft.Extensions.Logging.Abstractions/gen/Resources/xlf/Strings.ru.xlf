@@ -132,6 +132,16 @@
         <target state="translated">Обнаружено несколько полей типа Microsoft.Extensions.Logging.ILogger</target>
         <note>{Locked="Microsoft.Extensions.Logging.ILogger"}</note>
       </trans-unit>
+      <trans-unit id="PrimaryConstructorParameterLoggerHiddenMessage">
+        <source>Class '{0}' has a primary constructor parameter of type Microsoft.Extensions.Logging.ILogger that is hidden by a field in the class or a base class, preventing its use</source>
+        <target state="translated">Класс "{0}" имеет первичный параметр конструктора типа Microsoft.Extensions.Logging.ILogger который скрыт полем в этом классе или базовом классе, что препятствует его использованию</target>
+        <note>{Locked="Microsoft.Extensions.Logging.ILogger"}</note>
+      </trans-unit>
+      <trans-unit id="PrimaryConstructorParameterLoggerHiddenTitle">
+        <source>Primary constructor parameter of type Microsoft.Extensions.Logging.ILogger is hidden by a field</source>
+        <target state="translated">Параметр основного конструктора типа Microsoft.Extensions.Logging.ILogger скрыт полем</target>
+        <note>{Locked="Microsoft.Extensions.Logging.ILogger"}</note>
+      </trans-unit>
       <trans-unit id="RedundantQualifierInMessageMessage">
         <source>Remove redundant qualifier (Info:, Warning:, Error:, etc) from the logging message since it is implicit in the specified log level.</source>
         <target state="translated">Удалите избыточный квалификатор (Info:, Warning:, Error:, и т. п.) из сообщения журнала, поскольку квалификатор подразумевается на указанном уровне ведения журнала.</target>
