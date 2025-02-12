@@ -154,7 +154,7 @@ class Promotion
 
     static bool     IsCandidateForPhysicalPromotion(LclVarDsc* dsc);
     static GenTree* EffectiveUser(Compiler::GenTreeStack& ancestors);
-
+    static bool     MapsToParameterRegister(Compiler* comp, unsigned lclNum, unsigned offs, var_types accessType);
 public:
     explicit Promotion(Compiler* compiler)
         : m_compiler(compiler)
@@ -274,9 +274,9 @@ public:
         return m_mayHaveForwardSub;
     }
 
-    void StartBlock(BasicBlock* block);
-    void EndBlock();
-    void StartStatement(Statement* stmt);
+    Statement* StartBlock(BasicBlock* block);
+    void       EndBlock();
+    void       StartStatement(Statement* stmt);
 
     fgWalkResult PostOrderVisit(GenTree** use, GenTree* user);
 
