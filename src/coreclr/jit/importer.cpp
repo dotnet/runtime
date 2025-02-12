@@ -968,8 +968,7 @@ GenTree* Compiler::impStoreStruct(GenTree*         store,
     else if (src->OperIs(GT_COMMA))
     {
         GenTree* sideEffectAddressStore = nullptr;
-        if (store->OperIs(GT_STORE_BLK, GT_STOREIND) &&
-            ((store->AsIndir()->Addr()->gtFlags & GTF_ALL_EFFECT) != 0))
+        if (store->OperIs(GT_STORE_BLK, GT_STOREIND) && ((store->AsIndir()->Addr()->gtFlags & GTF_ALL_EFFECT) != 0))
         {
             TempInfo addrikTmp       = fgMakeTemp(store->AsIndir()->Addr());
             sideEffectAddressStore   = addrikTmp.store;
