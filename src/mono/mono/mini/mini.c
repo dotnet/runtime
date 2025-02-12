@@ -3677,6 +3677,8 @@ mini_method_compile (MonoMethod *method, guint32 opts, JitFlags flags, int parts
 		MONO_TIME_TRACK (mono_jit_stats.jit_insert_safepoints, insert_safepoints (cfg));
 		mono_cfg_dump_ir (cfg, "insert_safepoints");
 	}
+	
+	// TODO insert_samplepoints
 
 	/* after method_to_ir */
 	if (parts == 1) {

@@ -13161,6 +13161,8 @@ emit_method_inner (EmitContext *ctx)
 	}
 	LLVMSetLinkage (method, LLVMPrivateLinkage);
 
+	// TODO emit samplepoint
+
 	mono_llvm_add_func_attr (method, LLVM_ATTR_UW_TABLE);
 
 	if (cfg->disable_omit_fp)

@@ -285,6 +285,7 @@ export type EmscriptenBuildOptions = {
     enableAotProfiler: boolean,
     enableBrowserProfiler: boolean,
     enableLogProfiler: boolean,
+    enablePerfTracing: boolean,
     runAOTCompilation: boolean,
     wasmEnableThreads: boolean,
     gitHash: string,
