@@ -1028,7 +1028,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 		protected virtual IEnumerable<string> VerifyPseudoAttributes (MethodDefinition src, MethodDefinition linked)
 		{
 			var expected = (MethodAttributes) GetExpectedPseudoAttributeValue (src, (uint) src.Attributes);
-			if(!linked.Attributes.Equals(expected))
+			if (!linked.Attributes.Equals(expected))
 			{
 				yield return $"Method `{src}' pseudo attributes did not match expected";
 			}
@@ -1038,7 +1038,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 		{
 			var expected = (TypeAttributes) GetExpectedPseudoAttributeValue (src, (uint) src.Attributes);
 
-			if(!linked.Attributes.Equals(expected))
+			if (!linked.Attributes.Equals(expected))
 			{
 				yield return $"Type `{src}' pseudo attributes did not match expected";
 			}
@@ -1047,7 +1047,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 		protected virtual IEnumerable<string> VerifyPseudoAttributes (FieldDefinition src, FieldDefinition linked)
 		{
 			var expected = (FieldAttributes) GetExpectedPseudoAttributeValue (src, (uint) src.Attributes);
-			if(!linked.Attributes.Equals(expected))
+			if (!linked.Attributes.Equals(expected))
 			{
 				yield return $"Field `{src}' pseudo attributes did not match expected";
 			}
@@ -1056,7 +1056,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 		protected virtual IEnumerable<string> VerifyPseudoAttributes (PropertyDefinition src, PropertyDefinition linked)
 		{
 			var expected = (PropertyAttributes) GetExpectedPseudoAttributeValue (src, (uint) src.Attributes);
-			if(!linked.Attributes.Equals(expected))
+			if (!linked.Attributes.Equals(expected))
 			{
 				yield return $"Property `{src}' pseudo attributes did not match expected";
 			}
@@ -1066,7 +1066,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 		protected virtual IEnumerable<string> VerifyPseudoAttributes (EventDefinition src, EventDefinition linked)
 		{
 			var expected = (EventAttributes) GetExpectedPseudoAttributeValue (src, (uint) src.Attributes);
-			if(!linked.Attributes.Equals(expected))
+			if (!linked.Attributes.Equals(expected))
 			{
 				yield return $"Event `{src}' pseudo attributes did not match expected";
 			}
@@ -1077,7 +1077,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			var expectedAttrs = GetExpectedAttributes (src).ToList ();
 			var linkedAttrs = FilterLinkedAttributes (linked).ToList ();
 
-			if(!linkedAttrs.SequenceEqual(expectedAttrs))
+			if (!linkedAttrs.SequenceEqual(expectedAttrs))
 			{
 				yield return $"Custom attributes on `{src}' are not matching";
 			}
@@ -1091,7 +1091,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
 			var linkedAttrs = FilterLinkedSecurityAttributes (linked).ToList ();
 
-			if(!linkedAttrs.SequenceEqual(expectedAttrs))
+			if (!linkedAttrs.SequenceEqual(expectedAttrs))
 			{
 				yield return $"Security attributes on `{src}' are not matching";
 			}

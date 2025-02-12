@@ -418,7 +418,7 @@ namespace ILCompiler.DependencyAnalysis
 
             uint pcInstr = *pCode;
 
-            Debug.Assert(pcInstr == 0x1e00000e);  // Must be pcaddu18i R14, 0
+            Debug.Assert(pcInstr == 0x1e000010);  // Must be pcaddu18i t4, 0
 
             long relOff = imm38 & 0x20000;
             long imm = imm38 + relOff;
