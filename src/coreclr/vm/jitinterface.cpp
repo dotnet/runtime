@@ -8778,7 +8778,7 @@ bool CEEInfo::resolveVirtualMethodHelper(CORINFO_DEVIRTUALIZATION_INFO * info)
     }
 
     // This is generic virtual method devirtualization.
-    if (pBaseMD->HasMethodInstantiation())
+    if (!isArray && pBaseMD->HasMethodInstantiation())
     {
         pDevirtMD = pDevirtMD->FindOrCreateAssociatedMethodDesc(pDevirtMD, pExactMT, false, pBaseMD->GetMethodInstantiation(), false);
         if (ClassLoader::IsTypicalSharedInstantiation(pDevirtMD->GetMethodInstantiation()))
