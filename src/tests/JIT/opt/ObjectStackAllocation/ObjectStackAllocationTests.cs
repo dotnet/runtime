@@ -88,6 +88,13 @@ namespace ObjectStackAllocation
         Undefined
     }
 
+    ref struct SpanKeeper<T>
+    {
+        public int a;
+        public Span<T> span;
+        public int b;
+    }
+
     public class Tests
     {
         static volatile int f1 = 5;
@@ -162,6 +169,12 @@ namespace ObjectStackAllocation
             CallTestAndVerifyAllocation(AllocateArrayT<int>, 84, expectedAllocationKind);
             CallTestAndVerifyAllocation(AllocateArrayT<string>, 84, expectedAllocationKind);
 
+            // Span captures
+            CallTestAndVerifyAllocation(SpanCaptureArray1, 41, expectedAllocationKind);
+            CallTestAndVerifyAllocation(SpanCaptureArray2, 25, expectedAllocationKind);
+            CallTestAndVerifyAllocation(SpanCaptureArrayT<int>, 37, expectedAllocationKind);
+            CallTestAndVerifyAllocation(SpanCaptureArrayT<string>, 37, expectedAllocationKind);
+
             // The remaining tests currently never allocate on the stack
             if (expectedAllocationKind == AllocationKind.Stack) {
                 expectedAllocationKind = AllocationKind.Heap;
@@ -175,6 +188,11 @@ namespace ObjectStackAllocation
 
             CallTestAndVerifyAllocation(AllocateArrayWithNonGCElementsEscape, 42, expectedAllocationKind);
             CallTestAndVerifyAllocation(AllocateArrayWithGCElementsEscape, 42, expectedAllocationKind);
+
+            CallTestAndVerifyAllocation(SpanEscapeArrayArg, 42, expectedAllocationKind);
+            CallTestAndVerifyAllocation(SpanEscapeArrayArgCopy, 42, expectedAllocationKind);
+            CallTestAndVerifyAllocation(SpanEscapeArrayOutParam, 22, expectedAllocationKind);
+            CallTestAndVerifyAllocation(SpanEscapeArrayOutParam2, 22, expectedAllocationKind);
 
             // This test calls CORINFO_HELP_OVERFLOW
             CallTestAndVerifyAllocation(AllocateArrayWithNonGCElementsOutOfRangeLeft, 0, expectedAllocationKind, true);
@@ -404,6 +422,106 @@ namespace ObjectStackAllocation
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
+        static int SpanCaptureArray1()
+        {
+            Span<int> span = new int[100];
+            span[10] = 41;
+            return span[10] + span[42];
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static int SpanCaptureArray2() => SpanCaptureArray2Helper(null);
+
+        static int SpanCaptureArray2Helper(int[]? x)
+        {
+            Span<int> span = x ?? new int[100];
+            span[10] = 25;
+            return span[10] + span[42];
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static int SpanCaptureArray3()
+        {
+            Span<int> span = new int[128];
+            span[10] = 100;
+            Span<int> x = span;
+            return x[10] + span[42];
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static int SpanCaptureArrayT<T>()
+        {
+            Span<T> span = new T[37];
+            return span.Length;
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static int SpanEscapeArrayArg()
+        {
+            Span<int> y = new int[100];
+            Use(y);
+            TrashStack();
+            return y[42];
+        }
+
+       [MethodImpl(MethodImplOptions.NoInlining)]
+        static int SpanEscapeArrayArgCopy()
+        {
+            Span<int> x = new int[100];
+            Span<int> y = x;
+            Use(y);
+            TrashStack();
+            return y[42];
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static int SpanEscapeArrayReturn() => SpanEscapeArrayReturnHelper()[10];
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static Span<int> SpanEscapeArrayReturnHelper()
+        {
+            Span<int> x = new int[44];
+            Span<int> y = x;
+            x[10] = 99;
+            return y;
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static int SpanEscapeArrayOutParam()
+        {
+            Span<int> x;
+            SpanEscapeArrayOutParamHelper(out x);
+            TrashStack();
+            return x[10];
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static void SpanEscapeArrayOutParamHelper(out Span<int> a)
+        {
+            a = new Span<int>(new int[44]);
+            a[10] = 22;
+        }
+   
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static int SpanEscapeArrayOutParam2()
+        {
+            SpanKeeper<int> y;
+            SpanEscapeArrayOutParam2Helper(out y);
+            TrashStack();
+            return y.span[10];
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static void SpanEscapeArrayOutParam2Helper(out SpanKeeper<int> b)
+        {
+            int[] x = new int[44];
+            x[10] = 22;
+            b.span = x;
+            b.a = 1;
+            b.b = 2;
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
         static int AllocateArrayWithNonGCElementsEscape()
         {
             int[] array = new int[42];
@@ -468,6 +586,15 @@ namespace ObjectStackAllocation
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
+        static void Use(Span<int> span)
+        {
+            span[42] = 42;
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static Span<int> Identity(Span<int> x) => x;
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
         private static void ZeroAllocTest()
         {
             long before = GC.GetAllocatedBytesForCurrentThread();
@@ -524,6 +651,16 @@ namespace ObjectStackAllocation
         [MethodImpl(MethodImplOptions.NoInlining)]
         private static void Consume<T>(T _)
         {
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static void TrashStack()
+        {
+            Span<int> span = stackalloc int[128];
+            for (int i = 0; i < span.Length; i++)
+            {
+                span[i] = -1;
+            }
         }
 
         private record class MyRecord(int A, long B, Guid C);
