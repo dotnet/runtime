@@ -266,14 +266,14 @@ namespace System.Reflection.Tests
             Assert.True(t.IsArray);
             Assert.True(t.IsSZArray);
             Assert.Equal(1, t.GetArrayRank());
+            Assert.False(t.IsValueType);
+            Assert.False(t.IsEnum);
 
             Type et = t.GetElementType();
             Assert.True(et.IsSignatureType);
             Assert.True(et.IsGenericParameter);
             Assert.False(et.IsGenericTypeParameter);
             Assert.True(et.IsGenericMethodParameter);
-            Assert.Throws<NotSupportedException>(() => et.IsValueType);
-            Assert.Throws<NotSupportedException>(() => et.IsEnum);
             Assert.Equal(5, et.GenericParameterPosition);
 
             TestSignatureTypeInvariants(t);
@@ -302,6 +302,8 @@ namespace System.Reflection.Tests
             Type t = Type.MakeGenericMethodParameter(5);
             t = t.MakeByRefType();
             Assert.True(t.IsByRef);
+            Assert.False(t.IsValueType);
+            Assert.False(t.IsEnum);
 
             Type et = t.GetElementType();
             Assert.True(et.IsSignatureType);
@@ -309,8 +311,6 @@ namespace System.Reflection.Tests
             Assert.False(et.IsGenericTypeParameter);
             Assert.True(et.IsGenericMethodParameter);
             Assert.Equal(5, et.GenericParameterPosition);
-            Assert.False(t.IsValueType);
-            Assert.False(t.IsEnum);
 
             TestSignatureTypeInvariants(t);
         }
@@ -321,6 +321,8 @@ namespace System.Reflection.Tests
             Type t = Type.MakeGenericMethodParameter(5);
             t = t.MakePointerType();
             Assert.True(t.IsPointer);
+            Assert.False(t.IsValueType);
+            Assert.False(t.IsEnum);
 
             Type et = t.GetElementType();
             Assert.True(et.IsSignatureType);
@@ -328,8 +330,6 @@ namespace System.Reflection.Tests
             Assert.False(et.IsGenericTypeParameter);
             Assert.True(et.IsGenericMethodParameter);
             Assert.Equal(5, et.GenericParameterPosition);
-            Assert.False(t.IsValueType);
-            Assert.False(t.IsEnum);
 
             TestSignatureTypeInvariants(t);
         }
