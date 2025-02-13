@@ -2223,17 +2223,17 @@ AssertionInfo Compiler::optAssertionGenJtrue(GenTree* tree)
     // If op1 is lcl and op2 is const or lcl, create assertion.
     if ((op1->gtOper == GT_LCL_VAR) && (op2->OperIsConst() || (op2->gtOper == GT_LCL_VAR))) // Fix for Dev10 851483
     {
-        // Watch out for cases where the local(s) are truncated.
+        // Watch out for cases where long local(s) are implicitly truncated.
         //
         LclVarDsc* const lcl1Dsc = lvaGetDesc(op1->AsLclVarCommon());
-        if (lcl1Dsc->TypeGet() != op1->TypeGet())
+        if ((lcl1Dsc->TypeGet() == TYP_LONG) && (op1->TypeGet() != TYP_LONG))
         {
             return NO_ASSERTION_INDEX;
         }
         if (op2->OperIs(GT_LCL_VAR))
         {
             LclVarDsc* const lcl2Dsc = lvaGetDesc(op2->AsLclVarCommon());
-            if (lcl2Dsc->TypeGet() != op2->TypeGet())
+            if ((lcl2Dsc->TypeGet() == TYP_LONG) && (op2->TypeGet() != TYP_LONG))
             {
                 return NO_ASSERTION_INDEX;
             }
