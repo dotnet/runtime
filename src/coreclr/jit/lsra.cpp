@@ -401,6 +401,48 @@ void LinearScan::updateSpillCost(regNumber reg, Interval* interval)
 //    interval - Interval of Refposition.
 //    assignedReg - Assigned register for this refposition.
 //
+void LinearScan::updateRegsFreeBusyStateFast(RefPosition&               refPosition,
+    var_types                  registerType,
+    SingleTypeRegSet           regsBusy,
+    SingleTypeRegSet*                 regsToFree,
+    SingleTypeRegSet* delayRegsToFree DEBUG_ARG(Interval* interval)
+        DEBUG_ARG(regNumber assignedReg))
+{
+    regsInUseThisLocation.AddRegsetForType(regsBusy, registerType);
+    if (refPosition.lastUse)
+    {
+        if (refPosition.delayRegFree)
+        {
+            INDEBUG(dumpLsraAllocationEvent(LSRA_EVENT_LAST_USE_DELAYED, interval, assignedReg));
+            *delayRegsToFree |= regsBusy;
+            //delayRegsToFree->AddRegsetForType(regsBusy, registerType);
+            regsInUseNextLocation.AddRegsetForType(regsBusy, registerType);
+        }
+        else
+        {
+            INDEBUG(dumpLsraAllocationEvent(LSRA_EVENT_LAST_USE, interval, assignedReg));
+            *regsToFree |= regsBusy;
+            //regsToFree->AddRegsetForType(regsBusy, registerType);
+        }
+    }
+    else if (refPosition.delayRegFree)
+    {
+        regsInUseNextLocation.AddRegsetForType(regsBusy, registerType);
+    }
+}
+
+//------------------------------------------------------------------------
+// updateRegsFreeBusyState: Update various register masks and global state to track
+//   registers that are free and busy.
+//
+// Arguments:
+//    refPosition - RefPosition for which we need to update the state.
+//    regsBusy - Mask of registers that are busy.
+//    regsToFree - Mask of registers that are set to be free.
+//    delayRegsToFree - Mask of registers that are set to be delayed free.
+//    interval - Interval of Refposition.
+//    assignedReg - Assigned register for this refposition.
+//
 void LinearScan::updateRegsFreeBusyState(RefPosition&               refPosition,
                                          var_types                  registerType,
                                          SingleTypeRegSet           regsBusy,
@@ -4775,6 +4817,39 @@ void LinearScan::freeRegisters(regMaskTP regsToFree)
     }
 }
 
+
+//------------------------------------------------------------------------
+// LinearScan::freeRegisters: Free the registers in 'regsToFree'
+//
+// Arguments:
+//    regsToFree         - the mask of registers to free
+//
+void LinearScan::freeRegistersFast(SingleTypeRegSet regsToFree, bool isMaskType)
+{
+    if (regsToFree == RBM_NONE)
+    {
+        return;
+    }
+
+    INDEBUG(dumpLsraAllocationEvent(LSRA_EVENT_FREE_REGS));
+    makeRegsAvailableFast(regsToFree, isMaskType);
+    while (!(regsToFree == RBM_NONE))
+    {
+        regNumber nextReg = genFirstRegNumFromMaskAndToggleFast(regsToFree, isMaskType);
+
+        RegRecord* regRecord = getRegisterRecord(nextReg);
+#ifdef TARGET_ARM
+        if (regRecord->assignedInterval != nullptr && (regRecord->assignedInterval->registerType == TYP_DOUBLE))
+        {
+            assert(genIsValidDoubleReg(nextReg));
+            regsToFree &= ~genSingleTypeRegMask(regNumber(nextReg + 1));
+            //regsToFree.RemoveRegNumFromMask(regNumber(nextReg + 1));
+        }
+#endif
+        freeRegister(regRecord);
+    }
+}
+
 //------------------------------------------------------------------------
 // LinearScan::allocateRegistersMinimal: Perform the actual register allocation when localVars
 //  are not enregistered.
@@ -4826,11 +4901,28 @@ void LinearScan::allocateRegistersMinimal()
     RefPosition* nextKill     = killHead;
 
     LsraLocation prevLocation            = MinLocation;
-    regMaskTP    regsToFree              = RBM_NONE;
-    regMaskTP    delayRegsToFree         = RBM_NONE;
-    regMaskTP    regsToMakeInactive      = RBM_NONE;
-    regMaskTP    delayRegsToMakeInactive = RBM_NONE;
-    regMaskTP    copyRegsToFree          = RBM_NONE;
+    /*struct RegSetMasks
+    {
+        SingleTypeRegSet    regsToFree              = RBM_NONE;
+        SingleTypeRegSet    delayRegsToFree         = RBM_NONE;
+        SingleTypeRegSet    regsToMakeInactive      = RBM_NONE;
+        SingleTypeRegSet    delayRegsToMakeInactive = RBM_NONE;
+    };*/
+
+    RegSetMasks lowRegSet;
+    RegSetMasks highRegSet;
+    RegSetMasks *currRegSet = &lowRegSet;
+    /* SingleTypeRegSet regsToFree = (currRegSet->regsToFree);
+    SingleTypeRegSet delayRegsToFree = (currRegSet->delayRegsToFree);
+    SingleTypeRegSet regsToMakeInactive = (currRegSet->regsToMakeInactive);
+    SingleTypeRegSet delayRegsToMakeInactive = (currRegSet->delayRegsToMakeInactive);
+    SingleTypeRegSet copyRegsToFree = (currRegSet->copyRegsToFree);*/
+    bool currIsMask = false;
+    //regMaskTP    regsToFree              = RBM_NONE;
+    //regMaskTP    delayRegsToFree         = RBM_NONE;
+    //regMaskTP    regsToMakeInactive      = RBM_NONE;
+    //regMaskTP    delayRegsToMakeInactive = RBM_NONE;
+    //regMaskTP    copyRegsToFree          = RBM_NONE;
     regsInUseThisLocation                = RBM_NONE;
     regsInUseNextLocation                = RBM_NONE;
 
@@ -4846,22 +4938,44 @@ void LinearScan::allocateRegistersMinimal()
         // TODO: Can we combine this with the freeing of registers below? It might
         // mess with the dump, since this was previously being done before the call below
         // to dumpRegRecords.
-        regMaskTP tempRegsToMakeInactive = (regsToMakeInactive | delayRegsToMakeInactive);
-        while (tempRegsToMakeInactive.IsNonEmpty())
+        /*if(!currentRefPosition.IsPhysRegRef())
         {
-            regNumber  nextReg   = genFirstRegNumFromMaskAndToggle(tempRegsToMakeInactive);
+            Interval* currI = currentRefPosition.getInterval();
+            if(currI != nullptr)
+            {
+                 RegisterType currRegType     = getRegisterType(currI, &currentRefPosition);
+                 if (currRegType == TYP_DOUBLE)
+                {
+                    printf("\n Deepak \n");
+                }
+            }
+            else{
+                printf("\n huh\n");
+            }
+
+        }
+        else
+        {
+            printf("\n What!!");
+        }*/
+
+        SingleTypeRegSet tempRegsToMakeInactive = (currRegSet->regsToMakeInactive | currRegSet->delayRegsToMakeInactive);
+        while (!(tempRegsToMakeInactive == RBM_NONE))
+        {
+            //regNumber  nextReg   = genFirstRegNumFromMaskAndToggle(tempRegsToMakeInactive);
+            regNumber  nextReg   = genFirstRegNumFromMaskAndToggleFast(tempRegsToMakeInactive, currIsMask);
             RegRecord* regRecord = getRegisterRecord(nextReg);
             clearSpillCost(regRecord->regNum, regRecord->registerType);
             makeRegisterInactive(regRecord);
         }
         if (currentRefPosition.nodeLocation > prevLocation)
         {
-            makeRegsAvailable(regsToMakeInactive);
+            makeRegsAvailableFast(currRegSet->regsToMakeInactive, currIsMask);
             // TODO: Clean this up. We need to make the delayRegs inactive as well, but don't want
             // to mark them as free yet.
-            regsToMakeInactive |= delayRegsToMakeInactive;
-            regsToMakeInactive      = delayRegsToMakeInactive;
-            delayRegsToMakeInactive = RBM_NONE;
+            //*regsToMakeInactive |= *delayRegsToMakeInactive;
+            currRegSet->regsToMakeInactive      = currRegSet->delayRegsToMakeInactive;
+            currRegSet->delayRegsToMakeInactive = RBM_NONE;
         }
 
 #ifdef DEBUG
@@ -4917,28 +5031,28 @@ void LinearScan::allocateRegistersMinimal()
         if (currentLocation > prevLocation)
         {
             // CopyRegs are simply made available - we don't want to make the associated interval inactive.
-            makeRegsAvailable(copyRegsToFree);
-            copyRegsToFree        = RBM_NONE;
+            makeRegsAvailableFast(currRegSet->copyRegsToFree, currIsMask);
+            currRegSet->copyRegsToFree        = RBM_NONE;
             regsInUseThisLocation = regsInUseNextLocation;
             regsInUseNextLocation = RBM_NONE;
-            if ((regsToFree | delayRegsToFree).IsNonEmpty())
+            if (!((currRegSet->regsToFree | currRegSet->delayRegsToFree) == RBM_NONE))
             {
-                freeRegisters(regsToFree);
-                if ((currentLocation > (prevLocation + 1)) && (delayRegsToFree.IsNonEmpty()))
+                freeRegistersFast(currRegSet->regsToFree, currIsMask);
+                if ((currentLocation > (prevLocation + 1)) && (!(currRegSet->delayRegsToFree == RBM_NONE)))
                 {
                     // We should never see a delayReg that is delayed until a Location that has no RefPosition
                     // (that would be the RefPosition that it was supposed to interfere with).
                     assert(!"Found a delayRegFree associated with Location with no reference");
                     // However, to be cautious for the Release build case, we will free them.
-                    freeRegisters(delayRegsToFree);
-                    delayRegsToFree       = RBM_NONE;
+                    freeRegistersFast(currRegSet->delayRegsToFree, currIsMask);
+                    currRegSet->delayRegsToFree       = RBM_NONE;
                     regsInUseThisLocation = RBM_NONE;
                 }
-                regsToFree      = delayRegsToFree;
-                delayRegsToFree = RBM_NONE;
+                currRegSet->regsToFree      = currRegSet->delayRegsToFree;
+                currRegSet->delayRegsToFree = RBM_NONE;
 
 #ifdef DEBUG
-                verifyFreeRegisters(regsToFree);
+                //verifyFreeRegisters(*regsToFree);
 #endif // DEBUG
             }
         }
@@ -4976,8 +5090,8 @@ void LinearScan::allocateRegistersMinimal()
         if (!handledBlockEnd && refType == RefTypeBB)
         {
             // Free any delayed regs (now in regsToFree) before processing the block boundary
-            freeRegisters(regsToFree);
-            regsToFree            = RBM_NONE;
+            freeRegistersFast(currRegSet->regsToFree, currIsMask);
+            currRegSet->regsToFree            = RBM_NONE;
             regsInUseThisLocation = RBM_NONE;
             regsInUseNextLocation = RBM_NONE;
             handledBlockEnd       = true;
@@ -5061,6 +5175,29 @@ void LinearScan::allocateRegistersMinimal()
         assert(currentInterval != nullptr);
         assert(!currentInterval->isLocalVar);
         assignedRegister = currentInterval->physReg;
+
+        /*(currRegSet->regsToFree) = regsToFree;
+        (currRegSet->delayRegsToFree) = delayRegsToFree;
+        (currRegSet->regsToMakeInactive) = regsToMakeInactive;
+        (currRegSet->delayRegsToMakeInactive) = delayRegsToMakeInactive;
+        (currRegSet->copyRegsToFree) = copyRegsToFree;*/
+        if (varTypeIsMask(currentInterval->registerType))
+        {
+            
+            currRegSet = &highRegSet;
+            currIsMask = true;
+
+        }
+        else
+        {
+            currRegSet = &lowRegSet;
+            currIsMask = false;
+        }
+        /*regsToFree = (currRegSet->regsToFree);
+        delayRegsToFree = (currRegSet->delayRegsToFree);
+        regsToMakeInactive = (currRegSet->regsToMakeInactive);
+        delayRegsToMakeInactive = (currRegSet->delayRegsToMakeInactive);
+        copyRegsToFree = (currRegSet->copyRegsToFree);*/
 
         // Identify the special cases where we decide up-front not to allocate
         bool allocate = true;
@@ -5172,12 +5309,13 @@ void LinearScan::allocateRegistersMinimal()
                     // one that was assigned previously. However, in situation where an upper-vector restore
                     // happened to be restored in assignedReg, we would need assignedReg to stay alive because
                     // we will copy the entire vector value from it to the `copyReg`.
-                    updateRegsFreeBusyState(currentRefPosition, currentInterval->registerType,
-                                            assignedRegMask | copyRegMask, &regsToFree,
-                                            &delayRegsToFree DEBUG_ARG(currentInterval) DEBUG_ARG(assignedRegister));
+                    updateRegsFreeBusyStateFast(currentRefPosition, currentInterval->registerType,
+                                            assignedRegMask | copyRegMask, &(currRegSet->regsToFree),
+                                            &(currRegSet->delayRegsToFree) DEBUG_ARG(currentInterval) DEBUG_ARG(assignedRegister));
                     if (!currentRefPosition.lastUse)
                     {
-                        copyRegsToFree.AddRegsetForType(copyRegMask, currentInterval->registerType);
+                        //copyRegsToFree.AddRegsetForType(copyRegMask, currentInterval->registerType);
+                        currRegSet->copyRegsToFree |= copyRegMask;
                     }
 
                     // For tree temp (non-localVar) interval, we will need an explicit move.
@@ -5192,7 +5330,8 @@ void LinearScan::allocateRegistersMinimal()
                 else
                 {
                     INDEBUG(dumpLsraAllocationEvent(LSRA_EVENT_NEEDS_NEW_REG, nullptr, assignedRegister));
-                    regsToFree.AddRegNum(assignedRegister, currentInterval->registerType);
+                    //regsToFree.AddRegNum(assignedRegister, currentInterval->registerType);
+                    currRegSet->regsToFree |= getSingleTypeRegMask(assignedRegister, currentInterval->registerType);
                     // We want a new register, but we don't want this to be considered a spill.
                     assignedRegister = REG_NA;
                     if (physRegRecord->assignedInterval == currentInterval)
@@ -5300,7 +5439,8 @@ void LinearScan::allocateRegistersMinimal()
             currentRefPosition.registerAssignment = assignedRegBit;
 
             currentInterval->physReg = assignedRegister;
-            regsToFree.RemoveRegsetForType(regMask, currentInterval->registerType); // we'll set it again later if it's
+            currRegSet->regsToFree &= ~regMask;
+            //regsToFree.RemoveRegsetForType(regMask, currentInterval->registerType); // we'll set it again later if it's
                                                                                     // dead
 
             // If this interval is dead, free the register.
@@ -5322,11 +5462,13 @@ void LinearScan::allocateRegistersMinimal()
                 {
                     if (currentRefPosition.delayRegFree)
                     {
-                        delayRegsToMakeInactive.AddRegsetForType(regMask, currentInterval->registerType);
+                        //delayRegsToMakeInactive.AddRegsetForType(regMask, currentInterval->registerType);
+                        currRegSet->delayRegsToMakeInactive |= regMask;
                     }
                     else
                     {
-                        regsToMakeInactive.AddRegsetForType(regMask, currentInterval->registerType);
+                        //regsToMakeInactive.AddRegsetForType(regMask, currentInterval->registerType);
+                        currRegSet->regsToMakeInactive |= regMask;
                     }
                     // TODO-Cleanup: this makes things consistent with previous, and will enable preferences
                     // to be propagated, but it seems less than ideal.
@@ -5345,13 +5487,15 @@ void LinearScan::allocateRegistersMinimal()
             {
                 if (currentRefPosition.delayRegFree)
                 {
-                    delayRegsToFree.AddRegsetForType(regMask, currentInterval->registerType);
+                    // delayRegsToFree.AddRegsetForType(regMask, currentInterval->registerType);
+                    currRegSet->delayRegsToFree |= regMask;
 
                     INDEBUG(dumpLsraAllocationEvent(LSRA_EVENT_LAST_USE_DELAYED));
                 }
                 else
                 {
-                    regsToFree.AddRegsetForType(regMask, currentInterval->registerType);
+                    //regsToFree.AddRegsetForType(regMask, currentInterval->registerType);
+                    currRegSet->regsToFree |= regMask;
 
                     INDEBUG(dumpLsraAllocationEvent(LSRA_EVENT_LAST_USE));
                 }
@@ -5385,7 +5529,7 @@ void LinearScan::allocateRegistersMinimal()
     else
 #endif // DEBUG
     {
-        freeRegisters(regsToFree | delayRegsToFree);
+        freeRegistersFast(currRegSet->regsToFree | currRegSet->delayRegsToFree, currIsMask);
     }
 
 #ifdef DEBUG
@@ -5510,11 +5654,22 @@ void LinearScan::allocateRegisters()
     RefPosition* nextKill     = killHead;
 
     LsraLocation prevLocation            = MinLocation;
-    regMaskTP    regsToFree              = RBM_NONE;
+    RegSetMasks lowRegSet;
+    RegSetMasks highRegSet;
+    RegSetMasks *currRegSet = &lowRegSet;
+    /*SingleTypeRegSet regsToFree = (currRegSet->regsToFree);
+    SingleTypeRegSet delayRegsToFree = (currRegSet->delayRegsToFree);
+    SingleTypeRegSet regsToMakeInactive = (currRegSet->regsToMakeInactive);
+    SingleTypeRegSet delayRegsToMakeInactive = (currRegSet->delayRegsToMakeInactive);
+    SingleTypeRegSet copyRegsToFree = (currRegSet->copyRegsToFree);*/
+    bool currIsMask = false;
+
+
+    /*regMaskTP    regsToFree              = RBM_NONE;
     regMaskTP    delayRegsToFree         = RBM_NONE;
     regMaskTP    regsToMakeInactive      = RBM_NONE;
     regMaskTP    delayRegsToMakeInactive = RBM_NONE;
-    regMaskTP    copyRegsToFree          = RBM_NONE;
+    regMaskTP    copyRegsToFree          = RBM_NONE;*/
     regsInUseThisLocation                = RBM_NONE;
     regsInUseNextLocation                = RBM_NONE;
 
@@ -5532,22 +5687,22 @@ void LinearScan::allocateRegisters()
         // TODO: Can we combine this with the freeing of registers below? It might
         // mess with the dump, since this was previously being done before the call below
         // to dumpRegRecords.
-        regMaskTP tempRegsToMakeInactive = (regsToMakeInactive | delayRegsToMakeInactive);
-        while (tempRegsToMakeInactive.IsNonEmpty())
+        SingleTypeRegSet tempRegsToMakeInactive = ((currRegSet->regsToMakeInactive) | (currRegSet->delayRegsToMakeInactive));
+        while (!(tempRegsToMakeInactive == RBM_NONE))
         {
-            regNumber  nextReg   = genFirstRegNumFromMaskAndToggle(tempRegsToMakeInactive);
+            regNumber  nextReg   = genFirstRegNumFromMaskAndToggleFast(tempRegsToMakeInactive, currIsMask);
             RegRecord* regRecord = getRegisterRecord(nextReg);
             clearSpillCost(regRecord->regNum, regRecord->registerType);
             makeRegisterInactive(regRecord);
         }
         if (currentRefPosition.nodeLocation > prevLocation)
         {
-            makeRegsAvailable(regsToMakeInactive);
+            makeRegsAvailableFast((currRegSet->regsToMakeInactive), currIsMask);
             // TODO: Clean this up. We need to make the delayRegs inactive as well, but don't want
             // to mark them as free yet.
-            regsToMakeInactive |= delayRegsToMakeInactive;
-            regsToMakeInactive      = delayRegsToMakeInactive;
-            delayRegsToMakeInactive = RBM_NONE;
+            // regsToMakeInactive |= delayRegsToMakeInactive;
+            (currRegSet->regsToMakeInactive)      = (currRegSet->delayRegsToMakeInactive);
+            (currRegSet->delayRegsToMakeInactive) = RBM_NONE;
         }
 
 #ifdef DEBUG
@@ -5601,8 +5756,8 @@ void LinearScan::allocateRegisters()
         if (currentLocation > prevLocation)
         {
             // CopyRegs are simply made available - we don't want to make the associated interval inactive.
-            makeRegsAvailable(copyRegsToFree);
-            copyRegsToFree        = RBM_NONE;
+            makeRegsAvailableFast((currRegSet->copyRegsToFree), currIsMask);
+            (currRegSet->copyRegsToFree)        = RBM_NONE;
             regsInUseThisLocation = regsInUseNextLocation;
             regsInUseNextLocation = RBM_NONE;
 #ifdef TARGET_ARM64
@@ -5611,23 +5766,23 @@ void LinearScan::allocateRegisters()
                 consecutiveRegsInUseThisLocation = RBM_NONE;
             }
 #endif
-            if ((regsToFree | delayRegsToFree).IsNonEmpty())
+            if (!(((currRegSet->regsToFree) | (currRegSet->delayRegsToFree)) == RBM_NONE))
             {
-                freeRegisters(regsToFree);
-                if ((currentLocation > (prevLocation + 1)) && (delayRegsToFree.IsNonEmpty()))
+                freeRegistersFast((currRegSet->regsToFree), currIsMask);
+                if ((currentLocation > (prevLocation + 1)) && (!((currRegSet->delayRegsToFree) == RBM_NONE)))
                 {
                     // We should never see a delayReg that is delayed until a Location that has no RefPosition
                     // (that would be the RefPosition that it was supposed to interfere with).
                     assert(!"Found a delayRegFree associated with Location with no reference");
                     // However, to be cautious for the Release build case, we will free them.
-                    freeRegisters(delayRegsToFree);
-                    delayRegsToFree       = RBM_NONE;
+                    freeRegistersFast((currRegSet->delayRegsToFree), currIsMask);
+                    (currRegSet->delayRegsToFree)       = RBM_NONE;
                     regsInUseThisLocation = RBM_NONE;
                 }
-                regsToFree      = delayRegsToFree;
-                delayRegsToFree = RBM_NONE;
+                (currRegSet->regsToFree)      = (currRegSet->delayRegsToFree);
+                (currRegSet->delayRegsToFree) = RBM_NONE;
 #ifdef DEBUG
-                verifyFreeRegisters(regsToFree);
+                //verifyFreeRegisters(regsToFree);
 #endif
             }
         }
@@ -5683,8 +5838,8 @@ void LinearScan::allocateRegisters()
         if (!handledBlockEnd && (refType == RefTypeBB || refType == RefTypeDummyDef))
         {
             // Free any delayed regs (now in regsToFree) before processing the block boundary
-            freeRegisters(regsToFree);
-            regsToFree            = RBM_NONE;
+            freeRegistersFast((currRegSet->regsToFree), currIsMask);
+            (currRegSet->regsToFree)            = RBM_NONE;
             regsInUseThisLocation = RBM_NONE;
             regsInUseNextLocation = RBM_NONE;
             handledBlockEnd       = true;
@@ -5789,6 +5944,29 @@ void LinearScan::allocateRegisters()
         currentInterval = currentRefPosition.getInterval();
         assert(currentInterval != nullptr);
         assignedRegister = currentInterval->physReg;
+
+        /*(currRegSet->regsToFree) = regsToFree;
+        (currRegSet->delayRegsToFree) = delayRegsToFree;
+        (currRegSet->regsToMakeInactive) = regsToMakeInactive;
+        (currRegSet->delayRegsToMakeInactive) = delayRegsToMakeInactive;
+        (currRegSet->copyRegsToFree) = copyRegsToFree;*/
+        if (varTypeIsMask(currentInterval->registerType))
+        {
+            
+            currRegSet = &highRegSet;
+            currIsMask = true;
+
+        }
+        else
+        {
+            currRegSet = &lowRegSet;
+            currIsMask = false;
+        }
+        /*regsToFree = (currRegSet->regsToFree);
+        delayRegsToFree = (currRegSet->delayRegsToFree);
+        regsToMakeInactive = (currRegSet->regsToMakeInactive);
+        delayRegsToMakeInactive = (currRegSet->delayRegsToMakeInactive);
+        copyRegsToFree = (currRegSet->copyRegsToFree);*/
 
         // Identify the special cases where we decide up-front not to allocate
         bool allocate = true;
@@ -5897,7 +6075,8 @@ void LinearScan::allocateRegisters()
                                 updateSpillCost(assignedRegister, currentInterval);
                             }
 
-                            regsToFree.AddRegNum(assignedRegister, currentInterval->registerType);
+                            //regsToFree.AddRegNum(assignedRegister, currentInterval->registerType);
+                            (currRegSet->regsToFree) |= getSingleTypeRegMask(assignedRegister, currentInterval->registerType);
                         }
                         INDEBUG(dumpLsraAllocationEvent(LSRA_EVENT_NO_REG_ALLOCATED, nullptr, assignedRegister));
                         currentRefPosition.registerAssignment = RBM_NONE;
@@ -6209,13 +6388,14 @@ void LinearScan::allocateRegisters()
                             // happened to be restored in assignedReg, we would need assignedReg to stay alive because
                             // we will copy the entire vector value from it to the `copyReg`.
 
-                            updateRegsFreeBusyState(currentRefPosition, currentInterval->registerType,
-                                                    assignedRegMask | copyRegMask, &regsToFree,
-                                                    &delayRegsToFree DEBUG_ARG(currentInterval)
+                            updateRegsFreeBusyStateFast(currentRefPosition, currentInterval->registerType,
+                                                    assignedRegMask | copyRegMask, &(currRegSet->regsToFree),
+                                                    &(currRegSet->delayRegsToFree) DEBUG_ARG(currentInterval)
                                                         DEBUG_ARG(assignedRegister));
                             if (!currentRefPosition.lastUse)
                             {
-                                copyRegsToFree.AddRegsetForType(copyRegMask, currentInterval->registerType);
+                                (currRegSet->copyRegsToFree) |= copyRegMask;
+                                //copyRegsToFree.AddRegsetForType(copyRegMask, currentInterval->registerType);
                             }
 
                             // If this is a tree temp (non-localVar) interval, we will need an explicit move.
@@ -6320,12 +6500,13 @@ void LinearScan::allocateRegisters()
                     // one that was assigned previously. However, in situation where an upper-vector restore
                     // happened to be restored in assignedReg, we would need assignedReg to stay alive because
                     // we will copy the entire vector value from it to the `copyReg`.
-                    updateRegsFreeBusyState(currentRefPosition, currentInterval->registerType,
-                                            assignedRegMask | copyRegMask, &regsToFree,
-                                            &delayRegsToFree DEBUG_ARG(currentInterval) DEBUG_ARG(assignedRegister));
+                    updateRegsFreeBusyStateFast(currentRefPosition, currentInterval->registerType,
+                                            assignedRegMask | copyRegMask, &(currRegSet->regsToFree),
+                                            &(currRegSet->delayRegsToFree) DEBUG_ARG(currentInterval) DEBUG_ARG(assignedRegister));
                     if (!currentRefPosition.lastUse)
                     {
-                        copyRegsToFree.AddRegsetForType(copyRegMask, currentInterval->registerType);
+                        //copyRegsToFree.AddRegsetForType(copyRegMask, currentInterval->registerType);
+                        (currRegSet->copyRegsToFree) |= copyRegMask;
                     }
 
                     // If this is a tree temp (non-localVar) interval, we will need an explicit move.
@@ -6346,7 +6527,8 @@ void LinearScan::allocateRegisters()
                 else
                 {
                     INDEBUG(dumpLsraAllocationEvent(LSRA_EVENT_NEEDS_NEW_REG, nullptr, assignedRegister));
-                    regsToFree.AddRegNum(assignedRegister, currentInterval->registerType);
+                    //regsToFree.AddRegNum(assignedRegister, currentInterval->registerType);
+                    (currRegSet->regsToFree) |= getSingleTypeRegMask(assignedRegister, currentInterval->registerType);
                     // We want a new register, but we don't want this to be considered a spill.
                     assignedRegister = REG_NA;
                     if (physRegRecord->assignedInterval == currentInterval)
@@ -6524,7 +6706,8 @@ void LinearScan::allocateRegisters()
             currentRefPosition.registerAssignment = assignedRegBit;
 
             currentInterval->physReg = assignedRegister;
-            regsToFree.RemoveRegsetForType(regMask, currentInterval->registerType); // we'll set it again later if it's
+            (currRegSet->regsToFree) &= ~regMask;
+            //regsToFree.RemoveRegsetForType(regMask, currentInterval->registerType); // we'll set it again later if it's
                                                                                     // dead
 
             // If this interval is dead, free the register.
@@ -6562,11 +6745,12 @@ void LinearScan::allocateRegisters()
                     {
                         if (currentRefPosition.delayRegFree)
                         {
-                            delayRegsToMakeInactive.AddRegsetForType(regMask, currentInterval->registerType);
+                            // delayRegsToMakeInactive.AddRegsetForType(regMask, currentInterval->registerType);
+                            (currRegSet->delayRegsToMakeInactive) |= regMask;
                         }
                         else
                         {
-                            regsToMakeInactive.AddRegsetForType(regMask, currentInterval->registerType);
+                            //regsToMakeInactive.AddRegsetForType(regMask, currentInterval->registerType);
                         }
                         // TODO-Cleanup: this makes things consistent with previous, and will enable preferences
                         // to be propagated, but it seems less than ideal.
@@ -6585,13 +6769,15 @@ void LinearScan::allocateRegisters()
                 {
                     if (currentRefPosition.delayRegFree)
                     {
-                        delayRegsToFree.AddRegsetForType(regMask, currentInterval->registerType);
+                        //delayRegsToFree.AddRegsetForType(regMask, currentInterval->registerType);
+                        (currRegSet->delayRegsToFree) |= regMask;
 
                         INDEBUG(dumpLsraAllocationEvent(LSRA_EVENT_LAST_USE_DELAYED));
                     }
                     else
                     {
-                        regsToFree.AddRegsetForType(regMask, currentInterval->registerType);
+                        //regsToFree.AddRegsetForType(regMask, currentInterval->registerType);
+                        (currRegSet->regsToFree) |= regMask;
 
                         INDEBUG(dumpLsraAllocationEvent(LSRA_EVENT_LAST_USE));
                     }
@@ -6686,7 +6872,7 @@ void LinearScan::allocateRegisters()
     else
 #endif // DEBUG
     {
-        freeRegisters(regsToFree | delayRegsToFree);
+        freeRegistersFast((currRegSet->regsToFree) | (currRegSet->delayRegsToFree), currIsMask);
     }
 
 #ifdef DEBUG
