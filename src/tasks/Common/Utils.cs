@@ -214,11 +214,11 @@ internal static class Utils
         return (process.ExitCode, outputBuilder.ToString().Trim('\r', '\n'));
     }
 
-    private static bool ContentEqual(string fileA, string fileB)
+    private static bool ContentEqual(string filePathA, string filePathB)
     {
         const int bufferSize = 8192;
-        FileStream streamA = new(fileA, FileMode.Open, FileAccess.Read, FileShare.Read, bufferSize: bufferSize, FileOptions.SequentialScan);
-        FileStream streamB = new(fileB, FileMode.Open, FileAccess.Read, FileShare.Read, bufferSize: bufferSize, FileOptions.SequentialScan);
+        using FileStream streamA = new(filePathA, FileMode.Open, FileAccess.Read, FileShare.Read, bufferSize: bufferSize, FileOptions.SequentialScan);
+        using FileStream streamB = new(filePathB, FileMode.Open, FileAccess.Read, FileShare.Read, bufferSize: bufferSize, FileOptions.SequentialScan);
 
         if (streamA.Length != streamB.Length)
             return false;
@@ -230,6 +230,12 @@ internal static class Utils
         int readB = 0;
         int consumedA = 0;
         int consumedB = 0;
+
+        /*
+            Read both streams in parallel into rolling buffers, comparing overlapping bytes.
+            Advance the consumed amount by the overlap. Refill a buffer when the previous read is exhausted.
+            This keeps the comparison position in sync, even if the read amounts differ.
+         */
 
         while (true)
         {
