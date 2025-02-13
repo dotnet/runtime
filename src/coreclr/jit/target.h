@@ -262,6 +262,7 @@ public:
 #endif
     void                       AddGprRegs(SingleTypeRegSet gprRegs DEBUG_ARG(regMaskTP availableIntRegs));
     void                       AddRegNum(regNumber reg, var_types type);
+    void                       AddRegsetForMask(SingleTypeRegSet regMask, bool isMask);
     void                       AddRegNumInMask(regNumber reg);
     void                       AddRegsetForType(SingleTypeRegSet regsToAdd, var_types type);
     SingleTypeRegSet           GetRegSetForType(var_types type) const;
