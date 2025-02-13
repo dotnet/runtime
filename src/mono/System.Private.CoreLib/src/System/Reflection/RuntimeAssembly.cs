@@ -36,7 +36,7 @@ using System.Threading;
 namespace System.Reflection
 {
     [StructLayout(LayoutKind.Sequential)]
-    internal sealed class RuntimeAssembly : Assembly
+    internal sealed class RuntimeAssembly : Assembly, IRuntimeAssembly
     {
         private enum AssemblyInfoKind
         {
@@ -271,6 +271,13 @@ namespace System.Reflection
             return TypeNameResolver.GetType(name, throwOnError, ignoreCase, this);
         }
 
+        [RequiresUnreferencedCode("Types might be removed by trimming. If the type name is a string literal, consider using Type.GetType instead.")]
+        Type? IRuntimeAssembly.GetTypeCore(string unescapedName, bool ignoreCase)
+        {
+            return GetTypeCore(unescapedName, ignoreCase);
+        }
+
+        [RequiresUnreferencedCode("Types might be removed by trimming. If the type name is a string literal, consider using Type.GetType instead.")]
         internal Type? GetTypeCore(string unescapedName, bool ignoreCase)
         {
             var this_assembly = this;
@@ -506,5 +513,24 @@ namespace System.Reflection
             // TODO: Make this cheaper and faster
             return GetName().Name;
         }
+    }
+
+    /// <summary>
+    /// Provides common reflection methods for <see cref="RuntimeAssembly"/> and <see cref="Emit.RuntimeAssemblyBuilder"/>.
+    /// </summary>
+    internal interface IRuntimeAssembly
+    {
+        /// <summary>
+        /// Gets the type with the specified simple and unescaped name.
+        /// </summary>
+        /// <param name="unescapedName">The type's name.</param>
+        /// <param name="ignoreCase">Whether to make a case-insensitive search.</param>
+        /// <remarks>
+        /// Modifiers, nested types and generic instantiations are not supported,
+        /// these have to be handled by <see cref="TypeNameResolver"/>. In fact this method
+        /// is not supposed to be called directly.
+        /// </remarks>
+        [RequiresUnreferencedCode("Types might be removed by trimming. If the type name is a string literal, consider using Type.GetType instead.")]
+        Type? GetTypeCore(string unescapedName, bool ignoreCase);
     }
 }

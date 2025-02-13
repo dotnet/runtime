@@ -169,7 +169,7 @@ namespace System.Reflection
                 {
                     return GetTypeFromDefaultAssemblies(TypeName.Unescape(escapedTypeName), parsedName);
                 }
-                else if (assembly is RuntimeAssembly ra)
+                else if (assembly is IRuntimeAssembly ra)
                 {
                     type = ra.GetTypeCore(TypeName.Unescape(escapedTypeName), ignoreCase: _ignoreCase);
                 }
@@ -224,6 +224,7 @@ namespace System.Reflection
             return type;
         }
 
+        [RequiresUnreferencedCode("Types might be removed by trimming. If the type name is a string literal, consider using Type.GetType instead.")]
         private Type? GetTypeFromDefaultAssemblies(string typeName, TypeName parsedName)
         {
             RuntimeAssembly? requestingAssembly = (RuntimeAssembly?)_requestingAssembly;
