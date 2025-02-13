@@ -8579,7 +8579,6 @@ bool CEEInfo::resolveVirtualMethodHelper(CORINFO_DEVIRTUALIZATION_INFO * info)
     memset(&info->resolvedTokenDevirtualizedUnboxedMethod, 0, sizeof(info->resolvedTokenDevirtualizedUnboxedMethod));
     info->isInstantiatingStub = false;
     info->wasArrayInterfaceOrGvmDevirt = false;
-    info->needRuntimeLookup = false;
 
     MethodDesc* pBaseMD = GetMethod(info->virtualMethod);
     MethodTable* pBaseMT = pBaseMD->GetMethodTable();
@@ -8781,10 +8780,6 @@ bool CEEInfo::resolveVirtualMethodHelper(CORINFO_DEVIRTUALIZATION_INFO * info)
     if (!isArray && pBaseMD->HasMethodInstantiation())
     {
         pDevirtMD = pDevirtMD->FindOrCreateAssociatedMethodDesc(pDevirtMD, pExactMT, false, pBaseMD->GetMethodInstantiation(), false);
-        if (ClassLoader::IsTypicalSharedInstantiation(pDevirtMD->GetMethodInstantiation()))
-        {
-            info->needRuntimeLookup = true;
-        }
     }
 
     // Success! Pass back the results.

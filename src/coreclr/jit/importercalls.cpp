@@ -8361,13 +8361,11 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
     {
         // Pass the instantiating stub method desc as the inst param arg.
         //
-        if (dvInfo.needRuntimeLookup)
+        if (call->gtLdvirtftnHnd != nullptr && call->gtLdvirtftnHnd->OperIs(GT_RUNTIMELOOKUP))
         {
             // Runtime lookup is needed for the instantiating stub.
             //
             assert(call->IsVirtualGeneric());
-            assert(call->gtLdvirtftnHnd != nullptr);
-            assert(call->gtLdvirtftnHnd->OperIs(GT_RUNTIMELOOKUP));
             call->gtArgs.InsertInstParam(this, gtCloneExpr(call->gtLdvirtftnHnd));
         }
         else
