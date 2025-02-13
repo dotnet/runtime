@@ -33,8 +33,15 @@ namespace System.Linq
         public static IOrderedAsyncEnumerable<TSource> OrderBy<TSource, TKey>( // satisfies the C# query-expression pattern
             this IAsyncEnumerable<TSource> source,
             Func<TSource, TKey> keySelector,
-            IComparer<TKey>? comparer = null) =>
-            new OrderedIterator<TSource, TKey>(source, keySelector, comparer, false, null);
+            IComparer<TKey>? comparer = null)
+        {
+            ThrowHelper.ThrowIfNull(source);
+            ThrowHelper.ThrowIfNull(keySelector);
+
+            return
+                source.IsKnownEmpty() ? EmptyAsyncEnumerable<TSource>.Instance :
+                new OrderedIterator<TSource, TKey>(source, keySelector, comparer, false, null);
+        }
 
         /// <summary>Sorts the elements of a sequence in ascending order.</summary>
         /// <typeparam name="TSource">The type of the elements of <paramref name="source"/>.</typeparam>
@@ -48,8 +55,15 @@ namespace System.Linq
         public static IOrderedAsyncEnumerable<TSource> OrderBy<TSource, TKey>(
             this IAsyncEnumerable<TSource> source,
             Func<TSource, CancellationToken, ValueTask<TKey>> keySelector,
-            IComparer<TKey>? comparer = null) =>
-            new OrderedIterator<TSource, TKey>(source, keySelector, comparer, false, null);
+            IComparer<TKey>? comparer = null)
+        {
+            ThrowHelper.ThrowIfNull(source);
+            ThrowHelper.ThrowIfNull(keySelector);
+
+            return
+                source.IsKnownEmpty() ? EmptyAsyncEnumerable<TSource>.Instance :
+                new OrderedIterator<TSource, TKey>(source, keySelector, comparer, false, null);
+        }
 
         /// <summary>Sorts the elements of a sequence in descending order.</summary>
         /// <typeparam name="T">The type of the elements of <paramref name="source"/>.</typeparam>
@@ -74,8 +88,15 @@ namespace System.Linq
         public static IOrderedAsyncEnumerable<TSource> OrderByDescending<TSource, TKey>( // satisfies the C# query-expression pattern
             this IAsyncEnumerable<TSource> source,
             Func<TSource, TKey> keySelector,
-            IComparer<TKey>? comparer = null) =>
-            new OrderedIterator<TSource, TKey>(source, keySelector, comparer, true, null);
+            IComparer<TKey>? comparer = null)
+        {
+            ThrowHelper.ThrowIfNull(source);
+            ThrowHelper.ThrowIfNull(keySelector);
+
+            return
+                source.IsKnownEmpty() ? EmptyAsyncEnumerable<TSource>.Instance :
+                new OrderedIterator<TSource, TKey>(source, keySelector, comparer, true, null);
+        }
 
         /// <summary>Sorts the elements of a sequence in descending order.</summary>
         /// <typeparam name="TSource">The type of the elements of <paramref name="source"/>.</typeparam>
@@ -89,8 +110,15 @@ namespace System.Linq
         public static IOrderedAsyncEnumerable<TSource> OrderByDescending<TSource, TKey>(
             this IAsyncEnumerable<TSource> source,
             Func<TSource, CancellationToken, ValueTask<TKey>> keySelector,
-            IComparer<TKey>? comparer = null) =>
-            new OrderedIterator<TSource, TKey>(source, keySelector, comparer, true, null);
+            IComparer<TKey>? comparer = null)
+        {
+            ThrowHelper.ThrowIfNull(source);
+            ThrowHelper.ThrowIfNull(keySelector);
+
+            return
+                source.IsKnownEmpty() ? EmptyAsyncEnumerable<TSource>.Instance :
+                new OrderedIterator<TSource, TKey>(source, keySelector, comparer, true, null);
+        }
 
         /// <summary>Performs a subsequent ordering of the elements in a sequence in ascending order.</summary>
         /// <typeparam name="TSource">The type of the elements of <paramref name="source"/>.</typeparam>
@@ -198,9 +226,6 @@ namespace System.Linq
             internal OrderedIterator(IAsyncEnumerable<TElement> source, object keySelector, IComparer<TKey>? comparer, bool descending, OrderedIterator<TElement>? parent) :
                 base(source)
             {
-                ThrowHelper.ThrowIfNull(source);
-                ThrowHelper.ThrowIfNull(keySelector);
-
                 Debug.Assert(keySelector is Func<TElement, TKey> or Func<TElement, CancellationToken, ValueTask<TKey>>);
 
                 _parent = parent;

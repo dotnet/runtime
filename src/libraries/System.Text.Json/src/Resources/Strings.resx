@@ -492,7 +492,7 @@
     <value>The '$id', '$ref' or '$type' metadata properties must be JSON strings. Current token type is '{0}'.</value>
   </data>
   <data name="MetadataInvalidPropertyWithLeadingDollarSign" xml:space="preserve">
-    <value>Properties that start with '$' are not allowed in types that support metadata. Either escape the character or disable reference preservation and polymorphic deserialization.</value>
+    <value>Properties that start with '$' are not allowed in types that support metadata. Either replace the character or disable reference preservation and polymorphic deserialization.</value>
   </data>
   <data name="MetadataUnexpectedProperty" xml:space="preserve">
     <value>The metadata property is either not supported by the type or is not the first property in the deserialized JSON object.</value>
