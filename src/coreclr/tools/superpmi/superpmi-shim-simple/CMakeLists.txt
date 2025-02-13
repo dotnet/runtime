@@ -40,8 +40,14 @@ if (CLR_CMAKE_TARGET_WIN32)
     list(APPEND SUPERPMI_SHIM_SIMPLE_SOURCES ${CMAKE_CURRENT_BINARY_DIR}/superpmi-shim-simple.def)
 endif (CLR_CMAKE_TARGET_WIN32)
 
+if(CLR_CMAKE_TARGET_BROWSER)
+  set(LIBRARY_TYPE STATIC)
+else()
+  set(LIBRARY_TYPE SHARED)
+endif()
+
 add_library_clr(superpmi-shim-simple
-    SHARED
+    ${LIBRARY_TYPE}
     ${SUPERPMI_SHIM_SIMPLE_SOURCES}
 )
 

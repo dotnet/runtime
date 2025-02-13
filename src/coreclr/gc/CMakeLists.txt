@@ -115,7 +115,7 @@ if(FEATURE_STANDALONE_GC)
   endif()
 
   # clrgc is build with standalone+segments
-  add_library_clr(clrgc SHARED ${GC_SOURCES})
+  add_library_clr(clrgc ${LIBRARY_TYPE} ${GC_SOURCES})
   add_dependencies(clrgc eventing_headers)
   target_link_libraries(clrgc PRIVATE ${GC_LINK_LIBRARIES})
   install_clr(TARGETS clrgc DESTINATIONS . COMPONENT runtime)

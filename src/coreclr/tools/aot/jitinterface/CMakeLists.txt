@@ -17,8 +17,6 @@ else()
   set(LIBRARY_TYPE SHARED)
 endif()
 
-message("library type: ${LIBRARY_TYPE}")
-
 add_library_clr(jitinterface_${ARCH_HOST_NAME}
     ${LIBRARY_TYPE}
     ${NATIVE_SOURCES}
