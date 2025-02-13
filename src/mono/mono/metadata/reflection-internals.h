@@ -25,6 +25,9 @@ mono_domain_try_type_resolve_name (MonoAssembly *assembly, MonoStringHandle name
 MonoReflectionTypeBuilderHandle
 mono_class_get_ref_info (MonoClass *klass);
 
+gboolean
+mono_reflection_split_type_name (char *full_name, char** name_space, char** name);
+
 MONO_COMPONENT_API gboolean
 mono_reflection_parse_type_checked (char *name, MonoTypeNameParse *info, MonoError *error);
 

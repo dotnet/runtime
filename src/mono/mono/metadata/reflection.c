@@ -1967,6 +1967,40 @@ mono_identifier_unescape_info (MonoTypeNameParse *info)
 		g_list_foreach(info->nested, &unescape_each_nested_name, NULL);
 }
 
+/*
+ * Split a full type name into namespace and name parts.
+ * \p full_name will be mangled, so, make a copy before passing it to this function.
+ * The values written to \p name_space and \p name will by valid until the memory
+ * pointed to by \p full_name is valid.
+ * \param full_name the full type name
+ * \param name_space will be set to the namespace part of the type name
+ * \param name will be set to the name part of the type name
+ * \return 0 on failure, non-zero on success
+ */
+gboolean
+mono_reflection_split_type_name (char *full_name, char** name_space, char** name)
+{
+	if (!full_name || !name_space || !name)
+		return FALSE;
+
+	char* ns_start = strrchr (full_name, '.');
+
+	if (ns_start > full_name && ns_start[-1] == '.') {
+		ns_start--;
+	}
+
+	if (ns_start) {
+		*name_space = full_name;
+		*ns_start = 0;
+		*name = ns_start + 1;
+	} else {
+		*name_space = (char *) "";
+		*name = full_name;
+	}
+
+	return TRUE;
+}
+
 /**
  * mono_reflection_parse_type:
  */

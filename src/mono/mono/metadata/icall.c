@@ -5481,6 +5481,34 @@ ves_icall_System_Reflection_RuntimeAssembly_GetTopLevelForwardedTypes (MonoQCall
 }
 
 void
+ves_icall_System_Reflection_RuntimeAssembly_GetTypeInternal(MonoQCallAssemblyHandle assembly_h, MonoStringHandle unescapedName_h, MonoBoolean ignoreCase, MonoObjectHandleOnStack res_h, MonoError *error)
+{
+	MonoAssembly *assembly = assembly_h.assembly;
+	MonoImage *image = assembly->image;
+	char *str = mono_string_handle_to_utf8 (unescapedName_h, error);
+	return_if_nok (error);
+
+	char *name_space, *name;
+	if (!mono_reflection_split_type_name (str, &name_space, &name))
+	{
+		g_free (str);
+		return;
+	}
+
+	MonoClass *klass;
+	if (ignoreCase)
+		klass = mono_class_from_name_case_checked (image, name_space, name, error);
+	else
+		klass = mono_class_from_name_checked (image, name_space, name, error);
+	if (klass) {
+		MonoReflectionTypeHandle res = mono_type_get_object_handle (m_class_get_byval_arg (klass), error);
+		HANDLE_ON_STACK_SET (res_h, MONO_HANDLE_RAW (res));
+	}
+
+	g_free (str);
+}
+
+void
 ves_icall_System_Reflection_AssemblyName_FreeAssemblyName (MonoAssemblyName *aname, MonoBoolean free_struct)
 {
 	mono_assembly_name_free_internal (aname);

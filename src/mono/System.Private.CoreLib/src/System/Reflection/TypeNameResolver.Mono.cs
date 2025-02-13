@@ -3,11 +3,9 @@
 
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
-using System.Reflection;
 using System.Reflection.Metadata;
 using System.Runtime.CompilerServices;
 using System.Runtime.Loader;
-using System.Text;
 using System.Threading;
 
 namespace System.Reflection
@@ -19,17 +17,28 @@ namespace System.Reflection
         private bool _throwOnError;
         private bool _ignoreCase;
         private bool _extensibleParser;
-        private ref StackCrawlMark _stackMark;
+        private Assembly? _topLevelAssembly;
+        private Assembly? _requestingAssembly;
+
+        [RequiresUnreferencedCode("The type might be removed")]
+        internal static Type? GetType(
+            string typeName,
+            Assembly requestingAssembly,
+            bool throwOnError = false,
+            bool ignoreCase = false)
+        {
+            return GetType(typeName, null, null, requestingAssembly, throwOnError, ignoreCase, false);
+        }
 
         [RequiresUnreferencedCode("The type might be removed")]
         internal static Type? GetType(
             string typeName,
             Func<AssemblyName, Assembly?>? assemblyResolver,
             Func<Assembly?, string, bool, Type?>? typeResolver,
-            bool throwOnError,
-            bool ignoreCase,
-            bool extensibleParser,
-            ref StackCrawlMark stackMark)
+            Assembly requestingAssembly,
+            bool throwOnError = false,
+            bool ignoreCase = false,
+            bool extensibleParser = true)
         {
             ArgumentNullException.ThrowIfNull(typeName);
 
@@ -55,7 +64,34 @@ namespace System.Reflection
                 _throwOnError = throwOnError,
                 _ignoreCase = ignoreCase,
                 _extensibleParser = extensibleParser,
-                _stackMark = ref stackMark
+                _requestingAssembly = requestingAssembly
+            }.Resolve(parsed);
+        }
+
+        [RequiresUnreferencedCode("The type might be removed")]
+        internal static Type? GetType(
+            string typeName,
+            bool throwOnError,
+            bool ignoreCase,
+            Assembly topLevelAssembly)
+        {
+            TypeName? parsed = TypeNameParser.Parse(typeName, throwOnError);
+
+            if (parsed is null)
+            {
+                return null;
+            }
+            else if (topLevelAssembly is not null && parsed.AssemblyName is not null)
+            {
+                return throwOnError ? throw new ArgumentException(SR.Argument_AssemblyGetTypeCannotSpecifyAssembly) : null;
+            }
+
+            return new TypeNameResolver()
+            {
+                _throwOnError = throwOnError,
+                _ignoreCase = ignoreCase,
+                _topLevelAssembly = topLevelAssembly,
+                _requestingAssembly = topLevelAssembly
             }.Resolve(parsed);
         }
 
@@ -72,22 +108,15 @@ namespace System.Reflection
             }
             else
             {
-                if (_throwOnError)
+                // When throwOnError is false we should only catch FileNotFoundException.
+                // Other exceptions like BadImangeFormatException should still fly.
+                try
                 {
-                    assembly = Assembly.Load(name, ref _stackMark, null);
+                    assembly = RuntimeAssembly.InternalLoad(name, ref Unsafe.NullRef<StackCrawlMark>(), AssemblyLoadContext.CurrentContextualReflectionContext);
                 }
-                else
+                catch (FileNotFoundException) when (!_throwOnError)
                 {
-                    // When throwOnError is false we should only catch FileNotFoundException.
-                    // Other exceptions like BadImangeFormatException should still fly.
-                    try
-                    {
-                        assembly = Assembly.Load(name, ref _stackMark, null);
-                    }
-                    catch (FileNotFoundException)
-                    {
-                        return null;
-                    }
+                    return null;
                 }
             }
             return assembly;
@@ -99,7 +128,20 @@ namespace System.Reflection
             Justification = "TypeNameResolver.GetType is marked as RequiresUnreferencedCode.")]
         private Type? GetType(string escapedTypeName, ReadOnlySpan<string> nestedTypeNames, TypeName parsedName)
         {
-            Assembly? assembly = (parsedName.AssemblyName is not null) ? ResolveAssembly(parsedName.AssemblyName.ToAssemblyName()) : null;
+            Assembly? assembly;
+
+            if (parsedName.AssemblyName is not null)
+            {
+                assembly = ResolveAssembly(parsedName.AssemblyName.ToAssemblyName());
+                if (assembly is null)
+                {
+                    return null;
+                }
+            }
+            else
+            {
+                assembly = _topLevelAssembly;
+            }
 
             // Both the external type resolver and the default type resolvers expect escaped type names
             Type? type;
@@ -125,15 +167,27 @@ namespace System.Reflection
             {
                 if (assembly is null)
                 {
-                    type = RuntimeType.GetType(escapedTypeName, _throwOnError, _ignoreCase, ref _stackMark);
+                    return GetTypeFromDefaultAssemblies(TypeName.Unescape(escapedTypeName), parsedName);
+                }
+                else if (assembly is RuntimeAssembly ra)
+                {
+                    type = ra.GetTypeCore(TypeName.Unescape(escapedTypeName), ignoreCase: _ignoreCase);
                 }
                 else
                 {
+                    // This is a third-party Assembly object. Emulate GetTypeCore() by calling the public GetType()
+                    // method. This is wasteful because it'll probably reparse a type string that we've already parsed
+                    // but it can't be helped.
                     type = assembly.GetType(escapedTypeName, _throwOnError, _ignoreCase);
                 }
 
                 if (type is null)
                 {
+                    if (_throwOnError)
+                    {
+                        throw new TypeLoadException(SR.Format(SR.TypeLoad_ResolveType, parsedName.FullName),
+                            typeName: escapedTypeName);
+                    }
                     return null;
                 }
             }
@@ -168,6 +222,41 @@ namespace System.Reflection
             }
 
             return type;
+        }
+
+        private Type? GetTypeFromDefaultAssemblies(string typeName, TypeName parsedName)
+        {
+            RuntimeAssembly? requestingAssembly = (RuntimeAssembly?)_requestingAssembly;
+            if (requestingAssembly is not null)
+            {
+                Type? type = requestingAssembly.GetTypeCore(typeName, ignoreCase: _ignoreCase);
+                if (type is not null)
+                    return type;
+            }
+
+            RuntimeAssembly coreLib = (RuntimeAssembly)typeof(object).Assembly;
+            if (requestingAssembly != coreLib)
+            {
+                Type? type = coreLib.GetTypeCore(typeName, ignoreCase: _ignoreCase);
+                if (type is not null)
+                    return type;
+            }
+
+            RuntimeAssembly? resolvedAssembly = AssemblyLoadContext.OnTypeResolve(requestingAssembly, parsedName.FullName);
+            if (resolvedAssembly is not null)
+            {
+                Type? type = resolvedAssembly.GetTypeCore(typeName, ignoreCase: _ignoreCase);
+                if (type is not null)
+                    return type;
+            }
+
+            if (_throwOnError)
+            {
+                throw new TypeLoadException(SR.Format(SR.TypeLoad_ResolveTypeFromAssembly, parsedName.FullName, (requestingAssembly ?? coreLib).FullName),
+                    typeName: parsedName.FullName);
+            }
+
+            return null;
         }
     }
 }

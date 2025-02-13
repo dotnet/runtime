@@ -229,7 +229,8 @@ namespace System.Reflection
                 Module? resourceModule = null;
                 RuntimeAssembly? assembly = this;
                 byte* data = (byte*)GetManifestResourceInternal(new QCallAssembly(ref assembly), name, out length, ObjectHandleOnStack.Create(ref resourceModule));
-                if (data == null) {
+                if (data == null)
+                {
                     assembly = AssemblyLoadContext.OnResourceResolve(assembly!, name);
                     if (assembly != null)
                         data = (byte*)GetManifestResourceInternal(new QCallAssembly(ref assembly), name, out length, ObjectHandleOnStack.Create(ref resourceModule));
@@ -263,11 +264,19 @@ namespace System.Reflection
         }
 
         [RequiresUnreferencedCode("Types might be removed by trimming. If the type name is a string literal, consider using Type.GetType instead.")]
-        public override Type GetType(string name, bool throwOnError, bool ignoreCase)
+        public override Type? GetType(string name, bool throwOnError, bool ignoreCase)
         {
             ArgumentException.ThrowIfNullOrEmpty(name);
 
-            return InternalGetType(null, name, throwOnError, ignoreCase);
+            return TypeNameResolver.GetType(name, throwOnError, ignoreCase, this);
+        }
+
+        internal Type? GetTypeCore(string unescapedName, bool ignoreCase)
+        {
+            var this_assembly = this;
+            Type? type = null;
+            GetTypeInternal(new QCallAssembly(ref this_assembly), unescapedName, ignoreCase, ObjectHandleOnStack.Create(ref type));
+            return type;
         }
 
         public override bool IsDefined(Type attributeType, bool inherit)
@@ -488,6 +497,9 @@ namespace System.Reflection
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private static extern IntPtr InternalGetReferencedAssemblies(Assembly assembly);
+
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        private static extern void GetTypeInternal(QCallAssembly assembly, string unescapedName, bool ignoreCase, ObjectHandleOnStack type);
 
         internal string? GetSimpleName()
         {
