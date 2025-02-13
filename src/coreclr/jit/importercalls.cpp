@@ -8356,7 +8356,7 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
     {
         // Pass the instantiating stub method desc as the inst param arg.
         //
-        if (dvInfo.needRuntimeLookup)
+        if (dvInfo.needRuntimeLookup && call->IsVirtualGeneric())
         {
             // Runtime lookup is needed for the instantiating stub.
             //
