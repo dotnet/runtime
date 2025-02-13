@@ -1650,8 +1650,6 @@ struct CORINFO_EE_INFO
         // Size of the Frame structure when it also contains the secret stub arg
         unsigned    sizeWithSecretStubArg;
 
-        unsigned    offsetOfGSCookie;
-        unsigned    offsetOfFrameVptr;
         unsigned    offsetOfFrameLink;
         unsigned    offsetOfCallSiteSP;
         unsigned    offsetOfCalleeSavedFP;
