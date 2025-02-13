@@ -8693,7 +8693,7 @@ DONE_MORPHING_CHILDREN:
             break;
 
         case GT_BOUNDS_CHECK:
-            setMethodHasBoundChecks();
+            setMethodHasBoundsChecks();
             fgAddCodeRef(compCurBB, tree->AsBoundsChk()->gtThrowKind);
             break;
 
