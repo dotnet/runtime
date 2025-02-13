@@ -247,6 +247,12 @@ namespace System.IO.Compression
                             }
                             index = -value; // go to next node
 
+                            if (index >= array.Length)
+                            {
+                                // prevent an IndexOutOfRangeException from array[index]
+                                throw new InvalidDataException(SR.InvalidHuffmanData);
+                            }
+
                             codeBitMask <<= 1;
                             overflowBits--;
                         } while (overflowBits != 0);

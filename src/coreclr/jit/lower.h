@@ -94,6 +94,7 @@ private:
     insCflags TruthifyingFlags(GenCondition cond);
     void      ContainCheckConditionalCompare(GenTreeCCMP* ccmp);
     void      ContainCheckNeg(GenTreeOp* neg);
+    void      ContainCheckNot(GenTreeOp* notOp);
     void      TryLowerCnsIntCselToCinc(GenTreeOp* select, GenTree* cond);
     void      TryLowerCselToCSOp(GenTreeOp* select, GenTree* cond);
     bool      TryLowerAddSubToMulLongOp(GenTreeOp* op, GenTree** next);
@@ -131,6 +132,12 @@ private:
     static void CheckNode(Compiler* compiler, GenTree* node);
     static bool CheckBlock(Compiler* compiler, BasicBlock* block);
 #endif // DEBUG
+
+    typedef JitHashTable<unsigned, JitSmallPrimitiveKeyFuncs<unsigned>, bool> LocalSet;
+
+    void     MapParameterRegisterLocals();
+    void     FindInducedParameterRegisterLocals();
+    unsigned TryReuseLocalForParameterAccess(const LIR::Use& use, const LocalSet& storedToLocals);
 
     void     LowerBlock(BasicBlock* block);
     GenTree* LowerNode(GenTree* node);

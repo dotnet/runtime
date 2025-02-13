@@ -29,7 +29,7 @@ namespace System.Runtime.InteropServices.Marshalling
         /// <summary>
         /// Supports marshalling from managed into unmanaged in a call from unmanaged code to managed code.
         /// </summary>
-        public static unsafe class UnmanagedToManagedOut
+        public static class UnmanagedToManagedOut
         {
             /// <summary>
             /// Allocates the space to store the unmanaged elements.

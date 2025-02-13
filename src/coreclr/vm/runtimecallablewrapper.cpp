@@ -110,7 +110,7 @@ IUnknown *ComClassFactory::CreateInstanceFromClassFactory(IClassFactory *pClassF
     if (FAILED(SafeQueryInterface(pClassFact, IID_IClassFactory2, (IUnknown**)&pClassFact2))
         || m_pClassMT == NULL)
     {
-        FrameWithCookie<DebuggerExitFrame> __def;
+        DebuggerExitFrame __def;
         {
             GCX_PREEMP();
             hr = pClassFact->CreateInstance(punkOuter, IID_IUnknown, (void **)&pUnk);
@@ -196,7 +196,7 @@ IUnknown *ComClassFactory::CreateInstanceFromClassFactory(IClassFactory *pClassF
         // Create the instance
         if (SUCCEEDED(hr))
         {
-            FrameWithCookie<DebuggerExitFrame> __def;
+            DebuggerExitFrame __def;
             {
                 GCX_PREEMP();
                 if (fDesignTime || bstrKey == NULL)
@@ -253,7 +253,7 @@ IUnknown *ComClassFactory::CreateInstanceFromClassFactory(IClassFactory *pClassF
 
 //-------------------------------------------------------------
 // ComClassFactory::CreateAggregatedInstance(MethodTable* pMTClass)
-// create a COM+ instance that aggregates a COM instance
+// create a CLR instance that aggregates a COM instance
 
 OBJECTREF ComClassFactory::CreateAggregatedInstance(MethodTable* pMTClass, BOOL ForManaged)
 {
@@ -322,7 +322,7 @@ OBJECTREF ComClassFactory::CreateAggregatedInstance(MethodTable* pMTClass, BOOL 
         if (pCallbackMT && !pCallbackMT->IsComImport())
             bUseDelegate = TRUE;
 
-        FrameWithCookie<DebuggerExitFrame> __def;
+        DebuggerExitFrame __def;
 
         // get the IUnknown interface for the managed object
         pOuter = ComCallWrapper::GetComIPFromCCW(pComWrap, IID_IUnknown, NULL);

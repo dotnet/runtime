@@ -104,7 +104,6 @@ for /f "delims=-" %%i in ("%__OutputRid%") do set __HostFallbackOS=%%i
 if "%__HostFallbackOS%" == "win"       (set __HostFallbackOS=win10)
 
 set __ExtraCmakeParams=%__ExtraCmakeParams% "-DCLI_CMAKE_PKG_RID=%cm_BaseRid%" "-DCLI_CMAKE_FALLBACK_OS=%__HostFallbackOS%" "-DCLI_CMAKE_COMMIT_HASH=%__CommitSha%"
-set __ExtraCmakeParams=%__ExtraCmakeParams% "-DRUNTIME_FLAVOR=%__RuntimeFlavor% "
 set __ExtraCmakeParams=%__ExtraCmakeParams% "-DCLI_CMAKE_RESOURCE_DIR=%__ResourcesDir%" "-DCMAKE_BUILD_TYPE=%CMAKE_BUILD_TYPE%"
 
 :: Regenerate the native build files

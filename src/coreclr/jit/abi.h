@@ -38,6 +38,10 @@ public:
 
     static ABIPassingSegment InRegister(regNumber reg, unsigned offset, unsigned size);
     static ABIPassingSegment OnStack(unsigned stackOffset, unsigned offset, unsigned size);
+
+#ifdef DEBUG
+    void Dump() const;
+#endif
 };
 
 class ABIPassingSegmentIterator
@@ -84,6 +88,8 @@ private:
         ABIPassingSegment  m_singleSegment;
     };
 
+    bool m_passedByRef = false;
+
 public:
     // The number of segments used to pass the value. Examples:
     // - On SysV x64, structs can be passed in two registers, resulting in two
@@ -97,10 +103,9 @@ public:
     // - On loongarch64/riscv64, structs can be passed in two registers or
     // can be split out over register and stack, giving
     // multiple register segments and a struct segment.
-    unsigned NumSegments;
+    unsigned NumSegments = 0;
 
     ABIPassingInformation()
-        : NumSegments(0)
     {
     }
 
@@ -110,6 +115,7 @@ public:
     ABIPassingSegment&                      Segment(unsigned index);
     IteratorPair<ABIPassingSegmentIterator> Segments() const;
 
+    bool     IsPassedByReference() const;
     bool     HasAnyRegisterSegment() const;
     bool     HasAnyFloatingRegisterSegment() const;
     bool     HasAnyStackSegment() const;
@@ -118,7 +124,8 @@ public:
     bool     IsSplitAcrossRegistersAndStack() const;
     unsigned CountRegsAndStackSlots() const;
 
-    static ABIPassingInformation FromSegment(Compiler* comp, const ABIPassingSegment& segment);
+    static ABIPassingInformation FromSegment(Compiler* comp, bool passedByRef, const ABIPassingSegment& segment);
+    static ABIPassingInformation FromSegmentByValue(Compiler* comp, const ABIPassingSegment& segment);
     static ABIPassingInformation FromSegments(Compiler*                comp,
                                               const ABIPassingSegment& firstSegment,
                                               const ABIPassingSegment& secondSegment);

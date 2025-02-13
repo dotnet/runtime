@@ -929,6 +929,42 @@ bool Compiler::fgAddrCouldBeNull(GenTree* addr)
 }
 
 //------------------------------------------------------------------------------
+// fgAddrCouldBeHeap: Check whether the address tree may represent a heap address.
+//
+// Arguments:
+//    addr - Address to check
+//
+// Return Value:
+//    True if address could be a heap address; false otherwise (i.e. stack, native memory, etc.)
+//
+bool Compiler::fgAddrCouldBeHeap(GenTree* addr)
+{
+    GenTree* op = addr;
+    while (op->OperIs(GT_FIELD_ADDR) && op->AsFieldAddr()->IsInstance())
+    {
+        op = op->AsFieldAddr()->GetFldObj();
+    }
+
+    target_ssize_t offset;
+    gtPeelOffsets(&op, &offset);
+
+    // Ignore the offset for locals
+
+    if (op->OperIs(GT_LCL_ADDR))
+    {
+        return false;
+    }
+
+    if (op->OperIsScalarLocal() && (op->AsLclVarCommon()->GetLclNum() == impInlineRoot()->info.compRetBuffArg))
+    {
+        // RetBuf is known to be on the stack
+        return false;
+    }
+
+    return true;
+}
+
+//------------------------------------------------------------------------------
 // fgOptimizeDelegateConstructor: try and optimize construction of a delegate
 //
 // Arguments:
@@ -1388,14 +1424,9 @@ void Compiler::fgAddSyncMethodEnterExit()
     NYI("No support for synchronized methods");
 #endif // !FEATURE_EH
 
-    // Create a scratch first BB where we can put the new variable initialization.
-    // Don't put the scratch BB in the protected region.
-
-    fgEnsureFirstBBisScratch();
-
     // Create a block for the start of the try region, where the monitor enter call
     // will go.
-    BasicBlock* const tryBegBB  = fgSplitBlockAtEnd(fgFirstBB);
+    BasicBlock* const tryBegBB  = fgSplitBlockAtBeginning(fgFirstBB);
     BasicBlock* const tryLastBB = fgLastBB;
 
     // Create a block for the fault.
@@ -1517,7 +1548,7 @@ void Compiler::fgAddSyncMethodEnterExit()
         GenTree* zero     = gtNewZeroConNode(typeMonAcquired);
         GenTree* initNode = gtNewStoreLclVarNode(lvaMonAcquired, zero);
 
-        fgNewStmtAtEnd(fgFirstBB, initNode);
+        fgNewStmtAtBeg(fgFirstBB, initNode);
 
 #ifdef DEBUG
         if (verbose)
@@ -1543,7 +1574,7 @@ void Compiler::fgAddSyncMethodEnterExit()
         GenTree* thisNode = gtNewLclVarNode(info.compThisArg);
         GenTree* initNode = gtNewStoreLclVarNode(lvaCopyThis, thisNode);
 
-        fgNewStmtAtEnd(tryBegBB, initNode);
+        fgNewStmtAtBeg(tryBegBB, initNode);
     }
 
     // For OSR, we do not need the enter tree as the monitor is acquired by the original method.
@@ -1603,37 +1634,44 @@ GenTree* Compiler::fgCreateMonitorTree(unsigned lvaMonAcquired, unsigned lvaThis
     }
 #endif
 
-    if (block->KindIs(BBJ_RETURN) && block->lastStmt()->GetRootNode()->OperIs(GT_RETURN))
+    if (enter)
     {
-        GenTreeUnOp* retNode = block->lastStmt()->GetRootNode()->AsUnOp();
-        GenTree*     retExpr = retNode->gtOp1;
-
-        if (retExpr != nullptr)
-        {
-            // have to insert this immediately before the GT_RETURN so we transform:
-            // ret(...) ->
-            // ret(comma(comma(tmp=...,call mon_exit), tmp))
-            //
-            TempInfo tempInfo = fgMakeTemp(retExpr);
-            GenTree* lclVar   = tempInfo.load;
-
-            // TODO-1stClassStructs: delete this NO_CSE propagation. Requires handling multi-regs in copy prop.
-            lclVar->gtFlags |= (retExpr->gtFlags & GTF_DONT_CSE);
-
-            retExpr        = gtNewOperNode(GT_COMMA, lclVar->TypeGet(), tree, lclVar);
-            retExpr        = gtNewOperNode(GT_COMMA, lclVar->TypeGet(), tempInfo.store, retExpr);
-            retNode->gtOp1 = retExpr;
-            retNode->AddAllEffectsFlags(retExpr);
-        }
-        else
-        {
-            // Insert this immediately before the GT_RETURN
-            fgNewStmtNearEnd(block, tree);
-        }
+        fgNewStmtAtBeg(block, tree);
     }
     else
     {
-        fgNewStmtAtEnd(block, tree);
+        if (block->KindIs(BBJ_RETURN) && block->lastStmt()->GetRootNode()->OperIs(GT_RETURN))
+        {
+            GenTreeUnOp* retNode = block->lastStmt()->GetRootNode()->AsUnOp();
+            GenTree*     retExpr = retNode->gtOp1;
+
+            if (retExpr != nullptr)
+            {
+                // have to insert this immediately before the GT_RETURN so we transform:
+                // ret(...) ->
+                // ret(comma(comma(tmp=...,call mon_exit), tmp))
+                //
+                TempInfo tempInfo = fgMakeTemp(retExpr);
+                GenTree* lclVar   = tempInfo.load;
+
+                // TODO-1stClassStructs: delete this NO_CSE propagation. Requires handling multi-regs in copy prop.
+                lclVar->gtFlags |= (retExpr->gtFlags & GTF_DONT_CSE);
+
+                retExpr        = gtNewOperNode(GT_COMMA, lclVar->TypeGet(), tree, lclVar);
+                retExpr        = gtNewOperNode(GT_COMMA, lclVar->TypeGet(), tempInfo.store, retExpr);
+                retNode->gtOp1 = retExpr;
+                retNode->AddAllEffectsFlags(retExpr);
+            }
+            else
+            {
+                // Insert this immediately before the GT_RETURN
+                fgNewStmtNearEnd(block, tree);
+            }
+        }
+        else
+        {
+            fgNewStmtAtEnd(block, tree);
+        }
     }
 
     return tree;
@@ -1726,8 +1764,6 @@ void Compiler::fgAddReversePInvokeEnterExit()
     {
         tree = gtNewHelperCallNode(CORINFO_HELP_JIT_REVERSE_PINVOKE_ENTER, TYP_VOID, pInvokeFrameVar);
     }
-
-    fgEnsureFirstBBisScratch();
 
     fgNewStmtAtBeg(fgFirstBB, tree);
 
@@ -2307,15 +2343,6 @@ PhaseStatus Compiler::fgAddInternal()
     // type with a runtime lookup
     madeChanges |= fgCreateFiltersForGenericExceptions();
 
-    // The backend requires a scratch BB into which it can safely insert a P/Invoke method prolog if one is
-    // required. Similarly, we need a scratch BB for poisoning and when we have Swift parameters to reassemble.
-    // Create it here.
-    if (compMethodRequiresPInvokeFrame() || compShouldPoisonFrame() || lvaHasAnySwiftStackParamToReassemble())
-    {
-        madeChanges |= fgEnsureFirstBBisScratch();
-        fgFirstBB->SetFlags(BBF_DONT_REMOVE);
-    }
-
     /*
     <BUGNUM> VSW441487 </BUGNUM>
 
@@ -2351,8 +2378,7 @@ PhaseStatus Compiler::fgAddInternal()
             // Now assign the original input "this" to the temp.
             GenTree* store = gtNewStoreLclVarNode(lvaArg0Var, gtNewLclVarNode(info.compThisArg));
 
-            fgEnsureFirstBBisScratch();
-            fgNewStmtAtEnd(fgFirstBB, store);
+            fgNewStmtAtBeg(fgFirstBB, store);
 
             JITDUMP("\nCopy \"this\" to lvaArg0Var in first basic block %s\n", fgFirstBB->dspToString());
             DISPTREE(store);
@@ -2481,8 +2507,7 @@ PhaseStatus Compiler::fgAddInternal()
 
         // Stick the conditional call at the start of the method
 
-        fgEnsureFirstBBisScratch();
-        fgNewStmtAtEnd(fgFirstBB, gtNewQmarkNode(TYP_VOID, guardCheckCond, callback->AsColon()));
+        fgNewStmtAtBeg(fgFirstBB, gtNewQmarkNode(TYP_VOID, guardCheckCond, callback->AsColon()));
 
         madeChanges = true;
     }
@@ -2509,10 +2534,7 @@ PhaseStatus Compiler::fgAddInternal()
 
         tree = gtNewHelperCallNode(CORINFO_HELP_MON_ENTER, TYP_VOID, tree);
 
-        /* Create a new basic block and stick the call in it */
-
-        fgEnsureFirstBBisScratch();
-        fgNewStmtAtEnd(fgFirstBB, tree);
+        fgNewStmtAtBeg(fgFirstBB, tree);
 
 #ifdef DEBUG
         if (verbose)
@@ -2891,6 +2913,7 @@ void Compiler::fgInsertFuncletPrologBlock(BasicBlock* block)
     // the handler go to the prolog. Edges coming from with the handler are back-edges, and
     // go to the existing 'block'.
 
+    weight_t incomingWeight = BB_ZERO_WEIGHT;
     for (BasicBlock* const predBlock : block->PredBlocksEditing())
     {
         if (!fgIsIntraHandlerPred(predBlock, block))
@@ -2904,6 +2927,7 @@ void Compiler::fgInsertFuncletPrologBlock(BasicBlock* block)
                 {
                     noway_assert(predBlock->TargetIs(block));
                     fgRedirectTargetEdge(predBlock, newHead);
+                    incomingWeight += predBlock->bbWeight;
                     break;
                 }
 
@@ -2920,6 +2944,12 @@ void Compiler::fgInsertFuncletPrologBlock(BasicBlock* block)
     FlowEdge* const newEdge = fgAddRefPred(block, newHead);
     newHead->SetKindAndTargetEdge(BBJ_ALWAYS, newEdge);
     assert(newHead->JumpsToNext());
+
+    // Update flow into the header block
+    if (block->hasProfileWeight())
+    {
+        newHead->setBBProfileWeight(incomingWeight);
+    }
 }
 
 //------------------------------------------------------------------------
@@ -3002,6 +3032,18 @@ PhaseStatus Compiler::fgCreateFunclets()
 {
     assert(UsesFunclets());
     assert(!fgFuncletsCreated);
+
+    // Allocate the PSPSym, if needed. PSPSym is not used by the NativeAOT ABI
+    if (!IsTargetAbi(CORINFO_NATIVEAOT_ABI))
+    {
+        if (ehNeedsPSPSym())
+        {
+            lvaPSPSym            = lvaGrabTempWithImplicitUse(false DEBUGARG("PSPSym"));
+            LclVarDsc* lclPSPSym = lvaGetDesc(lvaPSPSym);
+            lclPSPSym->lvType    = TYP_I_IMPL;
+            lvaSetVarDoNotEnregister(lvaPSPSym DEBUGARG(DoNotEnregisterReason::VMNeedsStackAddr));
+        }
+    }
 
     fgCreateFuncletPrologBlocks();
 
@@ -4347,7 +4389,7 @@ FlowGraphDfsTree* Compiler::fgComputeDfs()
         fgRunDfs<decltype(visitPreorder), decltype(visitPostorder), decltype(visitEdge), useProfile>(visitPreorder,
                                                                                                      visitPostorder,
                                                                                                      visitEdge);
-    return new (this, CMK_DepthFirstSearch) FlowGraphDfsTree(this, postOrder, numBlocks, hasCycle);
+    return new (this, CMK_DepthFirstSearch) FlowGraphDfsTree(this, postOrder, numBlocks, hasCycle, useProfile);
 }
 
 // Add explicit instantiations.
@@ -4405,6 +4447,18 @@ BasicBlock* FlowGraphNaturalLoop::GetPreheader() const
     }
 
     return preheader;
+}
+
+//------------------------------------------------------------------------
+// SetEntryEdge: Set the entry edge of a loop
+//
+// Arguments:
+//   entryEdge - The new entry edge
+//
+void FlowGraphNaturalLoop::SetEntryEdge(FlowEdge* entryEdge)
+{
+    m_entryEdges.clear();
+    m_entryEdges.push_back(entryEdge);
 }
 
 //------------------------------------------------------------------------
@@ -6001,9 +6055,7 @@ void FlowGraphNaturalLoop::Duplicate(BasicBlock** insertAfter, BlockToBlockMap* 
 
     Compiler* comp = m_dfsTree->GetCompiler();
 
-    BasicBlock* bottom = GetLexicallyBottomMostBlock();
-
-    VisitLoopBlocksLexical([=](BasicBlock* blk) {
+    VisitLoopBlocks([=](BasicBlock* blk) {
         // Initialize newBlk as BBJ_ALWAYS without jump target, and fix up jump target later
         // with BasicBlock::CopyTarget().
         BasicBlock* newBlk = comp->fgNewBBafter(BBJ_ALWAYS, *insertAfter, /*extendRegion*/ true);
@@ -6213,7 +6265,7 @@ void FlowGraphNaturalLoop::DuplicateWithEH(BasicBlock** insertAfter, BlockToBloc
     BitVecTraits traits(comp->compBasicBlockID, comp);
     BitVec       visited(BitVecOps::MakeEmpty(&traits));
 
-    VisitLoopBlocksLexical([=, &traits, &visited, &clonedTry, &ehIndexShift](BasicBlock* blk) {
+    VisitLoopBlocks([=, &traits, &visited, &clonedTry, &ehIndexShift](BasicBlock* blk) {
         // Try cloning may have already handled this block
         //
         if (BitVecOps::IsMember(&traits, visited, blk->bbID))
@@ -6228,7 +6280,7 @@ void FlowGraphNaturalLoop::DuplicateWithEH(BasicBlock** insertAfter, BlockToBloc
         //
         if (comp->bbIsTryBeg(blk))
         {
-            CloneTryInfo info(comp);
+            CloneTryInfo info(traits);
             info.Map          = map;
             info.AddEdges     = false;
             info.ProfileScale = weightScale;

@@ -436,6 +436,31 @@ namespace System.IO.Compression.Tests
             }
         }
 
+        public static byte[] CreateZipFile(int entryCount, byte[] entryContents)
+        {
+            using (MemoryStream ms = new())
+            {
+                using (ZipArchive createdArchive = new(ms, ZipArchiveMode.Create, true))
+                {
+                    for (int i = 0; i < entryCount; i++)
+                    {
+                        string fileName = $"dummydata/{i}.bin";
+                        ZipArchiveEntry newEntry = createdArchive.CreateEntry(fileName);
+
+                        newEntry.LastWriteTime = DateTimeOffset.Now.AddHours(-1.0);
+                        using (Stream entryWriteStream = newEntry.Open())
+                        {
+                            entryWriteStream.Write(entryContents);
+                            entryWriteStream.WriteByte((byte)(i % byte.MaxValue));
+                        }
+                    }
+                }
+                ms.Flush();
+
+                return ms.ToArray();
+            }
+        }
+
         protected const string Utf8SmileyEmoji = "\ud83d\ude04";
         protected const string Utf8LowerCaseOUmlautChar = "\u00F6";
         protected const string Utf8CopyrightChar = "\u00A9";

@@ -82,7 +82,7 @@
     <Compile Include="PortableExecutable\PEReaderTests.cs" />
     <Compile Include="PortableExecutable\SectionHeaderTests.cs" />
     <Compile Include="Utilities\HashTests.cs" />
-    <Compile Include="Utilities\StreamExtensionsTests.cs" />
+    <Compile Include="Utilities\StreamExtensionsTests.cs" Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'" />
     <Compile Include="Metadata\MetadataReaderProviderTests.cs" />
     <Compile Include="Resources\TestResources.cs" />
     <Compile Include="TestUtilities\AssertEx.cs" />

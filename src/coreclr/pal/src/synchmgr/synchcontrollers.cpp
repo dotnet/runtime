@@ -772,9 +772,7 @@ namespace CorUnix
     SynchData (e.g. modifying the object signal count accordingly with its
     thread release semantics)
 
-    Note: this method must be called while holding the appropriate
-          synchronization locks (the local process synch lock if the target
-          object is local, both local and shared one if the object is shared).
+    Note: this method must be called while holding the local process synch lock.
     --*/
     PAL_ERROR CSynchData::ReleaseWaiterWithoutBlocking(
         CPalThread * pthrCurrent,

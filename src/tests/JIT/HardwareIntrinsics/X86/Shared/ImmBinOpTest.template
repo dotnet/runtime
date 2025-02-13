@@ -20,9 +20,9 @@ namespace JIT.HardwareIntrinsics.X86
     public static partial class Program
     {
         [Fact]
-        public static void {Method}{RetBaseType}{Imm}()
+        public static void {Method}{LargestVectorSize}{RetBaseType}{Imm}()
         {
-            var test = new ImmBinaryOpTest__{Method}{RetBaseType}{Imm}();
+            var test = new ImmBinaryOpTest__{Method}{LargestVectorSize}{RetBaseType}{Imm}();
 
             if (test.IsSupported)
             {
@@ -66,7 +66,7 @@ namespace JIT.HardwareIntrinsics.X86
         }
     }
 
-    public sealed unsafe class ImmBinaryOpTest__{Method}{RetBaseType}{Imm}
+    public sealed unsafe class ImmBinaryOpTest__{Method}{LargestVectorSize}{RetBaseType}{Imm}
     {
         private struct TestStruct
         {
@@ -85,7 +85,7 @@ namespace JIT.HardwareIntrinsics.X86
                 return testStruct;
             }
 
-            public void RunStructFldScenario(ImmBinaryOpTest__{Method}{RetBaseType}{Imm} testClass)
+            public void RunStructFldScenario(ImmBinaryOpTest__{Method}{LargestVectorSize}{RetBaseType}{Imm} testClass)
             {
                 var result = {Isa}.{Method}(_fld1, _fld2, {Imm});
 
@@ -108,7 +108,7 @@ namespace JIT.HardwareIntrinsics.X86
 
         private SimpleBinaryOpTest__DataTable<{RetBaseType}, {Op1BaseType}, {Op2BaseType}> _dataTable;
 
-        public ImmBinaryOpTest__{Method}{RetBaseType}{Imm}()
+        public ImmBinaryOpTest__{Method}{LargestVectorSize}{RetBaseType}{Imm}()
         {
             Succeeded = true;
 
@@ -293,7 +293,7 @@ namespace JIT.HardwareIntrinsics.X86
 
             if (!succeeded)
             {
-                TestLibrary.TestFramework.LogInformation($"{nameof({Isa})}.{nameof({Isa}.{Method})}<{RetBaseType}>({Op1VectorType}<{Op1BaseType}>.{Imm}, {Op2VectorType}<{Op2BaseType}>): {method} failed:");
+                TestLibrary.TestFramework.LogInformation($"{nameof({Isa})}.{nameof({Isa}.{Method})}.{LargestVectorSize}<{RetBaseType}>({Op1VectorType}<{Op1BaseType}>.{Imm}, {Op2VectorType}<{Op2BaseType}>): {method} failed:");
                 TestLibrary.TestFramework.LogInformation($"    left: ({string.Join(", ", left)})");
                 TestLibrary.TestFramework.LogInformation($"   right: ({string.Join(", ", right)})");
                 TestLibrary.TestFramework.LogInformation($"  result: ({string.Join(", ", result)})");

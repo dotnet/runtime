@@ -7,11 +7,25 @@ if (NOT CLR_CMAKE_USE_SYSTEM_ZLIB)
 endif()
 
 if (CLR_CMAKE_USE_SYSTEM_BROTLI)
+    find_library(BROTLIDEC brotlidec REQUIRED)
+    find_library(BROTLIENC brotlienc REQUIRED)
+    list(APPEND ${BROTLI_LIBRARIES} ${BROTLIDEC} ${BROTLIENC})
+
     if (CLR_CMAKE_HOST_FREEBSD)
         set(CMAKE_REQUIRED_INCLUDES ${CROSS_ROOTFS}/usr/local/include)
     endif()
 else()
     include(${CLR_SRC_NATIVE_DIR}/external/brotli.cmake)
+endif()
+
+if (STATIC_LIBS_ONLY)
+    # For every vendored library that we're actually vendoring (and not referencing the system one)
+    # mark it as "no interprocedural optimization" so that it's compatible with our NativeAOT shipping story.
+    foreach(VENDORED_LIB IN LISTS BROTLI_LIBRARIES ITEMS zlib)
+        if (TARGET ${VENDORED_LIB})
+            set_target_properties(${VENDORED_LIB} PROPERTIES INTERPROCEDURAL_OPTIMIZATION OFF)
+        endif()
+    endforeach()
 endif()
 
 configure_file(
@@ -163,23 +177,7 @@ else ()
 
         target_include_directories(System.IO.Compression.Native.Aot PUBLIC ${BROTLI_INCLUDE_DIRS})
         target_link_libraries(System.IO.Compression.Native.Aot PUBLIC ${BROTLI_LIBRARIES})
-
-        set_target_properties(System.IO.Compression.Native.Aot PROPERTIES CLR_CONTROL_FLOW_GUARD OFF)
         set_target_properties(System.IO.Compression.Native.Aot PROPERTIES INTERPROCEDURAL_OPTIMIZATION OFF)
-
-        add_library(System.IO.Compression.Native.Aot.GuardCF
-            STATIC
-            ${NATIVECOMPRESSION_SOURCES}
-        )
-
-        if (NOT CLR_CMAKE_USE_SYSTEM_ZLIB)
-            target_link_libraries(System.IO.Compression.Native.Aot.GuardCF PRIVATE zlibstatic)
-        endif()
-
-        target_include_directories(System.IO.Compression.Native.Aot.GuardCF PUBLIC ${BROTLI_INCLUDE_DIRS})
-        target_link_libraries(System.IO.Compression.Native.Aot.GuardCF PUBLIC ${BROTLI_LIBRARIES})
-
-        set_target_properties(System.IO.Compression.Native.Aot.GuardCF PROPERTIES INTERPROCEDURAL_OPTIMIZATION OFF)
     endif()
 
     if (GEN_SHARED_LIB)
@@ -196,7 +194,6 @@ else ()
 
     if(STATIC_LIBS_ONLY)
         install_static_library(System.IO.Compression.Native.Aot aotsdk nativeaot)
-        install_static_library(System.IO.Compression.Native.Aot.GuardCF aotsdk nativeaot)
         foreach(BROTLI_LIB ${BROTLI_LIBRARIES})
             # Brotli's build scripts can add some system dependencies like libm
             # to BROTLI_LIBRARIES. Only install the libraries that are actually

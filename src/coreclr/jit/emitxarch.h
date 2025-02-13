@@ -38,6 +38,18 @@ inline static bool isHighSimdReg(regNumber reg)
 #endif
 }
 
+inline static bool isHighGPReg(regNumber reg)
+{
+#ifdef TARGET_AMD64
+    // TODO-apx: the definition here is incorrect, we will need to revisit this after we extend the register definition.
+    //           for now, we can simply use REX2 as REX.
+    return ((reg >= REG_R16) && (reg <= REG_R23));
+#else
+    // X86 JIT operates in 32-bit mode and hence extended regs are not available.
+    return false;
+#endif
+}
+
 /************************************************************************/
 /*         Routines that compute the size of / encode instructions      */
 /************************************************************************/
@@ -83,11 +95,13 @@ BYTE* emitOutputLJ(insGroup* ig, BYTE* dst, instrDesc* id);
 
 unsigned emitOutputRexOrSimdPrefixIfNeeded(instruction ins, BYTE* dst, code_t& code);
 unsigned emitGetRexPrefixSize(instruction ins);
+unsigned emitGetRexPrefixSize(instrDesc* id, instruction ins);
 unsigned emitGetVexPrefixSize(instrDesc* id) const;
 unsigned emitGetEvexPrefixSize(instrDesc* id) const;
 unsigned emitGetPrefixSize(instrDesc* id, code_t code, bool includeRexPrefixSize);
 unsigned emitGetAdjustedSize(instrDesc* id, code_t code) const;
 
+code_t emitExtractRex2Prefix(instruction ins, code_t& code) const;
 code_t emitExtractVexPrefix(instruction ins, code_t& code) const;
 code_t emitExtractEvexPrefix(instruction ins, code_t& code) const;
 
@@ -119,17 +133,29 @@ static regNumber getBmiRegNumber(instruction ins);
 static regNumber getSseShiftRegNumber(instruction ins);
 bool             HasVexEncoding(instruction ins) const;
 bool             HasEvexEncoding(instruction ins) const;
+bool             HasRex2Encoding(instruction ins) const;
+bool             HasApxNdd(instruction ins) const;
+bool             HasApxNf(instruction ins) const;
 bool             IsVexEncodableInstruction(instruction ins) const;
 bool             IsEvexEncodableInstruction(instruction ins) const;
+bool             IsRex2EncodableInstruction(instruction ins) const;
+bool             IsApxNDDEncodableInstruction(instruction ins) const;
+bool             IsApxNFEncodableInstruction(instruction ins) const;
+bool             IsApxExtendedEvexInstruction(instruction ins) const;
+bool             IsShiftInstruction(instruction ins) const;
+bool             IsLegacyMap1(code_t code) const;
 bool             IsVexOrEvexEncodableInstruction(instruction ins) const;
+bool             DoJitUseApxNDD(instruction ins) const;
 
 code_t insEncodeMIreg(const instrDesc* id, regNumber reg, emitAttr size, code_t code);
 
 code_t AddRexWPrefix(const instrDesc* id, code_t code);
+code_t AddRex2WPrefix(const instrDesc* id, code_t code);
 code_t AddRexRPrefix(const instrDesc* id, code_t code);
 code_t AddRexXPrefix(const instrDesc* id, code_t code);
 code_t AddRexBPrefix(const instrDesc* id, code_t code);
 code_t AddRexPrefix(instruction ins, code_t code);
+code_t AddRex2Prefix(instruction ins, code_t code);
 
 bool   EncodedBySSE38orSSE3A(instruction ins) const;
 bool   Is4ByteSSEInstruction(instruction ins) const;
@@ -159,6 +185,8 @@ bool AreFlagsSetToZeroCmp(regNumber reg, emitAttr opSize, GenCondition cond);
 bool AreFlagsSetForSignJumpOpt(regNumber reg, emitAttr opSize, GenCondition cond);
 
 insOpts GetEmbRoundingMode(uint8_t mode) const;
+
+void emitHandleGCrefRegs(BYTE* dst, instrDesc* id);
 
 bool hasRexPrefix(code_t code)
 {
@@ -201,6 +229,32 @@ code_t AddVexPrefixIfNeededAndNotPresent(instruction ins, code_t code, emitAttr 
 }
 
 insTupleType insTupleTypeInfo(instruction ins) const;
+
+// 2-byte REX2 prefix starts with byte 0xD5
+#define REX2_PREFIX_MASK_2BYTE 0xFF0000000000ULL
+#define REX2_PREFIX_CODE_2BYTE 0xD50000000000ULL
+
+bool TakesRex2Prefix(const instrDesc* id) const;
+//------------------------------------------------------------------------
+// hasEvexPrefix: Returns true if the instruction encoding already
+// contains Evex prefix.
+//
+// Arguments:
+//    code - opcode + prefixes bits at some stage of encoding.
+//
+// Returns:
+//    `true` if code has an Evex prefix.
+//
+bool hasRex2Prefix(code_t code)
+{
+#ifdef TARGET_AMD64
+    return (code & REX2_PREFIX_MASK_2BYTE) == REX2_PREFIX_CODE_2BYTE;
+#else
+    return false;
+#endif
+}
+
+bool IsExtendedGPReg(regNumber reg) const;
 
 //------------------------------------------------------------------------
 // HasKMaskRegisterDest: Temporary check to identify instructions that can
@@ -275,6 +329,30 @@ void SetUseEvexEncoding(bool value)
     useEvexEncodings = value;
 }
 
+// Is Rex2 encoding supported.
+bool useRex2Encodings;
+bool UseRex2Encoding() const
+{
+    return useRex2Encodings;
+}
+
+void SetUseRex2Encoding(bool value)
+{
+    useRex2Encodings = value;
+}
+
+// Is Promoted EVEX encoding supported.
+bool usePromotedEVEXEncodings;
+bool UsePromotedEVEXEncoding() const
+{
+    return usePromotedEVEXEncodings;
+}
+
+void SetUsePromotedEVEXEncoding(bool value)
+{
+    usePromotedEVEXEncodings = value;
+}
+
 //------------------------------------------------------------------------
 // UseSimdEncoding: Returns true if either VEX or EVEX encoding is supported
 // contains Evex prefix.
@@ -292,6 +370,7 @@ bool UseSimdEncoding() const
 #define EVEX_PREFIX_CODE 0x6200000000000000ULL
 
 bool TakesEvexPrefix(const instrDesc* id) const;
+bool TakesApxExtendedEvexPrefix(const instrDesc* id) const;
 
 //------------------------------------------------------------------------
 // hasEvexPrefix: Returns true if the instruction encoding already
@@ -339,6 +418,74 @@ code_t AddSimdPrefixIfNeeded(const instrDesc* id, code_t code, emitAttr size)
 }
 
 //------------------------------------------------------------------------
+// AddX86PrefixIfNeeded: Add the correct instruction prefix if required.
+//
+// Arguments:
+//    ins - the instruction being encoded.
+//    code - opcode + prefixes bits at some stage of encoding.
+//    size - operand size
+//
+code_t AddX86PrefixIfNeeded(const instrDesc* id, code_t code, emitAttr size)
+{
+    if (TakesEvexPrefix(id) || TakesApxExtendedEvexPrefix(id))
+    {
+        return AddEvexPrefix(id, code, size);
+    }
+
+    instruction ins = id->idIns();
+
+    if (TakesVexPrefix(ins))
+    {
+        return AddVexPrefix(ins, code, size);
+    }
+
+    // Based on how we labeled REX2 enabled instructions, we can confirm there will not be
+    // overlapping part between REX2 and VEX/EVEX, so order of the checks does not matter.
+    if (TakesRex2Prefix(id))
+    {
+        return AddRex2Prefix(ins, code);
+    }
+
+    return code;
+}
+
+//------------------------------------------------------------------------
+// AddX86PrefixIfNeededAndNotPresent: Add the correct instruction prefix if required.
+//
+// Arguments:
+//    ins - the instruction being encoded.
+//    code - opcode + prefixes bits at some stage of encoding.
+//    size - operand size
+//
+code_t AddX86PrefixIfNeededAndNotPresent(const instrDesc* id, code_t code, emitAttr size)
+{
+    // TODO-xarch-apx:
+    // consider refactor this part with AddSimdPrefixIfNeeded as a lot of functionality
+    // of these functions are overlapping.
+
+    if (TakesEvexPrefix(id) || TakesApxExtendedEvexPrefix(id))
+    {
+        return !hasEvexPrefix(code) ? AddEvexPrefix(id, code, size) : code;
+    }
+
+    instruction ins = id->idIns();
+
+    if (TakesVexPrefix(ins))
+    {
+        return !hasVexPrefix(code) ? AddVexPrefix(ins, code, size) : code;
+    }
+
+    // Based on how we labeled REX2 enabled instructions, we can confirm there will not be
+    // overlapping part between REX2 and VEX/EVEX, so order of the checks does not matter.
+    if (TakesRex2Prefix(id))
+    {
+        return !hasRex2Prefix(code) ? AddRex2Prefix(ins, code) : code;
+    }
+
+    return code;
+}
+
+//------------------------------------------------------------------------
 // SetEvexBroadcastIfNeeded: set embedded broadcast if needed.
 //
 // Arguments:
@@ -379,6 +526,48 @@ void SetEvexEmbMaskIfNeeded(instrDesc* id, insOpts instOptions)
     else
     {
         assert((instOptions & INS_OPTS_EVEX_z_MASK) == 0);
+    }
+}
+
+//------------------------------------------------------------------------
+// SetEvexNdIfNeeded: set NDD form - new data destination if needed.
+//
+// Arguments:
+//    id          - instruction descriptor
+//    instOptions - emit options
+//
+void SetEvexNdIfNeeded(instrDesc* id, insOpts instOptions)
+{
+    if ((instOptions & INS_OPTS_EVEX_nd_MASK) != 0)
+    {
+        assert(UsePromotedEVEXEncoding());
+        assert(IsApxNDDEncodableInstruction(id->idIns()));
+        id->idSetEvexNdContext();
+    }
+    else
+    {
+        assert((instOptions & INS_OPTS_EVEX_nd_MASK) == 0);
+    }
+}
+
+//------------------------------------------------------------------------
+// SetEvexNdIfNeeded: set Evex.nf on instrDesc
+//
+// Arguments:
+//    id          - instruction descriptor
+//    instOptions - emit options
+//
+void SetEvexNfIfNeeded(instrDesc* id, insOpts instOptions)
+{
+    if ((instOptions & INS_OPTS_EVEX_nf_MASK) != 0)
+    {
+        assert(UsePromotedEVEXEncoding());
+        assert(IsApxNFEncodableInstruction(id->idIns()));
+        id->idSetEvexNfContext();
+    }
+    else
+    {
+        assert((instOptions & INS_OPTS_EVEX_nf_MASK) == 0);
     }
 }
 
@@ -624,7 +813,7 @@ void emitIns_Data16();
 
 void emitIns_I(instruction ins, emitAttr attr, cnsval_ssize_t val);
 
-void emitIns_R(instruction ins, emitAttr attr, regNumber reg);
+void emitIns_R(instruction ins, emitAttr attr, regNumber reg, insOpts instOptions = INS_OPTS_NONE);
 
 void emitIns_C(instruction ins, emitAttr attr, CORINFO_FIELD_HANDLE fdlHnd, int offs);
 
@@ -633,7 +822,9 @@ void emitIns_A(instruction ins, emitAttr attr, GenTreeIndir* indir);
 void emitIns_R_I(instruction ins,
                  emitAttr    attr,
                  regNumber   reg,
-                 ssize_t val DEBUGARG(size_t targetHandle = 0) DEBUGARG(GenTreeFlags gtFlags = GTF_EMPTY));
+                 ssize_t     val,
+                 insOpts instOptions = INS_OPTS_NONE DEBUGARG(size_t targetHandle = 0)
+                     DEBUGARG(GenTreeFlags gtFlags = GTF_EMPTY));
 
 void emitIns_Mov(instruction ins, emitAttr attr, regNumber dstReg, regNumber srgReg, bool canSkip);
 
@@ -642,7 +833,7 @@ void emitIns_R_R(instruction ins, emitAttr attr, regNumber reg1, regNumber reg2,
 void emitIns_R_R_I(
     instruction ins, emitAttr attr, regNumber reg1, regNumber reg2, int ival, insOpts instOptions = INS_OPTS_NONE);
 
-void emitIns_AR(instruction ins, emitAttr attr, regNumber base, int offs);
+void emitIns_AR(instruction ins, emitAttr attr, regNumber base, int offs, insOpts instOptions = INS_OPTS_NONE);
 
 void emitIns_AR_R_R(instruction ins,
                     emitAttr    attr,
@@ -813,7 +1004,8 @@ void emitIns_R_L(instruction ins, emitAttr attr, BasicBlock* dst, regNumber reg)
 
 void emitIns_R_D(instruction ins, emitAttr attr, unsigned offs, regNumber reg);
 
-void emitIns_I_AR(instruction ins, emitAttr attr, int val, regNumber reg, int offs);
+void emitIns_I_AR(
+    instruction ins, emitAttr attr, int val, regNumber reg, int offs, insOpts instOptions = INS_OPTS_NONE);
 
 void emitIns_I_AI(instruction ins, emitAttr attr, int val, ssize_t disp);
 
@@ -824,7 +1016,12 @@ void emitIns_R_AI(instruction  ins,
                   regNumber    ireg,
                   ssize_t disp DEBUGARG(size_t targetHandle = 0) DEBUGARG(GenTreeFlags gtFlags = GTF_EMPTY));
 
-void emitIns_AR_R(instruction ins, emitAttr attr, regNumber reg, regNumber base, cnsval_ssize_t disp);
+void emitIns_AR_R(instruction    ins,
+                  emitAttr       attr,
+                  regNumber      reg,
+                  regNumber      base,
+                  cnsval_ssize_t disp,
+                  insOpts        instOptions = INS_OPTS_NONE);
 
 void emitIns_AI_R(instruction ins, emitAttr attr, regNumber ireg, ssize_t disp);
 
@@ -845,7 +1042,8 @@ void emitIns_ARX_R(instruction    ins,
                    regNumber      base,
                    regNumber      index,
                    unsigned       scale,
-                   cnsval_ssize_t disp);
+                   cnsval_ssize_t disp,
+                   insOpts        instOptions = INS_OPTS_NONE);
 
 void emitIns_I_AX(instruction ins, emitAttr attr, int val, regNumber reg, unsigned mul, int disp);
 
@@ -993,6 +1191,13 @@ void emitIns_SIMD_R_R_R_S_I(instruction ins,
                             insOpts     instOptions);
 #endif // FEATURE_HW_INTRINSICS
 
+void emitIns_BASE_R_R(instruction ins, emitAttr attr, regNumber op1Reg, regNumber op2Reg);
+
+void emitIns_BASE_R_R_I(instruction ins, emitAttr attr, regNumber op1Reg, regNumber op2Reg, int ival);
+
+regNumber emitIns_BASE_R_R_RM(
+    instruction ins, emitAttr attr, regNumber targetReg, GenTree* treeNode, GenTree* regOp, GenTree* rmOp);
+
 enum EmitCallType
 {
     EC_FUNC_TOKEN, //   Direct call to a helper/static/nonvirtual/global method (call addr with RIP-relative encoding)
@@ -1089,6 +1294,7 @@ inline bool HasEmbeddedMask(const instrDesc* id) const
 }
 
 inline bool HasHighSIMDReg(const instrDesc* id) const;
+inline bool HasExtendedGPReg(const instrDesc* id) const;
 
 inline bool HasMaskReg(const instrDesc* id) const;
 

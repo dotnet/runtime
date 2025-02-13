@@ -11,6 +11,7 @@ namespace System.SpanTests
         public static void ZeroLengthCount_Int()
         {
             Assert.Equal(0, ReadOnlySpan<int>.Empty.Count(0));
+            Assert.All(GetDefaultEqualityComparers<int>(), comparer => Assert.Equal(0, ReadOnlySpan<int>.Empty.Count(0, comparer)));
         }
         
         [Fact]
@@ -19,15 +20,17 @@ namespace System.SpanTests
             for (int i = 0; i <= 2; i++)
             {
                 Assert.Equal(0, ReadOnlySpan<int>.Empty.Count(new int[i]));
+                Assert.All(GetDefaultEqualityComparers<int>(), comparer => Assert.Equal(0, ReadOnlySpan<int>.Empty.Count(new int[i], comparer)));
             }
         }
 
         [Fact]
         public static void ZeroLengthNeedleCount_RosInt()
         {
-            ReadOnlySpan<int> span = new ReadOnlySpan<int>(new int[] { 5, 5, 5, 5, 5 });
+            int[] arr = [5, 5, 5, 5, 5];
 
-            Assert.Equal(0, span.Count<int>(ReadOnlySpan<int>.Empty));
+            Assert.Equal(0, new ReadOnlySpan<int>(arr).Count(ReadOnlySpan<int>.Empty));
+            Assert.All(GetDefaultEqualityComparers<int>(), comparer => Assert.Equal(0, new ReadOnlySpan<int>(arr).Count(ReadOnlySpan<int>.Empty, comparer)));
         }
 
         [Fact]
@@ -40,11 +43,12 @@ namespace System.SpanTests
                 {
                     a[i] = 10 * (i + 1);
                 }
-                ReadOnlySpan<int> span = new ReadOnlySpan<int>(a);
 
                 for (int targetIndex = 0; targetIndex < length; targetIndex++)
                 {
-                    Assert.Equal(1, span.Count(a[targetIndex]));
+                    Assert.Equal(1, new ReadOnlySpan<int>(a).Count(a[targetIndex]));
+                    Assert.All(GetDefaultEqualityComparers<int>(), comparer => Assert.Equal(1, new ReadOnlySpan<int>(a).Count(a[targetIndex], comparer)));
+                    Assert.Equal(0, new ReadOnlySpan<int>(a).Count(a[targetIndex], GetFalseEqualityComparer<int>()));
                 }
             }
         }
@@ -59,11 +63,12 @@ namespace System.SpanTests
                 {
                     a[i] = 10 * (i + 1);
                 }
-                ReadOnlySpan<int> span = new ReadOnlySpan<int>(a);
 
                 for (int targetIndex = 0; targetIndex < length - 1; targetIndex++)
                 {
-                    Assert.Equal(1, span.Count(new int[] { a[targetIndex], a[targetIndex + 1] }));
+                    Assert.Equal(1, new ReadOnlySpan<int>(a).Count(new int[] { a[targetIndex], a[targetIndex + 1] }));
+                    Assert.All(GetDefaultEqualityComparers<int>(), comparer => Assert.Equal(1, new ReadOnlySpan<int>(a).Count(new int[] { a[targetIndex], a[targetIndex + 1] }, comparer)));
+                    Assert.Equal(0, new ReadOnlySpan<int>(a).Count(new int[] { a[targetIndex], a[targetIndex + 1] }, GetFalseEqualityComparer<int>()));
                 }
             }
         }
@@ -81,8 +86,9 @@ namespace System.SpanTests
 
                 a[^1] = a[^2] = 5555;
 
-                ReadOnlySpan<int> span = new ReadOnlySpan<int>(a);
-                Assert.Equal(2, span.Count(5555));
+                Assert.Equal(2, new ReadOnlySpan<int>(a).Count(5555));
+                Assert.All(GetDefaultEqualityComparers<int>(), comparer => Assert.Equal(2, new ReadOnlySpan<int>(a).Count(5555, comparer)));
+                Assert.Equal(0, new ReadOnlySpan<int>(a).Count(5555, GetFalseEqualityComparer<int>()));
             }
         }
         
@@ -98,8 +104,9 @@ namespace System.SpanTests
                 }
                 a[0] = a[1] = a[^1] = a[^2] = 5555;
 
-                ReadOnlySpan<int> span = new ReadOnlySpan<int>(a);
-                Assert.Equal(2, span.Count<int>(new int[] { 5555, 5555 }));
+                Assert.Equal(2, new ReadOnlySpan<int>(a).Count(new int[] { 5555, 5555 }));
+                Assert.All(GetDefaultEqualityComparers<int>(), comparer => Assert.Equal(2, new ReadOnlySpan<int>(a).Count(new int[] { 5555, 5555 }, comparer)));
+                Assert.Equal(0, new ReadOnlySpan<int>(a).Count(new int[] { 5555, 5555 }, GetFalseEqualityComparer<int>()));
             }
         }
 
@@ -222,12 +229,14 @@ namespace System.SpanTests
         public static void ZeroLengthCount_String()
         {
             Assert.Equal(0, ReadOnlySpan<string>.Empty.Count("a"));
+            Assert.All(GetDefaultEqualityComparers<string>(), comparer => Assert.Equal(0, ReadOnlySpan<string>.Empty.Count("a", comparer)));
         }
-        
+
         [Fact]
         public static void ZeroLengthCount_RosString()
         {
             Assert.Equal(0, ReadOnlySpan<string>.Empty.Count(new[] { "a", "b" }));
+            Assert.All(GetDefaultEqualityComparers<string>(), comparer => Assert.Equal(0, ReadOnlySpan<string>.Empty.Count(new[] { "a", "b" }, comparer)));
         }
 
         [Fact]
@@ -240,11 +249,12 @@ namespace System.SpanTests
                 {
                     a[i] = (10 * (i + 1)).ToString();
                 }
-                ReadOnlySpan<string> span = new ReadOnlySpan<string>(a);
 
                 for (int targetIndex = 0; targetIndex < length; targetIndex++)
                 {
-                    Assert.Equal(1, span.Count(a[targetIndex]));
+                    Assert.Equal(1, new ReadOnlySpan<string>(a).Count(a[targetIndex]));
+                    Assert.All(GetDefaultEqualityComparers<string>(), comparer => Assert.Equal(1, new ReadOnlySpan<string>(a).Count(a[targetIndex], comparer)));
+                    Assert.Equal(0, new ReadOnlySpan<string>(a).Count(a[targetIndex], GetFalseEqualityComparer<string>()));
                 }
             }
         }
@@ -259,11 +269,12 @@ namespace System.SpanTests
                 {
                     a[i] = (10 * (i + 1)).ToString();
                 }
-                ReadOnlySpan<string> span = new ReadOnlySpan<string>(a);
 
                 for (int targetIndex = 0; targetIndex < length - 1; targetIndex++)
                 {
-                    Assert.Equal(1, span.Count(new string[] { a[targetIndex], a[targetIndex + 1] }));
+                    Assert.Equal(1, new ReadOnlySpan<string>(a).Count(new string[] { a[targetIndex], a[targetIndex + 1] }));
+                    Assert.All(GetDefaultEqualityComparers<string>(), comparer => Assert.Equal(1, new ReadOnlySpan<string>(a).Count(new string[] { a[targetIndex], a[targetIndex + 1] }, comparer)));
+                    Assert.Equal(0, new ReadOnlySpan<string>(a).Count(new string[] { a[targetIndex], a[targetIndex + 1] }, GetFalseEqualityComparer<string>()));
                 }
             }
         }
@@ -282,8 +293,8 @@ namespace System.SpanTests
                     a[i] = val == target ? (target + 1) : val;
                 }
 
-                ReadOnlySpan<string> span = new ReadOnlySpan<string>(a);
-                Assert.Equal(0, span.Count(target));
+                Assert.Equal(0, new ReadOnlySpan<string>(a).Count(target));
+                Assert.All(GetDefaultEqualityComparers<string>(), comparer => Assert.Equal(0, new ReadOnlySpan<string>(a).Count(target, comparer)));
             }
         }
         
@@ -294,15 +305,15 @@ namespace System.SpanTests
             for (int length = 0; length <= byte.MaxValue; length++)
             {
                 string[] a = new string[length];
-                ReadOnlySpan<string> target = new string[] { rnd.Next(0, 256).ToString(), "0" };
+                var target = new string[] { rnd.Next(0, 256).ToString(), "0" };
                 for (int i = 0; i < length; i++)
                 {
                     string val = (i + 1).ToString();
                     a[i] = val == target[0] ? (target[0] + 1) : val;
                 }
 
-                ReadOnlySpan<string> span = new ReadOnlySpan<string>(a);
-                Assert.Equal(0, span.Count(target));
+                Assert.Equal(0, new ReadOnlySpan<string>(a).Count(target));
+                Assert.All(GetDefaultEqualityComparers<string>(), comparer => Assert.Equal(0, new ReadOnlySpan<string>(a).Count(target, comparer)));
             }
         }
 
@@ -319,8 +330,9 @@ namespace System.SpanTests
 
                 a[^1] = a[^2] = "5555";
 
-                ReadOnlySpan<string> span = new ReadOnlySpan<string>(a);
-                Assert.Equal(2, span.Count("5555"));
+                Assert.Equal(2, new ReadOnlySpan<string>(a).Count("5555"));
+                Assert.All(GetDefaultEqualityComparers<string>(), comparer => Assert.Equal(2, new ReadOnlySpan<string>(a).Count("5555", comparer)));
+                Assert.Equal(0, new ReadOnlySpan<string>(a).Count("5555", GetFalseEqualityComparer<string>()));
             }
         }
 
@@ -337,23 +349,28 @@ namespace System.SpanTests
                 
                 a[0] = a[1] = a[^1] = a[^2] = "5555";
 
-                ReadOnlySpan<string> span = new ReadOnlySpan<string>(a);
-                Assert.Equal(2, span.Count(new string[] { "5555", "5555" }));
+                Assert.Equal(2, new ReadOnlySpan<string>(a).Count(new string[] { "5555", "5555" }));
+                Assert.All(GetDefaultEqualityComparers<string>(), comparer => Assert.Equal(2, new ReadOnlySpan<string>(a).Count(new string[] { "5555", "5555" }, comparer)));
+                Assert.Equal(0, new ReadOnlySpan<string>(a).Count(new string[] { "5555", "5555" }, GetFalseEqualityComparer<string>()));
             }
         }
 
         [Fact]
         public static void TestOrdinalStringCount_String()
         {
-            ReadOnlySpan<string> span = new string[] { "ii", "II", "μμ", "ii" };
-            Assert.Equal(2, span.Count("ii"));
+            var arr = new string[] { "ii", "II", "μμ", "ii" };
+            Assert.Equal(2, new ReadOnlySpan<string>(arr).Count("ii"));
+            Assert.All(GetDefaultEqualityComparers<string>(), comparer => Assert.Equal(2, new ReadOnlySpan<string>(arr).Count("ii", comparer)));
+            Assert.Equal(0, new ReadOnlySpan<string>(arr).Count("ii", GetFalseEqualityComparer<string>()));
         }
 
         [Fact]
         public static void TestOrdinalStringCount_RosString()
         {
-            ReadOnlySpan<string> span = new string[] { "ii", "II", "μμ", "ii", "μμ" };
-            Assert.Equal(1, span.Count(new string[] { "ii", "II" }));
+            var arr = new string[] { "ii", "II", "μμ", "ii", "μμ" };
+            Assert.Equal(1, new ReadOnlySpan<string>(arr).Count(new string[] { "ii", "II" }));
+            Assert.All(GetDefaultEqualityComparers<string>(), comparer => Assert.Equal(1, new ReadOnlySpan<string>(arr).Count(new string[] { "ii", "II" }, comparer)));
+            Assert.Equal(0, new ReadOnlySpan<string>(arr).Count(new string[] { "ii", "II" }, GetFalseEqualityComparer<string>()));
         }
         
         [Fact]
@@ -367,17 +384,19 @@ namespace System.SpanTests
         [MemberData(nameof(TestHelpers.CountNullData), MemberType = typeof(TestHelpers))]
         public static void CountNull_String(string[] spanInput, int expected)
         {
-            ReadOnlySpan<string> theStrings = spanInput;
-            Assert.Equal(expected, theStrings.Count((string)null));
+            Assert.Equal(expected, new ReadOnlySpan<string>(spanInput).Count((string)null));
+            Assert.All(GetDefaultEqualityComparers<string>(), comparer => Assert.Equal(expected, new ReadOnlySpan<string>(spanInput).Count((string)null, comparer)));
+            Assert.Equal(0, new ReadOnlySpan<string>(spanInput).Count((string)null, GetFalseEqualityComparer<string>()));
         }
 
         [Theory]
         [MemberData(nameof(TestHelpers.CountNullRosData), MemberType = typeof(TestHelpers))]
         public static void CountNull_RosString(string[] spanInput, int expected)
         {
-            ReadOnlySpan<string> theStrings = spanInput;
-            ReadOnlySpan<string> target = new string[] { null, "9" };
-            Assert.Equal(expected, theStrings.Count(target));
+            var target = new string[] { null, "9" };
+            Assert.Equal(expected, new ReadOnlySpan<string>(spanInput).Count(target));
+            Assert.All(GetDefaultEqualityComparers<string>(), comparer => Assert.Equal(expected, new ReadOnlySpan<string>(spanInput).Count(target, comparer)));
+            Assert.Equal(0, new ReadOnlySpan<string>(spanInput).Count(target, GetFalseEqualityComparer<string>()));
         }
     }
 }

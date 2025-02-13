@@ -1354,6 +1354,7 @@ inline GenTree::GenTree(genTreeOps oper, var_types type DEBUGARG(bool largeNode)
     gtLIRFlags = 0;
 #ifdef DEBUG
     gtDebugFlags = GTF_DEBUG_NONE;
+    gtMorphCount = 0;
 #endif // DEBUG
     gtCSEnum = NO_CSE;
     ClearAssertion();
@@ -2638,6 +2639,9 @@ inline
     int
     Compiler::lvaFrameAddress(
         int varNum, bool mustBeFPBased, regNumber* pBaseReg, int addrModeOffset, bool isFloatUsage)
+#elif TARGET_ARM64
+    int
+    Compiler::lvaFrameAddress(int varNum, bool* pFPbased, bool suppressFPtoSPRewrite)
 #else
     int
     Compiler::lvaFrameAddress(int varNum, bool* pFPbased)
@@ -2807,6 +2811,16 @@ inline
     {
         *pBaseReg = REG_SPBASE;
     }
+#elif defined(TARGET_ARM64)
+    if (FPbased && !suppressFPtoSPRewrite && !codeGen->isFramePointerRequired() && varOffset < 0 && !opts.IsOSR() &&
+        lvaDoneFrameLayout == Compiler::FINAL_FRAME_LAYOUT && codeGen->IsSaveFpLrWithAllCalleeSavedRegisters())
+    {
+        int spVarOffset = varOffset + codeGen->genSPtoFPdelta();
+        JITDUMP("lvaFrameAddress optimization for V%02u: [FP-%d] -> [SP+%d]\n", varNum, -varOffset, spVarOffset);
+        FPbased   = false;
+        varOffset = spVarOffset;
+    }
+    *pFPbased = FPbased;
 #else
     *pFPbased = FPbased;
 #endif
@@ -4246,8 +4260,9 @@ inline void Compiler::CLR_API_Leave(API_ICorJitInfo_Names ename)
 bool Compiler::fgVarIsNeverZeroInitializedInProlog(unsigned varNum)
 {
     LclVarDsc* varDsc = lvaGetDesc(varNum);
-    bool       result = varDsc->lvIsParam || lvaIsOSRLocal(varNum) || (varNum == lvaGSSecurityCookie) ||
-                  (varNum == lvaInlinedPInvokeFrameVar) || (varNum == lvaStubArgumentVar) || (varNum == lvaRetAddrVar);
+    bool       result = varDsc->lvIsParam || varDsc->lvIsParamRegTarget || lvaIsOSRLocal(varNum) ||
+                  (varNum == lvaGSSecurityCookie) || (varNum == lvaInlinedPInvokeFrameVar) ||
+                  (varNum == lvaStubArgumentVar) || (varNum == lvaRetAddrVar);
 
 #ifdef TARGET_ARM64
     result = result || (varNum == lvaFfrRegister);
@@ -4625,15 +4640,25 @@ inline char* regMaskToString(regMaskTP mask, Compiler* context)
 
 inline void printRegMaskInt(regMaskTP mask)
 {
+    // RBM_ALLINT is not known at compile time on TARGET_AMD64 since it's dependent on APX support. These are used by GC
+    // exclusively
+#if defined(TARGET_AMD64)
+    printf(REG_MASK_INT_FMT, (mask & RBM_ALLINT_ALL).getLow());
+#else  // !TARGET_X86
     printf(REG_MASK_INT_FMT, (mask & RBM_ALLINT).getLow());
+#endif // !TARGET_X86
 }
 
 inline char* regMaskIntToString(regMaskTP mask, Compiler* context)
 {
     const size_t cchRegMask = 24;
     char*        regmask    = new (context, CMK_Unknown) char[cchRegMask];
-
+    // RBM_ALLINT is not known at compile time on TARGET_AMD64 since it's dependent on APX support. Deprecated????
+#if defined(TARGET_AMD64)
+    sprintf_s(regmask, cchRegMask, REG_MASK_INT_FMT, (mask & RBM_ALLINT_ALL).getLow());
+#else  // !TARGET_X86
     sprintf_s(regmask, cchRegMask, REG_MASK_INT_FMT, (mask & RBM_ALLINT).getLow());
+#endif // !TARGET_X86
 
     return regmask;
 }
@@ -5038,12 +5063,22 @@ void Compiler::fgVisitBlocksInLoopAwareRPO(FlowGraphDfsTree* dfsTree, FlowGraphN
         }
     };
 
-    LoopAwareVisitor visitor(dfsTree, loops, func);
-
-    for (unsigned i = dfsTree->GetPostOrderCount(); i != 0; i--)
+    if (loops->NumLoops() == 0)
     {
-        BasicBlock* const block = dfsTree->GetPostOrder(i - 1);
-        visitor.VisitBlock(block);
+        for (unsigned i = dfsTree->GetPostOrderCount(); i != 0; i--)
+        {
+            BasicBlock* const block = dfsTree->GetPostOrder(i - 1);
+            func(block);
+        }
+    }
+    else
+    {
+        LoopAwareVisitor visitor(dfsTree, loops, func);
+        for (unsigned i = dfsTree->GetPostOrderCount(); i != 0; i--)
+        {
+            BasicBlock* const block = dfsTree->GetPostOrder(i - 1);
+            visitor.VisitBlock(block);
+        }
     }
 }
 
@@ -5125,41 +5160,6 @@ template <typename TFunc>
 BasicBlockVisit FlowGraphNaturalLoop::VisitLoopBlocks(TFunc func)
 {
     return VisitLoopBlocksReversePostOrder(func);
-}
-
-//------------------------------------------------------------------------------
-// FlowGraphNaturalLoop::VisitLoopBlocksLexical: Visit the loop's blocks in
-// lexical order.
-//
-// Type parameters:
-//   TFunc - Callback functor type
-//
-// Arguments:
-//   func - Callback functor that takes a BasicBlock* and returns a
-//   BasicBlockVisit.
-//
-// Returns:
-//    BasicBlockVisit that indicated whether the visit was aborted by the
-//    callback or whether all blocks were visited.
-//
-template <typename TFunc>
-BasicBlockVisit FlowGraphNaturalLoop::VisitLoopBlocksLexical(TFunc func)
-{
-    BasicBlock* const top    = GetLexicallyTopMostBlock();
-    BasicBlock* const bottom = GetLexicallyBottomMostBlock();
-
-    for (BasicBlock* const block : m_dfsTree->GetCompiler()->Blocks(top, bottom))
-    {
-        if (ContainsBlock(block))
-        {
-            if (func(block) == BasicBlockVisit::Abort)
-            {
-                return BasicBlockVisit::Abort;
-            }
-        }
-    }
-
-    return BasicBlockVisit::Continue;
 }
 
 //------------------------------------------------------------------------------

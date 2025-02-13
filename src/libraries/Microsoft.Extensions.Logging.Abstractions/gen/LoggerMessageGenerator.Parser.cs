@@ -916,7 +916,9 @@ namespace Microsoft.Extensions.Logging.Generators
             {
                 result = (c ^ result) * 16777619;
             }
-            return Math.Abs((int)result);
+
+            int ret = (int)result;
+            return ret == int.MinValue ? 0 : Math.Abs(ret); // Ensure the result is non-negative
         }
     }
 }
