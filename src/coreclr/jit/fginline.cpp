@@ -598,6 +598,7 @@ private:
                 const bool             explicitTailCall       = call->IsTailPrefixedCall();
 
                 CORINFO_CONTEXT_HANDLE contextInput = context;
+                context                             = nullptr;
                 m_compiler->impDevirtualizeCall(call, nullptr, &method, &methodFlags, &contextInput, &context,
                                                 isLateDevirtualization, explicitTailCall);
 
