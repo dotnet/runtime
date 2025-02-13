@@ -7619,12 +7619,12 @@ public:
         optMethodFlags |= OMF_HAS_STATIC_INIT;
     }
 
-    bool doesMethodHaveBoundChecks()
+    bool doesMethodHaveBoundsChecks()
     {
         return (optMethodFlags & OMF_HAS_BOUNDS_CHECKS) != 0;
     }
 
-    void setMethodHasBoundChecks()
+    void setMethodHasBoundsChecks()
     {
         optMethodFlags |= OMF_HAS_BOUNDS_CHECKS;
     }
