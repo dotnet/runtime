@@ -8357,15 +8357,6 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
 
     JITDUMP("    %s; can devirtualize\n", note);
 
-    // Make the updates.
-    call->gtFlags &= ~GTF_CALL_VIRT_VTABLE;
-    call->gtFlags &= ~GTF_CALL_VIRT_STUB;
-    call->gtFlags &= ~GTF_CALL_VIRT_GENERIC;
-    call->gtCallMethHnd = derivedMethod;
-    call->gtCallType    = CT_USER_FUNC;
-    call->gtControlExpr = nullptr;
-    INDEBUG(call->gtCallDebugFlags |= GTF_CALL_MD_DEVIRTUALIZED);
-
     if (dvInfo.isInstantiatingStub)
     {
         // Pass the instantiating stub method desc as the inst param arg.
@@ -8388,6 +8379,15 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
             call->gtArgs.InsertInstParam(this, instParam);
         }
     }
+
+    // Make the updates.
+    call->gtFlags &= ~GTF_CALL_VIRT_VTABLE;
+    call->gtFlags &= ~GTF_CALL_VIRT_STUB;
+    call->gtFlags &= ~GTF_CALL_VIRT_GENERIC;
+    call->gtCallMethHnd = derivedMethod;
+    call->gtCallType    = CT_USER_FUNC;
+    call->gtControlExpr = nullptr;
+    INDEBUG(call->gtCallDebugFlags |= GTF_CALL_MD_DEVIRTUALIZED);
 
     // Virtual calls include an implicit null check, which we may
     // now need to make explicit.
