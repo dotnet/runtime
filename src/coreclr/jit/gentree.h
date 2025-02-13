@@ -5763,7 +5763,7 @@ struct GenTreeCall final : public GenTree
         void*                  gtDirectCallAddress; // Used to pass direct call address between lower and codegen
     };
 
-    LateDevirtualizationInfo* gtLateDevirtualizationInfo;
+    LateDevirtualizationInfo* gtLateDevirtualizationInfo; // Always available for user virtual calls
 
     // expression evaluated after args are placed which determines the control target
     GenTree* gtControlExpr;

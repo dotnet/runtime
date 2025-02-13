@@ -589,26 +589,15 @@ private:
                 }
 #endif // DEBUG
 
-                CORINFO_CONTEXT_HANDLE context                = nullptr;
-                InlineContext*         inlinersContext        = nullptr;
+                assert((call->gtCallMoreFlags & GTF_CALL_M_HAS_LATE_DEVIRT_INFO) != 0);
+                CORINFO_CONTEXT_HANDLE context                = call->gtLateDevirtualizationInfo->exactContextHnd;
+                InlineContext*         inlinersContext        = call->gtLateDevirtualizationInfo->inlinersContext;
                 CORINFO_METHOD_HANDLE  method                 = call->gtCallMethHnd;
                 unsigned               methodFlags            = 0;
                 const bool             isLateDevirtualization = true;
                 const bool             explicitTailCall       = call->IsTailPrefixedCall();
 
-                if ((call->gtCallMoreFlags & GTF_CALL_M_HAS_LATE_DEVIRT_INFO) != 0)
-                {
-                    context         = call->gtLateDevirtualizationInfo->exactContextHnd;
-                    inlinersContext = call->gtLateDevirtualizationInfo->inlinersContext;
-                    // Note: we might call this multiple times for the same trees.
-                    // If the devirtualization below succeeds, the call becomes
-                    // non-virtual and we won't get here again. If it does not
-                    // succeed we might get here again so we keep the late devirt
-                    // info.
-                }
-
                 CORINFO_CONTEXT_HANDLE contextInput = context;
-                context                             = nullptr;
                 m_compiler->impDevirtualizeCall(call, nullptr, &method, &methodFlags, &contextInput, &context,
                                                 isLateDevirtualization, explicitTailCall);
 
