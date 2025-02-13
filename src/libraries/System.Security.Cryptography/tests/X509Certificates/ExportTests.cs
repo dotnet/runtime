@@ -157,13 +157,21 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             }
         }
 
-        [Fact]
+        [Theory]
         [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.MacCatalyst | TestPlatforms.tvOS, "The PKCS#12 Exportable flag is not supported on iOS/MacCatalyst/tvOS")]
-        public static void ExportPkcs12_SimplePbeAes192()
+        [InlineData(PbeEncryptionAlgorithm.Aes192Cbc, nameof(HashAlgorithmName.SHA1), 1200)]
+        [InlineData(PbeEncryptionAlgorithm.Aes256Cbc, nameof(HashAlgorithmName.SHA256), 4000)]
+        [InlineData(PbeEncryptionAlgorithm.Aes128Cbc, nameof(HashAlgorithmName.SHA256), 4)]
+        [InlineData(PbeEncryptionAlgorithm.TripleDes3KeyPkcs12, nameof(HashAlgorithmName.SHA1), 1234)]
+        public static void ExportPkcs12_PbeParameters(
+            PbeEncryptionAlgorithm encryptionAlgorithm,
+            string hashAlgorithm,
+            int iterations)
         {
             const string password = "PLACEHOLDER";
+            HashAlgorithmName hashAlgorithmName = new(hashAlgorithm);
 
-            PbeParameters parameters = new(PbeEncryptionAlgorithm.Aes192Cbc, HashAlgorithmName.SHA384, 2345);
+            PbeParameters parameters = new(encryptionAlgorithm, hashAlgorithmName, iterations);
 
             using (X509Certificate2 cert = new(TestData.PfxData, TestData.PfxDataPassword, X509KeyStorageFlags.Exportable))
             {
@@ -171,9 +179,46 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 VerifyPkcs12(
                     pkcs12,
                     password,
-                    expectedIterations: 2345,
-                    expectedMacHashAlgorithm: HashAlgorithmName.SHA384,
-                    expectedEncryptionAlgorithm: PbeEncryptionAlgorithm.Aes192Cbc);
+                    iterations,
+                    hashAlgorithmName,
+                    encryptionAlgorithm);
+            }
+        }
+
+        [Fact]
+        public static void ExportPkcs12_Pkcs12ExportPbeParameters_ArgValidation()
+        {
+            using (X509Certificate2 cert = new(TestData.PfxData, TestData.PfxDataPassword))
+            {
+                AssertExtensions.Throws<ArgumentOutOfRangeException>("exportParameters",
+                    () => cert.ExportPkcs12((Pkcs12ExportPbeParameters)42, null));
+            }
+        }
+
+        [Theory]
+        [InlineData(PbeEncryptionAlgorithm.TripleDes3KeyPkcs12, nameof(HashAlgorithmName.SHA256))]
+        [InlineData(PbeEncryptionAlgorithm.TripleDes3KeyPkcs12, "")]
+        [InlineData(PbeEncryptionAlgorithm.TripleDes3KeyPkcs12, null)]
+        [InlineData(PbeEncryptionAlgorithm.TripleDes3KeyPkcs12, "POTATO")]
+        [InlineData(PbeEncryptionAlgorithm.Aes128Cbc, "POTATO")]
+        [InlineData(PbeEncryptionAlgorithm.Aes128Cbc, null)]
+        [InlineData(PbeEncryptionAlgorithm.Aes128Cbc, "")]
+        [InlineData(PbeEncryptionAlgorithm.Aes192Cbc, "POTATO")]
+        [InlineData(PbeEncryptionAlgorithm.Aes192Cbc, null)]
+        [InlineData(PbeEncryptionAlgorithm.Aes192Cbc, "")]
+        [InlineData(PbeEncryptionAlgorithm.Aes256Cbc, "POTATO")]
+        [InlineData(PbeEncryptionAlgorithm.Aes256Cbc, null)]
+        [InlineData(PbeEncryptionAlgorithm.Aes256Cbc, "")]
+        [InlineData(PbeEncryptionAlgorithm.Aes256Cbc, "SHA3-256")]
+        [InlineData((PbeEncryptionAlgorithm)(-1), nameof(HashAlgorithmName.SHA1))]
+        public static void ExportPkcs12_PbeParameters_ArgValidation(
+            PbeEncryptionAlgorithm encryptionAlgorithm,
+            string hashAlgorithm)
+        {
+            using (X509Certificate2 cert = new(TestData.PfxData, TestData.PfxDataPassword))
+            {
+                PbeParameters badParameters = new(encryptionAlgorithm, new HashAlgorithmName(hashAlgorithm), 1);
+                Assert.Throws<CryptographicException>(() => cert.ExportPkcs12(badParameters, null));
             }
         }
 
@@ -658,9 +703,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             string password,
             int expectedIterations,
             HashAlgorithmName expectedMacHashAlgorithm,
-            PbeEncryptionAlgorithm expectedEncryptionAlgorithm,
-            int expectedCerts,
-            int expectedKeys)
+            PbeEncryptionAlgorithm expectedEncryptionAlgorithm)
         {
             const string Pkcs7Data = "1.2.840.113549.1.7.1";
             const string Pkcs7Encrypted = "1.2.840.113549.1.7.6";
