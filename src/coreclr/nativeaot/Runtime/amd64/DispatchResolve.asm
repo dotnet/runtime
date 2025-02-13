@@ -17,36 +17,50 @@ LEAF_ENTRY RhpResolveInterfaceMethodFast, _TEXT
         ;; The exception handling infrastructure is aware of the fact that this is the first
         ;; instruction of RhpResolveInterfaceMethodFast and uses it to translate an AV here
         ;; to a NullReferenceException at the callsite.
-        mov     r9, [rcx]
+        mov     rax, [rcx]
 
         ;; r10 currently contains the indirection cell address.
-        ;; load r10 to point to the cache block.
-        mov     r10, [r10 + OFFSETOF__InterfaceDispatchCell__m_pCache]
-        test    r10b, IDC_CACHE_POINTER_MASK
-        jne     RhpResolveInterfaceMethodFast_SlowPath
+        ;; load r11 to point to the cache block.
+        mov     r11, [r10 + OFFSETOF__InterfaceDispatchCell__m_pCache]
+        test    r11b, IDC_CACHE_POINTER_MASK
+        jne     RhpResolveInterfaceMethodFast_SlowPath_Push
 
-        lea     rax, [r10 + OFFSETOF__InterfaceDispatchCache__m_rgEntries]
-        cmp     qword ptr [rax], r9
+        lea     r11, [r11 + OFFSETOF__InterfaceDispatchCache__m_rgEntries]
+        cmp     qword ptr [r11], rax
         jne     RhpResolveInterfaceMethodFast_Polymorphic
-        mov     rax, qword ptr [rax + 8]
+        mov     rax, qword ptr [r11 + 8]
         ret
 
       RhpResolveInterfaceMethodFast_Polymorphic:
-        mov     r10d, dword ptr [r10 + OFFSETOF__InterfaceDispatchCache__m_cEntries]
+        push    rdx
+        mov     rdx, [r10 + OFFSETOF__InterfaceDispatchCell__m_pCache]
+        mov     r11d, dword ptr [rdx + OFFSETOF__InterfaceDispatchCache__m_cEntries]
 
       RhpResolveInterfaceMethodFast_NextEntry:
-        add     rax, SIZEOF__InterfaceDispatchCacheEntry
-        dec     r10d
+        add     rdx, SIZEOF__InterfaceDispatchCacheEntry
+        dec     r11d
         jz      RhpResolveInterfaceMethodFast_SlowPath
 
-        cmp     qword ptr [rax], r9
+        cmp     qword ptr [rdx], rax
         jne     RhpResolveInterfaceMethodFast_NextEntry
 
-        mov     rax, qword ptr [rax + 8]
+        mov     rax, qword ptr [rdx + 8]
+        pop     rdx
         ret
 
+      RhpResolveInterfaceMethodFast_SlowPath_Push:
+        push    rdx
       RhpResolveInterfaceMethodFast_SlowPath:
-        jmp     RhpResolveInterfaceMethod
+        push    rcx
+        push    r8
+        push    r9
+        mov     rdx, r10
+        call    RhpResolveInterfaceMethod
+        pop     r9
+        pop     r8
+        pop     rcx
+        pop     rdx
+        ret
 
 LEAF_END RhpResolveInterfaceMethodFast, _TEXT
 
