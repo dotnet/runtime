@@ -185,7 +185,6 @@ EP_RT_DEFINE_THREAD_FUNC (server_thread)
 	while (server_loop_tick (NULL) == 0) { }
 	return (ep_rt_thread_start_func_return_t)0;
 }
-#else // PERFTRACING_DISABLE_THREADS
 #endif // PERFTRACING_DISABLE_THREADS
 
 void
