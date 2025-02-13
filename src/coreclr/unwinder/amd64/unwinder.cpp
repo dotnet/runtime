@@ -52,10 +52,29 @@ M128A OOPStackUnwinderAMD64::MemoryRead128(PM128A addr)
 {
     return *dac_cast<PTR_M128A>((TADDR)addr);
 }
+#else
+// Read 64 bit unsigned value from the specified addres when the unwinder is build
+// for the cDAC. This triggers a callback to the cDAC host to read the memory from
+// the target process.
+ULONG64 OOPStackUnwinderAMD64::MemoryRead64(PULONG64 addr)
+{
+    ULONG64 value;
+    readFromTarget((uint64_t)addr, &value, sizeof(value), callbackContext);
+    return value;
+}
+
+// Read 128 bit value from the specified addres when the unwinder is build
+// for the cDAC. This triggers a callback to the cDAC host to read the memory from
+// the target process.
+M128A OOPStackUnwinderAMD64::MemoryRead128(PM128A addr)
+{
+    M128A value;
+    readFromTarget((uint64_t)addr, &value, sizeof(value), callbackContext);
+    return value;
+}
 #endif // FEATURE_CDAC_UNWINDER
 
-#ifdef DACCESS_COMPILE
-
+#if defined(DACCESS_COMPILE) || defined(FEATURE_CDAC_UNWINDER)
 //---------------------------------------------------------------------------------------
 //
 // The InstructionBuffer class abstracts accessing assembler instructions in the function
@@ -68,6 +87,24 @@ class InstructionBuffer
     UINT m_offset;
     SIZE_T m_address;
     UCHAR m_buffer[32];
+
+#ifdef FEATURE_CDAC_UNWINDER
+    ReadFromTarget m_readFromTarget;
+    void* m_callbackContext;
+
+    // Load the instructions from the target process being debugged
+    HRESULT Load()
+    {
+        HRESULT hr = m_readFromTarget(m_address, m_buffer, sizeof(m_buffer), m_callbackContext);
+        if (SUCCEEDED(hr))
+        {
+            // TODO: Implement breakpoint patching for cDAC
+            // https://github.com/dotnet/runtime/issues/112273#issue-2838620747
+        }
+
+        return hr;
+    }
+#else // FEATURE_CDAC_UNWINDER
 
     // Load the instructions from the target process being debugged
     HRESULT Load()
@@ -84,13 +121,22 @@ class InstructionBuffer
 
         return hr;
     }
+#endif
 
 public:
 
     // Construct the InstructionBuffer for the given address in the target process
+#ifdef FEATURE_CDAC_UNWINDER
+    InstructionBuffer(SIZE_T address, ReadFromTarget readFromTarget, void* callbackContext)
+      : m_offset(0),
+        m_address(address),
+        m_readFromTarget(readFromTarget),
+        m_callbackContext(callbackContext)
+#else // FEATURE_CDAC_UNWINDER
     InstructionBuffer(SIZE_T address)
       : m_offset(0),
         m_address(address)
+#endif // FEATURE_CDAC_UNWINDER
     {
         HRESULT hr = Load();
         if (FAILED(hr))
@@ -136,7 +182,9 @@ public:
         return m_buffer[realIndex];
     }
 };
+#endif // DACCESS_COMPILE || FEATURE_CDAC_UNWINDER
 
+#ifdef DACCESS_COMPILE
 //---------------------------------------------------------------------------------------
 //
 // Given the target address of an UNWIND_INFO structure, this function retrieves all the memory used for
@@ -258,113 +306,6 @@ BOOL OOPStackUnwinderAMD64::Unwind(CONTEXT * pContext)
 }
 
 #elif defined(FEATURE_CDAC_UNWINDER)
-
-// Read 64 bit unsigned value from the specified addres when the unwinder is build
-// for the cDAC. This triggers a callback to the cDAC host to read the memory from
-// the target process.
-ULONG64 OOPStackUnwinderAMD64::MemoryRead64(PULONG64 addr)
-{
-    ULONG64 value;
-    readFromTarget((uint64_t)addr, &value, sizeof(value), callbackContext);
-    return value;
-}
-
-// Read 128 bit value from the specified addres when the unwinder is build
-// for the cDAC. This triggers a callback to the cDAC host to read the memory from
-// the target process.
-M128A OOPStackUnwinderAMD64::MemoryRead128(PM128A addr)
-{
-    M128A value;
-    readFromTarget((uint64_t)addr, &value, sizeof(value), callbackContext);
-    return value;
-}
-
-//---------------------------------------------------------------------------------------
-//
-// The InstructionBuffer class abstracts accessing assembler instructions in the function
-// being unwound. It behaves as a memory byte pointer, but it reads the instruction codes
-// from the target process being debugged and removes all changes that the debugger
-// may have made to the code, e.g. breakpoint instructions.
-//
-class InstructionBuffer
-{
-    UINT m_offset;
-    SIZE_T m_address;
-    UCHAR m_buffer[32];
-
-    ReadFromTarget readFromTarget;
-    void* callbackContext;
-
-    // Load the instructions from the target process being debugged
-    HRESULT Load()
-    {
-        HRESULT hr = readFromTarget(m_address, m_buffer, sizeof(m_buffer), callbackContext);
-        if (SUCCEEDED(hr))
-        {
-            // TODO: Implement breakpoint patching for cDAC
-            // https://github.com/dotnet/runtime/issues/112273#issue-2838620747
-
-            // On X64, we need to replace any patches which are within the requested memory range.
-            // This is because the X64 unwinder needs to disassemble the native instructions in order to determine
-            // whether the IP is in an epilog.
-        }
-
-        return hr;
-    }
-
-public:
-
-    // Construct the InstructionBuffer for the given address in the target process
-    InstructionBuffer(SIZE_T address, ReadFromTarget readFromTarget, void* callbackContext)
-      : m_offset(0),
-        m_address(address),
-        readFromTarget(readFromTarget),
-        callbackContext(callbackContext)
-    {
-        HRESULT hr = Load();
-        if (FAILED(hr))
-        {
-            // If we have failed to read from the target process, just pretend
-            // we've read zeros.
-            // The InstructionBuffer is used in code driven epilogue unwinding
-            // when we read processor instructions and simulate them.
-            // It's very rare to be stopped in an epilogue when
-            // getting a stack trace, so if we can't read the
-            // code just assume we aren't in an epilogue instead of failing
-            // the unwind.
-            memset(m_buffer, 0, sizeof(m_buffer));
-        }
-    }
-
-    // Move to the next byte in the buffer
-    InstructionBuffer& operator++()
-    {
-        m_offset++;
-        return *this;
-    }
-
-    // Skip delta bytes in the buffer
-    InstructionBuffer& operator+=(INT delta)
-    {
-        m_offset += delta;
-        return *this;
-    }
-
-    // Return address of the current byte in the buffer
-    explicit operator ULONG64()
-    {
-        return m_address + m_offset;
-    }
-
-    // Get the byte at the given index from the current position
-    // Invoke DacError if the index is out of the buffer
-    UCHAR operator[](int index)
-    {
-        int realIndex = m_offset + index;
-        UNWINDER_ASSERT(realIndex < (int)sizeof(m_buffer));
-        return m_buffer[realIndex];
-    }
-};
 
 BOOL amd64Unwind(void* pContext, ReadFromTarget readFromTarget, GetAllocatedBuffer getAllocatedBuffer, GetStackWalkInfo getStackWalkInfo, void* callbackContext)
 {
