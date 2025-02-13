@@ -114,19 +114,19 @@ namespace System.Reflection
         public Type ReturnType => _returnType;
         public bool IsStatic => _isStatic;
 
-        public static bool AlternativeEquals(in InvokeSignatureInfoKey @this, InvokeSignatureInfo signatureInfo)
+        public static bool AlternativeEquals(in InvokeSignatureInfoKey key, InvokeSignatureInfo signatureInfo)
         {
-            if (!ReferenceEquals(@this._declaringType, signatureInfo._declaringType) ||
-                !ReferenceEquals(@this._returnType, signatureInfo._returnType) ||
-                @this._isStatic != signatureInfo._isStatic ||
-                @this._parameterTypes.Length != signatureInfo._parameterTypes.Length)
+            if (!ReferenceEquals(key._declaringType, signatureInfo._declaringType) ||
+                !ReferenceEquals(key._returnType, signatureInfo._returnType) ||
+                key._isStatic != signatureInfo._isStatic ||
+                key._parameterTypes.Length != signatureInfo._parameterTypes.Length)
             {
                 return false;
             }
 
-            for (int i = 0; i < @this._parameterTypes.Length; i++)
+            for (int i = 0; i < key._parameterTypes.Length; i++)
             {
-                if (!ReferenceEquals(@this._parameterTypes[i], signatureInfo._parameterTypes[i]))
+                if (!ReferenceEquals(key._parameterTypes[i], signatureInfo._parameterTypes[i]))
                 {
                     return false;
                 }
