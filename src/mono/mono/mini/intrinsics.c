@@ -951,7 +951,7 @@ get_rttype_ins_relation (MonoCompile *cfg, MonoInst *ins1, MonoInst *ins2, gbool
 
 		/* Common case in gshared BCL code: t1 is a gshared type like T_INT, and t2 is a concrete type */
 		if (mono_class_is_gparam (k1)) {
-			MonoGenericParam *gparam = t1->data.generic_param;
+			MonoGenericParam *gparam = m_type_data_get_generic_param (t1);
 			constraint1 = gparam->gshared_constraint;
 		}
 		if (constraint1) {
@@ -1742,7 +1742,7 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 				i2u_cmp->sreg1 = args[2]->dreg;
 				MONO_ADD_INS (cfg->cbb, i2u_cmp);
 			}
-			
+
 			if (is_ref && !mini_debug_options.weak_memory_model)
 				mini_emit_memory_barrier (cfg, MONO_MEMORY_BARRIER_REL);
 
@@ -2206,7 +2206,7 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 
 			/* Common case in gshared BCL code: t1 is a gshared type like T_INT */
 			if (mono_class_is_gparam (k1)) {
-				MonoGenericParam *gparam = t1->data.generic_param;
+				MonoGenericParam *gparam = m_type_data_get_generic_param (t1);
 				constraint1 = gparam->gshared_constraint;
 				if (constraint1) {
 					if (constraint1->type == MONO_TYPE_OBJECT) {
@@ -2411,7 +2411,7 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 				cmethod_name += 80;
 			}
 		}
-		
+
 		if (!strcmp (cmethod_name, "get_IsHardwareAccelerated")) {
 			EMIT_NEW_ICONST (cfg, ins, 0);
 			ins->type = STACK_I4;

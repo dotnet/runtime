@@ -1554,20 +1554,27 @@ bulk_type_log_single_type (
 	// Sets val variable sized parameter type data, type_parameters_count, and mono_type_parameters associated
 	// with arrays or generics to be recursively batched in the same ep_rt_mono_log_type_and_parameters call
 	switch (mono_underlying_type->type) {
-	case MONO_TYPE_ARRAY:
 	case MONO_TYPE_SZARRAY:
+	{
+		// FIXME: Previously was handled by below ARRAY block but that is incorrect; this implementation is speculative -kg
+		val->fixed_sized_data.flags |= TYPE_FLAGS_ARRAY;
+		// mono arrays are always arrays of by value types
+		val->mono_type_parameters = mono_mempool_alloc0 (type_logger->mem_pool, 1 * sizeof (MonoType*));
+		*val->mono_type_parameters = m_class_get_byval_arg (m_type_data_get_klass_unchecked (mono_underlying_type));
+		val->type_parameters_count++;
+		break;
+	}
+	case MONO_TYPE_ARRAY:
 	{
 		MonoArrayType *mono_array_type = mono_type_get_array_type (mono_type);
 		val->fixed_sized_data.flags |= TYPE_FLAGS_ARRAY;
-		if (mono_underlying_type->type == MONO_TYPE_ARRAY) {
-			// Only ranks less than TypeFlagsArrayRankMax are supported.
-			// Fortunately TypeFlagsArrayRankMax should be greater than the
-			// number of ranks the type loader will support
-			uint32_t rank = mono_array_type->rank;
-			if (rank < TYPE_FLAGS_ARRAY_RANK_MAX) {
-				rank <<= 8;
-				val->fixed_sized_data.flags |= rank;
-			}
+		// Only ranks less than TypeFlagsArrayRankMax are supported.
+		// Fortunately TypeFlagsArrayRankMax should be greater than the
+		// number of ranks the type loader will support
+		uint32_t rank = mono_array_type->rank;
+		if (rank < TYPE_FLAGS_ARRAY_RANK_MAX) {
+			rank <<= 8;
+			val->fixed_sized_data.flags |= rank;
 		}
 
 		// mono arrays are always arrays of by value types
@@ -1578,7 +1585,7 @@ bulk_type_log_single_type (
 	}
 	case MONO_TYPE_GENERICINST:
 	{
-		MonoGenericInst *class_inst = mono_type->data.generic_class->context.class_inst;
+		MonoGenericInst *class_inst = m_type_data_get_generic_class_unchecked (mono_type)->context.class_inst;
 		val->type_parameters_count = class_inst->type_argc;
 		val->mono_type_parameters = mono_mempool_alloc0 (type_logger->mem_pool, val->type_parameters_count * sizeof (MonoType*));
 		memcpy (val->mono_type_parameters, class_inst->type_argv, val->type_parameters_count * sizeof (MonoType*));

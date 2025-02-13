@@ -3766,8 +3766,9 @@ void Lowering::LowerCFGCall(GenTreeCall* call)
 
             // Set up ABI information for this arg.
             targetArg->NewAbiInfo =
-                ABIPassingInformation::FromSegment(comp, ABIPassingSegment::InRegister(REG_DISPATCH_INDIRECT_CALL_ADDR,
-                                                                                       0, TARGET_POINTER_SIZE));
+                ABIPassingInformation::FromSegmentByValue(comp,
+                                                          ABIPassingSegment::InRegister(REG_DISPATCH_INDIRECT_CALL_ADDR,
+                                                                                        0, TARGET_POINTER_SIZE));
             targetArg->AbiInfo.ArgType = callTarget->TypeGet();
             targetArg->AbiInfo.SetRegNum(0, REG_DISPATCH_INDIRECT_CALL_ADDR);
             targetArg->AbiInfo.NumRegs  = 1;
@@ -5861,7 +5862,7 @@ GenTree* Lowering::CreateFrameLinkUpdate(FrameLinkAction action)
     if (action == PushFrame)
     {
         // Thread->m_pFrame = &inlinedCallFrame;
-        data = comp->gtNewLclAddrNode(comp->lvaInlinedPInvokeFrameVar, callFrameInfo.offsetOfFrameVptr);
+        data = comp->gtNewLclVarAddrNode(comp->lvaInlinedPInvokeFrameVar);
     }
     else
     {
@@ -5889,20 +5890,19 @@ GenTree* Lowering::CreateFrameLinkUpdate(FrameLinkAction action)
 //  64-bit  32-bit                                    CORINFO_EE_INFO
 //  offset  offset  field name                        offset                  when set
 //  -----------------------------------------------------------------------------------------
-//  +00h    +00h    GS cookie                         offsetOfGSCookie
-//  +08h    +04h    vptr for class InlinedCallFrame   offsetOfFrameVptr       method prolog
-//  +10h    +08h    m_Next                            offsetOfFrameLink       method prolog
-//  +18h    +0Ch    m_Datum                           offsetOfCallTarget      call site
-//  +20h    +10h    m_pCallSiteSP                     offsetOfCallSiteSP      x86: call site, and zeroed in method
+//  +00h    +00h    _frameIdentifier                  0                       method prolog
+//  +08h    +04h    m_Next                            offsetOfFrameLink       method prolog
+//  +10h    +08h    m_Datum                           offsetOfCallTarget      call site
+//  +18h    +0Ch    m_pCallSiteSP                     offsetOfCallSiteSP      x86: call site, and zeroed in method
 //                                                                              prolog;
 //                                                                            non-x86: method prolog (SP remains
 //                                                                              constant in function, after prolog: no
 //                                                                              localloc and PInvoke in same function)
-//  +28h    +14h    m_pCallerReturnAddress            offsetOfReturnAddress   call site
-//  +30h    +18h    m_pCalleeSavedFP                  offsetOfCalleeSavedFP   not set by JIT
-//  +38h    +1Ch    m_pThread
-//          +20h    m_pSPAfterProlog                  offsetOfSPAfterProlog   arm only
-//  +40h    +20/24h m_StubSecretArg                   offsetOfSecretStubArg   method prolog of IL stubs with secret arg
+//  +20h    +10h    m_pCallerReturnAddress            offsetOfReturnAddress   call site
+//  +28h    +14h    m_pCalleeSavedFP                  offsetOfCalleeSavedFP   not set by JIT
+//  +30h    +18h    m_pThread
+//          +1Ch    m_pSPAfterProlog                  offsetOfSPAfterProlog   arm only
+//  +38h    +1C/20h m_StubSecretArg                   offsetOfSecretStubArg   method prolog of IL stubs with secret arg
 //
 // Note that in the VM, InlinedCallFrame is a C++ class whose objects have a 'this' pointer that points
 // to the InlinedCallFrame vptr (the 2nd field listed above), and the GS cookie is stored *before*
@@ -5946,7 +5946,7 @@ void Lowering::InsertPInvokeMethodProlog()
 
     // Call runtime helper to fill in our InlinedCallFrame and push it on the Frame list:
     //     TCB = CORINFO_HELP_INIT_PINVOKE_FRAME(&symFrameStart);
-    GenTree*   frameAddr    = comp->gtNewLclAddrNode(comp->lvaInlinedPInvokeFrameVar, callFrameInfo.offsetOfFrameVptr);
+    GenTree*   frameAddr    = comp->gtNewLclVarAddrNode(comp->lvaInlinedPInvokeFrameVar);
     NewCallArg frameAddrArg = NewCallArg::Primitive(frameAddr).WellKnown(WellKnownArg::PInvokeFrame);
 
     GenTreeCall* call = comp->gtNewHelperCallNode(CORINFO_HELP_INIT_PINVOKE_FRAME, TYP_I_IMPL);
@@ -9440,8 +9440,15 @@ void Lowering::LowerStoreIndirCoalescing(GenTreeIndir* ind)
         //
         // IND<byte> is always fine (and all IND<X> created here from such)
         // IND<simd> is not required to be atomic per our Memory Model
-        const bool allowsNonAtomic =
+        bool allowsNonAtomic =
             ((ind->gtFlags & GTF_IND_ALLOW_NON_ATOMIC) != 0) && ((prevInd->gtFlags & GTF_IND_ALLOW_NON_ATOMIC) != 0);
+
+        if (!allowsNonAtomic && currData.baseAddr->OperIs(GT_LCL_VAR) &&
+            (currData.baseAddr->AsLclVar()->GetLclNum() == comp->info.compRetBuffArg))
+        {
+            // RetBuf is a private stack memory, so we don't need to worry about atomicity.
+            allowsNonAtomic = true;
+        }
 
         if (!allowsNonAtomic && (genTypeSize(ind) > 1) && !varTypeIsSIMD(ind))
         {
