@@ -1285,7 +1285,7 @@ void StackFrameIterator::UnwindFuncletInvokeThunk()
 #elif defined(TARGET_RISCV64)
     PTR_uint64_t f = (PTR_uint64_t)(m_RegDisplay.SP);
 
-    for (int i = 0; i < 8; i++)
+    for (int i = 0; i < 12; i++)
     {
         m_RegDisplay.F[i] = *f++;
     }

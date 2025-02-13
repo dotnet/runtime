@@ -243,7 +243,7 @@ LOCAL_LABEL(RhpNewArray_Rare):
         PUSH_COOP_PINVOKE_FRAME a3
 
         // Preserve data we will need later into the callee saved registers
-        mv   s0, a0              // Preserve MethodTable
+        mv   s2, a0              // Preserve MethodTable
 
         mv   a2, a1              // numElements
         li   a1, 0                // uFlags
