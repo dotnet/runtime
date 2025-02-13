@@ -138,6 +138,8 @@
             if (nextTestName === undefined) {
                 location.hash = "";
                 console.error("Number of tests passed: " + localStorage.getItem("passedCount") + " failed: " + localStorage.getItem("failedCount") + " disabled: " + localStorage.getItem("disabledCount"));
+                console.error("  Disabled tests: " + disabledTestNamePatterns.join(", "));
+                console.error("  Failed tests: " + JSON.parse(localStorage.getItem("failedTests")).join(", "));
                 console.error("Test run complete");
             } else {
                 location.hash = "#" + nextTestName;
