@@ -40,7 +40,7 @@ namespace TestStackOverflow
                     {
                         lines.Add(line.Data);
                     }
-                    else
+                    else if (!line.Data.StartsWith("@"))
                     {
                         endOfStackTrace = true;
                     }
