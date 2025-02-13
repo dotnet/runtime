@@ -1349,8 +1349,6 @@ MINI_OP(OP_GC_PARAM_SLOT_LIVENESS_DEF, "gc_param_slot_liveness_def", NONE, NONE,
 
 MINI_OP(OP_GC_SAFE_POINT, "gc_safe_point", NONE, IREG, NONE)
 
-MINI_OP(OP_GC_SAMPLE_POINT, "prof_samplepoint", NONE, NONE, NONE)
-
 /*
  * Check if the class given by sreg1 was inited, if not, call
  * mono_generic_class_init_trampoline () though a trampoline.

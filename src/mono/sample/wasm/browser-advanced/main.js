@@ -108,6 +108,8 @@ try {
     const deepMeaning = new Promise(resolve => setTimeout(() => resolve(meaning), 100));
     exports.Sample.Test.PrintMeaning(deepMeaning);
 
+    exports.Sample.Test.SillyLoop();
+
     let exit_code = await runMain(config.mainAssemblyName, []);
     exit(exit_code);
 }

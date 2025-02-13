@@ -8691,9 +8691,8 @@ calli_end:
 			break;
 		}
 		case MONO_CEE_RET:
-			if (!detached_before_ret) {
+			if (!detached_before_ret)
 				mini_profiler_emit_leave (cfg, sig->ret->type != MONO_TYPE_VOID ? sp [-1] : NULL);
-			}
 
 			g_assert (!method_does_not_return (method));
 
@@ -11485,9 +11484,8 @@ mono_ldptr:
 			if (sp != stack_start)
 				UNVERIFIED;
 
-			if (!detached_before_ret) {
+			if (!detached_before_ret)
 				mini_profiler_emit_leave (cfg, sp [0]);
-			}
 
 			MONO_INST_NEW (cfg, ins, OP_BR);
 			ins->inst_target_bb = end_bblock;

@@ -2846,13 +2846,13 @@ insert_safepoints (MonoCompile *cfg)
 static void
 insert_samplepoint (MonoCompile *cfg, MonoBasicBlock *bblock)
 {
-	MonoInst *ins;
-
 	if (cfg->verbose_level > 1)
-		printf ("ADDING MAPLE POINT TO BB %d\n", bblock->block_num);
+		printf ("ADDING SAMPLE POINT TO BB %d\n", bblock->block_num);
 
-	MONO_INST_NEW (cfg, ins, OP_GC_SAMPLE_POINT);
-	MONO_ADD_INS (bblock, ins);
+	MonoBasicBlock *prev_cbb = cfg->cbb;
+	cfg->cbb = bblock;
+	mini_profiler_emit_samplepoint (cfg);
+	cfg->cbb = prev_cbb;
 }
 
 static void
@@ -2869,21 +2869,13 @@ insert_samplepoints (MonoCompile *cfg)
 	if (cfg->verbose_level > 2)
 		mono_print_code (cfg, "BEFORE SAMPLEPOINTS");
 
-	/* if the method doesn't contain
-	 *  (1) a call (so it's a leaf method)
-	 *  (2) and no loops
-	 * we can skip the samplepoint on method entry. */
-	gboolean requires_samplepoint = cfg->has_calls;
-
 	for (bb = cfg->bb_entry->next_bb; bb; bb = bb->next_bb) {
 		if (bb->loop_body_start || (bb->flags & BB_EXCEPTION_HANDLER)) {
-			requires_samplepoint = TRUE;
 			insert_samplepoint (cfg, bb);
 		}
 	}
 
-	if (requires_samplepoint)
-		insert_samplepoint (cfg, cfg->bb_entry);
+	// we don't need samplepoint event on method entry, there is already a method entry event
 
 	if (cfg->verbose_level > 2)
 		mono_print_code (cfg, "AFTER SAMPLEPOINTS");
@@ -3732,8 +3724,11 @@ mini_method_compile (MonoMethod *method, guint32 opts, JitFlags flags, int parts
 		MONO_TIME_TRACK (mono_jit_stats.jit_insert_safepoints, insert_safepoints (cfg));
 		mono_cfg_dump_ir (cfg, "insert_safepoints");
 	}
-	
-	insert_samplepoints (cfg);
+
+	if (MONO_CFG_PROFILE (cfg, SAMPLEPOINT_CONTEXT)) {
+		MONO_TIME_TRACK (mono_jit_stats.jit_insert_samplepoints, insert_samplepoints (cfg));
+		mono_cfg_dump_ir (cfg, "insert_samplepoints");
+	}
 
 	/* after method_to_ir */
 	if (parts == 1) {
@@ -4430,6 +4425,7 @@ mini_jit_init (void)
 	mono_counters_register ("JIT/compile_dominator_info", MONO_COUNTER_JIT | MONO_COUNTER_LONG | MONO_COUNTER_TIME, &mono_jit_stats.jit_compile_dominator_info);
 	mono_counters_register ("JIT/compute_natural_loops", MONO_COUNTER_JIT | MONO_COUNTER_LONG | MONO_COUNTER_TIME, &mono_jit_stats.jit_compute_natural_loops);
 	mono_counters_register ("JIT/insert_safepoints", MONO_COUNTER_JIT | MONO_COUNTER_LONG | MONO_COUNTER_TIME, &mono_jit_stats.jit_insert_safepoints);
+	mono_counters_register ("JIT/insert_samplepoints", MONO_COUNTER_JIT | MONO_COUNTER_LONG | MONO_COUNTER_TIME, &mono_jit_stats.jit_insert_samplepoints);
 	mono_counters_register ("JIT/ssa_compute", MONO_COUNTER_JIT | MONO_COUNTER_LONG | MONO_COUNTER_TIME, &mono_jit_stats.jit_ssa_compute);
 	mono_counters_register ("JIT/ssa_cprop", MONO_COUNTER_JIT | MONO_COUNTER_LONG | MONO_COUNTER_TIME, &mono_jit_stats.jit_ssa_cprop);
 	mono_counters_register ("JIT/ssa_deadce", MONO_COUNTER_JIT | MONO_COUNTER_LONG | MONO_COUNTER_TIME, &mono_jit_stats.jit_ssa_deadce);

@@ -102,7 +102,7 @@ export function mono_wasm_profiler_enter (): void {
     }
 
     stackFrames.push(globalThis.performance.now());
-    stackFramesSkip.push(skipSample());
+    stackFramesSkip.push(skip_sample());
 }
 
 const methodNames: Map<number, string> = new Map();
@@ -115,7 +115,7 @@ export function mono_wasm_profiler_leave (method: MonoMethod): void {
     const skip = stackFramesSkip.pop();
 
     // no sample point and skip also now
-    if (skip && skipSample()) {
+    if (skip && skip_sample()) {
         return;
     }
 
@@ -138,7 +138,7 @@ export function mono_wasm_profiler_samplepoint (): void {
     if (!runtimeHelpers.enablePerfMeasure) {
         return;
     }
-    if (!stackFramesSkip[stackFramesSkip.length - 1] || skipSample()) {
+    if (!stackFramesSkip[stackFramesSkip.length - 1] || skip_sample()) {
         return;
     }
 
@@ -146,7 +146,7 @@ export function mono_wasm_profiler_samplepoint (): void {
     stackFramesSkip[stackFramesSkip.length - 1] = false;
 }
 
-function skipSample ():boolean {
+function skip_sample ():boolean {
     sampleSkipCounter++;
     if (sampleSkipCounter < skipsPerPeriod) {
         return true;

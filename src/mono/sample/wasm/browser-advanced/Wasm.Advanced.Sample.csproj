@@ -18,12 +18,6 @@
 
     <!-- Put "framework" (dotnet.js, dlls, etc) files directly into the AppBundle -->
     <WasmRuntimeAssetsLocation>./</WasmRuntimeAssetsLocation>
-
-    <!-- 
-    <RunAOTCompilation>true</RunAOTCompilation>
-    -->
-    <WasmNativeDebugSymbols>true</WasmNativeDebugSymbols>
-    <WasmNativeStrip>false</WasmNativeStrip>
   </PropertyGroup>
   <ItemGroup>
     <WasmExtraFilesToDeploy Include="main.js" />
