@@ -235,7 +235,7 @@ typedef uint64_t regMaskSmall;
 #define REG_MASK_ALL_FMT "%016llX"
 #endif
 
-#ifdef TARGET_ARM64
+#if defined(TARGET_AMD64) || defined(TARGET_ARM64)
 #define HAS_MORE_THAN_64_REGISTERS 1
 #endif // TARGET_ARM64
 
@@ -262,6 +262,7 @@ public:
 #endif
     void                       AddGprRegs(SingleTypeRegSet gprRegs DEBUG_ARG(regMaskTP availableIntRegs));
     void                       AddRegNum(regNumber reg, var_types type);
+    void                       AddRegsetForMask(SingleTypeRegSet regMask, bool isMask);
     void                       AddRegNumInMask(regNumber reg);
     void                       AddRegsetForType(SingleTypeRegSet regsToAdd, var_types type);
     SingleTypeRegSet           GetRegSetForType(var_types type) const;

@@ -1081,6 +1081,29 @@ private:
     void makeRegisterInactive(RegRecord* physRegRecord);
     void freeRegister(RegRecord* physRegRecord);
     void freeRegisters(regMaskTP regsToFree);
+    void freeRegistersFast(SingleTypeRegSet regsToFree, bool isMaskType);
+
+    inline regNumber genFirstRegNumFromMaskAndToggleFast(SingleTypeRegSet& mask, bool isMask)
+{
+    assert(mask != RBM_NONE); // Must have one bit set, so can't have a mask of zero
+
+    /* Convert the mask to a register number */
+
+    regNumber regNum = (regNumber)BitOperations::BitScanForward(mask);
+
+    mask ^= genSingleTypeRegMask(regNum);
+
+#ifdef HAS_MORE_THAN_64_REGISTERS
+    if (isMask)
+    {
+        regNum = (regNumber)(64 + regNum);
+    }
+#endif
+
+    return regNum;
+}
+
+
 
     // Get the type that this tree defines.
     var_types getDefType(GenTree* tree)
@@ -1779,6 +1802,10 @@ private:
     {
         m_AvailableRegs |= regMask;
     }
+    void makeRegsAvailableFast(SingleTypeRegSet regMask, bool isMask)
+    {
+        m_AvailableRegs.AddRegsetForMask(regMask, isMask);
+    }
     void makeRegAvailable(regNumber reg, var_types regType)
     {
         m_AvailableRegs.AddRegNum(reg, regType);
@@ -1798,6 +1825,13 @@ private:
                                              regMaskTP*                 regsToFree,
                                              regMaskTP* delayRegsToFree DEBUG_ARG(Interval* interval)
                                                  DEBUG_ARG(regNumber assignedReg));
+
+    FORCEINLINE void updateRegsFreeBusyStateFast(RefPosition&               refPosition,
+                                             var_types                  registerType,
+                                             SingleTypeRegSet           regsBusy,
+                                             SingleTypeRegSet*                 regsToFree,
+                                             SingleTypeRegSet* delayRegsToFree DEBUG_ARG(Interval* interval)
+                                             DEBUG_ARG(regNumber assignedReg));
 
     regMaskTP m_RegistersWithConstants;
     void      clearConstantReg(regNumber reg, var_types regType)
@@ -1842,7 +1876,14 @@ private:
         return loc;
     }
     weight_t spillCost[REG_COUNT];
-
+    struct RegSetMasks
+    {
+        SingleTypeRegSet    regsToFree              = RBM_NONE;
+        SingleTypeRegSet    delayRegsToFree         = RBM_NONE;
+        SingleTypeRegSet    regsToMakeInactive      = RBM_NONE;
+        SingleTypeRegSet    delayRegsToMakeInactive = RBM_NONE;
+        SingleTypeRegSet    copyRegsToFree = RBM_NONE;
+    };
     regMaskTP regsBusyUntilKill;
     regMaskTP regsInUseThisLocation;
     regMaskTP regsInUseNextLocation;

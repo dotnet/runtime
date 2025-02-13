@@ -85,6 +85,22 @@ void regMaskTP::AddRegNum(regNumber reg, var_types type)
 #endif
 }
 
+void regMaskTP::AddRegsetForMask(SingleTypeRegSet regsToAdd, bool isMask)
+{
+#ifdef HAS_MORE_THAN_64_REGISTERS
+    if (!isMask)
+    {
+        low |= regsToAdd;
+    }
+    else
+    {
+        high |= regsToAdd;
+    }
+#else
+    low |= regsToAdd;
+#endif
+}
+
 //------------------------------------------------------------------------
 // AddRegsetForType: Add regs of `type` in mask.
 //
