@@ -9648,7 +9648,7 @@ GenTree* Compiler::impMinMaxIntrinsic(CORINFO_METHOD_HANDLE method,
     GenTree* op1 = impImplicitR4orR8Cast(impStackTop(1).val, callType);
 
 #ifdef TARGET_XARCH
-    // If Avx10.2 is enabled, the min/max operations can be done using the 
+    // If Avx10.2 is enabled, the min/max operations can be done using the
     // new minmax instructions which is faster than using the combination
     // of instructions for lower ISAs. We can use the minmax instructions
 
@@ -9657,8 +9657,9 @@ GenTree* Compiler::impMinMaxIntrinsic(CORINFO_METHOD_HANDLE method,
         impPopStack();
         impPopStack();
         uint8_t ctrlByte = gtMinMaxControlByte(isMax, isMagnitude, isNumber);
-        
-        GenTree* retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, op2, gtNewIconNode(ctrlByte), NI_AVX10v2_MinMaxScalar, callJitType, 16);
+
+        GenTree* retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, op2, gtNewIconNode(ctrlByte),
+                                                    NI_AVX10v2_MinMaxScalar, callJitType, 16);
         return gtNewSimdToScalarNode(genActualType(callType), retNode, callJitType, 16);
     }
 #endif

@@ -24708,7 +24708,8 @@ GenTree* Compiler::gtNewSimdMinNode(
  *                          - 0b01: maximum - Returns x if x ≥ y, otherwise y; NaN handling applies.
  *                          - 0b10: minimumMagnitude - Compares absolute values, returns the smaller magnitude.
  *                          - 0b11: maximumMagnitude - Compares absolute values, returns the larger magnitude.
- *                        - Bit  [4] (min/max mode): Determines whether the instruction follows IEEE-compliant NaN handling:
+ *                        - Bit  [4] (min/max mode): Determines whether the instruction follows IEEE-compliant NaN
+ * handling:
  *                          - 0: Standard min/max (propagates NaNs).
  *                          - 1: Number-preferential min/max (ignores signaling NaNs).
  *                        - Bits [3:2] (Sign control): Defines how the result’s sign is determined:
@@ -24725,7 +24726,8 @@ GenTree* Compiler::gtNewSimdMinMaxNode(
     var_types type, GenTree* op1, GenTree* op2, ssize_t ctrlByte, CorInfoType simdBaseJitType, unsigned simdSize)
 {
     assert(IsBaselineSimdIsaSupportedDebugOnly());
-    assert(compIsaSupportedDebugOnly(InstructionSet_AVX10v2)); // Support for new MinMax instructions for AVX10.2 required
+    assert(compIsaSupportedDebugOnly(InstructionSet_AVX10v2)); // Support for new MinMax instructions for AVX10.2
+                                                               // required
     assert(simdSize != 64 || IsBaselineVector512IsaSupportedDebugOnly());
     assert(varTypeIsSIMD(type));
     assert(getSIMDTypeForSize(simdSize) == type);
@@ -24737,7 +24739,8 @@ GenTree* Compiler::gtNewSimdMinMaxNode(
     assert(varTypeIsArithmetic(simdBaseType));
     assert(varTypeIsFloating(simdBaseType));
     NamedIntrinsic minMaxIntrinsic = (simdSize == 64) ? NI_AVX10v2_V512_MinMax : NI_AVX10v2_MinMax;
-    return gtNewSimdHWIntrinsicNode(type, op1, op2, gtNewIconNode(ctrlByte), minMaxIntrinsic, simdBaseJitType, simdSize);
+    return gtNewSimdHWIntrinsicNode(type, op1, op2, gtNewIconNode(ctrlByte), minMaxIntrinsic, simdBaseJitType,
+                                    simdSize);
 }
 
 /**
