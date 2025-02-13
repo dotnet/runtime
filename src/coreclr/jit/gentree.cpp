@@ -19901,8 +19901,7 @@ void GenTreeArrAddr::ParseArrayAddress(Compiler* comp, GenTree** pArr, ValueNum*
     {
         // This is sort of like gtGetClassHandle, but that requires TYP_REF
         //
-        const unsigned       lclNum = tree->AsLclVar()->GetLclNum();
-        CORINFO_CLASS_HANDLE hnd    = comp->lvaTable[lclNum].lvClassHnd;
+        CORINFO_CLASS_HANDLE hnd = comp->lvaGetDesc(tree->AsLclVar())->lvClassHnd;
 
         if (hnd != NO_CLASS_HANDLE)
         {
