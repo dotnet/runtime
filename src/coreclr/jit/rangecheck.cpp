@@ -14,7 +14,7 @@
 //
 PhaseStatus Compiler::rangeCheckPhase()
 {
-    if (!doesMethodHaveBoundChecks() || (fgSsaPassesCompleted == 0))
+    if (!doesMethodHaveBoundsChecks() || (fgSsaPassesCompleted == 0))
     {
         return PhaseStatus::MODIFIED_NOTHING;
     }
