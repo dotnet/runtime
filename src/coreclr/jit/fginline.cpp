@@ -590,7 +590,7 @@ private:
 #endif // DEBUG
 
                 CORINFO_CONTEXT_HANDLE context                = nullptr;
-                InlineContext*         inlinersContext        = m_compiler->compInlineContext;
+                InlineContext*         inlinersContext        = nullptr;
                 CORINFO_METHOD_HANDLE  method                 = call->gtCallMethHnd;
                 unsigned               methodFlags            = 0;
                 const bool             isLateDevirtualization = true;
