@@ -5,17 +5,13 @@ This contract encapsulates support for walking the stack of managed threads.
 ## APIs of contract
 
 ```csharp
-public interface IStackWalkHandle { };
 public interface IStackDataFrameHandle { };
 ```
 
 ```csharp
 // Creates a stack walk and returns a handle
-IStackWalkHandle CreateStackWalk(ThreadData threadData);
-// Iterates the stackWalkHandle to the next frame. If successful, returns true. Otherwise false.
-bool Next(IStackWalkHandle stackWalkHandle);
-// Gets the current frame from a stack walk and returns a IStackDataFrameHandle to it.
-IStackDataFrameHandle GetCurrentFrame(IStackWalkHandle stackWalkHandle);
+IEnumerable<IStackDataFrameHandle> CreateStackWalk(ThreadData threadData);
+
 // Gets the thread context at the given stack dataframe.
 byte[] GetRawContext(IStackDataFrameHandle stackDataFrameHandle);
 // Gets the Frame address at the given stack dataframe. Returns TargetPointer.Null if the current dataframe does not have a valid Frame.
@@ -150,20 +146,14 @@ This could take multiple iterations, each time returning a new context to the ca
 
 ### APIs
 
-The majority of the contract's complexity comes from the stack walking algorithm implementation which is implemented and controlled through the following APIs.
-These handle setting up and iterating the stackwalk state according to the algorithm detailed above.
+The majority of the contract's complexity is the stack walking algorithm (detailed above) implemented as part of `CreateStackWalk`.
+The `IEnumerable<IStackDataFrame>` return value is computed lazily.
 
 ```csharp
-IStackWalkHandle CreateStackWalk(ThreadData threadData);
-bool Next(IStackWalkHandle stackWalkHandle);
+IEnumerable<IStackDataFrameHandle> CreateStackWalk(ThreadData threadData);
 ```
 
 The rest of the APIs convey state about the stack walk at a given point which fall out of the stack walking algorithm relatively simply.
-
-`GetCurrentFrame` creates a copy of the stack walk state which remains constant even if the stack walk is iterated.
-```csharp
-IStackDataFrameHandle GetCurrentFrame(IStackWalkHandle stackWalkHandle);
-```
 
 `GetRawContext` Retrieves the raw Windows style thread context of the current frame as a byte array. The size and shape of the context is platform dependent.
 

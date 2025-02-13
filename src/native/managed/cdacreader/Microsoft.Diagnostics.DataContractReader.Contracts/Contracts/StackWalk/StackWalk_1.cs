@@ -2,10 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.IO;
 using Microsoft.Diagnostics.DataContractReader.Contracts.StackWalkHelpers;
 using System.Diagnostics.CodeAnalysis;
 using System.Diagnostics;
+using System.Collections.Generic;
 
 namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 
@@ -33,60 +33,59 @@ internal readonly struct StackWalk_1 : IStackWalk
         SW_SKIPPED_FRAME,
     }
 
-    internal struct StackDataFrameHandle : IStackDataFrameHandle
+    private record StackDataFrameHandle(
+        IPlatformAgnosticContext Context,
+        StackWalkState State,
+        TargetPointer FrameAddress) : IStackDataFrameHandle
+    { }
+
+    private class StackWalkData(IPlatformAgnosticContext context, StackWalkState state, FrameIterator frameIter)
     {
-        internal IPlatformAgnosticContext Context { get; init; }
-        internal StackWalkState State { get; init; }
-        internal TargetPointer FrameAddress { get; init; }
+        public IPlatformAgnosticContext Context { get; set; } = context;
+        public StackWalkState State { get; set; } = state;
+        public FrameIterator FrameIter { get; set; } = frameIter;
+
+        public StackDataFrameHandle ToDataFrame() => new(Context.Clone(), State, FrameIter.CurrentFrameAddress);
     }
 
-    internal class StackWalkHandle : IStackWalkHandle
+    IEnumerable<IStackDataFrameHandle> IStackWalk.CreateStackWalk(ThreadData threadData)
     {
-        public StackWalkState state;
-        public IPlatformAgnosticContext context;
-        public FrameIterator frameIter;
+        IPlatformAgnosticContext context = IPlatformAgnosticContext.GetContextForPlatform(_target);
+        FillContextFromThread(context, threadData);
+        StackWalkState state = IsManaged(context.InstructionPointer, out _) ? StackWalkState.SW_FRAMELESS : StackWalkState.SW_FRAME;
+        StackWalkData stackWalkData = new(context, state, new(_target, threadData));
 
-        public StackWalkHandle(IPlatformAgnosticContext context, FrameIterator frameIter, StackWalkState state)
+        yield return stackWalkData.ToDataFrame();
+
+        while (Next(stackWalkData))
         {
-            this.context = context;
-            this.frameIter = frameIter;
-            this.state = state;
+            yield return stackWalkData.ToDataFrame();
         }
     }
 
-    IStackWalkHandle IStackWalk.CreateStackWalk(ThreadData threadData)
+    private bool Next(StackWalkData handle)
     {
-        IPlatformAgnosticContext context = IPlatformAgnosticContext.GetContextForPlatform(_target);
-        FillContextFromThread(ref context, threadData);
-        StackWalkState state = IsManaged(context.InstructionPointer, out _) ? StackWalkState.SW_FRAMELESS : StackWalkState.SW_FRAME;
-        return new StackWalkHandle(context, new(_target, threadData), state);
-    }
-
-    bool IStackWalk.Next(IStackWalkHandle stackWalkHandle)
-    {
-        StackWalkHandle handle = AssertCorrectHandle(stackWalkHandle);
-
-        switch (handle.state)
+        switch (handle.State)
         {
             case StackWalkState.SW_FRAMELESS:
                 try
                 {
-                    handle.context.Unwind(_target);
+                    handle.Context.Unwind(_target);
                 }
                 catch
                 {
-                    handle.state = StackWalkState.SW_ERROR;
+                    handle.State = StackWalkState.SW_ERROR;
                     throw;
                 }
                 break;
             case StackWalkState.SW_SKIPPED_FRAME:
-                handle.frameIter.Next();
+                handle.FrameIter.Next();
                 break;
             case StackWalkState.SW_FRAME:
-                handle.frameIter.TryUpdateContext(ref handle.context);
-                if (!handle.frameIter.IsInlineCallFrameWithActiveCall())
+                handle.FrameIter.TryUpdateContext(handle.Context);
+                if (!handle.FrameIter.IsInlineCallFrameWithActiveCall())
                 {
-                    handle.frameIter.Next();
+                    handle.FrameIter.Next();
                 }
                 break;
             case StackWalkState.SW_ERROR:
@@ -95,62 +94,51 @@ internal readonly struct StackWalk_1 : IStackWalk
         }
         UpdateState(handle);
 
-        return handle.state is not (StackWalkState.SW_ERROR or StackWalkState.SW_COMPLETE);
+        return handle.State is not (StackWalkState.SW_ERROR or StackWalkState.SW_COMPLETE);
     }
 
-    private void UpdateState(StackWalkHandle handle)
+    private void UpdateState(StackWalkData handle)
     {
         // If we are complete or in a bad state, no updating is required.
-        if (handle.state is StackWalkState.SW_ERROR or StackWalkState.SW_COMPLETE)
+        if (handle.State is StackWalkState.SW_ERROR or StackWalkState.SW_COMPLETE)
         {
             return;
         }
 
-        bool isManaged = IsManaged(handle.context.InstructionPointer, out _);
-        bool validFrame = handle.frameIter.IsValid();
+        bool isManaged = IsManaged(handle.Context.InstructionPointer, out _);
+        bool validFrame = handle.FrameIter.IsValid();
 
         if (isManaged)
         {
-            handle.state = StackWalkState.SW_FRAMELESS;
+            handle.State = StackWalkState.SW_FRAMELESS;
             if (CheckForSkippedFrames(handle))
             {
-                handle.state = StackWalkState.SW_SKIPPED_FRAME;
+                handle.State = StackWalkState.SW_SKIPPED_FRAME;
                 return;
             }
         }
         else
         {
-            handle.state = validFrame ? StackWalkState.SW_FRAME : StackWalkState.SW_COMPLETE;
+            handle.State = validFrame ? StackWalkState.SW_FRAME : StackWalkState.SW_COMPLETE;
         }
     }
 
-    private bool CheckForSkippedFrames(StackWalkHandle handle)
+    private bool CheckForSkippedFrames(StackWalkData handle)
     {
         // ensure we can find the caller context
-        Debug.Assert(IsManaged(handle.context.InstructionPointer, out _));
+        Debug.Assert(IsManaged(handle.Context.InstructionPointer, out _));
 
         // if there are no more Frames, vacuously false
-        if (!handle.frameIter.IsValid())
+        if (!handle.FrameIter.IsValid())
         {
             return false;
         }
 
         // get the caller context
-        IPlatformAgnosticContext parentContext = handle.context.Clone();
+        IPlatformAgnosticContext parentContext = handle.Context.Clone();
         parentContext.Unwind(_target);
 
-        return handle.frameIter.CurrentFrameAddress.Value < parentContext.StackPointer.Value;
-    }
-
-    IStackDataFrameHandle IStackWalk.GetCurrentFrame(IStackWalkHandle stackWalkHandle)
-    {
-        StackWalkHandle handle = AssertCorrectHandle(stackWalkHandle);
-        return new StackDataFrameHandle
-        {
-            Context = handle.context.Clone(),
-            State = handle.state,
-            FrameAddress = handle.frameIter.CurrentFrameAddress,
-        };
+        return handle.FrameIter.CurrentFrameAddress.Value < parentContext.StackPointer.Value;
     }
 
     byte[] IStackWalk.GetRawContext(IStackDataFrameHandle stackDataFrameHandle)
@@ -182,27 +170,17 @@ internal readonly struct StackWalk_1 : IStackWalk
         return false;
     }
 
-    private unsafe void FillContextFromThread(ref IPlatformAgnosticContext refContext, ThreadData threadData)
+    private unsafe void FillContextFromThread(IPlatformAgnosticContext context, ThreadData threadData)
     {
-        byte[] bytes = new byte[refContext.Size];
+        byte[] bytes = new byte[context.Size];
         Span<byte> buffer = new Span<byte>(bytes);
-        int hr = _target.GetThreadContext((uint)threadData.OSId.Value, refContext.DefaultContextFlags, refContext.Size, buffer);
+        int hr = _target.GetThreadContext((uint)threadData.OSId.Value, context.DefaultContextFlags, context.Size, buffer);
         if (hr != 0)
         {
             throw new InvalidOperationException($"GetThreadContext failed with hr={hr}");
         }
 
-        refContext.FillFromBuffer(buffer);
-    }
-
-    private static StackWalkHandle AssertCorrectHandle(IStackWalkHandle stackWalkHandle)
-    {
-        if (stackWalkHandle is not StackWalkHandle handle)
-        {
-            throw new ArgumentException("Invalid stack walk handle", nameof(stackWalkHandle));
-        }
-
-        return handle;
+        context.FillFromBuffer(buffer);
     }
 
     private static StackDataFrameHandle AssertCorrectHandle(IStackDataFrameHandle stackDataFrameHandle)

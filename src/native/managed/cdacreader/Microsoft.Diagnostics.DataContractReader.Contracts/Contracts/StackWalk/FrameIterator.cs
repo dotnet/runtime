@@ -43,7 +43,7 @@ internal sealed class FrameIterator
         return true;
     }
 
-    public bool TryUpdateContext(ref IPlatformAgnosticContext context)
+    public bool TryUpdateContext(IPlatformAgnosticContext context)
     {
         switch (GetFrameType(CurrentFrame))
         {

@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.Marshalling;
@@ -18,7 +19,7 @@ internal sealed unsafe partial class ClrDataStackWalk : IXCLRDataStackWalk
     private readonly Target _target;
     private readonly IXCLRDataStackWalk? _legacyImpl;
 
-    private readonly IStackWalkHandle _stackWalkHandle;
+    private readonly IEnumerator<IStackDataFrameHandle> _dataFrames;
 
     public ClrDataStackWalk(TargetPointer threadAddr, uint flags, Target target, IXCLRDataStackWalk? legacyImpl)
     {
@@ -28,7 +29,11 @@ internal sealed unsafe partial class ClrDataStackWalk : IXCLRDataStackWalk
         _legacyImpl = legacyImpl;
 
         ThreadData threadData = _target.Contracts.Thread.GetThreadData(_threadAddr);
-        _stackWalkHandle = _target.Contracts.StackWalk.CreateStackWalk(threadData);
+        _dataFrames = _target.Contracts.StackWalk.CreateStackWalk(threadData).GetEnumerator();
+
+        // IEnumerator<T> begins before the first element.
+        // Call MoveNext() to set _dataFrames.Current to the first element.
+        _dataFrames.MoveNext();
     }
 
     int IXCLRDataStackWalk.GetContext(uint contextFlags, uint contextBufSize, uint* contextSize, [MarshalUsing(CountElementName = "contextBufSize"), Out] byte[] contextBuf)
@@ -36,7 +41,7 @@ internal sealed unsafe partial class ClrDataStackWalk : IXCLRDataStackWalk
         int hr = HResults.S_OK;
 
         IStackWalk sw = _target.Contracts.StackWalk;
-        IStackDataFrameHandle dataFrame = sw.GetCurrentFrame(_stackWalkHandle);
+        IStackDataFrameHandle dataFrame = _dataFrames.Current;
         byte[] context = sw.GetRawContext(dataFrame);
         if (context.Length > contextBufSize)
             hr = HResults.E_INVALIDARG;
@@ -80,7 +85,7 @@ internal sealed unsafe partial class ClrDataStackWalk : IXCLRDataStackWalk
         int hr;
         try
         {
-            hr = _target.Contracts.StackWalk.Next(_stackWalkHandle) ? HResults.S_OK : HResults.S_FALSE;
+            hr = _dataFrames.MoveNext() ? HResults.S_OK : HResults.S_FALSE;
         }
         catch (System.Exception ex)
         {
@@ -110,7 +115,7 @@ internal sealed unsafe partial class ClrDataStackWalk : IXCLRDataStackWalk
                     hr = HResults.E_INVALIDARG;
 
                 IStackWalk sw = _target.Contracts.StackWalk;
-                IStackDataFrameHandle frameData = sw.GetCurrentFrame(_stackWalkHandle);
+                IStackDataFrameHandle frameData = _dataFrames.Current;
                 TargetPointer frameAddr = sw.GetFrameAddress(frameData);
                 *(ulong*)outBuffer = frameAddr.Value;
                 hr = HResults.S_OK;
