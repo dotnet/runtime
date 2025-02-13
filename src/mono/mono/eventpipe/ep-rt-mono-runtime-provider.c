@@ -1313,6 +1313,26 @@ ep_rt_mono_sample_profiler_write_sampling_event_for_threads (
 	return true;
 }
 
+void
+ep_rt_mono_sampling_provider_component_init (void)
+{
+}
+
+void
+ep_rt_mono_sampling_provider_component_fini (void)
+{
+}
+
+void
+ep_rt_mono_sample_profiler_enabled (EventPipeEvent *sampling_event)
+{
+}
+
+void
+ep_rt_mono_sample_profiler_disabled (void)
+{
+}
+
 #else // PERFTRACING_DISABLE_THREADS
 
 bool
@@ -1367,49 +1387,41 @@ method_filter (MonoProfiler *prof, MonoMethod *method)
 	return MONO_PROFILER_CALL_INSTRUMENTATION_ENTER;
 }
 
-#endif // PERFTRACING_DISABLE_THREADS
 
 void
 ep_rt_mono_sampling_provider_component_init (void)
 {
-#ifdef PERFTRACING_DISABLE_THREADS
 	// in single-threaded mode, we install instrumentation callbacks on the mono profiler, instead of stop-the-world
 	_ep_rt_mono_sampling_profiler_provider = mono_profiler_create (NULL);
 	// this has negative performance impact even when the EP client is not connected!
 	// but it has to be enabled before managed code starts running, because the instrumentation needs to be in place
 	mono_profiler_set_call_instrumentation_filter_callback (_ep_rt_mono_sampling_profiler_provider, method_filter);
-#endif
 }
 
 void
 ep_rt_mono_sampling_provider_component_fini (void)
 {
-#ifdef PERFTRACING_DISABLE_THREADS
+	EP_ASSERT (_ep_rt_mono_sampling_profiler_provider != NULL);
 	mono_profiler_set_call_instrumentation_filter_callback (_ep_rt_mono_sampling_profiler_provider, NULL);
-	g_free (_ep_rt_mono_sampling_profiler_provider);
-	_ep_rt_mono_sampling_profiler_provider = NULL;
-#endif
 }
 
 void
 ep_rt_mono_sample_profiler_enabled (EventPipeEvent *sampling_event)
 {
-#ifdef PERFTRACING_DISABLE_THREADS
 	current_sampling_event = sampling_event;
 	current_sampling_thread = ep_rt_thread_get_handle ();
+	EP_ASSERT (_ep_rt_mono_sampling_profiler_provider != NULL);
 	mono_profiler_set_method_enter_callback (_ep_rt_mono_sampling_profiler_provider, method_enter);
-#else
-	(void) sampling_event;
-#endif
 }
 
 void
 ep_rt_mono_sample_profiler_disabled (void)
 {
-#ifdef PERFTRACING_DISABLE_THREADS
+	EP_ASSERT (_ep_rt_mono_sampling_profiler_provider != NULL);
 	mono_profiler_set_method_enter_callback (_ep_rt_mono_sampling_profiler_provider, NULL);
-#endif
 }
+
+#endif // PERFTRACING_DISABLE_THREADS
 
 void
 ep_rt_mono_execute_rundown (dn_vector_ptr_t *execution_checkpoints)

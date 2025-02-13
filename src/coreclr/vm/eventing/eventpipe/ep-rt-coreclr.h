@@ -573,7 +573,6 @@ void
 ep_rt_sample_profiler_enabled (EventPipeEvent *sampling_event)
 {
     STATIC_CONTRACT_NOTHROW;
-	(void) sampling_event;
     // no-op
 }
 
@@ -583,7 +582,6 @@ void
 ep_rt_sample_profiler_disabled (void)
 {
     STATIC_CONTRACT_NOTHROW;
-
     // no-op
 }
 
