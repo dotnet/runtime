@@ -335,7 +335,6 @@ BOOL Precode::SetTargetInterlocked(PCODE target, BOOL fOnlyRedirectFromPrestub)
 #ifdef HAS_THISPTR_RETBUF_PRECODE
     case PRECODE_THISPTR_RETBUF:
         ret = AsThisPtrRetBufPrecode()->SetTargetInterlocked(target, expected);
-        ClrFlushInstructionCache(this, sizeof(ThisPtrRetBufPrecode), /* hasCodeExecutedBefore */ true);
         break;
 #endif // HAS_THISPTR_RETBUF_PRECODE
 
@@ -348,27 +347,6 @@ BOOL Precode::SetTargetInterlocked(PCODE target, BOOL fOnlyRedirectFromPrestub)
     // interlocked operation above (see ClrFlushInstructionCache())
 
     return ret;
-}
-
-void Precode::Reset()
-{
-    WRAPPER_NO_CONTRACT;
-
-    MethodDesc* pMD = GetMethodDesc();
-
-    PrecodeType t = GetType();
-    SIZE_T size = Precode::SizeOf(t);
-
-    if (t == PRECODE_FIXUP)
-    {
-        Init(this, t, pMD, pMD->GetLoaderAllocator());
-    }
-    else
-    {
-        ExecutableWriterHolder<Precode> precodeWriterHolder(this, size);
-        precodeWriterHolder.GetRW()->Init(this, t, pMD, pMD->GetLoaderAllocator());
-        ClrFlushInstructionCache(this, SizeOf(), /* hasCodeExecutedBefore */ true);
-    }
 }
 
 #endif // !DACCESS_COMPILE

@@ -250,6 +250,72 @@ typedef DPTR(NDirectImportPrecode) PTR_NDirectImportPrecode;
 
 #endif // HAS_NDIRECT_IMPORT_PRECODE
 
+#ifdef HAS_THISPTR_RETBUF_PRECODE
+
+// NDirect import precode
+// (This is fake precode. VTable slot does not point to it.)
+struct ThisPtrRetBufPrecode : StubPrecode
+{
+    static const int Type = 0x08;
+
+    void Init(ThisPtrRetBufPrecode* pPrecodeRX, MethodDesc* pMD, LoaderAllocator *pLoaderAllocator);
+
+    LPVOID GetEntrypoint()
+    {
+        LIMITED_METHOD_CONTRACT;
+        return (LPVOID)PINSTRToPCODE(dac_cast<TADDR>(this));
+    }
+
+    PCODE GetTarget()
+    {
+        LIMITED_METHOD_DAC_CONTRACT;
+
+        return GetData()->Target;
+    }
+
+    void ResetTargetInterlocked()
+    {
+        CONTRACTL
+        {
+            THROWS;
+            GC_NOTRIGGER;
+        }
+        CONTRACTL_END;
+
+        StubPrecodeData *pData = GetData();
+        InterlockedExchangeT<PCODE>(&pData->Target, GetPreStubEntryPoint());
+    }
+
+    BOOL SetTargetInterlocked(TADDR target, TADDR expected)
+    {
+        CONTRACTL
+        {
+            THROWS;
+            GC_NOTRIGGER;
+        }
+        CONTRACTL_END;
+
+        StubPrecodeData *pData = GetData();
+        return InterlockedCompareExchangeT<PCODE>(&pData->Target, (PCODE)target, (PCODE)expected) == expected;
+    }
+
+    PTR_StubPrecodeData GetData() const
+    {
+        LIMITED_METHOD_CONTRACT;
+        return dac_cast<PTR_StubPrecodeData>(dac_cast<TADDR>(this) + GetStubCodePageSize());
+    }
+
+    TADDR GetMethodDesc()
+    {
+        LIMITED_METHOD_DAC_CONTRACT;
+
+        return dac_cast<TADDR>(GetData()->MethodDesc);
+    }
+};
+typedef DPTR(ThisPtrRetBufPrecode) PTR_ThisPtrRetBufPrecode;
+
+#endif // HAS_THISPTR_RETBUF_PRECODE
+
 #ifdef FEATURE_INTERPRETER
 struct InterpreterPrecodeData
 {
@@ -538,7 +604,7 @@ public:
 
         if (type == StubPrecode::Type)
         {
-            // StubPrecode code is used for both StubPrecode and NDirectImportPrecode,
+            // StubPrecode code is used for both StubPrecode, NDirectImportPrecode, InterpreterPrecode, and ThisPtrRetBufPrecode,
             // so we need to get the real type
             type = AsStubPrecode()->GetType();
         }
@@ -627,9 +693,6 @@ public:
 #ifndef DACCESS_COMPILE
     void ResetTargetInterlocked();
     BOOL SetTargetInterlocked(PCODE target, BOOL fOnlyRedirectFromPrestub = TRUE);
-
-    // Reset precode to point to prestub
-    void Reset();
 #endif // DACCESS_COMPILE
 
     static PTR_Precode GetPrecodeFromEntryPoint(PCODE addr, BOOL fSpeculative = FALSE)
