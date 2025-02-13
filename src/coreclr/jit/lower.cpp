@@ -3666,7 +3666,8 @@ void Lowering::LowerCFGCall(GenTreeCall* call)
         // Use a placeholder for the cell since the cell is already inserted in
         // LIR.
         GenTree* vsdCellPlaceholder = comp->gtNewZeroConNode(TYP_I_IMPL);
-        resolve->gtArgs.PushFront(comp, NewCallArg::Primitive(vsdCellPlaceholder));
+        resolve->gtArgs.PushFront(comp,
+                                  NewCallArg::Primitive(vsdCellPlaceholder).WellKnown(WellKnownArg::VirtualStubCell));
 
         // 'this' arg clone is not inserted, so no need to use a placeholder for that.
         resolve->gtArgs.PushFront(comp, NewCallArg::Primitive(thisArgClone));
