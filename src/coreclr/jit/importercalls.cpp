@@ -399,7 +399,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
                 thisPtr =
                     impCloneExpr(thisPtr, &thisPtrCopy, CHECK_SPILL_ALL, nullptr DEBUGARG("LDVIRTFTN this pointer"));
 
-                if (thisPtr->TypeIs(TYP_REF) && (thisPtr->gtFlags & GTF_GLOB_EFFECT))
+                if (thisPtr->TypeIs(TYP_REF) && (origThisPtr->gtFlags & GTF_GLOB_EFFECT))
                 {
                     lvaGetDesc(thisPtr->AsLclVar())->lvSingleDef = 1;
                     lvaSetClass(thisPtr->AsLclVar()->GetLclNum(), origThisPtr);
