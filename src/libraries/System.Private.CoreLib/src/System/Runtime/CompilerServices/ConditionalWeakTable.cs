@@ -49,10 +49,6 @@ namespace System.Runtime.CompilerServices
         /// </param>
         /// <returns>Returns "true" if key was found, "false" otherwise.</returns>
         /// <exception cref="ArgumentNullException"><paramref name="key"/> is <see langword="null"/>.</exception>
-        /// <remarks>
-        /// The key may get garbage collected during the TryGetValue operation. If so, TryGetValue
-        /// may at its discretion, return "false" and set "value" to the default (as if the key was not present.)
-        /// </remarks>
         public bool TryGetValue(TKey key, [MaybeNullWhen(false)] out TValue value)
         {
             if (key is null)
@@ -67,12 +63,7 @@ namespace System.Runtime.CompilerServices
         /// <param name="key">key to add. May not be null.</param>
         /// <param name="value">value to associate with key.</param>
         /// <exception cref="ArgumentNullException"><paramref name="key"/> is <see langword="null"/>.</exception>
-        /// <remarks>
-        /// If the key is already entered into the dictionary, this method throws an exception.
-        /// The key may get garbage collected during the Add() operation. If so, Add()
-        /// has the right to consider any prior entries successfully removed and add a new entry without
-        /// throwing an exception.
-        /// </remarks>
+        /// <exception cref="ArgumentException"><paramref name="key"/> is already entered into the dictionary.</exception>
         public void Add(TKey key, TValue value)
         {
             if (key is null)
@@ -148,11 +139,6 @@ namespace System.Runtime.CompilerServices
         /// <param name="key">The key to remove.</param>
         /// <returns><see langword="true"/> if the key is found and removed; otherwise, <see langword="false"/>.</returns>
         /// <exception cref="ArgumentNullException"><paramref name="key"/> is <see langword="null"/>.</exception>
-        /// <remarks>
-        /// The key may get garbage collected during the <see cref="Remove(TKey)"/> operation. If so,
-        /// <see cref="Remove(TKey)"/> will not fail or throw, however, the return value can be either
-        /// true or false depending on who wins the race.
-        /// </remarks>
         public bool Remove(TKey key)
         {
             if (key is null)
@@ -171,11 +157,6 @@ namespace System.Runtime.CompilerServices
         /// <param name="value">value removed from the table, if it was present.</param>
         /// <returns><see langword="true"/> if the key is found and removed; otherwise, <see langword="false"/>.</returns>
         /// <exception cref="ArgumentNullException"><paramref name="key"/> is <see langword="null"/>.</exception>
-        /// <remarks>
-        /// The key may get garbage collected during the <see cref="Remove(TKey, out TValue)"/> operation. If so,
-        /// <see cref="Remove(TKey, out TValue)"/> will not fail or throw, however, the return value can be either
-        /// true or false depending on who wins the race.
-        /// </remarks>
         public bool Remove(TKey key, [MaybeNullWhen(false)] out TValue value)
         {
             if (key is null)
