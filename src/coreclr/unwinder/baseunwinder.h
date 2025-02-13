@@ -7,10 +7,10 @@
 #define __unwinder_h__
 
 #ifdef FEATURE_CDAC_UNWINDER
-using ReadFromTarget = int (*)(uint64_t addr, void* pBuffer, int bufferSize, void* callbackContext);
-using GetAllocatedBuffer = int (*)(int bufferSize, void** ppBuffer, void* callbackContext);
-using GetStackWalkInfo = void (*)(uint64_t controlPC, UINT_PTR* pModuleBase, UINT_PTR* pFuncEntry, void* callbackContext);
-using UnwinderFail = void (*)();
+using ReadFromTarget = LONG (*)(ULONG64 addr, PVOID pBuffer, LONG bufferSize, PVOID callbackContext);
+using GetAllocatedBuffer = LONG (*)(LONG bufferSize, PVOID* ppBuffer, PVOID callbackContext);
+using GetStackWalkInfo = VOID (*)(ULONG64 controlPC, UINT_PTR* pModuleBase, UINT_PTR* pFuncEntry, PVOID callbackContext);
+using UnwinderFail = VOID (*)();
 
 class CDACCallbacks
 {
