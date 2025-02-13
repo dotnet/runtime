@@ -2,8 +2,6 @@
   <PropertyGroup>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
     <TestRuntime>true</TestRuntime>
-    <!-- LoadInDefaultContext test relies on no deps.json -->
-    <GenerateDependencyFile>false</GenerateDependencyFile>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="DefaultLoadContextTest.cs" />
