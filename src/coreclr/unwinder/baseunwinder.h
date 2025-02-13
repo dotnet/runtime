@@ -12,6 +12,17 @@ using GetAllocatedBuffer = int (*)(int bufferSize, void** ppBuffer, void* callba
 using GetStackWalkInfo = void (*)(uint64_t controlPC, UINT_PTR* pModuleBase, UINT_PTR* pFuncEntry, void* callbackContext);
 #endif // FEATURE_CDAC_UNWINDER
 
+
+// Report failure in the unwinder if the condition is FALSE
+#if defined(FEATURE_CDAC_UNWINDER)
+// TODO: Add cDAC UNWINDER_ASSERT
+#define UNWINDER_ASSERT(x)
+#elif defined(DACCESS_COMPILE)
+#define UNWINDER_ASSERT(Condition) if (!(Condition)) DacError(CORDBG_E_TARGET_INCONSISTENT)
+#else // !DACCESS_COMPILE AND !FEATURE_CDAC_UNWINDER
+#define UNWINDER_ASSERT _ASSERTE
+#endif
+
 //---------------------------------------------------------------------------------------
 //
 // OOPStackUnwinder is the abstract base class for unwinding stack frames.  Each of the two 64-bit platforms

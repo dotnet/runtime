@@ -56,9 +56,6 @@ M128A OOPStackUnwinderAMD64::MemoryRead128(PM128A addr)
 
 #ifdef DACCESS_COMPILE
 
-// Report failure in the unwinder if the condition is FALSE
-#define UNWINDER_ASSERT(Condition) if (!(Condition)) DacError(CORDBG_E_TARGET_INCONSISTENT)
-
 //---------------------------------------------------------------------------------------
 //
 // The InstructionBuffer class abstracts accessing assembler instructions in the function
@@ -262,9 +259,6 @@ BOOL OOPStackUnwinderAMD64::Unwind(CONTEXT * pContext)
 
 #elif defined(FEATURE_CDAC_UNWINDER)
 
-// TODO: add asserts on cDAC build without importing more headers.
-#define UNWINDER_ASSERT(x)
-
 // Read 64 bit unsigned value from the specified addres when the unwinder is build
 // for the cDAC. This triggers a callback to the cDAC host to read the memory from
 // the target process.
@@ -450,9 +444,6 @@ UNWIND_INFO * OOPStackUnwinderAMD64::GetUnwindInfo(TADDR taUnwindInfo)
 }
 
 #else // !DACCESS_COMPILE && !FEATURE_CDAC_UNWINDER
-
-// Report failure in the unwinder if the condition is FALSE
-#define UNWINDER_ASSERT _ASSERTE
 
 // For unwinding of the jitted code on non-Windows platforms, the Instruction buffer is
 // just a plain pointer to the instruction data.

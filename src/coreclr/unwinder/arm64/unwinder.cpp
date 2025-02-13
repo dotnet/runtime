@@ -24,12 +24,6 @@
 #define PRUNTIME_FUNCTION PT_RUNTIME_FUNCTION
 #endif
 
-#ifndef FEATURE_CDAC_UNWINDER
-#define UNWINDER_ASSERT _ASSERTE
-#else // !FEATURE_CDAC_UNWINDER
-#define UNWINDER_ASSERT(x)
-#endif // FEATURE_CDAC_UNWINDER
-
 #ifndef __in
 #define __in _In_
 #define __out _Out_
