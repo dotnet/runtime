@@ -72,7 +72,7 @@ namespace System.Reflection.Emit
         private int[]? table_indexes;
 #endregion
 
-        private byte[] guid;
+        private Guid guid;
         private RuntimeTypeBuilder? global_type;
         private bool global_type_created;
         // name_cache keys are display names
@@ -94,7 +94,7 @@ namespace System.Reflection.Emit
             this.name = this.scopename = name;
             this.fqname = name;
             this.assembly = this.assemblyb = assb;
-            guid = Guid.NewGuid().ToByteArray();
+            guid = Guid.NewGuid();
             table_idx = get_next_table_index(0x00, 1);
             name_cache = new Dictionary<string, RuntimeTypeBuilder>();
             unescaped_name_cache = new Dictionary<string, RuntimeTypeBuilder>();
@@ -689,13 +689,7 @@ namespace System.Reflection.Emit
             get { return name; }
         }
 
-        public override Guid ModuleVersionId
-        {
-            get
-            {
-                return new Guid(guid);
-            }
-        }
+        public override Guid ModuleVersionId => guid;
 
         public override bool IsResource()
         {
