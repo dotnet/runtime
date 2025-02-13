@@ -2759,10 +2759,10 @@ ValueNum ValueNumStore::VNForFunc(var_types typ, VNFunc func, ValueNum arg0VN, V
 
     // We canonicalize commutative operations.
     // (Perhaps should eventually handle associative/commutative [AC] ops -- but that gets complicated...)
-    if (VNFuncIsCommutative(func))
+    if (VNFuncIsCommutative(func) && !IsVNConstantNonHandle(arg1VN))
     {
-        // Order arg0 arg1 by numerical VN value.
-        if (arg0VN > arg1VN)
+        // Order arg0 arg1 by numerical VN value, but keep constant non-handle VNs on the right.
+        if ((arg0VN > arg1VN) || IsVNConstantNonHandle(arg0VN))
         {
             std::swap(arg0VN, arg1VN);
         }

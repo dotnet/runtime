@@ -5448,9 +5448,36 @@ GenTree* Compiler::optAssertionProp_BndsChk(ASSERT_VALARG_TP assertions, GenTree
                     }
                 }
             }
+            else
+            {
+                // a[i + cns1] followed by a[i + cns2] where cns2 >= 0 and cns1 >= cns2
+                VNFuncApp assertedFuncApp;
+                if (vnStore->GetVNFunc(curAssertion->op1.bnd.vnIdx, &assertedFuncApp) &&
+                    (assertedFuncApp.m_func == VNF_ADD) && vnStore->IsVNInt32Constant(assertedFuncApp.m_args[1]))
+                {
+                    const int assertedOffset = vnStore->ConstantValue<int>(assertedFuncApp.m_args[1]);
+
+                    // Now inspect the current index - it has to be either ADD(idx, cns) or just idx
+                    //
+                    int       currentOffset = 0;
+                    ValueNum  currentIdx    = vnCurIdx;
+                    VNFuncApp currentFuncApp;
+                    if (vnStore->GetVNFunc(vnCurIdx, &currentFuncApp) && (currentFuncApp.m_func == VNF_ADD) &&
+                        vnStore->IsVNInt32Constant(currentFuncApp.m_args[1]))
+                    {
+                        currentIdx    = currentFuncApp.m_args[0];
+                        currentOffset = vnStore->ConstantValue<int>(currentFuncApp.m_args[1]);
+                    }
+
+                    if ((currentIdx == assertedFuncApp.m_args[0]) && (currentOffset >= 0) &&
+                        (assertedOffset >= currentOffset))
+                    {
+                        isRedundant = true;
+                    }
+                }
+            }
             // Extend this to remove additional redundant bounds checks:
-            // i.e.  a[i+1] followed by a[i]  by using the VN(i+1) >= VN(i)
-            //       a[i]   followed by a[j]  when j is known to be >= i
+            // i.e.  a[i]   followed by a[j]  when j is known to be >= i
             //       a[i]   followed by a[5]  when i is known to be >= 5
         }
 
