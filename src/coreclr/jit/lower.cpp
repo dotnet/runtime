@@ -4462,7 +4462,6 @@ GenTree* Lowering::LowerCompare(GenTree* cmp)
     }
 #endif // TARGET_XARCH
 
-#ifdef TARGET_ARM64
     // Check to see if we have a relopOp1 that supports setting flags e.g. AND & relopOp2 is 0.
     // We can then set flags on relopOp1, remove relopOp2 & cmp and insert a SETCC node after Op1.
     GenTreeOp* relop    = cmp->AsOp();
@@ -4498,7 +4497,6 @@ GenTree* Lowering::LowerCompare(GenTree* cmp)
         }
         return setcc;
     }
-#endif
 
     ContainCheckCompare(cmp->AsOp());
     return cmp->gtNext;
