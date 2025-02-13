@@ -485,7 +485,7 @@ void Compiler::lvaInitRetBuffArg(InitVarDscInfo* varDscInfo, bool useFixedRetBuf
         info.compRetBuffArg = varDscInfo->varNum;
 
         LclVarDsc* varDsc  = varDscInfo->varDsc;
-        varDsc->lvType     = TYP_BYREF;
+        varDsc->lvType     = TYP_I_IMPL;
         varDsc->lvIsParam  = 1;
         varDsc->lvIsRegArg = 0;
 
@@ -1600,13 +1600,6 @@ void Compiler::lvaInitVarDsc(LclVarDsc*              varDsc,
         compFloatingPointUsed = true;
     }
 
-#if FEATURE_IMPLICIT_BYREFS
-    varDsc->lvIsImplicitByRef = 0;
-#endif // FEATURE_IMPLICIT_BYREFS
-#if defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
-    varDsc->lvIsSplit = 0;
-#endif // TARGET_LOONGARCH64 || TARGET_RISCV64
-
     // Set the lvType (before this point it is TYP_UNDEF).
 
     if (GlobalJitOptions::compFeatureHfa)
@@ -1677,6 +1670,10 @@ void Compiler::lvaClassifyParameterABI(Classifier& classifier)
 #endif
 
         lvaParameterPassingInfo[i] = classifier.Classify(this, dsc->TypeGet(), structLayout, wellKnownArg);
+
+#if FEATURE_IMPLICIT_BYREFS
+        dsc->lvIsImplicitByRef = lvaParameterPassingInfo[i].IsPassedByReference();
+#endif // FEATURE_IMPLICIT_BYREFS
 
 #ifdef DEBUG
         if (verbose)
@@ -3326,22 +3323,6 @@ void Compiler::lvaSetStruct(unsigned varNum, ClassLayout* layout, bool unsafeVal
         if (layout->IsValueClass())
         {
             varDsc->lvType = layout->GetType();
-
-#if FEATURE_IMPLICIT_BYREFS
-            // Mark implicit byref struct parameters
-            if (varDsc->lvIsParam && !varDsc->lvIsStructField)
-            {
-                structPassingKind howToReturnStruct;
-                getArgTypeForStruct(layout->GetClassHandle(), &howToReturnStruct, info.compIsVarArgs,
-                                    varDsc->lvExactSize());
-
-                if (howToReturnStruct == SPK_ByReference)
-                {
-                    JITDUMP("Marking V%02i as a byref parameter\n", varNum);
-                    varDsc->lvIsImplicitByRef = 1;
-                }
-            }
-#endif // FEATURE_IMPLICIT_BYREFS
 
             // For structs that are small enough, we check and set HFA element type
             if (GlobalJitOptions::compFeatureHfa && (layout->GetSize() <= MAX_PASS_MULTIREG_BYTES))

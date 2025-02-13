@@ -751,7 +751,7 @@ void CallArg::Dump(Compiler* comp)
 {
     printf("CallArg[[%06u].%s", comp->dspTreeID(GetNode()), GenTree::OpName(GetNode()->OperGet()));
     printf(" %s", varTypeName(m_signatureType));
-    printf(" (%s)", AbiInfo.PassedByRef ? "By ref" : "By value");
+    printf(" (%s)", NewAbiInfo.IsPassedByReference() ? "By ref" : "By value");
     if (AbiInfo.GetRegNum() != REG_STK)
     {
         printf(", %u reg%s:", AbiInfo.NumRegs, AbiInfo.NumRegs == 1 ? "" : "s");
@@ -1496,7 +1496,7 @@ GenTree* CallArgs::MakeTmpArgNode(Compiler* comp, CallArg* arg, unsigned lclNum)
 
     if (varTypeIsStruct(argType))
     {
-        if (arg->AbiInfo.PassedByRef)
+        if (arg->NewAbiInfo.IsPassedByReference())
         {
             argNode = comp->gtNewLclVarAddrNode(lclNum);
             comp->lvaSetVarAddrExposed(lclNum DEBUGARG(AddressExposedReason::ESCAPE_ADDRESS));
@@ -1516,7 +1516,7 @@ GenTree* CallArgs::MakeTmpArgNode(Compiler* comp, CallArg* arg, unsigned lclNum)
     }
     else
     {
-        assert(!arg->AbiInfo.PassedByRef);
+        assert(!arg->NewAbiInfo.IsPassedByReference());
         argNode = comp->gtNewLclvNode(lclNum, argType);
     }
 
@@ -2061,7 +2061,7 @@ void CallArgs::AddFinalArgsAndDetermineABIInfo(Compiler* comp, GenTreeCall* call
         else
         {
             ABIPassingSegment segment = ABIPassingSegment::InRegister(nonStdRegNum, 0, TARGET_POINTER_SIZE);
-            abiInfo                   = ABIPassingInformation::FromSegment(comp, segment);
+            abiInfo                   = ABIPassingInformation::FromSegmentByValue(comp, segment);
         }
 
         JITDUMP("Argument %u ABI info: ", GetIndex(&arg));
@@ -2099,8 +2099,7 @@ void CallArgs::AddFinalArgsAndDetermineABIInfo(Compiler* comp, GenTreeCall* call
                 }
             }
 #endif // defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64)
-            arg.AbiInfo.PassedByRef = howToPassStruct == Compiler::SPK_ByReference;
-            arg.AbiInfo.ArgType     = structBaseType == TYP_UNKNOWN ? argx->TypeGet() : structBaseType;
+            arg.AbiInfo.ArgType = structBaseType == TYP_UNKNOWN ? argx->TypeGet() : structBaseType;
         }
         else
         {
@@ -2209,7 +2208,7 @@ void CallArgs::AddFinalArgsAndDetermineABIInfo(Compiler* comp, GenTreeCall* call
             }
         }
 
-        if (arg.AbiInfo.PassedByRef)
+        if (arg.NewAbiInfo.IsPassedByReference())
         {
             arg.AbiInfo.ByteSize = TARGET_POINTER_SIZE;
         }
@@ -2294,17 +2293,8 @@ void CallArgs::DetermineNewABIInfo(Compiler* comp, GenTreeCall* call)
         else
         {
             ABIPassingSegment segment = ABIPassingSegment::InRegister(nonStdRegNum, 0, TARGET_POINTER_SIZE);
-            arg.NewAbiInfo            = ABIPassingInformation::FromSegment(comp, segment);
+            arg.NewAbiInfo            = ABIPassingInformation::FromSegmentByValue(comp, segment);
         }
-
-        // TODO-Cleanup: This should be added to the new ABI info.
-        Compiler::structPassingKind passingKind = Compiler::SPK_ByValue;
-        if (argLayout != nullptr)
-        {
-            comp->getArgTypeForStruct(argSigClass, &passingKind, call->IsVarargs(), argLayout->GetSize());
-        }
-
-        arg.AbiInfo.PassedByRef = passingKind == Compiler::SPK_ByReference;
     }
 
     m_argsStackSize               = classifier.StackSize();
@@ -2519,7 +2509,7 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
             assert(originalSize == info.compCompHnd->getClassSize(arg.GetSignatureClassHandle()));
 
             // First, handle the case where the argument is passed by reference.
-            if (arg.AbiInfo.PassedByRef)
+            if (arg.NewAbiInfo.IsPassedByReference())
             {
                 assert(arg.AbiInfo.ByteSize == TARGET_POINTER_SIZE);
                 makeOutArgCopy = true;
@@ -2844,7 +2834,7 @@ void Compiler::fgMorphMultiregStructArgs(GenTreeCall* call)
 
     for (CallArg& arg : call->gtArgs.Args())
     {
-        if ((arg.AbiInfo.ArgType == TYP_STRUCT) && !arg.AbiInfo.PassedByRef)
+        if ((arg.AbiInfo.ArgType == TYP_STRUCT) && !arg.NewAbiInfo.IsPassedByReference())
         {
             foundStructArg = true;
             GenTree*& argx = arg.NodeRef();
@@ -3198,7 +3188,7 @@ void Compiler::fgMakeOutgoingStructArgCopy(GenTreeCall* call, CallArg* arg)
     //
     // We don't need a copy if this is the last use of the local.
     //
-    if (opts.OptimizationEnabled() && arg->AbiInfo.PassedByRef)
+    if (opts.OptimizationEnabled() && arg->NewAbiInfo.IsPassedByReference())
     {
         GenTree*             implicitByRefLclAddr;
         target_ssize_t       implicitByRefLclOffs;
@@ -3286,7 +3276,7 @@ void Compiler::fgMakeOutgoingStructArgCopy(GenTreeCall* call, CallArg* arg)
 #endif
 
     JITDUMP("making an outgoing copy for struct arg\n");
-    assert(!call->IsTailCall() || !arg->AbiInfo.PassedByRef);
+    assert(!call->IsTailCall() || !arg->NewAbiInfo.IsPassedByReference());
 
     CORINFO_CLASS_HANDLE copyBlkClass = arg->GetSignatureClassHandle();
     unsigned             tmp          = 0;
@@ -4899,7 +4889,7 @@ bool Compiler::fgCallHasMustCopyByrefParameter(GenTreeCall* call)
 //
 bool Compiler::fgCallArgWillPointIntoLocalFrame(GenTreeCall* call, CallArg& arg)
 {
-    if (!arg.AbiInfo.PassedByRef)
+    if (!arg.NewAbiInfo.IsPassedByReference())
     {
         return false;
     }

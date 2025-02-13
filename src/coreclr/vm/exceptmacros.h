@@ -277,22 +277,15 @@ VOID DECLSPEC_NORETURN UnwindAndContinueRethrowHelperAfterCatch(Frame* pEntryFra
 #ifdef TARGET_UNIX
 VOID DECLSPEC_NORETURN DispatchManagedException(PAL_SEHException& ex, bool isHardwareException);
 
-#define INSTALL_MANAGED_EXCEPTION_DISPATCHER_EX     \
+#define INSTALL_MANAGED_EXCEPTION_DISPATCHER        \
         PAL_SEHException exCopy;                    \
         bool hasCaughtException = false;            \
         try {
 
-#define INSTALL_MANAGED_EXCEPTION_DISPATCHER        \
-        INSTALL_MANAGED_EXCEPTION_DISPATCHER_EX
-
-#define UNINSTALL_MANAGED_EXCEPTION_DISPATCHER_EX(nativeRethrow) \
+#define UNINSTALL_MANAGED_EXCEPTION_DISPATCHER      \
         }                                           \
         catch (PAL_SEHException& ex)                \
         {                                           \
-            if (nativeRethrow)                      \
-            {                                       \
-                throw;                              \
-            }                                       \
             exCopy = std::move(ex);                 \
             hasCaughtException = true;              \
         }                                           \
@@ -300,9 +293,6 @@ VOID DECLSPEC_NORETURN DispatchManagedException(PAL_SEHException& ex, bool isHar
         {                                           \
             DispatchManagedException(exCopy, false);\
         }
-
-#define UNINSTALL_MANAGED_EXCEPTION_DISPATCHER      \
-    UNINSTALL_MANAGED_EXCEPTION_DISPATCHER_EX(false)
 
 // Install trap that catches unhandled managed exception and dumps its stack
 #define INSTALL_UNHANDLED_MANAGED_EXCEPTION_TRAP                                            \
@@ -325,9 +315,7 @@ VOID DECLSPEC_NORETURN DispatchManagedException(PAL_SEHException& ex, bool isHar
 #else // TARGET_UNIX
 
 #define INSTALL_MANAGED_EXCEPTION_DISPATCHER
-#define INSTALL_MANAGED_EXCEPTION_DISPATCHER_EX
 #define UNINSTALL_MANAGED_EXCEPTION_DISPATCHER
-#define UNINSTALL_MANAGED_EXCEPTION_DISPATCHER_EX
 
 #define INSTALL_UNHANDLED_MANAGED_EXCEPTION_TRAP
 #define UNINSTALL_UNHANDLED_MANAGED_EXCEPTION_TRAP

@@ -5441,7 +5441,7 @@ void LinearScan::allocateRegisters()
         if (currentInterval->isLocalVar && !stressInitialParamReg())
         {
             LclVarDsc* varDsc = currentInterval->getLocalVar(compiler);
-            if (varDsc->lvIsRegArg && currentInterval->firstRefPosition != nullptr)
+            if (varDsc->lvIsRegArg && (currentInterval->firstRefPosition != nullptr) && !compiler->opts.IsOSR())
             {
                 currentInterval->isActive = true;
             }
