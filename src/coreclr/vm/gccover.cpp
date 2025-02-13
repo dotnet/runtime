@@ -419,8 +419,9 @@ static MethodDesc* getTargetMethodDesc(PCODE target)
 #endif
 
                 return dac_cast<PTR_MethodDesc>(pPrecode->AsStubPrecode()->GetMethodDesc());
+            default:
+                return nullptr;
         }
-        return nullptr;
     }
 
     if (stubKind == STUB_CODE_BLOCK_FIXUPPRECODE)

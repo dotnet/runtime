@@ -163,7 +163,6 @@ UMEntryThunk *UMEntryThunkCache::GetUMEntryThunk(MethodDesc *pMD)
 
         pMarshInfo->LoadTimeInit(pMD);
 
-        ExecutableWriterHolder<UMEntryThunk> thunkWriterHolder(pThunk, sizeof(UMEntryThunk));
         pThunk->LoadTimeInit((PCODE)NULL, NULL, pMarshInfo, pMD);
 
         // add it to the cache

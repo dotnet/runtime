@@ -325,19 +325,19 @@ public:
     }
 
 
-    const BYTE* GetCode() const
+    PCODE GetCode() const
     {
-        CONTRACT (const BYTE*)
+        CONTRACT (PCODE)
         {
             NOTHROW;
             GC_NOTRIGGER;
             MODE_ANY;
             PRECONDITION(GetData()->m_state == kRunTimeInited || GetData()->m_state == kLoadTimeInited);
-            POSTCONDITION(CheckPointer(RETVAL, NULL_OK));
+            POSTCONDITION(CheckPointer(dac_cast<BYTE*>(RETVAL), NULL_OK));
         }
         CONTRACT_END;
 
-        RETURN (BYTE*)this;
+        RETURN PINSTRToPCODE(dac_cast<TADDR>(this));
     }
 
     MethodDesc* GetMethod() const
