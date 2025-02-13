@@ -169,7 +169,7 @@ namespace TestNeg
         static int NegsLSR(uint a)
         {
             //ARM64-FULL-LINE: lsr {{w[0-9]+}}, {{w[0-9]+}}, #3
-            //AR M64-FULL-LINE: negs {{w[0-9]+}}, {{w[0-9]+}}
+            //ARM64-FULL-LINE: negs {{x[0-9]+}}, {{x[0-9]+}}
             if (-(a>>3) != 0) {
                 return 1;
             }
