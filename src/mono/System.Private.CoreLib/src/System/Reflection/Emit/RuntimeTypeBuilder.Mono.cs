@@ -1449,12 +1449,12 @@ namespace System.Reflection.Emit
 
             string typeName = "$ArrayType$" + size;
             ITypeIdentifier ident = TypeIdentifiers.WithoutEscape(typeName);
-            Type? datablobtype = pmodule.GetRegisteredType(fullname.NestedName(ident));
+            Type? datablobtype = pmodule.GetRegisteredType(ident);
             if (datablobtype == null)
             {
-                TypeBuilder tb = DefineNestedTypeCore(typeName,
+                TypeBuilder tb = pmodule.DefineType(typeName,
                     TypeAttributes.NestedPrivate | TypeAttributes.ExplicitLayout | TypeAttributes.Sealed,
-                                                   typeof(ValueType), null, RuntimeFieldBuilder.RVADataPackingSize(size), size);
+                                                   typeof(ValueType), RuntimeFieldBuilder.RVADataPackingSize(size), size);
                 tb.CreateType();
                 datablobtype = tb;
             }
