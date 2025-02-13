@@ -136,7 +136,7 @@ ABIPassingInformation X86Classifier::Classify(Compiler*    comp,
         segment = ABIPassingSegment::OnStack(offset, 0, size);
     }
 
-    return ABIPassingInformation::FromSegment(comp, segment);
+    return ABIPassingInformation::FromSegmentByValue(comp, segment);
 }
 
 #endif // TARGET_X86

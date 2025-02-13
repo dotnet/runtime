@@ -729,11 +729,6 @@ void EEStartupHelper()
 
         InitGSCookie();
 
-        Frame::Init();
-
-
-
-
 #ifdef LOGGING
         InitializeLogging();
 #endif

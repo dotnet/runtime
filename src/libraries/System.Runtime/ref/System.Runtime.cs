@@ -14109,6 +14109,35 @@ namespace System.Runtime.InteropServices
         public static bool operator !=(System.Runtime.InteropServices.GCHandle a, System.Runtime.InteropServices.GCHandle b) { throw null; }
         public static System.IntPtr ToIntPtr(System.Runtime.InteropServices.GCHandle value) { throw null; }
     }
+    public partial struct GCHandle<T> : System.IDisposable, System.IEquatable<System.Runtime.InteropServices.GCHandle<T>> where T : class?
+    {
+        private int _dummyPrimitive;
+        public void Dispose() { }
+        public override readonly bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? obj) { throw null; }
+        public readonly bool Equals(System.Runtime.InteropServices.GCHandle<T> other) { throw null; }
+        public static System.Runtime.InteropServices.GCHandle<T> FromIntPtr(System.IntPtr value) { throw null; }
+        public override readonly int GetHashCode() { throw null; }
+        public GCHandle(T target) { }
+        public readonly bool IsAllocated { get { throw null; } }
+        public readonly T Target { get { throw null; } set { } }
+        public static System.IntPtr ToIntPtr(System.Runtime.InteropServices.GCHandle<T> value) { throw null; }
+    }
+    public static class GCHandleExtensions
+    {
+        [System.CLSCompliantAttribute(false)]
+        public static unsafe T* GetAddressOfArrayData<T>(
+#nullable disable
+            this System.Runtime.InteropServices.PinnedGCHandle<T[]> handle)
+#nullable restore
+            { throw null; }
+        [System.CLSCompliantAttribute(false)]
+#nullable disable
+        public static unsafe char* GetAddressOfStringData(
+#nullable disable
+            this System.Runtime.InteropServices.PinnedGCHandle<string> handle)
+#nullable restore
+            { throw null; }
+    }
     public enum GCHandleType
     {
         Weak = 0,
@@ -14177,6 +14206,21 @@ namespace System.Runtime.InteropServices
     public sealed partial class OutAttribute : System.Attribute
     {
         public OutAttribute() { }
+    }
+    public partial struct PinnedGCHandle<T> : System.IDisposable, System.IEquatable<System.Runtime.InteropServices.PinnedGCHandle<T>> where T : class?
+    {
+        private int _dummyPrimitive;
+        public void Dispose() { }
+        public override readonly bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? obj) { throw null; }
+        public readonly bool Equals(System.Runtime.InteropServices.PinnedGCHandle<T> other) { throw null; }
+        public static System.Runtime.InteropServices.PinnedGCHandle<T> FromIntPtr(System.IntPtr value) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public readonly unsafe void* GetAddressOfObjectData() { throw null; }
+        public override readonly int GetHashCode() { throw null; }
+        public readonly bool IsAllocated { get { throw null; } }
+        public PinnedGCHandle(T target) { }
+        public T Target { readonly get { throw null; } set { } }
+        public static System.IntPtr ToIntPtr(System.Runtime.InteropServices.PinnedGCHandle<T> value) { throw null; }
     }
     public static partial class RuntimeInformation
     {
@@ -14300,6 +14344,20 @@ namespace System.Runtime.InteropServices
         IInspectable = 46,
         HString = 47,
         LPUTF8Str = 48,
+    }
+    public partial struct WeakGCHandle<T> : System.IDisposable, System.IEquatable<System.Runtime.InteropServices.WeakGCHandle<T>> where T : class?
+    {
+        private int _dummyPrimitive;
+        public void Dispose() { }
+        public override readonly bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? obj) { throw null; }
+        public readonly bool Equals(System.Runtime.InteropServices.WeakGCHandle<T> other) { throw null; }
+        public static System.Runtime.InteropServices.WeakGCHandle<T> FromIntPtr(System.IntPtr value) { throw null; }
+        public override readonly int GetHashCode() { throw null; }
+        public readonly bool IsAllocated { get { throw null; } }
+        public readonly void SetTarget(T target) { }
+        public static System.IntPtr ToIntPtr(System.Runtime.InteropServices.WeakGCHandle<T> value) { throw null; }
+        public readonly bool TryGetTarget([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out T? target) { throw null; }
+        public WeakGCHandle(T target, bool trackResurrection = false) { }
     }
 }
 namespace System.Runtime.InteropServices.Marshalling
