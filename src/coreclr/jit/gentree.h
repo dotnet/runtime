@@ -4581,7 +4581,6 @@ struct CallArgABIInformation
         , ByteOffset(0)
         , ByteSize(0)
         , ArgType(TYP_UNDEF)
-        , PassedByRef(false)
 #if FEATURE_ARG_SPLIT
         , m_isSplit(false)
 #endif
@@ -4611,8 +4610,6 @@ public:
     // that type. Note that if a struct is passed by reference, this will still
     // be the struct type.
     var_types ArgType : 5;
-    // True iff the argument is passed by reference.
-    bool PassedByRef : 1;
 
 private:
 #if FEATURE_ARG_SPLIT

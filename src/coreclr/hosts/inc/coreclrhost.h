@@ -14,12 +14,6 @@
 #define CORECLR_CALLING_CONVENTION
 #endif
 
-#ifdef __cplusplus
-#define CORECLR_HOSTING_API_LINKAGE extern "C"
-#else
-#define CORECLR_HOSTING_API_LINKAGE
-#endif
-
 #include <stdint.h>
 
 #ifdef __cplusplus
