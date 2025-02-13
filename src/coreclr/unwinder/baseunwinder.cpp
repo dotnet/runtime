@@ -36,7 +36,7 @@ HRESULT OOPStackUnwinder::GetModuleBase(      DWORD64  address,
 #ifndef FEATURE_CDAC_UNWINDER
     GetRuntimeStackWalkInfo(address, reinterpret_cast<UINT_PTR *>(pdwBase), NULL);
 #else // FEATURE_CDAC_UNWINDER
-t_pCallbacks->getStackWalkInfo(address, reinterpret_cast<UINT_PTR *>(pdwBase), NULL, t_pCallbacks->callbackContext);
+    t_pCallbacks->getStackWalkInfo(address, reinterpret_cast<UINT_PTR *>(pdwBase), NULL, t_pCallbacks->callbackContext);
 #endif // FEATURE_CDAC_UNWINDER
     return ((*pdwBase == 0) ? E_FAIL : S_OK);
 }

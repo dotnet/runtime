@@ -26,7 +26,7 @@ typedef DPTR(M128A)  PTR_M128A;
 //    If the memory read fails in the DAC mode, the failure is reported as an exception
 //    via the DacError function.
 //
-ULONG64 MemoryRead64(PULONG64 addr)
+static ULONG64 MemoryRead64(PULONG64 addr)
 {
     return *dac_cast<PTR_ULONG64>((TADDR)addr);
 }
@@ -48,7 +48,7 @@ ULONG64 MemoryRead64(PULONG64 addr)
 //    If the memory read fails in the DAC mode, the failure is reported as an exception
 //    via the DacError function.
 //
-M128A MemoryRead128(PM128A addr)
+static M128A MemoryRead128(PM128A addr)
 {
     return *dac_cast<PTR_M128A>((TADDR)addr);
 }
@@ -56,7 +56,7 @@ M128A MemoryRead128(PM128A addr)
 // Read 64 bit unsigned value from the specified addres when the unwinder is build
 // for the cDAC. This triggers a callback to the cDAC host to read the memory from
 // the target process.
-ULONG64 MemoryRead64(PULONG64 addr)
+static ULONG64 MemoryRead64(PULONG64 addr)
 {
     ULONG64 value;
     t_pCallbacks->readFromTarget((uint64_t)addr, &value, sizeof(value), t_pCallbacks->callbackContext);
@@ -66,7 +66,7 @@ ULONG64 MemoryRead64(PULONG64 addr)
 // Read 128 bit value from the specified addres when the unwinder is build
 // for the cDAC. This triggers a callback to the cDAC host to read the memory from
 // the target process.
-M128A MemoryRead128(PM128A addr)
+static M128A MemoryRead128(PM128A addr)
 {
     M128A value;
     t_pCallbacks->readFromTarget((uint64_t)addr, &value, sizeof(value), t_pCallbacks->callbackContext);
