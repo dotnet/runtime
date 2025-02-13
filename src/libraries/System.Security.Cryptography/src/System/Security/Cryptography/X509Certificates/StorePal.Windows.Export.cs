@@ -90,7 +90,7 @@ namespace System.Security.Cryptography.X509Certificates
             }
         }
 
-        public unsafe byte[] ExportPkcs12(Pkcs12ExportPbeParameters exportParameters, SafePasswordHandle password)
+        public byte[] ExportPkcs12(Pkcs12ExportPbeParameters exportParameters, SafePasswordHandle password)
         {
             bool tryAes256sha256 = exportParameters is
                 Pkcs12ExportPbeParameters.Default or
@@ -111,6 +111,12 @@ namespace System.Security.Cryptography.X509Certificates
             }
 
             return ReEncryptAndSealPkcs12(exported, password, Helpers.WindowsAesPbe);
+        }
+
+        public byte[] ExportPkcs12(PbeParameters exportParameters, SafePasswordHandle password)
+        {
+            byte[] exported = ExportPkcs12(preferAes256Sha256: true, password, out _);
+            return ReEncryptAndSealPkcs12(exported, password, exportParameters);
         }
 
         private unsafe byte[] ExportPkcs12(bool preferAes256Sha256, SafePasswordHandle password, out bool aes256Sha256)

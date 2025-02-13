@@ -167,6 +167,25 @@ namespace System.Security.Cryptography.X509Certificates.Tests
 
         [Fact]
         [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.MacCatalyst | TestPlatforms.tvOS, "The PKCS#12 Exportable flag is not supported on iOS/MacCatalyst/tvOS")]
+        public static void ExportPkcs12_SimplePbeAes192()
+        {
+            const string password = "PLACEHOLDER";
+
+            PbeParameters parameters = new(PbeEncryptionAlgorithm.Aes192Cbc, HashAlgorithmName.SHA384, 2345);
+
+            using (X509Certificate2 cert = new(TestData.PfxData, TestData.PfxDataPassword, X509KeyStorageFlags.Exportable))
+            {
+                byte[] pkcs12 = cert.ExportPkcs12(parameters, password);
+                VerifyPkcs12(
+                    pkcs12,
+                    password,
+                    expectedMacIterations: 2345,
+                    expectedMacHashAlgorithm: HashAlgorithmName.SHA384);
+            }
+        }
+
+        [Fact]
+        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.MacCatalyst | TestPlatforms.tvOS, "The PKCS#12 Exportable flag is not supported on iOS/MacCatalyst/tvOS")]
         public static void ExportAsPfxWithPrivateKey()
         {
             using (X509Certificate2 cert = new X509Certificate2(TestData.PfxData, TestData.PfxDataPassword, X509KeyStorageFlags.Exportable))

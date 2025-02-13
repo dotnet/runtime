@@ -50,7 +50,7 @@ namespace System.Security.Cryptography.X509Certificates
                 case X509ContentType.Cert:
                     return ExportX509Der();
                 case X509ContentType.Pfx:
-                    return ExportPfx(Helpers.Windows3desPbe, password);
+                    return ExportPkcs12(Helpers.Windows3desPbe, password);
                 case X509ContentType.Pkcs7:
                     return ExportPkcs7();
                 case X509ContentType.SerializedCert:
@@ -64,7 +64,7 @@ namespace System.Security.Cryptography.X509Certificates
         public byte[] ExportPkcs12(Pkcs12ExportPbeParameters exportParameters, SafePasswordHandle password)
         {
             PbeParameters pbeParameters = Helpers.MapExportParametersToPbeParameters(exportParameters);
-            return ExportPfx(pbeParameters, password);
+            return ExportPkcs12(pbeParameters, password);
         }
 
         private byte[]? ExportX509Der()
@@ -86,7 +86,7 @@ namespace System.Security.Cryptography.X509Certificates
             return _certs[0].RawData;
         }
 
-        private byte[] ExportPfx(PbeParameters pbeParameters, SafePasswordHandle password)
+        public byte[] ExportPkcs12(PbeParameters exportParameters, SafePasswordHandle password)
         {
             bool gotRef = false;
 
@@ -126,9 +126,9 @@ namespace System.Security.Cryptography.X509Certificates
                     }
                 }
 
-                builder.AddSafeContentsEncrypted(certContainer, passwordSpan, pbeParameters);
+                builder.AddSafeContentsEncrypted(certContainer, passwordSpan, exportParameters);
                 builder.AddSafeContentsUnencrypted(keyContainer);
-                builder.SealWithMac(passwordSpan, pbeParameters.HashAlgorithm, pbeParameters.IterationCount);
+                builder.SealWithMac(passwordSpan, exportParameters.HashAlgorithm, exportParameters.IterationCount);
                 return builder.Encode();
             }
             finally
@@ -153,7 +153,7 @@ namespace System.Security.Cryptography.X509Certificates
                     Span<byte> localKeyIdAttributeValue = stackalloc byte[sizeof(int)];
                     BinaryPrimitives.WriteInt32LittleEndian(localKeyIdAttributeValue, localKeyIdCounter);
                     Pkcs9LocalKeyId keyId = new(localKeyIdAttributeValue);
-                    Pkcs12ShroudedKeyBag keyBag = new(ExportPkcs8(certificatePal, pbeParameters, password), skipCopy: true);
+                    Pkcs12ShroudedKeyBag keyBag = new(ExportPkcs8(certificatePal, exportParameters, password), skipCopy: true);
 
                     certBag.Attributes.Add(keyId);
                     keyBag.Attributes.Add(keyId);

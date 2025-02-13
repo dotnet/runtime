@@ -356,12 +356,28 @@ namespace System.Security.Cryptography.X509Certificates
             if (Pal is null)
                 throw new CryptographicException(ErrorCode.E_POINTER); // Consistent with existing Export method.
 
-            using (var safePasswordHandle = new SafePasswordHandle(password, passwordProvided: true))
+            using (SafePasswordHandle safePasswordHandle = new(password, passwordProvided: true))
             {
                 return Pal.ExportPkcs12(exportParameters, safePasswordHandle);
             }
         }
 
+        /// <summary> Exports the certificate and private key in PKCS#12 / PFX format. </summary>
+        /// <param name="exportParameters">The algorithm parameters to use for the export.</param>
+        /// <param name="password">The password to use for the export.</param>
+        /// <returns>A byte array containing the encoded certificate and private key.</returns>
+        public byte[] ExportPkcs12(PbeParameters exportParameters, string? password)
+        {
+            ArgumentNullException.ThrowIfNull(exportParameters);
+
+            if (Pal is null)
+                throw new CryptographicException(ErrorCode.E_POINTER); // Consistent with existing Export method.
+
+            using (SafePasswordHandle safePasswordHandle = new(password, passwordProvided: true))
+            {
+                return Pal.ExportPkcs12(exportParameters, safePasswordHandle);
+            }
+        }
 
         public virtual string GetRawCertDataString()
         {
