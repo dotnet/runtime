@@ -35,8 +35,9 @@ void InterpExecMethod(InterpMethodContextFrame *pFrame, InterpThreadContext *pTh
     const int32_t *ip;
     int8_t *stack;
 
-    pThreadContext->pStackPointer = pFrame->pStack + pFrame->pMethod->allocaSize;
-    ip = pFrame->pMethod->pCode;
+    InterpMethod *pMethod = *(InterpMethod**)pFrame->startIp;
+    pThreadContext->pStackPointer = pFrame->pStack + pMethod->allocaSize;
+    ip = pFrame->startIp + sizeof(InterpMethod*) / sizeof(int32_t);
     stack = pFrame->pStack;
 
     while (true)

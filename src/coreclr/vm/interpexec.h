@@ -24,7 +24,7 @@ struct StackVal
 struct InterpMethodContextFrame
 {
     InterpMethodContextFrame *pParent;
-    InterpMethod *pMethod;
+    int32_t *startIp; // from start_ip we can obtain InterpMethod and MethodDesc
     int8_t *pStack;
     int8_t *pRetVal;
     int32_t *ip;

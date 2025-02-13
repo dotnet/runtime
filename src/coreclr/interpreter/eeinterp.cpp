@@ -15,30 +15,6 @@
 #define INTERP_API __attribute__ ((visibility ("default")))
 #endif // _MSC_VER
 
-#include <vector>
-
-// FIXME We will probably end up not needing this table.
-// If deemed useful, use some hashtable implementation instead.
-std::vector<std::pair<CORINFO_METHOD_HANDLE,InterpMethod*>> g_interpCodeHash;
-
-static InterpMethod* InterpGetInterpMethod(CORINFO_METHOD_HANDLE methodHnd)
-{
-    // FIXME lock for multiple thread access
-    for (size_t i = 0; i < g_interpCodeHash.size(); i++)
-    {
-        if (g_interpCodeHash[i].first == methodHnd)
-        {
-            return g_interpCodeHash[i].second;
-        }
-    }
-
-    InterpMethod* pMethod = new InterpMethod();
-    pMethod->methodHnd = methodHnd;
-
-    g_interpCodeHash.push_back({methodHnd, pMethod});
-    return pMethod;
-}
-
 /*****************************************************************************/
 ICorJitHost* g_interpHost        = nullptr;
 bool         g_interpInitialized = false;
@@ -64,16 +40,6 @@ extern "C" INTERP_API ICorJitCompiler* getJit()
     return &g_CILInterp;
 }
 
-static InterpManager g_Manager;
-extern "C" INTERP_API ICorInterpreter* getInterpreter()
-{
-    if (!g_interpInitialized)
-    {
-        return nullptr;
-    }
-    return &g_Manager;
-}
-
 //****************************************************************************
 CorJitResult CILInterp::compileMethod(ICorJitInfo*         compHnd,
                                    CORINFO_METHOD_INFO* methodInfo,
@@ -95,33 +61,36 @@ CorJitResult CILInterp::compileMethod(ICorJitInfo*         compHnd,
         return CORJIT_SKIPPED;
     }
 
-    InterpMethod *pMethod = InterpGetInterpMethod(methodInfo->ftn);
-    if (!pMethod->compiled)
-    {
-        InterpCompiler compiler(compHnd, methodInfo);
-        compiler.CompileMethod(pMethod);
-    }
+    InterpCompiler compiler(compHnd, methodInfo);
+    InterpMethod *pMethod = compiler.CompileMethod();
+
+    int32_t IRCodeSize;
+    int32_t *pIRCode = compiler.GetCode(&IRCodeSize);
  
     // FIXME this shouldn't be here
     compHnd->setMethodAttribs(methodInfo->ftn, CORINFO_FLG_INTERPRETER);
 
+    uint32_t sizeOfCode = sizeof(InterpMethod*) + IRCodeSize * sizeof(int32_t);
+
     // TODO: get rid of the need to allocate fake unwind info.
     compHnd->reserveUnwindInfo(false /* isFunclet */, false /* isColdCode */ , 8 /* unwindSize */);
     AllocMemArgs args;
-    args.hotCodeSize = 16;
+    args.hotCodeSize = sizeOfCode;
     args.coldCodeSize = 0;
     args.roDataSize = 0;
     args.xcptnsCount = 0;
     args.flag = CORJIT_ALLOCMEM_DEFAULT_CODE_ALIGN;
     compHnd->allocMem(&args);
-    uint8_t *code = (uint8_t*)args.hotCodeBlockRW;
-    *code++ = 1; // fake byte code
+
+    // We store first the InterpMethod pointer as the code header, followed by the actual code
+    *(InterpMethod**)args.hotCodeBlockRW = pMethod;
+    memcpy ((uint8_t*)args.hotCodeBlockRW + sizeof(InterpMethod*), pIRCode, IRCodeSize * sizeof(int32_t));
 
     // TODO: get rid of the need to allocate fake unwind info
     compHnd->allocUnwindInfo((uint8_t*)args.hotCodeBlock, (uint8_t*)args.coldCodeBlock, 0, 1, 0, nullptr, CORJIT_FUNC_ROOT);
 
     *entryAddress = (uint8_t*)args.hotCodeBlock;
-    *nativeSizeOfCode = 1;
+    *nativeSizeOfCode = sizeOfCode;
 
     return CORJIT_OK;
 }
@@ -139,9 +108,4 @@ void CILInterp::getVersionIdentifier(GUID* versionIdentifier)
 
 void CILInterp::setTargetOS(CORINFO_OS os)
 {
-}
-
-void* InterpManager::GetInterpMethod(CORINFO_METHOD_HANDLE methodHnd)
-{
-    return InterpGetInterpMethod(methodHnd);
 }

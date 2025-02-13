@@ -2744,19 +2744,11 @@ extern "C" void STDCALL ExecuteInterpretedMethod(TransitionBlock* pTransitionBlo
 {
     // Argument registers are in the TransitionBlock
     // The stack arguments are right after the pTransitionBlock
-    CodeHeader* pCodeHeader = EEJitManager::GetCodeHeaderFromStartAddress(byteCodeAddr);
-
-    EEJitManager *pManager = ExecutionManager::GetEEJitManager();
-    MethodDesc *pMD = pCodeHeader->GetMethodDesc();
-
-    InterpMethod *pMethod = (InterpMethod*)pManager->m_interpreter->GetInterpMethod((CORINFO_METHOD_HANDLE)pMD);
-    assert(pMethod && pMethod->compiled);
-
     InterpThreadContext *threadContext = InterpGetThreadContext();
     int8_t *sp = threadContext->pStackPointer;
 
     InterpMethodContextFrame interpFrame = {0};
-    interpFrame.pMethod = pMethod;
+    interpFrame.startIp = (int32_t*)byteCodeAddr;
     interpFrame.pStack = sp;
     interpFrame.pRetVal = sp;
 

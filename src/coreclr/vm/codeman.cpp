@@ -1838,18 +1838,6 @@ static void LoadAndInitializeJIT(LPCWSTR pwzJitName DEBUGARG(LPCWSTR pwzJitPath)
     }
 }
 
-#ifdef FEATURE_INTERPRETER
-void InitializeInterpreter(IN HINSTANCE phJit, OUT ICorInterpreter **pNewInterpreter)
-{
-    typedef ICorInterpreter* (* pGetInterpreterFn)();
-    pGetInterpreterFn getInterpreterFn = (pGetInterpreterFn) GetProcAddress(phJit, "getInterpreter");
-    if (getInterpreterFn != NULL)
-    {
-        *pNewInterpreter = (*getInterpreterFn)();
-    }
-}
-#endif
-
 #ifdef FEATURE_MERGE_JIT_AND_ENGINE
 EXTERN_C void jitStartup(ICorJitHost* host);
 EXTERN_C ICorJitCompiler* getJit();
@@ -1911,9 +1899,6 @@ BOOL EEJitManager::LoadJIT()
     // This allows us to display load error messages for loading altjit.
 
     ICorJitCompiler* newAltJitCompiler = NULL;
-#ifdef FEATURE_INTERPRETER
-    ICorInterpreter* newInterpreter = NULL;
-#endif
 
     LPWSTR altJitConfig;
     IfFailThrow(CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_AltJit, &altJitConfig));
@@ -1985,9 +1970,6 @@ BOOL EEJitManager::LoadJIT()
         }
         g_JitLoadData.jld_id = JIT_LOAD_ALTJIT;
         LoadAndInitializeJIT(altJitName DEBUGARG(altJitPath), &m_AltJITCompiler, &newAltJitCompiler, &g_JitLoadData, targetOs);
-#ifdef FEATURE_INTERPRETER
-        InitializeInterpreter(m_AltJITCompiler, &newInterpreter);
-#endif
     }
 
 #endif // ALLOW_SXS_JIT
@@ -1997,9 +1979,6 @@ BOOL EEJitManager::LoadJIT()
 #ifdef ALLOW_SXS_JIT
     m_AltJITRequired = (altJitConfig != NULL);
     m_alternateJit = newAltJitCompiler;
-#ifdef FEATURE_INTERPRETER
-    m_interpreter = newInterpreter;
-#endif
 #endif // ALLOW_SXS_JIT
 
     m_jit = newJitCompiler;

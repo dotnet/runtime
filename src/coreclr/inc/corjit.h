@@ -104,12 +104,6 @@ class ICorJitInfo;
 
 extern "C" ICorJitCompiler* getJit();
 
-class ICorInterpreter
-{
-    public:
-        virtual void* GetInterpMethod(CORINFO_METHOD_HANDLE methodHnd) = 0;
-};
-
 // #EEToJitInterface
 // ICorJitCompiler is the interface that the EE uses to get IL bytecode converted to native code. Note that
 // to accomplish this the JIT has to call back to the EE to get symbolic information.  The code:ICorJitInfo

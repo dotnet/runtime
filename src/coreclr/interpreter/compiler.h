@@ -206,17 +206,20 @@ private:
 
     // Passes
     int32_t* m_pMethodCode;
+    int32_t m_MethodCodeSize; // in int32_t
 
     void AllocOffsets();
     int32_t ComputeCodeSize();
     void EmitCode();
     int32_t* EmitCodeIns(int32_t *ip, InterpInst *pIns);
-    void PublishInterpMethod(InterpMethod *pMethod);
+    InterpMethod* CreateInterpMethod();
 public:
 
     InterpCompiler(COMP_HANDLE compHnd, CORINFO_METHOD_INFO* methodInfo);
 
-    int CompileMethod(InterpMethod *pMethod);
+    InterpMethod* CompileMethod();
+
+    int32_t* GetCode(int32_t *pCodeSize);
 };
 
 #endif //_COMPILER_H_

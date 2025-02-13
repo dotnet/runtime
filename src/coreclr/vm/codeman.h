@@ -1988,9 +1988,6 @@ public:
 #ifdef ALLOW_SXS_JIT
     //put these at the end so that we don't mess up the offsets in the DAC.
     ICorJitCompiler *   m_alternateJit;
-#ifdef FEATURE_INTERPRETER
-    ICorInterpreter *   m_interpreter;
-#endif
     HINSTANCE           m_AltJITCompiler;
     bool                m_AltJITRequired;
 #endif //ALLOW_SXS_JIT
