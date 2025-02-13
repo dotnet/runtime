@@ -161,7 +161,7 @@ public:
     }
 
     // Get the byte at the given index from the current position
-    // Invoke DacError if the index is out of the buffer
+    // Assert that the index is within the buffer
     UCHAR operator[](int index)
     {
         int realIndex = m_offset + index;
