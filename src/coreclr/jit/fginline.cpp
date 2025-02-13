@@ -530,6 +530,29 @@ private:
     }
 #endif // FEATURE_MULTIREG_RET
 
+    CORINFO_METHOD_HANDLE GetMethodHandle(GenTreeCall* call)
+    {
+        if (call->IsVirtualGeneric())
+        {
+            assert(call->gtLdvirtftnHnd != nullptr);
+            switch (call->gtLdvirtftnHnd->OperGet())
+            {
+                case GT_RUNTIMELOOKUP:
+                    return call->gtLdvirtftnHnd->AsRuntimeLookup()->GetMethodHandle();
+                case GT_CNS_INT:
+                    return CORINFO_METHOD_HANDLE(call->gtLdvirtftnHnd->AsIntCon()->IconValue());
+                default:
+                    assert(!"Unexpected ldvirtftnHnd type");
+                    return nullptr;
+            }
+        }
+        else
+        {
+            assert(call->IsVirtual() && (call->gtCallType == CT_USER_FUNC));
+            return call->gtCallMethHnd;
+        }
+    }
+
     //------------------------------------------------------------------------
     // LateDevirtualization: re-examine calls after inlining to see if we
     //   can do more devirtualization
@@ -572,8 +595,8 @@ private:
 
         if (tree->OperGet() == GT_CALL)
         {
-            GenTreeCall* call          = tree->AsCall();
-            bool         tryLateDevirt = call->IsVirtual() && (call->gtCallType == CT_USER_FUNC);
+            GenTreeCall* call  = tree->AsCall();
+            bool tryLateDevirt = (call->IsVirtual() && (call->gtCallType == CT_USER_FUNC)) || call->IsVirtualGeneric();
 
 #ifdef DEBUG
             tryLateDevirt = tryLateDevirt && (JitConfig.JitEnableLateDevirtualization() == 1);
@@ -591,7 +614,7 @@ private:
 
                 CORINFO_CONTEXT_HANDLE context                = nullptr;
                 InlineContext*         inlinersContext        = m_compiler->compInlineContext;
-                CORINFO_METHOD_HANDLE  method                 = call->gtCallMethHnd;
+                CORINFO_METHOD_HANDLE  method                 = GetMethodHandle(call);
                 unsigned               methodFlags            = 0;
                 const bool             isLateDevirtualization = true;
                 const bool             explicitTailCall       = call->IsTailPrefixedCall();

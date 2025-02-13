@@ -392,10 +392,18 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
                 thisPtr          = impTransformThis(thisPtr, pConstrainedResolvedToken, callInfo->thisTransform);
                 assert(thisPtr != nullptr);
 
+                GenTree* origThisPtr = thisPtr;
+
                 // Clone the (possibly transformed) "this" pointer
                 GenTree* thisPtrCopy;
                 thisPtr =
                     impCloneExpr(thisPtr, &thisPtrCopy, CHECK_SPILL_ALL, nullptr DEBUGARG("LDVIRTFTN this pointer"));
+
+                if (thisPtr->TypeIs(TYP_REF))
+                {
+                    lvaGetDesc(thisPtr->AsLclVar())->lvSingleDef = 1;
+                    lvaSetClass(thisPtr->AsLclVar()->GetLclNum(), origThisPtr);
+                }
 
                 GenTree* runtimeLookup = nullptr;
                 GenTree* fptr          = impImportLdvirtftn(thisPtr, pResolvedToken, callInfo, &runtimeLookup);
@@ -1243,7 +1251,8 @@ DONE:
         // If the call is virtual, record the inliner's context for possible use during late devirt inlining.
         // Also record the generics context if there is any.
         //
-        if (call->AsCall()->IsVirtual() && (call->AsCall()->gtCallType != CT_INDIRECT))
+        if ((call->AsCall()->IsVirtual() && (call->AsCall()->gtCallType != CT_INDIRECT)) ||
+            call->AsCall()->IsVirtualGeneric())
         {
             JITDUMP("\nSaving generic context %p and inline context %p for call [%06u]\n", dspPtr(exactContextHnd),
                     dspPtr(compInlineContext), dspTreeID(call->AsCall()));
