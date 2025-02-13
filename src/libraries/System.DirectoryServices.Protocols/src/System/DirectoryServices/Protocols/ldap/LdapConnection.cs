@@ -955,13 +955,13 @@ namespace System.DirectoryServices.Protocols
 
         private void Connect()
         {
-            //Ccurrently ldap does not accept more than one certificate.
+            // Currently ldap does not accept more than one certificate.
             if (ClientCertificates.Count > 1)
             {
                 throw new InvalidOperationException(SR.InvalidClientCertificates);
             }
 
-            // Set the certificate callback routine here if user adds the certifcate to the certificate collection.
+            // Set the certificate callback routine here if user adds the certificate to the certificate collection.
             if (ClientCertificates.Count != 0)
             {
                 int certError = LdapPal.SetClientCertOption(_ldapHandle, LdapOption.LDAP_OPT_CLIENT_CERTIFICATE, _clientCertificateRoutine);
