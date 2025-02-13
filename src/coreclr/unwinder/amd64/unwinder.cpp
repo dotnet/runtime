@@ -59,7 +59,7 @@ M128A OOPStackUnwinderAMD64::MemoryRead128(PM128A addr)
 ULONG64 OOPStackUnwinderAMD64::MemoryRead64(PULONG64 addr)
 {
     ULONG64 value;
-    readFromTarget((uint64_t)addr, &value, sizeof(value), callbackContext);
+    m_readFromTarget((uint64_t)addr, &value, sizeof(value), m_callbackContext);
     return value;
 }
 
@@ -69,7 +69,7 @@ ULONG64 OOPStackUnwinderAMD64::MemoryRead64(PULONG64 addr)
 M128A OOPStackUnwinderAMD64::MemoryRead128(PM128A addr)
 {
     M128A value;
-    readFromTarget((uint64_t)addr, &value, sizeof(value), callbackContext);
+    m_readFromTarget((uint64_t)addr, &value, sizeof(value), m_callbackContext);
     return value;
 }
 #endif // FEATURE_CDAC_UNWINDER
@@ -349,7 +349,7 @@ BOOL OOPStackUnwinderAMD64::Unwind(CONTEXT * pContext)
 UNWIND_INFO * OOPStackUnwinderAMD64::GetUnwindInfo(TADDR taUnwindInfo)
 {
     UNWIND_INFO unwindInfo;
-    if(readFromTarget((uint64_t)taUnwindInfo, &unwindInfo, sizeof(unwindInfo), callbackContext) != S_OK)
+    if(m_readFromTarget((uint64_t)taUnwindInfo, &unwindInfo, sizeof(unwindInfo), m_callbackContext) != S_OK)
     {
         return NULL;
     }
@@ -371,12 +371,12 @@ UNWIND_INFO * OOPStackUnwinderAMD64::GetUnwindInfo(TADDR taUnwindInfo)
     // Allocate a buffer for the unwind info from cDAC callback.
     // This buffer will be freed by the cDAC host once unwinding is done.
     UNWIND_INFO* pUnwindInfo;
-    if(getAllocatedBuffer(cbUnwindInfo, (void**)&pUnwindInfo, callbackContext) != S_OK)
+    if(m_getAllocatedBuffer(cbUnwindInfo, (void**)&pUnwindInfo, m_callbackContext) != S_OK)
     {
         return NULL;
     }
 
-    if(readFromTarget(taUnwindInfo, pUnwindInfo, cbUnwindInfo, callbackContext) != S_OK)
+    if(m_readFromTarget(taUnwindInfo, pUnwindInfo, cbUnwindInfo, m_callbackContext) != S_OK)
     {
         return NULL;
     }
@@ -1333,7 +1333,7 @@ Arguments:
 #ifndef FEATURE_CDAC_UNWINDER
         InstructionBuffer InstrBuffer = (InstructionBuffer)ControlPc;
 #else // FEATURE_CDAC_UNWINDER
-        InstructionBuffer InstrBuffer(ControlPc, readFromTarget, callbackContext);
+        InstructionBuffer InstrBuffer(ControlPc, m_readFromTarget, m_callbackContext);
 #endif // FEATURE_CDAC_UNWINDER
         InstructionBuffer NextByte = InstrBuffer;
 

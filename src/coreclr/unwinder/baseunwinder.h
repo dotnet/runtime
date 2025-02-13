@@ -59,21 +59,21 @@ protected:
                      GetAllocatedBuffer getAllocatedBuffer,
                      GetStackWalkInfo getStackWalkInfo,
                      void* callbackContext)
-        : readFromTarget(readFromTarget),
-          getAllocatedBuffer(getAllocatedBuffer),
-          getStackWalkInfo(getStackWalkInfo),
-          callbackContext(callbackContext)
+        : m_readFromTarget(readFromTarget),
+          m_getAllocatedBuffer(getAllocatedBuffer),
+          m_getStackWalkInfo(getStackWalkInfo),
+          m_callbackContext(callbackContext)
     { }
 
 
 public:
     // These functions pointers are marked public because they are called using
     // a global instance of OOPStackUnwinder in the ARM64 implementation.
-    ReadFromTarget readFromTarget;
-    GetAllocatedBuffer getAllocatedBuffer;
-    GetStackWalkInfo getStackWalkInfo;
+    ReadFromTarget m_readFromTarget;
+    GetAllocatedBuffer m_getAllocatedBuffer;
+    GetStackWalkInfo m_getStackWalkInfo;
 
-    void* callbackContext;
+    void* m_callbackContext;
 
 #endif // FEATURE_CDAC_UWNINDER
 };

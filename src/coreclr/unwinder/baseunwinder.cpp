@@ -32,7 +32,7 @@ HRESULT OOPStackUnwinder::GetModuleBase(      DWORD64  address,
 #ifndef FEATURE_CDAC_UNWINDER
     GetRuntimeStackWalkInfo(address, reinterpret_cast<UINT_PTR *>(pdwBase), NULL);
 #else // FEATURE_CDAC_UNWINDER
-    getStackWalkInfo(address, reinterpret_cast<UINT_PTR *>(pdwBase), NULL, callbackContext);
+    m_getStackWalkInfo(address, reinterpret_cast<UINT_PTR *>(pdwBase), NULL, m_callbackContext);
 #endif // FEATURE_CDAC_UNWINDER
     return ((*pdwBase == 0) ? E_FAIL : S_OK);
 }
@@ -72,12 +72,12 @@ HRESULT OOPStackUnwinder::GetFunctionEntry(                       DWORD64 addres
     memcpy(pBuffer, pFuncEntry, cbBuffer);
     return S_OK;
 #else // FEATURE_CDAC_UNWINDER
-    getStackWalkInfo(address, NULL, reinterpret_cast<UINT_PTR *>(&pFuncEntry), callbackContext);
+    m_getStackWalkInfo(address, NULL, reinterpret_cast<UINT_PTR *>(&pFuncEntry), m_callbackContext);
     if (pFuncEntry == NULL)
     {
         return E_FAIL;
     }
-    if (readFromTarget((DWORD64)pFuncEntry, pBuffer, cbBuffer, callbackContext) != S_OK)
+    if (m_readFromTarget((DWORD64)pFuncEntry, pBuffer, cbBuffer, m_callbackContext) != S_OK)
     {
         return E_FAIL;
     }

@@ -178,7 +178,7 @@ template<typename T>
 T cdacRead(uint64_t addr)
 {
     T t;
-    g_pUnwinder->readFromTarget(addr, &t, sizeof(t), g_pUnwinder->callbackContext);
+    g_pUnwinder->m_readFromTarget(addr, &t, sizeof(t), g_pUnwinder->m_callbackContext);
     return t;
 }
 #define MEMORY_READ_BYTE(params, addr)       (cdacRead<BYTE>(addr))
