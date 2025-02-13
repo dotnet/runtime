@@ -187,12 +187,6 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
                 compInlineResult->NoteFatal(InlineObservation::CALLEE_HAS_MANAGED_VARARGS);
                 return TYP_UNDEF;
             }
-
-            if ((mflags & CORINFO_FLG_VIRTUAL) && (sig->sigInst.methInstCount != 0) && (opcode == CEE_CALLVIRT))
-            {
-                compInlineResult->NoteFatal(InlineObservation::CALLEE_IS_GENERIC_VIRTUAL);
-                return TYP_UNDEF;
-            }
         }
 
         clsHnd = pResolvedToken->hClass;
@@ -419,13 +413,16 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
                 fptr = gtNewLclvNode(lclNum, TYP_I_IMPL);
 
                 call->AsCall()->gtCallAddr = fptr;
-                call->AsCall()->gtCallMoreFlags |= GTF_CALL_M_GENERIC_VIRTUAL;
                 call->gtFlags |= GTF_EXCEPT | (fptr->gtFlags & GTF_GLOB_EFFECT);
 
-                if ((sig->sigInst.methInstCount != 0) && IsTargetAbi(CORINFO_NATIVEAOT_ABI))
+                if (sig->sigInst.methInstCount != 0)
                 {
-                    // NativeAOT generic virtual method: need to handle potential fat function pointers
-                    addFatPointerCandidate(call->AsCall());
+                    call->gtFlags |= GTF_CALL_VIRT_GENERIC;
+                    if (IsTargetAbi(CORINFO_NATIVEAOT_ABI))
+                    {
+                        // NativeAOT generic virtual method: need to handle potential fat function pointers
+                        addFatPointerCandidate(call->AsCall());
+                    }
                 }
 #ifdef FEATURE_READYTORUN
                 if (opts.IsReadyToRun())
@@ -953,7 +950,7 @@ DEVIRT:
     // See if we can devirt if we aren't probing.
     if (!probing && opts.OptimizationEnabled())
     {
-        if (call->AsCall()->IsVirtual() || call->AsCall()->IsGenericVirtual())
+        if (call->AsCall()->IsVirtual())
         {
             // only true object pointers can be virtual
             assert(call->AsCall()->gtArgs.HasThisPointer() &&
@@ -969,7 +966,7 @@ DEVIRT:
                                 // inlinees.
                                 rawILOffset);
 
-            const bool wasDevirtualized = !call->AsCall()->IsVirtual() && !call->AsCall()->IsGenericVirtual();
+            const bool wasDevirtualized = !call->AsCall()->IsVirtual();
 
             if (wasDevirtualized)
             {
@@ -8021,7 +8018,7 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
 
     // This should be a virtual vtable or virtual stub call, or a generic virtual call.
     //
-    assert(call->IsVirtual() || call->IsGenericVirtual());
+    assert(call->IsVirtual());
     assert(opts.OptimizationEnabled());
 
 #if defined(DEBUG)
@@ -8069,7 +8066,7 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
 #endif // DEBUG
     }
 
-    // In R2R mode, we might see virtual stub calls to
+    // In R2R mode, we might see virtual stub or generic calls to
     // non-virtuals. For instance cases where the non-virtual method
     // is in a different assembly but is called via CALLVIRT. For
     // version resilience we must allow for the fact that the method
@@ -8080,7 +8077,7 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
     //
     if ((baseMethodAttribs & CORINFO_FLG_VIRTUAL) == 0)
     {
-        assert(call->IsVirtualStub() || call->IsGenericVirtual());
+        assert(call->IsVirtualStub() || call->IsVirtualGeneric());
         assert(opts.IsReadyToRun());
         JITDUMP("\nimpDevirtualizeCall: [R2R] base method not virtual, sorry\n");
         return;
@@ -8172,7 +8169,7 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
     // It may or may not know enough to devirtualize...
     if (isInterface)
     {
-        assert(call->IsVirtualStub() || call->IsGenericVirtual());
+        assert(call->IsVirtualStub() || call->IsVirtualGeneric());
         JITDUMP("--- base class is interface\n");
     }
 
@@ -8349,7 +8346,7 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
     // Make the updates.
     call->gtFlags &= ~GTF_CALL_VIRT_VTABLE;
     call->gtFlags &= ~GTF_CALL_VIRT_STUB;
-    call->gtCallMoreFlags &= ~GTF_CALL_M_GENERIC_VIRTUAL;
+    call->gtFlags &= ~GTF_CALL_VIRT_GENERIC;
     call->gtCallMethHnd = derivedMethod;
     call->gtCallType    = CT_USER_FUNC;
     call->gtControlExpr = nullptr;

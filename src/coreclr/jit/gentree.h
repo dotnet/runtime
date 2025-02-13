@@ -459,7 +459,8 @@ enum GenTreeFlags : unsigned int
     GTF_CALL_VIRT_KIND_MASK     = 0x30000000, // GT_CALL -- mask of the below call kinds
     GTF_CALL_NONVIRT            = 0x00000000, // GT_CALL -- a non virtual call
     GTF_CALL_VIRT_STUB          = 0x10000000, // GT_CALL -- a stub-dispatch virtual call
-    GTF_CALL_VIRT_VTABLE        = 0x20000000, // GT_CALL -- a  vtable-based virtual call
+    GTF_CALL_VIRT_VTABLE        = 0x20000000, // GT_CALL -- a vtable-based virtual call
+    GTF_CALL_VIRT_GENERIC       = 0x30000000, // GT_CALL -- a generic virtual call
 
     GTF_CALL_NULLCHECK          = 0x08000000, // GT_CALL -- must check instance pointer for null
     GTF_CALL_POP_ARGS           = 0x04000000, // GT_CALL -- caller pop arguments?
@@ -4228,7 +4229,6 @@ enum GenTreeCallFlags : unsigned int
     GTF_CALL_M_CAST_OBJ_NONNULL        = 0x08000000, // if we expand this specific cast we don't need to check the input object for null
                                                      // NOTE: if needed, this flag can be removed, and we can introduce new _NONNUL cast helpers
     GTF_CALL_M_STACK_ARRAY             = 0x10000000, // this call is a new array helper for a stack allocated array.
-    GTF_CALL_M_GENERIC_VIRTUAL         = 0x20000000, // this call is a generic virtual call
 };
 
 inline constexpr GenTreeCallFlags operator ~(GenTreeCallFlags a)
@@ -5335,10 +5335,6 @@ struct GenTreeCall final : public GenTree
     {
         return (gtFlags & GTF_CALL_VIRT_KIND_MASK) != GTF_CALL_NONVIRT;
     }
-    bool IsGenericVirtual() const
-    {
-        return (gtCallMoreFlags & GTF_CALL_M_GENERIC_VIRTUAL) == GTF_CALL_M_GENERIC_VIRTUAL;
-    }
     bool IsVirtualStub() const
     {
         return (gtFlags & GTF_CALL_VIRT_KIND_MASK) == GTF_CALL_VIRT_STUB;
@@ -5346,6 +5342,10 @@ struct GenTreeCall final : public GenTree
     bool IsVirtualVtable() const
     {
         return (gtFlags & GTF_CALL_VIRT_KIND_MASK) == GTF_CALL_VIRT_VTABLE;
+    }
+    bool IsVirtualGeneric() const
+    {
+        return (gtFlags & GTF_CALL_VIRT_KIND_MASK) == GTF_CALL_VIRT_GENERIC;
     }
     bool IsInlineCandidate() const
     {
