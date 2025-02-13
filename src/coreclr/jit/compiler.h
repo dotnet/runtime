@@ -1207,6 +1207,13 @@ public:
         m_layout = layout;
     }
 
+    // Change the layout to one that may not be compatible.
+    void ChangeLayout(ClassLayout* layout)
+    {
+        assert(varTypeIsStruct(lvType));
+        m_layout = layout;
+    }
+
     // Grow the size of a block layout local.
     void GrowBlockLayout(ClassLayout* layout)
     {
