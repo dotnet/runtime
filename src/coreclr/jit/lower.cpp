@@ -2901,6 +2901,7 @@ GenTree* Lowering::LowerCall(GenTree* node)
                 break;
 
             case GTF_CALL_NONVIRT:
+            case GTF_CALL_VIRT_GENERIC:
                 if (call->IsUnmanaged())
                 {
                     controlExpr = LowerNonvirtPinvokeCall(call);
