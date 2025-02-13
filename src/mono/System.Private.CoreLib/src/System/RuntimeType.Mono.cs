@@ -6,6 +6,7 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Reflection;
+using System.Reflection.Metadata;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Serialization;
@@ -175,22 +176,17 @@ namespace System
                 return;
 
             // Get namespace
-            int nsDelimiter = fullname.LastIndexOf('.');
-            if (nsDelimiter != -1)
+            int nsDelimiter = TypeNameParserHelpers.IndexOfNamespaceDelimiter(fullname);
+            if (nsDelimiter > 0)
             {
                 ns = fullname.Substring(0, nsDelimiter);
-                int nameLength = fullname.Length - ns.Length - 1;
-                if (nameLength != 0)
-                    name = fullname.Substring(nsDelimiter + 1, nameLength);
-                else
-                    name = "";
+                name = fullname.Substring(nsDelimiter + 1);
                 Debug.Assert(fullname.Equals(ns + "." + name));
             }
             else
             {
                 name = fullname;
             }
-
         }
         #endregion
 
@@ -683,21 +679,17 @@ namespace System
             return candidates;
         }
 
-        private ListBuilder<Type> GetNestedTypeCandidates(string? fullname, BindingFlags bindingAttr, bool allowPrefixLookup)
+        private ListBuilder<Type> GetNestedTypeCandidates(string? name, BindingFlags bindingAttr, bool allowPrefixLookup)
         {
-            bool prefixLookup;
             bindingAttr &= ~BindingFlags.Static;
-            string? name, ns;
-            MemberListType listType;
-            SplitName(fullname, out name, out ns);
-            FilterHelper(bindingAttr, ref name, allowPrefixLookup, out prefixLookup, out _, out listType);
+            FilterHelper(bindingAttr, ref name, allowPrefixLookup, out bool prefixLookup, out _, out MemberListType listType);
 
             RuntimeType[] cache = GetNestedTypes_internal(name, bindingAttr, listType);
             ListBuilder<Type> candidates = new ListBuilder<Type>(cache.Length);
             for (int i = 0; i < cache.Length; i++)
             {
                 RuntimeType nestedClass = cache[i];
-                if (FilterApplyType(nestedClass, bindingAttr, name, prefixLookup, ns))
+                if (FilterApplyType(nestedClass, bindingAttr, name, prefixLookup, null))
                 {
                     candidates.Add(nestedClass);
                 }
@@ -1008,31 +1000,37 @@ namespace System
         }
 
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicNestedTypes | DynamicallyAccessedMemberTypes.NonPublicNestedTypes)]
-        public override Type? GetNestedType(string fullname, BindingFlags bindingAttr)
+        internal Type? GetNestedType([MaybeNull] string name, BindingFlags bindingAttr, bool ignoreAmbiguousMatch)
         {
-            ArgumentNullException.ThrowIfNull(fullname);
+            ArgumentNullException.ThrowIfNull(name);
 
             bindingAttr &= ~BindingFlags.Static;
-            string? name, ns;
-            MemberListType listType;
-            SplitName(fullname, out name, out ns);
-            FilterHelper(bindingAttr, ref name, out _, out listType);
+            FilterHelper(bindingAttr, ref name, out _, out MemberListType listType);
             RuntimeType[] cache = GetNestedTypes_internal(name, bindingAttr, listType);
             RuntimeType? match = null;
 
             for (int i = 0; i < cache.Length; i++)
             {
                 RuntimeType nestedType = cache[i];
-                if (FilterApplyType(nestedType, bindingAttr, name, false, ns))
+                if (FilterApplyType(nestedType, bindingAttr, name, false, null))
                 {
                     if (match != null)
                         throw ThrowHelper.GetAmbiguousMatchException(match);
 
                     match = nestedType;
+
+                    if (ignoreAmbiguousMatch)
+                        break;
                 }
             }
 
             return match;
+        }
+
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicNestedTypes | DynamicallyAccessedMemberTypes.NonPublicNestedTypes)]
+        public override Type? GetNestedType(string name, BindingFlags bindingAttr)
+        {
+            return GetNestedType(name, bindingAttr, ignoreAmbiguousMatch: false);
         }
 
         [DynamicallyAccessedMembers(GetAllMembers)]
@@ -1683,7 +1681,8 @@ namespace System
 
         [Flags]
         // Types of entries cached in TypeCache
-        private enum TypeCacheEntries {
+        private enum TypeCacheEntries
+        {
             IsGenericTypeDef = 1,
             IsDelegate = 2,
             IsValueType = 4,

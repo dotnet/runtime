@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
@@ -38,16 +38,14 @@ namespace System.Reflection.Metadata.Tests
         }
 
         [Theory]
-        [InlineData("JustTypeName", "JustTypeName")]
-        [InlineData("Namespace.TypeName", "TypeName")]
-        [InlineData("Namespace1.Namespace2.TypeName", "TypeName")]
-        [InlineData("Namespace.NotNamespace\\.TypeName", "NotNamespace\\.TypeName")]
-        [InlineData("Namespace1.Namespace2.Containing+Nested", "Nested")]
-        [InlineData("Namespace1.Namespace2.Not\\+Nested", "Not\\+Nested")]
-        [InlineData("NotNamespace1\\.NotNamespace2\\.TypeName", "NotNamespace1\\.NotNamespace2\\.TypeName")]
-        [InlineData("NotNamespace1\\.NotNamespace2\\.Not\\+Nested", "NotNamespace1\\.NotNamespace2\\.Not\\+Nested")]
-        public void GetNameReturnsJustName(string fullName, string expected)
-            => Assert.Equal(expected, TypeNameParserHelpers.GetName(fullName.AsSpan()).ToString());
+        [InlineData("JustTypeName", -1)]
+        [InlineData("Namespace.TypeName", 9)]
+        [InlineData("Namespace1.Namespace2.TypeName", 21)]
+        [InlineData("Namespace..Name", 9)]
+        [InlineData("Namespace...Name", 10)]
+        [InlineData("Namespace..Name.", 15)]
+        public void IndexOfNamespaceDelimiter(string fullName, int expected)
+            => Assert.Equal(expected, TypeNameParserHelpers.IndexOfNamespaceDelimiter(fullName.AsSpan()));
 
         [Theory]
         [InlineData("simple", "simple")]

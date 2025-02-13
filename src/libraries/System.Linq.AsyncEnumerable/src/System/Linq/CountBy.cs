@@ -28,7 +28,9 @@ namespace System.Linq
             ThrowHelper.ThrowIfNull(source);
             ThrowHelper.ThrowIfNull(keySelector);
 
-            return Impl(source, keySelector, keyComparer, default);
+            return
+                source.IsKnownEmpty() ? Empty<KeyValuePair<TKey, int>>() :
+                Impl(source, keySelector, keyComparer, default);
 
             static async IAsyncEnumerable<KeyValuePair<TKey, int>> Impl(
                 IAsyncEnumerable<TSource> source, Func<TSource, TKey> keySelector, IEqualityComparer<TKey>? keyComparer, [EnumeratorCancellation] CancellationToken cancellationToken)
@@ -83,7 +85,9 @@ namespace System.Linq
             ThrowHelper.ThrowIfNull(source);
             ThrowHelper.ThrowIfNull(keySelector);
 
-            return Impl(source, keySelector, keyComparer, default);
+            return
+                source.IsKnownEmpty() ? Empty<KeyValuePair<TKey, int>>() :
+                Impl(source, keySelector, keyComparer, default);
 
             static async IAsyncEnumerable<KeyValuePair<TKey, int>> Impl(
                 IAsyncEnumerable<TSource> source, Func<TSource, CancellationToken, ValueTask<TKey>> keySelector, IEqualityComparer<TKey>? keyComparer, [EnumeratorCancellation] CancellationToken cancellationToken)

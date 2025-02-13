@@ -26,7 +26,9 @@ namespace System.Linq
             ThrowHelper.ThrowIfNull(first);
             ThrowHelper.ThrowIfNull(second);
 
-            return Impl(first, second, comparer, default);
+            return
+                first.IsKnownEmpty() ? Empty<TSource>() :
+                Impl(first, second, comparer, default);
 
             async static IAsyncEnumerable<TSource> Impl(
                 IAsyncEnumerable<TSource> first,
@@ -34,19 +36,34 @@ namespace System.Linq
                 IEqualityComparer<TSource>? comparer,
                 [EnumeratorCancellation] CancellationToken cancellationToken)
             {
-                HashSet<TSource> set = new(comparer);
-
-                await foreach (TSource element in second.WithCancellation(cancellationToken).ConfigureAwait(false))
+                IAsyncEnumerator<TSource> firstEnumerator = first.GetAsyncEnumerator(cancellationToken);
+                try
                 {
-                    set.Add(element);
-                }
-
-                await foreach (TSource element in first.WithCancellation(cancellationToken).ConfigureAwait(false))
-                {
-                    if (set.Add(element))
+                    if (!await firstEnumerator.MoveNextAsync().ConfigureAwait(false))
                     {
-                        yield return element;
+                        yield break;
                     }
+
+                    HashSet<TSource> set = new(comparer);
+
+                    await foreach (TSource element in second.WithCancellation(cancellationToken).ConfigureAwait(false))
+                    {
+                        set.Add(element);
+                    }
+
+                    do
+                    {
+                        TSource firstElement = firstEnumerator.Current;
+                        if (set.Add(firstElement))
+                        {
+                            yield return firstElement;
+                        }
+                    }
+                    while (await firstEnumerator.MoveNextAsync().ConfigureAwait(false));
+                }
+                finally
+                {
+                    await firstEnumerator.DisposeAsync().ConfigureAwait(false);
                 }
             }
         }

@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
@@ -39,7 +39,7 @@ namespace System.Reflection.Metadata
 #else
         private readonly ImmutableArray<TypeName> _genericArguments;
 #endif
-        private string? _name, _fullName, _assemblyQualifiedName;
+        private string? _name, _namespace, _fullName, _assemblyQualifiedName;
 
         internal TypeName(string? fullName,
             AssemblyNameInfo? assemblyName,
@@ -217,6 +217,7 @@ namespace System.Reflection.Metadata
         /// This is because determining whether a type truly is a generic type requires loading the type
         /// and performing a runtime check.</para>
         /// </remarks>
+        [MemberNotNullWhen(false, nameof(_elementOrGenericType))]
         public bool IsSimple => _elementOrGenericType is null;
 
         /// <summary>
@@ -229,6 +230,7 @@ namespace System.Reflection.Metadata
         /// Returns true if this is a nested type (e.g., "Namespace.Declaring+Nested").
         /// For nested types <seealso cref="DeclaringType"/> returns their declaring type.
         /// </summary>
+        [MemberNotNullWhen(true, nameof(_declaringType))]
         public bool IsNested => _declaringType is not null;
 
         /// <summary>
@@ -262,7 +264,7 @@ namespace System.Reflection.Metadata
                 {
                     if (IsConstructedGenericType)
                     {
-                        _name = TypeNameParserHelpers.GetName(GetGenericTypeDefinition().FullName.AsSpan()).ToString();
+                        _name = GetGenericTypeDefinition().Name;
                     }
                     else if (IsPointer || IsByRef || IsArray)
                     {
@@ -270,17 +272,78 @@ namespace System.Reflection.Metadata
                         builder.Append(GetElementType().Name);
                         _name = TypeNameParserHelpers.GetRankOrModifierStringRepresentation(_rankOrModifier, ref builder);
                     }
-                    else if (_nestedNameLength > 0 && _fullName is not null)
-                    {
-                        _name = TypeNameParserHelpers.GetName(_fullName.AsSpan(0, _nestedNameLength)).ToString();
-                    }
                     else
                     {
-                        _name = TypeNameParserHelpers.GetName(FullName.AsSpan()).ToString();
+                        // _fullName can be null only in constructed generic or modified types, which we handled above.
+                        Debug.Assert(_fullName is not null);
+                        ReadOnlySpan<char> name = _fullName.AsSpan();
+                        if (_nestedNameLength > 0)
+                        {
+                            name = name.Slice(0, _nestedNameLength);
+                        }
+                        if (IsNested)
+                        {
+                            // If the type is nested, we know the length of the declaring type's full name.
+                            // Get the characters after that plus one for the '+' separator.
+                            name = name.Slice(_declaringType._nestedNameLength + 1);
+                        }
+                        else if (TypeNameParserHelpers.IndexOfNamespaceDelimiter(name) is int idx && idx >= 0)
+                        {
+                            // If the type is not nested, find the namespace delimiter in the full name and return the substring after it.
+                            name = name.Slice(idx + 1);
+                        }
+                        _name = name.ToString();
                     }
                 }
 
                 return _name;
+            }
+        }
+
+        /// <summary>
+        /// The namespace of this type; e.g., "System".
+        /// </summary>
+        /// <exception cref="InvalidOperationException">This instance is a nested type.</exception>
+        public string Namespace
+        {
+            get
+            {
+                if (_namespace is null)
+                {
+                    TypeName rootTypeName = this;
+                    while (!rootTypeName.IsSimple)
+                    {
+                        rootTypeName = rootTypeName._elementOrGenericType;
+                    }
+
+                    if (rootTypeName.IsNested)
+                    {
+                        TypeNameParserHelpers.ThrowInvalidOperation_NestedTypeNamespace();
+                    }
+
+                    // By setting the namespace field at the root type name, we avoid recomputing it for all derived names.
+                    if (rootTypeName._namespace is null)
+                    {
+                        // At this point the type does not have a modifier applied to it, so it should have its full name set.
+                        Debug.Assert(rootTypeName._fullName is not null);
+                        ReadOnlySpan<char> rootFullName = rootTypeName._fullName.AsSpan();
+                        if (rootTypeName._nestedNameLength > 0)
+                        {
+                            rootFullName = rootFullName.Slice(0, rootTypeName._nestedNameLength);
+                        }
+                        if (TypeNameParserHelpers.IndexOfNamespaceDelimiter(rootFullName) is int idx && idx >= 0)
+                        {
+                            rootTypeName._namespace = rootFullName.Slice(0, idx).ToString();
+                        }
+                        else
+                        {
+                            rootTypeName._namespace = string.Empty;
+                        }
+                    }
+                    _namespace = rootTypeName._namespace;
+                }
+
+                return _namespace;
             }
         }
 
@@ -399,6 +462,25 @@ namespace System.Reflection.Metadata
         {
             result = TypeNameParser.Parse(typeName, throwOnError: false, options);
             return result is not null;
+        }
+
+        /// <summary>
+        /// Converts any escaped characters in the input type name or namespace.
+        /// </summary>
+        /// <param name="name">The input string containing the name to convert.</param>
+        /// <returns>A string of characters with any escaped characters converted to their unescaped form.</returns>
+        /// <remarks>
+        /// <para>The unescaped string can be used for looking up the type name or namespace in metadata.</para>
+        /// <para>This method removes escape characters even if they precede a character that does not require escaping.</para>
+        /// </remarks>
+        public static string Unescape(string name)
+        {
+            if (name is null)
+            {
+                TypeNameParserHelpers.ThrowArgumentNullException(nameof(name));
+            }
+
+            return TypeNameParserHelpers.Unescape(name);
         }
 
         /// <summary>

@@ -5763,10 +5763,12 @@ struct GenTreeCall final : public GenTree
         jitstd::vector<InlineCandidateInfo*>* gtInlineCandidateInfoList;
 
         HandleHistogramProfileCandidateInfo* gtHandleHistogramProfileCandidateInfo;
-        LateDevirtualizationInfo*            gtLateDevirtualizationInfo;
+
         CORINFO_GENERIC_HANDLE compileTimeHelperArgumentHandle; // Used to track type handle argument of dynamic helpers
         void*                  gtDirectCallAddress; // Used to pass direct call address between lower and codegen
     };
+
+    LateDevirtualizationInfo* gtLateDevirtualizationInfo;
 
     // the runtime handle lookup for LDVIRTFTN, used by generic virtual calls
     GenTree* gtLdvirtftnHnd;

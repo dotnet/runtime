@@ -41,13 +41,28 @@ namespace System.Linq
                 Func<TSource, TKey> keySelector,
                 IEqualityComparer<TKey>? comparer)
             {
-                var lookup = new AsyncLookup<TKey, TSource>(comparer);
-                await foreach (TSource item in source)
+                ConfiguredCancelableAsyncEnumerable<TSource>.Enumerator e = source.GetAsyncEnumerator();
+                try
                 {
-                    lookup.GetGrouping(keySelector(item), create: true)!.Add(item);
-                }
+                    if (!await e.MoveNextAsync())
+                    {
+                        return EmptyLookup<TKey, TSource>.Instance;
+                    }
 
-                return lookup;
+                    AsyncLookup<TKey, TSource> lookup = new(comparer);
+                    do
+                    {
+                        TSource item = e.Current;
+                        lookup.GetGrouping(keySelector(item), create: true)!.Add(item);
+                    }
+                    while (await e.MoveNextAsync());
+
+                    return lookup;
+                }
+                finally
+                {
+                    await e.DisposeAsync();
+                }
             }
         }
 
@@ -81,13 +96,28 @@ namespace System.Linq
                 IEqualityComparer<TKey>? comparer,
                 CancellationToken cancellationToken)
             {
-                var lookup = new AsyncLookup<TKey, TSource>(comparer);
-                await foreach (TSource item in source.WithCancellation(cancellationToken).ConfigureAwait(false))
+                IAsyncEnumerator<TSource> e = source.GetAsyncEnumerator(cancellationToken);
+                try
                 {
-                    lookup.GetGrouping(await keySelector(item, cancellationToken).ConfigureAwait(false), create: true)!.Add(item);
-                }
+                    if (!await e.MoveNextAsync().ConfigureAwait(false))
+                    {
+                        return EmptyLookup<TKey, TSource>.Instance;
+                    }
 
-                return lookup;
+                    AsyncLookup<TKey, TSource> lookup = new(comparer);
+                    do
+                    {
+                        TSource item = e.Current;
+                        lookup.GetGrouping(await keySelector(item, cancellationToken).ConfigureAwait(false), create: true)!.Add(item);
+                    }
+                    while (await e.MoveNextAsync().ConfigureAwait(false));
+
+                    return lookup;
+                }
+                finally
+                {
+                    await e.DisposeAsync().ConfigureAwait(false);
+                }
             }
         }
 
@@ -125,13 +155,28 @@ namespace System.Linq
                 Func<TSource, TElement> elementSelector,
                 IEqualityComparer<TKey>? comparer)
             {
-                var lookup = new AsyncLookup<TKey, TElement>(comparer);
-                await foreach (TSource item in source)
+                ConfiguredCancelableAsyncEnumerable<TSource>.Enumerator e = source.GetAsyncEnumerator();
+                try
                 {
-                    lookup.GetGrouping(keySelector(item), create: true)!.Add(elementSelector(item));
-                }
+                    if (!await e.MoveNextAsync())
+                    {
+                        return EmptyLookup<TKey, TElement>.Instance;
+                    }
 
-                return lookup;
+                    AsyncLookup<TKey, TElement> lookup = new(comparer);
+                    do
+                    {
+                        TSource item = e.Current;
+                        lookup.GetGrouping(keySelector(item), create: true)!.Add(elementSelector(item));
+                    }
+                    while (await e.MoveNextAsync());
+
+                    return lookup;
+                }
+                finally
+                {
+                    await e.DisposeAsync();
+                }
             }
         }
 
@@ -170,15 +215,76 @@ namespace System.Linq
                 IEqualityComparer<TKey>? comparer,
                 CancellationToken cancellationToken)
             {
-                var lookup = new AsyncLookup<TKey, TElement>(comparer);
-                await foreach (TSource item in source.WithCancellation(cancellationToken).ConfigureAwait(false))
+                IAsyncEnumerator<TSource> e = source.GetAsyncEnumerator(cancellationToken);
+                try
                 {
-                    lookup.GetGrouping(await keySelector(item, cancellationToken).ConfigureAwait(false), create: true)!
-                          .Add(await elementSelector(item, cancellationToken).ConfigureAwait(false));
-                }
+                    if (!await e.MoveNextAsync().ConfigureAwait(false))
+                    {
+                        return EmptyLookup<TKey, TElement>.Instance;
+                    }
 
-                return lookup;
+                    AsyncLookup<TKey, TElement> lookup = new(comparer);
+                    do
+                    {
+                        TSource item = e.Current;
+                        lookup.GetGrouping(await keySelector(item, cancellationToken).ConfigureAwait(false), create: true)!.Add(await elementSelector(item, cancellationToken).ConfigureAwait(false));
+                    }
+                    while (await e.MoveNextAsync().ConfigureAwait(false));
+
+                    return lookup;
+                }
+                finally
+                {
+                    await e.DisposeAsync().ConfigureAwait(false);
+                }
             }
+        }
+
+        [DebuggerDisplay("Count = 0")]
+        private sealed class EmptyLookup<TKey, TElement> : ILookup<TKey, TElement>, IList<IGrouping<TKey, TElement>>, IReadOnlyCollection<IGrouping<TKey, TElement>>
+        {
+            public static readonly EmptyLookup<TKey, TElement> Instance = new();
+
+            public bool IsReadOnly => true;
+
+            public int Count => 0;
+
+            public IEnumerable<TElement> this[TKey key] => [];
+
+            public IEnumerator<IGrouping<TKey, TElement>> GetEnumerator() => Enumerable.Empty<IGrouping<TKey, TElement>>().GetEnumerator();
+
+            IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+
+            public bool Contains(TKey key) => false;
+
+            public bool Contains(IGrouping<TKey, TElement> item) => false;
+
+            public void CopyTo(IGrouping<TKey, TElement>[] array, int arrayIndex)
+            {
+                ThrowHelper.ThrowIfNull(array);
+                if ((uint)arrayIndex > (uint)array.Length)
+                {
+                    ThrowHelper.ThrowArgumentOutOfRangeException(nameof(arrayIndex));
+                }
+            }
+
+            public int IndexOf(IGrouping<TKey, TElement> item) => -1;
+
+            public void Add(IGrouping<TKey, TElement> item) => throw new NotSupportedException();
+
+            public void Clear() => throw new NotSupportedException();
+
+            public IGrouping<TKey, TElement> this[int index]
+            {
+                get => throw new ArgumentOutOfRangeException(nameof(index));
+                set => throw new NotSupportedException();
+            }
+
+            public void Insert(int index, IGrouping<TKey, TElement> item) => throw new NotSupportedException();
+
+            public bool Remove(IGrouping<TKey, TElement> item) => throw new NotSupportedException();
+
+            public void RemoveAt(int index) => throw new NotSupportedException();
         }
 
         [DebuggerDisplay("Count = {Count}")]

@@ -16,6 +16,12 @@ namespace System.Linq.Tests
 
         protected static IEnumerable<IAsyncEnumerable<T>> CreateSources<T>(params T[] items)
         {
+            if (items.Length == 0)
+            {
+                yield return Enumerable.Empty<T>().ToAsyncEnumerable();
+                yield return AsyncEnumerable.Empty<T>();
+            }
+
             yield return items.ToAsyncEnumerable();
             yield return items.ToAsyncEnumerable().Yield();
         }

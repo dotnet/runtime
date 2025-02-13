@@ -231,7 +231,7 @@ namespace System.Reflection
                         }
                         return null;
                     }
-                    return GetTypeFromDefaultAssemblies(TypeNameHelpers.Unescape(escapedTypeName), nestedTypeNames, parsedName);
+                    return GetTypeFromDefaultAssemblies(TypeName.Unescape(escapedTypeName), nestedTypeNames, parsedName);
                 }
 
                 if (assembly is RuntimeAssembly runtimeAssembly)
@@ -239,7 +239,7 @@ namespace System.Reflection
                     // Compat: Non-extensible parser allows ambiguous matches with ignore case lookup
                     bool useReflectionForNestedTypes = _extensibleParser && _ignoreCase;
 
-                    type = runtimeAssembly.GetTypeCore(TypeNameHelpers.Unescape(escapedTypeName), useReflectionForNestedTypes ? default : nestedTypeNames,
+                    type = runtimeAssembly.GetTypeCore(TypeName.Unescape(escapedTypeName), useReflectionForNestedTypes ? default : nestedTypeNames,
                         throwOnFileNotFound: _throwOnError, ignoreCase: _ignoreCase);
 
                     if (type is null)
@@ -282,7 +282,7 @@ namespace System.Reflection
                     if (_throwOnError)
                     {
                         throw new TypeLoadException(SR.Format(SR.TypeLoad_ResolveNestedType,
-                            nestedTypeNames[i], (i > 0) ? nestedTypeNames[i - 1] : TypeNameHelpers.Unescape(escapedTypeName)),
+                            nestedTypeNames[i], (i > 0) ? nestedTypeNames[i - 1] : TypeName.Unescape(escapedTypeName)),
                             typeName: parsedName.FullName);
                     }
                     return null;

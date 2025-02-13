@@ -634,6 +634,7 @@ struct InlineCandidateInfo : public HandleHistogramProfileCandidateInfo
 struct LateDevirtualizationInfo
 {
     CORINFO_CONTEXT_HANDLE exactContextHnd;
+    InlineContext*         inlinersContext;
 };
 
 // InlArgInfo describes inline candidate argument properties.
