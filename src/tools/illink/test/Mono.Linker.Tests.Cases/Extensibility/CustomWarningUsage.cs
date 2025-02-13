@@ -10,7 +10,7 @@ namespace Mono.Linker.Tests.Cases.Extensibility
 	[ExpectedNoWarnings]
 	public class CustomWarningUsage
 	{
-		[ExpectedWarning ("IL2026", "--RUCMethod--", Tool.Analyzer, "")]
+		[ExpectedWarning ("IL2026", "--RUCMethod--", Tool.Analyzer, "Analyzer doesn't have access to trim time flags")]
 		public static void Main ()
 		{
 			new KnownTypeThatShouldWarn ();
