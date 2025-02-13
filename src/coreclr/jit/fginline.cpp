@@ -595,8 +595,15 @@ private:
 
         if (tree->OperGet() == GT_CALL)
         {
-            GenTreeCall* call  = tree->AsCall();
-            bool tryLateDevirt = (call->IsVirtual() && (call->gtCallType == CT_USER_FUNC)) || call->IsVirtualGeneric();
+            GenTreeCall* call = tree->AsCall();
+            bool         isReadyToRunOrNativeAot =
+#ifdef FEATURE_READYTORUN
+                m_compiler->opts.IsReadyToRun() ||
+#endif // FEATURE_READYTORUN
+                m_compiler->IsTargetAbi(CORINFO_NATIVEAOT_ABI);
+
+            bool tryLateDevirt = (call->IsVirtual() && (call->gtCallType == CT_USER_FUNC)) ||
+                                 (call->IsVirtualGeneric() && !isReadyToRunOrNativeAot);
 
 #ifdef DEBUG
             tryLateDevirt = tryLateDevirt && (JitConfig.JitEnableLateDevirtualization() == 1);
