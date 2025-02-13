@@ -5,6 +5,7 @@ using System;
 using System.Runtime.InteropServices;
 using Microsoft.Diagnostics.DataContractReader.Contracts.StackWalkHelpers;
 using System.Collections.Generic;
+using System.Diagnostics;
 
 namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 internal static unsafe partial class Unwinder
@@ -15,6 +16,7 @@ internal static unsafe partial class Unwinder
         delegate* unmanaged<ulong, void*, int, void*, int> readFromTarget,
         delegate* unmanaged<int, void**, void*, int> getAllocatedBuffer,
         delegate* unmanaged<ulong, void*, void*, void*, void> getStackWalkInfo,
+        delegate* unmanaged<void> unwinderFail,
         void* callbackContext);
 
     public static int ARM64Unwind(
@@ -24,7 +26,13 @@ internal static unsafe partial class Unwinder
         using CallbackContext callbackContext = new(target);
 
         GCHandle handle = GCHandle.Alloc(callbackContext);
-        int ret = ARM64Unwind(ref context, &ReadFromTarget, &GetAllocatedBuffer, &GetStackWalkInfo, GCHandle.ToIntPtr(handle).ToPointer());
+        int ret = ARM64Unwind(
+            ref context,
+            &ReadFromTarget,
+            &GetAllocatedBuffer,
+            &GetStackWalkInfo,
+            &UnwinderFail,
+            GCHandle.ToIntPtr(handle).ToPointer());
         handle.Free();
 
         return ret;
@@ -36,6 +44,7 @@ internal static unsafe partial class Unwinder
         delegate* unmanaged<ulong, void*, int, void*, int> readFromTarget,
         delegate* unmanaged<int, void**, void*, int> getAllocatedBuffer,
         delegate* unmanaged<ulong, void*, void*, void*, void> getStackWalkInfo,
+        delegate* unmanaged<void> unwinderFail,
         void* callbackContext);
 
     public static int AMD64Unwind(
@@ -45,7 +54,13 @@ internal static unsafe partial class Unwinder
         using CallbackContext callbackContext = new(target);
 
         GCHandle handle = GCHandle.Alloc(callbackContext);
-        int ret = AMD64Unwind(ref context, &ReadFromTarget, &GetAllocatedBuffer, &GetStackWalkInfo, GCHandle.ToIntPtr(handle).ToPointer());
+        int ret = AMD64Unwind(
+            ref context,
+            &ReadFromTarget,
+            &GetAllocatedBuffer,
+            &GetStackWalkInfo,
+            &UnwinderFail,
+            GCHandle.ToIntPtr(handle).ToPointer());
         handle.Free();
 
         return ret;
@@ -143,5 +158,11 @@ internal static unsafe partial class Unwinder
         {
             Console.WriteLine($"GetStackWalkInfo failed: {ex}");
         }
+    }
+
+    [UnmanagedCallersOnly]
+    private static void UnwinderFail()
+    {
+        Debug.Fail("Native unwinder assertion failure.");
     }
 }

@@ -12,6 +12,10 @@ EXTERN_C void GetRuntimeStackWalkInfo(IN  ULONG64   ControlPc,
                                       OUT UINT_PTR* pFuncEntry);
 #endif // FEATURE_CDAC_UNWINDER
 
+#ifdef FEATURE_CDAC_UNWINDER
+thread_local CDACCallbacks* t_pCallbacks;
+#endif // FEATURE_CDAC_UNWINDER
+
 //---------------------------------------------------------------------------------------
 //
 // Given a control PC, return the base of the module it is in.  For jitted managed code, this is the
@@ -32,7 +36,7 @@ HRESULT OOPStackUnwinder::GetModuleBase(      DWORD64  address,
 #ifndef FEATURE_CDAC_UNWINDER
     GetRuntimeStackWalkInfo(address, reinterpret_cast<UINT_PTR *>(pdwBase), NULL);
 #else // FEATURE_CDAC_UNWINDER
-    m_getStackWalkInfo(address, reinterpret_cast<UINT_PTR *>(pdwBase), NULL, m_callbackContext);
+t_pCallbacks->getStackWalkInfo(address, reinterpret_cast<UINT_PTR *>(pdwBase), NULL, t_pCallbacks->callbackContext);
 #endif // FEATURE_CDAC_UNWINDER
     return ((*pdwBase == 0) ? E_FAIL : S_OK);
 }
@@ -72,12 +76,12 @@ HRESULT OOPStackUnwinder::GetFunctionEntry(                       DWORD64 addres
     memcpy(pBuffer, pFuncEntry, cbBuffer);
     return S_OK;
 #else // FEATURE_CDAC_UNWINDER
-    m_getStackWalkInfo(address, NULL, reinterpret_cast<UINT_PTR *>(&pFuncEntry), m_callbackContext);
+    t_pCallbacks->getStackWalkInfo(address, NULL, reinterpret_cast<UINT_PTR *>(&pFuncEntry), t_pCallbacks->callbackContext);
     if (pFuncEntry == NULL)
     {
         return E_FAIL;
     }
-    if (m_readFromTarget((DWORD64)pFuncEntry, pBuffer, cbBuffer, m_callbackContext) != S_OK)
+    if (t_pCallbacks->readFromTarget((DWORD64)pFuncEntry, pBuffer, cbBuffer, t_pCallbacks->callbackContext) != S_OK)
     {
         return E_FAIL;
     }

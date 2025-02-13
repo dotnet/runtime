@@ -178,7 +178,7 @@ template<typename T>
 T cdacRead(uint64_t addr)
 {
     T t;
-    g_pUnwinder->m_readFromTarget(addr, &t, sizeof(t), g_pUnwinder->m_callbackContext);
+    t_pCallbacks->readFromTarget(addr, &t, sizeof(t), t_pCallbacks->callbackContext);
     return t;
 }
 #define MEMORY_READ_BYTE(params, addr)       (cdacRead<BYTE>(addr))
@@ -2790,18 +2790,15 @@ BOOL DacUnwindStackFrame(T_CONTEXT *pContext, T_KNONVOLATILE_CONTEXT_POINTERS* p
     return res;
 }
 #elif defined(FEATURE_CDAC_UNWINDER)
-OOPStackUnwinderArm64* g_pUnwinder;
-BOOL arm64Unwind(void* pContext, ReadFromTarget readFromTarget, GetAllocatedBuffer getAllocatedBuffer, GetStackWalkInfo getStackWalkInfo, void* callbackContext)
+BOOL arm64Unwind(void* pContext, ReadFromTarget readFromTarget, GetAllocatedBuffer getAllocatedBuffer, GetStackWalkInfo getStackWalkInfo, UnwinderFail unwinderFail, void* callbackContext)
 {
-    HRESULT hr = E_FAIL;
+    CDACCallbacks callbacks { readFromTarget, getAllocatedBuffer, getStackWalkInfo, unwinderFail, callbackContext };
+    t_pCallbacks = &callbacks;
+    OOPStackUnwinderArm64 unwinder;
+    BOOL res = unwinder.Unwind((T_CONTEXT*) pContext);
+    t_pCallbacks = nullptr;
 
-    OOPStackUnwinderArm64 unwinder { readFromTarget, getAllocatedBuffer, getStackWalkInfo, callbackContext };
-    g_pUnwinder = &unwinder;
-    hr = unwinder.Unwind((T_CONTEXT*) pContext);
-
-    g_pUnwinder = nullptr;
-
-    return (hr == S_OK);
+    return res;
 }
 #endif // FEATURE_CDAC_UNWINDER
 
