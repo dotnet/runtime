@@ -238,7 +238,7 @@ ds_server_init (void)
 			ds_rt_auto_trace_wait ();
 		}
 #else
-		ep_rt_event_loop_job_create ((void *)server_loop_tick, NULL);
+		ep_rt_queue_job ((void *)server_loop_tick, NULL);
 #endif
 	}
 

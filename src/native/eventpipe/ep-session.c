@@ -127,7 +127,7 @@ session_create_streaming_thread (EventPipeSession *session)
 		EP_UNREACHABLE ("Unable to create stream flushing thread.");
 #else
 	ep_rt_volatile_store_uint32_t (&session->started, 1);
-	ep_rt_event_loop_job_create ((void *)streaming_loop_tick, (void *)session);
+	ep_rt_queue_job ((void *)streaming_loop_tick, (void *)session);
 #endif
 }
 

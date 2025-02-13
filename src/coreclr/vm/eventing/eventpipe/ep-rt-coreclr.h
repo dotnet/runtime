@@ -891,7 +891,7 @@ ep_rt_thread_create (
 
 static
 bool
-ep_rt_event_loop_job_create (
+ep_rt_queue_job (
 	void *job_func,
 	void *params)
 {
