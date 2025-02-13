@@ -166,6 +166,11 @@ namespace System.Linq
             {
                 IList<TSource> source = _source;
 
+                if (source.TryGetSpan(out ReadOnlySpan<TSource> span))
+                {
+                    return span.Slice(_minIndexInclusive, Count).IndexOf(item);
+                }
+
                 int end = _minIndexInclusive + Count;
                 for (int i = _minIndexInclusive; i < end; i++)
                 {
