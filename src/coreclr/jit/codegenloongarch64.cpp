@@ -1951,6 +1951,13 @@ void CodeGen::genCodeForBswap(GenTree* tree)
     }
 
     emit->emitIns_R_R(ins, attr, targetReg, operandReg);
+
+    if (tree->OperIs(GT_BSWAP16) && !genCanOmitNormalizationForBswap16(tree))
+    {
+        emit->emitIns_R_R_I_I(INS_bstrpick_d, EA_8BYTE, targetReg, targetReg, 15, 0);
+    }
+
+    genProduceReg(tree);
 }
 
 //------------------------------------------------------------------------
