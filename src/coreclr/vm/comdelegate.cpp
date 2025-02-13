@@ -1427,9 +1427,9 @@ OBJECTREF COMDelegate::ConvertToDelegate(LPVOID pCallback, MethodTable* pMT)
     // Make sure that the pointer doesn't have the value of 1 which is our hash table deleted item marker.
     OBJECTHANDLE DelegateHnd = (pUMEntryThunk != NULL)
         ? pUMEntryThunk->GetObjectHandleSpeculative()
-        : (PCODE)NULL;
+        : (OBJECTHANDLE)NULL;
 
-    if (DelegateHnd != (PCODE)NULL)
+    if (DelegateHnd != (OBJECTHANDLE)NULL)
     {
         // Found a managed callsite
         return ObjectFromHandle(DelegateHnd);

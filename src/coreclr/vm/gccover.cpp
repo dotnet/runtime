@@ -409,7 +409,7 @@ static MethodDesc* getTargetMethodDesc(PCODE target)
 
     if (stubKind == STUB_CODE_BLOCK_STUBPRECODE)
     {
-        Precode* pPrecode = Precode::GetPrecodeFromEntryPoint(stubStartAddress);
+        Precode* pPrecode = Precode::GetPrecodeFromEntryPoint(target);
         switch (pPrecode->GetType())
         {
             case PRECODE_STUB:
@@ -418,7 +418,7 @@ static MethodDesc* getTargetMethodDesc(PCODE target)
             case PRECODE_INTERPRETER:
 #endif
 
-                return pPrecode->AsStubPrecode()->GetMethodDesc();
+                return dac_cast<PTR_MethodDesc>(pPrecode->AsStubPrecode()->GetMethodDesc());
         }
         return nullptr;
     }

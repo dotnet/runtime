@@ -446,7 +446,6 @@ class Precode {
 
 public:
     UMEntryThunk* AsUMEntryThunk();
-private:
     StubPrecode* AsStubPrecode()
     {
         LIMITED_METHOD_CONTRACT;
@@ -454,6 +453,7 @@ private:
 
         return dac_cast<PTR_StubPrecode>(this);
     }
+private:
 
 #ifdef HAS_NDIRECT_IMPORT_PRECODE
 public:
