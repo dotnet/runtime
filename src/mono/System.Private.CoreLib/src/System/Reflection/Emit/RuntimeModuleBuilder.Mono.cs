@@ -46,9 +46,9 @@ namespace System.Reflection.Emit
     [StructLayout(LayoutKind.Sequential)]
     internal sealed partial class RuntimeModuleBuilder : ModuleBuilder
     {
-#region Sync with MonoReflectionModuleBuilder in object-internals.h
+        #region Sync with MonoReflectionModuleBuilder in object-internals.h
 
-#region This class inherits from Module, but the runtime expects it to have the same layout as RuntimeModule
+        #region This class inherits from Module, but the runtime expects it to have the same layout as RuntimeModule
         internal IntPtr _impl; /* a pointer to a MonoImage */
         internal Assembly assembly;
         internal string fqname;
@@ -56,7 +56,7 @@ namespace System.Reflection.Emit
         internal string scopename;
         internal bool is_resource;
         internal int token;
-#endregion
+        #endregion
 
         private UIntPtr dynamic_image; /* GC-tracked */
         private int num_types;
@@ -70,7 +70,7 @@ namespace System.Reflection.Emit
         private object? resources;
         private IntPtr unparented_classes;
         private int[]? table_indexes;
-#endregion
+        #endregion
 
         private Guid guid;
         private RuntimeTypeBuilder? global_type;
@@ -152,6 +152,22 @@ namespace System.Reflection.Emit
 
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
             Justification = "Reflection.Emit is not subject to trimming")]
+        internal Type DefineDataType(int size)
+        {
+            string typeName = $"$ArrayType${size}";
+            if (unescaped_name_cache.TryGetValue(typeName, out RuntimeTypeBuilder? datablobtype))
+            {
+                return datablobtype;
+            }
+
+            TypeBuilder tb = DefineType(typeName,
+                    TypeAttributes.Public | TypeAttributes.ExplicitLayout | TypeAttributes.Sealed,
+                                             typeof(ValueType), null, RuntimeFieldBuilder.RVADataPackingSize(size), size);
+            return tb.CreateType();
+        }
+
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+            Justification = "Reflection.Emit is not subject to trimming")]
         private FieldBuilder DefineDataImpl(string name, int size, FieldAttributes attributes)
         {
             ArgumentException.ThrowIfNullOrEmpty(name);
@@ -162,16 +178,7 @@ namespace System.Reflection.Emit
 
             CreateGlobalType();
 
-            string typeName = "$ArrayType$" + size;
-            Type? datablobtype = GetType(typeName, false, false);
-            if (datablobtype == null)
-            {
-                TypeBuilder tb = DefineType(typeName,
-                    TypeAttributes.Public | TypeAttributes.ExplicitLayout | TypeAttributes.Sealed,
-                                             typeof(ValueType), null, RuntimeFieldBuilder.RVADataPackingSize(size), size);
-                tb.CreateType();
-                datablobtype = tb;
-            }
+            Type? datablobtype = DefineDataType(size);
             FieldBuilder fb = global_type!.DefineField(name, datablobtype, attributes | FieldAttributes.Static);
 
             if (global_fields != null)
@@ -270,12 +277,6 @@ namespace System.Reflection.Emit
             Debug.Assert(name is not null);
 
             return new RuntimeTypeBuilder(this, name, attr, parent, interfaces, packingSize, typesize, null);
-        }
-
-        internal RuntimeTypeBuilder? GetRegisteredType(string name)
-        {
-            unescaped_name_cache.TryGetValue(name, out RuntimeTypeBuilder? result);
-            return result;
         }
 
         protected override TypeBuilder DefineTypeCore(string name, TypeAttributes attr, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type? parent, Type[]? interfaces, PackingSize packingSize, int typesize)

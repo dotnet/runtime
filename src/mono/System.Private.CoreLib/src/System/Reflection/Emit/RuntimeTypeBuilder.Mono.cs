@@ -1433,16 +1433,7 @@ namespace System.Reflection.Emit
                 throw new ArgumentException(SR.Argument_BadSizeForData);
             check_not_created();
 
-            string typeName = $"$ArrayType${size}";
-            Type? datablobtype = pmodule.GetRegisteredType(typeName);
-            if (datablobtype == null)
-            {
-                TypeBuilder tb = pmodule.DefineType(typeName,
-                    TypeAttributes.NestedPrivate | TypeAttributes.ExplicitLayout | TypeAttributes.Sealed,
-                                                   typeof(ValueType), RuntimeFieldBuilder.RVADataPackingSize(size), size);
-                tb.CreateType();
-                datablobtype = tb;
-            }
+            Type datablobtype = pmodule.DefineDataType(size);
             return DefineField(name, datablobtype, attributes | FieldAttributes.Static | FieldAttributes.HasFieldRVA);
         }
 
