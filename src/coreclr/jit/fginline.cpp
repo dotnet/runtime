@@ -530,6 +530,33 @@ private:
     }
 #endif // FEATURE_MULTIREG_RET
 
+    CORINFO_METHOD_HANDLE GetMethodHandle(GenTreeCall* call)
+    {
+        if (call->IsVirtualGeneric())
+        {
+            assert(call->gtCallType == CT_INDIRECT);
+            assert(call->gtCallAddr->IsHelperCall(m_compiler, CORINFO_HELP_VIRTUAL_FUNC_PTR));
+            assert(call->gtCallAddr->AsCall()->gtArgs.CountArgs() == 3);
+            GenTree* methodInstNode = call->gtCallAddr->AsCall()->gtArgs.GetArgByIndex(2)->GetNode();
+            switch (methodInstNode->OperGet())
+            {
+                case GT_RUNTIMELOOKUP:
+                    return methodInstNode->AsRuntimeLookup()->GetMethodHandle();
+                case GT_CNS_INT:
+                    return CORINFO_METHOD_HANDLE(methodInstNode->AsIntCon()->IconValue());
+                default:
+                    assert(!"Unexpected type in MethodInstHandle arg.");
+                    return nullptr;
+            }
+            return nullptr;
+        }
+        else
+        {
+            assert(call->IsVirtual() && (call->gtCallType == CT_USER_FUNC));
+            return call->gtCallMethHnd;
+        }
+    }
+
     //------------------------------------------------------------------------
     // LateDevirtualization: re-examine calls after inlining to see if we
     //   can do more devirtualization
@@ -572,8 +599,15 @@ private:
 
         if (tree->OperGet() == GT_CALL)
         {
-            GenTreeCall* call          = tree->AsCall();
-            bool         tryLateDevirt = call->IsVirtual() && (call->gtCallType == CT_USER_FUNC);
+            GenTreeCall* call = tree->AsCall();
+            bool         isReadyToRunOrNativeAot =
+#ifdef FEATURE_READYTORUN
+                m_compiler->opts.IsReadyToRun() ||
+#endif // FEATURE_READYTORUN
+                m_compiler->IsTargetAbi(CORINFO_NATIVEAOT_ABI);
+
+            bool tryLateDevirt = (call->IsVirtual() && (call->gtCallType == CT_USER_FUNC)) ||
+                                 (call->IsVirtualGeneric() && !isReadyToRunOrNativeAot);
 
 #ifdef DEBUG
             tryLateDevirt = tryLateDevirt && (JitConfig.JitEnableLateDevirtualization() == 1);
@@ -589,21 +623,13 @@ private:
                 }
 #endif // DEBUG
 
-                CORINFO_CONTEXT_HANDLE context                = nullptr;
-                CORINFO_METHOD_HANDLE  method                 = call->gtCallMethHnd;
+                assert((call->gtCallMoreFlags & GTF_CALL_M_HAS_LATE_DEVIRT_INFO) != 0);
+                CORINFO_CONTEXT_HANDLE context                = call->gtLateDevirtualizationInfo->exactContextHnd;
+                InlineContext*         inlinersContext        = call->gtLateDevirtualizationInfo->inlinersContext;
+                CORINFO_METHOD_HANDLE  method                 = GetMethodHandle(call);
                 unsigned               methodFlags            = 0;
                 const bool             isLateDevirtualization = true;
                 const bool             explicitTailCall       = call->IsTailPrefixedCall();
-
-                if ((call->gtCallMoreFlags & GTF_CALL_M_HAS_LATE_DEVIRT_INFO) != 0)
-                {
-                    context = call->gtLateDevirtualizationInfo->exactContextHnd;
-                    // Note: we might call this multiple times for the same trees.
-                    // If the devirtualization below succeeds, the call becomes
-                    // non-virtual and we won't get here again. If it does not
-                    // succeed we might get here again so we keep the late devirt
-                    // info.
-                }
 
                 CORINFO_CONTEXT_HANDLE contextInput = context;
                 context                             = nullptr;
@@ -613,10 +639,11 @@ private:
                 if (!call->IsVirtual())
                 {
                     assert(context != nullptr);
+                    assert(inlinersContext != nullptr);
                     CORINFO_CALL_INFO callInfo = {};
                     callInfo.hMethod           = method;
                     callInfo.methodFlags       = methodFlags;
-                    m_compiler->impMarkInlineCandidate(call, context, false, &callInfo);
+                    m_compiler->impMarkInlineCandidate(call, context, false, &callInfo, inlinersContext);
 
                     if (call->IsInlineCandidate())
                     {
@@ -651,9 +678,6 @@ private:
 
                             *pTree = retExpr;
                         }
-
-                        call->GetSingleInlineCandidateInfo()->exactContextHandle = context;
-                        INDEBUG(call->GetSingleInlineCandidateInfo()->inlinersContext = call->gtInlineContext);
 
                         JITDUMP("New inline candidate due to late devirtualization:\n");
                         DISPTREE(call);

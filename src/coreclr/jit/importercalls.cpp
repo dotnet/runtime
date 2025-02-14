@@ -187,12 +187,6 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
                 compInlineResult->NoteFatal(InlineObservation::CALLEE_HAS_MANAGED_VARARGS);
                 return TYP_UNDEF;
             }
-
-            if ((mflags & CORINFO_FLG_VIRTUAL) && (sig->sigInst.methInstCount != 0) && (opcode == CEE_CALLVIRT))
-            {
-                compInlineResult->NoteFatal(InlineObservation::CALLEE_IS_GENERIC_VIRTUAL);
-                return TYP_UNDEF;
-            }
         }
 
         clsHnd = pResolvedToken->hClass;
@@ -386,12 +380,6 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
 
             case CORINFO_VIRTUALCALL_LDVIRTFTN:
             {
-                if (compIsForInlining())
-                {
-                    compInlineResult->NoteFatal(InlineObservation::CALLSITE_HAS_CALL_VIA_LDVIRTFTN);
-                    return TYP_UNDEF;
-                }
-
                 assert(!(mflags & CORINFO_FLG_STATIC)); // can't call a static method
                 assert(!(clsFlags & CORINFO_FLG_VALUECLASS));
                 // OK, We've been told to call via LDVIRTFTN, so just
@@ -404,10 +392,18 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
                 thisPtr          = impTransformThis(thisPtr, pConstrainedResolvedToken, callInfo->thisTransform);
                 assert(thisPtr != nullptr);
 
+                GenTree* origThisPtr = thisPtr;
+
                 // Clone the (possibly transformed) "this" pointer
                 GenTree* thisPtrCopy;
                 thisPtr =
                     impCloneExpr(thisPtr, &thisPtrCopy, CHECK_SPILL_ALL, nullptr DEBUGARG("LDVIRTFTN this pointer"));
+
+                if (thisPtr->TypeIs(TYP_REF) && (origThisPtr->gtFlags & GTF_GLOB_EFFECT))
+                {
+                    lvaGetDesc(thisPtr->AsLclVar())->lvSingleDef = 1;
+                    lvaSetClass(thisPtr->AsLclVar()->GetLclNum(), origThisPtr);
+                }
 
                 GenTree* fptr = impImportLdvirtftn(thisPtr, pResolvedToken, callInfo);
                 assert(fptr != nullptr);
@@ -417,17 +413,18 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
 
                 // Now make an indirect call through the function pointer
 
-                unsigned lclNum = lvaGrabTemp(true DEBUGARG("VirtualCall through function pointer"));
-                impStoreToTemp(lclNum, fptr, CHECK_SPILL_ALL);
-                fptr = gtNewLclvNode(lclNum, TYP_I_IMPL);
-
                 call->AsCall()->gtCallAddr = fptr;
                 call->gtFlags |= GTF_EXCEPT | (fptr->gtFlags & GTF_GLOB_EFFECT);
 
-                if ((sig->sigInst.methInstCount != 0) && IsTargetAbi(CORINFO_NATIVEAOT_ABI))
+                if (sig->sigInst.methInstCount != 0)
                 {
-                    // NativeAOT generic virtual method: need to handle potential fat function pointers
-                    addFatPointerCandidate(call->AsCall());
+                    call->gtFlags |= GTF_CALL_VIRT_GENERIC;
+
+                    if (IsTargetAbi(CORINFO_NATIVEAOT_ABI))
+                    {
+                        // NativeAOT generic virtual method: need to handle potential fat function pointers
+                        addFatPointerCandidate(call->AsCall());
+                    }
                 }
 #ifdef FEATURE_READYTORUN
                 if (opts.IsReadyToRun())
@@ -441,7 +438,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
                 // Sine we are jumping over some code, check that its OK to skip that code
                 assert((sig->callConv & CORINFO_CALLCONV_MASK) != CORINFO_CALLCONV_VARARG &&
                        (sig->callConv & CORINFO_CALLCONV_MASK) != CORINFO_CALLCONV_NATIVEVARARG);
-                goto DONE;
+                goto DEVIRT;
             }
 
             case CORINFO_CALL:
@@ -943,6 +940,8 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
         }
     }
 
+DEVIRT:
+
     bool probing;
     probing = impConsiderCallProbe(call->AsCall(), rawILOffset);
 
@@ -1026,7 +1025,8 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
                 INDEBUG(call->AsCall()->gtRawILOffset = rawILOffset);
 
                 // Is it an inline candidate?
-                impMarkInlineCandidate(call, exactContextHnd, exactContextNeedsRuntimeLookup, callInfo);
+                impMarkInlineCandidate(call, exactContextHnd, exactContextNeedsRuntimeLookup, callInfo,
+                                       compInlineContext);
             }
 
             // append the call node.
@@ -1236,7 +1236,22 @@ DONE:
         INDEBUG(call->AsCall()->gtRawILOffset = rawILOffset);
 
         // Is it an inline candidate?
-        impMarkInlineCandidate(call, exactContextHnd, exactContextNeedsRuntimeLookup, callInfo);
+        impMarkInlineCandidate(call, exactContextHnd, exactContextNeedsRuntimeLookup, callInfo, compInlineContext);
+
+        // If the call is virtual, record the inliner's context for possible use during late devirt inlining.
+        // Also record the generics context if there is any.
+        //
+        if ((call->AsCall()->IsVirtual() && (call->AsCall()->gtCallType != CT_INDIRECT)) ||
+            call->AsCall()->IsVirtualGeneric())
+        {
+            JITDUMP("\nSaving generic context %p and inline context %p for call [%06u]\n", dspPtr(exactContextHnd),
+                    dspPtr(compInlineContext), dspTreeID(call->AsCall()));
+            call->AsCall()->gtCallMoreFlags |= GTF_CALL_M_HAS_LATE_DEVIRT_INFO;
+            LateDevirtualizationInfo* const info       = new (this, CMK_Inlining) LateDevirtualizationInfo;
+            info->exactContextHnd                      = exactContextHnd;
+            info->inlinersContext                      = compInlineContext;
+            call->AsCall()->gtLateDevirtualizationInfo = info;
+        }
     }
 
     // Extra checks for tail calls and tail recursion.
@@ -1427,22 +1442,6 @@ DONE_CALL:
             }
             else
             {
-                // If the call is virtual, and has a generics context, and is not going to have a class probe,
-                // record the context for possible use during late devirt.
-                //
-                // If we ever want to devirt at Tier0, and/or see issues where OSR methods under PGO lose
-                // important devirtualizations, we'll want to allow both a class probe and a captured context.
-                //
-                if (origCall->IsVirtual() && (origCall->gtCallType != CT_INDIRECT) && (exactContextHnd != nullptr) &&
-                    (origCall->gtHandleHistogramProfileCandidateInfo == nullptr))
-                {
-                    JITDUMP("\nSaving context %p for call [%06u]\n", dspPtr(exactContextHnd), dspTreeID(origCall));
-                    origCall->gtCallMoreFlags |= GTF_CALL_M_HAS_LATE_DEVIRT_INFO;
-                    LateDevirtualizationInfo* const info = new (this, CMK_Inlining) LateDevirtualizationInfo;
-                    info->exactContextHnd                = exactContextHnd;
-                    origCall->gtLateDevirtualizationInfo = info;
-                }
-
                 if (isFatPointerCandidate)
                 {
                     // fatPointer candidates should be in statements of the form call() or var = call().
@@ -7142,7 +7141,7 @@ void Compiler::considerGuardedDevirtualization(GenTreeCall*            call,
                 }
 
                 addGuardedDevirtualizationCandidate(call, exactMethod, exactCls, exactContext, exactMethodAttrs,
-                                                    clsAttrs, likelyHood, dvInfo.wasArrayInterfaceDevirt,
+                                                    clsAttrs, likelyHood, dvInfo.wasArrayInterfaceOrGvmDevirt,
                                                     dvInfo.isInstantiatingStub, originalContext);
             }
 
@@ -7214,7 +7213,7 @@ void Compiler::considerGuardedDevirtualization(GenTreeCall*            call,
 
             likelyContext     = dvInfo.exactContext;
             likelyMethod      = dvInfo.devirtualizedMethod;
-            arrayInterface    = dvInfo.wasArrayInterfaceDevirt;
+            arrayInterface    = dvInfo.wasArrayInterfaceOrGvmDevirt;
             instantiatingStub = dvInfo.isInstantiatingStub;
         }
         else
@@ -7451,6 +7450,7 @@ void Compiler::addGuardedDevirtualizationCandidate(GenTreeCall*           call,
 //    exactContextHnd -- context handle for inlining
 //    exactContextNeedsRuntimeLookup -- true if context required runtime lookup
 //    callInfo -- call info from VM
+//    inlinersContext -- the inliner's context
 //
 // Notes:
 //    Mostly a wrapper for impMarkInlineCandidateHelper that also undoes
@@ -7460,7 +7460,8 @@ void Compiler::addGuardedDevirtualizationCandidate(GenTreeCall*           call,
 void Compiler::impMarkInlineCandidate(GenTree*               callNode,
                                       CORINFO_CONTEXT_HANDLE exactContextHnd,
                                       bool                   exactContextNeedsRuntimeLookup,
-                                      CORINFO_CALL_INFO*     callInfo)
+                                      CORINFO_CALL_INFO*     callInfo,
+                                      InlineContext*         inlinersContext)
 {
     if (!opts.OptEnabled(CLFLG_INLINING))
     {
@@ -7483,7 +7484,7 @@ void Compiler::impMarkInlineCandidate(GenTree*               callNode,
 
             // Do the actual evaluation
             impMarkInlineCandidateHelper(call, candidateId, exactContextHnd, exactContextNeedsRuntimeLookup, callInfo,
-                                         &inlineResult);
+                                         inlinersContext, &inlineResult);
             // Ignore non-inlineable candidates
             // TODO: Consider keeping them to just devirtualize without inlining, at least for interface
             // calls on NativeAOT, but that requires more changes elsewhere too.
@@ -7506,7 +7507,8 @@ void Compiler::impMarkInlineCandidate(GenTree*               callNode,
         const uint8_t candidatesCount = call->GetInlineCandidatesCount();
         assert(candidatesCount <= 1);
         InlineResult inlineResult(this, call, nullptr, "impMarkInlineCandidate");
-        impMarkInlineCandidateHelper(call, 0, exactContextHnd, exactContextNeedsRuntimeLookup, callInfo, &inlineResult);
+        impMarkInlineCandidateHelper(call, 0, exactContextHnd, exactContextNeedsRuntimeLookup, callInfo,
+                                     inlinersContext, &inlineResult);
     }
 
     // If this call is an inline candidate or is not a guarded devirtualization
@@ -7539,6 +7541,7 @@ void Compiler::impMarkInlineCandidate(GenTree*               callNode,
 //    exactContextHnd -- context handle for inlining
 //    exactContextNeedsRuntimeLookup -- true if context required runtime lookup
 //    callInfo -- call info from VM
+//    inlinersContext -- the inliner's context
 //
 // Notes:
 //    If callNode is an inline candidate, this method sets the flag
@@ -7555,6 +7558,7 @@ void Compiler::impMarkInlineCandidateHelper(GenTreeCall*           call,
                                             CORINFO_CONTEXT_HANDLE exactContextHnd,
                                             bool                   exactContextNeedsRuntimeLookup,
                                             CORINFO_CALL_INFO*     callInfo,
+                                            InlineContext*         inlinersContext,
                                             InlineResult*          inlineResult)
 {
     // Let the strategy know there's another call
@@ -7749,7 +7753,8 @@ void Compiler::impMarkInlineCandidateHelper(GenTreeCall*           call,
     }
 
     InlineCandidateInfo* inlineCandidateInfo = nullptr;
-    impCheckCanInline(call, candidateIndex, fncHandle, methAttr, exactContextHnd, &inlineCandidateInfo, inlineResult);
+    impCheckCanInline(call, candidateIndex, fncHandle, methAttr, exactContextHnd, inlinersContext, &inlineCandidateInfo,
+                      inlineResult);
 
     if (inlineResult->IsFailure())
     {
@@ -8020,7 +8025,7 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
     assert(methodFlags != nullptr);
     assert(pContextHandle != nullptr);
 
-    // This should be a virtual vtable or virtual stub call.
+    // This should be a virtual vtable or virtual stub call, or a generic virtual call.
     //
     assert(call->IsVirtual());
     assert(opts.OptimizationEnabled());
@@ -8070,7 +8075,7 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
 #endif // DEBUG
     }
 
-    // In R2R mode, we might see virtual stub calls to
+    // In R2R mode, we might see virtual stub or generic calls to
     // non-virtuals. For instance cases where the non-virtual method
     // is in a different assembly but is called via CALLVIRT. For
     // version resilience we must allow for the fact that the method
@@ -8081,7 +8086,7 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
     //
     if ((baseMethodAttribs & CORINFO_FLG_VIRTUAL) == 0)
     {
-        assert(call->IsVirtualStub());
+        assert(call->IsVirtualStub() || call->IsVirtualGeneric());
         assert(opts.IsReadyToRun());
         JITDUMP("\nimpDevirtualizeCall: [R2R] base method not virtual, sorry\n");
         return;
@@ -8173,7 +8178,7 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
     // It may or may not know enough to devirtualize...
     if (isInterface)
     {
-        assert(call->IsVirtualStub());
+        assert(call->IsVirtualStub() || call->IsVirtualGeneric());
         JITDUMP("--- base class is interface\n");
     }
 
@@ -8203,14 +8208,14 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
 
         if (((size_t)exactContext & CORINFO_CONTEXTFLAGS_MASK) == CORINFO_CONTEXTFLAGS_CLASS)
         {
-            assert(!dvInfo.wasArrayInterfaceDevirt);
+            assert(!dvInfo.wasArrayInterfaceOrGvmDevirt);
             derivedClass = (CORINFO_CLASS_HANDLE)((size_t)exactContext & ~CORINFO_CONTEXTFLAGS_MASK);
         }
         else
         {
             // Array interface devirt can return a nonvirtual generic method of the non-generic SZArrayHelper class.
             //
-            assert(dvInfo.wasArrayInterfaceDevirt);
+            assert(dvInfo.wasArrayInterfaceOrGvmDevirt);
             assert(((size_t)exactContext & CORINFO_CONTEXTFLAGS_MASK) == CORINFO_CONTEXTFLAGS_METHOD);
             derivedClass = info.compCompHnd->getMethodClass(derivedMethod);
         }
@@ -8231,17 +8236,17 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
 
     if (dvInfo.isInstantiatingStub)
     {
-        // We should only end up with generic methods for array interface devirt.
+        // We should only end up with generic methods for array interface or GVM devirt.
         //
-        assert(dvInfo.wasArrayInterfaceDevirt);
+        assert(dvInfo.wasArrayInterfaceOrGvmDevirt);
 
         // We don't expect NAOT to end up here, since it has Array<T>
-        // and normal devirtualization.
+        // and normal devirtualization, and it does not (yet) support GVM devirtualization.
         //
         assert(!IsTargetAbi(CORINFO_NATIVEAOT_ABI));
 
         // We don't expect R2R to end up here, since it does not (yet) support
-        // array interface devirtualization.
+        // array interface or GVM devirtualization.
         //
         assert(!opts.IsReadyToRun());
 
@@ -8347,25 +8352,39 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
 
     JITDUMP("    %s; can devirtualize\n", note);
 
-    // Make the updates.
-    call->gtFlags &= ~GTF_CALL_VIRT_VTABLE;
-    call->gtFlags &= ~GTF_CALL_VIRT_STUB;
-    call->gtCallMethHnd = derivedMethod;
-    call->gtCallType    = CT_USER_FUNC;
-    call->gtControlExpr = nullptr;
-    INDEBUG(call->gtCallDebugFlags |= GTF_CALL_MD_DEVIRTUALIZED);
-
     if (dvInfo.isInstantiatingStub)
     {
         // Pass the instantiating stub method desc as the inst param arg.
         //
-        // Note different embedding would be needed for NAOT/R2R,
-        // but we have ruled those out above.
+        GenTree* instParam = nullptr;
+
+        if (call->IsVirtualGeneric())
+        {
+            assert(call->gtCallType == CT_INDIRECT);
+            assert(call->gtCallAddr->IsHelperCall(this, CORINFO_HELP_VIRTUAL_FUNC_PTR));
+            assert(call->gtCallAddr->AsCall()->gtArgs.CountArgs() == 3);
+            instParam = call->gtCallAddr->AsCall()->gtArgs.GetArgByIndex(2)->GetNode();
+        }
+
+        // If we don't need a runtime lookup, we can use the instantiating stub directly.
         //
-        GenTree* const instParam =
-            gtNewIconEmbHndNode(instantiatingStub, nullptr, GTF_ICON_METHOD_HDL, instantiatingStub);
+        if (instParam == nullptr || !instParam->OperIs(GT_RUNTIMELOOKUP))
+        {
+            // Note different embedding would be needed for NAOT/R2R,
+            // but we have ruled those out above.
+            //
+            instParam = gtNewIconEmbHndNode(instantiatingStub, nullptr, GTF_ICON_METHOD_HDL, instantiatingStub);
+        }
+
         call->gtArgs.InsertInstParam(this, instParam);
     }
+
+    // Make the updates.
+    call->gtFlags &= ~GTF_CALL_VIRT_KIND_MASK;
+    call->gtCallMethHnd = derivedMethod;
+    call->gtCallType    = CT_USER_FUNC;
+    call->gtControlExpr = nullptr;
+    INDEBUG(call->gtCallDebugFlags |= GTF_CALL_MD_DEVIRTUALIZED);
 
     // Virtual calls include an implicit null check, which we may
     // now need to make explicit.
@@ -9057,6 +9076,7 @@ bool Compiler::impTailCallRetTypeCompatible(bool                     allowWideni
 //   fncHandle - method that will be called
 //   methAttr - attributes for the method
 //   exactContextHnd - exact context for the method
+//   inlinersContext - the inliner's context
 //   ppInlineCandidateInfo [out] - information needed later for inlining
 //   inlineResult - result of ongoing inline evaluation
 //
@@ -9069,6 +9089,7 @@ void Compiler::impCheckCanInline(GenTreeCall*           call,
                                  CORINFO_METHOD_HANDLE  fncHandle,
                                  unsigned               methAttr,
                                  CORINFO_CONTEXT_HANDLE exactContextHnd,
+                                 InlineContext*         inlinersContext,
                                  InlineCandidateInfo**  ppInlineCandidateInfo,
                                  InlineResult*          inlineResult)
 {
@@ -9083,6 +9104,7 @@ void Compiler::impCheckCanInline(GenTreeCall*           call,
         CORINFO_METHOD_HANDLE  fncHandle;
         unsigned               methAttr;
         CORINFO_CONTEXT_HANDLE exactContextHnd;
+        InlineContext*         inlinersContext;
         InlineResult*          result;
         InlineCandidateInfo**  ppInlineCandidateInfo;
     } param;
@@ -9094,6 +9116,7 @@ void Compiler::impCheckCanInline(GenTreeCall*           call,
     param.fncHandle             = fncHandle;
     param.methAttr              = methAttr;
     param.exactContextHnd       = (exactContextHnd != nullptr) ? exactContextHnd : MAKE_METHODCONTEXT(fncHandle);
+    param.inlinersContext       = inlinersContext;
     param.result                = inlineResult;
     param.ppInlineCandidateInfo = ppInlineCandidateInfo;
 
@@ -9244,7 +9267,7 @@ void Compiler::impCheckCanInline(GenTreeCall*           call,
         pInfo->methAttr                       = pParam->methAttr;
         pInfo->initClassResult                = initClassResult;
         pInfo->exactContextNeedsRuntimeLookup = false;
-        pInfo->inlinersContext                = pParam->pThis->compInlineContext;
+        pInfo->inlinersContext                = pParam->inlinersContext;
 
         // Note exactContextNeedsRuntimeLookup is reset later on,
         // over in impMarkInlineCandidate.

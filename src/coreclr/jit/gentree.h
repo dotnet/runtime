@@ -459,7 +459,8 @@ enum GenTreeFlags : unsigned int
     GTF_CALL_VIRT_KIND_MASK     = 0x30000000, // GT_CALL -- mask of the below call kinds
     GTF_CALL_NONVIRT            = 0x00000000, // GT_CALL -- a non virtual call
     GTF_CALL_VIRT_STUB          = 0x10000000, // GT_CALL -- a stub-dispatch virtual call
-    GTF_CALL_VIRT_VTABLE        = 0x20000000, // GT_CALL -- a  vtable-based virtual call
+    GTF_CALL_VIRT_VTABLE        = 0x20000000, // GT_CALL -- a vtable-based virtual call
+    GTF_CALL_VIRT_GENERIC       = 0x30000000, // GT_CALL -- a generic virtual call
 
     GTF_CALL_NULLCHECK          = 0x08000000, // GT_CALL -- must check instance pointer for null
     GTF_CALL_POP_ARGS           = 0x04000000, // GT_CALL -- caller pop arguments?
@@ -5339,6 +5340,10 @@ struct GenTreeCall final : public GenTree
     {
         return (gtFlags & GTF_CALL_VIRT_KIND_MASK) == GTF_CALL_VIRT_VTABLE;
     }
+    bool IsVirtualGeneric() const
+    {
+        return (gtFlags & GTF_CALL_VIRT_KIND_MASK) == GTF_CALL_VIRT_GENERIC;
+    }
     bool IsInlineCandidate() const
     {
         return (gtFlags & GTF_CALL_INLINE_CANDIDATE) != 0;
@@ -5755,10 +5760,12 @@ struct GenTreeCall final : public GenTree
         jitstd::vector<InlineCandidateInfo*>* gtInlineCandidateInfoList;
 
         HandleHistogramProfileCandidateInfo* gtHandleHistogramProfileCandidateInfo;
-        LateDevirtualizationInfo*            gtLateDevirtualizationInfo;
+
         CORINFO_GENERIC_HANDLE compileTimeHelperArgumentHandle; // Used to track type handle argument of dynamic helpers
         void*                  gtDirectCallAddress; // Used to pass direct call address between lower and codegen
     };
+
+    LateDevirtualizationInfo* gtLateDevirtualizationInfo; // Always available for user virtual calls
 
     // expression evaluated after args are placed which determines the control target
     GenTree* gtControlExpr;

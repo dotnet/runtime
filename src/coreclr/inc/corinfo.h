@@ -1479,6 +1479,7 @@ enum CORINFO_DEVIRTUALIZATION_DETAIL
     CORINFO_DEVIRTUALIZATION_FAILED_CAST,                          // object class could not be cast to interface class
     CORINFO_DEVIRTUALIZATION_FAILED_LOOKUP,                        // interface method could not be found
     CORINFO_DEVIRTUALIZATION_FAILED_DIM,                           // interface method was default interface method
+    CORINFO_DEVIRTUALIZATION_FAILED_GVM,                           // Support for generic virtual method in devirtualization is not yet implemented in crossgen2
     CORINFO_DEVIRTUALIZATION_FAILED_SUBCLASS,                      // object not subclass of base class
     CORINFO_DEVIRTUALIZATION_FAILED_SLOT,                          // virtual method installed via explicit override
     CORINFO_DEVIRTUALIZATION_FAILED_BUBBLE,                        // devirtualization crossed version bubble
@@ -1512,7 +1513,7 @@ struct CORINFO_DEVIRTUALIZATION_INFO
     // - If pResolvedTokenDevirtualizedMethod is not set to NULL and targeting an R2R image
     //   use it as the parameter to getCallInfo
     // - isInstantiatingStub is set to TRUE if the devirtualized method is a generic method instantiating stub
-    // - wasArrayInterfaceDevirt is set TRUE for array interface method devirtualization
+    // - wasArrayInterfaceOrGvmDevirt is set TRUE for array interface method devirtualization
     //     (in which case the method handle and context will be a generic method)
     //
     CORINFO_METHOD_HANDLE           devirtualizedMethod;
@@ -1521,7 +1522,7 @@ struct CORINFO_DEVIRTUALIZATION_INFO
     CORINFO_RESOLVED_TOKEN          resolvedTokenDevirtualizedMethod;
     CORINFO_RESOLVED_TOKEN          resolvedTokenDevirtualizedUnboxedMethod;
     bool                            isInstantiatingStub;
-    bool                            wasArrayInterfaceDevirt;
+    bool                            wasArrayInterfaceOrGvmDevirt;
 };
 
 //----------------------------------------------------------------------------

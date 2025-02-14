@@ -10013,6 +10013,8 @@ GenTreeCall* Compiler::gtCloneExprCallHelper(GenTreeCall* tree)
         copy->gtInlineInfoCount     = tree->gtInlineInfoCount;
     }
 
+    copy->gtLateDevirtualizationInfo = tree->gtLateDevirtualizationInfo;
+
     copy->gtCallType   = tree->gtCallType;
     copy->gtReturnType = tree->gtReturnType;
 
