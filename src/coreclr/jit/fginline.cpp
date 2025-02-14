@@ -2045,20 +2045,32 @@ Statement* Compiler::fgInlinePrependStatements(InlineInfo* inlineInfo)
         }
     }
 
-    // Append the InstParam
-    if (inlineInfo->inlInstParamArgInfo != nullptr)
-    {
-        fgInsertInlineeArgument(*inlineInfo->inlInstParamArgInfo, block, &afterStmt, &newStmt, callDI);
-    }
-
-    // Treat arguments that had to be assigned to temps
-    if (inlineInfo->argCnt)
+#ifdef DEBUG
+    if (call->gtArgs.CountUserArgs() > 0)
     {
         JITDUMP("\nArguments setup:\n");
-        for (unsigned argNum = 0; argNum < inlineInfo->argCnt; argNum++)
+    }
+#endif
+
+    unsigned ilArgNum = 0;
+    for (CallArg& arg : call->gtArgs.Args())
+    {
+        InlArgInfo* argInfo = nullptr;
+        switch (arg.GetWellKnownArg())
         {
-            fgInsertInlineeArgument(inlArgInfo[argNum], block, &afterStmt, &newStmt, callDI);
+            case WellKnownArg::RetBuffer:
+                continue;
+            case WellKnownArg::InstParam:
+                argInfo = inlineInfo->inlInstParamArgInfo;
+                break;
+            default:
+                assert(ilArgNum < inlineInfo->argCnt);
+                argInfo = &inlineInfo->inlArgInfo[ilArgNum++];
+                break;
         }
+
+        assert(argInfo != nullptr);
+        fgInsertInlineeArgument(*argInfo, block, &afterStmt, &newStmt, callDI);
     }
 
     // Add the CCTOR check if asked for.

@@ -271,6 +271,19 @@ IteratorPair<ABIPassingSegmentIterator> ABIPassingInformation::Segments() const
 }
 
 //-----------------------------------------------------------------------------
+// IsPassedByReference:
+//   Check if the argument is passed by (implicit) reference. If true, a single
+//   pointer-sized segment is expected.
+//
+// Return Value:
+//   True if so.
+//
+bool ABIPassingInformation::IsPassedByReference() const
+{
+    return m_passedByRef;
+}
+
+//-----------------------------------------------------------------------------
 // HasAnyRegisterSegment:
 //   Check if any part of this value is passed in a register.
 //
@@ -409,18 +422,48 @@ unsigned ABIPassingInformation::CountRegsAndStackSlots() const
 //   Create ABIPassingInformation from a single segment.
 //
 // Parameters:
-//   comp    - Compiler instance
-//   segment - The single segment that represents the passing information
+//   comp        - Compiler instance
+//   passedByRef - If true, the argument is passed by reference and the segment is for its pointer.
+//   segment     - The single segment that represents the passing information
 //
 // Return Value:
 //   An instance of ABIPassingInformation.
 //
-ABIPassingInformation ABIPassingInformation::FromSegment(Compiler* comp, const ABIPassingSegment& segment)
+ABIPassingInformation ABIPassingInformation::FromSegment(Compiler*                comp,
+                                                         bool                     passedByRef,
+                                                         const ABIPassingSegment& segment)
 {
     ABIPassingInformation info;
+    info.m_passedByRef   = passedByRef;
     info.NumSegments     = 1;
     info.m_singleSegment = segment;
+
+#ifdef DEBUG
+    if (passedByRef)
+    {
+        assert(segment.Size == TARGET_POINTER_SIZE);
+        assert(!segment.IsPassedInRegister() || (segment.GetRegisterType() == TYP_I_IMPL));
+    }
+#endif
+
     return info;
+}
+
+//-----------------------------------------------------------------------------
+// FromSegmentByValue:
+//   Create ABIPassingInformation from a single segment passing an argument by
+//   value.
+//
+// Parameters:
+//   comp        - Compiler instance
+//   segment     - The single segment that represents the passing information
+//
+// Return Value:
+//   An instance of ABIPassingInformation.
+//
+ABIPassingInformation ABIPassingInformation::FromSegmentByValue(Compiler* comp, const ABIPassingSegment& segment)
+{
+    return FromSegment(comp, /* passedByRef */ false, segment);
 }
 
 //-----------------------------------------------------------------------------
@@ -466,7 +509,7 @@ void ABIPassingInformation::Dump() const
 
         const ABIPassingSegment& seg = Segment(i);
         seg.Dump();
-        printf("\n");
+        printf("%s\n", IsPassedByReference() ? " (implicit by-ref)" : "");
     }
 }
 
@@ -545,13 +588,14 @@ ABIPassingInformation SwiftABIClassifier::Classify(Compiler*    comp,
     if (wellKnownParam == WellKnownArg::RetBuffer)
     {
         regNumber reg = theFixedRetBuffReg(CorInfoCallConvExtension::Swift);
-        return ABIPassingInformation::FromSegment(comp, ABIPassingSegment::InRegister(reg, 0, TARGET_POINTER_SIZE));
+        return ABIPassingInformation::FromSegmentByValue(comp,
+                                                         ABIPassingSegment::InRegister(reg, 0, TARGET_POINTER_SIZE));
     }
 
     if (wellKnownParam == WellKnownArg::SwiftSelf)
     {
-        return ABIPassingInformation::FromSegment(comp, ABIPassingSegment::InRegister(REG_SWIFT_SELF, 0,
-                                                                                      TARGET_POINTER_SIZE));
+        return ABIPassingInformation::FromSegmentByValue(comp, ABIPassingSegment::InRegister(REG_SWIFT_SELF, 0,
+                                                                                             TARGET_POINTER_SIZE));
     }
 
     if (wellKnownParam == WellKnownArg::SwiftError)
@@ -561,8 +605,8 @@ ABIPassingInformation SwiftABIClassifier::Classify(Compiler*    comp,
         // as that will mess with other args.
         // Quirk: To work around the JIT for now, "pass" it in REG_SWIFT_ERROR,
         // and let CodeGen::genFnProlog handle the rest.
-        return ABIPassingInformation::FromSegment(comp, ABIPassingSegment::InRegister(REG_SWIFT_ERROR, 0,
-                                                                                      TARGET_POINTER_SIZE));
+        return ABIPassingInformation::FromSegmentByValue(comp, ABIPassingSegment::InRegister(REG_SWIFT_ERROR, 0,
+                                                                                             TARGET_POINTER_SIZE));
     }
 
     if (type == TYP_STRUCT)

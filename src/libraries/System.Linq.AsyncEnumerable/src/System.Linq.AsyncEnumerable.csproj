@@ -12,6 +12,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Include="System\Linq\Shuffle.cs" />
     <Compile Include="System\Linq\SkipLast.cs" />
     <Compile Include="System\Linq\SkipWhile.cs" />
     <Compile Include="System\Linq\Append.cs" />

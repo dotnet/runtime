@@ -552,8 +552,8 @@ namespace ILCompiler.ObjectWriter
                     {
                         IMAGE_REL_BASED_DIR64 => R_RISCV_64,
                         IMAGE_REL_BASED_HIGHLOW => R_RISCV_32,
-                        IMAGE_REL_BASED_RELPTR32 => R_RISCV_64_LO12,
-                        IMAGE_REL_BASED_RISCV64_PC => R_RISCV_64_HI20,
+                        IMAGE_REL_BASED_RELPTR32 => R_RISCV_32_PCREL,
+                        IMAGE_REL_BASED_RISCV64_PC => R_RISCV_CALL_PLT,
                         _ => throw new NotSupportedException("Unknown relocation type: " + symbolicRelocation.Type)
                     };
 
@@ -561,14 +561,6 @@ namespace ILCompiler.ObjectWriter
                     BinaryPrimitives.WriteUInt64LittleEndian(relocationEntry.Slice(8), ((ulong)symbolIndex << 32) | type);
                     BinaryPrimitives.WriteInt64LittleEndian(relocationEntry.Slice(16), symbolicRelocation.Addend);
                     relocationStream.Write(relocationEntry);
-
-                    if (symbolicRelocation.Type is IMAGE_REL_BASED_RISCV64_PC)
-                    {
-                        BinaryPrimitives.WriteUInt64LittleEndian(relocationEntry, (ulong)symbolicRelocation.Offset + 4);
-                        BinaryPrimitives.WriteUInt64LittleEndian(relocationEntry.Slice(8), ((ulong)symbolIndex << 32) | type + 1);
-                        BinaryPrimitives.WriteInt64LittleEndian(relocationEntry.Slice(16), symbolicRelocation.Addend);
-                        relocationStream.Write(relocationEntry);
-                    }
                 }
             }
         }

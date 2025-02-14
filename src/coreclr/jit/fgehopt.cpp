@@ -2552,6 +2552,7 @@ BasicBlock* Compiler::fgCloneTryRegion(BasicBlock* tryEntry, CloneTryInfo& info,
     auto addBlockToClone = [=, &blocks, &visited, &numberOfBlocksToClone](BasicBlock* block, const char* msg) {
         if (!BitVecOps::TryAddElemD(traits, visited, block->bbID))
         {
+            JITDUMP("[already seen]  %s block " FMT_BB "\n", msg, block->bbNum);
             return false;
         }
 
@@ -2781,6 +2782,8 @@ BasicBlock* Compiler::fgCloneTryRegion(BasicBlock* tryEntry, CloneTryInfo& info,
     // all the EH indicies at or above insertBeforeIndex will shift,
     // and the EH table may reallocate.
     //
+    // This addition may also fail, if the table would become too large...
+    //
     EHblkDsc* const clonedOutermostEbd =
         fgTryAddEHTableEntries(insertBeforeIndex, regionCount, /* deferAdding */ deferCloning);
 
@@ -3000,8 +3003,6 @@ BasicBlock* Compiler::fgCloneTryRegion(BasicBlock* tryEntry, CloneTryInfo& info,
                 cloneTryIndex += indexShift;
             }
 
-            EHblkDsc* const originalEbd = ehGetDsc(originalTryIndex);
-            EHblkDsc* const clonedEbd   = ehGetDsc(cloneTryIndex);
             newBlock->setTryIndex(cloneTryIndex);
             updateBlockReferences(cloneTryIndex);
         }
@@ -3016,8 +3017,6 @@ BasicBlock* Compiler::fgCloneTryRegion(BasicBlock* tryEntry, CloneTryInfo& info,
                 cloneHndIndex += indexShift;
             }
 
-            EHblkDsc* const originalEbd = ehGetDsc(originalHndIndex);
-            EHblkDsc* const clonedEbd   = ehGetDsc(cloneHndIndex);
             newBlock->setHndIndex(cloneHndIndex);
             updateBlockReferences(cloneHndIndex);
 
