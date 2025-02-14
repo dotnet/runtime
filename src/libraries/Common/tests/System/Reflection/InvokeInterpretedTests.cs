@@ -15,7 +15,7 @@ namespace System.Reflection.Tests
             TargetInvocationException ex = Assert.Throws<TargetInvocationException>(() => method.Invoke(null, null));
             Exception exInner = ex.InnerException;
 
-            Assert.Contains("Here", exInner.ToString());
+            Assert.Contains("Method Here", exInner.ToString());
             Assert.DoesNotContain("InvokeStub_TestClassThatThrows", exInner.ToString());
         }
 
@@ -27,7 +27,7 @@ namespace System.Reflection.Tests
             TargetInvocationException ex = Assert.Throws<TargetInvocationException>(() => ctor.Invoke(null));
             Exception exInner = ex.InnerException;
 
-            Assert.Contains("Here", exInner.ToString());
+            Assert.Contains("Ctor Here", exInner.ToString());
             Assert.DoesNotContain("InvokeStub_TestClassThatThrows", exInner.ToString());
         }
 
@@ -35,10 +35,10 @@ namespace System.Reflection.Tests
         {
             public TestClassThatThrows()
             {
-                throw new Exception("Here");
+                throw new Exception("Ctor Here");
             }
 
-            public static void Throw() => throw new Exception("Here");
+            public static void Throw() => throw new Exception("Method Here");
         }
     }
 }

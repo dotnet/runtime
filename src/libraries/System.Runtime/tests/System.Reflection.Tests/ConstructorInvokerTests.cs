@@ -78,6 +78,96 @@ namespace System.Reflection.Tests
         }
 
         [Fact]
+        public void Args_ByRef1()
+        {
+            string argValue = "Value";
+            ConstructorInvoker invoker = ConstructorInvoker.Create(typeof(TestClass).GetConstructor(
+                new Type[] { typeof(string).MakeByRefType() }));
+
+            // Although no copy-back, verify we can call.
+            TestClass obj = (TestClass)invoker.Invoke(argValue);
+            Assert.Equal("Value", obj._args);
+
+            // The Span version supports copy-back.
+            object[] args = new object[] { argValue };
+            invoker.Invoke(new Span<object?>(args));
+            Assert.Equal("Hello1", args[0]);
+        }
+
+        [Fact]
+        public void Args_ByRef2()
+        {
+            string argValue = "Value";
+            ConstructorInvoker invoker = ConstructorInvoker.Create(typeof(TestClass).GetConstructor(
+                new Type[] { typeof(string).MakeByRefType(), typeof(string).MakeByRefType() }));
+
+            // Although no copy-back, verify we can call.
+            TestClass obj = (TestClass)invoker.Invoke(argValue, argValue);
+            Assert.Equal("ValueValue", obj._args);
+
+            // The Span version supports copy-back.
+            object[] args = new object[] { argValue, argValue };
+            invoker.Invoke(new Span<object?>(args));
+            Assert.Equal("Hello1", args[0]);
+            Assert.Equal("Hello2", args[1]);
+        }
+
+        [Fact]
+        public void Args_ByRef3()
+        {
+            string argValue = "Value";
+            ConstructorInvoker invoker = ConstructorInvoker.Create(typeof(TestClass).GetConstructor(
+                new Type[] { typeof(string).MakeByRefType(), typeof(string).MakeByRefType(), typeof(string).MakeByRefType() }));
+
+            // Although no copy-back, verify we can call.
+            TestClass obj = (TestClass)invoker.Invoke(argValue, argValue, argValue);
+            Assert.Equal("ValueValueValue", obj._args);
+
+            // The Span version supports copy-back.
+            object[] args = new object[] { argValue, argValue, argValue };
+            invoker.Invoke(new Span<object?>(args));
+            Assert.Equal("Hello1", args[0]);
+            Assert.Equal("Hello2", args[1]);
+            Assert.Equal("Hello3", args[2]);
+        }
+
+        [Fact]
+        public void Args_ByRef4()
+        {
+            string argValue = "Value";
+            ConstructorInvoker invoker = ConstructorInvoker.Create(typeof(TestClass).GetConstructor(
+                new Type[] { typeof(string).MakeByRefType(), typeof(string).MakeByRefType(), typeof(string).MakeByRefType(), typeof(string).MakeByRefType() }));
+
+            // Although no copy-back, verify we can call.
+            TestClass obj = (TestClass)invoker.Invoke(argValue, argValue, argValue, argValue);
+            Assert.Equal("ValueValueValueValue", obj._args);
+
+            // The Span version supports copy-back.
+            object[] args = new object[] { argValue, argValue, argValue, argValue };
+            invoker.Invoke(new Span<object?>(args));
+            Assert.Equal("Hello1", args[0]);
+            Assert.Equal("Hello2", args[1]);
+            Assert.Equal("Hello3", args[2]);
+            Assert.Equal("Hello4", args[3]);
+        }
+
+        [Fact]
+        public void Args_ByRef5()
+        {
+            string argValue = "Value";
+            ConstructorInvoker invoker = ConstructorInvoker.Create(typeof(TestClass).GetConstructor(
+                new Type[] { typeof(string).MakeByRefType(), typeof(string).MakeByRefType(), typeof(string).MakeByRefType(), typeof(string).MakeByRefType(), typeof(string).MakeByRefType() }));
+
+            object[] args = new object[] { argValue, argValue, argValue, argValue, argValue };
+            invoker.Invoke(new Span<object?>(args));
+            Assert.Equal("Hello1", args[0]);
+            Assert.Equal("Hello2", args[1]);
+            Assert.Equal("Hello3", args[2]);
+            Assert.Equal("Hello4", args[3]);
+            Assert.Equal("Hello5", args[4]);
+        }
+
+        [Fact]
         public void Args_0_Extra_Throws()
         {
             ConstructorInvoker invoker = ConstructorInvoker.Create(typeof(TestClass).GetConstructor(new Type[] { }));
@@ -191,6 +281,46 @@ namespace System.Reflection.Tests
             public TestClass() { _args = "0"; }
 
             public void SomeMethod() { }
+
+            public TestClass(ref string arg1)
+            {
+                _args = arg1;
+                arg1 = "Hello1";
+            }
+
+            public TestClass(ref string arg1, ref string arg2)
+            {
+                _args = arg1 + arg2;
+                arg1 = "Hello1";
+                arg2 = "Hello2";
+            }
+
+            public TestClass(ref string arg1, ref string arg2, ref string arg3)
+            {
+                _args = arg1 + arg2 + arg3;
+                arg1 = "Hello1";
+                arg2 = "Hello2";
+                arg3 = "Hello3";
+            }
+
+            public TestClass(ref string arg1, ref string arg2, ref string arg3, ref string arg4)
+            {
+                _args = arg1 + arg2 + arg3 + arg4;
+                arg1 = "Hello1";
+                arg2 = "Hello2";
+                arg3 = "Hello3";
+                arg4 = "Hello4";
+            }
+
+            public TestClass(ref string arg1, ref string arg2, ref string arg3, ref string arg4, ref string arg5)
+            {
+                _args = arg1 + arg2 + arg3 + arg4 + arg5;
+                arg1 = "Hello1";
+                arg2 = "Hello2";
+                arg3 = "Hello3";
+                arg4 = "Hello4";
+                arg5 = "Hello5";
+            }
 
             public TestClass(string arg1)
             {
