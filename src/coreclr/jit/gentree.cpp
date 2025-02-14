@@ -1344,41 +1344,6 @@ bool CallArg::IsUserArg() const
     }
 }
 
-#ifdef DEBUG
-//---------------------------------------------------------------
-// CheckIsStruct: Verify that the struct ABI information is consistent with the IR node.
-//
-void CallArg::CheckIsStruct()
-{
-    GenTree* node = GetNode();
-    if (varTypeIsStruct(GetSignatureType()))
-    {
-        if (!varTypeIsStruct(node) && !node->OperIs(GT_FIELD_LIST))
-        {
-            // This is the case where we are passing a struct as a primitive type.
-            // On most targets, this is always a single register or slot.
-            // However, on ARM this could be two slots if it is TYP_DOUBLE.
-            bool isPassedAsPrimitiveType =
-                ((AbiInfo.NumRegs == 1) || ((AbiInfo.NumRegs == 0) && (AbiInfo.ByteSize <= TARGET_POINTER_SIZE)));
-#ifdef TARGET_ARM
-            if (!isPassedAsPrimitiveType)
-            {
-                if (node->TypeGet() == TYP_DOUBLE && AbiInfo.NumRegs == 0 && (AbiInfo.GetStackSlotsNumber() == 2))
-                {
-                    isPassedAsPrimitiveType = true;
-                }
-            }
-#endif // TARGET_ARM
-            assert(isPassedAsPrimitiveType);
-        }
-    }
-    else
-    {
-        assert(!varTypeIsStruct(node));
-    }
-}
-#endif
-
 CallArgs::CallArgs()
     : m_head(nullptr)
     , m_lateHead(nullptr)
