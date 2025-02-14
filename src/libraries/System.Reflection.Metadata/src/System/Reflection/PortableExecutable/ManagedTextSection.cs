@@ -4,7 +4,6 @@
 using System.Diagnostics;
 using System.Reflection.Internal;
 using System.Reflection.Metadata;
-using System.Reflection.Metadata.Ecma335;
 
 namespace System.Reflection.PortableExecutable
 {
