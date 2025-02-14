@@ -588,8 +588,6 @@ void SetEvexDFVIfNeeded(instrDesc* id, insOpts instOptions)
         assert(IsCCMP(id->idIns()));
         id->idSetEvexDFV(instOptions);
     }
-#else
-    return true;
 #endif
 }
 
