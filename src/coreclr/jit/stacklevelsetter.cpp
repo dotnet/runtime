@@ -427,6 +427,7 @@ void StackLevelSetter::CheckArgCnt()
 #endif
         comp->SetInterruptible(false);
     }
+
     if (maxStackLevel >= sizeof(unsigned))
     {
 #ifdef DEBUG

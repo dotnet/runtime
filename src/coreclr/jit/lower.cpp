@@ -10942,5 +10942,40 @@ void Lowering::FinalizeOutgoingArgSpace()
     comp->lvaOutgoingArgSpaceSize = m_outgoingArgSpaceSize;
     comp->lvaOutgoingArgSpaceSize.MarkAsReadOnly();
     comp->lvaGetDesc(comp->lvaOutgoingArgSpaceVar)->GrowBlockLayout(comp->typGetBlkLayout(m_outgoingArgSpaceSize));
+
+    SetFramePointerFromArgSpaceSize();
+#endif
+}
+
+//----------------------------------------------------------------------------------------------
+// Lowering::SetFramePointerFromArgSpaceSize:
+//   Set the frame pointer from the arg space size. This is a quirk because
+//   StackLevelSetter used to do this even outside x86.
+//
+void Lowering::SetFramePointerFromArgSpaceSize()
+{
+#ifdef TARGET_X64
+    unsigned stackLevelSpace = m_outgoingArgSpaceSize;
+
+    if (comp->compTailCallUsed)
+    {
+        // StackLevelSetter also used to count tailcalls.
+        for (BasicBlock* block : comp->Blocks())
+        {
+            GenTreeCall* tailCall;
+            if (block->endsWithTailCall(comp, true, false, &tailCall))
+            {
+                stackLevelSpace = max(stackLevelSpace, tailCall->gtArgs.OutgoingArgsStackSize());
+            }
+        }
+    }
+
+    unsigned stackLevel =
+        (max(stackLevelSpace, (unsigned)MIN_ARG_AREA_FOR_CALL) - MIN_ARG_AREA_FOR_CALL) / TARGET_POINTER_SIZE;
+
+    if (stackLevel >= 4)
+    {
+        comp->codeGen->setFramePointerRequired(true);
+    }
 #endif
 }
