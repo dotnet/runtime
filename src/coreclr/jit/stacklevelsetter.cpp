@@ -24,21 +24,11 @@ StackLevelSetter::StackLevelSetter(Compiler* compiler)
 }
 
 //------------------------------------------------------------------------
-// DoPhase: Calculate stack slots numbers for outgoing args.
+// DoPhase: Calculate stack slots numbers for outgoing args and compute
+// requirements of throw helper blocks.
 //
 // Returns:
 //   PhaseStatus indicating what, if anything, was changed.
-//
-// Notes:
-//   For non-x86 platforms it calculates the max number of slots
-//   that calls inside this method can push on the stack.
-//   This value is used for sanity checks in the emitter.
-//
-//   Stack slots are pointer-sized: 4 bytes for 32-bit platforms, 8 bytes for 64-bit platforms.
-//
-//   For x86 it also sets throw-helper blocks incoming stack depth and set
-//   framePointerRequired when it is necessary. These values are used to pop
-//   pushed args when an exception occurs.
 //
 PhaseStatus StackLevelSetter::DoPhase()
 {
@@ -56,7 +46,6 @@ PhaseStatus StackLevelSetter::DoPhase()
 
     CheckAdditionalArgs();
 
-    comp->fgSetPtrArgCntMax(maxStackLevel);
     CheckArgCnt();
 
     // When optimizing, check if there are any unused throw helper blocks,
@@ -125,10 +114,21 @@ PhaseStatus StackLevelSetter::DoPhase()
 void StackLevelSetter::ProcessBlock(BasicBlock* block)
 {
     assert(currentStackLevel == 0);
+#ifndef TARGET_X86
+    // Outside x86 we do not need to compute pushed/popped stack slots.
+    // However, we do optimize throw-helpers away here.
+    if (!throwHelperBlocksUsed || comp->opts.OptimizationDisabled())
+    {
+        return;
+    }
+#endif
+
     LIR::ReadOnlyRange& range = LIR::AsRange(block);
     for (auto i = range.rbegin(); i != range.rend(); ++i)
     {
         GenTree* node = *i;
+
+#ifdef TARGET_X86
         if (node->OperIsPutArgStkOrSplit())
         {
             GenTreePutArgStk* putArg   = node->AsPutArgStk();
@@ -145,6 +145,7 @@ void StackLevelSetter::ProcessBlock(BasicBlock* block)
             call->gtArgs.SetStkSizeBytes(usedStackSlotsCount * TARGET_POINTER_SIZE);
 #endif // UNIX_X86_ABI
         }
+#endif
 
         if (!throwHelperBlocksUsed)
         {
@@ -410,7 +411,12 @@ void StackLevelSetter::SubStackLevel(unsigned value)
 //
 void StackLevelSetter::CheckArgCnt()
 {
-    if (!comp->compCanEncodePtrArgCntMax())
+#ifdef JIT32_GCENCODER
+    // The GC encoding for fully interruptible methods does not
+    // support more than 1023 pushed arguments, so we have to
+    // use a partially interruptible GC info/encoding.
+    //
+    if (maxStackLevel >= MAX_PTRARG_OFS)
     {
 #ifdef DEBUG
         if (comp->verbose)
@@ -431,6 +437,7 @@ void StackLevelSetter::CheckArgCnt()
 #endif
         comp->codeGen->setFramePointerRequired(true);
     }
+#endif
 }
 
 //------------------------------------------------------------------------
