@@ -164,44 +164,5 @@ namespace System.Security.Cryptography.X509Certificates
                 certContainer.AddSafeBag(certBag);
             }
         }
-
-        private static string MapHashAlgorithmNameToOid(HashAlgorithmName hashAlgorithm)
-        {
-            if (hashAlgorithm == HashAlgorithmName.SHA1)
-            {
-                return Oids.Sha1;
-            }
-            else if (hashAlgorithm == HashAlgorithmName.SHA256)
-            {
-                return Oids.Sha256;
-            }
-            else if (hashAlgorithm == HashAlgorithmName.SHA384)
-            {
-                return Oids.Sha384;
-            }
-            else if (hashAlgorithm == HashAlgorithmName.SHA512)
-            {
-                return Oids.Sha512;
-            }
-            else if (hashAlgorithm == HashAlgorithmName.MD5)
-            {
-                return Oids.Md5;
-            }
-            else if (hashAlgorithm == HashAlgorithmName.SHA3_256)
-            {
-                return Oids.Sha3_256;
-            }
-            else if (hashAlgorithm == HashAlgorithmName.SHA3_384)
-            {
-                return Oids.Sha3_384;
-            }
-            else if (hashAlgorithm == HashAlgorithmName.SHA3_512)
-            {
-                return Oids.Sha3_512;
-            }
-
-            Debug.Fail("Unknown hash algorithm");
-            throw new CryptographicException();
-        }
     }
 }
