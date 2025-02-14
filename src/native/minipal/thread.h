@@ -43,6 +43,9 @@ extern "C" {
  */
 static inline size_t minipal_get_current_thread_id(void)
 {
+#if defined(__wasm) && defined(MONO_WASM_MT)
+    return 0;
+#else
 #if defined(__GNUC__) && !defined(__clang__) && defined(__cplusplus)
     // gcc doesn't like _Thread_local when __cplusplus is defined.
     // although thread_local is C2x, which other compilers don't allow with C11.
@@ -71,6 +74,7 @@ static inline size_t minipal_get_current_thread_id(void)
 #endif
 
     return tid;
+#endif
 }
 
 /**
