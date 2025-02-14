@@ -78,7 +78,6 @@
     <Compile Include="System\Transactions\DtcProxyShim\EnlistmentNotifyShim.cs" />
     <Compile Include="System\Transactions\DtcProxyShim\EnlistmentShim.cs" />
     <Compile Include="System\Transactions\DtcProxyShim\Guids.cs" />
-    <Compile Include="System\Transactions\DtcProxyShim\NativeEnums.cs" />
     <Compile Include="System\Transactions\DtcProxyShim\NotificationShimBase.cs" />
     <Compile Include="System\Transactions\DtcProxyShim\OletxHelper.cs" />
     <Compile Include="System\Transactions\DtcProxyShim\OletxXactTransInfo.cs" />
@@ -101,6 +100,8 @@
     <Compile Include="System\Transactions\Oletx\OletxTransactionManager.cs" />
     <Compile Include="System\Transactions\Oletx\OletxVolatileEnlistment.cs" />
     <Compile Include="System\Transactions\TransactionInterop.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Xolehlp\Interop.DtcGetTransactionManagerEx.cs" Link="Common\Interop\Windows\Xolehlp\Interop.DtcGetTransactionManagerEx.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Xolehlp\Interop.Enums.cs" Link="Common\Interop\Windows\Xolehlp\Interop.Enums.cs" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' != 'windows'">
