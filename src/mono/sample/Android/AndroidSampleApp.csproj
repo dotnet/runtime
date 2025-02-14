@@ -26,7 +26,11 @@
   </ItemGroup>
 
   <Import Project="$(MonoProjectRoot)\msbuild\android\build\AndroidBuild.props" />
-  <Import Project="$(MonoProjectRoot)\msbuild\android\build\AndroidBuild.InTree.targets" />
+  <PropertyGroup>
+    <!-- Import after SDK targets in order to override R2R-related targets in the SDK -->
+    <AfterMicrosoftNETSdkTargets>$(MonoProjectRoot)\msbuild\android\build\AndroidBuild.InTree.targets</AfterMicrosoftNETSdkTargets>
+  </PropertyGroup>
+
 
   <Target Name="RunAppBundle"
           Condition="'$(ArchiveTests)' != 'true' and '$(DeployAndRun)' == 'true'"
