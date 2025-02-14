@@ -244,11 +244,6 @@ namespace System.Net.Http.Functional.Tests
                     var req = new HttpRequestMessage(HttpMethod.Get, url) { Version = UseVersion };
                     req.Headers.ConnectionClose = connectionClose;
 
-#if TARGET_BROWSER
-                    var WebAssemblyEnableStreamingResponseKey = new HttpRequestOptionsKey<bool>("WebAssemblyEnableStreamingResponse");
-                    req.Options.Set(WebAssemblyEnableStreamingResponseKey, true);
-#endif
-
                     Task<HttpResponseMessage> getResponse = client.SendAsync(TestAsync, req, HttpCompletionOption.ResponseHeadersRead, cts.Token);
                     await ValidateClientCancellationAsync(async () =>
                     {
