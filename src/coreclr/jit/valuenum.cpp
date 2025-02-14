@@ -15074,8 +15074,8 @@ void Compiler::vnPrint(ValueNum vn, unsigned level)
 
 // Methods of ValueNumPair.
 ValueNumPair::ValueNumPair()
-    : m_liberal(ValueNumStore::NoVN)
-    , m_conservative(ValueNumStore::NoVN)
+    : m_conservative(ValueNumStore::NoVN)
+    , m_liberal(ValueNumStore::NoVN)
 {
 }
 
