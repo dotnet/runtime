@@ -8759,6 +8759,7 @@ bool CEEInfo::resolveVirtualMethodHelper(CORINFO_DEVIRTUALIZATION_INFO * info)
     MethodTable* pApproxMT = pDevirtMD->GetMethodTable();
     MethodTable* pExactMT = pApproxMT;
     bool isArray = false;
+    bool isGenericVirtual = false;
 
     if (pApproxMT->IsInterface())
     {
@@ -8780,11 +8781,12 @@ bool CEEInfo::resolveVirtualMethodHelper(CORINFO_DEVIRTUALIZATION_INFO * info)
     if (!isArray && pBaseMD->HasMethodInstantiation())
     {
         pDevirtMD = pDevirtMD->FindOrCreateAssociatedMethodDesc(pDevirtMD, pExactMT, false, pBaseMD->GetMethodInstantiation(), false);
+        isGenericVirtual = true;
     }
 
     // Success! Pass back the results.
     //
-    if (isArray || pBaseMD->HasMethodInstantiation())
+    if (isArray || isGenericVirtual)
     {
         // Note if array devirtualization produced an instantiation stub
         // so jit can try and inline it.
