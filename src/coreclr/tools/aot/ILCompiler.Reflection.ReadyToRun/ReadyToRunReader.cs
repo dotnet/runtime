@@ -406,7 +406,7 @@ namespace ILCompiler.Reflection.ReadyToRun
             _assemblyResolver = assemblyResolver;
             CompositeReader = peReader;
             Filename = filename;
-            Image = Unsafe.As<ImmutableArray<byte>, byte[]>(ref content);
+            Image = ImmutableCollectionsMarshal.AsArray<byte>(content);
             Initialize(metadata);
         }
 
@@ -432,7 +432,7 @@ namespace ILCompiler.Reflection.ReadyToRun
         {
             _assemblyResolver = assemblyResolver;
             Filename = filename;
-            Image = Unsafe.As<ImmutableArray<byte>, byte[]>(ref content);
+            Image = ImmutableCollectionsMarshal.AsArray<byte>(content);
             Initialize(metadata: null);
         }
 
