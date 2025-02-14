@@ -41,8 +41,7 @@ namespace System.Reflection.PortableExecutable
         public int MetadataSize { get; }
 
         /// <summary>
-        /// The size of managed resource data stream (unaligned).
-        /// When written, will be aligned to <see cref="ManagedResourcesDataAlignment"/>.
+        /// The size of managed resource data stream.
         /// </summary>
         public int ResourceDataSize { get; }
 
@@ -148,15 +147,11 @@ namespace System.Reflection.PortableExecutable
 
         internal int ComputeOffsetToDebugDirectory()
         {
-            Debug.Assert(MetadataSize % MetadataSizes.StreamAlignment == 0);
-
-            int offset =
+            return
                 ComputeOffsetToMetadata() +
                 MetadataSize +
-                BitArithmetic.Align(ResourceDataSize, ManagedResourcesDataAlignment) +
+                ResourceDataSize +
                 StrongNameSignatureSize;
-
-            return offset;
         }
 
         private int ComputeOffsetToImportTable()
@@ -189,7 +184,6 @@ namespace System.Reflection.PortableExecutable
 
         public int ComputeSizeOfTextSection()
         {
-            Debug.Assert(MappedFieldDataSize % MappedFieldDataAlignment == 0);
             return CalculateOffsetToMappedFieldDataStream() + MappedFieldDataSize;
         }
 
@@ -279,7 +273,6 @@ namespace System.Reflection.PortableExecutable
             if (resourceBuilderOpt != null)
             {
                 builder.LinkSuffix(resourceBuilderOpt);
-                builder.WriteBytes(0, BitArithmetic.Align(resourceBuilderOpt.Count, ManagedTextSection.ManagedResourcesDataAlignment) - resourceBuilderOpt.Count);
             }
 
             // strong name signature:
@@ -389,7 +382,7 @@ namespace System.Reflection.PortableExecutable
 
             int metadataRva = textSectionRva + ComputeOffsetToMetadata();
             int resourcesRva = metadataRva + MetadataSize;
-            int signatureRva = resourcesRva + BitArithmetic.Align(ResourceDataSize, ManagedResourcesDataAlignment);
+            int signatureRva = resourcesRva + ResourceDataSize;
 
             int start = builder.Count;
 
@@ -412,7 +405,7 @@ namespace System.Reflection.PortableExecutable
 
             // ResourcesDirectory:
             builder.WriteUInt32((uint)(ResourceDataSize == 0 ? 0 : resourcesRva)); // 28
-            builder.WriteUInt32((uint)BitArithmetic.Align(ResourceDataSize, ManagedResourcesDataAlignment));
+            builder.WriteUInt32((uint)ResourceDataSize);
 
             // StrongNameSignatureDirectory:
             builder.WriteUInt32((uint)(StrongNameSignatureSize == 0 ? 0 : signatureRva)); // 36
