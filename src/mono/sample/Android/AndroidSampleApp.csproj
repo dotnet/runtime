@@ -18,8 +18,6 @@
     <RepoDotnet Condition="'$(DOTNET_ROOT)' != ''">$(DOTNET_ROOT)/dotnet</RepoDotnet>
     <RepoDotnet Condition="'$(RepoDotnet)' == '' and '$(OS)' == 'Windows_NT'">..\..\..\..\dotnet.cmd</RepoDotnet>
     <RepoDotnet Condition="'$(RepoDotnet)' == '' and '$(OS)' != 'Windows_NT'">../../../dotnet.sh</RepoDotnet>
-    <!-- R2R -->
-    <!-- <PublishReadyToRun>true</PublishReadyToRun> -->
     <AfterMicrosoftNETSdkTargets>$(MSBuildThisFileDirectory)\AndroidSampleApp.targets</AfterMicrosoftNETSdkTargets>
   </PropertyGroup>
 
