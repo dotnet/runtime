@@ -8,8 +8,9 @@ enum class WellKnownArg : unsigned;
 
 class ABIPassingSegment
 {
-    regNumber m_register    = REG_NA;
-    unsigned  m_stackOffset = 0;
+    regNumberSmall m_register        = REG_NA;
+    bool           m_isFullStackSlot = true;
+    unsigned       m_stackOffset     = 0;
 
 public:
     bool IsPassedInRegister() const;
@@ -34,10 +35,16 @@ public:
     // offset, relative to the base of stack arguments.
     unsigned GetStackOffset() const;
 
+    // Get the size of stack consumed. Normally this is 'Size' rounded up to
+    // the pointer size, but for apple arm64 ABI some primitives do not consume
+    // full stack slots.
+    unsigned GetStackSize() const;
+
     var_types GetRegisterType() const;
 
     static ABIPassingSegment InRegister(regNumber reg, unsigned offset, unsigned size);
     static ABIPassingSegment OnStack(unsigned stackOffset, unsigned offset, unsigned size);
+    static ABIPassingSegment OnStackWithoutConsumingFullSlot(unsigned stackOffset, unsigned offset, unsigned size);
 
 #ifdef DEBUG
     void Dump() const;

@@ -38,7 +38,7 @@ bool ABIPassingSegment::IsPassedOnStack() const
 regNumber ABIPassingSegment::GetRegister() const
 {
     assert(IsPassedInRegister());
-    return m_register;
+    return static_cast<regNumber>(m_register);
 }
 
 //-----------------------------------------------------------------------------
@@ -50,17 +50,17 @@ regNumber ABIPassingSegment::GetRegister() const
 //
 regMaskTP ABIPassingSegment::GetRegisterMask() const
 {
-    assert(IsPassedInRegister());
-    regMaskTP reg = genRegMask(m_register);
+    regNumber reg  = GetRegister();
+    regMaskTP mask = genRegMask(reg);
 
 #ifdef TARGET_ARM
-    if (genIsValidFloatReg(m_register) && (Size == 8))
+    if (genIsValidFloatReg(reg) && (Size == 8))
     {
-        reg |= genRegMask(REG_NEXT(m_register));
+        mask |= genRegMask(REG_NEXT(reg));
     }
 #endif
 
-    return reg;
+    return mask;
 }
 
 //-----------------------------------------------------------------------------
@@ -88,6 +88,21 @@ unsigned ABIPassingSegment::GetStackOffset() const
 }
 
 //-----------------------------------------------------------------------------
+// GetStackSize:
+//   Get the amount of stack size consumed by this segment.
+//
+// Return Value:
+//   Normally the size rounded up to the pointer size. For Apple's arm64 ABI,
+//   however, some arguments do not get their own stack slots, in which case
+//   the return value is the same as "Size".
+//
+unsigned ABIPassingSegment::GetStackSize() const
+{
+    assert(IsPassedOnStack());
+    return m_isFullStackSlot ? roundUp(Size, TARGET_POINTER_SIZE) : Size;
+}
+
+//-----------------------------------------------------------------------------
 // GetRegisterType:
 //  Return the smallest type larger or equal to Size that most naturally
 //  represents the register this segment is passed in.
@@ -97,8 +112,7 @@ unsigned ABIPassingSegment::GetStackOffset() const
 //
 var_types ABIPassingSegment::GetRegisterType() const
 {
-    assert(IsPassedInRegister());
-    if (genIsValidFloatReg(m_register))
+    if (genIsValidFloatReg(GetRegister()))
     {
         switch (Size)
         {
@@ -157,7 +171,7 @@ ABIPassingSegment ABIPassingSegment::InRegister(regNumber reg, unsigned offset, 
 {
     assert(reg != REG_NA);
     ABIPassingSegment segment;
-    segment.m_register    = reg;
+    segment.m_register    = static_cast<regNumberSmall>(reg);
     segment.m_stackOffset = 0;
     segment.Offset        = offset;
     segment.Size          = size;
@@ -184,6 +198,35 @@ ABIPassingSegment ABIPassingSegment::OnStack(unsigned stackOffset, unsigned offs
     segment.m_stackOffset = stackOffset;
     segment.Offset        = offset;
     segment.Size          = size;
+    return segment;
+}
+
+//-----------------------------------------------------------------------------
+// OnStackWithoutConsumingFullSlot:
+//   Create an ABIPassingSegment representing that a segment is passed on the
+//   stack, and which does not gets its own full stack slot.
+//
+// Parameters:
+//   stackOffset - Offset relative to the first stack parameter/argument
+//   offset      - The offset of the segment that is passed in the register
+//   size        - The size of the segment passed in the register
+//
+// Return Value:
+//   New instance of ABIPassingSegment.
+//
+// Remarks:
+//   This affects what ABIPassingSegment::GetStackSize() returns.
+//
+ABIPassingSegment ABIPassingSegment::OnStackWithoutConsumingFullSlot(unsigned stackOffset,
+                                                                     unsigned offset,
+                                                                     unsigned size)
+{
+    ABIPassingSegment segment;
+    segment.m_register        = REG_NA;
+    segment.m_stackOffset     = stackOffset;
+    segment.m_isFullStackSlot = false;
+    segment.Offset            = offset;
+    segment.Size              = size;
     return segment;
 }
 

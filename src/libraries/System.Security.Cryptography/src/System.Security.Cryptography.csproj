@@ -298,6 +298,12 @@
       <Link>Common\System\Security\Cryptography\Asn1\Pkcs7\EncryptedDataAsn.xml.cs</Link>
       <DependentUpon>Common\System\Security\Cryptography\Asn1\Pkcs7\EncryptedDataAsn.xml</DependentUpon>
     </Compile>
+    <Compile Include="$(CommonPath)System\Security\Cryptography\AesGcm.cs"
+             Link="Common\System\Security\Cryptography\AesGcm.cs" />
+    <Compile Include="$(CommonPath)System\Security\Cryptography\AesAEAD.cs"
+             Link="Common\System\Security\Cryptography\AesAEAD.cs" />
+    <Compile Include="$(CommonPath)System\Security\Cryptography\AuthenticationTagMismatchException.cs"
+             Link="Common\System\Security\Cryptography\AuthenticationTagMismatchException.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\CryptographicAttributeObject.cs"
              Link="Common\System\Security\Cryptography\CryptographicAttributeObject.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\CryptographicAttributeObjectCollection.cs"
@@ -388,7 +394,6 @@
              Link="Common\System\Text\ValueStringBuilder.cs" />
     <Compile Include="Microsoft\Win32\SafeHandles\SafePasswordHandle.cs" />
     <Compile Include="System\Security\Cryptography\Aes.cs" />
-    <Compile Include="System\Security\Cryptography\AesAEAD.cs" />
     <Compile Include="System\Security\Cryptography\AesCcm.cs" />
     <Compile Include="System\Security\Cryptography\AesCryptoServiceProvider.cs" />
     <Compile Include="System\Security\Cryptography\AesGcm.cs" />
@@ -404,7 +409,6 @@
     <Compile Include="System\Security\Cryptography\AsymmetricKeyExchangeFormatter.cs" />
     <Compile Include="System\Security\Cryptography\AsymmetricSignatureDeformatter.cs" />
     <Compile Include="System\Security\Cryptography\AsymmetricSignatureFormatter.cs" />
-    <Compile Include="System\Security\Cryptography\AuthenticationTagMismatchException.cs" />
     <Compile Include="System\Security\Cryptography\Base64Transforms.cs" />
     <Compile Include="System\Security\Cryptography\BasicSymmetricCipher.cs" />
     <Compile Include="System\Security\Cryptography\ChaCha20Poly1305.cs" />
@@ -1704,6 +1708,10 @@
              Link="Common\Microsoft\Win32\SafeHandles\SafeCryptMsgHandle.cs" />
     <Compile Include="$(CommonPath)Microsoft\Win32\SafeHandles\SafeUnicodeStringHandle.cs"
              Link="Microsoft\Win32\SafeHandles\SafeUnicodeStringHandle.cs" />
+    <Compile Include="$(CommonPath)System\Security\Cryptography\AeadCommon.Windows.cs"
+             Link="Common\System\Security\Cryptography\AeadCommon.Windows" />
+    <Compile Include="$(CommonPath)System\Security\Cryptography\AesGcm.Windows.cs"
+             Link="Common\System\Security\Cryptography\AesGcm.Windows.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\CngPkcs8.cs"
              Link="Common\System\Security\Cryptography\CngPkcs8.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\CryptoThrowHelper.Windows.cs"
@@ -1741,10 +1749,8 @@
     <Compile Include="$(CommonPath)System\Security\Cryptography\SP800108HmacCounterKdfImplementationManaged.cs"
              Link="Common\System\Security\Cryptography\SP800108HmacCounterKdfImplementationManaged.cs" />
     <Compile Include="Microsoft\Win32\SafeHandles\NCryptSafeHandles.cs" />
-    <Compile Include="System\Security\Cryptography\AeadCommon.Windows.cs" />
     <Compile Include="System\Security\Cryptography\AesCcm.Windows.cs" />
     <Compile Include="System\Security\Cryptography\AesCng.Windows.cs" />
-    <Compile Include="System\Security\Cryptography\AesGcm.Windows.cs" />
     <Compile Include="System\Security\Cryptography\AesImplementation.Windows.cs" />
     <Compile Include="System\Security\Cryptography\AsnFormatter.Windows.cs" />
     <Compile Include="System\Security\Cryptography\BasicSymmetricCipherCsp.cs" />
