@@ -96,7 +96,8 @@
           Condition="$([MSBuild]::IsOsPlatform(Windows))">
     <PropertyGroup>
         <_BuildNativeArgs Condition="'$(Ninja)' == 'false'">$(_BuildNativeArgs) msbuild</_BuildNativeArgs>
-        <_MonoWasmMTCMakeArgs Condition="'$(WasmEnableThreads)' == 'true'"> -DMONO_WASM_MT=1</_MonoWasmMTCMakeArgs>
+        <_MonoWasmMTCMakeArgs Condition="'$(WasmEnableThreads)' == 'true'">-DMONO_WASM_MT=1</_MonoWasmMTCMakeArgs>
+        <_MonoWasmMTCMakeArgs Condition="'$(CMakeArgs)' != ''"> $(_MonoWasmMTCMakeArgs)</_MonoWasmMTCMakeArgs>
         <_BuildNativeArgs Condition="'$(CMakeArgs)' != '' or '$(_MonoWasmMTCMakeArgs)' != ''"> -cmakeargs "$(CMakeArgs)$(_MonoWasmMTCMakeArgs)"</_BuildNativeArgs>
     </PropertyGroup>
     <!-- Run script that uses CMake to generate and build the native files. -->
