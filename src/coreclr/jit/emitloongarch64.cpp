@@ -3988,9 +3988,13 @@ void emitter::emitDisInsName(code_t code, const BYTE* addr, instrDesc* id)
 
     printf("  ");
 
-    if (!emitComp->opts.disDiffable)
+    if (emitComp->opts.disCodeBytes && !emitComp->opts.disDiffable)
     {
         printf("%08X  ", code);
+    }
+    else
+    {
+        printf("          ");
     }
 #else
     printf("            ");
