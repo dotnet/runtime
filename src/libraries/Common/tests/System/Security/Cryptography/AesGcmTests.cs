@@ -1000,6 +1000,7 @@ namespace System.Security.Cryptography.Tests
             key = RandomNumberGenerator.GetBytes(256 / 8);
 #else
             key = new byte[256 / 8];
+
             using (RandomNumberGenerator generator = RandomNumberGenerator.Create())
             {
                 generator.GetBytes(key);
