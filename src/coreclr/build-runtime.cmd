@@ -74,6 +74,7 @@ set __Ninja=1
 set __RequestedBuildComponents=
 set __OutputRid=
 set __SubDir=
+set __ShouldEmitCmakeTarget=0
 
 :Arg_Loop
 if "%1" == "" goto ArgsDone
@@ -392,12 +393,19 @@ if %__BuildNative% EQU 1 (
         set __ExtraCmakeArgs="-DCMAKE_BUILD_TYPE=!__BuildType!"
     )
 
+    :: We want to specify CMAKE_TARGET_* when __HostOS isn't passed in or is windows (host == target)
     if /i not "%__HostOS%" == "%__TargetOS%" (
         if /i "%__HostOS%" == "" (
-            set __ExtraCmakeArgs=!__ExtraCmakeArgs! "-DCLR_CMAKE_TARGET_ARCH=%__TargetArch%" "-DCLR_CMAKE_TARGET_OS=%__TargetOS%"
+            set __ShouldEmitCmakeTarget=1
         )
+    ) else (
+        set __ShouldEmitCmakeTarget=1
     )
 
+    if %__ShouldEmitCmakeTarget% EQU 1 (
+        set __ExtraCmakeArgs=!__ExtraCmakeArgs! "-DCLR_CMAKE_TARGET_ARCH=%__TargetArch%" "-DCLR_CMAKE_TARGET_OS=%__TargetOS%"
+    )
+    
     set __ExtraCmakeArgs=!__ExtraCmakeArgs! "-DCLI_CMAKE_FALLBACK_OS=%__HostFallbackOS%" "-DCLR_CMAKE_PGO_INSTRUMENT=%__PgoInstrument%" "-DCLR_CMAKE_OPTDATA_PATH=%__PgoOptDataPath%" "-DCLR_CMAKE_PGO_OPTIMIZE=%__PgoOptimize%"
 
     if /i "%__TargetOS%" == "android" (
