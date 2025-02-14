@@ -2804,8 +2804,8 @@ bool Compiler::fgSimpleLowerCastOfSmpOp(LIR::Range& range, GenTreeCast* cast)
 }
 
 //------------------------------------------------------------------------
-// fgSimpleLowerCastOfSmallOp: Optimization to remove CAST nodes from operands of some small ops that depents on
-// lower bits only.
+// fgSimpleLowerBswap16 : Optimization to remove CAST nodes from operands of small ops that depents on
+// lower bits only (currently only BSWAP16).
 // Example:
 //      BSWAP16(CAST(x)) transforms to BSWAP16(x)
 //
@@ -2819,18 +2819,16 @@ bool Compiler::fgSimpleLowerCastOfSmpOp(LIR::Range& range, GenTreeCast* cast)
 //
 //      Because the optimization happens during rationalization, turning into LIR, it is safe to remove the CAST.
 //
-bool Compiler::fgSimpleLowerCastOfSmallOp(LIR::Range& range, GenTree* op)
+bool Compiler::fgSimpleLowerBswap16(LIR::Range& range, GenTree* op)
 {
+    assert(op->OperIs(GT_BSWAP16));
+
     if (opts.OptimizationDisabled())
         return false;
 
     // When openrand is a integral cast
     // When both source and target sizes are at least the operation size
-    var_types opSize;
-    if (op->OperIs(GT_BSWAP16))
-        opSize = TYP_SHORT;
-    else
-        return false;
+    var_types opSize = TYP_SHORT;
 
     bool madeChanges = false;
 

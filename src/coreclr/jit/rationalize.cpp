@@ -793,7 +793,7 @@ Compiler::fgWalkResult Rationalizer::RewriteNode(GenTree** useEdge, Compiler::Ge
         case GT_BSWAP16:
             if (node->gtGetOp1()->OperIs(GT_CAST))
             {
-                comp->fgSimpleLowerCastOfSmallOp(BlockRange(), node);
+                comp->fgSimpleLowerBswap16(BlockRange(), node);
             }
             break;
 
