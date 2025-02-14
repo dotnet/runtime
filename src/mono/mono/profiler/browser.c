@@ -204,7 +204,7 @@ parse_arg (const char *arg)
 }
 
 static void
-proflog_parse_args (const char *desc)
+parse_args (const char *desc)
 {
 	const char *p;
 	gboolean in_quotes = FALSE;
@@ -268,7 +268,7 @@ mono_profiler_init_browser (const char *desc)
 {
 	// browser:
 	if (desc && desc [7] == ':') {
-		proflog_parse_args (desc + 8);
+		parse_args (desc + 8);
 	}
 
 	MonoProfilerHandle handle = mono_profiler_create (&browser_profiler);
