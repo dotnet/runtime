@@ -21,7 +21,8 @@ public:
     static FCDECL1(INT32, GetCorElementTypeOfElementType, ArrayBase* arrayUNSAFE);
 };
 
-extern "C" void QCALLTYPE Array_CreateInstance(QCall::TypeHandle pTypeHnd, INT32 rank, INT32* pLengths, INT32* pBounds, BOOL createFromArrayType, QCall::ObjectHandleOnStack retArray);
 extern "C" PCODE QCALLTYPE Array_GetElementConstructorEntrypoint(QCall::TypeHandle pArrayTypeHnd);
+extern "C" void QCALLTYPE Array_CreateInstance(QCall::TypeHandle pTypeHnd, INT32 rank, INT32* pLengths, INT32* pBounds, BOOL createFromArrayType, QCall::ObjectHandleOnStack retArray);
+extern "C" void QCALLTYPE Array_CreateInstanceMDArray(EnregisteredTypeHandle typeHandle, UINT32 dwNumArgs, INT32* pArgList, QCall::ObjectHandleOnStack retArray);
 
 #endif // _ARRAYNATIVE_H_

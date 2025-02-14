@@ -3023,22 +3023,19 @@ namespace System.Xml
 
         private void ImplReadElement()
         {
-            if (3 != _docState || 9 != _docState)
+            switch (_docState)
             {
-                switch (_docState)
-                {
-                    case 0:
-                        _docState = 9;
-                        break;
-                    case 1:
-                    case 2:
-                        _docState = 3;
-                        break;
-                    case -1:
-                        throw CreateUnexpectedTokenException(_token);
-                    default:
-                        break;
-                }
+                case 0:
+                    _docState = 9;
+                    break;
+                case 1:
+                case 2:
+                    _docState = 3;
+                    break;
+                case -1:
+                    throw CreateUnexpectedTokenException(_token);
+                default:
+                    break;
             }
             _elemDepth++;
             if (_elemDepth == _elementStack.Length)

@@ -13,47 +13,24 @@ namespace System.Linq.Tests
         {
             for (int length = 2; length < 65; length++)
             {
-                yield return new object[] { Shuffler.Shuffle(Enumerable.Range(length, length).Select(i => (byte)i)), (byte)length };
-                yield return new object[] { Shuffler.Shuffle(Enumerable.Range(length, length).Select(i => (byte)i).ToArray()), (byte)length };
+                yield return [Enumerable.Range(length, length).Select(i => (byte)i).Shuffle(), (byte)length];
 
                 // Unit Tests does +T.One so we should generate data up to one value below sbyte.MaxValue, otherwise the type overflows
                 if ((length + length) < sbyte.MaxValue) {
-                    yield return new object[] { Shuffler.Shuffle(Enumerable.Range(length, length).Select(i => (sbyte)i)), (sbyte)length };
-                    yield return new object[] { Shuffler.Shuffle(Enumerable.Range(length, length).Select(i => (sbyte)i).ToArray()), (sbyte)length };
+                    yield return [Enumerable.Range(length, length).Select(i => (sbyte)i).Shuffle(), (sbyte)length];
                 }
 
-                yield return new object[] { Shuffler.Shuffle(Enumerable.Range(length, length).Select(i => (ushort)i)), (ushort)length };
-                yield return new object[] { Shuffler.Shuffle(Enumerable.Range(length, length).Select(i => (ushort)i).ToArray()), (ushort)length };
-
-                yield return new object[] { Shuffler.Shuffle(Enumerable.Range(length, length).Select(i => (short)i)), (short)length };
-                yield return new object[] { Shuffler.Shuffle(Enumerable.Range(length, length).Select(i => (short)i).ToArray()), (short)length };
-
-                yield return new object[] { Shuffler.Shuffle(Enumerable.Range(length, length).Select(i => (uint)i)), (uint)length };
-                yield return new object[] { Shuffler.Shuffle(Enumerable.Range(length, length).Select(i => (uint)i).ToArray()), (uint)length };
-
-                yield return new object[] { Shuffler.Shuffle(Enumerable.Range(length, length).Select(i => (int)i)), (int)length };
-                yield return new object[] { Shuffler.Shuffle(Enumerable.Range(length, length).Select(i => (int)i).ToArray()), (int)length };
-
-                yield return new object[] { Shuffler.Shuffle(Enumerable.Range(length, length).Select(i => (ulong)i)), (ulong)length };
-                yield return new object[] { Shuffler.Shuffle(Enumerable.Range(length, length).Select(i => (ulong)i).ToArray()), (ulong)length };
-
-                yield return new object[] { Shuffler.Shuffle(Enumerable.Range(length, length).Select(i => (long)i)), (long)length };
-                yield return new object[] { Shuffler.Shuffle(Enumerable.Range(length, length).Select(i => (long)i).ToArray()), (long)length };
-
-                yield return new object[] { Shuffler.Shuffle(Enumerable.Range(length, length).Select(i => (float)i)), (float)length };
-                yield return new object[] { Shuffler.Shuffle(Enumerable.Range(length, length).Select(i => (float)i).ToArray()), (float)length };
-
-                yield return new object[] { Shuffler.Shuffle(Enumerable.Range(length, length).Select(i => (double)i)), (double)length };
-                yield return new object[] { Shuffler.Shuffle(Enumerable.Range(length, length).Select(i => (double)i).ToArray()), (double)length };
-
-                yield return new object[] { Shuffler.Shuffle(Enumerable.Range(length, length).Select(i => (decimal)i)), (decimal)length };
-                yield return new object[] { Shuffler.Shuffle(Enumerable.Range(length, length).Select(i => (decimal)i).ToArray()), (decimal)length };
-
-                yield return new object[] { Shuffler.Shuffle(Enumerable.Range(length, length).Select(i => (nuint)i)), (nuint)length };
-                yield return new object[] { Shuffler.Shuffle(Enumerable.Range(length, length).Select(i => (nuint)i).ToArray()), (nuint)length };
-
-                yield return new object[] { Shuffler.Shuffle(Enumerable.Range(length, length).Select(i => (nint)i)), (nint)length };
-                yield return new object[] { Shuffler.Shuffle(Enumerable.Range(length, length).Select(i => (nint)i).ToArray()), (nint)length };
+                yield return [Enumerable.Range(length, length).Select(i => (ushort)i).Shuffle(), (ushort)length];
+                yield return [Enumerable.Range(length, length).Select(i => (short)i).Shuffle(), (short)length];
+                yield return [Enumerable.Range(length, length).Select(i => (uint)i).Shuffle(), (uint)length];
+                yield return [Enumerable.Range(length, length).Select(i => (int)i).Shuffle(), (int)length];
+                yield return [Enumerable.Range(length, length).Select(i => (ulong)i).Shuffle(), (ulong)length];
+                yield return [Enumerable.Range(length, length).Select(i => (long)i).Shuffle(), (long)length];
+                yield return [Enumerable.Range(length, length).Select(i => (float)i).Shuffle(), (float)length];
+                yield return [Enumerable.Range(length, length).Select(i => (double)i).Shuffle(), (double)length];
+                yield return [Enumerable.Range(length, length).Select(i => (decimal)i).Shuffle(), (decimal)length];
+                yield return [Enumerable.Range(length, length).Select(i => (nuint)i).Shuffle(), (nuint)length];
+                yield return [Enumerable.Range(length, length).Select(i => (nint)i).Shuffle(), (nint)length];
             }
         }
 
@@ -97,22 +74,22 @@ namespace System.Linq.Tests
         {
             foreach ((int[] array, long expected) in new[]
             {
-                (new[] { 42 }, 42),
+                ([42], 42),
                 (Enumerable.Range(1, 10).ToArray(), 1),
-                (new int[] { -1, -10, 10, 200, 1000 }, -10),
-                (new int[] { 3000, 100, 200, 1000 }, 100),
+                ([-1, -10, 10, 200, 1000], -10),
+                ([3000, 100, 200, 1000], 100),
                 (new int[] { 3000, 100, 200, 1000 }.Concat(Enumerable.Repeat(int.MinValue, 1)).ToArray(), int.MinValue),
 
-                (new[] { 20 }, 20),
+                ([20], 20),
                 (Enumerable.Repeat(-2, 5).ToArray(), -2),
                 (Enumerable.Range(1, 10).ToArray(), 1),
-                (new int[] { 6, 9, 10, 7, 8 }, 6),
-                (new int[] { 6, 9, 10, 0, -5 }, -5),
-                (new int[] { 6, 0, 9, 0, 10, 0 }, 0),
+                ([6, 9, 10, 7, 8], 6),
+                ([6, 9, 10, 0, -5], -5),
+                ([6, 0, 9, 0, 10, 0], 0),
             })
             {
-                yield return new object[] { new TestEnumerable<int>(array), expected };
-                yield return new object[] { array, expected };
+                yield return [new TestEnumerable<int>(array), expected];
+                yield return [array, expected];
             }
         }
 
@@ -146,21 +123,21 @@ namespace System.Linq.Tests
         {
             foreach ((long[] array, long expected) in new[]
             {
-                (new[] { 42L }, 42L),
+                ([42L], 42L),
                 (Enumerable.Range(1, 10).Select(i => (long)i).ToArray(), 1L),
-                (new long[] { -1, -10, 10, 200, 1000 }, -10L),
-                (new long[] { 3000, 100, 200, 1000 }, 100L),
+                ([-1, -10, 10, 200, 1000], -10L),
+                ([3000, 100, 200, 1000], 100L),
                 (new long[] { 3000, 100, 200, 1000 }.Concat(Enumerable.Repeat(long.MinValue, 1)).ToArray(), long.MinValue),
 
-                (new[] { int.MaxValue + 10L }, int.MaxValue + 10L),
+                ([int.MaxValue + 10L], int.MaxValue + 10L),
                 (Enumerable.Repeat(500L, 5).ToArray(), 500L),
-                (new long[] { -250, 49, 130, 47, 28 }, -250L),
-                (new long[] { 6, 9, 10, 0, -int.MaxValue - 50L }, -int.MaxValue - 50L),
-                (new long[] { 6, -5, 9, -5, 10, -5 }, -5),
+                ([-250, 49, 130, 47, 28], -250L),
+                ([6, 9, 10, 0, -int.MaxValue - 50L], -int.MaxValue - 50L),
+                ([6, -5, 9, -5, 10, -5], -5),
             })
             {
-                yield return new object[] { new TestEnumerable<long>(array), expected };
-                yield return new object[] { array, expected };
+                yield return [new TestEnumerable<long>(array), expected];
+                yield return [array, expected];
             }
         }
 
@@ -194,22 +171,22 @@ namespace System.Linq.Tests
         {
             foreach ((float[] array, float expected) in new[]
             {
-                (new[] { 42f }, 42f),
+                ([42f], 42f),
                 (Enumerable.Range(1, 10).Select(i => (float)i).ToArray(), 1f),
-                (new float[] { -1, -10, 10, 200, 1000 }, -10f),
-                (new float[] { 3000, 100, 200, 1000 }, 100),
+                ([-1, -10, 10, 200, 1000], -10f),
+                ([3000, 100, 200, 1000], 100),
                 (new float[] { 3000, 100, 200, 1000 }.Concat(Enumerable.Repeat(float.MinValue, 1)).ToArray(), float.MinValue),
 
-                (new[] { 5.5f }, 5.5f),
+                ([5.5f], 5.5f),
                 (Enumerable.Repeat(float.NaN, 5).ToArray(), float.NaN),
-                (new float[] { -2.5f, 4.9f, 130f, 4.7f, 28f }, -2.5f),
-                (new float[] { 6.8f, 9.4f, 10f, 0, -5.6f }, -5.6f),
-                (new float[] { -5.5f, float.NegativeInfinity, 9.9f, float.NegativeInfinity }, float.NegativeInfinity),
+                ([-2.5f, 4.9f, 130f, 4.7f, 28f], -2.5f),
+                ([6.8f, 9.4f, 10f, 0, -5.6f], -5.6f),
+                ([-5.5f, float.NegativeInfinity, 9.9f, float.NegativeInfinity], float.NegativeInfinity),
 
-                (new float[] { float.NaN, 6.8f, 9.4f, 10f, 0, -5.6f }, float.NaN),
-                (new float[] { 6.8f, 9.4f, 10f, 0, -5.6f, float.NaN }, float.NaN),
-                (new float[] { float.NaN, float.NegativeInfinity }, float.NaN),
-                (new float[] { float.NegativeInfinity, float.NaN }, float.NaN),
+                ([float.NaN, 6.8f, 9.4f, 10f, 0, -5.6f], float.NaN),
+                ([6.8f, 9.4f, 10f, 0, -5.6f, float.NaN], float.NaN),
+                ([float.NaN, float.NegativeInfinity], float.NaN),
+                ([float.NegativeInfinity, float.NaN], float.NaN),
 
                 // Normally NaN < anything is false, as is anything < NaN
                 // However, this leads to some irksome outcomes in Min and Max.
@@ -218,20 +195,20 @@ namespace System.Linq.Tests
                 // ordering where NaN is smaller than every value, including
                 // negative infinity.
                 (Enumerable.Range(1, 10).Select(i => (float)i).Concat(Enumerable.Repeat(float.NaN, 1)).ToArray(), float.NaN),
-                (new float[] { -1F, -10, float.NaN, 10, 200, 1000 }, float.NaN),
-                (new float[] { float.MinValue, 3000F, 100, 200, float.NaN, 1000 }, float.NaN),
+                ([-1F, -10, float.NaN, 10, 200, 1000], float.NaN),
+                ([float.MinValue, 3000F, 100, 200, float.NaN, 1000], float.NaN),
             })
             {
-                yield return new object[] { new TestEnumerable<float>(array), expected };
-                yield return new object[] { array, expected };
+                yield return [new TestEnumerable<float>(array), expected];
+                yield return [array, expected];
             }
 
             // In .NET Core, Enumerable.Min shortcircuits if it finds any float.NaN in the array,
             // as nothing can be less than float.NaN. See https://github.com/dotnet/corefx/pull/2426.
             // Without this optimization, we would iterate through int.MaxValue elements, which takes
             // a long time.
-            yield return new object[] { Enumerable.Repeat(float.NaN, int.MaxValue), float.NaN };
-            yield return new object[] { Enumerable.Repeat(float.NaN, 3).ToArray(), float.NaN };
+            yield return [Enumerable.Repeat(float.NaN, int.MaxValue), float.NaN];
+            yield return [Enumerable.Repeat(float.NaN, 3).ToArray(), float.NaN];
         }
 
         [Theory]
@@ -264,21 +241,21 @@ namespace System.Linq.Tests
         {
             foreach ((double[] array, double expected) in new[]
             {
-                (new[] { 42.0 }, 42.0),
+                ([42.0], 42.0),
                 (Enumerable.Range(1, 10).Select(i => (double)i).ToArray(), 1.0 ),
-                (new double[] { -1, -10, 10, 200, 1000 }, -10.0),
-                (new double[] { 3000, 100, 200, 1000 }, 100.0),
+                ([-1, -10, 10, 200, 1000], -10.0),
+                ([3000, 100, 200, 1000], 100.0),
                 (new double[] { 3000, 100, 200, 1000 }.Concat(Enumerable.Repeat(double.MinValue, 1)).ToArray(), double.MinValue),
 
-                (new[] { 5.5 }, 5.5),
-                (new double[] { -2.5, 4.9, 130, 4.7, 28 }, -2.5),
-                (new double[] { 6.8, 9.4, 10, 0, -5.6 }, -5.6),
-                (new double[] { -5.5, double.NegativeInfinity, 9.9, double.NegativeInfinity }, double.NegativeInfinity),
+                ([5.5], 5.5),
+                ([-2.5, 4.9, 130, 4.7, 28], -2.5),
+                ([6.8, 9.4, 10, 0, -5.6], -5.6),
+                ([-5.5, double.NegativeInfinity, 9.9, double.NegativeInfinity], double.NegativeInfinity),
 
-                (new double[] { double.NaN, 6.8, 9.4, 10, 0, -5.6 }, double.NaN),
-                (new double[] { 6.8, 9.4, 10, 0, -5.6, double.NaN }, double.NaN),
-                (new double[] { double.NaN, double.NegativeInfinity }, double.NaN),
-                (new double[] { double.NegativeInfinity, double.NaN }, double.NaN),
+                ([double.NaN, 6.8, 9.4, 10, 0, -5.6], double.NaN),
+                ([6.8, 9.4, 10, 0, -5.6, double.NaN], double.NaN),
+                ([double.NaN, double.NegativeInfinity], double.NaN),
+                ([double.NegativeInfinity, double.NaN], double.NaN),
 
                 // Normally NaN < anything is false, as is anything < NaN
                 // However, this leads to some irksome outcomes in Min and Max.
@@ -287,19 +264,19 @@ namespace System.Linq.Tests
                 // ordering where NaN is smaller than every value, including
                 // negative infinity.
                 (Enumerable.Range(1, 10).Select(i => (double)i).Concat(Enumerable.Repeat(double.NaN, 1)).ToArray(), double.NaN),
-                (new double[] { -1, -10, double.NaN, 10, 200, 1000 }, double.NaN),
-                (new double[] { double.MinValue, 3000F, 100, 200, double.NaN, 1000 }, double.NaN),
+                ([-1, -10, double.NaN, 10, 200, 1000], double.NaN),
+                ([double.MinValue, 3000F, 100, 200, double.NaN, 1000], double.NaN),
             })
             {
-                yield return new object[] { new TestEnumerable<double>(array), expected };
-                yield return new object[] { array, expected };
+                yield return [new TestEnumerable<double>(array), expected];
+                yield return [array, expected];
             }
 
             // In .NET Core, Enumerable.Min shortcircuits if it finds any double.NaN in the array,
             // as nothing can be less than double.NaN. See https://github.com/dotnet/corefx/pull/2426.
             // Without this optimization, we would iterate through int.MaxValue elements, which takes
             // a long time.
-            yield return new object[] { Enumerable.Repeat(double.NaN, int.MaxValue), double.NaN };
+            yield return [Enumerable.Repeat(double.NaN, int.MaxValue), double.NaN];
         }
 
         [Theory]
@@ -332,21 +309,21 @@ namespace System.Linq.Tests
         {
             foreach ((decimal[] array, decimal expected) in new[]
             {
-                (new[] { 42m }, 42m),
+                ([42m], 42m),
                 (Enumerable.Range(1, 10).Select(i => (decimal)i).ToArray(), 1m),
-                (new decimal[] { -1, -10, 10, 200, 1000 }, -10m),
-                (new decimal[] { 3000, 100, 200, 1000 }, 100m),
+                ([-1, -10, 10, 200, 1000], -10m),
+                ([3000, 100, 200, 1000], 100m),
                 (new decimal[] { 3000, 100, 200, 1000 }.Concat(Enumerable.Repeat(decimal.MinValue, 1)).ToArray(), decimal.MinValue),
 
-                (new[] { 5.5m }, 5.5m),
+                ([5.5m], 5.5m),
                 (Enumerable.Repeat(-3.4m, 5).ToArray(), -3.4m),
-                (new decimal[] { -2.5m, 4.9m, 130m, 4.7m, 28m }, -2.5m),
-                (new decimal[] { 6.8m, 9.4m, 10m, 0m, 0m, decimal.MinValue }, decimal.MinValue),
-                (new decimal[] { -5.5m, 0m, 9.9m, -5.5m, 5m }, -5.5m),
+                ([-2.5m, 4.9m, 130m, 4.7m, 28m], -2.5m),
+                ([6.8m, 9.4m, 10m, 0m, 0m, decimal.MinValue], decimal.MinValue),
+                ([-5.5m, 0m, 9.9m, -5.5m, 5m], -5.5m),
             })
             {
-                yield return new object[] { new TestEnumerable<decimal>(array), expected };
-                yield return new object[] { array, expected };
+                yield return [new TestEnumerable<decimal>(array), expected];
+                yield return [array, expected];
             }
         }
 
@@ -378,19 +355,20 @@ namespace System.Linq.Tests
 
         public static IEnumerable<object[]> Min_NullableInt_TestData()
         {
-            yield return new object[] { Enumerable.Range(1, 10).Select(i => (int?)i).ToArray(), 1 };
-            yield return new object[] { new int?[] { null, -1, -10, 10, 200, 1000 }, -10 };
-            yield return new object[] { new int?[] { null, 3000, 100, 200, 1000 }, 100 };
-            yield return new object[] { new int?[] { null, 3000, 100, 200, 1000 }.Concat(Enumerable.Repeat((int?)int.MinValue, 1)), int.MinValue };
-            yield return new object[] { Enumerable.Repeat(default(int?), 100), null };
-            yield return new object[] { Enumerable.Repeat((int?)42, 1), 42 };
+            yield return [Enumerable.Range(1, 10).Select(i => (int?)i).ToArray(), 1];
+            yield return [new int?[] { null, -1, -10, 10, 200, 1000 }, -10];
+            yield return [new int?[] { null, 3000, 100, 200, 1000 }, 100];
+            yield return [new int?[] { null, 3000, 100, 200, 1000 }.Concat(Enumerable.Repeat((int?)int.MinValue, 1)), int.MinValue
+            ];
+            yield return [Enumerable.Repeat(default(int?), 100), null];
+            yield return [Enumerable.Repeat((int?)42, 1), 42];
 
-            yield return new object[] { Enumerable.Empty<int?>(), null };
-            yield return new object[] { Enumerable.Repeat((int?)20, 1), 20 };
-            yield return new object[] { Enumerable.Repeat(default(int?), 5), null };
-            yield return new object[] { new int?[] { 6, null, 9, 10, null, 7, 8 }, 6 };
-            yield return new object[] { new int?[] { null, null, null, null, null, -5 }, -5 };
-            yield return new object[] { new int?[] { 6, null, null, 0, 9, 0, 10, 0 }, 0 };
+            yield return [Enumerable.Empty<int?>(), null];
+            yield return [Enumerable.Repeat((int?)20, 1), 20];
+            yield return [Enumerable.Repeat(default(int?), 5), null];
+            yield return [new int?[] { 6, null, 9, 10, null, 7, 8 }, 6];
+            yield return [new int?[] { null, null, null, null, null, -5 }, -5];
+            yield return [new int?[] { 6, null, null, 0, 9, 0, 10, 0 }, 0];
         }
 
         [Theory]
@@ -415,19 +393,20 @@ namespace System.Linq.Tests
 
         public static IEnumerable<object[]> Min_NullableLong_TestData()
         {
-            yield return new object[] { Enumerable.Range(1, 10).Select(i => (long?)i).ToArray(), 1L };
-            yield return new object[] { new long?[] { null, -1, -10, 10, 200, 1000 }, -10L };
-            yield return new object[] { new long?[] { null, 3000, 100, 200, 1000 }, 100L };
-            yield return new object[] { new long?[] { null, 3000, 100, 200, 1000 }.Concat(Enumerable.Repeat((long?)long.MinValue, 1)), long.MinValue };
-            yield return new object[] { Enumerable.Repeat(default(long?), 100), null };
-            yield return new object[] { Enumerable.Repeat((long?)42, 1), 42L };
+            yield return [Enumerable.Range(1, 10).Select(i => (long?)i).ToArray(), 1L];
+            yield return [new long?[] { null, -1, -10, 10, 200, 1000 }, -10L];
+            yield return [new long?[] { null, 3000, 100, 200, 1000 }, 100L];
+            yield return [new long?[] { null, 3000, 100, 200, 1000 }.Concat(Enumerable.Repeat((long?)long.MinValue, 1)), long.MinValue
+            ];
+            yield return [Enumerable.Repeat(default(long?), 100), null];
+            yield return [Enumerable.Repeat((long?)42, 1), 42L];
 
-            yield return new object[] { Enumerable.Empty<long?>(), null };
-            yield return new object[] { Enumerable.Repeat((long?)long.MaxValue, 1), long.MaxValue };
-            yield return new object[] { Enumerable.Repeat(default(long?), 5), null };
-            yield return new object[] { new long?[] { long.MinValue, null, 9, 10, null, 7, 8 }, long.MinValue };
-            yield return new object[] { new long?[] { null, null, null, null, null, -long.MaxValue }, -long.MaxValue };
-            yield return new object[] { new long?[] { 6, null, null, 0, 9, 0, 10, 0 }, 0L };
+            yield return [Enumerable.Empty<long?>(), null];
+            yield return [Enumerable.Repeat((long?)long.MaxValue, 1), long.MaxValue];
+            yield return [Enumerable.Repeat(default(long?), 5), null];
+            yield return [new long?[] { long.MinValue, null, 9, 10, null, 7, 8 }, long.MinValue];
+            yield return [new long?[] { null, null, null, null, null, -long.MaxValue }, -long.MaxValue];
+            yield return [new long?[] { 6, null, null, 0, 9, 0, 10, 0 }, 0L];
         }
 
         [Theory]
@@ -446,34 +425,35 @@ namespace System.Linq.Tests
 
         public static IEnumerable<object[]> Min_NullableFloat_TestData()
         {
-            yield return new object[] { Enumerable.Range(1, 10).Select(i => (float?)i).ToArray(), 1f };
-            yield return new object[] { new float?[] { null, -1, -10, 10, 200, 1000 }, -10f };
-            yield return new object[] { new float?[] { null, 3000, 100, 200, 1000 }, 100f };
-            yield return new object[] { new float?[] { null, 3000, 100, 200, 1000 }.Concat(Enumerable.Repeat((float?)float.MinValue, 1)), float.MinValue };
-            yield return new object[] { Enumerable.Repeat(default(float?), 100), null };
-            yield return new object[] { Enumerable.Repeat((float?)42, 1), 42f };
+            yield return [Enumerable.Range(1, 10).Select(i => (float?)i).ToArray(), 1f];
+            yield return [new float?[] { null, -1, -10, 10, 200, 1000 }, -10f];
+            yield return [new float?[] { null, 3000, 100, 200, 1000 }, 100f];
+            yield return [new float?[] { null, 3000, 100, 200, 1000 }.Concat(Enumerable.Repeat((float?)float.MinValue, 1)), float.MinValue
+            ];
+            yield return [Enumerable.Repeat(default(float?), 100), null];
+            yield return [Enumerable.Repeat((float?)42, 1), 42f];
 
-            yield return new object[] { Enumerable.Empty<float?>(), null };
-            yield return new object[] { Enumerable.Repeat((float?)float.MinValue, 1), float.MinValue };
-            yield return new object[] { Enumerable.Repeat(default(float?), 100), null };
-            yield return new object[] { new float?[] { -4.50f, null, 10.98f, null, 7.5f, 8.6f }, -4.5f };
-            yield return new object[] { new float?[] { null, null, null, null, null, 0f }, 0f };
-            yield return new object[] { new float?[] { 6.4f, null, null, -0.5f, 9.4f, -0.5f, 10.9f, -0.5f }, -0.5f };
+            yield return [Enumerable.Empty<float?>(), null];
+            yield return [Enumerable.Repeat((float?)float.MinValue, 1), float.MinValue];
+            yield return [Enumerable.Repeat(default(float?), 100), null];
+            yield return [new float?[] { -4.50f, null, 10.98f, null, 7.5f, 8.6f }, -4.5f];
+            yield return [new float?[] { null, null, null, null, null, 0f }, 0f];
+            yield return [new float?[] { 6.4f, null, null, -0.5f, 9.4f, -0.5f, 10.9f, -0.5f }, -0.5f];
 
-            yield return new object[] { new float?[] { float.NaN, 6.8f, 9.4f, 10f, 0, null, -5.6f }, float.NaN };
-            yield return new object[] { new float?[] { 6.8f, 9.4f, 10f, 0, null, -5.6f, float.NaN }, float.NaN };
-            yield return new object[] { new float?[] { float.NaN, float.NegativeInfinity }, float.NaN };
-            yield return new object[] { new float?[] { float.NegativeInfinity, float.NaN }, float.NaN };
-            yield return new object[] { new float?[] { float.NaN, null, null, null }, float.NaN };
-            yield return new object[] { new float?[] { null, null, null, float.NaN }, float.NaN };
-            yield return new object[] { new float?[] { null, float.NaN, null }, float.NaN };
+            yield return [new float?[] { float.NaN, 6.8f, 9.4f, 10f, 0, null, -5.6f }, float.NaN];
+            yield return [new float?[] { 6.8f, 9.4f, 10f, 0, null, -5.6f, float.NaN }, float.NaN];
+            yield return [new float?[] { float.NaN, float.NegativeInfinity }, float.NaN];
+            yield return [new float?[] { float.NegativeInfinity, float.NaN }, float.NaN];
+            yield return [new float?[] { float.NaN, null, null, null }, float.NaN];
+            yield return [new float?[] { null, null, null, float.NaN }, float.NaN];
+            yield return [new float?[] { null, float.NaN, null }, float.NaN];
 
             // In .NET Core, Enumerable.Min shortcircuits if it finds any float.NaN in the array,
             // as nothing can be less than float.NaN. See https://github.com/dotnet/corefx/pull/2426.
             // Without this optimization, we would iterate through int.MaxValue elements, which takes
             // a long time.
-            yield return new object[] { Enumerable.Repeat((float?)float.NaN, int.MaxValue), float.NaN };
-            yield return new object[] { Enumerable.Repeat((float?)float.NaN, 3), float.NaN };
+            yield return [Enumerable.Repeat((float?)float.NaN, int.MaxValue), float.NaN];
+            yield return [Enumerable.Repeat((float?)float.NaN, 3), float.NaN];
         }
 
         [Theory]
@@ -493,34 +473,35 @@ namespace System.Linq.Tests
 
         public static IEnumerable<object[]> Min_NullableDouble_TestData()
         {
-            yield return new object[] { Enumerable.Range(1, 10).Select(i => (double?)i).ToArray(), 1.0 };
-            yield return new object[] { new double?[] { null, -1, -10, 10, 200, 1000 }, -10.0 };
-            yield return new object[] { new double?[] { null, 3000, 100, 200, 1000 }, 100.0 };
-            yield return new object[] { new double?[] { null, 3000, 100, 200, 1000 }.Concat(Enumerable.Repeat((double?)double.MinValue, 1)), double.MinValue };
-            yield return new object[] { Enumerable.Repeat(default(double?), 100), null };
-            yield return new object[] { Enumerable.Repeat((double?)42, 1), 42.0 };
+            yield return [Enumerable.Range(1, 10).Select(i => (double?)i).ToArray(), 1.0];
+            yield return [new double?[] { null, -1, -10, 10, 200, 1000 }, -10.0];
+            yield return [new double?[] { null, 3000, 100, 200, 1000 }, 100.0];
+            yield return [new double?[] { null, 3000, 100, 200, 1000 }.Concat(Enumerable.Repeat((double?)double.MinValue, 1)), double.MinValue
+            ];
+            yield return [Enumerable.Repeat(default(double?), 100), null];
+            yield return [Enumerable.Repeat((double?)42, 1), 42.0];
 
-            yield return new object[] { Enumerable.Empty<double?>(), null };
-            yield return new object[] { Enumerable.Repeat((double?)double.MinValue, 1), double.MinValue };
-            yield return new object[] { Enumerable.Repeat(default(double?), 5), null };
-            yield return new object[] { new double?[] { -4.50, null, 10.98, null, 7.5, 8.6 }, -4.5 };
-            yield return new object[] { new double?[] { null, null, null, null, null, 0 }, 0.0 };
-            yield return new object[] { new double?[] { 6.4, null, null, -0.5, 9.4, -0.5, 10.9, -0.5 }, -0.5 };
+            yield return [Enumerable.Empty<double?>(), null];
+            yield return [Enumerable.Repeat((double?)double.MinValue, 1), double.MinValue];
+            yield return [Enumerable.Repeat(default(double?), 5), null];
+            yield return [new double?[] { -4.50, null, 10.98, null, 7.5, 8.6 }, -4.5];
+            yield return [new double?[] { null, null, null, null, null, 0 }, 0.0];
+            yield return [new double?[] { 6.4, null, null, -0.5, 9.4, -0.5, 10.9, -0.5 }, -0.5];
 
-            yield return new object[] { new double?[] { double.NaN, 6.8, 9.4, 10.0, 0.0, null, -5.6 }, double.NaN };
-            yield return new object[] { new double?[] { 6.8, 9.4, 10, 0.0, null, -5.6f, double.NaN }, double.NaN };
-            yield return new object[] { new double?[] { double.NaN, double.NegativeInfinity }, double.NaN };
-            yield return new object[] { new double?[] { double.NegativeInfinity, double.NaN }, double.NaN };
-            yield return new object[] { new double?[] { double.NaN, null, null, null }, double.NaN };
-            yield return new object[] { new double?[] { null, null, null, double.NaN }, double.NaN };
-            yield return new object[] { new double?[] { null, double.NaN, null }, double.NaN };
+            yield return [new double?[] { double.NaN, 6.8, 9.4, 10.0, 0.0, null, -5.6 }, double.NaN];
+            yield return [new double?[] { 6.8, 9.4, 10, 0.0, null, -5.6f, double.NaN }, double.NaN];
+            yield return [new double?[] { double.NaN, double.NegativeInfinity }, double.NaN];
+            yield return [new double?[] { double.NegativeInfinity, double.NaN }, double.NaN];
+            yield return [new double?[] { double.NaN, null, null, null }, double.NaN];
+            yield return [new double?[] { null, null, null, double.NaN }, double.NaN];
+            yield return [new double?[] { null, double.NaN, null }, double.NaN];
 
             // In .NET Core, Enumerable.Min shortcircuits if it finds any double.NaN in the array,
             // as nothing can be less than double.NaN. See https://github.com/dotnet/corefx/pull/2426.
             // Without this optimization, we would iterate through int.MaxValue elements, which takes
             // a long time.
-            yield return new object[] { Enumerable.Repeat((double?)double.NaN, int.MaxValue), double.NaN };
-            yield return new object[] { Enumerable.Repeat((double?)double.NaN, 3), double.NaN };
+            yield return [Enumerable.Repeat((double?)double.NaN, int.MaxValue), double.NaN];
+            yield return [Enumerable.Repeat((double?)double.NaN, 3), double.NaN];
         }
 
         [Theory]
@@ -539,19 +520,21 @@ namespace System.Linq.Tests
 
         public static IEnumerable<object[]> Min_NullableDecimal_TestData()
         {
-            yield return new object[] { Enumerable.Range(1, 10).Select(i => (decimal?)i).ToArray(), 1m };
-            yield return new object[] { new decimal?[] { null, -1, -10, 10, 200, 1000 }, -10m };
-            yield return new object[] { new decimal?[] { null, 3000, 100, 200, 1000 }, 100m };
-            yield return new object[] { new decimal?[] { null, 3000, 100, 200, 1000 }.Concat(Enumerable.Repeat((decimal?)decimal.MinValue, 1)), decimal.MinValue };
-            yield return new object[] { Enumerable.Repeat(default(decimal?), 100), null };
-            yield return new object[] { Enumerable.Repeat((decimal?)42, 1), 42m };
+            yield return [Enumerable.Range(1, 10).Select(i => (decimal?)i).ToArray(), 1m];
+            yield return [new decimal?[] { null, -1, -10, 10, 200, 1000 }, -10m];
+            yield return [new decimal?[] { null, 3000, 100, 200, 1000 }, 100m];
+            yield return [new decimal?[] { null, 3000, 100, 200, 1000 }.Concat(Enumerable.Repeat((decimal?)decimal.MinValue, 1)), decimal.MinValue
+            ];
+            yield return [Enumerable.Repeat(default(decimal?), 100), null];
+            yield return [Enumerable.Repeat((decimal?)42, 1), 42m];
 
-            yield return new object[] { Enumerable.Empty<decimal?>(), null };
-            yield return new object[] { Enumerable.Repeat((decimal?)decimal.MaxValue, 1), decimal.MaxValue };
-            yield return new object[] { Enumerable.Repeat(default(decimal?), 5), null };
-            yield return new object[] { new decimal?[] { -4.50m, null, null, 10.98m, null, 7.5m, 8.6m }, -4.5m };
-            yield return new object[] { new decimal?[] { null, null, null, null, null, 0m }, 0m };
-            yield return new object[] { new decimal?[] { 6.4m, null, null, decimal.MinValue, 9.4m, decimal.MinValue, 10.9m, decimal.MinValue }, decimal.MinValue };
+            yield return [Enumerable.Empty<decimal?>(), null];
+            yield return [Enumerable.Repeat((decimal?)decimal.MaxValue, 1), decimal.MaxValue];
+            yield return [Enumerable.Repeat(default(decimal?), 5), null];
+            yield return [new decimal?[] { -4.50m, null, null, 10.98m, null, 7.5m, 8.6m }, -4.5m];
+            yield return [new decimal?[] { null, null, null, null, null, 0m }, 0m];
+            yield return [new decimal?[] { 6.4m, null, null, decimal.MinValue, 9.4m, decimal.MinValue, 10.9m, decimal.MinValue }, decimal.MinValue
+            ];
         }
 
         [Theory]
@@ -571,18 +554,20 @@ namespace System.Linq.Tests
 
         public static IEnumerable<object[]> Min_DateTime_TestData()
         {
-            yield return new object[] { Enumerable.Range(1, 10).Select(i => new DateTime(2000, 1, i)).ToArray(), new DateTime(2000, 1, 1) };
-            yield return new object[] { new DateTime[] { new DateTime(2000, 12, 1), new DateTime(2000, 1, 1), new DateTime(2000, 1, 12) }, new DateTime(2000, 1, 1) };
+            yield return [Enumerable.Range(1, 10).Select(i => new DateTime(2000, 1, i)).ToArray(), new DateTime(2000, 1, 1)
+            ];
+            yield return [new DateTime[] { new DateTime(2000, 12, 1), new DateTime(2000, 1, 1), new DateTime(2000, 1, 12) }, new DateTime(2000, 1, 1)
+            ];
 
-            DateTime[] hundred = new DateTime[]
-            {
+            DateTime[] hundred =
+            [
                 new DateTime(3000, 1, 1),
                 new DateTime(100, 1, 1),
                 new DateTime(200, 1, 1),
                 new DateTime(1000, 1, 1)
-            };
-            yield return new object[] { hundred, new DateTime(100, 1, 1) };
-            yield return new object[] { hundred.Concat(Enumerable.Repeat(DateTime.MinValue, 1)), DateTime.MinValue };
+            ];
+            yield return [hundred, new DateTime(100, 1, 1)];
+            yield return [hundred.Concat(Enumerable.Repeat(DateTime.MinValue, 1)), DateTime.MinValue];
         }
 
         [Theory]
@@ -613,17 +598,18 @@ namespace System.Linq.Tests
 
         public static IEnumerable<object[]> Min_String_TestData()
         {
-            yield return new object[] { Enumerable.Range(1, 10).Select(i => i.ToString()).ToArray(), "1" };
-            yield return new object[] { new string[] { "Alice", "Bob", "Charlie", "Eve", "Mallory", "Trent", "Victor" }, "Alice" };
-            yield return new object[] { new string[] { null, "Charlie", null, "Victor", "Trent", null, "Eve", "Alice", "Mallory", "Bob" }, "Alice" };
+            yield return [Enumerable.Range(1, 10).Select(i => i.ToString()).ToArray(), "1"];
+            yield return [new string[] { "Alice", "Bob", "Charlie", "Eve", "Mallory", "Trent", "Victor" }, "Alice"];
+            yield return [new string[] { null, "Charlie", null, "Victor", "Trent", null, "Eve", "Alice", "Mallory", "Bob" }, "Alice"
+            ];
 
-            yield return new object[] { Enumerable.Empty<string>(), null };
-            yield return new object[] { Enumerable.Repeat("Hello", 1), "Hello" };
-            yield return new object[] { Enumerable.Repeat("hi", 5), "hi" };
-            yield return new object[] { new string[] { "aaa", "abcd", "bark", "temp", "cat" }, "aaa" };
-            yield return new object[] { new string[] { null, null, null, null, "aAa" }, "aAa" };
-            yield return new object[] { new string[] { "ooo", "www", "www", "ooo", "ooo", "ppp" }, "ooo" };
-            yield return new object[] { Enumerable.Repeat(default(string), 5), null };
+            yield return [Enumerable.Empty<string>(), null];
+            yield return [Enumerable.Repeat("Hello", 1), "Hello"];
+            yield return [Enumerable.Repeat("hi", 5), "hi"];
+            yield return [new string[] { "aaa", "abcd", "bark", "temp", "cat" }, "aaa"];
+            yield return [new string[] { null, null, null, null, "aAa" }, "aAa"];
+            yield return [new string[] { "ooo", "www", "www", "ooo", "ooo", "ppp" }, "ooo"];
+            yield return [Enumerable.Repeat(default(string), 5), null];
         }
 
         [Theory]
@@ -913,7 +899,7 @@ namespace System.Linq.Tests
                 expected: null);
 
             yield return WrapArgs(
-                source: Enumerable.Empty<int?>(),
+                source: [],
                 comparer: Comparer<int?>.Create((_, _) => 0),
                 expected: null);
 
@@ -933,17 +919,17 @@ namespace System.Linq.Tests
                 expected: 0);
 
             yield return WrapArgs(
-                source: new string[] { "Aardvark", "Zyzzyva", "Zebra", "Antelope" },
+                source: ["Aardvark", "Zyzzyva", "Zebra", "Antelope"],
                 comparer: null,
                 expected: "Aardvark");
 
             yield return WrapArgs(
-                source: new string[] { "Aardvark", "Zyzzyva", "Zebra", "Antelope" },
+                source: ["Aardvark", "Zyzzyva", "Zebra", "Antelope"],
                 comparer: Comparer<string>.Create((x, y) => -x.CompareTo(y)),
                 expected: "Zyzzyva");
 
             object[] WrapArgs<TSource>(IEnumerable<TSource> source, IComparer<TSource>? comparer, TSource? expected)
-                => new object[] { source, comparer, expected };
+                => [source, comparer, expected];
         }
 
         [Fact]
@@ -959,7 +945,7 @@ namespace System.Linq.Tests
         [Fact]
         public static void MinBy_Generic_NullKeySelector_ThrowsArgumentNullException()
         {
-            IEnumerable<int> source = Enumerable.Empty<int>();
+            IEnumerable<int> source = [];
             Func<int, int> keySelector = null;
 
             AssertExtensions.Throws<ArgumentNullException>("keySelector", () => source.MinBy(keySelector));
@@ -1062,13 +1048,13 @@ namespace System.Linq.Tests
                 expected: 0);
 
             yield return WrapArgs(
-                source: new string[] { "Aardvark", "Zyzzyva", "Zebra", "Antelope" },
+                source: ["Aardvark", "Zyzzyva", "Zebra", "Antelope"],
                 keySelector: x => x,
                 comparer: null,
                 expected: "Aardvark");
 
             yield return WrapArgs(
-                source: new string[] { "Aardvark", "Zyzzyva", "Zebra", "Antelope" },
+                source: ["Aardvark", "Zyzzyva", "Zebra", "Antelope"],
                 keySelector: x => x,
                 comparer: Comparer<string>.Create((x, y) => -x.CompareTo(y)),
                 expected: "Zyzzyva");
@@ -1104,7 +1090,7 @@ namespace System.Linq.Tests
                 expected: (Name: "Harry", Age: 20));
 
             object[] WrapArgs<TSource, TKey>(IEnumerable<TSource> source, Func<TSource, TKey> keySelector, IComparer<TKey>? comparer, TSource? expected)
-                => new object[] { source, keySelector, comparer, expected };
+                => [source, keySelector, comparer, expected];
         }
     }
 }

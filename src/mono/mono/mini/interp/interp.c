@@ -843,15 +843,15 @@ stackval_from_data (MonoType *type, stackval *result, const void *data, gboolean
 		result->data.p = *(gpointer*)data;
 		break;
 	case MONO_TYPE_VALUETYPE:
-		if (m_class_is_enumtype (type->data.klass)) {
-			stackval_from_data (mono_class_enum_basetype_internal (type->data.klass), result, data, pinvoke);
+		if (m_class_is_enumtype (m_type_data_get_klass_unchecked (type))) {
+			stackval_from_data (mono_class_enum_basetype_internal (m_type_data_get_klass_unchecked (type)), result, data, pinvoke);
 			break;
 		} else {
 			int size;
 			if (pinvoke)
-				size = mono_class_native_size (type->data.klass, NULL);
+				size = mono_class_native_size (m_type_data_get_klass_unchecked (type), NULL);
 			else
-				size = mono_class_value_size (type->data.klass, NULL);
+				size = mono_class_value_size (m_type_data_get_klass_unchecked (type), NULL);
 			memcpy (result, data, size);
 			break;
 		}
@@ -866,7 +866,7 @@ stackval_from_data (MonoType *type, stackval *result, const void *data, gboolean
 			memcpy (result, data, size);
 			break;
 		}
-		stackval_from_data (m_class_get_byval_arg (type->data.generic_class->container_class), result, data, pinvoke);
+		stackval_from_data (m_class_get_byval_arg (m_type_data_get_generic_class_unchecked (type)->container_class), result, data, pinvoke);
 		break;
 	}
 	default:
@@ -949,21 +949,21 @@ stackval_to_data (MonoType *type, stackval *val, void *data, gboolean pinvoke)
 		return MINT_STACK_SLOT_SIZE;
 	}
 	case MONO_TYPE_VALUETYPE:
-		if (m_class_is_enumtype (type->data.klass)) {
-			return stackval_to_data (mono_class_enum_basetype_internal (type->data.klass), val, data, pinvoke);
+		if (m_class_is_enumtype (m_type_data_get_klass_unchecked (type))) {
+			return stackval_to_data (mono_class_enum_basetype_internal (m_type_data_get_klass_unchecked (type)), val, data, pinvoke);
 		} else {
 			int size;
 			if (pinvoke) {
-				size = mono_class_native_size (type->data.klass, NULL);
+				size = mono_class_native_size (m_type_data_get_klass_unchecked (type), NULL);
 				memcpy (data, val, size);
 			} else {
-				size = mono_class_value_size (type->data.klass, NULL);
-				mono_value_copy_internal (data, val, type->data.klass);
+				size = mono_class_value_size (m_type_data_get_klass_unchecked (type), NULL);
+				mono_value_copy_internal (data, val, m_type_data_get_klass_unchecked (type));
 			}
 			return ALIGN_TO (size, MINT_STACK_SLOT_SIZE);
 		}
 	case MONO_TYPE_GENERICINST: {
-		MonoClass *container_class = type->data.generic_class->container_class;
+		MonoClass *container_class = m_type_data_get_generic_class_unchecked (type)->container_class;
 
 		if (m_class_is_valuetype (container_class) && !m_class_is_enumtype (container_class)) {
 			MonoClass *klass = mono_class_from_mono_type_internal (type);
@@ -977,7 +977,7 @@ stackval_to_data (MonoType *type, stackval *val, void *data, gboolean pinvoke)
 			}
 			return ALIGN_TO (size, MINT_STACK_SLOT_SIZE);
 		}
-		return stackval_to_data (m_class_get_byval_arg (type->data.generic_class->container_class), val, data, pinvoke);
+		return stackval_to_data (m_class_get_byval_arg (m_type_data_get_generic_class_unchecked (type)->container_class), val, data, pinvoke);
 	}
 	default:
 		g_error ("got type %x", type->type);
@@ -1426,8 +1426,8 @@ retry:
 			flen++;
 			break;
 		case MONO_TYPE_VALUETYPE:
-			if (m_class_is_enumtype (type->data.klass)) {
-				type = mono_class_enum_basetype_internal (type->data.klass);
+			if (m_class_is_enumtype (m_type_data_get_klass_unchecked (type))) {
+				type = mono_class_enum_basetype_internal (m_type_data_get_klass_unchecked (type));
 				goto retry;
 			}
 			info->arg_types [i] = PINVOKE_ARG_VTYPE;
@@ -1446,7 +1446,7 @@ retry:
 			break;
 		case MONO_TYPE_GENERICINST: {
 			// FIXME: Should mini_wasm_is_scalar_vtype stuff go in here?
-			MonoClass *container_class = type->data.generic_class->container_class;
+			MonoClass *container_class = m_type_data_get_generic_class_unchecked (type)->container_class;
 			type = m_class_get_byval_arg (container_class);
 			goto retry;
 		}
@@ -2046,7 +2046,7 @@ dump_stackval (GString *str, stackval *s, MonoType *type)
 		g_string_append_printf (str, "[%p] ", s->data.p);
 		break;
 	case MONO_TYPE_VALUETYPE:
-		if (m_class_is_enumtype (type->data.klass))
+		if (m_class_is_enumtype (m_type_data_get_klass_unchecked (type)))
 			g_string_append_printf (str, "[%d] ", s->data.i);
 		else
 			g_string_append_printf (str, "[vt:%p] ", s->data.p);
@@ -3209,9 +3209,9 @@ interp_entry_from_trampoline (gpointer ccontext_untyped, gpointer rmethod_untype
 			size = mono_class_value_size (mono_class_from_mono_type_internal (type), NULL);
 		} else if (type->type == MONO_TYPE_VALUETYPE) {
 			if (sig->pinvoke && !sig->marshalling_disabled)
-				size = mono_class_native_size (type->data.klass, NULL);
+				size = mono_class_native_size (m_type_data_get_klass_unchecked (type), NULL);
 			else
-				size = mono_class_value_size (type->data.klass, NULL);
+				size = mono_class_value_size (m_type_data_get_klass_unchecked (type), NULL);
 		} else {
 			size = MINT_STACK_SLOT_SIZE;
 		}
@@ -3861,6 +3861,34 @@ max_d (double lhs, double rhs)
 		return mono_signbit (rhs) ? lhs : rhs;
 	else
 		return fmax (lhs, rhs);
+}
+
+// Equivalent of mono_get_addr_compiled_method
+static gpointer
+interp_ldvirtftn_delegate (gpointer arg, MonoDelegate *del)
+{
+	MonoMethod *virtual_method = del->method;
+	ERROR_DECL(error);
+
+	MonoClass *klass = del->object.vtable->klass;
+	MonoMethod *invoke = mono_get_delegate_invoke_internal (klass);
+	MonoMethodSignature *invoke_sig = mono_method_signature_internal (invoke);
+
+	MonoClass *arg_class = NULL;
+	if (m_type_is_byref (invoke_sig->params [0])) {
+		arg_class = mono_class_from_mono_type_internal (invoke_sig->params [0]);
+	} else {
+		MonoObject *object = (MonoObject*)arg;
+		arg_class = object->vtable->klass;
+	}
+
+	MonoMethod *res = mono_class_get_virtual_method (arg_class, virtual_method, error);
+	mono_error_assert_ok (error);
+
+	gboolean need_unbox = m_class_is_valuetype (res->klass) && !m_class_is_valuetype (virtual_method->klass);
+
+	InterpMethod *imethod = mono_interp_get_imethod (res);
+	return imethod_to_ftnptr (imethod, need_unbox);
 }
 
 /*
@@ -7792,6 +7820,15 @@ MINT_IN_CASE(MINT_BRTRUE_I8_SP) ZEROP_SP(gint64, !=); MINT_IN_BREAK;
 			g_assert (del->interp_method);
 			LOCAL_VAR (ip [1], gpointer) = imethod_to_ftnptr (del->interp_method, FALSE);
 			ip += 3;
+			MINT_IN_BREAK;
+		}
+		MINT_IN_CASE(MINT_LDVIRTFTN_DELEGATE) {
+			gpointer arg = LOCAL_VAR (ip [2], gpointer);
+			MonoDelegate *del = LOCAL_VAR (ip [3], MonoDelegate*);
+			NULL_CHECK (arg);
+
+			LOCAL_VAR (ip [1], gpointer) = interp_ldvirtftn_delegate (arg, del);
+			ip += 4;
 			MINT_IN_BREAK;
 		}
 
