@@ -23,6 +23,10 @@ struct CodeBlockHandle
     TargetPointer GetMethodDesc(CodeBlockHandle codeInfoHandle);
     // Get the instruction pointer address of the start of the code block
     TargetCodePointer GetStartAddress(CodeBlockHandle codeInfoHandle);
+    // Gets the base address of the module containing the code block
+    TargetPointer GetModuleBaseAddress(CodeBlockHandle codeInfoHandle);
+    // Gets the unwind info of the code block at the specified code pointer
+    TargetPointer GetUnwindInfo(CodeBlockHandle codeInfoHandle, TargetCodePointer ip);
 ```
 
 ## Version 1
@@ -53,6 +57,8 @@ Data descriptors used:
 | `CodeHeapListNode` | `MapBase` | Start of the map - start address rounded down based on OS page size |
 | `CodeHeapListNode` | `HeaderMap` | Bit array used to find the start of methods - relative to `MapBase` |
 | `RealCodeHeader` | `MethodDesc` | Pointer to the corresponding `MethodDesc` |
+| `RealCodeHeader` | `NumUnwindInfos` | Number of Unwind Infos |
+| `RealCodeHeader` | `UnwindInfos` | Start address of Unwind Infos |
 | `Module` | `ReadyToRunInfo` | Pointer to the `ReadyToRunInfo` for the module |
 | `ReadyToRunInfo` | `CompositeInfo` | Pointer to composite R2R info - or itself for non-composite |
 | `ReadyToRunInfo` | `NumRuntimeFunctions` | Number of `RuntimeFunctions` |

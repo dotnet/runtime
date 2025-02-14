@@ -43,11 +43,23 @@ public sealed unsafe class ContractDescriptorTarget : Target
     public override DataCache ProcessedData { get; }
 
     public delegate int ReadFromTargetDelegate(ulong address, Span<byte> bufferToFill);
+    public delegate int GetTargetThreadContextDelegate(uint threadId, uint contextFlags, uint contextSize, Span<byte> bufferToFill);
+    public delegate int GetTargetPlatformDelegate(out int platform);
 
-    public static bool TryCreate(ulong contractDescriptor, ReadFromTargetDelegate readFromTarget, out ContractDescriptorTarget? target)
+    public static bool TryCreate(
+        ulong contractDescriptor,
+        ReadFromTargetDelegate readFromTarget,
+        GetTargetThreadContextDelegate getThreadContext,
+        GetTargetPlatformDelegate getTargetPlatform,
+        out ContractDescriptorTarget? target)
     {
-        Reader reader = new Reader(readFromTarget);
-        if (TryReadContractDescriptor(contractDescriptor, reader, out Configuration config, out ContractDescriptorParser.ContractDescriptor? descriptor, out TargetPointer[] pointerData))
+        Reader reader = new Reader(readFromTarget, getThreadContext, getTargetPlatform);
+        if (TryReadContractDescriptor(
+            contractDescriptor,
+            reader,
+            out Configuration config,
+            out ContractDescriptorParser.ContractDescriptor? descriptor,
+            out TargetPointer[] pointerData))
         {
             target = new ContractDescriptorTarget(config, descriptor!, pointerData, reader);
             return true;
@@ -65,6 +77,12 @@ public sealed unsafe class ContractDescriptorTarget : Target
         _reader = reader;
 
         _contracts = descriptor.Contracts ?? [];
+
+        if (_reader.GetTargetPlatform(out int platform) < 0)
+        {
+            throw new InvalidOperationException($"Unable to read target platform.");
+        }
+        Platform = (CorDebugPlatform)platform;
 
         // Read types and map to known data types
         if (descriptor.Types is not null)
@@ -212,6 +230,12 @@ public sealed unsafe class ContractDescriptorTarget : Target
 
     public override int PointerSize => _config.PointerSize;
     public override bool IsLittleEndian => _config.IsLittleEndian;
+    public override CorDebugPlatform Platform { get; }
+
+    public override int GetThreadContext(uint threadId, uint contextFlags, uint contextSize, Span<byte> buffer)
+    {
+        return _reader.GetThreadContext(threadId, contextFlags, contextSize, buffer);
+    }
 
     /// <summary>
     /// Read a value from the target in target endianness
@@ -526,7 +550,10 @@ public sealed unsafe class ContractDescriptorTarget : Target
         }
     }
 
-    private readonly struct Reader(ReadFromTargetDelegate readFromTarget)
+    private readonly struct Reader(
+        ReadFromTargetDelegate readFromTarget,
+        GetTargetThreadContextDelegate getThreadContext,
+        GetTargetPlatformDelegate getTargetPlatform)
     {
         public int ReadFromTarget(ulong address, Span<byte> buffer)
         {
@@ -535,5 +562,15 @@ public sealed unsafe class ContractDescriptorTarget : Target
 
         public int ReadFromTarget(ulong address, byte* buffer, uint bytesToRead)
             => readFromTarget(address, new Span<byte>(buffer, checked((int)bytesToRead)));
+
+        public int GetTargetPlatform(out int platform)
+        {
+            return getTargetPlatform(out platform);
+        }
+
+        public int GetThreadContext(uint threadId, uint contextFlags, uint contextSize, Span<byte> buffer)
+        {
+            return getThreadContext(threadId, contextFlags, contextSize, buffer);
+        }
     }
 }
