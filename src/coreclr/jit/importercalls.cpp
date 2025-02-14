@@ -415,6 +415,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
 
                 call->AsCall()->gtCallAddr = fptr;
                 call->gtFlags |= GTF_EXCEPT | (fptr->gtFlags & GTF_GLOB_EFFECT);
+                setMethodHasLdvirtftnIndirectCall();
 
                 if (sig->sigInst.methInstCount != 0)
                 {

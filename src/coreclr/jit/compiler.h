@@ -6149,7 +6149,8 @@ public:
     PhaseStatus fgExpandStackArrayAllocations();
     bool fgExpandStackArrayAllocation(BasicBlock* pBlock, Statement* stmt, GenTreeCall* call);
     
-    PhaseStatus fgExpandGenericVirtual();
+    PhaseStatus fgSplitLdvirtftnIndirectCall();
+    bool fgSplitLdvirtftnIndirectCall(BasicBlock* pBlock, Statement* stmt, GenTreeCall* call);
 
     PhaseStatus fgVNBasedIntrinsicExpansion();
     bool fgVNBasedIntrinsicExpansionForCall(BasicBlock** pBlock, Statement* stmt, GenTreeCall* call);
@@ -7584,6 +7585,7 @@ public:
 #define OMF_HAS_EXPANDABLE_CAST                0x00080000 // Method contains casts eligible for late expansion
 #define OMF_HAS_STACK_ARRAY                    0x00100000 // Method contains stack allocated arrays
 #define OMF_HAS_BOUNDS_CHECKS                  0x00200000 // Method contains bounds checks
+#define OMF_HAS_LDVIRTFTN_CALLI                0x00400000 // Method contains indirect call to Ldvirtftn
 
     // clang-format on
 
@@ -7692,6 +7694,16 @@ public:
     void setMethodHasStackAllocatedArray()
     {
         optMethodFlags |= OMF_HAS_STACK_ARRAY;
+    }
+
+    bool doesMethodHaveLdVirtftnIndirectCall()
+    {
+        return (optMethodFlags & OMF_HAS_LDVIRTFTN_CALLI) != 0;
+    }
+
+    void setMethodHasLdvirtftnIndirectCall()
+    {
+        optMethodFlags |= OMF_HAS_LDVIRTFTN_CALLI;
     }
 
     void pickGDV(GenTreeCall*           call,

@@ -5139,6 +5139,9 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     // Expand stack allocated arrays
     DoPhase(this, PHASE_EXPAND_STACK_ARR, &Compiler::fgExpandStackArrayAllocations);
 
+    // Split calli to ldvirtftn
+    DoPhase(this, PHASE_SPLIT_LDVIRTFTN_CALLI, &Compiler::fgSplitLdvirtftnIndirectCall);
+
     // Insert GC Polls
     DoPhase(this, PHASE_INSERT_GC_POLLS, &Compiler::fgInsertGCPolls);
 
