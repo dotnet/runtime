@@ -108,16 +108,8 @@ namespace System.Reflection
             }
             else
             {
-                // When throwOnError is false we should only catch FileNotFoundException.
-                // Other exceptions like BadImangeFormatException should still fly.
-                try
-                {
-                    assembly = RuntimeAssembly.InternalLoad(name, ref Unsafe.NullRef<StackCrawlMark>(), AssemblyLoadContext.CurrentContextualReflectionContext);
-                }
-                catch (FileNotFoundException) when (!_throwOnError)
-                {
-                    return null;
-                }
+                assembly = RuntimeAssembly.InternalLoad(name, ref Unsafe.NullRef<StackCrawlMark>(),
+                    AssemblyLoadContext.CurrentContextualReflectionContext, throwOnFileNotFound: _throwOnError);
             }
             return assembly;
         }

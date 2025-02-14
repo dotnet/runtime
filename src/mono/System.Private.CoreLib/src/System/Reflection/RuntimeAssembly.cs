@@ -471,12 +471,17 @@ namespace System.Reflection
             return res;
         }
 
-        internal static RuntimeAssembly InternalLoad(AssemblyName assemblyRef, ref StackCrawlMark stackMark, AssemblyLoadContext? assemblyLoadContext)
+        internal static RuntimeAssembly? InternalLoad(AssemblyName assemblyRef, ref StackCrawlMark stackMark, AssemblyLoadContext? assemblyLoadContext, bool throwOnFileNotFound)
         {
             var assembly = (RuntimeAssembly)InternalLoad(assemblyRef.FullName, ref stackMark, assemblyLoadContext != null ? assemblyLoadContext.NativeALC : IntPtr.Zero);
-            if (assembly == null)
+            if (assembly == null && throwOnFileNotFound)
                 throw new FileNotFoundException(null, assemblyRef.Name);
             return assembly;
+        }
+
+        internal static RuntimeAssembly InternalLoad(AssemblyName assemblyRef, ref StackCrawlMark stackMark, AssemblyLoadContext? assemblyLoadContext)
+        {
+            return InternalLoad(assemblyRef, ref stackMark, assemblyLoadContext, true)!;
         }
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
