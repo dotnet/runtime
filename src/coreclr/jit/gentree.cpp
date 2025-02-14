@@ -8399,6 +8399,7 @@ GenTreeCall* Compiler::gtNewCallNode(gtCallTypes           callType,
     node->gtCallMoreFlags = GTF_CALL_M_EMPTY;
     INDEBUG(node->gtCallDebugFlags = GTF_CALL_MD_EMPTY);
     node->gtInlineInfoCount = 0;
+    node->gtLdvirtftnHnd    = nullptr;
 
     if (callType == CT_INDIRECT)
     {

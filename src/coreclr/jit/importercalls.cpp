@@ -8361,11 +8361,12 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
     {
         // Pass the instantiating stub method desc as the inst param arg.
         //
-        if (call->IsVirtualGeneric() && call->gtLdvirtftnHnd != nullptr &&
-            call->gtLdvirtftnHnd->OperIs(GT_RUNTIMELOOKUP))
+        if (call->gtLdvirtftnHnd != nullptr)
         {
-            // Runtime lookup is needed for the instantiating stub.
+            assert(call->IsVirtualGeneric());
+            // The instantiating stub may need a runtime lookup.
             //
+            assert(call->gtLdvirtftnHnd->OperIs(GT_RUNTIMELOOKUP) || call->gtLdvirtftnHnd->OperIs(GT_CNS_INT));
             call->gtArgs.InsertInstParam(this, gtCloneExpr(call->gtLdvirtftnHnd));
         }
         else
@@ -8380,9 +8381,7 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
     }
 
     // Make the updates.
-    call->gtFlags &= ~GTF_CALL_VIRT_VTABLE;
-    call->gtFlags &= ~GTF_CALL_VIRT_STUB;
-    call->gtFlags &= ~GTF_CALL_VIRT_GENERIC;
+    call->gtFlags &= ~GTF_CALL_VIRT_KIND_MASK;
     call->gtCallMethHnd = derivedMethod;
     call->gtCallType    = CT_USER_FUNC;
     call->gtControlExpr = nullptr;
