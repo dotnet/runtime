@@ -91,8 +91,5 @@ namespace System.Reflection
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         internal static extern Assembly InternalLoad(string assemblyName, ref StackCrawlMark stackMark, IntPtr ptrLoadContextBinder);
-
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal extern Type InternalGetType(Module? module, string name, bool throwOnError, bool ignoreCase);
     }
 }

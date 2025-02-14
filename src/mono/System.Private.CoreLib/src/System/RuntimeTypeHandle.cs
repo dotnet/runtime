@@ -342,9 +342,6 @@ namespace System
             return true;
         }
 
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        private static extern void internal_from_name(IntPtr name, ref StackCrawlMark stackMark, ObjectHandleOnStack res, bool throwOnError, bool ignoreCase);
-
         internal static IntPtr[]? CopyRuntimeTypeHandles(RuntimeTypeHandle[]? inHandles, out int length)
         {
             if (inHandles == null || inHandles.Length == 0)

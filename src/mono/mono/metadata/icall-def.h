@@ -289,7 +289,6 @@ ICALL_TYPE(ASSEM, "System.Reflection.Assembly", ASSEM_2)
 HANDLES(ASSEM_2, "GetCallingAssembly", ves_icall_System_Reflection_Assembly_GetCallingAssembly, MonoReflectionAssembly, 0, ())
 HANDLES(ASSEM_3, "GetEntryAssemblyNative", ves_icall_System_Reflection_Assembly_GetEntryAssembly, MonoReflectionAssembly, 0, ())
 HANDLES(ASSEM_4, "GetExecutingAssembly", ves_icall_System_Reflection_Assembly_GetExecutingAssembly, MonoReflectionAssembly, 1, (MonoStackCrawlMark_ptr))
-HANDLES(ASSEM_6, "InternalGetType", ves_icall_System_Reflection_Assembly_InternalGetType, MonoReflectionType, 5, (MonoReflectionAssembly, MonoReflectionModule, MonoString, MonoBoolean, MonoBoolean))
 HANDLES(ASSEM_7, "InternalLoad", ves_icall_System_Reflection_Assembly_InternalLoad, MonoReflectionAssembly, 3, (MonoString, MonoStackCrawlMark_ptr, gpointer))
 
 ICALL_TYPE(ASSEMN, "System.Reflection.AssemblyName", ASSEMN_1)
@@ -536,7 +535,6 @@ HANDLES(RTH_20, "HasReferences", ves_icall_RuntimeTypeHandle_HasReferences, Mono
 HANDLES(RTH_21, "IsByRefLike", ves_icall_RuntimeTypeHandle_IsByRefLike, MonoBoolean, 1, (MonoQCallTypeHandle))
 NOHANDLES(ICALL(RTH_13, "IsGenericTypeDefinition", ves_icall_RuntimeTypeHandle_IsGenericTypeDefinition))
 HANDLES(RTH_15, "IsInstanceOfType", ves_icall_RuntimeTypeHandle_IsInstanceOfType, guint32, 2, (MonoQCallTypeHandle, MonoObject))
-HANDLES(RTH_17a, "internal_from_name", ves_icall_System_RuntimeTypeHandle_internal_from_name, void, 5, (char_ptr, MonoStackCrawlMark_ptr, MonoObjectHandleOnStack, MonoBoolean, MonoBoolean))
 HANDLES(RTH_17b, "is_subclass_of", ves_icall_RuntimeTypeHandle_is_subclass_of, MonoBoolean, 2, (MonoQCallTypeHandle, MonoQCallTypeHandle))
 HANDLES(RTH_18, "type_is_assignable_from", ves_icall_RuntimeTypeHandle_type_is_assignable_from, MonoBoolean, 2, (MonoQCallTypeHandle, MonoQCallTypeHandle))
 
