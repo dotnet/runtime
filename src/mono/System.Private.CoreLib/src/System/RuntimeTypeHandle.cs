@@ -345,29 +345,6 @@ namespace System
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private static extern void internal_from_name(IntPtr name, ref StackCrawlMark stackMark, ObjectHandleOnStack res, bool throwOnError, bool ignoreCase);
 
-        [RequiresUnreferencedCode("Types might be removed")]
-        internal static RuntimeType? GetTypeByName(string typeName, bool throwOnError, bool ignoreCase, ref StackCrawlMark stackMark)
-        {
-            ArgumentNullException.ThrowIfNull(typeName);
-
-            if (typeName.Length == 0)
-                if (throwOnError)
-                    throw new TypeLoadException(SR.Arg_TypeLoadNullStr);
-                else
-                    return null;
-
-            RuntimeType? t = null;
-            using (var namePtr = new Mono.SafeStringMarshal(typeName)) {
-                internal_from_name(
-                                   namePtr.Value,
-                                   ref stackMark,
-                                   ObjectHandleOnStack.Create(ref t), throwOnError, ignoreCase);
-                if (throwOnError && t == null)
-                    throw new TypeLoadException(SR.Arg_TypeLoadException);
-            }
-            return t;
-        }
-
         internal static IntPtr[]? CopyRuntimeTypeHandles(RuntimeTypeHandle[]? inHandles, out int length)
         {
             if (inHandles == null || inHandles.Length == 0)

@@ -157,16 +157,6 @@ namespace System
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private static extern void GetParentType(QCallTypeHandle type, ObjectHandleOnStack res);
 
-        [RequiresUnreferencedCode("Types might be removed")]
-        internal static RuntimeType? GetType(string typeName, bool throwOnError, bool ignoreCase,
-            ref StackCrawlMark stackMark)
-        {
-            ArgumentNullException.ThrowIfNull(typeName);
-
-            return RuntimeTypeHandle.GetTypeByName(
-                typeName, throwOnError, ignoreCase, ref stackMark);
-        }
-
         private static void SplitName(string? fullname, out string? name, out string? ns)
         {
             name = null;
