@@ -345,10 +345,20 @@ namespace System.Security.Cryptography.X509Certificates
             }
         }
 
-        /// <summary> Exports the certificate and private key in PKCS#12 / PFX format. </summary>
+        /// <summary>
+        ///   Exports the certificate and private key in PKCS#12 / PFX format.
+        /// </summary>
         /// <param name="exportParameters">The algorithm parameters to use for the export.</param>
         /// <param name="password">The password to use for the export.</param>
         /// <returns>A byte array containing the encoded certificate and private key.</returns>
+        /// <exception cref="ArgumentOutOfRangeException">
+        ///   <paramref name="exportParameters"/> is not a valid value.
+        /// </exception>
+        /// <exception cref="CryptographicException">
+        ///   <para>The current instance is disposed.</para>
+        ///   <para>-or-</para>
+        ///   <para>The export operation failed.</para>
+        /// </exception>
         public byte[] ExportPkcs12(Pkcs12ExportPbeParameters exportParameters, string? password)
         {
             VerifyExportParameters(exportParameters);
@@ -362,10 +372,30 @@ namespace System.Security.Cryptography.X509Certificates
             }
         }
 
-        /// <summary> Exports the certificate and private key in PKCS#12 / PFX format. </summary>
+        /// <summary>
+        ///   Exports the certificate and private key in PKCS#12 / PFX format.
+        /// </summary>
         /// <param name="exportParameters">The algorithm parameters to use for the export.</param>
         /// <param name="password">The password to use for the export.</param>
         /// <returns>A byte array containing the encoded certificate and private key.</returns>
+        /// <exception cref="ArgumentNullException">
+        ///   <paramref name="exportParameters"/> is <see langword="null"/> .
+        /// </exception>
+        /// <exception cref="CryptographicException">
+        ///   <para>The current instance is disposed.</para>
+        ///   <para>-or-</para>
+        ///   <para>The export operation failed.</para>
+        ///   <para>-or-</para>
+        ///   <para>
+        ///     <paramref name="exportParameters"/> contains an invalid or unsupported hash algorithm for
+        ///     <see cref="PbeParameters.HashAlgorithm"/>.
+        ///   </para>
+        ///   <para>-or-</para>
+        ///   <para>
+        ///     <paramref name="exportParameters"/> contains an invalid encryption algorithm for
+        ///     <see cref="PbeParameters.EncryptionAlgorithm"/>.
+        ///   </para>
+        /// </exception>
         public byte[] ExportPkcs12(PbeParameters exportParameters, string? password)
         {
             ArgumentNullException.ThrowIfNull(exportParameters);
