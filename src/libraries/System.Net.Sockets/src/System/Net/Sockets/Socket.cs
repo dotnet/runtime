@@ -2977,7 +2977,9 @@ namespace System.Net.Sockets
             return pending;
         }
 
-        public static bool ConnectAsync(SocketType socketType, ProtocolType protocolType, SocketAsyncEventArgs e)
+        public static bool ConnectAsync(SocketType socketType, ProtocolType protocolType, SocketAsyncEventArgs e) =>
+                            ConnectAsync(socketType, protocolType,  e, ConnectAlgorithm.Default);
+        public static bool ConnectAsync(SocketType socketType, ProtocolType protocolType, SocketAsyncEventArgs e, ConnectAlgorithm connectAlgorithm)
         {
             ArgumentNullException.ThrowIfNull(e);
 
@@ -3001,7 +3003,7 @@ namespace System.Net.Sockets
                 e.StartOperationConnect(saeaMultiConnectCancelable: true, userSocket: false);
                 try
                 {
-                    pending = e.DnsConnectAsync(dnsEP, socketType, protocolType);
+                    pending = e.DnsConnectAsync(dnsEP, socketType, protocolType, connectAlgorithm);
                 }
                 catch
                 {
