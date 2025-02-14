@@ -1058,6 +1058,8 @@ protected:
 
     template <typename HWIntrinsicSwitchCaseBody>
     void genHWIntrinsicJumpTableFallback(NamedIntrinsic            intrinsic,
+                                         instruction               ins,
+                                         emitAttr                  attr,
                                          regNumber                 nonConstImmReg,
                                          regNumber                 baseReg,
                                          regNumber                 offsReg,
