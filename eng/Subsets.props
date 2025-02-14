@@ -60,7 +60,7 @@
   <PropertyGroup>
     <DefaultSubsets>clr+mono+libs+tools+host+packs</DefaultSubsets>
     <DefaultSubsets Condition="'$(TargetsMobile)' == 'true'">mono+libs+packs</DefaultSubsets>
-    <DefaultSubsets Condition="'$(TargetsAndroid)' == 'true' and '$(CoreCLRSupported)' == 'true'">clr.runtime+clr.alljits+clr.corelib+clr.nativecorelib+clr.tools+clr.packages+mono+libs+host+packs</DefaultSubsets>
+    <DefaultSubsets Condition="'$(TargetsAndroid)' == 'true' and '$(CoreCLRSupported)' == 'true'">clr+mono+libs+host+packs</DefaultSubsets>
     <DefaultSubsets Condition="'$(TargetsAppleMobile)' == 'true'">clr.nativeaotruntime+clr.nativeaotlibs+mono+libs+packs</DefaultSubsets>
     <DefaultSubsets Condition="'$(TargetsLinuxBionic)' == 'true' and '$(MonoSupported)' == 'true'">clr.nativeaotruntime+clr.nativeaotlibs+mono+libs+host+packs</DefaultSubsets>
     <DefaultSubsets Condition="'$(TargetsLinuxBionic)' == 'true' and '$(MonoSupported)' != 'true'">clr.nativeaotruntime+clr.nativeaotlibs+libs+packs</DefaultSubsets>
@@ -100,6 +100,7 @@
   <PropertyGroup>
     <DefaultCoreClrSubsets>clr.native+clr.corelib+clr.tools+clr.nativecorelib+clr.packages+clr.nativeaotlibs+clr.crossarchtools+host.native</DefaultCoreClrSubsets>
     <DefaultCoreClrSubsets Condition="'$(PackageRID)' == 'linux-armel'">clr.native+clr.corelib+clr.tools+clr.nativecorelib+clr.packages+clr.nativeaotlibs+clr.crossarchtools</DefaultCoreClrSubsets>
+    <DefaultCoreClrSubsets Condition="'$(TargetsAndroid)' == 'true'">clr.native+clr.corelib+clr.tools+clr.nativecorelib+clr.packages+clr.nativeaotlibs+clr.crossarchtools</DefaultCoreClrSubsets>
     <!-- Even on platforms that do not support the CoreCLR runtime, we still want to build ilasm/ildasm. -->
     <DefaultCoreClrSubsets Condition="'$(RuntimeFlavor)' != 'CoreCLR'">clr.iltools+clr.packages</DefaultCoreClrSubsets>
 

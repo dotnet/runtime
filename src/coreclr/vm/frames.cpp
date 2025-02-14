@@ -1552,13 +1552,6 @@ void TransitionFrame::PromoteCallerStackHelper(promote_func* fn, ScanContext* sc
             (fn)(PTR_PTR_Object(pThis), sc, CHECK_APP_DOMAIN);
     }
 
-    if (argit.HasRetBuffArg())
-    {
-        PTR_PTR_VOID pRetBuffArg = dac_cast<PTR_PTR_VOID>(pTransitionBlock + argit.GetRetBuffArgOffset());
-        LOG((LF_GC, INFO3, "    ret buf Argument promoted from" FMT_ADDR "\n", DBG_ADDR(*pRetBuffArg) ));
-        PromoteCarefully(fn, PTR_PTR_Object(pRetBuffArg), sc, GC_CALL_INTERIOR|CHECK_APP_DOMAIN);
-    }
-
     int argOffset;
     while ((argOffset = argit.GetNextOffset()) != TransitionBlock::InvalidOffset)
     {
@@ -2145,13 +2138,6 @@ void FakeGcScanRoots(MetaSig& msig, ArgIterator& argit, MethodDesc * pMD, BYTE *
 
         // We are done for varargs - the remaining arguments are reported via vasig cookie
         return;
-    }
-
-    // Also if the method has a return buffer, then it is the first argument, and could be an interior ref,
-    // so always promote it.
-    if (argit.HasRetBuffArg())
-    {
-        FakePromote((Object **)(pFrame + argit.GetRetBuffArgOffset()), &sc, GC_CALL_INTERIOR);
     }
 
     //
