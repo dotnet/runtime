@@ -14,6 +14,11 @@
 //
 PhaseStatus Compiler::rangeCheckPhase()
 {
+    if (!doesMethodHaveBoundsChecks() || (fgSsaPassesCompleted == 0))
+    {
+        return PhaseStatus::MODIFIED_NOTHING;
+    }
+
     RangeCheck rc(this);
     const bool madeChanges = rc.OptimizeRangeChecks();
     return madeChanges ? PhaseStatus::MODIFIED_EVERYTHING : PhaseStatus::MODIFIED_NOTHING;
@@ -1711,11 +1716,6 @@ void RangeCheck::MapMethodDefs()
 // Entry point to range check optimizations.
 bool RangeCheck::OptimizeRangeChecks()
 {
-    if (m_pCompiler->fgSsaPassesCompleted == 0)
-    {
-        return false;
-    }
-
     bool madeChanges = false;
 
     // Walk through trees looking for arrBndsChk node and check if it can be optimized.
