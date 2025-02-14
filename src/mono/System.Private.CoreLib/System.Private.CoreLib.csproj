@@ -107,6 +107,9 @@
   <PropertyGroup>
     <NoWarn>$(NoWarn),618,67</NoWarn>
 
+    <!-- Diagnostics API for browser need to be made public for browser in future PRs, see https://github.com/dotnet/runtime/pull/111910 -->
+    <NoWarn Condition="'$(TargetsBrowser)' == 'true'">$(NoWarn);CA1416</NoWarn>
+
     <DefineConstants>$(DefineConstants);MONO_FEATURE_SRE</DefineConstants>
 
     <FeatureMono>true</FeatureMono>
@@ -114,7 +117,7 @@
     <FeatureSingleThread Condition="('$(TargetsBrowser)' == 'true' or '$(TargetsWasi)' == 'true') and '$(WasmEnableThreads)' != 'true'">true</FeatureSingleThread>
     <FeaturePortableTimer Condition="('$(TargetsBrowser)' != 'true' and '$(TargetsWasi)' != 'true') or '$(FeatureWasmManagedThreads)' == 'true'">true</FeaturePortableTimer>
     <FeaturePortableThreadPool Condition="('$(TargetsBrowser)' != 'true' and '$(TargetsWasi)' != 'true') or '$(FeatureWasmManagedThreads)' == 'true'">true</FeaturePortableThreadPool>
-    <FeaturePerfTracing Condition="('$(TargetsBrowser)' != 'true' and '$(TargetsWasi)' != 'true')">true</FeaturePerfTracing>
+    <FeaturePerfTracing Condition="('$(TargetsWasi)' != 'true')">true</FeaturePerfTracing>
     <FeatureObjCMarshal Condition="'$(TargetsOSX)' == 'true' or '$(TargetsMacCatalyst)' == 'true' or '$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true'">true</FeatureObjCMarshal>
   </PropertyGroup>
 

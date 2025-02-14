@@ -243,15 +243,19 @@ export type RuntimeHelpers = {
     forceDisposeProxies: (disposeMethods: boolean, verbose: boolean) => void,
     dumpThreads: () => void,
     mono_wasm_print_thread_dump: () => void,
-
-    stringToUTF16: (dstPtr: number, endPtr: number, text: string) => void,
-    stringToUTF16Ptr: (str: string) => VoidPtr,
-    utf16ToString: (startPtr: number, endPtr: number) => string,
-    utf16ToStringLoop: (startPtr: number, endPtr: number) => string,
-    localHeapViewU16: () => Uint16Array,
-    setU16_local: (heap: Uint16Array, ptr: number, value: number) => void,
-    setI32: (offset: MemOffset, value: number) => void,
+    utf8ToString: (ptr: CharPtr) => string,
+    mono_background_exec: () =>void;
+    mono_wasm_ds_exec: () =>void;
 }
+
+export type DiagHelpers = {
+    ds_rt_websocket_create:(urlPtr :CharPtr)=>number,
+    ds_rt_websocket_send:(client_socket :number, buffer:VoidPtr, bytes_to_write:number)=>number,
+    ds_rt_websocket_poll:(client_socket :number)=>number,
+    ds_rt_websocket_recv:(client_socket :number, buffer:VoidPtr, bytes_to_read:number)=>number,
+    ds_rt_websocket_close:(client_socket :number)=>number,
+}
+
 
 export type AOTProfilerOptions = {
     writeAt?: string, // should be in the format <CLASS>::<METHODNAME>, default: 'WebAssembly.Runtime::StopProfile'
@@ -283,6 +287,7 @@ export type EmscriptenBuildOptions = {
     enableAotProfiler: boolean,
     enableBrowserProfiler: boolean,
     enableLogProfiler: boolean,
+    enablePerfTracing: boolean,
     runAOTCompilation: boolean,
     wasmEnableThreads: boolean,
     gitHash: string,
@@ -303,6 +308,7 @@ export type GlobalObjects = {
     module: DotnetModuleInternal,
     loaderHelpers: LoaderHelpers,
     runtimeHelpers: RuntimeHelpers,
+    diagHelpers: DiagHelpers,
     api: RuntimeAPI,
 };
 export type EmscriptenReplacements = {
@@ -496,6 +502,9 @@ export type RuntimeModuleExportsInternal = {
     configureEmscriptenStartup: configureEmscriptenStartupType,
     configureWorkerStartup: configureWorkerStartupType,
     passEmscriptenInternals: passEmscriptenInternalsType,
+}
+export type DiagModuleExportsInternal = {
+    setRuntimeGlobals: setGlobalObjectsType,
 }
 
 export type NativeModuleExportsInternal = {

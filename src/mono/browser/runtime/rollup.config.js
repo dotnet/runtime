@@ -94,6 +94,11 @@ const checkNoRuntime =
     pattern: /_runtimeModuleLoaded/gm,
     failure: "module should not contain runtimeModuleLoaded member. This is probably duplicated code in the output caused by a dependency on the runtime module."
 };
+const checkNoDiag =
+{
+    pattern: /_diagModuleLoaded/gm,
+    failure: "module should not contain _diagModuleLoaded member. This is probably duplicated code in the output caused by a dependency on the runtime module."
+};
 
 
 let gitHash;
@@ -172,7 +177,7 @@ const loaderConfig = {
         }
     ],
     external: externalDependencies,
-    plugins: [nodeResolve(), regexReplace(inlineAssert), regexCheck([checkAssert, checkNoRuntime]), ...outputCodePlugins],
+    plugins: [nodeResolve(), regexReplace(inlineAssert), regexCheck([checkAssert, checkNoRuntime, checkNoDiag]), ...outputCodePlugins],
     onwarn: onwarn
 };
 const runtimeConfig = {
@@ -189,7 +194,24 @@ const runtimeConfig = {
         }
     ],
     external: externalDependencies,
-    plugins: [regexReplace(inlineAssert), regexCheck([checkAssert, checkNoLoader]), ...outputCodePlugins],
+    plugins: [regexReplace(inlineAssert), regexCheck([checkAssert, checkNoLoader, checkNoDiag]), ...outputCodePlugins],
+    onwarn: onwarn
+};
+const diagConfig = {
+    treeshake: !isDebug,
+    input: "diagnostics/index.ts",
+    output: [
+        {
+            format: "es",
+            file: nativeBinDir + "/dotnet.diag.js",
+            banner,
+            plugins,
+            sourcemap: true,
+            sourcemapPathTransform,
+        }
+    ],
+    external: externalDependencies,
+    plugins: [regexReplace(inlineAssert), regexCheck([checkAssert, checkNoLoader, checkNoRuntime]), ...outputCodePlugins],
     onwarn: onwarn
 };
 const wasmImportsConfig = {
@@ -239,6 +261,7 @@ if (isDebug) {
 const allConfigs = [
     loaderConfig,
     runtimeConfig,
+    diagConfig,
     wasmImportsConfig,
     typesConfig,
 ]
