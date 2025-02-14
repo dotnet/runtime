@@ -3322,6 +3322,8 @@ namespace System.Security.Cryptography.X509Certificates
         public byte[]? Export(System.Security.Cryptography.X509Certificates.X509ContentType contentType) { throw null; }
         public byte[]? Export(System.Security.Cryptography.X509Certificates.X509ContentType contentType, string? password) { throw null; }
         public string ExportCertificatePems() { throw null; }
+        public byte[] ExportPkcs12(System.Security.Cryptography.PbeParameters exportParameters, string? password) { throw null; }
+        public byte[] ExportPkcs12(System.Security.Cryptography.X509Certificates.Pkcs12ExportPbeParameters exportParameters, string? password) { throw null; }
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("ios")]
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("tvos")]
         public string ExportPkcs7Pem() { throw null; }

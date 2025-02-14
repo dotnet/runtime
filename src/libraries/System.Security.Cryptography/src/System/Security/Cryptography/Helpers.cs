@@ -404,5 +404,48 @@ namespace Internal.Cryptography
                 _ => throw new CryptographicException(),
             };
         }
+
+        internal static void VerifyExportParameters(Pkcs12ExportPbeParameters exportParameters)
+        {
+            if (exportParameters is < Pkcs12ExportPbeParameters.Default or > Pkcs12ExportPbeParameters.Pbes2Aes256Sha256)
+            {
+                throw new ArgumentOutOfRangeException(nameof(exportParameters));
+            }
+        }
+
+        internal static void VerifyExportParameters(PbeParameters exportParameters)
+        {
+            if (exportParameters.EncryptionAlgorithm is
+                PbeEncryptionAlgorithm.Aes128Cbc or PbeEncryptionAlgorithm.Aes192Cbc or PbeEncryptionAlgorithm.Aes256Cbc)
+            {
+                switch (exportParameters.HashAlgorithm.Name)
+                {
+                    case HashAlgorithmNames.SHA1:
+                    case HashAlgorithmNames.SHA256:
+                    case HashAlgorithmNames.SHA384:
+                    case HashAlgorithmNames.SHA512:
+                        return;
+                    case null or "":
+                        throw new CryptographicException(SR.Cryptography_HashAlgorithmNameNullOrEmpty);
+                    default:
+                        // Let SHA-3 fall in to default since SHA-3 has not been brought up for PKCS12.
+                        throw new CryptographicException(SR.Format(SR.Cryptography_UnknownAlgorithmIdentifier, exportParameters.HashAlgorithm.Name));
+                }
+            }
+            else if (exportParameters.EncryptionAlgorithm is PbeEncryptionAlgorithm.TripleDes3KeyPkcs12)
+            {
+                switch (exportParameters.HashAlgorithm.Name)
+                {
+                    case HashAlgorithmNames.SHA1:
+                        return;
+                    case null or "":
+                        throw new CryptographicException(SR.Cryptography_HashAlgorithmNameNullOrEmpty);
+                    default:
+                        throw new CryptographicException(SR.Format(SR.Cryptography_UnknownAlgorithmIdentifier, exportParameters.HashAlgorithm.Name));
+                }
+            }
+
+            throw new CryptographicException(SR.Format(SR.Cryptography_UnknownAlgorithmIdentifier, exportParameters.EncryptionAlgorithm));
+        }
     }
 }
