@@ -1358,7 +1358,7 @@ protected:
     // Codegen for multi-register struct returns.
     bool isStructReturn(GenTree* treeNode);
 #ifdef FEATURE_SIMD
-    void genSIMDSplitReturn(GenTree* src, ReturnTypeDesc* retTypeDesc);
+    void genSIMDSplitReturn(GenTree* src, const ReturnTypeDesc* retTypeDesc);
 #endif
     void genStructReturn(GenTree* treeNode);
 

@@ -3234,6 +3234,8 @@ public:
     GenTreeConditional* gtNewConditionalNode(
         genTreeOps oper, GenTree* cond, GenTree* op1, GenTree* op2, var_types type);
 
+    GenTreeFieldList* gtNewFieldList();
+
 #ifdef FEATURE_SIMD
     void SetOpLclRelatedToSIMDIntrinsic(GenTree* op);
 #endif
