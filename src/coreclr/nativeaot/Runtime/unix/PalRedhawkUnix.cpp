@@ -845,8 +845,10 @@ REDHAWK_PALEXPORT _Ret_maybenull_ _Post_writable_byte_size_(size) void* REDHAWK_
         flags |= MAP_JIT;
     }
 #endif
-
-    return mmap(NULL, size, unixProtect, flags, -1, 0);
+    void* pRtl = mmap(NULL, size, unixProtect, flags, -1, 0);
+    if (pRtl == MAP_FAILED)
+        return NULL;
+    return pRtl;
 }
 
 REDHAWK_PALEXPORT void REDHAWK_PALAPI PalVirtualFree(_In_ void* pAddress, size_t size)
