@@ -861,6 +861,12 @@ namespace System
                 result = checked((sbyte)actualValue);
                 return true;
             }
+            else if (typeof(TOther) == typeof(BFloat16))
+            {
+                BFloat16 actualValue = (BFloat16)(object)value;
+                result = checked((sbyte)actualValue);
+                return true;
+            }
             else if (typeof(TOther) == typeof(short))
             {
                 short actualValue = (short)(object)value;
@@ -931,6 +937,13 @@ namespace System
             else if (typeof(TOther) == typeof(Half))
             {
                 Half actualValue = (Half)(object)value;
+                result = (actualValue >= MaxValue) ? MaxValue :
+                         (actualValue <= MinValue) ? MinValue : (sbyte)actualValue;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(BFloat16))
+            {
+                BFloat16 actualValue = (BFloat16)(object)value;
                 result = (actualValue >= MaxValue) ? MaxValue :
                          (actualValue <= MinValue) ? MinValue : (sbyte)actualValue;
                 return true;
@@ -1011,6 +1024,13 @@ namespace System
             else if (typeof(TOther) == typeof(Half))
             {
                 Half actualValue = (Half)(object)value;
+                result = (actualValue >= MaxValue) ? MaxValue :
+                         (actualValue <= MinValue) ? MinValue : (sbyte)actualValue;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(BFloat16))
+            {
+                BFloat16 actualValue = (BFloat16)(object)value;
                 result = (actualValue >= MaxValue) ? MaxValue :
                          (actualValue <= MinValue) ? MinValue : (sbyte)actualValue;
                 return true;
