@@ -489,7 +489,7 @@ namespace ILCompiler.Reflection.ReadyToRun
                 byte[] image = null;
                 if (Image == null)
                 {
-                    File.ReadAllBytes(Filename);
+                    image = File.ReadAllBytes(Filename);
                     Image = image;
                 }
                 else
