@@ -405,19 +405,13 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
                     lvaSetClass(thisPtr->AsLclVar()->GetLclNum(), origThisPtr);
                 }
 
-                GenTree* methodHnd = nullptr;
-                GenTree* fptr      = impImportLdvirtftn(thisPtr, pResolvedToken, callInfo, &methodHnd);
+                GenTree* fptr = impImportLdvirtftn(thisPtr, pResolvedToken, callInfo);
                 assert(fptr != nullptr);
-                assert(!callInfo->exactContextNeedsRuntimeLookup || methodHnd != nullptr);
 
                 call->AsCall()
                     ->gtArgs.PushFront(this, NewCallArg::Primitive(thisPtrCopy).WellKnown(WellKnownArg::ThisPointer));
 
                 // Now make an indirect call through the function pointer
-
-                unsigned lclNum = lvaGrabTemp(true DEBUGARG("VirtualCall through function pointer"));
-                impStoreToTemp(lclNum, fptr, CHECK_SPILL_ALL);
-                fptr = gtNewLclvNode(lclNum, TYP_I_IMPL);
 
                 call->AsCall()->gtCallAddr = fptr;
                 call->gtFlags |= GTF_EXCEPT | (fptr->gtFlags & GTF_GLOB_EFFECT);
@@ -425,14 +419,6 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
                 if (sig->sigInst.methInstCount != 0)
                 {
                     call->gtFlags |= GTF_CALL_VIRT_GENERIC;
-                    setMethodHasGenericVirtual();
-
-                    if (methodHnd != nullptr)
-                    {
-                        // Create a fake arg for the method handle so that we can use it in devirtualization
-                        call->AsCall()->gtArgs.PushBack(this, NewCallArg::Primitive(gtCloneExpr(methodHnd))
-                                                                  .WellKnown(WellKnownArg::MethodInstHandle));
-                    }
 
                     if (IsTargetAbi(CORINFO_NATIVEAOT_ABI))
                     {
@@ -8370,22 +8356,17 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
     {
         // Pass the instantiating stub method desc as the inst param arg.
         //
-        CallArg* methodInstHnd = call->gtArgs.FindWellKnownArg(WellKnownArg::MethodInstHandle);
-        GenTree* instParam     = nullptr;
+        GenTree* instParam = nullptr;
 
-        if (methodInstHnd != nullptr)
+        if (call->IsVirtualGeneric())
         {
-            // This only happens for virtual generic calls.
-            //
-            assert(call->IsVirtualGeneric());
-            instParam = methodInstHnd->GetNode();
-            // Remove the fake arg from the call.
-            //
-            call->gtArgs.Remove(methodInstHnd);
+            assert(call->gtCallType == CT_INDIRECT);
+            assert(call->gtCallAddr->IsHelperCall(this, CORINFO_HELP_VIRTUAL_FUNC_PTR));
+            assert(call->gtCallAddr->AsCall()->gtArgs.CountArgs() == 3);
+            instParam = call->gtCallAddr->AsCall()->gtArgs.GetArgByIndex(2)->GetNode();
         }
 
-        // If we get a runtime lookup, insert the runtime lookup instead of the instanting stub.
-        // Otherwise, insert the instantiating stub.
+        // If we don't need a runtime lookup, we can use the instantiating stub directly.
         //
         if (instParam == nullptr || !instParam->OperIs(GT_RUNTIMELOOKUP))
         {

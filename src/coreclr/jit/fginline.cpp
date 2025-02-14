@@ -534,9 +534,10 @@ private:
     {
         if (call->IsVirtualGeneric())
         {
-            CallArg* methodInstHnd = call->gtArgs.FindWellKnownArg(WellKnownArg::MethodInstHandle);
-            assert(methodInstHnd != nullptr);
-            GenTree* methodInstNode = methodInstHnd->GetNode();
+            assert(call->gtCallType == CT_INDIRECT);
+            assert(call->gtCallAddr->IsHelperCall(m_compiler, CORINFO_HELP_VIRTUAL_FUNC_PTR));
+            assert(call->gtCallAddr->AsCall()->gtArgs.CountArgs() == 3);
+            GenTree* methodInstNode = call->gtCallAddr->AsCall()->gtArgs.GetArgByIndex(2)->GetNode();
             switch (methodInstNode->OperGet())
             {
                 case GT_RUNTIMELOOKUP:

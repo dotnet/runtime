@@ -4569,7 +4569,6 @@ enum class WellKnownArg : unsigned
     SwiftSelf,
     X86TailCallSpecialArg,
     StackArrayLocal,
-    MethodInstHandle,
 };
 
 #ifdef DEBUG

@@ -2764,8 +2764,7 @@ bool Compiler::checkTailCallConstraint(OPCODE                  opcode,
 
 GenTree* Compiler::impImportLdvirtftn(GenTree*                thisPtr,
                                       CORINFO_RESOLVED_TOKEN* pResolvedToken,
-                                      CORINFO_CALL_INFO*      pCallInfo,
-                                      GenTree**               pRuntimeHandle)
+                                      CORINFO_CALL_INFO*      pCallInfo)
 {
     const bool isInterface = (pCallInfo->classFlags & CORINFO_FLG_INTERFACE) == CORINFO_FLG_INTERFACE;
 
@@ -2782,7 +2781,6 @@ GenTree* Compiler::impImportLdvirtftn(GenTree*                thisPtr,
         GenTree* runtimeMethodHandle =
             impLookupToTree(pResolvedToken, &pCallInfo->codePointerLookup, GTF_ICON_METHOD_HDL, pCallInfo->hMethod);
         call = gtNewHelperCallNode(CORINFO_HELP_GVMLOOKUP_FOR_SLOT, TYP_I_IMPL, thisPtr, runtimeMethodHandle);
-        *pRuntimeHandle = runtimeMethodHandle;
     }
 
 #ifdef FEATURE_READYTORUN
@@ -2800,7 +2798,6 @@ GenTree* Compiler::impImportLdvirtftn(GenTree*                thisPtr,
 
             call = impReadyToRunHelperToTree(pResolvedToken, CORINFO_HELP_READYTORUN_GENERIC_HANDLE, TYP_I_IMPL,
                                              &pCallInfo->codePointerLookup.lookupKind, ctxTree);
-            *pRuntimeHandle = ctxTree;
         }
     }
 #endif
@@ -2825,7 +2822,6 @@ GenTree* Compiler::impImportLdvirtftn(GenTree*                thisPtr,
         // Call helper function.  This gets the target address of the final destination callsite.
         //
         call = gtNewHelperCallNode(CORINFO_HELP_VIRTUAL_FUNC_PTR, TYP_I_IMPL, thisPtr, exactTypeDesc, exactMethodDesc);
-        *pRuntimeHandle = exactMethodDesc;
     }
 
     assert(call != nullptr);
@@ -8684,8 +8680,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     goto DO_LDFTN;
                 }
 
-                GenTree* runtimeLookup;
-                GenTree* fptr = impImportLdvirtftn(op1, &resolvedToken, &callInfo, &runtimeLookup);
+                GenTree* fptr = impImportLdvirtftn(op1, &resolvedToken, &callInfo);
                 if (compDonotInline())
                 {
                     return;

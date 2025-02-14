@@ -4662,7 +4662,7 @@ protected:
     void impSaveStackState(SavedStack* savePtr, bool copy);
     void impRestoreStackState(SavedStack* savePtr);
 
-    GenTree* impImportLdvirtftn(GenTree* thisPtr, CORINFO_RESOLVED_TOKEN* pResolvedToken, CORINFO_CALL_INFO* pCallInfo, GenTree** pRuntimeHandle);
+    GenTree* impImportLdvirtftn(GenTree* thisPtr, CORINFO_RESOLVED_TOKEN* pResolvedToken, CORINFO_CALL_INFO* pCallInfo);
 
     enum class BoxPatterns
     {
@@ -7584,7 +7584,6 @@ public:
 #define OMF_HAS_EXPANDABLE_CAST                0x00080000 // Method contains casts eligible for late expansion
 #define OMF_HAS_STACK_ARRAY                    0x00100000 // Method contains stack allocated arrays
 #define OMF_HAS_BOUNDS_CHECKS                  0x00200000 // Method contains bounds checks
-#define OMF_HAS_GENERIC_VIRTUAL                0x00400000 // Method contains generic virtual calls
 
     // clang-format on
 
@@ -7653,16 +7652,6 @@ public:
     void setMethodHasGuardedDevirtualization()
     {
         optMethodFlags |= OMF_HAS_GUARDEDDEVIRT;
-    }
-
-    bool doesMethodHaveGenericVirtual() const
-    {
-        return (optMethodFlags & OMF_HAS_GENERIC_VIRTUAL) != 0;
-    }
-
-    void setMethodHasGenericVirtual()
-    {
-        optMethodFlags |= OMF_HAS_GENERIC_VIRTUAL;
     }
 
     bool methodHasTlsFieldAccess()
