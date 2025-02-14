@@ -4857,14 +4857,6 @@ public:
 
 #ifdef DEBUG
     void Dump(Compiler* comp);
-    // Check that the value of 'AbiInfo.IsStruct' is consistent.
-    // A struct arg must be one of the following:
-    // - A node of struct type,
-    // - A GT_FIELD_LIST, or
-    // - A node of a scalar type, passed in a single register or slot
-    //   (or two slots in the case of a struct pass on the stack as TYP_DOUBLE).
-    //
-    void CheckIsStruct();
 #endif
 };
 

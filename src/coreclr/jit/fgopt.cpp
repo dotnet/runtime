@@ -4677,10 +4677,10 @@ void Compiler::fgDoReversePostOrderLayout()
 
     BasicBlock** const rpoSequence   = new (this, CMK_BasicBlock) BasicBlock*[m_dfsTree->GetPostOrderCount()];
     unsigned           numBlocks     = 0;
-    auto               addToSequence = [rpoSequence, &numBlocks](BasicBlock* block) {
-        // Exclude handler regions from being reordered.
+    auto               addToSequence = [this, rpoSequence, &numBlocks](BasicBlock* block) {
+        // Exclude handler regions and cold blocks from being reordered.
         //
-        if (!block->hasHndIndex())
+        if (!block->hasHndIndex() && !block->isBBWeightCold(this))
         {
             rpoSequence[numBlocks++] = block;
         }
