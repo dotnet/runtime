@@ -7901,7 +7901,7 @@ PhaseStatus Lowering::DoPhase()
         comp->lvSetMinOptsDoNotEnreg();
     }
 
-    if (comp->opts.OptimizationEnabled())
+    if (comp->opts.OptimizationEnabled() && !comp->opts.IsOSR())
     {
         MapParameterRegisterLocals();
     }
@@ -8035,10 +8035,7 @@ void Lowering::MapParameterRegisterLocals()
         }
     }
 
-    if (!comp->opts.IsOSR())
-    {
-        FindInducedParameterRegisterLocals();
-    }
+    FindInducedParameterRegisterLocals();
 
 #ifdef DEBUG
     if (comp->verbose)
