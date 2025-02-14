@@ -505,6 +505,6 @@ LEAF_ENTRY ThisPtrRetBufPrecodeWorker, _TEXT
     mov rcx, rdx
     mov rdx, r11
     jmp METHODDESC_REGISTER
-LEAF_END ThisPtrWriteBarrierWorker, _TEXT
+LEAF_END ThisPtrRetBufPrecodeWorker, _TEXT
 
         end

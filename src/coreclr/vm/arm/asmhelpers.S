@@ -942,10 +942,10 @@ LOCAL_LABEL(JIT_PollGCRarePath):
 //x0 -This pointer
 //x1 -ReturnBuffer
 LEAF_ENTRY ThisPtrRetBufPrecodeWorker, _TEXT
-    ldr  r12, [r12, 0]
+    ldr  r12, [r12, #ThisPtrRetBufPrecodeData__Target]
     // Use XOR swap technique to set avoid the need to spill to the stack
     eor  r0, r0, r1
     eor  r1, r0, r1
     eor  r0, r0, r1
     EPILOG_BRANCH_REG r12
-LEAF_END ThisPtrWriteBarrierWorker, _TEXT
+LEAF_END ThisPtrRetBufPrecodeWorker, _TEXT

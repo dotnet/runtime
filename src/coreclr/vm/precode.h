@@ -252,13 +252,28 @@ typedef DPTR(NDirectImportPrecode) PTR_NDirectImportPrecode;
 
 #ifdef HAS_THISPTR_RETBUF_PRECODE
 
-// NDirect import precode
+struct ThisPtrRetBufPrecodeData
+{
+    PCODE Target;
+    MethodDesc *MethodDesc;
+};
+
+typedef DPTR(ThisPtrRetBufPrecodeData) PTR_ThisPtrRetBufPrecodeData;
+
+// ThisPtrRetBufPrecode, built on the infra for the StubPrecode
 // (This is fake precode. VTable slot does not point to it.)
 struct ThisPtrRetBufPrecode : StubPrecode
 {
     static const int Type = 0x08;
 
-    void Init(ThisPtrRetBufPrecode* pPrecodeRX, MethodDesc* pMD, LoaderAllocator *pLoaderAllocator);
+    void Init(ThisPtrRetBufPrecodeData* pPrecodeData, MethodDesc* pMD, LoaderAllocator *pLoaderAllocator);
+    void Init(MethodDesc* pMD, LoaderAllocator *pLoaderAllocator);
+
+    PTR_ThisPtrRetBufPrecodeData GetData() const
+    {
+        LIMITED_METHOD_CONTRACT;
+        return dac_cast<PTR_ThisPtrRetBufPrecodeData>(StubPrecode::GetData()->SecretParam);
+    }
 
     LPVOID GetEntrypoint()
     {
@@ -282,7 +297,7 @@ struct ThisPtrRetBufPrecode : StubPrecode
         }
         CONTRACTL_END;
 
-        StubPrecodeData *pData = GetData();
+        ThisPtrRetBufPrecodeData *pData = GetData();
         InterlockedExchangeT<PCODE>(&pData->Target, GetPreStubEntryPoint());
     }
 
@@ -295,14 +310,8 @@ struct ThisPtrRetBufPrecode : StubPrecode
         }
         CONTRACTL_END;
 
-        StubPrecodeData *pData = GetData();
+        ThisPtrRetBufPrecodeData *pData = GetData();
         return InterlockedCompareExchangeT<PCODE>(&pData->Target, (PCODE)target, (PCODE)expected) == expected;
-    }
-
-    PTR_StubPrecodeData GetData() const
-    {
-        LIMITED_METHOD_CONTRACT;
-        return dac_cast<PTR_StubPrecodeData>(dac_cast<TADDR>(this) + GetStubCodePageSize());
     }
 
     TADDR GetMethodDesc()
@@ -693,6 +702,9 @@ public:
 #ifndef DACCESS_COMPILE
     void ResetTargetInterlocked();
     BOOL SetTargetInterlocked(PCODE target, BOOL fOnlyRedirectFromPrestub = TRUE);
+
+    // Reset precode to point to prestub
+    void Reset();
 #endif // DACCESS_COMPILE
 
     static PTR_Precode GetPrecodeFromEntryPoint(PCODE addr, BOOL fSpeculative = FALSE)

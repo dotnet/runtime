@@ -1085,10 +1085,10 @@ NESTED_END OnCallCountThresholdReachedStub, _TEXT
 //edi -This pointer
 //esi -ReturnBuffer
 LEAF_ENTRY ThisPtrRetBufPrecodeWorker, _TEXT
-    mov  eax, [eax + 0]
+    mov  eax, [eax + ThisPtrRetBufPrecodeData__Target]
     // Use XOR swap technique to set avoid the need to spill to the stack
     xor edi, esi
     xor esi, edi
     xor edi, esi
     jmp eax
-LEAF_END ThisPtrWriteBarrierWorker, _TEXT
+LEAF_END ThisPtrRetBufPrecodeWorker, _TEXT

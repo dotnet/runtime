@@ -34,6 +34,9 @@ BOOL Precode::IsValidType(PrecodeType t)
 #ifdef HAS_THISPTR_RETBUF_PRECODE
     case PRECODE_THISPTR_RETBUF:
 #endif // HAS_THISPTR_RETBUF_PRECODE
+#ifdef FEATURE_INTERPRETER
+    case PRECODE_INTERPRETER:
+#endif // FEATURE_INTERPRETER
     case PRECODE_UMENTRY_THUNK:
         return TRUE;
     default:
@@ -70,6 +73,10 @@ SIZE_T Precode::SizeOf(PrecodeType t)
     case PRECODE_THISPTR_RETBUF:
         return sizeof(ThisPtrRetBufPrecode);
 #endif // HAS_THISPTR_RETBUF_PRECODE
+#ifdef FEATURE_INTERPRETER
+    case PRECODE_INTERPRETER:
+        return sizeof(InterpreterPrecode);
+#endif // FEATURE_INTERPRETER
 
     default:
         UnexpectedPrecodeType("Precode::SizeOf", t);
@@ -141,6 +148,14 @@ MethodDesc* Precode::GetMethodDesc(BOOL fSpeculative /*= FALSE*/)
         pMD = AsThisPtrRetBufPrecode()->GetMethodDesc();
         break;
 #endif // HAS_THISPTR_RETBUF_PRECODE
+    case PRECODE_UMENTRY_THUNK:
+        return NULL;
+        break;
+#ifdef FEATURE_INTERPRETER
+    case PRECODE_INTERPRETER:
+        return NULL;
+        break;
+#endif // FEATURE_INTERPRETER
 
     default:
         break;
@@ -226,26 +241,27 @@ Precode* Precode::Allocate(PrecodeType t, MethodDesc* pMD,
     }
     CONTRACTL_END;
 
-    SIZE_T size = Precode::SizeOf(t);
-    Precode* pPrecode;
+    Precode* pPrecode = NULL;
 
     if (t == PRECODE_FIXUP)
     {
-        pPrecode = (Precode*)pamTracker->Track(pLoaderAllocator->GetFixupPrecodeHeap()->AllocAlignedMem(size, 1));
+        pPrecode = (Precode*)pamTracker->Track(pLoaderAllocator->GetFixupPrecodeHeap()->AllocAlignedMem(sizeof(FixupPrecode), 1));
         pPrecode->Init(pPrecode, t, pMD, pLoaderAllocator);
     }
-    else if (t == PRECODE_STUB || t == PRECODE_NDIRECT_IMPORT)
+#ifdef HAS_THISPTR_RETBUF_PRECODE
+    else if (t == PRECODE_THISPTR_RETBUF)
     {
-        pPrecode = (Precode*)pamTracker->Track(pLoaderAllocator->GetNewStubPrecodeHeap()->AllocAlignedMem(size, 1));
-        pPrecode->Init(pPrecode, t, pMD, pLoaderAllocator);
+        ThisPtrRetBufPrecode* pThisPtrRetBufPrecode = (ThisPtrRetBufPrecode*)pamTracker->Track(pLoaderAllocator->GetNewStubPrecodeHeap()->AllocAlignedMem(sizeof(ThisPtrRetBufPrecode), 1));
+        ThisPtrRetBufPrecodeData *pData = (ThisPtrRetBufPrecodeData*)pamTracker->Track(pLoaderAllocator->GetLowFrequencyHeap()->AllocMem(S_SIZE_T(sizeof(ThisPtrRetBufPrecodeData))));
+        pThisPtrRetBufPrecode->Init(pData, pMD, pLoaderAllocator);
+        pPrecode = (Precode*)pThisPtrRetBufPrecode;
     }
+#endif // HAS_THISPTR_RETBUF_PRECODE
     else
     {
-        pPrecode = (Precode*)pamTracker->Track(pLoaderAllocator->GetPrecodeHeap()->AllocAlignedMem(size, AlignOf(t)));
-        ExecutableWriterHolder<Precode> precodeWriterHolder(pPrecode, size);
-        precodeWriterHolder.GetRW()->Init(pPrecode, t, pMD, pLoaderAllocator);
-        ClrFlushInstructionCache(pPrecode, size);
-
+        _ASSERTE(t == PRECODE_STUB || t == PRECODE_NDIRECT_IMPORT);
+        pPrecode = (Precode*)pamTracker->Track(pLoaderAllocator->GetNewStubPrecodeHeap()->AllocAlignedMem(sizeof(StubPrecode), 1));
+        pPrecode->Init(pPrecode, t, pMD, pLoaderAllocator);
     }
 
     return pPrecode;
@@ -349,6 +365,35 @@ BOOL Precode::SetTargetInterlocked(PCODE target, BOOL fOnlyRedirectFromPrestub)
     return ret;
 }
 
+void Precode::Reset()
+{
+    WRAPPER_NO_CONTRACT;
+
+    MethodDesc* pMD = GetMethodDesc();
+
+    PrecodeType t = GetType();
+    SIZE_T size = Precode::SizeOf(t);
+
+    switch (t)
+    {
+    case PRECODE_STUB:
+#ifdef HAS_NDIRECT_IMPORT_PRECODE
+    case PRECODE_NDIRECT_IMPORT:
+#endif // HAS_NDIRECT_IMPORT_PRECODE
+#ifdef HAS_FIXUP_PRECODE
+    case PRECODE_FIXUP:
+#endif // HAS_FIXUP_PRECODE
+#ifdef HAS_THISPTR_RETBUF_PRECODE
+    case PRECODE_THISPTR_RETBUF:
+#endif // HAS_THISPTR_RETBUF_PRECODE
+        Init(this, t, pMD, pMD->GetLoaderAllocator());
+
+    default:
+        _ASSERTE(!"Unexpected precode type");
+        JIT_FailFast();
+    }
+}
+
 #endif // !DACCESS_COMPILE
 
 #ifdef DACCESS_COMPILE
@@ -375,6 +420,23 @@ void FixupPrecode::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
 #endif // HAS_FIXUP_PRECODE
 
 #ifndef DACCESS_COMPILE
+
+#ifdef HAS_THISPTR_RETBUF_PRECODE
+extern "C" void ThisPtrRetBufPrecodeWorker();
+void ThisPtrRetBufPrecode::Init(ThisPtrRetBufPrecodeData* pPrecodeData, MethodDesc* pMD, LoaderAllocator *pLoaderAllocator)
+{
+    StubPrecode::Init(this, dac_cast<TADDR>(pPrecodeData), pLoaderAllocator, ThisPtrRetBufPrecode::Type, (TADDR)ThisPtrRetBufPrecodeWorker);
+    pPrecodeData->MethodDesc = pMD;
+    pPrecodeData->Target = GetPreStubEntryPoint();
+}
+
+void ThisPtrRetBufPrecode::Init(MethodDesc* pMD, LoaderAllocator *pLoaderAllocator)
+{
+    ThisPtrRetBufPrecodeData* pPrecodeData = GetData();
+    pPrecodeData->MethodDesc = pMD;
+    pPrecodeData->Target = GetPreStubEntryPoint();
+}
+#endif // HAS_THISPTR_RETBUF_PRECODE
 
 void StubPrecode::Init(StubPrecode* pPrecodeRX, TADDR secretParam, LoaderAllocator *pLoaderAllocator /* = NULL */,
     TADDR type /* = StubPrecode::Type */, TADDR target /* = NULL */)

@@ -999,9 +999,9 @@ LEAF_END JIT_PollGC, _TEXT
 //a0 -This pointer
 //a1 -ReturnBuffer
 LEAF_ENTRY ThisPtrRetBufPrecodeWorker, _TEXT
-    ld  t2, 0(METHODDESC_REGISTER)
+    ld  t2, ThisPtrRetBufPrecodeData__Target(METHODDESC_REGISTER)
     mv  t6, a0     // Move first arg pointer to temp register
     mv  a0, a1     // Move ret buf arg pointer from location in ABI for return buffer for instance method to location in ABI for return buffer for static method
     mv  a1, t6     // Move temp register to first arg register for static method with return buffer
     EPILOG_BRANCH_REG t2
-LEAF_END ThisPtrWriteBarrierWorker, _TEXT
+LEAF_END ThisPtrRetBufPrecodeWorker, _TEXT
