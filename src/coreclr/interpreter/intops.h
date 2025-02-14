@@ -4,6 +4,7 @@
 #ifndef _INTOPS_H
 #define _INTOPS_H
 
+#include "openum.h"
 #include <stdint.h>
 
 typedef enum
@@ -25,4 +26,7 @@ extern const InterpOpNameCharacters g_interpOpNameCharacters;
 
 const char* InterpOpName(int op);
 
+extern OPCODE_FORMAT const g_CEEOpArgs[];
+const char* CEEOpName(OPCODE op);
+OPCODE CEEDecodeOpcode(const uint8_t **ip);
 #endif

@@ -60,3 +60,54 @@ const char* InterpOpName(int op)
     return ((const char*)&g_interpOpNameCharacters) + g_interpOpNameOffsets[op];
 }
 
+// Information about IL opcodes
+
+OPCODE_FORMAT const g_CEEOpArgs[] = {
+#define OPDEF(c,s,pop,push,args,type,l,s1,s2,ctrl) args,
+#include "opcode.def"
+#undef OPDEF
+};
+
+struct CEEOpNameCharacters
+{
+#define OPDEF(c,s,pop,push,args,type,l,s1,s2,ctrl) char c[sizeof(s)];
+#include "opcode.def"
+#undef OPDEF
+};
+
+const struct CEEOpNameCharacters g_CEEOpNameCharacters = {
+#define OPDEF(c,s,pop,push,args,type,l,s1,s2,ctrl) s,
+#include "opcode.def"
+#undef OPDEF
+};
+
+const uint32_t g_CEEOpNameOffsets[] = {
+#define OPDEF(c,s,pop,push,args,type,l,s1,s2,ctrl) offsetof(CEEOpNameCharacters, c),
+#include "opcode.def"
+#undef OPDEF
+};
+
+const char* CEEOpName(OPCODE op)
+{
+    return ((const char*)&g_CEEOpNameCharacters) + g_CEEOpNameOffsets[op];
+}
+
+// Also updates ip to skip over prefix, if any
+OPCODE CEEDecodeOpcode(const uint8_t **pIp)
+{
+    OPCODE res;
+    const uint8_t *ip = *pIp;
+
+    if (*ip == 0xFE)
+    {
+        // Double byte encoding, offset
+        ip++;
+        res = (OPCODE)(*ip + CEE_ARGLIST);
+    }
+    else
+    {
+        res = (OPCODE)*ip;
+    }
+    *pIp = ip;
+    return res;
+}

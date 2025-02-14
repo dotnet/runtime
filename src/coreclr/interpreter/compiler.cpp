@@ -2,8 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 #include "interpreter.h"
 
-#include "openum.h"
-
 static const StackType g_stackTypeFromInterpType[] =
 {
     StackTypeI4, // I1
