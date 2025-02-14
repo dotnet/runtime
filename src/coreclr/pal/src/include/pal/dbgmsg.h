@@ -259,9 +259,15 @@ extern Volatile<BOOL> dbg_master_switch ;
     static const DBG_CHANNEL_ID defdbgchan = DCI_##x
 
 /* Is debug output enabled for the given level and channel? */
+#ifdef __wasm__
+// enable all debug output temporarily, before we have a way to control it
+#define DBG_ENABLED(level, channel) (output_file &&                     \
+                                     dbg_master_switch)
+#else
 #define DBG_ENABLED(level, channel) (output_file &&                     \
                                      dbg_master_switch &&               \
                                      (dbg_channel_flags[channel] & (1 << (level))))
+#endif
 #define TRACE \
     DBG_PRINTF(DLI_TRACE,defdbgchan,TRUE)
 
