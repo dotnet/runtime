@@ -1398,13 +1398,13 @@ endif ; FEATURE_TIERED_COMPILATION
 
 ; rcx -This pointer
 ; rdx -ReturnBuffer
-LEAF_ENTRY ThisPtrRetBufPrecodeWorker, _TEXT
+_ThisPtrRetBufPrecodeWorker@0 proc public
     mov  eax, [eax + ThisPtrRetBufPrecodeData__Target]
     ; Use XOR swap technique to set avoid the need to spill to the stack
     xor ecx, edx
     xor edx, ecx
     xor ecx, edx
     jmp eax
-LEAF_END ThisPtrRetBufPrecodeWorker, _TEXT
+_ThisPtrRetBufPrecodeWorker@0 endp
 
     end

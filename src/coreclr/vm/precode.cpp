@@ -387,10 +387,12 @@ void Precode::Reset()
     case PRECODE_THISPTR_RETBUF:
 #endif // HAS_THISPTR_RETBUF_PRECODE
         Init(this, t, pMD, pMD->GetLoaderAllocator());
+        break;
 
     default:
         _ASSERTE(!"Unexpected precode type");
         JIT_FailFast();
+        break;
     }
 }
 
