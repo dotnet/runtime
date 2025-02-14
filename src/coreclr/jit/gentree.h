@@ -4569,6 +4569,7 @@ enum class WellKnownArg : unsigned
     SwiftSelf,
     X86TailCallSpecialArg,
     StackArrayLocal,
+    MethodInstHandle,
 };
 
 #ifdef DEBUG
@@ -5769,8 +5770,6 @@ struct GenTreeCall final : public GenTree
     };
 
     LateDevirtualizationInfo* gtLateDevirtualizationInfo; // Always available for user virtual calls
-
-    GenTree* gtLdvirtftnHnd; // Method handle for LDVIRTFTN, it can be either an ICON or a RUNTIMELOOKUP
 
     // expression evaluated after args are placed which determines the control target
     GenTree* gtControlExpr;

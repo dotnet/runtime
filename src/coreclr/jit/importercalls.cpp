@@ -405,12 +405,11 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
                     lvaSetClass(thisPtr->AsLclVar()->GetLclNum(), origThisPtr);
                 }
 
-                GenTree* runtimeLookup = nullptr;
-                GenTree* fptr          = impImportLdvirtftn(thisPtr, pResolvedToken, callInfo, &runtimeLookup);
+                GenTree* methodHnd = nullptr;
+                GenTree* fptr      = impImportLdvirtftn(thisPtr, pResolvedToken, callInfo, &methodHnd);
                 assert(fptr != nullptr);
-                assert(!callInfo->exactContextNeedsRuntimeLookup || runtimeLookup != nullptr);
+                assert(!callInfo->exactContextNeedsRuntimeLookup || methodHnd != nullptr);
 
-                call->AsCall()->gtLdvirtftnHnd = runtimeLookup;
                 call->AsCall()
                     ->gtArgs.PushFront(this, NewCallArg::Primitive(thisPtrCopy).WellKnown(WellKnownArg::ThisPointer));
 
@@ -426,6 +425,15 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
                 if (sig->sigInst.methInstCount != 0)
                 {
                     call->gtFlags |= GTF_CALL_VIRT_GENERIC;
+                    setMethodHasGenericVirtual();
+
+                    if (methodHnd != nullptr)
+                    {
+                        // Create a fake arg for the method handle so that we can use it in devirtualization
+                        call->AsCall()->gtArgs.PushBack(this, NewCallArg::Primitive(gtCloneExpr(methodHnd))
+                                                                  .WellKnown(WellKnownArg::MethodInstHandle));
+                    }
+
                     if (IsTargetAbi(CORINFO_NATIVEAOT_ABI))
                     {
                         // NativeAOT generic virtual method: need to handle potential fat function pointers
@@ -8361,22 +8369,31 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
     {
         // Pass the instantiating stub method desc as the inst param arg.
         //
-        if (call->gtLdvirtftnHnd != nullptr && call->gtLdvirtftnHnd->OperIs(GT_RUNTIMELOOKUP))
+        CallArg* methodInstHnd = call->gtArgs.FindWellKnownArg(WellKnownArg::MethodInstHandle);
+        GenTree* instParam     = nullptr;
+
+        if (methodInstHnd != nullptr)
         {
-            // The instantiating stub needs a runtime lookup.
+            // This only happens for virtual generic calls.
             //
             assert(call->IsVirtualGeneric());
-            call->gtArgs.InsertInstParam(this, gtCloneExpr(call->gtLdvirtftnHnd));
+            instParam = methodInstHnd->GetNode();
+            // Remove the fake arg from the call.
+            //
+            call->gtArgs.Remove(methodInstHnd);
         }
-        else
+
+        // If we get a runtime lookup, insert the runtime lookup instead of the instanting stub.
+        //
+        if (instParam == nullptr || !instParam->OperIs(GT_RUNTIMELOOKUP))
         {
             // Note different embedding would be needed for NAOT/R2R,
             // but we have ruled those out above.
             //
-            GenTree* const instParam =
-                gtNewIconEmbHndNode(instantiatingStub, nullptr, GTF_ICON_METHOD_HDL, instantiatingStub);
-            call->gtArgs.InsertInstParam(this, instParam);
+            instParam = gtNewIconEmbHndNode(instantiatingStub, nullptr, GTF_ICON_METHOD_HDL, instantiatingStub);
         }
+
+        call->gtArgs.InsertInstParam(this, instParam);
     }
 
     // Make the updates.

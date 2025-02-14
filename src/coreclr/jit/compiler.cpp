@@ -4674,6 +4674,9 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     //
     DoPhase(this, PHASE_MORPH_INLINE, &Compiler::fgInline);
 
+    // Expand generic virtual indirect calls
+    DoPhase(this, PHASE_EXPAND_GENERIC_VIRTUAL, &Compiler::fgExpandGenericVirtual);
+
     // Record "start" values for post-inlining cycles and elapsed time.
     RecordStateAtEndOfInlining();
 

@@ -534,17 +534,20 @@ private:
     {
         if (call->IsVirtualGeneric())
         {
-            assert(call->gtLdvirtftnHnd != nullptr);
-            switch (call->gtLdvirtftnHnd->OperGet())
+            CallArg* methodInstHnd = call->gtArgs.FindWellKnownArg(WellKnownArg::MethodInstHandle);
+            assert(methodInstHnd != nullptr);
+            GenTree* methodInstNode = methodInstHnd->GetNode();
+            switch (methodInstNode->OperGet())
             {
                 case GT_RUNTIMELOOKUP:
-                    return call->gtLdvirtftnHnd->AsRuntimeLookup()->GetMethodHandle();
+                    return methodInstNode->AsRuntimeLookup()->GetMethodHandle();
                 case GT_CNS_INT:
-                    return CORINFO_METHOD_HANDLE(call->gtLdvirtftnHnd->AsIntCon()->IconValue());
+                    return CORINFO_METHOD_HANDLE(methodInstNode->AsIntCon()->IconValue());
                 default:
-                    assert(!"Unexpected ldvirtftnHnd type");
+                    assert(!"Unexpected type in MethodInstHandle arg.");
                     return nullptr;
             }
+            return nullptr;
         }
         else
         {

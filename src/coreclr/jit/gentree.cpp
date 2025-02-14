@@ -8399,7 +8399,6 @@ GenTreeCall* Compiler::gtNewCallNode(gtCallTypes           callType,
     node->gtCallMoreFlags = GTF_CALL_M_EMPTY;
     INDEBUG(node->gtCallDebugFlags = GTF_CALL_MD_EMPTY);
     node->gtInlineInfoCount = 0;
-    node->gtLdvirtftnHnd    = nullptr;
 
     if (callType == CT_INDIRECT)
     {
@@ -10018,8 +10017,6 @@ GenTreeCall* Compiler::gtCloneExprCallHelper(GenTreeCall* tree)
 
     copy->gtCallType   = tree->gtCallType;
     copy->gtReturnType = tree->gtReturnType;
-
-    copy->gtLdvirtftnHnd = tree->gtLdvirtftnHnd;
 
 #if FEATURE_MULTIREG_RET
     copy->gtReturnTypeDesc = tree->gtReturnTypeDesc;
@@ -13238,6 +13235,8 @@ const char* Compiler::gtGetWellKnownArgNameForArgMsg(WellKnownArg arg)
             return "tail call";
         case WellKnownArg::StackArrayLocal:
             return "&lcl arr";
+        case WellKnownArg::MethodInstHandle:
+            return "meth inst";
         default:
             return nullptr;
     }
