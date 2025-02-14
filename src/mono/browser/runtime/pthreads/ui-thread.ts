@@ -9,6 +9,7 @@ import { MonoWorkerToMainMessage, monoThreadInfo, mono_wasm_pthread_ptr, update_
 import { Module, ENVIRONMENT_IS_WORKER, createPromiseController, loaderHelpers, mono_assert, runtimeHelpers } from "../globals";
 import { PThreadLibrary, MainToWorkerMessageType, MonoThreadMessage, PThreadInfo, PThreadPtr, PThreadPtrNull, PThreadWorker, PromiseController, Thread, WorkerToMainMessageType, monoMessageSymbol } from "../types/internal";
 import { mono_log_info, mono_log_debug, mono_log_warn } from "../logging";
+import { forceThreadMemoryViewRefresh } from "../memory";
 
 const threadPromises: Map<PThreadPtr, PromiseController<Thread>[]> = new Map();
 
@@ -70,6 +71,8 @@ function monoWorkerMessageHandler (worker: PThreadWorker, ev: MessageEvent<any>)
         /// N.B. important to ignore messages we don't recognize - Emscripten uses the message event to send internal messages
         return;
     }
+
+    forceThreadMemoryViewRefresh();
 
     let thread: Thread;
     pthreadId = message.info?.pthreadId ?? 0;

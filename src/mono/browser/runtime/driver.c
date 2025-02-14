@@ -46,6 +46,11 @@ char *mono_method_get_full_name (MonoMethod *method);
 #ifndef INVARIANT_TIMEZONE
 extern void mono_register_timezones_bundle (void);
 #endif /* INVARIANT_TIMEZONE */
+
+#ifndef DISABLE_THREADS
+void wasm_atomic_fence(void);
+#endif /* DISABLE_THREADS */
+
 extern void mono_wasm_set_entrypoint_breakpoint (const char* assembly_name, int method_token);
 
 extern void mono_bundled_resources_add_assembly_resource (const char *id, const char *name, const uint8_t *data, uint32_t size, void (*free_func)(void *, void*), void *free_data);
@@ -188,6 +193,11 @@ mono_wasm_load_runtime (int debug_level)
 	runtime_initialized = 1;
 	const char *interp_opts = "";
 
+#ifndef DISABLE_THREADS
+	wasm_atomic_fence ();
+	__sync_synchronize ();
+#endif /* DISABLE_THREADS */
+
 #ifndef INVARIANT_GLOBALIZATION
 	mono_wasm_link_icu_shim ();
 #endif
@@ -230,6 +240,12 @@ mono_wasm_load_runtime (int debug_level)
 	root_domain = mono_wasm_load_runtime_common (debug_level, wasm_trace_logger, interp_opts);
 
 	bindings_initialize_internals();
+
+#ifndef DISABLE_THREADS
+	wasm_atomic_fence ();
+	__sync_synchronize ();
+#endif /* DISABLE_THREADS */
+
 }
 
 int initialize_runtime()
@@ -283,6 +299,8 @@ mono_wasm_print_thread_dump (void)
 static void
 mono_wasm_invoke_jsexport_async_post_cb (MonoMethod *method, void* args)
 {
+	wasm_atomic_fence ();
+	__sync_synchronize ();
 	mono_wasm_invoke_jsexport (method, args);
 	if (args) {
 		MonoBoolean *is_receiver_should_free = (MonoBoolean *)(((char *) args) + 20/*JSMarshalerArgumentOffsets.ReceiverShouldFree*/);
@@ -296,6 +314,8 @@ mono_wasm_invoke_jsexport_async_post_cb (MonoMethod *method, void* args)
 EMSCRIPTEN_KEEPALIVE void
 mono_wasm_invoke_jsexport_async_post (void* target_thread, MonoMethod *method, void* args /*JSMarshalerArguments*/)
 {
+	wasm_atomic_fence ();
+	__sync_synchronize ();
 	mono_threads_wasm_async_run_in_target_thread_vii(target_thread, (void (*)(gpointer, gpointer))mono_wasm_invoke_jsexport_async_post_cb, method, args);
 }
 
@@ -310,6 +330,8 @@ extern sync_context_pump synchronization_context_pump_handler;
 EMSCRIPTEN_KEEPALIVE void
 mono_wasm_invoke_jsexport_sync (MonoMethod *method, void* args)
 {
+	wasm_atomic_fence ();
+	__sync_synchronize ();
 	before_sync_js_import (args);
 	mono_wasm_invoke_jsexport (method, args);
 	after_sync_js_import (args);
@@ -319,6 +341,8 @@ mono_wasm_invoke_jsexport_sync (MonoMethod *method, void* args)
 EMSCRIPTEN_KEEPALIVE void
 mono_wasm_invoke_jsexport_sync_send (void* target_thread, MonoMethod *method, void* args /*JSMarshalerArguments*/)
 {
+	wasm_atomic_fence ();
+	__sync_synchronize ();
 	mono_threads_wasm_sync_run_in_target_thread_vii (target_thread, (void (*)(gpointer, gpointer))mono_wasm_invoke_jsexport_sync, method, args);
 }
 
