@@ -182,17 +182,11 @@ ABIPassingInformation Arm64Classifier::Classify(Compiler*    comp,
             unsigned          alignment;
             if (compAppleArm64Abi())
             {
-                if (varTypeIsStruct(type))
-                {
-                    alignment = TARGET_POINTER_SIZE;
-                }
-                else
-                {
-                    alignment = genTypeSize(type);
-                }
-
+                alignment      = varTypeIsStruct(type) ? TARGET_POINTER_SIZE : genTypeSize(type);
                 m_stackArgSize = roundUp(m_stackArgSize, alignment);
-                segment        = ABIPassingSegment::OnStackWithoutConsumingFullSlot(m_stackArgSize, 0, passedSize);
+                segment        = alignment < TARGET_POINTER_SIZE
+                                     ? ABIPassingSegment::OnStackWithoutConsumingFullSlot(m_stackArgSize, 0, passedSize)
+                                     : ABIPassingSegment::OnStack(m_stackArgSize, 0, passedSize);
             }
             else
             {

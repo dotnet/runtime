@@ -350,7 +350,7 @@ unsigned StackLevelSetter::PopArgumentsFromCall(GenTreeCall* call)
             {
                 if (segment.IsPassedOnStack())
                 {
-                    slotCount += segment.GetStackSize() / TARGET_POINTER_SIZE;
+                    slotCount += (segment.GetStackSize() + (TARGET_POINTER_SIZE - 1)) / TARGET_POINTER_SIZE;
                 }
             }
 
