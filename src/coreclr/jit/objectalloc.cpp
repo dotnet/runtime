@@ -84,6 +84,8 @@ PhaseStatus ObjectAllocator::DoPhase()
         assert(enabled);
         ComputeStackObjectPointers(&m_bitVecTraits);
         RewriteUses();
+
+        printf("\n**** Stack allocation in 0x%08x %s\n", comp->info.compMethodHash(), comp->info.compFullName);
     }
 
     // This phase always changes the IR. It may also modify the flow graph.
@@ -1137,12 +1139,15 @@ bool ObjectAllocator::CanLclVarEscapeViaParentStack(ArrayStack<GenTree*>* parent
                 if (tree != addr)
                 {
                     JITDUMP("... tree != addr\n");
-                    // Is this a store to the x field of a span?
-                    // Todo: mark like IsSpanLength?
-                    // (more generally, a store to a ref class -- though we'd also need to handle the load case)
+
+                    // Is this an array element address store to (the pointer) field of a span?
+                    // (note we can't yet handle cases where a span captures an object)
                     //
-                    if (addr->OperIs(GT_FIELD_ADDR))
+                    if (parent->OperIs(GT_STOREIND) && addr->OperIs(GT_FIELD_ADDR) && tree->OperIs(GT_INDEX_ADDR))
                     {
+                        // Todo: mark the span pointer field addr like we mark IsSpanLength?
+                        // (for now we don't worry which field we store to)
+                        //
                         GenTree* const base = addr->AsOp()->gtGetOp1();
 
                         if (base->OperIs(GT_LCL_ADDR))
