@@ -31,7 +31,6 @@
     <AfterMicrosoftNETSdkTargets>$(MonoProjectRoot)\msbuild\android\build\AndroidBuild.InTree.targets</AfterMicrosoftNETSdkTargets>
   </PropertyGroup>
 
-
   <Target Name="RunAppBundle"
           Condition="'$(ArchiveTests)' != 'true' and '$(DeployAndRun)' == 'true'"
           AfterTargets="_AfterAndroidBuild"
