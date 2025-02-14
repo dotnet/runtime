@@ -412,12 +412,12 @@ __MsbuildDebugLogsDir="$__LogsDir/MsbuildDebugLogs"
 
 # Set the remaining variables based upon the determined build configuration
 __OSPlatformConfig="$__TargetOS.$__TargetArch.$__BuildType"
-__BinDir="$__RootBinDir/bin/coreclr/$__OSPlatformConfig"
+__BinDir="$__RootBinDir/bin/$__RuntimeFlavor/$__OSPlatformConfig"
 __PackagesBinDir="$__BinDir/.nuget"
 __TestDir="$__RepoRootDir/src/tests"
-__TestBinDir="$__RootBinDir/tests/coreclr/$__OSPlatformConfig"
-__IntermediatesDir="$__RootBinDir/obj/coreclr/$__OSPlatformConfig"
-__TestIntermediatesDir="$__RootBinDir/tests/coreclr/obj/$__OSPlatformConfig"
+__TestBinDir="$__RootBinDir/tests/$__RuntimeFlavor/$__OSPlatformConfig"
+__IntermediatesDir="$__RootBinDir/obj/$__RuntimeFlavor/$__OSPlatformConfig"
+__TestIntermediatesDir="$__RootBinDir/tests/$__RuntimeFlavor/obj/$__OSPlatformConfig"
 __CrossCompIntermediatesDir="$__IntermediatesDir/crossgen"
 __MonoBinDir="$__RootBinDir/bin/mono/$__OSPlatformConfig"
 
