@@ -112,6 +112,63 @@ server_warning_callback (
 	DS_LOG_WARNING_2 ("warning (%d): %s.", code, message);
 }
 
+static size_t server_loop_tick (void* data) {
+	if (server_volatile_load_shutting_down_state ())
+		return 1; // done
+	DiagnosticsIpcStream *stream = ds_ipc_stream_factory_get_next_available_stream (server_warning_callback);
+	if (!stream)
+		return 0; // continue
+
+	ds_rt_auto_trace_signal ();
+
+	DiagnosticsIpcMessage message;
+	if (!ds_ipc_message_init (&message))
+		return 0; // continue
+
+	if (!ds_ipc_message_initialize_stream (&message, stream)) {
+		ds_ipc_message_send_error (stream, DS_IPC_E_BAD_ENCODING);
+		ds_ipc_stream_free (stream);
+		ds_ipc_message_fini (&message);
+		return 0; // continue
+	}
+
+	if (ep_rt_utf8_string_compare (
+		(const ep_char8_t *)ds_ipc_header_get_magic_ref (ds_ipc_message_get_header_ref (&message)),
+		(const ep_char8_t *)DOTNET_IPC_V1_MAGIC) != 0) {
+
+		ds_ipc_message_send_error (stream, DS_IPC_E_UNKNOWN_MAGIC);
+		ds_ipc_stream_free (stream);
+		ds_ipc_message_fini (&message);
+		return 0; // continue
+	}
+
+	DS_LOG_INFO_2 ("DiagnosticServer - received IPC message with command set (%d) and command id (%d)", ds_ipc_header_get_commandset (ds_ipc_message_get_header_ref (&message)), ds_ipc_header_get_commandid (ds_ipc_message_get_header_ref (&message)));
+
+	switch ((DiagnosticsServerCommandSet)ds_ipc_header_get_commandset (ds_ipc_message_get_header_ref (&message))) {
+	case DS_SERVER_COMMANDSET_EVENTPIPE:
+		ds_eventpipe_protocol_helper_handle_ipc_message (&message, stream);
+		break;
+	case DS_SERVER_COMMANDSET_DUMP:
+		ds_dump_protocol_helper_handle_ipc_message (&message, stream);
+		break;
+	case DS_SERVER_COMMANDSET_PROCESS:
+		ds_process_protocol_helper_handle_ipc_message (&message, stream);
+		break;
+	case DS_SERVER_COMMANDSET_PROFILER:
+		ds_profiler_protocol_helper_handle_ipc_message (&message, stream);
+		break;
+	default:
+		server_protocol_helper_unknown_command (&message, stream);
+		break;
+	}
+
+	ds_ipc_message_fini (&message);
+
+	(void)data; // unused
+	return 0; // continue
+}
+
+#ifndef PERFTRACING_DISABLE_THREADS
 EP_RT_DEFINE_THREAD_FUNC (server_thread)
 {
 	EP_ASSERT (server_volatile_load_shutting_down_state () || ds_ipc_stream_factory_has_active_ports ());
@@ -125,59 +182,10 @@ EP_RT_DEFINE_THREAD_FUNC (server_thread)
 		return 1;
 	}
 
-	while (!server_volatile_load_shutting_down_state ()) {
-		DiagnosticsIpcStream *stream = ds_ipc_stream_factory_get_next_available_stream (server_warning_callback);
-		if (!stream)
-			continue;
-
-		ds_rt_auto_trace_signal ();
-
-		DiagnosticsIpcMessage message;
-		if (!ds_ipc_message_init (&message))
-			continue;
-
-		if (!ds_ipc_message_initialize_stream (&message, stream)) {
-			ds_ipc_message_send_error (stream, DS_IPC_E_BAD_ENCODING);
-			ds_ipc_stream_free (stream);
-			ds_ipc_message_fini (&message);
-			continue;
-		}
-
-		if (ep_rt_utf8_string_compare (
-			(const ep_char8_t *)ds_ipc_header_get_magic_ref (ds_ipc_message_get_header_ref (&message)),
-			(const ep_char8_t *)DOTNET_IPC_V1_MAGIC) != 0) {
-
-			ds_ipc_message_send_error (stream, DS_IPC_E_UNKNOWN_MAGIC);
-			ds_ipc_stream_free (stream);
-			ds_ipc_message_fini (&message);
-			continue;
-		}
-
-		DS_LOG_INFO_2 ("DiagnosticServer - received IPC message with command set (%d) and command id (%d)", ds_ipc_header_get_commandset (ds_ipc_message_get_header_ref (&message)), ds_ipc_header_get_commandid (ds_ipc_message_get_header_ref (&message)));
-
-		switch ((DiagnosticsServerCommandSet)ds_ipc_header_get_commandset (ds_ipc_message_get_header_ref (&message))) {
-		case DS_SERVER_COMMANDSET_EVENTPIPE:
-			ds_eventpipe_protocol_helper_handle_ipc_message (&message, stream);
-			break;
-		case DS_SERVER_COMMANDSET_DUMP:
-			ds_dump_protocol_helper_handle_ipc_message (&message, stream);
-			break;
-		case DS_SERVER_COMMANDSET_PROCESS:
-			ds_process_protocol_helper_handle_ipc_message (&message, stream);
-			break;
-		case DS_SERVER_COMMANDSET_PROFILER:
-			ds_profiler_protocol_helper_handle_ipc_message (&message, stream);
-			break;
-		default:
-			server_protocol_helper_unknown_command (&message, stream);
-			break;
-		}
-
-		ds_ipc_message_fini (&message);
-	}
-
+	while (server_loop_tick (NULL) == 0) { }
 	return (ep_rt_thread_start_func_return_t)0;
 }
+#endif // PERFTRACING_DISABLE_THREADS
 
 void
 ds_server_disable (void)
@@ -218,6 +226,7 @@ ds_server_init (void)
 		ds_rt_auto_trace_init ();
 		ds_rt_auto_trace_launch ();
 
+#ifndef PERFTRACING_DISABLE_THREADS
 		ep_rt_thread_id_t thread_id = ep_rt_uint64_t_to_thread_id_t (0);
 
 		if (!ep_rt_thread_create ((void *)server_thread, NULL, EP_THREAD_TYPE_SERVER, (void *)&thread_id)) {
@@ -228,6 +237,9 @@ ds_server_init (void)
 		} else {
 			ds_rt_auto_trace_wait ();
 		}
+#else
+		ep_rt_queue_job ((void *)server_loop_tick, NULL);
+#endif
 	}
 
 	result = true;
@@ -258,6 +270,8 @@ ds_server_shutdown (void)
 void
 ds_server_pause_for_diagnostics_monitor (void)
 {
+// pause is not implemented for single-threaded
+#ifndef PERFTRACING_DISABLE_THREADS
 	_is_paused_for_startup = true;
 
 	if (ds_ipc_stream_factory_any_suspended_ports ()) {
@@ -272,6 +286,7 @@ ds_server_pause_for_diagnostics_monitor (void)
 	}
 
 	// allow wait failures to fall through and the runtime to continue coming up
+#endif
 }
 
 void
