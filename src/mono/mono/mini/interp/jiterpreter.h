@@ -203,6 +203,15 @@ void
 mono_jiterp_do_safepoint (InterpFrame *frame, guint16 *ip);
 
 void
+mono_jiterp_prof_enter (InterpFrame *frame, guint16 *ip);
+
+void
+mono_jiterp_prof_samplepoint (InterpFrame *frame, guint16 *ip);
+
+void
+mono_jiterp_prof_leave (InterpFrame *frame, guint16 *ip);
+
+void
 mono_jiterp_interp_entry (JiterpEntryData *_data, void *res);
 
 gpointer
