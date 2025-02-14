@@ -334,8 +334,12 @@ void ValidationTests()
 
     ::printf("-- Interfaces...\n");
     {
-        struct InterfaceImpl : IInterface2
+        class InterfaceImpl : IInterface2
         {
+            std::atomic<uint32_t> _refCount;
+        public:
+            InterfaceImpl() : _refCount{ 1 } {}
+
             STDMETHOD(QueryInterface)(REFIID riid, void** ppvObject) override
             {
                 if (riid == __uuidof(IInterface1) || riid == __uuidof(IInterface2))
@@ -351,13 +355,28 @@ void ValidationTests()
                     *ppvObject = nullptr;
                     return E_NOINTERFACE;
                 }
+                AddRef();
                 return S_OK;
             }
-            STDMETHOD_(ULONG, AddRef)() override { return 1; }
-            STDMETHOD_(ULONG, Release)() override { return 1; }
-        } iface{};
+
+            STDMETHOD_(ULONG, AddRef)() override
+            {
+                return ++_refCount;
+            }
+
+            STDMETHOD_(ULONG, Release)() override
+            {
+                ULONG count = --_refCount;
+                if (count == 0)
+                    delete this;
+                return count;
+            }
+        };
+        ComSmartPtr<InterfaceImpl> iface;
+        iface.Attach(new InterfaceImpl());
+
         ComSmartPtr<IInterface2> result;
-        HRESULT hr = miscTypesTesting->Marshal_Interface(&iface, &result);
+        HRESULT hr = miscTypesTesting->Marshal_Interface(iface, &result);
         THROW_IF_FAILED(hr);
     }
 }
