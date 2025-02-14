@@ -978,10 +978,12 @@ namespace System.Security.Cryptography.Tests
 #if NET
             RandomNumberGenerator.Fill(destination);
 #else
-            RandomNumberGenerator generator = RandomNumberGenerator.Create();
-            byte[] bytes = new byte[destination.Length];
-            generator.GetBytes(bytes);
-            bytes.AsSpan().CopyTo(destination);
+            using (RandomNumberGenerator generator = RandomNumberGenerator.Create())
+            {
+                byte[] bytes = new byte[destination.Length];
+                generator.GetBytes(bytes);
+                bytes.AsSpan().CopyTo(destination);
+            }
 #endif
         }
     }
@@ -998,8 +1000,10 @@ namespace System.Security.Cryptography.Tests
             key = RandomNumberGenerator.GetBytes(256 / 8);
 #else
             key = new byte[256 / 8];
-            RandomNumberGenerator generator = RandomNumberGenerator.Create();
-            generator.GetBytes(key);
+            using (RandomNumberGenerator generator = RandomNumberGenerator.Create())
+            {
+                generator.GetBytes(key);
+            }
 #endif
 
 #if NET
