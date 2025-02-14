@@ -5768,7 +5768,7 @@ struct GenTreeCall final : public GenTree
         void*                  gtDirectCallAddress; // Used to pass direct call address between lower and codegen
     };
 
-    LateDevirtualizationInfo* gtLateDevirtualizationInfo;
+    LateDevirtualizationInfo* gtLateDevirtualizationInfo; // Always available for user virtual calls
 
     // the runtime handle lookup for LDVIRTFTN, used by generic virtual calls
     GenTree* gtLdvirtftnHnd;
