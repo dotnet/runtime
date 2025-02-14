@@ -1,8 +1,0 @@
-<Project InitialTargets="NETStandardCompatError_Microsoft_Bcl_Cryptography">
-    <Target Name="NETStandardCompatError_Microsoft_Bcl_Cryptography">
-        <Error Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'netstandard2.1')) AND
-                          !$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net8.0')) AND
-                          !$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net462'))"
-               Text="Microsoft.Bcl.Cryptography doesn't support $(TargetFramework). Use multi-targeting instead of .NET Standard 2.1 for this package, or target .NET Standard 2.0." />
-    </Target>
-</Project>

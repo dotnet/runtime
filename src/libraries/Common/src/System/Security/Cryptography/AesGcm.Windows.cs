@@ -13,13 +13,7 @@ namespace System.Security.Cryptography
         private SafeKeyHandle _keyHandle;
         private static readonly KeySizes s_tagByteSizes = new KeySizes(12, 16, 1);
 
-#if NET || NETFRAMEWORK
         public static partial bool IsSupported => true;
-#elif NETSTANDARD
-        public static partial bool IsSupported => RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
-#else
-        #error Unhandled platform target
-#endif
 
         public static partial KeySizes TagByteSizes => s_tagByteSizes;
 
