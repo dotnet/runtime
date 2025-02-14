@@ -41,6 +41,7 @@ using System.IO;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Loader;
+using System.Threading;
 
 namespace System.Reflection.Emit
 {
@@ -173,17 +174,23 @@ namespace System.Reflection.Emit
     public partial class AssemblyBuilder
     {
         [RequiresDynamicCode("Defining a dynamic assembly requires dynamic code.")]
+        [System.Security.DynamicSecurityMethod] // Methods containing StackCrawlMark local var has to be marked DynamicSecurityMethod
         public static AssemblyBuilder DefineDynamicAssembly(AssemblyName name, AssemblyBuilderAccess access)
         {
             ArgumentNullException.ThrowIfNull(name);
 
-            return new RuntimeAssemblyBuilder(name, access);
+            StackCrawlMark stackMark = StackCrawlMark.LookForMyCaller;
+            return new RuntimeAssemblyBuilder(name, access, GetExecutingAssembly(ref stackMark));
         }
 
         [RequiresDynamicCode("Defining a dynamic assembly requires dynamic code.")]
+        [System.Security.DynamicSecurityMethod] // Methods containing StackCrawlMark local var has to be marked DynamicSecurityMethod
         public static AssemblyBuilder DefineDynamicAssembly(AssemblyName name, AssemblyBuilderAccess access, IEnumerable<CustomAttributeBuilder>? assemblyAttributes)
         {
-            AssemblyBuilder ab = DefineDynamicAssembly(name, access);
+            ArgumentNullException.ThrowIfNull(name);
+
+            StackCrawlMark stackMark = StackCrawlMark.LookForMyCaller;
+            AssemblyBuilder ab = new RuntimeAssemblyBuilder(name, access, GetExecutingAssembly(ref stackMark));
             if (assemblyAttributes != null)
             {
                 foreach (CustomAttributeBuilder attr in assemblyAttributes)
@@ -221,13 +228,13 @@ namespace System.Reflection.Emit
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         [DynamicDependency("RuntimeResolve", typeof(RuntimeModuleBuilder))]
-        private static extern void basic_init(RuntimeAssemblyBuilder ab);
+        private static extern void basic_init(RuntimeAssemblyBuilder ab, IntPtr alc_ptr);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private static extern void UpdateNativeCustomAttributes(RuntimeAssemblyBuilder ab);
 
         [DynamicDependency(nameof(access))] // Automatically keeps all previous fields too due to StructLayout
-        internal RuntimeAssemblyBuilder(AssemblyName n, AssemblyBuilderAccess access)
+        internal RuntimeAssemblyBuilder(AssemblyName n, AssemblyBuilderAccess access, Assembly callingAssembly)
         {
             EnsureDynamicCodeSupported();
 
@@ -251,7 +258,8 @@ namespace System.Reflection.Emit
             }
             public_key_token = n.GetPublicKeyToken();
 
-            basic_init(this);
+            AssemblyLoadContext alc = AssemblyLoadContext.CurrentContextualReflectionContext ?? AssemblyLoadContext.GetLoadContext(callingAssembly)!;
+            basic_init(this, alc.NativeALC);
 
             // Netcore only allows one module per assembly
             manifest_module = new RuntimeModuleBuilder(this, "RefEmit_InMemoryManifestModule");

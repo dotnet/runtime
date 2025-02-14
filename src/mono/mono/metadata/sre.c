@@ -1207,11 +1207,10 @@ register_module (MonoReflectionModuleBuilderHandle res, MonoDynamicImage *module
  * of the helper hash table and the basic metadata streams.
  */
 void
-mono_reflection_dynimage_basic_init (MonoReflectionAssemblyBuilder *assemblyb, MonoError *error)
+mono_reflection_dynimage_basic_init (MonoReflectionAssemblyBuilder *assemblyb, MonoAssemblyLoadContext *alc, MonoError *error)
 {
 	MonoDynamicAssembly *assembly;
 	MonoDynamicImage *image;
-	MonoAssemblyLoadContext *alc = mono_alc_get_default ();
 
 	if (assemblyb->dynamic_assembly)
 		return;
@@ -1290,7 +1289,6 @@ image_module_basic_init (MonoReflectionModuleBuilderHandle moduleb, MonoError *e
 		 * determined at assembly save time.
 		 */
 		/*image = (MonoDynamicImage*)ab->dynamic_assembly->assembly.image; */
-		MonoAssemblyLoadContext *alc = mono_alc_get_default ();
 		MonoStringHandle abname = MONO_HANDLE_NEW_GET (MonoString, ab, name);
 		char *name = mono_string_handle_to_utf8 (abname, error);
 		return_val_if_nok (error, FALSE);
@@ -1301,6 +1299,7 @@ image_module_basic_init (MonoReflectionModuleBuilderHandle moduleb, MonoError *e
 			return FALSE;
 		}
 		MonoDynamicAssembly *dynamic_assembly = MONO_HANDLE_GETVAL (ab, dynamic_assembly);
+		MonoAssemblyLoadContext *alc = dynamic_assembly->assembly.image->alc;
 		image = mono_dynamic_image_create (dynamic_assembly, name, fqname);
 		image->image.alc = alc;
 
@@ -4345,7 +4344,7 @@ mono_reflection_get_custom_attrs_blob (MonoReflectionAssembly *assembly, MonoObj
 }
 
 void
-mono_reflection_dynimage_basic_init (MonoReflectionAssemblyBuilder *assemblyb, MonoError *error)
+mono_reflection_dynimage_basic_init (MonoReflectionAssemblyBuilder *assemblyb, MonoAssemblyLoadContext *alc, MonoError *error)
 {
 	g_error ("This mono runtime was configured with --enable-minimal=reflection_emit, so System.Reflection.Emit is not supported.");
 }
@@ -4477,10 +4476,11 @@ ves_icall_CustomAttributeBuilder_GetBlob (MonoReflectionAssemblyHandle assembly,
 #endif
 
 void
-ves_icall_AssemblyBuilder_basic_init (MonoReflectionAssemblyBuilderHandle assemblyb, MonoError *error)
+ves_icall_AssemblyBuilder_basic_init (MonoReflectionAssemblyBuilderHandle assemblyb, gpointer alc_ptr, MonoError *error)
 {
 	MonoGCHandle gchandle = mono_gchandle_from_handle (MONO_HANDLE_CAST (MonoObject, assemblyb), TRUE);
-	mono_reflection_dynimage_basic_init (MONO_HANDLE_RAW (assemblyb), error);
+	MonoAssemblyLoadContext *alc = (MonoAssemblyLoadContext *)alc_ptr;
+	mono_reflection_dynimage_basic_init (MONO_HANDLE_RAW (assemblyb), alc, error);
 	mono_gchandle_free_internal (gchandle);
 }
 

@@ -52,7 +52,7 @@ void
 mono_reflection_emit_init (void);
 
 void
-mono_reflection_dynimage_basic_init (MonoReflectionAssemblyBuilder *assemblyb, MonoError *error);
+mono_reflection_dynimage_basic_init (MonoReflectionAssemblyBuilder *assemblyb, MonoAssemblyLoadContext *alc, MonoError *error);
 
 gpointer
 mono_image_g_malloc0 (MonoImage *image, guint size);

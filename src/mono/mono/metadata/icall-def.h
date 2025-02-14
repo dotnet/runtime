@@ -310,7 +310,7 @@ HANDLES(DYNM_1, "create_dynamic_method", ves_icall_DynamicMethod_create_dynamic_
 
 ICALL_TYPE(ASSEMB, "System.Reflection.Emit.RuntimeAssemblyBuilder", ASSEMB_1)
 HANDLES(ASSEMB_1, "UpdateNativeCustomAttributes", ves_icall_AssemblyBuilder_UpdateNativeCustomAttributes, void, 1, (MonoReflectionAssemblyBuilder))
-HANDLES(ASSEMB_2, "basic_init", ves_icall_AssemblyBuilder_basic_init, void, 1, (MonoReflectionAssemblyBuilder))
+HANDLES(ASSEMB_2, "basic_init", ves_icall_AssemblyBuilder_basic_init, void, 2, (MonoReflectionAssemblyBuilder, gpointer))
 
 ICALL_TYPE(ENUMB, "System.Reflection.Emit.RuntimeEnumBuilder", ENUMB_1)
 HANDLES(ENUMB_1, "setup_enum_type", ves_icall_EnumBuilder_setup_enum_type, void, 2, (MonoReflectionType, MonoReflectionType))
