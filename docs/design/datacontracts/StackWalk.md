@@ -59,16 +59,16 @@ The intuition for walking a managed stack is relatively simply: unwind managed p
 
 In reality, the actual algorithm is a little more complex fow two reasons. It requires pausing to return the current context and Frame at certain points and it checks for "skipped Frames" which can occur if an capital "F" Frame is allocated in a managed stack frame (e.g. an inlined P/Invoke call).
 
+1. Setup
+    1. Set the current context `currContext` to be the thread's context. Fetched as part of the [ICorDebugDataTarget](https://learn.microsoft.com/en-us/dotnet/framework/unmanaged-api/debugging/icordebugdatatarget-getthreadcontext-method) COM interface.
+    2. Create a stack of the thread's capital "F" Frames `frameStack`.
+2. **Return the current context**.
+3. While the `currContext` is in managed code or `frameStack` is not empty:
+    1. If `currContext` is native code, pop the top Frame from `frameStack` update the context using the popped Frame. **Return the updated context** and **go to step 3**.
+    2. If `frameStack` is not empty, check for skipped Frames. Peek `frameStack` to find a Frame `frame`. Compare the address of `frame` (allocated on the stack) with the caller of the current context's stack pointer (found by unwinding current context one iteration).
+    If the address of the `frame` is less than the caller's stack pointer, **return the current context**, pop the top Frame from `frameStack`, and **go to step 3**.
+    3. Unwind `currContext` using the Windows style unwinder. **Return the current context**.
 
-1. Read the thread context. Fetched as part of the [ICorDebugDataTarget](https://learn.microsoft.com/en-us/dotnet/framework/unmanaged-api/debugging/icordebugdatatarget-getthreadcontext-method) COM interface.
-2. If the current IP is in managed code, use Windows style unwinding iteratively, returning the updated context at each iteration, until the IP is not in managed code.
-3. Iterate each Frame in the linked list:
-    1. Check the current Frame, if it can update the context, do so.
-    2. For all Frame except `InlinedCallFrame` with an active call, go to the next the Frame.
-    3. Return the current context.
-    4. Check for skipped Frames by comparing the address of the current Frame (allocated on the stack) with the caller of the current context's stack pointer (found by unwinding current context one iteration).
-    If the address of the Frame is less than the caller's stack pointer, go to the next Frame, return the current context and repeat this step.
-    5. If the context was updated and the new IP is in managed code, use Windows style unwinding iteratively, returning a new context each iteration, until the IP is not in managed code.
 
 #### Simple Example
 
@@ -84,21 +84,15 @@ Given the following call stack and capital "F" Frames linked list, we can apply 
 <td>
 
 ```
+Managed Call:   -----------
+
    |  Native   | <- <A>'s SP
  - |           |
    |-----------| <- <B>'s SP
+   |           |
    |  Managed  |
+   |           |
    |-----------| <- <C>'s SP
-   |           |
-   |  Native   |
-   |           |
-   |-----------| <- <D>'s SP
-   |           |
-   |           |
-   |  Managed  |
-   |           |
-   |           |
-   |-----------| <- <E>'s SP
    |           |
    |  Native   |
  + |           |
@@ -114,12 +108,6 @@ SoftwareExceptionFrame
           ||
           \/
 
-SoftwareExceptionFrame
-   (Context = <D>)
-
-          ||
-          \/
-
    NULL TERMINATOR
 ```
 
@@ -127,22 +115,105 @@ SoftwareExceptionFrame
 </tr>
 </table>
 
-* (1) We fetch the initial thread context `<A>`, with SP pointing to the top of the call stack.
-* (2) In our example we can see that `<A>`'s SP is pointing to a native frame on the stack. Therefore context `<A>` is not pointing to managed code and we don't unwind.
-In actuality, this is checked through the [ExecutionManager](./ExecutionManager.md) contract.
-* (3.1) We look at the current (first) Frame, a SoftwareExceptionFrame with attached context `<B>`. Update our working context to `<B>`.
-* (3.2) Since the current Frame is not an InlinedCallFrame, set the current Frame to the next Frame on the chain.
-* (3.3) Return the current context and Frame.
-* (3.4) The example has no skipped Frames so we skip this step.
-* (3.5) Since we updated our context and our new context is in managed code, we use the Windows style unwinding tool to iteratively unwind until the context is no longer managed.
-This could take multiple iterations, each time returning a new context to the caller. We end up with context `<C>` which is the first context inside of a native call frame.
-* (3.1) We look at the current Frame, another SoftwareExceptionFrame with attached context `<D>`. Update our working context to `<D>`.
-* (3.2) Since the current Frame is not an InlinedCallFrame, set the current Frame to the next Frame (`NULL TERMINATOR`) on the chain.
-* (3.3) Return the current context and Frame.
-* (3.4) The example has no skipped Frames so we skip this step.
-* (3.5) Again, we updated our context and our new context is in managed code. Therefore, we use the Windows style unwinding tool to iteratively unwind until the context is no longer managed.
-This could take multiple iterations, each time returning a new context to the caller. We end up with context `<E>` which is the first context inside of a native call frame.
-* (3) Since our current context is in native code and the current Frame is the `NULL TERMINATOR`, we are done.
+1. (1) Set `currContext` to the thread context `<A>`. Create a stack of Frames `frameStack`.
+2. (2) Return the `currContext` which has the threads context.
+3. (3) `currContext` is in unmanaged code (native) however, because `frameStack` is not empty, we begin processing the context.
+4. (3.1) Since `currContext` is unmanaged. We pop the SoftwareExceptionFrame from `frameStack` and use it to update `currContext`. The SoftwareExceptionFrame is holding context `<B>` which we set `currContext` to. Return the current context and go back to step 3.
+5. (3) Now `currContext` is in managed code as shown by `<B>`'s SP. Therefore, we begin to process the context.
+6. (3.1) Since `currContext` is managed, skip step 3.1.
+7. (3.2) Since `frameStack` is empty, we do not check for skipped Frames.
+8. (3.3) Unwind `currContext` a single iteration to `<C>` and return the current context.
+9. (3) `currContext` is now at unmanaged (native) code and `frameStack` is empty. Therefore we are done.
+
+The following C# code could yield a stack similar to the example above:
+```csharp
+void foo()
+{
+    // Call native code or function that calls down to native.
+    Console.ReadLine();
+    // Capture stack trace while inside native code.
+}
+```
+
+#### Skipped Frame Example
+The skipped Frame check is important when managed code calls managed code through an unmanaged boundary.
+This occurs when calling a function marked with `[UnmanagedCallersOnly]` as an unmanaged delegate from a managed caller.
+In this case, if we ignored the skipped Frame check we would miss the unmanaged boundary.
+
+Given the following call stack and capital "F" Frames linked list, we can apply the above algorithm.
+<table>
+<tr>
+<th> Call Stack (growing down)</th>
+<th> Capital "F" Frames Linked List </th>
+</tr>
+<tr>
+<td>
+
+```
+Unmanaged Call: -X-X-X-X-X-
+Managed Call:   -----------
+InlinedCallFrame location: [ICF]
+
+   |  Managed  | <- <A>'s SP
+ - |           |
+   |           |
+   |-X-X-X-X-X-| <- <B>'s SP
+   |   [ICF]   |
+   |  Managed  |
+   |           |
+   |-----------| <- <C>'s SP
+   |           |
+   |  Native   |
+ + |           |
+   | StackBase |
+```
+</td>
+<td>
+
+```
+InlinedCallFrame
+ (Context = <B>)
+
+      ||
+      \/
+
+ NULL TERMINATOR
+```
+
+</td>
+</tr>
+</table>
+
+1. (1) Set `currContext` to the thread context `<A>`. Create a stack of Frames `frameStack`.
+2. (2) Return the `currContext` which has the threads context.
+3. (3) Since `currContext` is in managed code, we begin to process the context.
+4. (3.1) Since `currContext` is managed, skip step 3.1.
+5. (3.2) Check for skipped Frames. Copy `currContext` into `parentContext` and unwind `parentContext` once using the Windows style unwinder. As seen from the call stack, unwinding `currContext=<A>` will yield `<C>`. We peek the top of `frameStack` and find an InlinedCallFrame (shown in call stack above as `[ICF]`). Since `parentContext`'s SP is greater than the address of `[ICF]` there are no skipped Frames.
+6. (3.3) Unwind `currContext` a single iteration to `<B>` and return the current context.
+7. (3) Since `currContext` is still in managed code, we continue processing the context.
+8. (3.1) Since `currContext` is managed, skip step 3.1.
+9. (3.2) Check for skipped Frames. Copy `currContext` into `parentContext` and unwind `parentContext` once using the Windows style unwinder. As seen from the call stack, unwinding `currContext=<B>` will yield `<C>`. We peek the top of `frameStack` and find an InlinedCallFrame (shown in call stack above as `[ICF]`). This time the the address of `[ICF]` is less than `parentContext`'s SP. Therefore we return the current context then pop the InlinedCallFrame from `frameStack` which is now empty and return to step 3.
+10. (3) Since `currContext` is still in managed code, we continue processing the context.
+11. (3.1) Since `currContext` is managed, skip step 3.1.
+12. (3.2) Since `frameStack` is empty, we do not check for skipped Frames.
+13. (3.3) Unwind `currContext` a single iteration to `<C>` and return the current context.
+14. (3) `currContext` is now at unmanaged (native) code and `frameStack` is empty. Therefore we are done.
+
+The following C# code could yield a stack similar to the example above:
+```csharp
+void foo()
+{
+    var fptr = (delegate* unmanaged<void>)&bar;
+    fptr();
+}
+
+[UnmanagedCallersOnly]
+private static void bar()
+{
+    // Do something
+    // Capture stack trace while in here
+}
+```
 
 ### APIs
 
