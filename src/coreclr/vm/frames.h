@@ -557,8 +557,9 @@ public:
     static void __stdcall LogTransition(Frame* frame);
     void LogFrame(int LF, int LL);       // General purpose logging.
     void LogFrameChain(int LF, int LL);  // Log the whole chain.
-    static PTR_CSTR GetFrameTypeName(FrameIdentifier frameIdentifier);
 #endif
+
+    static LPCSTR GetFrameTypeName(FrameIdentifier frameIdentifier);
 
 private:
     FrameIdentifier _frameIdentifier;
