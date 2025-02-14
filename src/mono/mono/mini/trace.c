@@ -142,15 +142,15 @@ frame_kind (MonoJitInfo *ji)
 static void mono_trace_enter_method_impl (const char *prefix, MonoMethod *method, MonoJitInfo *ji, MonoProfilerCallContext *ctx);
 
 void
-mono_trace_samplepoint_method (MonoMethod *method, MonoJitInfo *ji, MonoProfilerCallContext *ctx)
-{
-	mono_trace_enter_method_impl ("SAMPLEPOINT:%c %s(", method, ji, ctx);
-}
-
-void
 mono_trace_enter_method (MonoMethod *method, MonoJitInfo *ji, MonoProfilerCallContext *ctx)
 {
 	mono_trace_enter_method_impl ("ENTER:%c %s(", method, ji, ctx);
+}
+
+void
+mono_trace_samplepoint_method (MonoMethod *method, MonoJitInfo *ji, MonoProfilerCallContext *ctx)
+{
+	mono_trace_enter_method_impl ("SAMPLEPOINT:%c %s(", method, ji, ctx);
 }
 
 static void

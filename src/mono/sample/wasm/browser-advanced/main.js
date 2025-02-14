@@ -53,8 +53,8 @@ try {
                 // config is loaded and could be tweaked before the rest of the runtime startup sequence
                 config.environmentVariables["MONO_LOG_LEVEL"] = "debug";
                 config.browserProfilerOptions = {
-                    sampleIntervalMs: 1,
-                    callSpec: "N:Sample"
+                    sampleIntervalMs: 5,
+                    // callSpec: "N:Sample"
                 };
             },
             preInit: () => { console.log('user code Module.preInit'); },

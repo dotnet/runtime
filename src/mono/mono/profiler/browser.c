@@ -30,36 +30,97 @@ struct _MonoProfiler {
 };
 
 static MonoProfiler browser_profiler;
+static int desired_sample_interval_ms = 10;// ms
 static MonoCallSpec callspec;
-
 
 #ifdef HOST_WASM
 
-void
-mono_wasm_profiler_enter ();
+typedef struct _ProfilerStackFrame ProfilerStackFrame;
 
-void
-mono_wasm_profiler_leave (MonoMethod *method);
+struct _ProfilerStackFrame {
+	double start;
+	bool should_record;
+	ProfilerStackFrame *next;
+};
 
-void
-mono_wasm_profiler_samplepoint ();
+static ProfilerStackFrame *profiler_stack = NULL;
+static double last_sample_time = 0;
+static int prev_skips_per_period = 1;
+static int skips_per_period = 1;
+static int sample_skip_counter = 1;
+
+double mono_wasm_profiler_now ();
+void mono_wasm_profiler_record (MonoMethod *method, double start);
+
+static bool should_record_frame (double now)
+{
+	if (sample_skip_counter < skips_per_period) {
+		return FALSE;
+	}
+
+	// timer resolution in non-isolated contexts: 100 microseconds (decimal number)
+	double ms_since_last_sample = now - last_sample_time;
+
+	if (desired_sample_interval_ms > 0 && last_sample_time != 0) {
+		// recalculate ideal number of skips per period
+		double skips_per_ms = ((double)sample_skip_counter) / ms_since_last_sample;
+		double newskips_per_period = (skips_per_ms * ((double)desired_sample_interval_ms));
+		skips_per_period = ((newskips_per_period + ((double)sample_skip_counter) + ((double)prev_skips_per_period)) / 3);
+		prev_skips_per_period = sample_skip_counter;
+	} else {
+		skips_per_period = 0;
+	}
+	last_sample_time = now;
+	sample_skip_counter = 0;
+
+	return TRUE;
+}
 
 static void
 method_enter (MonoProfiler *prof, MonoMethod *method, MonoProfilerCallContext *ctx)
 {
-	mono_wasm_profiler_enter ();
+	sample_skip_counter++;
+
+	ProfilerStackFrame* frame = g_new0 (ProfilerStackFrame, 1);
+	double now = frame->start = mono_wasm_profiler_now ();
+	frame->should_record = should_record_frame (now);
+	frame->next = profiler_stack;
+	profiler_stack = frame;
 }
 
 static void
 method_samplepoint (MonoProfiler *prof, MonoMethod *method, MonoProfilerCallContext *ctx)
 {
-	mono_wasm_profiler_samplepoint ();
+	g_assert(profiler_stack);
+
+	sample_skip_counter++;
+
+	if (!profiler_stack->should_record)
+	{
+		profiler_stack->should_record = should_record_frame (mono_wasm_profiler_now ());
+	}
 }
 
 static void
 method_leave (MonoProfiler *prof, MonoMethod *method, MonoProfilerCallContext *ctx)
 {
-	mono_wasm_profiler_leave (method);
+	g_assert(profiler_stack);
+	
+	sample_skip_counter++;
+
+	// pop top frame
+	ProfilerStackFrame *top = profiler_stack;
+	profiler_stack = profiler_stack->next;
+	
+	if (top->should_record || should_record_frame (mono_wasm_profiler_now ()))
+	{
+		// propagate keep to parent, if any
+		if(profiler_stack)
+			profiler_stack->should_record = TRUE;
+
+		mono_wasm_profiler_record (method, top->start);
+	}
+	g_free (top);
 }
 
 static void
@@ -114,6 +175,90 @@ match_option (const char *arg, const char *opt_name, const char **rval)
 	}
 }
 
+static void
+parse_arg (const char *arg)
+{
+	const char *val;
+
+	if (match_option (arg, "callspec", &val)) {
+		if (!val)
+			val = "";
+		if (val[0] == '\"')
+			++val;
+		char *spec = g_strdup (val);
+		size_t speclen = strlen (val);
+		if (speclen > 0 && spec[speclen - 1] == '\"')
+			spec[speclen - 1] = '\0';
+		char *errstr;
+		if (!mono_callspec_parse (spec, &callspec, &errstr)) {
+			mono_profiler_printf_err ("Could not parse callspec '%s': %s", spec, errstr);
+			g_free (errstr);
+			mono_callspec_cleanup (&callspec);
+		}
+		g_free (spec);
+	}
+	else if (match_option (arg, "interval", &val)) {
+		char *end;
+		desired_sample_interval_ms = strtoul (val, &end, 10);
+	}
+}
+
+static void
+proflog_parse_args (const char *desc)
+{
+	const char *p;
+	gboolean in_quotes = FALSE;
+	char quote_char = '\0';
+	char *buffer = g_malloc (strlen (desc) + 1);
+	int buffer_pos = 0;
+
+	for (p = desc; *p; p++){
+		switch (*p){
+		case ',':
+			if (!in_quotes) {
+				if (buffer_pos != 0){
+					buffer [buffer_pos] = 0;
+					parse_arg (buffer);
+					buffer_pos = 0;
+				}
+			} else {
+				buffer [buffer_pos++] = *p;
+			}
+			break;
+
+		case '\\':
+			if (p [1]) {
+				buffer [buffer_pos++] = p[1];
+				p++;
+			}
+			break;
+		case '\'':
+		case '"':
+			if (in_quotes) {
+				if (quote_char == *p)
+					in_quotes = FALSE;
+				else
+					buffer [buffer_pos++] = *p;
+			} else {
+				in_quotes = TRUE;
+				quote_char = *p;
+			}
+			break;
+		default:
+			buffer [buffer_pos++] = *p;
+			break;
+		}
+	}
+
+	if (buffer_pos != 0) {
+		buffer [buffer_pos] = 0;
+		parse_arg (buffer);
+	}
+
+	g_free (buffer);
+}
+
+
 /**
  * mono_profiler_init_browser:
  * the entry point
@@ -123,26 +268,7 @@ mono_profiler_init_browser (const char *desc)
 {
 	// browser:
 	if (desc && desc [7] == ':') {
-		const char *arg = desc + 8;
-		const char *val;
-
-		if (match_option (arg, "callspec", &val)) {
-			if (!val)
-				val = "";
-			if (val[0] == '\"')
-				++val;
-			char *spec = g_strdup (val);
-			size_t speclen = strlen (val);
-			if (speclen > 0 && spec[speclen - 1] == '\"')
-				spec[speclen - 1] = '\0';
-			char *errstr;
-			if (!mono_callspec_parse (spec, &callspec, &errstr)) {
-				mono_profiler_printf_err ("Could not parse callspec '%s': %s", spec, errstr);
-				g_free (errstr);
-				mono_callspec_cleanup (&callspec);
-			}
-			g_free (spec);
-		}
+		proflog_parse_args (desc + 8);
 	}
 
 	MonoProfilerHandle handle = mono_profiler_create (&browser_profiler);

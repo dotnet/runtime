@@ -13,7 +13,7 @@ import { mono_wasm_resolve_or_reject_promise } from "./marshal-to-js";
 import { mono_wasm_schedule_timer, schedule_background_exec } from "./scheduling";
 import { mono_wasm_asm_loaded } from "./startup";
 import { mono_log_warn, mono_wasm_console_clear, mono_wasm_trace_logger } from "./logging";
-import { mono_wasm_profiler_leave, mono_wasm_profiler_enter, mono_wasm_profiler_samplepoint } from "./profiler";
+import { mono_wasm_profiler_record, mono_wasm_profiler_now } from "./profiler";
 import { mono_wasm_browser_entropy } from "./crypto";
 import { mono_wasm_cancel_promise } from "./cancelable-promise";
 
@@ -70,9 +70,8 @@ export const mono_wasm_imports = [
     mono_interp_flush_jitcall_queue,
     mono_jiterp_free_method_data_js,
 
-    mono_wasm_profiler_enter,
-    mono_wasm_profiler_leave,
-    mono_wasm_profiler_samplepoint,
+    mono_wasm_profiler_now,
+    mono_wasm_profiler_record,
 
     // driver.c
     mono_wasm_trace_logger,

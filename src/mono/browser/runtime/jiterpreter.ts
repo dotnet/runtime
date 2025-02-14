@@ -298,6 +298,12 @@ function getTraceImports () {
     if (nullCheckValidation)
         traceImports.push(importDef("notnull", assert_not_null));
 
+    if (runtimeHelpers.emscriptenBuildOptions.enablePerfTracing) {
+        traceImports.push(importDef("prof_enter", getRawCwrap("mono_jiterp_prof_enter")));
+        traceImports.push(importDef("prof_samplepoint", getRawCwrap("mono_jiterp_prof_samplepoint")));
+        traceImports.push(importDef("prof_leave", getRawCwrap("mono_jiterp_prof_leave")));
+    }
+
     const pushMathOps = (list: string[], type: string) => {
         for (let i = 0; i < list.length; i++) {
             const mop = list[i];
@@ -573,6 +579,30 @@ function initialize_builder (builder: WasmBuilder) {
     );
     builder.defineType(
         "safepoint",
+        {
+            "frame": WasmValtype.i32,
+            "ip": WasmValtype.i32,
+        },
+        WasmValtype.void, true
+    );
+    builder.defineType(
+        "prof_enter",
+        {
+            "frame": WasmValtype.i32,
+            "ip": WasmValtype.i32,
+        },
+        WasmValtype.void, true
+    );
+    builder.defineType(
+        "prof_samplepoint",
+        {
+            "frame": WasmValtype.i32,
+            "ip": WasmValtype.i32,
+        },
+        WasmValtype.void, true
+    );
+    builder.defineType(
+        "prof_leave",
         {
             "frame": WasmValtype.i32,
             "ip": WasmValtype.i32,

@@ -74,30 +74,6 @@ can_encode_method_ref (MonoMethod *method)
 }
 
 void
-mini_profiler_emit_samplepoint (MonoCompile *cfg)
-{
-	gboolean trace = mono_jit_trace_calls != NULL && mono_trace_eval (cfg->method);
-
-	if ((!MONO_CFG_PROFILE (cfg, SAMPLEPOINT_CONTEXT) || cfg->current_method != cfg->method || (cfg->compile_aot && !can_encode_method_ref (cfg->method))) && !trace)
-		return;
-
-	if (cfg->current_method != cfg->method)
-		return;
-
-	MonoInst *iargs [3];
-
-	EMIT_NEW_METHODCONST (cfg, iargs [0], cfg->method);
-	EMIT_NEW_PCONST (cfg, iargs [1], NULL);
-	iargs [2] = emit_fill_call_ctx (cfg, iargs [0], NULL);
-
-	/* void mono_profiler_raise_method_samplepoint (MonoMethod *method, MonoJitInfo *ji, MonoProfilerCallContext *ctx) */
-	if (trace)
-		mono_emit_jit_icall (cfg, mono_trace_samplepoint_method, iargs);
-	else
-		mono_emit_jit_icall (cfg, mono_profiler_raise_method_samplepoint, iargs);
-}
-
-void
 mini_profiler_emit_enter (MonoCompile *cfg)
 {
 	gboolean trace = mono_jit_trace_calls != NULL && mono_trace_eval (cfg->method);
@@ -123,6 +99,30 @@ mini_profiler_emit_enter (MonoCompile *cfg)
 		mono_emit_jit_icall (cfg, mono_trace_enter_method, iargs);
 	else
 		mono_emit_jit_icall (cfg, mono_profiler_raise_method_enter, iargs);
+}
+
+void
+mini_profiler_emit_samplepoint (MonoCompile *cfg)
+{
+	gboolean trace = mono_jit_trace_calls != NULL && mono_trace_eval (cfg->method);
+
+	if ((!MONO_CFG_PROFILE (cfg, SAMPLEPOINT_CONTEXT) || cfg->current_method != cfg->method || (cfg->compile_aot && !can_encode_method_ref (cfg->method))) && !trace)
+		return;
+
+	if (cfg->current_method != cfg->method)
+		return;
+
+	MonoInst *iargs [3];
+
+	EMIT_NEW_METHODCONST (cfg, iargs [0], cfg->method);
+	EMIT_NEW_PCONST (cfg, iargs [1], NULL);
+	iargs [2] = emit_fill_call_ctx (cfg, iargs [0], NULL);
+
+	/* void mono_profiler_raise_method_samplepoint (MonoMethod *method, MonoJitInfo *ji, MonoProfilerCallContext *ctx) */
+	if (trace)
+		mono_emit_jit_icall (cfg, mono_trace_samplepoint_method, iargs);
+	else
+		mono_emit_jit_icall (cfg, mono_profiler_raise_method_samplepoint, iargs);
 }
 
 void
