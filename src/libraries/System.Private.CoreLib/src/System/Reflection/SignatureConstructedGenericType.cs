@@ -30,6 +30,7 @@ namespace System.Reflection
         protected sealed override bool IsArrayImpl() => false;
         protected sealed override bool IsByRefImpl() => false;
         public sealed override bool IsByRefLike => _genericTypeDefinition.IsByRefLike;
+        public sealed override bool IsEnum => _genericTypeDefinition.IsEnum;
         protected sealed override bool IsPointerImpl() => false;
         public sealed override bool IsSZArray => false;
         public sealed override bool IsVariableBoundArray => false;
@@ -50,6 +51,7 @@ namespace System.Reflection
             }
         }
 
+        protected sealed override bool IsValueTypeImpl() => _genericTypeDefinition.IsValueType;
         internal sealed override SignatureType? ElementType => null;
         public sealed override int GetArrayRank() => throw new ArgumentException(SR.Argument_HasToBeArrayClass);
         public sealed override Type GetGenericTypeDefinition() => _genericTypeDefinition;
