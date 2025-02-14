@@ -8385,6 +8385,7 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
         }
 
         // If we get a runtime lookup, insert the runtime lookup instead of the instanting stub.
+        // Otherwise, insert the instantiating stub.
         //
         if (instParam == nullptr || !instParam->OperIs(GT_RUNTIMELOOKUP))
         {
