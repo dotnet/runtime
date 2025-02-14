@@ -45,6 +45,7 @@ public:
     }
 
     void FinalizeOutgoingArgSpace();
+    void SetFramePointerFromArgSpaceSize();
 
 private:
     // LowerRange handles new code that is introduced by or after Lowering.
