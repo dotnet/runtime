@@ -31,7 +31,9 @@ namespace System.Linq
             ThrowHelper.ThrowIfNull(source);
             ThrowHelper.ThrowIfNull(predicate);
 
-            return Impl(source, predicate, default);
+            return
+                source.IsKnownEmpty() ? Empty<TSource>() :
+                Impl(source, predicate, default);
 
             static async IAsyncEnumerable<TSource> Impl(
                 IAsyncEnumerable<TSource> source,
@@ -84,7 +86,9 @@ namespace System.Linq
             ThrowHelper.ThrowIfNull(source);
             ThrowHelper.ThrowIfNull(predicate);
 
-            return Impl(source, predicate, default);
+            return
+                source.IsKnownEmpty() ? Empty<TSource>() :
+                Impl(source, predicate, default);
 
             static async IAsyncEnumerable<TSource> Impl(
                 IAsyncEnumerable<TSource> source,
@@ -141,7 +145,9 @@ namespace System.Linq
             ThrowHelper.ThrowIfNull(source);
             ThrowHelper.ThrowIfNull(predicate);
 
-            return Impl(source, predicate, default);
+            return
+                source.IsKnownEmpty() ? Empty<TSource>() :
+                Impl(source, predicate, default);
 
             static async IAsyncEnumerable<TSource> Impl(
                 IAsyncEnumerable<TSource> source,
@@ -199,7 +205,9 @@ namespace System.Linq
             ThrowHelper.ThrowIfNull(source);
             ThrowHelper.ThrowIfNull(predicate);
 
-            return Impl(source, predicate, default);
+            return
+                source.IsKnownEmpty() ? Empty<TSource>() :
+                Impl(source, predicate, default);
 
             static async IAsyncEnumerable<TSource> Impl(
                 IAsyncEnumerable<TSource> source,
