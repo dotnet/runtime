@@ -148,12 +148,14 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             using (X509Certificate2 cert = new(TestData.PfxData, TestData.PfxDataPassword, X509KeyStorageFlags.Exportable))
             {
                 byte[] pkcs12 = cert.ExportPkcs12(pkcs12ExportPbeParameters, password);
-                VerifyPkcs12(
+                (int certs, int keys) = VerifyPkcs12(
                     pkcs12,
                     password,
                     expectedIterations: 2000,
                     expectedMacHashAlgorithm: new HashAlgorithmName(expectedHashAlgorithm),
                     expectedEncryptionAlgorithm);
+                Assert.Equal(1, certs);
+                Assert.Equal(1, keys);
             }
         }
 
@@ -170,18 +172,71 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         {
             const string password = "PLACEHOLDER";
             HashAlgorithmName hashAlgorithmName = new(hashAlgorithm);
-
             PbeParameters parameters = new(encryptionAlgorithm, hashAlgorithmName, iterations);
 
             using (X509Certificate2 cert = new(TestData.PfxData, TestData.PfxDataPassword, X509KeyStorageFlags.Exportable))
             {
                 byte[] pkcs12 = cert.ExportPkcs12(parameters, password);
-                VerifyPkcs12(
+                (int certs, int keys) = VerifyPkcs12(
                     pkcs12,
                     password,
                     iterations,
                     hashAlgorithmName,
                     encryptionAlgorithm);
+                Assert.Equal(1, certs);
+                Assert.Equal(1, keys);
+            }
+        }
+
+        [Theory]
+        [InlineData(PbeEncryptionAlgorithm.Aes192Cbc, nameof(HashAlgorithmName.SHA1), 1200)]
+        [InlineData(PbeEncryptionAlgorithm.Aes256Cbc, nameof(HashAlgorithmName.SHA256), 4000)]
+        [InlineData(PbeEncryptionAlgorithm.Aes128Cbc, nameof(HashAlgorithmName.SHA256), 4)]
+        [InlineData(PbeEncryptionAlgorithm.TripleDes3KeyPkcs12, nameof(HashAlgorithmName.SHA1), 1234)]
+        public static void ExportPkcs12_PbeParameters_CertOnly(
+            PbeEncryptionAlgorithm encryptionAlgorithm,
+            string hashAlgorithm,
+            int iterations)
+        {
+            const string password = "PLACEHOLDER";
+            HashAlgorithmName hashAlgorithmName = new(hashAlgorithm);
+            PbeParameters parameters = new(encryptionAlgorithm, hashAlgorithmName, iterations);
+
+            using (X509Certificate2 cert = new(TestData.MsCertificate))
+            {
+                byte[] pkcs12 = cert.ExportPkcs12(parameters, password);
+                (int certs, int keys) = VerifyPkcs12(
+                    pkcs12,
+                    password,
+                    iterations,
+                    hashAlgorithmName,
+                    encryptionAlgorithm);
+                Assert.Equal(1, certs);
+                Assert.Equal(0, keys);
+            }
+        }
+
+        [Theory]
+        [InlineData(Pkcs12ExportPbeParameters.Pkcs12TripleDesSha1, nameof(HashAlgorithmName.SHA1), PbeEncryptionAlgorithm.TripleDes3KeyPkcs12)]
+        [InlineData(Pkcs12ExportPbeParameters.Pbes2Aes256Sha256, nameof(HashAlgorithmName.SHA256), PbeEncryptionAlgorithm.Aes256Cbc)]
+        public static void ExportPkcs12_CertOnly(
+            Pkcs12ExportPbeParameters pkcs12ExportPbeParameters,
+            string expectedHashAlgorithm,
+            PbeEncryptionAlgorithm expectedEncryptionAlgorithm)
+        {
+            const string password = "PLACEHOLDER";
+
+            using (X509Certificate2 cert = new(TestData.MsCertificate))
+            {
+                byte[] pkcs12 = cert.ExportPkcs12(pkcs12ExportPbeParameters, password);
+                (int certs, int keys) = VerifyPkcs12(
+                    pkcs12,
+                    password,
+                    expectedIterations: 2000,
+                    expectedMacHashAlgorithm: new HashAlgorithmName(expectedHashAlgorithm),
+                    expectedEncryptionAlgorithm);
+                Assert.Equal(1, certs);
+                Assert.Equal(0, keys);
             }
         }
 
@@ -698,7 +753,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             }
         }
 
-        private static void VerifyPkcs12(
+        internal static (int certs, int keys) VerifyPkcs12(
             byte[] pkcs12,
             string password,
             int expectedIterations,
@@ -728,6 +783,9 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             AsnValueReader sequenceReader = authSafeReader.ReadSequence();
             authSafeReader.ThrowIfNotEmpty();
 
+            int certs = 0;
+            int keys = 0;
+
             while (sequenceReader.HasData)
             {
                 ContentInfoAsn.Decode(ref sequenceReader, safeContents, out ContentInfoAsn contentInfo);
@@ -742,8 +800,11 @@ namespace System.Security.Cryptography.X509Certificates.Tests
 
             foreach (Pkcs12SafeContents pkcs12SafeContents in info.AuthenticatedSafe)
             {
+                bool wasEncryptedSafe = false;
+
                 if (pkcs12SafeContents.ConfidentialityMode == Pkcs12ConfidentialityMode.Password)
                 {
+                    wasEncryptedSafe = true;
                     pkcs12SafeContents.Decrypt(password);
                 }
 
@@ -755,9 +816,16 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                             shroudedKeyBag.EncryptedPkcs8PrivateKey,
                             AsnEncodingRules.BER);
                         AssertEncryptionAlgorithm(epki.EncryptionAlgorithm);
+                        keys++;
+                    }
+                    else if (safeBag is Pkcs12CertBag && wasEncryptedSafe)
+                    {
+                        certs++;
                     }
                 }
             }
+
+            return (certs, keys);
 
             void AssertEncryptionAlgorithm(AlgorithmIdentifierAsn algorithmIdentifier)
             {
