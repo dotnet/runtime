@@ -49,6 +49,13 @@ namespace System.Runtime
         [RuntimeExport("RhpResolveInterfaceMethod")]
         private static IntPtr RhpResolveInterfaceMethod(object pObject, IntPtr pCell)
         {
+            if (pObject == null)
+            {
+                // Optimizer may perform code motion on dispatch such that it occurs independant of
+                // null check on "this" pointer. Allow for this case by returning back an invalid pointer.
+                return IntPtr.Zero;
+            }
+
             MethodTable* pInstanceType = pObject.GetMethodTable();
 
             // This method is used for the implementation of LOAD_VIRT_FUNCTION and in that case the mapping we want

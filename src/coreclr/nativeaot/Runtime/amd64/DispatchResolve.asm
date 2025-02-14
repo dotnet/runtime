@@ -6,8 +6,8 @@ include AsmMacros.inc
 
 ifdef FEATURE_CACHED_INTERFACE_DISPATCH
 
-
-EXTERN RhpResolveInterfaceMethod : PROC
+EXTERN RhpCidResolve : PROC
+EXTERN RhpUniversalTransitionReturnResult_DebugStepTailCall : PROC
 
 ;; Fast version of RhpResolveInterfaceMethod
 LEAF_ENTRY RhpResolveInterfaceMethodFast, _TEXT
@@ -23,7 +23,7 @@ LEAF_ENTRY RhpResolveInterfaceMethodFast, _TEXT
         ;; load r11 to point to the cache block.
         mov     r11, [r10 + OFFSETOF__InterfaceDispatchCell__m_pCache]
         test    r11b, IDC_CACHE_POINTER_MASK
-        jne     RhpResolveInterfaceMethodFast_SlowPath_Push
+        jne     RhpResolveInterfaceMethodFast_SlowPath
 
         lea     r11, [r11 + OFFSETOF__InterfaceDispatchCache__m_rgEntries]
         cmp     qword ptr [r11], rax
@@ -39,7 +39,7 @@ LEAF_ENTRY RhpResolveInterfaceMethodFast, _TEXT
       RhpResolveInterfaceMethodFast_NextEntry:
         add     rdx, SIZEOF__InterfaceDispatchCacheEntry
         dec     r11d
-        jz      RhpResolveInterfaceMethodFast_SlowPath
+        jz      RhpResolveInterfaceMethodFast_SlowPath_Pop
 
         cmp     qword ptr [rdx], rax
         jne     RhpResolveInterfaceMethodFast_NextEntry
@@ -48,19 +48,12 @@ LEAF_ENTRY RhpResolveInterfaceMethodFast, _TEXT
         pop     rdx
         ret
 
-      RhpResolveInterfaceMethodFast_SlowPath_Push:
-        push    rdx
-      RhpResolveInterfaceMethodFast_SlowPath:
-        push    rcx
-        push    r8
-        push    r9
-        mov     rdx, r10
-        call    RhpResolveInterfaceMethod
-        pop     r9
-        pop     r8
-        pop     rcx
+      RhpResolveInterfaceMethodFast_SlowPath_Pop:
         pop     rdx
-        ret
+      RhpResolveInterfaceMethodFast_SlowPath:
+        mov     r11, r10
+        lea     r10, RhpCidResolve
+        jmp     RhpUniversalTransitionReturnResult_DebugStepTailCall
 
 LEAF_END RhpResolveInterfaceMethodFast, _TEXT
 

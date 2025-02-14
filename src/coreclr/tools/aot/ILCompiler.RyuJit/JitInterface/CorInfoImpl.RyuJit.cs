@@ -762,7 +762,7 @@ namespace Internal.JitInterface
                     id = ReadyToRunHelper.GVMLookupForSlot;
                     break;
                 case CorInfoHelpFunc.CORINFO_HELP_INTERFACELOOKUP_FOR_SLOT:
-                    return _compilation.NodeFactory.ExternSymbol(_compilation.TypeSystemContext.Target.IsWindows && _compilation.TypeSystemContext.Target.Architecture == TargetArchitecture.X64 ? "RhpResolveInterfaceMethodFast" : "RhpResolveInterfaceMethod");
+                    return _compilation.NodeFactory.ExternSymbol("RhpResolveInterfaceMethodFast");
 
                 case CorInfoHelpFunc.CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPE_MAYBENULL:
                     id = ReadyToRunHelper.TypeHandleToRuntimeType;
