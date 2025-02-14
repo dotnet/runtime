@@ -1614,6 +1614,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         [Theory]
         [InlineData(Pkcs12ExportPbeParameters.Pkcs12TripleDesSha1, nameof(HashAlgorithmName.SHA1), PbeEncryptionAlgorithm.TripleDes3KeyPkcs12)]
         [InlineData(Pkcs12ExportPbeParameters.Pbes2Aes256Sha256, nameof(HashAlgorithmName.SHA256), PbeEncryptionAlgorithm.Aes256Cbc)]
+        [InlineData(Pkcs12ExportPbeParameters.Default, nameof(HashAlgorithmName.SHA256), PbeEncryptionAlgorithm.Aes256Cbc)]
         [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.MacCatalyst | TestPlatforms.tvOS, "The PKCS#12 Exportable flag is not supported on iOS/MacCatalyst/tvOS")]
         public static void ExportPkcs12_OneCert(
             Pkcs12ExportPbeParameters pkcs12ExportPbeParameters,
@@ -1698,6 +1699,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.MacCatalyst | TestPlatforms.tvOS, "The PKCS#12 Exportable flag is not supported on iOS/MacCatalyst/tvOS")]
         [InlineData(Pkcs12ExportPbeParameters.Pkcs12TripleDesSha1, nameof(HashAlgorithmName.SHA1), PbeEncryptionAlgorithm.TripleDes3KeyPkcs12)]
         [InlineData(Pkcs12ExportPbeParameters.Pbes2Aes256Sha256, nameof(HashAlgorithmName.SHA256), PbeEncryptionAlgorithm.Aes256Cbc)]
+        [InlineData(Pkcs12ExportPbeParameters.Default, nameof(HashAlgorithmName.SHA256), PbeEncryptionAlgorithm.Aes256Cbc)]
         public static void ExportPkcs12_TwoCerts(
             Pkcs12ExportPbeParameters pkcs12ExportPbeParameters,
             string expectedHashAlgorithm,
@@ -1752,6 +1754,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         [Theory]
         [InlineData(Pkcs12ExportPbeParameters.Pkcs12TripleDesSha1, nameof(HashAlgorithmName.SHA1), PbeEncryptionAlgorithm.TripleDes3KeyPkcs12)]
         [InlineData(Pkcs12ExportPbeParameters.Pbes2Aes256Sha256, nameof(HashAlgorithmName.SHA256), PbeEncryptionAlgorithm.Aes256Cbc)]
+        [InlineData(Pkcs12ExportPbeParameters.Default, nameof(HashAlgorithmName.SHA256), PbeEncryptionAlgorithm.Aes256Cbc)]
         public static void ExportPkcs12_CertsOnly(
             Pkcs12ExportPbeParameters pkcs12ExportPbeParameters,
             string expectedHashAlgorithm,
