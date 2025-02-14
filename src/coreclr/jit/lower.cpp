@@ -10954,7 +10954,6 @@ void Lowering::FinalizeOutgoingArgSpace()
 //
 void Lowering::SetFramePointerFromArgSpaceSize()
 {
-#ifdef TARGET_X64
     unsigned stackLevelSpace = m_outgoingArgSpaceSize;
 
     if (comp->compTailCallUsed)
@@ -10977,5 +10976,4 @@ void Lowering::SetFramePointerFromArgSpaceSize()
     {
         comp->codeGen->setFramePointerRequired(true);
     }
-#endif
 }
