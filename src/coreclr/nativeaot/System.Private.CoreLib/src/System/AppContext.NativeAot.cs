@@ -36,5 +36,18 @@ namespace System
         {
             UnhandledException?.Invoke(/* AppDomain */ null, new UnhandledExceptionEventArgs(e, true));
         }
+
+        private static unsafe string GetRuntimeModulePath()
+        {
+            delegate* unmanaged<string> ip = &GetRuntimeModulePath;
+            if (RuntimeAugments.TryGetFullPathToApplicationModule((nint)(void*)ip, out _) is string modulePath)
+            {
+                return modulePath;
+            }
+
+            // If this method isn't in a dynamically loaded module,
+            // then it's in the executable. In that case, we can use the process path.
+            return Environment.ProcessPath;
+        }
     }
 }
