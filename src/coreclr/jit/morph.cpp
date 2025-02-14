@@ -2159,10 +2159,6 @@ void CallArgs::AddFinalArgsAndDetermineABIInfo(Compiler* comp, GenTreeCall* call
                 }
 #endif
             }
-
-#if defined(UNIX_AMD64_ABI) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
-            INDEBUG(arg.CheckIsStruct());
-#endif
         }
         else
         {

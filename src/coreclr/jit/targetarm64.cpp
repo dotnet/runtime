@@ -175,7 +175,8 @@ ABIPassingInformation Arm64Classifier::Classify(Compiler*    comp,
         }
         else
         {
-            unsigned alignment;
+            ABIPassingSegment segment;
+            unsigned          alignment;
             if (compAppleArm64Abi())
             {
                 if (varTypeIsStruct(type))
@@ -188,15 +189,16 @@ ABIPassingInformation Arm64Classifier::Classify(Compiler*    comp,
                 }
 
                 m_stackArgSize = roundUp(m_stackArgSize, alignment);
+                segment        = ABIPassingSegment::OnStackWithoutConsumingFullSlot(m_stackArgSize, 0, passedSize);
             }
             else
             {
                 alignment = TARGET_POINTER_SIZE;
                 assert((m_stackArgSize % TARGET_POINTER_SIZE) == 0);
+                segment = ABIPassingSegment::OnStack(m_stackArgSize, 0, passedSize);
             }
 
-            info = ABIPassingInformation::FromSegment(comp, passedByRef,
-                                                      ABIPassingSegment::OnStack(m_stackArgSize, 0, passedSize));
+            info = ABIPassingInformation::FromSegment(comp, passedByRef, segment);
 
             m_stackArgSize += roundUp(passedSize, alignment);
 
