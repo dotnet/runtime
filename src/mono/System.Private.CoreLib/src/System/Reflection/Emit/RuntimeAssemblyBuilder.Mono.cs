@@ -233,7 +233,7 @@ namespace System.Reflection.Emit
 
             aname = (AssemblyName)n.Clone();
 
-            if (!Enum.IsDefined(typeof(AssemblyBuilderAccess), access))
+            if (!Enum.IsDefined(access))
                 throw new ArgumentException(SR.Format(CultureInfo.InvariantCulture,
                     SR.Arg_EnumIllegalVal, (int)access),
                     nameof(access));
