@@ -15,7 +15,6 @@
     <_RuntimeVariant Condition="'$(WasmEnableThreads)' == 'true'">-threads</_RuntimeVariant>
     <_UsePThreads />
     <_UsePThreads Condition="'$(WasmEnableThreads)' == 'true'"> usepthreads</_UsePThreads>
-    <CMakeArgs Condition="'$(WasmEnableThreads)' == 'true'"> -DMONO_WASM_MT=1 $(CMakeArgs)</CMakeArgs>
 
     <_IcuDir Condition="'$(PkgMicrosoft_NETCore_Runtime_ICU_Transport)' != ''">$(PkgMicrosoft_NETCore_Runtime_ICU_Transport)/runtimes/$(TargetOS)-$(TargetArchitecture)$(_RuntimeVariant)/native</_IcuDir>
     <_IcuDirArg Condition="'$(_IcuDir)' != ''"> icudir "$(_IcuDir)"</_IcuDirArg>
@@ -51,7 +50,8 @@
       <_PortableBuildArg Condition="'$(PortableBuild)' != 'true'"> -portablebuild=false</_PortableBuildArg>
       <_CrossBuildArg Condition="'$(CrossBuild)' == 'true'"> -cross</_CrossBuildArg>
       <_KeepNativeSymbolsBuildArg Condition="'$(KeepNativeSymbols)' != 'false'"> -keepnativesymbols</_KeepNativeSymbolsBuildArg>
-      <_CMakeArgs Condition="'$(CMakeArgs)' != ''"> -cmakeargs "$(CMakeArgs)"</_CMakeArgs>
+      <_MonoWasmMTCMakeArgs Condition="'$(WasmEnableThreads)' == 'true'"> -DMONO_WASM_MT=1</_MonoWasmMTCMakeArgs>
+      <_CMakeArgs Condition="'$(CMakeArgs)' != '' or '$(_MonoWasmMTCMakeArgs)' != ''"> -cmakeargs "$(CMakeArgs)$(_MonoWasmMTCMakeArgs)"</_CMakeArgs>
 
       <!--
         BuildNativeCompiler is a pass-through argument, to pass an argument to build-native.sh. It is intended to be
@@ -96,7 +96,8 @@
           Condition="$([MSBuild]::IsOsPlatform(Windows))">
     <PropertyGroup>
         <_BuildNativeArgs Condition="'$(Ninja)' == 'false'">$(_BuildNativeArgs) msbuild</_BuildNativeArgs>
-        <_BuildNativeArgs Condition="'$(CMakeArgs)' != ''"> -cmakeargs "$(CMakeArgs)"</_BuildNativeArgs>
+        <_MonoWasmMTCMakeArgs Condition="'$(WasmEnableThreads)' == 'true'"> -DMONO_WASM_MT=1</_MonoWasmMTCMakeArgs>
+        <_BuildNativeArgs Condition="'$(CMakeArgs)' != '' or '$(_MonoWasmMTCMakeArgs)' != ''"> -cmakeargs "$(CMakeArgs)$(_MonoWasmMTCMakeArgs)"</_BuildNativeArgs>
     </PropertyGroup>
     <!-- Run script that uses CMake to generate and build the native files. -->
     <Message Text="&quot;$(MSBuildThisFileDirectory)build-native.cmd&quot; $(_BuildNativeArgs)" Importance="High"/>
