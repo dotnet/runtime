@@ -8780,7 +8780,8 @@ bool CEEInfo::resolveVirtualMethodHelper(CORINFO_DEVIRTUALIZATION_INFO * info)
     // This is generic virtual method devirtualization.
     if (!isArray && pBaseMD->HasMethodInstantiation())
     {
-        pDevirtMD = pDevirtMD->FindOrCreateAssociatedMethodDesc(pDevirtMD, pExactMT, false, pBaseMD->GetMethodInstantiation(), false);
+        pDevirtMD = pDevirtMD->FindOrCreateAssociatedMethodDesc(
+            pDevirtMD, pExactMT, pExactMT->IsValueType() && !pDevirtMD->IsStatic(), pBaseMD->GetMethodInstantiation(), false);
         isGenericVirtual = true;
     }
 
