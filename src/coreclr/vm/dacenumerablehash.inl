@@ -345,7 +345,10 @@ DPTR(VALUE) DacEnumerableHashTable<DAC_ENUM_HASH_ARGS>::BaseFindFirstEntryByHash
     do
     {
         DWORD cBuckets = GetLength(curBuckets);
+// DAC hardening for invalid process state
+#ifdef DACCESS_COMPILE
         if (cBuckets > 0)
+#endif
         {
             // Compute which bucket the entry belongs in based on the hash.
             // +2 to skip "length" and "next" slots
