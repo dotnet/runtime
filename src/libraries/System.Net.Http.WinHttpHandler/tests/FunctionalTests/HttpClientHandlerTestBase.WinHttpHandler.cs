@@ -41,6 +41,9 @@ namespace System.Net.Http.Functional.Tests
         {
             return useVersion.Major switch
             {
+#if !NETFRAMEWORK
+                3 => Http3LoopbackServerFactory.Singleton,
+#endif
                 2 => Http2LoopbackServerFactory.Singleton,
                 _ => Http11LoopbackServerFactory.Singleton
             };
