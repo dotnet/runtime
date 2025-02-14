@@ -3,7 +3,12 @@
 
 namespace System.Security.Cryptography.Pkcs
 {
-    public enum Pkcs12IntegrityMode
+#if BUILDING_PKCS
+    public
+#else
+    internal
+#endif
+    enum Pkcs12IntegrityMode
     {
         Unknown,
         None,
