@@ -1174,12 +1174,12 @@ bool ObjectAllocator::CanLclVarEscapeViaParentStack(ArrayStack<GenTree*>* parent
 
             case GT_CALL:
             {
-                GenTreeCall* const asCall = parent->AsCall();
+                GenTreeCall* const call = parent->AsCall();
 
-                if (asCall->IsHelperCall())
+                if (call->IsHelperCall())
                 {
                     canLclVarEscapeViaParentStack =
-                        !Compiler::s_helperCallProperties.IsNoEscape(comp->eeGetHelperNum(asCall->gtCallMethHnd));
+                        !Compiler::s_helperCallProperties.IsNoEscape(comp->eeGetHelperNum(call->gtCallMethHnd));
                 }
 
                 // Note there is nothing special here about the parent being a call. We could move all this processing
@@ -1200,7 +1200,77 @@ bool ObjectAllocator::CanLclVarEscapeViaParentStack(ArrayStack<GenTree*>* parent
                 }
                 else if (isSpanLocal)
                 {
-                    canLclVarEscapeViaParentStack = false;
+                    // A span argument can't escape, but the callee can pass its fields back via
+                    // return value and the return value may escape. (Todo: model this more precisely
+                    // -- see if we're assigning to a byref gc field)
+                    //
+                    JITDUMP("Span V%02u parent is call...\n", lclNum);
+
+                    CallArg* const retBufArg = call->gtArgs.GetRetBufferArg();
+                    if (retBufArg != nullptr)
+                    {
+                        GenTree* const retBuf = retBufArg->GetNode();
+
+                        if (retBuf->OperIs(GT_LCL_ADDR))
+                        {
+                            GenTreeLclVarCommon* const dstLocal = retBuf->AsLclVarCommon();
+
+                            if (dstLocal == tree)
+                            {
+                                JITDUMP(" ... span is local retbuf\n");
+                            }
+                            else
+                            {
+                                const unsigned   dstLclNum = dstLocal->GetLclNum();
+                                LclVarDsc* const dstLclDsc = comp->lvaGetDesc(dstLclNum);
+
+                                if (dstLclDsc->HasGCPtr())
+                                {
+                                    // Model as assignment of the argument to the return value local
+                                    //
+                                    JITDUMP(" ... (possible) byref return buffer. Modelling as V%02u <- V%02u\n",
+                                            dstLclNum, lclNum);
+                                    AddConnGraphEdge(dstLclNum, lclNum);
+                                }
+                                else
+                                {
+                                    JITDUMP(" ... non-byref return buffer\n");
+                                }
+                            }
+                            canLclVarEscapeViaParentStack = false;
+                        }
+                        else
+                        {
+                            JITDUMP(" ... retbuf is not a local\n");
+                        }
+                    }
+                    else if (call->TypeGet() == TYP_STRUCT)
+                    {
+                        CORINFO_CLASS_HANDLE retClsHnd = call->gtRetClsHnd;
+                        assert(retClsHnd != NO_CLASS_HANDLE);
+                        DWORD attrs = comp->info.compCompHnd->getClassAttribs(retClsHnd);
+
+                        if ((attrs & CORINFO_FLG_BYREF_LIKE) != 0)
+                        {
+                            JITDUMP(" ... byref return\n");
+                            // defer to parent.
+                            ++parentIndex;
+                            keepChecking = true;
+                        }
+                        else
+                        {
+                            JITDUMP(" ... non-byref return\n");
+                            canLclVarEscapeViaParentStack = false;
+                        }
+                    }
+                    else
+                    {
+                        JITDUMP(" ... non-struct return\n");
+                        canLclVarEscapeViaParentStack = false;
+                    }
+
+                    // Todo: the callee may also assign to any ref or out params...
+                    //
                 }
                 break;
             }
