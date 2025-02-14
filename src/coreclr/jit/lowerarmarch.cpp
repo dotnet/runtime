@@ -435,14 +435,16 @@ bool Lowering::IsContainableUnaryOrBinaryOp(GenTree* parentNode, GenTree* childN
             return false;
         }
 
+        if (!IsInvariantInRange(childNode, parentNode))
+        {
+            return false;
+        }
+
         if (parentNode->OperIs(GT_ADD, GT_SUB))
         {
             // These operations can still report flags
-
-            if (IsInvariantInRange(childNode, parentNode))
-            {
-                return true;
-            }
+            castOp->ClearContained();
+            return true;
         }
 
         if ((parentNode->gtFlags & GTF_SET_FLAGS) != 0)
@@ -453,10 +455,34 @@ bool Lowering::IsContainableUnaryOrBinaryOp(GenTree* parentNode, GenTree* childN
 
         if (parentNode->OperIs(GT_CMP))
         {
-            if (IsInvariantInRange(childNode, parentNode))
+            castOp->ClearContained();
+            return true;
+        }
+
+        if (parentNode->OperIsCmpCompare())
+        {
+            if (castOp->isContained())
             {
-                return true;
+                return false;
             }
+
+            if (IsContainableMemoryOp(castOp))
+            {
+                // The cast node will contain a memory operation which will perform
+                // the cast on load/store, so we don't need to contain it here.
+                // This check won't catch spills, so if register pressure is high
+                // this can result in cmp (extended-register) taking higher priority
+                // over a load/store with extension.
+                return false;
+            }
+
+            if (castOp->IsRegOptional())
+            {
+                // Force the register from the castOp so we can contain the cast node.
+                castOp->ClearRegOptional();
+            }
+
+            return true;
         }
 
         // TODO: Handle CMN
@@ -2834,25 +2860,12 @@ void Lowering::ContainCheckBinary(GenTreeOp* node)
     {
         if (IsContainableUnaryOrBinaryOp(node, op2))
         {
-            if (op2->OperIs(GT_CAST))
-            {
-                // We want to prefer the combined op here over containment of the cast op
-                op2->AsCast()->CastOp()->ClearContained();
-            }
             MakeSrcContained(node, op2);
-
             return;
         }
-
         if (node->OperIsCommutative() && IsContainableUnaryOrBinaryOp(node, op1))
         {
-            if (op1->OperIs(GT_CAST))
-            {
-                // We want to prefer the combined op here over containment of the cast op
-                op1->AsCast()->CastOp()->ClearContained();
-            }
             MakeSrcContained(node, op1);
-
             std::swap(node->gtOp1, node->gtOp2);
             return;
         }
