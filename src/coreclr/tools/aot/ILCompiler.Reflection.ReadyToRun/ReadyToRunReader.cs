@@ -401,12 +401,12 @@ namespace ILCompiler.Reflection.ReadyToRun
         /// <param name="peReader">PE image</param>
         /// <param name="filename">PE file name</param>
         /// <param name="content">PE image content</param>
-        public ReadyToRunReader(IAssemblyResolver assemblyResolver, IAssemblyMetadata metadata, PEReader peReader, string filename, ImmutableArray<byte> content)
+        public ReadyToRunReader(IAssemblyResolver assemblyResolver, IAssemblyMetadata metadata, PEReader peReader, string filename, ReadOnlyMemory<byte> content)
         {
             _assemblyResolver = assemblyResolver;
             CompositeReader = peReader;
             Filename = filename;
-            Image = ImmutableCollectionsMarshal.AsArray<byte>(content);
+            Image = ConvertToArray(content);
             Initialize(metadata);
         }
 
@@ -428,12 +428,24 @@ namespace ILCompiler.Reflection.ReadyToRun
         /// <param name="assemblyResolver">Assembly resolver</param>
         /// <param name="filename">PE file name</param>
         /// <param name="content">PE image content</param>
-        public unsafe ReadyToRunReader(IAssemblyResolver assemblyResolver, string filename, ImmutableArray<byte> content)
+        public unsafe ReadyToRunReader(IAssemblyResolver assemblyResolver, string filename, ReadOnlyMemory<byte> content)
         {
             _assemblyResolver = assemblyResolver;
             Filename = filename;
-            Image = ImmutableCollectionsMarshal.AsArray<byte>(content);
+            Image = ConvertToArray(content);
             Initialize(metadata: null);
+        }
+
+        private unsafe byte[] ConvertToArray(ReadOnlyMemory<byte> content)
+        {
+            if (MemoryMarshal.TryGetArray(content, out ArraySegment<byte> segment))
+            {
+                return segment.Array;
+            }
+            else
+            {
+                return content.ToArray();
+            }
         }
 
         public static bool IsReadyToRunImage(PEReader peReader)
