@@ -1770,6 +1770,8 @@ protected:
             _idCustom2 = ((value >> 1) & 1);
             _idCustom3 = ((value >> 2) & 1);
             _idCustom4 = ((value >> 3) & 1);
+
+            assert(value == idGetEvexDFV());
         }
 #endif
 
