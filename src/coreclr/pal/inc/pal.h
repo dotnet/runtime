@@ -3721,7 +3721,7 @@ VOID
 PALAPI
 FlushProcessWriteBuffers();
 
-typedef void (*PAL_ActivationFunction)(CONTEXT *context);
+typedef void (*PAL_ActivationFunction)(CONTEXT *context, bool fromDebugger);
 typedef BOOL (*PAL_SafeActivationCheckFunction)(SIZE_T ip);
 
 PALIMPORT
