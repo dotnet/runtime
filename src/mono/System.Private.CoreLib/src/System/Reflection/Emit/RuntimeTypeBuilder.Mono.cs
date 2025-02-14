@@ -39,6 +39,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
+using System.Reflection.Metadata;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
@@ -126,7 +127,7 @@ namespace System.Reflection.Emit
             if (parent == null && (attr & TypeAttributes.Interface) != 0 && (attr & TypeAttributes.Abstract) == 0)
                 throw new InvalidOperationException(SR.InvalidOperation_BadInterfaceNotAbstract);
 
-            sep_index = name.LastIndexOf('.');
+            sep_index = TypeNameParserHelpers.IndexOfNamespaceDelimiter(name);
             if (sep_index != -1)
             {
                 this.tname = name.Substring(sep_index + 1);

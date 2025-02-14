@@ -1983,6 +1983,8 @@ mono_reflection_split_type_name (char *full_name, char** name_space, char** name
 	if (!full_name || !name_space || !name)
 		return FALSE;
 
+	// Matches algorithm from ns::FindSep in src\coreclr\utilcode\namespaceutil.cpp
+	// This could result in the type name beginning with a '.' character.
 	char* ns_start = strrchr (full_name, '.');
 
 	if (ns_start > full_name && ns_start[-1] == '.') {
