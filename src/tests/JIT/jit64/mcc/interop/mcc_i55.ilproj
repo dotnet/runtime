@@ -1,6 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk.IL">
   <PropertyGroup>
     <CLRTestPriority>1</CLRTestPriority>
+    <CLRTestTargetUnsupported Condition="'$(TargetsWindows)' != 'true'">true</CLRTestTargetUnsupported>
   </PropertyGroup>
   <PropertyGroup>
     <DebugType>PdbOnly</DebugType>
