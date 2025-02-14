@@ -2908,7 +2908,7 @@ PhaseStatus Compiler::fgSplitLdvirtftnIndirectCall()
 {
     PhaseStatus result = PhaseStatus::MODIFIED_NOTHING;
 
-    if (!doesMethodHaveLdVirtftnIndirectCall())
+    if (!doesMethodHaveLdvirtftnIndirectCall())
     {
         // The method being compiled doesn't have any indirect call to ldvirtftn.
         return result;

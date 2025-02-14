@@ -7696,7 +7696,7 @@ public:
         optMethodFlags |= OMF_HAS_STACK_ARRAY;
     }
 
-    bool doesMethodHaveLdVirtftnIndirectCall()
+    bool doesMethodHaveLdvirtftnIndirectCall()
     {
         return (optMethodFlags & OMF_HAS_LDVIRTFTN_CALLI) != 0;
     }
