@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.IO.Compression;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -124,13 +125,7 @@ public partial class ApkBuilder
             throw new ArgumentException("Static linking is not supported for CoreCLR runtime");
         }
 
-        // Try to get the latest build-tools version if not specified
-        if (string.IsNullOrEmpty(BuildToolsVersion))
-            BuildToolsVersion = GetLatestBuildTools(AndroidSdk);
-
-        // Try to get the latest API level if not specified
-        if (string.IsNullOrEmpty(BuildApiLevel))
-            BuildApiLevel = GetLatestApiLevel(AndroidSdk);
+        AndroidSdkHelper androidSdkHelper = new AndroidSdkHelper(AndroidSdk, BuildApiLevel, BuildToolsVersion);
 
         if (string.IsNullOrEmpty(MinApiLevel))
             MinApiLevel = DefaultMinApiLevel;
@@ -140,25 +135,24 @@ public partial class ApkBuilder
 
         // make sure BuildApiLevel >= MinApiLevel and BuildApiLevel >= TargetApiLevel
         // only if these api levels are not "preview" (not integers)
-        if (int.TryParse(BuildApiLevel, out int intApi))
+        if (int.TryParse(androidSdkHelper.BuildApiLevel, out int intApi))
         {
             if (int.TryParse(MinApiLevel, out int intMinApi) && intApi < intMinApi)
             {
-                throw new ArgumentException($"BuildApiLevel={BuildApiLevel} < MinApiLevel={MinApiLevel}. " +
+                throw new ArgumentException($"BuildApiLevel={androidSdkHelper.BuildApiLevel} < MinApiLevel={MinApiLevel}. " +
                     "Make sure you've downloaded some recent build-tools in Android SDK");
             }
 
             if (int.TryParse(TargetApiLevel, out int intTargetApi) && intApi < intTargetApi)
             {
-                throw new ArgumentException($"BuildApiLevel={BuildApiLevel} < TargetApiLevel={TargetApiLevel}. " +
+                throw new ArgumentException($"BuildApiLevel={androidSdkHelper.BuildApiLevel} < TargetApiLevel={TargetApiLevel}. " +
                     "Make sure you've downloaded some recent build-tools in Android SDK");
             }
         }
 
-        string buildToolsFolder = Path.Combine(AndroidSdk, "build-tools", BuildToolsVersion);
-        if (!Directory.Exists(buildToolsFolder))
+        if (!Enum.TryParse(RuntimeFlavor, true, out parsedRuntimeFlavor))
         {
-            throw new ArgumentException($"{buildToolsFolder} was not found.");
+            throw new ArgumentException($"Unknown RuntimeFlavor value: {RuntimeFlavor}. '{nameof(RuntimeFlavor)}' must be one of: {string.Join(",", Enum.GetNames(typeof(RuntimeFlavorEnum)))}");
         }
 
         var assemblerFiles = new StringBuilder();
@@ -241,22 +235,15 @@ public partial class ApkBuilder
             File.Copy(aotlib, Path.Combine(assetsToZipDirectory, Path.GetFileName(aotlib)));
         }
 
-        // tools:
-        string dx = Path.Combine(buildToolsFolder, "dx");
-        string d8 = Path.Combine(buildToolsFolder, "d8");
-        string aapt = Path.Combine(buildToolsFolder, "aapt");
-        string zipalign = Path.Combine(buildToolsFolder, "zipalign");
-        string apksigner = Path.Combine(buildToolsFolder, "apksigner");
-        string androidJar = Path.Combine(AndroidSdk, "platforms", "android-" + BuildApiLevel, "android.jar");
+        string androidJar = Path.Combine(AndroidSdk, "platforms", "android-" + androidSdkHelper.BuildApiLevel, "android.jar");
         string androidToolchain = Path.Combine(AndroidNdk, "build", "cmake", "android.toolchain.cmake");
         string javac = "javac";
-        string zip = "zip";
 
-        Utils.RunProcess(logger, zip, workingDir: assetsToZipDirectory, args: "-q -r ../assets/assets.zip .");
+        ZipFile.CreateFromDirectory(assetsToZipDirectory, Path.Combine(OutputDir, "assets", "assets.zip"), CompressionLevel.SmallestSize, includeBaseDirectory: false);
         Directory.Delete(assetsToZipDirectory, true);
 
         if (!File.Exists(androidJar))
-            throw new ArgumentException($"API level={BuildApiLevel} is not downloaded in Android SDK");
+            throw new ArgumentException($"API level={androidSdkHelper.BuildApiLevel} is not downloaded in Android SDK");
 
         // 1. Build libmonodroid.so via cmake
 
@@ -339,10 +326,10 @@ public partial class ApkBuilder
             "monodroid-coreclr.c" : (IsLibraryMode) ? "monodroid-librarymode.c" : "monodroid.c";
 
         string cmakeLists = Utils.GetEmbeddedResource("CMakeLists-android.txt")
-            .Replace("%RuntimeInclude%", runtimeHeaders)
-            .Replace("%NativeLibrariesToLink%", nativeLibraries)
+            .Replace("%RuntimeInclude%", NormalizePathToUnix(runtimeHeaders))
+            .Replace("%NativeLibrariesToLink%", NormalizePathToUnix(nativeLibraries))
             .Replace("%MONODROID_SOURCE%", monodroidSource)
-            .Replace("%AotSources%", aotSources)
+            .Replace("%AotSources%", NormalizePathToUnix(aotSources))
             .Replace("%AotModulesSource%", string.IsNullOrEmpty(aotSources) ? "" : "modules.c")
             .Replace("%APP_LINKER_ARGS%", extraLinkerArgs.ToString());
 
@@ -431,25 +418,25 @@ public partial class ApkBuilder
         Utils.RunProcess(logger, javac, javaCompilerArgs + javaActivityPath, workingDir: OutputDir);
         Utils.RunProcess(logger, javac, javaCompilerArgs + monoRunnerPath, workingDir: OutputDir);
 
-        if (File.Exists(d8))
+        if (androidSdkHelper.HasD8)
         {
             string[] classFiles = Directory.GetFiles(Path.Combine(OutputDir, "obj"), "*.class", SearchOption.AllDirectories);
 
             if (classFiles.Length == 0)
                 throw new InvalidOperationException("Didn't find any .class files");
 
-            Utils.RunProcess(logger, d8, $"--no-desugaring {string.Join(" ", classFiles)}", workingDir: OutputDir);
+            Utils.RunProcess(logger, androidSdkHelper.D8Path, $"--no-desugaring {string.Join(" ", classFiles)}", workingDir: OutputDir);
         }
         else
         {
-            Utils.RunProcess(logger, dx, "--dex --output=classes.dex obj", workingDir: OutputDir);
+            Utils.RunProcess(logger, androidSdkHelper.DxPath, "--dex --output=classes.dex obj", workingDir: OutputDir);
         }
 
         // 3. Generate APK
 
         string debugModeArg = StripDebugSymbols ? string.Empty : "--debug-mode";
         string apkFile = Path.Combine(OutputDir, "bin", $"{ProjectName}.unaligned.apk");
-        Utils.RunProcess(logger, aapt, $"package -f -m -F {apkFile} -A assets -M AndroidManifest.xml -I {androidJar} {debugModeArg}", workingDir: OutputDir);
+        Utils.RunProcess(logger, androidSdkHelper.AaptPath, $"package -f -m -F {apkFile} -A assets -M AndroidManifest.xml -I {androidJar} {debugModeArg}", workingDir: OutputDir);
 
         var dynamicLibs = new List<string>();
         dynamicLibs.Add(Path.Combine(OutputDir, "monodroid", "libmonodroid.so"));
@@ -506,9 +493,9 @@ public partial class ApkBuilder
             // NOTE: we can run android-strip tool from NDK to shrink native binaries here even more.
 
             File.Copy(dynamicLib, Path.Combine(OutputDir, destRelative), true);
-            Utils.RunProcess(logger, aapt, $"add {apkFile} {destRelative}", workingDir: OutputDir);
+            Utils.RunProcess(logger, androidSdkHelper.AaptPath, $"add {apkFile} {NormalizePathToUnix(destRelative)}", workingDir: OutputDir);
         }
-        Utils.RunProcess(logger, aapt, $"add {apkFile} classes.dex", workingDir: OutputDir);
+        Utils.RunProcess(logger, androidSdkHelper.AaptPath, $"add {apkFile} classes.dex", workingDir: OutputDir);
 
         // Include prebuilt .dex files
         int sequence = 2;
@@ -518,18 +505,18 @@ public partial class ApkBuilder
             var classesFileName = $"classes{sequence++}.dex";
             File.Copy(dexFile, Path.Combine(OutputDir, classesFileName));
             logger.LogMessage(MessageImportance.High, $"Adding dex file {Path.GetFileName(dexFile)} as {classesFileName}");
-            Utils.RunProcess(logger, aapt, $"add {apkFile} {classesFileName}", workingDir: OutputDir);
+            Utils.RunProcess(logger, androidSdkHelper.AaptPath, $"add {apkFile} {classesFileName}", workingDir: OutputDir);
         }
 
         // 4. Align APK
 
         string alignedApk = Path.Combine(OutputDir, "bin", $"{ProjectName}.apk");
-        AlignApk(apkFile, alignedApk, zipalign);
+        AlignApk(apkFile, alignedApk, androidSdkHelper.ZipalignPath);
         // we don't need the unaligned one any more
         File.Delete(apkFile);
 
         // 5. Generate key (if needed) & sign the apk
-        SignApk(alignedApk, apksigner);
+        SignApk(alignedApk, androidSdkHelper.ApksignerPath);
 
         logger.LogMessage(MessageImportance.High, $"\nAPK size: {(new FileInfo(alignedApk).Length / 1000_000.0):0.#} Mb.\n");
 
@@ -569,21 +556,16 @@ public partial class ApkBuilder
         if (string.IsNullOrEmpty(AndroidSdk) || !Directory.Exists(AndroidSdk))
             throw new ArgumentException($"Android SDK='{AndroidSdk}' was not found or incorrect (can be set via ANDROID_SDK_ROOT envvar).");
 
-        if (string.IsNullOrEmpty(BuildToolsVersion))
-            BuildToolsVersion = GetLatestBuildTools(AndroidSdk);
+        AndroidSdkHelper androidSdkHelper = new AndroidSdkHelper(AndroidSdk, BuildApiLevel, BuildToolsVersion);
 
         if (string.IsNullOrEmpty(MinApiLevel))
             MinApiLevel = DefaultMinApiLevel;
 
-        string buildToolsFolder = Path.Combine(AndroidSdk, "build-tools", BuildToolsVersion);
-        string zipalign = Path.Combine(buildToolsFolder, "zipalign");
-        string apksigner = Path.Combine(buildToolsFolder, "apksigner");
-
         string alignedApkPath = $"{apkPath}.aligned";
-        AlignApk(apkPath, alignedApkPath, zipalign);
+        AlignApk(apkPath, alignedApkPath, androidSdkHelper.ZipalignPath);
         logger.LogMessage(MessageImportance.High, $"\nMoving '{alignedApkPath}' to '{apkPath}'.\n");
         File.Move(alignedApkPath, apkPath, overwrite: true);
-        SignApk(apkPath, apksigner);
+        SignApk(apkPath, androidSdkHelper.ApksignerPath);
     }
 
     public void ReplaceFileInApk(string file)
@@ -594,15 +576,10 @@ public partial class ApkBuilder
         if (string.IsNullOrEmpty(AndroidSdk) || !Directory.Exists(AndroidSdk))
             throw new ArgumentException($"Android SDK='{AndroidSdk}' was not found or incorrect (can be set via ANDROID_SDK_ROOT envvar).");
 
-        if (string.IsNullOrEmpty(BuildToolsVersion))
-            BuildToolsVersion = GetLatestBuildTools(AndroidSdk);
+        AndroidSdkHelper androidSdkHelper = new AndroidSdkHelper(AndroidSdk, BuildApiLevel, BuildToolsVersion);
 
         if (string.IsNullOrEmpty(MinApiLevel))
             MinApiLevel = DefaultMinApiLevel;
-
-        string buildToolsFolder = Path.Combine(AndroidSdk, "build-tools", BuildToolsVersion);
-        string aapt = Path.Combine(buildToolsFolder, "aapt");
-        string apksigner = Path.Combine(buildToolsFolder, "apksigner");
 
         string apkPath;
         if (string.IsNullOrEmpty(ProjectName))
@@ -613,41 +590,16 @@ public partial class ApkBuilder
         if (!File.Exists(apkPath))
             throw new Exception($"{apkPath} was not found");
 
-        Utils.RunProcess(logger, aapt, $"remove -v bin/{Path.GetFileName(apkPath)} {file}", workingDir: OutputDir);
-        Utils.RunProcess(logger, aapt, $"add -v bin/{Path.GetFileName(apkPath)} {file}", workingDir: OutputDir);
+        Utils.RunProcess(logger, androidSdkHelper.AaptPath, $"remove -v bin/{Path.GetFileName(apkPath)} {file}", workingDir: OutputDir);
+        Utils.RunProcess(logger, androidSdkHelper.AaptPath, $"add -v bin/{Path.GetFileName(apkPath)} {file}", workingDir: OutputDir);
 
         // we need to re-sign the apk
-        SignApk(apkPath, apksigner);
+        SignApk(apkPath, androidSdkHelper.ApksignerPath);
     }
 
-    /// <summary>
-    /// Scan android SDK for build tools (ignore preview versions)
-    /// </summary>
-    private static string GetLatestBuildTools(string androidSdkDir)
+    private static string NormalizePathToUnix(string path)
     {
-        string? buildTools = Directory.GetDirectories(Path.Combine(androidSdkDir, "build-tools"))
-            .Select(Path.GetFileName)
-            .Where(file => !file!.Contains('-'))
-            .Select(file => { Version.TryParse(Path.GetFileName(file), out Version? version); return version; })
-            .OrderByDescending(v => v)
-            .FirstOrDefault()?.ToString();
-
-        if (string.IsNullOrEmpty(buildTools))
-            throw new ArgumentException($"Android SDK ({androidSdkDir}) doesn't contain build-tools.");
-
-        return buildTools;
-    }
-
-    /// <summary>
-    /// Scan android SDK for api levels (ignore preview versions)
-    /// </summary>
-    private static string GetLatestApiLevel(string androidSdkDir)
-    {
-        return Directory.GetDirectories(Path.Combine(androidSdkDir, "platforms"))
-            .Select(file => int.TryParse(Path.GetFileName(file).Replace("android-", ""), out int apiLevel) ? apiLevel : -1)
-            .OrderByDescending(v => v)
-            .FirstOrDefault()
-            .ToString();
+        return path.Replace("\\", "/");
     }
 
     [GeneratedRegex(@"\.(\d)")]

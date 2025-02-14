@@ -525,7 +525,7 @@ LPVOID __FCThrow(LPVOID me, enum RuntimeExceptionKind reKind, UINT resID, LPCWST
 
 #endif // !SWIZZLE_STKARG_ORDER
 
-#define HELPER_FRAME_DECL(x) FrameWithCookie<HelperMethodFrame_##x##OBJ> __helperframe
+#define HELPER_FRAME_DECL(x) HelperMethodFrame_##x##OBJ __helperframe
 
 // use the capture state machinery if the architecture has one
 //

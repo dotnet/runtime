@@ -748,7 +748,7 @@ namespace System.Diagnostics.Tracing
 
         private readonly WeakReference<EventProvider> _eventProvider;
         private long _registrationHandle;
-        private GCHandle _gcHandle;
+        private GCHandle<EtwEventProvider> _gcHandle;
         private List<SessionInfo>? _liveSessions;       // current live sessions (KeyValuePair<sessionIdBit, etwSessionId>)
         private Guid _providerId;
 
@@ -817,7 +817,7 @@ namespace System.Diagnostics.Tracing
         private static unsafe void Callback(Guid* sourceId, int isEnabled, byte level,
             long matchAnyKeywords, long matchAllKeywords, Interop.Advapi32.EVENT_FILTER_DESCRIPTOR* filterData, void* callbackContext)
         {
-            EtwEventProvider _this = (EtwEventProvider)GCHandle.FromIntPtr((IntPtr)callbackContext).Target!;
+            EtwEventProvider _this = GCHandle<EtwEventProvider>.FromIntPtr((IntPtr)callbackContext).Target;
 
             if (_this._eventProvider.TryGetTarget(out EventProvider? target))
             {
@@ -830,7 +830,7 @@ namespace System.Diagnostics.Tracing
         internal override unsafe void Register(Guid id, string name)
         {
             Debug.Assert(!_gcHandle.IsAllocated);
-            _gcHandle = GCHandle.Alloc(this);
+            _gcHandle = new GCHandle<EtwEventProvider>(this);
 
             long registrationHandle = 0;
             _providerId = id;
@@ -838,11 +838,11 @@ namespace System.Diagnostics.Tracing
             uint status = Interop.Advapi32.EventRegister(
                 &providerId,
                 &Callback,
-                (void*)GCHandle.ToIntPtr(_gcHandle),
+                (void*)GCHandle<EtwEventProvider>.ToIntPtr(_gcHandle),
                 &registrationHandle);
             if (status != 0)
             {
-                _gcHandle.Free();
+                _gcHandle.Dispose();
                 throw new ArgumentException(Interop.Kernel32.GetMessage((int)status));
             }
 
@@ -859,10 +859,7 @@ namespace System.Diagnostics.Tracing
                 _registrationHandle = 0;
             }
 
-            if (_gcHandle.IsAllocated)
-            {
-                _gcHandle.Free();
-            }
+            _gcHandle.Dispose();
         }
 
         // Write an event.

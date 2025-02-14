@@ -24,14 +24,6 @@ struct DacHostVtPtrs
 #undef VPTR_CLASS
 };
 
-
-const WCHAR *g_dacVtStrings[] =
-{
-#define VPTR_CLASS(name) W(#name),
-#include <vptr_list.h>
-#undef VPTR_CLASS
-};
-
 DacHostVtPtrs g_dacHostVtPtrs;
 
 HRESULT
@@ -44,6 +36,13 @@ DacGetHostVtPtrs(void)
 
     return S_OK;
 }
+
+const WCHAR *g_dacFrameStrings[] =
+{
+#define FRAME_TYPE_NAME(name) W(#name),
+#include "FrameTypes.h"
+#undef FRAME_TYPE_NAME
+};
 
 bool
 DacExceptionFilter(Exception* ex, ClrDataAccess* access,
@@ -1134,22 +1133,17 @@ DacGetTargetAddrForHostInteriorAddr(LPCVOID ptr, bool throwEx)
 #endif // !_PREFIX_
 }
 
-PWSTR    DacGetVtNameW(TADDR targetVtable)
+PWSTR    DacGetFrameNameW(TADDR frameIdentifier)
 {
     PWSTR pszRet = NULL;
 
-    TADDR *targ = &DacGlobalValues()->EEJitManager__vtAddr;
-    TADDR *targStart = targ;
-    for (ULONG i = 0; i < sizeof(g_dacHostVtPtrs) / sizeof(PVOID); i++)
-    {
-        if (targetVtable == (*targ))
-        {
-            pszRet = (PWSTR) *(g_dacVtStrings + (targ - targStart));
-            break;
-        }
+    FrameIdentifier frameId = static_cast<FrameIdentifier>(frameIdentifier);
 
-        targ++;
+    if (!(frameId == FrameIdentifier::None || frameId >= FrameIdentifier::CountPlusOne))
+    {
+        pszRet = (PWSTR) g_dacFrameStrings[(int)frameId - 1];
     }
+
     return pszRet;
 }
 

@@ -217,7 +217,6 @@ void emitter::emitInsSanityCheck(instrDesc* id)
         case IF_BR_1B: // BR_1B   ................ ......nnnnn.....         Rn
             if (emitComp->IsTargetAbi(CORINFO_NATIVEAOT_ABI) && id->idIsTlsGD())
             {
-                assert(isGeneralRegister(id->idReg1()));
                 assert(id->idAddr()->iiaAddr != nullptr);
             }
             else
@@ -1086,6 +1085,22 @@ bool emitter::emitInsMayWriteToGCReg(instrDesc* id)
 
         case IF_SR_1A: // SR_1A   ................ ...........ttttt      Rt       (dc zva, mrs)
             return ins == INS_mrs_tpid0;
+
+        // Below SVE instructions write to GPR and hence GC reg
+        case IF_SVE_CO_3A: // clasta, clastb
+        case IF_SVE_BM_1A: // decb, decd, dech, decw, incb, incd, inch, incw
+        case IF_SVE_BO_1A: // sqdecb, sqdecd, sqdech, sqdecw, sqincb, sqincd, sqinch, sqincw, uqdecb, uqdecd, uqdech,
+                           // uqdecw, uqincb, uqincd, uqinch, uqincw
+        case IF_SVE_CS_3A: // lasta, lastb
+        case IF_SVE_DK_3A: // cntp
+        case IF_SVE_DL_2A: // cntp
+        case IF_SVE_DM_2A: // decp, incp
+        case IF_SVE_DO_2A: // sqdecp, sqincp, uqdecp, uqincp
+        case IF_SVE_BB_2A: // addpl, addvl
+        case IF_SVE_BC_1A: // rdvl
+        case IF_SVE_BL_1A: // cntb, cntd, cnth, cntw
+        case IF_SVE_DS_2A: // ctermeq, ctermne
+            return true;
 
         default:
             return false;
@@ -9223,11 +9238,14 @@ void emitter::emitIns_Call(EmitCallType          callType,
         if (emitComp->IsTargetAbi(CORINFO_NATIVEAOT_ABI) && EA_IS_CNS_TLSGD_RELOC(retSize))
         {
             // For NativeAOT linux/arm64, we need to also record the relocation of methHnd.
-            // Since we do not have space to embed it in instrDesc, we store the register in
-            // reg1 and instead use the `iiaAdd` to store the method handle. Likewise, during
-            // emitOutputInstr, we retrieve the register from reg1 for this specific case.
+            // Since we do not have space to embed it in instrDesc, we use the `iiaAddr` to
+            // store the method handle.
+            // The target handle need to be always in R2 and hence the assert check.
+            // We cannot use reg1 and reg2 fields of instrDesc because they contain the gc
+            // registers (emitEncodeCallGCregs()) that are live across the call.
+
+            assert(ireg == REG_R2);
             id->idSetTlsGD();
-            id->idReg1(ireg);
             id->idAddr()->iiaAddr = (BYTE*)methHnd;
         }
         else
@@ -11029,12 +11047,13 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             {
                 emitRecordRelocation(odst, (CORINFO_METHOD_HANDLE)id->idAddr()->iiaAddr,
                                      IMAGE_REL_AARCH64_TLSDESC_CALL);
-                code |= insEncodeReg_Rn(id->idReg1()); // nnnnn
+                code |= insEncodeReg_Rn(REG_R2); // nnnnn
             }
             else
             {
                 code |= insEncodeReg_Rn(id->idReg3()); // nnnnn
             }
+
             dst += emitOutputCall(ig, dst, id, code);
             sz = id->idIsLargeCall() ? sizeof(instrDescCGCA) : sizeof(instrDesc);
             break;
@@ -13359,7 +13378,15 @@ void emitter::emitDispInsHelp(
         case IF_BR_1B: // BR_1B   ................ ......nnnnn.....         Rn
             // The size of a branch target is always EA_PTRSIZE
             assert(insOptsNone(id->idInsOpt()));
-            emitDispReg(id->idReg3(), EA_PTRSIZE, false);
+
+            if (emitComp->IsTargetAbi(CORINFO_NATIVEAOT_ABI) && id->idIsTlsGD())
+            {
+                emitDispReg(REG_R2, EA_PTRSIZE, false);
+            }
+            else
+            {
+                emitDispReg(id->idReg3(), EA_PTRSIZE, false);
+            }
             break;
 
         case IF_LS_1A: // LS_1A   XX...V..iiiiiiii iiiiiiiiiiittttt      Rt    PC imm(1MB)

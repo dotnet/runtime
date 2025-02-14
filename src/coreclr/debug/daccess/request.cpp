@@ -2143,7 +2143,7 @@ ClrDataAccess::GetFrameName(CLRDATA_ADDRESS vtable, unsigned int count, _Inout_u
 
     SOSDacEnter();
 
-    PWSTR pszName = DacGetVtNameW(CLRDATA_ADDRESS_TO_TADDR(vtable));
+    PWSTR pszName = DacGetFrameNameW(CLRDATA_ADDRESS_TO_TADDR(vtable));
     if (pszName == NULL)
     {
         hr = E_INVALIDARG;
@@ -2921,7 +2921,7 @@ ClrDataAccess::GetGCDynamicAdaptationMode(int* pDynamicAdaptationMode)
     {
         *pDynamicAdaptationMode = -1;
         hr = S_FALSE;
-    }    
+    }
     SOSDacLeave();
     return hr;
 }

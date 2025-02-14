@@ -85,6 +85,36 @@ namespace TestAdd
                 fail = true;
             }
 
+            if (AddExtendedB(0, 0x101) != 1)
+            {
+                fail = true;
+            }
+
+            if (AddExtendedH(0, 0x10001) != 1)
+            {
+                fail = true;
+            }
+
+            if (AddExtendedW(0, 0x100000001) != 1)
+            {
+                fail = true;
+            }
+
+            if (AddExtendedUB(0, 0x101) != 1)
+            {
+                fail = true;
+            }
+
+            if (AddExtendedUH(0, 0x10001) != 1)
+            {
+                fail = true;
+            }
+
+            if (AddExtendedUW(0, 0x100000001) != 1)
+            {
+                fail = true;
+            }
+
             if (fail)
             {
                 return 101;
@@ -139,6 +169,48 @@ namespace TestAdd
         {
             //ARM64-FULL-LINE: add {{x[0-9]+}}, {{x[0-9]+}}, {{x[0-9]+}}, ASR #41
             return a + (b>>169);
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static long AddExtendedB(int a, int b)
+        {
+            //ARM64-FULL-LINE: add {{w[0-9]+}}, {{w[0-9]+}}, {{w[0-9]+}}, SXTB
+            return a + (sbyte)b;
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static long AddExtendedH(int a, int b)
+        {
+            //ARM64-FULL-LINE: add {{w[0-9]+}}, {{w[0-9]+}}, {{w[0-9]+}}, SXTH
+            return a + (short)b;
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static long AddExtendedW(long a, long b)
+        {
+            //ARM64-FULL-LINE: add {{x[0-9]+}}, {{x[0-9]+}}, {{w[0-9]+}}, SXTW
+            return a + (int)b;
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static long AddExtendedUB(int a, int b)
+        {
+            //ARM64-FULL-LINE: add {{w[0-9]+}}, {{w[0-9]+}}, {{w[0-9]+}}, UXTB
+            return a + (byte)b;
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static long AddExtendedUH(int a, int b)
+        {
+            //ARM64-FULL-LINE: add {{w[0-9]+}}, {{w[0-9]+}}, {{w[0-9]+}}, UXTH
+            return a + (ushort)b;
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static long AddExtendedUW(long a, long b)
+        {
+            //ARM64-FULL-LINE: add {{x[0-9]+}}, {{x[0-9]+}}, {{w[0-9]+}}, UXTW
+            return a + (uint)b;
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]

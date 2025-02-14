@@ -334,8 +334,8 @@ handle_enum:
 	case MONO_TYPE_R8:
 		return OP_FMOVE;
 	case MONO_TYPE_VALUETYPE:
-		if (m_class_is_enumtype (type->data.klass)) {
-			type = mono_class_enum_basetype_internal (type->data.klass);
+		if (m_class_is_enumtype (m_type_data_get_klass_unchecked (type))) {
+			type = mono_class_enum_basetype_internal (m_type_data_get_klass_unchecked (type));
 			goto handle_enum;
 		}
 		if (mini_class_is_simd (cfg, mono_class_from_mono_type_internal (type)))
@@ -346,7 +346,7 @@ handle_enum:
 	case MONO_TYPE_GENERICINST:
 		if (mini_class_is_simd (cfg, mono_class_from_mono_type_internal (type)))
 			return OP_XMOVE;
-		type = m_class_get_byval_arg (type->data.generic_class->container_class);
+		type = m_class_get_byval_arg (m_type_data_get_generic_class_unchecked (type)->container_class);
 		goto handle_enum;
 	case MONO_TYPE_VAR:
 	case MONO_TYPE_MVAR:
@@ -826,8 +826,8 @@ handle_enum:
 		inst->type = STACK_R8;
 		return;
 	case MONO_TYPE_VALUETYPE:
-		if (m_class_is_enumtype (type->data.klass)) {
-			type = mono_class_enum_basetype_internal (type->data.klass);
+		if (m_class_is_enumtype (m_type_data_get_klass_unchecked (type))) {
+			type = mono_class_enum_basetype_internal (m_type_data_get_klass_unchecked (type));
 			goto handle_enum;
 		} else {
 			inst->klass = klass;
@@ -839,7 +839,7 @@ handle_enum:
 		inst->type = STACK_VTYPE;
 		return;
 	case MONO_TYPE_GENERICINST:
-		type = m_class_get_byval_arg (type->data.generic_class->container_class);
+		type = m_class_get_byval_arg (m_type_data_get_generic_class_unchecked (type)->container_class);
 		goto handle_enum;
 	case MONO_TYPE_VAR:
 	case MONO_TYPE_MVAR:
@@ -2084,8 +2084,8 @@ handle_enum:
 				return TRUE;
 			continue;
 		case MONO_TYPE_VALUETYPE:
-			if (m_class_is_enumtype (simple_type->data.klass)) {
-				simple_type = mono_class_enum_basetype_internal (simple_type->data.klass);
+			if (m_class_is_enumtype (m_type_data_get_klass_unchecked (simple_type))) {
+				simple_type = mono_class_enum_basetype_internal (m_type_data_get_klass_unchecked (simple_type));
 				goto handle_enum;
 			}
 			if (args [i]->type != STACK_VTYPE)
@@ -2096,7 +2096,7 @@ handle_enum:
 				return TRUE;
 			continue;
 		case MONO_TYPE_GENERICINST:
-			simple_type = m_class_get_byval_arg (simple_type->data.generic_class->container_class);
+			simple_type = m_class_get_byval_arg (m_type_data_get_generic_class_unchecked (simple_type)->container_class);
 			goto handle_enum;
 		case MONO_TYPE_VAR:
 		case MONO_TYPE_MVAR:
@@ -5395,8 +5395,8 @@ handle_enum:
 	case MONO_TYPE_GENERICINST:
 		return 0;
 	case MONO_TYPE_VALUETYPE:
-		if (m_class_is_enumtype (type->data.klass)) {
-			type = mono_class_enum_basetype_internal (type->data.klass);
+		if (m_class_is_enumtype (m_type_data_get_klass_unchecked (type))) {
+			type = mono_class_enum_basetype_internal (m_type_data_get_klass_unchecked (type));
 			goto handle_enum;
 		}
 		return 0;
@@ -5931,7 +5931,7 @@ handle_constrained_call (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignat
 				constrained_partial_call = TRUE;
 
 			MonoType *t = m_class_get_byval_arg (constrained_class);
-			MonoGenericParam *gparam = t->data.generic_param;
+			MonoGenericParam *gparam = m_type_data_get_generic_param (t);
 			gshared_constraint = gparam->gshared_constraint;
 		}
 	}
@@ -10544,8 +10544,8 @@ calli_end:
 					int ro_type = ftype->type;
 					if (!addr)
 						addr = mono_static_field_get_addr (vtable, field);
-					if (ro_type == MONO_TYPE_VALUETYPE && m_class_is_enumtype (ftype->data.klass)) {
-						ro_type = mono_class_enum_basetype_internal (ftype->data.klass)->type;
+					if (ro_type == MONO_TYPE_VALUETYPE && m_class_is_enumtype (m_type_data_get_klass_unchecked (ftype))) {
+						ro_type = mono_class_enum_basetype_internal (m_type_data_get_klass_unchecked (ftype))->type;
 					}
 
 					GSHAREDVT_FAILURE (il_op);

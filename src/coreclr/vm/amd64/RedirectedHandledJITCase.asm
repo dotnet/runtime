@@ -97,8 +97,8 @@ endif
 endif
 
 
-; scratch area; padding; GSCookie
-OFFSET_OF_FRAME = SIZEOF_MAX_OUTGOING_ARGUMENT_HOMES + 8 + SIZEOF_GSCookie
+; scratch area
+OFFSET_OF_FRAME = SIZEOF_MAX_OUTGOING_ARGUMENT_HOMES
 
 ; force evaluation to avoid "expression is too complex errors"
 SIZEOF__FaultingExceptionFrame = SIZEOF__FaultingExceptionFrame

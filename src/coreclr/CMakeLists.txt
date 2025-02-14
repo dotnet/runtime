@@ -215,7 +215,13 @@ if(CLR_CMAKE_HOST_UNIX)
 
   set (NATIVE_RESOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/nativeresources)
   include_directories(${NATIVE_RESOURCE_DIR})
-  set (PROCESS_RC_SCRIPT ${NATIVE_RESOURCE_DIR}/processrc.sh)
+
+  # Win32 may be false when cross compiling
+  if (CMAKE_HOST_SYSTEM_NAME STREQUAL "Windows")
+    set (PROCESS_RC_SCRIPT ${NATIVE_RESOURCE_DIR}/processrc.ps1)
+  else()
+    set (PROCESS_RC_SCRIPT ${NATIVE_RESOURCE_DIR}/processrc.sh)
+  endif()
   set (RESOURCE_STRING_HEADER_DIR ${NATIVE_RESOURCE_DIR})
 
   # Create a command to create a C++ source file containing an array of
@@ -230,16 +236,25 @@ if(CLR_CMAKE_HOST_UNIX)
 
     set(RESOURCE_ENTRY_ARRAY_CPP ${CMAKE_CURRENT_BINARY_DIR}/${TARGET_NAME}.cpp)
 
-    add_custom_command(
-      OUTPUT ${RESOURCE_ENTRY_ARRAY_CPP}
-      # Convert the preprocessed .rc file to a C++ file which will be used to make a static lib.
-      COMMAND ${PROCESS_RC_SCRIPT} ${PREPROCESSED_SOURCE} ${TARGET_NAME} >${RESOURCE_ENTRY_ARRAY_CPP}
-            DEPENDS ${PREPROCESSED_SOURCE} ${PROCESS_RC_SCRIPT}
-    )
+    # Win32 may be false when cross compiling
+    if (CMAKE_HOST_SYSTEM_NAME STREQUAL "Windows")
+      add_custom_command(
+        OUTPUT ${RESOURCE_ENTRY_ARRAY_CPP}
+        # Convert the preprocessed .rc file to a C++ file which will be used to make a static lib.
+        COMMAND powershell -NoProfile -ExecutionPolicy ByPass -File \"${PROCESS_RC_SCRIPT}\" ${PREPROCESSED_SOURCE} ${TARGET_NAME} >${RESOURCE_ENTRY_ARRAY_CPP}
+        DEPENDS ${PREPROCESSED_SOURCE} ${PROCESS_RC_SCRIPT}
+      )
+    else()
+      add_custom_command(
+        OUTPUT ${RESOURCE_ENTRY_ARRAY_CPP}
+        # Convert the preprocessed .rc file to a C++ file which will be used to make a static lib.
+        COMMAND ${PROCESS_RC_SCRIPT} ${PREPROCESSED_SOURCE} ${TARGET_NAME} >${RESOURCE_ENTRY_ARRAY_CPP}
+        DEPENDS ${PREPROCESSED_SOURCE} ${PROCESS_RC_SCRIPT}
+      )
+    endif()
 
     include_directories(${RESOURCE_STRING_HEADER_DIR})
     set(${TARGET_FILE} ${RESOURCE_ENTRY_ARRAY_CPP} PARENT_SCOPE)
-
   endfunction()
 
   add_subdirectory(nativeresources)

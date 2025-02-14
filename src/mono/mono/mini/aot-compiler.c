@@ -3485,7 +3485,7 @@ encode_klass_ref_inner (MonoAotCompile *acfg, MonoClass *klass, guint8 *buf, gui
 		}
 	} else if ((m_class_get_byval_arg (klass)->type == MONO_TYPE_VAR) || (m_class_get_byval_arg (klass)->type == MONO_TYPE_MVAR)) {
 		MonoGenericContainer *container = mono_type_get_generic_param_owner (m_class_get_byval_arg (klass));
-		MonoGenericParam *par = m_class_get_byval_arg (klass)->data.generic_param;
+		MonoGenericParam *par = m_type_data_get_generic_param_unchecked (m_class_get_byval_arg (klass));
 
 		encode_value (MONO_AOT_TYPEREF_VAR, p, &p);
 
@@ -3726,24 +3726,24 @@ encode_type (MonoAotCompile *acfg, MonoType *t, guint8 *buf, guint8 **endbuf)
 		encode_klass_ref (acfg, mono_class_from_mono_type_internal (t), p, &p);
 		break;
 	case MONO_TYPE_SZARRAY:
-		encode_klass_ref (acfg, t->data.klass, p, &p);
+		encode_klass_ref (acfg, m_type_data_get_klass_unchecked (t), p, &p);
 		break;
 	case MONO_TYPE_PTR:
-		encode_type (acfg, t->data.type, p, &p);
+		encode_type (acfg, m_type_data_get_type_unchecked (t), p, &p);
 		break;
 	case MONO_TYPE_FNPTR:
-		encode_signature (acfg, t->data.method, p, &p);
+		encode_signature (acfg, m_type_data_get_method_unchecked (t), p, &p);
 		break;
 	case MONO_TYPE_GENERICINST: {
-		MonoClass *gclass = t->data.generic_class->container_class;
-		MonoGenericInst *inst = t->data.generic_class->context.class_inst;
+		MonoClass *gclass = m_type_data_get_generic_class_unchecked (t)->container_class;
+		MonoGenericInst *inst = m_type_data_get_generic_class_unchecked (t)->context.class_inst;
 
 		encode_klass_ref (acfg, gclass, p, &p);
 		encode_ginst (acfg, inst, p, &p);
 		break;
 	}
 	case MONO_TYPE_ARRAY: {
-		MonoArrayType *array = t->data.array;
+		MonoArrayType *array = m_type_data_get_array_unchecked (t);
 		int i;
 
 		encode_klass_ref (acfg, array->eklass, p, &p);
@@ -5666,7 +5666,7 @@ check_type_depth (MonoType *t, int depth)
 
 	switch (t->type) {
 	case MONO_TYPE_GENERICINST: {
-		MonoGenericClass *gklass = t->data.generic_class;
+		MonoGenericClass *gklass = m_type_data_get_generic_class_unchecked (t);
 		MonoGenericInst *ginst = gklass->context.class_inst;
 
 		if (ginst) {
@@ -9390,7 +9390,7 @@ add_referenced_patch (MonoAotCompile *acfg, MonoJumpInfo *patch_info, int depth)
 							m = gen;
 						}
 					}
-					
+
 					add_extra_method_with_depth (acfg, m, depth + 1);
 					add_types_from_method_header (acfg, m);
 				}
@@ -10486,8 +10486,8 @@ append_mangled_ginst (GString *str, MonoGenericInst *ginst)
 		case MONO_TYPE_VAR:
 		case MONO_TYPE_MVAR: {
 			MonoType *constraint = NULL;
-			if (type->data.generic_param)
-				constraint = type->data.generic_param->gshared_constraint;
+			if (m_type_data_get_generic_param_unchecked (type))
+				constraint = m_type_data_get_generic_param_unchecked (type)->gshared_constraint;
 			if (constraint) {
 				g_assert (constraint->type != MONO_TYPE_VAR && constraint->type != MONO_TYPE_MVAR);
 				g_string_append (str, "gshared:");
@@ -11218,11 +11218,11 @@ mono_aot_type_hash (MonoType *t1)
 	case MONO_TYPE_CLASS:
 	case MONO_TYPE_SZARRAY:
 		/* check if the distribution is good enough */
-		return ((hash << 5) - hash) ^ m_class_get_name_hash (t1->data.klass);
+		return ((hash << 5) - hash) ^ m_class_get_name_hash (m_type_data_get_klass_unchecked (t1));
 	case MONO_TYPE_PTR:
-		return ((hash << 5) - hash) ^ mono_metadata_type_hash (t1->data.type);
+		return ((hash << 5) - hash) ^ mono_metadata_type_hash (m_type_data_get_type_unchecked (t1));
 	case MONO_TYPE_ARRAY:
-		return ((hash << 5) - hash) ^ mono_metadata_type_hash (m_class_get_byval_arg (t1->data.array->eklass));
+		return ((hash << 5) - hash) ^ mono_metadata_type_hash (m_class_get_byval_arg (m_type_data_get_array_unchecked (t1)->eklass));
 	case MONO_TYPE_GENERICINST:
 		return ((hash << 5) - hash) ^ 0;
 	default:

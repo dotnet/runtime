@@ -416,7 +416,7 @@ extern "C" void QCALLTYPE RuntimeMethodHandle_InvokeMethod(
 
     GCStress<cfg_any>::MaybeTrigger();
 
-    FrameWithCookie<ProtectValueClassFrame> *pProtectValueClassFrame = NULL;
+    ProtectValueClassFrame *pProtectValueClassFrame = NULL;
     ValueClassInfo *pValueClasses = NULL;
 
     // if we have the magic Value Class return, we need to allocate that class
@@ -492,6 +492,9 @@ extern "C" void QCALLTYPE RuntimeMethodHandle_InvokeMethod(
     // If an exception occurs a gc may happen but we are going to dump the stack anyway and we do
     // not need to protect anything.
 
+    // Allocate a local buffer for the return buffer if necessary
+    PVOID pLocalRetBuf = nullptr;
+
     {
     BEGINFORBIDGC();
 #ifdef _DEBUG
@@ -501,8 +504,19 @@ extern "C" void QCALLTYPE RuntimeMethodHandle_InvokeMethod(
     // Take care of any return arguments
     if (fHasRetBuffArg)
     {
-        PVOID pRetBuff = gc.retVal->GetData();
-        *((LPVOID*) (pTransitionBlock + argit.GetRetBuffArgOffset())) = pRetBuff;
+        _ASSERT(hasValueTypeReturn);
+        PTR_MethodTable pMT = retTH.GetMethodTable();
+        size_t localRetBufSize = retTH.GetSize();
+
+        // Allocate a local buffer. The invoked method will write the return value to this
+        // buffer which will be copied to gc.retVal later.
+        pLocalRetBuf = _alloca(localRetBufSize);
+        ZeroMemory(pLocalRetBuf, localRetBufSize);
+        *((LPVOID*) (pTransitionBlock + argit.GetRetBuffArgOffset())) = pLocalRetBuf;
+        if (pMT->ContainsGCPointers())
+        {
+            pValueClasses = new (_alloca(sizeof(ValueClassInfo))) ValueClassInfo(pLocalRetBuf, pMT, pValueClasses);
+        }
     }
 
     // copy args
@@ -565,12 +579,25 @@ extern "C" void QCALLTYPE RuntimeMethodHandle_InvokeMethod(
 
     if (pValueClasses != NULL)
     {
-        pProtectValueClassFrame = new (_alloca (sizeof (FrameWithCookie<ProtectValueClassFrame>)))
-            FrameWithCookie<ProtectValueClassFrame>(pThread, pValueClasses);
+        pProtectValueClassFrame = new (_alloca (sizeof (ProtectValueClassFrame)))
+            ProtectValueClassFrame(pThread, pValueClasses);
     }
 
     // Call the method
     CallDescrWorkerWithHandler(&callDescrData);
+
+    if (fHasRetBuffArg)
+    {
+        // Copy the return value from the return buffer to the object
+        if (retTH.GetMethodTable()->ContainsGCPointers())
+        {
+            memmoveGCRefs(gc.retVal->GetData(), pLocalRetBuf, retTH.GetSize());
+        }
+        else
+        {
+            memcpyNoGCRefs(gc.retVal->GetData(), pLocalRetBuf, retTH.GetSize());
+        }
+    }
 
     // It is still illegal to do a GC here.  The return type might have/contain GC pointers.
     if (fConstructor)

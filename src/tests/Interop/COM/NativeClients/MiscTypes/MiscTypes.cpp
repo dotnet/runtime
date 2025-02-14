@@ -331,6 +331,35 @@ void ValidationTests()
         HRESULT hr = miscTypesTesting->Marshal_Variant(args.Input, &args.Result);
         THROW_FAIL_IF_FALSE(hr == 0x80131531); // COR_E_INVALIDOLEVARIANTTYPE
     }
+
+    ::printf("-- Interfaces...\n");
+    {
+        struct InterfaceImpl : IInterface2
+        {
+            STDMETHOD(QueryInterface)(REFIID riid, void** ppvObject) override
+            {
+                if (riid == __uuidof(IInterface1) || riid == __uuidof(IInterface2))
+                {
+                    *ppvObject = static_cast<IInterface2*>(this);
+                }
+                else if (riid == __uuidof(IUnknown))
+                {
+                    *ppvObject = static_cast<IUnknown*>(this);
+                }
+                else
+                {
+                    *ppvObject = nullptr;
+                    return E_NOINTERFACE;
+                }
+                return S_OK;
+            }
+            STDMETHOD_(ULONG, AddRef)() override { return 1; }
+            STDMETHOD_(ULONG, Release)() override { return 1; }
+        } iface{};
+        ComSmartPtr<IInterface2> result;
+        HRESULT hr = miscTypesTesting->Marshal_Interface(&iface, &result);
+        THROW_IF_FAILED(hr);
+    }
 }
 
 void ValidationByRefTests()
