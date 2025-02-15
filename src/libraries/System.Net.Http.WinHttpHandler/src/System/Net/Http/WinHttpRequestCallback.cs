@@ -60,6 +60,10 @@ namespace System.Net.Http
                         OnRequestHandleClosing(state);
                         return;
 
+                    case Interop.WinHttp.WINHTTP_CALLBACK_STATUS_REQUEST_SENT:
+                        OnRequestRequestSent(state);
+                        return;
+
                     case Interop.WinHttp.WINHTTP_CALLBACK_STATUS_SENDREQUEST_COMPLETE:
                         OnRequestSendRequestComplete(state);
                         return;
@@ -129,6 +133,44 @@ namespace System.Net.Http
             // now explicitly dispose the state object which will free its corresponding GCHandle.
             // This will then allow the state object to be garbage collected.
             state.Dispose();
+        }
+
+        private static unsafe Guid GetGuidForConnection(SafeWinHttpHandle handle)
+        {
+            Guid guid = Guid.Empty;
+            Guid* pGuid = &guid;
+            uint guidSize = (uint)sizeof(Guid);
+            if (!Interop.WinHttp.WinHttpQueryOption(
+                handle,
+                Interop.WinHttp.WINHTTP_OPTION_CONNECTION_GUID,
+                (IntPtr)pGuid,
+                ref guidSize))
+            {
+                int lastError = Marshal.GetLastWin32Error();
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(null, $"Error getting WINHTTP_OPTION_CONNECTION_GUID, {lastError}");
+                return Guid.Empty;
+            }
+            return guid;
+        }
+
+        private static void OnRequestRequestSent(WinHttpRequestState state)
+        {
+            Debug.Assert(state != null, "OnRequestRequestSent: state is null");
+            Debug.Assert(state.RequestHandle != null, "OnRequestRequestSent: state.RequestHandle is null");
+            Guid connectionGuid = GetGuidForConnection(state.RequestHandle);
+            if (connectionGuid == Guid.Empty)
+            {
+                Guid guid = Guid.NewGuid();
+                unsafe
+                {
+                    if (!Interop.WinHttp.WinHttpSetOption(state.RequestHandle!, Interop.WinHttp.WINHTTP_OPTION_CONNECTION_GUID, (IntPtr)(&guid), (uint)sizeof(Guid)))
+                    {
+                        int lastError = Marshal.GetLastWin32Error();
+                        if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(null, $"Error setting WINHTTP_OPTION_CONNECTION_GUID, {lastError}");
+                    }
+                }
+
+            }
         }
 
         private static void OnRequestSendRequestComplete(WinHttpRequestState state)
@@ -244,7 +286,9 @@ namespace System.Net.Http
             // the TransportContext object.
             state.TransportContext.SetChannelBinding(state.RequestHandle);
 
-            if (state.ServerCertificateValidationCallback != null)
+            Guid connectionGuid = GetGuidForConnection(state.RequestHandle);
+
+            if (state.ServerCertificateValidationCallback != null && connectionGuid == Guid.Empty)
             {
                 IntPtr certHandle = IntPtr.Zero;
                 uint certHandleSize = (uint)IntPtr.Size;
