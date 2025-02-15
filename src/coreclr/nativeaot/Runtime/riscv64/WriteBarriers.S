@@ -121,34 +121,40 @@
         // We can skip the card table write if the reference is to
         // an object not on the ephemeral segment.
         la      t2, g_ephemeral_low
+        ld      t2, (t2)
         la      t6, g_ephemeral_high
-        bgeu    \refReg, t2, 0f
-        bltu    \refReg, t6, 0f
+        ld      t6, (t6)
+        bltu    \refReg, t2, 0f
+        bgeu    \refReg, t6, 0f
 
         // Set this object's card, if it has not already been set.
         la      t2, g_card_table
+        ld      t2, (t2)
         srli    t6, \destReg, 11
         add     t6, t2, t6
 
         // Check that this card has not already been written. Avoiding useless writes
         // is a big win on multi-proc systems since it avoids cache thrashing.
         lb      t2, 0(t6)
-        li      t6, 0xFF
-        beq     t2, t6, 0f
+        xori    t2, t2, 0xFF
+        beqz    t2, 0f
 
-        sb      t6, 0(t6)
+        li      t2, 0xFF
+        sb      t2, 0(t6)
 
 #ifdef FEATURE_MANUALLY_MANAGED_CARD_BUNDLES
         // Check if we need to update the card bundle table
         la      t2, g_card_bundle_table
         ld      t2, (t2)
+
         srli    t6, \destReg, 21
         add     t6, t2, t6
         lb      t2, 0(t6)
-        li      t6, 0xFF
-        beq     t2, t6, 0f
+        xori    t2, t2, 0xFF
+        beqz    t2, 0f
 
-        sb      t6, 0(t6)
+        li      t2, 0xFF
+        sb      t2, 0(t6)
 #endif
 
 0:
