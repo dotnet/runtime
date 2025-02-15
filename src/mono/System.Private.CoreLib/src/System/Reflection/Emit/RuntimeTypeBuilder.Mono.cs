@@ -114,7 +114,6 @@ namespace System.Reflection.Emit
         internal RuntimeTypeBuilder(RuntimeModuleBuilder mb, string name, TypeAttributes attr, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type? parent, Type[]? interfaces, PackingSize packing_size, int type_size, Type? nesting_type)
         {
             this.is_hidden_global_type = false;
-            int sep_index;
             this.parent = ResolveUserType(parent);
             this.attrs = attr;
             this.class_size = type_size;
@@ -127,8 +126,8 @@ namespace System.Reflection.Emit
             if (parent == null && (attr & TypeAttributes.Interface) != 0 && (attr & TypeAttributes.Abstract) == 0)
                 throw new InvalidOperationException(SR.InvalidOperation_BadInterfaceNotAbstract);
 
-            sep_index = TypeNameParserHelpers.IndexOfNamespaceDelimiter(name);
-            if (sep_index != -1)
+            // Nested types do not have a namespace.
+            if (nesting_type is not null && TypeNameParserHelpers.IndexOfNamespaceDelimiter(name) is int sep_index && sep_index > 0)
             {
                 this.tname = name.Substring(sep_index + 1);
                 this.nspace = name.Substring(0, sep_index);
