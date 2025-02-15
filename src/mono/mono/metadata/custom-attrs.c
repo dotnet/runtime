@@ -235,7 +235,7 @@ cattr_type_from_name (char *n, MonoImage *image, gboolean is_enum, MonoError *er
 {
 	ERROR_DECL (inner_error);
 	MonoAssemblyLoadContext *alc = mono_image_get_alc (image);
-	MonoType *t = mono_reflection_type_from_name_checked (n, alc, image, inner_error);
+	MonoType *t = mono_reflection_type_from_name_checked (n, alc, image, FALSE, inner_error);
 	if (!t) {
 		mono_error_set_type_load_name (error, g_strdup(n), NULL,
 					       "Could not load %s %s while decoding custom attribute: %s",

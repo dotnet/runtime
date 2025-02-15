@@ -400,7 +400,7 @@ typedef struct {
 	gboolean (*is_out) (const MonoType *t);
 
 	gboolean (*pinvoke_is_unicode) (MonoMethodPInvoke *piinfo);
-	MonoType* (*reflection_type_from_name_checked) (char *name, MonoAssemblyLoadContext *alc, MonoImage *image, MonoError *error);
+	MonoType* (*reflection_type_from_name_checked) (char *name, MonoAssemblyLoadContext *alc, MonoImage *image, gboolean ignorecase, MonoError *error);
 	void (*memory_barrier) (void);
 	gboolean (*need_free) (MonoType *t, MonoMethodPInvoke *piinfo, MonoMarshalSpec *spec);
 	MonoType* (*get_int_type) (void);

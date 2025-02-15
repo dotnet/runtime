@@ -1108,9 +1108,9 @@ emit_marshal_custom_ilgen (EmitMarshalContext *m, int argnum, MonoType *t,
 	}
 
 	if (spec->data.custom_data.image)
-		mtype = cb_to_mono->reflection_type_from_name_checked (spec->data.custom_data.custom_name, alc, spec->data.custom_data.image, error);
+		mtype = cb_to_mono->reflection_type_from_name_checked (spec->data.custom_data.custom_name, alc, spec->data.custom_data.image, FALSE, error);
 	else
-		mtype = cb_to_mono->reflection_type_from_name_checked (spec->data.custom_data.custom_name, alc, m->image, error);
+		mtype = cb_to_mono->reflection_type_from_name_checked (spec->data.custom_data.custom_name, alc, m->image, FALSE, error);
 
 	if (!mtype)
 		return emit_marshal_custom_ilgen_throw_exception (mb, "System", "TypeLoadException", g_strdup ("Failed to load ICustomMarshaler type"), action);
