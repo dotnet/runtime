@@ -39,7 +39,7 @@ namespace System
 
         private static unsafe string GetRuntimeModulePath()
         {
-            delegate* unmanaged<string> ip = &GetRuntimeModulePath;
+            delegate*<string> ip = &GetRuntimeModulePath;
             if (RuntimeAugments.TryGetFullPathToApplicationModule((nint)(void*)ip, out _) is string modulePath)
             {
                 return modulePath;
