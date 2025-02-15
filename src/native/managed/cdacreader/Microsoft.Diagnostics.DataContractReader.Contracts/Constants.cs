@@ -28,6 +28,16 @@ public static class Constants
         public const string MiniMetaDataBuffAddress = nameof(MiniMetaDataBuffAddress);
         public const string MiniMetaDataBuffMaxSize = nameof(MiniMetaDataBuffMaxSize);
 
+        public const string StressLogEnabled = nameof(StressLogEnabled);
+        public const string StressLogHasModuleTable = nameof(StressLogHasModuleTable);
+        public const string StressLog = nameof(StressLog);
+        public const string StressLogModuleTable = nameof(StressLogModuleTable);
+        public const string StressLogMaxModules = nameof(StressLogMaxModules);
+        public const string StressLogChunkMaxSize = nameof(StressLogChunkMaxSize);
+        public const string StressLogMaxMessageSize = nameof(StressLogMaxMessageSize);
+        public const string StressLogChunkSize = nameof(StressLogChunkSize);
+        public const string StressLogValidChunkSig = nameof(StressLogValidChunkSig);
+
         public const string MethodDescAlignment = nameof(MethodDescAlignment);
         public const string ObjectHeaderSize = nameof(ObjectHeaderSize);
         public const string SyncBlockValueToObjectOffset = nameof(SyncBlockValueToObjectOffset);
