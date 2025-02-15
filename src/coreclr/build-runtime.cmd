@@ -402,7 +402,7 @@ if %__BuildNative% EQU 1 (
         set __ShouldEmitCmakeTarget=1
     )
 
-    if %__ShouldEmitCmakeTarget% EQU 1 (
+    if !__ShouldEmitCmakeTarget! EQU 1 (
         set __ExtraCmakeArgs=!__ExtraCmakeArgs! "-DCLR_CMAKE_TARGET_ARCH=%__TargetArch%" "-DCLR_CMAKE_TARGET_OS=%__TargetOS%"
     )
     
