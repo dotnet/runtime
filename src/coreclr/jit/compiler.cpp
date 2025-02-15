@@ -4860,7 +4860,9 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
             return fgHeadTailMerge(false);
         });
 
-        DoPhase(this, PHASE_CLONE_LOOPS, &Compiler::optCloneBlocks);
+        // Clone blocks with subsequent bounds checks
+        //
+        DoPhase(this, PHASE_CLONE_BLOCKS, &Compiler::optCloneBlocks);
 
         // Compute DFS tree and remove all unreachable blocks.
         //

@@ -3101,112 +3101,304 @@ PhaseStatus Compiler::optCloneLoops()
 
 struct BoundsCheckInfo
 {
+    // 32 bytes
     Statement*        stmt;
+    GenTree*          idx;
     GenTreeBoundsChk* bndChk;
+    int               offset;
 
     BoundsCheckInfo()
         : stmt(nullptr)
+        , idx(nullptr)
         , bndChk(nullptr)
-    {
-    }
-    BoundsCheckInfo(Statement* s, GenTreeBoundsChk* b)
-        : stmt(s)
-        , bndChk(b)
+        , offset(0)
     {
     }
 
-    void PeelOffset(GenTree** node, int* offset) const
+    GenTree* GetArrayLength() const
     {
-        if ((*node)->IsIntCnsFitsInI32())
+        return bndChk->GetArrayLength();
+    }
+
+    GenTree* GetArrayObj() const
+    {
+        if (GetArrayLength()->OperIs(GT_ARR_LENGTH))
         {
-            *offset = static_cast<int>((*node)->AsIntCon()->IconValue());
-            *node   = nullptr;
-            return;
+            return GetArrayLength()->AsArrLen()->ArrRef();
         }
-
-        *offset = 0;
-        if ((*node)->OperIs(GT_ADD) && (*node)->gtGetOp2()->IsIntCnsFitsInI32() && (*node)->gtGetOp2()->TypeIs(TYP_INT))
-        {
-            *offset = static_cast<int>((*node)->gtGetOp2()->AsIntCon()->IconValue());
-            *node   = (*node)->gtGetOp1();
-        }
-    }
-
-    GenTree* GetIndex(int* offset) const
-    {
-        GenTree* idx = bndChk->GetIndex();
-        PeelOffset(&idx, offset);
-        return idx;
+        assert(GetArrayLength()->OperIs(GT_LCL_VAR));
+        return nullptr;
     }
 
     bool Eliminates(const BoundsCheckInfo& other) const
     {
-        GenTree* length      = bndChk->GetArrayLength();
-        GenTree* otherLength = other.bndChk->GetArrayLength();
-
-        // Length must be the same
-        if (!GenTree::Compare(length, otherLength))
-            return false;
-
-        int      offset;
-        int      otherOffset;
-        GenTree* peeledIdx      = this->GetIndex(&offset);
-        GenTree* otherPeeledIdx = other.GetIndex(&otherOffset);
-
-        if (peeledIdx == nullptr && otherPeeledIdx == nullptr)
+        if (GenTree::Compare(GetArrayLength(), other.GetArrayLength()) && GenTree::Compare(idx, other.idx) &&
+            (offset >= other.offset))
         {
             return true;
-        }
-        if (peeledIdx == nullptr || otherPeeledIdx == nullptr)
-        {
-            return false;
-        }
-
-        if (GenTree::Compare(peeledIdx, otherPeeledIdx))
-        {
-            if ((otherOffset >= 0) && (offset >= 0) && (offset > otherOffset))
-            {
-                return true;
-            }
         }
         return false;
     }
 
-    bool IsValid(const Compiler* comp) const
+    bool SameBaseBound(const BoundsCheckInfo& other)
     {
-        GenTree* idx    = bndChk->GetIndex();
-        int      offset = 0;
-        PeelOffset(&idx, &offset);
+        return GenTree::Compare(GetArrayLength(), other.GetArrayLength()) && GenTree::Compare(idx, other.idx);
+    }
 
-        // We can allow bigger trees here, but it's not clear if it's worth it.
-        if (idx != nullptr && !(idx->OperIs(GT_LCL_VAR) && !comp->lvaVarAddrExposed(idx->AsLclVar()->GetLclNum())))
+    bool Initialize(const Compiler* comp, Statement* statement, int statementIdx, GenTreeBoundsChk* bndChkNode)
+    {
+        stmt   = statement;
+        idx    = bndChkNode->GetIndex();
+        bndChk = bndChkNode;
+
+        if (idx->IsIntCnsFitsInI32())
         {
-            return false;
+            offset = static_cast<int>(idx->AsIntCon()->IconValue());
+            idx    = nullptr; // means the base is 0
         }
-
-        GenTree* length = bndChk->GetArrayLength();
-        if (length->OperIs(GT_ARR_LENGTH))
+        else
         {
-            GenTree* arrObj = length->AsArrLen()->ArrRef();
-            if (!arrObj->OperIs(GT_LCL_VAR) || comp->lvaVarAddrExposed(arrObj->AsLclVar()->GetLclNum()))
+            if (genActualType(idx) != TYP_INT)
             {
                 return false;
             }
+            Compiler::gtPeelOffsetsI32(&idx, &offset);
         }
-        else if (!length->OperIs(GT_LCL_VAR) || comp->lvaVarAddrExposed(length->AsLclVar()->GetLclNum()))
+
+        if (offset < 0)
         {
+            // Not supported yet.
             return false;
         }
 
-        return true;
+        if (idx != nullptr && (!idx->OperIs(GT_LCL_VAR) || comp->lvaVarAddrExposed(idx->AsLclVar()->GetLclNum())))
+        {
+            // We might allow more complex trees, such as MUL(LCL_VAR, CNS), etc.
+            return false;
+        }
+
+        if (GetArrayLength()->OperIs(GT_ARR_LENGTH))
+        {
+            GenTree* arrObj = GetArrayLength()->AsArrLen()->ArrRef();
+            return arrObj->OperIs(GT_LCL_VAR) && !comp->lvaVarAddrExposed(arrObj->AsLclVar()->GetLclNum());
+        }
+        if (GetArrayLength()->OperIs(GT_LCL_VAR))
+        {
+            return !comp->lvaVarAddrExposed(GetArrayLength()->AsLclVar()->GetLclNum());
+        }
+        return false;
     }
 };
 
+static BasicBlock* optCloneBlocks_DoClone(Compiler*                    comp,
+                                          BasicBlock*                  block,
+                                          ArrayStack<BoundsCheckInfo>* guards,
+                                          GenTree*                     firstBndChkNode,
+                                          Statement*                   firstBndChkStmt,
+                                          Statement*                   lastBndChkStmt)
+{
+    assert(guards->Height() > 0);
+    assert(firstBndChkNode != nullptr);
+    assert(firstBndChkStmt != nullptr);
+    assert(lastBndChkStmt != nullptr);
+
+    // TODO-ClonnedBlocks: use gtSplitTree to be even more precise
+    BasicBlock* prevBb     = block;
+    BasicBlock* fallbackBb = nullptr;
+
+    GenTree**  use1;
+    Statement* newFirstStmt;
+    comp->gtSplitTree(block, firstBndChkStmt, firstBndChkNode, &newFirstStmt, &use1);
+
+    // Update the newly inserted statements after gtSplitTree
+    while ((newFirstStmt != nullptr) && (newFirstStmt != firstBndChkStmt))
+    {
+        comp->fgMorphStmtBlockOps(block, newFirstStmt);
+        newFirstStmt = newFirstStmt->GetNextStmt();
+    }
+    comp->fgMorphStmtBlockOps(block, firstBndChkStmt);
+    comp->gtUpdateStmtSideEffects(firstBndChkStmt);
+
+    // TODO-CloneBlocks: call gtSplitTree for lastBndChkStmt as well, to cut off
+    // the stuff we don't have to clone.
+
+    BasicBlock* fastpathBb = comp->fgSplitBlockBeforeStatement(prevBb, firstBndChkStmt);
+    BasicBlock* lastBb     = comp->fgSplitBlockAfterStatement(fastpathBb, lastBndChkStmt);
+    DebugInfo   debugInfo  = fastpathBb->firstStmt()->GetDebugInfo();
+
+    bool firstGuard = true;
+    while (guards->Height() > 0)
+    {
+        const BoundsCheckInfo& guard = guards->Pop();
+
+        int      offset = guard.offset;
+        GenTree* idx    = guard.idx;
+        if (idx == nullptr)
+        {
+            // it can be null when we deal with constant indices, so we treat them as offsets
+            // In this case, we don't need the LowerBound check, but let's still create it for
+            // simplicity, the downstream code will eliminate it.
+            idx = comp->gtNewIconNode(0);
+        }
+        assert(offset > 0);
+
+        GenTree* arrLen = guard.GetArrayLength();
+
+        // 1) lowerBndBb:
+        //
+        // if (i >= 0)
+        //     goto UpperBoundCheck
+        // else
+        //     goto Fallback
+        //
+        GenTreeOp* idxLowerBoundTree =
+            comp->gtNewOperNode(GT_GE, TYP_INT, comp->gtCloneExpr(idx), comp->gtNewIconNode(0));
+        idxLowerBoundTree->gtFlags |= GTF_RELOP_JMP_USED;
+
+        GenTree*    jtrue      = comp->gtNewOperNode(GT_JTRUE, TYP_VOID, idxLowerBoundTree);
+        BasicBlock* lowerBndBb = comp->fgNewBBFromTreeAfter(BBJ_COND, prevBb, jtrue, debugInfo);
+
+        // 2) upperBndBb:
+        //
+        // if (i < arrLen - indexOffset)
+        //     goto Fastpath
+        // else
+        //     goto Fallback
+        //
+
+        GenTree* arrLenClone = comp->gtCloneExpr(arrLen);
+        // TODO: Since we've just checked that the array obj is not null, we can mark GT_ARR_LENGTH
+        // as non-faulting here. Unfortunately, this will lead to regressions until all GT_ARR_LENGTH in our blocks
+        // are marked as non-faulting as well.
+        // Related: https://github.com/dotnet/runtime/pull/93531#issuecomment-1765286295
+
+        GenTreeOp* idxUpperBoundTree;
+        if (idx->IsIntegralConst(0))
+        {
+            // if the index is just 0, then we can simplify the condition to "arrLen > indexOffset"
+            idxUpperBoundTree = comp->gtNewOperNode(GT_GT, TYP_INT, arrLenClone, comp->gtNewIconNode(offset));
+        }
+        else
+        {
+            // "i < arrLen + (-indexOffset)"
+            GenTree*   negOffset = comp->gtNewIconNode(-offset);
+            GenTreeOp* subNode   = comp->gtNewOperNode(GT_ADD, TYP_INT, arrLenClone, negOffset);
+            idxUpperBoundTree    = comp->gtNewOperNode(GT_LT, TYP_INT, comp->gtCloneExpr(idx), subNode);
+        }
+        idxUpperBoundTree->gtFlags |= GTF_RELOP_JMP_USED;
+
+        jtrue                  = comp->gtNewOperNode(GT_JTRUE, TYP_VOID, idxUpperBoundTree);
+        BasicBlock* upperBndBb = comp->fgNewBBFromTreeAfter(BBJ_COND, lowerBndBb, jtrue, debugInfo);
+
+        // 3) fallbackBb:
+        //
+        // For the fallback (slow path), we just entirely clone the fast path.
+        // We do it only once in case we have multiple root bounds checks.
+        //
+        if (fallbackBb == nullptr)
+        {
+            fallbackBb = comp->fgNewBBafter(BBJ_ALWAYS, lowerBndBb, false);
+            BasicBlock::CloneBlockState(comp, fallbackBb, fastpathBb);
+        }
+
+        // 4) fastBlockBb:
+        //
+        // No actions needed - it's our current block as is.
+
+        // Wire up the edges
+        //
+        if (firstGuard)
+        {
+            // 1st iteration - unlink prevBb from fastpathBb and link it to lowerBndBb
+            comp->fgRedirectTargetEdge(prevBb, lowerBndBb);
+
+            // We need to link the fallbackBb to the lastBb only once.
+            FlowEdge* fallbackToNextBb = comp->fgAddRefPred(lastBb, fallbackBb);
+            fallbackBb->SetTargetEdge(fallbackToNextBb);
+            fallbackToNextBb->setLikelihood(1.0f);
+        }
+        else
+        {
+            assert(prevBb->KindIs(BBJ_COND));
+
+            // Redirect prevBb(which is previous upperBndBb)'s true edge
+            // to current lowerBndBb.
+            comp->fgRemoveRefPred(prevBb->GetTrueEdge());
+            FlowEdge* prevUpperBndToCurrNullcheck = comp->fgAddRefPred(lowerBndBb, prevBb);
+            prevBb->SetTrueEdge(prevUpperBndToCurrNullcheck);
+            prevUpperBndToCurrNullcheck->setLikelihood(1.0f);
+        }
+
+        FlowEdge* lowerBndToUpperBndEdge = comp->fgAddRefPred(upperBndBb, lowerBndBb);
+        FlowEdge* lowerBndToFallbackEdge = comp->fgAddRefPred(fallbackBb, lowerBndBb);
+        FlowEdge* upperBndToFastPathEdge = comp->fgAddRefPred(fastpathBb, upperBndBb);
+        FlowEdge* upperBndToFallbackEdge = comp->fgAddRefPred(fallbackBb, upperBndBb);
+        lowerBndBb->SetTrueEdge(lowerBndToUpperBndEdge);
+        lowerBndBb->SetFalseEdge(lowerBndToFallbackEdge);
+        upperBndBb->SetTrueEdge(upperBndToFastPathEdge);
+        upperBndBb->SetFalseEdge(upperBndToFallbackEdge);
+
+        // Set the weights. We assume that the fallback is rarely taken.
+        //
+        lowerBndBb->inheritWeightPercentage(prevBb, 100);
+        upperBndBb->inheritWeightPercentage(prevBb, 100);
+        fastpathBb->inheritWeightPercentage(prevBb, 100);
+        fallbackBb->bbSetRunRarely();
+        lowerBndToUpperBndEdge->setLikelihood(1.0f);
+        lowerBndToFallbackEdge->setLikelihood(0.0f);
+        upperBndToFastPathEdge->setLikelihood(1.0f);
+        upperBndToFallbackEdge->setLikelihood(0.0f);
+
+        lowerBndBb->SetFlags(BBF_INTERNAL);
+        upperBndBb->SetFlags(BBF_INTERNAL | BBF_HAS_IDX_LEN);
+
+        comp->fgMorphBlockStmt(lowerBndBb, lowerBndBb->lastStmt() DEBUGARG("Morph lowerBnd"));
+        comp->fgMorphBlockStmt(upperBndBb, upperBndBb->lastStmt() DEBUGARG("Morph upperBnd"));
+
+        if (lowerBndBb->lastStmt() != nullptr)
+        {
+            // lowerBndBb might be converted into no-op by fgMorphBlockStmt(lowerBndBb)
+            // it happens when we emit BBJ_COND(0 >= 0) fake block (for simplicity)
+            comp->gtUpdateStmtSideEffects(lowerBndBb->lastStmt());
+        }
+        comp->gtUpdateStmtSideEffects(upperBndBb->lastStmt());
+
+        // No need to morph
+
+        // Next bound check will be inserted after current upperBndBb
+        prevBb     = upperBndBb;
+        firstGuard = false;
+    }
+
+    return lastBb;
+}
+
 PhaseStatus Compiler::optCloneBlocks()
 {
+    if (!doesMethodHaveBoundsChecks())
+    {
+        JITDUMP("Current method has no bounds checks\n");
+        return PhaseStatus::MODIFIED_NOTHING;
+    }
+
+    if (lvaHaveManyLocals(0.75))
+    {
+        // If we're close to running out of locals, we should be conservative
+        JITDUMP("Too many locals - bail out.\n");
+        return PhaseStatus::MODIFIED_NOTHING;
+    }
+
+    const bool preferSize = opts.jitFlags->IsSet(JitFlags::JIT_FLAG_SIZE_OPT);
+    if (preferSize)
+    {
+        // The optimization comes with a codegen size increase
+        JITDUMP("Optimized for size - bail out.\n");
+        return PhaseStatus::MODIFIED_NOTHING;
+    }
+
     bool changed = false;
 
-    JitExpandArrayStack<BoundsCheckInfo> boundsChks(getAllocator(CMK_Generic));
+    JitExpandArrayStack<BoundsCheckInfo> allBndChks(getAllocator(CMK_Generic));
     for (BasicBlock* block = fgFirstBB; block != nullptr; block = block->Next())
     {
         if (block->isRunRarely())
@@ -3220,57 +3412,63 @@ PhaseStatus Compiler::optCloneBlocks()
             continue;
         }
 
-        boundsChks.Reset();
+        allBndChks.Reset();
+
+        int stmtIndex = 0;
         for (Statement* const stmt : block->Statements())
         {
             if (block->KindIs(BBJ_COND, BBJ_RETURN) && (stmt == block->lastStmt()))
             {
                 // TODO: Splitting these blocks at the last statements
-                // require a bit more work, see comment below.
+                // require using gtSplitTree
                 break;
             }
 
             struct TreeWalkData
             {
                 Statement*                            stmt;
+                int                                   stmtIndex;
                 JitExpandArrayStack<BoundsCheckInfo>* boundsChks;
-            } walkData = {stmt, &boundsChks};
+            } walkData = {stmt, stmtIndex, &allBndChks};
 
             auto visitor = [](GenTree** slot, fgWalkData* data) -> fgWalkResult {
                 TreeWalkData* walkData = static_cast<TreeWalkData*>(data->pCallbackData);
                 if ((*slot)->OperIs(GT_BOUNDS_CHECK))
                 {
-                    BoundsCheckInfo info = BoundsCheckInfo(walkData->stmt, (*slot)->AsBoundsChk());
-                    if (info.IsValid(data->compiler))
+                    BoundsCheckInfo info{};
+                    if (info.Initialize(data->compiler, walkData->stmt, walkData->stmtIndex, (*slot)->AsBoundsChk()))
                     {
                         walkData->boundsChks->Push(info);
                     }
                 }
-                if ((*slot)->OperIsLocalStore())
-                {
-                    // Conservatively give up on previously collected bounds checks
-                    // TODO: Be smart and process whatever we've already collected first.
-                    walkData->boundsChks->Reset();
-                }
+                // Do we want to watch for local stores that might
+                // change the index/array? It's not necessary, but might improve the diffs.
                 return WALK_CONTINUE;
             };
 
             fgWalkTreePre(stmt->GetRootNodePointer(), visitor, &walkData);
+            stmtIndex++;
         }
 
-        if (boundsChks.Size() < 2)
+        const int MinNumberOfChecksPerGroup = 3;
+        if (allBndChks.Size() < MinNumberOfChecksPerGroup)
         {
-            // Obviously, we need at least two bounds checks to consider cloning
+            // Not enough bounds checks to justify the optimization
             continue;
         }
 
-        int             numOfDominatedChecks = 0;
-        BoundsCheckInfo mainDominator        = boundsChks[0];
+        int             numOfImpliedChecks = 0;
+        BoundsCheckInfo domBndChk{};
 
-        for (unsigned i = 0; i < boundsChks.Size(); i++)
+        // Now we need to find the bounds check that would make the most of the other bounds checks
+        //
+        // NOTE: It's possible to be smarter than O(n^2) here, but we mostly work with small
+        // number of bounds checks, so it's not worth it.
+        //
+        for (unsigned i = 0; i < allBndChks.Size(); i++)
         {
-            int             currNumOfDominatedChecks = 0;
-            BoundsCheckInfo dominatingBndChkInfo     = boundsChks[i];
+            int             currNumOfImpliedChecks = 0;
+            BoundsCheckInfo rootBndChkCandidate    = allBndChks.Get(i);
 
             // "j < i" because we want to count only the bounds checks that might benefit from the optimization
             // For instance, if we have:
@@ -3284,156 +3482,61 @@ PhaseStatus Compiler::optCloneBlocks()
             //   a[i + 2] = 0;
             //   a[i + 3] = 0;
             //
-            for (unsigned j = 0; j < i; j++)
+            for (unsigned j = 0; j <= i; j++)
             {
-                BoundsCheckInfo dominatedBndChkInfo = boundsChks[j];
-                if (dominatingBndChkInfo.Eliminates(dominatedBndChkInfo))
+                if (rootBndChkCandidate.Eliminates(allBndChks.Get(j)))
                 {
-                    currNumOfDominatedChecks++;
+                    currNumOfImpliedChecks++;
                 }
             }
 
-            if (currNumOfDominatedChecks > numOfDominatedChecks)
+            if (currNumOfImpliedChecks > numOfImpliedChecks)
             {
-                mainDominator        = dominatingBndChkInfo;
-                numOfDominatedChecks = currNumOfDominatedChecks;
+                domBndChk          = rootBndChkCandidate;
+                numOfImpliedChecks = currNumOfImpliedChecks;
             }
         }
 
-        if (numOfDominatedChecks < 3)
+        if (numOfImpliedChecks < MinNumberOfChecksPerGroup)
         {
-            // We might consider requiring at least 2 dominated bounds checks to continue;
+            // Not enough dominated checks to justify the optimization
             continue;
         }
 
-        int      indexOffset;
-        GenTree* indexNode = mainDominator.GetIndex(&indexOffset);
-        if (indexOffset < 1)
+        if (domBndChk.offset < 2)
         {
+            // Max offset being 0 or 1 are better to be left for assertprop to handle
             continue;
         }
 
-        Statement* firstBndChk = nullptr;
-        Statement* lastBndChk  = nullptr;
-
-        // We can obviously clone the whole block, but let's be more precise and clone only the affected
-        // statements. For that, we need to run over the bounds checks again and find the first and last
-        // dominated bounds check.
+        // Iterate over the bounds checks again to find the first and last bounds check that
+        // are dominated by the one we've chosen, ignore the rest. This allows us to clone only part
+        // of the block.
         //
-        for (unsigned i = 0; i < boundsChks.Size(); i++)
+        GenTreeBoundsChk* firstBndChk         = nullptr;
+        Statement*        firstStmtWithBndChk = nullptr;
+        Statement*        lastStmtWithBndChk  = nullptr;
+        for (unsigned i = 0; i < allBndChks.Size(); i++)
         {
-            Statement* stmt = boundsChks[i].stmt;
-
-            bool belongs = stmt == mainDominator.stmt || mainDominator.Eliminates(boundsChks[i]);
-            if (firstBndChk == nullptr && belongs)
+            BoundsCheckInfo bndChk = allBndChks[i];
+            if (domBndChk.Eliminates(bndChk))
             {
-                firstBndChk = stmt;
+                if (firstStmtWithBndChk == nullptr)
+                {
+                    firstStmtWithBndChk = bndChk.stmt;
+                    firstBndChk         = bndChk.bndChk;
+                }
+                lastStmtWithBndChk = bndChk.stmt;
             }
-            if (belongs)
-            {
-                lastBndChk = stmt;
-            }
         }
 
-        assert(firstBndChk != nullptr);
-        assert(lastBndChk != nullptr);
+        // For now, we always have just one dominating bounds check, but we might have more in the future.
+        // NOTE: ArrayStack does not allocate memory since it's just 1 element:
+        ArrayStack<BoundsCheckInfo> dominatingBndChks(getAllocator(CMK_Generic));
+        dominatingBndChks.Push(domBndChk);
 
-        JITDUMP("Dominated bounds check: ");
-        DISPTREE(mainDominator.bndChk);
-
-        // TODO-ClonnedBlocks: use gtSplitTree to be even more precise (and handle non-BBJ_ALWAYS)
-        BasicBlock* prevBlock = block;
-        BasicBlock* fastBlock = fgSplitBlockBeforeStatement(prevBlock, firstBndChk);
-        BasicBlock* nextBlock = fgSplitBlockAfterStatement(fastBlock, lastBndChk);
-
-        DebugInfo debugInfo = fastBlock->firstStmt()->GetDebugInfo();
-
-        if (indexNode == nullptr)
-        {
-            // it can be null when we deal with constant indices, so we treat them as offsets
-            // In this case, we don't need the LowerBound check, but let's still create it for
-            // simplicity, the downstream code will eliminate it.
-            indexNode = gtNewIconNode(0);
-        }
-        GenTree* arrLen = mainDominator.bndChk->GetArrayLength();
-
-        // if (i >= 0)
-        //     goto UpperBoundCheck
-        // else
-        //     goto Fallback
-        //
-        GenTreeOp* idxLowerBoundTree = gtNewOperNode(GT_GE, TYP_INT, gtCloneExpr(indexNode), gtNewIconNode(0));
-        idxLowerBoundTree->gtFlags |= GTF_RELOP_JMP_USED;
-
-        GenTree*    jtrue                = gtNewOperNode(GT_JTRUE, TYP_VOID, idxLowerBoundTree);
-        BasicBlock* idxLowerBoundCheckBb = fgNewBBFromTreeAfter(BBJ_COND, prevBlock, jtrue, debugInfo);
-
-        // if (i < arrLen - indexOffset)
-        //     goto Fastpath
-        // else
-        //     goto Fallback
-        //
-        GenTreeOp* idxUpperBoundTree;
-        if (indexNode->IsIntegralConst(0))
-        {
-            // if the index is just 0, then we can simplify the condition to "arrLen > indexOffset"
-            idxUpperBoundTree = gtNewOperNode(GT_GT, TYP_INT, gtCloneExpr(arrLen), gtNewIconNode(indexOffset));
-        }
-        else
-        {
-            // "i < arrLen + (-indexOffset)"
-            GenTreeOp* subNode = gtNewOperNode(GT_ADD, TYP_INT, gtCloneExpr(arrLen), gtNewIconNode(-indexOffset));
-            idxUpperBoundTree  = gtNewOperNode(GT_LT, TYP_INT, gtCloneExpr(indexNode), subNode);
-        }
-        idxUpperBoundTree->gtFlags |= GTF_RELOP_JMP_USED;
-
-        jtrue                            = gtNewOperNode(GT_JTRUE, TYP_VOID, idxUpperBoundTree);
-        BasicBlock* idxUpperBoundCheckBb = fgNewBBFromTreeAfter(BBJ_COND, idxLowerBoundCheckBb, jtrue, debugInfo);
-
-        // For the fallback (slow path), we just entirely clone the fast path
-        // We probably can just go and bash all bounds checks to nop in the fast path, but for
-        // now, let's leave it to the assertprop phase.
-        //
-        BasicBlock* fallbackBb = fgNewBBafter(BBJ_ALWAYS, idxLowerBoundCheckBb, false);
-        BasicBlock::CloneBlockState(this, fallbackBb, fastBlock);
-
-        // Wire up the edges
-        //
-        fgRemoveRefPred(fastBlock->GetTargetEdge());
-        fgRedirectTargetEdge(prevBlock, idxLowerBoundCheckBb);
-        FlowEdge* lowerBoundToUpperBoundEdge = fgAddRefPred(idxUpperBoundCheckBb, idxLowerBoundCheckBb);
-        FlowEdge* lowerBoundToFallbackEdge   = fgAddRefPred(fallbackBb, idxLowerBoundCheckBb);
-        FlowEdge* upperBoundToFastPathEdge   = fgAddRefPred(fastBlock, idxUpperBoundCheckBb);
-        FlowEdge* upperBoundToFallbackEdge   = fgAddRefPred(fallbackBb, idxUpperBoundCheckBb);
-        FlowEdge* fastPathToNextBb           = fgAddRefPred(nextBlock, fastBlock);
-        FlowEdge* fallbackToNextBb           = fgAddRefPred(nextBlock, fallbackBb);
-        idxLowerBoundCheckBb->SetTrueEdge(lowerBoundToUpperBoundEdge);
-        idxLowerBoundCheckBb->SetFalseEdge(lowerBoundToFallbackEdge);
-        idxUpperBoundCheckBb->SetTrueEdge(upperBoundToFastPathEdge);
-        idxUpperBoundCheckBb->SetFalseEdge(upperBoundToFallbackEdge);
-        fastBlock->SetTargetEdge(fastPathToNextBb);
-        fallbackBb->SetTargetEdge(fallbackToNextBb);
-
-        // Set the weights. We assume that the fallback is rarely taken.
-        //
-        idxLowerBoundCheckBb->inheritWeightPercentage(prevBlock, 100);
-        idxUpperBoundCheckBb->inheritWeightPercentage(prevBlock, 100);
-        fastBlock->inheritWeightPercentage(prevBlock, 100);
-        fallbackBb->bbSetRunRarely();
-        lowerBoundToUpperBoundEdge->setLikelihood(1.0f);
-        lowerBoundToFallbackEdge->setLikelihood(0.0f);
-        upperBoundToFastPathEdge->setLikelihood(1.0f);
-        upperBoundToFallbackEdge->setLikelihood(0.0f);
-        fastPathToNextBb->setLikelihood(1.0f);
-        fallbackToNextBb->setLikelihood(1.0f);
-
-        idxLowerBoundCheckBb->SetFlags(BBF_INTERNAL);
-        idxUpperBoundCheckBb->SetFlags(BBF_INTERNAL | BBF_HAS_IDX_LEN);
-
-        gtUpdateStmtSideEffects(idxLowerBoundCheckBb->lastStmt());
-        gtUpdateStmtSideEffects(idxUpperBoundCheckBb->lastStmt());
-
-        block   = nextBlock;
+        block   = optCloneBlocks_DoClone(this, block, &dominatingBndChks, firstBndChk, firstStmtWithBndChk,
+                                         lastStmtWithBndChk);
         changed = true;
     }
 

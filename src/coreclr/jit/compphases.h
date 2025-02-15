@@ -73,6 +73,7 @@ CompPhaseNameMacro(PHASE_SET_BLOCK_WEIGHTS,          "Set block weights",       
 CompPhaseNameMacro(PHASE_ZERO_INITS,                 "Redundant zero Inits",           false, -1, false)
 CompPhaseNameMacro(PHASE_FIND_LOOPS,                 "Find loops",                     false, -1, false)
 CompPhaseNameMacro(PHASE_CLONE_LOOPS,                "Clone loops",                    false, -1, false)
+CompPhaseNameMacro(PHASE_CLONE_BLOCKS,               "Clone blocks with bnd chks",     false, -1, false)
 CompPhaseNameMacro(PHASE_UNROLL_LOOPS,               "Unroll loops",                   false, -1, false)
 CompPhaseNameMacro(PHASE_MORPH_MDARR,                "Morph array ops",                false, -1, false)
 CompPhaseNameMacro(PHASE_EMPTY_FINALLY_2,            "Remove empty finally 2",         false, -1, false)
