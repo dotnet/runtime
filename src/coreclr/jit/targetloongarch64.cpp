@@ -85,7 +85,7 @@ ABIPassingInformation LoongArch64Classifier::Classify(Compiler*    comp,
 
             if (!lowering->byIntegerCallConv)
             {
-                slots = lowering->numLoweredElements;
+                slots = static_cast<unsigned>(lowering->numLoweredElements);
                 if (lowering->numLoweredElements == 1)
                 {
                     canPassArgInRegisters = m_floatRegs.Count() > 0;

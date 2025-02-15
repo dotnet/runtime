@@ -93,11 +93,11 @@
 #ifdef FEATURE_COMINTEROP
 //    +-UnmanagedToManagedFrame - this frame represents a transition from
 //    | |                         unmanaged code back to managed code. It's
-//    | |                         main functions are to stop COM+ exception
+//    | |                         main functions are to stop CLR exception
 //    | |                         propagation and to expose unmanaged parameters.
 //    | |
 //    | +-ComMethodFrame        - this frame represents a transition from
-//    |   |                       com to com+
+//    |   |                       com to CLR
 //    |   |
 //    |   +-ComPrestubMethodFrame - prestub frame for calls from COM to CLR
 //    |
@@ -112,9 +112,7 @@
 //    |
 //    +-DebuggerClassInitMarkFrame - marker frame to indicate that "class init" code is running
 //    |
-//    +-DebuggerSecurityCodeMarkFrame - marker frame to indicate that security code is running
-//    |
-//    +-DebuggerExitFrame - marker frame to indicate that a "break" IL instruction is being executed
+//    +-DebuggerExitFrame - marker frame to indicate control flow has left the runtime
 //    |
 //    +-DebuggerU2MCatchHandlerFrame - marker frame to indicate that native code is going to catch and
 //    |                                swallow a managed exception
@@ -219,13 +217,9 @@ FRAME_TYPE_NAME(ExternalMethodFrame)
 #ifdef FEATURE_READYTORUN
 FRAME_TYPE_NAME(DynamicHelperFrame)
 #endif
-#ifdef FEATURE_INTERPRETER
-FRAME_TYPE_NAME(InterpreterFrame)
-#endif // FEATURE_INTERPRETER
 FRAME_TYPE_NAME(ProtectByRefsFrame)
 FRAME_TYPE_NAME(ProtectValueClassFrame)
 FRAME_TYPE_NAME(DebuggerClassInitMarkFrame)
-FRAME_TYPE_NAME(DebuggerSecurityCodeMarkFrame)
 FRAME_TYPE_NAME(DebuggerExitFrame)
 FRAME_TYPE_NAME(DebuggerU2MCatchHandlerFrame)
 FRAME_TYPE_NAME(InlinedCallFrame)
@@ -726,7 +720,6 @@ private:
     friend class TailCallFrame;
     friend class AppDomain;
     friend VOID RealCOMPlusThrow(OBJECTREF);
-    friend FCDECL0(VOID, JIT_StressGC);
 #ifdef _DEBUG
     friend LONG WINAPI CLRVectoredExceptionHandlerShim(PEXCEPTION_POINTERS pExceptionInfo);
 #endif
@@ -850,7 +843,7 @@ public:
             Object** firstIntReg = (Object**)&this->GetContext()->X0;
             Object** lastIntReg  = (Object**)&this->GetContext()->X28;
 #elif defined(TARGET_LOONGARCH64)
-            Object** firstIntReg = (Object**)&this->GetContext()->Tp;
+            Object** firstIntReg = (Object**)&this->GetContext()->A0;
             Object** lastIntReg  = (Object**)&this->GetContext()->S8;
 #elif defined(TARGET_RISCV64)
             Object** firstIntReg = (Object**)&this->GetContext()->Gp;
@@ -1308,7 +1301,7 @@ class HelperMethodFrame : public Frame
 public:
 #ifndef DACCESS_COMPILE
     // Lazy initialization of HelperMethodFrame.  Need to
-    // call InsureInit to complete initialization
+    // call EnsureInit to complete initialization
     // If this is an FCall, the first param is the entry point for the FCALL.
     // The MethodDesc will be looked up form this (lazily), and this method
     // will be used in stack reporting, if this is not an FCall pass a 0
@@ -1336,7 +1329,7 @@ public:
         {
 #if defined(DACCESS_COMPILE)
             MachState unwoundState;
-            InsureInit(&unwoundState);
+            EnsureInit(&unwoundState);
             return unwoundState.GetRetAddr();
 #else  // !DACCESS_COMPILE
             _ASSERTE(!"HMF's should always be initialized in the non-DAC world.");
@@ -1419,7 +1412,7 @@ public:
     }
 #endif // DACCESS_COMPILE
 
-    BOOL InsureInit(struct MachState* unwindState);
+    BOOL EnsureInit(struct MachState* unwindState);
 
     LazyMachState * MachineState() {
         LIMITED_METHOD_CONTRACT;
@@ -1933,7 +1926,7 @@ protected:
 };
 
 //------------------------------------------------------------------------
-// This frame represents a transition from COM to COM+
+// This frame represents a transition from COM to CLR
 //------------------------------------------------------------------------
 
 class ComMethodFrame : public UnmanagedToManagedFrame
@@ -2097,7 +2090,22 @@ public:
     }
 
     virtual void UpdateRegDisplay(const PREGDISPLAY, bool updateFloats = false);
+
+#ifdef TARGET_X86
+    // On x86 we need to specialcase return values
     virtual void GcScanRoots(promote_func *fn, ScanContext* sc);
+#else
+    // On non-x86 platforms HijackFrame is just a more compact form of a resumable
+    // frame with main difference that OnHijackTripThread captures just the registers
+    // that can possibly contain GC roots.
+    // The regular reporting of a top frame will report everything that is live
+    // after the call as specified in GC info, thus we do not need to worry about
+    // return values.
+    virtual unsigned GetFrameAttribs() {
+        LIMITED_METHOD_DAC_CONTRACT;
+        return FRAME_ATTR_RESUMABLE;    // Treat the next frame as the top frame.
+    }
+#endif
 
     // HijackFrames are created by trip functions. See OnHijackTripThread()
     // They are real C++ objects on the stack.
@@ -2375,7 +2383,7 @@ typedef VPTR(class DynamicHelperFrame) PTR_DynamicHelperFrame;
 #ifdef FEATURE_COMINTEROP
 
 //------------------------------------------------------------------------
-// This represents a com to com+ call method prestub.
+// This represents a com to CLR call method prestub.
 // we need to catch exceptions etc. so this frame is not the same
 // as the prestub method frame
 // Note that in rare IJW cases, the immediate caller could be a managed method
@@ -2483,34 +2491,6 @@ private:
     UINT          m_numObjRefs;
     BOOL          m_MaybeInterior;
 };
-
-#ifdef FEATURE_INTERPRETER
-class InterpreterFrame: public Frame
-{
-    VPTR_VTABLE_CLASS(InterpreterFrame, Frame)
-
-    class Interpreter* m_interp;
-
-public:
-
-#ifndef DACCESS_COMPILE
-    InterpreterFrame(class Interpreter* interp);
-
-    class Interpreter* GetInterpreter() { return m_interp; }
-
-    // Override.
-    virtual void GcScanRoots(promote_func *fn, ScanContext* sc);
-
-    MethodDesc* GetFunction();
-#endif
-
-    DEFINE_VTABLE_GETTER_AND_DTOR(InterpreterFrame)
-
-};
-
-typedef VPTR(class InterpreterFrame) PTR_InterpreterFrame;
-#endif // FEATURE_INTERPRETER
-
 
 //-----------------------------------------------------------------------------
 
@@ -2656,50 +2636,10 @@ public:
     DEFINE_VTABLE_GETTER_AND_DTOR(DebuggerClassInitMarkFrame)
 };
 
-
-//------------------------------------------------------------------------
-// DebuggerSecurityCodeMarkFrame is a small frame whose only purpose in
-// life is to mark for the debugger that "security code" is
-// being run. It does nothing useful except return good values from
-// GetFrameType and GetInterception.
-//------------------------------------------------------------------------
-
-class DebuggerSecurityCodeMarkFrame : public Frame
-{
-    VPTR_VTABLE_CLASS(DebuggerSecurityCodeMarkFrame, Frame)
-
-public:
-#ifndef DACCESS_COMPILE
-    DebuggerSecurityCodeMarkFrame()
-    {
-        WRAPPER_NO_CONTRACT;
-        Push();
-    }
-#endif
-
-    virtual int GetFrameType()
-    {
-        LIMITED_METHOD_DAC_CONTRACT;
-        return TYPE_INTERCEPTION;
-    }
-
-    virtual Interception GetInterception()
-    {
-        LIMITED_METHOD_DAC_CONTRACT;
-        return INTERCEPTION_SECURITY;
-    }
-
-    // Keep as last entry in class
-    DEFINE_VTABLE_GETTER_AND_DTOR(DebuggerSecurityCodeMarkFrame)
-};
-
 //------------------------------------------------------------------------
 // DebuggerExitFrame is a small frame whose only purpose in
-// life is to mark for the debugger that there is an exit transiton on
-// the stack.  This is special cased for the "break" IL instruction since
-// it is an fcall using a helper frame which returns TYPE_CALL instead of
-// an ecall (as in System.Diagnostics.Debugger.Break()) which returns
-// TYPE_EXIT.  This just makes the two consistent for debugging services.
+// life is to mark for the debugger that there is an exit transition on
+// the stack.
 //------------------------------------------------------------------------
 
 class DebuggerExitFrame : public Frame
@@ -3172,12 +3112,6 @@ public:
     FrameWithCookie(GCSafeCollection *gcSafeCollection) :
         m_gsCookie(GetProcessGSCookie()), m_frame(gcSafeCollection) { WRAPPER_NO_CONTRACT; }
 
-#ifdef FEATURE_INTERPRETER
-    // InterpreterFrame
-    FrameWithCookie(Interpreter* interp) :
-        m_gsCookie(GetProcessGSCookie()), m_frame(interp) { WRAPPER_NO_CONTRACT; }
-#endif
-
     // HijackFrame
     FrameWithCookie(LPVOID returnAddress, Thread *thread, HijackArgs *args) :
         m_gsCookie(GetProcessGSCookie()), m_frame(returnAddress, thread, args) { WRAPPER_NO_CONTRACT; }
@@ -3251,8 +3185,8 @@ public:
     FrameType* operator&() { LIMITED_METHOD_CONTRACT; return &m_frame; }
     LazyMachState * MachineState() { WRAPPER_NO_CONTRACT; return m_frame.MachineState(); }
     Thread * GetThread() { WRAPPER_NO_CONTRACT; return m_frame.GetThread(); }
-    BOOL InsureInit(struct MachState* unwindState)
-        { WRAPPER_NO_CONTRACT; return m_frame.InsureInit(unwindState); }
+    BOOL EnsureInit(struct MachState* unwindState)
+        { WRAPPER_NO_CONTRACT; return m_frame.EnsureInit(unwindState); }
     void Poll() { WRAPPER_NO_CONTRACT; m_frame.Poll(); }
     void SetStackPointerPtr(TADDR sp) { WRAPPER_NO_CONTRACT; m_frame.SetStackPointerPtr(sp); }
     void InitAndLink(T_CONTEXT *pContext) { WRAPPER_NO_CONTRACT; m_frame.InitAndLink(pContext); }

@@ -820,6 +820,9 @@ namespace System.Numerics
         /// <inheritdoc cref="ISimdVector{TSelf, T}.Alignment" />
         static int ISimdVector<Vector<T>, T>.Alignment => Vector.Alignment;
 
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.ElementCount" />
+        static int ISimdVector<Vector<T>, T>.ElementCount => Vector<T>.Count;
+
         /// <inheritdoc cref="ISimdVector{TSelf, T}.IsHardwareAccelerated" />
         static bool ISimdVector<Vector<T>, T>.IsHardwareAccelerated
         {
@@ -835,9 +838,25 @@ namespace System.Numerics
         [Intrinsic]
         static Vector<T> ISimdVector<Vector<T>, T>.Add(Vector<T> left, Vector<T> right) => left + right;
 
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.All(TSelf, T)" />
+        [Intrinsic]
+        static bool ISimdVector<Vector<T>, T>.All(Vector<T> vector, T value) => Vector.All(vector, value);
+
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.AllWhereAllBitsSet(TSelf)" />
+        [Intrinsic]
+        static bool ISimdVector<Vector<T>, T>.AllWhereAllBitsSet(Vector<T> vector) => Vector.AllWhereAllBitsSet(vector);
+
         /// <inheritdoc cref="ISimdVector{TSelf, T}.AndNot(TSelf, TSelf)" />
         [Intrinsic]
         static Vector<T> ISimdVector<Vector<T>, T>.AndNot(Vector<T> left, Vector<T> right) => Vector.AndNot(left, right);
+
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.Any(TSelf, T)" />
+        [Intrinsic]
+        static bool ISimdVector<Vector<T>, T>.Any(Vector<T> vector, T value) => Vector.Any(vector, value);
+
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.AnyWhereAllBitsSet(TSelf)" />
+        [Intrinsic]
+        static bool ISimdVector<Vector<T>, T>.AnyWhereAllBitsSet(Vector<T> vector) => Vector.AnyWhereAllBitsSet(vector);
 
         /// <inheritdoc cref="ISimdVector{TSelf, T}.BitwiseAnd(TSelf, TSelf)" />
         [Intrinsic]
@@ -875,6 +894,14 @@ namespace System.Numerics
 
         /// <inheritdoc cref="ISimdVector{TSelf, T}.CopyTo(TSelf, Span{T})" />
         static void ISimdVector<Vector<T>, T>.CopyTo(Vector<T> vector, Span<T> destination) => vector.CopyTo(destination);
+
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.Count(TSelf, T)" />
+        [Intrinsic]
+        static int ISimdVector<Vector<T>, T>.Count(Vector<T> vector, T value) => Vector.Count(vector, value);
+
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.CountWhereAllBitsSet(TSelf)" />
+        [Intrinsic]
+        static int ISimdVector<Vector<T>, T>.CountWhereAllBitsSet(Vector<T> vector) => Vector.CountWhereAllBitsSet(vector);
 
         /// <inheritdoc cref="ISimdVector{TSelf, T}.Create(T)" />
         [Intrinsic]
@@ -952,6 +979,73 @@ namespace System.Numerics
         /// <inheritdoc cref="ISimdVector{TSelf, T}.GreaterThanOrEqualAny(TSelf, TSelf)" />
         [Intrinsic]
         static bool ISimdVector<Vector<T>, T>.GreaterThanOrEqualAny(Vector<T> left, Vector<T> right) => Vector.GreaterThanOrEqualAny(left, right);
+
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.IndexOf(TSelf, T)" />
+        [Intrinsic]
+        static int ISimdVector<Vector<T>, T>.IndexOf(Vector<T> vector, T value) => Vector.IndexOf(vector, value);
+
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.IndexOfWhereAllBitsSet(TSelf)" />
+        [Intrinsic]
+        static int ISimdVector<Vector<T>, T>.IndexOfWhereAllBitsSet(Vector<T> vector) => Vector.IndexOfWhereAllBitsSet(vector);
+
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.IsEvenInteger(TSelf)" />
+        [Intrinsic]
+        static Vector<T> ISimdVector<Vector<T>, T>.IsEvenInteger(Vector<T> vector) => Vector.IsEvenInteger(vector);
+
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.IsFinite(TSelf)" />
+        [Intrinsic]
+        static Vector<T> ISimdVector<Vector<T>, T>.IsFinite(Vector<T> vector) => Vector.IsFinite(vector);
+
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.IsInfinity(TSelf)" />
+        [Intrinsic]
+        static Vector<T> ISimdVector<Vector<T>, T>.IsInfinity(Vector<T> vector) => Vector.IsInfinity(vector);
+
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.IsInteger(TSelf)" />
+        [Intrinsic]
+        static Vector<T> ISimdVector<Vector<T>, T>.IsInteger(Vector<T> vector) => Vector.IsInteger(vector);
+
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.IsNaN(TSelf)" />
+        [Intrinsic]
+        static Vector<T> ISimdVector<Vector<T>, T>.IsNaN(Vector<T> vector) => Vector.IsNaN(vector);
+
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.IsNegative(TSelf)" />
+        [Intrinsic]
+        static Vector<T> ISimdVector<Vector<T>, T>.IsNegative(Vector<T> vector) => Vector.IsNegative(vector);
+
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.IsNegativeInfinity(TSelf)" />
+        [Intrinsic]
+        static Vector<T> ISimdVector<Vector<T>, T>.IsNegativeInfinity(Vector<T> vector) => Vector.IsNegativeInfinity(vector);
+
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.IsNormal(TSelf)" />
+        [Intrinsic]
+        static Vector<T> ISimdVector<Vector<T>, T>.IsNormal(Vector<T> vector) => Vector.IsNormal(vector);
+
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.IsOddInteger(TSelf)" />
+        [Intrinsic]
+        static Vector<T> ISimdVector<Vector<T>, T>.IsOddInteger(Vector<T> vector) => Vector.IsOddInteger(vector);
+
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.IsPositive(TSelf)" />
+        [Intrinsic]
+        static Vector<T> ISimdVector<Vector<T>, T>.IsPositive(Vector<T> vector) => Vector.IsPositive(vector);
+
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.IsPositiveInfinity(TSelf)" />
+        [Intrinsic]
+        static Vector<T> ISimdVector<Vector<T>, T>.IsPositiveInfinity(Vector<T> vector) => Vector.IsPositiveInfinity(vector);
+
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.IsSubnormal(TSelf)" />
+        [Intrinsic]
+        static Vector<T> ISimdVector<Vector<T>, T>.IsSubnormal(Vector<T> vector) => Vector.IsSubnormal(vector);
+
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.IsZero(TSelf)" />
+        static Vector<T> ISimdVector<Vector<T>, T>.IsZero(Vector<T> vector) => Vector.IsZero(vector);
+
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.LastIndexOf(TSelf, T)" />
+        [Intrinsic]
+        static int ISimdVector<Vector<T>, T>.LastIndexOf(Vector<T> vector, T value) => Vector.LastIndexOf(vector, value);
+
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.LastIndexOfWhereAllBitsSet(TSelf)" />
+        [Intrinsic]
+        static int ISimdVector<Vector<T>, T>.LastIndexOfWhereAllBitsSet(Vector<T> vector) => Vector.LastIndexOfWhereAllBitsSet(vector);
 
         /// <inheritdoc cref="ISimdVector{TSelf, T}.LessThan(TSelf, TSelf)" />
         [Intrinsic]
@@ -1053,6 +1147,14 @@ namespace System.Numerics
         [Intrinsic]
         static Vector<T> ISimdVector<Vector<T>, T>.Negate(Vector<T> vector) => -vector;
 
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.None(TSelf, T)" />
+        [Intrinsic]
+        static bool ISimdVector<Vector<T>, T>.None(Vector<T> vector, T value) => Vector.None(vector, value);
+
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.NoneWhereAllBitsSet(TSelf)" />
+        [Intrinsic]
+        static bool ISimdVector<Vector<T>, T>.NoneWhereAllBitsSet(Vector<T> vector) => Vector.NoneWhereAllBitsSet(vector);
+
         /// <inheritdoc cref="ISimdVector{TSelf, T}.OnesComplement(TSelf)" />
         [Intrinsic]
         static Vector<T> ISimdVector<Vector<T>, T>.OnesComplement(Vector<T> vector) => ~vector;
@@ -1123,48 +1225,5 @@ namespace System.Numerics
         /// <inheritdoc cref="ISimdVector{TSelf, T}.Xor" />
         [Intrinsic]
         static Vector<T> ISimdVector<Vector<T>, T>.Xor(Vector<T> left, Vector<T> right) => left ^ right;
-
-        //
-        // New Surface Area
-        //
-
-        static bool ISimdVector<Vector<T>, T>.AnyWhereAllBitsSet(Vector<T> vector) => Vector.EqualsAny(vector, AllBitsSet);
-
-        static bool ISimdVector<Vector<T>, T>.Any(Vector<T> vector, T value) => Vector.EqualsAny(vector, Vector.Create(value));
-
-        static int ISimdVector<Vector<T>, T>.IndexOfLastMatch(Vector<T> vector)
-        {
-            if (sizeof(Vector<T>) == 64)
-            {
-                ulong mask = vector.AsVector512().ExtractMostSignificantBits();
-                return 63 - BitOperations.LeadingZeroCount(mask); // 63 = 64 (bits in Int64) - 1 (indexing from zero)
-            }
-            else if (sizeof(Vector<T>) == 32)
-            {
-                uint mask = vector.AsVector256().ExtractMostSignificantBits();
-                return 31 - BitOperations.LeadingZeroCount(mask); // 31 = 32 (bits in Int32) - 1 (indexing from zero)
-            }
-            else
-            {
-                Debug.Assert(sizeof(Vector<T>) == 16);
-                uint mask = vector.AsVector128().ExtractMostSignificantBits();
-                return 31 - BitOperations.LeadingZeroCount(mask); // 31 = 32 (bits in Int32) - 1 (indexing from zero)
-            }
-        }
-
-        [Intrinsic]
-        static Vector<T> ISimdVector<Vector<T>, T>.IsNaN(Vector<T> vector) => Vector.IsNaN(vector);
-
-        [Intrinsic]
-        static Vector<T> ISimdVector<Vector<T>, T>.IsNegative(Vector<T> vector) => Vector.IsNegative(vector);
-
-        [Intrinsic]
-        static Vector<T> ISimdVector<Vector<T>, T>.IsPositive(Vector<T> vector) => Vector.IsPositive(vector);
-
-        [Intrinsic]
-        static Vector<T> ISimdVector<Vector<T>, T>.IsPositiveInfinity(Vector<T> vector) => Vector.IsPositiveInfinity(vector);
-
-        [Intrinsic]
-        static Vector<T> ISimdVector<Vector<T>, T>.IsZero(Vector<T> vector) => Vector.IsZero(vector);
     }
 }

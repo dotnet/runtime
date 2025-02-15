@@ -535,6 +535,8 @@ static const regMaskTP LsraLimitSmallFPSet = (RBM_XMM0 | RBM_XMM1 | RBM_XMM2 | R
 static const regMaskTP LsraLimitUpperSimdSet =
     (RBM_XMM16 | RBM_XMM17 | RBM_XMM18 | RBM_XMM19 | RBM_XMM20 | RBM_XMM21 | RBM_XMM22 | RBM_XMM23 | RBM_XMM24 |
      RBM_XMM25 | RBM_XMM26 | RBM_XMM27 | RBM_XMM28 | RBM_XMM29 | RBM_XMM30 | RBM_XMM31);
+static const regMaskTP LsraLimitExtGprSet =
+    (RBM_R16 | RBM_R17 | RBM_R18 | RBM_R19 | RBM_R20 | RBM_R21 | RBM_R22 | RBM_R23 | RBM_ETW_FRAMED_EBP);
 #elif defined(TARGET_ARM)
 // On ARM, we may need two registers to set up the target register for a virtual call, so we need
 // to have at least the maximum number of arg registers, plus 2.
@@ -625,6 +627,13 @@ SingleTypeRegSet LinearScan::stressLimitRegs(RefPosition* refPosition, RegisterT
                 {
                     mask = getConstrainedRegMask(refPosition, regType, mask,
                                                  LsraLimitUpperSimdSet.GetRegSetForType(regType), minRegCount);
+                }
+                break;
+            case LSRA_LIMIT_EXT_GPR_SET:
+                if ((mask & LsraLimitExtGprSet) != RBM_NONE)
+                {
+                    mask = getConstrainedRegMask(refPosition, regType, mask,
+                                                 LsraLimitExtGprSet.GetRegSetForType(regType), minRegCount);
                 }
                 break;
 #endif
@@ -787,6 +796,10 @@ LinearScan::LinearScan(Compiler* theCompiler)
 #if defined(TARGET_AMD64)
     rbmAllFloat       = compiler->rbmAllFloat;
     rbmFltCalleeTrash = compiler->rbmFltCalleeTrash;
+    rbmAllInt         = compiler->rbmAllInt;
+    rbmIntCalleeTrash = compiler->rbmIntCalleeTrash;
+    regIntLast        = compiler->regIntLast;
+    isApxSupported    = compiler->canUseApxEncoding();
 #endif // TARGET_AMD64
 
 #if defined(TARGET_XARCH)
@@ -902,7 +915,14 @@ LinearScan::LinearScan(Compiler* theCompiler)
     availableRegs[static_cast<int>(TYP_##tn)] = &regFld;
 #include "typelist.h"
 #undef DEF_TP
-
+    // Updating lowGprRegs with final value
+#if defined(TARGET_XARCH)
+#if defined(TARGET_AMD64)
+    lowGprRegs = (availableIntRegs & RBM_LOWINT.GetIntRegSet());
+#else
+    lowGprRegs = availableIntRegs;
+#endif // TARGET_AMD64
+#endif // TARGET_XARCH
     compiler->rpFrameType           = FT_NOT_SET;
     compiler->rpMustCreateEBPCalled = false;
 
@@ -946,60 +966,37 @@ void LinearScan::setBlockSequence()
     traits       = new (compiler, CMK_LSRA) BitVecTraits(compiler->fgBBcount, compiler);
     bbVisitedSet = BitVecOps::MakeEmpty(traits);
 
-    // If optimizations are enabled, allocate blocks in reverse post-order.
-    // This ensures each block's predecessors are visited first.
-    FlowGraphDfsTree* dfsTree        = nullptr;
-    auto              getRpoSequence = [this, &dfsTree]() -> BasicBlock** {
-        BasicBlock** sequence = new (compiler, CMK_LSRA) BasicBlock*[compiler->fgBBcount];
-        dfsTree               = compiler->fgComputeDfs</* useProfile */ true>();
-        bbSeqCount            = dfsTree->GetPostOrderCount();
+    assert((blockSequence == nullptr) && (bbSeqCount == 0));
+    blockSequence = new (compiler, CMK_LSRA) BasicBlock*[compiler->fgBBcount];
 
-        if (dfsTree->HasCycle())
-        {
-            // Ensure loop bodies are compact in the visitation order
-            FlowGraphNaturalLoops* const loops = FlowGraphNaturalLoops::Find(dfsTree);
-            unsigned                     index = 0;
+    if (compiler->opts.OptimizationEnabled())
+    {
+        // If optimizations are enabled, allocate blocks in reverse post-order.
+        // This ensures each block's predecessors are visited first.
+        // Also, ensure loop bodies are compact in the visitation order.
+        compiler->m_dfsTree                = compiler->fgComputeDfs</* useProfile */ true>();
+        compiler->m_loops                  = FlowGraphNaturalLoops::Find(compiler->m_dfsTree);
+        FlowGraphNaturalLoops* const loops = compiler->m_loops;
 
-            auto addToSequence = [sequence, &index](BasicBlock* block) {
-                sequence[index++] = block;
-            };
+        auto addToSequence = [this](BasicBlock* block) {
+            blockSequence[bbSeqCount++] = block;
+        };
 
-            compiler->fgVisitBlocksInLoopAwareRPO(dfsTree, loops, addToSequence);
-        }
-        else
-        {
-            // Flip the DFS traversal to get the reverse post-order traversal
-            // (this is the order in which blocks will be allocated)
-            for (unsigned i = bbSeqCount, j = 0; i != 0; i--, j++)
-            {
-                sequence[j] = dfsTree->GetPostOrder(i - 1);
-            }
-        }
-
-        return sequence;
-    };
-
-    // If we aren't optimizing, we won't have any cross-block live registers,
-    // so the order of blocks allocated shouldn't matter.
-    // Just use the linear order.
-    auto getTraversalSequence = [this]() -> BasicBlock** {
-        BasicBlock** const traversalOrder = new (compiler, CMK_LSRA) BasicBlock*[compiler->fgBBcount];
-        bbSeqCount                        = compiler->fgBBcount;
-
-        unsigned i = 0;
+        compiler->fgVisitBlocksInLoopAwareRPO(compiler->m_dfsTree, loops, addToSequence);
+    }
+    else
+    {
+        // If we aren't optimizing, we won't have any cross-block live registers,
+        // so the order of blocks allocated shouldn't matter.
+        // Just use the linear order.
         for (BasicBlock* const block : compiler->Blocks())
         {
             // Give this block a unique post-order number that can be used as a key into bbVisitedSet
-            block->bbPostorderNum = i;
-            traversalOrder[i++]   = block;
+            block->bbPostorderNum       = bbSeqCount;
+            blockSequence[bbSeqCount++] = block;
         }
+    }
 
-        assert(i == bbSeqCount);
-        return traversalOrder;
-    };
-
-    assert((blockSequence == nullptr) && (bbSeqCount == 0));
-    blockSequence            = compiler->opts.OptimizationEnabled() ? getRpoSequence() : getTraversalSequence();
     bbNumMaxBeforeResolution = compiler->fgBBNumMax;
     blockInfo                = new (compiler, CMK_LSRA) LsraBlockInfo[bbNumMaxBeforeResolution + 1];
 
@@ -1111,9 +1108,9 @@ void LinearScan::setBlockSequence()
     {
         assert(compiler->opts.OptimizationEnabled());
         assert(block != nullptr);
-        assert(dfsTree != nullptr);
+        assert(compiler->m_dfsTree != nullptr);
 
-        if (!dfsTree->Contains(block))
+        if (!compiler->m_dfsTree->Contains(block))
         {
             // Give this block a unique post-order number that can be used as a key into bbVisitedSet
             block->bbPostorderNum = bbSeqCount;
@@ -1337,6 +1334,14 @@ PhaseStatus LinearScan::doLinearScan()
 
     compiler->compLSRADone = true;
 
+    // If edge resolution didn't create new blocks,
+    // we can reuse the current flowgraph annotations during block layout.
+    if (compiler->fgBBcount != bbSeqCount)
+    {
+        assert(compiler->fgBBcount > bbSeqCount);
+        compiler->fgInvalidateDfsTree();
+    }
+
     return PhaseStatus::MODIFIED_EVERYTHING;
 }
 
@@ -1481,7 +1486,8 @@ void LinearScan::identifyCandidatesExceptionDataflow()
 
         assert(varDsc->lvLiveInOutOfHndlr);
 
-        if (varTypeIsGC(varDsc) && VarSetOps::IsMember(compiler, finallyVars, varIndex) && !varDsc->lvIsParam)
+        if (varTypeIsGC(varDsc) && VarSetOps::IsMember(compiler, finallyVars, varIndex) && !varDsc->lvIsParam &&
+            !varDsc->lvIsParamRegTarget)
         {
             assert(varDsc->lvMustInit);
         }

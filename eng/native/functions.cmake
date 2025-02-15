@@ -1,8 +1,8 @@
 function(clr_unknown_arch)
     if (WIN32)
-        message(FATAL_ERROR "Only AMD64, ARM64, ARM and I386 hosts are supported. Found: ${CMAKE_SYSTEM_PROCESSOR}")
+        message(FATAL_ERROR "Only AMD64, ARM64, ARM, I386, LOONGARCH64 and RISCV64 hosts are supported. Found: ${CMAKE_SYSTEM_PROCESSOR}")
     elseif(CLR_CROSS_COMPONENTS_BUILD)
-        message(FATAL_ERROR "Only AMD64, ARM64 and I386 hosts are supported for linux cross-architecture component. Found: ${CMAKE_SYSTEM_PROCESSOR}")
+        message(FATAL_ERROR "Only AMD64, ARM64, I386, LOONGARCH64 and RISCV64 hosts are supported for linux cross-architecture component. Found: ${CMAKE_SYSTEM_PROCESSOR}")
     else()
         message(FATAL_ERROR "'${CMAKE_SYSTEM_PROCESSOR}' is an unsupported architecture.")
     endif()
@@ -319,7 +319,7 @@ function(add_component componentName)
   else()
     set(componentTargetName "${componentName}")
   endif()
-  if (${ARGC} EQUAL 3 AND "${ARG2}" STREQUAL "EXCLUDE_FROM_ALL")
+  if (${ARGC} EQUAL 3 AND "${ARGV2}" STREQUAL "EXCLUDE_FROM_ALL")
     set(exclude_from_all_flag "EXCLUDE_FROM_ALL")
   endif()
   get_property(definedComponents GLOBAL PROPERTY CLR_CMAKE_COMPONENTS)
@@ -489,7 +489,8 @@ endfunction()
 
 function(install_symbol_file symbol_file destination_path)
   if(CLR_CMAKE_TARGET_WIN32)
-      install(FILES ${symbol_file} DESTINATION ${destination_path}/PDB ${ARGN})
+      cmake_path(SET DEST NORMALIZE "${destination_path}/PDB")
+      install(FILES ${symbol_file} DESTINATION ${DEST} ${ARGN})
   else()
       install(FILES ${symbol_file} DESTINATION ${destination_path} ${ARGN})
   endif()
@@ -676,4 +677,16 @@ function(adhoc_sign_with_entitlements targetName entitlementsFile)
         TARGET ${targetName}
         POST_BUILD
         COMMAND codesign -s - -f --entitlements ${entitlementsFile} $<TARGET_FILE:${targetName}>)
+endfunction()
+
+function(esrp_sign targetName)
+    if ("${CLR_CMAKE_ESRP_CLIENT}" STREQUAL "")
+        return()
+    endif()
+
+    add_custom_command(
+        TARGET ${targetName}
+        POST_BUILD
+        COMMAND powershell -ExecutionPolicy ByPass -NoProfile "${CMAKE_CURRENT_FUNCTION_LIST_DIR}/sign-with-dac-certificate.ps1" -esrpClient ${CLR_CMAKE_ESRP_CLIENT} $<TARGET_FILE:${targetName}>
+    )
 endfunction()

@@ -1635,6 +1635,9 @@ CSE_HeuristicCommon::CSE_HeuristicCommon(Compiler* pCompiler)
     madeChanges    = false;
     codeOptKind    = m_pCompiler->compCodeOpt();
     enableConstCSE = Compiler::optConstantCSEEnabled();
+#if defined(TARGET_AMD64)
+    cntCalleeTrashInt = pCompiler->get_CNT_CALLEE_TRASH_INT();
+#endif // TARGET_AMD64
 
 #ifdef DEBUG
     // Track the order of CSEs done (candidate number)
@@ -1825,7 +1828,7 @@ bool CSE_HeuristicCommon::CanConsiderTree(GenTree* tree, bool isReturn)
         case GT_ADD: // Check for ADDRMODE flag on these Binary Operators
         case GT_MUL:
         case GT_LSH:
-            if ((tree->gtFlags & GTF_ADDRMODE_NO_CSE) != 0)
+            if (tree->IsPartOfAddressMode())
             {
                 return false;
             }

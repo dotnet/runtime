@@ -197,6 +197,9 @@ public class LibraryBuilderTask : AppBuilderTask
             }
         }
 
+        // Add dependencies of any runtime libraries explicitly after the runtime libraries
+        // to ensure that dependencies show up on the linker command line after their dependents.
+        List<string> bundledStaticLibs = [];
         foreach (ITaskItem lib in RuntimeLibraries)
         {
             string ext = Path.GetExtension(lib.ItemSpec);
@@ -205,11 +208,17 @@ public class LibraryBuilderTask : AppBuilderTask
             {
                 libs.Add(lib.ItemSpec);
             }
+            else if (lib.ItemSpec.Contains("brotli"))
+            {
+                bundledStaticLibs.Add(lib.ItemSpec);
+            }
             else
             {
                 sources.Add(lib.ItemSpec);
             }
         }
+
+        sources.AddRange(bundledStaticLibs);
 
         foreach (ITaskItem item in ExtraLinkerArguments)
         {
@@ -280,7 +289,7 @@ public class LibraryBuilderTask : AppBuilderTask
         {
             string dataSymbol = "NULL";
             string dataLenSymbol = "0";
-            StringBuilder externBundledResourcesSymbols = new ("#if defined(BUNDLED_RESOURCES)\nextern void mono_register_resources_bundle (void);");
+            StringBuilder externBundledResourcesSymbols = new("#if defined(BUNDLED_RESOURCES)\nextern void mono_register_resources_bundle (void);");
             if (BundledRuntimeConfig?.ItemSpec != null)
             {
                 dataSymbol = BundledRuntimeConfig.GetMetadata("DataSymbol");
