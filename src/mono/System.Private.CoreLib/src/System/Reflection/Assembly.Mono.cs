@@ -24,7 +24,8 @@ namespace System.Reflection
             try
             {
                 StackCrawlMark stackMark = StackCrawlMark.LookForMyCaller;
-                return InternalLoad(partialName, ref stackMark, IntPtr.Zero);
+                RuntimeAssembly requestingAssembly = GetExecutingAssembly(ref stackMark);
+                return InternalLoad(partialName, new QCallAssembly(ref requestingAssembly), IntPtr.Zero);
             }
             catch (FileNotFoundException)
             {
@@ -63,7 +64,7 @@ namespace System.Reflection
             // TODO: trigger assemblyFromResolveEvent
 
             StackCrawlMark stackMark = StackCrawlMark.LookForMyCaller;
-            return Load(name, ref stackMark, AssemblyLoadContext.CurrentContextualReflectionContext);
+            return Load(name, GetExecutingAssembly(ref stackMark), AssemblyLoadContext.CurrentContextualReflectionContext);
         }
 
         [System.Security.DynamicSecurityMethod] // Methods containing StackCrawlMark local var has to be marked DynamicSecurityMethod
@@ -72,13 +73,13 @@ namespace System.Reflection
             ArgumentNullException.ThrowIfNull(assemblyRef);
 
             StackCrawlMark stackMark = StackCrawlMark.LookForMyCaller;
-            return Load(assemblyRef, ref stackMark, AssemblyLoadContext.CurrentContextualReflectionContext);
+            return Load(assemblyRef, GetExecutingAssembly(ref stackMark), AssemblyLoadContext.CurrentContextualReflectionContext);
         }
 
-        internal static Assembly Load(AssemblyName assemblyRef, ref StackCrawlMark stackMark, AssemblyLoadContext? assemblyLoadContext)
+        internal static Assembly Load(AssemblyName assemblyRef, RuntimeAssembly requestingAssembly, AssemblyLoadContext? assemblyLoadContext)
         {
             // TODO: pass AssemblyName
-            Assembly? assembly = InternalLoad(assemblyRef.FullName, ref stackMark, assemblyLoadContext != null ? assemblyLoadContext.NativeALC : IntPtr.Zero);
+            Assembly? assembly = InternalLoad(assemblyRef.FullName, new QCallAssembly(ref requestingAssembly), assemblyLoadContext != null ? assemblyLoadContext.NativeALC : IntPtr.Zero);
             if (assembly == null)
                 throw new FileNotFoundException(null, assemblyRef.Name);
             return assembly;
@@ -90,6 +91,6 @@ namespace System.Reflection
         }
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal static extern Assembly InternalLoad(string assemblyName, ref StackCrawlMark stackMark, IntPtr ptrLoadContextBinder);
+        internal static extern Assembly InternalLoad(string assemblyName, QCallAssembly requestingAssembly, IntPtr ptrLoadContextBinder);
     }
 }

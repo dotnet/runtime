@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Reflection.Metadata;
@@ -108,7 +109,9 @@ namespace System.Reflection
             }
             else
             {
-                assembly = RuntimeAssembly.InternalLoad(name, ref Unsafe.NullRef<StackCrawlMark>(),
+                Debug.Assert(_requestingAssembly is RuntimeAssembly or Emit.RuntimeAssemblyBuilder);
+                // Mono AssemblyBuilder is also a RuntimeAssembly, see AssemblyBuilder.Mono.cs
+                assembly = RuntimeAssembly.InternalLoad(name, Unsafe.As<RuntimeAssembly>(_requestingAssembly),
                     AssemblyLoadContext.CurrentContextualReflectionContext, throwOnFileNotFound: _throwOnError);
             }
             return assembly;

@@ -415,7 +415,7 @@ namespace System.Reflection
             try
             {
                 StackCrawlMark unused = default;
-                res = Load(an, ref unused, AssemblyLoadContext.GetLoadContext(assembly));
+                res = Load(an, GetExecutingAssembly(ref unused), AssemblyLoadContext.GetLoadContext(assembly));
             }
             catch
             {
@@ -471,9 +471,9 @@ namespace System.Reflection
             return res;
         }
 
-        internal static RuntimeAssembly? InternalLoad(AssemblyName assemblyRef, ref StackCrawlMark stackMark, AssemblyLoadContext? assemblyLoadContext, bool throwOnFileNotFound)
+        internal static RuntimeAssembly? InternalLoad(AssemblyName assemblyRef, RuntimeAssembly requestingAssembly, AssemblyLoadContext? assemblyLoadContext, bool throwOnFileNotFound)
         {
-            var assembly = (RuntimeAssembly)InternalLoad(assemblyRef.FullName, ref stackMark, assemblyLoadContext != null ? assemblyLoadContext.NativeALC : IntPtr.Zero);
+            var assembly = (RuntimeAssembly)Load(assemblyRef, requestingAssembly, assemblyLoadContext);
             if (assembly == null && throwOnFileNotFound)
                 throw new FileNotFoundException(null, assemblyRef.Name);
             return assembly;
@@ -481,7 +481,7 @@ namespace System.Reflection
 
         internal static RuntimeAssembly InternalLoad(AssemblyName assemblyRef, ref StackCrawlMark stackMark, AssemblyLoadContext? assemblyLoadContext)
         {
-            return InternalLoad(assemblyRef, ref stackMark, assemblyLoadContext, true)!;
+            return InternalLoad(assemblyRef, GetExecutingAssembly(ref stackMark), assemblyLoadContext, true)!;
         }
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
