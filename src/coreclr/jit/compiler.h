@@ -4857,6 +4857,7 @@ protected:
     GenTree* addRangeCheckIfNeeded(
         NamedIntrinsic intrinsic, GenTree* immOp, int immLowerBound, int immUpperBound);
     GenTree* addRangeCheckForHWIntrinsic(GenTree* immOp, int immLowerBound, int immUpperBound);
+    GenTree* gtNewSIMDDivByZeroCheck(GenTree* op, var_types type, CorInfoType simdBaseJitType, unsigned int simdSize);
 
     void getHWIntrinsicImmOps(NamedIntrinsic    intrinsic,
                               CORINFO_SIG_INFO* sig,
@@ -5985,6 +5986,11 @@ public:
 
     // Adds the exception set for the current tree node which is performing a overflow checking operation
     void fgValueNumberAddExceptionSetForOverflow(GenTree* tree);
+
+#if defined(FEATURE_HW_INTRINSICS) && defined(TARGET_XARCH)
+    // Adds the exception set for the current tree node which is performing a bounds check operation
+    void fgValueNumberAddExceptionSetForSIMDDivByZeroCheck(GenTree* tree);
+#endif // defined(FEATURE_HW_INTRINSICS) && defined(TARGET_XARCH)
 
     // Adds the exception set for the current tree node which is performing a bounds check operation
     void fgValueNumberAddExceptionSetForBoundsCheck(GenTree* tree);
@@ -12128,6 +12134,9 @@ public:
             case GT_ARR_ADDR:
             case GT_KEEPALIVE:
             case GT_INC_SATURATE:
+#if defined(TARGET_XARCH) && defined(FEATURE_HW_INTRINSICS)
+            case GT_SIMD_DIV_BY_ZERO_CHECK:
+#endif // defined(TARGET_XARCH) && defined(FEATURE_HW_INTRINSICS)
             {
                 GenTreeUnOp* const unOp = node->AsUnOp();
                 if (unOp->gtOp1 != nullptr)
