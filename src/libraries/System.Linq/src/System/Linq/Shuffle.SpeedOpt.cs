@@ -146,7 +146,7 @@ namespace System.Linq
 
             public override int GetCount(bool onlyIfCheap) =>
                 TryGetNonEnumeratedCount(_source, out int count) ? Math.Min(_takeCount, count) :
-                !onlyIfCheap ? Math.Min(_takeCount, _source.Take(_takeCount).Count()) :
+                !onlyIfCheap ? _source.Take(_takeCount).Count() :
                 -1;
 
             public override TSource? TryGetFirst(out bool found) =>
