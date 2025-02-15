@@ -106,6 +106,7 @@
 #ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
         // Update the write watch table if necessary
         la      t2, g_write_watch_table
+        ld      t2, (t2)
 
         beqz    t2, 2f
         srli    t6, \destReg, 12   // SoftwareWriteWatch::AddressToTableByteIndexShift
@@ -140,6 +141,7 @@
 #ifdef FEATURE_MANUALLY_MANAGED_CARD_BUNDLES
         // Check if we need to update the card bundle table
         la      t2, g_card_bundle_table
+        ld      t2, (t2)
         srli    t6, \destReg, 21
         add     t6, t2, t6
         lb      t2, 0(t6)
