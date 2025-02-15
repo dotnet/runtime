@@ -1,6 +1,6 @@
-if(CLR_CMAKE_TARGET_WIN32)
+if(CLR_CMAKE_TARGET_WIN32 AND FEATURE_EVENT_TRACE)
     add_subdirectory(clretwrc)
-endif(CLR_CMAKE_TARGET_WIN32)
+endif(CLR_CMAKE_TARGET_WIN32 AND FEATURE_EVENT_TRACE)
 if (NOT (CLR_CMAKE_TARGET_WIN32 AND FEATURE_CROSSBITNESS))
     add_subdirectory(mscordbi)
     add_subdirectory(mscordac)

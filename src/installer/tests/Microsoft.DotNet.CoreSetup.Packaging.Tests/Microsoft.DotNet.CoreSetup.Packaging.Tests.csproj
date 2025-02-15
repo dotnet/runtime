@@ -2,14 +2,14 @@
 
   <PropertyGroup>
     <TargetFramework>$(TestInfraTargetFramework)</TargetFramework>
-
     <IsPackable>false</IsPackable>
+    <!-- NuGet warns about a transitive P2P to System.Text.Json that can't be pruned.
+         This is a false positive: https://github.com/NuGet/Home/issues/14103 -->
+    <NoWarn>$(NoWarn);NU1511</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>
     <PackageReference Include="NuGet.Packaging" Version="$(NugetPackagingVersion)" />
-    <!-- Upgrade to a non-vulnerable version of Asn1 - which will be ignored in favor of the framework copy  -->
-    <PackageReference Include="System.Formats.Asn1" Version="$(SystemFormatsAsn1Version)" ExcludeAssets="All" />
   </ItemGroup>
 
   <ItemGroup>

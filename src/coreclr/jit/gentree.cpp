@@ -1344,41 +1344,6 @@ bool CallArg::IsUserArg() const
     }
 }
 
-#ifdef DEBUG
-//---------------------------------------------------------------
-// CheckIsStruct: Verify that the struct ABI information is consistent with the IR node.
-//
-void CallArg::CheckIsStruct()
-{
-    GenTree* node = GetNode();
-    if (varTypeIsStruct(GetSignatureType()))
-    {
-        if (!varTypeIsStruct(node) && !node->OperIs(GT_FIELD_LIST))
-        {
-            // This is the case where we are passing a struct as a primitive type.
-            // On most targets, this is always a single register or slot.
-            // However, on ARM this could be two slots if it is TYP_DOUBLE.
-            bool isPassedAsPrimitiveType =
-                ((AbiInfo.NumRegs == 1) || ((AbiInfo.NumRegs == 0) && (AbiInfo.ByteSize <= TARGET_POINTER_SIZE)));
-#ifdef TARGET_ARM
-            if (!isPassedAsPrimitiveType)
-            {
-                if (node->TypeGet() == TYP_DOUBLE && AbiInfo.NumRegs == 0 && (AbiInfo.GetStackSlotsNumber() == 2))
-                {
-                    isPassedAsPrimitiveType = true;
-                }
-            }
-#endif // TARGET_ARM
-            assert(isPassedAsPrimitiveType);
-        }
-    }
-    else
-    {
-        assert(!varTypeIsStruct(node));
-    }
-}
-#endif
-
 CallArgs::CallArgs()
     : m_head(nullptr)
     , m_lateHead(nullptr)
@@ -18301,7 +18266,7 @@ bool GenTreeIndir::IsAddressNotOnHeap(Compiler* comp)
         return true;
     }
 
-    if (HasBase() && Base()->gtSkipReloadOrCopy()->OperIs(GT_LCL_ADDR))
+    if (HasBase() && !comp->fgAddrCouldBeHeap(Base()->gtSkipReloadOrCopy()))
     {
         return true;
     }
@@ -19887,14 +19852,38 @@ void GenTreeArrAddr::ParseArrayAddress(Compiler* comp, GenTree** pArr, ValueNum*
     ValueNum  vn = comp->GetValueNumStore()->VNLiberalNormalValue(tree->gtVNPair);
     VNFuncApp vnf;
 
+    bool treeIsArrayRef = false;
+
     if (tree->TypeIs(TYP_REF) || comp->GetValueNumStore()->IsVNNewArr(vn, &vnf))
     {
         // This must be the array pointer.
         assert(*pArr == nullptr);
         *pArr = tree;
         assert(inputMul == 1); // Can't multiply the array pointer by anything.
+        treeIsArrayRef = true;
     }
-    else
+    else if (tree->OperIs(GT_LCL_VAR) && tree->TypeIs(TYP_BYREF, TYP_I_IMPL))
+    {
+        // This is sort of like gtGetClassHandle, but that requires TYP_REF
+        //
+        CORINFO_CLASS_HANDLE hnd = comp->lvaGetDesc(tree->AsLclVar())->lvClassHnd;
+
+        if (hnd != NO_CLASS_HANDLE)
+        {
+            DWORD attribs  = comp->info.compCompHnd->getClassAttribs(hnd);
+            treeIsArrayRef = (attribs & CORINFO_FLG_ARRAY) != 0;
+
+            if (treeIsArrayRef)
+            {
+                // This must be the array pointer.
+                assert(*pArr == nullptr);
+                *pArr = tree;
+                assert(inputMul == 1); // Can't multiply the array pointer by anything.
+            }
+        }
+    }
+
+    if (!treeIsArrayRef)
     {
         switch (tree->OperGet())
         {
