@@ -6148,9 +6148,6 @@ public:
 
     PhaseStatus fgExpandStackArrayAllocations();
     bool fgExpandStackArrayAllocation(BasicBlock* pBlock, Statement* stmt, GenTreeCall* call);
-    
-    PhaseStatus fgSplitLdvirtftnIndirectCall();
-    bool fgSplitLdvirtftnIndirectCall(BasicBlock* pBlock, Statement* stmt, GenTreeCall* call);
 
     PhaseStatus fgVNBasedIntrinsicExpansion();
     bool fgVNBasedIntrinsicExpansionForCall(BasicBlock** pBlock, Statement* stmt, GenTreeCall* call);
@@ -6240,6 +6237,8 @@ public:
 
 private:
     FlowEdge** fgGetPredInsertPoint(BasicBlock* blockPred, BasicBlock* newTarget);
+    
+    bool fgSplitLdvirtftnIndirectCalls();
 
 public:
     void fgRedirectTargetEdge(BasicBlock* block, BasicBlock* newTarget);

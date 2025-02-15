@@ -801,9 +801,14 @@ private:
 //
 PhaseStatus Compiler::fgInline()
 {
+    bool madeChanges = false;
+
     if (!opts.OptEnabled(CLFLG_INLINING))
     {
-        return PhaseStatus::MODIFIED_NOTHING;
+        // At least split any ldvirtftn indirect calls before we bail out.
+        // Lowering is not happy about gtCallAddr being a CALL.
+        //
+        return fgSplitLdvirtftnIndirectCalls() ? PhaseStatus::MODIFIED_EVERYTHING : PhaseStatus::MODIFIED_NOTHING;
     }
 
 #ifdef DEBUG
@@ -820,7 +825,6 @@ PhaseStatus Compiler::fgInline()
 
     BasicBlock*                                 block = fgFirstBB;
     SubstitutePlaceholdersAndDevirtualizeWalker walker(this);
-    bool                                        madeChanges = false;
 
     do
     {
@@ -945,6 +949,8 @@ PhaseStatus Compiler::fgInline()
 
     Metrics.InlineCount   = m_inlineStrategy->GetInlineCount();
     Metrics.InlineAttempt = m_inlineStrategy->GetImportCount();
+
+    madeChanges |= fgSplitLdvirtftnIndirectCalls();
 
     return madeChanges ? PhaseStatus::MODIFIED_EVERYTHING : PhaseStatus::MODIFIED_NOTHING;
 }
