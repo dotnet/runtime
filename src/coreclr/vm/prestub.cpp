@@ -827,21 +827,23 @@ PCODE MethodDesc::JitCompileCodeLockedEventWrapper(PrepareCodeConfig* pConfig, J
     else
     {
         SString namespaceOrClassName, methodName, methodSignature;
-
+#ifdef FEATURE_EVENT_TRACE
         ETW::MethodLog::MethodJitting(this,
             pilHeader,
             &namespaceOrClassName,
             &methodName,
             &methodSignature);
+#endif //FEATURE_EVENT_TRACE
 
         pCode = JitCompileCodeLocked(pConfig, pilHeader, pEntry, &sizeOfCode);
-
+#ifdef FEATURE_EVENT_TRACE
         ETW::MethodLog::MethodJitted(this,
             &namespaceOrClassName,
             &methodName,
             &methodSignature,
             pCode,
             pConfig);
+#endif //FEATURE_EVENT_TRACE
     }
 
 #ifdef PROFILING_SUPPORTED

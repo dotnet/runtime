@@ -18,15 +18,15 @@ namespace System.Security.Cryptography.Tests
         public static void EncryptTamperAADDecrypt(int dataLength, int additionalDataLength)
         {
             byte[] additionalData = new byte[additionalDataLength];
-            RandomNumberGenerator.Fill(additionalData);
+            FillRandom(additionalData);
 
             byte[] plaintext = Enumerable.Range(1, dataLength).Select((x) => (byte)x).ToArray();
             byte[] ciphertext = new byte[dataLength];
             byte[] key = new byte[16];
             byte[] nonce = new byte[AesGcm.NonceByteSizes.MinSize];
             byte[] tag = new byte[AesGcm.TagByteSizes.MinSize];
-            RandomNumberGenerator.Fill(key);
-            RandomNumberGenerator.Fill(nonce);
+            FillRandom(key);
+            FillRandom(nonce);
 
             using (var aesGcm = new AesGcm(key, tag.Length))
             {
@@ -50,10 +50,12 @@ namespace System.Security.Cryptography.Tests
         public static void InvalidKeyLength(int keyLength)
         {
             byte[] key = new byte[keyLength];
+#if NET
 #pragma warning disable SYSLIB0053
             Assert.Throws<CryptographicException>(() => new AesGcm(key));
             Assert.Throws<CryptographicException>(() => new AesGcm(key.AsSpan()));
 #pragma warning restore SYSLIB0053
+#endif
             Assert.Throws<CryptographicException>(() => new AesGcm(key, AesGcm.TagByteSizes.MinSize));
             Assert.Throws<CryptographicException>(() => new AesGcm(key.AsSpan(), AesGcm.TagByteSizes.MinSize));
         }
@@ -68,8 +70,8 @@ namespace System.Security.Cryptography.Tests
             byte[] key = new byte[16];
             byte[] nonce = new byte[nonceSize];
             byte[] tag = new byte[AesGcm.TagByteSizes.MinSize];
-            RandomNumberGenerator.Fill(key);
-            RandomNumberGenerator.Fill(nonce);
+            FillRandom(key);
+            FillRandom(nonce);
 
             using (var aesGcm = new AesGcm(key, AesGcm.TagByteSizes.MinSize))
             {
@@ -87,8 +89,8 @@ namespace System.Security.Cryptography.Tests
             byte[] key = new byte[16];
             byte[] nonce = new byte[nonceSize];
             byte[] tag = new byte[AesGcm.TagByteSizes.MinSize];
-            RandomNumberGenerator.Fill(key);
-            RandomNumberGenerator.Fill(nonce);
+            FillRandom(key);
+            FillRandom(nonce);
 
             using (var aesGcm = new AesGcm(key, AesGcm.TagByteSizes.MinSize))
             {
@@ -100,6 +102,7 @@ namespace System.Security.Cryptography.Tests
             }
         }
 
+#if NET
         [Theory]
         [MemberData(nameof(GetInvalidTagSizes))]
         public static void InvalidTagSizeForUnspecifiedRequiredTag(int tagSize)
@@ -110,8 +113,8 @@ namespace System.Security.Cryptography.Tests
             byte[] key = new byte[16];
             byte[] nonce = new byte[12];
             byte[] tag = new byte[tagSize];
-            RandomNumberGenerator.Fill(key);
-            RandomNumberGenerator.Fill(nonce);
+            FillRandom(key);
+            FillRandom(nonce);
 
 #pragma warning disable SYSLIB0053
             using (var aesGcm = new AesGcm(key))
@@ -121,6 +124,7 @@ namespace System.Security.Cryptography.Tests
                 Assert.Throws<ArgumentException>("tag", () => aesGcm.Decrypt(nonce, ciphertext, tag, plaintext));
             }
         }
+#endif
 
         [Theory]
         [MemberData(nameof(GetInvalidTagSizes))]
@@ -141,8 +145,8 @@ namespace System.Security.Cryptography.Tests
             byte[] key = new byte[16];
             byte[] nonce = new byte[12];
             byte[] tag = new byte[tagSize];
-            RandomNumberGenerator.Fill(key);
-            RandomNumberGenerator.Fill(nonce);
+            FillRandom(key);
+            FillRandom(nonce);
 
             using (var aesGcm = new AesGcm(key, tagSize))
             {
@@ -254,9 +258,11 @@ namespace System.Security.Cryptography.Tests
         [Fact]
         public static void NullKey()
         {
+#if NET
 #pragma warning disable SYSLIB0053
             Assert.Throws<ArgumentNullException>(() => new AesGcm((byte[])null));
 #pragma warning restore SYSLIB0053
+#endif
             Assert.Throws<ArgumentNullException>(() => new AesGcm((byte[])null, AesGcm.TagByteSizes.MinSize));
         }
 
@@ -328,7 +334,7 @@ namespace System.Security.Cryptography.Tests
             byte[] originalPlaintext = new byte[] { 1, 2, 8, 12, 16, 99, 0 };
             byte[] data = (byte[])originalPlaintext.Clone();
             byte[] tag = new byte[16];
-            RandomNumberGenerator.Fill(nonce);
+            FillRandom(nonce);
 
             using (var aesGcm = new AesGcm(key, tag.Length))
             {
@@ -348,7 +354,7 @@ namespace System.Security.Cryptography.Tests
             byte[] originalPlaintext = new byte[] { 1, 2, 8, 12, 16, 99, 0 };
             byte[] data = (byte[])originalPlaintext.Clone();
             byte[] tag = new byte[16];
-            RandomNumberGenerator.Fill(nonce);
+            FillRandom(nonce);
 
             using (var aesGcm = new AesGcm(key, tag.Length))
             {
@@ -363,6 +369,7 @@ namespace System.Security.Cryptography.Tests
             }
         }
 
+#if NET
         [Theory]
         [MemberData(nameof(GetNistGcmTestCases))]
         public static void AesGcmNistTestsUnspecifiedTagSize(AEADTest testCase)
@@ -398,6 +405,7 @@ namespace System.Security.Cryptography.Tests
                 }
             }
         }
+#endif
 
         [Theory]
         [MemberData(nameof(GetNistGcmTestCases))]
@@ -445,7 +453,7 @@ namespace System.Security.Cryptography.Tests
                 tag[0] ^= 1;
 
                 byte[] plaintext = new byte[testCase.Plaintext.Length];
-                RandomNumberGenerator.Fill(plaintext);
+                FillRandom(plaintext);
                 Assert.Throws<AuthenticationTagMismatchException>(
                     () => aesGcm.Decrypt(testCase.Nonce, ciphertext, tag, plaintext, testCase.AssociatedData));
                 Assert.Equal(new byte[plaintext.Length], plaintext);
@@ -471,7 +479,9 @@ namespace System.Security.Cryptography.Tests
 
                 ciphertext[0] ^= 1;
 
-                byte[] plaintext = RandomNumberGenerator.GetBytes(testCase.Plaintext.Length);
+                byte[] plaintext = new byte[testCase.Plaintext.Length];
+                FillRandom(plaintext);
+
                 Assert.Throws<AuthenticationTagMismatchException>(
                     () => aesGcm.Decrypt(testCase.Nonce, ciphertext, tag, plaintext, testCase.AssociatedData));
                 AssertExtensions.FilledWith<byte>(0, plaintext);
@@ -962,6 +972,20 @@ namespace System.Security.Cryptography.Tests
                 Tag = "4ce8aff15debc1b23c50665b9c".HexToByteArray(),
             },
         };
+
+        private static void FillRandom(Span<byte> destination)
+        {
+#if NET
+            RandomNumberGenerator.Fill(destination);
+#else
+            using (RandomNumberGenerator generator = RandomNumberGenerator.Create())
+            {
+                byte[] bytes = new byte[destination.Length];
+                generator.GetBytes(bytes);
+                bytes.AsSpan().CopyTo(destination);
+            }
+#endif
+        }
     }
 
     public class AesGcmIsSupportedTests
@@ -971,12 +995,24 @@ namespace System.Security.Cryptography.Tests
         [ConditionalFact(nameof(RuntimeSaysIsNotSupported))]
         public static void CtorThrowsPNSEIfNotSupported()
         {
-            byte[] key = RandomNumberGenerator.GetBytes(256 / 8);
+            byte[] key;
+#if NET
+            key = RandomNumberGenerator.GetBytes(256 / 8);
+#else
+            key = new byte[256 / 8];
 
+            using (RandomNumberGenerator generator = RandomNumberGenerator.Create())
+            {
+                generator.GetBytes(key);
+            }
+#endif
+
+#if NET
 #pragma warning disable SYSLIB0053
             Assert.Throws<PlatformNotSupportedException>(() => new AesGcm(key));
             Assert.Throws<PlatformNotSupportedException>(() => new AesGcm(key.AsSpan()));
 #pragma warning restore SYSLIB0053
+#endif
 
             Assert.Throws<PlatformNotSupportedException>(() => new AesGcm(key, AesGcm.TagByteSizes.MinSize));
             Assert.Throws<PlatformNotSupportedException>(() => new AesGcm(key.AsSpan(), AesGcm.TagByteSizes.MinSize));

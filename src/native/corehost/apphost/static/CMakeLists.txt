@@ -190,7 +190,13 @@ else()
         coreclrpal_dac
         corguids
         dbgutil
-        eventprovider
+    )
+    if (FEATURE_EVENT_TRACE)
+        LIST(APPEND NATIVE_LIBS
+            eventprovider
+        )
+    endif(FEATURE_EVENT_TRACE) 
+    LIST(APPEND NATIVE_LIBS
         nativeresourcestring
     )
 

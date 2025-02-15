@@ -1583,36 +1583,34 @@ GenTree* Lowering::NewPutArg(GenTreeCall* call, GenTree* arg, CallArg* callArg, 
     assert(arg != nullptr);
     assert(callArg != nullptr);
 
-    GenTree* putArg = nullptr;
-
-    bool isOnStack = (callArg->AbiInfo.GetRegNum() == REG_STK);
+    GenTree*                     putArg  = nullptr;
+    const ABIPassingInformation& abiInfo = callArg->NewAbiInfo;
 
 #if FEATURE_ARG_SPLIT
     // Struct can be split into register(s) and stack on ARM
-    if (compFeatureArgSplit() && callArg->AbiInfo.IsSplit())
+    if (compFeatureArgSplit() && callArg->NewAbiInfo.IsSplitAcrossRegistersAndStack())
     {
         assert(arg->OperIs(GT_BLK, GT_FIELD_LIST) || arg->OperIsLocalRead());
-        // TODO: Need to check correctness for FastTailCall
-        if (call->IsFastTailCall())
+        assert(!call->IsFastTailCall());
+
+#ifdef DEBUG
+        for (unsigned i = 0; i < abiInfo.NumSegments; i++)
         {
-#ifdef TARGET_ARM
-            NYI_ARM("lower: struct argument by fast tail call");
-#endif // TARGET_ARM
+            assert((i < abiInfo.NumSegments - 1) == abiInfo.Segment(i).IsPassedInRegister());
         }
-
-        const unsigned slotNumber           = callArg->AbiInfo.ByteOffset / TARGET_POINTER_SIZE;
-        const bool     putInIncomingArgArea = call->IsFastTailCall();
-
-        putArg = new (comp, GT_PUTARG_SPLIT) GenTreePutArgSplit(arg, callArg->AbiInfo.ByteOffset,
-#ifdef FEATURE_PUT_STRUCT_ARG_STK
-                                                                callArg->AbiInfo.GetStackByteSize(),
 #endif
-                                                                callArg->AbiInfo.NumRegs, call, putInIncomingArgArea);
+
+        unsigned                 numRegs  = abiInfo.NumSegments - 1;
+        const ABIPassingSegment& stackSeg = abiInfo.Segment(abiInfo.NumSegments - 1);
+
+        putArg = new (comp, GT_PUTARG_SPLIT)
+            GenTreePutArgSplit(arg, stackSeg.GetStackOffset(), stackSeg.GetStackSize(), abiInfo.NumSegments - 1, call,
+                               /* putInIncomingArgArea */ false);
 
         GenTreePutArgSplit* argSplit = putArg->AsPutArgSplit();
-        for (unsigned regIndex = 0; regIndex < callArg->AbiInfo.NumRegs; regIndex++)
+        for (unsigned regIndex = 0; regIndex < numRegs; regIndex++)
         {
-            argSplit->SetRegNumByIdx(callArg->AbiInfo.GetRegNum(regIndex), regIndex);
+            argSplit->SetRegNumByIdx(abiInfo.Segment(regIndex).GetRegister(), regIndex);
         }
 
         if (arg->OperIs(GT_FIELD_LIST))
@@ -1620,7 +1618,7 @@ GenTree* Lowering::NewPutArg(GenTreeCall* call, GenTree* arg, CallArg* callArg, 
             unsigned regIndex = 0;
             for (GenTreeFieldList::Use& use : arg->AsFieldList()->Uses())
             {
-                if (regIndex >= callArg->AbiInfo.NumRegs)
+                if (regIndex >= numRegs)
                 {
                     break;
                 }
@@ -1642,7 +1640,7 @@ GenTree* Lowering::NewPutArg(GenTreeCall* call, GenTree* arg, CallArg* callArg, 
             ClassLayout* layout = arg->GetLayout(comp);
 
             // Set type of registers
-            for (unsigned index = 0; index < callArg->AbiInfo.NumRegs; index++)
+            for (unsigned index = 0; index < numRegs; index++)
             {
                 argSplit->m_regType[index] = layout->GetGCPtrType(index);
             }
@@ -1651,15 +1649,15 @@ GenTree* Lowering::NewPutArg(GenTreeCall* call, GenTree* arg, CallArg* callArg, 
     else
 #endif // FEATURE_ARG_SPLIT
     {
-        if (!isOnStack)
+        if (abiInfo.HasAnyRegisterSegment())
         {
 #if FEATURE_MULTIREG_ARGS
-            if ((callArg->AbiInfo.NumRegs > 1) && (arg->OperGet() == GT_FIELD_LIST))
+            if ((abiInfo.NumSegments > 1) && arg->OperIs(GT_FIELD_LIST))
             {
                 unsigned int regIndex = 0;
                 for (GenTreeFieldList::Use& use : arg->AsFieldList()->Uses())
                 {
-                    regNumber argReg = callArg->AbiInfo.GetRegNum(regIndex);
+                    regNumber argReg = abiInfo.Segment(regIndex).GetRegister();
                     GenTree*  curOp  = use.GetNode();
                     var_types curTyp = curOp->TypeGet();
 
@@ -1678,74 +1676,27 @@ GenTree* Lowering::NewPutArg(GenTreeCall* call, GenTree* arg, CallArg* callArg, 
             else
 #endif // FEATURE_MULTIREG_ARGS
             {
-                putArg = comp->gtNewPutArgReg(type, arg, callArg->AbiInfo.GetRegNum());
+                assert(abiInfo.HasExactlyOneRegisterSegment());
+                putArg = comp->gtNewPutArgReg(type, arg, abiInfo.Segment(0).GetRegister());
             }
         }
         else
         {
-            // Mark this one as tail call arg if it is a fast tail call.
-            // This provides the info to put this argument in in-coming arg area slot
-            // instead of in out-going arg area slot.
-
-#ifdef DEBUG
-            // Make sure state is correct. The PUTARG_STK has TYP_VOID, as it doesn't produce
-            // a result. So the type of its operand must be the correct type to push on the stack.
-            callArg->CheckIsStruct();
-#endif
-
-            if ((arg->OperGet() != GT_FIELD_LIST))
-            {
-#if defined(FEATURE_SIMD) && defined(FEATURE_PUT_STRUCT_ARG_STK)
-                if (type == TYP_SIMD12)
-                {
-#if !defined(TARGET_64BIT)
-                    assert(callArg->AbiInfo.ByteSize == 12);
-#else  // TARGET_64BIT
-                    if (compAppleArm64Abi())
-                    {
-                        assert(callArg->AbiInfo.ByteSize == 12);
-                    }
-                    else
-                    {
-                        assert(callArg->AbiInfo.ByteSize == 16);
-                    }
-#endif // TARGET_64BIT
-                }
-                else
-#endif // defined(FEATURE_SIMD) && defined(FEATURE_PUT_STRUCT_ARG_STK)
-                {
-                    assert(genActualType(arg->TypeGet()) == type);
-                }
-            }
-            const unsigned slotNumber           = callArg->AbiInfo.ByteOffset / TARGET_POINTER_SIZE;
-            const bool     putInIncomingArgArea = call->IsFastTailCall();
-
-            putArg =
-                new (comp, GT_PUTARG_STK) GenTreePutArgStk(GT_PUTARG_STK, TYP_VOID, arg, callArg->AbiInfo.ByteOffset,
-#ifdef FEATURE_PUT_STRUCT_ARG_STK
-                                                           callArg->AbiInfo.GetStackByteSize(),
-#endif
-                                                           call, putInIncomingArgArea);
-
-#if defined(DEBUG) && defined(FEATURE_PUT_STRUCT_ARG_STK)
-            if (varTypeIsStruct(callArg->GetSignatureType()))
-            {
-                // We use GT_BLK only for non-SIMD struct arguments.
-                if (arg->OperIs(GT_BLK))
-                {
-                    assert(!varTypeIsSIMD(arg));
-                }
-                else if (!arg->TypeIs(TYP_STRUCT))
-                {
-#ifdef TARGET_ARM
-                    assert((callArg->AbiInfo.GetStackSlotsNumber() == 1) ||
-                           ((arg->TypeGet() == TYP_DOUBLE) && (callArg->AbiInfo.GetStackSlotsNumber() == 2)));
+#ifdef FEATURE_SIMD
+            assert(arg->OperIsFieldList() || (genActualType(arg) == type) ||
+                   (arg->TypeIs(TYP_SIMD16) && (type == TYP_SIMD12)));
 #else
-                    assert(varTypeIsSIMD(arg) || (callArg->AbiInfo.GetStackSlotsNumber() == 1));
+            assert(arg->OperIsFieldList() || (genActualType(arg) == type));
 #endif
-                }
-            }
-#endif // defined(DEBUG) && defined(FEATURE_PUT_STRUCT_ARG_STK)
+            assert(abiInfo.NumSegments == 1);
+            const ABIPassingSegment& stackSeg             = abiInfo.Segment(0);
+            const bool               putInIncomingArgArea = call->IsFastTailCall();
+
+            putArg = new (comp, GT_PUTARG_STK) GenTreePutArgStk(GT_PUTARG_STK, TYP_VOID, arg, stackSeg.GetStackOffset(),
+#ifdef FEATURE_PUT_STRUCT_ARG_STK
+                                                                stackSeg.GetStackSize(),
+#endif
+                                                                call, putInIncomingArgArea);
         }
     }
 
@@ -1819,7 +1770,8 @@ void Lowering::LowerArg(GenTreeCall* call, CallArg* callArg, bool late)
     }
 #elif defined(TARGET_AMD64)
     // TYP_SIMD8 parameters that are passed as longs
-    if (type == TYP_SIMD8 && genIsValidIntReg(callArg->AbiInfo.GetRegNum()))
+    if (type == TYP_SIMD8 && callArg->NewAbiInfo.HasExactlyOneRegisterSegment() &&
+        genIsValidIntReg(callArg->NewAbiInfo.Segment(0).GetRegister()))
     {
         GenTree* bitcast = comp->gtNewBitCastNode(TYP_LONG, arg);
         BlockRange().InsertAfter(arg, bitcast);
