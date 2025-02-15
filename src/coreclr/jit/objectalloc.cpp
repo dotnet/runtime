@@ -84,8 +84,6 @@ PhaseStatus ObjectAllocator::DoPhase()
         assert(enabled);
         ComputeStackObjectPointers(&m_bitVecTraits);
         RewriteUses();
-
-        printf("\n**** Stack allocation in 0x%08x %s\n", comp->info.compMethodHash(), comp->info.compFullName);
     }
 
     // This phase always changes the IR. It may also modify the flow graph.
