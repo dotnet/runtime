@@ -589,7 +589,6 @@ private:
                 }
 #endif // DEBUG
 
-                assert((call->gtCallMoreFlags & GTF_CALL_M_HAS_LATE_DEVIRT_INFO) != 0);
                 CORINFO_CONTEXT_HANDLE context                = call->gtLateDevirtualizationInfo->exactContextHnd;
                 InlineContext*         inlinersContext        = call->gtLateDevirtualizationInfo->inlinersContext;
                 CORINFO_METHOD_HANDLE  method                 = call->gtCallMethHnd;
