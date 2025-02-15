@@ -258,10 +258,11 @@ C_FUNC(\Name):
     PROLOG_SAVE_REG_PAIR   s5, s6, 64
     PROLOG_SAVE_REG_PAIR   s7, s8, 80
     PROLOG_SAVE_REG_PAIR   s9, s10, 96
+    PROLOG_SAVE_REG        s11, 112
 
     // Save the value of SP before stack allocation to the last slot in the frame (slot #15)
     add \trashReg, sp, 128
-    sd \trashReg, 112(sp)
+    sd \trashReg, 120(sp)
 
     // Record the bitmask of saved registers in the frame (slot #3)
     li \trashReg, DEFAULT_FRAME_SAVE_FLAGS
@@ -277,6 +278,7 @@ C_FUNC(\Name):
     EPILOG_RESTORE_REG_PAIR   s5, s6, 64
     EPILOG_RESTORE_REG_PAIR   s7, s8, 80
     EPILOG_RESTORE_REG_PAIR   s9, s10, 96
+    EPILOG_RESTORE_REG        s11, 112
     EPILOG_RESTORE_REG_PAIR_INDEXED   s0, ra, 128
 .endm
 
