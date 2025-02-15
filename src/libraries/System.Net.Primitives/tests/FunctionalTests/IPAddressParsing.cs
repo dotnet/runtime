@@ -643,5 +643,12 @@ namespace System.Net.Primitives.Functional.Tests
             Assert.Equal(expectedValid, IPAddress.IsValid(address));
             Assert.Equal(expectedValid, IPAddress.IsValidUtf8(Encoding.UTF8.GetBytes(address)));
         }
+
+        [Fact]
+        public void _OmgOmg()
+        {
+            bool valid = IPAddress.IsValid("0.url1.com");
+            Assert.False(valid);
+        }
     }
 }
