@@ -20,6 +20,7 @@ namespace System.Reflection
         private bool _extensibleParser;
         private Assembly? _topLevelAssembly;
         private Assembly? _requestingAssembly;
+        private AssemblyLoadContext? _loadContext;
 
         [RequiresUnreferencedCode("The type might be removed")]
         internal static Type? GetType(
@@ -65,7 +66,8 @@ namespace System.Reflection
                 _throwOnError = throwOnError,
                 _ignoreCase = ignoreCase,
                 _extensibleParser = extensibleParser,
-                _requestingAssembly = requestingAssembly
+                _requestingAssembly = requestingAssembly,
+                _loadContext = AssemblyLoadContext.CurrentContextualReflectionContext,
             }.Resolve(parsed);
         }
 
@@ -92,7 +94,8 @@ namespace System.Reflection
                 _throwOnError = throwOnError,
                 _ignoreCase = ignoreCase,
                 _topLevelAssembly = topLevelAssembly,
-                _requestingAssembly = topLevelAssembly
+                _requestingAssembly = topLevelAssembly,
+                _loadContext = AssemblyLoadContext.CurrentContextualReflectionContext,
             }.Resolve(parsed);
         }
 
@@ -112,7 +115,7 @@ namespace System.Reflection
                 Debug.Assert(_requestingAssembly is RuntimeAssembly or Emit.RuntimeAssemblyBuilder);
                 // Mono AssemblyBuilder is also a RuntimeAssembly, see AssemblyBuilder.Mono.cs
                 assembly = RuntimeAssembly.InternalLoad(name, Unsafe.As<RuntimeAssembly>(_requestingAssembly),
-                    AssemblyLoadContext.CurrentContextualReflectionContext, throwOnFileNotFound: _throwOnError);
+                    _loadContext, throwOnFileNotFound: _throwOnError);
             }
             return assembly;
         }
