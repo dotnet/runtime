@@ -72,7 +72,7 @@
                          ILCompilerPackNamePattern="runtime.**RID**.Microsoft.DotNet.ILCompiler"
                          TargetFramework="$(NetCoreAppCurrent)"
                          ILCompilerPackVersion="$(ProductVersion)"
-                         ILCompilerRuntimeIdentifiers="linux-musl-x64;linux-x64;win-x64;linux-arm;linux-arm64;linux-musl-arm;linux-musl-arm64;osx-arm64;osx-x64;win-arm64;win-x86"
+                         ILCompilerRuntimeIdentifiers="linux-musl-x64;linux-x64;win-x64;linux-arm;linux-arm64;linux-musl-arm;linux-musl-arm64;osx-arm64;osx-x64;win-arm64;win-x86;linux-riscv64;linux-musl-riscv64;linux-loongarch64;linux-musl-loongarch64"
                          Condition="'$(UseLocalILCompilerPack)' == 'true' and '@(KnownILCompilerPack->AnyHaveMetadataValue('TargetFramework', '$(NetCoreAppCurrent)'))' != 'true'" />
     <KnownCrossgen2Pack Include="$(LocalFrameworkOverrideName).Crossgen2"
                         TargetFramework="$(NetCoreAppCurrent)"
@@ -163,8 +163,10 @@
           Condition="'$(UseLocalTargetingRuntimePack)' == 'true'"
           AfterTargets="ResolveTargetingPackAssets">
     <ItemGroup>
-      <RuntimeFramework Version="$(ProductVersion)"
-                        Condition="'%(RuntimeFramework.FrameworkName)' == '$(LocalFrameworkOverrideName)'" />
+      <RuntimeFramework Condition="'%(RuntimeFramework.FrameworkName)' == '$(LocalFrameworkOverrideName)'">
+        <Version Condition="'$(StageTwoBuild)' != 'true'">$(ProductVersion)</Version>
+        <Version Condition="'$(StageTwoBuild)' == 'true'">$(BundledNETCoreAppPackageVersion)</Version>
+      </RuntimeFramework>
     </ItemGroup>
   </Target>
 </Project>

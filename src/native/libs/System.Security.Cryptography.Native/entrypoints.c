@@ -5,6 +5,7 @@
 
 // Include System.Security.Cryptography.Native headers
 #include "openssl.h"
+#include "memory_debug.h"
 #include "pal_asn1.h"
 #include "pal_bignum.h"
 #include "pal_bio.h"
@@ -188,6 +189,9 @@ static const Entry s_cryptoNative[] =
     DllImportEntry(CryptoNative_GetECKeyParameters)
     DllImportEntry(CryptoNative_GetMaxMdSize)
     DllImportEntry(CryptoNative_GetMemoryBioSize)
+    DllImportEntry(CryptoNative_GetMemoryUse)
+    DllImportEntry(CryptoNative_EnableMemoryTracking)
+    DllImportEntry(CryptoNative_ForEachTrackedAllocation)
     DllImportEntry(CryptoNative_GetObjectDefinitionByName)
     DllImportEntry(CryptoNative_GetOcspRequestDerSize)
     DllImportEntry(CryptoNative_GetPkcs7Certificates)

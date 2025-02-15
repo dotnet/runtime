@@ -70,6 +70,9 @@ if (MSVC)
   add_compile_options($<$<COMPILE_LANGUAGE:CXX>:$<TARGET_PROPERTY:CLR_EH_OPTION>>)
   add_link_options($<$<BOOL:$<TARGET_PROPERTY:CLR_CONTROL_FLOW_GUARD>>:/guard:cf>)
 
+  # Load all imported DLLs from the System32 directory.
+  add_linker_flag(/DEPENDENTLOADFLAG:0x800)
+
   # Linker flags
   #
   set (WINDOWS_SUBSYSTEM_VERSION 6.01)
@@ -127,17 +130,13 @@ if (MSVC)
   add_linker_flag(/OPT:NOICF CHECKED)
 
   # Release build specific flags
-  add_linker_flag(/LTCG RELEASE)
   add_linker_flag(/OPT:REF RELEASE)
   add_linker_flag(/OPT:ICF RELEASE)
   add_linker_flag(/INCREMENTAL:NO RELEASE)
-  set(CMAKE_STATIC_LINKER_FLAGS_RELEASE "${CMAKE_STATIC_LINKER_FLAGS_RELEASE} /LTCG")
 
   # ReleaseWithDebugInfo build specific flags
-  add_linker_flag(/LTCG RELWITHDEBINFO)
   add_linker_flag(/OPT:REF RELWITHDEBINFO)
   add_linker_flag(/OPT:ICF RELWITHDEBINFO)
-  set(CMAKE_STATIC_LINKER_FLAGS_RELWITHDEBINFO "${CMAKE_STATIC_LINKER_FLAGS_RELWITHDEBINFO} /LTCG")
 
 elseif (CLR_CMAKE_HOST_UNIX)
   # Set the values to display when interactively configuring CMAKE_BUILD_TYPE
