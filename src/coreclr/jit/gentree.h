@@ -4857,14 +4857,6 @@ public:
 
 #ifdef DEBUG
     void Dump(Compiler* comp);
-    // Check that the value of 'AbiInfo.IsStruct' is consistent.
-    // A struct arg must be one of the following:
-    // - A node of struct type,
-    // - A GT_FIELD_LIST, or
-    // - A node of a scalar type, passed in a single register or slot
-    //   (or two slots in the case of a struct pass on the stack as TYP_DOUBLE).
-    //
-    void CheckIsStruct();
 #endif
 };
 
@@ -9523,7 +9515,71 @@ enum insCflags : unsigned
     INS_FLAGS_NZC,
     INS_FLAGS_NZCV,
 };
+#elif defined(TARGET_XARCH)
+enum insCflags : unsigned
+{
+    INS_FLAGS_NONE = 0x0,
+    INS_FLAGS_CF   = 0x1,
+    INS_FLAGS_ZF   = 0x2,
+    INS_FLAGS_SF   = 0x4,
+    INS_FLAGS_OF   = 0x8
+};
 
+// todo-apx-xarch : this data structure might not be necessary, but nice to have the CC
+// encoded somewhere
+enum insCC : unsigned
+{
+    INS_CC_O = 0x0, // OF = 1
+
+    INS_CC_NO = 0x1, // OF = 0
+
+    INS_CC_B   = 0x2, // CF = 1
+    INS_CC_C   = 0x2, // CF = 1
+    INS_CC_NAE = 0x2, // CF = 1
+
+    INS_CC_NB = 0x3, // CF = 0
+    INS_CC_NC = 0x3, // CF = 0
+    INS_CC_AE = 0x3, // CF = 0
+
+    INS_CC_E = 0x4, // ZF = 1
+    INS_CC_Z = 0x4, // ZF = 1
+
+    INS_CC_NE = 0x5, // ZF = 0
+    INS_CC_NZ = 0x5, // ZF = 0
+
+    INS_CC_BE = 0x6, // (CF OR ZF) = 1
+    INS_CC_NA = 0x6, // (CF OR ZF) = 1
+
+    INS_CC_NBE = 0x7, // (CF OR ZF) = 0
+    INS_CC_A   = 0x7, // (CF OR ZF) = 0
+
+    INS_CC_S = 0x8, // (SF = 1)
+
+    INS_CC_NS = 0x9, // (SF = 0)
+
+    // no parity flag in ccmp/ctest
+
+    // 0b1010 special always evals to true
+    INS_CC_TRUE = 0xA,
+
+    // 0b1011 special always evals to false
+    INS_CC_FALSE = 0xB,
+
+    INS_CC_L   = 0xC, // (SF XOR OF) = 1
+    INS_CC_NGE = 0xC, // (SF XOR OF) = 1
+
+    INS_CC_NL = 0xD, // (SF XOR OF) = 0
+    INS_CC_GE = 0xD, // (SF XOR OF) = 0
+
+    INS_CC_LE = 0xE, // (SF XOR OF) OR ZF) = 1
+    INS_CC_NG = 0xE, // (SF XOR OF) OR ZF) = 1
+
+    INS_CC_NLE = 0xF, // (SF XOR OF) OR ZF) = 0
+    INS_CC_G   = 0xF, // (SF XOR OF) OR ZF) = 0
+};
+#endif
+
+#if defined(TARGET_ARM64)
 struct GenTreeCCMP final : public GenTreeOpCC
 {
     insCflags gtFlagsVal;
