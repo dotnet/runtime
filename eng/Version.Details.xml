@@ -376,17 +376,17 @@
       <Uri>https://github.com/dotnet/runtime-assets</Uri>
       <Sha>5738defa642df0ca3df1d683d40e390f20b9e04c</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.Net.Compilers.Toolset" Version="4.14.0-2.25113.11">
+    <Dependency Name="Microsoft.Net.Compilers.Toolset" Version="4.14.0-2.25114.10">
       <Uri>https://github.com/dotnet/roslyn</Uri>
-      <Sha>6b9b9580217099b53bcb64ad58be4eed8a6018e9</Sha>
+      <Sha>ad54fbc9cd5a4305b9da662687cb015a46d19277</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.CodeAnalysis" Version="4.14.0-2.25113.11">
+    <Dependency Name="Microsoft.CodeAnalysis" Version="4.14.0-2.25114.10">
       <Uri>https://github.com/dotnet/roslyn</Uri>
-      <Sha>6b9b9580217099b53bcb64ad58be4eed8a6018e9</Sha>
+      <Sha>ad54fbc9cd5a4305b9da662687cb015a46d19277</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.CodeAnalysis.CSharp" Version="4.14.0-2.25113.11">
+    <Dependency Name="Microsoft.CodeAnalysis.CSharp" Version="4.14.0-2.25114.10">
       <Uri>https://github.com/dotnet/roslyn</Uri>
-      <Sha>6b9b9580217099b53bcb64ad58be4eed8a6018e9</Sha>
+      <Sha>ad54fbc9cd5a4305b9da662687cb015a46d19277</Sha>
     </Dependency>
     <Dependency Name="Microsoft.CodeAnalysis.Analyzers" Version="3.12.0-beta1.25081.1">
       <Uri>https://github.com/dotnet/roslyn-analyzers</Uri>
@@ -397,9 +397,9 @@
       <Sha>8fe7aeb135c64e095f43292c427453858d937184</Sha>
     </Dependency>
     <!-- Intermediate is necessary for source build. -->
-    <Dependency Name="Microsoft.SourceBuild.Intermediate.roslyn" Version="4.14.0-2.25113.11">
+    <Dependency Name="Microsoft.SourceBuild.Intermediate.roslyn" Version="4.14.0-2.25114.10">
       <Uri>https://github.com/dotnet/roslyn</Uri>
-      <Sha>6b9b9580217099b53bcb64ad58be4eed8a6018e9</Sha>
+      <Sha>ad54fbc9cd5a4305b9da662687cb015a46d19277</Sha>
       <SourceBuild RepoName="roslyn" ManagedOnly="true" />
     </Dependency>
     <Dependency Name="Microsoft.DotNet.ApiCompat.Task" Version="10.0.100-preview.2.25108.4">
