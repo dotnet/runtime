@@ -24,7 +24,11 @@
 #include <emscripten/threading.h>
 #include <mono/metadata/threads-types.h>
 #endif
-
+#else
+void
+wasm_atomic_fence (void)
+{
+}
 #endif
 
 uintptr_t get_wasm_stack_high(void);
@@ -311,6 +315,9 @@ mono_threads_platform_in_critical_region (THREAD_INFO_TYPE *info)
 void
 mono_memory_barrier_process_wide (void)
 {
+#ifndef DISABLE_THREADS
+	mono_memory_barrier ();
+#endif
 }
 
 #ifdef HOST_BROWSER

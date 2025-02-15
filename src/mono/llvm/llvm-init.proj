@@ -13,7 +13,6 @@
     <MonoLLVMToolsVersion Condition="'$(MonoLLVMHostOS)' == 'linux-musl'">$(runtimelinuxmuslx64MicrosoftNETCoreRuntimeMonoLLVMToolsVersion)</MonoLLVMToolsVersion>
     <MonoLLVMToolsVersion Condition="'$(MonoLLVMHostOS)' == 'win'">$(runtimewinx64MicrosoftNETCoreRuntimeMonoLLVMToolsVersion)</MonoLLVMToolsVersion>
     <MonoLLVMToolsVersion Condition="'$(MonoLLVMHostOS)' == 'osx'">$(runtimeosxx64MicrosoftNETCoreRuntimeMonoLLVMToolsVersion)</MonoLLVMToolsVersion>
-    <MonoLLVMSDKDebugSuffix Condition="'$(MonoLLVMHostOS)' == 'win' and '$(Configuration)' == 'Debug'" >.Debug</MonoLLVMSDKDebugSuffix>
   </PropertyGroup>
 
   <ItemGroup>

@@ -39,6 +39,7 @@ export function mono_wasm_start_deputy_thread_async () {
                     }
                 });
 
+                forceThreadMemoryViewRefresh();
                 await start_runtime();
 
                 postMessageToMain({
