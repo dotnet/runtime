@@ -775,7 +775,7 @@ PhaseStatus Compiler::fgPostImportationCleanup()
 }
 
 //------------------------------------------------------------------------------
-// fgSplitLdvirtftnIndirectCalls : split ldvirtftn indirect call
+// fgSplitLdvirtftnIndirectCalls : Split ldvirtftn indirect calls
 //
 bool Compiler::fgSplitLdvirtftnIndirectCalls()
 {
@@ -815,7 +815,13 @@ bool Compiler::fgSplitLdvirtftnIndirectCalls()
             {
                 GenTreeCall* const call = tree->AsCall();
                 if (call->gtCallType == CT_INDIRECT &&
-                    call->gtCallAddr->IsHelperCall(m_compiler, CORINFO_HELP_VIRTUAL_FUNC_PTR))
+                    (call->gtCallAddr->IsHelperCall(m_compiler, CORINFO_HELP_VIRTUAL_FUNC_PTR) ||
+                     call->gtCallAddr->IsHelperCall(m_compiler, CORINFO_HELP_GVMLOOKUP_FOR_SLOT)
+#ifdef FEATURE_READYTORUN
+                     || call->gtCallAddr->IsHelperCall(m_compiler, CORINFO_HELP_READYTORUN_VIRTUAL_FUNC_PTR) ||
+                     call->gtCallAddr->IsHelperCall(m_compiler, CORINFO_HELP_READYTORUN_GENERIC_HANDLE)
+#endif // FEATURE_READYTORUN
+                         ))
                 {
                     Statement* newStmt = nullptr;
                     GenTree**  callUse = nullptr;
