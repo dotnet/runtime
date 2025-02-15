@@ -38,7 +38,7 @@ namespace System
         {
             if (len != 0)
             {
-                SpanHelpers.Memmove(ref *(byte*)dest, ref Unsafe.As<char, byte>(ref src.GetRawStringData()), (nuint)len);
+                SpanHelpers.Memmove(ref *(byte*)dest, ref src.GetRawStringDataAsUInt8(), (nuint)len);
             }
         }
 
