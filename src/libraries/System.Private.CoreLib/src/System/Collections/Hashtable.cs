@@ -798,7 +798,7 @@ namespace System.Collections
 
             if (_keycomparer != null)
                 return _keycomparer.Equals(item, key);
-            return item == null ? false : item.Equals(key);
+            return item != null && item.Equals(key);
         }
 
         // Returns a collection representing the keys of this hashtable. The order
