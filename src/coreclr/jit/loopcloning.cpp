@@ -3377,7 +3377,6 @@ static BasicBlock* optCloneBlocks_DoClone(Compiler* comp, BasicBlock* block, Bou
     while (!guard->Empty())
     {
         BoundsCheckInfo info = guard->Pop();
-        assert(info.bndChkParent != nullptr);
         comp->optRemoveRangeCheck(info.bndChk, info.bndChkParent, info.stmt);
         comp->gtSetStmtInfo(info.stmt);
         comp->fgSetStmtSeq(info.stmt);
