@@ -91,9 +91,7 @@
     NESTED_ENTRY Rhp\FunctionName, _TEXT, NoHandler
 
         # FP and RA registers
-        addi        sp, sp, -STACK_SIZE
-        sd          s0, 0x0(sp)       # Save frame pointer
-        sd          ra, 0x08(sp)      # Save return address
+        PROLOG_SAVE_REG_PAIR_INDEXED fp, ra, -STACK_SIZE
 
         # Floating point registers
         fsd         fa0, FLOAT_ARG_OFFSET(sp)
