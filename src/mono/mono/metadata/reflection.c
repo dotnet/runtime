@@ -2449,7 +2449,7 @@ mono_reflection_type_from_name (char *name, MonoImage *image)
 
 	MonoAssemblyLoadContext *alc = mono_alc_get_default ();
 
-	result = mono_reflection_type_from_name_checked (name, alc, image, FALSE, error);
+	result = mono_reflection_type_from_name_checked (name, alc, image, FALSE, FALSE, error);
 
 	mono_error_cleanup (error);
 	MONO_EXIT_GC_UNSAFE;
@@ -2462,13 +2462,14 @@ mono_reflection_type_from_name (char *name, MonoImage *image)
  * \param alc the AssemblyLoadContext to check/load into
  * \param image a metadata context (can be NULL).
  * \param ignorecase compare type names case-insensitively
+ * \param use_toplevel_assembly if true, follow the semantics of Assembly.GetAssembly
  * \param error set on error.
  * Retrieves a MonoType from its \p name. If the name is not fully qualified,
  * it defaults to get the type from \p image or, if \p image is NULL or loading
  * from it fails, uses corlib.  On failure returns NULL and sets \p error.
  */
 MonoType*
-mono_reflection_type_from_name_checked (char *name, MonoAssemblyLoadContext *alc, MonoImage *image, gboolean ignorecase, MonoError *error)
+mono_reflection_type_from_name_checked (char *name, MonoAssemblyLoadContext *alc, MonoImage *image, gboolean ignorecase, gboolean use_toplevel_assembly, MonoError *error)
 {
 	MonoType *type = NULL;
 	MonoTypeNameParse info;
@@ -2482,6 +2483,10 @@ mono_reflection_type_from_name_checked (char *name, MonoAssemblyLoadContext *alc
 	ERROR_DECL (parse_error);
 	if (!mono_reflection_parse_type_checked (tmp, &info, parse_error)) {
 		mono_error_cleanup (parse_error);
+		goto leave;
+	}
+	if (info.assembly.name && use_toplevel_assembly) {
+		mono_error_set_argument_format (error, "name", "Unexpected assembly-qualified type \"%s\" was provided", name);
 		goto leave;
 	}
 	type = _mono_reflection_get_type_from_info (alc, &info, image, ignorecase, TRUE, error);

@@ -2823,7 +2823,7 @@ mono_reflection_marshal_as_attribute_from_marshal_spec (MonoClass *klass,
 
 	case MONO_NATIVE_CUSTOM:
 		if (spec->data.custom_data.custom_name) {
-			MonoType *mtype = mono_reflection_type_from_name_checked (spec->data.custom_data.custom_name, alc, klass->image, FALSE, error);
+			MonoType *mtype = mono_reflection_type_from_name_checked (spec->data.custom_data.custom_name, alc, klass->image, FALSE, FALSE, error);
 			goto_if_nok (error, fail);
 
 			if (mtype) {

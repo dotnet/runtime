@@ -377,7 +377,7 @@ monovm_create_delegate_impl (const char* assemblyName, const char* typeName, con
 		image = assm->image;
 	}
 
-	MonoType *t = mono_reflection_type_from_name_checked ((char*)typeName, alc, image, FALSE, error);
+	MonoType *t = mono_reflection_type_from_name_checked ((char*)typeName, alc, image, FALSE, FALSE, error);
 	goto_if_nok (error, fail);
 
 	g_assert (t);

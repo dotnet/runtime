@@ -44,7 +44,7 @@ MONO_COMPONENT_API MonoType*
 mono_reflection_get_type_checked (MonoAssemblyLoadContext *alc, MonoImage *rootimage, MonoImage* image, MonoTypeNameParse *info, gboolean ignorecase, gboolean search_mscorlib, gboolean *type_resolve, MonoError *error);
 
 MonoType*
-mono_reflection_type_from_name_checked (char *name, MonoAssemblyLoadContext *alc, MonoImage *image, gboolean ignorecase, MonoError *error);
+mono_reflection_type_from_name_checked (char *name, MonoAssemblyLoadContext *alc, MonoImage *image, gboolean ignorecase, gboolean use_toplevel_assembly, MonoError *error);
 
 guint32
 mono_reflection_get_token_checked (MonoObjectHandle obj, MonoError *error);
