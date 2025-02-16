@@ -207,6 +207,7 @@
     <!-- Mono -->
     <SubsetName Include="Mono" Description="The Mono runtime and CoreLib. Equivalent to: $(DefaultMonoSubsets)" />
     <SubsetName Include="Mono.Runtime" Description="The Mono .NET runtime." />
+    <SubsetName Include="Mono.EmSDK" Description="The emsdk provisioning." />
     <SubsetName Include="Mono.AotCross" Description="The cross-compiler runtime for Mono AOT." />
     <SubsetName Include="Mono.CoreLib" Description="The managed System.Private.CoreLib library for Mono." />
     <SubsetName Include="Mono.Manifests" Description="The NuGet packages with manifests defining the mobile and Blazor workloads." />
@@ -263,6 +264,11 @@
       <BuildInParallel>false</BuildInParallel>
     </ProjectToBuild>
   </ItemDefinitionGroup>
+
+  <!-- emscripten provisioning, needs to be placed before runtime projects -->
+  <ItemGroup Condition="$(_subset.Contains('+mono.emsdk+'))">
+    <ProjectToBuild Include="$(MonoProjectRoot)mono.proj" AdditionalProperties="%(AdditionalProperties);ProvisionEmscriptenOnly=true" Category="mono" />
+  </ItemGroup>
 
   <!-- CoreClr sets -->
   <ItemGroup Condition="$(_subset.Contains('+clr.corelib+'))">
@@ -325,7 +331,7 @@
     The cross tools are used as part of the build process with the downloaded build tools, so we need to build them for the host architecture and build them as unsanitized binaries.
     -->
   <PropertyGroup>
-    <_BuildAnyCrossArch Condition="'$(CrossBuild)' == 'true' or '$(BuildArchitecture)' != '$(TargetArchitecture)' or '$(HostOS)' != '$(TargetOS)' or '$(EnableNativeSanitizers)' != ''">true</_BuildAnyCrossArch>
+    <_BuildAnyCrossArch Condition="('$(CrossBuild)' == 'true' or '$(BuildArchitecture)' != '$(TargetArchitecture)' or '$(HostOS)' != '$(TargetOS)' or '$(EnableNativeSanitizers)' != '') and '$(TargetArchitecture)' != 'wasm'">true</_BuildAnyCrossArch>
     <_BuildCrossComponents Condition="$(_subset.Contains('+clr.crossarchtools+'))">true</_BuildCrossComponents>
     <_BuildCrossComponents Condition="'$(ClrRuntimeBuildSubsets)' != '' and ('$(PrimaryRuntimeFlavor)' == 'CoreCLR' or '$(TargetsMobile)' == 'true')">true</_BuildCrossComponents>
     <_CrossBitwidthBuild Condition="'$(BuildArchitecture)' == 'x64' and ('$(TargetArchitecture)' == 'x86' or '$(TargetArchitecture)' == 'arm')">true</_CrossBitwidthBuild>
