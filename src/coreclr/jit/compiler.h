@@ -114,6 +114,7 @@ void* operator new[](size_t n, Compiler* context, CompMemKind cmk);
 
 // Requires the definitions of "operator new" so including "LoopCloning.h" after the definitions.
 #include "loopcloning.h"
+#include "rangecheckcloning.h"
 
 /*****************************************************************************/
 
@@ -7220,7 +7221,7 @@ public:
     bool optCanonicalizeExit(FlowGraphNaturalLoop* loop, BasicBlock* exit);
 
     PhaseStatus optCloneLoops();
-    PhaseStatus optCloneBlocks();
+    PhaseStatus optRangeCheckCloning();
     bool optShouldCloneLoop(FlowGraphNaturalLoop* loop, LoopCloneContext* context);
     void optCloneLoop(FlowGraphNaturalLoop* loop, LoopCloneContext* context);
     PhaseStatus optUnrollLoops(); // Unrolls loops (needs to have cost info)
