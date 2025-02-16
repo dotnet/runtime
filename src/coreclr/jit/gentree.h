@@ -459,7 +459,8 @@ enum GenTreeFlags : unsigned int
     GTF_CALL_VIRT_KIND_MASK     = 0x30000000, // GT_CALL -- mask of the below call kinds
     GTF_CALL_NONVIRT            = 0x00000000, // GT_CALL -- a non virtual call
     GTF_CALL_VIRT_STUB          = 0x10000000, // GT_CALL -- a stub-dispatch virtual call
-    GTF_CALL_VIRT_VTABLE        = 0x20000000, // GT_CALL -- a  vtable-based virtual call
+    GTF_CALL_VIRT_VTABLE        = 0x20000000, // GT_CALL -- a vtable-based virtual call
+    GTF_CALL_VIRT_GENERIC       = 0x30000000, // GT_CALL -- a generic virtual call
 
     GTF_CALL_NULLCHECK          = 0x08000000, // GT_CALL -- must check instance pointer for null
     GTF_CALL_POP_ARGS           = 0x04000000, // GT_CALL -- caller pop arguments?
@@ -5330,6 +5331,10 @@ struct GenTreeCall final : public GenTree
     bool IsVirtualVtable() const
     {
         return (gtFlags & GTF_CALL_VIRT_KIND_MASK) == GTF_CALL_VIRT_VTABLE;
+    }
+    bool IsVirtualGeneric() const
+    {
+        return (gtFlags & GTF_CALL_VIRT_KIND_MASK) == GTF_CALL_VIRT_GENERIC;
     }
     bool IsInlineCandidate() const
     {

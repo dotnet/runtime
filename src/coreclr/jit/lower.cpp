@@ -2852,6 +2852,7 @@ GenTree* Lowering::LowerCall(GenTree* node)
                 }
                 break;
 
+            case GTF_CALL_VIRT_GENERIC:
             case GTF_CALL_NONVIRT:
                 if (call->IsUnmanaged())
                 {

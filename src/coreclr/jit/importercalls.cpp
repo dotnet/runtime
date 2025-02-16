@@ -424,10 +424,14 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
                 call->AsCall()->gtCallAddr = fptr;
                 call->gtFlags |= GTF_EXCEPT | (fptr->gtFlags & GTF_GLOB_EFFECT);
 
-                if ((sig->sigInst.methInstCount != 0) && IsTargetAbi(CORINFO_NATIVEAOT_ABI))
+                if (sig->sigInst.methInstCount != 0)
                 {
-                    // NativeAOT generic virtual method: need to handle potential fat function pointers
-                    addFatPointerCandidate(call->AsCall());
+                    call->gtFlags |= GTF_CALL_VIRT_GENERIC;
+                    if (IsTargetAbi(CORINFO_NATIVEAOT_ABI))
+                    {
+                        // NativeAOT generic virtual method: need to handle potential fat function pointers
+                        addFatPointerCandidate(call->AsCall());
+                    }
                 }
 #ifdef FEATURE_READYTORUN
                 if (opts.IsReadyToRun())
@@ -8348,8 +8352,7 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
     JITDUMP("    %s; can devirtualize\n", note);
 
     // Make the updates.
-    call->gtFlags &= ~GTF_CALL_VIRT_VTABLE;
-    call->gtFlags &= ~GTF_CALL_VIRT_STUB;
+    call->gtFlags &= ~GTF_CALL_VIRT_KIND_MASK;
     call->gtCallMethHnd = derivedMethod;
     call->gtCallType    = CT_USER_FUNC;
     call->gtControlExpr = nullptr;
