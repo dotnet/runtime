@@ -1269,49 +1269,6 @@ void Compiler::gtPeelOffsets(GenTree** addr, target_ssize_t* offset, FieldSeq** 
         }
     }
 }
-//------------------------------------------------------------------------
-// gtPeelOffsets: Peel all ADD(addr, CNS_INT(x)) nodes off the specified
-//   node and return the base node and sum of offsets peeled.
-//
-// Arguments:
-//   addr   - [in, out] The node.
-//   offset - [out] The sum of offset peeled such that ADD(addr, offset) is equivalent to the original addr.
-//
-void Compiler::gtPeelOffsetsI32(GenTree** addr, int* offset)
-{
-    assert(genActualType(*addr) == TYP_INT);
-    *offset = 0;
-
-    while (true)
-    {
-        if ((*addr)->OperIs(GT_ADD) && !(*addr)->gtOverflow())
-        {
-            GenTree* op1 = (*addr)->gtGetOp1();
-            GenTree* op2 = (*addr)->gtGetOp2();
-
-            if (op2->IsIntCnsFitsInI32() && op2->TypeIs(TYP_INT) && !op2->AsIntCon()->IsIconHandle())
-            {
-                GenTreeIntCon* intCon = op2->AsIntCon();
-                *offset += (int)intCon->IconValue();
-                *addr = op1;
-            }
-            else if (op1->IsIntCnsFitsInI32() && op1->TypeIs(TYP_INT) && !op1->AsIntCon()->IsIconHandle())
-            {
-                GenTreeIntCon* intCon = op1->AsIntCon();
-                *offset += (int)intCon->IconValue();
-                *addr = op2;
-            }
-            else
-            {
-                break;
-            }
-        }
-        else
-        {
-            break;
-        }
-    }
-}
 
 // HandleStructStore:
 //   Handle a store that may be between struct locals with replacements.

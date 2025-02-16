@@ -9140,25 +9140,6 @@ void Lowering::LowerBlockStoreAsHelperCall(GenTreeBlk* blkNode)
     }
 }
 
-static bool IsNodeInvariantForLoadStoreCoalescing(Compiler* comp, GenTree* node, bool allowNull)
-{
-    if (node == nullptr)
-    {
-        return allowNull;
-    }
-    if (node->OperIsConst())
-    {
-        return true;
-    }
-    if (node->OperIs(GT_CAST) && !node->gtOverflow())
-    {
-        return IsNodeInvariantForLoadStoreCoalescing(comp, node->AsCast()->CastOp(), false);
-    }
-
-    // We can allow bigger trees here, but it's not clear if it's worth it.
-    return node->OperIs(GT_LCL_VAR) && !comp->lvaVarAddrExposed(node->AsLclVar()->GetLclNum());
-}
-
 //------------------------------------------------------------------------
 // GetLoadStoreCoalescingData: given a STOREIND/IND node, get the data needed to perform
 //    store/load coalescing including pointer to the previous node.
@@ -9182,10 +9163,23 @@ bool Lowering::GetLoadStoreCoalescingData(GenTreeIndir* ind, LoadStoreCoalescing
     const bool isStore = ind->OperIs(GT_STOREIND, GT_STORE_BLK);
     const bool isLoad  = ind->OperIs(GT_IND);
 
+    auto isNodeInvariant = [](Compiler* comp, GenTree* node, bool allowNull) {
+        if (node == nullptr)
+        {
+            return allowNull;
+        }
+        if (node->OperIsConst())
+        {
+            return true;
+        }
+        // We can allow bigger trees here, but it's not clear if it's worth it.
+        return node->OperIs(GT_LCL_VAR) && !comp->lvaVarAddrExposed(node->AsLclVar()->GetLclNum());
+    };
+
     if (isStore)
     {
         // For stores, Data() is expected to be an invariant node
-        if (!IsNodeInvariantForLoadStoreCoalescing(comp, ind->Data(), false))
+        if (!isNodeInvariant(comp, ind->Data(), false))
         {
             return false;
         }
@@ -9201,14 +9195,14 @@ bool Lowering::GetLoadStoreCoalescingData(GenTreeIndir* ind, LoadStoreCoalescing
     {
         GenTree* base  = ind->Addr()->AsAddrMode()->Base();
         GenTree* index = ind->Addr()->AsAddrMode()->Index();
-        if (!IsNodeInvariantForLoadStoreCoalescing(comp, base, false))
+        if (!isNodeInvariant(comp, base, false))
         {
             // Base must be a local. It's possible for it to be nullptr when index is not null,
             // but let's ignore such cases.
             return false;
         }
 
-        if (!IsNodeInvariantForLoadStoreCoalescing(comp, index, true))
+        if (!isNodeInvariant(comp, index, true))
         {
             // Index should be either nullptr or a local.
             return false;
@@ -9219,7 +9213,7 @@ bool Lowering::GetLoadStoreCoalescingData(GenTreeIndir* ind, LoadStoreCoalescing
         data->scale    = ind->Addr()->AsAddrMode()->GetScale();
         data->offset   = ind->Addr()->AsAddrMode()->Offset();
     }
-    else if (IsNodeInvariantForLoadStoreCoalescing(comp, ind->Addr(), true))
+    else if (isNodeInvariant(comp, ind->Addr(), true))
     {
         // Address is just a local, no offset, scale is 1
         data->baseAddr = ind->Addr();

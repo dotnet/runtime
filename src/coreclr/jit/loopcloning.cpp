@@ -3476,7 +3476,7 @@ PhaseStatus Compiler::optCloneBlocks()
         // Now choose the largest group of bounds checks
         const int             MinNumberOfChecksPerGroup = 4;
         BoundsCheckInfoStack* largestGroup              = nullptr;
-        for (auto keyValuePair : BoundsCheckInfoMap::KeyValueIteration(&allBndChks))
+        for (BoundsCheckInfoMap::Node* keyValuePair : BoundsCheckInfoMap::KeyValueIteration(&allBndChks))
         {
             ArrayStack<BoundsCheckInfo>* value = keyValuePair->GetValue();
             if ((largestGroup == nullptr) || (value->Height() > largestGroup->Height()))
