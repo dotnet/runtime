@@ -19,13 +19,13 @@ namespace System.Reflection
         private bool _ignoreCase;
         private bool _extensibleParser;
         private Assembly? _topLevelAssembly;
-        private Assembly? _requestingAssembly;
+        private RuntimeAssembly? _requestingAssembly;
         private AssemblyLoadContext? _loadContext;
 
         [RequiresUnreferencedCode("The type might be removed")]
         internal static Type? GetType(
             string typeName,
-            Assembly requestingAssembly,
+            RuntimeAssembly requestingAssembly,
             bool throwOnError = false,
             bool ignoreCase = false)
         {
@@ -37,7 +37,7 @@ namespace System.Reflection
             string typeName,
             Func<AssemblyName, Assembly?>? assemblyResolver,
             Func<Assembly?, string, bool, Type?>? typeResolver,
-            Assembly requestingAssembly,
+            RuntimeAssembly requestingAssembly,
             bool throwOnError = false,
             bool ignoreCase = false,
             bool extensibleParser = true)
@@ -78,6 +78,8 @@ namespace System.Reflection
             bool ignoreCase,
             Assembly topLevelAssembly)
         {
+            // Mono AssemblyBuilder is also a RuntimeAssembly, see AssemblyBuilder.Mono.cs
+            Debug.Assert(topLevelAssembly is RuntimeAssembly or Emit.RuntimeAssemblyBuilder);
             TypeName? parsed = TypeNameParser.Parse(typeName, throwOnError);
 
             if (parsed is null)
@@ -94,7 +96,7 @@ namespace System.Reflection
                 _throwOnError = throwOnError,
                 _ignoreCase = ignoreCase,
                 _topLevelAssembly = topLevelAssembly,
-                _requestingAssembly = topLevelAssembly,
+                _requestingAssembly = Unsafe.As<RuntimeAssembly>(topLevelAssembly),
                 _loadContext = AssemblyLoadContext.CurrentContextualReflectionContext,
             }.Resolve(parsed);
         }
@@ -112,9 +114,7 @@ namespace System.Reflection
             }
             else
             {
-                Debug.Assert(_requestingAssembly is RuntimeAssembly or Emit.RuntimeAssemblyBuilder);
-                // Mono AssemblyBuilder is also a RuntimeAssembly, see AssemblyBuilder.Mono.cs
-                assembly = RuntimeAssembly.InternalLoad(name, Unsafe.As<RuntimeAssembly>(_requestingAssembly),
+                assembly = RuntimeAssembly.InternalLoad(name, _requestingAssembly!,
                     _loadContext, throwOnFileNotFound: _throwOnError);
             }
             return assembly;
@@ -167,7 +167,7 @@ namespace System.Reflection
                 {
                     return GetTypeFromDefaultAssemblies(TypeName.Unescape(escapedTypeName), parsedName);
                 }
-                else if (assembly is IRuntimeAssembly ra)
+                else if (assembly is RuntimeAssembly ra)
                 {
                     type = ra.GetTypeCore(TypeName.Unescape(escapedTypeName), ignoreCase: _ignoreCase);
                 }
@@ -225,7 +225,7 @@ namespace System.Reflection
         [RequiresUnreferencedCode("Types might be removed by trimming. If the type name is a string literal, consider using Type.GetType instead.")]
         private Type? GetTypeFromDefaultAssemblies(string typeName, TypeName parsedName)
         {
-            RuntimeAssembly? requestingAssembly = (RuntimeAssembly?)_requestingAssembly;
+            RuntimeAssembly? requestingAssembly = _requestingAssembly;
             if (requestingAssembly is not null)
             {
                 Type? type = requestingAssembly.GetTypeCore(typeName, ignoreCase: _ignoreCase);

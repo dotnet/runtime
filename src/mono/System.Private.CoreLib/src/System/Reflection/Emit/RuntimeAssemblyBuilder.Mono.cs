@@ -76,7 +76,7 @@ namespace System.Reflection.Emit
     }
 
     [StructLayout(LayoutKind.Sequential)]
-    internal sealed partial class RuntimeAssemblyBuilder : AssemblyBuilder, IRuntimeAssembly
+    internal sealed partial class RuntimeAssemblyBuilder : AssemblyBuilder
     {
         //
         // AssemblyBuilder inherits from Assembly, but the runtime thinks its layout inherits from RuntimeAssembly
@@ -212,8 +212,9 @@ namespace System.Reflection.Emit
             return TypeNameResolver.GetType(name, throwOnError, ignoreCase, this);
         }
 
+        /// <inheritdoc cref="RuntimeAssembly.GetTypeCore"/>
         [RequiresUnreferencedCode("Types might be removed by trimming. If the type name is a string literal, consider using Type.GetType instead.")]
-        Type? IRuntimeAssembly.GetTypeCore(string unescapedName, bool ignoreCase)
+        internal Type? GetTypeCore(string unescapedName, bool ignoreCase)
         {
             return manifest_module.GetTypeCore(unescapedName, ignoreCase);
         }
