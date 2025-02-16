@@ -379,10 +379,12 @@ namespace ILCompiler.Reflection.ReadyToRun
         }
 
         /// <summary>
-        /// Initializes the fields of the R2RHeader and R2RMethods
+        /// Minimally initializes the R2R reader.
         /// </summary>
-        /// <param name="filename">PE image</param>
-        /// <exception cref="BadImageFormatException">The Cor header flag must be ILLibrary</exception>
+        /// <param name="assemblyResolver">Assembly resolver</param>
+        /// <param name="metadata">Assembly metadata</param>
+        /// <param name="peReader">PE image</param>
+        /// <param name="filename">PE file name</param>
         public ReadyToRunReader(IAssemblyResolver assemblyResolver, IAssemblyMetadata metadata, PEReader peReader, string filename)
         {
             _assemblyResolver = assemblyResolver;
@@ -392,15 +394,58 @@ namespace ILCompiler.Reflection.ReadyToRun
         }
 
         /// <summary>
-        /// Initializes the fields of the R2RHeader and R2RMethods
+        /// Minimally initializes the R2R reader.
         /// </summary>
-        /// <param name="filename">PE image</param>
-        /// <exception cref="BadImageFormatException">The Cor header flag must be ILLibrary</exception>
+        /// <param name="assemblyResolver">Assembly resolver</param>
+        /// <param name="metadata">Assembly metadata</param>
+        /// <param name="peReader">PE image</param>
+        /// <param name="filename">PE file name</param>
+        /// <param name="content">PE image content</param>
+        public ReadyToRunReader(IAssemblyResolver assemblyResolver, IAssemblyMetadata metadata, PEReader peReader, string filename, ReadOnlyMemory<byte> content)
+        {
+            _assemblyResolver = assemblyResolver;
+            CompositeReader = peReader;
+            Filename = filename;
+            Image = ConvertToArray(content);
+            Initialize(metadata);
+        }
+
+        /// <summary>
+        /// Minimally initializes the R2R reader.
+        /// </summary>
+        /// <param name="assemblyResolver">Assembly resolver</param>
+        /// <param name="filename">PE file name</param>
         public unsafe ReadyToRunReader(IAssemblyResolver assemblyResolver, string filename)
         {
             _assemblyResolver = assemblyResolver;
             Filename = filename;
             Initialize(metadata: null);
+        }
+
+        /// <summary>
+        /// Minimally initializes the R2R reader.
+        /// </summary>
+        /// <param name="assemblyResolver">Assembly resolver</param>
+        /// <param name="filename">PE file name</param>
+        /// <param name="content">PE image content</param>
+        public unsafe ReadyToRunReader(IAssemblyResolver assemblyResolver, string filename, ReadOnlyMemory<byte> content)
+        {
+            _assemblyResolver = assemblyResolver;
+            Filename = filename;
+            Image = ConvertToArray(content);
+            Initialize(metadata: null);
+        }
+
+        private unsafe byte[] ConvertToArray(ReadOnlyMemory<byte> content)
+        {
+            if (MemoryMarshal.TryGetArray(content, out ArraySegment<byte> segment))
+            {
+                return segment.Array;
+            }
+            else
+            {
+                return content.ToArray();
+            }
         }
 
         public static bool IsReadyToRunImage(PEReader peReader)
@@ -441,10 +486,18 @@ namespace ILCompiler.Reflection.ReadyToRun
 
             if (CompositeReader == null)
             {
-                byte[] image = File.ReadAllBytes(Filename);
-                Image = image;
-                ImagePin = new PinningReference(image);
+                byte[] image = null;
+                if (Image == null)
+                {
+                    image = File.ReadAllBytes(Filename);
+                    Image = image;
+                }
+                else
+                {
+                    image = Image;
+                }
 
+                ImagePin = new PinningReference(image);
                 CompositeReader = new PEReader(Unsafe.As<byte[], ImmutableArray<byte>>(ref image));
             }
             else
@@ -1140,7 +1193,7 @@ namespace ILCompiler.Reflection.ReadyToRun
                     count++;
                     i++;
                 } while (i < isEntryPoint.Length && !isEntryPoint[i] && i < firstColdRuntimeFunction);
-                
+
                 if (dHotColdMap.ContainsKey(runtimeFunctionId))
                 {
                     int coldSize = dHotColdMap[runtimeFunctionId].Length;
