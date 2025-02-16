@@ -19,7 +19,7 @@
 NESTED_ENTRY RhpPInvoke, _TEXT, NoHandler
         sd    fp, OFFSETOF__PInvokeTransitionFrame__m_FramePointer(a0)
         sd    ra, OFFSETOF__PInvokeTransitionFrame__m_RIP(a0)
-        sd    t0, OFFSETOF__PInvokeTransitionFrame__m_PreservedRegs(a0)
+        sd    sp, OFFSETOF__PInvokeTransitionFrame__m_PreservedRegs(a0)
         li    t0, PTFF_SAVE_SP
         sd    t0, OFFSETOF__PInvokeTransitionFrame__m_Flags(a0)
 
