@@ -15186,3 +15186,29 @@ void ValueNumStore::PeelOffsets(ValueNum* vn, target_ssize_t* offset)
         }
     }
 }
+void ValueNumStore::PeelOffsetsI32(ValueNum* vn, int* offset)
+{
+    *offset = 0;
+    VNFuncApp app;
+    while (GetVNFunc(*vn, &app) && (app.m_func == VNF_ADD))
+    {
+        // We don't treat handles and null as constant offset.
+
+        if (IsVNConstantNonHandle(app.m_args[0]) && IsVNPositiveInt32Constant(app.m_args[0]) &&
+            IsVNConstantNonHandle(app.m_args[0]) && (app.m_args[0] != VNForNull()))
+        {
+            *offset += ConstantValue<int>(app.m_args[0]);
+            *vn = app.m_args[1];
+        }
+        else if (IsVNConstantNonHandle(app.m_args[1]) && IsVNPositiveInt32Constant(app.m_args[1]) &&
+                 (app.m_args[1] != VNForNull()))
+        {
+            *offset += ConstantValue<int>(app.m_args[1]);
+            *vn = app.m_args[0];
+        }
+        else
+        {
+            break;
+        }
+    }
+}

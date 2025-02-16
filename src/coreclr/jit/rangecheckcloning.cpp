@@ -1,0 +1,527 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
+#include "jitpch.h"
+#include "rangecheckcloning.h"
+
+// This file contains the definition of the "Range check cloning" phase.
+//
+// The goal of this phase is to pick up range checks which were not optimized by the
+// range check optimization phase and clone them to have "fast" and "slow" paths.
+// This is similar to what the "Loop Cloning" phase does for loops. Example:
+//
+//   arr[i + 1] = x;
+//   arr[i + 3] = y;
+//   arr[i + 5] = z;
+//   arr[i + 8] = w;
+//
+// assertprop/rangecheck phases give up on the above bounds checks because of the
+// increasing offsets and there are no assertions that they can rely on.
+// This phase handles such cases by cloning the entire block (only the affected statements
+// to be precise) into "fast" and "slow" under a "cloned" condition:
+//
+//   if (i >= 0 && i < arr.Length - 8)
+//   {
+//       // Fast path
+//       arr[i + 1] = x; // no bounds check
+//       arr[i + 3] = y; // no bounds check
+//       arr[i + 5] = z; // no bounds check
+//       arr[i + 8] = w; // no bounds check
+//   }
+//   else
+//   {
+//       // Slow path
+//       arr[i + 1] = x; // bounds check
+//       arr[i + 3] = y; // bounds check
+//       arr[i + 5] = w; // bounds check
+//       arr[i + 8] = w; // bounds check
+//   }
+//
+// The phase scans all statements in a block and groups the bounds checks based on
+// "Base Index and Length" pairs (VNs). Then the phase takes the largest group and
+// clones the block to have fast and slow paths.
+
+//------------------------------------------------------------------------------------
+// Initialize: Initialize the BoundsCheckInfo with the given bounds check node.
+//    and perform some basic legality checks.
+//
+// Arguments:
+//    comp             - The compiler instance
+//    statement        - The statement containing the bounds check
+//    bndChkNode       - The bounds check node
+//    bndChkParentNode - The parent node of the bounds check node (either null or COMMA)
+//
+// Return Value:
+//    true if the initialization was successful, false otherwise.
+//
+bool BoundsCheckInfo::Initialize(const Compiler*   comp,
+                                 Statement*        statement,
+                                 GenTreeBoundsChk* bndChkNode,
+                                 GenTree*          bndChkParentNode)
+{
+    idxVN = comp->vnStore->VNConservativeNormalValue(bndChkNode->GetIndex()->gtVNPair);
+    lenVN = comp->vnStore->VNConservativeNormalValue(bndChkNode->GetArrayLength()->gtVNPair);
+    if ((idxVN == ValueNumStore::NoVN) || (lenVN == ValueNumStore::NoVN))
+    {
+        return false;
+    }
+
+    stmt         = statement;
+    bndChk       = bndChkNode;
+    bndChkParent = bndChkParentNode;
+
+    if (bndChkParent != nullptr)
+    {
+        assert(bndChkParent->OperIs(GT_COMMA));
+        if (bndChkParent->gtGetOp2() == bndChkNode)
+        {
+            // GT_BOUNDS_CHECK is mostly LHS of COMMAs.
+            // In rare cases, it can be either a root node or RHS of COMMAs
+            // Unfortunately, optRemoveRangeCheck doesn't know how to handle it
+            // being RHS of COMMAs. TODO-RangeCheckCloning: fix that
+            return false;
+        }
+    }
+
+    if (bndChkNode->GetIndex()->IsIntCnsFitsInI32())
+    {
+        // Index being a constant means with have 0 index and cns offset
+        offset = static_cast<int>(bndChkNode->GetIndex()->AsIntCon()->IconValue());
+        idxVN  = comp->vnStore->VNZeroForType(TYP_INT);
+    }
+    else
+    {
+        // Otherwise, peel the offset from the index using VN
+        comp->vnStore->PeelOffsetsI32(&idxVN, &offset);
+        assert(idxVN != ValueNumStore::NoVN);
+    }
+
+    if (offset < 0)
+    {
+        // Not supported yet.
+        return false;
+    }
+    return true;
+}
+
+// -----------------------------------------------------------------------------
+// optRangeCheckCloning_DoClone: Perform the actual range check cloning for the given range
+//    of bounds checks. All the legality checks are done before calling this function.
+//    This function effectively converts a single block (containing bounds checks) into:
+//
+//  prevBb:
+//    goto lowerBndBb
+//
+//  lowerBndBb:
+//    if (idx >= 0)
+//        goto upperBndBb
+//    else
+//        goto fallbackBb
+//
+//  upperBndBb:
+//    if (idx < len - maxConstOffset)
+//        goto fastpathBb
+//    else
+//        goto fallbackBb
+//
+//  fallbackBb:
+//    [Original block with bounds checks]
+//    goto nextBb
+//
+//  fastpathBb:
+//    [Cloned block with no bounds checks]
+//    goto nextBb
+//
+//  nextBb:
+//    ...
+//
+// Arguments:
+//    comp        - The compiler instance
+//    block       - The block to clone
+//    bndChkStack - The stack of bounds checks to clone
+//
+// Return Value:
+//    The block containing the fast path.
+//
+static BasicBlock* optRangeCheckCloning_DoClone(Compiler* comp, BasicBlock* block, BoundsCheckInfoStack* bndChkStack)
+{
+    assert(block != nullptr);
+    assert(bndChkStack->Height() > 0);
+
+    // The bound checks are in the execution order (top of the stack is the last check)
+    BoundsCheckInfo firstCheck = bndChkStack->Bottom();
+    BoundsCheckInfo lastCheck  = bndChkStack->Top();
+    BasicBlock*     prevBb     = block;
+
+    // First, split the block at the first bounds check using gtSplitTree (via fgSplitBlockBeforeTree):
+    GenTree**   bndChkUse;
+    Statement*  newFirstStmt;
+    BasicBlock* fastpathBb =
+        comp->fgSplitBlockBeforeTree(block, firstCheck.stmt, firstCheck.bndChk, &newFirstStmt, &bndChkUse);
+
+    // Perform the usual routine after gtSplitTree:
+    while ((newFirstStmt != nullptr) && (newFirstStmt != firstCheck.stmt))
+    {
+        comp->fgMorphStmtBlockOps(fastpathBb, newFirstStmt);
+        newFirstStmt = newFirstStmt->GetNextStmt();
+    }
+    comp->fgMorphStmtBlockOps(fastpathBb, firstCheck.stmt);
+    comp->gtUpdateStmtSideEffects(firstCheck.stmt);
+
+    // Now split the block at the last bounds check using fgSplitBlockAfterStatement:
+    // TODO-RangeCheckCloning: call gtSplitTree for lastBndChkStmt as well, to cut off
+    // the stuff we don't have to clone.
+    BasicBlock* lastBb = comp->fgSplitBlockAfterStatement(fastpathBb, lastCheck.stmt);
+
+    DebugInfo debugInfo = fastpathBb->firstStmt()->GetDebugInfo();
+
+    int      offset = 0;
+    GenTree* idx    = firstCheck.bndChk->GetIndex();
+    GenTree* arrLen = firstCheck.bndChk->GetArrayLength();
+
+    // gtSplitTree is expected to spill the side effects of the index and array length expressions
+    assert((idx->gtFlags & GTF_ALL_EFFECT) == 0);
+    assert((arrLen->gtFlags & GTF_ALL_EFFECT) == 0);
+
+    // Find the maximum offset
+    for (int i = 0; i < bndChkStack->Height(); i++)
+    {
+        offset = max(offset, bndChkStack->Top(i).offset);
+    }
+    assert(offset >= 0);
+
+    if (idx == nullptr)
+    {
+        // it can be null when we deal with constant indices, so we treat them as offsets
+        // In this case, we don't need the LowerBound check, but let's still create it for
+        // simplicity, the downstream code will eliminate it.
+        idx = comp->gtNewIconNode(0);
+    }
+    else
+    {
+        idx = comp->gtCloneExpr(idx);
+    }
+
+    // Since we're re-using the index node from the first bounds check and its value was spilled
+    // by the tree split, we need to restore the base index by subtracting the offset.
+    // Hopefully, someone will fold this back into the index expression.
+    //
+    GenTree* idxClone;
+    if (firstCheck.offset > 0)
+    {
+        GenTree* offsetNode = comp->gtNewIconNode(-firstCheck.offset); // never overflows
+        idx                 = comp->gtNewOperNode(GT_ADD, TYP_INT, idx, offsetNode);
+        idxClone            = comp->fgInsertCommaFormTemp(&idx);
+    }
+    else
+    {
+        idxClone = comp->gtCloneExpr(idx);
+    }
+
+    // 1) lowerBndBb:
+    //
+    // if (i >= 0)
+    //     goto upperBndBb
+    // else
+    //     goto fallbackBb
+    //
+    GenTreeOp* idxLowerBoundTree = comp->gtNewOperNode(GT_GE, TYP_INT, comp->gtCloneExpr(idx), comp->gtNewIconNode(0));
+    idxLowerBoundTree->gtFlags |= GTF_RELOP_JMP_USED;
+    GenTree*    jtrue      = comp->gtNewOperNode(GT_JTRUE, TYP_VOID, idxLowerBoundTree);
+    BasicBlock* lowerBndBb = comp->fgNewBBFromTreeAfter(BBJ_COND, prevBb, jtrue, debugInfo);
+
+    // 2) upperBndBb:
+    //
+    // if (i < arrLen - indexOffset)
+    //     goto fastpathBb
+    // else
+    //     goto fallbackBb
+    //
+    GenTree*   arrLenClone = comp->gtCloneExpr(arrLen);
+    GenTreeOp* idxUpperBoundTree;
+    if (idx->IsIntegralConst(0))
+    {
+        // if the index is just 0, then we can simplify the condition to "arrLen > indexOffset"
+        idxUpperBoundTree = comp->gtNewOperNode(GT_GT, TYP_INT, arrLenClone, comp->gtNewIconNode(offset));
+    }
+    else
+    {
+        // "i < arrLen + (-indexOffset)"
+        GenTree*   negOffset = comp->gtNewIconNode(-offset); // never overflows
+        GenTreeOp* subNode   = comp->gtNewOperNode(GT_ADD, TYP_INT, arrLenClone, negOffset);
+        idxUpperBoundTree    = comp->gtNewOperNode(GT_LT, TYP_INT, idxClone, subNode);
+    }
+    idxUpperBoundTree->gtFlags |= GTF_RELOP_JMP_USED;
+    jtrue                  = comp->gtNewOperNode(GT_JTRUE, TYP_VOID, idxUpperBoundTree);
+    BasicBlock* upperBndBb = comp->fgNewBBFromTreeAfter(BBJ_COND, lowerBndBb, jtrue, debugInfo);
+
+    // 3) fallbackBb:
+    //
+    // For the fallback (slow path), we just entirely clone the fast path.
+    //
+    BasicBlock* fallbackBb = comp->fgNewBBafter(BBJ_ALWAYS, lowerBndBb, false);
+    BasicBlock::CloneBlockState(comp, fallbackBb, fastpathBb);
+
+    // 4) fastBlockBb:
+    //
+    // No actions needed - it's our current block as is.
+
+    // Wire up the edges
+    //
+    comp->fgRedirectTargetEdge(prevBb, lowerBndBb);
+    FlowEdge* fallbackToNextBb       = comp->fgAddRefPred(lastBb, fallbackBb);
+    FlowEdge* lowerBndToUpperBndEdge = comp->fgAddRefPred(upperBndBb, lowerBndBb);
+    FlowEdge* lowerBndToFallbackEdge = comp->fgAddRefPred(fallbackBb, lowerBndBb);
+    FlowEdge* upperBndToFastPathEdge = comp->fgAddRefPred(fastpathBb, upperBndBb);
+    FlowEdge* upperBndToFallbackEdge = comp->fgAddRefPred(fallbackBb, upperBndBb);
+    fallbackBb->SetTargetEdge(fallbackToNextBb);
+    lowerBndBb->SetTrueEdge(lowerBndToUpperBndEdge);
+    lowerBndBb->SetFalseEdge(lowerBndToFallbackEdge);
+    upperBndBb->SetTrueEdge(upperBndToFastPathEdge);
+    upperBndBb->SetFalseEdge(upperBndToFallbackEdge);
+
+    // Set the weights. We assume that the fallback is rarely taken.
+    //
+    lowerBndBb->inheritWeight(prevBb);
+    upperBndBb->inheritWeight(prevBb);
+    fastpathBb->inheritWeight(prevBb);
+    fallbackBb->bbSetRunRarely();
+    fallbackToNextBb->setLikelihood(1.0f);
+    lowerBndToUpperBndEdge->setLikelihood(1.0f);
+    lowerBndToFallbackEdge->setLikelihood(0.0f);
+    upperBndToFastPathEdge->setLikelihood(1.0f);
+    upperBndToFallbackEdge->setLikelihood(0.0f);
+
+    lowerBndBb->SetFlags(BBF_INTERNAL);
+    upperBndBb->SetFlags(BBF_INTERNAL | BBF_HAS_IDX_LEN);
+
+    // Now drop the bounds check from the fast path
+    while (!bndChkStack->Empty())
+    {
+        BoundsCheckInfo info = bndChkStack->Pop();
+#if DEBUG
+        // Ensure that the bounds check that we're removing is in the fast path:
+        bool statementFound = false;
+        for (Statement* const stmt : fastpathBb->Statements())
+        {
+            if (stmt == info.stmt)
+            {
+                statementFound = true;
+
+                // Find the bndChk in the statement
+                Compiler::fgWalkResult result = comp->fgWalkTreePre(
+                    stmt->GetRootNodePointer(),
+                    [](GenTree** pTree, Compiler::fgWalkData* data) -> Compiler::fgWalkResult {
+                    return (*pTree == (GenTree*)data->pCallbackData) ? Compiler::WALK_ABORT : Compiler::WALK_CONTINUE;
+                },
+                    info.bndChk);
+                // We don't need to validate bndChkParent - optRemoveRangeCheck will do it for us
+                assert(result == Compiler::WALK_ABORT);
+                break;
+            }
+        }
+        assert(statementFound);
+#endif
+        comp->optRemoveRangeCheck(info.bndChk, info.bndChkParent, info.stmt);
+        comp->gtSetStmtInfo(info.stmt);
+        comp->fgSetStmtSeq(info.stmt);
+    }
+
+    comp->fgMorphBlockStmt(lowerBndBb, lowerBndBb->lastStmt() DEBUGARG("Morph lowerBnd"));
+    comp->fgMorphBlockStmt(upperBndBb, upperBndBb->lastStmt() DEBUGARG("Morph upperBnd"));
+    if (lowerBndBb->lastStmt() != nullptr)
+    {
+        // lowerBndBb might be converted into no-op by fgMorphBlockStmt(lowerBndBb)
+        // it happens when we emit BBJ_COND(0 >= 0) fake block (for simplicity)
+        comp->gtUpdateStmtSideEffects(lowerBndBb->lastStmt());
+    }
+    comp->gtUpdateStmtSideEffects(upperBndBb->lastStmt());
+
+    // All blocks must be in the same EH region
+    assert(BasicBlock::sameEHRegion(prevBb, lowerBndBb));
+    assert(BasicBlock::sameEHRegion(prevBb, upperBndBb));
+    assert(BasicBlock::sameEHRegion(prevBb, fastpathBb));
+    assert(BasicBlock::sameEHRegion(prevBb, fallbackBb));
+    assert(BasicBlock::sameEHRegion(prevBb, lastBb));
+
+    return fastpathBb;
+}
+
+// A visitor to record all the bounds checks in a statement in the execution order
+class BoundsChecksVisitor final : public GenTreeVisitor<BoundsChecksVisitor>
+{
+    Statement*                      m_stmt;
+    ArrayStack<BoundCheckLocation>* m_boundsChks;
+
+public:
+    enum
+    {
+        DoPostOrder       = true,
+        UseExecutionOrder = true
+    };
+
+    BoundsChecksVisitor(Compiler* compiler, Statement* stmt, ArrayStack<BoundCheckLocation>* bndChkLocations)
+        : GenTreeVisitor(compiler)
+        , m_stmt(stmt)
+        , m_boundsChks(bndChkLocations)
+    {
+    }
+
+    fgWalkResult PostOrderVisit(GenTree** use, GenTree* user)
+    {
+        GenTree* node = *use;
+        if (node->OperIs(GT_BOUNDS_CHECK))
+        {
+            m_boundsChks->Push(BoundCheckLocation(m_stmt, node->AsBoundsChk(), user));
+        }
+        return fgWalkResult::WALK_CONTINUE;
+    }
+};
+
+// -----------------------------------------------------------------------------
+// optRangeCheckCloning: The main entry point for the range check cloning phase.
+//    This phase scans all the blocks in the method and groups the bounds checks
+//    in each block by the "Base Index and Length" pairs (VNs). Then it picks up
+//    the largest group and clones the block to have fast and slow paths in order
+//    to optimize the bounds checks in the fast path.
+//    See the overview at the top of the file and the comments in the optRangeCheckCloning_DoClone
+//    function for more details.
+//
+// Return Value:
+//    The status of the phase after the transformation.
+//
+PhaseStatus Compiler::optRangeCheckCloning()
+{
+    if (!doesMethodHaveBoundsChecks())
+    {
+        JITDUMP("Current method has no bounds checks\n");
+        return PhaseStatus::MODIFIED_NOTHING;
+    }
+
+    if (lvaHaveManyLocals(0.75))
+    {
+        // If we're close to running out of locals, we should be conservative
+        JITDUMP("Too many locals - bail out.\n");
+        return PhaseStatus::MODIFIED_NOTHING;
+    }
+
+    const bool preferSize = opts.jitFlags->IsSet(JitFlags::JIT_FLAG_SIZE_OPT);
+    if (preferSize)
+    {
+        // The optimization comes with a codegen size increase
+        JITDUMP("Optimized for size - bail out.\n");
+        return PhaseStatus::MODIFIED_NOTHING;
+    }
+
+    bool modified = false;
+
+    // An array to keep all the bounds checks in the block
+    // Strictly speaking, we don't need this array and can group the bounds checks
+    // right as we walk them, but this helps to improve the TP/Memory usage
+    // as many blocks don't have enough bounds checks to clone anyway.
+    ArrayStack<BoundCheckLocation> bndChkLocations(getAllocator(CMK_RangeCheckCloning));
+
+    // A map to group the bounds checks by the base index and length VNs
+    BoundsCheckInfoMap bndChkMap(getAllocator(CMK_RangeCheckCloning));
+
+    for (BasicBlock* block = fgFirstBB; block != nullptr; block = block->Next())
+    {
+        if (!block->HasFlag(BBF_MAY_HAVE_BOUNDS_CHECKS))
+        {
+            // TP optimization - skip blocks that *likely* don't have bounds checks
+            continue;
+        }
+
+        if (block->isRunRarely())
+        {
+            continue;
+        }
+
+        if (!block->KindIs(BBJ_ALWAYS, BBJ_RETURN, BBJ_COND))
+        {
+            // For now, we support only simple blocks
+            continue;
+        }
+
+        bndChkLocations.Reset();
+        bndChkMap.RemoveAll();
+
+        for (Statement* const stmt : block->Statements())
+        {
+            if (block->KindIs(BBJ_COND, BBJ_RETURN) && (stmt == block->lastStmt()))
+            {
+                // TODO-RangeCheckCloning: Splitting these blocks at the last statements
+                // require using gtSplitTree for the last bounds check.
+                break;
+            }
+
+            // Now just record all the bounds checks in the block (in the execution order)
+            //
+            BoundsChecksVisitor visitor(this, stmt, &bndChkLocations);
+            visitor.WalkTree(stmt->GetRootNodePointer(), nullptr);
+        }
+
+        if (bndChkLocations.Height() < MIN_CHECKS_PER_GROUP)
+        {
+            JITDUMP("Not enough bounds checks in the block - bail out.\n");
+            continue;
+        }
+
+        // Now we need to group the bounds checks by the base index and length VNs.
+        // We could do it directly in the visitor above and avoid this O(n) pass,
+        // but it's more TP/Memory wise to use stack-allocated ArrayStack first and
+        // bail out on <MIN_CHECKS_PER_GROUP cases.
+        for (int i = 0; i < bndChkLocations.Height(); i++)
+        {
+            BoundCheckLocation loc = bndChkLocations.Bottom(i);
+            BoundsCheckInfo    bci{};
+            if (bci.Initialize(this, loc.stmt, loc.bndChk, loc.bndChkParent))
+            {
+                IdxLenPair            key(bci.idxVN, bci.lenVN);
+                BoundsCheckInfoStack* value;
+                if (!bndChkMap.Lookup(key, &value))
+                {
+                    CompAllocator allocator = getAllocator(CMK_RangeCheckCloning);
+                    value                   = new (allocator) BoundsCheckInfoStack(allocator);
+                    bndChkMap.Set(key, value);
+                }
+                value->Push(bci);
+            }
+        }
+
+        if (bndChkMap.GetCount() == 0)
+        {
+            JITDUMP("No bounds checks in the block - bail out.\n");
+            continue;
+        }
+
+        // Now choose the largest group of bounds checks (the one with the most checks)
+        BoundsCheckInfoStack* largestGroup = nullptr;
+        for (BoundsCheckInfoMap::Node* keyValuePair : BoundsCheckInfoMap::KeyValueIteration(&bndChkMap))
+        {
+            ArrayStack<BoundsCheckInfo>* value = keyValuePair->GetValue();
+            if ((largestGroup == nullptr) || (value->Height() > largestGroup->Height()))
+            {
+                largestGroup = value;
+            }
+        }
+
+        assert(largestGroup != nullptr);
+        if (largestGroup->Height() < MIN_CHECKS_PER_GROUP)
+        {
+            JITDUMP("Not enough bounds checks in the largest group - bail out.\n");
+            continue;
+        }
+
+        JITDUMP("Cloning bounds checks in " FMT_BB "\n", block->bbNum);
+        block    = optRangeCheckCloning_DoClone(this, block, largestGroup);
+        modified = true;
+    }
+
+    if (modified)
+    {
+        return PhaseStatus::MODIFIED_EVERYTHING;
+    }
+
+    return PhaseStatus::MODIFIED_NOTHING;
+}
