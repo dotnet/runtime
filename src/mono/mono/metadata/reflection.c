@@ -1978,11 +1978,12 @@ mono_identifier_unescape_info (MonoTypeNameParse *info)
  * \param name will be set to the name part of the type name
  * \return 0 on failure, non-zero on success
  */
-gboolean
+void
 mono_reflection_split_type_name (char *full_name, char** name_space, char** name)
 {
-	if (!full_name || !name_space || !name)
-		return FALSE;
+	g_assert(full_name);
+	g_assert(name_space);
+	g_assert(name);
 
 	// Matches algorithm from ns::FindSep in src\coreclr\utilcode\namespaceutil.cpp
 	// This could result in the type name beginning with a '.' character.
@@ -2000,8 +2001,6 @@ mono_reflection_split_type_name (char *full_name, char** name_space, char** name
 		*name_space = (char *) "";
 		*name = full_name;
 	}
-
-	return TRUE;
 }
 
 static gboolean mono_reflection_parse_type_checked (char *name, MonoTypeNameParse *info, MonoError *error);

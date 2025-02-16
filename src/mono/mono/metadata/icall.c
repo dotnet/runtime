@@ -5208,11 +5208,7 @@ ves_icall_System_Reflection_RuntimeAssembly_GetTypeInternal(MonoQCallAssemblyHan
 	return_if_nok (error);
 
 	char *name_space, *name;
-	if (!mono_reflection_split_type_name (str, &name_space, &name))
-	{
-		g_free (str);
-		return;
-	}
+	mono_reflection_split_type_name (str, &name_space, &name);
 
 	MonoClass *klass;
 	if (ignoreCase)
