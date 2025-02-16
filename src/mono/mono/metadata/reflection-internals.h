@@ -28,9 +28,6 @@ mono_class_get_ref_info (MonoClass *klass);
 gboolean
 mono_reflection_split_type_name (char *full_name, char** name_space, char** name);
 
-MONO_COMPONENT_API gboolean
-mono_reflection_parse_type_checked (char *name, MonoTypeNameParse *info, MonoError *error);
-
 gboolean
 mono_reflection_is_usertype (MonoReflectionTypeHandle ref);
 
@@ -41,9 +38,6 @@ MonoType *
 mono_reflection_type_handle_mono_type (MonoReflectionTypeHandle ref_type, MonoError *error);
 
 MONO_COMPONENT_API MonoType*
-mono_reflection_get_type_checked (MonoAssemblyLoadContext *alc, MonoImage *rootimage, MonoImage* image, MonoTypeNameParse *info, gboolean ignorecase, gboolean search_mscorlib, gboolean *type_resolve, MonoError *error);
-
-MonoType*
 mono_reflection_type_from_name_checked (char *name, MonoAssemblyLoadContext *alc, MonoImage *image, gboolean ignorecase, gboolean use_toplevel_assembly, MonoError *error);
 
 guint32

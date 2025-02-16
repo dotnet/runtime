@@ -6786,7 +6786,7 @@ get_source_files_for_type (MonoClass *klass)
 
 
 typedef struct {
-	MonoTypeNameParse *info;
+	char *name;
 	gboolean ignore_case;
 	GPtrArray *res_classes;
 	GPtrArray *res_domains;
@@ -6796,7 +6796,6 @@ static void
 get_types (gpointer key, gpointer value, gpointer user_data)
 {
 	MonoAssembly *ass;
-	gboolean type_resolve;
 	MonoType *t;
 	MonoDomain *domain = (MonoDomain*)key;
 
@@ -6810,7 +6809,7 @@ get_types (gpointer key, gpointer value, gpointer user_data)
 		if (ass->image) {
 			ERROR_DECL (probe_type_error);
 			/* FIXME really okay to call while holding locks? */
-			t = mono_reflection_get_type_checked (alc, ass->image, ass->image, ud->info, ud->ignore_case, TRUE, FALSE, &type_resolve, probe_type_error);
+			t = mono_reflection_type_from_name_checked (ud->name, alc, ass->image, ud->ignore_case, FALSE, probe_type_error);
 			mono_error_cleanup (probe_type_error);
 			if (t) {
 				g_ptr_array_add (ud->res_classes, mono_class_from_mono_type_internal (t));
@@ -7467,22 +7466,12 @@ vm_commands (int command, int id, guint8 *p, guint8 *end, Buffer *buf)
 		break;
 	}
 	case CMD_VM_GET_TYPES: {
-		ERROR_DECL (error);
 		char *name;
 		gboolean ignore_case;
 		GPtrArray *res_classes, *res_domains;
-		MonoTypeNameParse info;
 
 		name = decode_string (p, &p, end);
 		ignore_case = decode_byte (p, &p, end);
-
-		if (!mono_reflection_parse_type_checked (name, &info, error)) {
-			add_error_string (buf, mono_error_get_message (error));
-			mono_error_cleanup (error);
-			g_free (name);
-			mono_reflection_free_type_info (&info);
-			return ERR_INVALID_ARGUMENT;
-		}
 
 		res_classes = g_ptr_array_new ();
 		res_domains = g_ptr_array_new ();
@@ -7491,7 +7480,7 @@ vm_commands (int command, int id, guint8 *p, guint8 *end, Buffer *buf)
 
 		GetTypesArgs args;
 		memset (&args, 0, sizeof (args));
-		args.info = &info;
+		args.name = name;
 		args.ignore_case = ignore_case;
 		args.res_classes = res_classes;
 		args.res_domains = res_domains;
@@ -7501,7 +7490,6 @@ vm_commands (int command, int id, guint8 *p, guint8 *end, Buffer *buf)
 		mono_loader_unlock ();
 
 		g_free (name);
-		mono_reflection_free_type_info (&info);
 
 		buffer_add_int (buf, res_classes->len);
 		for (guint i = 0; i < res_classes->len; ++i)
@@ -8158,44 +8146,25 @@ assembly_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 		char* original_s = g_strdup_printf ("\"%s\"", s);
 
 		gboolean ignorecase = decode_byte (p, &p, end);
-		MonoTypeNameParse info;
 		MonoType *t;
-		gboolean type_resolve;
 		MonoDomain *d = mono_domain_get ();
 		MonoAssemblyLoadContext *alc = mono_alc_get_default ();
 
 		/* This is needed to be able to find referenced assemblies */
 		mono_domain_set_fast (domain);
 
-		if (!mono_reflection_parse_type_checked (s, &info, error)) {
-			mono_error_cleanup (error);
-			t = NULL;
-		} else {
-			if (info.assembly.name) {
-				mono_reflection_free_type_info (&info);
-				g_free (s);
-				mono_domain_set_fast (d);
-				char* error_msg =  g_strdup_printf ("Unexpected assembly-qualified type %s was provided", original_s);
-				add_error_string (buf, error_msg);
-				g_free (error_msg);
-				g_free (original_s);
-				return ERR_INVALID_ARGUMENT;
-			}
-			t = mono_reflection_get_type_checked (alc, ass->image, ass->image, &info, ignorecase, TRUE, TRUE, &type_resolve, error);
-			if (!is_ok (error)) {
-				mono_error_cleanup (error); /* FIXME don't swallow the error */
-				mono_reflection_free_type_info (&info);
-				g_free (s);
-				mono_domain_set_fast (d);
-				char* error_msg =  g_strdup_printf ("Invalid type name %s", original_s);
-				add_error_string (buf, error_msg);
-				g_free (error_msg);
-				g_free (original_s);
-				return ERR_INVALID_ARGUMENT;
-			}
+		t = mono_reflection_type_from_name_checked (s, alc, ass->image, ignorecase, TRUE, error);
+		if (!is_ok (error)) {
+			mono_error_cleanup (error); /* FIXME don't swallow the error */
+			g_free (s);
+			mono_domain_set_fast (d);
+			char* error_msg =  g_strdup_printf ("Invalid type name %s", original_s);
+			add_error_string (buf, error_msg);
+			g_free (error_msg);
+			g_free (original_s);
+			return ERR_INVALID_ARGUMENT;
 		}
 		buffer_add_typeid (buf, domain, t ? mono_class_from_mono_type_internal (t) : NULL);
-		mono_reflection_free_type_info (&info);
 		g_free (s);
 		g_free (original_s);
 		mono_domain_set_fast (d);

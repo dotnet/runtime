@@ -2003,6 +2003,8 @@ mono_reflection_split_type_name (char *full_name, char** name_space, char** name
 	return TRUE;
 }
 
+static gboolean mono_reflection_parse_type_checked (char *name, MonoTypeNameParse *info, MonoError *error);
+
 /**
  * mono_reflection_parse_type:
  */
@@ -2251,24 +2253,6 @@ mono_reflection_get_type (MonoImage* image, MonoTypeNameParse *info, gboolean ig
 	return result;
 }
 
-/**
- * mono_reflection_get_type_checked:
- * \param alc the AssemblyLoadContext to check/load into
- * \param rootimage the image of the currently active managed caller
- * \param image a metadata context
- * \param info type description structure
- * \param ignorecase flag for case-insensitive string compares
- * \param type_resolve whenever type resolve was already tried
- * \param
- * \param error set on error.
- * Build a \c MonoType from the type description in \p info. On failure returns NULL and sets \p error.
- */
-MonoType*
-mono_reflection_get_type_checked (MonoAssemblyLoadContext *alc, MonoImage *rootimage, MonoImage* image, MonoTypeNameParse *info, gboolean ignorecase, gboolean search_mscorlib, gboolean *type_resolve, MonoError *error) {
-	error_init (error);
-	return mono_reflection_get_type_with_rootimage (alc, rootimage, image, info, ignorecase, search_mscorlib, type_resolve, error);
-}
-
 
 static MonoType*
 module_builder_array_get_type (MonoAssemblyLoadContext *alc, MonoArrayHandle module_builders, int i, MonoImage *rootimage, MonoTypeNameParse *info, gboolean ignorecase, gboolean search_mscorlib, MonoError *error)
@@ -2408,11 +2392,8 @@ exit:
 	HANDLE_FUNCTION_RETURN_VAL (type);
 }
 
-/**
- * mono_reflection_free_type_info:
- */
-void
-mono_reflection_free_type_info (MonoTypeNameParse *info)
+static void
+_mono_reflection_free_type_info (MonoTypeNameParse *info)
 {
 	g_list_free (info->modifiers);
 	g_list_free (info->nested);
@@ -2421,13 +2402,22 @@ mono_reflection_free_type_info (MonoTypeNameParse *info)
 		for (guint i = 0; i < info->type_arguments->len; i++) {
 			MonoTypeNameParse *subinfo = (MonoTypeNameParse *)g_ptr_array_index (info->type_arguments, i);
 
-			mono_reflection_free_type_info (subinfo);
+			_mono_reflection_free_type_info (subinfo);
 			/*We free the subinfo since it is allocated by _mono_reflection_parse_type*/
 			g_free (subinfo);
 		}
 
 		g_ptr_array_free (info->type_arguments, TRUE);
 	}
+}
+
+/**
+ * mono_reflection_free_type_info:
+ */
+void
+mono_reflection_free_type_info (MonoTypeNameParse *info)
+{
+	_mono_reflection_free_type_info (info);
 }
 
 /**
@@ -2492,7 +2482,7 @@ mono_reflection_type_from_name_checked (char *name, MonoAssemblyLoadContext *alc
 	type = _mono_reflection_get_type_from_info (alc, &info, image, ignorecase, TRUE, error);
 leave:
 	g_free (tmp);
-	mono_reflection_free_type_info (&info);
+	_mono_reflection_free_type_info (&info);
 	return type;
 }
 
