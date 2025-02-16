@@ -464,7 +464,7 @@ enum BasicBlockFlags : uint64_t
     BBF_HAS_VALUE_PROFILE              = MAKE_BBFLAG(39), // Block has a node that needs a value probing
 
     BBF_HAS_NEWARR                     = MAKE_BBFLAG(40), // BB contains 'new' of an array type.
-    BBF_MAY_HAVE_BOUNDS_CHECKS          = MAKE_BBFLAG(41), // BB may have bounds check (can be removed if we run out of bits)
+    BBF_MAY_HAVE_BOUNDS_CHECKS         = MAKE_BBFLAG(41), // BB *likely* has a bounds check (after rangecheck phase).
 
     // The following are sets of flags.
 

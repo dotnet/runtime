@@ -428,7 +428,7 @@ PhaseStatus Compiler::optRangeCheckCloning()
     {
         if (!block->HasFlag(BBF_MAY_HAVE_BOUNDS_CHECKS))
         {
-            // TP optimization - skip blocks that likely don't have bounds checks
+            // TP optimization - skip blocks that *likely* don't have bounds checks
             continue;
         }
 
