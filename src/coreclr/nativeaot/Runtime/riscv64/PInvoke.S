@@ -40,7 +40,7 @@ LEAF_ENTRY RhpPInvokeReturn, _TEXT
 
         PREPARE_EXTERNAL_VAR_INDIRECT_W RhpTrapThreads, t0
 
-        bnez    t1, 0f  // If TrapThreadsFlags_None is non-zero, branch
+        bnez    t0, 0f  // If TrapThreadsFlags_None is non-zero, branch
         ret
 
 0:
