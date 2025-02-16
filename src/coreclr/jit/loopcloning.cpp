@@ -3433,6 +3433,24 @@ PhaseStatus Compiler::optCloneBlocks()
 
             auto visitor = [](GenTree** slot, fgWalkData* data) -> fgWalkResult {
                 TreeWalkData* walkData = static_cast<TreeWalkData*>(data->pCallbackData);
+
+                if ((*slot)->IsHelperCall())
+                {
+                    switch ((*slot)->AsCall()->GetHelperNum())
+                    {
+                        case CORINFO_HELP_NEW_MDARR:
+                        case CORINFO_HELP_NEW_MDARR_RARE:
+                        case CORINFO_HELP_NEWARR_1_DIRECT:
+                        case CORINFO_HELP_NEWARR_1_MAYBEFROZEN:
+                        case CORINFO_HELP_NEWARR_1_OBJ:
+                        case CORINFO_HELP_NEWARR_1_VC:
+                        case CORINFO_HELP_NEWARR_1_ALIGN8:
+                            return WALK_ABORT;
+                        default:
+                            break;
+                    }
+                }
+
                 if ((*slot)->OperIs(GT_BOUNDS_CHECK))
                 {
                     BoundsCheckInfo info{};
@@ -3446,7 +3464,12 @@ PhaseStatus Compiler::optCloneBlocks()
                 return WALK_CONTINUE;
             };
 
-            fgWalkTreePre(stmt->GetRootNodePointer(), visitor, &walkData);
+            fgWalkResult result = fgWalkTreePre(stmt->GetRootNodePointer(), visitor, &walkData);
+            if (result == WALK_ABORT)
+            {
+                // We've encountered a block that we can't handle
+                break;
+            }
             stmtIndex++;
         }
 
