@@ -16,8 +16,8 @@
     <!-- With Mono AOT on Android we default to not using AOT data file optimization as it can degrade runtime performance for small binary size improvements. -->
     <_UseAotDataFile Condition="'$(RunAOTCompilation)' == 'true'">false</_UseAotDataFile>
     <RepoDotnet Condition="'$(DOTNET_ROOT)' != ''">$(DOTNET_ROOT)/dotnet</RepoDotnet>
-    <RepoDotnet Condition="'$(RepoDotnet)' == '' and '$(OS)' == 'Windows_NT'">..\..\..\..\dotnet.cmd</RepoDotnet>
-    <RepoDotnet Condition="'$(RepoDotnet)' == '' and '$(OS)' != 'Windows_NT'">../../../dotnet.sh</RepoDotnet>
+    <RepoDotnet Condition="'$(RepoDotnet)' == '' and '$(OS)' == 'Windows_NT'">$(RepoRoot)dotnet.cmd</RepoDotnet>
+    <RepoDotnet Condition="'$(RepoDotnet)' == '' and '$(OS)' != 'Windows_NT'">$(RepoRoot)dotnet.sh</RepoDotnet>
   </PropertyGroup>
 
   <ItemGroup>
