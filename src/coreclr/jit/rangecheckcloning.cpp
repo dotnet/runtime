@@ -269,8 +269,6 @@ static BasicBlock* optRangeCheckCloning_DoClone(Compiler* comp, BasicBlock* bloc
     // Wire up the edges
     //
     comp->fgRedirectTargetEdge(prevBb, lowerBndBb);
-    // We need to link the fallbackBb to the lastBb only once.
-
     FlowEdge* fallbackToNextBb       = comp->fgAddRefPred(lastBb, fallbackBb);
     FlowEdge* lowerBndToUpperBndEdge = comp->fgAddRefPred(upperBndBb, lowerBndBb);
     FlowEdge* lowerBndToFallbackEdge = comp->fgAddRefPred(fallbackBb, lowerBndBb);
@@ -297,9 +295,40 @@ static BasicBlock* optRangeCheckCloning_DoClone(Compiler* comp, BasicBlock* bloc
     lowerBndBb->SetFlags(BBF_INTERNAL);
     upperBndBb->SetFlags(BBF_INTERNAL | BBF_HAS_IDX_LEN);
 
+    // Now drop the bounds check from the fast path
+    while (!bndChkStack->Empty())
+    {
+        BoundsCheckInfo info = bndChkStack->Pop();
+#if DEBUG
+        // Ensure that the bounds check that we're removing is in the fast path:
+        bool statementFound = false;
+        for (Statement* const stmt : fastpathBb->Statements())
+        {
+            if (stmt == info.stmt)
+            {
+                statementFound = true;
+
+                // Find the bndChk in the statement
+                Compiler::fgWalkResult result = comp->fgWalkTreePre(
+                    stmt->GetRootNodePointer(),
+                    [](GenTree** pTree, Compiler::fgWalkData* data) -> Compiler::fgWalkResult {
+                    return (*pTree == (GenTree*)data->pCallbackData) ? Compiler::WALK_ABORT : Compiler::WALK_CONTINUE;
+                },
+                    info.bndChk);
+                // We don't need to validate bndChkParent - optRemoveRangeCheck will do it for us
+                assert(result == Compiler::WALK_ABORT);
+                break;
+            }
+        }
+        assert(statementFound);
+#endif
+        comp->optRemoveRangeCheck(info.bndChk, info.bndChkParent, info.stmt);
+        comp->gtSetStmtInfo(info.stmt);
+        comp->fgSetStmtSeq(info.stmt);
+    }
+
     comp->fgMorphBlockStmt(lowerBndBb, lowerBndBb->lastStmt() DEBUGARG("Morph lowerBnd"));
     comp->fgMorphBlockStmt(upperBndBb, upperBndBb->lastStmt() DEBUGARG("Morph upperBnd"));
-
     if (lowerBndBb->lastStmt() != nullptr)
     {
         // lowerBndBb might be converted into no-op by fgMorphBlockStmt(lowerBndBb)
@@ -307,15 +336,6 @@ static BasicBlock* optRangeCheckCloning_DoClone(Compiler* comp, BasicBlock* bloc
         comp->gtUpdateStmtSideEffects(lowerBndBb->lastStmt());
     }
     comp->gtUpdateStmtSideEffects(upperBndBb->lastStmt());
-
-    // Now drop the bounds check from the fast path
-    while (!bndChkStack->Empty())
-    {
-        BoundsCheckInfo info = bndChkStack->Pop();
-        comp->optRemoveRangeCheck(info.bndChk, info.bndChkParent, info.stmt);
-        comp->gtSetStmtInfo(info.stmt);
-        comp->fgSetStmtSeq(info.stmt);
-    }
 
     // All blocks must be in the same EH region
     assert(BasicBlock::sameEHRegion(prevBb, lowerBndBb));
