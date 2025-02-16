@@ -1,8 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
 using System.IO;
+using Microsoft.Win32.SafeHandles;
 
 namespace System.Diagnostics.Tests
 {
@@ -14,6 +14,11 @@ namespace System.Diagnostics.Tests
             filename += ".bat";
             File.WriteAllText(filename, $"exit {returnValue}");
             return filename;
+        }
+
+        private static bool FileHandleIsValid(SafeFileHandle fileHandle)
+        {
+            return Interop.Kernel32.GetFileType(fileHandle) == Interop.Kernel32.FileTypes.FILE_TYPE_DISK;
         }
     }
 }

@@ -47,6 +47,9 @@ namespace System.Diagnostics
             if (startInfo._environmentVariables != null)
                 throw new InvalidOperationException(SR.CantUseEnvVars);
 
+            if (!startInfo.InheritHandles)
+                throw new InvalidOperationException(SR.CantDisableHandleInheritanceAndUseShellExecute);
+
             string arguments = startInfo.BuildArguments();
 
             fixed (char* fileName = startInfo.FileName.Length > 0 ? startInfo.FileName : null)
