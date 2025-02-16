@@ -1924,7 +1924,40 @@ void CodeGen::genCodeForNegNot(GenTree* tree)
 //
 void CodeGen::genCodeForBswap(GenTree* tree)
 {
-    NYI_LOONGARCH64("genCodeForBswap unimpleement yet");
+    assert(tree->OperIs(GT_BSWAP, GT_BSWAP16));
+
+    emitAttr  attr      = emitActualTypeSize(tree);
+    regNumber targetReg = tree->GetRegNum();
+    emitter*  emit      = GetEmitter();
+
+    GenTree* operand = tree->gtGetOp1();
+    assert(!operand->isContained());
+    // The src must be a register.
+    regNumber   operandReg = genConsumeReg(operand);
+    instruction ins;
+
+    if (tree->OperIs(GT_BSWAP16))
+    {
+        ins = INS_revb_4h;
+    }
+    else if (attr == EA_8BYTE)
+    {
+        ins = INS_revb_d;
+    }
+    else
+    {
+        assert(attr == EA_4BYTE);
+        ins = INS_revb_2w;
+    }
+
+    emit->emitIns_R_R(ins, attr, targetReg, operandReg);
+
+    if (tree->OperIs(GT_BSWAP16) && !genCanOmitNormalizationForBswap16(tree))
+    {
+        emit->emitIns_R_R_I_I(INS_bstrpick_d, EA_8BYTE, targetReg, targetReg, 15, 0);
+    }
+
+    genProduceReg(tree);
 }
 
 //------------------------------------------------------------------------
