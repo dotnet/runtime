@@ -21,7 +21,11 @@ namespace System.Security.Cryptography.Pkcs
         private RSASignaturePadding? _signaturePadding;
 
         public X509Certificate2? Certificate { get; set; }
+#if NET || NETSTANDARD2_1
         public AsymmetricAlgorithm? PrivateKey { get; set; }
+#else
+        private AsymmetricAlgorithm? PrivateKey { get; set; }
+#endif
         public X509Certificate2Collection Certificates { get; } = new X509Certificate2Collection();
         public Oid DigestAlgorithm { get; set; }
         public X509IncludeOption IncludeOption { get; set; }
@@ -32,7 +36,12 @@ namespace System.Security.Cryptography.Pkcs
         /// Gets or sets the RSA signature padding to use.
         /// </summary>
         /// <value>The RSA signature padding to use.</value>
-        public RSASignaturePadding? SignaturePadding
+#if NET || NETSTANDARD2_1
+        public
+#else
+        private
+#endif
+        RSASignaturePadding? SignaturePadding
         {
             get => _signaturePadding;
             set
@@ -83,7 +92,12 @@ namespace System.Security.Cryptography.Pkcs
         {
         }
 
-        public CmsSigner(SubjectIdentifierType signerIdentifierType, X509Certificate2? certificate, AsymmetricAlgorithm? privateKey)
+#if NET || NETSTANDARD2_1
+        public
+#else
+        private
+#endif
+        CmsSigner(SubjectIdentifierType signerIdentifierType, X509Certificate2? certificate, AsymmetricAlgorithm? privateKey)
             : this(signerIdentifierType, certificate, privateKey, signaturePadding: null)
         {
         }
@@ -105,7 +119,12 @@ namespace System.Security.Cryptography.Pkcs
         /// <param name="signaturePadding">
         /// The RSA signature padding to use.
         /// </param>
-        public CmsSigner(
+#if NET || NETSTANDARD2_1
+        public
+#else
+        internal
+#endif
+        CmsSigner(
             SubjectIdentifierType signerIdentifierType,
             X509Certificate2? certificate,
             RSA? privateKey,

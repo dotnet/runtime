@@ -151,7 +151,12 @@ namespace System.Security.Cryptography.Pkcs
         /// <exception cref="CryptographicException">
         ///   The <paramref name="encodedMessage"/> parameter was not successfully decoded.
         /// </exception>
-        public void Decode(ReadOnlySpan<byte> encodedMessage)
+#if NET || NETSTANDARD2_1
+        public
+#else
+        internal
+#endif
+        void Decode(ReadOnlySpan<byte> encodedMessage)
         {
             if (_decryptorPal != null)
             {
@@ -219,7 +224,12 @@ namespace System.Security.Cryptography.Pkcs
             DecryptContent(RecipientInfos, extraStore);
         }
 
-        public void Decrypt(RecipientInfo recipientInfo, AsymmetricAlgorithm? privateKey)
+#if NET || NETSTANDARD2_1
+        public
+#else
+        internal
+#endif
+        void Decrypt(RecipientInfo recipientInfo, AsymmetricAlgorithm? privateKey)
         {
             if (recipientInfo is null)
             {
