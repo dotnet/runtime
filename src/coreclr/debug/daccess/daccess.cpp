@@ -25,6 +25,7 @@
 #include "dbgutil.h"
 #include "cdac.h"
 #include <clrconfignocache.h>
+#include <cdac_reader.h>
 
 #ifdef USE_DAC_TABLE_RVA
 #include <dactablerva.h>
@@ -7028,6 +7029,7 @@ CLRDataCreateInstance(REFIID iid,
         DWORD val;
         if (enable.TryAsInteger(10, val) && val == 1)
         {
+            CDAC::CreateInstance((void*)&iid, pLegacyTarget, iface, pClrDataAccess->m_globalBase);
             // TODO: [cdac] TryGetSymbol is only implemented for Linux, OSX, and Windows.
             uint64_t contractDescriptorAddr = 0;
             if (TryGetSymbol(pClrDataAccess->m_pTarget, pClrDataAccess->m_globalBase, "DotNetRuntimeContractDescriptor", &contractDescriptorAddr))
