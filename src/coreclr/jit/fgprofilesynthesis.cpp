@@ -30,10 +30,20 @@
 //
 void ProfileSynthesis::Run(ProfileSynthesisOption option)
 {
-    m_dfsTree             = m_comp->fgComputeDfs();
-    m_loops               = FlowGraphNaturalLoops::Find(m_dfsTree);
-    m_improperLoopHeaders = m_loops->ImproperLoopHeaders();
-    m_entryBlock          = m_comp->opts.IsOSR() ? m_comp->fgEntryBB : m_comp->fgFirstBB;
+    if (m_dfsTree == nullptr)
+    {
+        m_dfsTree             = m_comp->fgComputeDfs();
+        m_loops               = FlowGraphNaturalLoops::Find(m_dfsTree);
+        m_improperLoopHeaders = m_loops->ImproperLoopHeaders();
+    }
+    else
+    {
+        assert(m_loops != nullptr);
+    }
+
+    // Profile synthesis can be run before or after morph, so tolerate (non-)canonical method entries
+    //
+    m_entryBlock = (m_comp->opts.IsOSR() && (m_comp->fgEntryBB != nullptr)) ? m_comp->fgEntryBB : m_comp->fgFirstBB;
 
     // Retain or compute edge likelihood information
     //
@@ -104,7 +114,7 @@ void ProfileSynthesis::Run(ProfileSynthesisOption option)
     // belief that the profile should be somewhat flatter.
     //
     unsigned retries = 0;
-    while (m_approximate && (retries < maxRepairRetries))
+    while ((option != ProfileSynthesisOption::RetainLikelihoods) && m_approximate && (retries < maxRepairRetries))
     {
         JITDUMP("\n\n[%d] Retrying reconstruction with blend factor " FMT_WT ", because %s\n", retries, m_blendFactor,
                 m_cappedCyclicProbabilities ? "capped cyclic probabilities" : "solver failed to converge");
