@@ -4951,8 +4951,6 @@ public:
     void SetNeedsTemp(CallArg* arg);
     bool IsNonStandard(Compiler* comp, GenTreeCall* call, CallArg* arg);
 
-    GenTree* MakeTmpArgNode(Compiler* comp, CallArg* arg, unsigned lclNum);
-
     // clang-format off
     bool HasThisPointer() const { return m_hasThisPointer; }
     bool HasRetBuffer() const { return m_hasRetBuffer; }

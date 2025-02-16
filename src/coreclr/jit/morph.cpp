@@ -1418,51 +1418,6 @@ void CallArgs::SortArgs(Compiler* comp, GenTreeCall* call, CallArg** sortedArgs)
 }
 
 //------------------------------------------------------------------------------
-// MakeTmpArgNode:
-//   Create a temp for an argument if needed.  We usually need this to be done
-//   in order to enforce ordering of the evaluation of arguments.
-//
-// Return Value:
-//    the newly created temp var tree.
-//
-GenTree* CallArgs::MakeTmpArgNode(Compiler* comp, CallArg* arg, unsigned lclNum)
-{
-    LclVarDsc* varDsc  = comp->lvaGetDesc(lclNum);
-    var_types  argType = varDsc->TypeGet();
-    assert(genActualType(argType) == genActualType(arg->GetSignatureType()));
-
-    GenTree* argNode = nullptr;
-
-    if (varTypeIsStruct(argType))
-    {
-        if (arg->NewAbiInfo.IsPassedByReference())
-        {
-            argNode = comp->gtNewLclVarAddrNode(lclNum);
-            comp->lvaSetVarAddrExposed(lclNum DEBUGARG(AddressExposedReason::ESCAPE_ADDRESS));
-        }
-        // TODO-CQ: currently this mirrors the logic in "fgMorphArgs", but actually we only need
-        // this retyping for args passed in a single register: "(NumRegs == 1) && !IsSplit()".
-        else if (arg->AbiInfo.ArgType != TYP_STRUCT)
-        {
-            argNode = comp->gtNewLclFldNode(lclNum, arg->AbiInfo.ArgType, 0);
-            comp->lvaSetVarDoNotEnregister(lclNum DEBUGARG(DoNotEnregisterReason::SwizzleArg));
-        }
-        else
-        {
-            // We are passing this struct by value in multiple registers and/or on stack.
-            argNode = comp->gtNewLclvNode(lclNum, argType);
-        }
-    }
-    else
-    {
-        assert(!arg->NewAbiInfo.IsPassedByReference());
-        argNode = comp->gtNewLclvNode(lclNum, argType);
-    }
-
-    return argNode;
-}
-
-//------------------------------------------------------------------------------
 // EvalArgsToTemps: Handle arguments that were marked as requiring temps.
 //
 // Remarks:
