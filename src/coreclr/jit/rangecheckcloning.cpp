@@ -296,7 +296,7 @@ PhaseStatus Compiler::optRangeCheckCloning()
                     BoundsCheckInfo info{};
                     if (info.Initialize(data->compiler, walkData->stmt, node->AsBoundsChk(), data->parent))
                     {
-                        IndexLengthPair       key(info.idxVN, info.lenVN);
+                        IdxLenPair       key(info.idxVN, info.lenVN);
                         BoundsCheckInfoStack* value;
                         if (!walkData->boundsChks->Lookup(key, &value))
                         {

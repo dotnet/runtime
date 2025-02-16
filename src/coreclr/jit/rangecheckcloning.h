@@ -30,9 +30,9 @@ struct BoundsCheckInfo
                     GenTree*          bndChkParentNode);
 };
 
-struct IndexLengthPair
+struct IdxLenPair
 {
-    IndexLengthPair(ValueNum idx, ValueNum len)
+    IdxLenPair(ValueNum idx, ValueNum len)
         : idxVN(idx)
         , lenVN(len)
     {
@@ -41,20 +41,21 @@ struct IndexLengthPair
     ValueNum idxVN;
     ValueNum lenVN;
 };
-struct LargePrimitiveKeyFuncsTwoVNs
+
+struct LargePrimitiveKeyFuncsIdxLenPair
 {
-    static unsigned GetHashCode(const IndexLengthPair& val)
+    static unsigned GetHashCode(const IdxLenPair& val)
     {
-        // Value numbers are mostly small integers
+        // VNs are mostly small integers
         return val.idxVN ^ (val.lenVN << 16);
     }
 
-    static bool Equals(const IndexLengthPair& x, const IndexLengthPair& y)
+    static bool Equals(const IdxLenPair& x, const IdxLenPair& y)
     {
-        return x.idxVN == y.idxVN && x.lenVN == y.lenVN;
+        return (x.idxVN == y.idxVN) && (x.lenVN == y.lenVN);
     }
 };
 
 typedef ArrayStack<BoundsCheckInfo> BoundsCheckInfoStack;
 
-typedef JitHashTable<IndexLengthPair, LargePrimitiveKeyFuncsTwoVNs, BoundsCheckInfoStack*> BoundsCheckInfoMap;
+typedef JitHashTable<IdxLenPair, LargePrimitiveKeyFuncsIdxLenPair, BoundsCheckInfoStack*> BoundsCheckInfoMap;
