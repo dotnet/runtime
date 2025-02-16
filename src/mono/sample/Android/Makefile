@@ -7,6 +7,8 @@ AOT_WITH_LIBRARY_FILES=false
 INTERP=false
 DEPLOY_AND_RUN?=true
 RUNTIME_FLAVOR?=Mono
+R2R?=false
+R2R_COMPOSITE?=false
 
 #If DIAGNOSTIC_PORTS is enabled, @(RuntimeComponents) must also include 'diagnostics_tracing'.
 #If @(RuntimeComponents) includes 'diagnostics_tracing', DIAGNOSTIC_PORTS is optional.
@@ -48,6 +50,8 @@ run: appbuilder
 	/p:RunActivity=false \
 	'/p:DiagnosticPorts="$(DIAGNOSTIC_PORTS)"' \
 	/p:RuntimeFlavor=$(RUNTIME_FLAVOR) \
+	/p:PublishReadyToRun=$(R2R) \
+	/p:PublishReadyToRunComposite=$(R2R_COMPOSITE) \
 	/bl
 clean:
 	rm -rf $(REPO_DIR)/artifacts/bin/AndroidSampleApp
