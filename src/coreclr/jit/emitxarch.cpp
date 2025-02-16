@@ -13197,6 +13197,14 @@ void emitter::emitDispIns(
                 case INS_vcvttsd2usi64:
                 case INS_vcvttss2usi32:
                 case INS_vcvttss2usi64:
+                case INS_vcvttsd2sis32:
+                case INS_vcvttsd2sis64:
+                case INS_vcvttss2sis32:
+                case INS_vcvttss2sis64:
+                case INS_vcvttsd2usis32:
+                case INS_vcvttsd2usis64:
+                case INS_vcvttss2usis32:
+                case INS_vcvttss2usis64:
                 {
                     assert(!id->idIsEvexAaaContextSet());
                     printf("%s, %s", emitRegName(id->idReg1(), attr), emitRegName(id->idReg2(), EA_16BYTE));
