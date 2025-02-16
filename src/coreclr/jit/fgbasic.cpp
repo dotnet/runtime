@@ -4656,25 +4656,6 @@ BasicBlock* Compiler::fgSplitBlockAtEnd(BasicBlock* curr)
     return newBlock;
 }
 
-BasicBlock* Compiler::fgSplitBlockBeforeStatement(BasicBlock* curr, Statement* stmt)
-{
-    Statement* prevStmt = nullptr;
-    for (Statement* const currStmt : curr->Statements())
-    {
-        if (currStmt == stmt)
-        {
-            if (prevStmt == nullptr)
-            {
-                return fgSplitBlockAtBeginning(curr);
-            }
-            return fgSplitBlockAfterStatement(curr, prevStmt);
-        }
-        prevStmt = currStmt;
-    }
-    assert(!"stmt was not found");
-    return nullptr;
-}
-
 //------------------------------------------------------------------------------
 // fgSplitBlockAfterStatement - Split the given block, with all code after
 //                              the given statement going into the second block.

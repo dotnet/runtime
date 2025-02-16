@@ -4860,10 +4860,6 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
             return fgHeadTailMerge(false);
         });
 
-        // Clone blocks with subsequent bounds checks
-        //
-        DoPhase(this, PHASE_CLONE_BLOCKS, &Compiler::optCloneBlocks);
-
         // Compute DFS tree and remove all unreachable blocks.
         //
         DoPhase(this, PHASE_DFS_BLOCKS3, &Compiler::fgDfsBlocksAndRemove);
@@ -5050,12 +5046,17 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
 
             fgInvalidateDfsTree();
 
+            // Clone blocks with subsequent bounds checks
+            //
+
             if (doVNBasedDeadStoreRemoval)
             {
                 // Note: this invalidates SSA and value numbers on tree nodes.
                 //
                 DoPhase(this, PHASE_VN_BASED_DEAD_STORE_REMOVAL, &Compiler::optVNBasedDeadStoreRemoval);
             }
+
+            DoPhase(this, PHASE_CLONE_BLOCKS, &Compiler::optCloneBlocks);
 
             if (doVNBasedIntrinExpansion)
             {
