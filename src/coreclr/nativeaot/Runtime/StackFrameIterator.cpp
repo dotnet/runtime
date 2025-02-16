@@ -809,6 +809,8 @@ void StackFrameIterator::InternalInit(Thread * pThreadToWalk, NATIVE_CONTEXT* pC
     m_RegDisplay.pS9 = (PTR_uintptr_t)PTR_TO_REG(pCtx, S9);
     m_RegDisplay.pS10 = (PTR_uintptr_t)PTR_TO_REG(pCtx, S10);
     m_RegDisplay.pS11 = (PTR_uintptr_t)PTR_TO_REG(pCtx, S11);
+    m_RegDisplay.pFP = (PTR_uintptr_t)PTR_TO_REG(pCtx, Fp);
+    m_RegDisplay.pRA = (PTR_uintptr_t)PTR_TO_REG(pCtx, Ra);
 
     //
     // scratch regs
