@@ -77,6 +77,10 @@ typedef enum {
 	 * Instrument exceptional method exits.
 	 */
 	MONO_PROFILER_CALL_INSTRUMENTATION_EXCEPTION_LEAVE = 1 << 6,
+	/**
+	 * Instrument method samplepoints with context.
+	 */
+	MONO_PROFILER_CALL_INSTRUMENTATION_SAMPLEPOINT_CONTEXT = 1 << 7,
 } MonoProfilerCallInstrumentationFlags;
 
 typedef MonoProfilerCallInstrumentationFlags (*MonoProfilerCallInstrumentationFilterCallback) (MonoProfiler *prof, MonoMethod *method);

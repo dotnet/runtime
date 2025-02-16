@@ -62,7 +62,6 @@ const fn_signatures: SigLine[] = [
     [() => !runtimeHelpers.emscriptenBuildOptions.enableAotProfiler, "mono_wasm_profiler_init_aot", "void", ["string"]],
     [() => !runtimeHelpers.emscriptenBuildOptions.enableBrowserProfiler, "mono_wasm_profiler_init_browser", "void", ["string"]],
     [() => !runtimeHelpers.emscriptenBuildOptions.enableLogProfiler, "mono_wasm_profiler_init_log", "void", ["string"]],
-    [true, "mono_wasm_profiler_init_browser", "void", ["number"]],
     [false, "mono_wasm_exec_regression", "number", ["number", "string"]],
     [false, "mono_wasm_invoke_jsexport", "void", ["number", "number"]],
     [true, "mono_wasm_write_managed_pointer_unsafe", "void", ["number", "number"]],
@@ -130,6 +129,9 @@ const fn_signatures: SigLine[] = [
     [true, "mono_jiterp_end_catch", "void", []],
     [true, "mono_interp_pgo_load_table", "number", ["number", "number"]],
     [true, "mono_interp_pgo_save_table", "number", ["number", "number"]],
+    [() => !runtimeHelpers.emscriptenBuildOptions.enablePerfTracing, "mono_jiterp_prof_enter", "void", ["number", "number"]],
+    [() => !runtimeHelpers.emscriptenBuildOptions.enablePerfTracing, "mono_jiterp_prof_samplepoint", "void", ["number", "number"]],
+    [() => !runtimeHelpers.emscriptenBuildOptions.enablePerfTracing, "mono_jiterp_prof_leave", "void", ["number", "number"]],
 
     ...threading_cwraps,
 ];
