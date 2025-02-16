@@ -8,20 +8,14 @@ This witticism is the underlying philosophy of our approach. By actively maintai
 
 > Users are best served when we act _quickly_ not _exhaustively_.
 
-
 This double meaning is instructing us to be boldly pragmatic. Each new OS release brings a certain risk of breakage. The risk is far from uniform across the various repos and components that we maintain. Users are best served when we've developed 80% confidence and to leave the remaining (potential) 20% to bug reports. Exhaustive testing serves no one. We've also found that our users do a great job finding corner cases and enthusiastically participate in the process by opening issues in the appropriate repo.
-
 
 Continuing with the idea of pragmatism, if you only read this far, you've got the basic idea. The rest of the doc describes more context and mechanics.
 
 References:
 
+- [New Operating System Version Onboarding Guide](https://github.com/dotnet/dnceng/blob/main/Documentation/ProjectDocs/OS%20Onboarding/Guidance.md)
 - [.NET OS Support Tracking](https://github.com/dotnet/core/issues/9638)
-- [.NET Support](https://github.com/dotnet/core/blob/main/support.md)
-- [Prereq container image lifecycle](https://github.com/dotnet/dotnet-buildtools-prereqs-docker/blob/main/lifecycle.md)
-- [Support for Linux Distros](https://dev.azure.com/dnceng/internal/_wiki/wikis/DNCEng%20Services%20Wiki/940/Support-for-Linux-Distros) (MS internal)
-- [Support for Apple Operating Systems](https://dev.azure.com/dnceng/internal/_wiki/wikis/DNCEng%20Services%20Wiki/933/Support-for-Apple-Operating-Systems-(macOS-iOS-and-tvOS)) (MS internal)
-- [Support for Windows Operating Systems](https://dev.azure.com/dnceng/internal/_wiki/wikis/DNCEng%20Services%20Wiki/939/Support-for-Windows-Operating-Systems) (MS internal)
 
 ## Context
 
@@ -33,7 +27,7 @@ Nearly all the APIs that touch native code (networking, cryptography) and deal w
 
 Our rule is that we declare support (for all [supported .NET releases](https://github.com/dotnet/core/blob/main/releases.md)) for a new OS version after it is validated in dotnet/runtime `main`. We will only hold support on additional testing in special cases (which are uncommon).
 
-We aim to have "day of" support for about half the OSes we support, including Azure Linux, Ubuntu LTS, and Windows. This means we need to perform ahead-of-time signoff on non-final builds.
+We aim to have "day of" support for about half the OSes we support, including Azure Linux, Ubuntu LTS, and Windows. This means we need to perform ahead-of-time signoff on [non-final builds](https://github.com/dotnet/runtime/pull/111768#issuecomment-2617229139).
 
 Our testing philosophy is based on perceived risk and past experience. The effective test matrix is huge, the product of OSes \* supported versions \* architectures.  We try to make smart choices to **skip testing most of the matrix** while retaining much of the **practical coverage**. We also know where we tend to get bitten most when we don't pay sufficient attention. For example, our bug risk across Linux, macOS, and Windows is not uniform.
 
