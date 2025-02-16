@@ -25,7 +25,11 @@ namespace System.Text.Json
         /// <summary>
         /// Simple values or user-provided custom converters.
         /// </summary>
-        Value = 0x2,
+        SimpleValue = 0x2,
+        /// <summary>
+        /// Values that can participate in resumable serialization, for example by splitting the value and writing each split segment separately.
+        /// </summary>
+        SegmentableValue = 0x4,
         /// <summary>
         /// Enumerable collections except dictionaries.
         /// </summary>
