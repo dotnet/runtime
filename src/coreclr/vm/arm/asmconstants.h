@@ -192,8 +192,8 @@ ASMCONSTANTS_C_ASSERT(FixupPrecodeData__MethodDesc == offsetof(FixupPrecodeData,
 #define FixupPrecodeData__PrecodeFixupThunk 0x08
 ASMCONSTANTS_C_ASSERT(FixupPrecodeData__PrecodeFixupThunk == offsetof(FixupPrecodeData, PrecodeFixupThunk))
 
-#define StubPrecodeData__MethodDesc 0x00
-ASMCONSTANTS_C_ASSERT(StubPrecodeData__MethodDesc == offsetof(StubPrecodeData, MethodDesc))
+#define StubPrecodeData__SecretParam 0x00
+ASMCONSTANTS_C_ASSERT(StubPrecodeData__SecretParam == offsetof(StubPrecodeData, SecretParam))
 
 #define StubPrecodeData__Target 0x04
 ASMCONSTANTS_C_ASSERT(StubPrecodeData__Target == offsetof(StubPrecodeData, Target))
