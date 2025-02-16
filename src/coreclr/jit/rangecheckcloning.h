@@ -9,7 +9,7 @@ struct BoundCheckLocation
 {
     Statement*        stmt;
     GenTreeBoundsChk* bndChk;
-    GenTree* bndChkParent;
+    GenTree*          bndChkParent;
 
     BoundCheckLocation(Statement* stmt, GenTreeBoundsChk* bndChk, GenTree* bndChkParent)
         : stmt(stmt)

@@ -264,8 +264,15 @@ PhaseStatus Compiler::optRangeCheckCloning()
     BoundsCheckInfoMap             bndChkMap(getAllocator(CMK_RangeCheckCloning));
     for (BasicBlock* block = fgFirstBB; block != nullptr; block = block->Next())
     {
+        if (!block->HasFlag(BBF_MAY_HAVE_BOUNDS_CHECKS))
+        {
+            // This check is not strictly necessary, but it's a quick way to skip blocks
+            continue;
+        }
+
         if (block->isRunRarely())
         {
+            // We don't want to clone the blocks that are run rarely
             continue;
         }
 
