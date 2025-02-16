@@ -2704,7 +2704,8 @@ bool Compiler::fgTryMorphStructArg(CallArg* arg)
                 // We sometimes end up with struct reinterpretations where the
                 // retyping into a primitive allows us to replace by a scalar
                 // local here, so make sure we do that if possible.
-                if ((lclVar->GetLclOffs() == 0) && (offset == 0) && (genTypeSize(type) == genTypeSize(dsc)))
+                if ((lclVar->GetLclOffs() == 0) && (offset == 0) && (genTypeSize(type) == genTypeSize(dsc)) &&
+                    varTypeUsesSameRegType(type, dsc))
                 {
                     result = gtNewLclVarNode(lclVar->GetLclNum());
                 }
