@@ -537,6 +537,11 @@
 			<method signature="System.Void .ctor()" />
 		</type>
 
+		<!-- reflection.c: mono_reflection_type_from_name_checked -->
+		<type fullname="System.Reflection.TypeNameResolver">
+			<method signature="System.RuntimeType GetTypeHelper(System.String, System.IntPtr, System.Reflection.RuntimeAssembly, System.Boolean, System.Boolean)" />
+		</type>
+
 		<!-- exception.c: mono_get_exception_runtime_wrapped () -->
 		<type fullname="System.Runtime.CompilerServices.RuntimeWrappedException">
 			<method signature="System.Void .ctor(System.Object)" />

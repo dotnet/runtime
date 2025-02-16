@@ -69,6 +69,7 @@ static GENERATE_GET_CLASS_WITH_CACHE (missing, "System.Reflection", "Missing");
 static GENERATE_GET_CLASS_WITH_CACHE (method_body, "System.Reflection", "RuntimeMethodBody");
 static GENERATE_GET_CLASS_WITH_CACHE (local_variable_info, "System.Reflection", "RuntimeLocalVariableInfo");
 static GENERATE_GET_CLASS_WITH_CACHE (exception_handling_clause, "System.Reflection", "RuntimeExceptionHandlingClause");
+static GENERATE_GET_CLASS_WITH_CACHE (type_name_resolver, "System.Reflection", "TypeNameResolver");
 static GENERATE_GET_CLASS_WITH_CACHE (type_builder, "System.Reflection.Emit", "RuntimeTypeBuilder");
 static GENERATE_GET_CLASS_WITH_CACHE (dbnull, "System", "DBNull");
 
@@ -2461,29 +2462,50 @@ mono_reflection_type_from_name (char *name, MonoImage *image)
 MonoType*
 mono_reflection_type_from_name_checked (char *name, MonoAssemblyLoadContext *alc, MonoImage *image, gboolean ignorecase, gboolean use_toplevel_assembly, MonoError *error)
 {
+	HANDLE_FUNCTION_ENTER ();
 	MonoType *type = NULL;
-	MonoTypeNameParse info;
-	char *tmp;
 
 	error_init (error);
-	/* Make a copy since parse_type modifies its argument */
-	tmp = g_strdup (name);
 
-	/*g_print ("requested type %s\n", str);*/
-	ERROR_DECL (parse_error);
-	if (!mono_reflection_parse_type_checked (tmp, &info, parse_error)) {
-		mono_error_cleanup (parse_error);
-		goto leave;
+	MONO_STATIC_POINTER_INIT (MonoMethod, method)
+
+		ERROR_DECL (local_error);
+		MonoClass *type_name_resolver_class = mono_class_get_type_name_resolver_class ();
+		g_assert (type_name_resolver_class);
+		method = mono_class_get_method_from_name_checked (type_name_resolver_class, "GetTypeHelper", -1, 0, local_error);
+		g_assert (method);
+		mono_error_cleanup (local_error);
+
+	MONO_STATIC_POINTER_INIT_END (MonoMethod, method)
+
+	MonoStringHandle name_obj = mono_string_new_handle (name, error);
+	goto_if_nok (error, leave);
+
+	gpointer alc_ptr = mono_alc_get_gchandle_for_resolving (alc);
+
+	MonoReflectionAssemblyHandle requesting_handle;
+	if (image->assembly) {
+		requesting_handle = mono_assembly_get_object_handle (image->assembly, error);
+		goto_if_nok (error, leave);
+	} else {
+		requesting_handle = MONO_HANDLE_CAST (MonoReflectionAssembly, NULL_HANDLE);
 	}
-	if (info.assembly.name && use_toplevel_assembly) {
-		mono_error_set_argument_format (error, "name", "Unexpected assembly-qualified type \"%s\" was provided", name);
-		goto leave;
-	}
-	type = _mono_reflection_get_type_from_info (alc, &info, image, ignorecase, TRUE, error);
+
+	gpointer params [5];
+	params [0] = MONO_HANDLE_RAW (name_obj);
+	params [1] = &alc_ptr;
+	params [2] = MONO_HANDLE_RAW (requesting_handle);
+	params [3] = &ignorecase;
+	params [4] = &use_toplevel_assembly;
+	MonoReflectionTypeHandle result;
+	result = MONO_HANDLE_CAST (MonoReflectionType, mono_runtime_invoke_handle (method, NULL_HANDLE, params, error));
+	goto_if_nok (error, leave);
+
+	if (MONO_HANDLE_BOOL (result))
+		type = MONO_HANDLE_GETVAL (result, type);
+
 leave:
-	g_free (tmp);
-	_mono_reflection_free_type_info (&info);
-	return type;
+	HANDLE_FUNCTION_RETURN_VAL (type);
 }
 
 /**

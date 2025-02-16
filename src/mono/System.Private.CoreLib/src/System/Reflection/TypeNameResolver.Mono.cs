@@ -101,6 +101,35 @@ namespace System.Reflection
             }.Resolve(parsed);
         }
 
+        // Used by VM
+        internal static unsafe RuntimeType? GetTypeHelper(string typeName, IntPtr gchALC, RuntimeAssembly? requestingAssembly,
+            bool ignoreCase, bool useTopLevelAssembly)
+        {
+            if (typeName.Length == 0)
+            {
+                return null;
+            }
+
+            TypeName? parsed = TypeNameParser.Parse(typeName, throwOnError: false);
+            if (parsed is null)
+            {
+                return null;
+            }
+
+            if (useTopLevelAssembly && parsed.AssemblyName is not null)
+            {
+                throw new ArgumentException(SR.Argument_AssemblyGetTypeCannotSpecifyAssembly);
+            }
+
+            return (RuntimeType?)new TypeNameResolver()
+            {
+                _ignoreCase = ignoreCase,
+                _topLevelAssembly = useTopLevelAssembly ? requestingAssembly : null,
+                _requestingAssembly = requestingAssembly,
+                _loadContext = AssemblyLoadContext.GetAssemblyLoadContext(gchALC),
+            }.Resolve(parsed);
+        }
+
         private Assembly? ResolveAssembly(AssemblyName name)
         {
             Assembly? assembly;
