@@ -31,15 +31,17 @@ internal static partial class Interop
 
         private sealed class SafeSslContextCache : SafeHandleCache<SslContextCacheKey, SafeSslContextHandle> { }
 
-        private static readonly SafeSslContextCache s_clientSslContexts = new();
+        private static readonly SafeSslContextCache s_sslContexts = new();
 
         internal readonly struct SslContextCacheKey : IEquatable<SslContextCacheKey>
         {
+            public readonly bool IsClient;
             public readonly byte[]? CertificateThumbprint;
             public readonly SslProtocols SslProtocols;
 
-            public SslContextCacheKey(SslProtocols sslProtocols, byte[]? certificateThumbprint)
+            public SslContextCacheKey(bool isClient, SslProtocols sslProtocols, byte[]? certificateThumbprint)
             {
+                IsClient = isClient;
                 SslProtocols = sslProtocols;
                 CertificateThumbprint = certificateThumbprint;
             }
@@ -47,6 +49,7 @@ internal static partial class Interop
             public override bool Equals(object? obj) => obj is SslContextCacheKey key && Equals(key);
 
             public bool Equals(SslContextCacheKey other) =>
+                IsClient == other.IsClient &&
                 SslProtocols == other.SslProtocols &&
                 (CertificateThumbprint == null && other.CertificateThumbprint == null ||
                  CertificateThumbprint != null && other.CertificateThumbprint != null && CertificateThumbprint.AsSpan().SequenceEqual(other.CertificateThumbprint));
@@ -55,6 +58,7 @@ internal static partial class Interop
             {
                 HashCode hash = default;
 
+                hash.Add(IsClient);
                 hash.Add(SslProtocols);
                 if (CertificateThumbprint != null)
                 {
@@ -161,41 +165,19 @@ internal static partial class Interop
                 return AllocateSslContext(sslAuthenticationOptions, protocols, allowCached);
             }
 
-            if (sslAuthenticationOptions.IsClient)
-            {
-                var key = new SslContextCacheKey(protocols, sslAuthenticationOptions.CertificateContext?.TargetCertificate.GetCertHash(HashAlgorithmName.SHA512));
-                return s_clientSslContexts.GetOrCreate(key, static (args) =>
-                {
-                    var (sslAuthOptions, protocols, allowCached) = args;
-                    return AllocateSslContext(sslAuthOptions, protocols, allowCached);
-                }, (sslAuthenticationOptions, protocols, allowCached));
-            }
-
-            // cache in SslStreamCertificateContext is bounded and there is no eviction
-            // so the handle should always be valid,
-
             bool hasAlpn = sslAuthenticationOptions.ApplicationProtocols != null && sslAuthenticationOptions.ApplicationProtocols.Count != 0;
 
-            SslProtocols serverCacheKey = protocols | (hasAlpn ? FakeAlpnSslProtocol : SslProtocols.None);
-            if (!sslAuthenticationOptions.CertificateContext!.SslContexts!.TryGetValue(serverCacheKey, out SafeSslContextHandle? handle))
+            SslProtocols serverProtocolCacheKey = protocols | (hasAlpn ? FakeAlpnSslProtocol : SslProtocols.None);
+
+            var key = new SslContextCacheKey(
+                sslAuthenticationOptions.IsClient,
+                sslAuthenticationOptions.IsClient ? protocols : serverProtocolCacheKey,
+                sslAuthenticationOptions.CertificateContext?.TargetCertificate.GetCertHash(HashAlgorithmName.SHA512));
+            return s_sslContexts.GetOrCreate(key, static (args) =>
             {
-                // not found in cache, create and insert
-                handle = AllocateSslContext(sslAuthenticationOptions, protocols, allowCached);
-
-                SafeSslContextHandle cached = sslAuthenticationOptions.CertificateContext!.SslContexts!.GetOrAdd(serverCacheKey, handle);
-
-                if (handle != cached)
-                {
-                    // lost the race, another thread created the SSL_CTX meanwhile, prefer the cached one
-                    handle.Dispose();
-                    Debug.Assert(handle.IsClosed);
-                    handle = cached;
-                }
-            }
-
-            Debug.Assert(!handle.IsClosed);
-            handle.TryAddRentCount();
-            return handle;
+                var (sslAuthOptions, protocols, allowCached) = args;
+                return AllocateSslContext(sslAuthOptions, protocols, allowCached);
+            }, (sslAuthenticationOptions, protocols, allowCached));
         }
 
         // This essentially wraps SSL_CTX* aka SSL_CTX_new + setting
@@ -367,8 +349,7 @@ internal static partial class Interop
                 {
                     // Server should always have certificate
                     Debug.Assert(sslAuthenticationOptions.CertificateContext != null);
-                    if (sslAuthenticationOptions.CertificateContext == null ||
-                       sslAuthenticationOptions.CertificateContext.SslContexts == null)
+                    if (sslAuthenticationOptions.CertificateContext == null)
                     {
                         cacheSslContext = false;
                     }
