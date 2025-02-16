@@ -3,6 +3,11 @@
 
 #pragma once
 
+// This file contains the definition of the "Range check cloning" phase.
+//
+// See rangecheckcloning.cpp for context and overview.
+//
+
 #define MIN_CHECKS_PER_GROUP 4
 
 struct BoundCheckLocation

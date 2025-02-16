@@ -4,6 +4,43 @@
 #include "jitpch.h"
 #include "rangecheckcloning.h"
 
+// This file contains the definition of the "Range check cloning" phase.
+//
+// The goal of this phase is to pick up range checks which were not optimized by the
+// range check optimization phase and clone them to have "fast" and "slow" paths.
+// This is similar to what the "Loop Cloning" phase does for loops. Example:
+//
+//   arr[i + 1] = x;
+//   arr[i + 3] = y;
+//   arr[i + 5] = z;
+//   arr[i + 8] = w;
+//
+// assertprop/rangecheck phases give up on the above bounds checks because of the
+// increasing offsets and there are no assertions that they can rely on.
+// This phase handles such cases by cloning the entire block (only the affected statements
+// to be precise) into "fast" and "slow" under a "cloned" condition:
+//
+//   if (i >= 0 && i < arr.Length - 8)
+//   {
+//       // Fast path
+//       arr[i + 1] = x; // no bounds check
+//       arr[i + 3] = y; // no bounds check
+//       arr[i + 5] = z; // no bounds check
+//       arr[i + 8] = w; // no bounds check
+//   }
+//   else
+//   {
+//       // Slow path
+//       arr[i + 1] = x; // bounds check
+//       arr[i + 3] = y; // bounds check
+//       arr[i + 5] = w; // bounds check
+//       arr[i + 8] = w; // bounds check
+//   }
+//
+// The phase scans all statements in a block and groups the bounds checks based on
+// "Base Index and Length" pairs (VNs). Then the phase takes the largest group and
+// clones the block to have fast and slow paths.
+
 bool BoundsCheckInfo::Initialize(const Compiler*   comp,
                                  Statement*        statement,
                                  GenTreeBoundsChk* bndChkNode,
@@ -54,18 +91,19 @@ bool BoundsCheckInfo::Initialize(const Compiler*   comp,
     return true;
 }
 
-static BasicBlock* optRangeCheckCloning_DoClone(Compiler* comp, BasicBlock* block, BoundsCheckInfoStack* guard)
+static BasicBlock* optRangeCheckCloning_DoClone(Compiler* comp, BasicBlock* block, BoundsCheckInfoStack* bndChkStack)
 {
-    BasicBlock* prevBb     = block;
-    BasicBlock* fallbackBb = nullptr;
+    BoundsCheckInfo firstCheck = bndChkStack->Bottom();
+    BoundsCheckInfo lastCheck  = bndChkStack->Top();
+    BasicBlock*     prevBb     = block;
 
-    BoundsCheckInfo firstCheck = guard->Bottom();
-    BoundsCheckInfo lastCheck  = guard->Top();
-
-    GenTree**   bndChkUse;
-    Statement*  newFirstStmt;
-    BasicBlock* fastpathBb =
+    // First, split the block at the first bounds check using gtSplitTree (via fgSplitBlockBeforeTree):
+    GenTree**       bndChkUse;
+    Statement*      newFirstStmt;
+    BasicBlock*     fastpathBb =
         comp->fgSplitBlockBeforeTree(block, firstCheck.stmt, firstCheck.bndChk, &newFirstStmt, &bndChkUse);
+
+    // Perform the usual routine after gtSplitTree:
     while ((newFirstStmt != nullptr) && (newFirstStmt != firstCheck.stmt))
     {
         comp->fgMorphStmtBlockOps(fastpathBb, newFirstStmt);
@@ -74,10 +112,10 @@ static BasicBlock* optRangeCheckCloning_DoClone(Compiler* comp, BasicBlock* bloc
     comp->fgMorphStmtBlockOps(fastpathBb, firstCheck.stmt);
     comp->gtUpdateStmtSideEffects(firstCheck.stmt);
 
-    BasicBlock* lastBb = comp->fgSplitBlockAfterStatement(fastpathBb, lastCheck.stmt);
-
-    // TODO-CloneBlocks: call gtSplitTree for lastBndChkStmt as well, to cut off
+    // Now split the block at the last bounds check using fgSplitBlockAfterStatement:
+    // TODO-RangeCheckCloning: call gtSplitTree for lastBndChkStmt as well, to cut off
     // the stuff we don't have to clone.
+    BasicBlock* lastBb = comp->fgSplitBlockAfterStatement(fastpathBb, lastCheck.stmt);
 
     DebugInfo debugInfo = fastpathBb->firstStmt()->GetDebugInfo();
 
@@ -90,9 +128,9 @@ static BasicBlock* optRangeCheckCloning_DoClone(Compiler* comp, BasicBlock* bloc
     assert((arrLen->gtFlags & GTF_ALL_EFFECT) == 0);
 
     // Find the maximum offset
-    for (int i = 0; i < guard->Height(); i++)
+    for (int i = 0; i < bndChkStack->Height(); i++)
     {
-        offset = max(offset, guard->Top(i).offset);
+        offset = max(offset, bndChkStack->Top(i).offset);
     }
     assert(offset >= 0);
 
@@ -110,6 +148,7 @@ static BasicBlock* optRangeCheckCloning_DoClone(Compiler* comp, BasicBlock* bloc
 
     // Since we're re-using the index node from the first bounds check and its value was spilled
     // by the tree split, we need to restore the base index by subtracting the offset.
+    // Hopefully, someone will fold this back into the index expression.
     //
     GenTree* idxClone;
     if (firstCheck.offset > 0)
@@ -164,11 +203,8 @@ static BasicBlock* optRangeCheckCloning_DoClone(Compiler* comp, BasicBlock* bloc
     //
     // For the fallback (slow path), we just entirely clone the fast path.
     //
-    if (fallbackBb == nullptr)
-    {
-        fallbackBb = comp->fgNewBBafter(BBJ_ALWAYS, lowerBndBb, false);
-        BasicBlock::CloneBlockState(comp, fallbackBb, fastpathBb);
-    }
+    BasicBlock* fallbackBb = comp->fgNewBBafter(BBJ_ALWAYS, lowerBndBb, false);
+    BasicBlock::CloneBlockState(comp, fallbackBb, fastpathBb);
 
     // 4) fastBlockBb:
     //
@@ -217,14 +253,15 @@ static BasicBlock* optRangeCheckCloning_DoClone(Compiler* comp, BasicBlock* bloc
     comp->gtUpdateStmtSideEffects(upperBndBb->lastStmt());
 
     // Now drop the bounds check from the fast path
-    while (!guard->Empty())
+    while (!bndChkStack->Empty())
     {
-        BoundsCheckInfo info = guard->Pop();
+        BoundsCheckInfo info = bndChkStack->Pop();
         comp->optRemoveRangeCheck(info.bndChk, info.bndChkParent, info.stmt);
         comp->gtSetStmtInfo(info.stmt);
         comp->fgSetStmtSeq(info.stmt);
     }
 
+    // All blocks must be in the same EH region
     assert(BasicBlock::sameEHRegion(prevBb, lowerBndBb));
     assert(BasicBlock::sameEHRegion(prevBb, upperBndBb));
     assert(BasicBlock::sameEHRegion(prevBb, fastpathBb));
@@ -258,21 +295,27 @@ PhaseStatus Compiler::optRangeCheckCloning()
         return PhaseStatus::MODIFIED_NOTHING;
     }
 
-    bool changed = false;
+    bool modified = false;
 
+    // An array to keep all the bounds checks in the block
+    // Strictly speaking, we don't need this array and can group the bounds checks
+    // right as we walk them, but this helps to improve the TP/Memory usage
+    // as many blocks don't have enough bounds checks to clone anyway.
     ArrayStack<BoundCheckLocation> bndChkLocations(getAllocator(CMK_RangeCheckCloning));
+
+    // A map to group the bounds checks by the base index and length VNs
     BoundsCheckInfoMap             bndChkMap(getAllocator(CMK_RangeCheckCloning));
+
     for (BasicBlock* block = fgFirstBB; block != nullptr; block = block->Next())
     {
         if (!block->HasFlag(BBF_MAY_HAVE_BOUNDS_CHECKS))
         {
-            // This check is not strictly necessary, but it's a quick way to skip blocks
+            // TP optimization - skip blocks that likely don't have bounds checks
             continue;
         }
 
         if (block->isRunRarely())
         {
-            // We don't want to clone the blocks that are run rarely
             continue;
         }
 
@@ -289,11 +332,13 @@ PhaseStatus Compiler::optRangeCheckCloning()
         {
             if (block->KindIs(BBJ_COND, BBJ_RETURN) && (stmt == block->lastStmt()))
             {
-                // TODO: Splitting these blocks at the last statements
+                // TODO-RangeCheckCloning: Splitting these blocks at the last statements
                 // require using gtSplitTree for the last bounds check.
                 break;
             }
 
+            // Now just record all the bounds checks in the block (in the execution order)
+            //
             struct TreeWalkData
             {
                 Statement*                      stmt;
@@ -366,10 +411,10 @@ PhaseStatus Compiler::optRangeCheckCloning()
 
         JITDUMP("Cloning bounds checks in " FMT_BB "\n", block->bbNum);
         block   = optRangeCheckCloning_DoClone(this, block, largestGroup);
-        changed = true;
+        modified = true;
     }
 
-    if (changed)
+    if (modified)
     {
         return PhaseStatus::MODIFIED_EVERYTHING;
     }
