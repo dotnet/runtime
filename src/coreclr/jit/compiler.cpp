@@ -10082,6 +10082,10 @@ JITDBGAPI void __cdecl cTreeFlags(Compiler* comp, GenTree* tree)
                 {
                     chars += printf("[CALL_VIRT_STUB]");
                 }
+                if (tree->AsCall()->IsVirtualGeneric())
+                {
+                    chars += printf("[CALL_VIRT_GENERIC]");
+                }
                 if (tree->gtFlags & GTF_CALL_NULLCHECK)
                 {
                     chars += printf("[CALL_NULLCHECK]");
