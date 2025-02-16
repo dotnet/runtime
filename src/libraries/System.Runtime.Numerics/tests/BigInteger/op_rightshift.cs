@@ -169,7 +169,8 @@ namespace System.Numerics.Tests
             }
         }
 
-        public static IEnumerable<object[]> RunSmallTestsData()
+        [Fact]
+        public void RunSmallTests()
         {
             foreach (int i in new int[] {
                     0,
@@ -207,21 +208,15 @@ namespace System.Numerics.Tests
                         foreach (int sign in new int[] { -1, +1 })
                         {
                             Int128 value128 = sign * (num + k);
-                            yield return [value128, shift];
+
+                            byte[] tempByteArray1 = GetRandomSmallByteArray(value128);
+                            byte[] tempByteArray2 = GetRandomSmallByteArray(shift);
+
+                            VerifyRightShiftString(Print(tempByteArray2) + Print(tempByteArray1) + opstring);
                         }
                     }
                 }
             }
-        }
-
-        [Theory]
-        [MemberData(nameof(RunSmallTestsData))]
-        public void RunSmallTests(Int128 value, int shift)
-        {
-            byte[] tempByteArray1 = GetRandomSmallByteArray(value);
-            byte[] tempByteArray2 = GetRandomSmallByteArray(shift);
-
-            VerifyRightShiftString(Print(tempByteArray2) + Print(tempByteArray1) + opstring);
         }
 
         private static void VerifyRightShiftString(string opstring)
