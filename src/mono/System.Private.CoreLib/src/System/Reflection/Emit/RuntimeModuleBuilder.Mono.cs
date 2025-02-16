@@ -150,8 +150,6 @@ namespace System.Reflection.Emit
             return DefineDataImpl(name, size, attributes & ~FieldAttributes.ReservedMask);
         }
 
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
-            Justification = "Reflection.Emit is not subject to trimming")]
         internal Type DefineDataType(int size)
         {
             string typeName = $"$ArrayType${size}";
@@ -166,8 +164,6 @@ namespace System.Reflection.Emit
             return tb.CreateType();
         }
 
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
-            Justification = "Reflection.Emit is not subject to trimming")]
         private FieldBuilder DefineDataImpl(string name, int size, FieldAttributes attributes)
         {
             ArgumentException.ThrowIfNullOrEmpty(name);
