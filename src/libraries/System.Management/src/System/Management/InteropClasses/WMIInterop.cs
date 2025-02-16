@@ -1344,9 +1344,7 @@ namespace System.Management
                     return false;
 
                 // If we CAN get to the IObjectContext interface, we have a 'context'
-#pragma warning disable CS9191 // The 'ref' modifier for argument 1 corresponding to 'in' parameter is equivalent to 'in'. Consider using 'in' instead.
-                if (0 == Marshal.QueryInterface(pComThreadingInfo, ref Unsafe.AsRef(in IID_IObjectContext), out pObjectContext))
-#pragma warning restore CS9191
+                if (0 == Marshal.QueryInterface(pComThreadingInfo, in IID_IObjectContext, out pObjectContext))
                     return false;
             }
             finally
