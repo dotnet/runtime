@@ -17,3 +17,41 @@ internal unsafe partial interface ICLRDataEnumMemoryRegions
     [PreserveSig]
     int EnumMemoryRegions(/*ICLRDataEnumMemoryRegionsCallback*/ void* callback, uint miniDumpFlags, /*CLRDataEnumMemoryFlags*/ int clrFlags);
 }
+
+[GeneratedComInterface]
+[Guid("3e11ccee-d08b-43e5-af01-32717a64da03")]
+internal unsafe partial interface ICLRDataTarget
+{
+    [PreserveSig]
+    int GetMachineType(uint* machineType);
+
+    [PreserveSig]
+    int GetPointerSize(uint* pointerSize);
+
+    [PreserveSig]
+    int GetImageBase([MarshalAs(UnmanagedType.LPWStr)] string imagePath, ulong* baseAddress);
+
+    [PreserveSig]
+    int ReadVirtual(ulong address, byte* buffer, uint bytesRequested, uint* bytesRead);
+
+    [PreserveSig]
+    int WriteVirtual(ulong address, byte* buffer, uint bytesRequested, uint* bytesWritten);
+
+    [PreserveSig]
+    int GetTLSValue(uint threadID, uint index, ulong* value);
+
+    [PreserveSig]
+    int SetTLSValue(uint threadID, uint index, ulong value);
+
+    [PreserveSig]
+    int GetCurrentThreadID(uint* threadID);
+
+    [PreserveSig]
+    int GetThreadContext(uint threadID, uint contextFlags, uint contextSize, byte* context);
+
+    [PreserveSig]
+    int SetThreadContext(uint threadID, uint contextSize, byte* context);
+
+    [PreserveSig]
+    int Request(uint reqCode, uint inBufferSize, byte* inBuffer, uint outBufferSize, byte* outBuffer);
+}

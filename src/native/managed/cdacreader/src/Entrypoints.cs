@@ -2,8 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.IO;
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.Marshalling;
+using Microsoft.Diagnostics.DataContractReader.Decoder;
+using Microsoft.Diagnostics.DataContractReader.Legacy;
 
 namespace Microsoft.Diagnostics.DataContractReader;
 
@@ -81,6 +84,31 @@ internal static class Entrypoints
         Legacy.SOSDacImpl impl = new(target, legacyImpl);
         nint ptr = cw.GetOrCreateComInterfaceForObject(impl, CreateComInterfaceFlags.None);
         *obj = ptr;
+        return 0;
+    }
+
+    [UnmanagedCallersOnly(EntryPoint = $"{CDAC}create_instance")]
+    private static unsafe int CLRDataCreateInstance(Guid* pIID, IntPtr /*ICLRDataTarget*/ pLegacyTarget, void** iface, ulong baseAddress)
+    {
+        //Define the path to the text file
+        string logFilePath = "C:\\Users\\maxcharlamb\\OneDrive - Microsoft\\Desktop\\out.txt";
+
+        //Create a StreamWriter to write logs to a text file
+        using StreamWriter logFileWriter = new StreamWriter(logFilePath, append: true);
+        Console.SetOut(logFileWriter);
+
+        if (pLegacyTarget == IntPtr.Zero || iface == null)
+            return HResults.E_INVALIDARG;
+
+        Console.WriteLine("CLRDataCreateInstance called");
+
+        ComWrappers cw = new StrategyBasedComWrappers();
+        object obj = cw.GetOrCreateObjectForComInstance(pLegacyTarget, CreateObjectFlags.None);
+        ICLRDataTarget dataTarget = obj as ICLRDataTarget ?? throw new ArgumentException("Invalid ICLRDataTarget");
+
+        PEDecoder pEDecoder = new(dataTarget, baseAddress);
+        pEDecoder.GetSymbolAddress("test");
+        *iface = null;
         return 0;
     }
 }

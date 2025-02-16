@@ -90,6 +90,17 @@ CDAC CDAC::Create(uint64_t descriptorAddr, ICorDebugDataTarget* target, IUnknown
     return CDAC{cdacLib, handle, target, legacyImpl};
 }
 
+void CDAC::CreateInstance(void* iid, ICLRDataTarget* pLegacyTarget, void** iface, uintptr_t baseAddress)
+{
+    HMODULE cdacLib;
+    if (!TryLoadCDACLibrary(&cdacLib))
+        return;
+
+    decltype(&cdac_reader_create_instance) create_instance = reinterpret_cast<decltype(&cdac_reader_create_instance)>(::GetProcAddress(cdacLib, "cdac_reader_create_instance"));
+
+    create_instance(iid, pLegacyTarget, iface, baseAddress);
+}
+
 CDAC::CDAC(HMODULE module, intptr_t handle, ICorDebugDataTarget* target, IUnknown* legacyImpl)
     : m_module{module}
     , m_cdac_handle{handle}
