@@ -31,7 +31,6 @@
         la    t3, g_GCShadow
         ld    t3, 0(t3)
         beq  t3, zero, 1f
-        li   t4, 0
 
         // Save destReg since we're about to modify it (and we need the original value both within the macro and
         // once we exit the macro).
@@ -174,10 +173,12 @@
         // If no, early out.
 
         la      t2, g_lowest_address
-        bgeu    \destReg, t2, 0f
+        ld      t2, (t2)
+        bltu    \destReg, t2, 0f
 
         la      t2, g_highest_address
-        bltu    \destReg, t2, 0f
+        ld      t2, (t2)
+        bgeu    \destReg, t2, 0f
 
 1:
         INSERT_UNCHECKED_WRITE_BARRIER_CORE \destReg, \refReg
@@ -228,8 +229,10 @@ LEAF_END RhpByRefAssignRef, _TEXT
 LEAF_ENTRY RhpCheckedAssignRef, _TEXT
 
         # Check if the destination is within the heap bounds
-        la t2, C_FUNC(g_lowest_address)
-        la t6, C_FUNC(g_highest_address)
+        la      t2, C_FUNC(g_lowest_address)
+        ld      t2, (t2)
+        la      t6, C_FUNC(g_highest_address)
+        ld      t6, (t6)
 
         bltu    t3, t2, LOCAL_LABEL(NotInHeap)
         bgeu    t3, t6, LOCAL_LABEL(NotInHeap)
