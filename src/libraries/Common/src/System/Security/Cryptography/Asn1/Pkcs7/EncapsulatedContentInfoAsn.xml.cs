@@ -6,7 +6,7 @@ using System;
 using System.Formats.Asn1;
 using System.Runtime.InteropServices;
 
-namespace System.Security.Cryptography.Pkcs.Asn1
+namespace System.Security.Cryptography.Asn1.Pkcs7
 {
     [StructLayout(LayoutKind.Sequential)]
     internal partial struct EncapsulatedContentInfoAsn

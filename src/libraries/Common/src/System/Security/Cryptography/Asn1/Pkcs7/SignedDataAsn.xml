@@ -2,7 +2,7 @@
 <asn:Sequence
   xmlns:asn="http://schemas.dot.net/asnxml/201808/"
   name="SignedDataAsn"
-  namespace="System.Security.Cryptography.Pkcs.Asn1">
+  namespace="System.Security.Cryptography.Asn1.Pkcs7">
 
   <!--
     https://tools.ietf.org/html/rfc5652#section-5.1
@@ -24,14 +24,14 @@
   <asn:SetOf name="DigestAlgorithms">
     <asn:AsnType typeName="System.Security.Cryptography.Asn1.AlgorithmIdentifierAsn" />
   </asn:SetOf>
-  <asn:AsnType name="EncapContentInfo" typeName="System.Security.Cryptography.Pkcs.Asn1.EncapsulatedContentInfoAsn" />
+  <asn:AsnType name="EncapContentInfo" typeName="System.Security.Cryptography.Asn1.Pkcs7.EncapsulatedContentInfoAsn" />
   <asn:SetOf name="CertificateSet" implicitTag="0" optional="true">
-    <asn:AsnType typeName="System.Security.Cryptography.Pkcs.Asn1.CertificateChoiceAsn" />
+    <asn:AsnType typeName="System.Security.Cryptography.Asn1.Pkcs7.CertificateChoiceAsn" />
   </asn:SetOf>
   <asn:SetOf name="Crls" implicitTag="1" optional="true">
     <asn:AnyValue />
   </asn:SetOf>
   <asn:SetOf name="SignerInfos">
-    <asn:AsnType typeName="System.Security.Cryptography.Pkcs.Asn1.SignerInfoAsn" />
+    <asn:AsnType typeName="System.Security.Cryptography.Asn1.Pkcs7.SignerInfoAsn" />
   </asn:SetOf>
 </asn:Sequence>

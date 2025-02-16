@@ -7,13 +7,13 @@ using System.Collections.Generic;
 using System.Formats.Asn1;
 using System.Runtime.InteropServices;
 
-namespace System.Security.Cryptography.Pkcs.Asn1
+namespace System.Security.Cryptography.Asn1.Pkcs7
 {
     [StructLayout(LayoutKind.Sequential)]
     internal partial struct SignerInfoAsn
     {
         internal int Version;
-        internal System.Security.Cryptography.Pkcs.Asn1.SignerIdentifierAsn Sid;
+        internal System.Security.Cryptography.Asn1.Pkcs7.SignerIdentifierAsn Sid;
         internal System.Security.Cryptography.Asn1.AlgorithmIdentifierAsn DigestAlgorithm;
         internal ReadOnlyMemory<byte>? SignedAttributes;
         internal System.Security.Cryptography.Asn1.AlgorithmIdentifierAsn SignatureAlgorithm;
@@ -125,7 +125,7 @@ namespace System.Security.Cryptography.Pkcs.Asn1
                 sequenceReader.ThrowIfNotEmpty();
             }
 
-            System.Security.Cryptography.Pkcs.Asn1.SignerIdentifierAsn.Decode(ref sequenceReader, rebind, out decoded.Sid);
+            System.Security.Cryptography.Asn1.Pkcs7.SignerIdentifierAsn.Decode(ref sequenceReader, rebind, out decoded.Sid);
             System.Security.Cryptography.Asn1.AlgorithmIdentifierAsn.Decode(ref sequenceReader, rebind, out decoded.DigestAlgorithm);
 
             if (sequenceReader.HasData && sequenceReader.PeekTag().HasSameClassAndValue(new Asn1Tag(TagClass.ContextSpecific, 0)))
