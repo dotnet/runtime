@@ -8,6 +8,7 @@
 // See rangecheckcloning.cpp for context and overview.
 //
 
+// Min number of bounds checks required to form a group
 #define MIN_CHECKS_PER_GROUP 4
 
 struct BoundCheckLocation

@@ -175,32 +175,20 @@ static BasicBlock* optRangeCheckCloning_DoClone(Compiler* comp, BasicBlock* bloc
 
     DebugInfo debugInfo = fastpathBb->firstStmt()->GetDebugInfo();
 
-    int      offset = 0;
-    GenTree* idx    = firstCheck.bndChk->GetIndex();
-    GenTree* arrLen = firstCheck.bndChk->GetArrayLength();
-
-    // gtSplitTree is expected to spill the side effects of the index and array length expressions
-    assert((idx->gtFlags & GTF_ALL_EFFECT) == 0);
-    assert((arrLen->gtFlags & GTF_ALL_EFFECT) == 0);
-
     // Find the maximum offset
+    int offset = 0;
     for (int i = 0; i < bndChkStack->Height(); i++)
     {
         offset = max(offset, bndChkStack->Top(i).offset);
     }
     assert(offset >= 0);
 
-    if (idx == nullptr)
-    {
-        // it can be null when we deal with constant indices, so we treat them as offsets
-        // In this case, we don't need the LowerBound check, but let's still create it for
-        // simplicity, the downstream code will eliminate it.
-        idx = comp->gtNewIconNode(0);
-    }
-    else
-    {
-        idx = comp->gtCloneExpr(idx);
-    }
+    GenTree* idx    = comp->gtCloneExpr(firstCheck.bndChk->GetIndex());
+    GenTree* arrLen = comp->gtCloneExpr(firstCheck.bndChk->GetArrayLength());
+
+    // gtSplitTree is expected to spill the side effects of the index and array length expressions
+    assert((idx->gtFlags & GTF_ALL_EFFECT) == 0);
+    assert((arrLen->gtFlags & GTF_ALL_EFFECT) == 0);
 
     // Since we're re-using the index node from the first bounds check and its value was spilled
     // by the tree split, we need to restore the base index by subtracting the offset.
@@ -237,18 +225,17 @@ static BasicBlock* optRangeCheckCloning_DoClone(Compiler* comp, BasicBlock* bloc
     // else
     //     goto fallbackBb
     //
-    GenTree*   arrLenClone = comp->gtCloneExpr(arrLen);
     GenTreeOp* idxUpperBoundTree;
     if (idx->IsIntegralConst(0))
     {
         // if the index is just 0, then we can simplify the condition to "arrLen > indexOffset"
-        idxUpperBoundTree = comp->gtNewOperNode(GT_GT, TYP_INT, arrLenClone, comp->gtNewIconNode(offset));
+        idxUpperBoundTree = comp->gtNewOperNode(GT_GT, TYP_INT, arrLen, comp->gtNewIconNode(offset));
     }
     else
     {
         // "i < arrLen + (-indexOffset)"
         GenTree*   negOffset = comp->gtNewIconNode(-offset); // never overflows
-        GenTreeOp* subNode   = comp->gtNewOperNode(GT_ADD, TYP_INT, arrLenClone, negOffset);
+        GenTreeOp* subNode   = comp->gtNewOperNode(GT_ADD, TYP_INT, arrLen, negOffset);
         idxUpperBoundTree    = comp->gtNewOperNode(GT_LT, TYP_INT, idxClone, subNode);
     }
     idxUpperBoundTree->gtFlags |= GTF_RELOP_JMP_USED;
