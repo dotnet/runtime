@@ -43,6 +43,13 @@ void* InterpCompiler::AllocMemPool(size_t numBytes)
     return malloc(numBytes);
 }
 
+void* InterpCompiler::AllocMemPool0(size_t numBytes)
+{
+    void *ptr = AllocMemPool(numBytes);
+    memset(ptr, 0, numBytes);
+    return ptr;
+}
+
 // Allocator for potentially larger chunks of data, that we might want to free
 // eagerly, before method is finished compiling, to prevent excessive memory usage.
 void* InterpCompiler::AllocTemporary(size_t numBytes)
@@ -552,16 +559,138 @@ void InterpCompiler::EmitConv(StackInfo *sp, InterpInst *prevIns, StackType type
     newInst->SetDVar(var);
 }
 
+bool InterpCompiler::CreateBasicBlocks(CORINFO_METHOD_INFO* methodInfo)
+{
+    int32_t codeSize = methodInfo->ILCodeSize;
+    uint8_t *codeStart = methodInfo->ILCode;
+    uint8_t *codeEnd = codeStart + codeSize;
+    const uint8_t *ip = codeStart;
+
+    m_ppOffsetToBB = (InterpBasicBlock**)AllocMemPool0(sizeof(InterpBasicBlock*) * (methodInfo->ILCodeSize + 1));
+    GetBB(0);
+
+    for (unsigned int i = 0; i < methodInfo->EHcount; i++)
+    {
+        CORINFO_EH_CLAUSE clause;
+        m_compHnd->getEHinfo(methodInfo->ftn, i, &clause);
+
+        if ((codeStart + clause.TryOffset) > codeEnd ||
+                (codeStart + clause.TryOffset + clause.TryLength) > codeEnd)
+        {
+            return false;
+        }
+        GetBB(clause.TryOffset);
+
+        if ((codeStart + clause.HandlerOffset) > codeEnd ||
+                (codeStart + clause.HandlerOffset + clause.HandlerLength) > codeEnd)
+        {
+            return false;
+        }
+        GetBB(clause.HandlerOffset);
+
+        if (clause.Flags == CORINFO_EH_CLAUSE_FILTER)
+        {
+            if ((codeStart + clause.FilterOffset) > codeEnd)
+                return false;
+            GetBB(clause.FilterOffset);
+        }
+    }
+
+    while (ip < codeEnd)
+    {
+        int32_t insOffset = (int32_t)(ip - codeStart);
+        OPCODE opcode = CEEDecodeOpcode(&ip);
+        OPCODE_FORMAT opArgs = g_CEEOpArgs[opcode];
+        int32_t target;
+
+        switch (opArgs)
+        {
+        case InlineNone:
+            ip++;
+            break;
+        case InlineString:
+        case InlineType:
+        case InlineField:
+        case InlineMethod:
+        case InlineTok:
+        case InlineSig:
+        case ShortInlineR:
+        case InlineI:
+            ip += 5;
+            break;
+        case InlineVar:
+            ip += 3;
+            break;
+        case ShortInlineVar:
+        case ShortInlineI:
+            ip += 2;
+            break;
+        case ShortInlineBrTarget:
+            target = insOffset + 2 + (int8_t)ip [1];
+            if (target >= codeSize)
+                return false;
+            GetBB(target);
+            ip += 2;
+            GetBB((int32_t)(ip - codeStart));
+            break;
+        case InlineBrTarget:
+            target = insOffset + 5 + getI4LittleEndian(ip + 1);
+            if (target >= codeSize)
+                return false;
+            GetBB(target);
+            ip += 5;
+            GetBB((int32_t)(ip - codeStart));
+            break;
+        case InlineSwitch: {
+            uint32_t n = getI4LittleEndian(ip + 1);
+            ip += 5;
+            insOffset += 5 + 4 * n;
+            target = insOffset;
+            if (target >= codeSize)
+                return false;
+            GetBB(target);
+            for (uint32_t i = 0; i < n; i++)
+            {
+                target = insOffset + getI4LittleEndian(ip);
+                if (target >= codeSize)
+                    return false;
+                GetBB(target);
+                ip += 4;
+            }
+            GetBB((int32_t)(ip - codeStart));
+            break;
+        }
+        case InlineR:
+        case InlineI8:
+            ip += 9;
+            break;
+        default:
+            assert(0);
+        }
+        if (opcode == CEE_THROW || opcode == CEE_ENDFINALLY || opcode == CEE_RETHROW)
+            GetBB((int32_t)(ip - codeStart));
+    }
+
+    return true;
+}
+
 int InterpCompiler::GenerateCode(CORINFO_METHOD_INFO* methodInfo)
 {
     m_ip = methodInfo->ILCode;
     uint8_t *codeEnd = m_ip + methodInfo->ILCodeSize;
 
-    m_ppOffsetToBB = (InterpBasicBlock**)AllocMemPool(sizeof(InterpBasicBlock*) * (methodInfo->ILCodeSize + 1));
     m_stackCapacity = methodInfo->maxStack + 1;
     m_pStackBase = m_pStackPointer = (StackInfo*)AllocTemporary(sizeof(StackInfo) * m_stackCapacity);
 
     m_pCBB = m_pEntryBB = AllocBB();
+    m_pEntryBB->ilOffset = 0;
+
+    if (!CreateBasicBlocks(methodInfo))
+    {
+        // FIXME error return for compilation failure
+        m_hasInvalidCode = true;
+        goto exit;
+    }
 
     while (m_ip < codeEnd)
     {

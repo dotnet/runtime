@@ -36,4 +36,47 @@ OPCODE CEEDecodeOpcode(const uint8_t **ip);
 #define INTOP_MOV_P INTOP_MOV_4
 #endif
 
+// Helpers identical to ones used by JIT
+// FIXME how to consume GET_UNALIGNED_VAL defines from pal as jit ???
+//
+//#include "pal_mstypes.h"
+//#include "pal_endian.h"
+
+inline uint16_t getU2LittleEndian(const uint8_t* ptr)
+{
+    return *(uint16_t*)ptr;
+}
+
+inline uint32_t getU4LittleEndian(const uint8_t* ptr)
+{
+    return *(uint32_t*)ptr;
+}
+
+inline int16_t getI2LittleEndian(const uint8_t* ptr)
+{
+    return *(int16_t*)ptr;
+}
+
+inline int32_t getI4LittleEndian(const uint8_t* ptr)
+{
+    return *(int32_t*)ptr;
+}
+
+inline int64_t getI8LittleEndian(const uint8_t* ptr)
+{
+    return *(int64_t*)ptr;
+}
+
+inline float getR4LittleEndian(const uint8_t* ptr)
+{
+    int32_t val = getI4LittleEndian(ptr);
+    return *(float*)&val;
+}
+
+inline double getR8LittleEndian(const uint8_t* ptr)
+{
+    int64_t val = getI8LittleEndian(ptr);
+    return *(double*)&val;
+}
+
 #endif

@@ -165,6 +165,7 @@ private:
 
     void* AllocMethodData(size_t numBytes);
     void* AllocMemPool(size_t numBytes);
+    void* AllocMemPool0(size_t numBytes);
     void* AllocTemporary(size_t numBytes);
     void* ReallocTemporary(void* ptr, size_t numBytes);
     void  FreeTemporary(void* ptr);
@@ -233,6 +234,7 @@ private:
     void EmitCode();
     int32_t* EmitCodeIns(int32_t *ip, InterpInst *pIns);
     InterpMethod* CreateInterpMethod();
+    bool CreateBasicBlocks(CORINFO_METHOD_INFO* methodInfo);
 public:
 
     InterpCompiler(COMP_HANDLE compHnd, CORINFO_METHOD_INFO* methodInfo);
