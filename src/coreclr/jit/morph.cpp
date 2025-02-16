@@ -1566,6 +1566,8 @@ void CallArgs::EvalArgsToTemps(Compiler* comp, GenTreeCall* call)
                 {
                     // Create a GT_LCL_FLD using the wider type to go to the late argument list
                     defArg = comp->gtNewLclFldNode(tmpVarNum, scalarType, 0);
+
+                    comp->lvaSetVarDoNotEnregister(tmpVarNum DEBUGARG(DoNotEnregisterReason::LocalField));
                 }
                 else
                 {
