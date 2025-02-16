@@ -1,8 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-//
-
 #include "jitpch.h"
 #include "rangecheckcloning.h"
 
@@ -17,6 +15,7 @@ bool BoundsCheckInfo::Initialize(const Compiler*   comp,
     {
         return false;
     }
+
     stmt         = statement;
     bndChk       = bndChkNode;
     bndChkParent = bndChkParentNode;
@@ -55,7 +54,7 @@ bool BoundsCheckInfo::Initialize(const Compiler*   comp,
     return true;
 }
 
-static BasicBlock* optCloneBlocks_DoClone(Compiler* comp, BasicBlock* block, BoundsCheckInfoStack* guard)
+static BasicBlock* optRangeCheckCloning_DoClone(Compiler* comp, BasicBlock* block, BoundsCheckInfoStack* guard)
 {
     BasicBlock* prevBb     = block;
     BasicBlock* fallbackBb = nullptr;
@@ -85,6 +84,8 @@ static BasicBlock* optCloneBlocks_DoClone(Compiler* comp, BasicBlock* block, Bou
     int      offset = 0;
     GenTree* idx    = firstCheck.bndChk->GetIndex();
     GenTree* arrLen = firstCheck.bndChk->GetArrayLength();
+
+    // gtSplitTree is expected to spill the side effects of the index and array length expressions
     assert((idx->gtFlags & GTF_ALL_EFFECT) == 0);
     assert((arrLen->gtFlags & GTF_ALL_EFFECT) == 0);
 
@@ -109,11 +110,11 @@ static BasicBlock* optCloneBlocks_DoClone(Compiler* comp, BasicBlock* block, Bou
 
     // Since we're re-using the index node from the first bounds check and its value was spilled
     // by the tree split, we need to restore the base index by subtracting the offset.
-
+    //
     GenTree* idxClone;
     if (firstCheck.offset > 0)
     {
-        GenTree* offsetNode = comp->gtNewIconNode(-firstCheck.offset);
+        GenTree* offsetNode = comp->gtNewIconNode(-firstCheck.offset); // never overflows
         idx                 = comp->gtNewOperNode(GT_ADD, TYP_INT, idx, offsetNode);
         idxClone            = comp->fgInsertCommaFormTemp(&idx);
     }
@@ -131,7 +132,6 @@ static BasicBlock* optCloneBlocks_DoClone(Compiler* comp, BasicBlock* block, Bou
     //
     GenTreeOp* idxLowerBoundTree = comp->gtNewOperNode(GT_GE, TYP_INT, comp->gtCloneExpr(idx), comp->gtNewIconNode(0));
     idxLowerBoundTree->gtFlags |= GTF_RELOP_JMP_USED;
-
     GenTree*    jtrue      = comp->gtNewOperNode(GT_JTRUE, TYP_VOID, idxLowerBoundTree);
     BasicBlock* lowerBndBb = comp->fgNewBBFromTreeAfter(BBJ_COND, prevBb, jtrue, debugInfo);
 
@@ -142,7 +142,6 @@ static BasicBlock* optCloneBlocks_DoClone(Compiler* comp, BasicBlock* block, Bou
     // else
     //     goto Fallback
     //
-
     GenTree*   arrLenClone = comp->gtCloneExpr(arrLen);
     GenTreeOp* idxUpperBoundTree;
     if (idx->IsIntegralConst(0))
@@ -153,19 +152,17 @@ static BasicBlock* optCloneBlocks_DoClone(Compiler* comp, BasicBlock* block, Bou
     else
     {
         // "i < arrLen + (-indexOffset)"
-        GenTree*   negOffset = comp->gtNewIconNode(-offset);
+        GenTree*   negOffset = comp->gtNewIconNode(-offset); // never overflows
         GenTreeOp* subNode   = comp->gtNewOperNode(GT_ADD, TYP_INT, arrLenClone, negOffset);
         idxUpperBoundTree    = comp->gtNewOperNode(GT_LT, TYP_INT, idxClone, subNode);
     }
     idxUpperBoundTree->gtFlags |= GTF_RELOP_JMP_USED;
-
     jtrue                  = comp->gtNewOperNode(GT_JTRUE, TYP_VOID, idxUpperBoundTree);
     BasicBlock* upperBndBb = comp->fgNewBBFromTreeAfter(BBJ_COND, lowerBndBb, jtrue, debugInfo);
 
     // 3) fallbackBb:
     //
     // For the fallback (slow path), we just entirely clone the fast path.
-    // We do it only once in case we have multiple root bounds checks.
     //
     if (fallbackBb == nullptr)
     {
@@ -181,14 +178,13 @@ static BasicBlock* optCloneBlocks_DoClone(Compiler* comp, BasicBlock* block, Bou
     //
     comp->fgRedirectTargetEdge(prevBb, lowerBndBb);
     // We need to link the fallbackBb to the lastBb only once.
-    FlowEdge* fallbackToNextBb = comp->fgAddRefPred(lastBb, fallbackBb);
-    fallbackBb->SetTargetEdge(fallbackToNextBb);
-    fallbackToNextBb->setLikelihood(1.0f);
 
+    FlowEdge* fallbackToNextBb       = comp->fgAddRefPred(lastBb, fallbackBb);
     FlowEdge* lowerBndToUpperBndEdge = comp->fgAddRefPred(upperBndBb, lowerBndBb);
     FlowEdge* lowerBndToFallbackEdge = comp->fgAddRefPred(fallbackBb, lowerBndBb);
     FlowEdge* upperBndToFastPathEdge = comp->fgAddRefPred(fastpathBb, upperBndBb);
     FlowEdge* upperBndToFallbackEdge = comp->fgAddRefPred(fallbackBb, upperBndBb);
+    fallbackBb->SetTargetEdge(fallbackToNextBb);
     lowerBndBb->SetTrueEdge(lowerBndToUpperBndEdge);
     lowerBndBb->SetFalseEdge(lowerBndToFallbackEdge);
     upperBndBb->SetTrueEdge(upperBndToFastPathEdge);
@@ -196,10 +192,11 @@ static BasicBlock* optCloneBlocks_DoClone(Compiler* comp, BasicBlock* block, Bou
 
     // Set the weights. We assume that the fallback is rarely taken.
     //
-    lowerBndBb->inheritWeightPercentage(prevBb, 100);
-    upperBndBb->inheritWeightPercentage(prevBb, 100);
-    fastpathBb->inheritWeightPercentage(prevBb, 100);
+    lowerBndBb->inheritWeight(prevBb);
+    upperBndBb->inheritWeight(prevBb);
+    fastpathBb->inheritWeight(prevBb);
     fallbackBb->bbSetRunRarely();
+    fallbackToNextBb->setLikelihood(1.0f);
     lowerBndToUpperBndEdge->setLikelihood(1.0f);
     lowerBndToFallbackEdge->setLikelihood(0.0f);
     upperBndToFastPathEdge->setLikelihood(1.0f);
@@ -227,6 +224,12 @@ static BasicBlock* optCloneBlocks_DoClone(Compiler* comp, BasicBlock* block, Bou
         comp->gtSetStmtInfo(info.stmt);
         comp->fgSetStmtSeq(info.stmt);
     }
+
+    assert(BasicBlock::sameEHRegion(prevBb, lowerBndBb));
+    assert(BasicBlock::sameEHRegion(prevBb, upperBndBb));
+    assert(BasicBlock::sameEHRegion(prevBb, fastpathBb));
+    assert(BasicBlock::sameEHRegion(prevBb, fallbackBb));
+    assert(BasicBlock::sameEHRegion(prevBb, lastBb));
 
     // we need to inspect the fastpath block again
     return fastpathBb->Prev();
@@ -257,7 +260,8 @@ PhaseStatus Compiler::optRangeCheckCloning()
 
     bool changed = false;
 
-    BoundsCheckInfoMap allBndChks(getAllocator(CMK_Generic));
+    ArrayStack<BoundCheckLocation> bndChkLocations(getAllocator(CMK_RangeCheckCloning));
+    BoundsCheckInfoMap             bndChkMap(getAllocator(CMK_RangeCheckCloning));
     for (BasicBlock* block = fgFirstBB; block != nullptr; block = block->Next())
     {
         if (block->isRunRarely())
@@ -271,7 +275,8 @@ PhaseStatus Compiler::optRangeCheckCloning()
             continue;
         }
 
-        allBndChks.RemoveAll();
+        bndChkLocations.Reset();
+        bndChkMap.RemoveAll();
 
         for (Statement* const stmt : block->Statements())
         {
@@ -284,43 +289,59 @@ PhaseStatus Compiler::optRangeCheckCloning()
 
             struct TreeWalkData
             {
-                Statement*          stmt;
-                BoundsCheckInfoMap* boundsChks;
-            } walkData = {stmt, &allBndChks};
+                Statement*                      stmt;
+                ArrayStack<BoundCheckLocation>* boundsChks;
+            } walkData = {stmt, &bndChkLocations};
 
             auto visitor = [](GenTree** slot, fgWalkData* data) -> fgWalkResult {
-                GenTree*      node     = *slot;
-                TreeWalkData* walkData = static_cast<TreeWalkData*>(data->pCallbackData);
+                GenTree* node = *slot;
                 if (node->OperIs(GT_BOUNDS_CHECK))
                 {
-                    BoundsCheckInfo info{};
-                    if (info.Initialize(data->compiler, walkData->stmt, node->AsBoundsChk(), data->parent))
-                    {
-                        IdxLenPair       key(info.idxVN, info.lenVN);
-                        BoundsCheckInfoStack* value;
-                        if (!walkData->boundsChks->Lookup(key, &value))
-                        {
-                            CompAllocator allocator = data->compiler->getAllocator(CMK_Generic);
-                            value                   = new (allocator) BoundsCheckInfoStack(allocator);
-                            walkData->boundsChks->Set(key, value);
-                        }
-                        value->Push(info);
-                    }
+                    TreeWalkData* walkData = static_cast<TreeWalkData*>(data->pCallbackData);
+                    walkData->boundsChks->Push(BoundCheckLocation(walkData->stmt, node->AsBoundsChk(), data->parent));
                 }
                 return WALK_CONTINUE;
             };
             fgWalkTreePre(stmt->GetRootNodePointer(), visitor, &walkData);
         }
 
-        if (allBndChks.GetCount() == 0)
+        if (bndChkLocations.Height() < MIN_CHECKS_PER_GROUP)
+        {
+            JITDUMP("Not enough bounds checks in the block - bail out.\n");
+            continue;
+        }
+
+        // Now we need to group the bounds checks by the base index and length VNs.
+        // We could do it directly in the visitor above and avoid this O(n) pass,
+        // but it's more TP/Memory wise to use stack-allocated ArrayStack first and
+        // bail out on <MIN_CHECKS_PER_GROUP cases.
+        for (int i = 0; i < bndChkLocations.Height(); i++)
+        {
+            BoundCheckLocation loc = bndChkLocations.Bottom(i);
+            BoundsCheckInfo    bci{};
+            if (bci.Initialize(this, loc.stmt, loc.bndChk, loc.bndChkParent))
+            {
+                IdxLenPair            key(bci.idxVN, bci.lenVN);
+                BoundsCheckInfoStack* value;
+                if (!bndChkMap.Lookup(key, &value))
+                {
+                    CompAllocator allocator = getAllocator(CMK_RangeCheckCloning);
+                    value                   = new (allocator) BoundsCheckInfoStack(allocator);
+                    bndChkMap.Set(key, value);
+                }
+                value->Push(bci);
+            }
+        }
+
+        if (bndChkMap.GetCount() == 0)
         {
             JITDUMP("No bounds checks in the block - bail out.\n");
             continue;
         }
 
-        // Now choose the largest group of bounds checks
+        // Now choose the largest group of bounds checks (the one with the most checks)
         BoundsCheckInfoStack* largestGroup = nullptr;
-        for (BoundsCheckInfoMap::Node* keyValuePair : BoundsCheckInfoMap::KeyValueIteration(&allBndChks))
+        for (BoundsCheckInfoMap::Node* keyValuePair : BoundsCheckInfoMap::KeyValueIteration(&bndChkMap))
         {
             ArrayStack<BoundsCheckInfo>* value = keyValuePair->GetValue();
             if ((largestGroup == nullptr) || (value->Height() > largestGroup->Height()))
@@ -336,7 +357,8 @@ PhaseStatus Compiler::optRangeCheckCloning()
             continue;
         }
 
-        block   = optCloneBlocks_DoClone(this, block, largestGroup);
+        JITDUMP("Cloning bounds checks in " FMT_BB "\n", block->bbNum);
+        block   = optRangeCheckCloning_DoClone(this, block, largestGroup);
         changed = true;
     }
 

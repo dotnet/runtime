@@ -5,6 +5,20 @@
 
 #define MIN_CHECKS_PER_GROUP 4
 
+struct BoundCheckLocation
+{
+    Statement*        stmt;
+    GenTreeBoundsChk* bndChk;
+    GenTree* bndChkParent;
+
+    BoundCheckLocation(Statement* stmt, GenTreeBoundsChk* bndChk, GenTree* bndChkParent)
+        : stmt(stmt)
+        , bndChk(bndChk)
+        , bndChkParent(bndChkParent)
+    {
+    }
+};
+
 struct BoundsCheckInfo
 {
     Statement*        stmt;
