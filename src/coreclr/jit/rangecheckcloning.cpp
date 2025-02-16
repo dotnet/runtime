@@ -113,10 +113,10 @@ bool BoundsCheckInfo::Initialize(const Compiler*   comp,
 //    goto lowerBndBb
 //
 //  lowerBndBb:
-//    if (idx >= 0)
-//        goto upperBndBb
-//    else
+//    if (idx < 0)
 //        goto fallbackBb
+//    else
+//        goto upperBndBb
 //
 //  upperBndBb:
 //    if (idx < len - maxConstOffset)
@@ -208,15 +208,18 @@ static BasicBlock* optRangeCheckCloning_DoClone(Compiler* comp, BasicBlock* bloc
 
     // 1) lowerBndBb:
     //
-    // if (i >= 0)
-    //     goto upperBndBb
-    // else
+    // if (i < 0)
     //     goto fallbackBb
+    // else
+    //     goto upperBndBb
     //
-    GenTreeOp* idxLowerBoundTree = comp->gtNewOperNode(GT_GE, TYP_INT, comp->gtCloneExpr(idx), comp->gtNewIconNode(0));
+    GenTreeOp* idxLowerBoundTree = comp->gtNewOperNode(GT_LT, TYP_INT, comp->gtCloneExpr(idx), comp->gtNewIconNode(0));
     idxLowerBoundTree->gtFlags |= GTF_RELOP_JMP_USED;
     GenTree*    jtrue      = comp->gtNewOperNode(GT_JTRUE, TYP_VOID, idxLowerBoundTree);
     BasicBlock* lowerBndBb = comp->fgNewBBFromTreeAfter(BBJ_COND, prevBb, jtrue, debugInfo);
+
+    JITDUMP("\nLower bound check:\n");
+    DISPTREE(jtrue);
 
     // 2) upperBndBb:
     //
@@ -242,11 +245,14 @@ static BasicBlock* optRangeCheckCloning_DoClone(Compiler* comp, BasicBlock* bloc
     jtrue                  = comp->gtNewOperNode(GT_JTRUE, TYP_VOID, idxUpperBoundTree);
     BasicBlock* upperBndBb = comp->fgNewBBFromTreeAfter(BBJ_COND, lowerBndBb, jtrue, debugInfo);
 
+    JITDUMP("\nUpper bound check:\n");
+    DISPTREE(jtrue);
+
     // 3) fallbackBb:
     //
     // For the fallback (slow path), we just entirely clone the fast path.
     //
-    BasicBlock* fallbackBb = comp->fgNewBBafter(BBJ_ALWAYS, lowerBndBb, false);
+    BasicBlock* fallbackBb = comp->fgNewBBafter(BBJ_ALWAYS, upperBndBb, false);
     BasicBlock::CloneBlockState(comp, fallbackBb, fastpathBb);
 
     // 4) fastBlockBb:
@@ -262,8 +268,8 @@ static BasicBlock* optRangeCheckCloning_DoClone(Compiler* comp, BasicBlock* bloc
     FlowEdge* upperBndToFastPathEdge = comp->fgAddRefPred(fastpathBb, upperBndBb);
     FlowEdge* upperBndToFallbackEdge = comp->fgAddRefPred(fallbackBb, upperBndBb);
     fallbackBb->SetTargetEdge(fallbackToNextBb);
-    lowerBndBb->SetTrueEdge(lowerBndToUpperBndEdge);
-    lowerBndBb->SetFalseEdge(lowerBndToFallbackEdge);
+    lowerBndBb->SetTrueEdge(lowerBndToFallbackEdge);
+    lowerBndBb->SetFalseEdge(lowerBndToUpperBndEdge);
     upperBndBb->SetTrueEdge(upperBndToFastPathEdge);
     upperBndBb->SetFalseEdge(upperBndToFallbackEdge);
 
