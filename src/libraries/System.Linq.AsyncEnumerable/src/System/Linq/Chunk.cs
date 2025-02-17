@@ -30,7 +30,9 @@ namespace System.Linq
             ThrowHelper.ThrowIfNull(source);
             ThrowHelper.ThrowIfNegativeOrZero(size);
 
-            return Chunk(source, size, default);
+            return
+                source.IsKnownEmpty() ? Empty<TSource[]>() :
+                Chunk(source, size, default);
 
             async static IAsyncEnumerable<TSource[]> Chunk(
                 IAsyncEnumerable<TSource> source,

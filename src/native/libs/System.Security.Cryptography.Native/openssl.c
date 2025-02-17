@@ -7,6 +7,7 @@
 #include "pal_safecrt.h"
 #include "pal_x509.h"
 #include "pal_ssl.h"
+#include "memory_debug.h"
 #include "openssl.h"
 
 #ifdef FEATURE_DISTRO_AGNOSTIC_SSL
@@ -1508,7 +1509,12 @@ static int32_t EnsureOpenSslInitializedCore(void)
     // Otherwise call the 1.1 one.
 #ifdef FEATURE_DISTRO_AGNOSTIC_SSL
     InitializeOpenSSLShim();
+#endif
+    // This needs to be done before any allocation is done e.g. EnsureOpenSsl* is called.
+    // And it also needs to be after the pointers are loaded for DISTRO_AGNOSTIC_SSL
+    InitializeMemoryDebug();
 
+#ifdef FEATURE_DISTRO_AGNOSTIC_SSL
     if (API_EXISTS(SSL_state))
     {
         ret = EnsureOpenSsl10Initialized();

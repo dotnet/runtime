@@ -1583,36 +1583,34 @@ GenTree* Lowering::NewPutArg(GenTreeCall* call, GenTree* arg, CallArg* callArg, 
     assert(arg != nullptr);
     assert(callArg != nullptr);
 
-    GenTree* putArg = nullptr;
-
-    bool isOnStack = (callArg->AbiInfo.GetRegNum() == REG_STK);
+    GenTree*                     putArg  = nullptr;
+    const ABIPassingInformation& abiInfo = callArg->NewAbiInfo;
 
 #if FEATURE_ARG_SPLIT
     // Struct can be split into register(s) and stack on ARM
-    if (compFeatureArgSplit() && callArg->AbiInfo.IsSplit())
+    if (compFeatureArgSplit() && callArg->NewAbiInfo.IsSplitAcrossRegistersAndStack())
     {
         assert(arg->OperIs(GT_BLK, GT_FIELD_LIST) || arg->OperIsLocalRead());
-        // TODO: Need to check correctness for FastTailCall
-        if (call->IsFastTailCall())
+        assert(!call->IsFastTailCall());
+
+#ifdef DEBUG
+        for (unsigned i = 0; i < abiInfo.NumSegments; i++)
         {
-#ifdef TARGET_ARM
-            NYI_ARM("lower: struct argument by fast tail call");
-#endif // TARGET_ARM
+            assert((i < abiInfo.NumSegments - 1) == abiInfo.Segment(i).IsPassedInRegister());
         }
-
-        const unsigned slotNumber           = callArg->AbiInfo.ByteOffset / TARGET_POINTER_SIZE;
-        const bool     putInIncomingArgArea = call->IsFastTailCall();
-
-        putArg = new (comp, GT_PUTARG_SPLIT) GenTreePutArgSplit(arg, callArg->AbiInfo.ByteOffset,
-#ifdef FEATURE_PUT_STRUCT_ARG_STK
-                                                                callArg->AbiInfo.GetStackByteSize(),
 #endif
-                                                                callArg->AbiInfo.NumRegs, call, putInIncomingArgArea);
+
+        unsigned                 numRegs  = abiInfo.NumSegments - 1;
+        const ABIPassingSegment& stackSeg = abiInfo.Segment(abiInfo.NumSegments - 1);
+
+        putArg = new (comp, GT_PUTARG_SPLIT)
+            GenTreePutArgSplit(arg, stackSeg.GetStackOffset(), stackSeg.GetStackSize(), abiInfo.NumSegments - 1, call,
+                               /* putInIncomingArgArea */ false);
 
         GenTreePutArgSplit* argSplit = putArg->AsPutArgSplit();
-        for (unsigned regIndex = 0; regIndex < callArg->AbiInfo.NumRegs; regIndex++)
+        for (unsigned regIndex = 0; regIndex < numRegs; regIndex++)
         {
-            argSplit->SetRegNumByIdx(callArg->AbiInfo.GetRegNum(regIndex), regIndex);
+            argSplit->SetRegNumByIdx(abiInfo.Segment(regIndex).GetRegister(), regIndex);
         }
 
         if (arg->OperIs(GT_FIELD_LIST))
@@ -1620,7 +1618,7 @@ GenTree* Lowering::NewPutArg(GenTreeCall* call, GenTree* arg, CallArg* callArg, 
             unsigned regIndex = 0;
             for (GenTreeFieldList::Use& use : arg->AsFieldList()->Uses())
             {
-                if (regIndex >= callArg->AbiInfo.NumRegs)
+                if (regIndex >= numRegs)
                 {
                     break;
                 }
@@ -1642,7 +1640,7 @@ GenTree* Lowering::NewPutArg(GenTreeCall* call, GenTree* arg, CallArg* callArg, 
             ClassLayout* layout = arg->GetLayout(comp);
 
             // Set type of registers
-            for (unsigned index = 0; index < callArg->AbiInfo.NumRegs; index++)
+            for (unsigned index = 0; index < numRegs; index++)
             {
                 argSplit->m_regType[index] = layout->GetGCPtrType(index);
             }
@@ -1651,15 +1649,15 @@ GenTree* Lowering::NewPutArg(GenTreeCall* call, GenTree* arg, CallArg* callArg, 
     else
 #endif // FEATURE_ARG_SPLIT
     {
-        if (!isOnStack)
+        if (abiInfo.HasAnyRegisterSegment())
         {
 #if FEATURE_MULTIREG_ARGS
-            if ((callArg->AbiInfo.NumRegs > 1) && (arg->OperGet() == GT_FIELD_LIST))
+            if ((abiInfo.NumSegments > 1) && arg->OperIs(GT_FIELD_LIST))
             {
                 unsigned int regIndex = 0;
                 for (GenTreeFieldList::Use& use : arg->AsFieldList()->Uses())
                 {
-                    regNumber argReg = callArg->AbiInfo.GetRegNum(regIndex);
+                    regNumber argReg = abiInfo.Segment(regIndex).GetRegister();
                     GenTree*  curOp  = use.GetNode();
                     var_types curTyp = curOp->TypeGet();
 
@@ -1678,74 +1676,27 @@ GenTree* Lowering::NewPutArg(GenTreeCall* call, GenTree* arg, CallArg* callArg, 
             else
 #endif // FEATURE_MULTIREG_ARGS
             {
-                putArg = comp->gtNewPutArgReg(type, arg, callArg->AbiInfo.GetRegNum());
+                assert(abiInfo.HasExactlyOneRegisterSegment());
+                putArg = comp->gtNewPutArgReg(type, arg, abiInfo.Segment(0).GetRegister());
             }
         }
         else
         {
-            // Mark this one as tail call arg if it is a fast tail call.
-            // This provides the info to put this argument in in-coming arg area slot
-            // instead of in out-going arg area slot.
-
-#ifdef DEBUG
-            // Make sure state is correct. The PUTARG_STK has TYP_VOID, as it doesn't produce
-            // a result. So the type of its operand must be the correct type to push on the stack.
-            callArg->CheckIsStruct();
-#endif
-
-            if ((arg->OperGet() != GT_FIELD_LIST))
-            {
-#if defined(FEATURE_SIMD) && defined(FEATURE_PUT_STRUCT_ARG_STK)
-                if (type == TYP_SIMD12)
-                {
-#if !defined(TARGET_64BIT)
-                    assert(callArg->AbiInfo.ByteSize == 12);
-#else  // TARGET_64BIT
-                    if (compAppleArm64Abi())
-                    {
-                        assert(callArg->AbiInfo.ByteSize == 12);
-                    }
-                    else
-                    {
-                        assert(callArg->AbiInfo.ByteSize == 16);
-                    }
-#endif // TARGET_64BIT
-                }
-                else
-#endif // defined(FEATURE_SIMD) && defined(FEATURE_PUT_STRUCT_ARG_STK)
-                {
-                    assert(genActualType(arg->TypeGet()) == type);
-                }
-            }
-            const unsigned slotNumber           = callArg->AbiInfo.ByteOffset / TARGET_POINTER_SIZE;
-            const bool     putInIncomingArgArea = call->IsFastTailCall();
-
-            putArg =
-                new (comp, GT_PUTARG_STK) GenTreePutArgStk(GT_PUTARG_STK, TYP_VOID, arg, callArg->AbiInfo.ByteOffset,
-#ifdef FEATURE_PUT_STRUCT_ARG_STK
-                                                           callArg->AbiInfo.GetStackByteSize(),
-#endif
-                                                           call, putInIncomingArgArea);
-
-#if defined(DEBUG) && defined(FEATURE_PUT_STRUCT_ARG_STK)
-            if (varTypeIsStruct(callArg->GetSignatureType()))
-            {
-                // We use GT_BLK only for non-SIMD struct arguments.
-                if (arg->OperIs(GT_BLK))
-                {
-                    assert(!varTypeIsSIMD(arg));
-                }
-                else if (!arg->TypeIs(TYP_STRUCT))
-                {
-#ifdef TARGET_ARM
-                    assert((callArg->AbiInfo.GetStackSlotsNumber() == 1) ||
-                           ((arg->TypeGet() == TYP_DOUBLE) && (callArg->AbiInfo.GetStackSlotsNumber() == 2)));
+#ifdef FEATURE_SIMD
+            assert(arg->OperIsFieldList() || (genActualType(arg) == type) ||
+                   (arg->TypeIs(TYP_SIMD16) && (type == TYP_SIMD12)));
 #else
-                    assert(varTypeIsSIMD(arg) || (callArg->AbiInfo.GetStackSlotsNumber() == 1));
+            assert(arg->OperIsFieldList() || (genActualType(arg) == type));
 #endif
-                }
-            }
-#endif // defined(DEBUG) && defined(FEATURE_PUT_STRUCT_ARG_STK)
+            assert(abiInfo.NumSegments == 1);
+            const ABIPassingSegment& stackSeg             = abiInfo.Segment(0);
+            const bool               putInIncomingArgArea = call->IsFastTailCall();
+
+            putArg = new (comp, GT_PUTARG_STK) GenTreePutArgStk(GT_PUTARG_STK, TYP_VOID, arg, stackSeg.GetStackOffset(),
+#ifdef FEATURE_PUT_STRUCT_ARG_STK
+                                                                stackSeg.GetStackSize(),
+#endif
+                                                                call, putInIncomingArgArea);
         }
     }
 
@@ -1819,7 +1770,8 @@ void Lowering::LowerArg(GenTreeCall* call, CallArg* callArg, bool late)
     }
 #elif defined(TARGET_AMD64)
     // TYP_SIMD8 parameters that are passed as longs
-    if (type == TYP_SIMD8 && genIsValidIntReg(callArg->AbiInfo.GetRegNum()))
+    if (type == TYP_SIMD8 && callArg->NewAbiInfo.HasExactlyOneRegisterSegment() &&
+        genIsValidIntReg(callArg->NewAbiInfo.Segment(0).GetRegister()))
     {
         GenTree* bitcast = comp->gtNewBitCastNode(TYP_LONG, arg);
         BlockRange().InsertAfter(arg, bitcast);
@@ -3766,8 +3718,9 @@ void Lowering::LowerCFGCall(GenTreeCall* call)
 
             // Set up ABI information for this arg.
             targetArg->NewAbiInfo =
-                ABIPassingInformation::FromSegment(comp, ABIPassingSegment::InRegister(REG_DISPATCH_INDIRECT_CALL_ADDR,
-                                                                                       0, TARGET_POINTER_SIZE));
+                ABIPassingInformation::FromSegmentByValue(comp,
+                                                          ABIPassingSegment::InRegister(REG_DISPATCH_INDIRECT_CALL_ADDR,
+                                                                                        0, TARGET_POINTER_SIZE));
             targetArg->AbiInfo.ArgType = callTarget->TypeGet();
             targetArg->AbiInfo.SetRegNum(0, REG_DISPATCH_INDIRECT_CALL_ADDR);
             targetArg->AbiInfo.NumRegs  = 1;
@@ -5861,7 +5814,7 @@ GenTree* Lowering::CreateFrameLinkUpdate(FrameLinkAction action)
     if (action == PushFrame)
     {
         // Thread->m_pFrame = &inlinedCallFrame;
-        data = comp->gtNewLclAddrNode(comp->lvaInlinedPInvokeFrameVar, callFrameInfo.offsetOfFrameVptr);
+        data = comp->gtNewLclVarAddrNode(comp->lvaInlinedPInvokeFrameVar);
     }
     else
     {
@@ -5889,20 +5842,19 @@ GenTree* Lowering::CreateFrameLinkUpdate(FrameLinkAction action)
 //  64-bit  32-bit                                    CORINFO_EE_INFO
 //  offset  offset  field name                        offset                  when set
 //  -----------------------------------------------------------------------------------------
-//  +00h    +00h    GS cookie                         offsetOfGSCookie
-//  +08h    +04h    vptr for class InlinedCallFrame   offsetOfFrameVptr       method prolog
-//  +10h    +08h    m_Next                            offsetOfFrameLink       method prolog
-//  +18h    +0Ch    m_Datum                           offsetOfCallTarget      call site
-//  +20h    +10h    m_pCallSiteSP                     offsetOfCallSiteSP      x86: call site, and zeroed in method
+//  +00h    +00h    _frameIdentifier                  0                       method prolog
+//  +08h    +04h    m_Next                            offsetOfFrameLink       method prolog
+//  +10h    +08h    m_Datum                           offsetOfCallTarget      call site
+//  +18h    +0Ch    m_pCallSiteSP                     offsetOfCallSiteSP      x86: call site, and zeroed in method
 //                                                                              prolog;
 //                                                                            non-x86: method prolog (SP remains
 //                                                                              constant in function, after prolog: no
 //                                                                              localloc and PInvoke in same function)
-//  +28h    +14h    m_pCallerReturnAddress            offsetOfReturnAddress   call site
-//  +30h    +18h    m_pCalleeSavedFP                  offsetOfCalleeSavedFP   not set by JIT
-//  +38h    +1Ch    m_pThread
-//          +20h    m_pSPAfterProlog                  offsetOfSPAfterProlog   arm only
-//  +40h    +20/24h m_StubSecretArg                   offsetOfSecretStubArg   method prolog of IL stubs with secret arg
+//  +20h    +10h    m_pCallerReturnAddress            offsetOfReturnAddress   call site
+//  +28h    +14h    m_pCalleeSavedFP                  offsetOfCalleeSavedFP   not set by JIT
+//  +30h    +18h    m_pThread
+//          +1Ch    m_pSPAfterProlog                  offsetOfSPAfterProlog   arm only
+//  +38h    +1C/20h m_StubSecretArg                   offsetOfSecretStubArg   method prolog of IL stubs with secret arg
 //
 // Note that in the VM, InlinedCallFrame is a C++ class whose objects have a 'this' pointer that points
 // to the InlinedCallFrame vptr (the 2nd field listed above), and the GS cookie is stored *before*
@@ -5946,7 +5898,7 @@ void Lowering::InsertPInvokeMethodProlog()
 
     // Call runtime helper to fill in our InlinedCallFrame and push it on the Frame list:
     //     TCB = CORINFO_HELP_INIT_PINVOKE_FRAME(&symFrameStart);
-    GenTree*   frameAddr    = comp->gtNewLclAddrNode(comp->lvaInlinedPInvokeFrameVar, callFrameInfo.offsetOfFrameVptr);
+    GenTree*   frameAddr    = comp->gtNewLclVarAddrNode(comp->lvaInlinedPInvokeFrameVar);
     NewCallArg frameAddrArg = NewCallArg::Primitive(frameAddr).WellKnown(WellKnownArg::PInvokeFrame);
 
     GenTreeCall* call = comp->gtNewHelperCallNode(CORINFO_HELP_INIT_PINVOKE_FRAME, TYP_I_IMPL);
@@ -7901,6 +7853,11 @@ PhaseStatus Lowering::DoPhase()
         comp->lvSetMinOptsDoNotEnreg();
     }
 
+    if (comp->opts.OptimizationEnabled() && !comp->opts.IsOSR())
+    {
+        MapParameterRegisterLocals();
+    }
+
     for (BasicBlock* const block : comp->Blocks())
     {
         /* Make the block publicly available */
@@ -7914,11 +7871,6 @@ PhaseStatus Lowering::DoPhase()
 #endif //! TARGET_64BIT
 
         LowerBlock(block);
-    }
-
-    if (comp->opts.OptimizationEnabled())
-    {
-        MapParameterRegisterLocals();
     }
 
 #ifdef DEBUG
@@ -8030,11 +7982,12 @@ void Lowering::MapParameterRegisterLocals()
                 comp->m_paramRegLocalMappings->Emplace(&segment, fieldLclNum, segment.Offset - fieldDsc->lvFldOffset);
             }
 
-            LclVarDsc* fieldLclDsc = comp->lvaGetDesc(fieldLclNum);
-            assert(!fieldLclDsc->lvIsParamRegTarget);
-            fieldLclDsc->lvIsParamRegTarget = true;
+            assert(!fieldDsc->lvIsParamRegTarget);
+            fieldDsc->lvIsParamRegTarget = true;
         }
     }
+
+    FindInducedParameterRegisterLocals();
 
 #ifdef DEBUG
     if (comp->verbose)
@@ -8043,12 +7996,283 @@ void Lowering::MapParameterRegisterLocals()
         for (int i = 0; i < comp->m_paramRegLocalMappings->Height(); i++)
         {
             const ParameterRegisterLocalMapping& mapping = comp->m_paramRegLocalMappings->BottomRef(i);
-            printf("  ");
-            mapping.RegisterSegment->Dump();
-            printf(" -> V%02u\n", mapping.LclNum);
+            printf("  %s -> V%02u+%u\n", getRegName(mapping.RegisterSegment->GetRegister()), mapping.LclNum,
+                   mapping.Offset);
         }
     }
 #endif
+}
+
+//------------------------------------------------------------------------
+// Lowering::FindInducedParameterRegisterLocals:
+//   Find locals that would be profitable to map from parameter registers,
+//   based on IR in the initialization block.
+//
+void Lowering::FindInducedParameterRegisterLocals()
+{
+#ifdef TARGET_ARM
+    // On arm32 the profiler hook does not preserve arg registers, so
+    // parameters are prespilled and cannot stay enregistered.
+    if (comp->compIsProfilerHookNeeded())
+    {
+        JITDUMP("Skipping FindInducedParameterRegisterLocals on arm32 with profiler hook\n");
+        return;
+    }
+#endif
+
+    // Check if we possibly have any parameters we can induce new register
+    // locals from.
+    bool anyCandidates = false;
+    for (unsigned lclNum = 0; lclNum < comp->info.compArgsCount; lclNum++)
+    {
+        LclVarDsc* lcl = comp->lvaGetDesc(lclNum);
+        if (lcl->lvPromoted || !lcl->lvDoNotEnregister)
+        {
+            continue;
+        }
+
+        const ABIPassingInformation& abiInfo = comp->lvaGetParameterABIInfo(lclNum);
+        if (!abiInfo.HasAnyRegisterSegment())
+        {
+            continue;
+        }
+
+        anyCandidates = true;
+        break;
+    }
+
+    if (!anyCandidates)
+    {
+        return;
+    }
+
+    bool     hasRegisterKill = false;
+    LocalSet storedToLocals(comp->getAllocator(CMK_ABI));
+    // Now look for optimization opportunities in the first block: places where
+    // we read fields out of struct parameters that can be mapped cleanly. This
+    // is frequently created by physical promotion.
+    for (GenTree* node : LIR::AsRange(comp->fgFirstBB))
+    {
+        hasRegisterKill |= node->IsCall();
+
+        GenTreeLclVarCommon* storeLcl;
+        if (node->DefinesLocal(comp, &storeLcl))
+        {
+            storedToLocals.Emplace(storeLcl->GetLclNum(), true);
+            continue;
+        }
+
+        if (node->OperIs(GT_LCL_ADDR))
+        {
+            storedToLocals.Emplace(node->AsLclVarCommon()->GetLclNum(), true);
+            continue;
+        }
+
+        if (!node->OperIs(GT_LCL_FLD))
+        {
+            continue;
+        }
+
+        GenTreeLclFld* fld = node->AsLclFld();
+        if (fld->GetLclNum() >= comp->info.compArgsCount)
+        {
+            continue;
+        }
+
+        LclVarDsc* paramDsc = comp->lvaGetDesc(fld);
+        if (paramDsc->lvPromoted)
+        {
+            // These are complicated to reason about since they may be
+            // defined/used through their fields, so just skip them.
+            continue;
+        }
+
+        if (fld->TypeIs(TYP_STRUCT))
+        {
+            continue;
+        }
+
+        if (storedToLocals.Lookup(fld->GetLclNum()))
+        {
+            // LCL_FLD does not necessarily take the value of the parameter
+            // anymore.
+            continue;
+        }
+
+        const ABIPassingInformation& dataAbiInfo = comp->lvaGetParameterABIInfo(fld->GetLclNum());
+        const ABIPassingSegment*     regSegment  = nullptr;
+        for (const ABIPassingSegment& segment : dataAbiInfo.Segments())
+        {
+            if (!segment.IsPassedInRegister())
+            {
+                continue;
+            }
+
+            assert(fld->GetLclOffs() <= comp->lvaLclExactSize(fld->GetLclNum()));
+            unsigned structAccessedSize =
+                min(genTypeSize(fld), comp->lvaLclExactSize(fld->GetLclNum()) - fld->GetLclOffs());
+            if ((segment.Offset != fld->GetLclOffs()) || (structAccessedSize > segment.Size) ||
+                (varTypeUsesIntReg(fld) != genIsValidIntReg(segment.GetRegister())))
+            {
+                continue;
+            }
+
+            // This is a match, but check if it is already remapped.
+            // TODO-CQ: If it is already remapped, we can reuse the value from
+            // the remapping.
+            if (comp->FindParameterRegisterLocalMappingByRegister(segment.GetRegister()) == nullptr)
+            {
+                regSegment = &segment;
+            }
+
+            break;
+        }
+
+        if (regSegment == nullptr)
+        {
+            continue;
+        }
+
+        JITDUMP("LCL_FLD use [%06u] of unenregisterable parameter corresponds to ", Compiler::dspTreeID(fld));
+        DBEXEC(VERBOSE, regSegment->Dump());
+        JITDUMP("\n");
+
+        // Now see if we want to introduce a new local for this value, or if we
+        // can reuse one because this is the source of a store (frequently
+        // created by physical promotion).
+        LIR::Use use;
+        if (!LIR::AsRange(comp->fgFirstBB).TryGetUse(fld, &use))
+        {
+            JITDUMP("  ..but no use was found\n");
+            continue;
+        }
+
+        unsigned remappedLclNum = TryReuseLocalForParameterAccess(use, storedToLocals);
+
+        if (remappedLclNum == BAD_VAR_NUM)
+        {
+            // If we have seen register kills then avoid creating a new local.
+            // The local is going to have to move from the parameter register
+            // into a callee saved register, and the callee saved register will
+            // need to be saved/restored to/from stack anyway.
+            if (hasRegisterKill)
+            {
+                JITDUMP("  ..but use happens after a call and is deemed unprofitable to create a local for\n");
+                continue;
+            }
+
+            remappedLclNum = comp->lvaGrabTemp(
+                false DEBUGARG(comp->printfAlloc("V%02u.%s", fld->GetLclNum(), getRegName(regSegment->GetRegister()))));
+            comp->lvaGetDesc(remappedLclNum)->lvType = fld->TypeGet();
+            JITDUMP("Created new local V%02u for the mapping\n", remappedLclNum);
+        }
+        else
+        {
+            JITDUMP("Reusing local V%02u for store from struct parameter register %s. Store:\n", remappedLclNum,
+                    getRegName(regSegment->GetRegister()));
+            DISPTREERANGE(LIR::AsRange(comp->fgFirstBB), use.User());
+
+            // The store will be a no-op, so get rid of it
+            LIR::AsRange(comp->fgFirstBB).Remove(use.User(), true);
+            use = LIR::Use();
+
+#ifdef DEBUG
+            LclVarDsc* remappedLclDsc = comp->lvaGetDesc(remappedLclNum);
+            remappedLclDsc->lvReason =
+                comp->printfAlloc("%s%sV%02u.%s", remappedLclDsc->lvReason == nullptr ? "" : remappedLclDsc->lvReason,
+                                  remappedLclDsc->lvReason == nullptr ? "" : " ", fld->GetLclNum(),
+                                  getRegName(regSegment->GetRegister()));
+#endif
+        }
+
+        comp->m_paramRegLocalMappings->Emplace(regSegment, remappedLclNum, 0);
+        comp->lvaGetDesc(remappedLclNum)->lvIsParamRegTarget = true;
+
+        JITDUMP("New mapping: ");
+        DBEXEC(VERBOSE, regSegment->Dump());
+        JITDUMP(" -> V%02u\n", remappedLclNum);
+
+        // Insert explicit normalization for small types (the LCL_FLD we
+        // are replacing comes with this normalization).
+        if (varTypeIsSmall(fld))
+        {
+            GenTree* lcl                = comp->gtNewLclvNode(remappedLclNum, genActualType(fld));
+            GenTree* normalizeLcl       = comp->gtNewCastNode(TYP_INT, lcl, false, fld->TypeGet());
+            GenTree* storeNormalizedLcl = comp->gtNewStoreLclVarNode(remappedLclNum, normalizeLcl);
+            LIR::AsRange(comp->fgFirstBB).InsertAtBeginning(LIR::SeqTree(comp, storeNormalizedLcl));
+
+            JITDUMP("Parameter normalization:\n");
+            DISPTREERANGE(LIR::AsRange(comp->fgFirstBB), storeNormalizedLcl);
+        }
+
+        // If we still have a valid use, then replace the LCL_FLD with a
+        // LCL_VAR of the remapped parameter register local.
+        if (use.IsInitialized())
+        {
+            GenTree* lcl = comp->gtNewLclvNode(remappedLclNum, genActualType(fld));
+            LIR::AsRange(comp->fgFirstBB).InsertAfter(fld, lcl);
+            use.ReplaceWith(lcl);
+            LowerNode(lcl);
+            JITDUMP("New user tree range:\n");
+            DISPTREERANGE(LIR::AsRange(comp->fgFirstBB), use.User());
+        }
+
+        fld->gtBashToNOP();
+    }
+}
+
+//------------------------------------------------------------------------
+// Lowering::TryReuseLocalForParameterAccess:
+//   Try to figure out if a LCL_FLD that corresponds to a parameter register is
+//   being stored directly to a LCL_VAR, and in that case whether it would be
+//   profitable to reuse that local as the parameter register.
+//
+// Parameters:
+//   use - The use of the LCL_FLD
+//   storedToLocals - Map of locals that have had potential definitions to them
+//                    up until the use
+//
+// Returns:
+//   The local number to reuse, or BAD_VAR_NUM to create a new local instead.
+//
+unsigned Lowering::TryReuseLocalForParameterAccess(const LIR::Use& use, const LocalSet& storedToLocals)
+{
+    GenTree* useNode = use.User();
+
+    if (!useNode->OperIs(GT_STORE_LCL_VAR))
+    {
+        return BAD_VAR_NUM;
+    }
+
+    LclVarDsc* destLclDsc = comp->lvaGetDesc(useNode->AsLclVarCommon());
+
+    if (destLclDsc->lvIsParamRegTarget)
+    {
+        return BAD_VAR_NUM;
+    }
+
+    if (destLclDsc->lvIsStructField)
+    {
+        return BAD_VAR_NUM;
+    }
+
+    if (destLclDsc->TypeGet() == TYP_STRUCT)
+    {
+        return BAD_VAR_NUM;
+    }
+
+    if (destLclDsc->lvDoNotEnregister)
+    {
+        return BAD_VAR_NUM;
+    }
+
+    if (storedToLocals.Lookup(useNode->AsLclVarCommon()->GetLclNum()))
+    {
+        // Destination may change value before this access
+        return BAD_VAR_NUM;
+    }
+
+    return useNode->AsLclVarCommon()->GetLclNum();
 }
 
 #ifdef DEBUG
@@ -9165,8 +9389,15 @@ void Lowering::LowerStoreIndirCoalescing(GenTreeIndir* ind)
         //
         // IND<byte> is always fine (and all IND<X> created here from such)
         // IND<simd> is not required to be atomic per our Memory Model
-        const bool allowsNonAtomic =
+        bool allowsNonAtomic =
             ((ind->gtFlags & GTF_IND_ALLOW_NON_ATOMIC) != 0) && ((prevInd->gtFlags & GTF_IND_ALLOW_NON_ATOMIC) != 0);
+
+        if (!allowsNonAtomic && currData.baseAddr->OperIs(GT_LCL_VAR) &&
+            (currData.baseAddr->AsLclVar()->GetLclNum() == comp->info.compRetBuffArg))
+        {
+            // RetBuf is a private stack memory, so we don't need to worry about atomicity.
+            allowsNonAtomic = true;
+        }
 
         if (!allowsNonAtomic && (genTypeSize(ind) > 1) && !varTypeIsSIMD(ind))
         {
