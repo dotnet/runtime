@@ -7010,6 +7010,19 @@ CLRDataCreateInstance(REFIID iid,
     }
 
     *iface = NULL;
+
+
+    CLRConfigNoCache enable = CLRConfigNoCache::Get("ENABLE_CDAC");
+    if (enable.IsSet())
+    {
+        DWORD val;
+        if (enable.TryAsInteger(10, val) && val == 1)
+        {
+            CDAC::CreateInstance((void*)&iid, pLegacyTarget, iface);
+            return S_OK;
+        }
+    }
+
     ClrDataAccess * pClrDataAccess;
     HRESULT hr = CLRDataAccessCreateInstance(pLegacyTarget, &pClrDataAccess);
     if (hr != S_OK)
@@ -7022,39 +7035,6 @@ CLRDataCreateInstance(REFIID iid,
 
     // TODO: [cdac] Remove when cDAC deploys with SOS - https://github.com/dotnet/runtime/issues/108720
     NonVMComHolder<IUnknown> cdacInterface = nullptr;
-#ifdef CAN_USE_CDAC
-    CLRConfigNoCache enable = CLRConfigNoCache::Get("ENABLE_CDAC");
-    if (enable.IsSet())
-    {
-        DWORD val;
-        if (enable.TryAsInteger(10, val) && val == 1)
-        {
-            CDAC::CreateInstance((void*)&iid, pLegacyTarget, iface, pClrDataAccess->m_globalBase);
-            // TODO: [cdac] TryGetSymbol is only implemented for Linux, OSX, and Windows.
-            uint64_t contractDescriptorAddr = 0;
-            if (TryGetSymbol(pClrDataAccess->m_pTarget, pClrDataAccess->m_globalBase, "DotNetRuntimeContractDescriptor", &contractDescriptorAddr))
-            {
-                IUnknown* thisImpl;
-                HRESULT qiRes = pClrDataAccess->QueryInterface(IID_IUnknown, (void**)&thisImpl);
-                _ASSERTE(SUCCEEDED(qiRes));
-                CDAC& cdac = pClrDataAccess->m_cdac;
-                cdac = CDAC::Create(contractDescriptorAddr, pClrDataAccess->m_pTarget, thisImpl);
-                if (cdac.IsValid())
-                {
-                    // Get SOS interfaces from the cDAC if available.
-                    cdac.CreateSosInterface(&cdacInterface);
-                    _ASSERTE(cdacInterface != nullptr);
-
-                    // Lifetime is now managed by cDAC implementation of SOS interfaces
-                    pClrDataAccess->Release();
-                }
-
-                // Release the AddRef from the QI.
-                pClrDataAccess->Release();
-            }
-        }
-    }
-#endif
     if (cdacInterface != nullptr)
     {
         hr = cdacInterface->QueryInterface(iid, iface);

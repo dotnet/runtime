@@ -44,7 +44,7 @@ public sealed unsafe class ContractDescriptorTarget : Target
 
     public delegate int ReadFromTargetDelegate(ulong address, Span<byte> bufferToFill);
 
-    public static bool TryCreate(ulong contractDescriptor, ReadFromTargetDelegate readFromTarget, out ContractDescriptorTarget? target)
+    public static bool TryCreate(ulong contractDescriptor, ReadFromTargetDelegate readFromTarget, [NotNullWhen(true)] out ContractDescriptorTarget? target)
     {
         Reader reader = new Reader(readFromTarget);
         if (TryReadContractDescriptor(contractDescriptor, reader, out Configuration config, out ContractDescriptorParser.ContractDescriptor? descriptor, out TargetPointer[] pointerData))
