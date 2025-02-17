@@ -98,8 +98,8 @@ namespace System.Net.Http
         private SafeWinHttpHandle? _sessionHandle;
         private readonly WinHttpAuthHelper _authHelper = new WinHttpAuthHelper();
         private readonly Timer? _certificateCleanupTimer;
-        internal bool isTimerRunning;
-        internal ConcurrentDictionary<IPAddress, CachedCertificateValue> cachedCertificates = new();
+        private bool _isTimerRunning;
+        private ConcurrentDictionary<IPAddress, CachedCertificateValue> _cachedCertificates = new();
 
         public WinHttpHandler()
         {
@@ -1760,12 +1760,48 @@ namespace System.Net.Http
             return state.LifecycleAwaitable;
         }
 
-        internal void ChangeCleanerTimer(TimeSpan timeout)
+        internal bool GetCertificateFromCache(IPAddress ipAddress, [MaybeNullWhen(false)] out byte[] rawCertificateBytes)
+        {
+            if (_cachedCertificates.TryGetValue(ipAddress, out CachedCertificateValue? cachedValue))
+            {
+                cachedValue.LastUsedTime = Stopwatch.GetTimestamp();
+                rawCertificateBytes = cachedValue.RawCertificateData;
+                return true;
+            }
+
+            rawCertificateBytes = null;
+            return false;
+        }
+
+        internal bool TryAddCertificateToCache(IPAddress address, byte[] rawCertificateData)
+        {
+            bool result = _cachedCertificates.TryAdd(address, new CachedCertificateValue(rawCertificateData, Stopwatch.GetTimestamp()));
+            if (result)
+            {
+                EnsureCleanupTimerRunning();
+            }
+            return result;
+        }
+
+        internal bool TryRemoveCertificateFromCache(IPAddress address)
+        {
+            bool result = _cachedCertificates.TryRemove(address, out CachedCertificateValue? _);
+            if (result)
+            {
+                StopCleanupTimerIfEmpty();
+            }
+            return result;
+        }
+
+        private void ChangeCleanerTimer(TimeSpan timeout)
         {
             Debug.Assert(_certificateCleanupTimer != null);
             if (_certificateCleanupTimer!.Change(timeout, Timeout.InfiniteTimeSpan))
             {
-                isTimerRunning = timeout != Timeout.InfiniteTimeSpan;
+                lock (_lockObject)
+                {
+                    _isTimerRunning = timeout != Timeout.InfiniteTimeSpan;
+                }
             }
         }
 
@@ -1773,15 +1809,15 @@ namespace System.Net.Http
         {
             Debug.Assert(_certificateCleanupTimer != null);
 
-            foreach (KeyValuePair<IPAddress, CachedCertificateValue> kvPair in cachedCertificates)
+            foreach (KeyValuePair<IPAddress, CachedCertificateValue> kvPair in _cachedCertificates)
             {
                 if (IsStale(kvPair.Value.LastUsedTime))
                 {
-                    cachedCertificates.TryRemove(kvPair.Key, out CachedCertificateValue _);
+                    _cachedCertificates.TryRemove(kvPair.Key, out CachedCertificateValue? _);
                 }
             }
 
-            ChangeCleanerTimer(cachedCertificates.IsEmpty ? Timeout.InfiniteTimeSpan : s_cleanCachedCertificateTimeout);
+            ChangeCleanerTimer(_cachedCertificates.IsEmpty ? Timeout.InfiniteTimeSpan : s_cleanCachedCertificateTimeout);
 
             static bool IsStale(long lastUsedTime)
             {
@@ -1790,32 +1826,20 @@ namespace System.Net.Http
             }
         }
 
-        internal void CheckTimer()
+        private void EnsureCleanupTimerRunning()
         {
-            if (cachedCertificates.IsEmpty && isTimerRunning)
-            {
-                ChangeCleanerTimer(Timeout.InfiniteTimeSpan);
-            }
-
-            if (!cachedCertificates.IsEmpty && !isTimerRunning)
+            if (!_cachedCertificates.IsEmpty && !_isTimerRunning)
             {
                 ChangeCleanerTimer(s_cleanCachedCertificateTimeout);
             }
         }
 
-        internal bool GetCertificateFromCache(IPAddress ipAddress, [MaybeNullWhen(false)] out byte[] rawCertificateBytes)
+        private void StopCleanupTimerIfEmpty()
         {
-            if (cachedCertificates.TryGetValue(ipAddress, out CachedCertificateValue cachedCert))
+            if (_cachedCertificates.IsEmpty && _isTimerRunning)
             {
-                rawCertificateBytes = cachedCert.RawCertificateData;
-                cachedCert.LastUsedTime = Stopwatch.GetTimestamp();
+                ChangeCleanerTimer(Timeout.InfiniteTimeSpan);
             }
-            else
-            {
-                rawCertificateBytes = null;
-            }
-
-            return rawCertificateBytes != null;
         }
     }
 }

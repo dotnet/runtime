@@ -27,7 +27,7 @@ namespace System.Net.Http.WinHttpHandlerFunctional.Tests
 
         private readonly ITestOutputHelper _output;
 
-        public static IEnumerable<object[]> s_versions = [[HttpVersion.Version11], [HttpVersion20.Value]];
+        public static IEnumerable<object[]> HttpVersions = [[HttpVersion.Version11], [HttpVersion20.Value]];
 
         public WinHttpHandlerTest(ITestOutputHelper output)
         {
@@ -73,7 +73,7 @@ namespace System.Net.Http.WinHttpHandlerFunctional.Tests
 
         [OuterLoop]
         [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        [MemberData(nameof(s_versions))]
+        [MemberData(nameof(HttpVersions))]
         public async Task SendAsync_ServerCertificateValidationCallback_CalledOnce(Version version)
         {
             await RemoteExecutor.Invoke(async (version) =>
@@ -107,7 +107,7 @@ namespace System.Net.Http.WinHttpHandlerFunctional.Tests
 
         [OuterLoop]
         [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        [MemberData(nameof(s_versions))]
+        [MemberData(nameof(HttpVersions))]
         public async Task SendAsync_ServerCertificateValidationCallbackCertificateTimerTriggered_CalledTwice(Version version)
         {
             await RemoteExecutor.Invoke(async (version) =>

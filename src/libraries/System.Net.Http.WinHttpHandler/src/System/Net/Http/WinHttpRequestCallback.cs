@@ -140,10 +140,9 @@ namespace System.Net.Http
             Debug.Assert(state != null);
             Debug.Assert(state.Handler != null);
 
-            if (state.Handler.cachedCertificates.TryRemove(connectedIPAddress, out _))
+            if (state.Handler.TryRemoveCertificateFromCache(connectedIPAddress))
             {
                 if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(null, $"Removed cached certificate for {connectedIPAddress}");
-                state.Handler.CheckTimer();
             }
             else
             {
@@ -345,11 +344,9 @@ namespace System.Net.Http
                         }
                     }
 
-                    if (ipAddress is not null && state.Handler.cachedCertificates.TryGetValue(ipAddress, out CachedCertificateValue cachedCert) && cachedCert.RawCertificateData.SequenceEqual(serverCertificate.RawData))
+                    if (ipAddress is not null && state.Handler.GetCertificateFromCache(ipAddress, out byte[]? rawCertData) && rawCertData.SequenceEqual(serverCertificate.RawData))
                     {
                         if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(state, $"Skipping certificate validation. ipAddress: {ipAddress}, Thumbprint: {serverCertificate.Thumbprint}");
-                        // Update the timestamp of the cached certificate.
-                        cachedCert.LastUsedTime = Stopwatch.GetTimestamp();
                         serverCertificate.Dispose();
                         return;
                     }
@@ -380,8 +377,7 @@ namespace System.Net.Http
                         sslPolicyErrors);
                     if (CertificateCachingAppContextSwitchEnabled && result && ipAddress is not null)
                     {
-                        state.Handler.cachedCertificates[ipAddress] = new CachedCertificateValue(serverCertificate.RawData, Stopwatch.GetTimestamp());
-                        state.Handler.CheckTimer();
+                        _ = state.Handler.TryAddCertificateToCache(ipAddress, serverCertificate.RawData);
                     }
                 }
                 catch (Exception ex)

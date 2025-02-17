@@ -7,7 +7,7 @@ using System.Text;
 
 namespace System.Net.Http
 {
-    internal struct CachedCertificateValue(byte[] rawCertificateData, long lastUsedTime)
+    internal sealed class CachedCertificateValue(byte[] rawCertificateData, long lastUsedTime)
     {
         public byte[] RawCertificateData { get; } = rawCertificateData;
         public long LastUsedTime { get; set; } = lastUsedTime;
