@@ -2580,7 +2580,7 @@ void CodeGen::genCodeForMulHi(GenTreeOp* treeNode)
     genProduceReg(treeNode);
 }
 
-// Generate code for ADD, SUB, MUL, DIV, UDIV, AND, AND_NOT, OR and XOR
+// Generate code for ADD, SUB, MUL, DIV, UDIV, AND, AND_NOT, OR, OR_NOT, XOR and XOR_NOT
 // This method is expected to have called genConsumeOperands() before calling it.
 void CodeGen::genCodeForBinary(GenTreeOp* tree)
 {
@@ -2589,7 +2589,8 @@ void CodeGen::genCodeForBinary(GenTreeOp* tree)
     var_types        targetType = tree->TypeGet();
     emitter*         emit       = GetEmitter();
 
-    assert(tree->OperIs(GT_ADD, GT_SUB, GT_MUL, GT_DIV, GT_UDIV, GT_AND, GT_AND_NOT, GT_OR, GT_XOR));
+    assert(tree->OperIs(GT_ADD, GT_SUB, GT_MUL, GT_DIV, GT_UDIV, GT_AND, GT_AND_NOT, GT_OR, GT_OR_NOT, GT_XOR,
+                        GT_XOR_NOT));
 
     GenTree* op1 = tree->gtGetOp1();
     GenTree* op2 = tree->gtGetOp2();
@@ -2672,6 +2673,12 @@ void CodeGen::genCodeForBinary(GenTreeOp* tree)
                 case GT_AND:
                 {
                     ins = INS_ands;
+                    break;
+                }
+
+                case GT_AND_NOT:
+                {
+                    ins = INS_bics;
                     break;
                 }
 
@@ -3484,13 +3491,15 @@ void CodeGen::genCodeForNegNot(GenTree* tree)
 
     GenTree* operand = tree->gtGetOp1();
     // The src must be a register.
-    if (tree->OperIs(GT_NEG) && operand->isContained())
+    if (tree->OperIs(GT_NEG, GT_NOT) && operand->isContained())
     {
         genTreeOps oper = operand->OperGet();
         switch (oper)
         {
             case GT_MUL:
             {
+                assert(tree->OperIs(GT_NEG));
+
                 ins          = INS_mneg;
                 GenTree* op1 = tree->gtGetOp1();
                 GenTree* a   = op1->gtGetOp1();
@@ -3504,7 +3513,7 @@ void CodeGen::genCodeForNegNot(GenTree* tree)
             case GT_RSH:
             case GT_RSZ:
             {
-                assert(ins == INS_neg || ins == INS_negs);
+                assert(ins == INS_neg || ins == INS_negs || ins == INS_mvn);
                 assert(operand->gtGetOp2()->IsCnsIntOrI());
                 assert(operand->gtGetOp2()->isContained());
 
@@ -3613,9 +3622,10 @@ void CodeGen::genCodeForDivMod(GenTreeOp* tree)
             }
             else
             {
-                // Check if the divisor is zero throw a DivideByZeroException
-                emit->emitIns_R_I(INS_cmp, size, divisorReg, 0);
-                genJumpToThrowHlpBlk(EJ_eq, SCK_DIV_BY_ZERO);
+                genJumpToThrowHlpBlk(SCK_DIV_BY_ZERO, [&](BasicBlock* target, bool invert) {
+                    GenCondition::Code cond = invert ? GenCondition::NE : GenCondition::EQ;
+                    genCompareImmAndJump(cond, divisorReg, 0, size, target);
+                });
             }
         }
 
@@ -4268,6 +4278,9 @@ instruction CodeGen::genGetInsForOper(genTreeOps oper, var_types type)
             case GT_OR:
                 ins = INS_orr;
                 break;
+            case GT_OR_NOT:
+                ins = INS_orn;
+                break;
             case GT_ROR:
                 ins = INS_ror;
                 break;
@@ -4282,6 +4295,9 @@ instruction CodeGen::genGetInsForOper(genTreeOps oper, var_types type)
                 break;
             case GT_XOR:
                 ins = INS_eor;
+                break;
+            case GT_XOR_NOT:
+                ins = INS_eon;
                 break;
 
             default:
@@ -5053,6 +5069,34 @@ void CodeGen::genCodeForJumpCompare(GenTreeOpCC* tree)
     if (!compiler->compCurBB->CanRemoveJumpToTarget(falseTarget, compiler))
     {
         inst_JMP(EJ_jmp, falseTarget);
+    }
+}
+
+void CodeGen::genCompareImmAndJump(
+    GenCondition::Code cond, regNumber reg, ssize_t compareImm, emitAttr size, BasicBlock* target)
+{
+    // For ARM64 we only expect equality comparisons.
+    assert((cond == GenCondition::EQ) || (cond == GenCondition::NE));
+
+    if (compareImm == 0)
+    {
+        // We can use cbz/cbnz
+        instruction ins = (cond == GenCondition::EQ) ? INS_cbz : INS_cbnz;
+        GetEmitter()->emitIns_J_R(ins, size, target, reg);
+    }
+    else if (isPow2(compareImm))
+    {
+        // We can use tbz/tbnz
+        instruction ins = (cond == GenCondition::EQ) ? INS_tbz : INS_tbnz;
+        int         imm = genLog2((size_t)compareImm);
+        GetEmitter()->emitIns_J_R_I(ins, size, target, reg, imm);
+    }
+    else
+    {
+        // Emit compare and branch pair default.
+        emitJumpKind jumpKind = (cond == GenCondition::EQ) ? EJ_eq : EJ_ne;
+        GetEmitter()->emitIns_R_I(INS_cmp, size, reg, compareImm);
+        inst_JMP(jumpKind, target);
     }
 }
 
@@ -5922,6 +5966,29 @@ insOpts CodeGen::ShiftOpToInsOpts(genTreeOps shiftOp)
             NO_WAY("expected a shift-op");
             return INS_OPTS_NONE;
     }
+}
+
+//---------------------------------------------------------------------------------
+// genGetThrowHelper: Search for the throw helper for the exception kind `codeKind`
+BasicBlock* CodeGen::genGetThrowHelper(SpecialCodeKind codeKind)
+{
+    BasicBlock* excpRaisingBlock = nullptr;
+    if (compiler->fgUseThrowHelperBlocks())
+    {
+        // For code with throw helper blocks, find and use the helper block for
+        // raising the exception. The block may be shared by other trees too.
+        Compiler::AddCodeDsc* add = compiler->fgFindExcptnTarget(codeKind, compiler->compCurBB);
+        PREFIX_ASSUME_MSG((add != nullptr), ("ERROR: failed to find exception throw block"));
+        assert(add->acdUsed);
+        excpRaisingBlock = add->acdDstBlk;
+#if !FEATURE_FIXED_OUT_ARGS
+        assert(add->acdStkLvlInit || isFramePointerUsed());
+#endif // !FEATURE_FIXED_OUT_ARGS
+
+        noway_assert(excpRaisingBlock != nullptr);
+    }
+
+    return excpRaisingBlock;
 }
 
 #endif // TARGET_ARM64

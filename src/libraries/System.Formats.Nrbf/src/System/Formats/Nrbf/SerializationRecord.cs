@@ -39,6 +39,10 @@ public abstract class SerializationRecord
     /// Gets the name of the serialized type.
     /// </summary>
     /// <value>The name of the serialized type.</value>
+    /// <remarks>
+    /// Since the provided type name may originate from untrusted input,
+    /// it should not be utilized for type loading, as it could potentially load a malicious type.
+    /// </remarks>
     public abstract TypeName TypeName { get; }
 
     /// <summary>

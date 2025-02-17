@@ -40,9 +40,20 @@ DataFlow::DataFlow(Compiler* pCompiler)
 PhaseStatus Compiler::optSetBlockWeights()
 {
     noway_assert(opts.OptimizationEnabled());
+    assert(m_dfsTree != nullptr);
+    const bool usingProfileWeights = fgIsUsingProfileWeights();
+
+    // Rely on profile synthesis to propagate weights when we have PGO data.
+    // TODO: Replace optSetBlockWeights with profile synthesis entirely.
+    if (usingProfileWeights)
+    {
+        // Leave breadcrumb for loop alignment
+        fgHasLoops = m_dfsTree->HasCycle();
+        return PhaseStatus::MODIFIED_NOTHING;
+    }
+
     bool madeChanges = false;
 
-    assert(m_dfsTree != nullptr);
     if (m_domTree == nullptr)
     {
         m_domTree = FlowGraphDominatorTree::Build(m_dfsTree);
@@ -59,8 +70,7 @@ PhaseStatus Compiler::optSetBlockWeights()
         optFindAndScaleGeneralLoopBlocks();
     }
 
-    bool       firstBBDominatesAllReturns = true;
-    const bool usingProfileWeights        = fgIsUsingProfileWeights();
+    bool firstBBDominatesAllReturns = true;
 
     fgComputeReturnBlocks();
 
@@ -2230,11 +2240,6 @@ bool Compiler::optInvertWhileLoop(BasicBlock* block)
     //
     bNewCond->inheritWeight(block);
 
-    if (haveProfileWeights)
-    {
-        bTest->decreaseBBProfileWeight(block->bbWeight);
-    }
-
     // Move all predecessor edges that look like loop entry edges to point to the new cloned condition
     // block, not the existing condition block. The idea is that if we only move `block` to point to
     // `bNewCond`, but leave other `bTest` predecessors still pointing to `bTest`, when we eventually
@@ -2269,14 +2274,6 @@ bool Compiler::optInvertWhileLoop(BasicBlock* block)
             case BBJ_SWITCH:
             case BBJ_EHFINALLYRET:
                 fgReplaceJumpTarget(predBlock, bTest, bNewCond);
-
-                // Redirect profile weight, too
-                if (haveProfileWeights)
-                {
-                    const weight_t edgeWeight = predEdge->getLikelyWeight();
-                    bNewCond->increaseBBProfileWeight(edgeWeight);
-                    bTest->decreaseBBProfileWeight(edgeWeight);
-                }
                 break;
 
             case BBJ_EHCATCHRET:
@@ -2287,6 +2284,23 @@ bool Compiler::optInvertWhileLoop(BasicBlock* block)
             default:
                 assert(!"Unexpected bbKind for predecessor block");
                 break;
+        }
+    }
+
+    if (haveProfileWeights)
+    {
+        // The above change should have moved some flow out of 'bTest', and into 'bNewCond'.
+        // Check that no extraneous flow was lost or gained in the process.
+        //
+        const weight_t totalWeight = bTest->bbWeight;
+        bTest->setBBProfileWeight(bTest->computeIncomingWeight());
+        bNewCond->setBBProfileWeight(bNewCond->computeIncomingWeight());
+
+        if (!fgProfileWeightsConsistent(totalWeight, bTest->bbWeight + bNewCond->bbWeight))
+        {
+            JITDUMP("Redirecting flow from " FMT_BB " to " FMT_BB " introduced inconsistency. Data %s inconsistent.\n",
+                    bTest->bbNum, bNewCond->bbNum, fgPgoConsistent ? "is now" : "was already");
+            fgPgoConsistent = false;
         }
     }
 

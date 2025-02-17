@@ -30,6 +30,7 @@ namespace System.IO.Compression
         private readonly Stream? _backingStream;
         private byte[] _archiveComment;
         private Encoding? _entryNameAndCommentEncoding;
+        private long _firstDeletedEntryOffset;
 
 #if DEBUG_FORCE_ZIP64
         public bool _forceZip64;
@@ -164,12 +165,14 @@ namespace System.IO.Compression
                 _entries = new List<ZipArchiveEntry>();
                 _entriesCollection = new ReadOnlyCollection<ZipArchiveEntry>(_entries);
                 _entriesDictionary = new Dictionary<string, ZipArchiveEntry>();
+                Changed = ChangeState.Unchanged;
                 _readEntries = false;
                 _leaveOpen = leaveOpen;
                 _centralDirectoryStart = 0; // invalid until ReadCentralDirectory
                 _isDisposed = false;
                 _numberOfThisDisk = 0; // invalid until ReadCentralDirectory
                 _archiveComment = Array.Empty<byte>();
+                _firstDeletedEntryOffset = long.MaxValue;
 
                 switch (mode)
                 {
@@ -217,7 +220,11 @@ namespace System.IO.Compression
         public string Comment
         {
             get => (EntryNameAndCommentEncoding ?? Encoding.UTF8).GetString(_archiveComment);
-            set => _archiveComment = ZipHelper.GetEncodedTruncatedBytesFromString(value, EntryNameAndCommentEncoding, ZipEndOfCentralDirectoryBlock.ZipFileCommentMaxLength, out _);
+            set
+            {
+                _archiveComment = ZipHelper.GetEncodedTruncatedBytesFromString(value, EntryNameAndCommentEncoding, ZipEndOfCentralDirectoryBlock.ZipFileCommentMaxLength, out _);
+                Changed |= ChangeState.DynamicLengthMetadata;
+            }
         }
 
         /// <summary>
@@ -383,6 +390,10 @@ namespace System.IO.Compression
             }
         }
 
+        // This property's value only relates to the top-level fields of the archive (such as the archive comment.)
+        // New entries in the archive won't change its state.
+        internal ChangeState Changed { get; private set; }
+
         private ZipArchiveEntry DoCreateEntry(string entryName, CompressionLevel? compressionLevel)
         {
             ArgumentException.ThrowIfNullOrEmpty(entryName);
@@ -409,7 +420,7 @@ namespace System.IO.Compression
             {
                 if (!_archiveStreamOwner.EverOpenedForWrite)
                 {
-                    _archiveStreamOwner.WriteAndFinishLocalEntry();
+                    _archiveStreamOwner.WriteAndFinishLocalEntry(forceWrite: true);
                 }
                 else
                 {
@@ -441,6 +452,11 @@ namespace System.IO.Compression
             _entries.Remove(entry);
 
             _entriesDictionary.Remove(entry.FullName);
+            // Keep track of the offset of the earliest deleted entry in the archive
+            if (entry.OriginallyInArchive && entry.OffsetOfLocalHeader < _firstDeletedEntryOffset)
+            {
+                _firstDeletedEntryOffset = entry.OffsetOfLocalHeader;
+            }
         }
 
         internal void ThrowIfDisposed()
@@ -550,7 +566,12 @@ namespace System.IO.Compression
                     throw new InvalidDataException(SR.NumEntriesWrong);
                 }
 
-                _archiveStream.Seek(_centralDirectoryStart + bytesRead, SeekOrigin.Begin);
+                // Sort _entries by each archive entry's position. This supports the algorithm in WriteFile, so is only
+                // necessary when the ZipArchive has been opened in Update mode.
+                if (Mode == ZipArchiveMode.Update)
+                {
+                    _entries.Sort(ZipArchiveEntry.LocalHeaderOffsetComparer.Instance);
+                }
             }
             catch (EndOfStreamException ex)
             {
@@ -681,41 +702,107 @@ namespace System.IO.Compression
             // if we are in update mode, we call EnsureCentralDirectoryRead, which sets readEntries to true
             Debug.Assert(_readEntries);
 
+            // Entries starting after this offset have had a dynamically-sized change. Everything on or after this point must be rewritten.
+            long completeRewriteStartingOffset = 0;
+            List<ZipArchiveEntry> entriesToWrite = _entries;
+
             if (_mode == ZipArchiveMode.Update)
             {
-                List<ZipArchiveEntry> markedForDelete = new List<ZipArchiveEntry>();
+                // Entries starting after this offset have some kind of change made to them. It might just be a fixed-length field though, in which case
+                // that single entry's metadata can be rewritten without impacting anything else.
+                long startingOffset = _firstDeletedEntryOffset;
+                long nextFileOffset = 0;
+                completeRewriteStartingOffset = startingOffset;
+
+                entriesToWrite = new(_entries.Count);
                 foreach (ZipArchiveEntry entry in _entries)
                 {
-                    if (!entry.LoadLocalHeaderExtraFieldAndCompressedBytesIfNeeded())
-                        markedForDelete.Add(entry);
+                    if (!entry.OriginallyInArchive)
+                    {
+                        entriesToWrite.Add(entry);
+                    }
+                    else
+                    {
+                        if (entry.Changes == ChangeState.Unchanged)
+                        {
+                            // Keep track of the expected position of the file entry after the final untouched file entry so that when the loop completes,
+                            // we'll know which position to start writing new entries from.
+                            nextFileOffset = Math.Max(nextFileOffset, entry.OffsetOfCompressedData + entry.CompressedLength);
+                        }
+                        // When calculating the starting offset to load the files from, only look at changed entries which are already in the archive.
+                        else
+                        {
+                            startingOffset = Math.Min(startingOffset, entry.OffsetOfLocalHeader);
+                        }
+
+                        // We want to re-write entries which are after the starting offset of the first entry which has pending data to write.
+                        // NB: the existing ZipArchiveEntries are sorted in _entries by their position ascending.
+                        if (entry.OffsetOfLocalHeader >= startingOffset)
+                        {
+                            // If the pending data to write is fixed-length metadata in the header, there's no need to load the compressed file bits.
+                            if ((entry.Changes & (ChangeState.DynamicLengthMetadata | ChangeState.StoredData)) != 0)
+                            {
+                                completeRewriteStartingOffset = Math.Min(completeRewriteStartingOffset, entry.OffsetOfLocalHeader);
+                            }
+                            if (entry.OffsetOfLocalHeader >= completeRewriteStartingOffset)
+                            {
+                                entry.LoadLocalHeaderExtraFieldAndCompressedBytesIfNeeded();
+                            }
+
+                            entriesToWrite.Add(entry);
+                        }
+                    }
                 }
-                foreach (ZipArchiveEntry entry in markedForDelete)
-                    entry.Delete();
 
-                _archiveStream.Seek(0, SeekOrigin.Begin);
-                _archiveStream.SetLength(0);
+                // If the offset of entries to write from is still at long.MaxValue, then we know that nothing has been deleted,
+                // nothing has been modified - so we just want to move to the end of all remaining files in the archive.
+                if (startingOffset == long.MaxValue)
+                {
+                    startingOffset = nextFileOffset;
+                }
+
+                _archiveStream.Seek(startingOffset, SeekOrigin.Begin);
             }
+
+            foreach (ZipArchiveEntry entry in entriesToWrite)
+            {
+                // We don't always need to write the local header entry, ZipArchiveEntry is usually able to work out when it doesn't need to.
+                // We want to force this header entry to be written (even for completely untouched entries) if the entry comes after one
+                // which had a pending dynamically-sized write.
+                bool forceWriteLocalEntry = !entry.OriginallyInArchive || (entry.OriginallyInArchive && entry.OffsetOfLocalHeader >= completeRewriteStartingOffset);
+
+                entry.WriteAndFinishLocalEntry(forceWriteLocalEntry);
+            }
+
+            long plannedCentralDirectoryPosition = _archiveStream.Position;
+            // If there are no entries in the archive, we still want to create the archive epilogue.
+            bool archiveEpilogueRequiresUpdate = _entries.Count == 0;
 
             foreach (ZipArchiveEntry entry in _entries)
             {
-                entry.WriteAndFinishLocalEntry();
+                // The central directory needs to be rewritten if its position has moved, if there's a new entry in the archive, or if the entry might be different.
+                bool centralDirectoryEntryRequiresUpdate = plannedCentralDirectoryPosition != _centralDirectoryStart
+                    || !entry.OriginallyInArchive || entry.OffsetOfLocalHeader >= completeRewriteStartingOffset;
+
+                entry.WriteCentralDirectoryFileHeader(centralDirectoryEntryRequiresUpdate);
+                archiveEpilogueRequiresUpdate |= centralDirectoryEntryRequiresUpdate;
             }
 
-            long startOfCentralDirectory = _archiveStream.Position;
+            long sizeOfCentralDirectory = _archiveStream.Position - plannedCentralDirectoryPosition;
 
-            foreach (ZipArchiveEntry entry in _entries)
+            WriteArchiveEpilogue(plannedCentralDirectoryPosition, sizeOfCentralDirectory, archiveEpilogueRequiresUpdate);
+
+            // If entries have been removed and new (smaller) ones added, there could be empty space at the end of the file.
+            // Shrink the file to reclaim this space.
+            if (_mode == ZipArchiveMode.Update && _archiveStream.Position != _archiveStream.Length)
             {
-                entry.WriteCentralDirectoryFileHeader();
+                _archiveStream.SetLength(_archiveStream.Position);
             }
-
-            long sizeOfCentralDirectory = _archiveStream.Position - startOfCentralDirectory;
-
-            WriteArchiveEpilogue(startOfCentralDirectory, sizeOfCentralDirectory);
         }
 
         // writes eocd, and if needed, zip 64 eocd, zip64 eocd locator
         // should only throw an exception in extremely exceptional cases because it is called from dispose
-        private void WriteArchiveEpilogue(long startOfCentralDirectory, long sizeOfCentralDirectory)
+        private void WriteArchiveEpilogue(long startOfCentralDirectory, long sizeOfCentralDirectory, bool centralDirectoryChanged)
         {
             // determine if we need Zip 64
             if (startOfCentralDirectory >= uint.MaxValue
@@ -728,12 +815,37 @@ namespace System.IO.Compression
             {
                 // if we need zip 64, write zip 64 eocd and locator
                 long zip64EOCDRecordStart = _archiveStream.Position;
-                Zip64EndOfCentralDirectoryRecord.WriteBlock(_archiveStream, _entries.Count, startOfCentralDirectory, sizeOfCentralDirectory);
-                Zip64EndOfCentralDirectoryLocator.WriteBlock(_archiveStream, zip64EOCDRecordStart);
+
+                if (centralDirectoryChanged)
+                {
+                    Zip64EndOfCentralDirectoryRecord.WriteBlock(_archiveStream, _entries.Count, startOfCentralDirectory, sizeOfCentralDirectory);
+                    Zip64EndOfCentralDirectoryLocator.WriteBlock(_archiveStream, zip64EOCDRecordStart);
+                }
+                else
+                {
+                    _archiveStream.Seek(Zip64EndOfCentralDirectoryRecord.TotalSize, SeekOrigin.Current);
+                    _archiveStream.Seek(Zip64EndOfCentralDirectoryLocator.TotalSize, SeekOrigin.Current);
+                }
             }
 
             // write normal eocd
-            ZipEndOfCentralDirectoryBlock.WriteBlock(_archiveStream, _entries.Count, startOfCentralDirectory, sizeOfCentralDirectory, _archiveComment);
+            if (centralDirectoryChanged || (Changed != ChangeState.Unchanged))
+            {
+                ZipEndOfCentralDirectoryBlock.WriteBlock(_archiveStream, _entries.Count, startOfCentralDirectory, sizeOfCentralDirectory, _archiveComment);
+            }
+            else
+            {
+                _archiveStream.Seek(ZipEndOfCentralDirectoryBlock.TotalSize + _archiveComment.Length, SeekOrigin.Current);
+            }
+        }
+
+        [Flags]
+        internal enum ChangeState
+        {
+            Unchanged = 0x0,
+            FixedLengthMetadata = 0x1,
+            DynamicLengthMetadata = 0x2,
+            StoredData = 0x4
         }
     }
 }

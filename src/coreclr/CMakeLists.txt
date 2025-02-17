@@ -59,7 +59,7 @@ include(components.cmake)
 #---------------------------
 # Build the single file host
 #---------------------------
-if(NOT CLR_CROSS_COMPONENTS_BUILD)
+if(NOT CLR_CROSS_COMPONENTS_BUILD AND NOT CLR_CMAKE_TARGET_MACCATALYST AND NOT CLR_CMAKE_TARGET_IOS AND NOT CLR_CMAKE_TARGET_TVOS)
   set(CLR_SINGLE_FILE_HOST_ONLY 1)
   add_subdirectory(${CLR_SRC_NATIVE_DIR}/corehost/apphost/static Corehost.Static)
   add_dependencies(runtime singlefilehost)
@@ -101,8 +101,10 @@ if(CLR_CMAKE_HOST_UNIX)
       add_linker_flag(-Wl,-z,notext)
     endif()
 
-    if(NOT CLR_CMAKE_HOST_MACCATALYST AND NOT CLR_CMAKE_HOST_IOS AND NOT CLR_CMAKE_HOST_TVOS)
+    if(NOT CLR_CMAKE_HOST_TVOS)
       add_subdirectory(pal)
+    endif()
+    if(NOT CLR_CMAKE_HOST_MACCATALYST AND NOT CLR_CMAKE_HOST_IOS AND NOT CLR_CMAKE_HOST_TVOS)
       add_subdirectory(hosts)
     endif()
 else()
@@ -129,7 +131,7 @@ add_subdirectory(${CLR_SRC_NATIVE_DIR}/containers containers)
 add_subdirectory(${CLR_SRC_NATIVE_DIR}/eventpipe eventpipe)
 add_subdirectory(${CLR_SRC_NATIVE_DIR}/minipal shared_minipal)
 
-if(NOT CLR_CMAKE_HOST_MACCATALYST AND NOT CLR_CMAKE_HOST_IOS AND NOT CLR_CMAKE_HOST_TVOS)
+if(NOT CLR_CMAKE_HOST_TVOS)
   add_subdirectory(debug/debug-pal)
 endif()
 
@@ -213,7 +215,13 @@ if(CLR_CMAKE_HOST_UNIX)
 
   set (NATIVE_RESOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/nativeresources)
   include_directories(${NATIVE_RESOURCE_DIR})
-  set (PROCESS_RC_SCRIPT ${NATIVE_RESOURCE_DIR}/processrc.sh)
+
+  # Win32 may be false when cross compiling
+  if (CMAKE_HOST_SYSTEM_NAME STREQUAL "Windows")
+    set (PROCESS_RC_SCRIPT ${NATIVE_RESOURCE_DIR}/processrc.ps1)
+  else()
+    set (PROCESS_RC_SCRIPT ${NATIVE_RESOURCE_DIR}/processrc.sh)
+  endif()
   set (RESOURCE_STRING_HEADER_DIR ${NATIVE_RESOURCE_DIR})
 
   # Create a command to create a C++ source file containing an array of
@@ -228,27 +236,38 @@ if(CLR_CMAKE_HOST_UNIX)
 
     set(RESOURCE_ENTRY_ARRAY_CPP ${CMAKE_CURRENT_BINARY_DIR}/${TARGET_NAME}.cpp)
 
-    add_custom_command(
-      OUTPUT ${RESOURCE_ENTRY_ARRAY_CPP}
-      # Convert the preprocessed .rc file to a C++ file which will be used to make a static lib.
-      COMMAND ${PROCESS_RC_SCRIPT} ${PREPROCESSED_SOURCE} ${TARGET_NAME} >${RESOURCE_ENTRY_ARRAY_CPP}
-            DEPENDS ${PREPROCESSED_SOURCE} ${PROCESS_RC_SCRIPT}
-    )
+    # Win32 may be false when cross compiling
+    if (CMAKE_HOST_SYSTEM_NAME STREQUAL "Windows")
+      add_custom_command(
+        OUTPUT ${RESOURCE_ENTRY_ARRAY_CPP}
+        # Convert the preprocessed .rc file to a C++ file which will be used to make a static lib.
+        COMMAND powershell -NoProfile -ExecutionPolicy ByPass -File \"${PROCESS_RC_SCRIPT}\" ${PREPROCESSED_SOURCE} ${TARGET_NAME} >${RESOURCE_ENTRY_ARRAY_CPP}
+        DEPENDS ${PREPROCESSED_SOURCE} ${PROCESS_RC_SCRIPT}
+      )
+    else()
+      add_custom_command(
+        OUTPUT ${RESOURCE_ENTRY_ARRAY_CPP}
+        # Convert the preprocessed .rc file to a C++ file which will be used to make a static lib.
+        COMMAND ${PROCESS_RC_SCRIPT} ${PREPROCESSED_SOURCE} ${TARGET_NAME} >${RESOURCE_ENTRY_ARRAY_CPP}
+        DEPENDS ${PREPROCESSED_SOURCE} ${PROCESS_RC_SCRIPT}
+      )
+    endif()
 
     include_directories(${RESOURCE_STRING_HEADER_DIR})
     set(${TARGET_FILE} ${RESOURCE_ENTRY_ARRAY_CPP} PARENT_SCOPE)
-
   endfunction()
 
   add_subdirectory(nativeresources)
 endif(CLR_CMAKE_HOST_UNIX)
 
-if(NOT CLR_CMAKE_HOST_MACCATALYST AND NOT CLR_CMAKE_HOST_IOS AND NOT CLR_CMAKE_HOST_TVOS)
+if(NOT CLR_CMAKE_HOST_TVOS)
   add_subdirectory(utilcode)
   add_subdirectory(inc)
 
-  add_subdirectory(ilasm)
-  add_subdirectory(ildasm)
+  if (CLR_CMAKE_BUILD_TOOLS)
+    add_subdirectory(ilasm)
+    add_subdirectory(ildasm)
+  endif(CLR_CMAKE_BUILD_TOOLS)
   add_subdirectory(gcinfo)
   add_subdirectory(jit)
   add_subdirectory(vm)
@@ -257,11 +276,14 @@ if(NOT CLR_CMAKE_HOST_MACCATALYST AND NOT CLR_CMAKE_HOST_IOS AND NOT CLR_CMAKE_H
   add_subdirectory(binder)
   add_subdirectory(classlibnative)
   add_subdirectory(dlls)
-  add_subdirectory(tools)
   add_subdirectory(unwinder)
   add_subdirectory(interop)
+endif()
 
-  if(CLR_CMAKE_HOST_WIN32)
-    add_subdirectory(hosts)
-  endif(CLR_CMAKE_HOST_WIN32)
+if(NOT CLR_CMAKE_HOST_MACCATALYST AND NOT CLR_CMAKE_HOST_IOS AND NOT CLR_CMAKE_HOST_TVOS)
+  add_subdirectory(tools)
 endif(NOT CLR_CMAKE_HOST_MACCATALYST AND NOT CLR_CMAKE_HOST_IOS AND NOT CLR_CMAKE_HOST_TVOS)
+
+if(CLR_CMAKE_HOST_WIN32)
+  add_subdirectory(hosts)
+endif(CLR_CMAKE_HOST_WIN32)
