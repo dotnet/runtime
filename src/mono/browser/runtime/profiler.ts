@@ -32,10 +32,10 @@ export function mono_wasm_init_browser_profiler (options: BrowserProfilerOptions
         options = {};
     let arg = "browser:";
     if (typeof options.callSpec === "string") {
-        arg += `callspec=${options.callSpec}`;
+        arg += `callspec=${options.callSpec},`;
     }
     if (typeof options.sampleIntervalMs === "number") {
-        arg += `interval=${options.sampleIntervalMs}`;
+        arg += `interval=${options.sampleIntervalMs},`;
     }
     cwraps.mono_wasm_profiler_init_browser(arg);
 }

@@ -30,24 +30,26 @@ struct _MonoProfiler {
 };
 
 static MonoProfiler browser_profiler;
-static int desired_sample_interval_ms = 10;// ms
+static int desired_sample_interval_ms;
 static MonoCallSpec callspec;
 
-#ifdef HOST_WASM
+#ifdef HOST_BROWSER
 
 typedef struct _ProfilerStackFrame ProfilerStackFrame;
 
 struct _ProfilerStackFrame {
+	MonoMethod *method;
 	double start;
 	bool should_record;
 	ProfilerStackFrame *next;
 };
 
-static ProfilerStackFrame *profiler_stack = NULL;
-static double last_sample_time = 0;
-static int prev_skips_per_period = 1;
-static int skips_per_period = 1;
-static int sample_skip_counter = 1;
+static ProfilerStackFrame *profiler_stack;
+static double last_sample_time;
+static int prev_skips_per_period;
+static int skips_per_period;
+static int sample_skip_counter;
+static int stack_depth;
 
 double mono_wasm_profiler_now ();
 void mono_wasm_profiler_record (MonoMethod *method, double start);
@@ -80,17 +82,20 @@ static void
 method_enter (MonoProfiler *prof, MonoMethod *method, MonoProfilerCallContext *ctx)
 {
 	sample_skip_counter++;
+	stack_depth++;
 
 	ProfilerStackFrame* frame = g_new0 (ProfilerStackFrame, 1);
 	double now = frame->start = mono_wasm_profiler_now ();
 	frame->should_record = should_record_frame (now);
 	frame->next = profiler_stack;
+	frame->method = method;
 	profiler_stack = frame;
 }
 
 static void
 method_samplepoint (MonoProfiler *prof, MonoMethod *method, MonoProfilerCallContext *ctx)
 {
+	// enter/leave are not balanced, perhaps due to different callspecs between AOT and interpreter
 	g_assert(profiler_stack);
 
 	sample_skip_counter++;
@@ -104,13 +109,18 @@ method_samplepoint (MonoProfiler *prof, MonoMethod *method, MonoProfilerCallCont
 static void
 method_leave (MonoProfiler *prof, MonoMethod *method, MonoProfilerCallContext *ctx)
 {
+	// enter/leave are not balanced, perhaps due to different callspecs between AOT and interpreter
 	g_assert(profiler_stack);
 	
 	sample_skip_counter++;
+	stack_depth--;
 
 	// pop top frame
 	ProfilerStackFrame *top = profiler_stack;
 	profiler_stack = profiler_stack->next;
+
+	// enter/leave are not balanced, perhaps due to different callspecs between AOT and interpreter
+	g_assert(top->method == method);
 	
 	if (top->should_record || should_record_frame (mono_wasm_profiler_now ()))
 	{
@@ -135,7 +145,7 @@ method_exc_leave (MonoProfiler *prof, MonoMethod *method, MonoObject *exc)
 	method_leave (prof, method, NULL);
 }
 
-#endif /* HOST_WASM */
+#endif /* HOST_BROWSER */
 
 static MonoProfilerCallInstrumentationFlags
 method_filter (MonoProfiler *prof, MonoMethod *method)
@@ -266,6 +276,9 @@ parse_args (const char *desc)
 void
 mono_profiler_init_browser (const char *desc)
 {
+	desired_sample_interval_ms = 10;// ms
+	memset (&callspec, 0, sizeof (MonoCallSpec));
+
 	// browser:
 	if (desc && desc [7] == ':') {
 		parse_args (desc + 8);
@@ -279,12 +292,19 @@ mono_profiler_init_browser (const char *desc)
 		return;
 	}
 
-#ifdef HOST_WASM
+#ifdef HOST_BROWSER
+	profiler_stack = NULL;
+	last_sample_time = 0;
+	prev_skips_per_period = 1;
+	skips_per_period = 1;
+	sample_skip_counter = 1;
+	stack_depth = 0;
+
 	// install this only in production run, not in AOT run
 	mono_profiler_set_method_samplepoint_callback (handle, method_samplepoint);
 	mono_profiler_set_method_enter_callback (handle, method_enter);
 	mono_profiler_set_method_leave_callback (handle, method_leave);
 	mono_profiler_set_method_tail_call_callback (handle, tail_call);
 	mono_profiler_set_method_exception_leave_callback (handle, method_exc_leave);
-#endif /* HOST_WASM */
+#endif /* HOST_BROWSER */
 }

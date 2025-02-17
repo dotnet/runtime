@@ -260,7 +260,11 @@ export type AOTProfilerOptions = {
 
 export type BrowserProfilerOptions = {
     sampleIntervalMs?: number, // default: 1000
-    callSpec?: number, // see callspec in https://github.com/dotnet/runtime/blob/main/docs/design/mono/diagnostics-tracing.md#trace-monovm-profiler-events-during-startup
+    /**
+     * See callspec in https://github.com/dotnet/runtime/blob/main/docs/design/mono/diagnostics-tracing.md#trace-monovm-profiler-events-during-startup
+     * When used together with Mono AOT, the callspec needs to match one in <WasmProfilers>browser:callspec=N:Sample;</WasmProfilers> in your project file.
+     */
+    callSpec?: number,
 }
 
 export type LogProfilerOptions = {

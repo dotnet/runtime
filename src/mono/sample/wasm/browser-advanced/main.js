@@ -54,7 +54,7 @@ try {
                 config.environmentVariables["MONO_LOG_LEVEL"] = "debug";
                 config.browserProfilerOptions = {
                     sampleIntervalMs: 5,
-                    // callSpec: "N:Sample"
+                    callSpec: "N:Sample" // needs to match AOT profile
                 };
             },
             preInit: () => { console.log('user code Module.preInit'); },

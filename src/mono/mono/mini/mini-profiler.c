@@ -76,12 +76,12 @@ can_encode_method_ref (MonoMethod *method)
 void
 mini_profiler_emit_enter (MonoCompile *cfg)
 {
-	gboolean trace = mono_jit_trace_calls != NULL && mono_trace_eval (cfg->method);
-
-	if ((!MONO_CFG_PROFILE (cfg, ENTER) || cfg->current_method != cfg->method || (cfg->compile_aot && !can_encode_method_ref (cfg->method))) && !trace)
+	if (cfg->current_method != cfg->method)
 		return;
 
-	if (cfg->current_method != cfg->method)
+	gboolean trace = mono_jit_trace_calls != NULL && mono_trace_eval (cfg->method);
+
+	if (!trace && (!MONO_CFG_PROFILE (cfg, ENTER) || (cfg->compile_aot && !can_encode_method_ref (cfg->method))))
 		return;
 
 	MonoInst *iargs [3];
@@ -104,12 +104,12 @@ mini_profiler_emit_enter (MonoCompile *cfg)
 void
 mini_profiler_emit_samplepoint (MonoCompile *cfg)
 {
-	gboolean trace = mono_jit_trace_calls != NULL && mono_trace_eval (cfg->method);
-
-	if ((!MONO_CFG_PROFILE (cfg, SAMPLEPOINT_CONTEXT) || cfg->current_method != cfg->method || (cfg->compile_aot && !can_encode_method_ref (cfg->method))) && !trace)
+	if (cfg->current_method != cfg->method)
 		return;
 
-	if (cfg->current_method != cfg->method)
+	gboolean trace = mono_jit_trace_calls != NULL && mono_trace_eval (cfg->method);
+
+	if (!trace && (!MONO_CFG_PROFILE (cfg, SAMPLEPOINT_CONTEXT) || (cfg->compile_aot && !can_encode_method_ref (cfg->method))))
 		return;
 
 	MonoInst *iargs [3];
@@ -128,9 +128,12 @@ mini_profiler_emit_samplepoint (MonoCompile *cfg)
 void
 mini_profiler_emit_leave (MonoCompile *cfg, MonoInst *ret)
 {
+	if (cfg->current_method != cfg->method)
+		return;
+
 	gboolean trace = mono_jit_trace_calls != NULL && mono_trace_eval (cfg->method);
 
-	if (!MONO_CFG_PROFILE (cfg, LEAVE) || cfg->current_method != cfg->method || (cfg->compile_aot && !can_encode_method_ref (cfg->method)))
+	if (!trace && (!MONO_CFG_PROFILE (cfg, LEAVE) || (cfg->compile_aot && !can_encode_method_ref (cfg->method))))
 		return;
 
 	MonoInst *iargs [3];
@@ -153,9 +156,12 @@ mini_profiler_emit_leave (MonoCompile *cfg, MonoInst *ret)
 void
 mini_profiler_emit_tail_call (MonoCompile *cfg, MonoMethod *target)
 {
+	if (cfg->current_method != cfg->method)
+		return;
+
 	gboolean trace = mono_jit_trace_calls != NULL && mono_trace_eval (cfg->method);
 
-	if ((!MONO_CFG_PROFILE (cfg, TAIL_CALL) || cfg->current_method != cfg->method) && !trace)
+	if (!trace && (!MONO_CFG_PROFILE (cfg, TAIL_CALL) || (cfg->compile_aot && !can_encode_method_ref (cfg->method))))
 		return;
 
 	g_assert (cfg->current_method == cfg->method);
