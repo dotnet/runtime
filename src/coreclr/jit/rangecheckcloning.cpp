@@ -112,7 +112,7 @@ bool BoundsCheckInfo::Initialize(const Compiler*   comp,
 //
 static void RemoveBoundsChk(Compiler* comp, GenTreeBoundsChk* check, GenTree* comma, Statement* stmt)
 {
-    assert((check != nullptr) && (comma != nullptr) && (stmt != nullptr));
+    assert((check != nullptr) && (stmt != nullptr));
     assert((comma == nullptr) || (comma->OperIs(GT_COMMA)));
 
     GenTree* tree = comma != nullptr ? comma : check;
