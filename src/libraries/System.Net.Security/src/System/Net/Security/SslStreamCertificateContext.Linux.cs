@@ -28,7 +28,7 @@ namespace System.Net.Security
         internal readonly SafeX509Handle CertificateHandle;
         internal readonly SafeEvpPKeyHandle KeyHandle;
 
-        internal object SyncObject => KeyHandle;
+        private object SyncObject => KeyHandle;
 
         private bool _staplingForbidden;
         private byte[]? _ocspResponse;
