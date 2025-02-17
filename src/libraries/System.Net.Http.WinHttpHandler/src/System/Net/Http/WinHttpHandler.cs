@@ -4,6 +4,7 @@
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Net.Http.Headers;
 using System.Net.Security;
@@ -47,6 +48,8 @@ namespace System.Net.Http
         private static readonly StringWithQualityHeaderValue s_gzipHeaderValue = new StringWithQualityHeaderValue("gzip");
         private static readonly StringWithQualityHeaderValue s_deflateHeaderValue = new StringWithQualityHeaderValue("deflate");
         private static readonly Lazy<bool> s_supportsTls13 = new Lazy<bool>(CheckTls13Support);
+        private static readonly TimeSpan s_cleanCachedCertificateTimeout = TimeSpan.FromMinutes(1);
+        private static readonly long s_staleTimeout = (long)s_cleanCachedCertificateTimeout.TotalSeconds * Stopwatch.Frequency;
 
         [ThreadStatic]
         private static StringBuilder? t_requestHeadersBuilder;
@@ -94,10 +97,27 @@ namespace System.Net.Http
         private volatile int _disposed;
         private SafeWinHttpHandle? _sessionHandle;
         private readonly WinHttpAuthHelper _authHelper = new WinHttpAuthHelper();
-        internal ConcurrentDictionary<IPAddress, byte[]> cachedCertificates = new();
+        private readonly Timer? _certificateCleanupTimer;
+        internal bool isTimerRunning;
+        internal ConcurrentDictionary<IPAddress, CachedCertificateValue> cachedCertificates = new();
 
         public WinHttpHandler()
         {
+            if (WinHttpRequestCallback.CertificateCachingAppContextSwitchEnabled)
+            {
+                WeakReference<WinHttpHandler> thisRef = new(this);
+                _certificateCleanupTimer = new Timer(
+                    static s =>
+                    {
+                        if (((WeakReference<WinHttpHandler>)s!).TryGetTarget(out WinHttpHandler? thisRef))
+                        {
+                            thisRef.ClearStaleCertificates();
+                        }
+                    },
+                    thisRef,
+                    Timeout.Infinite,
+                    Timeout.Infinite);
+            }
         }
 
         #region Properties
@@ -543,9 +563,10 @@ namespace System.Net.Http
         {
             if (Interlocked.CompareExchange(ref _disposed, 1, 0) == 0)
             {
-                if (disposing && _sessionHandle != null)
+                if (disposing)
                 {
-                    _sessionHandle.Dispose();
+                    _sessionHandle?.Dispose();
+                    _certificateCleanupTimer?.Dispose();
                 }
             }
 
@@ -1737,6 +1758,64 @@ namespace System.Net.Http
             }
 
             return state.LifecycleAwaitable;
+        }
+
+        internal void ChangeCleanerTimer(TimeSpan timeout)
+        {
+            Debug.Assert(_certificateCleanupTimer != null);
+            if (_certificateCleanupTimer!.Change(timeout, Timeout.InfiniteTimeSpan))
+            {
+                isTimerRunning = timeout != Timeout.InfiniteTimeSpan;
+            }
+        }
+
+        private void ClearStaleCertificates()
+        {
+            Debug.Assert(_certificateCleanupTimer != null);
+
+            foreach (KeyValuePair<IPAddress, CachedCertificateValue> kvPair in cachedCertificates)
+            {
+                if (IsStale(kvPair.Value.LastUsedTime))
+                {
+                    cachedCertificates.TryRemove(kvPair.Key, out CachedCertificateValue _);
+                }
+            }
+
+            ChangeCleanerTimer(cachedCertificates.IsEmpty ? Timeout.InfiniteTimeSpan : s_cleanCachedCertificateTimeout);
+
+            static bool IsStale(long lastUsedTime)
+            {
+                long now = Stopwatch.GetTimestamp();
+                return (now - lastUsedTime) > s_staleTimeout;
+            }
+        }
+
+        internal void CheckTimer()
+        {
+            if (cachedCertificates.IsEmpty && isTimerRunning)
+            {
+                ChangeCleanerTimer(Timeout.InfiniteTimeSpan);
+            }
+
+            if (!cachedCertificates.IsEmpty && !isTimerRunning)
+            {
+                ChangeCleanerTimer(s_cleanCachedCertificateTimeout);
+            }
+        }
+
+        internal bool GetCertificateFromCache(IPAddress ipAddress, [MaybeNullWhen(false)] out byte[] rawCertificateBytes)
+        {
+            if (cachedCertificates.TryGetValue(ipAddress, out CachedCertificateValue cachedCert))
+            {
+                rawCertificateBytes = cachedCert.RawCertificateData;
+                cachedCert.LastUsedTime = Stopwatch.GetTimestamp();
+            }
+            else
+            {
+                rawCertificateBytes = null;
+            }
+
+            return rawCertificateBytes != null;
         }
     }
 }

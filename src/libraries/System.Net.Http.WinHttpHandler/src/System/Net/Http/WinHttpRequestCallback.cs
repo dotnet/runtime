@@ -11,7 +11,7 @@ using System.Net.Sockets;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography.X509Certificates;
-
+using System.Threading;
 using SafeWinHttpHandle = Interop.WinHttp.SafeWinHttpHandle;
 
 namespace System.Net.Http
@@ -24,7 +24,7 @@ namespace System.Net.Http
         public static Interop.WinHttp.WINHTTP_STATUS_CALLBACK StaticCallbackDelegate =
             new Interop.WinHttp.WINHTTP_STATUS_CALLBACK(WinHttpCallback);
 
-        private static bool CertificateCachingAppContextSwitchEnabled = AppContext.TryGetSwitch("System.Net.Http.UseWinHttpCertificateCaching", out bool certificateCachingEnabled) && certificateCachingEnabled;
+        public static bool CertificateCachingAppContextSwitchEnabled { get; } = AppContext.TryGetSwitch("System.Net.Http.UseWinHttpCertificateCaching", out bool enabled) && enabled;
 
         public static void WinHttpCallback(
             IntPtr handle,
@@ -143,6 +143,7 @@ namespace System.Net.Http
             if (state.Handler.cachedCertificates.TryRemove(connectedIPAddress, out _))
             {
                 if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(null, $"Removed cached certificate for {connectedIPAddress}");
+                state.Handler.CheckTimer();
             }
             else
             {
@@ -344,9 +345,11 @@ namespace System.Net.Http
                         }
                     }
 
-                    if (ipAddress is not null && state.Handler.cachedCertificates.TryGetValue(ipAddress, out byte[]? rawBytes) && rawBytes.SequenceEqual(serverCertificate.RawData))
+                    if (ipAddress is not null && state.Handler.cachedCertificates.TryGetValue(ipAddress, out CachedCertificateValue cachedCert) && cachedCert.RawCertificateData.SequenceEqual(serverCertificate.RawData))
                     {
                         if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(state, $"Skipping certificate validation. ipAddress: {ipAddress}, Thumbprint: {serverCertificate.Thumbprint}");
+                        // Update the timestamp of the cached certificate.
+                        cachedCert.LastUsedTime = Stopwatch.GetTimestamp();
                         serverCertificate.Dispose();
                         return;
                     }
@@ -377,7 +380,8 @@ namespace System.Net.Http
                         sslPolicyErrors);
                     if (CertificateCachingAppContextSwitchEnabled && result && ipAddress is not null)
                     {
-                        state.Handler.cachedCertificates[ipAddress] = serverCertificate.RawData;
+                        state.Handler.cachedCertificates[ipAddress] = new CachedCertificateValue(serverCertificate.RawData, Stopwatch.GetTimestamp());
+                        state.Handler.CheckTimer();
                     }
                 }
                 catch (Exception ex)

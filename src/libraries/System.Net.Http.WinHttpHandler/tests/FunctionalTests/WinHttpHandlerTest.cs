@@ -27,6 +27,8 @@ namespace System.Net.Http.WinHttpHandlerFunctional.Tests
 
         private readonly ITestOutputHelper _output;
 
+        public static IEnumerable<object[]> s_versions = [[HttpVersion.Version11], [HttpVersion20.Value]];
+
         public WinHttpHandlerTest(ITestOutputHelper output)
         {
             _output = output;
@@ -70,10 +72,11 @@ namespace System.Net.Http.WinHttpHandlerFunctional.Tests
         }
 
         [OuterLoop]
-        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        public async Task SendAsync_ServerCertificateValidationCallback_CalledOnce()
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [MemberData(nameof(s_versions))]
+        public async Task SendAsync_ServerCertificateValidationCallback_CalledOnce(Version version)
         {
-            await RemoteExecutor.Invoke(async () =>
+            await RemoteExecutor.Invoke(async (version) =>
             {
                 AppContext.SetSwitch("System.Net.Http.UseWinHttpCertificateCaching", true);
                 int callbackCount = 0;
@@ -91,7 +94,7 @@ namespace System.Net.Http.WinHttpHandlerFunctional.Tests
                     {
                         var response = await client.SendAsync(new HttpRequestMessage(HttpMethod.Get, Configuration.Http.SecureRemoteEchoServer)
                         {
-                            Version = HttpVersion.Version11
+                            Version = Version.Parse(version)
                         });
                         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
                         _ = await response.Content.ReadAsStringAsync();
@@ -99,20 +102,21 @@ namespace System.Net.Http.WinHttpHandlerFunctional.Tests
                     Assert.Equal(1, callbackCount);
                 }
                 AppContext.SetSwitch("System.Net.Http.UseWinHttpCertificateCaching", false);
-            }).DisposeAsync();
+            }, version.ToString()).DisposeAsync();
         }
 
         [OuterLoop]
-        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        public async Task SendAsync_ServerCertificateValidationCallbackHttp2_CalledOnce()
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [MemberData(nameof(s_versions))]
+        public async Task SendAsync_ServerCertificateValidationCallbackCertificateTimerTriggered_CalledTwice(Version version)
         {
-            await RemoteExecutor.Invoke(async () =>
+            await RemoteExecutor.Invoke(async (version) =>
             {
                 AppContext.SetSwitch("System.Net.Http.UseWinHttpCertificateCaching", true);
                 int callbackCount = 0;
                 var handler = new WinHttpHandler()
                 {
-                    ServerCertificateValidationCallback = (m, cert, chain, err) =>
+                    ServerCertificateValidationCallback = (_, _, _, _) =>
                     {
                         Interlocked.Increment(ref callbackCount);
                         return true;
@@ -120,19 +124,23 @@ namespace System.Net.Http.WinHttpHandlerFunctional.Tests
                 };
                 using (var client = new HttpClient(handler))
                 {
-                    for (int i = 0; i < 5; i++)
+                    var response = await client.SendAsync(new HttpRequestMessage(HttpMethod.Get, Configuration.Http.SecureRemoteEchoServer)
                     {
-                        var response = await client.SendAsync(new HttpRequestMessage(HttpMethod.Get, System.Net.Test.Common.Configuration.Http.Http2RemoteEchoServer)
-                        {
-                            Version = HttpVersion20.Value
-                        });
-                        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-                        _ = await response.Content.ReadAsStringAsync();
-                    }
-                    Assert.Equal(1, callbackCount);
+                        Version = Version.Parse(version)
+                    });
+                    Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+                    _ = await response.Content.ReadAsStringAsync();
+                    await Task.Delay(65 * 1000); // 65 seconds are enough for the certificate cache to expire.
+                    response = await client.SendAsync(new HttpRequestMessage(HttpMethod.Get, Configuration.Http.SecureRemoteEchoServer)
+                    {
+                        Version = Version.Parse(version)
+                    });
+                    Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+                    _ = await response.Content.ReadAsStringAsync();
+                    Assert.Equal(2, callbackCount);
                 }
                 AppContext.SetSwitch("System.Net.Http.UseWinHttpCertificateCaching", false);
-            }).DisposeAsync();
+            }, version.ToString(), options: new RemoteInvokeOptions() { TimeOut = 150_000 }).DisposeAsync();
         }
 
         [OuterLoop]
