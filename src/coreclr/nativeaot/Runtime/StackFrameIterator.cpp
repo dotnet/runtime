@@ -1500,8 +1500,8 @@ public:
     // Conservative GC reporting must be applied to everything between the base of the
     // ReturnBlock and the top of the StackPassedArgs.
 private:
-    uintptr_t m_pushedRA;                  // ChildSP+000     CallerSP-0F0 (0x08 bytes)    (ra)
-    uintptr_t m_pushedFP;                  // ChildSP+008     CallerSP-0E8 (0x08 bytes)    (fp)
+    uintptr_t m_pushedFP;                  // ChildSP+000     CallerSP-0F0 (0x08 bytes)    (fp)
+    uintptr_t m_pushedRA;                  // ChildSP+008     CallerSP-0E8 (0x08 bytes)    (ra)
     Fp128     m_fpArgRegs[8];              // ChildSP+010     CallerSP-0E0 (0x80 bytes)    (fa0-fa7)
     uintptr_t m_returnBlock[4];            // ChildSP+090     CallerSP-060 (0x20 bytes)
     uintptr_t m_intArgRegs[8];             // ChildSP+0B0     CallerSP-040 (0x40 bytes)    (a0-a7)
