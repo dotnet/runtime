@@ -2545,20 +2545,6 @@ bool Compiler::fgTryMorphStructArg(CallArg* arg)
                         fieldsMatch = false;
                         break;
                     }
-
-                    var_types fieldType = lvaGetDesc(fieldLclNum)->TypeGet();
-                    var_types regType   = genActualType(seg.GetRegisterType());
-
-                    if (!varTypeUsesSameRegType(fieldType, regType))
-                    {
-                        // TODO-CQ: We should be able to tolerate mismatches by inserting GT_BITCAST in lowering.
-                        //
-                        JITDUMP("Struct V%02u will be passed using GT_LCL_FLD because of type mismatch: "
-                                "register type is %s, field local V%02u's type is %s\n",
-                                lclNum, varTypeName(regType), fieldLclNum, varTypeName(fieldType));
-                        fieldsMatch = false;
-                        break;
-                    }
                 }
                 else
                 {
@@ -2708,8 +2694,7 @@ bool Compiler::fgTryMorphStructArg(CallArg* arg)
                 // We sometimes end up with struct reinterpretations where the
                 // retyping into a primitive allows us to replace by a scalar
                 // local here, so make sure we do that if possible.
-                if ((lclVar->GetLclOffs() == 0) && (offset == 0) && (genTypeSize(type) == genTypeSize(dsc)) &&
-                    varTypeUsesSameRegType(type, dsc))
+                if ((lclVar->GetLclOffs() == 0) && (offset == 0) && (genTypeSize(type) == genTypeSize(dsc)))
                 {
                     result = gtNewLclVarNode(lclVar->GetLclNum());
                 }
