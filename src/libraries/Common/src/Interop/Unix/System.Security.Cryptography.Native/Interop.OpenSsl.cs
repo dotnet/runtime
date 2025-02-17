@@ -376,6 +376,25 @@ internal static partial class Interop
                     throw CreateSslException(SR.net_allocate_ssl_context_failed);
                 }
 
+                if (cacheSslContext)
+                {
+                    // For non-cached SSL_CTX instances, we free the `sslCtxHandle`
+                    // after creating the SSL instance and don't use it again. We don't
+                    // access it afterwards and OpenSSL has internal refcount which
+                    // keeps it alive until the last SSL using it is freed.
+                    //
+                    // For cached SSL_CTX instances, we want to keep an outstanding
+                    // up-ref to indicate that it is in use and does not get
+                    // evicted from the cache.
+                    //
+                    // This call should always succeed because we already
+                    // increased the rent count when getting the context from
+                    // the cache.
+                    bool success = sslCtxHandle.TryAddRentCount();
+                    Debug.Assert(success);
+                    sslHandle.SslContextHandle = sslCtxHandle;
+                }
+
                 if (sslAuthenticationOptions.ApplicationProtocols != null && sslAuthenticationOptions.ApplicationProtocols.Count != 0)
                 {
                     if (sslAuthenticationOptions.IsServer)
@@ -407,15 +426,6 @@ internal static partial class Interop
                         if (cacheSslContext)
                         {
                             sslCtxHandle.TrySetSession(sslHandle, sslAuthenticationOptions.TargetHost);
-
-                            // Maintain additional rent count for the context so
-                            // that it is not evicted from the cache and future
-                            // SSL objects can reuse it. This call should always
-                            // succeed because already have increased rent count
-                            // when getting the context from the cache
-                            bool success = sslCtxHandle.TryAddRentCount();
-                            Debug.Assert(success);
-                            sslHandle.SslContextHandle = sslCtxHandle;
                         }
                     }
 
