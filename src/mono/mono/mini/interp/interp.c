@@ -1132,6 +1132,7 @@ interp_throw_ex_general (
 		THROW_EX (interp_get_exception_null_reference (frame, ip), ip); \
 	} while (0)
 
+#ifndef DISABLE_THREADS
 #define EXCEPTION_CHECKPOINT	\
 	do {										\
 		if (mono_thread_interruption_request_flag && !mono_threads_is_critical_method (frame->imethod->method)) { \
@@ -1140,6 +1141,9 @@ interp_throw_ex_general (
 				THROW_EX_GENERAL (exc, ip, TRUE);					\
 		}									\
 	} while (0)
+#else
+#define EXCEPTION_CHECKPOINT do { } while (0);
+#endif
 
 // Reduce duplicate code in mono_interp_exec_method
 static MONO_NEVER_INLINE void

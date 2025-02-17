@@ -12,6 +12,7 @@
 #include "mono/metadata/class-internals.h"
 #include "metadata/reflection-internals.h"
 #include "mono/metadata/handle.h"
+#include <mono/utils/options.h>
 
 
 #define OPDEF(a,b,c,d,e,f,g,h,i,j) \
@@ -962,6 +963,10 @@ mono_marshal_shared_emit_struct_conv (MonoMethodBuilder *mb, MonoClass *klass, g
 void
 mono_marshal_shared_emit_thread_interrupt_checkpoint_call (MonoMethodBuilder *mb, MonoJitICallId checkpoint_icall_id)
 {
+	if(mono_opt_wasm_disable_threads) {
+		return;
+	}
+
 	int pos_noabort, pos_noex;
 
 	mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);

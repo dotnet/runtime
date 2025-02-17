@@ -285,21 +285,30 @@ enum {
 static int
 mono_thread_get_abort_prot_block_count (MonoInternalThread *thread)
 {
+#ifndef DISABLE_THREADS
 	gsize state = thread->thread_state;
 	return (state & ABORT_PROT_BLOCK_MASK) >> ABORT_PROT_BLOCK_SHIFT;
+#else
+	return 0;
+#endif
 }
 
 gboolean
 mono_threads_is_current_thread_in_protected_block (void)
 {
+#ifndef DISABLE_THREADS
 	MonoInternalThread *thread = mono_thread_internal_current ();
 
 	return mono_thread_get_abort_prot_block_count (thread) > 0;
+#else
+	return false;
+#endif
 }
 
 void
 mono_threads_begin_abort_protected_block (void)
 {
+#ifndef DISABLE_THREADS
 	MonoInternalThread *thread = mono_thread_internal_current ();
 	gsize old_state, new_state;
 	int new_val;
@@ -323,11 +332,13 @@ mono_threads_begin_abort_protected_block (void)
 	} else {
 		THREADS_INTERRUPT_DEBUG ("[%d] begin abort protected block old_state %ld new_state %ld, tir %d\n", thread->small_id, old_state, new_state, mono_thread_interruption_request_flag);
 	}
+#endif
 }
 
 static gboolean
 mono_thread_state_has_interruption (gsize state)
 {
+#ifndef DISABLE_THREADS
 	/* pending exception, self abort */
 	if (state & INTERRUPT_SYNC_REQUESTED_BIT)
 		return TRUE;
@@ -336,12 +347,14 @@ mono_thread_state_has_interruption (gsize state)
 	if ((state & INTERRUPT_ASYNC_REQUESTED_BIT) && !(state & ABORT_PROT_BLOCK_MASK))
 		return TRUE;
 
+#endif
 	return FALSE;
 }
 
 gboolean
 mono_threads_end_abort_protected_block (void)
 {
+#ifndef DISABLE_THREADS
 	MonoInternalThread *thread = mono_thread_internal_current ();
 	gsize old_state, new_state;
 	int new_val;
@@ -364,14 +377,21 @@ mono_threads_end_abort_protected_block (void)
 	}
 
 	return mono_thread_state_has_interruption (new_state);
+#else
+	return FALSE;
+#endif
 }
 
 static gboolean
 mono_thread_get_interruption_requested (MonoInternalThread *thread)
 {
+#ifndef DISABLE_THREADS
 	gsize state = thread->thread_state;
 
 	return mono_thread_state_has_interruption (state);
+#else
+	return FALSE;
+#endif
 }
 
 /*
@@ -381,6 +401,7 @@ mono_thread_get_interruption_requested (MonoInternalThread *thread)
 static gboolean
 mono_thread_clear_interruption_requested (MonoInternalThread *thread)
 {
+#ifndef DISABLE_THREADS
 	gsize old_state, new_state;
 	do {
 		old_state = thread->thread_state;
@@ -401,23 +422,34 @@ mono_thread_clear_interruption_requested (MonoInternalThread *thread)
 	if (mono_thread_interruption_request_flag < 0)
 		g_warning ("bad mono_thread_interruption_request_flag state");
 	return TRUE;
+#else
+	return FALSE;
+#endif
 }
 
 static gboolean
 mono_thread_clear_interruption_requested_handle (MonoInternalThreadHandle thread)
 {
+#ifndef DISABLE_THREADS
 	// Internal threads are pinned so shallow coop/handle.
 	return mono_thread_clear_interruption_requested (mono_internal_thread_handle_ptr (thread));
+#else
+	return FALSE;
+#endif
 }
 
 /* Returns TRUE is there was a state change and the interruption can be processed */
 static gboolean
 mono_thread_set_interruption_requested (MonoInternalThread *thread)
 {
+#ifndef DISABLE_THREADS
 	//always force when the current thread is doing it to itself.
 	gboolean sync = thread == mono_thread_internal_current ();
 	/* Normally synchronous interruptions can bypass abort protection. */
 	return mono_thread_set_interruption_requested_flags (thread, sync);
+#else
+	return FALSE;
+#endif
 }
 
 /* Returns TRUE if there was a state change and the interruption can be
@@ -430,16 +462,21 @@ mono_thread_set_interruption_requested (MonoInternalThread *thread)
 static gboolean
 mono_thread_set_self_interruption_respect_abort_prot (void)
 {
+#ifndef DISABLE_THREADS
 	MonoInternalThread *thread = mono_thread_internal_current ();
 	/* N.B. Sets the ASYNC_REQUESTED_BIT for current this thread,
 	 * which is unusual. */
 	return mono_thread_set_interruption_requested_flags (thread, FALSE);
+#else
+	return FALSE;
+#endif
 }
 
 /* Returns TRUE if there was a state change and the interruption can be processed. */
 static gboolean
 mono_thread_set_interruption_requested_flags (MonoInternalThread *thread, gboolean sync)
 {
+#ifndef DISABLE_THREADS
 	gsize old_state, new_state;
 	do {
 		old_state = thread->thread_state;
@@ -463,6 +500,9 @@ mono_thread_set_interruption_requested_flags (MonoInternalThread *thread, gboole
 	}
 
 	return sync || !(new_state & ABORT_PROT_BLOCK_MASK);
+#else
+	return FALSE;
+#endif
 }
 
 static MonoNativeThreadId
@@ -3686,6 +3726,7 @@ mono_thread_execute_interruption_ptr (void)
 static gboolean
 mono_thread_request_interruption_internal (gboolean running_managed, MonoExceptionHandle *pexc)
 {
+#ifndef DISABLE_THREADS
 	MonoInternalThread *thread = mono_thread_internal_current ();
 
 	/* The thread may already be stopping */
@@ -3710,6 +3751,9 @@ mono_thread_request_interruption_internal (gboolean running_managed, MonoExcepti
 		return FALSE;
 	}
 	return mono_thread_execute_interruption (pexc);
+#else // DISABLE_THREADS
+	return FALSE;
+#endif
 }
 
 static void
@@ -3729,6 +3773,7 @@ mono_thread_request_interruption_managed (MonoExceptionHandle *exc)
 void
 mono_thread_resume_interruption (gboolean exec)
 {
+#ifndef DISABLE_THREADS
 	MonoInternalThread *thread = mono_thread_internal_current ();
 	gboolean still_aborting;
 
@@ -3751,23 +3796,27 @@ mono_thread_resume_interruption (gboolean exec)
 
 	if (exec) // Ignore the exception here, it will be raised later.
 		mono_thread_execute_interruption_void ();
+#endif
 }
 
 gboolean
 mono_thread_interruption_requested (void)
 {
+#ifndef DISABLE_THREADS
 	if (mono_thread_interruption_request_flag) {
 		MonoInternalThread *thread = mono_thread_internal_current ();
 		/* The thread may already be stopping */
 		if (thread != NULL)
 			return mono_thread_get_interruption_requested (thread);
 	}
+#endif
 	return FALSE;
 }
 
 static MonoException*
 mono_thread_interruption_checkpoint_request (gboolean bypass_abort_protection)
 {
+#ifndef DISABLE_THREADS
 	MonoInternalThread *thread = mono_thread_internal_current ();
 
 	/* The thread may already be stopping */
@@ -3779,6 +3828,9 @@ mono_thread_interruption_checkpoint_request (gboolean bypass_abort_protection)
 		return NULL;
 
 	return mono_thread_execute_interruption_ptr ();
+#else
+	return NULL;
+#endif
 }
 
 /*

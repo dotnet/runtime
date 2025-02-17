@@ -129,7 +129,7 @@ static void
 emit_thread_interrupt_checkpoint (MonoMethodBuilder *mb)
 {
 	// FIXME Put a boolean in MonoMethodBuilder instead.
-	if (strstr (mb->name, "mono_thread_interruption_checkpoint"))
+	if (mono_opt_wasm_disable_threads || strstr (mb->name, "mono_thread_interruption_checkpoint"))
 		return;
 
 	mono_marshal_shared_emit_thread_interrupt_checkpoint_call (mb, MONO_JIT_ICALL_mono_thread_interruption_checkpoint);
@@ -138,6 +138,9 @@ emit_thread_interrupt_checkpoint (MonoMethodBuilder *mb)
 static void
 emit_thread_force_interrupt_checkpoint (MonoMethodBuilder *mb)
 {
+	if (mono_opt_wasm_disable_threads)
+		return;
+
 	mono_marshal_shared_emit_thread_interrupt_checkpoint_call (mb, MONO_JIT_ICALL_mono_thread_force_interruption_checkpoint_noraise);
 }
 
@@ -596,8 +599,8 @@ gc_safe_transition_builder_init (GCSafeTransitionBuilder *builder, MonoMethodBui
 	#ifndef DISABLE_THREADS
 		return TRUE;
 	#else
-		/* if we're in the AOT compiler, obey the --wasm-gc-safepoints option even if the AOT compiler doesn't have threads enabled */
-		return mono_opt_wasm_gc_safepoints;
+		/* if we're in the AOT compiler, obey the --wasm-disable-threads option even if the AOT compiler doesn't have threads enabled */
+		return !mono_opt_wasm_disable_threads;
 	#endif
 #else
 	return TRUE;
@@ -2564,11 +2567,11 @@ emit_thunk_invoke_wrapper_ilgen (MonoMethodBuilder *mb, MonoMethod *method, Mono
 	MonoExceptionClause *clause;
 	MonoType *object_type = mono_get_object_type ();
 #if defined (TARGET_WASM)
-	/* in the AOT compiler emit blocking transitions if --wasm-gc-safepoints was used */
+	/* in the AOT compiler emit blocking transitions if --wasm-disable-threads was used */
 	#ifndef DISABLE_THREADS
 		const gboolean do_blocking_transition = TRUE;
 	#else
-		const gboolean do_blocking_transition = mono_opt_wasm_gc_safepoints;
+		const gboolean do_blocking_transition = !mono_opt_wasm_disable_threads;
 	#endif
 #else
 	const gboolean do_blocking_transition = TRUE;

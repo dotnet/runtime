@@ -2995,7 +2995,7 @@ mini_safepoints_enabled (void)
 	#ifndef DISABLE_THREADS
 		return TRUE;
 	#else
-		return mono_opt_wasm_gc_safepoints;
+		return !mono_opt_wasm_disable_threads;
 	#endif
 #else
 	return TRUE;

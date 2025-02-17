@@ -1160,8 +1160,11 @@ mono_monitor_try_enter_loop_if_interrupted (MonoObject *obj, guint32 ms,
 		res = mono_monitor_try_enter_internal (obj, ms, allow_interruption);
 		if (res == -1) {
 			// The wait was interrupted and the monitor was not acquired.
+#ifndef DISABLE_THREADS
 			MonoException *exc;
+#endif
 			HANDLE_FUNCTION_ENTER ();
+#ifndef DISABLE_THREADS
 			exc = mono_thread_interruption_checkpoint ();
 			if (exc) {
 				MONO_HANDLE_NEW (MonoException, exc);
@@ -1170,9 +1173,12 @@ mono_monitor_try_enter_loop_if_interrupted (MonoObject *obj, guint32 ms,
 				else
 					mono_set_pending_exception (exc);
 			}
+#endif
 			HANDLE_FUNCTION_RETURN ();
+#ifndef DISABLE_THREADS
 			if (exc)
 				return FALSE;
+#endif
 			// The interrupt was a false positive. Ignore it from now on.
 			// This feels like a hack.
 			// threads.c should give us less confusing directions.
