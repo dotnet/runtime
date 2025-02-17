@@ -6780,7 +6780,7 @@ private:
 #endif // FEATURE_SIMD
     GenTree* fgMorphIndexAddr(GenTreeIndexAddr* tree);
     GenTree* fgMorphExpandCast(GenTreeCast* tree);
-    GenTreeFieldList* fgMorphLclArgToFieldlist(GenTreeLclVarCommon* lcl);
+    GenTreeFieldList* fgMorphLclArgToFieldList(GenTreeLclVarCommon* lcl);
     GenTreeCall* fgMorphArgs(GenTreeCall* call);
 
     void fgMakeOutgoingStructArgCopy(GenTreeCall* call, CallArg* arg);
@@ -11804,8 +11804,7 @@ public:
     const CORINFO_FPSTRUCT_LOWERING* GetFpStructLowering(CORINFO_CLASS_HANDLE structHandle);
 #endif // defined(UNIX_AMD64_ABI)
 
-    void     fgMorphMultiregStructArgs(GenTreeCall* call);
-    GenTree* fgMorphMultiregStructArg(CallArg* arg);
+    bool fgTryMorphStructArg(CallArg* arg);
 
     bool killGCRefs(GenTree* tree);
 

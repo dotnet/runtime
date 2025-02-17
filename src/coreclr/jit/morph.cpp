@@ -1030,64 +1030,6 @@ void CallArgs::ArgsComplete(Compiler* comp, GenTreeCall* call)
             prevExceptionTree  = argx;
             prevExceptionFlags = exceptionFlags;
         }
-
-#if FEATURE_MULTIREG_ARGS
-        // In "fgMorphMultiRegStructArg" we will expand the arg into a GT_FIELD_LIST with multiple indirections, so
-        // here we consider spilling it into a local. We also need to spill it in case we have a node that we do not
-        // currently handle in multi-reg morphing.
-        // This logic can be skipped when the arg is already in the right multireg arg shape.
-        //
-        if (varTypeIsStruct(argx) && !arg.m_needTmp && !argx->OperIs(GT_FIELD_LIST))
-        {
-            if ((arg.AbiInfo.NumRegs > 0) && ((arg.AbiInfo.NumRegs + arg.AbiInfo.GetStackSlotsNumber()) > 1))
-            {
-                if ((argx->gtFlags & GTF_PERSISTENT_SIDE_EFFECTS) != 0)
-                {
-                    // Spill multireg struct arguments that have stores or calls embedded in them.
-                    SetNeedsTemp(&arg);
-                }
-                else if (!argx->OperIsLocalRead() && !argx->OperIsLoad())
-                {
-                    // TODO-CQ: handle HWI/SIMD/COMMA nodes in multi-reg morphing.
-                    SetNeedsTemp(&arg);
-                }
-                else if (comp->opts.OptimizationEnabled())
-                {
-                    // Finally, we call gtPrepareCost to measure the cost of evaluating this tree.
-                    comp->gtPrepareCost(argx);
-
-                    if (argx->GetCostEx() > (6 * IND_COST_EX))
-                    {
-                        // Spill multireg struct arguments that are expensive to evaluate twice.
-                        SetNeedsTemp(&arg);
-                    }
-                }
-            }
-
-            // We are only able to expand certain "BLK"s into field lists, so here we spill all the
-            // "mis-sized" ones. We could in theory support them directly with some arithmetic and
-            // shifts, but these cases are rare enough that it is probably not worth the complexity.
-            // No need to do this for stack args as they are directly supported by codegen.
-            //
-            if (argx->OperIs(GT_BLK) && (arg.AbiInfo.GetRegNum() != REG_STK))
-            {
-                GenTreeBlk* argObj       = argx->AsBlk();
-                unsigned    structSize   = argObj->Size();
-                unsigned    lastLoadSize = structSize % TARGET_POINTER_SIZE;
-
-                if ((lastLoadSize != 0) && !isPow2(lastLoadSize))
-                {
-#ifdef TARGET_ARM
-                    // On ARM we don't expand split args larger than 16 bytes into field lists.
-                    if (!arg.AbiInfo.IsSplit() || (structSize <= 16))
-#endif // TARGET_ARM
-                    {
-                        SetNeedsTemp(&arg);
-                    }
-                }
-            }
-        }
-#endif // FEATURE_MULTIREG_ARGS
     }
 
 #if FEATURE_FIXED_OUT_ARGS
@@ -1476,51 +1418,6 @@ void CallArgs::SortArgs(Compiler* comp, GenTreeCall* call, CallArg** sortedArgs)
 }
 
 //------------------------------------------------------------------------------
-// MakeTmpArgNode:
-//   Create a temp for an argument if needed.  We usually need this to be done
-//   in order to enforce ordering of the evaluation of arguments.
-//
-// Return Value:
-//    the newly created temp var tree.
-//
-GenTree* CallArgs::MakeTmpArgNode(Compiler* comp, CallArg* arg, unsigned lclNum)
-{
-    LclVarDsc* varDsc  = comp->lvaGetDesc(lclNum);
-    var_types  argType = varDsc->TypeGet();
-    assert(genActualType(argType) == genActualType(arg->GetSignatureType()));
-
-    GenTree* argNode = nullptr;
-
-    if (varTypeIsStruct(argType))
-    {
-        if (arg->NewAbiInfo.IsPassedByReference())
-        {
-            argNode = comp->gtNewLclVarAddrNode(lclNum);
-            comp->lvaSetVarAddrExposed(lclNum DEBUGARG(AddressExposedReason::ESCAPE_ADDRESS));
-        }
-        // TODO-CQ: currently this mirrors the logic in "fgMorphArgs", but actually we only need
-        // this retyping for args passed in a single register: "(NumRegs == 1) && !IsSplit()".
-        else if (arg->AbiInfo.ArgType != TYP_STRUCT)
-        {
-            argNode = comp->gtNewLclFldNode(lclNum, arg->AbiInfo.ArgType, 0);
-            comp->lvaSetVarDoNotEnregister(lclNum DEBUGARG(DoNotEnregisterReason::SwizzleArg));
-        }
-        else
-        {
-            // We are passing this struct by value in multiple registers and/or on stack.
-            argNode = comp->gtNewLclvNode(lclNum, argType);
-        }
-    }
-    else
-    {
-        assert(!arg->NewAbiInfo.IsPassedByReference());
-        argNode = comp->gtNewLclvNode(lclNum, argType);
-    }
-
-    return argNode;
-}
-
-//------------------------------------------------------------------------------
 // EvalArgsToTemps: Handle arguments that were marked as requiring temps.
 //
 // Remarks:
@@ -1601,29 +1498,36 @@ void CallArgs::EvalArgsToTemps(Compiler* comp, GenTreeCall* call)
             }
 #endif
 
-#if defined(TARGET_AMD64) && !defined(UNIX_AMD64_ABI)
-            noway_assert(argx->gtType != TYP_STRUCT);
-#endif
-
-            if (argx->OperIs(GT_FIELD_LIST))
+            GenTree* argxEffectiveVal = argx->gtEffectiveVal();
+            if (argxEffectiveVal->OperIs(GT_FIELD_LIST))
             {
-                GenTreeFieldList* fieldList = argx->AsFieldList();
+                GenTreeFieldList* fieldList = argxEffectiveVal->AsFieldList();
                 fieldList->gtFlags &= ~GTF_ALL_EFFECT;
+
+                auto appendEffect = [=, &setupArg](GenTree* effect) {
+                    if (setupArg == nullptr)
+                    {
+                        setupArg = effect;
+                    }
+                    else
+                    {
+                        setupArg = comp->gtNewOperNode(GT_COMMA, TYP_VOID, setupArg, effect);
+                        setupArg->SetMorphed(comp);
+                    }
+                };
+
+                for (GenTree* comma = argx; comma->OperIs(GT_COMMA); comma = comma->gtGetOp2())
+                {
+                    appendEffect(comma->gtGetOp1());
+                }
+
                 for (GenTreeFieldList::Use& use : fieldList->Uses())
                 {
                     unsigned tmpVarNum = comp->lvaGrabTemp(true DEBUGARG("argument with side effect"));
                     GenTree* store     = comp->gtNewTempStore(tmpVarNum, use.GetNode());
                     store->SetMorphed(comp);
 
-                    if (setupArg == nullptr)
-                    {
-                        setupArg = store;
-                    }
-                    else
-                    {
-                        setupArg = comp->gtNewOperNode(GT_COMMA, TYP_VOID, setupArg, store);
-                        setupArg->SetMorphed(comp);
-                    }
+                    appendEffect(store);
 
                     GenTree* setupUse = comp->gtNewLclvNode(tmpVarNum, genActualType(use.GetNode()));
                     setupUse->SetMorphed(comp);
@@ -1662,6 +1566,8 @@ void CallArgs::EvalArgsToTemps(Compiler* comp, GenTreeCall* call)
                 {
                     // Create a GT_LCL_FLD using the wider type to go to the late argument list
                     defArg = comp->gtNewLclFldNode(tmpVarNum, scalarType, 0);
+
+                    comp->lvaSetVarDoNotEnregister(tmpVarNum DEBUGARG(DoNotEnregisterReason::LocalField));
                 }
                 else
                 {
@@ -1699,14 +1605,6 @@ void CallArgs::EvalArgsToTemps(Compiler* comp, GenTreeCall* call)
             // No temp needed - move the whole node to the late list
 
             defArg = argx;
-
-#if defined(TARGET_AMD64) && !defined(UNIX_AMD64_ABI)
-
-            // All structs are either passed (and retyped) as integral types, OR they
-            // are passed by reference.
-            noway_assert(argx->gtType != TYP_STRUCT);
-
-#endif // !(defined(TARGET_AMD64) && !defined(UNIX_AMD64_ABI))
 
 #ifdef DEBUG
             if (comp->verbose)
@@ -2408,9 +2306,6 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
     // information about late arguments in CallArgs.
     // This information is used later to construct the late args
 
-    // Note that this name a misnomer - it indicates that there are struct args
-    // that are passed by value in more than one register or on stack.
-    bool hasMultiregStructArgs = false;
     for (CallArg& arg : call->gtArgs.Args())
     {
         GenTree** parentArgx = &arg.EarlyNodeRef();
@@ -2453,286 +2348,32 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
             argx->gtType = TYP_I_IMPL;
         }
 
-        bool     isStructArg    = varTypeIsStruct(arg.GetSignatureType());
-        GenTree* argObj         = argx->gtEffectiveVal();
-        bool     makeOutArgCopy = false;
-
-        if (argObj->OperIs(GT_FIELD_LIST))
+        if (varTypeIsStruct(arg.GetSignatureType()) && !reMorphing)
         {
-            // FIELD_LISTs can be created directly by physical promotion.
-            // Physical promotion will create this shape even for single-reg
-            // arguments. We strip the field list here for that case as the
-            // rest of the JIT does not expect single-reg args to be wrapped
-            // like that.
-            if (arg.NewAbiInfo.HasExactlyOneRegisterSegment())
-            {
-                GenTreeFieldList* fieldList = argObj->AsFieldList();
-                assert(fieldList->Uses().GetHead()->GetNext() == nullptr);
-                GenTree* node = fieldList->Uses().GetHead()->GetNode();
-
-                JITDUMP("Replacing single-field FIELD_LIST [%06u] by sole field [%06u]\n", dspTreeID(fieldList),
-                        dspTreeID(node));
-
-                assert(varTypeUsesSameRegType(node, arg.AbiInfo.ArgType));
-                GenTree** effectiveUse = parentArgx;
-                while ((*effectiveUse)->OperIs(GT_COMMA))
-                {
-                    effectiveUse = &(*effectiveUse)->AsOp()->gtOp2;
-                }
-                *effectiveUse = node;
-
-                argx   = *parentArgx;
-                argObj = node;
-            }
-        }
-        else if (isStructArg && !reMorphing)
-        {
-            unsigned originalSize;
-            if (argObj->TypeIs(TYP_STRUCT))
-            {
-                assert(argObj->OperIs(GT_BLK, GT_LCL_VAR, GT_LCL_FLD));
-                originalSize = argObj->GetLayout(this)->GetSize();
-            }
-            else
-            {
-                originalSize = genTypeSize(argx);
-            }
-
-            assert(argx->TypeGet() == arg.GetSignatureType());
-            assert(originalSize == info.compCompHnd->getClassSize(arg.GetSignatureClassHandle()));
-
-            // First, handle the case where the argument is passed by reference.
+            bool makeOutArgCopy = false;
             if (arg.NewAbiInfo.IsPassedByReference())
             {
-                assert(arg.AbiInfo.ByteSize == TARGET_POINTER_SIZE);
                 makeOutArgCopy = true;
-#ifdef UNIX_AMD64_ABI
-                assert(!"Structs are not passed by reference on x64/ux");
-#endif // UNIX_AMD64_ABI
             }
-            else // This is passed by value.
+            else if (fgTryMorphStructArg(&arg))
             {
-                unsigned structSize  = originalSize;
-                unsigned passingSize = originalSize;
-
-                // Check to see if we can transform this struct load (GT_BLK) into a GT_IND of the appropriate size.
-                // When it can do this is platform-dependent:
-                // - In general, it can be done for power of 2 structs that fit in a single register.
-                // - For ARM and ARM64 it must also be a non-HFA struct, or have a single field.
-                // - This is irrelevant for X86, since structs are always passed by value on the stack.
-                //
-                var_types structBaseType = arg.AbiInfo.ArgType;
-                bool      argIsLocal     = argObj->OperIsLocalRead();
-                bool      canTransform   = false;
-
-                if (structBaseType != TYP_STRUCT)
-                {
-                    if (isPow2(passingSize))
-                    {
-                        canTransform =
-                            (!arg.AbiInfo.IsHfaArg() || (passingSize == genTypeSize(arg.AbiInfo.GetHfaType())));
-                    }
-                    else
-                    {
-                        // We can pass non-power-of-2 structs in a register, but we can only transform in that
-                        // case if the arg is a local.
-                        canTransform = argIsLocal;
-                        passingSize  = genTypeSize(structBaseType);
-                    }
-                }
-#if !defined(TARGET_X86)
-                else
-                {
-                    hasMultiregStructArgs = true;
-                }
-#endif // !TARGET_X86
-
-                if (!canTransform)
-                {
-#if defined(TARGET_AMD64)
-#ifndef UNIX_AMD64_ABI
-                    // On Windows structs are always copied and passed by reference (handled above) unless they are
-                    // passed by value in a single register.
-                    assert(arg.AbiInfo.GetStackSlotsNumber() == 1);
-                    makeOutArgCopy = true;
-#else  // UNIX_AMD64_ABI
-       // On Unix, structs are always passed by value.
-       // We only need a copy if we have one of the following:
-       // - The sizes don't match for a non-lclVar argument.
-       // - We have a known struct type (e.g. SIMD) that requires multiple registers.
-       // TODO-Amd64-Unix-Throughput: We don't need to keep the structDesc in the argEntry if it's not
-       // actually passed in registers.
-                    if (arg.AbiInfo.IsPassedInRegisters())
-                    {
-                        if (argObj->OperIs(GT_BLK))
-                        {
-                            if (passingSize != structSize)
-                            {
-                                makeOutArgCopy = true;
-                            }
-                        }
-                        else if (!argIsLocal)
-                        {
-                            // This should only be the case of a value directly producing a known struct type.
-                            assert(argObj->TypeGet() != TYP_STRUCT);
-                            if (arg.AbiInfo.NumRegs > 1)
-                            {
-                                makeOutArgCopy = true;
-                            }
-                        }
-                    }
-#endif // UNIX_AMD64_ABI
-#elif defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
-                    if ((passingSize != structSize) && !argIsLocal)
-                    {
-                        makeOutArgCopy = true;
-                    }
-#endif // defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
-                }
-                else if (argObj->TypeGet() != structBaseType)
-                {
-                    // We have a struct argument that fits into a register, and it is either a power of 2,
-                    // or a local.
-                    // Change our argument, as needed, into a value of the appropriate type.
-                    assert(structBaseType != TYP_STRUCT);
-
-                    // On RISC-V / LoongArch the passing size may be smaller than the original size if we pass a struct
-                    // according to hardware FP calling convention and it has empty fields
-#if !defined(TARGET_LOONGARCH64) && !defined(TARGET_RISCV64)
-                    assert(genTypeSize(structBaseType) >= originalSize);
-#endif
-
-                    if (argObj->OperIsLoad())
-                    {
-                        assert(argObj->AsIndir()->Size() == genTypeSize(structBaseType));
-                        argObj->SetOper(GT_IND);
-                        // Use ChangeType over argx to update types in COMMAs as well
-                        argx->ChangeType(structBaseType);
-                    }
-                    else if (argObj->OperIsLocalRead())
-                    {
-                        unsigned   lclNum    = argObj->AsLclVarCommon()->GetLclNum();
-                        LclVarDsc* varDsc    = lvaGetDesc(lclNum);
-                        unsigned   lclOffset = argObj->AsLclVarCommon()->GetLclOffs();
-                        unsigned   argLclNum = BAD_VAR_NUM;
-                        LclVarDsc* argVarDsc = nullptr;
-
-                        if (varDsc->lvPromoted)
-                        {
-                            argLclNum = lvaGetFieldLocal(varDsc, lclOffset);
-                        }
-                        else if (lclOffset == 0)
-                        {
-                            argLclNum = lclNum;
-                        }
-
-                        // See if this local goes into the right register file.
-                        // TODO-CQ: we could use a bitcast here, if it does not.
-                        if (argLclNum != BAD_VAR_NUM)
-                        {
-                            argVarDsc = lvaGetDesc(argLclNum);
-                            if ((genTypeSize(argVarDsc) != originalSize) ||
-                                !varTypeUsesSameRegType(argVarDsc, structBaseType))
-                            {
-                                argLclNum = BAD_VAR_NUM;
-                            }
-                        }
-
-                        if (argLclNum != BAD_VAR_NUM)
-                        {
-                            argx->ChangeType(argVarDsc->TypeGet());
-                            argObj->SetOper(GT_LCL_VAR);
-                            argObj->AsLclVar()->SetLclNum(argLclNum);
-                        }
-                        else if (varDsc->lvPromoted)
-                        {
-                            // Preserve independent promotion of "argObj" by decomposing the copy.
-                            // TODO-CQ: condition this on the promotion actually being independent.
-                            makeOutArgCopy = true;
-                        }
-#ifdef TARGET_AMD64
-                        else if (!argObj->OperIs(GT_LCL_VAR) || !argObj->TypeIs(TYP_SIMD8)) // Handled by lowering.
-#else                                                                                       // !TARGET_ARM64
-                        else
-#endif                                                                                      // !TARGET_ARM64
-                        {
-                            // TODO-CQ: perform this transformation in lowering instead of here and
-                            // avoid marking enregisterable structs DNER.
-                            argx->ChangeType(structBaseType);
-                            if (argObj->OperIs(GT_LCL_VAR))
-                            {
-                                argObj->SetOper(GT_LCL_FLD);
-#if defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64)
-                                // Single-field structs passed according to floating-point calling convention may have
-                                // padding in front of the field passed in a register
-                                assert(arg.NewAbiInfo.NumSegments == 1);
-                                // Single-slot structs passed according to integer calling convention also go through
-                                // here but since they always have zero offset nothing should change
-                                ABIPassingSegment seg = arg.NewAbiInfo.Segment(0);
-                                assert((seg.IsPassedInRegister() && genIsValidFloatReg(seg.GetRegister())) ||
-                                       (seg.Offset == 0));
-                                argObj->AsLclFld()->SetLclOffs(seg.Offset);
-#endif
-                            }
-                            lvaSetVarDoNotEnregister(lclNum DEBUGARG(DoNotEnregisterReason::SwizzleArg));
-                        }
-                    }
-
-                    assert(varTypeIsEnregisterable(argObj) ||
-                           (makeOutArgCopy && varTypeIsEnregisterable(structBaseType)));
-                }
-                else if (argObj->OperIs(GT_LCL_VAR) && lvaGetDesc(argObj->AsLclVar())->lvPromoted)
-                {
-                    // Set DNER to block independent promotion.
-                    lvaSetVarDoNotEnregister(argObj->AsLclVar()->GetLclNum()
-                                                 DEBUGARG(DoNotEnregisterReason::IsStructArg));
-                }
-            }
-        }
-
-        if (makeOutArgCopy)
-        {
-            fgMakeOutgoingStructArgCopy(call, &arg);
-
-            if (arg.GetEarlyNode() != nullptr)
-            {
-                flagsSummary |= arg.GetEarlyNode()->gtFlags;
-            }
-        }
-
-#if FEATURE_MULTIREG_ARGS
-        if (!isStructArg)
-        {
-#ifdef TARGET_ARM
-            if ((arg.AbiInfo.ArgType == TYP_LONG) || (arg.AbiInfo.ArgType == TYP_DOUBLE))
-            {
-                assert((arg.AbiInfo.NumRegs == 2) || (arg.AbiInfo.GetStackSlotsNumber() == 2));
+                argx = *parentArgx;
             }
             else
-#endif
             {
-                // We must have exactly one register or slot.
-                assert(((arg.AbiInfo.NumRegs == 1) && (arg.AbiInfo.GetStackSlotsNumber() == 0)) ||
-                       ((arg.AbiInfo.NumRegs == 0) && (arg.AbiInfo.GetStackSlotsNumber() == 1)));
+                makeOutArgCopy = true;
             }
-        }
-#endif
 
-#if defined(TARGET_X86)
-        if (isStructArg)
-        {
-            if (argx->OperIs(GT_LCL_VAR) &&
-                (lvaGetPromotionType(argx->AsLclVar()->GetLclNum()) == PROMOTION_TYPE_INDEPENDENT))
+            if (makeOutArgCopy)
             {
-                argx = fgMorphLclArgToFieldlist(argx->AsLclVar());
-                arg.SetEarlyNode(argx);
-            }
-            else if (argx->OperIs(GT_LCL_FLD))
-            {
-                lvaSetVarDoNotEnregister(argx->AsLclFld()->GetLclNum() DEBUGARG(DoNotEnregisterReason::LocalField));
+                fgMakeOutgoingStructArgCopy(call, &arg);
+
+                if (arg.GetEarlyNode() != nullptr)
+                {
+                    flagsSummary |= arg.GetEarlyNode()->gtFlags;
+                }
             }
         }
-#endif // TARGET_X86
 
         flagsSummary |= arg.GetEarlyNode()->gtFlags;
 
@@ -2779,11 +2420,6 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
         call->gtArgs.EvalArgsToTemps(this, call);
     }
 
-    if (hasMultiregStructArgs)
-    {
-        fgMorphMultiregStructArgs(call);
-    }
-
 #ifdef DEBUG
     if (verbose)
     {
@@ -2802,82 +2438,28 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
 #endif
 
 //-----------------------------------------------------------------------------
-// fgMorphMultiregStructArgs:  Locate the TYP_STRUCT arguments and
-//                             call fgMorphMultiregStructArg on each of them.
+// fgTryMorphStructArg:
+//   Given a varTypeIsStruct argument, try to morph it into a shape that the
+//   backend supports.
 //
 // Arguments:
-//    call    :    a GenTreeCall node that has one or more TYP_STRUCT arguments\.
+//   arg - The argument
 //
-// Notes:
-//    We only call fgMorphMultiregStructArg for struct arguments that are not passed as simple types.
-//    It will ensure that the struct arguments are in the correct form.
-//    If this method fails to find any TYP_STRUCT arguments it will assert.
+// Returns:
+//   False if the argument cannot be put into a shape supported by the backend.
 //
-void Compiler::fgMorphMultiregStructArgs(GenTreeCall* call)
+// Remarks:
+//   The backend requires register-passed arguments to be of FIELD_LIST shape
+//   with one primitive node for each register. If the argument is passed in
+//   only one register, then the FIELD_LIST should be directly replaced by its
+//   operand. For stack-passed arguments the backend supports struct-typed
+//   arguments directly.
+//
+bool Compiler::fgTryMorphStructArg(CallArg* arg)
 {
-    bool         foundStructArg = false;
-    GenTreeFlags flagsSummary   = GTF_EMPTY;
-
-#ifdef TARGET_X86
-    assert(!"Logic error: no MultiregStructArgs for X86");
-#endif
-#if defined(TARGET_AMD64) && !defined(UNIX_AMD64_ABI)
-    assert(!"Logic error: no MultiregStructArgs for Windows X64 ABI");
-#endif
-
-    for (CallArg& arg : call->gtArgs.Args())
-    {
-        if ((arg.AbiInfo.ArgType == TYP_STRUCT) && !arg.NewAbiInfo.IsPassedByReference())
-        {
-            foundStructArg = true;
-            GenTree*& argx = arg.NodeRef();
-
-            if (!argx->OperIs(GT_FIELD_LIST))
-            {
-                argx = fgMorphMultiregStructArg(&arg);
-            }
-        }
-    }
-
-    // We should only call this method when we actually have one or more multireg struct args
-    assert(foundStructArg);
-
-    // Update the flags
-    call->gtFlags |= (flagsSummary & GTF_ALL_EFFECT);
-}
-
-//-----------------------------------------------------------------------------
-// fgMorphMultiregStructArg:  Given a TYP_STRUCT arg from a call argument list,
-//     morph the argument as needed to be passed correctly.
-//
-// Arguments:
-//     arg        - The argument containing a struct node.
-//
-// Notes:
-//    The arg node must be a GT_BLK or GT_LCL_VAR or GT_LCL_FLD of TYP_STRUCT.
-//    If arg node is a lclVar passed on the stack, we will ensure that any lclVars that must be on the
-//    stack are marked as doNotEnregister, and then we return.
-//
-//    If it is passed by register, we mutate the argument into the GT_FIELD_LIST form
-//    which is only used for struct arguments.
-//
-//    If arg is a LclVar we check if it is struct promoted and has the right number of fields
-//    and if they are at the appropriate offsets we will use the struct promted fields
-//    in the GT_FIELD_LIST nodes that we create.
-//    If we have a GT_LCL_VAR that isn't struct promoted or doesn't meet the requirements
-//    we will use a set of GT_LCL_FLDs nodes to access the various portions of the struct
-//    this also forces the struct to be stack allocated into the local frame.
-//    For the GT_BLK case will clone the address expression and generate two (or more)
-//    indirections.
-//
-GenTree* Compiler::fgMorphMultiregStructArg(CallArg* arg)
-{
-    GenTree* argNode = arg->GetNode();
+    GenTree** use     = GenTree::EffectiveUse(&arg->NodeRef());
+    GenTree*  argNode = *use;
     assert(varTypeIsStruct(argNode));
-
-#if !defined(TARGET_ARMARCH) && !defined(UNIX_AMD64_ABI) && !defined(TARGET_LOONGARCH64) && !defined(TARGET_RISCV64)
-    NYI("fgMorphMultiregStructArg requires implementation for this target");
-#endif
 
     bool isSplit = arg->NewAbiInfo.IsSplitAcrossRegistersAndStack();
 #ifdef TARGET_ARM
@@ -2893,7 +2475,14 @@ GenTree* Compiler::fgMorphMultiregStructArg(CallArg* arg)
             // TODO-Arm-CQ: support decomposing "large" promoted structs into field lists.
             if (!isSplit)
             {
-                argNode = fgMorphLclArgToFieldlist(argNode->AsLclVar());
+                GenTreeFieldList* fieldList = fgMorphLclArgToFieldList(argNode->AsLclVar());
+                // TODO-Cleanup: The containment/reg optionality for x86 is
+                // conservative in the "no field list" case.
+#ifdef TARGET_X86
+                *use = fieldList;
+#else
+                *use = fieldList->SoleFieldOrThis();
+#endif
             }
             else
             {
@@ -2905,39 +2494,39 @@ GenTree* Compiler::fgMorphMultiregStructArg(CallArg* arg)
         {
             lvaSetVarDoNotEnregister(argNode->AsLclFld()->GetLclNum() DEBUGARG(DoNotEnregisterReason::LocalField));
         }
+        else if (argNode->OperIs(GT_BLK))
+        {
+            ClassLayout* layout = argNode->AsBlk()->GetLayout();
 
-        return argNode;
+            var_types primitiveType = layout->GetRegisterType();
+            if (primitiveType != TYP_UNDEF)
+            {
+                JITDUMP("Converting argument [%06u] to primitive indirection\n", dspTreeID(argNode));
+
+                argNode->SetOper(GT_IND);
+                argNode->gtType = primitiveType;
+            }
+        }
+
+        // Potentially update commas
+        arg->GetNode()->ChangeType((*use)->TypeGet());
+        return true;
     }
 
-#if FEATURE_MULTIREG_ARGS
-    ClassLayout* layout     = argNode->TypeIs(TYP_STRUCT) ? argNode->GetLayout(this) : nullptr;
-    unsigned     structSize = argNode->TypeIs(TYP_STRUCT) ? layout->GetSize() : genTypeSize(argNode);
+    GenTree* newArg = nullptr;
 
-    if (layout != nullptr)
-    {
-        assert(ClassLayout::AreCompatible(typGetObjLayout(arg->GetSignatureClassHandle()), layout));
-    }
-    else
-    {
-        assert(varTypeIsSIMD(argNode) && varTypeIsSIMD(arg->GetSignatureType()));
-    }
-
-    // We should still have a TYP_STRUCT
-    assert(varTypeIsStruct(argNode));
-
-    GenTreeFieldList* newArg = nullptr;
-
-    // Are we passing a struct LclVar?
-    //
     if (argNode->OperIs(GT_LCL_VAR))
     {
         GenTreeLclVarCommon* lclNode = argNode->AsLclVarCommon();
         unsigned             lclNum  = lclNode->GetLclNum();
         LclVarDsc*           varDsc  = lvaGetDesc(lclNum);
 
-        varDsc->lvIsMultiRegArg = true;
+        if (!arg->NewAbiInfo.HasExactlyOneRegisterSegment())
+        {
+            varDsc->lvIsMultiRegArg = true;
+        }
 
-        JITDUMP("Multireg struct argument V%02u : ", lclNum);
+        JITDUMP("Struct argument V%02u: ", lclNum);
         JITDUMPEXEC(arg->Dump(this));
 
         // Try to see if we can use the promoted fields to pass this argument.
@@ -2964,7 +2553,7 @@ GenTree* Compiler::fgMorphMultiregStructArg(CallArg* arg)
                     {
                         // TODO-CQ: We should be able to tolerate mismatches by inserting GT_BITCAST in lowering.
                         //
-                        JITDUMP("Multireg struct V%02u will be passed using GT_LCL_FLD because of type mismatch: "
+                        JITDUMP("Struct V%02u will be passed using GT_LCL_FLD because of type mismatch: "
                                 "register type is %s, field local V%02u's type is %s\n",
                                 lclNum, varTypeName(regType), fieldLclNum, varTypeName(fieldType));
                         fieldsMatch = false;
@@ -2986,8 +2575,19 @@ GenTree* Compiler::fgMorphMultiregStructArg(CallArg* arg)
 
             if (fieldsMatch)
             {
-                newArg = fgMorphLclArgToFieldlist(lclNode);
+                newArg = fgMorphLclArgToFieldList(lclNode)->SoleFieldOrThis();
             }
+        }
+    }
+    else if (argNode->OperIsFieldList())
+    {
+        // We can already see a field list here if physical promotion created it.
+        // Physical promotion will also create single-field field lists which
+        // the backend does not expect, so fix that here.
+        newArg = argNode->AsFieldList()->SoleFieldOrThis();
+        if (newArg == argNode)
+        {
+            return true;
         }
     }
 
@@ -2995,10 +2595,60 @@ GenTree* Compiler::fgMorphMultiregStructArg(CallArg* arg)
     //
     if (newArg == nullptr)
     {
-        if (!arg->NewAbiInfo.HasAnyRegisterSegment())
+        bool isUseOfIndependentlyPromotedStruct =
+            argNode->OperIs(GT_LCL_VAR) &&
+            (lvaGetPromotionType(argNode->AsLclVarCommon()->GetLclNum()) == PROMOTION_TYPE_INDEPENDENT);
+        if (isUseOfIndependentlyPromotedStruct)
         {
-            // We leave this stack passed argument alone.
-            return argNode;
+            if (arg->NewAbiInfo.HasExactlyOneRegisterSegment())
+            {
+                // We already tried to use the fields above, but that failed.
+                // Here we prefer to create a copy to avoid DNER'ing the local.
+                // That turns out to be profitable mostly for single-register arguments.
+                return false;
+            }
+        }
+        else if (!argNode->TypeIs(TYP_STRUCT) && arg->NewAbiInfo.HasExactlyOneRegisterSegment())
+        {
+            // This can be treated primitively. Leave it alone.
+            return true;
+        }
+
+        if (!argNode->OperIsLocalRead() && !argNode->OperIsLoad())
+        {
+            // A node we do not know how to turn into multiple registers.
+            // Usually HWINTRINSIC. Bail.
+            return false;
+        }
+
+        ClassLayout* layout     = argNode->TypeIs(TYP_STRUCT) ? argNode->GetLayout(this) : nullptr;
+        unsigned     structSize = argNode->TypeIs(TYP_STRUCT) ? layout->GetSize() : genTypeSize(argNode);
+
+        if (layout != nullptr)
+        {
+            assert(ClassLayout::AreCompatible(typGetObjLayout(arg->GetSignatureClassHandle()), layout));
+        }
+        else
+        {
+            assert(varTypeIsSIMD(argNode) && varTypeIsSIMD(arg->GetSignatureType()));
+        }
+
+        if (argNode->OperIsLoad())
+        {
+            unsigned lastLoadSize = structSize % TARGET_POINTER_SIZE;
+            if ((lastLoadSize != 0) && !isPow2(lastLoadSize))
+            {
+                // Cannot read this size from a non-local. Bail.
+                return false;
+            }
+
+            GenTree* indirAddr = argNode->AsIndir()->Addr();
+            if (((indirAddr->gtFlags & GTF_PERSISTENT_SIDE_EFFECTS) != 0) &&
+                (arg->NewAbiInfo.CountRegsAndStackSlots() > 1))
+            {
+                // Cannot create multiple uses of the address. Bail.
+                return false;
+            }
         }
 
         auto createSlotAccess = [=](unsigned offset, var_types type) -> GenTree* {
@@ -3006,16 +2656,10 @@ GenTree* Compiler::fgMorphMultiregStructArg(CallArg* arg)
 
             if (type == TYP_UNDEF)
             {
-                if ((structSize - offset) < TARGET_POINTER_SIZE)
+                unsigned sizeLeft = structSize - offset;
+                if (sizeLeft < TARGET_POINTER_SIZE)
                 {
-                    // ArgsComplete has made it so that for loads from memory
-                    // we will only see the easily handleable cases here, For
-                    // locals we may see odd sizes, but for those we can load
-                    // "too much" from the stack frame, and thus can just round
-                    // up the size.
-                    assert(isPow2(structSize - offset) || argNode->OperIsLocalRead());
-
-                    switch (structSize - offset)
+                    switch (sizeLeft)
                     {
                         case 1:
                             type = TYP_UBYTE;
@@ -3038,7 +2682,7 @@ GenTree* Compiler::fgMorphMultiregStructArg(CallArg* arg)
                     }
 
 #ifdef TARGET_ARM64
-                    if (argNode->OperIsLocalRead())
+                    if ((offset > 0) && argNode->OperIsLocalRead())
                     {
                         // For arm64 it's beneficial to consider all tails to
                         // be TYP_I_IMPL to allow more ldp's.
@@ -3058,10 +2702,28 @@ GenTree* Compiler::fgMorphMultiregStructArg(CallArg* arg)
 
             if (argNode->OperIsLocalRead())
             {
-                GenTreeLclFld* lclFld = gtNewLclFldNode(argNode->AsLclVarCommon()->GetLclNum(), genActualType(type),
-                                                        argNode->AsLclVarCommon()->GetLclOffs() + offset);
-                lclFld->SetMorphed(this);
-                return lclFld;
+                GenTreeLclVarCommon* lclVar = argNode->AsLclVarCommon();
+                LclVarDsc*           dsc    = lvaGetDesc(lclVar);
+                GenTree*             result;
+                // We sometimes end up with struct reinterpretations where the
+                // retyping into a primitive allows us to replace by a scalar
+                // local here, so make sure we do that if possible.
+                if ((lclVar->GetLclOffs() == 0) && (offset == 0) && (genTypeSize(type) == genTypeSize(dsc)) &&
+                    varTypeUsesSameRegType(type, dsc))
+                {
+                    result = gtNewLclVarNode(lclVar->GetLclNum());
+                }
+                else
+                {
+                    result = gtNewLclFldNode(lclVar->GetLclNum(), type, lclVar->GetLclOffs() + offset);
+
+                    if (!dsc->lvDoNotEnregister)
+                    {
+                        lvaSetVarDoNotEnregister(lclVar->GetLclNum() DEBUGARG(DoNotEnregisterReason::LocalField));
+                    }
+                }
+                result->SetMorphed(this);
+                return result;
             }
             else
             {
@@ -3075,8 +2737,6 @@ GenTree* Compiler::fgMorphMultiregStructArg(CallArg* arg)
                 }
                 else
                 {
-                    assert((indirAddr->gtFlags & GTF_PERSISTENT_SIDE_EFFECTS) == 0);
-
                     GenTree* indirAddrDup = gtCloneExpr(indirAddr);
                     GenTree* offsetNode   = gtNewIconNode(offset, TYP_I_IMPL);
                     addr                  = gtNewOperNode(GT_ADD, indirAddr->TypeGet(), indirAddrDup, offsetNode);
@@ -3100,7 +2760,8 @@ GenTree* Compiler::fgMorphMultiregStructArg(CallArg* arg)
                 // createSlotAccess get the type from the layout.
                 var_types slotType = varTypeUsesFloatReg(regType) ? regType : TYP_UNDEF;
                 GenTree*  access   = createSlotAccess(seg.Offset, slotType);
-                newArg->AddField(this, access, seg.Offset, access->TypeGet());
+
+                newArg->AsFieldList()->AddField(this, access, seg.Offset, access->TypeGet());
             }
             else
             {
@@ -3108,33 +2769,26 @@ GenTree* Compiler::fgMorphMultiregStructArg(CallArg* arg)
                 {
                     unsigned layoutOffset = seg.Offset + slotOffset;
                     GenTree* access       = createSlotAccess(layoutOffset, TYP_UNDEF);
-                    newArg->AddField(this, access, layoutOffset, access->TypeGet());
+
+                    newArg->AsFieldList()->AddField(this, access, layoutOffset, access->TypeGet());
                 }
             }
         }
 
-        if (argNode->OperIsLocalRead())
-        {
-            lvaSetVarDoNotEnregister(argNode->AsLclVarCommon()->GetLclNum()
-                                         DEBUGARG(DoNotEnregisterReason::LocalField));
-        }
+        newArg = newArg->AsFieldList()->SoleFieldOrThis();
     }
 
-    // If we reach here we should have set newArg to something
-    noway_assert(newArg != nullptr);
-
-    JITDUMP("fgMorphMultiregStructArg created tree:\n");
+    JITDUMP("fgTryMorphStructArg created tree:\n");
     DISPTREE(newArg);
 
-    argNode = newArg; // consider calling fgMorphTree(newArg);
-
-#endif // FEATURE_MULTIREG_ARGS
-
-    return argNode;
+    *use = newArg;
+    // Potentially update commas
+    arg->GetNode()->ChangeType((*use)->TypeGet());
+    return true;
 }
 
 //------------------------------------------------------------------------
-// fgMorphLclArgToFieldlist: Morph a GT_LCL_VAR node to a GT_FIELD_LIST of its promoted fields
+// fgMorphLclArgToFieldList: Morph a GT_LCL_VAR node to a GT_FIELD_LIST of its promoted fields
 //
 // Arguments:
 //    lcl  - The GT_LCL_VAR node we will transform
@@ -3142,7 +2796,7 @@ GenTree* Compiler::fgMorphMultiregStructArg(CallArg* arg)
 // Return value:
 //    The new GT_FIELD_LIST that we have created.
 //
-GenTreeFieldList* Compiler::fgMorphLclArgToFieldlist(GenTreeLclVarCommon* lcl)
+GenTreeFieldList* Compiler::fgMorphLclArgToFieldList(GenTreeLclVarCommon* lcl)
 {
     LclVarDsc* varDsc = lvaGetDesc(lcl);
     assert(varDsc->lvPromoted);
@@ -3150,6 +2804,8 @@ GenTreeFieldList* Compiler::fgMorphLclArgToFieldlist(GenTreeLclVarCommon* lcl)
     unsigned fieldLclNum = varDsc->lvFieldLclStart;
 
     GenTreeFieldList* fieldList = new (this, GT_FIELD_LIST) GenTreeFieldList();
+    fieldList->SetMorphed(this);
+
     for (unsigned i = 0; i < fieldCount; i++)
     {
         LclVarDsc* fieldVarDsc = lvaGetDesc(fieldLclNum);
@@ -3158,7 +2814,6 @@ GenTreeFieldList* Compiler::fgMorphLclArgToFieldlist(GenTreeLclVarCommon* lcl)
         fieldList->AddField(this, lclVar, fieldVarDsc->lvFldOffset, fieldVarDsc->TypeGet());
         fieldLclNum++;
     }
-    fieldList->SetMorphed(this);
     return fieldList;
 }
 
@@ -3322,29 +2977,42 @@ void Compiler::fgMakeOutgoingStructArgCopy(GenTreeCall* call, CallArg* arg)
     GenTree* copyBlk = gtNewStoreLclVarNode(tmp, argx);
     copyBlk          = fgMorphCopyBlock(copyBlk);
 
+    GenTree* argNode;
+    if (arg->NewAbiInfo.IsPassedByReference())
+    {
+        argNode = gtNewLclVarAddrNode(tmp);
+        lvaSetVarAddrExposed(tmp DEBUGARG(AddressExposedReason::ESCAPE_ADDRESS));
+    }
+    else
+    {
+        argNode = gtNewLclvNode(tmp, lvaGetDesc(tmp)->TypeGet());
+    }
+    argNode->SetMorphed(this);
+
 #if FEATURE_FIXED_OUT_ARGS
 
     // For fixed out args we create the setup node here; EvalArgsToTemps knows
     // to handle the case of "already have a setup node" properly.
     arg->SetEarlyNode(copyBlk);
-    GenTree* argNode = call->gtArgs.MakeTmpArgNode(this, arg, tmp);
-    argNode->SetMorphed(this);
     arg->SetLateNode(argNode);
 
-#else // !FEATURE_FIXED_OUT_ARGS
+#else  // !FEATURE_FIXED_OUT_ARGS
 
     // Structs are always on the stack, and thus never need temps
     // so we have to put the copy and temp all into one expression.
-    GenTree* argNode = call->gtArgs.MakeTmpArgNode(this, arg, tmp);
-    argNode->SetMorphed(this);
-
     // Change the expression to "(tmp=val),tmp"
     argNode = gtNewOperNode(GT_COMMA, argNode->TypeGet(), copyBlk, argNode);
     argNode->SetMorphed(this);
 
     arg->SetEarlyNode(argNode);
-
 #endif // !FEATURE_FIXED_OUT_ARGS
+
+    if (!arg->NewAbiInfo.IsPassedByReference())
+    {
+        bool morphed = fgTryMorphStructArg(arg);
+        // Should always succeed for an unpromoted local.
+        assert(morphed);
+    }
 }
 
 /*****************************************************************************
