@@ -32,19 +32,20 @@ LEAF_ENTRY RhpResolveInterfaceMethodFast, _TEXT
         ret
 
       RhpResolveInterfaceMethodFast_Polymorphic:
+        ;; load the count of cache entries into edx
+        ;; r11 points to the first cache entry so to get to m_cEntries, we need to subtract m_rgEntries first
         push    rdx
-        mov     rdx, [r10 + OFFSETOF__InterfaceDispatchCell__m_pCache]
-        mov     r11d, dword ptr [rdx + OFFSETOF__InterfaceDispatchCache__m_cEntries]
+        mov     edx, dword ptr [r11 - OFFSETOF__InterfaceDispatchCache__m_rgEntries + OFFSETOF__InterfaceDispatchCache__m_cEntries]
 
       RhpResolveInterfaceMethodFast_NextEntry:
-        add     rdx, SIZEOF__InterfaceDispatchCacheEntry
-        dec     r11d
+        add     r11, SIZEOF__InterfaceDispatchCacheEntry
+        dec     edx
         jz      RhpResolveInterfaceMethodFast_SlowPath_Pop
 
-        cmp     qword ptr [rdx], rax
+        cmp     qword ptr [r11], rax
         jne     RhpResolveInterfaceMethodFast_NextEntry
 
-        mov     rax, qword ptr [rdx + 8]
+        mov     rax, qword ptr [r11 + 8]
         pop     rdx
         ret
 
