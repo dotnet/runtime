@@ -144,6 +144,8 @@ private:
     COMP_HANDLE m_compHnd;
     CORINFO_METHOD_INFO* m_methodInfo;
 
+    static int32_t InterpGetMovForType(InterpType interpType, bool signExtend);
+
     int GenerateCode(CORINFO_METHOD_INFO* methodInfo);
 
     void* AllocMethodData(size_t numBytes);

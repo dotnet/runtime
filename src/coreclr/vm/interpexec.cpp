@@ -54,6 +54,30 @@ void InterpExecMethod(InterpMethodContextFrame *pFrame, InterpThreadContext *pTh
                 goto EXIT_FRAME;
             case INTOP_RET_VOID:
                 goto EXIT_FRAME;
+
+#define MOV(argtype1,argtype2) \
+    LOCAL_VAR(ip [1], argtype1) = LOCAL_VAR(ip [2], argtype2); \
+    ip += 3;
+            // When loading from a local, we might need to sign / zero extend to 4 bytes
+            // which is our minimum "register" size in interp. They are only needed when
+            // the address of the local is taken and we should try to optimize them out
+            // because the local can't be propagated.
+            case INTOP_MOV_I4_I1: MOV(int32_t, int8_t); break;
+            case INTOP_MOV_I4_U1: MOV(int32_t, uint8_t); break;
+            case INTOP_MOV_I4_I2: MOV(int32_t, int16_t); break;
+            case INTOP_MOV_I4_U2: MOV(int32_t, uint16_t); break;
+            // Normal moves between vars
+            case INTOP_MOV_4: MOV(int32_t, int32_t); break;
+            case INTOP_MOV_8: MOV(int64_t, int64_t); break;
+
+            case INTOP_MOV_VT:
+                memmove(stack + ip[1], stack + ip[2], ip[3]);
+                ip += 4;
+                break;
+
+            default:
+                assert(0);
+                break;
         }
     }
 

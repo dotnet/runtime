@@ -11,3 +11,11 @@ OPDEF(INTOP_RET, "ret", 2, 0, 1, InterpOpNoArgs)
 OPDEF(INTOP_RET_VOID, "ret.void", 1, 0, 0, InterpOpNoArgs)
 
 OPDEF(INTOP_LDC_I4, "ldc.i4", 3, 1, 0, InterpOpInt)
+
+OPDEF(INTOP_MOV_I4_I1, "mov.i4.i1", 3, 1, 1, InterpOpNoArgs)
+OPDEF(INTOP_MOV_I4_U1, "mov.i4.u1", 3, 1, 1, InterpOpNoArgs)
+OPDEF(INTOP_MOV_I4_I2, "mov.i4.i2", 3, 1, 1, InterpOpNoArgs)
+OPDEF(INTOP_MOV_I4_U2, "mov.i4.u2", 3, 1, 1, InterpOpNoArgs)
+OPDEF(INTOP_MOV_4, "mov.4", 3, 1, 1, InterpOpNoArgs)
+OPDEF(INTOP_MOV_8, "mov.8", 3, 1, 1, InterpOpNoArgs)
+OPDEF(INTOP_MOV_VT, "mov.vt", 4, 1, 1, InterpOpInt)
