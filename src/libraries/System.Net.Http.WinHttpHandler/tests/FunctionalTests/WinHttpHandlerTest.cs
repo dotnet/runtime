@@ -9,6 +9,7 @@ using System.Net.Test.Common;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.DotNet.RemoteExecutor;
 using TestUtilities;
 using Xunit;
 using Xunit.Abstractions;
@@ -47,32 +48,36 @@ namespace System.Net.Http.WinHttpHandlerFunctional.Tests
         }
 
         [OuterLoop]
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public async Task SendAsync_ServerCertificateValidationCallback_CalledOnce()
         {
-            using TestEventListener listener = new TestEventListener(_output, TestEventListener.NetworkingEvents);
-            int callbackCount = 0;
-            var handler = new WinHttpHandler()
+            await RemoteExecutor.Invoke(async () =>
             {
-                ServerCertificateValidationCallback = (m, cert, chain, err) =>
+                AppContext.SetSwitch("System.Net.Http.UseWinHttpCertificateCaching", true);
+                int callbackCount = 0;
+                var handler = new WinHttpHandler()
                 {
-                    Interlocked.Increment(ref callbackCount);
-                    return true;
-                }
-            };
-            using (var client = new HttpClient(handler))
-            {
-                for (int i = 0; i < 5; i++)
-                {
-                    var response = await client.SendAsync(new HttpRequestMessage(HttpMethod.Get, Configuration.Http.SecureRemoteEchoServer)
+                    ServerCertificateValidationCallback = (_, _, _, _) =>
                     {
-                        Version = HttpVersion.Version11
-                    });
-                    Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-                    _ = await response.Content.ReadAsStringAsync();
+                        Interlocked.Increment(ref callbackCount);
+                        return true;
+                    }
+                };
+                using (var client = new HttpClient(handler))
+                {
+                    for (int i = 0; i < 5; i++)
+                    {
+                        var response = await client.SendAsync(new HttpRequestMessage(HttpMethod.Get, Configuration.Http.SecureRemoteEchoServer)
+                        {
+                            Version = HttpVersion.Version11
+                        });
+                        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+                        _ = await response.Content.ReadAsStringAsync();
+                    }
+                    Assert.Equal(1, callbackCount);
                 }
-                Assert.Equal(1, callbackCount);
-            }
+                AppContext.SetSwitch("System.Net.Http.UseWinHttpCertificateCaching", false);
+            }).DisposeAsync();
         }
 
         [OuterLoop]

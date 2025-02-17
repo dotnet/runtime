@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -93,6 +94,7 @@ namespace System.Net.Http
         private volatile bool _disposed;
         private SafeWinHttpHandle? _sessionHandle;
         private readonly WinHttpAuthHelper _authHelper = new WinHttpAuthHelper();
+        internal ConcurrentDictionary<IPAddress, byte[]> cachedCertificates = new();
 
         public WinHttpHandler()
         {

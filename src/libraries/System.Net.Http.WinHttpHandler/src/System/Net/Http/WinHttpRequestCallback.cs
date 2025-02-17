@@ -6,6 +6,7 @@ using System.Buffers.Binary;
 using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Net.Security;
 using System.Net.Sockets;
 using System.Runtime.InteropServices;
@@ -23,7 +24,7 @@ namespace System.Net.Http
         public static Interop.WinHttp.WINHTTP_STATUS_CALLBACK StaticCallbackDelegate =
             new Interop.WinHttp.WINHTTP_STATUS_CALLBACK(WinHttpCallback);
 
-        private static ConcurrentDictionary<IPAddress, string> s_cachedCertificates = new();
+        private static bool CertificateCachingAppContextSwitchEnabled = AppContext.TryGetSwitch("System.Net.Http.UseWinHttpCertificateCaching", out bool certificateCachingEnabled) && certificateCachingEnabled;
 
         public static void WinHttpCallback(
             IntPtr handle,
@@ -62,8 +63,11 @@ namespace System.Net.Http
                 switch (internetStatus)
                 {
                     case Interop.WinHttp.WINHTTP_CALLBACK_STATUS_CONNECTED_TO_SERVER:
-                        IPAddress connectedToIPAddress = IPAddress.Parse(Marshal.PtrToStringUni(statusInformation)!);
-                        OnRequestConnectedToServer(connectedToIPAddress);
+                        if (CertificateCachingAppContextSwitchEnabled)
+                        {
+                            IPAddress connectedToIPAddress = IPAddress.Parse(Marshal.PtrToStringUni(statusInformation)!);
+                            OnRequestConnectedToServer(state, connectedToIPAddress);
+                        }
                         return;
 
                     case Interop.WinHttp.WINHTTP_CALLBACK_STATUS_HANDLE_CLOSING:
@@ -131,9 +135,12 @@ namespace System.Net.Http
             }
         }
 
-        private static void OnRequestConnectedToServer(IPAddress connectedIPAddress)
+        private static void OnRequestConnectedToServer(WinHttpRequestState state, IPAddress connectedIPAddress)
         {
-            if (s_cachedCertificates.TryRemove(connectedIPAddress, out _))
+            Debug.Assert(state != null);
+            Debug.Assert(state.Handler != null);
+
+            if (state.Handler.cachedCertificates.TryRemove(connectedIPAddress, out _))
             {
                 if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(null, $"Removed cached certificate for {connectedIPAddress}");
             }
@@ -253,6 +260,7 @@ namespace System.Net.Http
         private static void OnRequestSendingRequest(WinHttpRequestState state)
         {
             Debug.Assert(state != null, "OnRequestSendingRequest: state is null");
+            Debug.Assert(state.Handler != null, "OnRequestSendingRequest: state.Handler is null");
             Debug.Assert(state.RequestMessage != null, "OnRequestSendingRequest: state.RequestMessage is null");
             Debug.Assert(state.RequestMessage.RequestUri != null, "OnRequestSendingRequest: state.RequestMessage.RequestUri is null");
 
@@ -302,45 +310,50 @@ namespace System.Net.Http
                 Interop.Crypt32.CertFreeCertificateContext(certHandle);
 
                 IPAddress? ipAddress = null;
-                unsafe
+                if (CertificateCachingAppContextSwitchEnabled)
                 {
-                    Interop.WinHttp.WINHTTP_CONNECTION_INFO connectionInfo;
-                    Interop.WinHttp.WINHTTP_CONNECTION_INFO* pConnectionInfo = &connectionInfo;
-                    uint infoSize = (uint)sizeof(Interop.WinHttp.WINHTTP_CONNECTION_INFO);
-                    if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(state, $"sizeof(WINHTTP_CONNECTION_INFO)={infoSize}");
-                    if (Interop.WinHttp.WinHttpQueryOption(
-                        state.RequestHandle,
-                        Interop.WinHttp.WINHTTP_OPTION_CONNECTION_INFO,
-                        (IntPtr)pConnectionInfo,
-                        ref infoSize))
+                    unsafe
                     {
-                        ReadOnlySpan<byte> RemoteAddressSpan = new ReadOnlySpan<byte>(connectionInfo.RemoteAddress, 128);
-                        AddressFamily addressFamily = (AddressFamily)BitConverter.ToInt16(RemoteAddressSpan.ToArray(), 0);
-                        ipAddress = addressFamily switch
+                        Interop.WinHttp.WINHTTP_CONNECTION_INFO connectionInfo;
+                        Interop.WinHttp.WINHTTP_CONNECTION_INFO* pConnectionInfo = &connectionInfo;
+                        uint infoSize = (uint)sizeof(Interop.WinHttp.WINHTTP_CONNECTION_INFO);
+                        if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(state, $"sizeof(WINHTTP_CONNECTION_INFO)={infoSize}");
+                        if (Interop.WinHttp.WinHttpQueryOption(
+                            state.RequestHandle,
+                            // This option is available on Windows XP SP2 and later; Windows 2003 with SP1 and later.
+                            Interop.WinHttp.WINHTTP_OPTION_CONNECTION_INFO,
+                            (IntPtr)pConnectionInfo,
+                            ref infoSize))
                         {
-                            AddressFamily.InterNetwork => new IPAddress(BinaryPrimitives.ReadUInt32LittleEndian(RemoteAddressSpan.Slice(4))),
-                            AddressFamily.InterNetworkV6 => new IPAddress(RemoteAddressSpan.Slice(8, 16).ToArray()),
-                            _ => null
-                        };
-                        if (ipAddress != null && NetEventSource.Log.IsEnabled()) NetEventSource.Info(state, $"ipAddress: {ipAddress}");
+                            ReadOnlySpan<byte> remoteAddressSpan = new ReadOnlySpan<byte>(connectionInfo.RemoteAddress, 128);
+                            AddressFamily addressFamily = (AddressFamily)BitConverter.ToInt16(remoteAddressSpan.Slice(0, 2).ToArray(), 0);
+                            ipAddress = addressFamily switch
+                            {
+                                AddressFamily.InterNetwork => new IPAddress(BinaryPrimitives.ReadUInt32LittleEndian(remoteAddressSpan.Slice(4))),
+                                AddressFamily.InterNetworkV6 => new IPAddress(remoteAddressSpan.Slice(8, 16).ToArray()),
+                                _ => null
+                            };
+                            Debug.Assert(ipAddress != null, "AddressFamily is not supported");
+                            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(state, $"ipAddress: {ipAddress}");
 
+                        }
+                        else
+                        {
+                            int lastError = Marshal.GetLastWin32Error();
+                            if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(state, $"Error getting WINHTTP_OPTION_CONNECTION_INFO, {lastError}");
+                        }
+                    }
+
+                    if (ipAddress is not null && state.Handler.cachedCertificates.TryGetValue(ipAddress, out byte[]? rawBytes) && rawBytes.SequenceEqual(serverCertificate.RawData))
+                    {
+                        if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(state, $"Skipping certificate validation. ipAddress: {ipAddress}, Thumbprint: {serverCertificate.Thumbprint}");
+                        serverCertificate.Dispose();
+                        return;
                     }
                     else
                     {
-                        int lastError = Marshal.GetLastWin32Error();
-                        if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(state, $"Error getting WINHTTP_OPTION_CONNECTION_INFO, {lastError}");
+                        if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(state, $"Certificate validation is required! IPAddress = {ipAddress}, Thumbprint: {serverCertificate.Thumbprint}");
                     }
-                }
-
-                if (ipAddress is not null && s_cachedCertificates.TryGetValue(ipAddress, out string? thumbprint) && thumbprint == serverCertificate.Thumbprint)
-                {
-                    if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(state, $"Skipping certificate validation. ipAddress: {ipAddress}, Thumbprint: {serverCertificate.Thumbprint}");
-                    serverCertificate.Dispose();
-                    return;
-                }
-                else
-                {
-                    if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(state, $"Certificate validation is required! IPAddress = {ipAddress}, Thumbprint: {serverCertificate.Thumbprint}");
                 }
 
                 X509Chain? chain = null;
@@ -362,9 +375,9 @@ namespace System.Net.Http
                         serverCertificate,
                         chain,
                         sslPolicyErrors);
-                    if (result && ipAddress is not null)
+                    if (CertificateCachingAppContextSwitchEnabled && result && ipAddress is not null)
                     {
-                        s_cachedCertificates[ipAddress] = serverCertificate.Thumbprint;
+                        state.Handler.cachedCertificates[ipAddress] = serverCertificate.RawData;
                     }
                 }
                 catch (Exception ex)
