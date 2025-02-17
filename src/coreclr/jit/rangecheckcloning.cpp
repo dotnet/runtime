@@ -391,13 +391,6 @@ PhaseStatus Compiler::optRangeCheckCloning()
         return PhaseStatus::MODIFIED_NOTHING;
     }
 
-    if (lvaHaveManyLocals(0.75))
-    {
-        // If we're close to running out of locals, we should be conservative
-        JITDUMP("Too many locals - bail out.\n");
-        return PhaseStatus::MODIFIED_NOTHING;
-    }
-
     const bool preferSize = opts.jitFlags->IsSet(JitFlags::JIT_FLAG_SIZE_OPT);
     if (preferSize)
     {
@@ -427,12 +420,6 @@ PhaseStatus Compiler::optRangeCheckCloning()
 
         if (block->isRunRarely())
         {
-            continue;
-        }
-
-        if (!block->KindIs(BBJ_ALWAYS, BBJ_RETURN, BBJ_COND))
-        {
-            // For now, we support only simple blocks
             continue;
         }
 
@@ -470,8 +457,8 @@ PhaseStatus Compiler::optRangeCheckCloning()
             BoundsCheckInfo    bci{};
             if (bci.Initialize(this, loc.stmt, loc.bndChk, loc.bndChkParent))
             {
-                IdxLenPair            key(bci.idxVN, bci.lenVN);
-                BoundsCheckInfoStack** value = bndCheckMap.LookupPointerOrAdd(key, nullptr);
+                IdxLenPair             key(bci.idxVN, bci.lenVN);
+                BoundsCheckInfoStack** value = bndChkMap.LookupPointerOrAdd(key, nullptr);
                 if (*value == nullptr)
                 {
                     CompAllocator allocator = getAllocator(CMK_RangeCheckCloning);
