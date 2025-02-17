@@ -103,7 +103,7 @@
         fsd         fa6, FLOAT_ARG_OFFSET + 0x30(sp)
         fsd         fa7, FLOAT_ARG_OFFSET + 0x38(sp)
 
-        # Space for return buffer data (0x40 bytes)
+        # Space for return buffer data (0x20 bytes)
 
         # Save argument registers
         sd          a0, ARGUMENT_REGISTERS_OFFSET(sp)
