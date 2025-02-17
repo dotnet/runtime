@@ -85,16 +85,22 @@ bool BoundsCheckInfo::Initialize(const Compiler*   comp,
 
     if (bndChkNode->GetIndex()->IsIntCnsFitsInI32())
     {
-        // Index being a constant means with have 0 index and cns offset
+        // Index being a constant means we have index=0 and cns offset
         offset = static_cast<int>(bndChkNode->GetIndex()->AsIntCon()->IconValue());
         idxVN  = comp->vnStore->VNZeroForType(TYP_INT);
     }
     else
     {
+        if (comp->vnStore->TypeOfVN(idxVN) != TYP_INT)
+        {
+            return false;
+        }
+
         // Otherwise, peel the offset from the index using VN
         comp->vnStore->PeelOffsetsI32(&idxVN, &offset);
         assert(idxVN != ValueNumStore::NoVN);
     }
+    assert(comp->vnStore->TypeOfVN(idxVN) == TYP_INT);
 
     if (offset < 0)
     {
