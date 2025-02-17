@@ -326,7 +326,7 @@ namespace System.Net.Http
                             ref infoSize))
                         {
                             ReadOnlySpan<byte> remoteAddressSpan = new ReadOnlySpan<byte>(connectionInfo.RemoteAddress, 128);
-                            AddressFamily addressFamily = (AddressFamily)BitConverter.ToInt16(remoteAddressSpan.Slice(0, 2).ToArray(), 0);
+                            AddressFamily addressFamily = (AddressFamily)BinaryPrimitives.ReadInt16LittleEndian(remoteAddressSpan);
                             ipAddress = addressFamily switch
                             {
                                 AddressFamily.InterNetwork => new IPAddress(BinaryPrimitives.ReadUInt32LittleEndian(remoteAddressSpan.Slice(4))),
