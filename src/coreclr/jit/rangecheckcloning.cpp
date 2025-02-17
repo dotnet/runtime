@@ -441,7 +441,7 @@ PhaseStatus Compiler::optRangeCheckCloning()
 
         for (Statement* const stmt : block->Statements())
         {
-            if (block->KindIs(BBJ_COND, BBJ_RETURN) && (stmt == block->lastStmt()))
+            if (block->HasTerminator() && (stmt == block->lastStmt()))
             {
                 // TODO-RangeCheckCloning: Splitting these blocks at the last statements
                 // require using gtSplitTree for the last bounds check.
@@ -471,14 +471,13 @@ PhaseStatus Compiler::optRangeCheckCloning()
             if (bci.Initialize(this, loc.stmt, loc.bndChk, loc.bndChkParent))
             {
                 IdxLenPair            key(bci.idxVN, bci.lenVN);
-                BoundsCheckInfoStack* value;
-                if (!bndChkMap.Lookup(key, &value))
+                BoundsCheckInfoStack** value = bndCheckMap.LookupPointerOrAdd(key, nullptr);
+                if (*value == nullptr)
                 {
                     CompAllocator allocator = getAllocator(CMK_RangeCheckCloning);
-                    value                   = new (allocator) BoundsCheckInfoStack(allocator);
-                    bndChkMap.Set(key, value);
+                    *value                  = new (allocator) BoundsCheckInfoStack(allocator);
                 }
-                value->Push(bci);
+                (*value)->Push(bci);
             }
         }
 
