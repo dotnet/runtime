@@ -201,10 +201,160 @@ void InterpExecMethod(InterpMethodContextFrame *pFrame, InterpThreadContext *pTh
                 LOCAL_VAR(ip[1], double) = (double)LOCAL_VAR(ip[2], float);
                 ip += 3;
                 break;
-
             case INTOP_CONV_U8_R4:
             case INTOP_CONV_U8_R8:
                 // TODO
+                assert(0);
+                break;
+
+            case INTOP_SWITCH:
+            {
+                uint32_t val = LOCAL_VAR(ip[1], uint32_t);
+                uint32_t n = ip[2];
+                ip += 3;
+                if (val < n)
+                {
+                    ip += val;
+                    ip += *ip;
+                }
+                else
+                {
+                    ip += n;
+                }
+                break;
+            }
+
+            case INTOP_BR:
+                ip += ip[1];
+                break;
+
+#define BR_UNOP(datatype, op)           \
+    if (LOCAL_VAR(ip[1], datatype) op)  \
+        ip += ip[2];                    \
+    else \
+        ip += 3;
+
+            case INTOP_BRFALSE_I4:
+                BR_UNOP(int32_t, == 0);
+                break;
+            case INTOP_BRFALSE_I8:
+                BR_UNOP(int64_t, == 0);
+                break;
+            case INTOP_BRTRUE_I4:
+                BR_UNOP(int32_t, != 0);
+                break;
+            case INTOP_BRTRUE_I8:
+                BR_UNOP(int64_t, != 0);
+                break;
+
+#define BR_BINOP_COND(cond) \
+    if (cond)               \
+        ip += ip[3];        \
+    else                    \
+        ip += 4;
+
+#define BR_BINOP(datatype, op) \
+    BR_BINOP_COND(LOCAL_VAR(ip[1], datatype) op LOCAL_VAR(ip[2], datatype))
+
+            case INTOP_BEQ_I4:
+                BR_BINOP(int32_t, ==);
+                break;
+            case INTOP_BEQ_I8:
+                BR_BINOP(int64_t, ==);
+                break;
+            case INTOP_BEQ_R4:
+            case INTOP_BEQ_R8:
+                // TODO Floating point comparisons
+                assert(0);
+                break;
+            case INTOP_BGE_I4:
+                BR_BINOP(int32_t, >=);
+                break;
+            case INTOP_BGE_I8:
+                BR_BINOP(int64_t, >=);
+                break;
+            case INTOP_BGE_R4:
+            case INTOP_BGE_R8:
+                assert(0);
+                break;
+            case INTOP_BGT_I4:
+                BR_BINOP(int32_t, >);
+                break;
+            case INTOP_BGT_I8:
+                BR_BINOP(int64_t, >);
+                break;
+            case INTOP_BGT_R4:
+            case INTOP_BGT_R8:
+                assert(0);
+                break;
+            case INTOP_BLT_I4:
+                BR_BINOP(int32_t, <);
+                break;
+            case INTOP_BLT_I8:
+                BR_BINOP(int64_t, <);
+                break;
+            case INTOP_BLT_R4:
+            case INTOP_BLT_R8:
+                assert(0);
+                break;
+            case INTOP_BLE_I4:
+                BR_BINOP(int32_t, <=);
+                break;
+            case INTOP_BLE_I8:
+                BR_BINOP(int64_t, <=);
+                break;
+            case INTOP_BLE_R4:
+            case INTOP_BLE_R8:
+                assert(0);
+                break;
+            case INTOP_BNE_UN_I4:
+                BR_BINOP(uint32_t, !=);
+                break;
+            case INTOP_BNE_UN_I8:
+                BR_BINOP(uint64_t, !=);
+                break;
+            case INTOP_BNE_UN_R4:
+            case INTOP_BNE_UN_R8:
+                assert(0);
+                break;
+            case INTOP_BGE_UN_I4:
+                BR_BINOP(uint32_t, >=);
+                break;
+            case INTOP_BGE_UN_I8:
+                BR_BINOP(uint64_t, >=);
+                break;
+            case INTOP_BGE_UN_R4:
+            case INTOP_BGE_UN_R8:
+                assert(0);
+                break;
+            case INTOP_BGT_UN_I4:
+                BR_BINOP(uint32_t, >);
+                break;
+            case INTOP_BGT_UN_I8:
+                BR_BINOP(uint64_t, >);
+                break;
+            case INTOP_BGT_UN_R4:
+            case INTOP_BGT_UN_R8:
+                assert(0);
+                break;
+            case INTOP_BLE_UN_I4:
+                BR_BINOP(uint32_t, <=);
+                break;
+            case INTOP_BLE_UN_I8:
+                BR_BINOP(uint64_t, <=);
+                break;
+            case INTOP_BLE_UN_R4:
+            case INTOP_BLE_UN_R8:
+                assert(0);
+                break;
+            case INTOP_BLT_UN_I4:
+                BR_BINOP(uint32_t, <);
+                break;
+            case INTOP_BLT_UN_I8:
+                BR_BINOP(uint64_t, <);
+                break;
+            case INTOP_BLT_UN_R4:
+            case INTOP_BLT_UN_R8:
                 assert(0);
                 break;
 

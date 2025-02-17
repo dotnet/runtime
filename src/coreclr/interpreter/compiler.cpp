@@ -177,7 +177,14 @@ bool InterpCompiler::InsIsNop(InterpInst *ins)
 
 int32_t InterpCompiler::GetInsLength(InterpInst *ins)
 {
-    return g_interpOpLen[ins->opcode];
+    int len = g_interpOpLen[ins->opcode];
+    if (len == 0)
+    {
+        assert(ins->opcode == INTOP_SWITCH);
+        len = 3 + ins->data[0];
+    }
+
+    return len;
 }
 
 void InterpCompiler::ForEachInsSVar(InterpInst *ins, void *pData, void (InterpCompiler::*callback)(int*, void*))
@@ -372,7 +379,73 @@ int32_t InterpCompiler::InterpGetMovForType(InterpType interpType, bool signExte
     return -1;
 }
 
-int32_t InterpCompiler::CreateVarExplicit(InterpType mt, CORINFO_CLASS_HANDLE clsHnd, int size)
+// This method needs to be called when the current basic blocks ends and execution can
+// continue into pTargetBB. When the stack state of a basic block is initialized, the vars
+// associated with the stack state are set. When another bblock will continue execution
+// into this bblock, it will first have to emit moves from the vars in its stack state
+// to the vars of the target bblock stack state.
+void InterpCompiler::EmitBBEndVarMoves(InterpBasicBlock *pTargetBB)
+{
+    if (pTargetBB->stackHeight <= 0)
+        return;
+
+    for (int i = 0; i < pTargetBB->stackHeight; i++)
+    {
+        int sVar = m_pStackPointer[i].var;
+        int dVar = pTargetBB->pStackState[i].var;
+        if (sVar != dVar)
+        {
+            InterpType interpType = m_pVars[sVar].interpType;
+            int32_t movOp = InterpGetMovForType(interpType, false);
+
+            AddIns(movOp);
+            m_pLastIns->SetSVar(m_pStackPointer[i].var);
+            m_pLastIns->SetDVar(pTargetBB->pStackState[i].var);
+
+            if (interpType == InterpTypeVT)
+            {
+                assert(m_pVars[sVar].size == m_pVars[dVar].size);
+                m_pLastIns->data[0] = m_pVars[sVar].size;
+            }
+        }
+    }
+}
+
+static void MergeStackTypeInfo(StackInfo *pState1, StackInfo *pState2, int len)
+{
+    // Discard type information if we have type conflicts for stack contents
+    for (int i = 0; i < len; i++)
+    {
+        if (pState1[i].clsHnd != pState2[i].clsHnd)
+        {
+            pState1[i].clsHnd = NULL;
+            pState2[i].clsHnd = NULL;
+        }
+    }
+}
+
+// Initializes stack state at entry to bb, based on the current stack state
+void InterpCompiler::InitBBStackState(InterpBasicBlock *pBB)
+{
+    if (pBB->stackHeight >= 0)
+    {
+        // Already initialized, update stack information
+        MergeStackTypeInfo(m_pStackBase, pBB->pStackState, pBB->stackHeight);
+    }
+    else
+    {
+        pBB->stackHeight = (int32_t)(m_pStackPointer - m_pStackBase);
+        if (pBB->stackHeight > 0)
+        {
+            int size = pBB->stackHeight * sizeof (StackInfo);
+            pBB->pStackState = (StackInfo*)AllocMemPool(size);
+            memcpy (pBB->pStackState, m_pStackBase, size);
+        }
+    }
+}
+
+
+int32_t InterpCompiler::CreateVarExplicit(InterpType interpType, CORINFO_CLASS_HANDLE clsHnd, int size)
 {
     if (m_varsSize == m_varsCapacity) {
         m_varsCapacity *= 2;
@@ -382,7 +455,7 @@ int32_t InterpCompiler::CreateVarExplicit(InterpType mt, CORINFO_CLASS_HANDLE cl
     }
     InterpVar *var = &m_pVars[m_varsSize];
 
-    var->mt = mt;
+    var->interpType = interpType;
     var->clsHnd = clsHnd;
     var->size = size;
     var->indirects = 0;
@@ -408,7 +481,19 @@ void InterpCompiler::EnsureStack(int additional)
     do                                      \
     {                                       \
         if (!CheckStackHelper (n))          \
-            goto exit;                      \
+            goto exit_bad_code;             \
+    } while (0)
+
+#define CHECK_STACK_RET_VOID(n)             \
+    do {                                    \
+        if (!CheckStackHelper(n))           \
+            return;                         \
+    } while (0)
+
+#define CHECK_STACK_RET(n, ret)             \
+    do {                                    \
+        if (!CheckStackHelper(n))           \
+            return ret;                     \
     } while (0)
 
 bool InterpCompiler::CheckStackHelper(int n)
@@ -459,42 +544,110 @@ int32_t InterpCompiler::ComputeCodeSize()
     return codeSize;
 }
 
-int32_t* InterpCompiler::EmitCodeIns(int32_t *ip, InterpInst *ins)
+int32_t* InterpCompiler::EmitCodeIns(int32_t *ip, InterpInst *ins, PtrArray<Reloc*> *relocs)
 {
     int32_t opcode = ins->opcode;
     int32_t *startIp = ip;
 
     *ip++ = opcode;
 
-    if (g_interpOpDVars[opcode])
-        *ip++ = m_pVars[ins->dVar].offset;
-
-    if (g_interpOpSVars[opcode])
+    if (opcode == INTOP_SWITCH)
     {
-        for (int i = 0; i < g_interpOpSVars[opcode]; i++)
+        int32_t numLabels = ins->data [0];
+        *ip++ = m_pVars[ins->sVars[0]].offset;
+        *ip++ = numLabels;
+        // Add relocation for each label
+        for (int32_t i = 0; i < numLabels; i++)
         {
-            if (ins->sVars[i] == CALL_ARGS_SVAR)
-            {
-                *ip++ = m_paramAreaOffset + ins->info.pCallInfo->callOffset;
-            }
-            else
-            {
-                *ip++ = m_pVars[ins->sVars[i]].offset;
-            }
+            Reloc *reloc = (Reloc*)AllocMemPool(sizeof(Reloc));
+            reloc->type = RelocSwitch;
+            reloc->offset = (int32_t)(ip - m_pMethodCode);
+            reloc->pTargetBB = ins->info.ppTargetBBTable [i];
+            relocs->Add(reloc);
+            *ip++ = (int32_t)0xdeadbeef;
         }
     }
+    else if (InterpOpIsUncondBranch(opcode) || InterpOpIsCondBranch(opcode))
+    {
+        int32_t brBaseOffset = (int32_t)(startIp - m_pMethodCode);
+        for (int i = 0; i < g_interpOpSVars[opcode]; i++)
+            *ip++ = m_pVars[ins->sVars[i]].offset;
 
-    int left = GetInsLength(ins) - (int32_t)(ip - startIp);
-    // Emit the rest of the data
-    for (int i = 0; i < left; i++)
-        *ip++ = ins->data[i];
+        if (ins->info.pTargetBB->nativeOffset >= 0)
+        {
+            *ip++ = ins->info.pTargetBB->nativeOffset - brBaseOffset;
+        }
+        else if (opcode == INTOP_BR && ins->info.pTargetBB == m_pCBB->pNextBB)
+        {
+            // Ignore branch to the next basic block. Revert the added INTOP_BR.
+            ip--;
+        }
+        else
+        {
+            // We don't know yet the IR offset of the target, add a reloc instead
+            Reloc *reloc = (Reloc*)AllocMemPool(sizeof(Reloc));
+            reloc->type = RelocLongBranch;
+            reloc->skip = g_interpOpSVars[opcode];
+            reloc->offset = brBaseOffset;
+            reloc->pTargetBB = ins->info.pTargetBB;
+            relocs->Add(reloc);
+            *ip++ = (int32_t)0xdeadbeef;
+        }
+    }
+    else
+    {
+        if (g_interpOpDVars[opcode])
+            *ip++ = m_pVars[ins->dVar].offset;
+
+        if (g_interpOpSVars[opcode])
+        {
+            for (int i = 0; i < g_interpOpSVars[opcode]; i++)
+            {
+                if (ins->sVars[i] == CALL_ARGS_SVAR)
+                {
+                    *ip++ = m_paramAreaOffset + ins->info.pCallInfo->callOffset;
+                }
+                else
+                {
+                    *ip++ = m_pVars[ins->sVars[i]].offset;
+                }
+            }
+        }
+
+        int left = GetInsLength(ins) - (int32_t)(ip - startIp);
+        // Emit the rest of the data
+        for (int i = 0; i < left; i++)
+            *ip++ = ins->data[i];
+    }
 
     return ip;
 }
 
+void InterpCompiler::PatchRelocations(PtrArray<Reloc*> *relocs)
+{
+    int32_t size = relocs->GetSize();
+
+    for (int32_t i = 0; i < size; i++)
+    {
+        Reloc *reloc = relocs->Get(i);
+        int32_t offset = reloc->pTargetBB->nativeOffset - reloc->offset;
+        int32_t *pSlot = NULL;
+
+        if (reloc->type == RelocLongBranch)
+            pSlot = m_pMethodCode + reloc->offset + reloc->skip + 1;
+        else if (reloc->type == RelocSwitch)
+            pSlot = m_pMethodCode + reloc->offset;
+        else
+            assert(0);
+
+        assert(*pSlot == (int32_t)0xdeadbeef);
+        *pSlot = offset;
+    }
+}
 
 void InterpCompiler::EmitCode()
 {
+    PtrArray<Reloc*> relocs;
     int32_t codeSize = ComputeCodeSize();
     m_pMethodCode = (int32_t*)AllocMethodData(codeSize * sizeof(int32_t));
 
@@ -502,13 +655,16 @@ void InterpCompiler::EmitCode()
     for (InterpBasicBlock *bb = m_pEntryBB; bb != NULL; bb = bb->pNextBB)
     {
         bb->nativeOffset = (int32_t)(ip - m_pMethodCode);
+        m_pCBB = bb;
         for (InterpInst *ins = bb->pFirstIns; ins != NULL; ins = ins->pNext)
         {
-            ip = EmitCodeIns(ip, ins);
+            ip = EmitCodeIns(ip, ins, &relocs);
         }
     }
 
     m_MethodCodeSize = (int32_t)(ip - m_pMethodCode);
+
+    PatchRelocations(&relocs);
 }
 
 InterpMethod* InterpCompiler::CreateInterpMethod()
@@ -674,26 +830,216 @@ bool InterpCompiler::CreateBasicBlocks(CORINFO_METHOD_INFO* methodInfo)
     return true;
 }
 
+// ilOffset represents relative branch offset
+void InterpCompiler::EmitBranch(InterpOpcode opcode, int32_t ilOffset)
+{
+    int32_t target = (int32_t)(m_ip - m_pILCode) + ilOffset;
+    if (target < 0 || target >= m_ILCodeSize)
+        assert(0);
+
+    InterpBasicBlock *pTargetBB = m_ppOffsetToBB[target];
+    assert(pTargetBB != NULL);
+
+    EmitBBEndVarMoves(pTargetBB);
+    InitBBStackState(pTargetBB);
+
+    AddIns(opcode);
+    m_pLastIns->info.pTargetBB = pTargetBB;
+}
+
+void InterpCompiler::EmitOneArgBranch(InterpOpcode opcode, int32_t ilOffset, int insSize)
+{
+    CHECK_STACK_RET_VOID(1);
+    StackType argType = (m_pStackPointer[-1].type == StackTypeO || m_pStackPointer[-1].type == StackTypeMP) ? StackTypeI : m_pStackPointer[-1].type;
+    // offset the opcode to obtain the type specific I4/I8/R4/R8 variant.
+    InterpOpcode opcodeArgType = (InterpOpcode)(opcode + argType - StackTypeI4);
+    m_pStackPointer--;
+    if (ilOffset)
+    {
+        EmitBranch(opcodeArgType, ilOffset + insSize);
+        m_pLastIns->SetSVar(m_pStackPointer[0].var);
+    }
+    else
+    {
+        AddIns(INTOP_NOP);
+    }
+}
+
+void InterpCompiler::EmitTwoArgBranch(InterpOpcode opcode, int32_t ilOffset, int insSize)
+{
+    CHECK_STACK_RET_VOID(2);
+    StackType argType1 = (m_pStackPointer[-1].type == StackTypeO || m_pStackPointer[-1].type == StackTypeMP) ? StackTypeI : m_pStackPointer[-1].type;
+    StackType argType2 = (m_pStackPointer[-2].type == StackTypeO || m_pStackPointer[-2].type == StackTypeMP) ? StackTypeI : m_pStackPointer[-2].type;
+
+    // Since branch opcodes only compare args of the same type, handle implicit conversions before
+    // emitting the conditional branch
+    if (argType1 == StackTypeI4 && argType2 == StackTypeI8)
+    {
+        EmitConv(m_pStackPointer - 1, m_pLastIns, StackTypeI8, INTOP_CONV_I8_I4);
+        argType1 = StackTypeI8;
+    }
+    else if (argType1 == StackTypeI8 && argType2 == StackTypeI4)
+    {
+        EmitConv(m_pStackPointer - 2, m_pLastIns, StackTypeI8, INTOP_CONV_I8_I4);
+    }
+    else if (argType1 == StackTypeR4 && argType2 == StackTypeR8)
+    {
+        EmitConv(m_pStackPointer - 1, m_pLastIns, StackTypeR8, INTOP_CONV_R8_R4);
+        argType1 = StackTypeR8;
+    }
+    else if (argType1 == StackTypeR8 && argType2 == StackTypeR4)
+    {
+        EmitConv(m_pStackPointer - 2, m_pLastIns, StackTypeR8, INTOP_CONV_R8_R4);
+    }
+    else if (argType1 != argType2)
+    {
+        m_hasInvalidCode = true;
+        return;
+    }
+
+    // offset the opcode to obtain the type specific I4/I8/R4/R8 variant.
+    InterpOpcode opcodeArgType = (InterpOpcode)(opcode + argType1 - StackTypeI4);
+    m_pStackPointer -= 2;
+
+    if (ilOffset)
+    {
+        EmitBranch(opcodeArgType, ilOffset + insSize);
+        m_pLastIns->SetSVars2(m_pStackPointer[0].var, m_pStackPointer[1].var);
+    }
+    else
+    {
+        AddIns(INTOP_NOP);
+    }
+}
+
 int InterpCompiler::GenerateCode(CORINFO_METHOD_INFO* methodInfo)
 {
-    m_ip = methodInfo->ILCode;
-    uint8_t *codeEnd = m_ip + methodInfo->ILCodeSize;
+    uint8_t *codeEnd;
+    bool emittedBBlocks, linkBBlocks, needsRetryEmit;
+    m_ip = m_pILCode = methodInfo->ILCode;
+    m_ILCodeSize = (int32_t)methodInfo->ILCodeSize;
 
     m_stackCapacity = methodInfo->maxStack + 1;
     m_pStackBase = m_pStackPointer = (StackInfo*)AllocTemporary(sizeof(StackInfo) * m_stackCapacity);
 
-    m_pCBB = m_pEntryBB = AllocBB();
+    m_pEntryBB = AllocBB();
     m_pEntryBB->ilOffset = 0;
+    m_pEntryBB->emitState = BBStateEmitting;
+    m_pEntryBB->stackHeight = 0;
+    m_pCBB = m_pEntryBB;
 
     if (!CreateBasicBlocks(methodInfo))
     {
-        // FIXME error return for compilation failure
         m_hasInvalidCode = true;
-        goto exit;
+        goto exit_bad_code;
     }
 
+    codeEnd = m_ip + m_ILCodeSize;
+
+    linkBBlocks = true;
+    needsRetryEmit = false;
+retry_emit:
+    emittedBBlocks = false;
     while (m_ip < codeEnd)
     {
+        // Check here for every opcode to avoid code bloat
+        if (m_hasInvalidCode)
+            goto exit_bad_code;
+
+        int32_t insOffset = (int32_t)(m_ip - m_pILCode);
+        InterpBasicBlock *pNewBB = m_ppOffsetToBB[insOffset];
+        if (pNewBB != NULL && m_pCBB != pNewBB)
+        {
+            // If we were emitting into previous bblock, we are finished now
+            if (m_pCBB->emitState == BBStateEmitting)
+                m_pCBB->emitState = BBStateEmitted;
+            // If the new bblock was already emitted, skip its instructions
+            if (pNewBB->emitState == BBStateEmitted)
+            {
+                if (linkBBlocks)
+                {
+                    LinkBBs(m_pCBB, pNewBB);
+                    // Further emitting can only start at a point where the bblock is not fallthrough
+                    linkBBlocks = false;
+                }
+                // If the bblock was fully emitted it means we already iterated at least once over
+                // all instructions so we have `pNextBB` initialized, unless it is the last bblock.
+                // Skip through all emitted bblocks.
+                m_pCBB = pNewBB;
+                while (m_pCBB->pNextBB && m_pCBB->pNextBB->emitState == BBStateEmitted)
+                    m_pCBB = m_pCBB->pNextBB;
+
+                if (m_pCBB->pNextBB)
+                    m_ip = m_pILCode + m_pCBB->pNextBB->ilOffset;
+                else
+                    m_ip = codeEnd;
+
+                continue;
+            }
+            else
+            {
+                assert (pNewBB->emitState == BBStateNotEmitted);
+            }
+            // We are starting a new basic block. Change cbb and link them together
+            if (linkBBlocks)
+            {
+                // By default we link cbb with the new starting bblock, unless the previous
+                // instruction is an unconditional branch (BR, LEAVE, ENDFINALLY)
+                LinkBBs(m_pCBB, pNewBB);
+                EmitBBEndVarMoves(pNewBB);
+                pNewBB->emitState = BBStateEmitting;
+                emittedBBlocks = true;
+                if (pNewBB->stackHeight >= 0)
+                {
+                    MergeStackTypeInfo(m_pStackBase, pNewBB->pStackState, pNewBB->stackHeight);
+                    // This is relevant only for copying the vars associated with the values on the stack
+                    memcpy(m_pStackBase, pNewBB->pStackState, pNewBB->stackHeight * sizeof(StackInfo));
+                    m_pStackPointer = m_pStackBase + pNewBB->stackHeight;
+                }
+                else
+                {
+                    // This bblock has not been branched to yet. Initialize its stack state
+                    InitBBStackState(pNewBB);
+                }
+                // linkBBlocks remains true, which is the default
+            }
+            else
+            {
+                if (pNewBB->stackHeight >= 0)
+                {
+                    // This is relevant only for copying the vars associated with the values on the stack
+                    memcpy (m_pStackBase, pNewBB->pStackState, pNewBB->stackHeight * sizeof(StackInfo));
+                    m_pStackPointer = m_pStackBase + pNewBB->stackHeight;
+                    pNewBB->emitState = BBStateEmitting;
+                    emittedBBlocks = true;
+                    linkBBlocks = true;
+                }
+                else
+                {
+                    assert(pNewBB->emitState == BBStateNotEmitted);
+                    needsRetryEmit = true;
+                    // linking to its next bblock, if its the case, will only happen
+                    // after we actually emit the bblock
+                    linkBBlocks = false;
+                    // If we had pNewBB->pNextBB initialized, here we could skip to its il offset directly.
+                    // We will just skip all instructions instead, since it doesn't seem that problematic.
+                }
+            }
+            if (!m_pCBB->pNextBB)
+                m_pCBB->pNextBB = pNewBB;
+            m_pCBB = pNewBB;
+        }
+
+        int32_t opcodeSize = CEEOpcodeSize(m_ip, codeEnd);
+        if (m_pCBB->emitState != BBStateEmitting)
+        {
+            // If we are not really emitting, just skip the instructions in the bblock
+            m_ip += opcodeSize;
+            continue;
+        }
+
+        m_ppOffsetToBB[insOffset] = m_pCBB;
+
         uint8_t opcode = *m_ip;
         switch (opcode)
         {
@@ -1063,12 +1409,198 @@ int InterpCompiler::GenerateCode(CORINFO_METHOD_INFO* methodInfo)
                 }
                 m_ip++;
                 break;
+            case CEE_SWITCH:
+            {
+                m_ip++;
+                uint32_t n = getU4LittleEndian(m_ip);
+                // Format of switch instruction is opcode + srcVal + n + T1 + T2 + ... + Tn
+                AddInsExplicit(INTOP_SWITCH, n + 3);
+                m_pLastIns->data[0] = n;
+                m_ip += 4;
+                const uint8_t *nextIp = m_ip + n * 4;
+                m_pStackPointer--;
+                m_pLastIns->SetSVar(m_pStackPointer->var);
+                InterpBasicBlock **targetBBTable = (InterpBasicBlock**)AllocMemPool(sizeof (InterpBasicBlock*) * n);
+
+                for (uint32_t i = 0; i < n; i++)
+                {
+                    int32_t offset = getU4LittleEndian(m_ip);
+                    uint32_t target = (uint32_t)(nextIp - m_pILCode + offset);
+                    InterpBasicBlock *targetBB = m_ppOffsetToBB[target];
+                    assert(targetBB);
+
+                    InitBBStackState(targetBB);
+                    targetBBTable[i] = targetBB;
+                    LinkBBs(m_pCBB, targetBB);
+                    m_ip += 4;
+                }
+                m_pLastIns->info.ppTargetBBTable = targetBBTable;
+                break;
+            }
+            case CEE_BR:
+            {
+                int32_t offset = getI4LittleEndian(m_ip + 1);
+                if (offset)
+                {
+                    EmitBranch(INTOP_BR, 5 + offset);
+                    linkBBlocks = false;
+                }
+                m_ip += 5;
+                break;
+            }
+            case CEE_BR_S:
+            {
+                int32_t offset = (int8_t)m_ip [1];
+                if (offset)
+                {
+                    EmitBranch(INTOP_BR, 2 + (int8_t)m_ip [1]);
+                    linkBBlocks = false;
+                }
+                m_ip += 2;
+                break;
+            }
+            case CEE_BRFALSE:
+                EmitOneArgBranch(INTOP_BRFALSE_I4, getI4LittleEndian(m_ip + 1), 5);
+                m_ip += 5;
+                break;
+            case CEE_BRFALSE_S:
+                EmitOneArgBranch(INTOP_BRFALSE_I4, (int8_t)m_ip [1], 2);
+                m_ip += 2;
+                break;
+            case CEE_BRTRUE:
+                EmitOneArgBranch(INTOP_BRTRUE_I4, getI4LittleEndian(m_ip + 1), 5);
+                m_ip += 5;
+                break;
+            case CEE_BRTRUE_S:
+                EmitOneArgBranch(INTOP_BRTRUE_I4, (int8_t)m_ip [1], 2);
+                m_ip += 2;
+                break;
+            case CEE_BEQ:
+                EmitTwoArgBranch(INTOP_BEQ_I4, getI4LittleEndian(m_ip + 1), 5);
+                m_ip += 5;
+                break;
+            case CEE_BEQ_S:
+                EmitTwoArgBranch(INTOP_BEQ_I4, (int8_t)m_ip [1], 2);
+                m_ip += 2;
+                break;
+            case CEE_BGE:
+                EmitTwoArgBranch(INTOP_BGE_I4, getI4LittleEndian(m_ip + 1), 5);
+                m_ip += 5;
+                break;
+            case CEE_BGE_S:
+                EmitTwoArgBranch(INTOP_BGE_I4, (int8_t)m_ip [1], 2);
+                m_ip += 2;
+                break;
+            case CEE_BGT:
+                EmitTwoArgBranch(INTOP_BGT_I4, getI4LittleEndian(m_ip + 1), 5);
+                m_ip += 5;
+                break;
+            case CEE_BGT_S:
+                EmitTwoArgBranch(INTOP_BGT_I4, (int8_t)m_ip [1], 2);
+                m_ip += 2;
+                break;
+            case CEE_BLT:
+                EmitTwoArgBranch(INTOP_BLT_I4, getI4LittleEndian(m_ip + 1), 5);
+                m_ip += 5;
+                break;
+            case CEE_BLT_S:
+                EmitTwoArgBranch(INTOP_BLT_I4, (int8_t)m_ip [1], 2);
+                m_ip += 2;
+                break;
+            case CEE_BLE:
+                EmitTwoArgBranch(INTOP_BLE_I4, getI4LittleEndian(m_ip + 1), 5);
+                m_ip += 5;
+                break;
+            case CEE_BLE_S:
+                EmitTwoArgBranch(INTOP_BLE_I4, (int8_t)m_ip [1], 2);
+                m_ip += 2;
+                break;
+            case CEE_BNE_UN:
+                EmitTwoArgBranch(INTOP_BNE_UN_I4, getI4LittleEndian(m_ip + 1), 5);
+                m_ip += 5;
+                break;
+            case CEE_BNE_UN_S:
+                EmitTwoArgBranch(INTOP_BNE_UN_I4, (int8_t)m_ip [1], 2);
+                m_ip += 2;
+                break;
+            case CEE_BGE_UN:
+                EmitTwoArgBranch(INTOP_BGE_UN_I4, getI4LittleEndian(m_ip + 1), 5);
+                m_ip += 5;
+                break;
+            case CEE_BGE_UN_S:
+                EmitTwoArgBranch(INTOP_BGE_UN_I4, (int8_t)m_ip [1], 2);
+                m_ip += 2;
+                break;
+            case CEE_BGT_UN:
+                EmitTwoArgBranch(INTOP_BGT_UN_I4, getI4LittleEndian(m_ip + 1), 5);
+                m_ip += 5;
+                break;
+            case CEE_BGT_UN_S:
+                EmitTwoArgBranch(INTOP_BGT_UN_I4, (int8_t)m_ip [1], 2);
+                m_ip += 2;
+                break;
+            case CEE_BLE_UN:
+                EmitTwoArgBranch(INTOP_BLE_UN_I4, getI4LittleEndian(m_ip + 1), 5);
+                m_ip += 5;
+                break;
+            case CEE_BLE_UN_S:
+                EmitTwoArgBranch(INTOP_BLE_UN_I4, (int8_t)m_ip [1], 2);
+                m_ip += 2;
+                break;
+            case CEE_BLT_UN:
+                EmitTwoArgBranch(INTOP_BLT_UN_I4, getI4LittleEndian(m_ip + 1), 5);
+                m_ip += 5;
+                break;
+            case CEE_BLT_UN_S:
+                EmitTwoArgBranch(INTOP_BLT_UN_I4, (int8_t)m_ip [1], 2);
+                m_ip += 2;
+                break;
+
             default:
                 assert(0);
                 break;
         }
     }
 
-exit:
+    if (m_pCBB->emitState == BBStateEmitting)
+        m_pCBB->emitState = BBStateEmitted;
+
+    // If no bblocks were emitted during the last iteration, there is no point to try again
+    // Some bblocks are just unreachable in the code.
+    if (needsRetryEmit && emittedBBlocks)
+    {
+        m_ip = m_pILCode;
+        m_pCBB = m_pEntryBB;
+
+        linkBBlocks = false;
+        needsRetryEmit = false;
+        goto retry_emit;
+    }
+
+    UnlinkUnreachableBBlocks();
+
     return CORJIT_OK;
+exit_bad_code:
+    return CORJIT_BADCODE;
+}
+
+void InterpCompiler::UnlinkUnreachableBBlocks()
+{
+    // Unlink unreachable bblocks, prevBB is always an emitted bblock
+    InterpBasicBlock *prevBB = m_pEntryBB;
+    InterpBasicBlock *nextBB = prevBB->pNextBB;
+    while (nextBB != NULL)
+    {
+        if (nextBB->emitState == BBStateNotEmitted)
+        {
+            m_ppOffsetToBB[nextBB->ilOffset] = NULL;
+            prevBB->pNextBB = nextBB->pNextBB;
+            nextBB = prevBB->pNextBB;
+        }
+        else
+        {
+            prevBB = nextBB;
+            nextBB = nextBB->pNextBB;
+        }
+    }
 }

@@ -7,10 +7,14 @@
 #include "openum.h"
 #include <stdint.h>
 
+#include "intopsshared.h"
+
 typedef enum
 {
     InterpOpNoArgs,
     InterpOpInt,
+    InterpOpBranch,
+    InterpOpSwitch,
 } InterpOpArgType;
 
 extern const uint8_t g_interpOpLen[];
@@ -29,12 +33,23 @@ const char* InterpOpName(int op);
 extern OPCODE_FORMAT const g_CEEOpArgs[];
 const char* CEEOpName(OPCODE op);
 OPCODE CEEDecodeOpcode(const uint8_t **ip);
+int CEEOpcodeSize(const uint8_t *ip, const uint8_t *codeEnd);
 
 #ifdef TARGET_64BIT
 #define INTOP_MOV_P INTOP_MOV_8
 #else
 #define INTOP_MOV_P INTOP_MOV_4
 #endif
+
+static inline bool InterpOpIsUncondBranch(int32_t opcode)
+{
+    return opcode == INTOP_BR;
+}
+
+static inline bool InterpOpIsCondBranch(int32_t opcode)
+{
+    return opcode >= INTOP_BRFALSE_I4 && opcode <= INTOP_BLT_UN_R8;
+}
 
 // Helpers identical to ones used by JIT
 // FIXME how to consume GET_UNALIGNED_VAL defines from pal as jit ???

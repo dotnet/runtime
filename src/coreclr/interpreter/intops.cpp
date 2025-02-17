@@ -4,6 +4,7 @@
 #include "intops.h"
 
 #include <stddef.h>
+#include <assert.h>
 
 // This, instead of an array of pointers, to optimize away a pointer and a relocation per string.
 struct InterpOpNameCharacters
@@ -110,4 +111,55 @@ OPCODE CEEDecodeOpcode(const uint8_t **pIp)
     }
     *pIp = ip;
     return res;
+}
+
+int32_t CEEOpcodeSize(const uint8_t *ip, const uint8_t *codeEnd)
+{
+    const uint8_t *p = ip;
+    OPCODE opcode = CEEDecodeOpcode(&p);
+    OPCODE_FORMAT opArgs = g_CEEOpArgs[opcode];
+
+    size_t size = 0;
+
+    switch (opArgs)
+    {
+    case InlineNone:
+        size = 1;
+        break;
+    case InlineString:
+    case InlineType:
+    case InlineField:
+    case InlineMethod:
+    case InlineTok:
+    case InlineSig:
+    case ShortInlineR:
+    case InlineI:
+    case InlineBrTarget:
+        size = 5;
+        break;
+    case InlineVar:
+        size = 3;
+        break;
+    case ShortInlineVar:
+    case ShortInlineI:
+    case ShortInlineBrTarget:
+        size = 2;
+        break;
+    case InlineR:
+    case InlineI8:
+        size = 9;
+        break;
+    case InlineSwitch: {
+        size_t entries = getI4LittleEndian(p + 1);
+        size = 5 + 4 * entries;
+        break;
+    }
+    default:
+        assert(0);
+    }
+
+    if ((ip + size) >= codeEnd)
+        return -1;
+
+    return (int32_t)((p - ip) + size);
 }
