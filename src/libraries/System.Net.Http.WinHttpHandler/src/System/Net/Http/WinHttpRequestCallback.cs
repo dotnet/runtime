@@ -3,12 +3,12 @@
 
 using System;
 using System.Buffers.Binary;
-using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Net.Security;
 using System.Net.Sockets;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography.X509Certificates;
 
@@ -326,7 +326,7 @@ namespace System.Net.Http
                             ref infoSize))
                         {
                             ReadOnlySpan<byte> remoteAddressSpan = new ReadOnlySpan<byte>(connectionInfo.RemoteAddress, 128);
-                            AddressFamily addressFamily = (AddressFamily)BinaryPrimitives.ReadInt16LittleEndian(remoteAddressSpan);
+                            AddressFamily addressFamily = (AddressFamily)(remoteAddressSpan[0] + (remoteAddressSpan[1] << 8));
                             ipAddress = addressFamily switch
                             {
                                 AddressFamily.InterNetwork => new IPAddress(BinaryPrimitives.ReadUInt32LittleEndian(remoteAddressSpan.Slice(4))),
