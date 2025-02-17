@@ -2369,23 +2369,24 @@ void CodeGen::genLockedInstructions(GenTreeOp* treeNode)
 {
     assert(!varTypeIsSmall(treeNode->TypeGet()));
 
-    GenTree*  data      = treeNode->AsOp()->gtOp2;
-    GenTree*  addr      = treeNode->AsOp()->gtOp1;
-    regNumber dataReg   = data->GetRegNum();
+    GenTree*  data = treeNode->AsOp()->gtOp2;
+    GenTree*  addr = treeNode->AsOp()->gtOp1;
+    assert(!data->isContained() || data->IsIntegralConst(0));
+    assert(!addr->isContained());
+    regNumber dataReg   = !data->isContained() ? data->GetRegNum() : REG_ZERO;
     regNumber addrReg   = addr->GetRegNum();
     regNumber targetReg = treeNode->GetRegNum();
     if (targetReg == REG_NA)
     {
-        targetReg = REG_R0;
+        targetReg = REG_ZERO;
     }
 
     genConsumeAddress(addr);
-    genConsumeRegs(data);
+    if (!data->isContained())
+        genConsumeRegs(data);
 
     emitAttr dataSize = emitActualTypeSize(data);
     bool     is4      = (dataSize == EA_4BYTE);
-
-    assert(!data->isContainedIntOrIImmed());
 
     instruction ins = INS_none;
     switch (treeNode->gtOper)
@@ -2407,7 +2408,7 @@ void CodeGen::genLockedInstructions(GenTreeOp* treeNode)
     }
     GetEmitter()->emitIns_R_R_R(ins, dataSize, targetReg, addrReg, dataReg);
 
-    if (targetReg != REG_R0)
+    if (targetReg != REG_ZERO)
     {
         genProduceReg(treeNode);
     }
@@ -2427,12 +2428,15 @@ void CodeGen::genCodeForCmpXchg(GenTreeCmpXchg* treeNode)
     GenTree* locOp       = treeNode->Addr();
     GenTree* valOp       = treeNode->Data();
     GenTree* comparandOp = treeNode->Comparand();
+    assert(locOp->isUsedFromReg());
+    assert(valOp->isUsedFromReg() || valOp->IsIntegralConst(0));
+    assert(comparandOp->isUsedFromReg() || comparandOp->IsIntegralConst(0));
 
     regNumber target    = treeNode->GetRegNum();
     regNumber loc       = locOp->GetRegNum();
     regNumber val       = valOp->GetRegNum();
     regNumber comparand = comparandOp->GetRegNum();
-    regNumber storeErr  = internalRegisters.Extract(treeNode, RBM_ALLINT);
+    regNumber storeErr  = internalRegisters.GetSingle(treeNode);
 
     // Register allocator should have extended the lifetimes of all input and internal registers
     // They should all be different
@@ -2448,10 +2452,6 @@ void CodeGen::genCodeForCmpXchg(GenTreeCmpXchg* treeNode)
     noway_assert(comparand != storeErr);
     noway_assert(target != REG_NA);
     noway_assert(storeErr != REG_NA);
-
-    assert(locOp->isUsedFromReg());
-    assert(valOp->isUsedFromReg());
-    assert(!comparandOp->isUsedFromMemory());
 
     genConsumeAddress(locOp);
     genConsumeRegs(valOp);

@@ -650,6 +650,7 @@ GenTree* Lowering::LowerNode(GenTree* node)
         case GT_XORR:
         case GT_XAND:
         case GT_XADD:
+        case GT_XCHG:
             CheckImmedAndMakeContained(node, node->AsOp()->gtOp2);
             break;
 #elif defined(TARGET_XARCH)

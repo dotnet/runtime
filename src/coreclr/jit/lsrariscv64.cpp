@@ -460,6 +460,7 @@ int LinearScan::BuildNode(GenTree* tree)
             assert(dstCount == 1);
 
             buildInternalIntRegisterDefForNode(tree); // temp reg for store conditional error
+
             // Extend lifetimes of argument regs because they may be reused during retries
             setDelayFree(BuildUse(cas->Addr()));
             setDelayFree(BuildUse(cas->Data()));
@@ -484,11 +485,15 @@ int LinearScan::BuildNode(GenTree* tree)
             assert(dstCount == (tree->TypeIs(TYP_VOID) ? 0 : 1));
             GenTree* addr = tree->gtGetOp1();
             GenTree* data = tree->gtGetOp2();
-            assert(!addr->isContained() && !data->isContained());
-            srcCount = 2;
+            assert(!addr->isContained());
 
+            srcCount = 1;
             BuildUse(addr);
-            BuildUse(data);
+            if (!data->isContained())
+            {
+                srcCount++;
+                BuildUse(data);
+            }
             if (dstCount == 1)
             {
                 BuildDef(tree);
