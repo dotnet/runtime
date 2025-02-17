@@ -1201,7 +1201,7 @@ bool ObjectAllocator::CanLclVarEscapeViaParentStack(ArrayStack<GenTree*>* parent
                     JITDUMP("Enumerator V%02u passed to call...\n", lclNum);
                     canLclVarEscapeViaParentStack = !CheckForGuardedUse(block, parent, lclNum);
                 }
-                else if (isSpanLocal)
+                else if (isSpanLocal && !call->CanTailCall())
                 {
                     // A span argument can't escape, but the callee can pass its fields back via
                     // return value and the return value may escape. (Todo: model this more precisely
