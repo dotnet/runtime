@@ -70,18 +70,7 @@ bool BoundsCheckInfo::Initialize(const Compiler*   comp,
     bndChk       = bndChkNode;
     bndChkParent = bndChkParentNode;
 
-    if (bndChkParent != nullptr)
-    {
-        assert(bndChkParent->OperIs(GT_COMMA));
-        if (bndChkParent->gtGetOp2() == bndChkNode)
-        {
-            // GT_BOUNDS_CHECK is mostly LHS of COMMAs.
-            // In rare cases, it can be either a root node or RHS of COMMAs
-            // Unfortunately, optRemoveRangeCheck doesn't know how to handle it
-            // being RHS of COMMAs. TODO-RangeCheckCloning: fix that
-            return false;
-        }
-    }
+    assert((bndChkParent == nullptr) || bndChkParent->OperIs(GT_COMMA));
 
     if (bndChkNode->GetIndex()->IsIntCnsFitsInI32())
     {
@@ -108,6 +97,70 @@ bool BoundsCheckInfo::Initialize(const Compiler*   comp,
         return false;
     }
     return true;
+}
+
+//------------------------------------------------------------------------------------
+// RemoveBoundsChk - Remove the given bounds check from the statement and the block.
+//    This function is a copy of the optRemoveRangeCheck, but without questionable
+//    relaxations around side effect extractions.
+//
+// Arguments:
+//    comp  - compiler instance
+//    check - bounds check node to remove
+//    comma - check's parent node (either null or COMMA)
+//    stmt  - statement containing the bounds check
+//
+static void RemoveBoundsChk(Compiler* comp, GenTreeBoundsChk* check, GenTree* comma, Statement* stmt)
+{
+    assert((check != nullptr) && (comma != nullptr) && (stmt != nullptr));
+    assert((comma == nullptr) || (comma->OperIs(GT_COMMA)));
+
+    GenTree* tree = comma != nullptr ? comma : check;
+
+    JITDUMP("Before RemoveBoundsChk:\n");
+    DISPTREE(tree);
+
+    GenTree* sideEffList = nullptr;
+    comp->gtExtractSideEffList(check, &sideEffList, GTF_SIDE_EFFECT, /*ignoreRoot*/ true);
+
+    if (sideEffList != nullptr)
+    {
+        if (comma != nullptr)
+        {
+            // Is the check LHS or RHS of the comma?
+            if (comma->gtGetOp1() == check)
+            {
+                comma->AsOp()->gtOp1 = sideEffList;
+            }
+            else
+            {
+                assert(comma->gtGetOp2() == check);
+                comma->AsOp()->gtOp2 = sideEffList;
+            }
+        }
+        else
+        {
+            // Side-effects are now the new root of the statement.
+            stmt->SetRootNode(sideEffList);
+            tree = sideEffList;
+        }
+    }
+    else
+    {
+        // No side effects, just bash the bounds check to NOP.
+        check->gtBashToNOP();
+    }
+
+    if (tree->OperIs(GT_COMMA))
+    {
+        // We can no longer CSE the GT_COMMA.
+        tree->gtFlags |= GTF_DONT_CSE;
+    }
+
+    comp->gtUpdateStmtSideEffects(stmt);
+
+    JITDUMP("After RemoveBoundsChk:\n");
+    DISPTREE(stmt->GetRootNode());
 }
 
 // -----------------------------------------------------------------------------
@@ -314,14 +367,14 @@ static BasicBlock* optRangeCheckCloning_DoClone(Compiler* comp, BasicBlock* bloc
                     return (*pTree == (GenTree*)data->pCallbackData) ? Compiler::WALK_ABORT : Compiler::WALK_CONTINUE;
                 },
                     info.bndChk);
-                // We don't need to validate bndChkParent - optRemoveRangeCheck will do it for us
+                // We don't need to validate bndChkParent - RemoveBoundsChk will do it for us
                 assert(result == Compiler::WALK_ABORT);
                 break;
             }
         }
         assert(statementFound);
 #endif
-        comp->optRemoveRangeCheck(info.bndChk, info.bndChkParent, info.stmt);
+        RemoveBoundsChk(comp, info.bndChk, info.bndChkParent, info.stmt);
         comp->gtSetStmtInfo(info.stmt);
         comp->fgSetStmtSeq(info.stmt);
     }
