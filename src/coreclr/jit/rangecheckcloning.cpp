@@ -389,6 +389,56 @@ public:
 };
 
 // -----------------------------------------------------------------------------
+// DoesComplexityExceed: Check if the complexity of the bounds checks exceeds the budget.
+//    We want to avoid cloning blocks with too many unrelated trees/statements between
+//    the bounds checks.
+//
+// Arguments:
+//    bndChks - The stack of bounds checks
+//
+// Return Value:
+//    true if the complexity exceeds the budget, false otherwise.
+//
+static bool DoesComplexityExceed(ArrayStack<BoundsCheckInfo>* bndChks)
+{
+    Statement* firstBndChkStmt = bndChks->Bottom().stmt;
+    Statement* lastBndChkStmt  = bndChks->Top().stmt;
+
+    JITDUMP("Checking complexity from " FMT_STMT " to " FMT_STMT "\n", firstBndChkStmt->GetID(),
+            lastBndChkStmt->GetID());
+
+    // Some arbitrary limit just in case
+    if (bndChks->Height() > 64)
+    {
+        JITDUMP("\tExceeded the maximum number of bounds checks: %d\n", bndChks->Height());
+        return true;
+    }
+
+    // We're relying on GetCostSz to avoid walking the trees again.
+    // We assume the costs are initialized and relatively accurate.
+    //
+    int budget = bndChks->Height() * 64; // 64 is an arbitrary value based on SPMI measurements
+    JITDUMP("\tBudget: %d\n", budget);
+
+    Statement* currentStmt = firstBndChkStmt;
+    while (currentStmt != lastBndChkStmt)
+    {
+        JITDUMP("\t\tSubtracting %d from budget in " FMT_STMT " statement\n", currentStmt->GetCostSz(),
+                currentStmt->GetID());
+        budget -= currentStmt->GetCostSz();
+        if (budget < 0)
+        {
+            JITDUMP("\t\tExceeded budget!");
+            return true;
+        }
+        currentStmt = currentStmt->GetNextStmt();
+    }
+
+    JITDUMP("Complexity is within budget: %d\n", budget);
+    return false;
+}
+
+// -----------------------------------------------------------------------------
 // optRangeCheckCloning: The main entry point for the range check cloning phase.
 //    This phase scans all the blocks in the method and groups the bounds checks
 //    in each block by the "Base Index and Length" pairs (VNs). Then it picks up
@@ -435,7 +485,7 @@ PhaseStatus Compiler::optRangeCheckCloning()
             continue;
         }
 
-        if (block->isRunRarely())
+        if (block->isRunRarely() || block->KindIs(BBJ_THROW))
         {
             continue;
         }
@@ -498,11 +548,20 @@ PhaseStatus Compiler::optRangeCheckCloning()
             ArrayStack<BoundsCheckInfo>* value = keyValuePair->GetValue();
             if ((largestGroup == nullptr) || (value->Height() > largestGroup->Height()))
             {
+                if (DoesComplexityExceed(value))
+                {
+                    continue;
+                }
                 largestGroup = value;
             }
         }
 
-        assert(largestGroup != nullptr);
+        if (largestGroup == nullptr)
+        {
+            JITDUMP("No suitable group of bounds checks in the block - bail out.\n");
+            continue;
+        }
+
         if (largestGroup->Height() < MIN_CHECKS_PER_GROUP)
         {
             JITDUMP("Not enough bounds checks in the largest group - bail out.\n");
