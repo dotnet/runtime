@@ -1696,8 +1696,7 @@ void Lowering::LowerArg(GenTreeCall* call, CallArg* callArg)
 
             GenTree* putArg =
                 new (comp, GT_PUTARG_STK) GenTreePutArgStk(GT_PUTARG_STK, TYP_VOID, arg, stackSeg.GetStackOffset(),
-                                                           stackSeg.GetStackSize(),
-                                                           call, putInIncomingArgArea);
+                                                           stackSeg.GetStackSize(), call, putInIncomingArgArea);
 
             BlockRange().InsertAfter(arg, putArg);
             *ppArg = arg = putArg;
@@ -1735,10 +1734,11 @@ void Lowering::InsertBitCastIfNecessary(GenTree** argNode, const ABIPassingSegme
     // such cases we cut off the end of the segment to get an appropriate
     // register type for the bitcast.
     ABIPassingSegment cutRegisterSegment = registerSegment;
-    unsigned argNodeSize = genTypeSize(genActualType(*argNode));
+    unsigned          argNodeSize        = genTypeSize(genActualType(*argNode));
     if (registerSegment.Size > argNodeSize)
     {
-        cutRegisterSegment = ABIPassingSegment::InRegister(registerSegment.GetRegister(), registerSegment.Offset, argNodeSize);
+        cutRegisterSegment =
+            ABIPassingSegment::InRegister(registerSegment.GetRegister(), registerSegment.Offset, argNodeSize);
     }
 
     var_types bitCastType = cutRegisterSegment.GetRegisterType();
@@ -4926,8 +4926,8 @@ GenTree* Lowering::LowerStoreLocCommon(GenTreeLclVarCommon* lclStore)
         assert(lclRegType != TYP_UNDEF);
 
         GenTreeUnOp* bitcast = comp->gtNewBitCastNode(lclRegType, src);
-        lclStore->gtOp1  = bitcast;
-        src              = lclStore->gtGetOp1();
+        lclStore->gtOp1      = bitcast;
+        src                  = lclStore->gtGetOp1();
         BlockRange().InsertBefore(lclStore, bitcast);
         ContainCheckBitCast(bitcast);
     }
@@ -5043,7 +5043,7 @@ void Lowering::LowerRetStruct(GenTreeUnOp* ret)
             if (!varTypeUsesSameRegType(ret, retVal))
             {
                 GenTreeUnOp* bitcast = comp->gtNewBitCastNode(ret->TypeGet(), retVal);
-                ret->gtOp1       = bitcast;
+                ret->gtOp1           = bitcast;
                 BlockRange().InsertBefore(ret, bitcast);
                 ContainCheckBitCast(bitcast);
             }
@@ -8690,7 +8690,7 @@ void Lowering::ContainCheckRet(GenTreeUnOp* ret)
 
 //------------------------------------------------------------------------
 // TryRemoveBitCast:
-//   Try to remove a bitcast node if it is a no-op, or by changing its operand.
+//   Try to remove a bitcast node by changing its operand.
 //
 // Arguments:
 //    node - Bitcast node
@@ -8718,16 +8718,16 @@ bool Lowering::TryRemoveBitCast(GenTreeUnOp* node)
     if (isConst)
     {
         uint8_t bits[sizeof(simd_t)];
+        assert(sizeof(bits) >= genTypeSize(genActualType(op)));
         if (op->OperIs(GT_CNS_INT))
         {
             ssize_t cns = op->AsIntCon()->IconValue();
-            assert(sizeof(ssize_t) >= genTypeSize(genActualType(op)) && (sizeof(bits) >= genTypeSize(genActualType(op))));
+            assert(sizeof(ssize_t) >= genTypeSize(genActualType(op)));
             memcpy(bits, &cns, genTypeSize(genActualType(op)));
         }
 #ifdef FEATURE_SIMD
         else if (op->OperIs(GT_CNS_VEC))
         {
-            assert(sizeof(bits) >= genTypeSize(op));
             memcpy(bits, &op->AsVecCon()->gtSimdVal, genTypeSize(op));
         }
 #endif
@@ -8736,13 +8736,11 @@ bool Lowering::TryRemoveBitCast(GenTreeUnOp* node)
             if (op->TypeIs(TYP_FLOAT))
             {
                 float floatVal = FloatingPointUtils::convertToSingle(op->AsDblCon()->DconValue());
-                assert(sizeof(bits) >= sizeof(float));
                 memcpy(bits, &floatVal, sizeof(float));
             }
             else
             {
                 double doubleVal = op->AsDblCon()->DconValue();
-                assert(sizeof(bits) >= sizeof(double));
                 memcpy(bits, &doubleVal, sizeof(double));
             }
         }

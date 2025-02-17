@@ -384,7 +384,7 @@ private:
     void     LowerPutArgStkOrSplit(GenTreePutArgStk* putArgNode);
     GenTree* LowerArrLength(GenTreeArrCommon* node);
 
-    bool     TryRemoveBitCast(GenTreeUnOp* node);
+    bool TryRemoveBitCast(GenTreeUnOp* node);
 
 #ifdef TARGET_XARCH
     void     LowerPutArgStk(GenTreePutArgStk* putArgStk);
