@@ -350,6 +350,7 @@ public:
     enum
     {
         DoPostOrder       = true,
+        DoPreOrder        = true,
         UseExecutionOrder = true
     };
 
@@ -358,6 +359,16 @@ public:
         , m_stmt(stmt)
         , m_boundsChks(bndChkLocations)
     {
+    }
+
+    fgWalkResult PreOrderVisit(GenTree** use, GenTree* user)
+    {
+        // No GTF_EXCEPT - no bounds check down the tree
+        if (((*use)->gtFlags & GTF_EXCEPT) == 0)
+        {
+            return fgWalkResult::WALK_SKIP_SUBTREES;
+        }
+        return fgWalkResult::WALK_CONTINUE;
     }
 
     fgWalkResult PostOrderVisit(GenTree** use, GenTree* user)
