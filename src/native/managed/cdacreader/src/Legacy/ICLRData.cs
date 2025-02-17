@@ -55,3 +55,11 @@ internal unsafe partial interface ICLRDataTarget
     [PreserveSig]
     int Request(uint reqCode, uint inBufferSize, byte* inBuffer, uint outBufferSize, byte* outBuffer);
 }
+
+[GeneratedComInterface]
+[Guid("b760bf44-9377-4597-8be7-58083bdc5146")]
+internal unsafe partial interface ICLRRuntimeLocator
+{
+    [PreserveSig]
+    int GetRuntimeBase(ulong* baseAddress);
+}

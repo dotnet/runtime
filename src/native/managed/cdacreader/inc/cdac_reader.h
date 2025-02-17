@@ -34,7 +34,7 @@ int cdac_reader_free(intptr_t handle);
 //   obj: returned SOS interface that can be QI'd to ISOSDacInterface*
 int cdac_reader_create_sos_interface(intptr_t handle, IUnknown* legacyImpl, IUnknown** obj);
 
-int cdac_reader_create_instance(void* iid, IUnknown* pLegacyTarget, void** iface, intptr_t baseAddress);
+int cdac_reader_create_instance(void* iid, IUnknown* pLegacyTarget, void** iface);
 
 #ifdef __cplusplus
 }

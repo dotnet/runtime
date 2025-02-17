@@ -88,27 +88,51 @@ internal static class Entrypoints
     }
 
     [UnmanagedCallersOnly(EntryPoint = $"{CDAC}create_instance")]
-    private static unsafe int CLRDataCreateInstance(Guid* pIID, IntPtr /*ICLRDataTarget*/ pLegacyTarget, void** iface, ulong baseAddress)
+    private static unsafe int CLRDataCreateInstance(Guid* pIID, IntPtr /*ICLRDataTarget*/ pLegacyTarget, void** iface)
     {
-        //Define the path to the text file
-        string logFilePath = "C:\\Users\\maxcharlamb\\OneDrive - Microsoft\\Desktop\\out.txt";
-
-        //Create a StreamWriter to write logs to a text file
-        using StreamWriter logFileWriter = new StreamWriter(logFilePath, append: true);
-        Console.SetOut(logFileWriter);
-
         if (pLegacyTarget == IntPtr.Zero || iface == null)
             return HResults.E_INVALIDARG;
 
-        Console.WriteLine("CLRDataCreateInstance called");
+        *iface = null;
 
         ComWrappers cw = new StrategyBasedComWrappers();
         object obj = cw.GetOrCreateObjectForComInstance(pLegacyTarget, CreateObjectFlags.None);
         ICLRDataTarget dataTarget = obj as ICLRDataTarget ?? throw new ArgumentException("Invalid ICLRDataTarget");
+        ICLRRuntimeLocator? locator = obj as ICLRRuntimeLocator;
 
-        PEDecoder pEDecoder = new(dataTarget, baseAddress);
-        pEDecoder.GetSymbolAddress("test");
-        *iface = null;
+        ulong baseAddress;
+        if (locator is ICLRRuntimeLocator loc)
+        {
+            locator.GetRuntimeBase(&baseAddress);
+        }
+        else
+        {
+            dataTarget.GetImageBase("coreclr.dll", &baseAddress);
+        }
+
+
+        PEDecoder peDecoder = new(dataTarget, baseAddress);
+        ulong contractDescriptor = peDecoder.GetSymbolAddress("DotNetRuntimeContractDescriptor");
+
+        if (!ContractDescriptorTarget.TryCreate(contractDescriptor, (address, buffer) =>
+        {
+            fixed (byte* bufferPtr = buffer)
+            {
+                return dataTarget.ReadVirtual(address, bufferPtr, (uint)buffer.Length, null);
+            }
+        }, out ContractDescriptorTarget? target))
+        {
+            return -1;
+        }
+
+        Legacy.SOSDacImpl impl = new(target, null);
+        nint ccw = cw.GetOrCreateComInterfaceForObject(impl, CreateComInterfaceFlags.None);
+        Marshal.QueryInterface(ccw, *pIID, out nint ptrToIface);
+        *iface = (void*)ptrToIface;
+
+        // Decrement reference count on ccw because QI increments it?
+        Marshal.Release(ccw);
+
         return 0;
     }
 }

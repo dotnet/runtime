@@ -9,7 +9,7 @@ class CDAC final
 public: // static
     static CDAC Create(uint64_t descriptorAddr, ICorDebugDataTarget *pDataTarget, IUnknown* legacyImpl);
 
-    static void CreateInstance(void* iid, ICLRDataTarget* pLegacyTarget, void** iface, uintptr_t baseAddress);
+    static void CreateInstance(void* iid, ICLRDataTarget* pLegacyTarget, void** iface);
 
 public:
     CDAC() = default;
