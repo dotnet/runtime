@@ -2508,6 +2508,8 @@ bool Compiler::fgTryMorphStructArg(CallArg* arg)
             }
         }
 
+        // Potentially update commas
+        arg->GetNode()->ChangeType((*use)->TypeGet());
         return true;
     }
 
@@ -2780,6 +2782,8 @@ bool Compiler::fgTryMorphStructArg(CallArg* arg)
     DISPTREE(newArg);
 
     *use = newArg;
+    // Potentially update commas
+    arg->GetNode()->ChangeType((*use)->TypeGet());
     return true;
 }
 
