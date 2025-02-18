@@ -194,7 +194,7 @@ namespace System.Reflection
             {
                 if (assembly is null)
                 {
-                    return GetTypeFromDefaultAssemblies(TypeName.Unescape(escapedTypeName), parsedName);
+                    type = GetTypeFromDefaultAssemblies(TypeName.Unescape(escapedTypeName), parsedName);
                 }
                 // We cannot check if it is RuntimeAssembly, because the object might be a RuntimeAssemblyBuilder.
                 else if (AssemblyLoadContext.GetRuntimeAssembly(assembly) is { } ra)
