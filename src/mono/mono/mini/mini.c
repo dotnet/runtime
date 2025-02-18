@@ -2765,14 +2765,14 @@ skip_insert_safepoint (MonoCompile *cfg)
 				 info->d.icall.jit_icall_id == MONO_JIT_ICALL_mono_threads_exit_gc_safe_region_unbalanced)) {
 			if (cfg->verbose_level > 1)
 				printf ("SKIPPING SAFEPOINTS for the polling function icall\n");
-			return true;
+			return TRUE;
 		}
 	}
 
 	if (cfg->method->wrapper_type == MONO_WRAPPER_NATIVE_TO_MANAGED) {
 		if (cfg->verbose_level > 1)
 			printf ("SKIPPING SAFEPOINTS for native-to-managed wrappers.\n");
-		return true;
+		return TRUE;
 	}
 
 	if (cfg->method->wrapper_type == MONO_WRAPPER_OTHER) {
@@ -2782,16 +2782,16 @@ skip_insert_safepoint (MonoCompile *cfg)
 			/* These wrappers shouldn't do any icalls */
 			if (cfg->verbose_level > 1)
 				printf ("SKIPPING SAFEPOINTS for interp-in wrappers.\n");
-			return true;
+			return TRUE;
 		}
 	}
 
 	if (cfg->method->wrapper_type == MONO_WRAPPER_WRITE_BARRIER) {
 		if (cfg->verbose_level > 1)
 			printf ("SKIPPING SAFEPOINTS for write barrier wrappers.\n");
-		return true;
+		return TRUE;
 	}
-	return false;
+	return FALSE;
 }
 
 /*

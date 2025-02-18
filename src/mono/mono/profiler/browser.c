@@ -30,7 +30,7 @@ struct _MonoProfiler {
 };
 
 static MonoProfiler browser_profiler;
-static int desired_sample_interval_ms;
+static double desired_sample_interval_ms;
 static MonoCallSpec callspec;
 
 #ifdef HOST_BROWSER
@@ -41,10 +41,13 @@ struct _ProfilerStackFrame {
 	MonoMethod *method;
 	double start;
 	bool should_record;
-	ProfilerStackFrame *next;
 };
 
-static ProfilerStackFrame *profiler_stack;
+enum { MAX_STACK_DEPTH = 100 };
+static ProfilerStackFrame profiler_stack_frames[MAX_STACK_DEPTH];
+// -1 means empty stack, we keep counting even after MAX_STACK_DEPTH is reached
+static int top_stack_frame_index;
+
 static double last_sample_time;
 static int prev_skips_per_period;
 static int skips_per_period;
@@ -84,25 +87,33 @@ method_enter (MonoProfiler *prof, MonoMethod *method, MonoProfilerCallContext *c
 	sample_skip_counter++;
 	stack_depth++;
 
-	ProfilerStackFrame* frame = g_new0 (ProfilerStackFrame, 1);
-	double now = frame->start = mono_wasm_profiler_now ();
-	frame->should_record = should_record_frame (now);
-	frame->next = profiler_stack;
-	frame->method = method;
-	profiler_stack = frame;
+	top_stack_frame_index++;
+	if (top_stack_frame_index < MAX_STACK_DEPTH) {
+		ProfilerStackFrame *newframe = &profiler_stack_frames[top_stack_frame_index];
+		double now = newframe->start = mono_wasm_profiler_now ();
+		newframe->should_record = should_record_frame (now);
+		newframe->method = method;
+	}
 }
 
 static void
 method_samplepoint (MonoProfiler *prof, MonoMethod *method, MonoProfilerCallContext *ctx)
 {
 	// enter/leave are not balanced, perhaps due to different callspecs between AOT and interpreter
-	g_assert(profiler_stack);
+	g_assert(top_stack_frame_index > 0);
 
 	sample_skip_counter++;
 
-	if (!profiler_stack->should_record)
+	bool is_over = top_stack_frame_index >= MAX_STACK_DEPTH;
+	int top_index = is_over ? MAX_STACK_DEPTH - 1 : top_stack_frame_index;
+	ProfilerStackFrame *top_frame = &profiler_stack_frames[top_index];
+
+	// enter/leave are not balanced, perhaps due to different callspecs between AOT and interpreter
+	g_assert(is_over || top_frame->method == method);
+
+	if (!top_frame->should_record)
 	{
-		profiler_stack->should_record = should_record_frame (mono_wasm_profiler_now ());
+		top_frame->should_record = should_record_frame (mono_wasm_profiler_now ());
 	}
 }
 
@@ -110,27 +121,31 @@ static void
 method_leave (MonoProfiler *prof, MonoMethod *method, MonoProfilerCallContext *ctx)
 {
 	// enter/leave are not balanced, perhaps due to different callspecs between AOT and interpreter
-	g_assert(profiler_stack);
+	g_assert(top_stack_frame_index >= 0);
 	
 	sample_skip_counter++;
 	stack_depth--;
 
-	// pop top frame
-	ProfilerStackFrame *top = profiler_stack;
-	profiler_stack = profiler_stack->next;
-
-	// enter/leave are not balanced, perhaps due to different callspecs between AOT and interpreter
-	g_assert(top->method == method);
+	bool is_over = top_stack_frame_index >= MAX_STACK_DEPTH;
+	int top_index = is_over ? MAX_STACK_DEPTH - 1 : top_stack_frame_index;
+	ProfilerStackFrame *top_frame = &profiler_stack_frames[top_index];
 	
-	if (top->should_record || should_record_frame (mono_wasm_profiler_now ()))
-	{
-		// propagate keep to parent, if any
-		if(profiler_stack)
-			profiler_stack->should_record = TRUE;
+	// enter/leave are not balanced, perhaps due to different callspecs between AOT and interpreter
+	g_assert(is_over || top_frame->method == method);
+	
+	// pop top frame
+	top_stack_frame_index--;
 
-		mono_wasm_profiler_record (method, top->start);
+	if (top_frame->should_record || should_record_frame (mono_wasm_profiler_now ()))
+	{
+		// propagate should_record to parent, if any
+		if(top_index > 0)
+		{
+			profiler_stack_frames[top_index - 1].should_record = TRUE;
+		}
+
+		mono_wasm_profiler_record (method, top_frame->start);
 	}
-	g_free (top);
 }
 
 static void
@@ -209,7 +224,7 @@ parse_arg (const char *arg)
 	}
 	else if (match_option (arg, "interval", &val)) {
 		char *end;
-		desired_sample_interval_ms = strtoul (val, &end, 10);
+		desired_sample_interval_ms = strtod (val, &end);
 	}
 }
 
@@ -293,7 +308,7 @@ mono_profiler_init_browser (const char *desc)
 	}
 
 #ifdef HOST_BROWSER
-	profiler_stack = NULL;
+	top_stack_frame_index = -1;
 	last_sample_time = 0;
 	prev_skips_per_period = 1;
 	skips_per_period = 1;

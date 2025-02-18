@@ -53,7 +53,7 @@ try {
                 // config is loaded and could be tweaked before the rest of the runtime startup sequence
                 config.environmentVariables["MONO_LOG_LEVEL"] = "debug";
                 config.browserProfilerOptions = {
-                    sampleIntervalMs: 5,
+                    sampleIntervalMs: 5.15,
                     callSpec: "N:Sample" // needs to match AOT profile
                 };
             },
