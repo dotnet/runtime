@@ -8548,6 +8548,11 @@ GenTreeConditional* Compiler::gtNewConditionalNode(
     return node;
 }
 
+GenTreeFieldList* Compiler::gtNewFieldList()
+{
+    return new (this, GT_FIELD_LIST) GenTreeFieldList();
+}
+
 GenTreeLclFld* Compiler::gtNewLclFldNode(unsigned lnum, var_types type, unsigned offset, ClassLayout* layout)
 {
     GenTreeLclFld* node = new (this, GT_LCL_FLD) GenTreeLclFld(GT_LCL_FLD, type, lnum, offset, layout);
@@ -30509,6 +30514,30 @@ void ReturnTypeDesc::InitializeReturnType(Compiler*                comp,
 
         INDEBUG(m_inited = true);
     }
+}
+
+//-------------------------------------------------------------------
+// GetReturnFieldOffset:
+//   For the N'th returned register, identified by "index", returns the
+//   starting offset in the struct return type of the data being returned.
+//
+// Arguments:
+//     index - The register whose offset to get
+//
+// Return Value:
+//     Starting offset of data returned in that register.
+//
+unsigned ReturnTypeDesc::GetReturnFieldOffset(unsigned index) const
+{
+    assert(m_regType[index] != TYP_UNKNOWN);
+#if defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64)
+    return m_fieldOffset[index];
+#else
+    unsigned offset = 0;
+    for (unsigned i = 0; i < index; i++)
+        offset += genTypeSize(m_regType[i]);
+    return offset;
+#endif
 }
 
 //-------------------------------------------------------------------

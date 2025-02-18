@@ -1732,6 +1732,14 @@ bool RangeCheck::OptimizeRangeChecks()
                     return madeChanges;
                 }
 
+                if (tree->OperIs(GT_BOUNDS_CHECK))
+                {
+                    // Leave a hint for optRangeCheckCloning to improve the JIT TP.
+                    // NOTE: it doesn't have to be precise and being properly maintained
+                    // during transformations, it's just a hint.
+                    block->SetFlags(BBF_MAY_HAVE_BOUNDS_CHECKS);
+                }
+
                 OptimizeRangeCheck(block, stmt, tree);
             }
 

@@ -4467,13 +4467,7 @@ public:
 #endif
     }
 
-#if defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64)
-    unsigned GetReturnFieldOffset(unsigned index) const
-    {
-        assert(m_regType[index] != TYP_UNKNOWN);
-        return m_fieldOffset[index];
-    }
-#endif
+    unsigned GetReturnFieldOffset(unsigned index) const;
 
     // Get i'th ABI return register
     regNumber GetABIReturnReg(unsigned idx, CorInfoCallConvExtension callConv) const;
