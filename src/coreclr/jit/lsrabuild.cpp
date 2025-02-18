@@ -2326,32 +2326,31 @@ void LinearScan::buildIntervals()
     numPlacedArgLocals = 0;
     placedArgRegs      = RBM_NONE;
 
-    BasicBlock* predBlock = nullptr;
     BasicBlock* prevBlock = nullptr;
 
     // Initialize currentLiveVars to the empty set.  We will set it to the current
     // live-in at the entry to each block (this will include the incoming args on
     // the first block).
     VarSetOps::AssignNoCopy(compiler, currentLiveVars, VarSetOps::MakeEmpty(compiler));
+    const bool floatingPointUsed = compiler->compFloatingPointUsed;
 
     for (block = startBlockSequence(); block != nullptr; block = moveToNextBlock())
     {
         JITDUMP("\nNEW BLOCK " FMT_BB "\n", block->bbNum);
         compiler->compCurBB = block;
 
-        bool predBlockIsAllocated = false;
-        predBlock                 = findPredBlockForLiveIn(block, prevBlock DEBUGARG(&predBlockIsAllocated));
-        if (predBlock != nullptr)
-        {
-            JITDUMP("\n\nSetting " FMT_BB " as the predecessor for determining incoming variable registers of " FMT_BB
-                    "\n",
-                    predBlock->bbNum, block->bbNum);
-            assert(predBlock->bbNum <= bbNumMaxBeforeResolution);
-            blockInfo[block->bbNum].predBBNum = predBlock->bbNum;
-        }
-
         if (localVarsEnregistered)
         {
+            bool              predBlockIsAllocated = false;
+            BasicBlock* const predBlock = findPredBlockForLiveIn(block, prevBlock DEBUGARG(&predBlockIsAllocated));
+            if (predBlock != nullptr)
+            {
+                JITDUMP("\n\nSetting " FMT_BB
+                        " as the predecessor for determining incoming variable registers of " FMT_BB "\n",
+                        predBlock->bbNum, block->bbNum);
+                assert(predBlock->bbNum <= bbNumMaxBeforeResolution);
+                blockInfo[block->bbNum].predBBNum = predBlock->bbNum;
+            }
             VarSetOps::AssignNoCopy(compiler, currentLiveVars,
                                     VarSetOps::Intersection(compiler, registerCandidateVars, block->bbLiveIn));
 
@@ -2410,6 +2409,11 @@ void LinearScan::buildIntervals()
                     }
                 }
             }
+        }
+        else
+        {
+            // If state isn't live across blocks, then reset any global Compiler state.
+            compiler->compFloatingPointUsed = floatingPointUsed;
         }
 
         // Add a dummy RefPosition to mark the block boundary.
@@ -4391,6 +4395,22 @@ int LinearScan::BuildReturn(GenTree* tree)
                 BuildUse(op1, useCandidates);
                 return 1;
             }
+        }
+        else if (!tree->TypeIs(TYP_VOID) && op1->OperIsFieldList())
+        {
+            const ReturnTypeDesc& retDesc = compiler->compRetTypeDesc;
+
+            unsigned regIndex = 0;
+            for (const GenTreeFieldList::Use& use : op1->AsFieldList()->Uses())
+            {
+                GenTree*  tree   = use.GetNode();
+                regNumber retReg = retDesc.GetABIReturnReg(regIndex, compiler->info.compCallConv);
+                BuildUse(tree, genSingleTypeRegMask(retReg));
+
+                regIndex++;
+            }
+
+            return regIndex;
         }
         else
         {

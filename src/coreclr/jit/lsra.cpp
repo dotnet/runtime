@@ -956,7 +956,7 @@ LinearScan::LinearScan(Compiler* theCompiler)
 // Notes:
 //    On return, the blockSequence array contains the blocks in reverse post-order.
 //    This method clears the bbVisitedSet on LinearScan, and when it returns the set
-//    contains all the bbNums for the block.
+//    contains all the bbPostorderNums for the block.
 //
 void LinearScan::setBlockSequence()
 {
@@ -967,30 +967,33 @@ void LinearScan::setBlockSequence()
     bbVisitedSet = BitVecOps::MakeEmpty(traits);
 
     assert((blockSequence == nullptr) && (bbSeqCount == 0));
-
-    compiler->m_dfsTree             = compiler->fgComputeDfs</* useProfile */ true>();
-    FlowGraphDfsTree* const dfsTree = compiler->m_dfsTree;
-    blockSequence                   = new (compiler, CMK_LSRA) BasicBlock*[compiler->fgBBcount];
+    blockSequence = new (compiler, CMK_LSRA) BasicBlock*[compiler->fgBBcount];
 
     if (compiler->opts.OptimizationEnabled())
     {
-        // Ensure loop bodies are compact in the visitation order.
-        compiler->m_loops                  = FlowGraphNaturalLoops::Find(dfsTree);
+        // If optimizations are enabled, allocate blocks in reverse post-order.
+        // This ensures each block's predecessors are visited first.
+        // Also, ensure loop bodies are compact in the visitation order.
+        compiler->m_dfsTree                = compiler->fgComputeDfs</* useProfile */ true>();
+        compiler->m_loops                  = FlowGraphNaturalLoops::Find(compiler->m_dfsTree);
         FlowGraphNaturalLoops* const loops = compiler->m_loops;
-        unsigned                     index = 0;
 
-        auto addToSequence = [this, &index](BasicBlock* block) {
-            blockSequence[index++] = block;
+        auto addToSequence = [this](BasicBlock* block) {
+            blockSequence[bbSeqCount++] = block;
         };
 
-        compiler->fgVisitBlocksInLoopAwareRPO(dfsTree, loops, addToSequence);
+        compiler->fgVisitBlocksInLoopAwareRPO(compiler->m_dfsTree, loops, addToSequence);
     }
     else
     {
-        // TODO: Just use lexical block order in MinOpts
-        for (unsigned i = 0; i < dfsTree->GetPostOrderCount(); i++)
+        // If we aren't optimizing, we won't have any cross-block live registers,
+        // so the order of blocks allocated shouldn't matter.
+        // Just use the linear order.
+        for (BasicBlock* const block : compiler->Blocks())
         {
-            blockSequence[i] = dfsTree->GetPostOrder(dfsTree->GetPostOrderCount() - i - 1);
+            // Give this block a unique post-order number that can be used as a key into bbVisitedSet
+            block->bbPostorderNum       = bbSeqCount;
+            blockSequence[bbSeqCount++] = block;
         }
     }
 
@@ -1094,30 +1097,29 @@ void LinearScan::setBlockSequence()
     };
 
     JITDUMP("Start LSRA Block Sequence: \n");
-    for (unsigned i = 0; i < dfsTree->GetPostOrderCount(); i++)
+    for (unsigned i = 0; i < bbSeqCount; i++)
     {
         visitBlock(blockSequence[i]);
     }
 
-    // If the DFS didn't visit any blocks, add them to the end of blockSequence
-    if (dfsTree->GetPostOrderCount() < compiler->fgBBcount)
+    // If any blocks remain unvisited, add them to the end of blockSequence.
+    // Unvisited blocks are more likely to be at the back of the list, so iterate backwards.
+    for (BasicBlock* block = compiler->fgLastBB; bbSeqCount < compiler->fgBBcount; block = block->Prev())
     {
-        // Unvisited blocks are more likely to be at the back of the list, so iterate backwards
-        unsigned i = dfsTree->GetPostOrderCount();
-        for (BasicBlock* block = compiler->fgLastBB; i < compiler->fgBBcount; block = block->Prev())
+        assert(compiler->opts.OptimizationEnabled());
+        assert(block != nullptr);
+        assert(compiler->m_dfsTree != nullptr);
+
+        if (!compiler->m_dfsTree->Contains(block))
         {
-            assert(block != nullptr);
-            if (!dfsTree->Contains(block))
-            {
-                // Give this block a unique post-order number that can be used as a key into bbVisitedSet
-                block->bbPostorderNum = i;
-                visitBlock(block);
-                blockSequence[i++] = block;
-            }
+            // Give this block a unique post-order number that can be used as a key into bbVisitedSet
+            block->bbPostorderNum = bbSeqCount;
+            visitBlock(block);
+            blockSequence[bbSeqCount++] = block;
         }
     }
 
-    bbSeqCount          = compiler->fgBBcount;
+    assert(bbSeqCount == compiler->fgBBcount);
     blockSequencingDone = true;
 
 #ifdef DEBUG
