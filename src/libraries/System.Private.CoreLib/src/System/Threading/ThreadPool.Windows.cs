@@ -199,7 +199,23 @@ namespace System.Threading
         {
             get
             {
-                return ThreadPool.UseWindowsThreadPool ? WindowsThreadPool.CompletedWorkItemCount : PortableThreadPool.ThreadPoolInstance.CompletedWorkItemCount;
+                long count =
+                    UseWindowsThreadPool
+                        ? WindowsThreadPool.CompletedWorkItemCount
+                        : PortableThreadPool.ThreadPoolInstance.CompletedWorkItemCount;
+
+                // Ensure that the returned value is monotonically increasing
+                long lastCount = s_lastCompletedWorkItemCount;
+                if (count > lastCount)
+                {
+                    s_lastCompletedWorkItemCount = count;
+                }
+                else
+                {
+                    count = lastCount;
+                }
+
+                return count;
             }
         }
 
