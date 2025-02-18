@@ -1693,10 +1693,7 @@ GenTree* Lowering::NewPutArg(GenTreeCall* call, GenTree* arg, CallArg* callArg, 
             const bool               putInIncomingArgArea = call->IsFastTailCall();
 
             putArg = new (comp, GT_PUTARG_STK) GenTreePutArgStk(GT_PUTARG_STK, TYP_VOID, arg, stackSeg.GetStackOffset(),
-#ifdef FEATURE_PUT_STRUCT_ARG_STK
-                                                                stackSeg.GetStackSize(),
-#endif
-                                                                call, putInIncomingArgArea);
+                                                                stackSeg.GetStackSize(), call, putInIncomingArgArea);
         }
     }
 
