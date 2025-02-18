@@ -158,6 +158,7 @@ public class MonoRunner extends Instrumentation
 
                 if (zipEntry.isDirectory()) {
                     file.mkdirs();
+                    continue;
                 }
                 else if (!parent.exists()) {
                     parent.mkdirs();
