@@ -26,8 +26,7 @@
     CALLEE_SAVED_REGISTER(S5) \
     CALLEE_SAVED_REGISTER(S6) \
     CALLEE_SAVED_REGISTER(S7) \
-    CALLEE_SAVED_REGISTER(S8) \
-    CALLEE_SAVED_REGISTER(Tp)
+    CALLEE_SAVED_REGISTER(S8)
 
 #define ENUM_FP_CALLEE_SAVED_REGISTERS() \
     CALLEE_SAVED_REGISTER(F[24]) \
@@ -122,7 +121,6 @@ struct CalleeSavedRegisters {
     INT64 s6;
     INT64 s7;
     INT64 s8;
-    INT64 tp;
 };
 
 //--------------------------------------------------------------------
@@ -340,21 +338,6 @@ struct IntReg
     WORD Mask() const { return 1 << reg; }
 };
 
-struct FloatReg
-{
-    int reg;
-    FloatReg(int reg):reg(reg)
-    {
-        _ASSERTE(0 <= reg && reg < 32);
-    }
-
-    operator int () { return reg; }
-    operator int () const { return reg; }
-    int operator == (FloatReg other) { return reg == other.reg; }
-    int operator != (FloatReg other) { return reg != other.reg; }
-    WORD Mask() const { return 1 << reg; }
-};
-
 struct VecReg
 {
     int reg;
@@ -423,8 +406,6 @@ public:
     void EmitLoadStoreRegPairImm(DWORD flags, VecReg Vt1, VecReg Vt2, IntReg Xn, int offset=0);
 
     void EmitLoadStoreRegImm(DWORD flags, IntReg Rt, IntReg Rn, int offset=0, int log2Size = 3);
-
-    void EmitLoadFloatRegImm(FloatReg ft, IntReg base, int offset);
 };
 
 
@@ -464,7 +445,7 @@ struct HijackArgs
         DWORD64 Ra;
         size_t ReturnAddress;
     };
-    DWORD64 S0, S1, S2, S3, S4, S5, S6, S7, S8, Tp;
+    DWORD64 S0, S1, S2, S3, S4, S5, S6, S7, S8;
     union
     {
         struct {

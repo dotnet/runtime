@@ -195,20 +195,6 @@ CHECK MethodDesc::CheckActivated()
 
 #ifndef DACCESS_COMPILE
 
-//*******************************************************************************
-LoaderAllocator * MethodDesc::GetDomainSpecificLoaderAllocator()
-{
-    if (GetLoaderModule()->IsCollectible())
-    {
-        return GetLoaderAllocator();
-    }
-    else
-    {
-        return ::GetAppDomain()->GetLoaderAllocator();
-    }
-
-}
-
 HRESULT MethodDesc::EnsureCodeDataExists(AllocMemTracker *pamTracker)
 {
     CONTRACTL
@@ -474,19 +460,6 @@ void MethodDesc::GetSigFromMetadata(IMDInternalImport * importer,
 }
 
 //*******************************************************************************
-PCCOR_SIGNATURE MethodDesc::GetSig()
-{
-    WRAPPER_NO_CONTRACT;
-
-    PCCOR_SIGNATURE pSig;
-    DWORD           cSig;
-
-    GetSig(&pSig, &cSig);
-
-    PREFIX_ASSUME(pSig != NULL);
-
-    return pSig;
-}
 
 Signature MethodDesc::GetSignature()
 {
@@ -791,36 +764,6 @@ Instantiation MethodDesc::LoadMethodInstantiation()
 }
 
 //*******************************************************************************
-Module *MethodDesc::GetDefiningModuleForOpenMethod()
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        FORBID_FAULT;
-    }
-    CONTRACTL_END
-
-    Module *pModule = GetMethodTable()->GetDefiningModuleForOpenType();
-    if (pModule != NULL)
-        return pModule;
-
-    if (IsGenericMethodDefinition())
-        return GetModule();
-
-    Instantiation inst = GetMethodInstantiation();
-    for (DWORD i = 0; i < inst.GetNumArgs(); i++)
-    {
-        pModule = inst[i].GetDefiningModuleForOpenType();
-        if (pModule != NULL)
-            return pModule;
-    }
-
-    return NULL;
-}
-
-
-//*******************************************************************************
 BOOL MethodDesc::ContainsGenericVariables()
 {
     CONTRACTL
@@ -1079,7 +1022,7 @@ PCODE MethodDesc::GetNativeCode()
         PCODE pCode = *ppCode;
 
 #ifdef TARGET_ARM
-        if (pCode != NULL)
+        if (pCode != (PCODE)NULL)
             pCode |= THUMB_CODE;
 #endif
         return pCode;
@@ -2349,32 +2292,6 @@ MethodDesc* NonVirtualEntry2MethodDesc(PCODE entryPoint)
 }
 
 //*******************************************************************************
-// convert an entry point into a method desc
-MethodDesc* Entry2MethodDesc(PCODE entryPoint, MethodTable *pMT)
-{
-    CONTRACT(MethodDesc*)
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-        POSTCONDITION(RETVAL->SanityCheck());
-    }
-    CONTRACT_END
-
-    MethodDesc* pMD = NonVirtualEntry2MethodDesc(entryPoint);
-    if (pMD != NULL)
-        RETURN(pMD);
-
-    pMD = VirtualCallStubManagerManager::Entry2MethodDesc(entryPoint, pMT);
-    if (pMD != NULL)
-        RETURN(pMD);
-
-    // We should never get here
-    _ASSERTE(!"Entry2MethodDesc failed");
-    RETURN (NULL);
-}
-
-//*******************************************************************************
 BOOL MethodDesc::IsPointingToPrestub()
 {
     CONTRACTL
@@ -3192,10 +3109,10 @@ BOOL MethodDesc::SetNativeCodeInterlocked(PCODE addr, PCODE pExpected /*=NULL*/)
     if (HasNativeCodeSlot())
     {
 #ifdef TARGET_ARM
-        _ASSERTE(IsThumbCode(addr) || (addr==NULL));
+        _ASSERTE(IsThumbCode(addr) || (addr == (PCODE)NULL));
         addr &= ~THUMB_CODE;
 
-        if (pExpected != NULL)
+        if (pExpected != (PCODE)NULL)
         {
             _ASSERTE(IsThumbCode(pExpected));
             pExpected &= ~THUMB_CODE;
@@ -3781,7 +3698,7 @@ PTR_LoaderAllocator MethodDesc::GetLoaderAllocator()
 }
 
 #if !defined(DACCESS_COMPILE)
-REFLECTMETHODREF MethodDesc::GetStubMethodInfo()
+REFLECTMETHODREF MethodDesc::AllocateStubMethodInfo()
 {
     CONTRACTL
     {

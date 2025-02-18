@@ -24,7 +24,7 @@ short Compiler::mapRegNumToDwarfReg(regNumber reg)
 
     // On RISC-V registers from R0 to F31
     // can be mapped directly to dwarf structure
-    if (reg >= REG_R0 && reg <= REG_F31)
+    if (reg >= REG_INT_FIRST && reg <= REG_FP_LAST)
     {
         dwarfReg = static_cast<short>(reg);
     }
@@ -189,10 +189,10 @@ void Compiler::unwindSaveReg(regNumber reg, int offset)
     else
     {
         // save_freg: 1101110x | xxxxzzzz | zzzzzzzz : save reg f(8 + #X) at [sp + #Z * 8], offset <= 2047
-        assert(REG_F8 == reg || REG_F9 == reg ||    // first legal register: F8
-               (REG_F18 <= reg && reg <= REG_F27)); // last legal register: F27
+        assert(REG_FS0 == reg || REG_FS1 == reg ||   // first legal register: FS0
+               (REG_FS2 <= reg && reg <= REG_FS11)); // last legal register: FS11
 
-        BYTE x = (BYTE)(reg - REG_F8);
+        BYTE x = (BYTE)(reg - REG_FS0);
         assert(0 <= x && x <= 0x13);
         assert(0 <= z && z <= 0xFFF);
 
@@ -597,7 +597,7 @@ void DumpUnwindInfo(Compiler*         comp,
             z = ((DWORD)(b2 & 0xF) << 8) | (DWORD)b3;
 
             printf("    %02X %02X %02X      save_freg X#%u Z#%u (0x%02X); fsd %s, [sp, #%u]\n", b1, b2, b3, x, z, z,
-                   getRegName(REG_F8 + x), z * 8);
+                   getRegName(REG_FS0 + x), z * 8);
         }
 #if 0
         else if (b1 == 0xDE)

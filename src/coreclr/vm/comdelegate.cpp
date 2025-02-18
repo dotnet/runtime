@@ -211,7 +211,7 @@ public:
         {
             const unsigned byteIndex = m_argLocDesc->m_byteStackIndex + m_currentByteStackIndex;
 
-#if !defined(TARGET_OSX) || !defined(TARGET_ARM64)
+#if !defined(TARGET_APPLE) || !defined(TARGET_ARM64)
             index = byteIndex / TARGET_POINTER_SIZE;
             m_currentByteStackIndex += TARGET_POINTER_SIZE;
 
@@ -337,7 +337,7 @@ struct ShuffleGraphNode
 
 BOOL AddNextShuffleEntryToArray(ArgLocDesc sArgSrc, ArgLocDesc sArgDst, SArray<ShuffleEntry> * pShuffleEntryArray, ShuffleComputationType shuffleType)
 {
-#if defined(TARGET_RISCV64)
+#if defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64)
     if (sArgSrc.m_structFields.flags != sArgDst.m_structFields.flags)
     {
         _ASSERT(sArgSrc.m_structFields.flags == FpStruct::UseIntCallConv
@@ -347,7 +347,7 @@ BOOL AddNextShuffleEntryToArray(ArgLocDesc sArgSrc, ArgLocDesc sArgDst, SArray<S
         // calling conventions is handled by IL stubs.
         return FALSE;
     }
-#endif // TARGET_RISCV64
+#endif // TARGET_RISCV64 || TARGET_LOONGARCH64
 
     ShuffleEntry entry;
     ZeroMemory(&entry, sizeof(entry));
@@ -825,7 +825,7 @@ LoaderHeap *DelegateEEClass::GetStubHeap()
     return GetInvokeMethod()->GetLoaderAllocator()->GetStubHeap();
 }
 
-#if defined(TARGET_RISCV64)
+#if defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64)
 static Stub* CreateILDelegateShuffleThunk(MethodDesc* pDelegateMD, bool callTargetWithThis)
 {
     SigTypeContext typeContext(pDelegateMD);
@@ -885,7 +885,7 @@ static Stub* CreateILDelegateShuffleThunk(MethodDesc* pDelegateMD, bool callTarg
 
     return Stub::NewStub(JitILStub(pStubMD), NEWSTUB_FL_SHUFFLE_THUNK);
 }
-#endif // TARGET_RISCV64
+#endif // TARGET_RISCV64 || TARGET_LOONGARCH64
 
 static PCODE SetupShuffleThunk(MethodTable * pDelMT, MethodDesc *pTargetMeth)
 {
@@ -927,12 +927,12 @@ static PCODE SetupShuffleThunk(MethodTable * pDelMT, MethodDesc *pTargetMeth)
     }
     else
     {
-#if defined(TARGET_RISCV64)
+#if defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64)
         pShuffleThunk = CreateILDelegateShuffleThunk(pMD, isInstRetBuff);
 #else
         _ASSERTE(FALSE);
         return (PCODE)NULL;
-#endif // TARGET_RISCV64
+#endif // TARGET_RISCV64 || TARGET_LOONGARCH64
     }
 
     if (!pShuffleThunk)
@@ -1610,7 +1610,7 @@ extern "C" PCODE QCALLTYPE Delegate_AdjustTarget(QCall::ObjectHandleOnStack targ
 
     MethodTable* pMTTarg = target.Get()->GetMethodTable();
 
-    MethodDesc *pMeth = Entry2MethodDesc(method, pMTTarg);
+    MethodDesc *pMeth = NonVirtualEntry2MethodDesc(method);
     _ASSERTE(pMeth);
     _ASSERTE(!pMeth->IsStatic());
 
@@ -1694,7 +1694,7 @@ extern "C" void QCALLTYPE Delegate_Construct(QCall::ObjectHandleOnStack _this, Q
         pMTTarg = target.Get()->GetMethodTable();
 
     MethodTable* pDelMT = refThis->GetMethodTable();
-    MethodDesc* pMethOrig = Entry2MethodDesc(method, pMTTarg);
+    MethodDesc* pMethOrig = NonVirtualEntry2MethodDesc(method);
     MethodDesc* pMeth = pMethOrig;
     _ASSERTE(pMeth != NULL);
 
@@ -1878,13 +1878,7 @@ MethodDesc *COMDelegate::GetMethodDesc(OBJECTREF orDelegate)
             // Must be a normal delegate
             code = thisDel->GetMethodPtr();
 
-            OBJECTREF orThis = thisDel->GetTarget();
-            if (orThis!=NULL)
-            {
-                pMT = orThis->GetMethodTable();
-            }
-
-            pMethodHandle = Entry2MethodDesc(code, pMT);
+            pMethodHandle = NonVirtualEntry2MethodDesc(code);
         }
     }
 
@@ -1971,10 +1965,11 @@ Stub* COMDelegate::GetInvokeMethodStub(EEImplMethodDesc* pMD)
     {
         // Validate the invoke method, which at the moment just means checking the calling convention
 
-        if (*pMD->GetSig() != (IMAGE_CEE_CS_CALLCONV_HASTHIS | IMAGE_CEE_CS_CALLCONV_DEFAULT))
-            COMPlusThrow(kInvalidProgramException);
-
         MetaSig sig(pMD);
+
+        BYTE callConv = sig.GetCallingConventionInfo();
+        if (callConv != (IMAGE_CEE_CS_CALLCONV_HASTHIS | IMAGE_CEE_CS_CALLCONV_DEFAULT))
+            COMPlusThrow(kInvalidProgramException);
 
         BOOL fReturnVal = !sig.IsReturnTypeVoid();
 
@@ -2021,36 +2016,6 @@ Stub* COMDelegate::GetInvokeMethodStub(EEImplMethodDesc* pMD)
         // We do not support asynchronous delegates in CoreCLR
         COMPlusThrow(kPlatformNotSupportedException);
     }
-}
-
-extern "C" void QCALLTYPE Delegate_InternalAlloc(QCall::TypeHandle pType, QCall::ObjectHandleOnStack d)
-{
-    QCALL_CONTRACT;
-
-    BEGIN_QCALL;
-
-    GCX_COOP();
-
-    _ASSERTE(pType.AsTypeHandle().AsMethodTable()->IsDelegate());
-
-    d.Set(pType.AsTypeHandle().AsMethodTable()->Allocate());
-
-    END_QCALL;
-}
-
-extern "C" void QCALLTYPE Delegate_InternalAllocLike(QCall::ObjectHandleOnStack d)
-{
-    QCALL_CONTRACT;
-
-    BEGIN_QCALL;
-
-    GCX_COOP();
-
-    _ASSERTE(d.Get()->GetMethodTable()->IsDelegate());
-
-    d.Set(d.Get()->GetMethodTable()->AllocateNoChecks());
-
-    END_QCALL;
 }
 
 void COMDelegate::ThrowIfInvalidUnmanagedCallersOnlyUsage(MethodDesc* pMD)
@@ -2156,7 +2121,7 @@ extern "C" void QCALLTYPE Delegate_FindMethodHandle(QCall::ObjectHandleOnStack d
 
     MethodDesc* pMD = COMDelegate::GetMethodDesc(d.Get());
     pMD = MethodDesc::FindOrCreateAssociatedMethodDescForReflection(pMD, TypeHandle(pMD->GetMethodTable()), pMD->GetMethodInstantiation());
-    retMethodInfo.Set(pMD->GetStubMethodInfo());
+    retMethodInfo.Set(pMD->AllocateStubMethodInfo());
 
     END_QCALL;
 }

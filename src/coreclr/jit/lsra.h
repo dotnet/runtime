@@ -771,7 +771,8 @@ private:
         LSRA_LIMIT_SMALL_SET = 0x3,
 #if defined(TARGET_AMD64)
         LSRA_LIMIT_UPPER_SIMD_SET = 0x2000,
-        LSRA_LIMIT_MASK           = 0x2003
+        LSRA_LIMIT_EXT_GPR_SET    = 0x4000,
+        LSRA_LIMIT_MASK           = 0x6003
 #else
         LSRA_LIMIT_MASK = 0x3
 #endif
@@ -1037,20 +1038,6 @@ private:
     void buildUpperVectorRestoreRefPosition(
         Interval* lclVarInterval, LsraLocation currentLoc, GenTree* node, bool isUse, unsigned multiRegIdx);
 #endif // FEATURE_PARTIAL_SIMD_CALLEE_SAVE
-
-#if defined(UNIX_AMD64_ABI) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
-    // For AMD64 on SystemV machines. This method
-    // is called as replacement for raUpdateRegStateForArg
-    // that is used on Windows. On System V systems a struct can be passed
-    // partially using registers from the 2 register files.
-    //
-    // For LoongArch64's ABI, a struct can be passed
-    // partially using registers from the 2 register files.
-    void UpdateRegStateForStructArg(LclVarDsc* argDsc);
-#endif // defined(UNIX_AMD64_ABI) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
-
-    // Update reg state for an incoming register argument
-    void updateRegStateForArg(LclVarDsc* argDsc);
 
     inline bool isCandidateLocalRef(GenTree* tree)
     {
@@ -1347,6 +1334,13 @@ private:
         FORCEINLINE void calculateUnassignedSets();
         FORCEINLINE void reset(Interval* interval, RefPosition* refPosition);
         FORCEINLINE void resetMinimal(Interval* interval, RefPosition* refPosition);
+#if defined(TARGET_AMD64)
+        regMaskTP             rbmAllInt;
+        FORCEINLINE regMaskTP get_RBM_ALLINT() const
+        {
+            return this->rbmAllInt;
+        }
+#endif // TARGET_AMD64
 
 #define REG_SEL_DEF(stat, value, shortname, orderSeqId)      FORCEINLINE void try_##stat();
 #define BUSY_REG_SEL_DEF(stat, value, shortname, orderSeqId) REG_SEL_DEF(stat, value, shortname, orderSeqId)
@@ -1423,6 +1417,7 @@ private:
     GenTree*                 getVectorAddrOperand(GenTreeHWIntrinsic* intrinsicTree);
     GenTree*                 getConsecutiveRegistersOperand(const HWIntrinsic intrin, bool* destIsConsecutive);
     GenTreeHWIntrinsic*      getEmbeddedMaskOperand(const HWIntrinsic intrin);
+    GenTreeHWIntrinsic*      getContainedCselOperand(GenTreeHWIntrinsic* intrinsicTree);
 #endif
 
 #ifdef DEBUG
@@ -1611,18 +1606,19 @@ private:
     Interval** localVarIntervals;
 
     // Set of blocks that have been visited.
-    BlockSet bbVisitedSet;
-    void     markBlockVisited(BasicBlock* block)
+    BitVecTraits* traits;
+    BitVec        bbVisitedSet;
+    void          markBlockVisited(BasicBlock* block)
     {
-        BlockSetOps::AddElemD(compiler, bbVisitedSet, block->bbNum);
+        BitVecOps::AddElemD(traits, bbVisitedSet, block->bbPostorderNum);
     }
     void clearVisitedBlocks()
     {
-        BlockSetOps::ClearD(compiler, bbVisitedSet);
+        BitVecOps::ClearD(traits, bbVisitedSet);
     }
     bool isBlockVisited(BasicBlock* block)
     {
-        return BlockSetOps::IsMember(compiler, bbVisitedSet, block->bbNum);
+        return BitVecOps::IsMember(traits, bbVisitedSet, block->bbPostorderNum);
     }
 
 #if DOUBLE_ALIGN
@@ -1639,10 +1635,6 @@ private:
     BasicBlock** blockSequence;
     void         setBlockSequence();
     bool         blockSequencingDone;
-#ifdef DEBUG
-    // LSRA must not change number of blocks and blockEpoch that it initializes at start.
-    unsigned blockEpoch;
-#endif // DEBUG
 
     // Indicates whether the allocation pass has been completed.
     bool allocationPassComplete;
@@ -1943,8 +1935,13 @@ private:
     int          BuildBinaryUses(GenTreeOp* node, SingleTypeRegSet candidates = RBM_NONE);
     int          BuildCastUses(GenTreeCast* cast, SingleTypeRegSet candidates);
 #ifdef TARGET_XARCH
-    int BuildRMWUses(GenTree* node, GenTree* op1, GenTree* op2, SingleTypeRegSet candidates = RBM_NONE);
+    int BuildRMWUses(
+        GenTree* node, GenTree* op1, GenTree* op2, SingleTypeRegSet op1Candidates, SingleTypeRegSet op2Candidates);
     inline SingleTypeRegSet BuildEvexIncompatibleMask(GenTree* tree);
+    inline SingleTypeRegSet BuildApxIncompatibleGPRMask(GenTree*         tree,
+                                                        SingleTypeRegSet candidates = RBM_NONE,
+                                                        bool             isGPR      = false);
+    inline bool             DoesThisUseGPR(GenTree* op);
 #endif // !TARGET_XARCH
     int BuildSelect(GenTreeOp* select);
     // This is the main entry point for building the RefPositions for a node.
@@ -2037,6 +2034,9 @@ private:
     void BuildConsecutiveRegistersForDef(GenTree* treeNode, int fieldCount);
     void BuildHWIntrinsicImmediate(GenTreeHWIntrinsic* intrinsicTree, const HWIntrinsic intrin);
     int  BuildEmbeddedOperandUses(GenTreeHWIntrinsic* embeddedOpNode, GenTree* embeddedDelayFreeOp);
+    int  BuildContainedCselUses(GenTreeHWIntrinsic* containedCselOpNode,
+                                GenTree*            delayFreeOp,
+                                SingleTypeRegSet    candidates);
 #endif // TARGET_ARM64
 #endif // FEATURE_HW_INTRINSICS
 
@@ -2053,6 +2053,10 @@ private:
 #if defined(TARGET_AMD64)
     regMaskTP rbmAllFloat;
     regMaskTP rbmFltCalleeTrash;
+    regMaskTP rbmAllInt;
+    regMaskTP rbmIntCalleeTrash;
+    regNumber regIntLast;
+    bool      isApxSupported;
 
     FORCEINLINE regMaskTP get_RBM_ALLFLOAT() const
     {
@@ -2062,11 +2066,33 @@ private:
     {
         return this->rbmFltCalleeTrash;
     }
+    FORCEINLINE regMaskTP get_RBM_ALLINT() const
+    {
+        return this->rbmAllInt;
+    }
+    FORCEINLINE regMaskTP get_RBM_INT_CALLEE_TRASH() const
+    {
+        return this->rbmIntCalleeTrash;
+    }
+    FORCEINLINE regNumber get_REG_INT_LAST() const
+    {
+        return this->regIntLast;
+    }
+    FORCEINLINE bool getIsApxSupported() const
+    {
+        return this->isApxSupported;
+    }
+#else
+    FORCEINLINE regNumber get_REG_INT_LAST() const
+    {
+        return REG_INT_LAST;
+    }
 #endif // TARGET_AMD64
 
 #if defined(TARGET_XARCH)
-    regMaskTP rbmAllMask;
-    regMaskTP rbmMskCalleeTrash;
+    regMaskTP        rbmAllMask;
+    regMaskTP        rbmMskCalleeTrash;
+    SingleTypeRegSet lowGprRegs;
 
     FORCEINLINE regMaskTP get_RBM_ALLMASK() const
     {

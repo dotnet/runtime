@@ -32,6 +32,7 @@
 #include <openssl/sha.h>
 #include <openssl/ssl.h>
 #include <openssl/tls1.h>
+#include <openssl/ui.h>
 #include <openssl/x509.h>
 #include <openssl/x509v3.h>
 
@@ -312,6 +313,7 @@ extern bool g_libSslUses32BitTime;
     REQUIRED_FUNCTION(CRYPTO_malloc) \
     LEGACY_FUNCTION(CRYPTO_num_locks) \
     LEGACY_FUNCTION(CRYPTO_set_locking_callback) \
+    REQUIRED_FUNCTION(CRYPTO_set_mem_functions) \
     REQUIRED_FUNCTION(d2i_OCSP_RESPONSE) \
     REQUIRED_FUNCTION(d2i_PKCS12_fp) \
     REQUIRED_FUNCTION(d2i_PKCS7) \
@@ -699,6 +701,8 @@ extern bool g_libSslUses32BitTime;
     LIGHTUP_FUNCTION(SSL_verify_client_post_handshake) \
     LIGHTUP_FUNCTION(SSL_set_post_handshake_auth) \
     REQUIRED_FUNCTION(SSL_version) \
+    REQUIRED_FUNCTION(UI_create_method) \
+    REQUIRED_FUNCTION(UI_destroy_method) \
     FALLBACK_FUNCTION(X509_check_host) \
     REQUIRED_FUNCTION(X509_check_purpose) \
     REQUIRED_FUNCTION(X509_cmp_time) \
@@ -858,6 +862,7 @@ extern TYPEOF(OPENSSL_gmtime)* OPENSSL_gmtime_ptr;
 #define CRYPTO_malloc CRYPTO_malloc_ptr
 #define CRYPTO_num_locks CRYPTO_num_locks_ptr
 #define CRYPTO_set_locking_callback CRYPTO_set_locking_callback_ptr
+#define CRYPTO_set_mem_functions CRYPTO_set_mem_functions_ptr
 #define d2i_OCSP_RESPONSE d2i_OCSP_RESPONSE_ptr
 #define d2i_PKCS12_fp d2i_PKCS12_fp_ptr
 #define d2i_PKCS7 d2i_PKCS7_ptr
@@ -1249,6 +1254,8 @@ extern TYPEOF(OPENSSL_gmtime)* OPENSSL_gmtime_ptr;
 #define SSL_set_post_handshake_auth SSL_set_post_handshake_auth_ptr
 #define SSL_version SSL_version_ptr
 #define TLS_method TLS_method_ptr
+#define UI_create_method UI_create_method_ptr
+#define UI_destroy_method UI_destroy_method_ptr
 #define X509_check_host X509_check_host_ptr
 #define X509_check_purpose X509_check_purpose_ptr
 #define X509_cmp_time X509_cmp_time_ptr

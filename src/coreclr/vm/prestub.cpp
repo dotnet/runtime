@@ -21,10 +21,7 @@
 #include "array.h"
 #include "ecall.h"
 #include "virtualcallstub.h"
-
-#ifdef FEATURE_INTERPRETER
-#include "interpreter.h"
-#endif
+#include "../debug/ee/debugger.h"
 
 #ifdef FEATURE_COMINTEROP
 #include "clrtocomcall.h"
@@ -429,6 +426,16 @@ PCODE MethodDesc::PrepareILBasedCode(PrepareCodeConfig* pConfig)
         LOG((LF_CLASSLOADER, LL_INFO1000000,
             "    In PrepareILBasedCode, calling JitCompileCode\n"));
         pCode = JitCompileCode(pConfig);
+#ifdef FEATURE_INTERPRETER
+        if (pConfig->IsInterpreterCode())
+        {
+            AllocMemTracker amt;
+            InterpreterPrecode* pPrecode = Precode::AllocateInterpreterPrecode(pCode, GetLoaderAllocator(), &amt);
+            amt.SuppressRelease();
+            pCode = PINSTRToPCODE(pPrecode->GetEntryPoint());
+            SetNativeCodeInterlocked(pCode);
+        }
+#endif // FEATURE_INTERPRETER
     }
     else
     {
@@ -821,37 +828,20 @@ PCODE MethodDesc::JitCompileCodeLockedEventWrapper(PrepareCodeConfig* pConfig, J
     {
         SString namespaceOrClassName, methodName, methodSignature;
 
-        // Methods that may be interpreted defer this notification until it is certain
-        // we are jitting and not interpreting in CompileMethodWithEtwWrapper.
-        // Some further refactoring could consolidate the notification to always
-        // occur at the point the interpreter does it, but it might even better
-        // to fix the issues that cause us to avoid generating jit notifications
-        // for interpreted methods in the first place. The interpreter does generate
-        // a small stub of native code but no native-IL mapping.
-#ifndef FEATURE_INTERPRETER
         ETW::MethodLog::MethodJitting(this,
             pilHeader,
             &namespaceOrClassName,
             &methodName,
             &methodSignature);
-#endif
 
         pCode = JitCompileCodeLocked(pConfig, pilHeader, pEntry, &sizeOfCode);
 
-        // Interpretted methods skip this notification
-#ifdef FEATURE_INTERPRETER
-        if (Interpreter::InterpretationStubToMethodInfo(pCode) == NULL)
-#endif
-        {
-            // Fire an ETW event to mark the end of JIT'ing
-            ETW::MethodLog::MethodJitted(this,
-                &namespaceOrClassName,
-                &methodName,
-                &methodSignature,
-                pCode,
-                pConfig);
-        }
-
+        ETW::MethodLog::MethodJitted(this,
+            &namespaceOrClassName,
+            &methodName,
+            &methodSignature,
+            pCode,
+            pConfig);
     }
 
 #ifdef PROFILING_SUPPORTED
@@ -896,28 +886,13 @@ PCODE MethodDesc::JitCompileCodeLockedEventWrapper(PrepareCodeConfig* pConfig, J
     }
 #endif // PROFILING_SUPPORTED
 
-#ifdef FEATURE_INTERPRETER
-    bool isJittedMethod = (Interpreter::InterpretationStubToMethodInfo(pCode) == NULL);
-#endif
-
-    // Interpretted methods skip this notification
-#ifdef FEATURE_INTERPRETER
-    if (isJittedMethod)
-#endif
-    {
 #ifdef FEATURE_PERFMAP
-        // Save the JIT'd method information so that perf can resolve JIT'd call frames.
-        PerfMap::LogJITCompiledMethod(this, pCode, sizeOfCode, pConfig);
+    // Save the JIT'd method information so that perf can resolve JIT'd call frames.
+    PerfMap::LogJITCompiledMethod(this, pCode, sizeOfCode, pConfig);
 #endif
-    }
 
-#ifdef FEATURE_INTERPRETER
-    if (isJittedMethod)
-#endif
-    {
-        // The notification will only occur if someone has registered for this method.
-        DACNotifyCompilationFinished(this, pCode);
-    }
+    // The notification will only occur if someone has registered for this method.
+    DACNotifyCompilationFinished(this, pCode);
 
     return pCode;
 }
@@ -1445,11 +1420,18 @@ namespace
 
         DWORD declArgCount;
         IfFailThrow(CorSigUncompressData_EndPtr(pSig1, pEndSig1, &declArgCount));
-
-        // UnsafeAccessors for fields require return types be byref.
-        // This was explicitly checked in TryGenerateUnsafeAccessor().
         if (pSig1 >= pEndSig1)
             ThrowHR(META_E_BAD_SIGNATURE);
+
+        // UnsafeAccessors for fields require return types be byref. However, we first need to
+        // consume any custom modifiers which are prior to the expected ELEMENT_TYPE_BYREF in
+        // the RetType signature (II.23.2.11).
+        _ASSERTE(state.IgnoreCustomModifiers); // We should always ignore custom modifiers for field look-up.
+        MetaSig::ConsumeCustomModifiers(pSig1, pEndSig1);
+        if (pSig1 >= pEndSig1)
+            ThrowHR(META_E_BAD_SIGNATURE);
+
+        // The ELEMENT_TYPE_BYREF was explicitly checked in TryGenerateUnsafeAccessor().
         CorElementType byRefType = CorSigUncompressElementType(pSig1);
         _ASSERTE(byRefType == ELEMENT_TYPE_BYREF);
 
@@ -1497,7 +1479,7 @@ namespace
 
             TokenPairList list { nullptr };
             MetaSig::CompareState state{ &list };
-            state.IgnoreCustomModifiers = false;
+            state.IgnoreCustomModifiers = true;
             if (!DoesFieldMatchUnsafeAccessorDeclaration(cxt, pField, state))
                 continue;
 
@@ -1865,6 +1847,9 @@ PrepareCodeConfig::PrepareCodeConfig(NativeCodeVersion codeVersion, BOOL needsMu
 #ifdef FEATURE_TIERED_COMPILATION
     m_jitSwitchedToOptimized(false),
 #endif
+#ifdef FEATURE_INTERPRETER
+    m_isInterpreterCode(false),
+#endif
     m_nextInSameThread(nullptr)
 {}
 
@@ -2112,11 +2097,11 @@ HRESULT VersionedPrepareCodeConfig::FinishConfiguration()
     // Any code build stages that do just in time configuration should
     // be configured now
 #ifdef FEATURE_REJIT
-    if (m_ilCodeVersion.GetRejitState() != ILCodeVersion::kStateActive)
+    if (m_ilCodeVersion.GetRejitState() != RejitFlags::kStateActive)
     {
         ReJitManager::ConfigureILCodeVersion(m_ilCodeVersion);
     }
-    _ASSERTE(m_ilCodeVersion.GetRejitState() == ILCodeVersion::kStateActive);
+    _ASSERTE(m_ilCodeVersion.GetRejitState() == RejitFlags::kStateActive);
 #endif
 
     return S_OK;
@@ -2551,6 +2536,20 @@ Stub * MakeInstantiatingStubWorker(MethodDesc *pMD)
 }
 #endif // defined(FEATURE_SHARE_GENERIC_CODE)
 
+extern "C" size_t CallDescrWorkerInternalReturnAddressOffset;
+
+bool IsCallDescrWorkerInternalReturnAddress(PCODE pCode)
+{
+    LIMITED_METHOD_CONTRACT;
+#ifdef FEATURE_EH_FUNCLETS
+    size_t CallDescrWorkerInternalReturnAddress = (size_t)CallDescrWorkerInternal + CallDescrWorkerInternalReturnAddressOffset;
+
+    return pCode == CallDescrWorkerInternalReturnAddress;
+#else // FEATURE_EH_FUNCLETS
+    return false;
+#endif // FEATURE_EH_FUNCLETS
+}
+
 //=============================================================================
 // This function generates the real code when from Preemptive mode.
 // It is specifically designed to work with the UnmanagedCallersOnlyAttribute.
@@ -2641,65 +2640,81 @@ extern "C" PCODE STDCALL PreStubWorker(TransitionBlock* pTransitionBlock, Method
         Thread::ObjectRefFlush(CURRENT_THREAD);
 #endif
 
-        FrameWithCookie<PrestubMethodFrame> frame(pTransitionBlock, pMD);
+        PrestubMethodFrame frame(pTransitionBlock, pMD);
         PrestubMethodFrame* pPFrame = &frame;
 
         pPFrame->Push(CURRENT_THREAD);
 
-        INSTALL_MANAGED_EXCEPTION_DISPATCHER;
-        INSTALL_UNWIND_AND_CONTINUE_HANDLER;
-
-        // Make sure the method table is restored, and method instantiation if present
-        pMD->CheckRestore();
-        CONSISTENCY_CHECK(GetAppDomain()->CheckCanExecuteManagedCode(pMD));
-
-        MethodTable* pDispatchingMT = NULL;
-        if (pMD->IsVtableMethod())
+        EX_TRY
         {
-            OBJECTREF curobj = pPFrame->GetThis();
+            bool propagateExceptionToNativeCode = IsCallDescrWorkerInternalReturnAddress(pTransitionBlock->m_ReturnAddress);
 
-            if (curobj != NULL) // Check for virtual function called non-virtually on a NULL object
+            INSTALL_MANAGED_EXCEPTION_DISPATCHER_EX;
+            INSTALL_UNWIND_AND_CONTINUE_HANDLER_EX;
+
+            // Make sure the method table is restored, and method instantiation if present
+            pMD->CheckRestore();
+            CONSISTENCY_CHECK(GetAppDomain()->CheckCanExecuteManagedCode(pMD));
+
+            MethodTable* pDispatchingMT = NULL;
+            if (pMD->IsVtableMethod())
             {
-                pDispatchingMT = curobj->GetMethodTable();
+                OBJECTREF curobj = pPFrame->GetThis();
 
-                if (pDispatchingMT->IsIDynamicInterfaceCastable())
+                if (curobj != NULL) // Check for virtual function called non-virtually on a NULL object
                 {
-                    MethodTable* pMDMT = pMD->GetMethodTable();
-                    TypeHandle objectType(pDispatchingMT);
-                    TypeHandle methodType(pMDMT);
+                    pDispatchingMT = curobj->GetMethodTable();
 
-                    GCStress<cfg_any>::MaybeTrigger();
-                    INDEBUG(curobj = NULL); // curobj is unprotected and CanCastTo() can trigger GC
-                    if (!objectType.CanCastTo(methodType))
+                    if (pDispatchingMT->IsIDynamicInterfaceCastable())
                     {
-                        // Apparently IDynamicInterfaceCastable magic was involved when we chose this method to be called
-                        // that's why we better stick to the MethodTable it belongs to, otherwise
-                        // DoPrestub() will fail not being able to find implementation for pMD in pDispatchingMT.
+                        MethodTable* pMDMT = pMD->GetMethodTable();
+                        TypeHandle objectType(pDispatchingMT);
+                        TypeHandle methodType(pMDMT);
 
-                        pDispatchingMT = pMDMT;
+                        GCStress<cfg_any>::MaybeTrigger();
+                        INDEBUG(curobj = NULL); // curobj is unprotected and CanCastTo() can trigger GC
+                        if (!objectType.CanCastTo(methodType))
+                        {
+                            // Apparently IDynamicInterfaceCastable magic was involved when we chose this method to be called
+                            // that's why we better stick to the MethodTable it belongs to, otherwise
+                            // DoPrestub() will fail not being able to find implementation for pMD in pDispatchingMT.
+
+                            pDispatchingMT = pMDMT;
+                        }
                     }
-                }
 
-                // For value types, the only virtual methods are interface implementations.
-                // Thus pDispatching == pMT because there
-                // is no inheritance in value types.  Note the BoxedEntryPointStubs are shared
-                // between all sharable generic instantiations, so the == test is on
-                // canonical method tables.
+                    // For value types, the only virtual methods are interface implementations.
+                    // Thus pDispatching == pMT because there
+                    // is no inheritance in value types.  Note the BoxedEntryPointStubs are shared
+                    // between all sharable generic instantiations, so the == test is on
+                    // canonical method tables.
 #ifdef _DEBUG
-                MethodTable* pMDMT = pMD->GetMethodTable(); // put this here to see what the MT is in debug mode
-                _ASSERTE(!pMD->GetMethodTable()->IsValueType() ||
-                (pMD->IsUnboxingStub() && (pDispatchingMT->GetCanonicalMethodTable() == pMDMT->GetCanonicalMethodTable())));
+                    MethodTable* pMDMT = pMD->GetMethodTable(); // put this here to see what the MT is in debug mode
+                    _ASSERTE(!pMD->GetMethodTable()->IsValueType() ||
+                    (pMD->IsUnboxingStub() && (pDispatchingMT->GetCanonicalMethodTable() == pMDMT->GetCanonicalMethodTable())));
 #endif // _DEBUG
+                }
             }
-        }
 
-        GCX_PREEMP_THREAD_EXISTS(CURRENT_THREAD);
+            GCX_PREEMP_THREAD_EXISTS(CURRENT_THREAD);
+            {
+                pbRetVal = pMD->DoPrestub(pDispatchingMT, CallerGCMode::Coop);
+            }
+
+            UNINSTALL_UNWIND_AND_CONTINUE_HANDLER_EX(propagateExceptionToNativeCode);
+            UNINSTALL_MANAGED_EXCEPTION_DISPATCHER_EX(propagateExceptionToNativeCode);
+        }
+        EX_CATCH
         {
-            pbRetVal = pMD->DoPrestub(pDispatchingMT, CallerGCMode::Coop);
+            if (g_isNewExceptionHandlingEnabled)
+            {
+                OBJECTHANDLE ohThrowable = CURRENT_THREAD->LastThrownObjectHandle();
+                _ASSERTE(ohThrowable);
+                StackTraceInfo::AppendElement(ohThrowable, 0, (UINT_PTR)pTransitionBlock, pMD, NULL);
+            }
+            EX_RETHROW;
         }
-
-        UNINSTALL_UNWIND_AND_CONTINUE_HANDLER;
-        UNINSTALL_MANAGED_EXCEPTION_DISPATCHER;
+        EX_END_CATCH(SwallowAllExceptions)
 
         {
             HardwareExceptionHolder;
@@ -2717,6 +2732,20 @@ extern "C" PCODE STDCALL PreStubWorker(TransitionBlock* pTransitionBlock, Method
 
     return pbRetVal;
 }
+
+#ifdef FEATURE_INTERPRETER
+extern "C" void STDCALL ExecuteInterpretedMethod(TransitionBlock* pTransitionBlock, TADDR byteCodeAddr)
+{
+    CodeHeader* pCodeHeader = EEJitManager::GetCodeHeaderFromStartAddress(byteCodeAddr);
+
+    EEJitManager *pManager = ExecutionManager::GetEEJitManager();
+    MethodDesc *pMD = pCodeHeader->GetMethodDesc();
+
+    // TODO-Interp: call the interpreter method execution entry point
+    // Argument registers are in the TransitionBlock
+    // The stack arguments are right after the pTransitionBlock
+}
+#endif // FEATURE_INTERPRETER
 
 #ifdef _DEBUG
 //
@@ -3132,7 +3161,7 @@ EXTERN_C PCODE STDCALL ExternalMethodFixupWorker(TransitionBlock * pTransitionBl
     Thread::ObjectRefFlush(CURRENT_THREAD);
 #endif
 
-    FrameWithCookie<ExternalMethodFrame> frame(pTransitionBlock);
+    ExternalMethodFrame frame(pTransitionBlock);
     ExternalMethodFrame * pEMFrame = &frame;
 
 #if defined(TARGET_X86) || defined(TARGET_AMD64)
@@ -3155,8 +3184,10 @@ EXTERN_C PCODE STDCALL ExternalMethodFixupWorker(TransitionBlock * pTransitionBl
 
     pEMFrame->Push(CURRENT_THREAD);         // Push the new ExternalMethodFrame onto the frame stack
 
-    INSTALL_MANAGED_EXCEPTION_DISPATCHER;
-    INSTALL_UNWIND_AND_CONTINUE_HANDLER;
+    bool propagateExceptionToNativeCode = IsCallDescrWorkerInternalReturnAddress(pTransitionBlock->m_ReturnAddress);
+
+    INSTALL_MANAGED_EXCEPTION_DISPATCHER_EX;
+    INSTALL_UNWIND_AND_CONTINUE_HANDLER_EX;
 
     bool fVirtual = false;
     MethodDesc * pMD = NULL;
@@ -3392,11 +3423,14 @@ EXTERN_C PCODE STDCALL ExternalMethodFixupWorker(TransitionBlock * pTransitionBl
 
     // Force a GC on every jit if the stress level is high enough
     GCStress<cfg_any>::MaybeTrigger();
-
+    if (g_externalMethodFixupTraceActiveCount > 0)
+    {
+        g_pDebugger->ExternalMethodFixupNextStep(pCode);
+    }
     // Ready to return
 
-    UNINSTALL_UNWIND_AND_CONTINUE_HANDLER;
-    UNINSTALL_MANAGED_EXCEPTION_DISPATCHER;
+    UNINSTALL_UNWIND_AND_CONTINUE_HANDLER_EX(propagateExceptionToNativeCode);
+    UNINSTALL_MANAGED_EXCEPTION_DISPATCHER_EX(propagateExceptionToNativeCode);
 
     pEMFrame->Pop(CURRENT_THREAD);          // Pop the ExternalMethodFrame from the frame stack
 
@@ -3492,6 +3526,14 @@ static PCODE getHelperForSharedStatic(Module * pModule, CORCOMPILE_FIXUP_BLOB_KI
 
     switch(helpFunc)
     {
+        case CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED2:
+        case CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED2_NOJITOPT:
+        {
+            pMT->EnsureTlsIndexAllocated();
+            pArgs->arg0 = (TADDR)pMT->GetThreadStaticsInfo()->NonGCTlsIndex.GetIndexOffset();
+            break;
+        }
+
         case CORINFO_HELP_GETDYNAMIC_GCTHREADSTATIC_BASE_NOCTOR:
         case CORINFO_HELP_GETDYNAMIC_GCTHREADSTATIC_BASE:
         case CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_NOCTOR:
@@ -3573,17 +3615,6 @@ static PCODE getHelperForStaticBase(Module * pModule, CORCOMPILE_FIXUP_BLOB_KIND
     pHelper = DynamicHelpers::CreateHelper(pModule->GetLoaderAllocator(), (TADDR)pMT, CEEJitInfo::getHelperFtnStatic(helper));
 
     return pHelper;
-}
-
-TADDR GetFirstArgumentRegisterValuePtr(TransitionBlock * pTransitionBlock)
-{
-    TADDR pArgument = (TADDR)pTransitionBlock + TransitionBlock::GetOffsetOfArgumentRegisters();
-#ifdef TARGET_X86
-    // x86 is special as always
-    pArgument += offsetof(ArgumentRegisters, ECX);
-#endif
-
-    return pArgument;
 }
 
 void ProcessDynamicDictionaryLookup(TransitionBlock *           pTransitionBlock,
@@ -4073,7 +4104,7 @@ extern "C" SIZE_T STDCALL DynamicHelperWorker(TransitionBlock * pTransitionBlock
     Thread::ObjectRefFlush(CURRENT_THREAD);
 #endif
 
-    FrameWithCookie<DynamicHelperFrame> frame(pTransitionBlock, frameFlags);
+    DynamicHelperFrame frame(pTransitionBlock, frameFlags);
     DynamicHelperFrame * pFrame = &frame;
 
     pFrame->Push(CURRENT_THREAD);

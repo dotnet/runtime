@@ -26,7 +26,7 @@ namespace ILCompiler
         }
 
         public void AddExportedMethods(IEnumerable<EcmaMethod> methods)
-            => _methods.AddRange(methods.Where(m => m.Module != _context.SystemModule));
+            => _methods.AddRange(methods);
 
         public void EmitExportedMethods()
         {
@@ -41,7 +41,7 @@ namespace ILCompiler
                     foreach (var method in _methods)
                         streamWriter.WriteLine($"   {method.GetUnmanagedCallersOnlyExportName()}");
                 }
-                else if(_context.Target.IsApplePlatform)
+                else if (_context.Target.IsApplePlatform)
                 {
                     foreach (string symbol in _exportSymbols)
                         streamWriter.WriteLine($"_{symbol}");

@@ -6,19 +6,20 @@ using System;
 namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 
 // an opaque handle to a type handle.  See IMetadata.GetMethodTableData
-internal readonly struct TypeHandle
+public readonly struct TypeHandle
 {
-    internal TypeHandle(TargetPointer address)
+    // TODO-Layering: These members should be accessible only to contract implementations.
+    public TypeHandle(TargetPointer address)
     {
         Address = address;
     }
 
-    internal TargetPointer Address { get; }
+    public TargetPointer Address { get; }
 
-    internal bool IsNull => Address == 0;
+    public bool IsNull => Address == 0;
 }
 
-internal enum CorElementType
+public enum CorElementType
 {
     Void = 1,
     Boolean = 2,
@@ -55,14 +56,15 @@ internal enum CorElementType
     Sentinel = 0x41,
 }
 
-internal readonly struct MethodDescHandle
+public readonly struct MethodDescHandle
 {
-    internal MethodDescHandle(TargetPointer address)
+    // TODO-Layering: These members should be accessible only to contract implementations.
+    public MethodDescHandle(TargetPointer address)
     {
         Address = address;
     }
 
-    internal TargetPointer Address { get; }
+    public TargetPointer Address { get; }
 }
 
 public enum ArrayFunctionType
@@ -73,13 +75,14 @@ public enum ArrayFunctionType
     Constructor = 3
 }
 
-internal interface IRuntimeTypeSystem : IContract
+public interface IRuntimeTypeSystem : IContract
 {
     static string IContract.Name => nameof(RuntimeTypeSystem);
 
     #region TypeHandle inspection APIs
     public virtual TypeHandle GetTypeHandle(TargetPointer address) => throw new NotImplementedException();
     public virtual TargetPointer GetModule(TypeHandle typeHandle) => throw new NotImplementedException();
+
     // A canonical method table is either the MethodTable itself, or in the case of a generic instantiation, it is the
     // MethodTable of the prototypical instance.
     public virtual TargetPointer GetCanonicalMethodTable(TypeHandle typeHandle) => throw new NotImplementedException();
@@ -130,7 +133,7 @@ internal interface IRuntimeTypeSystem : IContract
     public virtual bool IsGenericMethodDefinition(MethodDescHandle methodDesc) => throw new NotImplementedException();
     public virtual ReadOnlySpan<TypeHandle> GetGenericMethodInstantiation(MethodDescHandle methodDesc) => throw new NotImplementedException();
 
-    // Return mdTokenNil (0x06000000) if the method doesn't have a token, otherwise return the token of the method
+    // Return mdtMethodDef (0x06000000) if the method doesn't have a token, otherwise return the token of the method
     public virtual uint GetMethodToken(MethodDescHandle methodDesc) => throw new NotImplementedException();
 
     // Return true if a MethodDesc represents an array method
@@ -153,10 +156,24 @@ internal interface IRuntimeTypeSystem : IContract
     // A IL Stub method is also a StoredSigMethodDesc, and a NoMetadataMethod
     public virtual bool IsILStub(MethodDescHandle methodDesc) => throw new NotImplementedException();
 
+    public virtual bool IsCollectibleMethod(MethodDescHandle methodDesc) => throw new NotImplementedException();
+    public virtual bool IsVersionable(MethodDescHandle methodDesc) => throw new NotImplementedException();
+
+    public virtual TargetPointer GetMethodDescVersioningState(MethodDescHandle methodDesc) => throw new NotImplementedException();
+
+    public virtual TargetCodePointer GetNativeCode(MethodDescHandle methodDesc) => throw new NotImplementedException();
+
+    public virtual ushort GetSlotNumber(MethodDescHandle methodDesc) => throw new NotImplementedException();
+
+    public virtual bool HasNativeCodeSlot(MethodDescHandle methodDesc) => throw new NotImplementedException();
+
+    public virtual TargetPointer GetAddressOfNativeCodeSlot(MethodDescHandle methodDesc) => throw new NotImplementedException();
+
+    public virtual TargetPointer GetGCStressCodeCopy(MethodDescHandle methodDesc) => throw new NotImplementedException();
     #endregion MethodDesc inspection APIs
 }
 
-internal struct RuntimeTypeSystem : IRuntimeTypeSystem
+public struct RuntimeTypeSystem : IRuntimeTypeSystem
 {
     // Everything throws NotImplementedException
 }

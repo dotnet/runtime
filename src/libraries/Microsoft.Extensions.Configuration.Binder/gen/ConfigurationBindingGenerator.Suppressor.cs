@@ -48,12 +48,16 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                         ? diagnostic.AdditionalLocations[0]
                         : diagnostic.Location;
 
+                    // The trim analyzer changed from warning on the InvocationExpression to the MemberAccessExpression in https://github.com/dotnet/runtime/pull/110086
+                    // In other words, the warning location went from from `{|Method1(arg1, arg2)|}` to `{|Method1|}(arg1, arg2)`
+                    // To account for this, we need to check if the location is an InvocationExpression or a child of an InvocationExpression.
                     bool shouldSuppressDiagnostic =
                         location.SourceTree is SyntaxTree sourceTree &&
                         sourceTree.GetRoot().FindNode(location.SourceSpan) is SyntaxNode syntaxNode &&
-                        BinderInvocation.IsCandidateSyntaxNode(syntaxNode) &&
+                        (syntaxNode as InvocationExpressionSyntax ?? syntaxNode.Parent as InvocationExpressionSyntax) is InvocationExpressionSyntax invocation &&
+                        BinderInvocation.IsCandidateSyntaxNode(invocation) &&
                         context.GetSemanticModel(sourceTree)
-                            .GetOperation((InvocationExpressionSyntax)syntaxNode, context.CancellationToken) is IInvocationOperation operation &&
+                            .GetOperation(invocation, context.CancellationToken) is IInvocationOperation operation &&
                         BinderInvocation.IsBindingOperation(operation);
 
                     if (shouldSuppressDiagnostic)

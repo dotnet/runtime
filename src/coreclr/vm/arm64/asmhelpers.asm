@@ -21,6 +21,9 @@
 #endif
     IMPORT HijackHandler
     IMPORT ThrowControlForThread
+#ifdef FEATURE_INTERPRETER
+    IMPORT ExecuteInterpretedMethod
+#endif
 
 #ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
     IMPORT  g_sw_ww_table
@@ -36,6 +39,12 @@
     IMPORT  g_highest_address
     IMPORT  g_card_table
     IMPORT  g_dispatch_cache_chain_success_counter
+    IMPORT  g_pGetGCStaticBase
+    IMPORT  g_pGetNonGCStaticBase
+
+    IMPORT g_pPollGC
+    IMPORT g_TrapReturningThreads
+
 #ifdef WRITE_BARRIER_CHECK
     SETALIAS g_GCShadow, ?g_GCShadow@@3PEAEEA
     SETALIAS g_GCShadowEnd, ?g_GCShadowEnd@@3PEAEEA
@@ -44,9 +53,6 @@
     IMPORT $g_GCShadow
     IMPORT $g_GCShadowEnd
 #endif // WRITE_BARRIER_CHECK
-
-    IMPORT JIT_GetDynamicNonGCStaticBase_Portable
-    IMPORT JIT_GetDynamicGCStaticBase_Portable
 
 #ifdef FEATURE_COMINTEROP
     IMPORT CLRToCOMWorker
@@ -429,7 +435,7 @@ NoFloatingPointRetVal
     GBLA ComCallPreStub_ErrorReturnOffset
     GBLA ComCallPreStub_FirstStackAdjust
 
-ComCallPreStub_FrameSize         SETA (SIZEOF__GSCookie + SIZEOF__ComMethodFrame)
+ComCallPreStub_FrameSize         SETA (SIZEOF__ComMethodFrame)
 ComCallPreStub_FirstStackAdjust  SETA (8 + SIZEOF__ArgumentRegisters + 2 * 8) ; x8, reg args , fp & lr already pushed
 ComCallPreStub_StackAlloc        SETA ComCallPreStub_FrameSize - ComCallPreStub_FirstStackAdjust
 ComCallPreStub_StackAlloc        SETA ComCallPreStub_StackAlloc + SIZEOF__FloatArgumentRegisters + 8; 8 for ErrorReturn
@@ -499,7 +505,7 @@ ComCallPreStub_ErrorExit
     GBLA GenericComCallStub_FrameOffset
     GBLA GenericComCallStub_FirstStackAdjust
 
-GenericComCallStub_FrameSize         SETA (SIZEOF__GSCookie + SIZEOF__ComMethodFrame)
+GenericComCallStub_FrameSize         SETA (SIZEOF__ComMethodFrame)
 GenericComCallStub_FirstStackAdjust  SETA (8 + SIZEOF__ArgumentRegisters + 2 * 8)
 GenericComCallStub_StackAlloc        SETA GenericComCallStub_FrameSize - GenericComCallStub_FirstStackAdjust
 GenericComCallStub_StackAlloc        SETA GenericComCallStub_StackAlloc + SIZEOF__FloatArgumentRegisters
@@ -759,8 +765,8 @@ COMToCLRDispatchHelper_RegSetup
         GBLA FaultingExceptionFrame_StackAlloc
         GBLA FaultingExceptionFrame_FrameOffset
 
-FaultingExceptionFrame_StackAlloc         SETA (SIZEOF__GSCookie + SIZEOF__FaultingExceptionFrame)
-FaultingExceptionFrame_FrameOffset        SETA  SIZEOF__GSCookie
+FaultingExceptionFrame_StackAlloc         SETA (SIZEOF__FaultingExceptionFrame)
+FaultingExceptionFrame_FrameOffset        SETA  0
 
         MACRO
         GenerateRedirectedStubWithFrame $STUB, $TARGET
@@ -936,7 +942,6 @@ Fail
     mov x12, x0
 
     EPILOG_WITH_TRANSITION_BLOCK_TAILCALL
-    PATCH_LABEL ExternalMethodFixupPatchLabel
     EPILOG_BRANCH_REG   x12
 
     NESTED_END
@@ -1019,8 +1024,11 @@ Fail
     ret lr
 
 CallHelper1
-    ; Tail call JIT_GetDynamicNonGCStaticBase_Portable
-    b JIT_GetDynamicNonGCStaticBase_Portable
+    ; Tail call GetNonGCStaticBase
+    ldr x0, [x0, #OFFSETOF__DynamicStaticsInfo__m_pMethodTable]
+    adrp     x1, g_pGetNonGCStaticBase
+    ldr      x1, [x1, g_pGetNonGCStaticBase]
+    br       x1
     LEAF_END
 
 ; void* JIT_GetDynamicGCStaticBase(DynamicStaticsInfo *dynamicInfo)
@@ -1034,8 +1042,11 @@ CallHelper1
     ret lr
 
 CallHelper2
-    ; Tail call JIT_GetDynamicGCStaticBase_Portable
-    b JIT_GetDynamicGCStaticBase_Portable
+    ; Tail call GetGCStaticBase
+    ldr x0, [x0, #OFFSETOF__DynamicStaticsInfo__m_pMethodTable]
+    adrp     x1, g_pGetGCStaticBase
+    ldr      x1, [x1, g_pGetGCStaticBase]
+    br       x1
     LEAF_END
 
 ; ------------------------------------------------------------------
@@ -1131,6 +1142,24 @@ __HelperNakedFuncName SETS "$helper":CC:"Naked"
         EPILOG_BRANCH_REG x9
     NESTED_END
 
+    IMPORT JIT_PatchpointWorkerWorkerWithPolicy
+
+    NESTED_ENTRY JIT_Patchpoint
+        PROLOG_WITH_TRANSITION_BLOCK
+
+        add     x0, sp, #__PWTB_TransitionBlock ; TransitionBlock *
+        bl      JIT_PatchpointWorkerWorkerWithPolicy
+
+        EPILOG_WITH_TRANSITION_BLOCK_RETURN
+    NESTED_END
+
+    // first arg register holds iloffset, which needs to be moved to the second register, and the first register filled with NULL
+    LEAF_ENTRY JIT_PartialCompilationPatchpoint
+        mov x1, x0
+        mov x0, #0
+        b JIT_Patchpoint
+    LEAF_END
+
 #endif ; FEATURE_TIERED_COMPILATION
 
     LEAF_ENTRY  JIT_ValidateIndirectCall
@@ -1174,6 +1203,31 @@ __HelperNakedFuncName SETS "$helper":CC:"Naked"
 
 #endif ; FEATURE_SPECIAL_USER_MODE_APC
 
+    LEAF_ENTRY  JIT_PollGC
+        ldr     x9, =g_TrapReturningThreads
+        ldr     w9, [x9]
+        cbnz    w9, JIT_PollGCRarePath
+        ret
+JIT_PollGCRarePath
+        ldr     x9, =g_pPollGC
+        ldr     x9, [x9]
+        br x9
+    LEAF_END
+
+#ifdef FEATURE_INTERPRETER
+    NESTED_ENTRY InterpreterStub
+
+        PROLOG_WITH_TRANSITION_BLOCK
+
+        add         x0, sp, #__PWTB_TransitionBlock ; pTransitionBlock
+        mov         x1, METHODDESC_REGISTER         ; pMethodDesc
+
+        bl          ExecuteInterpretedMethod
+
+        EPILOG_WITH_TRANSITION_BLOCK_RETURN
+
+    NESTED_END
+#endif // FEATURE_INTERPRETER
 
 ; Must be at very end of file
     END

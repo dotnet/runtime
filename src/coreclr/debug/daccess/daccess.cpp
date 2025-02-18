@@ -3245,6 +3245,10 @@ ClrDataAccess::QueryInterface(THIS_
     {
         ifaceRet = static_cast<ISOSDacInterface15*>(this);
     }
+    else if (IsEqualIID(interfaceId, __uuidof(ISOSDacInterface16)))
+    {
+        ifaceRet = static_cast<ISOSDacInterface16*>(this);
+    }
     else
     {
         *iface = NULL;
@@ -5897,8 +5901,8 @@ ClrDataAccess::RawGetMethodName(
     return E_NOINTERFACE;
 
 NameFromMethodDesc:
-    if (methodDesc->GetClassification() == mcDynamic &&
-        !methodDesc->GetSig())
+    if (methodDesc->GetClassification() == mcDynamic
+        && methodDesc->GetSigParser().IsNull())
     {
         return FormatCLRStubName(
             NULL,

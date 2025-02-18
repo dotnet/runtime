@@ -1414,7 +1414,7 @@ mdToken ResolveReflectionNotation(BYTE* dataPtr,
             if(mAsmRefs)
             {
                 mdToken tkResScope = 0;
-                mdToken tk=TokenFromRid(mdtAssemblyRef,1), tkmax=TokenFromRid(mdtAssemblyRef,mAsmRefs);
+                mdToken tk=TokenFromRid(1, mdtAssemblyRef), tkmax=TokenFromRid(mAsmRefs, mdtAssemblyRef);
                 LPCSTR szAsmRefName;
                 // these are dummies
                 const void* pPKT, *pHash;
@@ -1914,7 +1914,7 @@ BYTE* PrettyPrintCABlobValue(PCCOR_SIGNATURE &typePtr,
                 for(n=0; n < numElements; n++)
                 {
                     if(n) appendStr(out," ");
-                    sprintf_s(str, 64, "%.*g", 8, (double)(*((float*)dataPtr)));
+                    sprintf_s(str, 64, "%#.8g", (double)(*((float*)dataPtr)));
                     float df = (float)atof(str);
                     // Must compare as underlying bytes, not floating point otherwise optimizer will
                     // try to enregister and compare 80-bit precision number with 32-bit precision number!!!!
@@ -1933,7 +1933,7 @@ BYTE* PrettyPrintCABlobValue(PCCOR_SIGNATURE &typePtr,
                 {
                     if(n) appendStr(out," ");
                     char *pch;
-                    sprintf_s(str, 64, "%.*g", 17, *((double*)dataPtr));
+                    sprintf_s(str, 64, "%#.17g", *((double*)dataPtr));
                     double df = strtod(str, &pch);
                     // Must compare as underlying bytes, not floating point otherwise optimizer will
                     // try to enregister and compare 80-bit precision number with 64-bit precision number!!!!
@@ -2608,7 +2608,7 @@ void DumpDefaultValue(mdToken tok, __inout __nullterminated char* szString, void
         case ELEMENT_TYPE_R4:
             {
                 char szf[32];
-                sprintf_s(szf, 32, "%.*g", 8, (double)MDDV.m_fltValue);
+                sprintf_s(szf, 32, "%#.8g", (double)MDDV.m_fltValue);
                 float df = (float)atof(szf);
                 // Must compare as underlying bytes, not floating point otherwise optimizer will
                 // try to enregister and compare 80-bit precision number with 32-bit precision number!!!!
@@ -2622,7 +2622,7 @@ void DumpDefaultValue(mdToken tok, __inout __nullterminated char* szString, void
         case ELEMENT_TYPE_R8:
             {
                 char szf[32], *pch;
-                sprintf_s(szf, 32, "%.*g", 17, MDDV.m_dblValue);
+                sprintf_s(szf, 32, "%#.17g", MDDV.m_dblValue);
                 double df = strtod(szf, &pch); //atof(szf);
                 szf[31]=0;
                 // Must compare as underlying bytes, not floating point otherwise optimizer will
@@ -5700,7 +5700,7 @@ void DumpHeader(IMAGE_COR20_HEADER *CORHeader, void* GUICookie)
         sprintf_s(szString,SZSTRING_SIZE,"// Addr. of entry point:           0x%08x", VAL32(pOptHeader->AddressOfEntryPoint));
         printLine(GUICookie,szStr);
         dwAddrOfEntryPoint = VAL32(pOptHeader->AddressOfEntryPoint);
-        dwEntryPointSize = (VAL16(pCOFF->Machine)==IMAGE_FILE_MACHINE_IA64) ? 48 : 12;
+        dwEntryPointSize = 12;
         sprintf_s(szString,SZSTRING_SIZE,"// Base of code:                   0x%08x", VAL32(pOptHeader->BaseOfCode));
         printLine(GUICookie,szStr);
         sprintf_s(szString,SZSTRING_SIZE,"// Image base:                     0x%016I64x", VAL64(pOptHeader->ImageBase));
@@ -6689,11 +6689,7 @@ void DumpEATEntries(void* GUICookie,
                             }
                             else
                             {
-                                ULONGLONG ullTokRVA;
-                                if(pNTHeader64->FileHeader.Machine == IMAGE_FILE_MACHINE_IA64)
-                                    ullTokRVA = VAL64(*((ULONGLONG*)(pCont+8)));
-                                else
-                                    ullTokRVA = VAL64(*((ULONGLONG*)(pCont+2)));
+                                ULONGLONG ullTokRVA = VAL64(*((ULONGLONG*)(pCont+2)));
 
                                 dwTokRVA =(DWORD)(ullTokRVA - VAL64((DWORD)pOptHeader64->ImageBase));
                             }

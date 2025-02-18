@@ -12,7 +12,7 @@ success &= RunTest(DependencyInjectionPattern.Run);
 
 return success ? 100 : 1;
 
-static bool RunTest(Func<int> t, [CallerArgumentExpression("t")] string name = null)
+static bool RunTest(Func<int> t, [CallerArgumentExpression(nameof(t))] string name = null)
 {
     Console.WriteLine($"===== Running test {name} =====");
     bool success = true;

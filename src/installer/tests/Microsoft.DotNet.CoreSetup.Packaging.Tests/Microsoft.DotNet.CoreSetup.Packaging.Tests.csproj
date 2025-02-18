@@ -12,8 +12,6 @@
     <PackageReference Include="System.Formats.Asn1" Version="$(SystemFormatsAsn1Version)" ExcludeAssets="All" />
   </ItemGroup>
 
-  <Import Project="$(RepositoryEngineeringDir)PackageDownloadAndReference.targets" />
-
   <ItemGroup>
     <ProjectReference Include="..\TestUtils\TestUtils.csproj" />
     <OrderProjectReference Include="@(PkgprojProjectToBuild)" />
@@ -33,5 +31,7 @@
       Targets="Build"
       BuildInParallel="$(BuildInParallel)" />
   </Target>
+
+  <Import Project="$(RepositoryEngineeringDir)PackageDownloadAndReference.targets" />
 
 </Project>

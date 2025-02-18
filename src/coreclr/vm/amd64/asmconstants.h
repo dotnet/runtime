@@ -78,8 +78,8 @@ ASMCONSTANTS_C_ASSERT(SIZEOF_CalleeSavedRegisters == sizeof(CalleeSavedRegisters
 ASMCONSTANTS_C_ASSERT(SIZEOF_CalleeSavedRegisters == sizeof(CalleeSavedRegisters));
 #endif
 
-#define SIZEOF_GSCookie                             0x8
-ASMCONSTANTS_C_ASSERT(SIZEOF_GSCookie == sizeof(GSCookie));
+#define FRAMETYPE_InlinedCallFrame 0x1
+ASMCONSTANTS_C_ASSERT(FRAMETYPE_InlinedCallFrame == (int)FrameIdentifier::InlinedCallFrame)
 
 #define               OFFSETOF__Frame____VFN_table  0
 
@@ -185,6 +185,10 @@ ASMCONSTANTS_C_ASSERT(SIZEOF__InterfaceInfo_t
 
 ASMCONSTANTS_C_ASSERT(MethodTableAuxiliaryData::enum_flag_Initialized == 0x1);
 
+#define                OFFSETOF__DynamicStaticsInfo__m_pMethodTable 0x10
+ASMCONSTANTS_C_ASSERT(OFFSETOF__DynamicStaticsInfo__m_pMethodTable
+                    == offsetof(DynamicStaticsInfo, m_pMethodTable));
+
 #define                OFFSETOF__DynamicStaticsInfo__m_pNonGCStatics 0x8
 ASMCONSTANTS_C_ASSERT(OFFSETOF__DynamicStaticsInfo__m_pNonGCStatics
                     == offsetof(DynamicStaticsInfo, m_pNonGCStatics));
@@ -234,8 +238,15 @@ ASMCONSTANTS_C_ASSERT(OFFSETOF__VASigCookie__pNDirectILStub
 
 #if defined(UNIX_AMD64_ABI) && !defined(HOST_WINDOWS)
 // Expression is too complicated, is currently:
-//     (8*6 + 4*2 + 2*6 + 4 + 8*6 + 8*16 + 8 + /*XMM_SAVE_AREA32*/(2*2 + 1*2 + 2 + 4 + 2*2 + 4 + 2*2 + 4*2 + 16*8 + 16*16 + 1*96) + 26*16 + 8 + 8*5 + /*XSTATE*/ + 8 + 8 + /*XSTATE_AVX*/ 16*16 + /*XSTATE_AVX512_KMASK*/ 8*8 + /*XSTATE_AVX512_ZMM_H*/ 32*16 + /*XSTATE_AVX512_ZMM*/ 64*16)
-#define               SIZEOF__CONTEXT                 (3104)
+//     (8*6 + 4*2 + 2*6 + 4 + 8*6 + 8*16 + 8 + 
+//      /*XMM_SAVE_AREA32*/(2*2 + 1*2 + 2 + 4 + 2*2 + 4 + 2*2 + 4*2 + 16*8 + 16*16 + 1*96) + 26*16 + 8 + 8*5 + 
+//      /*XSTATE*/ + 8 + 8 + 
+//      /*XSTATE_AVX*/ 16*16 + 
+//      /*XSTATE_AVX512_KMASK*/ 8*8 + 
+//      /*XSTATE_AVX512_ZMM_H*/ 32*16 + 
+//      /*XSTATE_AVX512_ZMM*/ 64*16 + 
+//      /*XSTATE_APX*/ 8*16)
+#define               SIZEOF__CONTEXT                 (3232)
 #else
 // Expression is too complicated, is currently:
 //     (8*6 + 4*2 + 2*6 + 4 + 8*6 + 8*16 + 8 + /*XMM_SAVE_AREA32*/(2*2 + 1*2 + 2 + 4 + 2*2 + 4 + 2*2 + 4*2 + 16*8 + 16*16 + 1*96) + 26*16 + 8 + 8*5)
@@ -422,7 +433,7 @@ ASMCONSTANTS_C_ASSERT(OFFSET__TEB__ThreadLocalStoragePointer == offsetof(TEB, Th
 #define REDIRECTSTUB_ESTABLISHER_OFFSET_RBP 0
 #define REDIRECTSTUB_RBP_OFFSET_CONTEXT     0x20
 
-#define THROWSTUB_ESTABLISHER_OFFSET_FaultingExceptionFrame 0x30
+#define THROWSTUB_ESTABLISHER_OFFSET_FaultingExceptionFrame 0x20
 
 #ifdef FEATURE_SPECIAL_USER_MODE_APC
 #define OFFSETOF__APC_CALLBACK_DATA__ContextRecord 0x8

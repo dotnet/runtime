@@ -433,7 +433,6 @@ enum CorInfoHelpFunc
     CORINFO_HELP_STOP_FOR_GC,       // Call GC (force a GC)
     CORINFO_HELP_POLL_GC,           // Ask GC if it wants to collect
 
-    CORINFO_HELP_STRESS_GC,         // Force a GC, but then update the JITTED code to be a noop call
     CORINFO_HELP_CHECK_OBJ,         // confirm that ECX is a valid object pointer (debugging only)
 
     /* GC Write barrier support */
@@ -480,6 +479,7 @@ enum CorInfoHelpFunc
     CORINFO_HELP_GETDYNAMIC_GCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED,
     CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED,
     CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED2,
+    CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED2_NOJITOPT,
 
     /* Debugger */
 
@@ -786,7 +786,7 @@ enum CorInfoFlag
 enum CorInfoMethodRuntimeFlags
 {
     CORINFO_FLG_BAD_INLINEE         = 0x00000001, // The method is not suitable for inlining
-    // unused                       = 0x00000002,
+    CORINFO_FLG_INTERPRETER         = 0x00000002, // The method was compiled by the interpreter
     // unused                       = 0x00000004,
     CORINFO_FLG_SWITCHED_TO_MIN_OPT = 0x00000008, // The JIT decided to switch to MinOpt for this method, when it was not requested
     CORINFO_FLG_SWITCHED_TO_OPTIMIZED = 0x00000010, // The JIT decided to switch to tier 1 for this method, when a different tier was requested
@@ -1511,7 +1511,7 @@ struct CORINFO_DEVIRTUALIZATION_INFO
     // - details on the computation done by the jit host
     // - If pResolvedTokenDevirtualizedMethod is not set to NULL and targeting an R2R image
     //   use it as the parameter to getCallInfo
-    // - requiresInstMethodTableArg is set to TRUE if the devirtualized method requires a type handle arg.
+    // - isInstantiatingStub is set to TRUE if the devirtualized method is a generic method instantiating stub
     // - wasArrayInterfaceDevirt is set TRUE for array interface method devirtualization
     //     (in which case the method handle and context will be a generic method)
     //
@@ -1520,7 +1520,7 @@ struct CORINFO_DEVIRTUALIZATION_INFO
     CORINFO_DEVIRTUALIZATION_DETAIL detail;
     CORINFO_RESOLVED_TOKEN          resolvedTokenDevirtualizedMethod;
     CORINFO_RESOLVED_TOKEN          resolvedTokenDevirtualizedUnboxedMethod;
-    bool                            requiresInstMethodTableArg;
+    bool                            isInstantiatingStub;
     bool                            wasArrayInterfaceDevirt;
 };
 
@@ -1650,8 +1650,6 @@ struct CORINFO_EE_INFO
         // Size of the Frame structure when it also contains the secret stub arg
         unsigned    sizeWithSecretStubArg;
 
-        unsigned    offsetOfGSCookie;
-        unsigned    offsetOfFrameVptr;
         unsigned    offsetOfFrameLink;
         unsigned    offsetOfCallSiteSP;
         unsigned    offsetOfCalleeSavedFP;
@@ -2111,6 +2109,14 @@ public:
         bool*                 requiresInstMethodTableArg
         ) = 0;
 
+    // Get the wrapped entry point for an instantiating stub, if possible.
+    // Sets methodArg for method instantiations, classArg for class instantiations.
+    virtual CORINFO_METHOD_HANDLE getInstantiatedEntry(
+        CORINFO_METHOD_HANDLE ftn,
+        CORINFO_METHOD_HANDLE* methodArg,
+        CORINFO_CLASS_HANDLE* classArg
+        ) = 0;
+
     // Given T, return the type of the default Comparer<T>.
     // Returns null if the type can't be determined exactly.
     virtual CORINFO_CLASS_HANDLE getDefaultComparerClass(
@@ -2292,6 +2298,13 @@ public:
             unsigned             index
             ) = 0;
 
+    // Return the type argument of the instantiated generic method,
+    // which is specified by the index
+    virtual CORINFO_CLASS_HANDLE getMethodInstantiationArgument(
+            CORINFO_METHOD_HANDLE ftn,
+            unsigned              index
+            ) = 0;
+
     // Prints the name for a specified class including namespaces and enclosing
     // classes.
     // See printObjectDescription for documentation for the parameters.
@@ -2310,7 +2323,7 @@ public:
             CORINFO_CLASS_HANDLE    cls
             ) = 0;
 
-    // Returns the assembly name of the class "cls", or nullptr if there is none.    
+    // Returns the assembly name of the class "cls", or nullptr if there is none.
     virtual const char* getClassAssemblyName (
             CORINFO_CLASS_HANDLE cls
             ) = 0;
@@ -2361,10 +2374,10 @@ public:
             bool                        fDoubleAlignHint = false
             ) = 0;
 
-    // This is only called for Value classes.  It returns a boolean array
-    // in representing of 'cls' from a GC perspective.  The class is
-    // assumed to be an array of machine words
-    // (of length // getClassSize(cls) / TARGET_POINTER_SIZE),
+    // Returns a boolean array representing 'cls' from a GC perspective.
+    // The class is assumed to be an array of machine words
+    // (of length getClassSize(cls) / TARGET_POINTER_SIZE for value classes
+    // and getHeapClassSize(cls) / TARGET_POINTER_SIZE for reference types),
     // 'gcPtrs' is a pointer to an array of uint8_ts of this length.
     // getClassGClayout fills in this array so that gcPtrs[i] is set
     // to one of the CorInfoGCType values which is the GC type of
@@ -2946,9 +2959,6 @@ public:
             CORINFO_EE_INFO            *pEEInfoOut
             ) = 0;
 
-    // Returns name of the JIT timer log
-    virtual const char16_t *getJitTimeLogFilename() = 0;
-
     /*********************************************************************************/
     //
     // Diagnostic methods
@@ -3338,6 +3348,17 @@ public:
 // So, the value of offset correction is 12
 //
 #define IMAGE_REL_BASED_REL_THUMB_MOV32_PCREL   0x14
+
+//
+// LOONGARCH64 relocation types
+//
+#define IMAGE_REL_LOONGARCH64_PC        0x0003
+#define IMAGE_REL_LOONGARCH64_JIR       0x0004
+
+//
+// RISCV64 relocation types
+//
+#define IMAGE_REL_RISCV64_PC            0x0003
 
 /**********************************************************************************/
 #ifdef TARGET_64BIT

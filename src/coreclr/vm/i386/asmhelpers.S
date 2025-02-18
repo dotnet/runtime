@@ -180,7 +180,7 @@ LOCAL_LABEL(CallDescrWorkerInternalReturnAddress):
 #ifdef _DEBUG
     nop     // This is a tag that we use in an assert.  Fcalls expect to
             // be called from Jitted code or from certain blessed call sites like
-            // this one.  (See HelperMethodFrame::InsureInit)
+            // this one.  (See HelperMethodFrame::EnsureInit)
 #endif
 
     // Save FP return value if necessary
@@ -558,7 +558,6 @@ NESTED_ENTRY DelayLoad_MethodCall, _TEXT, NoHandler
 
     STUB_EPILOG
 
-PATCH_LABEL ExternalMethodFixupPatchLabel
     // Tailcall target
     jmp eax
 
