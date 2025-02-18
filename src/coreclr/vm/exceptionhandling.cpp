@@ -946,26 +946,12 @@ ProcessCLRExceptionNew(IN     PEXCEPTION_RECORD   pExceptionRecord,
 #ifndef HOST_UNIX
     if (!(pExceptionRecord->ExceptionFlags & EXCEPTION_UNWINDING))
     {
-        // If the exception is a breakpoint, but outside of the runtime or managed code,
-        //  let it go.  It is not ours, so someone else will handle it, or we'll see
-        //  it again as an unhandled exception.
+        // If the exception is a breakpoint, let it go. The managed exception handling
+        // doesn't process breakpoints.
         if ((pExceptionRecord->ExceptionCode == STATUS_BREAKPOINT) ||
             (pExceptionRecord->ExceptionCode == STATUS_SINGLE_STEP))
         {
-            // It is a breakpoint; is it from the runtime or managed code?
-            PCODE ip = GetIP(pContextRecord); // IP of the fault.
-
-            BOOL fExternalException;
-
-            fExternalException = (!ExecutionManager::IsManagedCode(ip) &&
-                                  !IsIPInModule(GetClrModuleBase(), ip));
-
-            if (fExternalException)
-            {
-                // The breakpoint was not ours.  Someone else can handle it.  (Or if not, we'll get it again as
-                //  an unhandled exception.)
-                return ExceptionContinueSearch;
-            }
+            return ExceptionContinueSearch;
         }
 
         // Failfast if exception indicates corrupted process state
