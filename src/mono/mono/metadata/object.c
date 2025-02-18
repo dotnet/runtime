@@ -605,8 +605,12 @@ retry_top:
 		 * throw tie for the type.
 		 */
 		if (exc && mono_object_class (exc) == mono_defaults.threadabortexception_class) {
+#ifndef DISABLE_THREADS
 			pending_tae = TRUE;
 			mono_thread_resume_interruption (FALSE);
+#else // DISABLE_THREADS
+			g_assert_not_reached ();
+#endif // DISABLE_THREADS
 		}
 	} else {
 		/* this just blocks until the initializing thread is done */

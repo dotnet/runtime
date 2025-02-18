@@ -2422,8 +2422,12 @@ mono_handle_exception_internal (MonoContext *ctx, MonoObject *obj, gboolean resu
 							}
 						}
 						if (is_outside) {
+#ifndef DISABLE_THREADS
 							jit_tls->handler_block = NULL;
 							mono_thread_resume_interruption (TRUE); /*We ignore the exception here, it will be raised later*/
+#else // DISABLE_THREADS
+							g_assert_not_reached ();
+#endif // DISABLE_THREADS
 						}
 					}
 

@@ -282,16 +282,14 @@ enum {
 	ABORT_PROT_BLOCK_MASK = (((1 << ABORT_PROT_BLOCK_BITS) - 1) << ABORT_PROT_BLOCK_SHIFT)
 };
 
+#ifndef DISABLE_THREADS
 static int
 mono_thread_get_abort_prot_block_count (MonoInternalThread *thread)
 {
-#ifndef DISABLE_THREADS
 	gsize state = thread->thread_state;
 	return (state & ABORT_PROT_BLOCK_MASK) >> ABORT_PROT_BLOCK_SHIFT;
-#else
-	return 0;
-#endif
 }
+#endif
 
 gboolean
 mono_threads_is_current_thread_in_protected_block (void)
@@ -335,10 +333,10 @@ mono_threads_begin_abort_protected_block (void)
 #endif
 }
 
+#ifndef DISABLE_THREADS
 static gboolean
 mono_thread_state_has_interruption (gsize state)
 {
-#ifndef DISABLE_THREADS
 	/* pending exception, self abort */
 	if (state & INTERRUPT_SYNC_REQUESTED_BIT)
 		return TRUE;
@@ -347,9 +345,9 @@ mono_thread_state_has_interruption (gsize state)
 	if ((state & INTERRUPT_ASYNC_REQUESTED_BIT) && !(state & ABORT_PROT_BLOCK_MASK))
 		return TRUE;
 
-#endif
 	return FALSE;
 }
+#endif
 
 gboolean
 mono_threads_end_abort_protected_block (void)
@@ -382,17 +380,15 @@ mono_threads_end_abort_protected_block (void)
 #endif
 }
 
+#ifndef DISABLE_THREADS
 static gboolean
 mono_thread_get_interruption_requested (MonoInternalThread *thread)
 {
-#ifndef DISABLE_THREADS
 	gsize state = thread->thread_state;
 
 	return mono_thread_state_has_interruption (state);
-#else
-	return FALSE;
-#endif
 }
+#endif
 
 /*
  * Returns TRUE is there was a state change
@@ -448,7 +444,7 @@ mono_thread_set_interruption_requested (MonoInternalThread *thread)
 	/* Normally synchronous interruptions can bypass abort protection. */
 	return mono_thread_set_interruption_requested_flags (thread, sync);
 #else
-	return FALSE;
+	g_assert_not_reached ();
 #endif
 }
 
@@ -468,7 +464,7 @@ mono_thread_set_self_interruption_respect_abort_prot (void)
 	 * which is unusual. */
 	return mono_thread_set_interruption_requested_flags (thread, FALSE);
 #else
-	return FALSE;
+	g_assert_not_reached ();
 #endif
 }
 
@@ -501,7 +497,7 @@ mono_thread_set_interruption_requested_flags (MonoInternalThread *thread, gboole
 
 	return sync || !(new_state & ABORT_PROT_BLOCK_MASK);
 #else
-	return FALSE;
+	g_assert_not_reached ();
 #endif
 }
 
@@ -3752,7 +3748,7 @@ mono_thread_request_interruption_internal (gboolean running_managed, MonoExcepti
 	}
 	return mono_thread_execute_interruption (pexc);
 #else // DISABLE_THREADS
-	return FALSE;
+	g_assert_not_reached ();
 #endif
 }
 
@@ -3796,6 +3792,8 @@ mono_thread_resume_interruption (gboolean exec)
 
 	if (exec) // Ignore the exception here, it will be raised later.
 		mono_thread_execute_interruption_void ();
+#else
+	g_assert_not_reached ();
 #endif
 }
 
