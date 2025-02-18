@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -24,14 +23,11 @@ namespace System.Net.WebSockets.Client.Tests
         protected override bool UseHttpClient => true;
     }
 
-    public class CancelTest : ClientWebSocketTestBase
+    public abstract class CancelTestBase : ClientWebSocketTestBase
     {
-        public CancelTest(ITestOutputHelper output) : base(output) { }
+        public CancelTestBase(ITestOutputHelper output) : base(output) { }
 
-        [OuterLoop("Uses external servers", typeof(PlatformDetection), nameof(PlatformDetection.LocalEchoServerIsNotAvailable))]
-        [ConditionalTheory(nameof(WebSocketsSupported)), MemberData(nameof(EchoServers))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/83579", typeof(PlatformDetection), nameof(PlatformDetection.IsNodeJS))]
-        public async Task ConnectAsync_Cancel_ThrowsCancellationException(Uri server)
+        protected async Task RunClient_ConnectAsync_Cancel_ThrowsCancellationException(Uri server)
         {
             using (var cws = new ClientWebSocket())
             {
@@ -45,9 +41,7 @@ namespace System.Net.WebSockets.Client.Tests
             }
         }
 
-        [OuterLoop("Uses external servers", typeof(PlatformDetection), nameof(PlatformDetection.LocalEchoServerIsNotAvailable))]
-        [ConditionalTheory(nameof(WebSocketsSupported)), MemberData(nameof(EchoServers))]
-        public async Task SendAsync_Cancel_Success(Uri server)
+        protected async Task RunClient_SendAsync_Cancel_Success(Uri server)
         {
             await TestCancellation((cws) =>
             {
@@ -60,9 +54,7 @@ namespace System.Net.WebSockets.Client.Tests
             }, server);
         }
 
-        [OuterLoop("Uses external servers", typeof(PlatformDetection), nameof(PlatformDetection.LocalEchoServerIsNotAvailable))]
-        [ConditionalTheory(nameof(WebSocketsSupported)), MemberData(nameof(EchoServers))]
-        public async Task ReceiveAsync_Cancel_Success(Uri server)
+        protected async Task RunClient_ReceiveAsync_Cancel_Success(Uri server)
         {
             await TestCancellation(async (cws) =>
             {
@@ -82,9 +74,7 @@ namespace System.Net.WebSockets.Client.Tests
             }, server);
         }
 
-        [OuterLoop("Uses external servers", typeof(PlatformDetection), nameof(PlatformDetection.LocalEchoServerIsNotAvailable))]
-        [ConditionalTheory(nameof(WebSocketsSupported)), MemberData(nameof(EchoServers))]
-        public async Task CloseAsync_Cancel_Success(Uri server)
+        protected async Task RunClient_CloseAsync_Cancel_Success(Uri server)
         {
             await TestCancellation(async (cws) =>
             {
@@ -104,9 +94,7 @@ namespace System.Net.WebSockets.Client.Tests
             }, server);
         }
 
-        [OuterLoop("Uses external servers", typeof(PlatformDetection), nameof(PlatformDetection.LocalEchoServerIsNotAvailable))]
-        [ConditionalTheory(nameof(WebSocketsSupported)), MemberData(nameof(EchoServers))]
-        public async Task CloseOutputAsync_Cancel_Success(Uri server)
+        protected async Task RunClient_CloseOutputAsync_Cancel_Success(Uri server)
         {
             await TestCancellation(async (cws) =>
             {
@@ -127,9 +115,7 @@ namespace System.Net.WebSockets.Client.Tests
             }, server);
         }
 
-        [OuterLoop("Uses external servers", typeof(PlatformDetection), nameof(PlatformDetection.LocalEchoServerIsNotAvailable))]
-        [ConditionalTheory(nameof(WebSocketsSupported)), MemberData(nameof(EchoServers))]
-        public async Task ReceiveAsync_CancelThenReceive_ThrowsOperationCanceledException(Uri server)
+        protected async Task RunClient_ReceiveAsync_CancelThenReceive_ThrowsOperationCanceledException(Uri server)
         {
             using (ClientWebSocket cws = await GetConnectedWebSocket(server, TimeOutMilliseconds, _output))
             {
@@ -143,9 +129,7 @@ namespace System.Net.WebSockets.Client.Tests
             }
         }
 
-        [OuterLoop("Uses external servers", typeof(PlatformDetection), nameof(PlatformDetection.LocalEchoServerIsNotAvailable))]
-        [ConditionalTheory(nameof(WebSocketsSupported)), MemberData(nameof(EchoServers))]
-        public async Task ReceiveAsync_ReceiveThenCancel_ThrowsOperationCanceledException(Uri server)
+        protected async Task RunClient_ReceiveAsync_ReceiveThenCancel_ThrowsOperationCanceledException(Uri server)
         {
             using (ClientWebSocket cws = await GetConnectedWebSocket(server, TimeOutMilliseconds, _output))
             {
@@ -159,9 +143,7 @@ namespace System.Net.WebSockets.Client.Tests
             }
         }
 
-        [OuterLoop("Uses external servers", typeof(PlatformDetection), nameof(PlatformDetection.LocalEchoServerIsNotAvailable))]
-        [ConditionalTheory(nameof(WebSocketsSupported)), MemberData(nameof(EchoServers))]
-        public async Task ReceiveAsync_AfterCancellationDoReceiveAsync_ThrowsWebSocketException(Uri server)
+        protected async Task RunClient_ReceiveAsync_AfterCancellationDoReceiveAsync_ThrowsWebSocketException(Uri server)
         {
             using (ClientWebSocket cws = await GetConnectedWebSocket(server, TimeOutMilliseconds, _output))
             {
@@ -180,5 +162,45 @@ namespace System.Net.WebSockets.Client.Tests
                     ex.Message);
             }
         }
+    }
+
+    [OuterLoop("Uses external servers", typeof(PlatformDetection), nameof(PlatformDetection.LocalEchoServerIsNotAvailable))]
+    [ConditionalClass(typeof(ClientWebSocketTestBase), nameof(WebSocketsSupported))]
+    public class CancelTest : CancelTestBase
+    {
+        public CancelTest(ITestOutputHelper output) : base(output) { }
+
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/83579", typeof(PlatformDetection), nameof(PlatformDetection.IsNodeJS))]
+        [Theory, MemberData(nameof(EchoServers))]
+        public Task ConnectAsync_Cancel_ThrowsCancellationException(Uri server)
+            => RunClient_ConnectAsync_Cancel_ThrowsCancellationException(server);
+
+        [Theory, MemberData(nameof(EchoServers))]
+        public Task SendAsync_Cancel_Success(Uri server)
+            => RunClient_SendAsync_Cancel_Success(server);
+
+        [Theory, MemberData(nameof(EchoServers))]
+        public Task ReceiveAsync_Cancel_Success(Uri server)
+            => RunClient_ReceiveAsync_Cancel_Success(server);
+
+        [Theory, MemberData(nameof(EchoServers))]
+        public Task CloseAsync_Cancel_Success(Uri server)
+            => RunClient_CloseAsync_Cancel_Success(server);
+
+        [Theory, MemberData(nameof(EchoServers))]
+        public Task CloseOutputAsync_Cancel_Success(Uri server)
+            => RunClient_CloseOutputAsync_Cancel_Success(server);
+
+        [Theory, MemberData(nameof(EchoServers))]
+        public Task ReceiveAsync_CancelThenReceive_ThrowsOperationCanceledException(Uri server)
+            => RunClient_ReceiveAsync_CancelThenReceive_ThrowsOperationCanceledException(server);
+
+        [Theory, MemberData(nameof(EchoServers))]
+        public Task ReceiveAsync_ReceiveThenCancel_ThrowsOperationCanceledException(Uri server)
+            => RunClient_ReceiveAsync_ReceiveThenCancel_ThrowsOperationCanceledException(server);
+
+        [Theory, MemberData(nameof(EchoServers))]
+        public Task ReceiveAsync_AfterCancellationDoReceiveAsync_ThrowsWebSocketException(Uri server)
+            => RunClient_ReceiveAsync_AfterCancellationDoReceiveAsync_ThrowsWebSocketException(server);
     }
 }

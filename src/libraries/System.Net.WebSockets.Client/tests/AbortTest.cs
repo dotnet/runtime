@@ -1,9 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Collections.Generic;
-using System.Net.Http;
-using System.Net.Test.Common;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -26,14 +23,11 @@ namespace System.Net.WebSockets.Client.Tests
         protected override bool UseHttpClient => true;
     }
 
-    public class AbortTest : ClientWebSocketTestBase
+    public abstract class AbortTestBase : ClientWebSocketTestBase
     {
-        public AbortTest(ITestOutputHelper output) : base(output) { }
+        public AbortTestBase(ITestOutputHelper output) : base(output) { }
 
-
-        [OuterLoop("Uses external servers", typeof(PlatformDetection), nameof(PlatformDetection.LocalEchoServerIsNotAvailable))]
-        [ConditionalTheory(nameof(WebSocketsSupported)), MemberData(nameof(EchoServers))]
-        public async Task Abort_ConnectAndAbort_ThrowsWebSocketExceptionWithmessage(Uri server)
+        protected async Task RunClient_Abort_ConnectAndAbort_ThrowsWebSocketExceptionWithMessage(Uri server)
         {
             using (var cws = new ClientWebSocket())
             {
@@ -53,9 +47,7 @@ namespace System.Net.WebSockets.Client.Tests
             }
         }
 
-        [OuterLoop("Uses external servers", typeof(PlatformDetection), nameof(PlatformDetection.LocalEchoServerIsNotAvailable))]
-        [ConditionalTheory(nameof(WebSocketsSupported)), MemberData(nameof(EchoServers))]
-        public async Task Abort_SendAndAbort_Success(Uri server)
+        protected async Task RunClient_Abort_SendAndAbort_Success(Uri server)
         {
             await TestCancellation(async (cws) =>
             {
@@ -73,9 +65,7 @@ namespace System.Net.WebSockets.Client.Tests
             }, server);
         }
 
-        [OuterLoop("Uses external servers", typeof(PlatformDetection), nameof(PlatformDetection.LocalEchoServerIsNotAvailable))]
-        [ConditionalTheory(nameof(WebSocketsSupported)), MemberData(nameof(EchoServers))]
-        public async Task Abort_ReceiveAndAbort_Success(Uri server)
+        protected async Task RunClient_Abort_ReceiveAndAbort_Success(Uri server)
         {
             await TestCancellation(async (cws) =>
             {
@@ -97,9 +87,7 @@ namespace System.Net.WebSockets.Client.Tests
             }, server);
         }
 
-        [OuterLoop("Uses external servers", typeof(PlatformDetection), nameof(PlatformDetection.LocalEchoServerIsNotAvailable))]
-        [ConditionalTheory(nameof(WebSocketsSupported)), MemberData(nameof(EchoServers))]
-        public async Task Abort_CloseAndAbort_Success(Uri server)
+        protected async Task RunClient_Abort_CloseAndAbort_Success(Uri server)
         {
             await TestCancellation(async (cws) =>
             {
@@ -121,9 +109,7 @@ namespace System.Net.WebSockets.Client.Tests
             }, server);
         }
 
-        [OuterLoop("Uses external servers", typeof(PlatformDetection), nameof(PlatformDetection.LocalEchoServerIsNotAvailable))]
-        [ConditionalTheory(nameof(WebSocketsSupported)), MemberData(nameof(EchoServers))]
-        public async Task ClientWebSocket_Abort_CloseOutputAsync(Uri server)
+        protected async Task RunClient_ClientWebSocket_Abort_CloseOutputAsync(Uri server)
         {
             await TestCancellation(async (cws) =>
             {
@@ -144,5 +130,32 @@ namespace System.Net.WebSockets.Client.Tests
                 await t;
             }, server);
         }
+    }
+
+    [OuterLoop("Uses external servers", typeof(PlatformDetection), nameof(PlatformDetection.LocalEchoServerIsNotAvailable))]
+    [ConditionalClass(typeof(ClientWebSocketTestBase), nameof(WebSocketsSupported))]
+    public class AbortTest : AbortTestBase
+    {
+        public AbortTest(ITestOutputHelper output) : base(output) { }
+
+        [Theory, MemberData(nameof(EchoServers))]
+        public Task Abort_ConnectAndAbort_ThrowsWebSocketExceptionWithMessage(Uri server)
+            => RunClient_Abort_ConnectAndAbort_ThrowsWebSocketExceptionWithMessage(server);
+
+        [Theory, MemberData(nameof(EchoServers))]
+        public Task Abort_SendAndAbort_Success(Uri server)
+            => RunClient_Abort_SendAndAbort_Success(server);
+
+        [Theory, MemberData(nameof(EchoServers))]
+        public Task Abort_ReceiveAndAbort_Success(Uri server)
+            => RunClient_Abort_ReceiveAndAbort_Success(server);
+
+        [Theory, MemberData(nameof(EchoServers))]
+        public Task Abort_CloseAndAbort_Success(Uri server)
+            => RunClient_Abort_CloseAndAbort_Success(server);
+
+        [Theory, MemberData(nameof(EchoServers))]
+        public Task ClientWebSocket_Abort_CloseOutputAsync(Uri server)
+            => RunClient_ClientWebSocket_Abort_CloseOutputAsync(server);
     }
 }

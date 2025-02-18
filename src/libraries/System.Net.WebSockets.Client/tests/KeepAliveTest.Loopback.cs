@@ -1,11 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Collections.Generic;
-using System.Net.Test.Common;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Threading.Channels;
 
 using Xunit;
 using Xunit.Abstractions;
@@ -35,7 +32,6 @@ namespace System.Net.WebSockets.Client.Tests
 
             var options = new LoopbackWebSocketServer.Options(HttpVersion, useSsl, GetInvoker())
             {
-                DisposeServerWebSocket = true,
                 DisposeClientWebSocket = true,
                 ConfigureClientOptions = clientOptions =>
                 {

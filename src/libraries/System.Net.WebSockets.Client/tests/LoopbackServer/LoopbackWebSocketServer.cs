@@ -145,6 +145,7 @@ namespace System.Net.WebSockets.Client.Tests
             public bool DisposeClientWebSocket { get; set; }
             public bool DisposeHttpInvoker { get; set; }
             public bool ManualServerHandshakeResponse { get; set; }
+            public bool IgnoreServerErrors { get; set; }
             public Action<ClientWebSocketOptions>? ConfigureClientOptions { get; set; }
         }
     }

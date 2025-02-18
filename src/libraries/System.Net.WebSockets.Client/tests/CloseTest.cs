@@ -2,13 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
-using System.Diagnostics;
-using System.Net.Http;
 using System.Net.Test.Common;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Linq;
 
 using Xunit;
 using Xunit.Abstractions;
@@ -29,15 +26,11 @@ namespace System.Net.WebSockets.Client.Tests
         protected override bool UseHttpClient => true;
     }
 
-    public class CloseTest : ClientWebSocketTestBase
+    public abstract class CloseTestBase : ClientWebSocketTestBase
     {
-        public CloseTest(ITestOutputHelper output) : base(output) { }
+        public CloseTestBase(ITestOutputHelper output) : base(output) { }
 
-
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/28957", typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
-        [OuterLoop("Uses external servers", typeof(PlatformDetection), nameof(PlatformDetection.LocalEchoServerIsNotAvailable))]
-        [ConditionalTheory(nameof(WebSocketsSupported)), MemberData(nameof(EchoServersAndBoolean))]
-        public async Task CloseAsync_ServerInitiatedClose_Success(Uri server, bool useCloseOutputAsync)
+        protected async Task RunClient_CloseAsync_ServerInitiatedClose_Success(Uri server, bool useCloseOutputAsync)
         {
             const string shutdownWebSocketMetaCommand = ".shutdown";
 
@@ -84,9 +77,7 @@ namespace System.Net.WebSockets.Client.Tests
             }
         }
 
-        [OuterLoop("Uses external servers", typeof(PlatformDetection), nameof(PlatformDetection.LocalEchoServerIsNotAvailable))]
-        [ConditionalTheory(nameof(WebSocketsSupported)), MemberData(nameof(EchoServers))]
-        public async Task CloseAsync_ClientInitiatedClose_Success(Uri server)
+        protected async Task RunClient_CloseAsync_ClientInitiatedClose_Success(Uri server)
         {
             using (ClientWebSocket cws = await GetConnectedWebSocket(server, TimeOutMilliseconds, _output))
             {
@@ -106,9 +97,7 @@ namespace System.Net.WebSockets.Client.Tests
             }
         }
 
-        [OuterLoop("Uses external servers", typeof(PlatformDetection), nameof(PlatformDetection.LocalEchoServerIsNotAvailable))]
-        [ConditionalTheory(nameof(WebSocketsSupported)), MemberData(nameof(EchoServers))]
-        public async Task CloseAsync_CloseDescriptionIsMaxLength_Success(Uri server)
+        protected async Task RunClient_CloseAsync_CloseDescriptionIsMaxLength_Success(Uri server)
         {
             string closeDescription = new string('C', CloseDescriptionMaxLength);
 
@@ -120,9 +109,7 @@ namespace System.Net.WebSockets.Client.Tests
             }
         }
 
-        [OuterLoop("Uses external servers", typeof(PlatformDetection), nameof(PlatformDetection.LocalEchoServerIsNotAvailable))]
-        [ConditionalTheory(nameof(WebSocketsSupported)), MemberData(nameof(EchoServers))]
-        public async Task CloseAsync_CloseDescriptionIsMaxLengthPlusOne_ThrowsArgumentException(Uri server)
+        protected async Task RunClient_CloseAsync_CloseDescriptionIsMaxLengthPlusOne_ThrowsArgumentException(Uri server)
         {
             string closeDescription = new string('C', CloseDescriptionMaxLength + 1);
 
@@ -145,9 +132,7 @@ namespace System.Net.WebSockets.Client.Tests
             }
         }
 
-        [OuterLoop("Uses external servers", typeof(PlatformDetection), nameof(PlatformDetection.LocalEchoServerIsNotAvailable))]
-        [ConditionalTheory(nameof(WebSocketsSupported)), MemberData(nameof(EchoServers))]
-        public async Task CloseAsync_CloseDescriptionHasUnicode_Success(Uri server)
+        protected async Task RunClient_CloseAsync_CloseDescriptionHasUnicode_Success(Uri server)
         {
             using (ClientWebSocket cws = await GetConnectedWebSocket(server, TimeOutMilliseconds, _output))
             {
@@ -164,9 +149,7 @@ namespace System.Net.WebSockets.Client.Tests
             }
         }
 
-        [OuterLoop("Uses external servers", typeof(PlatformDetection), nameof(PlatformDetection.LocalEchoServerIsNotAvailable))]
-        [ConditionalTheory(nameof(WebSocketsSupported)), MemberData(nameof(EchoServers))]
-        public async Task CloseAsync_CloseDescriptionIsNull_Success(Uri server)
+        protected async Task RunClient_CloseAsync_CloseDescriptionIsNull_Success(Uri server)
         {
             using (ClientWebSocket cws = await GetConnectedWebSocket(server, TimeOutMilliseconds, _output))
             {
@@ -180,9 +163,7 @@ namespace System.Net.WebSockets.Client.Tests
             }
         }
 
-        [OuterLoop("Uses external servers", typeof(PlatformDetection), nameof(PlatformDetection.LocalEchoServerIsNotAvailable))]
-        [ConditionalTheory(nameof(WebSocketsSupported)), MemberData(nameof(EchoServers))]
-        public async Task CloseOutputAsync_ExpectedStates(Uri server)
+        protected async Task RunClient_CloseOutputAsync_ExpectedStates(Uri server)
         {
             using (ClientWebSocket cws = await GetConnectedWebSocket(server, TimeOutMilliseconds, _output))
             {
@@ -199,9 +180,7 @@ namespace System.Net.WebSockets.Client.Tests
             }
         }
 
-        [OuterLoop("Uses external servers", typeof(PlatformDetection), nameof(PlatformDetection.LocalEchoServerIsNotAvailable))]
-        [ConditionalTheory(nameof(WebSocketsSupported)), MemberData(nameof(EchoServers))]
-        public async Task CloseAsync_CloseOutputAsync_Throws(Uri server)
+        protected async Task RunClient_CloseAsync_CloseOutputAsync_Throws(Uri server)
         {
             using (ClientWebSocket cws = await GetConnectedWebSocket(server, TimeOutMilliseconds, _output))
             {
@@ -224,9 +203,7 @@ namespace System.Net.WebSockets.Client.Tests
             }
         }
 
-        [OuterLoop("Uses external servers", typeof(PlatformDetection), nameof(PlatformDetection.LocalEchoServerIsNotAvailable))]
-        [ConditionalTheory(nameof(WebSocketsSupported)), MemberData(nameof(EchoServers))]
-        public async Task CloseOutputAsync_ClientInitiated_CanReceive_CanClose(Uri server)
+        protected async Task RunClient_CloseOutputAsync_ClientInitiated_CanReceive_CanClose(Uri server)
         {
             string message = "Hello WebSockets!";
 
@@ -262,10 +239,7 @@ namespace System.Net.WebSockets.Client.Tests
             }
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/28957", typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
-        [OuterLoop("Uses external servers", typeof(PlatformDetection), nameof(PlatformDetection.LocalEchoServerIsNotAvailable))]
-        [ConditionalTheory(nameof(WebSocketsSupported)), MemberData(nameof(EchoServersAndBoolean))]
-        public async Task CloseOutputAsync_ServerInitiated_CanReceive(Uri server, bool delayReceiving)
+        protected async Task RunClient_CloseOutputAsync_ServerInitiated_CanReceive(Uri server, bool delayReceiving)
         {
             var expectedCloseStatus = WebSocketCloseStatus.NormalClosure;
             var expectedCloseDescription = ".shutdownafter";
@@ -319,10 +293,7 @@ namespace System.Net.WebSockets.Client.Tests
             }
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/28957", typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
-        [OuterLoop("Uses external servers", typeof(PlatformDetection), nameof(PlatformDetection.LocalEchoServerIsNotAvailable))]
-        [ConditionalTheory(nameof(WebSocketsSupported)), MemberData(nameof(EchoServers))]
-        public async Task CloseOutputAsync_ServerInitiated_CanSend(Uri server)
+        protected async Task RunClient_CloseOutputAsync_ServerInitiated_CanSend(Uri server)
         {
             string message = "Hello WebSockets!";
             var expectedCloseStatus = WebSocketCloseStatus.NormalClosure;
@@ -367,9 +338,7 @@ namespace System.Net.WebSockets.Client.Tests
             }
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/28957", typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
-        [ConditionalTheory(nameof(WebSocketsSupported)), MemberData(nameof(EchoServersAndBoolean))]
-        public async Task CloseOutputAsync_ServerInitiated_CanReceiveAfterClose(Uri server, bool syncState)
+        protected async Task RunClient_CloseOutputAsync_ServerInitiated_CanReceiveAfterClose(Uri server, bool syncState)
         {
             using (ClientWebSocket cws = await GetConnectedWebSocket(server, TimeOutMilliseconds, _output))
             {
@@ -397,9 +366,7 @@ namespace System.Net.WebSockets.Client.Tests
             }
         }
 
-        [OuterLoop("Uses external servers", typeof(PlatformDetection), nameof(PlatformDetection.LocalEchoServerIsNotAvailable))]
-        [ConditionalTheory(nameof(WebSocketsSupported)), MemberData(nameof(EchoServers))]
-        public async Task CloseOutputAsync_CloseDescriptionIsNull_Success(Uri server)
+        protected async Task RunClient_CloseOutputAsync_CloseDescriptionIsNull_Success(Uri server)
         {
             using (ClientWebSocket cws = await GetConnectedWebSocket(server, TimeOutMilliseconds, _output))
             {
@@ -412,10 +379,7 @@ namespace System.Net.WebSockets.Client.Tests
             }
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/22000", TargetFrameworkMonikers.Netcoreapp)]
-        [OuterLoop("Uses external servers", typeof(PlatformDetection), nameof(PlatformDetection.LocalEchoServerIsNotAvailable))]
-        [ConditionalTheory(nameof(WebSocketsSupported)), MemberData(nameof(EchoServers))]
-        public async Task CloseOutputAsync_DuringConcurrentReceiveAsync_ExpectedStates(Uri server)
+        protected async Task RunClient_CloseOutputAsync_DuringConcurrentReceiveAsync_ExpectedStates(Uri server)
         {
             var receiveBuffer = new byte[1024];
             using (ClientWebSocket cws = await GetConnectedWebSocket(server, TimeOutMilliseconds, _output))
@@ -450,9 +414,7 @@ namespace System.Net.WebSockets.Client.Tests
             }
         }
 
-        [OuterLoop("Uses external servers", typeof(PlatformDetection), nameof(PlatformDetection.LocalEchoServerIsNotAvailable))]
-        [ConditionalTheory(nameof(WebSocketsSupported)), MemberData(nameof(EchoServers))]
-        public async Task CloseAsync_DuringConcurrentReceiveAsync_ExpectedStates(Uri server)
+        protected async Task RunClient_CloseAsync_DuringConcurrentReceiveAsync_ExpectedStates(Uri server)
         {
             var receiveBuffer = new byte[1024];
             using (ClientWebSocket cws = await GetConnectedWebSocket(server, TimeOutMilliseconds, _output))
@@ -523,5 +485,77 @@ namespace System.Net.WebSockets.Client.Tests
 
             }), new LoopbackServer.Options { WebSocketEndpoint = true });
         }
+    }
+
+    [OuterLoop("Uses external servers", typeof(PlatformDetection), nameof(PlatformDetection.LocalEchoServerIsNotAvailable))]
+    [ConditionalClass(typeof(ClientWebSocketTestBase), nameof(WebSocketsSupported))]
+    public class CloseTest : CloseTestBase
+    {
+        public CloseTest(ITestOutputHelper output) : base(output) { }
+
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/28957", typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+        [Theory, MemberData(nameof(EchoServersAndBoolean))]
+        public Task CloseAsync_ServerInitiatedClose_Success(Uri server, bool useCloseOutputAsync)
+            => RunClient_CloseAsync_ServerInitiatedClose_Success(server, useCloseOutputAsync);
+
+        [Theory, MemberData(nameof(EchoServers))]
+        public Task CloseAsync_ClientInitiatedClose_Success(Uri server)
+            => RunClient_CloseAsync_ClientInitiatedClose_Success(server);
+
+        [Theory, MemberData(nameof(EchoServers))]
+        public Task CloseAsync_CloseDescriptionIsMaxLength_Success(Uri server)
+            => RunClient_CloseAsync_CloseDescriptionIsMaxLength_Success(server);
+
+        [Theory, MemberData(nameof(EchoServers))]
+        public Task CloseAsync_CloseDescriptionIsMaxLengthPlusOne_ThrowsArgumentException(Uri server)
+            => RunClient_CloseAsync_CloseDescriptionIsMaxLengthPlusOne_ThrowsArgumentException(server);
+
+        [Theory, MemberData(nameof(EchoServers))]
+        public Task CloseAsync_CloseDescriptionHasUnicode_Success(Uri server)
+            => RunClient_CloseAsync_CloseDescriptionHasUnicode_Success(server);
+
+        [Theory, MemberData(nameof(EchoServers))]
+        public Task CloseAsync_CloseDescriptionIsNull_Success(Uri server)
+            => RunClient_CloseAsync_CloseDescriptionIsNull_Success(server);
+
+        [Theory, MemberData(nameof(EchoServers))]
+        public Task CloseOutputAsync_ExpectedStates(Uri server)
+            => RunClient_CloseOutputAsync_ExpectedStates(server);
+
+        [Theory, MemberData(nameof(EchoServers))]
+        public Task CloseAsync_CloseOutputAsync_Throws(Uri server)
+            => RunClient_CloseAsync_CloseOutputAsync_Throws(server);
+
+        [Theory, MemberData(nameof(EchoServers))]
+        public Task CloseOutputAsync_ClientInitiated_CanReceive_CanClose(Uri server)
+            => RunClient_CloseOutputAsync_ClientInitiated_CanReceive_CanClose(server);
+
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/28957", typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+        [Theory, MemberData(nameof(EchoServersAndBoolean))]
+        public Task CloseOutputAsync_ServerInitiated_CanReceive(Uri server, bool delayReceiving)
+            => RunClient_CloseOutputAsync_ServerInitiated_CanReceive(server, delayReceiving);
+
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/28957", typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+        [Theory, MemberData(nameof(EchoServers))]
+        public Task CloseOutputAsync_ServerInitiated_CanSend(Uri server)
+            => RunClient_CloseOutputAsync_ServerInitiated_CanSend(server);
+
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/28957", typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+        [Theory, MemberData(nameof(EchoServersAndBoolean))]
+        public Task CloseOutputAsync_ServerInitiated_CanReceiveAfterClose(Uri server, bool syncState)
+            => RunClient_CloseOutputAsync_ServerInitiated_CanReceiveAfterClose(server, syncState);
+
+        [Theory, MemberData(nameof(EchoServers))]
+        public Task CloseOutputAsync_CloseDescriptionIsNull_Success(Uri server)
+            => RunClient_CloseOutputAsync_CloseDescriptionIsNull_Success(server);
+
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/22000", TargetFrameworkMonikers.Netcoreapp)]
+        [Theory, MemberData(nameof(EchoServers))]
+        public Task CloseOutputAsync_DuringConcurrentReceiveAsync_ExpectedStates(Uri server)
+            => RunClient_CloseOutputAsync_DuringConcurrentReceiveAsync_ExpectedStates(server);
+
+        [Theory, MemberData(nameof(EchoServers))]
+        public Task CloseAsync_DuringConcurrentReceiveAsync_ExpectedStates(Uri server)
+            => RunClient_CloseAsync_DuringConcurrentReceiveAsync_ExpectedStates(server);
     }
 }

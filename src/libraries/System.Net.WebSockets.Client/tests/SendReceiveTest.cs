@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Net.Http;
 using System.Net.Sockets;
 using System.Net.Test.Common;
 using System.Threading;
@@ -72,16 +71,14 @@ namespace System.Net.WebSockets.Client.Tests
             ws.SendAsync(arraySegment, messageType, endOfMessage, cancellationToken);
     }
 
-    public abstract class SendReceiveTest : ClientWebSocketTestBase
+    public abstract class SendReceiveTestBase : ClientWebSocketTestBase
     {
         protected abstract Task SendAsync(WebSocket ws, ArraySegment<byte> arraySegment, WebSocketMessageType messageType, bool endOfMessage, CancellationToken cancellationToken);
         protected abstract Task<WebSocketReceiveResult> ReceiveAsync(WebSocket ws, ArraySegment<byte> arraySegment, CancellationToken cancellationToken);
 
-        public SendReceiveTest(ITestOutputHelper output) : base(output) { }
+        public SendReceiveTestBase(ITestOutputHelper output) : base(output) { }
 
-        [OuterLoop("Uses external servers", typeof(PlatformDetection), nameof(PlatformDetection.LocalEchoServerIsNotAvailable))]
-        [ConditionalTheory(nameof(WebSocketsSupported)), MemberData(nameof(EchoServers))]
-        public async Task SendReceive_PartialMessageDueToSmallReceiveBuffer_Success(Uri server)
+        protected async Task RunClient_SendReceive_PartialMessageDueToSmallReceiveBuffer_Success(Uri server)
         {
             const int SendBufferSize = 10;
             var sendBuffer = new byte[SendBufferSize];
@@ -116,10 +113,7 @@ namespace System.Net.WebSockets.Client.Tests
             }
         }
 
-        [OuterLoop("Uses external servers", typeof(PlatformDetection), nameof(PlatformDetection.LocalEchoServerIsNotAvailable))]
-        [ConditionalTheory(nameof(WebSocketsSupported)), MemberData(nameof(EchoServers))]
-        [SkipOnPlatform(TestPlatforms.Browser, "JS Websocket does not support see issue https://github.com/dotnet/runtime/issues/46983")]
-        public async Task SendReceive_PartialMessageBeforeCompleteMessageArrives_Success(Uri server)
+        protected async Task RunClient_SendReceive_PartialMessageBeforeCompleteMessageArrives_Success(Uri server)
         {
             var sendBuffer = new byte[ushort.MaxValue + 1];
             Random.Shared.NextBytes(sendBuffer);
@@ -158,9 +152,7 @@ namespace System.Net.WebSockets.Client.Tests
             }
         }
 
-        [OuterLoop("Uses external servers", typeof(PlatformDetection), nameof(PlatformDetection.LocalEchoServerIsNotAvailable))]
-        [ConditionalTheory(nameof(WebSocketsSupported)), MemberData(nameof(EchoServers))]
-        public async Task SendAsync_SendCloseMessageType_ThrowsArgumentExceptionWithMessage(Uri server)
+        protected async Task RunClient_SendAsync_SendCloseMessageType_ThrowsArgumentExceptionWithMessage(Uri server)
         {
             using (ClientWebSocket cws = await GetConnectedWebSocket(server, TimeOutMilliseconds, _output))
             {
@@ -186,10 +178,7 @@ namespace System.Net.WebSockets.Client.Tests
             }
         }
 
-        [OuterLoop("Uses external servers", typeof(PlatformDetection), nameof(PlatformDetection.LocalEchoServerIsNotAvailable))]
-        [ConditionalTheory(nameof(WebSocketsSupported)), MemberData(nameof(EchoServers))]
-        // This will also pass when no exception is thrown. Current implementation doesn't throw.
-        public async Task SendAsync_MultipleOutstandingSendOperations_Throws(Uri server)
+        protected async Task RunClient_SendAsync_MultipleOutstandingSendOperations_Throws(Uri server)
         {
             using (ClientWebSocket cws = await GetConnectedWebSocket(server, TimeOutMilliseconds, _output))
             {
@@ -246,11 +235,7 @@ namespace System.Net.WebSockets.Client.Tests
             }
         }
 
-        [OuterLoop("Uses external servers", typeof(PlatformDetection), nameof(PlatformDetection.LocalEchoServerIsNotAvailable))]
-        [ConditionalTheory(nameof(WebSocketsSupported)), MemberData(nameof(EchoServers))]
-        // This will also pass when no exception is thrown. Current implementation doesn't throw.
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/83517", typeof(PlatformDetection), nameof(PlatformDetection.IsNodeJS))]
-        public async Task ReceiveAsync_MultipleOutstandingReceiveOperations_Throws(Uri server)
+        protected async Task RunClient_ReceiveAsync_MultipleOutstandingReceiveOperations_Throws(Uri server)
         {
             using (ClientWebSocket cws = await GetConnectedWebSocket(server, TimeOutMilliseconds, _output))
             {
@@ -312,9 +297,7 @@ namespace System.Net.WebSockets.Client.Tests
             }
         }
 
-        [OuterLoop("Uses external servers", typeof(PlatformDetection), nameof(PlatformDetection.LocalEchoServerIsNotAvailable))]
-        [ConditionalTheory(nameof(WebSocketsSupported)), MemberData(nameof(EchoServers))]
-        public async Task SendAsync_SendZeroLengthPayloadAsEndOfMessage_Success(Uri server)
+        protected async Task RunClient_SendAsync_SendZeroLengthPayloadAsEndOfMessage_Success(Uri server)
         {
             using (ClientWebSocket cws = await GetConnectedWebSocket(server, TimeOutMilliseconds, _output))
             {
@@ -351,9 +334,7 @@ namespace System.Net.WebSockets.Client.Tests
             }
         }
 
-        [OuterLoop("Uses external servers", typeof(PlatformDetection), nameof(PlatformDetection.LocalEchoServerIsNotAvailable))]
-        [ConditionalTheory(nameof(WebSocketsSupported)), MemberData(nameof(EchoServers))]
-        public async Task SendReceive_VaryingLengthBuffers_Success(Uri server)
+        protected async Task RunClient_SendReceive_VaryingLengthBuffers_Success(Uri server)
         {
             using (ClientWebSocket cws = await WebSocketHelper.GetConnectedWebSocket(server, TimeOutMilliseconds, _output))
             {
@@ -391,9 +372,7 @@ namespace System.Net.WebSockets.Client.Tests
             }
         }
 
-        [OuterLoop("Uses external servers", typeof(PlatformDetection), nameof(PlatformDetection.LocalEchoServerIsNotAvailable))]
-        [ConditionalTheory(nameof(WebSocketsSupported)), MemberData(nameof(EchoServers))]
-        public async Task SendReceive_Concurrent_Success(Uri server)
+        protected async Task RunClient_SendReceive_Concurrent_Success(Uri server)
         {
             using (ClientWebSocket cws = await GetConnectedWebSocket(server, TimeOutMilliseconds, _output))
             {
@@ -420,10 +399,7 @@ namespace System.Net.WebSockets.Client.Tests
             }
         }
 
-        [OuterLoop("Uses external servers", typeof(PlatformDetection), nameof(PlatformDetection.LocalEchoServerIsNotAvailable))]
-        [ConditionalFact(nameof(WebSocketsSupported))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/54153", TestPlatforms.Browser)]
-        public async Task SendReceive_ConnectionClosedPrematurely_ReceiveAsyncFailsAndWebSocketStateUpdated()
+        protected async Task RunClient_SendReceive_ConnectionClosedPrematurely_ReceiveAsyncFailsAndWebSocketStateUpdated()
         {
             var options = new LoopbackServer.Options { WebSocketEndpoint = true };
 
@@ -490,9 +466,7 @@ namespace System.Net.WebSockets.Client.Tests
             }, options);
         }
 
-        [OuterLoop("Uses external servers", typeof(PlatformDetection), nameof(PlatformDetection.LocalEchoServerIsNotAvailable))]
-        [ConditionalTheory(nameof(WebSocketsSupported)), MemberData(nameof(EchoServers))]
-        public async Task ZeroByteReceive_CompletesWhenDataAvailable(Uri server)
+        protected async Task RunClient_ZeroByteReceive_CompletesWhenDataAvailable(Uri server)
         {
             using (ClientWebSocket cws = await GetConnectedWebSocket(server, TimeOutMilliseconds, _output))
             {
@@ -527,8 +501,58 @@ namespace System.Net.WebSockets.Client.Tests
                 Assert.Equal(42, receiveBuffer[0]);
 
                 // Clean up.
-                await cws.CloseAsync(WebSocketCloseStatus.NormalClosure, nameof(ZeroByteReceive_CompletesWhenDataAvailable), ctsDefault.Token);
+                await cws.CloseAsync(WebSocketCloseStatus.NormalClosure, nameof(RunClient_ZeroByteReceive_CompletesWhenDataAvailable), ctsDefault.Token);
             }
         }
+    }
+
+    [OuterLoop("Uses external servers", typeof(PlatformDetection), nameof(PlatformDetection.LocalEchoServerIsNotAvailable))]
+    [ConditionalClass(typeof(ClientWebSocketTestBase), nameof(WebSocketsSupported))]
+    public abstract class SendReceiveTest : SendReceiveTestBase
+    {
+        public SendReceiveTest(ITestOutputHelper output) : base(output) { }
+
+        [Theory, MemberData(nameof(EchoServers))]
+        public Task SendReceive_PartialMessageDueToSmallReceiveBuffer_Success(Uri server)
+            => RunClient_SendReceive_PartialMessageDueToSmallReceiveBuffer_Success(server);
+
+        [SkipOnPlatform(TestPlatforms.Browser, "JS Websocket does not support see issue https://github.com/dotnet/runtime/issues/46983")]
+        [Theory, MemberData(nameof(EchoServers))]
+        public Task SendReceive_PartialMessageBeforeCompleteMessageArrives_Success(Uri server)
+            => RunClient_SendReceive_PartialMessageBeforeCompleteMessageArrives_Success(server);
+
+        [Theory, MemberData(nameof(EchoServers))]
+        public Task SendAsync_SendCloseMessageType_ThrowsArgumentExceptionWithMessage(Uri server)
+            => RunClient_SendAsync_SendCloseMessageType_ThrowsArgumentExceptionWithMessage(server);
+
+        [Theory, MemberData(nameof(EchoServers))]
+        public Task SendAsync_MultipleOutstandingSendOperations_Throws(Uri server)
+            => RunClient_SendAsync_MultipleOutstandingSendOperations_Throws(server);
+
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/83517", typeof(PlatformDetection), nameof(PlatformDetection.IsNodeJS))]
+        [Theory, MemberData(nameof(EchoServers))]
+        public Task ReceiveAsync_MultipleOutstandingReceiveOperations_Throws(Uri server)
+            => RunClient_ReceiveAsync_MultipleOutstandingReceiveOperations_Throws(server);
+
+        [Theory, MemberData(nameof(EchoServers))]
+        public Task SendAsync_SendZeroLengthPayloadAsEndOfMessage_Success(Uri server)
+            => RunClient_SendAsync_SendZeroLengthPayloadAsEndOfMessage_Success(server);
+
+        [Theory, MemberData(nameof(EchoServers))]
+        public Task SendReceive_VaryingLengthBuffers_Success(Uri server)
+            => RunClient_SendReceive_VaryingLengthBuffers_Success(server);
+
+        [Theory, MemberData(nameof(EchoServers))]
+        public Task SendReceive_Concurrent_Success(Uri server)
+            => RunClient_SendReceive_Concurrent_Success(server);
+
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/54153", TestPlatforms.Browser)]
+        [Fact]
+        public Task SendReceive_ConnectionClosedPrematurely_ReceiveAsyncFailsAndWebSocketStateUpdated()
+            => RunClient_SendReceive_ConnectionClosedPrematurely_ReceiveAsyncFailsAndWebSocketStateUpdated();
+
+        [Theory, MemberData(nameof(EchoServers))]
+        public Task ZeroByteReceive_CompletesWhenDataAvailable(Uri server)
+            => RunClient_ZeroByteReceive_CompletesWhenDataAvailable(server);
     }
 }
