@@ -14,6 +14,10 @@ while [[ -h "$source" ]]; do
 done
 scriptroot="$( cd -P "$( dirname "$source" )" && pwd )"
 
+statscmd="$scriptroot/stats.sh"
+
+$statscmd &
+
 usage()
 {
   echo "Common settings:"
