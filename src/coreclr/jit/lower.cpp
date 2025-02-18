@@ -8769,6 +8769,10 @@ bool Lowering::TryRemoveBitCast(GenTreeUnOp* node)
     {
         use.ReplaceWith(op);
     }
+    else
+    {
+        op->SetUnusedValue();
+    }
 
     BlockRange().Remove(node);
     return true;
