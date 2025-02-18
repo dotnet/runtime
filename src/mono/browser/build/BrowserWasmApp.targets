@@ -323,8 +323,9 @@
       <!-- Adding optimization flag at the top, so it gets precedence -->
       <_EmccLDFlags Include="$(WasmLinkOptimizationFlag)" />
       <_EmccLDFlags Include="@(_EmccCommonFlags)" />
+      <!-- -lexports.js to MINIFY_WASM_EXPORT_NAMES=0 -->
       <_EmccLDFlags Include="-s EXPORT_ES6=1 -lexports.js" />
-      <_EmccLDFlags Condition="'$(WasmEnableExceptionHandling)' != 'false'" Include="-s EXPORT_EXCEPTION_HANDLING_HELPERS=1"   />
+      <EmccExportedFunction Condition="'$(WasmEnableExceptionHandling)' != 'false'" Include="___cpp_exception" />
 
       <_RuntimeCDependencies Include="$(_WasmPInvokeHPath);$(_WasmICallTablePath)" />
       <_RuntimeCDependencies Include="$(_DriverGenCPath)" Condition="'$(_DriverGenCNeeded)' == 'true'" />
