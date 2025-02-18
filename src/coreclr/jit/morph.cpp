@@ -1953,7 +1953,7 @@ void CallArgs::AddFinalArgsAndDetermineABIInfo(Compiler* comp, GenTreeCall* call
 #endif
 
     m_abiInformationDetermined = true;
-    m_hasAddedFinalArgs = true;
+    m_hasAddedFinalArgs        = true;
 }
 
 //------------------------------------------------------------------------
