@@ -196,7 +196,8 @@ namespace System.Reflection
                 {
                     return GetTypeFromDefaultAssemblies(TypeName.Unescape(escapedTypeName), parsedName);
                 }
-                else if (assembly is RuntimeAssembly ra)
+                // We cannot check if it is RuntimeAssembly, because the object might be a RuntimeAssemblyBuilder.
+                else if (AssemblyLoadContext.GetRuntimeAssembly(assembly) is { } ra)
                 {
                     type = ra.GetTypeCore(TypeName.Unescape(escapedTypeName), ignoreCase: _ignoreCase);
                 }

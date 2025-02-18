@@ -2463,6 +2463,11 @@ mono_reflection_type_from_name_checked (char *name, MonoAssemblyLoadContext *alc
 {
 	HANDLE_FUNCTION_ENTER ();
 	MonoType *type = NULL;
+	MonoStringHandle name_param;
+	gpointer alc_param;
+	MonoReflectionAssemblyHandle requesting_handle;
+	MonoBoolean ignorecase_param;
+	MonoBoolean use_toplevel_assembly_param;
 
 	error_init (error);
 
@@ -2477,12 +2482,11 @@ mono_reflection_type_from_name_checked (char *name, MonoAssemblyLoadContext *alc
 
 	MONO_STATIC_POINTER_INIT_END (MonoMethod, method)
 
-	MonoStringHandle name_obj = mono_string_new_handle (name, error);
+	name_param = mono_string_new_handle (name, error);
 	goto_if_nok (error, leave);
 
-	gpointer alc_ptr = mono_alc_get_gchandle_for_resolving (alc);
+	alc_param = mono_alc_get_gchandle_for_resolving (alc);
 
-	MonoReflectionAssemblyHandle requesting_handle;
 	if (image->assembly) {
 		requesting_handle = mono_assembly_get_object_handle (image->assembly, error);
 		goto_if_nok (error, leave);
@@ -2490,12 +2494,15 @@ mono_reflection_type_from_name_checked (char *name, MonoAssemblyLoadContext *alc
 		requesting_handle = MONO_HANDLE_CAST (MonoReflectionAssembly, NULL_HANDLE);
 	}
 
+	ignorecase_param = !!ignorecase;
+	use_toplevel_assembly_param = !!use_toplevel_assembly;
+
 	gpointer params [5];
-	params [0] = MONO_HANDLE_RAW (name_obj);
-	params [1] = &alc_ptr;
+	params [0] = MONO_HANDLE_RAW (name_param);
+	params [1] = &alc_param;
 	params [2] = MONO_HANDLE_RAW (requesting_handle);
-	params [3] = &ignorecase;
-	params [4] = &use_toplevel_assembly;
+	params [3] = &ignorecase_param;
+	params [4] = &use_toplevel_assembly_param;
 	MonoReflectionTypeHandle result;
 	result = MONO_HANDLE_CAST (MonoReflectionType, mono_runtime_invoke_handle (method, NULL_HANDLE, params, error));
 	goto_if_nok (error, leave);

@@ -163,7 +163,7 @@ namespace System.Runtime.Loader
             dll = context.GetResolvedUnmanagedDll(assembly, unmanagedDllName);
         }
 
-        private static RuntimeAssembly? GetRuntimeAssembly(Assembly? asm)
+        internal static RuntimeAssembly? GetRuntimeAssembly(Assembly? asm)
         {
             return
                 asm == null ? null :

@@ -127,7 +127,7 @@ namespace System.Reflection.Emit
                 throw new InvalidOperationException(SR.InvalidOperation_BadInterfaceNotAbstract);
 
             // Nested types do not have a namespace.
-            if (nesting_type is not null && TypeNameParserHelpers.IndexOfNamespaceDelimiter(name) is int sep_index && sep_index > 0)
+            if (nesting_type is null && TypeNameParserHelpers.IndexOfNamespaceDelimiter(name) is int sep_index && sep_index > 0)
             {
                 this.tname = name.Substring(sep_index + 1);
                 this.nspace = name.Substring(0, sep_index);
