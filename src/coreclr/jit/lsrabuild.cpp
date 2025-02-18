@@ -2413,6 +2413,7 @@ void LinearScan::buildIntervals()
         }
         else
         {
+            // If state isn't live across blocks, set FP register kill switch per block.
             needToKillFloatRegs = false;
         }
 
