@@ -372,7 +372,7 @@ extern "C" bool RhInitialize(bool isDll)
 #endif
 
 #if defined(HOST_WINDOWS) || defined(FEATURE_PERFTRACING)
-    atexit(&OnProcessExit);
+    at_quick_exit(&OnProcessExit);
 #endif
 
 #if defined(HOST_WINDOWS) && defined(FEATURE_PERFTRACING)
