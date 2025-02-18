@@ -932,14 +932,13 @@ ProcessCLRExceptionNew(IN     PEXCEPTION_RECORD   pExceptionRecord,
 
     Thread* pThread         = GetThread();
 
-    if (pThread->HasThreadStateNC(Thread::TSNC_ProcessedUnhandledException))
+    // Skip native frames of asm helpers that have the ProcessCLRException set as their personality routine.
+    // There is nothing to do for those with the new exception handling.
+    // Also skip all frames when processing unhandled exceptions. That allows them to reach the host app
+    // level and let 3rd party the chance to handle them.
+    if (!ExecutionManager::IsManagedCode((PCODE)pDispatcherContext->ControlPc) ||
+        pThread->HasThreadStateNC(Thread::TSNC_ProcessedUnhandledException))
     {
-        if ((pExceptionRecord->ExceptionFlags & EXCEPTION_UNWINDING))
-        {
-            GCX_COOP();
-            PopExplicitFrames(pThread, (void*)pDispatcherContext->EstablisherFrame, (void*)GetSP(pDispatcherContext->ContextRecord));
-            ExInfo::PopExInfos(pThread, (void*)pDispatcherContext->EstablisherFrame);
-        }
         return ExceptionContinueSearch;
     }
 
@@ -8514,7 +8513,7 @@ static StackWalkAction MoveToNextNonSkippedFrame(StackFrameIterator* pStackFrame
     return retVal;
 }
 
-extern "C" size_t CallDescrWorkerInternalReturnAddressOffset;
+bool IsCallDescrWorkerInternalReturnAddress(PCODE pCode);
 
 extern "C" bool QCALLTYPE SfiNext(StackFrameIterator* pThis, uint* uExCollideClauseIdx, bool* fUnwoundReversePInvoke, bool* pfIsExceptionIntercepted)
 {
@@ -8569,8 +8568,7 @@ extern "C" bool QCALLTYPE SfiNext(StackFrameIterator* pThis, uint* uExCollideCla
         }
         else
         {
-            size_t CallDescrWorkerInternalReturnAddress = (size_t)CallDescrWorkerInternal + CallDescrWorkerInternalReturnAddressOffset;
-            if (GetIP(pThis->m_crawl.GetRegisterSet()->pCallerContext) == CallDescrWorkerInternalReturnAddress)
+            if (IsCallDescrWorkerInternalReturnAddress(GetIP(pThis->m_crawl.GetRegisterSet()->pCallerContext)))
             {
                 invalidRevPInvoke = true;
             }
