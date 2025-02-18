@@ -101,7 +101,7 @@ bool BoundsCheckInfo::Initialize(const Compiler*   comp,
 
 //------------------------------------------------------------------------------------
 // RemoveBoundsChk - Remove the given bounds check from the statement and the block.
-//    This function is a copy of the optRemoveRangeCheck, but without questionable
+//    This function is a copy of optRemoveRangeCheck, but without questionable
 //    relaxations around side effect extractions.
 //
 // Arguments:
@@ -377,6 +377,10 @@ static BasicBlock* optRangeCheckCloning_DoClone(Compiler* comp, BasicBlock* bloc
         RemoveBoundsChk(comp, info.bndChk, info.bndChkParent, info.stmt);
         comp->gtSetStmtInfo(info.stmt);
         comp->fgSetStmtSeq(info.stmt);
+
+        // TODO: Remove GTF_EXCEPT from ARR_LENGTH nodes as well. Technically, it should
+        // be handled by assertprop, but it doesn't do it for ARR_LENGTH nodes yet,
+        // see https://github.com/dotnet/runtime/pull/93531
     }
 
     comp->fgMorphBlockStmt(lowerBndBb, lowerBndBb->lastStmt() DEBUGARG("Morph lowerBnd"));
@@ -452,7 +456,7 @@ public:
 // Return Value:
 //    true if the complexity exceeds the budget, false otherwise.
 //
-static bool DoesComplexityExceed(ArrayStack<BoundsCheckInfo>* bndChks)
+static bool DoesComplexityExceed(Compiler* comp, ArrayStack<BoundsCheckInfo>* bndChks)
 {
     Statement* firstBndChkStmt = bndChks->Bottom().stmt;
     Statement* lastBndChkStmt  = bndChks->Top().stmt;
@@ -467,22 +471,27 @@ static bool DoesComplexityExceed(ArrayStack<BoundsCheckInfo>* bndChks)
         return true;
     }
 
-    // We're relying on GetCostSz to avoid walking the trees again.
-    // We assume the costs are initialized and relatively accurate.
+    // An average statement with a bounds check is ~20 nodes. There can be statements
+    // between the bounds checks (i.e. bounds checks from another groups). So let's say
+    // our budget is 40 nodes per bounds check.
     //
-    int budget = bndChks->Height() * 64; // 64 is an arbitrary value based on SPMI measurements
-    JITDUMP("\tBudget: %d\n", budget);
+    unsigned budget = bndChks->Height() * 40;
+    JITDUMP("\tBudget: %d nodes.\n", budget);
 
     Statement* currentStmt = firstBndChkStmt;
     while (currentStmt != lastBndChkStmt)
     {
-        JITDUMP("\t\tSubtracting %d from budget in " FMT_STMT " statement\n", currentStmt->GetCostSz(),
-                currentStmt->GetID());
-        budget -= currentStmt->GetCostSz();
-        if (budget < 0)
+        GenTree* rootNode = currentStmt->GetRootNode();
+        if (rootNode != nullptr)
         {
-            JITDUMP("\t\tExceeded budget!");
-            return true;
+            unsigned actual = 0;
+            if (comp->gtComplexityExceeds(rootNode, budget, &actual))
+            {
+                JITDUMP("\tExceeded budget!");
+                return true;
+            }
+            JITDUMP("\t\tSubtracting %d from budget in " FMT_STMT " statement\n", actual, currentStmt->GetID());
+            budget -= actual;
         }
         currentStmt = currentStmt->GetNextStmt();
     }
@@ -601,7 +610,7 @@ PhaseStatus Compiler::optRangeCheckCloning()
             ArrayStack<BoundsCheckInfo>* value = keyValuePair->GetValue();
             if ((largestGroup == nullptr) || (value->Height() > largestGroup->Height()))
             {
-                if (DoesComplexityExceed(value))
+                if (DoesComplexityExceed(this, value))
                 {
                     continue;
                 }
