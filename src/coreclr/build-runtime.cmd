@@ -66,6 +66,7 @@ set __UnprocessedBuildArgs=
 
 set __BuildNative=1
 set __RestoreOptData=1
+set __HostOS=
 set __HostArch=
 set __PgoOptDataPath=
 set __CMakeArgs=
@@ -133,6 +134,7 @@ if [!__PassThroughArgs!]==[] (
     set "__PassThroughArgs=%__PassThroughArgs% %1"
 )
 
+if /i "%1" == "-hostos"              (set __HostOS=%2&shift&shift&goto Arg_Loop)    
 if /i "%1" == "-hostarch"            (set __HostArch=%2&shift&shift&goto Arg_Loop)
 if /i "%1" == "-os"                  (set __TargetOS=%2&shift&shift&goto Arg_Loop)
 if /i "%1" == "-outputrid"           (set __OutputRid=%2&shift&shift&goto Arg_Loop)
@@ -279,7 +281,11 @@ REM ============================================================================
 
 @if defined _echo @echo on
 
-call "%__RepoRootDir%\eng\native\version\copy_version_files.cmd"
+if not "%__TargetOS%"=="android" (
+    call "%__RepoRootDir%\eng\native\version\copy_version_files.cmd"
+) else (
+    call powershell -NoProfile -ExecutionPolicy ByPass -File "%__RepoRootDir%\eng\native\version\copy_version_files.ps1"
+)
 
 REM =========================================================================================
 REM ===
