@@ -159,6 +159,7 @@ set( JIT_SOURCES
   promotiondecomposition.cpp
   promotionliveness.cpp
   rangecheck.cpp
+  rangecheckcloning.cpp
   rationalize.cpp
   redundantbranchopts.cpp
   regalloc.cpp
@@ -167,6 +168,7 @@ set( JIT_SOURCES
   regset.cpp
   scev.cpp
   scopeinfo.cpp
+  segmentlist.cpp
   sideeffects.cpp
   sm.cpp
   smdata.cpp
@@ -174,7 +176,6 @@ set( JIT_SOURCES
   ssabuilder.cpp
   ssarenamestate.cpp
   stacklevelsetter.cpp
-  structsegments.cpp
   switchrecognition.cpp
   treelifeupdater.cpp
   unwind.cpp
@@ -356,12 +357,14 @@ set( JIT_HEADERS
   priorityqueue.h
   promotion.h
   rangecheck.h
+  rangecheckcloning.h
   rationalize.h
   regalloc.h
   registerargconvention.h
   register.h
   regset.h
   scev.h
+  segmentlist.h
   sideeffects.h
   simd.h
   sm.h
@@ -372,7 +375,6 @@ set( JIT_HEADERS
   ssaconfig.h
   ssarenamestate.h
   stacklevelsetter.h
-  structsegments.h
   target.h
   targetx86.h
   targetamd64.h
@@ -642,6 +644,10 @@ if (CLR_CMAKE_TARGET_ARCH_ARM64 OR CLR_CMAKE_TARGET_ARCH_AMD64)
   create_standalone_jit(TARGET clrjit_universal_arm64_${ARCH_HOST_NAME} OS universal ARCH arm64)
   create_standalone_jit(TARGET clrjit_unix_x64_${ARCH_HOST_NAME} OS unix_anyos ARCH x64)
   create_standalone_jit(TARGET clrjit_win_x64_${ARCH_HOST_NAME} OS win ARCH x64)
+  if (CLR_CMAKE_BUILD_COMMUNITY_ALTJITS EQUAL 1)
+    create_standalone_jit(TARGET clrjit_unix_loongarch64_${ARCH_HOST_NAME} OS unix ARCH loongarch64)
+    create_standalone_jit(TARGET clrjit_unix_riscv64_${ARCH_HOST_NAME} OS unix ARCH riscv64)
+  endif(CLR_CMAKE_BUILD_COMMUNITY_ALTJITS EQUAL 1)
 endif (CLR_CMAKE_TARGET_ARCH_ARM64 OR CLR_CMAKE_TARGET_ARCH_AMD64)
 
 if (CLR_CMAKE_TARGET_ARCH_LOONGARCH64)

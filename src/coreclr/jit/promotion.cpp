@@ -720,9 +720,9 @@ public:
                         return true;
                     }
 
-                    const StructSegments& significantSegments = comp->GetSignificantSegments(otherAccess.Layout);
+                    const SegmentList& significantSegments = otherAccess.Layout->GetNonPadding(comp);
                     if (!significantSegments.Intersects(
-                            StructSegments::Segment(layoutOffset + accessSize, layoutOffset + TARGET_POINTER_SIZE)))
+                            SegmentList::Segment(layoutOffset + accessSize, layoutOffset + TARGET_POINTER_SIZE)))
                     {
                         return true;
                     }
@@ -767,11 +767,33 @@ public:
 
         unsigned countReadBacks    = 0;
         weight_t countReadBacksWtd = 0;
-        // For parameters or OSR locals we always need one read back.
-        if (lcl->lvIsParam || lcl->lvIsOSRLocal)
+
+        // For OSR locals we always need one read back.
+        if (lcl->lvIsOSRLocal)
         {
             countReadBacks++;
             countReadBacksWtd += comp->fgFirstBB->getBBWeight(comp);
+        }
+        else if (lcl->lvIsParam)
+        {
+            // For parameters, the backend may be able to map it directly from a register.
+            if (MapsToRegister(comp, access, lclNum))
+            {
+                // No promotion will result in a store to stack in the prolog.
+                costWithout += COST_STRUCT_ACCESS_CYCLES * comp->fgFirstBB->getBBWeight(comp);
+                sizeWithout += COST_STRUCT_ACCESS_SIZE;
+
+                // Promotion we cost like the normal reg accesses above
+                costWith += COST_REG_ACCESS_CYCLES * comp->fgFirstBB->getBBWeight(comp);
+                sizeWith += COST_REG_ACCESS_SIZE;
+            }
+            else
+            {
+                // Otherwise we expect no prolog work to be required if we
+                // don't promote, and we need a read back from the stack.
+                countReadBacks++;
+                countReadBacksWtd += comp->fgFirstBB->getBBWeight(comp);
+            }
         }
 
         // If the struct is stored from a call (either due to a multireg
@@ -999,6 +1021,46 @@ private:
         } while ((index < m_accesses.size()) && (m_accesses[index].Offset == offs));
 
         return nullptr;
+    }
+
+    //------------------------------------------------------------------------
+    // MapsToRegister:
+    //   Check if a specific access in the specified parameter local is
+    //   expected to map to a register.
+    //
+    // Parameters:
+    //   comp   - Compiler instance
+    //   access - Access in the local
+    //   lclNum - Parameter lcl num
+    //
+    // Returns:
+    //   Pointer to a matching access, or nullptr if no match was found.
+    //
+    bool MapsToRegister(Compiler* comp, const Access& access, unsigned lclNum)
+    {
+        assert(lclNum < comp->info.compArgsCount);
+
+        if (comp->lvaIsImplicitByRefLocal(lclNum))
+        {
+            return false;
+        }
+
+        const ABIPassingInformation& abiInfo = comp->lvaGetParameterABIInfo(lclNum);
+        if (abiInfo.HasAnyStackSegment())
+        {
+            return false;
+        }
+
+        for (const ABIPassingSegment& seg : abiInfo.Segments())
+        {
+            if ((access.Offset == seg.Offset) && (genTypeSize(access.AccessType) == seg.Size) &&
+                (varTypeUsesIntReg(access.AccessType) == genIsValidIntReg(seg.GetRegister())))
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 };
 
@@ -1296,17 +1358,17 @@ public:
             }
 #endif
 
-            agg->Unpromoted = m_compiler->GetSignificantSegments(m_compiler->lvaGetDesc(agg->LclNum)->GetLayout());
+            agg->Unpromoted = m_compiler->lvaGetDesc(agg->LclNum)->GetLayout()->GetNonPadding(m_compiler);
             for (Replacement& rep : reps)
             {
-                agg->Unpromoted.Subtract(StructSegments::Segment(rep.Offset, rep.Offset + genTypeSize(rep.AccessType)));
+                agg->Unpromoted.Subtract(SegmentList::Segment(rep.Offset, rep.Offset + genTypeSize(rep.AccessType)));
             }
 
             JITDUMP("  Unpromoted remainder: ");
             DBEXEC(m_compiler->verbose, agg->Unpromoted.Dump());
             JITDUMP("\n\n");
 
-            StructSegments::Segment unpromotedSegment;
+            SegmentList::Segment unpromotedSegment;
             if (agg->Unpromoted.CoveringSegment(&unpromotedSegment))
             {
                 agg->UnpromotedMin = unpromotedSegment.Start;
@@ -1496,7 +1558,7 @@ private:
                     call->gtArgs.DetermineNewABIInfo(m_compiler, call);
                 }
 
-                if (!arg.NewAbiInfo.HasAnyStackSegment() && !arg.AbiInfo.PassedByRef)
+                if (!arg.NewAbiInfo.HasAnyStackSegment() && !arg.NewAbiInfo.IsPassedByReference())
                 {
                     flags |= AccessKindFlags::IsRegCallArg;
                 }
@@ -2246,7 +2308,7 @@ bool ReplaceVisitor::CanReplaceCallArgWithFieldListOfReplacements(GenTreeCall*  
     // We should have computed ABI information during the costing phase.
     assert(call->gtArgs.IsNewAbiInformationDetermined());
 
-    if (callArg->NewAbiInfo.HasAnyStackSegment() || callArg->AbiInfo.PassedByRef)
+    if (callArg->NewAbiInfo.HasAnyStackSegment() || callArg->NewAbiInfo.IsPassedByReference())
     {
         return false;
     }
@@ -2281,7 +2343,7 @@ bool ReplaceVisitor::CanReplaceCallArgWithFieldListOfReplacements(GenTreeCall*  
             // the remainder is a different promotion we will return false when
             // the replacement is visited in this callback.
             if ((repSize < seg.Size) &&
-                agg->Unpromoted.Intersects(StructSegments::Segment(rep.Offset + repSize, rep.Offset + seg.Size)))
+                agg->Unpromoted.Intersects(SegmentList::Segment(rep.Offset + repSize, rep.Offset + seg.Size)))
             {
                 return false;
             }
