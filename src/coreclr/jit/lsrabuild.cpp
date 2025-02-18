@@ -840,8 +840,8 @@ regMaskTP LinearScan::getKillSetForCall(GenTreeCall* call)
         killMask                 = compiler->compHelperCallKillSet(helpFunc);
     }
 
-    // if there is no FP used, we can ignore the FP kills
-    if (!compiler->compFloatingPointUsed)
+    // if there is no FP used, or if we don't have cross-block live registers, we can ignore the FP kills
+    if (!enregisterLocalVars || !compiler->compFloatingPointUsed)
     {
 #if defined(TARGET_XARCH)
 
@@ -2321,7 +2321,6 @@ void LinearScan::buildIntervals()
     numPlacedArgLocals = 0;
     placedArgRegs      = RBM_NONE;
 
-    BasicBlock* predBlock = nullptr;
     BasicBlock* prevBlock = nullptr;
 
     // Initialize currentLiveVars to the empty set.  We will set it to the current
@@ -2334,19 +2333,18 @@ void LinearScan::buildIntervals()
         JITDUMP("\nNEW BLOCK " FMT_BB "\n", block->bbNum);
         compiler->compCurBB = block;
 
-        bool predBlockIsAllocated = false;
-        predBlock                 = findPredBlockForLiveIn(block, prevBlock DEBUGARG(&predBlockIsAllocated));
-        if (predBlock != nullptr)
-        {
-            JITDUMP("\n\nSetting " FMT_BB " as the predecessor for determining incoming variable registers of " FMT_BB
-                    "\n",
-                    predBlock->bbNum, block->bbNum);
-            assert(predBlock->bbNum <= bbNumMaxBeforeResolution);
-            blockInfo[block->bbNum].predBBNum = predBlock->bbNum;
-        }
-
         if (localVarsEnregistered)
         {
+            bool              predBlockIsAllocated = false;
+            BasicBlock* const predBlock = findPredBlockForLiveIn(block, prevBlock DEBUGARG(&predBlockIsAllocated));
+            if (predBlock != nullptr)
+            {
+                JITDUMP("\n\nSetting " FMT_BB
+                        " as the predecessor for determining incoming variable registers of " FMT_BB "\n",
+                        predBlock->bbNum, block->bbNum);
+                assert(predBlock->bbNum <= bbNumMaxBeforeResolution);
+                blockInfo[block->bbNum].predBBNum = predBlock->bbNum;
+            }
             VarSetOps::AssignNoCopy(compiler, currentLiveVars,
                                     VarSetOps::Intersection(compiler, registerCandidateVars, block->bbLiveIn));
 
