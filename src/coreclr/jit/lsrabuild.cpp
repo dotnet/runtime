@@ -2327,6 +2327,7 @@ void LinearScan::buildIntervals()
     // live-in at the entry to each block (this will include the incoming args on
     // the first block).
     VarSetOps::AssignNoCopy(compiler, currentLiveVars, VarSetOps::MakeEmpty(compiler));
+    const bool floatingPointUsed = compiler->compFloatingPointUsed;
 
     for (block = startBlockSequence(); block != nullptr; block = moveToNextBlock())
     {
@@ -2403,6 +2404,11 @@ void LinearScan::buildIntervals()
                     }
                 }
             }
+        }
+        else
+        {
+            // If state isn't live across blocks, then reset any global Compiler state.
+            compiler->compFloatingPointUsed = floatingPointUsed;
         }
 
         // Add a dummy RefPosition to mark the block boundary.
