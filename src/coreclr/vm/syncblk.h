@@ -804,18 +804,6 @@ public:
 
 #if defined(FEATURE_COMWRAPPERS)
 public:
-    bool TryGetManagedObjectComWrapper(_In_ INT64 wrapperId, _Out_ void** mocw)
-    {
-        LIMITED_METHOD_DAC_CONTRACT;
-
-        *mocw = NULL;
-        if (m_managedObjectComWrapperMap == NULL)
-            return false;
-
-        CrstHolder lock(&m_managedObjectComWrapperLock);
-        return m_managedObjectComWrapperMap->Lookup(wrapperId, mocw);
-    }
-
 #ifndef DACCESS_COMPILE
     bool TrySetManagedObjectComWrapper(_In_ INT64 wrapperId, _In_ void* mocw, _In_ void* curr = NULL)
     {
@@ -839,55 +827,6 @@ public:
 
         m_managedObjectComWrapperMap->Add(wrapperId, mocw);
         return true;
-    }
-
-    using ClearWrappersCallback = void(void* mocw);
-    void ClearManagedObjectComWrappers(ClearWrappersCallback* callback)
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        if (m_managedObjectComWrapperMap == NULL)
-            return;
-
-        CQuickArrayList<void*> localList;
-        {
-            CrstHolder lock(&m_managedObjectComWrapperLock);
-            if (callback != NULL)
-            {
-                ManagedObjectComWrapperByIdMap::Iterator iter = m_managedObjectComWrapperMap->Begin();
-                while (iter != m_managedObjectComWrapperMap->End())
-                {
-                    localList.Push(iter->Value());
-                    ++iter;
-                }
-            }
-
-            m_managedObjectComWrapperMap->RemoveAll();
-        }
-
-        for (SIZE_T i = 0; i < localList.Size(); i++)
-            callback(localList[i]);
-    }
-
-    using EnumWrappersCallback = bool(void* mocw, void* cxt);
-    void EnumManagedObjectComWrappers(EnumWrappersCallback* callback, void* cxt)
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        _ASSERTE(callback != NULL);
-
-        if (m_managedObjectComWrapperMap == NULL)
-            return;
-
-        CrstHolder lock(&m_managedObjectComWrapperLock);
-
-        ManagedObjectComWrapperByIdMap::Iterator iter = m_managedObjectComWrapperMap->Begin();
-        while (iter != m_managedObjectComWrapperMap->End())
-        {
-            if (!callback(iter->Value(), cxt))
-                break;
-            ++iter;
-        }
     }
 #endif // !DACCESS_COMPILE
 

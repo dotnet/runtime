@@ -2126,6 +2126,9 @@
     <Compile Include="$(CommonPath)Interop\Windows\Ole32\Interop.CoCreateGuid.cs">
       <Link>Common\Interop\Windows\Ole32\Interop.CoCreateGuid.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\Ole32\Interop.CoGetContextToken.cs">
+      <Link>Interop\Windows\Ole32\Interop.CoGetContextToken.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\Ole32\Interop.CoGetStandardMarshal.cs">
       <Link>Common\Interop\Windows\Ole32\Interop.CoGetStandardMarshal.cs</Link>
     </Compile>
@@ -2252,6 +2255,13 @@
   </ItemGroup>
   <ItemGroup Condition="'$(FeatureComWrappers)' != 'true'">
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\ComWrappers.PlatformNotSupported.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(FeatureComWrappers)' == 'true'">
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\ComWrappers.Common.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\IReferenceTracker.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\ReferenceTrackerHost.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\TrackerObjectManager.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\ComAwareWeakReference.ComWrappers.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(FeatureCominterop)' != 'true'">
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\Marshal.NoCom.cs" />

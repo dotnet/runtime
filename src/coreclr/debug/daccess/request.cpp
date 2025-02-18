@@ -23,7 +23,6 @@
 #include <interoplibinterface.h>
 #include <interoplibabi.h>
 
-typedef DPTR(InteropLibInterface::ExternalObjectContextBase) PTR_ExternalObjectContext;
 typedef DPTR(InteropLib::ABI::ManagedObjectWrapperLayout) PTR_ManagedObjectWrapper;
 #endif // FEATURE_COMWRAPPERS
 
@@ -5190,7 +5189,7 @@ HRESULT ClrDataAccess::GetComWrappersCCWData(CLRDATA_ADDRESS ccw, CLRDATA_ADDRES
 
         if (refCount != NULL)
         {
-            *refCount = (int)pMOW->RefCount;
+            *refCount = (int)pMOW->GetRawRefCount();
         }
     }
     else
@@ -5206,6 +5205,73 @@ HRESULT ClrDataAccess::GetComWrappersCCWData(CLRDATA_ADDRESS ccw, CLRDATA_ADDRES
 #endif // FEATURE_COMWRAPPERS
 }
 
+#ifdef FEATURE_COMWRAPPERS
+namespace
+{
+    BOOL IsComWrappersRCW(CLRDATA_ADDRESS rcw)
+    {
+        NewArrayHolder<SOSMemoryRegion> region;
+        unsigned int count = 0;
+
+        {
+            DacHandleTableMemoryEnumerator handleEnumerator;
+            handleEnumerator.Init();
+            if (!handleEnumerator.GetCount(&count) || count == 0)
+            {
+                return FALSE;
+            }
+            region = new(nothrow) SOSMemoryRegion[count];
+            if (handleEnumerator.Next(count, region, &count) != S_OK)
+            {
+                return FALSE;
+            }
+        }
+
+        BOOL isGCHandle = FALSE;
+        for (unsigned int i = 0; i < count; i++)
+        {
+            if (region[i].Start <= rcw && rcw < region[i].Start + region[i].Size)
+            {
+                isGCHandle = TRUE;
+                break;
+            }
+        }
+
+        if (!isGCHandle)
+        {
+            return FALSE;
+        }
+
+        OBJECTHANDLE nativeObjectWrapperHandle = (OBJECTHANDLE)TO_TADDR(rcw);
+        OBJECTREF nativeObjectWrapper = ObjectFromHandle(nativeObjectWrapperHandle);
+        if (nativeObjectWrapper == NULL)
+        {
+            return FALSE;
+        }
+
+        if (nativeObjectWrapper->GetMethodTable() != (&g_CoreLib)->GetClass(CLASS__NATIVE_OBJECT_WRAPPER))
+        {
+            return FALSE;
+        }
+
+        return TRUE;
+    }
+
+    TADDR GetComWrappersRCWIdentity(CLRDATA_ADDRESS rcw)
+    {
+        OBJECTHANDLE nativeObjectWrapperHandle = (OBJECTHANDLE)TO_TADDR(rcw);
+        OBJECTREF nativeObjectWrapper = ObjectFromHandle(nativeObjectWrapperHandle);
+        if (nativeObjectWrapper == NULL)
+        {
+            return NULL;
+        }
+
+        NATIVEOBJECTWRAPPERREF pNativeObjectWrapper = NATIVEOBJECTWRAPPERREF(nativeObjectWrapper);
+        return pNativeObjectWrapper->GetExternalComObject();
+    }
+}
+#endif
+
 HRESULT ClrDataAccess::IsComWrappersRCW(CLRDATA_ADDRESS rcw, BOOL *isComWrappersRCW)
 {
 #ifdef FEATURE_COMWRAPPERS
@@ -5218,40 +5284,7 @@ HRESULT ClrDataAccess::IsComWrappersRCW(CLRDATA_ADDRESS rcw, BOOL *isComWrappers
 
     if (isComWrappersRCW != NULL)
     {
-        PTR_ExternalObjectContext pRCW(TO_TADDR(rcw));
-        BOOL stillValid = TRUE;
-        if(pRCW->SyncBlockIndex >= SyncBlockCache::s_pSyncBlockCache->m_SyncTableSize)
-        {
-            stillValid = FALSE;
-        }
-
-        PTR_SyncBlock pSyncBlk = NULL;
-        if (stillValid)
-        {
-            PTR_SyncTableEntry ste = PTR_SyncTableEntry(dac_cast<TADDR>(g_pSyncTable) + (sizeof(SyncTableEntry) * pRCW->SyncBlockIndex));
-            pSyncBlk = ste->m_SyncBlock;
-            if(pSyncBlk == NULL)
-            {
-                stillValid = FALSE;
-            }
-        }
-
-        PTR_InteropSyncBlockInfo pInfo = NULL;
-        if (stillValid)
-        {
-            pInfo = pSyncBlk->GetInteropInfoNoCreate();
-            if(pInfo == NULL)
-            {
-                stillValid = FALSE;
-            }
-        }
-
-        if (stillValid)
-        {
-            stillValid = TO_TADDR(pInfo->m_externalComObjectContext) == PTR_HOST_TO_TADDR(pRCW);
-        }
-
-        *isComWrappersRCW = stillValid;
+        *isComWrappersRCW = ::IsComWrappersRCW(rcw);
         hr = *isComWrappersRCW ? S_OK : S_FALSE;
     }
 
@@ -5272,10 +5305,9 @@ HRESULT ClrDataAccess::GetComWrappersRCWData(CLRDATA_ADDRESS rcw, CLRDATA_ADDRES
 
     SOSDacEnter();
 
-    PTR_ExternalObjectContext pEOC(TO_TADDR(rcw));
     if (identity != NULL)
     {
-        *identity = PTR_CDADDR(pEOC->Identity);
+        *identity = TO_CDADDR(GetComWrappersRCWIdentity(rcw));
     }
 
     SOSDacLeave();

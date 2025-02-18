@@ -21,8 +21,8 @@ public:
     static FCDECL1(FC_BOOL_RET, HasInteropInfo, Object* pObject);
 };
 
-extern "C" void QCALLTYPE ComWeakRefToObject(IWeakReference * pComWeakReference, INT64 wrapperId, QCall::ObjectHandleOnStack retRcw);
-extern "C" IWeakReference * QCALLTYPE ObjectToComWeakRef(QCall::ObjectHandleOnStack obj, INT64* wrapperId);
+extern "C" void QCALLTYPE ComWeakRefToObject(IWeakReference * pComWeakReference, QCall::ObjectHandleOnStack retRcw);
+extern "C" IWeakReference * QCALLTYPE ObjectToComWeakRef(QCall::ObjectHandleOnStack obj);
 
 #endif // FEATURE_COMINTEROP || FEATURE_COMWRAPPERS
 

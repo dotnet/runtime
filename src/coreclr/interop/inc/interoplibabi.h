@@ -5,6 +5,7 @@
 #define _INTEROP_INC_INTEROPLIBABI_H_
 
 #include <stddef.h>
+#include <interoplib.h>
 
 namespace InteropLib
 {
@@ -19,12 +20,29 @@ namespace InteropLib
 
         const intptr_t DispatchThisPtrMask = ~(DispatchAlignmentThisPtr - 1);
 
+        struct ComInterfaceDispatch;
+
+        struct ComInterfaceEntry;
+
         // Managed object wrapper layout.
         // This is designed to codify the binary layout.
         struct ManagedObjectWrapperLayout
         {
-            PTR_VOID ManagedObject;
-            long long RefCount;
+        public:
+            Volatile<InteropLib::OBJECTHANDLE> Target;
+
+            LONGLONG GetRawRefCount() const
+            {
+                return _refCount;
+            }
+        
+        protected:
+            LONGLONG _refCount;
+        
+            Volatile<InteropLib::Com::CreateComInterfaceFlagsEx> _flags;
+            const int32_t _userDefinedCount;
+            const ComInterfaceEntry* _userDefined;
+            ComInterfaceDispatch* _dispatches;
         };
     }
 }

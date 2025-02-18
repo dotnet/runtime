@@ -10,13 +10,19 @@ namespace System
     internal sealed partial class ComAwareWeakReference
     {
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ComWeakRefToObject")]
-        private static partial void ComWeakRefToObject(IntPtr pComWeakRef, long wrapperId, ObjectHandleOnStack retRcw);
+        private static partial void ComWeakRefToObject(IntPtr pComWeakRef, ObjectHandleOnStack retRcw);
 
-        internal static object? ComWeakRefToObject(IntPtr pComWeakRef, long wrapperId)
+        internal static object? ComWeakRefToObject(IntPtr pComWeakRef, object? context)
         {
-            object? retRcw = null;
-            ComWeakRefToObject(pComWeakRef, wrapperId, ObjectHandleOnStack.Create(ref retRcw));
-            return retRcw;
+            if (context is null)
+            {
+                // This wrapper was not created by ComWrappers, so we try to rehydrate using built-in COM.
+                object? retRcw = null;
+                ComWeakRefToObject(pComWeakRef, ObjectHandleOnStack.Create(ref retRcw));
+                return retRcw;
+            }
+
+            return ComWeakRefToComWrappersObject(pComWeakRef, context);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -40,17 +46,24 @@ namespace System
         internal static extern bool HasInteropInfo(object target);
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ObjectToComWeakRef")]
-        private static partial IntPtr ObjectToComWeakRef(ObjectHandleOnStack retRcw, out long wrapperId);
+        private static partial IntPtr ObjectToComWeakRef(ObjectHandleOnStack retRcw);
 
-        internal static nint ObjectToComWeakRef(object target, out long wrapperId)
+        internal static nint ObjectToComWeakRef(object target, out object? context)
         {
-            if (HasInteropInfo(target))
+            if (!HasInteropInfo(target))
             {
-                return ObjectToComWeakRef(ObjectHandleOnStack.Create(ref target), out wrapperId);
+                context = null;
+                return IntPtr.Zero;
             }
 
-            wrapperId = 0;
-            return IntPtr.Zero;
+            if (target is __ComObject)
+            {
+                // This object is using built-in COM, so use built-in COM to create the weak reference.
+                context = null;
+                return ObjectToComWeakRef(ObjectHandleOnStack.Create(ref target));
+            }
+
+            return ComWrappersObjectToComWeakRef(target, out context);
         }
     }
 }
