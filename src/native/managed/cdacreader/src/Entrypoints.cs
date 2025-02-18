@@ -2,8 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.IO;
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.Marshalling;
+using Microsoft.Diagnostics.DataContractReader.Decoder;
+using Microsoft.Diagnostics.DataContractReader.Legacy;
 
 namespace Microsoft.Diagnostics.DataContractReader;
 
@@ -58,6 +61,55 @@ internal static class Entrypoints
         Legacy.SOSDacImpl impl = new(target, legacyImpl);
         nint ptr = cw.GetOrCreateComInterfaceForObject(impl, CreateComInterfaceFlags.None);
         *obj = ptr;
+        return 0;
+    }
+
+    [UnmanagedCallersOnly(EntryPoint = $"{CDAC}create_instance")]
+    private static unsafe int CLRDataCreateInstance(Guid* pIID, IntPtr /*ICLRDataTarget*/ pLegacyTarget, void** iface)
+    {
+        if (pLegacyTarget == IntPtr.Zero || iface == null)
+            return HResults.E_INVALIDARG;
+
+        *iface = null;
+
+        ComWrappers cw = new StrategyBasedComWrappers();
+        object obj = cw.GetOrCreateObjectForComInstance(pLegacyTarget, CreateObjectFlags.None);
+        ICLRDataTarget dataTarget = obj as ICLRDataTarget ?? throw new ArgumentException("Invalid ICLRDataTarget");
+        ICLRRuntimeLocator? locator = obj as ICLRRuntimeLocator;
+
+        ulong baseAddress;
+        if (locator is ICLRRuntimeLocator loc)
+        {
+            locator.GetRuntimeBase(&baseAddress);
+        }
+        else
+        {
+            dataTarget.GetImageBase("coreclr.dll", &baseAddress);
+        }
+
+
+        PEDecoder peDecoder = new(dataTarget, baseAddress);
+        ulong contractDescriptor = peDecoder.GetSymbolAddress("DotNetRuntimeContractDescriptor");
+
+        if (!ContractDescriptorTarget.TryCreate(contractDescriptor, (address, buffer) =>
+        {
+            fixed (byte* bufferPtr = buffer)
+            {
+                return dataTarget.ReadVirtual(address, bufferPtr, (uint)buffer.Length, null);
+            }
+        }, out ContractDescriptorTarget? target))
+        {
+            return -1;
+        }
+
+        Legacy.SOSDacImpl impl = new(target, null);
+        nint ccw = cw.GetOrCreateComInterfaceForObject(impl, CreateComInterfaceFlags.None);
+        Marshal.QueryInterface(ccw, *pIID, out nint ptrToIface);
+        *iface = (void*)ptrToIface;
+
+        // Decrement reference count on ccw because QI increments it?
+        Marshal.Release(ccw);
+
         return 0;
     }
 }
