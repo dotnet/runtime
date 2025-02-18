@@ -24,8 +24,6 @@ namespace System.Net.Http
         public static Interop.WinHttp.WINHTTP_STATUS_CALLBACK StaticCallbackDelegate =
             new Interop.WinHttp.WINHTTP_STATUS_CALLBACK(WinHttpCallback);
 
-        public static bool CertificateCachingAppContextSwitchEnabled { get; } = AppContext.TryGetSwitch("System.Net.Http.UseWinHttpCertificateCaching", out bool enabled) && enabled;
-
         public static void WinHttpCallback(
             IntPtr handle,
             IntPtr context,
@@ -63,7 +61,7 @@ namespace System.Net.Http
                 switch (internetStatus)
                 {
                     case Interop.WinHttp.WINHTTP_CALLBACK_STATUS_CONNECTED_TO_SERVER:
-                        if (CertificateCachingAppContextSwitchEnabled)
+                        if (WinHttpHandler.CertificateCachingAppContextSwitchEnabled)
                         {
                             IPAddress connectedToIPAddress = IPAddress.Parse(Marshal.PtrToStringUni(statusInformation)!);
                             OnRequestConnectedToServer(state, connectedToIPAddress);
@@ -139,14 +137,15 @@ namespace System.Net.Http
         {
             Debug.Assert(state != null);
             Debug.Assert(state.Handler != null);
+            Debug.Assert(state.RequestMessage != null);
 
-            if (state.Handler.TryRemoveCertificateFromCache(connectedIPAddress))
+            if (state.Handler.TryRemoveCertificateFromCache(WinHttpHandler.CreateCachedCertificateKey(connectedIPAddress, state.RequestMessage)))
             {
-                if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(null, $"Removed cached certificate for {connectedIPAddress}");
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(state, $"Removed cached certificate for {connectedIPAddress}");
             }
             else
             {
-                if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(null, $"No cached certificate for {connectedIPAddress} to remove");
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(state, $"No cached certificate for {connectedIPAddress} to remove");
             }
         }
 
@@ -310,14 +309,13 @@ namespace System.Net.Http
                 Interop.Crypt32.CertFreeCertificateContext(certHandle);
 
                 IPAddress? ipAddress = null;
-                if (CertificateCachingAppContextSwitchEnabled)
+                if (WinHttpHandler.CertificateCachingAppContextSwitchEnabled)
                 {
                     unsafe
                     {
                         Interop.WinHttp.WINHTTP_CONNECTION_INFO connectionInfo;
                         Interop.WinHttp.WINHTTP_CONNECTION_INFO* pConnectionInfo = &connectionInfo;
                         uint infoSize = (uint)sizeof(Interop.WinHttp.WINHTTP_CONNECTION_INFO);
-                        if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(state, $"sizeof(WINHTTP_CONNECTION_INFO)={infoSize}");
                         if (Interop.WinHttp.WinHttpQueryOption(
                             state.RequestHandle,
                             // This option is available on Windows XP SP2 and later; Windows 2003 with SP1 and later.
@@ -344,7 +342,7 @@ namespace System.Net.Http
                         }
                     }
 
-                    if (ipAddress is not null && state.Handler.GetCertificateFromCache(ipAddress, out byte[]? rawCertData) && rawCertData.SequenceEqual(serverCertificate.RawData))
+                    if (ipAddress is not null && state.Handler.GetCertificateFromCache(WinHttpHandler.CreateCachedCertificateKey(ipAddress, state.RequestMessage), out byte[]? rawCertData) && rawCertData.SequenceEqual(serverCertificate.RawData))
                     {
                         if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(state, $"Skipping certificate validation. ipAddress: {ipAddress}, Thumbprint: {serverCertificate.Thumbprint}");
                         serverCertificate.Dispose();
@@ -375,9 +373,9 @@ namespace System.Net.Http
                         serverCertificate,
                         chain,
                         sslPolicyErrors);
-                    if (CertificateCachingAppContextSwitchEnabled && result && ipAddress is not null)
+                    if (WinHttpHandler.CertificateCachingAppContextSwitchEnabled && result && ipAddress is not null)
                     {
-                        _ = state.Handler.TryAddCertificateToCache(ipAddress, serverCertificate.RawData);
+                        state.Handler.AddCertificateToCache(WinHttpHandler.CreateCachedCertificateKey(ipAddress, state.RequestMessage), serverCertificate.RawData);
                     }
                 }
                 catch (Exception ex)

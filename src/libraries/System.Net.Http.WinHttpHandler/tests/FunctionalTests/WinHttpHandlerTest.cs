@@ -101,7 +101,6 @@ namespace System.Net.Http.WinHttpHandlerFunctional.Tests
                     }
                     Assert.Equal(1, callbackCount);
                 }
-                AppContext.SetSwitch("System.Net.Http.UseWinHttpCertificateCaching", false);
             }, version.ToString()).DisposeAsync();
         }
 
@@ -112,7 +111,10 @@ namespace System.Net.Http.WinHttpHandlerFunctional.Tests
         {
             await RemoteExecutor.Invoke(async (version) =>
             {
+                const int certificateCacheCleanupInterval = 1;
                 AppContext.SetSwitch("System.Net.Http.UseWinHttpCertificateCaching", true);
+                AppDomain.CurrentDomain.SetData("System.Net.Http.WinHttpCertificateCachingCleanupTimerInterval", certificateCacheCleanupInterval);
+                AppDomain.CurrentDomain.SetData("System.Net.Http.WinHttpCertificateCachingStaleTimeout", certificateCacheCleanupInterval);
                 int callbackCount = 0;
                 var handler = new WinHttpHandler()
                 {
@@ -130,7 +132,7 @@ namespace System.Net.Http.WinHttpHandlerFunctional.Tests
                     });
                     Assert.Equal(HttpStatusCode.OK, response.StatusCode);
                     _ = await response.Content.ReadAsStringAsync();
-                    await Task.Delay(65 * 1000); // 65 seconds are enough for the certificate cache to expire.
+                    await Task.Delay(TimeSpan.FromSeconds(certificateCacheCleanupInterval));
                     response = await client.SendAsync(new HttpRequestMessage(HttpMethod.Get, Configuration.Http.SecureRemoteEchoServer)
                     {
                         Version = Version.Parse(version)
@@ -139,7 +141,6 @@ namespace System.Net.Http.WinHttpHandlerFunctional.Tests
                     _ = await response.Content.ReadAsStringAsync();
                     Assert.Equal(2, callbackCount);
                 }
-                AppContext.SetSwitch("System.Net.Http.UseWinHttpCertificateCaching", false);
             }, version.ToString(), options: new RemoteInvokeOptions() { TimeOut = 150_000 }).DisposeAsync();
         }
 

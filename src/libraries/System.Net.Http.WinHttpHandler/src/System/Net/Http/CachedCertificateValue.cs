@@ -12,4 +12,10 @@ namespace System.Net.Http
         public byte[] RawCertificateData { get; } = rawCertificateData;
         public long LastUsedTime { get; set; } = lastUsedTime;
     }
+
+    internal readonly struct CachedCertificateKey(IPAddress address, string host)
+    {
+        public IPAddress Address { get; } = address;
+        public string Host { get; } = host;
+    }
 }
