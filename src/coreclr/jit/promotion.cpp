@@ -2538,12 +2538,6 @@ bool ReplaceVisitor::CanReplaceCallArgWithFieldListOfReplacements(GenTreeCall*  
                 return false;
             }
 
-            // Finally, the backend requires the register types to match.
-            if (!varTypeUsesSameRegType(rep.AccessType, seg.GetRegisterType()))
-            {
-                return false;
-            }
-
             return true;
         };
 
