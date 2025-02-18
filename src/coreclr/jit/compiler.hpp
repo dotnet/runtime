@@ -1598,7 +1598,6 @@ inline GenTreeCall* Compiler::gtNewHelperCallNode(
 inline GenTreeCall* Compiler::gtNewVirtualFunctionLookupHelperCallNode(
     unsigned helper, var_types type, GenTree* thisPtr, GenTree* methHnd, GenTree* clsHnd)
 {
-
     GenTreeCall* const result = gtNewCallNode(CT_HELPER, eeFindHelper(helper), type);
 
     if (!s_helperCallProperties.NoThrow((CorInfoHelpFunc)helper))
