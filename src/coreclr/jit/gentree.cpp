@@ -21299,7 +21299,8 @@ GenTree* Compiler::gtNewSimdBinOpNode(
                                                      divideOpSimdSize);
                 GenTree* divOpCvt       = gtNewSimdHWIntrinsicNode(type, divOp, floatToIntConvertIntrinsic,
                                                                    floatToIntConvertType, divideOpSimdSize);
-                GenTree* hwIntrinsicChk = gtNewSIMDDivByZeroCheck(op2, TYP_INT, simdBaseJitType, simdSize);
+                GenTree* cmpZeroChk = gtNewSimdCmpOpAnyNode(GT_EQ, TYP_INT, op2, gtNewZeroConNode(type), simdBaseJitType, simdSize);
+                GenTree* hwIntrinsicChk = gtNewSIMDDivByZeroCheck(cmpZeroChk, TYP_INT, simdBaseJitType, simdSize);
                 return gtNewOperNode(GT_COMMA, type, hwIntrinsicChk, divOpCvt);
             }
             unreached();

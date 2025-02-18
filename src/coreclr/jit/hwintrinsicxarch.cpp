@@ -5219,10 +5219,8 @@ GenTree* Compiler::gtNewSIMDDivByZeroCheck(GenTree*     op,
                                            unsigned int simdSize)
 {
     assert(type == TYP_INT);
-    GenTree* zeroVecCon = gtNewZeroConNode(op->TypeGet());
-    GenTree* cmpOp      = gtNewSimdCmpOpNode(GT_EQ, op->TypeGet(), op, zeroVecCon, simdBaseJitType, simdSize);
     GenTreeSIMDDivByZeroChk* hwIntrinsicChk =
-        new (this, GT_SIMD_DIV_BY_ZERO_CHECK) GenTreeSIMDDivByZeroChk(cmpOp, SCK_DIV_BY_ZERO);
+        new (this, GT_SIMD_DIV_BY_ZERO_CHECK) GenTreeSIMDDivByZeroChk(op, SCK_DIV_BY_ZERO);
     return hwIntrinsicChk;
 }
 #endif // defined(TARGET_XARCH) && defined(FEATURE_HW_INTRINSICS)
