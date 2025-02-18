@@ -422,6 +422,7 @@ namespace System.Net
 
             if (!ValidateAddressFamily(ref addressFamily, hostName, justAddresses, out object? resultOnFailure))
             {
+                Debug.Assert(!activityOrDefault.HasValue);
                 return resultOnFailure;
             }
 
