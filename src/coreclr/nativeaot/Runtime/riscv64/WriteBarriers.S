@@ -303,6 +303,7 @@ LEAF_END RhpAssignRef, _TEXT
 //  t0, t1, t2, t6: trashed
 //
 LEAF_ENTRY RhpCheckedLockCmpXchg
+        fence
 
 LOCAL_LABEL(CmpXchgRetry):
         // Load the current value at the destination address.
@@ -342,13 +343,15 @@ LEAF_END RhpCheckedLockCmpXchg
 //
 // On exit:
 //  a0: original value of objectref
-//  t1: trashed
-//  t3, t6, t4: trashed
+//  t1, t2, t6: trashed
 //
 LEAF_ENTRY RhpCheckedXchg
+        fence
 
-        ld   t1, 0(a0)
-        sd   a1, 0(a0)
+RhpCheckedXchgRetry:
+        lr.d   t1, 0(a0)
+        sc.d   t2, a1, 0(a0)
+        bnez   t2, RhpCheckedXchgRetry // if store conditional failed, retry
 
 DoCardsXchg:
         // We have successfully updated the value of the objectref so now we need a GC write barrier.
