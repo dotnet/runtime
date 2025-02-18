@@ -621,8 +621,8 @@ namespace System.Threading
             // Only request a thread if the stage is NotScheduled.
             // Otherwise let the current requested thread handle parallelization.
             if (Interlocked.Exchange(
-                ref _separated.queueProcessingStage,
-                QueueProcessingStage.Scheduled) == QueueProcessingStage.NotScheduled)
+                    ref _separated.queueProcessingStage,
+                    QueueProcessingStage.Scheduled) == QueueProcessingStage.NotScheduled)
             {
                 ThreadPool.RequestWorkerThread();
             }
@@ -723,14 +723,27 @@ namespace System.Threading
             // Pop each work item off the local queue and push it onto the global. This is a
             // bounded loop as no other thread is allowed to push into this thread's queue.
             ThreadPoolWorkQueue queue = ThreadPool.s_workQueue;
+            bool anyWorkItemMoved = false;
             while (tl.workStealingQueue.LocalPop() is object workItem)
             {
-                queue.highPriorityWorkItems.Enqueue(workItem);
+                try
+                {
+                    queue.highPriorityWorkItems.Enqueue(workItem);
+                }
+                catch (Exception ex)
+                {
+                    // Typically would be an OOM, but since we have lost a work item, fail-fast on any exception
+                    Environment.FailFast("Failed to move a local work item to the high-priority global queue.", ex);
+                }
+
+                anyWorkItemMoved = true;
             }
 
-            Volatile.Write(ref queue._mayHaveHighPriorityWorkItems, true);
-
-            queue.EnsureThreadRequested();
+            if (anyWorkItemMoved)
+            {
+                Volatile.Write(ref queue._mayHaveHighPriorityWorkItems, true);
+                queue.EnsureThreadRequested();
+            }
         }
 
         internal static bool LocalFindAndPop(object callback)
