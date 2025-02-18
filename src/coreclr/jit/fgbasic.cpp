@@ -4047,7 +4047,12 @@ void Compiler::fgFixEntryFlowForOSR()
     fgRedirectTargetEdge(fgFirstBB, fgOSREntryBB);
 
     fgFirstBB->bbWeight = fgCalledCount;
-    fgFirstBB->CopyFlags(fgEntryBB, (BBF_PROF_WEIGHT | BBF_RUN_RARELY));
+    fgFirstBB->CopyFlags(fgEntryBB, BBF_PROF_WEIGHT);
+
+    if (fgCalledCount == BB_ZERO_WEIGHT)
+    {
+        fgFirstBB->bbSetRunRarely();
+    }
 
     JITDUMP("OSR: redirecting flow at method entry from " FMT_BB " to OSR entry " FMT_BB " for the importer\n",
             fgFirstBB->bbNum, fgOSREntryBB->bbNum);
