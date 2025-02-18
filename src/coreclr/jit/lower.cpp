@@ -4835,7 +4835,7 @@ void Lowering::LowerRet(GenTreeOp* ret)
     //   - We're returning a floating type as an integral type or vice-versa, or
     // - If we're returning a struct as a primitive type, we change the type of
     // 'retval' in 'LowerRetStructLclVar()'
-    bool needBitcast        = (ret->TypeGet() != TYP_VOID) && !varTypeUsesSameRegType(ret, retVal);
+    bool needBitcast        = !ret->TypeIs(TYP_VOID) && !varTypeUsesSameRegType(ret, retVal);
     bool doPrimitiveBitcast = false;
     if (needBitcast)
     {
@@ -4855,7 +4855,7 @@ void Lowering::LowerRet(GenTreeOp* ret)
         BlockRange().InsertBefore(ret, bitcast);
         ContainCheckBitCast(bitcast);
     }
-    else if (ret->TypeGet() != TYP_VOID)
+    else if (!ret->TypeIs(TYP_VOID))
     {
 #if FEATURE_MULTIREG_RET
         if (comp->compMethodReturnsMultiRegRetType() && retVal->OperIs(GT_LCL_VAR))
@@ -4884,7 +4884,11 @@ void Lowering::LowerRet(GenTreeOp* ret)
         }
 #endif // DEBUG
 
-        if (varTypeIsStruct(ret))
+        if (retVal->OperIsFieldList())
+        {
+            LowerRetFieldList(ret, retVal->AsFieldList());
+        }
+        else if (varTypeIsStruct(ret))
         {
             LowerRetStruct(ret);
         }
@@ -4896,12 +4900,134 @@ void Lowering::LowerRet(GenTreeOp* ret)
         }
     }
 
-    // Method doing PInvokes has exactly one return block unless it has tail calls.
     if (comp->compMethodRequiresPInvokeFrame())
     {
         InsertPInvokeMethodEpilog(comp->compCurBB DEBUGARG(ret));
     }
     ContainCheckRet(ret);
+}
+
+//----------------------------------------------------------------------------------------------
+// LowerRetFieldList:
+//   Lower a returned FIELD_LIST node.
+//
+// Arguments:
+//     ret       - The return node
+//     fieldList - The field list
+//
+void Lowering::LowerRetFieldList(GenTreeOp* ret, GenTreeFieldList* fieldList)
+{
+    const ReturnTypeDesc& retDesc = comp->compRetTypeDesc;
+    unsigned              numRegs = retDesc.GetReturnRegCount();
+
+    bool isCompatible = IsFieldListCompatibleWithReturn(fieldList);
+    if (!isCompatible)
+    {
+        JITDUMP("Spilling field list [%06u] to stack\n", Compiler::dspTreeID(fieldList));
+        unsigned   lclNum = comp->lvaGrabTemp(true DEBUGARG("Spilled local for return value"));
+        LclVarDsc* varDsc = comp->lvaGetDesc(lclNum);
+        comp->lvaSetStruct(lclNum, comp->info.compMethodInfo->args.retTypeClass, false);
+        comp->lvaSetVarDoNotEnregister(lclNum DEBUGARG(DoNotEnregisterReason::BlockOpRet));
+
+        for (GenTreeFieldList::Use& use : fieldList->Uses())
+        {
+            GenTree* store = comp->gtNewStoreLclFldNode(lclNum, use.GetType(), use.GetOffset(), use.GetNode());
+            BlockRange().InsertAfter(use.GetNode(), store);
+            LowerNode(store);
+        }
+
+        GenTree* retValue = comp->gtNewLclvNode(lclNum, varDsc->TypeGet());
+        ret->SetReturnValue(retValue);
+        BlockRange().InsertBefore(ret, retValue);
+        LowerNode(retValue);
+
+        BlockRange().Remove(fieldList);
+
+        if (numRegs == 1)
+        {
+            var_types nativeReturnType = comp->info.compRetNativeType;
+            ret->ChangeType(genActualType(nativeReturnType));
+            LowerRetSingleRegStructLclVar(ret);
+        }
+        else
+        {
+            varDsc->lvIsMultiRegRet = true;
+        }
+
+        return;
+    }
+
+    unsigned regIndex = 0;
+    for (GenTreeFieldList::Use& use : fieldList->Uses())
+    {
+        var_types regType = retDesc.GetReturnRegType(regIndex);
+        if (varTypeUsesIntReg(regType) != varTypeUsesIntReg(use.GetNode()))
+        {
+            GenTree* bitcast = comp->gtNewOperNode(GT_BITCAST, regType, use.GetNode());
+            BlockRange().InsertBefore(fieldList, bitcast);
+            use.SetNode(bitcast);
+            LowerNode(bitcast);
+        }
+
+        regIndex++;
+    }
+}
+
+//----------------------------------------------------------------------------------------------
+// IsFieldListCompatibleWithReturn:
+//   Check if the fields of a FIELD_LIST are compatible with the registers
+//   being returned.
+//
+// Arguments:
+//   fieldList - The FIELD_LIST node
+//
+// Returns:
+//   True if the fields of the FIELD_LIST map cleanly to the ABI returned
+//   registers. Insertions of bitcasts may still be required.
+//
+bool Lowering::IsFieldListCompatibleWithReturn(GenTreeFieldList* fieldList)
+{
+    JITDUMP("Checking if field list [%06u] is compatible with return ABI: ", Compiler::dspTreeID(fieldList));
+    const ReturnTypeDesc& retDesc    = comp->compRetTypeDesc;
+    unsigned              numRetRegs = retDesc.GetReturnRegCount();
+    unsigned              regIndex   = 0;
+
+    for (const GenTreeFieldList::Use& use : fieldList->Uses())
+    {
+        if (regIndex >= numRetRegs)
+        {
+            JITDUMP("it is not; too many fields\n");
+            return false;
+        }
+
+        unsigned offset = retDesc.GetReturnFieldOffset(regIndex);
+        if (offset != use.GetOffset())
+        {
+            JITDUMP("it is not; field %u register starts at offset %u, but field starts at offset %u\n", regIndex,
+                    offset, use.GetOffset());
+            return false;
+        }
+
+        var_types fieldType = genActualType(use.GetNode());
+        var_types regType   = genActualType(retDesc.GetReturnRegType(regIndex));
+        if (genTypeSize(fieldType) != genTypeSize(regType))
+        {
+            JITDUMP("it is not; field %u register has type %s but field has type %s\n", regIndex, varTypeName(regType),
+                    varTypeName(fieldType));
+            return false;
+        }
+
+        regIndex++;
+    }
+
+    if (regIndex != numRetRegs)
+    {
+        JITDUMP("it is not; too few fields\n");
+        return false;
+    }
+
+    JITDUMP("it is\n");
+    return true;
 }
 
 //----------------------------------------------------------------------------------------------

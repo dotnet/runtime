@@ -159,6 +159,7 @@ set( JIT_SOURCES
   promotiondecomposition.cpp
   promotionliveness.cpp
   rangecheck.cpp
+  rangecheckcloning.cpp
   rationalize.cpp
   redundantbranchopts.cpp
   regalloc.cpp
@@ -356,6 +357,7 @@ set( JIT_HEADERS
   priorityqueue.h
   promotion.h
   rangecheck.h
+  rangecheckcloning.h
   rationalize.h
   regalloc.h
   registerargconvention.h

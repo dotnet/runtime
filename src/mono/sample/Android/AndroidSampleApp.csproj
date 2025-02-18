@@ -25,7 +25,10 @@
   </ItemGroup>
 
   <Import Project="$(MonoProjectRoot)\msbuild\android\build\AndroidBuild.props" />
-  <Import Project="$(MonoProjectRoot)\msbuild\android\build\AndroidBuild.InTree.targets" />
+  <PropertyGroup>
+    <!-- Import after SDK targets in order to override R2R-related targets in the SDK -->
+    <AfterMicrosoftNETSdkTargets>$(MonoProjectRoot)\msbuild\android\build\AndroidBuild.InTree.targets</AfterMicrosoftNETSdkTargets>
+  </PropertyGroup>
 
   <Target Name="RunAppBundle"
           Condition="'$(ArchiveTests)' != 'true' and '$(DeployAndRun)' == 'true'"
@@ -34,8 +37,8 @@
     <Exec Command="$(RepoDotnet) xharness android test --package-name=net.dot.HelloAndroid --instrumentation=net.dot.MonoRunner --app=$(AndroidBundleDir)/bin/HelloAndroid.apk --expected-exit-code=42 --output-directory=$(AndroidBundleDir)/log" />
   </Target>
 
-  <Target Name="CopySampleAppToHelixTestDir" 
-          Condition="'$(ArchiveTests)' == 'true'" 
+  <Target Name="CopySampleAppToHelixTestDir"
+          Condition="'$(ArchiveTests)' == 'true'"
           AfterTargets="_AfterAndroidBuild"
           DependsOnTargets="$(AndroidBuildDependsOn)" >
     <PropertyGroup>
