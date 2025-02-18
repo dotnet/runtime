@@ -31,7 +31,7 @@ runtimepack:
 	$(BUILD_SCRIPT) mono+libs -os android -arch $(TARGET_ARCH) -c $(BUILD_CONFIG) -bl
 else
 runtimepack:
-	$(BUILD_SCRIPT) clr.runtime+clr.alljits+clr.corelib+clr.nativecorelib+clr.tools+clr.packages+libs -os android -arch $(TARGET_ARCH) -c $(BUILD_CONFIG) -cross -bl
+	$(BUILD_SCRIPT) clr.runtime+clr.alljits+clr.corelib+clr.nativecorelib+clr.tools+clr.packages+libs -os android -arch $(TARGET_ARCH) -c $(BUILD_CONFIG) -bl
 endif
 
 run: appbuilder

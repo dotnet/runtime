@@ -669,7 +669,6 @@ void Lowering::LowerPutArgStk(GenTreePutArgStk* putArgStk)
         return;
     }
 
-#ifdef FEATURE_PUT_STRUCT_ARG_STK
     if (src->TypeIs(TYP_STRUCT))
     {
         assert(src->OperIs(GT_BLK) || src->OperIsLocalRead());
@@ -756,7 +755,6 @@ void Lowering::LowerPutArgStk(GenTreePutArgStk* putArgStk)
     {
         return;
     }
-#endif // FEATURE_PUT_STRUCT_ARG_STK
 
     assert(!src->TypeIs(TYP_STRUCT));
 
