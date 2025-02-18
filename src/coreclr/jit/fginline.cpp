@@ -536,6 +536,7 @@ private:
         assert(call->IsDevirtualizationCandidate(m_compiler));
         if (call->IsVirtual())
         {
+            assert(call->gtCallType == CT_USER_FUNC);
             return call->gtCallMethHnd;
         }
         else
