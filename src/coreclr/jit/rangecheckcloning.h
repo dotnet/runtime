@@ -11,6 +11,13 @@
 // Min number of bounds checks required to form a group
 #define MIN_CHECKS_PER_GROUP 4
 
+// Max number of bounds checks allowed in a group.
+// This is just an arbitrary number to avoid cloning too many checks.
+#define MAX_CHECKS_PER_GROUP 64
+
+// See comments in DoesComplexityExceed function for more details.
+#define BUDGET_MULTIPLIER 40
+
 struct BoundCheckLocation
 {
     Statement* stmt;

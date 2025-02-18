@@ -414,18 +414,12 @@ static bool DoesComplexityExceed(Compiler* comp, ArrayStack<BoundsCheckInfo>* bn
     JITDUMP("Checking complexity from " FMT_STMT " to " FMT_STMT "\n", firstBndChkStmt->GetID(),
             lastBndChkStmt->GetID());
 
-    // Some arbitrary limit just in case
-    if (bndChks->Height() > 64)
-    {
-        JITDUMP("\tExceeded the maximum number of bounds checks: %d\n", bndChks->Height());
-        return true;
-    }
+    assert(bndChks->Height() <= MAX_CHECKS_PER_GROUP);
 
     // An average statement with a bounds check is ~20 nodes. There can be statements
     // between the bounds checks (i.e. bounds checks from another groups). So let's say
     // our budget is 40 nodes per bounds check.
-    //
-    unsigned budget = bndChks->Height() * 40;
+    unsigned budget = bndChks->Height() * BUDGET_MULTIPLIER;
     JITDUMP("\tBudget: %d nodes.\n", budget);
 
     Statement* currentStmt = firstBndChkStmt;
@@ -543,7 +537,11 @@ PhaseStatus Compiler::optRangeCheckCloning()
                     CompAllocator allocator = getAllocator(CMK_RangeCheckCloning);
                     *value                  = new (allocator) BoundsCheckInfoStack(allocator);
                 }
-                (*value)->Push(bci);
+
+                if ((*value)->Height() < MAX_CHECKS_PER_GROUP)
+                {
+                    (*value)->Push(bci);
+                }
             }
         }
 
