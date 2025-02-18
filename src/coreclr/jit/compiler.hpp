@@ -1579,6 +1579,63 @@ inline GenTreeCall* Compiler::gtNewHelperCallNode(
     return result;
 }
 
+/*****************************************************************************/
+
+//------------------------------------------------------------------------------
+// gtNewHelperCallNode : Helper to create a call helper node.
+//
+//
+// Arguments:
+//    helper      - Call helper
+//    type        - Type of the node
+//    thisTree    - 'this' argument
+//    clsHndTree  - Class handle argument
+//    methHndTree - Runtime method handle argument
+//
+// Return Value:
+//    New CT_HELPER node
+//
+inline GenTreeCall* Compiler::gtNewVirtualFunctionLookupHelperCallNode(
+    unsigned helper, var_types type, GenTree* thisTree, GenTree* clsHndTree, GenTree* methHndTree)
+{
+
+    GenTreeCall* const result = gtNewCallNode(CT_HELPER, eeFindHelper(helper), type);
+
+    if (!s_helperCallProperties.NoThrow((CorInfoHelpFunc)helper))
+    {
+        result->gtFlags |= GTF_EXCEPT;
+
+        if (s_helperCallProperties.AlwaysThrow((CorInfoHelpFunc)helper))
+        {
+            setCallDoesNotReturn(result);
+        }
+    }
+#if DEBUG
+    // Helper calls are never candidates.
+
+    result->gtInlineObservation = InlineObservation::CALLSITE_IS_CALL_TO_HELPER;
+#endif
+
+    if (methHndTree != nullptr)
+    {
+        result->gtArgs.PushFront(this, NewCallArg::Primitive(methHndTree).WellKnown(WellKnownArg::RuntimeMethodHandle));
+        result->gtFlags |= methHndTree->gtFlags & GTF_ALL_EFFECT;
+    }
+
+    if (clsHndTree != nullptr)
+    {
+        result->gtArgs.PushFront(this, NewCallArg::Primitive(clsHndTree));
+        result->gtFlags |= clsHndTree->gtFlags & GTF_ALL_EFFECT;
+    }
+
+    assert(thisTree != nullptr);
+
+    result->gtArgs.PushFront(this, NewCallArg::Primitive(thisTree).WellKnown(WellKnownArg::ThisPointer));
+    result->gtFlags |= thisTree->gtFlags & GTF_ALL_EFFECT;
+
+    return result;
+}
+
 //------------------------------------------------------------------------
 // gtNewAllocObjNode: A little helper to create an object allocation node.
 //

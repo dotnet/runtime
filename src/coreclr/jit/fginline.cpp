@@ -541,18 +541,17 @@ private:
         else
         {
             assert(call->gtCallType == CT_INDIRECT);
-            assert(call->gtCallAddr->IsCall() &&
-                   call->gtCallAddr->AsCall()->IsVirtualFunctionPointerLookup(m_compiler));
-            assert(call->gtCallAddr->AsCall()->gtArgs.CountArgs() == 3);
-            GenTree* methodInstNode = call->gtCallAddr->AsCall()->gtArgs.GetArgByIndex(2)->GetNode();
-            switch (methodInstNode->OperGet())
+            GenTree* runtimeMethHndNode =
+                call->gtCallAddr->AsCall()->gtArgs.FindWellKnownArg(WellKnownArg::RuntimeMethodHandle)->GetNode();
+            assert(runtimeMethHndNode != nullptr);
+            switch (runtimeMethHndNode->OperGet())
             {
                 case GT_RUNTIMELOOKUP:
-                    return methodInstNode->AsRuntimeLookup()->GetMethodHandle();
+                    return runtimeMethHndNode->AsRuntimeLookup()->GetMethodHandle();
                 case GT_CNS_INT:
-                    return CORINFO_METHOD_HANDLE(methodInstNode->AsIntCon()->IconValue());
+                    return CORINFO_METHOD_HANDLE(runtimeMethHndNode->AsIntCon()->IconValue());
                 default:
-                    assert(!"Unexpected type in MethodInstHandle arg.");
+                    assert(!"Unexpected type in RuntimeMethodHandle arg.");
                     return nullptr;
             }
             return nullptr;

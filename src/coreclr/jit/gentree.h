@@ -4568,6 +4568,7 @@ enum class WellKnownArg : unsigned
     SwiftSelf,
     X86TailCallSpecialArg,
     StackArrayLocal,
+    RuntimeMethodHandle,
 };
 
 #ifdef DEBUG
@@ -5333,7 +5334,6 @@ struct GenTreeCall final : public GenTree
     }
 
     bool IsDevirtualizationCandidate(Compiler* compiler) const;
-    bool IsVirtualFunctionPointerLookup(Compiler* compiler) const;
 
     bool IsInlineCandidate() const
     {
