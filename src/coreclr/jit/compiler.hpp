@@ -1586,17 +1586,17 @@ inline GenTreeCall* Compiler::gtNewHelperCallNode(
 //
 //
 // Arguments:
-//    helper      - Call helper
-//    type        - Type of the node
-//    thisTree    - 'this' argument
-//    clsHndTree  - Class handle argument
-//    methHndTree - Runtime method handle argument
+//    helper  - Call helper
+//    type    - Type of the node
+//    thisPtr - 'this' argument
+//    methHnd - Runtime method handle argument
+//    clsHnd  - Class handle argument
 //
 // Return Value:
 //    New CT_HELPER node
 //
 inline GenTreeCall* Compiler::gtNewVirtualFunctionLookupHelperCallNode(
-    unsigned helper, var_types type, GenTree* thisTree, GenTree* clsHndTree, GenTree* methHndTree)
+    unsigned helper, var_types type, GenTree* thisPtr, GenTree* methHnd, GenTree* clsHnd)
 {
 
     GenTreeCall* const result = gtNewCallNode(CT_HELPER, eeFindHelper(helper), type);
@@ -1616,22 +1616,20 @@ inline GenTreeCall* Compiler::gtNewVirtualFunctionLookupHelperCallNode(
     result->gtInlineObservation = InlineObservation::CALLSITE_IS_CALL_TO_HELPER;
 #endif
 
-    if (methHndTree != nullptr)
+    assert(methHnd != nullptr);
+    result->gtArgs.PushFront(this, NewCallArg::Primitive(methHnd).WellKnown(WellKnownArg::RuntimeMethodHandle));
+    result->gtFlags |= methHnd->gtFlags & GTF_ALL_EFFECT;
+
+    if (clsHnd != nullptr)
     {
-        result->gtArgs.PushFront(this, NewCallArg::Primitive(methHndTree).WellKnown(WellKnownArg::RuntimeMethodHandle));
-        result->gtFlags |= methHndTree->gtFlags & GTF_ALL_EFFECT;
+        result->gtArgs.PushFront(this, NewCallArg::Primitive(clsHnd));
+        result->gtFlags |= clsHnd->gtFlags & GTF_ALL_EFFECT;
     }
 
-    if (clsHndTree != nullptr)
-    {
-        result->gtArgs.PushFront(this, NewCallArg::Primitive(clsHndTree));
-        result->gtFlags |= clsHndTree->gtFlags & GTF_ALL_EFFECT;
-    }
+    assert(thisPtr != nullptr);
 
-    assert(thisTree != nullptr);
-
-    result->gtArgs.PushFront(this, NewCallArg::Primitive(thisTree).WellKnown(WellKnownArg::ThisPointer));
-    result->gtFlags |= thisTree->gtFlags & GTF_ALL_EFFECT;
+    result->gtArgs.PushFront(this, NewCallArg::Primitive(thisPtr).WellKnown(WellKnownArg::ThisPointer));
+    result->gtFlags |= thisPtr->gtFlags & GTF_ALL_EFFECT;
 
     return result;
 }

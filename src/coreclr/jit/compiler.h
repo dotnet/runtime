@@ -3221,7 +3221,7 @@ public:
         unsigned helper, var_types type, GenTree* arg1 = nullptr, GenTree* arg2 = nullptr, GenTree* arg3 = nullptr);
     
     GenTreeCall* gtNewVirtualFunctionLookupHelperCallNode(
-        unsigned helper, var_types type, GenTree* thisTree, GenTree* clsHndTree = nullptr, GenTree* methHndTree = nullptr);
+        unsigned helper, var_types type, GenTree* thisPtr, GenTree* methHnd, GenTree* clsHnd = nullptr);
 
     GenTreeCall* gtNewRuntimeLookupHelperCallNode(CORINFO_RUNTIME_LOOKUP* pRuntimeLookup,
                                                   GenTree*                ctxTree,
