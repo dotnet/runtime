@@ -80,6 +80,7 @@ export function startMeasure (): TimeStamp {
 
 export function endMeasure (start: TimeStamp, block: string, id?: string) {
     if (runtimeHelpers.enablePerfMeasure && start) {
+        // API is slightly different between web and Nodejs
         const options = ENVIRONMENT_IS_WEB
             ? { start: start as any }
             : { startTime: start as any };
@@ -90,6 +91,10 @@ export function endMeasure (start: TimeStamp, block: string, id?: string) {
 
 export function mono_wasm_profiler_now (): number {
     return globalThis.performance.now();
+}
+
+export function mono_wasm_profiler_free_method (method: MonoMethod): void {
+    methodNames.delete(method as any);
 }
 
 const methodNames: Map<number, string> = new Map();

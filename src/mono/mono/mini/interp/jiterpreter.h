@@ -163,7 +163,7 @@ mono_interp_invoke_wasm_jit_call_trampoline (
 #ifdef __MONO_MINI_INTERPRETER_INTERNALS_H__
 
 extern void
-mono_jiterp_free_method_data_js (
+mono_wasm_free_method_data (
 	MonoMethod *method, InterpMethod *imethod, int trace_index
 );
 

@@ -6,7 +6,7 @@ import WasmEnableThreads from "consts:wasmEnableThreads";
 import { mono_wasm_debugger_log, mono_wasm_add_dbg_command_received, mono_wasm_set_entrypoint_breakpoint, mono_wasm_fire_debugger_agent_message_with_data, mono_wasm_fire_debugger_agent_message_with_data_to_pause } from "./debug";
 import { mono_wasm_release_cs_owned_object } from "./gc-handles";
 import { mono_wasm_bind_js_import_ST, mono_wasm_invoke_js_function, mono_wasm_invoke_jsimport_MT, mono_wasm_invoke_jsimport_ST } from "./invoke-js";
-import { mono_interp_tier_prepare_jiterpreter, mono_jiterp_free_method_data_js } from "./jiterpreter";
+import { mono_interp_tier_prepare_jiterpreter, mono_wasm_free_method_data } from "./jiterpreter";
 import { mono_interp_jit_wasm_entry_trampoline, mono_interp_record_interp_entry } from "./jiterpreter-interp-entry";
 import { mono_interp_jit_wasm_jit_call_trampoline, mono_interp_invoke_wasm_jit_call_trampoline, mono_interp_flush_jitcall_queue } from "./jiterpreter-jit-call";
 import { mono_wasm_resolve_or_reject_promise } from "./marshal-to-js";
@@ -68,7 +68,7 @@ export const mono_wasm_imports = [
     mono_interp_jit_wasm_jit_call_trampoline,
     mono_interp_invoke_wasm_jit_call_trampoline,
     mono_interp_flush_jitcall_queue,
-    mono_jiterp_free_method_data_js,
+    mono_wasm_free_method_data,
 
     mono_wasm_profiler_now,
     mono_wasm_profiler_record,
