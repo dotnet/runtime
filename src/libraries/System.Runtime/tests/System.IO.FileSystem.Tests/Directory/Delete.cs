@@ -293,6 +293,34 @@ namespace System.IO.Tests
         }
 
         [Fact]
+        [PlatformSpecific(TestPlatforms.Windows)]
+        [OuterLoop]
+        public void RecursiveDelete_ShouldThrowExceptionIfNestingTooDeep()
+        {
+            // Create a 6000 level deep directory and recursively delete from the root.
+
+            string rootDirectory = GetTestFilePath();
+            StringBuilder sb = new StringBuilder(15000);
+            sb.Append(rootDirectory);
+            for (int i = 0; i < 3000; i++)
+            {
+                sb.Append(@"\a");
+            }
+            string cleanupRoot = sb.ToString();
+            for (int i = 0; i < 3000; i++)
+            {
+                sb.Append(@"\a");
+            }
+            string path = sb.ToString();
+            Directory.CreateDirectory(path);
+            Assert.Throws<InsufficientExecutionStackException>(() => Delete(rootDirectory, recursive: true));
+
+            // Cleanup
+            Directory.Delete(cleanupRoot, true);
+            Directory.Delete(path, true);
+        }
+
+        [Fact]
         [PlatformSpecific(TestPlatforms.Windows)]  // Recursive delete throws IOException if directory contains in-use file
         public void RecursiveDelete_ShouldThrowIOExceptionIfContainedFileInUse()
         {

@@ -4,6 +4,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO.Enumeration;
+using System.Runtime.CompilerServices;
 using System.Text;
 using Microsoft.Win32.SafeHandles;
 
@@ -471,11 +472,11 @@ namespace System.IO
             {
                 Debug.Assert(recursive);
 
-                RemoveDirectoryRecursive(fullPath);
+                RemoveDirectoryRecursive(fullPath, 0);
             }
         }
 
-        private static void RemoveDirectoryRecursive(string fullPath)
+        private static void RemoveDirectoryRecursive(string fullPath, int depth)
         {
             Exception? firstException = null;
 
@@ -496,7 +497,11 @@ namespace System.IO
                     {
                         if (isDirectory)
                         {
-                            RemoveDirectoryRecursive(childPath);
+                            if (depth > DirectoryRemoveUncheckedRecursion)
+                            {
+                                RuntimeHelpers.EnsureSufficientExecutionStack();
+                            }
+                            RemoveDirectoryRecursive(childPath, depth + 1);
                         }
                         else
                         {

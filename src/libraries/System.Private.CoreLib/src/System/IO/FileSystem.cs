@@ -19,6 +19,8 @@ namespace System.IO
             UnixFileMode.SetGroup |
             UnixFileMode.SetUser;
 
+        private const int DirectoryRemoveUncheckedRecursion = 32; // 32 arbitrarily chosen
+
         internal static void VerifyValidPath(string path, string argName)
         {
             ArgumentException.ThrowIfNullOrEmpty(path, argName);

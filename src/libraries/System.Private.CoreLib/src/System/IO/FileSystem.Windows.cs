@@ -4,6 +4,7 @@
 using System.Buffers;
 using System.ComponentModel;
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using Microsoft.Win32.SafeHandles;
 
@@ -270,7 +271,7 @@ namespace System.IO
             // We want extended syntax so we can delete "extended" subdirectories and files
             // (most notably ones with trailing whitespace or periods)
             fullPath = PathInternal.EnsureExtendedPrefix(fullPath);
-            RemoveDirectoryRecursive(fullPath, ref findData, topLevel: true);
+            RemoveDirectoryRecursive(fullPath, ref findData, depth: 0);
         }
 
         private static void GetFindData(string fullPath, bool isDirectory, bool ignoreAccessDenied, ref Interop.Kernel32.WIN32_FIND_DATA findData)
@@ -304,10 +305,11 @@ namespace System.IO
                 && (data.dwReserved0 & 0x20000000) != 0; // IsReparseTagNameSurrogate
         }
 
-        private static void RemoveDirectoryRecursive(string fullPath, ref Interop.Kernel32.WIN32_FIND_DATA findData, bool topLevel)
+        private static void RemoveDirectoryRecursive(string fullPath, ref Interop.Kernel32.WIN32_FIND_DATA findData, int depth)
         {
             int errorCode;
             Exception? exception = null;
+            bool topLevel = depth == 0;
 
             using (SafeFindHandle handle = Interop.Kernel32.FindFirstFile(Path.Join(fullPath, "*"), ref findData))
             {
@@ -344,10 +346,14 @@ namespace System.IO
                             // Not a reparse point, or the reparse point isn't a name surrogate, recurse.
                             try
                             {
+                                if (depth > DirectoryRemoveUncheckedRecursion)
+                                {
+                                    RuntimeHelpers.EnsureSufficientExecutionStack();
+                                }
                                 RemoveDirectoryRecursive(
                                     Path.Combine(fullPath, fileName),
                                     findData: ref findData,
-                                    topLevel: false);
+                                    depth: depth + 1);
                             }
                             catch (Exception e)
                             {
