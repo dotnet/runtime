@@ -3124,7 +3124,7 @@ int LinearScan::BuildCallArgUses(GenTreeCall* call)
             continue;
         }
 
-        assert(!arg.NewAbiInfo.HasAnyRegisterSegment());
+        assert(!arg.AbiInfo.HasAnyRegisterSegment());
         assert(argNode->OperIs(GT_PUTARG_STK));
     }
 

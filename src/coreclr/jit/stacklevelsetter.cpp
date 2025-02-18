@@ -345,14 +345,7 @@ unsigned StackLevelSetter::PopArgumentsFromCall(GenTreeCall* call)
     {
         for (CallArg& arg : call->gtArgs.Args())
         {
-            unsigned slotCount = 0;
-            for (const ABIPassingSegment& segment : arg.NewAbiInfo.Segments())
-            {
-                if (segment.IsPassedOnStack())
-                {
-                    slotCount += (segment.GetStackSize() + (TARGET_POINTER_SIZE - 1)) / TARGET_POINTER_SIZE;
-                }
-            }
+            unsigned slotCount = (arg.AbiInfo.StackBytesConsumed() + (TARGET_POINTER_SIZE - 1)) / TARGET_POINTER_SIZE;
 
             if (slotCount != 0)
             {

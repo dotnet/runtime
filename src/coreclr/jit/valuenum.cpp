@@ -13548,7 +13548,7 @@ void Compiler::fgValueNumberHelperCallFunc(GenTreeCall* call, VNFunc vnf, ValueN
 #ifdef DEBUG
             for (CallArg& arg : call->gtArgs.Args())
             {
-                assert(!arg.NewAbiInfo.IsPassedByReference() &&
+                assert(!arg.AbiInfo.IsPassedByReference() &&
                        "Helpers taking implicit byref arguments should not be marked as pure");
             }
 #endif
