@@ -530,6 +530,35 @@ private:
     }
 #endif // FEATURE_MULTIREG_RET
 
+    
+    CORINFO_METHOD_HANDLE GetMethodHandle(GenTreeCall* call)
+    {
+        assert(call->IsDevirtualizationCandidate(m_compiler));
+        if (call->IsVirtual())
+        {
+            return call->gtCallMethHnd;
+        }
+        else
+        {
+            assert(call->gtCallType == CT_INDIRECT);
+            assert(call->gtCallAddr->IsCall() &&
+                   call->gtCallAddr->AsCall()->IsVirtualFunctionPointerLookup(m_compiler));
+            assert(call->gtCallAddr->AsCall()->gtArgs.CountArgs() == 3);
+            GenTree* methodInstNode = call->gtCallAddr->AsCall()->gtArgs.GetArgByIndex(2)->GetNode();
+            switch (methodInstNode->OperGet())
+            {
+                case GT_RUNTIMELOOKUP:
+                    return methodInstNode->AsRuntimeLookup()->GetMethodHandle();
+                case GT_CNS_INT:
+                    return CORINFO_METHOD_HANDLE(methodInstNode->AsIntCon()->IconValue());
+                default:
+                    assert(!"Unexpected type in MethodInstHandle arg.");
+                    return nullptr;
+            }
+            return nullptr;
+        }
+    }
+
     //------------------------------------------------------------------------
     // LateDevirtualization: re-examine calls after inlining to see if we
     //   can do more devirtualization
@@ -590,7 +619,7 @@ private:
 #endif // DEBUG
 
                 CORINFO_CONTEXT_HANDLE context                = nullptr;
-                CORINFO_METHOD_HANDLE  method                 = call->gtCallMethHnd;
+                CORINFO_METHOD_HANDLE  method                 = GetMethodHandle(call);
                 unsigned               methodFlags            = 0;
                 const bool             isLateDevirtualization = true;
                 const bool             explicitTailCall       = call->IsTailPrefixedCall();
