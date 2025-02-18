@@ -2369,8 +2369,8 @@ void CodeGen::genLockedInstructions(GenTreeOp* treeNode)
 {
     assert(!varTypeIsSmall(treeNode->TypeGet()));
 
-    GenTree*  data = treeNode->AsOp()->gtOp2;
-    GenTree*  addr = treeNode->AsOp()->gtOp1;
+    GenTree* data = treeNode->AsOp()->gtOp2;
+    GenTree* addr = treeNode->AsOp()->gtOp1;
     assert(!data->isContained() || data->IsIntegralConst(0));
     assert(!addr->isContained());
     regNumber dataReg   = !data->isContained() ? data->GetRegNum() : REG_ZERO;
@@ -2429,13 +2429,13 @@ void CodeGen::genCodeForCmpXchg(GenTreeCmpXchg* treeNode)
     GenTree* valOp       = treeNode->Data();
     GenTree* comparandOp = treeNode->Comparand();
     assert(locOp->isUsedFromReg());
-    assert(valOp->isUsedFromReg() || valOp->IsIntegralConst(0));
+    assert(valOp->isUsedFromReg());
     assert(comparandOp->isUsedFromReg() || comparandOp->IsIntegralConst(0));
 
     regNumber target    = treeNode->GetRegNum();
     regNumber loc       = locOp->GetRegNum();
     regNumber val       = valOp->GetRegNum();
-    regNumber comparand = comparandOp->GetRegNum();
+    regNumber comparand = !comparandOp->isContained() ? comparandOp->GetRegNum() : REG_ZERO;
     regNumber storeErr  = internalRegisters.GetSingle(treeNode);
 
     // Register allocator should have extended the lifetimes of all input and internal registers
@@ -2455,7 +2455,8 @@ void CodeGen::genCodeForCmpXchg(GenTreeCmpXchg* treeNode)
 
     genConsumeAddress(locOp);
     genConsumeRegs(valOp);
-    genConsumeRegs(comparandOp);
+    if (!comparandOp->isContained())
+        genConsumeRegs(comparandOp);
 
     // NOTE: `genConsumeAddress` marks consumed register as not a GC pointer, assuming the input
     // registers die at the first generated instruction. However, here the input registers are reused,

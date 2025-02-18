@@ -455,8 +455,9 @@ int LinearScan::BuildNode(GenTree* tree)
         case GT_CMPXCHG:
         {
             GenTreeCmpXchg* cas = tree->AsCmpXchg();
-            assert(!cas->Comparand()->isContained());
-            srcCount = 3;
+
+            GenTree* comparand = cas->Comparand();
+            srcCount           = 2;
             assert(dstCount == 1);
 
             buildInternalIntRegisterDefForNode(tree); // temp reg for store conditional error
@@ -464,7 +465,15 @@ int LinearScan::BuildNode(GenTree* tree)
             // Extend lifetimes of argument regs because they may be reused during retries
             setDelayFree(BuildUse(cas->Addr()));
             setDelayFree(BuildUse(cas->Data()));
-            setDelayFree(BuildUse(cas->Comparand()));
+            if (!comparand->isContained())
+            {
+                srcCount++;
+                setDelayFree(BuildUse(comparand));
+            }
+            else
+            {
+                assert(comparand->IsIntegralConst(0));
+            }
 
             // Internals may not collide with target
             setInternalRegsDelayFree = true;
@@ -494,6 +503,11 @@ int LinearScan::BuildNode(GenTree* tree)
                 srcCount++;
                 BuildUse(data);
             }
+            else
+            {
+                assert(data->IsIntegralConst(0));
+            }
+
             if (dstCount == 1)
             {
                 BuildDef(tree);

@@ -79,7 +79,7 @@ bool Lowering::IsContainableImmed(GenTree* parentNode, GenTree* childNode) const
             case GT_JCMP:
                 return true;
 
-            // case GT_CMPXCHG:
+            case GT_CMPXCHG:
             case GT_XORR:
             case GT_XAND:
             case GT_XADD:
