@@ -1204,6 +1204,9 @@ namespace System.Threading
             Interlocked.MemoryBarrier();
             if (!_workItems.TryDequeue(out T workItem))
             {
+                // Discount a work item here to avoid counting this queue processing work item
+                ThreadInt64PersistentCounter.Decrement(
+                    ThreadPoolWorkQueueThreadLocals.threadLocals!.threadLocalCompletionCountObject!);
                 return;
             }
 
@@ -1247,7 +1250,7 @@ namespace System.Threading
                 currentThread.ResetThreadPoolThread();
             }
 
-            // Discount a work item here to avoid counting most of the queue processing work items
+            // Discount a work item here to avoid counting this queue processing work item
             if (completedCount > 1)
             {
                 ThreadInt64PersistentCounter.Add(tl.threadLocalCompletionCountObject!, completedCount - 1);
@@ -1453,6 +1456,8 @@ namespace System.Threading
         internal const string WorkerThreadName = ".NET TP Worker";
 
         internal static readonly ThreadPoolWorkQueue s_workQueue = new ThreadPoolWorkQueue();
+
+        private static long s_lastCompletedWorkItemCount;
 
         /// <summary>Shim used to invoke <see cref="IAsyncStateMachineBox.MoveNext"/> of the supplied <see cref="IAsyncStateMachineBox"/>.</summary>
         internal static readonly Action<object?> s_invokeAsyncStateMachineBox = static state =>

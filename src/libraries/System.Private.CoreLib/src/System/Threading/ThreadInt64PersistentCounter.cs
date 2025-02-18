@@ -32,6 +32,13 @@ namespace System.Threading
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void Decrement(object threadLocalCountObject)
+        {
+            Debug.Assert(threadLocalCountObject is ThreadLocalNode);
+            Unsafe.As<ThreadLocalNode>(threadLocalCountObject).Decrement();
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void Add(object threadLocalCountObject, uint count)
         {
             Debug.Assert(threadLocalCountObject is ThreadLocalNode);
@@ -134,6 +141,18 @@ namespace System.Threading
                 OnAddOverflow(1);
             }
 
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public void Decrement()
+            {
+                if (_count != 0)
+                {
+                    _count--;
+                    return;
+                }
+
+                OnAddOverflow(-1);
+            }
+
             public void Add(uint count)
             {
                 Debug.Assert(count != 0);
@@ -149,7 +168,7 @@ namespace System.Threading
             }
 
             [MethodImpl(MethodImplOptions.NoInlining)]
-            private void OnAddOverflow(uint count)
+            private void OnAddOverflow(long count)
             {
                 Debug.Assert(count != 0);
 
@@ -161,7 +180,7 @@ namespace System.Threading
                 counter._lock.Acquire();
                 try
                 {
-                    counter._overflowCount += (long)_count + count;
+                    counter._overflowCount += _count + count;
                     _count = 0;
                 }
                 finally
