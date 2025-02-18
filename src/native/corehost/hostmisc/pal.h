@@ -6,7 +6,6 @@
 
 #include <string>
 #include <vector>
-#include <fstream>
 #include <sstream>
 #include <iostream>
 #include <cstring>
@@ -118,14 +117,6 @@ namespace pal
     typedef wchar_t char_t;
     typedef std::wstring string_t;
     typedef std::wstringstream stringstream_t;
-    // TODO: Agree on the correct encoding of the files: The PoR for now is to
-    // temporarily wchar for Windows and char for Unix. Current implementation
-    // implicitly expects the contents on both Windows and Unix as char and
-    // converts them to wchar in code for Windows. This line should become:
-    // typedef std::basic_ifstream<char_t> ifstream_t.
-    typedef std::basic_ifstream<char> ifstream_t;
-    typedef std::istreambuf_iterator<ifstream_t::char_type> istreambuf_iterator_t;
-    typedef std::basic_istream<char> istream_t;
     typedef HRESULT hresult_t;
     typedef HMODULE dll_t;
     typedef FARPROC proc_t;
@@ -207,9 +198,6 @@ namespace pal
     typedef char char_t;
     typedef std::string string_t;
     typedef std::stringstream stringstream_t;
-    typedef std::basic_ifstream<char> ifstream_t;
-    typedef std::istreambuf_iterator<ifstream_t::char_type> istreambuf_iterator_t;
-    typedef std::basic_istream<char> istream_t;
     typedef int hresult_t;
     typedef void* dll_t;
     typedef void* proc_t;

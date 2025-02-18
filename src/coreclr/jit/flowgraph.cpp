@@ -932,6 +932,42 @@ bool Compiler::fgAddrCouldBeNull(GenTree* addr)
 }
 
 //------------------------------------------------------------------------------
+// fgAddrCouldBeHeap: Check whether the address tree may represent a heap address.
+//
+// Arguments:
+//    addr - Address to check
+//
+// Return Value:
+//    True if address could be a heap address; false otherwise (i.e. stack, native memory, etc.)
+//
+bool Compiler::fgAddrCouldBeHeap(GenTree* addr)
+{
+    GenTree* op = addr;
+    while (op->OperIs(GT_FIELD_ADDR) && op->AsFieldAddr()->IsInstance())
+    {
+        op = op->AsFieldAddr()->GetFldObj();
+    }
+
+    target_ssize_t offset;
+    gtPeelOffsets(&op, &offset);
+
+    // Ignore the offset for locals
+
+    if (op->OperIs(GT_LCL_ADDR))
+    {
+        return false;
+    }
+
+    if (op->OperIsScalarLocal() && (op->AsLclVarCommon()->GetLclNum() == impInlineRoot()->info.compRetBuffArg))
+    {
+        // RetBuf is known to be on the stack
+        return false;
+    }
+
+    return true;
+}
+
+//------------------------------------------------------------------------------
 // fgOptimizeDelegateConstructor: try and optimize construction of a delegate
 //
 // Arguments:
@@ -4356,7 +4392,7 @@ FlowGraphDfsTree* Compiler::fgComputeDfs()
         fgRunDfs<decltype(visitPreorder), decltype(visitPostorder), decltype(visitEdge), useProfile>(visitPreorder,
                                                                                                      visitPostorder,
                                                                                                      visitEdge);
-    return new (this, CMK_DepthFirstSearch) FlowGraphDfsTree(this, postOrder, numBlocks, hasCycle);
+    return new (this, CMK_DepthFirstSearch) FlowGraphDfsTree(this, postOrder, numBlocks, hasCycle, useProfile);
 }
 
 // Add explicit instantiations.

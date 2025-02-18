@@ -373,7 +373,7 @@ SIZE_T GetRegOffsInCONTEXT(ICorDebugInfo::RegNum regNum)
     {
     case ICorDebugInfo::REGNUM_R0: return offsetof(T_CONTEXT, R0);
     case ICorDebugInfo::REGNUM_RA: return offsetof(T_CONTEXT, Ra);
-    case ICorDebugInfo::REGNUM_TP: return offsetof(T_CONTEXT, Tp);
+    //case ICorDebugInfo::REGNUM_TP: return offsetof(T_CONTEXT, Tp);
     case ICorDebugInfo::REGNUM_SP: return offsetof(T_CONTEXT, Sp);
     case ICorDebugInfo::REGNUM_A0: return offsetof(T_CONTEXT, A0);
     case ICorDebugInfo::REGNUM_A1: return offsetof(T_CONTEXT, A1);

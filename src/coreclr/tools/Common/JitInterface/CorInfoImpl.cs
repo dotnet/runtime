@@ -270,9 +270,9 @@ namespace Internal.JitInterface
 
             bool isType = nativeSchema[index + 1].InstrumentationKind == PgoInstrumentationKind.HandleHistogramTypes;
 
-            fixed(PgoInstrumentationSchema* pSchema = &nativeSchema[index])
+            fixed (PgoInstrumentationSchema* pSchema = &nativeSchema[index])
             {
-                fixed(byte* pInstrumentationData = &instrumentationData[0])
+                fixed (byte* pInstrumentationData = &instrumentationData[0])
                 {
                     // We're going to store only the most popular type/method to reduce size of the profile
                     LikelyClassMethodRecord* likelyClassMethods = stackalloc LikelyClassMethodRecord[1];

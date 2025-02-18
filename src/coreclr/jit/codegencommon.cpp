@@ -186,6 +186,9 @@ void CodeGenInterface::CopyRegisterInfo()
 #if defined(TARGET_AMD64)
     rbmAllFloat       = compiler->rbmAllFloat;
     rbmFltCalleeTrash = compiler->rbmFltCalleeTrash;
+    rbmAllInt         = compiler->rbmAllInt;
+    rbmIntCalleeTrash = compiler->rbmIntCalleeTrash;
+    regIntLast        = compiler->regIntLast;
 #endif // TARGET_AMD64
 
     rbmAllMask        = compiler->rbmAllMask;
@@ -198,7 +201,7 @@ void CodeGenInterface::CopyRegisterInfo()
 CodeGen::CodeGen(Compiler* theCompiler)
     : CodeGenInterface(theCompiler)
 {
-#if defined(FEATURE_PUT_STRUCT_ARG_STK) && !defined(TARGET_X86)
+#if !defined(TARGET_X86)
     m_stkArgVarNum = BAD_VAR_NUM;
 #endif
 
@@ -1195,15 +1198,9 @@ AGAIN:
 
     /* Check for an addition of a constant */
 
-    if (op2->IsIntCnsFitsInI32() && (op2->gtType != TYP_REF) && FitsIn<INT32>(cns + op2->AsIntConCommon()->IconValue()))
+    if (op2->IsIntCnsFitsInI32() && op2->AsIntConCommon()->ImmedValCanBeFolded(compiler, addr->OperGet()) &&
+        (op2->gtType != TYP_REF) && FitsIn<INT32>(cns + op2->AsIntConCommon()->IconValue()))
     {
-        // We should not be building address modes out of non-foldable constants
-        if (!op2->AsIntConCommon()->ImmedValCanBeFolded(compiler, addr->OperGet()))
-        {
-            assert(compiler->opts.compReloc);
-            return false;
-        }
-
         /* We're adding a constant */
 
         cns += op2->AsIntConCommon()->IconValue();
@@ -3414,6 +3411,12 @@ void CodeGen::genHomeRegisterParams(regNumber initReg, bool* initRegStillZeroed)
     // top of the underlying registers.
     RegGraph graph(compiler);
 
+    // Add everything to the graph, or spill directly to stack when needed.
+    // Note that some registers may be homed in multiple (stack) places.
+    // Particularly if there is a mapping to a local that does not share its
+    // (stack) home with the parameter local, in which case we will home it
+    // both into the parameter local's stack home (if it is used), but also to
+    // the mapping target.
     for (unsigned lclNum = 0; lclNum < compiler->info.compArgsCount; lclNum++)
     {
         LclVarDsc*                   lclDsc  = compiler->lvaGetDesc(lclNum);
@@ -3429,11 +3432,26 @@ void CodeGen::genHomeRegisterParams(regNumber initReg, bool* initRegStillZeroed)
             const ParameterRegisterLocalMapping* mapping =
                 compiler->FindParameterRegisterLocalMappingByRegister(segment.GetRegister());
 
+            bool spillToBaseLocal = true;
             if (mapping != nullptr)
             {
                 genSpillOrAddRegisterParam(mapping->LclNum, mapping->Offset, lclNum, segment, &graph);
+
+                // If home is shared with base local, then skip spilling to the
+                // base local.
+                if (lclDsc->lvPromoted)
+                {
+                    spillToBaseLocal = false;
+                }
             }
-            else
+
+#ifdef TARGET_ARM
+            // For arm32 the spills to the base local happen as part of
+            // prespilling sometimes, so skip it in that case.
+            spillToBaseLocal &= (regSet.rsMaskPreSpillRegs(false) & segment.GetRegisterMask()) == 0;
+#endif
+
+            if (spillToBaseLocal)
             {
                 genSpillOrAddRegisterParam(lclNum, segment.Offset, lclNum, segment, &graph);
             }
@@ -3918,7 +3936,7 @@ void CodeGen::genCheckUseBlockInit()
         // must force spill R4/R5/R6 so that we can use them during
         // zero-initialization process.
         //
-        int forceSpillRegCount = genCountBits(maskCalleeRegArgMask & ~regSet.rsMaskPreSpillRegs(false)) - 1;
+        int forceSpillRegCount = genCountBits(maskCalleeRegArgMask & ~genPrespilledUnmappedRegs()) - 1;
         if (forceSpillRegCount > 0)
             regSet.rsSetRegsModified(RBM_R4);
         if (forceSpillRegCount > 1)
@@ -5350,7 +5368,7 @@ void CodeGen::genFnProlog()
     // These registers will be available to use for the initReg.  We just remove
     // all of these registers from the rsCalleeRegArgMaskLiveIn.
     //
-    intRegState.rsCalleeRegArgMaskLiveIn &= ~regSet.rsMaskPreSpillRegs(false);
+    intRegState.rsCalleeRegArgMaskLiveIn &= ~genPrespilledUnmappedRegs();
 #endif
 
     /* Choose the register to use for zero initialization */
@@ -5362,6 +5380,10 @@ void CodeGen::genFnProlog()
     // will be skipped.
     bool      initRegZeroed = false;
     regMaskTP excludeMask   = intRegState.rsCalleeRegArgMaskLiveIn;
+#if defined(TARGET_AMD64)
+    // TODO-Xarch-apx : Revert. Excluding eGPR so that it's not used for non REX2 supported movs.
+    excludeMask = excludeMask | RBM_HIGHINT;
+#endif // !defined(TARGET_AMD64)
 
 #ifdef TARGET_ARM
     // If we have a variable sized frame (compLocallocUsed is true)
@@ -5750,6 +5772,10 @@ void CodeGen::genFnProlog()
 #else
         genEnregisterOSRArgsAndLocals();
 #endif
+        // OSR functions take no parameters in registers. Ensure no mappings
+        // are present.
+        assert((compiler->m_paramRegLocalMappings == nullptr) || compiler->m_paramRegLocalMappings->Empty());
+
         compiler->lvaUpdateArgsWithInitialReg();
     }
     else
@@ -5771,7 +5797,7 @@ void CodeGen::genFnProlog()
 
     if (initRegs)
     {
-        for (regNumber reg = REG_INT_FIRST; reg <= REG_INT_LAST; reg = REG_NEXT(reg))
+        for (regNumber reg = REG_INT_FIRST; reg <= get_REG_INT_LAST(); reg = REG_NEXT(reg))
         {
             regMaskTP regMask = genRegMask(reg);
             if (regMask & initRegs)
@@ -6313,8 +6339,7 @@ regMaskTP CodeGen::genPushRegs(regMaskTP regs, regMaskTP* byrefRegs, regMaskTP* 
     noway_assert(genTypeStSz(TYP_BYREF) == genTypeStSz(TYP_I_IMPL));
 
     regMaskTP pushedRegs = regs;
-
-    for (regNumber reg = REG_INT_FIRST; reg <= REG_INT_LAST; reg = REG_NEXT(reg))
+    for (regNumber reg = REG_INT_FIRST; reg <= get_REG_INT_LAST(); reg = REG_NEXT(reg))
     {
         regMaskTP regMask = genRegMask(reg);
 
@@ -6386,7 +6411,7 @@ void CodeGen::genPopRegs(regMaskTP regs, regMaskTP byrefRegs, regMaskTP noRefReg
     regMaskTP popedRegs = regs;
 
     // Walk the registers in the reverse order as genPushRegs()
-    for (regNumber reg = REG_INT_LAST; reg >= REG_INT_LAST; reg = REG_PREV(reg))
+    for (regNumber reg = get_REG_INT_LAST(); reg >= REG_INT_FIRST; reg = REG_PREV(reg))
     {
         regMaskTP regMask = genRegMask(reg);
 
