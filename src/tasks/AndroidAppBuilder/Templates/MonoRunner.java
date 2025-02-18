@@ -156,7 +156,7 @@ public class MonoRunner extends Instrumentation
                 File file = new File(toPath, fileOrDirectory);
                 File parent = new File(file.getParent());
 
-                if (file.isDirectory()) {
+                if (zipEntry.isDirectory()) {
                     file.mkdirs();
                 }
                 else if (!parent.exists()) {
