@@ -376,5 +376,18 @@ namespace System.Numerics.Tests
     public class op_UnsignedRightshiftTest : op_rightshiftTestBase
     {
         public override string opstring => "b>>>";
+
+        [Fact]
+        public void PowerOfTwo()
+        {
+            for (int i = 0; i < 32; i++)
+            {
+                foreach (int k in new int[] { 1, 2, 10 })
+                {
+                    Assert.Equal(BigInteger.One << i, (BigInteger.One << (32 * k + i)) >>> (32 * k));
+                    Assert.Equal(new BigInteger(uint.MaxValue << i), (BigInteger.MinusOne << (32 * k + i)) >>> (32 * k));
+                }
+            }
+        }
     }
 }

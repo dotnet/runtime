@@ -302,13 +302,39 @@ namespace System.Numerics.Tests
         }
     }
 
-    public class RotateRightTest : RotateTestBase
-    {
-        public override string opstring => "bRotateRight";
-    }
-
     public class RotateLeftTest : RotateTestBase
     {
         public override string opstring => "bRotateLeft";
+
+        [Fact]
+        public void PowerOfTwo()
+        {
+            for (int i = 0; i < 32; i++)
+            {
+                foreach (int k in new int[] { 1, 2, 10 })
+                {
+                    Assert.Equal(BigInteger.One << (32 * (k - 1) + i), BigInteger.RotateLeft(BigInteger.One << (32 * k + i), 32 * k));
+                    Assert.Equal((new BigInteger(uint.MaxValue << i)) << (32 * (k - 1)), BigInteger.RotateLeft(BigInteger.MinusOne << (32 * k + i), 32 * k));
+                }
+            }
+        }
+    }
+
+    public class RotateRightTest : RotateTestBase
+    {
+        public override string opstring => "bRotateRight";
+
+        [Fact]
+        public void PowerOfTwo()
+        {
+            for (int i = 0; i < 32; i++)
+            {
+                foreach (int k in new int[] { 1, 2, 10 })
+                {
+                    Assert.Equal(BigInteger.One << i, BigInteger.RotateRight(BigInteger.One << (32 * k + i), 32 * k));
+                    Assert.Equal(new BigInteger(uint.MaxValue << i), BigInteger.RotateRight(BigInteger.MinusOne << (32 * k + i), 32 * k));
+                }
+            }
+        }
     }
 }
