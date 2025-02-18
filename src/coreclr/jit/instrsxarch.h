@@ -147,6 +147,8 @@ INSTMUL(imul_15,        "imul",             IUM_RD, BAD_CODE,     0x4400003868, 
 
 #endif // TARGET_AMD64
 
+
+
 // the hex codes in this file represent the instruction encoding as follows:
 // 0x0000ff00 - modrm byte position
 // 0x000000ff - last byte of opcode (before modrm)
@@ -913,7 +915,7 @@ INST3(vcvtps2ibs,       "cvtps2ibs",        IUM_WR, BAD_CODE,               BAD_
 INST3(vcvtps2iubs,      "cvtps2iubs",       IUM_WR, BAD_CODE,               BAD_CODE,     PCKDBLMAP(0x05, 0x6B),       INS_TT_FULL,                         Input_32Bit    | REX_W0       | Encoding_EVEX)                                                                                                                                  // cvt with truncation/saturation scalar single to unsigned DWORD/QWORD
 INST3(vcvttps2ibs,      "cvttps2ibs",       IUM_WR, BAD_CODE,               BAD_CODE,     PCKDBLMAP(0x05, 0x68),       INS_TT_FULL,                         Input_32Bit    | REX_W0       | Encoding_EVEX)                                                                                                                                  // cvt with truncation/saturation scalar single to unsigned DWORD/QWORD
 INST3(vcvttps2iubs,     "cvttps2iubs",      IUM_WR, BAD_CODE,               BAD_CODE,     PCKDBLMAP(0x05, 0x6A),       INS_TT_FULL,                         Input_32Bit    | REX_W0       | Encoding_EVEX)                                                                                                                                  // cvt with truncation/saturation scalar single to unsigned DWORD/QWORD
-INST3(vmpsadbw,         "mpsadbw",          IUM_WR, BAD_CODE,               BAD_CODE,     AVX3A(0x42),                 INS_TT_FULL,                         Input_8Bit     | REX_W0       | Encoding_EVEX             | INS_Flags_IsDstDstSrcAVXInstruction)                                                                                           // Compute Multiple Packed Sums of Absolute Difference
+INST3(vmpsadbw,         "mpsadbw",          IUM_WR, BAD_CODE,               BAD_CODE,     AVX3A(0x42),                 INS_TT_FULL_MEM,                     Input_8Bit     | REX_W0       | Encoding_EVEX             | INS_Flags_IsDstDstSrcAVXInstruction)                                                                                           // Compute Multiple Packed Sums of Absolute Difference
 
 INST3(vminmaxsd,        "minmaxsd",         IUM_WR, BAD_CODE,               BAD_CODE,     SSE3A(0x53),                 INS_TT_TUPLE1_SCALAR,                Input_64Bit    | REX_W1       | Encoding_EVEX             | INS_Flags_IsDstSrcSrcAVXInstruction)                                                                                                                                  // Return Minimum/Maximum scalar double 
 INST3(vminmaxss,        "minmaxss",         IUM_WR, BAD_CODE,               BAD_CODE,     SSE3A(0x53),                 INS_TT_TUPLE1_SCALAR,                Input_32Bit    | REX_W0       | Encoding_EVEX             | INS_Flags_IsDstSrcSrcAVXInstruction)                                                                                                                                  // Return Minimum/Maximum scalar single
@@ -934,6 +936,34 @@ INST3(vpdpbsuds,        "pdpbsuds",         IUM_WR, BAD_CODE,               BAD_
 INST3(vpdpbuud,         "pdpbuud",          IUM_WR, BAD_CODE,               BAD_CODE,     PSSE38(0x00, 0x50),                INS_TT_FULL,                         Input_8Bit     | REX_W0       | Encoding_EVEX             | INS_Flags_EmbeddedBroadcastSupported | INS_Flags_IsDstSrcSrcAVXInstruction)                                         // Multiply individual bytes of first source operand with individual bytes of second source operand and add the results
 INST3(vpdpbuuds,        "pdpbuuds",         IUM_WR, BAD_CODE,               BAD_CODE,     PSSE38(0x00, 0x51),                INS_TT_FULL,                         Input_8Bit     | REX_W0       | Encoding_EVEX             | INS_Flags_EmbeddedBroadcastSupported | INS_Flags_IsDstSrcSrcAVXInstruction)                                         // Multiply individual bytes of first source operand with individual bytes of second source operand and add the results
 INST3(LAST_AVX10v2_INSTRUCTION, "LAST_AVX10v2_INSTRUCTION", IUM_WR, BAD_CODE, BAD_CODE, BAD_CODE, INS_TT_NONE, INS_FLAGS_None)
+//    id                nm                  um      mr            mi            rm            tt              flags
+
+INST3(FIRST_APX_INSTRUCTION, "FIRST_APX_INSTRUCTION", IUM_WR, BAD_CODE, BAD_CODE, BAD_CODE, INS_TT_NONE, INS_FLAGS_None)
+
+INST3(FIRST_CCMP_INSTRUCTION, "FIRST_CCMP_INSTRUCTION", IUM_WR, BAD_CODE, BAD_CODE, BAD_CODE, INS_TT_NONE, INS_FLAGS_None)
+
+INST3(ccmpo,            "ccmpo",             IUM_RD, 0x000038,    0x0003880,   0x00003A,   INS_TT_NONE,    Writes_OF | Writes_SF | Writes_ZF | Writes_CF | INS_FLAGS_Has_Sbit)
+INST3(ccmpno,           "ccmpno",            IUM_RD, 0x000038,    0x0003880,   0x00003A,   INS_TT_NONE,    Writes_OF | Writes_SF | Writes_ZF | Writes_CF | INS_FLAGS_Has_Sbit)
+INST3(ccmpb,            "ccmpb",             IUM_RD, 0x000038,    0x0003880,   0x00003A,   INS_TT_NONE,    Writes_OF | Writes_SF | Writes_ZF | Writes_CF | INS_FLAGS_Has_Sbit)
+INST3(ccmpae,           "ccmpae",            IUM_RD, 0x000038,    0x0003880,   0x00003A,   INS_TT_NONE,    Writes_OF | Writes_SF | Writes_ZF | Writes_CF | INS_FLAGS_Has_Sbit)
+INST3(ccmpe,            "ccmpe",             IUM_RD, 0x000038,    0x0003880,   0x00003A,   INS_TT_NONE,    Writes_OF | Writes_SF | Writes_ZF | Writes_CF | INS_FLAGS_Has_Sbit)
+INST3(ccmpne,           "ccmpne",            IUM_RD, 0x000038,    0x0003880,   0x00003A,   INS_TT_NONE,    Writes_OF | Writes_SF | Writes_ZF | Writes_CF | INS_FLAGS_Has_Sbit)
+INST3(ccmpbe,           "ccmpbe",            IUM_RD, 0x000038,    0x0003880,   0x00003A,   INS_TT_NONE,    Writes_OF | Writes_SF | Writes_ZF | Writes_CF | INS_FLAGS_Has_Sbit)
+INST3(ccmpa,            "ccmpa",             IUM_RD, 0x000038,    0x0003880,   0x00003A,   INS_TT_NONE,    Writes_OF | Writes_SF | Writes_ZF | Writes_CF | INS_FLAGS_Has_Sbit)
+INST3(ccmps,            "ccmps",             IUM_RD, 0x000038,    0x0003880,   0x00003A,   INS_TT_NONE,    Writes_OF | Writes_SF | Writes_ZF | Writes_CF | INS_FLAGS_Has_Sbit)
+INST3(ccmpns,           "ccmpns",            IUM_RD, 0x000038,    0x0003880,   0x00003A,   INS_TT_NONE,    Writes_OF | Writes_SF | Writes_ZF | Writes_CF | INS_FLAGS_Has_Sbit)
+INST3(ccmpt,            "ccmpt",             IUM_RD, 0x000038,    0x0003880,   0x00003A,   INS_TT_NONE,    Writes_OF | Writes_SF | Writes_ZF | Writes_CF | INS_FLAGS_Has_Sbit)
+INST3(ccmpf,            "ccmpf",             IUM_RD, 0x000038,    0x0003880,   0x00003A,   INS_TT_NONE,    Writes_OF | Writes_SF | Writes_ZF | Writes_CF | INS_FLAGS_Has_Sbit)
+INST3(ccmpl,            "ccmpl",             IUM_RD, 0x000038,    0x0003880,   0x00003A,   INS_TT_NONE,    Writes_OF | Writes_SF | Writes_ZF | Writes_CF | INS_FLAGS_Has_Sbit)
+INST3(ccmpge,           "ccmpge",            IUM_RD, 0x000038,    0x0003880,   0x00003A,   INS_TT_NONE,    Writes_OF | Writes_SF | Writes_ZF | Writes_CF | INS_FLAGS_Has_Sbit)
+INST3(ccmple,           "ccmple",            IUM_RD, 0x000038,    0x0003880,   0x00003A,   INS_TT_NONE,    Writes_OF | Writes_SF | Writes_ZF | Writes_CF | INS_FLAGS_Has_Sbit)
+INST3(ccmpg,            "ccmpg",             IUM_RD, 0x000038,    0x0003880,   0x00003A,   INS_TT_NONE,    Writes_OF | Writes_SF | Writes_ZF | Writes_CF | INS_FLAGS_Has_Sbit)
+
+INST3(LAST_CCMP_INSTRUCTION, "LAST_CCMP_INSTRUCTION", IUM_WR, BAD_CODE, BAD_CODE, BAD_CODE, INS_TT_NONE, INS_FLAGS_None)
+
+INST3(LAST_APX_INSTRUCTION, "LAST_APX_INSTRUCTION", IUM_WR, BAD_CODE, BAD_CODE, BAD_CODE, INS_TT_NONE, INS_FLAGS_None)
+
+
 
 // Scalar instructions in SSE4.2
 INST3(crc32,            "crc32",            IUM_RW, BAD_CODE,     BAD_CODE,     PSSE38(0xF2, 0xF0),                      INS_TT_NONE,    INS_FLAGS_None)

@@ -33,7 +33,9 @@ namespace System.Linq
             ThrowHelper.ThrowIfNull(second);
             ThrowHelper.ThrowIfNull(keySelector);
 
-            return Impl(first, second, keySelector, comparer, default);
+            return
+                first.IsKnownEmpty() ? Empty<TSource>() :
+                Impl(first, second, keySelector, comparer, default);
 
             static async IAsyncEnumerable<TSource> Impl(
                 IAsyncEnumerable<TSource> first,
@@ -42,19 +44,34 @@ namespace System.Linq
                 IEqualityComparer<TKey>? comparer,
                 [EnumeratorCancellation] CancellationToken cancellationToken)
             {
-                HashSet<TKey> set = new(comparer);
-
-                await foreach (TKey key in second.WithCancellation(cancellationToken).ConfigureAwait(false))
+                IAsyncEnumerator<TSource> firstEnumerator = first.GetAsyncEnumerator(cancellationToken);
+                try
                 {
-                    set.Add(key);
-                }
-
-                await foreach (TSource element in first.WithCancellation(cancellationToken).ConfigureAwait(false))
-                {
-                    if (set.Add(keySelector(element)))
+                    if (!await firstEnumerator.MoveNextAsync().ConfigureAwait(false))
                     {
-                        yield return element;
+                        yield break;
                     }
+
+                    HashSet<TKey> set = new(comparer);
+
+                    await foreach (TKey key in second.WithCancellation(cancellationToken).ConfigureAwait(false))
+                    {
+                        set.Add(key);
+                    }
+
+                    do
+                    {
+                        TSource firstElement = firstEnumerator.Current;
+                        if (set.Add(keySelector(firstElement)))
+                        {
+                            yield return firstElement;
+                        }
+                    }
+                    while (await firstEnumerator.MoveNextAsync().ConfigureAwait(false));
+                }
+                finally
+                {
+                    await firstEnumerator.DisposeAsync().ConfigureAwait(false);
                 }
             }
         }
@@ -82,7 +99,9 @@ namespace System.Linq
             ThrowHelper.ThrowIfNull(second);
             ThrowHelper.ThrowIfNull(keySelector);
 
-            return Impl(first, second, keySelector, comparer, default);
+            return
+                first.IsKnownEmpty() ? Empty<TSource>() :
+                Impl(first, second, keySelector, comparer, default);
 
             static async IAsyncEnumerable<TSource> Impl(
                 IAsyncEnumerable<TSource> first,
@@ -91,19 +110,34 @@ namespace System.Linq
                 IEqualityComparer<TKey>? comparer,
                 [EnumeratorCancellation] CancellationToken cancellationToken)
             {
-                HashSet<TKey> set = new(comparer);
-
-                await foreach (TKey key in second.WithCancellation(cancellationToken).ConfigureAwait(false))
+                IAsyncEnumerator<TSource> firstEnumerator = first.GetAsyncEnumerator(cancellationToken);
+                try
                 {
-                    set.Add(key);
-                }
-
-                await foreach (TSource element in first.WithCancellation(cancellationToken).ConfigureAwait(false))
-                {
-                    if (set.Add(await keySelector(element, cancellationToken).ConfigureAwait(false)))
+                    if (!await firstEnumerator.MoveNextAsync().ConfigureAwait(false))
                     {
-                        yield return element;
+                        yield break;
                     }
+
+                    HashSet<TKey> set = new(comparer);
+
+                    await foreach (TKey key in second.WithCancellation(cancellationToken).ConfigureAwait(false))
+                    {
+                        set.Add(key);
+                    }
+
+                    do
+                    {
+                        TSource firstElement = firstEnumerator.Current;
+                        if (set.Add(await keySelector(firstElement, cancellationToken).ConfigureAwait(false)))
+                        {
+                            yield return firstElement;
+                        }
+                    }
+                    while (await firstEnumerator.MoveNextAsync().ConfigureAwait(false));
+                }
+                finally
+                {
+                    await firstEnumerator.DisposeAsync().ConfigureAwait(false);
                 }
             }
         }
