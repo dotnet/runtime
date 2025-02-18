@@ -5331,6 +5331,10 @@ struct GenTreeCall final : public GenTree
     {
         return (gtFlags & GTF_CALL_VIRT_KIND_MASK) == GTF_CALL_VIRT_VTABLE;
     }
+
+    bool IsDevirtualizationCandidate(Compiler* compiler) const;
+    bool IsVirtualFunctionPointerLookup(Compiler* compiler) const;
+
     bool IsInlineCandidate() const
     {
         return (gtFlags & GTF_CALL_INLINE_CANDIDATE) != 0;

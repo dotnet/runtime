@@ -573,7 +573,7 @@ private:
         if (tree->OperGet() == GT_CALL)
         {
             GenTreeCall* call          = tree->AsCall();
-            bool         tryLateDevirt = call->IsVirtual() && (call->gtCallType == CT_USER_FUNC);
+            bool         tryLateDevirt = call->IsDevirtualizationCandidate(m_compiler);
 
 #ifdef DEBUG
             tryLateDevirt = tryLateDevirt && (JitConfig.JitEnableLateDevirtualization() == 1);
@@ -610,7 +610,7 @@ private:
                 m_compiler->impDevirtualizeCall(call, nullptr, &method, &methodFlags, &contextInput, &context,
                                                 isLateDevirtualization, explicitTailCall);
 
-                if (!call->IsVirtual())
+                if (!call->IsDevirtualizationCandidate(m_compiler))
                 {
                     assert(context != nullptr);
                     CORINFO_CALL_INFO callInfo = {};
