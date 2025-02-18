@@ -8411,7 +8411,7 @@ void CodeGen::genPutArgStk(GenTreePutArgStk* putArgStk)
         CallArg* callArg = putArgStk->gtCall->gtArgs.FindByNode(putArgStk);
         assert(callArg != nullptr);
         assert(callArg->AbiInfo.HasExactlyOneStackSegment());
-        assert(argOffset = callArg->AbiInfo.Segment(0).GetStackOffset());
+        assert(argOffset == callArg->AbiInfo.Segment(0).GetStackOffset());
 #endif
 
         if (data->isContainedIntOrIImmed())
