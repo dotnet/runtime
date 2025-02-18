@@ -325,7 +325,7 @@
       <_EmccLDFlags Include="@(_EmccCommonFlags)" />
       <!-- -lexports.js to MINIFY_WASM_EXPORT_NAMES=0 -->
       <_EmccLDFlags Include="-s EXPORT_ES6=1 -lexports.js" />
-      <EmccExportedFunction Condition="'$(WasmEnableExceptionHandling)' != 'false'" Include="___cpp_exception" />
+      <EmccExportedFunction Condition="'$(WasmEnableExceptionHandling)' == 'true'" Include="___cpp_exception" />
 
       <_RuntimeCDependencies Include="$(_WasmPInvokeHPath);$(_WasmICallTablePath)" />
       <_RuntimeCDependencies Include="$(_DriverGenCPath)" Condition="'$(_DriverGenCNeeded)' == 'true'" />
