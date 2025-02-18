@@ -530,7 +530,6 @@ private:
     }
 #endif // FEATURE_MULTIREG_RET
 
-    
     CORINFO_METHOD_HANDLE GetMethodHandle(GenTreeCall* call)
     {
         assert(call->IsDevirtualizationCandidate(m_compiler));
