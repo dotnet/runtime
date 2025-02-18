@@ -261,14 +261,12 @@ void GenTree::InitNodeSize()
     GenTree::s_gtNodeSizes[GT_MOD]           = TREE_NODE_SZ_LARGE;
     GenTree::s_gtNodeSizes[GT_UMOD]          = TREE_NODE_SZ_LARGE;
 #endif
-#ifdef FEATURE_PUT_STRUCT_ARG_STK
     // TODO-Throughput: This should not need to be a large node. The object info should be
     // obtained from the child node.
     GenTree::s_gtNodeSizes[GT_PUTARG_STK]    = TREE_NODE_SZ_LARGE;
 #if FEATURE_ARG_SPLIT
     GenTree::s_gtNodeSizes[GT_PUTARG_SPLIT]  = TREE_NODE_SZ_LARGE;
 #endif // FEATURE_ARG_SPLIT
-#endif // FEATURE_PUT_STRUCT_ARG_STK
 
     // This list of assertions should come to contain all GenTree subtypes that are declared
     // "small".
@@ -324,16 +322,12 @@ void GenTree::InitNodeSize()
     static_assert_no_msg(sizeof(GenTreeILOffset)     <= TREE_NODE_SZ_SMALL);
     static_assert_no_msg(sizeof(GenTreePhiArg)       <= TREE_NODE_SZ_SMALL);
     static_assert_no_msg(sizeof(GenTreeAllocObj)     <= TREE_NODE_SZ_LARGE); // *** large node
-#ifndef FEATURE_PUT_STRUCT_ARG_STK
-    static_assert_no_msg(sizeof(GenTreePutArgStk)       <= TREE_NODE_SZ_SMALL);
-#else  // FEATURE_PUT_STRUCT_ARG_STK
     // TODO-Throughput: This should not need to be a large node. The object info should be
     // obtained from the child node.
     static_assert_no_msg(sizeof(GenTreePutArgStk)       <= TREE_NODE_SZ_LARGE);
 #if FEATURE_ARG_SPLIT
     static_assert_no_msg(sizeof(GenTreePutArgSplit)     <= TREE_NODE_SZ_LARGE);
 #endif // FEATURE_ARG_SPLIT
-#endif // FEATURE_PUT_STRUCT_ARG_STK
 
 #ifdef FEATURE_HW_INTRINSICS
     static_assert_no_msg(sizeof(GenTreeHWIntrinsic)     <= TREE_NODE_SZ_SMALL);
@@ -1145,6 +1139,27 @@ void GenTreeFieldList::InsertFieldLIR(
     Compiler* compiler, Use* insertAfter, GenTree* node, unsigned offset, var_types type)
 {
     m_uses.InsertUse(insertAfter, new (compiler, CMK_ASTNode) Use(node, offset, type));
+}
+
+//---------------------------------------------------------------
+// SoleFieldOrThis:
+//   If this FIELD_LIST has only one field, then return it; otherwise return
+//   the field list.
+//
+// Returns:
+//   Sole field, or "this".
+//
+GenTree* GenTreeFieldList::SoleFieldOrThis()
+{
+    Use* head = m_uses.GetHead();
+    assert(head != nullptr);
+
+    if (head->GetNext() == nullptr)
+    {
+        return head->GetNode();
+    }
+
+    return this;
 }
 
 //---------------------------------------------------------------
@@ -2621,13 +2636,6 @@ void CallArgs::ResetFinalArgsAndABIInfo()
     m_abiInformationDetermined = false;
 }
 
-#if !defined(FEATURE_PUT_STRUCT_ARG_STK)
-unsigned GenTreePutArgStk::GetStackByteSize() const
-{
-    return genTypeSize(genActualType(gtOp1->gtType));
-}
-#endif // !defined(FEATURE_PUT_STRUCT_ARG_STK)
-
 /*****************************************************************************
  *
  *  Returns non-zero if the two trees are identical.
@@ -3046,6 +3054,25 @@ AGAIN:
     }
 
     return false;
+}
+
+//------------------------------------------------------------------------
+// EffectiveUse: Return the use pointer to the "effective val".
+//
+// Arguments:
+//   use - Use edge
+//
+// Return Value:
+//   Edge pointing to non-comma node.
+//
+GenTree** GenTree::EffectiveUse(GenTree** use)
+{
+    while ((*use)->OperIs(GT_COMMA))
+    {
+        use = &(*use)->AsOp()->gtOp2;
+    }
+
+    return use;
 }
 
 //------------------------------------------------------------------------
@@ -12733,7 +12760,6 @@ void Compiler::gtDispTree(GenTree*                    tree,
                 }
             }
         }
-#if FEATURE_PUT_STRUCT_ARG_STK
         else if (tree->OperGet() == GT_PUTARG_STK)
         {
             const GenTreePutArgStk* putArg = tree->AsPutArgStk();
@@ -12766,7 +12792,6 @@ void Compiler::gtDispTree(GenTree*                    tree,
             printf(" (%d stackByteSize), (%d numRegs)", putArg->GetStackByteSize(), putArg->gtNumRegs);
         }
 #endif // FEATURE_ARG_SPLIT
-#endif // FEATURE_PUT_STRUCT_ARG_STK
 
         if (tree->OperIs(GT_FIELD_ADDR))
         {

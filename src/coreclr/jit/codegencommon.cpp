@@ -201,7 +201,7 @@ void CodeGenInterface::CopyRegisterInfo()
 CodeGen::CodeGen(Compiler* theCompiler)
     : CodeGenInterface(theCompiler)
 {
-#if defined(FEATURE_PUT_STRUCT_ARG_STK) && !defined(TARGET_X86)
+#if !defined(TARGET_X86)
     m_stkArgVarNum = BAD_VAR_NUM;
 #endif
 
