@@ -2425,8 +2425,8 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                 {
                     break;
                 }
-                impSpillSideEffect(true,
-                                   stackState.esStackDepth - 2 DEBUGARG("Spilling op1 side effects for vector integer division"));
+                impSpillSideEffect(true, stackState.esStackDepth -
+                                             2 DEBUGARG("Spilling op1 side effects for vector integer division"));
 #else
                 break;
 #endif // defined(TARGET_XARCH) && defined(FEATURE_HW_INTRINSICS)
