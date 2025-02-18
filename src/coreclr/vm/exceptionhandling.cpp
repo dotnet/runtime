@@ -6138,6 +6138,7 @@ BOOL IsSafeToUnwindFrameChain(Thread* pThread, LPVOID MemoryStackFpForFrameChain
     // Otherwise "unwind" to managed method
     REGDISPLAY rd;
     CONTEXT ctx;
+    ctx.ContextFlags = CONTEXT_CONTROL;
     SetIP(&ctx, 0);
     SetSP(&ctx, 0);
     FillRegDisplay(&rd, &ctx);
