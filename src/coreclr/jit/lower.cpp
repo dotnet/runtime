@@ -644,6 +644,7 @@ GenTree* Lowering::LowerNode(GenTree* node)
 
 #if defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
         case GT_CMPXCHG:
+            RISCV64_ONLY(CheckImmedAndMakeContained(node, node->AsCmpXchg()->Data()));
             CheckImmedAndMakeContained(node, node->AsCmpXchg()->Comparand());
             break;
 

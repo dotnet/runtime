@@ -2428,13 +2428,13 @@ void CodeGen::genCodeForCmpXchg(GenTreeCmpXchg* treeNode)
     GenTree* locOp       = treeNode->Addr();
     GenTree* valOp       = treeNode->Data();
     GenTree* comparandOp = treeNode->Comparand();
-    assert(locOp->isUsedFromReg());
-    assert(valOp->isUsedFromReg());
-    assert(comparandOp->isUsedFromReg() || comparandOp->IsIntegralConst(0));
+    assert(!locOp->isContained());
+    assert(!valOp->isContained() || valOp->IsIntegralConst(0));
+    assert(!comparandOp->isContained() || comparandOp->IsIntegralConst(0));
 
     regNumber target    = treeNode->GetRegNum();
     regNumber loc       = locOp->GetRegNum();
-    regNumber val       = valOp->GetRegNum();
+    regNumber val       = !valOp->isContained() ? valOp->GetRegNum() : REG_ZERO;
     regNumber comparand = !comparandOp->isContained() ? comparandOp->GetRegNum() : REG_ZERO;
     regNumber storeErr  = internalRegisters.GetSingle(treeNode);
 
@@ -2447,14 +2447,15 @@ void CodeGen::genCodeForCmpXchg(GenTreeCmpXchg* treeNode)
     noway_assert(loc != val);
     noway_assert(loc != comparand);
     noway_assert(loc != storeErr);
-    noway_assert(val != comparand);
+    noway_assert((val != comparand) || (val == REG_ZERO));
     noway_assert(val != storeErr);
     noway_assert(comparand != storeErr);
     noway_assert(target != REG_NA);
     noway_assert(storeErr != REG_NA);
 
     genConsumeAddress(locOp);
-    genConsumeRegs(valOp);
+    if (!valOp->isContained())
+        genConsumeRegs(valOp);
     if (!comparandOp->isContained())
         genConsumeRegs(comparandOp);
 
