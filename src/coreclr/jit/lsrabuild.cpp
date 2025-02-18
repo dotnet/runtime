@@ -840,8 +840,8 @@ regMaskTP LinearScan::getKillSetForCall(GenTreeCall* call)
         killMask                 = compiler->compHelperCallKillSet(helpFunc);
     }
 
-    // if there is no FP used, or if we don't have cross-block live registers, we can ignore the FP kills
-    if (!enregisterLocalVars || !compiler->compFloatingPointUsed)
+    // if there is no FP used, we can ignore the FP kills
+    if (!compiler->compFloatingPointUsed)
     {
 #if defined(TARGET_XARCH)
 
