@@ -1558,7 +1558,7 @@ private:
                     call->gtArgs.DetermineNewABIInfo(m_compiler, call);
                 }
 
-                if (!arg.NewAbiInfo.HasAnyStackSegment() && !arg.AbiInfo.PassedByRef)
+                if (!arg.NewAbiInfo.HasAnyStackSegment() && !arg.NewAbiInfo.IsPassedByReference())
                 {
                     flags |= AccessKindFlags::IsRegCallArg;
                 }
@@ -2308,7 +2308,7 @@ bool ReplaceVisitor::CanReplaceCallArgWithFieldListOfReplacements(GenTreeCall*  
     // We should have computed ABI information during the costing phase.
     assert(call->gtArgs.IsNewAbiInformationDetermined());
 
-    if (callArg->NewAbiInfo.HasAnyStackSegment() || callArg->AbiInfo.PassedByRef)
+    if (callArg->NewAbiInfo.HasAnyStackSegment() || callArg->NewAbiInfo.IsPassedByReference())
     {
         return false;
     }

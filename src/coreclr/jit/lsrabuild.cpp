@@ -2266,7 +2266,12 @@ void LinearScan::buildIntervals()
         }
         else if (lclDsc->lvIsParam)
         {
-            if (lclDsc->lvIsStructField)
+            if (compiler->opts.IsOSR())
+            {
+                // Fall through with no preferred register since parameter are
+                // not passed in registers for OSR
+            }
+            else if (lclDsc->lvIsStructField)
             {
                 // All fields passed in registers should be assigned via the
                 // lvIsParamRegTarget mechanism, so this must be a stack
