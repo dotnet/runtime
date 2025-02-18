@@ -305,8 +305,9 @@ GenTree* Compiler::fgMorphExpandCast(GenTreeCast* tree)
             //       dstType = int for SSE41
             // For pre-SSE41, the all src is converted to TYP_DOUBLE
             // and goes through helpers.
-            && (tree->gtOverflow() || (dstType == TYP_LONG) ||
-                !(canUseEvexEncoding() || (dstType == TYP_INT && compOpportunisticallyDependsOn(InstructionSet_SSE41))))
+            &&
+            (tree->gtOverflow() || (dstType == TYP_LONG && !compOpportunisticallyDependsOn(InstructionSet_AVX10v2)) ||
+             !(canUseEvexEncoding() || (dstType == TYP_INT && compOpportunisticallyDependsOn(InstructionSet_SSE41))))
 #elif defined(TARGET_ARM)
             // Arm: src = float, dst = int64/uint64 or overflow conversion.
             && (tree->gtOverflow() || varTypeIsLong(dstType))
@@ -340,6 +341,8 @@ GenTree* Compiler::fgMorphExpandCast(GenTreeCast* tree)
 #else
 #if defined(TARGET_AMD64)
                 // Following nodes are handled when lowering the nodes
+                //     float  -> ulong/uint/int/long for AVX10.2
+                //     double -> ulong/uint/int/long for AVX10.2
                 //     float  -> ulong/uint/int for AVX512F
                 //     double -> ulong/uint/long/int for AVX512F
                 //     float  -> int for SSE41
