@@ -2335,7 +2335,7 @@ regNumber AbsRegNumber(regNumber reg)
     {
         return (regNumber)(reg - XMMBASE);
     }
-    return reg;
+    return (regNumber)reg;
 }
 
 // Returns true if using this register will require a REX.* prefix.
