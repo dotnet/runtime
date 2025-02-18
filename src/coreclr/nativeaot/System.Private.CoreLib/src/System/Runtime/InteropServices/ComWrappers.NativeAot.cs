@@ -110,7 +110,7 @@ namespace System.Runtime.InteropServices
 
             internal static unsafe ManagedObjectWrapper* ToManagedObjectWrapper(ComInterfaceDispatch* dispatchPtr)
             {
-                InternalComInterfaceDispatch* dispatch = (InternalComInterfaceDispatch*)((nuint)dispatchPtr & InternalComInterfaceDispatch.DispatchAlignmentMask);
+                InternalComInterfaceDispatch* dispatch = (InternalComInterfaceDispatch*)unchecked((nuint)dispatchPtr & (nuint)InternalComInterfaceDispatch.DispatchAlignmentMask);
                 return dispatch->_thisPtr;
             }
         }
@@ -124,7 +124,7 @@ namespace System.Runtime.InteropServices
             internal const int DispatchAlignment = 16;
             internal const int NumEntriesInDispatchTable = DispatchAlignment / 4 /* sizeof(void*) */  - 1;
 #endif
-            internal const uint DispatchAlignmentMask = unchecked((uint)~(InternalComInterfaceDispatch.DispatchAlignment - 1));
+            internal const ulong DispatchAlignmentMask = unchecked((ulong)~(InternalComInterfaceDispatch.DispatchAlignment - 1));
 
             internal ManagedObjectWrapper* _thisPtr;
 
@@ -358,7 +358,7 @@ namespace System.Runtime.InteropServices
             {
                 InternalComInterfaceDispatch* dispatch = &Dispatches[index / InternalComInterfaceDispatch.NumEntriesInDispatchTable];
                 IntPtr* vtables = (IntPtr*)(void*)&dispatch->Vtables;
-                return vtables[index % InternalComInterfaceDispatch.NumEntriesInDispatchTable];
+                return (IntPtr)(&vtables[index % InternalComInterfaceDispatch.NumEntriesInDispatchTable]);
             }
 
             private unsafe IntPtr AsRuntimeDefined(in Guid riid)
@@ -804,7 +804,7 @@ namespace System.Runtime.InteropServices
 
             // Instead of allocating a full section even when we have a trailing one, we'll allocate only
             // as much space as we need to store all of our dispatch tables.
-            nuint dispatchSectionSize = totalDefinedCount * (nuint)sizeof(void*) + numSections * sizeof(void*);
+            nuint dispatchSectionSize = (nuint)totalDefinedCount * (nuint)sizeof(void*) + (nuint)numSections * (nuint)sizeof(void*);
 
             // Allocate memory for the ManagedObjectWrapper with the correct alignment for our dispatch tables.
             IntPtr wrapperMem = (IntPtr)NativeMemory.AlignedAlloc(
