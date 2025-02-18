@@ -13,41 +13,43 @@
 
 struct BoundCheckLocation
 {
-    Statement*        stmt;
-    GenTreeBoundsChk* bndChk;
-    GenTree*          bndChkParent;
+    Statement* stmt;
+    GenTree**  bndChkUse;
 
-    BoundCheckLocation(Statement* stmt, GenTreeBoundsChk* bndChk, GenTree* bndChkParent)
+    BoundCheckLocation(Statement* stmt, GenTree** bndChkUse)
         : stmt(stmt)
-        , bndChk(bndChk)
-        , bndChkParent(bndChkParent)
+        , bndChkUse(bndChkUse)
     {
+        assert(stmt != nullptr);
+        assert((bndChkUse != nullptr));
+        assert((*bndChkUse) != nullptr);
+        assert((*bndChkUse)->OperIs(GT_BOUNDS_CHECK));
     }
 };
 
 struct BoundsCheckInfo
 {
-    Statement*        stmt;
-    GenTree*          bndChkParent;
-    GenTreeBoundsChk* bndChk;
-    ValueNum          lenVN;
-    ValueNum          idxVN;
-    int               offset;
+    Statement* stmt;
+    GenTree**  bndChkUse;
+    ValueNum   lenVN;
+    ValueNum   idxVN;
+    int        offset;
 
     BoundsCheckInfo()
         : stmt(nullptr)
-        , bndChkParent(nullptr)
-        , bndChk(nullptr)
+        , bndChkUse(nullptr)
         , lenVN(ValueNumStore::NoVN)
         , idxVN(ValueNumStore::NoVN)
         , offset(0)
     {
     }
 
-    bool Initialize(const Compiler*   comp,
-                    Statement*        statement,
-                    GenTreeBoundsChk* bndChkNode,
-                    GenTree*          bndChkParentNode);
+    bool Initialize(const Compiler* comp, Statement* statement, GenTree** bndChkUse);
+
+    GenTreeBoundsChk* BndChk() const
+    {
+        return (*bndChkUse)->AsBoundsChk();
+    }
 };
 
 struct IdxLenPair

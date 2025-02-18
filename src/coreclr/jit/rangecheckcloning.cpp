@@ -54,28 +54,23 @@
 // Return Value:
 //    true if the initialization was successful, false otherwise.
 //
-bool BoundsCheckInfo::Initialize(const Compiler*   comp,
-                                 Statement*        statement,
-                                 GenTreeBoundsChk* bndChkNode,
-                                 GenTree*          bndChkParentNode)
+bool BoundsCheckInfo::Initialize(const Compiler* comp, Statement* statement, GenTree** bndChk)
 {
-    idxVN = comp->vnStore->VNConservativeNormalValue(bndChkNode->GetIndex()->gtVNPair);
-    lenVN = comp->vnStore->VNConservativeNormalValue(bndChkNode->GetArrayLength()->gtVNPair);
+    assert((bndChk != nullptr) && ((*bndChk) != nullptr));
+
+    stmt      = statement;
+    bndChkUse = bndChk;
+    idxVN     = comp->vnStore->VNConservativeNormalValue(BndChk()->GetIndex()->gtVNPair);
+    lenVN     = comp->vnStore->VNConservativeNormalValue(BndChk()->GetArrayLength()->gtVNPair);
     if ((idxVN == ValueNumStore::NoVN) || (lenVN == ValueNumStore::NoVN))
     {
         return false;
     }
 
-    stmt         = statement;
-    bndChk       = bndChkNode;
-    bndChkParent = bndChkParentNode;
-
-    assert((bndChkParent == nullptr) || bndChkParent->OperIs(GT_COMMA));
-
-    if (bndChkNode->GetIndex()->IsIntCnsFitsInI32())
+    if (BndChk()->GetIndex()->IsIntCnsFitsInI32())
     {
         // Index being a constant means we have index=0 and cns offset
-        offset = static_cast<int>(bndChkNode->GetIndex()->AsIntCon()->IconValue());
+        offset = static_cast<int>(BndChk()->GetIndex()->AsIntCon()->IconValue());
         idxVN  = comp->vnStore->VNZeroForType(TYP_INT);
     }
     else
@@ -101,8 +96,6 @@ bool BoundsCheckInfo::Initialize(const Compiler*   comp,
 
 //------------------------------------------------------------------------------------
 // RemoveBoundsChk - Remove the given bounds check from the statement and the block.
-//    This function is a copy of optRemoveRangeCheck, but without questionable
-//    relaxations around side effect extractions.
 //
 // Arguments:
 //    comp  - compiler instance
@@ -110,54 +103,18 @@ bool BoundsCheckInfo::Initialize(const Compiler*   comp,
 //    comma - check's parent node (either null or COMMA)
 //    stmt  - statement containing the bounds check
 //
-static void RemoveBoundsChk(Compiler* comp, GenTreeBoundsChk* check, GenTree* comma, Statement* stmt)
+static void RemoveBoundsChk(Compiler* comp, GenTree** treeUse, Statement* stmt)
 {
-    assert((check != nullptr) && (stmt != nullptr));
-    assert((comma == nullptr) || (comma->OperIs(GT_COMMA)));
-
-    GenTree* tree = comma != nullptr ? comma : check;
-
     JITDUMP("Before RemoveBoundsChk:\n");
-    DISPTREE(tree);
+    DISPTREE(*treeUse);
 
     GenTree* sideEffList = nullptr;
-    comp->gtExtractSideEffList(check, &sideEffList, GTF_SIDE_EFFECT, /*ignoreRoot*/ true);
-
-    if (sideEffList != nullptr)
-    {
-        if (comma != nullptr)
-        {
-            // Is the check LHS or RHS of the comma?
-            if (comma->gtGetOp1() == check)
-            {
-                comma->AsOp()->gtOp1 = sideEffList;
-            }
-            else
-            {
-                assert(comma->gtGetOp2() == check);
-                comma->AsOp()->gtOp2 = sideEffList;
-            }
-        }
-        else
-        {
-            // Side-effects are now the new root of the statement.
-            stmt->SetRootNode(sideEffList);
-            tree = sideEffList;
-        }
-    }
-    else
-    {
-        // No side effects, just bash the bounds check to NOP.
-        check->gtBashToNOP();
-    }
-
-    if (tree->OperIs(GT_COMMA))
-    {
-        // We can no longer CSE the GT_COMMA.
-        tree->gtFlags |= GTF_DONT_CSE;
-    }
+    comp->gtExtractSideEffList(*treeUse, &sideEffList, GTF_SIDE_EFFECT, /*ignoreRoot*/ true);
+    *treeUse = (sideEffList != nullptr) ? sideEffList : comp->gtNewNothingNode();
 
     comp->gtUpdateStmtSideEffects(stmt);
+    comp->gtSetStmtInfo(stmt);
+    comp->fgSetStmtSeq(stmt);
 
     JITDUMP("After RemoveBoundsChk:\n");
     DISPTREE(stmt->GetRootNode());
@@ -216,7 +173,7 @@ static BasicBlock* optRangeCheckCloning_DoClone(Compiler* comp, BasicBlock* bloc
     GenTree**   bndChkUse;
     Statement*  newFirstStmt;
     BasicBlock* fastpathBb =
-        comp->fgSplitBlockBeforeTree(block, firstCheck.stmt, firstCheck.bndChk, &newFirstStmt, &bndChkUse);
+        comp->fgSplitBlockBeforeTree(block, firstCheck.stmt, firstCheck.BndChk(), &newFirstStmt, &bndChkUse);
 
     // Perform the usual routine after gtSplitTree:
     while ((newFirstStmt != nullptr) && (newFirstStmt != firstCheck.stmt))
@@ -242,8 +199,8 @@ static BasicBlock* optRangeCheckCloning_DoClone(Compiler* comp, BasicBlock* bloc
     }
     assert(offset >= 0);
 
-    GenTree* idx    = comp->gtCloneExpr(firstCheck.bndChk->GetIndex());
-    GenTree* arrLen = comp->gtCloneExpr(firstCheck.bndChk->GetArrayLength());
+    GenTree* idx    = comp->gtCloneExpr(firstCheck.BndChk()->GetIndex());
+    GenTree* arrLen = comp->gtCloneExpr(firstCheck.BndChk()->GetArrayLength());
 
     // gtSplitTree is expected to spill the side effects of the index and array length expressions
     assert((idx->gtFlags & GTF_ALL_EFFECT) == 0);
@@ -366,7 +323,7 @@ static BasicBlock* optRangeCheckCloning_DoClone(Compiler* comp, BasicBlock* bloc
                     [](GenTree** pTree, Compiler::fgWalkData* data) -> Compiler::fgWalkResult {
                     return (*pTree == (GenTree*)data->pCallbackData) ? Compiler::WALK_ABORT : Compiler::WALK_CONTINUE;
                 },
-                    info.bndChk);
+                    info.BndChk());
                 // We don't need to validate bndChkParent - RemoveBoundsChk will do it for us
                 assert(result == Compiler::WALK_ABORT);
                 break;
@@ -374,13 +331,7 @@ static BasicBlock* optRangeCheckCloning_DoClone(Compiler* comp, BasicBlock* bloc
         }
         assert(statementFound);
 #endif
-        RemoveBoundsChk(comp, info.bndChk, info.bndChkParent, info.stmt);
-        comp->gtSetStmtInfo(info.stmt);
-        comp->fgSetStmtSeq(info.stmt);
-
-        // TODO: Remove GTF_EXCEPT from ARR_LENGTH nodes as well. Technically, it should
-        // be handled by assertprop, but it doesn't do it for ARR_LENGTH nodes yet,
-        // see https://github.com/dotnet/runtime/pull/93531
+        RemoveBoundsChk(comp, info.bndChkUse, info.stmt);
     }
 
     comp->fgMorphBlockStmt(lowerBndBb, lowerBndBb->lastStmt() DEBUGARG("Morph lowerBnd"));
@@ -436,10 +387,9 @@ public:
 
     fgWalkResult PostOrderVisit(GenTree** use, GenTree* user)
     {
-        GenTree* node = *use;
-        if (node->OperIs(GT_BOUNDS_CHECK))
+        if ((*use)->OperIs(GT_BOUNDS_CHECK))
         {
-            m_boundsChks->Push(BoundCheckLocation(m_stmt, node->AsBoundsChk(), user));
+            m_boundsChks->Push(BoundCheckLocation(m_stmt, use));
         }
         return fgWalkResult::WALK_CONTINUE;
     }
@@ -584,7 +534,7 @@ PhaseStatus Compiler::optRangeCheckCloning()
         {
             BoundCheckLocation loc = bndChkLocations.Bottom(i);
             BoundsCheckInfo    bci{};
-            if (bci.Initialize(this, loc.stmt, loc.bndChk, loc.bndChkParent))
+            if (bci.Initialize(this, loc.stmt, loc.bndChkUse))
             {
                 IdxLenPair             key(bci.idxVN, bci.lenVN);
                 BoundsCheckInfoStack** value = bndChkMap.LookupPointerOrAdd(key, nullptr);
