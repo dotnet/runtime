@@ -211,9 +211,74 @@ namespace Microsoft.Extensions.Caching.Memory
             DateTime utcNow = UtcNow;
 
             CoherentState coherentState = _coherentState; // Clear() can update the reference in the meantime
-            if (coherentState.TryGetValue(key, out CacheEntry? tmp))
+            if (!coherentState.TryGetValue(key, out CacheEntry? entry))
             {
-                CacheEntry entry = tmp;
+                entry = null;
+            }
+            return PostProcessTryGetValue(coherentState, utcNow, entry, out result);
+        }
+
+#if NET9_0_OR_GREATER
+        /// <summary>
+        /// Gets the item associated with this key if present.
+        /// </summary>
+        /// <param name="key">A character span corresponding to a <see cref="string"/> identifying the requested entry.</param>
+        /// <param name="result">The located value or null.</param>
+        /// <returns>True if the key was found.</returns>
+        /// <remarks>This method allows values with <see cref="string"/> keys to be queried by content without allocating a new <see cref="string"/> instance.</remarks>
+        [OverloadResolutionPriority(1)]
+        public bool TryGetValue(ReadOnlySpan<char> key, out object? result)
+        {
+            CheckDisposed();
+
+            DateTime utcNow = UtcNow;
+
+            CoherentState coherentState = _coherentState; // Clear() can update the reference in the meantime
+            if (!coherentState.TryGetValue(key, out CacheEntry? entry))
+            {
+                entry = null;
+            }
+            return PostProcessTryGetValue(coherentState, utcNow, entry, out result);
+        }
+
+        /// <summary>
+        /// Gets the item associated with this key if present.
+        /// </summary>
+        /// <param name="key">A character span corresponding to a <see cref="string"/> identifying the requested entry.</param>
+        /// <param name="result">The located value or null.</param>
+        /// <returns>True if the key was found.</returns>
+        /// <remarks>This method allows values with <see cref="string"/> keys to be queried by content without allocating a new <see cref="string"/> instance.</remarks>
+        [OverloadResolutionPriority(1)]
+        public bool TryGetValue<TItem>(ReadOnlySpan<char> key, out TItem? result)
+        {
+            // this implementation intentionally based on (and consistent with) CacheExtensions.TryGetValue<TItem>
+            if (TryGetValue(key, out object? untyped))
+            {
+                if (untyped == null)
+                {
+                    result = default;
+                    return true;
+                }
+
+                if (untyped is TItem item)
+                {
+                    result = item;
+                    return true;
+                }
+            }
+
+            result = default;
+            return false;
+
+        }
+#endif
+
+        private bool PostProcessTryGetValue(CoherentState coherentState, DateTime utcNow, CacheEntry? entry, out object? result)
+        {
+            // shared "get value" logic
+
+            if (entry is not null)
+            {
                 // Check if expired due to expiration tokens, timers, etc. and if so, remove it.
                 // Allow a stale Replaced value to be returned due to concurrent calls to SetExpired during SetEntry.
                 if (!entry.CheckExpired(utcNow) || entry.EvictionReason == EvictionReason.Replaced)
@@ -671,10 +736,30 @@ namespace Microsoft.Extensions.Caching.Memory
         {
             private readonly ConcurrentDictionary<string, CacheEntry> _stringEntries = new ConcurrentDictionary<string, CacheEntry>(StringKeyComparer.Instance);
             private readonly ConcurrentDictionary<object, CacheEntry> _nonStringEntries = new ConcurrentDictionary<object, CacheEntry>();
+
+#if NET9_0_OR_GREATER
+            private readonly bool _useStringAltLookup;
+            private readonly ConcurrentDictionary<string, CacheEntry>.AlternateLookup<ReadOnlySpan<char>> _stringAltLookup;
+
+            public CoherentState()
+            {
+                _useStringAltLookup = _stringEntries.TryGetAlternateLookup<ReadOnlySpan<char>>(out _stringAltLookup);
+                // we *expect* this to be available in all scenarios where this is used, but add a dev guard, and a fallback
+                Debug.Assert(_useStringAltLookup, "Expectation failure: alt-lookup feature is not available");
+            }
+#endif
+
             internal long _cacheSize;
 
             internal bool TryGetValue(object key, [NotNullWhen(true)] out CacheEntry? entry)
                 => key is string s ? _stringEntries.TryGetValue(s, out entry) : _nonStringEntries.TryGetValue(key, out entry);
+
+#if NET9_0_OR_GREATER
+            internal bool TryGetValue(ReadOnlySpan<char> key, [NotNullWhen(true)] out CacheEntry? entry)
+                => _useStringAltLookup ? _stringAltLookup.TryGetValue(key, out entry)
+                    : _stringEntries.TryGetValue(new string(key), out entry); // <== we do not expect this path to be hit; chaos fallback only
+#endif
+
 
             internal bool TryRemove(object key, [NotNullWhen(true)] out CacheEntry? entry)
                 => key is string s ? _stringEntries.TryRemove(s, out entry) : _nonStringEntries.TryRemove(key, out entry);

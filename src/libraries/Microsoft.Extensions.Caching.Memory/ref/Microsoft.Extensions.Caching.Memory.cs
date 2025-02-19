@@ -4,6 +4,9 @@
 // Changes to this file must follow the https://aka.ms/api-review process.
 // ------------------------------------------------------------------------------
 
+using System;
+using System.Runtime.CompilerServices;
+
 namespace Microsoft.Extensions.Caching.Distributed
 {
     public partial class MemoryDistributedCache : Microsoft.Extensions.Caching.Distributed.IDistributedCache
@@ -37,6 +40,13 @@ namespace Microsoft.Extensions.Caching.Memory
         public Microsoft.Extensions.Caching.Memory.MemoryCacheStatistics? GetCurrentStatistics() { throw null; }
         public void Remove(object key) { }
         public bool TryGetValue(object key, out object? result) { throw null; }
+
+#if NET9_0_OR_GREATER
+        [OverloadResolutionPriority(1)]
+        public bool TryGetValue(ReadOnlySpan<char> key, out object? result) { throw null; }
+        [OverloadResolutionPriority(1)]
+        public bool TryGetValue<TItem>(ReadOnlySpan<char> key, out TItem? value) { throw null; }
+#endif
     }
     public partial class MemoryCacheOptions : Microsoft.Extensions.Options.IOptions<Microsoft.Extensions.Caching.Memory.MemoryCacheOptions>
     {
