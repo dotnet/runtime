@@ -7,6 +7,7 @@
   <ItemGroup>
     <LinuxPackageDependency Include="libc6;libgcc1;libgssapi-krb5-2;libstdc++6"/>
     <LinuxPackageDependency Include="libssl3" />
-    <LinuxPackageDependency Include="libicu72" />
+    <KnownLibIcuVersion Include="72" />
+    <LinuxPackageDependency Include="@(KnownLibIcuVersion -> 'libicu%(Identity)', ' | ')" />
  </ItemGroup>
 </Project>
