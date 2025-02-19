@@ -155,7 +155,7 @@ int jitprintf(const char* fmt, ...)
 #if defined(HOST_ANDROID)
     int status = jitstdout() == procstdout()
         ? __android_log_vprint(ANDROID_LOG_VERBOSE, MAIN_CLR_MODULE_NAME_A, fmt, vl)
-        : 0;
+        : vfprintf(jitstdout(), fmt, vl);
 #else
     int status = vfprintf(jitstdout(), fmt, vl);
 #endif
