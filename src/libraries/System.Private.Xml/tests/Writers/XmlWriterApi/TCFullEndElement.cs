@@ -5296,15 +5296,7 @@ namespace System.Xml.XmlWriterApiTests
                 [XmlWriterInlineData(4096)]
                 public void Base64_1(XmlWriterUtils utils, int strBase64Len)
                 {
-                    StringBuilder strBase64Builder = new StringBuilder(strBase64Len);
-
-                    for (int i = 0; i < strBase64Len; i++)
-                    {
-                        strBase64Builder.Append("A");
-                    }
-
-                    string strBase64 = strBase64Builder.ToString();
-
+                    string strBase64 = new string('A', strBase64Len);
                     byte[] Wbase64 = new byte[strBase64Len * 2];
                     int Wbase64len = 0;
 
@@ -6312,10 +6304,12 @@ namespace System.Xml.XmlWriterApiTests
                 [XmlWriterInlineData]
                 public void var_1(XmlWriterUtils utils)
                 {
-                    int charCount = (int)('\ufffe' - '\ue000');
+                    char startChar = '\ue000';
+                    char endChar = '\ufffe';
+                    int charCount = endChar - startChar;
                     StringBuilder uniStrBuilder = new StringBuilder(charCount);
 
-                    for (char ch = '\ue000'; ch < '\ufffe'; ch++)
+                    for (char ch = startChar; ch < endChar; ch++)
                     {
                         uniStrBuilder.Append(ch);
                     }
