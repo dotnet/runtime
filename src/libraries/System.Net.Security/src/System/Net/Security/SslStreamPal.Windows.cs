@@ -445,18 +445,32 @@ namespace System.Net.Security
 
             if (NetEventSource.Log.IsEnabled()) NetEventSource.Info($"flags=({flags}), ProtocolFlags=({protocolFlags}), EncryptionPolicy={policy}");
 
-            Interop.SspiCli.TLS_PARAMETERS tlsParameters;
+            Interop.SspiCli.TLS_PARAMETERS tlsParameters = default;
             if (protocolFlags != 0)
             {
                 // If we were asked to do specific protocol we need to fill TLS_PARAMETERS.
-                tlsParameters = default;
                 tlsParameters.grbitDisabledProtocols = (uint)protocolFlags ^ uint.MaxValue;
+            }
+
+            Interop.SspiCli.CRYPTO_SETTINGS cryptoSettings = default;
+            IntPtr algIdPtr = IntPtr.Zero;
+
+            if (Environment.GetEnvironmentVariable("DISABLED_ALG") is string alg)
+            {
+                algIdPtr = Marshal.StringToHGlobalUni(alg);
+                cryptoSettings.eAlgorithmUsage = Interop.SspiCli.CRYPTO_SETTINGS.TlsAlgorithmUsage.TlsParametersCngAlgUsageCertSig;
+                Interop.NtDll.RtlInitUnicodeString(out cryptoSettings.strCngAlgId, algIdPtr);
+
+                tlsParameters.pDisabledCrypto = &cryptoSettings;
+                tlsParameters.cDisabledCrypto = 1;
 
                 credential.cTlsParameters = 1;
                 credential.pTlsParameters = &tlsParameters;
             }
 
-            return AcquireCredentialsHandle(direction, &credential);
+            var ret = AcquireCredentialsHandle(direction, &credential);
+            Marshal.FreeHGlobal(algIdPtr);
+            return ret;
         }
 
         public static unsafe ProtocolToken EncryptMessage(SafeDeleteSslContext securityContext, ReadOnlyMemory<byte> input, int headerSize, int trailerSize)
