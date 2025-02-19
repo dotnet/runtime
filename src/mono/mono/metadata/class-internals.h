@@ -545,13 +545,13 @@ mono_generic_param_name (MonoGenericParam *p)
 static inline MonoGenericContainer *
 mono_type_get_generic_param_owner (MonoType *t)
 {
-	return mono_generic_param_owner (t->data.generic_param);
+	return mono_generic_param_owner (m_type_data_get_generic_param (t));
 }
 
 static inline guint16
 mono_type_get_generic_param_num (MonoType *t)
 {
-	return mono_generic_param_num (t->data.generic_param);
+	return mono_generic_param_num (m_type_data_get_generic_param (t));
 }
 
 /*
