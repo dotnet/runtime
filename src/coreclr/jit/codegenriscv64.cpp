@@ -1741,7 +1741,7 @@ void CodeGen::genLclHeap(GenTree* tree)
         emit->emitIns_R_R_I(INS_beq, EA_PTRSIZE, tempReg, REG_R0, 2 << 2);
         emit->emitIns_R_R_I(INS_addi, EA_PTRSIZE, regCnt, REG_R0, 0);
 
-        regNumber rPageSize  = internalRegisters.GetSingle(tree);
+        regNumber rPageSize = internalRegisters.GetSingle(tree);
 
         noway_assert(rPageSize != tempReg);
 
