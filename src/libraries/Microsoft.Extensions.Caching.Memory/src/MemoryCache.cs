@@ -211,10 +211,7 @@ namespace Microsoft.Extensions.Caching.Memory
             DateTime utcNow = UtcNow;
 
             CoherentState coherentState = _coherentState; // Clear() can update the reference in the meantime
-            if (!coherentState.TryGetValue(key, out CacheEntry? entry))
-            {
-                entry = null;
-            }
+            coherentState.TryGetValue(key, out CacheEntry? entry); // note we rely on documented "default when fails" contract re the out
             return PostProcessTryGetValue(coherentState, utcNow, entry, out result);
         }
 
@@ -234,10 +231,7 @@ namespace Microsoft.Extensions.Caching.Memory
             DateTime utcNow = UtcNow;
 
             CoherentState coherentState = _coherentState; // Clear() can update the reference in the meantime
-            if (!coherentState.TryGetValue(key, out CacheEntry? entry))
-            {
-                entry = null;
-            }
+            coherentState.TryGetValue(key, out CacheEntry? entry); // note we rely on documented "default when fails" contract re the out
             return PostProcessTryGetValue(coherentState, utcNow, entry, out result);
         }
 
@@ -738,14 +732,11 @@ namespace Microsoft.Extensions.Caching.Memory
             private readonly ConcurrentDictionary<object, CacheEntry> _nonStringEntries = new ConcurrentDictionary<object, CacheEntry>();
 
 #if NET9_0_OR_GREATER
-            private readonly bool _useStringAltLookup;
             private readonly ConcurrentDictionary<string, CacheEntry>.AlternateLookup<ReadOnlySpan<char>> _stringAltLookup;
 
             public CoherentState()
             {
-                _useStringAltLookup = _stringEntries.TryGetAlternateLookup<ReadOnlySpan<char>>(out _stringAltLookup);
-                // we *expect* this to be available in all scenarios where this is used, but add a dev guard, and a fallback
-                Debug.Assert(_useStringAltLookup, "Expectation failure: alt-lookup feature is not available");
+                _stringAltLookup = _stringEntries.GetAlternateLookup<ReadOnlySpan<char>>();
             }
 #endif
 
@@ -756,8 +747,7 @@ namespace Microsoft.Extensions.Caching.Memory
 
 #if NET9_0_OR_GREATER
             internal bool TryGetValue(ReadOnlySpan<char> key, [NotNullWhen(true)] out CacheEntry? entry)
-                => _useStringAltLookup ? _stringAltLookup.TryGetValue(key, out entry)
-                    : _stringEntries.TryGetValue(new string(key), out entry); // <== we do not expect this path to be hit; chaos fallback only
+                => _stringAltLookup.TryGetValue(key, out entry);
 #endif
 
 
