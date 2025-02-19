@@ -31,9 +31,6 @@ mono_reflection_split_type_name (char *full_name, char** name_space, char** name
 gboolean
 mono_reflection_is_usertype (MonoReflectionTypeHandle ref);
 
-MonoReflectionType*
-mono_reflection_type_resolve_user_types (MonoReflectionType *type, MonoError *error);
-
 MonoType *
 mono_reflection_type_handle_mono_type (MonoReflectionTypeHandle ref_type, MonoError *error);
 
