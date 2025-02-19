@@ -2297,7 +2297,8 @@ leave:
 MonoType*
 mono_reflection_type_from_name_checked (char *name, MonoAssemblyLoadContext *alc, MonoImage *image, gboolean ignorecase, gboolean use_toplevel_assembly, MonoError *error)
 {
-	return mono_reflection_type_from_name_internal (name, alc, image, ignorecase, use_toplevel_assembly, NULL, error);
+	gboolean type_resolve = FALSE;
+	return mono_reflection_type_from_name_internal (name, alc, image, ignorecase, use_toplevel_assembly, &type_resolve, error);
 }
 
 /**
