@@ -88,8 +88,13 @@ internal static class Entrypoints
         }
 
 
-        PEDecoder peDecoder = new(dataTarget, baseAddress);
-        ulong contractDescriptor = peDecoder.GetSymbolAddress("DotNetRuntimeContractDescriptor");
+        DataTargetStream dataTargetStream = new(dataTarget, baseAddress);
+        using PEDecoder peDecoder = new(dataTargetStream);
+
+        if (!peDecoder.TryGetRelativeSymbolAddress("DotNetRuntimeContractDescriptor", out ulong contractDescriptor))
+        {
+            return -1;
+        }
 
         if (!ContractDescriptorTarget.TryCreate(contractDescriptor, (address, buffer) =>
         {
