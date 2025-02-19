@@ -5311,89 +5311,138 @@ bool Compiler::ThreeOptLayout::CompactHotJumps()
     JITDUMP("Compacting hot jumps\n");
     bool modified = false;
 
+    auto isBackwardJump = [INDEBUG(this)](BasicBlock* block, BasicBlock* target) {
+        assert((block->bbPostorderNum < numCandidateBlocks) && (blockOrder[block->bbPostorderNum] == block));
+        assert((target->bbPostorderNum < numCandidateBlocks) && (blockOrder[target->bbPostorderNum] == target));
+        return block->bbPostorderNum >= target->bbPostorderNum;
+    };
+
     for (unsigned i = 0; i < numCandidateBlocks; i++)
     {
         BasicBlock* const block = blockOrder[i];
         FlowEdge*         edge;
+        FlowEdge*         unlikelyEdge;
 
         if (block->KindIs(BBJ_ALWAYS))
         {
-            edge = block->GetTargetEdge();
+            edge         = block->GetTargetEdge();
+            unlikelyEdge = nullptr;
         }
         else if (block->KindIs(BBJ_COND))
         {
-            // Consider conditional block's most likely branch for moving
-            edge = (block->GetTrueEdge()->getLikelihood() > 0.5) ? block->GetTrueEdge() : block->GetFalseEdge();
+            // Consider conditional block's most likely branch for moving.
+            if (block->GetTrueEdge()->getLikelihood() > 0.5)
+            {
+                edge         = block->GetTrueEdge();
+                unlikelyEdge = block->GetFalseEdge();
+            }
+            else
+            {
+                edge         = block->GetFalseEdge();
+                unlikelyEdge = block->GetTrueEdge();
+            }
+
+            // If we aren't sure which successor is hotter, and we already fall into one of them,
+            // do nothing.
+            BasicBlock* const unlikelyTarget = unlikelyEdge->getDestinationBlock();
+            if ((unlikelyEdge->getLikelihood() == 0.5) && (unlikelyTarget->bbPostorderNum == (i + 1)))
+            {
+                continue;
+            }
         }
         else
         {
-            // Don't consider other block kinds
+            // Don't consider other block kinds.
             continue;
         }
 
-        // Ensure we won't break any ordering invariants by creating fallthrough on this edge
+        // Ensure we won't break any ordering invariants by creating fallthrough on this edge.
         if (!ConsiderEdge</* addToQueue */ false>(edge))
         {
             continue;
         }
 
+        if (block->KindIs(BBJ_COND) && isBackwardJump(block, edge->getDestinationBlock()))
+        {
+            // This could be a loop exit, so don't bother moving this block up.
+            // Instead, try moving the unlikely target up to create fallthrough.
+            if (!ConsiderEdge</* addToQueue */ false>(unlikelyEdge) ||
+                isBackwardJump(block, unlikelyEdge->getDestinationBlock()))
+            {
+                continue;
+            }
+
+            edge = unlikelyEdge;
+        }
+
         BasicBlock* const target = edge->getDestinationBlock();
-        const unsigned    srcPos = block->bbPostorderNum;
+        const unsigned    srcPos = i;
         const unsigned    dstPos = target->bbPostorderNum;
 
-        // We don't need to do anything if this edge already falls through
+        // We don't need to do anything if this edge already falls through.
         if ((srcPos + 1) == dstPos)
         {
             continue;
         }
 
-        const bool     isForwardJump = (srcPos < dstPos);
-        const unsigned startPos      = 0;
-        const unsigned endPos        = numCandidateBlocks - 1;
-        unsigned       s2Start, s3Start, s3End;
+        // If this move will break up existing fallthrough into 'target', make sure it's worth it.
+        assert(dstPos != 0);
+        FlowEdge* const fallthroughEdge = compiler->fgGetPredForBlock(target, blockOrder[dstPos - 1]);
+        if ((fallthroughEdge != nullptr) && (fallthroughEdge->getLikelyWeight() >= edge->getLikelyWeight()))
+        {
+            continue;
+        }
 
+        JITDUMP("Creating fallthrough along " FMT_BB " -> " FMT_BB "\n", block->bbNum, target->bbNum);
+
+        const bool isForwardJump = !isBackwardJump(block, target);
         if (isForwardJump)
         {
             // Before swap: | ..srcBlk | ... | dstBlk | ... |
             // After swap:  | ..srcBlk | dstBlk | ... |
-            s2Start = srcPos + 1;
-            s3Start = dstPos;
-            s3End   = dstPos;
 
-            // Call-finally pairs need to stick together, so include the tail in the partition
+            // First, shift all blocks between 'block' and 'target' rightward to make space for the latter.
+            // If 'target' is a call-finally pair, include space for the pair's tail.
+            const unsigned offset = target->isBBCallFinallyPair() ? 2 : 1;
+            for (unsigned pos = dstPos - 1; pos != srcPos; pos--)
+            {
+                BasicBlock* const blockToMove = blockOrder[pos];
+                blockOrder[pos + offset]      = blockOrder[pos];
+                blockToMove->bbPostorderNum += offset;
+            }
+
+            // Now, insert 'target' in the space after 'block'.
+            blockOrder[srcPos + 1] = target;
+            target->bbPostorderNum = srcPos + 1;
+
+            // Move call-finally pairs in tandem.
             if (target->isBBCallFinallyPair())
             {
-                s3End++;
+                blockOrder[srcPos + 2]         = target->Next();
+                target->Next()->bbPostorderNum = srcPos + 2;
             }
         }
         else
         {
             // Before swap: | ... | dstBlk.. | srcBlk | ... |
             // After swap:  | ... | srcBlk | dstBlk.. | ... |
-            s2Start = dstPos;
-            s3Start = srcPos;
-            s3End   = srcPos;
+
+            // First, shift everything between 'target' and 'block' (including 'target') over
+            // to make space for 'block'.
+            for (unsigned pos = srcPos - 1; pos >= dstPos; pos--)
+            {
+                BasicBlock* const blockToMove = blockOrder[pos];
+                blockOrder[pos + 1]           = blockOrder[pos];
+                blockToMove->bbPostorderNum++;
+            }
+
+            // Now, insert 'block' before 'target'.
+            blockOrder[dstPos]    = block;
+            block->bbPostorderNum = dstPos;
         }
 
-        // Don't align this branch if it isn't profitable
-        const weight_t costChange = GetPartitionCostDelta(s2Start, s3Start, s3End, endPos);
-        if ((costChange >= BB_ZERO_WEIGHT) || Compiler::fgProfileWeightsEqual(costChange, BB_ZERO_WEIGHT, 0.001))
-        {
-            continue;
-        }
-
-        JITDUMP("Swapping partitions [" FMT_BB ", " FMT_BB "] and [" FMT_BB ", " FMT_BB "] (cost change = %f)\n",
-                blockOrder[s2Start]->bbNum, blockOrder[s3Start - 1]->bbNum, blockOrder[s3Start]->bbNum,
-                blockOrder[s3End]->bbNum, costChange);
-
-        SwapPartitions(startPos, s2Start, s3Start, s3End, endPos);
+        assert((block->bbPostorderNum + 1) == target->bbPostorderNum);
         modified = true;
-    }
-
-    // Write back to 'tempOrder' so the changes made above aren't lost next time we swap 'tempOrder' and 'blockOrder'
-    if (modified)
-    {
-        memcpy(tempOrder, blockOrder, sizeof(BasicBlock*) * numCandidateBlocks);
     }
 
     return modified;
