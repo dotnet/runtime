@@ -1623,7 +1623,6 @@ bool LinearScan::isRegCandidate(LclVarDsc* varDsc)
 #if defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
             // The LoongArch64's ABI which the float args within a struct maybe passed by integer register
             // when no float register left but free integer register.
-            assert(!genIsValidFloatReg(varDsc->GetOtherArgReg()));
             isRegCandidate &= !genIsValidFloatReg(varDsc->GetOtherArgReg());
 #endif
             return isRegCandidate;
