@@ -54,7 +54,7 @@
 #include "icall-decl.h"
 
 static void get_default_param_value_blobs (MonoMethod *method, char **blobs, guint32 *types);
-static MonoType* mono_reflection_get_type_with_rootimage (MonoAssemblyLoadContext *alc, MonoImage *rootimage, MonoImage* image, MonoTypeNameParse *info, gboolean ignorecase, gboolean search_mscorlib, gboolean *type_resolve, MonoError *error);
+static MonoType* mono_reflection_type_from_name_internal (char *name, MonoAssemblyLoadContext *alc, MonoImage *image, gboolean ignorecase, gboolean use_toplevel_assembly, gboolean *type_resolve, MonoError *error);
 
 /* Class lazy loading functions */
 static GENERATE_GET_CLASS_WITH_CACHE (mono_assembly, "System.Reflection", "RuntimeAssembly")
@@ -1968,6 +1968,98 @@ mono_identifier_unescape_info (MonoTypeNameParse *info)
 		g_list_foreach(info->nested, &unescape_each_nested_name, NULL);
 }
 
+static void
+escape_type_name (const char *identifier, GString *str)
+{
+	char *escaped = mono_identifier_escape_type_name_chars (identifier);
+	g_string_append (str, escaped);
+	g_free (escaped);
+}
+
+static void
+escape_each_nested_name (void *data, void *user_data)
+{
+	const char* nested_name = (const char*) data;
+	GString *str = (GString*) user_data;
+	g_string_append_c (str, '+');
+	escape_type_name (nested_name, str);
+}
+
+typedef struct {
+	GString *str;
+	gboolean bounded;
+} FormatModifierState;
+
+static void
+format_each_modifier (void *data, void *user_data)
+{
+	gint modifier = GPOINTER_TO_INT (data);
+	FormatModifierState *state = user_data;
+	GString *str = state->str;
+	/* Bounded arrays are represented by a -2 and then a -1. Keep track of it,
+	and append the string when we see the next modifier. */
+	if (modifier == -2) {
+		state->bounded = TRUE;
+		return;
+	}
+	else if (modifier == -1)
+		g_string_append_c (str, '*');
+	else if (modifier == 0)
+		g_string_append_c (str, '&');
+	else {
+		g_string_append_c (str, '[');
+		if (state->bounded) {
+			g_string_append_c (str, '*');
+			state->bounded = FALSE;
+		} else {
+			for (int i = 0; i < modifier - 1; i++)
+				g_string_append_c (str, ',');
+		}
+		g_string_append_c (str, ']');
+	}
+}
+
+static void
+format_type_name (MonoTypeNameParse *info, GString *str)
+{
+	if (!info)
+		return;
+	if (info->name_space && *info->name_space)
+	{
+		escape_type_name (info->name_space, str);
+		g_string_append_c (str, '.');
+	}
+	escape_type_name (info->name, str);
+	if (info->nested)
+	{
+		g_list_foreach (info->nested, &escape_each_nested_name, str);
+	}
+	if (info->type_arguments)
+	{
+		g_string_append_c (str, '[');
+		for (guint i = 0; i < info->type_arguments->len; i++)
+		{
+			if (i > 0)
+				g_string_append_c (str, ',');
+			g_string_append_c (str, '[');
+			MonoTypeNameParse *arg = g_ptr_array_index (info->type_arguments, i);
+			format_type_name (arg, str);
+			g_string_append_c (str, ']');
+		}
+		g_string_append_c (str, ']');
+	}
+	if (info->modifiers)
+	{
+		FormatModifierState state = { str, FALSE };
+		g_list_foreach (info->modifiers, &format_each_modifier, &state);
+	}
+	if (info->assembly.name)
+	{
+		g_string_append (str, ", ");
+		mono_assembly_name_format (&info->assembly, str);
+	}
+}
+
 /*
  * Split a full type name into namespace and name parts.
  * \p full_name will be mangled, so, make a copy before passing it to this function.
@@ -1981,9 +2073,9 @@ mono_identifier_unescape_info (MonoTypeNameParse *info)
 void
 mono_reflection_split_type_name (char *full_name, char** name_space, char** name)
 {
-	g_assert(full_name);
-	g_assert(name_space);
-	g_assert(name);
+	g_assert (full_name);
+	g_assert (name_space);
+	g_assert (name);
 
 	// Matches algorithm from ns::FindSep in src\coreclr\utilcode\namespaceutil.cpp
 	// This could result in the type name beginning with a '.' character.
@@ -2247,7 +2339,10 @@ mono_reflection_get_type (MonoImage* image, MonoTypeNameParse *info, gboolean ig
 	MonoType *result;
 	MONO_ENTER_GC_UNSAFE;
 	ERROR_DECL (error);
-	result = mono_reflection_get_type_with_rootimage (mono_alc_get_default (), image, image, info, ignorecase, TRUE, type_resolve, error);
+	GString *name = g_string_new ("");
+	format_type_name (info, name);
+	result = mono_reflection_type_from_name_internal (name->str, mono_alc_get_default (), image, ignorecase, FALSE, type_resolve, error);
+	g_string_free (name, TRUE);
 	mono_error_cleanup (error);
 	MONO_EXIT_GC_UNSAFE;
 	return result;
@@ -2446,7 +2541,7 @@ mono_reflection_type_from_name (char *name, MonoImage *image)
 	return result;
 }
 
-static MonoType*
+MonoType*
 mono_reflection_type_from_name_internal (char *name, MonoAssemblyLoadContext *alc, MonoImage *image, gboolean ignorecase, gboolean use_toplevel_assembly, gboolean *type_resolve, MonoError *error)
 {
 	HANDLE_FUNCTION_ENTER ();
