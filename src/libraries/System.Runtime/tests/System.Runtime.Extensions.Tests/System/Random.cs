@@ -951,7 +951,7 @@ namespace System.Tests
         }
 
         [Fact]
-        public static void GetHexString_Array_ProducesExceptedStrings()
+        public static void GetHexString_Array_ProducesExpectedStrings()
         {
             Random random = new Random(42);
 
@@ -972,7 +972,7 @@ namespace System.Tests
         }
 
         [Fact]
-        public static void GetHexString_Span_ProducesExceptedItems()
+        public static void GetHexString_Span_ProducesExpectedItems()
         {
             Random random = new Random(42);
 
