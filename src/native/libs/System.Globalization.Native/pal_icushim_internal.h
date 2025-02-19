@@ -203,8 +203,6 @@ extern ucol_safeClone_func ucol_safeClone_ptr;
 // The following are the list of the ICU APIs which are optional. If these APIs exist in the ICU version we load at runtime, then we'll use it.
 // Otherwise, we'll just not provide the functionality to users which needed these APIs.
 #define FOR_ALL_OPTIONAL_ICU_FUNCTIONS \
-    PER_FUNCTION_BLOCK(ucal_getWindowsTimeZoneID, libicui18n, false) \
-    PER_FUNCTION_BLOCK(ucal_getTimeZoneIDForWindowsID, libicui18n, false) \
     PER_FUNCTION_BLOCK(ucol_clone, libicui18n, false)
 
 #define FOR_ALL_ICU_FUNCTIONS \
