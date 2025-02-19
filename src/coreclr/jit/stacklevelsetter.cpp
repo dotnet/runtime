@@ -32,10 +32,7 @@ StackLevelSetter::StackLevelSetter(Compiler* compiler)
 //
 PhaseStatus StackLevelSetter::DoPhase()
 {
-    for (BasicBlock* const block : comp->Blocks())
-    {
-        ProcessBlock(block);
-    }
+    ProcessBlocks();
 
 #if !FEATURE_FIXED_OUT_ARGS
     if (framePointerRequired)
@@ -98,7 +95,28 @@ PhaseStatus StackLevelSetter::DoPhase()
 }
 
 //------------------------------------------------------------------------
-// ProcessBlock: Do stack level calculations for one block.
+// ProcessBlocks: Process all the blocks if necessary.
+//
+void StackLevelSetter::ProcessBlocks()
+{
+#ifndef TARGET_X86
+    // Outside x86 we do not need to compute pushed/popped stack slots.
+    // However, we do optimize throw-helpers and need to process the blocks for
+    // that, but only when optimizing.
+    if (!throwHelperBlocksUsed || comp->opts.OptimizationDisabled())
+    {
+        return;
+    }
+#endif
+
+    for (BasicBlock* const block : comp->Blocks())
+    {
+        ProcessBlock(block);
+    }
+}
+
+//------------------------------------------------------------------------
+// ProcessBlock: Do stack level and throw helper determinations for one block.
 //
 // Notes:
 //   Block starts and ends with an empty outgoing stack.
@@ -114,14 +132,6 @@ PhaseStatus StackLevelSetter::DoPhase()
 void StackLevelSetter::ProcessBlock(BasicBlock* block)
 {
     assert(currentStackLevel == 0);
-#ifndef TARGET_X86
-    // Outside x86 we do not need to compute pushed/popped stack slots.
-    // However, we do optimize throw-helpers away here.
-    if (!throwHelperBlocksUsed || comp->opts.OptimizationDisabled())
-    {
-        return;
-    }
-#endif
 
     LIR::ReadOnlyRange& range = LIR::AsRange(block);
     for (auto i = range.rbegin(); i != range.rend(); ++i)
