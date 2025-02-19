@@ -2369,10 +2369,8 @@ void CodeGen::genLockedInstructions(GenTreeOp* treeNode)
 {
     assert(!varTypeIsSmall(treeNode->TypeGet()));
 
-    GenTree* data = treeNode->AsOp()->gtOp2;
-    GenTree* addr = treeNode->AsOp()->gtOp1;
-    assert(!data->isContained() || data->IsIntegralConst(0));
-    assert(!addr->isContained());
+    GenTree*  data      = treeNode->AsOp()->gtOp2;
+    GenTree*  addr      = treeNode->AsOp()->gtOp1;
     regNumber dataReg   = !data->isContained() ? data->GetRegNum() : REG_ZERO;
     regNumber addrReg   = addr->GetRegNum();
     regNumber targetReg = treeNode->GetRegNum();
@@ -2382,8 +2380,7 @@ void CodeGen::genLockedInstructions(GenTreeOp* treeNode)
     }
 
     genConsumeAddress(addr);
-    if (!data->isContained())
-        genConsumeRegs(data);
+    genConsumeRegs(data);
 
     emitAttr dataSize = emitActualTypeSize(data);
     bool     is4      = (dataSize == EA_4BYTE);
@@ -2428,15 +2425,22 @@ void CodeGen::genCodeForCmpXchg(GenTreeCmpXchg* treeNode)
     GenTree* locOp       = treeNode->Addr();
     GenTree* valOp       = treeNode->Data();
     GenTree* comparandOp = treeNode->Comparand();
-    assert(!locOp->isContained());
-    assert(!valOp->isContained() || valOp->IsIntegralConst(0));
-    assert(!comparandOp->isContained() || comparandOp->IsIntegralConst(0));
 
     regNumber target    = treeNode->GetRegNum();
     regNumber loc       = locOp->GetRegNum();
     regNumber val       = !valOp->isContained() ? valOp->GetRegNum() : REG_ZERO;
-    regNumber comparand = !comparandOp->isContained() ? comparandOp->GetRegNum() : REG_ZERO;
-    regNumber storeErr  = internalRegisters.GetSingle(treeNode);
+    regNumber comparand = REG_ZERO;
+    if (!comparandOp->isContained())
+    {
+        comparand = comparandOp->GetRegNum();
+        if (comparandOp->TypeIs(TYP_INT, TYP_UINT))
+        {
+            regNumber signExtendedComparand = internalRegisters.Extract(treeNode);
+            GetEmitter()->emitIns_R_R(INS_sext_w, EA_4BYTE, signExtendedComparand, comparand);
+            comparand = signExtendedComparand;
+        }
+    }
+    regNumber storeErr = internalRegisters.GetSingle(treeNode);
 
     // Register allocator should have extended the lifetimes of all input and internal registers
     // They should all be different
@@ -2454,10 +2458,8 @@ void CodeGen::genCodeForCmpXchg(GenTreeCmpXchg* treeNode)
     noway_assert(storeErr != REG_NA);
 
     genConsumeAddress(locOp);
-    if (!valOp->isContained())
-        genConsumeRegs(valOp);
-    if (!comparandOp->isContained())
-        genConsumeRegs(comparandOp);
+    genConsumeRegs(valOp);
+    genConsumeRegs(comparandOp);
 
     // NOTE: `genConsumeAddress` marks consumed register as not a GC pointer, assuming the input
     // registers die at the first generated instruction. However, here the input registers are reused,
