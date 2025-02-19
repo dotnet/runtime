@@ -194,7 +194,7 @@ namespace System.Net.Http
             try
             {
                 _outgoingBuffer.EnsureAvailableSpace(Http2ConnectionPreface.Length +
-                    FrameHeader.Size + FrameHeader.SettingLength +
+                    FrameHeader.Size + 2 * FrameHeader.SettingLength +
                     FrameHeader.Size + FrameHeader.WindowUpdateLength);
 
                 // Send connection preface
