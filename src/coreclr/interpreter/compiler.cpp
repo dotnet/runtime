@@ -13,19 +13,20 @@ static const StackType g_stackTypeFromInterpType[] =
     StackTypeR4, // R4
     StackTypeR8, // R8
     StackTypeO,  // O
-    StackTypeVT  // VT
+    StackTypeVT, // VT
+    StackTypeMP, // ByRef
 };
 
 static const InterpType g_interpTypeFromStackType[] =
 {
-    InterpTypeI4, // I4,
-    InterpTypeI8, // I8,
-    InterpTypeR4, // R4,
-    InterpTypeR8, // R8,
-    InterpTypeO,  // O,
-    InterpTypeVT, // VT,
-    InterpTypeI,  // MP,
-    InterpTypeI,  // F
+    InterpTypeI4,       // I4,
+    InterpTypeI8,       // I8,
+    InterpTypeR4,       // R4,
+    InterpTypeR8,       // R8,
+    InterpTypeO,        // O,
+    InterpTypeVT,       // VT,
+    InterpTypeByRef,    // MP,
+    InterpTypeI,        // F
 };
 
 // FIXME Use specific allocators for their intended purpose
@@ -370,6 +371,7 @@ int32_t InterpCompiler::InterpGetMovForType(InterpType interpType, bool signExte
         case InterpTypeR8:
             return INTOP_MOV_8;
         case InterpTypeO:
+        case InterpTypeByRef:
             return INTOP_MOV_P;
         case InterpTypeVT:
             return INTOP_MOV_VT;
@@ -518,10 +520,15 @@ void InterpCompiler::PushTypeExplicit(StackType stackType, CORINFO_CLASS_HANDLE 
     m_pStackPointer++;
 }
 
-void InterpCompiler::PushType(StackType stackType, CORINFO_CLASS_HANDLE clsHnd)
+void InterpCompiler::PushStackType(StackType stackType, CORINFO_CLASS_HANDLE clsHnd)
 {
     // We don't really care about the exact size for non-valuetypes
     PushTypeExplicit(stackType, clsHnd, INTERP_STACK_SLOT_SIZE);
+}
+
+void InterpCompiler::PushInterpType(InterpType interpType, CORINFO_CLASS_HANDLE clsHnd)
+{
+    PushStackType(g_stackTypeFromInterpType[interpType], clsHnd);
 }
 
 void InterpCompiler::PushTypeVT(CORINFO_CLASS_HANDLE clsHnd, int size)
@@ -690,6 +697,8 @@ InterpCompiler::InterpCompiler(COMP_HANDLE compHnd,
 
 InterpMethod* InterpCompiler::CompileMethod()
 {
+    CreateILVars();
+
     GenerateCode(m_methodInfo);
 
     AllocOffsets();
@@ -713,6 +722,153 @@ void InterpCompiler::EmitConv(StackInfo *sp, InterpInst *prevIns, StackType type
     int32_t var = CreateVarExplicit(g_interpTypeFromStackType[type], NULL, INTERP_STACK_SLOT_SIZE);
     sp->var = var;
     newInst->SetDVar(var);
+}
+
+static InterpType GetInterpType(CorInfoType corInfoType)
+{
+    switch (corInfoType)
+    {
+        case CORINFO_TYPE_BYTE:
+            return InterpTypeI1;
+        case CORINFO_TYPE_UBYTE:
+        case CORINFO_TYPE_BOOL:
+            return InterpTypeU1;
+        case CORINFO_TYPE_CHAR:
+        case CORINFO_TYPE_USHORT:
+            return InterpTypeU2;
+        case CORINFO_TYPE_SHORT:
+            return InterpTypeI2;
+        case CORINFO_TYPE_INT:
+        case CORINFO_TYPE_UINT:
+            return InterpTypeI4;
+        case CORINFO_TYPE_LONG:
+        case CORINFO_TYPE_ULONG:
+            return InterpTypeI8;
+        case CORINFO_TYPE_NATIVEINT:
+        case CORINFO_TYPE_NATIVEUINT:
+            return InterpTypeI;
+        case CORINFO_TYPE_FLOAT:
+            return InterpTypeR4;
+        case CORINFO_TYPE_DOUBLE:
+            return InterpTypeR8;
+        case CORINFO_TYPE_STRING:
+        case CORINFO_TYPE_CLASS:
+            return InterpTypeO;
+        case CORINFO_TYPE_PTR:
+            return InterpTypeI;
+        case CORINFO_TYPE_BYREF:
+            return InterpTypeByRef;
+        case CORINFO_TYPE_VALUECLASS:
+        case CORINFO_TYPE_REFANY:
+            return InterpTypeVT;
+        default:
+            assert(0);
+            break;
+    }
+    return InterpTypeVoid;
+}
+
+int32_t InterpCompiler::GetInterpTypeSize(CORINFO_CLASS_HANDLE clsHnd, InterpType interpType, int32_t *pAlign)
+{
+    int32_t size, align;
+    if (interpType == InterpTypeVT)
+    {
+        size = m_compHnd->getClassSize(clsHnd);
+        align = m_compHnd->getClassAlignmentRequirement(clsHnd);
+
+        assert(align <= INTERP_STACK_ALIGNMENT);
+
+        // All vars are stored at 8 byte aligned offsets
+        if (align < INTERP_STACK_SLOT_SIZE)
+            align = INTERP_STACK_SLOT_SIZE;
+    }
+    else
+    {
+        size = INTERP_STACK_SLOT_SIZE; // not really
+        align = INTERP_STACK_SLOT_SIZE;
+    }
+    *pAlign = align;
+    return size;
+}
+
+
+void InterpCompiler::CreateILVars()
+{
+    bool hasThis = m_methodInfo->args.hasThis();
+    int32_t offset, size, align;
+    int numArgs = hasThis + m_methodInfo->args.numArgs;
+    int numILLocals = m_methodInfo->locals.numArgs;
+    int numILVars = numArgs + numILLocals;
+
+    // add some starting extra space for new vars
+    m_varsCapacity = numILVars + 64;
+    m_pVars = (InterpVar*)AllocTemporary(m_varsCapacity * sizeof (InterpVar));
+    m_varsSize = numILVars;
+
+    offset = 0;
+
+    CORINFO_ARG_LIST_HANDLE sigArg = m_methodInfo->args.args;
+    for (int i = 0; i < numArgs; i++) {
+        InterpType interpType;
+        CORINFO_CLASS_HANDLE argClass;
+        if (hasThis && i == 0)
+        {
+            argClass = m_compHnd->getMethodClass(m_methodInfo->ftn);
+            if (m_compHnd->isValueClass(argClass))
+                interpType = InterpTypeByRef;
+            else
+                interpType = InterpTypeO;
+        }
+        else
+        {
+            CorInfoType argCorType;
+            argCorType = strip(m_compHnd->getArgType(&m_methodInfo->args, sigArg, &argClass));
+            interpType = GetInterpType(argCorType);
+            sigArg = m_compHnd->getArgNext(sigArg);
+        }
+
+        m_pVars[i].interpType = interpType;
+        m_pVars[i].clsHnd = argClass;
+        m_pVars[i].global = true;
+        m_pVars[i].ILGlobal = true;
+        m_pVars[i].indirects = 0;
+
+        size = GetInterpTypeSize(argClass, interpType, &align);
+        m_pVars[i].size = size;
+        offset = ALIGN_UP_TO(offset, align);
+        m_pVars[i].offset = offset;
+        offset += size;
+    }
+
+    offset = ALIGN_UP_TO(offset, INTERP_STACK_ALIGNMENT);
+
+    sigArg = m_methodInfo->locals.args;
+    m_ILLocalsOffset = offset;
+    for (int i = 0; i < numILLocals; i++) {
+        int index = numArgs + i;
+        InterpType interpType;
+        CORINFO_CLASS_HANDLE argClass;
+
+        CorInfoType argCorType = strip(m_compHnd->getArgType(&m_methodInfo->locals, sigArg, &argClass));
+        interpType = GetInterpType(argCorType);
+
+        m_pVars[index].interpType = interpType;
+        m_pVars[index].clsHnd = argClass;
+        m_pVars[index].global = true;
+        m_pVars[index].ILGlobal = true;
+        m_pVars[index].indirects = 0;
+
+        size = GetInterpTypeSize(argClass, interpType, &align);
+        m_pVars[index].size = size;
+        offset = ALIGN_UP_TO(offset, align);
+        m_pVars[index].offset = offset;
+        offset += size;
+        sigArg = m_compHnd->getArgNext(sigArg);
+    }
+    offset = ALIGN_UP_TO(offset, INTERP_STACK_ALIGNMENT);
+
+    m_ILLocalsSize = offset - m_ILLocalsOffset;
+    m_totalVarsStackSize = offset;
 }
 
 bool InterpCompiler::CreateBasicBlocks(CORINFO_METHOD_INFO* methodInfo)
@@ -912,9 +1068,52 @@ void InterpCompiler::EmitTwoArgBranch(InterpOpcode opcode, int32_t ilOffset, int
     }
 }
 
+
+void InterpCompiler::EmitLoadVar(int32_t var)
+{
+    InterpType interpType = m_pVars[var].interpType;
+    int32_t size = m_pVars[var].size;
+    CORINFO_CLASS_HANDLE clsHnd = m_pVars[var].clsHnd;
+
+    if (interpType == InterpTypeVT)
+        PushTypeVT(clsHnd, size);
+    else
+        PushInterpType(interpType, clsHnd);
+
+    AddIns(InterpGetMovForType(interpType, true));
+    m_pLastIns->SetSVar(var);
+    m_pLastIns->SetDVar(m_pStackPointer[-1].var);
+    if (interpType == InterpTypeVT)
+        m_pLastIns->data[0] = size;
+}
+
+void InterpCompiler::EmitStoreVar(int32_t var)
+{
+    InterpType interpType = m_pVars[var].interpType;
+    CHECK_STACK_RET_VOID(1);
+
+#ifdef TARGET_64BIT
+    // nint and int32 can be used interchangeably. Add implicit conversions.
+    if (m_pStackPointer[-1].type == StackTypeI4 && g_stackTypeFromInterpType[interpType] == StackTypeI8)
+        EmitConv(m_pStackPointer - 1, NULL, StackTypeI8, INTOP_CONV_I8_I4);
+#endif
+    if (m_pStackPointer[-1].type == StackTypeR4 && g_stackTypeFromInterpType[interpType] == StackTypeR8)
+        EmitConv(m_pStackPointer - 1, NULL, StackTypeR8, INTOP_CONV_R8_R4);
+    else if (m_pStackPointer[-1].type == StackTypeR8 && g_stackTypeFromInterpType[interpType] == StackTypeR4)
+        EmitConv(m_pStackPointer - 1, NULL, StackTypeR4, INTOP_CONV_R4_R8);
+
+    m_pStackPointer--;
+    AddIns(InterpGetMovForType(interpType, false));
+    m_pLastIns->SetSVar(m_pStackPointer[0].var);
+    m_pLastIns->SetDVar(var);
+    if (interpType == InterpTypeVT)
+        m_pLastIns->data[0] = m_pVars[var].size;
+}
+
 int InterpCompiler::GenerateCode(CORINFO_METHOD_INFO* methodInfo)
 {
     uint8_t *codeEnd;
+    int numArgs = m_methodInfo->args.hasThis() + m_methodInfo->args.numArgs;
     bool emittedBBlocks, linkBBlocks, needsRetryEmit;
     m_ip = m_pILCode = methodInfo->ILCode;
     m_ILCodeSize = (int32_t)methodInfo->ILCodeSize;
@@ -1058,17 +1257,56 @@ retry_emit:
             case CEE_LDC_I4_8:
                 AddIns(INTOP_LDC_I4);
                 m_pLastIns->data[0] = opcode - CEE_LDC_I4_0;
-                PushType(StackTypeI4, NULL);
+                PushStackType(StackTypeI4, NULL);
                 m_pLastIns->SetDVar(m_pStackPointer[-1].var);
                 m_ip++;
                 break;
             case CEE_LDC_I4_S:
                 AddIns(INTOP_LDC_I4);
                 m_pLastIns->data[0] = (int8_t)m_ip[1];
-                PushType(StackTypeI4, NULL);
+                PushStackType(StackTypeI4, NULL);
                 m_pLastIns->SetDVar(m_pStackPointer[-1].var);
                 m_ip += 2;
                 break;
+
+            case CEE_LDARG_S:
+                EmitLoadVar(m_ip[1]);
+                m_ip += 2;
+                break;
+            case CEE_LDARG_0:
+            case CEE_LDARG_1:
+            case CEE_LDARG_2:
+            case CEE_LDARG_3:
+                EmitLoadVar(*m_ip - CEE_LDARG_0);
+                m_ip++;
+                break;
+            case CEE_STARG_S:
+                EmitStoreVar(m_ip[1]);
+                m_ip += 2;
+                break;
+            case CEE_LDLOC_S:
+                EmitLoadVar(numArgs + m_ip[1]);
+                m_ip += 2;
+                break;
+            case CEE_LDLOC_0:
+            case CEE_LDLOC_1:
+            case CEE_LDLOC_2:
+            case CEE_LDLOC_3:
+                EmitLoadVar(numArgs + *m_ip - CEE_LDLOC_0);
+                m_ip++;
+                break;
+            case CEE_STLOC_S:
+                EmitStoreVar(numArgs + m_ip[1]);
+                m_ip += 2;
+                break;
+            case CEE_STLOC_0:
+            case CEE_STLOC_1:
+            case CEE_STLOC_2:
+            case CEE_STLOC_3:
+                EmitStoreVar(numArgs + *m_ip - CEE_STLOC_0);
+                m_ip++;
+                break;
+
             case CEE_RET:
             {
                 CORINFO_SIG_INFO sig = methodInfo->args;
@@ -1554,6 +1792,32 @@ retry_emit:
             case CEE_BLT_UN_S:
                 EmitTwoArgBranch(INTOP_BLT_UN_I4, (int8_t)m_ip [1], 2);
                 m_ip += 2;
+                break;
+
+            case CEE_PREFIX1:
+                m_ip++;
+                switch (*m_ip + 256)
+                {
+                    case CEE_LDARG:
+                        EmitLoadVar(getU2LittleEndian(m_ip + 1));
+                        m_ip += 3;
+                        break;
+                    case CEE_STARG:
+                        EmitStoreVar(getU2LittleEndian(m_ip + 1));
+                        m_ip += 3;
+                        break;
+                    case CEE_LDLOC:
+                        EmitLoadVar(numArgs + getU2LittleEndian(m_ip + 1));
+                        m_ip += 3;
+                        break;
+                    case CEE_STLOC:
+                        EmitStoreVar(numArgs + getU2LittleEndian(m_ip + 1));\
+                        m_ip += 3;
+                        break;
+                    default:
+                        assert(0);
+                        break;
+                }
                 break;
 
             default:
