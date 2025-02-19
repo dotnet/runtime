@@ -61,11 +61,31 @@ namespace System.Security.Claims
         {
             ArgumentNullException.ThrowIfNull(identities);
 
-            foreach (ClaimsIdentity identity in identities)
+            // If the identities value is exactly a List<ClaimsIdentity>, special case it so that
+            // the enumerator allocation can be skipped. Doing this for List<ClaimsIdentity> is the 99%
+            // case because it is normally used on the _identities value, which is a List<ClaimsIdentity>.
+            if (identities.GetType() == typeof(List<ClaimsIdentity>))
             {
-                if (identity != null)
+                List<ClaimsIdentity> identitiesList = (identities as List<ClaimsIdentity>)!;
+
+                for (int i = 0; i < identitiesList.Count; i++)
                 {
-                    return identity;
+                    ClaimsIdentity identity = identitiesList[i];
+
+                    if (identity != null)
+                    {
+                        return identity;
+                    }
+                }
+            }
+            else
+            {
+                foreach (ClaimsIdentity identity in identities)
+                {
+                    if (identity != null)
+                    {
+                        return identity;
+                    }
                 }
             }
 
