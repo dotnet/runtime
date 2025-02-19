@@ -924,8 +924,6 @@ namespace System.Tests
             }
         }
 
-        // -----
-
         [Fact]
         public static void GetString_ArgValidation()
         {
@@ -943,7 +941,7 @@ namespace System.Tests
         }
 
         [Fact]
-        public static void GetString_ProducesExceptedStrings()
+        public static void GetString_ProducesExpectedStrings()
         {
             Random random = new Random(42);
             Assert.Equal("", random.GetString("abcdefghijklmnopqrstuvwxyz", 0));
