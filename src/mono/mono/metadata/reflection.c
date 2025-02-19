@@ -2138,6 +2138,32 @@ mono_reflection_parse_type_checked (char *name, MonoTypeNameParse *info, MonoErr
 	return (ok != 0);
 }
 
+/**
+ * mono_reflection_get_type:
+ * \param image a metadata context
+ * \param info type description structure
+ * \param ignorecase flag for case-insensitive string compares
+ * \param type_resolve whenever type resolve was already tried
+ *
+ * Build a MonoType from the type description in \p info.
+ *
+ */
+MonoType*
+mono_reflection_get_type (MonoImage* image, MonoTypeNameParse *info, gboolean ignorecase, gboolean *type_resolve)
+{
+	MonoType *result;
+	MONO_ENTER_GC_UNSAFE;
+	ERROR_DECL (error);
+	GString *name = g_string_new ("");
+	format_type_name (info, name);
+	result = mono_reflection_type_from_name_internal (name->str, mono_alc_get_default (), image, ignorecase, FALSE, type_resolve, error);
+	g_string_free (name, TRUE);
+	mono_error_cleanup (error);
+	MONO_EXIT_GC_UNSAFE;
+	return result;
+}
+
+
 static void
 _mono_reflection_free_type_info (MonoTypeNameParse *info)
 {
