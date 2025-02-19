@@ -525,11 +525,6 @@ void CodeGen::genPrologSaveRegPair(regNumber reg1,
             compiler->unwindSaveRegPair(reg1, reg2, spOffset);
         }
     }
-
-    if (reg2 == REG_LR)
-    {
-        compiler->unwindPacSignLR();
-    }
 }
 
 //------------------------------------------------------------------------
@@ -660,10 +655,6 @@ void CodeGen::genEpilogRestoreRegPair(regNumber reg1,
         {
             compiler->unwindSaveRegPair(reg1, reg2, spOffset);
         }
-    }
-    if (reg2 == REG_LR)
-    {
-        compiler->unwindPacSignLR();
     }
 }
 

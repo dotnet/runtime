@@ -1391,6 +1391,7 @@ void emitter::emitPacInProlog()
     {
         return;
     }
+    // TODO-PAC: should be paciasp
     emitIns(INS_paciaz);
     emitComp->unwindPacSignLR();
 }
@@ -1404,7 +1405,7 @@ void emitter::emitPacInEpilog()
     {
         return;
     }
-    // TODO: should be autiasp
+    // TODO-PAC: should be autiasp
     emitIns(INS_autiaz);
     emitComp->unwindPacSignLR();
 }
