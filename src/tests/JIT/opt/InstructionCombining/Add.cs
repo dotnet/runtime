@@ -85,6 +85,26 @@ namespace TestAdd
                 fail = true;
             }
 
+            if (!AddsSingleLine(-5, 5))
+            {
+                fail = true;
+            }
+
+            if (!AddsSingleLineLSL(-0x70, 0x7))
+            {
+                fail = true;
+            }
+
+            if (AddsBinOp(-5, 5, 2, -2) != 1)
+            {
+                fail = true;
+            }
+
+            if (!AddsBinOpSingleLine(-5, 5, 4, -2))
+            {
+                fail = true;
+            }
+
             if (AddExtendedB(0, 0x101) != 1)
             {
                 fail = true;
@@ -282,6 +302,39 @@ namespace TestAdd
                 return 1;
             }
             return -1;
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static bool AddsSingleLine(int a, int b)
+        {
+            //ARM64-FULL-LINE: adds {{w[0-9]+}}, {{w[0-9]+}}, {{w[0-9]+}}
+            return a + b == 0;
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static bool AddsSingleLineLSL(int a, int b)
+        {
+            //ARM64-FULL-LINE: adds {{w[0-9]+}}, {{w[0-9]+}}, {{w[0-9]+}}, LSL #4
+            return a + (b<<4) == 0;
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static int AddsBinOp(int a, int b, int c, int d)
+        {
+            //ARM64-FULL-LINE: adds {{w[0-9]+}}, {{w[0-9]+}}, {{w[0-9]+}}
+            //ARM64-FULL-LINE: adds {{w[0-9]+}}, {{w[0-9]+}}, {{w[0-9]+}}
+            if ((a + b == 0) == (c + d == 0)) {
+                return 1;
+            }
+            return -1;
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static bool AddsBinOpSingleLine(int a, int b, int c, int d)
+        {
+            //ARM64-FULL-LINE: adds {{w[0-9]+}}, {{w[0-9]+}}, {{w[0-9]+}}
+            //ARM64-FULL-LINE: adds {{w[0-9]+}}, {{w[0-9]+}}, {{w[0-9]+}}
+            return (a + b == 0) | (c + d == 0);
         }
     }
 }

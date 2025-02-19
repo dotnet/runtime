@@ -261,14 +261,12 @@ void GenTree::InitNodeSize()
     GenTree::s_gtNodeSizes[GT_MOD]           = TREE_NODE_SZ_LARGE;
     GenTree::s_gtNodeSizes[GT_UMOD]          = TREE_NODE_SZ_LARGE;
 #endif
-#ifdef FEATURE_PUT_STRUCT_ARG_STK
     // TODO-Throughput: This should not need to be a large node. The object info should be
     // obtained from the child node.
     GenTree::s_gtNodeSizes[GT_PUTARG_STK]    = TREE_NODE_SZ_LARGE;
 #if FEATURE_ARG_SPLIT
     GenTree::s_gtNodeSizes[GT_PUTARG_SPLIT]  = TREE_NODE_SZ_LARGE;
 #endif // FEATURE_ARG_SPLIT
-#endif // FEATURE_PUT_STRUCT_ARG_STK
 
     // This list of assertions should come to contain all GenTree subtypes that are declared
     // "small".
@@ -324,16 +322,12 @@ void GenTree::InitNodeSize()
     static_assert_no_msg(sizeof(GenTreeILOffset)     <= TREE_NODE_SZ_SMALL);
     static_assert_no_msg(sizeof(GenTreePhiArg)       <= TREE_NODE_SZ_SMALL);
     static_assert_no_msg(sizeof(GenTreeAllocObj)     <= TREE_NODE_SZ_LARGE); // *** large node
-#ifndef FEATURE_PUT_STRUCT_ARG_STK
-    static_assert_no_msg(sizeof(GenTreePutArgStk)       <= TREE_NODE_SZ_SMALL);
-#else  // FEATURE_PUT_STRUCT_ARG_STK
     // TODO-Throughput: This should not need to be a large node. The object info should be
     // obtained from the child node.
     static_assert_no_msg(sizeof(GenTreePutArgStk)       <= TREE_NODE_SZ_LARGE);
 #if FEATURE_ARG_SPLIT
     static_assert_no_msg(sizeof(GenTreePutArgSplit)     <= TREE_NODE_SZ_LARGE);
 #endif // FEATURE_ARG_SPLIT
-#endif // FEATURE_PUT_STRUCT_ARG_STK
 
 #ifdef FEATURE_HW_INTRINSICS
     static_assert_no_msg(sizeof(GenTreeHWIntrinsic)     <= TREE_NODE_SZ_SMALL);
@@ -1145,6 +1139,27 @@ void GenTreeFieldList::InsertFieldLIR(
     Compiler* compiler, Use* insertAfter, GenTree* node, unsigned offset, var_types type)
 {
     m_uses.InsertUse(insertAfter, new (compiler, CMK_ASTNode) Use(node, offset, type));
+}
+
+//---------------------------------------------------------------
+// SoleFieldOrThis:
+//   If this FIELD_LIST has only one field, then return it; otherwise return
+//   the field list.
+//
+// Returns:
+//   Sole field, or "this".
+//
+GenTree* GenTreeFieldList::SoleFieldOrThis()
+{
+    Use* head = m_uses.GetHead();
+    assert(head != nullptr);
+
+    if (head->GetNext() == nullptr)
+    {
+        return head->GetNode();
+    }
+
+    return this;
 }
 
 //---------------------------------------------------------------
@@ -2621,13 +2636,6 @@ void CallArgs::ResetFinalArgsAndABIInfo()
     m_abiInformationDetermined = false;
 }
 
-#if !defined(FEATURE_PUT_STRUCT_ARG_STK)
-unsigned GenTreePutArgStk::GetStackByteSize() const
-{
-    return genTypeSize(genActualType(gtOp1->gtType));
-}
-#endif // !defined(FEATURE_PUT_STRUCT_ARG_STK)
-
 /*****************************************************************************
  *
  *  Returns non-zero if the two trees are identical.
@@ -3046,6 +3054,25 @@ AGAIN:
     }
 
     return false;
+}
+
+//------------------------------------------------------------------------
+// EffectiveUse: Return the use pointer to the "effective val".
+//
+// Arguments:
+//   use - Use edge
+//
+// Return Value:
+//   Edge pointing to non-comma node.
+//
+GenTree** GenTree::EffectiveUse(GenTree** use)
+{
+    while ((*use)->OperIs(GT_COMMA))
+    {
+        use = &(*use)->AsOp()->gtOp2;
+    }
+
+    return use;
 }
 
 //------------------------------------------------------------------------
@@ -8521,6 +8548,11 @@ GenTreeConditional* Compiler::gtNewConditionalNode(
     return node;
 }
 
+GenTreeFieldList* Compiler::gtNewFieldList()
+{
+    return new (this, GT_FIELD_LIST) GenTreeFieldList();
+}
+
 GenTreeLclFld* Compiler::gtNewLclFldNode(unsigned lnum, var_types type, unsigned offset, ClassLayout* layout)
 {
     GenTreeLclFld* node = new (this, GT_LCL_FLD) GenTreeLclFld(GT_LCL_FLD, type, lnum, offset, layout);
@@ -9121,20 +9153,12 @@ GenTree* Compiler::gtNewPutArgReg(var_types type, GenTree* arg, regNumber argReg
 // Notes:
 //    The node is generated as GenTreeMultiRegOp on RyuJIT/arm, as GenTreeOp on all the other archs.
 //
-GenTree* Compiler::gtNewBitCastNode(var_types type, GenTree* arg)
+GenTreeUnOp* Compiler::gtNewBitCastNode(var_types type, GenTree* arg)
 {
     assert(arg != nullptr);
     assert(type != TYP_STRUCT);
 
-    GenTree* node = nullptr;
-#if defined(TARGET_ARM)
-    // A BITCAST could be a MultiRegOp on arm since we could move a double register to two int registers.
-    node = new (this, GT_BITCAST) GenTreeMultiRegOp(GT_BITCAST, type, arg, nullptr);
-#else
-    node = gtNewOperNode(GT_BITCAST, type, arg);
-#endif
-
-    return node;
+    return gtNewOperNode(GT_BITCAST, type, arg);
 }
 
 //------------------------------------------------------------------------
@@ -9977,6 +10001,8 @@ GenTreeCall* Compiler::gtCloneExprCallHelper(GenTreeCall* tree)
         copy->gtInlineCandidateInfo = tree->gtInlineCandidateInfo;
         copy->gtInlineInfoCount     = tree->gtInlineInfoCount;
     }
+
+    copy->gtLateDevirtualizationInfo = tree->gtLateDevirtualizationInfo;
 
     copy->gtCallType   = tree->gtCallType;
     copy->gtReturnType = tree->gtReturnType;
@@ -12733,7 +12759,6 @@ void Compiler::gtDispTree(GenTree*                    tree,
                 }
             }
         }
-#if FEATURE_PUT_STRUCT_ARG_STK
         else if (tree->OperGet() == GT_PUTARG_STK)
         {
             const GenTreePutArgStk* putArg = tree->AsPutArgStk();
@@ -12766,7 +12791,6 @@ void Compiler::gtDispTree(GenTree*                    tree,
             printf(" (%d stackByteSize), (%d numRegs)", putArg->GetStackByteSize(), putArg->gtNumRegs);
         }
 #endif // FEATURE_ARG_SPLIT
-#endif // FEATURE_PUT_STRUCT_ARG_STK
 
         if (tree->OperIs(GT_FIELD_ADDR))
         {
@@ -14494,9 +14518,10 @@ GenTree* Compiler::gtFoldExprSpecial(GenTree* tree)
             // Optimize boxed value classes; these are always false.  This IL is
             // generated when a generic value is tested against null:
             //     <T> ... foo(T x) { ... if ((object)x == null) ...
-            if ((val == 0) && op->IsBoxedValue())
+            // Also fold checks against known non-null data like static readonlys
+            if ((val == 0) && !fgAddrCouldBeNull(op))
             {
-                JITDUMP("\nAttempting to optimize BOX(valueType) %s null [%06u]\n", GenTree::OpName(oper),
+                JITDUMP("\nAttempting to optimize BOX(valueType)/non-null %s null [%06u]\n", GenTree::OpName(oper),
                         dspTreeID(tree));
 
                 // We don't expect GT_GT with signed compares, and we
@@ -14508,44 +14533,46 @@ GenTree* Compiler::gtFoldExprSpecial(GenTree* tree)
                 }
                 else
                 {
-                    // The tree under the box must be side effect free
-                    // since we will drop it if we optimize.
-                    assert(!gtTreeHasSideEffects(op->AsBox()->BoxOp(), GTF_SIDE_EFFECT));
-
-                    // See if we can optimize away the box and related statements.
-                    GenTree* boxSourceTree = gtTryRemoveBoxUpstreamEffects(op);
-                    bool     didOptimize   = (boxSourceTree != nullptr);
-
-                    // If optimization succeeded, remove the box.
-                    if (didOptimize)
+                    bool wrapEffects = true;
+                    if (op->IsBoxedValue())
                     {
-                        // Set up the result of the compare.
-                        int compareResult = 0;
-                        if (oper == GT_GT)
-                        {
-                            // GT_GT(null, box) == false
-                            // GT_GT(box, null) == true
-                            compareResult = (op1 == op);
-                        }
-                        else if (oper == GT_EQ)
-                        {
-                            // GT_EQ(box, null) == false
-                            // GT_EQ(null, box) == false
-                            compareResult = 0;
-                        }
-                        else
-                        {
-                            assert(oper == GT_NE);
-                            // GT_NE(box, null) == true
-                            // GT_NE(null, box) == true
-                            compareResult = 1;
-                        }
+                        // The tree under the box must be side effect free
+                        // since we will drop it if we optimize.
+                        assert(!gtTreeHasSideEffects(op->AsBox()->BoxOp(), GTF_SIDE_EFFECT));
 
-                        JITDUMP("\nSuccess: replacing BOX(valueType) %s null with %d\n", GenTree::OpName(oper),
-                                compareResult);
-
-                        return NewMorphedIntConNode(compareResult);
+                        // See if we can optimize away the box and related statements.
+                        wrapEffects = (gtTryRemoveBoxUpstreamEffects(op) == nullptr);
                     }
+
+                    // Set up the result of the compare.
+                    int compareResult;
+                    if (oper == GT_GT)
+                    {
+                        // GT_GT(null, op) == false
+                        // GT_GT(op, null) == true
+                        compareResult = (op1 == op);
+                    }
+                    else if (oper == GT_EQ)
+                    {
+                        // GT_EQ(op, null) == false
+                        // GT_EQ(null, op) == false
+                        compareResult = 0;
+                    }
+                    else
+                    {
+                        assert(oper == GT_NE);
+                        // GT_NE(op, null) == true
+                        // GT_NE(null, op) == true
+                        compareResult = 1;
+                    }
+
+                    GenTree* newTree = gtNewIconNode(compareResult);
+                    if (wrapEffects)
+                    {
+                        newTree = gtWrapWithSideEffects(newTree, op, GTF_ALL_EFFECT);
+                    }
+                    op = newTree;
+                    goto DONE_FOLD;
                 }
             }
             else
@@ -20057,7 +20084,7 @@ bool GenTree::SupportsSettingZeroFlag()
     }
 #endif
 #elif defined(TARGET_ARM64)
-    if (OperIs(GT_AND, GT_AND_NOT))
+    if (OperIs(GT_AND, GT_AND_NOT, GT_NEG))
     {
         return true;
     }
@@ -21667,7 +21694,39 @@ GenTree* Compiler::gtNewSimdCvtNode(var_types   type,
     GenTree* fixupVal;
     bool     isV512Supported = false;
 
-    if (compIsEvexOpportunisticallySupported(isV512Supported))
+    if (compOpportunisticallyDependsOn(InstructionSet_AVX10v2))
+    {
+        NamedIntrinsic cvtIntrinsic = NI_Illegal;
+        switch (simdTargetBaseType)
+        {
+            case TYP_INT:
+                cvtIntrinsic = (simdSize == 64) ? NI_AVX10v2_V512_ConvertToVectorInt32WithTruncationSaturation
+                                                : NI_AVX10v2_ConvertToVectorInt32WithTruncationSaturation;
+                break;
+
+            case TYP_UINT:
+                cvtIntrinsic = (simdSize == 64) ? NI_AVX10v2_V512_ConvertToVectorUInt32WithTruncationSaturation
+                                                : NI_AVX10v2_ConvertToVectorUInt32WithTruncationSaturation;
+                break;
+
+            case TYP_LONG:
+                cvtIntrinsic = (simdSize == 64) ? NI_AVX10v2_V512_ConvertToVectorInt64WithTruncationSaturation
+                                                : NI_AVX10v2_ConvertToVectorInt64WithTruncationSaturation;
+                break;
+
+            case TYP_ULONG:
+                cvtIntrinsic = (simdSize == 64) ? NI_AVX10v2_V512_ConvertToVectorUInt64WithTruncationSaturation
+                                                : NI_AVX10v2_ConvertToVectorUInt64WithTruncationSaturation;
+                break;
+
+            default:
+            {
+                unreached();
+            }
+        }
+        return gtNewSimdHWIntrinsicNode(type, op1, cvtIntrinsic, simdSourceBaseJitType, simdSize);
+    }
+    else if (compIsEvexOpportunisticallySupported(isV512Supported))
     {
         /*Generate the control table for VFIXUPIMMSD/SS
         - For conversion to unsigned
@@ -30484,6 +30543,30 @@ void ReturnTypeDesc::InitializeReturnType(Compiler*                comp,
 
         INDEBUG(m_inited = true);
     }
+}
+
+//-------------------------------------------------------------------
+// GetReturnFieldOffset:
+//   For the N'th returned register, identified by "index", returns the
+//   starting offset in the struct return type of the data being returned.
+//
+// Arguments:
+//     index - The register whose offset to get
+//
+// Return Value:
+//     Starting offset of data returned in that register.
+//
+unsigned ReturnTypeDesc::GetReturnFieldOffset(unsigned index) const
+{
+    assert(m_regType[index] != TYP_UNKNOWN);
+#if defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64)
+    return m_fieldOffset[index];
+#else
+    unsigned offset = 0;
+    for (unsigned i = 0; i < index; i++)
+        offset += genTypeSize(m_regType[i]);
+    return offset;
+#endif
 }
 
 //-------------------------------------------------------------------

@@ -946,6 +946,14 @@ ProcessCLRExceptionNew(IN     PEXCEPTION_RECORD   pExceptionRecord,
 #ifndef HOST_UNIX
     if (!(pExceptionRecord->ExceptionFlags & EXCEPTION_UNWINDING))
     {
+        // If the exception is a breakpoint, let it go. The managed exception handling
+        // doesn't process breakpoints.
+        if ((pExceptionRecord->ExceptionCode == STATUS_BREAKPOINT) ||
+            (pExceptionRecord->ExceptionCode == STATUS_SINGLE_STEP))
+        {
+            return ExceptionContinueSearch;
+        }
+
         // Failfast if exception indicates corrupted process state
         if (IsProcessCorruptedStateException(pExceptionRecord->ExceptionCode, /* throwable */ NULL))
         {
