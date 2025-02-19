@@ -1782,6 +1782,9 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             X509Certificate2Collection collection = [];
             AssertExtensions.Throws<ArgumentOutOfRangeException>("exportParameters",
                 () => collection.ExportPkcs12((Pkcs12ExportPbeParameters)42, null));
+
+            AssertExtensions.Throws<ArgumentException>("password",
+                    () => collection.ExportPkcs12(Pkcs12ExportPbeParameters.Pbes2Aes256Sha256, "PLACE\0HOLDER"));
         }
 
         [Theory]
@@ -1807,6 +1810,15 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             X509Certificate2Collection collection = [];
             PbeParameters badParameters = new(encryptionAlgorithm, new HashAlgorithmName(hashAlgorithm), 1);
             Assert.Throws<CryptographicException>(() => collection.ExportPkcs12(badParameters, null));
+        }
+
+        [Fact]
+        public static void ExportPkcs12_PbeParameters_ArgValidation_Password()
+        {
+            X509Certificate2Collection collection = [];
+            PbeParameters parameters = new(PbeEncryptionAlgorithm.Aes256Cbc, HashAlgorithmName.SHA256, 1);
+            AssertExtensions.Throws<ArgumentException>("password",
+                () => collection.ExportPkcs12(parameters, "PLACE\0HOLDER"));
         }
 
         private static void TestExportSingleCert_SecureStringPassword(X509ContentType ct)

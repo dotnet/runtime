@@ -405,7 +405,7 @@ namespace Internal.Cryptography
             };
         }
 
-        internal static void VerifyExportParameters(Pkcs12ExportPbeParameters exportParameters)
+        internal static void ThrowIfInvalidPkcs12ExportParameters(Pkcs12ExportPbeParameters exportParameters)
         {
             if (exportParameters is < Pkcs12ExportPbeParameters.Default or > Pkcs12ExportPbeParameters.Pbes2Aes256Sha256)
             {
@@ -413,7 +413,7 @@ namespace Internal.Cryptography
             }
         }
 
-        internal static void VerifyExportParameters(PbeParameters exportParameters)
+        internal static void ThrowIfInvalidPkcs12ExportParameters(PbeParameters exportParameters)
         {
             if (exportParameters.EncryptionAlgorithm is
                 PbeEncryptionAlgorithm.Aes128Cbc or PbeEncryptionAlgorithm.Aes192Cbc or PbeEncryptionAlgorithm.Aes256Cbc)
@@ -446,6 +446,14 @@ namespace Internal.Cryptography
             }
 
             throw new CryptographicException(SR.Format(SR.Cryptography_UnknownAlgorithmIdentifier, exportParameters.EncryptionAlgorithm));
+        }
+
+        internal static void ThrowIfPasswordContainsNullCharacter(string? password)
+        {
+            if (password is not null && password.Contains('\0'))
+            {
+                throw new ArgumentException(SR.Argument_PasswordNullChars, nameof(password));
+            }
         }
     }
 }

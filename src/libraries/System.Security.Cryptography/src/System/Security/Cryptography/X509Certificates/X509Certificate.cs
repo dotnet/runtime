@@ -351,6 +351,9 @@ namespace System.Security.Cryptography.X509Certificates
         /// <param name="exportParameters">The algorithm parameters to use for the export.</param>
         /// <param name="password">The password to use for the export.</param>
         /// <returns>A byte array containing the encoded PKCS#12.</returns>
+        /// <exception cref="ArgumentException">
+        ///   <paramref name="password"/> contains a Unicode 'NULL' character.
+        /// </exception>
         /// <exception cref="ArgumentOutOfRangeException">
         ///   <paramref name="exportParameters"/> is not a valid value.
         /// </exception>
@@ -361,7 +364,8 @@ namespace System.Security.Cryptography.X509Certificates
         /// </exception>
         public byte[] ExportPkcs12(Pkcs12ExportPbeParameters exportParameters, string? password)
         {
-            Helpers.VerifyExportParameters(exportParameters);
+            Helpers.ThrowIfInvalidPkcs12ExportParameters(exportParameters);
+            Helpers.ThrowIfPasswordContainsNullCharacter(password);
 
             if (Pal is null)
                 throw new CryptographicException(ErrorCode.E_POINTER); // Consistent with existing Export method.
@@ -378,6 +382,9 @@ namespace System.Security.Cryptography.X509Certificates
         /// <param name="exportParameters">The algorithm parameters to use for the export.</param>
         /// <param name="password">The password to use for the export.</param>
         /// <returns>A byte array containing the encoded PKCS#12.</returns>
+        /// <exception cref="ArgumentException">
+        ///   <paramref name="password"/> contains a Unicode 'NULL' character.
+        /// </exception>
         /// <exception cref="ArgumentNullException">
         ///   <paramref name="exportParameters"/> is <see langword="null"/> .
         /// </exception>
@@ -387,8 +394,8 @@ namespace System.Security.Cryptography.X509Certificates
         ///   <para>The export operation failed.</para>
         ///   <para>-or-</para>
         ///   <para>
-        ///     <paramref name="exportParameters"/> contains an invalid or unsupported hash algorithm for
-        ///     <see cref="PbeParameters.HashAlgorithm"/>.
+        ///     <paramref name="exportParameters"/> specifies a <see cref="PbeParameters.HashAlgorithm"/> value that is
+        ///     not supported for the <see cref="PbeParameters.EncryptionAlgorithm"/> value.
         ///   </para>
         ///   <para>-or-</para>
         ///   <para>
@@ -399,7 +406,8 @@ namespace System.Security.Cryptography.X509Certificates
         public byte[] ExportPkcs12(PbeParameters exportParameters, string? password)
         {
             ArgumentNullException.ThrowIfNull(exportParameters);
-            Helpers.VerifyExportParameters(exportParameters);
+            Helpers.ThrowIfInvalidPkcs12ExportParameters(exportParameters);
+            Helpers.ThrowIfPasswordContainsNullCharacter(password);
 
             if (Pal is null)
                 throw new CryptographicException(ErrorCode.E_POINTER); // Consistent with existing Export method.
