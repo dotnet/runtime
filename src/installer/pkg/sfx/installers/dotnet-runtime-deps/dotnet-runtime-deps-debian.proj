@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.Build.NoTargets">
   <PropertyGroup>
-    <BuildDebPackage Condition="'$(TargetArchitecture)' == 'x64'">true</BuildDebPackage>
+    <BuildDebPackage>true</BuildDebPackage>
     <BuildRpmPackage>false</BuildRpmPackage>
   </PropertyGroup>
 
