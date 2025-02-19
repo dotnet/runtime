@@ -841,8 +841,9 @@ regMaskTP LinearScan::getKillSetForCall(GenTreeCall* call)
     }
 
     // if there is no FP used, we can ignore the FP kills
-    if (!compiler->compFloatingPointUsed)
+    if (!needToKillFloatRegs)
     {
+        assert(!compiler->compFloatingPointUsed || !enregisterLocalVars);
 #if defined(TARGET_XARCH)
 
 #ifdef TARGET_AMD64
@@ -2332,7 +2333,6 @@ void LinearScan::buildIntervals()
     // live-in at the entry to each block (this will include the incoming args on
     // the first block).
     VarSetOps::AssignNoCopy(compiler, currentLiveVars, VarSetOps::MakeEmpty(compiler));
-    const bool floatingPointUsed = compiler->compFloatingPointUsed;
 
     for (block = startBlockSequence(); block != nullptr; block = moveToNextBlock())
     {
@@ -2341,6 +2341,7 @@ void LinearScan::buildIntervals()
 
         if (localVarsEnregistered)
         {
+            needToKillFloatRegs                    = compiler->compFloatingPointUsed;
             bool              predBlockIsAllocated = false;
             BasicBlock* const predBlock = findPredBlockForLiveIn(block, prevBlock DEBUGARG(&predBlockIsAllocated));
             if (predBlock != nullptr)
@@ -2412,8 +2413,8 @@ void LinearScan::buildIntervals()
         }
         else
         {
-            // If state isn't live across blocks, then reset any global Compiler state.
-            compiler->compFloatingPointUsed = floatingPointUsed;
+            // If state isn't live across blocks, set FP register kill switch per block.
+            needToKillFloatRegs = false;
         }
 
         // Add a dummy RefPosition to mark the block boundary.
@@ -3012,6 +3013,7 @@ RefPosition* LinearScan::BuildDef(GenTree* tree, SingleTypeRegSet dstCandidates,
     if (!varTypeUsesIntReg(type))
     {
         compiler->compFloatingPointUsed = true;
+        needToKillFloatRegs             = true;
     }
 
     Interval* interval = newInterval(type);

@@ -822,20 +822,6 @@ extends:
           scenarios:
             - WasmTestOnChrome
 
-      # Library tests with full threading
-      - template: /eng/pipelines/common/templates/wasm-library-tests.yml
-        parameters:
-          platforms:
-            - browser_wasm
-            #- browser_wasm_win
-          nameSuffix: _Threading
-          extraBuildArgs: /p:WasmEnableThreads=true /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
-          extraHelixArguments: /p:WasmEnableThreads=true
-          alwaysRun: ${{ variables.isRollingBuild }}
-          shouldRunSmokeOnly: onLibrariesAndIllinkChanges
-          scenarios:
-            - WasmTestOnChrome
-
       # EAT Library tests - only run on linux
       - template: /eng/pipelines/common/templates/wasm-library-aot-tests.yml
         parameters:
@@ -870,17 +856,6 @@ extends:
           extraBuildArgs: /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
           publishArtifactsForWorkload: true
           publishWBT: true
-
-      - template: /eng/pipelines/common/templates/wasm-build-only.yml
-        parameters:
-          platforms:
-            - browser_wasm
-            - browser_wasm_win
-          condition: or(eq(variables.isRollingBuild, true), eq(variables.wasmSingleThreadedBuildOnlyNeededOnDefaultPipeline, true))
-          nameSuffix: MultiThreaded
-          extraBuildArgs: /p:WasmEnableThreads=true /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
-          publishArtifactsForWorkload: true
-          publishWBT: false
 
       # Browser Wasm.Build.Tests
       - template: /eng/pipelines/common/templates/browser-wasm-build-tests.yml
