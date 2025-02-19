@@ -150,8 +150,7 @@ namespace System.Reflection
             }
             else
             {
-                assembly = RuntimeAssembly.InternalLoad(name, _requestingAssembly!,
-                    _loadContext, throwOnFileNotFound: _throwOnError);
+                assembly = Assembly.Load(name, _requestingAssembly!, _loadContext, throwOnFileNotFound: _throwOnError);
             }
             return assembly;
         }

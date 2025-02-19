@@ -78,9 +78,14 @@ namespace System.Reflection
 
         internal static Assembly Load(AssemblyName assemblyRef, RuntimeAssembly requestingAssembly, AssemblyLoadContext? assemblyLoadContext)
         {
+            return Load(assemblyRef, requestingAssembly, assemblyLoadContext, throwOnFileNotFound: true)!;
+        }
+
+        internal static Assembly? Load(AssemblyName assemblyRef, RuntimeAssembly requestingAssembly, AssemblyLoadContext? assemblyLoadContext, bool throwOnFileNotFound)
+        {
             // TODO: pass AssemblyName
             Assembly? assembly = InternalLoad(assemblyRef.FullName, new QCallAssembly(ref requestingAssembly), assemblyLoadContext != null ? assemblyLoadContext.NativeALC : IntPtr.Zero);
-            if (assembly == null)
+            if (assembly == null && throwOnFileNotFound)
                 throw new FileNotFoundException(null, assemblyRef.Name);
             return assembly;
         }
