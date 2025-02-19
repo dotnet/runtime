@@ -84,7 +84,6 @@ jobs:
       extraBuildArgs: /p:WasmEnableThreads=true /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
       extraHelixArguments: /p:WasmEnableThreads=true
       isExtraPlatformsBuild: ${{ parameters.isExtraPlatformsBuild }}
-      alwaysRun: ${{ variables.isRollingBuild }}
       shouldRunSmokeOnly: onLibrariesAndIllinkChanges
       scenarios:
         - WasmTestOnChrome
