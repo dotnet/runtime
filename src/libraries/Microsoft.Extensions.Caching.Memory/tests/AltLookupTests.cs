@@ -58,7 +58,6 @@ namespace Microsoft.Extensions.Caching.Memory.Tests
 
             // not found after removing
             cache.Remove(stringKey);
-            cache.Set(stringKey, cachedValue);
 
             Assert.False(cache.TryGetValue(stringKey, out result));
             Assert.Null(result);
