@@ -19,7 +19,6 @@ scriptroot="$( cd -P "$( dirname "$source" )" && pwd )"
 sudo tdnf install -y procps-ng
 sudo tdnf install -y gawk
 sudo tdnf install -y coreutils
-sudo dotnet tool install --global dotnet-trace
 
 statscmd="$scriptroot/stats.sh"
 
