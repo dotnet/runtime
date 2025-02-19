@@ -162,25 +162,29 @@ C_FUNC(\Name):
         .error "target cannot be a0"
     .endif
 
-    addi sp, sp, -48
-    sd ra,  40(sp)
-    sd t1,  32(sp)
-    sd a1,  24(sp)
-    sd a2,  16(sp)
-    sd a3,   8(sp)
-    sd a4,   0(sp)
+    addi sp, sp, -64
+    sd ra,  56(sp)
+    sd t1,  48(sp)
+    sd a1,  40(sp)
+    sd a2,  32(sp)
+    sd a3,  24(sp)
+    sd a4,  16(sp)
+    sd a5,   8(sp)
+    sd a6,   0(sp)
 
     // global dynamic TLS, see https://github.com/riscv-non-isa/riscv-elf-psabi-doc/blob/eb2b2962/riscv-elf.adoc#global-dynamic
     la.tls.gd a0, \var
     call C_FUNC(__tls_get_addr)
 
-    ld ra,  40(sp)
-    ld t1,  32(sp)
-    ld a1,  24(sp)
-    ld a2,  16(sp)
-    ld a3,   8(sp)
-    ld a4,   0(sp)
-    addi sp, sp, 48
+    ld ra,  56(sp)
+    ld t1,  48(sp)
+    ld a1,  40(sp)
+    ld a2,  32(sp)
+    ld a3,  24(sp)
+    ld a4,  16(sp)
+    ld a5,   8(sp)
+    ld a6,   0(sp)
+    addi sp, sp, 64
 
     mv \target, a0
 

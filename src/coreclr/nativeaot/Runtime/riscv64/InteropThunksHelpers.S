@@ -21,13 +21,15 @@
         // Custom calling convention:
         //      tp pointer to the current thunk's data block (data contains 2 pointer values: context + target pointers)
 
+        mv               t2, a0
         INLINE_GET_TLS_VAR t0, C_FUNC(tls_thunkData)
+        mv               a0, t2
 
         // t0 = base address of TLS data
         // t1 = address of context cell in thunk's data
 
         // Load the thunk address from the data block and store it in the thread's static storage
-        ld    t2, 0(t1)        // Load thunk data into t1
+        ld    t2, 0(t1)        // Load thunk data into t2
         sd    t2, 0(t0)        // Store the thunk address in thread static storage
 
         // Load the target address from the data block and jump to it
