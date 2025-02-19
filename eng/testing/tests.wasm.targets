@@ -93,8 +93,6 @@
              TaskName="Microsoft.WebAssembly.Build.Tasks.GenerateAOTProps"
              AssemblyFile="$(WasmBuildTasksAssemblyPath)" TaskFactory="TaskHostFactory" />
 
-  <UsingTask TaskName="Microsoft.WebAssembly.Build.Tasks.ForceMSBuildGC" AssemblyFile="$(WasmAppBuilderTasksAssemblyPath)" />
-
   <Target Name="_BundleAOTTestWasmAppForHelix" DependsOnTargets="$(_BundleAOTTestWasmAppForHelixDependsOn)">
     <PropertyGroup>
       <_MainAssemblyPath Condition="'%(WasmAssembliesToBundle.FileName)' == $(AssemblyName) and '%(WasmAssembliesToBundle.Extension)' == '.dll'">%(WasmAssembliesToBundle.Identity)</_MainAssemblyPath>
