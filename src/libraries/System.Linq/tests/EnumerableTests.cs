@@ -5,6 +5,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using Xunit;
+using Xunit.Sdk;
 
 namespace System.Linq.Tests
 {
@@ -243,6 +244,7 @@ namespace System.Linq.Tests
         {
             return source is ICollection<T> ? ForceNotCollection(source) : new List<T>(source);
         }
+
         protected static T[] Repeat<T>(Func<int, T> factory, int count)
         {
             T[] results = new T[count];
@@ -316,26 +318,83 @@ namespace System.Linq.Tests
             }
         }
 
-        protected static List<Func<IEnumerable<T>, IEnumerable<T>>> IdentityTransforms<T>()
+        protected static IEnumerable<Func<IEnumerable<T>, IEnumerable<T>>> IdentityTransforms<T>()
         {
-            // All of these transforms should take an enumerable and produce
-            // another enumerable with the same contents.
-            return
+            // Various collection types all representing the same source.
+            List<Func<IEnumerable<T>, IEnumerable<T>>> sources =
             [
-                e => e,
-                e => e.ToArray(),
-                e => e.ToList(),
-                e => e.ToList().Take(int.MaxValue),
-                e => e.Select(i => i),
-                e => e.Select(i => i).Take(int.MaxValue),
-                e => e.Select(i => i).Where(i => true),
-                e => e.Where(i => true),
-                e => e.Concat(Array.Empty<T>()),
-                e => e.Concat(ForceNotCollection(Array.Empty<T>())),
-                e => ForceNotCollection(e),
-                e => ForceNotCollection(e).Skip(0),
-                e => new ReadOnlyCollection<T>(e.ToArray())
+                e => e, // original
+                e => e.ToArray(), // T[]
+                e => e.ToList(), // List<T>
+                e => new ReadOnlyCollection<T>(e.ToArray()), // IList<T> that's not List<T>/T[]
+                e => new TestCollection<T>(e.ToArray()), // ICollection<T> that's not IList<T>
+                e => new TestReadOnlyCollection<T>(e.ToArray()), // IReadOnlyCollection<T> that's not ICollection<T>
+                e => ForceNotCollection(e), // IEnumerable<T> with no other interfaces
             ];
+            if (typeof(T) == typeof(char))
+            {
+                sources.Add(e => (IEnumerable<T>)(object)string.Concat((IEnumerable<char>)(object)e)); // string
+            }
+
+            // Various transforms that all yield the same elements as the source.
+            List<Func<IEnumerable<T>, IEnumerable<T>>> transforms =
+            [
+                // Append
+                e =>
+                {
+                    T[] values = e.ToArray();
+                    return values.Length == 0 ? [] : values[0..^1].Append(values[^1]);
+                },
+
+                // Concat
+                e => e.Concat(ForceNotCollection<T>([])),
+                e => ForceNotCollection<T>([]).Concat(e),
+
+                // Prepend
+                e =>
+                {
+                    T[] values = e.ToArray();
+                    return values.Length == 0 ? [] : values[1..].Prepend(values[0]);
+                },
+
+                // Reverse
+                e => e.Reverse().Reverse(),
+
+                // Select
+                e => e.Select(i => i),
+
+                // SelectMany
+                e => e.SelectMany<T, T>(i => [i]),
+
+                // Take
+                e => e.Take(int.MaxValue),
+                e => e.TakeLast(int.MaxValue),
+                e => e.TakeWhile(i => true),
+
+                // Skip
+                e => e.SkipWhile(i => false),
+
+                // Where
+                e => e.Where(i => true),
+            ];
+
+            foreach (Func<IEnumerable<T>, IEnumerable<T>> source in sources)
+            {
+                // Yield the source itself.
+                yield return source;
+
+                foreach (Func<IEnumerable<T>, IEnumerable<T>> transform in transforms)
+                {
+                    // Yield a single transform on the source
+                    yield return e => transform(source(e));
+
+                    foreach (Func<IEnumerable<T>, IEnumerable<T>> transform2 in transforms)
+                    {
+                        // Yield a second transform on the first transform on the source.
+                        yield return e => transform2(transform(source(e)));
+                    }
+                }
+            }
         }
 
         protected sealed class DelegateIterator<TSource> : IEnumerable<TSource>, IEnumerator<TSource>

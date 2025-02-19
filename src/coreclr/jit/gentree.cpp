@@ -261,14 +261,12 @@ void GenTree::InitNodeSize()
     GenTree::s_gtNodeSizes[GT_MOD]           = TREE_NODE_SZ_LARGE;
     GenTree::s_gtNodeSizes[GT_UMOD]          = TREE_NODE_SZ_LARGE;
 #endif
-#ifdef FEATURE_PUT_STRUCT_ARG_STK
     // TODO-Throughput: This should not need to be a large node. The object info should be
     // obtained from the child node.
     GenTree::s_gtNodeSizes[GT_PUTARG_STK]    = TREE_NODE_SZ_LARGE;
 #if FEATURE_ARG_SPLIT
     GenTree::s_gtNodeSizes[GT_PUTARG_SPLIT]  = TREE_NODE_SZ_LARGE;
 #endif // FEATURE_ARG_SPLIT
-#endif // FEATURE_PUT_STRUCT_ARG_STK
 
     // This list of assertions should come to contain all GenTree subtypes that are declared
     // "small".
@@ -324,16 +322,12 @@ void GenTree::InitNodeSize()
     static_assert_no_msg(sizeof(GenTreeILOffset)     <= TREE_NODE_SZ_SMALL);
     static_assert_no_msg(sizeof(GenTreePhiArg)       <= TREE_NODE_SZ_SMALL);
     static_assert_no_msg(sizeof(GenTreeAllocObj)     <= TREE_NODE_SZ_LARGE); // *** large node
-#ifndef FEATURE_PUT_STRUCT_ARG_STK
-    static_assert_no_msg(sizeof(GenTreePutArgStk)       <= TREE_NODE_SZ_SMALL);
-#else  // FEATURE_PUT_STRUCT_ARG_STK
     // TODO-Throughput: This should not need to be a large node. The object info should be
     // obtained from the child node.
     static_assert_no_msg(sizeof(GenTreePutArgStk)       <= TREE_NODE_SZ_LARGE);
 #if FEATURE_ARG_SPLIT
     static_assert_no_msg(sizeof(GenTreePutArgSplit)     <= TREE_NODE_SZ_LARGE);
 #endif // FEATURE_ARG_SPLIT
-#endif // FEATURE_PUT_STRUCT_ARG_STK
 
 #ifdef FEATURE_HW_INTRINSICS
     static_assert_no_msg(sizeof(GenTreeHWIntrinsic)     <= TREE_NODE_SZ_SMALL);
@@ -1148,6 +1142,27 @@ void GenTreeFieldList::InsertFieldLIR(
 }
 
 //---------------------------------------------------------------
+// SoleFieldOrThis:
+//   If this FIELD_LIST has only one field, then return it; otherwise return
+//   the field list.
+//
+// Returns:
+//   Sole field, or "this".
+//
+GenTree* GenTreeFieldList::SoleFieldOrThis()
+{
+    Use* head = m_uses.GetHead();
+    assert(head != nullptr);
+
+    if (head->GetNext() == nullptr)
+    {
+        return head->GetNode();
+    }
+
+    return this;
+}
+
+//---------------------------------------------------------------
 // IsHfaArg: Is this arg considered a homogeneous floating-point aggregate?
 //
 bool CallArgABIInformation::IsHfaArg() const
@@ -1343,41 +1358,6 @@ bool CallArg::IsUserArg() const
             return false;
     }
 }
-
-#ifdef DEBUG
-//---------------------------------------------------------------
-// CheckIsStruct: Verify that the struct ABI information is consistent with the IR node.
-//
-void CallArg::CheckIsStruct()
-{
-    GenTree* node = GetNode();
-    if (varTypeIsStruct(GetSignatureType()))
-    {
-        if (!varTypeIsStruct(node) && !node->OperIs(GT_FIELD_LIST))
-        {
-            // This is the case where we are passing a struct as a primitive type.
-            // On most targets, this is always a single register or slot.
-            // However, on ARM this could be two slots if it is TYP_DOUBLE.
-            bool isPassedAsPrimitiveType =
-                ((AbiInfo.NumRegs == 1) || ((AbiInfo.NumRegs == 0) && (AbiInfo.ByteSize <= TARGET_POINTER_SIZE)));
-#ifdef TARGET_ARM
-            if (!isPassedAsPrimitiveType)
-            {
-                if (node->TypeGet() == TYP_DOUBLE && AbiInfo.NumRegs == 0 && (AbiInfo.GetStackSlotsNumber() == 2))
-                {
-                    isPassedAsPrimitiveType = true;
-                }
-            }
-#endif // TARGET_ARM
-            assert(isPassedAsPrimitiveType);
-        }
-    }
-    else
-    {
-        assert(!varTypeIsStruct(node));
-    }
-}
-#endif
 
 CallArgs::CallArgs()
     : m_head(nullptr)
@@ -2656,13 +2636,6 @@ void CallArgs::ResetFinalArgsAndABIInfo()
     m_abiInformationDetermined = false;
 }
 
-#if !defined(FEATURE_PUT_STRUCT_ARG_STK)
-unsigned GenTreePutArgStk::GetStackByteSize() const
-{
-    return genTypeSize(genActualType(gtOp1->gtType));
-}
-#endif // !defined(FEATURE_PUT_STRUCT_ARG_STK)
-
 /*****************************************************************************
  *
  *  Returns non-zero if the two trees are identical.
@@ -3081,6 +3054,25 @@ AGAIN:
     }
 
     return false;
+}
+
+//------------------------------------------------------------------------
+// EffectiveUse: Return the use pointer to the "effective val".
+//
+// Arguments:
+//   use - Use edge
+//
+// Return Value:
+//   Edge pointing to non-comma node.
+//
+GenTree** GenTree::EffectiveUse(GenTree** use)
+{
+    while ((*use)->OperIs(GT_COMMA))
+    {
+        use = &(*use)->AsOp()->gtOp2;
+    }
+
+    return use;
 }
 
 //------------------------------------------------------------------------
@@ -8556,6 +8548,11 @@ GenTreeConditional* Compiler::gtNewConditionalNode(
     return node;
 }
 
+GenTreeFieldList* Compiler::gtNewFieldList()
+{
+    return new (this, GT_FIELD_LIST) GenTreeFieldList();
+}
+
 GenTreeLclFld* Compiler::gtNewLclFldNode(unsigned lnum, var_types type, unsigned offset, ClassLayout* layout)
 {
     GenTreeLclFld* node = new (this, GT_LCL_FLD) GenTreeLclFld(GT_LCL_FLD, type, lnum, offset, layout);
@@ -9156,20 +9153,12 @@ GenTree* Compiler::gtNewPutArgReg(var_types type, GenTree* arg, regNumber argReg
 // Notes:
 //    The node is generated as GenTreeMultiRegOp on RyuJIT/arm, as GenTreeOp on all the other archs.
 //
-GenTree* Compiler::gtNewBitCastNode(var_types type, GenTree* arg)
+GenTreeUnOp* Compiler::gtNewBitCastNode(var_types type, GenTree* arg)
 {
     assert(arg != nullptr);
     assert(type != TYP_STRUCT);
 
-    GenTree* node = nullptr;
-#if defined(TARGET_ARM)
-    // A BITCAST could be a MultiRegOp on arm since we could move a double register to two int registers.
-    node = new (this, GT_BITCAST) GenTreeMultiRegOp(GT_BITCAST, type, arg, nullptr);
-#else
-    node = gtNewOperNode(GT_BITCAST, type, arg);
-#endif
-
-    return node;
+    return gtNewOperNode(GT_BITCAST, type, arg);
 }
 
 //------------------------------------------------------------------------
@@ -12768,7 +12757,6 @@ void Compiler::gtDispTree(GenTree*                    tree,
                 }
             }
         }
-#if FEATURE_PUT_STRUCT_ARG_STK
         else if (tree->OperGet() == GT_PUTARG_STK)
         {
             const GenTreePutArgStk* putArg = tree->AsPutArgStk();
@@ -12801,7 +12789,6 @@ void Compiler::gtDispTree(GenTree*                    tree,
             printf(" (%d stackByteSize), (%d numRegs)", putArg->GetStackByteSize(), putArg->gtNumRegs);
         }
 #endif // FEATURE_ARG_SPLIT
-#endif // FEATURE_PUT_STRUCT_ARG_STK
 
         if (tree->OperIs(GT_FIELD_ADDR))
         {
@@ -19887,14 +19874,38 @@ void GenTreeArrAddr::ParseArrayAddress(Compiler* comp, GenTree** pArr, ValueNum*
     ValueNum  vn = comp->GetValueNumStore()->VNLiberalNormalValue(tree->gtVNPair);
     VNFuncApp vnf;
 
+    bool treeIsArrayRef = false;
+
     if (tree->TypeIs(TYP_REF) || comp->GetValueNumStore()->IsVNNewArr(vn, &vnf))
     {
         // This must be the array pointer.
         assert(*pArr == nullptr);
         *pArr = tree;
         assert(inputMul == 1); // Can't multiply the array pointer by anything.
+        treeIsArrayRef = true;
     }
-    else
+    else if (tree->OperIs(GT_LCL_VAR) && tree->TypeIs(TYP_BYREF, TYP_I_IMPL))
+    {
+        // This is sort of like gtGetClassHandle, but that requires TYP_REF
+        //
+        CORINFO_CLASS_HANDLE hnd = comp->lvaGetDesc(tree->AsLclVar())->lvClassHnd;
+
+        if (hnd != NO_CLASS_HANDLE)
+        {
+            DWORD attribs  = comp->info.compCompHnd->getClassAttribs(hnd);
+            treeIsArrayRef = (attribs & CORINFO_FLG_ARRAY) != 0;
+
+            if (treeIsArrayRef)
+            {
+                // This must be the array pointer.
+                assert(*pArr == nullptr);
+                *pArr = tree;
+                assert(inputMul == 1); // Can't multiply the array pointer by anything.
+            }
+        }
+    }
+
+    if (!treeIsArrayRef)
     {
         switch (tree->OperGet())
         {
@@ -21678,7 +21689,39 @@ GenTree* Compiler::gtNewSimdCvtNode(var_types   type,
     GenTree* fixupVal;
     bool     isV512Supported = false;
 
-    if (compIsEvexOpportunisticallySupported(isV512Supported))
+    if (compOpportunisticallyDependsOn(InstructionSet_AVX10v2))
+    {
+        NamedIntrinsic cvtIntrinsic = NI_Illegal;
+        switch (simdTargetBaseType)
+        {
+            case TYP_INT:
+                cvtIntrinsic = (simdSize == 64) ? NI_AVX10v2_V512_ConvertToVectorInt32WithTruncationSaturation
+                                                : NI_AVX10v2_ConvertToVectorInt32WithTruncationSaturation;
+                break;
+
+            case TYP_UINT:
+                cvtIntrinsic = (simdSize == 64) ? NI_AVX10v2_V512_ConvertToVectorUInt32WithTruncationSaturation
+                                                : NI_AVX10v2_ConvertToVectorUInt32WithTruncationSaturation;
+                break;
+
+            case TYP_LONG:
+                cvtIntrinsic = (simdSize == 64) ? NI_AVX10v2_V512_ConvertToVectorInt64WithTruncationSaturation
+                                                : NI_AVX10v2_ConvertToVectorInt64WithTruncationSaturation;
+                break;
+
+            case TYP_ULONG:
+                cvtIntrinsic = (simdSize == 64) ? NI_AVX10v2_V512_ConvertToVectorUInt64WithTruncationSaturation
+                                                : NI_AVX10v2_ConvertToVectorUInt64WithTruncationSaturation;
+                break;
+
+            default:
+            {
+                unreached();
+            }
+        }
+        return gtNewSimdHWIntrinsicNode(type, op1, cvtIntrinsic, simdSourceBaseJitType, simdSize);
+    }
+    else if (compIsEvexOpportunisticallySupported(isV512Supported))
     {
         /*Generate the control table for VFIXUPIMMSD/SS
         - For conversion to unsigned
@@ -30495,6 +30538,30 @@ void ReturnTypeDesc::InitializeReturnType(Compiler*                comp,
 
         INDEBUG(m_inited = true);
     }
+}
+
+//-------------------------------------------------------------------
+// GetReturnFieldOffset:
+//   For the N'th returned register, identified by "index", returns the
+//   starting offset in the struct return type of the data being returned.
+//
+// Arguments:
+//     index - The register whose offset to get
+//
+// Return Value:
+//     Starting offset of data returned in that register.
+//
+unsigned ReturnTypeDesc::GetReturnFieldOffset(unsigned index) const
+{
+    assert(m_regType[index] != TYP_UNKNOWN);
+#if defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64)
+    return m_fieldOffset[index];
+#else
+    unsigned offset = 0;
+    for (unsigned i = 0; i < index; i++)
+        offset += genTypeSize(m_regType[i]);
+    return offset;
+#endif
 }
 
 //-------------------------------------------------------------------
