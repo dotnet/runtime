@@ -371,7 +371,7 @@ namespace System.Linq
                 for (long i = 0; i < _takeCount; i++)
                 {
                     probOfDrawingZeroMatches *=
-                        (totalCount - equalCount - i) / // number of non-matching items left to draw from
+                        (double)(totalCount - equalCount - i) / // number of non-matching items left to draw from
                         (totalCount - i); // number of items left to draw from
                 }
 
