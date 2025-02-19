@@ -20,7 +20,7 @@ function(create_standalone_jit)
   set(oneValueArgs TARGET OS ARCH)
   cmake_parse_arguments(TARGETDETAILS "" "${oneValueArgs}" "" ${ARGN})
 
-  if(TARGETDETAILS_OS STREQUAL "unix_osx" OR TARGETDETAILS_OS STREQUAL "unix_anyos")
+  if(TARGETDETAILS_OS STREQUAL "unix_osx" OR TARGETDETAILS_OS STREQUAL "unix_android" OR TARGETDETAILS_OS STREQUAL "unix_anyos")
     set(JIT_ARCH_LINK_LIBRARIES gcinfo_unix_${TARGETDETAILS_ARCH})
   else()
     set(JIT_ARCH_LINK_LIBRARIES gcinfo_${TARGETDETAILS_OS}_${TARGETDETAILS_ARCH})
@@ -560,6 +560,10 @@ else()
     )
 endif(CLR_CMAKE_HOST_UNIX)
 
+if (CLR_CMAKE_TARGET_ANDROID)
+    list(APPEND JIT_LINK_LIBRARIES log)
+endif()
+
 # Shared function for generating JIT
 function(add_jit jitName)
 
@@ -622,6 +626,8 @@ add_subdirectory(static)
 
 if (CLR_CMAKE_TARGET_APPLE)
   set(TARGET_OS_NAME unix_osx)
+elseif (CLR_CMAKE_TARGET_ANDROID)
+  set(TARGET_OS_NAME unix_android)
 elseif (CLR_CMAKE_TARGET_UNIX)
   set(TARGET_OS_NAME unix)
 else()
