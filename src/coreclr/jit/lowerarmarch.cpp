@@ -443,7 +443,6 @@ bool Lowering::IsContainableUnaryOrBinaryOp(GenTree* parentNode, GenTree* childN
         if (parentNode->OperIs(GT_ADD, GT_SUB))
         {
             // These operations can still report flags
-            castOp->ClearContained();
             return true;
         }
 
@@ -455,7 +454,6 @@ bool Lowering::IsContainableUnaryOrBinaryOp(GenTree* parentNode, GenTree* childN
 
         if (parentNode->OperIs(GT_CMP))
         {
-            castOp->ClearContained();
             return true;
         }
 
@@ -474,12 +472,6 @@ bool Lowering::IsContainableUnaryOrBinaryOp(GenTree* parentNode, GenTree* childN
                 // this can result in cmp (extended-register) taking higher priority
                 // over a load/store with extension.
                 return false;
-            }
-
-            if (castOp->IsRegOptional())
-            {
-                // Force the register from the castOp so we can contain the cast node.
-                castOp->ClearRegOptional();
             }
 
             return true;
@@ -2860,11 +2852,23 @@ void Lowering::ContainCheckBinary(GenTreeOp* node)
     {
         if (IsContainableUnaryOrBinaryOp(node, op2))
         {
+            if (node->OperIs(GT_ADD, GT_SUB, GT_CMP) && op2->OperIs(GT_CAST))
+            {
+                // We want to prefer the combined op here over containment of the cast op
+                op2->AsCast()->CastOp()->ClearContained();
+            }
+
             MakeSrcContained(node, op2);
             return;
         }
         if (node->OperIsCommutative() && IsContainableUnaryOrBinaryOp(node, op1))
         {
+            if (node->OperIs(GT_ADD, GT_SUB, GT_CMP) && op1->OperIs(GT_CAST))
+            {
+                // We want to prefer the combined op here over containment of the cast op
+                op1->AsCast()->CastOp()->ClearContained();
+            }
+
             MakeSrcContained(node, op1);
             std::swap(node->gtOp1, node->gtOp2);
             return;
@@ -3081,12 +3085,22 @@ void Lowering::ContainCheckCompare(GenTreeOp* cmp)
     {
         if (IsContainableUnaryOrBinaryOp(cmp, op2))
         {
+            if (cmp->OperIsCmpCompare() && op2->OperIs(GT_CAST))
+            {
+                op2->AsCast()->CastOp()->ClearRegOptional();
+            }
+
             MakeSrcContained(cmp, op2);
             return;
         }
 
         if (IsContainableUnaryOrBinaryOp(cmp, op1))
         {
+            if (cmp->OperIsCmpCompare() && op1->OperIs(GT_CAST))
+            {
+                op1->AsCast()->CastOp()->ClearRegOptional();
+            }
+
             MakeSrcContained(cmp, op1);
             std::swap(cmp->gtOp1, cmp->gtOp2);
             if (cmp->OperIsCompare())
