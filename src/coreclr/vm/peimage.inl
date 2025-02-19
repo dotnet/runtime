@@ -112,7 +112,7 @@ inline BOOL PEImage::IsFile()
 {
     WRAPPER_NO_CONTRACT;
 #if defined(TARGET_ANDROID)
-    return false;
+    return FALSE;
 #else
     return !GetPathToLoad().IsEmpty();
 #endif
