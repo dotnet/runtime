@@ -154,8 +154,8 @@ int jitprintf(const char* fmt, ...)
     va_start(vl, fmt);
 #if defined(HOST_ANDROID)
     int status = jitstdout() == procstdout()
-        ? __android_log_vprint(ANDROID_LOG_VERBOSE, MAIN_CLR_MODULE_NAME_A, fmt, vl)
-        : vfprintf(jitstdout(), fmt, vl);
+                     ? __android_log_vprint(ANDROID_LOG_VERBOSE, MAIN_CLR_MODULE_NAME_A, fmt, vl)
+                     : vfprintf(jitstdout(), fmt, vl);
 #else
     int status = vfprintf(jitstdout(), fmt, vl);
 #endif
