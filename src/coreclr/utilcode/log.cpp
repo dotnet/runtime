@@ -389,11 +389,12 @@ VOID LogSpewAlwaysValist(const char *fmt, va_list args)
     }
 
 #if defined(TARGET_ANDROID)
+    __android_log_write (ANDROID_LOG_INFO, "CoreCLR-log", "This should be logged");
     if (LogFlags & LOG_ENABLE_ANDROID_LOGGING)
     {
         // TODO: priority should be configurable here (best, passed via a parameter)
         //       likewise for the tag
-        __android_log_write (ANDROID_LOG_INFO, "CoreCLR", pBuffer);
+        __android_log_write (ANDROID_LOG_INFO, "CoreCLR-log", pBuffer);
     }
 #endif // TARGET_ANDROID
 
