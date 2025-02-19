@@ -75,6 +75,32 @@ namespace TestSub
                 fail = true;
             }
 
+            if (SubExtendedB(1, 0x1001) != 0)
+            {
+                fail = true;
+            }
+            if (SubExtendedH(1, 0x10001) != 0)
+            {
+                fail = true;
+            }
+            if (SubExtendedW(1, 0x100000001) != 0)
+            {
+                fail = true;
+            }
+
+            if (SubExtendedUB(1, 0x1001) != 0)
+            {
+                fail = true;
+            }
+            if (SubExtendedUH(1, 0x10001) != 0)
+            {
+                fail = true;
+            }
+            if (SubExtendedUW(1, 0x100000001) != 0)
+            {
+                fail = true;
+            }
+
             if (fail)
             {
                 return 101;
@@ -122,6 +148,48 @@ namespace TestSub
         {
             //ARM64-FULL-LINE: sub {{x[0-9]+}}, {{x[0-9]+}}, {{x[0-9]+}}, LSL #54
             return a - (b<<118);
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static long SubExtendedB(int a, int b)
+        {
+            //ARM64-FULL-LINE: sub {{w[0-9]+}}, {{w[0-9]+}}, {{w[0-9]+}}, SXTB
+            return a - (sbyte)b;
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static long SubExtendedH(int a, int b)
+        {
+            //ARM64-FULL-LINE: sub {{w[0-9]+}}, {{w[0-9]+}}, {{w[0-9]+}}, SXTH
+            return a - (short)b;
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static long SubExtendedW(long a, long b)
+        {
+            //ARM64-FULL-LINE: sub {{x[0-9]+}}, {{x[0-9]+}}, {{w[0-9]+}}, SXTW
+            return a - (int)b;
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static long SubExtendedUB(int a, int b)
+        {
+            //ARM64-FULL-LINE: sub {{w[0-9]+}}, {{w[0-9]+}}, {{w[0-9]+}}, UXTB
+            return a - (byte)b;
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static long SubExtendedUH(int a, int b)
+        {
+            //ARM64-FULL-LINE: sub {{w[0-9]+}}, {{w[0-9]+}}, {{w[0-9]+}}, UXTH
+            return a - (ushort)b;
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static long SubExtendedUW(long a, long b)
+        {
+            //ARM64-FULL-LINE: sub {{x[0-9]+}}, {{x[0-9]+}}, {{w[0-9]+}}, UXTW
+            return a - (uint)b;
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
