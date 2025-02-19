@@ -1635,6 +1635,9 @@ void CodeGen::genLclHeap(GenTree* tree)
             // The SP might already be in the guard page, so we must touch it BEFORE
             // the alloc, not after.
 
+            // tickle the page - this triggers a page fault when on the guard page
+            emit->emitIns_R_R_I(INS_lw, EA_4BYTE, REG_R0, REG_SP, 0);
+
             lastTouchDelta = amount;
             imm            = -(ssize_t)amount;
             if (emitter::isValidSimm12(imm))
@@ -1677,8 +1680,7 @@ void CodeGen::genLclHeap(GenTree* tree)
         // and localloc size is a multiple of STACK_ALIGN.
 
         // Loop:
-        ssize_t imm = -16;
-        emit->emitIns_R_R_I(INS_addi, EA_PTRSIZE, REG_SPBASE, REG_SPBASE, imm);
+        emit->emitIns_R_R_I(INS_addi, EA_PTRSIZE, REG_SPBASE, REG_SPBASE, -16);
 
         emit->emitIns_R_R_I(INS_sd, EA_PTRSIZE, REG_R0, REG_SPBASE, 8);
         emit->emitIns_R_R_I(INS_sd, EA_PTRSIZE, REG_R0, REG_SPBASE, 0);
@@ -1690,8 +1692,8 @@ void CodeGen::genLclHeap(GenTree* tree)
 
         emit->emitIns_R_R_I(INS_addi, emitActualTypeSize(type), regCnt, regCnt, -16);
 
-        assert(imm == (-4 << 2)); // goto loop.
-        emit->emitIns_R_R_I(INS_bne, EA_PTRSIZE, regCnt, REG_R0, (-4 << 2));
+        // goto Loop
+        emit->emitIns_R_R_I(INS_bne, EA_PTRSIZE, regCnt, REG_R0, -4 << 2);
 
         lastTouchDelta = 0;
     }
@@ -1715,22 +1717,19 @@ void CodeGen::genLclHeap(GenTree* tree)
         //       addi     regCnt, REG_R0, 0
         //
         //  Skip:
-        //       lui      regTmp, eeGetPageSize()>>12
+        //       lui      regPageSize, eeGetPageSize()>>12
+        //       addi     regTmp, SP, 0
         //  Loop:
-        //       lw       r0, 0(SP)               // tickle the page - read from the page
-        //       sub      RA, SP, regTmp          // decrement SP by eeGetPageSize()
-        //       bltu     RA, regCnt, Done
-        //       sub      SP, SP,regTmp
-        //       j        Loop
+        //       lw       r0, 0(regTmp)           // tickle the page - read from the page
+        //       sub      regTmp, regTmp, regPageSize
+        //       bgeu     regTmp, regCnt, Loop
         //
         //  Done:
-        //       mov      SP, regCnt
+        //       addi     SP, regCnt, 0
         //
 
         if (tempReg == REG_NA)
             tempReg = internalRegisters.Extract(tree);
-
-        regNumber rPageSize = internalRegisters.GetSingle(tree);
 
         assert(regCnt != tempReg);
         emit->emitIns_R_R_R(INS_sltu, EA_PTRSIZE, tempReg, REG_SPBASE, regCnt);
@@ -1742,32 +1741,24 @@ void CodeGen::genLclHeap(GenTree* tree)
         emit->emitIns_R_R_I(INS_beq, EA_PTRSIZE, tempReg, REG_R0, 2 << 2);
         emit->emitIns_R_R_I(INS_addi, EA_PTRSIZE, regCnt, REG_R0, 0);
 
+        regNumber rPageSize  = internalRegisters.GetSingle(tree);
+
+        noway_assert(rPageSize != tempReg);
+
         emit->emitIns_R_I(INS_lui, EA_PTRSIZE, rPageSize, pageSize >> 12);
+        regSet.verifyRegUsed(rPageSize);
+        emit->emitIns_R_R_I(INS_addi, EA_PTRSIZE, tempReg, REG_SPBASE, 0);
 
-        // genDefineTempLabel(loop);
+        // tickle the page - this triggers a page fault when on the guard page
+        emit->emitIns_R_R_I(INS_lw, EA_4BYTE, REG_R0, tempReg, 0);
+        emit->emitIns_R_R_R(INS_sub, EA_4BYTE, tempReg, tempReg, rPageSize);
 
-        // decrement SP by eeGetPageSize()
-        emit->emitIns_R_R_R(INS_sub, EA_PTRSIZE, tempReg, REG_SPBASE, rPageSize);
-
-        assert(rPageSize != tempReg);
-
-        ssize_t imm = 3 << 2; // goto done.
-        emit->emitIns_R_R_I(INS_bltu, EA_PTRSIZE, tempReg, regCnt, imm);
-
-        emit->emitIns_R_R_R(INS_sub, EA_PTRSIZE, REG_SPBASE, REG_SPBASE, rPageSize);
-
-        imm = -4 << 2;
-        // Jump to loop and tickle new stack address
-        emit->emitIns_I(INS_j, EA_PTRSIZE, imm);
-
-        // Done with stack tickle loop
-        // genDefineTempLabel(done);
-
-        // Now just move the final value to SP
-        emit->emitIns_R_R_I(INS_ori, EA_PTRSIZE, REG_SPBASE, regCnt, 0);
+        emit->emitIns_R_R_I(INS_bgeu, EA_PTRSIZE, tempReg, regCnt, -2 << 2);
 
         // lastTouchDelta is dynamic, and can be up to a page. So if we have outgoing arg space,
         // we're going to assume the worst and probe.
+        // Move the final value to SP
+        emit->emitIns_R_R_I(INS_addi, EA_PTRSIZE, REG_SPBASE, regCnt, 0);
     }
 
 ALLOC_DONE:
