@@ -42,11 +42,11 @@ jobs:
       jobParameters:
         dependsOn:
           - ${{ if eq(platform, 'browser_wasm') }}:
-            - ${{ if eq(includeMultiThreaded, true) }}:
+            - ${{ if eq(parameters.includeMultiThreaded, true) }}:
               - build_browser_wasm_linux_Release_MultiThreaded_BuildOnly
             - build_browser_wasm_linux_Release_SingleThreaded_BuildOnly
           - ${{ if eq(platform, 'browser_wasm_win') }}:
-            - ${{ if eq(includeMultiThreaded, true) }}:
+            - ${{ if eq(parameters.includeMultiThreaded, true) }}:
               - build_browser_wasm_windows_Release_MultiThreaded_BuildOnly
             - build_browser_wasm_windows_Release_SingleThreaded_BuildOnly
         isExtraPlatforms: ${{ parameters.isExtraPlatformsBuild }}
@@ -71,7 +71,7 @@ jobs:
               CleanTargetFolder: false
 
           # Download for multi-threaded
-          - ${{ if eq(includeMultiThreaded, true) }}:
+          - ${{ if eq(parameters.includeMultiThreaded, true) }}:
             - task: DownloadBuildArtifacts@0
               displayName: Download built nugets for multi-threaded runtime
               inputs:
