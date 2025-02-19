@@ -9153,20 +9153,12 @@ GenTree* Compiler::gtNewPutArgReg(var_types type, GenTree* arg, regNumber argReg
 // Notes:
 //    The node is generated as GenTreeMultiRegOp on RyuJIT/arm, as GenTreeOp on all the other archs.
 //
-GenTree* Compiler::gtNewBitCastNode(var_types type, GenTree* arg)
+GenTreeUnOp* Compiler::gtNewBitCastNode(var_types type, GenTree* arg)
 {
     assert(arg != nullptr);
     assert(type != TYP_STRUCT);
 
-    GenTree* node = nullptr;
-#if defined(TARGET_ARM)
-    // A BITCAST could be a MultiRegOp on arm since we could move a double register to two int registers.
-    node = new (this, GT_BITCAST) GenTreeMultiRegOp(GT_BITCAST, type, arg, nullptr);
-#else
-    node = gtNewOperNode(GT_BITCAST, type, arg);
-#endif
-
-    return node;
+    return gtNewOperNode(GT_BITCAST, type, arg);
 }
 
 //------------------------------------------------------------------------
@@ -10009,6 +10001,8 @@ GenTreeCall* Compiler::gtCloneExprCallHelper(GenTreeCall* tree)
         copy->gtInlineCandidateInfo = tree->gtInlineCandidateInfo;
         copy->gtInlineInfoCount     = tree->gtInlineInfoCount;
     }
+
+    copy->gtLateDevirtualizationInfo = tree->gtLateDevirtualizationInfo;
 
     copy->gtCallType   = tree->gtCallType;
     copy->gtReturnType = tree->gtReturnType;
@@ -14524,9 +14518,10 @@ GenTree* Compiler::gtFoldExprSpecial(GenTree* tree)
             // Optimize boxed value classes; these are always false.  This IL is
             // generated when a generic value is tested against null:
             //     <T> ... foo(T x) { ... if ((object)x == null) ...
-            if ((val == 0) && op->IsBoxedValue())
+            // Also fold checks against known non-null data like static readonlys
+            if ((val == 0) && !fgAddrCouldBeNull(op))
             {
-                JITDUMP("\nAttempting to optimize BOX(valueType) %s null [%06u]\n", GenTree::OpName(oper),
+                JITDUMP("\nAttempting to optimize BOX(valueType)/non-null %s null [%06u]\n", GenTree::OpName(oper),
                         dspTreeID(tree));
 
                 // We don't expect GT_GT with signed compares, and we
@@ -14538,44 +14533,46 @@ GenTree* Compiler::gtFoldExprSpecial(GenTree* tree)
                 }
                 else
                 {
-                    // The tree under the box must be side effect free
-                    // since we will drop it if we optimize.
-                    assert(!gtTreeHasSideEffects(op->AsBox()->BoxOp(), GTF_SIDE_EFFECT));
-
-                    // See if we can optimize away the box and related statements.
-                    GenTree* boxSourceTree = gtTryRemoveBoxUpstreamEffects(op);
-                    bool     didOptimize   = (boxSourceTree != nullptr);
-
-                    // If optimization succeeded, remove the box.
-                    if (didOptimize)
+                    bool wrapEffects = true;
+                    if (op->IsBoxedValue())
                     {
-                        // Set up the result of the compare.
-                        int compareResult = 0;
-                        if (oper == GT_GT)
-                        {
-                            // GT_GT(null, box) == false
-                            // GT_GT(box, null) == true
-                            compareResult = (op1 == op);
-                        }
-                        else if (oper == GT_EQ)
-                        {
-                            // GT_EQ(box, null) == false
-                            // GT_EQ(null, box) == false
-                            compareResult = 0;
-                        }
-                        else
-                        {
-                            assert(oper == GT_NE);
-                            // GT_NE(box, null) == true
-                            // GT_NE(null, box) == true
-                            compareResult = 1;
-                        }
+                        // The tree under the box must be side effect free
+                        // since we will drop it if we optimize.
+                        assert(!gtTreeHasSideEffects(op->AsBox()->BoxOp(), GTF_SIDE_EFFECT));
 
-                        JITDUMP("\nSuccess: replacing BOX(valueType) %s null with %d\n", GenTree::OpName(oper),
-                                compareResult);
-
-                        return NewMorphedIntConNode(compareResult);
+                        // See if we can optimize away the box and related statements.
+                        wrapEffects = (gtTryRemoveBoxUpstreamEffects(op) == nullptr);
                     }
+
+                    // Set up the result of the compare.
+                    int compareResult;
+                    if (oper == GT_GT)
+                    {
+                        // GT_GT(null, op) == false
+                        // GT_GT(op, null) == true
+                        compareResult = (op1 == op);
+                    }
+                    else if (oper == GT_EQ)
+                    {
+                        // GT_EQ(op, null) == false
+                        // GT_EQ(null, op) == false
+                        compareResult = 0;
+                    }
+                    else
+                    {
+                        assert(oper == GT_NE);
+                        // GT_NE(op, null) == true
+                        // GT_NE(null, op) == true
+                        compareResult = 1;
+                    }
+
+                    GenTree* newTree = gtNewIconNode(compareResult);
+                    if (wrapEffects)
+                    {
+                        newTree = gtWrapWithSideEffects(newTree, op, GTF_ALL_EFFECT);
+                    }
+                    op = newTree;
+                    goto DONE_FOLD;
                 }
             }
             else
@@ -21697,7 +21694,39 @@ GenTree* Compiler::gtNewSimdCvtNode(var_types   type,
     GenTree* fixupVal;
     bool     isV512Supported = false;
 
-    if (compIsEvexOpportunisticallySupported(isV512Supported))
+    if (compOpportunisticallyDependsOn(InstructionSet_AVX10v2))
+    {
+        NamedIntrinsic cvtIntrinsic = NI_Illegal;
+        switch (simdTargetBaseType)
+        {
+            case TYP_INT:
+                cvtIntrinsic = (simdSize == 64) ? NI_AVX10v2_V512_ConvertToVectorInt32WithTruncationSaturation
+                                                : NI_AVX10v2_ConvertToVectorInt32WithTruncationSaturation;
+                break;
+
+            case TYP_UINT:
+                cvtIntrinsic = (simdSize == 64) ? NI_AVX10v2_V512_ConvertToVectorUInt32WithTruncationSaturation
+                                                : NI_AVX10v2_ConvertToVectorUInt32WithTruncationSaturation;
+                break;
+
+            case TYP_LONG:
+                cvtIntrinsic = (simdSize == 64) ? NI_AVX10v2_V512_ConvertToVectorInt64WithTruncationSaturation
+                                                : NI_AVX10v2_ConvertToVectorInt64WithTruncationSaturation;
+                break;
+
+            case TYP_ULONG:
+                cvtIntrinsic = (simdSize == 64) ? NI_AVX10v2_V512_ConvertToVectorUInt64WithTruncationSaturation
+                                                : NI_AVX10v2_ConvertToVectorUInt64WithTruncationSaturation;
+                break;
+
+            default:
+            {
+                unreached();
+            }
+        }
+        return gtNewSimdHWIntrinsicNode(type, op1, cvtIntrinsic, simdSourceBaseJitType, simdSize);
+    }
+    else if (compIsEvexOpportunisticallySupported(isV512Supported))
     {
         /*Generate the control table for VFIXUPIMMSD/SS
         - For conversion to unsigned
