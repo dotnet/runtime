@@ -144,20 +144,11 @@ int LinearScan::BuildNode(GenTree* tree)
         case GT_CNS_DBL:
         {
             emitAttr size = emitActualTypeSize(tree);
-
-            double constValue = tree->AsDblCon()->DconValue();
-            if (!FloatingPointUtils::isPositiveZero(constValue))
+            int64_t  bits;
+            if (emitter::isSingleInstructionFpImm(tree->AsDblCon()->DconValue(), size, &bits) && bits != 0)
             {
-                int64_t bits =
-                    (size == EA_4BYTE)
-                        ? (int32_t)BitOperations::SingleToUInt32Bits(FloatingPointUtils::convertToSingle(constValue))
-                        : (int64_t)BitOperations::DoubleToUInt64Bits(constValue);
-                bool fitsInLui = ((bits & 0xfff) == 0) && emitter::isValidSimm20(bits >> 12);
-                if (fitsInLui || emitter::isValidSimm12(bits)) // can we synthesize bits with a single instruction?
-                {
-                    buildInternalIntRegisterDefForNode(tree);
-                    buildInternalRegisterUses();
-                }
+                buildInternalIntRegisterDefForNode(tree);
+                buildInternalRegisterUses();
             }
         }
             FALLTHROUGH;
