@@ -438,14 +438,11 @@ namespace ILCompiler.Reflection.ReadyToRun
 
         private unsafe byte[] ConvertToArray(ReadOnlyMemory<byte> content)
         {
-            if (MemoryMarshal.TryGetArray(content, out ArraySegment<byte> segment))
+            if (MemoryMarshal.TryGetArray(content, out ArraySegment<byte> segment) && (segment.Offset == 0) && (segment.Count == content.Length))
             {
                 return segment.Array;
             }
-            else
-            {
-                return content.ToArray();
-            }
+            return content.ToArray();
         }
 
         public static bool IsReadyToRunImage(PEReader peReader)
