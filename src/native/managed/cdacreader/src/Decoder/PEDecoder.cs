@@ -1,32 +1,35 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
 using System.IO;
+using System.Text;
 using Microsoft.Diagnostics.DataContractReader.Decoder.PETypes;
-using Microsoft.Diagnostics.DataContractReader.Legacy;
 
 namespace Microsoft.Diagnostics.DataContractReader.Decoder;
-internal sealed class PEDecoder
+internal sealed class PEDecoder : IDisposable
 {
-    private readonly ICLRDataTarget _dataTarget;
-    private readonly ulong _baseAddress;
+    private readonly Stream _stream;
     private uint _peSigOffset;
     private ushort _optHeaderMagic;
     private IMAGE_EXPORT_DIRECTORY _exportDir;
+    private bool _disposedValue;
 
     public bool IsValid { get; init; }
 
-    public PEDecoder(ICLRDataTarget dataTarget, ulong baseAddress)
+    /// <summary>
+    /// Create PEDecoder with stream beginning at the base address of the module.
+    /// </summary>
+    public PEDecoder(Stream stream)
     {
-        _dataTarget = dataTarget;
-        _baseAddress = baseAddress;
+        _stream = stream;
 
         IsValid = Initialize();
     }
 
     private bool Initialize()
     {
-        using BinaryReader reader = new(new DataTargetStream(_dataTarget, _baseAddress));
+        using BinaryReader reader = new(_stream, Encoding.UTF8, leaveOpen: true);
 
         ushort dosMagic = reader.ReadUInt16();
         if (dosMagic != 0x5A4D) // "MZ"
@@ -71,12 +74,13 @@ internal sealed class PEDecoder
         return true;
     }
 
-    public TargetPointer GetSymbolAddress(string symbol)
+    public bool TryGetRelativeSymbolAddress(string symbol, out ulong address)
     {
+        address = 0;
         if (!IsValid)
-            return TargetPointer.Null;
+            return false;
 
-        using BinaryReader reader = new(new DataTargetStream(_dataTarget, _baseAddress));
+        using BinaryReader reader = new(_stream, Encoding.UTF8, leaveOpen: true);
 
         for (int nameIndex = 0; nameIndex < _exportDir.NumberOfNames; nameIndex++)
         {
@@ -99,10 +103,31 @@ internal sealed class PEDecoder
                 reader.BaseStream.Seek(_exportDir.AddressOfFunctions + sizeof(uint) * ordinalForNamedExport, SeekOrigin.Begin);
                 uint symbolRVA = reader.ReadUInt32();
 
-                return new TargetPointer(_baseAddress + symbolRVA);
+                address = symbolRVA;
+                return true;
             }
         }
 
-        return TargetPointer.Null;
+        return false;
+    }
+
+    private void Dispose(bool disposing)
+    {
+        if (!_disposedValue)
+        {
+            if (disposing)
+            {
+                _stream.Close();
+            }
+
+            _disposedValue = true;
+        }
+    }
+
+    void IDisposable.Dispose()
+    {
+        // Do not change this code. Put cleanup code in 'Dispose(bool disposing)' method
+        Dispose(disposing: true);
+        GC.SuppressFinalize(this);
     }
 }
