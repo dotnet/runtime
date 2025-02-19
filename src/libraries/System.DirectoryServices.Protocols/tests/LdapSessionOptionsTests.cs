@@ -7,8 +7,6 @@ using Xunit;
 
 namespace System.DirectoryServices.Protocols.Tests
 {
-    // To enable these tests locally for Mono, comment out this line in DirectoryServicesTestHelpers.cs:
-    //     [assembly: ActiveIssue("https://github.com/dotnet/runtime/issues/35912", TestRuntimes.Mono)]
     [ConditionalClass(typeof(DirectoryServicesTestHelpers), nameof(DirectoryServicesTestHelpers.IsWindowsOrLibLdapIsInstalled))]
     public class LdapSessionOptionsTests
     {
@@ -29,7 +27,6 @@ namespace System.DirectoryServices.Protocols.Tests
         }
 
         [Theory]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/112146")]
         [PlatformSpecific(TestPlatforms.Linux)]
         [InlineData(ReferralChasingOptions.None)]
         [InlineData(ReferralChasingOptions.All)]
