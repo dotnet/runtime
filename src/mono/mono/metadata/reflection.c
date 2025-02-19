@@ -2446,20 +2446,8 @@ mono_reflection_type_from_name (char *name, MonoImage *image)
 	return result;
 }
 
-/**
- * mono_reflection_type_from_name_checked:
- * \param name type name.
- * \param alc the AssemblyLoadContext to check/load into
- * \param image a metadata context (can be NULL).
- * \param ignorecase compare type names case-insensitively
- * \param use_toplevel_assembly if true, follow the semantics of Assembly.GetAssembly
- * \param error set on error.
- * Retrieves a MonoType from its \p name. If the name is not fully qualified,
- * it defaults to get the type from \p image or, if \p image is NULL or loading
- * from it fails, uses corlib.  On failure returns NULL and sets \p error.
- */
-MonoType*
-mono_reflection_type_from_name_checked (char *name, MonoAssemblyLoadContext *alc, MonoImage *image, gboolean ignorecase, gboolean use_toplevel_assembly, MonoError *error)
+static MonoType*
+mono_reflection_type_from_name_internal (char *name, MonoAssemblyLoadContext *alc, MonoImage *image, gboolean ignorecase, gboolean use_toplevel_assembly, gboolean *type_resolve, MonoError *error)
 {
 	HANDLE_FUNCTION_ENTER ();
 	MonoType *type = NULL;
@@ -2468,6 +2456,8 @@ mono_reflection_type_from_name_checked (char *name, MonoAssemblyLoadContext *alc
 	MonoReflectionAssemblyHandle requesting_handle;
 	MonoBoolean ignorecase_param;
 	MonoBoolean use_toplevel_assembly_param;
+	MonoBoolean type_resolve_param;
+	MonoBoolean *type_resolve_param_addr;
 
 	error_init (error);
 
@@ -2496,22 +2486,46 @@ mono_reflection_type_from_name_checked (char *name, MonoAssemblyLoadContext *alc
 
 	ignorecase_param = !!ignorecase;
 	use_toplevel_assembly_param = !!use_toplevel_assembly;
+	type_resolve_param = type_resolve ? !!*type_resolve : FALSE;
+	type_resolve_param_addr = type_resolve ? &type_resolve_param : NULL;
 
-	gpointer params [5];
+	gpointer params [6];
 	params [0] = MONO_HANDLE_RAW (name_param);
 	params [1] = &alc_param;
 	params [2] = MONO_HANDLE_RAW (requesting_handle);
 	params [3] = &ignorecase_param;
 	params [4] = &use_toplevel_assembly_param;
+	params [5] = &type_resolve_param_addr;
 	MonoReflectionTypeHandle result;
 	result = MONO_HANDLE_CAST (MonoReflectionType, mono_runtime_invoke_handle (method, NULL_HANDLE, params, error));
 	goto_if_nok (error, leave);
 
+	if (type_resolve) {
+		*type_resolve = type_resolve_param;
+	}
 	if (MONO_HANDLE_BOOL (result))
 		type = MONO_HANDLE_GETVAL (result, type);
 
 leave:
 	HANDLE_FUNCTION_RETURN_VAL (type);
+}
+
+/**
+ * mono_reflection_type_from_name_checked:
+ * \param name type name.
+ * \param alc the AssemblyLoadContext to check/load into
+ * \param image a metadata context (can be NULL).
+ * \param ignorecase compare type names case-insensitively
+ * \param use_toplevel_assembly if true, follow the semantics of Assembly.GetAssembly
+ * \param error set on error.
+ * Retrieves a MonoType from its \p name. If the name is not fully qualified,
+ * it defaults to get the type from \p image or, if \p image is NULL or loading
+ * from it fails, uses corlib.  On failure returns NULL and sets \p error.
+ */
+MonoType*
+mono_reflection_type_from_name_checked (char *name, MonoAssemblyLoadContext *alc, MonoImage *image, gboolean ignorecase, gboolean use_toplevel_assembly, MonoError *error)
+{
+	return mono_reflection_type_from_name_internal (name, alc, image, ignorecase, use_toplevel_assembly, NULL, error);
 }
 
 /**
