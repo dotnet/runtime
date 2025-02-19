@@ -49,42 +49,6 @@ namespace System.Reflection.Tests
             }
         }
 
-        [Theory]
-        [MemberData(nameof(IsValueTypeTestData))]
-        public static void IsValueType(Type type, bool expected)
-        {
-            Assert.Equal(expected, type.IsValueType);
-        }
-
-        public static IEnumerable<object[]> IsValueTypeTestData
-        {
-            get
-            {
-                // These have normal generic argument types, not SignatureTypes. Using a SignatureType from MakeGenericMethodParameter()
-                // as the generic type argument throws NotSupportedException which is verified in MakeSignatureConstructedGenericType().
-                yield return new object[] { Type.MakeGenericSignatureType(typeof(List<>), typeof(int)).GetGenericArguments()[0], true };
-                yield return new object[] { Type.MakeGenericSignatureType(typeof(List<>), typeof(object)).GetGenericArguments()[0], false };
-            }
-        }
-
-        [Theory]
-        [MemberData(nameof(IsEnumTestData))]
-        public static void IsEnum(Type type, bool expected)
-        {
-            Assert.Equal(expected, type.IsEnum);
-        }
-
-        public static IEnumerable<object[]> IsEnumTestData
-        {
-            get
-            {
-                // These have normal generic argument types, not SignatureTypes. Using a SignatureType from MakeGenericMethodParameter()
-                // as the generic type argument throws NotSupportedException which is verified in MakeSignatureConstructedGenericType().
-                yield return new object[] { Type.MakeGenericSignatureType(typeof(List<>), typeof(MyEnum)).GetGenericArguments()[0], true };
-                yield return new object[] { Type.MakeGenericSignatureType(typeof(List<>), typeof(object)).GetGenericArguments()[0], false };
-            }
-        }
-
         [Fact]
         public static void GetMethodWithGenericParameterCount()
         {
@@ -348,6 +312,8 @@ namespace System.Reflection.Tests
                     Assert.True(t.IsConstructedGenericType);
                     Assert.Equal(genericTypeDefinition, t.GetGenericTypeDefinition());
                     Assert.Equal(1, t.GenericTypeArguments.Length);
+                    Assert.Equal(genericTypeDefinition.IsValueType, t.IsValueType);
+                    Assert.False(t.IsEnum);
 
                     Type et = t.GenericTypeArguments[0];
                     Assert.True(et.IsSignatureType);
@@ -355,8 +321,6 @@ namespace System.Reflection.Tests
                     Assert.False(et.IsGenericTypeParameter);
                     Assert.True(et.IsGenericMethodParameter);
                     Assert.Equal(5, et.GenericParameterPosition);
-                    Assert.Throws<NotSupportedException>(() => et.IsValueType);
-                    Assert.Throws<NotSupportedException>(() => et.IsEnum);
 
                     TestSignatureTypeInvariants(t);
                 });
