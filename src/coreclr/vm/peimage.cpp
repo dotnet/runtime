@@ -891,7 +891,7 @@ HRESULT PEImage::TryOpenFile(bool takeLock)
                           OPEN_EXISTING,
                           FILE_ATTRIBUTE_NORMAL,
                           NULL);
-#endif
+#endif // TARGET_ANDROID
     if (m_hFile != INVALID_HANDLE_VALUE)
             return S_OK;
 
