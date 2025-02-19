@@ -66,7 +66,9 @@ namespace System.Security.Cryptography.Pkcs
 
         internal ReadOnlyMemory<byte> GetSignatureMemory() => _signature;
 
+#if NET || NETSTANDARD2_1
         public byte[] GetSignature() => _signature.ToArray();
+#endif
 
         public X509Certificate2? Certificate =>
             _signerCertificate ??= FindSignerCertificate();
@@ -89,7 +91,12 @@ namespace System.Security.Cryptography.Pkcs
 
         public Oid DigestAlgorithm => new Oid(_digestAlgorithm, null);
 
-        public Oid SignatureAlgorithm => new Oid(_signatureAlgorithm, null);
+#if NET || NETSTANDARD2_1
+        public
+#else
+        internal
+#endif
+        Oid SignatureAlgorithm => new Oid(_signatureAlgorithm, null);
 
         private delegate void WithSelfInfoDelegate(ref SignerInfoAsn mySigned);
 
@@ -167,7 +174,12 @@ namespace System.Security.Cryptography.Pkcs
             }
         }
 
-        public void AddUnsignedAttribute(AsnEncodedData unsignedAttribute)
+#if NET || NETSTANDARD2_1
+        public
+#else
+        internal
+#endif
+        void AddUnsignedAttribute(AsnEncodedData unsignedAttribute)
         {
             WithSelfInfo((ref SignerInfoAsn mySigner) =>
                 {
@@ -208,7 +220,12 @@ namespace System.Security.Cryptography.Pkcs
             }
         }
 
-        public void RemoveUnsignedAttribute(AsnEncodedData unsignedAttribute)
+#if NET || NETSTANDARD2_1
+        public
+#else
+        internal
+#endif
+        void RemoveUnsignedAttribute(AsnEncodedData unsignedAttribute)
         {
             WithSelfInfo((ref SignerInfoAsn mySigner) =>
                 {

@@ -426,8 +426,8 @@ NESTED_ENTRY CallEHFilterFunclet, _TEXT, NoHandler
 
 NESTED_END CallEHFilterFunclet, _TEXT
 
-#define FaultingExceptionFrame_StackAlloc (SIZEOF__GSCookie + SIZEOF__FaultingExceptionFrame)
-#define FaultingExceptionFrame_FrameOffset SIZEOF__GSCookie
+#define FaultingExceptionFrame_StackAlloc (SIZEOF__FaultingExceptionFrame)
+#define FaultingExceptionFrame_FrameOffset 0
 
 .macro GenerateRedirectedStubWithFrame stub, target
 
@@ -835,3 +835,18 @@ LOCAL_LABEL(JIT_PollGCRarePath):
         ldr     x9, [x9]
         br x9
 LEAF_END  JIT_PollGC, _TEXT
+
+#ifdef FEATURE_INTERPRETER
+NESTED_ENTRY InterpreterStub, _TEXT, NoHandler
+
+    PROLOG_WITH_TRANSITION_BLOCK
+
+    add x0, sp, #__PWTB_TransitionBlock // pTransitionBlock
+    mov x1, METHODDESC_REGISTER // pMethodDesc
+
+    bl  C_FUNC(ExecuteInterpretedMethod)
+
+    EPILOG_WITH_TRANSITION_BLOCK_RETURN
+
+NESTED_END InterpreterStub, _TEXT
+#endif // FEATURE_INTERPRETER

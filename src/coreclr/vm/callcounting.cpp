@@ -774,8 +774,8 @@ PCODE CallCountingManager::OnCallCountThresholdReached(TransitionBlock *transiti
         CallCountingInfo::From(CallCountingStub::From(stubIdentifyingToken)->GetRemainingCallCountCell())->GetCodeVersion();
 
     MethodDesc *methodDesc = codeVersion.GetMethodDesc();
-    FrameWithCookie<CallCountingHelperFrame> frameWithCookie(transitionBlock, methodDesc);
-    CallCountingHelperFrame *frame = &frameWithCookie;
+    CallCountingHelperFrame callCountingFrame(transitionBlock, methodDesc);
+    CallCountingHelperFrame *frame = &callCountingFrame;
     frame->Push(CURRENT_THREAD);
 
     INSTALL_MANAGED_EXCEPTION_DISPATCHER;
