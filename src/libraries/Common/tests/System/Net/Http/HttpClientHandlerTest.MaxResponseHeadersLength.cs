@@ -73,6 +73,7 @@ namespace System.Net.Http.Functional.Tests
         [InlineData(15)]
         public async Task LargeSingleHeader_ThrowsException(int maxResponseHeadersLength)
         {
+            var semaphore = new SemaphoreSlim(0);
             using HttpClientHandler handler = CreateHttpClientHandler();
             handler.MaxResponseHeadersLength = maxResponseHeadersLength;
 
@@ -85,6 +86,7 @@ namespace System.Net.Http.Functional.Tests
                 {
                     Assert.Contains((handler.MaxResponseHeadersLength * 1024).ToString(), e.ToString());
                 }
+                await semaphore.WaitAsync();
             },
             async server =>
             {
@@ -97,6 +99,10 @@ namespace System.Net.Http.Functional.Tests
 #if !WINHTTPHANDLER_TEST
                 catch (QuicException ex) when (ex.QuicError == QuicError.StreamAborted && ex.ApplicationErrorCode == Http3ExcessiveLoad) {}
 #endif
+                finally
+                {
+                    semaphore.Release();
+                }
             });
         }
 
