@@ -822,7 +822,7 @@ regMaskTP LinearScan::getKillSetForCall(GenTreeCall* call)
 {
     regMaskTP killMask = RBM_CALLEE_TRASH;
 #ifdef TARGET_X86
-    if (needToKillFloatRegs)
+    if (compiler->compFloatingPointUsed)
     {
         if (call->TypeGet() == TYP_DOUBLE)
         {
