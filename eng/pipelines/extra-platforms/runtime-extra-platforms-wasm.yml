@@ -177,7 +177,6 @@ jobs:
         - browser_wasm_win
       nameSuffix: MultiThreaded
       extraBuildArgs: /p:WasmEnableThreads=true /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
-      condition: or(eq(variables.isRollingBuild, true), eq(variables.wasmSingleThreadedBuildOnlyNeededOnDefaultPipeline, true))
       publishArtifactsForWorkload: true
       publishWBT: false
 
