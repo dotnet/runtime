@@ -4175,6 +4175,26 @@ GenTree* Lowering::OptimizeConstCompare(GenTree* cmp)
         }
     }
 
+    // Optimize EQ/NE(op_that_sets_zf, 0) into op_that_sets_zf with GTF_SET_FLAGS + SETCC.
+    LIR::Use use;
+    if (cmp->OperIs(GT_EQ, GT_NE) && op2->IsIntegralConst(0) && op1->SupportsSettingZeroFlag() &&
+        BlockRange().TryGetUse(cmp, &use))
+    {
+        op1->gtFlags |= GTF_SET_FLAGS;
+        op1->SetUnusedValue();
+
+        GenTree* next = cmp->gtNext;
+        BlockRange().Remove(cmp);
+        BlockRange().Remove(op2);
+
+        GenCondition cmpCondition = GenCondition::FromRelop(cmp);
+        GenTreeCC*   setcc        = comp->gtNewCC(GT_SETCC, cmp->TypeGet(), cmpCondition);
+        BlockRange().InsertAfter(op1, setcc);
+
+        use.ReplaceWith(setcc);
+        return next;
+    }
+
     return cmp;
 }
 
@@ -4439,50 +4459,35 @@ bool Lowering::TryLowerConditionToFlagsNode(GenTree* parent, GenTree* condition,
         }
 #endif
 
-        // Optimize EQ/NE(op_that_sets_zf, 0) into op_that_sets_zf with GTF_SET_FLAGS.
-        if (optimizing && relop->OperIs(GT_EQ, GT_NE) && relopOp2->IsIntegralConst(0) &&
-            relopOp1->SupportsSettingZeroFlag() && IsInvariantInRange(relopOp1, parent))
-        {
-            relopOp1->gtFlags |= GTF_SET_FLAGS;
-            relopOp1->SetUnusedValue();
+        relop->gtType = TYP_VOID;
+        relop->gtFlags |= GTF_SET_FLAGS;
 
-            BlockRange().Remove(relopOp1);
-            BlockRange().InsertBefore(parent, relopOp1);
-            BlockRange().Remove(relop);
-            BlockRange().Remove(relopOp2);
+        if (relop->OperIs(GT_EQ, GT_NE, GT_LT, GT_LE, GT_GE, GT_GT))
+        {
+            relop->SetOper(GT_CMP);
+
+            if (cond->PreferSwap())
+            {
+                std::swap(relop->gtOp1, relop->gtOp2);
+                *cond = GenCondition::Swap(*cond);
+            }
         }
+#ifdef TARGET_XARCH
+        else if (relop->OperIs(GT_BITTEST_EQ, GT_BITTEST_NE))
+        {
+            relop->SetOper(GT_BT);
+        }
+#endif
         else
         {
-            relop->gtType = TYP_VOID;
-            relop->gtFlags |= GTF_SET_FLAGS;
+            assert(relop->OperIs(GT_TEST_EQ, GT_TEST_NE));
+            relop->SetOper(GT_TEST);
+        }
 
-            if (relop->OperIs(GT_EQ, GT_NE, GT_LT, GT_LE, GT_GE, GT_GT))
-            {
-                relop->SetOper(GT_CMP);
-
-                if (cond->PreferSwap())
-                {
-                    std::swap(relop->gtOp1, relop->gtOp2);
-                    *cond = GenCondition::Swap(*cond);
-                }
-            }
-#ifdef TARGET_XARCH
-            else if (relop->OperIs(GT_BITTEST_EQ, GT_BITTEST_NE))
-            {
-                relop->SetOper(GT_BT);
-            }
-#endif
-            else
-            {
-                assert(relop->OperIs(GT_TEST_EQ, GT_TEST_NE));
-                relop->SetOper(GT_TEST);
-            }
-
-            if (relop->gtNext != parent)
-            {
-                BlockRange().Remove(relop);
-                BlockRange().InsertBefore(parent, relop);
-            }
+        if (relop->gtNext != parent)
+        {
+            BlockRange().Remove(relop);
+            BlockRange().InsertBefore(parent, relop);
         }
 
         return true;
