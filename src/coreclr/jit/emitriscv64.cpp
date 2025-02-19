@@ -1385,7 +1385,7 @@ void emitter::emitIns_Call(EmitCallType          callType,
 
     // Our stack level should be always greater than the bytes of arguments we push. Just
     // a sanity test.
-    assert((unsigned)abs(argSize) <= codeGen->genStackLevel);
+    assert((unsigned)std::abs(argSize) <= codeGen->genStackLevel);
 
     // Trim out any callee-trashed registers from the live set.
     regMaskTP savedSet = emitGetGCRegsSavedOrModified(methHnd);
@@ -4573,7 +4573,7 @@ void emitter::emitDispIns(
     emitDispInsInstrNum(id);
 
     const BYTE* instr = pCode + writeableOffset;
-    size_t      instrSize;
+    unsigned    instrSize;
     for (size_t i = 0; i < sz; instr += instrSize, i += instrSize, offset += instrSize)
     {
         // TODO-RISCV64: support different size instructions

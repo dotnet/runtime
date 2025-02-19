@@ -163,7 +163,7 @@ void CodeGen::genStackPointerAdjustment(ssize_t spDelta, regNumber tmpReg, bool*
     {
         // spDelta is negative in the prolog, positive in the epilog,
         // but we always tell the unwind codes the positive value.
-        ssize_t  spDeltaAbs    = abs(spDelta);
+        ssize_t  spDeltaAbs    = std::abs(spDelta);
         unsigned unwindSpDelta = (unsigned)spDeltaAbs;
         assert((ssize_t)unwindSpDelta == spDeltaAbs); // make sure that it fits in a unsigned
 
@@ -6362,8 +6362,6 @@ void CodeGen::genIntToIntCast(GenTreeCast* cast)
 
     if ((desc.ExtendKind() != GenIntCastDesc::COPY) || (srcReg != dstReg))
     {
-        instruction ins;
-
         switch (desc.ExtendKind())
         {
             case GenIntCastDesc::ZERO_EXTEND_SMALL_INT:
