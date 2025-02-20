@@ -26,7 +26,7 @@ steps:
       displayName: Build HelloAndroid sample app
     - template: /eng/pipelines/common/upload-artifact-step.yml
       parameters:
-        rootFolder: $(Build.SourcesDirectory)/artifacts/bin/AndroidSampleApp/arm64/Release/android-arm64/publish/apk/bin/HelloAndroid.apk
+        rootFolder: $(Build.SourcesDirectory)/artifacts/bin/AndroidSampleApp/arm64/Release/android-arm64/Bundle/bin/HelloAndroid.apk
         includeRootFolder: true
         displayName: Android Mono Artifacts
         artifactName: AndroidMonoarm64
