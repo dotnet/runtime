@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Text;
 
 namespace System.Net.Http
@@ -13,9 +14,26 @@ namespace System.Net.Http
         public long LastUsedTime { get; set; } = lastUsedTime;
     }
 
-    internal readonly struct CachedCertificateKey(IPAddress address, string host)
+    internal readonly struct CachedCertificateKey : IEquatable<CachedCertificateKey>
     {
-        public IPAddress Address { get; } = address;
-        public string Host { get; } = host;
+        public CachedCertificateKey(IPAddress address, HttpRequestMessage message)
+        {
+            Debug.Assert(message.RequestUri != null);
+            Address = address;
+            Host = message.Headers.Host ?? message.RequestUri.Host;
+        }
+        public IPAddress Address { get; }
+        public string Host { get; }
+
+        public bool Equals(CachedCertificateKey other) =>
+            Address.Equals(other.Address) &&
+            Host == other.Host;
+
+        public override bool Equals(object? obj)
+        {
+            throw new Exception("Unreachable");
+        }
+
+        public override int GetHashCode() => HashCode.Combine(Address, Host);
     }
 }

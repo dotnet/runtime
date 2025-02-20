@@ -139,7 +139,7 @@ namespace System.Net.Http
             Debug.Assert(state.Handler != null);
             Debug.Assert(state.RequestMessage != null);
 
-            if (state.Handler.TryRemoveCertificateFromCache(WinHttpHandler.CreateCachedCertificateKey(connectedIPAddress, state.RequestMessage)))
+            if (state.Handler.TryRemoveCertificateFromCache(new CachedCertificateKey(connectedIPAddress, state.RequestMessage)))
             {
                 if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(state, $"Removed cached certificate for {connectedIPAddress}");
             }
@@ -342,7 +342,7 @@ namespace System.Net.Http
                         }
                     }
 
-                    if (ipAddress is not null && state.Handler.GetCertificateFromCache(WinHttpHandler.CreateCachedCertificateKey(ipAddress, state.RequestMessage), out byte[]? rawCertData) && rawCertData.SequenceEqual(serverCertificate.RawData))
+                    if (ipAddress is not null && state.Handler.GetCertificateFromCache(new CachedCertificateKey(ipAddress, state.RequestMessage), out byte[]? rawCertData) && rawCertData.SequenceEqual(serverCertificate.RawData))
                     {
                         if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(state, $"Skipping certificate validation. ipAddress: {ipAddress}, Thumbprint: {serverCertificate.Thumbprint}");
                         serverCertificate.Dispose();
@@ -375,7 +375,7 @@ namespace System.Net.Http
                         sslPolicyErrors);
                     if (WinHttpHandler.CertificateCachingAppContextSwitchEnabled && result && ipAddress is not null)
                     {
-                        state.Handler.AddCertificateToCache(WinHttpHandler.CreateCachedCertificateKey(ipAddress, state.RequestMessage), serverCertificate.RawData);
+                        state.Handler.AddCertificateToCache(new CachedCertificateKey(ipAddress, state.RequestMessage), serverCertificate.RawData);
                     }
                 }
                 catch (Exception ex)

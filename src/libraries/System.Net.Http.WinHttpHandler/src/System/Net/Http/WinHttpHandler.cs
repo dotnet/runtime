@@ -49,8 +49,8 @@ namespace System.Net.Http
         private static readonly StringWithQualityHeaderValue s_gzipHeaderValue = new StringWithQualityHeaderValue("gzip");
         private static readonly StringWithQualityHeaderValue s_deflateHeaderValue = new StringWithQualityHeaderValue("deflate");
         private static readonly Lazy<bool> s_supportsTls13 = new Lazy<bool>(CheckTls13Support);
-        private static readonly TimeSpan s_cleanCachedCertificateTimeout = TimeSpan.FromSeconds((int?)AppDomain.CurrentDomain.GetData("System.Net.Http.WinHttpCertificateCachingCleanupTimerInterval") ?? 60);
-        private static readonly long s_staleTimeout = ((int?)AppDomain.CurrentDomain.GetData("System.Net.Http.WinHttpCertificateCachingStaleTimeout") ?? (long)s_cleanCachedCertificateTimeout.TotalSeconds) * Stopwatch.Frequency;
+        private static readonly TimeSpan s_cleanCachedCertificateTimeout = TimeSpan.FromMilliseconds((int?)AppDomain.CurrentDomain.GetData("System.Net.Http.WinHttpCertificateCachingCleanupTimerInterval") ?? 60_000);
+        private static readonly long s_staleTimeout = ((int?)AppDomain.CurrentDomain.GetData("System.Net.Http.WinHttpCertificateCachingStaleTimeout") ?? (long)s_cleanCachedCertificateTimeout.TotalSeconds) * Stopwatch.Frequency / 1000;
 
         [ThreadStatic]
         private static StringBuilder? t_requestHeadersBuilder;
@@ -1809,7 +1809,7 @@ namespace System.Net.Http
             {
                 if (IsStale(kvPair.Value.LastUsedTime))
                 {
-                    _cachedCertificates.TryRemove(kvPair.Key, out CachedCertificateValue? _);
+                    _cachedCertificates.TryRemove(kvPair.Key, out _);
                 }
             }
 
@@ -1845,12 +1845,6 @@ namespace System.Net.Http
                     ChangeCleanerTimer(Timeout.InfiniteTimeSpan);
                 }
             }
-        }
-
-        internal static CachedCertificateKey CreateCachedCertificateKey(IPAddress ipAddress, HttpRequestMessage message)
-        {
-            Debug.Assert(message.RequestUri != null);
-            return new(ipAddress, message.Headers.Host ?? message.RequestUri.Host);
         }
     }
 }

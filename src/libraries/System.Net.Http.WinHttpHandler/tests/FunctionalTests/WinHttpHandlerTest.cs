@@ -27,7 +27,7 @@ namespace System.Net.Http.WinHttpHandlerFunctional.Tests
 
         private readonly ITestOutputHelper _output;
 
-        public static IEnumerable<object[]> HttpVersions = [[HttpVersion.Version11], [HttpVersion20.Value]];
+        public static IEnumerable<object[]> HttpVersions = [[HttpVersion.Version11, Configuration.Http.SecureRemoteEchoServer], [HttpVersion20.Value, Configuration.Http.Http2RemoteEchoServer]];
 
         public WinHttpHandlerTest(ITestOutputHelper output)
         {
@@ -74,7 +74,7 @@ namespace System.Net.Http.WinHttpHandlerFunctional.Tests
         [OuterLoop]
         [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [MemberData(nameof(HttpVersions))]
-        public async Task SendAsync_ServerCertificateValidationCallback_CalledOnce(Version version)
+        public async Task SendAsync_ServerCertificateValidationCallback_CalledOnce(Version version, Uri uri)
         {
             await RemoteExecutor.Invoke(async (version) =>
             {
@@ -92,7 +92,7 @@ namespace System.Net.Http.WinHttpHandlerFunctional.Tests
                 {
                     for (int i = 0; i < 5; i++)
                     {
-                        var response = await client.SendAsync(new HttpRequestMessage(HttpMethod.Get, Configuration.Http.SecureRemoteEchoServer)
+                        var response = await client.SendAsync(new HttpRequestMessage(HttpMethod.Get, uri)
                         {
                             Version = Version.Parse(version)
                         });
@@ -107,11 +107,11 @@ namespace System.Net.Http.WinHttpHandlerFunctional.Tests
         [OuterLoop]
         [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [MemberData(nameof(HttpVersions))]
-        public async Task SendAsync_ServerCertificateValidationCallbackCertificateTimerTriggered_CalledTwice(Version version)
+        public async Task SendAsync_ServerCertificateValidationCallbackCertificateTimerTriggered_CalledTwice(Version version, Uri uri)
         {
             await RemoteExecutor.Invoke(async (version) =>
             {
-                const int certificateCacheCleanupInterval = 1;
+                const int certificateCacheCleanupInterval = 10;
                 AppContext.SetSwitch("System.Net.Http.UseWinHttpCertificateCaching", true);
                 AppDomain.CurrentDomain.SetData("System.Net.Http.WinHttpCertificateCachingCleanupTimerInterval", certificateCacheCleanupInterval);
                 AppDomain.CurrentDomain.SetData("System.Net.Http.WinHttpCertificateCachingStaleTimeout", certificateCacheCleanupInterval);
@@ -132,8 +132,8 @@ namespace System.Net.Http.WinHttpHandlerFunctional.Tests
                     });
                     Assert.Equal(HttpStatusCode.OK, response.StatusCode);
                     _ = await response.Content.ReadAsStringAsync();
-                    await Task.Delay(TimeSpan.FromSeconds(certificateCacheCleanupInterval));
-                    response = await client.SendAsync(new HttpRequestMessage(HttpMethod.Get, Configuration.Http.SecureRemoteEchoServer)
+                    await Task.Delay(TimeSpan.FromSeconds(certificateCacheCleanupInterval * 3));
+                    response = await client.SendAsync(new HttpRequestMessage(HttpMethod.Get, uri)
                     {
                         Version = Version.Parse(version)
                     });
@@ -141,7 +141,7 @@ namespace System.Net.Http.WinHttpHandlerFunctional.Tests
                     _ = await response.Content.ReadAsStringAsync();
                     Assert.Equal(2, callbackCount);
                 }
-            }, version.ToString(), options: new RemoteInvokeOptions() { TimeOut = 150_000 }).DisposeAsync();
+            }, version.ToString()).DisposeAsync();
         }
 
         [OuterLoop]
