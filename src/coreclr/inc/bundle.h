@@ -57,10 +57,7 @@ public:
     static BundleFileLocation ProbeAppBundle(const SString& path, bool pathIsBundleRelative = false);
 
 private:
-#if defined(TARGET_ANDROID)
-    SString m_appName;
-#endif
-    SString m_path; // The path to single-file executable
+    SString m_path; // The path to single-file executable or package name/id on Android
     BundleProbeFn *m_probe;
     ExternalAssemblyProbeFn *m_externalAssemblyProbe;
 

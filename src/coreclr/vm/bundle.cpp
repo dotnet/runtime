@@ -49,11 +49,10 @@ Bundle::Bundle(LPCSTR bundlePath, BundleProbeFn *probe, ExternalAssemblyProbeFn*
     _ASSERTE(probe != nullptr || externalAssemblyProbe != nullptr);
     m_probe = probe;
     m_externalAssemblyProbe = externalAssemblyProbe;
-#if defined(TARGET_ANDROID)
-    m_appName.SetUTF8(bundlePath);
-#else
-    m_path.SetUTF8(bundlePath);
 
+    // On Android this is not a real path, but rather the application's package name
+    m_path.SetUTF8(bundlePath);
+#if !defined(TARGET_ANDROID)
     // The bundle-base path is the directory containing the single-file bundle.
     // When the Probe() function searches within the bundle, it masks out the basePath from the assembly-path (if found).
 
