@@ -108,17 +108,6 @@ static void RemoveBoundsChk(Compiler* comp, GenTree** treeUse, Statement* stmt)
     JITDUMP("Before RemoveBoundsChk:\n");
     DISPTREE(*treeUse);
 
-    // If we deal with GT_ARR_LEN(lcl), we can unmark the array length node
-    // as having an NRE. Technically, this should be done by the assertion prop,
-    // but not today, see https://github.com/dotnet/runtime/pull/93531
-    //
-    GenTreeBoundsChk* bndsChk = (*treeUse)->AsBoundsChk();
-    GenTree*          arrObj  = bndsChk->GetArray();
-    if ((arrObj != nullptr) && ((arrObj->gtFlags & GTF_ALL_EFFECT) == 0))
-    {
-        bndsChk->GetArrayLength()->gtFlags &= ~GTF_EXCEPT;
-    }
-
     GenTree* sideEffList = nullptr;
     comp->gtExtractSideEffList(*treeUse, &sideEffList, GTF_SIDE_EFFECT, /*ignoreRoot*/ true);
     *treeUse = (sideEffList != nullptr) ? sideEffList : comp->gtNewNothingNode();
