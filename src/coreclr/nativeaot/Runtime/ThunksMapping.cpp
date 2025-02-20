@@ -25,7 +25,7 @@
 #elif TARGET_LOONGARCH64
 #define THUNK_SIZE  16
 #elif TARGET_RISCV64
-#define THUNK_SIZE  24
+#define THUNK_SIZE  20
 #else
 #define THUNK_SIZE  (2 * OS_PAGE_SIZE) // This will cause RhpGetNumThunksPerBlock to return 0
 #endif
