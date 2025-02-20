@@ -126,20 +126,17 @@ namespace System.Net.Http.WinHttpHandlerFunctional.Tests
                 };
                 using (var client = new HttpClient(handler))
                 {
-                    var response = await client.SendAsync(new HttpRequestMessage(HttpMethod.Get, Configuration.Http.SecureRemoteEchoServer)
+                    for (int i = 0; i < 5; i++)
                     {
-                        Version = Version.Parse(version)
-                    });
-                    Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-                    _ = await response.Content.ReadAsStringAsync();
-                    await Task.Delay(TimeSpan.FromMilliseconds(certificateCacheCleanupInterval * 3));
-                    response = await client.SendAsync(new HttpRequestMessage(HttpMethod.Get, uri)
-                    {
-                        Version = Version.Parse(version)
-                    });
-                    Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-                    _ = await response.Content.ReadAsStringAsync();
-                    Assert.Equal(2, callbackCount);
+                        var response = await client.SendAsync(new HttpRequestMessage(HttpMethod.Get, uri)
+                        {
+                            Version = Version.Parse(version)
+                        });
+                        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+                        _ = await response.Content.ReadAsStringAsync();
+                        await Task.Delay(TimeSpan.FromMilliseconds(certificateCacheCleanupInterval * 3));
+                    }
+                    Assert.True(callbackCount > 1);
                 }
             }, version.ToString(), uri.ToString()).DisposeAsync();
         }

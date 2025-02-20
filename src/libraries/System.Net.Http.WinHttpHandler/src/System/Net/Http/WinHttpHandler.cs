@@ -50,7 +50,7 @@ namespace System.Net.Http
         private static readonly StringWithQualityHeaderValue s_deflateHeaderValue = new StringWithQualityHeaderValue("deflate");
         private static readonly Lazy<bool> s_supportsTls13 = new Lazy<bool>(CheckTls13Support);
         private static readonly TimeSpan s_cleanCachedCertificateTimeout = TimeSpan.FromMilliseconds((int?)AppDomain.CurrentDomain.GetData("System.Net.Http.WinHttpCertificateCachingCleanupTimerInterval") ?? 60_000);
-        private static readonly long s_staleTimeout = ((int?)AppDomain.CurrentDomain.GetData("System.Net.Http.WinHttpCertificateCachingStaleTimeout") ?? (long)s_cleanCachedCertificateTimeout.TotalSeconds) * Stopwatch.Frequency / 1000;
+        private static readonly long s_staleTimeout = (long)(s_cleanCachedCertificateTimeout.TotalSeconds * Stopwatch.Frequency / 1000);
 
         [ThreadStatic]
         private static StringBuilder? t_requestHeadersBuilder;
@@ -1794,6 +1794,7 @@ namespace System.Net.Http
 
         private void ChangeCleanerTimer(TimeSpan timeout)
         {
+            Debug.Assert(Monitor.IsEntered(_lockObject));
             Debug.Assert(_certificateCleanupTimer != null);
             if (_certificateCleanupTimer!.Change(timeout, Timeout.InfiniteTimeSpan))
             {
@@ -1803,8 +1804,6 @@ namespace System.Net.Http
 
         private void ClearStaleCertificates()
         {
-            Debug.Assert(_certificateCleanupTimer != null);
-
             foreach (KeyValuePair<CachedCertificateKey, CachedCertificateValue> kvPair in _cachedCertificates)
             {
                 if (IsStale(kvPair.Value.LastUsedTime))

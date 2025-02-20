@@ -5,13 +5,19 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Text;
+using System.Threading;
 
 namespace System.Net.Http
 {
     internal sealed class CachedCertificateValue(byte[] rawCertificateData, long lastUsedTime)
     {
+        private long _lastUsedTime = lastUsedTime;
         public byte[] RawCertificateData { get; } = rawCertificateData;
-        public long LastUsedTime { get; set; } = lastUsedTime;
+        public long LastUsedTime
+        {
+            get => Volatile.Read(ref _lastUsedTime);
+            set => Volatile.Write(ref _lastUsedTime, value);
+        }
     }
 
     internal readonly struct CachedCertificateKey : IEquatable<CachedCertificateKey>
