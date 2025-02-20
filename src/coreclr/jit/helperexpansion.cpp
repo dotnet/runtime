@@ -2822,6 +2822,7 @@ bool Compiler::fgExpandStackArrayAllocation(BasicBlock* block, Statement* stmt, 
 
     const CorInfoHelpFunc helper         = eeGetHelperNum(call->gtCallMethHnd);
     int                   lengthArgIndex = -1;
+    int                   typeArgIndex   = -1;
 
     switch (helper)
     {
@@ -2830,10 +2831,7 @@ bool Compiler::fgExpandStackArrayAllocation(BasicBlock* block, Statement* stmt, 
         case CORINFO_HELP_NEWARR_1_OBJ:
         case CORINFO_HELP_NEWARR_1_ALIGN8:
             lengthArgIndex = 1;
-            break;
-
-        case CORINFO_HELP_READYTORUN_NEWARR_1:
-            lengthArgIndex = 0;
+            typeArgIndex   = 0;
             break;
 
         default:
@@ -2871,9 +2869,7 @@ bool Compiler::fgExpandStackArrayAllocation(BasicBlock* block, Statement* stmt, 
 
     // Initialize the array method table pointer.
     //
-    CORINFO_CLASS_HANDLE arrayHnd = (CORINFO_CLASS_HANDLE)call->compileTimeHelperArgumentHandle;
-
-    GenTree* const   mt      = gtNewIconEmbClsHndNode(arrayHnd);
+    GenTree* const   mt      = call->gtArgs.GetArgByIndex(typeArgIndex)->GetNode();
     GenTree* const   mtStore = gtNewStoreValueNode(TYP_I_IMPL, stackLocalAddress, mt);
     Statement* const mtStmt  = fgNewStmtFromTree(mtStore);
 
