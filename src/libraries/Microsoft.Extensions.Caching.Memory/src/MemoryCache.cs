@@ -207,12 +207,9 @@ namespace Microsoft.Extensions.Caching.Memory
             ThrowHelper.ThrowIfNull(key);
 
             CheckDisposed();
-
-            DateTime utcNow = UtcNow;
-
             CoherentState coherentState = _coherentState; // Clear() can update the reference in the meantime
             coherentState.TryGetValue(key, out CacheEntry? entry); // note we rely on documented "default when fails" contract re the out
-            return PostProcessTryGetValue(coherentState, utcNow, entry, out result);
+            return PostProcessTryGetValue(coherentState, entry, out result);
         }
 
 #if NET9_0_OR_GREATER
@@ -227,12 +224,9 @@ namespace Microsoft.Extensions.Caching.Memory
         public bool TryGetValue(ReadOnlySpan<char> key, out object? value)
         {
             CheckDisposed();
-
-            DateTime utcNow = UtcNow;
-
             CoherentState coherentState = _coherentState; // Clear() can update the reference in the meantime
             coherentState.TryGetValue(key, out CacheEntry? entry); // note we rely on documented "default when fails" contract re the out
-            return PostProcessTryGetValue(coherentState, utcNow, entry, out value);
+            return PostProcessTryGetValue(coherentState, entry, out value);
         }
 
         /// <summary>
@@ -267,10 +261,10 @@ namespace Microsoft.Extensions.Caching.Memory
         }
 #endif
 
-        private bool PostProcessTryGetValue(CoherentState coherentState, DateTime utcNow, CacheEntry? entry, out object? result)
+        private bool PostProcessTryGetValue(CoherentState coherentState, CacheEntry? entry, out object? result)
         {
             // shared "get value" logic
-
+            DateTime utcNow = UtcNow;
             if (entry is not null)
             {
                 // Check if expired due to expiration tokens, timers, etc. and if so, remove it.
