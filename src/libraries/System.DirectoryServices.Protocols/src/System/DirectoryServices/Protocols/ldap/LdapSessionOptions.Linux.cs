@@ -55,12 +55,6 @@ namespace System.DirectoryServices.Protocols
             }
         }
 
-        public int ProtocolVersion
-        {
-            get => GetPtrValueHelper(LdapOption.LDAP_OPT_VERSION).ToInt32();
-            set => SetPtrValueHelper(LdapOption.LDAP_OPT_VERSION, new IntPtr(value));
-        }
-
         public ReferralChasingOptions ReferralChasing
         {
             get

@@ -24,6 +24,15 @@ namespace System.Linq.Tests
             AssertExtensions.Throws<ArgumentNullException>("predicate", () => AsyncEnumerable.TakeWhile(AsyncEnumerable.Empty<int>(), (Func<int, int, CancellationToken, ValueTask<bool>>)null));
         }
 
+        [Fact]
+        public void Empty_ProducesEmpty() // validating an optimization / implementation detail
+        {
+            Assert.Same(AsyncEnumerable.Empty<string>(), AsyncEnumerable.Empty<string>().TakeWhile(i => true));
+            Assert.Same(AsyncEnumerable.Empty<string>(), AsyncEnumerable.Empty<string>().TakeWhile((i, index) => true));
+            Assert.Same(AsyncEnumerable.Empty<string>(), AsyncEnumerable.Empty<string>().TakeWhile(async (i, ct) => true));
+            Assert.Same(AsyncEnumerable.Empty<string>(), AsyncEnumerable.Empty<string>().TakeWhile(async (i, index, ct) => true));
+        }
+
         [Theory]
         [InlineData(new int[0])]
         [InlineData(new int[] { 42 })]

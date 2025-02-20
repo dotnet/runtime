@@ -836,8 +836,6 @@ namespace Internal.JitInterface
             // Size of the Frame structure inside IL stubs that include secret stub arg in the frame
             public uint sizeWithSecretStubArg;
 
-            public uint offsetOfGSCookie;
-            public uint offsetOfFrameVptr;
             public uint offsetOfFrameLink;
             public uint offsetOfCallSiteSP;
             public uint offsetOfCalleeSavedFP;

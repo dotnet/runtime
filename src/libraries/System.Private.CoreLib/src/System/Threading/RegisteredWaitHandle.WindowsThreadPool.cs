@@ -20,7 +20,7 @@ namespace System.Threading
         private bool _unregistering;
 
         // Handle to this object to keep it alive
-        private GCHandle _gcHandle;
+        private GCHandle<RegisteredWaitHandle> _gcHandle;
 
         // Pointer to the TP_WAIT structure
         private IntPtr _tpWait;
@@ -40,13 +40,13 @@ namespace System.Threading
             _repeating = repeating;
 
             // Allocate _gcHandle and _tpWait as the last step and make sure they are never leaked
-            _gcHandle = GCHandle.Alloc(this);
+            _gcHandle = new GCHandle<RegisteredWaitHandle>(this);
 
-            _tpWait = Interop.Kernel32.CreateThreadpoolWait(&RegisteredWaitCallback, (IntPtr)_gcHandle, IntPtr.Zero);
+            _tpWait = Interop.Kernel32.CreateThreadpoolWait(&RegisteredWaitCallback, GCHandle<RegisteredWaitHandle>.ToIntPtr(_gcHandle), IntPtr.Zero);
 
             if (_tpWait == IntPtr.Zero)
             {
-                _gcHandle.Free();
+                _gcHandle.Dispose();
                 throw new OutOfMemoryException();
             }
 
@@ -60,9 +60,9 @@ namespace System.Threading
         {
             var wrapper = ThreadPoolCallbackWrapper.Enter();
 
-            GCHandle handle = (GCHandle)context;
-            RegisteredWaitHandle registeredWaitHandle = (RegisteredWaitHandle)handle.Target!;
-            Debug.Assert((handle == registeredWaitHandle._gcHandle) && (wait == registeredWaitHandle._tpWait));
+            GCHandle<RegisteredWaitHandle> handle = GCHandle<RegisteredWaitHandle>.FromIntPtr(context);
+            RegisteredWaitHandle registeredWaitHandle = handle.Target;
+            Debug.Assert((handle.Equals(registeredWaitHandle._gcHandle)) && (wait == registeredWaitHandle._tpWait));
 
             bool timedOut = (waitResult == (uint)Interop.Kernel32.WAIT_TIMEOUT);
             registeredWaitHandle.PerformCallbackWindowsThreadPool(timedOut);
@@ -90,7 +90,7 @@ namespace System.Threading
                     {
                         // This wait will not be fired again. Free the GC handle to allow the GC to collect this object.
                         Debug.Assert(_gcHandle.IsAllocated);
-                        _gcHandle.Free();
+                        _gcHandle.Dispose();
                     }
                 }
             }
@@ -160,10 +160,7 @@ namespace System.Threading
             Interop.Kernel32.CloseThreadpoolWait(_tpWait);
             _tpWait = IntPtr.Zero;
 
-            if (_gcHandle.IsAllocated)
-            {
-                _gcHandle.Free();
-            }
+            _gcHandle.Dispose();
 
             Debug.Assert(_waitHandle != null);
             _waitHandle.DangerousRelease();
