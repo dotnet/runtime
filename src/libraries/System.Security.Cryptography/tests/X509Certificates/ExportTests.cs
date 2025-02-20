@@ -834,7 +834,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                         AssertEncryptionAlgorithm(epki.EncryptionAlgorithm);
                         keys++;
                     }
-                    else if (safeBag is Pkcs12CertBag && wasEncryptedSafe)
+                    else if (safeBag is Pkcs12CertBag && (wasEncryptedSafe || PlatformDetection.IsWindows))
                     {
                         certs++;
                     }
