@@ -2853,12 +2853,25 @@ static void
 insert_samplepoint (MonoCompile *cfg, MonoBasicBlock *bblock)
 {
 	if (cfg->verbose_level > 1)
-		printf ("ADDING SAMPLE POINT TO BB %d\n", bblock->block_num);
+		printf ("ADDING SAMPLE POINT TO BB%d\n", bblock->block_num);
 
+	// store the previous instruction list and make the bb empty
+	MonoInst *begin = bblock->code;
+	MonoInst *end = bblock->last_ins;
+	bblock->code = bblock->last_ins = NULL;
+
+	// insert the samplepoint at the start of the bb
 	MonoBasicBlock *prev_cbb = cfg->cbb;
 	cfg->cbb = bblock;
 	mini_profiler_emit_samplepoint (cfg);
 	cfg->cbb = prev_cbb;
+	
+	// append the previous instruction list to the end of the bb
+	if (begin) {
+		begin->prev = bblock->last_ins;
+		bblock->last_ins->next = begin;
+		bblock->last_ins = end;
+	}
 }
 
 static void
