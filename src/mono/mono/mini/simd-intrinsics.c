@@ -1667,6 +1667,7 @@ static guint16 sri_vector_methods [] = {
 	SN_Negate,
 	SN_OnesComplement,
 	SN_Shuffle,
+	SN_ShuffleNative,
 	SN_Sqrt,
 	SN_Subtract,
 	SN_Sum,
@@ -3003,7 +3004,8 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 			return NULL;
 		return emit_simd_ins_for_unary_op (cfg, klass, fsig, args, arg0_type, id);
 	}
-	case SN_Shuffle: {
+	case SN_Shuffle:
+	case SN_ShuffleNative: {
 		MonoType *etype = get_vector_t_elem_type (fsig->ret);
 		if (!MONO_TYPE_IS_VECTOR_PRIMITIVE (etype))
 			return NULL;
@@ -3049,7 +3051,7 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 			if (vector_size != 128) {
 				return NULL;
 			}
-			if (!is_xconst (args [1])) {
+			if (!is_xconst (args [1]) && id != SN_ShuffleNative) {
 				return NULL;
 			}
 			MonoType *op_etype = etype;
@@ -3057,6 +3059,16 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 			int vsize = mono_class_value_size (klass, NULL);
 			int esize = mono_class_value_size (mono_class_from_mono_type_internal (etype), NULL);
 			int ecount = vsize / esize;
+			if (id == SN_ShuffleNative) {
+				if (ecount != 16) {
+					return NULL;
+				} else {
+					if (!is_SIMD_feature_supported (cfg, MONO_CPU_X86_SSSE3)) {
+						return NULL;
+					}
+					return emit_simd_ins_for_sig (cfg, klass, OP_XOP_OVR_X_X_X, INTRINS_SSE_PSHUFB, 0, fsig, args);
+				}
+			}
 			g_assert ((ecount == 2) || (ecount == 4) || (ecount == 8) || (ecount == 16));
 			guint8 control = 0;
 			gboolean needs_zero = false;
