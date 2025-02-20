@@ -301,6 +301,7 @@ namespace System.Reflection.Tests
         [Theory]
         [InlineData(typeof(List<>))]
         [InlineData(typeof(Span<>))]
+        [InlineData(typeof(GenericType<>.GenericEnum))]
         public static void MakeSignatureConstructedGenericType(Type genericTypeDefinition)
         {
             Type gmp = Type.MakeGenericMethodParameter(5);
@@ -313,7 +314,7 @@ namespace System.Reflection.Tests
                     Assert.Equal(genericTypeDefinition, t.GetGenericTypeDefinition());
                     Assert.Equal(1, t.GenericTypeArguments.Length);
                     Assert.Equal(genericTypeDefinition.IsValueType, t.IsValueType);
-                    Assert.False(t.IsEnum);
+                    Assert.Equal(genericTypeDefinition.IsEnum, t.IsEnum);
 
                     Type et = t.GenericTypeArguments[0];
                     Assert.True(et.IsSignatureType);
@@ -425,6 +426,13 @@ namespace System.Reflection.Tests
 
         private class NoOneSubclasses { }
         private class NoOneSubclassesThisEither { }
+
+        private class GenericType<T>
+        {
+            public enum GenericEnum
+            {
+            }
+        }
 
         private static void TestSignatureTypeInvariants(Type type)
         {

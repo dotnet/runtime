@@ -32,7 +32,7 @@ namespace System.Reflection
         protected sealed override bool IsArrayImpl() => false;
         protected sealed override bool IsByRefImpl() => false;
         public sealed override bool IsByRefLike => _genericTypeDefinition.IsByRefLike;
-        public sealed override bool IsEnum => false;
+        public sealed override bool IsEnum => _genericTypeDefinition.IsEnum;
         protected sealed override bool IsPointerImpl() => false;
         public sealed override bool IsSZArray => false;
         public sealed override bool IsVariableBoundArray => false;
