@@ -249,9 +249,6 @@ extern "C"
 NOINLINE
 DLLEXPORT
 int coreclr_initialize(
-#if defined(TARGET_ANDROID)
-            host_runtime_contract* contract,
-#endif
             const char* exePath,
             const char* appDomainFriendlyName,
             int propertyCount,
@@ -266,7 +263,7 @@ int coreclr_initialize(
     LPCWSTR* propertyValuesW;
     BundleProbeFn* bundleProbe = nullptr;
     PInvokeOverrideFn* pinvokeOverride = nullptr;
-    host_runtime_contract* hostContract = contract;
+    host_runtime_contract* hostContract = nullptr;
 
 #ifdef TARGET_UNIX
     HostingApiFrameHolder apiFrameHolder(_ReturnAddress());
@@ -311,7 +308,7 @@ int coreclr_initialize(
 
     ConstWStringHolder appDomainFriendlyNameW = StringToUnicode(appDomainFriendlyName);
 
-    ExternalAssemblyProbeFn* externalAssemblyProbe = contract != nullptr ? contract->external_assembly_probe : nullptr;
+    ExternalAssemblyProbeFn* externalAssemblyProbe = hostContract != nullptr ? hostContract->external_assembly_probe : nullptr;
     if (bundleProbe != nullptr || externalAssemblyProbe != nullptr)
     {
         static Bundle bundle(exePath, bundleProbe, externalAssemblyProbe);

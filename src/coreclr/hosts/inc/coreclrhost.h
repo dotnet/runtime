@@ -50,9 +50,6 @@
 //  HRESULT indicating status of the operation. S_OK if the assembly was successfully executed
 //
 CORECLR_HOSTING_API(coreclr_initialize,
-#if defined(TARGET_ANDROID)
-            host_runtime_contract* contract,
-#endif
             const char* exePath,
             const char* appDomainFriendlyName,
             int propertyCount,
