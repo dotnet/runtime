@@ -37,7 +37,6 @@
 // Initialize the CoreCLR. Creates and starts CoreCLR host and creates an app domain
 //
 // Parameters:
-//  hostContract            - (Android only) pointer to the host contract structure
 //  exePath                 - Absolute path of the executable that invoked the ExecuteAssembly (the native host application)
 //  appDomainFriendlyName   - Friendly name of the app domain that will be created to execute the assembly
 //  propertyCount           - Number of properties (elements of the following two arguments)
