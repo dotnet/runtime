@@ -5062,65 +5062,61 @@ bool Compiler::ThreeOptLayout::ReorderBlockList()
         lastHotBlocks[HBtab->ebdTryBeg->bbTryIndex] = HBtab->ebdTryBeg;
     }
 
-    // Reorder the block list
+    // Reorder the block list.
+    JITDUMP("Reordering block list\n");
     bool modified = false;
     for (unsigned i = 1; i < numCandidateBlocks; i++)
     {
         BasicBlock* const block          = blockOrder[i - 1];
-        BasicBlock* const next           = blockOrder[i];
+        BasicBlock* const blockToMove    = blockOrder[i];
         lastHotBlocks[block->bbTryIndex] = block;
 
-        // Don't move try region entries yet.
-        // We will move entire try regions after.
-        if (compiler->bbIsTryBeg(next))
+        // Don't move call-finally pair tails independently.
+        // When we encounter the head, we will move the entire pair.
+        if (blockToMove->isBBCallFinallyPairTail())
         {
             continue;
         }
 
-        // If 'block' and 'next' are in the same region, we should have no problem creating fallthrough.
-        // If they aren't, then we will pick the last hot block we saw in the same region as 'next' to insert after.
-        BasicBlock* insertionPoint = lastHotBlocks[next->bbTryIndex];
-        assert(insertionPoint != nullptr);
-        assert((block == insertionPoint) || !BasicBlock::sameTryRegion(block, next));
-
-        // Nothing to do if we already fall through.
-        if (insertionPoint->NextIs(next))
+        // Only reorder blocks within the same try region. We don't want to make them non-contiguous.
+        if (compiler->bbIsTryBeg(blockToMove))
         {
             continue;
         }
 
-        // Don't break up call-finally pairs.
+        // If these blocks aren't in the same try region, use the last block seen in the same region as 'blockToMove'
+        // for the insertion point.
+        // This will push the region containing 'block' down the method, but we will fix this after.
+        BasicBlock* insertionPoint =
+            BasicBlock::sameTryRegion(block, blockToMove) ? block : lastHotBlocks[blockToMove->bbTryIndex];
+
+        // Don't break up call-finally pairs by inserting something in the middle.
         if (insertionPoint->isBBCallFinallyPair())
         {
             insertionPoint = insertionPoint->Next();
-            assert(insertionPoint != next);
+            assert(blockToMove != insertionPoint);
         }
 
-        // Move call-finally pairs in tandem.
-        if (next->isBBCallFinallyPair())
+        if (insertionPoint->NextIs(blockToMove))
         {
-            BasicBlock* const callFinallyTail = next->Next();
-            if (callFinallyTail != insertionPoint)
-            {
-                compiler->fgUnlinkRange(next, callFinallyTail);
-                compiler->fgMoveBlocksAfter(next, callFinallyTail, insertionPoint);
-                modified = true;
-            }
+            continue;
         }
-        else if (next->isBBCallFinallyPairTail())
+
+        // Move call-finallies together.
+        if (blockToMove->isBBCallFinallyPair())
         {
-            BasicBlock* const callFinally = next->Prev();
-            if (callFinally != insertionPoint)
+            BasicBlock* const callFinallyRet = blockToMove->Next();
+            if (callFinallyRet != insertionPoint)
             {
-                compiler->fgUnlinkRange(callFinally, next);
-                compiler->fgMoveBlocksAfter(callFinally, next, insertionPoint);
+                compiler->fgUnlinkRange(blockToMove, callFinallyRet);
+                compiler->fgMoveBlocksAfter(blockToMove, callFinallyRet, insertionPoint);
                 modified = true;
             }
         }
         else
         {
-            compiler->fgUnlinkBlock(next);
-            compiler->fgInsertBBafter(insertionPoint, next);
+            compiler->fgUnlinkBlock(blockToMove);
+            compiler->fgInsertBBafter(insertionPoint, blockToMove);
             modified = true;
         }
     }
@@ -5130,13 +5126,13 @@ bool Compiler::ThreeOptLayout::ReorderBlockList()
         return modified;
     }
 
-    lastHotBlocks[blockOrder[numCandidateBlocks - 1]->bbTryIndex] = blockOrder[numCandidateBlocks - 1];
-
     // If we reordered within any try regions, make sure the EH table is up-to-date.
     if (modified)
     {
         compiler->fgFindEHRegionEnds();
     }
+
+    JITDUMP("Moving try regions\n");
 
     // We only ordered blocks within regions above.
     // Now, move entire try regions up to their ideal predecessors, if possible.
@@ -5152,24 +5148,15 @@ bool Compiler::ThreeOptLayout::ReorderBlockList()
         }
 
         // We will try using 3-opt's chosen predecessor for the try region.
-        BasicBlock* insertionPoint = blockOrder[tryBeg->bbPreorderNum - 1];
-        unsigned    parentIndex =
+        BasicBlock*    insertionPoint = blockOrder[tryBeg->bbPreorderNum - 1];
+        const unsigned parentIndex =
             insertionPoint->hasTryIndex() ? insertionPoint->getTryIndex() : EHblkDsc::NO_ENCLOSING_INDEX;
 
         // Can we move this try to after 'insertionPoint' without breaking EH nesting invariants?
         if (parentIndex != HBtab->ebdEnclosingTryIndex)
         {
-            // We cannot. Instead, get the last hot block in the parent region.
-            parentIndex =
-                (HBtab->ebdEnclosingTryIndex != EHblkDsc::NO_ENCLOSING_INDEX) ? (HBtab->ebdEnclosingTryIndex + 1) : 0;
-            insertionPoint = lastHotBlocks[parentIndex];
-
-            // If the parent of this try region is the same as it, it won't have an entry in 'lastHotBlocks'.
-            // Tolerate this.
-            if (insertionPoint == nullptr)
-            {
-                continue;
-            }
+            // We cannot.
+            continue;
         }
 
         // Don't break up call-finally pairs.
@@ -5184,32 +5171,11 @@ bool Compiler::ThreeOptLayout::ReorderBlockList()
             continue;
         }
 
-        BasicBlock* const tryBegPrev = tryBeg->Prev();
         BasicBlock* const tryLast    = HBtab->ebdTryLast;
         compiler->fgUnlinkRange(tryBeg, tryLast);
         compiler->fgMoveBlocksAfter(tryBeg, tryLast, insertionPoint);
         modified = true;
-
-        // If this region's parents also end on 'tryLast',
-        // update the parents' end pointers to 'tryBegPrev', since we moved this region up within its parents.
-        for (unsigned tryIndex = compiler->ehGetEnclosingTryIndex(tryBeg->getTryIndex());
-             tryIndex != EHblkDsc::NO_ENCLOSING_INDEX; tryIndex = compiler->ehGetEnclosingTryIndex(tryIndex))
-        {
-            EHblkDsc* const parentTab = compiler->ehGetDsc(tryIndex);
-            if (parentTab->ebdTryLast == tryLast)
-            {
-                // Tolerate parent regions that are identical to the child region.
-                if (parentTab->ebdTryBeg != tryBeg)
-                {
-                    parentTab->ebdTryLast = tryBegPrev;
-                }
-            }
-            else
-            {
-                // No need to continue searching if the parent region's end block differs from the child region's.
-                break;
-            }
-        }
+        compiler->fgFindEHRegionEnds();
     }
 
     return modified;
