@@ -17,12 +17,13 @@ while true; do
   current_time=$(date +%s)
   elapsed_time=$((current_time - start_time))
 
-  if [ $elapsed_time -ge 1200 ] && [ "$triggered" = false ]; then
+  if [ $elapsed_time -ge 360 ] && [ "$triggered" = false ]; then
     triggered=true
+    echo "--------installing---------"
     sudo dotnet tool install --global dotnet-trace
-    export pid=$(ps aux | grep "dotnet" | sort -nrk 4 | awk 'NR==1{print $2}')
-    echo "--------collecting---------"
-    dotnet-trace collect --profile gc-collect -p "$msb" --duration 00:20:00 --output $CurrentRepoSourceBuildArtifactsPackagesDir/trace.nettrace
+    export pid=$(ps aux | grep "noautoresponse" | sort -nrk 4 | awk 'NR==1{print $2}')
+    echo "--------collecting $pid ---------"
+    dotnet-trace collect --profile gc-collect -p "$pid" --duration 00:01:00 --output $CurrentRepoSourceBuildArtifactsPackagesDir/trace.nettrace
     echo "--------end collecting---------"
   fi
 done
