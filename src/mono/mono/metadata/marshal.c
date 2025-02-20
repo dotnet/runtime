@@ -1347,15 +1347,15 @@ handle_enum:
 	case MONO_TYPE_R8:
 		return CEE_LDIND_R8;
 	case MONO_TYPE_VALUETYPE:
-		if (m_class_is_enumtype (type->data.klass)) {
-			type = mono_class_enum_basetype_internal (type->data.klass);
+		if (m_class_is_enumtype (m_type_data_get_klass_unchecked (type))) {
+			type = mono_class_enum_basetype_internal (m_type_data_get_klass_unchecked (type));
 			goto handle_enum;
 		}
 		return CEE_LDOBJ;
 	case MONO_TYPE_TYPEDBYREF:
 		return CEE_LDOBJ;
 	case MONO_TYPE_GENERICINST:
-		type = m_class_get_byval_arg (type->data.generic_class->container_class);
+		type = m_class_get_byval_arg (m_type_data_get_generic_class_unchecked (type)->container_class);
 		goto handle_enum;
 	default:
 		g_error ("unknown type 0x%02x in type_to_ldind", type->type);
@@ -1401,15 +1401,15 @@ handle_enum:
 	case MONO_TYPE_R8:
 		return CEE_STIND_R8;
 	case MONO_TYPE_VALUETYPE:
-		if (m_class_is_enumtype (type->data.klass)) {
-			type = mono_class_enum_basetype_internal (type->data.klass);
+		if (m_class_is_enumtype (m_type_data_get_klass_unchecked (type))) {
+			type = mono_class_enum_basetype_internal (m_type_data_get_klass_unchecked (type));
 			goto handle_enum;
 		}
 		return CEE_STOBJ;
 	case MONO_TYPE_TYPEDBYREF:
 		return CEE_STOBJ;
 	case MONO_TYPE_GENERICINST:
-		type = m_class_get_byval_arg (type->data.generic_class->container_class);
+		type = m_class_get_byval_arg (m_type_data_get_generic_class_unchecked (type)->container_class);
 		goto handle_enum;
 	default:
 		g_error ("unknown type 0x%02x in type_to_stind", type->type);
@@ -1602,7 +1602,7 @@ mono_marshal_need_free (MonoType *t, MonoMethodPInvoke *piinfo, MonoMarshalSpec 
 		return TRUE;
 	case MONO_TYPE_OBJECT:
 	case MONO_TYPE_CLASS:
-		if (t->data.klass == mono_class_try_get_stringbuilder_class ()) {
+		if (m_type_data_get_klass_unchecked (t) == mono_class_try_get_stringbuilder_class ()) {
 			gboolean need_free;
 			mono_marshal_get_ptr_to_stringbuilder_conv (piinfo, spec, &need_free);
 			return need_free;
@@ -2495,8 +2495,8 @@ handle_enum:
 	case MONO_TYPE_U:
 		return mono_get_int_type ();
 	case MONO_TYPE_VALUETYPE:
-		if (m_class_is_enumtype (t->data.klass)) {
-			t = mono_class_enum_basetype_internal (t->data.klass);
+		if (m_class_is_enumtype (m_type_data_get_klass_unchecked (t))) {
+			t = mono_class_enum_basetype_internal (m_type_data_get_klass_unchecked (t));
 			goto handle_enum;
 		}
 		return t;
@@ -5364,7 +5364,7 @@ mono_marshal_get_unsafe_accessor_wrapper (MonoMethod *accessor_method, MonoUnsaf
 			return res;
 	}
 	// printf ("Cache miss\n");
-	
+
 	mb = mono_mb_new (accessor_method->klass, accessor_method->name, MONO_WRAPPER_OTHER);
 	if (generic_wrapper) {
 		// If the accessor method was generic, make the wrapper generic, too.
@@ -6325,7 +6325,7 @@ mono_marshal_asany_impl (MonoObjectHandle o, MonoMarshalNative string_encoding, 
 	case MONO_TYPE_CLASS:
 	case MONO_TYPE_VALUETYPE: {
 
-		MonoClass *klass = t->data.klass;
+		MonoClass *klass = m_type_data_get_klass_unchecked (t);
 
 		if (mono_class_is_auto_layout (klass))
 			break;
@@ -6349,7 +6349,8 @@ mono_marshal_asany_impl (MonoObjectHandle o, MonoMarshalNative string_encoding, 
 	}
 	case MONO_TYPE_SZARRAY: {
 		//TODO: Implement structs and in-params for all value types
-		MonoClass *klass = t->data.klass;
+		// FIXME: This appears to be incorrect, t->data->klass is initialized to the eklass. -kg
+		MonoClass *klass = m_type_data_get_klass_unchecked (t);
 		MonoClass *eklass = m_class_get_element_class (klass);
 		MonoArray *arr = (MonoArray *) MONO_HANDLE_RAW (o);
 
@@ -6357,6 +6358,7 @@ mono_marshal_asany_impl (MonoObjectHandle o, MonoMarshalNative string_encoding, 
 		if ((param_attrs & PARAM_ATTRIBUTE_IN) && eklass != mono_get_char_class ())
 			break;
 
+		// FIXME: SZARRAY rank is always 1; this is either never true or is trying to check for T[][,]. I suspect this is just a dead if. -kg
 		if (m_class_get_rank (klass) > 1)
 			break;
 
@@ -6412,7 +6414,7 @@ mono_marshal_free_asany_impl (MonoObjectHandle o, gpointer ptr, MonoMarshalNativ
 		break;
 	case MONO_TYPE_CLASS:
 	case MONO_TYPE_VALUETYPE: {
-		MonoClass *klass = t->data.klass;
+		MonoClass *klass = m_type_data_get_klass_unchecked (t);
 
 		if (m_class_is_valuetype (klass) && (mono_class_is_explicit_layout (klass) || m_class_is_blittable (klass) || m_class_is_enumtype (klass)))
 			break;
@@ -6437,7 +6439,8 @@ mono_marshal_free_asany_impl (MonoObjectHandle o, gpointer ptr, MonoMarshalNativ
 		break;
 	}
 	case MONO_TYPE_SZARRAY: {
-		MonoClass *klass = t->data.klass;
+		// FIXME: t->data->klass should already be the eklass. -kg
+		MonoClass *klass = m_type_data_get_klass_unchecked (t);
 		MonoClass *eklass = m_class_get_element_class (klass);
 		MonoArray *arr = (MonoArray *) MONO_HANDLE_RAW (o);
 
@@ -6446,6 +6449,8 @@ mono_marshal_free_asany_impl (MonoObjectHandle o, gpointer ptr, MonoMarshalNativ
 
 		mono_unichar2 *utf16_array = g_utf8_to_utf16 ((const char *)ptr, arr->max_length, NULL, NULL, NULL);
 		g_free (ptr);
+		// g_utf8_to_utf16 can fail and return NULL. In that case we can't do anything except either continue or crash.
+		g_assert (utf16_array);
 		memcpy (arr->vector, utf16_array, arr->max_length * sizeof (mono_unichar2));
 		g_free (utf16_array);
 		break;
@@ -6751,7 +6756,7 @@ typedef enum {
 	SWIFT_DOUBLE,
 } SwiftPhysicalLoweringKind;
 
-static int get_swift_lowering_alignment (SwiftPhysicalLoweringKind kind) 
+static int get_swift_lowering_alignment (SwiftPhysicalLoweringKind kind)
 {
 	switch (kind) {
 	case SWIFT_INT64:
@@ -6764,19 +6769,19 @@ static int get_swift_lowering_alignment (SwiftPhysicalLoweringKind kind)
 	}
 }
 
-static void set_lowering_range(guint8* lowered_bytes, guint32 offset, guint32 size, SwiftPhysicalLoweringKind kind) 
+static void set_lowering_range(guint8* lowered_bytes, guint32 offset, guint32 size, SwiftPhysicalLoweringKind kind)
 {
 	bool force_opaque = false;
-	
+
 	if (offset != ALIGN_TO(offset, get_swift_lowering_alignment(kind))) {
 		// If the start of the range is not aligned, we need to force the entire range to be opaque.
 		force_opaque = true;
 	}
-	
+
         // Check if any of the range is non-empty.
         // If so, we need to force this range to be opaque
         // and extend the range to the existing tag's range and mark as opaque in addition to the requested range.
-	
+
 	for (guint32 i = 0; i < size; ++i) {
 		SwiftPhysicalLoweringKind current = (SwiftPhysicalLoweringKind)lowered_bytes[offset + i];
 		if (current != SWIFT_EMPTY && current != kind) {
@@ -6796,7 +6801,7 @@ static void set_lowering_range(guint8* lowered_bytes, guint32 offset, guint32 si
 
 static void record_struct_field_physical_lowering (guint8* lowered_bytes, MonoType* type, guint32 offset);
 
-static void record_inlinearray_struct_physical_lowering (guint8* lowered_bytes, MonoClass* klass, guint32 offset) 
+static void record_inlinearray_struct_physical_lowering (guint8* lowered_bytes, MonoClass* klass, guint32 offset)
 {
 	int align;
 	int type_offset = MONO_ABI_SIZEOF (MonoObject);
@@ -6841,7 +6846,7 @@ static void record_struct_physical_lowering (guint8* lowered_bytes, MonoClass* k
 	}
 }
 
-static void record_struct_field_physical_lowering (guint8* lowered_bytes, MonoType* type, guint32 offset) 
+static void record_struct_field_physical_lowering (guint8* lowered_bytes, MonoType* type, guint32 offset)
 {
 	int align;
 
@@ -6864,7 +6869,7 @@ static void record_struct_field_physical_lowering (guint8* lowered_bytes, MonoTy
 		else if (type->type == MONO_TYPE_PTR || type->type == MONO_TYPE_FNPTR
 			|| type->type == MONO_TYPE_I || type->type == MONO_TYPE_U) {
 			kind = SWIFT_INT64;
-		} 
+		}
 #endif
 		else if (type->type == MONO_TYPE_R4) {
 			kind = SWIFT_FLOAT;
@@ -6913,7 +6918,7 @@ mono_marshal_get_swift_physical_lowering (MonoType *type, gboolean native_layout
 	}
 
 	guint8 lowered_bytes[TARGET_SIZEOF_VOID_P * 4] = { 0 };
-	
+
 	// Loop through all fields and get the physical lowering for each field
 	record_struct_physical_lowering(lowered_bytes, klass, 0);
 
@@ -6943,7 +6948,7 @@ mono_marshal_get_swift_physical_lowering (MonoType *type, gboolean native_layout
 			|| (i == ALIGN_TO(i, 8) && (current == SWIFT_DOUBLE || current == SWIFT_INT64))
 			// We've changed interval types
 			|| current != lowered_bytes[i - 1];
-		
+
 		if (start_new_interval) {
 			struct _SwiftInterval interval = { i, 1, current };
 			g_array_append_val(intervals, interval);
@@ -6973,7 +6978,7 @@ mono_marshal_get_swift_physical_lowering (MonoType *type, gboolean native_layout
 	MonoType *lowered_types[4];
 	guint32 offsets[4];
 	guint32 num_lowered_types = 0;
-	
+
 	for (int i = 0; i < intervals->len; ++i) {
 		if (num_lowered_types == 4) {
 			// We can't handle more than 4 fields
@@ -6983,7 +6988,7 @@ mono_marshal_get_swift_physical_lowering (MonoType *type, gboolean native_layout
 		}
 
 		struct _SwiftInterval interval = g_array_index(intervals, struct _SwiftInterval, i);
-		
+
 		offsets[num_lowered_types] = interval.start;
 
 		switch (interval.kind) {

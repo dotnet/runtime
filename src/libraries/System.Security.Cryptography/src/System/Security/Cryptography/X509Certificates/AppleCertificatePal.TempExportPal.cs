@@ -42,6 +42,10 @@ namespace System.Security.Cryptography.X509Certificates
             public byte[] RawData => _realPal.RawData;
             public byte[] Export(X509ContentType contentType, SafePasswordHandle password) =>
                 _realPal.Export(contentType, password);
+            public byte[] ExportPkcs12(Pkcs12ExportPbeParameters exportParameters, SafePasswordHandle password) =>
+                _realPal.ExportPkcs12(exportParameters, password);
+            public byte[] ExportPkcs12(PbeParameters exportParameters, SafePasswordHandle password) =>
+                _realPal.ExportPkcs12(exportParameters, password);
         }
     }
 }

@@ -86,10 +86,7 @@ build_native()
             exit 1
         fi
 
-        # cmake cache scripts can't see command line args
-        export ANDROID_BUILD=1
-
-        cmakeArgs="-C $__RepoRootDir/eng/native/tryrun.cmake $cmakeArgs"
+        cmakeArgs="-DANDROID_BUILD=1 -C $__RepoRootDir/eng/native/tryrun.cmake $cmakeArgs"
         cmakeArgs="-DCMAKE_TOOLCHAIN_FILE=$ANDROID_NDK_ROOT/build/cmake/android.toolchain.cmake -DANDROID_PLATFORM=android-${ANDROID_API_LEVEL} -DANDROID_NATIVE_API_LEVEL=${ANDROID_API_LEVEL} $cmakeArgs"
 
         # Don't try to set CC/CXX in init-compiler.sh - it's handled in android.toolchain.cmake already

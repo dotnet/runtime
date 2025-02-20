@@ -3824,3 +3824,318 @@ bool EnumGcRefsX86(PREGDISPLAY     pContext,
 
     return true;
 }
+
+void ptrArgTP::doBigInit(ChunkType arg)
+{
+    LIMITED_METHOD_DAC_CONTRACT;
+
+    m_vals.m_chunks[0] = arg;
+    m_vals.SetLength(1);
+}
+
+void ptrArgTP::doBigInit(const ptrArgTP& arg)
+{
+    LIMITED_METHOD_DAC_CONTRACT;
+
+    if (arg.isBig())
+    {
+        memcpy(m_vals.m_chunks, arg.m_vals.m_chunks, (sizeof(ChunkType) * arg.m_vals.GetLength()));
+        m_vals.SetLength(arg.m_vals.GetLength());
+    }
+    else
+    {
+        m_val = arg.m_val;
+    }
+}
+
+void ptrArgTP::doBigLeftShiftAssign(unsigned shift)
+{
+    LIMITED_METHOD_DAC_CONTRACT;
+
+    if ((m_val == 0) || (shift == 0))     // Zero is a special case, don't need to do anything
+        return;
+
+    unsigned numWords = shift / CHUNK_BITS;
+    unsigned numBits  = shift % CHUNK_BITS;
+
+    //
+    // Change to Big representation
+    //
+    toBig();
+
+    int       from    = m_vals.GetLength()-1;
+    int       to      = from + numWords;
+    unsigned  newlen  = to + 1;
+
+    ChunkType topBits = 0;
+    if (numBits > 0)
+    {
+        topBits = m_vals.m_chunks[from] >> (CHUNK_BITS - numBits);
+    }
+
+    if (topBits != 0 || numWords != 0)
+    {
+        if (topBits != 0)
+        {
+            m_vals.m_chunks[newlen] = topBits;
+            newlen++;
+        }
+        m_vals.SetLength(newlen);
+    }
+
+    while (to >= 0)
+    {
+        m_vals.m_chunks[to] = (from >= 0) ? (m_vals.m_chunks[from] << numBits) : 0;
+        from--;
+
+        if ((from >= 0) && (numBits > 0))
+        {
+            m_vals.m_chunks[to] |= m_vals.m_chunks[from] >> (CHUNK_BITS - numBits);
+        }
+        to--;
+    }
+
+    // Convert back to small format if necessary
+    if ((newlen == 1) && (m_vals.m_chunks[0] <= MaxVal))
+    {
+        m_val = ChunkType(m_vals.m_chunks[0] << 1);
+    }
+}
+
+void ptrArgTP::doBigRightShiftAssign(unsigned shift)
+{
+    LIMITED_METHOD_DAC_CONTRACT;
+
+    if ((m_val == 0) || (shift == 0))     // Zero is a special case, don't need to do anything
+        return;
+
+    unsigned   numWords = shift / CHUNK_BITS;
+    unsigned   numBits  = shift % CHUNK_BITS;
+
+    //
+    // Change to Big representation
+    //
+    toBig();
+
+    unsigned  from   = numWords;
+    unsigned  to     = 0;
+    unsigned  len    = m_vals.GetLength();
+    unsigned  newlen = len - numWords;
+
+    if (from >= len)
+    {
+        // we always encode zero in short form
+        m_val = 0;
+    }
+    else
+    {
+        m_vals.m_chunks[to] = (m_vals.m_chunks[from] >> numBits);
+        from++;
+
+        while (from < len)
+        {
+            if (numBits > 0)
+            {
+                m_vals.m_chunks[to] |= m_vals.m_chunks[from] << (CHUNK_BITS - numBits);
+            }
+            to++;
+
+            m_vals.m_chunks[to] = (m_vals.m_chunks[from] >> numBits);
+            from++;
+        }
+
+        if ((newlen > 1) && (m_vals.m_chunks[newlen-1] == 0))
+        {
+            newlen--;
+        }
+
+        m_vals.SetLength(newlen);
+
+        // Convert back to small format if necessary
+        if ((newlen == 1) && (m_vals.m_chunks[0] <= MaxVal))
+        {
+            m_val = ChunkType(m_vals.m_chunks[0] << 1);
+        }
+    }
+}
+
+void ptrArgTP::doBigAndAssign(const ptrArgTP& arg)
+{
+    LIMITED_METHOD_DAC_CONTRACT;
+
+    //
+    // Change to Big representation
+    //
+    toBig();
+
+    if (arg.isBig())
+    {
+        bool     isZero = true;   // until proven otherwise
+        unsigned myLen  = m_vals.GetLength();
+        unsigned argLen = arg.m_vals.GetLength();
+
+        if (myLen > argLen)
+        {
+            // shrink our length to match argLen
+            m_vals.SetLength(argLen);
+            myLen = argLen;
+        }
+
+        for (unsigned i = 0; (i < myLen); i++)
+        {
+            ChunkType curChunk = m_vals.m_chunks[i] & arg.m_vals.m_chunks[i];
+            m_vals.m_chunks[i] = curChunk;
+            if (curChunk != 0)
+                isZero = false;
+        }
+
+        if (isZero)
+        {
+            // we always encode zero in short form
+            m_val = 0;
+        }
+    }
+    else
+    {
+        m_val = (m_vals.m_chunks[0] << 1) & arg.m_val;
+    }
+}
+
+void ptrArgTP::doBigOrAssign(const ptrArgTP& arg)
+{
+    LIMITED_METHOD_DAC_CONTRACT;
+
+    //
+    // Change to Big representation
+    //
+    toBig();
+
+    if (arg.isBig())
+    {
+        unsigned myLen  = m_vals.GetLength();
+        unsigned argLen = arg.m_vals.GetLength();
+
+        if (myLen < argLen)
+        {
+            // expand our length to match argLen and zero init
+            memset(m_vals.m_chunks + myLen, 0, sizeof(ChunkType) * (argLen - myLen));
+            m_vals.SetLength(argLen);
+            myLen = argLen;
+        }
+
+        for(unsigned i = 0; ((i < myLen) && (i < argLen)); i++)
+        {
+            m_vals.m_chunks[i] |= arg.m_vals.m_chunks[i];
+        }
+    }
+    else
+    {
+        m_vals.m_chunks[0] |= arg.smallBits();
+    }
+}
+
+void ptrArgTP::doBigDiffAssign(const ptrArgTP& arg)
+{
+    LIMITED_METHOD_DAC_CONTRACT;
+
+    //
+    // Change to Big representation
+    //
+    toBig();
+
+    unsigned myLen  = m_vals.GetLength();
+    unsigned argLen = arg.m_vals.GetLength();
+    bool     isZero = true;                    // until proven otherwise
+
+    for (unsigned i = 0; (i < myLen); i++)
+    {
+        ChunkType nextChunk = m_vals.m_chunks[i];
+        if (i < argLen)
+        {
+            nextChunk &= ~arg.m_vals.m_chunks[i];
+            m_vals.m_chunks[i] = nextChunk;
+        }
+        else if (i == 0)
+        {
+            nextChunk &= ~arg.smallBits();
+            m_vals.m_chunks[i] = nextChunk;
+        }
+
+        if (nextChunk != 0)
+            isZero = false;
+    }
+
+    if (isZero)
+    {
+        // we always encode zero in short form
+        m_val = 0;
+    }
+}
+
+bool ptrArgTP::doBigEquals(const ptrArgTP& arg) const
+{
+    LIMITED_METHOD_DAC_CONTRACT;
+
+    unsigned myLen  = m_vals.GetLength();
+    unsigned argLen = arg.m_vals.GetLength();
+    unsigned maxLen = (myLen >= argLen) ? myLen : argLen;
+
+    for (unsigned i=0; (i < maxLen); i++)
+    {
+        ChunkType myVal  = 0;
+        ChunkType argVal = 0;
+
+        if (i < myLen)
+            myVal = m_vals.m_chunks[i];
+
+        if (i < argLen)
+            argVal = arg.m_vals.m_chunks[i];
+
+        if (i == 0)
+        {
+            if (myLen == 0)
+                myVal = smallBits();
+            if (argLen == 0)
+                argVal = arg.smallBits();
+        }
+
+        if (myVal != argVal)
+            return false;
+    }
+
+    return true;
+}
+
+bool ptrArgTP::doBigIntersect(const ptrArgTP& arg) const
+{
+    LIMITED_METHOD_DAC_CONTRACT;
+
+    unsigned myLen  = m_vals.GetLength();
+    unsigned argLen = arg.m_vals.GetLength();
+    unsigned minLen = (myLen <= argLen) ? myLen : argLen;
+
+    for (unsigned i=0; (i <= minLen); i++)
+    {
+        ChunkType myVal  = 0;
+        ChunkType argVal = 0;
+
+        if (i < myLen)
+            myVal = m_vals.m_chunks[i];
+
+        if (i < argLen)
+            argVal = arg.m_vals.m_chunks[i];
+
+        if (i == 0)
+        {
+            if (myLen == 0)
+                myVal = smallBits();
+            if (argLen == 0)
+                argVal = arg.smallBits();
+        }
+
+        if ((myVal & argVal) != 0)
+            return true;
+    }
+
+    return false;
+}

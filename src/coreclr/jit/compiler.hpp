@@ -1411,14 +1411,14 @@ inline Statement* Compiler::gtNewStmt(GenTree* expr, const DebugInfo& di)
     return stmt;
 }
 
-inline GenTree* Compiler::gtNewOperNode(genTreeOps oper, var_types type, GenTree* op1)
+inline GenTreeUnOp* Compiler::gtNewOperNode(genTreeOps oper, var_types type, GenTree* op1)
 {
     assert((GenTree::OperKind(oper) & (GTK_UNOP | GTK_BINOP)) != 0);
     assert((GenTree::OperKind(oper) & GTK_EXOP) == 0); // Can't use this to construct any types that extend unary/binary
                                                        // operator.
     assert(op1 != nullptr || oper == GT_RETFILT || (oper == GT_RETURN && type == TYP_VOID));
 
-    GenTree* node = new (this, oper) GenTreeOp(oper, type, op1, nullptr);
+    GenTreeUnOp* node = new (this, oper) GenTreeOp(oper, type, op1, nullptr);
 
     return node;
 }
@@ -3024,20 +3024,6 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 */
 
-inline bool Compiler::compCanEncodePtrArgCntMax()
-{
-#ifdef JIT32_GCENCODER
-    // DDB 204533:
-    // The GC encoding for fully interruptible methods does not
-    // support more than 1023 pushed arguments, so we have to
-    // use a partially interruptible GC info/encoding.
-    //
-    return (fgPtrArgCntMax < MAX_PTRARG_OFS);
-#else // JIT32_GCENCODER
-    return true;
-#endif
-}
-
 /*****************************************************************************
  *
  *  Call the given function pointer for all nodes in the tree. The 'visitor'
@@ -4260,8 +4246,9 @@ inline void Compiler::CLR_API_Leave(API_ICorJitInfo_Names ename)
 bool Compiler::fgVarIsNeverZeroInitializedInProlog(unsigned varNum)
 {
     LclVarDsc* varDsc = lvaGetDesc(varNum);
-    bool       result = varDsc->lvIsParam || lvaIsOSRLocal(varNum) || (varNum == lvaGSSecurityCookie) ||
-                  (varNum == lvaInlinedPInvokeFrameVar) || (varNum == lvaStubArgumentVar) || (varNum == lvaRetAddrVar);
+    bool       result = varDsc->lvIsParam || varDsc->lvIsParamRegTarget || lvaIsOSRLocal(varNum) ||
+                  (varNum == lvaGSSecurityCookie) || (varNum == lvaInlinedPInvokeFrameVar) ||
+                  (varNum == lvaStubArgumentVar) || (varNum == lvaRetAddrVar);
 
 #ifdef TARGET_ARM64
     result = result || (varNum == lvaFfrRegister);
@@ -4639,15 +4626,25 @@ inline char* regMaskToString(regMaskTP mask, Compiler* context)
 
 inline void printRegMaskInt(regMaskTP mask)
 {
+    // RBM_ALLINT is not known at compile time on TARGET_AMD64 since it's dependent on APX support. These are used by GC
+    // exclusively
+#if defined(TARGET_AMD64)
+    printf(REG_MASK_INT_FMT, (mask & RBM_ALLINT_ALL).getLow());
+#else  // !TARGET_X86
     printf(REG_MASK_INT_FMT, (mask & RBM_ALLINT).getLow());
+#endif // !TARGET_X86
 }
 
 inline char* regMaskIntToString(regMaskTP mask, Compiler* context)
 {
     const size_t cchRegMask = 24;
     char*        regmask    = new (context, CMK_Unknown) char[cchRegMask];
-
+    // RBM_ALLINT is not known at compile time on TARGET_AMD64 since it's dependent on APX support. Deprecated????
+#if defined(TARGET_AMD64)
+    sprintf_s(regmask, cchRegMask, REG_MASK_INT_FMT, (mask & RBM_ALLINT_ALL).getLow());
+#else  // !TARGET_X86
     sprintf_s(regmask, cchRegMask, REG_MASK_INT_FMT, (mask & RBM_ALLINT).getLow());
+#endif // !TARGET_X86
 
     return regmask;
 }
@@ -5052,12 +5049,22 @@ void Compiler::fgVisitBlocksInLoopAwareRPO(FlowGraphDfsTree* dfsTree, FlowGraphN
         }
     };
 
-    LoopAwareVisitor visitor(dfsTree, loops, func);
-
-    for (unsigned i = dfsTree->GetPostOrderCount(); i != 0; i--)
+    if (loops->NumLoops() == 0)
     {
-        BasicBlock* const block = dfsTree->GetPostOrder(i - 1);
-        visitor.VisitBlock(block);
+        for (unsigned i = dfsTree->GetPostOrderCount(); i != 0; i--)
+        {
+            BasicBlock* const block = dfsTree->GetPostOrder(i - 1);
+            func(block);
+        }
+    }
+    else
+    {
+        LoopAwareVisitor visitor(dfsTree, loops, func);
+        for (unsigned i = dfsTree->GetPostOrderCount(); i != 0; i--)
+        {
+            BasicBlock* const block = dfsTree->GetPostOrder(i - 1);
+            visitor.VisitBlock(block);
+        }
     }
 }
 

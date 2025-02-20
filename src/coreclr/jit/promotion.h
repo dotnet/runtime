@@ -46,7 +46,7 @@ struct AggregateInfo
     jitstd::vector<Replacement> Replacements;
     unsigned                    LclNum;
     // Unpromoted parts of the struct local.
-    StructSegments Unpromoted;
+    SegmentList Unpromoted;
     // Min offset in the struct local of the unpromoted part.
     unsigned UnpromotedMin = 0;
     // Max offset in the struct local of the unpromoted part.
@@ -98,7 +98,7 @@ class Promotion
     friend class PromotionLiveness;
     friend class ReplaceVisitor;
     friend class DecompositionPlan;
-    friend class StructSegments;
+    friend class SegmentList;
 
     void            ExplicitlyZeroInitReplacementLocals(unsigned                           lclNum,
                                                         const jitstd::vector<Replacement>& replacements,
@@ -294,6 +294,9 @@ private:
     void      InsertPreStatementWriteBacks();
     GenTree** InsertMidTreeReadBacks(GenTree** use);
 
+    bool ReplaceStructLocal(GenTree* user, GenTreeLclVarCommon* value);
+    bool ReplaceReturnedStructLocal(GenTreeOp* ret, GenTreeLclVarCommon* value);
+    bool IsReturnProfitableAsFieldList(GenTreeLclVarCommon* value);
     bool ReplaceCallArgWithFieldList(GenTreeCall* call, GenTreeLclVarCommon* callArg);
     bool CanReplaceCallArgWithFieldListOfReplacements(GenTreeCall* call, CallArg* callArg, GenTreeLclVarCommon* lcl);
     void ReadBackAfterCall(GenTreeCall* call, GenTree* user);
