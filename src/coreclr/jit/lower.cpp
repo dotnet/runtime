@@ -1562,7 +1562,7 @@ void Lowering::LowerArg(GenTreeCall* call, CallArg* callArg)
     // If we hit this we are probably double-lowering.
     assert(!arg->OperIsPutArg());
 
-    const ABIPassingInformation& abiInfo = callArg->NewAbiInfo;
+    const ABIPassingInformation& abiInfo = callArg->AbiInfo;
     JITDUMP("Passed in ");
     DBEXEC(comp->verbose, abiInfo.Dump());
 
@@ -1589,7 +1589,7 @@ void Lowering::LowerArg(GenTreeCall* call, CallArg* callArg)
 
     if (varTypeIsLong(arg))
     {
-        assert(callArg->NewAbiInfo.CountRegsAndStackSlots() == 2);
+        assert(callArg->AbiInfo.CountRegsAndStackSlots() == 2);
 
         noway_assert(arg->OperIs(GT_LONG));
         GenTreeFieldList* fieldList = new (comp, GT_FIELD_LIST) GenTreeFieldList();
@@ -3531,14 +3531,10 @@ void Lowering::LowerCFGCall(GenTreeCall* call)
             call->gtArgs.PushLateBack(targetArg);
 
             // Set up ABI information for this arg.
-            targetArg->NewAbiInfo =
+            targetArg->AbiInfo =
                 ABIPassingInformation::FromSegmentByValue(comp,
                                                           ABIPassingSegment::InRegister(REG_DISPATCH_INDIRECT_CALL_ADDR,
                                                                                         0, TARGET_POINTER_SIZE));
-            targetArg->AbiInfo.ArgType = callTarget->TypeGet();
-            targetArg->AbiInfo.SetRegNum(0, REG_DISPATCH_INDIRECT_CALL_ADDR);
-            targetArg->AbiInfo.NumRegs  = 1;
-            targetArg->AbiInfo.ByteSize = TARGET_POINTER_SIZE;
 
             // Lower the newly added args now that call is updated
             LowerArg(call, targetArg);
@@ -4175,6 +4171,26 @@ GenTree* Lowering::OptimizeConstCompare(GenTree* cmp)
         }
     }
 
+    // Optimize EQ/NE(op_that_sets_zf, 0) into op_that_sets_zf with GTF_SET_FLAGS + SETCC.
+    LIR::Use use;
+    if (cmp->OperIs(GT_EQ, GT_NE) && op2->IsIntegralConst(0) && op1->SupportsSettingZeroFlag() &&
+        BlockRange().TryGetUse(cmp, &use))
+    {
+        op1->gtFlags |= GTF_SET_FLAGS;
+        op1->SetUnusedValue();
+
+        GenTree* next = cmp->gtNext;
+        BlockRange().Remove(cmp);
+        BlockRange().Remove(op2);
+
+        GenCondition cmpCondition = GenCondition::FromRelop(cmp);
+        GenTreeCC*   setcc        = comp->gtNewCC(GT_SETCC, cmp->TypeGet(), cmpCondition);
+        BlockRange().InsertAfter(op1, setcc);
+
+        use.ReplaceWith(setcc);
+        return next;
+    }
+
     return cmp;
 }
 
@@ -4439,50 +4455,35 @@ bool Lowering::TryLowerConditionToFlagsNode(GenTree* parent, GenTree* condition,
         }
 #endif
 
-        // Optimize EQ/NE(op_that_sets_zf, 0) into op_that_sets_zf with GTF_SET_FLAGS.
-        if (optimizing && relop->OperIs(GT_EQ, GT_NE) && relopOp2->IsIntegralConst(0) &&
-            relopOp1->SupportsSettingZeroFlag() && IsInvariantInRange(relopOp1, parent))
-        {
-            relopOp1->gtFlags |= GTF_SET_FLAGS;
-            relopOp1->SetUnusedValue();
+        relop->gtType = TYP_VOID;
+        relop->gtFlags |= GTF_SET_FLAGS;
 
-            BlockRange().Remove(relopOp1);
-            BlockRange().InsertBefore(parent, relopOp1);
-            BlockRange().Remove(relop);
-            BlockRange().Remove(relopOp2);
+        if (relop->OperIs(GT_EQ, GT_NE, GT_LT, GT_LE, GT_GE, GT_GT))
+        {
+            relop->SetOper(GT_CMP);
+
+            if (cond->PreferSwap())
+            {
+                std::swap(relop->gtOp1, relop->gtOp2);
+                *cond = GenCondition::Swap(*cond);
+            }
         }
+#ifdef TARGET_XARCH
+        else if (relop->OperIs(GT_BITTEST_EQ, GT_BITTEST_NE))
+        {
+            relop->SetOper(GT_BT);
+        }
+#endif
         else
         {
-            relop->gtType = TYP_VOID;
-            relop->gtFlags |= GTF_SET_FLAGS;
+            assert(relop->OperIs(GT_TEST_EQ, GT_TEST_NE));
+            relop->SetOper(GT_TEST);
+        }
 
-            if (relop->OperIs(GT_EQ, GT_NE, GT_LT, GT_LE, GT_GE, GT_GT))
-            {
-                relop->SetOper(GT_CMP);
-
-                if (cond->PreferSwap())
-                {
-                    std::swap(relop->gtOp1, relop->gtOp2);
-                    *cond = GenCondition::Swap(*cond);
-                }
-            }
-#ifdef TARGET_XARCH
-            else if (relop->OperIs(GT_BITTEST_EQ, GT_BITTEST_NE))
-            {
-                relop->SetOper(GT_BT);
-            }
-#endif
-            else
-            {
-                assert(relop->OperIs(GT_TEST_EQ, GT_TEST_NE));
-                relop->SetOper(GT_TEST);
-            }
-
-            if (relop->gtNext != parent)
-            {
-                BlockRange().Remove(relop);
-                BlockRange().InsertBefore(parent, relop);
-            }
+        if (relop->gtNext != parent)
+        {
+            BlockRange().Remove(relop);
+            BlockRange().InsertBefore(parent, relop);
         }
 
         return true;
@@ -10924,5 +10925,38 @@ void Lowering::FinalizeOutgoingArgSpace()
     comp->lvaOutgoingArgSpaceSize = m_outgoingArgSpaceSize;
     comp->lvaOutgoingArgSpaceSize.MarkAsReadOnly();
     comp->lvaGetDesc(comp->lvaOutgoingArgSpaceVar)->GrowBlockLayout(comp->typGetBlkLayout(m_outgoingArgSpaceSize));
+
+    SetFramePointerFromArgSpaceSize();
 #endif
+}
+
+//----------------------------------------------------------------------------------------------
+// Lowering::SetFramePointerFromArgSpaceSize:
+//   Set the frame pointer from the arg space size. This is a quirk because
+//   StackLevelSetter used to do this even outside x86.
+//
+void Lowering::SetFramePointerFromArgSpaceSize()
+{
+    unsigned stackLevelSpace = m_outgoingArgSpaceSize;
+
+    if (comp->compTailCallUsed)
+    {
+        // StackLevelSetter also used to count tailcalls.
+        for (BasicBlock* block : comp->Blocks())
+        {
+            GenTreeCall* tailCall;
+            if (block->endsWithTailCall(comp, true, false, &tailCall))
+            {
+                stackLevelSpace = max(stackLevelSpace, tailCall->gtArgs.OutgoingArgsStackSize());
+            }
+        }
+    }
+
+    unsigned stackLevel =
+        (max(stackLevelSpace, (unsigned)MIN_ARG_AREA_FOR_CALL) - MIN_ARG_AREA_FOR_CALL) / TARGET_POINTER_SIZE;
+
+    if (stackLevel >= 4)
+    {
+        comp->codeGen->setFramePointerRequired(true);
+    }
 }

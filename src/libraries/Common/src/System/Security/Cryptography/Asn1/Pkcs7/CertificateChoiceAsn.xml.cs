@@ -6,7 +6,7 @@ using System;
 using System.Formats.Asn1;
 using System.Runtime.InteropServices;
 
-namespace System.Security.Cryptography.Pkcs.Asn1
+namespace System.Security.Cryptography.Asn1.Pkcs7
 {
     [StructLayout(LayoutKind.Sequential)]
     internal partial struct CertificateChoiceAsn
@@ -15,7 +15,7 @@ namespace System.Security.Cryptography.Pkcs.Asn1
         internal ReadOnlyMemory<byte>? ExtendedCertificate;
         internal ReadOnlyMemory<byte>? AttributeCertificateV1;
         internal ReadOnlyMemory<byte>? AttributeCertificateV2;
-        internal System.Security.Cryptography.Pkcs.Asn1.OtherCertificateFormat? OtherCertificateFormat;
+        internal System.Security.Cryptography.Asn1.Pkcs7.OtherCertificateFormat? OtherCertificateFormat;
 
 #if DEBUG
         static CertificateChoiceAsn()
@@ -216,8 +216,8 @@ namespace System.Security.Cryptography.Pkcs.Asn1
             }
             else if (tag.HasSameClassAndValue(new Asn1Tag(TagClass.ContextSpecific, 3)))
             {
-                System.Security.Cryptography.Pkcs.Asn1.OtherCertificateFormat tmpOtherCertificateFormat;
-                System.Security.Cryptography.Pkcs.Asn1.OtherCertificateFormat.Decode(ref reader, new Asn1Tag(TagClass.ContextSpecific, 3), rebind, out tmpOtherCertificateFormat);
+                System.Security.Cryptography.Asn1.Pkcs7.OtherCertificateFormat tmpOtherCertificateFormat;
+                System.Security.Cryptography.Asn1.Pkcs7.OtherCertificateFormat.Decode(ref reader, new Asn1Tag(TagClass.ContextSpecific, 3), rebind, out tmpOtherCertificateFormat);
                 decoded.OtherCertificateFormat = tmpOtherCertificateFormat;
 
             }

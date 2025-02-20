@@ -461,6 +461,28 @@ unsigned ABIPassingInformation::CountRegsAndStackSlots() const
 }
 
 //-----------------------------------------------------------------------------
+// StackBytesConsumes:
+//   Count the amount of stack bytes consumed by this argument.
+//
+// Return Value:
+//   Bytes.
+//
+unsigned ABIPassingInformation::StackBytesConsumed() const
+{
+    unsigned numBytes = 0;
+
+    for (const ABIPassingSegment& seg : Segments())
+    {
+        if (seg.IsPassedOnStack())
+        {
+            numBytes += seg.GetStackSize();
+        }
+    }
+
+    return numBytes;
+}
+
+//-----------------------------------------------------------------------------
 // FromSegment:
 //   Create ABIPassingInformation from a single segment.
 //
