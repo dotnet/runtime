@@ -1818,7 +1818,7 @@ BOOL ObjHeader::GetThreadOwningMonitorLock(DWORD *pThreadId, DWORD *pAcquisition
             DWORD holdingThreadId = psb->GetMonitor()->GetHoldingThreadId();
             // If the lock is orphaned during sync block creation, holdingThreadId would be assigned -1.
             // Otherwise it would be the id of the holding thread if there is one or 0 if there isn't.
-            if (holdingThreadId == 0 || holdingThreadId == -1)
+            if (holdingThreadId == 0 || holdingThreadId == (DWORD)-1)
             {
                 *pThreadId = 0;
                 *pAcquisitionCount = 0;
