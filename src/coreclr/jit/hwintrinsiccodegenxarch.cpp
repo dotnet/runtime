@@ -1871,6 +1871,79 @@ void CodeGen::genBaseIntrinsic(GenTreeHWIntrinsic* node, insOpts instOptions)
             break;
         }
 
+        case NI_Vector128_op_Division:
+        case NI_Vector256_op_Division:
+        {
+            regNumber maskReg        = internalRegisters.Extract(node, RBM_ALLFLOAT);
+            regNumber cmpReg         = internalRegisters.Extract(node, RBM_ALLFLOAT);
+            regNumber op2Reg         = op2->GetRegNum();
+            emitAttr  typeSize       = emitTypeSize(node->TypeGet());
+            noway_assert(typeSize == EA_16BYTE || typeSize == EA_32BYTE);
+            emitAttr divTypeSize = typeSize == EA_16BYTE ? EA_32BYTE : EA_64BYTE;
+            emit->emitIns_SIMD_R_R_R(INS_xorpd, typeSize, maskReg, maskReg, maskReg, INS_OPTS_NONE);
+            emit->emitIns_SIMD_R_R_R(INS_pcmpeqd, typeSize, maskReg, maskReg, op2Reg, INS_OPTS_NONE);
+            emit->emitIns_R_R(INS_ptest, typeSize, maskReg, maskReg, INS_OPTS_NONE);
+            genJumpToThrowHlpBlk(EJ_jne, SCK_DIV_BY_ZERO);
+
+            CORINFO_FIELD_HANDLE maxValueFld;
+            CORINFO_FIELD_HANDLE negOneFld;
+
+            if (typeSize == EA_16BYTE)
+            {
+                simd16_t maxValueIntVec;
+                maxValueIntVec.i32[0] = INT_MAX;
+                maxValueIntVec.i32[1] = INT_MAX;
+                maxValueIntVec.i32[2] = INT_MAX;
+                maxValueIntVec.i32[3] = INT_MAX;
+
+                simd16_t negOneIntVec;
+                negOneIntVec.i32[0] = -1;
+                negOneIntVec.i32[1] = -1;
+                negOneIntVec.i32[2] = -1;
+                negOneIntVec.i32[3] = -1;
+
+                maxValueFld = emit->emitSimd16Const(maxValueIntVec);
+                negOneFld = emit->emitSimd16Const(negOneIntVec);
+            }
+            else
+            {
+                noway_assert(typeSize == EA_32BYTE);
+                simd32_t maxValueIntVec;
+                maxValueIntVec.i32[0] = INT_MAX;
+                maxValueIntVec.i32[1] = INT_MAX;
+                maxValueIntVec.i32[2] = INT_MAX;
+                maxValueIntVec.i32[3] = INT_MAX;
+                maxValueIntVec.i32[4] = INT_MAX;
+                maxValueIntVec.i32[5] = INT_MAX;
+                maxValueIntVec.i32[6] = INT_MAX;
+                maxValueIntVec.i32[7] = INT_MAX;
+
+                simd32_t negOneIntVec;
+                negOneIntVec.i32[0] = -1;
+                negOneIntVec.i32[1] = -1;
+                negOneIntVec.i32[2] = -1;
+                negOneIntVec.i32[3] = -1;
+                negOneIntVec.i32[4] = -1;
+                negOneIntVec.i32[5] = -1;
+                negOneIntVec.i32[6] = -1;
+                negOneIntVec.i32[7] = -1;
+
+                maxValueFld = emit->emitSimd32Const(maxValueIntVec);
+                negOneFld = emit->emitSimd32Const(negOneIntVec);
+            }
+
+            emit->emitIns_SIMD_R_R_C(INS_pcmpeqd, typeSize, maskReg, op1Reg, maxValueFld, 0, INS_OPTS_NONE);
+            emit->emitIns_SIMD_R_R_C(INS_pcmpeqd, typeSize, cmpReg, op2Reg, negOneFld, 0, INS_OPTS_NONE);
+            emit->emitIns_SIMD_R_R_R(INS_pand, typeSize, maskReg, maskReg, cmpReg, INS_OPTS_NONE);
+            emit->emitIns_R_R(INS_ptest, typeSize, maskReg, maskReg, INS_OPTS_NONE);
+            genJumpToThrowHlpBlk(EJ_jne, SCK_OVERFLOW);
+
+            emit->emitIns_R_R(INS_cvtdq2pd, divTypeSize, op1Reg, op1Reg, INS_OPTS_NONE);
+            emit->emitIns_R_R(INS_cvtdq2pd, divTypeSize, op2Reg, op2Reg, INS_OPTS_NONE);
+            emit->emitIns_SIMD_R_R_R(INS_divpd, divTypeSize, targetReg, op1Reg, op2->GetRegNum(), instOptions);
+            break;
+        }
+
         default:
         {
             unreached();

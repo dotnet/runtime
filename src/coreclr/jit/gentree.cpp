@@ -248,9 +248,6 @@ void GenTree::InitNodeSize()
     GenTree::s_gtNodeSizes[GT_BOX]           = TREE_NODE_SZ_LARGE;
     GenTree::s_gtNodeSizes[GT_INDEX_ADDR]    = TREE_NODE_SZ_LARGE;
     GenTree::s_gtNodeSizes[GT_BOUNDS_CHECK]  = TREE_NODE_SZ_SMALL;
-#if defined(TARGET_XARCH) && defined(FEATURE_HW_INTRINSICS)
-    GenTree::s_gtNodeSizes[GT_SIMD_DIV_BY_ZERO_CHECK]  = TREE_NODE_SZ_SMALL;
-#endif // defined(TARGET_XARCH) && defined(FEATURE_HW_INTRINSICS)
     GenTree::s_gtNodeSizes[GT_ARR_ELEM]      = TREE_NODE_SZ_LARGE;
     GenTree::s_gtNodeSizes[GT_RET_EXPR]      = TREE_NODE_SZ_LARGE;
     GenTree::s_gtNodeSizes[GT_FIELD_ADDR]    = TREE_NODE_SZ_LARGE;
@@ -3440,12 +3437,6 @@ AGAIN:
                 case GT_BOX:
                 case GT_ARR_ADDR:
                     break;
-
-#if defined(TARGET_XARCH) && defined(FEATURE_HW_INTRINSICS)
-                case GT_SIMD_DIV_BY_ZERO_CHECK:
-                    hash = genTreeHashAdd(hash, tree->AsSIMDDivByZeroChk()->gtThrowKind);
-                    break;
-#endif // defined(TARGET_XARCH) && defined(FEATURE_HW_INTRINSICS)
 
                 default:
                     assert(!"unexpected unary ExOp operator");
@@ -6730,9 +6721,6 @@ bool GenTree::TryGetUse(GenTree* operand, GenTree*** pUse)
         case GT_BSWAP16:
         case GT_KEEPALIVE:
         case GT_INC_SATURATE:
-#if defined(TARGET_XARCH) && defined(FEATURE_HW_INTRINSICS)
-        case GT_SIMD_DIV_BY_ZERO_CHECK:
-#endif // defined(TARGET_XARCH) && defined(FEATURE_HW_INTRINSICS)
             if (operand == this->AsUnOp()->gtOp1)
             {
                 *pUse = &this->AsUnOp()->gtOp1;
@@ -7248,11 +7236,6 @@ ExceptionSetFlags GenTree::OperExceptions(Compiler* comp)
 
             return ExceptionSetFlags::None;
         }
-
-#ifdef TARGET_XARCH
-        case GT_SIMD_DIV_BY_ZERO_CHECK:
-            return ExceptionSetFlags::DivideByZeroException;
-#endif // TARGET_XARCH
 #endif // FEATURE_HW_INTRINSICS
 
         default:
@@ -7286,6 +7269,14 @@ bool GenTree::OperMayThrow(Compiler* comp)
         {
             return true;
         }
+
+#ifdef TARGET_XARCH
+        NamedIntrinsic intrinsicId = this->AsHWIntrinsic()->GetHWIntrinsicId();
+        if (intrinsicId == NI_Vector128_op_Division || intrinsicId == NI_Vector256_op_Division)
+        {
+            return true;
+        }
+#endif // TARGET_XARCH
     }
 #endif // FEATURE_HW_INTRINSICS
 
@@ -10332,9 +10323,6 @@ GenTreeUseEdgeIterator::GenTreeUseEdgeIterator(GenTree* node)
         case GT_BSWAP16:
         case GT_KEEPALIVE:
         case GT_INC_SATURATE:
-#if defined(TARGET_XARCH) && defined(FEATURE_HW_INTRINSICS)
-        case GT_SIMD_DIV_BY_ZERO_CHECK:
-#endif // defined(TARGET_XARCH) && defined(FEATURE_HW_INTRINSICS)
 #if FEATURE_ARG_SPLIT
         case GT_PUTARG_SPLIT:
 #endif // FEATURE_ARG_SPLIT
@@ -21280,8 +21268,6 @@ GenTree* Compiler::gtNewSimdBinOpNode(
 
                 assert(simdSize == 16 || simdSize == 32);
 
-                GenTree* op2Clone = fgMakeMultiUse(&op2);
-
                 NamedIntrinsic intToFloatConvertIntrinsic =
                     simdSize == 16 ? NI_AVX_ConvertToVector256Double : NI_AVX512F_ConvertToVector512Double;
                 NamedIntrinsic floatToIntConvertIntrinsic = simdSize == 16
@@ -21289,20 +21275,14 @@ GenTree* Compiler::gtNewSimdBinOpNode(
                                                                 : NI_AVX512F_ConvertToVector256Int32WithTruncation;
                 var_types      intToFloatConvertType      = simdSize == 16 ? TYP_SIMD32 : TYP_SIMD64;
                 CorInfoType    floatToIntConvertType      = simdSize == 16 ? simdBaseJitType : CORINFO_TYPE_DOUBLE;
-                unsigned int   divideOpSimdSize           = simdSize * 2;
+                NamedIntrinsic divIntrinsic     = simdSize == 16 ? NI_Vector128_op_Division : NI_Vector256_op_Division;
+                unsigned int   divideOpSimdSize = simdSize * 2;
 
-                GenTree* op1Cvt = gtNewSimdHWIntrinsicNode(intToFloatConvertType, op1, intToFloatConvertIntrinsic,
-                                                           simdBaseJitType, divideOpSimdSize);
-                GenTree* op2Cvt = gtNewSimdHWIntrinsicNode(intToFloatConvertType, op2Clone, intToFloatConvertIntrinsic,
-                                                           simdBaseJitType, divideOpSimdSize);
-                GenTree* divOp  = gtNewSimdBinOpNode(GT_DIV, intToFloatConvertType, op1Cvt, op2Cvt, CORINFO_TYPE_DOUBLE,
-                                                     divideOpSimdSize);
+                GenTree* divOp  = gtNewSimdHWIntrinsicNode(op1->TypeGet(), op1, op2, divIntrinsic, simdBaseJitType, divideOpSimdSize);
                 GenTree* divOpCvt = gtNewSimdHWIntrinsicNode(type, divOp, floatToIntConvertIntrinsic,
                                                              floatToIntConvertType, divideOpSimdSize);
-                GenTree* cmpZeroChk =
-                    gtNewSimdCmpOpAnyNode(GT_EQ, TYP_INT, op2, gtNewZeroConNode(type), simdBaseJitType, simdSize);
-                GenTree* hwIntrinsicChk = gtNewSIMDDivByZeroCheck(cmpZeroChk, TYP_INT, simdBaseJitType, simdSize);
-                return gtNewOperNode(GT_COMMA, type, hwIntrinsicChk, divOpCvt);
+                divOp->gtFlags |= (GTF_EXCEPT | GTF_OVERFLOW);
+                return divOpCvt;
             }
             unreached();
         }
@@ -28227,6 +28207,13 @@ void GenTreeHWIntrinsic::Initialize(NamedIntrinsic intrinsicId)
             {
                 // Mark as a call and global reference, much as is done for GT_KEEPALIVE
                 gtFlags |= (GTF_CALL | GTF_GLOB_REF);
+                break;
+            }
+
+            case NI_Vector128_op_Division:
+            case NI_Vector256_op_Division:
+            {
+                gtFlags |= (GTF_EXCEPT | GTF_OVERFLOW);
                 break;
             }
 #endif // TARGET_XARCH
