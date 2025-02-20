@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 
 start_time=$(date +%s)
+triggered=false
 
 while true; do
   echo "--------vm stats-----"
