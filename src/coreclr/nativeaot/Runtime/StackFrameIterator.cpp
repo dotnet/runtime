@@ -530,7 +530,7 @@ void StackFrameIterator::InternalInit(Thread * pThreadToWalk, PTR_PAL_LIMITED_CO
     // preserved floating-point registers
     //
     int32_t preservedFpIndices[] = {8, 9, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27};
-    for (int i = 0; i < sizeof(preservedFpIndices) / sizeof(preservedFpIndices[0]); i++)
+    for (int i = 0; i < ARRAY_SIZE(preservedFpIndices); i++)
     {
         m_RegDisplay.F[preservedFpIndices[i]] = pCtx->F[preservedFpIndices[i]];
     }
@@ -1287,11 +1287,10 @@ void StackFrameIterator::UnwindFuncletInvokeThunk()
 #elif defined(TARGET_RISCV64)
     PTR_uint64_t f = (PTR_uint64_t)(m_RegDisplay.SP);
 
-    m_RegDisplay.F[8] = *f++;
-    m_RegDisplay.F[9] = *f++;
-    for (int i = 0; i < 10; i++)
+    int32_t preservedFpIndices[] = {8, 9, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27};
+    for (int i = 0; i < ARRAY_SIZE(preservedFpIndices); i++)
     {
-        m_RegDisplay.F[i + 18] = *f++;
+        m_RegDisplay.F[preservedFpIndices[i]] = *f++;
     }
 
     SP = (PTR_uintptr_t)f;
