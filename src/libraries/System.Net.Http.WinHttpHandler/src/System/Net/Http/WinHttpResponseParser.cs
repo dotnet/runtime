@@ -196,7 +196,7 @@ namespace System.Net.Http
                     }
                 }
 
-                int lastError = Marshal.GetLastWin32Error();
+                lastError = Marshal.GetLastWin32Error();
             }
 
             throw WinHttpException.CreateExceptionUsingError(lastError, nameof(Interop.WinHttp.WinHttpQueryHeaders));
