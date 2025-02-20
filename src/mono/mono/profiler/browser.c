@@ -310,7 +310,6 @@ mono_profiler_init_browser (const char *desc)
 	prev_skips_per_period = 1;
 	skips_per_period = 1;
 	sample_skip_counter = 1;
-	stack_depth = 0;
 
 	// install this only in production run, not in AOT run
 	mono_profiler_set_method_samplepoint_callback (handle, method_samplepoint);
