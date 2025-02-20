@@ -5193,8 +5193,9 @@ static GCInfo::WriteBarrierForm GetWriteBarrierForm(Compiler* comp, ValueNum vn)
     {
         if (funcApp.m_func == VNF_PtrToArrElem)
         {
-            // Arrays are always on the heap
-            return GCInfo::WriteBarrierForm::WBF_BarrierUnchecked;
+            // Check whether the array is on the heap
+            ValueNum arrayVN = funcApp.m_args[1];
+            return GetWriteBarrierForm(comp, arrayVN);
         }
         if (funcApp.m_func == VNF_PtrToLoc)
         {

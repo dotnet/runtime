@@ -2,7 +2,7 @@
 <asn:Choice
   xmlns:asn="http://schemas.dot.net/asnxml/201808/"
   name="SignerIdentifierAsn"
-  namespace="System.Security.Cryptography.Pkcs.Asn1">
+  namespace="System.Security.Cryptography.Asn1.Pkcs7">
 
   <!--
     https://tools.ietf.org/html/rfc5652#section-5.3
@@ -14,6 +14,6 @@
 
     SubjectKeyIdentifier ::= OCTET STRING
   -->
-  <asn:AsnType name="IssuerAndSerialNumber" typeName="System.Security.Cryptography.Pkcs.Asn1.IssuerAndSerialNumberAsn" />
+  <asn:AsnType name="IssuerAndSerialNumber" typeName="System.Security.Cryptography.Asn1.Pkcs7.IssuerAndSerialNumberAsn" />
   <asn:OctetString name="SubjectKeyIdentifier" implicitTag="0" />
 </asn:Choice>

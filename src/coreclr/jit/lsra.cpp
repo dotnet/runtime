@@ -1621,13 +1621,7 @@ bool LinearScan::isRegCandidate(LclVarDsc* varDsc)
             // vars will have `lvMustInit` set, because emitter has poor support for struct liveness,
             // but if the variable is tracked the prolog generator would expect it to be in liveIn set,
             // so an assert in `genFnProlog` will fire.
-            bool isRegCandidate = compiler->compEnregStructLocals() && !varDsc->HasGCPtr();
-#if defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
-            // The LoongArch64's ABI which the float args within a struct maybe passed by integer register
-            // when no float register left but free integer register.
-            isRegCandidate &= !genIsValidFloatReg(varDsc->GetOtherArgReg());
-#endif
-            return isRegCandidate;
+            return compiler->compEnregStructLocals() && !varDsc->HasGCPtr();
         }
 
         case TYP_UNDEF:
