@@ -1413,6 +1413,15 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
+        public static void TypeInfoResolverChain_AppendTypeInfoResolverToChain_ThrowsInvalidOperationException()
+        {
+            var defaultResolver = new DefaultJsonTypeInfoResolver();
+            var options = new JsonSerializerOptions { TypeInfoResolver = defaultResolver };
+
+            Assert.Throws<InvalidOperationException>(() => options.TypeInfoResolverChain.Add(options.TypeInfoResolver));
+        }
+
+        [Fact]
         public static void TypeInfoResolverChain_AddsModifier_WorksAsExpected()
         {
             // Regression test for https://github.com/dotnet/runtime/issues/112735
