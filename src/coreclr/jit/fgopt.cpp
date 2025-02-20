@@ -5129,7 +5129,7 @@ bool Compiler::ThreeOptLayout::ReorderBlockList()
     // If we reordered within any try regions, make sure the EH table is up-to-date.
     if (modified)
     {
-        compiler->fgFindEHRegionEnds();
+        compiler->fgFindTryRegionEnds();
     }
 
     JITDUMP("Moving try regions\n");
@@ -5175,7 +5175,7 @@ bool Compiler::ThreeOptLayout::ReorderBlockList()
         compiler->fgUnlinkRange(tryBeg, tryLast);
         compiler->fgMoveBlocksAfter(tryBeg, tryLast, insertionPoint);
         modified = true;
-        compiler->fgFindEHRegionEnds();
+        compiler->fgFindTryRegionEnds();
     }
 
     return modified;
