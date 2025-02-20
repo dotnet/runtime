@@ -441,7 +441,7 @@ namespace System.Reflection.Runtime.TypeInfos
             {
                 Type typeArgument = typeArguments[i];
                 if (typeArgument == null)
-                    throw new ArgumentNullException(nameof(typeArguments));
+                    throw new ArgumentNullException();
 
                 if (typeArgument is RuntimeType typeArgumentAsRuntimeType)
                 {

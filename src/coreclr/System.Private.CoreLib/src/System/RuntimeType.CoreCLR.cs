@@ -3599,7 +3599,7 @@ namespace System
             bool foundNonRuntimeType = false;
             for (int i = 0; i < typeArguments.Length; i++)
             {
-                Type instantiationElem = typeArguments[i] ?? throw new ArgumentNullException(nameof(typeArguments));
+                Type instantiationElem = typeArguments[i] ?? throw new ArgumentNullException();
                 RuntimeType? rtInstantiationElem = instantiationElem as RuntimeType;
 
                 if (rtInstantiationElem == null)

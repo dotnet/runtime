@@ -1431,7 +1431,7 @@ namespace System
             {
                 Type instantiationElem = typeArguments[i];
                 if (instantiationElem == null)
-                    throw new ArgumentNullException(nameof(typeArguments));
+                    throw new ArgumentNullException();
 
                 RuntimeType? rtInstantiationElem = instantiationElem as RuntimeType;
 

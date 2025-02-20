@@ -340,8 +340,8 @@ namespace System.Reflection.Tests
             AssertExtensions.Throws<ArgumentNullException>("typeArguments", () => Type.MakeGenericSignatureType(genericTypeDefinition: typeof(IList<>), typeArguments: null));
             AssertExtensions.Throws<ArgumentNullException>("typeArguments", () => typeof(IList<>).MakeGenericType(typeArguments: null));
 
-            AssertExtensions.Throws<ArgumentNullException>("typeArguments", () => Type.MakeGenericSignatureType(genericTypeDefinition: typeof(IList<>), typeArguments: new Type[] { null }));
-            AssertExtensions.Throws<ArgumentNullException>("typeArguments", () => typeof(IList<>).MakeGenericType(typeArguments: new Type[] { null }));
+            AssertExtensions.Throws<ArgumentNullException>(() => Type.MakeGenericSignatureType(genericTypeDefinition: typeof(IList<>), typeArguments: new Type[] { null }));
+            AssertExtensions.Throws<ArgumentNullException>(() => typeof(IList<>).MakeGenericType(typeArguments: new Type[] { null }));
         }
 
         private static Type ToSignatureType(this Type type)
