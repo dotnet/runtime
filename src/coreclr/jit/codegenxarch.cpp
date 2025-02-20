@@ -4210,7 +4210,9 @@ void CodeGen::genClearStackVec3ArgUpperBits()
         {
             // Assume that for x64 linux, an argument is fully in registers
             // or fully on stack.
-            regNumber argReg = varDsc->GetOtherArgReg();
+            const ABIPassingInformation& abiInfo = compiler->lvaGetParameterABIInfo(varNum);
+            assert((abiInfo.NumSegments == 2) && !abiInfo.HasAnyStackSegment());
+            regNumber argReg = abiInfo.Segment(1).GetRegister();
             genSimd12UpperClear(argReg);
         }
     }
@@ -7920,25 +7922,6 @@ unsigned CodeGen::getBaseVarForPutArgStk(GenTree* treeNode)
     {
         // See the note in the function header re: finding the first stack passed argument.
         baseVarNum = getFirstArgWithStackSlot();
-        assert(baseVarNum != BAD_VAR_NUM);
-
-#ifdef DEBUG
-        // This must be a fast tail call.
-        assert(treeNode->AsPutArgStk()->gtCall->AsCall()->IsFastTailCall());
-
-        // Since it is a fast tail call, the existence of first incoming arg is guaranteed
-        // because fast tail call requires that in-coming arg area of caller is >= out-going
-        // arg area required for tail call.
-        LclVarDsc* varDsc = compiler->lvaGetDesc(baseVarNum);
-        assert(varDsc != nullptr);
-
-#ifdef UNIX_AMD64_ABI
-        assert(!varDsc->lvIsRegArg && varDsc->GetArgReg() == REG_STK);
-#else  // !UNIX_AMD64_ABI
-       // On Windows this assert is always true. The first argument will always be in REG_ARG_0 or REG_FLTARG_0.
-        assert(varDsc->lvIsRegArg && (varDsc->GetArgReg() == REG_ARG_0 || varDsc->GetArgReg() == REG_FLTARG_0));
-#endif // !UNIX_AMD64_ABI
-#endif // !DEBUG
     }
     else
     {
@@ -9744,7 +9727,7 @@ void CodeGen::genProfilingEnterCallback(regNumber initReg, bool* pInitRegZeroed)
         return;
     }
 
-#if !defined(UNIX_AMD64_ABI)
+#if defined(WINDOWS_AMD64_ABI)
 
     unsigned   varNum;
     LclVarDsc* varDsc;
@@ -9766,13 +9749,15 @@ void CodeGen::genProfilingEnterCallback(regNumber initReg, bool* pInitRegZeroed)
         {
             noway_assert(varDsc->lvIsParam);
 
-            if (!varDsc->lvIsRegArg)
+            const ABIPassingInformation& abiInfo = compiler->lvaGetParameterABIInfo(varNum);
+            if (!abiInfo.HasExactlyOneRegisterSegment())
             {
+                assert(!abiInfo.HasAnyRegisterSegment());
                 continue;
             }
 
             var_types storeType = varDsc->GetRegisterType();
-            regNumber argReg    = varDsc->GetArgReg();
+            regNumber argReg    = abiInfo.Segment(0).GetRegister();
 
             instruction store_ins = ins_Store(storeType);
 
@@ -9827,13 +9812,16 @@ void CodeGen::genProfilingEnterCallback(regNumber initReg, bool* pInitRegZeroed)
     {
         noway_assert(varDsc->lvIsParam);
 
-        if (!varDsc->lvIsRegArg)
+        const ABIPassingInformation& abiInfo = compiler->lvaGetParameterABIInfo(varNum);
+
+        if (!abiInfo.HasExactlyOneRegisterSegment())
         {
+            assert(!abiInfo.HasAnyRegisterSegment());
             continue;
         }
 
         var_types loadType = varDsc->GetRegisterType();
-        regNumber argReg   = varDsc->GetArgReg();
+        regNumber argReg   = abiInfo.Segment(0).GetRegister();
 
         instruction load_ins = ins_Load(loadType);
 
