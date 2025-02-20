@@ -8780,8 +8780,18 @@ bool CEEInfo::resolveVirtualMethodHelper(CORINFO_DEVIRTUALIZATION_INFO * info)
     // This is generic virtual method devirtualization.
     if (!isArray && pBaseMD->HasMethodInstantiation())
     {
+        // If we're in a shared context we'll devirt to a shared
+        // generic method and won't be able to inline, so just bail.
+        //
+        if (pExactMT->IsSharedByGenericInstantiations())
+        {
+            info->detail = CORINFO_DEVIRTUALIZATION_FAILED_CANON;
+            return false;
+        }
+
         pDevirtMD = pDevirtMD->FindOrCreateAssociatedMethodDesc(
             pDevirtMD, pExactMT, pExactMT->IsValueType() && !pDevirtMD->IsStatic(), pBaseMD->GetMethodInstantiation(), false);
+
         isGenericVirtual = true;
     }
 
