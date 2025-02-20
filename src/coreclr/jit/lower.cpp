@@ -8058,14 +8058,10 @@ void Lowering::FindInducedParameterRegisterLocals()
                 continue;
             }
 
-            // TODO-CQ: Float -> int extractions are not supported
-            if (!genIsValidIntReg(segment.GetRegister()) && varTypeUsesFloatReg(fld))
-            {
-                continue;
-            }
-
+            // TODO-CQ: Float -> !float extractions are not supported
             // TODO-CQ: Float -> float extractions with non-zero offset is not supported
-            if (genIsValidFloatReg(segment.GetRegister()) && (fld->GetLclOffs() != segment.Offset))
+            if (genIsValidFloatReg(segment.GetRegister()) &&
+                (!varTypeUsesFloatReg(fld) || (fld->GetLclOffs() != segment.Offset)))
             {
                 continue;
             }
