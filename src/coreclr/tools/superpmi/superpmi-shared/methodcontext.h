@@ -1207,6 +1207,7 @@ enum mcPackets
     Packet_GetSZArrayHelperEnumeratorClass = 226,
     Packet_GetMethodInstantiationArgument = 227,
     Packet_GetInstantiatedEntry = 228,
+    Packet_NotifyInstructionSetUsage = 229,
 };
 
 void SetDebugDumpVariables();
