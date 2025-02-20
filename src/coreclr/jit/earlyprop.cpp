@@ -459,7 +459,6 @@ bool Compiler::optFoldNullCheck(GenTree* tree, LocalNumberToNullCheckTreeMap* nu
 
         // The current indir is no longer non-faulting.
         tree->gtFlags &= ~GTF_IND_NONFAULTING;
-        tree->SetIndirExceptionFlags(this);
 
         if (nullCheckParent != nullptr)
         {
