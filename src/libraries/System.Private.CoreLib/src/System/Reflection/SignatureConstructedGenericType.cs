@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics;
 using System.Text;
 
 namespace System.Reflection
@@ -11,8 +12,9 @@ namespace System.Reflection
         // intended user of this constructor.
         internal SignatureConstructedGenericType(Type genericTypeDefinition, Type[] typeArguments)
         {
-            ArgumentNullException.ThrowIfNull(genericTypeDefinition);
-            ArgumentNullException.ThrowIfNull(typeArguments);
+            Debug.Assert(genericTypeDefinition != null);
+            Debug.Assert(typeArguments != null);
+            Debug.Assert(genericTypeDefinition.IsGenericTypeDefinition);
 
             typeArguments = (Type[])(typeArguments.Clone());
             for (int i = 0; i < typeArguments.Length; i++)

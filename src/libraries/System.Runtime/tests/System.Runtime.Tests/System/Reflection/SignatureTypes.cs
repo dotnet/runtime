@@ -329,9 +329,16 @@ namespace System.Reflection.Tests
         [Fact]
         public static void MakeGenericSignatureTypeValidation()
         {
-            AssertExtensions.Throws<ArgumentNullException>("genericTypeDefinition", () => Type.MakeGenericSignatureType(null));
-            AssertExtensions.Throws<ArgumentNullException>("typeArguments", () => Type.MakeGenericSignatureType(typeof(IList<>), typeArguments: null));
-            AssertExtensions.Throws<ArgumentNullException>("typeArguments", () => Type.MakeGenericSignatureType(typeof(IList<>), new Type[] { null }));
+            // Standard reflection used as baseline.
+            AssertExtensions.Throws<ArgumentNullException>("typeArguments", () => typeof(IList<>).MakeGenericType(typeArguments: null));
+            AssertExtensions.Throws<ArgumentNullException>("typeArguments", () => typeof(IList<>).MakeGenericType(typeArguments: new Type[] { null }));
+            AssertExtensions.Throws<ArgumentException>("genericTypeDefinition", () => typeof(int).MakeGenericType(typeArguments: new Type[] { typeof(int) }));
+
+            // SignatureTypes.
+            AssertExtensions.Throws<ArgumentNullException>("genericTypeDefinition", () => Type.MakeGenericSignatureType(genericTypeDefinition: null));
+            AssertExtensions.Throws<ArgumentNullException>("typeArguments", () => Type.MakeGenericSignatureType(genericTypeDefinition: typeof(IList<>), typeArguments: null));
+            AssertExtensions.Throws<ArgumentNullException>("typeArguments", () => Type.MakeGenericSignatureType(genericTypeDefinition: typeof(IList<>), typeArguments: new Type[] { null }));
+            AssertExtensions.Throws<ArgumentException>("genericTypeDefinition", () => Type.MakeGenericSignatureType(genericTypeDefinition: typeof(int), typeArguments: new Type[] { typeof(int) }));
         }
 
         private static Type ToSignatureType(this Type type)
@@ -416,8 +423,6 @@ namespace System.Reflection.Tests
 
         private class NoOneSubclasses { }
         private class NoOneSubclassesThisEither { }
-
-        private enum MyEnum { }
 
         private static void TestSignatureTypeInvariants(Type type)
         {
