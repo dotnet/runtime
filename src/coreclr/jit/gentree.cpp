@@ -24406,7 +24406,9 @@ GenTree* Compiler::gtNewSimdMaxNode(
     {
         if (compOpportunisticallyDependsOn(InstructionSet_AVX10v2))
         {
-            return gtNewSimdMinMaxNode(type, op1, op2, gtMinMaxControlByte(true), simdBaseJitType, simdSize);
+            NamedIntrinsic minMaxIntrinsic = (simdSize == 64) ? NI_AVX10v2_V512_MinMax : NI_AVX10v2_MinMax;
+            return gtNewSimdHWIntrinsicNode(type, op1, op2, gtNewIconNode(0x05), minMaxIntrinsic, simdBaseJitType,
+                                            simdSize);
         }
         GenTree* op1Dup1 = fgMakeMultiUse(&op1);
         GenTree* op1Dup2 = gtCloneExpr(op1Dup1);
@@ -24669,7 +24671,9 @@ GenTree* Compiler::gtNewSimdMinNode(
     {
         if (compOpportunisticallyDependsOn(InstructionSet_AVX10v2))
         {
-            return gtNewSimdMinMaxNode(type, op1, op2, gtMinMaxControlByte(), simdBaseJitType, simdSize);
+            NamedIntrinsic minMaxIntrinsic = (simdSize == 64) ? NI_AVX10v2_V512_MinMax : NI_AVX10v2_MinMax;
+            return gtNewSimdHWIntrinsicNode(type, op1, op2, gtNewIconNode(0x04), minMaxIntrinsic, simdBaseJitType,
+                                            simdSize);
         }
         GenTree* op1Dup1 = fgMakeMultiUse(&op1);
         GenTree* op1Dup2 = gtCloneExpr(op1Dup1);
@@ -24694,159 +24698,6 @@ GenTree* Compiler::gtNewSimdMinNode(
 
     return gtNewSimdMinNativeNode(type, op1, op2, simdBaseJitType, simdSize);
 }
-
-#if defined(TARGET_XARCH)
-/**
- * Creates a new SIMD node for performing minimum/maximum operations based on the given control byte.
- *
- * @param type            The SIMD type of the operation result.
- * @param op1             The first operand.
- * @param op2             The second operand.
- * @param ctrlByte        A control byte (imm8) that specifies the type of min/max operation and sign behavior:
- *                        - Bits [1:0] (Op-select): Determines the operation performed:
- *                          - 0b00: minimum - Returns x if x ≤ y, otherwise y; NaN handling applies.
- *                          - 0b01: maximum - Returns x if x ≥ y, otherwise y; NaN handling applies.
- *                          - 0b10: minimumMagnitude - Compares absolute values, returns the smaller magnitude.
- *                          - 0b11: maximumMagnitude - Compares absolute values, returns the larger magnitude.
- *                        - Bit  [4] (min/max mode): Determines whether the instruction follows IEEE-compliant NaN
- * handling:
- *                          - 0: Standard min/max (propagates NaNs).
- *                          - 1: Number-preferential min/max (ignores signaling NaNs).
- *                        - Bits [3:2] (Sign control): Defines how the result’s sign is determined:
- *                          - 0b00: Select sign from the first operand (src1).
- *                          - 0b01: Select sign from the comparison result.
- *                          - 0b10: Force result sign to 0 (positive).
- *                          - 0b11: Force result sign to 1 (negative).
- * @param simdBaseJitType The base JIT type of the SIMD vector (e.g., float, int).
- * @param simdSize        The size of the SIMD vector in bytes.
- *
- * @return A new GenTree node representing the SIMD min/max operation.
- */
-GenTree* Compiler::gtNewSimdMinMaxNode(
-    var_types type, GenTree* op1, GenTree* op2, ssize_t ctrlByte, CorInfoType simdBaseJitType, unsigned simdSize)
-{
-    assert(IsBaselineSimdIsaSupportedDebugOnly());
-    assert(compIsaSupportedDebugOnly(InstructionSet_AVX10v2)); // Support for new MinMax instructions for AVX10.2
-                                                               // required
-    assert(simdSize != 64 || IsBaselineVector512IsaSupportedDebugOnly());
-    assert(varTypeIsSIMD(type));
-    assert(getSIMDTypeForSize(simdSize) == type);
-    assert(op1 != nullptr);
-    assert(op1->TypeIs(type));
-    assert(op2 != nullptr);
-    assert(op2->TypeIs(type));
-    var_types simdBaseType = JitType2PreciseVarType(simdBaseJitType);
-    assert(varTypeIsArithmetic(simdBaseType));
-    assert(varTypeIsFloating(simdBaseType));
-    NamedIntrinsic minMaxIntrinsic = (simdSize == 64) ? NI_AVX10v2_V512_MinMax : NI_AVX10v2_MinMax;
-    return gtNewSimdHWIntrinsicNode(type, op1, op2, gtNewIconNode(ctrlByte), minMaxIntrinsic, simdBaseJitType,
-                                    simdSize);
-}
-
-/**
- * @brief Generates a control byte for a SIMD Min/Max operation.
- *
- * This function constructs a control byte (imm8) for Min/Max SIMD operations based on the provided flags.
- * The control byte defines the operation type (e.g., Min or Max), and whether the operation should consider
- * the magnitude or numerical values (NaN-aware comparisons).
- *
- * @param isMax Specifies if the operation is Max (true) or Min (false).
- *              - If true, the operation is Max.
- *              - If false, the operation is Min.
- * @param isNumber Specifies if the operation should be NaN-aware (true) or not (false).
- *              - If true, NaN values are considered in the comparison, producing NaN if one of the operands is NaN.
- *              - If false, NaN values are ignored, and the result is based on the non-NaN operand.
- * @param isMagnitude Specifies if the operation is based on the magnitude of the values (true) or not (false).
- *              - If true, comparisons are performed based on the absolute value of the operands.
- *              - If false, comparisons are performed on the actual values, including the sign.
- *
- * @return A `uint8_t` value representing the control byte (imm8) for the specified operation.
- *         The returned value can be directly used in SIMD Min/Max instructions.
- */
-uint8_t Compiler::gtMinMaxControlByte(bool isMax, bool isMagnitude, bool isNumber)
-{
-    /**
-     * ctrlByte   A control byte (imm8) that specifies the type of min/max operation and sign behavior:
-     *            - Bits [1:0] (Op-select): Determines the operation performed:
-     *              - 0b00: minimum - Returns x if x ≤ y, otherwise y; NaN handling applies.
-     *              - 0b01: maximum - Returns x if x ≥ y, otherwise y; NaN handling applies.
-     *              - 0b10: minimumMagnitude - Compares absolute values, returns the smaller magnitude.
-     *              - 0b11: maximumMagnitude - Compares absolute values, returns the larger magnitude.
-     *            - Bit  [4] (min/max mode): Determines whether the instruction follows IEEE-compliant NaN handling:
-     *              - 0: Standard min/max (propagates NaNs).
-     *              - 1: Number-preferential min/max (ignores signaling NaNs).
-     *            - Bits [3:2] (Sign control): Defines how the result’s sign is determined:
-     *              - 0b00: Select sign from the first operand (src1).
-     *              - 0b01: Select sign from the comparison result.
-     *              - 0b10: Force result sign to 0 (positive).
-     *              - 0b11: Force result sign to 1 (negative).
-     */
-    uint8_t ctrlByte;
-
-    if (isMax)
-    {
-        if (isMagnitude)
-        {
-            if (isNumber)
-            {
-                // min/max mode  | sign control | Op-select
-                // 0001 0000     | 0000 0100    | 0000 0011
-                ctrlByte = 0x17;
-            }
-            else
-            {
-                // min/max mode  | sign control | Op-select
-                // 0000 0000     | 0000 0100    | 0000 0011
-                ctrlByte = 0x07;
-            }
-        }
-        else if (isNumber)
-        {
-            // min/max mode  | sign control | Op-select
-            // 0001 0000     | 0000 0100    | 0000 0001
-            ctrlByte = 0x15;
-        }
-        else
-        {
-            // min/max mode  | sign control | Op-select
-            // 0000 0000     | 0000 0100    | 0000 0001
-            ctrlByte = 0x05;
-        }
-    }
-    else
-    {
-        if (isMagnitude)
-        {
-            if (isNumber)
-            {
-                // min/max mode  | sign control | Op-select
-                // 0001 0000     | 0000 0100    | 0000 0010
-                ctrlByte = 0x16;
-            }
-            else
-            {
-                // min/max mode  | sign control | Op-select
-                // 0000 0000     | 0000 0100    | 0000 0010
-                ctrlByte = 0x06;
-            }
-        }
-        else if (isNumber)
-        {
-            // min/max mode  | sign control | Op-select
-            // 0001 0000     | 0000 0100    | 0000 0000
-            ctrlByte = 0x14;
-        }
-        else
-        {
-            // min/max mode  | sign control | Op-select
-            // 0000 0000     | 0000 0100    | 0000 0000
-            ctrlByte = 0x04;
-        }
-    }
-    return ctrlByte;
-}
-
-#endif // TARGET_XARCH
 
 GenTree* Compiler::gtNewSimdMinNativeNode(
     var_types type, GenTree* op1, GenTree* op2, CorInfoType simdBaseJitType, unsigned simdSize)

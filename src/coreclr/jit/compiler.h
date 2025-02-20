@@ -3521,17 +3521,6 @@ public:
         var_types type, GenTree* op1, CorInfoType simdBaseJitType, unsigned simdSize);
 
 #if defined(TARGET_XARCH)
-    GenTree* gtNewSimdMinMaxNode(var_types   type,
-                                 GenTree*    op1,
-                                 GenTree*    op2,
-                                 ssize_t     ctrlByte,
-                                 CorInfoType simdBaseJitType,
-                                 unsigned    simdSize);
-    
-    uint8_t gtMinMaxControlByte(bool   isMax       = false,
-                                bool   isMagnitude = false,
-                                bool   isNumber    = false);
-
     GenTree* gtNewSimdTernaryLogicNode(var_types   type,
                                        GenTree*    op1,
                                        GenTree*    op2,
