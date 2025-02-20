@@ -1400,14 +1400,12 @@ VOID EnsureComStarted(BOOL fCoInitCurrentThread)
         GC_TRIGGERS;
         MODE_ANY;
         PRECONDITION(GetThreadNULLOk() || !fCoInitCurrentThread);
-        PRECONDITION(g_fEEStarted);
+        PRECONDITION(g_fEEStarted || IsFinalizerThread());
     }
     CONTRACTL_END;
 
     if (g_fComStarted == FALSE)
     {
-        FinalizerThread::GetFinalizerThread()->SetRequiresCoInitialize();
-
         // Attempt to set the thread's apartment model (to MTA by default). May not
         // succeed (if someone beat us to the punch). That doesn't matter (since
         // CLR objects are now apartment agile), we only care that a CoInitializeEx
@@ -1415,8 +1413,12 @@ VOID EnsureComStarted(BOOL fCoInitCurrentThread)
         if (fCoInitCurrentThread)
             GetThread()->SetApartment(Thread::AS_InMTA);
 
-        // set the finalizer event
-        FinalizerThread::EnableFinalization();
+        if (!IsFinalizerThread())
+        {
+            FinalizerThread::GetFinalizerThread()->SetRequiresCoInitialize();
+            // set the finalizer event
+            FinalizerThread::EnableFinalization();
+        }
 
         g_fComStarted = TRUE;
     }
