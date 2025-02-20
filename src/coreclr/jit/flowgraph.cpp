@@ -863,6 +863,9 @@ bool Compiler::fgAddrCouldBeNull(GenTree* addr)
         case GT_ARR_ADDR:
             return (addr->gtFlags & GTF_ARR_ADDR_NONNULL) == 0;
 
+        case GT_BOX:
+            return !addr->IsBoxedValue();
+
         case GT_LCL_VAR:
             return !lvaIsImplicitByRefLocal(addr->AsLclVar()->GetLclNum());
 

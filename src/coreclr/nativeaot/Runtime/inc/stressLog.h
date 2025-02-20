@@ -443,8 +443,7 @@ public:
 
     static const size_t maxArgCnt = 63;
     static const int64_t maxOffset = (int64_t)1 << (formatOffsetLowBits + formatOffsetHighBits);
-    static size_t maxMsgSize ()
-    { return sizeof(StressMsg) + maxArgCnt*sizeof(void*); }
+    static constexpr size_t maxMsgSize = sizeof(uint64_t) * 2 + maxArgCnt * sizeof(void*);
 
     friend void PopulateDebugHeaders();
 };
@@ -623,7 +622,7 @@ inline StressMsg* ThreadStressLog::AdvReadPastBoundary() {
     }
     curReadChunk = curReadChunk->next;
     void** p = (void**)curReadChunk->StartPtr();
-    while (*p == NULL && (size_t)(p-(void**)curReadChunk->StartPtr ()) < (StressMsg::maxMsgSize()/sizeof(void*)))
+    while (*p == NULL && (size_t)(p-(void**)curReadChunk->StartPtr ()) < (StressMsg::maxMsgSize/sizeof(void*)))
     {
         ++p;
     }
