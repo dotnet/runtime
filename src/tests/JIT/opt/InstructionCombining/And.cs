@@ -85,6 +85,26 @@ namespace TestAnd
                 fail = true;
             }
 
+            if (!AndsSingleLine(6, 10))
+            {
+                fail = true;
+            }
+
+            if (!AndsSingleLineLSR(0xB00, 8))
+            {
+                fail = true;
+            }
+
+            if (AndsBinOp(4, 1, 0x3000, 4) != 1)
+            {
+                fail = true;
+            }
+
+            if (!AndsBinOpSingleLine(1, 2, 4, 12))
+            {
+                fail = true;
+            }
+
             if (fail)
             {
                 return 101;
@@ -210,6 +230,39 @@ namespace TestAnd
                 return 1;
             }
             return -1;
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static bool AndsSingleLine(uint a, uint b)
+        {
+            //ARM64-FULL-LINE: tst {{w[0-9]+}}, {{w[0-9]+}}
+            return (a & b) != 0;
+        }
+        
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static bool AndsSingleLineLSR(uint a, uint b)
+        {
+            //ARM64-FULL-LINE: tst {{w[0-9]+}}, {{w[0-9]+}}, LSR #8
+            return ((a>>8) & b) != 0;
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static int AndsBinOp(uint a, uint b, uint c, uint d)
+        {
+            //ARM64-FULL-LINE: tst {{w[0-9]+}}, {{w[0-9]+}}, LSL #2
+            //ARM64-FULL-LINE: tst {{w[0-9]+}}, {{w[0-9]+}}, LSR #10
+            if (((a & (b<<2)) == 0) == (((c>>10) & d) == 0)) {
+                return 1;
+            }
+            return -1;
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static bool AndsBinOpSingleLine(uint a, uint b, uint c, uint d)
+        {
+            //ARM64-FULL-LINE: tst {{w[0-9]+}}, {{w[0-9]+}}
+            //ARM64-FULL-LINE: tst {{w[0-9]+}}, {{w[0-9]+}}
+            return ((a & b) == 0) | ((c & d) == 0);
         }
     }
 }

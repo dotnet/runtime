@@ -26100,6 +26100,7 @@ void gc_heap::calculate_new_heap_count ()
                 mb (total_soh_stable_size), mb (total_bcd), diff_pct, change_int, (change_int * 100.0 / n_heaps)));
         }
 
+#ifdef FEATURE_EVENT_TRACE
         GCEventFireSizeAdaptationTuning_V1 (
             (uint16_t)new_n_heaps,
             (uint16_t)max_heap_count_datas,
@@ -26118,6 +26119,7 @@ void gc_heap::calculate_new_heap_count ()
             (uint16_t)hc_change_freq_factor,
             (uint16_t)hc_freq_reason,
             (uint8_t)adj_metric);
+#endif //FEATURE_EVENT_TRACE
     }
 
     size_t num_gen2s_since_last_change = 0;
@@ -26173,6 +26175,7 @@ void gc_heap::calculate_new_heap_count ()
     if (process_gen2_samples_p)
     {
         dynamic_heap_count_data_t::gen2_sample* gen2_samples = dynamic_heap_count_data.gen2_samples;
+#ifdef FEATURE_EVENT_TRACE
         GCEventFireSizeAdaptationFullGCTuning_V1 (
             (uint16_t)dynamic_heap_count_data.new_n_heaps,
             (uint64_t)current_gc_index,
@@ -26184,6 +26187,7 @@ void gc_heap::calculate_new_heap_count ()
             (float)gen2_samples[1].gc_percent,
             (uint32_t)(current_gc_index - gen2_samples[2].gc_index),
             (float)gen2_samples[2].gc_percent);
+#endif //FEATURE_EVENT_TRACEs
 
         dprintf (6666, ("processed gen2 samples, updating processed %Id -> %Id", dynamic_heap_count_data.processed_gen2_samples_count, dynamic_heap_count_data.current_gen2_samples_count));
         dynamic_heap_count_data.processed_gen2_samples_count = dynamic_heap_count_data.current_gen2_samples_count;
@@ -26879,12 +26883,14 @@ void gc_heap::process_datas_sample()
             (sample.gc_pause_time ? (sample.gc_survived_size / 1000.0 / sample.gc_pause_time) : 0),
             (sample.gc_pause_time ? ((float)sample.gc_survived_size / sample.gc_pause_time / n_heaps) : 0)));
 
+#ifdef FEATURE_EVENT_TRACE
         GCEventFireSizeAdaptationSample_V1 (
             (uint64_t)gc_index,
             (uint32_t)sample.elapsed_between_gcs,
             (uint32_t)sample.gc_pause_time,
             (uint32_t)soh_msl_wait_time, (uint32_t)uoh_msl_wait_time,
             (uint64_t)total_soh_stable_size, (uint32_t)sample.gen0_budget_per_heap);
+#endif //FEATURE_EVENT_TRACE
 
         dynamic_heap_count_data.sample_index = (dynamic_heap_count_data.sample_index + 1) % dynamic_heap_count_data_t::sample_size;
         (dynamic_heap_count_data.current_samples_count)++;

@@ -3337,8 +3337,8 @@ mini_method_compile (MonoMethod *method, guint32 opts, JitFlags flags, int parts
 				MonoExceptionClause *clause1 = &cfg->header->clauses [i];
 				MonoExceptionClause *clause2 = &cfg->header->clauses [j];
 
-				if (i != j && clause1->try_offset >= clause2->try_offset && clause1->handler_offset <= clause2->handler_offset) {
-					if (clause1->flags == MONO_EXCEPTION_CLAUSE_NONE && clause2->flags != MONO_EXCEPTION_CLAUSE_NONE) {
+				if (clause1->flags == MONO_EXCEPTION_CLAUSE_NONE && clause2->flags == MONO_EXCEPTION_CLAUSE_FINALLY) {
+					if (clause1->try_offset >= clause2->handler_offset && clause1->try_offset <= (clause2->handler_offset + clause2->handler_len)) {
 						can_deopt = FALSE;
 						break;
 					}

@@ -686,6 +686,8 @@ ep_rt_byte_array_free (uint8_t *ptr)
  * Event.
  */
 
+#ifndef PERFTRACING_DISABLE_THREADS
+
 static
 inline
 void
@@ -779,6 +781,69 @@ ep_rt_wait_event_is_valid (ep_rt_wait_event_handle_t *wait_event)
 	else
 		return true;
 }
+
+#else // PERFTRACING_DISABLE_THREADS
+
+static
+inline
+void
+ep_rt_wait_event_alloc (
+	ep_rt_wait_event_handle_t *wait_event,
+	bool manual,
+	bool initial)
+{
+	EP_ASSERT (wait_event != NULL);
+	wait_event->event = INVALID_HANDLE_VALUE;
+}
+
+static
+inline
+void
+ep_rt_wait_event_free (ep_rt_wait_event_handle_t *wait_event)
+{
+}
+
+static
+inline
+bool
+ep_rt_wait_event_set (ep_rt_wait_event_handle_t *wait_event)
+{
+	return true;
+}
+
+static
+inline
+int32_t
+ep_rt_wait_event_wait (
+	ep_rt_wait_event_handle_t *wait_event,
+	uint32_t timeout,
+	bool alertable)
+{
+	EP_ASSERT (wait_event != NULL && wait_event->event == INVALID_HANDLE_VALUE);
+	return (int32_t)0;
+}
+
+static
+inline
+EventPipeWaitHandle
+ep_rt_wait_event_get_wait_handle (ep_rt_wait_event_handle_t *wait_event)
+{
+	EP_ASSERT (wait_event != NULL);
+	return (EventPipeWaitHandle)wait_event->event;
+}
+
+static
+inline
+bool
+ep_rt_wait_event_is_valid (ep_rt_wait_event_handle_t *wait_event)
+{
+	if (wait_event == NULL || wait_event->event == NULL || wait_event->event != INVALID_HANDLE_VALUE)
+		return false;
+	else
+		return true;
+}
+
+#endif // PERFTRACING_DISABLE_THREADS
 
 /*
  * Misc.
@@ -949,6 +1014,55 @@ ep_rt_event_loop_job_create (
 	return false;
 #endif
 }
+
+static
+bool
+ep_rt_queue_job (
+	void *job_func,
+	void *params)
+{
+	EP_UNREACHABLE ("Not implemented on in multi threaded");
+	return false;
+}
+
+#else // PERFTRACING_DISABLE_THREADS
+
+static
+inline
+bool
+ep_rt_thread_create (
+	void *thread_func,
+	void *params,
+	EventPipeThreadType thread_type,
+	void *id)
+{
+	EP_UNREACHABLE ("Not implemented on in single threaded");
+	return false;
+}
+
+static
+bool
+ep_rt_queue_job (
+	void *job_func,
+	void *params)
+{
+	// in single-threaded, it will run the callback inline and re-schedule itself if necessary
+	// it's called from browser event loop
+	ds_job_cb cb = (ds_job_cb)job_func;
+
+	// invoke the callback inline for the fist time
+	gsize done = cb (params);
+
+	// see if it's done or needs to be scheduled again
+	if (!done) {
+		// self schedule again
+		mono_schedule_ds_job (cb, params);
+	}
+
+	return true;
+}
+
+#endif // PERFTRACING_DISABLE_THREADS
 
 static
 inline

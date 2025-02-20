@@ -2131,8 +2131,8 @@ StackWalkAction COMPlusThrowCallback(       // SWA value
     #else
     #define METHODNAME(pFunc) "<n/a>"
     #endif
-    STRESS_LOG4(LF_EH, LL_INFO100, "COMPlusThrowCallback: STACKCRAWL method:%pM ('%s'), Frame:%p, FrameVtable = %pV\n",
-        pFunc, METHODNAME(pFunc), pFrame, pCf->IsFrameless()?0:(*(void**)pFrame));
+    STRESS_LOG4(LF_EH, LL_INFO100, "COMPlusThrowCallback: STACKCRAWL method:%pM ('%s'), Frame:%p, FrameIdentifier = %s\n",
+        pFunc, METHODNAME(pFunc), pFrame, pCf->IsFrameless()?0:Frame::GetFrameTypeName(pFrame->GetFrameIdentifier()));
     #undef METHODNAME
 
     Thread *pThread = GetThread();
@@ -2539,8 +2539,8 @@ StackWalkAction COMPlusUnwindCallback (CrawlFrame *pCf, ThrowCallbackType *pData
     #else
     #define METHODNAME(pFunc) "<n/a>"
     #endif
-    STRESS_LOG4(LF_EH, LL_INFO100, "COMPlusUnwindCallback: STACKCRAWL method:%pM ('%s'), Frame:%p, FrameVtable = %pV\n",
-        pFunc, METHODNAME(pFunc), pFrame, pCf->IsFrameless()?0:(*(void**)pFrame));
+    STRESS_LOG4(LF_EH, LL_INFO100, "COMPlusUnwindCallback: STACKCRAWL method:%pM ('%s'), Frame:%p, FrameIdentifier = %s\n",
+        pFunc, METHODNAME(pFunc), pFrame, pCf->IsFrameless()?0:Frame::GetFrameTypeName(pFrame->GetFrameIdentifier()));
     #undef METHODNAME
 
     if (pFrame && pData->pTopFrame == pFrame)

@@ -55,9 +55,12 @@ namespace System.Security.Cryptography.X509Certificates
 
             protected override byte[] ExportPkcs7() => throw new NotImplementedException();
 
-            protected override byte[] ExportPkcs8(ICertificatePalCore certificatePal, ReadOnlySpan<char> password)
+            protected override byte[] ExportPkcs8(
+                ICertificatePalCore certificatePal,
+                PbeParameters pbeParameters,
+                ReadOnlySpan<char> password)
             {
-                return AppleCertificatePal.ExportPkcs8(_privateKey, password);
+                return AppleCertificatePal.ExportPkcs8(_privateKey, pbeParameters, password);
             }
         }
     }

@@ -964,8 +964,8 @@ extends:
                     eq(variables['isRollingBuild'], true))
 
       #
-      # Android devices
-      # Build the whole product using CoreCLR and run libraries tests
+      # Android arm64 devices and x64 emulators
+      # Build the whole product using CoreCLR and run functional tests
       #
       - template: /eng/pipelines/common/platform-matrix.yml
         parameters:
@@ -990,6 +990,7 @@ extends:
             condition: >-
               or(
                 eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
+                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
                 eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_installer.containsChange'], true),
                 eq(variables['isRollingBuild'], true))
             # extra steps, run tests

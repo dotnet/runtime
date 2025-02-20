@@ -98,7 +98,6 @@ public class SelfContextTests
     }
 
     [Fact]
-    [SkipOnMono("https://github.com/dotnet/runtime/issues/108855")]
     public unsafe static void TestSelfIsFrozenNonEnregisteredStructWithExtraArgs()
     {
         float sum = SumFrozenNonEnregisteredStructWithExtraArgs(3f, 4f, new SwiftSelf<FrozenNonEnregisteredStruct>(new FrozenNonEnregisteredStruct { A = 10, B = 20, C = 30, D = 40, E = 50 }));

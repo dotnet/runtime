@@ -367,8 +367,8 @@ StackWalkAction GcStackCrawlCallBack(CrawlFrame* pCF, VOID* pData)
             Frame * pFrame = pCF->GetFrame();
 
             STRESS_LOG3(LF_GCROOTS, LL_INFO1000,
-                "Scanning ExplicitFrame %p AssocMethod = %pM frameVTable = %pV\n",
-                pFrame, pFrame->GetFunction(), *((void**) pFrame));
+                "Scanning ExplicitFrame %p AssocMethod = %pM FrameIdentifier = %s\n",
+                pFrame, pFrame->GetFunction(), Frame::GetFrameTypeName(pFrame->GetFrameIdentifier()));
             pFrame->GcScanRoots( gcctx->f, gcctx->sc);
         }
     }

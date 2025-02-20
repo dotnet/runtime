@@ -561,10 +561,10 @@ namespace System.Data.Common
             // provide their own connection-less implementation anyway (i.e. interacting with the originating
             // DbDataSource), so they'd have to override this in any case.
             public override void Prepare()
-                => throw ExceptionBuilder.NotSupportedOnDataSourceCommand();
+                => throw ExceptionBuilder.NotSupportedOnDataSourceBatch();
 
             public override Task PrepareAsync(CancellationToken cancellationToken = default)
-                => Task.FromException(ExceptionBuilder.NotSupportedOnDataSourceCommand());
+                => Task.FromException(ExceptionBuilder.NotSupportedOnDataSourceBatch());
 
             // The below are incompatible with batches executed directly against DbDataSource, since no DbConnection
             // is involved at the user API level and the DbBatchWrapper owns the DbConnection.

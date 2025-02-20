@@ -589,21 +589,12 @@ private:
                 }
 #endif // DEBUG
 
-                CORINFO_CONTEXT_HANDLE context                = nullptr;
+                CORINFO_CONTEXT_HANDLE context                = call->gtLateDevirtualizationInfo->exactContextHnd;
+                InlineContext*         inlinersContext        = call->gtLateDevirtualizationInfo->inlinersContext;
                 CORINFO_METHOD_HANDLE  method                 = call->gtCallMethHnd;
                 unsigned               methodFlags            = 0;
                 const bool             isLateDevirtualization = true;
                 const bool             explicitTailCall       = call->IsTailPrefixedCall();
-
-                if ((call->gtCallMoreFlags & GTF_CALL_M_HAS_LATE_DEVIRT_INFO) != 0)
-                {
-                    context = call->gtLateDevirtualizationInfo->exactContextHnd;
-                    // Note: we might call this multiple times for the same trees.
-                    // If the devirtualization below succeeds, the call becomes
-                    // non-virtual and we won't get here again. If it does not
-                    // succeed we might get here again so we keep the late devirt
-                    // info.
-                }
 
                 CORINFO_CONTEXT_HANDLE contextInput = context;
                 context                             = nullptr;
@@ -613,10 +604,11 @@ private:
                 if (!call->IsVirtual())
                 {
                     assert(context != nullptr);
+                    assert(inlinersContext != nullptr);
                     CORINFO_CALL_INFO callInfo = {};
                     callInfo.hMethod           = method;
                     callInfo.methodFlags       = methodFlags;
-                    m_compiler->impMarkInlineCandidate(call, context, false, &callInfo);
+                    m_compiler->impMarkInlineCandidate(call, context, false, &callInfo, inlinersContext);
 
                     if (call->IsInlineCandidate())
                     {
@@ -651,9 +643,6 @@ private:
 
                             *pTree = retExpr;
                         }
-
-                        call->GetSingleInlineCandidateInfo()->exactContextHandle = context;
-                        INDEBUG(call->GetSingleInlineCandidateInfo()->inlinersContext = call->gtInlineContext);
 
                         JITDUMP("New inline candidate due to late devirtualization:\n");
                         DISPTREE(call);

@@ -148,6 +148,12 @@ namespace System.Linq
 
             private static void Fill(IList<TSource> source, Span<TSource> destination, int sourceIndex)
             {
+                if (source.TryGetSpan(out ReadOnlySpan<TSource> sourceSpan))
+                {
+                    sourceSpan.Slice(sourceIndex, destination.Length).CopyTo(destination);
+                    return;
+                }
+
                 for (int i = 0; i < destination.Length; i++, sourceIndex++)
                 {
                     destination[i] = source[sourceIndex];
@@ -159,6 +165,11 @@ namespace System.Linq
             public int IndexOf(TSource item)
             {
                 IList<TSource> source = _source;
+
+                if (source.TryGetSpan(out ReadOnlySpan<TSource> span))
+                {
+                    return span.Slice(_minIndexInclusive, Count).IndexOf(item);
+                }
 
                 int end = _minIndexInclusive + Count;
                 for (int i = _minIndexInclusive; i < end; i++)
@@ -426,9 +437,12 @@ namespace System.Linq
             {
                 if (_source is Iterator<TSource> iterator &&
                     iterator.GetCount(onlyIfCheap: true) is int count &&
-                    count >= _minIndexInclusive)
+                    count > _minIndexInclusive)
                 {
-                    return !HasLimit ?
+                    // If there's no upper bound, or if there are fewer items in the list
+                    // than the upper bound allows, just return the last element of the list.
+                    // Otherwise, get the element at the upper bound.
+                    return (uint)count <= (uint)_maxIndexInclusive ?
                         iterator.TryGetLast(out found) :
                         iterator.TryGetElementAt(_maxIndexInclusive, out found);
                 }

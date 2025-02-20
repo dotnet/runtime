@@ -115,54 +115,54 @@ server_warning_callback (
 static size_t server_loop_tick (void* data) {
 	if (server_volatile_load_shutting_down_state ())
 		return 1; // done
-	DiagnosticsIpcStream *stream = ds_ipc_stream_factory_get_next_available_stream (server_warning_callback);
-	if (!stream)
+		DiagnosticsIpcStream *stream = ds_ipc_stream_factory_get_next_available_stream (server_warning_callback);
+		if (!stream)
 		return 0; // continue
 
-	ds_rt_auto_trace_signal ();
+		ds_rt_auto_trace_signal ();
 
-	DiagnosticsIpcMessage message;
-	if (!ds_ipc_message_init (&message))
+		DiagnosticsIpcMessage message;
+		if (!ds_ipc_message_init (&message))
 		return 0; // continue
 
-	if (!ds_ipc_message_initialize_stream (&message, stream)) {
-		ds_ipc_message_send_error (stream, DS_IPC_E_BAD_ENCODING);
-		ds_ipc_stream_free (stream);
+		if (!ds_ipc_message_initialize_stream (&message, stream)) {
+			ds_ipc_message_send_error (stream, DS_IPC_E_BAD_ENCODING);
+			ds_ipc_stream_free (stream);
+			ds_ipc_message_fini (&message);
+		return 0; // continue
+		}
+
+		if (ep_rt_utf8_string_compare (
+			(const ep_char8_t *)ds_ipc_header_get_magic_ref (ds_ipc_message_get_header_ref (&message)),
+			(const ep_char8_t *)DOTNET_IPC_V1_MAGIC) != 0) {
+
+			ds_ipc_message_send_error (stream, DS_IPC_E_UNKNOWN_MAGIC);
+			ds_ipc_stream_free (stream);
+			ds_ipc_message_fini (&message);
+		return 0; // continue
+		}
+
+		DS_LOG_INFO_2 ("DiagnosticServer - received IPC message with command set (%d) and command id (%d)", ds_ipc_header_get_commandset (ds_ipc_message_get_header_ref (&message)), ds_ipc_header_get_commandid (ds_ipc_message_get_header_ref (&message)));
+
+		switch ((DiagnosticsServerCommandSet)ds_ipc_header_get_commandset (ds_ipc_message_get_header_ref (&message))) {
+		case DS_SERVER_COMMANDSET_EVENTPIPE:
+			ds_eventpipe_protocol_helper_handle_ipc_message (&message, stream);
+			break;
+		case DS_SERVER_COMMANDSET_DUMP:
+			ds_dump_protocol_helper_handle_ipc_message (&message, stream);
+			break;
+		case DS_SERVER_COMMANDSET_PROCESS:
+			ds_process_protocol_helper_handle_ipc_message (&message, stream);
+			break;
+		case DS_SERVER_COMMANDSET_PROFILER:
+			ds_profiler_protocol_helper_handle_ipc_message (&message, stream);
+			break;
+		default:
+			server_protocol_helper_unknown_command (&message, stream);
+			break;
+		}
+
 		ds_ipc_message_fini (&message);
-		return 0; // continue
-	}
-
-	if (ep_rt_utf8_string_compare (
-		(const ep_char8_t *)ds_ipc_header_get_magic_ref (ds_ipc_message_get_header_ref (&message)),
-		(const ep_char8_t *)DOTNET_IPC_V1_MAGIC) != 0) {
-
-		ds_ipc_message_send_error (stream, DS_IPC_E_UNKNOWN_MAGIC);
-		ds_ipc_stream_free (stream);
-		ds_ipc_message_fini (&message);
-		return 0; // continue
-	}
-
-	DS_LOG_INFO_2 ("DiagnosticServer - received IPC message with command set (%d) and command id (%d)", ds_ipc_header_get_commandset (ds_ipc_message_get_header_ref (&message)), ds_ipc_header_get_commandid (ds_ipc_message_get_header_ref (&message)));
-
-	switch ((DiagnosticsServerCommandSet)ds_ipc_header_get_commandset (ds_ipc_message_get_header_ref (&message))) {
-	case DS_SERVER_COMMANDSET_EVENTPIPE:
-		ds_eventpipe_protocol_helper_handle_ipc_message (&message, stream);
-		break;
-	case DS_SERVER_COMMANDSET_DUMP:
-		ds_dump_protocol_helper_handle_ipc_message (&message, stream);
-		break;
-	case DS_SERVER_COMMANDSET_PROCESS:
-		ds_process_protocol_helper_handle_ipc_message (&message, stream);
-		break;
-	case DS_SERVER_COMMANDSET_PROFILER:
-		ds_profiler_protocol_helper_handle_ipc_message (&message, stream);
-		break;
-	default:
-		server_protocol_helper_unknown_command (&message, stream);
-		break;
-	}
-
-	ds_ipc_message_fini (&message);
 
 	(void)data; // unused
 	return 0; // continue
@@ -238,7 +238,7 @@ ds_server_init (void)
 			ds_rt_auto_trace_wait ();
 		}
 #else
-		ep_rt_event_loop_job_create ((void *)server_loop_tick, NULL);
+		ep_rt_queue_job ((void *)server_loop_tick, NULL);
 #endif
 	}
 

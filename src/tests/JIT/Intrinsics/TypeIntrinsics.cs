@@ -67,8 +67,6 @@ public partial class Program
         IsTrue (IsValueType<GenericStruct<int>>(default));
         IsTrue (IsValueType<GenericStruct<string>>(default));
         IsTrue (IsValueType(SimpleEnum.B));
-        IsTrue (IsValueType(CreateDynamic1()));
-        IsFalse(IsValueType(CreateDynamic2()));
 
         IsTrue (IsValueTypeObj(42));
         IsTrue (IsValueTypeObj(new Nullable<int>(42)));
@@ -80,8 +78,6 @@ public partial class Program
         IsTrue (IsValueTypeObj(new GenericStruct<int>()));
         IsTrue (IsValueTypeObj(new GenericStruct<string>()));
         IsTrue (IsValueTypeObj(SimpleEnum.B));
-        IsTrue (IsValueTypeObj(CreateDynamic1()));
-        IsFalse(IsValueTypeObj(CreateDynamic2()));
 
         IsTrue (IsValueTypeRef(ref _varInt));
         IsTrue (IsValueTypeRef(ref _varNullableInt));
@@ -341,12 +337,6 @@ public partial class Program
 
     [MethodImpl(MethodImplOptions.NoInlining)]
     private static bool IsValueTypeObj(object val) => val.GetType().IsValueType;
-
-    [MethodImpl(MethodImplOptions.NoInlining)]
-    private static dynamic CreateDynamic1() => 42;
-
-    [MethodImpl(MethodImplOptions.NoInlining)]
-    private static dynamic CreateDynamic2() => new { Name = "Test" };
 
     [MethodImpl(MethodImplOptions.NoInlining)]
     private static Type GetGenericTypeDefinition<T>() => typeof(T).GetGenericTypeDefinition();
