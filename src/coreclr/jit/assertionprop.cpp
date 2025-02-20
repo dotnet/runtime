@@ -11,6 +11,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 */
 
 #include "jitpch.h"
+#include "rangecheck.h"
 #ifdef _MSC_VER
 #pragma hdrstop
 #endif
@@ -4029,11 +4030,36 @@ void Compiler::optAssertionProp_RangeProperties(ASSERT_VALARG_TP assertions,
         return;
     }
 
-    const ValueNum  treeVN = vnStore->VNConservativeNormalValue(tree->gtVNPair);
+    const ValueNum treeVN = vnStore->VNConservativeNormalValue(tree->gtVNPair);
+
+    if (tree->TypeIs(TYP_INT))
+    {
+        Range rng = Range(Limit(Limit::keDependent));
+        RangeCheck::MergeEdgeAssertions(this, treeVN, ValueNumStore::NoVN, assertions, &rng, false);
+        if (rng.LowerLimit().IsConstant())
+        {
+            int lower = rng.LowerLimit().GetConstant();
+            if (lower >= 0)
+            {
+                *isKnownNonNegative = true;
+            }
+            if (lower > 0)
+            {
+                *isKnownNonZero = true;
+            }
+        }
+    }
+
     BitVecOps::Iter iter(apTraits, assertions);
     unsigned        index = 0;
     while (iter.NextElem(&index))
     {
+        if (*isKnownNonZero && *isKnownNonNegative)
+        {
+            // TP: We already have both properties, no need to check assertions.
+            return;
+        }
+
         AssertionDsc* curAssertion = optGetAssertion(GetAssertionIndex(index));
 
         // if treeVN has a bound-check assertion where it's an index, then
@@ -4122,6 +4148,39 @@ void Compiler::optAssertionProp_RangeProperties(ASSERT_VALARG_TP assertions,
                 // X >= CNS means X is [CNS..unknown]
                 *isKnownNonNegative = true;
                 *isKnownNonZero     = (cmpOper == GT_GT) || (info.constVal > 0);
+            }
+        }
+    }
+
+    if (*isKnownNonZero && *isKnownNonNegative)
+    {
+        return;
+    }
+
+    // Re-use rangecheck for ADD(op, -CNS) to see if op's lower bound can tell us
+    // whether op is non-negative or non-zero.
+    //
+    if (tree->TypeIs(TYP_INT) && tree->OperIs(GT_ADD) && tree->gtGetOp2()->IsIntCnsFitsInI32())
+    {
+        int cns = static_cast<int>(tree->gtGetOp2()->AsIntCon()->IconValue());
+        if ((cns < 0) && (cns > INT32_MIN))
+        {
+            ValueNum op1VN = vnStore->VNConservativeNormalValue(tree->gtGetOp1()->gtVNPair);
+            Range    rng   = Range(Limit(Limit::keDependent));
+            RangeCheck::MergeEdgeAssertions(this, op1VN, ValueNumStore::NoVN, assertions, &rng, false);
+
+            if (rng.LowerLimit().IsConstant())
+            {
+                // Say we have ADD(X, -8) and X is known to be [8..MAX_VALUE]
+                int lower = rng.LowerLimit().GetConstant();
+                if (lower >= -cns)
+                {
+                    *isKnownNonNegative = true;
+                }
+                if (lower > -cns)
+                {
+                    *isKnownNonZero = true;
+                }
             }
         }
     }
@@ -4851,12 +4910,6 @@ GenTree* Compiler::optAssertionProp_Cast(ASSERT_VALARG_TP assertions, GenTreeCas
     // Skip over a GT_COMMA node(s), if necessary to get to the lcl.
     GenTree* lcl = op1->gtEffectiveVal();
 
-    // If we don't have a cast of a LCL_VAR then bail.
-    if (!lcl->OperIs(GT_LCL_VAR))
-    {
-        return nullptr;
-    }
-
     // Try and see if we can make this cast into a cheaper zero-extending version
     // if the input is known to be non-negative.
     if (!cast->IsUnsigned() && genActualTypeIsInt(lcl) && cast->TypeIs(TYP_LONG) && (TARGET_POINTER_SIZE == 8))
@@ -4868,6 +4921,12 @@ GenTree* Compiler::optAssertionProp_Cast(ASSERT_VALARG_TP assertions, GenTreeCas
         {
             cast->SetUnsigned();
         }
+    }
+
+    // If we don't have a cast of a LCL_VAR then bail.
+    if (!lcl->OperIs(GT_LCL_VAR))
+    {
+        return nullptr;
     }
 
     IntegralRange  range = IntegralRange::ForCastInput(cast);
