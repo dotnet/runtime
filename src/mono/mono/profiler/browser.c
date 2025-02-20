@@ -52,7 +52,6 @@ static double last_sample_time;
 static int prev_skips_per_period;
 static int skips_per_period;
 static int sample_skip_counter;
-static int stack_depth;
 
 double mono_wasm_profiler_now ();
 void mono_wasm_profiler_record (MonoMethod *method, double start);
@@ -85,7 +84,6 @@ static void
 method_enter (MonoProfiler *prof, MonoMethod *method, MonoProfilerCallContext *ctx)
 {
 	sample_skip_counter++;
-	stack_depth++;
 
 	top_stack_frame_index++;
 	if (top_stack_frame_index < MAX_STACK_DEPTH) {
@@ -100,7 +98,7 @@ static void
 method_samplepoint (MonoProfiler *prof, MonoMethod *method, MonoProfilerCallContext *ctx)
 {
 	// enter/leave are not balanced, perhaps due to different callspecs between AOT and interpreter
-	g_assert(top_stack_frame_index > 0);
+	g_assert(top_stack_frame_index >= 0);
 
 	sample_skip_counter++;
 
@@ -124,7 +122,6 @@ method_leave (MonoProfiler *prof, MonoMethod *method, MonoProfilerCallContext *c
 	g_assert(top_stack_frame_index >= 0);
 	
 	sample_skip_counter++;
-	stack_depth--;
 
 	bool is_over = top_stack_frame_index >= MAX_STACK_DEPTH;
 	int top_index = is_over ? MAX_STACK_DEPTH - 1 : top_stack_frame_index;
