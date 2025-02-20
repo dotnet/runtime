@@ -1,0 +1,39 @@
+# This pipeline only runs on GitHub PRs, not on merges.
+trigger: none
+
+# Only run on specific changes to the JIT directory that are likely to affect APX.
+pr:
+  branches:
+    include:
+    - main
+  paths:
+    include:
+    - src/coreclr/jit/codegenxarch.cpp
+    - src/coreclr/jit/emitxarch.cpp
+    - src/coreclr/jit/emitxarch.h
+    - src/coreclr/jit/lsra.cpp
+    - src/coreclr/jit/lsra.h
+    - src/coreclr/jit/lsrabuild.cpp
+    - src/coreclr/jit/lsraxarch.cpp
+    - src/coreclr/jit/regMaskTPOps.cpp
+    - src/coreclr/jit/register.h
+    - src/coreclr/jit/target.h
+    - src/coreclr/jit/targetamd64.h
+
+schedules:
+- cron: "30 19 * * 6"
+  displayName: Sat at 11:30 AM (UTC-8:00)
+  branches:
+    include:
+    - main
+  always: true
+
+variables:
+  - template: /eng/pipelines/common/variables.yml
+
+extends:
+  template:  /eng/pipelines/coreclr/templates/jit-outerloop-pipeline.yml
+  parameters:
+    platforms:
+    - windows_x64
+    testGroup: jitstress-isas-apx
