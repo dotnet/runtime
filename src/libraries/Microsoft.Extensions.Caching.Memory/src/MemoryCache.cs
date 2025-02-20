@@ -220,11 +220,11 @@ namespace Microsoft.Extensions.Caching.Memory
         /// Gets the item associated with this key if present.
         /// </summary>
         /// <param name="key">A character span corresponding to a <see cref="string"/> identifying the requested entry.</param>
-        /// <param name="result">The located value or null.</param>
+        /// <param name="value">The located value or null.</param>
         /// <returns>True if the key was found.</returns>
         /// <remarks>This method allows values with <see cref="string"/> keys to be queried by content without allocating a new <see cref="string"/> instance.</remarks>
         [OverloadResolutionPriority(1)]
-        public bool TryGetValue(ReadOnlySpan<char> key, out object? result)
+        public bool TryGetValue(ReadOnlySpan<char> key, out object? value)
         {
             CheckDisposed();
 
@@ -232,36 +232,36 @@ namespace Microsoft.Extensions.Caching.Memory
 
             CoherentState coherentState = _coherentState; // Clear() can update the reference in the meantime
             coherentState.TryGetValue(key, out CacheEntry? entry); // note we rely on documented "default when fails" contract re the out
-            return PostProcessTryGetValue(coherentState, utcNow, entry, out result);
+            return PostProcessTryGetValue(coherentState, utcNow, entry, out value);
         }
 
         /// <summary>
         /// Gets the item associated with this key if present.
         /// </summary>
         /// <param name="key">A character span corresponding to a <see cref="string"/> identifying the requested entry.</param>
-        /// <param name="result">The located value or null.</param>
+        /// <param name="value">The located value or null.</param>
         /// <returns>True if the key was found.</returns>
         /// <remarks>This method allows values with <see cref="string"/> keys to be queried by content without allocating a new <see cref="string"/> instance.</remarks>
         [OverloadResolutionPriority(1)]
-        public bool TryGetValue<TItem>(ReadOnlySpan<char> key, out TItem? result)
+        public bool TryGetValue<TItem>(ReadOnlySpan<char> key, out TItem? value)
         {
             // this implementation intentionally based on (and consistent with) CacheExtensions.TryGetValue<TItem>
             if (TryGetValue(key, out object? untyped))
             {
                 if (untyped == null)
                 {
-                    result = default;
+                    value = default;
                     return true;
                 }
 
                 if (untyped is TItem item)
                 {
-                    result = item;
+                    value = item;
                     return true;
                 }
             }
 
-            result = default;
+            value = default;
             return false;
 
         }
