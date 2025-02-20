@@ -22,10 +22,6 @@
 #define CORECLR_HOSTING_API_LINKAGE
 #endif
 
-#if defined(TARGET_ANDROID)
-#include "corehost/host_runtime_contract.h"
-#endif
-
 // For each hosting API, we define a function prototype and a function pointer
 // The prototype is useful for implicit linking against the dynamic coreclr
 // library and the pointer for explicit dynamic loading (dlopen, LoadLibrary)
