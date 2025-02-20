@@ -21,6 +21,9 @@
 #endif
     IMPORT HijackHandler
     IMPORT ThrowControlForThread
+#ifdef FEATURE_INTERPRETER
+    IMPORT ExecuteInterpretedMethod
+#endif
 
 #ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
     IMPORT  g_sw_ww_table
@@ -432,7 +435,7 @@ NoFloatingPointRetVal
     GBLA ComCallPreStub_ErrorReturnOffset
     GBLA ComCallPreStub_FirstStackAdjust
 
-ComCallPreStub_FrameSize         SETA (SIZEOF__GSCookie + SIZEOF__ComMethodFrame)
+ComCallPreStub_FrameSize         SETA (SIZEOF__ComMethodFrame)
 ComCallPreStub_FirstStackAdjust  SETA (8 + SIZEOF__ArgumentRegisters + 2 * 8) ; x8, reg args , fp & lr already pushed
 ComCallPreStub_StackAlloc        SETA ComCallPreStub_FrameSize - ComCallPreStub_FirstStackAdjust
 ComCallPreStub_StackAlloc        SETA ComCallPreStub_StackAlloc + SIZEOF__FloatArgumentRegisters + 8; 8 for ErrorReturn
@@ -502,7 +505,7 @@ ComCallPreStub_ErrorExit
     GBLA GenericComCallStub_FrameOffset
     GBLA GenericComCallStub_FirstStackAdjust
 
-GenericComCallStub_FrameSize         SETA (SIZEOF__GSCookie + SIZEOF__ComMethodFrame)
+GenericComCallStub_FrameSize         SETA (SIZEOF__ComMethodFrame)
 GenericComCallStub_FirstStackAdjust  SETA (8 + SIZEOF__ArgumentRegisters + 2 * 8)
 GenericComCallStub_StackAlloc        SETA GenericComCallStub_FrameSize - GenericComCallStub_FirstStackAdjust
 GenericComCallStub_StackAlloc        SETA GenericComCallStub_StackAlloc + SIZEOF__FloatArgumentRegisters
@@ -762,8 +765,8 @@ COMToCLRDispatchHelper_RegSetup
         GBLA FaultingExceptionFrame_StackAlloc
         GBLA FaultingExceptionFrame_FrameOffset
 
-FaultingExceptionFrame_StackAlloc         SETA (SIZEOF__GSCookie + SIZEOF__FaultingExceptionFrame)
-FaultingExceptionFrame_FrameOffset        SETA  SIZEOF__GSCookie
+FaultingExceptionFrame_StackAlloc         SETA (SIZEOF__FaultingExceptionFrame)
+FaultingExceptionFrame_FrameOffset        SETA  0
 
         MACRO
         GenerateRedirectedStubWithFrame $STUB, $TARGET
@@ -1211,6 +1214,20 @@ JIT_PollGCRarePath
         br x9
     LEAF_END
 
+#ifdef FEATURE_INTERPRETER
+    NESTED_ENTRY InterpreterStub
+
+        PROLOG_WITH_TRANSITION_BLOCK
+
+        add         x0, sp, #__PWTB_TransitionBlock ; pTransitionBlock
+        mov         x1, METHODDESC_REGISTER         ; pMethodDesc
+
+        bl          ExecuteInterpretedMethod
+
+        EPILOG_WITH_TRANSITION_BLOCK_RETURN
+
+    NESTED_END
+#endif // FEATURE_INTERPRETER
 
 ; Must be at very end of file
     END
