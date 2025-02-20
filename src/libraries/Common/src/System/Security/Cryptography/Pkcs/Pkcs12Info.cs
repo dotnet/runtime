@@ -6,12 +6,17 @@ using System.Collections.ObjectModel;
 using System.Formats.Asn1;
 using System.Security.Cryptography.Asn1.Pkcs12;
 using System.Security.Cryptography.Asn1.Pkcs7;
-using System.Security.Cryptography.Pkcs.Asn1;
 using Internal.Cryptography;
 
 namespace System.Security.Cryptography.Pkcs
 {
-    public sealed class Pkcs12Info
+#if BUILDING_PKCS
+    public
+#else
+    #pragma warning disable CA1510, CA1512
+    internal
+#endif
+    sealed class Pkcs12Info
     {
         private PfxAsn _decoded;
         private ReadOnlyMemory<byte> _authSafeContents;
