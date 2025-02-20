@@ -329,16 +329,18 @@ namespace System.Reflection.Tests
         [Fact]
         public static void MakeGenericSignatureTypeValidation()
         {
-            // Standard reflection used as baseline.
-            AssertExtensions.Throws<ArgumentNullException>("typeArguments", () => typeof(IList<>).MakeGenericType(typeArguments: null));
-            AssertExtensions.Throws<ArgumentNullException>("typeArguments", () => typeof(IList<>).MakeGenericType(typeArguments: new Type[] { null }));
-            AssertExtensions.Throws<ArgumentException>("genericTypeDefinition", () => typeof(int).MakeGenericType(typeArguments: new Type[] { typeof(int) }));
+            // Calls to MakeGenericSignatureType() should have consistent validation with MakeGenericType().
 
-            // SignatureTypes.
             AssertExtensions.Throws<ArgumentNullException>("genericTypeDefinition", () => Type.MakeGenericSignatureType(genericTypeDefinition: null));
-            AssertExtensions.Throws<ArgumentNullException>("typeArguments", () => Type.MakeGenericSignatureType(genericTypeDefinition: typeof(IList<>), typeArguments: null));
-            AssertExtensions.Throws<ArgumentNullException>("typeArguments", () => Type.MakeGenericSignatureType(genericTypeDefinition: typeof(IList<>), typeArguments: new Type[] { null }));
+
             AssertExtensions.Throws<ArgumentException>("genericTypeDefinition", () => Type.MakeGenericSignatureType(genericTypeDefinition: typeof(int), typeArguments: new Type[] { typeof(int) }));
+            AssertExtensions.Throws<InvalidOperationException>(() => typeof(int).MakeGenericType(typeArguments: new Type[] { typeof(int) }));
+
+            AssertExtensions.Throws<ArgumentNullException>("typeArguments", () => Type.MakeGenericSignatureType(genericTypeDefinition: typeof(IList<>), typeArguments: null));
+            AssertExtensions.Throws<ArgumentNullException>("typeArguments", () => typeof(IList<>).MakeGenericType(typeArguments: null));
+
+            AssertExtensions.Throws<ArgumentNullException>("typeArguments", () => Type.MakeGenericSignatureType(genericTypeDefinition: typeof(IList<>), typeArguments: new Type[] { null }));
+            AssertExtensions.Throws<ArgumentNullException>("typeArguments", () => typeof(IList<>).MakeGenericType(typeArguments: new Type[] { null }));
         }
 
         private static Type ToSignatureType(this Type type)
