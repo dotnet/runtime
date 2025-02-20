@@ -76,7 +76,7 @@ namespace System.Net.Http.WinHttpHandlerFunctional.Tests
         [MemberData(nameof(HttpVersions))]
         public async Task SendAsync_ServerCertificateValidationCallback_CalledOnce(Version version, Uri uri)
         {
-            await RemoteExecutor.Invoke(async (version) =>
+            await RemoteExecutor.Invoke(async (version, uri) =>
             {
                 AppContext.SetSwitch("System.Net.Http.UseWinHttpCertificateCaching", true);
                 int callbackCount = 0;
@@ -101,7 +101,7 @@ namespace System.Net.Http.WinHttpHandlerFunctional.Tests
                     }
                     Assert.Equal(1, callbackCount);
                 }
-            }, version.ToString()).DisposeAsync();
+            }, version.ToString(), uri.ToString()).DisposeAsync();
         }
 
         [OuterLoop]
@@ -109,7 +109,7 @@ namespace System.Net.Http.WinHttpHandlerFunctional.Tests
         [MemberData(nameof(HttpVersions))]
         public async Task SendAsync_ServerCertificateValidationCallbackCertificateTimerTriggered_CalledTwice(Version version, Uri uri)
         {
-            await RemoteExecutor.Invoke(async (version) =>
+            await RemoteExecutor.Invoke(async (version, uri) =>
             {
                 const int certificateCacheCleanupInterval = 10;
                 AppContext.SetSwitch("System.Net.Http.UseWinHttpCertificateCaching", true);
@@ -132,7 +132,7 @@ namespace System.Net.Http.WinHttpHandlerFunctional.Tests
                     });
                     Assert.Equal(HttpStatusCode.OK, response.StatusCode);
                     _ = await response.Content.ReadAsStringAsync();
-                    await Task.Delay(TimeSpan.FromSeconds(certificateCacheCleanupInterval * 3));
+                    await Task.Delay(TimeSpan.FromMilliseconds(certificateCacheCleanupInterval * 3));
                     response = await client.SendAsync(new HttpRequestMessage(HttpMethod.Get, uri)
                     {
                         Version = Version.Parse(version)
@@ -141,7 +141,7 @@ namespace System.Net.Http.WinHttpHandlerFunctional.Tests
                     _ = await response.Content.ReadAsStringAsync();
                     Assert.Equal(2, callbackCount);
                 }
-            }, version.ToString()).DisposeAsync();
+            }, version.ToString(), uri.ToString()).DisposeAsync();
         }
 
         [OuterLoop]
