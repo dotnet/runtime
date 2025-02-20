@@ -801,8 +801,11 @@ namespace CoreclrTestLib
                             Console.WriteLine($"\t{activeProcess.Id,-6} {activeProcess.ProcessName}");
                         }
 
-                        Console.WriteLine("Snapshot of processes currently running (using wmic):");
-                        Console.WriteLine(GetAllProcessNames_wmic());
+                        if (OperatingSystem.IsWindows())
+                        {
+                            Console.WriteLine("Snapshot of processes currently running (using wmic):");
+                            Console.WriteLine(GetAllProcessNames_wmic());
+                        }
 
                         if (collectCrashDumps)
                         {
