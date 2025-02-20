@@ -37,13 +37,6 @@ DacGetHostVtPtrs(void)
     return S_OK;
 }
 
-const WCHAR *g_dacFrameStrings[] =
-{
-#define FRAME_TYPE_NAME(name) W(#name),
-#include "FrameTypes.h"
-#undef FRAME_TYPE_NAME
-};
-
 bool
 DacExceptionFilter(Exception* ex, ClrDataAccess* access,
                    HRESULT* status)
@@ -1131,20 +1124,6 @@ DacGetTargetAddrForHostInteriorAddr(LPCVOID ptr, bool throwEx)
         return addr;
     }
 #endif // !_PREFIX_
-}
-
-PWSTR    DacGetFrameNameW(TADDR frameIdentifier)
-{
-    PWSTR pszRet = NULL;
-
-    FrameIdentifier frameId = static_cast<FrameIdentifier>(frameIdentifier);
-
-    if (!(frameId == FrameIdentifier::None || frameId >= FrameIdentifier::CountPlusOne))
-    {
-        pszRet = (PWSTR) g_dacFrameStrings[(int)frameId - 1];
-    }
-
-    return pszRet;
 }
 
 TADDR

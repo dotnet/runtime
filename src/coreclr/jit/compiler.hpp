@@ -1411,14 +1411,14 @@ inline Statement* Compiler::gtNewStmt(GenTree* expr, const DebugInfo& di)
     return stmt;
 }
 
-inline GenTree* Compiler::gtNewOperNode(genTreeOps oper, var_types type, GenTree* op1)
+inline GenTreeUnOp* Compiler::gtNewOperNode(genTreeOps oper, var_types type, GenTree* op1)
 {
     assert((GenTree::OperKind(oper) & (GTK_UNOP | GTK_BINOP)) != 0);
     assert((GenTree::OperKind(oper) & GTK_EXOP) == 0); // Can't use this to construct any types that extend unary/binary
                                                        // operator.
     assert(op1 != nullptr || oper == GT_RETFILT || (oper == GT_RETURN && type == TYP_VOID));
 
-    GenTree* node = new (this, oper) GenTreeOp(oper, type, op1, nullptr);
+    GenTreeUnOp* node = new (this, oper) GenTreeOp(oper, type, op1, nullptr);
 
     return node;
 }

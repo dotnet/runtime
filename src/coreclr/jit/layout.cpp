@@ -778,6 +778,7 @@ ClassLayoutBuilder ClassLayoutBuilder::BuildArray(Compiler* compiler, CORINFO_CL
 
     ClrSafeInt<unsigned> totalSize(elementSize);
     totalSize *= static_cast<unsigned>(length);
+    totalSize.AlignUp(TARGET_POINTER_SIZE);
     totalSize += static_cast<unsigned>(OFFSETOF__CORINFO_Array__data);
     assert(!totalSize.IsOverflow());
 

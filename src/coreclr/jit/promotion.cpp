@@ -2202,8 +2202,198 @@ GenTree** ReplaceVisitor::InsertMidTreeReadBacks(GenTree** use)
 }
 
 //------------------------------------------------------------------------
+// ReplaceStructLocal:
+//   Try to replace a promoted struct local with uses of its fields.
+//
+// Parameters:
+//   user  - The user
+//   value - The struct local
+//
+// Returns:
+//   True if the local was replaced and no more work needs to be done; false if
+//   the use will need to be handled via write-backs.
+//
+// Remarks:
+//   Usually this amounts to replacing the struct local by a FIELD_LIST with
+//   the promoted fields, but merged returns require more complicated handling.
+//
+bool ReplaceVisitor::ReplaceStructLocal(GenTree* user, GenTreeLclVarCommon* value)
+{
+    if (user->IsCall())
+    {
+        return ReplaceCallArgWithFieldList(user->AsCall(), value);
+    }
+    else
+    {
+        assert(user->OperIs(GT_RETURN, GT_SWIFT_ERROR_RET));
+        return ReplaceReturnedStructLocal(user->AsOp(), value);
+    }
+}
+
+//------------------------------------------------------------------------
+// ReplaceReturnedStructLocal:
+//   Try to replace a returned promoted struct local.
+//
+// Parameters:
+//   ret   - The return node
+//   value - The struct local
+//
+// Returns:
+//   True if the local was used and no more work needs to be done; false if the
+//   use will need to be handled via write-backs.
+//
+// Remarks:
+//   The backend supports arbitrary FIELD_LIST for returns, i.e. there is no
+//   requirement that the fields map cleanly to registers. However, morph does
+//   not support introducing a returned FIELD_LIST in cases where returns are
+//   being merged. Due to that, and for CQ, we instead decompose a store to the
+//   return local for that case.
+//
+bool ReplaceVisitor::ReplaceReturnedStructLocal(GenTreeOp* ret, GenTreeLclVarCommon* value)
+{
+    if (m_compiler->genReturnLocal != BAD_VAR_NUM)
+    {
+        JITDUMP("Replacing merged return by store to merged return local\n");
+        // If we have merged returns then replace with a store to the return
+        // local, and switch out the GT_RETURN to return that local.
+        GenTree* sideEffects = nullptr;
+        m_compiler->gtExtractSideEffList(ret, &sideEffects, GTF_SIDE_EFFECT, true);
+        m_currentStmt->SetRootNode(sideEffects == nullptr ? m_compiler->gtNewNothingNode() : sideEffects);
+        DISPSTMT(m_currentStmt);
+        m_madeChanges = true;
+
+        GenTree*   store     = m_compiler->gtNewStoreLclVarNode(m_compiler->genReturnLocal, value);
+        Statement* storeStmt = m_compiler->fgNewStmtFromTree(store);
+        m_compiler->fgInsertStmtAfter(m_currentBlock, m_currentStmt, storeStmt);
+        DISPSTMT(storeStmt);
+
+        ret->SetReturnValue(m_compiler->gtNewLclVarNode(m_compiler->genReturnLocal));
+        Statement* retStmt = m_compiler->fgNewStmtFromTree(ret);
+        m_compiler->fgInsertStmtAfter(m_currentBlock, storeStmt, retStmt);
+        DISPSTMT(retStmt);
+
+        return true;
+    }
+
+    AggregateInfo* agg    = m_aggregates.Lookup(value->GetLclNum());
+    ClassLayout*   layout = value->GetLayout(m_compiler);
+    assert(layout != nullptr);
+
+    unsigned startOffset     = value->GetLclOffs();
+    unsigned returnValueSize = layout->GetSize();
+    if (agg->Unpromoted.Intersects(SegmentList::Segment(startOffset, startOffset + returnValueSize)))
+    {
+        // TODO-CQ: We could handle cases where the intersected remainder is simple
+        return false;
+    }
+
+    auto checkPartialOverlap = [=](Replacement& rep) {
+        bool contained =
+            (rep.Offset >= startOffset) && (rep.Offset + genTypeSize(rep.AccessType) <= startOffset + returnValueSize);
+
+        if (contained)
+        {
+            // Keep visiting overlapping replacements
+            return true;
+        }
+
+        // Partial overlap, abort the visit and give up
+        return false;
+    };
+
+    if (!VisitOverlappingReplacements(value->GetLclNum(), startOffset, returnValueSize, checkPartialOverlap))
+    {
+        return false;
+    }
+
+    if (!IsReturnProfitableAsFieldList(value))
+    {
+        return false;
+    }
+
+    StructDeaths      deaths    = m_liveness->GetDeathsForStructLocal(value);
+    GenTreeFieldList* fieldList = m_compiler->gtNewFieldList();
+
+    auto addField = [=](Replacement& rep) {
+        GenTree* fieldValue;
+        if (!rep.NeedsReadBack)
+        {
+            fieldValue = m_compiler->gtNewLclvNode(rep.LclNum, rep.AccessType);
+
+            assert(deaths.IsReplacementDying(static_cast<unsigned>(&rep - agg->Replacements.data())));
+            fieldValue->gtFlags |= GTF_VAR_DEATH;
+            CheckForwardSubForLastUse(rep.LclNum);
+        }
+        else
+        {
+            // Replacement local is not up to date.
+            fieldValue = m_compiler->gtNewLclFldNode(value->GetLclNum(), rep.AccessType, rep.Offset);
+
+            if (!m_compiler->lvaGetDesc(value->GetLclNum())->lvDoNotEnregister)
+            {
+                m_compiler->lvaSetVarDoNotEnregister(value->GetLclNum() DEBUGARG(DoNotEnregisterReason::LocalField));
+            }
+        }
+
+        fieldList->AddField(m_compiler, fieldValue, rep.Offset - startOffset, rep.AccessType);
+
+        return true;
+    };
+
+    VisitOverlappingReplacements(value->GetLclNum(), startOffset, returnValueSize, addField);
+
+    ret->SetReturnValue(fieldList);
+
+    m_madeChanges = true;
+    return true;
+}
+
+//------------------------------------------------------------------------
+// IsReturnProfitableAsFieldList:
+//   Check if a returned local is expected to be profitable to turn into a
+//   FIELD_LIST.
+//
+// Parameters:
+//   value - The struct local
+//
+// Returns:
+//   True if so.
+//
+bool ReplaceVisitor::IsReturnProfitableAsFieldList(GenTreeLclVarCommon* value)
+{
+    // Currently the backend requires all fields to map cleanly to registers to
+    // efficiently return them. Otherwise they will be spilled, and we are
+    // better off decomposing the store here.
+    auto fieldMapsCleanly = [=](Replacement& rep) {
+        const ReturnTypeDesc& retDesc     = m_compiler->compRetTypeDesc;
+        unsigned              fieldOffset = rep.Offset - value->GetLclOffs();
+        unsigned              numRegs     = retDesc.GetReturnRegCount();
+        for (unsigned i = 0; i < numRegs; i++)
+        {
+            unsigned  offset  = retDesc.GetReturnFieldOffset(i);
+            var_types regType = retDesc.GetReturnRegType(i);
+            if ((fieldOffset == offset) && (genTypeSize(rep.AccessType) == genTypeSize(regType)))
+            {
+                return true;
+            }
+        }
+
+        return false;
+    };
+
+    unsigned size = value->GetLayout(m_compiler)->GetSize();
+    if (!VisitOverlappingReplacements(value->GetLclNum(), value->GetLclOffs(), size, fieldMapsCleanly))
+    {
+        // Aborted early, so a field did not map
+        return false;
+    }
+
+    return true;
+}
+
+//------------------------------------------------------------------------
 // ReplaceCallArgWithFieldList:
-//   Handle a call that may  pass a struct local with replacements as the
+//   Handle a call that may pass a struct local with replacements as the
 //   retbuf.
 //
 // Parameters:
@@ -2228,7 +2418,7 @@ bool ReplaceVisitor::ReplaceCallArgWithFieldList(GenTreeCall* call, GenTreeLclVa
     ClassLayout*   layout = argNode->GetLayout(m_compiler);
     assert(layout != nullptr);
     StructDeaths      deaths    = m_liveness->GetDeathsForStructLocal(argNode);
-    GenTreeFieldList* fieldList = new (m_compiler, GT_FIELD_LIST) GenTreeFieldList;
+    GenTreeFieldList* fieldList = m_compiler->gtNewFieldList();
     for (const ABIPassingSegment& seg : callArg->NewAbiInfo.Segments())
     {
         Replacement* rep = nullptr;
@@ -2344,12 +2534,6 @@ bool ReplaceVisitor::CanReplaceCallArgWithFieldListOfReplacements(GenTreeCall*  
             // the replacement is visited in this callback.
             if ((repSize < seg.Size) &&
                 agg->Unpromoted.Intersects(SegmentList::Segment(rep.Offset + repSize, rep.Offset + seg.Size)))
-            {
-                return false;
-            }
-
-            // Finally, the backend requires the register types to match.
-            if (!varTypeUsesSameRegType(rep.AccessType, seg.GetRegisterType()))
             {
                 return false;
             }
@@ -2533,7 +2717,7 @@ void ReplaceVisitor::ReplaceLocal(GenTree** use, GenTree* user)
 
         assert(effectiveUser->OperIs(GT_CALL, GT_RETURN, GT_SWIFT_ERROR_RET));
 
-        if (!effectiveUser->IsCall() || !ReplaceCallArgWithFieldList(effectiveUser->AsCall(), lcl))
+        if (!ReplaceStructLocal(effectiveUser, lcl))
         {
             unsigned size = lcl->GetLayout(m_compiler)->GetSize();
             WriteBackBeforeUse(use, lclNum, lcl->GetLclOffs(), size);

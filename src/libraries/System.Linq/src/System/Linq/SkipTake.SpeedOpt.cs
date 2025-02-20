@@ -437,9 +437,12 @@ namespace System.Linq
             {
                 if (_source is Iterator<TSource> iterator &&
                     iterator.GetCount(onlyIfCheap: true) is int count &&
-                    count >= _minIndexInclusive)
+                    count > _minIndexInclusive)
                 {
-                    return !HasLimit ?
+                    // If there's no upper bound, or if there are fewer items in the list
+                    // than the upper bound allows, just return the last element of the list.
+                    // Otherwise, get the element at the upper bound.
+                    return (uint)count <= (uint)_maxIndexInclusive ?
                         iterator.TryGetLast(out found) :
                         iterator.TryGetElementAt(_maxIndexInclusive, out found);
                 }

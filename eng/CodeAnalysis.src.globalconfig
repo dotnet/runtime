@@ -1178,7 +1178,7 @@ dotnet_diagnostic.SA1013.severity = none
 dotnet_diagnostic.SA1014.severity = warning
 
 # SA1015: Closing generic bracket should not be followed by a space
-dotnet_diagnostic.SA1015.severity = none
+dotnet_diagnostic.SA1015.severity = warning
 
 # SA1018: Nullable type symbol should not be preceded by a space
 dotnet_diagnostic.SA1018.severity = warning

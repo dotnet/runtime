@@ -102,7 +102,7 @@ private:
     bool      TryContainingCselOp(GenTreeHWIntrinsic* parentNode, GenTreeHWIntrinsic* childNode);
 #endif
     void ContainCheckSelect(GenTreeOp* select);
-    void ContainCheckBitCast(GenTree* node);
+    void ContainCheckBitCast(GenTreeUnOp* node);
     void ContainCheckCallOperands(GenTreeCall* call);
     void ContainCheckIndir(GenTreeIndir* indirNode);
     void ContainCheckStoreIndir(GenTreeStoreInd* indirNode);
@@ -168,6 +168,8 @@ private:
     GenTree*   LowerStoreLocCommon(GenTreeLclVarCommon* lclVar);
     void       LowerRetStruct(GenTreeUnOp* ret);
     void       LowerRetSingleRegStructLclVar(GenTreeUnOp* ret);
+    void       LowerRetFieldList(GenTreeOp* ret, GenTreeFieldList* fieldList);
+    bool       IsFieldListCompatibleWithReturn(GenTreeFieldList* fieldList);
     void       LowerCallStruct(GenTreeCall* call);
     void       LowerStoreSingleRegCallStruct(GenTreeBlk* store);
 #if !defined(WINDOWS_AMD64_ABI)
@@ -190,17 +192,13 @@ private:
     GenTree* LowerVirtualVtableCall(GenTreeCall* call);
     GenTree* LowerVirtualStubCall(GenTreeCall* call);
     void     LowerArgsForCall(GenTreeCall* call);
-    void     ReplaceArgWithPutArgOrBitcast(GenTree** ppChild, GenTree* newNode);
 #if defined(TARGET_X86) && defined(FEATURE_IJW)
     void LowerSpecialCopyArgs(GenTreeCall* call);
     void InsertSpecialCopyArg(GenTreePutArgStk* putArgStk, CORINFO_CLASS_HANDLE argType, unsigned lclNum);
 #endif // defined(TARGET_X86) && defined(FEATURE_IJW)
-    GenTree* NewPutArg(GenTreeCall* call, GenTree* arg, CallArg* callArg, var_types type);
-    void     LowerArg(GenTreeCall* call, CallArg* callArg, bool late);
-#if defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
-    GenTree* LowerFloatArg(GenTree** pArg, CallArg* callArg);
-    GenTree* LowerFloatArgReg(GenTree* arg, regNumber regNum);
-#endif
+    void LowerArg(GenTreeCall* call, CallArg* callArg);
+    void InsertBitCastIfNecessary(GenTree** argNode, const ABIPassingSegment& registerSegment);
+    void InsertPutArgReg(GenTree** node, const ABIPassingSegment& registerSegment);
     void LegalizeArgPlacement(GenTreeCall* call);
 
     void     InsertPInvokeCallProlog(GenTreeCall* call);
@@ -387,6 +385,8 @@ private:
     void     ContainBlockStoreAddress(GenTreeBlk* blkNode, unsigned size, GenTree* addr, GenTree* addrParent);
     void     LowerPutArgStkOrSplit(GenTreePutArgStk* putArgNode);
     GenTree* LowerArrLength(GenTreeArrCommon* node);
+
+    bool TryRemoveBitCast(GenTreeUnOp* node);
 
 #ifdef TARGET_XARCH
     void     LowerPutArgStk(GenTreePutArgStk* putArgStk);

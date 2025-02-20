@@ -431,19 +431,16 @@ bool isLegalManagedCodeCaller(PCODE retAddr) {
 #endif //0
 
 
-#if defined (_DEBUG_IMPL)   // _DEBUG and !DAC
-
 //-----------------------------------------------------------------------
-// Implementation of the global table of names.  On the DAC side, just the global pointer.
-//  On the runtime side, the array of names.
-    #define FRAME_TYPE_NAME(x) #x,
-    static PTR_CSTR FrameTypeNameTable[] = {
-    #include "frames.h"
-    };
+// Implementation of the global table of names
+#define FRAME_TYPE_NAME(x) #x,
+static const LPCSTR FrameTypeNameTable[] = {
+#include "frames.h"
+};
 
 
 /* static */
-PTR_CSTR Frame::GetFrameTypeName(FrameIdentifier frameIdentifier)
+LPCSTR Frame::GetFrameTypeName(FrameIdentifier frameIdentifier)
 {
     LIMITED_METHOD_CONTRACT;
     if ((frameIdentifier == FrameIdentifier::None) || frameIdentifier >= FrameIdentifier::CountPlusOne)
@@ -453,6 +450,8 @@ PTR_CSTR Frame::GetFrameTypeName(FrameIdentifier frameIdentifier)
     return FrameTypeNameTable[(int)frameIdentifier - 1];
 } // char* Frame::FrameTypeName()
 
+
+#if defined (_DEBUG_IMPL)   // _DEBUG and !DAC
 
 //-----------------------------------------------------------------------
 

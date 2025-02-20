@@ -2145,7 +2145,7 @@ void MethodContext::recGetRuntimeTypePointer(CORINFO_CLASS_HANDLE cls, CORINFO_O
         GetRuntimeTypePointer = new LightWeightMap<DWORDLONG, DWORDLONG>();
 
     DWORDLONG key = CastHandle(cls);
-    DWORDLONG value = (DWORDLONG)result;
+    DWORDLONG value = CastHandle(result);
     GetRuntimeTypePointer->Add(key, value);
     DEBUG_REC(dmpGetRuntimeTypePointer(key, value));
 }
@@ -2166,7 +2166,7 @@ void MethodContext::recIsObjectImmutable(CORINFO_OBJECT_HANDLE objPtr, bool resu
     if (IsObjectImmutable == nullptr)
         IsObjectImmutable = new LightWeightMap<DWORDLONG, DWORD>();
 
-    DWORDLONG key = (DWORDLONG)objPtr;
+    DWORDLONG key = CastHandle(objPtr);
     DWORD value = (DWORD)result;
     IsObjectImmutable->Add(key, value);
     DEBUG_REC(dmpIsObjectImmutable(key, value));
@@ -2177,7 +2177,7 @@ void MethodContext::dmpIsObjectImmutable(DWORDLONG key, DWORD value)
 }
 bool MethodContext::repIsObjectImmutable(CORINFO_OBJECT_HANDLE objPtr)
 {
-    DWORDLONG key = (DWORDLONG)objPtr;
+    DWORDLONG key = CastHandle(objPtr);
     DWORD value = LookupByKeyOrMiss(IsObjectImmutable, key, ": key %016" PRIX64 "", key);
     DEBUG_REP(dmpIsObjectImmutable(key, value));
     return (bool)value;
@@ -2224,8 +2224,8 @@ void MethodContext::recGetObjectType(CORINFO_OBJECT_HANDLE objPtr, CORINFO_CLASS
     if (GetObjectType == nullptr)
         GetObjectType = new LightWeightMap<DWORDLONG, DWORDLONG>();
 
-    DWORDLONG key = (DWORDLONG)objPtr;
-    DWORDLONG value = (DWORDLONG)result;
+    DWORDLONG key = CastHandle(objPtr);
+    DWORDLONG value = CastHandle(result);
     GetObjectType->Add(key, value);
     DEBUG_REC(dmpGetObjectType(key, value));
 }
@@ -2235,7 +2235,7 @@ void MethodContext::dmpGetObjectType(DWORDLONG key, DWORDLONG value)
 }
 CORINFO_CLASS_HANDLE MethodContext::repGetObjectType(CORINFO_OBJECT_HANDLE objPtr)
 {
-    DWORDLONG key = (DWORDLONG)objPtr;
+    DWORDLONG key = CastHandle(objPtr);
     DWORDLONG value = LookupByKeyOrMiss(GetObjectType, key, ": key %016" PRIX64 "", key);
     DEBUG_REP(dmpGetObjectType(key, value));
     return (CORINFO_CLASS_HANDLE)value;

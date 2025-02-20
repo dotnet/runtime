@@ -613,8 +613,8 @@ static StackWalkAction TAStackCrawlCallBackWorker(CrawlFrame* pCf, StackCrawlCon
     #endif
     if (pData->fWriteToStressLog)
     {
-        STRESS_LOG5(LF_EH, LL_INFO100, "TAStackCrawlCallBack: STACKCRAWL method:%pM ('%s'), offset %x, Frame:%p, FrameVtable = %pV\n",
-            pMD, METHODNAME(pMD), pCf->IsFrameless()?pCf->GetRelOffset():0, pFrame, pCf->IsFrameless()?0:(*(void**)pFrame));
+        STRESS_LOG5(LF_EH, LL_INFO100, "TAStackCrawlCallBack: STACKCRAWL method:%pM ('%s'), offset %x, Frame:%p, FrameIdentifier = %s\n",
+            pMD, METHODNAME(pMD), pCf->IsFrameless()?pCf->GetRelOffset():0, pFrame, pCf->IsFrameless()?0:Frame::GetFrameTypeName(pFrame->GetFrameIdentifier()));
     }
     #undef METHODNAME
 

@@ -90,7 +90,7 @@ NESTED_ENTRY JIT_PInvokeBegin, _TEXT, NoHandler
 
     // s0 = pFrame
     // set first slot to the value of InlinedCallFrame identifier (checked by runtime code)
-    li.d $t0, FRAMETYPE_InlinedCallFrame
+    li.d  $t4, FRAMETYPE_InlinedCallFrame
     st.d  $t4, $s0, 0
 
     st.d  $zero, $s0, InlinedCallFrame__m_Datum

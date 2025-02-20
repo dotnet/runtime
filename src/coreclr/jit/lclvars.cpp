@@ -95,6 +95,22 @@ void Compiler::lvaInitTypeRef()
         info.compRetNativeType = hasRetBuffArg ? TYP_STRUCT : TYP_VOID;
     }
 
+#ifdef DEBUG
+    if (verbose)
+    {
+        CORINFO_CLASS_HANDLE retClass = info.compMethodInfo->args.retTypeClass;
+        printf("%u return registers for return type %s %s\n", returnRegCount, varTypeName(info.compRetType),
+               varTypeIsStruct(info.compRetType) ? eeGetClassName(retClass) : "");
+        for (unsigned i = 0; i < returnRegCount; i++)
+        {
+            unsigned offset = compRetTypeDesc.GetReturnFieldOffset(i);
+            unsigned size   = genTypeSize(compRetTypeDesc.GetReturnRegType(i));
+            printf("  [%02u..%02u) reg %s\n", offset, offset + size,
+                   getRegName(compRetTypeDesc.GetABIReturnReg(i, info.compCallConv)));
+        }
+    }
+#endif
+
     // Do we have a RetBuffArg?
     if (hasRetBuffArg)
     {
@@ -5842,8 +5858,21 @@ void Compiler::lvaFixVirtualFrameOffsets()
 #ifdef TARGET_ARM
 bool Compiler::lvaIsPreSpilled(unsigned lclNum, regMaskTP preSpillMask)
 {
-    const LclVarDsc& desc = lvaTable[lclNum];
-    return desc.lvIsRegArg && (preSpillMask & genRegMask(desc.GetArgReg()));
+    LclVarDsc* dsc = lvaGetDesc(lclNum);
+    if (dsc->lvIsStructField)
+    {
+        lclNum = dsc->lvParentLcl;
+    }
+    const ABIPassingInformation& abiInfo = lvaGetParameterABIInfo(lclNum);
+    for (const ABIPassingSegment& segment : abiInfo.Segments())
+    {
+        if (segment.IsPassedInRegister() && ((preSpillMask & segment.GetRegisterMask()) != RBM_NONE))
+        {
+            return true;
+        }
+    }
+
+    return false;
 }
 #endif // TARGET_ARM
 
@@ -6604,12 +6633,31 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
             if (varDsc->lvIsParam)
             {
 #ifdef TARGET_ARM64
-                if (info.compIsVarArgs && varDsc->lvIsRegArg &&
-                    (varDsc->GetArgReg() != theFixedRetBuffReg(info.compCallConv)))
+                if (info.compIsVarArgs && varDsc->lvIsRegArg && (lclNum != info.compRetBuffArg))
                 {
-                    // Stack offset to varargs (parameters) should point to home area which will be preallocated.
-                    const unsigned regArgNum = genMapIntRegNumToRegArgNum(varDsc->GetArgReg(), info.compCallConv);
-                    varDsc->SetStackOffset(-initialStkOffs + regArgNum * REGSIZE_BYTES);
+                    const ABIPassingInformation& abiInfo =
+                        lvaGetParameterABIInfo(varDsc->lvIsStructField ? varDsc->lvParentLcl : lclNum);
+                    bool found = false;
+                    for (const ABIPassingSegment& segment : abiInfo.Segments())
+                    {
+                        if (!segment.IsPassedInRegister())
+                        {
+                            continue;
+                        }
+
+                        if (varDsc->lvIsStructField && (segment.Offset != varDsc->lvFldOffset))
+                        {
+                            continue;
+                        }
+
+                        found = true;
+                        // Stack offset to varargs (parameters) should point to home area which will be preallocated.
+                        const unsigned regArgNum = genMapIntRegNumToRegArgNum(segment.GetRegister(), info.compCallConv);
+                        varDsc->SetStackOffset(-initialStkOffs + regArgNum * REGSIZE_BYTES);
+                        break;
+                    }
+
+                    assert(found);
                     continue;
                 }
 #endif
@@ -6916,7 +6964,7 @@ bool Compiler::lvaParamHasLocalStackSpace(unsigned lclNum)
     // On ARM we spill the registers in codeGen->regSet.rsMaskPreSpillRegArg
     // in the prolog, thus they don't need stack frame space.
     //
-    if ((codeGen->regSet.rsMaskPreSpillRegs(false) & genRegMask(varDsc->GetArgReg())) != 0)
+    if (lvaIsPreSpilled(lclNum, codeGen->regSet.rsMaskPreSpillRegs(false)))
     {
         assert(varDsc->GetStackOffset() != BAD_STK_OFFS);
         return false;

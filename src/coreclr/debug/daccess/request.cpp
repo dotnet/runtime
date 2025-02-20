@@ -2143,7 +2143,7 @@ ClrDataAccess::GetFrameName(CLRDATA_ADDRESS vtable, unsigned int count, _Inout_u
 
     SOSDacEnter();
 
-    PWSTR pszName = DacGetFrameNameW(CLRDATA_ADDRESS_TO_TADDR(vtable));
+    LPCSTR pszName = Frame::GetFrameTypeName((FrameIdentifier)CLRDATA_ADDRESS_TO_TADDR(vtable));
     if (pszName == NULL)
     {
         hr = E_INVALIDARG;
@@ -2151,11 +2151,19 @@ ClrDataAccess::GetFrameName(CLRDATA_ADDRESS vtable, unsigned int count, _Inout_u
     else
     {
         // Turn from bytes to wide characters
-        unsigned int len = (unsigned int)u16_strlen(pszName);
+        unsigned int len = (unsigned int)strlen(pszName);
 
         if (frameName)
         {
-            wcsncpy_s(frameName, count, pszName, _TRUNCATE);
+            if (count != 0)
+            {
+                unsigned truncatedLength = min(len, count - 1);
+                for (unsigned i = 0; i < truncatedLength; i++)
+                {
+                    frameName[i] = pszName[i];
+                }
+                frameName[truncatedLength] = '\0';
+            }
 
             if (pNeeded)
             {

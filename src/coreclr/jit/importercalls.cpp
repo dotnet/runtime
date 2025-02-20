@@ -1247,7 +1247,6 @@ DONE:
         {
             JITDUMP("\nSaving generic context %p and inline context %p for call [%06u]\n", dspPtr(exactContextHnd),
                     dspPtr(compInlineContext), dspTreeID(call->AsCall()));
-            call->AsCall()->gtCallMoreFlags |= GTF_CALL_M_HAS_LATE_DEVIRT_INFO;
             LateDevirtualizationInfo* const info       = new (this, CMK_Inlining) LateDevirtualizationInfo;
             info->exactContextHnd                      = exactContextHnd;
             info->inlinersContext                      = compInlineContext;
@@ -8398,7 +8397,6 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
     // it's a union field used for other things by virtual
     // stubs)
     call->ClearInlineInfo();
-    call->gtCallMoreFlags &= ~GTF_CALL_M_HAS_LATE_DEVIRT_INFO;
 
 #if defined(DEBUG)
     if (verbose)

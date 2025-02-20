@@ -1206,7 +1206,7 @@ private:
 //   offset - [out] The sum of offset peeled such that ADD(addr, offset) is equivalent to the original addr.
 //   fldSeq - [out, optional] The combined field sequence for all the peeled offsets.
 //
-void Compiler::gtPeelOffsets(GenTree** addr, target_ssize_t* offset, FieldSeq** fldSeq)
+void Compiler::gtPeelOffsets(GenTree** addr, target_ssize_t* offset, FieldSeq** fldSeq) const
 {
     assert((*addr)->TypeIs(TYP_I_IMPL, TYP_BYREF, TYP_REF));
     *offset = 0;
