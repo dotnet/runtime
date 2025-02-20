@@ -872,6 +872,10 @@ void EEStartupHelper()
         }
 #endif
 
+        // This isn't done as part of InitializeGarbageCollector() above because
+        // debugger must be initialized before creating EE thread objects 
+        FinalizerThread::FinalizerThreadCreate();
+
         InitPreStubManager();
 
 #ifdef FEATURE_COMINTEROP
@@ -908,10 +912,6 @@ void EEStartupHelper()
         EventPipeAdapter::FinishInitialize();
 #endif // FEATURE_PERFTRACING
         GenAnalysis::Initialize();
-
-        // This isn't done as part of InitializeGarbageCollector() above because thread
-        // creation requires AppDomains to have been set up.
-        FinalizerThread::FinalizerThreadCreate();
 
         // Now we really have fully initialized the garbage collector
         SetGarbageCollectorFullyInitialized();
@@ -964,6 +964,16 @@ void EEStartupHelper()
                                                 g_MiniMetaDataBuffMaxSize, MEM_COMMIT, PAGE_READWRITE);
 #endif // FEATURE_MINIMETADATA_IN_TRIAGEDUMPS
 
+#ifdef TARGET_WINDOWS
+#ifdef FEATURE_COMINTEROP
+        // By now finalizer thread should have initialized COM.Make sure that it did.
+        // COM initialization will register its FLS slot.
+        // We need that it happened before we register ours so that COM cleanup callback
+        // run before ours (since COM cleanup may indirectly call managed code)
+        FinalizerThread::WaitForFinalizerThreadStart();
+#endif
+        InitFlsSlot();
+#endif
         g_fEEStarted = TRUE;
         g_EEStartupStatus = S_OK;
         hr = S_OK;

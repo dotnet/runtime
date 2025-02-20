@@ -385,6 +385,12 @@ DWORD WINAPI FinalizerThread::FinalizerThreadStart(void *args)
     _ASSERTE(s_FinalizerThreadOK);
     _ASSERTE(GetThread() == GetFinalizerThread());
 
+#if defined(TARGET_WINDOWS) && defined (FEATURE_COMINTEROP)
+    // handshake with EE initializating FLS slot, which should be happening after
+    // HasStarted called CoInitializeEx
+    hEventFinalizerDone->Set();
+#endif
+
     // finalizer should always park in default domain
 
     if (s_FinalizerThreadOK)
@@ -457,6 +463,10 @@ void FinalizerThread::FinalizerThreadCreate()
     _ASSERTE(g_pFinalizerThread == 0);
     g_pFinalizerThread = SetupUnstartedThread();
 
+#ifdef FEATURE_COMINTEROP
+    g_pFinalizerThread->SetApartmentOfUnstartedThread(Thread::AS_InMTA);
+#endif
+
     // We don't want the thread block disappearing under us -- even if the
     // actual thread terminates.
     GetFinalizerThread()->IncExternalCount();
@@ -489,6 +499,15 @@ void FinalizerThread::SignalFinalizationDone(int observedFullGcCount)
 
     g_fullGcCountSeenByFinalization = observedFullGcCount;
     hEventFinalizerDone->Set();
+}
+
+void FinalizerThread::WaitForFinalizerThreadStart()
+{
+    // this should be only called during EE startup
+    _ASSERTE(!g_fEEStarted);
+
+    hEventFinalizerDone->Wait(INFINITE,FALSE);
+    hEventFinalizerDone->Reset();
 }
 
 // Wait for the finalizer thread to complete one pass.
