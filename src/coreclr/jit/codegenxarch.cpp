@@ -2178,12 +2178,6 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             genRangeCheck(treeNode);
             break;
 
-#if defined(TARGET_XARCH) && defined(FEATURE_HW_INTRINSICS)
-        case GT_SIMD_DIV_BY_ZERO_CHECK:
-            genSIMDDivByZeroCheck(treeNode);
-            break;
-#endif // defined(TARGET_XARCH) && defined(FEATURE_HW_INTRINSICS)
-
         case GT_PHYSREG:
             genCodeForPhysReg(treeNode->AsPhysReg());
             break;
@@ -4604,18 +4598,6 @@ void CodeGen::genCodeForCmpXchg(GenTreeCmpXchg* tree)
 
     genProduceReg(tree);
 }
-
-#if defined(TARGET_XARCH) && defined(FEATURE_HW_INTRINSICS)
-void CodeGen::genSIMDDivByZeroCheck(GenTree* oper)
-{
-    noway_assert(oper->OperIs(GT_SIMD_DIV_BY_ZERO_CHECK));
-    GenTreeSIMDDivByZeroChk* divByZeroChk = oper->AsSIMDDivByZeroChk();
-    GenTree*                 cmpOp        = divByZeroChk->gtGetOp1();
-    noway_assert(cmpOp->OperIs(GT_SETCC));
-    genConsumeRegs(cmpOp);
-    genJumpToThrowHlpBlk(EJ_jne, divByZeroChk->gtThrowKind, divByZeroChk->gtIndRngFailBB);
-}
-#endif // defined(TARGET_XARCH) && defined(FEATURE_HW_INTRINSICS)
 
 // generate code for BoundsCheck nodes
 void CodeGen::genRangeCheck(GenTree* oper)

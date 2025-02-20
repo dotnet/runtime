@@ -114,9 +114,6 @@ private:
     void ContainCheckBinary(GenTreeOp* node);
     void ContainCheckBoundsChk(GenTreeBoundsChk* node);
 #ifdef TARGET_XARCH
-#ifdef FEATURE_HW_INTRINSICS
-    void ContainCheckSIMDDivByZeroChk(GenTreeSIMDDivByZeroChk* node);
-#endif // FEATURE_HW_INTRINSICS
     void ContainCheckFloatBinary(GenTreeOp* node);
     void ContainCheckIntrinsic(GenTreeOp* node);
 #endif // TARGET_XARCH

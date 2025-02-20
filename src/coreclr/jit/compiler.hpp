@@ -4449,9 +4449,6 @@ void GenTree::VisitOperands(TVisitor visitor)
 #if FEATURE_ARG_SPLIT
         case GT_PUTARG_SPLIT:
 #endif // FEATURE_ARG_SPLIT
-#if defined(TARGET_XARCH) && defined(FEATURE_HW_INTRINSICS)
-        case GT_SIMD_DIV_BY_ZERO_CHECK:
-#endif // defined(TARGET_XARCH) && defined(FEATURE_HW_INTRINSICS)
         case GT_RETURNTRAP:
         case GT_KEEPALIVE:
         case GT_INC_SATURATE:

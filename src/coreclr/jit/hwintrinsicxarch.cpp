@@ -5213,16 +5213,3 @@ void Compiler::getHWIntrinsicImmOps(NamedIntrinsic    intrinsic,
 }
 
 #endif // FEATURE_HW_INTRINSICS
-
-#if defined(TARGET_XARCH) && defined(FEATURE_HW_INTRINSICS)
-GenTree* Compiler::gtNewSIMDDivByZeroCheck(GenTree*     op,
-                                           var_types    type,
-                                           CorInfoType  simdBaseJitType,
-                                           unsigned int simdSize)
-{
-    assert(type == TYP_INT);
-    GenTreeSIMDDivByZeroChk* hwIntrinsicChk =
-        new (this, GT_SIMD_DIV_BY_ZERO_CHECK) GenTreeSIMDDivByZeroChk(op, SCK_DIV_BY_ZERO);
-    return hwIntrinsicChk;
-}
-#endif // defined(TARGET_XARCH) && defined(FEATURE_HW_INTRINSICS)
