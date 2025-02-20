@@ -1413,12 +1413,19 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-        public static void TypeInfoResolverChain_AppendTypeInfoResolverToChain_ThrowsInvalidOperationException()
+        public static void TypeInfoResolverChain_AddsModifier_WorksAsExpected()
         {
+            // Regression test for https://github.com/dotnet/runtime/issues/112735
+            bool isModifierInvoked = false;
             var defaultResolver = new DefaultJsonTypeInfoResolver();
-            var options = new JsonSerializerOptions { TypeInfoResolver = defaultResolver };
+            var options = new JsonSerializerOptions { TypeInfoResolver = JsonContext.Default };
+            options.TypeInfoResolverChain.Add(new DefaultJsonTypeInfoResolver());
+            options.TypeInfoResolver = options.TypeInfoResolver!.WithAddedModifier(_ => isModifierInvoked = true);
+            options.MakeReadOnly();
 
-            Assert.Throws<InvalidOperationException>(() => options.TypeInfoResolverChain.Add(options.TypeInfoResolver));
+            options.GetTypeInfo(typeof(List<List<List<string>>>)); // A type not in JsonContext.Default
+
+            Assert.True(isModifierInvoked);
         }
 
         [Fact]
