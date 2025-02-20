@@ -158,7 +158,7 @@ static void RemoveBoundsChk(Compiler* comp, GenTree** treeUse, Statement* stmt)
 //    lastStmt    - The last statement in the block (the block is split after this statement)
 //
 // Return Value:
-//    The block containing the fast path.
+//    The next block to visit after the cloning.
 //
 static BasicBlock* optRangeCheckCloning_DoClone(Compiler*             comp,
                                                 BasicBlock*           block,
@@ -354,7 +354,7 @@ static BasicBlock* optRangeCheckCloning_DoClone(Compiler*             comp,
     assert(BasicBlock::sameEHRegion(prevBb, fallbackBb));
     assert(BasicBlock::sameEHRegion(prevBb, lastBb));
 
-    return fastpathBb->Prev();
+    return fastpathBb;
 }
 
 // A visitor to record all the bounds checks in a statement in the execution order
@@ -624,7 +624,11 @@ PhaseStatus Compiler::optRangeCheckCloning()
         JITDUMP("Cloning bounds checks in " FMT_BB " from " FMT_STMT " to " FMT_STMT "\n", block->bbNum,
                 firstGroup->Bottom().stmt->GetID(), lastStmt->GetID());
 
-        block    = optRangeCheckCloning_DoClone(this, block, firstGroup, lastStmt);
+        BasicBlock* nextBbToVisit = optRangeCheckCloning_DoClone(this, block, firstGroup, lastStmt);
+        assert(nextBbToVisit != nullptr);
+        // optRangeCheckCloning_DoClone wants us to visit nextBbToVisit next
+        block = nextBbToVisit->Prev();
+        assert(block != nullptr);
         modified = true;
     }
 
