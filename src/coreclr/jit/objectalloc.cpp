@@ -1214,6 +1214,10 @@ bool ObjectAllocator::CanLclVarEscapeViaParentStack(ArrayStack<GenTree*>* parent
                     {
                         GenTree* const retBuf = retBufArg->GetNode();
 
+                        // Is it possible to assign directly to a struct's struct field,
+                        // or is the retbuf always a standalone struct? Seems like it has
+                        // to be the latter to give proper no-alias guarantees.
+                        //
                         if (retBuf->OperIs(GT_LCL_ADDR))
                         {
                             GenTreeLclVarCommon* const dstLocal = retBuf->AsLclVarCommon();
@@ -1272,8 +1276,49 @@ bool ObjectAllocator::CanLclVarEscapeViaParentStack(ArrayStack<GenTree*>* parent
                         canLclVarEscapeViaParentStack = false;
                     }
 
-                    // Todo: the callee may also assign to any ref or out params...
+                    // The callee may also assign to any ref or out params.
+                    // Try and model this as an assignment, if possible.
                     //
+                    for (CallArg& arg : call->gtArgs.Args())
+                    {
+                        if (!arg.IsUserArg())
+                        {
+                            continue;
+                        }
+
+                        GenTree* const argNode = arg.GetNode();
+
+                        if ((argNode != tree) && (argNode->TypeIs(TYP_BYREF)))
+                        {
+                            // Try and resolve to a local and model as an assignment.
+                            // (todo: could also be a field of a local)
+                            //
+                            if (argNode->OperIs(GT_LCL_ADDR))
+                            {
+                                GenTreeLclVarCommon* const argLocal  = argNode->AsLclVarCommon();
+                                const unsigned             argLclNum = argLocal->GetLclNum();
+                                LclVarDsc* const           argLclDsc = comp->lvaGetDesc(argLclNum);
+
+                                if (argLclDsc->HasGCPtr())
+                                {
+                                    // Model as assignment of the argument to the byref local
+                                    //
+                                    JITDUMP(" ... (possible) byref out param. Modelling as V%02u <- V%02u\n", argLclNum,
+                                            lclNum);
+                                    AddConnGraphEdge(argLclNum, lclNum);
+                                }
+                            }
+                            else
+                            {
+                                // Can't easily tell what this byref refers to, assume the worst.
+                                // (points-to analysis anyone)?
+                                // Would be nice to track byref referent types too.
+                                //
+                                JITDUMP(" ... byref arg [%06u]; assuming escape\n", comp->dspTreeID(argNode));
+                                canLclVarEscapeViaParentStack = true;
+                            }
+                        }
+                    }
                 }
                 break;
             }
