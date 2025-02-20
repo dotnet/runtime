@@ -1342,6 +1342,12 @@ PCODE VSD_ResolveWorker(TransitionBlock * pTransitionBlock,
     pSDFrame->SetCallSite(NULL, (TADDR)callSite.GetIndirectCell());
 
     DispatchToken representativeToken(token);
+    if (!representativeToken.IsValid())
+    {
+        // Used by JIT_InterfaceLookupForSlot
+        representativeToken = DispatchToken(VirtualCallStubManager::GetTokenFromStub(callSite.GetSiteTarget()));
+    }
+
     MethodTable * pRepresentativeMT = pObj->GetMethodTable();
     if (representativeToken.IsTypedToken())
     {
