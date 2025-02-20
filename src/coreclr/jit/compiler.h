@@ -6703,33 +6703,6 @@ private:
 
     //------------------------- Morphing --------------------------------------
 
-    unsigned fgPtrArgCntMax = 0;
-
-public:
-    //------------------------------------------------------------------------
-    // fgGetPtrArgCntMax: Return the maximum number of pointer-sized stack arguments that calls inside this method
-    // can push on the stack. This value is calculated during morph.
-    //
-    // Return Value:
-    //    Returns fgPtrArgCntMax, that is a private field.
-    //
-    unsigned fgGetPtrArgCntMax() const
-    {
-        return fgPtrArgCntMax;
-    }
-
-    //------------------------------------------------------------------------
-    // fgSetPtrArgCntMax: Set the maximum number of pointer-sized stack arguments that calls inside this method
-    // can push on the stack. This function is used during StackLevelSetter to fix incorrect morph calculations.
-    //
-    void fgSetPtrArgCntMax(unsigned argCntMax)
-    {
-        fgPtrArgCntMax = argCntMax;
-    }
-
-    bool compCanEncodePtrArgCntMax();
-
-private:
     hashBv*               fgAvailableOutgoingArgTemps;
     ArrayStack<unsigned>* fgUsedSharedTemps = nullptr;
 
