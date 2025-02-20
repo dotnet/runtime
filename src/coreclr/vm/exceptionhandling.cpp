@@ -6184,9 +6184,16 @@ void CleanUpForSecondPass(Thread* pThread, bool fIsSO, LPVOID MemoryStackFpForFr
     // Instead, we rely on the END_SO_TOLERANT_CODE macro to call ClearExceptionStateAfterSO().  Of course,
     // we may leak in the UMThunkStubCommon() case where we don't have this macro lower on the stack
     // (stack grows up).
-    if (!fIsSO && !g_isNewExceptionHandlingEnabled)
+    if (!fIsSO)
     {
-        ExceptionTracker::PopTrackerIfEscaping(MemoryStackFp);
+        if (g_isNewExceptionHandlingEnabled)
+        {
+            ExInfo::PopExInfos(pThread, MemoryStackFp);
+        }
+        else
+        {
+            ExceptionTracker::PopTrackerIfEscaping(MemoryStackFp);
+        }
     }
 }
 
@@ -8592,8 +8599,12 @@ extern "C" bool QCALLTYPE SfiNext(StackFrameIterator* pThis, uint* uExCollideCla
             _ASSERTE(pThis->GetFrameState() != StackFrameIterator::SFITER_SKIPPED_FRAME_FUNCTION);
 
             pFrame = pThis->m_crawl.GetFrame();
-            // Check if there are any further managed frames on the stack, if not, the exception is unhandled.
-            if ((pFrame == FRAME_TOP) || IsTopmostDebuggerU2MCatchHandlerFrame(pFrame))
+
+            // Check if there are any further managed frames on the stack or a catch for all exceptions in native code (marked by
+            // DebuggerU2MCatchHandlerFrame with CatchesAllExceptions() returning true).
+            // If not, the exception is unhandled.
+            if ((pFrame == FRAME_TOP) ||
+                (IsTopmostDebuggerU2MCatchHandlerFrame(pFrame) && !((DebuggerU2MCatchHandlerFrame*)pFrame)->CatchesAllExceptions()))
             {
                 if (pTopExInfo->m_passNumber == 1)
                 {
