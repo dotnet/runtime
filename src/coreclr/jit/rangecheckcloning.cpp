@@ -563,7 +563,6 @@ PhaseStatus Compiler::optRangeCheckCloning()
         }
 
         // Now choose the largest group of bounds checks (the one with the most checks)
-        // BoundsCheckInfoStack* largestGroup = nullptr;
         ArrayStack<BoundsCheckInfoStack*> groups(getAllocator(CMK_RangeCheckCloning));
 
         for (BoundsCheckInfoMap::Node* keyValuePair : BoundsCheckInfoMap::KeyValueIteration(&bndChkMap))
