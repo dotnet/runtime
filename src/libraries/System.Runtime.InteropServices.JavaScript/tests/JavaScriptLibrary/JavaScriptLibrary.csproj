@@ -1,16 +1,23 @@
 <Project Sdk="Microsoft.NET.Sdk">
+
   <PropertyGroup>
-    <TargetPlatformIdentifier>$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)'))</TargetPlatformIdentifier>
-    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <TargetFrameworks>$(NetCoreAppCurrent)-browser</TargetFrameworks>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <!-- Use following lines to write the generated files to disk. -->
     <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
   </PropertyGroup>
+
+  <!-- DesignTimeBuild requires all the TargetFramework Derived Properties to not be present in the first property group. -->
+  <PropertyGroup>
+    <TargetPlatformIdentifier>$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)'))</TargetPlatformIdentifier>
+  </PropertyGroup>
+
   <!-- Make debugging easier -->
   <PropertyGroup Condition="'$(Configuration)' == 'Debug'">
     <WasmNativeDebugSymbols>true</WasmNativeDebugSymbols>
     <WasmNativeStrip>false</WasmNativeStrip>
   </PropertyGroup>
+
   <ItemGroup>
     <Compile Include="$(MSBuildThisFileDirectory)JavaScriptInterop.cs" />
     <InternalsVisibleTo Include="System.Runtime.InteropServices.JavaScript.Tests" />
@@ -23,4 +30,5 @@
     <ProjectReference Include="$(LibrariesProjectRoot)System.Threading.Thread\src\System.Threading.Thread.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime.InteropServices.JavaScript\src\System.Runtime.InteropServices.JavaScript.csproj" SkipUseReferenceAssembly="true" />
   </ItemGroup>
+
 </Project>
