@@ -123,8 +123,12 @@ public:
     bool repIsIntrinsic(CORINFO_METHOD_HANDLE ftn);
 
     void recNotifyMethodInfoUsage(CORINFO_METHOD_HANDLE ftn, bool result);
-    void dmpNotifyMethodInfoUsage(DWORDLONG key, DWORD value);
+    void dmpNotifyMethodInfoUsage(DD key, DWORD value);
     bool repNotifyMethodInfoUsage(CORINFO_METHOD_HANDLE ftn);
+
+    void recNotifyInstructionSetUsage(CORINFO_InstructionSet instructionSet, bool supported, bool result);
+    void dmpNotifyInstructionSetUsage(DD key, DWORD supported);
+    bool repNotifyInstructionSetUsage(CORINFO_InstructionSet instructionSet, bool supported);
 
     void recGetMethodAttribs(CORINFO_METHOD_HANDLE methodHandle, DWORD attribs);
     void dmpGetMethodAttribs(DWORDLONG key, DWORD value);
