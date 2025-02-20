@@ -15,7 +15,8 @@ while true; do
   sleep 5
 
   current_time=$(date +%s)
-  elapsed_time=$((current_time - start_time))
+  elapsed_time=$(($current_time - $start_time))
+  echo "-------- elapsed_time $elapsed_time ---------"
 
   if [ $elapsed_time -ge 360 ] && [ "$triggered" = false ]; then
     triggered=true
