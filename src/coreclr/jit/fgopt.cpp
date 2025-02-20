@@ -5152,10 +5152,8 @@ bool Compiler::ThreeOptLayout::ReorderBlockList()
         }
 
         // We will try using 3-opt's chosen predecessor for the try region.
-        BasicBlock* const tryBegPrev     = tryBeg->Prev();
-        BasicBlock* const tryLast        = HBtab->ebdTryLast;
-        BasicBlock*       insertionPoint = blockOrder[tryBeg->bbPreorderNum - 1];
-        unsigned          parentIndex =
+        BasicBlock* insertionPoint = blockOrder[tryBeg->bbPreorderNum - 1];
+        unsigned    parentIndex =
             insertionPoint->hasTryIndex() ? insertionPoint->getTryIndex() : EHblkDsc::NO_ENCLOSING_INDEX;
 
         // Can we move this try to after 'insertionPoint' without breaking EH nesting invariants?
@@ -5186,11 +5184,14 @@ bool Compiler::ThreeOptLayout::ReorderBlockList()
             continue;
         }
 
+        BasicBlock* const tryBegPrev = tryBeg->Prev();
+        BasicBlock* const tryLast    = HBtab->ebdTryLast;
         compiler->fgUnlinkRange(tryBeg, tryLast);
         compiler->fgMoveBlocksAfter(tryBeg, tryLast, insertionPoint);
         modified = true;
 
-        // Update the parent regions' end blocks.
+        // If this region's parents also end on 'tryLast',
+        // update the parents' end pointers to 'tryBegPrev', since we moved this region up within its parents.
         for (unsigned tryIndex = compiler->ehGetEnclosingTryIndex(tryBeg->getTryIndex());
              tryIndex != EHblkDsc::NO_ENCLOSING_INDEX; tryIndex = compiler->ehGetEnclosingTryIndex(tryIndex))
         {
