@@ -1040,12 +1040,12 @@ private:
     {
         assert(lclNum < comp->info.compArgsCount);
 
-        if (comp->lvaIsImplicitByRefLocal(lclNum))
+        const ABIPassingInformation& abiInfo = comp->lvaGetParameterABIInfo(lclNum);
+        if (abiInfo.IsPassedByReference())
         {
             return false;
         }
 
-        const ABIPassingInformation& abiInfo = comp->lvaGetParameterABIInfo(lclNum);
         if (abiInfo.HasAnyStackSegment())
         {
             return false;
@@ -1053,11 +1053,23 @@ private:
 
         for (const ABIPassingSegment& seg : abiInfo.Segments())
         {
-            if ((access.Offset == seg.Offset) && (genTypeSize(access.AccessType) == seg.Size) &&
-                (varTypeUsesIntReg(access.AccessType) == genIsValidIntReg(seg.GetRegister())))
+            if ((access.Offset < seg.Offset) ||
+                (access.Offset + genTypeSize(access.AccessType) > seg.Offset + seg.Size))
             {
-                return true;
+                continue;
             }
+
+            if (!genIsValidIntReg(seg.GetRegister()) && varTypeUsesFloatReg(access.AccessType))
+            {
+                continue;
+            }
+
+            if (genIsValidFloatReg(seg.GetRegister()) && (access.Offset != seg.Offset))
+            {
+                continue;
+            }
+
+            return true;
         }
 
         return false;
