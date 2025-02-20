@@ -194,6 +194,8 @@ namespace System.Diagnostics.Tests
             {
                 using (var eventRecords = new EventObserverAndRecorder())
                 {
+                    Activity.DefaultIdFormat = ActivityIdFormat.W3C;
+                    Activity.ForceDefaultIdFormat = true;
                     var parent = new Activity("w3c activity");
                     parent.SetParentId(ActivityTraceId.CreateRandom(), ActivitySpanId.CreateRandom());
                     parent.TraceStateString = "some=state";
