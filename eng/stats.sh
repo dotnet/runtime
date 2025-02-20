@@ -22,10 +22,10 @@ while true; do
   if [ $elapsed_time -ge 360 ] && [ "$triggered" = false ]; then
     triggered=true
     echo "--------installing---------"
-    sudo dotnet tool install --global dotnet-trace
+    sudo /__w/1/s/.dotnet/dotnet tool install --global dotnet-trace
     export pid=$(ps aux | grep "noautoresponse" | sort -nrk 4 | awk 'NR==1{print $2}')
     echo "--------collecting $pid ---------"
-    dotnet-trace collect --profile gc-collect -p "$pid" --duration 00:01:00 --output $CurrentRepoSourceBuildArtifactsPackagesDir/trace.nettrace
+    /__w/1/s/.dotnet/tools/dotnet-trace collect --profile gc-collect -p "$pid" --duration 00:01:00 --output $CurrentRepoSourceBuildArtifactsPackagesDir/trace.nettrace
     echo "--------end collecting---------"
   fi
 done
