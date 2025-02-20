@@ -1562,7 +1562,7 @@ void Lowering::LowerArg(GenTreeCall* call, CallArg* callArg)
     // If we hit this we are probably double-lowering.
     assert(!arg->OperIsPutArg());
 
-    const ABIPassingInformation& abiInfo = callArg->NewAbiInfo;
+    const ABIPassingInformation& abiInfo = callArg->AbiInfo;
     JITDUMP("Passed in ");
     DBEXEC(comp->verbose, abiInfo.Dump());
 
@@ -1589,7 +1589,7 @@ void Lowering::LowerArg(GenTreeCall* call, CallArg* callArg)
 
     if (varTypeIsLong(arg))
     {
-        assert(callArg->NewAbiInfo.CountRegsAndStackSlots() == 2);
+        assert(callArg->AbiInfo.CountRegsAndStackSlots() == 2);
 
         noway_assert(arg->OperIs(GT_LONG));
         GenTreeFieldList* fieldList = new (comp, GT_FIELD_LIST) GenTreeFieldList();
@@ -3531,14 +3531,10 @@ void Lowering::LowerCFGCall(GenTreeCall* call)
             call->gtArgs.PushLateBack(targetArg);
 
             // Set up ABI information for this arg.
-            targetArg->NewAbiInfo =
+            targetArg->AbiInfo =
                 ABIPassingInformation::FromSegmentByValue(comp,
                                                           ABIPassingSegment::InRegister(REG_DISPATCH_INDIRECT_CALL_ADDR,
                                                                                         0, TARGET_POINTER_SIZE));
-            targetArg->AbiInfo.ArgType = callTarget->TypeGet();
-            targetArg->AbiInfo.SetRegNum(0, REG_DISPATCH_INDIRECT_CALL_ADDR);
-            targetArg->AbiInfo.NumRegs  = 1;
-            targetArg->AbiInfo.ByteSize = TARGET_POINTER_SIZE;
 
             // Lower the newly added args now that call is updated
             LowerArg(call, targetArg);
