@@ -33,11 +33,11 @@ Passing a Dictionary of identical type to the Dictionary constructor will reuse 
 
 Documentation states that any key used in a Dictionary must not change in any way that affects its hash after insertion, so it is technically possible to remove or change this caching behavior in the future, but if a user provides a comparer with side-effects, such a change could cause breakage.
 
-### Thread-safety Violations Must Produce Exceptions
+### Thread-safety Violations Must Not Cause Memory Safety Errors or Hangs
 
-Dictionary is designed to reliably produce exceptions when it is manipulated from multiple threads at once without synchronization, and we have multiple tests that verify this. "Improving" Dictionary to be able to perform operations safely across multiple threads without synchronization or throwing will as a result produce test failures and could result in observable behavior changes.
+Dictionary is designed to fail safely when it is manipulated from multiple threads at once without synchronization, and we have multiple tests that verify this. "Improving" Dictionary to be able to perform operations successfully across multiple threads without synchronization will as a result produce test failures and could result in observable behavior changes.
 
-It is okay for a Dictionary to become irreversibly corrupted when manipulated from multiple threads, but it should not lead to buffer overruns or other types of memory safety errors.
+It is okay for a Dictionary to become irreversibly corrupted when manipulated from multiple threads, but it should not lead to buffer overruns or other types of memory safety errors, and operations should never hang.
 
 ### Specialization for Structs with Default Comparers
 
