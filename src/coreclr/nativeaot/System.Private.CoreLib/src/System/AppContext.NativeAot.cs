@@ -40,8 +40,11 @@ namespace System
 
         private static unsafe string GetRuntimeModulePath()
         {
-            delegate*<string> ip = &GetRuntimeModulePath;
-            if (RuntimeAugments.TryGetFullPathToApplicationModule((nint)(void*)ip, out _) is string modulePath)
+            // We aren't going to call this method, we just need an address that we know is in this module.
+            // As this code is NativeAOT only, we know that this method will be AOT compiled into the executable,
+            // so the entry point address will be in the module.
+            void* ip = (void*)(delegate*<string>)&GetRuntimeModulePath;
+            if (RuntimeAugments.TryGetFullPathToApplicationModule((nint)ip, out _) is string modulePath)
             {
                 return modulePath;
             }
