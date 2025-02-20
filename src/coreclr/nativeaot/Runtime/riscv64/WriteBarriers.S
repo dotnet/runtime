@@ -134,8 +134,8 @@
 
         // Check that this card has not already been written. Avoiding useless writes
         // is a big win on multi-proc systems since it avoids cache thrashing.
-        lb      t2, 0(t6)
-        xori    t2, t2, 0xFF
+        lbu     t2, 0(t6)
+        addi    t2, t2, -0xFF
         beqz    t2, 0f
 
         li      t2, 0xFF
@@ -148,8 +148,8 @@
 
         srli    t6, \destReg, 21
         add     t6, t2, t6
-        lb      t2, 0(t6)
-        xori    t2, t2, 0xFF
+        lbu     t2, 0(t6)
+        addi    t2, t2, -0xFF
         beqz    t2, 0f
 
         li      t2, 0xFF
@@ -303,16 +303,15 @@ LEAF_END RhpAssignRef, _TEXT
 //  t0, t1, t2, t6: trashed
 //
 LEAF_ENTRY RhpCheckedLockCmpXchg
-        fence
 
 LOCAL_LABEL(CmpXchgRetry):
         // Load the current value at the destination address.
-        lr.d    t0, (a0)         // t0 = *dest
+        lr.d.aqrl    t0, (a0)       // t0 = *dest (load with sequential consistency)
         // Compare the loaded value with the comparand.
         bne     t0, a2, LOCAL_LABEL(CmpXchgNoUpdate) // if (*dest != comparand) goto CmpXchgNoUpdate
 
         // Attempt to store the exchange value at the destination address.
-        sc.d    t1, a1, (a0)     // t1 = (store conditional result: 0 if successful)
+        sc.d.rl    t1, a1, (a0)  // t1 = (store conditional result: 0 if successful, with sequential consistency)
         bnez    t1, LOCAL_LABEL(CmpXchgRetry) // if store conditional failed, retry
 
 LOCAL_LABEL(DoCardsCmpXchg):
@@ -343,15 +342,10 @@ LEAF_END RhpCheckedLockCmpXchg
 //
 // On exit:
 //  a0: original value of objectref
-//  t1, t2, t6: trashed
+//  t1, t6: trashed
 //
 LEAF_ENTRY RhpCheckedXchg
-        fence
-
-RhpCheckedXchgRetry:
-        lr.d   t1, 0(a0)
-        sc.d   t2, a1, 0(a0)
-        bnez   t2, RhpCheckedXchgRetry // if store conditional failed, retry
+        amoswap.d.aqrl t1, a1, (a0)
 
 DoCardsXchg:
         // We have successfully updated the value of the objectref so now we need a GC write barrier.

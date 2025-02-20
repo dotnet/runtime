@@ -702,11 +702,11 @@ int UnixNativeCodeManager::IsInProlog(MethodInfo * pMethodInfo, PTR_VOID pvAddre
 #define STW_PAIR_BITS 0x00003023
 #define STW_PAIR_MASK 0x0000707F
 
-// add[i] fp, sp, x
+// addi fp, sp, x
 #define ADD_FP_SP_BITS 0x00010413
 #define ADD_FP_SP_MASK 0x000FFFFF
 
-// add[i] sp, sp, x
+// addi sp, sp, x
 #define ADD_SP_SP_BITS 0x00010113
 #define ADD_SP_SP_MASK 0x000FFFFF
 
@@ -1191,8 +1191,8 @@ int UnixNativeCodeManager::TrailingEpilogueInstructionsCount(MethodInfo * pMetho
 #define LD_BITS 0x00000003
 #define LD_MASK 0x0000007F
 
-// Branches, Jumps, System calls
-// BEQ, BNE, JAL, etc.
+// Branches
+// BEQ, BNE, etc.
 #define BEGS_BITS 0x00000063
 #define BEGS_MASK 0x0000007F
 

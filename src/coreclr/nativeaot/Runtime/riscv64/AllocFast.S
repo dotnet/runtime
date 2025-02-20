@@ -74,7 +74,7 @@ LOCAL_LABEL(RhpNewFast_RarePath):
 
         // a3: transition frame
 
-        // Preserve the MethodTable in s0
+        // Preserve the MethodTable in s2
         mv  s2, a0
 
         li  a2, 0 // numElements

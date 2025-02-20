@@ -262,7 +262,6 @@ EXTERN_C void* QCALLTYPE RhAllocateThunksMapping()
             //auipc    t1, hi(<delta PC to thunk data address>)
             //addi     t1, t1, lo(<delta PC to thunk data address>)
             //auipc    t0, hi(<delta to get to last word in data page>)
-            //addi     t0, t0, lo(<delta to get to last word in data page>)
             //ld       t0, (t0)
             //jalr     zero, t0, 0
 
@@ -277,10 +276,7 @@ EXTERN_C void* QCALLTYPE RhAllocateThunksMapping()
             *((uint32_t*)pCurrentThunkAddress) = 0x00000297 | ((((delta + 0x800) & 0xFFFFF000) >> 12) << 12);  // auipc t0, delta[31:12]
             pCurrentThunkAddress += 4;
 
-            *((uint32_t*)pCurrentThunkAddress) = 0x00028293 | ((delta & 0xFFF) << 20);  // addi t0, t0, delta[11:0]
-            pCurrentThunkAddress += 4;
-
-            *((uint32_t*)pCurrentThunkAddress) = 0x0002b283; // ld t0, (t0)
+            *((uint32_t*)pCurrentThunkAddress) = 0x0002b283 | ((delta & 0xFFF) << 20); // ld t0, (delta[11:0])(t0)
             pCurrentThunkAddress += 4;
 
             *((uint32_t*)pCurrentThunkAddress) = 0x00008282;  // jalr zero, t0, 0
