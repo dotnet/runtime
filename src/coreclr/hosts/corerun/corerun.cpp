@@ -404,6 +404,9 @@ static int run(const configuration& config)
 
     int result;
     result = coreclr_init_func(
+#if defined(TARGET_ANDROID)
+        nullptr, // contract
+#endif
         exe_path_utf8.c_str(),
         "corerun",
         propertyCount,

@@ -33,19 +33,11 @@
     CORECLR_HOSTING_API_LINKAGE int CORECLR_CALLING_CONVENTION function(__VA_ARGS__); \
     typedef int (CORECLR_CALLING_CONVENTION *function##_ptr)(__VA_ARGS__)
 
-#if defined(TARGET_ANDROID)
-CORECLR_HOSTING_API(android_coreclr_initialize,
-            const char* appName,
-            const char16_t* appDomainFriendlyName,
-            host_runtime_contract* hostContract,
-            const host_configuration_properties* properties,
-            void **hostHandle,
-            unsigned int* domainId);
-#endif
 //
 // Initialize the CoreCLR. Creates and starts CoreCLR host and creates an app domain
 //
 // Parameters:
+//  hostContract            - (Android only) pointer to the host contract structure
 //  exePath                 - Absolute path of the executable that invoked the ExecuteAssembly (the native host application)
 //  appDomainFriendlyName   - Friendly name of the app domain that will be created to execute the assembly
 //  propertyCount           - Number of properties (elements of the following two arguments)
@@ -58,6 +50,9 @@ CORECLR_HOSTING_API(android_coreclr_initialize,
 //  HRESULT indicating status of the operation. S_OK if the assembly was successfully executed
 //
 CORECLR_HOSTING_API(coreclr_initialize,
+#if defined(TARGET_ANDROID)
+            host_runtime_contract* contract,
+#endif
             const char* exePath,
             const char* appDomainFriendlyName,
             int propertyCount,
@@ -163,11 +158,8 @@ CORECLR_HOSTING_API(coreclr_execute_assembly,
 //
 // Callback types used by the hosts
 //
-#if defined(TARGET_ANDROID)
-using BundleProbeFn = bool(const char* path, void** data_start, int64_t* size);
-#else
+using ExternalAssemblyProbeFn = bool(const char* path, void** data_start, int64_t* size);
 typedef bool(CORECLR_CALLING_CONVENTION BundleProbeFn)(const char* path, int64_t* offset, int64_t* size, int64_t* compressedSize);
-#endif
 typedef const void* (CORECLR_CALLING_CONVENTION PInvokeOverrideFn)(const char* libraryName, const char* entrypointName);
 
 

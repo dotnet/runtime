@@ -42,12 +42,13 @@ const SString &BundleFileLocation::AppName() const
 }
 #endif
 
-Bundle::Bundle(LPCSTR bundlePath, BundleProbeFn *probe)
+Bundle::Bundle(LPCSTR bundlePath, BundleProbeFn *probe, ExternalAssemblyProbeFn* externalAssemblyProbe)
 {
     STANDARD_VM_CONTRACT;
 
-    _ASSERTE(probe != nullptr);
+    _ASSERTE(probe != nullptr || externalAssemblyProbe != nullptr);
     m_probe = probe;
+    m_externalAssemblyProbe = externalAssemblyProbe;
 #if defined(TARGET_ANDROID)
     m_appName.SetUTF8(bundlePath);
 #else
@@ -105,11 +106,24 @@ BundleFileLocation Bundle::Probe(const SString& path, bool pathIsBundleRelative)
 #endif // !TARGET_ANDROID
     INT64 fileSize = 0;
     INT64 compressedSize = 0;
+    bool assemblyFound = false;
 
-#if defined(TARGET_ANDROID)
-    m_probe(utf8Path, &loc.DataStart, &loc.Size);
-#else
-    m_probe(utf8Path, &loc.Offset, &fileSize, &compressedSize);
+    if (m_probe != nullptr)
+    {
+        assemblyFound = m_probe(utf8Path, &loc.Offset, &fileSize, &compressedSize);
+        loc.DataStart = nullptr; // Location is based on the bundle file start
+    }
+
+    if (!assemblyFound && m_externalAssemblyProbe != nullptr)
+    {
+        m_externalAssemblyProbe (utf8Path, &loc.DataStart, &fileSize);
+
+        // Host takes care of decompression, if any
+        compressedSize = 0;
+
+        // Must always be 0 in this mode, since loc.DataStart points to the beginning of data
+        loc.Offset = 0;
+    }
 
     if (compressedSize)
     {
@@ -121,7 +135,7 @@ BundleFileLocation Bundle::Probe(const SString& path, bool pathIsBundleRelative)
         loc.Size = fileSize;
         loc.UncompresedSize = 0;
     }
-#endif
+
     return loc;
 }
 

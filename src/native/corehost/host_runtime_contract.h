@@ -38,12 +38,12 @@ struct host_runtime_contract
         size_t value_buffer_size,
         void* contract_context);
 
-#if defined(TARGET_ANDROID)
-    bool(HOST_CONTRACT_CALLTYPE* android_bundle_probe)(
+    // Probe the host for `path`. Sets pointer to data start and its size, if found.
+    bool(HOST_CONTRACT_CALLTYPE* external_assembly_probe)(
         const char* path,
         void **data_start,
         int64_t* size);
-#endif
+
     // Probe an app bundle for `path`. Sets its location (`offset`, `size`) in the bundle if found.
     // Returns true if found, false otherwise.
     bool(HOST_CONTRACT_CALLTYPE* bundle_probe)(

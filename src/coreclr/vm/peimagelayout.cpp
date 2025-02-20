@@ -638,7 +638,7 @@ FlatImageLayout::FlatImageLayout(PEImage* pOwner)
 #else // !TARGET_ANDROID
     INT64 size = pOwner->GetSize();
     HANDLE mapBegin = pOwner->AndroidGetDataStart();
-    if (size == 0) {
+    if (size == 0 || mapBegin == nullptr) {
         // TODO: throw something
     }
 #endif // TARGET_ANDROID
