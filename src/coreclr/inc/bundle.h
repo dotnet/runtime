@@ -27,7 +27,7 @@ struct BundleFileLocation
         LIMITED_METHOD_CONTRACT;
 
         Size = 0;
-        DataStart = INVALID_HANDLE_VALUE;
+        DataStart = nullptr;
         Offset = 0;
         UncompresedSize = 0;
     }
