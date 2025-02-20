@@ -2,7 +2,7 @@
 <asn:Sequence
   xmlns:asn="http://schemas.dot.net/asnxml/201808/"
   name="SignerInfoAsn"
-  namespace="System.Security.Cryptography.Pkcs.Asn1">
+  namespace="System.Security.Cryptography.Asn1.Pkcs7">
 
   <!--
     https://tools.ietf.org/html/rfc5652#section-5.3
@@ -25,7 +25,7 @@
     UnsignedAttributes ::= SET SIZE(1..MAX) OF Attribute
   -->
   <asn:Integer name="Version" backingType="int" />
-  <asn:AsnType name="Sid" typeName="System.Security.Cryptography.Pkcs.Asn1.SignerIdentifierAsn" />
+  <asn:AsnType name="Sid" typeName="System.Security.Cryptography.Asn1.Pkcs7.SignerIdentifierAsn" />
   <asn:AsnType name="DigestAlgorithm" typeName="System.Security.Cryptography.Asn1.AlgorithmIdentifierAsn" />
   <asn:AnyValue name="SignedAttributes" implicitTag="0" optional="true" />
   <asn:AsnType name="SignatureAlgorithm" typeName="System.Security.Cryptography.Asn1.AlgorithmIdentifierAsn" />

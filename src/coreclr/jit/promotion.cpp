@@ -1553,12 +1553,12 @@ private:
 
                 flags |= AccessKindFlags::IsCallArg;
 
-                if (!call->gtArgs.IsNewAbiInformationDetermined())
+                if (!call->gtArgs.IsAbiInformationDetermined())
                 {
-                    call->gtArgs.DetermineNewABIInfo(m_compiler, call);
+                    call->gtArgs.DetermineABIInfo(m_compiler, call);
                 }
 
-                if (!arg.NewAbiInfo.HasAnyStackSegment() && !arg.NewAbiInfo.IsPassedByReference())
+                if (!arg.AbiInfo.HasAnyStackSegment() && !arg.AbiInfo.IsPassedByReference())
                 {
                     flags |= AccessKindFlags::IsRegCallArg;
                 }
@@ -2419,7 +2419,7 @@ bool ReplaceVisitor::ReplaceCallArgWithFieldList(GenTreeCall* call, GenTreeLclVa
     assert(layout != nullptr);
     StructDeaths      deaths    = m_liveness->GetDeathsForStructLocal(argNode);
     GenTreeFieldList* fieldList = m_compiler->gtNewFieldList();
-    for (const ABIPassingSegment& seg : callArg->NewAbiInfo.Segments())
+    for (const ABIPassingSegment& seg : callArg->AbiInfo.Segments())
     {
         Replacement* rep = nullptr;
         if (agg->OverlappingReplacements(argNode->GetLclOffs() + seg.Offset, seg.Size, &rep, nullptr) &&
@@ -2496,9 +2496,9 @@ bool ReplaceVisitor::CanReplaceCallArgWithFieldListOfReplacements(GenTreeCall*  
                                                                   GenTreeLclVarCommon* lcl)
 {
     // We should have computed ABI information during the costing phase.
-    assert(call->gtArgs.IsNewAbiInformationDetermined());
+    assert(call->gtArgs.IsAbiInformationDetermined());
 
-    if (callArg->NewAbiInfo.HasAnyStackSegment() || callArg->NewAbiInfo.IsPassedByReference())
+    if (callArg->AbiInfo.HasAnyStackSegment() || callArg->AbiInfo.IsPassedByReference())
     {
         return false;
     }
@@ -2507,7 +2507,7 @@ bool ReplaceVisitor::CanReplaceCallArgWithFieldListOfReplacements(GenTreeCall*  
     assert(agg != nullptr);
 
     bool anyReplacements = false;
-    for (const ABIPassingSegment& seg : callArg->NewAbiInfo.Segments())
+    for (const ABIPassingSegment& seg : callArg->AbiInfo.Segments())
     {
         assert(seg.IsPassedInRegister());
 
