@@ -13548,7 +13548,7 @@ void Compiler::fgValueNumberHelperCallFunc(GenTreeCall* call, VNFunc vnf, ValueN
 #ifdef DEBUG
             for (CallArg& arg : call->gtArgs.Args())
             {
-                assert(!arg.NewAbiInfo.IsPassedByReference() &&
+                assert(!arg.AbiInfo.IsPassedByReference() &&
                        "Helpers taking implicit byref arguments should not be marked as pure");
             }
 #endif
@@ -15179,6 +15179,45 @@ void ValueNumStore::PeelOffsets(ValueNum* vn, target_ssize_t* offset)
         {
             *offset += ConstantValue<target_ssize_t>(app.m_args[1]);
             *vn = app.m_args[0];
+        }
+        else
+        {
+            break;
+        }
+    }
+}
+
+//--------------------------------------------------------------------------------
+// PeelOffsetsI32: Peel all additions with a TYP_INT constant offset away from the
+// specified VN.
+//
+// Arguments:
+//    vn     - [in, out] The VN. Will be modified to the base VN that the offsets are added to.
+//    offset - [out] The offsets peeled out of the VNF_ADD funcs.
+//
+void ValueNumStore::PeelOffsetsI32(ValueNum* vn, int* offset)
+{
+    *offset = 0;
+    VNFuncApp app;
+    while (GetVNFunc(*vn, &app) && (app.m_func == VNF_ADD))
+    {
+        ValueNum op1 = app.m_args[0];
+        ValueNum op2 = app.m_args[1];
+
+        if ((TypeOfVN(op1) != TYP_INT) || (TypeOfVN(op2) != TYP_INT))
+        {
+            break;
+        }
+
+        if (IsVNInt32Constant(op1) && !IsVNHandle(op1))
+        {
+            *offset += ConstantValue<int>(op1);
+            *vn = op2;
+        }
+        else if (IsVNInt32Constant(op2) && !IsVNHandle(op2))
+        {
+            *offset += ConstantValue<int>(op2);
+            *vn = op1;
         }
         else
         {

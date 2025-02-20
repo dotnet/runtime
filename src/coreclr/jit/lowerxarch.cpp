@@ -851,7 +851,9 @@ GenTree* Lowering::LowerCast(GenTree* tree)
 
 #if defined(TARGET_AMD64)
     // Handle saturation logic for X64
-    if (varTypeIsFloating(srcType) && varTypeIsIntegral(dstType) && !varTypeIsSmall(dstType))
+    // Let InstructionSet_AVX10v2 pass through since it can handle the saturation
+    if (varTypeIsFloating(srcType) && varTypeIsIntegral(dstType) && !varTypeIsSmall(dstType) &&
+        !comp->compOpportunisticallyDependsOn(InstructionSet_AVX10v2))
     {
         // We should have filtered out float -> long conversion and
         // converted it to float -> double -> long conversion.
@@ -868,10 +870,8 @@ GenTree* Lowering::LowerCast(GenTree* tree)
         bool isV512Supported = false;
         /*The code below is to introduce saturating conversions on X86/X64.
         The C# equivalence of the code is given below -->
-
                 // Replace QNaN and SNaN with Zero
                 op1 = Avx512F.Fixup(op1, op1, Vector128.Create<long>(0x88), 0);
-
                 // Convert from double to long, replacing any values that were greater than or equal to MaxValue
         with MaxValue
                 // Values that were less than or equal to MinValue will already be MinValue
@@ -7091,9 +7091,9 @@ GenTree* Lowering::TryLowerAndOpToResetLowestSetBit(GenTreeOp* andNode)
     JITDUMP("to:\n");
     DISPNODE(blsrNode);
 
+    BlockRange().InsertBefore(andNode, blsrNode);
     use.ReplaceWith(blsrNode);
 
-    BlockRange().InsertBefore(andNode, blsrNode);
     BlockRange().Remove(andNode);
     BlockRange().Remove(op2);
     BlockRange().Remove(addOp1);
@@ -7176,9 +7176,9 @@ GenTree* Lowering::TryLowerAndOpToExtractLowestSetBit(GenTreeOp* andNode)
     JITDUMP("to:\n");
     DISPNODE(blsiNode);
 
+    BlockRange().InsertBefore(andNode, blsiNode);
     use.ReplaceWith(blsiNode);
 
-    BlockRange().InsertBefore(andNode, blsiNode);
     BlockRange().Remove(andNode);
     BlockRange().Remove(negNode);
     BlockRange().Remove(negOp);
@@ -7263,9 +7263,9 @@ GenTree* Lowering::TryLowerAndOpToAndNot(GenTreeOp* andNode)
     JITDUMP("to:\n");
     DISPNODE(andnNode);
 
+    BlockRange().InsertBefore(andNode, andnNode);
     use.ReplaceWith(andnNode);
 
-    BlockRange().InsertBefore(andNode, andnNode);
     BlockRange().Remove(andNode);
     BlockRange().Remove(notNode);
 
@@ -7348,9 +7348,9 @@ GenTree* Lowering::TryLowerXorOpToGetMaskUpToLowestSetBit(GenTreeOp* xorNode)
     JITDUMP("to:\n");
     DISPNODE(blsmskNode);
 
+    BlockRange().InsertBefore(xorNode, blsmskNode);
     use.ReplaceWith(blsmskNode);
 
-    BlockRange().InsertBefore(xorNode, blsmskNode);
     BlockRange().Remove(xorNode);
     BlockRange().Remove(op2);
     BlockRange().Remove(addOp1);

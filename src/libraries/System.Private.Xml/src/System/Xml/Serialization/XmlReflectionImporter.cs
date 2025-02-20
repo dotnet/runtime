@@ -862,7 +862,11 @@ namespace System.Xml.Serialization
                     if (member == null) continue;
                     if (mapping.BaseMapping != null)
                     {
-                        if (mapping.BaseMapping.Declares(member, mapping.TypeName)) continue;
+                        // If the base mapping already declares this member, then we should remove that accessor and prefer the derived one.
+                        if (mapping.BaseMapping.Declares(member, mapping.TypeName))
+                        {
+                            RemoveUniqueAccessor(member, mapping.LocalElements, mapping.LocalAttributes, isSequence);
+                        }
                     }
                     isSequence |= member.IsSequence;
                     // add All member accessors to the scope accessors
@@ -2217,6 +2221,36 @@ namespace System.Xml.Serialization
                 for (int i = 0; i < member.Elements.Length; i++)
                 {
                     AddUniqueAccessor(elements, member.Elements[i]);
+                }
+            }
+        }
+
+        private static void RemoveUniqueAccessor(INameScope scope, Accessor accessor)
+        {
+            Accessor? existing = (Accessor?)scope[accessor.Name, accessor.Namespace];
+            if (existing != null)
+            {
+                scope[accessor.Name, accessor.Namespace] = null;
+            }
+#if DEBUG
+            else
+            {
+                throw new InvalidOperationException(SR.Format(SR.XmlInternalErrorDetails, $"The XML attribute/element '{accessor.Namespace}{accessor.Name}' does not have an existing accessor to remove."));
+            }
+#endif
+        }
+
+        private static void RemoveUniqueAccessor(MemberMapping member, INameScope elements, INameScope attributes, bool isSequence)
+        {
+            if (member.Attribute != null)
+            {
+                RemoveUniqueAccessor(attributes, member.Attribute);
+            }
+            else if (!isSequence && member.Elements != null && member.Elements.Length > 0)
+            {
+                for (int i = 0; i < member.Elements.Length; i++)
+                {
+                    RemoveUniqueAccessor(elements, member.Elements[i]);
                 }
             }
         }
