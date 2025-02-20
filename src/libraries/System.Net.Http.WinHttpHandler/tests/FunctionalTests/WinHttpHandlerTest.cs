@@ -114,7 +114,6 @@ namespace System.Net.Http.WinHttpHandlerFunctional.Tests
                 const int certificateCacheCleanupInterval = 10;
                 AppContext.SetSwitch("System.Net.Http.UseWinHttpCertificateCaching", true);
                 AppDomain.CurrentDomain.SetData("System.Net.Http.WinHttpCertificateCachingCleanupTimerInterval", certificateCacheCleanupInterval);
-                AppDomain.CurrentDomain.SetData("System.Net.Http.WinHttpCertificateCachingStaleTimeout", certificateCacheCleanupInterval);
                 int callbackCount = 0;
                 var handler = new WinHttpHandler()
                 {

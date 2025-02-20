@@ -100,7 +100,7 @@ namespace System.Net.Http
         private readonly WinHttpAuthHelper _authHelper = new WinHttpAuthHelper();
         private readonly Timer? _certificateCleanupTimer;
         private bool _isTimerRunning;
-        private ConcurrentDictionary<CachedCertificateKey, CachedCertificateValue> _cachedCertificates = new();
+        private readonly ConcurrentDictionary<CachedCertificateKey, CachedCertificateValue> _cachedCertificates = new();
 
         public WinHttpHandler()
         {
