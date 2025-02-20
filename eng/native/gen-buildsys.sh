@@ -106,6 +106,7 @@ if [[ "$host_arch" == "wasm" ]]; then
     fi
 fi
 
+echo "$cmake_command --no-warn-unused-cli -G \"$generator\" \"-DCMAKE_BUILD_TYPE=$buildtype\" \"-DCMAKE_INSTALL_PREFIX=$__CMakeBinDir\" $cmake_extra_defines $__UnprocessedCMakeArgs \"${cmake_extra_defines_wasm[@]}\" -S \"$1\" -B \"$2\""
 $cmake_command \
   --no-warn-unused-cli \
   -G "$generator" \

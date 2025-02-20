@@ -397,7 +397,4 @@ extern DummyGlobalContract ___contract;
 #endif
 
 void LogErrorToHost(const char* format, ...);
-#if defined(TARGET_ANDROID)
-void LogDebugToHost(const char* format, ...);
-#endif
 #endif // !_common_h_

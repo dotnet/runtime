@@ -163,10 +163,6 @@ set(COREDAC_LIBRARIES
     ${END_LIBRARY_GROUP} # End group of libraries that have circular references
 )
 
-if(CLR_CMAKE_TARGET_ANDROID)
-   list(APPEND COREDAC_LIBRARIES log)
-endif()
-
 if(CLR_CMAKE_HOST_WIN32)
     # mscordac.def should be generated before mscordaccore.dll is built
     add_dependencies(mscordaccore mscordaccore_def)
