@@ -30,18 +30,6 @@ const SString &BundleFileLocation::Path() const
     return Bundle::AppBundle->Path();
 }
 
-#if defined(TARGET_ANDROID)
-const SString &BundleFileLocation::AppName() const
-{
-    LIMITED_METHOD_CONTRACT;
-
-    _ASSERTE(IsValid());
-    _ASSERTE(Bundle::AppBundle != nullptr);
-
-    return Bundle::AppBundle->Path();
-}
-#endif
-
 Bundle::Bundle(LPCSTR bundlePath, BundleProbeFn *probe, ExternalAssemblyProbeFn* externalAssemblyProbe)
 {
     STANDARD_VM_CONTRACT;

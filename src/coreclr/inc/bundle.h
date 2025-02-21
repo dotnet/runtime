@@ -35,12 +35,8 @@ struct BundleFileLocation
     static BundleFileLocation Invalid() { LIMITED_METHOD_CONTRACT; return BundleFileLocation(); }
 
     const SString &Path() const;
-#if defined(TARGET_ANDROID)
-    const SString &AppName() const;
-    bool IsValid() const { LIMITED_METHOD_CONTRACT; return DataStart != nullptr; }
-#else // TARGET_ANDROID
-    bool IsValid() const { LIMITED_METHOD_CONTRACT; return Offset != 0; }
-#endif // !TARGET_ANDROID
+
+    bool IsValid() const { LIMITED_METHOD_CONTRACT; return DataStart != nullptr || Offset != 0; }
 };
 
 class Bundle
