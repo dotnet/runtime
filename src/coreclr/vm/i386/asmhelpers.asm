@@ -1155,7 +1155,7 @@ _TheUMEntryPrestub@0 proc public
     push        ecx
     push        edx
 
-    push    eax     ; UMEntryThunk*
+    push    eax     ; UMEntryThunkData*
     call    _TheUMEntryPrestubWorker@4
 
     ; pop argument registers
@@ -1393,5 +1393,16 @@ _OnCallCountThresholdReachedStub@0 proc public
 _OnCallCountThresholdReachedStub@0 endp
 
 endif ; FEATURE_TIERED_COMPILATION
+
+; rcx -This pointer
+; rdx -ReturnBuffer
+_ThisPtrRetBufPrecodeWorker@0 proc public
+    mov  eax, [eax + ThisPtrRetBufPrecodeData__Target]
+    ; Use XOR swap technique to set avoid the need to spill to the stack
+    xor ecx, edx
+    xor edx, ecx
+    xor ecx, edx
+    jmp eax
+_ThisPtrRetBufPrecodeWorker@0 endp
 
     end

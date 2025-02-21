@@ -6,7 +6,7 @@
 
 LEAF_ENTRY StubPrecodeCode
     auipc t1, 0x4
-    ld t2, (StubPrecodeData__MethodDesc)(t1)
+    ld t2, (StubPrecodeData__SecretParam)(t1)
     ld t1, (StubPrecodeData__Target)(t1)
     jr t1
 LEAF_END_MARKED StubPrecodeCode
