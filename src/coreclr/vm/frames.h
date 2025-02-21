@@ -1151,6 +1151,14 @@ public:
 
         return m_showFrame;
     }
+
+    friend struct cdac_data<FuncEvalFrame>;
+};
+
+template<>
+struct cdac_data<FuncEvalFrame>
+{
+    static constexpr size_t DebuggerEvalPtr = offsetof(FuncEvalFrame, m_pDebuggerEval);
 };
 
 typedef DPTR(FuncEvalFrame) PTR_FuncEvalFrame;
@@ -1668,8 +1676,15 @@ public:
 #endif
         return dac_cast<PTR_VOID>(p);
     }
+
+    friend struct cdac_data<FramedMethodFrame>;
 };
 
+template<>
+struct cdac_data<FramedMethodFrame>
+{
+    static constexpr size_t TransitionBlockPtr = offsetof(FramedMethodFrame, m_pTransitionBlock);
+};
 
 #ifdef FEATURE_COMINTEROP
 

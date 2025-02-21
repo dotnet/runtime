@@ -1,0 +1,105 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
+using Microsoft.Diagnostics.DataContractReader.Data;
+
+namespace Microsoft.Diagnostics.DataContractReader.Contracts.StackWalkHelpers;
+
+internal class AMD64FrameHandler(Target target, ContextHolder<AMD64Context> contextHolder) : IPlatformFrameHandler
+{
+    private readonly Target _target = target;
+    private readonly ContextHolder<AMD64Context> _context = contextHolder;
+
+    bool IPlatformFrameHandler.HandleInlinedCallFrame(InlinedCallFrame inlinedCallFrame)
+    {
+        // if the caller return address is 0, then the call is not active
+        // and we should not update the context
+        if (inlinedCallFrame.CallerReturnAddress == 0)
+        {
+            return false;
+        }
+
+        _context.InstructionPointer = inlinedCallFrame.CallerReturnAddress;
+        _context.StackPointer = inlinedCallFrame.CallSiteSP;
+        _context.FramePointer = inlinedCallFrame.CalleeSavedFP;
+
+        return true;
+    }
+
+    bool IPlatformFrameHandler.HandleSoftwareExceptionFrame(SoftwareExceptionFrame softwareExceptionFrame)
+    {
+        ContextHolder<AMD64Context> otherContextHolder = new();
+        otherContextHolder.ReadFromAddress(_target, softwareExceptionFrame.TargetContext);
+
+        UpdateCalleeSavedRegistersFromOtherContext(otherContextHolder);
+
+        _context.InstructionPointer = otherContextHolder.Context.InstructionPointer;
+        _context.StackPointer = otherContextHolder.Context.StackPointer;
+
+        return true;
+    }
+
+    bool IPlatformFrameHandler.HandleTransitionFrame(FramedMethodFrame framedMethodFrame, TransitionBlock transitionBlock, uint transitionBlockSize)
+    {
+        _context.InstructionPointer = transitionBlock.ReturnAddress;
+        _context.StackPointer = framedMethodFrame.TransitionBlockPtr + transitionBlockSize;
+        UpdateFromCalleeSavedRegisters(transitionBlock.CalleeSavedRegisters);
+
+        return true;
+    }
+
+    bool IPlatformFrameHandler.HandleFuncEvalFrame(FuncEvalFrame frame, DebuggerEval debuggerEval)
+    {
+        // No context to update if we're doing a func eval from within exception processing.
+        if (debuggerEval.EvalDuringException)
+        {
+            return false;
+        }
+        _context.ReadFromAddress(_target, debuggerEval.TargetContext);
+        return true;
+    }
+
+    private void UpdateFromCalleeSavedRegisters(TargetPointer calleeSavedRegisters)
+    {
+        bool unixAmd64Abi = _target.ReadGlobal<byte>(Constants.Globals.UnixAmd64ABI) != 0;
+        // Order of registers is hardcoded in the runtime. See vm/amd64/cgencpu.h CalleeSavedRegisters
+        if (unixAmd64Abi)
+        {
+            _context.Context.R12 = _target.ReadPointer(calleeSavedRegisters + (ulong)_target.PointerSize * 0);
+            _context.Context.R13 = _target.ReadPointer(calleeSavedRegisters + (ulong)_target.PointerSize * 1);
+            _context.Context.R14 = _target.ReadPointer(calleeSavedRegisters + (ulong)_target.PointerSize * 2);
+            _context.Context.R15 = _target.ReadPointer(calleeSavedRegisters + (ulong)_target.PointerSize * 3);
+            _context.Context.Rbx = _target.ReadPointer(calleeSavedRegisters + (ulong)_target.PointerSize * 4);
+            _context.Context.Rbp = _target.ReadPointer(calleeSavedRegisters + (ulong)_target.PointerSize * 5);
+        }
+        else
+        {
+            _context.Context.Rdi = _target.ReadPointer(calleeSavedRegisters + (ulong)_target.PointerSize * 0);
+            _context.Context.Rsi = _target.ReadPointer(calleeSavedRegisters + (ulong)_target.PointerSize * 1);
+            _context.Context.Rbx = _target.ReadPointer(calleeSavedRegisters + (ulong)_target.PointerSize * 2);
+            _context.Context.Rbp = _target.ReadPointer(calleeSavedRegisters + (ulong)_target.PointerSize * 3);
+            _context.Context.R12 = _target.ReadPointer(calleeSavedRegisters + (ulong)_target.PointerSize * 4);
+            _context.Context.R13 = _target.ReadPointer(calleeSavedRegisters + (ulong)_target.PointerSize * 5);
+            _context.Context.R14 = _target.ReadPointer(calleeSavedRegisters + (ulong)_target.PointerSize * 6);
+            _context.Context.R15 = _target.ReadPointer(calleeSavedRegisters + (ulong)_target.PointerSize * 7);
+        }
+    }
+
+    private void UpdateCalleeSavedRegistersFromOtherContext(ContextHolder<AMD64Context> otherContext)
+    {
+        bool unixAmd64Abi = _target.ReadGlobal<byte>(Constants.Globals.UnixAmd64ABI) != 0;
+
+        if (!unixAmd64Abi)
+        {
+            _context.Context.Rdi = otherContext.Context.Rdi;
+            _context.Context.Rsi = otherContext.Context.Rsi;
+        }
+
+        _context.Context.Rbx = otherContext.Context.Rbx;
+        _context.Context.Rbp = otherContext.Context.Rbp;
+        _context.Context.R12 = otherContext.Context.R12;
+        _context.Context.R13 = otherContext.Context.R13;
+        _context.Context.R14 = otherContext.Context.R14;
+        _context.Context.R15 = otherContext.Context.R15;
+    }
+}

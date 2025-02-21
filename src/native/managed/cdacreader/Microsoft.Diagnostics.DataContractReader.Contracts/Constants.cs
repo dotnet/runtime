@@ -16,6 +16,8 @@ public static class Constants
         public const string FeatureCOMInterop = nameof(FeatureCOMInterop);
         public const string FeatureEHFunclets = nameof(FeatureEHFunclets);
 
+        public const string UnixAmd64ABI = nameof(UnixAmd64ABI);
+
         public const string ObjectToMethodTableUnmask = nameof(ObjectToMethodTableUnmask);
         public const string SOSBreakingChangeVersion = nameof(SOSBreakingChangeVersion);
 

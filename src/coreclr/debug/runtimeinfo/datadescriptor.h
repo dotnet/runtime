@@ -594,6 +594,30 @@ CDAC_TYPE_FIELD(SoftwareExceptionFrame, /*pointer*/, ReturnAddress, cdac_data<So
 CDAC_TYPE_END(SoftwareExceptionFrame)
 #endif // FEATURE_EH_FUNCLETS
 
+CDAC_TYPE_BEGIN(FramedMethodFrame)
+CDAC_TYPE_SIZE(sizeof(FramedMethodFrame))
+CDAC_TYPE_FIELD(FramedMethodFrame, /*pointer*/, TransitionBlockPtr, cdac_data<FramedMethodFrame>::TransitionBlockPtr)
+CDAC_TYPE_END(FramedMethodFrame)
+
+CDAC_TYPE_BEGIN(TransitionBlock)
+CDAC_TYPE_SIZE(sizeof(TransitionBlock))
+CDAC_TYPE_FIELD(TransitionBlock, /*pointer*/, ReturnAddress, offsetof(TransitionBlock, m_ReturnAddress))
+CDAC_TYPE_FIELD(TransitionBlock, /*CalleeSavedRegisters*/, CalleeSavedRegisters, offsetof(TransitionBlock, m_calleeSavedRegisters))
+CDAC_TYPE_END(TransitionBlock)
+
+#ifdef DEBUGGING_SUPPORTED
+CDAC_TYPE_BEGIN(FuncEvalFrame)
+CDAC_TYPE_SIZE(sizeof(FuncEvalFrame))
+CDAC_TYPE_FIELD(FuncEvalFrame, /*pointer*/, DebuggerEvalPtr, cdac_data<FuncEvalFrame>::DebuggerEvalPtr)
+CDAC_TYPE_END(FuncEvalFrame)
+
+CDAC_TYPE_BEGIN(DebuggerEval)
+CDAC_TYPE_SIZE(sizeof(DebuggerEval))
+CDAC_TYPE_FIELD(DebuggerEval, /*T_CONTEXT*/, TargetContext, offsetof(DebuggerEval, m_context))
+CDAC_TYPE_FIELD(DebuggerEval, /*bool*/, EvalDuringException, offsetof(DebuggerEval, m_evalDuringException))
+CDAC_TYPE_END(DebuggerEval)
+#endif // DEBUGGING_SUPPORTED
+
 CDAC_TYPES_END()
 
 CDAC_GLOBALS_BEGIN()
@@ -619,6 +643,11 @@ CDAC_GLOBAL(FeatureEHFunclets, uint8, 0)
 CDAC_GLOBAL(FeatureCOMInterop, uint8, 1)
 #else
 CDAC_GLOBAL(FeatureCOMInterop, uint8, 0)
+#endif
+#ifdef UNIX_AMD64_ABI
+CDAC_GLOBAL(UnixAmd64ABI, uint8, 1)
+#else
+CDAC_GLOBAL(UnixAmd64ABI, uint8, 0)
 #endif
 // See Object::GetGCSafeMethodTable
 #ifdef TARGET_64BIT

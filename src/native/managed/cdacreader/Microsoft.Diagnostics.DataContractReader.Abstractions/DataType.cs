@@ -82,8 +82,12 @@ public enum DataType
     MethodImpl,
     NativeCodeSlot,
     GCCoverageInfo,
+    TransitionBlock,
+    DebuggerEval,
 
     Frame,
     InlinedCallFrame,
     SoftwareExceptionFrame,
+    FramedMethodFrame,
+    FuncEvalFrame,
 }

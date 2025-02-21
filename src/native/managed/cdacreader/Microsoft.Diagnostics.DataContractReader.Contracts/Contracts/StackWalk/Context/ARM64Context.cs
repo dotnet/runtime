@@ -10,7 +10,7 @@ namespace Microsoft.Diagnostics.DataContractReader.Contracts.StackWalkHelpers;
 /// ARM64-specific thread context.
 /// </summary>
 [StructLayout(LayoutKind.Explicit, Pack = 1)]
-internal struct ARM64Context : IPlatformContext
+public struct ARM64Context : IPlatformContext
 {
     [Flags]
     public enum ContextFlagsValues : uint
@@ -239,4 +239,12 @@ internal struct ARM64Context : IPlatformContext
     public unsafe fixed ulong Wvr[ARM64_MAX_WATCHPOINTS];
 
     #endregion
+
+    public override unsafe string ToString()
+    {
+        return $"ContextFlags: {ContextFlags}, Cpsr: {Cpsr}, X0: {X0}, X1: {X1}, X2: {X2}, X3: {X3}, X4: {X4}, X5: {X5}, X6: {X6}, X7: {X7}, " +
+                $"X8: {X8}, X9: {X9}, X10: {X10}, X11: {X11}, X12: {X12}, X13: {X13}, X14: {X14}, X15: {X15}, X16: {X16}, X17: {X17}, " +
+                $"X18: {X18}, X19: {X19}, X20: {X20}, X21: {X21}, X22: {X22}, X23: {X23}, X24: {X24}, X25: {X25}, X26: {X26}, X27: {X27}, " +
+                $"X28: {X28}, Fp: {Fp}, Lr: {Lr}, Sp: {Sp}, Pc: {Pc}, Fpcr: {Fpcr}, Fpsr: {Fpsr}";
+    }
 }

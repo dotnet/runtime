@@ -6,7 +6,7 @@ using System.Runtime.InteropServices;
 
 namespace Microsoft.Diagnostics.DataContractReader.Contracts.StackWalkHelpers;
 
-public class CotnextHolder<T> : IPlatformAgnosticContext where T : unmanaged, IPlatformContext
+public class ContextHolder<T> : IPlatformAgnosticContext, IEquatable<ContextHolder<T>> where T : unmanaged, IPlatformContext
 {
     public T Context;
 
@@ -42,7 +42,30 @@ public class CotnextHolder<T> : IPlatformAgnosticContext where T : unmanaged, IP
         Span<byte> byteSpan = MemoryMarshal.AsBytes(structSpan);
         return byteSpan.ToArray();
     }
-    public IPlatformAgnosticContext Clone() => new CotnextHolder<T>() { Context = Context };
+    public IPlatformAgnosticContext Clone() => new ContextHolder<T>() { Context = Context };
     public void Clear() => Context = default;
     public void Unwind(Target target) => Context.Unwind(target);
+
+    public override string? ToString() => Context.ToString();
+    public bool Equals(ContextHolder<T>? other)
+    {
+        if (other is null)
+        {
+            return false;
+        }
+
+        if (GetType() != other.GetType())
+        {
+            return false;
+        }
+
+        return Context.Equals(other.Context);
+    }
+
+    public override bool Equals(object? obj)
+    {
+        return Equals(obj as ContextHolder<T>);
+    }
+
+    public override int GetHashCode() => Context.GetHashCode();
 }
