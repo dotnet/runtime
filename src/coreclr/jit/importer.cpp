@@ -7326,20 +7326,6 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
                 // Other binary math operations
 
-#ifdef TARGET_ARM64
-            case CEE_DIV:
-            case CEE_DIV_UN:
-                if (opts.OptimizationEnabled())
-                {
-                    impImportDivision(opcode == CEE_DIV);
-                    break;
-                }
-                else
-                {
-                    oper = (opcode == CEE_DIV) ? GT_DIV : GT_UDIV;
-                    goto MATH_MAYBE_CALL_NO_OVF;
-                }
-#else
             case CEE_DIV:
                 oper = GT_DIV;
                 goto MATH_MAYBE_CALL_NO_OVF;
@@ -7347,7 +7333,6 @@ void Compiler::impImportBlockCode(BasicBlock* block)
             case CEE_DIV_UN:
                 oper = GT_UDIV;
                 goto MATH_MAYBE_CALL_NO_OVF;
-#endif // TARGET_ARM64
 
             case CEE_REM:
                 oper = GT_MOD;
@@ -7388,8 +7373,8 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
                 /* Pull two values and push back the result */
 
-                op2 = impPopStack().val;
-                op1 = impPopStack().val;
+                op2 = impStackTop().val;
+                op1 = impStackTop(1).val;
 
                 /* Can't do arithmetic with references */
                 assertImp(genActualType(op1->TypeGet()) != TYP_REF && genActualType(op2->TypeGet()) != TYP_REF);
@@ -7410,10 +7395,20 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                         (op2->IsIntegralConst(1) && (oper == GT_MUL || oper == GT_DIV)))
 
                     {
+                        impPopStack();
+                        impPopStack();
                         impPushOnStack(op1, tiRetVal);
                         break;
                     }
                 }
+
+#ifdef TARGET_ARM64
+                if ((oper == GT_DIV || oper == GT_UDIV) && varTypeIsIntegral(type) && opts.OptimizationEnabled())
+                {
+                    impImportDivisionWithChecks(oper, type, op1, op2);
+                    break;
+                }
+#endif
 
                 if (callNode)
                 {
@@ -7464,6 +7459,8 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 // Fold result, if possible.
                 op1 = gtFoldExpr(op1);
 
+                impPopStack();
+                impPopStack();
                 impPushOnStack(op1, tiRetVal);
                 break;
 
@@ -13892,130 +13889,102 @@ methodPointerInfo* Compiler::impAllocateMethodPointerInfo(const CORINFO_RESOLVED
 #ifdef TARGET_ARM64
 // impImportDivision: Import a division operation, adding runtime checks for overflow/divide-by-zero if needed.
 //
+// Assumes a stack state:
+// (top) -> divisor
+//          dividend
+//          ...
+// I.e. the dividend and divisor pointers passed to this function were peep'd on the stack.
+// This function will handle popping the two trees in the correct order, and will push the resultant tree
+// to the stack.
+//
 // Arguments:
 //    isSigned - Is the division a signed operation?
 //
-void Compiler::impImportDivision(bool isSigned)
+void Compiler::impImportDivisionWithChecks(genTreeOps oper, var_types resultType, GenTree* dividend, GenTree* divisor)
 {
+    assert(oper == GT_DIV || oper == GT_UDIV);
+
     typeInfo tiRetVal = typeInfo();
 
-    genTreeOps oper = isSigned ? GT_DIV : GT_UDIV;
+    // The node is allocated as large because some optimizations may bash the node into a GT_CAST node in lowering.
+    GenTree* divNode = gtNewLargeOperNode(oper, resultType, dividend, divisor);
 
-    GenTree* divisor  = impPopStack().val;
-    GenTree* dividend = impPopStack().val;
-
-    // Can't do arithmetic with references
-    assert(genActualType(dividend) != TYP_REF && genActualType(divisor) != TYP_REF);
-
-    // Change both to TYP_I_IMPL (impBashVarAddrsToI won't change if its a true byref, only
-    // if it is in the stack)
-    impBashVarAddrsToI(dividend, divisor);
-
-    var_types resultType = impGetByRefResultType(oper, !isSigned, &dividend, &divisor);
-
-    // Cannot perform div.un with floating point.
-    assert(!(!isSigned && varTypeIsFloating(resultType)));
-
-    // Special case: "int/1"
-    if (divisor->IsIntegralConst(1))
-    {
-        impPushOnStack(dividend, tiRetVal);
-        return;
-    }
-
-    // These operators can later be transformed into 'GT_CALL'
-
-    assert(GenTree::s_gtNodeSizes[GT_CALL] > GenTree::s_gtNodeSizes[GT_MUL]);
-#ifndef TARGET_ARM
-    assert(GenTree::s_gtNodeSizes[GT_CALL] > GenTree::s_gtNodeSizes[GT_DIV]);
-    assert(GenTree::s_gtNodeSizes[GT_CALL] > GenTree::s_gtNodeSizes[GT_UDIV]);
-    assert(GenTree::s_gtNodeSizes[GT_CALL] > GenTree::s_gtNodeSizes[GT_MOD]);
-    assert(GenTree::s_gtNodeSizes[GT_CALL] > GenTree::s_gtNodeSizes[GT_UMOD]);
-#endif
-    // It's tempting to use LargeOpOpcode() here, but this logic is *not* saying
-    // that we'll need to transform into a general large node, but rather specifically
-    // to a call: by doing it this way, things keep working if there are multiple sizes,
-    // and a CALL is no longer the largest.
-    // That said, as of now it *is* a large node, so we'll do this with an assert rather
-    // than an "if".
-    assert(GenTree::s_gtNodeSizes[GT_CALL] == TREE_NODE_SZ_LARGE);
-    GenTree* divNode = new (this, GT_CALL) GenTreeOp(oper, resultType, dividend, divisor DEBUGARG(/*largeNode*/ true));
+    if (oper == GT_UDIV)
+        divNode->gtFlags |= GTF_UNSIGNED;
 
     divNode = gtFoldExpr(divNode);
 
-    const bool isDivisionAfterFold = divNode->OperIs(GT_DIV, GT_UDIV);
+    // Is is still a division after folding? If not - push the result and finish.
+    if (!divNode->OperIs(GT_DIV, GT_UDIV))
+    {
+        impPopStack();
+        impPopStack();
+        impPushOnStack(divNode, tiRetVal);
+        return;
+    }
 
     GenTree* result = divNode;
 
-    // Special case: integer/long division may throw an exception
-    if (opts.OptimizationEnabled() && !varTypeIsFloating(resultType) && isDivisionAfterFold)
-    {
-        // Spill the divisor, as (divisor == 0) is always checked.
-        GenTree* divisorCopy = nullptr;
-        impCloneExpr(divisor, &divisorCopy, CHECK_SPILL_NONE, nullptr DEBUGARG("divisor used in runtime checks"));
+    GenTree* divisorCopy = nullptr;
 
-        // Update the original division to use this temp as the divisor.
-        divNode->AsOp()->gtOp2 = gtClone(divisorCopy, true);
-        assert(divNode->AsOp()->gtOp2 != nullptr);
+    // Expand division into QMark containing runtime checks.
+    // We can skip this when both the dividend and divisor are unsigned.
+    if ((oper == GT_DIV) && !(varTypeIsUnsigned(dividend) && varTypeIsUnsigned(divisor)))
+    {
+        GenTree* dividendCopy = nullptr;
+
+        impPopStack();
+        divNode->AsOp()->gtOp1 = impCloneExpr(dividend, &dividendCopy, CHECK_SPILL_NONE,
+                                              nullptr DEBUGARG("dividend used in runtime checks"));
+
+        impPopStack();
+        divNode->AsOp()->gtOp2 =
+            impCloneExpr(divisor, &divisorCopy, CHECK_SPILL_NONE, nullptr DEBUGARG("divisor used in runtime checks"));
+
+        const ssize_t minValue = genActualType(dividendCopy) == TYP_LONG ? INT64_MIN : INT32_MIN;
+
+        // (dividend == MinValue && divisor == -1)
+        GenTreeOp* const divisorIsMinusOne =
+            gtNewOperNode(GT_EQ, TYP_INT, divisorCopy, gtNewIconNode(-1, genActualType(divisorCopy)));
+        GenTreeOp* const dividendIsMinValue =
+            gtNewOperNode(GT_EQ, TYP_INT, dividendCopy, gtNewIconNode(minValue, genActualType(dividendCopy)));
+
+        GenTreeOp* const combinedTest = gtNewOperNode(GT_AND, TYP_INT, divisorIsMinusOne, dividendIsMinValue);
+        GenTree*         condition    = gtNewOperNode(GT_EQ, TYP_INT, combinedTest, gtNewTrue());
 
         result =
-            gtNewQmarkNode(resultType,
-                           // (divisor == 0)
-                           gtNewOperNode(GT_EQ, TYP_INT, divisorCopy, gtNewIconNode(0, genActualType(divisorCopy))),
-                           gtNewColonNode(resultType, gtNewHelperCallNode(CORINFO_HELP_THROWDIVZERO, resultType),
-                                          result));
+            gtNewQmarkNode(resultType, condition,
+                           gtNewColonNode(resultType, gtNewHelperCallNode(CORINFO_HELP_OVERFLOW, resultType), result));
+    }
 
-        // No need to generate check in Emitter.
-        divNode->gtFlags |= GTF_DIV_MOD_NO_BY_ZERO;
-
-        // Expand division into QMark containing runtime checks.
-        // We can skip this when both the dividend and divisor are unsigned.
-        if (isSigned && !(varTypeIsUnsigned(dividend) && varTypeIsUnsigned(divisor)))
-        {
-            // Spill the dividend for the check if it's complex.
-            GenTree* dividendCopy = nullptr;
-            impCloneExpr(dividend, &dividendCopy, CHECK_SPILL_NONE,
-                         nullptr DEBUGARG("dividend used in runtime checks"));
-
-            // Update the original division to use this temp as the dividend.
-            divNode->AsOp()->gtOp1 = gtClone(dividendCopy, true);
-            assert(divNode->AsOp()->gtOp1 != nullptr);
-
-            // Clone of the divisor should be easy, it was either simple enough to clone or spilled already.
-            divisorCopy = gtClone(divisorCopy, true);
-            assert(divisorCopy != nullptr);
-
-            const ssize_t minValue = genActualType(dividendCopy) == TYP_LONG ? INT64_MIN : INT32_MIN;
-
-            // (dividend == MinValue && divisor == -1)
-            GenTreeOp* const divisorIsMinusOne =
-                gtNewOperNode(GT_EQ, TYP_INT, divisorCopy, gtNewIconNode(-1, genActualType(divisorCopy)));
-            GenTreeOp* const dividendIsMinValue =
-                gtNewOperNode(GT_EQ, TYP_INT, dividendCopy, gtNewIconNode(minValue, genActualType(dividendCopy)));
-            GenTreeOp* const combinedTest = gtNewOperNode(GT_AND, TYP_INT, divisorIsMinusOne, dividendIsMinValue);
-            GenTree*         condition    = gtNewOperNode(GT_EQ, TYP_INT, combinedTest, gtNewTrue());
-
-            result = gtNewQmarkNode(resultType, condition,
-                                    gtNewColonNode(resultType, gtNewHelperCallNode(CORINFO_HELP_OVERFLOW, resultType),
-                                                   result));
-
-            // No need to generate check in Emitter.
-            divNode->gtFlags |= GTF_DIV_MOD_NO_OVERFLOW;
-        }
-
-        // Spilling the overall Qmark helps with later passes.
-        unsigned tmp            = lvaGrabTemp(true DEBUGARG("spilling to hold checked division tree"));
-        lvaGetDesc(tmp)->lvType = resultType;
-        impStoreToTemp(tmp, result, CHECK_SPILL_NONE);
-
-        result = gtNewLclVarNode(tmp, resultType);
+    if (divisorCopy == nullptr)
+    {
+        impPopStack();
+        impPopStack();
+        divNode->AsOp()->gtOp2 =
+            impCloneExpr(divisor, &divisorCopy, CHECK_SPILL_ALL, nullptr DEBUGARG("divisor used in runtime checks"));
     }
     else
     {
-        // The division could still throw if it was not folded away.
-        if (isDivisionAfterFold)
-            divNode->gtFlags |= GTF_EXCEPT;
+        divisorCopy = gtClone(divisorCopy, true);
     }
+
+    result =
+        gtNewQmarkNode(resultType,
+                       // (divisor == 0)
+                       gtNewOperNode(GT_EQ, TYP_INT, divisorCopy, gtNewIconNode(0, genActualType(divisorCopy))),
+                       gtNewColonNode(resultType, gtNewHelperCallNode(CORINFO_HELP_THROWDIVZERO, resultType), result));
+
+    // No need to generate checks in Emitter.
+    divNode->gtFlags |= (GTF_DIV_MOD_NO_OVERFLOW | GTF_DIV_MOD_NO_BY_ZERO);
+    assert(!divNode->OperMayThrow(this));
+
+    // Spilling the overall Qmark helps with later passes.
+    unsigned tmp            = lvaGrabTemp(true DEBUGARG("spilling to hold checked division tree"));
+    lvaGetDesc(tmp)->lvType = resultType;
+    impStoreToTemp(tmp, result, CHECK_SPILL_NONE);
+
+    result = gtNewLclVarNode(tmp, resultType);
 
     impPushOnStack(result, tiRetVal);
     return;
