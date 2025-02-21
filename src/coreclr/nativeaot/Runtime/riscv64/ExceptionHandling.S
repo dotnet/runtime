@@ -44,7 +44,7 @@
     fsd  fs10, 0x60(sp)
     fsd  fs11, 0x68(sp)
 
-    PROLOG_SAVE_REG_PAIR_INDEXED  fp, ra, -0x78
+    PROLOG_SAVE_REG_PAIR_INDEXED  fp, ra, 0x78
 
     sd  zero, 0x10(sp)        // locations reserved for return value, not used for exception handling
     sd  zero, 0x18(sp)

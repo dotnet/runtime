@@ -17,7 +17,7 @@
     # incoming register values into it.
 
     # First create PInvokeTransitionFrame
-    PROLOG_SAVE_REG_PAIR_INDEXED  fp, ra, -PROBE_FRAME_SIZE  # Push down stack pointer and store FP (s10) and RA (ra)
+    PROLOG_SAVE_REG_PAIR_INDEXED  fp, ra, PROBE_FRAME_SIZE  # Push down stack pointer and store FP (s10) and RA (ra)
 
     # Slot at sp+0x10 is reserved for Thread *
     # Slot at sp+0x18 is reserved for bitmask of saved registers

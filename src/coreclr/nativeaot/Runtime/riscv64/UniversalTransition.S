@@ -87,7 +87,7 @@
     NESTED_ENTRY Rhp\FunctionName, _TEXT, NoHandler
 
         # FP and RA registers
-        PROLOG_SAVE_REG_PAIR_INDEXED fp, ra, -STACK_SIZE
+        PROLOG_SAVE_REG_PAIR_INDEXED fp, ra, STACK_SIZE
 
         # Floating point registers
         fsd         fa0, FLOAT_ARG_OFFSET(sp)
