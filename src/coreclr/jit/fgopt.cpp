@@ -5175,7 +5175,12 @@ bool Compiler::ThreeOptLayout::ReorderBlockList()
         compiler->fgUnlinkRange(tryBeg, tryLast);
         compiler->fgMoveBlocksAfter(tryBeg, tryLast, insertionPoint);
         modified = true;
-        compiler->fgFindTryRegionEnds();
+
+        // If we moved this region within another region, recompute the try region end blocks.
+        if (parentIndex != EHblkDsc::NO_ENCLOSING_INDEX)
+        {
+            compiler->fgFindTryRegionEnds();
+        }
     }
 
     return modified;
