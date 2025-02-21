@@ -50,8 +50,7 @@
     sd  \trashReg, 0x78(sp)                                                # Save caller's SP
 
     # Link the frame into the Thread
-    mv  \trashReg, sp
-    sd  \trashReg, OFFSETOF__Thread__m_pDeferredTransitionFrame(\threadReg)
+    sd  sp, OFFSETOF__Thread__m_pDeferredTransitionFrame(\threadReg)
 
 .endm
 
