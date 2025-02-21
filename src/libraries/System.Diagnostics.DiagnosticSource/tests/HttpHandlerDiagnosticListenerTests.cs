@@ -145,6 +145,7 @@ namespace System.Diagnostics.Tests
             }
         }
 
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/112792")]
         [OuterLoop]
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void TestW3CHeaders()
