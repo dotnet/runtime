@@ -10,7 +10,7 @@
     <PackageVersionNet9>9.0.3</PackageVersionNet9>
     <PackageVersionNet8>8.0.14</PackageVersionNet8>
     <PackageVersionNet7>7.0.20</PackageVersionNet7>
-    <PackageVersionNet6>6.0.$([MSBuild]::Add($([System.Version]::Parse('$(PackageVersionNet8)').Build),25))</PackageVersionNet6>
+    <PackageVersionNet6>6.0.23</PackageVersionNet6>
     <PreReleaseVersionLabel>preview</PreReleaseVersionLabel>
     <PreReleaseVersionIteration>2</PreReleaseVersionIteration>
     <!-- Enable to remove prerelease label. -->
