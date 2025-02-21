@@ -190,8 +190,8 @@ C_FUNC(\Name):
     mv \target, a0
 
     /*
-    In the future we should switch to TLS descriptors. The support was added in 2024 in glibc, musl, llvm, gcc and binutils,
-    so its support is currently unavailable on majority devices. See https://maskray.me/blog/2024-01-23-riscv-tlsdesc-works
+    In the future we should switch to TLS descriptors. Its support was added in 2024 in glibc, musl, llvm, gcc and binutils,
+    which is currently unavailable on majority devices. See https://maskray.me/blog/2024-01-23-riscv-tlsdesc-works
 
     When the support for TLS descriptors is available in NativeAOT baseline, actions to perform:
     * Apply this patch:
@@ -208,6 +208,7 @@ C_FUNC(\Name):
 
         add_subdirectory(Bootstrap)
         ```
+    * Remove global dynamic code including prolog and epilog.
     * Uncomment the following code and remove these comments.
 
     // TLS descriptor, see https://github.com/riscv-non-isa/riscv-elf-psabi-doc/blob/eb2b2962/riscv-elf.adoc#tls-descriptors
