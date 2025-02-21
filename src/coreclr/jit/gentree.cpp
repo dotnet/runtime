@@ -1162,134 +1162,6 @@ GenTree* GenTreeFieldList::SoleFieldOrThis()
     return this;
 }
 
-//---------------------------------------------------------------
-// IsHfaArg: Is this arg considered a homogeneous floating-point aggregate?
-//
-bool CallArgABIInformation::IsHfaArg() const
-{
-    if (GlobalJitOptions::compFeatureHfa)
-    {
-        return IsHfa(GetHfaElemKind());
-    }
-    else
-    {
-        return false;
-    }
-}
-
-//---------------------------------------------------------------
-// IsHfaRegArg: Is this an HFA argument passed in registers?
-//
-bool CallArgABIInformation::IsHfaRegArg() const
-{
-    if (GlobalJitOptions::compFeatureHfa)
-    {
-        return IsHfa(GetHfaElemKind()) && IsPassedInRegisters();
-    }
-    else
-    {
-        return false;
-    }
-}
-
-//---------------------------------------------------------------
-// GetHfaType: Get the type of each element of the HFA arg.
-//
-var_types CallArgABIInformation::GetHfaType() const
-{
-    if (GlobalJitOptions::compFeatureHfa)
-    {
-        return HfaTypeFromElemKind(GetHfaElemKind());
-    }
-    else
-    {
-        return TYP_UNDEF;
-    }
-}
-
-//---------------------------------------------------------------
-// SetHfaType: Set the type of each element of the HFA arg.
-//
-// Arguments:
-//   type     - The new type for each element
-//   hfaSlots - How many registers are used by the HFA.
-//
-// Remarks:
-//   This can only be called after the passing mode of the argument (registers
-//   or stack) has been determined. When passing HFAs of doubles on ARM it is
-//   expected that `hfaSlots` refers to the number of float registers used,
-//   i.e. twice the number of doubles being passed. This function will convert
-//   that into double registers and set `NumRegs` appropriately.
-//
-void CallArgABIInformation::SetHfaType(var_types type, unsigned hfaSlots)
-{
-    if (GlobalJitOptions::compFeatureHfa)
-    {
-        if (type != TYP_UNDEF)
-        {
-            // We must already have set the passing mode.
-            assert(NumRegs != 0 || GetStackByteSize() != 0);
-            // We originally set numRegs according to the size of the struct, but if the size of the
-            // hfaType is not the same as the pointer size, we need to correct it.
-            // Note that hfaSlots is the number of registers we will use. For ARM, that is twice
-            // the number of "double registers".
-            unsigned numHfaRegs = hfaSlots;
-#ifdef TARGET_ARM
-            if (type == TYP_DOUBLE)
-            {
-                // Must be an even number of registers.
-                assert((NumRegs & 1) == 0);
-                numHfaRegs = hfaSlots / 2;
-            }
-#endif // TARGET_ARM
-
-            if (!IsHfaArg())
-            {
-                // We haven't previously set this; do so now.
-                CorInfoHFAElemType elemKind = HfaElemKindFromType(type);
-                SetHfaElemKind(elemKind);
-                // Ensure we've allocated enough bits.
-                assert(GetHfaElemKind() == elemKind);
-                if (IsPassedInRegisters())
-                {
-                    NumRegs = numHfaRegs;
-                }
-            }
-            else
-            {
-                // We've already set this; ensure that it's consistent.
-                if (IsPassedInRegisters())
-                {
-                    assert(NumRegs == numHfaRegs);
-                }
-                assert(type == HfaTypeFromElemKind(GetHfaElemKind()));
-            }
-        }
-    }
-}
-
-//---------------------------------------------------------------
-// GetStackByteSize: Get the number of stack bytes used to pass this argument.
-//
-// Returns:
-//   For pure register arguments, this returns 0.
-//   For pure stack arguments, this returns ByteSize.
-//   For split arguments the return value is between 0 and ByteSize.
-//
-unsigned CallArgABIInformation::GetStackByteSize() const
-{
-    if (!IsSplit() && NumRegs > 0)
-    {
-        return 0;
-    }
-
-    assert(!IsHfaArg() || !IsSplit());
-
-    assert(ByteSize > TARGET_POINTER_SIZE * NumRegs);
-    const unsigned stackByteSize = ByteSize - TARGET_POINTER_SIZE * NumRegs;
-    return stackByteSize;
-}
-
 #ifdef DEBUG
 void NewCallArg::ValidateTypes()
 {
@@ -1371,7 +1243,7 @@ CallArgs::CallArgs()
     , m_hasRetBuffer(false)
     , m_isVarArgs(false)
     , m_abiInformationDetermined(false)
-    , m_newAbiInformationDetermined(false)
+    , m_hasAddedFinalArgs(false)
     , m_hasRegArgs(false)
     , m_hasStackArgs(false)
     , m_argsComplete(false)
@@ -1980,7 +1852,7 @@ void CallArgs::PushLateBack(CallArg* arg)
 //
 void CallArgs::Remove(CallArg* arg)
 {
-    assert(!m_abiInformationDetermined && !m_argsComplete);
+    assert(!m_hasAddedFinalArgs && !m_argsComplete);
 
     CallArg** slot = &m_head;
     while (*slot != nullptr)
@@ -2601,9 +2473,7 @@ bool GenTreeCall::Equals(GenTreeCall* c1, GenTreeCall* c2)
 //
 void CallArgs::ResetFinalArgsAndABIInfo()
 {
-    m_newAbiInformationDetermined = false;
-
-    if (!IsAbiInformationDetermined())
+    if (!m_hasAddedFinalArgs)
     {
         return;
     }
@@ -2633,6 +2503,7 @@ void CallArgs::ResetFinalArgsAndABIInfo()
         }
     }
 
+    m_hasAddedFinalArgs        = false;
     m_abiInformationDetermined = false;
 }
 
@@ -9907,6 +9778,7 @@ void CallArgs::InternalCopyFrom(Compiler* comp, CallArgs* other, CopyNodeFunc co
     m_hasRetBuffer             = other->m_hasRetBuffer;
     m_isVarArgs                = other->m_isVarArgs;
     m_abiInformationDetermined = other->m_abiInformationDetermined;
+    m_hasAddedFinalArgs        = other->m_hasAddedFinalArgs;
     m_hasRegArgs               = other->m_hasRegArgs;
     m_hasStackArgs             = other->m_hasStackArgs;
     m_argsComplete             = other->m_argsComplete;
@@ -9928,7 +9800,6 @@ void CallArgs::InternalCopyFrom(Compiler* comp, CallArgs* other, CopyNodeFunc co
         carg->m_needPlace       = arg.m_needPlace;
         carg->m_processed       = arg.m_processed;
         carg->AbiInfo           = arg.AbiInfo;
-        carg->NewAbiInfo        = arg.NewAbiInfo;
         *tail                   = carg;
         tail                    = &carg->m_next;
     }
@@ -13274,41 +13145,7 @@ void Compiler::gtGetArgMsg(GenTreeCall* call, CallArg* arg, char* bufp, unsigned
     }
     else if (call->gtArgs.IsAbiInformationDetermined())
     {
-#ifdef TARGET_ARM
-        if (arg->AbiInfo.IsSplit())
-        {
-            regNumber firstReg = arg->AbiInfo.GetRegNum();
-            if (arg->AbiInfo.NumRegs == 1)
-            {
-                sprintf_s(bufp, bufLength, " %s out+%02x", compRegVarName(firstReg), arg->AbiInfo.ByteOffset);
-            }
-            else
-            {
-                regNumber lastReg   = REG_STK;
-                char      separator = (arg->AbiInfo.NumRegs == 2) ? ',' : '-';
-                if (arg->AbiInfo.IsHfaRegArg())
-                {
-                    unsigned lastRegNum = genMapFloatRegNumToRegArgNum(firstReg) + arg->AbiInfo.NumRegs - 1;
-                    lastReg             = genMapFloatRegArgNumToRegNum(lastRegNum);
-                }
-                else
-                {
-                    unsigned lastRegNum =
-                        genMapIntRegNumToRegArgNum(firstReg, call->GetUnmanagedCallConv()) + arg->AbiInfo.NumRegs - 1;
-                    lastReg = genMapIntRegArgNumToRegNum(lastRegNum, call->GetUnmanagedCallConv());
-                }
-                sprintf_s(bufp, bufLength, " %s%c%s out+%02x", compRegVarName(firstReg), separator,
-                          compRegVarName(lastReg), arg->AbiInfo.ByteOffset);
-            }
-
-            return;
-        }
-#endif // TARGET_ARM
-#if FEATURE_FIXED_OUT_ARGS
-        sprintf_s(bufp, bufLength, " out+%02x", arg->AbiInfo.ByteOffset);
-#else
-        sprintf_s(bufp, bufLength, " on STK");
-#endif
+        gtPrintABILocation(arg->AbiInfo, &bufp, &bufLength);
     }
 }
 
@@ -13323,65 +13160,112 @@ void Compiler::gtGetArgMsg(GenTreeCall* call, CallArg* arg, char* bufp, unsigned
 //
 // Return Value:
 //    No return value, but bufp is written.
-
+//
 void Compiler::gtGetLateArgMsg(GenTreeCall* call, CallArg* arg, char* bufp, unsigned bufLength)
 {
     assert(arg->GetLateNode() != nullptr);
-    regNumber argReg = arg->AbiInfo.GetRegNum();
 
     gtPrintArgPrefix(call, arg, &bufp, &bufLength);
+    gtPrintABILocation(arg->AbiInfo, &bufp, &bufLength);
+}
 
-#if FEATURE_FIXED_OUT_ARGS
-    if (argReg == REG_STK)
-    {
-        sprintf_s(bufp, bufLength, " in out+%02x", arg->AbiInfo.ByteOffset);
-    }
-    else
-#endif
-    {
-#ifdef TARGET_ARM
-        if (arg->AbiInfo.IsSplit())
+//------------------------------------------------------------------------
+// gtPrintABILocation: Print location that an argument is being passed in.
+//
+// Arguments:
+//    abiInfo   - Passing information
+//    bufp      - Pointer to buffer
+//    bufLength - Remaining length of buffer
+//
+void Compiler::gtPrintABILocation(const ABIPassingInformation& abiInfo, char** bufp, unsigned* bufLength)
+{
+    regNumber firstReg = REG_NA;
+    regNumber lastReg  = REG_NA;
+
+    int numPrinted;
+#define PRINTF_BUF(...)                                                                                                \
+    numPrinted = sprintf_s(*bufp, *bufLength, __VA_ARGS__);                                                            \
+    assert((numPrinted > 0) && ((unsigned)numPrinted < *bufLength));                                                   \
+    *bufp += numPrinted;                                                                                               \
+    *bufLength -= (unsigned)numPrinted;
+
+    auto printRegs = [&]() {
+        if (firstReg == REG_NA)
         {
-            regNumber firstReg = arg->AbiInfo.GetRegNum();
-            if (arg->AbiInfo.NumRegs == 1)
+            return;
+        }
+
+        bool printSeparately = firstReg == lastReg;
+
+#ifdef TARGET_XARCH
+        // No numeric arg regs, always print separately
+        printSeparately = true;
+#endif
+
+        if (printSeparately)
+        {
+            regNumber reg = firstReg;
+            while (true)
             {
-                sprintf_s(bufp, bufLength, " %s out+%02x", compRegVarName(firstReg), arg->AbiInfo.ByteOffset);
-            }
-            else
-            {
-                regNumber lastReg   = REG_STK;
-                char      separator = (arg->AbiInfo.NumRegs == 2) ? ',' : '-';
-                if (arg->AbiInfo.IsHfaRegArg())
+                PRINTF_BUF(" %s", getRegName(reg));
+                if (reg == lastReg)
                 {
-                    unsigned lastRegNum = genMapFloatRegNumToRegArgNum(firstReg) + arg->AbiInfo.NumRegs - 1;
-                    lastReg             = genMapFloatRegArgNumToRegNum(lastRegNum);
+                    break;
+                }
+                reg = REG_NEXT(reg);
+            }
+        }
+        else
+        {
+            // Numeric arg regs, print as a range
+            PRINTF_BUF(" %s%c%s", getRegName(firstReg), REG_NEXT(firstReg) == lastReg ? ' ' : '-', getRegName(lastReg));
+        }
+
+        firstReg = REG_NA;
+        lastReg  = REG_NA;
+    };
+
+    for (const ABIPassingSegment& segment : abiInfo.Segments())
+    {
+        if (segment.IsPassedInRegister())
+        {
+            regMaskTP regs = segment.GetRegisterMask();
+            while (regs != RBM_NONE)
+            {
+                regNumber reg = genFirstRegNumFromMaskAndToggle(regs);
+                if (firstReg == REG_NA)
+                {
+                    firstReg = reg;
+                    lastReg  = reg;
+                }
+                else if (REG_NEXT(lastReg) == reg)
+                {
+                    lastReg = reg;
                 }
                 else
                 {
-                    unsigned lastRegNum =
-                        genMapIntRegNumToRegArgNum(firstReg, call->GetUnmanagedCallConv()) + arg->AbiInfo.NumRegs - 1;
-                    lastReg = genMapIntRegArgNumToRegNum(lastRegNum, call->GetUnmanagedCallConv());
+                    printRegs();
+                    firstReg = reg;
+                    lastReg  = reg;
                 }
-                sprintf_s(bufp, bufLength, " %s%c%s out+%02x", compRegVarName(firstReg), separator,
-                          compRegVarName(lastReg), arg->AbiInfo.ByteOffset);
             }
-
-            return;
-        }
-#endif // TARGET_ARM
-#if FEATURE_MULTIREG_ARGS
-        if (arg->AbiInfo.NumRegs >= 2)
-        {
-            char separator = (arg->AbiInfo.NumRegs == 2) ? ',' : '-';
-            sprintf_s(bufp, bufLength, " %s%c%s", compRegVarName(argReg), separator,
-                      compRegVarName(arg->AbiInfo.GetRegNum(arg->AbiInfo.NumRegs - 1)));
         }
         else
-#endif
         {
-            sprintf_s(bufp, bufLength, " in %s", compRegVarName(argReg));
+            printRegs();
+
+#if FEATURE_FIXED_OUT_ARGS
+            int numPrinted = sprintf_s(*bufp, *bufLength, " out+%02x", segment.GetStackOffset());
+#else
+            int numPrinted = sprintf_s(*bufp, *bufLength, " STK");
+#endif
+            assert((numPrinted > 0) && ((unsigned)numPrinted < *bufLength));
+            *bufp += numPrinted;
+            *bufLength -= (unsigned)numPrinted;
         }
     }
+
+    printRegs();
 }
 
 //------------------------------------------------------------------------
