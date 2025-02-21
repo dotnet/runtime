@@ -4548,23 +4548,31 @@ struct ExecutionState
 #if defined(TARGET_ARM64)
 static inline void* PacSignPtr(void* ptr)
 {
+    #if defined(_MSC_VER)
+    __asm paciza ptr
+    #else
     __asm__ volatile (".arch_extension pauth\n"
                       "paciza %0"
                       : "+r" (ptr)
                       :
                       : "memory"                // Memory is affected, prevent reordering
                       );
+    #endif // _MSC_VER
     return ptr;
 }
 
 static inline void* PacStripPtr(void* ptr)
 {
+    #if defined(_MSC_VER)
+    __asm xpaci ptr
+    #else
     __asm__ volatile (".arch_extension pauth\n"
                       "xpaci %0"
                       : "+r" (ptr)
                       :
                       : "memory"                // Memory is affected, prevent reordering
                       );
+    #endif // _MSC_VER
     return ptr;
 }
 #endif // TARGET_ARM64
