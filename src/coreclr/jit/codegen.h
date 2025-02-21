@@ -103,9 +103,6 @@ private:
     void genRangeCheck(GenTree* node);
 
     void genLockedInstructions(GenTreeOp* node);
-#if defined(TARGET_XARCH) && defined(FEATURE_HW_INTRINSICS)
-    void genSIMDDivByZeroCheck(GenTree* node);
-#endif // defined(TARGET_XARCH) && defined(FEATURE_HW_INTRINSICS)
 #ifdef TARGET_XARCH
     void genCodeForLockAdd(GenTreeOp* node);
 #endif

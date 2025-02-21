@@ -14701,42 +14701,6 @@ void Compiler::fgValueNumberAddExceptionSetForOverflow(GenTree* tree)
     }
 }
 
-#if defined(FEATURE_HW_INTRINSICS) && defined(TARGET_XARCH)
-//--------------------------------------------------------------------------------
-// fgValueNumberAddExceptionSetForSIMDDivByZeroCheck
-//          - Adds the exception set for the current tree node
-//            which is performing a SIMD div-by-zero check
-//
-// Arguments:
-//    tree  - The current GenTree node,
-//            It must be a node that performs a SIMD div-by-zero check operation
-//
-// Return Value:
-//          - The tree's gtVNPair is updated to include the
-//            VNF_DivideByZeroExc exception set.
-//
-void Compiler::fgValueNumberAddExceptionSetForSIMDDivByZeroCheck(GenTree* tree)
-{
-    // Unpack, Norm,Exc for the tree's VN
-    //
-    ValueNumPair vnpTreeNorm;
-    ValueNumPair vnpTreeExc;
-
-    vnStore->VNPUnpackExc(tree->gtVNPair, &vnpTreeNorm, &vnpTreeExc);
-
-    // Construct the exception set for div-by-zero check
-    ValueNumPair divByZeroChkExcSet =
-        vnStore->VNPExcSetSingleton(vnStore->VNPairForFunc(TYP_REF, VNF_DivideByZeroExc, vnpTreeNorm));
-
-    // Combine the new DivideByZero exception with the original exception set of tree
-    ValueNumPair newExcSet = vnStore->VNPExcSetUnion(vnpTreeExc, divByZeroChkExcSet);
-
-    // Update the VN for the tree it, the updated VN for tree
-    // now includes the DivideByZero exception.
-    tree->gtVNPair = vnStore->VNPWithExc(vnpTreeNorm, newExcSet);
-}
-#endif // defined(FEATURE_HW_INTRINSICS) && defined(TARGET_XARCH)
-
 //--------------------------------------------------------------------------------
 // fgValueNumberAddExceptionSetForBoundsCheck
 //          - Adds the exception set for the current tree node
