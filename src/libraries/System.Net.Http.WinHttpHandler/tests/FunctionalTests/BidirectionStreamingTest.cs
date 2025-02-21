@@ -96,6 +96,7 @@ namespace System.Net.Http.WinHttpHandlerFunctional.Tests
         }
 
         [ConditionalFact(nameof(TestsEnabled))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/112700")]
         public async Task AfterReadResponseServerError_ClientWrite()
         {
             TaskCompletionSource<Stream> requestStreamTcs = new TaskCompletionSource<Stream>(TaskCreationOptions.RunContinuationsAsynchronously);
