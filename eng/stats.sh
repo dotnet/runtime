@@ -24,11 +24,11 @@ while true; do
     echo "--------installing---------"
     sudo /__w/1/s/.dotnet/dotnet tool install --global dotnet-trace
     export pid=$(ps aux | grep "noautoresponse" | sort -nrk 4 | awk 'NR==1{print $2}')
-    echo "--------collecting $pid into $CurrentRepoSourceBuildArtifactsPackagesDir ---------"
-    mkdir -p $CurrentRepoSourceBuildArtifactsPackagesDir
-    mkdir -p /mnt/vss/_work/1/a/artifacts/log
-    /root/.dotnet/tools/dotnet-trace collect --profile gc-collect -p "$pid" --duration 00:01:00 --output $CurrentRepoSourceBuildArtifactsPackagesDir/trace.$(date +%s).nettrace
-    cp $CurrentRepoSourceBuildArtifactsPackagesDir/trace.$(date +%s).nettrace /mnt/vss/_work/1/a/artifacts/log
+    echo "--------collecting $pid  ---------"
+    sudo mkdir -p /mnt/vss/_work/1/a/artifacts/log
+    sudo ls -la /mnt/vss/_work/1/a/artifacts/log/
+    sudo /root/.dotnet/tools/dotnet-trace collect --profile gc-collect -p "$pid" --duration 00:01:00 --output /mnt/vss/_work/1/a/artifacts/log/trace.$(date +%s).nettrace
+    sudo ls -la /mnt/vss/_work/1/a/artifacts/log/
     echo "--------end collecting---------"
   fi
 done
