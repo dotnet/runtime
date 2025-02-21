@@ -648,9 +648,11 @@ void RangeCheck::MergeEdgeAssertions(GenTreeLclVarCommon* lcl, ASSERT_VALARG_TP 
 // MergeEdgeAssertions: Merge assertions on the edge flowing into the block about a variable
 //
 // Arguments:
-//    normalLclVN - the value number to look for assertions for
-//    assertions - the assertions to use
-//    pRange - the range to tighten with assertions
+//    comp             - the compiler instance
+//    normalLclVN      - the value number to look for assertions for
+//    preferredBoundVN - when this VN is set, it will be given preference over constant limits
+//    assertions       - the assertions to use
+//    pRange           - the range to tighten with assertions
 //
 void RangeCheck::MergeEdgeAssertions(Compiler*        comp,
                                      ValueNum         normalLclVN,

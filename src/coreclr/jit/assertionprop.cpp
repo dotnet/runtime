@@ -4030,18 +4030,11 @@ void Compiler::optAssertionProp_RangeProperties(ASSERT_VALARG_TP assertions,
         return;
     }
 
-    const ValueNum treeVN = vnStore->VNConservativeNormalValue(tree->gtVNPair);
-
+    const ValueNum  treeVN = vnStore->VNConservativeNormalValue(tree->gtVNPair);
     BitVecOps::Iter iter(apTraits, assertions);
     unsigned        index = 0;
     while (iter.NextElem(&index))
     {
-        if (*isKnownNonZero && *isKnownNonNegative)
-        {
-            // TP: We already have both properties, no need to check assertions.
-            return;
-        }
-
         AssertionDsc* curAssertion = optGetAssertion(GetAssertionIndex(index));
 
         // if treeVN has a bound-check assertion where it's an index, then
