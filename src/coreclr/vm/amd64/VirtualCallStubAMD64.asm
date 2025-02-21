@@ -83,4 +83,22 @@ Fail:
 
 LEAF_END ResolveWorkerChainLookupAsmStub, _TEXT
 
+;; On Input:
+;;    r11                    contains the address of the indirection cell (with the flags in the low bits)
+NESTED_ENTRY JIT_InterfaceLookupForSlot, _TEXT
+
+        PROLOG_WITH_TRANSITION_BLOCK
+        
+        lea             rcx, [rsp + __PWTB_TransitionBlock]         ; pTransitionBlock
+        mov             rdx, r11                                    ; indirection cell
+        mov             r8, 7FFFFFFFFFFFFFFFh                       ; INVALID_TOKEN
+        xor             r9, r9                                      ; flags
+
+        call            VSD_ResolveWorker
+
+        EPILOG_WITH_TRANSITION_BLOCK_RETURN
+        TAILJMP_RAX
+
+NESTED_END JIT_InterfaceLookupForSlot, _TEXT
+
         end
