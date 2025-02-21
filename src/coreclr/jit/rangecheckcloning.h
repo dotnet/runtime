@@ -22,15 +22,18 @@ struct BoundCheckLocation
 {
     Statement* stmt;
     GenTree**  bndChkUse;
+    int        stmtIdx;
 
-    BoundCheckLocation(Statement* stmt, GenTree** bndChkUse)
+    BoundCheckLocation(Statement* stmt, GenTree** bndChkUse, int stmtIdx)
         : stmt(stmt)
         , bndChkUse(bndChkUse)
+        , stmtIdx(stmtIdx)
     {
         assert(stmt != nullptr);
         assert((bndChkUse != nullptr));
         assert((*bndChkUse) != nullptr);
         assert((*bndChkUse)->OperIs(GT_BOUNDS_CHECK));
+        assert(stmtIdx >= 0);
     }
 };
 
@@ -41,6 +44,7 @@ struct BoundsCheckInfo
     ValueNum   lenVN;
     ValueNum   idxVN;
     int        offset;
+    int        stmtIdx;
 
     BoundsCheckInfo()
         : stmt(nullptr)
@@ -48,10 +52,11 @@ struct BoundsCheckInfo
         , lenVN(ValueNumStore::NoVN)
         , idxVN(ValueNumStore::NoVN)
         , offset(0)
+        , stmtIdx(0)
     {
     }
 
-    bool Initialize(const Compiler* comp, Statement* statement, GenTree** bndChkUse);
+    bool Initialize(const Compiler* comp, Statement* statement, int statementIdx, GenTree** bndChkUse);
 
     GenTreeBoundsChk* BndChk() const
     {
