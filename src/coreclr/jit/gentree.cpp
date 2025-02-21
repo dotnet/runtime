@@ -21268,21 +21268,13 @@ GenTree* Compiler::gtNewSimdBinOpNode(
 
                 assert(simdSize == 16 || simdSize == 32);
 
-                NamedIntrinsic intToFloatConvertIntrinsic =
-                    simdSize == 16 ? NI_AVX_ConvertToVector256Double : NI_AVX512F_ConvertToVector512Double;
-                NamedIntrinsic floatToIntConvertIntrinsic = simdSize == 16
-                                                                ? NI_AVX_ConvertToVector128Int32WithTruncation
-                                                                : NI_AVX512F_ConvertToVector256Int32WithTruncation;
-                var_types      intToFloatConvertType      = simdSize == 16 ? TYP_SIMD32 : TYP_SIMD64;
-                CorInfoType    floatToIntConvertType      = simdSize == 16 ? simdBaseJitType : CORINFO_TYPE_DOUBLE;
                 NamedIntrinsic divIntrinsic     = simdSize == 16 ? NI_Vector128_op_Division : NI_Vector256_op_Division;
                 unsigned int   divideOpSimdSize = simdSize * 2;
 
-                GenTree* divOp  = gtNewSimdHWIntrinsicNode(op1->TypeGet(), op1, op2, divIntrinsic, simdBaseJitType, divideOpSimdSize);
-                GenTree* divOpCvt = gtNewSimdHWIntrinsicNode(type, divOp, floatToIntConvertIntrinsic,
-                                                             floatToIntConvertType, divideOpSimdSize);
+                GenTree* divOp =
+                    gtNewSimdHWIntrinsicNode(op1->TypeGet(), op1, op2, divIntrinsic, simdBaseJitType, divideOpSimdSize);
                 divOp->gtFlags |= (GTF_EXCEPT | GTF_OVERFLOW);
-                return divOpCvt;
+                return divOp;
             }
             unreached();
         }

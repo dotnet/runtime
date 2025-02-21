@@ -2789,14 +2789,15 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
             case NI_Vector128_op_Division:
             case NI_Vector256_op_Division:
             {
-                srcCount = BuildOperandUses(op1);
-                srcCount += BuildOperandUses(op2);
+                srcCount = BuildOperandUses(op1, lowSIMDRegs());
+                srcCount += BuildOperandUses(op2, lowSIMDRegs());
 
                 // get a tmp register for div-by-zero check
                 buildInternalFloatRegisterDefForNode(intrinsicTree, lowSIMDRegs());
 
                 // get a tmp register for overflow check
                 buildInternalFloatRegisterDefForNode(intrinsicTree, lowSIMDRegs());
+                setInternalRegsDelayFree = true;
 
                 buildUses = false;
                 break;
