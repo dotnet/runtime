@@ -2857,6 +2857,7 @@ bool Compiler::fgExpandStackArrayAllocation(BasicBlock* block, Statement* stmt, 
     // if we could show that was sound.
     //
     bool const isLocAlloc = (elemSizeArg != nullptr);
+    bool const isAlign8   = isLocAlloc && (helper == CORINFO_HELP_NEWARR_1_ALIGN8);
 
     JITDUMP("Expanding new array helper for stack allocated array at [%06d] %sin " FMT_BB ":\n", dspTreeID(call),
             isLocAlloc ? " into localloc " : "", block->bbNum);
@@ -2892,10 +2893,38 @@ bool Compiler::fgExpandStackArrayAllocation(BasicBlock* block, Statement* stmt, 
         unsigned const locallocTemp   = lvaGrabTemp(true DEBUGARG("localloc stack address"));
         lvaTable[locallocTemp].lvType = TYP_I_IMPL;
 
-        GenTree* const arrayLength  = gtCloneExpr(lengthArg);
-        GenTree* const baseSize     = gtNewIconNode(OFFSETOF__CORINFO_Array__data, TYP_I_IMPL);
-        GenTree* const payloadSize  = gtNewOperNode(GT_MUL, TYP_I_IMPL, elemSize, arrayLength);
-        GenTree* const totalSize    = gtNewOperNode(GT_ADD, TYP_I_IMPL, baseSize, payloadSize);
+        GenTree* const arrayLength = gtCloneExpr(lengthArg);
+        GenTree* const baseSize    = gtNewIconNode(OFFSETOF__CORINFO_Array__data, TYP_I_IMPL);
+        GenTree* const payloadSize = gtNewOperNode(GT_MUL, TYP_I_IMPL, elemSize, arrayLength);
+        GenTree*       totalSize   = gtNewOperNode(GT_ADD, TYP_I_IMPL, baseSize, payloadSize);
+
+        unsigned const elemSizeValue = (unsigned)elemSize->AsIntCon()->IconValue();
+
+        if ((elemSizeValue % TARGET_POINTER_SIZE) != 0)
+        {
+            // Round size up to TARGET_POINTER_SIZE.
+            // size = (size + TPS) & ~(TPS-1)
+            //
+            GenTree* const roundSize  = gtNewIconNode(TARGET_POINTER_SIZE, TYP_I_IMPL);
+            GenTree* const biasedSize = gtNewOperNode(GT_ADD, TYP_I_IMPL, totalSize, roundSize);
+            GenTree* const mask       = gtNewIconNode(TARGET_POINTER_SIZE - 1, TYP_I_IMPL);
+            GenTree* const invMask    = gtNewOperNode(GT_NOT, TYP_I_IMPL, mask);
+            GenTree* const paddedSize = gtNewOperNode(GT_AND, TYP_I_IMPL, biasedSize, invMask);
+
+            totalSize = paddedSize;
+        }
+
+#ifndef TARGET_64BIT
+        if (isAlign8)
+        {
+            // For Align8, allocate an extra TARGET_POINTER_SIZED (4) bytes so
+            // we can fix alignment below.
+            //
+            GenTree* const alignSize = gtNewIconNode(4, TYP_I_IMPL);
+            totalSize                = gtNewOperNode(GT_ADD, TYP_I_IMPL, totalSize, alignSize);
+        }
+#endif
+
         GenTree* const locallocNode = gtNewOperNode(GT_LCLHEAP, TYP_I_IMPL, totalSize);
 
         // Allocation might fail. Codegen must zero the allocation
@@ -2912,6 +2941,21 @@ bool Compiler::fgExpandStackArrayAllocation(BasicBlock* block, Statement* stmt, 
         //
         stackLocalAddress = gtNewLclVarNode(locallocTemp);
         compLocallocUsed  = true;
+
+#ifndef TARGET_64BIT
+        if (isAlign8)
+        {
+            // For Align8, adjust address to be suitably aligned.
+            // Addr = (Localloc + 4) & ~7;
+            //
+            GenTree* const alignSize      = gtNewIconNode(4, TYP_I_IMPL);
+            GenTree* const biasedAddress  = gtNewOperNode(GT_ADD, TYP_I_IMPL, stackLocalAddress, alignSize);
+            GenTree* const alignMaskInv   = gtNewIconNode(-8, TYP_I_IMPL);
+            GenTree* const alignedAddress = gtNewOperNode(GT_AND, TYP_I_IMPL, biasedAddress, alignMaskInv);
+
+            stackLocalAddress = alignedAddress;
+        }
+#endif
 
         // We now require a frame pointer
         //
