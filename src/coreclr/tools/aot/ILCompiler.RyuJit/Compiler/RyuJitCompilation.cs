@@ -77,6 +77,9 @@ namespace ILCompiler
             if (canPotentiallyConstruct)
                 return _nodeFactory.MaximallyConstructableType(type);
 
+            if (type.IsGenericDefinition && NodeFactory.DevirtualizationManager.IsGenericDefinitionMethodTableReflectionVisible(type))
+                return _nodeFactory.ConstructedTypeSymbol(type);
+
             return _nodeFactory.NecessaryTypeSymbol(type);
         }
 
@@ -86,6 +89,9 @@ namespace ILCompiler
                 && NodeFactory.DevirtualizationManager.CanReferenceConstructedMethodTable(type);
             if (canPotentiallyConstruct)
                 return _nodeFactory.SerializedMaximallyConstructableRuntimeTypeObject(type);
+
+            if (type.IsGenericDefinition && NodeFactory.DevirtualizationManager.IsGenericDefinitionMethodTableReflectionVisible(type))
+                return _nodeFactory.SerializedConstructedRuntimeTypeObject(type);
 
             return _nodeFactory.SerializedNecessaryRuntimeTypeObject(type);
         }
