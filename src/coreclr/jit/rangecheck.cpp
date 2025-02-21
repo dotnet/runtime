@@ -966,8 +966,12 @@ void RangeCheck::MergeEdgeAssertions(Compiler*        comp,
 
             case GT_GT:
             case GT_GE:
-                pRange->lLimit = limit;
-                // it doesn't matter if it's isUnsigned or not here - it's not negative anyway.
+                // GT/GE being unsigned creates a non-contiguous range which we can't represent
+                // using single Range object.
+                if (!isUnsigned)
+                {
+                    pRange->lLimit = limit;
+                }
                 break;
 
             case GT_EQ:

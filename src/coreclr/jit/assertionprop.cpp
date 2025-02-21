@@ -4032,24 +4032,6 @@ void Compiler::optAssertionProp_RangeProperties(ASSERT_VALARG_TP assertions,
 
     const ValueNum treeVN = vnStore->VNConservativeNormalValue(tree->gtVNPair);
 
-    if (tree->TypeIs(TYP_INT))
-    {
-        Range rng = Range(Limit(Limit::keDependent));
-        RangeCheck::MergeEdgeAssertions(this, treeVN, ValueNumStore::NoVN, assertions, &rng, false);
-        if (rng.LowerLimit().IsConstant())
-        {
-            int lower = rng.LowerLimit().GetConstant();
-            if (lower >= 0)
-            {
-                *isKnownNonNegative = true;
-            }
-            if (lower > 0)
-            {
-                *isKnownNonZero = true;
-            }
-        }
-    }
-
     BitVecOps::Iter iter(apTraits, assertions);
     unsigned        index = 0;
     while (iter.NextElem(&index))
@@ -4157,27 +4139,47 @@ void Compiler::optAssertionProp_RangeProperties(ASSERT_VALARG_TP assertions,
         return;
     }
 
-    // Re-use rangecheck for ADD(op, -CNS) to see if op's lower bound can tell us
-    // whether op is non-negative or non-zero.
-    //
-    if (tree->TypeIs(TYP_INT) && tree->OperIs(GT_ADD) && tree->gtGetOp2()->IsIntCnsFitsInI32())
+    // Let's see if MergeEdgeAssertions can help us:
+    if (tree->TypeIs(TYP_INT))
     {
-        int cns = static_cast<int>(tree->gtGetOp2()->AsIntCon()->IconValue());
-        if ((cns < 0) && (cns > INT32_MIN))
-        {
-            ValueNum op1VN = vnStore->VNConservativeNormalValue(tree->gtGetOp1()->gtVNPair);
-            Range    rng   = Range(Limit(Limit::keDependent));
-            RangeCheck::MergeEdgeAssertions(this, op1VN, ValueNumStore::NoVN, assertions, &rng, false);
+        auto getLowerBound = [&](ValueNum vn) -> Limit {
+            Range rng = Range(Limit(Limit::keDependent));
+            RangeCheck::MergeEdgeAssertions(this, vn, ValueNumStore::NoVN, assertions, &rng, false);
+            return rng.LowerLimit();
+        };
 
-            if (rng.LowerLimit().IsConstant())
+        // See if (X + CNS) is known to be non-negative
+        if (tree->OperIs(GT_ADD) && tree->gtGetOp2()->IsIntCnsFitsInI32())
+        {
+            int cns = static_cast<int>(tree->gtGetOp2()->AsIntCon()->IconValue());
+            if ((cns < 0) && (cns > INT32_MIN))
             {
-                // Say we have ADD(X, -8) and X is known to be [8..MAX_VALUE]
-                int lower = rng.LowerLimit().GetConstant();
-                if (lower >= -cns)
+                Limit lowerBound = getLowerBound(vnStore->VNConservativeNormalValue(tree->gtGetOp1()->gtVNPair));
+                if (lowerBound.IsConstant())
+                {
+                    // Say we have ADD(X, -8) and X is known to be [8..MAX_VALUE]
+                    int lower = lowerBound.GetConstant();
+                    if (lower >= -cns)
+                    {
+                        *isKnownNonNegative = true;
+                    }
+                    if (lower > -cns)
+                    {
+                        *isKnownNonZero = true;
+                    }
+                }
+            }
+        }
+        else
+        {
+            Limit lowerBound = getLowerBound(treeVN);
+            if (lowerBound.IsConstant())
+            {
+                if (lowerBound.GetConstant() >= 0)
                 {
                     *isKnownNonNegative = true;
                 }
-                if (lower > -cns)
+                if (lowerBound.GetConstant() > 0)
                 {
                     *isKnownNonZero = true;
                 }
