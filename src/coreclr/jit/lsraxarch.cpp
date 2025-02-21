@@ -2270,13 +2270,9 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                     buildUses = false;
                 }
 #if TARGET_X86
-                else if (varTypeIsByte(baseType))
+                else if (varTypeIsByte(baseType) && HWIntrinsicInfo::IsVectorToScalar(intrinsicId))
                 {
-                    if ((intrinsicId == NI_Vector128_ToScalar) || (intrinsicId == NI_Vector256_ToScalar) ||
-                        (intrinsicId == NI_Vector512_ToScalar))
-                    {
-                        dstCandidates = allByteRegs();
-                    }
+                    dstCandidates = allByteRegs();
                 }
                 else if (varTypeIsLong(baseType) && !compiler->compOpportunisticallyDependsOn(InstructionSet_SSE41))
                 {

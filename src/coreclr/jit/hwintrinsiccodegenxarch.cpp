@@ -1694,6 +1694,7 @@ void CodeGen::genBaseIntrinsic(GenTreeHWIntrinsic* node, insOpts instOptions)
                             }
                             else
                             {
+                                assert(targetReg != op1Reg);
                                 emit->emitIns_SIMD_R_R_R(INS_xorps, attr, targetReg, targetReg, targetReg, instOptions);
                                 genHWIntrinsic_R_RM(node, INS_movss, attr, targetReg, op1, instOptions);
                             }

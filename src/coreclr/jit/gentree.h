@@ -6669,7 +6669,12 @@ struct GenTreeVecCon : public GenTree
                 {
                     // CreateScalar leaves the upper bits as zero
 
-                    if (!HWIntrinsicInfo::IsVectorCreateScalar(intrinsic))
+#if defined(TARGET_XARCH)
+                    if ((intrinsic != NI_Vector128_CreateScalar) && (intrinsic != NI_Vector256_CreateScalar) &&
+                        (intrinsic != NI_Vector512_CreateScalar))
+#elif defined(TARGET_ARM64)
+                    if ((intrinsic != NI_Vector64_CreateScalar) && (intrinsic != NI_Vector128_CreateScalar))
+#endif
                     {
                         // Now assign the rest of the arguments.
                         for (unsigned i = 1; i < ElementCount(simdSize, simdBaseType); i++)
