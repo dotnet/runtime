@@ -141,7 +141,7 @@ public:
 
     BOOL IsFile();
     BOOL IsInBundle() const;
-    void* GetData(INT64* size);
+    void* GetExternalData(INT64* size);
     INT64 GetOffset() const;
     INT64 GetSize() const;
     INT64 GetUncompressedSize() const;

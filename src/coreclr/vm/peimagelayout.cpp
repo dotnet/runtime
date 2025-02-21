@@ -624,7 +624,7 @@ FlatImageLayout::FlatImageLayout(PEImage* pOwner)
 #endif // LOGGING
 
     INT64 dataSize;
-    void* data = pOwner->GetData(&dataSize);
+    void* data = pOwner->GetExternalData(&dataSize);
     if (data != nullptr)
     {
         // Image was provided as flat data via external assembly probing.

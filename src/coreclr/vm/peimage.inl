@@ -46,7 +46,7 @@ inline const SString& PEImage::GetPathToLoad()
     return IsInBundle() ? m_bundleFileLocation.Path() : m_path;
 }
 
-inline void* PEImage::GetData(INT64* size)
+inline void* PEImage::GetExternalData(INT64* size)
 {
     LIMITED_METHOD_CONTRACT;
 
