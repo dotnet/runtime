@@ -497,6 +497,8 @@
                        $(NativeBinDir)dotnet.js.map;
                        $(NativeBinDir)dotnet.runtime.js;
                        $(NativeBinDir)dotnet.runtime.js.map;
+                       $(NativeBinDir)dotnet.diag.js;
+                       $(NativeBinDir)dotnet.diag.js.map;
                        $(NativeBinDir)dotnet.native.js;
                        $(NativeBinDir)dotnet.d.ts;
                        $(NativeBinDir)package.json;

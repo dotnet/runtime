@@ -15,6 +15,7 @@
     <RunAOTCompilation Condition="'$(RunAOTCompilation)' == ''">false</RunAOTCompilation>
     <PublishTrimmed>true</PublishTrimmed>
     <RunAnalyzers>false</RunAnalyzers>
+    <FeaturePerfTracing>true</FeaturePerfTracing>
 
     <DisableImplicitFrameworkReferences>false</DisableImplicitFrameworkReferences>
     <UseLocalTargetingRuntimePack Condition="'$(UseLocalTargetingRuntimePack)' == ''">true</UseLocalTargetingRuntimePack>
