@@ -1,12 +1,48 @@
-trigger: none
+trigger:
+  batch: true
+  branches:
+    include:
+    - release/*.*
+  paths:
+    include:
+    - '*'
+    exclude:
+    - '**.md'
+    - eng/Version.Details.xml
+    - .devcontainer/*
+    - .github/*
+    - docs/*
+    - LICENSE.TXT
+    - PATENTS.TXT
+    - THIRD-PARTY-NOTICES.TXT
+    - eng/pipelines/performance/*
+    - eng/testing/performance/*
 
 schedules:
-- cron: "0 2 * * 0,1"
-  displayName: Sat and Sun at 6:00 PM (UTC-8:00)
+  - cron: "0 8,20 * * *" # run at 8:00 and 20:00 (UTC) which is 00:00 and 12:00 (PST).
+    displayName: Runtime default schedule
+    branches:
+      include:
+      - main
+    always: true # run only if there were changes since the last successful scheduled run.
+
+pr:
   branches:
     include:
     - main
-  always: true
+    - release/*.*
+  paths:
+    include:
+    - '*'
+    exclude:
+    - '**.md'
+    - eng/Version.Details.xml
+    - .devcontainer/*
+    - .github/*
+    - docs/*
+    - LICENSE.TXT
+    - PATENTS.TXT
+    - THIRD-PARTY-NOTICES.TXT
 
 variables:
   - template: /eng/pipelines/common/variables.yml
