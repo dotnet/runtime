@@ -21257,7 +21257,6 @@ GenTree* Compiler::gtNewSimdBinOpNode(
 
                 GenTree* divOp =
                     gtNewSimdHWIntrinsicNode(op1->TypeGet(), op1, op2, divIntrinsic, simdBaseJitType, divideOpSimdSize);
-                divOp->gtFlags |= (GTF_EXCEPT | GTF_OVERFLOW);
                 return divOp;
             }
             unreached();
@@ -28189,7 +28188,7 @@ void GenTreeHWIntrinsic::Initialize(NamedIntrinsic intrinsicId)
             case NI_Vector128_op_Division:
             case NI_Vector256_op_Division:
             {
-                gtFlags |= (GTF_EXCEPT | GTF_OVERFLOW);
+                gtFlags |= GTF_EXCEPT;
                 break;
             }
 #endif // TARGET_XARCH
