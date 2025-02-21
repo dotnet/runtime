@@ -619,9 +619,7 @@ bool ObjectAllocator::MorphAllocObjNodes()
                             }
                             else
                             {
-                                MorphNewArrNodeIntoStackAlloc(data->AsCall(), clsHnd,
-                                                              (unsigned int)len->AsIntCon()->IconValue(), blockSize,
-                                                              block, stmt);
+                                MorphNewArrNodeIntoStackAlloc(data->AsCall(), clsHnd, len, block, stmt);
                             }
 
                             // Note we do not want to rewrite uses of lclNum, so we
@@ -813,36 +811,28 @@ GenTree* ObjectAllocator::MorphAllocObjNodeIntoHelperCall(GenTreeAllocObj* alloc
 // Arguments:
 //    newArr       - GT_CALL that will be replaced by helper call.
 //    clsHnd       - class representing the type of the array
-//    length       - length of the array
-//    blockSize    - size of the layout
+//    len          - tree representing length of the array (must be a constant)
 //    block        - a basic block where newArr is
 //    stmt         - a statement where newArr is
 //
 // Notes:
 //    This function can insert additional statements before stmt.
 //
-void ObjectAllocator::MorphNewArrNodeIntoStackAlloc(GenTreeCall*         newArr,
-                                                    CORINFO_CLASS_HANDLE clsHnd,
-                                                    unsigned int         length,
-                                                    unsigned int         blockSize,
-                                                    BasicBlock*          block,
-                                                    Statement*           stmt)
+void ObjectAllocator::MorphNewArrNodeIntoStackAlloc(
+    GenTreeCall* newArr, CORINFO_CLASS_HANDLE clsHnd, GenTree* len, BasicBlock* block, Statement* stmt)
 {
     assert(newArr != nullptr);
     assert(m_AnalysisDone);
     assert(clsHnd != NO_CLASS_HANDLE);
     assert(newArr->IsHelperCall());
     assert(newArr->GetHelperNum() != CORINFO_HELP_NEWARR_1_MAYBEFROZEN);
+    assert(len->IsCnsIntOrI());
 
+    const unsigned     length        = (unsigned int)len->AsIntCon()->IconValue();
     const bool         shortLifetime = false;
     const bool         alignTo8      = newArr->GetHelperNum() == CORINFO_HELP_NEWARR_1_ALIGN8;
     const unsigned int lclNum        = comp->lvaGrabTemp(shortLifetime DEBUGARG("stack allocated array temp"));
     LclVarDsc* const   lclDsc        = comp->lvaGetDesc(lclNum);
-
-    if (alignTo8)
-    {
-        blockSize = AlignUp(blockSize, 8);
-    }
 
     comp->lvaSetStruct(lclNum, comp->typGetArrayLayout(clsHnd, length), /* unsafe */ false);
     lclDsc->lvStackAllocatedObject = true;
@@ -926,10 +916,10 @@ void ObjectAllocator::MorphNewArrNodeIntoLocAlloc(
     newArr->gtArgs.PushBack(comp, NewCallArg::Primitive(elemSizeNode).WellKnown(WellKnownArg::StackArrayElemSize));
     newArr->gtCallMoreFlags |= GTF_CALL_M_STACK_ARRAY;
 
-    // Retype the call result as an unmanaged pointer
+    // Retype the call result as a byref (we may decide to heap allocate at runtime).
     //
-    newArr->ChangeType(TYP_I_IMPL);
-    newArr->gtReturnType = TYP_I_IMPL;
+    newArr->ChangeType(TYP_BYREF);
+    newArr->gtReturnType = TYP_BYREF;
 
     // Note that we have stack allocated arrays in this method
     //

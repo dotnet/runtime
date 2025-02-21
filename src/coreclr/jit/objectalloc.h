@@ -178,12 +178,8 @@ private:
     GenTree*     MorphAllocObjNodeIntoHelperCall(GenTreeAllocObj* allocObj);
     unsigned int MorphAllocObjNodeIntoStackAlloc(
         GenTreeAllocObj* allocObj, CORINFO_CLASS_HANDLE clsHnd, bool isValueClass, BasicBlock* block, Statement* stmt);
-    void MorphNewArrNodeIntoStackAlloc(GenTreeCall*         newArr,
-                                       CORINFO_CLASS_HANDLE clsHnd,
-                                       unsigned int         length,
-                                       unsigned int         blockSize,
-                                       BasicBlock*          block,
-                                       Statement*           stmt);
+    void MorphNewArrNodeIntoStackAlloc(
+        GenTreeCall* newArr, CORINFO_CLASS_HANDLE clsHnd, GenTree* length, BasicBlock* block, Statement* stmt);
     void MorphNewArrNodeIntoLocAlloc(
         GenTreeCall* newArr, CORINFO_CLASS_HANDLE clsHnd, GenTree* length, BasicBlock* block, Statement* stmt);
 
@@ -369,8 +365,11 @@ inline bool ObjectAllocator::CanAllocateLclVarOnStack(unsigned int         lclNu
             return false;
         }
 
-        ClassLayout* const layout = comp->typGetArrayLayout(clsHnd, (unsigned)length);
-        classSize                 = layout->GetSize();
+        if (length != -1)
+        {
+            ClassLayout* const layout = comp->typGetArrayLayout(clsHnd, (unsigned)length);
+            classSize                 = layout->GetSize();
+        }
     }
     else if (allocType == OAT_NEWOBJ)
     {
