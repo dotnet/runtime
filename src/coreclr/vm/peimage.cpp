@@ -851,11 +851,7 @@ HANDLE PEImage::GetFileHandle()
     {
 #if !defined(DACCESS_COMPILE)
         EEFileLoadException::Throw(
-#if defined(TARGET_ANDROID)
-            AndroidGetAppName(),
-#else
             GetPathToLoad(),
-#endif
             hr
         );
 #else // defined(DACCESS_COMPILE)

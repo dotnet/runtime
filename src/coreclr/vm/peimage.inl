@@ -32,13 +32,6 @@ inline const SString &PEImage::GetPath()
     return m_path;
 }
 
-#if defined(TARGET_ANDROID)
-inline const SString& PEImage::AndroidGetAppName()
-{
-    return m_bundleFileLocation.AppName();
-}
-#endif // !TARGET_ANDROID
-
 inline const SString& PEImage::GetPathToLoad()
 {
     LIMITED_METHOD_DAC_CONTRACT;
