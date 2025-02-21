@@ -23,10 +23,6 @@
 #include <hostinformation.h>
 #include <corehost/host_runtime_contract.h>
 
-#if defined(TARGET_ANDROID)
-#include <android/log.h>
-#endif // TARGET_ANDROID
-
 #define ASSERTE_ALL_BUILDS(expr) _ASSERTE_ALL_BUILDS((expr))
 
 #ifdef TARGET_UNIX
@@ -77,19 +73,6 @@ public:
         }
     }
 };
-
-#if defined(TARGET_ANDROID)
-namespace {
-    constexpr static char ANDROID_LOGCAT_TAG[] { "CoreCLR" };
-    void LogErrorToLogcat(int priority, const char* format, ...) noexcept
-    {
-        va_list args;
-        va_start(args, format);
-        __android_log_vprint(priority, ANDROID_LOGCAT_TAG, format, args);
-        va_end(args);
-    }
-}
-#endif
 
 // Convert 8 bit string to unicode
 static LPCWSTR StringToUnicode(LPCSTR str)

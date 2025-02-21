@@ -122,9 +122,6 @@ elseif(CLR_CMAKE_HOST_UNIX)
     # find all symbols.
     target_link_libraries(mscordbi PRIVATE ${COREDBI_LIBRARIES} ${COREDBI_LIBRARIES})
 
-    if(CLR_CMAKE_TARGET_ANDROID)
-        target_link_libraries(mscordbi PRIVATE log)
-    endif()
 
     add_dependencies(mscordbi mscordaccore)
 
