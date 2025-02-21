@@ -671,7 +671,7 @@ void RangeCheck::MergeEdgeAssertions(Compiler*        comp,
         return;
     }
 
-    // Walk through the "assertions" to check if the apply.
+    // Walk through the "assertions" to check if they apply.
     BitVecOps::Iter iter(comp->apTraits, assertions);
     unsigned        index = 0;
     while (iter.NextElem(&index))

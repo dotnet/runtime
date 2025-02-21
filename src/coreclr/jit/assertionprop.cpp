@@ -4135,37 +4135,41 @@ void Compiler::optAssertionProp_RangeProperties(ASSERT_VALARG_TP assertions,
     // Let's see if MergeEdgeAssertions can help us:
     if (tree->TypeIs(TYP_INT))
     {
-        auto getLowerBound = [&](ValueNum vn) -> Limit {
-            Range rng = Range(Limit(Limit::keDependent));
-            RangeCheck::MergeEdgeAssertions(this, vn, ValueNumStore::NoVN, assertions, &rng, false);
-            return rng.LowerLimit();
-        };
-
         // See if (X + CNS) is known to be non-negative
         if (tree->OperIs(GT_ADD) && tree->gtGetOp2()->IsIntCnsFitsInI32())
         {
+            Range    rng = Range(Limit(Limit::keDependent));
+            ValueNum vn  = vnStore->VNConservativeNormalValue(tree->gtGetOp1()->gtVNPair);
+            RangeCheck::MergeEdgeAssertions(this, vn, ValueNumStore::NoVN, assertions, &rng, false);
+
             int cns = static_cast<int>(tree->gtGetOp2()->AsIntCon()->IconValue());
-            if ((cns < 0) && (cns > INT32_MIN))
+            rng.LowerLimit().AddConstant(cns);
+            rng.UpperLimit().AddConstant(cns);
+
+            if (rng.LowerLimit().IsConstant())
             {
-                Limit lowerBound = getLowerBound(vnStore->VNConservativeNormalValue(tree->gtGetOp1()->gtVNPair));
-                if (lowerBound.IsConstant())
+                // E.g. "X + -8" when X's range is [8..unknown]
+                // it's safe to say "X + -8" is non-negative
+                if ((rng.LowerLimit().GetConstant() == 0))
                 {
-                    // Say we have ADD(X, -8) and X is known to be [8..MAX_VALUE]
-                    int lower = lowerBound.GetConstant();
-                    if (lower >= -cns)
-                    {
-                        *isKnownNonNegative = true;
-                    }
-                    if (lower > -cns)
-                    {
-                        *isKnownNonZero = true;
-                    }
+                    *isKnownNonNegative = true;
+                }
+
+                // E.g. "X + 8" when X's range is [0..CNS]
+                // Here we have to check the upper bound as well to avoid overflow
+                if ((rng.LowerLimit().GetConstant() > 0) && rng.UpperLimit().IsConstant() &&
+                    rng.UpperLimit().GetConstant() > rng.LowerLimit().GetConstant())
+                {
+                    *isKnownNonNegative = true;
+                    *isKnownNonZero     = true;
                 }
             }
         }
         else
         {
-            Limit lowerBound = getLowerBound(treeVN);
+            Range rng = Range(Limit(Limit::keDependent));
+            RangeCheck::MergeEdgeAssertions(this, treeVN, ValueNumStore::NoVN, assertions, &rng, false);
+            Limit lowerBound = rng.LowerLimit();
             if (lowerBound.IsConstant())
             {
                 if (lowerBound.GetConstant() >= 0)
