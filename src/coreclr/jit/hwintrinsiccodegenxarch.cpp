@@ -1874,10 +1874,34 @@ void CodeGen::genBaseIntrinsic(GenTreeHWIntrinsic* node, insOpts instOptions)
         case NI_Vector128_op_Division:
         case NI_Vector256_op_Division:
         {
-            regNumber op2Reg         = op2->GetRegNum();
-            regNumber tmpReg1        = internalRegisters.Extract(node, RBM_ALLFLOAT);
-            regNumber tmpReg2        = internalRegisters.Extract(node, RBM_ALLFLOAT);
-            emitAttr  typeSize       = emitTypeSize(node->TypeGet());
+            // We can emulate SIMD integer division by converting the 32-bit integer -> 64-bit double,
+            // perform a 64-bit double divide, then convert back to a 32-bit integer. This is generating
+            // something similar to the following managed code:
+            //      if (Vector128.EqualsAny(op2, Vector128<int>.Zero))
+            //      {
+            //          throw new DivideByZeroException();
+            //      }
+            //
+            //      Vector128<int> overflowMask =
+            //          Vector128.Equals(op1, Vector128.Create(int.MaxValue)
+            //          & Vector128.Equals(op2, Vector128.Create(-1));
+            //      if (!Vector128.EqualsAll(overflowMask, Vector128<int>.Zero))
+            //      {
+            //          throw new OverflowException();
+            //      }
+            //
+            //      Vector256<double> op1_f64 =
+            //          Vector256.ConvertToDouble(Vector256.WidenLower(Vector128.ToVector256Unsafe(op1))));
+            //      Vector256<double> op2_f64 =
+            //          Vector256.ConvertToDouble(Vector256.WidenLower(Vector128.ToVector256Unsafe(op2))));
+            //      Vector256<double> div_f64 = op1_f64 / op2_f64;
+            //      Vector256<long>   div_i64 = Vector256.ConvertToInt64(div_f64);
+            //      Vector128<int> div_i32 = Vector256.Narrow(div_i64.GetLower(), div_i64.GetUpper());
+            //      return div_i32;
+            regNumber op2Reg   = op2->GetRegNum();
+            regNumber tmpReg1  = internalRegisters.Extract(node, RBM_ALLFLOAT);
+            regNumber tmpReg2  = internalRegisters.Extract(node, RBM_ALLFLOAT);
+            emitAttr  typeSize = emitTypeSize(node->TypeGet());
             noway_assert(typeSize == EA_16BYTE || typeSize == EA_32BYTE);
             emitAttr divTypeSize = typeSize == EA_16BYTE ? EA_32BYTE : EA_64BYTE;
 
@@ -1899,7 +1923,7 @@ void CodeGen::genBaseIntrinsic(GenTreeHWIntrinsic* node, insOpts instOptions)
                 negOneIntVec.i32[3] = -1;
 
                 maxValueFld = emit->emitSimd16Const(maxValueIntVec);
-                negOneFld = emit->emitSimd16Const(negOneIntVec);
+                negOneFld   = emit->emitSimd16Const(negOneIntVec);
             }
             else
             {
@@ -1925,7 +1949,7 @@ void CodeGen::genBaseIntrinsic(GenTreeHWIntrinsic* node, insOpts instOptions)
                 negOneIntVec.i32[7] = -1;
 
                 maxValueFld = emit->emitSimd32Const(maxValueIntVec);
-                negOneFld = emit->emitSimd32Const(negOneIntVec);
+                negOneFld   = emit->emitSimd32Const(negOneIntVec);
             }
 
             // div-by-zero check
