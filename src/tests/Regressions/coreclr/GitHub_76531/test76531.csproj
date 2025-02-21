@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <!-- Required for the ability to disable the test for WASM via issues.targets  -->
+    <RequiresProcessIsolation>true</RequiresProcessIsolation>
+    <!-- This test removes one of its dependencies at runtime, so it is not compatible with AOT  -->
+    <MonoAotIncompatible>true</MonoAotIncompatible>
+    <NativeAotIncompatible>true</NativeAotIncompatible>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="test76531.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="dependencytodelete.csproj" />
+    <ProjectReference Include="tailcallinvoker.ilproj" />
+    <ProjectReference Include="$(TestSourceDir)Common/CoreCLRTestLibrary/CoreCLRTestLibrary.csproj" />
+  </ItemGroup>
+</Project>

@@ -932,14 +932,13 @@ ProcessCLRExceptionNew(IN     PEXCEPTION_RECORD   pExceptionRecord,
 
     Thread* pThread         = GetThread();
 
-    if (pThread->HasThreadStateNC(Thread::TSNC_ProcessedUnhandledException))
+    // Skip native frames of asm helpers that have the ProcessCLRException set as their personality routine.
+    // There is nothing to do for those with the new exception handling.
+    // Also skip all frames when processing unhandled exceptions. That allows them to reach the host app
+    // level and let 3rd party the chance to handle them.
+    if (!ExecutionManager::IsManagedCode((PCODE)pDispatcherContext->ControlPc) ||
+        pThread->HasThreadStateNC(Thread::TSNC_ProcessedUnhandledException))
     {
-        if ((pExceptionRecord->ExceptionFlags & EXCEPTION_UNWINDING))
-        {
-            GCX_COOP();
-            PopExplicitFrames(pThread, (void*)pDispatcherContext->EstablisherFrame, (void*)GetSP(pDispatcherContext->ContextRecord));
-            ExInfo::PopExInfos(pThread, (void*)pDispatcherContext->EstablisherFrame);
-        }
         return ExceptionContinueSearch;
     }
 
@@ -6147,6 +6146,7 @@ BOOL IsSafeToUnwindFrameChain(Thread* pThread, LPVOID MemoryStackFpForFrameChain
     // Otherwise "unwind" to managed method
     REGDISPLAY rd;
     CONTEXT ctx;
+    ctx.ContextFlags = CONTEXT_CONTROL;
     SetIP(&ctx, 0);
     SetSP(&ctx, 0);
     FillRegDisplay(&rd, &ctx);
@@ -6192,9 +6192,16 @@ void CleanUpForSecondPass(Thread* pThread, bool fIsSO, LPVOID MemoryStackFpForFr
     // Instead, we rely on the END_SO_TOLERANT_CODE macro to call ClearExceptionStateAfterSO().  Of course,
     // we may leak in the UMThunkStubCommon() case where we don't have this macro lower on the stack
     // (stack grows up).
-    if (!fIsSO && !g_isNewExceptionHandlingEnabled)
+    if (!fIsSO)
     {
-        ExceptionTracker::PopTrackerIfEscaping(MemoryStackFp);
+        if (g_isNewExceptionHandlingEnabled)
+        {
+            ExInfo::PopExInfos(pThread, MemoryStackFp);
+        }
+        else
+        {
+            ExceptionTracker::PopTrackerIfEscaping(MemoryStackFp);
+        }
     }
 }
 
@@ -8522,7 +8529,7 @@ static StackWalkAction MoveToNextNonSkippedFrame(StackFrameIterator* pStackFrame
     return retVal;
 }
 
-extern "C" size_t CallDescrWorkerInternalReturnAddressOffset;
+bool IsCallDescrWorkerInternalReturnAddress(PCODE pCode);
 
 extern "C" bool QCALLTYPE SfiNext(StackFrameIterator* pThis, uint* uExCollideClauseIdx, bool* fUnwoundReversePInvoke, bool* pfIsExceptionIntercepted)
 {
@@ -8577,8 +8584,7 @@ extern "C" bool QCALLTYPE SfiNext(StackFrameIterator* pThis, uint* uExCollideCla
         }
         else
         {
-            size_t CallDescrWorkerInternalReturnAddress = (size_t)CallDescrWorkerInternal + CallDescrWorkerInternalReturnAddressOffset;
-            if (GetIP(pThis->m_crawl.GetRegisterSet()->pCallerContext) == CallDescrWorkerInternalReturnAddress)
+            if (IsCallDescrWorkerInternalReturnAddress(GetIP(pThis->m_crawl.GetRegisterSet()->pCallerContext)))
             {
                 invalidRevPInvoke = true;
             }
@@ -8601,8 +8607,12 @@ extern "C" bool QCALLTYPE SfiNext(StackFrameIterator* pThis, uint* uExCollideCla
             _ASSERTE(pThis->GetFrameState() != StackFrameIterator::SFITER_SKIPPED_FRAME_FUNCTION);
 
             pFrame = pThis->m_crawl.GetFrame();
-            // Check if there are any further managed frames on the stack, if not, the exception is unhandled.
-            if ((pFrame == FRAME_TOP) || IsTopmostDebuggerU2MCatchHandlerFrame(pFrame))
+
+            // Check if there are any further managed frames on the stack or a catch for all exceptions in native code (marked by
+            // DebuggerU2MCatchHandlerFrame with CatchesAllExceptions() returning true).
+            // If not, the exception is unhandled.
+            if ((pFrame == FRAME_TOP) ||
+                (IsTopmostDebuggerU2MCatchHandlerFrame(pFrame) && !((DebuggerU2MCatchHandlerFrame*)pFrame)->CatchesAllExceptions()))
             {
                 if (pTopExInfo->m_passNumber == 1)
                 {

@@ -45,6 +45,20 @@ namespace System.Linq
                 found = false;
                 return default;
             }
+
+            public override bool Contains(TSource value)
+            {
+                IEnumerable<TSource>? source;
+                for (int i = 0; (source = GetEnumerable(i)) is not null; i++)
+                {
+                    if (source.Contains(value))
+                    {
+                        return true;
+                    }
+                }
+
+                return default;
+            }
         }
     }
 }
