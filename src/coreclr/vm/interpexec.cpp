@@ -75,6 +75,139 @@ void InterpExecMethod(InterpMethodContextFrame *pFrame, InterpThreadContext *pTh
                 ip += 4;
                 break;
 
+            case INTOP_CONV_R_UN_I4:
+                LOCAL_VAR(ip[1], double) = (double)LOCAL_VAR(ip[2], uint32_t);
+                ip += 3;
+                break;
+            case INTOP_CONV_R_UN_I8:
+                LOCAL_VAR(ip[1], double) = (double)LOCAL_VAR(ip[2], uint64_t);
+                ip += 3;
+                break;
+            case INTOP_CONV_I1_I4:
+                LOCAL_VAR(ip[1], int32_t) = (int8_t)LOCAL_VAR(ip[2], int32_t);
+                ip += 3;
+                break;
+            case INTOP_CONV_I1_I8:
+                LOCAL_VAR(ip[1], int32_t) = (int8_t)LOCAL_VAR(ip[2], int64_t);
+                ip += 3;
+                break;
+            case INTOP_CONV_I1_R4:
+                LOCAL_VAR(ip[1], int32_t) = (int8_t)(int32_t)LOCAL_VAR(ip[2], float);
+                ip += 3;
+                break;
+            case INTOP_CONV_I1_R8:
+                LOCAL_VAR(ip[1], int32_t) = (int8_t)(int32_t)LOCAL_VAR(ip[2], double);
+                ip += 3;
+                break;
+            case INTOP_CONV_U1_I4:
+                LOCAL_VAR(ip[1], int32_t) = (uint8_t)LOCAL_VAR(ip[2], int32_t);
+                ip += 3;
+                break;
+            case INTOP_CONV_U1_I8:
+                LOCAL_VAR(ip[1], int32_t) = (uint8_t)LOCAL_VAR(ip[2], int64_t);
+                ip += 3;
+                break;
+            case INTOP_CONV_U1_R4:
+                LOCAL_VAR(ip[1], int32_t) = (uint8_t)(uint32_t)LOCAL_VAR(ip[2], float);
+                ip += 3;
+                break;
+            case INTOP_CONV_U1_R8:
+                LOCAL_VAR(ip[1], int32_t) = (uint8_t)(uint32_t)LOCAL_VAR(ip[2], double);
+                ip += 3;
+                break;
+            case INTOP_CONV_I2_I4:
+                LOCAL_VAR(ip[1], int32_t) = (int16_t)LOCAL_VAR(ip[2], int32_t);
+                ip += 3;
+                break;
+            case INTOP_CONV_I2_I8:
+                LOCAL_VAR(ip[1], int32_t) = (int16_t)LOCAL_VAR(ip[2], int64_t);
+                ip += 3;
+                break;
+            case INTOP_CONV_I2_R4:
+                LOCAL_VAR(ip[1], int32_t) = (int16_t)(int32_t)LOCAL_VAR(ip[2], float);
+                ip += 3;
+                break;
+            case INTOP_CONV_I2_R8:
+                LOCAL_VAR(ip[1], int32_t) = (int16_t)(int32_t)LOCAL_VAR(ip[2], double);
+                ip += 3;
+                break;
+            case INTOP_CONV_U2_I4:
+                LOCAL_VAR(ip[1], int32_t) = (uint16_t)LOCAL_VAR(ip[2], int32_t);
+                ip += 3;
+                break;
+            case INTOP_CONV_U2_I8:
+                LOCAL_VAR(ip[1], int32_t) = (uint16_t)LOCAL_VAR(ip[2], int64_t);
+                ip += 3;
+                break;
+            case INTOP_CONV_U2_R4:
+                LOCAL_VAR(ip[1], int32_t) = (uint16_t)(uint32_t)LOCAL_VAR(ip[2], float);
+                ip += 3;
+                break;
+            case INTOP_CONV_U2_R8:
+                LOCAL_VAR(ip[1], int32_t) = (uint16_t)(uint32_t)LOCAL_VAR(ip[2], double);
+                ip += 3;
+                break;
+            case INTOP_CONV_I4_R4:
+                LOCAL_VAR(ip[1], int32_t) = (int32_t)LOCAL_VAR(ip[2], float);
+                ip += 3;
+                break;;
+            case INTOP_CONV_I4_R8:
+                LOCAL_VAR(ip[1], int32_t) = (int32_t)LOCAL_VAR(ip[2], double);
+                ip += 3;
+                break;;
+
+            case INTOP_CONV_U4_R4:
+            case INTOP_CONV_U4_R8:
+                assert(0);
+                break;
+
+            case INTOP_CONV_I8_I4:
+                LOCAL_VAR(ip[1], int64_t) = LOCAL_VAR(ip[2], int32_t);
+                ip += 3;
+                break;
+            case INTOP_CONV_I8_U4:
+                LOCAL_VAR(ip[1], int64_t) = (uint32_t)LOCAL_VAR (ip[2], int32_t);
+                ip += 3;
+                break;;
+            case INTOP_CONV_I8_R4:
+                LOCAL_VAR(ip[1], int64_t) = (int64_t)LOCAL_VAR(ip[2], float);
+                ip += 3;
+                break;
+            case INTOP_CONV_I8_R8:
+                LOCAL_VAR(ip[1], int64_t) = (int64_t)LOCAL_VAR(ip[2], double);
+                ip += 3;
+                break;
+            case INTOP_CONV_R4_I4:
+                LOCAL_VAR(ip[1], float) = (float)LOCAL_VAR(ip[2], int32_t);
+                ip += 3;
+                break;;
+            case INTOP_CONV_R4_I8:
+                LOCAL_VAR(ip[1], float) = (float)LOCAL_VAR(ip[2], int64_t);
+                ip += 3;
+                break;
+            case INTOP_CONV_R4_R8:
+                LOCAL_VAR(ip[1], float) = (float)LOCAL_VAR(ip[2], double);
+                ip += 3;
+                break;
+            case INTOP_CONV_R8_I4:
+                LOCAL_VAR(ip[1], double) = (double)LOCAL_VAR(ip[2], int32_t);
+                ip += 3;
+                break;
+            case INTOP_CONV_R8_I8:
+                LOCAL_VAR(ip[1], double) = (double)LOCAL_VAR(ip[2], int64_t);
+                ip += 3;
+                break;
+            case INTOP_CONV_R8_R4:
+                LOCAL_VAR(ip[1], double) = (double)LOCAL_VAR(ip[2], float);
+                ip += 3;
+                break;
+
+            case INTOP_CONV_U8_R4:
+            case INTOP_CONV_U8_R8:
+                // TODO
+                assert(0);
+                break;
+
             default:
                 assert(0);
                 break;
