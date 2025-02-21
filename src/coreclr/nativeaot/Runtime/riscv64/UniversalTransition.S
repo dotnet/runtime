@@ -17,7 +17,7 @@
 #define ARGUMENT_REGISTERS_SIZE (COUNT_ARG_REGISTERS * INTEGER_REGISTER_SIZE)
 
 // Largest return block is 4 doubles
-#define RETURN_BLOCK_SIZE (32)
+#define RETURN_BLOCK_SIZE 16
 
 #define COUNT_FLOAT_ARG_REGISTERS (8)
 #define FLOAT_REGISTER_SIZE (8)
@@ -59,9 +59,8 @@
 // Frame layout is:
 //
 //  {StackPassedArgs}                           ChildSP+100     CallerSP+000
-//  {AlignmentPad (0x8 bytes)}                  ChildSP+0F8     CallerSP-008
 //  {IntArgRegs (a0-a7) (0x40 bytes)}           ChildSP+0B8     CallerSP-048
-//  {ReturnBlock (0x20 bytes)}                  ChildSP+098     CallerSP-068
+//  {ReturnBlock (0x10 bytes)}                  ChildSP+098     CallerSP-068
 //   -- The base address of the Return block is the TransitionBlock pointer, the floating point args are
 //      in the neg space of the TransitionBlock pointer.  Note that the callee has knowledge of the exact
 //      layout of all pieces of the frame that lie at or above the pushed floating point registers.
@@ -99,7 +98,7 @@
         fsd         fa6, FLOAT_ARG_OFFSET + 0x30(sp)
         fsd         fa7, FLOAT_ARG_OFFSET + 0x38(sp)
 
-        # Space for return buffer data (0x20 bytes)
+        # Space for return block data (0x10 bytes)
 
         # Save argument registers
         sd          a0, ARGUMENT_REGISTERS_OFFSET(sp)

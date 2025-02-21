@@ -306,12 +306,12 @@ LEAF_ENTRY RhpCheckedLockCmpXchg
 
 LOCAL_LABEL(CmpXchgRetry):
         // Load the current value at the destination address.
-        lr.d.aqrl    t0, (a0)       // t0 = *dest (load with sequential consistency)
+        lr.d.aqrl    t0, (a0)       // t0 = *dest (load with release ordering)
         // Compare the loaded value with the comparand.
         bne     t0, a2, LOCAL_LABEL(CmpXchgNoUpdate) // if (*dest != comparand) goto CmpXchgNoUpdate
 
         // Attempt to store the exchange value at the destination address.
-        sc.d.rl    t1, a1, (a0)  // t1 = (store conditional result: 0 if successful, with sequential consistency)
+        sc.d.rl    t1, a1, (a0)  // t1 = (store conditional result: 0 if successful, with release ordering)
         bnez    t1, LOCAL_LABEL(CmpXchgRetry) // if store conditional failed, retry
 
 LOCAL_LABEL(DoCardsCmpXchg):

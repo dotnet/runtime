@@ -698,9 +698,9 @@ int UnixNativeCodeManager::IsInProlog(MethodInfo * pMethodInfo, PTR_VOID pvAddre
 
 #elif defined(TARGET_RISCV64)
 
-// store pair with signed offset
-#define STW_PAIR_BITS 0x00003023
-#define STW_PAIR_MASK 0x0000707F
+// store doubleword with signed offset
+#define SD_BITS 0x00003023
+#define SD_MASK 0x0000707F
 
 // addi fp, sp, x
 #define ADD_FP_SP_BITS 0x00010413
@@ -710,12 +710,12 @@ int UnixNativeCodeManager::IsInProlog(MethodInfo * pMethodInfo, PTR_VOID pvAddre
 #define ADD_SP_SP_BITS 0x00010113
 #define ADD_SP_SP_MASK 0x000FFFFF
 
-#define STW_PAIR_RS1_MASK 0xF8000
-#define STW_PAIR_RS1_SP  0x10000
-#define STW_PAIR_RS1_FP  0x40000
-#define STW_PAIR_RS2_MASK 0x1F00000
-#define STW_PAIR_RS2_FP  0x800000
-#define STW_PAIR_RS2_RA  0x100000
+#define SD_RS1_MASK 0xF8000
+#define SD_RS1_SP   0x10000
+#define SD_RS1_FP   0x40000
+#define SD_RS2_MASK 0x1F00000
+#define SD_RS2_FP   0x800000
+#define SD_RS2_RA   0x100000
 
     UnixNativeMethodInfo * pNativeMethodInfo = (UnixNativeMethodInfo *)pMethodInfo;
     ASSERT(pNativeMethodInfo != NULL);
@@ -729,13 +729,13 @@ int UnixNativeCodeManager::IsInProlog(MethodInfo * pMethodInfo, PTR_VOID pvAddre
     {
         uint32_t instr = *pInstr;
 
-        if (((instr & STW_PAIR_MASK) == STW_PAIR_BITS) &&
-            ((instr & STW_PAIR_RS1_MASK) == STW_PAIR_RS1_SP || (instr & STW_PAIR_RS1_MASK) == STW_PAIR_RS1_FP) &&
-            ((instr & STW_PAIR_RS2_MASK) == STW_PAIR_RS2_FP || (instr & STW_PAIR_RS2_MASK) == STW_PAIR_RS2_RA))
+        if (((instr & SD_MASK) == SD_BITS) &&
+            ((instr & SD_RS1_MASK) == SD_RS1_SP || (instr & SD_RS1_MASK) == SD_RS1_FP) &&
+            ((instr & SD_RS2_MASK) == SD_RS2_FP || (instr & SD_RS2_MASK) == SD_RS2_RA))
         {
             // SP/FP-relative store of pair of registers
-            savedFp |= (instr & STW_PAIR_RS2_MASK) == STW_PAIR_RS2_FP;
-            savedRa |= (instr & STW_PAIR_RS2_MASK) == STW_PAIR_RS2_RA;
+            savedFp |= (instr & SD_RS2_MASK) == SD_RS2_FP;
+            savedRa |= (instr & SD_RS2_MASK) == SD_RS2_RA;
         }
         else if ((instr & ADD_FP_SP_MASK) == ADD_FP_SP_BITS)
         {
