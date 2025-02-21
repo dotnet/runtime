@@ -253,7 +253,7 @@ C_FUNC(\Name):
 #define DEFAULT_FRAME_SAVE_FLAGS PTFF_SAVE_ALL_PRESERVED + PTFF_SAVE_SP
 
 .macro PUSH_COOP_PINVOKE_FRAME trashReg
-    PROLOG_SAVE_REG_PAIR_INDEXED   s0, ra, -128      // Push down stack pointer and store s0 (fp) and RA
+    PROLOG_SAVE_REG_PAIR_INDEXED   s0, ra, 128      // Push down stack pointer and store s0 (fp) and RA
 
     // 16 bytes reserved for Thread* and flags
 
