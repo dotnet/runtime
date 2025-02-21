@@ -122,7 +122,6 @@ elseif(CLR_CMAKE_HOST_UNIX)
     # find all symbols.
     target_link_libraries(mscordbi PRIVATE ${COREDBI_LIBRARIES} ${COREDBI_LIBRARIES})
 
-
     add_dependencies(mscordbi mscordaccore)
 
     if(CLR_CMAKE_HOST_LINUX)

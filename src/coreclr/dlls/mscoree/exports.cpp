@@ -188,6 +188,7 @@ static void ConvertConfigPropertiesToUnicode(
     *propertyKeysWRef = propertyKeysW;
     *propertyValuesWRef = propertyValuesW;
 }
+
 coreclr_error_writer_callback_fn g_errorWriter = nullptr;
 
 //
