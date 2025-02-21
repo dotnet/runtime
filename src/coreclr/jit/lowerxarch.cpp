@@ -112,8 +112,7 @@ GenTree* Lowering::LowerStoreIndir(GenTreeStoreInd* node)
         GenTreeHWIntrinsic* hwintrinsic = node->Data()->AsHWIntrinsic();
         NamedIntrinsic      intrinsicId = hwintrinsic->GetHWIntrinsicId();
 
-        if (((intrinsicId == NI_Vector128_ToScalar) || (intrinsicId == NI_Vector256_ToScalar) ||
-             (intrinsicId == NI_Vector512_ToScalar)) &&
+        if (HWIntrinsicInfo::IsVectorToScalar(intrinsicId) &&
             comp->compOpportunisticallyDependsOn(InstructionSet_SSE41))
         {
             CorInfoType baseJitType = varTypeIsByte(node) ? CORINFO_TYPE_UBYTE : CORINFO_TYPE_USHORT;
@@ -4054,10 +4053,9 @@ GenTree* Lowering::LowerHWIntrinsicCreate(GenTreeHWIntrinsic* node)
     GenTree* tmp2 = nullptr;
     GenTree* tmp3 = nullptr;
 
-    bool isConstant     = GenTreeVecCon::IsHWIntrinsicCreateConstant<simd_t>(node, simdVal);
-    bool isCreateScalar = (intrinsicId == NI_Vector128_CreateScalar) || (intrinsicId == NI_Vector256_CreateScalar) ||
-                          (intrinsicId == NI_Vector512_CreateScalar);
-    size_t argCnt = node->GetOperandCount();
+    bool   isConstant     = GenTreeVecCon::IsHWIntrinsicCreateConstant<simd_t>(node, simdVal);
+    bool   isCreateScalar = HWIntrinsicInfo::IsVectorCreateScalar(intrinsicId);
+    size_t argCnt         = node->GetOperandCount();
 
     if (isConstant)
     {
@@ -5018,9 +5016,7 @@ GenTree* Lowering::LowerHWIntrinsicGetElement(GenTreeHWIntrinsic* node)
     var_types      simdBaseType    = node->GetSimdBaseType();
     unsigned       simdSize        = node->GetSimdSize();
 
-    assert((intrinsicId == NI_Vector128_GetElement) || (intrinsicId == NI_Vector256_GetElement) ||
-           (intrinsicId == NI_Vector512_GetElement));
-
+    assert(HWIntrinsicInfo::IsVectorGetElement(intrinsicId));
     assert(!varTypeIsSIMD(simdType));
     assert(varTypeIsArithmetic(simdBaseType));
     assert(simdSize != 0);
@@ -6643,9 +6639,7 @@ GenTree* Lowering::LowerHWIntrinsicToScalar(GenTreeHWIntrinsic* node)
     unsigned       simdSize        = node->GetSimdSize();
     var_types      simdType        = Compiler::getSIMDTypeForSize(simdSize);
 
-    assert((intrinsicId == NI_Vector128_ToScalar) || (intrinsicId == NI_Vector256_ToScalar) ||
-           (intrinsicId == NI_Vector512_ToScalar));
-
+    assert(HWIntrinsicInfo::IsVectorToScalar(intrinsicId));
     assert(varTypeIsSIMD(simdType));
     assert(varTypeIsArithmetic(simdBaseType));
     assert(simdSize != 0);
@@ -9055,7 +9049,8 @@ bool Lowering::IsContainableHWIntrinsicOp(GenTreeHWIntrinsic* parentNode, GenTre
                         expectedSize     = genTypeSize(genActualType(parentBaseType));
                         supportsSIMDLoad = false;
 
-                        if (parentNode->OperIsCreateScalarUnsafe() && comp->opts.OptimizationEnabled())
+                        if (HWIntrinsicInfo::IsVectorCreateScalarUnsafe(parentIntrinsicId) &&
+                            comp->opts.OptimizationEnabled())
                         {
                             // A special case is CreateScalarUnsafe with memory source.
                             // We can emit `pinsrb/w xmm m8/16` for these, so allow smaller memory op.
@@ -9258,7 +9253,7 @@ bool Lowering::IsContainableHWIntrinsicOp(GenTreeHWIntrinsic* parentNode, GenTre
                 {
                     GenTreeHWIntrinsic* hwintrinsicOperand = broadcastOperand->AsHWIntrinsic();
 
-                    if (hwintrinsicOperand->OperIsCreateScalarUnsafe())
+                    if (HWIntrinsicInfo::IsVectorCreateScalarUnsafe(hwintrinsicOperand->GetHWIntrinsicId()))
                     {
                         // CreateScalarUnsafe can contain non-memory operands such as enregistered
                         // locals, so we want to check if its operand is containable instead. This
@@ -9605,9 +9600,7 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
     if ((simdSize == 8) || (simdSize == 12))
     {
         // We want to handle GetElement/ToScalar still for Vector2/3
-        if ((intrinsicId != NI_Vector128_GetElement) && (intrinsicId != NI_Vector128_ToScalar) &&
-            (intrinsicId != NI_Vector256_GetElement) && (intrinsicId != NI_Vector256_ToScalar) &&
-            (intrinsicId != NI_Vector512_GetElement) && (intrinsicId != NI_Vector512_ToScalar))
+        if (!HWIntrinsicInfo::IsVectorToScalar(intrinsicId) && !HWIntrinsicInfo::IsVectorGetElement(intrinsicId))
         {
             // TODO-XArch-CQ: Ideally we would key this off of the size the containing node
             // expects vs the size node actually is or would be if spilled to the stack
@@ -9716,7 +9709,7 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                         {
                             GenTreeHWIntrinsic* childNode = op1->AsHWIntrinsic();
 
-                            if (childNode->OperIsCreateScalarUnsafe())
+                            if (HWIntrinsicInfo::IsVectorCreateScalarUnsafe(childNode->GetHWIntrinsicId()))
                             {
                                 // We have a very special case of BroadcastScalarToVector(CreateScalarUnsafe(op1))
                                 //

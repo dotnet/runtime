@@ -1594,7 +1594,7 @@ void CodeGen::genBaseIntrinsic(GenTreeHWIntrinsic* node, insOpts instOptions)
 
                 if (varTypeIsSmall(baseType))
                 {
-                    assert(node->OperIsCreateScalarUnsafe());
+                    assert(HWIntrinsicInfo::IsVectorCreateScalarUnsafe(intrinsicId));
 
                     if (!op1->isUsedFromReg() && compiler->opts.OptimizationEnabled())
                     {
@@ -1669,7 +1669,7 @@ void CodeGen::genBaseIntrinsic(GenTreeHWIntrinsic* node, insOpts instOptions)
                 {
                     assert(instOptions == INS_OPTS_NONE);
 
-                    if (!node->OperIsCreateScalarUnsafe())
+                    if (HWIntrinsicInfo::IsVectorCreateScalar(intrinsicId))
                     {
                         // If this is CreateScalar, we need to ensure the upper elements are zeroed.
                         // Scalar integer loads and loads from memory always zero the upper elements,
@@ -1890,8 +1890,7 @@ void CodeGen::genBaseIntrinsic(GenTreeHWIntrinsic* node, insOpts instOptions)
             else if (varTypeIsIntegral(baseType))
             {
                 assert(!varTypeIsLong(baseType) || TargetArchitecture::Is64Bit);
-                assert((intrinsicId == NI_Vector128_ToScalar) || (intrinsicId == NI_Vector256_ToScalar) ||
-                       (intrinsicId == NI_Vector512_ToScalar));
+                assert(HWIntrinsicInfo::IsVectorToScalar(intrinsicId));
 
                 attr = emitActualTypeSize(baseType);
                 genHWIntrinsic_R_RM(node, ins, attr, targetReg, op1, instOptions);

@@ -2260,9 +2260,8 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                         tgtPrefUse = BuildUse(op1);
                         srcCount += 1;
 
-                        if (((intrinsicId == NI_Vector128_CreateScalar) || (intrinsicId == NI_Vector256_CreateScalar) ||
-                             (intrinsicId == NI_Vector512_CreateScalar)) &&
-                            (baseType == TYP_FLOAT) && !compiler->compOpportunisticallyDependsOn(InstructionSet_SSE41))
+                        if ((baseType == TYP_FLOAT) && HWIntrinsicInfo::IsVectorCreateScalar(intrinsicId) &&
+                            !compiler->compOpportunisticallyDependsOn(InstructionSet_SSE41))
                         {
                             tgtPrefUse = nullptr;
                         }

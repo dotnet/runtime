@@ -179,27 +179,17 @@ GenTree* DecomposeLongs::DecomposeNode(GenTree* tree)
                 next = next->gtNext;
             }
 
-            if (user == next)
+            if ((user == next) && HWIntrinsicInfo::IsVectorToScalar(tree->AsHWIntrinsic()->GetHWIntrinsicId()))
             {
-                NamedIntrinsic intrinsic = tree->AsHWIntrinsic()->GetHWIntrinsicId();
-
-                if ((intrinsic == NI_Vector128_ToScalar) || (intrinsic == NI_Vector256_ToScalar) ||
-                    (intrinsic == NI_Vector512_ToScalar))
-                {
-                    return tree->gtNext;
-                }
+                return tree->gtNext;
             }
         }
     }
 
     if (tree->OperIs(GT_STOREIND) && tree->AsStoreInd()->Data()->OperIsHWIntrinsic())
     {
-#if DEBUG
         // We should only get here if we matched the second pattern above.
-        NamedIntrinsic intrinsic = tree->AsStoreInd()->Data()->AsHWIntrinsic()->GetHWIntrinsicId();
-        assert((intrinsic == NI_Vector128_ToScalar) || (intrinsic == NI_Vector256_ToScalar) ||
-               (intrinsic == NI_Vector512_ToScalar));
-#endif // DEBUG
+        assert(HWIntrinsicInfo::IsVectorToScalar(tree->AsStoreInd()->Data()->AsHWIntrinsic()->GetHWIntrinsicId()));
 
         return tree->gtNext;
     }
@@ -1801,9 +1791,7 @@ GenTree* DecomposeLongs::DecomposeHWIntrinsicGetElement(LIR::Use& use, GenTreeHW
 {
     assert(node == use.Def());
     assert(varTypeIsLong(node));
-    assert((node->GetHWIntrinsicId() == NI_Vector128_GetElement) ||
-           (node->GetHWIntrinsicId() == NI_Vector256_GetElement) ||
-           (node->GetHWIntrinsicId() == NI_Vector512_GetElement));
+    assert(HWIntrinsicInfo::IsVectorGetElement(node->GetHWIntrinsicId()));
 
     GenTree*  op1          = node->Op(1);
     GenTree*  op2          = node->Op(2);
@@ -1908,6 +1896,7 @@ GenTree* DecomposeLongs::DecomposeHWIntrinsicToScalar(LIR::Use& use, GenTreeHWIn
 {
     assert(node == use.Def());
     assert(varTypeIsLong(node));
+    assert(HWIntrinsicInfo::IsVectorToScalar(node->GetHWIntrinsicId()));
 
     GenTree*       op1          = node->Op(1);
     NamedIntrinsic intrinsicId  = node->GetHWIntrinsicId();
@@ -1916,8 +1905,6 @@ GenTree* DecomposeLongs::DecomposeHWIntrinsicToScalar(LIR::Use& use, GenTreeHWIn
 
     assert(varTypeIsLong(simdBaseType));
     assert(varTypeIsSIMD(op1));
-    assert((intrinsicId == NI_Vector128_ToScalar) || (intrinsicId == NI_Vector256_ToScalar) ||
-           (intrinsicId == NI_Vector512_ToScalar));
 
     GenTree* simdTmpVar    = RepresentOpAsLocalVar(op1, node, &node->Op(1));
     unsigned simdTmpVarNum = simdTmpVar->AsLclVarCommon()->GetLclNum();

@@ -27636,37 +27636,6 @@ bool GenTreeHWIntrinsic::OperIsBroadcastScalar() const
 }
 
 //------------------------------------------------------------------------
-// OperIsCreateScalarUnsafe: Is this HWIntrinsic a CreateScalarUnsafe node.
-//
-// Return Value:
-//    Whether "this" is a CreateScalarUnsafe node.
-//
-bool GenTreeHWIntrinsic::OperIsCreateScalarUnsafe() const
-{
-    NamedIntrinsic intrinsicId = GetHWIntrinsicId();
-
-    switch (intrinsicId)
-    {
-#if defined(TARGET_ARM64)
-        case NI_Vector64_CreateScalarUnsafe:
-#endif // TARGET_ARM64
-        case NI_Vector128_CreateScalarUnsafe:
-#if defined(TARGET_XARCH)
-        case NI_Vector256_CreateScalarUnsafe:
-        case NI_Vector512_CreateScalarUnsafe:
-#endif // TARGET_XARCH
-        {
-            return true;
-        }
-
-        default:
-        {
-            return false;
-        }
-    }
-}
-
-//------------------------------------------------------------------------
 // OperIsBitwiseHWIntrinsic: Is the operation a bitwise logic operation.
 //
 // Arguments:
