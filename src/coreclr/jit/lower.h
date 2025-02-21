@@ -453,61 +453,6 @@ private:
                                                  unsigned    simdSize);
 #endif // FEATURE_HW_INTRINSICS
 
-    //----------------------------------------------------------------------------------------------
-    // TryRemoveCastIfPresent: Removes op it is a cast operation and the size of its input is at
-    //                         least the size of expectedType
-    //
-    //  Arguments:
-    //     expectedType - The expected type of the cast operation input if it is to be removed
-    //     op           - The tree to remove if it is a cast op whose input is at least the size of expectedType
-    //
-    //  Returns:
-    //     op if it was not a cast node or if its input is not at least the size of expected type;
-    //     Otherwise, it returns the underlying operation that was being casted
-    GenTree* TryRemoveCastIfPresent(var_types expectedType, GenTree* op)
-    {
-        if (!op->OperIs(GT_CAST) || !comp->opts.OptimizationEnabled())
-        {
-            return op;
-        }
-
-        GenTreeCast* cast   = op->AsCast();
-        GenTree*     castOp = cast->CastOp();
-
-        // FP <-> INT casts should be kept
-        if (varTypeIsFloating(castOp) ^ varTypeIsFloating(expectedType))
-        {
-            return op;
-        }
-
-        // Keep casts which can overflow
-        if (cast->gtOverflow())
-        {
-            return op;
-        }
-
-        // Keep casts with operands usable from memory.
-        if (castOp->isContained() || castOp->IsRegOptional())
-        {
-            return op;
-        }
-
-        if (genTypeSize(cast->CastToType()) >= genTypeSize(expectedType))
-        {
-#ifndef TARGET_64BIT
-            // Don't expose TYP_LONG on 32bit
-            if (castOp->TypeIs(TYP_LONG))
-            {
-                return op;
-            }
-#endif
-            BlockRange().Remove(op);
-            return castOp;
-        }
-
-        return op;
-    }
-
     // Utility functions
 public:
     static bool IndirsAreEquivalent(GenTree* pTreeA, GenTree* pTreeB);

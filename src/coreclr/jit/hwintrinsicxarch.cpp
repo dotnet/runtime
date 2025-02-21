@@ -2125,16 +2125,6 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
         {
             if (sig->numArgs == 1)
             {
-#if defined(TARGET_X86)
-                if (varTypeIsLong(simdBaseType) && !impStackTop(0).val->IsIntegralConst())
-                {
-                    // TODO-XARCH-CQ: It may be beneficial to emit the movq
-                    // instruction, which takes a 64-bit memory address and
-                    // works on 32-bit x86 systems.
-                    break;
-                }
-#endif // TARGET_X86
-
                 op1     = impPopStack().val;
                 retNode = gtNewSimdCreateBroadcastNode(retType, op1, simdBaseJitType, simdSize);
                 break;
@@ -2266,16 +2256,6 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                 break;
             }
 
-#if defined(TARGET_X86)
-            if (varTypeIsLong(simdBaseType))
-            {
-                // TODO-XARCH-CQ: It may be beneficial to emit the movq
-                // instruction, which takes a 64-bit memory address and
-                // works on 32-bit x86 systems.
-                break;
-            }
-#endif // TARGET_X86
-
             IntrinsicNodeBuilder nodeBuilder(getAllocator(CMK_ASTNode), sig->numArgs);
 
             // TODO-CQ: We don't handle contiguous args for anything except TYP_FLOAT today
@@ -2321,16 +2301,6 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
         {
             assert(sig->numArgs == 1);
 
-#if defined(TARGET_X86)
-            if (varTypeIsLong(simdBaseType) && !impStackTop(0).val->IsIntegralConst())
-            {
-                // TODO-XARCH-CQ: It may be beneficial to emit the movq
-                // instruction, which takes a 64-bit memory address and
-                // works on 32-bit x86 systems.
-                break;
-            }
-#endif // TARGET_X86
-
             op1     = impPopStack().val;
             retNode = gtNewSimdCreateScalarNode(retType, op1, simdBaseJitType, simdSize);
             break;
@@ -2341,16 +2311,6 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
         case NI_Vector512_CreateScalarUnsafe:
         {
             assert(sig->numArgs == 1);
-
-#if defined(TARGET_X86)
-            if (varTypeIsLong(simdBaseType) && !impStackTop(0).val->IsIntegralConst())
-            {
-                // TODO-XARCH-CQ: It may be beneficial to emit the movq
-                // instruction, which takes a 64-bit memory address and
-                // works on 32-bit x86 systems.
-                break;
-            }
-#endif // TARGET_X86
 
             op1     = impPopStack().val;
             retNode = gtNewSimdCreateScalarUnsafeNode(retType, op1, simdBaseJitType, simdSize);
@@ -2391,11 +2351,6 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                             break;
                         }
                     }
-
-#if defined(TARGET_X86)
-                    // TODO-XARCH-CQ: We need to support 64-bit CreateBroadcast
-                    break;
-#endif // TARGET_X86
                 }
             }
 
@@ -2753,13 +2708,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                 case TYP_LONG:
                 case TYP_ULONG:
                 {
-                    bool useToScalar = op2->IsIntegralConst(0);
-
-#if defined(TARGET_X86)
-                    useToScalar &= !varTypeIsLong(simdBaseType);
-#endif // TARGET_X86
-
-                    if (!useToScalar && !compOpportunisticallyDependsOn(InstructionSet_SSE41))
+                    if (!op2->IsIntegralConst(0) && !compOpportunisticallyDependsOn(InstructionSet_SSE41))
                     {
                         // Using software fallback if simdBaseType is not supported by hardware
                         return nullptr;
@@ -3339,11 +3288,6 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
             if (varTypeIsLong(simdBaseType))
             {
-                if (TARGET_POINTER_SIZE == 4)
-                {
-                    // TODO-XARCH-CQ: 32bit support
-                    break;
-                }
 
                 if ((simdSize == 32) && compOpportunisticallyDependsOn(InstructionSet_AVX2))
                 {
@@ -3395,12 +3339,6 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
             if (varTypeIsLong(simdBaseType))
             {
-                if (TARGET_POINTER_SIZE == 4)
-                {
-                    // TODO-XARCH-CQ: 32bit support
-                    break;
-                }
-
                 if ((simdSize == 32) && compOpportunisticallyDependsOn(InstructionSet_AVX2))
                 {
                     // Emulate NI_AVX512DQ_VL_MultiplyLow with AVX2 for SIMD32
@@ -3538,18 +3476,6 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
         case NI_Vector512_op_RightShift:
         {
             assert(sig->numArgs == 2);
-
-#if defined(TARGET_X86)
-            if ((simdBaseType == TYP_LONG) || (simdBaseType == TYP_DOUBLE))
-            {
-                if (!compOpportunisticallyDependsOn(InstructionSet_EVEX) && !impStackTop(0).val->IsCnsIntOrI())
-                {
-                    // If vpsraq is available, we can use that. We can also trivially emulate arithmetic shift by const
-                    // amount. Otherwise, more work is required for long types, so we fall back to managed for now.
-                    break;
-                }
-            }
-#endif // TARGET_X86
 
             if ((simdSize != 32) || compOpportunisticallyDependsOn(InstructionSet_AVX2))
             {
@@ -3815,13 +3741,6 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             {
                 break;
             }
-#if defined(TARGET_X86)
-            else if (varTypeIsLong(simdBaseType) && !compOpportunisticallyDependsOn(InstructionSet_SSE41))
-            {
-                // We need SSE41 to handle long, use software fallback
-                break;
-            }
-#endif // TARGET_X86
 
             op1     = impSIMDPopStack();
             retNode = gtNewSimdSumNode(retType, op1, simdBaseJitType, simdSize);
@@ -3833,14 +3752,6 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
         case NI_Vector512_ToScalar:
         {
             assert(sig->numArgs == 1);
-
-#if defined(TARGET_X86)
-            if (varTypeIsLong(simdBaseType) && !compOpportunisticallyDependsOn(InstructionSet_SSE41))
-            {
-                // We need SSE41 to handle long, use software fallback
-                break;
-            }
-#endif // TARGET_X86
 
             op1     = impSIMDPopStack();
             retNode = gtNewSimdToScalarNode(retType, op1, simdBaseJitType, simdSize);

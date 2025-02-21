@@ -20233,7 +20233,7 @@ var_types GenTreeJitIntrinsic::GetSimdBaseType() const
 // isCommutativeHWIntrinsic: Checks if the intrinsic is commutative
 //
 // Return Value:
-//     true if the intrisic is commutative
+//     true if the intrinsic is commutative
 //
 bool GenTree::isCommutativeHWIntrinsic() const
 {
@@ -20395,6 +20395,9 @@ bool GenTree::isContainableHWIntrinsic() const
             return true;
         }
 
+        case NI_Vector128_CreateScalar:
+        case NI_Vector256_CreateScalar:
+        case NI_Vector512_CreateScalar:
         case NI_Vector128_CreateScalarUnsafe:
         case NI_Vector256_CreateScalarUnsafe:
         case NI_Vector512_CreateScalarUnsafe:
@@ -21521,7 +21524,7 @@ GenTree* Compiler::gtNewSimdCeilNode(var_types type, GenTree* op1, CorInfoType s
 
 #if defined(FEATURE_MASKED_HW_INTRINSICS)
 //------------------------------------------------------------------------
-// gtNewSimdCvtMaskToVectorNode: Convert a HW instrinsic mask node to a vector
+// gtNewSimdCvtMaskToVectorNode: Convert a HW intrinsic mask node to a vector
 //
 // Arguments:
 //    type            -- The type of the node to convert to
@@ -21946,7 +21949,7 @@ GenTree* Compiler::gtNewSimdCvtNativeNode(var_types   type,
 
 #if defined(FEATURE_MASKED_HW_INTRINSICS)
 //------------------------------------------------------------------------
-// gtNewSimdCvtVectorToMaskNode: Convert a HW instrinsic vector node to a mask
+// gtNewSimdCvtVectorToMaskNode: Convert a HW intrinsic vector node to a mask
 //
 // Arguments:
 //    type            -- The type of the mask to produce.
@@ -22700,16 +22703,6 @@ GenTree* Compiler::gtNewSimdCreateBroadcastNode(var_types   type,
     }
 
 #if defined(TARGET_XARCH)
-#if defined(TARGET_X86)
-    if (varTypeIsLong(simdBaseType) && !op1->IsIntegralConst())
-    {
-        // TODO-XARCH-CQ: It may be beneficial to emit the movq
-        // instruction, which takes a 64-bit memory address and
-        // works on 32-bit x86 systems.
-        unreached();
-    }
-#endif // TARGET_X86
-
     if (simdSize == 64)
     {
         hwIntrinsicID = NI_Vector512_Create;
@@ -22813,16 +22806,6 @@ GenTree* Compiler::gtNewSimdCreateScalarNode(var_types   type,
     }
 
 #if defined(TARGET_XARCH)
-#if defined(TARGET_X86)
-    if (varTypeIsLong(simdBaseType) && !op1->IsIntegralConst())
-    {
-        // TODO-XARCH-CQ: It may be beneficial to emit the movq
-        // instruction, which takes a 64-bit memory address and
-        // works on 32-bit x86 systems.
-        unreached();
-    }
-#endif // TARGET_X86
-
     if (simdSize == 32)
     {
         hwIntrinsicID = NI_Vector256_CreateScalar;
@@ -22958,16 +22941,6 @@ GenTree* Compiler::gtNewSimdCreateScalarUnsafeNode(var_types   type,
     }
 
 #if defined(TARGET_XARCH)
-#if defined(TARGET_X86)
-    if (varTypeIsLong(simdBaseType) && !op1->IsIntegralConst())
-    {
-        // TODO-XARCH-CQ: It may be beneficial to emit the movq
-        // instruction, which takes a 64-bit memory address and
-        // works on 32-bit x86 systems.
-        unreached();
-    }
-#endif // TARGET_X86
-
     if (simdSize == 32)
     {
         hwIntrinsicID = NI_Vector256_CreateScalarUnsafe;
@@ -23004,7 +22977,7 @@ GenTree* Compiler::gtNewSimdCreateScalarUnsafeNode(var_types   type,
 GenTree* Compiler::gtNewSimdCreateSequenceNode(
     var_types type, GenTree* op1, GenTree* op2, CorInfoType simdBaseJitType, unsigned simdSize)
 {
-    // This effectively doees: (Indices * op2) + Create(op1)
+    // This effectively does: (Indices * op2) + Create(op1)
     //
     // When both op2 and op1 are constant we can fully fold this to a constant. Additionally,
     // if only op2 is a constant we can simplify the computation by a lot. However, if only op1
@@ -23336,14 +23309,7 @@ GenTree* Compiler::gtNewSimdGetElementNode(
     assert(varTypeIsArithmetic(simdBaseType));
 
 #if defined(TARGET_XARCH)
-    bool useToScalar = op2->IsIntegralConst(0);
-
-#if defined(TARGET_X86)
-    // We handle decomposition via GetElement for simplicity
-    useToScalar &= !varTypeIsLong(simdBaseType);
-#endif // TARGET_X86
-
-    if (useToScalar)
+    if (op2->IsIntegralConst(0))
     {
         return gtNewSimdToScalarNode(type, op1, simdBaseJitType, simdSize);
     }
@@ -26309,18 +26275,6 @@ GenTree* Compiler::gtNewSimdToScalarNode(var_types type, GenTree* op1, CorInfoTy
     NamedIntrinsic intrinsic = NI_Illegal;
 
 #ifdef TARGET_XARCH
-#if defined(TARGET_X86)
-    if (varTypeIsLong(simdBaseType))
-    {
-        // We need SSE41 to handle long, use software fallback
-        assert(compIsaSupportedDebugOnly(InstructionSet_SSE41));
-
-        // Create a GetElement node which handles decomposition
-        GenTree* op2 = gtNewIconNode(0);
-        return gtNewSimdGetElementNode(type, op1, op2, simdBaseJitType, simdSize);
-    }
-#endif // TARGET_X86
-
     if (simdSize == 64)
     {
         assert(IsBaselineVector512IsaSupportedDebugOnly());
@@ -27480,7 +27434,7 @@ bool GenTreeHWIntrinsic::OperIsMemoryLoad(GenTree** pAddr) const
 }
 
 //------------------------------------------------------------------------
-// OperIsMemoryLoad: Does this HWI node have memory store semantics?
+// OperIsMemoryStore: Does this HWI node have memory store semantics?
 //
 // Arguments:
 //    pAddr - optional [out] parameter for the address
@@ -27615,7 +27569,7 @@ bool GenTreeHWIntrinsic::OperIsMemoryStoreOrBarrier() const
 }
 
 //------------------------------------------------------------------------
-// OperIsEmbBroadcastCompatible: Checks if the intrinsic is a embedded broadcast compatible inintrsic.
+// OperIsEmbBroadcastCompatible: Checks if the intrinsic is a embedded broadcast compatible intrinsic.
 //
 // Return Value:
 //     true if the intrinsic node lowering instruction is embedded broadcast compatible.
