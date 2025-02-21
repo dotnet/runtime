@@ -33,12 +33,6 @@ inline const SString &PEImage::GetPath()
 }
 
 #if defined(TARGET_ANDROID)
-inline const HANDLE PEImage::AndroidGetDataStart()
-{
-    LIMITED_METHOD_CONTRACT;
-    return m_bundleFileLocation.DataStart;
-}
-
 inline const SString& PEImage::AndroidGetAppName()
 {
     return m_bundleFileLocation.AppName();
@@ -51,6 +45,16 @@ inline const SString& PEImage::GetPathToLoad()
     return IsInBundle() ? m_bundleFileLocation.Path() : m_path;
 }
 #endif // !TARGET_ANDROID
+
+inline void* PEImage::GetData(INT64* size)
+{
+    LIMITED_METHOD_CONTRACT;
+
+    if (size != nullptr)
+        *size = m_bundleFileLocation.Size;
+
+    return m_bundleFileLocation.DataStart;
+}
 
 inline INT64 PEImage::GetOffset() const
 {

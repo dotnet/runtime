@@ -134,7 +134,6 @@ public:
 
     const SString& GetPath();
 #if defined(TARGET_ANDROID)
-    const HANDLE AndroidGetDataStart();
     const SString& AndroidGetAppName();
 #else
     const SString& GetPathToLoad();
@@ -143,6 +142,7 @@ public:
 
     BOOL IsFile();
     BOOL IsInBundle() const;
+    void* GetData(INT64* size);
     INT64 GetOffset() const;
     INT64 GetSize() const;
     INT64 GetUncompressedSize() const;

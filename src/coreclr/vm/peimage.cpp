@@ -877,7 +877,7 @@ HRESULT PEImage::TryOpenFile(bool takeLock)
 
     ErrorModeHolder mode{};
 #if defined(TARGET_ANDROID)
-    m_hFile = AndroidGetDataStart ();
+    m_hFile = GetData(nullptr);
 #else
     m_hFile=WszCreateFile((LPCWSTR)GetPathToLoad(),
                           GENERIC_READ
