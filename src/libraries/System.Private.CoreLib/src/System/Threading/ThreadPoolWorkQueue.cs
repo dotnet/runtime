@@ -726,14 +726,18 @@ namespace System.Threading
             bool anyWorkItemMoved = false;
             while (tl.workStealingQueue.LocalPop() is object workItem)
             {
+                // If there's an unexpected exception here that happens to get handled, the lost work item, or missing thread
+                // request, etc., may lead to other issues. A fail-fast or try-finally here could reduce the effect of such
+                // uncommon issues to various degrees, but it's also uncommon to check for unexpected exceptions.
                 try
                 {
                     queue.highPriorityWorkItems.Enqueue(workItem);
                 }
-                catch (Exception ex)
+                catch (OutOfMemoryException)
                 {
-                    // Typically would be an OOM, but since we have lost a work item, fail-fast on any exception
-                    Environment.FailFast("Failed to move a local work item to the high-priority global queue.", ex);
+                    // This is not expected to throw under normal circumstances
+                    tl.workStealingQueue.LocalPush(workItem);
+                    break;
                 }
 
                 anyWorkItemMoved = true;
