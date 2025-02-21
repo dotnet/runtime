@@ -127,20 +127,7 @@ namespace System.Threading
         {
             get
             {
-                long count = PortableThreadPool.ThreadPoolInstance.CompletedWorkItemCount;
-
-                // Ensure that the returned value is monotonically increasing
-                long lastCount = s_lastCompletedWorkItemCount;
-                if (count > lastCount)
-                {
-                    s_lastCompletedWorkItemCount = count;
-                }
-                else
-                {
-                    count = lastCount;
-                }
-
-                return count;
+                return PortableThreadPool.ThreadPoolInstance.CompletedWorkItemCount;
             }
         }
 

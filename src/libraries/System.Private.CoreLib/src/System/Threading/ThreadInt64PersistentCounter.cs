@@ -15,6 +15,7 @@ namespace System.Threading
         private static List<ThreadLocalNodeFinalizationHelper>? t_nodeFinalizationHelpers;
 
         private long _overflowCount;
+        private long _lastReturnedCount;
 
         // dummy node serving as a start and end of the ring list
         private readonly ThreadLocalNode _nodes;
@@ -82,6 +83,17 @@ namespace System.Threading
                     {
                         count += node.Count;
                         node = node._next;
+                    }
+
+                    // Ensure that the returned value is monotonically increasing
+                    long lastReturnedCount = _lastReturnedCount;
+                    if (count > lastReturnedCount)
+                    {
+                        _lastReturnedCount = count;
+                    }
+                    else
+                    {
+                        count = lastReturnedCount;
                     }
                 }
                 finally
