@@ -5171,7 +5171,7 @@ bool Compiler::ThreeOptLayout::ReorderBlockList()
             continue;
         }
 
-        BasicBlock* const tryLast    = HBtab->ebdTryLast;
+        BasicBlock* const tryLast = HBtab->ebdTryLast;
         compiler->fgUnlinkRange(tryBeg, tryLast);
         compiler->fgMoveBlocksAfter(tryBeg, tryLast, insertionPoint);
         modified = true;
