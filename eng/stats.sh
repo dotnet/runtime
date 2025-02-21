@@ -19,7 +19,7 @@ while true; do
   elapsed_time=$(($current_time - $start_time))
   echo "-------- elapsed_time $elapsed_time ---------"
 
-  if [ $elapsed_time -ge 360 ] && [ "$triggered" = false ]; then
+  if [ $elapsed_time -ge 180 ] && [ "$triggered" = false ]; then
     triggered=true
     echo "--------installing---------"
     sudo /__w/1/s/.dotnet/dotnet tool install --global dotnet-trace
