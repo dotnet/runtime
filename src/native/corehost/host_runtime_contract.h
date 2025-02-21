@@ -39,7 +39,7 @@ struct host_runtime_contract
         void* contract_context);
 
     // Probe an app bundle for `path`. Sets its location (`offset`, `size`) in the bundle if found.
-    // Returns true if found, false otherwise.
+    // Returns true if found, false otherwise. If false, out parameter values are ignored by the runtime.
     bool(HOST_CONTRACT_CALLTYPE* bundle_probe)(
         const char* path,
         /*out*/ int64_t* offset,
@@ -53,10 +53,11 @@ struct host_runtime_contract
         const char* entry_point_name);
 
     // Probe the host for `path`. Sets pointer to data start and its size, if found.
+    // Returns true if found, false otherwise. If false, out parameter values are ignored by the runtime.
     bool(HOST_CONTRACT_CALLTYPE* external_assembly_probe)(
         const char* path,
-        void **data_start,
-        int64_t* size);
+        /*out*/ void **data_start,
+        /*out*/ int64_t* size);
 };
 
 #endif // __HOST_RUNTIME_CONTRACT_H__
