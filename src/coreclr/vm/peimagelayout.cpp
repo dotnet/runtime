@@ -623,14 +623,19 @@ FlatImageLayout::FlatImageLayout(PEImage* pOwner)
     LOG((LF_LOADER, LL_INFO100, "PEImage: Opening flat %s\n", ownerPath.GetUTF8()));
 #endif // LOGGING
 
-// TODO: Any image from external_assembly_probe should go down this path, not just on Android
-#if defined(TARGET_ANDROID)
-    INT64 dataSize;
-    void* data = pOwner->GetData(&dataSize);
-    _ASSERTE(dataSize != 0 && data != nullptr);
-    Init(data, (COUNT_T)dataSize);
-    return;
-#endif
+    if (!pOwner->IsFile())
+    {
+        INT64 dataSize;
+        void* data = pOwner->GetData(&dataSize);
+        if (data != nullptr)
+        {
+            // Image was provided as flat data via external assembly probing.
+            // We do not manage the data - just initialize with it directly.
+            _ASSERTE(dataSize != 0);
+            Init(data, (COUNT_T)dataSize);
+            return;
+        }
+    }
 
     HANDLE hFile = pOwner->GetFileHandle();
     INT64 offset = pOwner->GetOffset();
