@@ -75,7 +75,7 @@ namespace ILCompiler.DependencyAnalysis
                             // We need to trigger the cctor before returning the base. It is stored at the beginning of the non-GC statics region.
                             encoder.EmitADDI(encoder.TargetRegister.Arg3, encoder.TargetRegister.Arg0, -NonGCStaticsNode.GetClassConstructorContextSize(factory.Target));
                             encoder.EmitLD(encoder.TargetRegister.Arg2, encoder.TargetRegister.Arg3, 0);
-                            encoder.EmitFENCE();
+                            encoder.EmitFENCE_RW_RW();
                             encoder.EmitRETIfZero(encoder.TargetRegister.Arg2);
 
                             encoder.EmitMOV(encoder.TargetRegister.Arg1, encoder.TargetRegister.Result);
@@ -107,7 +107,7 @@ namespace ILCompiler.DependencyAnalysis
 
                             encoder.EmitADDI(encoder.TargetRegister.Arg2, encoder.TargetRegister.Arg2, -NonGCStaticsNode.GetClassConstructorContextSize(factory.Target));
                             encoder.EmitLD(encoder.TargetRegister.Arg3, encoder.TargetRegister.Arg2, 0);
-                            encoder.EmitFENCE();
+                            encoder.EmitFENCE_RW_RW();
                             encoder.EmitRETIfZero(encoder.TargetRegister.Arg3);
 
                             encoder.EmitMOV(encoder.TargetRegister.Arg1, encoder.TargetRegister.Result);

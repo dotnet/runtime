@@ -25,9 +25,9 @@ namespace ILCompiler.DependencyAnalysis.RiscV64
             Builder.EmitUInt(0x00100073);
         }
 
-        public void EmitFENCE()
+        public void EmitFENCE_RW_RW()
         {
-            Builder.EmitUInt(0x0ff0000f);
+            Builder.EmitUInt(0x0330000f);
         }
 
         public void EmitLI(Register regDst, int offset)
