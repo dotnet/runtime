@@ -115,11 +115,7 @@ inline const SString &PEImage::GetModuleFileNameHintForDAC()
 inline BOOL PEImage::IsFile()
 {
     WRAPPER_NO_CONTRACT;
-#if defined(TARGET_ANDROID)
-    return FALSE;
-#else
-    return !GetPathToLoad().IsEmpty();
-#endif
+    return m_bundleFileLocation.DataStart == nullptr && !GetPathToLoad().IsEmpty();
 }
 
 //
