@@ -133,4 +133,8 @@
     <Compile Include="$(CommonTestPath)System\IO\TempFile.cs" Link="Common\System\IO\TempFile.cs" />
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Reflection.MetadataLoadContext\src\System.Reflection.MetadataLoadContext.csproj" />
+  </ItemGroup>
+
 </Project>
