@@ -137,7 +137,7 @@ static NTSTATUS OutOfProcessFindHeader(ReadMemoryFunction fpReadMemory,PVOID pUs
     return STATUS_SUCCESS;
 }
 
-#define CODE_HEADER FakeRealCodeHeader
+#define CODE_HEADER FakeJitRealCodeHeader
 #define ResolveCodeHeader(pHeader)                          \
     if (pHeader)                                            \
     {                                                       \
@@ -169,7 +169,7 @@ extern "C" NTSTATUS OutOfProcessFunctionTableCallbackEx(IN  ReadMemoryFunction  
     *ppFunctions = 0;
     *pnEntries   = 0;
 
-    DWORD_PTR  pHp = JitMan + (DWORD_PTR)offsetof(FakeEEJitManager, m_pCodeHeap);
+    DWORD_PTR  pHp = JitMan + (DWORD_PTR)offsetof(FakeEECodeGenManager, m_pCodeHeap);
 
     move(pHp, pHp);
 

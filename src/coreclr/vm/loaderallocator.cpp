@@ -70,6 +70,7 @@ LoaderAllocator::LoaderAllocator(bool collectible) :
     m_pVSDHeapInitialAlloc = NULL;
     m_pLastUsedCodeHeap = NULL;
     m_pLastUsedDynamicCodeHeap = NULL;
+    m_pLastUsedInterpreterCodeHeap = NULL;
     m_pJumpStubCache = NULL;
     m_IsCollectible = collectible;
 

@@ -22,9 +22,9 @@ public class InterpreterTester
         string interpreterApp = Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), "Interpreter.dll");
 
         var startInfo = new ProcessStartInfo(Path.Combine(coreRoot, corerun), interpreterApp);
-        startInfo.EnvironmentVariables["DOTNET_AltJitName"] = libInterp;
-        startInfo.EnvironmentVariables["DOTNET_AltJitPath"] = Path.Combine(coreRoot, libInterp);
-        startInfo.EnvironmentVariables["DOTNET_AltJit"] = "RunInterpreterTests";
+        startInfo.EnvironmentVariables["DOTNET_InterpreterName"] = libInterp;
+        startInfo.EnvironmentVariables["DOTNET_InterpreterPath"] = Path.Combine(coreRoot, libInterp);
+        startInfo.EnvironmentVariables["DOTNET_Interpreter"] = "RunInterpreterTests";
 
         using (Process p = Process.Start(startInfo))
         {

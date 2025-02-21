@@ -11,7 +11,7 @@
 #define _FN_TABLE_ACCESS_H
 
 
-struct FakeEEJitManager
+struct FakeEECodeGenManager
 {
     LPVOID      __VFN_table;
     LPVOID      m_runtimeSupport;
@@ -55,7 +55,7 @@ typedef struct _FakeHpRealCodeHdr
     LPVOID              hdrMDesc;       // changed from MethodDesc*
     DWORD               nUnwindInfos;
     T_RUNTIME_FUNCTION  unwindInfos[0];
-} FakeRealCodeHeader;
+} FakeJitRealCodeHeader;
 
 typedef struct _FakeHpCodeHdr
 {
@@ -76,7 +76,7 @@ class CheckDuplicatedStructLayouts
 {
 #define CHECK_OFFSET(cls, fld) CPP_ASSERT(cls##fld, offsetof(Fake##cls, fld) == offsetof(cls, fld))
 
-    CHECK_OFFSET(EEJitManager, m_pCodeHeap);
+    CHECK_OFFSET(EECodeGenManager, m_pCodeHeap);
 
     CHECK_OFFSET(HeapList, hpNext);
     CHECK_OFFSET(HeapList, startAddress);
@@ -85,8 +85,8 @@ class CheckDuplicatedStructLayouts
     CHECK_OFFSET(HeapList, pHdrMap);
 
 #if !defined(TARGET_X86)
-    CHECK_OFFSET(RealCodeHeader,    nUnwindInfos);
-    CHECK_OFFSET(RealCodeHeader,    unwindInfos);
+    CHECK_OFFSET(JitRealCodeHeader,    nUnwindInfos);
+    CHECK_OFFSET(JitRealCodeHeader,    unwindInfos);
 #endif  // !TARGET_X86
 
 #undef CHECK_OFFSET
