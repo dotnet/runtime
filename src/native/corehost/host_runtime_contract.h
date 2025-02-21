@@ -38,12 +38,6 @@ struct host_runtime_contract
         size_t value_buffer_size,
         void* contract_context);
 
-    // Probe the host for `path`. Sets pointer to data start and its size, if found.
-    bool(HOST_CONTRACT_CALLTYPE* external_assembly_probe)(
-        const char* path,
-        void **data_start,
-        int64_t* size);
-
     // Probe an app bundle for `path`. Sets its location (`offset`, `size`) in the bundle if found.
     // Returns true if found, false otherwise.
     bool(HOST_CONTRACT_CALLTYPE* bundle_probe)(
@@ -57,6 +51,12 @@ struct host_runtime_contract
     const void* (HOST_CONTRACT_CALLTYPE* pinvoke_override)(
         const char* library_name,
         const char* entry_point_name);
+
+    // Probe the host for `path`. Sets pointer to data start and its size, if found.
+    bool(HOST_CONTRACT_CALLTYPE* external_assembly_probe)(
+        const char* path,
+        void **data_start,
+        int64_t* size);
 };
 
 #endif // __HOST_RUNTIME_CONTRACT_H__
