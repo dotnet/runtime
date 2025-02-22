@@ -2550,7 +2550,7 @@ PROCAbort(int signal, siginfo_t* siginfo)
     SEHCleanupSignals(false /* isChildProcess */);
 
 #if defined(TARGET_ANDROID)
-    __android_log_print (ANDROID_LOG_INFO, "CoreCLR", "Aborting in %s:%u", __FILE_NAME__, __LINE__);
+    __android_log_print(ANDROID_LOG_FATAL, MAIN_CLR_MODULE_NAME_A, "Aborting in %s:%u", __FILE_NAME__, __LINE__);
 #endif // defined(TARGET_ANDROID)
 
     // Abort the process after waiting for the core dump to complete

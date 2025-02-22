@@ -383,7 +383,7 @@ VOID LogSpewAlwaysValist(const char *fmt, va_list args)
 #else
         // TODO: priority should be configurable here (best, passed via a parameter)
         //       likewise for the tag
-        __android_log_write(ANDROID_LOG_INFO, "CoreCLR-log", pBuffer);
+        __android_log_write(ANDROID_LOG_INFO, MAIN_CLR_MODULE_NAME_A, pBuffer);
 #endif // defined(TARGET_ANDROID)
     }
 
