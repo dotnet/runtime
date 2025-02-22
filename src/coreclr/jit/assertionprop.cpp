@@ -4144,7 +4144,13 @@ void Compiler::optAssertionProp_RangeProperties(ASSERT_VALARG_TP assertions,
 
             int cns = static_cast<int>(tree->gtGetOp2()->AsIntCon()->IconValue());
             rng.LowerLimit().AddConstant(cns);
-            rng.UpperLimit().AddConstant(cns);
+
+            if ((rng.LowerLimit().IsConstant() && !rng.LowerLimit().AddConstant(cns)) ||
+                (rng.UpperLimit().IsConstant() && !rng.UpperLimit().AddConstant(cns)))
+            {
+                // Add cns to both bounds if they are constants. Make sure the addition doesn't overflow.
+                return;
+            }
 
             if (rng.LowerLimit().IsConstant())
             {
