@@ -2255,7 +2255,7 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                     {
                         // CreateScalarUnsafe and ToScalar are essentially no-ops for floating point types and can reuse
                         // the op1 register. CreateScalar needs to clear the upper elements, so if we have a float and
-                        // can't use insertps to zero the upper elements in-place, we'll need a different target reg.
+                        // can't use insertps to zero the upper elements in-place, we'll need a different working reg.
 
                         tgtPrefUse = BuildUse(op1);
                         srcCount += 1;
@@ -2263,6 +2263,8 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                         if ((baseType == TYP_FLOAT) && HWIntrinsicInfo::IsVectorCreateScalar(intrinsicId) &&
                             !compiler->compOpportunisticallyDependsOn(InstructionSet_SSE41))
                         {
+                            buildInternalFloatRegisterDefForNode(intrinsicTree);
+                            setInternalRegsDelayFree = true;
                             tgtPrefUse = nullptr;
                         }
                     }
