@@ -4841,7 +4841,7 @@ void CodeGen::genPutArgStk(GenTreePutArgStk* treeNode)
                 assert(varDsc->lvType == TYP_STRUCT);
                 assert(varDsc->lvOnFrame && !varDsc->lvRegister);
 
-                srcSize = lvaLclStackHomeSize(varNode->GetLclNum());
+                srcSize = compiler->lvaLclStackHomeSize(varNode->GetLclNum());
 
                 layout = varDsc->GetLayout();
             }
@@ -4870,7 +4870,7 @@ void CodeGen::genPutArgStk(GenTreePutArgStk* treeNode)
                 if (varNode != nullptr)
                 {
                     // If we have a varNode, even if it was casted using `OBJ`, we can read its original memory size.
-                    const unsigned varStackSize = lvaLclStackHomeSize(varNode->GetLclNum());
+                    const unsigned varStackSize = compiler->lvaLclStackHomeSize(varNode->GetLclNum());
                     if (varStackSize >= srcSize)
                     {
                         srcSize = varStackSize;
