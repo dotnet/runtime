@@ -156,7 +156,30 @@ namespace System.Numerics
         internal const
 #endif
             int MultiplyKaratsubaThreshold = 32;
+
+        /// <summary>
+        /// A wrapper of <see cref="MultiplyImpl(ReadOnlySpan{uint}, ReadOnlySpan{uint}, Span{uint})"/>.
+        /// </summary>
+        /// /// <remarks>
+        /// The order of <paramref name="left"/> and <paramref name="right"/> does not matter.
+        /// The method internally swaps them if necessary to ensure correct computation.
+        /// </remarks>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void Multiply(ReadOnlySpan<uint> left, ReadOnlySpan<uint> right, Span<uint> bits)
+        {
+            if (left.Length < right.Length)
+            {
+                if (left.Length > 0)
+                    MultiplyImpl(right, left, bits);
+            }
+            else
+            {
+                if (right.Length > 0)
+                    MultiplyImpl(left, right, bits);
+            }
+        }
+
+        public static void MultiplyImpl(ReadOnlySpan<uint> left, ReadOnlySpan<uint> right, Span<uint> bits)
         {
             Debug.Assert(left.Length >= right.Length);
             Debug.Assert(bits.Length >= left.Length + right.Length);
@@ -218,7 +241,7 @@ namespace System.Numerics
                 Span<uint> bitsHigh = bits.Slice(n);
 
                 // ... compute low
-                Multiply(leftLow, right, bitsLow);
+                MultiplyImpl(leftLow, right, bitsLow);
 
                 int carryLength = right.Length;
                 uint[]? carryFromPool = null;
@@ -234,7 +257,7 @@ namespace System.Numerics
                 if (leftHigh.Length < right.Length)
                     MultiplyKaratsuba(right, leftHigh, bitsHigh.Slice(0, leftHigh.Length + right.Length), (right.Length + 1) >> 1);
                 else
-                    Multiply(leftHigh, right, bitsHigh.Slice(0, leftHigh.Length + right.Length));
+                    MultiplyImpl(leftHigh, right, bitsHigh.Slice(0, leftHigh.Length + right.Length));
 
                 AddSelf(bitsHigh, carry);
 
@@ -277,7 +300,7 @@ namespace System.Numerics
                     MultiplyKaratsuba(leftLow, rightLow, bitsLow, (leftLow.Length + 1) >> 1);
 
                     // ... compute z_2 = a_1 * b_1 (multiply again)
-                    Multiply(leftHigh, rightHigh, bitsHigh);
+                    MultiplyImpl(leftHigh, rightHigh, bitsHigh);
 
                     int foldLength = n + 1;
                     uint[]? leftFoldFromPool = null;
