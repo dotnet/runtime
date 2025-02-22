@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 #include "interpexec.h"
+#include <math.h>
 
 #ifdef FEATURE_INTERPRETER
 
@@ -166,7 +167,7 @@ void InterpExecMethod(InterpMethodContextFrame *pFrame, InterpThreadContext *pTh
                 ip += 3;
                 break;
             case INTOP_CONV_I8_U4:
-                LOCAL_VAR(ip[1], int64_t) = (uint32_t)LOCAL_VAR (ip[2], int32_t);
+                LOCAL_VAR(ip[1], int64_t) = (uint32_t)LOCAL_VAR(ip[2], int32_t);
                 ip += 3;
                 break;;
             case INTOP_CONV_I8_R4:
@@ -358,6 +359,217 @@ void InterpExecMethod(InterpMethodContextFrame *pFrame, InterpThreadContext *pTh
                 assert(0);
                 break;
 
+            case INTOP_ADD_I4:
+                LOCAL_VAR(ip[1], int32_t) = LOCAL_VAR(ip[2], int32_t) + LOCAL_VAR(ip[3], int32_t);
+                ip += 4;
+                break;
+            case INTOP_ADD_I8:
+                LOCAL_VAR(ip[1], int64_t) = LOCAL_VAR(ip[2], int64_t) + LOCAL_VAR(ip[3], int64_t);
+                ip += 4;
+                break;
+            case INTOP_ADD_R4:
+                LOCAL_VAR(ip[1], float) = LOCAL_VAR(ip[2], float) + LOCAL_VAR(ip[3], float);
+                ip += 4;
+                break;
+            case INTOP_ADD_R8:
+                LOCAL_VAR(ip[1], double) = LOCAL_VAR(ip[2], double) + LOCAL_VAR(ip[3], double);
+                ip += 4;
+                break;
+
+            case INTOP_SUB_I4:
+                LOCAL_VAR(ip[1], int32_t) = LOCAL_VAR(ip[2], int32_t) - LOCAL_VAR(ip[3], int32_t);
+                ip += 4;
+                break;
+            case INTOP_SUB_I8:
+                LOCAL_VAR(ip[1], int64_t) = LOCAL_VAR(ip[2], int64_t) - LOCAL_VAR(ip[3], int64_t);
+                ip += 4;
+                break;
+            case INTOP_SUB_R4:
+                LOCAL_VAR(ip[1], float) = LOCAL_VAR(ip[2], float) - LOCAL_VAR(ip[3], float);
+                ip += 4;
+                break;
+            case INTOP_SUB_R8:
+                LOCAL_VAR(ip[1], double) = LOCAL_VAR(ip[2], double) - LOCAL_VAR(ip[3], double);
+                ip += 4;
+                break;
+
+            case INTOP_MUL_I4:
+                LOCAL_VAR(ip[1], int32_t) = LOCAL_VAR(ip[2], int32_t) * LOCAL_VAR(ip[3], int32_t);
+                ip += 4;
+                break;
+            case INTOP_MUL_I8:
+                LOCAL_VAR(ip[1], int64_t) = LOCAL_VAR(ip[2], int64_t) * LOCAL_VAR(ip[3], int64_t);
+                ip += 4;
+                break;
+            case INTOP_MUL_R4:
+                LOCAL_VAR(ip[1], float) = LOCAL_VAR(ip[2], float) * LOCAL_VAR(ip[3], float);
+                ip += 4;
+                break;
+            case INTOP_MUL_R8:
+                LOCAL_VAR(ip[1], double) = LOCAL_VAR(ip[2], double) * LOCAL_VAR(ip[3], double);
+                ip += 4;
+                break;
+
+            case INTOP_SHL_I4:
+                LOCAL_VAR(ip[1], int32_t) = LOCAL_VAR(ip[2], int32_t) << LOCAL_VAR(ip[3], int32_t);
+                ip += 4;
+                break;
+            case INTOP_SHL_I8:
+                LOCAL_VAR(ip[1], int64_t) = LOCAL_VAR(ip[2], int64_t) << LOCAL_VAR(ip[3], int32_t);
+                ip += 4;
+                break;
+            case INTOP_SHR_I4:
+                LOCAL_VAR(ip[1], int32_t) = LOCAL_VAR(ip[2], int32_t) >> LOCAL_VAR(ip[3], int32_t);
+                ip += 4;
+                break;
+            case INTOP_SHR_I8:
+                LOCAL_VAR(ip[1], int64_t) = LOCAL_VAR(ip[2], int64_t) >> LOCAL_VAR(ip[3], int32_t);
+                ip += 4;
+                break;
+            case INTOP_SHR_UN_I4:
+                LOCAL_VAR(ip[1], uint32_t) = LOCAL_VAR(ip[2], uint32_t) >> LOCAL_VAR(ip[3], int32_t);
+                ip += 4;
+                break;
+            case INTOP_SHR_UN_I8:
+                LOCAL_VAR(ip[1], uint64_t) = LOCAL_VAR(ip[2], uint64_t) >> LOCAL_VAR(ip[3], int32_t);
+                ip += 4;
+                break;
+
+            case INTOP_NEG_I4:
+                LOCAL_VAR(ip[1], int32_t) = - LOCAL_VAR(ip[2], int32_t);
+                ip += 3;
+                break;
+            case INTOP_NEG_I8:
+                LOCAL_VAR(ip[1], int64_t) = - LOCAL_VAR(ip[2], int64_t);
+                ip += 3;
+                break;
+            case INTOP_NEG_R4:
+                LOCAL_VAR(ip[1], float) = - LOCAL_VAR(ip[2], float);
+                ip += 3;
+                break;
+            case INTOP_NEG_R8:
+                LOCAL_VAR(ip[1], double) = - LOCAL_VAR(ip[2], double);
+                ip += 3;
+                break;
+            case INTOP_NOT_I4:
+                LOCAL_VAR(ip[1], int32_t) = ~ LOCAL_VAR(ip[2], int32_t);
+                ip += 3;
+                break;
+            case INTOP_NOT_I8:
+                LOCAL_VAR(ip[1], int64_t) = ~ LOCAL_VAR(ip[2], int64_t);
+                ip += 3;
+                break;
+
+            case INTOP_AND_I4:
+                LOCAL_VAR(ip[1], int32_t) = LOCAL_VAR(ip[2], int32_t) & LOCAL_VAR(ip[3], int32_t);
+                ip += 4;
+                break;
+            case INTOP_AND_I8:
+                LOCAL_VAR(ip[1], int64_t) = LOCAL_VAR(ip[2], int64_t) & LOCAL_VAR(ip[3], int64_t);
+                ip += 4;
+                break;
+            case INTOP_OR_I4:
+                LOCAL_VAR(ip[1], int32_t) = LOCAL_VAR(ip[2], int32_t) | LOCAL_VAR(ip[3], int32_t);
+                ip += 4;
+                break;
+            case INTOP_OR_I8:
+                LOCAL_VAR(ip[1], int64_t) = LOCAL_VAR(ip[2], int64_t) | LOCAL_VAR(ip[3], int64_t);
+                ip += 4;
+                break;
+            case INTOP_XOR_I4:
+                LOCAL_VAR(ip[1], int32_t) = LOCAL_VAR(ip[2], int32_t) ^ LOCAL_VAR(ip[3], int32_t);
+                ip += 4;
+                break;
+            case INTOP_XOR_I8:
+                LOCAL_VAR(ip[1], int64_t) = LOCAL_VAR(ip[2], int64_t) ^ LOCAL_VAR(ip[3], int64_t);
+                ip += 4;
+                break;
+
+#define CMP_BINOP_FP(datatype, op, noOrderVal)      \
+    do {                                            \
+        datatype f1 = LOCAL_VAR(ip[2], datatype);   \
+        datatype f2 = LOCAL_VAR(ip[3], datatype);   \
+        if (isunordered(f1, f2))                    \
+            LOCAL_VAR(ip[1], int32_t) = noOrderVal; \
+        else                                        \
+            LOCAL_VAR(ip[1], int32_t) = f1 op f2;   \
+        ip += 4;                                    \
+    } while (0)
+
+            case INTOP_CEQ_I4:
+                LOCAL_VAR(ip[1], int32_t) = LOCAL_VAR(ip[2], int32_t) == LOCAL_VAR(ip[3], int32_t);
+                ip += 4;
+                break;
+            case INTOP_CEQ_I8:
+                LOCAL_VAR(ip[1], int32_t) = LOCAL_VAR(ip[2], int64_t) == LOCAL_VAR(ip[3], int64_t);
+                ip += 4;
+                break;
+            case INTOP_CEQ_R4:
+                CMP_BINOP_FP(float, ==, 0);
+                break;
+            case INTOP_CEQ_R8:
+                CMP_BINOP_FP(double, ==, 0);
+                break;
+
+            case INTOP_CGT_I4:
+                LOCAL_VAR(ip[1], int32_t) = LOCAL_VAR(ip[2], int32_t) > LOCAL_VAR(ip[3], int32_t);
+                ip += 4;
+                break;
+            case INTOP_CGT_I8:
+                LOCAL_VAR(ip[1], int32_t) = LOCAL_VAR(ip[2], int64_t) > LOCAL_VAR(ip[3], int64_t);
+                ip += 4;
+                break;
+            case INTOP_CGT_R4:
+                CMP_BINOP_FP(float, >, 0);
+                break;
+            case INTOP_CGT_R8:
+                CMP_BINOP_FP(double, >, 0);
+                break;
+
+            case INTOP_CGT_UN_I4:
+                LOCAL_VAR(ip[1], int32_t) = LOCAL_VAR(ip[2], uint32_t) > LOCAL_VAR(ip[3], uint32_t);
+                ip += 4;
+                break;
+            case INTOP_CGT_UN_I8:
+                LOCAL_VAR(ip[1], int32_t) = LOCAL_VAR(ip[2], uint32_t) > LOCAL_VAR(ip[3], uint32_t);
+                ip += 4;
+                break;
+            case INTOP_CGT_UN_R4:
+                CMP_BINOP_FP(float, >, 1);
+                break;
+            case INTOP_CGT_UN_R8:
+                CMP_BINOP_FP(double, >, 1);
+                break;
+
+            case INTOP_CLT_I4:
+                LOCAL_VAR(ip[1], int32_t) = LOCAL_VAR(ip[2], int32_t) < LOCAL_VAR(ip[3], int32_t);
+                ip += 4;
+                break;
+            case INTOP_CLT_I8:
+                LOCAL_VAR(ip[1], int32_t) = LOCAL_VAR(ip[2], int64_t) < LOCAL_VAR(ip[3], int64_t);
+                ip += 4;
+                break;
+            case INTOP_CLT_R4:
+                CMP_BINOP_FP(float, <, 0);
+                break;
+            case INTOP_CLT_R8:
+                CMP_BINOP_FP(double, <, 0);
+                break;
+
+            case INTOP_CLT_UN_I4:
+                LOCAL_VAR(ip[1], int32_t) = LOCAL_VAR(ip[2], uint32_t) < LOCAL_VAR(ip[3], uint32_t);
+                ip += 4;
+                break;
+            case INTOP_CLT_UN_I8:
+                LOCAL_VAR(ip[1], int32_t) = LOCAL_VAR(ip[2], uint64_t) < LOCAL_VAR(ip[3], uint64_t);
+                ip += 4;
+                break;
+            case INTOP_CLT_UN_R4:
+                CMP_BINOP_FP(float, <, 1);
+                break;
+            case INTOP_CLT_UN_R8:
+                CMP_BINOP_FP(double, <, 1);
+                break;
             default:
                 assert(0);
                 break;

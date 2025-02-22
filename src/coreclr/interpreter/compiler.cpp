@@ -498,6 +498,12 @@ void InterpCompiler::EnsureStack(int additional)
             return ret;                     \
     } while (0)
 
+#define INVALID_CODE_RET_VOID               \
+    do {                                    \
+        m_hasInvalidCode = true;            \
+        return;                             \
+    } while (0);
+
 bool InterpCompiler::CheckStackHelper(int n)
 {
     int32_t currentSize = (int32_t)(m_pStackPointer - m_pStackBase);
@@ -1108,6 +1114,181 @@ void InterpCompiler::EmitStoreVar(int32_t var)
     m_pLastIns->SetDVar(var);
     if (interpType == InterpTypeVT)
         m_pLastIns->data[0] = m_pVars[var].size;
+}
+
+void InterpCompiler::EmitBinaryArithmeticOp(int32_t opBase)
+{
+    CHECK_STACK_RET_VOID(2);
+    StackType type1 = m_pStackPointer[-2].type;
+    StackType type2 = m_pStackPointer[-1].type;
+
+    StackType typeRes;
+
+    if (opBase == INTOP_ADD_I4 && (type1 == StackTypeMP || type2 == StackTypeMP))
+    {
+        if (type1 == type2)
+            INVALID_CODE_RET_VOID;
+        if (type1 == StackTypeMP)
+        {
+            if (type2 == StackTypeI4)
+            {
+#ifdef TARGET_64BIT
+                EmitConv(m_pStackPointer - 1, NULL, StackTypeI8, INTOP_CONV_I8_I4);
+                type2 = StackTypeI8;
+#endif
+                typeRes = StackTypeMP;
+            }
+            else if (type2 == StackTypeI)
+            {
+                typeRes = StackTypeMP;
+            }
+            else
+            {
+                INVALID_CODE_RET_VOID;
+            }
+        }
+        else
+        {
+            // type2 == StackTypeMP
+            if (type1 == StackTypeI4)
+            {
+#ifdef TARGET_64BIT
+                EmitConv(m_pStackPointer - 2, NULL, StackTypeI8, INTOP_CONV_I8_I4);
+                type1 = StackTypeI8;
+#endif
+                typeRes = StackTypeMP;
+            }
+            else if (type1 == StackTypeI)
+            {
+                typeRes = StackTypeMP;
+            }
+            else
+            {
+                INVALID_CODE_RET_VOID;
+            }
+        }
+    }
+    else if (opBase == INTOP_SUB_I4 && type1 == StackTypeMP)
+    {
+        if (type2 == StackTypeI4)
+        {
+#ifdef TARGET_64BIT
+            EmitConv(m_pStackPointer - 1, NULL, StackTypeI8, INTOP_CONV_I8_I4);
+            type2 = StackTypeI8;
+#endif
+            typeRes = StackTypeMP;
+        }
+        else if (type2 == StackTypeI)
+        {
+            typeRes = StackTypeMP;
+        }
+        else if (type2 == StackTypeMP)
+        {
+            typeRes = StackTypeI;
+        }
+        else
+        {
+            INVALID_CODE_RET_VOID;
+        }
+    }
+    else
+    {
+#if SIZEOF_VOID_P == 8
+        if (type1 == StackTypeI8 && type2 == StackTypeI4)
+        {
+            EmitConv(m_pStackPointer - 1, NULL, StackTypeI8, INTOP_CONV_I8_I4);
+            type2 = StackTypeI8;
+        }
+        else if (type1 == StackTypeI4 && type2 == StackTypeI8)
+        {
+            EmitConv(m_pStackPointer - 2, NULL, StackTypeI8, INTOP_CONV_I8_I4);
+            type1 = StackTypeI8;
+        }
+#endif
+        if (type1 == StackTypeR8 && type2 == StackTypeR4)
+        {
+            EmitConv(m_pStackPointer - 1, NULL, StackTypeR8, INTOP_CONV_R8_R4);
+            type2 = StackTypeR8;
+        }
+        else if (type1 == StackTypeR4 && type2 == StackTypeR8)
+        {
+            EmitConv(m_pStackPointer - 2, NULL, StackTypeR8, INTOP_CONV_R8_R4);
+            type1 = StackTypeR8;
+        }
+        if (type1 != type2)
+            INVALID_CODE_RET_VOID;
+
+        typeRes = type1;
+    }
+
+    // The argument opcode is for the base _I4 instruction. Depending on the type of the result
+    // we compute the specific variant, _I4/_I8/_R4 or R8.
+    int32_t typeOffset = ((typeRes == StackTypeMP) ? StackTypeI : typeRes) - StackTypeI4;
+    int32_t finalOpcode = opBase + typeOffset;
+
+    m_pStackPointer -= 2;
+    AddIns(finalOpcode);
+    m_pLastIns->SetSVars2(m_pStackPointer[0].var, m_pStackPointer[1].var);
+    PushStackType(typeRes, NULL);
+    m_pLastIns->SetDVar(m_pStackPointer[-1].var);
+}
+
+void InterpCompiler::EmitUnaryArithmeticOp(int32_t opBase)
+{
+    CHECK_STACK_RET_VOID(1);
+    StackType stackType = m_pStackPointer[-1].type;
+    int32_t finalOpcode = opBase + (stackType - StackTypeI4);
+
+    if (stackType == StackTypeMP || stackType == StackTypeO)
+        INVALID_CODE_RET_VOID;
+    if (opBase == INTOP_NOT_I4 && (stackType != StackTypeI4 && stackType != StackTypeI8))
+        INVALID_CODE_RET_VOID;
+
+    m_pStackPointer--;
+    AddIns(finalOpcode);
+    m_pLastIns->SetSVar(m_pStackPointer[0].var);
+    PushStackType(stackType, NULL);
+    m_pLastIns->SetDVar(m_pStackPointer[-1].var);
+}
+
+void InterpCompiler::EmitShiftOp(int32_t opBase)
+{
+    CHECK_STACK_RET_VOID(2);
+    StackType stackType = m_pStackPointer[-2].type;
+    StackType shiftAmountType = m_pStackPointer[-1].type;
+    int32_t typeOffset = stackType - StackTypeI4;
+    int32_t finalOpcode = opBase + typeOffset;
+
+    if ((stackType != StackTypeI4 && stackType != StackTypeI8) ||
+            (shiftAmountType != StackTypeI4 && shiftAmountType != StackTypeI))
+        INVALID_CODE_RET_VOID;
+
+    m_pStackPointer -= 2;
+    AddIns(finalOpcode);
+    m_pLastIns->SetSVars2(m_pStackPointer[0].var, m_pStackPointer[1].var);
+    PushStackType(stackType, NULL);
+    m_pLastIns->SetDVar(m_pStackPointer[-1].var);
+}
+
+void InterpCompiler::EmitCompareOp(int32_t opBase)
+{
+    CHECK_STACK_RET_VOID(2);
+    if (m_pStackPointer[-1].type == StackTypeO || m_pStackPointer[-1].type == StackTypeMP)
+    {
+        AddIns(opBase + StackTypeI - StackTypeI4);
+    }
+    else
+    {
+        if (m_pStackPointer[-1].type == StackTypeR4 && m_pStackPointer[-2].type == StackTypeR8)
+            EmitConv(m_pStackPointer - 1, NULL, StackTypeR8, INTOP_CONV_R8_R4);
+        if (m_pStackPointer[-1].type == StackTypeR8 && m_pStackPointer[-2].type == StackTypeR4)
+            EmitConv(m_pStackPointer - 2, NULL, StackTypeR8, INTOP_CONV_R8_R4);
+        AddIns(opBase + m_pStackPointer[-1].type - StackTypeI4);
+    }
+    m_pStackPointer -= 2;
+    m_pLastIns->SetSVars2(m_pStackPointer[0].var, m_pStackPointer[1].var);
+    PushStackType(StackTypeI4, NULL);
+    m_pLastIns->SetDVar(m_pStackPointer[-1].var);
 }
 
 int InterpCompiler::GenerateCode(CORINFO_METHOD_INFO* methodInfo)
@@ -1794,6 +1975,51 @@ retry_emit:
                 m_ip += 2;
                 break;
 
+            case CEE_ADD:
+                EmitBinaryArithmeticOp(INTOP_ADD_I4);
+                m_ip++;
+                break;
+            case CEE_SUB:
+                EmitBinaryArithmeticOp(INTOP_SUB_I4);
+                m_ip++;
+                break;
+            case CEE_MUL:
+                EmitBinaryArithmeticOp(INTOP_MUL_I4);
+                m_ip++;
+                break;
+            case CEE_AND:
+                EmitBinaryArithmeticOp(INTOP_AND_I4);
+                m_ip++;
+                break;
+            case CEE_OR:
+                EmitBinaryArithmeticOp(INTOP_OR_I4);
+                m_ip++;
+                break;
+            case CEE_XOR:
+                EmitBinaryArithmeticOp(INTOP_XOR_I4);
+                m_ip++;
+                break;
+            case CEE_SHL:
+                EmitShiftOp(INTOP_SHL_I4);
+                m_ip++;
+                break;
+            case CEE_SHR:
+                EmitShiftOp(INTOP_SHR_I4);
+                m_ip++;
+                break;
+            case CEE_SHR_UN:
+                EmitShiftOp(INTOP_SHR_UN_I4);
+                m_ip++;
+                break;
+            case CEE_NEG:
+                EmitUnaryArithmeticOp(INTOP_NEG_I4);
+                m_ip++;
+                break;
+            case CEE_NOT:
+                EmitUnaryArithmeticOp(INTOP_NOT_I4);
+                m_ip++;
+                break;
+
             case CEE_PREFIX1:
                 m_ip++;
                 switch (*m_ip + 256)
@@ -1813,6 +2039,26 @@ retry_emit:
                     case CEE_STLOC:
                         EmitStoreVar(numArgs + getU2LittleEndian(m_ip + 1));\
                         m_ip += 3;
+                        break;
+                    case CEE_CEQ:
+                        EmitCompareOp(INTOP_CEQ_I4);
+                        m_ip++;
+                        break;
+                    case CEE_CGT:
+                        EmitCompareOp(INTOP_CGT_I4);
+                        m_ip++;
+                        break;
+                    case CEE_CGT_UN:
+                        EmitCompareOp(INTOP_CGT_UN_I4);
+                        m_ip++;
+                        break;
+                    case CEE_CLT:
+                        EmitCompareOp(INTOP_CLT_I4);
+                        m_ip++;
+                        break;
+                    case CEE_CLT_UN:
+                        EmitCompareOp(INTOP_CLT_UN_I4);
+                        m_ip++;
                         break;
                     default:
                         assert(0);
