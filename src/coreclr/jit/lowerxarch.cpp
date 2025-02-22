@@ -9048,19 +9048,6 @@ bool Lowering::IsContainableHWIntrinsicOp(GenTreeHWIntrinsic* parentNode, GenTre
                     {
                         expectedSize     = genTypeSize(genActualType(parentBaseType));
                         supportsSIMDLoad = false;
-
-                        if (HWIntrinsicInfo::IsVectorCreateScalarUnsafe(parentIntrinsicId) &&
-                            comp->opts.OptimizationEnabled())
-                        {
-                            // A special case is CreateScalarUnsafe with memory source.
-                            // We can emit `pinsrb/w xmm m8/16` for these, so allow smaller memory op.
-                            if (varTypeIsShort(parentBaseType) ||
-                                (varTypeIsByte(parentBaseType) &&
-                                 comp->compOpportunisticallyDependsOn(InstructionSet_SSE41)))
-                            {
-                                expectedSize = genTypeSize(parentBaseType);
-                            }
-                        }
                     }
                     break;
                 }

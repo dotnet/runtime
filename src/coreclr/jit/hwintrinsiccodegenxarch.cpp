@@ -1592,20 +1592,8 @@ void CodeGen::genBaseIntrinsic(GenTreeHWIntrinsic* node, insOpts instOptions)
             {
                 emitAttr baseAttr = emitActualTypeSize(baseType);
 
-                if (varTypeIsSmall(baseType))
-                {
-                    assert(HWIntrinsicInfo::IsVectorCreateScalarUnsafe(intrinsicId));
-
-                    if (!op1->isUsedFromReg() && compiler->opts.OptimizationEnabled())
-                    {
-                        ins = varTypeIsByte(baseType) ? INS_pinsrb : INS_pinsrw;
-                        inst_RV_RV_TT_IV(ins, EA_16BYTE, targetReg, targetReg, op1, 0x00,
-                                         !compiler->canUseVexEncoding(), instOptions);
-                        break;
-                    }
-                }
 #if defined(TARGET_X86)
-                else if (varTypeIsLong(baseType))
+                if (varTypeIsLong(baseType))
                 {
                     assert(op1->isContained());
 
