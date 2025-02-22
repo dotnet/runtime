@@ -43,9 +43,9 @@ inline void* PEImage::GetExternalData(INT64* size)
 {
     LIMITED_METHOD_CONTRACT;
 
-    if (size != nullptr)
-        *size = m_bundleFileLocation.Size;
+    _ASSERTE(size != nullptr);
 
+    *size = m_bundleFileLocation.Size;
     return m_bundleFileLocation.DataStart;
 }
 

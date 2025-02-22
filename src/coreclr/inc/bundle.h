@@ -58,7 +58,7 @@ private:
     ExternalAssemblyProbeFn *m_externalAssemblyProbe;
 
     SString m_basePath; // The prefix to denote a path within the bundle
-    COUNT_T m_basePathLength = 0;
+    COUNT_T m_basePathLength;
 };
 
 #endif // _BUNDLE_H_

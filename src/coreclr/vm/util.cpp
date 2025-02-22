@@ -17,7 +17,7 @@
 
 #if defined(TARGET_ANDROID)
 #include <android/log.h>
-#endif
+#endif // defined(TARGET_ANDROID)
 
 thread_local size_t t_ThreadType;
 
@@ -180,15 +180,14 @@ void PrintToStdErrA(const char *pszString) {
     }
     CONTRACTL_END
 
-    HANDLE  Handle = GetStdHandle(STD_ERROR_HANDLE);
-
 #if defined(TARGET_ANDROID)
     // TODO: make priority configurable?
     __android_log_write(ANDROID_LOG_INFO, "CoreCLR", pszString);
 #else
+    HANDLE Handle = GetStdHandle(STD_ERROR_HANDLE);
     size_t len = strlen(pszString);
     NPrintToHandleA(Handle, pszString, len);
-#endif
+#endif // defined(TARGET_ANDROID)
 }
 
 void PrintToStdErrW(const WCHAR *pwzString)

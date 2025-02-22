@@ -32,7 +32,6 @@
 #define LOG_ENABLE_APPEND_FILE          0x0010
 #define LOG_ENABLE_DEBUGGER_LOGGING     0x0020
 #define LOG_ENABLE                      0x0040
-#define LOG_ENABLE_ANDROID_LOGGING      0x0080
 
 static          DWORD        LogFlags                    = 0;
 static          CQuickWSTR   szLogFileName;
@@ -59,7 +58,6 @@ VOID InitLogging()
     LogFlags |= (CLRConfig::GetConfigValue(CLRConfig::INTERNAL_LogToDebugger) != 0) ? LOG_ENABLE_DEBUGGER_LOGGING : 0;
     LogFlags |= (CLRConfig::GetConfigValue(CLRConfig::INTERNAL_LogToFile) != 0) ? LOG_ENABLE_FILE_LOGGING : 0;
     LogFlags |= (CLRConfig::GetConfigValue(CLRConfig::INTERNAL_LogToConsole) != 0) ? LOG_ENABLE_CONSOLE_LOGGING : 0;
-    LogFlags |= (CLRConfig::GetConfigValue(CLRConfig::INTERNAL_LogToAndroid) != 0) ? LOG_ENABLE_ANDROID_LOGGING : 0;
 
     LogFacilityMask2 = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_LogFacility2, LogFacilityMask2) | LF_ALWAYS;
 
@@ -377,26 +375,22 @@ VOID LogSpewAlwaysValist(const char *fmt, va_list args)
 
     if (LogFlags & LOG_ENABLE_CONSOLE_LOGGING)
     {
+#if !defined(TARGET_ANDROID)
         WriteFile(GetStdHandle(STD_OUTPUT_HANDLE), pBuffer, buflen, &written, 0);
         //<TODO>@TODO ...Unnecessary to flush console?</TODO>
         if (LogFlags & LOG_ENABLE_FLUSH_FILE)
             FlushFileBuffers( GetStdHandle(STD_OUTPUT_HANDLE) );
+#else
+        // TODO: priority should be configurable here (best, passed via a parameter)
+        //       likewise for the tag
+        __android_log_write(ANDROID_LOG_INFO, "CoreCLR-log", pBuffer);
+#endif // defined(TARGET_ANDROID)
     }
 
     if (LogFlags & LOG_ENABLE_DEBUGGER_LOGGING)
     {
         OutputDebugStringA(pBuffer);
     }
-
-#if defined(TARGET_ANDROID)
-    __android_log_write (ANDROID_LOG_INFO, "CoreCLR-log", "This should be logged");
-    if (LogFlags & LOG_ENABLE_ANDROID_LOGGING)
-    {
-        // TODO: priority should be configurable here (best, passed via a parameter)
-        //       likewise for the tag
-        __android_log_write (ANDROID_LOG_INFO, "CoreCLR-log", pBuffer);
-    }
-#endif // TARGET_ANDROID
 
     LeaveLogLock();
 }

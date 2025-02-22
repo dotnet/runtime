@@ -73,7 +73,7 @@ SET_DEFAULT_DEBUG_CHANNEL(PROCESS); // some headers have code with asserts, so d
 
 #if defined(TARGET_ANDROID)
 #include <android/log.h>
-#endif
+#endif // defined(TARGET_ANDROID)
 
 #ifdef __APPLE__
 #include <pwd.h>
@@ -2549,10 +2549,11 @@ PROCAbort(int signal, siginfo_t* siginfo)
     // the others to prevent multiple core dumps from being generated.
     SEHCleanupSignals(false /* isChildProcess */);
 
-    // Abort the process after waiting for the core dump to complete
 #if defined(TARGET_ANDROID)
     __android_log_print (ANDROID_LOG_INFO, "CoreCLR", "Aborting in %s:%u", __FILE_NAME__, __LINE__);
-#endif
+#endif // defined(TARGET_ANDROID)
+
+    // Abort the process after waiting for the core dump to complete
     abort();
 }
 

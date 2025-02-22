@@ -31,12 +31,13 @@ const SString &BundleFileLocation::Path() const
 }
 
 Bundle::Bundle(LPCSTR bundlePath, BundleProbeFn *probe, ExternalAssemblyProbeFn* externalAssemblyProbe)
+    : m_probe(probe)
+    , m_externalAssemblyProbe(externalAssemblyProbe)
+    , m_basePathLength(0)
 {
     STANDARD_VM_CONTRACT;
 
-    _ASSERTE(probe != nullptr || externalAssemblyProbe != nullptr);
-    m_probe = probe;
-    m_externalAssemblyProbe = externalAssemblyProbe;
+    _ASSERTE(m_probe != nullptr || m_externalAssemblyProbe != nullptr);
 
     // On Android this is not a real path, but rather the application's package name
     m_path.SetUTF8(bundlePath);
