@@ -58,6 +58,7 @@ namespace Microsoft.Extensions.Logging.EventSource
     /// <para>
     /// It's expected that only one of these keywords is turned on at a time, but you can turn them all on (and get
     /// the same data logged three different ways).
+    /// </para>
     /// </remarks>
     /// <example>
     /// This example shows how to use an EventListener to get ILogging information.
@@ -67,7 +68,7 @@ namespace Microsoft.Extensions.Logging.EventSource
     ///         if (eventSource.Name == "Microsoft-Extensions-Logging") {
     ///             // Initialize a dictionary of arguments to pass to the EventSource.
     ///             // Turn on loggers matching App* to Information; everything else (*) is the default level (which is EventLevel.Error).
-    ///             var args = new Dictionary<string, string>() { { "FilterSpecs", "App*:Information;*" } };
+    ///             var args = new Dictionary&lt;string, string&gt;() { { "FilterSpecs", "App*:Information;*" } };
     ///             // Set the default level (verbosity) to Error, and only ask for the formatted messages in this case.
     ///             EnableEvents(eventSource, EventLevel.Error, LoggingEventSource.Keywords.FormattedMessage, args);
     ///         }
