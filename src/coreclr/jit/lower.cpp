@@ -8028,12 +8028,19 @@ void Lowering::FindInducedParameterRegisterLocals()
             continue;
         }
 
-        // SIMD12 extractions are not supported as they would require the upper
-        // field to be zeroed on extraction from a SIMD16 argument.
-        if (fld->TypeIs(TYP_STRUCT, TYP_SIMD12))
+        if (fld->TypeIs(TYP_STRUCT))
         {
             continue;
         }
+
+#ifdef FEATURE_SIMD
+        // SIMD12 extractions are not supported as they would require the upper
+        // field to be zeroed on extraction from a SIMD16 argument.
+        if (fld->TypeIs(TYP_SIMD12))
+        {
+            continue;
+        }
+#endif
 
         if (storedToLocals.Lookup(fld->GetLclNum()))
         {
