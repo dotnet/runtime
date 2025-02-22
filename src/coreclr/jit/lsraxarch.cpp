@@ -2265,7 +2265,7 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                         {
                             buildInternalFloatRegisterDefForNode(intrinsicTree);
                             setInternalRegsDelayFree = true;
-                            tgtPrefUse = nullptr;
+                            tgtPrefUse               = nullptr;
                         }
                     }
 
