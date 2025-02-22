@@ -972,7 +972,6 @@ void EEStartupHelper()
         // run before ours (since COM cleanup may indirectly call managed code)
         FinalizerThread::WaitForFinalizerThreadStart();
 #endif
-        InitFlsSlot();
 #endif
         g_fEEStarted = TRUE;
         g_EEStartupStatus = S_OK;
@@ -1681,6 +1680,24 @@ BOOL STDMETHODCALLTYPE EEDllMain( // TRUE on success, FALSE on error.
                 }
                 break;
             }
+
+            case DLL_THREAD_DETACH:
+            {
+                // Make sure that we do not have an attached Thread object.
+                // We can end up here with live Thread if some kind of thread termination callback reinitializes
+                // the Thread by entering managed code or by calling APIs that set up Thread, after we have already
+                // seen the OS premortem callback for the thread.
+                // The callback runs only once. There will be no thurther clean up at this point and we will likely crash in GC
+                // once OS clears the native TLS.
+                //
+                // NB: It is ok for the Thread to be reinitialized before the premortem OS callback runs.
+                //     That historically may happen in rare cases when a thread main returns and cleans, but then FlsDataCleanup for COM
+                //     ends up calling release APIs in the runtime that require Thread, or sends messages to the thread's
+                //     managed message loop. That is ok, as long as reinitialization happens prior to the final thread termination
+                //     callback from OS. We guarantee that by ensuring our FlsSlot is initializad after COM has already been
+                //     initialized.
+                _ASSERTE_ALL_BUILDS(!GetThreadNULLOk() && "Thread reinitialized after final clean up?");
+            }
         }
 
     }
@@ -1719,7 +1736,7 @@ static void RuntimeThreadShutdown(void* thread)
             GCX_COOP_NO_DTOR_END();
         }
 
-        pThread->DetachThread(TRUE);
+        pThread->DetachThread(FALSE);
     }
     else
     {

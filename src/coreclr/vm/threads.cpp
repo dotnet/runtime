@@ -357,6 +357,7 @@ void SetThread(Thread* t)
     gCurrentThreadInfo.m_pThread = t;
     if (t != NULL)
     {
+        _ASSERTE(origThread == NULL);
         InitializeCurrentThreadsStaticData(t);
         EnsureTlsDestructionMonitor();
         t->InitRuntimeThreadLocals();
