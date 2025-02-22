@@ -251,7 +251,7 @@ void RangeCheck::OptimizeRangeCheck(BasicBlock* block, Statement* stmt, GenTree*
         {
             JITDUMP("Looking for array size assertions for: " FMT_VN "\n", arrLenVn);
             Range arrLength = Range(Limit(Limit::keDependent));
-            MergeEdgeAssertions(arrLenVn, block->bbAssertionIn, &arrLength);
+            MergeEdgeAssertions(m_pCompiler, arrLenVn, arrLenVn, block->bbAssertionIn, &arrLength);
             if (arrLength.lLimit.IsConstant())
             {
                 arrSize = arrLength.lLimit.GetConstant();
@@ -640,20 +640,28 @@ void RangeCheck::MergeEdgeAssertions(GenTreeLclVarCommon* lcl, ASSERT_VALARG_TP 
 
     LclSsaVarDsc* ssaData     = m_pCompiler->lvaGetDesc(lcl)->GetPerSsaData(lcl->GetSsaNum());
     ValueNum      normalLclVN = m_pCompiler->vnStore->VNConservativeNormalValue(ssaData->m_vnPair);
-    MergeEdgeAssertions(normalLclVN, assertions, pRange);
+    ValueNum      arrLenVN = m_pCompiler->vnStore->VNConservativeNormalValue(m_pCurBndsChk->GetArrayLength()->gtVNPair);
+    MergeEdgeAssertions(m_pCompiler, normalLclVN, arrLenVN, assertions, pRange);
 }
 
 //------------------------------------------------------------------------
 // MergeEdgeAssertions: Merge assertions on the edge flowing into the block about a variable
 //
 // Arguments:
-//    normalLclVN - the value number to look for assertions for
-//    assertions - the assertions to use
-//    pRange - the range to tighten with assertions
+//    comp             - the compiler instance
+//    normalLclVN      - the value number to look for assertions for
+//    preferredBoundVN - when this VN is set, it will be given preference over constant limits
+//    assertions       - the assertions to use
+//    pRange           - the range to tighten with assertions
 //
-void RangeCheck::MergeEdgeAssertions(ValueNum normalLclVN, ASSERT_VALARG_TP assertions, Range* pRange)
+void RangeCheck::MergeEdgeAssertions(Compiler*        comp,
+                                     ValueNum         normalLclVN,
+                                     ValueNum         preferredBoundVN,
+                                     ASSERT_VALARG_TP assertions,
+                                     Range*           pRange,
+                                     bool             log)
 {
-    if (BitVecOps::IsEmpty(m_pCompiler->apTraits, assertions))
+    if (BitVecOps::IsEmpty(comp->apTraits, assertions))
     {
         return;
     }
@@ -663,14 +671,14 @@ void RangeCheck::MergeEdgeAssertions(ValueNum normalLclVN, ASSERT_VALARG_TP asse
         return;
     }
 
-    // Walk through the "assertions" to check if the apply.
-    BitVecOps::Iter iter(m_pCompiler->apTraits, assertions);
+    // Walk through the "assertions" to check if they apply.
+    BitVecOps::Iter iter(comp->apTraits, assertions);
     unsigned        index = 0;
     while (iter.NextElem(&index))
     {
         AssertionIndex assertionIndex = GetAssertionIndex(index);
 
-        Compiler::AssertionDsc* curAssertion = m_pCompiler->optGetAssertion(assertionIndex);
+        Compiler::AssertionDsc* curAssertion = comp->optGetAssertion(assertionIndex);
 
         Limit      limit(Limit::keUndef);
         genTreeOps cmpOper             = GT_NONE;
@@ -683,7 +691,7 @@ void RangeCheck::MergeEdgeAssertions(ValueNum normalLclVN, ASSERT_VALARG_TP asse
             ValueNumStore::CompareCheckedBoundArithInfo info;
 
             // Get i, len, cns and < as "info."
-            m_pCompiler->vnStore->GetCompareCheckedBoundArithInfo(curAssertion->op1.vn, &info);
+            comp->vnStore->GetCompareCheckedBoundArithInfo(curAssertion->op1.vn, &info);
 
             // If we don't have the same variable we are comparing against, bail.
             if (normalLclVN != info.cmpOp)
@@ -697,12 +705,12 @@ void RangeCheck::MergeEdgeAssertions(ValueNum normalLclVN, ASSERT_VALARG_TP asse
             }
 
             // If the operand that operates on the bound is not constant, then done.
-            if (!m_pCompiler->vnStore->IsVNInt32Constant(info.arrOp))
+            if (!comp->vnStore->IsVNInt32Constant(info.arrOp))
             {
                 continue;
             }
 
-            int cons = m_pCompiler->vnStore->ConstantValue<int>(info.arrOp);
+            int cons = comp->vnStore->ConstantValue<int>(info.arrOp);
             limit    = Limit(Limit::keBinOpArray, info.vnBound, info.arrOper == GT_SUB ? -cons : cons);
             cmpOper  = (genTreeOps)info.cmpOper;
         }
@@ -712,7 +720,7 @@ void RangeCheck::MergeEdgeAssertions(ValueNum normalLclVN, ASSERT_VALARG_TP asse
             ValueNumStore::CompareCheckedBoundArithInfo info;
 
             // Get the info as "i", "<" and "len"
-            m_pCompiler->vnStore->GetCompareCheckedBound(curAssertion->op1.vn, &info);
+            comp->vnStore->GetCompareCheckedBound(curAssertion->op1.vn, &info);
 
             // If we don't have the same variable we are comparing against, bail.
             if (normalLclVN == info.cmpOp)
@@ -736,7 +744,7 @@ void RangeCheck::MergeEdgeAssertions(ValueNum normalLclVN, ASSERT_VALARG_TP asse
             ValueNumStore::ConstantBoundInfo info;
 
             // Get the info as "i", "<" and "100"
-            m_pCompiler->vnStore->GetConstantBoundInfo(curAssertion->op1.vn, &info);
+            comp->vnStore->GetConstantBoundInfo(curAssertion->op1.vn, &info);
 
             // If we don't have the same variable we are comparing against, bail.
             if (normalLclVN != info.cmpOpVN)
@@ -756,10 +764,10 @@ void RangeCheck::MergeEdgeAssertions(ValueNum normalLclVN, ASSERT_VALARG_TP asse
                 continue;
             }
 
-            int cnstLimit = m_pCompiler->vnStore->CoercedConstantValue<int>(curAssertion->op2.vn);
+            int cnstLimit = comp->vnStore->CoercedConstantValue<int>(curAssertion->op2.vn);
 
             if ((cnstLimit == 0) && (curAssertion->assertionKind == Compiler::OAK_NOT_EQUAL) &&
-                m_pCompiler->vnStore->IsVNCheckedBound(curAssertion->op1.vn))
+                comp->vnStore->IsVNCheckedBound(curAssertion->op1.vn))
             {
                 // we have arr.Len != 0, so the length must be atleast one
                 limit   = Limit(Limit::keConstant, 1);
@@ -804,31 +812,31 @@ void RangeCheck::MergeEdgeAssertions(ValueNum normalLclVN, ASSERT_VALARG_TP asse
 
         // Make sure the assertion is of the form != 0 or == 0 if it isn't a constant assertion.
         if (!isConstantAssertion && (curAssertion->assertionKind != Compiler::OAK_NO_THROW) &&
-            (curAssertion->op2.vn != m_pCompiler->vnStore->VNZeroForType(TYP_INT)))
+            (curAssertion->op2.vn != comp->vnStore->VNZeroForType(TYP_INT)))
         {
             continue;
         }
 #ifdef DEBUG
-        if (m_pCompiler->verbose)
+        if (comp->verbose)
         {
-            m_pCompiler->optPrintAssertion(curAssertion, assertionIndex);
+            comp->optPrintAssertion(curAssertion, assertionIndex);
         }
 #endif
 
         // Limits are sometimes made with the form vn + constant, where vn is a known constant
         // see if we can simplify this to just a constant
-        if (limit.IsBinOpArray() && m_pCompiler->vnStore->IsVNInt32Constant(limit.vn))
+        if (limit.IsBinOpArray() && comp->vnStore->IsVNInt32Constant(limit.vn))
         {
-            Limit tempLimit = Limit(Limit::keConstant, m_pCompiler->vnStore->ConstantValue<int>(limit.vn));
+            Limit tempLimit = Limit(Limit::keConstant, comp->vnStore->ConstantValue<int>(limit.vn));
             if (tempLimit.AddConstant(limit.cns))
             {
                 limit = tempLimit;
             }
         }
 
-        ValueNum arrLenVN = m_pCompiler->vnStore->VNConservativeNormalValue(m_pCurBndsChk->GetArrayLength()->gtVNPair);
+        ValueNum arrLenVN = preferredBoundVN;
 
-        if (m_pCompiler->vnStore->IsVNConstant(arrLenVN))
+        if (comp->vnStore->IsVNConstant(arrLenVN))
         {
             // Set arrLenVN to NoVN; this will make it match the "vn" recorded on
             // constant limits (where we explicitly track the constant and don't
@@ -917,7 +925,10 @@ void RangeCheck::MergeEdgeAssertions(ValueNum normalLclVN, ASSERT_VALARG_TP asse
 
             if (limit.vn != arrLenVN)
             {
-                JITDUMP("Array length VN did not match arrLen=" FMT_VN ", limit=" FMT_VN "\n", arrLenVN, limit.vn);
+                if (log)
+                {
+                    JITDUMP("Array length VN did not match arrLen=" FMT_VN ", limit=" FMT_VN "\n", arrLenVN, limit.vn);
+                }
                 continue;
             }
 
@@ -927,7 +938,10 @@ void RangeCheck::MergeEdgeAssertions(ValueNum normalLclVN, ASSERT_VALARG_TP asse
             // Incoming limit doesn't tighten the existing upper limit.
             if (limCns >= curCns)
             {
-                JITDUMP("Bound limit %d doesn't tighten current bound %d\n", limCns, curCns);
+                if (log)
+                {
+                    JITDUMP("Bound limit %d doesn't tighten current bound %d\n", limCns, curCns);
+                }
                 continue;
             }
         }
@@ -954,8 +968,12 @@ void RangeCheck::MergeEdgeAssertions(ValueNum normalLclVN, ASSERT_VALARG_TP asse
 
             case GT_GT:
             case GT_GE:
-                pRange->lLimit = limit;
-                // it doesn't matter if it's isUnsigned or not here - it's not negative anyway.
+                // GT/GE being unsigned creates a non-contiguous range which we can't represent
+                // using single Range object.
+                if (!isUnsigned)
+                {
+                    pRange->lLimit = limit;
+                }
                 break;
 
             case GT_EQ:
@@ -967,9 +985,13 @@ void RangeCheck::MergeEdgeAssertions(ValueNum normalLclVN, ASSERT_VALARG_TP asse
                 // All other 'cmpOper' kinds leave lLimit/uLimit unchanged
                 break;
         }
-        JITDUMP("The range after edge merging:");
-        JITDUMP(pRange->ToString(m_pCompiler));
-        JITDUMP("\n");
+
+        if (log)
+        {
+            JITDUMP("The range after edge merging:");
+            JITDUMP(pRange->ToString(comp));
+            JITDUMP("\n");
+        }
     }
 }
 
