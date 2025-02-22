@@ -37,13 +37,6 @@ namespace Microsoft.Extensions.Caching.Memory
         public Microsoft.Extensions.Caching.Memory.MemoryCacheStatistics? GetCurrentStatistics() { throw null; }
         public void Remove(object key) { }
         public bool TryGetValue(object key, out object? result) { throw null; }
-
-#if NET9_0_OR_GREATER
-        [System.Runtime.CompilerServices.OverloadResolutionPriority(1)]
-        public bool TryGetValue(System.ReadOnlySpan<char> key, out object? value) { throw null; }
-        [System.Runtime.CompilerServices.OverloadResolutionPriority(1)]
-        public bool TryGetValue<TItem>(System.ReadOnlySpan<char> key, out TItem? value) { throw null; }
-#endif
     }
     public partial class MemoryCacheOptions : Microsoft.Extensions.Options.IOptions<Microsoft.Extensions.Caching.Memory.MemoryCacheOptions>
     {

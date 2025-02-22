@@ -560,6 +560,10 @@ else()
     )
 endif(CLR_CMAKE_HOST_UNIX)
 
+if (CLR_CMAKE_HOST_ANDROID)
+    list(APPEND JIT_LINK_LIBRARIES log)
+endif()
+
 # Shared function for generating JIT
 function(add_jit jitName)
 
