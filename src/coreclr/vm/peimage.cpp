@@ -850,10 +850,7 @@ HANDLE PEImage::GetFileHandle()
     if (m_hFile == INVALID_HANDLE_VALUE)
     {
 #if !defined(DACCESS_COMPILE)
-        EEFileLoadException::Throw(
-            GetPathToLoad(),
-            hr
-        );
+        EEFileLoadException::Throw(GetPathToLoad(), hr);
 #else // defined(DACCESS_COMPILE)
         ThrowHR(hr);
 #endif // !defined(DACCESS_COMPILE)
