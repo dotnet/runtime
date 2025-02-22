@@ -2533,8 +2533,7 @@ namespace System.Numerics
 
             bits.CopyTo(zd);
 
-            uint carry = 0;
-            BigIntegerCalculator.LeftShiftSelf(zd, smallShift, ref carry);
+            BigIntegerCalculator.LeftShiftSelf(zd, smallShift, out uint carry);
 
             Debug.Assert(carry == over);
             Debug.Assert(z[^1] != 0);
@@ -2612,8 +2611,7 @@ namespace System.Numerics
             zd[^1] = 0;
             bits.Slice(digitShift).CopyTo(zd);
 
-            uint carry = 0;
-            BigIntegerCalculator.RightShiftSelf(zd, smallShift, ref carry);
+            BigIntegerCalculator.RightShiftSelf(zd, smallShift, out uint carry);
 
             bool neg = value._sign < 0;
             if (neg && (carry != 0 || bits.Slice(0, digitShift).ContainsAnyExcept(0u)))
@@ -5088,8 +5086,7 @@ namespace System.Numerics
                 }
             }
 
-            uint carry = 0;
-            BigIntegerCalculator.RightShiftSelf(zd, smallShift, ref carry);
+            BigIntegerCalculator.RightShiftSelf(zd, smallShift, out _);
 
             BigInteger result = new BigInteger(zd, false);
 

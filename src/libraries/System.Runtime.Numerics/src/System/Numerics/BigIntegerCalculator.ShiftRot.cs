@@ -39,8 +39,7 @@ namespace System.Numerics
         {
             Debug.Assert(bits.Length > 0);
 
-            uint carry = 0;
-            LeftShiftSelf(bits, smallShift, ref carry);
+            LeftShiftSelf(bits, smallShift, out uint carry);
             bits[0] |= carry;
 
             if (digitShift == 0)
@@ -53,8 +52,7 @@ namespace System.Numerics
         {
             Debug.Assert(bits.Length > 0);
 
-            uint carry = 0;
-            RightShiftSelf(bits, smallShift, ref carry);
+            RightShiftSelf(bits, smallShift, out uint carry);
             bits[^1] |= carry;
 
             if (digitShift == 0)
@@ -98,9 +96,11 @@ namespace System.Numerics
                 ArrayPool<uint>.Shared.Return(tmpFromPool);
         }
 
-        public static void LeftShiftSelf(Span<uint> bits, int shift, ref uint carry)
+        public static void LeftShiftSelf(Span<uint> bits, int shift, out uint carry)
         {
             Debug.Assert((uint)shift < 32);
+
+            carry = 0;
             if (shift == 0)
                 return;
 
@@ -112,9 +112,11 @@ namespace System.Numerics
                 bits[i] = value;
             }
         }
-        public static void RightShiftSelf(Span<uint> bits, int shift, ref uint carry)
+        public static void RightShiftSelf(Span<uint> bits, int shift, out uint carry)
         {
             Debug.Assert((uint)shift < 32);
+
+            carry = 0;
             if (shift == 0)
                 return;
 
