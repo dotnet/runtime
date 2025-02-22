@@ -380,16 +380,23 @@ DWORD WINAPI FinalizerThread::FinalizerThreadStart(void *args)
 
     LOG((LF_GC, LL_INFO10, "Finalizer thread starting...\n"));
 
+#ifdef TARGET_WINDOWS
+#ifdef FEATURE_COMINTEROP
+    // Making finalizer thread MTA early ensures that COM is initialized before we initialize our thread
+    // termination callback.
+    ::CoInitializeEx(NULL, COINIT_MULTITHREADED);
+#endif
+
+    InitFlsSlot();
+
+    // handshake with EE initialization, as now we can attach Thread objects to native threads.
+    hEventFinalizerDone->Set();
+#endif
+
     s_FinalizerThreadOK = GetFinalizerThread()->HasStarted();
 
     _ASSERTE(s_FinalizerThreadOK);
     _ASSERTE(GetThread() == GetFinalizerThread());
-
-#if defined(TARGET_WINDOWS) && defined (FEATURE_COMINTEROP)
-    // handshake with EE initializating FLS slot, which should be happening after
-    // HasStarted called CoInitializeEx
-    hEventFinalizerDone->Set();
-#endif
 
     // finalizer should always park in default domain
 
