@@ -4480,9 +4480,9 @@ GenTree* Lowering::LowerHWIntrinsicCreate(GenTreeHWIntrinsic* node)
                 break;
             }
 
-            case TYP_DOUBLE:
             case TYP_LONG:
             case TYP_ULONG:
+            case TYP_DOUBLE:
             {
                 if ((IsContainableMemoryOp(op1) || simdBaseType == TYP_DOUBLE) &&
                     comp->compOpportunisticallyDependsOn(InstructionSet_SSE3))
