@@ -834,9 +834,17 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                         AssertEncryptionAlgorithm(epki.EncryptionAlgorithm);
                         keys++;
                     }
-                    else if (safeBag is Pkcs12CertBag && wasEncryptedSafe)
+                    else if (safeBag is Pkcs12CertBag)
                     {
-                        certs++;
+                        if (wasEncryptedSafe)
+                        {
+                            certs++;
+                        }
+                        else if (PlatformDetection.IsWindows10OrLater && !PlatformDetection.IsWindows10Version1703OrGreater)
+                        {
+                            // Windows 10 before RS2 / 1703 did not encrypt certs, but count them anyway.
+                            certs++;
+                        }
                     }
                 }
             }

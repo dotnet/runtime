@@ -6654,6 +6654,7 @@ public:
     }
 
     void fgRemoveProfileData(const char* reason);
+    PhaseStatus fgRepairProfile();
     void fgRepairProfileCondToUncond(BasicBlock* block, FlowEdge* retainedEdge, FlowEdge* removedEdge, int* metric = nullptr);
 
 //-------- Insert a statement at the start or end of a basic block --------
