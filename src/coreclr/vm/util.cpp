@@ -181,8 +181,7 @@ void PrintToStdErrA(const char *pszString) {
     CONTRACTL_END
 
 #if defined(TARGET_ANDROID)
-    // TODO: make priority configurable?
-    __android_log_write(ANDROID_LOG_ERROR, MAIN_CLR_MODULE_NAME_A, pszString);
+    __android_log_write(ANDROID_LOG_FATAL, MAIN_CLR_MODULE_NAME_A, pszString);
 #else
     HANDLE Handle = GetStdHandle(STD_ERROR_HANDLE);
     size_t len = strlen(pszString);
