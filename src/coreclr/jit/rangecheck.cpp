@@ -19,9 +19,23 @@ PhaseStatus Compiler::rangeCheckPhase()
         return PhaseStatus::MODIFIED_NOTHING;
     }
 
-    RangeCheck rc(this);
-    const bool madeChanges = rc.OptimizeRangeChecks();
+    const bool madeChanges = GetRangeCheck()->OptimizeRangeChecks();
     return madeChanges ? PhaseStatus::MODIFIED_EVERYTHING : PhaseStatus::MODIFIED_NOTHING;
+}
+
+//------------------------------------------------------------------------
+// GetRangeCheck: get the RangeCheck instance
+//
+// Returns:
+//    The range check object
+//
+RangeCheck* Compiler::GetRangeCheck()
+{
+    if (optRangeCheck == nullptr)
+    {
+        optRangeCheck = new (this, CMK_Generic) RangeCheck(this);
+    }
+    return optRangeCheck;
 }
 
 // Max stack depth (path length) in walking the UD chain.
@@ -32,7 +46,8 @@ static const int MAX_VISIT_BUDGET = 8192;
 
 // RangeCheck constructor.
 RangeCheck::RangeCheck(Compiler* pCompiler)
-    : m_pOverflowMap(nullptr)
+    : m_preferredBound(ValueNumStore::NoVN)
+    , m_pOverflowMap(nullptr)
     , m_pRangeMap(nullptr)
     , m_pSearchPath(nullptr)
 #ifdef DEBUG
@@ -69,6 +84,15 @@ RangeCheck::OverflowMap* RangeCheck::GetOverflowMap()
         m_pOverflowMap = new (m_alloc) OverflowMap(m_alloc);
     }
     return m_pOverflowMap;
+}
+
+RangeCheck::SearchPath* RangeCheck::GetSearchPath()
+{
+    if (m_pSearchPath == nullptr)
+    {
+        m_pSearchPath = new (m_alloc) SearchPath(m_alloc);
+    }
+    return m_pSearchPath;
 }
 
 // Get the length of the array vn, if it is new.
@@ -223,7 +247,7 @@ void RangeCheck::OptimizeRangeCheck(BasicBlock* block, Statement* stmt, GenTree*
 
     GenTree*          comma   = treeParent->OperIs(GT_COMMA) ? treeParent : nullptr;
     GenTreeBoundsChk* bndsChk = tree->AsBoundsChk();
-    m_pCurBndsChk             = bndsChk;
+    m_preferredBound          = m_pCompiler->vnStore->VNConservativeNormalValue(bndsChk->GetArrayLength()->gtVNPair);
     GenTree* treeIndex        = bndsChk->GetIndex();
 
     // Take care of constant index first, like a[2], for example.
@@ -282,7 +306,7 @@ void RangeCheck::OptimizeRangeCheck(BasicBlock* block, Statement* stmt, GenTree*
 
     GetRangeMap()->RemoveAll();
     GetOverflowMap()->RemoveAll();
-    m_pSearchPath = new (m_alloc) SearchPath(m_alloc);
+    GetSearchPath()->RemoveAll();
 
     // Special case: arr[arr.Length - CNS] if we know that arr.Length >= CNS
     // We assume that SUB(x, CNS) is canonized into ADD(x, -CNS)
@@ -365,7 +389,7 @@ void RangeCheck::OptimizeRangeCheck(BasicBlock* block, Statement* stmt, GenTree*
     }
 
     JITDUMP("Range value %s\n", range.ToString(m_pCompiler));
-    m_pSearchPath->RemoveAll();
+    GetSearchPath()->RemoveAll();
     Widen(block, treeIndex, &range);
 
     // If upper or lower limit is unknown, then return.
@@ -459,7 +483,7 @@ bool RangeCheck::IsMonotonicallyIncreasing(GenTree* expr, bool rejectNegativeCon
     JITDUMP("[RangeCheck::IsMonotonicallyIncreasing] [%06d]\n", Compiler::dspTreeID(expr));
 
     // Add hashtable entry for expr.
-    bool alreadyPresent = m_pSearchPath->Set(expr, nullptr, SearchPath::Overwrite);
+    bool alreadyPresent = GetSearchPath()->Set(expr, nullptr, SearchPath::Overwrite);
     if (alreadyPresent)
     {
         return true;
@@ -467,11 +491,11 @@ bool RangeCheck::IsMonotonicallyIncreasing(GenTree* expr, bool rejectNegativeCon
 
     // Remove hashtable entry for expr when we exit the present scope.
     auto code = [this, expr] {
-        m_pSearchPath->Remove(expr);
+        GetSearchPath()->Remove(expr);
     };
     jitstd::utility::scoped_code<decltype(code)> finally(code);
 
-    if (m_pSearchPath->GetCount() > MAX_SEARCH_DEPTH)
+    if (GetSearchPath()->GetCount() > MAX_SEARCH_DEPTH)
     {
         return false;
     }
@@ -506,7 +530,7 @@ bool RangeCheck::IsMonotonicallyIncreasing(GenTree* expr, bool rejectNegativeCon
         for (GenTreePhi::Use& use : expr->AsPhi()->Uses())
         {
             // If the arg is already in the path, skip.
-            if (m_pSearchPath->Lookup(use.GetNode()))
+            if (GetSearchPath()->Lookup(use.GetNode()))
             {
                 continue;
             }
@@ -640,8 +664,7 @@ void RangeCheck::MergeEdgeAssertions(GenTreeLclVarCommon* lcl, ASSERT_VALARG_TP 
 
     LclSsaVarDsc* ssaData     = m_pCompiler->lvaGetDesc(lcl)->GetPerSsaData(lcl->GetSsaNum());
     ValueNum      normalLclVN = m_pCompiler->vnStore->VNConservativeNormalValue(ssaData->m_vnPair);
-    ValueNum      arrLenVN = m_pCompiler->vnStore->VNConservativeNormalValue(m_pCurBndsChk->GetArrayLength()->gtVNPair);
-    MergeEdgeAssertions(m_pCompiler, normalLclVN, arrLenVN, assertions, pRange);
+    MergeEdgeAssertions(m_pCompiler, normalLclVN, m_preferredBound, assertions, pRange);
 }
 
 //------------------------------------------------------------------------
@@ -760,6 +783,11 @@ void RangeCheck::MergeEdgeAssertions(Compiler*        comp,
         else if (curAssertion->IsConstantInt32Assertion())
         {
             if (curAssertion->op1.vn != normalLclVN)
+            {
+                continue;
+            }
+
+            if (varTypeIsGC(comp->vnStore->TypeOfVN(curAssertion->op2.vn)))
             {
                 continue;
             }
@@ -1132,7 +1160,7 @@ Range RangeCheck::ComputeRangeForBinOp(BasicBlock* block, GenTreeOp* binop, bool
     {
         // If we already have the op in the path, then, just rely on assertions, else
         // find the range.
-        if (m_pSearchPath->Lookup(op1))
+        if (GetSearchPath()->Lookup(op1))
         {
             op1Range = Range(Limit(Limit::keDependent));
         }
@@ -1154,7 +1182,7 @@ Range RangeCheck::ComputeRangeForBinOp(BasicBlock* block, GenTreeOp* binop, bool
     {
         // If we already have the op in the path, then, just rely on assertions, else
         // find the range.
-        if (m_pSearchPath->Lookup(op2))
+        if (GetSearchPath()->Lookup(op2))
         {
             op2Range = Range(Limit(Limit::keDependent));
         }
@@ -1343,12 +1371,12 @@ bool RangeCheck::DoesBinOpOverflow(BasicBlock* block, GenTreeOp* binop, const Ra
     GenTree* op1 = binop->gtGetOp1();
     GenTree* op2 = binop->gtGetOp2();
 
-    if (!m_pSearchPath->Lookup(op1) && DoesOverflow(block, op1, range))
+    if (!GetSearchPath()->Lookup(op1) && DoesOverflow(block, op1, range))
     {
         return true;
     }
 
-    if (!m_pSearchPath->Lookup(op2) && DoesOverflow(block, op2, range))
+    if (!GetSearchPath()->Lookup(op2) && DoesOverflow(block, op2, range))
     {
         return true;
     }
@@ -1417,7 +1445,7 @@ bool RangeCheck::DoesPhiOverflow(BasicBlock* block, GenTree* expr, const Range& 
     for (GenTreePhi::Use& use : expr->AsPhi()->Uses())
     {
         GenTree* arg = use.GetNode();
-        if (m_pSearchPath->Lookup(arg))
+        if (GetSearchPath()->Lookup(arg))
         {
             continue;
         }
@@ -1455,11 +1483,11 @@ bool RangeCheck::DoesOverflow(BasicBlock* block, GenTree* expr, const Range& ran
 bool RangeCheck::ComputeDoesOverflow(BasicBlock* block, GenTree* expr, const Range& range)
 {
     JITDUMP("Does overflow [%06d]?\n", Compiler::dspTreeID(expr));
-    m_pSearchPath->Set(expr, block, SearchPath::Overwrite);
+    GetSearchPath()->Set(expr, block, SearchPath::Overwrite);
 
     bool overflows = true;
 
-    if (m_pSearchPath->GetCount() > MAX_SEARCH_DEPTH)
+    if (GetSearchPath()->GetCount() > MAX_SEARCH_DEPTH)
     {
         overflows = true;
     }
@@ -1502,7 +1530,7 @@ bool RangeCheck::ComputeDoesOverflow(BasicBlock* block, GenTree* expr, const Ran
         overflows = ComputeDoesOverflow(block, expr->gtGetOp1(), range);
     }
     GetOverflowMap()->Set(expr, overflows, OverflowMap::Overwrite);
-    m_pSearchPath->Remove(expr);
+    GetSearchPath()->Remove(expr);
     JITDUMP("[%06d] %s\n", Compiler::dspTreeID(expr), ((overflows) ? "overflows" : "does not overflow"));
     return overflows;
 }
@@ -1530,7 +1558,7 @@ bool RangeCheck::ComputeDoesOverflow(BasicBlock* block, GenTree* expr, const Ran
 //
 Range RangeCheck::ComputeRange(BasicBlock* block, GenTree* expr, bool monIncreasing DEBUGARG(int indent))
 {
-    bool  newlyAdded = !m_pSearchPath->Set(expr, block, SearchPath::Overwrite);
+    bool  newlyAdded = !GetSearchPath()->Set(expr, block, SearchPath::Overwrite);
     Range range      = Limit(Limit::keUndef);
 
     ValueNum vn = m_pCompiler->vnStore->VNConservativeNormalValue(expr->gtVNPair);
@@ -1553,7 +1581,7 @@ Range RangeCheck::ComputeRange(BasicBlock* block, GenTree* expr, bool monIncreas
         JITDUMP("GetRange not tractable within max node visit budget.\n");
     }
     // Prevent unbounded recursion.
-    else if (m_pSearchPath->GetCount() > MAX_SEARCH_DEPTH)
+    else if (GetSearchPath()->GetCount() > MAX_SEARCH_DEPTH)
     {
         // Unknown is lattice top, anything that merges with Unknown will yield Unknown.
         range = Range(Limit(Limit::keUnknown));
@@ -1598,7 +1626,7 @@ Range RangeCheck::ComputeRange(BasicBlock* block, GenTree* expr, bool monIncreas
         for (GenTreePhi::Use& use : expr->AsPhi()->Uses())
         {
             Range argRange = Range(Limit(Limit::keUndef));
-            if (m_pSearchPath->Lookup(use.GetNode()))
+            if (GetSearchPath()->Lookup(use.GetNode()))
             {
                 JITDUMP("PhiArg [%06d] is already being computed\n", Compiler::dspTreeID(use.GetNode()));
                 argRange = Range(Limit(Limit::keDependent));
@@ -1636,7 +1664,7 @@ Range RangeCheck::ComputeRange(BasicBlock* block, GenTree* expr, bool monIncreas
     }
 
     GetRangeMap()->Set(expr, new (m_alloc) Range(range), RangeMap::Overwrite);
-    m_pSearchPath->Remove(expr);
+    GetSearchPath()->Remove(expr);
     return range;
 }
 
@@ -1743,6 +1771,11 @@ bool RangeCheck::OptimizeRangeChecks()
     // Walk through trees looking for arrBndsChk node and check if it can be optimized.
     for (BasicBlock* const block : m_pCompiler->Blocks())
     {
+        if (!block->HasFlag(BBF_MAY_HAVE_BOUNDS_CHECKS))
+        {
+            continue;
+        }
+
         for (Statement* const stmt : block->Statements())
         {
             m_updateStmt = false;
@@ -1753,15 +1786,6 @@ bool RangeCheck::OptimizeRangeChecks()
                 {
                     return madeChanges;
                 }
-
-                if (tree->OperIs(GT_BOUNDS_CHECK))
-                {
-                    // Leave a hint for optRangeCheckCloning to improve the JIT TP.
-                    // NOTE: it doesn't have to be precise and being properly maintained
-                    // during transformations, it's just a hint.
-                    block->SetFlags(BBF_MAY_HAVE_BOUNDS_CHECKS);
-                }
-
                 OptimizeRangeCheck(block, stmt, tree);
             }
 

@@ -737,7 +737,7 @@ private:
     // Given a lclvar use, try to find the lclvar's defining store and its containing block.
     LclSsaVarDsc* GetSsaDefStore(GenTreeLclVarCommon* lclUse);
 
-    GenTreeBoundsChk* m_pCurBndsChk;
+    ValueNum m_preferredBound;
 
     // Get the cached overflow values.
     OverflowMap* GetOverflowMap();
@@ -747,6 +747,7 @@ private:
     RangeMap* GetRangeMap();
     RangeMap* m_pRangeMap;
 
+    SearchPath* GetSearchPath();
     SearchPath* m_pSearchPath;
 
 #ifdef DEBUG
