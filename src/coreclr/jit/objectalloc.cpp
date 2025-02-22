@@ -581,7 +581,7 @@ bool ObjectAllocator::MorphAllocObjNodes()
                         GenTree* const len = data->AsCall()->gtArgs.GetUserArgByIndex(1)->GetNode();
                         assert(len != nullptr);
 
-                        ssize_t      arraySize = len->IsCnsIntOrI() ? len->AsIntCon()->IconValue() : -1;
+                        ssize_t      arraySize = len->IsCnsIntOrI() ? len->AsIntCon()->IconValue() : 1;
                         unsigned int blockSize = 0;
                         comp->Metrics.NewArrayHelperCalls++;
 
@@ -600,8 +600,8 @@ bool ObjectAllocator::MorphAllocObjNodes()
                             onHeapReason = "[unknown size, in handler]";
                             canStack     = false;
                         }
-                        else if (!CanAllocateLclVarOnStack(lclNum, clsHnd, allocType, arraySize, &blockSize,
-                                                           &onHeapReason))
+                        else if (!CanAllocateLclVarOnStack(lclNum, clsHnd, allocType, arraySize, len->IsCnsIntOrI(),
+                                                           &blockSize, &onHeapReason))
                         {
                             // reason set by the call
                             canStack = false;
@@ -616,16 +616,13 @@ bool ObjectAllocator::MorphAllocObjNodes()
                             if (useLocalloc)
                             {
                                 MorphNewArrNodeIntoLocAlloc(data->AsCall(), clsHnd, len, block, stmt);
+                                comp->Metrics.LocallocAllocatedArrays++;
                             }
                             else
                             {
                                 MorphNewArrNodeIntoStackAlloc(data->AsCall(), clsHnd, len, block, stmt);
+                                comp->Metrics.StackAllocatedArrays++;
                             }
-
-                            // Note we do not want to rewrite uses of lclNum, so we
-                            // do not update m_HeapLocalToStackLocalMap.
-                            //
-                            comp->Metrics.StackAllocatedArrays++;
                         }
                     }
                     else if (allocType == OAT_NEWOBJ)
@@ -653,7 +650,8 @@ bool ObjectAllocator::MorphAllocObjNodes()
                             comp->Metrics.NewRefClassHelperCalls++;
                         }
 
-                        if (!CanAllocateLclVarOnStack(lclNum, clsHnd, allocType, 0, nullptr, &onHeapReason))
+                        if (!CanAllocateLclVarOnStack(lclNum, clsHnd, allocType, /* length */ 0, /* lengthKnown */ true,
+                                                      nullptr, &onHeapReason))
                         {
                             // reason set by the call
                             canStack = false;
@@ -1333,6 +1331,7 @@ void ObjectAllocator::UpdateAncestorTypes(GenTree* tree, ArrayStack<GenTree*>* p
 
             case GT_IND:
             case GT_CALL:
+                // Watch for helper calls that have retyped operands...?
                 break;
 
             default:
@@ -2026,7 +2025,8 @@ void ObjectAllocator::CheckForGuardedAllocationOrCopy(BasicBlock* block,
                 const char*          reason = nullptr;
                 unsigned             size   = 0;
                 unsigned             length = TARGET_POINTER_SIZE;
-                if (CanAllocateLclVarOnStack(enumeratorLocal, clsHnd, OAT_NEWOBJ, length, &size, &reason,
+                if (CanAllocateLclVarOnStack(enumeratorLocal, clsHnd, OAT_NEWOBJ, length, /* length known */ true,
+                                             &size, &reason,
                                              /* preliminaryCheck */ true))
                 {
                     // We are going to conditionally track accesses to the enumerator local via a pseudo local.

@@ -154,6 +154,7 @@ public:
                                   CORINFO_CLASS_HANDLE clsHnd,
                                   ObjectAllocationType allocType,
                                   ssize_t              length,
+                                  bool                 lengthKnown,
                                   unsigned int*        blockSize,
                                   const char**         reason,
                                   bool                 preliminaryCheck = false);
@@ -319,7 +320,8 @@ inline void ObjectAllocator::EnableObjectStackAllocation()
 //    lclNum   - Local variable number
 //    clsHnd   - Class/struct handle of the variable class
 //    allocType - Type of allocation (newobj or newarr)
-//    length    - Length of the array (for newarr), -1 for runtime determined size
+//    length    - Length of the array (for newarr), 1 for runtime determined size
+//    lengthKnown - true if length is known
 //    blockSize - [out, optional] exact size of the object
 //    reason   - [out, required] if result is false, reason why
 //    preliminaryCheck - if true, allow checking before analysis is done
@@ -332,6 +334,7 @@ inline bool ObjectAllocator::CanAllocateLclVarOnStack(unsigned int         lclNu
                                                       CORINFO_CLASS_HANDLE clsHnd,
                                                       ObjectAllocationType allocType,
                                                       ssize_t              length,
+                                                      bool                 lengthKnown,
                                                       unsigned int*        blockSize,
                                                       const char**         reason,
                                                       bool                 preliminaryCheck)
@@ -359,16 +362,22 @@ inline bool ObjectAllocator::CanAllocateLclVarOnStack(unsigned int         lclNu
             return false;
         }
 
-        if ((length < -1) || (length > CORINFO_Array_MaxLength))
+        if ((length < 0) || (length > CORINFO_Array_MaxLength))
         {
             *reason = "[invalid array length]";
             return false;
         }
 
-        if (length != -1)
+        ClassLayout* const layout = comp->typGetArrayLayout(clsHnd, (unsigned)length);
+        classSize                 = layout->GetSize();
+
+        if (!lengthKnown && layout->HasGCPtr())
         {
-            ClassLayout* const layout = comp->typGetArrayLayout(clsHnd, (unsigned)length);
-            classSize                 = layout->GetSize();
+            // We can't represent GC info for these yet
+            //
+            assert(length == 1);
+            *reason = "[unknown length, gc elements]";
+            return false;
         }
     }
     else if (allocType == OAT_NEWOBJ)
