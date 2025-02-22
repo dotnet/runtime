@@ -4589,21 +4589,6 @@ void CodeGen::genReportGenericContextArg(regNumber initReg, bool* pInitRegZeroed
     }
     else
     {
-        if (isFramePointerUsed())
-        {
-#if defined(TARGET_ARM)
-            // GetStackOffset() is always valid for incoming stack-arguments, even if the argument
-            // will become enregistered.
-            // On Arm compiler->compArgSize doesn't include r11 and lr sizes and hence we need to add 2*REGSIZE_BYTES
-            noway_assert((2 * REGSIZE_BYTES <= varDsc->GetStackOffset()) &&
-                         (size_t(varDsc->GetStackOffset()) < compiler->compArgSize + 2 * REGSIZE_BYTES));
-#else
-            // GetStackOffset() is always valid for incoming stack-arguments, even if the argument
-            // will become enregistered.
-            noway_assert((0 < varDsc->GetStackOffset()) && (size_t(varDsc->GetStackOffset()) < compiler->compArgSize));
-#endif
-        }
-
         // We will just use the initReg since it is an available register
         // and we are probably done using it anyway...
         reg             = initReg;

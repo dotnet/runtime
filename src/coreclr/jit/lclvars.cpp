@@ -444,7 +444,7 @@ void Compiler::lvaInitArgs(InitVarDscInfo* varDscInfo)
        instruction can only pop 2^16 arguments. Could be handled correctly
        but it will be very difficult for fully interruptible code */
 
-    if (compArgSize != (size_t)(unsigned short)compArgSize)
+    if (lvaParameterStackSize != (size_t)(unsigned short)lvaParameterStackSize)
         IMPL_LIMITATION("Too many arguments for the \"ret\" instruction to pop");
 #endif
 }
