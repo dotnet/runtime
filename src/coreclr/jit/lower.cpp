@@ -8028,7 +8028,9 @@ void Lowering::FindInducedParameterRegisterLocals()
             continue;
         }
 
-        if (fld->TypeIs(TYP_STRUCT))
+        // SIMD12 extractions are not supported as they would require the upper
+        // field to be zeroed on extraction from a SIMD16 argument.
+        if (fld->TypeIs(TYP_STRUCT, TYP_SIMD12))
         {
             continue;
         }
@@ -8098,17 +8100,23 @@ void Lowering::FindInducedParameterRegisterLocals()
         {
             remappedLclNum = comp->lvaGrabTemp(
                 false DEBUGARG(comp->printfAlloc("V%02u.%s", fld->GetLclNum(), getRegName(regSegment->GetRegister()))));
-            var_types registerType = regSegment->GetRegisterType();
+
+            // We always use the full width for integer registers even if the
+            // width is shorter, because various places in the JIT will type
+            // accesses larger to generate smaller code.
+            var_types registerType =
+                genIsValidIntReg(regSegment->GetRegister()) ? TYP_I_IMPL : regSegment->GetRegisterType();
             if ((registerType == TYP_I_IMPL) && varTypeIsGC(fld))
             {
                 registerType = fld->TypeGet();
             }
 
-            comp->lvaGetDesc(remappedLclNum)->lvType = registerType;
+            LclVarDsc* varDsc = comp->lvaGetDesc(remappedLclNum);
+            varDsc->lvType    = genActualType(registerType);
             JITDUMP("Created new local V%02u for the mapping\n", remappedLclNum);
 
             comp->m_paramRegLocalMappings->Emplace(regSegment, remappedLclNum, 0);
-            comp->lvaGetDesc(remappedLclNum)->lvIsParamRegTarget = true;
+            varDsc->lvIsParamRegTarget = true;
 
             JITDUMP("New mapping: ");
             DBEXEC(VERBOSE, regSegment->Dump());
