@@ -21,12 +21,6 @@ namespace System.Reflection
         private Assembly? _topLevelAssembly;
         private RuntimeAssembly? _requestingAssembly;
         private AssemblyLoadContext? _loadContext;
-        /// <summary>
-        /// If not null and false, will be set to true if <see cref="AppDomain.TypeResolve"/> gets called.
-        /// If not null and true, <see cref="AppDomain.TypeResolve"/> will not be called.
-        /// If null, this field is ignored, and <see cref="AppDomain.TypeResolve"/> can be called an unlimited number of times.
-        /// </summary>
-        private bool* _typeResolve;
 
         [RequiresUnreferencedCode("The type might be removed")]
         internal static Type? GetType(
@@ -104,36 +98,6 @@ namespace System.Reflection
                 _topLevelAssembly = topLevelAssembly,
                 _requestingAssembly = Unsafe.As<RuntimeAssembly>(topLevelAssembly),
                 _loadContext = AssemblyLoadContext.CurrentContextualReflectionContext,
-            }.Resolve(parsed);
-        }
-
-        // Used by VM
-        internal static unsafe RuntimeType? GetTypeHelper(string typeName, IntPtr gchALC, RuntimeAssembly? requestingAssembly,
-            bool ignoreCase, bool useTopLevelAssembly, bool* typeResolve)
-        {
-            if (typeName.Length == 0)
-            {
-                return null;
-            }
-
-            TypeName? parsed = TypeNameParser.Parse(typeName, throwOnError: false);
-            if (parsed is null)
-            {
-                return null;
-            }
-
-            if (useTopLevelAssembly && parsed.AssemblyName is not null)
-            {
-                throw new ArgumentException(SR.Argument_AssemblyGetTypeCannotSpecifyAssembly);
-            }
-
-            return (RuntimeType?)new TypeNameResolver()
-            {
-                _ignoreCase = ignoreCase,
-                _topLevelAssembly = useTopLevelAssembly ? requestingAssembly : null,
-                _requestingAssembly = requestingAssembly,
-                _loadContext = AssemblyLoadContext.GetAssemblyLoadContext(gchALC),
-                _typeResolve = typeResolve,
             }.Resolve(parsed);
         }
 
@@ -277,15 +241,6 @@ namespace System.Reflection
                     return type;
             }
 
-            if (_typeResolve is not null)
-            {
-                if (*_typeResolve)
-                {
-                    goto returnNull;
-                }
-                *_typeResolve = true;
-            }
-
             RuntimeAssembly? resolvedAssembly = AssemblyLoadContext.OnTypeResolve(requestingAssembly, parsedName.FullName);
             if (resolvedAssembly is not null)
             {
@@ -294,7 +249,6 @@ namespace System.Reflection
                     return type;
             }
 
-        returnNull:
             if (_throwOnError)
             {
                 throw new TypeLoadException(SR.Format(SR.TypeLoad_ResolveTypeFromAssembly, parsedName.FullName, (requestingAssembly ?? coreLib).FullName),

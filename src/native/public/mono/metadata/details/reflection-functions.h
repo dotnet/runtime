@@ -8,7 +8,7 @@
 
 MONO_API_FUNCTION(MONO_RT_EXTERNAL_ONLY int, mono_reflection_parse_type, (char *name, MonoTypeNameParse *info))
 MONO_API_FUNCTION(MONO_RT_EXTERNAL_ONLY MonoType*, mono_reflection_get_type, (MonoImage* image, MonoTypeNameParse *info, mono_bool ignorecase, mono_bool *type_resolve))
-MONO_API_FUNCTION(MONO_RT_EXTERNAL_ONLY void, mono_reflection_free_type_info, (MonoTypeNameParse *info))
+MONO_API_FUNCTION(void, mono_reflection_free_type_info, (MonoTypeNameParse *info))
 MONO_API_FUNCTION(MONO_RT_EXTERNAL_ONLY MonoType*, mono_reflection_type_from_name, (char *name, MonoImage *image))
 MONO_API_FUNCTION(MONO_RT_EXTERNAL_ONLY uint32_t, mono_reflection_get_token, (MonoObject *obj))
 

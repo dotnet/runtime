@@ -533,11 +533,23 @@ mono_assembly_fill_assembly_name (MonoImage *image, MonoAssemblyName *aname)
 	return mono_assembly_fill_assembly_name_full (image, aname, FALSE);
 }
 
-void
-mono_assembly_name_format (MonoAssemblyName *aname, GString *str)
+/**
+ * mono_stringify_assembly_name:
+ * \param aname the assembly name.
+ *
+ * Convert \p aname into its string format. The returned string is dynamically
+ * allocated and should be freed by the caller.
+ *
+ * \returns a newly allocated string with a string representation of
+ * the assembly name.
+ */
+char*
+mono_stringify_assembly_name (MonoAssemblyName *aname)
 {
 	const char *quote = (aname->name && g_ascii_isspace (aname->name [0])) ? "\"" : "";
 
+	GString *str;
+	str = g_string_new (NULL);
 	g_string_append_printf (str, "%s%s%s", quote, aname->name, quote);
 	if (!aname->without_version)
 		g_string_append_printf (str, ", Version=%d.%d.%d.%d", aname->major, aname->minor, aname->build, aname->revision);
@@ -552,25 +564,6 @@ mono_assembly_name_format (MonoAssemblyName *aname, GString *str)
 			g_string_append_printf (str,", PublicKeyToken=%s%s", (char *)aname->public_key_token, (aname->flags & ASSEMBLYREF_RETARGETABLE_FLAG) ? ", Retargetable=Yes" : "");
 		else g_string_append_printf (str,", PublicKeyToken=%s%s", "null", (aname->flags & ASSEMBLYREF_RETARGETABLE_FLAG) ? ", Retargetable=Yes" : "");
 	}
-}
-
-/**
- * mono_stringify_assembly_name:
- * \param aname the assembly name.
- *
- * Convert \p aname into its string format. The returned string is dynamically
- * allocated and should be freed by the caller.
- *
- * \returns a newly allocated string with a string representation of
- * the assembly name.
- */
-char*
-mono_stringify_assembly_name (MonoAssemblyName *aname)
-{
-	GString *str;
-	str = g_string_new (NULL);
-
-	mono_assembly_name_format (aname, str);
 
 	char *result = g_string_free (str, FALSE); //  result is the final formatted string.
 
