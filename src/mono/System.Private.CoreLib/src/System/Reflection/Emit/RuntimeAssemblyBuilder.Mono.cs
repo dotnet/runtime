@@ -214,9 +214,9 @@ namespace System.Reflection.Emit
 
         /// <inheritdoc cref="RuntimeAssembly.GetTypeCore"/>
         [RequiresUnreferencedCode("Types might be removed by trimming. If the type name is a string literal, consider using Type.GetType instead.")]
-        internal Type? GetTypeCore(string unescapedName, bool ignoreCase)
+        internal Type? GetTypeCore(string unescapedName, ReadOnlySpan<string> nestedTypeNames, bool ignoreCase)
         {
-            return manifest_module.GetTypeCore(unescapedName, ignoreCase);
+            return manifest_module.GetTypeCore(unescapedName, nestedTypeNames, ignoreCase);
         }
 
         public override Module? GetModule(string name)

@@ -164,12 +164,30 @@ namespace System.Reflection
             {
                 if (assembly is null)
                 {
-                    type = GetTypeFromDefaultAssemblies(TypeName.Unescape(escapedTypeName), parsedName);
+                    return GetTypeFromDefaultAssemblies(TypeName.Unescape(escapedTypeName), nestedTypeNames, parsedName);
                 }
                 // We cannot check if it is RuntimeAssembly, because the object might be a RuntimeAssemblyBuilder.
-                else if (AssemblyLoadContext.GetRuntimeAssembly(assembly) is { } ra)
+                else if (AssemblyLoadContext.GetRuntimeAssembly(assembly) is { } runtimeAssembly)
                 {
-                    type = ra.GetTypeCore(TypeName.Unescape(escapedTypeName), ignoreCase: _ignoreCase);
+                    // Compat: Non-extensible parser allows ambiguous matches with ignore case lookup
+                    bool allowAmbiguousMatchesForNestedTypes = _extensibleParser && _ignoreCase;
+
+                    type = runtimeAssembly.GetTypeCore(TypeName.Unescape(escapedTypeName), allowAmbiguousMatchesForNestedTypes ? default : nestedTypeNames, ignoreCase: _ignoreCase);
+
+                    if (type is null)
+                    {
+                        if (_throwOnError)
+                        {
+                            throw new TypeLoadException(SR.Format(SR.TypeLoad_ResolveTypeFromAssembly, parsedName.FullName, runtimeAssembly.FullName),
+                                typeName: parsedName.FullName);
+                        }
+                        return null;
+                    }
+
+                    if (!allowAmbiguousMatchesForNestedTypes)
+                    {
+                        return type;
+                    }
                 }
                 else
                 {
@@ -223,12 +241,12 @@ namespace System.Reflection
         }
 
         [RequiresUnreferencedCode("Types might be removed by trimming. If the type name is a string literal, consider using Type.GetType instead.")]
-        private Type? GetTypeFromDefaultAssemblies(string typeName, TypeName parsedName)
+        private Type? GetTypeFromDefaultAssemblies(string typeName, ReadOnlySpan<string> nestedTypeNames, TypeName parsedName)
         {
             RuntimeAssembly? requestingAssembly = _requestingAssembly;
             if (requestingAssembly is not null)
             {
-                Type? type = requestingAssembly.GetTypeCore(typeName, ignoreCase: _ignoreCase);
+                Type? type = requestingAssembly.GetTypeCore(typeName, nestedTypeNames, ignoreCase: _ignoreCase);
                 if (type is not null)
                     return type;
             }
@@ -236,7 +254,7 @@ namespace System.Reflection
             RuntimeAssembly coreLib = (RuntimeAssembly)typeof(object).Assembly;
             if (requestingAssembly != coreLib)
             {
-                Type? type = coreLib.GetTypeCore(typeName, ignoreCase: _ignoreCase);
+                Type? type = coreLib.GetTypeCore(typeName, nestedTypeNames, ignoreCase: _ignoreCase);
                 if (type is not null)
                     return type;
             }
@@ -244,7 +262,7 @@ namespace System.Reflection
             RuntimeAssembly? resolvedAssembly = AssemblyLoadContext.OnTypeResolve(requestingAssembly, parsedName.FullName);
             if (resolvedAssembly is not null)
             {
-                Type? type = resolvedAssembly.GetTypeCore(typeName, ignoreCase: _ignoreCase);
+                Type? type = resolvedAssembly.GetTypeCore(typeName, nestedTypeNames, ignoreCase: _ignoreCase);
                 if (type is not null)
                     return type;
             }

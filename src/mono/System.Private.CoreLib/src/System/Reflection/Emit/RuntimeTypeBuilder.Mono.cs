@@ -1103,33 +1103,44 @@ namespace System.Reflection.Emit
         }
 
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicNestedTypes | DynamicallyAccessedMemberTypes.NonPublicNestedTypes)]
-        public override Type? GetNestedType(string name, BindingFlags bindingAttr)
+        internal RuntimeTypeBuilder? GetNestedType([MaybeNull] string name, BindingFlags bindingAttr, bool ignoreAmbiguousMatch)
         {
+            ArgumentNullException.ThrowIfNull(name);
+
             check_created();
 
-            if (subtypes == null)
+            if (subtypes is null)
                 return null;
+
+            bindingAttr &= ~BindingFlags.Static;
+            StringComparison comparison = (bindingAttr & BindingFlags.IgnoreCase) != 0 ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal;
+            RuntimeType.FilterHelper(bindingAttr, ref name, out _, out _);
+            RuntimeTypeBuilder? match = null;
 
             foreach (RuntimeTypeBuilder t in subtypes)
             {
                 if (!t.is_created)
                     continue;
-                if ((t.attrs & TypeAttributes.VisibilityMask) == TypeAttributes.NestedPublic)
+                // Unlike RuntimeType which does the actual name checking in the VM, we need to do it here.
+                if (!t.Name.Equals(name, comparison))
+                    continue;
+                if (RuntimeType.FilterApplyType(t, bindingAttr, name, false, null))
                 {
-                    if ((bindingAttr & BindingFlags.Public) == 0)
-                        continue;
+                    if (match is not null)
+                        throw ThrowHelper.GetAmbiguousMatchException(match);
+
+                    match = t;
+
+                    if (ignoreAmbiguousMatch)
+                        break;
                 }
-                else
-                {
-                    if ((bindingAttr & BindingFlags.NonPublic) == 0)
-                        continue;
-                }
-                if (t.Name == name)
-                    return t.created;
             }
 
-            return null;
+            return match;
         }
+
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicNestedTypes | DynamicallyAccessedMemberTypes.NonPublicNestedTypes)]
+        public override Type? GetNestedType(string name, BindingFlags bindingAttr) => GetNestedType(name, bindingAttr, ignoreAmbiguousMatch: false);
 
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicNestedTypes | DynamicallyAccessedMemberTypes.NonPublicNestedTypes)]
         public override Type[] GetNestedTypes(BindingFlags bindingAttr)

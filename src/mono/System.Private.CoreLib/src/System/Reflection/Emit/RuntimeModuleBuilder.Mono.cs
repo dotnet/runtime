@@ -311,7 +311,7 @@ namespace System.Reflection.Emit
         }
 
         [RequiresUnreferencedCode("Types might be removed by trimming. If the type name is a string literal, consider using Type.GetType instead.")]
-        internal Type? GetTypeCore(string unescapedName, bool ignoreCase)
+        internal Type? GetTypeCore(string unescapedName, ReadOnlySpan<string> nestedTypeNames, bool ignoreCase)
         {
             RuntimeTypeBuilder? result = null;
 
@@ -330,7 +330,16 @@ namespace System.Reflection.Emit
                     }
                 }
             }
-            if (result != null && result.is_created)
+            BindingFlags bindingFlags = BindingFlags.NonPublic | BindingFlags.Public;
+            if (ignoreCase)
+                bindingFlags |= BindingFlags.IgnoreCase;
+            for (int i = 0; i < nestedTypeNames.Length; i++)
+            {
+                if (result is null)
+                    break;
+                result = result.GetNestedType(nestedTypeNames[i], bindingFlags, ignoreAmbiguousMatch: true);
+            }
+            if (result is not null && result.is_created)
                 return result.CreateType();
             else
                 return result;

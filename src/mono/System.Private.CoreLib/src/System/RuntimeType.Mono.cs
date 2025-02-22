@@ -252,7 +252,7 @@ namespace System
         }
 
         // Used by the singular GetXXX APIs (Event, Field, Interface, NestedType) where prefixLookup is not supported.
-        private static void FilterHelper(BindingFlags bindingFlags, ref string? name, out bool ignoreCase, out MemberListType listType)
+        internal static void FilterHelper(BindingFlags bindingFlags, ref string? name, out bool ignoreCase, out MemberListType listType)
         {
             FilterHelper(bindingFlags, ref name, false, out _, out ignoreCase, out listType);
         }
@@ -362,7 +362,7 @@ namespace System
 
 
         // Used by GetInterface and GetNestedType(s) which don't need parameter type filtering.
-        private static bool FilterApplyType(
+        internal static bool FilterApplyType(
             Type type, BindingFlags bindingFlags, string? name, bool prefixLookup, string? ns)
         {
             Debug.Assert(type is RuntimeType);
@@ -990,7 +990,7 @@ namespace System
         }
 
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicNestedTypes | DynamicallyAccessedMemberTypes.NonPublicNestedTypes)]
-        internal Type? GetNestedType([MaybeNull] string name, BindingFlags bindingAttr, bool ignoreAmbiguousMatch)
+        internal RuntimeType? GetNestedType([MaybeNull] string name, BindingFlags bindingAttr, bool ignoreAmbiguousMatch)
         {
             ArgumentNullException.ThrowIfNull(name);
 
