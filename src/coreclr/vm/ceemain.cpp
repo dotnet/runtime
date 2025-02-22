@@ -965,13 +965,10 @@ void EEStartupHelper()
 #endif // FEATURE_MINIMETADATA_IN_TRIAGEDUMPS
 
 #ifdef TARGET_WINDOWS
-#ifdef FEATURE_COMINTEROP
-        // By now finalizer thread should have initialized COM.Make sure that it did.
-        // COM initialization will register its FLS slot.
-        // We need that it happened before we register ours so that COM cleanup callback
-        // run before ours (since COM cleanup may indirectly call managed code)
+        // By now finalizer thread should have initialized FLS slot for thread cleanup notifications.
+        // And ensured that COM is initialized (must happen before allocating FLS slot).
+        // Make sure that this was done.
         FinalizerThread::WaitForFinalizerThreadStart();
-#endif
 #endif
         g_fEEStarted = TRUE;
         g_EEStartupStatus = S_OK;
@@ -1687,13 +1684,13 @@ BOOL STDMETHODCALLTYPE EEDllMain( // TRUE on success, FALSE on error.
                 // We can end up here with live Thread if some kind of thread termination callback reinitializes
                 // the Thread by entering managed code or by calling APIs that set up Thread, after we have already
                 // seen the OS premortem callback for the thread.
-                // The callback runs only once. There will be no thurther clean up at this point and we will likely crash in GC
+                // The callback runs only once. There will be no further clean up and we will likely crash in GC
                 // once OS clears the native TLS.
                 //
                 // NB: It is ok for the Thread to be reinitialized before the premortem OS callback runs.
-                //     That historically may happen in rare cases when a thread main returns and cleans, but then FlsDataCleanup for COM
-                //     ends up calling release APIs in the runtime that require Thread, or sends messages to the thread's
-                //     managed message loop. That is ok, as long as reinitialization happens prior to the final thread termination
+                //     That historically may happen in rare cases when a thread cleans upon returning, but then FlsDataCleanup for COM
+                //     ends up releasing objects and calling APIs in the runtime that require Thread, or sends messages to the thread's
+                //     managed message loop. That is ok, as long as reinitialization happens prior to our thread termination
                 //     callback from OS. We guarantee that by ensuring our FlsSlot is initializad after COM has already been
                 //     initialized.
                 _ASSERTE_ALL_BUILDS(!GetThreadNULLOk() && "Thread reinitialized after final clean up?");
@@ -1736,7 +1733,7 @@ static void RuntimeThreadShutdown(void* thread)
             GCX_COOP_NO_DTOR_END();
         }
 
-        pThread->DetachThread(FALSE);
+        pThread->DetachThread(TRUE);
     }
     else
     {

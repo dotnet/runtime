@@ -875,7 +875,7 @@ void DestroyThread(Thread *th)
 // Public function: DetachThread()
 // Marks the thread as needing to be destroyed, but doesn't destroy it yet.
 //-------------------------------------------------------------------------
-HRESULT Thread::DetachThread(BOOL fDLLThreadDetach)
+HRESULT Thread::DetachThread(BOOL inTerminationCallback)
 {
     // !!! Can not use contract here.
     // !!! Contract depends on Thread object for GC_TRIGGERS.
@@ -900,9 +900,9 @@ HRESULT Thread::DetachThread(BOOL fDLLThreadDetach)
         pErrorInfo->Release();
     }
 
-    // Revoke our IInitializeSpy registration only if we are not in DLL_THREAD_DETACH
+    // Revoke our IInitializeSpy registration only if we are not in a thread termination callback
     // (COM will do it or may have already done it automatically in that case).
-    if (!fDLLThreadDetach)
+    if (!inTerminationCallback)
     {
         RevokeApartmentSpy();
     }
