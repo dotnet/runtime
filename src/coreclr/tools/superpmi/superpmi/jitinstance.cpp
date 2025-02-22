@@ -222,8 +222,6 @@ HRESULT JitInstance::StartUp(char* PathToJit, bool copyJit, bool breakOnDebugBre
         // Mismatched version ID. Fail the load.
         pJitInstance = NULL;
 
-        GUID expected = JITEEVersionIdentifier;
-        GUID actual = versionId;
         LogError("Jit Compiler has wrong version identifier");
         return -1;
     }
