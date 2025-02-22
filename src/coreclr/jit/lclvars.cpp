@@ -2555,7 +2555,7 @@ bool Compiler::StructPromotionHelper::CanPromoteStructVar(unsigned lclNum)
                 // promotion of non FP or SIMD type fields is disallowed.
                 // TODO-1stClassStructs: add support in Lowering and prolog generation
                 // to enable promoting these types.
-                if (varDsc->lvIsParam && (varDsc->lvIsHfa() != varTypeUsesFloatReg(fieldType)))
+                if (varDsc->lvIsParam && (IsArmHfaParameter(lclNum) != varTypeUsesFloatReg(fieldType)))
                 {
                     canPromote = false;
                 }
@@ -2613,6 +2613,36 @@ bool Compiler::StructPromotionHelper::CanPromoteStructVar(unsigned lclNum)
 }
 
 //--------------------------------------------------------------------------------------------
+// IsArmHfaParameter - Check if a local is an ARM or ARM64 HFA parameter.
+// This is a quirk to match old promotion behavior.
+//
+// Arguments:
+//   lclNum - The local
+//
+// Return value:
+//   True if it is an HFA parameter.
+//
+bool Compiler::StructPromotionHelper::IsArmHfaParameter(unsigned lclNum)
+{
+    if (!GlobalJitOptions::compFeatureHfa)
+    {
+        return false;
+    }
+
+    const ABIPassingInformation& abiInfo = compiler->lvaGetParameterABIInfo(lclNum);
+    // Struct types are only passed in registers if they are HFAs/HVAs.
+    for (const ABIPassingSegment& seg : abiInfo.Segments())
+    {
+        if (seg.IsPassedInRegister() && (genIsValidFloatReg(seg.GetRegister())))
+        {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+//--------------------------------------------------------------------------------------------
 // ShouldPromoteStructVar - Should a struct var be promoted if it can be promoted?
 // This routine mainly performs profitability checks.  Right now it also has
 // some correctness checks due to limitations of down-stream phases.
@@ -2666,7 +2696,7 @@ bool Compiler::StructPromotionHelper::ShouldPromoteStructVar(unsigned lclNum)
         shouldPromote = false;
     }
 #endif // TARGET_LOONGARCH64 || TARGET_RISCV64
-    else if (varDsc->lvIsParam && !compiler->lvaIsImplicitByRefLocal(lclNum) && !varDsc->lvIsHfa())
+    else if (varDsc->lvIsParam && !compiler->lvaIsImplicitByRefLocal(lclNum) && !IsArmHfaParameter(lclNum))
     {
 #if FEATURE_MULTIREG_STRUCT_PROMOTE
         // Is this a variable holding a value with exactly two fields passed in
@@ -2912,7 +2942,7 @@ void Compiler::StructPromotionHelper::PromoteStructVar(unsigned lclNum)
                 if (varTypeIsValidHfaType(hfaType))
                 {
                     fieldVarDsc->SetHfaType(hfaType);
-                    fieldVarDsc->lvIsMultiRegArg = (varDsc->lvIsMultiRegArg != 0) && (fieldVarDsc->lvHfaSlots() > 1);
+                    fieldVarDsc->lvIsMultiRegArg = (varDsc->lvIsMultiRegArg != 0) && (fieldVarDsc->lvExactSize() > genTypeSize(hfaType));
                 }
             }
         }
