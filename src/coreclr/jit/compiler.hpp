@@ -4333,9 +4333,9 @@ bool Compiler::fgVarNeedsExplicitZeroInit(unsigned varNum, bool bbInALoop, bool 
             return false;
         }
 
-// Below conditions guarantee block initialization, which will initialize
-// all struct fields. If the logic for block initialization in CodeGen::genCheckUseBlockInit()
-// changes, these conditions need to be updated.
+        // Below conditions guarantee block initialization, which will initialize
+        // all struct fields. If the logic for block initialization in CodeGen::genCheckUseBlockInit()
+        // changes, these conditions need to be updated.
         unsigned stackHomeSize = lvaLclStackHomeSize(varNum);
 #ifdef TARGET_64BIT
 #if defined(TARGET_AMD64)

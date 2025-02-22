@@ -3042,7 +3042,7 @@ void Lowering::LowerFastTailCall(GenTreeCall* call)
                 const ABIPassingSegment& seg = abiInfo.Segment(0);
 
                 unsigned argStart = seg.GetStackOffset();
-                unsigned argEnd = argStart + seg.GetStackSize();
+                unsigned argEnd   = argStart + seg.GetStackSize();
 
                 // If ranges do not overlap then this PUTARG_STK will not mess up the arg.
                 if ((overwrittenEnd <= argStart) || (overwrittenStart >= argEnd))
@@ -8279,7 +8279,8 @@ void Lowering::CheckNode(Compiler* compiler, GenTree* node)
 #if defined(FEATURE_SIMD) && defined(TARGET_64BIT)
             if (node->TypeIs(TYP_SIMD12))
             {
-                assert(compiler->lvaIsFieldOfDependentlyPromotedStruct(varDsc) || (compiler->lvaLclStackHomeSize(node->AsLclVar()->GetLclNum()) == 12));
+                assert(compiler->lvaIsFieldOfDependentlyPromotedStruct(varDsc) ||
+                       (compiler->lvaLclStackHomeSize(node->AsLclVar()->GetLclNum()) == 12));
             }
 #endif // FEATURE_SIMD && TARGET_64BIT
             if (varDsc->lvPromoted)

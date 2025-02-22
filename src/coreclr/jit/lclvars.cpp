@@ -2942,7 +2942,8 @@ void Compiler::StructPromotionHelper::PromoteStructVar(unsigned lclNum)
                 if (varTypeIsValidHfaType(hfaType))
                 {
                     fieldVarDsc->SetHfaType(hfaType);
-                    fieldVarDsc->lvIsMultiRegArg = (varDsc->lvIsMultiRegArg != 0) && (fieldVarDsc->lvExactSize() > genTypeSize(hfaType));
+                    fieldVarDsc->lvIsMultiRegArg =
+                        (varDsc->lvIsMultiRegArg != 0) && (fieldVarDsc->lvExactSize() > genTypeSize(hfaType));
                 }
             }
         }
@@ -3751,8 +3752,8 @@ unsigned Compiler::lvaLclStackHomeSize(unsigned varNum)
 {
     assert(varNum < lvaCount);
 
-    LclVarDsc* varDsc = lvaGetDesc(varNum);
-    var_types varType = varDsc->TypeGet();
+    LclVarDsc* varDsc  = lvaGetDesc(varNum);
+    var_types  varType = varDsc->TypeGet();
 
     if (!varTypeIsStruct(varType))
     {
@@ -6381,7 +6382,8 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
                 stkOffs -= TARGET_POINTER_SIZE;
             }
         }
-        stkOffs = lvaAllocLocalAndSetVirtualOffset(lvaShadowSPslotsVar, lvaLclStackHomeSize(lvaShadowSPslotsVar), stkOffs);
+        stkOffs =
+            lvaAllocLocalAndSetVirtualOffset(lvaShadowSPslotsVar, lvaLclStackHomeSize(lvaShadowSPslotsVar), stkOffs);
     }
 #endif // FEATURE_EH_WINDOWS_X86
 
@@ -6391,7 +6393,8 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
 
         if (!opts.IsOSR() || !info.compPatchpointInfo->HasSecurityCookie())
         {
-            stkOffs = lvaAllocLocalAndSetVirtualOffset(lvaGSSecurityCookie, lvaLclStackHomeSize(lvaGSSecurityCookie), stkOffs);
+            stkOffs = lvaAllocLocalAndSetVirtualOffset(lvaGSSecurityCookie, lvaLclStackHomeSize(lvaGSSecurityCookie),
+                                                       stkOffs);
         }
     }
 
@@ -6741,7 +6744,8 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
         if (!opts.IsOSR() || !info.compPatchpointInfo->HasSecurityCookie())
         {
             // LOCALLOC used, but we have no unsafe buffer.  Allocated cookie last, close to localloc buffer.
-            stkOffs = lvaAllocLocalAndSetVirtualOffset(lvaGSSecurityCookie, lvaLclStackHomeSize(lvaGSSecurityCookie), stkOffs);
+            stkOffs = lvaAllocLocalAndSetVirtualOffset(lvaGSSecurityCookie, lvaLclStackHomeSize(lvaGSSecurityCookie),
+                                                       stkOffs);
         }
     }
 
@@ -6831,7 +6835,8 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
         // Since this will always use an SP relative offset of zero
         // at the end of lvaFixVirtualFrameOffsets, it will be set to absolute '0'
 
-        stkOffs = lvaAllocLocalAndSetVirtualOffset(lvaOutgoingArgSpaceVar, lvaLclStackHomeSize(lvaOutgoingArgSpaceVar), stkOffs);
+        stkOffs = lvaAllocLocalAndSetVirtualOffset(lvaOutgoingArgSpaceVar, lvaLclStackHomeSize(lvaOutgoingArgSpaceVar),
+                                                   stkOffs);
     }
 #endif // FEATURE_FIXED_OUT_ARGS
 

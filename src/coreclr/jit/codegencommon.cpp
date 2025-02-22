@@ -3869,7 +3869,8 @@ void CodeGen::genCheckUseBlockInit()
 
                     if (!counted)
                     {
-                        initStkLclCnt += roundUp(compiler->lvaLclStackHomeSize(varNum), TARGET_POINTER_SIZE) / sizeof(int);
+                        initStkLclCnt +=
+                            roundUp(compiler->lvaLclStackHomeSize(varNum), TARGET_POINTER_SIZE) / sizeof(int);
                         counted = true;
                     }
                 }
