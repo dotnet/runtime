@@ -4102,19 +4102,20 @@ GenTree* Lowering::LowerHWIntrinsicCreate(GenTreeHWIntrinsic* node)
                 case TYP_SHORT:
                 case TYP_USHORT:
                 {
-                    // The smallest scalar load that zeroes upper elements is 32 bits, so for CreateScalar,
-                    // we must ensure that the upper bits of that value are zero if the base type is small.
+                    // The smallest scalar SIMD load that zeroes upper elements is 32 bits, so for CreateScalar,
+                    // we must ensure that the upper bits of that 32-bit value are zero if the base type is small.
                     //
                     // The most likely case is that op1 is a cast from int/long to the base type:
                     // *  CAST      int <- short <- int/long
-                    // If the base type is signed, that cast will be sign-extending, but we need zero
-                    // extension, so we can simply retype the cast to the unsigned type of the same size.
+                    // If the base type is signed, that cast will be sign-extending, but we need zero extension,
+                    // so we can simply retype the cast to the unsigned type of the same size.
                     //
                     // It's also possible we have an indir of the base type:
                     // *  IND       short
                     // We can likewise change the type of the indir to force zero extension on load.
                     //
-                    // If we can't safely retype one of the above patterns, we will insert our own cast.
+                    // If we can't safely retype one of the above patterns and don't already have a cast to the
+                    // correct unsigned type, we will insert our own cast.
 
                     node->SetSimdBaseJitType(CORINFO_TYPE_INT);
 
@@ -4130,7 +4131,7 @@ GenTree* Lowering::LowerHWIntrinsicCreate(GenTreeHWIntrinsic* node)
                         assert(genTypeSize(op1) == genTypeSize(simdBaseType));
                         op1->gtType = unsignedType;
                     }
-                    else
+                    else if (!op1->OperIs(GT_CAST) || (op1->AsCast()->CastToType() != unsignedType))
                     {
                         tmp1        = comp->gtNewCastNode(TYP_INT, op1, /* fromUnsigned */ false, unsignedType);
                         node->Op(1) = tmp1;
