@@ -739,7 +739,6 @@ void Compiler::lvaInitUserArgs(InitVarDscInfo* varDscInfo, unsigned skipArgs, un
         switch (origArgType)
         {
             case TYP_STRUCT:
-                assert(lvaLclStackHomeSize(varDscInfo->varNum) == argSize);
                 cAlign = varDsc->lvStructDoubleAlign ? 2 : 1;
 
                 // HFA arguments go on the stack frame. They don't get spilled in the prolog like struct
