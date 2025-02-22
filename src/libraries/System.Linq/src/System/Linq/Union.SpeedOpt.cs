@@ -48,16 +48,26 @@ namespace System.Linq
 
             public override bool Contains(TSource value)
             {
-                IEnumerable<TSource>? source;
-                for (int i = 0; (source = GetEnumerable(i)) is not null; i++)
+                // If there's no comparer, then source1.Union(source2).Contains(value) is no different from
+                // source1.Contains(value) || source2.Contains(value), as Union's set semantics won't remove
+                // anything from either that could have matched. However, if there is a comparer, it's possible
+                // the Union could end up removing items that would have matched, and thus we can't skip it.
+                if (_comparer is null || _comparer == EqualityComparer<TSource>.Default)
                 {
-                    if (source.Contains(value))
+                    IEnumerable<TSource>? source;
+                    for (int i = 0; (source = GetEnumerable(i)) is not null; i++)
                     {
-                        return true;
+                        if (source.Contains(value))
+                        {
+                            return true;
+                        }
                     }
+
+                    return false;
                 }
 
-                return default;
+
+                return base.Contains(value);
             }
         }
     }
