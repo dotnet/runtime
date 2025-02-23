@@ -1791,7 +1791,7 @@ void InitFlsSlot()
 //  thread        - thread to attach
 static void OsAttachThread(void* thread)
 {
-    if (flsState != FLS_STATE_INVOKED)
+    if (flsState == FLS_STATE_INVOKED)
     {
         _ASSERTE_ALL_BUILDS(!"Attempt to execute managed code after the .NET runtime thread state has been destroyed.");
     }
