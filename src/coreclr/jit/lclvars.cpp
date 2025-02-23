@@ -2629,17 +2629,9 @@ bool Compiler::StructPromotionHelper::IsArmHfaParameter(unsigned lclNum)
         return false;
     }
 
-    const ABIPassingInformation& abiInfo = compiler->lvaGetParameterABIInfo(lclNum);
-    // Struct types are only passed in registers if they are HFAs/HVAs.
-    for (const ABIPassingSegment& seg : abiInfo.Segments())
-    {
-        if (seg.IsPassedInRegister() && (genIsValidFloatReg(seg.GetRegister())))
-        {
-            return true;
-        }
-    }
-
-    return false;
+    CorInfoHFAElemType hfaType =
+        compiler->info.compCompHnd->getHFAType(compiler->lvaGetDesc(lclNum)->GetLayout()->GetClassHandle());
+    return hfaType != CORINFO_HFA_ELEM_NONE;
 }
 
 //--------------------------------------------------------------------------------------------
