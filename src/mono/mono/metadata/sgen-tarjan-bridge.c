@@ -748,7 +748,7 @@ create_scc (ScanData *data)
 
 	for (i = dyn_array_ptr_size (&loop_stack) - 1; i >= 0; --i) {
 		ScanData *other = (ScanData *)dyn_array_ptr_get (&loop_stack, i);
-		found_bridge |= other->is_bridge;
+		found_bridge |= other->is_bridge || dyn_array_ptr_size (&other->xrefs) > 0;
 		if (found_bridge || other == data)
 			break;
 	}
