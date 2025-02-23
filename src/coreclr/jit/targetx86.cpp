@@ -190,6 +190,16 @@ ABIReturningInformation X86ReturnClassifier::Classify(Compiler* comp, var_types 
     bool mayReturnInRegister = m_info.CallConv == CorInfoCallConvExtension::Managed;
 #else
     bool mayReturnInRegister = !callConvIsInstanceMethodCallConv(m_info.CallConv);
+
+    // The rest of the native calling conventions allow 8 byte structs to be
+    // returned in two registers.
+    if (mayReturnInRegister && (m_info.CallConv != CorInfoCallConvExtension::Managed) && (structLayout->GetSize() == 8))
+    {
+        return ABIReturningInformation::FromSegments(
+            comp,
+            ABIReturningSegment(REG_EAX, 0, 4),
+            ABIReturningSegment(REG_EDX, 4, 8));
+    }
 #endif
 
     if (mayReturnInRegister && isPow2(structLayout->GetSize()) && (structLayout->GetSize() <= 4))
