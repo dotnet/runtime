@@ -28,7 +28,7 @@
 //    o  Set all the other bits to randomly (or pseudo-randomly) chosen
 //       values.
 //
-bool minipal_guid_v4_create(minipal_guid_t* guid)
+bool minipal_guid_v4_create(GUID* guid)
 {
 #ifdef HOST_WINDOWS
     // Windows has a built-in function for creating v4 GUIDs.
@@ -58,12 +58,12 @@ bool minipal_guid_v4_create(minipal_guid_t* guid)
 #endif
 }
 
-bool minipal_guid_equals(minipal_guid_t const* g1, minipal_guid_t const* g2)
+bool minipal_guid_equals(GUID const* g1, GUID const* g2)
 {
-    return memcmp(g1, g2, sizeof(minipal_guid_t)) == 0;
+    return memcmp(g1, g2, sizeof(GUID)) == 0;
 }
 
-void minipal_guid_as_string(minipal_guid_t guid, char* guidString, uint32_t len)
+void minipal_guid_as_string(GUID guid, char* guidString, uint32_t len)
 {
     assert(len >= MINIPAL_GUID_BUFFER_LEN);
 
