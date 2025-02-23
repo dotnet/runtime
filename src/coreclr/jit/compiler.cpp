@@ -4938,6 +4938,7 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
         bool doAssertionProp           = true;
         bool doVNBasedIntrinExpansion  = true;
         bool doRangeAnalysis           = true;
+        bool doRangeCheckCloning       = true;
         bool doVNBasedDeadStoreRemoval = true;
 
 #if defined(OPT_CONFIG)
@@ -4950,6 +4951,7 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
         doCse                     = doValueNum;
         doAssertionProp           = doValueNum && (JitConfig.JitDoAssertionProp() != 0);
         doRangeAnalysis           = doAssertionProp && (JitConfig.JitDoRangeAnalysis() != 0);
+        doRangeCheckCloning       = doValueNum && doRangeAnalysis;
         doOptimizeIVs             = doAssertionProp && (JitConfig.JitDoOptimizeIVs() != 0);
         doVNBasedDeadStoreRemoval = doValueNum && (JitConfig.JitDoVNBasedDeadStoreRemoval() != 0);
         doVNBasedIntrinExpansion  = doValueNum;
@@ -5062,6 +5064,13 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
                 DoPhase(this, PHASE_VN_BASED_DEAD_STORE_REMOVAL, &Compiler::optVNBasedDeadStoreRemoval);
             }
 
+            if (doRangeCheckCloning)
+            {
+                // Clone blocks with subsequent bounds checks
+                //
+                DoPhase(this, PHASE_RANGE_CHECK_CLONING, &Compiler::optRangeCheckCloning);
+            }
+
             if (doVNBasedIntrinExpansion)
             {
                 // Expand some intrinsics based on VN data
@@ -5172,6 +5181,10 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
         // Conditional to Switch conversion
         //
         DoPhase(this, PHASE_SWITCH_RECOGNITION, &Compiler::optSwitchRecognition);
+
+        // Run profile repair
+        //
+        DoPhase(this, PHASE_REPAIR_PROFILE, &Compiler::fgRepairProfile);
     }
 
 #ifdef DEBUG

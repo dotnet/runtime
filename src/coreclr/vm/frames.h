@@ -557,8 +557,9 @@ public:
     static void __stdcall LogTransition(Frame* frame);
     void LogFrame(int LF, int LL);       // General purpose logging.
     void LogFrameChain(int LF, int LL);  // Log the whole chain.
-    static PTR_CSTR GetFrameTypeName(FrameIdentifier frameIdentifier);
 #endif
+
+    static LPCSTR GetFrameTypeName(FrameIdentifier frameIdentifier);
 
 private:
     FrameIdentifier _frameIdentifier;
@@ -2496,13 +2497,15 @@ class DebuggerU2MCatchHandlerFrame : public Frame
 {
 public:
 #ifndef DACCESS_COMPILE
-    DebuggerU2MCatchHandlerFrame() : Frame(FrameIdentifier::DebuggerU2MCatchHandlerFrame)
+    DebuggerU2MCatchHandlerFrame(bool catchesAllExceptions) : Frame(FrameIdentifier::DebuggerU2MCatchHandlerFrame),
+                                                              m_catchesAllExceptions(catchesAllExceptions)
     {
         WRAPPER_NO_CONTRACT;
         Frame::Push();
     }
 
-    DebuggerU2MCatchHandlerFrame(Thread * pThread) : Frame(FrameIdentifier::DebuggerU2MCatchHandlerFrame)
+    DebuggerU2MCatchHandlerFrame(Thread * pThread, bool catchesAllExceptions) : Frame(FrameIdentifier::DebuggerU2MCatchHandlerFrame),
+                                                                                m_catchesAllExceptions(catchesAllExceptions)
     {
         WRAPPER_NO_CONTRACT;
         Frame::Push(pThread);
@@ -2514,6 +2517,16 @@ public:
         LIMITED_METHOD_DAC_CONTRACT;
         return TT_U2M;
     }
+
+    bool CatchesAllExceptions()
+    {
+        LIMITED_METHOD_DAC_CONTRACT;
+        return m_catchesAllExceptions;
+    }
+
+private:
+    // The catch handled marked by the DebuggerU2MCatchHandlerFrame catches all exceptions.
+    bool m_catchesAllExceptions;
 };
 
 // Frame for the Reverse PInvoke (i.e. UnmanagedCallersOnlyAttribute).

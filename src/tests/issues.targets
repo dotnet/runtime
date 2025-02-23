@@ -680,12 +680,6 @@
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Directed/debugging/debuginfo/tester/*">
             <Issue>Just-in-time compilation test</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Intrinsics/TypeIntrinsics_r/*">
-            <Issue>Not compatible with multifile testing.</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Intrinsics/TypeIntrinsics_ro/*">
-            <Issue>Not compatible with multifile testing.</Issue>
-        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/baseservices/compilerservices/RuntimeWrappedException/RuntimeWrappedException/*">
             <Issue>https://github.com/dotnet/runtimelab/issues/155: Wrapping non-exception throws</Issue>
         </ExcludeList>
@@ -3089,6 +3083,9 @@
     <ItemGroup Condition="'$(TargetArchitecture)' == 'wasm'">
         <ExcludeList Include = "$(XunitTestBinBase)/baseservices/exceptions/unhandled/unhandled/**">
             <Issue>System.Diagnostics.Process is not supported</Issue>
+        </ExcludeList>
+        <ExcludeList Include = "$(XunitTestBinBase)/Regressions/coreclr/GitHub_76531/test76531/**">
+            <Issue>Assembly.GetExecutingAssembly().Location returns NULL on WASM</Issue>
         </ExcludeList>
         <ExcludeList Include = "$(XunitTestBinBase)/tracing/eventcounter/incrementingeventcounter/**">
             <Issue>System.Threading.Thread.UnsafeStart not supported</Issue>
