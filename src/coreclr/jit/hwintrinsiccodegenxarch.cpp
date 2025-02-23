@@ -1682,12 +1682,7 @@ void CodeGen::genBaseIntrinsic(GenTreeHWIntrinsic* node, insOpts instOptions)
                             }
                             else
                             {
-                                if (targetReg == op1Reg)
-                                {
-                                    regNumber tmpReg = internalRegisters.GetSingle(node);
-                                    emit->emitIns_Mov(INS_movaps, attr, tmpReg, op1Reg, /* canSkip */ false);
-                                    op1Reg = tmpReg;
-                                }
+                                assert(targetReg != op1Reg);
                                 emit->emitIns_SIMD_R_R_R(INS_xorps, attr, targetReg, targetReg, targetReg, instOptions);
                                 emit->emitIns_Mov(INS_movss, attr, targetReg, op1Reg, /* canSkip */ false);
                             }
