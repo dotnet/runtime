@@ -470,10 +470,6 @@ void FinalizerThread::FinalizerThreadCreate()
     _ASSERTE(g_pFinalizerThread == 0);
     g_pFinalizerThread = SetupUnstartedThread();
 
-#ifdef FEATURE_COMINTEROP
-    g_pFinalizerThread->SetApartmentOfUnstartedThread(Thread::AS_InMTA);
-#endif
-
     // We don't want the thread block disappearing under us -- even if the
     // actual thread terminates.
     GetFinalizerThread()->IncExternalCount();
