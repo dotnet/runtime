@@ -4139,11 +4139,30 @@ void Compiler::optAssertionProp_RangeProperties(ASSERT_VALARG_TP assertions,
     }
 
     // Let's see if RangeCheck can help us:
-    if (!onlyIfCheap && tree->TypeIs(TYP_INT))
+    if (tree->TypeIs(TYP_INT))
     {
-        Range range      = GetRangeCheck()->GetRange(block, tree);
-        Limit lowerBound = range.LowerLimit();
-        if (lowerBound.IsConstant() && !GetRangeCheck()->DoesOverflow(block, tree, range))
+        Limit lowerBound(Limit::keUnknown);
+
+        // We use SSA+Assertions only when onlyIsCheap is false because it can be expensive
+        // Otherwise, Assertions only (cheap).
+        if (onlyIfCheap)
+        {
+            // NOTE: we shouldn't need this path, the loop above should have handled all the cases as is
+            Range range = Range(Limit(Limit::keDependent));
+            RangeCheck::MergeEdgeAssertions(this, treeVN, ValueNumStore::NoVN, assertions, &range, false);
+            lowerBound = range.LowerLimit();
+        }
+        else
+        {
+            // For SSA-based we also need to check whether it overflows or not.
+            Range range = GetRangeCheck()->GetRange(block, tree);
+            if (range.LowerLimit().IsConstant() && !GetRangeCheck()->DoesOverflow(block, tree, range))
+            {
+                lowerBound = range.LowerLimit();
+            }
+        }
+
+        if (lowerBound.IsConstant())
         {
             if (lowerBound.GetConstant() >= 0)
             {
@@ -4494,7 +4513,7 @@ GenTree* Compiler::optAssertionPropGlobal_RelOp(ASSERT_VALARG_TP assertions,
         Range rng1 = GetRangeCheck()->GetRange(block, op1);
         Range rng2 = Range(Limit(Limit::keConstant, static_cast<int>(op2->AsIntCon()->IconValue())));
 
-        RangeOps::RelationKind kind = RangeOps::EvalRelop(tree->OperGet(), rng1, rng2);
+        RangeOps::RelationKind kind = RangeOps::EvalRelop(tree->OperGet(), tree->IsUnsigned(), rng1, rng2);
         if ((kind != RangeOps::RelationKind::Unknown) && !GetRangeCheck()->DoesOverflow(block, op1, rng1))
         {
             newTree = kind == RangeOps::RelationKind::AlwaysTrue ? gtNewTrue() : gtNewFalse();

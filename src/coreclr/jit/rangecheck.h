@@ -598,18 +598,29 @@ struct RangeOps
     //    Example: "x >= y" is AlwaysTrue when "x.LowerLimit() >= y.UpperLimit()"
     //
     // Arguments:
-    //    relop - The relational operator (LE,LT,GE,GT,EQ,NE)
-    //    x     - The left range
-    //    y     - The right range
+    //    relop      - The relational operator (LE,LT,GE,GT,EQ,NE)
+    //    isUnsigned - True if the comparison is unsigned
+    //    x          - The left range
+    //    y          - The right range
     //
     // Returns:
     //    AlwaysTrue when the given relop always evaluates to true for the given ranges
     //    AlwaysFalse when the given relop always evaluates to false for the given ranges
     //    Otherwise Unknown
     //
-    static RelationKind EvalRelop(const genTreeOps relop, const Range& x, const Range& y)
+    static RelationKind EvalRelop(const genTreeOps relop, bool isUnsigned, const Range& x, const Range& y)
     {
         // NOTE: we can also handle BinOpArray here, but it doesn't seem worth it
+
+        // For unsigned comparisons, we only support non-negative ranges.
+        if (isUnsigned)
+        {
+            if ((!x.LowerLimit().IsConstant() || !y.UpperLimit().IsConstant()) ||
+                (x.LowerLimit().GetConstant() < 0 || y.LowerLimit().GetConstant() < 0))
+            {
+                return RelationKind::Unknown;
+            }
+        }
 
         switch (relop)
         {
