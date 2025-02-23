@@ -544,14 +544,6 @@ ABIPassingInformation ABIPassingInformation::FromSegments(Compiler*             
     return info;
 }
 
-ABIPassingInformation ABIPassingInformation::ReturnedByReference()
-{
-    ABIPassingInformation info;
-    info.m_passedByRef = true;
-    info.NumSegments   = 0;
-    return info;
-}
-
 #ifdef DEBUG
 //-----------------------------------------------------------------------------
 // Dump:

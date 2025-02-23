@@ -138,7 +138,6 @@ public:
                                               const ABIPassingSegment& firstSegment,
                                               const ABIPassingSegment& secondSegment);
 
-    static ABIPassingInformation ReturnedByReference();
 
 #ifdef WINDOWS_AMD64_ABI
     static bool GetShadowSpaceCallerOffsetForReg(regNumber reg, int* offset);
