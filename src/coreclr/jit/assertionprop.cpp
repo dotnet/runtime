@@ -4509,7 +4509,6 @@ GenTree* Compiler::optAssertionPropGlobal_RelOp(ASSERT_VALARG_TP assertions,
         !op2->IsIntegralConst(0))
     {
         // NOTE: we can call GetRange for op2 as well, but that will be even more expensive,
-        // so for now it's limited to "op2 relop CNS"
         Range rng1 = GetRangeCheck()->GetRange(block, op1);
         Range rng2 = Range(Limit(Limit::keConstant, static_cast<int>(op2->AsIntCon()->IconValue())));
 

@@ -1404,11 +1404,6 @@ bool RangeCheck::DoesPhiOverflow(BasicBlock* block, GenTree* expr, const Range& 
 //
 bool RangeCheck::DoesOverflow(BasicBlock* block, GenTree* expr, const Range& range)
 {
-    if (range.LowerLimit().IsConstant() && range.UpperLimit().IsConstant())
-    {
-        return false;
-    }
-
     bool overflows = false;
     if (!GetOverflowMap()->Lookup(expr, &overflows))
     {
@@ -1434,10 +1429,6 @@ bool RangeCheck::ComputeDoesOverflow(BasicBlock* block, GenTree* expr, const Ran
         overflows = false;
     }
     else if (expr->OperIs(GT_IND))
-    {
-        overflows = false;
-    }
-    else if (expr->OperIsConst())
     {
         overflows = false;
     }
