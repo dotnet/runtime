@@ -611,6 +611,19 @@ bool Compiler::isNativePrimitiveStructType(CORINFO_CLASS_HANDLE clsHnd)
     return strcmp(typeName, "CLong") == 0 || strcmp(typeName, "CULong") == 0 || strcmp(typeName, "NFloat") == 0;
 }
 
+//---------------------------------------------------------------------------
+// mapNativePrimitiveStructType:
+//   If a struct layout represents a native primitive struct type then map it
+//   to a JIT primitive type.
+//
+// Arguments:
+//   layout - Layout
+//
+// Return Value:
+//   TYP_UNDEF is the layout is something other than
+//   System.Runtime.InteropServices.CLong/CUlong/NFloat; otherwise the
+//   primitive type corresponding to the layout.
+//
 var_types Compiler::mapNativePrimitiveStructType(ClassLayout* layout)
 {
     if (!isIntrinsicType(layout->GetClassHandle()))

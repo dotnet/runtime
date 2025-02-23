@@ -212,6 +212,13 @@ ABIPassingInformation Arm64Classifier::Classify(Compiler*    comp,
     return info;
 }
 
+//-----------------------------------------------------------------------------
+// Arm64ReturnClassifier::Arm64ReturnClassifier:
+//   Construct a classifier for arm64 return values.
+//
+// Parameters:
+//   info - Classifier information
+//
 Arm64ReturnClassifier::Arm64ReturnClassifier(const ReturnClassifierInfo& info)
     : m_info(info)
 {

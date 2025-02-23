@@ -203,6 +203,13 @@ ABIPassingInformation Arm32Classifier::ClassifyFloat(Compiler* comp, var_types t
     }
 }
 
+//-----------------------------------------------------------------------------
+// Arm32ReturnClassifier:
+//   Construct a classifier for arm32 return values.
+//
+// Parameters:
+//   info - Classifier information
+//
 Arm32ReturnClassifier::Arm32ReturnClassifier(const ReturnClassifierInfo& info)
     : m_info(info)
 {

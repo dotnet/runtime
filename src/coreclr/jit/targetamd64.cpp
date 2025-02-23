@@ -134,11 +134,31 @@ ABIPassingInformation SysVX64Classifier::Classify(Compiler*    comp,
     return info;
 }
 
+//-----------------------------------------------------------------------------
+// SysVX64ReturnClassifier::
+//   Construct a classifier for SysV x64 return values.
+//
+// Parameters:
+//   info - Classifier information
+//
 SysVX64ReturnClassifier::SysVX64ReturnClassifier(const ReturnClassifierInfo& info)
     : m_info(info)
 {
 }
 
+//-----------------------------------------------------------------------------
+// Classify:
+//   Classify how a value is returned in the SysV x64 ABI.
+//
+// Parameters:
+//   comp           - Compiler instance
+//   type           - The return type
+//   structLayout   - The layout of the struct. Expected to be non-null if
+//                    varTypeIsStruct(type) is true.
+//
+// Returns:
+//   Classification information for the return value.
+//
 ABIReturningInformation SysVX64ReturnClassifier::Classify(Compiler* comp, var_types type, ClassLayout* structLayout)
 {
     switch (type)
@@ -286,11 +306,31 @@ bool ABIPassingInformation::GetShadowSpaceCallerOffsetForReg(regNumber reg, int*
     }
 }
 
+//-----------------------------------------------------------------------------
+// WinX64ReturnClassifier::WinX64ReturnClassifier:
+//   Construct a classifier for Windows x64 return values.
+//
+// Parameters:
+//   info - Classifier information
+//
 WinX64ReturnClassifier::WinX64ReturnClassifier(const ReturnClassifierInfo& info)
     : m_info(info)
 {
 }
 
+//-----------------------------------------------------------------------------
+// Classify:
+//   Classify how a value is returned in the Windows x64 ABI.
+//
+// Parameters:
+//   comp           - Compiler instance
+//   type           - The return type
+//   structLayout   - The layout of the struct. Expected to be non-null if
+//                    varTypeIsStruct(type) is true.
+//
+// Returns:
+//   Classification information for the return value.
+//
 ABIReturningInformation WinX64ReturnClassifier::Classify(Compiler* comp, var_types type, ClassLayout* structLayout)
 {
     switch (type)
