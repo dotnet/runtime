@@ -662,16 +662,18 @@ public:
     // The "path" is the path taken in the search for the rhs' range and its constituents' range.
     // If "monIncreasing" is true, the calculations are made more liberally assuming initial values
     // at phi definitions for the lower bound.
-    Range GetRange(BasicBlock* block, GenTree* expr, bool monIncreasing DEBUGARG(int indent));
+    Range GetRange(BasicBlock* block, GenTree* expr);
+
+    Range GetRangeWorker(BasicBlock* block, GenTree* expr, bool monIncreasing DEBUGARG(int indent));
 
     // Compute the range from the given type
     Range GetRangeFromType(var_types type);
 
     // Given the local variable, first find the definition of the local and find the range of the rhs.
-    // Helper for GetRange.
+    // Helper for GetRangeWorker.
     Range ComputeRangeForLocalDef(BasicBlock* block, GenTreeLclVarCommon* lcl, bool monIncreasing DEBUGARG(int indent));
 
-    // Compute the range, rather than retrieve a cached value. Helper for GetRange.
+    // Compute the range, rather than retrieve a cached value. Helper for GetRangeWorker.
     Range ComputeRange(BasicBlock* block, GenTree* expr, bool monIncreasing DEBUGARG(int indent));
 
     // Compute the range for the op1 and op2 for the given binary operator.

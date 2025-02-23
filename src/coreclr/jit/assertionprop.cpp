@@ -4137,7 +4137,7 @@ void Compiler::optAssertionProp_RangeProperties(ASSERT_VALARG_TP assertions,
     // Let's see if RangeCheck can help us:
     if (tree->TypeIs(TYP_INT))
     {
-        Range range      = GetRangeCheck()->GetRange(block, tree, false DEBUGARG(0));
+        Range range      = GetRangeCheck()->GetRange(block, tree);
         Limit lowerBound = range.LowerLimit();
         if (lowerBound.IsConstant() && !GetRangeCheck()->DoesOverflow(block, tree, range))
         {

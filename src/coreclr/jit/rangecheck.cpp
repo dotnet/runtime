@@ -304,10 +304,6 @@ void RangeCheck::OptimizeRangeCheck(BasicBlock* block, Statement* stmt, GenTree*
         }
     }
 
-    GetRangeMap()->RemoveAll();
-    GetOverflowMap()->RemoveAll();
-    GetSearchPath()->RemoveAll();
-
     // Special case: arr[arr.Length - CNS] if we know that arr.Length >= CNS
     // We assume that SUB(x, CNS) is canonized into ADD(x, -CNS)
     VNFuncApp funcApp;
@@ -335,7 +331,7 @@ void RangeCheck::OptimizeRangeCheck(BasicBlock* block, Statement* stmt, GenTree*
             //   bool result = (arr.Length == 0) || (arr[arr.Length - 1] == 0);
             //
             // here for the array access we know that arr.Length >= 1
-            Range arrLenRange = GetRange(block, bndsChk->GetArrayLength(), false DEBUGARG(0));
+            Range arrLenRange = GetRangeWorker(block, bndsChk->GetArrayLength(), false DEBUGARG(0));
             if (arrLenRange.LowerLimit().IsConstant())
             {
                 // Lower known limit of ArrLen:
@@ -371,13 +367,13 @@ void RangeCheck::OptimizeRangeCheck(BasicBlock* block, Statement* stmt, GenTree*
     }
 
     // Get the range for this index.
-    Range range = GetRange(block, treeIndex, false DEBUGARG(0));
+    Range range = GetRange(block, treeIndex);
 
     // If upper or lower limit is found to be unknown (top), or it was found to
     // be unknown because of over budget or a deep search, then return early.
     if (range.UpperLimit().IsUnknown() || range.LowerLimit().IsUnknown())
     {
-        // Note: If we had stack depth too deep in the GetRange call, we'd be
+        // Note: If we had stack depth too deep in the GetRangeWorker call, we'd be
         // too deep even in the DoesOverflow call. So return early.
         return;
     }
@@ -429,7 +425,7 @@ void RangeCheck::Widen(BasicBlock* block, GenTree* tree, Range* pRange)
         {
             JITDUMP("[%06d] is monotonically increasing.\n", Compiler::dspTreeID(tree));
             GetRangeMap()->RemoveAll();
-            *pRange = GetRange(block, tree, true DEBUGARG(0));
+            *pRange = GetRangeWorker(block, tree, true DEBUGARG(0));
         }
     }
 }
@@ -1166,7 +1162,7 @@ Range RangeCheck::ComputeRangeForBinOp(BasicBlock* block, GenTreeOp* binop, bool
         }
         else
         {
-            op1Range = GetRange(block, op1, monIncreasing DEBUGARG(indent));
+            op1Range = GetRangeWorker(block, op1, monIncreasing DEBUGARG(indent));
         }
         MergeAssertion(block, op1, &op1Range DEBUGARG(indent + 1));
     }
@@ -1188,7 +1184,7 @@ Range RangeCheck::ComputeRangeForBinOp(BasicBlock* block, GenTreeOp* binop, bool
         }
         else
         {
-            op2Range = GetRange(block, op2, monIncreasing DEBUGARG(indent));
+            op2Range = GetRangeWorker(block, op2, monIncreasing DEBUGARG(indent));
         }
         MergeAssertion(block, op2, &op2Range DEBUGARG(indent + 1));
     }
@@ -1271,7 +1267,7 @@ Range RangeCheck::ComputeRangeForLocalDef(BasicBlock*          block,
         JITDUMP("----------------------------------------------------\n");
     }
 #endif
-    Range range = GetRange(ssaDef->GetBlock(), ssaDef->GetDefNode()->Data(), monIncreasing DEBUGARG(indent));
+    Range range = GetRangeWorker(ssaDef->GetBlock(), ssaDef->GetDefNode()->Data(), monIncreasing DEBUGARG(indent));
     if (!BitVecOps::MayBeUninit(block->bbAssertionIn) && (m_pCompiler->GetAssertionCount() > 0))
     {
         JITDUMP("Merge assertions from " FMT_BB ": ", block->bbNum);
@@ -1578,14 +1574,14 @@ Range RangeCheck::ComputeRange(BasicBlock* block, GenTree* expr, bool monIncreas
         // searches. This is because anything that merges with Unknown will
         // yield Unknown. Unknown is lattice top.
         range = Range(Limit(Limit::keUnknown));
-        JITDUMP("GetRange not tractable within max node visit budget.\n");
+        JITDUMP("GetRangeWorker not tractable within max node visit budget.\n");
     }
     // Prevent unbounded recursion.
     else if (GetSearchPath()->GetCount() > MAX_SEARCH_DEPTH)
     {
         // Unknown is lattice top, anything that merges with Unknown will yield Unknown.
         range = Range(Limit(Limit::keUnknown));
-        JITDUMP("GetRange not tractable within max stack depth.\n");
+        JITDUMP("GetRangeWorker not tractable within max stack depth.\n");
     }
     // TODO-CQ: The current implementation is reliant on integer storage types
     // for constants. It could use INT64. Still, representing ULONG constants
@@ -1594,7 +1590,7 @@ Range RangeCheck::ComputeRange(BasicBlock* block, GenTree* expr, bool monIncreas
     else if (expr->TypeGet() == TYP_LONG || expr->TypeGet() == TYP_ULONG)
     {
         range = Range(Limit(Limit::keUnknown));
-        JITDUMP("GetRange long or ulong, setting to unknown value.\n");
+        JITDUMP("GetRangeWorker long or ulong, setting to unknown value.\n");
     }
     // If VN is constant return range as constant.
     else if (m_pCompiler->vnStore->IsVNConstant(vn))
@@ -1617,7 +1613,7 @@ Range RangeCheck::ComputeRange(BasicBlock* block, GenTree* expr, bool monIncreas
     else if (expr->OperIs(GT_NEG))
     {
         // Compute range for negation, e.g.: [0..8] -> [-8..0]
-        Range op1Range = GetRange(block, expr->gtGetOp1(), monIncreasing DEBUGARG(indent + 1));
+        Range op1Range = GetRangeWorker(block, expr->gtGetOp1(), monIncreasing DEBUGARG(indent + 1));
         range          = RangeOps::Negate(op1Range);
     }
     // If phi, then compute the range for arguments, calling the result "dependent" when looping begins.
@@ -1633,7 +1629,7 @@ Range RangeCheck::ComputeRange(BasicBlock* block, GenTree* expr, bool monIncreas
             }
             else
             {
-                argRange = GetRange(block, use.GetNode(), monIncreasing DEBUGARG(indent + 1));
+                argRange = GetRangeWorker(block, use.GetNode(), monIncreasing DEBUGARG(indent + 1));
             }
             assert(!argRange.LowerLimit().IsUndef());
             assert(!argRange.UpperLimit().IsUndef());
@@ -1650,7 +1646,7 @@ Range RangeCheck::ComputeRange(BasicBlock* block, GenTree* expr, bool monIncreas
     }
     else if (expr->OperIs(GT_COMMA))
     {
-        range = GetRange(block, expr->gtEffectiveVal(), monIncreasing DEBUGARG(indent + 1));
+        range = GetRangeWorker(block, expr->gtEffectiveVal(), monIncreasing DEBUGARG(indent + 1));
     }
     else if (expr->OperIs(GT_CAST))
     {
@@ -1679,13 +1675,23 @@ void Indent(int indent)
 #endif
 
 // Get the range, if it is already computed, use the cached range value, else compute it.
-Range RangeCheck::GetRange(BasicBlock* block, GenTree* expr, bool monIncreasing DEBUGARG(int indent))
+Range RangeCheck::GetRange(BasicBlock* block, GenTree* expr)
+{
+    GetRangeMap()->RemoveAll();
+    GetOverflowMap()->RemoveAll();
+    GetSearchPath()->RemoveAll();
+
+    return GetRangeWorker(block, expr, false DEBUGARG(0));
+}
+
+// Get the range, if it is already computed, use the cached range value, else compute it.
+Range RangeCheck::GetRangeWorker(BasicBlock* block, GenTree* expr, bool monIncreasing DEBUGARG(int indent))
 {
 #ifdef DEBUG
     if (m_pCompiler->verbose)
     {
         Indent(indent);
-        JITDUMP("[RangeCheck::GetRange] " FMT_BB " ", block->bbNum);
+        JITDUMP("[RangeCheck::GetRangeWorker] " FMT_BB " ", block->bbNum);
         m_pCompiler->gtDispTree(expr);
         Indent(indent);
         JITDUMP("{\n", expr);
