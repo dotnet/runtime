@@ -262,7 +262,7 @@ if(CLR_CMAKE_HOST_UNIX)
   add_subdirectory(nativeresources)
 endif(CLR_CMAKE_HOST_UNIX)
 
-if(NOT CLR_CMAKE_HOST_TVOS)
+if(NOT CLR_CMAKE_HOST_TVOS AND NOT CLR_CMAKE_HOST_BROWSER)
   add_subdirectory(utilcode)
   add_subdirectory(inc)
 
@@ -280,7 +280,7 @@ if(NOT CLR_CMAKE_HOST_TVOS)
   add_subdirectory(dlls)
   add_subdirectory(unwinder)
   add_subdirectory(interop)
-endif()
+endif(NOT CLR_CMAKE_HOST_TVOS AND NOT CLR_CMAKE_HOST_BROWSER)
 
 if(NOT CLR_CMAKE_HOST_MACCATALYST AND NOT CLR_CMAKE_HOST_IOS AND NOT CLR_CMAKE_HOST_TVOS)
   add_subdirectory(tools)

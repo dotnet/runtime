@@ -316,6 +316,11 @@ typedef int __ptrace_request;
     ASSIGN_REG(R29)     \
     ASSIGN_REG(R30)
 
+#elif defined(HOST_WASM)
+#define ASSIGN_CONTROL_REGS  \
+    ASSERT("WASM does not have registers");
+#define ASSIGN_INTEGER_REGS  \
+    ASSERT("WASM does not have registers");
 #else
 #error "Don't know how to assign registers on this architecture"
 #endif
@@ -2183,6 +2188,8 @@ DBG_FlushInstructionCache(
 #endif
 
     syscall(__NR_riscv_flush_icache, (char *)lpBaseAddress, (char *)((INT_PTR)lpBaseAddress + dwSize), 0 /* all harts */);
+#elif defined(HOST_WASM)
+    // do nothing, no instruction cache to flush
 #elif defined(HOST_APPLE) && !defined(HOST_OSX)
     sys_icache_invalidate((void *)lpBaseAddress, dwSize);
 #else
