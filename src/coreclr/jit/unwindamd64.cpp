@@ -423,15 +423,20 @@ void Compiler::unwindSaveRegWindows(regNumber reg, unsigned offset)
             code             = (UNWIND_CODE*)&func->unwindCodes[func->unwindCodeSlot -= sizeof(UNWIND_CODE)];
             code->UnwindOp   = (genIsValidFloatReg(reg)) ? UWOP_SAVE_XMM128_FAR : UWOP_SAVE_NONVOL_FAR;
         }
+        unsigned unwindRegNum;
         if (genIsValidFloatReg(reg))
         {
-            code->OpInfo = reg - XMMBASE;
+            unwindRegNum = reg - XMMBASE;
         }
         else
         {
             assert(genIsValidIntReg(reg));
-            code->OpInfo = reg;
+            unwindRegNum = reg;
         }
+        assert(unwindRegNum <= 15);
+        code->OpInfo = (UCHAR)unwindRegNum;
+        assert((unsigned)code->OpInfo == unwindRegNum);
+
         unsigned int cbProlog = unwindGetCurrentOffset(func);
         noway_assert((BYTE)cbProlog == cbProlog);
         code->CodeOffset = (BYTE)cbProlog;
