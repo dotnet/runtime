@@ -875,6 +875,7 @@ def getKeywordsMaskCombined(keywords, keywordsToMask):
 def updateclreventsfile(write_xplatheader, target_cpp, runtimeFlavor, is_host_windows, eventpipe_trace_context_typedef, dotnet_trace_context_typedef_windows, user_events_trace_context_typedef, tree, clrallevents, inclusion_list, generatedFileType, user_events):
     with open_for_update(clrallevents) as Clrallevents:
         Clrallevents.write(stdprolog)
+        Clrallevents.write('#include <minipal/guid.h>\n\n')
         if generatedFileType=="header-impl":
             if runtimeFlavor.mono:
                 Clrallevents.write(getCoreCLRMonoNativeAotTypeAdaptionDefines() + "\n")

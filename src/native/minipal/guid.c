@@ -4,6 +4,8 @@
 #include "guid.h"
 #include "random.h"
 #include <string.h>
+#include <stdio.h>
+#include <assert.h>
 #ifdef HOST_WINDOWS
 #include <Windows.h>
 #endif
@@ -30,7 +32,7 @@ bool minipal_guid_v4_create(minipal_guid_t* guid)
 {
 #ifdef HOST_WINDOWS
     // Windows has a built-in function for creating v4 GUIDs.
-    return SUCCEEDED(CoCreateGuid((GUID*)guid));
+    return SUCCEEDED(CoCreateGuid(guid));
 #else
     // Technically, v4 GUIDs don't require cryptographically secure random bytes;
     // however, CoCreateGuid provides that guarantee and we want to ensure
@@ -42,14 +44,14 @@ bool minipal_guid_v4_create(minipal_guid_t* guid)
         // time_hi_and_version
         const uint16_t mask  = 0xf000; // b1111000000000000
         const uint16_t value = 0x4000; // b0100000000000000
-        guid->data3 = (guid->data3 & ~mask) | value;
+        guid->Data3 = (guid->Data3 & ~mask) | value;
     }
 
     {
         // clock_seq_hi_and_reserved
         const uint8_t mask  = 0xc0; // b11000000
         const uint8_t value = 0x80; // b10000000
-        guid->data4[0] = (guid->data4[0] & ~mask) | value;
+        guid->Data4[0] = (guid->Data4[0] & ~mask) | value;
     }
 
     return true;
@@ -59,4 +61,19 @@ bool minipal_guid_v4_create(minipal_guid_t* guid)
 bool minipal_guid_equals(minipal_guid_t const* g1, minipal_guid_t const* g2)
 {
     return memcmp(g1, g2, sizeof(minipal_guid_t)) == 0;
+}
+
+void minipal_guid_as_string(minipal_guid_t guid, char* guidString, uint32_t len)
+{
+    assert(len >= MINIPAL_GUID_BUFFER_LEN);
+
+    int32_t nBytes = snprintf(guidString, len, "{%08x-%04x-%04x-%02x%02x-%02x%02x%02x%02x%02x%02x}",
+        guid.Data1, guid.Data2, guid.Data3,
+        guid.Data4[0], guid.Data4[1],
+        guid.Data4[2], guid.Data4[3],
+        guid.Data4[4], guid.Data4[5],
+        guid.Data4[6], guid.Data4[7]) + 1;
+
+    (void)nBytes; // unused in release mode
+    assert(nBytes == MINIPAL_GUID_BUFFER_LEN - 1);
 }
