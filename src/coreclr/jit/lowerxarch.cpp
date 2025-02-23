@@ -106,28 +106,6 @@ GenTree* Lowering::LowerStoreIndir(GenTreeStoreInd* node)
         node->Data()->ChangeType(TYP_BYTE);
     }
 
-#if defined(FEATURE_HW_INTRINSICS)
-    if (varTypeIsSmall(node) && node->Data()->OperIsHWIntrinsic() && comp->opts.OptimizationEnabled())
-    {
-        GenTreeHWIntrinsic* hwintrinsic = node->Data()->AsHWIntrinsic();
-        NamedIntrinsic      intrinsicId = hwintrinsic->GetHWIntrinsicId();
-
-        if (HWIntrinsicInfo::IsVectorToScalar(intrinsicId) &&
-            comp->compOpportunisticallyDependsOn(InstructionSet_SSE41))
-        {
-            CorInfoType baseJitType = varTypeIsByte(node) ? CORINFO_TYPE_UBYTE : CORINFO_TYPE_USHORT;
-            intrinsicId             = varTypeIsByte(node) ? NI_SSE41_Extract : NI_SSE2_Extract;
-
-            GenTree* zero = comp->gtNewZeroConNode(TYP_INT);
-            BlockRange().InsertBefore(hwintrinsic, zero);
-
-            hwintrinsic->SetSimdBaseJitType(baseJitType);
-            hwintrinsic->ResetHWIntrinsicId(intrinsicId, hwintrinsic->Op(1), zero);
-            zero->SetContained();
-        }
-    }
-#endif // FEATURE_HW_INTRINSICS
-
     ContainCheckStoreIndir(node);
 
 #if defined(FEATURE_HW_INTRINSICS)
@@ -7739,26 +7717,38 @@ void Lowering::ContainCheckStoreIndir(GenTreeStoreInd* node)
                 case NI_Vector256_ToScalar:
                 case NI_Vector512_ToScalar:
                 {
-                    if (varTypeIsFloating(simdBaseType))
-                    {
-                        // These intrinsics are "ins reg/mem, xmm" or "ins xmm, reg/mem"
-                        //
-                        // In the case we are coming from and going to memory, we want to
-                        // preserve the original containment as we'll end up emitting:
-                        //    movss xmm0, [addr1]           ; Size: 4, Latency: 4-7,  TP: 0.5
-                        //    movss [addr2], xmm0           ; Size: 4, Latency: 4-10, TP: 1
-                        //
-                        // However, we want to prefer containing the store over allowing the
-                        // input to be regOptional, so track and clear containment if required.
+                    // These intrinsics are "ins reg/mem, xmm" or "ins xmm, reg/mem"
+                    //
+                    // In the case we are coming from and going to memory, we want to
+                    // preserve the original containment as we'll end up emitting a pair
+                    // of scalar moves. e.g. for float:
+                    //    movss xmm0, [addr1]           ; Size: 4, Latency: 4-7,  TP: 0.5
+                    //    movss [addr2], xmm0           ; Size: 4, Latency: 4-10, TP: 1
+                    //
+                    // However, we want to prefer containing the store over allowing the
+                    // input to be regOptional, so track and clear containment if required.
 
-                        clearContainedNode = hwintrinsic->Op(1);
-                        isContainable      = !clearContainedNode->isContained();
-                    }
-                    else if (!varTypeIsSmall(simdBaseType))
+                    clearContainedNode = hwintrinsic->Op(1);
+                    isContainable      = !clearContainedNode->isContained();
+
+                    if (isContainable && varTypeIsIntegral(simdBaseType))
                     {
-                        clearContainedNode = hwintrinsic->Op(1);
-                        isContainable =
-                            !clearContainedNode->isContained() && (genTypeSize(simdBaseType) == genTypeSize(node));
+                        isContainable = (genTypeSize(simdBaseType) == genTypeSize(node)) &&
+                                        (!varTypeIsSmall(simdBaseType) ||
+                                         comp->compOpportunisticallyDependsOn(InstructionSet_SSE41));
+
+                        if (isContainable && varTypeIsSmall(simdBaseType))
+                        {
+                            CorInfoType baseJitType = varTypeIsByte(node) ? CORINFO_TYPE_UBYTE : CORINFO_TYPE_USHORT;
+                            intrinsicId             = varTypeIsByte(node) ? NI_SSE41_Extract : NI_SSE2_Extract;
+
+                            GenTree* zero = comp->gtNewZeroConNode(TYP_INT);
+                            BlockRange().InsertBefore(hwintrinsic, zero);
+
+                            hwintrinsic->SetSimdBaseJitType(baseJitType);
+                            hwintrinsic->ResetHWIntrinsicId(intrinsicId, hwintrinsic->Op(1), zero);
+                            zero->SetContained();
+                        }
                     }
                     break;
                 }
