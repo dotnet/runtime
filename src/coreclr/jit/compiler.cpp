@@ -1370,7 +1370,7 @@ ABIReturningInformation Compiler::ClassifyReturnABI(var_types                typ
     ReturnClassifierInfo info;
     info.CallConv = callConv;
 
-#ifdef SWIFT_SUPPORT
+#if defined(SWIFT_SUPPORT)
     if (callConv == CorInfoCallConvExtension::Swift)
     {
         SwiftABIReturnClassifier retClassifier(info);
@@ -1378,10 +1378,27 @@ ABIReturningInformation Compiler::ClassifyReturnABI(var_types                typ
     }
 #endif
 
+#if !defined(TARGET_LOONGARCH64) && !defined(TARGET_RISCV64)
     PlatformReturnClassifier retClassifier(info);
     return retClassifier.Classify(this, type, structLayout);
+#else
+    return ABIReturningInformation::Void();
+#endif
 }
 
+//-----------------------------------------------------------------------------
+// ClassifyReturnABI:
+//   Classify how a value should be returned under the specified calling
+//   convention.
+//
+// Parameters:
+//   type         - JIT type for the parameter
+//   structLayout - If varTypeIsStruct(type) the (non-custom) layout of the struct
+//   callConv     - Calling convention to classify for
+//
+// Return Value:
+//   Information for the return value.
+//
 void Compiler::CompareReturnABI(const ReturnTypeDesc&          desc,
                                 CorInfoCallConvExtension       callConv,
                                 const ABIReturningInformation& abiInfo)
