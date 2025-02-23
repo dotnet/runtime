@@ -651,7 +651,7 @@ CPFH_RealFirstPassHandler(                  // ExceptionContinueSearch, etc.
 
 #if defined(USE_FEF)
     BOOL bPopFaultingExceptionFrame = FALSE;
-    FrameWithCookie<FaultingExceptionFrame> faultingExceptionFrame;
+    FaultingExceptionFrame faultingExceptionFrame;
 #endif // USE_FEF
     ExInfo* pExInfo = &(pThread->GetExceptionState()->m_currentExInfo);
 
@@ -690,7 +690,7 @@ CPFH_RealFirstPassHandler(                  // ExceptionContinueSearch, etc.
     if (fIsManagedCode &&
         fPGCDisabledOnEntry &&
         (pThread->m_pFrame == FRAME_TOP ||
-         pThread->m_pFrame->GetVTablePtr() != FaultingExceptionFrame::GetMethodFrameVPtr() ||
+         pThread->m_pFrame->GetFrameIdentifier() != FrameIdentifier::FaultingExceptionFrame ||
          (size_t)pThread->m_pFrame > (size_t)pEstablisherFrame))
     {
         // setup interrupted frame so that GC during calls to init won't collect the frames
@@ -2131,8 +2131,8 @@ StackWalkAction COMPlusThrowCallback(       // SWA value
     #else
     #define METHODNAME(pFunc) "<n/a>"
     #endif
-    STRESS_LOG4(LF_EH, LL_INFO100, "COMPlusThrowCallback: STACKCRAWL method:%pM ('%s'), Frame:%p, FrameVtable = %pV\n",
-        pFunc, METHODNAME(pFunc), pFrame, pCf->IsFrameless()?0:(*(void**)pFrame));
+    STRESS_LOG4(LF_EH, LL_INFO100, "COMPlusThrowCallback: STACKCRAWL method:%pM ('%s'), Frame:%p, FrameIdentifier = %s\n",
+        pFunc, METHODNAME(pFunc), pFrame, pCf->IsFrameless()?0:Frame::GetFrameTypeName(pFrame->GetFrameIdentifier()));
     #undef METHODNAME
 
     Thread *pThread = GetThread();
@@ -2167,7 +2167,7 @@ StackWalkAction COMPlusThrowCallback(       // SWA value
         if (pData->pPrevExceptionRecord) {
             // FCALLS have an extra SEH record in debug because of the desctructor
             // associated with ForbidGC checking.  This is benign, so just ignore it.
-            if (pFrame) _ASSERTE(pData->pPrevExceptionRecord < pFrame || pFrame->GetVTablePtr() == HelperMethodFrame::GetMethodFrameVPtr());
+            if (pFrame) _ASSERTE(pData->pPrevExceptionRecord < pFrame || pFrame->GetFrameIdentifier() == FrameIdentifier::HelperMethodFrame);
             if (pCf->IsFrameless()) _ASSERTE((ULONG_PTR)pData->pPrevExceptionRecord <= GetRegdisplaySP(pCf->GetRegisterSet()));
         }
     }
@@ -2539,8 +2539,8 @@ StackWalkAction COMPlusUnwindCallback (CrawlFrame *pCf, ThrowCallbackType *pData
     #else
     #define METHODNAME(pFunc) "<n/a>"
     #endif
-    STRESS_LOG4(LF_EH, LL_INFO100, "COMPlusUnwindCallback: STACKCRAWL method:%pM ('%s'), Frame:%p, FrameVtable = %pV\n",
-        pFunc, METHODNAME(pFunc), pFrame, pCf->IsFrameless()?0:(*(void**)pFrame));
+    STRESS_LOG4(LF_EH, LL_INFO100, "COMPlusUnwindCallback: STACKCRAWL method:%pM ('%s'), Frame:%p, FrameIdentifier = %s\n",
+        pFunc, METHODNAME(pFunc), pFrame, pCf->IsFrameless()?0:Frame::GetFrameTypeName(pFrame->GetFrameIdentifier()));
     #undef METHODNAME
 
     if (pFrame && pData->pTopFrame == pFrame)
@@ -2668,7 +2668,7 @@ StackWalkAction COMPlusUnwindCallback (CrawlFrame *pCf, ThrowCallbackType *pData
             // Make the filter as done. See comment in CallJitEHFilter
             // on why we have to do it here.
             Frame* pFilterFrame = pThread->GetFrame();
-            _ASSERTE(pFilterFrame->GetVTablePtr() == ExceptionFilterFrame::GetMethodFrameVPtr());
+            _ASSERTE(pFilterFrame->GetFrameIdentifier() == FrameIdentifier::ExceptionFilterFrame);
             ((ExceptionFilterFrame*)pFilterFrame)->SetFilterDone();
 
             // Inform the profiler that we're leaving, and what pass we're on
@@ -3115,7 +3115,7 @@ int CallJitEHFilter(CrawlFrame* pCf, BYTE* startPC, EE_ILEXCEPTION_CLAUSE *EHCla
     // GC holes. The stack would be in inconsistent state when we trigger gc just before
     // returning from UnwindFrames.
 
-    FrameWithCookie<ExceptionFilterFrame> exceptionFilterFrame(pShadowSP);
+    ExceptionFilterFrame exceptionFilterFrame(pShadowSP);
 
     ETW::ExceptionLog::ExceptionFilterBegin(pCf->GetCodeInfo()->GetMethodDesc(), (PVOID)pCf->GetCodeInfo()->GetStartAddress());
 

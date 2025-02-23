@@ -17,6 +17,18 @@ namespace System.Linq.Tests
             AssertExtensions.Throws<ArgumentNullException>("second", () => AsyncEnumerable.Union(AsyncEnumerable.Empty<int>(), null));
         }
 
+        [Fact]
+        public void Empty_ProducesEmpty() // validating an optimization / implementation detail
+        {
+            IAsyncEnumerable<int> empty = AsyncEnumerable.Empty<int>();
+            IAsyncEnumerable<int> nonEmpty = CreateSource(1, 2, 3);
+
+            Assert.Same(empty, empty.Union(empty));
+            Assert.NotSame(empty, empty.Union(nonEmpty));
+            Assert.NotSame(empty, nonEmpty.Union(empty));
+            Assert.NotSame(empty, nonEmpty.Union(nonEmpty));
+        }
+
         [Theory]
         [InlineData(new int[0], new int[0])]
         [InlineData(new int[0], new int[] { 42 })]

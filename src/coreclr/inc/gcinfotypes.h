@@ -350,7 +350,8 @@ inline const char *ReturnKindToString(ReturnKind returnKind)
 #ifdef TARGET_X86
 
 #include <stdlib.h>     // For memcmp()
-#include "bitvector.h"  // for ptrArgTP
+
+#define MAX_PTRARG_OFS 1024
 
 #ifndef FASTCALL
 #define FASTCALL __fastcall
@@ -780,8 +781,8 @@ void FASTCALL decodeCallPattern(int         pattern,
 #define DENORMALIZE_STACK_SLOT(x) ((x)<<3)
 #define NORMALIZE_CODE_LENGTH(x) ((x)>>2)   // All Instructions are 4 bytes long
 #define DENORMALIZE_CODE_LENGTH(x) ((x)<<2)
-#define NORMALIZE_STACK_BASE_REGISTER(x) ((x) == 22 ? 0 : 1) // Encode Frame pointer fp=$22 as zero
-#define DENORMALIZE_STACK_BASE_REGISTER(x) ((x) == 0 ? 22 : 3)
+#define NORMALIZE_STACK_BASE_REGISTER(x) ((x) == 22 ? 0u : 1u) // Encode Frame pointer fp=$22 as zero
+#define DENORMALIZE_STACK_BASE_REGISTER(x) ((x) == 0 ? 22u : 3u)
 #define NORMALIZE_SIZE_OF_STACK_AREA(x) ((x)>>3)
 #define DENORMALIZE_SIZE_OF_STACK_AREA(x) ((x)<<3)
 #define CODE_OFFSETS_NEED_NORMALIZATION 1
@@ -833,8 +834,8 @@ void FASTCALL decodeCallPattern(int         pattern,
 #define DENORMALIZE_STACK_SLOT(x) ((x)<<3)
 #define NORMALIZE_CODE_LENGTH(x) ((x)>>2)   // All Instructions are 4 bytes long
 #define DENORMALIZE_CODE_LENGTH(x) ((x)<<2)
-#define NORMALIZE_STACK_BASE_REGISTER(x) ((x) == 8 ? 0 : 1) // Encode Frame pointer X8 as zero, sp/x2 as 1
-#define DENORMALIZE_STACK_BASE_REGISTER(x) ((x) == 0 ? 8 : 2)
+#define NORMALIZE_STACK_BASE_REGISTER(x) ((x) == 8 ? 0u : 1u) // Encode Frame pointer X8 as zero, sp/x2 as 1
+#define DENORMALIZE_STACK_BASE_REGISTER(x) ((x) == 0 ? 8u : 2u)
 #define NORMALIZE_SIZE_OF_STACK_AREA(x) ((x)>>3)
 #define DENORMALIZE_SIZE_OF_STACK_AREA(x) ((x)<<3)
 #define CODE_OFFSETS_NEED_NORMALIZATION 1

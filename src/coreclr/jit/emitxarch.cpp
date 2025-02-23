@@ -85,6 +85,11 @@ bool emitter::IsAvx512OnlyInstruction(instruction ins)
     return (ins >= INS_FIRST_AVX512_INSTRUCTION) && (ins <= INS_LAST_AVX512_INSTRUCTION);
 }
 
+bool emitter::IsApxOnlyInstruction(instruction ins)
+{
+    return (ins >= INS_FIRST_APX_INSTRUCTION) && (ins <= INS_LAST_APX_INSTRUCTION);
+}
+
 bool emitter::IsFMAInstruction(instruction ins)
 {
     return (ins >= INS_FIRST_FMA_INSTRUCTION) && (ins <= INS_LAST_FMA_INSTRUCTION);
@@ -359,7 +364,17 @@ bool emitter::IsApxExtendedEvexInstruction(instruction ins) const
         return false;
     }
 
-    return HasApxNdd(ins) || HasApxNf(ins);
+    if (HasApxNdd(ins) || HasApxNf(ins))
+    {
+        return true;
+    }
+
+    if (IsApxOnlyInstruction(ins))
+    {
+        return true;
+    }
+
+    return false;
 }
 
 //------------------------------------------------------------------------
@@ -775,6 +790,65 @@ bool emitter::DoJitUseApxNDD(instruction ins) const
 #else
     return JitConfig.EnableApxNDD() && IsApxNDDEncodableInstruction(ins);
 #endif
+}
+
+inline bool emitter::IsCCMP(instruction ins)
+{
+    return (ins > INS_FIRST_CCMP_INSTRUCTION && ins < INS_LAST_CCMP_INSTRUCTION);
+}
+
+//------------------------------------------------------------------------
+// GetCCFromCCMP: Get a condition code from a ccmp instruction
+//
+// Arguments:
+//    ins - The instruction to check.
+//
+// Returns:
+//    `insCC` representing the condition code for a ccmp instruction.
+//    ccmpx instructions share the same instruction encoding unlike
+//    other x86 status bit instructions and instead have a CC coded into
+//    the EVEX prefix.
+//
+inline insCC emitter::GetCCFromCCMP(instruction ins)
+{
+    assert(IsCCMP(ins));
+    switch (ins)
+    {
+        case INS_ccmpo:
+            return INS_CC_O;
+        case INS_ccmpno:
+            return INS_CC_NO;
+        case INS_ccmpb:
+            return INS_CC_B;
+        case INS_ccmpae:
+            return INS_CC_AE;
+        case INS_ccmpe:
+            return INS_CC_E;
+        case INS_ccmpne:
+            return INS_CC_NE;
+        case INS_ccmpbe:
+            return INS_CC_BE;
+        case INS_ccmpa:
+            return INS_CC_A;
+        case INS_ccmps:
+            return INS_CC_S;
+        case INS_ccmpns:
+            return INS_CC_NS;
+        case INS_ccmpt:
+            return INS_CC_TRUE;
+        case INS_ccmpf:
+            return INS_CC_FALSE;
+        case INS_ccmpl:
+            return INS_CC_L;
+        case INS_ccmpge:
+            return INS_CC_GE;
+        case INS_ccmple:
+            return INS_CC_LE;
+        case INS_ccmpg:
+            return INS_CC_G;
+        default:
+            unreached();
+    }
 }
 
 #ifdef TARGET_64BIT
@@ -1778,6 +1852,10 @@ bool emitter::TakesApxExtendedEvexPrefix(const instrDesc* id) const
         return true;
     }
 #endif // DEBUG
+    if (IsApxOnlyInstruction(ins))
+    {
+        return true;
+    }
 
     return false;
 }
@@ -1897,6 +1975,14 @@ emitter::code_t emitter::AddEvexPrefix(const instrDesc* id, code_t code, emitAtt
             // it to EVEX when needed with some helper functions.
             code &= 0xFF7FFFFFFFFFFFFFULL;
         }
+#ifdef TARGET_AMD64
+        if (IsCCMP(ins))
+        {
+            code &= 0xFFFF87F0FFFFFFFF;
+            code |= ((size_t)id->idGetEvexDFV()) << 43;
+            code |= ((size_t)GetCCFromCCMP(ins)) << 32;
+        }
+#endif
 
         return code;
     }
@@ -2004,6 +2090,12 @@ emitter::code_t emitter::AddEvexPrefix(const instrDesc* id, code_t code, emitAtt
 
         default:
         {
+#ifdef TARGET_AMD64
+            if (IsCCMP(id->idIns())) // Special case for conditional ins such as CCMP, CCMOV
+            {
+                break;
+            }
+#endif
             unsigned aaaContext = id->idGetEvexAaaContext();
 
             if (aaaContext != 0)
@@ -2314,6 +2406,30 @@ bool emitter::HasMaskReg(const instrDesc* id) const
     return false;
 }
 
+//------------------------------------------------------------------------
+// AbsRegNumber: Returns the register value to be used for encoding.
+// JIT internally represents registers using regnumber 0 - (REG_STK-1).
+// For encoding, we need to separate out GPR, SIMD and K registers.
+//
+// Arguments:
+// reg -- The register being encoded.
+//
+// Return Value:
+// The register value to be used for encoding.
+regNumber AbsRegNumber(regNumber reg)
+{
+    assert(reg < REG_STK);
+    if (reg >= KBASE)
+    {
+        return (regNumber)(reg - KBASE);
+    }
+    else if (reg >= XMMBASE)
+    {
+        return (regNumber)(reg - XMMBASE);
+    }
+    return reg;
+}
+
 // Returns true if using this register will require a REX.* prefix.
 // Since XMM registers overlap with YMM registers, this routine
 // can also be used to know whether a YMM register if the
@@ -2321,8 +2437,7 @@ bool emitter::HasMaskReg(const instrDesc* id) const
 bool IsExtendedReg(regNumber reg)
 {
 #ifdef TARGET_AMD64
-    // TODO-XArch-apx: extend the gpr test, extended gprs should be from r8 to r31 after apx.
-    return ((reg >= REG_R8) && (reg <= REG_R15)) || ((reg >= REG_XMM8) && (reg <= REG_XMM31));
+    return ((reg >= REG_R8) && (reg <= REG_R23)) || ((reg >= REG_XMM8) && (reg <= REG_XMM31));
 #else
     // X86 JIT operates in 32-bit mode and hence extended reg are not available.
     return false;
@@ -2340,10 +2455,12 @@ bool emitter::IsExtendedGPReg(regNumber reg) const
         return false;
     }
 
-    // TODO-XArch-APX:
-    // we will eventually check EGPRs here: (reg >= REG_R16) && (reg <= REG_R31).
-    // revisit this part when LSRA is updated.
-    return false;
+    if (isHighGPReg(reg))
+    {
+        // TODO-XArch-APX: Once eEVEX is supported, this should be 'if APX anabled machine'
+        assert(UseRex2Encoding());
+        return true;
+    }
 #endif
     return false;
 }
@@ -2414,14 +2531,14 @@ bool IsXMMReg(regNumber reg)
 unsigned HighAwareRegEncoding(regNumber reg)
 {
     static_assert((REG_XMM0 & 0x7) == 0, "bad XMMBASE");
-    return (unsigned)(reg & 0xF);
+    return (unsigned)(AbsRegNumber(reg) & 0xF);
 }
 
 // Returns bits to be encoded in instruction for the given register.
 unsigned RegEncoding(regNumber reg)
 {
     static_assert((REG_XMM0 & 0x7) == 0, "bad XMMBASE");
-    return (unsigned)(reg & 0x7);
+    return (unsigned)(AbsRegNumber(reg) & 0x7);
 }
 
 // Utility routines that abstract the logic of adding REX.W, REX.R, REX.X, REX.B and REX prefixes
@@ -4107,11 +4224,11 @@ inline unsigned emitter::insEncodeReg012(const instrDesc* id, regNumber reg, emi
         {
             *code = AddRexXPrefix(id, *code); // EVEX.X
         }
-        if (reg & 0x8)
+        if (AbsRegNumber(reg) & 0x8)
         {
             *code = AddRexBPrefix(id, *code); // REX.B
         }
-        if (false /*reg >= REG_R16 && reg <= REG_R31*/)
+        if (IsExtendedGPReg(reg))
         {
             // Seperate the encoding for REX2.B3/B4, REX2.B3 will be handled in `AddRexBPrefix`.
             assert(TakesRex2Prefix(id));
@@ -4156,11 +4273,11 @@ inline unsigned emitter::insEncodeReg345(const instrDesc* id, regNumber reg, emi
         {
             *code = AddEvexRPrimePrefix(*code); // EVEX.R'
         }
-        if (reg & 0x8)
+        if (AbsRegNumber(reg) & 0x8)
         {
             *code = AddRexRPrefix(id, *code); // REX.R
         }
-        if (false /*reg >= REG_R16 && reg <= REG_R31*/)
+        if (IsExtendedGPReg(reg))
         {
             // Seperate the encoding for REX2.R3/R4, REX2.R3 will be handled in `AddRexRPrefix`.
             assert(TakesRex2Prefix(id));
@@ -4286,11 +4403,11 @@ inline unsigned emitter::insEncodeRegSIB(const instrDesc* id, regNumber reg, cod
         {
             *code = AddEvexVPrimePrefix(*code); // EVEX.X
         }
-        if (reg & 0x8)
+        if (AbsRegNumber(reg) & 0x8)
         {
             *code = AddRexXPrefix(id, *code); // REX.X
         }
-        if (false /*reg >= REG_R16 && reg <= REG_R31*/)
+        if (IsExtendedGPReg(reg))
         {
             // Separate the encoding for REX2.X3/X4, REX2.X3 will be handled in `AddRexXPrefix`.
             assert(TakesRex2Prefix(id));
@@ -4950,7 +5067,7 @@ inline UNATIVE_OFFSET emitter::emitInsSizeSV(instrDesc* id, code_t code, int var
 static bool baseRegisterRequiresSibByte(regNumber base)
 {
 #ifdef TARGET_AMD64
-    return base == REG_ESP || base == REG_R12;
+    return base == REG_ESP || base == REG_R12 || base == REG_R20;
 #else
     return base == REG_ESP;
 #endif
@@ -4959,7 +5076,7 @@ static bool baseRegisterRequiresSibByte(regNumber base)
 static bool baseRegisterRequiresDisplacement(regNumber base)
 {
 #ifdef TARGET_AMD64
-    return base == REG_EBP || base == REG_R13;
+    return base == REG_EBP || base == REG_R13 || base == REG_R21;
 #else
     return base == REG_EBP;
 #endif
@@ -6531,7 +6648,12 @@ void emitter::emitIns_R(instruction ins, emitAttr attr, regNumber reg, insOpts i
     noway_assert(emitVerifyEncodable(ins, size, reg));
 
     UNATIVE_OFFSET sz;
-    instrDesc*     id = emitNewInstrSmall(attr);
+    instrDesc*     id  = emitNewInstrSmall(attr);
+    insFormat      fmt = emitInsModeFormat(ins, IF_RRD);
+
+    id->idIns(ins);
+    id->idInsFmt(fmt);
+    id->idReg1(reg);
 
     switch (ins)
     {
@@ -6593,11 +6715,6 @@ void emitter::emitIns_R(instruction ins, emitAttr attr, regNumber reg, insOpts i
                 break;
             }
     }
-    insFormat fmt = emitInsModeFormat(ins, IF_RRD);
-
-    id->idIns(ins);
-    id->idInsFmt(fmt);
-    id->idReg1(reg);
 
     SetEvexNfIfNeeded(id, instOptions);
 
@@ -6818,6 +6935,7 @@ void emitter::emitIns_R_I(instruction         ins,
 #endif
 
     SetEvexNfIfNeeded(id, instOptions);
+    SetEvexDFVIfNeeded(id, instOptions);
 
     if (isSimdInsAndValInByte)
     {
@@ -7615,6 +7733,7 @@ void emitter::emitIns_R_R(instruction ins, emitAttr attr, regNumber reg1, regNum
 
     SetEvexNdIfNeeded(id, instOptions);
     SetEvexNfIfNeeded(id, instOptions);
+    SetEvexDFVIfNeeded(id, instOptions);
 
     if (id->idIsEvexNdContextSet() && IsApxNDDEncodableInstruction(ins))
     {
@@ -8537,6 +8656,7 @@ void emitter::emitIns_R_C(
         {
             SetEvexBroadcastIfNeeded(id, instOptions);
             SetEvexEmbMaskIfNeeded(id, instOptions);
+            SetEvexDFVIfNeeded(id, instOptions);
 
             sz = emitInsSizeCV(id, insCodeRM(ins));
         }
@@ -10467,6 +10587,7 @@ void emitter::emitIns_R_S(instruction ins, emitAttr attr, regNumber ireg, int va
     SetEvexBroadcastIfNeeded(id, instOptions);
     SetEvexEmbMaskIfNeeded(id, instOptions);
     SetEvexNfIfNeeded(id, instOptions);
+    SetEvexDFVIfNeeded(id, instOptions);
 
     UNATIVE_OFFSET sz = emitInsSizeSV(id, insCodeRM(ins), varx, offs);
     id->idCodeSize(sz);
@@ -12369,6 +12490,27 @@ void emitter::emitDispIns(
     sstr = codeGen->genInsDisplayName(id);
     printf(" %-9s", sstr);
 
+#ifdef TARGET_AMD64
+    if (IsCCMP(id->idIns()))
+    {
+        // print finite set notation for DFV
+        unsigned dfv        = id->idGetEvexDFV();
+        char     dfvstr[20] = {0};
+        int      len        = 0;
+        if (dfv & INS_FLAGS_OF)
+            len += snprintf(dfvstr + len, 4, "of,");
+        if (dfv & INS_FLAGS_SF)
+            len += snprintf(dfvstr + len, 4, "sf,");
+        if (dfv & INS_FLAGS_ZF)
+            len += snprintf(dfvstr + len, 4, "zf,");
+        if (dfv & INS_FLAGS_CF)
+            len += snprintf(dfvstr + len, 4, "cf,");
+        if (len)
+            dfvstr[len - 1] = 0;
+        printf("{dfv=%s}    ", dfvstr);
+    }
+#endif // TARGET_AMD64
+
 #ifndef HOST_UNIX
     if (strnlen_s(sstr, 10) >= 9)
 #else  // HOST_UNIX
@@ -13055,6 +13197,14 @@ void emitter::emitDispIns(
                 case INS_vcvttsd2usi64:
                 case INS_vcvttss2usi32:
                 case INS_vcvttss2usi64:
+                case INS_vcvttsd2sis32:
+                case INS_vcvttsd2sis64:
+                case INS_vcvttss2sis32:
+                case INS_vcvttss2sis64:
+                case INS_vcvttsd2usis32:
+                case INS_vcvttsd2usis64:
+                case INS_vcvttss2usis32:
+                case INS_vcvttss2usis64:
                 {
                     assert(!id->idIsEvexAaaContextSet());
                     printf("%s, %s", emitRegName(id->idReg1(), attr), emitRegName(id->idReg2(), EA_16BYTE));
@@ -16398,7 +16548,7 @@ BYTE* emitter::emitOutputRR(BYTE* dst, instrDesc* id)
         // So the logic should be:
         // checking if those new features are used, then check if EGPRs are involved.
         // EGPRs will be supported by EVEX anyway, so don't need to check in the first place.
-        assert(!TakesSimdPrefix(id));
+        assert(!TakesSimdPrefix(id) || TakesApxExtendedEvexPrefix(id));
         code = insCodeMR(ins);
         code = AddX86PrefixIfNeeded(id, code, size);
         code = insEncodeMRreg(id, code);
@@ -16419,7 +16569,6 @@ BYTE* emitter::emitOutputRR(BYTE* dst, instrDesc* id)
                 // Output a size prefix for a 16-bit operand
                 if (TakesApxExtendedEvexPrefix(id))
                 {
-                    assert(IsApxExtendedEvexInstruction(ins));
                     assert(hasEvexPrefix(code));
                     // Evex.pp should already be added when adding the prefix.
                     assert((code & EXTENDED_EVEX_PP_BITS) != 0);
@@ -16428,10 +16577,21 @@ BYTE* emitter::emitOutputRR(BYTE* dst, instrDesc* id)
                 {
                     dst += emitOutputByte(dst, 0x66);
                 }
-                FALLTHROUGH;
+
+                code |= 0x1;
+                break;
 
             case EA_4BYTE:
                 // Set the 'w' bit to get the large version
+
+#ifdef TARGET_AMD64
+                if (TakesApxExtendedEvexPrefix(id))
+                {
+                    assert(hasEvexPrefix(code));
+                    // Evex.pp should already be added when adding the prefix
+                    assert((code & EXTENDED_EVEX_PP_BITS) == 0);
+                }
+#endif
                 code |= 0x1;
                 break;
 
@@ -16491,7 +16651,11 @@ BYTE* emitter::emitOutputRR(BYTE* dst, instrDesc* id)
         regCode = insEncodeReg012(id, reg2, size, &code);
     }
 
+#ifdef TARGET_AMD64
+    if (TakesSimdPrefix(id) && !IsCCMP(ins))
+#else
     if (TakesSimdPrefix(id))
+#endif
     {
         // In case of AVX instructions that take 3 operands, we generally want to encode reg1
         // as first source.  In this case, reg1 is both a source and a destination.
@@ -19926,6 +20090,26 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
         case INS_cmovge:
         case INS_cmovle:
         case INS_cmovg:
+#ifdef TARGET_AMD64
+        // todo-xarch-apx: we need to double check the logic for ccmp
+        case INS_ccmpo:
+        case INS_ccmpno:
+        case INS_ccmpb:
+        case INS_ccmpae:
+        case INS_ccmpe:
+        case INS_ccmpne:
+        case INS_ccmpbe:
+        case INS_ccmpa:
+        case INS_ccmps:
+        case INS_ccmpns:
+        case INS_ccmpt:
+        case INS_ccmpf:
+        case INS_ccmpl:
+        case INS_ccmpge:
+        case INS_ccmple:
+        case INS_ccmpg:
+#endif
+
             if (memFmt == IF_NONE)
             {
                 result.insThroughput = PERFSCORE_THROUGHPUT_4X;

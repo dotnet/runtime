@@ -316,7 +316,7 @@ public class AppleAppBuilderTask : Task
         }
 
         List<string> extraLinkerArgs = new List<string>();
-        foreach(ITaskItem item in ExtraLinkerArguments)
+        foreach (ITaskItem item in ExtraLinkerArguments)
         {
             extraLinkerArgs.Add(item.ItemSpec);
         }

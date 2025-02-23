@@ -741,15 +741,16 @@ public:
     void updateMaxSpill(RefPosition* refPosition);
     void recordMaxSpill();
 
+private:
     // max simultaneous spill locations used of every type
     unsigned int maxSpill[TYP_COUNT];
     unsigned int currentSpill[TYP_COUNT];
     bool         needFloatTmpForFPCall;
     bool         needDoubleTmpForFPCall;
     bool         needNonIntegerRegisters;
+    bool         needToKillFloatRegs;
 
 #ifdef DEBUG
-private:
     //------------------------------------------------------------------------
     // Should we stress lsra? This uses the DOTNET_JitStressRegs variable.
     //
@@ -771,7 +772,8 @@ private:
         LSRA_LIMIT_SMALL_SET = 0x3,
 #if defined(TARGET_AMD64)
         LSRA_LIMIT_UPPER_SIMD_SET = 0x2000,
-        LSRA_LIMIT_MASK           = 0x2003
+        LSRA_LIMIT_EXT_GPR_SET    = 0x4000,
+        LSRA_LIMIT_MASK           = 0x6003
 #else
         LSRA_LIMIT_MASK = 0x3
 #endif
@@ -1333,6 +1335,13 @@ private:
         FORCEINLINE void calculateUnassignedSets();
         FORCEINLINE void reset(Interval* interval, RefPosition* refPosition);
         FORCEINLINE void resetMinimal(Interval* interval, RefPosition* refPosition);
+#if defined(TARGET_AMD64)
+        regMaskTP             rbmAllInt;
+        FORCEINLINE regMaskTP get_RBM_ALLINT() const
+        {
+            return this->rbmAllInt;
+        }
+#endif // TARGET_AMD64
 
 #define REG_SEL_DEF(stat, value, shortname, orderSeqId)      FORCEINLINE void try_##stat();
 #define BUSY_REG_SEL_DEF(stat, value, shortname, orderSeqId) REG_SEL_DEF(stat, value, shortname, orderSeqId)
@@ -1927,8 +1936,13 @@ private:
     int          BuildBinaryUses(GenTreeOp* node, SingleTypeRegSet candidates = RBM_NONE);
     int          BuildCastUses(GenTreeCast* cast, SingleTypeRegSet candidates);
 #ifdef TARGET_XARCH
-    int BuildRMWUses(GenTree* node, GenTree* op1, GenTree* op2, SingleTypeRegSet candidates = RBM_NONE);
+    int BuildRMWUses(
+        GenTree* node, GenTree* op1, GenTree* op2, SingleTypeRegSet op1Candidates, SingleTypeRegSet op2Candidates);
     inline SingleTypeRegSet BuildEvexIncompatibleMask(GenTree* tree);
+    inline SingleTypeRegSet BuildApxIncompatibleGPRMask(GenTree*         tree,
+                                                        SingleTypeRegSet candidates = RBM_NONE,
+                                                        bool             isGPR      = false);
+    inline bool             DoesThisUseGPR(GenTree* op);
 #endif // !TARGET_XARCH
     int BuildSelect(GenTreeOp* select);
     // This is the main entry point for building the RefPositions for a node.
@@ -2040,6 +2054,10 @@ private:
 #if defined(TARGET_AMD64)
     regMaskTP rbmAllFloat;
     regMaskTP rbmFltCalleeTrash;
+    regMaskTP rbmAllInt;
+    regMaskTP rbmIntCalleeTrash;
+    regNumber regIntLast;
+    bool      isApxSupported;
 
     FORCEINLINE regMaskTP get_RBM_ALLFLOAT() const
     {
@@ -2049,11 +2067,33 @@ private:
     {
         return this->rbmFltCalleeTrash;
     }
+    FORCEINLINE regMaskTP get_RBM_ALLINT() const
+    {
+        return this->rbmAllInt;
+    }
+    FORCEINLINE regMaskTP get_RBM_INT_CALLEE_TRASH() const
+    {
+        return this->rbmIntCalleeTrash;
+    }
+    FORCEINLINE regNumber get_REG_INT_LAST() const
+    {
+        return this->regIntLast;
+    }
+    FORCEINLINE bool getIsApxSupported() const
+    {
+        return this->isApxSupported;
+    }
+#else
+    FORCEINLINE regNumber get_REG_INT_LAST() const
+    {
+        return REG_INT_LAST;
+    }
 #endif // TARGET_AMD64
 
 #if defined(TARGET_XARCH)
-    regMaskTP rbmAllMask;
-    regMaskTP rbmMskCalleeTrash;
+    regMaskTP        rbmAllMask;
+    regMaskTP        rbmMskCalleeTrash;
+    SingleTypeRegSet lowGprRegs;
 
     FORCEINLINE regMaskTP get_RBM_ALLMASK() const
     {

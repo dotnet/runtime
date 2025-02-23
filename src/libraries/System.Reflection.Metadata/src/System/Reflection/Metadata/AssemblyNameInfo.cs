@@ -112,9 +112,26 @@ namespace System.Reflection.Metadata
             {
                 if (_fullName is null)
                 {
-                    bool isPublicKey = (Flags & AssemblyNameFlags.PublicKey) != 0;
+                    ValueStringBuilder vsb = new(stackalloc char[256]);
+                    AppendFullName(ref vsb);
+                    _fullName = vsb.ToString();
+                }
 
-                    byte[]? publicKeyOrToken =
+                return _fullName;
+            }
+        }
+
+        internal void AppendFullName(ref ValueStringBuilder vsb)
+        {
+            if (_fullName is not null)
+            {
+                vsb.Append(_fullName);
+            }
+            else
+            {
+                bool isPublicKey = (Flags & AssemblyNameFlags.PublicKey) != 0;
+
+                byte[]? publicKeyOrToken =
 #if SYSTEM_PRIVATE_CORELIB
                     PublicKeyOrToken;
 #elif NET8_0_OR_GREATER
@@ -122,13 +139,10 @@ namespace System.Reflection.Metadata
 #else
                     !PublicKeyOrToken.IsDefault ? PublicKeyOrToken.ToArray() : null;
 #endif
-                    _fullName = AssemblyNameFormatter.ComputeDisplayName(Name, Version, CultureName,
-                        pkt: isPublicKey ? null : publicKeyOrToken,
-                        ExtractAssemblyNameFlags(_flags), ExtractAssemblyContentType(_flags),
-                        pk: isPublicKey ? publicKeyOrToken : null);
-                }
-
-                return _fullName;
+                AssemblyNameFormatter.AppendDisplayName(ref vsb, Name, Version, CultureName,
+                    pkt: isPublicKey ? null : publicKeyOrToken,
+                    ExtractAssemblyNameFlags(_flags), ExtractAssemblyContentType(_flags),
+                    pk: isPublicKey ? publicKeyOrToken : null);
             }
         }
 

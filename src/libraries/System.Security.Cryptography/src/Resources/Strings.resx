@@ -132,6 +132,9 @@
   <data name="Argument_BitsMustBeWholeBytes" xml:space="preserve">
     <value>The value specified in bits must be a whole number of bytes.</value>
   </data>
+  <data name="Argument_PasswordNullChars" xml:space="preserve">
+    <value>The password contains a Unicode 'NULL' character, which is not permitted.</value>
+  </data>
   <data name="Argument_PemEncoding_NoPemFound" xml:space="preserve">
     <value>No PEM encoded data found.</value>
   </data>

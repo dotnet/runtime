@@ -28,7 +28,6 @@
 #include "regdisp.h"
 #include "corjit.h"     // For NativeVarInfo
 #include "stackwalktypes.h"
-#include "bitvector.h"
 #include "gcinfotypes.h"
 
 #if !defined(TARGET_X86)

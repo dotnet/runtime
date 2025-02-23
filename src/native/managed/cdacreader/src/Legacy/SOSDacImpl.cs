@@ -569,7 +569,62 @@ internal sealed unsafe partial class SOSDacImpl
     int ISOSDacInterface.GetMethodDescPtrFromFrame(ulong frameAddr, ulong* ppMD)
         => _legacyImpl is not null ? _legacyImpl.GetMethodDescPtrFromFrame(frameAddr, ppMD) : HResults.E_NOTIMPL;
     int ISOSDacInterface.GetMethodDescPtrFromIP(ulong ip, ulong* ppMD)
-        => _legacyImpl is not null ? _legacyImpl.GetMethodDescPtrFromIP(ip, ppMD) : HResults.E_NOTIMPL;
+    {
+        if (ip == 0 || ppMD == null)
+            return HResults.E_INVALIDARG;
+
+        int hr = HResults.E_NOTIMPL;
+
+        try
+        {
+            IExecutionManager executionManager = _target.Contracts.ExecutionManager;
+            IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
+
+            CodeBlockHandle? handle = executionManager.GetCodeBlockHandle(new TargetCodePointer(ip));
+            if (handle is CodeBlockHandle codeHandle)
+            {
+                TargetPointer methodDescAddr = executionManager.GetMethodDesc(codeHandle);
+
+                try
+                {
+                    // Runs validation of MethodDesc
+                    // if validation fails, should return E_INVALIDARG
+                    rts.GetMethodDescHandle(methodDescAddr);
+
+                    *ppMD = methodDescAddr.Value;
+                    hr = HResults.S_OK;
+                }
+                catch (System.Exception)
+                {
+                    hr = HResults.E_INVALIDARG;
+                }
+            }
+            else
+            {
+                hr = HResults.E_FAIL;
+            }
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+
+#if DEBUG
+        if (_legacyImpl is not null)
+        {
+            ulong ppMDLocal;
+            int hrLocal = _legacyImpl.GetMethodDescPtrFromIP(ip, &ppMDLocal);
+
+            Debug.Assert(hrLocal == hr);
+            if (hr == HResults.S_OK)
+            {
+                Debug.Assert(*ppMD == ppMDLocal);
+            }
+        }
+#endif
+        return hr;
+    }
+
     int ISOSDacInterface.GetMethodDescTransparencyData(ulong methodDesc, void* data)
         => _legacyImpl is not null ? _legacyImpl.GetMethodDescTransparencyData(methodDesc, data) : HResults.E_NOTIMPL;
     int ISOSDacInterface.GetMethodTableData(ulong mt, DacpMethodTableData* data)
@@ -1139,8 +1194,23 @@ internal sealed unsafe partial class SOSDacImpl
         => _legacyImpl is not null ? _legacyImpl.GetStackLimits(threadPtr, lower, upper, fp) : HResults.E_NOTIMPL;
     int ISOSDacInterface.GetStackReferences(int osThreadID, void** ppEnum)
         => _legacyImpl is not null ? _legacyImpl.GetStackReferences(osThreadID, ppEnum) : HResults.E_NOTIMPL;
+
     int ISOSDacInterface.GetStressLogAddress(ulong* stressLog)
-        => _legacyImpl is not null ? _legacyImpl.GetStressLogAddress(stressLog) : HResults.E_NOTIMPL;
+    {
+        ulong stressLogAddress = _target.ReadGlobalPointer(Constants.Globals.StressLog);
+
+#if DEBUG
+        if (_legacyImpl is not null)
+        {
+            ulong legacyStressLog;
+            Debug.Assert(HResults.S_OK == _legacyImpl.GetStressLogAddress(&legacyStressLog));
+            Debug.Assert(legacyStressLog == stressLogAddress);
+        }
+#endif
+        *stressLog = stressLogAddress;
+        return HResults.S_OK;
+    }
+
     int ISOSDacInterface.GetSyncBlockCleanupData(ulong addr, void* data)
         => _legacyImpl is not null ? _legacyImpl.GetSyncBlockCleanupData(addr, data) : HResults.E_NOTIMPL;
     int ISOSDacInterface.GetSyncBlockData(uint number, void* data)

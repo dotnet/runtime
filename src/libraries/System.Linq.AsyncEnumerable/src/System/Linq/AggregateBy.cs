@@ -42,7 +42,9 @@ namespace System.Linq
             ThrowHelper.ThrowIfNull(keySelector);
             ThrowHelper.ThrowIfNull(func);
 
-            return Impl(source, keySelector, seed, func, keyComparer, default);
+            return
+                source.IsKnownEmpty() ? Empty<KeyValuePair<TKey, TAccumulate>>() :
+                Impl(source, keySelector, seed, func, keyComparer, default);
 
             static async IAsyncEnumerable<KeyValuePair<TKey, TAccumulate>> Impl(
                 IAsyncEnumerable<TSource> source,
@@ -117,7 +119,9 @@ namespace System.Linq
             ThrowHelper.ThrowIfNull(keySelector);
             ThrowHelper.ThrowIfNull(func);
 
-            return Impl(source, keySelector, seed, func, keyComparer, default);
+            return
+                source.IsKnownEmpty() ? Empty<KeyValuePair<TKey, TAccumulate>>() :
+                Impl(source, keySelector, seed, func, keyComparer, default);
 
             static async IAsyncEnumerable<KeyValuePair<TKey, TAccumulate>> Impl(
                 IAsyncEnumerable<TSource> source,
@@ -188,7 +192,9 @@ namespace System.Linq
             ThrowHelper.ThrowIfNull(seedSelector);
             ThrowHelper.ThrowIfNull(func);
 
-            return Impl(source, keySelector, seedSelector, func, keyComparer, default);
+            return
+                source.IsKnownEmpty() ? Empty<KeyValuePair<TKey, TAccumulate>>() :
+                Impl(source, keySelector, seedSelector, func, keyComparer, default);
 
             static async IAsyncEnumerable<KeyValuePair<TKey, TAccumulate>> Impl(
                 IAsyncEnumerable<TSource> source,
@@ -264,7 +270,9 @@ namespace System.Linq
             ThrowHelper.ThrowIfNull(seedSelector);
             ThrowHelper.ThrowIfNull(func);
 
-            return Impl(source, keySelector, seedSelector, func, keyComparer, default);
+            return
+                source.IsKnownEmpty() ? Empty<KeyValuePair<TKey, TAccumulate>>() :
+                Impl(source, keySelector, seedSelector, func, keyComparer, default);
 
             static async IAsyncEnumerable<KeyValuePair<TKey, TAccumulate>> Impl(
                 IAsyncEnumerable<TSource> source,
@@ -277,28 +285,26 @@ namespace System.Linq
                 IAsyncEnumerator<TSource> enumerator = source.GetAsyncEnumerator(cancellationToken);
                 try
                 {
-                    if (!await enumerator.MoveNextAsync().ConfigureAwait(false))
+                    if (await enumerator.MoveNextAsync().ConfigureAwait(false))
                     {
-                        yield break;
-                    }
+                        Dictionary<TKey, TAccumulate> dict = new(keyComparer);
 
-                    Dictionary<TKey, TAccumulate> dict = new(keyComparer);
+                        do
+                        {
+                            TSource value = enumerator.Current;
+                            TKey key = await keySelector(value, cancellationToken).ConfigureAwait(false);
 
-                    do
-                    {
-                        TSource value = enumerator.Current;
-                        TKey key = await keySelector(value, cancellationToken).ConfigureAwait(false);
+                            dict[key] = await func(
+                                dict.TryGetValue(key, out TAccumulate? acc) ? acc : await seedSelector(key, cancellationToken).ConfigureAwait(false),
+                                value,
+                                cancellationToken).ConfigureAwait(false);
+                        }
+                        while (await enumerator.MoveNextAsync().ConfigureAwait(false));
 
-                        dict[key] = await func(
-                            dict.TryGetValue(key, out TAccumulate? acc) ? acc : await seedSelector(key, cancellationToken).ConfigureAwait(false),
-                            value,
-                            cancellationToken).ConfigureAwait(false);
-                    }
-                    while (await enumerator.MoveNextAsync().ConfigureAwait(false));
-
-                    foreach (KeyValuePair<TKey, TAccumulate> countBy in dict)
-                    {
-                        yield return countBy;
+                        foreach (KeyValuePair<TKey, TAccumulate> countBy in dict)
+                        {
+                            yield return countBy;
+                        }
                     }
                 }
                 finally

@@ -529,6 +529,7 @@ public:
     CORINFO_CLASS_HANDLE GetObjectType(ValueNum vn, bool* pIsExact, bool* pIsNonNull);
 
     void PeelOffsets(ValueNum* vn, target_ssize_t* offset);
+    void PeelOffsetsI32(ValueNum* vn, int* offset);
 
     typedef JitHashTable<ValueNum, JitSmallPrimitiveKeyFuncs<ValueNum>, bool> ValueNumSet;
 

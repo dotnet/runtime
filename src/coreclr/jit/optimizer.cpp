@@ -2240,13 +2240,6 @@ bool Compiler::optInvertWhileLoop(BasicBlock* block)
     //
     bNewCond->inheritWeight(block);
 
-    const weight_t totalWeight = bTest->bbWeight;
-
-    if (haveProfileWeights)
-    {
-        bTest->decreaseBBProfileWeight(block->bbWeight);
-    }
-
     // Move all predecessor edges that look like loop entry edges to point to the new cloned condition
     // block, not the existing condition block. The idea is that if we only move `block` to point to
     // `bNewCond`, but leave other `bTest` predecessors still pointing to `bTest`, when we eventually
@@ -2281,14 +2274,6 @@ bool Compiler::optInvertWhileLoop(BasicBlock* block)
             case BBJ_SWITCH:
             case BBJ_EHFINALLYRET:
                 fgReplaceJumpTarget(predBlock, bTest, bNewCond);
-
-                // Redirect profile weight, too
-                if (haveProfileWeights)
-                {
-                    const weight_t edgeWeight = predEdge->getLikelyWeight();
-                    bNewCond->increaseBBProfileWeight(edgeWeight);
-                    bTest->decreaseBBProfileWeight(edgeWeight);
-                }
                 break;
 
             case BBJ_EHCATCHRET:
@@ -2302,13 +2287,21 @@ bool Compiler::optInvertWhileLoop(BasicBlock* block)
         }
     }
 
-    const weight_t loopWeight    = bTest->bbWeight;
-    const weight_t nonLoopWeight = bNewCond->bbWeight;
-    if (haveProfileWeights && !fgProfileWeightsConsistent(totalWeight, loopWeight + nonLoopWeight))
+    if (haveProfileWeights)
     {
-        JITDUMP("Redirecting flow from " FMT_BB " to " FMT_BB " introduced inconsistency. Data %s inconsistent.\n",
-                bTest->bbNum, bNewCond->bbNum, fgPgoConsistent ? "is now" : "was already");
-        fgPgoConsistent = false;
+        // The above change should have moved some flow out of 'bTest', and into 'bNewCond'.
+        // Check that no extraneous flow was lost or gained in the process.
+        //
+        const weight_t totalWeight = bTest->bbWeight;
+        bTest->setBBProfileWeight(bTest->computeIncomingWeight());
+        bNewCond->setBBProfileWeight(bNewCond->computeIncomingWeight());
+
+        if (!fgProfileWeightsConsistent(totalWeight, bTest->bbWeight + bNewCond->bbWeight))
+        {
+            JITDUMP("Redirecting flow from " FMT_BB " to " FMT_BB " introduced inconsistency. Data %s inconsistent.\n",
+                    bTest->bbNum, bNewCond->bbNum, fgPgoConsistent ? "is now" : "was already");
+            fgPgoConsistent = false;
+        }
     }
 
 #ifdef DEBUG

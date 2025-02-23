@@ -27,13 +27,27 @@ namespace System.Linq
             static async ValueTask<TSource[]> Impl(
                 ConfiguredCancelableAsyncEnumerable<TSource> source)
             {
-                List<TSource> list = [];
-                await foreach (TSource element in source)
+                ConfiguredCancelableAsyncEnumerable<TSource>.Enumerator e = source.GetAsyncEnumerator();
+                try
                 {
-                    list.Add(element);
-                }
+                    if (await e.MoveNextAsync())
+                    {
+                        List<TSource> list = [];
+                        do
+                        {
+                            list.Add(e.Current);
+                        }
+                        while (await e.MoveNextAsync());
 
-                return list.ToArray();
+                        return list.ToArray();
+                    }
+
+                    return [];
+                }
+                finally
+                {
+                    await e.DisposeAsync();
+                }
             }
         }
     }

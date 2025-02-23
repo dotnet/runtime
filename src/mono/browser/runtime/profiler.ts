@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+import type { CharPtr, VoidPtr } from "./types/emscripten";
+
 import { ENVIRONMENT_IS_WEB, mono_assert, runtimeHelpers } from "./globals";
 import { MonoMethod, AOTProfilerOptions, BrowserProfilerOptions, LogProfilerOptions } from "./types/internal";
 import { profiler_c_functions as cwraps } from "./cwraps";
@@ -104,4 +106,25 @@ export function mono_wasm_profiler_leave (method: MonoMethod): void {
         }
         globalThis.performance.measure(methodName, options);
     }
+}
+
+/* eslint-disable @typescript-eslint/no-unused-vars */
+export function ds_rt_websocket_create (urlPtr :CharPtr):number {
+    throw new Error("TODO");
+}
+
+export function ds_rt_websocket_send (client_socket :number, buffer:VoidPtr, bytes_to_write:number):number {
+    throw new Error("TODO");
+}
+
+export function ds_rt_websocket_poll (client_socket :number):number {
+    throw new Error("TODO");
+}
+
+export function ds_rt_websocket_recv (client_socket :number, buffer:VoidPtr, bytes_to_read:number):number {
+    throw new Error("TODO");
+}
+
+export function ds_rt_websocket_close (client_socket :number):number {
+    throw new Error("TODO");
 }

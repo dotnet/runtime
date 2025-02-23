@@ -18,6 +18,13 @@ namespace System.Linq.Tests
             AssertExtensions.Throws<ArgumentNullException>("keySelector", () => AsyncEnumerable.CountBy(AsyncEnumerable.Empty<string>(), (Func<string, CancellationToken, ValueTask<int>>)null));
         }
 
+        [Fact]
+        public void Empty_ProducesEmpty() // validating an optimization / implementation detail
+        {
+            Assert.Same(AsyncEnumerable.Empty<KeyValuePair<object, int>>(), AsyncEnumerable.Empty<object>().CountBy(i => i));
+            Assert.Same(AsyncEnumerable.Empty<KeyValuePair<object, int>>(), AsyncEnumerable.Empty<object>().CountBy(async (i, ct) => i));
+        }
+
 #if NET
         [Fact]
         public async Task VariousValues_MatchesEnumerable_Strings()

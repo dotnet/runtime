@@ -45,7 +45,6 @@ FOR_ALL_ICU_FUNCTIONS
 
 static void* libicuuc = NULL;
 static void* libicui18n = NULL;
-ucol_setVariableTop_func ucol_setVariableTop_ptr = NULL;
 ucol_safeClone_func ucol_safeClone_ptr = NULL;
 
 #if defined (TARGET_UNIX)
@@ -240,7 +239,7 @@ static int FindICULibs(char* symbolName, char* symbolVersion)
 // a year.
 // On some platforms (mainly Alpine Linux) we want to make our minimum version
 // an earlier version than what we build that we know we support.
-#define MinICUVersion  50
+#define MinICUVersion  60
 #define MaxICUVersion  (U_ICU_VERSION_MAJOR_NUM + 30)
 #define MinMinorICUVersion  1
 #define MaxMinorICUVersion  5
@@ -443,35 +442,6 @@ static void InitializeUColClonePointers(char* symbolVersion)
     }
 }
 
-static void InitializeVariableMaxAndTopPointers(char* symbolVersion)
-{
-    if (ucol_setMaxVariable_ptr != NULL)
-    {
-        return;
-    }
-
-#if defined(TARGET_OSX) || defined(TARGET_ANDROID)
-    // OSX and Android always run against ICU version which has ucol_setMaxVariable.
-    // We shouldn't come here.
-    (void)symbolVersion;
-    assert(false);
-#elif defined(TARGET_WINDOWS)
-    char symbolName[SYMBOL_NAME_SIZE];
-    sprintf_s(symbolName, SYMBOL_NAME_SIZE, "ucol_setVariableTop%s", symbolVersion);
-    ucol_setVariableTop_ptr = (ucol_setVariableTop_func)GetProcAddress((HMODULE)libicui18n, symbolName);
-#else
-    char symbolName[SYMBOL_NAME_SIZE];
-    snprintf(symbolName, SYMBOL_NAME_SIZE, "ucol_setVariableTop%s", symbolVersion);
-    ucol_setVariableTop_ptr = (ucol_setVariableTop_func)dlsym(libicui18n, symbolName);
-#endif // defined(TARGET_OSX) || defined(TARGET_ANDROID)
-
-    if (ucol_setVariableTop_ptr == NULL)
-    {
-        fprintf(stderr, "Cannot get the symbols of ICU APIs ucol_setMaxVariable or ucol_setVariableTop.\n");
-        abort();
-    }
-}
-
 // GlobalizationNative_LoadICU
 // This method get called from the managed side during the globalization initialization.
 // This method shouldn't get called at all if we are running in globalization invariant mode
@@ -509,7 +479,6 @@ int32_t GlobalizationNative_LoadICU(void)
     FOR_ALL_ICU_FUNCTIONS
     ValidateICUDataCanLoad();
 
-    InitializeVariableMaxAndTopPointers(symbolVersion);
     InitializeUColClonePointers(symbolVersion);
 
     return true;
@@ -566,7 +535,6 @@ void GlobalizationNative_InitICUFunctions(void* icuuc, void* icuin, const char* 
     FOR_ALL_ICU_FUNCTIONS
     ValidateICUDataCanLoad();
 
-    InitializeVariableMaxAndTopPointers(symbolVersion);
     InitializeUColClonePointers(symbolVersion);
 }
 

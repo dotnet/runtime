@@ -699,7 +699,6 @@ PWSTR   DacInstantiateStringW(TADDR addr, ULONG32 maxChars, bool throwEx);
 TADDR   DacGetTargetAddrForHostAddr(LPCVOID ptr, bool throwEx);
 TADDR   DacGetTargetAddrForHostInteriorAddr(LPCVOID ptr, bool throwEx);
 TADDR   DacGetTargetVtForHostVt(LPCVOID vtHost, bool throwEx);
-PWSTR   DacGetVtNameW(TADDR targetVtable);
 
 // Report a region of memory to the debugger
 bool    DacEnumMemoryRegion(TADDR addr, TSIZE_T size, bool fExpectSuccess = true);
@@ -2205,9 +2204,6 @@ public: name(int dummy) : base(dummy) {}
 
 // helper macro to make the vtables unique for DAC
 #define VPTR_UNIQUE(unique) virtual int MakeVTableUniqueForDAC() { return unique; }
-#define VPTR_UNIQUE_ComMethodFrame                      (100000)
-#define VPTR_UNIQUE_RedirectedThreadFrame               (VPTR_UNIQUE_ComMethodFrame + 1)
-#define VPTR_UNIQUE_HijackFrame                         (VPTR_UNIQUE_RedirectedThreadFrame + 1)
 
 #define PTR_TO_TADDR(ptr) ((TADDR)(ptr))
 #define GFN_TADDR(name) ((TADDR)(name))

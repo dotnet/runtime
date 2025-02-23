@@ -31,7 +31,9 @@ namespace System.Linq
             ThrowHelper.ThrowIfNull(source);
             ThrowHelper.ThrowIfNull(selector);
 
-            return Impl(source, selector, default);
+            return
+                source.IsKnownEmpty() ? Empty<TResult>() :
+                Impl(source, selector, default);
 
             async static IAsyncEnumerable<TResult> Impl(
                 IAsyncEnumerable<TSource> source,
@@ -69,7 +71,9 @@ namespace System.Linq
             ThrowHelper.ThrowIfNull(source);
             ThrowHelper.ThrowIfNull(selector);
 
-            return Impl(source, selector, default);
+            return
+                source.IsKnownEmpty() ? Empty<TResult>() :
+                Impl(source, selector, default);
 
             async static IAsyncEnumerable<TResult> Impl(
                 IAsyncEnumerable<TSource> source,
@@ -107,7 +111,9 @@ namespace System.Linq
             ThrowHelper.ThrowIfNull(source);
             ThrowHelper.ThrowIfNull(selector);
 
-            return Impl(source, selector, default);
+            return
+                source.IsKnownEmpty() ? Empty<TResult>() :
+                Impl(source, selector, default);
 
             async static IAsyncEnumerable<TResult> Impl(
                 IAsyncEnumerable<TSource> source,
@@ -146,7 +152,9 @@ namespace System.Linq
             ThrowHelper.ThrowIfNull(source);
             ThrowHelper.ThrowIfNull(selector);
 
-            return Impl(source, selector, default);
+            return
+                source.IsKnownEmpty() ? Empty<TResult>() :
+                Impl(source, selector, default);
 
             async static IAsyncEnumerable<TResult> Impl(
                 IAsyncEnumerable<TSource> source,
@@ -186,7 +194,9 @@ namespace System.Linq
             ThrowHelper.ThrowIfNull(source);
             ThrowHelper.ThrowIfNull(selector);
 
-            return Impl(source, selector, default);
+            return
+                source.IsKnownEmpty() ? Empty<TResult>() :
+                Impl(source, selector, default);
 
             async static IAsyncEnumerable<TResult> Impl(
                 IAsyncEnumerable<TSource> source,
@@ -226,7 +236,9 @@ namespace System.Linq
             ThrowHelper.ThrowIfNull(source);
             ThrowHelper.ThrowIfNull(selector);
 
-            return Impl(source, selector, default);
+            return
+                source.IsKnownEmpty() ? Empty<TResult>() :
+                Impl(source, selector, default);
 
             async static IAsyncEnumerable<TResult> Impl(
                 IAsyncEnumerable<TSource> source,
@@ -274,7 +286,9 @@ namespace System.Linq
             ThrowHelper.ThrowIfNull(collectionSelector);
             ThrowHelper.ThrowIfNull(resultSelector);
 
-            return Impl(source, collectionSelector, resultSelector, default);
+            return
+                source.IsKnownEmpty() ? Empty<TResult>() :
+                Impl(source, collectionSelector, resultSelector, default);
 
             async static IAsyncEnumerable<TResult> Impl(
                 IAsyncEnumerable<TSource> source,
@@ -322,7 +336,9 @@ namespace System.Linq
             ThrowHelper.ThrowIfNull(collectionSelector);
             ThrowHelper.ThrowIfNull(resultSelector);
 
-            return Impl(source, collectionSelector, resultSelector, default);
+            return
+                source.IsKnownEmpty() ? Empty<TResult>() :
+                Impl(source, collectionSelector, resultSelector, default);
 
             async static IAsyncEnumerable<TResult> Impl(
                 IAsyncEnumerable<TSource> source,
@@ -370,7 +386,9 @@ namespace System.Linq
             ThrowHelper.ThrowIfNull(collectionSelector);
             ThrowHelper.ThrowIfNull(resultSelector);
 
-            return Impl(source, collectionSelector, resultSelector, default);
+            return
+                source.IsKnownEmpty() ? Empty<TResult>() :
+                Impl(source, collectionSelector, resultSelector, default);
 
             async static IAsyncEnumerable<TResult> Impl(
                 IAsyncEnumerable<TSource> source,
@@ -418,7 +436,9 @@ namespace System.Linq
             ThrowHelper.ThrowIfNull(collectionSelector);
             ThrowHelper.ThrowIfNull(resultSelector);
 
-            return Impl(source, collectionSelector, resultSelector, default);
+            return
+                source.IsKnownEmpty() ? Empty<TResult>() :
+                Impl(source, collectionSelector, resultSelector, default);
 
             async static IAsyncEnumerable<TResult> Impl(
                 IAsyncEnumerable<TSource> source,
@@ -465,7 +485,9 @@ namespace System.Linq
             ThrowHelper.ThrowIfNull(collectionSelector);
             ThrowHelper.ThrowIfNull(resultSelector);
 
-            return Impl(source, collectionSelector, resultSelector, default);
+            return
+                source.IsKnownEmpty() ? Empty<TResult>() :
+                Impl(source, collectionSelector, resultSelector, default);
 
             static async IAsyncEnumerable<TResult> Impl(
                 IAsyncEnumerable<TSource> source,
@@ -513,7 +535,9 @@ namespace System.Linq
             ThrowHelper.ThrowIfNull(collectionSelector);
             ThrowHelper.ThrowIfNull(resultSelector);
 
-            return Impl(source, collectionSelector, resultSelector, default);
+            return
+                source.IsKnownEmpty() ? Empty<TResult>() :
+                Impl(source, collectionSelector, resultSelector, default);
 
             static async IAsyncEnumerable<TResult> Impl(
                 IAsyncEnumerable<TSource> source,
@@ -561,7 +585,9 @@ namespace System.Linq
             ThrowHelper.ThrowIfNull(collectionSelector);
             ThrowHelper.ThrowIfNull(resultSelector);
 
-            return Impl(source, collectionSelector, resultSelector, default);
+            return
+                source.IsKnownEmpty() ? Empty<TResult>() :
+                Impl(source, collectionSelector, resultSelector, default);
 
             static async IAsyncEnumerable<TResult> Impl(
                 IAsyncEnumerable<TSource> source,

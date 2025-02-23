@@ -10,6 +10,7 @@
     <Compile Include="ElementAtOrDefaultAsyncTests.cs" />
     <Compile Include="ElementAtAsyncTests.cs" />
     <Compile Include="GroupByTests.cs" />
+    <Compile Include="ShuffleTests.cs" />
     <Compile Include="SingleOrDefaultAsyncTests.cs" />
     <Compile Include="SingleAsyncTests.cs" />
     <Compile Include="LastOrDefaultAsyncTests.cs" />

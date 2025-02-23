@@ -134,7 +134,7 @@ namespace System.Runtime.InteropServices.JavaScript
                     else
                     {
                         marshaler(ref arg_3, out T result);
-                        if(!tcs.TrySetResult(result))
+                        if (!tcs.TrySetResult(result))
                         {
                             Environment.FailFast("Failed to set result to TaskCompletionSource (marshaler type is none)");
                         }

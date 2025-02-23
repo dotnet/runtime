@@ -16,6 +16,18 @@ namespace System.Linq.Tests
             AssertExtensions.Throws<ArgumentNullException>("source", () => AsyncEnumerable.ToAsyncEnumerable<int>(null));
         }
 
+        [Fact]
+        public void Empty_ProducesEmpty() // validating an optimization / implementation detail
+        {
+            Assert.Same(AsyncEnumerable.Empty<int>(), Enumerable.Empty<int>().ToAsyncEnumerable());
+            Assert.Same(AsyncEnumerable.Empty<int>(), Array.Empty<int>().ToAsyncEnumerable());
+            Assert.Same(AsyncEnumerable.Empty<int>(), new int[0].ToAsyncEnumerable());
+
+            Assert.NotSame(AsyncEnumerable.Empty<int>(), new List<int>().ToAsyncEnumerable());
+            Assert.NotSame(AsyncEnumerable.Empty<int>(), new HashSet<int>().ToAsyncEnumerable());
+            Assert.NotSame(AsyncEnumerable.Empty<int>(), new ReadOnlyCollection<int>([]).ToAsyncEnumerable());
+        }
+
         [Theory]
         [InlineData(new int[0])]
         [InlineData(new int[] { 1 })]

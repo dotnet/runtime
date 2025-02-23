@@ -1140,21 +1140,44 @@ bool Registers_REGDISPLAY::validVectorRegister(int num) const
 
 inline uint64_t Registers_REGDISPLAY::getRegister(int regNum) const {
     switch (regNum) {
-    case UNW_RISCV_X0:
-        return *pT0;
     case UNW_RISCV_X1:
-        return *pT1;
-    case UNW_RISCV_X2:
-        return *pT2;
+        return *pRA;
     case UNW_RISCV_X3:
-        return *pT3;
+        return *pGP;
     case UNW_RISCV_X4:
-        return *pT4;
+        return *pTP;
     case UNW_RISCV_X5:
-        return *pT5;
+        return *pT0;
     case UNW_RISCV_X6:
+        return *pT1;
+    case UNW_RISCV_X7:
+        return *pT2;
+    case UNW_RISCV_X28:
+        return *pT3;
+    case UNW_RISCV_X29:
+        return *pT4;
+    case UNW_RISCV_X30:
+        return *pT5;
+    case UNW_RISCV_X31:
         return *pT6;
-    // Add other general-purpose registers if needed
+
+    case UNW_RISCV_X8:
+        return *pFP;
+    case UNW_RISCV_X9:
+        return *pS1;
+
+    case UNW_RISCV_X18:
+        return *pS2;
+    case UNW_RISCV_X19:
+        return *pS3;
+    case UNW_RISCV_X20:
+        return *pS4;
+    case UNW_RISCV_X21:
+        return *pS5;
+    case UNW_RISCV_X22:
+        return *pS6;
+    case UNW_RISCV_X23:
+        return *pS7;
 
     case UNW_RISCV_F0:
         return F[0];
@@ -1220,7 +1243,6 @@ inline uint64_t Registers_REGDISPLAY::getRegister(int regNum) const {
         return F[30];
     case UNW_RISCV_F31:
         return F[31];
-    // Add other floating-point registers if needed
 
     case UNW_RISCV_VLENB:
         return 0; // VLENB not used in REGDISPLAY, adjust if needed
@@ -1233,26 +1255,60 @@ inline uint64_t Registers_REGDISPLAY::getRegister(int regNum) const {
 void Registers_REGDISPLAY::setRegister(int regNum, uint64_t value, uint64_t location)
 {
     switch (regNum) {
-    case UNW_RISCV_X0:
-        *pT0 = value;
-        break;
     case UNW_RISCV_X1:
-        *pT1 = value;
-        break;
-    case UNW_RISCV_X2:
-        *pT2 = value;
+        *pRA = value;
         break;
     case UNW_RISCV_X3:
-        *pT3 = value;
+        *pGP = value;
         break;
     case UNW_RISCV_X4:
-        *pT4 = value;
+        *pTP = value;
         break;
     case UNW_RISCV_X5:
-        *pT5 = value;
+        *pT0 = value;
         break;
     case UNW_RISCV_X6:
+        *pT1 = value;
+        break;
+    case UNW_RISCV_X7:
+        *pT2 = value;
+        break;
+    case UNW_RISCV_X28:
+        *pT3 = value;
+        break;
+    case UNW_RISCV_X29:
+        *pT4 = value;
+        break;
+    case UNW_RISCV_X30:
+        *pT5 = value;
+        break;
+    case UNW_RISCV_X31:
         *pT6 = value;
+        break;
+
+    case UNW_RISCV_X8:
+        *pFP = value;
+        break;
+    case UNW_RISCV_X9:
+        *pS1 = value;
+        break;
+    case UNW_RISCV_X18:
+        *pS2 = value;
+        break;
+    case UNW_RISCV_X19:
+        *pS3 = value;
+        break;
+    case UNW_RISCV_X20:
+        *pS4 = value;
+        break;
+    case UNW_RISCV_X21:
+        *pS5 = value;
+        break;
+    case UNW_RISCV_X22:
+        *pS6 = value;
+        break;
+    case UNW_RISCV_X23:
+        *pS7 = value;
         break;
 
     // Add other general-purpose registers if needed
@@ -1353,8 +1409,6 @@ void Registers_REGDISPLAY::setRegister(int regNum, uint64_t value, uint64_t loca
     case UNW_RISCV_F31:
         F[31] = value;
         break;
-
-    // Add other floating-point registers if needed
 
     case UNW_RISCV_VLENB:
         PORTABILITY_ASSERT("unsupported RISC-V VLENB register");

@@ -3,9 +3,12 @@
 
 using System;
 using System.Diagnostics;
+using System.Globalization;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography.X509Certificates;
 using Microsoft.Win32.SafeHandles;
+
+using TrackedAllocationDelegate = System.Action<System.IntPtr, ulong, System.IntPtr, int>;
 
 internal static partial class Interop
 {
@@ -163,6 +166,53 @@ internal static partial class Interop
             }
 
             return bytes;
+        }
+
+        [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_GetMemoryUse")]
+        private static partial void GetMemoryUse(ref long memoryUse, ref long allocationCount);
+
+        internal static long GetOpenSslAllocatedMemory()
+        {
+            long used = 0;
+            long count = 0;
+            GetMemoryUse(ref used, ref count);
+            return used;
+        }
+
+        internal static long GetOpenSslAllocationCount()
+        {
+            long used = 0;
+            long count = 0;
+            GetMemoryUse(ref used, ref count);
+            return count;
+        }
+
+        [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EnableMemoryTracking")]
+        internal static unsafe partial void EnableMemoryTracking(int enable);
+
+        [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_ForEachTrackedAllocation")]
+        private static unsafe partial void ForEachTrackedAllocation(delegate* unmanaged<IntPtr, ulong, char*, int, IntPtr, void> callback, IntPtr ctx);
+
+        internal static unsafe void ForEachTrackedAllocation(TrackedAllocationDelegate callback)
+        {
+            ForEachTrackedAllocation(&MemoryTrackingCallback, (IntPtr)(&callback));
+        }
+
+        [UnmanagedCallersOnly]
+        private static unsafe void MemoryTrackingCallback(IntPtr ptr, ulong size, char* file, int line, IntPtr ctx)
+        {
+            TrackedAllocationDelegate callback = *(TrackedAllocationDelegate*)ctx;
+            callback(ptr, size, (IntPtr)file, line);
+        }
+
+        internal static unsafe void EnableMemoryTracking()
+        {
+            EnableMemoryTracking(1);
+        }
+
+        internal static unsafe void DisableMemoryTracking()
+        {
+            EnableMemoryTracking(0);
         }
     }
 }

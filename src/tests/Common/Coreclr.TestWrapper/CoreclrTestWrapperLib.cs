@@ -392,24 +392,31 @@ namespace CoreclrTestLib
 
                 Console.WriteLine("=========================================");
                 string? userName = Environment.GetEnvironmentVariable("USER");
-                if (!string.IsNullOrEmpty(userName))
+                if (string.IsNullOrEmpty(userName))
                 {
-                    if (!RunProcess("sudo", $"chown {userName} {crashReportJsonFile}", Console.Out))
-                    {
-                        return false;
-                    }
+                    userName="helixbot";
+                }
 
-                    Console.WriteLine("=========================================");
-                    if (!RunProcess("sudo", $"ls -l {crashReportJsonFile}", Console.Out))
-                    {
-                        return false;
-                    }
+                if (!RunProcess("sudo", $"chmod a+rw {crashReportJsonFile}", Console.Out))
+                {
+                    return false;
+                }
 
-                    Console.WriteLine("=========================================");
-                    if (!RunProcess("ls", $"-l {crashReportJsonFile}", Console.Out))
-                    {
-                        return false;
-                    }
+                if (!RunProcess("sudo", $"chown {userName} {crashReportJsonFile}", Console.Out))
+                {
+                    return false;
+                }
+
+                Console.WriteLine("=========================================");
+                if (!RunProcess("sudo", $"ls -l {crashReportJsonFile}", Console.Out))
+                {
+                    return false;
+                }
+
+                Console.WriteLine("=========================================");
+                if (!RunProcess("ls", $"-l {crashReportJsonFile}", Console.Out))
+                {
+                    return false;
                 }
             }
 
@@ -801,6 +808,12 @@ namespace CoreclrTestLib
                             Console.WriteLine($"\t{activeProcess.Id,-6} {activeProcess.ProcessName}");
                         }
 
+                        if (OperatingSystem.IsWindows())
+                        {
+                            Console.WriteLine("Snapshot of processes currently running (using wmic):");
+                            Console.WriteLine(GetAllProcessNames_wmic());
+                        }
+
                         if (collectCrashDumps)
                         {
                             if (crashDumpFolder != null)
@@ -832,6 +845,28 @@ namespace CoreclrTestLib
             }
 
             return exitCode;
+        }
+
+        private static string GetAllProcessNames_wmic()
+        {
+            // The command to execute
+            string command = "wmic process get Name, ProcessId, ParentProcessId";
+            
+            // Start the process and capture the output
+            Process process = new Process();
+            process.StartInfo.FileName = "cmd.exe";
+            process.StartInfo.Arguments = $"/c {command}";
+            process.StartInfo.RedirectStandardOutput = true;
+            process.StartInfo.UseShellExecute = false;
+            process.StartInfo.CreateNoWindow = true;
+
+            // Start the process and read the output
+            process.Start();
+            string output = process.StandardOutput.ReadToEnd();
+            process.WaitForExit(100); // wait for 100 ms
+
+            // Output the result
+            return output;
         }
     }
 }

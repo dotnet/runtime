@@ -32,6 +32,14 @@
 #define DBG_FRE(dbg,fre) fre
 #endif
 
+#define FRAMETYPE_InlinedCallFrame 0x1
+ASMCONSTANTS_C_ASSERT(FRAMETYPE_InlinedCallFrame == (int)FrameIdentifier::InlinedCallFrame)
+
+#if defined(TARGET_X86) && !defined(UNIX_X86_ABI)
+#define FRAMETYPE_TailCallFrame 0x2
+ASMCONSTANTS_C_ASSERT(FRAMETYPE_TailCallFrame == (int)FrameIdentifier::TailCallFrame)
+#endif
+
 #define INITIAL_SUCCESS_COUNT               0x100
 
 #define DynamicHelperFrameFlags_Default     0
@@ -146,8 +154,6 @@ ASMCONSTANTS_C_ASSERT(VASigCookie__StubOffset == offsetof(VASigCookie, pNDirectI
 #define SIZEOF_TailCallFrame 32
 ASMCONSTANTS_C_ASSERT(SIZEOF_TailCallFrame == sizeof(TailCallFrame))
 #endif // !UNIX_X86_ABI
-
-#define SIZEOF_GSCookie 4
 
 // ICodeManager::SHADOW_SP_IN_FILTER from clr/src/inc/eetwain.h
 #define SHADOW_SP_IN_FILTER_ASM 0x1

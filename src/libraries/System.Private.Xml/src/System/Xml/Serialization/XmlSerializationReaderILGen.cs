@@ -2949,14 +2949,14 @@ namespace System.Xml.Serialization
 
             if (isNullable)
             {
-                ilg.ExitScope();    // if(!ReadNull()) { ExitScope
+                ilg.ExitScope();    // if (!ReadNull()) { ExitScope
                 ilg.Else();         // } else { EnterScope
                 ilg.EnterScope();
                 member.IsNullable = true;
                 WriteMemberBegin(members);
                 WriteMemberEnd(members);
             }
-            ilg.ExitScope();    // if(!ReadNull())/else ExitScope
+            ilg.ExitScope();    // if (!ReadNull())/else ExitScope
             ilg.EndIf();
         }
 
