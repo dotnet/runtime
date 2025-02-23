@@ -1829,9 +1829,10 @@ void CodeGen::genGenerateMachineCode()
 #if defined(TARGET_X86)
         if (compiler->canUseEvexEncoding())
         {
-            if (compiler->compOpportunisticallyDependsOn(InstructionSet_AVX10v2))
+            // Check ISA directly here to avoid JIT-EE calls that could make us miss
+            if (compiler->opts.compSupportsISA.HasInstructionSet(InstructionSet_AVX10v2))
             {
-                if (compiler->compOpportunisticallyDependsOn(InstructionSet_AVX10v2_V512))
+                if (compiler->opts.compSupportsISA.HasInstructionSet(InstructionSet_AVX10v2_V512))
                 {
                     printf("X86 with AVX10.2/512");
                 }
@@ -1840,9 +1841,9 @@ void CodeGen::genGenerateMachineCode()
                     printf("X86 with AVX10.2/256");
                 }
             }
-            else if (compiler->compOpportunisticallyDependsOn(InstructionSet_AVX10v1))
+            else if (compiler->opts.compSupportsISA.HasInstructionSet(InstructionSet_AVX10v1))
             {
-                if (compiler->compOpportunisticallyDependsOn(InstructionSet_AVX10v1_V512))
+                if (compiler->opts.compSupportsISA.HasInstructionSet(InstructionSet_AVX10v1_V512))
                 {
                     printf("X86 with AVX10.1/512");
                 }
@@ -1868,9 +1869,9 @@ void CodeGen::genGenerateMachineCode()
 #elif defined(TARGET_AMD64)
         if (compiler->canUseEvexEncoding())
         {
-            if (compiler->compOpportunisticallyDependsOn(InstructionSet_AVX10v2))
+            if (compiler->opts.compSupportsISA.HasInstructionSet(InstructionSet_AVX10v2))
             {
-                if (compiler->compOpportunisticallyDependsOn(InstructionSet_AVX10v2_V512))
+                if (compiler->opts.compSupportsISA.HasInstructionSet(InstructionSet_AVX10v2_V512))
                 {
                     printf("X64 with AVX10.2/512");
                 }
@@ -1879,9 +1880,9 @@ void CodeGen::genGenerateMachineCode()
                     printf("X64 with AVX10.2/256");
                 }
             }
-            else if (compiler->compOpportunisticallyDependsOn(InstructionSet_AVX10v1))
+            else if (compiler->opts.compSupportsISA.HasInstructionSet(InstructionSet_AVX10v1))
             {
-                if (compiler->compOpportunisticallyDependsOn(InstructionSet_AVX10v1_V512))
+                if (compiler->opts.compSupportsISA.HasInstructionSet(InstructionSet_AVX10v1_V512))
                 {
                     printf("X64 with AVX10.1/512");
                 }
