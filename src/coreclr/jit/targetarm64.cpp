@@ -22,6 +22,9 @@ const regMaskTP intArgMasks[] = {RBM_R0, RBM_R1, RBM_R2, RBM_R3, RBM_R4, RBM_R5,
 
 const regNumber fltArgRegs [] = {REG_V0, REG_V1, REG_V2, REG_V3, REG_V4, REG_V5, REG_V6, REG_V7 };
 const regMaskTP fltArgMasks[] = {RBM_V0, RBM_V1, RBM_V2, RBM_V3, RBM_V4, RBM_V5, RBM_V6, RBM_V7 };
+
+const regNumber intRetRegs [] = {REG_R0, REG_R1};
+const regNumber fltRetRegs [] = {REG_V0, REG_V1, REG_V2, REG_V3};
 // clang-format on
 
 //-----------------------------------------------------------------------------
@@ -207,6 +210,96 @@ ABIPassingInformation Arm64Classifier::Classify(Compiler*    comp,
 
     assert(info.IsPassedByReference() == passedByRef);
     return info;
+}
+
+Arm64ReturnClassifier::Arm64ReturnClassifier(const ReturnClassifierInfo& info)
+    : m_info(info)
+{
+}
+
+//-----------------------------------------------------------------------------
+// Classify:
+//   Classify how a value is returned in the arm64 ABI.
+//
+// Parameters:
+//   comp           - Compiler instance
+//   type           - The return type
+//   structLayout   - The layout of the struct. Expected to be non-null if
+//                    varTypeIsStruct(type) is true.
+//
+// Returns:
+//   Classification information for the return value.
+//
+ABIReturningInformation Arm64ReturnClassifier::Classify(Compiler* comp, var_types type, ClassLayout* structLayout)
+{
+    switch (type)
+    {
+    case TYP_BYTE:
+    case TYP_UBYTE:
+    case TYP_SHORT:
+    case TYP_USHORT:
+    case TYP_INT:
+    case TYP_LONG:
+    case TYP_REF:
+    case TYP_BYREF:
+        return ABIReturningInformation::FromSegment(
+            comp,
+            ABIReturningSegment(REG_R0, 0, genTypeSize(type)));
+    case TYP_FLOAT:
+    case TYP_DOUBLE:
+    case TYP_SIMD8:
+    case TYP_SIMD16:
+        return ABIReturningInformation::FromSegment(
+            comp,
+            ABIReturningSegment(REG_V0, 0, genTypeSize(type)));
+    default:
+        break;
+    }
+
+    assert(varTypeIsStruct(type));
+
+    if (TargetOS::IsWindows && callConvIsInstanceMethodCallConv(m_info.CallConv))
+    {
+        return ABIReturningInformation::InRetBuffer();
+    }
+
+    var_types hfaType = comp->GetHfaType(structLayout->GetClassHandle());
+    if (hfaType != TYP_UNDEF)
+    {
+        unsigned elemSize = genTypeSize(hfaType);
+        unsigned slots    = structLayout->GetSize() / elemSize;
+        if (slots > 4)
+        {
+            return ABIReturningInformation::InRetBuffer();
+        }
+
+        ABIReturningInformation info(comp, slots);
+        for (unsigned i = 0; i < slots; i++)
+        {
+            info.Segment(i) = ABIReturningSegment(fltRetRegs[i], i * elemSize, elemSize);
+        }
+
+        return info;
+    }
+
+    if (structLayout->GetSize() <= 8)
+    {
+        return
+            ABIReturningInformation::FromSegment(
+                comp,
+                ABIReturningSegment(REG_R0, 0, structLayout->GetSize()));
+    }
+
+    if (structLayout->GetSize() <= 16)
+    {
+        return
+            ABIReturningInformation::FromSegments(
+                comp,
+                ABIReturningSegment(REG_R0, 0, 8),
+                ABIReturningSegment(REG_R1, 8, structLayout->GetSize() - 8));
+    }
+
+    return ABIReturningInformation::InRetBuffer();
 }
 
 #endif // TARGET_ARM64

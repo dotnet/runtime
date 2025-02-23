@@ -18,13 +18,15 @@ const Target::ArgOrder Target::g_tgtUnmanagedArgOrder = ARG_ORDER_R2L;
 
 // clang-format off
 #ifdef UNIX_AMD64_ABI
-const regNumber intArgRegs [] = { REG_EDI, REG_ESI, REG_EDX, REG_ECX, REG_R8, REG_R9 };
-const regMaskTP intArgMasks[] = { RBM_EDI, RBM_ESI, RBM_EDX, RBM_ECX, RBM_R8, RBM_R9 };
+const regNumber intArgRegs [] = { REG_RDI, REG_RSI, REG_RDX, REG_RCX, REG_R8, REG_R9 };
+const regMaskTP intArgMasks[] = { RBM_RDI, RBM_RSI, RBM_RDX, RBM_RCX, RBM_R8, RBM_R9 };
 const regNumber fltArgRegs [] = { REG_XMM0, REG_XMM1, REG_XMM2, REG_XMM3, REG_XMM4, REG_XMM5, REG_XMM6, REG_XMM7 };
 const regMaskTP fltArgMasks[] = { RBM_XMM0, RBM_XMM1, RBM_XMM2, RBM_XMM3, RBM_XMM4, RBM_XMM5, RBM_XMM6, RBM_XMM7 };
+const regNumber intRetRegs [] = { REG_RAX, REG_RDX };
+const regNumber fltRetRegs [] = { REG_XMM0, REG_XMM1 };
 #else // !UNIX_AMD64_ABI
-const regNumber intArgRegs [] = { REG_ECX, REG_EDX, REG_R8, REG_R9 };
-const regMaskTP intArgMasks[] = { RBM_ECX, RBM_EDX, RBM_R8, RBM_R9 };
+const regNumber intArgRegs [] = { REG_RCX, REG_RDX, REG_R8, REG_R9 };
+const regMaskTP intArgMasks[] = { RBM_RCX, RBM_RDX, RBM_R8, RBM_R9 };
 const regNumber fltArgRegs [] = { REG_XMM0, REG_XMM1, REG_XMM2, REG_XMM3 };
 const regMaskTP fltArgMasks[] = { RBM_XMM0, RBM_XMM1, RBM_XMM2, RBM_XMM3 };
 #endif // !UNIX_AMD64_ABI
@@ -132,6 +134,60 @@ ABIPassingInformation SysVX64Classifier::Classify(Compiler*    comp,
     return info;
 }
 
+SysVX64ReturnClassifier::SysVX64ReturnClassifier(const ReturnClassifierInfo& info)
+    : m_info(info)
+{
+}
+
+ABIReturningInformation SysVX64ReturnClassifier::Classify(Compiler* comp, var_types type, ClassLayout* structLayout)
+{
+    switch (type)
+    {
+    case TYP_BYTE:
+    case TYP_UBYTE:
+    case TYP_SHORT:
+    case TYP_USHORT:
+    case TYP_INT:
+    case TYP_LONG:
+    case TYP_REF:
+    case TYP_BYREF:
+        return ABIReturningInformation::FromSegment(
+            comp,
+            ABIReturningSegment(REG_RAX, 0, genTypeSize(type)));
+    case TYP_FLOAT:
+    case TYP_DOUBLE:
+        return ABIReturningInformation::FromSegment(
+            comp,
+            ABIReturningSegment(REG_XMM0, 0, genTypeSize(type)));
+    default:
+        break;
+    }
+
+    assert(varTypeIsStruct(type));
+
+    SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR desc;
+    comp->eeGetSystemVAmd64PassStructInRegisterDescriptor(structLayout->GetClassHandle(), &desc);
+
+    if (!desc.passedInRegisters)
+    {
+        return ABIReturningInformation::InRetBuffer();
+    }
+
+    RegisterQueue intReturnRegs(intRetRegs, ArrLen(intRetRegs));
+    RegisterQueue fltReturnRegs(fltRetRegs, ArrLen(fltRetRegs));
+
+    ABIReturningInformation info(comp, desc.eightByteCount);
+    for (int i = 0; i < desc.eightByteCount; i++)
+    {
+        RegisterQueue& queue = desc.eightByteClassifications[i] == SystemVClassificationTypeSSE ? fltReturnRegs : intReturnRegs;
+        info.Segment(i) =
+            ABIReturningSegment(queue.Dequeue(), desc.eightByteOffsets[i], desc.eightByteSizes[i]);
+    }
+
+    return info;
+}
+
+
 #else // !UNIX_AMD64_ABI
 
 //-----------------------------------------------------------------------------
@@ -233,6 +289,47 @@ bool ABIPassingInformation::GetShadowSpaceCallerOffsetForReg(regNumber reg, int*
         default:
             return false;
     }
+}
+
+WinX64ReturnClassifier::WinX64ReturnClassifier(const ReturnClassifierInfo& info)
+    : m_info(info)
+{
+}
+
+ABIReturningInformation WinX64ReturnClassifier::Classify(Compiler* comp, var_types type, ClassLayout* structLayout)
+{
+    switch (type)
+    {
+    case TYP_BYTE:
+    case TYP_UBYTE:
+    case TYP_SHORT:
+    case TYP_USHORT:
+    case TYP_INT:
+    case TYP_LONG:
+    case TYP_REF:
+    case TYP_BYREF:
+        return ABIReturningInformation::FromSegment(
+            comp,
+            ABIReturningSegment(REG_RAX, 0, genTypeSize(type)));
+    case TYP_FLOAT:
+    case TYP_DOUBLE:
+        return ABIReturningInformation::FromSegment(
+            comp,
+            ABIReturningSegment(REG_XMM0, 0, genTypeSize(type)));
+    default:
+        break;
+    }
+
+    assert(varTypeIsStruct(type));
+
+    if (!callConvIsInstanceMethodCallConv(m_info.CallConv) && isPow2(structLayout->GetSize()) && (structLayout->GetSize() <= 8))
+    {
+        return ABIReturningInformation::FromSegment(
+            comp,
+            ABIReturningSegment(REG_RAX, 0, structLayout->GetSize()));
+    }
+
+    return ABIReturningInformation::InRetBuffer();
 }
 
 #endif

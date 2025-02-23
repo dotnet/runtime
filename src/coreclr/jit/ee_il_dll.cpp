@@ -1370,26 +1370,6 @@ void Compiler::eeGetSystemVAmd64PassStructInRegisterDescriptor(
 {
     bool ok = info.compCompHnd->getSystemVAmd64PassStructInRegisterDescriptor(structHnd, structPassInRegDescPtr);
     noway_assert(ok);
-
-#ifdef DEBUG
-    if (verbose)
-    {
-        printf("**** getSystemVAmd64PassStructInRegisterDescriptor(0x%x (%s), ...) =>\n", dspPtr(structHnd),
-               eeGetClassName(structHnd));
-        printf("        passedInRegisters = %s\n", dspBool(structPassInRegDescPtr->passedInRegisters));
-        if (structPassInRegDescPtr->passedInRegisters)
-        {
-            printf("        eightByteCount   = %d\n", structPassInRegDescPtr->eightByteCount);
-            for (unsigned int i = 0; i < structPassInRegDescPtr->eightByteCount; i++)
-            {
-                printf("        eightByte #%d -- classification: ", i);
-                dumpSystemVClassificationType(structPassInRegDescPtr->eightByteClassifications[i]);
-                printf(", byteSize: %d, byteOffset: %d\n", structPassInRegDescPtr->eightByteSizes[i],
-                       structPassInRegDescPtr->eightByteOffsets[i]);
-            }
-        }
-    }
-#endif // DEBUG
 }
 
 #endif // UNIX_AMD64_ABI

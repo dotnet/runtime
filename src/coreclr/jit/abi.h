@@ -118,8 +118,8 @@ public:
 
     ABIPassingInformation(Compiler* comp, unsigned numSegments);
 
-    const ABIPassingSegment&                Segment(unsigned index) const;
     ABIPassingSegment&                      Segment(unsigned index);
+    const ABIPassingSegment&                Segment(unsigned index) const;
     IteratorPair<ABIPassingSegmentIterator> Segments() const;
 
     bool     IsPassedByReference() const;
@@ -137,6 +137,8 @@ public:
     static ABIPassingInformation FromSegments(Compiler*                comp,
                                               const ABIPassingSegment& firstSegment,
                                               const ABIPassingSegment& secondSegment);
+
+    static ABIPassingInformation ReturnedByReference();
 
 #ifdef WINDOWS_AMD64_ABI
     static bool GetShadowSpaceCallerOffsetForReg(regNumber reg, int* offset);
@@ -330,16 +332,159 @@ public:
                                    WellKnownArg wellKnownParam);
 };
 
+struct ABIReturningSegment
+{
+    uint16_t m_offset = 0;
+    uint8_t m_size = 0;
+    regNumberSmall m_reg = REG_NA;
+
+public:
+    ABIReturningSegment();
+    ABIReturningSegment(regNumber reg, unsigned offset, unsigned size);
+
+    regNumber GetRegister() const;
+    unsigned  GetOffset() const;
+    unsigned  GetSize() const;
+    var_types GetRegisterType() const;
+};
+
+class ABIReturningSegmentIterator
+{
+    const ABIReturningSegment* m_value;
+public:
+    explicit ABIReturningSegmentIterator(const ABIReturningSegment* value)
+        : m_value(value)
+    {
+    }
+
+    const ABIReturningSegment& operator*() const
+    {
+        return *m_value;
+    }
+    const ABIReturningSegment* operator->() const
+    {
+        return m_value;
+    }
+
+    ABIReturningSegmentIterator& operator++()
+    {
+        m_value++;
+        return *this;
+    }
+
+    bool operator==(const ABIReturningSegmentIterator& other) const
+    {
+        return m_value == other.m_value;
+    }
+
+    bool operator!=(const ABIReturningSegmentIterator& other) const
+    {
+        return m_value != other.m_value;
+    }
+};
+
+struct ABIReturningInformation
+{
+private:
+    union
+    {
+        ABIReturningSegment* m_segments;
+        ABIReturningSegment m_inlineSegments[sizeof(ABIReturningSegment*) / sizeof(ABIReturningSegment)];
+    };
+
+    bool m_returnedInRetBuffer = false;
+
+    ABIReturningInformation();
+public:
+    // Number of registers used to return the value. Values returned via return buffer
+    // will have 0 here and UsesReturnBuffer() will return true.
+    // TYP_VOID returns will have 0 and UsesReturnBuffer() will return false.
+    unsigned NumRegisters = 0;
+
+    ABIReturningInformation(Compiler* comp, unsigned numRegisters);
+
+    bool UsesRetBuffer() const;
+
+    ABIReturningSegment& Segment(unsigned index);
+    const ABIReturningSegment& Segment(unsigned index) const;
+    IteratorPair<ABIReturningSegmentIterator> Segments() const;
+
+    static ABIReturningInformation FromSegment(Compiler* comp, const ABIReturningSegment& segment);
+    static ABIReturningInformation FromSegments(Compiler* comp, const ABIReturningSegment& firstSegment, const ABIReturningSegment& secondSegment);
+    static ABIReturningInformation InRetBuffer();
+    static ABIReturningInformation Void();
+};
+
+struct ReturnClassifierInfo
+{
+    CorInfoCallConvExtension CallConv = CorInfoCallConvExtension::Managed;
+};
+
+class X86ReturnClassifier
+{
+    const ReturnClassifierInfo& m_info;
+
+public:
+    X86ReturnClassifier(const ReturnClassifierInfo& info);
+
+    ABIReturningInformation Classify(Compiler* comp, var_types type, ClassLayout* structLayout);
+};
+
+class WinX64ReturnClassifier
+{
+    const ReturnClassifierInfo& m_info;
+
+public:
+    WinX64ReturnClassifier(const ReturnClassifierInfo& info);
+
+    ABIReturningInformation Classify(Compiler* comp, var_types type, ClassLayout* structLayout);
+};
+
+class SysVX64ReturnClassifier
+{
+    const ReturnClassifierInfo& m_info;
+
+public:
+    SysVX64ReturnClassifier(const ReturnClassifierInfo& info);
+
+    ABIReturningInformation Classify(Compiler* comp, var_types type, ClassLayout* structLayout);
+};
+
+class Arm64ReturnClassifier
+{
+    const ReturnClassifierInfo& m_info;
+
+public:
+    Arm64ReturnClassifier(const ReturnClassifierInfo& info);
+
+    ABIReturningInformation Classify(Compiler* comp, var_types type, ClassLayout* structLayout);
+};
+
+class Arm32ReturnClassifier
+{
+    const ReturnClassifierInfo& m_info;
+
+public:
+    Arm32ReturnClassifier(const ReturnClassifierInfo& info);
+
+    ABIReturningInformation Classify(Compiler* comp, var_types type, ClassLayout* structLayout);
+};
+
 #if defined(TARGET_X86)
 typedef X86Classifier PlatformClassifier;
+typedef X86ReturnClassifier PlatformReturnClassifier;
 #elif defined(WINDOWS_AMD64_ABI)
 typedef WinX64Classifier PlatformClassifier;
+typedef WinX64ReturnClassifier PlatformReturnClassifier;
 #elif defined(UNIX_AMD64_ABI)
 typedef SysVX64Classifier PlatformClassifier;
+typedef SysVX64ReturnClassifier PlatformReturnClassifier;
 #elif defined(TARGET_ARM64)
 typedef Arm64Classifier PlatformClassifier;
+typedef Arm64ReturnClassifier PlatformReturnClassifier;
 #elif defined(TARGET_ARM)
 typedef Arm32Classifier PlatformClassifier;
+typedef Arm32ReturnClassifier PlatformReturnClassifier;
 #elif defined(TARGET_RISCV64)
 typedef RiscV64Classifier PlatformClassifier;
 #elif defined(TARGET_LOONGARCH64)
@@ -366,5 +511,7 @@ public:
                                    var_types    type,
                                    ClassLayout* structLayout,
                                    WellKnownArg wellKnownParam);
+
+    static ABIPassingInformation ClassifyReturn(Compiler* comp, var_types type, ClassLayout* structLayout);
 };
 #endif

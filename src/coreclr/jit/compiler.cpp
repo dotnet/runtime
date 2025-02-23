@@ -611,6 +611,34 @@ bool Compiler::isNativePrimitiveStructType(CORINFO_CLASS_HANDLE clsHnd)
     return strcmp(typeName, "CLong") == 0 || strcmp(typeName, "CULong") == 0 || strcmp(typeName, "NFloat") == 0;
 }
 
+var_types Compiler::mapNativePrimitiveStructType(ClassLayout* layout)
+{
+    if (!isIntrinsicType(layout->GetClassHandle()))
+    {
+        return TYP_UNDEF;
+    }
+
+    const char* namespaceName = nullptr;
+    const char* typeName      = getClassNameFromMetadata(layout->GetClassHandle(), &namespaceName);
+
+    if (strcmp(namespaceName, "System.Runtime.InteropServices") != 0)
+    {
+        return TYP_UNDEF;
+    }
+
+    if ((strcmp(typeName, "CLong") == 0) || (strcmp(typeName, "CULong") == 0))
+    {
+        return layout->GetSize() == 4 ? TYP_INT : TYP_LONG;
+    }
+
+    if (strcmp(typeName, "NFloat") == 0)
+    {
+        return layout->GetSize() == 4 ? TYP_FLOAT : TYP_DOUBLE;
+    }
+
+    return TYP_UNDEF;
+}
+
 //-----------------------------------------------------------------------------
 // getPrimitiveTypeForStruct:
 //     Get the "primitive" type that is used for a struct

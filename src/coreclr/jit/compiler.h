@@ -6059,6 +6059,8 @@ public:
     // for the unmanaged calling conventions.
     bool isNativePrimitiveStructType(CORINFO_CLASS_HANDLE clsHnd);
 
+    var_types mapNativePrimitiveStructType(ClassLayout* layout);
+
     enum structPassingKind
     {
         SPK_Unknown,       // Invalid value, never returned

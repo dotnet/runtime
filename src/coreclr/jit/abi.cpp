@@ -263,7 +263,7 @@ ABIPassingInformation::ABIPassingInformation(Compiler* comp, unsigned numSegment
 // Returns:
 //   Reference to segment.
 //
-const ABIPassingSegment& ABIPassingInformation::Segment(unsigned index) const
+ABIPassingSegment& ABIPassingInformation::Segment(unsigned index)
 {
     assert(index < NumSegments);
     if (NumSegments == 1)
@@ -284,9 +284,9 @@ const ABIPassingSegment& ABIPassingInformation::Segment(unsigned index) const
 // Returns:
 //   Reference to segment.
 //
-ABIPassingSegment& ABIPassingInformation::Segment(unsigned index)
+const ABIPassingSegment& ABIPassingInformation::Segment(unsigned index) const
 {
-    return const_cast<ABIPassingSegment&>(static_cast<const ABIPassingInformation&>(*this).Segment(index));
+    return const_cast<ABIPassingInformation*>(this)->Segment(index);
 }
 
 //-----------------------------------------------------------------------------
@@ -299,16 +299,7 @@ ABIPassingSegment& ABIPassingInformation::Segment(unsigned index)
 //
 IteratorPair<ABIPassingSegmentIterator> ABIPassingInformation::Segments() const
 {
-    const ABIPassingSegment* begin;
-    if (NumSegments == 1)
-    {
-        begin = &m_singleSegment;
-    }
-    else
-    {
-        begin = m_segments;
-    }
-
+    const ABIPassingSegment* begin = &Segment(0);
     return IteratorPair<ABIPassingSegmentIterator>(ABIPassingSegmentIterator(begin),
                                                    ABIPassingSegmentIterator(begin + NumSegments));
 }
@@ -553,6 +544,14 @@ ABIPassingInformation ABIPassingInformation::FromSegments(Compiler*             
     return info;
 }
 
+ABIPassingInformation ABIPassingInformation::ReturnedByReference()
+{
+    ABIPassingInformation info;
+    info.m_passedByRef = true;
+    info.NumSegments = 0;
+    return info;
+}
+
 #ifdef DEBUG
 //-----------------------------------------------------------------------------
 // Dump:
@@ -628,6 +627,263 @@ regNumber RegisterQueue::Peek()
 void RegisterQueue::Clear()
 {
     m_index = m_numRegs;
+}
+
+//-----------------------------------------------------------------------------
+// ABIReturningSegment::ABIReturningSegment:
+//   Construct an instance of a return segment.
+//
+ABIReturningSegment::ABIReturningSegment()
+{
+}
+
+//-----------------------------------------------------------------------------
+// ABIReturningSegment::ABIReturningSegment:
+//   Construct an instance of a return segment with the specified information.
+//
+// Parameters:
+//   reg    - The register
+//   offset - Start of the part of the struct that is being returned in this register
+//   size   - Size of the part of the struct being returned in this register
+//
+ABIReturningSegment::ABIReturningSegment(regNumber reg, unsigned offset, unsigned size)
+    : m_offset((uint16_t)offset)
+    , m_size((uint8_t)size)
+    , m_reg((regNumberSmall)reg)
+{
+    assert(m_reg == reg);
+    assert(m_offset == offset);
+    assert(m_size == size);
+}
+
+//-----------------------------------------------------------------------------
+// ABIReturningSegment::GetRegister:
+//   Get the register.
+//
+// Return Value:
+//   The register.
+//
+regNumber ABIReturningSegment::GetRegister() const
+{
+    return (regNumber)m_reg;
+}
+
+//-----------------------------------------------------------------------------
+// ABIReturningSegment::GetOffset:
+//   Get the offset into the struct of the part returned in this register.
+//
+// Return Value:
+//   The offset.
+//
+unsigned ABIReturningSegment::GetOffset() const
+{
+    return m_offset;
+}
+
+//-----------------------------------------------------------------------------
+// ABIReturningSegment::GetSize:
+//   Get the size of the part of the struct being returned in this register.
+//
+// Return Value:
+//   The offset.
+//
+unsigned ABIReturningSegment::GetSize() const
+{
+    return m_size;
+}
+
+//-----------------------------------------------------------------------------
+// ABIReturningSegment::GetRegisterType:
+//  Return the smallest type larger or equal to Size that most naturally
+//  represents the register this segment is passed in.
+//
+// Return Value:
+//   A type that matches the size and the register.
+//
+var_types ABIReturningSegment::GetRegisterType() const
+{
+    if (genIsValidFloatReg(GetRegister()))
+    {
+        switch (GetSize())
+        {
+            case 4:
+                return TYP_FLOAT;
+            case 8:
+                return TYP_DOUBLE;
+#ifdef FEATURE_SIMD
+            case 16:
+                return TYP_SIMD16;
+#endif
+            default:
+                assert(!"Unexpected size for floating point register");
+                return TYP_UNDEF;
+        }
+    }
+    else
+    {
+        switch (GetSize())
+        {
+            case 1:
+                return TYP_UBYTE;
+            case 2:
+                return TYP_USHORT;
+            case 3:
+            case 4:
+                return TYP_INT;
+#ifdef TARGET_64BIT
+            case 5:
+            case 6:
+            case 7:
+            case 8:
+                return TYP_LONG;
+#endif
+            default:
+                assert(!"Unexpected size for integer register");
+                return TYP_UNDEF;
+        }
+    }
+}
+
+//-----------------------------------------------------------------------------
+// ABIReturningInformation::ABIReturningInformation:
+//   Construct an instance with no registers.
+//
+ABIReturningInformation::ABIReturningInformation()
+{
+}
+
+//-----------------------------------------------------------------------------
+// ABIReturningInformation::ABIReturningInformation:
+//   Construct an instance with the specified number of registers.
+//
+// Parameters:
+//   comp         - Compiler instance
+//   numRegisters - Number of registers
+//
+ABIReturningInformation::ABIReturningInformation(Compiler* comp, unsigned numRegisters)
+    : NumRegisters(numRegisters)
+{
+    if (numRegisters > ArrLen(m_inlineSegments))
+    {
+        m_segments = new (comp, CMK_ABI) ABIReturningSegment[numRegisters];
+    }
+}
+
+//-----------------------------------------------------------------------------
+// ABIReturningInformation::UsesRetBuffer:
+//   Returns true if the value is being returned using a return buffer passed
+//   as a parameter. In that case NumRegisters should be equal to 0.
+//
+bool ABIReturningInformation::UsesRetBuffer() const
+{
+    return m_returnedInRetBuffer;
+}
+
+//-----------------------------------------------------------------------------
+// ABIReturningInformation::Segment:
+//   Get reference to one of the segments.
+//
+// Parameters:
+//   index - Index of the segment
+//
+// Return Value:
+//   Reference to a register segment.
+//
+ABIReturningSegment& ABIReturningInformation::Segment(unsigned index)
+{
+    assert(index < NumRegisters);
+
+    if (NumRegisters > ArrLen(m_inlineSegments))
+    {
+        return m_segments[index];
+    }
+
+    return m_inlineSegments[index];
+}
+
+//-----------------------------------------------------------------------------
+// ABIReturningInformation::Segment:
+//   Get reference to one of the segments.
+//
+// Parameters:
+//   index - Index of the segment
+//
+// Return Value:
+//   Reference to a register segment.
+//
+const ABIReturningSegment& ABIReturningInformation::Segment(unsigned index) const
+{
+    return const_cast<ABIReturningInformation*>(this)->Segment(index);
+}
+
+//-----------------------------------------------------------------------------
+// ABIReturningInformation::Segments:
+//   Get an iterator for the segments.
+//
+// Return Value:
+//   Iterator.
+//
+IteratorPair<ABIReturningSegmentIterator> ABIReturningInformation::Segments() const
+{
+    const ABIReturningSegment* begin = &Segment(0);
+    return IteratorPair<ABIReturningSegmentIterator>(
+        ABIReturningSegmentIterator(begin),
+        ABIReturningSegmentIterator(begin + NumRegisters));
+}
+
+//-----------------------------------------------------------------------------
+// ABIReturningInformation::FromSegment:
+//   Construct an instance from a single register.
+//
+// Return Value:
+//   Instance representing that register.
+//
+ABIReturningInformation ABIReturningInformation::FromSegment(Compiler* comp, const ABIReturningSegment& segment)
+{
+    ABIReturningInformation info(comp, 1);
+    info.Segment(0) = segment;
+    return info;
+}
+
+//-----------------------------------------------------------------------------
+// ABIReturningInformation::FromSegments:
+//   Construct an instance from two registers.
+//
+// Return Value:
+//   Instance representing those registers.
+//
+ABIReturningInformation ABIReturningInformation::FromSegments(Compiler* comp, const ABIReturningSegment& firstSegment, const ABIReturningSegment& secondSegment)
+{
+    ABIReturningInformation info(comp, 2);
+    info.Segment(0) = firstSegment;
+    info.Segment(1) = secondSegment;
+    return info;
+}
+
+//-----------------------------------------------------------------------------
+// ABIReturningInformation::InRetBuffer:
+//   Construct an instance that represents a value returned in a return buffer.
+//
+// Return Value:
+//   Instance with no registers, but with UsesReturnBuffer() returning true.
+//
+ABIReturningInformation ABIReturningInformation::InRetBuffer()
+{
+    ABIReturningInformation info;
+    info.m_returnedInRetBuffer = true;
+    return info;
+}
+
+//-----------------------------------------------------------------------------
+// ABIReturningInformation::Void:
+//   Construct an instance that represents a void return.
+//
+// Return Value:
+//   Instance with no registers.
+//
+ABIReturningInformation ABIReturningInformation::Void()
+{
+    return ABIReturningInformation();
 }
 
 #ifdef SWIFT_SUPPORT

@@ -22,6 +22,8 @@ const regMaskTP intArgMasks[] = {RBM_R0, RBM_R1, RBM_R2, RBM_R3};
 
 const regNumber fltArgRegs [] = {REG_F0, REG_F1, REG_F2, REG_F3, REG_F4, REG_F5, REG_F6, REG_F7, REG_F8, REG_F9, REG_F10, REG_F11, REG_F12, REG_F13, REG_F14, REG_F15 };
 const regMaskTP fltArgMasks[] = {RBM_F0, RBM_F1, RBM_F2, RBM_F3, RBM_F4, RBM_F5, RBM_F6, RBM_F7, RBM_F8, RBM_F9, RBM_F10, RBM_F11, RBM_F12, RBM_F13, RBM_F14, RBM_F15 };
+
+const regNumber fltRetRegs [] = {REG_F0, REG_F1, REG_F2, REG_F3};
 // clang-format on
 
 static_assert_no_msg(RBM_ALLDOUBLE == (RBM_ALLDOUBLE_HIGH >> 1));
@@ -201,6 +203,82 @@ ABIPassingInformation Arm32Classifier::ClassifyFloat(Compiler* comp, var_types t
 
         return info;
     }
+}
+
+Arm32ReturnClassifier::Arm32ReturnClassifier(const ReturnClassifierInfo& info)
+    : m_info(info)
+{
+}
+
+//-----------------------------------------------------------------------------
+// ClassifyReturn:
+//   Classify how a value is returned in the arm32 ABI.
+//
+// Parameters:
+//   comp           - Compiler instance
+//   type           - The return type
+//   structLayout   - The layout of the struct. Expected to be non-null if
+//                    varTypeIsStruct(type) is true.
+//
+// Returns:
+//   Classification information for the return value.
+//
+ABIReturningInformation Arm32ReturnClassifier::Classify(Compiler* comp, var_types type, ClassLayout* structLayout)
+{
+    switch (type)
+    {
+    case TYP_BYTE:
+    case TYP_UBYTE:
+    case TYP_SHORT:
+    case TYP_USHORT:
+    case TYP_INT:
+    case TYP_REF:
+    case TYP_BYREF:
+        return ABIReturningInformation::FromSegment(
+            comp,
+            ABIReturningSegment(REG_R0, 0, genTypeSize(type)));
+    case TYP_LONG:
+        return ABIReturningInformation::FromSegments(
+            comp,
+            ABIReturningSegment(REG_R0, 0, 4),
+            ABIReturningSegment(REG_R1, 4, 8));
+    case TYP_FLOAT:
+    case TYP_DOUBLE:
+        return ABIReturningInformation::FromSegment(
+            comp,
+            ABIReturningSegment(REG_F0, 0, genTypeSize(type)));
+    default:
+        break;
+    }
+
+    assert(varTypeIsStruct(type));
+
+    var_types hfaType = comp->GetHfaType(structLayout->GetClassHandle());
+    if (hfaType != TYP_UNDEF)
+    {
+        unsigned elemSize = genTypeSize(hfaType);
+        unsigned slots    = structLayout->GetSize() / elemSize;
+        if (slots > 4)
+        {
+            return ABIReturningInformation::InRetBuffer();
+        }
+
+        ABIReturningInformation info(comp, slots);
+        for (unsigned i = 0; i < slots; i++)
+        {
+            info.Segment(i) = ABIReturningSegment(fltRetRegs[i], i * elemSize, elemSize);
+        }
+
+        return info;
+    }
+
+    if (structLayout->GetSize() <= 4)
+    {
+        return ABIReturningInformation::FromSegment(
+            comp, ABIReturningSegment(REG_R0, 0, structLayout->GetSize()));
+    }
+
+    return ABIReturningInformation::InRetBuffer();
 }
 
 #endif // TARGET_ARM
