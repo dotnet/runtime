@@ -2857,21 +2857,6 @@ bool Compiler::fgExpandStackArrayAllocation(BasicBlock* block, Statement* stmt, 
         return false;
     }
 
-    // Remove these args since we may leave the call in the IR as a normal helper.
-    // (or just make a new call?)
-    //
-    call->gtArgs.ResetFinalArgsAndABIInfo();
-    if (stackLocalAddressArg != nullptr)
-    {
-        call->gtArgs.Remove(stackLocalAddressArg);
-    }
-    if (elemSizeArg != nullptr)
-    {
-        call->gtArgs.Remove(elemSizeArg);
-    }
-    call->gtArgs.ArgsComplete(this, call);
-    call->gtArgs.AddFinalArgsAndDetermineABIInfo(this, call);
-
     // If we have an elem size arg, this is intended to be a localloc/heapalloc
     //
     // Note we may have figured out the array length after we did the
@@ -3000,11 +2985,24 @@ bool Compiler::fgExpandStackArrayAllocation(BasicBlock* block, Statement* stmt, 
         block->SetCond(heapallocInEdge, locallocInEdge);
 
         // Now fill in the heapalloc block.
+        //
+        // Create a helper call just like call, but without the extra arguments
+        //
+        GenTreeCall* newCall = gtNewCallNode(CT_HELPER, call->gtCallMethHnd, call->TypeGet());
+
+        newCall->gtArgs.PushBack(this, NewCallArg::Primitive(call->gtArgs.GetArgByIndex(typeArgIndex)->GetNode()));
+        newCall->gtArgs.PushBack(this, NewCallArg::Primitive(call->gtArgs.GetArgByIndex(lengthArgIndex)->GetNode()));
+        newCall->gtFlags = call->gtFlags;
+#if defined(FEATURE_READYTORUN)
+        newCall->setEntryPoint(call->gtEntryPoint);
+#endif // FEATURE_READYTORUN
+        newCall = fgMorphArgs(newCall);
+
         // We expect *callUse's user to be a local store.
         //
         assert((*callUse)->gtNext->OperIs(GT_STORE_LCL_VAR));
         unsigned const   useLclNum      = (*callUse)->gtNext->AsLclVarCommon()->GetLclNum();
-        GenTree* const   heapAllocStore = gtNewStoreLclVarNode(useLclNum, call);
+        GenTree* const   heapAllocStore = gtNewStoreLclVarNode(useLclNum, newCall);
         Statement* const heapAllocStmt  = fgNewStmtFromTree(heapAllocStore);
 
         gtUpdateStmtSideEffects(heapAllocStmt);
@@ -3090,11 +3088,7 @@ bool Compiler::fgExpandStackArrayAllocation(BasicBlock* block, Statement* stmt, 
     // Replace call with local address
     //
     *callUse = gtCloneExpr(stackLocalAddress);
-
-    if (!isLocAlloc)
-    {
-        DEBUG_DESTROY_NODE(call);
-    }
+    DEBUG_DESTROY_NODE(call);
 
     fgMorphStmtBlockOps(block, stmt);
     gtUpdateStmtSideEffects(stmt);
