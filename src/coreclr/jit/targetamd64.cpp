@@ -143,24 +143,20 @@ ABIReturningInformation SysVX64ReturnClassifier::Classify(Compiler* comp, var_ty
 {
     switch (type)
     {
-    case TYP_BYTE:
-    case TYP_UBYTE:
-    case TYP_SHORT:
-    case TYP_USHORT:
-    case TYP_INT:
-    case TYP_LONG:
-    case TYP_REF:
-    case TYP_BYREF:
-        return ABIReturningInformation::FromSegment(
-            comp,
-            ABIReturningSegment(REG_RAX, 0, genTypeSize(type)));
-    case TYP_FLOAT:
-    case TYP_DOUBLE:
-        return ABIReturningInformation::FromSegment(
-            comp,
-            ABIReturningSegment(REG_XMM0, 0, genTypeSize(type)));
-    default:
-        break;
+        case TYP_BYTE:
+        case TYP_UBYTE:
+        case TYP_SHORT:
+        case TYP_USHORT:
+        case TYP_INT:
+        case TYP_LONG:
+        case TYP_REF:
+        case TYP_BYREF:
+            return ABIReturningInformation::FromSegment(comp, ABIReturningSegment(REG_RAX, 0, genTypeSize(type)));
+        case TYP_FLOAT:
+        case TYP_DOUBLE:
+            return ABIReturningInformation::FromSegment(comp, ABIReturningSegment(REG_XMM0, 0, genTypeSize(type)));
+        default:
+            break;
     }
 
     assert(varTypeIsStruct(type));
@@ -179,14 +175,13 @@ ABIReturningInformation SysVX64ReturnClassifier::Classify(Compiler* comp, var_ty
     ABIReturningInformation info(comp, desc.eightByteCount);
     for (int i = 0; i < desc.eightByteCount; i++)
     {
-        RegisterQueue& queue = desc.eightByteClassifications[i] == SystemVClassificationTypeSSE ? fltReturnRegs : intReturnRegs;
-        info.Segment(i) =
-            ABIReturningSegment(queue.Dequeue(), desc.eightByteOffsets[i], desc.eightByteSizes[i]);
+        RegisterQueue& queue =
+            desc.eightByteClassifications[i] == SystemVClassificationTypeSSE ? fltReturnRegs : intReturnRegs;
+        info.Segment(i) = ABIReturningSegment(queue.Dequeue(), desc.eightByteOffsets[i], desc.eightByteSizes[i]);
     }
 
     return info;
 }
-
 
 #else // !UNIX_AMD64_ABI
 
@@ -300,33 +295,28 @@ ABIReturningInformation WinX64ReturnClassifier::Classify(Compiler* comp, var_typ
 {
     switch (type)
     {
-    case TYP_BYTE:
-    case TYP_UBYTE:
-    case TYP_SHORT:
-    case TYP_USHORT:
-    case TYP_INT:
-    case TYP_LONG:
-    case TYP_REF:
-    case TYP_BYREF:
-        return ABIReturningInformation::FromSegment(
-            comp,
-            ABIReturningSegment(REG_RAX, 0, genTypeSize(type)));
-    case TYP_FLOAT:
-    case TYP_DOUBLE:
-        return ABIReturningInformation::FromSegment(
-            comp,
-            ABIReturningSegment(REG_XMM0, 0, genTypeSize(type)));
-    default:
-        break;
+        case TYP_BYTE:
+        case TYP_UBYTE:
+        case TYP_SHORT:
+        case TYP_USHORT:
+        case TYP_INT:
+        case TYP_LONG:
+        case TYP_REF:
+        case TYP_BYREF:
+            return ABIReturningInformation::FromSegment(comp, ABIReturningSegment(REG_RAX, 0, genTypeSize(type)));
+        case TYP_FLOAT:
+        case TYP_DOUBLE:
+            return ABIReturningInformation::FromSegment(comp, ABIReturningSegment(REG_XMM0, 0, genTypeSize(type)));
+        default:
+            break;
     }
 
     assert(varTypeIsStruct(type));
 
-    if (!callConvIsInstanceMethodCallConv(m_info.CallConv) && isPow2(structLayout->GetSize()) && (structLayout->GetSize() <= 8))
+    if (!callConvIsInstanceMethodCallConv(m_info.CallConv) && isPow2(structLayout->GetSize()) &&
+        (structLayout->GetSize() <= 8))
     {
-        return ABIReturningInformation::FromSegment(
-            comp,
-            ABIReturningSegment(REG_RAX, 0, structLayout->GetSize()));
+        return ABIReturningInformation::FromSegment(comp, ABIReturningSegment(REG_RAX, 0, structLayout->GetSize()));
     }
 
     return ABIReturningInformation::InRetBuffer();

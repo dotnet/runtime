@@ -334,9 +334,9 @@ public:
 
 struct ABIReturningSegment
 {
-    uint16_t m_offset = 0;
-    uint8_t m_size = 0;
-    regNumberSmall m_reg = REG_NA;
+    uint16_t       m_offset = 0;
+    uint8_t        m_size   = 0;
+    regNumberSmall m_reg    = REG_NA;
 
 public:
     ABIReturningSegment();
@@ -389,7 +389,7 @@ private:
     union
     {
         ABIReturningSegment* m_segments;
-        ABIReturningSegment m_inlineSegments[sizeof(ABIReturningSegment*) / sizeof(ABIReturningSegment)];
+        ABIReturningSegment  m_inlineSegments[sizeof(ABIReturningSegment*) / sizeof(ABIReturningSegment)];
     };
 
     bool m_returnedInRetBuffer = false;
@@ -405,12 +405,14 @@ public:
 
     bool UsesRetBuffer() const;
 
-    ABIReturningSegment& Segment(unsigned index);
-    const ABIReturningSegment& Segment(unsigned index) const;
+    ABIReturningSegment&                      Segment(unsigned index);
+    const ABIReturningSegment&                Segment(unsigned index) const;
     IteratorPair<ABIReturningSegmentIterator> Segments() const;
 
     static ABIReturningInformation FromSegment(Compiler* comp, const ABIReturningSegment& segment);
-    static ABIReturningInformation FromSegments(Compiler* comp, const ABIReturningSegment& firstSegment, const ABIReturningSegment& secondSegment);
+    static ABIReturningInformation FromSegments(Compiler*                  comp,
+                                                const ABIReturningSegment& firstSegment,
+                                                const ABIReturningSegment& secondSegment);
     static ABIReturningInformation InRetBuffer();
     static ABIReturningInformation Void();
 };
@@ -471,19 +473,19 @@ public:
 };
 
 #if defined(TARGET_X86)
-typedef X86Classifier PlatformClassifier;
+typedef X86Classifier       PlatformClassifier;
 typedef X86ReturnClassifier PlatformReturnClassifier;
 #elif defined(WINDOWS_AMD64_ABI)
-typedef WinX64Classifier PlatformClassifier;
+typedef WinX64Classifier       PlatformClassifier;
 typedef WinX64ReturnClassifier PlatformReturnClassifier;
 #elif defined(UNIX_AMD64_ABI)
-typedef SysVX64Classifier PlatformClassifier;
+typedef SysVX64Classifier       PlatformClassifier;
 typedef SysVX64ReturnClassifier PlatformReturnClassifier;
 #elif defined(TARGET_ARM64)
-typedef Arm64Classifier PlatformClassifier;
+typedef Arm64Classifier       PlatformClassifier;
 typedef Arm64ReturnClassifier PlatformReturnClassifier;
 #elif defined(TARGET_ARM)
-typedef Arm32Classifier PlatformClassifier;
+typedef Arm32Classifier       PlatformClassifier;
 typedef Arm32ReturnClassifier PlatformReturnClassifier;
 #elif defined(TARGET_RISCV64)
 typedef RiscV64Classifier PlatformClassifier;

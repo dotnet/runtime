@@ -234,26 +234,22 @@ ABIReturningInformation Arm64ReturnClassifier::Classify(Compiler* comp, var_type
 {
     switch (type)
     {
-    case TYP_BYTE:
-    case TYP_UBYTE:
-    case TYP_SHORT:
-    case TYP_USHORT:
-    case TYP_INT:
-    case TYP_LONG:
-    case TYP_REF:
-    case TYP_BYREF:
-        return ABIReturningInformation::FromSegment(
-            comp,
-            ABIReturningSegment(REG_R0, 0, genTypeSize(type)));
-    case TYP_FLOAT:
-    case TYP_DOUBLE:
-    case TYP_SIMD8:
-    case TYP_SIMD16:
-        return ABIReturningInformation::FromSegment(
-            comp,
-            ABIReturningSegment(REG_V0, 0, genTypeSize(type)));
-    default:
-        break;
+        case TYP_BYTE:
+        case TYP_UBYTE:
+        case TYP_SHORT:
+        case TYP_USHORT:
+        case TYP_INT:
+        case TYP_LONG:
+        case TYP_REF:
+        case TYP_BYREF:
+            return ABIReturningInformation::FromSegment(comp, ABIReturningSegment(REG_R0, 0, genTypeSize(type)));
+        case TYP_FLOAT:
+        case TYP_DOUBLE:
+        case TYP_SIMD8:
+        case TYP_SIMD16:
+            return ABIReturningInformation::FromSegment(comp, ABIReturningSegment(REG_V0, 0, genTypeSize(type)));
+        default:
+            break;
     }
 
     assert(varTypeIsStruct(type));
@@ -284,19 +280,13 @@ ABIReturningInformation Arm64ReturnClassifier::Classify(Compiler* comp, var_type
 
     if (structLayout->GetSize() <= 8)
     {
-        return
-            ABIReturningInformation::FromSegment(
-                comp,
-                ABIReturningSegment(REG_R0, 0, structLayout->GetSize()));
+        return ABIReturningInformation::FromSegment(comp, ABIReturningSegment(REG_R0, 0, structLayout->GetSize()));
     }
 
     if (structLayout->GetSize() <= 16)
     {
-        return
-            ABIReturningInformation::FromSegments(
-                comp,
-                ABIReturningSegment(REG_R0, 0, 8),
-                ABIReturningSegment(REG_R1, 8, structLayout->GetSize() - 8));
+        return ABIReturningInformation::FromSegments(comp, ABIReturningSegment(REG_R0, 0, 8),
+                                                     ABIReturningSegment(REG_R1, 8, structLayout->GetSize() - 8));
     }
 
     return ABIReturningInformation::InRetBuffer();

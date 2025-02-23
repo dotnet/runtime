@@ -161,36 +161,27 @@ ABIReturningInformation X86ReturnClassifier::Classify(Compiler* comp, var_types 
 {
     switch (type)
     {
-    case TYP_LONG:
-        return
-            ABIReturningInformation::FromSegments(
-                comp,
-                ABIReturningSegment(REG_EAX, 0, 4),
-                ABIReturningSegment(REG_EDX, 4, 8));
+        case TYP_LONG:
+            return ABIReturningInformation::FromSegments(comp, ABIReturningSegment(REG_EAX, 0, 4),
+                                                         ABIReturningSegment(REG_EDX, 4, 8));
 
-    case TYP_FLOAT:
-    case TYP_DOUBLE:
-        // Technically returned in st(0), but we don't model those registers so
-        // we cheat a bit here -- the backend knows to load the result into
-        // st(0).
-        return
-            ABIReturningInformation::FromSegment(
-                comp,
-                ABIReturningSegment(REG_XMM0, 0, genTypeSize(type)));
+        case TYP_FLOAT:
+        case TYP_DOUBLE:
+            // Technically returned in st(0), but we don't model those registers so
+            // we cheat a bit here -- the backend knows to load the result into
+            // st(0).
+            return ABIReturningInformation::FromSegment(comp, ABIReturningSegment(REG_XMM0, 0, genTypeSize(type)));
 
-    case TYP_BYTE:
-    case TYP_UBYTE:
-    case TYP_SHORT:
-    case TYP_USHORT:
-    case TYP_INT:
-    case TYP_REF:
-    case TYP_BYREF:
-        return
-            ABIReturningInformation::FromSegment(
-                comp,
-                ABIReturningSegment(REG_EAX, 0, genTypeSize(type)));
-    default:
-        break;
+        case TYP_BYTE:
+        case TYP_UBYTE:
+        case TYP_SHORT:
+        case TYP_USHORT:
+        case TYP_INT:
+        case TYP_REF:
+        case TYP_BYREF:
+            return ABIReturningInformation::FromSegment(comp, ABIReturningSegment(REG_EAX, 0, genTypeSize(type)));
+        default:
+            break;
     }
 
     assert(varTypeIsStruct(type));
@@ -203,10 +194,7 @@ ABIReturningInformation X86ReturnClassifier::Classify(Compiler* comp, var_types 
 
     if (mayReturnInRegister && isPow2(structLayout->GetSize()) && (structLayout->GetSize() <= 4))
     {
-        return
-            ABIReturningInformation::FromSegment(
-                comp,
-                ABIReturningSegment(REG_EAX, 0, genTypeSize(type)));
+        return ABIReturningInformation::FromSegment(comp, ABIReturningSegment(REG_EAX, 0, genTypeSize(type)));
     }
 
     return ABIReturningInformation::InRetBuffer();

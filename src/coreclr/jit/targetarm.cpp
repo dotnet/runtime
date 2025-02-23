@@ -227,28 +227,22 @@ ABIReturningInformation Arm32ReturnClassifier::Classify(Compiler* comp, var_type
 {
     switch (type)
     {
-    case TYP_BYTE:
-    case TYP_UBYTE:
-    case TYP_SHORT:
-    case TYP_USHORT:
-    case TYP_INT:
-    case TYP_REF:
-    case TYP_BYREF:
-        return ABIReturningInformation::FromSegment(
-            comp,
-            ABIReturningSegment(REG_R0, 0, genTypeSize(type)));
-    case TYP_LONG:
-        return ABIReturningInformation::FromSegments(
-            comp,
-            ABIReturningSegment(REG_R0, 0, 4),
-            ABIReturningSegment(REG_R1, 4, 8));
-    case TYP_FLOAT:
-    case TYP_DOUBLE:
-        return ABIReturningInformation::FromSegment(
-            comp,
-            ABIReturningSegment(REG_F0, 0, genTypeSize(type)));
-    default:
-        break;
+        case TYP_BYTE:
+        case TYP_UBYTE:
+        case TYP_SHORT:
+        case TYP_USHORT:
+        case TYP_INT:
+        case TYP_REF:
+        case TYP_BYREF:
+            return ABIReturningInformation::FromSegment(comp, ABIReturningSegment(REG_R0, 0, genTypeSize(type)));
+        case TYP_LONG:
+            return ABIReturningInformation::FromSegments(comp, ABIReturningSegment(REG_R0, 0, 4),
+                                                         ABIReturningSegment(REG_R1, 4, 8));
+        case TYP_FLOAT:
+        case TYP_DOUBLE:
+            return ABIReturningInformation::FromSegment(comp, ABIReturningSegment(REG_F0, 0, genTypeSize(type)));
+        default:
+            break;
     }
 
     assert(varTypeIsStruct(type));
@@ -274,8 +268,7 @@ ABIReturningInformation Arm32ReturnClassifier::Classify(Compiler* comp, var_type
 
     if (structLayout->GetSize() <= 4)
     {
-        return ABIReturningInformation::FromSegment(
-            comp, ABIReturningSegment(REG_R0, 0, structLayout->GetSize()));
+        return ABIReturningInformation::FromSegment(comp, ABIReturningSegment(REG_R0, 0, structLayout->GetSize()));
     }
 
     return ABIReturningInformation::InRetBuffer();

@@ -548,7 +548,7 @@ ABIPassingInformation ABIPassingInformation::ReturnedByReference()
 {
     ABIPassingInformation info;
     info.m_passedByRef = true;
-    info.NumSegments = 0;
+    info.NumSegments   = 0;
     return info;
 }
 
@@ -826,9 +826,8 @@ const ABIReturningSegment& ABIReturningInformation::Segment(unsigned index) cons
 IteratorPair<ABIReturningSegmentIterator> ABIReturningInformation::Segments() const
 {
     const ABIReturningSegment* begin = &Segment(0);
-    return IteratorPair<ABIReturningSegmentIterator>(
-        ABIReturningSegmentIterator(begin),
-        ABIReturningSegmentIterator(begin + NumRegisters));
+    return IteratorPair<ABIReturningSegmentIterator>(ABIReturningSegmentIterator(begin),
+                                                     ABIReturningSegmentIterator(begin + NumRegisters));
 }
 
 //-----------------------------------------------------------------------------
@@ -852,7 +851,9 @@ ABIReturningInformation ABIReturningInformation::FromSegment(Compiler* comp, con
 // Return Value:
 //   Instance representing those registers.
 //
-ABIReturningInformation ABIReturningInformation::FromSegments(Compiler* comp, const ABIReturningSegment& firstSegment, const ABIReturningSegment& secondSegment)
+ABIReturningInformation ABIReturningInformation::FromSegments(Compiler*                  comp,
+                                                              const ABIReturningSegment& firstSegment,
+                                                              const ABIReturningSegment& secondSegment)
 {
     ABIReturningInformation info(comp, 2);
     info.Segment(0) = firstSegment;
