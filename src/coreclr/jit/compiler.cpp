@@ -1333,7 +1333,9 @@ var_types Compiler::getReturnTypeForStruct(CORINFO_CLASS_HANDLE     clsHnd,
 // Return Value:
 //   Information for the return value.
 //
-ABIReturningInformation Compiler::ClassifyReturnABI(var_types type, ClassLayout* structLayout, CorInfoCallConvExtension callConv)
+ABIReturningInformation Compiler::ClassifyReturnABI(var_types                type,
+                                                    ClassLayout*             structLayout,
+                                                    CorInfoCallConvExtension callConv)
 {
     if (type == TYP_VOID)
     {
@@ -1350,7 +1352,7 @@ ABIReturningInformation Compiler::ClassifyReturnABI(var_types type, ClassLayout*
         var_types mappedType = mapNativePrimitiveStructType(structLayout);
         if (mappedType != TYP_UNDEF)
         {
-            type = mappedType;
+            type         = mappedType;
             structLayout = nullptr;
         }
     }

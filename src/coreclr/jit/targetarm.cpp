@@ -272,7 +272,8 @@ ABIReturningInformation Arm32ReturnClassifier::Classify(Compiler* comp, var_type
         ABIReturningInformation info(comp, slots);
         for (unsigned i = 0; i < slots; i++)
         {
-            info.Segment(i) = ABIReturningSegment((regNumber)((int)REG_F0 + i * (elemSize / 4)), i * elemSize, elemSize);
+            info.Segment(i) =
+                ABIReturningSegment((regNumber)((int)REG_F0 + i * (elemSize / 4)), i * elemSize, elemSize);
         }
 
         return info;

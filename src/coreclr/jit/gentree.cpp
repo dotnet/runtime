@@ -30434,14 +30434,14 @@ void ReturnTypeDesc::InitializeReturnType(Compiler*                comp,
         return;
     }
 
-    ClassLayout* layout = varTypeIsStruct(type) ? comp->typGetObjLayout(retClsHnd) : nullptr;
+    ClassLayout*            layout  = varTypeIsStruct(type) ? comp->typGetObjLayout(retClsHnd) : nullptr;
     ABIReturningInformation abiInfo = comp->ClassifyReturnABI(type, layout, callConv);
 
     assert(abiInfo.NumRegisters == GetReturnRegCount());
     for (unsigned i = 0; i < abiInfo.NumRegisters; i++)
     {
-        const ABIReturningSegment& seg = abiInfo.Segment(i);
-        regNumber oldReg = GetABIReturnReg(i, callConv);
+        const ABIReturningSegment& seg    = abiInfo.Segment(i);
+        regNumber                  oldReg = GetABIReturnReg(i, callConv);
 #ifdef TARGET_X86
         // Old info reports eax, new info reports xmm0, real answer is st(0).
         // Ignore these mismatches.

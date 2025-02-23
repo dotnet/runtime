@@ -195,10 +195,8 @@ ABIReturningInformation X86ReturnClassifier::Classify(Compiler* comp, var_types 
     // returned in two registers.
     if (mayReturnInRegister && (m_info.CallConv != CorInfoCallConvExtension::Managed) && (structLayout->GetSize() == 8))
     {
-        return ABIReturningInformation::FromSegments(
-            comp,
-            ABIReturningSegment(REG_EAX, 0, 4),
-            ABIReturningSegment(REG_EDX, 4, 8));
+        return ABIReturningInformation::FromSegments(comp, ABIReturningSegment(REG_EAX, 0, 4),
+                                                     ABIReturningSegment(REG_EDX, 4, 8));
     }
 #endif
 
