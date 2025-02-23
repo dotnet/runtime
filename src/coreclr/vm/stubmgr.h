@@ -502,53 +502,6 @@ class StubLinkStubManager : public StubManager
 #endif
 } ;
 
-// Stub manager for thunks.
-
-typedef VPTR(class ThunkHeapStubManager) PTR_ThunkHeapStubManager;
-
-class ThunkHeapStubManager : public StubManager
-{
-    VPTR_VTABLE_CLASS(ThunkHeapStubManager, StubManager)
-
-  public:
-
-    SPTR_DECL(ThunkHeapStubManager, g_pManager);
-
-    static void Init();
-
-#ifndef DACCESS_COMPILE
-    ThunkHeapStubManager() : StubManager(), m_rangeList() { LIMITED_METHOD_CONTRACT; }
-    ~ThunkHeapStubManager() {WRAPPER_NO_CONTRACT;}
-#endif
-
-#ifdef _DEBUG
-    virtual const char * DbgGetName() { LIMITED_METHOD_CONTRACT; return "ThunkHeapStubManager"; }
-#endif
-
-  protected:
-    LockedRangeList m_rangeList;
-  public:
-    // Get dac-ized pointer to rangelist.
-    PTR_RangeList GetRangeList()
-    {
-        SUPPORTS_DAC;
-        TADDR addr = PTR_HOST_MEMBER_TADDR(ThunkHeapStubManager, this, m_rangeList);
-        return PTR_RangeList(addr);
-    }
-    virtual BOOL CheckIsStub_Internal(PCODE stubStartAddress);
-
-  private:
-    virtual BOOL DoTraceStub(PCODE stubStartAddress, TraceDestination *trace);
-
-#ifdef DACCESS_COMPILE
-    virtual void DoEnumMemoryRegions(CLRDataEnumMemoryFlags flags);
-
-  protected:
-    virtual LPCWSTR GetStubManagerName(PCODE addr)
-        { LIMITED_METHOD_CONTRACT; return W("ThunkHeapStub"); }
-#endif
-};
-
 //
 // Stub manager for jump stubs created by ExecutionManager::jumpStub()
 // These are currently used only on the 64-bit targets IA64 and AMD64
