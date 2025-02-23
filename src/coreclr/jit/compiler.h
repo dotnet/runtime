@@ -6103,6 +6103,8 @@ public:
                                      structPassingKind*       wbPassStruct = nullptr,
                                      unsigned                 structSize   = 0);
 
+    ABIReturningInformation ClassifyReturnABI(var_types returnType, ClassLayout* layout, CorInfoCallConvExtension callConv);
+
 #ifdef DEBUG
     // Print a representation of "vnp" or "vn" on standard output.
     // If "level" is non-zero, we also print out a partial expansion of the value.

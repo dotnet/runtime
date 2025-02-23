@@ -240,7 +240,21 @@ ABIReturningInformation Arm32ReturnClassifier::Classify(Compiler* comp, var_type
                                                          ABIReturningSegment(REG_R1, 4, 8));
         case TYP_FLOAT:
         case TYP_DOUBLE:
-            return ABIReturningInformation::FromSegment(comp, ABIReturningSegment(REG_F0, 0, genTypeSize(type)));
+            if (comp->opts.compUseSoftFP)
+            {
+                if (type == TYP_FLOAT)
+                {
+                    return ABIReturningInformation::FromSegment(comp, ABIReturningSegment(REG_R0, 0, 4));
+                }
+                else
+                {
+                    return ABIReturningInformation::InRetBuffer();
+                }
+            }
+            else
+            {
+                return ABIReturningInformation::FromSegment(comp, ABIReturningSegment(REG_F0, 0, genTypeSize(type)));
+            }
         default:
             break;
     }

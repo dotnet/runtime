@@ -245,8 +245,6 @@ ABIReturningInformation Arm64ReturnClassifier::Classify(Compiler* comp, var_type
             return ABIReturningInformation::FromSegment(comp, ABIReturningSegment(REG_R0, 0, genTypeSize(type)));
         case TYP_FLOAT:
         case TYP_DOUBLE:
-        case TYP_SIMD8:
-        case TYP_SIMD16:
             return ABIReturningInformation::FromSegment(comp, ABIReturningSegment(REG_V0, 0, genTypeSize(type)));
         default:
             break;

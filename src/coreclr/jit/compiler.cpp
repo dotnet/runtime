@@ -1320,6 +1320,45 @@ var_types Compiler::getReturnTypeForStruct(CORINFO_CLASS_HANDLE     clsHnd,
     return useType;
 }
 
+//-----------------------------------------------------------------------------
+// ClassifyReturnABI:
+//   Classify how a value should be returned under the specified calling
+//   convention.
+//
+// Parameters:
+//   type         - JIT type for the parameter
+//   structLayout - If varTypeIsStruct(type) the (non-custom) layout of the struct
+//   callConv     - Calling convention to classify for
+//
+// Return Value:
+//   Information for the return value.
+//
+ABIReturningInformation Compiler::ClassifyReturnABI(var_types type, ClassLayout* structLayout, CorInfoCallConvExtension callConv)
+{
+    if (type == TYP_VOID)
+    {
+        return ABIReturningInformation::Void();
+    }
+
+    ReturnClassifierInfo info;
+    info.CallConv = callConv;
+
+    if ((callConv != CorInfoCallConvExtension::Managed) && (type == TYP_STRUCT))
+    {
+        // TODO-Bug: Should be done for parameters too? E.g. NFloat is probably
+        // handled incorrectly on most ABIs.
+        var_types mappedType = mapNativePrimitiveStructType(structLayout);
+        if (mappedType != TYP_UNDEF)
+        {
+            type = mappedType;
+            structLayout = nullptr;
+        }
+    }
+
+    PlatformReturnClassifier retClassifier(info);
+    return retClassifier.Classify(this, type, structLayout);
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 //
 // MEASURE_NOWAY: code to measure and rank dynamic occurrences of noway_assert.

@@ -30427,6 +30427,24 @@ void ReturnTypeDesc::InitializeReturnType(Compiler*                comp,
 
         INDEBUG(m_inited = true);
     }
+
+#if defined(DEBUG) && !defined(TARGET_LOONGARCH64) && !defined(TARGET_RISCV64)
+    if (callConv == CorInfoCallConvExtension::Swift)
+    {
+        return;
+    }
+
+    ClassLayout* layout = varTypeIsStruct(type) ? comp->typGetObjLayout(retClsHnd) : nullptr;
+    ABIReturningInformation abiInfo = comp->ClassifyReturnABI(type, layout, callConv);
+
+    assert(abiInfo.NumRegisters == GetReturnRegCount());
+    for (unsigned i = 0; i < abiInfo.NumRegisters; i++)
+    {
+        const ABIReturningSegment& seg = abiInfo.Segment(i);
+        regNumber oldReg = GetABIReturnReg(i, callConv);
+        assert(seg.GetRegister() == oldReg);
+    }
+#endif
 }
 
 //-------------------------------------------------------------------
