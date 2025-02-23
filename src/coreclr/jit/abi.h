@@ -138,7 +138,6 @@ public:
                                               const ABIPassingSegment& firstSegment,
                                               const ABIPassingSegment& secondSegment);
 
-
 #ifdef WINDOWS_AMD64_ABI
     static bool GetShadowSpaceCallerOffsetForReg(regNumber reg, int* offset);
 #endif
@@ -345,6 +344,10 @@ public:
     unsigned  GetOffset() const;
     unsigned  GetSize() const;
     var_types GetRegisterType() const;
+
+#ifdef DEBUG
+    void Dump() const;
+#endif
 };
 
 class ABIReturningSegmentIterator
@@ -393,13 +396,13 @@ private:
 
     bool m_returnedInRetBuffer = false;
 
-    ABIReturningInformation();
 public:
     // Number of registers used to return the value. Values returned via return buffer
     // will have 0 here and UsesReturnBuffer() will return true.
     // TYP_VOID returns will have 0 and UsesReturnBuffer() will return false.
     unsigned NumRegisters = 0;
 
+    ABIReturningInformation();
     ABIReturningInformation(Compiler* comp, unsigned numRegisters);
 
     bool UsesRetBuffer() const;
@@ -414,6 +417,10 @@ public:
                                                 const ABIReturningSegment& secondSegment);
     static ABIReturningInformation InRetBuffer();
     static ABIReturningInformation Void();
+
+#ifdef DEBUG
+    void Dump() const;
+#endif
 };
 
 struct ReturnClassifierInfo
@@ -512,7 +519,15 @@ public:
                                    var_types    type,
                                    ClassLayout* structLayout,
                                    WellKnownArg wellKnownParam);
+};
 
-    static ABIPassingInformation ClassifyReturn(Compiler* comp, var_types type, ClassLayout* structLayout);
+class SwiftABIReturnClassifier
+{
+public:
+    SwiftABIReturnClassifier(const ReturnClassifierInfo& info)
+    {
+    }
+
+    ABIReturningInformation Classify(Compiler* comp, var_types type, ClassLayout* structLayout);
 };
 #endif

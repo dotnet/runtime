@@ -30427,32 +30427,6 @@ void ReturnTypeDesc::InitializeReturnType(Compiler*                comp,
 
         INDEBUG(m_inited = true);
     }
-
-#if defined(DEBUG) && !defined(TARGET_LOONGARCH64) && !defined(TARGET_RISCV64)
-    if (callConv == CorInfoCallConvExtension::Swift)
-    {
-        return;
-    }
-
-    ClassLayout*            layout  = varTypeIsStruct(type) ? comp->typGetObjLayout(retClsHnd) : nullptr;
-    ABIReturningInformation abiInfo = comp->ClassifyReturnABI(type, layout, callConv);
-
-    assert(abiInfo.NumRegisters == GetReturnRegCount());
-    for (unsigned i = 0; i < abiInfo.NumRegisters; i++)
-    {
-        const ABIReturningSegment& seg    = abiInfo.Segment(i);
-        regNumber                  oldReg = GetABIReturnReg(i, callConv);
-#ifdef TARGET_X86
-        // Old info reports eax, new info reports xmm0, real answer is st(0).
-        // Ignore these mismatches.
-        if (type == TYP_FLOAT || type == TYP_DOUBLE)
-        {
-            oldReg = REG_XMM0;
-        }
-#endif
-        assert(seg.GetRegister() == oldReg);
-    }
-#endif
 }
 
 //-------------------------------------------------------------------

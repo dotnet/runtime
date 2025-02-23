@@ -879,6 +879,47 @@ ABIReturningInformation ABIReturningInformation::Void()
     return ABIReturningInformation();
 }
 
+#ifdef DEBUG
+//-----------------------------------------------------------------------------
+// Dump:
+//   Dump the ABIReturningInformation to stdout.
+//
+void ABIReturningInformation::Dump() const
+{
+    if (m_returnedInRetBuffer)
+    {
+        printf("return buffer");
+        return;
+    }
+
+    if (NumRegisters != 1)
+    {
+        printf("%u registers\n", NumRegisters);
+    }
+
+    for (unsigned i = 0; i < NumRegisters; i++)
+    {
+        if (NumRegisters > 1)
+        {
+            printf("  [%u] ", i);
+        }
+
+        const ABIReturningSegment& seg = Segment(i);
+        seg.Dump();
+        printf("\n");
+    }
+}
+
+//-----------------------------------------------------------------------------
+// Dump:
+//   Dump the ABIReturningSegment to stdout.
+//
+void ABIReturningSegment::Dump() const
+{
+    printf("[%02u..%02u) %s", GetOffset(), GetOffset() + GetSize(), getRegName(GetRegister()));
+}
+#endif
+
 #ifdef SWIFT_SUPPORT
 //-----------------------------------------------------------------------------
 // Classify:
@@ -958,5 +999,61 @@ ABIPassingInformation SwiftABIClassifier::Classify(Compiler*    comp,
     }
 
     return m_classifier.Classify(comp, type, structLayout, wellKnownParam);
+}
+
+//-----------------------------------------------------------------------------
+// Classify:
+//   Classify how a value is returned in the Swift ABI.
+//
+// Parameters:
+//   comp           - Compiler instance
+//   type           - The return type
+//   structLayout   - The layout of the struct. Expected to be non-null if
+//                    varTypeIsStruct(type) is true.
+//
+// Returns:
+//   Classification information for the return value.
+//
+ABIReturningInformation SwiftABIReturnClassifier::Classify(Compiler* comp, var_types type, ClassLayout* structLayout)
+{
+    static const regNumber intRetRegs[] = {REG_SWIFT_INTRET_ORDER};
+    static const regNumber fltRetRegs[] = {REG_SWIFT_FLOATRET_ORDER};
+
+    switch (type)
+    {
+        case TYP_BYTE:
+        case TYP_UBYTE:
+        case TYP_SHORT:
+        case TYP_USHORT:
+        case TYP_INT:
+        case TYP_LONG:
+        case TYP_REF:
+        case TYP_BYREF:
+            return ABIReturningInformation::FromSegment(comp, ABIReturningSegment(intRetRegs[0], 0, genTypeSize(type)));
+        case TYP_FLOAT:
+        case TYP_DOUBLE:
+            return ABIReturningInformation::FromSegment(comp, ABIReturningSegment(fltRetRegs[0], 0, genTypeSize(type)));
+        default:
+            break;
+    }
+
+    assert(varTypeIsStruct(type));
+    const CORINFO_SWIFT_LOWERING* lowering = comp->GetSwiftLowering(structLayout->GetClassHandle());
+    if (lowering->byReference)
+    {
+        return ABIReturningInformation::InRetBuffer();
+    }
+
+    RegisterQueue           intQueue(intRetRegs, ArrLen(intRetRegs));
+    RegisterQueue           floatQueue(fltRetRegs, ArrLen(fltRetRegs));
+    ABIReturningInformation info(comp, (unsigned)lowering->numLoweredElements);
+    for (size_t i = 0; i < lowering->numLoweredElements; i++)
+    {
+        var_types      type       = JITtype2varType(lowering->loweredElements[i]);
+        RegisterQueue& queue      = varTypeUsesFloatReg(type) ? floatQueue : intQueue;
+        info.Segment((unsigned)i) = ABIReturningSegment(queue.Dequeue(), lowering->offsets[i], genTypeSize(type));
+    }
+
+    return info;
 }
 #endif

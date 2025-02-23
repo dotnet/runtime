@@ -78,7 +78,14 @@ void Compiler::lvaInitTypeRef()
     ReturnTypeDesc retTypeDesc;
     retTypeDesc.InitializeReturnType(this, info.compRetType, info.compMethodInfo->args.retTypeClass, info.compCallConv);
 
-    compRetTypeDesc         = retTypeDesc;
+    compRetTypeDesc = retTypeDesc;
+
+    ClassLayout* layout =
+        varTypeIsStruct(info.compRetType) ? typGetObjLayout(info.compMethodInfo->args.retTypeClass) : nullptr;
+    compRetTypeInfo = ClassifyReturnABI(info.compRetType, layout, info.compCallConv);
+
+    CompareReturnABI(retTypeDesc, info.compCallConv, compRetTypeInfo);
+
     unsigned returnRegCount = retTypeDesc.GetReturnRegCount();
     bool     hasRetBuffArg  = false;
     if (returnRegCount > 1)
@@ -99,15 +106,10 @@ void Compiler::lvaInitTypeRef()
     if (verbose)
     {
         CORINFO_CLASS_HANDLE retClass = info.compMethodInfo->args.retTypeClass;
-        printf("%u return registers for return type %s %s\n", returnRegCount, varTypeName(info.compRetType),
+        printf("Return type %s %s is returned in ", varTypeName(info.compRetType),
                varTypeIsStruct(info.compRetType) ? eeGetClassName(retClass) : "");
-        for (unsigned i = 0; i < returnRegCount; i++)
-        {
-            unsigned offset = compRetTypeDesc.GetReturnFieldOffset(i);
-            unsigned size   = genTypeSize(compRetTypeDesc.GetReturnRegType(i));
-            printf("  [%02u..%02u) reg %s\n", offset, offset + size,
-                   getRegName(compRetTypeDesc.GetABIReturnReg(i, info.compCallConv)));
-        }
+        compRetTypeInfo.Dump();
+        printf("\n");
     }
 #endif
 

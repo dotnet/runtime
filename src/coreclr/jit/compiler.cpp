@@ -1355,9 +1355,6 @@ ABIReturningInformation Compiler::ClassifyReturnABI(var_types                typ
         return ABIReturningInformation::Void();
     }
 
-    ReturnClassifierInfo info;
-    info.CallConv = callConv;
-
     if ((callConv != CorInfoCallConvExtension::Managed) && (type == TYP_STRUCT))
     {
         // TODO-Bug: Should be done for parameters too? E.g. NFloat is probably
@@ -1370,8 +1367,42 @@ ABIReturningInformation Compiler::ClassifyReturnABI(var_types                typ
         }
     }
 
+    ReturnClassifierInfo info;
+    info.CallConv = callConv;
+
+#ifdef SWIFT_SUPPORT
+    if (callConv == CorInfoCallConvExtension::Swift)
+    {
+        SwiftABIReturnClassifier retClassifier(info);
+        return retClassifier.Classify(this, type, structLayout);
+    }
+#endif
+
     PlatformReturnClassifier retClassifier(info);
     return retClassifier.Classify(this, type, structLayout);
+}
+
+void Compiler::CompareReturnABI(const ReturnTypeDesc&          desc,
+                                CorInfoCallConvExtension       callConv,
+                                const ABIReturningInformation& abiInfo)
+{
+#if defined(DEBUG) && !defined(TARGET_LOONGARCH64) && !defined(TARGET_RISCV64)
+    assert(abiInfo.NumRegisters == desc.GetReturnRegCount());
+    for (unsigned i = 0; i < abiInfo.NumRegisters; i++)
+    {
+        const ABIReturningSegment& seg    = abiInfo.Segment(i);
+        regNumber                  oldReg = desc.GetABIReturnReg(i, callConv);
+#ifdef TARGET_X86
+        // Old info reports eax, new info reports xmm0, real answer is st(0).
+        // Ignore these mismatches.
+        if ((type == TYP_FLOAT) || (type == TYP_DOUBLE))
+        {
+            oldReg = REG_XMM0;
+        }
+#endif
+        assert(seg.GetRegister() == oldReg);
+    }
+#endif
 }
 
 ///////////////////////////////////////////////////////////////////////////////
