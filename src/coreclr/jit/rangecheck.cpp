@@ -1616,7 +1616,6 @@ Range RangeCheck::GetRange(BasicBlock* block, GenTree* expr)
     GetRangeMap()->RemoveAll();
     GetOverflowMap()->RemoveAll();
     GetSearchPath()->RemoveAll();
-    //INDEBUG(GetDefTable()->RemoveAll());
 
     return GetRangeWorker(block, expr, false DEBUGARG(0));
 }
