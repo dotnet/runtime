@@ -1393,11 +1393,11 @@ void Compiler::CompareReturnABI(const ReturnTypeDesc&          desc,
         const ABIReturningSegment& seg    = abiInfo.Segment(i);
         regNumber                  oldReg = desc.GetABIReturnReg(i, callConv);
 #ifdef TARGET_X86
-        // Old info reports eax, new info reports xmm0, real answer is st(0).
-        // Ignore these mismatches.
-        if ((type == TYP_FLOAT) || (type == TYP_DOUBLE))
+        // For floats/doubles the old info reports eax, new info reports xmm0,
+        // and the real answer is st(0). Ignore these mismatches.
+        if ((seg.GetRegister() == REG_XMM0) && (oldReg == REG_EAX))
         {
-            oldReg = REG_XMM0;
+            continue;
         }
 #endif
         assert(seg.GetRegister() == oldReg);
