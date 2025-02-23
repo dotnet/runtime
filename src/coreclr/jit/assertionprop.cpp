@@ -4003,6 +4003,9 @@ GenTree* Compiler::optAssertionProp_BlockStore(ASSERT_VALARG_TP assertions, GenT
 // Arguments:
 //    assertions         - set of live assertions
 //    tree               - the integral tree to analyze
+//    stmt               - statement containing "tree"
+//    block              - block containing "stmt"
+//    onlyIfCheap        - if true, the algorithm will avoid expensive operations
 //    isKnownNonZero     - [OUT] set to true if the tree is known to be non-zero
 //    isKnownNonNegative - [OUT] set to true if the tree is known to be non-negative
 //
@@ -4010,6 +4013,7 @@ void Compiler::optAssertionProp_RangeProperties(ASSERT_VALARG_TP assertions,
                                                 GenTree*         tree,
                                                 Statement*       stmt,
                                                 BasicBlock*      block,
+                                                bool             onlyIfCheap,
                                                 bool*            isKnownNonZero,
                                                 bool*            isKnownNonNegative)
 {
@@ -4135,7 +4139,7 @@ void Compiler::optAssertionProp_RangeProperties(ASSERT_VALARG_TP assertions,
     }
 
     // Let's see if RangeCheck can help us:
-    if (tree->TypeIs(TYP_INT))
+    if (!onlyIfCheap && tree->TypeIs(TYP_INT))
     {
         Range range      = GetRangeCheck()->GetRange(block, tree);
         Limit lowerBound = range.LowerLimit();
@@ -4180,8 +4184,8 @@ GenTree* Compiler::optAssertionProp_ModDiv(ASSERT_VALARG_TP assertions,
     bool op2IsNotZero;
     bool op1IsNotNegative;
     bool op2IsNotNegative;
-    optAssertionProp_RangeProperties(assertions, op1, stmt, block, &op1IsNotZero, &op1IsNotNegative);
-    optAssertionProp_RangeProperties(assertions, op2, stmt, block, &op2IsNotZero, &op2IsNotNegative);
+    optAssertionProp_RangeProperties(assertions, op1, stmt, block, false, &op1IsNotZero, &op1IsNotNegative);
+    optAssertionProp_RangeProperties(assertions, op2, stmt, block, false, &op2IsNotZero, &op2IsNotNegative);
 
     bool changed = false;
     if (op1IsNotNegative && op2IsNotNegative && tree->OperIs(GT_DIV, GT_MOD))
@@ -4480,11 +4484,25 @@ GenTree* Compiler::optAssertionPropGlobal_RelOp(ASSERT_VALARG_TP assertions,
     GenTree* op1     = tree->AsOp()->gtOp1;
     GenTree* op2     = tree->AsOp()->gtOp2;
 
-    // Can we fold "X relop 0" based on assertions?
-    if (op2->IsIntegralConst(0) && tree->OperIsCmpCompare())
+    // Can we fold "X relop CNS" based on assertions?
+    if (tree->OperIsCmpCompare() && op1->TypeIs(TYP_INT) && op2->IsIntCnsFitsInI32())
+    {
+        Range rng1 = GetRangeCheck()->GetRange(block, op1);
+        Range rng2 = Range(Limit(Limit::keConstant, static_cast<int>(op2->AsIntCon()->IconValue())));
+
+        RangeOps::RelationKind kind = RangeOps::Relation(tree->OperGet(), rng1, rng2);
+        if ((kind != RangeOps::RelationKind::Unknown) && !GetRangeCheck()->DoesOverflow(block, op1, rng1))
+        {
+            newTree = kind == RangeOps::RelationKind::AlwaysTrue ? gtNewTrue() : gtNewFalse();
+            newTree = gtWrapWithSideEffects(newTree, tree, GTF_ALL_EFFECT);
+            return optAssertionProp_Update(newTree, tree, stmt);
+        }
+    }
+
+    if (tree->OperIsCmpCompare() && op2->IsIntegralConst(0))
     {
         bool isNonZero, isNeverNegative;
-        optAssertionProp_RangeProperties(assertions, op1, stmt, block, &isNonZero, &isNeverNegative);
+        optAssertionProp_RangeProperties(assertions, op1, stmt, block, true, &isNonZero, &isNeverNegative);
 
         if (tree->OperIs(GT_GE, GT_LT) && isNeverNegative)
         {
@@ -4898,7 +4916,7 @@ GenTree* Compiler::optAssertionProp_Cast(ASSERT_VALARG_TP assertions,
     {
         bool isKnownNonZero;
         bool isKnownNonNegative;
-        optAssertionProp_RangeProperties(assertions, lcl, stmt, block, &isKnownNonZero, &isKnownNonNegative);
+        optAssertionProp_RangeProperties(assertions, lcl, stmt, block, false, &isKnownNonZero, &isKnownNonNegative);
         if (isKnownNonNegative)
         {
             cast->SetUnsigned();
