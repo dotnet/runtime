@@ -1528,14 +1528,11 @@ Range RangeCheck::ComputeRange(BasicBlock* block, GenTree* expr, bool monIncreas
         range = Range(Limit(Limit::keUnknown));
         JITDUMP("GetRangeWorker not tractable within max stack depth.\n");
     }
-    // TODO-CQ: The current implementation is reliant on integer storage types
-    // for constants. It could use INT64. Still, representing ULONG constants
-    // might require preserving the var_type whether it is a un/signed 64-bit.
-    // JIT64 doesn't do anything for "long" either. No asm diffs.
-    else if (expr->TypeGet() == TYP_LONG || expr->TypeGet() == TYP_ULONG)
+    // TYP_LONG is not supported anyway.
+    else if (expr->TypeGet() == TYP_LONG)
     {
         range = Range(Limit(Limit::keUnknown));
-        JITDUMP("GetRangeWorker long or ulong, setting to unknown value.\n");
+        JITDUMP("GetRangeWorker long, setting to unknown value.\n");
     }
     // If VN is constant return range as constant.
     else if (m_pCompiler->vnStore->IsVNConstant(vn))

@@ -594,7 +594,7 @@ struct RangeOps
     };
 
     //------------------------------------------------------------------------
-    // Relation: Evaluate the relation between two ranges for the given relop
+    // EvalRelop: Evaluate the relation between two ranges for the given relop
     //    Example: "x >= y" is AlwaysTrue when "x.LowerLimit() >= y.UpperLimit()"
     //
     // Arguments:
@@ -607,8 +607,10 @@ struct RangeOps
     //    AlwaysFalse when the given relop always evaluates to false for the given ranges
     //    Otherwise Unknown
     //
-    static RelationKind Relation(const genTreeOps relop, const Range& x, const Range& y)
+    static RelationKind EvalRelop(const genTreeOps relop, const Range& x, const Range& y)
     {
+        // NOTE: we can also handle BinOpArray here, but it doesn't seem worth it
+
         switch (relop)
         {
             case GT_GE:

@@ -4485,12 +4485,16 @@ GenTree* Compiler::optAssertionPropGlobal_RelOp(ASSERT_VALARG_TP assertions,
     GenTree* op2     = tree->AsOp()->gtOp2;
 
     // Can we fold "X relop CNS" based on assertions?
-    if (tree->OperIsCmpCompare() && op1->TypeIs(TYP_INT) && op2->IsIntCnsFitsInI32())
+    if (tree->OperIsCmpCompare() && op1->TypeIs(TYP_INT) && op2->IsIntCnsFitsInI32() &&
+        // JIT-TP: Ignore "X relop 0" - it will be handled below
+        !op2->IsIntegralConst(0))
     {
+        // NOTE: we can call GetRange for op2 as well, but that will be even more expensive,
+        // so for now it's limited to "op2 relop CNS"
         Range rng1 = GetRangeCheck()->GetRange(block, op1);
         Range rng2 = Range(Limit(Limit::keConstant, static_cast<int>(op2->AsIntCon()->IconValue())));
 
-        RangeOps::RelationKind kind = RangeOps::Relation(tree->OperGet(), rng1, rng2);
+        RangeOps::RelationKind kind = RangeOps::EvalRelop(tree->OperGet(), rng1, rng2);
         if ((kind != RangeOps::RelationKind::Unknown) && !GetRangeCheck()->DoesOverflow(block, op1, rng1))
         {
             newTree = kind == RangeOps::RelationKind::AlwaysTrue ? gtNewTrue() : gtNewFalse();
@@ -4499,6 +4503,7 @@ GenTree* Compiler::optAssertionPropGlobal_RelOp(ASSERT_VALARG_TP assertions,
         }
     }
 
+    // There are still some cases GetRangeCheck() can't handle (it is also TYP_INT only)
     if (tree->OperIsCmpCompare() && op2->IsIntegralConst(0))
     {
         bool isNonZero, isNeverNegative;
