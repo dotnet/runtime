@@ -4134,60 +4134,20 @@ void Compiler::optAssertionProp_RangeProperties(ASSERT_VALARG_TP assertions,
         return;
     }
 
-    // Let's see if MergeEdgeAssertions can help us:
+    // Let's see if RangeCheck can help us:
     if (tree->TypeIs(TYP_INT))
     {
-        // See if (X + CNS) is known to be non-negative
-        if (tree->OperIs(GT_ADD) && tree->gtGetOp2()->IsIntCnsFitsInI32())
+        Range range      = GetRangeCheck()->GetRange(block, tree, false DEBUGARG(0));
+        Limit lowerBound = range.LowerLimit();
+        if (lowerBound.IsConstant() && !GetRangeCheck()->DoesOverflow(block, tree, range))
         {
-            Range    rng = Range(Limit(Limit::keDependent));
-            ValueNum vn  = vnStore->VNConservativeNormalValue(tree->gtGetOp1()->gtVNPair);
-            RangeCheck::MergeEdgeAssertions(this, vn, ValueNumStore::NoVN, assertions, &rng, false);
-
-            int cns = static_cast<int>(tree->gtGetOp2()->AsIntCon()->IconValue());
-            rng.LowerLimit().AddConstant(cns);
-
-            if ((rng.LowerLimit().IsConstant() && !rng.LowerLimit().AddConstant(cns)) ||
-                (rng.UpperLimit().IsConstant() && !rng.UpperLimit().AddConstant(cns)))
+            if (lowerBound.GetConstant() >= 0)
             {
-                // Add cns to both bounds if they are constants. Make sure the addition doesn't overflow.
-                return;
+                *isKnownNonNegative = true;
             }
-
-            if (rng.LowerLimit().IsConstant())
+            if (lowerBound.GetConstant() > 0)
             {
-                // E.g. "X + -8" when X's range is [8..unknown]
-                // it's safe to say "X + -8" is non-negative
-                if ((rng.LowerLimit().GetConstant() == 0))
-                {
-                    *isKnownNonNegative = true;
-                }
-
-                // E.g. "X + 8" when X's range is [0..CNS]
-                // Here we have to check the upper bound as well to avoid overflow
-                if ((rng.LowerLimit().GetConstant() > 0) && rng.UpperLimit().IsConstant() &&
-                    rng.UpperLimit().GetConstant() > rng.LowerLimit().GetConstant())
-                {
-                    *isKnownNonNegative = true;
-                    *isKnownNonZero     = true;
-                }
-            }
-        }
-        else
-        {
-            Range rng = Range(Limit(Limit::keDependent));
-            RangeCheck::MergeEdgeAssertions(this, treeVN, ValueNumStore::NoVN, assertions, &rng, false);
-            Limit lowerBound = rng.LowerLimit();
-            if (lowerBound.IsConstant())
-            {
-                if (lowerBound.GetConstant() >= 0)
-                {
-                    *isKnownNonNegative = true;
-                }
-                if (lowerBound.GetConstant() > 0)
-                {
-                    *isKnownNonZero = true;
-                }
+                *isKnownNonZero = true;
             }
         }
     }
@@ -6793,6 +6753,8 @@ PhaseStatus Compiler::optAssertionPropMain()
             // Perform assertion gen for control flow based assertions.
             for (GenTree* const tree : stmt->TreeList())
             {
+                // Leave a hint for the downstream phases that this block may have
+                // bounds checks.
                 if (tree->OperIs(GT_BOUNDS_CHECK))
                 {
                     block->SetFlags(BBF_MAY_HAVE_BOUNDS_CHECKS);
