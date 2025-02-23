@@ -2742,65 +2742,65 @@ bool Compiler::fgSimpleLowerCastOfSmpOp(LIR::Range& range, GenTreeCast* cast)
 
     assert(castOp->OperIsSimple());
 
-if (opts.OptimizationDisabled())
-return false;
+    if (opts.OptimizationDisabled())
+        return false;
 
-if (cast->gtOverflow())
-return false;
+    if (cast->gtOverflow())
+        return false;
 
-if (castOp->OperMayOverflow() && castOp->gtOverflow())
-return false;
+    if (castOp->OperMayOverflow() && castOp->gtOverflow())
+        return false;
 
-// Only optimize if the castToType is a small integer type.
-// Only optimize if the srcType is an integer type.
-if (!varTypeIsSmall(castToType) || !varTypeIsIntegral(srcType))
-return false;
+    // Only optimize if the castToType is a small integer type.
+    // Only optimize if the srcType is an integer type.
+    if (!varTypeIsSmall(castToType) || !varTypeIsIntegral(srcType))
+        return false;
 
-// These are the only safe ops where the CAST is not necessary for the inputs.
-if (castOp->OperIs(GT_ADD, GT_SUB, GT_MUL, GT_AND, GT_XOR, GT_OR, GT_NOT, GT_NEG))
-{
-    bool madeChanges = false;
-
-    if (castOp->gtGetOp1()->OperIs(GT_CAST))
+    // These are the only safe ops where the CAST is not necessary for the inputs.
+    if (castOp->OperIs(GT_ADD, GT_SUB, GT_MUL, GT_AND, GT_XOR, GT_OR, GT_NOT, GT_NEG))
     {
-        GenTreeCast* op1 = castOp->gtGetOp1()->AsCast();
+        bool madeChanges = false;
 
-        if (!op1->gtOverflow() && (genActualType(op1->CastOp()) == genActualType(srcType)) &&
-            (castToType == op1->CastToType()))
+        if (castOp->gtGetOp1()->OperIs(GT_CAST))
         {
-            // Removes the cast.
-            castOp->AsOp()->gtOp1 = op1->CastOp();
-            range.Remove(op1);
-            madeChanges = true;
+            GenTreeCast* op1 = castOp->gtGetOp1()->AsCast();
+
+            if (!op1->gtOverflow() && (genActualType(op1->CastOp()) == genActualType(srcType)) &&
+                (castToType == op1->CastToType()))
+            {
+                // Removes the cast.
+                castOp->AsOp()->gtOp1 = op1->CastOp();
+                range.Remove(op1);
+                madeChanges = true;
+            }
         }
-    }
 
-    if (castOp->OperIsBinary() && castOp->gtGetOp2()->OperIs(GT_CAST))
-    {
-        GenTreeCast* op2 = castOp->gtGetOp2()->AsCast();
-
-        if (!op2->gtOverflow() && (genActualType(op2->CastOp()) == genActualType(srcType)) &&
-            (castToType == op2->CastToType()))
+        if (castOp->OperIsBinary() && castOp->gtGetOp2()->OperIs(GT_CAST))
         {
-            // Removes the cast.
-            castOp->AsOp()->gtOp2 = op2->CastOp();
-            range.Remove(op2);
-            madeChanges = true;
+            GenTreeCast* op2 = castOp->gtGetOp2()->AsCast();
+
+            if (!op2->gtOverflow() && (genActualType(op2->CastOp()) == genActualType(srcType)) &&
+                (castToType == op2->CastToType()))
+            {
+                // Removes the cast.
+                castOp->AsOp()->gtOp2 = op2->CastOp();
+                range.Remove(op2);
+                madeChanges = true;
+            }
         }
-    }
 
 #ifdef DEBUG
-    if (madeChanges)
-    {
-        JITDUMP("Lower - Cast of Simple Op %s:\n", GenTree::OpName(cast->OperGet()));
-        DISPTREE(cast);
-    }
+        if (madeChanges)
+        {
+            JITDUMP("Lower - Cast of Simple Op %s:\n", GenTree::OpName(cast->OperGet()));
+            DISPTREE(cast);
+        }
 #endif // DEBUG
 
-    return madeChanges;
-}
+        return madeChanges;
+    }
 
-return false;
+    return false;
 }
 
 //------------------------------------------------------------------------
