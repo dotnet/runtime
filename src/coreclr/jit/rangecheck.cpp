@@ -50,10 +50,6 @@ RangeCheck::RangeCheck(Compiler* pCompiler)
     , m_pOverflowMap(nullptr)
     , m_pRangeMap(nullptr)
     , m_pSearchPath(nullptr)
-#ifdef DEBUG
-    , m_fMappedDefs(false)
-    , m_pDefTable(nullptr)
-#endif
     , m_pCompiler(pCompiler)
     , m_alloc(pCompiler->getAllocator(CMK_RangeCheck))
     , m_nVisitBudget(MAX_VISIT_BUDGET)
@@ -94,17 +90,6 @@ RangeCheck::SearchPath* RangeCheck::GetSearchPath()
     }
     return m_pSearchPath;
 }
-
-#ifdef DEBUG
-RangeCheck::VarToLocMap* RangeCheck::GetDefTable()
-{
-    if (m_pDefTable == nullptr)
-    {
-        m_pDefTable = new (m_alloc) VarToLocMap(m_alloc);
-    }
-    return m_pDefTable;
-}
-#endif
 
 // Get the length of the array vn, if it is new.
 int RangeCheck::GetArrLength(ValueNum vn)
@@ -591,57 +576,8 @@ LclSsaVarDsc* RangeCheck::GetSsaDefStore(GenTreeLclVarCommon* lclUse)
         return nullptr;
     }
 
-#ifdef DEBUG
-    Location* loc = GetDef(lclUse);
-    assert(loc != nullptr);
-    assert(loc->tree == defStore);
-    assert(loc->block == ssaDef->GetBlock());
-#endif
-
     return ssaDef;
 }
-
-#ifdef DEBUG
-UINT64 RangeCheck::HashCode(unsigned lclNum, unsigned ssaNum)
-{
-    assert(ssaNum != SsaConfig::RESERVED_SSA_NUM);
-    return UINT64(lclNum) << 32 | ssaNum;
-}
-
-// Get the def location of a given variable.
-RangeCheck::Location* RangeCheck::GetDef(unsigned lclNum, unsigned ssaNum)
-{
-    Location* loc = nullptr;
-    if (ssaNum == SsaConfig::RESERVED_SSA_NUM)
-    {
-        return nullptr;
-    }
-    if (!m_fMappedDefs)
-    {
-        MapMethodDefs();
-    }
-    GetDefTable()->Lookup(HashCode(lclNum, ssaNum), &loc);
-    return loc;
-}
-
-RangeCheck::Location* RangeCheck::GetDef(GenTreeLclVarCommon* lcl)
-{
-    return GetDef(lcl->GetLclNum(), lcl->GetSsaNum());
-}
-
-// Add the def location to the hash table.
-void RangeCheck::SetDef(UINT64 hash, Location* loc)
-{
-    Location* loc2;
-    if (GetDefTable()->Lookup(hash, &loc2))
-    {
-        JITDUMP("Already have " FMT_BB ", " FMT_STMT ", [%06d] for hash => %0I64X", loc2->block->bbNum,
-                loc2->stmt->GetID(), Compiler::dspTreeID(loc2->tree), hash);
-        assert(false);
-    }
-    GetDefTable()->Set(hash, loc);
-}
-#endif
 
 //------------------------------------------------------------------------
 // MergeEdgeAssertions: Merge assertions on the edge flowing into the block about a variable
@@ -1680,7 +1616,7 @@ Range RangeCheck::GetRange(BasicBlock* block, GenTree* expr)
     GetRangeMap()->RemoveAll();
     GetOverflowMap()->RemoveAll();
     GetSearchPath()->RemoveAll();
-    INDEBUG(GetDefTable()->RemoveAll());
+    //INDEBUG(GetDefTable()->RemoveAll());
 
     return GetRangeWorker(block, expr, false DEBUGARG(0));
 }
@@ -1715,60 +1651,6 @@ Range RangeCheck::GetRangeWorker(BasicBlock* block, GenTree* expr, bool monIncre
 #endif
     return range;
 }
-
-#ifdef DEBUG
-// If this is a tree local definition add its location to the def map.
-void RangeCheck::MapStmtDefs(const Location& loc)
-{
-    GenTreeLclVarCommon* tree = loc.tree;
-
-    if (tree->HasSsaName() && tree->OperIsLocalStore())
-    {
-        SetDef(HashCode(tree->GetLclNum(), tree->GetSsaNum()), new (m_alloc) Location(loc));
-    }
-}
-
-struct MapMethodDefsData
-{
-    RangeCheck* rc;
-    BasicBlock* block;
-    Statement*  stmt;
-
-    MapMethodDefsData(RangeCheck* rc, BasicBlock* block, Statement* stmt)
-        : rc(rc)
-        , block(block)
-        , stmt(stmt)
-    {
-    }
-};
-
-Compiler::fgWalkResult MapMethodDefsVisitor(GenTree** ptr, Compiler::fgWalkData* data)
-{
-    GenTree*           tree = *ptr;
-    MapMethodDefsData* rcd  = ((MapMethodDefsData*)data->pCallbackData);
-
-    if (tree->IsLocal())
-    {
-        rcd->rc->MapStmtDefs(RangeCheck::Location(rcd->block, rcd->stmt, tree->AsLclVarCommon()));
-    }
-
-    return Compiler::WALK_CONTINUE;
-}
-
-void RangeCheck::MapMethodDefs()
-{
-    // First, gather where all definitions occur in the program and store it in a map.
-    for (BasicBlock* const block : m_pCompiler->Blocks())
-    {
-        for (Statement* const stmt : block->Statements())
-        {
-            MapMethodDefsData data(this, block, stmt);
-            m_pCompiler->fgWalkTreePre(stmt->GetRootNodePointer(), MapMethodDefsVisitor, &data, false, true);
-        }
-    }
-    m_fMappedDefs = true;
-}
-#endif
 
 // Entry point to range check optimizations.
 bool RangeCheck::OptimizeRangeChecks()
