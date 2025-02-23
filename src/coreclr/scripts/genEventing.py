@@ -913,7 +913,7 @@ def updateclreventsfile(write_xplatheader, target_cpp, runtimeFlavor, is_host_wi
                 Clrallevents.write(dotnet_trace_context_typedef_windows + "\n")
             else:
                 Clrallevents.write("\n")
-        
+
         if not is_host_windows and runtimeFlavor.coreclr:
             Clrallevents.write(user_events_trace_context_typedef)
 

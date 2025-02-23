@@ -140,7 +140,7 @@ public:
     // return the version identifier that the EE expects), then the EE fails to load the JIT.
     //
     virtual void getVersionIdentifier(
-            minipal_guid_t*   versionIdentifier   /* OUT */
+            GUID*   versionIdentifier   /* OUT */
             ) = 0;
 
     // Some JIT's may support multiple OSs. This api provides a means to specify to the JIT what OS it should

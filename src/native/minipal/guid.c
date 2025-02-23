@@ -72,7 +72,7 @@ void minipal_guid_as_string(minipal_guid_t guid, char* guidString, uint32_t len)
         guid.Data4[0], guid.Data4[1],
         guid.Data4[2], guid.Data4[3],
         guid.Data4[4], guid.Data4[5],
-        guid.Data4[6], guid.Data4[7]) + 1;
+        guid.Data4[6], guid.Data4[7]);
 
     (void)nBytes; // unused in release mode
     assert(nBytes == MINIPAL_GUID_BUFFER_LEN - 1);

@@ -32,8 +32,8 @@ typedef struct minipal_guid__
 
 /**
  * Define the buffer length required to store a GUID string, including the null terminator.
- * 
- * This accounts for the standard GUID format: "{12345678-1234-1234-1234-123456789abc}" 
+ *
+ * This accounts for the standard GUID format: "{12345678-1234-1234-1234-123456789abc}"
  * which consists of 38 characters plus 1 null-terminating character.
  */
 #define MINIPAL_GUID_BUFFER_LEN (ARRAY_SIZE("{12345678-1234-1234-1234-123456789abc}"))

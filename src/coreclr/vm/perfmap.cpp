@@ -99,7 +99,7 @@ void PerfMap::Enable(PerfMapType type, bool sendExisting)
             {
                 s_ShowOptimizationTiers = true;
             }
-            
+
             s_enabled = true;
         }
     }
@@ -164,7 +164,7 @@ void PerfMap::Enable(PerfMapType type, bool sendExisting)
                 codeInfo.GetMethodRegionInfo(&methodRegionInfo);
                 _ASSERTE(methodRegionInfo.hotStartAddress == codeStart);
                 _ASSERTE(methodRegionInfo.hotSize > 0);
-                    
+
                 PrepareCodeConfig config(!nativeCodeVersion.IsNull() ? nativeCodeVersion : NativeCodeVersion(pMethod), FALSE, FALSE);
                 PerfMap::LogJITCompiledMethod(pMethod, codeStart, methodRegionInfo.hotSize, &config);
             }
