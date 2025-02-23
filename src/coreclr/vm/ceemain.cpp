@@ -1801,6 +1801,7 @@ static void OsAttachThread(void* thread)
     // Associate the current fiber with the current thread.  This makes the current fiber the thread's "home"
     // fiber.  This fiber is the only fiber allowed to execute managed code on this thread.  When this fiber
     // is destroyed, we consider the thread to be destroyed.
+    _ASSERTE(thread != NULL);
     FlsSetValue(g_flsIndex, thread);
 }
 
@@ -1815,11 +1816,22 @@ void OsDetachThread(void* thread)
     ASSERT(g_flsIndex != FLS_OUT_OF_INDEXES);
     void* threadFromCurrentFiber = FlsGetValue(g_flsIndex);
 
+    if (threadFromCurrentFiber == NULL)
+    {
+        // Thread is not attached.
+        // This could come from DestroyThread called when refcount reaches 0
+        // and the thread may have already been detached or never attached.
+        // We leave flsState as-is to keep track whether our callback has been called.
+        return;
+    }
+
     if (threadFromCurrentFiber != thread)
     {
         _ASSERTE_ALL_BUILDS(!"Detaching a thread from the wrong fiber");
     }
 
+    // Leave the existing FLS value, to keep the callback "armed" so that we could observe the termination callback.
+    // After that we will not allow to attach as we will no longer be able to clean up.
     flsState = FLS_STATE_CLEAR;
 }
 
