@@ -1755,7 +1755,7 @@ static uint32_t g_flsIndex = FLS_OUT_OF_INDEXES;
 #define FLS_STATE_ARMED 1
 #define FLS_STATE_INVOKED 2
 
-static __declspec(thread) int flsState;
+static __declspec(thread) byte flsState;
 
 // This is called when each *fiber* is destroyed. When the home fiber of a thread is destroyed,
 // it means that the thread itself is destroyed.
@@ -1791,7 +1791,10 @@ void InitFlsSlot()
 //  thread        - thread to attach
 static void OsAttachThread(void* thread)
 {
-    _ASSERTE_ALL_BUILDS((flsState != FLS_STATE_INVOKED) && "Initializing thread after termination callback has run.");
+    if (flsState != FLS_STATE_INVOKED)
+    {
+        _ASSERTE_ALL_BUILDS(!"Attempt to execute managed code after the .NET runtime thread state has been destroyed.");
+    }
 
     flsState = FLS_STATE_ARMED;
 
