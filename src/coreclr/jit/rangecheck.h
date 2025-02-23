@@ -755,6 +755,7 @@ private:
 #ifdef DEBUG
     bool         m_fMappedDefs;
     VarToLocMap* m_pDefTable;
+    VarToLocMap* GetDefTable();
 #endif
 
     Compiler*     m_pCompiler;

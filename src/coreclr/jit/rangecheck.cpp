@@ -95,6 +95,17 @@ RangeCheck::SearchPath* RangeCheck::GetSearchPath()
     return m_pSearchPath;
 }
 
+#ifdef DEBUG
+RangeCheck::VarToLocMap* RangeCheck::GetDefTable()
+{
+    if (m_pDefTable == nullptr)
+    {
+        m_pDefTable = new (m_alloc) VarToLocMap(m_alloc);
+    }
+    return m_pDefTable;
+}
+#endif
+
 // Get the length of the array vn, if it is new.
 int RangeCheck::GetArrLength(ValueNum vn)
 {
@@ -609,12 +620,7 @@ RangeCheck::Location* RangeCheck::GetDef(unsigned lclNum, unsigned ssaNum)
     {
         MapMethodDefs();
     }
-    // No defs.
-    if (m_pDefTable == nullptr)
-    {
-        return nullptr;
-    }
-    m_pDefTable->Lookup(HashCode(lclNum, ssaNum), &loc);
+    GetDefTable()->Lookup(HashCode(lclNum, ssaNum), &loc);
     return loc;
 }
 
@@ -626,20 +632,14 @@ RangeCheck::Location* RangeCheck::GetDef(GenTreeLclVarCommon* lcl)
 // Add the def location to the hash table.
 void RangeCheck::SetDef(UINT64 hash, Location* loc)
 {
-    if (m_pDefTable == nullptr)
-    {
-        m_pDefTable = new (m_alloc) VarToLocMap(m_alloc);
-    }
-#ifdef DEBUG
     Location* loc2;
-    if (m_pDefTable->Lookup(hash, &loc2))
+    if (GetDefTable()->Lookup(hash, &loc2))
     {
         JITDUMP("Already have " FMT_BB ", " FMT_STMT ", [%06d] for hash => %0I64X", loc2->block->bbNum,
                 loc2->stmt->GetID(), Compiler::dspTreeID(loc2->tree), hash);
         assert(false);
     }
-#endif
-    m_pDefTable->Set(hash, loc);
+    GetDefTable()->Set(hash, loc);
 }
 #endif
 
@@ -1680,6 +1680,7 @@ Range RangeCheck::GetRange(BasicBlock* block, GenTree* expr)
     GetRangeMap()->RemoveAll();
     GetOverflowMap()->RemoveAll();
     GetSearchPath()->RemoveAll();
+    INDEBUG(GetDefTable()->RemoveAll());
 
     return GetRangeWorker(block, expr, false DEBUGARG(0));
 }
