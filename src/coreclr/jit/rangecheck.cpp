@@ -719,6 +719,7 @@ void RangeCheck::MergeEdgeAssertions(Compiler*        comp,
                 continue;
             }
 
+            // Ignore GC values/NULL caught by IsConstantInt32Assertion assertion (may happen on 32bit)
             if (varTypeIsGC(comp->vnStore->TypeOfVN(curAssertion->op2.vn)))
             {
                 continue;
@@ -1607,9 +1608,19 @@ void Indent(int indent)
 }
 #endif
 
-// Get the range, if it is already computed, use the cached range value, else compute it.
+//------------------------------------------------------------------------
+// GetRange: Get the range for the given expression.
+//
+// Arguments:
+//    block - the block that contains `expr`;
+//    expr  - expression to compute the range for;
+//
+// Return Value:
+//    expr's range
+//
 Range RangeCheck::GetRange(BasicBlock* block, GenTree* expr)
 {
+    // Reset the maps.
     GetRangeMap()->RemoveAll();
     GetOverflowMap()->RemoveAll();
     GetSearchPath()->RemoveAll();
@@ -1617,7 +1628,19 @@ Range RangeCheck::GetRange(BasicBlock* block, GenTree* expr)
     return GetRangeWorker(block, expr, false DEBUGARG(0));
 }
 
-// Get the range, if it is already computed, use the cached range value, else compute it.
+//------------------------------------------------------------------------
+// GetRangeWorker: Internal worker for GetRange. Does not reset the internal state
+//    needed to obtain cached ranges quickly.
+//
+// Arguments:
+//    block         - the block that contains `expr`;
+//    expr          - expression to compute the range for;
+//    monIncreasing - true if `expr` is proven to be monotonically increasing;
+//    indent        - debug printing indent.
+//
+// Return Value:
+//    expr's range
+//
 Range RangeCheck::GetRangeWorker(BasicBlock* block, GenTree* expr, bool monIncreasing DEBUGARG(int indent))
 {
 #ifdef DEBUG
