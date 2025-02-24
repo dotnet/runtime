@@ -36,23 +36,51 @@ internal static partial class Interop
         internal readonly struct SslContextCacheKey : IEquatable<SslContextCacheKey>
         {
             public readonly bool IsClient;
-            public readonly byte[]? CertificateThumbprint;
+            public readonly List<byte[]> CertificateThumbprints;
             public readonly SslProtocols SslProtocols;
 
-            public SslContextCacheKey(bool isClient, SslProtocols sslProtocols, byte[]? certificateThumbprint)
+            public SslContextCacheKey(bool isClient, SslProtocols sslProtocols, SslStreamCertificateContext? certContext)
             {
                 IsClient = isClient;
                 SslProtocols = sslProtocols;
-                CertificateThumbprint = certificateThumbprint;
+
+                CertificateThumbprints = new();
+
+                if (certContext != null)
+                {
+                    CertificateThumbprints.Add(certContext.TargetCertificate.GetCertHash(HashAlgorithmName.SHA512));
+
+                    foreach (X509Certificate2 intermediate in certContext.IntermediateCertificates)
+                    {
+                        CertificateThumbprints.Add(intermediate.GetCertHash(HashAlgorithmName.SHA512));
+                    }
+                }
             }
 
             public override bool Equals(object? obj) => obj is SslContextCacheKey key && Equals(key);
 
-            public bool Equals(SslContextCacheKey other) =>
-                IsClient == other.IsClient &&
-                SslProtocols == other.SslProtocols &&
-                (CertificateThumbprint == null && other.CertificateThumbprint == null ||
-                 CertificateThumbprint != null && other.CertificateThumbprint != null && CertificateThumbprint.AsSpan().SequenceEqual(other.CertificateThumbprint));
+            public bool Equals(SslContextCacheKey other)
+            {
+                if (IsClient != other.IsClient || SslProtocols != other.SslProtocols)
+                {
+                    return false;
+                }
+
+                if (CertificateThumbprints.Count != other.CertificateThumbprints.Count)
+                {
+                    return false;
+                }
+
+                for (int i = 0; i < CertificateThumbprints.Count; i++)
+                {
+                    if (!CertificateThumbprints[i].AsSpan().SequenceEqual(other.CertificateThumbprints[i]))
+                    {
+                        return false;
+                    }
+                }
+
+                return true;
+            }
 
             public override int GetHashCode()
             {
@@ -60,9 +88,10 @@ internal static partial class Interop
 
                 hash.Add(IsClient);
                 hash.Add(SslProtocols);
-                if (CertificateThumbprint != null)
+
+                foreach (var thumbprint in CertificateThumbprints)
                 {
-                    hash.AddBytes(CertificateThumbprint);
+                    hash.AddBytes(thumbprint);
                 }
 
                 return hash.ToHashCode();
@@ -172,7 +201,7 @@ internal static partial class Interop
             var key = new SslContextCacheKey(
                 sslAuthenticationOptions.IsClient,
                 sslAuthenticationOptions.IsClient ? protocols : serverProtocolCacheKey,
-                sslAuthenticationOptions.CertificateContext?.TargetCertificate.GetCertHash(HashAlgorithmName.SHA512));
+                sslAuthenticationOptions.CertificateContext);
             return s_sslContexts.GetOrCreate(key, static (args) =>
             {
                 var (sslAuthOptions, protocols, allowCached) = args;
