@@ -49,6 +49,7 @@
     <Reference Include="System.Collections" />
     <Reference Include="System.ComponentModel.Primitives" />
     <Reference Include="System.Memory" />
+    <Reference Include="System.Numerics.Colors" />
     <Reference Include="System.Numerics.Vectors" />
     <Reference Include="System.ObjectModel" />
     <Reference Include="System.Runtime" />
