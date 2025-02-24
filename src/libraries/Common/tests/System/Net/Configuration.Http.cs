@@ -21,7 +21,7 @@ namespace System.Net.Test.Common
 
             // This server doesn't use HTTP/2 server push (push promise) feature. Some HttpClient implementations
             // don't support servers that use push right now.
-            public static string Http2NoPushHost => GetValue("DOTNET_TEST_HTTP2NOPUSHHOST", "www.microsoft.com");
+            public static string Http2NoPushHost => GetValue("DOTNET_TEST_HTTP2NOPUSHHOST", "httpbin.org");
 
             // Domain server environment.
             public static string DomainJoinedHttpHost => GetValue("DOTNET_TEST_DOMAINJOINED_HTTPHOST");
@@ -106,6 +106,7 @@ namespace System.Net.Test.Common
 
             public static readonly object[][] Http2Servers = { new object[] { new Uri("https://" + Http2Host) } };
             public static readonly object[][] Http2NoPushServers = { new object[] { new Uri("https://" + Http2NoPushHost) } };
+            public static readonly object[][] Http2NoPushGetUris = { new object[] { new Uri("https://" + Http2NoPushHost + "/get") } };
 
             public static readonly RemoteServer RemoteHttp11Server = new RemoteServer(new Uri("http://" + Host + "/"), HttpVersion.Version11);
             public static readonly RemoteServer RemoteSecureHttp11Server = new RemoteServer(new Uri("https://" + SecureHost + "/"), HttpVersion.Version11);

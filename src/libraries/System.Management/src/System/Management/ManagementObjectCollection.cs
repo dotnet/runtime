@@ -367,7 +367,7 @@ namespace System.Management
         ///         ManagementObjectCollection disks = diskClass.GetInstances();
         ///         ManagementObjectCollection.ManagementObjectEnumerator disksEnumerator =
         ///             disks.GetEnumerator();
-        ///         while(disksEnumerator.MoveNext()) {
+        ///         while (disksEnumerator.MoveNext()) {
         ///             ManagementObject disk = (ManagementObject)disksEnumerator.Current;
         ///            Console.WriteLine("Disk found: " + disk["deviceid"]);
         ///         }

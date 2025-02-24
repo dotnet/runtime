@@ -91,7 +91,9 @@
 
   <UsingTask Condition="'$(BuildAOTTestsOnHelix)' == 'true'"
              TaskName="Microsoft.WebAssembly.Build.Tasks.GenerateAOTProps"
-             AssemblyFile="$(WasmBuildTasksAssemblyPath)" />
+             AssemblyFile="$(WasmBuildTasksAssemblyPath)" TaskFactory="TaskHostFactory" />
+
+  <UsingTask TaskName="Microsoft.WebAssembly.Build.Tasks.ForceMSBuildGC" AssemblyFile="$(WasmAppBuilderTasksAssemblyPath)" />
 
   <Target Name="_BundleAOTTestWasmAppForHelix" DependsOnTargets="$(_BundleAOTTestWasmAppForHelixDependsOn)">
     <PropertyGroup>
