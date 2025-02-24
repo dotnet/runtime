@@ -14,6 +14,16 @@ while [[ -h "$source" ]]; do
 done
 scriptroot="$( cd -P "$( dirname "$source" )" && pwd )"
 
+/tmp/docker exec -t -u root sample tdnf install -y sudo
+
+sudo tdnf install -y procps-ng
+sudo tdnf install -y gawk
+sudo tdnf install -y coreutils
+
+statscmd="$scriptroot/stats.sh"
+
+$statscmd &
+
 usage()
 {
   echo "Common settings:"
