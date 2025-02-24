@@ -585,13 +585,6 @@ struct RangeOps
         result.uLimit = Limit(Limit::keConstant, -lo);
         return result;
     }
-
-    enum class RelationKind
-    {
-        AlwaysTrue,
-        AlwaysFalse,
-        Unknown
-    };
 };
 
 class RangeCheck

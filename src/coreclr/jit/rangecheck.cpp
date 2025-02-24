@@ -1674,6 +1674,10 @@ Range RangeCheck::GetRangeWorker(BasicBlock* block, GenTree* expr, bool monIncre
 // Entry point to range check optimizations.
 bool RangeCheck::OptimizeRangeChecks()
 {
+    // Reset the budget in case of JitOptRepeat.
+    m_nVisitBudget   = MAX_VISIT_BUDGET;
+    m_preferredBound = ValueNumStore::NoVN;
+
     bool madeChanges = false;
 
     // Walk through trees looking for arrBndsChk node and check if it can be optimized.
