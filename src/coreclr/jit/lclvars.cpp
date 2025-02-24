@@ -2693,7 +2693,7 @@ bool Compiler::StructPromotionHelper::ShouldPromoteStructVar(unsigned lclNum)
 #if FEATURE_MULTIREG_STRUCT_PROMOTE
         // Is this a variable holding a value with exactly two fields passed in
         // multiple registers?
-        if (compiler->lvaIsMultiregStruct(varDsc, compiler->info.compIsVarArgs))
+        if (varDsc->lvIsMultiRegArg)
         {
             if ((structPromotionInfo.fieldCnt != 2) &&
                 !((structPromotionInfo.fieldCnt == 1) && varTypeIsSIMD(structPromotionInfo.fields[0].fldType)))
