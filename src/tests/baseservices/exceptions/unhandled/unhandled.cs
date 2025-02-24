@@ -5,6 +5,7 @@ using System;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Threading;
 
 namespace TestUnhandledException
 {
@@ -46,6 +47,12 @@ namespace TestUnhandledException
             else if (args[0] == "foreign")
             {
                 InvokeCallbackOnNewThread(&ThrowException);
+            }
+            else if (args[0] == "secondary")
+            {
+                Thread t = new Thread(() => throw new Exception("Test"));
+                t.Start();
+                t.Join();
             }
         }
     }

@@ -11,6 +11,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 */
 
 #include "jitpch.h"
+#include "rangecheck.h"
 #ifdef _MSC_VER
 #pragma hdrstop
 #endif
@@ -2223,6 +2224,22 @@ AssertionInfo Compiler::optAssertionGenJtrue(GenTree* tree)
     // If op1 is lcl and op2 is const or lcl, create assertion.
     if ((op1->gtOper == GT_LCL_VAR) && (op2->OperIsConst() || (op2->gtOper == GT_LCL_VAR))) // Fix for Dev10 851483
     {
+        // Watch out for cases where long local(s) are implicitly truncated.
+        //
+        LclVarDsc* const lcl1Dsc = lvaGetDesc(op1->AsLclVarCommon());
+        if ((lcl1Dsc->TypeGet() == TYP_LONG) && (op1->TypeGet() != TYP_LONG))
+        {
+            return NO_ASSERTION_INDEX;
+        }
+        if (op2->OperIs(GT_LCL_VAR))
+        {
+            LclVarDsc* const lcl2Dsc = lvaGetDesc(op2->AsLclVarCommon());
+            if ((lcl2Dsc->TypeGet() == TYP_LONG) && (op2->TypeGet() != TYP_LONG))
+            {
+                return NO_ASSERTION_INDEX;
+            }
+        }
+
         return optCreateJtrueAssertions(op1, op2, assertionKind);
     }
     else if (!optLocalAssertionProp)
@@ -4109,6 +4126,69 @@ void Compiler::optAssertionProp_RangeProperties(ASSERT_VALARG_TP assertions,
             }
         }
     }
+
+    if (*isKnownNonZero && *isKnownNonNegative)
+    {
+        return;
+    }
+
+    // Let's see if MergeEdgeAssertions can help us:
+    if (tree->TypeIs(TYP_INT))
+    {
+        // See if (X + CNS) is known to be non-negative
+        if (tree->OperIs(GT_ADD) && tree->gtGetOp2()->IsIntCnsFitsInI32())
+        {
+            Range    rng = Range(Limit(Limit::keDependent));
+            ValueNum vn  = vnStore->VNConservativeNormalValue(tree->gtGetOp1()->gtVNPair);
+            RangeCheck::MergeEdgeAssertions(this, vn, ValueNumStore::NoVN, assertions, &rng, false);
+
+            int cns = static_cast<int>(tree->gtGetOp2()->AsIntCon()->IconValue());
+            rng.LowerLimit().AddConstant(cns);
+
+            if ((rng.LowerLimit().IsConstant() && !rng.LowerLimit().AddConstant(cns)) ||
+                (rng.UpperLimit().IsConstant() && !rng.UpperLimit().AddConstant(cns)))
+            {
+                // Add cns to both bounds if they are constants. Make sure the addition doesn't overflow.
+                return;
+            }
+
+            if (rng.LowerLimit().IsConstant())
+            {
+                // E.g. "X + -8" when X's range is [8..unknown]
+                // it's safe to say "X + -8" is non-negative
+                if ((rng.LowerLimit().GetConstant() == 0))
+                {
+                    *isKnownNonNegative = true;
+                }
+
+                // E.g. "X + 8" when X's range is [0..CNS]
+                // Here we have to check the upper bound as well to avoid overflow
+                if ((rng.LowerLimit().GetConstant() > 0) && rng.UpperLimit().IsConstant() &&
+                    rng.UpperLimit().GetConstant() > rng.LowerLimit().GetConstant())
+                {
+                    *isKnownNonNegative = true;
+                    *isKnownNonZero     = true;
+                }
+            }
+        }
+        else
+        {
+            Range rng = Range(Limit(Limit::keDependent));
+            RangeCheck::MergeEdgeAssertions(this, treeVN, ValueNumStore::NoVN, assertions, &rng, false);
+            Limit lowerBound = rng.LowerLimit();
+            if (lowerBound.IsConstant())
+            {
+                if (lowerBound.GetConstant() >= 0)
+                {
+                    *isKnownNonNegative = true;
+                }
+                if (lowerBound.GetConstant() > 0)
+                {
+                    *isKnownNonZero = true;
+                }
+            }
+        }
+    }
 }
 
 //------------------------------------------------------------------------
@@ -4835,12 +4915,6 @@ GenTree* Compiler::optAssertionProp_Cast(ASSERT_VALARG_TP assertions, GenTreeCas
     // Skip over a GT_COMMA node(s), if necessary to get to the lcl.
     GenTree* lcl = op1->gtEffectiveVal();
 
-    // If we don't have a cast of a LCL_VAR then bail.
-    if (!lcl->OperIs(GT_LCL_VAR))
-    {
-        return nullptr;
-    }
-
     // Try and see if we can make this cast into a cheaper zero-extending version
     // if the input is known to be non-negative.
     if (!cast->IsUnsigned() && genActualTypeIsInt(lcl) && cast->TypeIs(TYP_LONG) && (TARGET_POINTER_SIZE == 8))
@@ -4852,6 +4926,12 @@ GenTree* Compiler::optAssertionProp_Cast(ASSERT_VALARG_TP assertions, GenTreeCas
         {
             cast->SetUnsigned();
         }
+    }
+
+    // If we don't have a cast of a LCL_VAR then bail.
+    if (!lcl->OperIs(GT_LCL_VAR))
+    {
+        return nullptr;
     }
 
     IntegralRange  range = IntegralRange::ForCastInput(cast);
@@ -5177,8 +5257,9 @@ static GCInfo::WriteBarrierForm GetWriteBarrierForm(Compiler* comp, ValueNum vn)
     {
         if (funcApp.m_func == VNF_PtrToArrElem)
         {
-            // Arrays are always on the heap
-            return GCInfo::WriteBarrierForm::WBF_BarrierUnchecked;
+            // Check whether the array is on the heap
+            ValueNum arrayVN = funcApp.m_args[1];
+            return GetWriteBarrierForm(comp, arrayVN);
         }
         if (funcApp.m_func == VNF_PtrToLoc)
         {

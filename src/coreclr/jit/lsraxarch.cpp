@@ -536,11 +536,9 @@ int LinearScan::BuildNode(GenTree* tree)
             srcCount = 0;
             break;
 
-#ifdef FEATURE_PUT_STRUCT_ARG_STK
         case GT_PUTARG_STK:
             srcCount = BuildPutArgStk(tree->AsPutArgStk());
             break;
-#endif // FEATURE_PUT_STRUCT_ARG_STK
 
         case GT_STORE_BLK:
             srcCount = BuildBlockStore(tree->AsBlk());
@@ -1285,7 +1283,7 @@ int LinearScan::BuildCall(GenTreeCall* call)
     {
         for (CallArg& arg : call->gtArgs.LateArgs())
         {
-            for (const ABIPassingSegment& seg : arg.NewAbiInfo.Segments())
+            for (const ABIPassingSegment& seg : arg.AbiInfo.Segments())
             {
                 if (seg.IsPassedInRegister() && genIsValidFloatReg(seg.GetRegister()))
                 {
@@ -1679,7 +1677,6 @@ int LinearScan::BuildBlockStore(GenTreeBlk* blkNode)
     return useCount;
 }
 
-#ifdef FEATURE_PUT_STRUCT_ARG_STK
 //------------------------------------------------------------------------
 // BuildPutArgStk: Set the NodeInfo for a GT_PUTARG_STK.
 //
@@ -1853,7 +1850,6 @@ int LinearScan::BuildPutArgStk(GenTreePutArgStk* putArgStk)
 
     return srcCount;
 }
-#endif // FEATURE_PUT_STRUCT_ARG_STK
 
 //------------------------------------------------------------------------
 // BuildLclHeap: Set the NodeInfo for a GT_LCLHEAP.
