@@ -625,7 +625,7 @@ public:
 #endif                                     // FEATURE_HFA_FIELDS_PRESENT
 
 #ifdef DEBUG
-    // TODO-Cleanup: See the note on lvSize() - this flag is only in use by asserts that are checking for struct
+    // TODO-Cleanup: this flag is only in use by asserts that are checking for struct
     // types, and is needed because of cases where TYP_STRUCT is bashed to an integral type.
     // Consider cleaning this up so this workaround is not required.
     unsigned char lvUnusedStruct : 1; // All references to this promoted struct are through its field locals.
@@ -1118,9 +1118,6 @@ public:
     }
 
     unsigned lvExactSize() const;
-    unsigned lvSize() const;
-
-    size_t lvArgStackSize() const;
 
     unsigned lvSlotNum; // original slot # (if remapped)
 
@@ -4312,7 +4309,7 @@ public:
         return varNum;
     }
 
-    unsigned lvaLclSize(unsigned varNum);
+    unsigned lvaLclStackHomeSize(unsigned varNum);
     unsigned lvaLclExactSize(unsigned varNum);
 
     bool lvaHaveManyLocals(float percent = 1.0f) const;
@@ -4437,6 +4434,7 @@ public:
         bool ShouldPromoteStructVar(unsigned lclNum);
         void PromoteStructVar(unsigned lclNum);
         void SortStructFields();
+        bool IsArmHfaParameter(unsigned lclNum);
 
         var_types TryPromoteValueClassAsPrimitive(CORINFO_TYPE_LAYOUT_NODE* treeNodes, size_t maxTreeNodes, size_t index);
         void AdvanceSubTree(CORINFO_TYPE_LAYOUT_NODE* treeNodes, size_t maxTreeNodes, size_t* index);
@@ -4457,27 +4455,26 @@ public:
     bool lvaIsGCTracked(const LclVarDsc* varDsc);
 
 #if defined(FEATURE_SIMD)
-    bool lvaMapSimd12ToSimd16(const LclVarDsc* varDsc)
+    bool lvaMapSimd12ToSimd16(unsigned varNum)
     {
-        assert(varDsc->lvType == TYP_SIMD12);
+        LclVarDsc* varDsc = lvaGetDesc(varNum);
+        assert(varDsc->TypeGet() == TYP_SIMD12);
 
-#if defined(TARGET_64BIT)
-        assert(compAppleArm64Abi() || varDsc->lvSize() == 16);
-#endif // defined(TARGET_64BIT)
+        unsigned stackHomeSize = lvaLclStackHomeSize(varNum);
 
         // We make local variable SIMD12 types 16 bytes instead of just 12.
-        // lvSize() will return 16 bytes for SIMD12, even for fields.
+        // lvaLclStackHomeSize() will return 16 bytes for SIMD12, even for fields.
         // However, we can't do that mapping if the var is a dependently promoted struct field.
         // Such a field must remain its exact size within its parent struct unless it is a single
         // field *and* it is the only field in a struct of 16 bytes.
-        if (varDsc->lvSize() != 16)
+        if (stackHomeSize != 16)
         {
             return false;
         }
         if (lvaIsFieldOfDependentlyPromotedStruct(varDsc))
         {
             LclVarDsc* parentVarDsc = lvaGetDesc(varDsc->lvParentLcl);
-            return (parentVarDsc->lvFieldCnt == 1) && (parentVarDsc->lvSize() == 16);
+            return (parentVarDsc->lvFieldCnt == 1) && (lvaLclStackHomeSize(varDsc->lvParentLcl) == 16);
         }
         return true;
     }
