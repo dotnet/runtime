@@ -4155,7 +4155,7 @@ void Compiler::optAssertionProp_RangeProperties(ASSERT_VALARG_TP assertions,
         else
         {
             // For SSA-based we also need to check whether it overflows or not.
-            Range range = GetRangeCheck()->GetRange(block, tree, /*budget*/ 16);
+            Range range = GetRangeCheck()->GetRange(block, tree, /*budget*/ 12);
             if (range.LowerLimit().IsConstant() && !GetRangeCheck()->DoesOverflow(block, tree, range))
             {
                 lowerBound = range.LowerLimit();
@@ -4509,7 +4509,7 @@ GenTree* Compiler::optAssertionPropGlobal_RelOp(ASSERT_VALARG_TP assertions,
         !op2->IsIntegralConst(0))
     {
         // NOTE: we can call GetRange for op2 as well, but that will be even more expensive,
-        Range rng1 = GetRangeCheck()->GetRange(block, op1, /*budget*/ 16);
+        Range rng1 = GetRangeCheck()->GetRange(block, op1, /*budget*/ 12);
         Range rng2 = Range(Limit(Limit::keConstant, static_cast<int>(op2->AsIntCon()->IconValue())));
 
         RangeOps::RelationKind kind = RangeOps::EvalRelop(tree->OperGet(), tree->IsUnsigned(), rng1, rng2);

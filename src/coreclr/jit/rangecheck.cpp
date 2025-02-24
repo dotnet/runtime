@@ -924,7 +924,7 @@ void RangeCheck::MergeEdgeAssertions(Compiler*        comp,
                 {
                     pRange->lLimit = Limit(Limit::keConstant, 0);
                 }
-                else if (pRange->LowerLimit().IsUnknown())
+                else if (limit.IsConstant() && pRange->LowerLimit().IsUnknown())
                 {
                     // INT32_MIN is better than Unknown.
                     pRange->lLimit = Limit(Limit::keConstant, INT32_MIN);
@@ -938,7 +938,7 @@ void RangeCheck::MergeEdgeAssertions(Compiler*        comp,
                 if (!isUnsigned)
                 {
                     pRange->lLimit = limit;
-                    if (pRange->UpperLimit().IsUnknown())
+                    if (limit.IsConstant() && pRange->UpperLimit().IsUnknown())
                     {
                         // INT32_MAX is better than Unknown.
                         pRange->uLimit = Limit(Limit::keConstant, INT32_MAX);
