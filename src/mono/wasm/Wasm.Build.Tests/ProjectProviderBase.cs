@@ -180,11 +180,12 @@ public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string?
         }
 
         if (expected is not null)
-            AssertDotNetFilesSet(expected, superSet, actual, expectFingerprintOnDotnetJs, binFrameworkDir);
+            AssertDotNetFilesSet(assertOptions, expected, superSet, actual, expectFingerprintOnDotnetJs, binFrameworkDir);
         return actual;
     }
 
     private void AssertDotNetFilesSet(
+        AssertBundleOptions assertOptions,
         IReadOnlySet<string> expected,
         IReadOnlyDictionary<string, bool> superSet,
         IReadOnlyDictionary<string, DotNetFileName> actualReadOnly,
@@ -198,7 +199,7 @@ public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string?
         {
             bool expectFingerprint = superSet[expectedFilename];
 
-            Assert.True(actual.ContainsKey(expectedFilename), $"Could not find {expectedFilename} in bundle directory: {bundleDir}. Actual files on disk: {string.Join(", ", actual.Keys)}");
+            Assert.True(actual.ContainsKey(expectedFilename), $"Could not find {expectedFilename} in bundle directory: {bundleDir}. Actual files on disk: {string.Join(", ", actual.Keys)} Options {assertOptions}");
 
             // Check that the version and hash are present or not present as expected
             if (ShouldCheckFingerprint(expectedFilename: expectedFilename,
@@ -206,12 +207,12 @@ public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string?
                                        expectFingerprintForThisFile: expectFingerprint))
             {
                 if (string.IsNullOrEmpty(actual[expectedFilename].Hash))
-                    throw new XunitException($"Expected hash in filename: {actual[expectedFilename].ActualPath}");
+                    throw new XunitException($"Expected hash in filename: {actual[expectedFilename].ActualPath} Options {assertOptions}");
             }
             else
             {
                 if (!string.IsNullOrEmpty(actual[expectedFilename].Hash))
-                    throw new XunitException($"Expected no hash in filename: {actual[expectedFilename].ActualPath}");
+                    throw new XunitException($"Expected no hash in filename: {actual[expectedFilename].ActualPath} Options {assertOptions}");
             }
             actual.Remove(expectedFilename);
         }
@@ -219,7 +220,7 @@ public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string?
         if (actual.Any())
         {
             var actualFileNames = actual.Values.Select(x => x.ActualPath).Order();
-            throw new XunitException($"Found unexpected files: {string.Join(", ", actualFileNames)}");
+            throw new XunitException($"Found unexpected files: {string.Join(", ", actualFileNames)} Options {assertOptions}");
         }
     }
 
