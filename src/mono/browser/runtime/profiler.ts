@@ -7,6 +7,7 @@ import { ENVIRONMENT_IS_WEB, mono_assert, runtimeHelpers } from "./globals";
 import { MonoMethod, AOTProfilerOptions, BrowserProfilerOptions, LogProfilerOptions } from "./types/internal";
 import { profiler_c_functions as cwraps } from "./cwraps";
 import { utf8ToString } from "./strings";
+import { free } from "./memory";
 
 // Initialize the AOT profiler with OPTIONS.
 // Requires the AOT profiler to be linked into the app.
@@ -106,9 +107,10 @@ export function mono_wasm_profiler_record (method: MonoMethod, start: number): v
         : { startTime: start };
     let methodName = methodNames.get(method as any);
     if (!methodName) {
-        const chars = cwraps.mono_wasm_method_get_name(method);
+        const chars = cwraps.mono_wasm_method_get_name_ex(method);
         methodName = utf8ToString(chars);
         methodNames.set(method as any, methodName);
+        free(chars as any);
     }
     globalThis.performance.measure(methodName, options);
 }

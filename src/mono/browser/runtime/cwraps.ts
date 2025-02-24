@@ -72,6 +72,7 @@ const fn_signatures: SigLine[] = [
     [true, "mono_wasm_f64_to_i52", "number", ["number", "number"]],
     [true, "mono_wasm_f64_to_u52", "number", ["number", "number"]],
     [true, "mono_wasm_method_get_name", "number", ["number"]],
+    [true, "mono_wasm_method_get_name_ex", "number", ["number"]],
     [true, "mono_wasm_method_get_full_name", "number", ["number"]],
     [true, "mono_wasm_gc_lock", "void", []],
     [true, "mono_wasm_gc_unlock", "void", []],
@@ -195,6 +196,7 @@ export interface t_Cwraps {
     mono_wasm_f64_to_i52(destination: VoidPtr, value: number): I52Error;
     mono_wasm_f64_to_u52(destination: VoidPtr, value: number): I52Error;
     mono_wasm_method_get_name(method: MonoMethod): CharPtr;
+    mono_wasm_method_get_name_ex(method: MonoMethod): CharPtr;
     mono_wasm_method_get_full_name(method: MonoMethod): CharPtr;
     mono_wasm_gc_lock(): void;
     mono_wasm_gc_unlock(): void;
