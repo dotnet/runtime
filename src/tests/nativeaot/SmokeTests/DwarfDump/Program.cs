@@ -50,13 +50,8 @@ public class Program
         });
 
         // Just count the number of warnings and errors. There are so many right now that it's not worth enumerating the list
-#if DEBUG
-        const int MinWarnings = 2000;
-        const int MaxWarnings = 4000;
-#else
-        const int MinWarnings = 3000;
-        const int MaxWarnings = 5000;
-#endif
+        const int MinWarnings = 1000;
+        const int MaxWarnings = 1500;
         int count = 0;
         string line;
         while ((line = proc.StandardOutput.ReadLine()) != null)
@@ -72,17 +67,36 @@ public class Program
         {
             // something is off, lets check the StandardError stream
             int errorCount = 0;
+            bool foundIlCpp = false;
+            bool insideIlCpp = false;
             string[] firstFiveErrors = new string[5];
             while ((line = proc.StandardError.ReadLine()) != null)
             {
-                if (line.Contains("error:"))
+                if (line.StartsWith("Verifying unit:"))
+                {
+                    if (line.EndsWith("\"il.cpp\""))
+                    {
+                        foundIlCpp = true;
+                        insideIlCpp = true;
+                    }
+                    else
+                    {
+                        insideIlCpp = false;
+                    }
+                }
+                if (line.Contains("error:") && insideIlCpp)
                 {
                     if (errorCount < 5) firstFiveErrors[errorCount] = line;
                     errorCount++;
                 }
             }
 
-            if (errorCount > 0)
+            if (!foundIlCpp)
+            {
+                Console.Error.WriteLine($"llvm-dwarfdump failed. Cound not find unit named \"il.cpp\".");
+                return 10;
+            }
+            else if (errorCount > 0)
             {
                 Console.Error.WriteLine($"llvm-dwarfdump failed. First five errors:{Environment.NewLine}{string.Join(Environment.NewLine, firstFiveErrors)}");
                 return 10;
