@@ -21,5 +21,6 @@
   "ReJIT": 1,
   "RuntimeTypeSystem": 1,
   "StackWalk": 1,
+  "StressLog": 2,
   "Thread": 1
 }

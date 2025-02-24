@@ -159,6 +159,7 @@ set( JIT_SOURCES
   promotiondecomposition.cpp
   promotionliveness.cpp
   rangecheck.cpp
+  rangecheckcloning.cpp
   rationalize.cpp
   redundantbranchopts.cpp
   regalloc.cpp
@@ -356,6 +357,7 @@ set( JIT_HEADERS
   priorityqueue.h
   promotion.h
   rangecheck.h
+  rangecheckcloning.h
   rationalize.h
   regalloc.h
   registerargconvention.h
@@ -502,7 +504,7 @@ endif()
 
 set(JIT_DLL_MAIN_FILE ${CMAKE_CURRENT_LIST_DIR}/dllmain.cpp)
 
-if(CLR_CMAKE_TARGET_WIN32)
+if(CLR_CMAKE_HOST_WIN32)
   set(CLRJIT_EXPORTS ${CMAKE_CURRENT_LIST_DIR}/ClrJit.exports)
   set(JIT_EXPORTS_FILE ${CMAKE_CURRENT_BINARY_DIR}/ClrJit.exports.def)
   preprocess_file (${CLRJIT_EXPORTS} ${JIT_EXPORTS_FILE})
@@ -557,6 +559,10 @@ else()
        coreclrminipal
     )
 endif(CLR_CMAKE_HOST_UNIX)
+
+if (CLR_CMAKE_HOST_ANDROID)
+    list(APPEND JIT_LINK_LIBRARIES log)
+endif()
 
 # Shared function for generating JIT
 function(add_jit jitName)

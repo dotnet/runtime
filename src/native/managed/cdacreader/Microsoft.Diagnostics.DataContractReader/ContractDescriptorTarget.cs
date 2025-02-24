@@ -46,6 +46,15 @@ public sealed unsafe class ContractDescriptorTarget : Target
     public delegate int GetTargetThreadContextDelegate(uint threadId, uint contextFlags, uint contextSize, Span<byte> bufferToFill);
     public delegate int GetTargetPlatformDelegate(out int platform);
 
+    /// <summary>
+    /// Create a new target instance from a contract descriptor embedded in the target memory.
+    /// </summary>
+    /// <param name="contractDescriptor">The offset of the contract descriptor in the target memory</param>
+    /// <param name="readFromTarget">A callback to read memory blocks at a given address from the target</param>
+    /// <param name="getThreadContext">A callback to fetch a thread's context</param>
+    /// <param name="getTargetPlatform">A callback to fetch the target's platform</param>
+    /// <param name="target">The target object.</param>
+    /// <returns>If a target instance could be created, <c>true</c>; otherwise, <c>false</c>.</returns>
     public static bool TryCreate(
         ulong contractDescriptor,
         ReadFromTargetDelegate readFromTarget,
@@ -69,6 +78,20 @@ public sealed unsafe class ContractDescriptorTarget : Target
         return false;
     }
 
+    /// <summary>
+    /// Create a new target instance from an externally-provided contract descriptor.
+    /// </summary>
+    /// <param name="contractDescriptor">The contract descriptor to use for this target</param>
+    /// <param name="globalPointerValues">The values for any global pointers specified in the contract descriptor.</param>
+    /// <param name="readFromTarget">A callback to read memory blocks at a given address from the target</param>
+    /// <param name="isLittleEndian">Whether the target is little-endian</param>
+    /// <param name="pointerSize">The size of a pointer in bytes in the target process.</param>
+    /// <returns>The target object.</returns>
+    public static ContractDescriptorTarget Create(ContractDescriptorParser.ContractDescriptor contractDescriptor, TargetPointer[] globalPointerValues, ReadFromTargetDelegate readFromTarget, bool isLittleEndian, int pointerSize)
+    {
+        return new ContractDescriptorTarget(new Configuration { IsLittleEndian = isLittleEndian, PointerSize = pointerSize }, contractDescriptor, globalPointerValues, new Reader(readFromTarget));
+    }
+
     private ContractDescriptorTarget(Configuration config, ContractDescriptorParser.ContractDescriptor descriptor, TargetPointer[] pointerData, Reader reader)
     {
         Contracts = new CachingContractRegistry(this, this.TryGetContractVersion);
@@ -83,6 +106,9 @@ public sealed unsafe class ContractDescriptorTarget : Target
             throw new InvalidOperationException($"Unable to read target platform.");
         }
         Platform = (CorDebugPlatform)platform;
+
+        // Set pointer type size
+        _knownTypes[DataType.pointer] = new TypeInfo { Size = (uint)_config.PointerSize };
 
         // Read types and map to known data types
         if (descriptor.Types is not null)
