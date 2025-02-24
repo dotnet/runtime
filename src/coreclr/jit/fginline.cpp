@@ -955,6 +955,14 @@ void Compiler::fgMorphCallInline(GenTreeCall* call, InlineResult* inlineResult)
                 // We created a context before we got to the failure, so mark
                 // it as failed in the tree.
                 createdContext->SetFailed(inlineResult);
+
+                if (call->gtReturnType == TYP_REF && createdContext->retExprClassHnd != nullptr)
+                {
+                    call->gtReturnClassInfo            = new (this, CMK_Inlining) ReturnClassInfo();
+                    call->gtReturnClassInfo->clsHandle = createdContext->retExprClassHnd;
+                    call->gtReturnClassInfo->isExact   = createdContext->retExprClassHndIsExact;
+                    call->gtCallMoreFlags |= GTF_CALL_M_HAS_RET_CLASS;
+                }
             }
             else
             {
@@ -1227,8 +1235,6 @@ void Compiler::fgInvokeInlineeCompiler(GenTreeCall* call, InlineResult* inlineRe
     inlineInfo.iciStmt                = fgMorphStmt;
     inlineInfo.iciBlock               = compCurBB;
     inlineInfo.thisDereferencedFirst  = false;
-    inlineInfo.retExprClassHnd        = nullptr;
-    inlineInfo.retExprClassHndIsExact = false;
     inlineInfo.inlineResult           = inlineResult;
     inlineInfo.inlInstParamArgInfo    = nullptr;
 #ifdef FEATURE_SIMD

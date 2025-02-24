@@ -176,6 +176,7 @@ enum BasicBlockFlags : uint64_t;
 struct InlineCandidateInfo;
 struct HandleHistogramProfileCandidateInfo;
 struct LateDevirtualizationInfo;
+struct ReturnClassInfo;
 
 typedef unsigned short AssertionIndex;
 
@@ -4230,6 +4231,7 @@ enum GenTreeCallFlags : unsigned int
     GTF_CALL_M_CAST_OBJ_NONNULL        = 0x04000000, // if we expand this specific cast we don't need to check the input object for null
                                                      // NOTE: if needed, this flag can be removed, and we can introduce new _NONNUL cast helpers
     GTF_CALL_M_STACK_ARRAY             = 0x08000000, // this call is a new array helper for a stack allocated array.
+    GTF_CALL_M_HAS_RET_CLASS           = 0x10000000, // this call has a return class handle.
 };
 
 inline constexpr GenTreeCallFlags operator ~(GenTreeCallFlags a)
@@ -5599,7 +5601,11 @@ struct GenTreeCall final : public GenTree
         void*                  gtDirectCallAddress; // Used to pass direct call address between lower and codegen
     };
 
-    LateDevirtualizationInfo* gtLateDevirtualizationInfo; // Always available for user virtual calls
+    union
+    {
+        LateDevirtualizationInfo* gtLateDevirtualizationInfo; // Always available for user virtual calls
+        ReturnClassInfo*          gtReturnClassInfo;
+    };
 
     // expression evaluated after args are placed which determines the control target
     GenTree* gtControlExpr;

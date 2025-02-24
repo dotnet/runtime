@@ -304,6 +304,11 @@ public:
         return m_IsDataCollectionTarget;
     }
 
+    bool IsLateFailure() const
+    {
+        return m_IsLateFailure;
+    }
+
 #endif // defined(DEBUG)
 
 protected:
@@ -311,6 +316,7 @@ protected:
         : m_Decision(InlineDecision::UNDECIDED)
         , m_Observation(InlineObservation::CALLEE_UNUSED_INITIAL)
         , m_IsPrejitRoot(isPrejitRoot)
+        , m_IsLateFailure(false)
 #if defined(DEBUG)
         , m_IsDataCollectionTarget(false)
 #endif // defined(DEBUG)
@@ -328,6 +334,7 @@ protected:
     InlineDecision    m_Decision;
     InlineObservation m_Observation;
     bool              m_IsPrejitRoot;
+    bool              m_IsLateFailure;
 
 #if defined(DEBUG)
 
@@ -355,6 +362,12 @@ public:
     bool IsFailure() const
     {
         return InlDecisionIsFailure(m_Policy->GetDecision());
+    }
+
+    // Has the policy determined this inline should fail after importation?
+    bool IsLateFailure() const
+    {
+        return m_Policy->IsLateFailure();
     }
 
     // Has the policy determined this inline will succeed?
@@ -637,6 +650,12 @@ struct LateDevirtualizationInfo
     InlineContext*         inlinersContext;
 };
 
+struct ReturnClassInfo
+{
+    CORINFO_CLASS_HANDLE clsHandle;
+    bool                 isExact;
+};
+
 // InlArgInfo describes inline candidate argument properties.
 
 struct InlArgInfo
@@ -684,9 +703,6 @@ struct InlineInfo
     InlineContext*        inlineContext;
 
     InlineResult* inlineResult;
-
-    CORINFO_CLASS_HANDLE retExprClassHnd;
-    bool                 retExprClassHndIsExact;
 
     CORINFO_CONTEXT_HANDLE tokenLookupContextHandle; // The context handle that will be passed to
                                                      // impTokenLookupContextHandle in Inlinee's Compiler.
@@ -869,6 +885,9 @@ public:
         m_ILInstsSet = set;
     }
 #endif
+
+    CORINFO_CLASS_HANDLE retExprClassHnd;
+    bool                 retExprClassHndIsExact;
 
 private:
     InlineContext(InlineStrategy* strategy);

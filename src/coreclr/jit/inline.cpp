@@ -1317,6 +1317,9 @@ InlineContext* InlineStrategy::NewContext(InlineContext* parentContext, Statemen
     assert(call->gtCallType == CT_USER_FUNC);
     context->m_Callee = call->gtCallMethHnd;
 
+    context->retExprClassHnd        = nullptr;
+    context->retExprClassHndIsExact = false;
+
 #if defined(DEBUG)
     context->m_Devirtualized = call->IsDevirtualized();
     context->m_Guarded       = call->IsGuarded();

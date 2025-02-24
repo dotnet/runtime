@@ -11170,42 +11170,42 @@ bool Compiler::impReturnInstruction(int prefixFlags, OPCODE& opcode)
                     }
                 }
 
+                // If this method returns a ref type, track the actual types seen in the returns.
+                if (info.compRetType == TYP_REF)
+                {
+                    bool                 isExact      = false;
+                    bool                 isNonNull    = false;
+                    CORINFO_CLASS_HANDLE returnClsHnd = gtGetClassHandle(op2, &isExact, &isNonNull);
+
+                    if (inlRetExpr->gtSubstExpr == nullptr)
+                    {
+                        // This is the first return, so best known type is the type
+                        // of this return value.
+                        impInlineInfo->inlineContext->retExprClassHnd        = returnClsHnd;
+                        impInlineInfo->inlineContext->retExprClassHndIsExact = isExact;
+                    }
+                    else
+                    {
+                        if (impInlineInfo->inlineContext->retExprClassHnd != returnClsHnd)
+                        {
+                            // This return site type differs from earlier seen sites,
+                            // so reset the info and we'll fall back to using the method's
+                            // declared return type for the return spill temp.
+                            impInlineInfo->inlineContext->retExprClassHnd = nullptr;
+                            impInlineInfo->inlineContext->retExprClassHndIsExact = false;
+                        }
+                        else
+                        {
+                            // Same return type, but we may need to update exactness.
+                            impInlineInfo->inlineContext->retExprClassHndIsExact &= isExact;
+                        }
+                    }
+                }
+
                 if (fgNeedReturnSpillTemp())
                 {
                     assert(info.compRetNativeType != TYP_VOID &&
                            (fgMoreThanOneReturnBlock() || impInlineInfo->HasGcRefLocals()));
-
-                    // If this method returns a ref type, track the actual types seen in the returns.
-                    if (info.compRetType == TYP_REF)
-                    {
-                        bool                 isExact      = false;
-                        bool                 isNonNull    = false;
-                        CORINFO_CLASS_HANDLE returnClsHnd = gtGetClassHandle(op2, &isExact, &isNonNull);
-
-                        if (inlRetExpr->gtSubstExpr == nullptr)
-                        {
-                            // This is the first return, so best known type is the type
-                            // of this return value.
-                            impInlineInfo->retExprClassHnd        = returnClsHnd;
-                            impInlineInfo->retExprClassHndIsExact = isExact;
-                        }
-                        else
-                        {
-                            if (impInlineInfo->retExprClassHnd != returnClsHnd)
-                            {
-                                // This return site type differs from earlier seen sites,
-                                // so reset the info and we'll fall back to using the method's
-                                // declared return type for the return spill temp.
-                                impInlineInfo->retExprClassHnd        = nullptr;
-                                impInlineInfo->retExprClassHndIsExact = false;
-                            }
-                            else
-                            {
-                                // Same return type, but we may need to update exactness.
-                                impInlineInfo->retExprClassHndIsExact &= isExact;
-                            }
-                        }
-                    }
 
                     impStoreToTemp(lvaInlineeReturnSpillTemp, op2, CHECK_SPILL_ALL);
 
