@@ -114,7 +114,7 @@ namespace System.Net.NameResolution.Tests
         {
             const string InvalidHostName = $"invalid...example.com...{nameof(ForwardLookup_InvalidHostName_ActivityRecorded)}";
 
-            await RemoteExecutor.Invoke(async (createParentActivity) =>
+            await RemoteExecutor.Invoke(static async (createParentActivity) =>
             {
                 using var recorder = new ActivityRecorder(ActivitySourceName, ActivityName)
                 {
@@ -149,6 +149,26 @@ namespace System.Net.NameResolution.Tests
                     ActivityAssert.HasTag(activity, "error.type", "host_not_found");
                 }
             }, createParentActivity.ToString()).DisposeAsync();
+        }
+
+        [ConditionalFact(typeof(GetHostEntryTest), nameof(GetHostEntryTest.GetHostEntry_DisableIPv6_Condition))]
+        public static void ForwardLookup_DisableIPv6_AddressFamilyInterNetworkV6_ActivitiesAreFinished()
+        {
+            RemoteExecutor.Invoke(static async () =>
+            {
+                const string ValidHostName = "localhost";
+                AppContext.SetSwitch("System.Net.DisableIPv6", true);
+                using var recorder = new ActivityRecorder(ActivitySourceName, ActivityName);
+
+                await Dns.GetHostEntryAsync(ValidHostName);
+                await Dns.GetHostAddressesAsync(ValidHostName);
+                Dns.GetHostEntry(ValidHostName);
+                Dns.GetHostAddresses(ValidHostName);
+                Dns.EndGetHostEntry(Dns.BeginGetHostEntry(ValidHostName, null, null));
+                Dns.EndGetHostAddresses(Dns.BeginGetHostAddresses(ValidHostName, null, null));
+
+                Assert.Equal(recorder.Started, recorder.Stopped);
+            }).Dispose();
         }
 
         static void VerifyForwardActivityInfo(Activity activity, string question)
