@@ -27,10 +27,15 @@ internal class DataTargetStream(ICLRDataTarget dataTarget, ulong startPosition) 
 
     public override unsafe int Read(byte[] buffer, int offset, int count)
     {
-        fixed (byte* bufferPtr = &buffer[offset])
+        Span<byte> span = buffer;
+        return Read(span.Slice(start: offset, length: count));
+    }
+    public override unsafe int Read(Span<byte> buffer)
+    {
+        fixed (byte* bufferPtr = buffer)
         {
             uint bytesRead;
-            int hr = _dataTarget.ReadVirtual(GlobalPosition, bufferPtr, (uint)count, &bytesRead);
+            int hr = _dataTarget.ReadVirtual(GlobalPosition, bufferPtr, (uint)buffer.Length, &bytesRead);
             _offset += bytesRead;
             if (hr != 0)
                 throw new InvalidOperationException($"ReadVirtual failed with hr={hr}");

@@ -14,6 +14,15 @@ internal static class Entrypoints
 {
     private const string CDAC = "cdac_reader_";
 
+    static Entrypoints()
+    {
+        StreamWriter logFileWriter = new StreamWriter("C:\\Users\\maxcharlamb\\OneDrive - Microsoft\\Desktop\\out.txt", append: true);
+        Console.SetOut(logFileWriter);
+        Console.WriteLine("Creating cDAC entrypoints");
+        logFileWriter.AutoFlush = true;
+        logFileWriter.Flush();
+    }
+
     [UnmanagedCallersOnly(EntryPoint = $"{CDAC}init")]
     private static unsafe int Init(
         ulong descriptor,
@@ -111,19 +120,22 @@ internal static class Entrypoints
         }
 
 
-        DataTargetStream dataTargetStream = new(dataTarget, baseAddress);
-        using PEDecoder peDecoder = new(dataTargetStream);
+        using PEDecoder peDecoder = new(new DataTargetStream(dataTarget, baseAddress));
+        using ELFDecoder elfDecoder = new(new DataTargetStream(dataTarget, baseAddress), baseAddress);
 
-        if (!peDecoder.TryGetRelativeSymbolAddress("DotNetRuntimeContractDescriptor", out ulong contractDescriptor))
+        Console.WriteLine($"PE: {peDecoder.IsValid} ELF: {elfDecoder.IsValid}");
+
+        if (!elfDecoder.TryGetRelativeSymbolAddress("DotNetRuntimeContractDescriptor", out ulong contractDescriptor))
         {
             return -1;
         }
 
-        if (!ContractDescriptorTarget.TryCreate(contractDescriptor, (address, buffer) =>
+        if (!ContractDescriptorTarget.TryCreate(baseAddress + contractDescriptor, (address, buffer) =>
         {
             fixed (byte* bufferPtr = buffer)
             {
-                return dataTarget.ReadVirtual(address, bufferPtr, (uint)buffer.Length, null);
+                uint bytesRead;
+                return dataTarget.ReadVirtual(address, bufferPtr, (uint)buffer.Length, &bytesRead);
             }
         }, out ContractDescriptorTarget? target))
         {

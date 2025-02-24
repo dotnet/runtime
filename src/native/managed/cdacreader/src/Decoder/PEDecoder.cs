@@ -91,7 +91,6 @@ internal sealed class PEDecoder : IDisposable
             // Seek to name RVA and read name
             reader.BaseStream.Seek(namePointerRVA, SeekOrigin.Begin);
             string name = reader.ReadZString();
-
             if (name == symbol)
             {
                 // If the name matches, we should be able to get the ordinal using the ordinal
