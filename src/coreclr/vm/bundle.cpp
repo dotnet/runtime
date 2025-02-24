@@ -66,13 +66,6 @@ BundleFileLocation Bundle::Probe(const SString& path, bool pathIsBundleRelative)
     pathBuffer.SetAndConvertToUTF8(path.GetUnicode());
     LPCSTR utf8Path(pathBuffer.GetUTF8());
 
-#if defined(TARGET_ANDROID)
-    // On Android we always strip away the assembly path, if any
-    LPCSTR pos = strrchr(utf8Path, DIRECTORY_SEPARATOR_CHAR_A);
-    if (pos != nullptr) {
-        utf8Path = pos + 1; // one past the last directory separator char
-    }
-#else // TARGET_ANDROID
     if (!pathIsBundleRelative)
     {
 #ifdef TARGET_UNIX
@@ -89,7 +82,7 @@ BundleFileLocation Bundle::Probe(const SString& path, bool pathIsBundleRelative)
             return BundleFileLocation::Invalid();
         }
     }
-#endif // !TARGET_ANDROID
+
     if (m_probe != nullptr)
     {
         BundleFileLocation loc;
