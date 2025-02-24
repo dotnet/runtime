@@ -4087,7 +4087,7 @@ GenTree* Lowering::LowerHWIntrinsicCreate(GenTreeHWIntrinsic* node)
                     // If the base type is signed, that cast will be sign-extending, but we need zero extension,
                     // so we can simply retype the cast to the unsigned type of the same size.
                     //
-                    // It's also possible we have an indir of the base type:
+                    // It's also possible we have a memory load of the base type:
                     // *  IND       short
                     // We can likewise change the type of the indir to force zero extension on load.
                     //
@@ -4103,7 +4103,7 @@ GenTree* Lowering::LowerHWIntrinsicCreate(GenTreeHWIntrinsic* node)
                         assert(op1->TypeIs(TYP_INT) && (genTypeSize(op1->CastToType()) == genTypeSize(simdBaseType)));
                         op1->AsCast()->gtCastType = unsignedType;
                     }
-                    else if (op1->OperIs(GT_IND))
+                    else if (op1->OperIs(GT_IND, GT_LCL_FLD))
                     {
                         assert(genTypeSize(op1) == genTypeSize(simdBaseType));
                         op1->gtType = unsignedType;
