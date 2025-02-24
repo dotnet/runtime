@@ -1701,7 +1701,7 @@ namespace System.Numerics
             }
 
             if (bitsFromPool != null)
-                    ArrayPool<uint>.Shared.Return(bitsFromPool);
+                ArrayPool<uint>.Shared.Return(bitsFromPool);
 
             return result;
         }
@@ -2636,7 +2636,7 @@ namespace System.Numerics
 
             if (zdFromPool != null)
                 ArrayPool<uint>.Shared.Return(zdFromPool);
-        exit:
+            exit:
             if (xdFromPool != null)
                 ArrayPool<uint>.Shared.Return(xdFromPool);
 
@@ -5239,13 +5239,20 @@ namespace System.Numerics
 
             BigInteger result;
 
+            bool negx = value._sign < 0;
+            ReadOnlySpan<uint> bits = value._bits ?? stackalloc uint[1] { NumericsHelpers.Abs(value._sign) };
+            int xl = bits.Length;
+
+            if (negx && bits[^1] >= kuMaskHighBit
+                && !(bits.IndexOfAnyExcept(0u) == bits.Length - 1 && bits[^1] == kuMaskHighBit))
+                ++xl;
+
             uint[]? xdFromPool = null;
-            int xl = value._bits?.Length ?? 1;
             Span<uint> xd = (xl <= BigIntegerCalculator.StackAllocThreshold
                           ? stackalloc uint[BigIntegerCalculator.StackAllocThreshold]
                           : xdFromPool = ArrayPool<uint>.Shared.Rent(xl)).Slice(0, xl);
-
-            bool negx = value.GetPartsForBitManipulation(xd);
+            xd[^1] = 0;
+            bits.CopyTo(xd);
 
             if (negx)
             {
