@@ -306,7 +306,7 @@ LEAF_ENTRY RhpCheckedLockCmpXchg
 
 LOCAL_LABEL(CmpXchgRetry):
         // Load the current value at the destination address.
-        lr.d.aqrl    t0, (a0)       // t0 = *dest (load with release ordering)
+        lr.d.aqrl    t0, (a0)       // t0 = *dest (load with acquire-release ordering)
         // Compare the loaded value with the comparand.
         bne     t0, a2, LOCAL_LABEL(CmpXchgNoUpdate) // if (*dest != comparand) goto CmpXchgNoUpdate
 
