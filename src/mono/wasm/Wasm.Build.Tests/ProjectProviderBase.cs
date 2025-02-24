@@ -119,7 +119,7 @@ public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string?
                         return false;
 
                     string actualFilename = Path.GetFileName(actualFile);
-                    // _testOutput.WriteLine($"Comparing {expectedFilename} with {actualFile}, expectFingerprintOnDotnetJs: {expectFingerprintOnDotnetJs}, expectFingerprint: {expectFingerprint}");
+                    _testOutput.WriteLine($"Comparing {expectedFilename} with {actualFile}, expectFingerprintOnDotnetJs: {expectFingerprintOnDotnetJs}, expectFingerprint: {expectFingerprint}");
                     if (ShouldCheckFingerprint(expectedFilename: expectedFilename,
                                                expectFingerprintOnDotnetJs: expectFingerprintOnDotnetJs,
                                                expectFingerprintForThisFile: expectFingerprint))
@@ -147,12 +147,12 @@ public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string?
                 }).ToList();
         }
 
-        // _testOutput.WriteLine($"Accepted count: {actual.Count}");
-        // foreach (var kvp in actual)
-        //     _testOutput.WriteLine($"Accepted: \t[{kvp.Key}] = {kvp.Value}");
-
         if (dotnetFiles.Any())
         {
+            _testOutput.WriteLine($"Accepted count: {actual.Count}");
+            foreach (var kvp in actual)
+                _testOutput.WriteLine($"Accepted: \t[{kvp.Key}] = {kvp.Value}");
+
             throw new XunitException($"Found unknown files in {binFrameworkDir}:{Environment.NewLine}    " +
                     $"{string.Join($"{Environment.NewLine}  ", dotnetFiles.Select(f => Path.GetRelativePath(binFrameworkDir, f)))}{Environment.NewLine}" +
                     $"Add these to {nameof(GetAllKnownDotnetFilesToFingerprintMap)} method");
