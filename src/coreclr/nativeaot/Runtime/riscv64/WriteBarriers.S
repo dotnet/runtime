@@ -315,6 +315,10 @@ LOCAL_LABEL(CmpXchgRetry):
         sc.d.rl    t1, a1, (a0)  // t1 = (store conditional result: 0 if successful, with release ordering)
         bnez    t1, LOCAL_LABEL(CmpXchgRetry) // if store conditional failed, retry
 
+        // See comment at the top of PalInterlockedOperationBarrier method for explanation why this memory
+        // barrier is necessary.
+        fence   rw, rw
+
 LOCAL_LABEL(DoCardsCmpXchg):
         // We have successfully updated the value of the objectref so now we need a GC write barrier.
         // The following barrier code takes the destination in a0 and the value in a1 so the arguments are
@@ -347,6 +351,10 @@ LEAF_END RhpCheckedLockCmpXchg
 //
 LEAF_ENTRY RhpCheckedXchg
         amoswap.d.aqrl t1, a1, (a0)
+
+        // See comment at the top of PalInterlockedOperationBarrier method for explanation why this memory
+        // barrier is necessary.
+        fence rw, rw
 
 DoCardsXchg:
         // We have successfully updated the value of the objectref so now we need a GC write barrier.
