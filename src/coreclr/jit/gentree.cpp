@@ -7272,8 +7272,10 @@ bool GenTree::OperMayThrow(Compiler* comp)
 
 #ifdef TARGET_XARCH
         NamedIntrinsic intrinsicId = this->AsHWIntrinsic()->GetHWIntrinsicId();
-        if (intrinsicId == NI_Vector128_op_Division || intrinsicId == NI_Vector256_op_Division)
+        if (intrinsicId == NI_Vector128_op_Division || intrinsicId == NI_Vector256_op_Division ||
+            intrinsicId == NI_Vector512_op_Division)
         {
+            assert(varTypeIsInt(AsHWIntrinsic()->GetSimdBaseType()));
             return true;
         }
 #endif // TARGET_XARCH

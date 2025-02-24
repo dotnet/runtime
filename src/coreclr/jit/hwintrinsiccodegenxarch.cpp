@@ -1883,7 +1883,7 @@ void CodeGen::genBaseIntrinsic(GenTreeHWIntrinsic* node, insOpts instOptions)
             //      }
             //
             //      Vector128<int> overflowMask =
-            //          Vector128.Equals(op1, Vector128.Create(int.MaxValue)
+            //          Vector128.Equals(op1, Vector128.Create(int.MinValue)
             //          & Vector128.Equals(op2, Vector128.Create(-1));
             //      if (!Vector128.EqualsAll(overflowMask, Vector128<int>.Zero))
             //      {
@@ -1905,52 +1905,17 @@ void CodeGen::genBaseIntrinsic(GenTreeHWIntrinsic* node, insOpts instOptions)
             noway_assert(typeSize == EA_16BYTE || typeSize == EA_32BYTE);
             emitAttr divTypeSize = typeSize == EA_16BYTE ? EA_32BYTE : EA_64BYTE;
 
-            CORINFO_FIELD_HANDLE maxValueFld;
-            CORINFO_FIELD_HANDLE negOneFld;
-
-            if (typeSize == EA_16BYTE)
+            simd_t negOneIntVec = simd_t::AllBitsSet();
+            simd_t minValueInt{};
+            int    numElements = genTypeSize(node->TypeGet()) / 4;
+            for (int i = 0; i < numElements; i++)
             {
-                simd16_t maxValueIntVec;
-                maxValueIntVec.i32[0] = INT_MAX;
-                maxValueIntVec.i32[1] = INT_MAX;
-                maxValueIntVec.i32[2] = INT_MAX;
-                maxValueIntVec.i32[3] = INT_MAX;
-
-                simd16_t negOneIntVec;
-                negOneIntVec.i32[0] = -1;
-                negOneIntVec.i32[1] = -1;
-                negOneIntVec.i32[2] = -1;
-                negOneIntVec.i32[3] = -1;
-
-                maxValueFld = emit->emitSimd16Const(maxValueIntVec);
-                negOneFld   = emit->emitSimd16Const(negOneIntVec);
+                minValueInt.i32[i] = INT_MIN;
             }
-            else
-            {
-                noway_assert(typeSize == EA_32BYTE);
-                simd32_t maxValueIntVec;
-                maxValueIntVec.i32[0] = INT_MAX;
-                maxValueIntVec.i32[1] = INT_MAX;
-                maxValueIntVec.i32[2] = INT_MAX;
-                maxValueIntVec.i32[3] = INT_MAX;
-                maxValueIntVec.i32[4] = INT_MAX;
-                maxValueIntVec.i32[5] = INT_MAX;
-                maxValueIntVec.i32[6] = INT_MAX;
-                maxValueIntVec.i32[7] = INT_MAX;
-
-                simd32_t negOneIntVec;
-                negOneIntVec.i32[0] = -1;
-                negOneIntVec.i32[1] = -1;
-                negOneIntVec.i32[2] = -1;
-                negOneIntVec.i32[3] = -1;
-                negOneIntVec.i32[4] = -1;
-                negOneIntVec.i32[5] = -1;
-                negOneIntVec.i32[6] = -1;
-                negOneIntVec.i32[7] = -1;
-
-                maxValueFld = emit->emitSimd32Const(maxValueIntVec);
-                negOneFld   = emit->emitSimd32Const(negOneIntVec);
-            }
+            CORINFO_FIELD_HANDLE minValueFld = typeSize == EA_16BYTE ? emit->emitSimd16Const(minValueInt.v128[0])
+                                                                     : emit->emitSimd32Const(minValueInt.v256[0]);
+            CORINFO_FIELD_HANDLE negOneFld   = typeSize == EA_16BYTE ? emit->emitSimd16Const(negOneIntVec.v128[0])
+                                                                     : emit->emitSimd32Const(negOneIntVec.v256[0]);
 
             // div-by-zero check
             emit->emitIns_SIMD_R_R_R(INS_xorpd, typeSize, tmpReg1, tmpReg1, tmpReg1, instOptions);
@@ -1959,7 +1924,7 @@ void CodeGen::genBaseIntrinsic(GenTreeHWIntrinsic* node, insOpts instOptions)
             genJumpToThrowHlpBlk(EJ_jne, SCK_DIV_BY_ZERO);
 
             // overflow check
-            emit->emitIns_SIMD_R_R_C(INS_pcmpeqd, typeSize, tmpReg1, op1Reg, maxValueFld, 0, instOptions);
+            emit->emitIns_SIMD_R_R_C(INS_pcmpeqd, typeSize, tmpReg1, op1Reg, minValueFld, 0, instOptions);
             emit->emitIns_SIMD_R_R_C(INS_pcmpeqd, typeSize, tmpReg2, op2Reg, negOneFld, 0, instOptions);
             emit->emitIns_SIMD_R_R_R(INS_pand, typeSize, tmpReg1, tmpReg1, tmpReg2, instOptions);
             emit->emitIns_R_R(INS_ptest, typeSize, tmpReg1, tmpReg1, instOptions);
