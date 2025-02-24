@@ -126,7 +126,7 @@ namespace ILCompiler.DependencyAnalysis.RiscV64
 
         public void EmitJMPIfZero(Register regSrc, ISymbolNode symbol)
         {
-            uint offset = symbol.RepresentsIndirectionCell ? 28u : 8u;
+            uint offset = symbol.RepresentsIndirectionCell ? 28u : 12u;
             uint encodedOffset = ((offset & 0x1e) << 7) | ((offset & 0x7e0) << 20) | ((offset & 0x800) >> 4) | ((offset & 0x1000) << 19);
             // bne regSrc, x0, offset
             Builder.EmitUInt((uint)(0x00001063 | ((uint)regSrc << 15) | encodedOffset));

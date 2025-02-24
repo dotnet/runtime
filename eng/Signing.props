@@ -61,6 +61,16 @@
     <FileExtensionSignInfo Include=".deb;.rpm" CertificateName="LinuxSign" />
   </ItemGroup>
 
+  <!--
+    Ensure that we sign the AZL3 RPM with the LinuxSignMariner key.
+    This package name has the version in it, so we need to use a wildcard to discover the right name.
+  -->
+  <ItemGroup>
+    <AzureLinuxPrereqsRPM Include="$(ArtifactsPackagesDir)**/dotnet-runtime-deps-*-azl.3-*.rpm" />
+    <FileSignInfo Include="@(AzureLinuxPrereqsRPM->'%(Filename)%(Extension)')" CertificateName="LinuxSignMariner" />
+  </ItemGroup>
+
+  <!-- In build signing and publishing without a join point -->
   <ItemGroup Condition="'$(EnableBlobArtifacts)' == 'true'">
     <Artifact Include="$(ArtifactsPackagesDir)**\*.tar.gz;
                        $(ArtifactsPackagesDir)**\*.zip;
