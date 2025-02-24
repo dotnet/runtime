@@ -191,6 +191,8 @@ namespace System.Numerics.Tests
                     return BigInteger.Max(num1, num2);
                 case "b>>":
                     return num1 >> (int)num2;
+                case "b>>>":
+                    return num1 >>> (int)num2;
                 case "b<<":
                     return num1 << (int)num2;
                 case "b^":
@@ -254,7 +256,7 @@ namespace System.Numerics.Tests
 
         private static string Print(byte[] bytes)
         {
-           return MyBigIntImp.PrintFormatX(bytes);
+            return MyBigIntImp.PrintFormatX(bytes);
         }
     }
 }
