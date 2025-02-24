@@ -304,12 +304,12 @@ public:
         return m_IsDataCollectionTarget;
     }
 
+#endif // defined(DEBUG)
+
     bool IsLateFailure() const
     {
         return m_IsLateFailure;
     }
-
-#endif // defined(DEBUG)
 
 protected:
     InlinePolicy(bool isPrejitRoot)
