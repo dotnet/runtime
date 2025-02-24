@@ -24,6 +24,7 @@
 #include <mono/metadata/debug-helpers.h>
 #include <mono/utils/mono-publib.h>
 #include <mono/jit/jit.h>
+#include <mono/metadata/profiler-private.h>
 
 struct _MonoProfiler {
 	gboolean verbose;
@@ -39,11 +40,12 @@ typedef struct _ProfilerStackFrame ProfilerStackFrame;
 
 struct _ProfilerStackFrame {
 	MonoMethod *method;
+	gpointer interp_frame;
 	double start;
 	bool should_record;
 };
 
-enum { MAX_STACK_DEPTH = 100 };
+enum { MAX_STACK_DEPTH = 600 };
 static ProfilerStackFrame profiler_stack_frames[MAX_STACK_DEPTH];
 // -1 means empty stack, we keep counting even after MAX_STACK_DEPTH is reached
 static int top_stack_frame_index;
@@ -91,6 +93,7 @@ method_enter (MonoProfiler *prof, MonoMethod *method, MonoProfilerCallContext *c
 		double now = newframe->start = mono_wasm_profiler_now ();
 		newframe->should_record = should_record_frame (now);
 		newframe->method = method;
+		newframe->interp_frame = ctx ? ctx->interp_frame : NULL;
 	}
 }
 
@@ -106,8 +109,10 @@ method_samplepoint (MonoProfiler *prof, MonoMethod *method, MonoProfilerCallCont
 	int top_index = is_over ? MAX_STACK_DEPTH - 1 : top_stack_frame_index;
 	ProfilerStackFrame *top_frame = &profiler_stack_frames[top_index];
 
-	// enter/leave are not balanced, perhaps due to different callspecs between AOT and interpreter
-	g_assert(is_over || top_frame->method == method);
+	if (!is_over) {
+		g_assertf(top_frame->method == method, "method_exc_leave: %d method mismatch top_frame %s != leave %s\n", top_stack_frame_index, mono_method_get_full_name (top_frame->method), mono_method_get_full_name (method));
+		g_assertf(!ctx || !top_frame->interp_frame || top_frame->interp_frame == ctx->interp_frame, "method_exc_leave: %d interp_frame mismatch top_frame %p != leave %p\n", top_stack_frame_index, top_frame->interp_frame, ctx->interp_frame);
+	}
 
 	if (!top_frame->should_record)
 	{
@@ -127,8 +132,10 @@ method_leave (MonoProfiler *prof, MonoMethod *method, MonoProfilerCallContext *c
 	int top_index = is_over ? MAX_STACK_DEPTH - 1 : top_stack_frame_index;
 	ProfilerStackFrame *top_frame = &profiler_stack_frames[top_index];
 	
-	// enter/leave are not balanced, perhaps due to different callspecs between AOT and interpreter
-	g_assert(is_over || top_frame->method == method);
+	if (!is_over) {
+		g_assertf(top_frame->method == method, "method_exc_leave: %d method mismatch top_frame %s != leave %s\n", top_stack_frame_index, mono_method_get_full_name (top_frame->method), mono_method_get_full_name (method));
+		g_assertf(!ctx || !top_frame->interp_frame || top_frame->interp_frame == ctx->interp_frame, "method_exc_leave: %d interp_frame mismatch top_frame %p != leave %p\n", top_stack_frame_index, top_frame->interp_frame, ctx->interp_frame);
+	}
 	
 	// pop top frame
 	top_stack_frame_index--;
@@ -146,13 +153,41 @@ method_leave (MonoProfiler *prof, MonoMethod *method, MonoProfilerCallContext *c
 }
 
 static void
-tail_call (MonoProfiler *prof, MonoMethod *method, MonoMethod *target)
+method_exc_leave (MonoProfiler *prof, MonoMethod *method, MonoObject *exc)
 {
-	method_leave (prof, method, NULL);
+	// enter/leave are not balanced, perhaps due to different callspecs between AOT and interpreter
+	g_assert(top_stack_frame_index >= 0);
+	
+	sample_skip_counter++;
+
+	bool is_over = top_stack_frame_index >= MAX_STACK_DEPTH;
+	int top_index = is_over ? MAX_STACK_DEPTH - 1 : top_stack_frame_index;
+	ProfilerStackFrame *top_frame = &profiler_stack_frames[top_index];
+	
+	if (top_frame->should_record || should_record_frame (mono_wasm_profiler_now ()))
+	{
+		// propagate should_record to parent, if any
+		if(top_index > 0)
+		{
+			profiler_stack_frames[top_index - 1].should_record = TRUE;
+		}
+
+		mono_wasm_profiler_record (method, top_frame->start);
+	}
+
+	// pop top frame
+	top_stack_frame_index--;
+
+	is_over = top_stack_frame_index >= MAX_STACK_DEPTH;
+	if (!is_over) {
+		top_index = is_over ? MAX_STACK_DEPTH - 1 : top_stack_frame_index;
+		top_frame = &profiler_stack_frames[top_index];
+		g_assertf(top_frame->method == method, "method_exc_leave: %d method mismatch top_frame %s != leave %s\n", top_stack_frame_index, mono_method_get_full_name (top_frame->method), mono_method_get_full_name (method));
+	}
 }
 
 static void
-method_exc_leave (MonoProfiler *prof, MonoMethod *method, MonoObject *exc)
+tail_call (MonoProfiler *prof, MonoMethod *method, MonoMethod *target)
 {
 	method_leave (prof, method, NULL);
 }
@@ -166,7 +201,7 @@ method_filter (MonoProfiler *prof, MonoMethod *method)
 		!mono_callspec_eval (method, &callspec))
 		return MONO_PROFILER_CALL_INSTRUMENTATION_NONE;
 
-	return 	MONO_PROFILER_CALL_INSTRUMENTATION_SAMPLEPOINT_CONTEXT |
+	return 	MONO_PROFILER_CALL_INSTRUMENTATION_SAMPLEPOINT |
 			MONO_PROFILER_CALL_INSTRUMENTATION_ENTER |
 			MONO_PROFILER_CALL_INSTRUMENTATION_LEAVE |
 			MONO_PROFILER_CALL_INSTRUMENTATION_TAIL_CALL |
