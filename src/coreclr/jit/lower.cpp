@@ -4171,10 +4171,10 @@ GenTree* Lowering::OptimizeConstCompare(GenTree* cmp)
         }
     }
 
-    // Optimize EQ/NE(op_that_sets_zf, 0) into op_that_sets_zf with GTF_SET_FLAGS + SETCC.
+    // Optimize EQ/NE/GT/GE/LT/LE(op_that_sets_zf, 0) into op_that_sets_zf with GTF_SET_FLAGS + SETCC.
     LIR::Use use;
-    if (cmp->OperIs(GT_EQ, GT_NE) && op2->IsIntegralConst(0) && op1->SupportsSettingZeroFlag() &&
-        BlockRange().TryGetUse(cmp, &use))
+    if (cmp->OperIs(GT_EQ, GT_NE, GT_GT, GT_GE, GT_LT, GT_LE) && op2->IsIntegralConst(0) &&
+        op1->SupportsSettingZeroFlag() && BlockRange().TryGetUse(cmp, &use))
     {
         op1->gtFlags |= GTF_SET_FLAGS;
         op1->SetUnusedValue();

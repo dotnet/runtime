@@ -121,6 +121,26 @@ namespace TestSub
                 fail = true;
             }
 
+            if (!SubsGreaterThan(5, 3))
+            {
+                fail = true;
+            }
+
+            if (!SubsGreaterThanEq(4, 4))
+            {
+                fail = true;
+            }
+
+            if (!SubsLessThan(7, 8))
+            {
+                fail = true;
+            }
+
+            if (!SubsLessThanEq(10, 10))
+            {
+                fail = true;
+            }
+
             if (fail)
             {
                 return 101;
@@ -303,6 +323,34 @@ namespace TestSub
             //ARM64-FULL-LINE: subs {{w[0-9]+}}, {{w[0-9]+}}, {{w[0-9]+}}
             //ARM64-FULL-LINE: subs {{w[0-9]+}}, {{w[0-9]+}}, {{w[0-9]+}}
             return (a - b == 0) | (c - d == 0);
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static bool SubsGreaterThan(int a, int b)
+        {
+            //ARM64-FULL-LINE: subs {{w[0-9]+}}, {{w[0-9]+}}, {{w[0-9]+}}
+            return a - b > 0;
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static bool SubsGreaterThanEq(int a, int b)
+        {
+            //ARM64-FULL-LINE: subs {{w[0-9]+}}, {{w[0-9]+}}, {{w[0-9]+}}
+            return a - b >= 0;
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static bool SubsLessThan(int a, int b)
+        {
+            //ARM64-FULL-LINE: subs {{w[0-9]+}}, {{w[0-9]+}}, {{w[0-9]+}}
+            return a - b < 0;
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static bool SubsLessThanEq(int a, int b)
+        {
+            //ARM64-FULL-LINE: subs {{w[0-9]+}}, {{w[0-9]+}}, {{w[0-9]+}}
+            return a - b <= 0;
         }
     }
 }

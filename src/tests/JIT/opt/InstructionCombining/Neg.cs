@@ -95,6 +95,26 @@ namespace TestNeg
                 fail = true;
             }
 
+            if (!NegsGreaterThan(-1))
+            {
+                fail = true;
+            }
+
+            if (!NegsGreaterThanEq(0))
+            {
+                fail = true;
+            }
+
+            if (!NegsLessThan(5))
+            {
+                fail = true;
+            }
+
+            if (!NegsLessThanEq(20))
+            {
+                fail = true;
+            }
+
             if (fail)
             {
                 return 101;
@@ -238,6 +258,34 @@ namespace TestNeg
             //ARM64-FULL-LINE: negs {{w[0-9]+}}, {{w[0-9]+}}, ASR #1
             //ARM64-FULL-LINE: negs {{w[0-9]+}}, {{w[0-9]+}}, LSL #1
             return (-(a>>1) != 0) | (-(b<<1) != 0);
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static bool NegsGreaterThan(int a)
+        {
+            //ARM64-FULL-LINE: negs {{w[0-9]+}}, {{w[0-9]+}}
+            return -a > 0;
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static bool NegsGreaterThanEq(int a)
+        {
+            //ARM64-FULL-LINE: negs {{w[0-9]+}}, {{w[0-9]+}}
+            return -a >= 0;
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static bool NegsLessThan(int a)
+        {
+            //ARM64-FULL-LINE: negs {{w[0-9]+}}, {{w[0-9]+}}
+            return -a < 0;
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static bool NegsLessThanEq(int a)
+        {
+            //ARM64-FULL-LINE: negs {{w[0-9]+}}, {{w[0-9]+}}
+            return -a <= 0;
         }
     }
 }
