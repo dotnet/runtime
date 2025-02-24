@@ -300,10 +300,7 @@ if(CLR_CMAKE_TARGET_LINUX)
   else(NOT CLR_CMAKE_TARGET_ANDROID)
     target_link_libraries(coreclrpal
       PUBLIC
-      ${ANDROID_GLOB}
-      ${LZMA}
-      PRIVATE
-      log)
+      ${ANDROID_GLOB})
   endif(NOT CLR_CMAKE_TARGET_ANDROID)
 
   target_link_libraries(coreclrpal

@@ -106,12 +106,6 @@ elseif(CLR_CMAKE_HOST_UNIX)
         )
     endif(CLR_CMAKE_HOST_HAIKU)
 
-    if(CLR_CMAKE_TARGET_ANDROID)
-        list(APPEND COREDBI_LIBRARIES
-            log
-        )
-    endif(CLR_CMAKE_TARGET_ANDROID)
-
     # Before llvm 16, lld was setting `--undefined-version` by default. The default was
     # flipped to `--no-undefined-version` in lld 16, so we will explicitly set it to
     # `--undefined-version` for our use-case.

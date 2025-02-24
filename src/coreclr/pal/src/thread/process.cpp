@@ -71,10 +71,6 @@ SET_DEFAULT_DEBUG_CHANNEL(PROCESS); // some headers have code with asserts, so d
 #include <sys/membarrier.h>
 #endif
 
-#if defined(TARGET_ANDROID)
-#include <android/log.h>
-#endif // defined(TARGET_ANDROID)
-
 #ifdef __APPLE__
 #include <pwd.h>
 #include <sys/sysctl.h>
@@ -2548,12 +2544,6 @@ PROCAbort(int signal, siginfo_t* siginfo)
     // Restore all signals; the SIGABORT handler to prevent recursion and
     // the others to prevent multiple core dumps from being generated.
     SEHCleanupSignals(false /* isChildProcess */);
-
-#if defined(TARGET_ANDROID)
-    // Ideally, MAIN_CLR_MODULE_NAME_A would be used, but cor.h can't
-    // currently be included in the pal.
-    __android_log_print(ANDROID_LOG_FATAL, "coreclr", "Aborting in %s:%u", __FILE_NAME__, __LINE__);
-#endif // defined(TARGET_ANDROID)
 
     // Abort the process after waiting for the core dump to complete
     abort();

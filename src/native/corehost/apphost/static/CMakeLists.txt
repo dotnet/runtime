@@ -309,8 +309,6 @@ target_link_libraries(
 if(CLR_CMAKE_TARGET_ANDROID)
     target_link_libraries(
         singlefilehost
-        PRIVATE
-        log
     )
 endif()
 

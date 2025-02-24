@@ -18,10 +18,6 @@
 #include "log.h"
 #include "utilcode.h"
 
-#if defined(TARGET_ANDROID)
-#include <android/log.h>
-#endif // defined(TARGET_ANDROID)
-
 #ifdef LOGGING
 
 #define DEFAULT_LOGFILE_NAME    W("COMPLUS.LOG")
@@ -375,16 +371,10 @@ VOID LogSpewAlwaysValist(const char *fmt, va_list args)
 
     if (LogFlags & LOG_ENABLE_CONSOLE_LOGGING)
     {
-#if defined(TARGET_ANDROID)
-        // TODO: priority should be configurable here (best, passed via a parameter)
-        //       likewise for the tag
-        __android_log_write(ANDROID_LOG_INFO, MAIN_CLR_MODULE_NAME_A, pBuffer);
-#else
         WriteFile(GetStdHandle(STD_OUTPUT_HANDLE), pBuffer, buflen, &written, 0);
         //<TODO>@TODO ...Unnecessary to flush console?</TODO>
         if (LogFlags & LOG_ENABLE_FLUSH_FILE)
             FlushFileBuffers( GetStdHandle(STD_OUTPUT_HANDLE) );
-#endif // defined(TARGET_ANDROID)
     }
 
     if (LogFlags & LOG_ENABLE_DEBUGGER_LOGGING)
