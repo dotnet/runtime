@@ -157,29 +157,26 @@ See [Debugging Android](../../debugging/mono/android-debugging.md)
 
 ## Upgrading the Android NDK Version in CI Pipelines
 
-The Android NDK LTS version is released annually. CI pipelines retrieve the NDK version from Docker images hosted in the [dotnet-buildtools-prereqs-docker](https://github.com/dotnet/dotnet-buildtools-prereqs-docker) repository.  
-For reference, see an example Dockerfile:  
-[Azure Linux 3.0 .NET 10.0 Android Dockerfile](https://github.com/dotnet/dotnet-buildtools-prereqs-docker/blob/main/src/azurelinux/3.0/net10.0/android/amd64/Dockerfile).  
+The Android NDK LTS version is released annually. CI pipelines retrieve the NDK version from Docker images hosted in the [dotnet-buildtools-prereqs-docker](https://github.com/dotnet/dotnet-buildtools-prereqs-docker) repository.
+For reference, see an example Dockerfile:
+[Azure Linux 3.0 .NET 10.0 Android Dockerfile](https://github.com/dotnet/dotnet-buildtools-prereqs-docker/blob/main/src/azurelinux/3.0/net10.0/android/amd64/Dockerfile).
 
 To upgrade the NDK version used in CI for building and testing Android, follow these steps:
 
 ### 1. Verify the New NDK Version Locally
-- Download the new NDK version.  
-- Test the local build using the new NDK by building a sample Android app.  
-- Ensure **AOT** and **AOT_WITH_LIBRARY_FILES** are enabled in the build.  
+- Download the new NDK version.
+- Test the local build using the new NDK by building a sample Android app.
+- Ensure **AOT** and **AOT_WITH_LIBRARY_FILES** are enabled in the build.
 
-### 2. Test the New NDK in CI
-- Create a new Docker image containing the updated NDK version.  
-- Open a **draft PR** in the **runtime** repository that updates the Dockerfile reference to use the new image.  
-- Monitor CI results and fix any failures.  
-
-### 3. Commit Changes Without Updating the Docker Reference
-- Once CI is green, **commit only the necessary changes** (e.g., fixes, build adjustments) to the respective branch.  
-- **Do not** change the Docker image reference in the final commit.  
-- Merge the PR.  
+### 2. Test the New NDK in CI and Fix Issues
+- Create a new Docker image containing the updated NDK version.
+- Open a **draft PR** in the **runtime** repository that updates the Dockerfile reference to use the new image.
+- Monitor CI results and fix any failures.
+- Once CI is green, **commit only the necessary changes** (e.g., fixes, build adjustments) to the respective branch.
+- **Do not** change the Docker image reference in the final commit.
 
 ### 4. Update the NDK Version in the Prerequisites Repository
-- Update the NDK version in the [dotnet-buildtools-prereqs-docker](https://github.com/dotnet/dotnet-buildtools-prereqs-docker) repository by modifying the Dockerfile.  
-- The updated NDK will automatically flow to all builds of a given branch once merged.  
+- Update the NDK version in the [dotnet-buildtools-prereqs-docker](https://github.com/dotnet/dotnet-buildtools-prereqs-docker) repository by modifying the Dockerfile.
+- The updated NDK will automatically flow to all builds of a given branch once merged.
 
 By following these steps, you ensure a smooth upgrade of the Android NDK in CI while maintaining stability and compatibility.
