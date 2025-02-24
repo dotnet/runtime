@@ -78,11 +78,11 @@ void DecomposeLongs::DecomposeBlock(BasicBlock* block)
 // Return Value:
 //    None.
 //
-void DecomposeLongs::DecomposeRange(Compiler* compiler, LIR::Range& range)
+void DecomposeLongs::DecomposeRange(Compiler* compiler, Lowering* lowering, LIR::Range& range)
 {
     assert(compiler != nullptr);
 
-    DecomposeLongs decomposer(compiler);
+    DecomposeLongs decomposer(compiler, lowering);
     decomposer.m_range = &range;
 
     decomposer.DecomposeRangeHelper();
@@ -159,27 +159,15 @@ GenTree* DecomposeLongs::DecomposeNode(GenTree* tree)
 
         if (user->OperIsHWIntrinsic())
         {
-            if (tree->OperIs(GT_CNS_LNG) || (tree->OperIs(GT_IND, GT_LCL_FLD) && (user == tree->gtNext)))
+            if (tree->OperIs(GT_CNS_LNG) ||
+                (tree->OperIs(GT_IND, GT_LCL_FLD) && m_lowering->IsSafeToContainMem(user, tree)))
             {
                 return tree->gtNext;
             }
         }
         else if (user->OperIs(GT_STOREIND) && tree->OperIsHWIntrinsic() && m_compiler->opts.OptimizationEnabled())
         {
-            // We're looking for this common pattern, with operands in either order in the LIR sequence:
-            //   t1 = *  HWINTRINSIC long   ToScalar
-            //   t0 =    LCL_VAR     byref
-            //        /--*  t0       byref
-            //        +--*  t1       long
-            //        *  STOREIND    long
-
-            GenTree* next = tree->gtNext;
-            if ((user != next) && !m_compiler->gtTreeHasSideEffects(next, GTF_SIDE_EFFECT))
-            {
-                next = next->gtNext;
-            }
-
-            if ((user == next) && HWIntrinsicInfo::IsVectorToScalar(tree->AsHWIntrinsic()->GetHWIntrinsicId()))
+            if (m_lowering->IsSafeToContainMem(user, tree))
             {
                 return tree->gtNext;
             }

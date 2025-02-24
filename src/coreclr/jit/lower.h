@@ -502,6 +502,13 @@ public:
     bool IsContainableHWIntrinsicOp(GenTreeHWIntrinsic* parentNode, GenTree* childNode, bool* supportsRegOptional);
 #endif // FEATURE_HW_INTRINSICS
 
+    // Checks for memory conflicts in the instructions between childNode and parentNode, and returns true if childNode
+    // can be contained.
+    bool IsSafeToContainMem(GenTree* parentNode, GenTree* childNode) const;
+
+    // Similar to above, but allows bypassing a "transparent" parent.
+    bool IsSafeToContainMem(GenTree* grandparentNode, GenTree* parentNode, GenTree* childNode) const;
+
     static void TransformUnusedIndirection(GenTreeIndir* ind, Compiler* comp, BasicBlock* block);
 
 private:
@@ -532,13 +539,6 @@ private:
                                  GenTree* rangeEnd,
                                  GenTree* endExclusive,
                                  GenTree* ignoreNode) const;
-
-    // Checks for memory conflicts in the instructions between childNode and parentNode, and returns true if childNode
-    // can be contained.
-    bool IsSafeToContainMem(GenTree* parentNode, GenTree* childNode) const;
-
-    // Similar to above, but allows bypassing a "transparent" parent.
-    bool IsSafeToContainMem(GenTree* grandparentNode, GenTree* parentNode, GenTree* childNode) const;
 
     // Check if marking an operand of a node as reg-optional is safe.
     bool IsSafeToMarkRegOptional(GenTree* parentNode, GenTree* node) const;

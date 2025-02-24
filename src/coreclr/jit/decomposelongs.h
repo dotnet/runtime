@@ -14,19 +14,21 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #define _DECOMPOSELONGS_H_
 
 #include "compiler.h"
+#include "lower.h"
 
 class DecomposeLongs
 {
 public:
-    DecomposeLongs(Compiler* compiler)
+    DecomposeLongs(Compiler* compiler, Lowering* lowering)
         : m_compiler(compiler)
+        , m_lowering(lowering)
     {
     }
 
     void PrepareForDecomposition();
     void DecomposeBlock(BasicBlock* block);
 
-    static void DecomposeRange(Compiler* compiler, LIR::Range& range);
+    static void DecomposeRange(Compiler* compiler, Lowering* lowering, LIR::Range& range);
 
 private:
     inline LIR::Range& Range() const
@@ -81,6 +83,7 @@ private:
 
     // Data
     Compiler*   m_compiler;
+    Lowering*   m_lowering;
     LIR::Range* m_range;
 };
 
