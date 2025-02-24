@@ -723,7 +723,8 @@ namespace System.Threading
             // Pop each work item off the local queue and push it onto the global. This is a
             // bounded loop as no other thread is allowed to push into this thread's queue.
             ThreadPoolWorkQueue queue = ThreadPool.s_workQueue;
-            bool anyWorkItemMoved = false;
+            bool addedHighPriorityWorkItem = false;
+            bool ensureThreadRequest = false;
             while (tl.workStealingQueue.LocalPop() is object workItem)
             {
                 // If there's an unexpected exception here that happens to get handled, the lost work item, or missing thread
@@ -732,20 +733,28 @@ namespace System.Threading
                 try
                 {
                     queue.highPriorityWorkItems.Enqueue(workItem);
+                    addedHighPriorityWorkItem = true;
                 }
                 catch (OutOfMemoryException)
                 {
                     // This is not expected to throw under normal circumstances
                     tl.workStealingQueue.LocalPush(workItem);
+
+                    // A work item had been removed temporarily and other threads may have missed stealing it, so ensure that
+                    // there will be a thread request
+                    ensureThreadRequest = true;
                     break;
                 }
-
-                anyWorkItemMoved = true;
             }
 
-            if (anyWorkItemMoved)
+            if (addedHighPriorityWorkItem)
             {
                 Volatile.Write(ref queue._mayHaveHighPriorityWorkItems, true);
+                ensureThreadRequest = true;
+            }
+
+            if (ensureThreadRequest)
+            {
                 queue.EnsureThreadRequested();
             }
         }
