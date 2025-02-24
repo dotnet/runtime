@@ -29,6 +29,7 @@
 #define LOG_ENABLE_DEBUGGER_LOGGING     0x0020
 #define LOG_ENABLE                      0x0040
 
+
 static          DWORD        LogFlags                    = 0;
 static          CQuickWSTR   szLogFileName;
 static          HANDLE       LogFileHandle               = INVALID_HANDLE_VALUE;
@@ -416,3 +417,4 @@ VOID LogSpewAlways (const char *fmt, ... )
 }
 
 #endif // LOGGING
+

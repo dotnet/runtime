@@ -397,4 +397,7 @@ extern DummyGlobalContract ___contract;
 #endif
 
 void LogErrorToHost(const char* format, ...);
+
 #endif // !_common_h_
+
+
