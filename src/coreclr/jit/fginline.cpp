@@ -1230,13 +1230,13 @@ void Compiler::fgInvokeInlineeCompiler(GenTreeCall* call, InlineResult* inlineRe
     InlineInfo            inlineInfo{};
     CORINFO_METHOD_HANDLE fncHandle = call->gtCallMethHnd;
 
-    inlineInfo.fncHandle              = fncHandle;
-    inlineInfo.iciCall                = call;
-    inlineInfo.iciStmt                = fgMorphStmt;
-    inlineInfo.iciBlock               = compCurBB;
-    inlineInfo.thisDereferencedFirst  = false;
-    inlineInfo.inlineResult           = inlineResult;
-    inlineInfo.inlInstParamArgInfo    = nullptr;
+    inlineInfo.fncHandle             = fncHandle;
+    inlineInfo.iciCall               = call;
+    inlineInfo.iciStmt               = fgMorphStmt;
+    inlineInfo.iciBlock              = compCurBB;
+    inlineInfo.thisDereferencedFirst = false;
+    inlineInfo.inlineResult          = inlineResult;
+    inlineInfo.inlInstParamArgInfo   = nullptr;
 #ifdef FEATURE_SIMD
     inlineInfo.hasSIMDTypeArgLocalOrReturn = false;
 #endif // FEATURE_SIMD

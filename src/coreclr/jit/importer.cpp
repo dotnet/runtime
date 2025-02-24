@@ -11191,7 +11191,7 @@ bool Compiler::impReturnInstruction(int prefixFlags, OPCODE& opcode)
                             // This return site type differs from earlier seen sites,
                             // so reset the info and we'll fall back to using the method's
                             // declared return type for the return spill temp.
-                            impInlineInfo->inlineContext->retExprClassHnd = nullptr;
+                            impInlineInfo->inlineContext->retExprClassHnd        = nullptr;
                             impInlineInfo->inlineContext->retExprClassHndIsExact = false;
                         }
                         else

@@ -321,8 +321,7 @@ PhaseStatus Compiler::fgPostImportationCleanup()
                     (returnSpillVarDsc->lvSingleDef || lvaInlineeReturnSpillTempFreshlyCreated))
                 {
                     lvaUpdateClass(lvaInlineeReturnSpillTemp, retExprClassHnd,
-                                   impInlineInfo->inlineContext->retExprClassHndIsExact,
-                                   false);
+                                   impInlineInfo->inlineContext->retExprClassHndIsExact, false);
                 }
             }
         }
