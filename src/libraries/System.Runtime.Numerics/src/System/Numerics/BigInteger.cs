@@ -1701,7 +1701,7 @@ namespace System.Numerics
             }
 
             if (bitsFromPool != null)
-                    ArrayPool<uint>.Shared.Return(bitsFromPool);
+                ArrayPool<uint>.Shared.Return(bitsFromPool);
 
             return result;
         }
@@ -2636,7 +2636,7 @@ namespace System.Numerics
 
             if (zdFromPool != null)
                 ArrayPool<uint>.Shared.Return(zdFromPool);
-        exit:
+            exit:
             if (xdFromPool != null)
                 ArrayPool<uint>.Shared.Return(xdFromPool);
 
@@ -3239,7 +3239,16 @@ namespace System.Numerics
         public static BigInteger RotateLeft(BigInteger value, int rotateAmount)
         {
             value.AssertValid();
-            int byteCount = (value._bits is null) ? sizeof(int) : (value._bits.Length * 4);
+
+            bool negx = value._sign < 0;
+            ReadOnlySpan<uint> bits = value._bits ?? stackalloc uint[1] { NumericsHelpers.Abs(value._sign) };
+            int xl = bits.Length;
+
+            if (negx && bits[^1] >= kuMaskHighBit
+                && !(bits.IndexOfAnyExcept(0u) == bits.Length - 1 && bits[^1] == kuMaskHighBit))
+                ++xl;
+
+            int byteCount = xl * 4;
 
             // Normalize the rotate amount to drop full rotations
             rotateAmount = (int)(rotateAmount % (byteCount * 8L));
@@ -3256,14 +3265,13 @@ namespace System.Numerics
             (int digitShift, int smallShift) = Math.DivRem(rotateAmount, kcbitUint);
 
             uint[]? xdFromPool = null;
-            int xl = value._bits?.Length ?? 1;
-
             Span<uint> xd = (xl <= BigIntegerCalculator.StackAllocThreshold)
                           ? stackalloc uint[BigIntegerCalculator.StackAllocThreshold]
                           : xdFromPool = ArrayPool<uint>.Shared.Rent(xl);
             xd = xd.Slice(0, xl);
+            xd[^1] = 0;
 
-            bool negx = value.GetPartsForBitManipulation(xd);
+            bits.CopyTo(xd);
 
             int zl = xl;
             uint[]? zdFromPool = null;
@@ -3374,7 +3382,17 @@ namespace System.Numerics
         public static BigInteger RotateRight(BigInteger value, int rotateAmount)
         {
             value.AssertValid();
-            int byteCount = (value._bits is null) ? sizeof(int) : (value._bits.Length * 4);
+
+
+            bool negx = value._sign < 0;
+            ReadOnlySpan<uint> bits = value._bits ?? stackalloc uint[1] { NumericsHelpers.Abs(value._sign) };
+            int xl = bits.Length;
+
+            if (negx && bits[^1] >= kuMaskHighBit
+                && !(bits.IndexOfAnyExcept(0u) == bits.Length - 1 && bits[^1] == kuMaskHighBit))
+                ++xl;
+
+            int byteCount = xl * 4;
 
             // Normalize the rotate amount to drop full rotations
             rotateAmount = (int)(rotateAmount % (byteCount * 8L));
@@ -3391,14 +3409,13 @@ namespace System.Numerics
             (int digitShift, int smallShift) = Math.DivRem(rotateAmount, kcbitUint);
 
             uint[]? xdFromPool = null;
-            int xl = value._bits?.Length ?? 1;
-
             Span<uint> xd = (xl <= BigIntegerCalculator.StackAllocThreshold)
                           ? stackalloc uint[BigIntegerCalculator.StackAllocThreshold]
                           : xdFromPool = ArrayPool<uint>.Shared.Rent(xl);
             xd = xd.Slice(0, xl);
+            xd[^1] = 0;
 
-            bool negx = value.GetPartsForBitManipulation(xd);
+            bits.CopyTo(xd);
 
             int zl = xl;
             uint[]? zdFromPool = null;
@@ -3445,19 +3462,12 @@ namespace System.Numerics
             {
                 int carryShift = kcbitUint - smallShift;
 
-                int dstIndex = 0;
-                int srcIndex = digitShift;
+                int dstIndex = xd.Length - 1;
+                int srcIndex = digitShift == 0
+                    ? xd.Length - 1
+                    : digitShift - 1;
 
-                uint carry = 0;
-
-                if (digitShift == 0)
-                {
-                    carry = xd[^1] << carryShift;
-                }
-                else
-                {
-                    carry = xd[srcIndex - 1] << carryShift;
-                }
+                uint carry = xd[digitShift] << carryShift;
 
                 do
                 {
@@ -3466,22 +3476,22 @@ namespace System.Numerics
                     zd[dstIndex] = (part >> smallShift) | carry;
                     carry = part << carryShift;
 
-                    dstIndex++;
-                    srcIndex++;
+                    dstIndex--;
+                    srcIndex--;
                 }
-                while (srcIndex < xd.Length);
+                while ((uint)srcIndex < (uint)xd.Length);
 
-                srcIndex = 0;
+                srcIndex = xd.Length - 1;
 
-                while (dstIndex < zd.Length)
+                while ((uint)dstIndex < (uint)zd.Length)
                 {
                     uint part = xd[srcIndex];
 
                     zd[dstIndex] = (part >> smallShift) | carry;
                     carry = part << carryShift;
 
-                    dstIndex++;
-                    srcIndex++;
+                    dstIndex--;
+                    srcIndex--;
                 }
             }
 

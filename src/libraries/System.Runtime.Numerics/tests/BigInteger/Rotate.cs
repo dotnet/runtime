@@ -174,8 +174,8 @@ namespace System.Numerics.Tests
         public void RunSmallTests()
         {
             foreach (int i in new int[] {
-                    0,
-                    1,
+                0,
+                1,
                     16,
                     31,
                     32,
