@@ -5864,9 +5864,9 @@ void Compiler::fgMorphTailCallViaJitHelper(GenTreeCall* call)
         call->gtArgs.Remove(thisArg);
     }
 
-    unsigned nOldStkArgsWords =
-        (compArgSize - (codeGen->intRegState.rsCalleeRegArgCount * REGSIZE_BYTES)) / REGSIZE_BYTES;
-    GenTree* arg3Node = gtNewIconNode((ssize_t)nOldStkArgsWords, TYP_I_IMPL);
+    assert(lvaParameterStackSize == (compArgSize - codeGen->intRegState.rsCalleeRegArgCount * REGSIZE_BYTES));
+    unsigned nOldStkArgsWords = lvaParameterStackSize / REGSIZE_BYTES;
+    GenTree* arg3Node         = gtNewIconNode((ssize_t)nOldStkArgsWords, TYP_I_IMPL);
     CallArg* arg3 =
         call->gtArgs.PushBack(this, NewCallArg::Primitive(arg3Node).WellKnown(WellKnownArg::X86TailCallSpecialArg));
     // Inject a placeholder for the count of outgoing stack arguments that the Lowering phase will generate.
