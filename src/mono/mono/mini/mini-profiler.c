@@ -81,7 +81,7 @@ mini_profiler_emit_enter (MonoCompile *cfg)
 
 	gboolean trace = mono_jit_trace_calls != NULL && mono_trace_eval (cfg->method);
 
-	if (!trace && (!MONO_CFG_PROFILE (cfg, ENTER) || (cfg->compile_aot && !can_encode_method_ref (cfg->method))))
+	if (!trace && (!(MONO_CFG_PROFILE (cfg, ENTER) || MONO_CFG_PROFILE (cfg, ENTER_CONTEXT)) || (cfg->compile_aot && !can_encode_method_ref (cfg->method))))
 		return;
 
 	MonoInst *iargs [3];
@@ -109,7 +109,7 @@ mini_profiler_emit_samplepoint (MonoCompile *cfg)
 
 	gboolean trace = mono_jit_trace_calls != NULL && mono_trace_eval (cfg->method);
 
-	if (!trace && (!MONO_CFG_PROFILE (cfg, SAMPLEPOINT_CONTEXT) || (cfg->compile_aot && !can_encode_method_ref (cfg->method))))
+	if (!trace && (!(MONO_CFG_PROFILE (cfg, SAMPLEPOINT) || MONO_CFG_PROFILE (cfg, SAMPLEPOINT_CONTEXT))|| (cfg->compile_aot && !can_encode_method_ref (cfg->method))))
 		return;
 
 	MonoInst *iargs [3];
@@ -133,7 +133,7 @@ mini_profiler_emit_leave (MonoCompile *cfg, MonoInst *ret)
 
 	gboolean trace = mono_jit_trace_calls != NULL && mono_trace_eval (cfg->method);
 
-	if (!trace && (!MONO_CFG_PROFILE (cfg, LEAVE) || (cfg->compile_aot && !can_encode_method_ref (cfg->method))))
+	if (!trace && (!(MONO_CFG_PROFILE (cfg, LEAVE) || MONO_CFG_PROFILE (cfg, LEAVE_CONTEXT)) || (cfg->compile_aot && !can_encode_method_ref (cfg->method))))
 		return;
 
 	MonoInst *iargs [3];

@@ -739,7 +739,7 @@ handle_branch (TransformData *td, int long_op, int offset)
 		guint16 samplepoint_profiling = 0;
 		if (mono_jit_trace_calls != NULL && mono_trace_eval (rtm->method))
 			samplepoint_profiling |= TRACING_FLAG;
-		if (rtm->prof_flags & MONO_PROFILER_CALL_INSTRUMENTATION_SAMPLEPOINT_CONTEXT)
+		if (rtm->prof_flags & (MONO_PROFILER_CALL_INSTRUMENTATION_SAMPLEPOINT | MONO_PROFILER_CALL_INSTRUMENTATION_SAMPLEPOINT_CONTEXT ))
 			samplepoint_profiling |= PROFILING_FLAG;
 		if (samplepoint_profiling) {
 			interp_add_ins (td, MINT_PROF_SAMPLEPOINT);
@@ -5376,14 +5376,16 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 			td->has_localloc = TRUE;
 		}
 
-		guint16 enter_profiling = 0;
-		if (mono_jit_trace_calls != NULL && mono_trace_eval (method))
-			enter_profiling |= TRACING_FLAG;
-		if (rtm->prof_flags & MONO_PROFILER_CALL_INSTRUMENTATION_ENTER)
-			enter_profiling |= PROFILING_FLAG;
-		if (enter_profiling) {
-			interp_add_ins (td, MINT_PROF_ENTER);
-			td->last_ins->data [0] = enter_profiling;
+		if(!inlining) {
+			guint16 enter_profiling = 0;
+			if (mono_jit_trace_calls != NULL && mono_trace_eval (method))
+				enter_profiling |= TRACING_FLAG;
+			if (rtm->prof_flags & (MONO_PROFILER_CALL_INSTRUMENTATION_ENTER | MONO_PROFILER_CALL_INSTRUMENTATION_ENTER_CONTEXT))
+				enter_profiling |= PROFILING_FLAG;
+			if (enter_profiling) {
+				interp_add_ins (td, MINT_PROF_ENTER);
+				td->last_ins->data [0] = enter_profiling;
+			}
 		}
 
 		/*
@@ -5948,7 +5950,7 @@ retry_emit:
 			guint16 exit_profiling = 0;
 			if (mono_jit_trace_calls != NULL && mono_trace_eval (method))
 				exit_profiling |= TRACING_FLAG;
-			if (rtm->prof_flags & MONO_PROFILER_CALL_INSTRUMENTATION_LEAVE)
+			if (rtm->prof_flags & (MONO_PROFILER_CALL_INSTRUMENTATION_LEAVE | MONO_PROFILER_CALL_INSTRUMENTATION_LEAVE_CONTEXT))
 				exit_profiling |= PROFILING_FLAG;
 			if (exit_profiling) {
 				/* This does the return as well */

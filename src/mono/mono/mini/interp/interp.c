@@ -3893,7 +3893,7 @@ interp_ldvirtftn_delegate (gpointer arg, MonoDelegate *del)
 
 #define INTERP_PROFILER_RAISE(name_lower, name_upper) \
 	if ((flag & TRACING_FLAG) || ((flag & PROFILING_FLAG) && MONO_PROFILER_ENABLED (method_ ## name_lower) && \
-			(frame->imethod->prof_flags & MONO_PROFILER_CALL_INSTRUMENTATION_ ## name_upper ## _CONTEXT))) { \
+			(frame->imethod->prof_flags & (MONO_PROFILER_CALL_INSTRUMENTATION_ ## name_upper ## _CONTEXT | MONO_PROFILER_CALL_INSTRUMENTATION_ ## name_upper)))) { \
 		MonoProfilerCallContext *prof_ctx = g_new0 (MonoProfilerCallContext, 1);\
 		prof_ctx->interp_frame = frame;\
 		prof_ctx->method = frame->imethod->method; \
