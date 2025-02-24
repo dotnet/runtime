@@ -1100,6 +1100,16 @@ void CEEInfo::resolveToken(/* IN, OUT */ CORINFO_RESOLVED_TOKEN * pResolvedToken
             th = ClassLoader::LoadArrayTypeThrowing(th);
             break;
 
+        case CORINFO_TOKENKIND_Await:
+            // in rare cases a method that returns Task is not actually TaskReturning (i.e. returns T).
+            // we cannot resolve to an async2 variant in such case.
+            // return NULL, so that caller would re-resolve as a regular method call
+            pMD = pMD->IsTaskReturningMethod() ?
+                pMD->GetAsyncOtherVariant(/*allowInstParam*/FALSE):
+                NULL;
+
+            break;
+
         default:
             // Disallow ELEMENT_TYPE_BYREF and ELEMENT_TYPE_VOID
             if (et == ELEMENT_TYPE_BYREF || et == ELEMENT_TYPE_VOID)

@@ -8947,7 +8947,63 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 // many other places.  We unfortunately embed that knowledge here.
                 if (opcode != CEE_CALLI)
                 {
-                    _impResolveToken(CORINFO_TOKENKIND_Method);
+                    bool isAwait = false;
+                    if (JitConfig.JitOptimizeAwait())
+                    {
+                        // If we see the following code pattern in runtime async methods:
+                        //
+                        //    call[virt] <Method>
+                        //    call       <Await>
+                        //
+                        //  we emit an eqivalent of
+                        //
+                        //    call[virt] <RtMethod>
+                        //
+                        //  where "RtMethod" is the runtime-async counterpart of a Task-returning method.
+                        //
+                        //  NOTE: we could potentially check if Method is not a thunk and, in cases when we can tell,
+                        //        bypass this optimization. Otherwise in a non-thunk case we would be
+                        //        replacing the pattern with a call to a thunk, which contains roughly the same code.
+
+                        const BYTE* nextOpcode = codeAddr + sizeof(mdToken);
+                        if (compIsAsync2() && (nextOpcode + sizeof(mdToken) < codeEndp) &&
+                            (getU1LittleEndian(nextOpcode) == CEE_CALL))
+                        {
+                            // resolve the next token
+                            CORINFO_RESOLVED_TOKEN nextCallTok;
+                            impResolveToken(nextOpcode + 1, &nextCallTok, CORINFO_TOKENKIND_Method);
+
+                            // check if it is an Await intrinsic
+                            if (eeIsIntrinsic(nextCallTok.hMethod) &&
+                                lookupNamedIntrinsic(nextCallTok.hMethod) == NI_System_Runtime_CompilerServices_RuntimeHelpers_Await)
+                            {
+                                // yes, this is an Await
+                                isAwait = true;
+                            }
+                        }
+                    }
+
+                    if (isAwait)
+                    {
+                        _impResolveToken(CORINFO_TOKENKIND_Await);
+                        if (resolvedToken.hMethod != NULL)
+                        {
+                            // There is a runtime async variant that is implicitly awaitable, just call that.
+                            // Skip the call to `Await`
+                            codeAddr += 1 + sizeof(mdToken);
+                        }
+                        else
+                        {
+                            // This can happen in rare cases when the Task-returning method is not a runtime Async function.
+                            // For example "T M1<T>(T arg) => arg" when called with a Task argument.
+                            // Treat that as a regualr call that is Awaited
+                            _impResolveToken(CORINFO_TOKENKIND_Method);
+                        }
+                    }
+                    else
+                    {
+                        _impResolveToken(CORINFO_TOKENKIND_Method);
+                    }
 
                     eeGetCallInfo(&resolvedToken,
                                   (prefixFlags & PREFIX_CONSTRAINED) ? &constrainedResolvedToken : nullptr,

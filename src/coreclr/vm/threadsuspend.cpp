@@ -4909,15 +4909,6 @@ void STDCALL OnHijackWorker(HijackArgs * pArgs)
 #endif // HIJACK_NONINTERRUPTIBLE_THREADS
 }
 
-bool IsSpecialCaseAsyncRet(MethodDesc* pMD)
-{
-    // TODO: What's the right way to do this through CoreLibBinder without
-    // causing loading to happen? Also, can we just mark them as async2 in SPC,
-    // or force them to be fully interruptible?
-    LPCUTF8 name = pMD->GetName();
-    return strcmp(name, "UnsafeAwaitAwaiterFromRuntimeAsync") == 0 || strcmp(name, "AwaitAwaiterFromRuntimeAsync") == 0;
-}
-
 static bool GetReturnAddressHijackInfo(EECodeInfo *pCodeInfo, ReturnKind *pReturnKind, bool* hasAsyncRet)
 {
     GCInfoToken gcInfoToken = pCodeInfo->GetGCInfoToken();
@@ -4928,8 +4919,7 @@ static bool GetReturnAddressHijackInfo(EECodeInfo *pCodeInfo, ReturnKind *pRetur
     *hasAsyncRet = false;
 
     MethodDesc* pMD = pCodeInfo->GetMethodDesc();
-    *hasAsyncRet = pMD->IsAsync2Method() ||
-        (pMD->IsIntrinsic() && IsSpecialCaseAsyncRet(pMD));
+    *hasAsyncRet = pMD->IsAsync2Method();
 
     return true;
 }

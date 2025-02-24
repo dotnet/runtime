@@ -3595,17 +3595,27 @@ MethodTableBuilder::EnumerateClassMethods()
                 if (IsAsyncTaskMethodTaskReturningMethod(asyncMethodType))
                 {
                     // ordinary Task-returning method:
-                    //    declare an ordinary method and add a helper thunk with Async2 signature
+                    //    declare a TaskReturning method and add a helper thunk with Async2 signature
                     // 
                     // IsMiAsync Task-returning method:
-                    //    declare an Async method and add a helper method with the actual implementation
-                    //    the Async method becomes a thunk to the implementation helper.
-                    pNewMethod->SetAsyncMethodKind(IsMiAsync(dwImplFlags) ? AsyncMethodKind::Async : AsyncMethodKind::NotAsync);
+                    //    declare a RuntimeAsync method and add a helper method with the actual implementation
+                    //    the RuntimeAsync method becomes a thunk to the implementation helper.
+                    pNewMethod->SetAsyncMethodKind(IsMiAsync(dwImplFlags) ? AsyncMethodKind::RuntimeAsync : AsyncMethodKind::TaskReturning);
                 }
                 else
                 {
                     _ASSERTE(IsAsyncTaskMethodNormal(asyncMethodType));
-                    pNewMethod->SetAsyncMethodKind(AsyncMethodKind::NotAsync);
+
+                    if (IsMiAsync(dwImplFlags))
+                    {
+                        // TODO: explicitly-async methods have special semantics that is useful in the implementation of runtime async itself.
+                        //       It should not be valid to declare this outside of runtime infrastructure methods. (exact criteria TBD)
+                        pNewMethod->SetAsyncMethodKind(AsyncMethodKind::AsyncImplExplicit);
+                    }
+                    else
+                    {
+                        pNewMethod->SetAsyncMethodKind(AsyncMethodKind::NotAsync);
+                    }
                 }
 
                 pDeclaredMethod = pNewMethod;
