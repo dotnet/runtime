@@ -5,7 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net.WebSockets;
-using System.Net.WebSockets.Tests;
+using System.Net.Test.Common;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -20,20 +20,16 @@ namespace NetCoreServer
         {
             try
             {
-                if (!context.WebSockets.IsWebSocketRequest)
+                WebSocket socket = await WebSocketAcceptHelper.AcceptAsync(context);
+                if (socket is null)
                 {
-                    context.Response.StatusCode = 200;
-                    context.Response.ContentType = "text/plain";
-                    await context.Response.WriteAsync("Not a websocket request");
-
                     return;
                 }
 
-                WebSocket socket = await context.WebSockets.AcceptWebSocketAsync();
-                await WebSocketEchoHelper.ProcessHeadersRequest(
-                    socket,
-                    context.Request.Headers.Select(h => new KeyValuePair<string, string>(h.Key, h.Value.ToString())));
+                var headers = context.Request.Headers.Select(
+                        h => new KeyValuePair<string, string>(h.Key, h.Value.ToString()))
 
+                await WebSocketEchoHelper.RunEchoHeaders(socket, headers);
             }
             catch (Exception)
             {

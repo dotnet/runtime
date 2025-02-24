@@ -13,6 +13,8 @@ namespace System.Net.WebSockets.Client.Tests
 {
     public static class WebSocketHelper
     {
+        public const string OriginalQueryStringHeader = "x-original-query-string";
+
         private static readonly Lazy<bool> s_WebSocketSupported = new Lazy<bool>(InitWebSocketSupported);
         public static bool WebSocketsSupported { get { return s_WebSocketSupported.Value; } }
 
@@ -21,6 +23,7 @@ namespace System.Net.WebSockets.Client.Tests
             WebSocketMessageType type,
             int timeOutMilliseconds,
             ITestOutputHelper output,
+            Action<ClientWebSocketOptions> configureOptions,
             HttpMessageInvoker? invoker = null)
         {
             var cts = new CancellationTokenSource(timeOutMilliseconds);
@@ -29,7 +32,7 @@ namespace System.Net.WebSockets.Client.Tests
             var receiveBuffer = new byte[100];
             var receiveSegment = new ArraySegment<byte>(receiveBuffer);
 
-            using (ClientWebSocket cws = await GetConnectedWebSocket(server, timeOutMilliseconds, output, invoker: invoker))
+            using (ClientWebSocket cws = await GetConnectedWebSocket(server, timeOutMilliseconds, output, configureOptions, invoker))
             {
                 output.WriteLine("TestEcho: SendAsync starting.");
                 await cws.SendAsync(WebSocketData.GetBufferFromText(message), type, true, cts.Token);

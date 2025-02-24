@@ -6,7 +6,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace System.Net.WebSockets.Tests
+namespace System.Net.Test.Common
 {
     public struct WebSocketEchoOptions
     {

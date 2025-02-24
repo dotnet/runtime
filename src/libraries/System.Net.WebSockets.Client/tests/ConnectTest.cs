@@ -126,12 +126,12 @@ namespace System.Net.WebSockets.Client.Tests
 
         protected async Task RunClient_EchoBinaryMessage_Success(Uri server)
         {
-            await TestEcho(server, WebSocketMessageType.Binary, TimeOutMilliseconds, _output);
+            await TestEcho(server, WebSocketMessageType.Binary);
         }
 
         protected async Task RunClient_EchoTextMessage_Success(Uri server)
         {
-            await TestEcho(server, WebSocketMessageType.Text, TimeOutMilliseconds, _output);
+            await TestEcho(server, WebSocketMessageType.Text);
         }
 
         protected async Task RunClient_ConnectAsync_AddCustomHeaders_Success(Uri server)

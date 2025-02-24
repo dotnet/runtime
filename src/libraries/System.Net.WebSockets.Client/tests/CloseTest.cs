@@ -34,7 +34,7 @@ namespace System.Net.WebSockets.Client.Tests
         {
             const string shutdownWebSocketMetaCommand = ".shutdown";
 
-            using (ClientWebSocket cws = await GetConnectedWebSocket(server, TimeOutMilliseconds, _output))
+            using (ClientWebSocket cws = await GetConnectedWebSocket(server))
             {
                 var cts = new CancellationTokenSource(TimeOutMilliseconds);
 
@@ -79,7 +79,7 @@ namespace System.Net.WebSockets.Client.Tests
 
         protected async Task RunClient_CloseAsync_ClientInitiatedClose_Success(Uri server)
         {
-            using (ClientWebSocket cws = await GetConnectedWebSocket(server, TimeOutMilliseconds, _output))
+            using (ClientWebSocket cws = await GetConnectedWebSocket(server))
             {
                 var cts = new CancellationTokenSource(TimeOutMilliseconds);
                 Assert.Equal(WebSocketState.Open, cws.State);
@@ -101,7 +101,7 @@ namespace System.Net.WebSockets.Client.Tests
         {
             string closeDescription = new string('C', CloseDescriptionMaxLength);
 
-            using (ClientWebSocket cws = await GetConnectedWebSocket(server, TimeOutMilliseconds, _output))
+            using (ClientWebSocket cws = await GetConnectedWebSocket(server))
             {
                 var cts = new CancellationTokenSource(TimeOutMilliseconds);
 
@@ -113,7 +113,7 @@ namespace System.Net.WebSockets.Client.Tests
         {
             string closeDescription = new string('C', CloseDescriptionMaxLength + 1);
 
-            using (ClientWebSocket cws = await GetConnectedWebSocket(server, TimeOutMilliseconds, _output))
+            using (ClientWebSocket cws = await GetConnectedWebSocket(server))
             {
                 var cts = new CancellationTokenSource(TimeOutMilliseconds);
 
@@ -134,7 +134,7 @@ namespace System.Net.WebSockets.Client.Tests
 
         protected async Task RunClient_CloseAsync_CloseDescriptionHasUnicode_Success(Uri server)
         {
-            using (ClientWebSocket cws = await GetConnectedWebSocket(server, TimeOutMilliseconds, _output))
+            using (ClientWebSocket cws = await GetConnectedWebSocket(server))
             {
                 var cts = new CancellationTokenSource(TimeOutMilliseconds);
 
@@ -151,7 +151,7 @@ namespace System.Net.WebSockets.Client.Tests
 
         protected async Task RunClient_CloseAsync_CloseDescriptionIsNull_Success(Uri server)
         {
-            using (ClientWebSocket cws = await GetConnectedWebSocket(server, TimeOutMilliseconds, _output))
+            using (ClientWebSocket cws = await GetConnectedWebSocket(server))
             {
                 var cts = new CancellationTokenSource(TimeOutMilliseconds);
 
@@ -165,7 +165,7 @@ namespace System.Net.WebSockets.Client.Tests
 
         protected async Task RunClient_CloseOutputAsync_ExpectedStates(Uri server)
         {
-            using (ClientWebSocket cws = await GetConnectedWebSocket(server, TimeOutMilliseconds, _output))
+            using (ClientWebSocket cws = await GetConnectedWebSocket(server))
             {
                 var cts = new CancellationTokenSource(TimeOutMilliseconds);
 
@@ -182,7 +182,7 @@ namespace System.Net.WebSockets.Client.Tests
 
         protected async Task RunClient_CloseAsync_CloseOutputAsync_Throws(Uri server)
         {
-            using (ClientWebSocket cws = await GetConnectedWebSocket(server, TimeOutMilliseconds, _output))
+            using (ClientWebSocket cws = await GetConnectedWebSocket(server))
             {
                 var cts = new CancellationTokenSource(TimeOutMilliseconds);
 
@@ -207,7 +207,7 @@ namespace System.Net.WebSockets.Client.Tests
         {
             string message = "Hello WebSockets!";
 
-            using (ClientWebSocket cws = await GetConnectedWebSocket(server, TimeOutMilliseconds, _output))
+            using (ClientWebSocket cws = await GetConnectedWebSocket(server))
             {
                 var cts = new CancellationTokenSource(TimeOutMilliseconds);
 
@@ -244,7 +244,7 @@ namespace System.Net.WebSockets.Client.Tests
             var expectedCloseStatus = WebSocketCloseStatus.NormalClosure;
             var expectedCloseDescription = ".shutdownafter";
 
-            using (ClientWebSocket cws = await GetConnectedWebSocket(server, TimeOutMilliseconds, _output))
+            using (ClientWebSocket cws = await GetConnectedWebSocket(server))
             {
                 var cts = new CancellationTokenSource(TimeOutMilliseconds);
 
@@ -299,7 +299,7 @@ namespace System.Net.WebSockets.Client.Tests
             var expectedCloseStatus = WebSocketCloseStatus.NormalClosure;
             var expectedCloseDescription = ".shutdown";
 
-            using (ClientWebSocket cws = await GetConnectedWebSocket(server, TimeOutMilliseconds, _output))
+            using (ClientWebSocket cws = await GetConnectedWebSocket(server))
             {
                 var cts = new CancellationTokenSource(TimeOutMilliseconds);
 
@@ -340,7 +340,7 @@ namespace System.Net.WebSockets.Client.Tests
 
         protected async Task RunClient_CloseOutputAsync_ServerInitiated_CanReceiveAfterClose(Uri server, bool syncState)
         {
-            using (ClientWebSocket cws = await GetConnectedWebSocket(server, TimeOutMilliseconds, _output))
+            using (ClientWebSocket cws = await GetConnectedWebSocket(server))
             {
                 var cts = new CancellationTokenSource(TimeOutMilliseconds);
                 await cws.SendAsync(
@@ -368,7 +368,7 @@ namespace System.Net.WebSockets.Client.Tests
 
         protected async Task RunClient_CloseOutputAsync_CloseDescriptionIsNull_Success(Uri server)
         {
-            using (ClientWebSocket cws = await GetConnectedWebSocket(server, TimeOutMilliseconds, _output))
+            using (ClientWebSocket cws = await GetConnectedWebSocket(server))
             {
                 var cts = new CancellationTokenSource(TimeOutMilliseconds);
 
@@ -382,7 +382,7 @@ namespace System.Net.WebSockets.Client.Tests
         protected async Task RunClient_CloseOutputAsync_DuringConcurrentReceiveAsync_ExpectedStates(Uri server)
         {
             var receiveBuffer = new byte[1024];
-            using (ClientWebSocket cws = await GetConnectedWebSocket(server, TimeOutMilliseconds, _output))
+            using (ClientWebSocket cws = await GetConnectedWebSocket(server))
             {
                 // Issue a receive but don't wait for it.
                 var t = cws.ReceiveAsync(new ArraySegment<byte>(receiveBuffer), CancellationToken.None);
@@ -417,7 +417,7 @@ namespace System.Net.WebSockets.Client.Tests
         protected async Task RunClient_CloseAsync_DuringConcurrentReceiveAsync_ExpectedStates(Uri server)
         {
             var receiveBuffer = new byte[1024];
-            using (ClientWebSocket cws = await GetConnectedWebSocket(server, TimeOutMilliseconds, _output))
+            using (ClientWebSocket cws = await GetConnectedWebSocket(server))
             {
                 var t = cws.ReceiveAsync(new ArraySegment<byte>(receiveBuffer), CancellationToken.None);
                 Assert.False(t.IsCompleted);

@@ -40,7 +40,7 @@ namespace System.Net.WebSockets.Client.Tests
                 using (var cws = new ClientWebSocket())
                 using (var cts = new CancellationTokenSource(TimeOutMilliseconds))
                 {
-                    cws.Options.HttpVersion = HttpVersion.Version20;
+                    cws.Options.HttpVersion = Net.HttpVersion.Version20;
                     cws.Options.HttpVersionPolicy = HttpVersionPolicy.RequestVersionExact;
 
                     await cws.ConnectAsync(uri, GetInvoker(), cts.Token);
@@ -78,7 +78,7 @@ namespace System.Net.WebSockets.Client.Tests
                 using (var cws = new ClientWebSocket())
                 using (var cts = new CancellationTokenSource(TimeOutMilliseconds))
                 {
-                    cws.Options.HttpVersion = HttpVersion.Version20;
+                    cws.Options.HttpVersion = Net.HttpVersion.Version20;
                     cws.Options.HttpVersionPolicy = HttpVersionPolicy.RequestVersionExact;
 
                     await cws.ConnectAsync(uri, GetInvoker(), cts.Token);

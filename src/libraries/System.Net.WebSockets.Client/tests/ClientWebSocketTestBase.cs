@@ -8,6 +8,7 @@ using System.Net.Http;
 using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.DotNet.XUnitExtensions;
 using TestUtilities;
 
 using Xunit;
@@ -75,7 +76,7 @@ namespace System.Net.WebSockets.Client.Tests
 
         public async Task TestCancellation(Func<ClientWebSocket, Task> action, Uri server)
         {
-            using (ClientWebSocket cws = await WebSocketHelper.GetConnectedWebSocket(server, TimeOutMilliseconds, _output))
+            using (ClientWebSocket cws = await GetConnectedWebSocket(server))
             {
                 try
                 {
@@ -118,6 +119,18 @@ namespace System.Net.WebSockets.Client.Tests
             }
         }
 
+        protected TestConfig _defaultConfig = null!;
+        protected TestConfig DefaultConfig => _defaultConfig ??= new TestConfig
+            {
+                InvokerType = UseCustomInvoker
+                    ? HttpInvokerType.HttpMessageInvoker
+                    : UseHttpClient
+                        ? HttpInvokerType.HttpClient
+                        : HttpInvokerType.Shared,
+                ConfigureHttpHandler = ConfigureCustomHandler,
+                HttpVersion = HttpVersion,
+            };
+
         protected virtual bool UseCustomInvoker => false;
 
         protected virtual bool UseHttpClient => false;
@@ -126,40 +139,88 @@ namespace System.Net.WebSockets.Client.Tests
 
         protected Action<HttpClientHandler>? ConfigureCustomHandler;
 
-        internal HttpMessageInvoker? GetInvoker()
+        internal virtual Version HttpVersion => Net.HttpVersion.Version11;
+
+        internal HttpMessageInvoker? GetInvoker() => DefaultConfig.Invoker;
+
+        protected Task<ClientWebSocket> GetConnectedWebSocket(Uri uri, int timeOutMilliseconds, ITestOutputHelper output)
+            => WebSocketHelper.GetConnectedWebSocket(uri, timeOutMilliseconds, output, o => ConfigureHttpVersion(o, uri), GetInvoker());
+
+        protected Task<ClientWebSocket> GetConnectedWebSocket(Uri uri)
+            => GetConnectedWebSocket(uri, TimeOutMilliseconds, _output);
+
+        protected Task ConnectAsync(ClientWebSocket cws, Uri uri, CancellationToken cancellationToken)
         {
-            var handler = new HttpClientHandler();
-
-            if (PlatformDetection.IsNotBrowser)
-            {
-                handler.ServerCertificateCustomValidationCallback = HttpClientHandler.DangerousAcceptAnyServerCertificateValidator;
-            }
-
-            ConfigureCustomHandler?.Invoke(handler);
-
-            if (UseCustomInvoker)
-            {
-                Debug.Assert(!UseHttpClient);
-                return new HttpMessageInvoker(handler);
-            }
-
-            if (UseHttpClient)
-            {
-                return new HttpClient(handler);
-            }
-
-            return null;
+            ConfigureHttpVersion(cws.Options, uri);
+            return cws.ConnectAsync(uri, GetInvoker(), cancellationToken);
         }
 
-        protected Task<ClientWebSocket> GetConnectedWebSocket(Uri uri, int TimeOutMilliseconds, ITestOutputHelper output) =>
-            WebSocketHelper.GetConnectedWebSocket(uri, TimeOutMilliseconds, output, invoker: GetInvoker());
+        protected Task TestEcho(Uri uri, WebSocketMessageType type)
+            => WebSocketHelper.TestEcho(uri, type, TimeOutMilliseconds, _output,o => ConfigureHttpVersion(o, uri), GetInvoker());
 
-        protected Task ConnectAsync(ClientWebSocket cws, Uri uri, CancellationToken cancellationToken) =>
-            cws.ConnectAsync(uri, GetInvoker(), cancellationToken);
+        protected void ConfigureHttpVersion(ClientWebSocketOptions options, Uri uri)
+        {
+            if (PlatformDetection.IsBrowser)
+            {
+                if (HttpVersion != Net.HttpVersion.Version11)
+                {
+                    throw new SkipTestException($"HTTP version {HttpVersion} is not supported for WebSockets on Browser.");
+                }
+                return;
+            }
 
-        protected Task TestEcho(Uri uri, WebSocketMessageType type, int timeOutMilliseconds, ITestOutputHelper output) =>
-            WebSocketHelper.TestEcho(uri, WebSocketMessageType.Text, TimeOutMilliseconds, _output, GetInvoker());
+            options.HttpVersion = HttpVersion;
+            options.HttpVersionPolicy = HttpVersionPolicy.RequestVersionExact;
+
+            if (HttpVersion == Net.HttpVersion.Version20 && uri.Query is not null or "" or "?")
+            {
+                // HTTP/2 CONNECT requests drop path and query from the request URI,
+                // see https://datatracker.ietf.org/doc/html/rfc7540#section-8.3:
+                // > The ":scheme" and ":path" pseudo-header fields MUST be omitted.
+                // Saving the original query string in a custom header.
+                options.SetRequestHeader(WebSocketHelper.OriginalQueryStringHeader, uri.Query);
+            }
+        }
 
         public static bool WebSocketsSupported { get { return WebSocketHelper.WebSocketsSupported; } }
+
+        public record class TestConfig
+        {
+            public HttpInvokerType InvokerType { get; set; }
+            public Action<HttpClientHandler>? ConfigureHttpHandler { get; set; }
+            public HttpMessageInvoker? Invoker => CreateInvoker();
+
+            public Version HttpVersion { get; set; }
+            public bool? UseSsl { get; set; }
+            public Uri? Uri { get; set; }
+
+            private HttpMessageInvoker? CreateInvoker()
+            {
+                var handler = new HttpClientHandler();
+
+                if (PlatformDetection.IsNotBrowser)
+                {
+                    handler.ServerCertificateCustomValidationCallback = HttpClientHandler.DangerousAcceptAnyServerCertificateValidator;
+                }
+
+                ConfigureHttpHandler?.Invoke(handler);
+
+                return InvokerType switch
+                {
+                    HttpInvokerType.Shared => null,
+                    HttpInvokerType.HttpClient => new HttpClient(handler),
+                    HttpInvokerType.HttpMessageInvoker => new HttpMessageInvoker(handler),
+                    _ => throw new NotImplementedException()
+                };
+            }
+
+        }
+
+        public enum HttpInvokerType
+        {
+            Shared = 0,
+            HttpClient,
+            HttpMessageInvoker
+        }
     }
 }

@@ -14,8 +14,6 @@ namespace System.Net.WebSockets.Client.Tests
     {
         public KeepAliveTest_Loopback(ITestOutputHelper output) : base(output) { }
 
-        protected virtual Version HttpVersion => Net.HttpVersion.Version11;
-
         [OuterLoop("Uses Task.Delay")]
         [Theory]
         [MemberData(nameof(UseSsl_MemberData))]
@@ -30,8 +28,11 @@ namespace System.Net.WebSockets.Client.Tests
 
             var timeoutCts = new CancellationTokenSource(TimeOutMilliseconds);
 
-            var options = new LoopbackWebSocketServer.Options(HttpVersion, useSsl, GetInvoker())
+            var options = new LoopbackWebSocketServer.Options
             {
+                HttpVersion = HttpVersion,
+                UseSsl = useSsl,
+                HttpInvoker = GetInvoker(),
                 DisposeClientWebSocket = true,
                 ConfigureClientOptions = clientOptions =>
                 {
@@ -129,12 +130,12 @@ namespace System.Net.WebSockets.Client.Tests
     public class KeepAliveTest_Invoker_Http2 : KeepAliveTest_Invoker_Loopback
     {
         public KeepAliveTest_Invoker_Http2(ITestOutputHelper output) : base(output) { }
-        protected override Version HttpVersion => Net.HttpVersion.Version20;
+        internal override Version HttpVersion => Net.HttpVersion.Version20;
     }
 
     public class KeepAliveTest_HttpClient_Http2 : KeepAliveTest_HttpClient_Loopback
     {
         public KeepAliveTest_HttpClient_Http2(ITestOutputHelper output) : base(output) { }
-        protected override Version HttpVersion => Net.HttpVersion.Version20;
+        internal override Version HttpVersion => Net.HttpVersion.Version20;
     }
 }

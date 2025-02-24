@@ -87,7 +87,7 @@ namespace System.Net.WebSockets.Client.Tests
             var receiveBuffer = new byte[SendBufferSize / 2];
             var receiveSegment = new ArraySegment<byte>(receiveBuffer);
 
-            using (ClientWebSocket cws = await GetConnectedWebSocket(server, TimeOutMilliseconds, _output))
+            using (ClientWebSocket cws = await GetConnectedWebSocket(server))
             {
                 var ctsDefault = new CancellationTokenSource(TimeOutMilliseconds);
 
@@ -154,7 +154,7 @@ namespace System.Net.WebSockets.Client.Tests
 
         protected async Task RunClient_SendAsync_SendCloseMessageType_ThrowsArgumentExceptionWithMessage(Uri server)
         {
-            using (ClientWebSocket cws = await GetConnectedWebSocket(server, TimeOutMilliseconds, _output))
+            using (ClientWebSocket cws = await GetConnectedWebSocket(server))
             {
                 var cts = new CancellationTokenSource(TimeOutMilliseconds);
 
@@ -180,7 +180,7 @@ namespace System.Net.WebSockets.Client.Tests
 
         protected async Task RunClient_SendAsync_MultipleOutstandingSendOperations_Throws(Uri server)
         {
-            using (ClientWebSocket cws = await GetConnectedWebSocket(server, TimeOutMilliseconds, _output))
+            using (ClientWebSocket cws = await GetConnectedWebSocket(server))
             {
                 var cts = new CancellationTokenSource(TimeOutMilliseconds);
 
@@ -237,7 +237,7 @@ namespace System.Net.WebSockets.Client.Tests
 
         protected async Task RunClient_ReceiveAsync_MultipleOutstandingReceiveOperations_Throws(Uri server)
         {
-            using (ClientWebSocket cws = await GetConnectedWebSocket(server, TimeOutMilliseconds, _output))
+            using (ClientWebSocket cws = await GetConnectedWebSocket(server))
             {
                 var cts = new CancellationTokenSource(PlatformDetection.LocalEchoServerIsNotAvailable ? TimeOutMilliseconds : 200);
 
@@ -299,7 +299,7 @@ namespace System.Net.WebSockets.Client.Tests
 
         protected async Task RunClient_SendAsync_SendZeroLengthPayloadAsEndOfMessage_Success(Uri server)
         {
-            using (ClientWebSocket cws = await GetConnectedWebSocket(server, TimeOutMilliseconds, _output))
+            using (ClientWebSocket cws = await GetConnectedWebSocket(server))
             {
                 var cts = new CancellationTokenSource(TimeOutMilliseconds);
                 string message = "hello";
@@ -336,7 +336,7 @@ namespace System.Net.WebSockets.Client.Tests
 
         protected async Task RunClient_SendReceive_VaryingLengthBuffers_Success(Uri server)
         {
-            using (ClientWebSocket cws = await WebSocketHelper.GetConnectedWebSocket(server, TimeOutMilliseconds, _output))
+            using (ClientWebSocket cws = await GetConnectedWebSocket(server))
             {
                 var rand = new Random();
                 var ctsDefault = new CancellationTokenSource(TimeOutMilliseconds);
@@ -374,7 +374,7 @@ namespace System.Net.WebSockets.Client.Tests
 
         protected async Task RunClient_SendReceive_Concurrent_Success(Uri server)
         {
-            using (ClientWebSocket cws = await GetConnectedWebSocket(server, TimeOutMilliseconds, _output))
+            using (ClientWebSocket cws = await GetConnectedWebSocket(server))
             {
                 CancellationTokenSource ctsDefault = new CancellationTokenSource(TimeOutMilliseconds);
 
@@ -468,7 +468,7 @@ namespace System.Net.WebSockets.Client.Tests
 
         protected async Task RunClient_ZeroByteReceive_CompletesWhenDataAvailable(Uri server)
         {
-            using (ClientWebSocket cws = await GetConnectedWebSocket(server, TimeOutMilliseconds, _output))
+            using (ClientWebSocket cws = await GetConnectedWebSocket(server))
             {
                 var ctsDefault = new CancellationTokenSource(TimeOutMilliseconds);
 

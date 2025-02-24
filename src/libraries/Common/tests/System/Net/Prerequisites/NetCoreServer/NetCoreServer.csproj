@@ -47,6 +47,7 @@
     <Compile Include="Helpers\NameValueCollectionConverter.cs" />
     <Compile Include="Helpers\RequestHelper.cs" />
     <Compile Include="Helpers\RequestInformation.cs" />
+    <Compile Include="Helpers\WebSocketAcceptHelper.cs" />
     <Compile Include="Helpers\WebSocketEchoHelper.cs" />
     <Compile Include="Helpers\WebSocketEchoOptions.cs" />
     <Compile Include="GenericHandler.cs" />

@@ -2,31 +2,31 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Net.WebSockets;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace System.Net.WebSockets.Tests
+namespace System.Net.Test.Common
 {
     public static class WebSocketEchoHelper
     {
-        private const int MaxBufferSize = 128 * 1024;
-        private const int HeadersBufferSize = 1024;
-
-        public static async Task ProcessRequest(WebSocket socket, bool replyWithPartialMessages, bool replyWithEnhancedCloseMessage)
+        public static async Task RunEchoAll(WebSocket socket, bool replyWithPartialMessages, bool replyWithEnhancedCloseMessage, CancellationToken cancellationToken = default)
         {
+            const int MaxBufferSize = 128 * 1024;
+
             var receiveBuffer = new byte[MaxBufferSize];
             var throwAwayBuffer = new byte[MaxBufferSize];
 
             // Stay in loop while websocket is open
             while (socket.State == WebSocketState.Open || socket.State == WebSocketState.CloseSent)
             {
-                var receiveResult = await socket.ReceiveAsync(new ArraySegment<byte>(receiveBuffer), CancellationToken.None);
+                var receiveResult = await socket.ReceiveAsync(new ArraySegment<byte>(receiveBuffer), cancellationToken);
                 if (receiveResult.MessageType == WebSocketMessageType.Close)
                 {
                     if (receiveResult.CloseStatus == WebSocketCloseStatus.Empty)
                     {
-                        await socket.CloseAsync(WebSocketCloseStatus.Empty, null, CancellationToken.None);
+                        await socket.CloseAsync(WebSocketCloseStatus.Empty, null, cancellationToken);
                     }
                     else
                     {
@@ -36,7 +36,7 @@ namespace System.Net.WebSockets.Tests
                             replyWithEnhancedCloseMessage ?
                                 ("Server received: " + (int)closeStatus + " " + receiveResult.CloseStatusDescription) :
                                 receiveResult.CloseStatusDescription,
-                            CancellationToken.None);
+                            cancellationToken);
                     }
 
                     continue;
@@ -50,13 +50,13 @@ namespace System.Net.WebSockets.Tests
                     {
                         receiveResult = await socket.ReceiveAsync(
                             new ArraySegment<byte>(receiveBuffer, offset, MaxBufferSize - offset),
-                            CancellationToken.None);
+                            cancellationToken);
                     }
                     else
                     {
                         receiveResult = await socket.ReceiveAsync(
                             new ArraySegment<byte>(throwAwayBuffer),
-                            CancellationToken.None);
+                            cancellationToken);
                     }
 
                     offset += receiveResult.Count;
@@ -67,8 +67,8 @@ namespace System.Net.WebSockets.Tests
                 {
                     await socket.CloseAsync(
                         WebSocketCloseStatus.MessageTooBig,
-                        String.Format("{0}: {1} > {2}", WebSocketCloseStatus.MessageTooBig.ToString(), offset, MaxBufferSize),
-                        CancellationToken.None);
+                        string.Format("{0}: {1} > {2}", WebSocketCloseStatus.MessageTooBig.ToString(), offset, MaxBufferSize),
+                        cancellationToken);
 
                     continue;
                 }
@@ -80,11 +80,11 @@ namespace System.Net.WebSockets.Tests
                     receivedMessage = Encoding.UTF8.GetString(receiveBuffer, 0, offset);
                     if (receivedMessage == ".close")
                     {
-                        await socket.CloseAsync(WebSocketCloseStatus.NormalClosure, receivedMessage, CancellationToken.None);
+                        await socket.CloseAsync(WebSocketCloseStatus.NormalClosure, receivedMessage, cancellationToken);
                     }
                     else if (receivedMessage == ".shutdown")
                     {
-                        await socket.CloseOutputAsync(WebSocketCloseStatus.NormalClosure, receivedMessage, CancellationToken.None);
+                        await socket.CloseOutputAsync(WebSocketCloseStatus.NormalClosure, receivedMessage, cancellationToken);
                     }
                     else if (receivedMessage == ".abort")
                     {
@@ -96,15 +96,14 @@ namespace System.Net.WebSockets.Tests
                     }
                     else if (receivedMessage == ".receiveMessageAfterClose")
                     {
-                        byte[] buffer = new byte[1024];
-                        string message = $"{receivedMessage} {DateTime.Now.ToString("HH:mm:ss")}";
-                        buffer = System.Text.Encoding.UTF8.GetBytes(message);
+                        string message = $"{receivedMessage} {DateTime.Now:HH:mm:ss}";
+                        byte[] buffer = Encoding.UTF8.GetBytes(message);
                         await socket.SendAsync(
                             new ArraySegment<byte>(buffer, 0, message.Length),
                             WebSocketMessageType.Text,
                             true,
-                            CancellationToken.None);
-                        await socket.CloseAsync(WebSocketCloseStatus.NormalClosure, receivedMessage, CancellationToken.None);
+                            cancellationToken);
+                        await socket.CloseAsync(WebSocketCloseStatus.NormalClosure, receivedMessage, cancellationToken);
                     }
                     else if (socket.State == WebSocketState.Open)
                     {
@@ -122,22 +121,23 @@ namespace System.Net.WebSockets.Tests
                             new ArraySegment<byte>(receiveBuffer, 0, offset),
                             receiveResult.MessageType,
                             !replyWithPartialMessages,
-                            CancellationToken.None);
+                            cancellationToken);
                 }
                 if (receivedMessage == ".closeafter")
                 {
-                    await socket.CloseAsync(WebSocketCloseStatus.NormalClosure, receivedMessage, CancellationToken.None);
+                    await socket.CloseAsync(WebSocketCloseStatus.NormalClosure, receivedMessage, cancellationToken);
                 }
                 else if (receivedMessage == ".shutdownafter")
                 {
-                    await socket.CloseOutputAsync(WebSocketCloseStatus.NormalClosure, receivedMessage, CancellationToken.None);
+                    await socket.CloseOutputAsync(WebSocketCloseStatus.NormalClosure, receivedMessage, cancellationToken);
                 }
             }
         }
 
-        public static async Task ProcessHeadersRequest(WebSocket socket, IEnumerable<KeyValuePair<string, string>> headers)
+        public static async Task RunEchoHeaders(WebSocket socket, IEnumerable<KeyValuePair<string, string>> headers, CancellationToken cancellationToken = default)
         {
-            var receiveBuffer = new byte[HeadersBufferSize];
+            const int MaxBufferSize = 1024;
+            var receiveBuffer = new byte[MaxBufferSize];
 
             // Reflect all headers and cookies
             var sb = new StringBuilder();
@@ -151,29 +151,39 @@ namespace System.Net.WebSockets.Tests
             }
 
             byte[] sendBuffer = Encoding.UTF8.GetBytes(sb.ToString());
-            await socket.SendAsync(new ArraySegment<byte>(sendBuffer), WebSocketMessageType.Text, true, new CancellationToken());
+            await socket.SendAsync(new ArraySegment<byte>(sendBuffer), WebSocketMessageType.Text, true, cancellationToken);
 
             // Stay in loop while websocket is open
             while (socket.State == WebSocketState.Open || socket.State == WebSocketState.CloseSent)
             {
-                var receiveResult = await socket.ReceiveAsync(new ArraySegment<byte>(receiveBuffer), CancellationToken.None);
+                var receiveResult = await socket.ReceiveAsync(new ArraySegment<byte>(receiveBuffer), cancellationToken);
                 if (receiveResult.MessageType == WebSocketMessageType.Close)
                 {
                     if (receiveResult.CloseStatus == WebSocketCloseStatus.Empty)
                     {
-                        await socket.CloseAsync(WebSocketCloseStatus.Empty, null, CancellationToken.None);
+                        await socket.CloseAsync(WebSocketCloseStatus.Empty, null, cancellationToken);
                     }
                     else
                     {
                         await socket.CloseAsync(
                             receiveResult.CloseStatus.GetValueOrDefault(),
                             receiveResult.CloseStatusDescription,
-                            CancellationToken.None);
+                            cancellationToken);
                     }
 
                     continue;
                 }
             }
+        }
+
+        public static async ValueTask<WebSocketEchoOptions> ProcessOptions(string queryString, CancellationToken cancellationToken = default)
+        {
+            WebSocketEchoOptions options = WebSocketEchoOptions.Parse(queryString);
+            if (options.Delay is TimeSpan d)
+            {
+                await Task.Delay(d, cancellationToken).ConfigureAwait(false);
+            }
+            return options;
         }
     }
 }

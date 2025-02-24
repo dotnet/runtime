@@ -3,7 +3,7 @@
 
 using System;
 using System.Net.WebSockets;
-using System.Net.WebSockets.Tests;
+using System.Net.Test.Common;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -15,37 +15,17 @@ namespace NetCoreServer
     {
         public static async Task InvokeAsync(HttpContext context)
         {
-            WebSocketEchoOptions options = WebSocketEchoOptions.Parse(context.Request.QueryString.Value);
-            if (options.Delay is TimeSpan d)
-            {
-                await Task.Delay(d);
-            }
-
+            WebSocketEchoOptions options = await WebSocketEchoHelper.ProcessOptions(queryString);
             try
             {
-                if (!context.WebSockets.IsWebSocketRequest)
+                WebSocket socket = await WebSocketAcceptHelper.AcceptAsync(context, options.SubProtocol);
+                if (socket is null)
                 {
-                    context.Response.StatusCode = 200;
-                    context.Response.ContentType = "text/plain";
-                    await context.Response.WriteAsync("Not a websocket request");
-
                     return;
                 }
 
-                WebSocket socket;
-                if (!string.IsNullOrEmpty(options.SubProtocol))
-                {
-                    socket = await context.WebSockets.AcceptWebSocketAsync(options.SubProtocol);
-                }
-                else
-                {
-                    socket = await context.WebSockets.AcceptWebSocketAsync();
-                }
-
-                await WebSocketEchoHelper.ProcessRequest(
-                    socket,
-                    options.ReplyWithPartialMessages,
-                    options.ReplyWithEnhancedCloseMessage);
+                await WebSocketEchoHelper.RunEchoAll(
+                    socket, options.ReplyWithPartialMessages, options.ReplyWithEnhancedCloseMessage);
             }
             catch (Exception)
             {

@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
-using System.Linq;
 using System.Net.Http;
 using System.Net.Sockets;
 using System.Net.Test.Common;
@@ -14,7 +13,7 @@ namespace System.Net.WebSockets.Client.Tests
 {
     public static class WebSocketHandshakeHelper
     {
-        public static async Task<WebSocketRequestData> ProcessHttp11RequestAsync(LoopbackServer.Connection connection, bool sendServerResponse = true, CancellationToken cancellationToken = default)
+        public static async Task<WebSocketRequestData> ProcessHttp11RequestAsync(LoopbackServer.Connection connection, bool skipServerHandshakeResponse = false, CancellationToken cancellationToken = default)
         {
             List<string> headers = await connection.ReadRequestHeaderAsync().WaitAsync(cancellationToken).ConfigureAwait(false);
 
@@ -24,9 +23,18 @@ namespace System.Net.WebSockets.Client.Tests
                 Http11Connection = connection
             };
 
-            foreach (string header in headers.Skip(1))
+            // extract query with leading '?' from request line
+            // e.g. GET /echo?query=string HTTP/1.1 => "?query=string"
+            int queryIndex = headers[0].IndexOf('?');
+            if (queryIndex != -1)
             {
-                string[] tokens = header.Split(new char[] { ':' }, StringSplitOptions.RemoveEmptyEntries);
+                int spaceIndex = headers[0].IndexOf(' ', queryIndex);
+                data.Query = headers[0].Substring(queryIndex, spaceIndex - queryIndex);
+            }
+
+            for (int i = 1; i < headers.Count; ++i)
+            {
+                string[] tokens = headers[i].Split(new char[] { ':' }, StringSplitOptions.RemoveEmptyEntries);
                 if (tokens.Length is 1 or 2)
                 {
                     data.Headers.Add(
@@ -38,7 +46,7 @@ namespace System.Net.WebSockets.Client.Tests
             var isValidOpeningHandshake = data.Headers.TryGetValue("Sec-WebSocket-Key", out var secWebSocketKey);
             Assert.True(isValidOpeningHandshake);
 
-            if (sendServerResponse)
+            if (!skipServerHandshakeResponse)
             {
                 await SendHttp11ServerResponseAsync(connection, secWebSocketKey, cancellationToken).ConfigureAwait(false);
             }
@@ -53,7 +61,7 @@ namespace System.Net.WebSockets.Client.Tests
             await connection.WriteStringAsync(serverResponse).WaitAsync(cancellationToken).ConfigureAwait(false);
         }
 
-        public static async Task<WebSocketRequestData> ProcessHttp2RequestAsync(Http2LoopbackServer server, bool sendServerResponse = true, CancellationToken cancellationToken = default)
+        public static async Task<WebSocketRequestData> ProcessHttp2RequestAsync(Http2LoopbackServer server, bool skipServerHandshakeResponse = false, CancellationToken cancellationToken = default)
         {
             var connection = await server.EstablishConnectionAsync(new SettingsEntry { SettingId = SettingId.EnableConnect, Value = 1 })
                 .WaitAsync(cancellationToken).ConfigureAwait(false);
@@ -78,7 +86,13 @@ namespace System.Net.WebSockets.Client.Tests
             var isValidOpeningHandshake = httpRequestData.Method == HttpMethod.Connect.ToString() && data.Headers.ContainsKey(":protocol");
             Assert.True(isValidOpeningHandshake);
 
-            if (sendServerResponse)
+            // HTTP/2 CONNECT requests drop path and query from the request URI,
+            // see https://datatracker.ietf.org/doc/html/rfc7540#section-8.3:
+            // > The ":scheme" and ":path" pseudo-header fields MUST be omitted.
+            // The original query string was passed in a custom header.
+            data.Query = data.Headers.GetValueOrDefault(WebSocketHelper.OriginalQueryStringHeader);
+
+            if (!skipServerHandshakeResponse)
             {
                 await SendHttp2ServerResponseAsync(connection, streamId, cancellationToken: cancellationToken).ConfigureAwait(false);
             }

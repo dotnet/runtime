@@ -32,8 +32,8 @@ namespace System.Net.WebSockets.Client.Tests
 
         public static IEnumerable<object[]> ConnectAsync_Http2WithNoInvoker_ThrowsArgumentException_MemberData()
         {
-            yield return Options(options => options.HttpVersion = HttpVersion.Version20);
-            yield return Options(options => options.HttpVersion = HttpVersion.Version30);
+            yield return Options(options => options.HttpVersion = Net.HttpVersion.Version20);
+            yield return Options(options => options.HttpVersion = Net.HttpVersion.Version30);
             yield return Options(options => options.HttpVersion = new Version(2, 1));
             yield return Options(options => options.HttpVersionPolicy = HttpVersionPolicy.RequestVersionOrHigher);
 
@@ -69,7 +69,7 @@ namespace System.Net.WebSockets.Client.Tests
                 using (var cws = new ClientWebSocket())
                 using (var cts = new CancellationTokenSource(TimeOutMilliseconds))
                 {
-                    cws.Options.HttpVersion = HttpVersion.Version20;
+                    cws.Options.HttpVersion = Net.HttpVersion.Version20;
                     cws.Options.HttpVersionPolicy = HttpVersionPolicy.RequestVersionExact;
 
                     Task t = cws.ConnectAsync(uri, GetInvoker(), cts.Token);
@@ -95,7 +95,7 @@ namespace System.Net.WebSockets.Client.Tests
                 using (var cws = new ClientWebSocket())
                 using (var cts = new CancellationTokenSource(TimeOutMilliseconds))
                 {
-                    cws.Options.HttpVersion = HttpVersion.Version20;
+                    cws.Options.HttpVersion = Net.HttpVersion.Version20;
                     cws.Options.HttpVersionPolicy = HttpVersionPolicy.RequestVersionExact;
 
                     Task t = cws.ConnectAsync(uri, GetInvoker(), cts.Token);
@@ -120,7 +120,7 @@ namespace System.Net.WebSockets.Client.Tests
             using (var cws = new ClientWebSocket())
             using (var cts = new CancellationTokenSource(TimeOutMilliseconds))
             {
-                cws.Options.HttpVersion = HttpVersion.Version20;
+                cws.Options.HttpVersion = Net.HttpVersion.Version20;
                 cws.Options.HttpVersionPolicy = HttpVersionPolicy.RequestVersionExact;
 
                 Task t = cws.ConnectAsync(Test.Common.Configuration.WebSockets.SecureRemoteEchoServer, GetInvoker(), cts.Token);
@@ -145,7 +145,7 @@ namespace System.Net.WebSockets.Client.Tests
             using (var cws = new ClientWebSocket())
             using (var cts = new CancellationTokenSource(TimeOutMilliseconds))
             {
-                cws.Options.HttpVersion = HttpVersion.Version20;
+                cws.Options.HttpVersion = Net.HttpVersion.Version20;
                 cws.Options.HttpVersionPolicy = HttpVersionPolicy.RequestVersionOrLower;
                 await cws.ConnectAsync(server, GetInvoker(), cts.Token);
                 Assert.Equal(WebSocketState.Open, cws.State);
@@ -161,7 +161,7 @@ namespace System.Net.WebSockets.Client.Tests
                 using (var cws = new ClientWebSocket())
                 using (var cts = new CancellationTokenSource(TimeOutMilliseconds))
                 {
-                    cws.Options.HttpVersion = HttpVersion.Version20;
+                    cws.Options.HttpVersion = Net.HttpVersion.Version20;
                     cws.Options.HttpVersionPolicy = HttpVersionPolicy.RequestVersionExact;
                     await cws.ConnectAsync(uri, GetInvoker(), cts.Token);
                 }
@@ -183,7 +183,7 @@ namespace System.Net.WebSockets.Client.Tests
                 using (var cws = new ClientWebSocket())
                 using (var cts = new CancellationTokenSource(TimeOutMilliseconds))
                 {
-                    cws.Options.HttpVersion = HttpVersion.Version20;
+                    cws.Options.HttpVersion = Net.HttpVersion.Version20;
                     cws.Options.HttpVersionPolicy = HttpVersionPolicy.RequestVersionExact;
                     await cws.ConnectAsync(uri, GetInvoker(), cts.Token);
                 }
@@ -203,11 +203,11 @@ namespace System.Net.WebSockets.Client.Tests
             await Http2LoopbackServer.CreateClientAndServerAsync(async uri =>
             {
                 using var cws1 = new ClientWebSocket();
-                cws1.Options.HttpVersion = HttpVersion.Version20;
+                cws1.Options.HttpVersion = Net.HttpVersion.Version20;
                 cws1.Options.HttpVersionPolicy = HttpVersionPolicy.RequestVersionExact;
 
                 using var cws2 = new ClientWebSocket();
-                cws2.Options.HttpVersion = HttpVersion.Version20;
+                cws2.Options.HttpVersion = Net.HttpVersion.Version20;
                 cws2.Options.HttpVersionPolicy = HttpVersionPolicy.RequestVersionExact;
 
                 using var cts = new CancellationTokenSource(TimeOutMilliseconds);

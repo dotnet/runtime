@@ -117,7 +117,7 @@ namespace System.Net.WebSockets.Client.Tests
 
         protected async Task RunClient_ReceiveAsync_CancelThenReceive_ThrowsOperationCanceledException(Uri server)
         {
-            using (ClientWebSocket cws = await GetConnectedWebSocket(server, TimeOutMilliseconds, _output))
+            using (ClientWebSocket cws = await GetConnectedWebSocket(server))
             {
                 var recvBuffer = new byte[100];
                 var segment = new ArraySegment<byte>(recvBuffer);
@@ -131,7 +131,7 @@ namespace System.Net.WebSockets.Client.Tests
 
         protected async Task RunClient_ReceiveAsync_ReceiveThenCancel_ThrowsOperationCanceledException(Uri server)
         {
-            using (ClientWebSocket cws = await GetConnectedWebSocket(server, TimeOutMilliseconds, _output))
+            using (ClientWebSocket cws = await GetConnectedWebSocket(server))
             {
                 var recvBuffer = new byte[100];
                 var segment = new ArraySegment<byte>(recvBuffer);
@@ -145,7 +145,7 @@ namespace System.Net.WebSockets.Client.Tests
 
         protected async Task RunClient_ReceiveAsync_AfterCancellationDoReceiveAsync_ThrowsWebSocketException(Uri server)
         {
-            using (ClientWebSocket cws = await GetConnectedWebSocket(server, TimeOutMilliseconds, _output))
+            using (ClientWebSocket cws = await GetConnectedWebSocket(server))
             {
                 var recvBuffer = new byte[100];
                 var segment = new ArraySegment<byte>(recvBuffer);
