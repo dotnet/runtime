@@ -613,7 +613,7 @@ namespace System
         {
             string? tzDirectory = Environment.GetEnvironmentVariable(TimeZoneDirectoryEnvironmentVariable);
 
-            if (tzDirectory == null)
+            if (tzDirectory == null || srting.IsNullOrEmpty(tzDirectory))
             {
                 tzDirectory = DefaultTimeZoneDirectory;
             }
