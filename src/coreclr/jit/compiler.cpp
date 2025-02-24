@@ -639,7 +639,7 @@ bool Compiler::isNativePrimitiveStructType(CORINFO_CLASS_HANDLE clsHnd)
 //    For vector calling conventions, a vector is considered a "primitive"
 //    type, as it is passed in a single register.
 //
-var_types Compiler::getPrimitiveTypeForStruct(unsigned structSize, CORINFO_CLASS_HANDLE clsHnd, bool isVarArg)
+var_types Compiler::getPrimitiveTypeForStruct(unsigned structSize, CORINFO_CLASS_HANDLE clsHnd)
 {
     assert(structSize != 0);
 
@@ -648,37 +648,32 @@ var_types Compiler::getPrimitiveTypeForStruct(unsigned structSize, CORINFO_CLASS
     // Start by determining if we have an HFA/HVA with a single element.
     if (GlobalJitOptions::compFeatureHfa)
     {
-        // Arm64 Windows VarArg methods arguments will not classify HFA types, they will need to be treated
-        // as if they are not HFA types.
-        if (!(TargetArchitecture::IsArm64 && TargetOS::IsWindows && isVarArg))
+        switch (structSize)
         {
-            switch (structSize)
-            {
-                case 4:
-                case 8:
+            case 4:
+            case 8:
 #ifdef TARGET_ARM64
-                case 16:
+            case 16:
 #endif // TARGET_ARM64
+            {
+                var_types hfaType = GetHfaType(clsHnd);
+                // We're only interested in the case where the struct size is equal to the size of the hfaType.
+                if (varTypeIsValidHfaType(hfaType))
                 {
-                    var_types hfaType = GetHfaType(clsHnd);
-                    // We're only interested in the case where the struct size is equal to the size of the hfaType.
-                    if (varTypeIsValidHfaType(hfaType))
+                    if (genTypeSize(hfaType) == structSize)
                     {
-                        if (genTypeSize(hfaType) == structSize)
-                        {
-                            useType = hfaType;
-                        }
-                        else
-                        {
-                            return TYP_UNKNOWN;
-                        }
+                        useType = hfaType;
+                    }
+                    else
+                    {
+                        return TYP_UNKNOWN;
                     }
                 }
             }
-            if (useType != TYP_UNKNOWN)
-            {
-                return useType;
-            }
+        }
+        if (useType != TYP_UNKNOWN)
+        {
+            return useType;
         }
     }
 
@@ -728,230 +723,6 @@ var_types Compiler::getPrimitiveTypeForStruct(unsigned structSize, CORINFO_CLASS
         default:
             useType = TYP_UNKNOWN;
             break;
-    }
-
-    return useType;
-}
-
-//-----------------------------------------------------------------------------
-// getArgTypeForStruct:
-//     Get the type that is used to pass values of the given struct type.
-//     If you have already retrieved the struct size then it should be
-//     passed as the optional fourth argument, as this allows us to avoid
-//     an extra call to getClassSize(clsHnd)
-//
-// Arguments:
-//    clsHnd       - the handle for the struct type
-//    wbPassStruct - An "out" argument with information about how
-//                   the struct is to be passed
-//    isVarArg     - is vararg, used to ignore HFA types for Arm64 windows varargs
-//    structSize   - the size of the struct type,
-//                   or zero if we should call getClassSize(clsHnd)
-//
-// Return Value:
-//    For wbPassStruct you can pass a 'nullptr' and nothing will be written
-//     or returned for that out parameter.
-//    When *wbPassStruct is SPK_PrimitiveType this method's return value
-//       is the primitive type used to pass the struct.
-//    When *wbPassStruct is SPK_ByReference this method's return value
-//       is always TYP_UNKNOWN and the struct type is passed by reference to a copy
-//    When *wbPassStruct is SPK_ByValue or SPK_ByValueAsHfa this method's return value
-//       is always TYP_STRUCT and the struct type is passed by value either
-//       using multiple registers or on the stack.
-//
-// Assumptions:
-//    The size must be the size of the given type.
-//    The given class handle must be for a value type (struct).
-//
-// Notes:
-//    About HFA types:
-//        When the clsHnd is a one element HFA type we return the appropriate
-//         floating point primitive type and *wbPassStruct is SPK_PrimitiveType
-//        If there are two or more elements in the HFA type then the this method's
-//         return value is TYP_STRUCT and *wbPassStruct is SPK_ByValueAsHfa
-//
-var_types Compiler::getArgTypeForStruct(CORINFO_CLASS_HANDLE clsHnd,
-                                        structPassingKind*   wbPassStruct,
-                                        bool                 isVarArg,
-                                        unsigned             structSize)
-{
-    var_types         useType         = TYP_UNKNOWN;
-    structPassingKind howToPassStruct = SPK_Unknown; // We must change this before we return
-
-    assert(structSize != 0);
-
-// Determine if we can pass the struct as a primitive type.
-// Note that on x86 we only pass specific pointer-sized structs that satisfy isTrivialPointerSizedStruct checks.
-#ifndef TARGET_X86
-#ifdef UNIX_AMD64_ABI
-
-    // An 8-byte struct may need to be passed in a floating point register
-    // So we always consult the struct "Classifier" routine
-    //
-    SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR structDesc;
-    eeGetSystemVAmd64PassStructInRegisterDescriptor(clsHnd, &structDesc);
-
-    if (structDesc.passedInRegisters && (structDesc.eightByteCount != 1))
-    {
-        // We can't pass this as a primitive type.
-    }
-    else if (structDesc.eightByteClassifications[0] == SystemVClassificationTypeSSE)
-    {
-        // If this is passed as a floating type, use that.
-        // Otherwise, we'll use the general case - we don't want to use the "EightByteType"
-        // directly, because it returns `TYP_INT` for any integral type <= 4 bytes, and
-        // we need to preserve small types.
-        useType = GetEightByteType(structDesc, 0);
-    }
-    else
-#endif // UNIX_AMD64_ABI
-
-        // The largest arg passed in a single register is MAX_PASS_SINGLEREG_BYTES,
-        // so we can skip calling getPrimitiveTypeForStruct when we
-        // have a struct that is larger than that.
-        //
-        if (structSize <= MAX_PASS_SINGLEREG_BYTES)
-        {
-            // We set the "primitive" useType based upon the structSize
-            // and also examine the clsHnd to see if it is an HFA of count one
-            useType = getPrimitiveTypeForStruct(structSize, clsHnd, isVarArg);
-        }
-#else
-    if (isTrivialPointerSizedStruct(clsHnd))
-    {
-        useType = TYP_I_IMPL;
-    }
-#endif // !TARGET_X86
-
-    // Did we change this struct type into a simple "primitive" type?
-    //
-    if (useType != TYP_UNKNOWN)
-    {
-        // Yes, we should use the "primitive" type in 'useType'
-        howToPassStruct = SPK_PrimitiveType;
-    }
-    else // We can't replace the struct with a "primitive" type
-    {
-        // See if we can pass this struct by value, possibly in multiple registers
-        // or if we should pass it by reference to a copy
-        //
-        if (structSize <= MAX_PASS_MULTIREG_BYTES)
-        {
-            // Structs that are HFA/HVA's are passed by value in multiple registers.
-            // Arm64 Windows VarArg methods arguments will not classify HFA/HVA types, they will need to be treated
-            // as if they are not HFA/HVA types.
-            var_types hfaType;
-            if (TargetArchitecture::IsArm64 && TargetOS::IsWindows && isVarArg)
-            {
-                hfaType = TYP_UNDEF;
-            }
-            else
-            {
-                hfaType = GetHfaType(clsHnd);
-            }
-            if (varTypeIsValidHfaType(hfaType))
-            {
-                // HFA's of count one should have been handled by getPrimitiveTypeForStruct
-                assert(GetHfaCount(clsHnd) >= 2);
-
-                // setup wbPassType and useType indicate that this is passed by value as an HFA
-                //  using multiple registers
-                //  (when all of the parameters registers are used, then the stack will be used)
-                howToPassStruct = SPK_ByValueAsHfa;
-                useType         = TYP_STRUCT;
-            }
-            else // Not an HFA struct type
-            {
-
-#ifdef UNIX_AMD64_ABI
-                // The case of (structDesc.eightByteCount == 1) should have already been handled
-                if ((structDesc.eightByteCount > 1) || !structDesc.passedInRegisters)
-                {
-                    // setup wbPassType and useType indicate that this is passed by value in multiple registers
-                    //  (when all of the parameters registers are used, then the stack will be used)
-                    howToPassStruct = SPK_ByValue;
-                    useType         = TYP_STRUCT;
-                }
-                else
-                {
-                    assert(structDesc.eightByteCount == 0);
-                    // Otherwise we pass this struct by reference to a copy
-                    // setup wbPassType and useType indicate that this is passed using one register
-                    //  (by reference to a copy)
-                    howToPassStruct = SPK_ByReference;
-                    useType         = TYP_UNKNOWN;
-                }
-
-#elif defined(TARGET_ARM64)
-
-                // Structs that are pointer sized or smaller should have been handled by getPrimitiveTypeForStruct
-                assert(structSize > TARGET_POINTER_SIZE);
-
-                // On ARM64 structs that are 9-16 bytes are passed by value in multiple registers
-                //
-                if (structSize <= (TARGET_POINTER_SIZE * 2))
-                {
-                    // setup wbPassType and useType indicate that this is passed by value in multiple registers
-                    //  (when all of the parameters registers are used, then the stack will be used)
-                    howToPassStruct = SPK_ByValue;
-                    useType         = TYP_STRUCT;
-                }
-                else // a structSize that is 17-32 bytes in size
-                {
-                    // Otherwise we pass this struct by reference to a copy
-                    // setup wbPassType and useType indicate that this is passed using one register
-                    //  (by reference to a copy)
-                    howToPassStruct = SPK_ByReference;
-                    useType         = TYP_UNKNOWN;
-                }
-
-#elif defined(TARGET_X86) || defined(TARGET_ARM) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
-
-                // Otherwise we pass this struct by value on the stack
-                // setup wbPassType and useType indicate that this is passed by value according to the X86/ARM32 ABI
-                // On LOONGARCH64 and RISCV64 struct that is 1-16 bytes is passed by value in one/two register(s)
-                howToPassStruct = SPK_ByValue;
-                useType         = TYP_STRUCT;
-
-#else //  TARGET_XXX
-
-                noway_assert(!"Unhandled TARGET in getArgTypeForStruct (with FEATURE_MULTIREG_ARGS=1)");
-
-#endif //  TARGET_XXX
-            }
-        }
-        else // (structSize > MAX_PASS_MULTIREG_BYTES)
-        {
-            // We have a (large) struct that can't be replaced with a "primitive" type
-            // and can't be passed in multiple registers
-
-#if defined(TARGET_X86) || defined(TARGET_ARM) || defined(UNIX_AMD64_ABI)
-
-            // Otherwise we pass this struct by value on the stack
-            // setup wbPassType and useType indicate that this is passed by value according to the X86/ARM32 ABI
-            howToPassStruct = SPK_ByValue;
-            useType         = TYP_STRUCT;
-
-#elif defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
-
-            // Otherwise we pass this struct by reference to a copy
-            // setup wbPassType and useType indicate that this is passed using one register (by reference to a copy)
-            howToPassStruct = SPK_ByReference;
-            useType         = TYP_UNKNOWN;
-
-#else //  TARGET_XXX
-
-            noway_assert(!"Unhandled TARGET in getArgTypeForStruct");
-
-#endif //  TARGET_XXX
-        }
-    }
-
-    // 'howToPassStruct' must be set to one of the valid values before we return
-    assert(howToPassStruct != SPK_Unknown);
-    if (wbPassStruct != nullptr)
-    {
-        *wbPassStruct = howToPassStruct;
     }
 
     return useType;
@@ -1136,7 +907,7 @@ var_types Compiler::getReturnTypeForStruct(CORINFO_CLASS_HANDLE     clsHnd,
         //
         // The ABI for struct returns in varArg methods, is same as the normal case,
         // so pass false for isVararg
-        useType = getPrimitiveTypeForStruct(structSize, clsHnd, /*isVararg=*/false);
+        useType = getPrimitiveTypeForStruct(structSize, clsHnd);
 
         if (useType != TYP_UNKNOWN)
         {
@@ -4082,8 +3853,8 @@ bool Compiler::compRsvdRegCheck(FrameLayoutState curState)
     JITDUMP("\n"
             "compRsvdRegCheck\n"
             "  frame size  = %6d\n"
-            "  compArgSize = %6d\n",
-            frameSize, compArgSize);
+            "  lvaParameterStackSize = %6d\n",
+            frameSize, lvaParameterStackSize);
 
     if (opts.MinOpts())
     {
@@ -4153,7 +3924,7 @@ bool Compiler::compRsvdRegCheck(FrameLayoutState curState)
     JITDUMP("  maxR11NegativeEncodingOffset     = %6d\n", maxR11NegativeEncodingOffset);
 
     // -1 because otherwise we are computing the address just beyond the last argument, which we don't need to do.
-    unsigned maxR11PositiveOffset = compArgSize + (2 * REGSIZE_BYTES) - 1;
+    unsigned maxR11PositiveOffset = lvaParameterStackSize + (2 * REGSIZE_BYTES) - 1;
     JITDUMP("  maxR11PositiveOffset             = %6d\n", maxR11PositiveOffset);
 
     // The value is positive, but represents a negative offset from R11.
@@ -4184,8 +3955,8 @@ bool Compiler::compRsvdRegCheck(FrameLayoutState curState)
     JITDUMP("  maxSPPositiveEncodingOffset      = %6d\n", maxSPPositiveEncodingOffset);
 
     // -1 because otherwise we are computing the address just beyond the last argument, which we don't need to do.
-    assert(compArgSize + frameSize > 0);
-    unsigned maxSPPositiveOffset = compArgSize + frameSize - 1;
+    assert(lvaParameterStackSize + frameSize > 0);
+    unsigned maxSPPositiveOffset = lvaParameterStackSize + frameSize - 1;
 
     if (codeGen->isFramePointerUsed())
     {

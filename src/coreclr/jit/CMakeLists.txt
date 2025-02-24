@@ -163,7 +163,6 @@ set( JIT_SOURCES
   rationalize.cpp
   redundantbranchopts.cpp
   regalloc.cpp
-  registerargconvention.cpp
   regMaskTPOps.cpp
   regset.cpp
   scev.cpp
@@ -360,7 +359,6 @@ set( JIT_HEADERS
   rangecheckcloning.h
   rationalize.h
   regalloc.h
-  registerargconvention.h
   register.h
   regset.h
   scev.h
