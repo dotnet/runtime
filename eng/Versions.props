@@ -44,9 +44,9 @@
       Any tools that contribute to the design-time experience should use the MicrosoftCodeAnalysisVersion_LatestVS property above to ensure
       they do not break the local dev experience.
     -->
-    <MicrosoftCodeAnalysisCSharpVersion>4.14.0-2.25110.8</MicrosoftCodeAnalysisCSharpVersion>
-    <MicrosoftCodeAnalysisVersion>4.14.0-2.25110.8</MicrosoftCodeAnalysisVersion>
-    <MicrosoftNetCompilersToolsetVersion>4.14.0-2.25110.8</MicrosoftNetCompilersToolsetVersion>
+    <MicrosoftCodeAnalysisCSharpVersion>4.14.0-2.25121.3</MicrosoftCodeAnalysisCSharpVersion>
+    <MicrosoftCodeAnalysisVersion>4.14.0-2.25121.3</MicrosoftCodeAnalysisVersion>
+    <MicrosoftNetCompilersToolsetVersion>4.14.0-2.25121.3</MicrosoftNetCompilersToolsetVersion>
   </PropertyGroup>
   <!--
     For source generator support we need to target multiple versions of Roslyn in order to be able to run on older versions of Roslyn.
