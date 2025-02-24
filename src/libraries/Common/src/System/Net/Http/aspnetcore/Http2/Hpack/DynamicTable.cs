@@ -72,9 +72,11 @@ namespace System.Net.Http.HPack
             // Ensure that we have at least one slot available.
             if (_count == _buffer.Length)
             {
-                Debug.Assert(_count + 1 <= _maxSize / HeaderField.RfcOverhead);
+                int maxCapacity = _maxSize / HeaderField.RfcOverhead;
+                Debug.Assert(_count + 1 <= maxCapacity);
 
-                int newBufferSize = Math.Min(Math.Max(4, _buffer.Length * 2), _maxSize / HeaderField.RfcOverhead);
+                // Double the size of the current buffer, starting with at least 16 entries.
+                int newBufferSize = Math.Min(Math.Max(16, _buffer.Length * 2), maxCapacity);
                 Debug.Assert(newBufferSize > _count);
 
                 var newBuffer = new HeaderField[newBufferSize];
