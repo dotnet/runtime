@@ -105,7 +105,6 @@ GenTree* Lowering::LowerStoreIndir(GenTreeStoreInd* node)
     {
         node->Data()->ChangeType(TYP_BYTE);
     }
-
     ContainCheckStoreIndir(node);
 
 #if defined(FEATURE_HW_INTRINSICS)

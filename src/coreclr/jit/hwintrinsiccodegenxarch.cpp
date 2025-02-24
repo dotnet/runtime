@@ -1677,8 +1677,8 @@ void CodeGen::genBaseIntrinsic(GenTreeHWIntrinsic* node, insOpts instOptions)
                                 // We want count_d 0b00 (0x0) to insert the value to element 0
                                 // We want count_s 0b00 (0x0) as we're just taking element 0 of the source
 
-                                GetEmitter()->emitIns_SIMD_R_R_R_I(INS_insertps, attr, targetReg, targetReg, op1Reg,
-                                                                   0x0E, instOptions);
+                                emit->emitIns_SIMD_R_R_R_I(INS_insertps, attr, targetReg, targetReg, op1Reg, 0x0E,
+                                                           instOptions);
                             }
                             else
                             {
