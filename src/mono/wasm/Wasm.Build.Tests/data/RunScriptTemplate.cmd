@@ -61,6 +61,11 @@ if [%WASM_FINGERPRINT_ASSETS%] == [false] (
 ) else (
    set USE_FINGERPRINTING_FOR_TESTS=true
 )
+if [%WASM_FINGERPRINT_DOTNET_JS%] == [false] (
+   set USE_DOTNET_FINGERPRINTING_FOR_TESTS=false
+) else (
+   set USE_DOTNET_FINGERPRINTING_FOR_TESTS=true
+)
 
 if [%HELIX_CORRELATION_PAYLOAD%] NEQ [] (
     robocopy /mt /np /nfl /NDL /nc /e %BASE_DIR%\%SDK_DIR_NAME% %EXECUTION_DIR%\%SDK_DIR_NAME%
