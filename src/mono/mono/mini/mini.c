@@ -2868,9 +2868,14 @@ insert_samplepoint (MonoCompile *cfg, MonoBasicBlock *bblock)
 	
 	// append the previous instruction list to the end of the bb
 	if (begin) {
-		begin->prev = bblock->last_ins;
-		bblock->last_ins->next = begin;
-		bblock->last_ins = end;
+		if(bblock->code) {
+			begin->prev = bblock->last_ins;
+			bblock->last_ins->next = begin;
+			bblock->last_ins = end;
+		} else {
+			bblock->code = begin;
+			bblock->last_ins = end;
+		}
 	}
 }
 

@@ -109,7 +109,7 @@ mini_profiler_emit_samplepoint (MonoCompile *cfg)
 
 	gboolean trace = mono_jit_trace_calls != NULL && mono_trace_eval (cfg->method);
 
-	if (!trace && (!(MONO_CFG_PROFILE (cfg, SAMPLEPOINT) || MONO_CFG_PROFILE (cfg, SAMPLEPOINT_CONTEXT))|| (cfg->compile_aot && !can_encode_method_ref (cfg->method))))
+	if (!trace && (!(MONO_CFG_PROFILE (cfg, SAMPLEPOINT) || MONO_CFG_PROFILE (cfg, SAMPLEPOINT_CONTEXT)) || (cfg->compile_aot && !can_encode_method_ref (cfg->method))))
 		return;
 
 	MonoInst *iargs [3];
