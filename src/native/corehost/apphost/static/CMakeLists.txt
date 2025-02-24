@@ -306,12 +306,6 @@ target_link_libraries(
     ${END_WHOLE_ARCHIVE}
 )
 
-if(CLR_CMAKE_TARGET_ANDROID)
-    target_link_libraries(
-        singlefilehost
-    )
-endif()
-
 target_link_libraries(singlefilehost PRIVATE hostmisc)
 
 add_sanitizer_runtime_support(singlefilehost)
