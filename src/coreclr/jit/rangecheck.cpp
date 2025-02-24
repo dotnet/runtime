@@ -924,6 +924,11 @@ void RangeCheck::MergeEdgeAssertions(Compiler*        comp,
                 {
                     pRange->lLimit = Limit(Limit::keConstant, 0);
                 }
+                else if (pRange->LowerLimit().IsUnknown())
+                {
+                    // INT32_MIN is better than Unknown.
+                    pRange->lLimit = Limit(Limit::keConstant, INT32_MIN);
+                }
                 break;
 
             case GT_GT:
@@ -933,6 +938,11 @@ void RangeCheck::MergeEdgeAssertions(Compiler*        comp,
                 if (!isUnsigned)
                 {
                     pRange->lLimit = limit;
+                    if (pRange->UpperLimit().IsUnknown())
+                    {
+                        // INT32_MAX is better than Unknown.
+                        pRange->uLimit = Limit(Limit::keConstant, INT32_MAX);
+                    }
                 }
                 break;
 
@@ -1608,13 +1618,27 @@ void Indent(int indent)
 #endif
 
 // Get the range, if it is already computed, use the cached range value, else compute it.
-Range RangeCheck::GetRange(BasicBlock* block, GenTree* expr)
+Range RangeCheck::GetRange(BasicBlock* block, GenTree* expr, int customBudget)
 {
+    // In case if we have a custom budget
+    int globalBudget = m_nVisitBudget;
+    if (customBudget != -1)
+    {
+        assert(customBudget > 0);
+        m_nVisitBudget = customBudget;
+    }
+
     GetRangeMap()->RemoveAll();
     GetOverflowMap()->RemoveAll();
     GetSearchPath()->RemoveAll();
 
-    return GetRangeWorker(block, expr, false DEBUGARG(0));
+    Range result = GetRangeWorker(block, expr, false DEBUGARG(0));
+    if (customBudget != -1)
+    {
+        // Restore the global budget.
+        m_nVisitBudget = globalBudget;
+    }
+    return result;
 }
 
 // Get the range, if it is already computed, use the cached range value, else compute it.

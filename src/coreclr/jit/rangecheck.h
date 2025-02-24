@@ -712,7 +712,7 @@ public:
     // The "path" is the path taken in the search for the rhs' range and its constituents' range.
     // If "monIncreasing" is true, the calculations are made more liberally assuming initial values
     // at phi definitions for the lower bound.
-    Range GetRange(BasicBlock* block, GenTree* expr);
+    Range GetRange(BasicBlock* block, GenTree* expr, int customBudget = -1);
 
     Range GetRangeWorker(BasicBlock* block, GenTree* expr, bool monIncreasing DEBUGARG(int indent));
 
