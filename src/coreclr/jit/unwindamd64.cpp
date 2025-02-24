@@ -433,6 +433,8 @@ void Compiler::unwindSaveRegWindows(regNumber reg, unsigned offset)
             assert(genIsValidIntReg(reg));
             unwindRegNum = reg;
         }
+        // We only add unwind codes for non-volatile registers and for x86/x64,
+        // the max registers index for a non-volatile register is 15.
         assert(unwindRegNum <= 15);
         code->OpInfo = (UCHAR)unwindRegNum;
         assert((unsigned)code->OpInfo == unwindRegNum);
