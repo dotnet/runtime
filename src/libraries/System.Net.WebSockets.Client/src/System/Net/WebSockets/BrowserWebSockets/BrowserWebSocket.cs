@@ -588,7 +588,7 @@ namespace System.Net.WebSockets
                     }
                     if (ex is OperationCanceledException || cancellationToken.IsCancellationRequested || ex.Message == "Error: OperationCanceledException")
                     {
-                        if(state != WebSocketState.Closed)
+                        if (state != WebSocketState.Closed)
                         {
                             FastState = WebSocketState.Aborted;
                         }

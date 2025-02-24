@@ -7,6 +7,8 @@ AOT_WITH_LIBRARY_FILES=false
 INTERP=false
 DEPLOY_AND_RUN?=true
 RUNTIME_FLAVOR?=Mono
+R2R?=false
+R2R_COMPOSITE?=false
 
 #If DIAGNOSTIC_PORTS is enabled, @(RuntimeComponents) must also include 'diagnostics_tracing'.
 #If @(RuntimeComponents) includes 'diagnostics_tracing', DIAGNOSTIC_PORTS is optional.
@@ -31,7 +33,7 @@ runtimepack:
 	$(BUILD_SCRIPT) mono+libs -os android -arch $(TARGET_ARCH) -c $(BUILD_CONFIG) -bl
 else
 runtimepack:
-	$(BUILD_SCRIPT) clr.runtime+clr.alljits+clr.corelib+clr.nativecorelib+clr.tools+clr.packages+libs -os android -arch $(TARGET_ARCH) -c $(BUILD_CONFIG) -cross -bl
+	$(BUILD_SCRIPT) clr.runtime+clr.alljits+clr.corelib+clr.nativecorelib+clr.tools+clr.packages+libs -os android -arch $(TARGET_ARCH) -c $(BUILD_CONFIG) -bl
 endif
 
 run: appbuilder
@@ -44,10 +46,12 @@ run: appbuilder
 	/p:ForceAOT=$(AOT) \
 	/p:AOTWithLibraryFiles=$(AOT_WITH_LIBRARY_FILES) \
 	/p:MonoForceInterpreter=$(INTERP) \
-	/p:UseLLVM=$(USE_LLVM) \
+	/p:MonoEnableLLVM=$(USE_LLVM) \
 	/p:RunActivity=false \
 	'/p:DiagnosticPorts="$(DIAGNOSTIC_PORTS)"' \
 	/p:RuntimeFlavor=$(RUNTIME_FLAVOR) \
+	/p:PublishReadyToRun=$(R2R) \
+	/p:PublishReadyToRunComposite=$(R2R_COMPOSITE) \
 	/bl
 clean:
 	rm -rf $(REPO_DIR)/artifacts/bin/AndroidSampleApp

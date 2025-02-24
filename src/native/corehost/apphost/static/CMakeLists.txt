@@ -25,7 +25,7 @@ include_directories(${CLR_ARTIFACTS_OBJ_DIR}) # Generated version files
 add_subdirectory(../../hostmisc hostmisc)
 
 configure_file(${CLR_SRC_NATIVE_DIR}/corehost/configure.h.in ${GENERATED_INCLUDE_DIR}/corehost/configure.h)
-target_include_directories(hostmisc PUBLIC ${GENERATED_INCLUDE_DIR}/corehost)
+target_include_directories(hostmisc_interface INTERFACE ${GENERATED_INCLUDE_DIR}/corehost)
 
 if ((NOT DEFINED CLR_CMAKE_USE_SYSTEM_RAPIDJSON) OR (NOT CLR_CMAKE_USE_SYSTEM_RAPIDJSON))
     include_directories(${CLR_SRC_NATIVE_DIR}/external/)
@@ -190,7 +190,13 @@ else()
         coreclrpal_dac
         corguids
         dbgutil
-        eventprovider
+    )
+    if (FEATURE_EVENT_TRACE)
+        LIST(APPEND NATIVE_LIBS
+            eventprovider
+        )
+    endif(FEATURE_EVENT_TRACE) 
+    LIST(APPEND NATIVE_LIBS
         nativeresourcestring
     )
 
@@ -198,7 +204,7 @@ else()
     include(${CLR_SRC_NATIVE_DIR}/libs/System.IO.Compression.Native/extra_libs.cmake)
     append_extra_compression_libs(NATIVE_LIBS)
 
-    if (NOT CLR_CMAKE_TARGET_TVOS AND NOT CLR_CMAKE_HOST_ANDROID) # no gssapi on tvOS, see https://developer.apple.com/documentation/gss
+    if (NOT CLR_CMAKE_TARGET_TVOS AND NOT CLR_CMAKE_TARGET_ANDROID) # no gssapi on tvOS, see https://developer.apple.com/documentation/gss
         # Additional requirements for System.Net.Security.Native
         include(${CLR_SRC_NATIVE_DIR}/libs/System.Net.Security.Native/extra_libs.cmake)
         append_extra_security_libs(NATIVE_LIBS)
@@ -208,7 +214,7 @@ else()
     include(${CLR_SRC_NATIVE_DIR}/libs/System.Native/extra_libs.cmake)
     append_extra_system_libs(NATIVE_LIBS)
 
-    if(NOT CLR_CMAKE_TARGET_MACCATALYST AND NOT CLR_CMAKE_TARGET_IOS AND NOT CLR_CMAKE_TARGET_TVOS AND NOT CLR_CMAKE_HOST_ANDROID)
+    if(NOT CLR_CMAKE_TARGET_MACCATALYST AND NOT CLR_CMAKE_TARGET_IOS AND NOT CLR_CMAKE_TARGET_TVOS AND NOT CLR_CMAKE_TARGET_ANDROID)
         # Additional requirements for System.Security.Cryptography.Native.OpenSsl
         include(${CLR_SRC_NATIVE_DIR}/libs/System.Security.Cryptography.Native/extra_libs.cmake)
         append_extra_cryptography_libs(NATIVE_LIBS)
