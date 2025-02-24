@@ -777,7 +777,7 @@ public:
         else if (lcl->lvIsParam)
         {
             // For parameters, the backend may be able to map it directly from a register.
-            if (MapsToRegister(comp, access, lclNum))
+            if (Promotion::MapsToParameterRegister(comp, lclNum, access.Offset, access.AccessType))
             {
                 // No promotion will result in a store to stack in the prolog.
                 costWithout += COST_STRUCT_ACCESS_CYCLES * comp->fgFirstBB->getBBWeight(comp);
@@ -1021,46 +1021,6 @@ private:
         } while ((index < m_accesses.size()) && (m_accesses[index].Offset == offs));
 
         return nullptr;
-    }
-
-    //------------------------------------------------------------------------
-    // MapsToRegister:
-    //   Check if a specific access in the specified parameter local is
-    //   expected to map to a register.
-    //
-    // Parameters:
-    //   comp   - Compiler instance
-    //   access - Access in the local
-    //   lclNum - Parameter lcl num
-    //
-    // Returns:
-    //   Pointer to a matching access, or nullptr if no match was found.
-    //
-    bool MapsToRegister(Compiler* comp, const Access& access, unsigned lclNum)
-    {
-        assert(lclNum < comp->info.compArgsCount);
-
-        if (comp->lvaIsImplicitByRefLocal(lclNum))
-        {
-            return false;
-        }
-
-        const ABIPassingInformation& abiInfo = comp->lvaGetParameterABIInfo(lclNum);
-        if (abiInfo.HasAnyStackSegment())
-        {
-            return false;
-        }
-
-        for (const ABIPassingSegment& seg : abiInfo.Segments())
-        {
-            if ((access.Offset == seg.Offset) && (genTypeSize(access.AccessType) == seg.Size) &&
-                (varTypeUsesIntReg(access.AccessType) == genIsValidIntReg(seg.GetRegister())))
-            {
-                return true;
-            }
-        }
-
-        return false;
     }
 };
 
@@ -1553,12 +1513,12 @@ private:
 
                 flags |= AccessKindFlags::IsCallArg;
 
-                if (!call->gtArgs.IsNewAbiInformationDetermined())
+                if (!call->gtArgs.IsAbiInformationDetermined())
                 {
-                    call->gtArgs.DetermineNewABIInfo(m_compiler, call);
+                    call->gtArgs.DetermineABIInfo(m_compiler, call);
                 }
 
-                if (!arg.NewAbiInfo.HasAnyStackSegment() && !arg.NewAbiInfo.IsPassedByReference())
+                if (!arg.AbiInfo.HasAnyStackSegment() && !arg.AbiInfo.IsPassedByReference())
                 {
                     flags |= AccessKindFlags::IsRegCallArg;
                 }
@@ -1674,7 +1634,10 @@ GenTree* Promotion::CreateReadBack(Compiler* compiler, unsigned structLclNum, co
 // Parameters:
 //   block - The block
 //
-void ReplaceVisitor::StartBlock(BasicBlock* block)
+// Returns:
+//   Statement in block to start from.
+//
+Statement* ReplaceVisitor::StartBlock(BasicBlock* block)
 {
     m_currentBlock = block;
 
@@ -1697,8 +1660,10 @@ void ReplaceVisitor::StartBlock(BasicBlock* block)
     // when we start the initial BB.
     if (block != m_compiler->fgFirstBB)
     {
-        return;
+        return block->firstStmt();
     }
+
+    Statement* lastInsertedStmt = nullptr;
 
     for (AggregateInfo* agg : m_aggregates)
     {
@@ -1708,24 +1673,48 @@ void ReplaceVisitor::StartBlock(BasicBlock* block)
             continue;
         }
 
-        JITDUMP("Marking fields of %s V%02u as needing read-back in entry BB " FMT_BB "\n",
-                dsc->lvIsParam ? "parameter" : "OSR-local", agg->LclNum, block->bbNum);
+        JITDUMP("Processing fields of %s V%02u in entry BB " FMT_BB "\n", dsc->lvIsParam ? "parameter" : "OSR-local",
+                agg->LclNum, block->bbNum);
 
         for (size_t i = 0; i < agg->Replacements.size(); i++)
         {
             Replacement& rep = agg->Replacements[i];
             ClearNeedsWriteBack(rep);
-            if (m_liveness->IsReplacementLiveIn(block, agg->LclNum, (unsigned)i))
+            if (!m_liveness->IsReplacementLiveIn(block, agg->LclNum, (unsigned)i))
+            {
+                JITDUMP("  V%02u (%s) ignored because it is not live-in to entry BB\n", rep.LclNum, rep.Description);
+                continue;
+            }
+
+            if (!dsc->lvIsParam ||
+                !Promotion::MapsToParameterRegister(m_compiler, agg->LclNum, rep.Offset, rep.AccessType))
             {
                 SetNeedsReadBack(rep);
-                JITDUMP("  V%02u (%s) marked\n", rep.LclNum, rep.Description);
+                JITDUMP("  V%02u (%s) marked as needing read back\n", rep.LclNum, rep.Description);
+                continue;
+            }
+
+            // Insert read backs of parameters mapping to registers eagerly to
+            // set the backend up for recognizing these as register accesses.
+            GenTree*   readBack = Promotion::CreateReadBack(m_compiler, agg->LclNum, rep);
+            Statement* stmt     = m_compiler->fgNewStmtFromTree(readBack);
+            JITDUMP("  V%02u (%s) is read back eagerly because it is a register parameter\n", rep.LclNum,
+                    rep.Description);
+            DISPSTMT(stmt);
+            if (lastInsertedStmt == nullptr)
+            {
+                m_compiler->fgInsertStmtAtBeg(block, stmt);
             }
             else
             {
-                JITDUMP("  V%02u (%s) not marked (not live-in to entry BB)\n", rep.LclNum, rep.Description);
+                m_compiler->fgInsertStmtAfter(block, lastInsertedStmt, stmt);
             }
+            lastInsertedStmt = stmt;
         }
     }
+
+    // Skip all the eager read-backs if any were inserted.
+    return lastInsertedStmt == nullptr ? block->firstStmt() : lastInsertedStmt->GetNextStmt();
 }
 
 //------------------------------------------------------------------------
@@ -2419,7 +2408,7 @@ bool ReplaceVisitor::ReplaceCallArgWithFieldList(GenTreeCall* call, GenTreeLclVa
     assert(layout != nullptr);
     StructDeaths      deaths    = m_liveness->GetDeathsForStructLocal(argNode);
     GenTreeFieldList* fieldList = m_compiler->gtNewFieldList();
-    for (const ABIPassingSegment& seg : callArg->NewAbiInfo.Segments())
+    for (const ABIPassingSegment& seg : callArg->AbiInfo.Segments())
     {
         Replacement* rep = nullptr;
         if (agg->OverlappingReplacements(argNode->GetLclOffs() + seg.Offset, seg.Size, &rep, nullptr) &&
@@ -2496,9 +2485,9 @@ bool ReplaceVisitor::CanReplaceCallArgWithFieldListOfReplacements(GenTreeCall*  
                                                                   GenTreeLclVarCommon* lcl)
 {
     // We should have computed ABI information during the costing phase.
-    assert(call->gtArgs.IsNewAbiInformationDetermined());
+    assert(call->gtArgs.IsAbiInformationDetermined());
 
-    if (callArg->NewAbiInfo.HasAnyStackSegment() || callArg->NewAbiInfo.IsPassedByReference())
+    if (callArg->AbiInfo.HasAnyStackSegment() || callArg->AbiInfo.IsPassedByReference())
     {
         return false;
     }
@@ -2507,7 +2496,7 @@ bool ReplaceVisitor::CanReplaceCallArgWithFieldListOfReplacements(GenTreeCall*  
     assert(agg != nullptr);
 
     bool anyReplacements = false;
-    for (const ABIPassingSegment& seg : callArg->NewAbiInfo.Segments())
+    for (const ABIPassingSegment& seg : callArg->AbiInfo.Segments())
     {
         assert(seg.IsPassedInRegister());
 
@@ -2534,12 +2523,6 @@ bool ReplaceVisitor::CanReplaceCallArgWithFieldListOfReplacements(GenTreeCall*  
             // the replacement is visited in this callback.
             if ((repSize < seg.Size) &&
                 agg->Unpromoted.Intersects(SegmentList::Segment(rep.Offset + repSize, rep.Offset + seg.Size)))
-            {
-                return false;
-            }
-
-            // Finally, the backend requires the register types to match.
-            if (!varTypeUsesSameRegType(rep.AccessType, seg.GetRegisterType()))
             {
                 return false;
             }
@@ -3037,13 +3020,13 @@ PhaseStatus Promotion::Run()
     ReplaceVisitor replacer(this, aggregates, &liveness);
     for (BasicBlock* bb : m_compiler->Blocks())
     {
-        replacer.StartBlock(bb);
+        Statement* firstStmt = replacer.StartBlock(bb);
 
         JITDUMP("\nReplacing in ");
         DBEXEC(m_compiler->verbose, bb->dspBlockHeader(m_compiler));
         JITDUMP("\n");
 
-        for (Statement* stmt : bb->Statements())
+        for (Statement* stmt : StatementList(firstStmt))
         {
             replacer.StartStatement(stmt);
 
@@ -3147,6 +3130,47 @@ GenTree* Promotion::EffectiveUser(Compiler::GenTreeStack& ancestors)
     }
 
     return nullptr;
+}
+
+//------------------------------------------------------------------------
+// MapsToParameterRegister:
+//   Check if a specific access in the specified parameter local is
+//   expected to map to a register.
+//
+// Parameters:
+//   comp       - Compiler instance
+//   lclNum     - Local being accessed into
+//   offset     - Offset being accessed at
+//   accessType - Type of access
+//
+// Returns:
+//   True if the access can be efficiently done via a parameter register.
+//
+bool Promotion::MapsToParameterRegister(Compiler* comp, unsigned lclNum, unsigned offset, var_types accessType)
+{
+    assert(lclNum < comp->info.compArgsCount);
+
+    if (comp->opts.IsOSR())
+    {
+        return false;
+    }
+
+    const ABIPassingInformation& abiInfo = comp->lvaGetParameterABIInfo(lclNum);
+    if (abiInfo.IsPassedByReference() || abiInfo.HasAnyStackSegment())
+    {
+        return false;
+    }
+
+    for (const ABIPassingSegment& seg : abiInfo.Segments())
+    {
+        if ((offset == seg.Offset) && (genTypeSize(accessType) == seg.Size) &&
+            (varTypeUsesIntReg(accessType) == genIsValidIntReg(seg.GetRegister())))
+        {
+            return true;
+        }
+    }
+
+    return false;
 }
 
 // Promotion::ExplicitlyZeroInitReplacementLocals:

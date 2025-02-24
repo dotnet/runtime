@@ -15,9 +15,6 @@
     <EnableDefaultAssembliesToBundle>true</EnableDefaultAssembliesToBundle>
     <!-- With Mono AOT on Android we default to not using AOT data file optimization as it can degrade runtime performance for small binary size improvements. -->
     <_UseAotDataFile Condition="'$(RunAOTCompilation)' == 'true'">false</_UseAotDataFile>
-    <RepoDotnet Condition="'$(DOTNET_ROOT)' != ''">$(DOTNET_ROOT)/dotnet</RepoDotnet>
-    <RepoDotnet Condition="'$(RepoDotnet)' == '' and '$(OS)' == 'Windows_NT'">..\..\..\..\dotnet.cmd</RepoDotnet>
-    <RepoDotnet Condition="'$(RepoDotnet)' == '' and '$(OS)' != 'Windows_NT'">../../../dotnet.sh</RepoDotnet>
   </PropertyGroup>
 
   <ItemGroup>
@@ -34,7 +31,7 @@
           Condition="'$(ArchiveTests)' != 'true' and '$(DeployAndRun)' == 'true'"
           AfterTargets="_AfterAndroidBuild"
           DependsOnTargets="$(AndroidBuildDependsOn)" >
-    <Exec Command="$(RepoDotnet) xharness android test --package-name=net.dot.HelloAndroid --instrumentation=net.dot.MonoRunner --app=$(AndroidBundleDir)/bin/HelloAndroid.apk --expected-exit-code=42 --output-directory=$(AndroidBundleDir)/log" />
+    <Exec Command="$(DotNetTool) xharness android test --package-name=net.dot.HelloAndroid --instrumentation=net.dot.MonoRunner --app=$(AndroidBundleDir)/bin/HelloAndroid.apk --expected-exit-code=42 --output-directory=$(AndroidBundleDir)/log" />
   </Target>
 
   <Target Name="CopySampleAppToHelixTestDir"

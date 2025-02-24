@@ -1827,11 +1827,14 @@ void CodeGen::genGenerateMachineCode()
         printf(" for ");
 
 #if defined(TARGET_X86)
-        if (compiler->canUseEvexEncoding())
+        // Check ISA directly here instead of using
+        // compOpportunisticallyDependsOn to avoid JIT-EE calls that could make
+        // us miss in SPMI
+        if (compiler->opts.compSupportsISA.HasInstructionSet(InstructionSet_EVEX))
         {
-            if (compiler->compOpportunisticallyDependsOn(InstructionSet_AVX10v2))
+            if (compiler->opts.compSupportsISA.HasInstructionSet(InstructionSet_AVX10v2))
             {
-                if (compiler->compOpportunisticallyDependsOn(InstructionSet_AVX10v2_V512))
+                if (compiler->opts.compSupportsISA.HasInstructionSet(InstructionSet_AVX10v2_V512))
                 {
                     printf("X86 with AVX10.2/512");
                 }
@@ -1840,9 +1843,9 @@ void CodeGen::genGenerateMachineCode()
                     printf("X86 with AVX10.2/256");
                 }
             }
-            else if (compiler->compOpportunisticallyDependsOn(InstructionSet_AVX10v1))
+            else if (compiler->opts.compSupportsISA.HasInstructionSet(InstructionSet_AVX10v1))
             {
-                if (compiler->compOpportunisticallyDependsOn(InstructionSet_AVX10v1_V512))
+                if (compiler->opts.compSupportsISA.HasInstructionSet(InstructionSet_AVX10v1_V512))
                 {
                     printf("X86 with AVX10.1/512");
                 }
@@ -1857,7 +1860,7 @@ void CodeGen::genGenerateMachineCode()
                 printf("X86 with AVX512");
             }
         }
-        else if (compiler->canUseVexEncoding())
+        else if (compiler->opts.compSupportsISA.HasInstructionSet(InstructionSet_AVX))
         {
             printf("X86 with AVX");
         }
@@ -1866,11 +1869,11 @@ void CodeGen::genGenerateMachineCode()
             printf("generic X86");
         }
 #elif defined(TARGET_AMD64)
-        if (compiler->canUseEvexEncoding())
+        if (compiler->opts.compSupportsISA.HasInstructionSet(InstructionSet_EVEX))
         {
-            if (compiler->compOpportunisticallyDependsOn(InstructionSet_AVX10v2))
+            if (compiler->opts.compSupportsISA.HasInstructionSet(InstructionSet_AVX10v2))
             {
-                if (compiler->compOpportunisticallyDependsOn(InstructionSet_AVX10v2_V512))
+                if (compiler->opts.compSupportsISA.HasInstructionSet(InstructionSet_AVX10v2_V512))
                 {
                     printf("X64 with AVX10.2/512");
                 }
@@ -1879,9 +1882,9 @@ void CodeGen::genGenerateMachineCode()
                     printf("X64 with AVX10.2/256");
                 }
             }
-            else if (compiler->compOpportunisticallyDependsOn(InstructionSet_AVX10v1))
+            else if (compiler->opts.compSupportsISA.HasInstructionSet(InstructionSet_AVX10v1))
             {
-                if (compiler->compOpportunisticallyDependsOn(InstructionSet_AVX10v1_V512))
+                if (compiler->opts.compSupportsISA.HasInstructionSet(InstructionSet_AVX10v1_V512))
                 {
                     printf("X64 with AVX10.1/512");
                 }
@@ -1896,7 +1899,7 @@ void CodeGen::genGenerateMachineCode()
                 printf("X64 with AVX512");
             }
         }
-        else if (compiler->canUseVexEncoding())
+        else if (compiler->opts.compSupportsISA.HasInstructionSet(InstructionSet_AVX))
         {
             printf("X64 with AVX");
         }
@@ -4582,9 +4585,10 @@ void CodeGen::genReportGenericContextArg(regNumber initReg, bool* pInitRegZeroed
 #endif
 
     // Load from the argument register only if it is not prespilled.
-    if (compiler->lvaIsRegArgument(contextArg) && !isPrespilledForProfiling)
+    const ABIPassingInformation& abiInfo = compiler->lvaGetParameterABIInfo(contextArg);
+    if (abiInfo.HasExactlyOneRegisterSegment() && !isPrespilledForProfiling)
     {
-        reg = varDsc->GetArgReg();
+        reg = abiInfo.Segment(0).GetRegister();
     }
     else
     {
@@ -6045,7 +6049,9 @@ regNumber CodeGen::getCallIndirectionCellReg(GenTreeCall* call)
     if (call->GetIndirectionCellArgKind() != WellKnownArg::None)
     {
         CallArg* indirCellArg = call->gtArgs.FindWellKnownArg(call->GetIndirectionCellArgKind());
-        assert((indirCellArg != nullptr) && (indirCellArg->AbiInfo.GetRegNum() == result));
+        assert(indirCellArg != nullptr);
+        assert(indirCellArg->AbiInfo.HasExactlyOneRegisterSegment());
+        assert(indirCellArg->AbiInfo.Segment(0).GetRegister() == result);
     }
 #endif
 
@@ -6265,13 +6271,15 @@ unsigned CodeGen::getFirstArgWithStackSlot()
     // that's passed on the stack.
     for (unsigned i = 0; i < compiler->info.compArgsCount; i++)
     {
-        LclVarDsc* varDsc = compiler->lvaGetDesc(i);
-
         // We should have found a stack parameter (and broken out of this loop) before
         // we find any non-parameters.
-        assert(varDsc->lvIsParam);
+        assert(compiler->lvaGetDesc(i)->lvIsParam);
 
-        if (varDsc->GetArgReg() == REG_STK)
+        const ABIPassingInformation& abiInfo = compiler->lvaGetParameterABIInfo(i);
+        // We do not expect to need this function in ambiguous cases.
+        assert(!abiInfo.IsSplitAcrossRegistersAndStack());
+
+        if (abiInfo.HasAnyStackSegment())
         {
             return i;
         }
@@ -7499,7 +7507,7 @@ void CodeGen::genCallPlaceRegArgs(GenTreeCall* call)
     // Consume all the arg regs
     for (CallArg& arg : call->gtArgs.LateArgs())
     {
-        ABIPassingInformation& abiInfo = arg.NewAbiInfo;
+        ABIPassingInformation& abiInfo = arg.AbiInfo;
         GenTree*               argNode = arg.GetLateNode();
 
 #if FEATURE_MULTIREG_ARGS
@@ -7591,7 +7599,7 @@ void CodeGen::genCallPlaceRegArgs(GenTreeCall* call)
     {
         for (CallArg& arg : call->gtArgs.Args())
         {
-            for (const ABIPassingSegment& seg : arg.NewAbiInfo.Segments())
+            for (const ABIPassingSegment& seg : arg.AbiInfo.Segments())
             {
                 if (seg.IsPassedInRegister() && genIsValidFloatReg(seg.GetRegister()))
                 {

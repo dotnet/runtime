@@ -522,7 +522,7 @@ public:
     var_types lvType : 5; // TYP_INT/LONG/FLOAT/DOUBLE/REF
 
     unsigned char lvIsParam           : 1; // is this a parameter?
-    unsigned char lvIsRegArg          : 1; // is this an argument that was passed by register?
+    unsigned char lvIsRegArg          : 1; // is any part of this parameter passed in a register?
     unsigned char lvIsParamRegTarget  : 1; // is this the target of a param reg to local mapping?
     unsigned char lvFramePointerBased : 1; // 0 = off of REG_SPBASE (e.g., ESP), 1 = off of REG_FPBASE (e.g., EBP)
 
@@ -3119,7 +3119,7 @@ public:
     Statement* gtNewStmt(GenTree* expr, const DebugInfo& di);
 
     // For unary opers.
-    GenTree* gtNewOperNode(genTreeOps oper, var_types type, GenTree* op1);
+    GenTreeUnOp* gtNewOperNode(genTreeOps oper, var_types type, GenTree* op1);
 
     // For binary opers.
     GenTreeOp* gtNewOperNode(genTreeOps oper, var_types type, GenTree* op1, GenTree* op2);
@@ -3208,7 +3208,7 @@ public:
 
     GenTree* gtNewPutArgReg(var_types type, GenTree* arg, regNumber argReg);
 
-    GenTree* gtNewBitCastNode(var_types type, GenTree* arg);
+    GenTreeUnOp* gtNewBitCastNode(var_types type, GenTree* arg);
 
 public:
     GenTreeCall* gtNewCallNode(gtCallTypes           callType,
@@ -3933,6 +3933,7 @@ public:
     const char* gtGetWellKnownArgNameForArgMsg(WellKnownArg arg);
     void gtGetArgMsg(GenTreeCall* call, CallArg* arg, char* bufp, unsigned bufLength);
     void gtGetLateArgMsg(GenTreeCall* call, CallArg* arg, char* bufp, unsigned bufLength);
+    void gtPrintABILocation(const ABIPassingInformation& abiInfo, char** bufp, unsigned* bufLength);
     void gtDispArgList(GenTreeCall* call, GenTree* lastCallOperand, IndentStack* indentStack);
     void gtDispFieldSeq(FieldSeq* fieldSeq, ssize_t offset);
 
@@ -5247,6 +5248,7 @@ private:
                            CORINFO_METHOD_HANDLE  fncHandle,
                            unsigned               methAttr,
                            CORINFO_CONTEXT_HANDLE exactContextHnd,
+                           InlineContext*         inlinersContext,
                            InlineCandidateInfo**  ppInlineCandidateInfo,
                            InlineResult*          inlineResult);
 
@@ -5268,13 +5270,15 @@ private:
     void impMarkInlineCandidate(GenTree*               call,
                                 CORINFO_CONTEXT_HANDLE exactContextHnd,
                                 bool                   exactContextNeedsRuntimeLookup,
-                                CORINFO_CALL_INFO*     callInfo);
+                                CORINFO_CALL_INFO*     callInfo,
+                                InlineContext*         inlinersContext);
 
     void impMarkInlineCandidateHelper(GenTreeCall*           call,
                                       uint8_t                candidateIndex,
                                       CORINFO_CONTEXT_HANDLE exactContextHnd,
                                       bool                   exactContextNeedsRuntimeLookup,
                                       CORINFO_CALL_INFO*     callInfo,
+                                      InlineContext*         inlinersContext,
                                       InlineResult*          inlineResult);
 
     bool impTailCallRetTypeCompatible(bool                     allowWidening,
@@ -6368,23 +6372,22 @@ public:
 #endif // DEBUG
 
         weight_t GetCost(BasicBlock* block, BasicBlock* next);
-        weight_t GetPartitionCostDelta(unsigned s1Start, unsigned s2Start, unsigned s3Start, unsigned s3End, unsigned s4End);
+        weight_t GetPartitionCostDelta(unsigned s2Start, unsigned s3Start, unsigned s3End, unsigned s4End);
         void SwapPartitions(unsigned s1Start, unsigned s2Start, unsigned s3Start, unsigned s3End, unsigned s4End);
 
-        void ConsiderEdge(FlowEdge* edge);
+        template <bool addToQueue = true>
+        bool ConsiderEdge(FlowEdge* edge);
         void AddNonFallthroughSuccs(unsigned blockPos);
         void AddNonFallthroughPreds(unsigned blockPos);
         bool RunGreedyThreeOptPass(unsigned startPos, unsigned endPos);
 
+        bool CompactHotJumps();
         bool RunThreeOpt();
 
     public:
         ThreeOptLayout(Compiler* comp);
         void Run();
     };
-
-    template <bool hasEH>
-    void fgMoveHotJumps();
 
     bool fgFuncletsAreCold();
 
@@ -6651,6 +6654,7 @@ public:
     }
 
     void fgRemoveProfileData(const char* reason);
+    PhaseStatus fgRepairProfile();
     void fgRepairProfileCondToUncond(BasicBlock* block, FlowEdge* retainedEdge, FlowEdge* removedEdge, int* metric = nullptr);
 
 //-------- Insert a statement at the start or end of a basic block --------
@@ -6701,33 +6705,6 @@ private:
 
     //------------------------- Morphing --------------------------------------
 
-    unsigned fgPtrArgCntMax = 0;
-
-public:
-    //------------------------------------------------------------------------
-    // fgGetPtrArgCntMax: Return the maximum number of pointer-sized stack arguments that calls inside this method
-    // can push on the stack. This value is calculated during morph.
-    //
-    // Return Value:
-    //    Returns fgPtrArgCntMax, that is a private field.
-    //
-    unsigned fgGetPtrArgCntMax() const
-    {
-        return fgPtrArgCntMax;
-    }
-
-    //------------------------------------------------------------------------
-    // fgSetPtrArgCntMax: Set the maximum number of pointer-sized stack arguments that calls inside this method
-    // can push on the stack. This function is used during StackLevelSetter to fix incorrect morph calculations.
-    //
-    void fgSetPtrArgCntMax(unsigned argCntMax)
-    {
-        fgPtrArgCntMax = argCntMax;
-    }
-
-    bool compCanEncodePtrArgCntMax();
-
-private:
     hashBv*               fgAvailableOutgoingArgTemps;
     ArrayStack<unsigned>* fgUsedSharedTemps = nullptr;
 
