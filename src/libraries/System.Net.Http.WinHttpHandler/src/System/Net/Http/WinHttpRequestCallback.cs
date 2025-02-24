@@ -231,7 +231,6 @@ namespace System.Net.Http
         private static void OnRequestSendingRequest(WinHttpRequestState state)
         {
             Debug.Assert(state != null, "OnRequestSendingRequest: state is null");
-            Debug.Assert(state.RequestHandle != null, "OnRequestSendingRequest: state.RequestHandle is null");
             Debug.Assert(state.RequestMessage != null, "OnRequestSendingRequest: state.RequestMessage is null");
             Debug.Assert(state.RequestMessage.RequestUri != null, "OnRequestSendingRequest: state.RequestMessage.RequestUri is null");
 
