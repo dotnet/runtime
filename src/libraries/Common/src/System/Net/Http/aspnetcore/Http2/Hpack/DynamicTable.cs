@@ -94,7 +94,12 @@ namespace System.Net.Http.HPack
 
             var entry = new HeaderField(staticTableIndex, name, value);
             _buffer[_insertIndex] = entry;
-            _insertIndex = (_insertIndex + 1) % _buffer.Length;
+
+            if (++_insertIndex == _buffer.Length)
+            {
+                _insertIndex = 0;
+            }
+
             _size += entry.Length;
             _count++;
         }
@@ -119,7 +124,11 @@ namespace System.Net.Http.HPack
                 field = default;
 
                 _count--;
-                _removeIndex = (_removeIndex + 1) % _buffer.Length;
+
+                if (++_removeIndex == _buffer.Length)
+                {
+                    _removeIndex = 0;
+                }
             }
         }
     }
