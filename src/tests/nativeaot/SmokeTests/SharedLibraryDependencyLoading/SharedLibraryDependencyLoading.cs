@@ -15,6 +15,12 @@ namespace SharedLibrary
             return MultiplyIntegers(x, y);
         }
 
+        [UnmanagedCallersOnly(EntryPoint = "GetBaseDirectory", CallConvs = [typeof(CallConvStdcall)])]
+        public static IntPtr GetBaseDirectory()
+        {
+            return Marshal.StringToCoTaskMemAnsi(AppContext.BaseDirectory);
+        }
+
         [DllImport("SharedLibraryDependency")]
         [DefaultDllImportSearchPaths(DllImportSearchPath.AssemblyDirectory)]
         [UnmanagedCallConv(CallConvs = [typeof(CallConvStdcall)])]

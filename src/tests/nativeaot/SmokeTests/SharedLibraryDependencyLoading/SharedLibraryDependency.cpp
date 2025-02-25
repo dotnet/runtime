@@ -3,7 +3,6 @@
 
 #include <platformdefines.h>
 
-
 extern "C" DLL_EXPORT int32_t STDMETHODCALLTYPE MultiplyIntegers(int32_t a, int32_t b)
 {
     return a * b;

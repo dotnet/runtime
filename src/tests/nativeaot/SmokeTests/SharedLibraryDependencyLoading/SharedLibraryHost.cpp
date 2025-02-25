@@ -8,6 +8,8 @@
 #endif
 #include <cstdint>
 #include <string>
+#include <memory>
+#include <iostream>
 
 #ifndef TARGET_WINDOWS
 #define __stdcall
@@ -15,6 +17,22 @@
 
 // typedef for shared lib exported methods
 using f_MultiplyIntegers = int32_t(__stdcall *)(int32_t, int32_t);
+using f_getBaseDirectory = const char*(__stdcall *)();
+
+#ifdef TARGET_WINDOWS
+struct CoTaskMemDeleter
+{
+    void operator()(void* p) const
+    {
+        CoTaskMemFree(p);
+    }
+};
+template<typename T>
+using CoTaskMemPtr = std::unique_ptr<T, CoTaskMemDeleter>;
+#else
+template<typename T>
+using CoTaskMemPtr = std::unique_ptr<T>;
+#endif
 
 #ifdef TARGET_WINDOWS
 int __cdecl main()
@@ -22,7 +40,12 @@ int __cdecl main()
 int main(int argc, char* argv[])
 #endif
 {
+    std::string pathToSubdir = argv[0];
+    // Step out of the current directory and the parent directory.
+    pathToSubdir = pathToSubdir.substr(0, pathToSubdir.find_last_of("/\\"));
+    pathToSubdir = pathToSubdir.substr(0, pathToSubdir.find_last_of("/\\"));
 #ifdef TARGET_WINDOWS
+    pathToSubdir += "subdir";
     // We need to include System32 to find system dependencies of SharedLibraryDependencyLoading.dll
     HINSTANCE handle = LoadLibraryEx("..\\subdir\\SharedLibraryDependencyLoading.dll", nullptr, LOAD_LIBRARY_SEARCH_APPLICATION_DIR | LOAD_LIBRARY_SEARCH_SYSTEM32);
 #else
@@ -32,11 +55,8 @@ int main(int argc, char* argv[])
     constexpr char const* ext = ".so";
 #endif
 
-    std::string path = argv[0];
-    // Step out of the current directory and the parent directory.
-    path = path.substr(0, path.find_last_of("/\\"));
-    path = path.substr(0, path.find_last_of("/\\"));
-    path += "/subdir/SharedLibraryDependencyLoading";
+    pathToSubdir += "subdir/";
+    std::string path = pathToSubdir +  "SharedLibraryDependencyLoading";
     path += ext;
     void* handle = dlopen(path.c_str(), RTLD_LAZY);
 #endif
@@ -50,7 +70,28 @@ int main(int argc, char* argv[])
     f_MultiplyIntegers multiplyIntegers = (f_MultiplyIntegers)dlsym(handle, "MultiplyIntegers");
 #endif
 
-    return multiplyIntegers(10, 7) == 70 ? 100 : 2;
+    if (multiplyIntegers(10, 7) != 70)
+        return 2;
+
+    CoTaskMemPtr<const char> baseDirectory;
+#ifdef TARGET_WINDOWS
+    f_getBaseDirectory getBaseDirectory = (f_getBaseDirectory)GetProcAddress(handle, "GetBaseDirectory");
+#else
+    f_getBaseDirectory getBaseDirectory = (f_getBaseDirectory)dlsym(handle, "GetBaseDirectory");
+#endif
+
+    baseDirectory.reset(getBaseDirectory());
+    if (baseDirectory == nullptr)
+        return 3;
+    
+    if (pathToSubdir != baseDirectory.get())
+    {
+        std::cout << "Expected base directory: " << pathToSubdir << std::endl;
+        std::cout << "Actual base directory: " << baseDirectory.get() << std::endl;
+        return 4;
+    }
+
+    return 100;
 }
 
 extern "C" const char* __stdcall __asan_default_options()
