@@ -385,6 +385,7 @@ DWORD WINAPI FinalizerThread::FinalizerThreadStart(void *args)
     // Making finalizer thread MTA early ensures that COM is initialized before we initialize our thread
     // termination callback.
     ::CoInitializeEx(NULL, COINIT_MULTITHREADED);
+    g_fComStarted = true;
 #endif
 
     InitFlsSlot();
