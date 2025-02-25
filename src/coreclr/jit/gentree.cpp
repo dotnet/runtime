@@ -7167,6 +7167,16 @@ bool GenTree::OperMayThrow(Compiler* comp)
         {
             return true;
         }
+
+#ifdef TARGET_XARCH
+        NamedIntrinsic intrinsicId = this->AsHWIntrinsic()->GetHWIntrinsicId();
+        if (intrinsicId == NI_Vector128_op_Division || intrinsicId == NI_Vector256_op_Division ||
+            intrinsicId == NI_Vector512_op_Division)
+        {
+            assert(varTypeIsInt(AsHWIntrinsic()->GetSimdBaseType()));
+            return true;
+        }
+#endif // TARGET_XARCH
     }
 #endif // FEATURE_HW_INTRINSICS
 
@@ -21145,6 +21155,26 @@ GenTree* Compiler::gtNewSimdBinOpNode(
             }
         }
 #endif // TARGET_XARCH
+#if defined(TARGET_XARCH) && defined(FEATURE_HW_INTRINSICS)
+        case GT_DIV:
+        {
+            if (simdBaseType == TYP_INT)
+            {
+                assert(compOpportunisticallyDependsOn(InstructionSet_AVX) ||
+                       compOpportunisticallyDependsOn(InstructionSet_AVX512F));
+
+                assert(simdSize == 16 || simdSize == 32);
+
+                NamedIntrinsic divIntrinsic     = simdSize == 16 ? NI_Vector128_op_Division : NI_Vector256_op_Division;
+                unsigned int   divideOpSimdSize = simdSize * 2;
+
+                GenTree* divOp =
+                    gtNewSimdHWIntrinsicNode(op1->TypeGet(), op1, op2, divIntrinsic, simdBaseJitType, divideOpSimdSize);
+                return divOp;
+            }
+            unreached();
+        }
+#endif // defined(TARGET_XARCH) && defined(FEATURE_HW_INTRINSICS)
 
         case GT_MUL:
         {
@@ -28099,6 +28129,13 @@ void GenTreeHWIntrinsic::Initialize(NamedIntrinsic intrinsicId)
                 gtFlags |= (GTF_CALL | GTF_GLOB_REF);
                 break;
             }
+
+            case NI_Vector128_op_Division:
+            case NI_Vector256_op_Division:
+            {
+                gtFlags |= GTF_EXCEPT;
+                break;
+            }
 #endif // TARGET_XARCH
 
 #if defined(TARGET_ARM64)
@@ -29016,26 +29053,33 @@ NamedIntrinsic GenTreeHWIntrinsic::GetHWIntrinsicIdForBinOp(Compiler*  comp,
 
         case GT_DIV:
         {
+#if defined(TARGET_XARCH)
+            assert(varTypeIsFloating(simdBaseType) || varTypeIsInt(simdBaseType));
+#else
             assert(varTypeIsFloating(simdBaseType));
+#endif
             assert(op2->TypeIs(simdType));
 
 #if defined(TARGET_XARCH)
-            if (simdSize == 64)
+            if (varTypeIsFloating(simdBaseType))
             {
-                id = NI_AVX512F_Divide;
-            }
-            else if (simdSize == 32)
-            {
-                id = NI_AVX_Divide;
-            }
-            else if (simdBaseType == TYP_FLOAT)
-            {
-                id = isScalar ? NI_SSE_DivideScalar : NI_SSE_Divide;
-            }
-            else
-            {
-                assert(comp->compIsaSupportedDebugOnly(InstructionSet_SSE2));
-                id = isScalar ? NI_SSE2_DivideScalar : NI_SSE2_Divide;
+                if (simdSize == 64)
+                {
+                    id = NI_AVX512F_Divide;
+                }
+                else if (simdSize == 32)
+                {
+                    id = NI_AVX_Divide;
+                }
+                else if (simdBaseType == TYP_FLOAT)
+                {
+                    id = isScalar ? NI_SSE_DivideScalar : NI_SSE_Divide;
+                }
+                else
+                {
+                    assert(comp->compIsaSupportedDebugOnly(InstructionSet_SSE2));
+                    id = isScalar ? NI_SSE2_DivideScalar : NI_SSE2_Divide;
+                }
             }
 #elif defined(TARGET_ARM64)
             if ((simdSize == 8) && (isScalar || (simdBaseType == TYP_DOUBLE)))

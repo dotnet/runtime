@@ -3432,6 +3432,12 @@ void Compiler::fgDebugCheckFlags(GenTree* tree, BasicBlock* block)
                         expectedFlags |= GTF_GLOB_REF;
                         break;
                     }
+
+                    case NI_Vector128_op_Division:
+                    case NI_Vector256_op_Division:
+                    {
+                        break;
+                    }
 #endif // TARGET_XARCH
 
 #if defined(TARGET_ARM64)

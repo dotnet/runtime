@@ -2417,8 +2417,19 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
             if (!varTypeIsFloating(simdBaseType))
             {
-                // We can't trivially handle division for integral types using SIMD
+#if defined(TARGET_XARCH) && defined(FEATURE_HW_INTRINSICS)
+                // Check to see if it is possible to emulate the integer division
+                if (!(simdBaseType == TYP_INT &&
+                      ((simdSize == 16 && compOpportunisticallyDependsOn(InstructionSet_AVX)) ||
+                       (simdSize == 32 && compOpportunisticallyDependsOn(InstructionSet_AVX512F)))))
+                {
+                    break;
+                }
+                impSpillSideEffect(true, stackState.esStackDepth -
+                                             2 DEBUGARG("Spilling op1 side effects for vector integer division"));
+#else
                 break;
+#endif // defined(TARGET_XARCH) && defined(FEATURE_HW_INTRINSICS)
             }
 
             CORINFO_ARG_LIST_HANDLE arg1     = sig->args;
@@ -2433,6 +2444,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             op1     = getArgForHWIntrinsic(argType, argClass);
 
             retNode = gtNewSimdBinOpNode(GT_DIV, retType, op1, op2, simdBaseJitType, simdSize);
+
             break;
         }
 
