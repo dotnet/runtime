@@ -8,6 +8,7 @@ parameters:
     'monoPacks',
     'perfBDNApp'
   ]
+  mauiFramework: '' # Framework version to get versions for and build for (e.g. net9.0)
 
 jobs:
   - ${{ if or(containsValue(parameters.jobsAndPlatforms, 'coreclr:linux_x64'), containsValue(parameters.jobsAndPlatforms, 'coreclr:windows_x64'), containsValue(parameters.jobsAndPlatforms, 'coreclr:windows_x86'), containsValue(parameters.jobsAndPlatforms, 'coreclr:linux_musl_x64')) }}:
@@ -159,3 +160,5 @@ jobs:
                 archiveType: tar
                 tarCompression: gz
                 perfBranch: ${{ parameters.perfBranch }}
+                ${{ if parameters.mauiFramework }}:
+                  framework: ${{ parameters.mauiFramework }}
