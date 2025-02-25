@@ -2031,7 +2031,7 @@ public:
 
     bool IsArrayAddr(GenTreeArrAddr** pArrAddr);
 
-    bool SupportsSettingZeroFlag();
+    bool SupportsSettingFlags();
 
     // These are only used for dumping.
     // The GetRegNum() is only valid in LIR, but the dumping methods are not easily
