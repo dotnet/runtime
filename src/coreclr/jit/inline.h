@@ -107,6 +107,7 @@ enum class InlineDecision
     CANDIDATE,
     SUCCESS,
     FAILURE,
+    FAILLATER,
     NEVER
 };
 
@@ -306,17 +307,11 @@ public:
 
 #endif // defined(DEBUG)
 
-    bool IsLateFailure() const
-    {
-        return m_IsLateFailure;
-    }
-
 protected:
     InlinePolicy(bool isPrejitRoot)
         : m_Decision(InlineDecision::UNDECIDED)
         , m_Observation(InlineObservation::CALLEE_UNUSED_INITIAL)
         , m_IsPrejitRoot(isPrejitRoot)
-        , m_IsLateFailure(false)
 #if defined(DEBUG)
         , m_IsDataCollectionTarget(false)
 #endif // defined(DEBUG)
@@ -334,7 +329,6 @@ protected:
     InlineDecision    m_Decision;
     InlineObservation m_Observation;
     bool              m_IsPrejitRoot;
-    bool              m_IsLateFailure;
 
 #if defined(DEBUG)
 
@@ -367,7 +361,7 @@ public:
     // Has the policy determined this inline should fail after importation?
     bool IsLateFailure() const
     {
-        return m_Policy->IsLateFailure();
+        return m_Policy->GetDecision() == InlineDecision::FAILLATER;
     }
 
     // Has the policy determined this inline will succeed?

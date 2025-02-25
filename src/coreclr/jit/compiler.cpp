@@ -7332,11 +7332,6 @@ _Next:
 #endif // DEBUG
     }
 
-    if (compIsForInlining() && impInlineInfo->inlineResult->IsLateFailure())
-    {
-        return CORJIT_SKIPPED;
-    }
-
     /* Success! */
     return CORJIT_OK;
 }

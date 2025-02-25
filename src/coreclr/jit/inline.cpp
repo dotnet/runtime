@@ -163,6 +163,7 @@ CorInfoInline InlGetCorInfoInlineDecision(InlineDecision d)
     switch (d)
     {
         case InlineDecision::SUCCESS:
+        case InlineDecision::FAILLATER:
             return INLINE_PASS;
         case InlineDecision::FAILURE:
             return INLINE_FAIL;
@@ -197,6 +198,8 @@ const char* InlGetDecisionString(InlineDecision d)
             return "candidate";
         case InlineDecision::UNDECIDED:
             return "undecided";
+        case InlineDecision::FAILLATER:
+            return "fail later";
         default:
             assert(!"Unexpected InlineDecision");
             unreached();
@@ -219,6 +222,7 @@ bool InlDecisionIsFailure(InlineDecision d)
         case InlineDecision::SUCCESS:
         case InlineDecision::UNDECIDED:
         case InlineDecision::CANDIDATE:
+        case InlineDecision::FAILLATER:
             return false;
         case InlineDecision::FAILURE:
         case InlineDecision::NEVER:
@@ -243,6 +247,7 @@ bool InlDecisionIsSuccess(InlineDecision d)
     switch (d)
     {
         case InlineDecision::SUCCESS:
+        case InlineDecision::FAILLATER:
             return true;
         case InlineDecision::FAILURE:
         case InlineDecision::NEVER:
@@ -274,6 +279,7 @@ bool InlDecisionIsNever(InlineDecision d)
         case InlineDecision::SUCCESS:
         case InlineDecision::UNDECIDED:
         case InlineDecision::CANDIDATE:
+        case InlineDecision::FAILLATER:
             return false;
         default:
             assert(!"Unexpected InlineDecision");
@@ -312,6 +318,7 @@ bool InlDecisionIsDecided(InlineDecision d)
         case InlineDecision::FAILURE:
         case InlineDecision::SUCCESS:
             return true;
+        case InlineDecision::FAILLATER:
         case InlineDecision::UNDECIDED:
         case InlineDecision::CANDIDATE:
             return false;

@@ -1338,16 +1338,21 @@ void Compiler::fgInvokeInlineeCompiler(GenTreeCall* call, InlineResult* inlineRe
                               pParam->pThis->info.compCompHnd, &pParam->inlineCandidateInfo->methInfo,
                               (void**)pParam->inlineInfo, nullptr, &compileFlagsForInlinee, pParam->inlineInfo);
 
+            InlineResult* innerInlineResult = pParam->inlineInfo->inlineResult;
+
             if (result != CORJIT_OK)
             {
                 // If we haven't yet determined why this inline fails, use
                 // a catch-all something bad happened observation.
-                InlineResult* innerInlineResult = pParam->inlineInfo->inlineResult;
 
                 if (!innerInlineResult->IsFailure())
                 {
                     innerInlineResult->NoteFatal(InlineObservation::CALLSITE_COMPILATION_FAILURE);
                 }
+            }
+            else if (innerInlineResult->IsLateFailure())
+            {
+                innerInlineResult->NoteFatal(InlineObservation::CALLSITE_LATE_FAILURE);
             }
         }
     },
