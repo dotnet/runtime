@@ -34,7 +34,7 @@ namespace System
 #endif // HAS_CUSTOM_BLOCKS
 
         [Intrinsic] // Unrolled for small constant lengths
-        internal static unsafe void Memmove(ref byte dest, ref byte src, nuint len)
+        internal static void Memmove(ref byte dest, ref byte src, nuint len)
         {
             // P/Invoke into the native version when the buffers are overlapping.
             if ((nuint)Unsafe.ByteOffset(ref src, ref dest) < len ||
@@ -243,7 +243,7 @@ namespace System
         }
 
         [Intrinsic] // Unrolled for small sizes
-        public static unsafe void ClearWithoutReferences(ref byte dest, nuint len)
+        public static void ClearWithoutReferences(ref byte dest, nuint len)
         {
             if (len == 0)
                 return;
@@ -438,7 +438,7 @@ namespace System
             if (len >= (nuint)Vector<byte>.Count)
             {
                 // We have enough data for at least one vectorized write.
-                Vector<byte> vector = new (value);
+                Vector<byte> vector = new(value);
                 nuint stopLoopAtOffset = len & (nuint)(nint)(2 * (int)-Vector<byte>.Count); // intentional sign extension carries the negative bit
                 nuint offset = 0;
 

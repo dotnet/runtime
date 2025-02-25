@@ -28,7 +28,6 @@
 #include "regdisp.h"
 #include "corjit.h"     // For NativeVarInfo
 #include "stackwalktypes.h"
-#include "bitvector.h"
 #include "gcinfotypes.h"
 
 #if !defined(TARGET_X86)
@@ -306,7 +305,7 @@ virtual size_t GetFunctionSize(GCInfoToken gcInfoToken) = 0;
 *  returns true.
 *  If hijacking is not possible for some reason, it return false.
 */
-virtual bool GetReturnAddressHijackInfo(GCInfoToken gcInfoToken, ReturnKind * returnKind) = 0;
+virtual bool GetReturnAddressHijackInfo(GCInfoToken gcInfoToken X86_ARG(ReturnKind * returnKind)) = 0;
 
 #ifndef USE_GC_INFO_DECODER
 /*
@@ -575,7 +574,7 @@ size_t GetFunctionSize(GCInfoToken gcInfoToken);
 *  returns true.
 *  If hijacking is not possible for some reason, it return false.
 */
-virtual bool GetReturnAddressHijackInfo(GCInfoToken gcInfoToken, ReturnKind * returnKind);
+virtual bool GetReturnAddressHijackInfo(GCInfoToken gcInfoToken X86_ARG(ReturnKind * returnKind));
 
 #ifndef USE_GC_INFO_DECODER
 /*

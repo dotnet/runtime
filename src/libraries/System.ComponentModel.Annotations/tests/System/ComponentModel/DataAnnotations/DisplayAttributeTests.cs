@@ -191,5 +191,20 @@ namespace System.ComponentModel.DataAnnotations.Tests
             Assert.Equal(value, attribute.Order);
             Assert.Equal(value, attribute.GetOrder());
         }
+ 
+        [Fact]
+        public void LocalizableString_WorksWithInternalResourceType()
+        {
+            DisplayAttribute attribute = new DisplayAttribute();
+            attribute.ResourceType = typeof(InternalResourceType);
+            attribute.Name = nameof(InternalResourceType.PublicProperty);
+
+            Assert.Equal(InternalResourceType.PublicProperty, attribute.GetName());
+        }
+
+        internal class InternalResourceType
+        {
+            public static string PublicProperty => "Internal Resource with Public Property";
+        }
     }
 }

@@ -35,7 +35,7 @@ public class WasmTemplateTestsBase : BuildTestBase
 
     private Dictionary<string, string> browserProgramReplacements = new Dictionary<string, string>
         {
-            { "while(true)", $"int i = 0;{Environment.NewLine}while(i++ < 0)" },  // the test has to be fast, skip the loop
+            { "while (true)", $"int i = 0;{Environment.NewLine}while (i++ < 0)" },  // the test has to be fast, skip the loop
             { "partial class StopwatchSample", $"return 42;{Environment.NewLine}partial class StopwatchSample" },
             { "Hello, Browser!", "TestOutput -> Hello, Browser!" }
         };
@@ -161,8 +161,7 @@ public class WasmTemplateTestsBase : BuildTestBase
         if (buildOptions.ExtraBuildEnvironmentVariables is null)
             buildOptions = buildOptions with { ExtraBuildEnvironmentVariables = new Dictionary<string, string>() };
 
-        // TODO: reenable this when the SDK supports targetting net10.0
-        //buildOptions.ExtraBuildEnvironmentVariables["TreatPreviousAsCurrent"] = "false";
+        buildOptions.ExtraBuildEnvironmentVariables["TreatPreviousAsCurrent"] = "false";
 
         (CommandResult res, string logFilePath) = BuildProjectWithoutAssert(configuration, info.ProjectName, buildOptions);
 
@@ -220,7 +219,7 @@ public class WasmTemplateTestsBase : BuildTestBase
     protected void DeleteFile(string pathRelativeToProjectDir)
     {
         var deletedFilePath = Path.Combine(_projectDir, pathRelativeToProjectDir);
-        if(File.Exists(deletedFilePath))
+        if (File.Exists(deletedFilePath))
         {
             File.Delete(deletedFilePath);
         }
@@ -230,17 +229,18 @@ public class WasmTemplateTestsBase : BuildTestBase
     {
         string mainJsPath = Path.Combine(_projectDir, "wwwroot", "main.js");
         string mainJsContent = File.ReadAllText(mainJsPath);
+        Version targetFrameworkVersion = new Version(targetFramework.Replace("net", ""));
 
         string updatedMainJsContent = StringReplaceWithAssert(
             mainJsContent,
             ".create()",
-            (targetFramework == "net8.0" || targetFramework == "net9.0")
+            (targetFrameworkVersion.Major >= 8)
                     ? ".withConsoleForwarding().withElementOnExit().withExitCodeLogging().withExitOnUnhandledError().create()"
                     : ".withConsoleForwarding().withElementOnExit().withExitCodeLogging().create()"
             );
 
-        // dotnet.run() is already used in <= net8.0
-        if (targetFramework != "net8.0")
+        // dotnet.run() is used instead of runMain() in net9.0+
+        if (targetFrameworkVersion.Major >= 9)
             updatedMainJsContent = StringReplaceWithAssert(updatedMainJsContent, "runMain()", "dotnet.run()");
 
         updatedMainJsContent = StringReplaceWithAssert(updatedMainJsContent, "from './_framework/dotnet.js'", $"from '{runtimeAssetsRelativePath}dotnet.js'");

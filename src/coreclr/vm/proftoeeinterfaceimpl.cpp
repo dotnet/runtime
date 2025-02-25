@@ -8088,7 +8088,7 @@ StackWalkAction ProfilerStackWalkCallback(CrawlFrame *pCf, PROFILER_STACK_WALK_D
     if (g_isNewExceptionHandlingEnabled && !pCf->IsFrameless() && InlinedCallFrame::FrameHasActiveCall(pCf->GetFrame()))
     {
         // Skip new exception handling helpers
-        InlinedCallFrame *pInlinedCallFrame = (InlinedCallFrame *)pCf->GetFrame();
+        InlinedCallFrame *pInlinedCallFrame = dac_cast<PTR_InlinedCallFrame>(pCf->GetFrame());
         PTR_NDirectMethodDesc pMD = pInlinedCallFrame->m_Datum;
         TADDR datum = dac_cast<TADDR>(pMD);
         if ((datum & (TADDR)InlinedCallFrameMarker::Mask) == (TADDR)InlinedCallFrameMarker::ExceptionHandlingHelper)
@@ -8199,13 +8199,13 @@ static BOOL EnsureFrameInitialized(Frame * pFrame)
         return TRUE;
     }
 
-    HelperMethodFrame * pHMF = (HelperMethodFrame *) pFrame;
+    HelperMethodFrame * pHMF = dac_cast<PTR_HelperMethodFrame>(pFrame);
 
-    if (pHMF->InsureInit(
+    if (pHMF->EnsureInit(
         NULL                        // unwindState
         ) != NULL)
     {
-        // InsureInit() succeeded and found the return address
+        // EnsureInit() succeeded and found the return address
         return TRUE;
     }
 

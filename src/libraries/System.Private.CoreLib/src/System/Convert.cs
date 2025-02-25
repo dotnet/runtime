@@ -2470,7 +2470,7 @@ namespace System
         /// <param name="bytes">The bytes to encode.</param>
         /// <param name="chars">The destination buffer large enough to handle the encoded chars.</param>
         /// <param name="charLengthRequired">The pre-calculated, exact number of chars that will be written.</param>
-        private static unsafe void ToBase64CharsLargeNoLineBreaks(ReadOnlySpan<byte> bytes, Span<char> chars, int charLengthRequired)
+        private static void ToBase64CharsLargeNoLineBreaks(ReadOnlySpan<byte> bytes, Span<char> chars, int charLengthRequired)
         {
             // For large enough inputs, it's beneficial to use the vectorized UTF8-based Base64 encoding
             // and then widen the resulting bytes into chars.

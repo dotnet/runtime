@@ -31,6 +31,7 @@ namespace System.Net.Http.Functional.Tests
 
         public static readonly object[][] Http2Servers = Configuration.Http.Http2Servers;
         public static readonly object[][] Http2NoPushServers = Configuration.Http.Http2NoPushServers;
+        public static readonly object[][] Http2NoPushGetUris = Configuration.Http.Http2NoPushGetUris;
 
         // Standard HTTP methods defined in RFC7231: http://tools.ietf.org/html/rfc7231#section-4.3
         //     "GET", "HEAD", "POST", "PUT", "DELETE", "OPTIONS", "TRACE"
@@ -70,7 +71,7 @@ namespace System.Net.Http.Functional.Tests
             handler.UseDefaultCredentials = false;
             using (HttpClient client = CreateHttpClient(handler))
             {
-                Uri uri = Configuration.Http.RemoteHttp11Server.NegotiateAuthUriForDefaultCreds;
+                Uri uri = Configuration.Http.RemoteSecureHttp11Server.NegotiateAuthUriForDefaultCreds;
                 _output.WriteLine("Uri: {0}", uri);
                 using (HttpResponseMessage response = await client.GetAsync(uri))
                 {
@@ -602,9 +603,9 @@ namespace System.Net.Http.Functional.Tests
         public static IEnumerable<object[]> ExpectContinueVersion()
         {
             return
-                from expect in new bool?[] {true, false, null}
-                from version in new Version[] {new Version(1, 0), new Version(1, 1), new Version(2, 0)}
-                select new object[] {expect, version};
+                from expect in new bool?[] { true, false, null }
+                from version in new Version[] { new Version(1, 0), new Version(1, 1), new Version(2, 0) }
+                select new object[] { expect, version };
         }
 
         [OuterLoop("Uses external servers", typeof(PlatformDetection), nameof(PlatformDetection.LocalEchoServerIsNotAvailable))]
@@ -776,7 +777,8 @@ namespace System.Net.Http.Functional.Tests
             {
                 var request = new HttpRequestMessage(
                     new HttpMethod(method),
-                    serverUri) { Version = UseVersion };
+                    serverUri)
+                { Version = UseVersion };
 
                 using (HttpResponseMessage response = await client.SendAsync(TestAsync, request))
                 {
@@ -802,7 +804,8 @@ namespace System.Net.Http.Functional.Tests
             {
                 var request = new HttpRequestMessage(
                     new HttpMethod(method),
-                    serverUri) { Version = UseVersion };
+                    serverUri)
+                { Version = UseVersion };
                 request.Content = new StringContent(ExpectedContent);
                 using (HttpResponseMessage response = await client.SendAsync(TestAsync, request))
                 {
@@ -981,6 +984,7 @@ namespace System.Net.Http.Functional.Tests
         [OuterLoop("Uses external servers")]
         [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/55083", TestPlatforms.Browser)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/110578")]
         public async Task GetAsync_AllowAutoRedirectTrue_RedirectFromHttpToHttps_StatusCodeOK()
         {
             HttpClientHandler handler = CreateHttpClientHandler();
@@ -1065,9 +1069,9 @@ namespace System.Net.Http.Functional.Tests
             handler.MaxAutomaticRedirections = maxHops;
             using (HttpClient client = CreateHttpClient(handler))
             {
-                Task<HttpResponseMessage> t = client.GetAsync(Configuration.Http.RemoteHttp11Server.RedirectUriForDestinationUri(
+                Task<HttpResponseMessage> t = client.GetAsync(Configuration.Http.RemoteSecureHttp11Server.RedirectUriForDestinationUri(
                     statusCode: 302,
-                    destinationUri: Configuration.Http.RemoteHttp11Server.EchoUri,
+                    destinationUri: Configuration.Http.RemoteSecureHttp11Server.EchoUri,
                     hops: hops));
 
                 if (hops <= maxHops)
@@ -1075,7 +1079,7 @@ namespace System.Net.Http.Functional.Tests
                     using (HttpResponseMessage response = await t)
                     {
                         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-                        Assert.Equal(Configuration.Http.RemoteEchoServer, response.RequestMessage.RequestUri);
+                        Assert.Equal(Configuration.Http.SecureRemoteEchoServer, response.RequestMessage.RequestUri);
                     }
                 }
                 else
@@ -1362,7 +1366,7 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [OuterLoop("Uses external servers")]
-        [ConditionalTheory(nameof(IsWindows10Version1607OrGreater)), MemberData(nameof(Http2NoPushServers))]
+        [ConditionalTheory(nameof(IsWindows10Version1607OrGreater)), MemberData(nameof(Http2NoPushGetUris))]
         public async Task SendAsync_RequestVersion20_ResponseVersion20(Uri server)
         {
             // Sync API supported only up to HTTP/1.1

@@ -55,5 +55,9 @@ DLL_EXPORT void JitProcessShutdownWork(ICorJitCompiler * pJit)
 
 DLL_EXPORT int JitGetProcessorFeatures()
 {
+#ifndef CROSS_COMPILE
     return minipal_getcpufeatures();
+#else
+    return 0;
+#endif
 }

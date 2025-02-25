@@ -1354,6 +1354,7 @@ inline GenTree::GenTree(genTreeOps oper, var_types type DEBUGARG(bool largeNode)
     gtLIRFlags = 0;
 #ifdef DEBUG
     gtDebugFlags = GTF_DEBUG_NONE;
+    gtMorphCount = 0;
 #endif // DEBUG
     gtCSEnum = NO_CSE;
     ClearAssertion();
@@ -1410,14 +1411,14 @@ inline Statement* Compiler::gtNewStmt(GenTree* expr, const DebugInfo& di)
     return stmt;
 }
 
-inline GenTree* Compiler::gtNewOperNode(genTreeOps oper, var_types type, GenTree* op1)
+inline GenTreeUnOp* Compiler::gtNewOperNode(genTreeOps oper, var_types type, GenTree* op1)
 {
     assert((GenTree::OperKind(oper) & (GTK_UNOP | GTK_BINOP)) != 0);
     assert((GenTree::OperKind(oper) & GTK_EXOP) == 0); // Can't use this to construct any types that extend unary/binary
                                                        // operator.
     assert(op1 != nullptr || oper == GT_RETFILT || (oper == GT_RETURN && type == TYP_VOID));
 
-    GenTree* node = new (this, oper) GenTreeOp(oper, type, op1, nullptr);
+    GenTreeUnOp* node = new (this, oper) GenTreeOp(oper, type, op1, nullptr);
 
     return node;
 }
@@ -2638,6 +2639,9 @@ inline
     int
     Compiler::lvaFrameAddress(
         int varNum, bool mustBeFPBased, regNumber* pBaseReg, int addrModeOffset, bool isFloatUsage)
+#elif TARGET_ARM64
+    int
+    Compiler::lvaFrameAddress(int varNum, bool* pFPbased, bool suppressFPtoSPRewrite)
 #else
     int
     Compiler::lvaFrameAddress(int varNum, bool* pFPbased)
@@ -2807,6 +2811,16 @@ inline
     {
         *pBaseReg = REG_SPBASE;
     }
+#elif defined(TARGET_ARM64)
+    if (FPbased && !suppressFPtoSPRewrite && !codeGen->isFramePointerRequired() && varOffset < 0 && !opts.IsOSR() &&
+        lvaDoneFrameLayout == Compiler::FINAL_FRAME_LAYOUT && codeGen->IsSaveFpLrWithAllCalleeSavedRegisters())
+    {
+        int spVarOffset = varOffset + codeGen->genSPtoFPdelta();
+        JITDUMP("lvaFrameAddress optimization for V%02u: [FP-%d] -> [SP+%d]\n", varNum, -varOffset, spVarOffset);
+        FPbased   = false;
+        varOffset = spVarOffset;
+    }
+    *pFPbased = FPbased;
 #else
     *pFPbased = FPbased;
 #endif
@@ -3009,20 +3023,6 @@ XX                                                                           XX
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 */
-
-inline bool Compiler::compCanEncodePtrArgCntMax()
-{
-#ifdef JIT32_GCENCODER
-    // DDB 204533:
-    // The GC encoding for fully interruptible methods does not
-    // support more than 1023 pushed arguments, so we have to
-    // use a partially interruptible GC info/encoding.
-    //
-    return (fgPtrArgCntMax < MAX_PTRARG_OFS);
-#else // JIT32_GCENCODER
-    return true;
-#endif
-}
 
 /*****************************************************************************
  *
@@ -4085,6 +4085,17 @@ inline bool Compiler::impIsPrimitive(CorInfoType jitType)
 
 inline Compiler::lvaPromotionType Compiler::lvaGetPromotionType(const LclVarDsc* varDsc)
 {
+    // TODO-Review: Sometimes we get called on ARM with HFA struct variables that have been promoted,
+    // where the struct itself is no longer used because all access is via its member fields.
+    // When that happens, the struct is marked as unused and its type has been changed to
+    // TYP_INT (to keep the GC tracking code from looking at it).
+    // See Compiler::raAssignVars() for details. For example:
+    //      N002 (  4,  3) [00EA067C] -------------               return    struct $346
+    //      N001 (  3,  2) [00EA0628] -------------                  lclVar    struct(U) V03 loc2
+    //                                                                        float  V03.f1 (offs=0x00) -> V12 tmp7
+    //                                                                        f8 (last use) (last use) $345
+    // Here, the "struct(U)" shows that the "V03 loc2" variable is unused. Not shown is that V03
+    // is now TYP_INT in the local variable table. It's not really unused, because it's in the tree.
     assert(!varDsc->lvPromoted || varTypeIsPromotable(varDsc) || varDsc->lvUnusedStruct);
 
     if (!varDsc->lvPromoted)
@@ -4246,8 +4257,9 @@ inline void Compiler::CLR_API_Leave(API_ICorJitInfo_Names ename)
 bool Compiler::fgVarIsNeverZeroInitializedInProlog(unsigned varNum)
 {
     LclVarDsc* varDsc = lvaGetDesc(varNum);
-    bool       result = varDsc->lvIsParam || lvaIsOSRLocal(varNum) || (varNum == lvaGSSecurityCookie) ||
-                  (varNum == lvaInlinedPInvokeFrameVar) || (varNum == lvaStubArgumentVar) || (varNum == lvaRetAddrVar);
+    bool       result = varDsc->lvIsParam || varDsc->lvIsParamRegTarget || lvaIsOSRLocal(varNum) ||
+                  (varNum == lvaGSSecurityCookie) || (varNum == lvaInlinedPInvokeFrameVar) ||
+                  (varNum == lvaStubArgumentVar) || (varNum == lvaRetAddrVar);
 
 #ifdef TARGET_ARM64
     result = result || (varNum == lvaFfrRegister);
@@ -4321,19 +4333,20 @@ bool Compiler::fgVarNeedsExplicitZeroInit(unsigned varNum, bool bbInALoop, bool 
             return false;
         }
 
-// Below conditions guarantee block initialization, which will initialize
-// all struct fields. If the logic for block initialization in CodeGen::genCheckUseBlockInit()
-// changes, these conditions need to be updated.
+        // Below conditions guarantee block initialization, which will initialize
+        // all struct fields. If the logic for block initialization in CodeGen::genCheckUseBlockInit()
+        // changes, these conditions need to be updated.
+        unsigned stackHomeSize = lvaLclStackHomeSize(varNum);
 #ifdef TARGET_64BIT
 #if defined(TARGET_AMD64)
         // We can clear using aligned SIMD so the threshold is lower,
         // and clears in order which is better for auto-prefetching
-        if (roundUp(varDsc->lvSize(), TARGET_POINTER_SIZE) / sizeof(int) > 4)
+        if (roundUp(stackHomeSize, TARGET_POINTER_SIZE) / sizeof(int) > 4)
 #else // !defined(TARGET_AMD64)
-        if (roundUp(varDsc->lvSize(), TARGET_POINTER_SIZE) / sizeof(int) > 8)
+        if (roundUp(stackHomeSize, TARGET_POINTER_SIZE) / sizeof(int) > 8)
 #endif
 #else
-        if (roundUp(varDsc->lvSize(), TARGET_POINTER_SIZE) / sizeof(int) > 4)
+        if (roundUp(stackHomeSize, TARGET_POINTER_SIZE) / sizeof(int) > 4)
 #endif
         {
             return false;
@@ -4625,15 +4638,25 @@ inline char* regMaskToString(regMaskTP mask, Compiler* context)
 
 inline void printRegMaskInt(regMaskTP mask)
 {
+    // RBM_ALLINT is not known at compile time on TARGET_AMD64 since it's dependent on APX support. These are used by GC
+    // exclusively
+#if defined(TARGET_AMD64)
+    printf(REG_MASK_INT_FMT, (mask & RBM_ALLINT_ALL).getLow());
+#else  // !TARGET_X86
     printf(REG_MASK_INT_FMT, (mask & RBM_ALLINT).getLow());
+#endif // !TARGET_X86
 }
 
 inline char* regMaskIntToString(regMaskTP mask, Compiler* context)
 {
     const size_t cchRegMask = 24;
     char*        regmask    = new (context, CMK_Unknown) char[cchRegMask];
-
+    // RBM_ALLINT is not known at compile time on TARGET_AMD64 since it's dependent on APX support. Deprecated????
+#if defined(TARGET_AMD64)
+    sprintf_s(regmask, cchRegMask, REG_MASK_INT_FMT, (mask & RBM_ALLINT_ALL).getLow());
+#else  // !TARGET_X86
     sprintf_s(regmask, cchRegMask, REG_MASK_INT_FMT, (mask & RBM_ALLINT).getLow());
+#endif // !TARGET_X86
 
     return regmask;
 }
@@ -5038,12 +5061,22 @@ void Compiler::fgVisitBlocksInLoopAwareRPO(FlowGraphDfsTree* dfsTree, FlowGraphN
         }
     };
 
-    LoopAwareVisitor visitor(dfsTree, loops, func);
-
-    for (unsigned i = dfsTree->GetPostOrderCount(); i != 0; i--)
+    if (loops->NumLoops() == 0)
     {
-        BasicBlock* const block = dfsTree->GetPostOrder(i - 1);
-        visitor.VisitBlock(block);
+        for (unsigned i = dfsTree->GetPostOrderCount(); i != 0; i--)
+        {
+            BasicBlock* const block = dfsTree->GetPostOrder(i - 1);
+            func(block);
+        }
+    }
+    else
+    {
+        LoopAwareVisitor visitor(dfsTree, loops, func);
+        for (unsigned i = dfsTree->GetPostOrderCount(); i != 0; i--)
+        {
+            BasicBlock* const block = dfsTree->GetPostOrder(i - 1);
+            visitor.VisitBlock(block);
+        }
     }
 }
 

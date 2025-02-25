@@ -14,7 +14,7 @@
     <BuildX509Loader Condition="!$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net9.0'))">true</BuildX509Loader>
     <OmitResources Condition="'$(BuildX509Loader)' != 'true'">true</OmitResources>
   </PropertyGroup>
- 
+
   <Import Project="$(CommonPath)System\Security\Cryptography\Asn1\AsnXml.targets" Condition="'$(BuildX509Loader)' == 'true'" />
   <Import Project="$(CommonPath)System\Security\Cryptography\Asn1Reader\System.Security.Cryptography.Asn1Reader.Shared.projitems" Condition="'$(BuildX509Loader)' == 'true'" />
 
@@ -136,13 +136,13 @@
       <Link>Common\System\Security\Cryptography\Asn1\Pbkdf2SaltChoice.xml.cs</Link>
       <DependentUpon>Common\System\Security\Cryptography\Asn1\Pbkdf2SaltChoice.xml</DependentUpon>
     </Compile>
-   <AsnXml Include="$(CommonPath)System\Security\Cryptography\Asn1\PrivateKeyInfoAsn.xml">
+    <AsnXml Include="$(CommonPath)System\Security\Cryptography\Asn1\PrivateKeyInfoAsn.xml">
       <Link>Common\System\Security\Cryptography\Asn1\PrivateKeyInfoAsn.xml</Link>
     </AsnXml>
     <Compile Include="$(CommonPath)System\Security\Cryptography\Asn1\PrivateKeyInfoAsn.xml.cs">
       <Link>Common\System\Security\Cryptography\Asn1\PrivateKeyInfoAsn.xml.cs</Link>
       <DependentUpon>Common\System\Security\Cryptography\Asn1\PrivateKeyInfoAsn.xml</DependentUpon>
-    </Compile> 
+    </Compile>
     <AsnXml Include="$(CommonPath)System\Security\Cryptography\Asn1\Rc2CbcParameters.xml">
       <Link>Common\System\Security\Cryptography\Asn1\Rc2CbcParameters.xml</Link>
     </AsnXml>
@@ -255,7 +255,7 @@
     <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.ContentType.cs"
              Link="Common\Interop\Windows\Crypt32\Interop.ContentType.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.CryptQueryObject_IntPtr_out.cs"
-             Link="Common\Interop\Windows\Crypt32\Interop.CryptQueryObject_IntPtr_out.cs" /> 
+             Link="Common\Interop\Windows\Crypt32\Interop.CryptQueryObject_IntPtr_out.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.DATA_BLOB.cs"
              Link="Common\Interop\Windows\Crypt32\Interop.DATA_BLOB.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.ExpectedContentTypeFlags.cs"
@@ -293,6 +293,31 @@
 
   <ItemGroup Condition="'$(BuildX509Loader)' == 'true'">
     <ProjectReference Include="$(LibrariesProjectRoot)System.Formats.Asn1\src\System.Formats.Asn1.csproj" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">
+    <Compile Include="$(CommonPath)Interop\Windows\BCrypt\BCryptAeadHandleCache.cs"
+             Link="Common\Interop\Windows\BCrypt\BCryptAeadHandleCache.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\BCrypt\Cng.cs"
+             Link="Common\Interop\Windows\BCrypt\Cng.cs" />
+    <Compile Include="$(CommonPath)\Interop\Windows\BCrypt\Interop.BCryptEncryptDecrypt.cs"
+             Link="Common\Interop\Windows\BCrypt\Interop.BCryptEncryptDecrypt.cs" />
+    <Compile Include="$(CommonPath)\Interop\Windows\BCrypt\Interop.BCryptImportKey.cs"
+             Link="Common\Interop\Windows\BCrypt\Interop.BCryptImportKey.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\BCrypt\Interop.BCryptPropertyStrings.cs"
+             Link="Common\Interop\Windows\BCrypt\Interop.BCryptPropertyStrings.cs" />
+    <Compile Include="$(CommonPath)System\Security\Cryptography\AeadCommon.Windows.cs"
+             Link="Common\System\Security\Cryptography\AeadCommon.Windows" />
+    <Compile Include="$(CommonPath)System\Security\Cryptography\AesGcm.cs"
+             Link="Common\System\Security\Cryptography\AesGcm.cs" />
+    <Compile Include="$(CommonPath)System\Security\Cryptography\AesGcm.Windows.cs"
+             Link="Common\System\Security\Cryptography\AesGcm.Windows.cs" />
+    <Compile Include="$(CommonPath)System\Security\Cryptography\AesAEAD.cs"
+             Link="Common\System\Security\Cryptography\AesAEAD.cs" />
+    <Compile Include="$(CommonPath)System\Security\Cryptography\AuthenticationTagMismatchException.cs"
+             Link="Common\System\Security\Cryptography\AuthenticationTagMismatchException.cs" />
+    <Compile Include="$(CommonPath)System\Security\Cryptography\KeySizeHelpers.cs"
+             Link="Common\System\Security\Cryptography\KeySizeHelpers.cs" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">

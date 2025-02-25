@@ -330,15 +330,15 @@ enum_type:
 	case MONO_TYPE_ARRAY:
 		return MINT_TYPE_O;
 	case MONO_TYPE_VALUETYPE:
-		if (m_class_is_enumtype (type->data.klass)) {
-			type = mono_class_enum_basetype_internal (type->data.klass);
+		if (m_class_is_enumtype (m_type_data_get_klass_unchecked (type))) {
+			type = mono_class_enum_basetype_internal (m_type_data_get_klass_unchecked (type));
 			goto enum_type;
 		} else
 			return MINT_TYPE_VT;
 	case MONO_TYPE_TYPEDBYREF:
 		return MINT_TYPE_VT;
 	case MONO_TYPE_GENERICINST:
-		type = m_class_get_byval_arg (type->data.generic_class->container_class);
+		type = m_class_get_byval_arg (m_type_data_get_generic_class_unchecked (type)->container_class);
 		goto enum_type;
 	case MONO_TYPE_VOID:
 		return MINT_TYPE_VOID;
@@ -2676,7 +2676,54 @@ interp_handle_intrinsics (TransformData *td, MonoMethod *target_method, MonoClas
 				!strncmp ("Vector", klass_name, 6) &&
 				!strcmp (tm, "get_IsHardwareAccelerated"))) {
 		*op = MINT_LDC_I4_0;
-	}
+	} else if ((target_method->klass == mono_defaults.double_class) || (target_method->klass == mono_defaults.single_class)) {
+		MonoGenericContext *method_context = mono_method_get_context (target_method);
+		bool isDouble = target_method->klass == mono_defaults.double_class;
+		if (!strcmp (tm, "ConvertToIntegerNative") &&
+				method_context != NULL &&
+				method_context->method_inst->type_argc == 1) {
+			MonoTypeEnum tto_type = method_context->method_inst->type_argv [0]->type;
+			switch (tto_type) {
+				case MONO_TYPE_I1:
+					*op = isDouble ? MINT_CONV_I1_R8 : MINT_CONV_I1_R4;
+					break;
+				case MONO_TYPE_I2:
+					*op = isDouble ? MINT_CONV_I2_R8 : MINT_CONV_I2_R4;
+					break;
+#if TARGET_SIZEOF_VOID_P == 4
+				case MONO_TYPE_I:
+#endif
+				case MONO_TYPE_I4:
+					*op = isDouble ? MINT_CONV_I4_R8 : MINT_CONV_I4_R4;
+					break;
+#if TARGET_SIZEOF_VOID_P == 8
+				case MONO_TYPE_I:
+#endif
+				case MONO_TYPE_I8:
+					*op = isDouble ? MINT_CONV_I8_R8 : MINT_CONV_I8_R4;
+					break;
+				case MONO_TYPE_U1:
+					*op = isDouble ? MINT_CONV_U1_R8 : MINT_CONV_U1_R4;
+					break;
+				case MONO_TYPE_U2:
+					*op = isDouble ? MINT_CONV_U2_R8 : MINT_CONV_U2_R4;
+					break;
+#if TARGET_SIZEOF_VOID_P == 4
+				case MONO_TYPE_U:
+#endif
+				case MONO_TYPE_U4:
+					*op = isDouble ? MINT_CONV_U4_R8 : MINT_CONV_U4_R4;
+					break;
+#if TARGET_SIZEOF_VOID_P == 8
+				case MONO_TYPE_U:
+#endif
+				case MONO_TYPE_U8:
+					*op = isDouble ? MINT_CONV_U8_R8 : MINT_CONV_U8_R4;
+					break;
+				default: return FALSE;
+			}
+		}
+	} 
 
 	return FALSE;
 }
@@ -2748,7 +2795,7 @@ interp_type_as_ptr (MonoType *tp)
 		return TRUE;
 	if ((tp)->type == MONO_TYPE_CHAR)
 		return TRUE;
-	if ((tp)->type == MONO_TYPE_VALUETYPE && m_class_is_enumtype (tp->data.klass))
+	if ((tp)->type == MONO_TYPE_VALUETYPE && m_class_is_enumtype (m_type_data_get_klass_unchecked (tp)))
 		return TRUE;
 	if (is_scalar_vtype (tp))
 		return TRUE;
@@ -4580,8 +4627,8 @@ interp_method_compute_offsets (TransformData *td, InterpMethod *imethod, MonoMet
 		int mt = mono_mint_type (header->locals [i]);
 		size = mono_interp_type_size (header->locals [i], mt, &align);
 		if (header->locals [i]->type == MONO_TYPE_VALUETYPE) {
-			if (mono_class_has_failure (header->locals [i]->data.klass)) {
-				mono_error_set_for_class_failure (error, header->locals [i]->data.klass);
+			if (mono_class_has_failure (m_type_data_get_klass_unchecked (header->locals [i]))) {
+				mono_error_set_for_class_failure (error, m_type_data_get_klass_unchecked (header->locals [i]));
 				return;
 			}
 		}
@@ -8056,6 +8103,16 @@ retry_emit:
 					push_simple_type (td, STACK_TYPE_I);
 					interp_ins_set_dreg (td->last_ins, td->sp [-1].var);
 					break;
+				case CEE_MONO_LDVIRTFTN_DELEGATE:
+					CHECK_STACK (td, 2);
+					td->sp -= 2;
+					td->ip += 1;
+					interp_add_ins (td, MINT_LDVIRTFTN_DELEGATE);
+					interp_ins_set_sregs2 (td->last_ins, td->sp [0].var, td->sp [1].var);
+					push_simple_type (td, STACK_TYPE_I);
+					interp_ins_set_dreg (td->last_ins, td->sp [-1].var);
+					break;
+
 				case CEE_MONO_CALLI_EXTRA_ARG: {
 					int saved_local = td->sp [-1].var;
 					/* Same as CEE_CALLI, except that we drop the extra arg required for llvm specific behaviour */

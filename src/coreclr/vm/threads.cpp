@@ -305,7 +305,7 @@ bool Thread::DetectHandleILStubsForDebugger()
         while (pFrame != FRAME_TOP)
         {
             // Check for HMF's.  See the comment at the beginning of this function.
-            if (pFrame->GetVTablePtr() == HelperMethodFrame::GetMethodFrameVPtr())
+            if (pFrame->GetFrameIdentifier() == FrameIdentifier::HelperMethodFrame)
             {
                 break;
             }
@@ -353,7 +353,6 @@ void SetThread(Thread* t)
 {
     LIMITED_METHOD_CONTRACT
 
-    Thread* origThread = gCurrentThreadInfo.m_pThread;
     gCurrentThreadInfo.m_pThread = t;
     if (t != NULL)
     {
@@ -361,14 +360,6 @@ void SetThread(Thread* t)
         EnsureTlsDestructionMonitor();
         t->InitRuntimeThreadLocals();
     }
-#ifdef TARGET_WINDOWS
-    else if (origThread != NULL)
-    {
-        // Unregister from OS notifications
-        // This can return false if a thread did not register for OS notification.
-        OsDetachThread(origThread);
-    }
-#endif
 
     // Clear or set the app domain to the one domain based on if the thread is being nulled out or set
     gCurrentThreadInfo.m_pAppDomain = t == NULL ? NULL : AppDomain::GetCurrentDomain();
@@ -1048,10 +1039,6 @@ void InitThreadManager()
     }
     CONTRACTL_END;
 
-#ifdef TARGET_WINDOWS
-    InitFlsSlot();
-#endif
-
     // All patched helpers should fit into one page.
     // If you hit this assert on retail build, there is most likely problem with BBT script.
     _ASSERTE_ALL_BUILDS((BYTE*)JIT_PatchedCodeLast - (BYTE*)JIT_PatchedCodeStart > (ptrdiff_t)0);
@@ -1511,7 +1498,10 @@ Thread::Thread()
 #ifdef FEATURE_PERFTRACING
     memset(&m_activityId, 0, sizeof(m_activityId));
 #endif // FEATURE_PERFTRACING
+
+#ifdef TARGET_X86
     m_HijackReturnKind = RT_Illegal;
+#endif
 
     m_currentPrepareCodeConfig = nullptr;
     m_isInForbidSuspendForDebuggerRegion = false;
@@ -7216,7 +7206,7 @@ static void ManagedThreadBase_DispatchOuter(ManagedThreadCallState *pCallState)
     // The sole purpose of having this frame is to tell the debugger that we have a catch handler here
     // which may swallow managed exceptions.  The debugger needs this in order to send a
     // CatchHandlerFound (CHF) notification.
-    FrameWithCookie<DebuggerU2MCatchHandlerFrame> catchFrame;
+    DebuggerU2MCatchHandlerFrame catchFrame(false /* catchesAllExceptions */);
 
     TryParam param(pCallState);
     param.pFrame = &catchFrame;

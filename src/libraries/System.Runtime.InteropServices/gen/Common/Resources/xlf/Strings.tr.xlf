@@ -9,7 +9,7 @@
       </trans-unit>
       <trans-unit id="AddGeneratedComClassAttributeDescription">
         <source>This type implements at least one type with the 'GeneratedComInterfaceAttribute' attribute or its base type has the 'GeneratedComClassAttribute' attribute. Add the 'GeneratedComClassAttribute' to enable passing this type to COM and exposing the COM interfaces for the types with the 'GeneratedComInterfaceAttribute' from objects of this type.</source>
-        <target state="new">This type implements at least one type with the 'GeneratedComInterfaceAttribute' attribute or its base type has the 'GeneratedComClassAttribute' attribute. Add the 'GeneratedComClassAttribute' to enable passing this type to COM and exposing the COM interfaces for the types with the 'GeneratedComInterfaceAttribute' from objects of this type.</target>
+        <target state="translated">Bu tür, 'GeneratedComInterfaceAttribute' özniteliğine sahip en az bir türü uygular veya temel türü 'GeneratedComClassAttribute' özniteliğine sahiptir. Bu türü COM'a geçirmeyi ve bu türdeki nesnelerden 'GeneratedComInterfaceAttribute' içeren türler için COM arabirimlerini açığa çıkarmayı etkinleştirmek için 'GeneratedComClassAttribute' ekleyin.</target>
         <note />
       </trans-unit>
       <trans-unit id="AddGeneratedComClassAttributeMessage">
@@ -69,12 +69,12 @@
       </trans-unit>
       <trans-unit id="BaseInterfaceDefinedInOtherAssemblyMessage">
         <source>The type '{0}' has a base interface '{1}' defined in a different assembly. This can cause a variety of difficult to diagnose issues in some scenarios</source>
-        <target state="new">The type '{0}' has a base interface '{1}' defined in a different assembly. This can cause a variety of difficult to diagnose issues in some scenarios</target>
+        <target state="translated">'{0}' tipinin farklı bir derlemede tanımlanmış bir temel arayüzü '{1}' vardır. Bu, bazı senaryolarda tanılaması zor çeşitli sorunlara neden olabilir</target>
         <note />
       </trans-unit>
       <trans-unit id="BaseInterfaceDefinedInOtherAssemblyTitle">
         <source>Specifying 'GeneratedComInterfaceAttribute' on an interface that has a base interface defined in another assembly is not supported</source>
-        <target state="new">Specifying 'GeneratedComInterfaceAttribute' on an interface that has a base interface defined in another assembly is not supported</target>
+        <target state="translated">Başka bir bütünleştirilmiş kodda tanımlanmış bir temel arabirime sahip arabirimde 'GeneratedComInterfaceAttribute' belirtilmesi desteklenmez</target>
         <note />
       </trans-unit>
       <trans-unit id="BaseInterfaceMustGenerateAtLeastSameWrappers">
@@ -504,7 +504,7 @@
       </trans-unit>
       <trans-unit id="InVariantShouldBeRef">
         <source>Objects marshalled from VARIANTs as 'in' parameters in unmanaged-to-managed calls will not propagate back the updated result, even if the VARIANT is a VT_BYREF variant. Use a 'ref' parameter instead of an 'in' parameter to propagate the updated value back to the caller.</source>
-        <target state="new">Objects marshalled from VARIANTs as 'in' parameters in unmanaged-to-managed calls will not propagate back the updated result, even if the VARIANT is a VT_BYREF variant. Use a 'ref' parameter instead of an 'in' parameter to propagate the updated value back to the caller.</target>
+        <target state="translated">Yönetilmeyenden yönetilene yapılan çağrılarda 'in' parametresi olarak kullanılan VARIANT'lardan hazırlanma işlemiyle elde edilen nesneler, VARIANT çeşidi VT_BYREF olsa bile güncelleştirilmiş sonucu geri yaymaz. Güncelleştirilmiş değeri çağırana geri yayma için 'in' parametresi yerine bir 'ref' parametresi kullanın.</target>
         <note />
       </trans-unit>
       <trans-unit id="InstanceEventDeclaredInInterfaceDescription">
@@ -842,9 +842,9 @@
         <target state="translated">Yönetilen tür '{1}' için sıralayıcı giriş noktası '{0}', yönetilen türden büyük bir parametre sayısına sahip olmalıdır.</target>
         <note />
       </trans-unit>
-      <trans-unit id="MarshallerInNativeReturnPositionMustMatchNativeReturnType">
-        <source>All marshallers for values that are passed as the unmanaged return value must have the same unmanaged type.</source>
-        <target state="translated">Yönetilmeyen dönüş değeri olarak geçirilen değerler için tüm hazırlayıcılar aynı yönetilmeyen türe sahip olmalıdır.</target>
+      <trans-unit id="MarshallerInOverlappingNativePositionMustMatchNativeType">
+        <source>All marshallers for values that are passed as the unmanaged return value or parameter must have the same unmanaged type.</source>
+        <target state="translated">Yönetilmeyen dönüş değeri veya parametresi olarak geçirilen değerler için tüm hazırlayıcılar aynı yönetilmeyen türe sahip olmalıdır.</target>
         <note />
       </trans-unit>
       <trans-unit id="MarshallerTypeMustBeClosedOrMatchArityDescription">

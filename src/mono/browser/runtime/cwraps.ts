@@ -17,13 +17,6 @@ type SigLine = [lazyOrSkip: boolean | (() => boolean), name: string, returnType:
 
 const threading_cwraps: SigLine[] = WasmEnableThreads ? [
     // MONO.diagnostics
-    [true, "mono_wasm_event_pipe_enable", "bool", ["string", "number", "number", "string", "bool", "number"]],
-    [true, "mono_wasm_event_pipe_session_start_streaming", "bool", ["number"]],
-    [true, "mono_wasm_event_pipe_session_disable", "bool", ["number"]],
-    [true, "mono_wasm_diagnostic_server_create_thread", "bool", ["string", "number"]],
-    [true, "mono_wasm_diagnostic_server_thread_attach_to_runtime", "void", []],
-    [true, "mono_wasm_diagnostic_server_post_resume_runtime", "void", []],
-    [true, "mono_wasm_diagnostic_server_create_stream", "number", []],
     [false, "mono_wasm_init_finalizer_thread", null, []],
     [false, "mono_wasm_invoke_jsexport_async_post", "void", ["number", "number", "number"]],
     [false, "mono_wasm_invoke_jsexport_sync_send", "void", ["number", "number", "number"]],
@@ -49,6 +42,7 @@ const fn_signatures: SigLine[] = [
     [true, "mono_wasm_parse_runtime_options", null, ["number", "number"]],
     [true, "mono_wasm_strdup", "number", ["string"]],
     [true, "mono_background_exec", null, []],
+    [true, "mono_wasm_ds_exec", null, []],
     [true, "mono_wasm_execute_timer", null, []],
     [true, "mono_wasm_load_icu_data", "number", ["number"]],
     [false, "mono_wasm_add_assembly", "number", ["string", "number", "number"]],
@@ -143,13 +137,6 @@ const fn_signatures: SigLine[] = [
 
 export interface t_ThreadingCwraps {
     // MONO.diagnostics
-    mono_wasm_event_pipe_enable(outputPath: string | null, stream: VoidPtr, bufferSizeInMB: number, providers: string, rundownRequested: boolean, outSessionId: VoidPtr): boolean;
-    mono_wasm_event_pipe_session_start_streaming(sessionId: number): boolean;
-    mono_wasm_event_pipe_session_disable(sessionId: number): boolean;
-    mono_wasm_diagnostic_server_create_thread(websocketURL: string, threadIdOutPtr: VoidPtr): boolean;
-    mono_wasm_diagnostic_server_thread_attach_to_runtime(): void;
-    mono_wasm_diagnostic_server_post_resume_runtime(): void;
-    mono_wasm_diagnostic_server_create_stream(): VoidPtr;
     mono_wasm_init_finalizer_thread(): void;
     mono_wasm_invoke_jsexport_async_post(targetTID: PThreadPtr, method: MonoMethod, args: VoidPtr): void;
     mono_wasm_invoke_jsexport_sync_send(targetTID: PThreadPtr, method: MonoMethod, args: VoidPtr): void;
@@ -180,6 +167,7 @@ export interface t_Cwraps {
     mono_wasm_strdup(value: string): number;
     mono_wasm_parse_runtime_options(length: number, argv: VoidPtr): void;
     mono_background_exec(): void;
+    mono_wasm_ds_exec(): void;
     mono_wasm_execute_timer(): void;
     mono_wasm_load_icu_data(offset: VoidPtr): number;
     mono_wasm_add_assembly(name: string, data: VoidPtr, size: number): number;
