@@ -2,6 +2,8 @@
 
 This folder contains the source code of vendored third party native libraries that are used as dependencies for dotnet/runtime.
 
+We call "vendored libraries" those from which we keep a copy of their source code in this repository, and those copies are built alongside the rest of our repository. The main document describing vendored libraries can be found here: https://github.com/dotnet/arcade/blob/main/Documentation/UnifiedBuild/VMR-Strategy-For-External-Source.md
+
 ### Folder structure
 
 Each native library is roughly structured the following way:
