@@ -534,7 +534,7 @@ EMSCRIPTEN_KEEPALIVE const char * mono_wasm_method_get_name (MonoMethod *method)
 	return res;
 }
 
-EMSCRIPTEN_KEEPALIVE const char * mono_wasm_method_get_name_ex (MonoMethod *method) {
+EMSCRIPTEN_KEEPALIVE char * mono_wasm_method_get_name_ex (MonoMethod *method) {
 	const char *res;
 	MONO_ENTER_GC_UNSAFE;
 	res = mono_method_get_name (method);
