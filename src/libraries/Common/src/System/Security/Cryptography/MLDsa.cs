@@ -8,6 +8,10 @@ using System.Formats.Asn1;
 using System.Security.Cryptography.Asn1;
 using System.Security.Cryptography.X509Certificates;
 
+// The type being internal is making unused parameter warnings fire for
+// not-implemented methods. Suppress those warnings.
+#pragma warning disable IDE0060
+
 namespace System.Security.Cryptography
 {
     /// <summary>
