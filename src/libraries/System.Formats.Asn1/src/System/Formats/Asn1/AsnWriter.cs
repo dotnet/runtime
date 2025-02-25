@@ -288,6 +288,43 @@ namespace System.Formats.Asn1
                 _encodeDepth--;
             }
         }
+
+        /// <summary>
+        ///   Provides the encoded representation of the data to the specified callback.
+        /// </summary>
+        /// <param name="encodeCallback">
+        ///   The callback that receives the encoded data.
+        /// </param>
+        /// <param name="state">
+        ///   The state to pass to <paramref name="encodeCallback" />.
+        /// </param>
+        /// <typeparam name="TState">
+        ///   The type of the state.
+        /// </typeparam>
+        /// <exception cref="ArgumentNullException">
+        ///   <paramref name="encodeCallback"/> is <see langword="null"/>.
+        /// </exception>
+        /// <exception cref="InvalidOperationException">
+        ///   A <see cref="PushSequence"/> or <see cref="PushSetOf"/> has not been closed via
+        ///   <see cref="PopSequence"/> or <see cref="PopSetOf"/>.
+        /// </exception>
+        public void Encode<TState>(TState state, Action<TState, ReadOnlySpan<byte>> encodeCallback)
+            where TState : allows ref struct
+        {
+            if (encodeCallback is null)
+                throw new ArgumentNullException(nameof(encodeCallback));
+
+            try
+            {
+                _encodeDepth = checked(_encodeDepth + 1);
+                ReadOnlySpan<byte> encoded = EncodeAsSpan();
+                encodeCallback(state, encoded);
+            }
+            finally
+            {
+                _encodeDepth--;
+            }
+        }
 #endif
 
         private ReadOnlySpan<byte> EncodeAsSpan()
