@@ -774,6 +774,82 @@ PhaseStatus Compiler::fgPostImportationCleanup()
     return madeChanges ? PhaseStatus::MODIFIED_EVERYTHING : PhaseStatus::MODIFIED_NOTHING;
 }
 
+//------------------------------------------------------------------------------
+// fgSplitLdvirtftnIndirectCalls : Split ldvirtftn indirect calls
+//
+bool Compiler::fgSplitLdvirtftnIndirectCalls()
+{
+    if (!doesMethodHaveLdvirtftnIndirectCall())
+    {
+        // The method being compiled doesn't have any indirect call to ldvirtftn.
+        return false;
+    }
+
+    struct SplitLdvirtftnCalliWalker : GenTreeVisitor<SplitLdvirtftnCalliWalker>
+    {
+    private:
+        bool m_madeChanges = false;
+
+    public:
+        SplitLdvirtftnCalliWalker(Compiler* comp)
+            : GenTreeVisitor(comp)
+        {
+        }
+
+        enum
+        {
+            DoPostOrder       = true,
+            UseExecutionOrder = true,
+        };
+
+        bool MadeChanges() const
+        {
+            return m_madeChanges;
+        }
+
+        fgWalkResult PostOrderVisit(GenTree** use, GenTree* user)
+        {
+            GenTree* const tree = *use;
+
+            if (tree->IsCall())
+            {
+                GenTreeCall* const call = tree->AsCall();
+                if (call->gtCallType == CT_INDIRECT &&
+                    (call->gtCallAddr->IsHelperCall(m_compiler, CORINFO_HELP_VIRTUAL_FUNC_PTR) ||
+                     call->gtCallAddr->IsHelperCall(m_compiler, CORINFO_HELP_GVMLOOKUP_FOR_SLOT)
+#ifdef FEATURE_READYTORUN
+                     || call->gtCallAddr->IsHelperCall(m_compiler, CORINFO_HELP_READYTORUN_VIRTUAL_FUNC_PTR) ||
+                     call->gtCallAddr->IsHelperCall(m_compiler, CORINFO_HELP_READYTORUN_GENERIC_HANDLE)
+#endif // FEATURE_READYTORUN
+                         ))
+                {
+                    Statement* newStmt = nullptr;
+                    GenTree**  callUse = nullptr;
+                    m_madeChanges |= m_compiler->gtSplitTree(m_compiler->compCurBB, m_compiler->compCurStmt, call,
+                                                             &newStmt, &callUse);
+                }
+            }
+            return Compiler::WALK_CONTINUE;
+        }
+    };
+
+    // Find call sites, and split the ldvirtftn call from the indirect call
+    //
+    SplitLdvirtftnCalliWalker walker(this);
+
+    for (BasicBlock* const block : Blocks())
+    {
+        compCurBB = block;
+        for (Statement* const stmt : block->Statements())
+        {
+            compCurStmt = stmt;
+            walker.WalkTree(stmt->GetRootNodePointer(), nullptr);
+        }
+    }
+
+    return walker.MadeChanges();
+}
+
 //-------------------------------------------------------------
 // fgCanCompactBlock: Determine if a BBJ_ALWAYS block and its target can be compacted.
 //

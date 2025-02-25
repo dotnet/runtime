@@ -530,6 +530,33 @@ private:
     }
 #endif // FEATURE_MULTIREG_RET
 
+    CORINFO_METHOD_HANDLE GetMethodHandle(GenTreeCall* call)
+    {
+        if (call->IsVirtualGeneric())
+        {
+            assert(call->gtCallType == CT_INDIRECT);
+            assert(call->gtCallAddr->IsHelperCall(m_compiler, CORINFO_HELP_VIRTUAL_FUNC_PTR));
+            assert(call->gtCallAddr->AsCall()->gtArgs.CountArgs() == 3);
+            GenTree* methodInstNode = call->gtCallAddr->AsCall()->gtArgs.GetArgByIndex(2)->GetNode();
+            switch (methodInstNode->OperGet())
+            {
+                case GT_RUNTIMELOOKUP:
+                    return methodInstNode->AsRuntimeLookup()->GetMethodHandle();
+                case GT_CNS_INT:
+                    return CORINFO_METHOD_HANDLE(methodInstNode->AsIntCon()->IconValue());
+                default:
+                    assert(!"Unexpected type in MethodInstHandle arg.");
+                    return nullptr;
+            }
+            return nullptr;
+        }
+        else
+        {
+            assert(call->IsVirtual() && (call->gtCallType == CT_USER_FUNC));
+            return call->gtCallMethHnd;
+        }
+    }
+
     //------------------------------------------------------------------------
     // LateDevirtualization: re-examine calls after inlining to see if we
     //   can do more devirtualization
@@ -572,8 +599,15 @@ private:
 
         if (tree->OperGet() == GT_CALL)
         {
-            GenTreeCall* call          = tree->AsCall();
-            bool         tryLateDevirt = call->IsVirtual() && (call->gtCallType == CT_USER_FUNC);
+            GenTreeCall* call = tree->AsCall();
+            bool         isReadyToRunOrNativeAot =
+#ifdef FEATURE_READYTORUN
+                m_compiler->opts.IsReadyToRun() ||
+#endif // FEATURE_READYTORUN
+                m_compiler->IsTargetAbi(CORINFO_NATIVEAOT_ABI);
+
+            bool tryLateDevirt = (call->IsVirtual() && (call->gtCallType == CT_USER_FUNC)) ||
+                                 (call->IsVirtualGeneric() && !isReadyToRunOrNativeAot);
 
 #ifdef DEBUG
             tryLateDevirt = tryLateDevirt && (JitConfig.JitEnableLateDevirtualization() == 1);
@@ -591,7 +625,7 @@ private:
 
                 CORINFO_CONTEXT_HANDLE context                = call->gtLateDevirtualizationInfo->exactContextHnd;
                 InlineContext*         inlinersContext        = call->gtLateDevirtualizationInfo->inlinersContext;
-                CORINFO_METHOD_HANDLE  method                 = call->gtCallMethHnd;
+                CORINFO_METHOD_HANDLE  method                 = GetMethodHandle(call);
                 unsigned               methodFlags            = 0;
                 const bool             isLateDevirtualization = true;
                 const bool             explicitTailCall       = call->IsTailPrefixedCall();
@@ -766,9 +800,14 @@ private:
 //
 PhaseStatus Compiler::fgInline()
 {
+    bool madeChanges = false;
+
     if (!opts.OptEnabled(CLFLG_INLINING))
     {
-        return PhaseStatus::MODIFIED_NOTHING;
+        // At least split any ldvirtftn indirect calls before we bail out.
+        // Lowering is not happy about gtCallAddr being a CALL.
+        //
+        return fgSplitLdvirtftnIndirectCalls() ? PhaseStatus::MODIFIED_EVERYTHING : PhaseStatus::MODIFIED_NOTHING;
     }
 
 #ifdef DEBUG
@@ -785,7 +824,6 @@ PhaseStatus Compiler::fgInline()
 
     BasicBlock*                                 block = fgFirstBB;
     SubstitutePlaceholdersAndDevirtualizeWalker walker(this);
-    bool                                        madeChanges = false;
 
     do
     {
@@ -910,6 +948,8 @@ PhaseStatus Compiler::fgInline()
 
     Metrics.InlineCount   = m_inlineStrategy->GetInlineCount();
     Metrics.InlineAttempt = m_inlineStrategy->GetImportCount();
+
+    madeChanges |= fgSplitLdvirtftnIndirectCalls();
 
     return madeChanges ? PhaseStatus::MODIFIED_EVERYTHING : PhaseStatus::MODIFIED_NOTHING;
 }
