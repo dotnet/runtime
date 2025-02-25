@@ -2,21 +2,29 @@ parameters:
   perfBranch: 'main' # Currently only used for building the BDN App
   jobsAndPlatforms: [
     'coreclr:linux_x64', 'coreclr:windows_x64', 'coreclr:windows_x86', 'coreclr:linux_musl_x64',
-    'monoAot:linux_x64',
-    'monoAndroid:android_arm64',
-    'mono:linux_x64',
-    'monoPacks:android_arm64',
-    'perfBDNApp:ios_arm64'
+    'monoAot',
+    'monoAndroid',
+    'mono',
+    'monoPacks',
+    'perfBDNApp'
   ]
 
 jobs:
-  - ${{ if any(parameters.jobsAndPlatforms, 'startsWith', 'coreclr:') }}:
+  - ${{ if or(containsValue(parameters.jobsAndPlatforms, 'coreclr:linux_x64'), containsValue(parameters.jobsAndPlatforms, 'coreclr:windows_x64'), containsValue(parameters.jobsAndPlatforms, 'coreclr:windows_x86'), containsValue(parameters.jobsAndPlatforms, 'coreclr:linux_musl_x64')) }}:
     # build coreclr and libraries
     - template: /eng/pipelines/common/platform-matrix.yml
       parameters:
         jobTemplate: /eng/pipelines/common/global-build-job.yml
         buildConfig: release
-        platforms: ${{ parameters.jobsAndPlatforms | where 'startsWith', 'coreclr:' | select 'split', ':', 1 }}
+        platforms: 
+        - ${{ if containsValue(parameters.jobsAndPlatforms, 'coreclr:linux_x64') }}:
+          - linux_x64
+        - ${{ if containsValue(parameters.jobsAndPlatforms, 'coreclr:windows_x64') }}:
+          - windows_x64
+        - ${{ if containsValue(parameters.jobsAndPlatforms, 'coreclr:windows_x86') }}:
+          - windows_x86
+        - ${{ if containsValue(parameters.jobsAndPlatforms, 'coreclr:linux_musl_x64') }}:
+          - linux_musl_x64
         jobParameters:
           nameSuffix: coreclr
           buildArgs: -s clr+libs+host+packs -c $(_BuildConfig)
@@ -32,14 +40,15 @@ jobs:
               artifactName: BuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)_coreclr
               displayName: Build Assets
 
-  - ${{ if any(parameters.jobsAndPlatforms, 'startsWith', 'monoAot:') }}:
+  - ${{ if containsValue(parameters.jobsAndPlatforms, 'monoAot') }}:
     # build mono for AOT
     - template: /eng/pipelines/common/platform-matrix.yml
       parameters:
         jobTemplate: /eng/pipelines/common/global-build-job.yml
         buildConfig: release
         runtimeFlavor: mono
-        platforms: ${{ parameters.jobsAndPlatforms | where 'startsWith', 'monoAot:' | select 'split', ':', 1 }}
+        platforms:
+        - linux_x64
         jobParameters:
           buildArgs: -s mono+libs+host+packs -c $(_BuildConfig) /p:MonoAOTEnableLLVM=true /p:MonoEnableLLVM=true /p:BuildMonoAOTCrossCompiler=true /p:AotHostArchitecture=x64 /p:AotHostOS=linux
           nameSuffix: AOT
@@ -55,14 +64,15 @@ jobs:
                 archiveType: tar
                 tarCompression: gz
 
-  - ${{ if any(parameters.jobsAndPlatforms, 'startsWith', 'monoAndroid:') }}:
+  - ${{ if containsValue(parameters.jobsAndPlatforms, 'monoAndroid') }}:
     # build mono Android scenarios
     - template: /eng/pipelines/common/platform-matrix.yml
       parameters:
         jobTemplate: /eng/pipelines/common/global-build-job.yml
         buildConfig: release
         runtimeFlavor: mono
-        platforms: ${{ parameters.jobsAndPlatforms | where 'startsWith', 'monoAndroid:' | select 'split', ':', 1 }}
+        platforms:
+        - android_arm64
         jobParameters:
           buildArgs: -s mono+libs+host+packs -c $(_BuildConfig)
           nameSuffix: AndroidMono
@@ -77,15 +87,16 @@ jobs:
                 archiveExtension: '.tar.gz'
                 archiveType: tar
                 tarCompression: gz
-
-  - ${{ if any(parameters.jobsAndPlatforms, 'startsWith', 'mono:') }}:
+                
+  - ${{ if containsValue(parameters.jobsAndPlatforms, 'mono') }}:
     # build mono
     - template: /eng/pipelines/common/platform-matrix.yml
       parameters:
         jobTemplate: /eng/pipelines/common/global-build-job.yml
         buildConfig: release
         runtimeFlavor: mono
-        platforms: ${{ parameters.jobsAndPlatforms | where 'startsWith', 'mono:' | select 'split', ':', 1 }}
+        platforms:
+        - linux_x64
         jobParameters:
           nameSuffix: mono
           buildArgs: -s mono+clr.iltools+clr.hosts+libs+host+packs -c $(_BuildConfig)
@@ -100,15 +111,16 @@ jobs:
               tarCompression: $(tarCompression)
               artifactName: BuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)_mono
               displayName: Build Assets
-
-  - ${{ if any(parameters.jobsAndPlatforms, 'startsWith', 'monoPacks:') }}:
+              
+  - ${{ if containsValue(parameters.jobsAndPlatforms, 'monoPacks') }}:
     # build mono runtime packs
     - template: /eng/pipelines/common/platform-matrix.yml
       parameters:
         jobTemplate: /eng/pipelines/common/global-build-job.yml
         buildConfig: release
         runtimeFlavor: mono
-        platforms: ${{ parameters.jobsAndPlatforms | where 'startsWith', 'monoPacks:' | select 'split', ':', 1 }}
+        platforms:
+        - android_arm64
         jobParameters:
           buildArgs: -s mono+libs+host+packs -c $(_BuildConfig)
           nameSuffix: Mono_Packs
@@ -118,15 +130,16 @@ jobs:
               parameters:
                 name: MonoRuntimePacks
                 isOfficialBuild: false
-
-  - ${{ if any(parameters.jobsAndPlatforms, 'startsWith', 'perfBDNApp:') }}:
+                
+  - ${{ if containsValue(parameters.jobsAndPlatforms, 'perfBDNApp') }}:
     # build PerfBDN app
     - template: /eng/pipelines/common/platform-matrix.yml
       parameters:
         jobTemplate: /eng/pipelines/common/global-build-job.yml
         buildConfig: release
         runtimeFlavor: mono
-        platforms: ${{ parameters.jobsAndPlatforms | where 'startsWith', 'perfBDNApp:' | select 'split', ':', 1 }}
+        platforms:
+        - ios_arm64
         jobParameters:
           dependsOn:
            - Build_android_arm64_release_Mono_Packs
