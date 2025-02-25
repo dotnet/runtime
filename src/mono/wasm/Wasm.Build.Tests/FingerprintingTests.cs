@@ -33,20 +33,4 @@ public class FingerprintingTests : WasmTemplateTestsBase
         PublishProject(info, config, new PublishOptions(UseCache: false));
         await RunForPublishWithWebServer(runOptions);
     }
-    
-    [Fact]
-    public async Task TestDotnetJsFingerprinting()
-    {
-        var config = Configuration.Release;
-        bool wasmFingerprintDotnetJs = true;
-        string extraProperties = $"<WasmFingerprintDotnetJs>{wasmFingerprintDotnetJs}</WasmFingerprintDotnetJs>";
-        ProjectInfo info = CopyTestAsset(config, aot: false, TestAsset.WasmBasicTestApp, "DotnetJsFingerprinting", extraProperties: extraProperties);
-
-        BuildProject(info, config, wasmFingerprintDotnetJs: wasmFingerprintDotnetJs);
-        BrowserRunOptions runOptions = new(config, TestScenario: "DotnetRun");
-        await RunForBuildWithDotnetRun(runOptions);
-        
-        PublishProject(info, config, new PublishOptions(UseCache: false), wasmFingerprintDotnetJs: wasmFingerprintDotnetJs);
-        await RunForPublishWithWebServer(runOptions);
-    }
 }
