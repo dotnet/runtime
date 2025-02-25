@@ -1048,16 +1048,6 @@ LONG CLRNoCatchHandler(EXCEPTION_POINTERS* pExceptionInfo, PVOID pv)
     return EXCEPTION_CONTINUE_SEARCH;
 }
 
-void WriteBarrierManager::Validate()
-{
-  // Nothing to do
-}
-
-void WriteBarrierManager::UpdatePatchLocations()
-{
-  // Nothing to do
-}
-
 // This function bashes the super fast amd64 version of the JIT_WriteBarrier
 // helper.  It should be called by the GC whenever the ephermeral region
 // bounds get changed, but still remain on the top of the GC Heap.

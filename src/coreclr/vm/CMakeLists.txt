@@ -651,7 +651,6 @@ elseif(CLR_CMAKE_TARGET_ARCH_ARM64)
     set(VM_SOURCES_WKS_ARCH_ASM
         ${ARCH_SOURCES_DIR}/AsmHelpers.asm
         ${ARCH_SOURCES_DIR}/CallDescrWorkerARM64.asm
-        ${ARCH_SOURCES_DIR}/JitHelpers_FastWriteBarriers.asm
         ${ARCH_SOURCES_DIR}/patchedcode.asm
         ${ARCH_SOURCES_DIR}/PInvokeStubs.asm
         ${ARCH_SOURCES_DIR}/thunktemplates.asm
@@ -706,7 +705,6 @@ else(CLR_CMAKE_TARGET_WIN32)
         set(VM_SOURCES_WKS_ARCH_ASM
             ${ARCH_SOURCES_DIR}/asmhelpers.S
             ${ARCH_SOURCES_DIR}/calldescrworkerarm64.S
-            ${ARCH_SOURCES_DIR}/JitHelpers_FastWriteBarriers.S
             ${ARCH_SOURCES_DIR}/patchedcode.S
             ${ARCH_SOURCES_DIR}/pinvokestubs.S
             ${ARCH_SOURCES_DIR}/thunktemplates.S
