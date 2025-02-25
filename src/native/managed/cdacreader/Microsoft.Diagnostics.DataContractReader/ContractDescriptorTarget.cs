@@ -78,20 +78,6 @@ public sealed unsafe class ContractDescriptorTarget : Target
         return false;
     }
 
-    /// <summary>
-    /// Create a new target instance from an externally-provided contract descriptor.
-    /// </summary>
-    /// <param name="contractDescriptor">The contract descriptor to use for this target</param>
-    /// <param name="globalPointerValues">The values for any global pointers specified in the contract descriptor.</param>
-    /// <param name="readFromTarget">A callback to read memory blocks at a given address from the target</param>
-    /// <param name="isLittleEndian">Whether the target is little-endian</param>
-    /// <param name="pointerSize">The size of a pointer in bytes in the target process.</param>
-    /// <returns>The target object.</returns>
-    public static ContractDescriptorTarget Create(ContractDescriptorParser.ContractDescriptor contractDescriptor, TargetPointer[] globalPointerValues, ReadFromTargetDelegate readFromTarget, bool isLittleEndian, int pointerSize)
-    {
-        return new ContractDescriptorTarget(new Configuration { IsLittleEndian = isLittleEndian, PointerSize = pointerSize }, contractDescriptor, globalPointerValues, new Reader(readFromTarget));
-    }
-
     private ContractDescriptorTarget(Configuration config, ContractDescriptorParser.ContractDescriptor descriptor, TargetPointer[] pointerData, Reader reader)
     {
         Contracts = new CachingContractRegistry(this, this.TryGetContractVersion);
