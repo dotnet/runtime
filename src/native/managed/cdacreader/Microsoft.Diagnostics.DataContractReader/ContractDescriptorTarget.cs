@@ -114,12 +114,6 @@ public sealed unsafe class ContractDescriptorTarget : Target
 
         _contracts = descriptor.Contracts ?? [];
 
-        if (_reader.GetTargetPlatform(out int platform) < 0)
-        {
-            throw new InvalidOperationException($"Unable to read target platform.");
-        }
-        Platform = (CorDebugPlatform)platform;
-
         // Set pointer type size
         _knownTypes[DataType.pointer] = new TypeInfo { Size = (uint)_config.PointerSize };
 
@@ -269,7 +263,14 @@ public sealed unsafe class ContractDescriptorTarget : Target
 
     public override int PointerSize => _config.PointerSize;
     public override bool IsLittleEndian => _config.IsLittleEndian;
-    public override CorDebugPlatform Platform { get; }
+    public override CorDebugPlatform Platform
+    {
+        get
+        {
+            _reader.GetTargetPlatform(out int platform);
+            return (CorDebugPlatform)platform;
+        }
+    }
 
     public override int GetThreadContext(uint threadId, uint contextFlags, uint contextSize, Span<byte> buffer)
     {
