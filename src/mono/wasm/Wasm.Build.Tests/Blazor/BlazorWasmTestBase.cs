@@ -108,9 +108,6 @@ public abstract class BlazorWasmTestBase : WasmTemplateTestsBase
             if (buildOptions != _defaultBlazorBuildOptions)
                 buildOptions = buildOptions with { ExtraMSBuildArgs = $"{_blazorExtraMSBuildArgs} {buildOptions.ExtraMSBuildArgs}" };
 
-            if (config == Configuration.Debug && s_buildEnv.IsWorkload)
-                buildOptions = buildOptions with { FeaturePerfTracing = true };
-
             (string projectDir, string buildOutput) = BuildProject(
                 info,
                 config,
@@ -141,9 +138,6 @@ public abstract class BlazorWasmTestBase : WasmTemplateTestsBase
         {
             if (publishOptions != _defaultBlazorPublishOptions)
                 publishOptions = publishOptions with { ExtraMSBuildArgs = $"{_blazorExtraMSBuildArgs} {publishOptions.ExtraMSBuildArgs}" };
-
-            if (config == Configuration.Debug && s_buildEnv.IsWorkload)
-                publishOptions = publishOptions with { FeaturePerfTracing = true };
 
             (string projectDir, string buildOutput) = PublishProject(
                 info,

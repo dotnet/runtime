@@ -158,9 +158,6 @@ public class WasmTemplateTestsBase : BuildTestBase
             buildOptions = buildOptions with { ExtraMSBuildArgs = $"{buildOptions.ExtraMSBuildArgs} -p:RunAOTCompilation=true -p:EmccVerbose=true" };
         }
 
-        if (configuration == Configuration.Debug && s_buildEnv.IsWorkload)
-            buildOptions = buildOptions with { FeaturePerfTracing = true };
-
         if (buildOptions.ExtraBuildEnvironmentVariables is null)
             buildOptions = buildOptions with { ExtraBuildEnvironmentVariables = new Dictionary<string, string>() };
 
