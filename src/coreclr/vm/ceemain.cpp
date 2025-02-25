@@ -1735,7 +1735,7 @@ static uint32_t g_flsIndex = FLS_OUT_OF_INDEXES;
 #define FLS_STATE_ARMED 1
 #define FLS_STATE_INVOKED 2
 
-static __declspec(thread) byte flsState;
+static __declspec(thread) byte t_flsState;
 
 // This is called when each *fiber* is destroyed. When the home fiber of a thread is destroyed,
 // it means that the thread itself is destroyed.
@@ -1746,12 +1746,12 @@ static void __stdcall FiberDetachCallback(void* lpFlsData)
     _ASSERTE(g_flsIndex != FLS_OUT_OF_INDEXES);
     _ASSERTE(lpFlsData);
 
-    if (flsState == FLS_STATE_ARMED)
+    if (t_flsState == FLS_STATE_ARMED)
     {
         RuntimeThreadShutdown(lpFlsData);
     }
 
-    flsState = FLS_STATE_INVOKED;
+    t_flsState = FLS_STATE_INVOKED;
 }
 
 void InitFlsSlot()
@@ -1771,12 +1771,12 @@ void InitFlsSlot()
 //  thread        - thread to attach
 static void OsAttachThread(void* thread)
 {
-    if (flsState == FLS_STATE_INVOKED)
+    if (t_flsState == FLS_STATE_INVOKED)
     {
         _ASSERTE_ALL_BUILDS(!"Attempt to execute managed code after the .NET runtime thread state has been destroyed.");
     }
 
-    flsState = FLS_STATE_ARMED;
+    t_flsState = FLS_STATE_ARMED;
 
     // Associate the current fiber with the current thread.  This makes the current fiber the thread's "home"
     // fiber.  This fiber is the only fiber allowed to execute managed code on this thread.  When this fiber
@@ -1799,7 +1799,7 @@ void OsDetachThread(void* thread)
         // Thread is not attached.
         // This could come from DestroyThread called when refcount reaches 0
         // and the thread may have already been detached or never attached.
-        // We leave flsState as-is to keep track whether our callback has been called.
+        // We leave t_flsState as-is to keep track whether our callback has been called.
         return;
     }
 
@@ -1810,7 +1810,7 @@ void OsDetachThread(void* thread)
 
     // Leave the existing FLS value, to keep the callback "armed" so that we could observe the termination callback.
     // After that we will not allow to attach as we will no longer be able to clean up.
-    flsState = FLS_STATE_CLEAR;
+    t_flsState = FLS_STATE_CLEAR;
 }
 
 void EnsureTlsDestructionMonitor()
