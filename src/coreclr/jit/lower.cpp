@@ -5292,7 +5292,8 @@ void Lowering::LowerCallStruct(GenTreeCall* call)
                 break;
 
             case GT_CALL:
-                // Argument lowering will deal with register file mismatches if needed.
+            case GT_FIELD_LIST:
+                // Argument/return lowering will deal with register file mismatches if needed.
                 assert(varTypeIsSIMD(origType));
                 break;
 
