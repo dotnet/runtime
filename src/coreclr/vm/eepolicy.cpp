@@ -311,7 +311,9 @@ inline void LogCallstackForLogWorker(Thread* pThread, PEXCEPTION_POINTERS pExcep
     pThread->StackWalkFrames(&CallStackLogger::LogCallstackForLogCallback, &logger, QUICKUNWIND | FUNCTIONSONLY | ALLOW_ASYNC_STACK_WALK);
 
     logger.PrintStackTrace(WordAt.GetUnicode());
-
+#ifdef _DEBUG
+    PrintToStdErrA("@Exiting stack trace printing thread.\n");
+#endif
 }
 
 //---------------------------------------------------------------------------------------
@@ -665,21 +667,34 @@ void DECLSPEC_NORETURN EEPolicy::HandleFatalStackOverflow(EXCEPTION_POINTERS *pE
         HandleHolder stackDumpThreadHandle = Thread::CreateUtilityThread(Thread::StackSize_Small, LogStackOverflowStackTraceThread, GetThreadNULLOk(), W(".NET Stack overflow trace logger"));
         if (stackDumpThreadHandle != INVALID_HANDLE_VALUE)
         {
+#ifdef _DEBUG
+            PrintToStdErrA("@Waiting for the stack trace printing helper thread.\n");
+#endif
             // Wait for the stack trace logging completion
             DWORD res = WaitForSingleObject(stackDumpThreadHandle, INFINITE);
             _ASSERTE(res == WAIT_OBJECT_0);
+ #ifdef _DEBUG
+            PrintToStdErrA("@Stack trace printing helper thread exited.\n");
+ #endif
         }
 
         g_stackOverflowCallStackLogged = 2;
     }
     else
     {
+#ifdef _DEBUG
+        PrintToStdErrA("@Waiting for thread that's logging stack overflow.\n");
+#endif
         // Wait for the thread that is logging the stack trace to complete
         while (g_stackOverflowCallStackLogged != 2)
         {
             Sleep(50);
         }
     }
+
+#ifdef _DEBUG
+    PrintToStdErrA("@Proceeding with exit.\n");
+#endif
 
     if(ETW_EVENT_ENABLED(MICROSOFT_WINDOWS_DOTNETRUNTIME_PRIVATE_PROVIDER_DOTNET_Context, FailFast))
     {
@@ -698,6 +713,9 @@ void DECLSPEC_NORETURN EEPolicy::HandleFatalStackOverflow(EXCEPTION_POINTERS *pE
         if (pThread)
         {
             GCX_COOP();
+#ifdef _DEBUG
+            PrintToStdErrA("@Setting throwable.\n");
+#endif
             // If we had a SO before preallocated exception objects are initialized, we will AV here. This can happen
             // during the initialization of SystemDomain during EEStartup. Thus, setup the SO throwable only if its not
             // NULL.
@@ -731,10 +749,15 @@ void DECLSPEC_NORETURN EEPolicy::HandleFatalStackOverflow(EXCEPTION_POINTERS *pE
         }
 #endif // !TARGET_UNIX
 
+#ifdef _DEBUG
+        PrintToStdErrA("@Calling WatsonLastChance.\n");
+#endif
         WatsonLastChance(pThread, pExceptionInfo,
             (fTreatAsNativeUnhandledException == FALSE)? TypeOfReportedError::UnhandledException: TypeOfReportedError::NativeThreadUnhandledException);
     }
-
+#ifdef _DEBUG
+    PrintToStdErrA("@Terminating the process.\n");
+#endif
     CrashDumpAndTerminateProcess(COR_E_STACKOVERFLOW);
     UNREACHABLE();
 }
