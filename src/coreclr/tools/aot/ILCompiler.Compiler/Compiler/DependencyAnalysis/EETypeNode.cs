@@ -272,7 +272,7 @@ namespace ILCompiler.DependencyAnalysis
             }
         }
 
-        public sealed override bool HasConditionalStaticDependencies
+        public override bool HasConditionalStaticDependencies
         {
             get
             {
@@ -323,7 +323,7 @@ namespace ILCompiler.DependencyAnalysis
             }
         }
 
-        public sealed override IEnumerable<CombinedDependencyListEntry> GetConditionalStaticDependencies(NodeFactory factory)
+        public override IEnumerable<CombinedDependencyListEntry> GetConditionalStaticDependencies(NodeFactory factory)
         {
             List<CombinedDependencyListEntry> result = new List<CombinedDependencyListEntry>();
 
@@ -353,7 +353,7 @@ namespace ILCompiler.DependencyAnalysis
                     "Information about static bases for type with template"));
             }
 
-            if (!_type.IsGenericDefinition && !_type.IsCanonicalSubtype(CanonicalFormKind.Any))
+            if (!_type.IsCanonicalSubtype(CanonicalFormKind.Any))
             {
                 foreach (DefType iface in _type.RuntimeInterfaces)
                 {

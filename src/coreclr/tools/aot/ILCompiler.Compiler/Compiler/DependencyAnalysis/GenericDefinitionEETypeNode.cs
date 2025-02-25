@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Generic;
 using Internal.Runtime;
 using Internal.Text;
 using Internal.TypeSystem;
@@ -15,6 +16,10 @@ namespace ILCompiler.DependencyAnalysis
         {
             Debug.Assert(type.IsGenericDefinition);
         }
+
+        public override bool HasConditionalStaticDependencies => false;
+
+        public override IEnumerable<CombinedDependencyListEntry> GetConditionalStaticDependencies(NodeFactory factory) => null;
 
         public override ISymbolNode NodeForLinkage(NodeFactory factory)
         {

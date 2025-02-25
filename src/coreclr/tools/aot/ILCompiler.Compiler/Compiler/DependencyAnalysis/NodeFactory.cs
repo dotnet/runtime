@@ -707,7 +707,7 @@ namespace ILCompiler.DependencyAnalysis
 
         public IEETypeNode MaximallyConstructableType(TypeDesc type)
         {
-            if (ConstructedEETypeNode.CreationAllowed(type))
+            if (ConstructedEETypeNode.CreationAllowed(type) || type.IsGenericDefinition)
                 return ConstructedTypeSymbol(type);
             else
                 return NecessaryTypeSymbol(type);
@@ -1383,7 +1383,7 @@ namespace ILCompiler.DependencyAnalysis
 
         public FrozenRuntimeTypeNode SerializedMaximallyConstructableRuntimeTypeObject(TypeDesc type)
         {
-            if (ConstructedEETypeNode.CreationAllowed(type))
+            if (ConstructedEETypeNode.CreationAllowed(type) || type.IsGenericDefinition)
                 return SerializedConstructedRuntimeTypeObject(type);
             return SerializedNecessaryRuntimeTypeObject(type);
         }
