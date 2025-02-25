@@ -4978,8 +4978,37 @@ bool Compiler::fgDebugCheckOutgoingProfileData(BasicBlock* block, ProfileChecks 
 #endif // DEBUG
 
 //------------------------------------------------------------------------
+// fgRepairProfile: If we have PGO data and the profile is inconsistent,
+//   run synthesis to re-establish consistency.
+//
+// Returns:
+//   PhaseStatus indicating if profile synthesis ran or not.
+//
+PhaseStatus Compiler::fgRepairProfile()
+{
+    if (fgIsUsingProfileWeights())
+    {
+        if (fgPgoConsistent)
+        {
+            JITDUMP("Profile is already consistent.\n");
+        }
+        else
+        {
+            ProfileSynthesis::Run(this, ProfileSynthesisOption::RetainLikelihoods);
+            return PhaseStatus::MODIFIED_EVERYTHING;
+        }
+    }
+    else
+    {
+        JITDUMP("No PGO data. Skipping profile repair.\n");
+    }
+
+    return PhaseStatus::MODIFIED_NOTHING;
+}
+
+//------------------------------------------------------------------------
 // fgRepairProfileCondToUncond: attempt to repair profile after modifying
-//   a conditinal branch to an unconditional branch.
+//   a conditional branch to an unconditional branch.
 //
 // Arguments:
 //   block        - block that was just altered

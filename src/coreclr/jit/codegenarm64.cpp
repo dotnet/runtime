@@ -1781,7 +1781,7 @@ void CodeGen::genCaptureFuncletPrologEpilogInfo()
         // We furthermore allocate the "monitor acquired" bool between PSP and
         // the saved registers because this is part of the EnC header.
         // Note that OSR methods reuse the monitor bool created by tier 0.
-        saveRegsPlusPSPSize += compiler->lvaLclSize(compiler->lvaMonAcquired);
+        saveRegsPlusPSPSize += compiler->lvaLclStackHomeSize(compiler->lvaMonAcquired);
     }
 
     unsigned const saveRegsPlusPSPSizeAligned = roundUp(saveRegsPlusPSPSize, STACK_ALIGN);
@@ -2966,7 +2966,7 @@ void CodeGen::genCodeForStoreLclVar(GenTreeLclVar* lclNode)
     if (lclNode->IsMultiReg())
     {
         // This is the case of storing to a multi-reg HFA local from a fixed-size SIMD type.
-        assert(varTypeIsSIMD(data) && varDsc->lvIsHfa() && (varDsc->GetHfaType() == TYP_FLOAT));
+        assert(varTypeIsSIMD(data));
         regNumber    operandReg = genConsumeReg(data);
         unsigned int regCount   = varDsc->lvFieldCnt;
         for (unsigned i = 0; i < regCount; ++i)

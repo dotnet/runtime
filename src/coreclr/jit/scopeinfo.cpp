@@ -1964,7 +1964,7 @@ void CodeGen::genSetScopeInfo(unsigned       which,
 
         noway_assert(cookieOffset < varOffset);
         unsigned offset     = varOffset - cookieOffset;
-        unsigned stkArgSize = compiler->compArgSize - intRegState.rsCalleeRegArgCount * REGSIZE_BYTES;
+        unsigned stkArgSize = compiler->lvaParameterStackSize;
         noway_assert(offset < stkArgSize);
         offset = stkArgSize - offset;
 

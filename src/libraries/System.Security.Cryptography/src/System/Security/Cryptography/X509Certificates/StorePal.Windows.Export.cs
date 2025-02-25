@@ -75,9 +75,7 @@ namespace System.Security.Cryptography.X509Certificates
                     }
 
                 case X509ContentType.Pkcs12:
-                    byte[] pkcs12 = ExportPkcs12(false, password, out bool aes256Sha256);
-                    Debug.Assert(!aes256Sha256);
-                    return pkcs12;
+                    return ExportPkcs12Core(null, password);
 
                 case X509ContentType.SerializedStore:
                     return SaveToMemoryStore(Interop.Crypt32.CertStoreSaveAs.CERT_STORE_SAVE_AS_STORE);
@@ -92,34 +90,16 @@ namespace System.Security.Cryptography.X509Certificates
 
         public byte[] ExportPkcs12(Pkcs12ExportPbeParameters exportParameters, SafePasswordHandle password)
         {
-            bool tryAes256sha256 = exportParameters is
-                Pkcs12ExportPbeParameters.Default or
-                Pkcs12ExportPbeParameters.Pbes2Aes256Sha256;
-
-            byte[] exported = ExportPkcs12(tryAes256sha256, password, out bool aes256Sha256);
-
-            // What we asked for and what we got are the same - so return it as-is.
-            if (tryAes256sha256 == aes256Sha256)
-            {
-                return exported;
-            }
-
-            if (!tryAes256sha256)
-            {
-                Debug.Fail("3DES PKCS12 export failed.");
-                throw new CryptographicException();
-            }
-
-            return ReEncryptAndSealPkcs12(exported, password, Helpers.WindowsAesPbe);
+            return ExportPkcs12Core(exportParameters, password);
         }
 
         public byte[] ExportPkcs12(PbeParameters exportParameters, SafePasswordHandle password)
         {
-            byte[] exported = ExportPkcs12(preferAes256Sha256: true, password, out _);
+            byte[] exported = ExportPkcs12Core(null, password);
             return ReEncryptAndSealPkcs12(exported, password, exportParameters);
         }
 
-        private unsafe byte[] ExportPkcs12(bool preferAes256Sha256, SafePasswordHandle password, out bool aes256Sha256)
+        private unsafe byte[] ExportPkcs12Core(Pkcs12ExportPbeParameters? exportParameters, SafePasswordHandle password)
         {
             Interop.Crypt32.DATA_BLOB dataBlob = new Interop.Crypt32.DATA_BLOB(IntPtr.Zero, 0);
             Interop.Crypt32.PFXExportFlags flags =
@@ -127,20 +107,37 @@ namespace System.Security.Cryptography.X509Certificates
                 Interop.Crypt32.PFXExportFlags.REPORT_NOT_ABLE_TO_EXPORT_PRIVATE_KEY;
 
             Interop.Crypt32.PKCS12_PBES2_EXPORT_PARAMS* exportParams = null;
-            aes256Sha256 = preferAes256Sha256 && s_supportsAes256Sha256;
+            PbeParameters? reEncodeParameters = null;
 
-            if (aes256Sha256)
+            if (exportParameters is Pkcs12ExportPbeParameters.Pbes2Aes256Sha256 or Pkcs12ExportPbeParameters.Default)
             {
-                flags |= Interop.Crypt32.PFXExportFlags.PKCS12_EXPORT_PBES2_PARAMS;
-                // PKCS12_PBES2_ALG_AES256_SHA256
-                char* algStr = stackalloc char[] { 'A', 'E', 'S', '2', '5', '6', '-', 'S', 'H', 'A', '2', '5', '6', '\0' };
-                Interop.Crypt32.PKCS12_PBES2_EXPORT_PARAMS p = new()
+                if (s_supportsAes256Sha256)
                 {
-                    dwSize = (uint)Marshal.SizeOf<Interop.Crypt32.PKCS12_PBES2_EXPORT_PARAMS>(),
-                    hNcryptDescriptor = 0,
-                    pwszPbes2Alg = algStr,
-                };
-                exportParams = &p;
+                    flags |= Interop.Crypt32.PFXExportFlags.PKCS12_EXPORT_PBES2_PARAMS;
+                    // PKCS12_PBES2_ALG_AES256_SHA256
+                    char* algStr = stackalloc char[] { 'A', 'E', 'S', '2', '5', '6', '-', 'S', 'H', 'A', '2', '5', '6', '\0' };
+                    Interop.Crypt32.PKCS12_PBES2_EXPORT_PARAMS p = new()
+                    {
+                        dwSize = (uint)Marshal.SizeOf<Interop.Crypt32.PKCS12_PBES2_EXPORT_PARAMS>(),
+                        hNcryptDescriptor = 0,
+                        pwszPbes2Alg = algStr,
+                    };
+                    exportParams = &p;
+                }
+                else
+                {
+                    reEncodeParameters = Helpers.WindowsAesPbe;
+                }
+            }
+            else if (exportParameters == Pkcs12ExportPbeParameters.Pkcs12TripleDesSha1)
+            {
+                // Older Windows is not guaranteed to export in 3DES. If 3DES was asked for explicitly, then re-encode
+                // it as 3DES.
+                reEncodeParameters = Helpers.Windows3desPbe;
+            }
+            else
+            {
+                Debug.Assert(exportParameters is null);
             }
 
             if (!Interop.Crypt32.PFXExportCertStoreEx(_certStore, ref dataBlob, password, exportParams, flags))
@@ -160,7 +157,9 @@ namespace System.Security.Cryptography.X509Certificates
                 }
             }
 
-            return pbEncoded;
+            return reEncodeParameters is not null ?
+                ReEncryptAndSealPkcs12(pbEncoded, password, reEncodeParameters) :
+                pbEncoded;
         }
 
         private static byte[] ReEncryptAndSealPkcs12(byte[] pkcs12, SafePasswordHandle password, PbeParameters newPbeParameters)

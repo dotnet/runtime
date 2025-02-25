@@ -3084,6 +3084,9 @@
         <ExcludeList Include = "$(XunitTestBinBase)/baseservices/exceptions/unhandled/unhandled/**">
             <Issue>System.Diagnostics.Process is not supported</Issue>
         </ExcludeList>
+        <ExcludeList Include = "$(XunitTestBinBase)/Regressions/coreclr/GitHub_76531/test76531/**">
+            <Issue>Assembly.GetExecutingAssembly().Location returns NULL on WASM</Issue>
+        </ExcludeList>
         <ExcludeList Include = "$(XunitTestBinBase)/tracing/eventcounter/incrementingeventcounter/**">
             <Issue>System.Threading.Thread.UnsafeStart not supported</Issue>
         </ExcludeList>

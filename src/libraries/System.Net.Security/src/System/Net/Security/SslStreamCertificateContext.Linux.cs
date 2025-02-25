@@ -25,24 +25,10 @@ namespace System.Net.Security
 
         private const bool TrimRootCertificate = true;
         private const bool ChainBuildNeedsTrustedRoot = false;
-        internal ConcurrentDictionary<SslProtocols, SafeSslContextHandle> SslContexts
-        {
-            get
-            {
-                ConcurrentDictionary<SslProtocols, SafeSslContextHandle>? sslContexts = _sslContexts;
-                if (sslContexts is null)
-                {
-                    Interlocked.CompareExchange(ref _sslContexts, new(), null);
-                    sslContexts = _sslContexts;
-                }
-
-                return sslContexts;
-            }
-        }
-
-        private ConcurrentDictionary<SslProtocols, SafeSslContextHandle>? _sslContexts;
         internal readonly SafeX509Handle CertificateHandle;
         internal readonly SafeEvpPKeyHandle KeyHandle;
+
+        private object SyncObject => KeyHandle;
 
         private bool _staplingForbidden;
         private byte[]? _ocspResponse;
@@ -239,7 +225,7 @@ namespace System.Net.Security
                 return new ValueTask<byte[]?>((byte[]?)null);
             }
 
-            lock (SslContexts)
+            lock (SyncObject)
             {
                 pending = _pendingDownload;
 

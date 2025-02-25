@@ -534,6 +534,22 @@ EMSCRIPTEN_KEEPALIVE const char * mono_wasm_method_get_name (MonoMethod *method)
 	return res;
 }
 
+EMSCRIPTEN_KEEPALIVE const char * mono_wasm_method_get_name_ex (MonoMethod *method) {
+	const char *res;
+	MONO_ENTER_GC_UNSAFE;
+	res = mono_method_get_name (method);
+	// starts with .ctor or .cctor
+	if (mono_method_get_flags (method, NULL) & 0x0800 /* METHOD_ATTRIBUTE_SPECIAL_NAME */ && strlen (res) < 7) {
+		char *res_ex = (char *) malloc (128);
+		snprintf (res_ex, 128,"%s.%s", mono_class_get_name (mono_method_get_class (method)), res);
+		res = res_ex;
+	} else {
+		res = strdup (res);
+	}
+	MONO_EXIT_GC_UNSAFE;
+	return res;
+}
+
 EMSCRIPTEN_KEEPALIVE float mono_wasm_get_f32_unaligned (const float *src) {
 	return *src;
 }

@@ -651,7 +651,16 @@ namespace System
 
         public virtual Type MakePointerType() => throw new NotSupportedException();
 
-        public static Type MakeGenericSignatureType(Type genericTypeDefinition, params Type[] typeArguments) => new SignatureConstructedGenericType(genericTypeDefinition, typeArguments);
+        public static Type MakeGenericSignatureType(Type genericTypeDefinition, params Type[] typeArguments)
+        {
+            ArgumentNullException.ThrowIfNull(genericTypeDefinition);
+            ArgumentNullException.ThrowIfNull(typeArguments);
+
+            if (!genericTypeDefinition.IsGenericTypeDefinition)
+                throw new ArgumentException(SR.Format(SR.Arg_NotGenericTypeDefinition, genericTypeDefinition), nameof(genericTypeDefinition));
+
+            return new SignatureConstructedGenericType(genericTypeDefinition, typeArguments);
+        }
 
         public static Type MakeGenericMethodParameter(int position)
         {

@@ -2068,6 +2068,22 @@ mono_get_exception_runtime_wrapped_checked (MonoObject *wrapped_exception_raw, M
 	HANDLE_FUNCTION_RETURN_OBJ (ret);
 }
 
+#define MONO_PROFILER_RAISE_EXCEPTION_CLAUSE(clause_flags) \
+	if (G_UNLIKELY (mono_profiler_clauses_enabled ())) { \
+		jit_tls->orig_ex_ctx_set = TRUE; \
+		MONO_PROFILER_RAISE (exception_clause, (method, i, clause_flags , ex_obj)); \
+		jit_tls->orig_ex_ctx_set = FALSE; \
+	}
+
+#define MONO_PROFILER_RAISE_EXCEPTION_LEAVE \
+	if (MONO_PROFILER_ENABLED (method_exception_leave) && \
+			mono_profiler_get_call_instrumentation_flags (method) & MONO_PROFILER_CALL_INSTRUMENTATION_EXCEPTION_LEAVE) { \
+		jit_tls->orig_ex_ctx_set = TRUE; \
+		MONO_PROFILER_RAISE (method_exception_leave, (method, ex_obj)); \
+		jit_tls->orig_ex_ctx_set = FALSE; \
+	}
+
+
 /**
  * mono_handle_exception_internal:
  * \param ctx saved processor state
@@ -2437,11 +2453,9 @@ mono_handle_exception_internal (MonoContext *ctx, MonoObject *obj, gboolean resu
 					 * catch portion of this EH clause, pass MONO_EXCEPTION_CLAUSE_NONE explicitly
 					 * instead of ei->flags.
 					 */
-					if (G_UNLIKELY (mono_profiler_clauses_enabled ())) {
-						jit_tls->orig_ex_ctx_set = TRUE;
-						MONO_PROFILER_RAISE (exception_clause, (method, i, MONO_EXCEPTION_CLAUSE_NONE, ex_obj));
-						jit_tls->orig_ex_ctx_set = FALSE;
-					}
+					MONO_PROFILER_RAISE_EXCEPTION_CLAUSE ( MONO_EXCEPTION_CLAUSE_NONE );
+
+					MONO_PROFILER_RAISE_EXCEPTION_LEAVE;
 
 					mini_set_abort_threshold (&frame);
 
@@ -2493,22 +2507,17 @@ mono_handle_exception_internal (MonoContext *ctx, MonoObject *obj, gboolean resu
 					if (mono_trace_is_enabled () && mono_trace_eval (method))
 						g_print ("EXCEPTION: fault clause %d of %s\n", i, mono_method_full_name (method, TRUE));
 
-					if (G_UNLIKELY (mono_profiler_clauses_enabled ())) {
-						jit_tls->orig_ex_ctx_set = TRUE;
-						MONO_PROFILER_RAISE (exception_clause, (method, i, (MonoExceptionEnum)ei->flags, ex_obj));
-						jit_tls->orig_ex_ctx_set = FALSE;
-					}
+						MONO_PROFILER_RAISE_EXCEPTION_CLAUSE ((MonoExceptionEnum)ei->flags);
+
+						MONO_PROFILER_RAISE_EXCEPTION_LEAVE;
 				}
 				if (ei->flags == MONO_EXCEPTION_CLAUSE_FINALLY) {
 					if (mono_trace_is_enabled () && mono_trace_eval (method))
 						g_print ("EXCEPTION: finally clause %d of %s\n", i, mono_method_full_name (method, TRUE));
 
-					if (G_UNLIKELY (mono_profiler_clauses_enabled ())) {
-						jit_tls->orig_ex_ctx_set = TRUE;
-						MONO_PROFILER_RAISE (exception_clause, (method, i, (MonoExceptionEnum)ei->flags, ex_obj));
-						jit_tls->orig_ex_ctx_set = FALSE;
-					}
+					MONO_PROFILER_RAISE_EXCEPTION_CLAUSE ((MonoExceptionEnum)ei->flags);
 
+					MONO_PROFILER_RAISE_EXCEPTION_LEAVE;
 				}
 				if (ei->flags == MONO_EXCEPTION_CLAUSE_FAULT || ei->flags == MONO_EXCEPTION_CLAUSE_FINALLY) {
 					mono_set_lmf (lmf);
@@ -2556,13 +2565,6 @@ mono_handle_exception_internal (MonoContext *ctx, MonoObject *obj, gboolean resu
 					}
 				}
 			}
-		}
-
-		if (MONO_PROFILER_ENABLED (method_exception_leave) &&
-		    mono_profiler_get_call_instrumentation_flags (method) & MONO_PROFILER_CALL_INSTRUMENTATION_EXCEPTION_LEAVE) {
-			jit_tls->orig_ex_ctx_set = TRUE;
-			MONO_PROFILER_RAISE (method_exception_leave, (method, ex_obj));
-			jit_tls->orig_ex_ctx_set = FALSE;
 		}
 
 		*ctx = new_ctx;

@@ -208,8 +208,8 @@ def process_git_hash_arg(coreclr_args, return_first_hash=False):
         baseline_hash = stdout_git_merge_base.decode('utf-8').strip()
         logging.info("Baseline hash: %s", baseline_hash)
 
-        # Enumerate the last 20 changes, starting with the baseline, that included JIT changes.
-        command = [ "git", "log", "--pretty=format:%H", baseline_hash, "-20", "--", "src/coreclr/jit/*" ]
+        # Enumerate the last 20 changes, starting with the baseline, that included JIT and JIT-EE GUID changes.
+        command = [ "git", "log", "--pretty=format:%H", baseline_hash, "-20", "--", "src/coreclr/jit/*", "src/coreclr/inc/jiteeversionguid.h" ]
         logging.debug("Invoking: {}".format(" ".join(command)))
         proc = subprocess.Popen(command, stdout=subprocess.PIPE)
         stdout_change_list, _ = proc.communicate()
@@ -435,8 +435,8 @@ def upload_command(coreclr_args):
         # from the root of the runtime repo.
 
         with ChangeDir(coreclr_args.runtime_repo_location):
-            # Enumerate the last change, starting with the jit_git_hash, that included JIT changes.
-            command = [ "git", "log", "--pretty=format:%H", jit_git_hash, "-1", "--", "src/coreclr/jit/*" ]
+            # Enumerate the last change, starting with the jit_git_hash, that included JIT and JIT-EE GUID changes.
+            command = [ "git", "log", "--pretty=format:%H", jit_git_hash, "-1", "--", "src/coreclr/jit/*", "src/coreclr/inc/jiteeversionguid.h" ]
             logging.info("Invoking: {}".format(" ".join(command)))
             proc = subprocess.Popen(command, stdout=subprocess.PIPE)
             stdout_change_list, _ = proc.communicate()

@@ -2,10 +2,10 @@
   <PropertyGroup>
     <BuildDebPackage>false</BuildDebPackage>
     <BuildRpmPackage>true</BuildRpmPackage>
-    <PackageTargetOS>opensuse.42</PackageTargetOS>
+    <PackageTargetOS>opensuse.15</PackageTargetOS>
   </PropertyGroup>
 
   <ItemGroup>
-    <LinuxPackageDependency Include="libopenssl1_0_0;libicu;krb5" />
+    <LinuxPackageDependency Include="libopenssl3;libicu;krb5" />
   </ItemGroup>
 </Project>

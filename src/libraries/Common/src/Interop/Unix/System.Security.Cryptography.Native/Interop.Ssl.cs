@@ -352,6 +352,8 @@ namespace Microsoft.Win32.SafeHandles
         private bool _handshakeCompleted;
 
         public GCHandle AlpnHandle;
+        // Reference to the parent SSL_CTX handle in the SSL_CTX is being cached. Only used for
+        // refcount management.
         public SafeSslContextHandle? SslContextHandle;
 
         public bool IsServer
@@ -445,8 +447,6 @@ namespace Microsoft.Win32.SafeHandles
                 Disconnect();
             }
 
-            // drop reference to any SSL_CTX handle, any handle present here is being
-            // rented from (client) SSL_CTX cache.
             SslContextHandle?.Dispose();
 
             if (AlpnHandle.IsAllocated)

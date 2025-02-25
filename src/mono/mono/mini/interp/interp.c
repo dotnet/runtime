@@ -3891,6 +3891,24 @@ interp_ldvirtftn_delegate (gpointer arg, MonoDelegate *del)
 	return imethod_to_ftnptr (imethod, need_unbox);
 }
 
+#define INTERP_PROFILER_RAISE(name_lower, name_upper) \
+	if ((flag & TRACING_FLAG) || ((flag & PROFILING_FLAG) && MONO_PROFILER_ENABLED (method_ ## name_lower) && \
+			(frame->imethod->prof_flags & (MONO_PROFILER_CALL_INSTRUMENTATION_ ## name_upper ## _CONTEXT | MONO_PROFILER_CALL_INSTRUMENTATION_ ## name_upper)))) { \
+		MonoProfilerCallContext *prof_ctx = g_new0 (MonoProfilerCallContext, 1);\
+		prof_ctx->interp_frame = frame;\
+		prof_ctx->method = frame->imethod->method; \
+		if (!is_void) \
+			prof_ctx->return_value = frame->retval; \
+		if (flag & TRACING_FLAG) \
+			mono_trace_ ## name_lower ## _method (frame->imethod->method, frame->imethod->jinfo, prof_ctx); \
+		if (flag & PROFILING_FLAG) \
+			MONO_PROFILER_RAISE (method_ ## name_lower, (frame->imethod->method, prof_ctx)); \
+		g_free (prof_ctx); \
+	} else if ((flag & PROFILING_FLAG) && MONO_PROFILER_ENABLED (method_ ## name_lower)) { \
+		MONO_PROFILER_RAISE (method_ ## name_lower, (frame->imethod->method, NULL)); \
+	}
+
+
 /*
  * If CLAUSE_ARGS is non-null, start executing from it.
  * The ERROR argument is used to avoid declaring an error object for every interp frame, its not used
@@ -7610,24 +7628,19 @@ MINT_IN_CASE(MINT_BRTRUE_I8_SP) ZEROP_SP(gint64, !=); MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_PROF_ENTER) {
 			guint16 flag = ip [1];
 			ip += 2;
-
-			if ((flag & TRACING_FLAG) || ((flag & PROFILING_FLAG) && MONO_PROFILER_ENABLED (method_enter) &&
-					(frame->imethod->prof_flags & MONO_PROFILER_CALL_INSTRUMENTATION_ENTER_CONTEXT))) {
-				MonoProfilerCallContext *prof_ctx = g_new0 (MonoProfilerCallContext, 1);
-				prof_ctx->interp_frame = frame;
-				prof_ctx->method = frame->imethod->method;
-				// FIXME push/pop LMF
-				if (flag & TRACING_FLAG)
-					mono_trace_enter_method (frame->imethod->method, frame->imethod->jinfo, prof_ctx);
-				if (flag & PROFILING_FLAG)
-					MONO_PROFILER_RAISE (method_enter, (frame->imethod->method, prof_ctx));
-				g_free (prof_ctx);
-			} else if ((flag & PROFILING_FLAG) && MONO_PROFILER_ENABLED (method_enter)) {
-				MONO_PROFILER_RAISE (method_enter, (frame->imethod->method, NULL));
-			}
+			gboolean is_void = TRUE;
+			// FIXME push/pop LMF
+			INTERP_PROFILER_RAISE(enter, ENTER);
 			MINT_IN_BREAK;
 		}
-
+		MINT_IN_CASE(MINT_PROF_SAMPLEPOINT) {
+			guint16 flag = ip [1];
+			ip += 2;
+			gboolean is_void = TRUE;
+			// FIXME push/pop LMF
+			INTERP_PROFILER_RAISE(samplepoint, SAMPLEPOINT);
+			MINT_IN_BREAK;
+		}
 		MINT_IN_CASE(MINT_PROF_EXIT)
 		MINT_IN_CASE(MINT_PROF_EXIT_VOID) {
 			gboolean is_void = ip [0] == MINT_PROF_EXIT_VOID;
@@ -7640,24 +7653,7 @@ MINT_IN_CASE(MINT_BRTRUE_I8_SP) ZEROP_SP(gint64, !=); MINT_IN_BREAK;
 				else
 					frame->retval [0] = LOCAL_VAR (ip [1], stackval);
 			}
-
-			if ((flag & TRACING_FLAG) || ((flag & PROFILING_FLAG) && MONO_PROFILER_ENABLED (method_leave) &&
-					(frame->imethod->prof_flags & MONO_PROFILER_CALL_INSTRUMENTATION_LEAVE_CONTEXT))) {
-				MonoProfilerCallContext *prof_ctx = g_new0 (MonoProfilerCallContext, 1);
-				prof_ctx->interp_frame = frame;
-				prof_ctx->method = frame->imethod->method;
-				if (!is_void)
-					prof_ctx->return_value = frame->retval;
-				// FIXME push/pop LMF
-				if (flag & TRACING_FLAG)
-					mono_trace_leave_method (frame->imethod->method, frame->imethod->jinfo, prof_ctx);
-				if (flag & PROFILING_FLAG)
-					MONO_PROFILER_RAISE (method_leave, (frame->imethod->method, prof_ctx));
-				g_free (prof_ctx);
-			} else if ((flag & PROFILING_FLAG) && MONO_PROFILER_ENABLED (method_enter)) {
-				MONO_PROFILER_RAISE (method_leave, (frame->imethod->method, NULL));
-			}
-
+			INTERP_PROFILER_RAISE(leave, LEAVE);
 			frame_data_allocator_pop (&context->data_stack, frame);
 			goto exit_frame;
 		}
@@ -9126,7 +9122,7 @@ mono_jiterp_interp_entry (JiterpEntryData *_data, void *res)
 	int params_size = get_arg_offset_fast (header.rmethod, NULL, header.params_count);
 	// g_printf ("jiterp_interp_entry: rmethod=%d, params_count=%d, params_size=%d\n", header.rmethod, header.params_count, params_size);
 	header.context->stack_pointer = (guchar*)ALIGN_TO ((guchar*)sp + params_size, MINT_STACK_ALIGNMENT);
-;
+
 	g_assert (header.context->stack_pointer < header.context->stack_end);
 
 	MONO_ENTER_GC_UNSAFE;
@@ -9160,6 +9156,30 @@ EMSCRIPTEN_KEEPALIVE volatile size_t *
 mono_jiterp_get_polling_required_address ()
 {
 	return &mono_polling_required;
+}
+
+EMSCRIPTEN_KEEPALIVE void
+mono_jiterp_prof_enter (InterpFrame *frame, guint16 *ip)
+{
+	gboolean is_void = TRUE;
+	guint16 flag = ip [1];
+	INTERP_PROFILER_RAISE(enter, ENTER);
+}
+
+EMSCRIPTEN_KEEPALIVE void
+mono_jiterp_prof_samplepoint (InterpFrame *frame, guint16 *ip)
+{
+	guint16 flag = ip [1];
+	gboolean is_void = TRUE;
+	INTERP_PROFILER_RAISE(samplepoint, SAMPLEPOINT);
+}
+
+EMSCRIPTEN_KEEPALIVE void
+mono_jiterp_prof_leave (InterpFrame *frame, guint16 *ip)
+{
+	gboolean is_void = ip [0] == MINT_PROF_EXIT_VOID;
+	guint16 flag = is_void ? ip [1] : ip [2];
+	INTERP_PROFILER_RAISE(leave, LEAVE);
 }
 
 EMSCRIPTEN_KEEPALIVE void

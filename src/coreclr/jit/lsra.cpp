@@ -8387,7 +8387,7 @@ void LinearScan::insertMove(
 
     var_types typ = varDsc->TypeGet();
 #if defined(FEATURE_SIMD)
-    if ((typ == TYP_SIMD12) && compiler->lvaMapSimd12ToSimd16(varDsc))
+    if ((typ == TYP_SIMD12) && compiler->lvaMapSimd12ToSimd16(lclNum))
     {
         typ = TYP_SIMD16;
     }
