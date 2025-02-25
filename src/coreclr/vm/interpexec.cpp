@@ -264,10 +264,19 @@ void InterpExecMethod(InterpMethodContextFrame *pFrame, InterpThreadContext *pTh
                 BR_BINOP(int64_t, ==);
                 break;
             case INTOP_BEQ_R4:
-            case INTOP_BEQ_R8:
-                // TODO Floating point comparisons
-                assert(0);
+            {
+                float f1 = LOCAL_VAR(ip[1], float);
+                float f2 = LOCAL_VAR(ip[2], float);
+                BR_BINOP_COND(!isunordered(f1, f2) && f1 == f2);
                 break;
+            }
+            case INTOP_BEQ_R8:
+            {
+                double d1 = LOCAL_VAR(ip[1], double);
+                double d2 = LOCAL_VAR(ip[2], double);
+                BR_BINOP_COND(!isunordered(d1, d2) && d1 == d2);
+                break;
+            }
             case INTOP_BGE_I4:
                 BR_BINOP(int32_t, >=);
                 break;
@@ -275,9 +284,19 @@ void InterpExecMethod(InterpMethodContextFrame *pFrame, InterpThreadContext *pTh
                 BR_BINOP(int64_t, >=);
                 break;
             case INTOP_BGE_R4:
-            case INTOP_BGE_R8:
-                assert(0);
+            {
+                float f1 = LOCAL_VAR(ip[1], float);
+                float f2 = LOCAL_VAR(ip[2], float);
+                BR_BINOP_COND(!isunordered(f1, f2) && f1 >= f2);
                 break;
+            }
+            case INTOP_BGE_R8:
+            {
+                double d1 = LOCAL_VAR(ip[1], double);
+                double d2 = LOCAL_VAR(ip[2], double);
+                BR_BINOP_COND(!isunordered(d1, d2) && d1 >= d2);
+                break;
+            }
             case INTOP_BGT_I4:
                 BR_BINOP(int32_t, >);
                 break;
@@ -285,9 +304,19 @@ void InterpExecMethod(InterpMethodContextFrame *pFrame, InterpThreadContext *pTh
                 BR_BINOP(int64_t, >);
                 break;
             case INTOP_BGT_R4:
-            case INTOP_BGT_R8:
-                assert(0);
+            {
+                float f1 = LOCAL_VAR(ip[1], float);
+                float f2 = LOCAL_VAR(ip[2], float);
+                BR_BINOP_COND(!isunordered(f1, f2) && f1 > f2);
                 break;
+            }
+            case INTOP_BGT_R8:
+            {
+                double d1 = LOCAL_VAR(ip[1], double);
+                double d2 = LOCAL_VAR(ip[2], double);
+                BR_BINOP_COND(!isunordered(d1, d2) && d1 > d2);
+                break;
+            }
             case INTOP_BLT_I4:
                 BR_BINOP(int32_t, <);
                 break;
@@ -295,9 +324,19 @@ void InterpExecMethod(InterpMethodContextFrame *pFrame, InterpThreadContext *pTh
                 BR_BINOP(int64_t, <);
                 break;
             case INTOP_BLT_R4:
-            case INTOP_BLT_R8:
-                assert(0);
+            {
+                float f1 = LOCAL_VAR(ip[1], float);
+                float f2 = LOCAL_VAR(ip[2], float);
+                BR_BINOP_COND(!isunordered(f1, f2) && f1 < f2);
                 break;
+            }
+            case INTOP_BLT_R8:
+            {
+                double d1 = LOCAL_VAR(ip[1], double);
+                double d2 = LOCAL_VAR(ip[2], double);
+                BR_BINOP_COND(!isunordered(d1, d2) && d1 < d2);
+                break;
+            }
             case INTOP_BLE_I4:
                 BR_BINOP(int32_t, <=);
                 break;
@@ -305,9 +344,19 @@ void InterpExecMethod(InterpMethodContextFrame *pFrame, InterpThreadContext *pTh
                 BR_BINOP(int64_t, <=);
                 break;
             case INTOP_BLE_R4:
-            case INTOP_BLE_R8:
-                assert(0);
+            {
+                float f1 = LOCAL_VAR(ip[1], float);
+                float f2 = LOCAL_VAR(ip[2], float);
+                BR_BINOP_COND(!isunordered(f1, f2) && f1 <= f2);
                 break;
+            }
+            case INTOP_BLE_R8:
+            {
+                double d1 = LOCAL_VAR(ip[1], double);
+                double d2 = LOCAL_VAR(ip[2], double);
+                BR_BINOP_COND(!isunordered(d1, d2) && d1 <= d2);
+                break;
+            }
             case INTOP_BNE_UN_I4:
                 BR_BINOP(uint32_t, !=);
                 break;
@@ -315,9 +364,19 @@ void InterpExecMethod(InterpMethodContextFrame *pFrame, InterpThreadContext *pTh
                 BR_BINOP(uint64_t, !=);
                 break;
             case INTOP_BNE_UN_R4:
-            case INTOP_BNE_UN_R8:
-                assert(0);
+            {
+                float f1 = LOCAL_VAR(ip[1], float);
+                float f2 = LOCAL_VAR(ip[2], float);
+                BR_BINOP_COND(isunordered(f1, f2) || f1 != f2);
                 break;
+            }
+            case INTOP_BNE_UN_R8:
+            {
+                double d1 = LOCAL_VAR(ip[1], double);
+                double d2 = LOCAL_VAR(ip[2], double);
+                BR_BINOP_COND(isunordered(d1, d2) || d1 != d2);
+                break;
+            }
             case INTOP_BGE_UN_I4:
                 BR_BINOP(uint32_t, >=);
                 break;
@@ -325,9 +384,19 @@ void InterpExecMethod(InterpMethodContextFrame *pFrame, InterpThreadContext *pTh
                 BR_BINOP(uint64_t, >=);
                 break;
             case INTOP_BGE_UN_R4:
-            case INTOP_BGE_UN_R8:
-                assert(0);
+            {
+                float f1 = LOCAL_VAR(ip[1], float);
+                float f2 = LOCAL_VAR(ip[2], float);
+                BR_BINOP_COND(isunordered(f1, f2) || f1 >= f2);
                 break;
+            }
+            case INTOP_BGE_UN_R8:
+            {
+                double d1 = LOCAL_VAR(ip[1], double);
+                double d2 = LOCAL_VAR(ip[2], double);
+                BR_BINOP_COND(isunordered(d1, d2) || d1 >= d2);
+                break;
+            }
             case INTOP_BGT_UN_I4:
                 BR_BINOP(uint32_t, >);
                 break;
@@ -335,9 +404,19 @@ void InterpExecMethod(InterpMethodContextFrame *pFrame, InterpThreadContext *pTh
                 BR_BINOP(uint64_t, >);
                 break;
             case INTOP_BGT_UN_R4:
-            case INTOP_BGT_UN_R8:
-                assert(0);
+            {
+                float f1 = LOCAL_VAR(ip[1], float);
+                float f2 = LOCAL_VAR(ip[2], float);
+                BR_BINOP_COND(isunordered(f1, f2) || f1 > f2);
                 break;
+            }
+            case INTOP_BGT_UN_R8:
+            {
+                double d1 = LOCAL_VAR(ip[1], double);
+                double d2 = LOCAL_VAR(ip[2], double);
+                BR_BINOP_COND(isunordered(d1, d2) || d1 > d2);
+                break;
+            }
             case INTOP_BLE_UN_I4:
                 BR_BINOP(uint32_t, <=);
                 break;
@@ -345,9 +424,19 @@ void InterpExecMethod(InterpMethodContextFrame *pFrame, InterpThreadContext *pTh
                 BR_BINOP(uint64_t, <=);
                 break;
             case INTOP_BLE_UN_R4:
-            case INTOP_BLE_UN_R8:
-                assert(0);
+            {
+                float f1 = LOCAL_VAR(ip[1], float);
+                float f2 = LOCAL_VAR(ip[2], float);
+                BR_BINOP_COND(isunordered(f1, f2) || f1 <= f2);
                 break;
+            }
+            case INTOP_BLE_UN_R8:
+            {
+                double d1 = LOCAL_VAR(ip[1], double);
+                double d2 = LOCAL_VAR(ip[2], double);
+                BR_BINOP_COND(isunordered(d1, d2) || d1 <= d2);
+                break;
+            }
             case INTOP_BLT_UN_I4:
                 BR_BINOP(uint32_t, <);
                 break;
@@ -355,9 +444,19 @@ void InterpExecMethod(InterpMethodContextFrame *pFrame, InterpThreadContext *pTh
                 BR_BINOP(uint64_t, <);
                 break;
             case INTOP_BLT_UN_R4:
-            case INTOP_BLT_UN_R8:
-                assert(0);
+            {
+                float f1 = LOCAL_VAR(ip[1], float);
+                float f2 = LOCAL_VAR(ip[2], float);
+                BR_BINOP_COND(isunordered(f1, f2) || f1 < f2);
                 break;
+            }
+            case INTOP_BLT_UN_R8:
+            {
+                double d1 = LOCAL_VAR(ip[1], double);
+                double d2 = LOCAL_VAR(ip[2], double);
+                BR_BINOP_COND(isunordered(d1, d2) || d1 < d2);
+                break;
+            }
 
             case INTOP_ADD_I4:
                 LOCAL_VAR(ip[1], int32_t) = LOCAL_VAR(ip[2], int32_t) + LOCAL_VAR(ip[3], int32_t);
