@@ -2635,6 +2635,28 @@ bool Compiler::StructPromotionHelper::IsArmHfaParameter(unsigned lclNum)
 }
 
 //--------------------------------------------------------------------------------------------
+// IsSysVMultiRegType - Check if a type is one that could be passed in 2
+// registers in some cases.
+// This is a quirk to match old promotion behavior.
+//
+// Arguments:
+//   lclNum - The local
+//
+// Return value:
+//   True if it sometimes may be passed in two registers.
+//
+bool Compiler::StructPromotionHelper::IsSysVMultiRegType(ClassLayout* layout)
+{
+#ifdef UNIX_AMD64_ABI
+    SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR structDesc;
+    compiler->eeGetSystemVAmd64PassStructInRegisterDescriptor(layout->GetClassHandle(), &structDesc);
+    return structDesc.passedInRegisters && (structDesc.eightByteCount == 2);
+#else
+    return false;
+#endif
+}
+
+//--------------------------------------------------------------------------------------------
 // ShouldPromoteStructVar - Should a struct var be promoted if it can be promoted?
 // This routine mainly performs profitability checks.  Right now it also has
 // some correctness checks due to limitations of down-stream phases.
@@ -2693,10 +2715,10 @@ bool Compiler::StructPromotionHelper::ShouldPromoteStructVar(unsigned lclNum)
 #if FEATURE_MULTIREG_STRUCT_PROMOTE
         // Is this a variable holding a value with exactly two fields passed in
         // multiple registers?
-        if (compiler->lvaIsMultiregStruct(varDsc, compiler->info.compIsVarArgs))
+        if (varDsc->lvIsMultiRegArg || IsSysVMultiRegType(varDsc->GetLayout()))
         {
             if ((structPromotionInfo.fieldCnt != 2) &&
-                !((structPromotionInfo.fieldCnt == 1) && varTypeIsSIMD(structPromotionInfo.fields[0].fldType)))
+                ((structPromotionInfo.fieldCnt != 1) || !varTypeIsSIMD(structPromotionInfo.fields[0].fldType)))
             {
                 JITDUMP("Not promoting multireg struct local V%02u, because lvIsParam is true, #fields != 2 and it's "
                         "not a single SIMD.\n",
@@ -2713,6 +2735,7 @@ bool Compiler::StructPromotionHelper::ShouldPromoteStructVar(unsigned lclNum)
         }
         else
 #endif // !FEATURE_MULTIREG_STRUCT_PROMOTE
+        {
 
             // TODO-PERF - Implement struct promotion for incoming single-register structs.
             //             Also the implementation of jmp uses the 4 byte move to store
@@ -2726,6 +2749,7 @@ bool Compiler::StructPromotionHelper::ShouldPromoteStructVar(unsigned lclNum)
                         lclNum, structPromotionInfo.fieldCnt);
                 shouldPromote = false;
             }
+        }
     }
     else if ((lclNum == compiler->genReturnLocal) && (structPromotionInfo.fieldCnt > 1))
     {
