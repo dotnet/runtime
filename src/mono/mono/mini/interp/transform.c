@@ -5376,16 +5376,14 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 			td->has_localloc = TRUE;
 		}
 
-		if(!inlining) {
-			guint16 enter_profiling = 0;
-			if (mono_jit_trace_calls != NULL && mono_trace_eval (method))
-				enter_profiling |= TRACING_FLAG;
-			if (rtm->prof_flags & (MONO_PROFILER_CALL_INSTRUMENTATION_ENTER | MONO_PROFILER_CALL_INSTRUMENTATION_ENTER_CONTEXT))
-				enter_profiling |= PROFILING_FLAG;
-			if (enter_profiling) {
-				interp_add_ins (td, MINT_PROF_ENTER);
-				td->last_ins->data [0] = enter_profiling;
-			}
+		guint16 enter_profiling = 0;
+		if (mono_jit_trace_calls != NULL && mono_trace_eval (method))
+			enter_profiling |= TRACING_FLAG;
+		if (rtm->prof_flags & (MONO_PROFILER_CALL_INSTRUMENTATION_ENTER | MONO_PROFILER_CALL_INSTRUMENTATION_ENTER_CONTEXT))
+			enter_profiling |= PROFILING_FLAG;
+		if (enter_profiling) {
+			interp_add_ins (td, MINT_PROF_ENTER);
+			td->last_ins->data [0] = enter_profiling;
 		}
 
 		/*
