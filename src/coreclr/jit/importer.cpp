@@ -3861,7 +3861,7 @@ GenTree* Compiler::impImportStaticReadOnlyField(CORINFO_FIELD_HANDLE field, CORI
                 int simdWidth = getSIMDTypeSizeInBytes(fieldClsHnd);
                 if ((simdWidth > 0) && IsBaselineSimdIsaSupported())
                 {
-                    assert((totalSize <= 32) && (totalSize <= MaxStructSize));
+                    assert((totalSize <= 64) && (totalSize <= MaxStructSize));
                     var_types simdType = getSIMDTypeForSize(simdWidth);
 
                     bool hwAccelerated = true;

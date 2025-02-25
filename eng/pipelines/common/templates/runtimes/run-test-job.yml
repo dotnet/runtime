@@ -386,6 +386,9 @@ jobs:
           - jitstress_isas_x86_nosse41
           - jitstress_isas_x86_nosse42
           - jitstress_isas_x86_nossse3
+          - jitstress_isas_x86_vectort128
+          - jitstress_isas_x86_vectort512
+          - jitstress_isas_x86_noavx512_vectort128
           - jitstress_isas_1_x86_noaes
           - jitstress_isas_1_x86_noavx
           - jitstress_isas_1_x86_noavx2
