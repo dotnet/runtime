@@ -7223,7 +7223,7 @@ void CodeGen::genPushCalleeSavedRegisters(regNumber initReg, bool* pInitRegZeroe
 
     if (leftFrameSize != 0)
     {
-        genStackPointerAdjustment(-leftFrameSize, REG_SCRATCH, nullptr, /* reportUnwindData */ true);
+        genStackPointerAdjustment(-leftFrameSize, REG_SCRATCH, nullptr, /* reportUnwindData */ false);
     }
 }
 
