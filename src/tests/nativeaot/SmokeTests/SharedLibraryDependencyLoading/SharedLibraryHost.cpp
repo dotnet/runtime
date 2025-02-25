@@ -7,6 +7,7 @@
 #include "dlfcn.h"
 #endif
 #include <cstdint>
+#include <string>
 
 #ifndef TARGET_WINDOWS
 #define __stdcall
@@ -24,10 +25,20 @@ int main(int argc, char* argv[])
 #ifdef TARGET_WINDOWS
     // We need to include System32 to find system dependencies of SharedLibraryDependencyLoading.dll
     HINSTANCE handle = LoadLibraryEx("..\\subdir\\SharedLibraryDependencyLoading.dll", nullptr, LOAD_LIBRARY_SEARCH_APPLICATION_DIR | LOAD_LIBRARY_SEARCH_SYSTEM32);
-#elif __APPLE__
-    void *handle = dlopen("../subdir/SharedLibraryDependencyLoading.dylib", RTLD_LAZY);
 #else
-    void *handle = dlopen("../subdir/SharedLibraryDependencyLoading.so", RTLD_LAZY);
+#if TARGET_APPLE
+    constexpr char const* ext = ".dylib";
+#else
+    constexpr char const* ext = ".so";
+#endif
+
+    std::string path = argv[0];
+    // Step out of the current directory and the parent directory.
+    path = path.substr(0, path.find_last_of("/\\"));
+    path = path.substr(0, path.find_last_of("/\\"));
+    path += "/subdir/SharedLibraryDependencyLoading";
+    path += ext;
+    void* handle = dlopen(path.c_str(), RTLD_LAZY);
 #endif
 
     if (!handle)
