@@ -19110,30 +19110,30 @@ CORINFO_CLASS_HANDLE Compiler::gtGetClassHandle(GenTree* tree, bool* pIsExact, b
             }
             else if (call->gtCallType == CT_USER_FUNC)
             {
-                if ((call->gtCallMoreFlags & GTF_CALL_M_HAS_RET_CLASS) == GTF_CALL_M_HAS_RET_CLASS)
+                // For user calls, we can fetch the approximate return
+                // type info from the method handle. Unfortunately
+                // we've lost the exact context, so this is the best
+                // we can do for now.
+                CORINFO_METHOD_HANDLE method     = call->gtCallMethHnd;
+                CORINFO_CLASS_HANDLE  exactClass = nullptr;
+                CORINFO_SIG_INFO      sig;
+                eeGetMethodSig(method, &sig, exactClass);
+                if (sig.retType == CORINFO_TYPE_VOID)
                 {
-                    assert(call->gtReturnClassInfo != nullptr);
-                    objClass  = call->gtReturnClassInfo->clsHandle;
-                    *pIsExact = call->gtReturnClassInfo->isExact;
+                    // This is a constructor call.
+                    const unsigned methodFlags = info.compCompHnd->getMethodAttribs(method);
+                    assert((methodFlags & CORINFO_FLG_CONSTRUCTOR) != 0);
+                    objClass    = info.compCompHnd->getMethodClass(method);
+                    *pIsExact   = true;
+                    *pIsNonNull = true;
                 }
                 else
                 {
-                    // For user calls, we can fetch the approximate return
-                    // type info from the method handle. Unfortunately
-                    // we've lost the exact context, so this is the best
-                    // we can do for now.
-                    CORINFO_METHOD_HANDLE method     = call->gtCallMethHnd;
-                    CORINFO_CLASS_HANDLE  exactClass = nullptr;
-                    CORINFO_SIG_INFO      sig;
-                    eeGetMethodSig(method, &sig, exactClass);
-                    if (sig.retType == CORINFO_TYPE_VOID)
+                    if ((call->gtCallMoreFlags & GTF_CALL_M_HAS_RET_CLASS) == GTF_CALL_M_HAS_RET_CLASS)
                     {
-                        // This is a constructor call.
-                        const unsigned methodFlags = info.compCompHnd->getMethodAttribs(method);
-                        assert((methodFlags & CORINFO_FLG_CONSTRUCTOR) != 0);
-                        objClass    = info.compCompHnd->getMethodClass(method);
-                        *pIsExact   = true;
-                        *pIsNonNull = true;
+                        assert(call->gtReturnClassInfo != nullptr);
+                        objClass  = call->gtReturnClassInfo->clsHandle;
+                        *pIsExact = call->gtReturnClassInfo->isExact;
                     }
                     else
                     {
