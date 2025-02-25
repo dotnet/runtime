@@ -429,21 +429,24 @@ void DefaultPolicy::NoteBool(InlineObservation obs, bool value)
                 break;
 
             case InlineObservation::CALLSITE_RARE_GC_STRUCT:
-                // If this is a discretionary or always inline candidate
-                // with a gc struct, we may change our mind about inlining
-                // if the call site is rare, to avoid costs associated with
-                // zeroing the GC struct up in the root prolog.
-                if (m_Observation == InlineObservation::CALLEE_BELOW_ALWAYS_INLINE_SIZE)
+                if (!m_IsLateFailure)
                 {
-                    assert(m_CallsiteFrequency == InlineCallsiteFrequency::UNUSED);
-                    SetFailure(obs);
-                    return;
-                }
-                else if (m_Observation == InlineObservation::CALLEE_IS_DISCRETIONARY_INLINE)
-                {
-                    assert(m_CallsiteFrequency == InlineCallsiteFrequency::RARE);
-                    SetFailure(obs);
-                    return;
+                    // If this is a discretionary or always inline candidate
+                    // with a gc struct, we may change our mind about inlining
+                    // if the call site is rare, to avoid costs associated with
+                    // zeroing the GC struct up in the root prolog.
+                    if (m_Observation == InlineObservation::CALLEE_BELOW_ALWAYS_INLINE_SIZE)
+                    {
+                        assert(m_CallsiteFrequency == InlineCallsiteFrequency::UNUSED);
+                        SetFailure(obs);
+                        return;
+                    }
+                    else if (m_Observation == InlineObservation::CALLEE_IS_DISCRETIONARY_INLINE)
+                    {
+                        assert(m_CallsiteFrequency == InlineCallsiteFrequency::RARE);
+                        SetFailure(obs);
+                        return;
+                    }
                 }
                 break;
 
