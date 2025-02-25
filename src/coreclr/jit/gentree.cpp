@@ -14450,7 +14450,7 @@ GenTree* Compiler::gtFoldExprSpecial(GenTree* tree)
                         compareResult = 1;
                     }
 
-                    GenTree* newTree = gtNewIconNode(compareResult);
+                    GenTree* newTree = NewMorphedIntConNode(compareResult);
                     if (wrapEffects)
                     {
                         newTree = gtWrapWithSideEffects(newTree, op, GTF_ALL_EFFECT);
@@ -27052,9 +27052,9 @@ GenTree* Compiler::gtNewSimdWithElementNode(
 //
 GenTreeFieldList* Compiler::gtConvertTableOpToFieldList(GenTree* op, unsigned fieldCount)
 {
-    LclVarDsc* opVarDsc  = lvaGetDesc(op->AsLclVar());
-    unsigned   lclNum    = lvaGetLclNum(opVarDsc);
-    unsigned   fieldSize = opVarDsc->lvSize() / fieldCount;
+    unsigned   lclNum    = op->AsLclVar()->GetLclNum();
+    LclVarDsc* opVarDsc  = lvaGetDesc(lclNum);
+    unsigned   fieldSize = opVarDsc->lvExactSize() / fieldCount;
     var_types  fieldType = Compiler::getSIMDTypeForSize(fieldSize);
 
     GenTreeFieldList* fieldList = new (this, GT_FIELD_LIST) GenTreeFieldList();
@@ -27083,9 +27083,9 @@ GenTreeFieldList* Compiler::gtConvertTableOpToFieldList(GenTree* op, unsigned fi
 //
 GenTreeFieldList* Compiler::gtConvertParamOpToFieldList(GenTree* op, unsigned fieldCount, CORINFO_CLASS_HANDLE clsHnd)
 {
-    LclVarDsc*           opVarDsc  = lvaGetDesc(op->AsLclVar());
-    unsigned             lclNum    = lvaGetLclNum(opVarDsc);
-    unsigned             fieldSize = opVarDsc->lvSize() / fieldCount;
+    unsigned             lclNum    = op->AsLclVar()->GetLclNum();
+    LclVarDsc*           opVarDsc  = lvaGetDesc(lclNum);
+    unsigned             fieldSize = opVarDsc->lvExactSize() / fieldCount;
     GenTreeFieldList*    fieldList = new (this, GT_FIELD_LIST) GenTreeFieldList();
     int                  offset    = 0;
     unsigned             sizeBytes = 0;

@@ -2753,6 +2753,47 @@ insert_safepoint (MonoCompile *cfg, MonoBasicBlock *bblock)
 	}
 }
 
+static bool
+skip_insert_safepoint (MonoCompile *cfg)
+{
+	if (cfg->method->wrapper_type == MONO_WRAPPER_MANAGED_TO_NATIVE) {
+		WrapperInfo *info = mono_marshal_get_wrapper_info (cfg->method);
+		/* These wrappers are called from the wrapper for the polling function, leading to potential stack overflow */
+		if (info && info->subtype == WRAPPER_SUBTYPE_ICALL_WRAPPER &&
+				(info->d.icall.jit_icall_id == MONO_JIT_ICALL_mono_threads_state_poll ||
+				 info->d.icall.jit_icall_id == MONO_JIT_ICALL_mono_thread_interruption_checkpoint ||
+				 info->d.icall.jit_icall_id == MONO_JIT_ICALL_mono_threads_exit_gc_safe_region_unbalanced)) {
+			if (cfg->verbose_level > 1)
+				printf ("SKIPPING SAFEPOINTS for the polling function icall\n");
+			return TRUE;
+		}
+	}
+
+	if (cfg->method->wrapper_type == MONO_WRAPPER_NATIVE_TO_MANAGED) {
+		if (cfg->verbose_level > 1)
+			printf ("SKIPPING SAFEPOINTS for native-to-managed wrappers.\n");
+		return TRUE;
+	}
+
+	if (cfg->method->wrapper_type == MONO_WRAPPER_OTHER) {
+		WrapperInfo *info = mono_marshal_get_wrapper_info (cfg->method);
+
+		if (info && (info->subtype == WRAPPER_SUBTYPE_INTERP_IN || info->subtype == WRAPPER_SUBTYPE_INTERP_LMF)) {
+			/* These wrappers shouldn't do any icalls */
+			if (cfg->verbose_level > 1)
+				printf ("SKIPPING SAFEPOINTS for interp-in wrappers.\n");
+			return TRUE;
+		}
+	}
+
+	if (cfg->method->wrapper_type == MONO_WRAPPER_WRITE_BARRIER) {
+		if (cfg->verbose_level > 1)
+			printf ("SKIPPING SAFEPOINTS for write barrier wrappers.\n");
+		return TRUE;
+	}
+	return FALSE;
+}
+
 /*
 This code inserts safepoints into managed code at important code paths.
 Those are:
@@ -2778,39 +2819,7 @@ insert_safepoints (MonoCompile *cfg)
 		}
 	}
 
-	if (cfg->method->wrapper_type == MONO_WRAPPER_MANAGED_TO_NATIVE) {
-		WrapperInfo *info = mono_marshal_get_wrapper_info (cfg->method);
-		/* These wrappers are called from the wrapper for the polling function, leading to potential stack overflow */
-		if (info && info->subtype == WRAPPER_SUBTYPE_ICALL_WRAPPER &&
-				(info->d.icall.jit_icall_id == MONO_JIT_ICALL_mono_threads_state_poll ||
-				 info->d.icall.jit_icall_id == MONO_JIT_ICALL_mono_thread_interruption_checkpoint ||
-				 info->d.icall.jit_icall_id == MONO_JIT_ICALL_mono_threads_exit_gc_safe_region_unbalanced)) {
-			if (cfg->verbose_level > 1)
-				printf ("SKIPPING SAFEPOINTS for the polling function icall\n");
-			return;
-		}
-	}
-
-	if (cfg->method->wrapper_type == MONO_WRAPPER_NATIVE_TO_MANAGED) {
-		if (cfg->verbose_level > 1)
-			printf ("SKIPPING SAFEPOINTS for native-to-managed wrappers.\n");
-		return;
-	}
-
-	if (cfg->method->wrapper_type == MONO_WRAPPER_OTHER) {
-		WrapperInfo *info = mono_marshal_get_wrapper_info (cfg->method);
-
-		if (info && (info->subtype == WRAPPER_SUBTYPE_INTERP_IN || info->subtype == WRAPPER_SUBTYPE_INTERP_LMF)) {
-			/* These wrappers shouldn't do any icalls */
-			if (cfg->verbose_level > 1)
-				printf ("SKIPPING SAFEPOINTS for interp-in wrappers.\n");
-			return;
-		}
-	}
-
-	if (cfg->method->wrapper_type == MONO_WRAPPER_WRITE_BARRIER) {
-		if (cfg->verbose_level > 1)
-			printf ("SKIPPING SAFEPOINTS for write barrier wrappers.\n");
+	if (skip_insert_safepoint (cfg)) {
 		return;
 	}
 
@@ -2840,6 +2849,62 @@ insert_safepoints (MonoCompile *cfg)
 
 }
 
+static void
+insert_samplepoint (MonoCompile *cfg, MonoBasicBlock *bblock)
+{
+	if (cfg->verbose_level > 1)
+		printf ("ADDING SAMPLE POINT TO BB%d\n", bblock->block_num);
+
+	// store the previous instruction list and make the bb empty
+	MonoInst *begin = bblock->code;
+	MonoInst *end = bblock->last_ins;
+	bblock->code = bblock->last_ins = NULL;
+
+	// insert the samplepoint at the start of the bb
+	MonoBasicBlock *prev_cbb = cfg->cbb;
+	cfg->cbb = bblock;
+	mini_profiler_emit_samplepoint (cfg);
+	cfg->cbb = prev_cbb;
+	
+	// append the previous instruction list to the end of the bb
+	if (begin) {
+		if(bblock->code) {
+			begin->prev = bblock->last_ins;
+			bblock->last_ins->next = begin;
+			bblock->last_ins = end;
+		} else {
+			bblock->code = begin;
+			bblock->last_ins = end;
+		}
+	}
+}
+
+static void
+insert_samplepoints (MonoCompile *cfg)
+{
+	MonoBasicBlock *bb;
+
+	if (skip_insert_safepoint (cfg)) {
+		return;
+	}
+
+	if (cfg->verbose_level > 1)
+		printf ("INSERTING SAMPLEPOINTS\n");
+	if (cfg->verbose_level > 2)
+		mono_print_code (cfg, "BEFORE SAMPLEPOINTS");
+
+	for (bb = cfg->bb_entry->next_bb; bb; bb = bb->next_bb) {
+		if (bb->loop_body_start || (bb->flags & BB_EXCEPTION_HANDLER)) {
+			insert_samplepoint (cfg, bb);
+		}
+	}
+
+	// we don't need samplepoint event on method entry, there is already a method entry event
+
+	if (cfg->verbose_level > 2)
+		mono_print_code (cfg, "AFTER SAMPLEPOINTS");
+
+}
 
 static void
 mono_insert_branches_between_bblocks (MonoCompile *cfg)
@@ -3391,7 +3456,8 @@ mini_method_compile (MonoMethod *method, guint32 opts, JitFlags flags, int parts
 	if (trace)
 		cfg->prof_flags = (MonoProfilerCallInstrumentationFlags)(
 			MONO_PROFILER_CALL_INSTRUMENTATION_ENTER | MONO_PROFILER_CALL_INSTRUMENTATION_ENTER_CONTEXT |
-			MONO_PROFILER_CALL_INSTRUMENTATION_LEAVE | MONO_PROFILER_CALL_INSTRUMENTATION_LEAVE_CONTEXT);
+			MONO_PROFILER_CALL_INSTRUMENTATION_LEAVE | MONO_PROFILER_CALL_INSTRUMENTATION_LEAVE_CONTEXT | 
+			MONO_PROFILER_CALL_INSTRUMENTATION_SAMPLEPOINT | MONO_PROFILER_CALL_INSTRUMENTATION_SAMPLEPOINT_CONTEXT);
 
 	/* The debugger has no liveness information, so avoid sharing registers/stack slots */
 	if (mini_debug_options.mdb_optimizations || MONO_CFG_PROFILE_CALL_CONTEXT (cfg)) {
@@ -3682,6 +3748,11 @@ mini_method_compile (MonoMethod *method, guint32 opts, JitFlags flags, int parts
 	if (mono_threads_are_safepoints_enabled ()) {
 		MONO_TIME_TRACK (mono_jit_stats.jit_insert_safepoints, insert_safepoints (cfg));
 		mono_cfg_dump_ir (cfg, "insert_safepoints");
+	}
+
+	if (MONO_CFG_PROFILE (cfg, SAMPLEPOINT) || MONO_CFG_PROFILE (cfg, SAMPLEPOINT_CONTEXT)) {
+		MONO_TIME_TRACK (mono_jit_stats.jit_insert_samplepoints, insert_samplepoints (cfg));
+		mono_cfg_dump_ir (cfg, "insert_samplepoints");
 	}
 
 	/* after method_to_ir */
@@ -4379,6 +4450,7 @@ mini_jit_init (void)
 	mono_counters_register ("JIT/compile_dominator_info", MONO_COUNTER_JIT | MONO_COUNTER_LONG | MONO_COUNTER_TIME, &mono_jit_stats.jit_compile_dominator_info);
 	mono_counters_register ("JIT/compute_natural_loops", MONO_COUNTER_JIT | MONO_COUNTER_LONG | MONO_COUNTER_TIME, &mono_jit_stats.jit_compute_natural_loops);
 	mono_counters_register ("JIT/insert_safepoints", MONO_COUNTER_JIT | MONO_COUNTER_LONG | MONO_COUNTER_TIME, &mono_jit_stats.jit_insert_safepoints);
+	mono_counters_register ("JIT/insert_samplepoints", MONO_COUNTER_JIT | MONO_COUNTER_LONG | MONO_COUNTER_TIME, &mono_jit_stats.jit_insert_samplepoints);
 	mono_counters_register ("JIT/ssa_compute", MONO_COUNTER_JIT | MONO_COUNTER_LONG | MONO_COUNTER_TIME, &mono_jit_stats.jit_ssa_compute);
 	mono_counters_register ("JIT/ssa_cprop", MONO_COUNTER_JIT | MONO_COUNTER_LONG | MONO_COUNTER_TIME, &mono_jit_stats.jit_ssa_cprop);
 	mono_counters_register ("JIT/ssa_deadce", MONO_COUNTER_JIT | MONO_COUNTER_LONG | MONO_COUNTER_TIME, &mono_jit_stats.jit_ssa_deadce);
