@@ -92,7 +92,6 @@ namespace System.Security.Cryptography.X509Certificates
                     writer.Encode(dsa, static (dsa, encoded) =>
                     {
                         dsa.ImportSubjectPublicKeyInfo(encoded, out _);
-                        return (object?)null;
                     });
 
                     toDispose = null;

@@ -277,7 +277,6 @@ namespace System.Security.Cryptography
                 inner.Encode(writer, static (writer, encoded) =>
                 {
                     writer.WriteBitString(encoded);
-                    return (object?)null;
                 });
             }
             else
