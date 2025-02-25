@@ -20,22 +20,23 @@ using f_MultiplyIntegers = int32_t(__stdcall *)(int32_t, int32_t);
 using f_getBaseDirectory = const char*(__stdcall *)();
 
 #ifdef TARGET_WINDOWS
+template<typename T>
 struct CoTaskMemDeleter
 {
-    void operator()(void* p) const
+    void operator()(T* p) const
     {
-        CoTaskMemFree(p);
+        CoTaskMemFree((void*)p);
     }
 };
 template<typename T>
-using CoTaskMemPtr = std::unique_ptr<T, CoTaskMemDeleter>;
+using CoTaskMemPtr = std::unique_ptr<T, CoTaskMemDeleter<T>>;
 #else
 template<typename T>
 using CoTaskMemPtr = std::unique_ptr<T>;
 #endif
 
 #ifdef TARGET_WINDOWS
-int __cdecl main()
+int __cdecl main(int argc, char* argv[])
 #else
 int main(int argc, char* argv[])
 #endif
@@ -45,7 +46,7 @@ int main(int argc, char* argv[])
     pathToSubdir = pathToSubdir.substr(0, pathToSubdir.find_last_of("/\\"));
     pathToSubdir = pathToSubdir.substr(0, pathToSubdir.find_last_of("/\\"));
 #ifdef TARGET_WINDOWS
-    pathToSubdir += "subdir";
+    pathToSubdir += "subdir\\";
     // We need to include System32 to find system dependencies of SharedLibraryDependencyLoading.dll
     HINSTANCE handle = LoadLibraryEx("..\\subdir\\SharedLibraryDependencyLoading.dll", nullptr, LOAD_LIBRARY_SEARCH_APPLICATION_DIR | LOAD_LIBRARY_SEARCH_SYSTEM32);
 #else
@@ -83,7 +84,7 @@ int main(int argc, char* argv[])
     baseDirectory.reset(getBaseDirectory());
     if (baseDirectory == nullptr)
         return 3;
-    
+
     if (pathToSubdir != baseDirectory.get())
     {
         std::cout << "Expected base directory: " << pathToSubdir << std::endl;
