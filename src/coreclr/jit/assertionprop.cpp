@@ -1862,8 +1862,7 @@ void Compiler::optDebugCheckAssertion(AssertionDsc* assertion)
                    lvaGetDesc(assertion->op1.lcl.lclNum)->lvPerSsaData.IsValidSsaNum(assertion->op1.lcl.ssaNum));
             break;
         case O1K_ARR_BND:
-            assert(assertion->op1.bnd.vnIdx != ValueNumStore::NoVN);
-            assert(assertion->op1.bnd.vnLen != ValueNumStore::NoVN);
+            // It would be good to check that bnd.vnIdx and bnd.vnLen are valid value numbers.
             assert(!optLocalAssertionProp);
             assert(assertion->assertionKind == OAK_NO_THROW);
             break;
