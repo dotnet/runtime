@@ -76,8 +76,6 @@
              Link="Common\System\Net\SocketAddressExtensions.cs" />
     <Compile Include="$(CommonPath)System\Net\NegotiationInfoClass.cs"
              Link="Common\System\Net\NegotiationInfoClass.cs" />
-    <Compile Include="$(CommonPath)System\Net\NetworkInformation\HostInformation.cs"
-             Link="Common\System\Net\NetworkInformation\HostInformation.cs" />
     <Compile Include="$(CommonPath)System\Text\StringBuilderCache.cs"
              Link="Common\System\Text\StringBuilderCache.cs" />
     <Compile Include="$(CommonPath)System\HexConverter.cs"
