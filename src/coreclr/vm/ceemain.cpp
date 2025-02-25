@@ -1677,26 +1677,6 @@ BOOL STDMETHODCALLTYPE EEDllMain( // TRUE on success, FALSE on error.
                 }
                 break;
             }
-
-            case DLL_THREAD_DETACH:
-            {
-#ifdef TARGET_WINDOWS
-                // Make sure that we do not have an attached Thread object.
-                // We can end up here with live Thread if some kind of thread termination callback initializes
-                // the Thread by entering managed code or by calling APIs that set up Thread, after the point where
-                // the OS premortem callback for the thread could have run.
-                // There will be no further clean up at this point and we will likely crash in GC once OS clears the native TLS.
-                //
-                // NB: It is ok for the Thread to be reinitialized before the premortem OS callback runs.
-                //     That historically may happen in rare cases when a thread cleans upon returning, but then FlsDataCleanup for COM
-                //     ends up releasing objects and calling APIs in the runtime that require Thread, or sends messages to the thread's
-                //     managed message loop. That is ok, as long as initialization happens prior to our thread termination
-                //     callback from OS. We guarantee that by ensuring our FlsSlot is initializad after COM has already been
-                //     initialized.
-                _ASSERTE_ALL_BUILDS(!GetThreadNULLOk() && "Thread initialized after final clean up could have run.");
-#endif
-                break;
-            }
         }
 
     }
