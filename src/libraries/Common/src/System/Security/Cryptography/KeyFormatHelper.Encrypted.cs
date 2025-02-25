@@ -272,6 +272,68 @@ namespace System.Security.Cryptography
                 out bytesRead);
         }
 
+        internal static unsafe T DecryptPkcs8<T>(
+            ReadOnlySpan<char> password,
+            ReadOnlySpan<byte> source,
+            Func<ReadOnlySpan<byte>, T> keyReader,
+            out int bytesRead)
+        {
+            fixed (byte* pointer = source)
+            {
+                using (PointerMemoryManager<byte> manager = new(pointer, source.Length))
+                {
+                    ArraySegment<byte> decrypted = KeyFormatHelper.DecryptPkcs8(password, manager.Memory, out bytesRead);
+                    AsnValueReader reader = new(decrypted, AsnEncodingRules.BER);
+                    reader.ReadEncodedValue();
+
+                    try
+                    {
+                        reader.ThrowIfNotEmpty();
+                        return keyReader(decrypted);
+                    }
+                    catch (AsnContentException e)
+                    {
+                        throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding, e);
+                    }
+                    finally
+                    {
+                        CryptoPool.Return(decrypted);
+                    }
+                }
+            }
+        }
+
+        internal static unsafe T DecryptPkcs8<T>(
+            ReadOnlySpan<byte> passwordBytes,
+            ReadOnlySpan<byte> source,
+            Func<ReadOnlySpan<byte>, T> keyReader,
+            out int bytesRead)
+        {
+            fixed (byte* pointer = source)
+            {
+                using (PointerMemoryManager<byte> manager = new(pointer, source.Length))
+                {
+                    ArraySegment<byte> decrypted = KeyFormatHelper.DecryptPkcs8(passwordBytes, manager.Memory, out bytesRead);
+                    AsnValueReader reader = new(decrypted, AsnEncodingRules.BER);
+                    reader.ReadEncodedValue();
+
+                    try
+                    {
+                        reader.ThrowIfNotEmpty();
+                        return keyReader(decrypted);
+                    }
+                    catch (AsnContentException e)
+                    {
+                        throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding, e);
+                    }
+                    finally
+                    {
+                        CryptoPool.Return(decrypted);
+                    }
+                }
+            }
+        }
+
         private static ArraySegment<byte> DecryptPkcs8(
             ReadOnlySpan<char> inputPassword,
             ReadOnlySpan<byte> inputPasswordBytes,

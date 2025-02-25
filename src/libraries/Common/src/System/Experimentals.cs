@@ -31,6 +31,9 @@ namespace System
         // System.Formats.Nrbf is experimental
         internal const string NrbfDecoderDiagId = "SYSLIB5005";
 
+        // Types for Post-Quantum Cryptography (PQC) are experimental.
+        internal const string PostQuantumCryptographyDiagId = "SYSLIB5006";
+
         // When adding a new diagnostic ID, add it to the table in docs\project\list-of-diagnostics.md as well.
         // Keep new const identifiers above this comment.
     }
