@@ -275,6 +275,22 @@ convert_dllimport_flags (int flags)
 #endif
 }
 
+static int
+add_load_with_altered_search_path_flags (int flags)
+{
+#ifdef HOST_WIN32
+	// LOAD_WITH_ALTERED_SEARCH_PATH is incompatible with LOAD_LIBRARY_SEARCH flags. Remove those flags if they are set.
+	int load_library_search_flags = LOAD_LIBRARY_SEARCH_DLL_LOAD_DIR
+		| LOAD_LIBRARY_SEARCH_APPLICATION_DIR
+		| LOAD_LIBRARY_SEARCH_USER_DIRS
+		| LOAD_LIBRARY_SEARCH_SYSTEM32
+		| LOAD_LIBRARY_SEARCH_DEFAULT_DIRS;
+	return LOAD_WITH_ALTERED_SEARCH_PATH | (flags & ~load_library_search_flags);
+#else
+	return flags;
+#endif
+}
+
 static MonoDl *
 netcore_probe_for_module_variations (const char *mdirname, const char *file_name, int raw_flags, MonoError *error)
 {
@@ -352,7 +368,7 @@ netcore_probe_for_module (MonoImage *image, const char *file_name, int flags, Mo
 		error_init_reuse (error);
 		char *mdirname = g_path_get_dirname (image->filename);
 		if (mdirname)
-			module = netcore_probe_for_module_variations (mdirname, file_name, lflags, error);
+			module = netcore_probe_for_module_variations (mdirname, file_name, add_load_with_altered_search_path_flags(lflags), error);
 		g_free (mdirname);
 	}
 
