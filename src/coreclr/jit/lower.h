@@ -126,6 +126,9 @@ private:
     void TryCompressConstVecData(GenTreeStoreInd* node);
 #endif // TARGET_XARCH
 #endif // FEATURE_HW_INTRINSICS
+#ifdef TARGET_RISCV64
+    bool TryLowerIndirAfterIndexAddr(GenTreeIndexAddr* indexAddr, GenTree** nextNode);
+#endif // TARGET_RISCV64
 
 #ifdef DEBUG
     static void CheckCallArg(GenTree* arg);

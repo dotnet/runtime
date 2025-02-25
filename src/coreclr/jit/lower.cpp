@@ -15,6 +15,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 */
 
+#include "gentreeopsdef.h"
 #include "jitpch.h"
 #ifdef _MSC_VER
 #pragma hdrstop
@@ -690,6 +691,19 @@ GenTree* Lowering::LowerNode(GenTree* node)
             }
         }
         break;
+
+#if defined(TARGET_RISCV64)
+        case GT_INDEX_ADDR:
+        {
+            GenTree* nextNode = nullptr;
+            if (TryLowerIndirAfterIndexAddr(node->AsIndexAddr(), &nextNode))
+            {
+                assert(nextNode != nullptr);
+                return nextNode;
+            }
+        }
+        break;
+#endif
 
 #if defined(FEATURE_HW_INTRINSICS) && defined(TARGET_XARCH)
         case GT_BSWAP:

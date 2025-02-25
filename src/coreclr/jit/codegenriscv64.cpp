@@ -5616,7 +5616,10 @@ void CodeGen::genCodeForIndexAddr(GenTreeIndexAddr* node)
     }
 
     // dest = dest + elemOffs
-    GetEmitter()->emitIns_R_R_I(INS_addi, attr, node->GetRegNum(), node->GetRegNum(), node->gtElemOffset);
+    if (node->gtElemOffset != 0)
+    {
+        GetEmitter()->emitIns_R_R_I(INS_addi, attr, node->GetRegNum(), node->GetRegNum(), node->gtElemOffset);
+    }
 
     gcInfo.gcMarkRegSetNpt(base->gtGetRegMask());
 
