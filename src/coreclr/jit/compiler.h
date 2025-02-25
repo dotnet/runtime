@@ -4722,6 +4722,10 @@ protected:
 
     GenTree* impThrowIfNull(GenTreeCall* call);
 
+#ifdef TARGET_ARM64
+    void impImportDivisionWithChecks(genTreeOps oper, var_types resultType, GenTree* dividend, GenTree* divisor);
+#endif
+
 #ifdef DEBUG
     var_types impImportJitTestLabelMark(int numArgs);
 #endif // DEBUG
