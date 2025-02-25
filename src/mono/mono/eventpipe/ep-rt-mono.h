@@ -698,13 +698,7 @@ ep_rt_wait_event_alloc (
 {
 	//TODO, replace with low level PAL implementation.
 	EP_ASSERT (wait_event != NULL);
-#ifndef PERFTRACING_DISABLE_THREADS
 	wait_event->event = mono_w32event_create (manual, initial);
-#else
-	wait_event->event = INVALID_HANDLE_VALUE;
-	(void)manual;
-	(void)initial;
-#endif
 }
 
 static
@@ -712,15 +706,11 @@ inline
 void
 ep_rt_wait_event_free (ep_rt_wait_event_handle_t *wait_event)
 {
-#ifndef PERFTRACING_DISABLE_THREADS
 	//TODO, replace with low level PAL implementation.
 	if (wait_event != NULL && wait_event->event != NULL) {
 		mono_w32event_close (wait_event->event);
 		wait_event->event = NULL;
 	}
-#else
-	(void)wait_event;
-#endif
 }
 
 static
@@ -728,13 +718,9 @@ inline
 bool
 ep_rt_wait_event_set (ep_rt_wait_event_handle_t *wait_event)
 {
-#ifndef PERFTRACING_DISABLE_THREADS
 	//TODO, replace with low level PAL implementation.
 	EP_ASSERT (wait_event != NULL && wait_event->event != NULL);
 	mono_w32event_set (wait_event->event);
-#else
-	(void)wait_event;
-#endif
 	return true;
 }
 
@@ -747,15 +733,8 @@ ep_rt_wait_event_wait (
 	bool alertable)
 {
 	//TODO, replace with low level PAL implementation.
-#ifndef PERFTRACING_DISABLE_THREADS
 	EP_ASSERT (wait_event != NULL && wait_event->event != NULL);
 	return (int32_t)mono_w32handle_wait_one (wait_event->event, timeout, alertable);
-#else
-	EP_ASSERT (wait_event != NULL && wait_event->event == INVALID_HANDLE_VALUE);
-	(void)timeout;
-	(void)alertable;
-	return (int32_t)0;
-#endif
 }
 
 static
@@ -772,11 +751,7 @@ inline
 bool
 ep_rt_wait_event_is_valid (ep_rt_wait_event_handle_t *wait_event)
 {
-#ifndef PERFTRACING_DISABLE_THREADS
 	if (wait_event == NULL || wait_event->event == NULL || wait_event->event == INVALID_HANDLE_VALUE)
-#else
-	if (wait_event == NULL || wait_event->event == NULL || wait_event->event != INVALID_HANDLE_VALUE)
-#endif
 		return false;
 	else
 		return true;
@@ -954,7 +929,6 @@ EP_RT_DEFINE_THREAD_FUNC (ep_rt_thread_mono_start_func)
 
 	return result;
 }
-#endif // PERFTRACING_DISABLE_THREADS
 
 static
 inline
@@ -965,7 +939,6 @@ ep_rt_thread_create (
 	EventPipeThreadType thread_type,
 	void *id)
 {
-#ifndef PERFTRACING_DISABLE_THREADS
 	rt_mono_thread_params_internal_t *thread_params = g_new0 (rt_mono_thread_params_internal_t, 1);
 	if (thread_params) {
 		thread_params->thread_params.thread_type = thread_type;
@@ -976,43 +949,6 @@ ep_rt_thread_create (
 	}
 
 	return false;
-#else
-	(void)thread_func;
-	(void)params;
-	(void)thread_type;
-	(void)id;
-	EP_UNREACHABLE ("Not implemented on in single threaded");
-	return false;
-#endif
-}
-
-static
-bool
-ep_rt_event_loop_job_create (
-	void *job_func,
-	void *params)
-{
-#ifdef PERFTRACING_DISABLE_THREADS
-	// in single-threaded, it will run the callback inline and re-schedule itself if necessary
-	// it's called from browser event loop
-	ds_job_cb cb = (ds_job_cb)job_func;
-
-	// invoke the callback inline for the fist time
-	gsize done = cb (params);
-
-	// see if it's done or needs to be scheduled again
-	if (!done) {
-		// self schedule again
-		mono_schedule_ds_job (cb, params);
-	}
-
-	return true;
-#else
-	EP_UNREACHABLE ("Not implemented on in multi threaded");
-	(void)job_func;
-	(void)params;
-	return false;
-#endif
 }
 
 static
