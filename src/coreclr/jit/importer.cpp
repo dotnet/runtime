@@ -13924,7 +13924,7 @@ void Compiler::impImportDivisionWithChecks(genTreeOps oper, var_types resultType
         return;
     }
 
-    GenTree* result = divNode;
+    GenTree* result       = divNode;
     GenTree* divisorCopy  = nullptr;
     GenTree* dividendCopy = nullptr;
 
