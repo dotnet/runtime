@@ -234,9 +234,10 @@ namespace System.Formats.Asn1
             if (encodeCallback is null)
                 throw new ArgumentNullException(nameof(encodeCallback));
 
+            _encodeDepth = checked(_encodeDepth + 1);
+
             try
             {
-                _encodeDepth = checked(_encodeDepth + 1);
                 ReadOnlySpan<byte> encoded = EncodeAsSpan();
                 return encodeCallback(encoded);
             }
@@ -277,9 +278,10 @@ namespace System.Formats.Asn1
             if (encodeCallback is null)
                 throw new ArgumentNullException(nameof(encodeCallback));
 
+            _encodeDepth = checked(_encodeDepth + 1);
+
             try
             {
-                _encodeDepth = checked(_encodeDepth + 1);
                 ReadOnlySpan<byte> encoded = EncodeAsSpan();
                 return encodeCallback(state, encoded);
             }
@@ -314,9 +316,10 @@ namespace System.Formats.Asn1
             if (encodeCallback is null)
                 throw new ArgumentNullException(nameof(encodeCallback));
 
+            _encodeDepth = checked(_encodeDepth + 1);
+
             try
             {
-                _encodeDepth = checked(_encodeDepth + 1);
                 ReadOnlySpan<byte> encoded = EncodeAsSpan();
                 encodeCallback(state, encoded);
             }
