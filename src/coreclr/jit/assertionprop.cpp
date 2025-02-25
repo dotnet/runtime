@@ -1551,7 +1551,8 @@ AssertionIndex Compiler::optCreateAssertion(GenTree*         op1,
             ValueNum op1VN = optConservativeNormalVN(op1);
             ValueNum op2VN = optConservativeNormalVN(op2);
 
-            if (op1VN != ValueNumStore::NoVN && op2VN != ValueNumStore::NoVN && vnStore->IsVNInt32Constant(op2VN) &&
+            // For TP reasons, limited to 32-bit constants on the op2 side.
+            if ((op1VN != ValueNumStore::NoVN) && (op2VN != ValueNumStore::NoVN) && vnStore->IsVNInt32Constant(op2VN) &&
                 !vnStore->IsVNHandle(op2VN))
             {
                 assert(assertionKind == OAK_EQUAL || assertionKind == OAK_NOT_EQUAL);
