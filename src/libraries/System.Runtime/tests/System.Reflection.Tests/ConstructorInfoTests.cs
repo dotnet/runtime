@@ -177,7 +177,8 @@ namespace System.Reflection.Tests
 
     public static class ClassWithStaticConstructor
     {
-        static ClassWithStaticConstructor() { }
+        public static int _intValue;
+        static ClassWithStaticConstructor() { _intValue++; }
     }
 
     public struct StructWith1Constructor

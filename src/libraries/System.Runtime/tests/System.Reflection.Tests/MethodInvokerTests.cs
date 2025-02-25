@@ -138,22 +138,90 @@ namespace System.Reflection.Tests
         }
 
         [Fact]
-        public void Args_ByRef()
+        public void Args_ByRef1()
         {
+            object obj = new TestClass();
             string argValue = "Value";
-            MethodInvoker invoker = MethodInvoker.Create(typeof(TestClass).GetMethod(nameof(TestClass.Args_ByRef)));
+            MethodInvoker invoker = MethodInvoker.Create(typeof(TestClass).GetMethod(nameof(TestClass.RefArgs_1)));
 
             // Although no copy-back, verify we can call.
-            Assert.Equal("Hello", invoker.Invoke(obj: null, argValue));
+            Assert.Equal(1, invoker.Invoke(obj, argValue));
 
             // The Span version supports copy-back.
             object[] args = new object[] { argValue };
-            invoker.Invoke(obj: null, new Span<object?>(args));
-            Assert.Equal("Hello", args[0]);
+            invoker.Invoke(obj, new Span<object?>(args));
+            Assert.Equal("Hello1", args[0]);
+        }
 
-            args[0] = null;
-            invoker.Invoke(obj: null, new Span<object?>(args));
-            Assert.Equal("Hello", args[0]);
+        [Fact]
+        public void Args_ByRef2()
+        {
+            object obj = new TestClass();
+            string argValue = "Value";
+            MethodInvoker invoker = MethodInvoker.Create(typeof(TestClass).GetMethod(nameof(TestClass.RefArgs_2)));
+
+            // Although no copy-back, verify we can call.
+            Assert.Equal(2, invoker.Invoke(obj, argValue, argValue));
+
+            // The Span version supports copy-back.
+            object[] args = new object[] { argValue, argValue };
+            invoker.Invoke(obj, new Span<object?>(args));
+            Assert.Equal("Hello1", args[0]);
+            Assert.Equal("Hello2", args[1]);
+        }
+
+        [Fact]
+        public void Args_ByRef3()
+        {
+            object obj = new TestClass();
+            string argValue = "Value";
+            MethodInvoker invoker = MethodInvoker.Create(typeof(TestClass).GetMethod(nameof(TestClass.RefArgs_3)));
+
+            // Although no copy-back, verify we can call.
+            Assert.Equal(3, invoker.Invoke(obj, argValue, argValue, argValue));
+
+            // The Span version supports copy-back.
+            object[] args = new object[] { argValue, argValue, argValue };
+            invoker.Invoke(obj, new Span<object?>(args));
+            Assert.Equal("Hello1", args[0]);
+            Assert.Equal("Hello2", args[1]);
+            Assert.Equal("Hello3", args[2]);
+        }
+
+        [Fact]
+        public void Args_ByRef4()
+        {
+            object obj = new TestClass();
+            string argValue = "Value";
+            MethodInvoker invoker = MethodInvoker.Create(typeof(TestClass).GetMethod(nameof(TestClass.RefArgs_4)));
+
+            // Although no copy-back, verify we can call.
+            Assert.Equal(4, invoker.Invoke(obj, argValue, argValue, argValue, argValue));
+
+            // The Span version supports copy-back.
+            object[] args = new object[] { argValue, argValue, argValue, argValue };
+            invoker.Invoke(obj, new Span<object?>(args));
+            Assert.Equal("Hello1", args[0]);
+            Assert.Equal("Hello2", args[1]);
+            Assert.Equal("Hello3", args[2]);
+            Assert.Equal("Hello4", args[3]);
+        }
+
+        [Fact]
+        public void Args_ByRef5()
+        {
+            object obj = new TestClass();
+            string argValue = "Value";
+            MethodInvoker invoker = MethodInvoker.Create(typeof(TestClass).GetMethod(nameof(TestClass.RefArgs_5)));
+
+            // The Span version supports copy-back.
+            object[] args = new object[] { argValue, argValue, argValue, argValue, argValue };
+            invoker.Invoke(obj, new Span<object?>(args));
+            Assert.Equal("Hello1", args[0]);
+            Assert.Equal("Hello2", args[1]);
+            Assert.Equal("Hello3", args[2]);
+            Assert.Equal("Hello4", args[3]);
+            Assert.Equal("Hello5", args[4]);
         }
 
         [Fact]
@@ -308,10 +376,44 @@ namespace System.Reflection.Tests
             public static string Args_4(string arg1, string arg2, string arg3, string arg4) => arg1 + arg2 + arg3 + arg4;
             public static string Args_5(string arg1, string arg2, string arg3, string arg4, string arg5) => arg1 + arg2 + arg3 + arg4 + arg5;
 
-            public static string Args_ByRef(ref string arg)
+            public int RefArgs_1(ref string arg1)
             {
-                arg = "Hello";
-                return arg;
+                arg1 = "Hello1";
+                return 1;
+            }
+
+            public int RefArgs_2(ref string arg1, ref string arg2)
+            {
+                arg1 = "Hello1";
+                arg2 = "Hello2";
+                return 2;
+            }
+
+            public int RefArgs_3(ref string arg1, ref string arg2, ref string arg3)
+            {
+                arg1 = "Hello1";
+                arg2 = "Hello2";
+                arg3 = "Hello3";
+                return 3;
+            }
+
+            public int RefArgs_4(ref string arg1, ref string arg2, ref string arg3, ref string arg4)
+            {
+                arg1 = "Hello1";
+                arg2 = "Hello2";
+                arg3 = "Hello3";
+                arg4 = "Hello4";
+                return 4;
+            }
+
+            public int RefArgs_5(ref string arg1, ref string arg2, ref string arg3, ref string arg4, ref string arg5)
+            {
+                arg1 = "Hello1";
+                arg2 = "Hello2";
+                arg3 = "Hello3";
+                arg4 = "Hello4";
+                arg5 = "Hello5";
+                return 5;
             }
 
             public static unsafe void Args_ByPointer(int* arg)
