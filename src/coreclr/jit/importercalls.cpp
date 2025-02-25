@@ -2113,13 +2113,13 @@ const CORINFO_SWIFT_LOWERING* Compiler::GetSwiftLowering(CORINFO_CLASS_HANDLE hC
 {
     if (m_swiftLoweringCache == nullptr)
     {
-        m_swiftLoweringCache = new (this, CMK_CallArgs) SwiftLoweringMap(getAllocator(CMK_CallArgs));
+        m_swiftLoweringCache = new (this, CMK_ABI) SwiftLoweringMap(getAllocator(CMK_ABI));
     }
 
     CORINFO_SWIFT_LOWERING* lowering;
     if (!m_swiftLoweringCache->Lookup(hClass, &lowering))
     {
-        lowering = new (this, CMK_CallArgs) CORINFO_SWIFT_LOWERING;
+        lowering = new (this, CMK_ABI) CORINFO_SWIFT_LOWERING;
         info.compCompHnd->getSwiftLowering(hClass, lowering);
         m_swiftLoweringCache->Set(hClass, lowering);
     }
