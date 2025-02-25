@@ -11,7 +11,6 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 */
 
 #include "jitpch.h"
-#include "rangecheck.h"
 #ifdef _MSC_VER
 #pragma hdrstop
 #endif
@@ -743,6 +742,10 @@ void Compiler::optPrintAssertion(AssertionDsc* curAssertion, AssertionIndex asse
     {
         printf("ArrBnds  ");
     }
+    else if (curAssertion->op1.kind == O1K_VN)
+    {
+        printf("Vn  ");
+    }
     else if (curAssertion->op1.kind == O1K_SUBTYPE)
     {
         printf("Subtype  ");
@@ -787,6 +790,10 @@ void Compiler::optPrintAssertion(AssertionDsc* curAssertion, AssertionIndex asse
         printf("; len: " FMT_VN, curAssertion->op1.bnd.vnLen);
         vnStore->vnDump(this, curAssertion->op1.bnd.vnLen);
         printf("]");
+    }
+    else if (curAssertion->op1.kind == O1K_VN)
+    {
+        printf("[" FMT_VN "]", curAssertion->op1.vn);
     }
     else if (curAssertion->op1.kind == O1K_BOUND_OPER_BND)
     {
@@ -1535,6 +1542,31 @@ AssertionIndex Compiler::optCreateAssertion(GenTree*         op1,
             }
         }
     }
+    else
+    {
+        // Currently, O1K_VN serves as a backup for O1K_LCLVAR (where it's not a local),
+        // but long term we should keep O1K_LCLVAR for local assertions only.
+        if (!optLocalAssertionProp)
+        {
+            ValueNum op1VN = optConservativeNormalVN(op1);
+            ValueNum op2VN = optConservativeNormalVN(op2);
+
+            // For TP reasons, limited to 32-bit constants on the op2 side.
+            if ((op1VN != ValueNumStore::NoVN) && (op2VN != ValueNumStore::NoVN) && vnStore->IsVNInt32Constant(op2VN) &&
+                !vnStore->IsVNHandle(op2VN))
+            {
+                assert(assertionKind == OAK_EQUAL || assertionKind == OAK_NOT_EQUAL);
+                assertion.assertionKind  = assertionKind;
+                assertion.op1.vn         = op1VN;
+                assertion.op1.kind       = O1K_VN;
+                assertion.op2.vn         = op2VN;
+                assertion.op2.kind       = O2K_CONST_INT;
+                assertion.op2.u1.iconVal = vnStore->ConstantValue<int>(op2VN);
+                assertion.op2.SetIconFlag(GTF_EMPTY);
+                return optAddAssertion(&assertion);
+            }
+        }
+    }
 
 DONE_ASSERTION:
     return optFinalizeCreatingAssertion(&assertion);
@@ -1832,7 +1864,10 @@ void Compiler::optDebugCheckAssertion(AssertionDsc* assertion)
             break;
         case O1K_ARR_BND:
             // It would be good to check that bnd.vnIdx and bnd.vnLen are valid value numbers.
+            assert(!optLocalAssertionProp);
+            assert(assertion->assertionKind == OAK_NO_THROW);
             break;
+        case O1K_VN:
         case O1K_BOUND_OPER_BND:
         case O1K_BOUND_LOOP_BND:
         case O1K_CONSTANT_LOOP_BND:
@@ -2250,45 +2285,7 @@ AssertionInfo Compiler::optAssertionGenJtrue(GenTree* tree)
         if (vnStore->IsVNCheckedBound(op1VN) && vnStore->IsVNInt32Constant(op2VN))
         {
             assert(relop->OperIs(GT_EQ, GT_NE));
-
-            int con = vnStore->ConstantValue<int>(op2VN);
-            if (con >= 0)
-            {
-                AssertionDsc dsc;
-
-                // For arr.Length != 0, we know that 0 is a valid index
-                // For arr.Length == con, we know that con - 1 is the greatest valid index
-                if (con == 0)
-                {
-                    dsc.assertionKind = OAK_NOT_EQUAL;
-                    dsc.op1.bnd.vnIdx = vnStore->VNForIntCon(0);
-                }
-                else
-                {
-                    dsc.assertionKind = OAK_EQUAL;
-                    dsc.op1.bnd.vnIdx = vnStore->VNForIntCon(con - 1);
-                }
-
-                dsc.op1.vn         = op1VN;
-                dsc.op1.kind       = O1K_ARR_BND;
-                dsc.op1.bnd.vnLen  = op1VN;
-                dsc.op2.vn         = vnStore->VNConservativeNormalValue(op2->gtVNPair);
-                dsc.op2.kind       = O2K_CONST_INT;
-                dsc.op2.u1.iconVal = 0;
-                dsc.op2.SetIconFlag(GTF_EMPTY);
-
-                // when con is not zero, create an assertion on the arr.Length == con edge
-                // when con is zero, create an assertion on the arr.Length != 0 edge
-                AssertionIndex index = optAddAssertion(&dsc);
-                if (relop->OperIs(GT_NE) != (con == 0))
-                {
-                    return AssertionInfo::ForNextEdge(index);
-                }
-                else
-                {
-                    return index;
-                }
-            }
+            return optCreateJtrueAssertions(op1, op2, assertionKind);
         }
     }
 
@@ -4062,8 +4059,7 @@ void Compiler::optAssertionProp_RangeProperties(ASSERT_VALARG_TP assertions,
         }
 
         // First, analyze possible X ==/!= CNS assertions.
-        if (curAssertion->IsConstantInt32Assertion() && (curAssertion->op1.kind == O1K_LCLVAR) &&
-            (curAssertion->op1.vn == treeVN))
+        if (curAssertion->IsConstantInt32Assertion() && (curAssertion->op1.vn == treeVN))
         {
             if ((curAssertion->assertionKind == OAK_NOT_EQUAL) && (curAssertion->op2.u1.iconVal == 0))
             {
@@ -4123,69 +4119,6 @@ void Compiler::optAssertionProp_RangeProperties(ASSERT_VALARG_TP assertions,
                 // X >= CNS means X is [CNS..unknown]
                 *isKnownNonNegative = true;
                 *isKnownNonZero     = (cmpOper == GT_GT) || (info.constVal > 0);
-            }
-        }
-    }
-
-    if (*isKnownNonZero && *isKnownNonNegative)
-    {
-        return;
-    }
-
-    // Let's see if MergeEdgeAssertions can help us:
-    if (tree->TypeIs(TYP_INT))
-    {
-        // See if (X + CNS) is known to be non-negative
-        if (tree->OperIs(GT_ADD) && tree->gtGetOp2()->IsIntCnsFitsInI32())
-        {
-            Range    rng = Range(Limit(Limit::keDependent));
-            ValueNum vn  = vnStore->VNConservativeNormalValue(tree->gtGetOp1()->gtVNPair);
-            RangeCheck::MergeEdgeAssertions(this, vn, ValueNumStore::NoVN, assertions, &rng, false);
-
-            int cns = static_cast<int>(tree->gtGetOp2()->AsIntCon()->IconValue());
-            rng.LowerLimit().AddConstant(cns);
-
-            if ((rng.LowerLimit().IsConstant() && !rng.LowerLimit().AddConstant(cns)) ||
-                (rng.UpperLimit().IsConstant() && !rng.UpperLimit().AddConstant(cns)))
-            {
-                // Add cns to both bounds if they are constants. Make sure the addition doesn't overflow.
-                return;
-            }
-
-            if (rng.LowerLimit().IsConstant())
-            {
-                // E.g. "X + -8" when X's range is [8..unknown]
-                // it's safe to say "X + -8" is non-negative
-                if ((rng.LowerLimit().GetConstant() == 0))
-                {
-                    *isKnownNonNegative = true;
-                }
-
-                // E.g. "X + 8" when X's range is [0..CNS]
-                // Here we have to check the upper bound as well to avoid overflow
-                if ((rng.LowerLimit().GetConstant() > 0) && rng.UpperLimit().IsConstant() &&
-                    rng.UpperLimit().GetConstant() > rng.LowerLimit().GetConstant())
-                {
-                    *isKnownNonNegative = true;
-                    *isKnownNonZero     = true;
-                }
-            }
-        }
-        else
-        {
-            Range rng = Range(Limit(Limit::keDependent));
-            RangeCheck::MergeEdgeAssertions(this, treeVN, ValueNumStore::NoVN, assertions, &rng, false);
-            Limit lowerBound = rng.LowerLimit();
-            if (lowerBound.IsConstant())
-            {
-                if (lowerBound.GetConstant() >= 0)
-                {
-                    *isKnownNonNegative = true;
-                }
-                if (lowerBound.GetConstant() > 0)
-                {
-                    *isKnownNonZero = true;
-                }
             }
         }
     }
@@ -4915,6 +4848,12 @@ GenTree* Compiler::optAssertionProp_Cast(ASSERT_VALARG_TP assertions, GenTreeCas
     // Skip over a GT_COMMA node(s), if necessary to get to the lcl.
     GenTree* lcl = op1->gtEffectiveVal();
 
+    // If we don't have a cast of a LCL_VAR then bail.
+    if (!lcl->OperIs(GT_LCL_VAR))
+    {
+        return nullptr;
+    }
+
     // Try and see if we can make this cast into a cheaper zero-extending version
     // if the input is known to be non-negative.
     if (!cast->IsUnsigned() && genActualTypeIsInt(lcl) && cast->TypeIs(TYP_LONG) && (TARGET_POINTER_SIZE == 8))
@@ -4926,12 +4865,6 @@ GenTree* Compiler::optAssertionProp_Cast(ASSERT_VALARG_TP assertions, GenTreeCas
         {
             cast->SetUnsigned();
         }
-    }
-
-    // If we don't have a cast of a LCL_VAR then bail.
-    if (!lcl->OperIs(GT_LCL_VAR))
-    {
-        return nullptr;
     }
 
     IntegralRange  range = IntegralRange::ForCastInput(cast);
