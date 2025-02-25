@@ -3263,11 +3263,17 @@ namespace System.Numerics
             {
                 bits = new ReadOnlySpan<uint>(in smallBits);
             }
-            int xl = bits.Length;
 
-            if (negx && bits[^1] >= kuMaskHighBit
-                && !(bits.IndexOfAnyExcept(0u) == bits.Length - 1 && bits[^1] == kuMaskHighBit))
+            int xl = bits.Length;
+            if (negx && (bits[^1] >= kuMaskHighBit) && ((bits[^1] != kuMaskHighBit) || bits.IndexOfAnyExcept(0u) != (bits.Length - 1)))
+            {
+                // We check for a special case where its sign bit could be outside the uint array after 2's complement conversion.
+                // For example given [0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF], its 2's complement is [0x01, 0x00, 0x00]
+                // After a 32 bit right shift, it becomes [0x00, 0x00] which is [0x00, 0x00] when converted back.
+                // The expected result is [0x00, 0x00, 0xFFFFFFFF] (2's complement) or [0x00, 0x00, 0x01] when converted back
+                // If the 2's component's last element is a 0, we will track the sign externally
                 ++xl;
+            }
 
             int byteCount = xl * 4;
 
@@ -3412,11 +3418,17 @@ namespace System.Numerics
             {
                 bits = new ReadOnlySpan<uint>(in smallBits);
             }
-            int xl = bits.Length;
 
-            if (negx && bits[^1] >= kuMaskHighBit
-                && !(bits.IndexOfAnyExcept(0u) == bits.Length - 1 && bits[^1] == kuMaskHighBit))
+            int xl = bits.Length;
+            if (negx && (bits[^1] >= kuMaskHighBit) && ((bits[^1] != kuMaskHighBit) || bits.IndexOfAnyExcept(0u) != (bits.Length - 1)))
+            {
+                // We check for a special case where its sign bit could be outside the uint array after 2's complement conversion.
+                // For example given [0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF], its 2's complement is [0x01, 0x00, 0x00]
+                // After a 32 bit right shift, it becomes [0x00, 0x00] which is [0x00, 0x00] when converted back.
+                // The expected result is [0x00, 0x00, 0xFFFFFFFF] (2's complement) or [0x00, 0x00, 0x01] when converted back
+                // If the 2's component's last element is a 0, we will track the sign externally
                 ++xl;
+            }
 
             int byteCount = xl * 4;
 
@@ -3505,11 +3517,11 @@ namespace System.Numerics
                     dstIndex--;
                     srcIndex--;
                 }
-                while ((uint)srcIndex < (uint)xd.Length);
+                while ((uint)srcIndex < (uint)xd.Length); // is equivalent to (srcIndex >= 0 && srcIndex < xd.Length)
 
                 srcIndex = xd.Length - 1;
 
-                while ((uint)dstIndex < (uint)zd.Length)
+                while ((uint)dstIndex < (uint)zd.Length) // is equivalent to (dstIndex >= 0 && dstIndex < zd.Length)
                 {
                     uint part = xd[srcIndex];
 
