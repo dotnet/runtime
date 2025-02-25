@@ -3257,7 +3257,12 @@ namespace System.Numerics
             value.AssertValid();
 
             bool negx = value._sign < 0;
-            ReadOnlySpan<uint> bits = value._bits ?? stackalloc uint[1] { NumericsHelpers.Abs(value._sign) };
+            uint smallBits = NumericsHelpers.Abs(value._sign);
+            scoped ReadOnlySpan<uint> bits = value._bits;
+            if (bits.IsEmpty)
+            {
+                bits = new ReadOnlySpan<uint>(in smallBits);
+            }
             int xl = bits.Length;
 
             if (negx && bits[^1] >= kuMaskHighBit
@@ -3401,7 +3406,12 @@ namespace System.Numerics
 
 
             bool negx = value._sign < 0;
-            ReadOnlySpan<uint> bits = value._bits ?? stackalloc uint[1] { NumericsHelpers.Abs(value._sign) };
+            uint smallBits = NumericsHelpers.Abs(value._sign);
+            scoped ReadOnlySpan<uint> bits = value._bits;
+            if (bits.IsEmpty)
+            {
+                bits = new ReadOnlySpan<uint>(in smallBits);
+            }
             int xl = bits.Length;
 
             if (negx && bits[^1] >= kuMaskHighBit
