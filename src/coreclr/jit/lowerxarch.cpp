@@ -823,7 +823,6 @@ GenTree* Lowering::LowerCast(GenTree* tree)
     var_types castToType = tree->CastToType();
     var_types dstType    = castToType;
     var_types srcType    = castOp->TypeGet();
-    var_types tmpType    = TYP_UNDEF;
 
     // force the srcType to unsigned if GT_UNSIGNED flag is set
     if (tree->IsUnsigned())
@@ -837,11 +836,14 @@ GenTree* Lowering::LowerCast(GenTree* tree)
     //       Reason: must be converted to a helper call
     //   srcType = float/double,                   castToType = ulong
     //       Reason: must be converted to a helper call
+    //   srcType = float/double,                   castToType = byte/sbyte/ushort/short
+    //       Reason: must have intermediate cast to int
     //   srcType = uint                            castToType = float/double
     //       Reason: uint -> float/double = uint -> long -> float/double
     if (varTypeIsFloating(srcType))
     {
         noway_assert(!tree->gtOverflow());
+        assert(!varTypeIsSmall(dstType));
         assert(castToType != TYP_ULONG || comp->canUseEvexEncodingDebugOnly());
     }
     else if (srcType == TYP_UINT)
@@ -1163,30 +1165,6 @@ GenTree* Lowering::LowerCast(GenTree* tree)
         return castOutput->gtNext;
     }
 #endif // TARGET_AMD64
-
-    // Case of src is a small type and dst is a floating point type.
-    if (varTypeIsSmall(srcType) && varTypeIsFloating(castToType))
-    {
-        // These conversions can never be overflow detecting ones.
-        noway_assert(!tree->gtOverflow());
-        tmpType = TYP_INT;
-    }
-    // case of src is a floating point type and dst is a small type.
-    else if (varTypeIsFloating(srcType) && varTypeIsSmall(castToType))
-    {
-        tmpType = TYP_INT;
-    }
-
-    if (tmpType != TYP_UNDEF)
-    {
-        GenTree* tmp = comp->gtNewCastNode(tmpType, castOp, tree->IsUnsigned(), tmpType);
-        tmp->gtFlags |= (tree->gtFlags & (GTF_OVERFLOW | GTF_EXCEPT));
-
-        tree->gtFlags &= ~GTF_UNSIGNED;
-        tree->AsOp()->gtOp1 = tmp;
-        BlockRange().InsertAfter(castOp, tmp);
-        ContainCheckCast(tmp->AsCast());
-    }
 
     // Now determine if we have operands that should be contained.
     ContainCheckCast(tree->AsCast());
@@ -8567,26 +8545,14 @@ void Lowering::ContainCheckCast(GenTreeCast* node)
 
         if (varTypeIsFloating(castToType) || varTypeIsFloating(srcType))
         {
-#ifdef DEBUG
-            // If converting to float/double, the operand must be 4 or 8 byte in size.
-            if (varTypeIsFloating(castToType))
+            if (castOp->IsCnsNonZeroFltOrDbl())
             {
-                unsigned opSize = genTypeSize(srcType);
-                assert(opSize == 4 || opSize == 8);
+                MakeSrcContained(node, castOp);
             }
-#endif // DEBUG
-
-            // U8 -> R8 conversion requires that the operand be in a register.
-            if (srcType != TYP_ULONG)
+            else
             {
-                if (castOp->IsCnsNonZeroFltOrDbl())
-                {
-                    MakeSrcContained(node, castOp);
-                }
-                else
-                {
-                    srcIsContainable = true;
-                }
+                // The ulong->floating SSE2 fallback requires the source to be in register
+                srcIsContainable = !varTypeIsSmall(srcType) && ((srcType != TYP_ULONG) || comp->canUseEvexEncoding());
             }
         }
         else if (comp->opts.OptimizationEnabled() && varTypeIsIntegral(castOp) && varTypeIsIntegral(castToType))
