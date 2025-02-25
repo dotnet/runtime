@@ -2,9 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text.Json;
+using System.Threading.Tasks;
 using Xunit;
 using Xunit.Abstractions;
 using Xunit.Sdk;
@@ -102,5 +104,21 @@ public class MiscTests : BlazorWasmTestBase
         }
 
         Assert.True(lazyVal.EnumerateObject().Select(jp => jp.Name).FirstOrDefault(f => f.StartsWith(razorClassLibraryName)) != null);
+    }
+
+    
+    [Fact]
+    public async Task TestWriteImportMapToHtml()
+    {
+        var config = Configuration.Release;
+        string extraProperties = "<WriteImportMapToHtml>true</WriteImportMapToHtml>";
+        ProjectInfo info = CopyTestAsset(config, aot: false, TestAsset.BlazorBasicTestApp, "blz_import_map_html", extraProperties: extraProperties);
+
+        BuildProject(info, config);
+        BrowserRunOptions runOptions = new(config, TestScenario: "DotnetRun");
+        await RunForBuildWithDotnetRun(runOptions);
+        
+        PublishProject(info, config, new PublishOptions(UseCache: false));
+        await RunForPublishWithWebServer(runOptions);
     }
 }
