@@ -10777,7 +10777,21 @@ void LinearScan::TupleStyleDump(LsraTupleDumpMode mode)
                 const LclVarDsc* varDsc = compiler->lvaGetDesc(interval->varNum);
                 printf("(");
                 regNumber assignedReg = varDsc->GetRegNum();
-                regNumber argReg      = (varDsc->lvIsRegArg) ? varDsc->GetArgReg() : REG_STK;
+
+                regNumber argReg = REG_STK;
+                if (varDsc->lvIsParamRegTarget)
+                {
+                    const ParameterRegisterLocalMapping* mapping =
+                        compiler->FindParameterRegisterLocalMappingByLocal(interval->varNum, 0);
+                    assert(mapping != nullptr);
+                    argReg = mapping->RegisterSegment->GetRegister();
+                }
+                else if (varDsc->lvIsRegArg && !varDsc->lvIsStructField)
+                {
+                    const ABIPassingInformation& abiInfo = compiler->lvaGetParameterABIInfo(
+                        varDsc->lvIsStructField ? varDsc->lvParentLcl : interval->varNum);
+                    argReg = abiInfo.Segment(0).GetRegister();
+                }
 
                 assert(reg == assignedReg || varDsc->lvRegister == false);
                 if (reg != argReg)

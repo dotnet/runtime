@@ -4496,7 +4496,6 @@ void CodeGen::genHomeStackPartOfSplitParameter(regNumber initReg, bool* initRegS
         const ABIPassingInformation& abiInfo = compiler->lvaGetParameterABIInfo(lclNum);
         if (abiInfo.IsSplitAcrossRegistersAndStack())
         {
-            assert(var->lvIsSplit);
             JITDUMP("Homing stack part of split parameter V%02u\n", lclNum);
 
             assert(abiInfo.NumSegments == 2);

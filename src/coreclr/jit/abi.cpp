@@ -679,7 +679,9 @@ ABIPassingInformation SwiftABIClassifier::Classify(Compiler*    comp,
         const CORINFO_SWIFT_LOWERING* lowering = comp->GetSwiftLowering(structLayout->GetClassHandle());
         if (lowering->byReference)
         {
-            return m_classifier.Classify(comp, TYP_I_IMPL, nullptr, WellKnownArg::None);
+            ABIPassingInformation abiInfo = m_classifier.Classify(comp, TYP_I_IMPL, nullptr, WellKnownArg::None);
+            assert(abiInfo.NumSegments == 1);
+            return ABIPassingInformation::FromSegment(comp, /* passedByRef */ true, abiInfo.Segment(0));
         }
 
         ArrayStack<ABIPassingSegment> segments(comp->getAllocator(CMK_ABI));
