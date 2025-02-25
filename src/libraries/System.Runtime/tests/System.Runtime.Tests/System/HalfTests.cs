@@ -1692,17 +1692,17 @@ namespace System.Tests
 
         [Theory]
         [MemberData(nameof(Hypot_TestData))]
-        public static void Hypot(float x, float y, float expectedResult, float allowedVariance)
+        public static void Hypot(Half x, Half y, Half expectedResult, Half allowedVariance)
         {
-            AssertExtensions.Equal(expectedResult, float.Hypot(-x, -y), allowedVariance);
-            AssertExtensions.Equal(expectedResult, float.Hypot(-x, +y), allowedVariance);
-            AssertExtensions.Equal(expectedResult, float.Hypot(+x, -y), allowedVariance);
-            AssertExtensions.Equal(expectedResult, float.Hypot(+x, +y), allowedVariance);
+            AssertExtensions.Equal(expectedResult, Half.Hypot(-x, -y), allowedVariance);
+            AssertExtensions.Equal(expectedResult, Half.Hypot(-x, +y), allowedVariance);
+            AssertExtensions.Equal(expectedResult, Half.Hypot(+x, -y), allowedVariance);
+            AssertExtensions.Equal(expectedResult, Half.Hypot(+x, +y), allowedVariance);
 
-            AssertExtensions.Equal(expectedResult, float.Hypot(-y, -x), allowedVariance);
-            AssertExtensions.Equal(expectedResult, float.Hypot(-y, +x), allowedVariance);
-            AssertExtensions.Equal(expectedResult, float.Hypot(+y, -x), allowedVariance);
-            AssertExtensions.Equal(expectedResult, float.Hypot(+y, +x), allowedVariance);
+            AssertExtensions.Equal(expectedResult, Half.Hypot(-y, -x), allowedVariance);
+            AssertExtensions.Equal(expectedResult, Half.Hypot(-y, +x), allowedVariance);
+            AssertExtensions.Equal(expectedResult, Half.Hypot(+y, -x), allowedVariance);
+            AssertExtensions.Equal(expectedResult, Half.Hypot(+y, +x), allowedVariance);
         }
 
         public static IEnumerable<object[]> RootN_TestData()
