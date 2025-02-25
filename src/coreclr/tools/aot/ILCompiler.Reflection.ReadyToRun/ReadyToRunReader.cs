@@ -483,17 +483,8 @@ namespace ILCompiler.Reflection.ReadyToRun
 
             if (CompositeReader == null)
             {
-                byte[] image = null;
-                if (Image == null)
-                {
-                    image = File.ReadAllBytes(Filename);
-                    Image = image;
-                }
-                else
-                {
-                    image = Image;
-                }
-
+                Image ??= File.ReadAllBytes(Filename);
+                byte[] image = Image;
                 ImagePin = new PinningReference(image);
                 CompositeReader = new PEReader(Unsafe.As<byte[], ImmutableArray<byte>>(ref image));
             }
