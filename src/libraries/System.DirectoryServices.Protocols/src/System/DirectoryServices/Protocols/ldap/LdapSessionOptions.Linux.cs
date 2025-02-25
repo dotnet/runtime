@@ -24,7 +24,7 @@ namespace System.DirectoryServices.Protocols
         /// which can be done by using <code>openssl rehash .</code> or <code>c_rehash .</code> in the directory
         /// containing the certificate files.
         /// </remarks>
-        /// <exception cref="DirectoryNotFoundException">The directory not exist.</exception>
+        /// <exception cref="DirectoryNotFoundException">The directory does not exist.</exception>
         [UnsupportedOSPlatform("windows")]
         public string TrustedCertificatesDirectory
         {
