@@ -242,8 +242,8 @@ The `GetMethodDesc` and `GetStartAddress` APIs extract fields of the `CodeBlock`
 
 * For R2R code (`ReadyToRunJitManager`), a list of sorted `RUNTIME_FUNCTION` are stored on the module's `ReadyToRunInfo`. This is accessed as described above for `GetMethodInfo`. Again, the relevant `RUNTIME_FUNCTION` is found by binary searching the list based on IP.
 
-Unwind info (`RUNTIME_FUNCTION`) use relative addressing. For native code, these are usually relative to the base address of the containing image. For managed code, unwind info is relative to the start of the code's containing range in the RangeSectionMap (described below). This could be the beginning of a `CodeHeap` for jitted code or the base address of the loaded image for ReadyToRun code.
-`GetUnwindInfoBaseAddress` finds this base address for a given `CodeBlock`.
+Unwind info (`RUNTIME_FUNCTION`) use relative addressing. For managed code, these values are relative to the start of the code's containing range in the RangeSectionMap (described below). This could be the beginning of a `CodeHeap` for jitted code or the base address of the loaded image for ReadyToRun code.
+`GetUnwindInfoBaseAddress` finds this base address for a given `CodeBlockHandle`.
 
 ### RangeSectionMap
 
