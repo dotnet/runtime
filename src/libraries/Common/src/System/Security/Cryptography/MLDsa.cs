@@ -315,7 +315,7 @@ namespace System.Security.Cryptography
             ThrowIfDisposed();
 
             AsnWriter writer = ExportSubjectPublicKeyInfoCore();
-            return writer.Encode(static span => PemEncoding.WriteString("PUBLIC KEY", span));
+            return writer.Encode(static span => PemEncoding.WriteString(PemLabels.SpkiPublicKey, span));
         }
 
         /// <summary>
@@ -422,6 +422,8 @@ namespace System.Security.Cryptography
         {
             ThrowIfDisposed();
 
+            // TODO: Validation on pbeParameters.
+
             AsnWriter writer = ExportEncryptedPkcs8PrivateKeyCore(password, pbeParameters);
 
             try
@@ -461,6 +463,8 @@ namespace System.Security.Cryptography
         public byte[] ExportEncryptedPkcs8PrivateKey(ReadOnlySpan<byte> passwordBytes, PbeParameters pbeParameters)
         {
             ThrowIfDisposed();
+
+            // TODO: Validation on pbeParameters.
 
             AsnWriter writer = ExportEncryptedPkcs8PrivateKeyCore(passwordBytes, pbeParameters);
 
@@ -605,11 +609,13 @@ namespace System.Security.Cryptography
         {
             ThrowIfDisposed();
 
+            // TODO: Validation on pbeParameters.
+
             AsnWriter writer = ExportEncryptedPkcs8PrivateKeyCore(password, pbeParameters);
 
             try
             {
-                return writer.Encode(static span => PemEncoding.WriteString("ENCRYPTED PRIVATE KEY", span));
+                return writer.Encode(static span => PemEncoding.WriteString(PemLabels.EncryptedPkcs8PrivateKey, span));
             }
             finally
             {
@@ -648,11 +654,13 @@ namespace System.Security.Cryptography
         {
             ThrowIfDisposed();
 
+            // TODO: Validation on pbeParameters.
+
             AsnWriter writer = ExportEncryptedPkcs8PrivateKeyCore(passwordBytes, pbeParameters);
 
             try
             {
-                return writer.Encode(static span => PemEncoding.WriteString("ENCRYPTED PRIVATE KEY", span));
+                return writer.Encode(static span => PemEncoding.WriteString(PemLabels.EncryptedPkcs8PrivateKey, span));
             }
             finally
             {
@@ -1621,6 +1629,7 @@ namespace System.Security.Cryptography
                             {
                                 AsnWriter writer = new AsnWriter(AsnEncodingRules.DER);
                                 pki.PrivateKeyAlgorithm.Encode(writer);
+                                // TODO: Use callback and span support for this in .NET 9.
                                 algorithmId = Convert.ToHexString(writer.Encode());
                             }
                         }
@@ -1765,6 +1774,10 @@ namespace System.Security.Cryptography
                 Algorithm = algorithm;
                 Oid = oid;
             }
+
+            // ML-DSA parameter sets, and the sizes associated with them,
+            // are defined in FIPS 204, section 4 "Parameter Sets".
+            // particularly Table 2 "Sizes (in bytes) of keys and signatures of ML-DSA"
 
             internal static readonly ParameterSetInfo MLDsa44 =
                 new ParameterSetInfo(2560, 1312, 2420, MLDsaAlgorithm.MLDsa44, Oids.MLDsa44);
