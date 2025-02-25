@@ -107,6 +107,9 @@ public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string?
                                                              SearchOption.TopDirectoryOnly)
                                                 .Order()
                                                 .ToList();
+        
+        var comparisonLogging = new List<string>();
+
         foreach ((string expectedFilename, bool expectFingerprint) in superSet.OrderByDescending(kvp => kvp.Key))
         {
             string prefix = Path.GetFileNameWithoutExtension(expectedFilename);
@@ -119,7 +122,7 @@ public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string?
                         return false;
 
                     string actualFilename = Path.GetFileName(actualFile);
-                    _testOutput.WriteLine($"Comparing {expectedFilename} with {actualFile}, expectFingerprintOnDotnetJs: {expectFingerprintOnDotnetJs}, expectFingerprint: {expectFingerprint}");
+                    comparisonLogging.Add($"Comparing {expectedFilename} with {actualFile}, expectFingerprintOnDotnetJs: {expectFingerprintOnDotnetJs}, expectFingerprint: {expectFingerprint}");
                     if (ShouldCheckFingerprint(expectedFilename: expectedFilename,
                                                expectFingerprintOnDotnetJs: expectFingerprintOnDotnetJs,
                                                expectFingerprintForThisFile: expectFingerprint))
@@ -149,9 +152,15 @@ public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string?
 
         if (dotnetFiles.Any())
         {
+            foreach (var message in comparisonLogging)
+            {
+                _testOutput.WriteLine(message);
+            }
             _testOutput.WriteLine($"Accepted count: {actual.Count}");
             foreach (var kvp in actual)
+            {
                 _testOutput.WriteLine($"Accepted: \t[{kvp.Key}] = {kvp.Value}");
+            }
 
             throw new XunitException($"Found unknown files in {binFrameworkDir}:{Environment.NewLine}    " +
                     $"{string.Join($"{Environment.NewLine}  ", dotnetFiles.Select(f => Path.GetRelativePath(binFrameworkDir, f)))}{Environment.NewLine}" +
