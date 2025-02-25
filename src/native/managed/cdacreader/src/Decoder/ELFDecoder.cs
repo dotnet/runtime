@@ -3,7 +3,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
 using System.Numerics;
 using System.Text;
@@ -12,200 +11,147 @@ using Microsoft.Diagnostics.DataContractReader.Decoder.PETypes;
 namespace Microsoft.Diagnostics.DataContractReader.Decoder;
 internal sealed class ELFDecoder : IDisposable
 {
-    private readonly Stream _stream;
-    private ulong _baseAddress;
-    private bool is64Bit;
-    private ulong dynamicOffset;
-    private ulong gnuHashTableOffset;
-    private ulong symbolTableOffset;
-    private ulong stringTableOffset;
-    private int stringTableSize;
+    private readonly BinaryReader _reader;
+    private readonly ulong _baseAddress;
 
-    private GnuHashTable _gnuHashTable;
-    private List<int> _hashBuckets = [];
-    private ulong _chainsOffset;
+    private bool _is64Bit;
+    private GnuHashTable? _gnuHashTable;
 
     private bool _disposedValue;
 
-    public bool IsValid { get; init; }
+    public bool IsValid => _gnuHashTable is not null;
 
     /// <summary>
     /// Create ELFReader with stream beginning at the base address of the module.
     /// </summary>
     public ELFDecoder(Stream stream, ulong baseAddress)
     {
-        _stream = stream;
+        _reader = new(stream, Encoding.UTF8);
         _baseAddress = baseAddress;
 
-        IsValid = Initialize();
-        if (IsValid)
+        Initialize();
+    }
+
+    private void Initialize()
+    {
+        _reader.BaseStream.Seek(0, SeekOrigin.Begin);
+
+        uint elfMagic = _reader.ReadUInt32();
+        if (elfMagic != 0x464C457F) // 0x7F followed by "ELF"
+            return;
+
+        _is64Bit = _reader.ReadByte() != 1;
+
+        if (_is64Bit)
         {
-            IsValid = is64Bit ? InitializeHashTable<ulong>() : InitializeHashTable<uint>();
+            Initialize<ulong>();
+        }
+        else
+        {
+            Initialize<uint>();
         }
     }
 
-    private bool Initialize()
-    {
-        using BinaryReader reader = new(_stream, Encoding.UTF8, leaveOpen: true);
-
-        reader.BaseStream.Seek(0, SeekOrigin.Begin);
-
-        uint elfMagic = reader.ReadUInt32();
-        if (elfMagic != 0x464C457F) // 0x7F followed by "ELF"
-            return false;
-
-        is64Bit = reader.ReadByte() != 1;
-
-        return is64Bit ? Initialize<ulong>(reader) : Initialize<uint>(reader);
-    }
-
-    private bool Initialize<T>(BinaryReader reader)
+    /// <summary>
+    /// Initializes the ElfDecoder with specific type.
+    /// Supports ELF32 with uint and ELF64 with ulong.
+    /// </summary>
+    private void Initialize<T>()
         where T : unmanaged, IBinaryInteger<T>, IMinMaxValue<T>, IConvertible
     {
-        reader.BaseStream.Seek(0, SeekOrigin.Begin);
-        Elf_Ehdr<T> elfHeader = new(reader);
+        // read the full Elf_Ehdr
+        _reader.BaseStream.Seek(0, SeekOrigin.Begin);
+        Elf_Ehdr<T> elfHeader = new(_reader);
 
-        reader.BaseStream.Seek(Convert.ToInt64(elfHeader.e_phoff), SeekOrigin.Begin);
-
+        // read the list of Elf_Phdr starting at e_phoff
+        _reader.BaseStream.Seek(Convert.ToInt64(elfHeader.e_phoff), SeekOrigin.Begin);
         List<Elf_Phdr<T>> programHeaders = [];
         for (int i = 0; i < elfHeader.e_phnum; i++)
         {
-            programHeaders.Add(new Elf_Phdr<T>(reader));
+            programHeaders.Add(new Elf_Phdr<T>(_reader));
         }
 
-        // Calculate the load bais from the PT_LOAD program headers.
-        ulong loadBias = 0;
+        // Calculate the load bias from the PT_LOAD program headers.
+        // PT_LOAD program headers map the executable file regions to virtual memory regions.
+        // p_offset: offset into the executable file for first byte of segment
+        // p_vaddr: virtual address of first byte of segment in memory
+        // p_filesz: number of bytes in the file image of the segment
+        // p_memsz: number of bytes in the virtual memory region of the segment
+        //
+        // For a given PT_LOAD header, it maps a virtual memory region at the requested p_vaddr
+        // to the data beginning at p_offset in the file. While the OS can move the virtual memory segments,
+        // Within an executable, all of the mapped segments must maintain their relative spacing.
+        // We compute this "load bias" to correctly map RVAs to memory.
+        //
+        // Since the Elf Header is always at the beginning of the executable file it is mapped in the PT_LOAD, `firstLoad`, with p_offset = 0.
+        // We read the ElfHeader at memory _baseAddress, therefore the load bias is `_baseAddress - (firstLoad.p_vaddr)`
+        // Because we are working relative to _baseAddress load bias is stored as a just `firstLoad.p_vaddr` then subtracted.
+        ulong relativeLoadBias = 0;
         foreach (Elf_Phdr<T> programHeader in programHeaders)
         {
             if (programHeader.Type == HeaderType.PT_LOAD &&
-                programHeader.p_offset == default)
+                Convert.ToUInt64(programHeader.p_offset) == 0)
             {
-                loadBias = Convert.ToUInt64(programHeader.p_vaddr);
+                relativeLoadBias = Convert.ToUInt64(programHeader.p_vaddr);
                 break;
             }
         }
+        ulong loadBias = _baseAddress - relativeLoadBias;
 
+        long dynamicOffset = 0;
         foreach (Elf_Phdr<T> programHeader in programHeaders)
         {
             if (programHeader.Type == HeaderType.PT_DYNAMIC)
             {
-                dynamicOffset = Convert.ToUInt64(programHeader.p_vaddr) - loadBias;
+                dynamicOffset = (long)(Convert.ToUInt64(programHeader.p_vaddr) - relativeLoadBias);
                 break;
             }
         }
+        if (dynamicOffset == 0) return;
 
-        if (dynamicOffset == 0) return false;
-
-        reader.BaseStream.Seek((long)dynamicOffset, SeekOrigin.Begin);
-        List<Elf_Dyn<T>> dynamicEntries = [];
+        long gnuHashTableOffset = 0;
+        long symbolTableOffset = 0;
+        long stringTableOffset = 0;
+        int stringTableSize = 0;
+        _reader.BaseStream.Seek(dynamicOffset, SeekOrigin.Begin);
         while (true)
         {
-            Elf_Dyn<T> dynamicEntry = new Elf_Dyn<T>(reader);
+            Elf_Dyn<T> dynamicEntry = new Elf_Dyn<T>(_reader);
 
             if (dynamicEntry.Type == DynamicType.DT_NULL)
                 break;
             if (dynamicEntry.Type == DynamicType.DT_GNU_HASH)
-                gnuHashTableOffset = Convert.ToUInt64(dynamicEntry.d_val) - _baseAddress;
+                gnuHashTableOffset = (long)(Convert.ToUInt64(dynamicEntry.d_val) - loadBias);
             if (dynamicEntry.Type == DynamicType.DT_SYMTAB)
-                symbolTableOffset = Convert.ToUInt64(dynamicEntry.d_val) - _baseAddress;
+                symbolTableOffset = (long)(Convert.ToUInt64(dynamicEntry.d_val) - loadBias);
             if (dynamicEntry.Type == DynamicType.DT_STRTAB)
-                stringTableOffset = Convert.ToUInt64(dynamicEntry.d_val) - _baseAddress;
+                stringTableOffset = (long)(Convert.ToUInt64(dynamicEntry.d_val) - loadBias);
             if (dynamicEntry.Type == DynamicType.DT_STRSZ)
                 stringTableSize = Convert.ToInt32(dynamicEntry.d_val);
-            dynamicEntries.Add(dynamicEntry);
         }
 
-        if (gnuHashTableOffset == 0) return false;
-        if (symbolTableOffset == 0) return false;
-        if (stringTableOffset == 0) return false;
+        if (gnuHashTableOffset == 0) return;
+        if (symbolTableOffset == 0) return;
+        if (stringTableOffset == 0) return;
 
-        return true;
-    }
-
-    private bool InitializeHashTable<T>()
-        where T : unmanaged, IBinaryInteger<T>, IMinMaxValue<T>, IConvertible
-    {
-        using BinaryReader reader = new(_stream, Encoding.UTF8, leaveOpen: true);
-        reader.BaseStream.Seek((long)gnuHashTableOffset, SeekOrigin.Begin);
-        _gnuHashTable = new(reader);
-
-        ulong bucketsOffset = gnuHashTableOffset + 16ul /*sizeof(GnuHashTable)*/ +
-            (ulong)_gnuHashTable.bloomSize * (is64Bit ? 8ul : 4ul);
-
-        reader.BaseStream.Seek((long)bucketsOffset, SeekOrigin.Begin);
-        for (int i = 0; i < _gnuHashTable.bucketCount; i++)
-        {
-            _hashBuckets.Add(reader.ReadInt32());
-        }
-
-        _chainsOffset = bucketsOffset + (ulong)(_gnuHashTable.bucketCount * sizeof(int));
-
-        return true;
+        _gnuHashTable = new GnuHashTable(
+            _reader.BaseStream,
+            gnuHashTableOffset,
+            symbolTableOffset,
+            stringTableOffset,
+            stringTableSize,
+            _is64Bit,
+            leaveStreamOpen: true);
     }
 
     public bool TryGetRelativeSymbolAddress(string symbol, out ulong address)
     {
         address = 0;
 
-        if (!IsValid)
+        if (_gnuHashTable is not GnuHashTable hashTable)
             return false;
-        using BinaryReader reader = new(_stream, Encoding.UTF8, leaveOpen: true);
 
-        uint hash = GnuHash(symbol);
-
-        List<int> symbolIndexes = [];
-        int i = _hashBuckets[(int)(hash % _hashBuckets.Count)] - _gnuHashTable.symbolOffset;
-        while (true)
-        {
-            reader.BaseStream.Seek((long)_chainsOffset + i * sizeof(int), SeekOrigin.Begin);
-            int chainVal = reader.ReadInt32();
-            if ((chainVal & 0xfffffffe) == (hash & 0xfffffffe))
-            {
-                symbolIndexes.Add(i + _gnuHashTable.symbolOffset);
-            }
-            if ((chainVal & 0x1) == 0x1)
-            {
-                break;
-            }
-            i++;
-        }
-
-        foreach (int possibleLocation in symbolIndexes)
-        {
-            reader.BaseStream.Seek((long)symbolTableOffset + Elf_Sym<ulong>.GetPackedSize() * possibleLocation, SeekOrigin.Begin);
-            Elf_Sym<ulong> elfSymbol = new(reader);
-            string possibleString = GetStringAtIndex(elfSymbol.st_name);
-
-            if (symbol == possibleString)
-            {
-                address = elfSymbol.st_value;
-                return true;
-            }
-        }
-        return false;
-    }
-
-    private string GetStringAtIndex(uint index)
-    {
-        using BinaryReader reader = new(_stream, Encoding.UTF8, leaveOpen: true);
-
-        if (index > stringTableSize)
-        {
-            throw new InvalidOperationException("String table index out of bounds.");
-        }
-
-        reader.BaseStream.Seek((long)stringTableOffset + index, SeekOrigin.Begin);
-        return reader.ReadZString();
-    }
-
-    private static uint GnuHash(string symbolName)
-    {
-        uint h = 5381;
-        foreach (char c in symbolName)
-        {
-            h = (h << 5) + h + c;
-        }
-        return h;
+        return hashTable.TryLookupRelativeSymbolAddress(symbol, out address);
     }
 
     private void Dispose(bool disposing)
@@ -214,17 +160,16 @@ internal sealed class ELFDecoder : IDisposable
         {
             if (disposing)
             {
-                _stream.Close();
+                _gnuHashTable?.Dispose();
+                _reader.Dispose();
             }
 
             _disposedValue = true;
         }
     }
 
-    void IDisposable.Dispose()
+    public void Dispose()
     {
-        // Do not change this code. Put cleanup code in 'Dispose(bool disposing)' method
         Dispose(disposing: true);
-        GC.SuppressFinalize(this);
     }
 }
