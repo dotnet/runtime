@@ -136,7 +136,7 @@ public class ExecutionManagerTests
 
     [Theory]
     [MemberData(nameof(StdArchAllVersions))]
-    public void GetModuleBaseAddress_OneRangeOneMethod(int version, MockTarget.Architecture arch)
+    public void GetUnwindInfoBaseAddress_OneRangeOneMethod(int version, MockTarget.Architecture arch)
     {
         const ulong codeRangeStart = 0x0a0a_0000u; // arbitrary
         const uint codeRangeSize = 0xc000u; // arbitrary
@@ -164,7 +164,7 @@ public class ExecutionManagerTests
         // Get CodeBlockHandle
         var eeInfo = em.GetCodeBlockHandle(methodStart);
         Assert.NotNull(eeInfo);
-        TargetPointer actualBaseAddress = em.GetModuleBaseAddress(eeInfo.Value);
+        TargetPointer actualBaseAddress = em.GetUnwindInfoBaseAddress(eeInfo.Value);
         Assert.Equal(new TargetPointer(actualBaseAddress), actualBaseAddress);
     }
 
@@ -364,7 +364,7 @@ public class ExecutionManagerTests
 
     [Theory]
     [MemberData(nameof(StdArchAllVersions))]
-    public void GetModuleBaseAddress_R2R_ManyRuntimeFunction(int version, MockTarget.Architecture arch)
+    public void GetUnwindInfoBaseAddress_R2R_ManyRuntimeFunction(int version, MockTarget.Architecture arch)
     {
         const ulong codeRangeStart = 0x0a0a_0000u; // arbitrary
         const uint codeRangeSize = 0xc000u; // arbitrary
@@ -392,8 +392,8 @@ public class ExecutionManagerTests
 
         var handle = em.GetCodeBlockHandle(codeRangeStart + runtimeFunction);
         Assert.NotNull(handle);
-        TargetPointer actualModuleBaseAddress = em.GetModuleBaseAddress(handle.Value);
-        Assert.Equal(new TargetPointer(codeRangeStart), actualModuleBaseAddress);
+        TargetPointer actualBaseAddress = em.GetUnwindInfoBaseAddress(handle.Value);
+        Assert.Equal(new TargetPointer(codeRangeStart), actualBaseAddress);
     }
 
     public static IEnumerable<object[]> StdArchAllVersions()

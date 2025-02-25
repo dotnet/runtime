@@ -17,6 +17,6 @@ public sealed class ExecutionManager_2 : IExecutionManager
     public CodeBlockHandle? GetCodeBlockHandle(TargetCodePointer ip) => _executionManagerCore.GetCodeBlockHandle(ip);
     public TargetPointer GetMethodDesc(CodeBlockHandle codeInfoHandle) => _executionManagerCore.GetMethodDesc(codeInfoHandle);
     public TargetCodePointer GetStartAddress(CodeBlockHandle codeInfoHandle) => _executionManagerCore.GetStartAddress(codeInfoHandle);
-    public TargetPointer GetModuleBaseAddress(CodeBlockHandle codeInfoHandle) => _executionManagerCore.GetModuleBaseAddress(codeInfoHandle);
     public TargetPointer GetUnwindInfo(CodeBlockHandle codeInfoHandle, TargetCodePointer ip) => _executionManagerCore.GetUnwindInfo(codeInfoHandle, ip);
+    public TargetPointer GetUnwindInfoBaseAddress(CodeBlockHandle codeInfoHandle) => _executionManagerCore.GetUnwindInfoBaseAddress(codeInfoHandle);
 }

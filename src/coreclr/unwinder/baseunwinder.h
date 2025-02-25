@@ -9,7 +9,7 @@
 #ifdef FEATURE_CDAC_UNWINDER
 using ReadFromTarget = LONG (*)(ULONG64 addr, PVOID pBuffer, LONG bufferSize, PVOID callbackContext);
 using GetAllocatedBuffer = LONG (*)(LONG bufferSize, PVOID* ppBuffer, PVOID callbackContext);
-using GetStackWalkInfo = VOID (*)(ULONG64 controlPC, UINT_PTR* pModuleBase, UINT_PTR* pFuncEntry, PVOID callbackContext);
+using GetStackWalkInfo = VOID (*)(ULONG64 controlPC, UINT_PTR* pUnwindInfoBase, UINT_PTR* pFuncEntry, PVOID callbackContext);
 using UnwinderFail = VOID (*)();
 
 class CDACCallbacks

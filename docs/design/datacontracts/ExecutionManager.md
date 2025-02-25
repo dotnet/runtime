@@ -23,10 +23,10 @@ struct CodeBlockHandle
     TargetPointer GetMethodDesc(CodeBlockHandle codeInfoHandle);
     // Get the instruction pointer address of the start of the code block
     TargetCodePointer GetStartAddress(CodeBlockHandle codeInfoHandle);
-    // Gets the base address of the module containing the code block
-    TargetPointer GetModuleBaseAddress(CodeBlockHandle codeInfoHandle);
     // Gets the unwind info of the code block at the specified code pointer
     TargetPointer GetUnwindInfo(CodeBlockHandle codeInfoHandle, TargetCodePointer ip);
+    // Gets the base address the UnwindInfo of codeInfoHandle is relative to.
+    TargetPointer GetUnwindInfoBaseAddress(CodeBlockHandle codeInfoHandle);
 ```
 
 ## Version 1
@@ -236,13 +236,14 @@ The `GetMethodDesc` and `GetStartAddress` APIs extract fields of the `CodeBlock`
     }
 ```
 
-`GetModuleBaseAddress` uses the RangeSectionMap (described below) to find the range containing a given `CodeBlock`. This region represents the memory mapped by the containing module. Therefore the module base address is the start address of this data range.
-
 `GetUnwindInfo` gets the Windows style unwind data in the form of `RUNTIME_FUNCTION` which has a platform dependent implementation. The ExecutionManager delegates to the JitManager implementations as the unwind infos (`RUNTIME_FUNCTION`) are stored differently on jitted and R2R code.
 
 * For jitted code (`EEJitManager`) a list of sorted `RUNTIME_FUNCTION` are stored on the `RealCodeHeader` which is accessed in the same was as `GetMethodInfo` described above. The correct `RUNTIME_FUNCTION` is found by binary searching the list based on IP.
 
 * For R2R code (`ReadyToRunJitManager`), a list of sorted `RUNTIME_FUNCTION` are stored on the module's `ReadyToRunInfo`. This is accessed as described above for `GetMethodInfo`. Again, the relevant `RUNTIME_FUNCTION` is found by binary searching the list based on IP.
+
+Unwind info (`RUNTIME_FUNCTION`) use relative addressing. For native code, these are usually relative to the base address of the containing image. For managed code, unwind info is relative to the start of the code's containing range in the RangeSectionMap (described below). This could be the beginning of a `CodeHeap` for jitted code or the base address of the loaded image for ReadyToRun code.
+`GetUnwindInfoBaseAddress` finds this base address for a given `CodeBlock`.
 
 ### RangeSectionMap
 
