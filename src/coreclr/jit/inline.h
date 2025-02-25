@@ -107,6 +107,7 @@ enum class InlineDecision
     CANDIDATE,
     SUCCESS,
     FAILURE,
+    FAILLATER,
     NEVER
 };
 
@@ -355,6 +356,12 @@ public:
     bool IsFailure() const
     {
         return InlDecisionIsFailure(m_Policy->GetDecision());
+    }
+
+    // Has the policy determined this inline should fail after importation?
+    bool IsLateFailure() const
+    {
+        return m_Policy->GetDecision() == InlineDecision::FAILLATER;
     }
 
     // Has the policy determined this inline will succeed?
@@ -637,6 +644,12 @@ struct LateDevirtualizationInfo
     InlineContext*         inlinersContext;
 };
 
+struct ReturnClassInfo
+{
+    CORINFO_CLASS_HANDLE clsHandle;
+    bool                 isExact;
+};
+
 // InlArgInfo describes inline candidate argument properties.
 
 struct InlArgInfo
@@ -684,9 +697,6 @@ struct InlineInfo
     InlineContext*        inlineContext;
 
     InlineResult* inlineResult;
-
-    CORINFO_CLASS_HANDLE retExprClassHnd;
-    bool                 retExprClassHndIsExact;
 
     CORINFO_CONTEXT_HANDLE tokenLookupContextHandle; // The context handle that will be passed to
                                                      // impTokenLookupContextHandle in Inlinee's Compiler.
@@ -869,6 +879,9 @@ public:
         m_ILInstsSet = set;
     }
 #endif
+
+    CORINFO_CLASS_HANDLE retExprClassHnd;
+    bool                 retExprClassHndIsExact;
 
 private:
     InlineContext(InlineStrategy* strategy);

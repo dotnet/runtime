@@ -955,6 +955,14 @@ void Compiler::fgMorphCallInline(GenTreeCall* call, InlineResult* inlineResult)
                 // We created a context before we got to the failure, so mark
                 // it as failed in the tree.
                 createdContext->SetFailed(inlineResult);
+
+                if (call->gtReturnType == TYP_REF && createdContext->retExprClassHnd != nullptr)
+                {
+                    call->gtReturnClassInfo            = new (this, CMK_Inlining) ReturnClassInfo();
+                    call->gtReturnClassInfo->clsHandle = createdContext->retExprClassHnd;
+                    call->gtReturnClassInfo->isExact   = createdContext->retExprClassHndIsExact;
+                    call->gtCallMoreFlags |= GTF_CALL_M_HAS_RET_CLASS;
+                }
             }
             else
             {
@@ -1222,15 +1230,13 @@ void Compiler::fgInvokeInlineeCompiler(GenTreeCall* call, InlineResult* inlineRe
     InlineInfo            inlineInfo{};
     CORINFO_METHOD_HANDLE fncHandle = call->gtCallMethHnd;
 
-    inlineInfo.fncHandle              = fncHandle;
-    inlineInfo.iciCall                = call;
-    inlineInfo.iciStmt                = fgMorphStmt;
-    inlineInfo.iciBlock               = compCurBB;
-    inlineInfo.thisDereferencedFirst  = false;
-    inlineInfo.retExprClassHnd        = nullptr;
-    inlineInfo.retExprClassHndIsExact = false;
-    inlineInfo.inlineResult           = inlineResult;
-    inlineInfo.inlInstParamArgInfo    = nullptr;
+    inlineInfo.fncHandle             = fncHandle;
+    inlineInfo.iciCall               = call;
+    inlineInfo.iciStmt               = fgMorphStmt;
+    inlineInfo.iciBlock              = compCurBB;
+    inlineInfo.thisDereferencedFirst = false;
+    inlineInfo.inlineResult          = inlineResult;
+    inlineInfo.inlInstParamArgInfo   = nullptr;
 #ifdef FEATURE_SIMD
     inlineInfo.hasSIMDTypeArgLocalOrReturn = false;
 #endif // FEATURE_SIMD
@@ -1332,16 +1338,21 @@ void Compiler::fgInvokeInlineeCompiler(GenTreeCall* call, InlineResult* inlineRe
                               pParam->pThis->info.compCompHnd, &pParam->inlineCandidateInfo->methInfo,
                               (void**)pParam->inlineInfo, nullptr, &compileFlagsForInlinee, pParam->inlineInfo);
 
+            InlineResult* innerInlineResult = pParam->inlineInfo->inlineResult;
+
             if (result != CORJIT_OK)
             {
                 // If we haven't yet determined why this inline fails, use
                 // a catch-all something bad happened observation.
-                InlineResult* innerInlineResult = pParam->inlineInfo->inlineResult;
 
                 if (!innerInlineResult->IsFailure())
                 {
                     innerInlineResult->NoteFatal(InlineObservation::CALLSITE_COMPILATION_FAILURE);
                 }
+            }
+            else if (innerInlineResult->IsLateFailure())
+            {
+                innerInlineResult->NoteFatal(InlineObservation::CALLSITE_LATE_FAILURE);
             }
         }
     },
