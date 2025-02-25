@@ -90,6 +90,7 @@ function injectDependencies() {
         `enablePerfTracing: ${FEATURE_PERFTRACING ? "true" : "false"}, ` +
         `enableAotProfiler: ${ENABLE_AOT_PROFILER ? "true" : "false"}, ` +
         `enableBrowserProfiler: ${ENABLE_BROWSER_PROFILER ? "true" : "false"}, ` +
+        `enablePerfTracing: ${ENABLE_BROWSER_PROFILER ? "true" : "false"}, ` +
         `enableLogProfiler: ${ENABLE_LOG_PROFILER ? "true" : "false"}, ` +
         `runAOTCompilation: ${RUN_AOT_COMPILATION ? "true" : "false"}, ` +
         `wasmEnableThreads: ${USE_PTHREADS ? "true" : "false"}, ` +
