@@ -4,6 +4,7 @@
     <WasmEnableExceptionHandling Condition="'$(WasmEnableExceptionHandling)' == ''">true</WasmEnableExceptionHandling>
     <WasmEnableSIMD Condition="'$(WasmEnableSIMD)' == ''">$(WasmEnableExceptionHandling)</WasmEnableSIMD>
     <!-- we are not triggering FeaturePerfTracing in Debug automatically, because it would trigger re-link, making dev-loop slow -->
+    <FeaturePerfTracing Condition="'$(WasmProfilers)' != ''">true</FeaturePerfTracing>
     <FeaturePerfTracing Condition="'$(FeaturePerfTracing)' == ''">false</FeaturePerfTracing>
   </PropertyGroup>
 
