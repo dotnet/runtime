@@ -204,10 +204,10 @@ namespace System.Reflection
 
         [RequiresUnreferencedCode("Types might be removed by trimming. If the type name is a string literal, consider using Type.GetType instead.")]
         public override
-        Type GetType(string className, bool throwOnError, bool ignoreCase)
+        Type? GetType(string className, bool throwOnError, bool ignoreCase)
         {
             ArgumentException.ThrowIfNullOrEmpty(className);
-            return assembly.InternalGetType(this, className, throwOnError, ignoreCase);
+            return TypeNameResolver.GetType(className, throwOnError, ignoreCase, assembly);
         }
 
         public override

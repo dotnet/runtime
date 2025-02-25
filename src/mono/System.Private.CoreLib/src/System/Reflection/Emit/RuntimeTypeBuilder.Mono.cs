@@ -39,6 +39,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
+using System.Reflection.Metadata;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
@@ -81,7 +82,7 @@ namespace System.Reflection.Emit
 #endregion
 
         internal bool is_hidden_global_type;
-        private ITypeName fullname;
+        private string? fullNameDisplay;
         private bool createTypeCalled;
         private Type? underlying_type;
 
@@ -101,7 +102,7 @@ namespace System.Reflection.Emit
             this.table_idx = table_idx;
             this.tname = table_idx == 1 ? "<Module>" : "type_" + table_idx.ToString();
             this.nspace = string.Empty;
-            this.fullname = TypeIdentifiers.WithoutEscape(this.tname);
+            FullNameUnescaped = this.tname;
             pmodule = mb;
         }
 
@@ -113,7 +114,6 @@ namespace System.Reflection.Emit
         internal RuntimeTypeBuilder(RuntimeModuleBuilder mb, string name, TypeAttributes attr, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type? parent, Type[]? interfaces, PackingSize packing_size, int type_size, Type? nesting_type)
         {
             this.is_hidden_global_type = false;
-            int sep_index;
             this.parent = ResolveUserType(parent);
             this.attrs = attr;
             this.class_size = type_size;
@@ -121,12 +121,13 @@ namespace System.Reflection.Emit
             this.nesting_type = nesting_type;
 
             check_name(nameof(name), name);
+            mb.CheckTypeNameConflict(name, nesting_type);
 
             if (parent == null && (attr & TypeAttributes.Interface) != 0 && (attr & TypeAttributes.Abstract) == 0)
                 throw new InvalidOperationException(SR.InvalidOperation_BadInterfaceNotAbstract);
 
-            sep_index = name.LastIndexOf('.');
-            if (sep_index != -1)
+            // Nested types do not have a namespace.
+            if (nesting_type is null && TypeNameParserHelpers.IndexOfNamespaceDelimiter(name) is int sep_index && sep_index > 0)
             {
                 this.tname = name.Substring(sep_index + 1);
                 this.nspace = name.Substring(0, sep_index);
@@ -148,7 +149,8 @@ namespace System.Reflection.Emit
 
             // skip .<Module> ?
             table_idx = mb.get_next_table_index(0x02, 1);
-            this.fullname = GetFullName();
+            FullNameUnescaped = name;
+            mb.AddType(this);
         }
 
         public override Assembly Assembly
@@ -213,23 +215,9 @@ namespace System.Reflection.Emit
             }
         }
 
-        private ITypeName GetFullName()
-        {
-            ITypeIdentifier ident = TypeIdentifiers.FromInternal(tname);
-            if (nesting_type != null)
-                return TypeNames.FromDisplay(nesting_type.FullName!).NestedName(ident);
-            if ((nspace != null) && (nspace.Length > 0))
-                return TypeIdentifiers.FromInternal(nspace, ident);
-            return ident;
-        }
+        internal string FullNameUnescaped { get; }
 
-        public override string? FullName
-        {
-            get
-            {
-                return TypeNameBuilder.ToString(this, TypeNameBuilder.Format.FullName);
-            }
-        }
+        public override string FullName => fullNameDisplay ??= TypeNameBuilder.ToString(this, TypeNameBuilder.Format.FullName)!;
 
         public override Guid GUID
         {
@@ -396,8 +384,6 @@ namespace System.Reflection.Emit
             }
 
             RuntimeTypeBuilder res = new RuntimeTypeBuilder(pmodule, name, attr, parent, interfaces, packSize, typeSize, this);
-            res.fullname = res.GetFullName();
-            pmodule.RegisterTypeName(res, res.fullname);
             if (subtypes != null)
             {
                 RuntimeTypeBuilder[] new_types = new RuntimeTypeBuilder[subtypes.Length + 1];
@@ -730,19 +716,19 @@ namespace System.Reflection.Emit
             if (parent != null)
             {
                 if (parent.IsSealed)
-                    throw new TypeLoadException(SR.Format(SR.TypeLoad_AssemblySealedParentTypeError, fullname.DisplayName, Assembly));
+                    throw new TypeLoadException(SR.Format(SR.TypeLoad_AssemblySealedParentTypeError, FullName, Assembly));
                 if (parent.IsGenericTypeDefinition)
                     throw new BadImageFormatException();
             }
 
             if (parent == typeof(Enum) && methods != null)
-                throw new TypeLoadException(SR.Format(SR.TypeLoad_AssemblyEnumContainsMethodsError, fullname.DisplayName, Assembly));
+                throw new TypeLoadException(SR.Format(SR.TypeLoad_AssemblyEnumContainsMethodsError, FullName, Assembly));
             if (interfaces != null)
             {
                 foreach (Type iface in interfaces)
                 {
                     if (iface.IsNestedPrivate && iface.Assembly != Assembly)
-                        throw new TypeLoadException(SR.Format(SR.TypeLoad_AssemblyInaccessibleInterfaceError, fullname.DisplayName, Assembly, iface.FullName));
+                        throw new TypeLoadException(SR.Format(SR.TypeLoad_AssemblyInaccessibleInterfaceError, FullName, Assembly, iface.FullName));
                     if (iface.IsGenericTypeDefinition)
                         throw new BadImageFormatException();
                     if (!iface.IsInterface)
@@ -1117,33 +1103,44 @@ namespace System.Reflection.Emit
         }
 
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicNestedTypes | DynamicallyAccessedMemberTypes.NonPublicNestedTypes)]
-        public override Type? GetNestedType(string name, BindingFlags bindingAttr)
+        internal RuntimeTypeBuilder? GetNestedType([MaybeNull] string name, BindingFlags bindingAttr, bool ignoreAmbiguousMatch)
         {
+            ArgumentNullException.ThrowIfNull(name);
+
             check_created();
 
-            if (subtypes == null)
+            if (subtypes is null)
                 return null;
+
+            bindingAttr &= ~BindingFlags.Static;
+            StringComparison comparison = (bindingAttr & BindingFlags.IgnoreCase) != 0 ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal;
+            RuntimeType.FilterHelper(bindingAttr, ref name, out _, out _);
+            RuntimeTypeBuilder? match = null;
 
             foreach (RuntimeTypeBuilder t in subtypes)
             {
                 if (!t.is_created)
                     continue;
-                if ((t.attrs & TypeAttributes.VisibilityMask) == TypeAttributes.NestedPublic)
+                // Unlike RuntimeType which does the actual name checking in the VM, we need to do it here.
+                if (!t.Name.Equals(name, comparison))
+                    continue;
+                if (RuntimeType.FilterApplyType(t, bindingAttr, name, false, null))
                 {
-                    if ((bindingAttr & BindingFlags.Public) == 0)
-                        continue;
+                    if (match is not null)
+                        throw ThrowHelper.GetAmbiguousMatchException(match);
+
+                    match = t;
+
+                    if (ignoreAmbiguousMatch)
+                        break;
                 }
-                else
-                {
-                    if ((bindingAttr & BindingFlags.NonPublic) == 0)
-                        continue;
-                }
-                if (t.Name == name)
-                    return t.created;
             }
 
-            return null;
+            return match;
         }
+
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicNestedTypes | DynamicallyAccessedMemberTypes.NonPublicNestedTypes)]
+        public override Type? GetNestedType(string name, BindingFlags bindingAttr) => GetNestedType(name, bindingAttr, ignoreAmbiguousMatch: false);
 
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicNestedTypes | DynamicallyAccessedMemberTypes.NonPublicNestedTypes)]
         public override Type[] GetNestedTypes(BindingFlags bindingAttr)
@@ -1447,17 +1444,7 @@ namespace System.Reflection.Emit
                 throw new ArgumentException(SR.Argument_BadSizeForData);
             check_not_created();
 
-            string typeName = "$ArrayType$" + size;
-            ITypeIdentifier ident = TypeIdentifiers.WithoutEscape(typeName);
-            Type? datablobtype = pmodule.GetRegisteredType(fullname.NestedName(ident));
-            if (datablobtype == null)
-            {
-                TypeBuilder tb = DefineNestedTypeCore(typeName,
-                    TypeAttributes.NestedPrivate | TypeAttributes.ExplicitLayout | TypeAttributes.Sealed,
-                                                   typeof(ValueType), null, RuntimeFieldBuilder.RVADataPackingSize(size), size);
-                tb.CreateType();
-                datablobtype = tb;
-            }
+            Type datablobtype = pmodule.DefineDataType(size);
             return DefineField(name, datablobtype, attributes | FieldAttributes.Static | FieldAttributes.HasFieldRVA);
         }
 

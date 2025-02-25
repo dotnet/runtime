@@ -140,7 +140,7 @@ namespace System.Runtime.Loader
             return context.ResolveSatelliteAssembly(new AssemblyName(assemblyName));
         }
 
-        private static AssemblyLoadContext GetAssemblyLoadContext(IntPtr gchManagedAssemblyLoadContext)
+        internal static AssemblyLoadContext GetAssemblyLoadContext(IntPtr gchManagedAssemblyLoadContext)
         {
             AssemblyLoadContext context;
             // This check exists because the function can be called early in startup, before the default ALC is initialized
@@ -163,7 +163,7 @@ namespace System.Runtime.Loader
             dll = context.GetResolvedUnmanagedDll(assembly, unmanagedDllName);
         }
 
-        private static RuntimeAssembly? GetRuntimeAssembly(Assembly? asm)
+        internal static RuntimeAssembly? GetRuntimeAssembly(Assembly? asm)
         {
             return
                 asm == null ? null :
