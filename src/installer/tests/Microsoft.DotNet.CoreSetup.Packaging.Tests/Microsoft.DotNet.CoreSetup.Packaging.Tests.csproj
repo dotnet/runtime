@@ -32,6 +32,4 @@
       BuildInParallel="$(BuildInParallel)" />
   </Target>
 
-  <Import Project="$(RepositoryEngineeringDir)PackageDownloadAndReference.targets" />
-
 </Project>

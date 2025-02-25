@@ -1,7 +1,8 @@
 <Project Sdk="Microsoft.NET.Sdk">
+
   <PropertyGroup>
-    <RootNamespace>System.Xml.Tests</RootNamespace>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
+    <RootNamespace>System.Xml.Tests</RootNamespace>
   </PropertyGroup>
 
   <ItemGroup>

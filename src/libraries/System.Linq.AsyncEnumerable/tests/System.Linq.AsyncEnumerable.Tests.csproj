@@ -1,8 +1,10 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
+
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent);$(NetFrameworkMinimum)</TargetFrameworks>
     <NoWarn>$(NoWarn);CS1998</NoWarn>
   </PropertyGroup>
+
   <ItemGroup>
     <Compile Include="AggregateByTests.cs" />
     <Compile Include="AggregateAsyncTests.cs" />
@@ -72,12 +74,12 @@
     <Compile Include="AllAsyncTests.cs" />
     <Compile Include="AsyncEnumerableTests.cs" />
   </ItemGroup>
-  <ItemGroup>
+
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">
     <ProjectReference Include="..\src\System.Linq.AsyncEnumerable.csproj" />
     <ProjectReference Include="..\..\System.Threading.Channels\src\System.Threading.Channels.csproj" />
-  </ItemGroup>
-  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">
     <Compile Include="$(CoreLibSharedDir)System\Runtime\CompilerServices\CompilerFeatureRequiredAttribute.cs" />
     <Compile Include="$(CoreLibSharedDir)System\Runtime\CompilerServices\IsExternalInit.cs" />
   </ItemGroup>
+
 </Project>
