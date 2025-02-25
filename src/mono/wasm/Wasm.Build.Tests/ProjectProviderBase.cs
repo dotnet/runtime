@@ -80,6 +80,7 @@ public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string?
     {
         EnsureProjectDirIsSet();
         return FindAndAssertDotnetFiles(binFrameworkDir: assertOptions.BinFrameworkDir,
+                                        expectFingerprintOnDotnetJs: assertOptions.ExpectDotnetJsFingerprinting,
                                         superSet: GetAllKnownDotnetFilesToFingerprintMap(assertOptions),
                                         expected: GetDotNetFilesExpectedSet(assertOptions));
     }
@@ -89,6 +90,7 @@ public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string?
 
     public IReadOnlyDictionary<string, DotNetFileName> FindAndAssertDotnetFiles(
         string binFrameworkDir,
+        bool? expectFingerprintOnDotnetJs,
         IReadOnlyDictionary<string, bool> superSet,
         IReadOnlySet<string>? expected)
     {
@@ -120,6 +122,7 @@ public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string?
                     string actualFilename = Path.GetFileName(actualFile);
                     comparisonLogging.Add($"Comparing {expectedFilename} with {actualFile}, expectFingerprint: {expectFingerprint}");
                     if (ShouldCheckFingerprint(expectedFilename: expectedFilename,
+                                               expectFingerprintOnDotnetJs: expectFingerprintOnDotnetJs,
                                                expectFingerprintForThisFile: expectFingerprint))
                     {
                         string pattern = $"^{prefix}{s_dotnetVersionHashRegex}{extension}$";
@@ -163,7 +166,7 @@ public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string?
         }
 
         if (expected is not null)
-            AssertDotNetFilesSet(expected, superSet, actual, binFrameworkDir);
+            AssertDotNetFilesSet(expected, superSet, actual, expectFingerprintOnDotnetJs, binFrameworkDir);
         return actual;
     }
 
@@ -171,6 +174,7 @@ public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string?
         IReadOnlySet<string> expected,
         IReadOnlyDictionary<string, bool> superSet,
         IReadOnlyDictionary<string, DotNetFileName> actualReadOnly,
+        bool? expectFingerprintOnDotnetJs,
         string bundleDir)
     {
         EnsureProjectDirIsSet();
@@ -184,6 +188,7 @@ public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string?
 
             // Check that the version and hash are present or not present as expected
             if (ShouldCheckFingerprint(expectedFilename: expectedFilename,
+                                       expectFingerprintOnDotnetJs: expectFingerprintOnDotnetJs,
                                        expectFingerprintForThisFile: expectFingerprint))
             {
                 if (string.IsNullOrEmpty(actual[expectedFilename].Hash))
@@ -396,8 +401,8 @@ public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string?
         return dict;
     }
 
-    public bool ShouldCheckFingerprint(string expectedFilename, bool expectFingerprintForThisFile)
-        => IsFingerprintingEnabled && expectFingerprintForThisFile;
+    public bool ShouldCheckFingerprint(string expectedFilename, bool? expectFingerprintOnDotnetJs, bool expectFingerprintForThisFile)
+        => IsFingerprintingEnabled && ((expectedFilename == "dotnet.js" && expectFingerprintOnDotnetJs == true) || expectFingerprintForThisFile);
 
 
     public static void AssertRuntimePackPath(string buildOutput, string targetFramework, RuntimeVariant runtimeType = RuntimeVariant.SingleThreaded)
@@ -531,6 +536,7 @@ public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string?
                 string extension = Path.GetExtension(expectedFilename).Substring(1);
 
                 if (ShouldCheckFingerprint(expectedFilename: expectedFilename,
+                                           expectFingerprintOnDotnetJs: options.ExpectDotnetJsFingerprinting,
                                            expectFingerprintForThisFile: expectFingerprint))
                 {
                     return Regex.Match(item, $"{prefix}{s_dotnetVersionHashRegex}{extension}").Success;
