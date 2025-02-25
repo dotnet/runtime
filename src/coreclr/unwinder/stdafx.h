@@ -10,10 +10,17 @@
 
 #define USE_COM_CONTEXT_DEF
 
+#ifndef FEATURE_CDAC_UNWINDER
 #include <common.h>
-
 #include <debugger.h>
 #include <methoditer.h>
+#else // FEATURE_CDAC_UNWINDER
+#include <windows.h>
+#include <contract.h>
+#include <daccess.h>
+#include <clrnt.h>
+#endif // FEATURE_CDAC_UNWINDER
+
 #ifdef DACCESS_COMPILE
 #include <dacprivate.h>
 #include <dacimpl.h>

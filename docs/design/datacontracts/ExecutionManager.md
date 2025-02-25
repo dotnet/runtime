@@ -23,6 +23,10 @@ struct CodeBlockHandle
     TargetPointer GetMethodDesc(CodeBlockHandle codeInfoHandle);
     // Get the instruction pointer address of the start of the code block
     TargetCodePointer GetStartAddress(CodeBlockHandle codeInfoHandle);
+    // Gets the base address of the module containing the code block
+    TargetPointer GetModuleBaseAddress(CodeBlockHandle codeInfoHandle);
+    // Gets the unwind info of the code block at the specified code pointer
+    TargetPointer GetUnwindInfo(CodeBlockHandle codeInfoHandle, TargetCodePointer ip);
 ```
 
 ## Version 1
@@ -53,6 +57,8 @@ Data descriptors used:
 | `CodeHeapListNode` | `MapBase` | Start of the map - start address rounded down based on OS page size |
 | `CodeHeapListNode` | `HeaderMap` | Bit array used to find the start of methods - relative to `MapBase` |
 | `RealCodeHeader` | `MethodDesc` | Pointer to the corresponding `MethodDesc` |
+| `RealCodeHeader` | `NumUnwindInfos` | Number of Unwind Infos |
+| `RealCodeHeader` | `UnwindInfos` | Start address of Unwind Infos |
 | `Module` | `ReadyToRunInfo` | Pointer to the `ReadyToRunInfo` for the module |
 | `ReadyToRunInfo` | `CompositeInfo` | Pointer to composite R2R info - or itself for non-composite |
 | `ReadyToRunInfo` | `NumRuntimeFunctions` | Number of `RuntimeFunctions` |
@@ -214,7 +220,7 @@ class CodeBlock
 }
 ```
 
-The remaining contract APIs extract fields of the `CodeBlock`:
+The `GetMethodDesc` and `GetStartAddress` APIs extract fields of the `CodeBlock`:
 
 ```csharp
     TargetPointer IExecutionManager.GetMethodDesc(CodeBlockHandle codeInfoHandle)
@@ -229,6 +235,14 @@ The remaining contract APIs extract fields of the `CodeBlock`:
         return info.StartAddress;
     }
 ```
+
+`GetModuleBaseAddress` uses the RangeSectionMap (described below) to find the range containing a given `CodeBlock`. This region represents the memory mapped by the containing module. Therefore the module base address is the start address of this data range.
+
+`GetUnwindInfo` gets the Windows style unwind data in the form of `RUNTIME_FUNCTION` which has a platform dependent implementation. The ExecutionManager delegates to the JitManager implementations as the unwind infos (`RUNTIME_FUNCTION`) are stored differently on jitted and R2R code.
+
+* For jitted code (`EEJitManager`) a list of sorted `RUNTIME_FUNCTION` are stored on the `RealCodeHeader` which is accessed in the same was as `GetMethodInfo` described above. The correct `RUNTIME_FUNCTION` is found by binary searching the list based on IP.
+
+* For R2R code (`ReadyToRunJitManager`), a list of sorted `RUNTIME_FUNCTION` are stored on the module's `ReadyToRunInfo`. This is accessed as described above for `GetMethodInfo`. Again, the relevant `RUNTIME_FUNCTION` is found by binary searching the list based on IP.
 
 ### RangeSectionMap
 
