@@ -926,6 +926,13 @@ void ObjectAllocator::MorphNewArrNodeIntoLocAlloc(
     // Notify the compiler; this disables fast tail calls (for now)
     //
     comp->compLocallocUsed = true;
+
+#ifdef UNIX_AMD64_ABI
+    // Ensure we don't end up with misaligned frames,
+    // if we manage to dead code this newarr.
+    //
+    comp->opts.compNeedToAlignFrame = true;
+#endif
 }
 
 //------------------------------------------------------------------------

@@ -2850,6 +2850,7 @@ void CodeGen::genLclHeap(GenTree* tree)
 {
     assert(tree->OperGet() == GT_LCLHEAP);
     assert(compiler->compLocallocUsed);
+    genLocallocUsed = true;
 
     GenTree* size = tree->AsOp()->gtOp1;
     noway_assert((genActualType(size->gtType) == TYP_INT) || (genActualType(size->gtType) == TYP_I_IMPL));
