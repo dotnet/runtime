@@ -222,6 +222,7 @@
       Microsoft.Extensions.Options.DataAnnotations;
       Microsoft.Extensions.Primitives;
       System.Diagnostics.EventLog;
+      System.Net.ServerSentEvents;
       System.Security.Cryptography.Xml;
       System.Threading.RateLimiting;
     </AspNetCoreAppLibrary>
