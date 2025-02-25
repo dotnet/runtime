@@ -1404,7 +1404,7 @@ VOID EnsureComStarted(BOOL fCoInitCurrentThread)
     }
     CONTRACTL_END;
 
-    // COM should have been stated as soon as we start finalizer thread.
+    // COM is expected to be started on finalizer thread during startup
     _ASSERTE(g_fComStarted);
 }
 
@@ -1422,7 +1422,7 @@ HRESULT EnsureComStartedNoThrow(BOOL fCoInitCurrentThread)
 
     HRESULT hr = S_OK;
 
-    // COM should have been stated as soon as we start finalizer thread.
+    // COM is expected to be started on finalizer thread during startup
     _ASSERTE(g_fComStarted);
 
     return hr;
