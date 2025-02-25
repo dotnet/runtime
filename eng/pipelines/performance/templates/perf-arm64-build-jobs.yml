@@ -2,6 +2,8 @@ parameters:
   mono: false
   coreclr: false
   monoAot: false
+  linux: true
+  windows: true
 
 jobs:
   - ${{ if eq(parameters.mono, true) }}:
@@ -12,7 +14,7 @@ jobs:
         buildConfig: release
         runtimeFlavor: mono
         platforms:
-        - linux_arm64
+        - ${{ if eq(parameters.linux, true) }}: linux_arm64
         jobParameters:
           nameSuffix: mono
           buildArgs: -s mono+clr.iltools+clr.hosts+libs+host+packs -c $(_BuildConfig)
@@ -35,8 +37,8 @@ jobs:
         jobTemplate: /eng/pipelines/common/global-build-job.yml
         buildConfig: release
         platforms:
-        - linux_arm64
-        - windows_arm64
+        - ${{ if eq(parameters.linux, true) }}: linux_arm64
+        - ${{ if eq(parameters.windows, true) }}: windows_arm64
         jobParameters:
           nameSuffix: coreclr
           buildArgs: -s clr+libs+host+packs -c $(_BuildConfig)
@@ -60,7 +62,7 @@ jobs:
         runtimeFlavor: mono
         runtimeVariant: 'llvmaot'
         platforms:
-        - linux_arm64
+        - ${{ if eq(parameters.linux, true) }}: linux_arm64
         jobParameters:
           buildArgs: -s mono+libs+host+packs -c $(_BuildConfig) /p:MonoAOTEnableLLVM=true /p:MonoEnableLLVM=true /p:BuildMonoAOTCrossCompiler=true /p:AotHostArchitecture=arm64 /p:AotHostOS=linux
           nameSuffix: AOT
