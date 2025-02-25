@@ -211,7 +211,7 @@ export interface ResourceGroups {
     pdb?: ResourceList;
 
     jsModuleWorker?: ResourceList;
-    jsModuleGlobalization?: ResourceList;
+    jsModuleDiag?: ResourceList;
     jsModuleNative: ResourceList;
     jsModuleRuntime: ResourceList;
     wasmSymbols?: ResourceList;
@@ -318,6 +318,10 @@ export type SingleAssetBehaviors =
      * The javascript module for threads.
      */
     | "js-module-threads"
+    /**
+     * The javascript module for diagnostic server and client.
+     */
+    | "js-module-diag"
     /**
      * The javascript module for runtime.
      */

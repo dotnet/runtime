@@ -107,6 +107,7 @@ public abstract class BlazorWasmTestBase : WasmTemplateTestsBase
         {
             if (buildOptions != _defaultBlazorBuildOptions)
                 buildOptions = buildOptions with { ExtraMSBuildArgs = $"{_blazorExtraMSBuildArgs} {buildOptions.ExtraMSBuildArgs}" };
+
             (string projectDir, string buildOutput) = BuildProject(
                 info,
                 config,
@@ -137,6 +138,7 @@ public abstract class BlazorWasmTestBase : WasmTemplateTestsBase
         {
             if (publishOptions != _defaultBlazorPublishOptions)
                 publishOptions = publishOptions with { ExtraMSBuildArgs = $"{_blazorExtraMSBuildArgs} {publishOptions.ExtraMSBuildArgs}" };
+
             (string projectDir, string buildOutput) = PublishProject(
                 info,
                 config,
