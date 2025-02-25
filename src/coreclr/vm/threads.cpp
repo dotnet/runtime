@@ -7206,7 +7206,7 @@ static void ManagedThreadBase_DispatchOuter(ManagedThreadCallState *pCallState)
     // The sole purpose of having this frame is to tell the debugger that we have a catch handler here
     // which may swallow managed exceptions.  The debugger needs this in order to send a
     // CatchHandlerFound (CHF) notification.
-    DebuggerU2MCatchHandlerFrame catchFrame;
+    DebuggerU2MCatchHandlerFrame catchFrame(false /* catchesAllExceptions */);
 
     TryParam param(pCallState);
     param.pFrame = &catchFrame;
