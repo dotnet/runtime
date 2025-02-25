@@ -1600,6 +1600,8 @@ void CodeGen::genLclHeap(GenTree* tree)
     noway_assert(isFramePointerUsed()); // localloc requires Frame Pointer to be established since SP changes
     noway_assert(genStackLevel == 0);   // Can't have anything on the stack
 
+    bool const initMem = compiler->info.compInitMem || (tree->gtFlags & GTF_LCLHEAP_MUSTINIT);
+
     // compute the amount of memory to allocate to properly STACK_ALIGN.
     size_t amount = 0;
     if (size->IsCnsIntOrI())
@@ -1626,9 +1628,9 @@ void CodeGen::genLclHeap(GenTree* tree)
         emit->emitIns_J_cond_la(INS_beq, endLabel, targetReg, REG_R0);
 
         // Compute the size of the block to allocate and perform alignment.
-        // If compInitMem=true, we can reuse targetReg as regcnt,
+        // If initMem=true, we can reuse targetReg as regcnt,
         // since we don't need any internal registers.
-        if (compiler->info.compInitMem)
+        if (initMem)
         {
             assert(internalRegisters.Count(tree) == 0);
             regCnt = targetReg;
@@ -1680,7 +1682,7 @@ void CodeGen::genLclHeap(GenTree* tree)
         static_assert_no_msg(STACK_ALIGN == (REGSIZE_BYTES * 2));
         assert(amount % (REGSIZE_BYTES * 2) == 0); // stp stores two registers at a time
         size_t stpCount = amount / (REGSIZE_BYTES * 2);
-        if (compiler->info.compInitMem)
+        if (initMem)
         {
             if (stpCount <= 4)
             {
@@ -1727,10 +1729,10 @@ void CodeGen::genLclHeap(GenTree* tree)
         }
 
         // else, "mov regCnt, amount"
-        // If compInitMem=true, we can reuse targetReg as regcnt.
+        // If initMem=true, we can reuse targetReg as regcnt.
         // Since size is a constant, regCnt is not yet initialized.
         assert(regCnt == REG_NA);
-        if (compiler->info.compInitMem)
+        if (initMem)
         {
             assert(internalRegisters.Count(tree) == 0);
             regCnt = targetReg;
@@ -1742,7 +1744,7 @@ void CodeGen::genLclHeap(GenTree* tree)
         instGen_Set_Reg_To_Imm(((unsigned int)amount == amount) ? EA_4BYTE : EA_8BYTE, regCnt, amount);
     }
 
-    if (compiler->info.compInitMem)
+    if (initMem)
     {
         // At this point 'regCnt' is set to the total number of bytes to locAlloc.
         // Since we have to zero out the allocated memory AND ensure that the stack pointer is always valid
