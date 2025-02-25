@@ -790,6 +790,64 @@ void Lowering::ContainCheckBoundsChk(GenTreeBoundsChk* node)
     }
 }
 
+//------------------------------------------------------------------------
+// TryLowerIndirAfterIndexAddr: try to move offset value from GT_INDEX_ADDR to the following GT_INDIR node to eliminate
+// unecessary add instruction
+//
+// Arguments:
+//     node - GT_INDEX_ADDR node
+//     nextNode - next node to lower if offset successfully moved
+//
+//  Return Value:
+//     True if successfully moved offset value
+//
+bool Lowering::TryLowerIndirAfterIndexAddr(GenTreeIndexAddr* indexAddr, GenTree** nextNode)
+{
+    if (!indexAddr->gtNext->OperIs(GT_IND) || indexAddr->gtNext->AsIndir()->Addr() != indexAddr)
+    {
+        return false;
+    }
+
+    auto indexAddrOffset = indexAddr->gtElemOffset;
+    auto indir           = indexAddr->gtNext->AsIndir();
+
+    if (indir->Addr()->OperIs(GT_LEA))
+    {
+        auto indirAddr   = indir->Addr()->AsAddrMode();
+        auto indirOffset = indirAddr->Offset();
+        if (indexAddrOffset + indirOffset > 0x7ff)
+        {
+            return false;
+        }
+
+        indexAddr->gtElemOffset = 0;
+        indirAddr->SetOffset(indexAddrOffset + indirOffset);
+
+        ContainCheckIndir(indir);
+        *nextNode = indir;
+
+        return true;
+    }
+    else
+    {
+        if (indexAddrOffset > 0x7ff)
+        {
+            return false;
+        }
+
+        indexAddr->gtElemOffset = 0;
+
+        auto newAddr = Offset(indir->Addr(), indexAddrOffset);
+        BlockRange().InsertBefore(indir, newAddr);
+        *nextNode = newAddr;
+
+        indir->SetAddr(newAddr);
+        ContainCheckIndir(indir);
+
+        return true;
+    }
+}
+
 #ifdef FEATURE_SIMD
 //----------------------------------------------------------------------------------------------
 // ContainCheckSIMD: Perform containment analysis for a SIMD intrinsic node.
