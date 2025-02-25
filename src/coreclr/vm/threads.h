@@ -678,7 +678,7 @@ public:
     };
 
 public:
-    HRESULT DetachThread(BOOL fDLLThreadDetach);
+    HRESULT DetachThread(BOOL inTerminationCallback);
 
     void SetThreadState(ThreadState ts)
     {
