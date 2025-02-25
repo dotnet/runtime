@@ -75,6 +75,26 @@ namespace TestSub
                 fail = true;
             }
 
+            if (!SubsSingleLine(8, 8))
+            {
+                fail = true;
+            }
+
+            if (!SubsSingleLineLSL(32, 8))
+            {
+                fail = true;
+            }
+
+            if (SubsBinOp(8, 1, 5, 10) != 1)
+            {
+                fail = true;
+            }
+
+            if (!SubsBinOpSingleLine(8, 7, 9, 9))
+            {
+                fail = true;
+            }
+
             if (SubExtendedB(1, 0x1001) != 0)
             {
                 fail = true;
@@ -250,6 +270,39 @@ namespace TestSub
                 return 1;
             }
             return -1;
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static bool SubsSingleLine(int a, int b)
+        {
+            //ARM64-FULL-LINE: subs {{w[0-9]+}}, {{w[0-9]+}}, {{w[0-9]+}}
+            return a - b == 0;
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static bool SubsSingleLineLSL(int a, int b)
+        {
+            //ARM64-FULL-LINE: subs {{w[0-9]+}}, {{w[0-9]+}}, {{w[0-9]+}}, LSL #2
+            return a - (b<<2) == 0;
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static int SubsBinOp(int a, int b, int c, int d)
+        {
+            //ARM64-FULL-LINE: subs {{w[0-9]+}}, {{w[0-9]+}}, {{w[0-9]+}}, LSL #3
+            //ARM64-FULL-LINE: subs {{w[0-9]+}}, {{w[0-9]+}}, {{w[0-9]+}}, ASR #1
+            if ((a - (b<<3) == 0) == (c - (d>>1) == 0)) {
+                return 1;
+            }
+            return -1;
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static bool SubsBinOpSingleLine(int a, int b, int c, int d)
+        {
+            //ARM64-FULL-LINE: subs {{w[0-9]+}}, {{w[0-9]+}}, {{w[0-9]+}}
+            //ARM64-FULL-LINE: subs {{w[0-9]+}}, {{w[0-9]+}}, {{w[0-9]+}}
+            return (a - b == 0) | (c - d == 0);
         }
     }
 }
