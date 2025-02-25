@@ -14,13 +14,6 @@ ThreadDebugBlockingInfo::ThreadDebugBlockingInfo()
     m_firstBlockingItem = NULL;
 }
 
-//Destructor
-ThreadDebugBlockingInfo::~ThreadDebugBlockingInfo()
-{
-    WRAPPER_NO_CONTRACT;
-    _ASSERTE(m_firstBlockingItem == NULL);
-}
-
 // Adds a new blocking item at the front of the list
 // The caller is responsible for allocating the memory this points to and keeping it alive until
 // after PopBlockingItem is called

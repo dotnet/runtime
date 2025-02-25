@@ -51,7 +51,6 @@ private:
 
 public:
     ThreadDebugBlockingInfo();
-    ~ThreadDebugBlockingInfo();
 
 #ifndef DACCESS_COMPILE
     // Adds a new blocking item at the front of the list
