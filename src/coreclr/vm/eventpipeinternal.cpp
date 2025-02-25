@@ -192,7 +192,7 @@ extern "C" int QCALLTYPE EventPipeInternal_EventActivityIdControl(uint32_t contr
 
         case ActivityControlCode::EVENT_ACTIVITY_CONTROL_CREATE_ID:
 
-            minipal_guid_v4_create(reinterpret_cast<minipal_guid_t*>(pActivityId));
+            minipal_guid_v4_create(pActivityId);
             break;
 
         case ActivityControlCode::EVENT_ACTIVITY_CONTROL_GET_SET_ID:

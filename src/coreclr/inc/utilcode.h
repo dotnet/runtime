@@ -35,7 +35,8 @@ using std::nothrow;
 
 #include "contract.h"
 
-#include <minipal/utils.h>
+#include <stddef.h>
+#include <minipal/guid.h>
 #include <dn-u16.h>
 
 #include "clrnt.h"
@@ -149,13 +150,9 @@ typedef LPSTR   LPUTF8;
 #endif
 #endif
 
-#include <stddef.h> // for offsetof
-#include <minipal/utils.h>
-
 #define IS_DIGIT(ch) (((ch) >= W('0')) && ((ch) <= W('9')))
 #define DIGIT_TO_INT(ch) ((ch) - W('0'))
 #define INT_TO_DIGIT(i) ((WCHAR)(W('0') + (i)))
-
 
 // Helper will 4 byte align a value, rounding up.
 #define ALIGN4BYTE(val) (((val) + 3) & ~0x3)
@@ -3030,23 +3027,6 @@ private:
 
     BYTE m_inited;
 };
-
-// 38 characters + 1 null terminating.
-#define GUID_STR_BUFFER_LEN (ARRAY_SIZE("{12345678-1234-1234-1234-123456789abc}"))
-
-//*****************************************************************************
-// Convert a GUID into a pointer to a string
-//*****************************************************************************
-int GuidToLPSTR(
-    REFGUID guid,   // [IN] The GUID to convert.
-    LPSTR szGuid,   // [OUT] String into which the GUID is stored
-    DWORD cchGuid); // [IN] Size in chars of szGuid
-
-template<DWORD N>
-int GuidToLPSTR(REFGUID guid, CHAR (&s)[N])
-{
-    return GuidToLPSTR(guid, s, N);
-}
 
 //*****************************************************************************
 // Convert a pointer to a string into a GUID.
