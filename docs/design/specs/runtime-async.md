@@ -46,7 +46,7 @@ Async methods support the following suspension points:
 
 Each of the above methods will have semantics analogous to the current AsyncTaskMethodBuilder.AwaitOnCompleted/AwaitUnsafeOnCompleted methods. After calling this method, it can be presumed that the task has completed.
 
-Only local variables which are "hoisted" may be used across suspension points. That is, only "hoisted" local variables will have their state preserved after returning from a suspension. On methods with the `localsinit` flag set, non-"hoisted" local variables will be initialized to their default value when resuming from suspension. By-ref variables may not be hoisted across suspension, and any read of a by-ref variable after suspension will produce null.
+Local variables used across suspension points are considered "hoisted." That is, only "hoisted" local variables will have their state preserved after returning from a suspension. By-ref variables may not be hoisted across suspension, and any read of a by-ref variable after suspension will produce null.
 
 Async methods have some temporary restrictions with may be lifted later:
 * The `tail` prefix is forbidden
