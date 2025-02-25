@@ -89,12 +89,12 @@ namespace Microsoft.NET.Sdk.WebAssembly
             string resourceExtension = Path.GetExtension(resourceName);
             if (resourceName.StartsWith("dotnet.native.worker", StringComparison.OrdinalIgnoreCase) && string.Equals(resourceExtension, ".mjs", StringComparison.OrdinalIgnoreCase))
                 return bootConfig.resources.jsModuleWorker ??= new();
+            else if (resourceName.StartsWith("dotnet.diag", StringComparison.OrdinalIgnoreCase) && string.Equals(resourceExtension, ".js", StringComparison.OrdinalIgnoreCase))
+                return bootConfig.resources.jsModuleDiag ??= new();
             else if (resourceName.StartsWith("dotnet.native", StringComparison.OrdinalIgnoreCase) && string.Equals(resourceExtension, ".js", StringComparison.OrdinalIgnoreCase))
                 return bootConfig.resources.jsModuleNative ??= new();
             else if (resourceName.StartsWith("dotnet.runtime", StringComparison.OrdinalIgnoreCase) && string.Equals(resourceExtension, ".js", StringComparison.OrdinalIgnoreCase))
                 return bootConfig.resources.jsModuleRuntime ??= new();
-            else if (resourceName.StartsWith("dotnet.diag", StringComparison.OrdinalIgnoreCase) && string.Equals(resourceExtension, ".js", StringComparison.OrdinalIgnoreCase))
-                return bootConfig.resources.jsModuleDiag ??= new();
             else if (resourceName.StartsWith("dotnet.native", StringComparison.OrdinalIgnoreCase) && string.Equals(resourceExtension, ".wasm", StringComparison.OrdinalIgnoreCase))
                 return bootConfig.resources.wasmNative ??= new();
             else if (resourceName.StartsWith("dotnet", StringComparison.OrdinalIgnoreCase) && string.Equals(resourceExtension, ".js", StringComparison.OrdinalIgnoreCase))

@@ -83,8 +83,10 @@ public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string?
         EnsureProjectDirIsSet();
         return FindAndAssertDotnetFiles(binFrameworkDir: assertOptions.BinFrameworkDir,
                                         expectFingerprintOnDotnetJs: IsFingerprintingOnDotnetJsEnabled,
+                                        assertOptions,
                                         superSet: GetAllKnownDotnetFilesToFingerprintMap(assertOptions),
-                                        expected: GetDotNetFilesExpectedSet(assertOptions));
+                                        expected: GetDotNetFilesExpectedSet(assertOptions)
+                                        );
     }
 
     protected abstract IReadOnlyDictionary<string, bool> GetAllKnownDotnetFilesToFingerprintMap(AssertBundleOptions assertOptions);
@@ -93,6 +95,7 @@ public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string?
     public IReadOnlyDictionary<string, DotNetFileName> FindAndAssertDotnetFiles(
         string binFrameworkDir,
         bool expectFingerprintOnDotnetJs,
+        AssertBundleOptions assertOptions,
         IReadOnlyDictionary<string, bool> superSet,
         IReadOnlySet<string>? expected)
     {
@@ -101,7 +104,7 @@ public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string?
 
         if (!Directory.Exists(binFrameworkDir))
             throw new XunitException($"Could not find bundle directory {binFrameworkDir}");
-
+        StringBuilder msg = new();
         IList<string> dotnetFiles = Directory.EnumerateFiles(binFrameworkDir,
                                                              "dotnet.*",
                                                              SearchOption.TopDirectoryOnly)
@@ -111,12 +114,16 @@ public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string?
         {
             string prefix = Path.GetFileNameWithoutExtension(expectedFilename);
             string extension = Path.GetExtension(expectedFilename).Substring(1);
+            msg.AppendLine($"Outer: expectedFilename:{expectedFilename} expectFingerprint:{expectFingerprint} extension:{extension} prefix:{prefix}");
 
             dotnetFiles = dotnetFiles
                 .Where(actualFile =>
                 {
                     if (s_dotnetExtensionsToIgnore.Contains(Path.GetExtension(actualFile)))
+                    {
+                        msg.AppendLine($"   ignore {actualFile}");
                         return false;
+                    }
 
                     string actualFilename = Path.GetFileName(actualFile);
                     // _testOutput.WriteLine($"Comparing {expectedFilename} with {actualFile}, expectFingerprintOnDotnetJs: {expectFingerprintOnDotnetJs}, expectFingerprint: {expectFingerprint}");
@@ -127,8 +134,13 @@ public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string?
                         string pattern = $"^{prefix}{s_dotnetVersionHashRegex}{extension}$";
                         var match = Regex.Match(actualFilename, pattern);
                         if (!match.Success)
+                        {
+                            msg.AppendLine($"   FP no match expectedFilename:{expectedFilename} actualFile:{actualFile}");
                             return true;
 
+                        }
+
+                        msg.AppendLine($"   FP actual expectedFilename:{expectedFilename} actualFile:{actualFile}");
                         actual[expectedFilename] = new(ExpectedFilename: expectedFilename,
                                                        Hash: match.Groups[1].Value,
                                                        ActualPath: actualFile);
@@ -136,8 +148,12 @@ public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string?
                     else
                     {
                         if (actualFilename != expectedFilename)
+                        {
+                            msg.AppendLine($"   No FP no match expectedFilename:{expectedFilename} actualFile:{actualFile}");
                             return true;
+                        }
 
+                        msg.AppendLine($"   No FP actual expectedFilename:{expectedFilename} actualFile:{actualFile}");
                         actual[expectedFilename] = new(ExpectedFilename: expectedFilename,
                                                        Hash: null,
                                                        ActualPath: actualFile);
@@ -153,17 +169,23 @@ public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string?
 
         if (dotnetFiles.Any())
         {
+            var exp = expected!=null ? string.Join(", ", expected) : "";
             throw new XunitException($"Found unknown files in {binFrameworkDir}:{Environment.NewLine}    " +
                     $"{string.Join($"{Environment.NewLine}  ", dotnetFiles.Select(f => Path.GetRelativePath(binFrameworkDir, f)))}{Environment.NewLine}" +
-                    $"Add these to {nameof(GetAllKnownDotnetFilesToFingerprintMap)} method");
+                    $"Add these to {nameof(GetAllKnownDotnetFilesToFingerprintMap)} method{Environment.NewLine}" + 
+                    $"Expected {exp}{Environment.NewLine}" + 
+                    $"Options {assertOptions} {Environment.NewLine}" +
+                    $"Log {msg}"
+                    );
         }
 
         if (expected is not null)
-            AssertDotNetFilesSet(expected, superSet, actual, expectFingerprintOnDotnetJs, binFrameworkDir);
+            AssertDotNetFilesSet(assertOptions, expected, superSet, actual, expectFingerprintOnDotnetJs, binFrameworkDir);
         return actual;
     }
 
     private void AssertDotNetFilesSet(
+        AssertBundleOptions assertOptions,
         IReadOnlySet<string> expected,
         IReadOnlyDictionary<string, bool> superSet,
         IReadOnlyDictionary<string, DotNetFileName> actualReadOnly,
@@ -177,7 +199,7 @@ public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string?
         {
             bool expectFingerprint = superSet[expectedFilename];
 
-            Assert.True(actual.ContainsKey(expectedFilename), $"Could not find {expectedFilename} in bundle directory: {bundleDir}. Actual files on disk: {string.Join(", ", actual.Keys)}");
+            Assert.True(actual.ContainsKey(expectedFilename), $"Could not find {expectedFilename} in bundle directory: {bundleDir}. Actual files on disk: {string.Join(", ", actual.Keys)} Options {assertOptions}");
 
             // Check that the version and hash are present or not present as expected
             if (ShouldCheckFingerprint(expectedFilename: expectedFilename,
@@ -185,12 +207,12 @@ public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string?
                                        expectFingerprintForThisFile: expectFingerprint))
             {
                 if (string.IsNullOrEmpty(actual[expectedFilename].Hash))
-                    throw new XunitException($"Expected hash in filename: {actual[expectedFilename].ActualPath}");
+                    throw new XunitException($"Expected hash in filename: {actual[expectedFilename].ActualPath} Options {assertOptions}");
             }
             else
             {
                 if (!string.IsNullOrEmpty(actual[expectedFilename].Hash))
-                    throw new XunitException($"Expected no hash in filename: {actual[expectedFilename].ActualPath}");
+                    throw new XunitException($"Expected no hash in filename: {actual[expectedFilename].ActualPath} Options {assertOptions}");
             }
             actual.Remove(expectedFilename);
         }
@@ -198,7 +220,7 @@ public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string?
         if (actual.Any())
         {
             var actualFileNames = actual.Values.Select(x => x.ActualPath).Order();
-            throw new XunitException($"Found unexpected files: {string.Join(", ", actualFileNames)}");
+            throw new XunitException($"Found unexpected files: {string.Join(", ", actualFileNames)} Options {assertOptions}");
         }
     }
 

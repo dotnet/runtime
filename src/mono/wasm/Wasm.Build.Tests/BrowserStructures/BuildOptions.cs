@@ -26,7 +26,7 @@ public record BuildOptions : MSBuildOptions
         string BootConfigFileName                                   = "blazor.boot.json",
         string NonDefaultFrameworkDir                               = "",
         string ExtraMSBuildArgs                                     = "",
-        bool PerfTracingEnabled                                     = false
+        bool FeaturePerfTracing                                     = false
     ) : base(
         IsPublish,
         AOT,
@@ -44,7 +44,7 @@ public record BuildOptions : MSBuildOptions
         BootConfigFileName,
         NonDefaultFrameworkDir,
         ExtraMSBuildArgs,
-        PerfTracingEnabled
+        FeaturePerfTracing
     )
     {
     }

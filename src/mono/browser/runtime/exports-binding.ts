@@ -13,7 +13,6 @@ import { mono_wasm_resolve_or_reject_promise } from "./marshal-to-js";
 import { mono_wasm_schedule_timer, schedule_background_exec } from "./scheduling";
 import { mono_wasm_asm_loaded } from "./startup";
 import { mono_log_warn, mono_wasm_console_clear, mono_wasm_trace_logger } from "./logging";
-import { mono_wasm_profiler_record, mono_wasm_profiler_now, ds_rt_websocket_close, ds_rt_websocket_create, ds_rt_websocket_poll, ds_rt_websocket_recv, ds_rt_websocket_send } from "./profiler";
 import { mono_wasm_browser_entropy } from "./crypto";
 import { mono_wasm_cancel_promise } from "./cancelable-promise";
 
@@ -25,6 +24,8 @@ import {
 import { mono_wasm_dump_threads } from "./pthreads/ui-thread";
 import { mono_wasm_schedule_synchronization_context } from "./pthreads/shared";
 import { mono_wasm_get_locale_info } from "./globalization-locale";
+
+import { mono_wasm_profiler_record, mono_wasm_profiler_now } from "./profiler";
 import { ds_rt_websocket_create, ds_rt_websocket_send, ds_rt_websocket_poll, ds_rt_websocket_recv, ds_rt_websocket_close } from "./diagnostics";
 
 // the JS methods would be visible to EMCC linker and become imports of the WASM module
@@ -50,6 +51,9 @@ export const mono_wasm_threads_imports = !WasmEnableThreads ? [] : [
 ];
 
 export const mono_wasm_diag_imports = [
+    mono_wasm_profiler_now,
+    mono_wasm_profiler_record,
+
     //event pipe
     ds_rt_websocket_create,
     ds_rt_websocket_send,
@@ -80,9 +84,6 @@ export const mono_wasm_imports = [
     mono_interp_flush_jitcall_queue,
     mono_wasm_free_method_data,
 
-    mono_wasm_profiler_now,
-    mono_wasm_profiler_record,
-
     // driver.c
     mono_wasm_trace_logger,
     mono_wasm_set_entrypoint_breakpoint,
@@ -99,13 +100,6 @@ export const mono_wasm_imports = [
     mono_wasm_resolve_or_reject_promise,
     mono_wasm_cancel_promise,
     mono_wasm_get_locale_info,
-
-    //event pipe
-    ds_rt_websocket_create,
-    ds_rt_websocket_send,
-    ds_rt_websocket_poll,
-    ds_rt_websocket_recv,
-    ds_rt_websocket_close,
 ];
 
 // !!! Keep in sync with exports-linker.ts

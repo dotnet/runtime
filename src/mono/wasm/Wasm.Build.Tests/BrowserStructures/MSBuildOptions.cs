@@ -25,5 +25,5 @@ public abstract record MSBuildOptions
     string                          BootConfigFileName              = "blazor.boot.json",
     string                          NonDefaultFrameworkDir          = "",
     string                          ExtraMSBuildArgs                = "",
-    bool                            PerfTracingEnabled              = false
+    bool                            FeaturePerfTracing              = false
 );

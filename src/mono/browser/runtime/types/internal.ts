@@ -509,6 +509,7 @@ export type RuntimeModuleExportsInternal = {
     configureWorkerStartup: configureWorkerStartupType,
     passEmscriptenInternals: passEmscriptenInternalsType,
 }
+
 export type DiagModuleExportsInternal = {
     setRuntimeGlobals: setGlobalObjectsType,
 }

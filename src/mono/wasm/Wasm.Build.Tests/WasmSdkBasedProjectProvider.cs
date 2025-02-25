@@ -62,7 +62,7 @@ public class WasmSdkBasedProjectProvider : ProjectProviderBase
         if (assertOptions.AssertSymbolsFile && assertOptions.ExpectSymbolsFile)
             res.Add("dotnet.native.js.symbols");
 
-        if (assertOptions.BuildOptions.PerfTracingEnabled)
+        if (assertOptions.BuildOptions.FeaturePerfTracing)
         {
             res.Add("dotnet.diag.js");
             if (!assertOptions.BuildOptions.IsPublish)
