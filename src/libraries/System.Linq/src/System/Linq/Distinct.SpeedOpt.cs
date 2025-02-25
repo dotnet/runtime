@@ -16,6 +16,8 @@ namespace System.Linq
             public override int GetCount(bool onlyIfCheap) => onlyIfCheap ? -1 : new HashSet<TSource>(_source, _comparer).Count;
 
             public override TSource? TryGetFirst(out bool found) => _source.TryGetFirst(out found);
+
+            public override bool Contains(TSource value) => _source.Contains(value);
         }
     }
 }

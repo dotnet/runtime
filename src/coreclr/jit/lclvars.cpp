@@ -444,7 +444,7 @@ void Compiler::lvaInitArgs(InitVarDscInfo* varDscInfo)
        instruction can only pop 2^16 arguments. Could be handled correctly
        but it will be very difficult for fully interruptible code */
 
-    if (compArgSize != (size_t)(unsigned short)compArgSize)
+    if (lvaParameterStackSize != (size_t)(unsigned short)lvaParameterStackSize)
         IMPL_LIMITATION("Too many arguments for the \"ret\" instruction to pop");
 #endif
 }
@@ -739,7 +739,6 @@ void Compiler::lvaInitUserArgs(InitVarDscInfo* varDscInfo, unsigned skipArgs, un
         switch (origArgType)
         {
             case TYP_STRUCT:
-                assert(varDsc->lvSize() == argSize);
                 cAlign = varDsc->lvStructDoubleAlign ? 2 : 1;
 
                 // HFA arguments go on the stack frame. They don't get spilled in the prolog like struct
@@ -2556,7 +2555,7 @@ bool Compiler::StructPromotionHelper::CanPromoteStructVar(unsigned lclNum)
                 // promotion of non FP or SIMD type fields is disallowed.
                 // TODO-1stClassStructs: add support in Lowering and prolog generation
                 // to enable promoting these types.
-                if (varDsc->lvIsParam && (varDsc->lvIsHfa() != varTypeUsesFloatReg(fieldType)))
+                if (varDsc->lvIsParam && (IsArmHfaParameter(lclNum) != varTypeUsesFloatReg(fieldType)))
                 {
                     canPromote = false;
                 }
@@ -2614,6 +2613,28 @@ bool Compiler::StructPromotionHelper::CanPromoteStructVar(unsigned lclNum)
 }
 
 //--------------------------------------------------------------------------------------------
+// IsArmHfaParameter - Check if a local is an ARM or ARM64 HFA parameter.
+// This is a quirk to match old promotion behavior.
+//
+// Arguments:
+//   lclNum - The local
+//
+// Return value:
+//   True if it is an HFA parameter.
+//
+bool Compiler::StructPromotionHelper::IsArmHfaParameter(unsigned lclNum)
+{
+    if (!GlobalJitOptions::compFeatureHfa)
+    {
+        return false;
+    }
+
+    CorInfoHFAElemType hfaType =
+        compiler->info.compCompHnd->getHFAType(compiler->lvaGetDesc(lclNum)->GetLayout()->GetClassHandle());
+    return hfaType != CORINFO_HFA_ELEM_NONE;
+}
+
+//--------------------------------------------------------------------------------------------
 // ShouldPromoteStructVar - Should a struct var be promoted if it can be promoted?
 // This routine mainly performs profitability checks.  Right now it also has
 // some correctness checks due to limitations of down-stream phases.
@@ -2667,7 +2688,7 @@ bool Compiler::StructPromotionHelper::ShouldPromoteStructVar(unsigned lclNum)
         shouldPromote = false;
     }
 #endif // TARGET_LOONGARCH64 || TARGET_RISCV64
-    else if (varDsc->lvIsParam && !compiler->lvaIsImplicitByRefLocal(lclNum) && !varDsc->lvIsHfa())
+    else if (varDsc->lvIsParam && !compiler->lvaIsImplicitByRefLocal(lclNum) && !IsArmHfaParameter(lclNum))
     {
 #if FEATURE_MULTIREG_STRUCT_PROMOTE
         // Is this a variable holding a value with exactly two fields passed in
@@ -2913,7 +2934,8 @@ void Compiler::StructPromotionHelper::PromoteStructVar(unsigned lclNum)
                 if (varTypeIsValidHfaType(hfaType))
                 {
                     fieldVarDsc->SetHfaType(hfaType);
-                    fieldVarDsc->lvIsMultiRegArg = (varDsc->lvIsMultiRegArg != 0) && (fieldVarDsc->lvHfaSlots() > 1);
+                    fieldVarDsc->lvIsMultiRegArg =
+                        (varDsc->lvIsMultiRegArg != 0) && (fieldVarDsc->lvExactSize() > genTypeSize(hfaType));
                 }
             }
         }
@@ -3710,7 +3732,7 @@ void Compiler::lvaUpdateClass(unsigned varNum, GenTree* tree, CORINFO_CLASS_HAND
 }
 
 //------------------------------------------------------------------------
-// lvaLclSize: returns size of a local variable, in bytes
+// lvaLclStackHomeSize: returns size of stack home of a local variable, in bytes
 //
 // Arguments:
 //    varNum -- variable to query
@@ -3718,26 +3740,56 @@ void Compiler::lvaUpdateClass(unsigned varNum, GenTree* tree, CORINFO_CLASS_HAND
 // Returns:
 //    Number of bytes needed on the frame for such a local.
 //
-unsigned Compiler::lvaLclSize(unsigned varNum)
+unsigned Compiler::lvaLclStackHomeSize(unsigned varNum)
 {
     assert(varNum < lvaCount);
 
-    var_types varType = lvaTable[varNum].TypeGet();
+    LclVarDsc* varDsc  = lvaGetDesc(varNum);
+    var_types  varType = varDsc->TypeGet();
 
-    if (varType == TYP_STRUCT)
+    if (!varTypeIsStruct(varType))
     {
-        return lvaTable[varNum].lvSize();
-    }
-
 #ifdef TARGET_64BIT
-    // We only need this Quirk for TARGET_64BIT
-    if (lvaTable[varNum].lvQuirkToLong)
-    {
-        noway_assert(lvaTable[varNum].IsAddressExposed());
-        return genTypeStSz(TYP_LONG) * sizeof(int); // return 8  (2 * 4)
-    }
+        // We only need this Quirk for TARGET_64BIT
+        if (varDsc->lvQuirkToLong)
+        {
+            noway_assert(varDsc->IsAddressExposed());
+            return genTypeStSz(TYP_LONG) * sizeof(int); // return 8  (2 * 4)
+        }
 #endif
-    return genTypeStSz(varType) * sizeof(int);
+
+        return genTypeStSz(varType) * sizeof(int);
+    }
+
+    if (varDsc->lvIsParam && !varDsc->lvIsStructField)
+    {
+        // If this parameter was passed on the stack then we often reuse that
+        // space for its home. Take into account that this space might actually
+        // not be pointer-sized for some cases (macos-arm64 ABI currently).
+        const ABIPassingInformation& abiInfo = lvaGetParameterABIInfo(varNum);
+        if (abiInfo.HasExactlyOneStackSegment())
+        {
+            return abiInfo.Segment(0).GetStackSize();
+        }
+
+        // There are other cases where the caller has allocated space for the
+        // parameter, like windows-x64 with shadow space for register
+        // parameters, but in those cases this rounding is fine.
+        return roundUp(varDsc->lvExactSize(), TARGET_POINTER_SIZE);
+    }
+
+#if defined(FEATURE_SIMD) && !defined(TARGET_64BIT)
+    // For 32-bit architectures, we make local variable SIMD12 types 16 bytes instead of just 12. We can't do
+    // this for arguments, which must be passed according the defined ABI. We don't want to do this for
+    // dependently promoted struct fields, but we don't know that here. See lvaMapSimd12ToSimd16().
+    // (Note that for 64-bits, we are already rounding up to 16.)
+    if (varDsc->TypeGet() == TYP_SIMD12)
+    {
+        return 16;
+    }
+#endif // defined(FEATURE_SIMD) && !defined(TARGET_64BIT)
+
+    return roundUp(varDsc->lvExactSize(), TARGET_POINTER_SIZE);
 }
 
 //
@@ -4203,93 +4255,6 @@ void Compiler::lvaSortByRefCount()
 unsigned LclVarDsc::lvExactSize() const
 {
     return (lvType == TYP_STRUCT) ? GetLayout()->GetSize() : genTypeSize(lvType);
-}
-
-//------------------------------------------------------------------------
-// lvSize: Get the size of a struct local on the stack frame.
-//
-// Return Value:
-//    Size in bytes.
-//
-unsigned LclVarDsc::lvSize() const // Size needed for storage representation. Only used for structs.
-{
-    // TODO-Review: Sometimes we get called on ARM with HFA struct variables that have been promoted,
-    // where the struct itself is no longer used because all access is via its member fields.
-    // When that happens, the struct is marked as unused and its type has been changed to
-    // TYP_INT (to keep the GC tracking code from looking at it).
-    // See Compiler::raAssignVars() for details. For example:
-    //      N002 (  4,  3) [00EA067C] -------------               return    struct $346
-    //      N001 (  3,  2) [00EA0628] -------------                  lclVar    struct(U) V03 loc2
-    //                                                                        float  V03.f1 (offs=0x00) -> V12 tmp7
-    //                                                                        f8 (last use) (last use) $345
-    // Here, the "struct(U)" shows that the "V03 loc2" variable is unused. Not shown is that V03
-    // is now TYP_INT in the local variable table. It's not really unused, because it's in the tree.
-
-    assert(varTypeIsStruct(lvType) || (lvPromoted && lvUnusedStruct));
-
-    if (lvIsParam)
-    {
-        assert(varTypeIsStruct(lvType));
-        const bool     isFloatHfa       = (lvIsHfa() && (GetHfaType() == TYP_FLOAT));
-        const unsigned argSizeAlignment = Compiler::eeGetArgSizeAlignment(lvType, isFloatHfa);
-        return roundUp(lvExactSize(), argSizeAlignment);
-    }
-
-#if defined(FEATURE_SIMD) && !defined(TARGET_64BIT)
-    // For 32-bit architectures, we make local variable SIMD12 types 16 bytes instead of just 12. We can't do
-    // this for arguments, which must be passed according the defined ABI. We don't want to do this for
-    // dependently promoted struct fields, but we don't know that here. See lvaMapSimd12ToSimd16().
-    // (Note that for 64-bits, we are already rounding up to 16.)
-    if (lvType == TYP_SIMD12)
-    {
-        assert(!lvIsParam);
-        return 16;
-    }
-#endif // defined(FEATURE_SIMD) && !defined(TARGET_64BIT)
-
-    return roundUp(lvExactSize(), TARGET_POINTER_SIZE);
-}
-
-/**********************************************************************************
- * Get stack size of the varDsc.
- */
-size_t LclVarDsc::lvArgStackSize() const
-{
-    // Make sure this will have a stack size
-    assert(!this->lvIsRegArg);
-
-    size_t stackSize = 0;
-    if (varTypeIsStruct(this))
-    {
-#if defined(WINDOWS_AMD64_ABI)
-        // Structs are either passed by reference or can be passed by value using one pointer
-        stackSize = TARGET_POINTER_SIZE;
-#elif defined(TARGET_ARM64) || defined(UNIX_AMD64_ABI) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
-        // lvSize performs a roundup.
-        stackSize = this->lvSize();
-
-#if defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
-        if ((stackSize > TARGET_POINTER_SIZE * 2) && (!this->lvIsHfa()))
-        {
-            // If the size is greater than 16 bytes then it will
-            // be passed by reference.
-            stackSize = TARGET_POINTER_SIZE;
-        }
-#endif // defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
-
-#else // !TARGET_ARM64 !WINDOWS_AMD64_ABI !UNIX_AMD64_ABI !TARGET_LOONGARCH64 !TARGET_RISCV64
-
-        NYI("Unsupported target.");
-        unreached();
-
-#endif //  !TARGET_ARM64 !WINDOWS_AMD64_ABI !UNIX_AMD64_ABI
-    }
-    else
-    {
-        stackSize = TARGET_POINTER_SIZE;
-    }
-
-    return stackSize;
 }
 
 //------------------------------------------------------------------------
@@ -5634,7 +5599,7 @@ void Compiler::lvaFixVirtualFrameOffsets()
         varDsc = lvaGetDesc(lvaPSPSym);
         assert(varDsc->lvFramePointerBased); // We always access it RBP-relative.
         assert(!varDsc->lvMustInit);         // It is never "must init".
-        varDsc->SetStackOffset(codeGen->genCallerSPtoInitialSPdelta() + lvaLclSize(lvaOutgoingArgSpaceVar));
+        varDsc->SetStackOffset(codeGen->genCallerSPtoInitialSPdelta() + lvaLclStackHomeSize(lvaOutgoingArgSpaceVar));
 
         if (opts.IsOSR())
         {
@@ -5717,7 +5682,7 @@ void Compiler::lvaFixVirtualFrameOffsets()
                 delta += TARGET_POINTER_SIZE;
             }
 
-            delta += lvaLclSize(lvaMonAcquired);
+            delta += lvaLclStackHomeSize(lvaMonAcquired);
         }
         else if (lvaPSPSym != BAD_VAR_NUM)
         {
@@ -6284,7 +6249,7 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
             // This var must go first, in what is called the 'frame header' for EnC so that it is
             // preserved when remapping occurs.  See vm\eetwain.cpp for detailed comment specifying frame
             // layout requirements for EnC to work.
-            stkOffs = lvaAllocLocalAndSetVirtualOffset(lvaMonAcquired, lvaLclSize(lvaMonAcquired), stkOffs);
+            stkOffs = lvaAllocLocalAndSetVirtualOffset(lvaMonAcquired, lvaLclStackHomeSize(lvaMonAcquired), stkOffs);
         }
     }
 
@@ -6409,7 +6374,8 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
                 stkOffs -= TARGET_POINTER_SIZE;
             }
         }
-        stkOffs = lvaAllocLocalAndSetVirtualOffset(lvaShadowSPslotsVar, lvaLclSize(lvaShadowSPslotsVar), stkOffs);
+        stkOffs =
+            lvaAllocLocalAndSetVirtualOffset(lvaShadowSPslotsVar, lvaLclStackHomeSize(lvaShadowSPslotsVar), stkOffs);
     }
 #endif // FEATURE_EH_WINDOWS_X86
 
@@ -6419,7 +6385,8 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
 
         if (!opts.IsOSR() || !info.compPatchpointInfo->HasSecurityCookie())
         {
-            stkOffs = lvaAllocLocalAndSetVirtualOffset(lvaGSSecurityCookie, lvaLclSize(lvaGSSecurityCookie), stkOffs);
+            stkOffs = lvaAllocLocalAndSetVirtualOffset(lvaGSSecurityCookie, lvaLclStackHomeSize(lvaGSSecurityCookie),
+                                                       stkOffs);
         }
     }
 
@@ -6746,7 +6713,7 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
             }
 
             // Reserve the stack space for this variable
-            stkOffs = lvaAllocLocalAndSetVirtualOffset(lclNum, lvaLclSize(lclNum), stkOffs);
+            stkOffs = lvaAllocLocalAndSetVirtualOffset(lclNum, lvaLclStackHomeSize(lclNum), stkOffs);
 #if defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
             // If we have an incoming register argument that has a promoted field then we
             // need to copy the lvStkOff (the stack home) from the reg arg to the field lclvar
@@ -6769,7 +6736,8 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
         if (!opts.IsOSR() || !info.compPatchpointInfo->HasSecurityCookie())
         {
             // LOCALLOC used, but we have no unsafe buffer.  Allocated cookie last, close to localloc buffer.
-            stkOffs = lvaAllocLocalAndSetVirtualOffset(lvaGSSecurityCookie, lvaLclSize(lvaGSSecurityCookie), stkOffs);
+            stkOffs = lvaAllocLocalAndSetVirtualOffset(lvaGSSecurityCookie, lvaLclStackHomeSize(lvaGSSecurityCookie),
+                                                       stkOffs);
         }
     }
 
@@ -6859,7 +6827,8 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
         // Since this will always use an SP relative offset of zero
         // at the end of lvaFixVirtualFrameOffsets, it will be set to absolute '0'
 
-        stkOffs = lvaAllocLocalAndSetVirtualOffset(lvaOutgoingArgSpaceVar, lvaLclSize(lvaOutgoingArgSpaceVar), stkOffs);
+        stkOffs = lvaAllocLocalAndSetVirtualOffset(lvaOutgoingArgSpaceVar, lvaLclStackHomeSize(lvaOutgoingArgSpaceVar),
+                                                   stkOffs);
     }
 #endif // FEATURE_FIXED_OUT_ARGS
 
@@ -7486,7 +7455,7 @@ void Compiler::lvaDumpEntry(unsigned lclNum, FrameLayoutState curState, size_t r
         printf(" %7s ", varTypeName(type));
         if (genTypeSize(type) == 0)
         {
-            printf("(%2d) ", lvaLclSize(lclNum));
+            printf("(%2d) ", lvaLclStackHomeSize(lclNum));
         }
         else
         {
@@ -8199,7 +8168,7 @@ Compiler::fgWalkResult Compiler::lvaStressLclFldCB(GenTree** pTree, fgWalkData* 
         if (varType != TYP_STRUCT)
         {
             // Change the variable to a custom layout struct
-            unsigned           size = roundUp(padding + pComp->lvaLclSize(lclNum), TARGET_POINTER_SIZE);
+            unsigned           size = roundUp(padding + pComp->lvaLclStackHomeSize(lclNum), TARGET_POINTER_SIZE);
             ClassLayoutBuilder builder(pComp, size);
 #ifdef DEBUG
             builder.SetName(pComp->printfAlloc("%s_%u_Stress", varTypeName(varType), size),
