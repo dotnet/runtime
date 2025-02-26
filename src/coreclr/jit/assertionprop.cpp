@@ -793,7 +793,9 @@ void Compiler::optPrintAssertion(AssertionDsc* curAssertion, AssertionIndex asse
     }
     else if (curAssertion->op1.kind == O1K_VN)
     {
-        printf("[" FMT_VN "]", curAssertion->op1.vn);
+        printf("[vn: " FMT_VN, curAssertion->op1.vn);
+        vnStore->vnDump(this, curAssertion->op1.vn);
+        printf("]");
     }
     else if (curAssertion->op1.kind == O1K_BOUND_OPER_BND)
     {
@@ -1131,6 +1133,13 @@ AssertionIndex Compiler::optCreateAssertion(GenTree*         op1,
             assertion.op1.kind           = O1K_ARR_BND;
             assertion.op1.bnd.vnIdx      = optConservativeNormalVN(arrBndsChk->GetIndex());
             assertion.op1.bnd.vnLen      = optConservativeNormalVN(arrBndsChk->GetArrayLength());
+
+            if ((assertion.op1.bnd.vnIdx == ValueNumStore::NoVN) || (assertion.op1.bnd.vnLen == ValueNumStore::NoVN))
+            {
+                // Don't make an assertion if one of the operands has no VN
+                return NO_ASSERTION_INDEX;
+            }
+
             goto DONE_ASSERTION;
         }
     }
@@ -1979,6 +1988,30 @@ void Compiler::optCreateComplementaryAssertion(AssertionIndex assertionIndex,
 
     if (candidateAssertion.assertionKind == OAK_EQUAL)
     {
+        // Don't create useless OAK_NOT_EQUAL assertions
+
+        if ((candidateAssertion.op1.kind == O1K_LCLVAR) || (candidateAssertion.op1.kind == O1K_VN))
+        {
+            // "LCLVAR != CNS" is not a useful assertion (unless CNS is 0/1)
+            if (((candidateAssertion.op2.kind == O2K_CONST_INT) || (candidateAssertion.op2.kind == O2K_CONST_LONG)) &&
+                (candidateAssertion.op2.u1.iconVal != 0) && (candidateAssertion.op2.u1.iconVal != 1))
+            {
+                return;
+            }
+
+            // "LCLVAR != LCLVAR_COPY"
+            if (candidateAssertion.op2.kind == O2K_LCLVAR_COPY)
+            {
+                return;
+            }
+        }
+
+        // "Object is not Class" is also not a useful assertion (at least for now)
+        if ((candidateAssertion.op1.kind == O1K_EXACT_TYPE) || (candidateAssertion.op1.kind == O1K_SUBTYPE))
+        {
+            return;
+        }
+
         AssertionIndex index = optCreateAssertion(op1, op2, OAK_NOT_EQUAL, helperCallArgs);
         optMapComplementary(index, assertionIndex);
     }
@@ -1986,12 +2019,6 @@ void Compiler::optCreateComplementaryAssertion(AssertionIndex assertionIndex,
     {
         AssertionIndex index = optCreateAssertion(op1, op2, OAK_EQUAL, helperCallArgs);
         optMapComplementary(index, assertionIndex);
-    }
-
-    // Are we making a subtype or exact type assertion?
-    if ((candidateAssertion.op1.kind == O1K_SUBTYPE) || (candidateAssertion.op1.kind == O1K_EXACT_TYPE))
-    {
-        optCreateAssertion(op1, nullptr, OAK_NOT_EQUAL);
     }
 }
 
@@ -2153,6 +2180,12 @@ AssertionInfo Compiler::optCreateJTrueBoundsAssertion(GenTree* tree)
         dsc.op1.bnd.vnLen = vnStore->VNNormalValue(unsignedCompareBnd.vnBound);
         dsc.op2.kind      = O2K_INVALID;
         dsc.op2.vn        = ValueNumStore::NoVN;
+
+        if ((dsc.op1.bnd.vnIdx == ValueNumStore::NoVN) || (dsc.op1.bnd.vnLen == ValueNumStore::NoVN))
+        {
+            // Don't make an assertion if one of the operands has no VN
+            return NO_ASSERTION_INDEX;
+        }
 
         AssertionIndex index = optAddAssertion(&dsc);
         if (unsignedCompareBnd.cmpOper == VNF_GE_UN)
