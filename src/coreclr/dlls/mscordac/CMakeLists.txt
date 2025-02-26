@@ -45,7 +45,11 @@ else(CLR_CMAKE_HOST_WIN32)
         # Generate DAC export file with the DAC_ prefix
         generate_exports_file_prefix(${DEF_SOURCES} ${EXPORTS_FILE} DAC_)
 
-        set(REDEFINES_FILE_SCRIPT ${CMAKE_SOURCE_DIR}/generateredefinesfile.sh)
+        if (CMAKE_HOST_SYSTEM_NAME STREQUAL "Windows")
+            set(REDEFINES_FILE_SCRIPT ${CMAKE_SOURCE_DIR}/generateredefinesfile.ps1)
+        else()
+            set(REDEFINES_FILE_SCRIPT ${CMAKE_SOURCE_DIR}/generateredefinesfile.sh)
+        endif()
 
         if (CLR_CMAKE_HOST_ARCH_ARM OR CLR_CMAKE_HOST_ARCH_ARM64 OR CLR_CMAKE_HOST_ARCH_LOONGARCH64)
             set(JUMP_INSTRUCTION b)
@@ -57,23 +61,46 @@ else(CLR_CMAKE_HOST_WIN32)
 
         # Generate the palredefines.inc file to map from the imported prefixed APIs (foo to DAC_foo)
         set(PAL_REDEFINES_INC ${GENERATED_INCLUDE_DIR}/palredefines.inc)
-        add_custom_command(
-            OUTPUT ${PAL_REDEFINES_INC}
-            COMMAND ${REDEFINES_FILE_SCRIPT} ${DEF_SOURCES} ${JUMP_INSTRUCTION} "" DAC_ > ${PAL_REDEFINES_INC}
-            DEPENDS ${DEF_SOURCES} ${REDEFINES_FILE_SCRIPT}
-            COMMENT "Generating PAL redefines file -> ${PAL_REDEFINES_INC}"
-            VERBATIM
-        )
+
+        # Win32 may be false when cross compiling
+        if (CMAKE_HOST_SYSTEM_NAME STREQUAL "Windows")
+            add_custom_command(
+                OUTPUT ${PAL_REDEFINES_INC}
+                COMMAND powershell -NoProfile -ExecutionPolicy ByPass -File \"${REDEFINES_FILE_SCRIPT}\" -filename \"${DEF_SOURCES}\" -jump ${JUMP_INSTRUCTION} -prefix1 \"\" -prefix2 \"DAC_\" > ${PAL_REDEFINES_INC}
+                DEPENDS ${DEF_SOURCES} ${REDEFINES_FILE_SCRIPT}
+                COMMENT "Generating PAL redefines file -> ${PAL_REDEFINES_INC}"
+            )
+        else()
+            add_custom_command(
+                OUTPUT ${PAL_REDEFINES_INC}
+                COMMAND ${REDEFINES_FILE_SCRIPT} ${DEF_SOURCES} ${JUMP_INSTRUCTION} "" DAC_ > ${PAL_REDEFINES_INC}
+                DEPENDS ${DEF_SOURCES} ${REDEFINES_FILE_SCRIPT}
+                COMMENT "Generating PAL redefines file -> ${PAL_REDEFINES_INC}"
+                VERBATIM
+            )
+        endif()
         add_custom_target(pal_redefines_file DEPENDS ${PAL_REDEFINES_INC})
 
         # Generate the libredefines.inc file for the DAC to export the prefixed APIs (DAC_foo to foo)
         set(LIB_REDEFINES_INC ${GENERATED_INCLUDE_DIR}/libredefines.inc)
-        add_custom_command(
-            OUTPUT ${LIB_REDEFINES_INC}
-            COMMAND ${REDEFINES_FILE_SCRIPT} ${DEF_SOURCES} ${JUMP_INSTRUCTION} DAC_ > ${LIB_REDEFINES_INC}
-            DEPENDS ${DEF_SOURCES} ${REDEFINES_FILE_SCRIPT}
-            COMMENT "Generating DAC export redefines file -> ${LIB_REDEFINES_INC}"
-        )
+
+        # Win32 may be false when cross compiling
+        if (CMAKE_HOST_SYSTEM_NAME STREQUAL "Windows")
+            add_custom_command(
+                OUTPUT ${LIB_REDEFINES_INC}
+                COMMAND powershell -NoProfile -ExecutionPolicy ByPass -File \"${REDEFINES_FILE_SCRIPT}\" -filename \"${DEF_SOURCES}\" -jump ${JUMP_INSTRUCTION} -prefix1 \"DAC_\" > ${LIB_REDEFINES_INC}
+                DEPENDS ${DEF_SOURCES} ${REDEFINES_FILE_SCRIPT}
+                COMMENT "Generating DAC export redefines file -> ${LIB_REDEFINES_INC}"
+            )
+        else()
+            add_custom_command(
+                OUTPUT ${LIB_REDEFINES_INC}
+                COMMAND ${REDEFINES_FILE_SCRIPT} ${DEF_SOURCES} ${JUMP_INSTRUCTION} DAC_ > ${LIB_REDEFINES_INC}
+                DEPENDS ${DEF_SOURCES} ${REDEFINES_FILE_SCRIPT}
+                COMMENT "Generating DAC export redefines file -> ${LIB_REDEFINES_INC}"
+                VERBATIM
+            )
+        endif()
         add_custom_target(lib_redefines_inc DEPENDS ${LIB_REDEFINES_INC})
 
         # Add lib redefines file to DAC

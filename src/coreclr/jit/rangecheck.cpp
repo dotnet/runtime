@@ -14,6 +14,11 @@
 //
 PhaseStatus Compiler::rangeCheckPhase()
 {
+    if (!doesMethodHaveBoundsChecks() || (fgSsaPassesCompleted == 0))
+    {
+        return PhaseStatus::MODIFIED_NOTHING;
+    }
+
     RangeCheck rc(this);
     const bool madeChanges = rc.OptimizeRangeChecks();
     return madeChanges ? PhaseStatus::MODIFIED_EVERYTHING : PhaseStatus::MODIFIED_NOTHING;
@@ -751,7 +756,8 @@ void RangeCheck::MergeEdgeAssertions(ValueNum normalLclVN, ASSERT_VALARG_TP asse
                 continue;
             }
 
-            int cnstLimit = m_pCompiler->vnStore->CoercedConstantValue<int>(curAssertion->op2.vn);
+            int cnstLimit = (int)curAssertion->op2.u1.iconVal;
+            assert(cnstLimit == m_pCompiler->vnStore->CoercedConstantValue<int>(curAssertion->op2.vn));
 
             if ((cnstLimit == 0) && (curAssertion->assertionKind == Compiler::OAK_NOT_EQUAL) &&
                 m_pCompiler->vnStore->IsVNCheckedBound(curAssertion->op1.vn))
@@ -1711,11 +1717,6 @@ void RangeCheck::MapMethodDefs()
 // Entry point to range check optimizations.
 bool RangeCheck::OptimizeRangeChecks()
 {
-    if (m_pCompiler->fgSsaPassesCompleted == 0)
-    {
-        return false;
-    }
-
     bool madeChanges = false;
 
     // Walk through trees looking for arrBndsChk node and check if it can be optimized.
@@ -1730,6 +1731,14 @@ bool RangeCheck::OptimizeRangeChecks()
                 if (IsOverBudget() && !m_updateStmt)
                 {
                     return madeChanges;
+                }
+
+                if (tree->OperIs(GT_BOUNDS_CHECK))
+                {
+                    // Leave a hint for optRangeCheckCloning to improve the JIT TP.
+                    // NOTE: it doesn't have to be precise and being properly maintained
+                    // during transformations, it's just a hint.
+                    block->SetFlags(BBF_MAY_HAVE_BOUNDS_CHECKS);
                 }
 
                 OptimizeRangeCheck(block, stmt, tree);

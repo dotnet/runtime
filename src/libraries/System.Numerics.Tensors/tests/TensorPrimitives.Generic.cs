@@ -84,7 +84,7 @@ namespace System.Numerics.Tensors.Tests
             ConvertCheckedImpl<Half, float>();
             ConvertCheckedImpl<Half, double>();
             ConvertCheckedImpl<float, double>();
-            ConvertCheckedImpl<double, float>();
+            ConvertCheckedImpl<double, double>();
 
             // Conversions that may overflow. This isn't an exhaustive list; just a sampling.
             ConvertCheckedImpl<float, int>(42f, float.MaxValue);

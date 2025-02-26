@@ -69,7 +69,7 @@ namespace ILCompiler.DependencyAnalysis
 
             if (!openImplementationType.IsInterface)
             {
-                for(int index = 0; index < openImplementationType.RuntimeInterfaces.Length; index++)
+                for (int index = 0; index < openImplementationType.RuntimeInterfaces.Length; index++)
                 {
                     if (openImplementationType.RuntimeInterfaces[index] == callingMethod.OwningType)
                     {

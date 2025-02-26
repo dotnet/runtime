@@ -119,7 +119,7 @@ namespace Microsoft.Android.Build.Ndk
             {
                 string host = validHosts[hostOS];
             }
-            catch(KeyNotFoundException)
+            catch (KeyNotFoundException)
             {
                 throw new Exception("An invalid HostOS value was supplied. Only windows, osx, and linux are supported.");
             }

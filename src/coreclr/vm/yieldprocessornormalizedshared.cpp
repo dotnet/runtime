@@ -181,7 +181,9 @@ void YieldProcessorNormalization::PerformMeasurement()
             }
             if (i < NsPerYieldMeasurementCount - 1)
             {
+#ifdef FEATURE_EVENT_TRACE
                 FireEtwYieldProcessorMeasurement(GetClrInstanceId(), latestNsPerYield, s_establishedNsPerYield);
+#endif //FEATURE_EVENT_TRACE
             }
         }
     }
@@ -204,9 +206,9 @@ void YieldProcessorNormalization::PerformMeasurement()
     {
         AtomicStore(&s_establishedNsPerYield, establishedNsPerYield);
     }
-
+#ifdef FEATURE_EVENT_TRACE
     FireEtwYieldProcessorMeasurement(GetClrInstanceId(), latestNsPerYield, s_establishedNsPerYield);
-
+#endif //FEATURE_EVENT_TRACE
     // Calculate the number of yields required to span the duration of a normalized yield
     unsigned int yieldsPerNormalizedYield = max(1u, (unsigned int)(TargetNsPerNormalizedYield / establishedNsPerYield + 0.5));
     _ASSERTE(yieldsPerNormalizedYield <= MaxYieldsPerNormalizedYield);
