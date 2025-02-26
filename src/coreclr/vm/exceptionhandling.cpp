@@ -8612,7 +8612,13 @@ extern "C" bool QCALLTYPE SfiNext(StackFrameIterator* pThis, uint* uExCollideCla
             // DebuggerU2MCatchHandlerFrame with CatchesAllExceptions() returning true).
             // If not, the exception is unhandled.
             if ((pFrame == FRAME_TOP) ||
-                (IsTopmostDebuggerU2MCatchHandlerFrame(pFrame) && !((DebuggerU2MCatchHandlerFrame*)pFrame)->CatchesAllExceptions()))
+                (IsTopmostDebuggerU2MCatchHandlerFrame(pFrame) && !((DebuggerU2MCatchHandlerFrame*)pFrame)->CatchesAllExceptions())
+#ifdef HOST_UNIX
+                // Don't allow propagating exceptions from managed to native code except for the case when it is called by the
+                // CallDescrWorkerInternal.
+                || IsCallDescrWorkerInternalReturnAddress(GetControlPC(pThis->m_crawl.GetRegisterSet())) 
+#endif
+               )
             {
                 if (pTopExInfo->m_passNumber == 1)
                 {
