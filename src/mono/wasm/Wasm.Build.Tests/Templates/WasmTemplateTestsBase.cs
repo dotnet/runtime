@@ -95,7 +95,7 @@ public class WasmTemplateTestsBase : BuildTestBase
         }
     }
 
-    private void UpdateBootJsInHtmlFile(string filePath)
+    protected void UpdateBootJsInHtmlFile(string filePath)
     {
         string fileContent = File.ReadAllText(filePath);
         fileContent = StringReplaceWithAssert(fileContent, "<head>", "<head><script>window['__DOTNET_INTERNAL_BOOT_CONFIG_SRC'] = 'boot.js';</script>");
