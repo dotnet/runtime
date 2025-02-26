@@ -26,11 +26,11 @@ public class FingerprintingTests : WasmTemplateTestsBase
         var config = Configuration.Release;
         string extraProperties = "<WriteImportMapToHtml>true</WriteImportMapToHtml>";
         ProjectInfo info = CopyTestAsset(config, aot: false, TestAsset.WasmBasicTestApp, "WriteImportMapToHtml", extraProperties: extraProperties);
-        BuildProject(info, config);
+        BuildProject(info, config, wasmFingerprintDotnetJs: true);
         BrowserRunOptions runOptions = new(config, TestScenario: "DotnetRun");
         await RunForBuildWithDotnetRun(runOptions);
         
-        PublishProject(info, config, new PublishOptions(UseCache: false));
+        PublishProject(info, config, new PublishOptions(UseCache: false), wasmFingerprintDotnetJs: true);
         await RunForPublishWithWebServer(runOptions);
     }
 }
