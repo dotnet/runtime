@@ -52,6 +52,11 @@ jobs:
         /p:DotNetSignType=$(_SignType)
         /bl:$(Build.SourcesDirectory)\prepare-artifacts.binlog
       displayName: Prepare artifacts and upload to build
+
+    - template: /eng/common/templates-official/steps/generate-sbom.yml
+      parameters:
+        BuildDropPath: $(Build.SourcesDirectory)\artifacts
+        PackageVersion: $(Version)
     
     - task: CopyFiles@2
       displayName: Copy Files to $(Build.StagingDirectory)\BuildLogs
