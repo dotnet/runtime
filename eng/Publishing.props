@@ -10,7 +10,7 @@
       We can't use NETCoreSdkRuntimeIdentifier here as the Arcade SDK projects don't import the .NET SDK.
       Instead, just make sure we include the assets targeting "not the output rid", which will catch the host assets.
     -->
-    <ItemGroup Condition="'$(EnableDefaultArtifacts)' == 'true' and '$(DotNetBuildOrchestrator)' == 'true'">
+    <ItemGroup Condition="'$(EnableDefaultRidSpecificArtifacts)' != 'true' and '$(DotNetBuildOrchestrator)' == 'true'">
       <_HostArtifact Include="$(ArtifactsPackagesDir)**\runtime.*.Microsoft.NETCore.ILAsm.*.nupkg"
                       Exclude="$(ArtifactsPackagesDir)**\runtime.$(OutputRID).Microsoft.NETCore.ILAsm.*.nupkg" />
 
