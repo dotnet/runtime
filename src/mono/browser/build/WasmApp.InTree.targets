@@ -5,7 +5,7 @@
   <UsingTask TaskName="RuntimeConfigParserTask" AssemblyFile="$(MonoTargetsTasksAssemblyPath)" TaskFactory="TaskHostFactory" />
 
   <PropertyGroup>
-    <FeaturePerfTracing Condition="'$(FeaturePerfTracing)' == '' and '$(WasmProfilers)' == ''">true</FeaturePerfTracing>
+    <FeaturePerfTracing Condition="'$(FeaturePerfTracing)' == '' and '$(WasmProfilers)' == '' and '$(WasmBuildNative)' != 'false'">true</FeaturePerfTracing>
   </PropertyGroup>
 
   <!-- TODO: this breaks runtime tests on Helix due to the file not being there for some reason. Once this is fixed we can remove the UpdateRuntimePack target here -->
