@@ -7701,34 +7701,6 @@ void Lowering::WidenSIMD12IfNecessary(GenTreeLclVarCommon* node)
 #ifdef FEATURE_SIMD
     if (node->TypeGet() == TYP_SIMD12)
     {
-        // Assumption 1:
-        // RyuJit backend depends on the assumption that on 64-Bit targets Vector3 size is rounded off
-        // to TARGET_POINTER_SIZE and hence Vector3 locals on stack can be treated as TYP_SIMD16 for
-        // reading and writing purposes.
-        //
-        // Assumption 2:
-        // RyuJit backend is making another implicit assumption that Vector3 type args when passed in
-        // registers or on stack, the upper most 4-bytes will be zero.
-        //
-        // For P/Invoke return and Reverse P/Invoke argument passing, native compiler doesn't guarantee
-        // that upper 4-bytes of a Vector3 type struct is zero initialized and hence assumption 2 is
-        // invalid.
-        //
-        // RyuJIT x64 Windows: arguments are treated as passed by ref and hence read/written just 12
-        // bytes. In case of Vector3 returns, Caller allocates a zero initialized Vector3 local and
-        // passes it retBuf arg and Callee method writes only 12 bytes to retBuf. For this reason,
-        // there is no need to clear upper 4-bytes of Vector3 type args.
-        //
-        // RyuJIT x64 Unix: arguments are treated as passed by value and read/writen as if TYP_SIMD16.
-        // Vector3 return values are returned two return registers and Caller assembles them into a
-        // single xmm reg. Hence RyuJIT explicitly generates code to clears upper 4-bytes of Vector3
-        // type args in prolog and Vector3 type return value of a call
-        //
-        // RyuJIT x86 Windows: all non-param Vector3 local vars are allocated as 16 bytes. Vector3 arguments
-        // are pushed as 12 bytes. For return values, a 16-byte local is allocated and the address passed
-        // as a return buffer pointer. The callee doesn't write the high 4 bytes, and we don't need to clear
-        // it either.
-
         if (comp->lvaMapSimd12ToSimd16(node->AsLclVarCommon()->GetLclNum()))
         {
             JITDUMP("Mapping TYP_SIMD12 lclvar node to TYP_SIMD16:\n");
@@ -8008,15 +7980,6 @@ void Lowering::FindInducedParameterRegisterLocals()
             continue;
         }
 
-#ifdef FEATURE_SIMD
-        // SIMD12 extractions are not supported as they would require the upper
-        // field to be zeroed on extraction from a SIMD16 argument.
-        if (fld->TypeIs(TYP_SIMD12))
-        {
-            continue;
-        }
-#endif
-
         if (storedToLocals.Lookup(fld->GetLclNum()))
         {
             // LCL_FLD does not necessarily take the value of the parameter
@@ -8116,6 +8079,16 @@ void Lowering::FindInducedParameterRegisterLocals()
             assert(fld->GetLclOffs() == regSegment->Offset);
 
             value->gtType = fld->TypeGet();
+
+#ifdef FEATURE_SIMD
+            // SIMD12s should be widened. We cannot do that with
+            // WidenSIMD12IfNecessary as it does not expect to see SIMD12
+            // accesses of SIMD16 locals here.
+            if (value->TypeIs(TYP_SIMD12))
+            {
+                value->gtType = TYP_SIMD16;
+            }
+#endif
         }
         else
         {
@@ -8167,7 +8140,7 @@ void Lowering::FindInducedParameterRegisterLocals()
         JITDUMP("New user tree range:\n");
         DISPTREERANGE(LIR::AsRange(comp->fgFirstBB), use.User());
 
-        fld->SetUnusedValue();
+        fld->gtBashToNOP();
     }
 }
 
