@@ -87,11 +87,11 @@ public class MiscTests : BlazorWasmTestBase
         BlazorBuild(info, config);
 
         // will relink
-        BlazorPublish(info, config, new PublishOptions(UseCache: false));
+        BlazorPublish(info, config, new PublishOptions(UseCache: false, BootConfigFileName: "blazor.boot.json"));
 
         // publish/wwwroot/_framework/blazor.boot.json
         string frameworkDir = GetBlazorBinFrameworkDir(config, forPublish: true);
-        string bootJson = Path.Combine(frameworkDir, "blazor.boot.json");
+        string bootJson = Path.Combine(frameworkDir, "boot.js");
 
         Assert.True(File.Exists(bootJson), $"Could not find {bootJson}");
         var jdoc = JsonDocument.Parse(File.ReadAllText(bootJson));

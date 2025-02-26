@@ -367,7 +367,7 @@ public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string?
 
         if (IsFingerprintingEnabled)
         {
-            string bootJsonPath = Path.Combine(paths.BinFrameworkDir, "blazor.boot.json");
+            string bootJsonPath = Path.Combine(paths.BinFrameworkDir, "boot.js");
             BootJsonData bootJson = GetBootJson(bootJsonPath);
             var keysToUpdate = new List<string>();
             var updates = new List<(string oldKey, string newKey, (string fullPath, bool unchanged) value)>();
@@ -562,17 +562,40 @@ public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string?
         return bootJson;
     }
 
-    public static BootJsonData ParseBootData(string bootJsonPath)
+    public static BootJsonData ParseBootData(string bootConfigPath)
     {
-        using FileStream stream = File.OpenRead(bootJsonPath);
-        stream.Position = 0;
-        var serializer = new DataContractJsonSerializer(
-            typeof(BootJsonData),
-            new DataContractJsonSerializerSettings { UseSimpleDictionaryFormat = true });
+        string startComment = "/*json-start*/";
+        string endComment = "/*json-end*/";
 
-        var config = (BootJsonData?)serializer.ReadObject(stream);
-        Assert.NotNull(config);
-        return config;
+        string moduleContent = File.ReadAllText(bootConfigPath);
+        int startCommentIndex = moduleContent.IndexOf(startComment);
+        int endCommentIndex = moduleContent.IndexOf(endComment);
+        if (startCommentIndex >= 0 && endCommentIndex >= 0)
+        {
+            // boot.js
+            int startJsonIndex = startCommentIndex + startComment.Length;
+            string jsonContent = moduleContent.Substring(startJsonIndex, endCommentIndex - startJsonIndex);
+            using var ms = new MemoryStream(Encoding.UTF8.GetBytes(jsonContent));
+            ms.Position = 0;
+            return LoadConfig(ms);
+        }
+        else
+        {
+            using FileStream stream = File.OpenRead(bootConfigPath);
+            stream.Position = 0;
+            return LoadConfig(stream);
+        }
+
+        static BootJsonData LoadConfig(Stream stream)
+        {
+            var serializer = new DataContractJsonSerializer(
+                typeof(BootJsonData),
+                new DataContractJsonSerializerSettings { UseSimpleDictionaryFormat = true });
+
+            var config = (BootJsonData?)serializer.ReadObject(stream);
+            Assert.NotNull(config);
+            return config;
+        }
     }
 
     private void AssertFileNames(IEnumerable<string> expected, IEnumerable<string> actual)
