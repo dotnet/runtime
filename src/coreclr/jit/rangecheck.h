@@ -597,20 +597,10 @@ public:
     // and assertion prop phases are completed.
     bool OptimizeRangeChecks();
 
-    // Inspect the assertions about the current ValueNum to refine pRange
-    static void MergeEdgeAssertions(Compiler*        comp,
-                                    ValueNum         num,
-                                    ValueNum         preferredBoundVN,
-                                    ASSERT_VALARG_TP assertions,
-                                    Range*           pRange,
-                                    bool             log = true);
-
-    // Given the index expression try to find its range.
-    // The range of a variable depends on its rhs which in turn depends on its constituent variables.
-    // The "path" is the path taken in the search for the rhs' range and its constituents' range.
-    // If "monIncreasing" is true, the calculations are made more liberally assuming initial values
-    // at phi definitions for the lower bound.
     bool TryGetRange(BasicBlock* block, GenTree* expr, Range* pRange);
+
+    // Cheaper version of TryGetRange that is based only on incoming assertions.
+    static bool TryGetRangeFromAssertions(Compiler* comp, ValueNum num, ASSERT_VALARG_TP assertions, Range* pRange);
 
 private:
     typedef JitHashTable<GenTree*, JitPtrKeyFuncs<GenTree>, bool>        OverflowMap;
@@ -653,6 +643,14 @@ private:
     // Inspect the "assertions" and extract assertions about the given "phiArg" and
     // refine the "pRange" value.
     void MergeEdgeAssertions(GenTreeLclVarCommon* lcl, ASSERT_VALARG_TP assertions, Range* pRange);
+
+    // Inspect the assertions about the current ValueNum to refine pRange
+    static void MergeEdgeAssertions(Compiler*        comp,
+                                    ValueNum         num,
+                                    ValueNum         preferredBoundVN,
+                                    ASSERT_VALARG_TP assertions,
+                                    Range*           pRange,
+                                    bool             log = true);
 
     // The maximum possible value of the given "limit". If such a value could not be determined
     // return "false". For example: CORINFO_Array_MaxLength for array length.

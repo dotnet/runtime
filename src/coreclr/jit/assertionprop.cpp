@@ -4174,7 +4174,10 @@ void Compiler::optAssertionProp_RangeProperties(ASSERT_VALARG_TP assertions,
         {
             Range    rng = Range(Limit(Limit::keDependent));
             ValueNum vn  = vnStore->VNConservativeNormalValue(tree->gtGetOp1()->gtVNPair);
-            RangeCheck::MergeEdgeAssertions(this, vn, ValueNumStore::NoVN, assertions, &rng, false);
+            if (!RangeCheck::TryGetRangeFromAssertions(this, vn, assertions, &rng))
+            {
+                return;
+            }
 
             int cns = static_cast<int>(tree->gtGetOp2()->AsIntCon()->IconValue());
             rng.LowerLimit().AddConstant(cns);
@@ -4207,18 +4210,20 @@ void Compiler::optAssertionProp_RangeProperties(ASSERT_VALARG_TP assertions,
         }
         else
         {
-            Range rng = Range(Limit(Limit::keDependent));
-            RangeCheck::MergeEdgeAssertions(this, treeVN, ValueNumStore::NoVN, assertions, &rng, false);
-            Limit lowerBound = rng.LowerLimit();
-            if (lowerBound.IsConstant())
+            Range rng = Range(Limit(Limit::keUnknown));
+            if (RangeCheck::TryGetRangeFromAssertions(this, treeVN, assertions, &rng))
             {
-                if (lowerBound.GetConstant() >= 0)
+                Limit lowerBound = rng.LowerLimit();
+                if (lowerBound.IsConstant())
                 {
-                    *isKnownNonNegative = true;
-                }
-                if (lowerBound.GetConstant() > 0)
-                {
-                    *isKnownNonZero = true;
+                    if (lowerBound.GetConstant() >= 0)
+                    {
+                        *isKnownNonNegative = true;
+                    }
+                    if (lowerBound.GetConstant() > 0)
+                    {
+                        *isKnownNonZero = true;
+                    }
                 }
             }
         }

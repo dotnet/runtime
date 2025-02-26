@@ -623,6 +623,25 @@ void RangeCheck::MergeEdgeAssertions(GenTreeLclVarCommon* lcl, ASSERT_VALARG_TP 
 }
 
 //------------------------------------------------------------------------
+// TryGetRangeFromAssertions: Cheaper version of TryGetRange that is based purely on assertions
+//    and does not require a full range analysis based on SSA.
+//
+// Arguments:
+//    comp             - the compiler instance
+//    num              - the value number to analyze range for
+//    assertions       - the assertions to use
+//    pRange           - the range to tighten with assertions
+//
+// Return Value:
+//    True if the range was successfully computed
+//
+bool RangeCheck::TryGetRangeFromAssertions(Compiler* comp, ValueNum num, ASSERT_VALARG_TP assertions, Range* pRange)
+{
+    MergeEdgeAssertions(comp, num, num, assertions, pRange);
+    return !pRange->LowerLimit().IsUnknown() || !pRange->UpperLimit().IsUnknown();
+}
+
+//------------------------------------------------------------------------
 // MergeEdgeAssertions: Merge assertions on the edge flowing into the block about a variable
 //
 // Arguments:
