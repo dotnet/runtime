@@ -108,7 +108,7 @@ namespace Wasm.Build.Tests
         public static IEnumerable<object?[]> BrowserBuildAndRunTestData()
         {
             yield return new object?[] { "", BuildTestBase.DefaultTargetFramework, DefaultRuntimeAssetsRelativePath };
-            yield return new object?[] { "-f net10.0", "net10.0", DefaultRuntimeAssetsRelativePath };
+            yield return new object?[] { $"-f net{Environment.Version.Major}.0", $"net{Environment.Version.Major}.0", DefaultRuntimeAssetsRelativePath };
 
             if (EnvironmentVariables.WorkloadsTestPreviousVersions)
             {

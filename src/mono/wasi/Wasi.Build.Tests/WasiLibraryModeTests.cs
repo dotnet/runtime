@@ -31,7 +31,7 @@ public class WasiLibraryModeTests : BuildTestBase
                 $"""
                 <Project Sdk="{sdk}">
                     <PropertyGroup>
-                        <TargetFramework>net10.0</TargetFramework>
+                        <TargetFramework>net{Environment.Version.Major}.0</TargetFramework>
                         <RuntimeIdentifier>wasi-wasm</RuntimeIdentifier>
                         <WasmSingleFileBundle>true</WasmSingleFileBundle>
                         <OutputType>Library</OutputType>

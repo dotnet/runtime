@@ -23,10 +23,10 @@ public class NonWasmTemplateBuildTests : WasmTemplateTestsBase
     // So, copy the reference for latest TFM, and add that back with the
     // TFM=DefaultTargetFramework
     //
-    // This is useful for the case when we are on tfm=net10.0, but sdk, and packages
+    // This is useful for the case when we are on latest TFM, but sdk, and packages
     // are really 10.0 .
-    private const string s_latestTargetFramework = "net10.0";
-    private const string s_previousTargetFramework = "net9.0";
+    private static readonly string s_latestTargetFramework = $"net{Environment.Version.Major}.0";
+    private static readonly string s_previousTargetFramework = $"net{Environment.Version.Major - 1}.0";
     private static string s_directoryBuildTargetsForPreviousTFM =
         $$"""
             <Project>
