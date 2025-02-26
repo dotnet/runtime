@@ -30,7 +30,7 @@ namespace System.SpanTests
             ReadOnlySpan<char> span = default;
             Assert.Equal(0, span.CountAny(SearchValues.Create(ReadOnlySpan<char>.Empty)));
             Assert.Equal(0, span.CountAny());
-            Assert.Equal(0, span.CountAny(['a', 'b', 'c'], EqualityComparer<char>.Default));
+            Assert.Equal(0, span.CountAny([], EqualityComparer<char>.Default));
         }
 
         [Fact]

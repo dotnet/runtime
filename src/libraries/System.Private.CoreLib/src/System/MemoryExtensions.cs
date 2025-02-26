@@ -4790,7 +4790,7 @@ namespace System
         /// elements in <paramref name="values"/> with <paramref name="newValue"/>.
         /// </summary>
         /// <typeparam name="T">The type of the elements in the spans.</typeparam>
-        /// <param name="span">The span to copy.</param>
+        /// <param name="span">The span to edit.</param>
         /// <param name="values">The values to be replaced with <paramref name="newValue"/>.</param>
         /// <param name="newValue">The value to replace all occurrences of any of the elements in <paramref name="values"/>.</param>
         /// <exception cref="ArgumentNullException"><paramref name="values"/> is <see langword="null"/>.</exception>
