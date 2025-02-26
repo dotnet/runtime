@@ -612,9 +612,6 @@ public:
     // at phi definitions for the lower bound.
     bool TryGetRange(BasicBlock* block, GenTree* expr, Range* pRange);
 
-    // Does the current "expr", which is a use, involve a definition that overflows.
-    bool DoesOverflow(BasicBlock* block, GenTree* tree, const Range& range);
-
 private:
     typedef JitHashTable<GenTree*, JitPtrKeyFuncs<GenTree>, bool>        OverflowMap;
     typedef JitHashTable<GenTree*, JitPtrKeyFuncs<GenTree>, Range*>      RangeMap;
@@ -676,6 +673,9 @@ private:
     // Find the def of the "expr" local and recurse on the arguments if any of them involve a
     // calculation that overflows.
     bool DoesVarDefOverflow(BasicBlock* block, GenTreeLclVarCommon* lcl, const Range& range);
+
+    // Does the current "expr", which is a use, involve a definition that overflows.
+    bool DoesOverflow(BasicBlock* block, GenTree* tree, const Range& range);
 
     bool ComputeDoesOverflow(BasicBlock* block, GenTree* expr, const Range& range);
 
