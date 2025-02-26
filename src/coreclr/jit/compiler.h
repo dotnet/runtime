@@ -4712,7 +4712,7 @@ protected:
     GenTree* impThrowIfNull(GenTreeCall* call);
 
 #ifdef TARGET_ARM64
-    void impImportDivisionWithChecks(genTreeOps oper, var_types resultType, GenTree* dividend, GenTree* divisor);
+    bool impImportDivisionWithChecks(genTreeOps oper);
 #endif
 
 #ifdef DEBUG

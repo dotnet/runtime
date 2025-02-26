@@ -7327,11 +7327,14 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 // Other binary math operations
 
             case CEE_DIV:
-                oper = GT_DIV;
-                goto MATH_MAYBE_CALL_NO_OVF;
-
             case CEE_DIV_UN:
-                oper = GT_UDIV;
+                oper = (opcode == CEE_DIV) ? GT_DIV : GT_UDIV;
+#ifdef TARGET_ARM64
+                if (opts.OptimizationEnabled() && impImportDivisionWithChecks(oper))
+                {
+                    break;
+                }
+#endif
                 goto MATH_MAYBE_CALL_NO_OVF;
 
             case CEE_REM:
@@ -7373,8 +7376,8 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
                 /* Pull two values and push back the result */
 
-                op2 = impStackTop().val;
-                op1 = impStackTop(1).val;
+                op2 = impPopStack().val;
+                op1 = impPopStack().val;
 
                 /* Can't do arithmetic with references */
                 assertImp(genActualType(op1->TypeGet()) != TYP_REF && genActualType(op2->TypeGet()) != TYP_REF);
@@ -7395,20 +7398,10 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                         (op2->IsIntegralConst(1) && (oper == GT_MUL || oper == GT_DIV)))
 
                     {
-                        impPopStack();
-                        impPopStack();
                         impPushOnStack(op1, tiRetVal);
                         break;
                     }
                 }
-
-#ifdef TARGET_ARM64
-                if ((oper == GT_DIV || oper == GT_UDIV) && varTypeIsIntegral(type) && opts.OptimizationEnabled())
-                {
-                    impImportDivisionWithChecks(oper, type, op1, op2);
-                    break;
-                }
-#endif
 
                 if (callNode)
                 {
@@ -7459,8 +7452,6 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 // Fold result, if possible.
                 op1 = gtFoldExpr(op1);
 
-                impPopStack();
-                impPopStack();
                 impPushOnStack(op1, tiRetVal);
                 break;
 
@@ -13889,25 +13880,24 @@ methodPointerInfo* Compiler::impAllocateMethodPointerInfo(const CORINFO_RESOLVED
 #ifdef TARGET_ARM64
 // impImportDivision: Import a division operation, adding runtime checks for overflow/divide-by-zero if needed.
 //
-// Assumes a stack state:
-// (top) -> divisor
-//          dividend
-//          ...
-// I.e. the dividend and divisor pointers passed to this function were peep'd on the stack.
-// This function will handle popping the two trees in the correct order, and will push the resultant tree
-// to the stack.
-//
 // Arguments:
-//    isSigned - Is the division a signed operation?
+//    oper - Type of operation to create the tree for
 //
-void Compiler::impImportDivisionWithChecks(genTreeOps oper, var_types resultType, GenTree* dividend, GenTree* divisor)
+bool Compiler::impImportDivisionWithChecks(genTreeOps oper)
 {
     assert(oper == GT_DIV || oper == GT_UDIV);
 
     typeInfo tiRetVal = typeInfo();
 
-    impPopStack();
-    impPopStack();
+    GenTree* divisor  = impStackTop().val;
+    GenTree* dividend = impStackTop(1).val;
+
+    if (varTypeIsFloating(dividend) || varTypeIsFloating(divisor))
+    {
+        return false;
+    }
+
+    var_types resultType = genActualType(dividend);
 
     // The node is allocated as large because some optimizations may bash the node into a GT_CAST node in lowering.
     GenTree* divNode = gtNewLargeOperNode(oper, resultType, dividend, divisor);
@@ -13920,8 +13910,10 @@ void Compiler::impImportDivisionWithChecks(genTreeOps oper, var_types resultType
     // Is is still a division after folding? If not - push the result and finish.
     if (!divNode->OperIs(GT_DIV, GT_UDIV))
     {
+        impPopStack();
+        impPopStack();
         impPushOnStack(divNode, tiRetVal);
-        return;
+        return true;
     }
 
     GenTree* result       = divNode;
@@ -13931,11 +13923,13 @@ void Compiler::impImportDivisionWithChecks(genTreeOps oper, var_types resultType
     // The dividend and divisor must be cloned in this order to preserve evaluation order.
     // The first clone must check the rest of the stack for side-effects to preserve ordering relative to other nodes on
     // the stack.
+    impPopStack();
+    divNode->AsOp()->gtOp2 =
+        impCloneExpr(divisor, &divisorCopy, CHECK_SPILL_ALL, nullptr DEBUGARG("divisor used in runtime checks"));
+
+    impPopStack();
     divNode->AsOp()->gtOp1 =
         impCloneExpr(dividend, &dividendCopy, CHECK_SPILL_ALL, nullptr DEBUGARG("dividend used in runtime checks"));
-
-    divNode->AsOp()->gtOp2 =
-        impCloneExpr(divisor, &divisorCopy, CHECK_SPILL_NONE, nullptr DEBUGARG("divisor used in runtime checks"));
 
     // Expand division into QMark containing runtime checks.
     // We can skip this when both the dividend and divisor are unsigned.
@@ -13972,11 +13966,11 @@ void Compiler::impImportDivisionWithChecks(genTreeOps oper, var_types resultType
     // Spilling the overall Qmark helps with later passes.
     unsigned tmp            = lvaGrabTemp(true DEBUGARG("spilling to hold checked division tree"));
     lvaGetDesc(tmp)->lvType = resultType;
-    impStoreToTemp(tmp, result, CHECK_SPILL_NONE);
+    impStoreToTemp(tmp, result, CHECK_SPILL_ALL);
 
     result = gtNewLclVarNode(tmp, resultType);
 
     impPushOnStack(result, tiRetVal);
-    return;
+    return true;
 }
 #endif // TARGET_ARM64
