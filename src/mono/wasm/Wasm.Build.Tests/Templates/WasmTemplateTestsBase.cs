@@ -51,7 +51,7 @@ public class WasmTemplateTestsBase : BuildTestBase
     {
         string projectName = GetProjectName(idPrefix, config, aot, appendUnicodeToPath, avoidAotLongPathIssue);
         (string logPath, string nugetDir) = InitPaths(projectName);
-        InitProjectDir(_projectDir, addNuGetSourceForLocalPackages: true);
+        InitProjectDir(_projectDir, addNuGetSourceForLocalPackages: true, DefaultTargetFramework);
         return (projectName, logPath, nugetDir);
     }
 
@@ -225,7 +225,7 @@ public class WasmTemplateTestsBase : BuildTestBase
         }
     }
 
-    protected void UpdateBrowserMainJs(string targetFramework = DefaultTargetFramework, string runtimeAssetsRelativePath = DefaultRuntimeAssetsRelativePath)
+    protected void UpdateBrowserMainJs(string targetFramework, string runtimeAssetsRelativePath = DefaultRuntimeAssetsRelativePath)
     {
         string mainJsPath = Path.Combine(_projectDir, "wwwroot", "main.js");
         string mainJsContent = File.ReadAllText(mainJsPath);
@@ -265,7 +265,7 @@ public class WasmTemplateTestsBase : BuildTestBase
         RunHost.WebServer =>
                 await BrowserRunTest($"{s_xharnessRunnerCommand} wasm webserver --app=. --web-server-use-default-files",
                     string.IsNullOrEmpty(runOptions.CustomBundleDir) ?
-                        Path.GetFullPath(Path.Combine(GetBinFrameworkDir(runOptions.Configuration, forPublish: true), "..")) :
+                        Path.GetFullPath(Path.Combine(GetBinFrameworkDir(runOptions.Configuration, forPublish: true, DefaultTargetFramework), "..")) :
                         runOptions.CustomBundleDir,
                      runOptions),
 
@@ -366,7 +366,7 @@ public class WasmTemplateTestsBase : BuildTestBase
         }
     }
 
-    public string GetBinFrameworkDir(Configuration config, bool forPublish, string framework = DefaultTargetFramework, string? projectDir = null) =>
+    public string GetBinFrameworkDir(Configuration config, bool forPublish, string framework, string? projectDir = null) =>
         _provider.GetBinFrameworkDir(config, forPublish, framework, projectDir);
 
     public BuildPaths GetBuildPaths(Configuration config, bool forPublish) =>

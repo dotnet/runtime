@@ -16,7 +16,7 @@ public record PublishOptions : MSBuildOptions
         bool IsPublish                                              = true,
         bool AOT                                                    = false,
         NativeFilesType ExpectedFileType                            = NativeFilesType.FromRuntimePack,
-        string TargetFramework                                      = BuildTestBase.DefaultTargetFramework,
+        string? TargetFramework                                     = null,
         GlobalizationMode GlobalizationMode                         = GlobalizationMode.Sharded,
         string CustomIcuFile                                        = "",
         bool UseCache                                               = true,
@@ -33,9 +33,9 @@ public record PublishOptions : MSBuildOptions
         bool ExpectRelinkDirWhenPublishing                          = false
     ) : base(
         IsPublish,
+        TargetFramework ?? BuildTestBase.DefaultTargetFramework,
         AOT,
         ExpectedFileType,
-        TargetFramework,
         GlobalizationMode,
         CustomIcuFile,
         UseCache,

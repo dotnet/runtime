@@ -230,7 +230,7 @@ namespace Wasm.Build.Tests
             return (_logPath, _nugetPackagesDir);
         }
 
-        protected void InitProjectDir(string dir, bool addNuGetSourceForLocalPackages = true, string targetFramework = DefaultTargetFramework)
+        protected void InitProjectDir(string dir, bool addNuGetSourceForLocalPackages, string targetFramework)
         {
             if (Directory.Exists(dir))
                 Directory.Delete(dir, recursive: true);

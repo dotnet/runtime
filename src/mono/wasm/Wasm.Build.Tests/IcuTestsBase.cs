@@ -131,7 +131,7 @@ public abstract class IcuTestsBase : WasmTemplateTestsBase
         File.WriteAllText(programPath, programText);
         _testOutput.WriteLine($"----- Program: -----{Environment.NewLine}{programText}{Environment.NewLine}-------");
 
-        UpdateBrowserMainJs();
+        UpdateBrowserMainJs(DefaultTargetFramework);
         return info;
     }
 

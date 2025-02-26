@@ -32,7 +32,7 @@ namespace Wasm.Build.Tests
                 extraProperties: "<WasmBuildNative>true</WasmBuildNative>");
             
             UpdateBrowserProgramFile();
-            UpdateBrowserMainJs();
+            UpdateBrowserMainJs(DefaultTargetFramework);
 
             (string _, string buildOutput) = PublishProject(info, config, isNativeBuild: true);
             await RunForPublishWithWebServer(new BrowserRunOptions(config, ExpectedExitCode: 42));
@@ -50,7 +50,7 @@ namespace Wasm.Build.Tests
                 extraProperties: "<PublishTrimmed>false</PublishTrimmed>");
             
             UpdateBrowserProgramFile();
-            UpdateBrowserMainJs();
+            UpdateBrowserMainJs(DefaultTargetFramework);
 
             (string _, string output) = PublishProject(info, config, new PublishOptions(ExpectSuccess: false, AOT: aot));
             Assert.Contains("AOT is not supported without IL trimming", output);

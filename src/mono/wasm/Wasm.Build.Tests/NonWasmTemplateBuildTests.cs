@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -103,7 +104,7 @@ public class NonWasmTemplateBuildTests : WasmTemplateTestsBase
     {
         string id = $"nonwasm_{targetFramework}_{config}_{GetRandomId()}";
         InitPaths(id);
-        InitProjectDir(_projectDir);
+        InitProjectDir(_projectDir, true, DefaultTargetFramework);
 
         directoryBuildTargets ??= targetFramework == s_previousTargetFramework
                                     ? s_directoryBuildTargetsForPreviousTFM
