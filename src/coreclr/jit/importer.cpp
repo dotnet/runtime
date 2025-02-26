@@ -13916,32 +13916,38 @@ bool Compiler::impImportDivisionWithChecks(genTreeOps oper)
         return true;
     }
 
-    GenTree* result       = divNode;
-    GenTree* divisorCopy  = nullptr;
-    GenTree* dividendCopy = nullptr;
+    GenTree* result = divNode;
+
+    impPopStack();
+    impPopStack();
+    impSpillSideEffects(false, CHECK_SPILL_ALL DEBUGARG("spilling side effects before adding runtime exception"));
 
     // The dividend and divisor must be cloned in this order to preserve evaluation order.
-    // The first clone must check the rest of the stack for side-effects to preserve ordering relative to other nodes on
-    // the stack.
-    impPopStack();
-    divNode->AsOp()->gtOp2 =
-        impCloneExpr(divisor, &divisorCopy, CHECK_SPILL_ALL, nullptr DEBUGARG("divisor used in runtime checks"));
+    unsigned dividendTmp = lvaGrabTemp(true DEBUGARG("dividend used in runtime checks"));
+    impStoreToTemp(dividendTmp, dividend, CHECK_SPILL_NONE);
+    dividend               = gtNewLclvNode(dividendTmp, genActualType(dividend));
+    divNode->AsOp()->gtOp1 = dividend;
 
-    impPopStack();
-    divNode->AsOp()->gtOp1 =
-        impCloneExpr(dividend, &dividendCopy, CHECK_SPILL_ALL, nullptr DEBUGARG("dividend used in runtime checks"));
+    unsigned divisorTmp = lvaGrabTemp(true DEBUGARG("divisor used in runtime checks"));
+    impStoreToTemp(divisorTmp, divisor, CHECK_SPILL_NONE);
+    divisor                = gtNewLclvNode(divisorTmp, genActualType(divisor));
+    divNode->AsOp()->gtOp2 = divisor;
 
     // Expand division into QMark containing runtime checks.
     if (oper == GT_DIV)
     {
         assert(!(varTypeIsUnsigned(dividend) || varTypeIsUnsigned(divisor)));
 
+        dividend = gtClone(dividend, false);
+        divisor  = gtClone(divisor, false);
+
+        const ssize_t minValue = genActualType(dividend) == TYP_LONG ? INT64_MIN : INT32_MIN;
 
         // (dividend == MinValue && divisor == -1)
         GenTreeOp* const divisorIsMinusOne =
-            gtNewOperNode(GT_EQ, TYP_INT, divisorCopy, gtNewIconNode(-1, genActualType(divisorCopy)));
+            gtNewOperNode(GT_EQ, TYP_INT, divisor, gtNewIconNode(-1, genActualType(divisor)));
         GenTreeOp* const dividendIsMinValue =
-            gtNewOperNode(GT_EQ, TYP_INT, dividendCopy, gtNewIconNode(minValue, genActualType(dividendCopy)));
+            gtNewOperNode(GT_EQ, TYP_INT, dividend, gtNewIconNode(minValue, genActualType(dividend)));
 
         GenTreeOp* const combinedTest = gtNewOperNode(GT_AND, TYP_INT, divisorIsMinusOne, dividendIsMinValue);
         GenTree*         condition    = gtNewOperNode(GT_EQ, TYP_INT, combinedTest, gtNewTrue());
@@ -13949,14 +13955,13 @@ bool Compiler::impImportDivisionWithChecks(genTreeOps oper)
         result =
             gtNewQmarkNode(resultType, condition,
                            gtNewColonNode(resultType, gtNewHelperCallNode(CORINFO_HELP_OVERFLOW, resultType), result));
-
-        divisorCopy = gtClone(divisorCopy, true);
     }
 
+    divisor = gtClone(divisor, false);
     result =
         gtNewQmarkNode(resultType,
                        // (divisor == 0)
-                       gtNewOperNode(GT_EQ, TYP_INT, divisorCopy, gtNewIconNode(0, genActualType(divisorCopy))),
+                       gtNewOperNode(GT_EQ, TYP_INT, divisor, gtNewIconNode(0, genActualType(divisor))),
                        gtNewColonNode(resultType, gtNewHelperCallNode(CORINFO_HELP_THROWDIVZERO, resultType), result));
 
     // No need to generate checks in Emitter.
@@ -13966,7 +13971,7 @@ bool Compiler::impImportDivisionWithChecks(genTreeOps oper)
     // Spilling the overall Qmark helps with later passes.
     unsigned tmp            = lvaGrabTemp(true DEBUGARG("spilling to hold checked division tree"));
     lvaGetDesc(tmp)->lvType = resultType;
-    impStoreToTemp(tmp, result, CHECK_SPILL_ALL);
+    impStoreToTemp(tmp, result, CHECK_SPILL_NONE);
 
     result = gtNewLclVarNode(tmp, resultType);
 
