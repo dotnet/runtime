@@ -13783,10 +13783,6 @@ GenTree* Compiler::impInlineFetchArg(InlArgInfo& argInfo, const InlLclVarInfo& l
             if (varTypeIsStruct(lclTyp))
             {
                 lvaSetStruct(tmpNum, lclInfo.lclTypeHandle, true /* unsafe value cls check */);
-                if (info.compIsVarArgs)
-                {
-                    lvaSetStructUsedAsVarArg(tmpNum);
-                }
             }
 
             argInfo.argHasTmp = true;
