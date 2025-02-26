@@ -6669,9 +6669,7 @@ GenTree* Lowering::LowerHWIntrinsicToScalar(GenTreeHWIntrinsic* node)
     }
 
     ContainCheckHWIntrinsic(node);
-    GenTree* next = node->gtNext;
-
-    return next;
+    return node->gtNext;
 }
 
 //----------------------------------------------------------------------------------------------
