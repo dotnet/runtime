@@ -32,7 +32,7 @@ while true; do
     echo /__w/1/a/artifacts/log/
     sudo ls -la /__w/1/a/artifacts/log/
     timestamp=$(date +%s)
-    sudo /root/.dotnet/tools/dotnet-trace collect --profile gc-collect -p "$pid" --duration 00:10:00 --output /__w/1/s/artifacts/log/trace.$timestamp.nettrace
+    sudo /root/.dotnet/tools/dotnet-trace collect --profile gc-collect -p "$pid" --duration 00:30:00 --output /__w/1/s/artifacts/log/trace.$timestamp.nettrace
     sudo chmod a+r /__w/1/s/artifacts/log/trace.$timestamp.nettrace
     echo /__w/1/s/artifacts/log/
     sudo ls -la /__w/1/s/artifacts/log/
