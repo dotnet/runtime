@@ -64,7 +64,7 @@ public partial class ApkBuilder
     public (string apk, string packageId) BuildApk(
         string runtimeIdentifier,
         string mainLibraryFileName,
-        string runtimeHeaders)
+        string[] runtimeHeaders)
     {
         if (!Enum.TryParse(RuntimeFlavor, true, out parsedRuntimeFlavor))
         {
@@ -324,9 +324,10 @@ public partial class ApkBuilder
         string aotSources = assemblerFiles.ToString();
         string monodroidSource = IsCoreCLR ?
             "monodroid-coreclr.c" : (IsLibraryMode) ? "monodroid-librarymode.c" : "monodroid.c";
+        string runtimeInclude = string.Join(" ", runtimeHeaders.Select(h => $"\"{NormalizePathToUnix(h)}\""));
 
         string cmakeLists = Utils.GetEmbeddedResource("CMakeLists-android.txt")
-            .Replace("%RuntimeInclude%", NormalizePathToUnix(runtimeHeaders))
+            .Replace("%RuntimeInclude%", runtimeInclude)
             .Replace("%NativeLibrariesToLink%", NormalizePathToUnix(nativeLibraries))
             .Replace("%MONODROID_SOURCE%", monodroidSource)
             .Replace("%AotSources%", NormalizePathToUnix(aotSources))
