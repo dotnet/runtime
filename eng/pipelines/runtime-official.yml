@@ -323,8 +323,8 @@ extends:
             - Build_android_arm64_release_AllRuntimes
             - Build_android_x86_release_AllRuntimes
             - Build_android_x64_release_AllRuntimes
-            - Build_browser_wasm_Linux_release_Mono
-            - Build_wasi_wasm_linux_release_Mono
+            - Build_browser_wasm_Linux_release_AllRuntimes
+            - Build_wasi_wasm_linux_release_AllRuntimes
             - Build_ios_arm64_release_AllRuntimes
             - Build_iossimulator_x64_release_AllRuntimes
             - Build_iossimulator_arm64_release_AllRuntimes
