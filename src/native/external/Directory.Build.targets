@@ -1,0 +1,42 @@
+<Project>
+  <PropertyGroup>
+    <_BuildNativeArgs>$(TargetArchitecture) $(Configuration) -os $(TargetOS)</_BuildNativeArgs>
+    <_BuildNativeArgs Condition="'$(EnableNativeSanitizers)' != ''">$(_BuildNativeArgs) -fsanitize=$(EnableNativeSanitizers)</_BuildNativeArgs>
+    <_BuildNativeArgs Condition="'$(BuildFlavor)' != ''">$(_BuildNativeArgs) -flavor $(BuildFlavor)</_BuildNativeArgs>
+    <_BuildNativeArgs Condition="'$(LibraryName)' != ''">$(_BuildNativeArgs) -project $(LibraryName)</_BuildNativeArgs>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="$([MSBuild]::IsOsPlatform(Windows))">
+    <_BuildNativeArgs Condition="'$(Ninja)' == 'false'">$(_BuildNativeArgs) msbuild</_BuildNativeArgs>
+    <_BuildScriptExtension>cmd</_BuildScriptExtension>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="!$([MSBuild]::IsOsPlatform(Windows))">
+    <_BuildNativeArgs Condition="'$(Ninja)' == 'true'">$(_BuildNativeArgs) ninja</_BuildNativeArgs>
+    <_CrossBuildArg Condition="'$(CrossBuild)' == 'true'"> -cross</_CrossBuildArg>
+    <_KeepNativeSymbolsBuildArg Condition="'$(KeepNativeSymbols)' != 'false'"> -keepnativesymbols</_KeepNativeSymbolsBuildArg>
+    <!--
+      BuildNativeCompiler is a pass-through argument, to pass an argument to build-native.sh. It is intended to be
+      used to force a specific compiler toolset.
+    -->
+    <_BuildNativeCompilerArg Condition="'$(BuildNativeCompiler)' != ''"> $(BuildNativeCompiler)</_BuildNativeCompilerArg>
+    <_BuildNativeArgs>$(_BuildNativeArgs)$(_CrossBuildArg)$(_BuildNativeCompilerArg)$(_KeepNativeSymbolsBuildArg) $(Compiler)</_BuildNativeArgs>
+    <_BuildScriptExtension>sh</_BuildScriptExtension>
+  </PropertyGroup>
+
+  <Target Name="BuildNative"
+          BeforeTargets="Build"
+          Condition="'$(UsingMicrosoftTraversalSdk)' != 'true'">
+    <PropertyGroup>
+      <_CMakeArgs Condition="'@(CMakeArg)' != ''"> @(CMakeArg->'-cmakeargs &quot;%(Identity)&quot;',' ')</_CMakeArgs>
+      <_BuildNativeEnvironmentVariables>EXTRA_CFLAGS=@(CFlag->'%(Identity)',' ')</_BuildNativeEnvironmentVariables>
+      <_BuildNativeEnvironmentVariables>$(_BuildNativeEnvironmentVariables);EXTRA_CXXFLAGS=@(CXXFlag->'%(Identity)',' ')</_BuildNativeEnvironmentVariables>
+      <_BuildNativeEnvironmentVariables>$(_BuildNativeEnvironmentVariables);EXTRA_LDFLAGS=@(LDFlag->'%(Identity)',' ')</_BuildNativeEnvironmentVariables>
+    </PropertyGroup>
+    <!-- Run script that uses CMake to generate and build the native files. -->
+    <Message Text="&quot;$(MSBuildThisFileDirectory)build-native.$(_BuildScriptExtension)&quot; $(_BuildNativeArgs)$(_CMakeArgs)" Importance="High"/>
+    <Exec Command="&quot;$(MSBuildThisFileDirectory)build-native.$(_BuildScriptExtension)&quot; $(_BuildNativeArgs)$(_CMakeArgs)" EnvironmentVariables="$(_BuildNativeEnvironmentVariables)" />
+  </Target>
+
+  <Import Project="..\..\..\Directory.Build.targets" />
+</Project>

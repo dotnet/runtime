@@ -1,0 +1,13 @@
+<Project>
+  <Import Project="..\..\..\Directory.Build.props" />
+  <ItemGroup Condition="'$(HostOS)' == 'windows'">
+    <CFlag Include="/guard:cf" />
+    <CFlag Include="/guard:ehcont" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(HostOS)' == 'windows'">
+    <LDFlag Include="/guard:ehcont" />
+  </ItemGroup>
+  <ItemGroup>
+    <CMakeArg Include="-DCMAKE_INTERPROCEDURAL_OPTIMIZATION=1" Condition="'$(BuildFlavor)' != 'NOIPO'" />
+  </ItemGroup>
+</Project>

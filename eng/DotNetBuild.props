@@ -103,6 +103,7 @@
       <!-- TODO: LinuxTracepoints -->
       <InnerBuildArgs Condition="$(UseSystemLibs.Contains('+rapidjson+'))">$(InnerBuildArgs) --cmakeargs -DCLR_CMAKE_USE_SYSTEM_RAPIDJSON=true</InnerBuildArgs>
       <InnerBuildArgs Condition="$(UseSystemLibs.Contains('+zlib+'))">$(InnerBuildArgs) --cmakeargs -DCLR_CMAKE_USE_SYSTEM_ZLIB=true</InnerBuildArgs>
+      <InnerBuildArgs Condition="'$(UseSystemLibs)' != ''">$(InnerBuildArgs) /p:UseSystemLibs=$(UseSystemLibs)</InnerBuildArgs>
 
       <!-- Needed until https://github.com/dotnet/runtime/issues/109329 is fixed. -->
       <InnerBuildArgs Condition="'$(NetCoreAppToolCurrentVersion)' != ''">$(InnerBuildArgs) /p:NetCoreAppToolCurrentVersion=$(NetCoreAppToolCurrentVersion)</InnerBuildArgs>

@@ -25,6 +25,9 @@
   <ItemGroup>
     <ProjectReference Include="$(LibrariesProjectRoot)native-binplace.proj" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(RepoRoot)/src/native/external/vendored-libs.proj" />
+  </ItemGroup>
 
   <PropertyGroup Condition="'$(TargetOS)' == 'wasi'">
     <WASI_SDK_PATH Condition="'$(WASI_SDK_PATH)' == '' or !Exists('$(WASI_SDK_PATH)/WASI-SDK-VERSION-25.0')">$([MSBuild]::NormalizeDirectory($(RepoRoot), 'src', 'mono', 'wasi', 'wasi-sdk'))</WASI_SDK_PATH>
@@ -73,8 +76,8 @@
     <Exec Command="&quot;$(MSBuildThisFileDirectory)build-native.sh&quot; $(_BuildNativeUnixArgs)" EnvironmentVariables="$(_BuildNativeEnvironmentVariables)" />
   </Target>
 
-  <!-- 
-    This is a workaround when cross-compiling on Windows for Android. 
+  <!--
+    This is a workaround when cross-compiling on Windows for Android.
 
     https://github.com/dotnet/arcade/issues/15496
   -->

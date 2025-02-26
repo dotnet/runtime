@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.Build.Traversal">
+  <PropertyGroup>
+    <SystemLibs>lib1+lib2+lib3</SystemLibs>
+    <!-- Replace '+' with ';' to create a semicolon-delimited list we can use to make items -->
+    <SystemLibList>$([System.String]::Copy('$(UseSystemLibs)').Replace('+',';'))</SystemLibList>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <SystemLib Include="$(SystemLibList)" />
+  </ItemGroup>
+  <ItemGroup Condition="'@(SystemLib->AnyWithMetadataValue('Identity','brotli'))' != 'true'">
+    <ProjectReference Include="brotli.proj" />
+    <ProjectReference Include="brotli.proj" AdditionalProperties="BuildFlavor=NOIPO" />
+  </ItemGroup>
+</Project>
