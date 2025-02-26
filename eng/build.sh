@@ -542,8 +542,6 @@ fi
 if [[ "$os" == "browser" ]]; then
     # override default arch for Browser, we only support wasm
     arch=wasm
-    export DOTNET_GCHighMemPercent="10"
-    export DOTNET_GCHeapHardLimitPercent="20"
 fi
 if [[ "$os" == "wasi" ]]; then
     # override default arch for wasi, we only support wasm
@@ -562,6 +560,12 @@ initDistroRid "$os" "$arch" "$crossBuild"
 # Disable targeting pack caching as we reference a partially constructed targeting pack and update it later.
 # The later changes are ignored when using the cache.
 export DOTNETSDK_ALLOW_TARGETING_PACK_CACHING=0
+
+if [[ "$arch" == "wasm" ]]; then
+    # LLVM + MSBuild can consume a lot of memory, so we set the GC limits to be more aggressive.
+    export DOTNET_GCHighMemPercent="10"
+    export DOTNET_GCHeapHardLimitPercent="20"
+fi
 
 # URL-encode space (%20) to avoid quoting issues until the msbuild call in /eng/common/tools.sh.
 # In *proj files (XML docs), URL-encoded string are rendered in their decoded form.
