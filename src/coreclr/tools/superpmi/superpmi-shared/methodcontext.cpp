@@ -811,9 +811,21 @@ bool MethodContext::repNotifyInstructionSetUsage(CORINFO_InstructionSet isa, boo
     DD key{};
     key.A = (DWORD)isa;
     key.B = supported ? 1 : 0;
-    DWORD value = LookupByKeyOrMiss(NotifyInstructionSetUsage, key, ": key %u-%u", key.A, key.B);
-    DEBUG_REP(dmpNotifyInstructionSetUsage(key, value));
-    return value != 0;
+
+    if (NotifyInstructionSetUsage != nullptr)
+    {
+        int index = NotifyInstructionSetUsage->GetIndex(key);
+        if (index != -1)
+        {
+            DWORD value = NotifyInstructionSetUsage->GetItem(index);
+            DEBUG_REP(dmpNotifyInstructionSetUsage(key, value));
+            return value != 0;
+        }
+    }
+
+    // Fall back to most likely implementation instead of missing, since ISA
+    // usage changes are quite common on normal JIT changes.
+    return supported;
 }
 
 void MethodContext::recGetMethodAttribs(CORINFO_METHOD_HANDLE methodHandle, DWORD attribs)
