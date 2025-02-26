@@ -54,7 +54,7 @@ namespace Microsoft.NET.Sdk.WebAssembly
             AddDictionary(sb, bootConfig.resources.coreAssembly);
 
             AddDictionary(sb, bootConfig.resources.jsModuleWorker);
-            AddDictionary(sb, bootConfig.resources.jsModuleDiag);
+            AddDictionary(sb, bootConfig.resources.jsModuleDiagnostics);
             AddDictionary(sb, bootConfig.resources.jsModuleNative);
             AddDictionary(sb, bootConfig.resources.jsModuleRuntime);
             AddDictionary(sb, bootConfig.resources.wasmNative);
@@ -89,8 +89,8 @@ namespace Microsoft.NET.Sdk.WebAssembly
             string resourceExtension = Path.GetExtension(resourceName);
             if (resourceName.StartsWith("dotnet.native.worker", StringComparison.OrdinalIgnoreCase) && string.Equals(resourceExtension, ".mjs", StringComparison.OrdinalIgnoreCase))
                 return bootConfig.resources.jsModuleWorker ??= new();
-            else if (resourceName.StartsWith("dotnet.diag", StringComparison.OrdinalIgnoreCase) && string.Equals(resourceExtension, ".js", StringComparison.OrdinalIgnoreCase))
-                return bootConfig.resources.jsModuleDiag ??= new();
+            else if (resourceName.StartsWith("dotnet.diagnostics", StringComparison.OrdinalIgnoreCase) && string.Equals(resourceExtension, ".js", StringComparison.OrdinalIgnoreCase))
+                return bootConfig.resources.jsModuleDiagnostics ??= new();
             else if (resourceName.StartsWith("dotnet.native", StringComparison.OrdinalIgnoreCase) && string.Equals(resourceExtension, ".js", StringComparison.OrdinalIgnoreCase))
                 return bootConfig.resources.jsModuleNative ??= new();
             else if (resourceName.StartsWith("dotnet.runtime", StringComparison.OrdinalIgnoreCase) && string.Equals(resourceExtension, ".js", StringComparison.OrdinalIgnoreCase))

@@ -50,10 +50,7 @@ export const mono_wasm_threads_imports = !WasmEnableThreads ? [] : [
     mono_wasm_warn_about_blocking_wait,
 ];
 
-export const mono_wasm_diag_imports = [
-    mono_wasm_profiler_now,
-    mono_wasm_profiler_record,
-
+export const mono_wasm_diagnostic_imports = [
     //event pipe
     ds_rt_websocket_create,
     ds_rt_websocket_send,
@@ -84,6 +81,10 @@ export const mono_wasm_imports = [
     mono_interp_flush_jitcall_queue,
     mono_wasm_free_method_data,
 
+    // browser.c
+    mono_wasm_profiler_now,
+    mono_wasm_profiler_record,
+
     // driver.c
     mono_wasm_trace_logger,
     mono_wasm_set_entrypoint_breakpoint,
@@ -105,8 +106,8 @@ export const mono_wasm_imports = [
 // !!! Keep in sync with exports-linker.ts
 const wasmImports: Function[] = [
     ...mono_wasm_imports,
-    // threading exports, if threading is enabled
-    ...mono_wasm_diag_imports,
+    // diagnostic server exports, when enabled
+    ...mono_wasm_diagnostic_imports,
     // threading exports, if threading is enabled
     ...mono_wasm_threads_imports,
 ];

@@ -25,7 +25,7 @@ export function instantiate_asset (asset: AssetEntry, url: string, bytes: Uint8A
     switch (asset.behavior) {
         case "dotnetwasm":
         case "js-module-threads":
-        case "js-module-diag":
+        case "js-module-diagnostics":
         case "symbols":
             // do nothing
             break;

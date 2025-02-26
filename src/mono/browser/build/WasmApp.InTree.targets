@@ -9,6 +9,10 @@
   <Import Project="$(MSBuildThisFileDirectory)BrowserWasmApp.targets" Condition="'$(UsingNativeAOT)' != 'true'" />
   <Import Project="$(MSBuildThisFileDirectory)EmSdkRepo.Defaults.props" Condition="'$(UsingNativeAOT)' == 'true' and '$(EMSDK_PATH)' != ''" />
 
+  <PropertyGroup>
+    <FeaturePerfTracing Condition="'$(FeaturePerfTracing)' == '' and '$(WasmProfilers)' == ''">true</FeaturePerfTracing>
+  </PropertyGroup>
+
   <!-- FIXME: use proper dependency -->
   <Target Name="SetupAppHostConfig" BeforeTargets="_WasmGenerateAppBundle">
     <PropertyGroup>

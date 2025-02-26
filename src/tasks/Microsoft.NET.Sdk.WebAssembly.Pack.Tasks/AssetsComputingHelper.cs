@@ -27,7 +27,7 @@ public class AssetsComputingHelper
 
     private static readonly string[] dotnetJsDiagNames = new[]
     {
-        "dotnet.diag",
+        "dotnet.diagnostics",
     };
 
     private static readonly string[] icuShardsFromRuntimePack = new[]
@@ -73,8 +73,8 @@ public class AssetsComputingHelper
             ".json" when fromMonoPackage && (fileName == "wasm-props" || fileName == "package") => $"{fileName}{extension} is not used by Blazor",
             ".ts" when fromMonoPackage && fileName == "dotnet.d" => "dotnet type definition is not used by Blazor",
             ".map" when emitSourceMap && fromMonoPackage && (fileName == "dotnet.js" || fileName == "dotnet.runtime.js") => null,
-            ".map" when emitSourceMap && fromMonoPackage && featurePerfTracing && fileName == "dotnet.diag.js" => null,
-            ".map" when emitSourceMap && fromMonoPackage && !featurePerfTracing && fileName == "dotnet.diag.js" => "perf tracing is not enabled",
+            ".map" when emitSourceMap && fromMonoPackage && featurePerfTracing && fileName == "dotnet.diagnostics.js" => null,
+            ".map" when emitSourceMap && fromMonoPackage && !featurePerfTracing && fileName == "dotnet.diagnostics.js" => "perf tracing is not enabled",
             ".map" when !emitSourceMap && fromMonoPackage => "source map file is not published",
             ".ts" when fromMonoPackage && fileName == "dotnet-legacy.d" => "dotnet type definition is not used by Blazor",
             ".js" when assetType == "native" && dotnetJsSingleThreadNames.Contains(fileName) => null,
@@ -127,7 +127,7 @@ public class AssetsComputingHelper
             {
                 ("dotnet", ".js") => string.Concat(fileName, fingerprintDotNetJs ? requiredFingerprint : optionalFingerprint, extension),
                 ("dotnet.runtime", ".js") => string.Concat(fileName, requiredFingerprint, extension),
-                ("dotnet.diag", ".js") => string.Concat(fileName, requiredFingerprint, extension),
+                ("dotnet.diagnostics", ".js") => string.Concat(fileName, requiredFingerprint, extension),
                 ("dotnet.native", ".js") => string.Concat(fileName, requiredFingerprint, extension),
                 ("dotnet.native.worker", ".mjs") => string.Concat(fileName, requiredFingerprint, extension),
                 _ => string.Concat(fileName, extension)

@@ -97,14 +97,13 @@ public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string?
         bool expectFingerprintOnDotnetJs,
         AssertBundleOptions assertOptions,
         IReadOnlyDictionary<string, bool> superSet,
-        IReadOnlySet<string>? expected)
+        IReadOnlySet<string> expected)
     {
         EnsureProjectDirIsSet();
         var actual = new SortedDictionary<string, DotNetFileName>();
 
         if (!Directory.Exists(binFrameworkDir))
             throw new XunitException($"Could not find bundle directory {binFrameworkDir}");
-        StringBuilder msg = new();
         IList<string> dotnetFiles = Directory.EnumerateFiles(binFrameworkDir,
                                                              "dotnet.*",
                                                              SearchOption.TopDirectoryOnly)
@@ -114,16 +113,12 @@ public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string?
         {
             string prefix = Path.GetFileNameWithoutExtension(expectedFilename);
             string extension = Path.GetExtension(expectedFilename).Substring(1);
-            msg.AppendLine($"Outer: expectedFilename:{expectedFilename} expectFingerprint:{expectFingerprint} extension:{extension} prefix:{prefix}");
 
             dotnetFiles = dotnetFiles
                 .Where(actualFile =>
                 {
                     if (s_dotnetExtensionsToIgnore.Contains(Path.GetExtension(actualFile)))
-                    {
-                        msg.AppendLine($"   ignore {actualFile}");
                         return false;
-                    }
 
                     string actualFilename = Path.GetFileName(actualFile);
                     // _testOutput.WriteLine($"Comparing {expectedFilename} with {actualFile}, expectFingerprintOnDotnetJs: {expectFingerprintOnDotnetJs}, expectFingerprint: {expectFingerprint}");
@@ -134,13 +129,8 @@ public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string?
                         string pattern = $"^{prefix}{s_dotnetVersionHashRegex}{extension}$";
                         var match = Regex.Match(actualFilename, pattern);
                         if (!match.Success)
-                        {
-                            msg.AppendLine($"   FP no match expectedFilename:{expectedFilename} actualFile:{actualFile}");
                             return true;
 
-                        }
-
-                        msg.AppendLine($"   FP actual expectedFilename:{expectedFilename} actualFile:{actualFile}");
                         actual[expectedFilename] = new(ExpectedFilename: expectedFilename,
                                                        Hash: match.Groups[1].Value,
                                                        ActualPath: actualFile);
@@ -148,12 +138,8 @@ public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string?
                     else
                     {
                         if (actualFilename != expectedFilename)
-                        {
-                            msg.AppendLine($"   No FP no match expectedFilename:{expectedFilename} actualFile:{actualFile}");
                             return true;
-                        }
 
-                        msg.AppendLine($"   No FP actual expectedFilename:{expectedFilename} actualFile:{actualFile}");
                         actual[expectedFilename] = new(ExpectedFilename: expectedFilename,
                                                        Hash: null,
                                                        ActualPath: actualFile);
@@ -169,13 +155,11 @@ public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string?
 
         if (dotnetFiles.Any())
         {
-            var exp = expected!=null ? string.Join(", ", expected) : "";
             throw new XunitException($"Found unknown files in {binFrameworkDir}:{Environment.NewLine}    " +
                     $"{string.Join($"{Environment.NewLine}  ", dotnetFiles.Select(f => Path.GetRelativePath(binFrameworkDir, f)))}{Environment.NewLine}" +
                     $"Add these to {nameof(GetAllKnownDotnetFilesToFingerprintMap)} method{Environment.NewLine}" + 
-                    $"Expected {exp}{Environment.NewLine}" + 
-                    $"Options {assertOptions} {Environment.NewLine}" +
-                    $"Log {msg}"
+                    $"Expected {string.Join($"{Environment.NewLine}  ", expected)}{Environment.NewLine}" + 
+                    $"Options {assertOptions} {Environment.NewLine}"
                     );
         }
 
@@ -530,7 +514,7 @@ public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string?
             .Union(bootJson.resources.wasmNative.Keys)
             .Union(bootJson.resources.jsModuleRuntime.Keys)
             .Union(bootJson.resources.jsModuleWorker?.Keys ?? Enumerable.Empty<string>())
-            .Union(bootJson.resources.jsModuleDiag?.Keys ?? Enumerable.Empty<string>())
+            .Union(bootJson.resources.jsModuleDiagnostics?.Keys ?? Enumerable.Empty<string>())
             .Union(bootJson.resources.wasmSymbols?.Keys ?? Enumerable.Empty<string>())
             .ToArray();
 

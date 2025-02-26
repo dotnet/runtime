@@ -95,10 +95,10 @@ const checkNoRuntime =
     pattern: /_runtimeModuleLoaded/gm,
     failure: "module should not contain runtimeModuleLoaded member. This is probably duplicated code in the output caused by a dependency on the runtime module."
 };
-const checkNoDiag =
+const checkNoDiagnostics =
 {
-    pattern: /_diagModuleLoaded/gm,
-    failure: "module should not contain _diagModuleLoaded member. This is probably duplicated code in the output caused by a dependency on the runtime module."
+    pattern: /_diagnosticModuleLoaded/gm,
+    failure: "module should not contain _diagnosticModuleLoaded member. This is probably duplicated code in the output caused by a dependency on the runtime module."
 };
 
 
@@ -179,7 +179,7 @@ const loaderConfig = {
         }
     ],
     external: externalDependencies,
-    plugins: [nodeResolve(), regexReplace(inlineAssert), regexCheck([checkAssert, checkNoRuntime, checkNoDiag]), ...outputCodePlugins],
+    plugins: [nodeResolve(), regexReplace(inlineAssert), regexCheck([checkAssert, checkNoRuntime, checkNoDiagnostics]), ...outputCodePlugins],
     onwarn: onwarn
 };
 const runtimeConfig = {
@@ -196,7 +196,7 @@ const runtimeConfig = {
         }
     ],
     external: externalDependencies,
-    plugins: [regexReplace(inlineAssert), regexCheck([checkAssert, checkNoLoader, checkNoDiag]), ...outputCodePlugins],
+    plugins: [regexReplace(inlineAssert), regexCheck([checkAssert, checkNoLoader, checkNoDiagnostics]), ...outputCodePlugins],
     onwarn: onwarn
 };
 const diagConfig = {
@@ -205,7 +205,7 @@ const diagConfig = {
     output: [
         {
             format: "es",
-            file: nativeBinDir + "/dotnet.diag.js",
+            file: nativeBinDir + "/dotnet.diagnostics.js",
             banner,
             plugins,
             sourcemap: true,

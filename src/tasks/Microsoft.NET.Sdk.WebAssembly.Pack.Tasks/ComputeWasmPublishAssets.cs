@@ -222,8 +222,8 @@ public class ComputeWasmPublishAssets : Task
                     baseName = "dotnet.native";
                 else if (baseName.StartsWith("dotnet.runtime"))
                     baseName = "dotnet.runtime";
-                else if (baseName.StartsWith("dotnet.diag"))
-                    baseName = "dotnet.diag";
+                else if (baseName.StartsWith("dotnet.diagnostics"))
+                    baseName = "dotnet.diagnostics";
                 else if (baseName.StartsWith("dotnet"))
                     baseName = "dotnet";
 

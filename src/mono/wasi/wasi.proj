@@ -165,7 +165,7 @@
       { "identity": "WasmNativeStrip",        "defaultValueInRuntimePack": "$(WasmNativeStrip)" },
       { "identity": "WasmSingleFileBundle",   "defaultValueInRuntimePack": "$(WasmSingleFileBundle)" },
       { "identity": "FeaturePerfTracing",     "defaultValueInRuntimePack": "$(FeaturePerfTracing)" },
-      { "identity": "WasmProfilers",                "defaultValueInRuntimePack": "$(WasmProfilers)" },
+      { "identity": "WasmProfilers",          "defaultValueInRuntimePack": "$(WasmProfilers)" },
       { "identity": "WasmEnableSIMD",         "defaultValueInRuntimePack": "$(WasmEnableSIMD)" }
     ]
   }

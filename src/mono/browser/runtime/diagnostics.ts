@@ -3,24 +3,24 @@
 
 import type { CharPtr, VoidPtr } from "./types/emscripten";
 
-import { diagHelpers } from "./globals";
+import { diagnosticHelpers } from "./globals";
 
 export function ds_rt_websocket_create (urlPtr :CharPtr):number {
-    return diagHelpers.ds_rt_websocket_create(urlPtr);
+    return diagnosticHelpers.ds_rt_websocket_create(urlPtr);
 }
 
 export function ds_rt_websocket_send (client_socket :number, buffer:VoidPtr, bytes_to_write:number):number {
-    return diagHelpers.ds_rt_websocket_send(client_socket, buffer, bytes_to_write);
+    return diagnosticHelpers.ds_rt_websocket_send(client_socket, buffer, bytes_to_write);
 }
 
 export function ds_rt_websocket_poll (client_socket :number):number {
-    return diagHelpers.ds_rt_websocket_poll(client_socket);
+    return diagnosticHelpers.ds_rt_websocket_poll(client_socket);
 }
 
 export function ds_rt_websocket_recv (client_socket :number, buffer:VoidPtr, bytes_to_read:number):number {
-    return diagHelpers.ds_rt_websocket_recv(client_socket, buffer, bytes_to_read);
+    return diagnosticHelpers.ds_rt_websocket_recv(client_socket, buffer, bytes_to_read);
 }
 
 export function ds_rt_websocket_close (client_socket :number):number {
-    return diagHelpers.ds_rt_websocket_close(client_socket);
+    return diagnosticHelpers.ds_rt_websocket_close(client_socket);
 }

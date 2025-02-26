@@ -248,7 +248,7 @@ export type RuntimeHelpers = {
     mono_wasm_ds_exec: () =>void;
 }
 
-export type DiagHelpers = {
+export type DiagnosticHelpers = {
     ds_rt_websocket_create:(urlPtr :CharPtr)=>number,
     ds_rt_websocket_send:(client_socket :number, buffer:VoidPtr, bytes_to_write:number)=>number,
     ds_rt_websocket_poll:(client_socket :number)=>number,
@@ -313,7 +313,7 @@ export type GlobalObjects = {
     module: DotnetModuleInternal,
     loaderHelpers: LoaderHelpers,
     runtimeHelpers: RuntimeHelpers,
-    diagHelpers: DiagHelpers,
+    diagnosticHelpers: DiagnosticHelpers,
     api: RuntimeAPI,
 };
 export type EmscriptenReplacements = {
@@ -509,7 +509,7 @@ export type RuntimeModuleExportsInternal = {
     passEmscriptenInternals: passEmscriptenInternalsType,
 }
 
-export type DiagModuleExportsInternal = {
+export type DiagnosticModuleExportsInternal = {
     setRuntimeGlobals: setGlobalObjectsType,
 }
 

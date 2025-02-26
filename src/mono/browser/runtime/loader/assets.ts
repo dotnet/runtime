@@ -32,7 +32,7 @@ const jsRuntimeModulesAssetTypes: {
     "js-module-runtime": true,
     "js-module-dotnet": true,
     "js-module-native": true,
-    "js-module-diag": true,
+    "js-module-diagnostics": true,
 };
 
 const jsModulesAssetTypes: {
@@ -304,8 +304,8 @@ export function prepareAssets () {
         convert_single_asset(assetsToLoad, resources.wasmNative, "dotnetwasm");
         convert_single_asset(modulesAssets, resources.jsModuleNative, "js-module-native");
         convert_single_asset(modulesAssets, resources.jsModuleRuntime, "js-module-runtime");
-        if (resources.jsModuleDiag) {
-            convert_single_asset(modulesAssets, resources.jsModuleDiag, "js-module-diag");
+        if (resources.jsModuleDiagnostics) {
+            convert_single_asset(modulesAssets, resources.jsModuleDiagnostics, "js-module-diagnostics");
         }
         if (WasmEnableThreads) {
             convert_single_asset(modulesAssets, resources.jsModuleWorker, "js-module-threads");

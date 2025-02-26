@@ -256,7 +256,7 @@ interface ResourceGroups {
     corePdb?: ResourceList;
     pdb?: ResourceList;
     jsModuleWorker?: ResourceList;
-    jsModuleDiag?: ResourceList;
+    jsModuleDiagnostics?: ResourceList;
     jsModuleNative: ResourceList;
     jsModuleRuntime: ResourceList;
     wasmSymbols?: ResourceList;
@@ -363,7 +363,7 @@ type SingleAssetBehaviors =
 /**
  * The javascript module for diagnostic server and client.
  */
- | "js-module-diag"
+ | "js-module-diagnostics"
 /**
  * The javascript module for runtime.
  */

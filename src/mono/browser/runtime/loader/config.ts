@@ -71,8 +71,8 @@ function deep_merge_resources (target: ResourceGroups, source: ResourceGroups): 
     if (providedResources.jsModuleNative !== undefined) {
         providedResources.jsModuleNative = { ...(target.jsModuleNative || {}), ...(providedResources.jsModuleNative || {}) };
     }
-    if (providedResources.jsModuleDiag !== undefined) {
-        providedResources.jsModuleDiag = { ...(target.jsModuleDiag || {}), ...(providedResources.jsModuleDiag || {}) };
+    if (providedResources.jsModuleDiagnostics !== undefined) {
+        providedResources.jsModuleDiagnostics = { ...(target.jsModuleDiagnostics || {}), ...(providedResources.jsModuleDiagnostics || {}) };
     }
     if (providedResources.jsModuleRuntime !== undefined) {
         providedResources.jsModuleRuntime = { ...(target.jsModuleRuntime || {}), ...(providedResources.jsModuleRuntime || {}) };
@@ -170,8 +170,8 @@ export function normalizeConfig () {
                 case "js-module-native":
                     toMerge.jsModuleNative = resource;
                     break;
-                case "js-module-diag":
-                    toMerge.jsModuleDiag = resource;
+                case "js-module-diagnostics":
+                    toMerge.jsModuleDiagnostics = resource;
                     break;
                 case "js-module-dotnet":
                     // don't merge loader

@@ -35,8 +35,8 @@ public class WasmSdkBasedProjectProvider : ProjectProviderBase
                { "dotnet.native.worker.mjs", true },
                { "dotnet.runtime.js", true },
                { "dotnet.runtime.js.map", false },
-               { "dotnet.diag.js", true },
-               { "dotnet.diag.js.map", false },
+               { "dotnet.diagnostics.js", true },
+               { "dotnet.diagnostics.js.map", false },
             };
 
     protected override IReadOnlySet<string> GetDotNetFilesExpectedSet(AssertBundleOptions assertOptions)
@@ -64,9 +64,9 @@ public class WasmSdkBasedProjectProvider : ProjectProviderBase
 
         if (assertOptions.BuildOptions.FeaturePerfTracing)
         {
-            res.Add("dotnet.diag.js");
+            res.Add("dotnet.diagnostics.js");
             if (!assertOptions.BuildOptions.IsPublish)
-                res.Add("dotnet.diag.js.map");
+                res.Add("dotnet.diagnostics.js.map");
         }
 
         return res;
