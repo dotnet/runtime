@@ -228,7 +228,7 @@ internal class TestPlaceholderTarget : Target
         throw new NotImplementedException();
     }
 
-    public override int GetThreadContext(uint threadId, uint contextFlags, uint contextSize, Span<byte> bufferToFill) => throw new NotImplementedException();
+    public override bool TryGetThreadContext(ulong threadId, uint contextFlags, Span<byte> bufferToFill) => throw new NotImplementedException();
 
     public override Target.IDataCache ProcessedData => _dataCache;
     public override ContractRegistry Contracts => _contractRegistry;

@@ -272,9 +272,12 @@ public sealed unsafe class ContractDescriptorTarget : Target
         }
     }
 
-    public override int GetThreadContext(uint threadId, uint contextFlags, uint contextSize, Span<byte> buffer)
+    public override bool TryGetThreadContext(ulong threadId, uint contextFlags, Span<byte> buffer)
     {
-        return _reader.GetThreadContext(threadId, contextFlags, contextSize, buffer);
+        if (threadId > uint.MaxValue)
+            return false;
+        int hr = _reader.GetThreadContext((uint)threadId, contextFlags, (uint)buffer.Length, buffer);
+        return hr == 0;
     }
 
     /// <summary>
