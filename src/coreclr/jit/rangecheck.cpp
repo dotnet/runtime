@@ -1668,7 +1668,7 @@ bool RangeCheck::TryGetRange(BasicBlock* block, GenTree* expr, Range* pRange)
 }
 
 //------------------------------------------------------------------------
-// GetRangeWorker: Internal worker for GetRange. Does not reset the internal state
+// GetRangeWorker: Internal worker for TryGetRange. Does not reset the internal state
 //    needed to obtain cached ranges quickly.
 //
 // Arguments:
