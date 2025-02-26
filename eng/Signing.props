@@ -22,6 +22,9 @@
     <EnableBlobArtifacts>true</EnableBlobArtifacts>
     <EnableBlobArtifacts Condition="'$(MonoAOTEnableLLVM)' == 'true'">false</EnableBlobArtifacts>
 
+    <!-- Set the TargetRid property to our PackageRID, which is the right RID to use for selecting packages from our repo. -->
+    <TargetRid>$(PackageRID)</TargetRid>
+
     <EnableDefaultRidSpecificArtifacts Condition="'$(EnableDefaultRidSpecificArtifacts)' == ''">true</EnableDefaultRidSpecificArtifacts>
 
     <UseDotNetCertificate>true</UseDotNetCertificate>
