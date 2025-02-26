@@ -962,23 +962,26 @@ bool OptBoolsDsc::optOptimizeRangeTests()
 //
 bool OptBoolsDsc::optOptimizeCompareChainCondBlock()
 {
-    assert((m_b1 != nullptr) && (m_b2 != nullptr) && (m_b3 == nullptr));
+    assert((m_b1 != nullptr) && (m_b2 != nullptr));
     m_t3 = nullptr;
 
     bool foundEndOfOrConditions = false;
-    if (m_b1->FalseTargetIs(m_b2) && m_b2->FalseTargetIs(m_b1->GetTrueTarget()))
+    if (m_b3 == nullptr)
     {
-        // Found the end of two (or more) conditions being ORed together.
-        // The final condition has been inverted.
-        foundEndOfOrConditions = true;
-    }
-    else if (m_b1->FalseTargetIs(m_b2) && m_b1->TrueTargetIs(m_b2->GetTrueTarget()))
-    {
-        // Found two conditions connected together.
-    }
-    else
-    {
-        return false;
+        if (m_b1->FalseTargetIs(m_b2) && m_b2->FalseTargetIs(m_b1->GetTrueTarget()))
+        {
+            // Found the end of two (or more) conditions being ORed together.
+            // The final condition has been inverted.
+            foundEndOfOrConditions = true;
+        }
+        else if (m_b1->FalseTargetIs(m_b2) && m_b1->TrueTargetIs(m_b2->GetTrueTarget()))
+        {
+            // Found two conditions connected together.
+        }
+        else
+        {
+            return false;
+        }
     }
 
     Statement* const s1 = optOptimizeBoolsChkBlkCond();
@@ -990,7 +993,7 @@ bool OptBoolsDsc::optOptimizeCompareChainCondBlock()
 
     assert(m_testInfo1.testTree->OperIs(GT_JTRUE));
     GenTree* cond1 = m_testInfo1.testTree->gtGetOp1();
-    assert(m_testInfo2.testTree->OperIs(GT_JTRUE));
+    assert(m_testInfo2.testTree->OperIs((m_b3 == nullptr) ? GT_JTRUE : GT_RETURN));
     GenTree* cond2 = m_testInfo2.testTree->gtGetOp1();
 
     // Ensure both conditions are suitable.
@@ -1031,8 +1034,8 @@ bool OptBoolsDsc::optOptimizeCompareChainCondBlock()
         int op1Cost = cond1->GetCostEx();
         int op2Cost = cond2->GetCostEx();
         // The cost of combing three simple conditions is 32.
-        int maxOp1Cost = op1IsCondChain ? 31 : 7;
-        int maxOp2Cost = op2IsCondChain ? 31 : 7;
+        int maxOp1Cost = op1IsCondChain ? 31 : 10;
+        int maxOp2Cost = op2IsCondChain ? 31 : 10;
 
         // Cost to allow for chain size of three.
         if (op1Cost > maxOp1Cost || op2Cost > maxOp2Cost)
@@ -2011,6 +2014,16 @@ PhaseStatus Compiler::optOptimizeBools()
                     change = true;
                     numReturn++;
                 }
+#ifdef TARGET_ARM64
+                else if (optBoolsDsc.optOptimizeCompareChainCondBlock())
+                {
+                    // The optimization will have merged b1 and b2. Retry the loop so that
+                    // b1 and b2->bbNext can be tested.
+                    change = true;
+                    retry  = true;
+                    numCond++;
+                }
+#endif
             }
             else
             {
