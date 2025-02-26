@@ -45,6 +45,9 @@
       <NestedBuildProperty Include="InvariantGlobalization" />
       <NestedBuildProperty Include="UsingNativeAOT" />
       <NestedBuildProperty Include="WasmEnableThreads" />
+      <NestedBuildProperty Include="FeaturePerfTracing" />
+      <NestedBuildProperty Include="WasmEmitSourceMap" />
+      <NestedBuildProperty Include="WasmEmitSymbolMap" />
       <NestedBuildPropertyValue Include="/p:%(NestedBuildProperty.Identity)=$(%(NestedBuildProperty.Identity))" Condition="'$(%(NestedBuildProperty.Identity))' != '%(NestedBuildProperty.DefaultValue)'" />
     </ItemGroup>
     <Exec Command="$(_Dotnet) publish -bl:publish-browser.binlog /p:Configuration=$(Configuration) /p:TargetArchitecture=wasm /p:TargetOS=browser @(NestedBuildPropertyValue, ' ') $(_SampleProject) $(BuildAdditionalArgs)" />
