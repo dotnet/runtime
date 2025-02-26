@@ -274,9 +274,8 @@ public sealed unsafe class ContractDescriptorTarget : Target
 
     public override bool TryGetThreadContext(ulong threadId, uint contextFlags, Span<byte> buffer)
     {
-        if (threadId > uint.MaxValue)
-            return false;
-        int hr = _reader.GetThreadContext((uint)threadId, contextFlags, (uint)buffer.Length, buffer);
+        // Underlying API only supports 32-bit thread IDs, mask off top 32 bits
+        int hr = _reader.GetThreadContext((uint)(threadId & uint.MaxValue), contextFlags, (uint)buffer.Length, buffer);
         return hr == 0;
     }
 
