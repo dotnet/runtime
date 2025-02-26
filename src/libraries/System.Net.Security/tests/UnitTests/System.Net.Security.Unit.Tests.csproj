@@ -289,6 +289,8 @@
              Link="Common\Interop\Windows\SspiCli\SecurityPackageInfoClass.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\SspiCli\SecurityPackageInfo.cs"
              Link="Common\Interop\Windows\SspiCli\SecurityPackageInfo.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\SspiCli\SecPkgContext_SessionKey.cs"
+             Link="Common\Interop\Windows\SspiCli\SecPkgContext_SessionKey.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\SspiCli\SecPkgContext_Sizes.cs"
              Link="Common\Interop\Windows\SspiCli\SecPkgContext_Sizes.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\SspiCli\SafeDeleteContext.cs"

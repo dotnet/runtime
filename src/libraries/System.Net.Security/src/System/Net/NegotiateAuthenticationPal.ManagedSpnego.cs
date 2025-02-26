@@ -450,6 +450,16 @@ namespace System.Net
 
                 _mechanism.GetMIC(message, signature);
             }
+
+            public override TReturn DeriveKeyFromSessionKey<TState, TReturn>(Func<ReadOnlySpan<byte>, TState, TReturn> keyDerivationFunction, TState state)
+            {
+                if (_mechanism is null || !_isAuthenticated)
+                {
+                    throw new InvalidOperationException(SR.net_auth_noauth);
+                }
+
+                return _mechanism.DeriveKeyFromSessionKey(keyDerivationFunction, state);
+            }
         }
     }
 }

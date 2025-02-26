@@ -1042,10 +1042,18 @@ check_include_files(
 
 if (HAVE_GSSFW_HEADERS)
     check_symbol_exists(
+        GSS_C_INQ_SSPI_SESSION_KEY
+        "GSS/GSS.h"
+        HAVE_GSS_C_INQ_SSPI_SESSION_KEY)
+    check_symbol_exists(
         GSS_SPNEGO_MECHANISM
         "GSS/GSS.h"
         HAVE_GSS_SPNEGO_MECHANISM)
 else ()
+    check_symbol_exists(
+        GSS_C_INQ_SSPI_SESSION_KEY,
+        "gssapi/gssapi.h"
+        HAVE_GSS_C_INQ_SSPI_SESSION_KEY)
     check_symbol_exists(
         GSS_SPNEGO_MECHANISM
         "gssapi/gssapi.h"

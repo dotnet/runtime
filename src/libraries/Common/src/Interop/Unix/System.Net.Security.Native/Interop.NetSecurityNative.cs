@@ -285,5 +285,11 @@ internal static partial class Interop
                 return VerifyMic(out minorStatus, contextHandle, inputBytesPtr, inputBytes.Length, tokenBytesPtr, tokenBytes.Length);
             }
         }
+
+        [LibraryImport(Interop.Libraries.NetSecurityNative, EntryPoint = "NetSecurityNative_InquireSecContextSessionKey")]
+        internal static partial Status InquireSecContextSessionKey(
+            out Status minorStatus,
+            SafeGssContextHandle? contextHandle,
+            ref GssBuffer outBuffer);
     }
 }

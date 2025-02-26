@@ -664,6 +664,29 @@ namespace System.Net
                 }
             }
 
+            public override unsafe TReturn DeriveKeyFromSessionKey<TState, TReturn>(Func<ReadOnlySpan<byte>, TState, TReturn> keyDerivationFunction, TState state)
+            {
+                Debug.Assert(_securityContext is not null);
+
+                SecPkgContext_SessionKey sessionKey = default;
+                int result = Interop.SspiCli.QueryContextAttributesW(ref _securityContext._handle, Interop.SspiCli.ContextAttribute.SECPKG_ATTR_SESSION_KEY, &sessionKey);
+                if (result != 0)
+                {
+                    if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(null, SR.Format(SR.net_log_operation_failed_with_error, nameof(Interop.SspiCli.QueryContextAttributesW), $"0x{result:X}"));
+                    throw new Win32Exception(result);
+                }
+
+                try
+                {
+                    ReadOnlySpan<byte> key = new ReadOnlySpan<byte>((void*)sessionKey.SessionKey, sessionKey.SessionKeyLength);
+                    return keyDerivationFunction(key, state);
+                }
+                finally
+                {
+                    Interop.SspiCli.FreeContextBuffer(sessionKey.SessionKey);
+                }
+            }
+
             private static SafeFreeCredentials AcquireDefaultCredential(string package, bool isServer)
             {
                 return SSPIWrapper.AcquireDefaultCredential(

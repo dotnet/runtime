@@ -17,7 +17,7 @@ namespace System.Net.Security.Tests
         {
             _testOutputHelper = testOutputHelper;
         }
-    
+
         [Fact]
         public async Task Loopback_Success()
         {
@@ -58,6 +58,10 @@ namespace System.Net.Security.Tests
                 Assert.Equal("Kerberos", serverNegotiateAuthentication.Package);
                 Assert.True(clientNegotiateAuthentication.IsAuthenticated);
                 Assert.True(serverNegotiateAuthentication.IsAuthenticated);
+
+                byte[] clientKey = clientNegotiateAuthentication.DeriveKeyFromSessionKey(static (k) => k.ToArray());
+                byte[] serverKey = serverNegotiateAuthentication.DeriveKeyFromSessionKey(static (k) => k.ToArray());
+                Assert.Equal(clientKey, serverKey);
             });
         }
 

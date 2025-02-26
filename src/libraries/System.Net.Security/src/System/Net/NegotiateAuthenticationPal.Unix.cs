@@ -457,6 +457,31 @@ namespace System.Net
                 return status == Interop.NetSecurityNative.Status.GSS_S_COMPLETE;
             }
 
+            public override TReturn DeriveKeyFromSessionKey<TState, TReturn>(Func<ReadOnlySpan<byte>, TState, TReturn> keyDerivationFunction, TState state)
+            {
+                Debug.Assert(_securityContext is not null);
+
+                Interop.NetSecurityNative.GssBuffer keyBuffer = default;
+                try
+                {
+                    Interop.NetSecurityNative.Status minorStatus;
+                    Interop.NetSecurityNative.Status status = Interop.NetSecurityNative.InquireSecContextSessionKey(
+                        out minorStatus,
+                        _securityContext,
+                        ref keyBuffer);
+                    if (status != Interop.NetSecurityNative.Status.GSS_S_COMPLETE)
+                    {
+                        throw new Interop.NetSecurityNative.GssApiException(status, minorStatus);
+                    }
+
+                    return keyDerivationFunction(keyBuffer.Span, state);
+                }
+                finally
+                {
+                    keyBuffer.Dispose();
+                }
+            }
+
             private static Interop.NetSecurityNative.PackageType GetPackageType(string package)
             {
                 if (string.Equals(package, NegotiationInfoClass.Negotiate, StringComparison.OrdinalIgnoreCase))

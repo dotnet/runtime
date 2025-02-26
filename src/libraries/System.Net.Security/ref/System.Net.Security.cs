@@ -59,6 +59,10 @@ namespace System.Net.Security
         public System.Net.Security.NegotiateAuthenticationStatusCode Wrap(System.ReadOnlySpan<byte> input, System.Buffers.IBufferWriter<byte> outputWriter, bool requestEncryption, out bool isEncrypted) { throw null; }
         public void ComputeIntegrityCheck(System.ReadOnlySpan<byte> message, System.Buffers.IBufferWriter<byte> signatureWriter) { }
         public bool VerifyIntegrityCheck(System.ReadOnlySpan<byte> message, System.ReadOnlySpan<byte> signature) { throw null; }
+        public void DeriveKeyFromSessionKey(Action<ReadOnlySpan<byte>> keyDerivationFunction) { }
+        public void DeriveKeyFromSessionKey<TState>(Action<ReadOnlySpan<byte>, TState> keyDerivationFunction, TState state) { }
+        public TReturn DeriveKeyFromSessionKey<TReturn>(Func<ReadOnlySpan<byte>, TReturn> keyDerivationFunction) { throw null; }
+        public TReturn DeriveKeyFromSessionKey<TState, TReturn>(Func<ReadOnlySpan<byte>, TState, TReturn> keyDerivationFunction, TState state) { throw null; }
     }
     public partial class NegotiateAuthenticationClientOptions
     {

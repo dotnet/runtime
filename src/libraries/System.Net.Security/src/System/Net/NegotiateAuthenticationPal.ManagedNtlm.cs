@@ -31,6 +31,7 @@ namespace System.Net
             private readonly ProtectionLevel _protectionLevel;
 
             // State parameters
+            private byte[]? _exportedSessionKey;
             private byte[]? _negotiateMessage;
             private byte[]? _clientSigningKey;
             private byte[]? _serverSigningKey;
@@ -247,6 +248,11 @@ namespace System.Net
             public override void Dispose()
             {
                 // Dispose of the state
+                if (_exportedSessionKey is not null)
+                {
+                    CryptographicOperations.ZeroMemory(_exportedSessionKey);
+                }
+                _exportedSessionKey = null;
                 _negotiateMessage = null;
                 _clientSigningKey = null;
                 _serverSigningKey = null;
@@ -654,8 +660,8 @@ namespace System.Net
                 AddToPayload(ref response.Workstation, s_workstation, payload, ref payloadOffset);
 
                 // Generate random session key that will be used for signing the messages
-                Span<byte> exportedSessionKey = stackalloc byte[16];
-                RandomNumberGenerator.Fill(exportedSessionKey);
+                _exportedSessionKey = new byte[SessionKeyLength];
+                RandomNumberGenerator.Fill(_exportedSessionKey);
 
                 // Both flags are necessary to exchange keys needed for MIC (!)
                 Debug.Assert(flags.HasFlag(Flags.NegotiateSign) && flags.HasFlag(Flags.NegotiateKeyExchange));
@@ -669,14 +675,14 @@ namespace System.Net
                 using (RC4 rc4 = new RC4(sessionBaseKey))
                 {
                     Span<byte> encryptedRandomSessionKey = payload.Slice(payloadOffset, 16);
-                    rc4.Transform(exportedSessionKey, encryptedRandomSessionKey);
+                    rc4.Transform(_exportedSessionKey, encryptedRandomSessionKey);
                     SetField(ref response.EncryptedRandomSessionKey, 16, payloadOffset);
                     payloadOffset += 16;
                 }
 
                 // Calculate MIC
                 Debug.Assert(_negotiateMessage != null);
-                using (var hmacMic = IncrementalHash.CreateHMAC(HashAlgorithmName.MD5, exportedSessionKey))
+                using (var hmacMic = IncrementalHash.CreateHMAC(HashAlgorithmName.MD5, _exportedSessionKey))
                 {
                     hmacMic.AppendData(_negotiateMessage);
                     hmacMic.AppendData(blob);
@@ -685,14 +691,13 @@ namespace System.Net
                 }
 
                 // Derive signing keys
-                _clientSigningKey = DeriveKey(exportedSessionKey, ClientSigningKeyMagic);
-                _serverSigningKey = DeriveKey(exportedSessionKey, ServerSigningKeyMagic);
-                _clientSealingKey = DeriveKey(exportedSessionKey, ClientSealingKeyMagic);
-                _serverSealingKey = DeriveKey(exportedSessionKey, ServerSealingKeyMagic);
+                _clientSigningKey = DeriveKey(_exportedSessionKey, ClientSigningKeyMagic);
+                _serverSigningKey = DeriveKey(_exportedSessionKey, ServerSigningKeyMagic);
+                _clientSealingKey = DeriveKey(_exportedSessionKey, ClientSealingKeyMagic);
+                _serverSealingKey = DeriveKey(_exportedSessionKey, ServerSealingKeyMagic);
                 ResetKeys();
                 _clientSequenceNumber = 0;
                 _serverSequenceNumber = 0;
-                CryptographicOperations.ZeroMemory(exportedSessionKey);
 
                 Debug.Assert(payloadOffset == responseBytes.Length);
 
@@ -828,6 +833,16 @@ namespace System.Net
                 }
 
                 return NegotiateAuthenticationStatusCode.Completed;
+            }
+
+            public override TReturn DeriveKeyFromSessionKey<TState, TReturn>(Func<ReadOnlySpan<byte>, TState, TReturn> keyDerivationFunction, TState state)
+            {
+                if (_exportedSessionKey is null)
+                {
+                    throw new InvalidOperationException(SR.net_auth_noauth);
+                }
+
+                return keyDerivationFunction(_exportedSessionKey, state);
             }
         }
     }

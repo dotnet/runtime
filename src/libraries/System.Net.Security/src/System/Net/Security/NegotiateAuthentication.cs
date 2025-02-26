@@ -401,6 +401,58 @@ namespace System.Net.Security
             return _pal.VerifyMIC(message, signature);
         }
 
+        /// <summary>
+        /// Derive a key from the negotiate authentication's session key.
+        /// </summary>
+        /// <param name="keyDerivationFunction">A callback that receives the session key.</param>
+        /// <exception cref="InvalidOperationException">Authentication failed or has not occurred.</exception>
+        public void DeriveKeyFromSessionKey(Action<ReadOnlySpan<byte>> keyDerivationFunction) =>
+            DeriveKeyFromSessionKey(static (key, state) => state(key), keyDerivationFunction);
+
+        /// <summary>
+        /// Derive a key from the negotiate authentication's session key with the provided state.
+        /// </summary>
+        /// <param name="keyDerivationFunction">A callback that receives the session key.</param>
+        /// <param name="state">The element to pass to <paramref name="keyDerivationFunction"/>.</param>
+        /// <exception cref="InvalidOperationException">Authentication failed or has not occurred.</exception>
+        public void DeriveKeyFromSessionKey<TState>(Action<ReadOnlySpan<byte>, TState> keyDerivationFunction, TState state) =>
+            DeriveKeyFromSessionKey(
+                static (key, state) =>
+                {
+                    state.Kdf(key, state.State);
+                    return 0;
+                },
+                (Kdf: keyDerivationFunction, State: state));
+
+        /// <summary>
+        /// Derive a key from the negotiate authentication's session key.
+        /// </summary>
+        /// <typeparam name="TReturn">The return type of <paramref name="keyDerivationFunction"/>.</typeparam>
+        /// <param name="keyDerivationFunction">A callback that receives the session key and returns a value.</param>
+        /// <returns>The value returned by <paramref name="keyDerivationFunction"/>.</returns>
+        /// <exception cref="InvalidOperationException">Authentication failed or has not occurred.</exception>
+        public TReturn DeriveKeyFromSessionKey<TReturn>(Func<ReadOnlySpan<byte>, TReturn> keyDerivationFunction) =>
+            DeriveKeyFromSessionKey(static (key, state) => state(key), keyDerivationFunction);
+
+        /// <summary>
+        /// Derive a key from the negotiate authentication's session key with the provided state.
+        /// </summary>
+        /// <typeparam name="TState">The type of the state element.</typeparam>
+        /// <typeparam name="TReturn">The return type of <paramref name="keyDerivationFunction"/>.</typeparam>
+        /// <param name="keyDerivationFunction">A callback that receives the session key and returns a value.</param>
+        /// <param name="state">The element to pass to <paramref name="keyDerivationFunction"/>.</param>
+        /// <returns>The value returned by <paramref name="keyDerivationFunction"/>.</returns>
+        /// <exception cref="InvalidOperationException">Authentication failed or has not occurred.</exception>
+        public TReturn DeriveKeyFromSessionKey<TState, TReturn>(Func<ReadOnlySpan<byte>, TState, TReturn> keyDerivationFunction, TState state)
+        {
+            if (!IsAuthenticated || _isDisposed)
+            {
+                throw new InvalidOperationException(SR.net_auth_noauth);
+            }
+
+            return _pal.DeriveKeyFromSessionKey(keyDerivationFunction, state);
+        }
+
         private bool CheckSpn()
         {
             Debug.Assert(_extendedProtectionPolicy != null);

@@ -65,6 +65,53 @@ namespace System.Net.Security.Tests
         }
 
         [Fact]
+        public void DeriveKeyFromSessionKey_ThrowsOnUnauthenticated()
+        {
+            NegotiateAuthenticationClientOptions clientOptions = new NegotiateAuthenticationClientOptions { Credential = s_testCredentialRight, TargetName = "HTTP/foo" };
+            NegotiateAuthentication negotiateAuthentication = new NegotiateAuthentication(clientOptions);
+            Assert.Throws<InvalidOperationException>(() => negotiateAuthentication.DeriveKeyFromSessionKey(static (k) => throw new Exception()));
+        }
+
+        [ConditionalFact(nameof(IsNtlmAvailable))]
+        public void DeriveKeyFromSessionKey()
+        {
+            using FakeNtlmServer fakeNtlmServer = new FakeNtlmServer(s_testCredentialRight);
+            NegotiateAuthentication negotiateAuthentication = new NegotiateAuthentication(
+                new NegotiateAuthenticationClientOptions
+                {
+                    Package = "NTLM",
+                    Credential = s_testCredentialRight,
+                    TargetName = "HTTP/foo",
+                    RequiredProtectionLevel = ProtectionLevel.Sign
+                });
+
+            DoNtlmExchange(fakeNtlmServer, negotiateAuthentication);
+
+            Assert.True(fakeNtlmServer.IsAuthenticated);
+            Assert.True(negotiateAuthentication.IsAuthenticated);
+
+            byte[] sessionKey = negotiateAuthentication.DeriveKeyFromSessionKey(static (k) => k.ToArray());
+            Assert.Equal(16, sessionKey.Length);  // NTLM is always 16
+
+            negotiateAuthentication.DeriveKeyFromSessionKey((k) =>
+            {
+                Assert.Equal(sessionKey, k);
+            });
+
+            negotiateAuthentication.DeriveKeyFromSessionKey(static (k, s) =>
+            {
+                Assert.Equal(s, k);
+            }, sessionKey);
+
+            bool res = negotiateAuthentication.DeriveKeyFromSessionKey(static (k, s) =>
+            {
+                Assert.Equal(s, k);
+                return true;
+            }, sessionKey);
+            Assert.True(res);
+        }
+
+        [Fact]
         public void Package_Unsupported()
         {
             NegotiateAuthenticationClientOptions clientOptions = new NegotiateAuthenticationClientOptions { Package = "INVALID", Credential = s_testCredentialRight, TargetName = "HTTP/foo" };

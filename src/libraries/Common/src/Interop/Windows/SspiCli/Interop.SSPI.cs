@@ -50,6 +50,7 @@ internal static partial class Interop
             SECPKG_ATTR_DCE_INFO = 3,
             SECPKG_ATTR_STREAM_SIZES = 4,
             SECPKG_ATTR_AUTHORITY = 6,
+            SECPKG_ATTR_SESSION_KEY = 9,
             SECPKG_ATTR_PACKAGE_INFO = 10,
             SECPKG_ATTR_NEGOTIATION_INFO = 12,
             SECPKG_ATTR_UNIQUE_BINDINGS = 25,

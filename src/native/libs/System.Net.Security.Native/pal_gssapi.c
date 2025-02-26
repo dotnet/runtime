@@ -56,6 +56,13 @@ static gss_OID_desc gss_mech_ntlm_OID_desc = {.length = STRING_LENGTH(gss_ntlm_o
                                               .elements = gss_ntlm_oid_value};
 #endif
 
+#if !HAVE_GSS_C_INQ_SSPI_SESSION_KEY
+static char gss_c_inq_sspi_session_key_oid_value[] =
+    "\x2a\x86\x48\x86\xf7\x12\x01\x02\x02\x05\x05"; // Binary representation of GSS_C_INQ_SSPI_SESSION_KEY OID
+static gss_OID_desc gss_c_inq_sspi_session_key_OID_desc = {.length = STRING_LENGTH(gss_c_inq_sspi_session_key_oid_value),
+                                                           .elements = gss_c_inq_sspi_session_key_oid_value};
+#endif
+
 #if defined(GSS_SHIM)
 
 #define FOR_ALL_GSS_FUNCTIONS \
@@ -69,9 +76,11 @@ static gss_OID_desc gss_mech_ntlm_OID_desc = {.length = STRING_LENGTH(gss_ntlm_o
     PER_FUNCTION_BLOCK(gss_indicate_mechs) \
     PER_FUNCTION_BLOCK(gss_init_sec_context) \
     PER_FUNCTION_BLOCK(gss_inquire_context) \
+    PER_FUNCTION_BLOCK(gss_inquire_sec_context_by_oid) \
     PER_FUNCTION_BLOCK(gss_mech_krb5) \
     PER_FUNCTION_BLOCK(gss_oid_equal) \
     PER_FUNCTION_BLOCK(gss_release_buffer) \
+    PER_FUNCTION_BLOCK(gss_release_buffer_set) \
     PER_FUNCTION_BLOCK(gss_release_cred) \
     PER_FUNCTION_BLOCK(gss_release_name) \
     PER_FUNCTION_BLOCK(gss_release_oid_set) \
@@ -103,8 +112,10 @@ static void* volatile s_gssLib = NULL;
 #define gss_indicate_mechs(...)             gss_indicate_mechs_ptr(__VA_ARGS__)
 #define gss_init_sec_context(...)           gss_init_sec_context_ptr(__VA_ARGS__)
 #define gss_inquire_context(...)            gss_inquire_context_ptr(__VA_ARGS__)
+#define gss_inquire_sec_context_by_oid(...) gss_inquire_sec_context_by_oid_ptr(__VA_ARGS__)
 #define gss_oid_equal(...)                  gss_oid_equal_ptr(__VA_ARGS__)
 #define gss_release_buffer(...)             gss_release_buffer_ptr(__VA_ARGS__)
+#define gss_release_buffer_set(...)         gss_release_buffer_set_ptr(__VA_ARGS__)
 #define gss_release_cred(...)               gss_release_cred_ptr(__VA_ARGS__)
 #define gss_release_name(...)               gss_release_name_ptr(__VA_ARGS__)
 #define gss_release_oid_set(...)            gss_release_oid_set_ptr(__VA_ARGS__)
@@ -704,6 +715,52 @@ uint32_t NetSecurityNative_IsNtlmInstalled(void)
     }
 
     return foundNtlm;
+}
+
+uint32_t NetSecurityNative_InquireSecContextSessionKey(uint32_t* minorStatus,
+                                                       GssCtxId* contextHandle,
+                                                       PAL_GssBuffer* outBuffer)
+{
+    assert(minorStatus != NULL);
+    assert(contextHandle != NULL);
+    assert(outBuffer != NULL);
+
+    uint32_t minorStatusFree;
+    size_t i;
+#if HAVE_GSS_C_INQ_SSPI_SESSION_KEY
+    gss_OID desiredObject = GSS_C_INQ_SSPI_SESSION_KEY;
+#else
+    gss_OID desiredObject = &gss_c_inq_sspi_session_key_OID_desc;
+#endif
+    gss_buffer_set_t sessionKey = GSS_C_NO_BUFFER_SET;
+
+    uint32_t majorStatus =
+        gss_inquire_sec_context_by_oid(minorStatus, contextHandle, desiredObject, &sessionKey);
+
+    if (majorStatus != GSS_S_COMPLETE)
+    {
+        return majorStatus;
+    }
+
+    // We expect at least 1 buffer in the set with the first being the session key.
+    if (sessionKey->count < 1)
+    {
+        gss_release_buffer_set(&minorStatusFree, &sessionKey);
+        return GSS_S_FAILURE;
+    }
+
+    // It is difficult to map the buffer set to the .NET shim so we copy the session key into a single buffer that can
+    // be freed by our shim. We need to make sure we clear out the remaining data set values and the set itself.
+    NetSecurityNative_MoveBuffer(&sessionKey->elements[0], outBuffer);
+
+    for (i = 1; i < sessionKey->count; i++)
+    {
+        gss_release_buffer(&minorStatusFree, &sessionKey->elements[i]);
+    }
+    free(sessionKey->elements);
+    free(sessionKey);
+
+    return majorStatus;
 }
 
 int32_t NetSecurityNative_EnsureGssInitialized(void)

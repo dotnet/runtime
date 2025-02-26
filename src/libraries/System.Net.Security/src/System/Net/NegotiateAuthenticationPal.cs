@@ -25,5 +25,6 @@ namespace System.Net
         public abstract NegotiateAuthenticationStatusCode UnwrapInPlace(Span<byte> input, out int unwrappedOffset, out int unwrappedLength, out bool wasEncrypted);
         public abstract void GetMIC(ReadOnlySpan<byte> message, IBufferWriter<byte> signature);
         public abstract bool VerifyMIC(ReadOnlySpan<byte> message, ReadOnlySpan<byte> signature);
+        public abstract TReturn DeriveKeyFromSessionKey<TState, TReturn>(Func<ReadOnlySpan<byte>, TState, TReturn> keyDerivationFunction, TState state);
     }
 }

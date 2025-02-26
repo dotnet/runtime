@@ -249,6 +249,8 @@
              Link="Common\Interop\Windows\SspiCli\SecPkgContext_NegotiationInfoW.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\SspiCli\NegotiationInfoClass.cs"
              Link="Common\Interop\Windows\SspiCli\NegotiationInfoClass.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\SspiCli\SecPkgContext_SessionKey.cs"
+             Link="Common\Interop\Windows\SspiCli\SecPkgContext_SessionKey.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\SspiCli\SecPkgContext_Sizes.cs"
              Link="Common\Interop\Windows\SspiCli\SecPkgContext_Sizes.cs" />
     <Compile Include="$(CommonPath)System\Collections\Generic\BidirectionalDictionary.cs"

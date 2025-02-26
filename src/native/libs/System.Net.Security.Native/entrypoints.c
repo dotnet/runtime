@@ -29,6 +29,7 @@ static const Entry s_securityNative[] =
     DllImportEntry(NetSecurityNative_Wrap)
     DllImportEntry(NetSecurityNative_GetMic)
     DllImportEntry(NetSecurityNative_VerifyMic)
+    DllImportEntry(NetSecurityNative_InquireSecContextSessionKey)
 };
 
 EXTERN_C const void* SecurityResolveDllImport(const char* name);

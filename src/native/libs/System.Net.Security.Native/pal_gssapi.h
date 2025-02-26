@@ -220,6 +220,14 @@ PALEXPORT uint32_t NetSecurityNative_GetUser(uint32_t* minorStatus,
                                              GssCtxId* contextHandle,
                                              PAL_GssBuffer* outBuffer);
 
+
+/*
+Shims gss_inquire_sec_context_by_oid with GSS_C_INQ_SSPI_SESSION_KEY.
+*/
+PALEXPORT uint32_t NetSecurityNative_InquireSecContextSessionKey(uint32_t* minorStatus,
+                                                                 GssCtxId* contextHandle,
+                                                                 PAL_GssBuffer* outBuffer);
+
 /*
 Performs initialization of GSS shim, if necessary.
 Return value 0 indicates a success.

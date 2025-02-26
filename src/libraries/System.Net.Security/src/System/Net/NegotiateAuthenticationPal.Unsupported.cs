@@ -54,6 +54,7 @@ namespace System.Net
             public override NegotiateAuthenticationStatusCode UnwrapInPlace(Span<byte> input, out int unwrappedOffset, out int unwrappedLength, out bool wasEncrypted) => throw new InvalidOperationException();
             public override void GetMIC(ReadOnlySpan<byte> message, IBufferWriter<byte> signature) => throw new InvalidOperationException();
             public override bool VerifyMIC(ReadOnlySpan<byte> message, ReadOnlySpan<byte> signature) => throw new InvalidOperationException();
+            public override TReturn DeriveKeyFromSessionKey<TState, TReturn>(Func<ReadOnlySpan<byte>, TState, TReturn> keyDerivationFunction, TState state) => throw new InvalidOperationException();
         }
     }
 }
