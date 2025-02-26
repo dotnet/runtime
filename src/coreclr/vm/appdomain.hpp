@@ -1243,20 +1243,6 @@ public:
     // Only call this routine when you can guarantee there are no loads in progress.
     void ClearBinderContext();
 
-    void SetIgnoreUnhandledExceptions()
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        m_dwFlags |= IGNORE_UNHANDLED_EXCEPTIONS;
-    }
-
-    BOOL IgnoreUnhandledExceptions()
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        return (m_dwFlags & IGNORE_UNHANDLED_EXCEPTIONS);
-    }
-
     static void ExceptionUnwind(Frame *pFrame);
 
     BOOL IsActive()
@@ -1462,9 +1448,6 @@ private:
     PTR_CWSTR       m_friendlyName;
     PTR_Assembly    m_pRootAssembly;
 
-    // General purpose flags.
-    DWORD           m_dwFlags;
-
     // When an application domain is created the ref count is artificially incremented
     // by one. For it to hit zero an explicit close must have happened.
     LONG        m_cRef;                    // Ref count.
@@ -1582,12 +1565,6 @@ public:
     //---------------------------------------------------------
 
 public:
-
-    enum {
-        CONTEXT_INITIALIZED =               0x0001,
-        // unused =                         0x0400,
-        IGNORE_UNHANDLED_EXCEPTIONS =      0x10000, // AppDomain was created using the APPDOMAIN_IGNORE_UNHANDLED_EXCEPTIONS flag
-    };
 
     AssemblySpecBindingCache  m_AssemblyCache;
     size_t                    m_MemoryPressure;

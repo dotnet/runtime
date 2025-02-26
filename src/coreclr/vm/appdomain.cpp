@@ -1625,7 +1625,6 @@ AppDomain::AppDomain()
     , m_pDelayedLoaderAllocatorUnloadList{NULL}
     , m_friendlyName{NULL}
     , m_pRootAssembly{NULL}
-    , m_dwFlags{0}
     , m_cRef{1}
 #ifdef FEATURE_COMINTEROP
     , m_pRCWCache{NULL}

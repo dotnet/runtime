@@ -6232,7 +6232,7 @@ UnhandledExceptionHandlerUnix(
     // Unhandled exception happened, so dump the managed stack trace and terminate the process
 
     DefaultCatchHandler(NULL /*pExceptionInfo*/, NULL /*Throwable*/, TRUE /*useLastThrownObject*/,
-        TRUE /*isTerminating*/, FALSE /*isThreadBaseFIlter*/, FALSE /*sendAppDomainEvents*/);
+        FALSE /*isThreadBaseFIlter*/, FALSE /*sendAppDomainEvents*/);
 
     EEPOLICY_HANDLE_FATAL_ERROR(COR_E_EXECUTIONENGINE);
     return _URC_FATAL_PHASE1_ERROR;
