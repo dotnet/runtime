@@ -18,6 +18,7 @@
     <_ServeMimeTypes>$(_ServeMimeTypes) --mime .cjs=text/javascript</_ServeMimeTypes>
     <_ServeMimeTypes>$(_ServeMimeTypes) --mime .js=text/javascript</_ServeMimeTypes>
     <_ServeMimeTypes>$(_ServeMimeTypes) --mime .webcil=application/octet-stream</_ServeMimeTypes>
+    <FeaturePerfTracing Condition="'$(FeaturePerfTracing)' == '' and '$(WasmProfilers)' == '' and '$(WasmBuildNative)' != 'false'">true</FeaturePerfTracing>
   </PropertyGroup>
 
   <Target Name="BuildSampleInTree"
