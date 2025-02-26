@@ -26,23 +26,15 @@ while true; do
     export pid=$(ps aux | grep "noautoresponse" | sort -nrk 4 | awk 'NR==1{print $2}')
     echo "--------collecting $pid  ---------"
     sudo mkdir -p /__w/1/s/artifacts/log/
-    sudo mkdir -p /__w/1/a/artifacts/log/
     echo /__w/1/s/artifacts/log/
     sudo ls -la /__w/1/s/artifacts/log/
-    echo /__w/1/a/artifacts/log/
-    sudo ls -la /__w/1/a/artifacts/log/
     timestamp=$(date +%s)
     sudo /root/.dotnet/tools/dotnet-trace collect --profile gc-collect -p "$pid" --duration 00:30:00 --output /__w/1/s/artifacts/log/trace.$timestamp.nettrace
     sudo chmod a+r /__w/1/s/artifacts/log/trace.$timestamp.nettrace
     echo /__w/1/s/artifacts/log/
     sudo ls -la /__w/1/s/artifacts/log/
-    echo /__w/1/a/artifacts/log/
-    sudo ls -la /__w/1/a/artifacts/log/
-    sudo cp /__w/1/s/artifacts/log/trace.$timestamp.nettrace /__w/1/a/artifacts/log/trace.$timestamp.nettrace
     echo /__w/1/s/artifacts/log/
     sudo ls -la /__w/1/s/artifacts/log/
-    echo /__w/1/a/artifacts/log/
-    sudo ls -la /__w/1/a/artifacts/log/
     echo "--------end collecting---------"
   fi
 done
