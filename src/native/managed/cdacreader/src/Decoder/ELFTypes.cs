@@ -2,14 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Collections;
 using System.IO;
 using System.Numerics;
-using System.Reflection.PortableExecutable;
-using System.Runtime.InteropServices;
-using Microsoft.Diagnostics.DataContractReader.Legacy;
 
-namespace Microsoft.Diagnostics.DataContractReader.Decoder.PETypes;
+namespace Microsoft.Diagnostics.DataContractReader.Decoder;
 
 internal enum HeaderType : uint
 {

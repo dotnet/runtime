@@ -6,9 +6,9 @@ using System.Collections.Generic;
 using System.IO;
 using System.Numerics;
 using System.Text;
-using Microsoft.Diagnostics.DataContractReader.Decoder.PETypes;
 
 namespace Microsoft.Diagnostics.DataContractReader.Decoder;
+
 internal sealed class ELFDecoder : IDisposable
 {
     private readonly BinaryReader _reader;

@@ -4,7 +4,6 @@
 using System;
 using System.IO;
 using System.Text;
-using Microsoft.Diagnostics.DataContractReader.Decoder.PETypes;
 
 namespace Microsoft.Diagnostics.DataContractReader.Decoder;
 internal sealed class PEDecoder : IDisposable
