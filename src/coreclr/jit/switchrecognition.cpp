@@ -131,108 +131,6 @@ bool IsConstantTestCondBlock(const BasicBlock* block,
     return false;
 }
 
-#if defined(TARGET_AMD64)
-//------------------------------------------------------------------------------
-// optSwitchDetectLikely : Return true if it is likely this block chain
-//    can be converted into a switch at a later optimization pass
-//
-// Arguments:
-//    firstBlock - A block to start the search from
-//
-// Return Value:
-//    True if the conversion was successful, false otherwise
-//
-bool Compiler::optSwitchDetectLikely(BasicBlock* firstBlock)
-{
-    assert(firstBlock->KindIs(BBJ_COND));
-
-    GenTree*    variableNode = nullptr;
-    ssize_t     cns          = 0;
-    BasicBlock* trueTarget   = nullptr;
-    BasicBlock* falseTarget  = nullptr;
-
-    // The algorithm is simple - we check that the given block is a constant test block
-    // and then try to accumulate as many constant test blocks as possible. Once we hit
-    // a block that doesn't match the pattern, we start processing the accumulated blocks.
-    bool isReversed = false;
-    if (IsConstantTestCondBlock(firstBlock, true, &trueTarget, &falseTarget, &isReversed, &variableNode, &cns))
-    {
-        if (isReversed)
-        {
-            // First block uses NE - we don't support this yet. We currently expect all blocks to use EQ
-            // and allow NE for the last one (because it's what Roslyn usually emits).
-            // TODO: make it more flexible and support cases like "x != cns1 && x != cns2 && ..."
-            return false;
-        }
-
-        // No more than SWITCH_MAX_TABLE_SIZE blocks are allowed (arbitrary limit in this context)
-        int     testValueIndex                  = 0;
-        ssize_t testValues[SWITCH_MAX_DISTANCE] = {};
-        testValues[testValueIndex]              = cns;
-        testValueIndex++;
-
-        // Track likelihood of reaching the false block
-        //
-        weight_t          falseLikelihood = firstBlock->GetFalseEdge()->getLikelihood();
-        const BasicBlock* prevBlock       = firstBlock;
-
-        // Follow the same algorithm as below but only peek to the next block
-        const BasicBlock* currBb = firstBlock->Next();
-        if (currBb != nullptr)
-        {
-            GenTree*    currVariableNode = nullptr;
-            ssize_t     currCns          = 0;
-            BasicBlock* currTrueTarget   = nullptr;
-            BasicBlock* currFalseTarget  = nullptr;
-
-            if (!currBb->hasSingleStmt())
-            {
-                // Only the first conditional block can have multiple statements.
-                // Stop searching and process what we already have.
-                return false;
-            }
-
-            // Inspect secondary blocks
-            if (IsConstantTestCondBlock(currBb, false, &currTrueTarget, &currFalseTarget, &isReversed,
-                                        &currVariableNode, &currCns))
-            {
-                if (currTrueTarget != trueTarget)
-                {
-                    // This blocks jumps to a different target, stop searching and process what we already have.
-                    return false;
-                }
-
-                if (!GenTree::Compare(currVariableNode, variableNode->gtEffectiveVal()))
-                {
-                    // A different variable node is used, stop searching and process what we already have.
-                    return false;
-                }
-
-                if (currBb->GetUniquePred(this) != prevBlock)
-                {
-                    return false;
-                }
-
-                if (!BasicBlock::sameEHRegion(prevBlock, currBb))
-                {
-                    // Current block is in a different EH region, stop searching and process what we already have.
-                    return false;
-                }
-
-                return true;
-            }
-            else
-            {
-                // Current block is not a suitable test, stop searching and process what we already have.
-                return false;
-            }
-        }
-    }
-
-    return false;
-}
-#endif
-
 //------------------------------------------------------------------------------
 // optSwitchDetectAndConvert : Try to detect a series of conditional blocks which
 //    can be converted into a switch (jump-table) construct. See optSwitchConvert
@@ -240,11 +138,14 @@ bool Compiler::optSwitchDetectLikely(BasicBlock* firstBlock)
 //
 // Arguments:
 //    firstBlock - A block to start the search from
+//    testingForConversion - Test if its likely a switch conversion will happen.
+//    Used to prevent a pessimization when optimizing for conditional chaining.
+//    Done in this function to prevent maintaining the check in two places.
 //
 // Return Value:
 //    True if the conversion was successful, false otherwise
 //
-bool Compiler::optSwitchDetectAndConvert(BasicBlock* firstBlock)
+bool Compiler::optSwitchDetectAndConvert(BasicBlock* firstBlock, bool testingForConversion)
 {
     assert(firstBlock->KindIs(BBJ_COND));
 
@@ -289,7 +190,8 @@ bool Compiler::optSwitchDetectAndConvert(BasicBlock* firstBlock)
             {
                 // Only the first conditional block can have multiple statements.
                 // Stop searching and process what we already have.
-                return optSwitchConvert(firstBlock, testValueIndex, testValues, falseLikelihood, variableNode);
+                return !testingForConversion &&
+                       optSwitchConvert(firstBlock, testValueIndex, testValues, falseLikelihood, variableNode);
             }
 
             // Inspect secondary blocks
@@ -299,25 +201,29 @@ bool Compiler::optSwitchDetectAndConvert(BasicBlock* firstBlock)
                 if (currTrueTarget != trueTarget)
                 {
                     // This blocks jumps to a different target, stop searching and process what we already have.
-                    return optSwitchConvert(firstBlock, testValueIndex, testValues, falseLikelihood, variableNode);
+                    return !testingForConversion &&
+                           optSwitchConvert(firstBlock, testValueIndex, testValues, falseLikelihood, variableNode);
                 }
 
                 if (!GenTree::Compare(currVariableNode, variableNode->gtEffectiveVal()))
                 {
                     // A different variable node is used, stop searching and process what we already have.
-                    return optSwitchConvert(firstBlock, testValueIndex, testValues, falseLikelihood, variableNode);
+                    return !testingForConversion &&
+                           optSwitchConvert(firstBlock, testValueIndex, testValues, falseLikelihood, variableNode);
                 }
 
                 if (currBb->GetUniquePred(this) != prevBlock)
                 {
                     // Multiple preds in a secondary block, stop searching and process what we already have.
-                    return optSwitchConvert(firstBlock, testValueIndex, testValues, falseLikelihood, variableNode);
+                    return !testingForConversion &&
+                           optSwitchConvert(firstBlock, testValueIndex, testValues, falseLikelihood, variableNode);
                 }
 
                 if (!BasicBlock::sameEHRegion(prevBlock, currBb))
                 {
                     // Current block is in a different EH region, stop searching and process what we already have.
-                    return optSwitchConvert(firstBlock, testValueIndex, testValues, falseLikelihood, variableNode);
+                    return !testingForConversion &&
+                           optSwitchConvert(firstBlock, testValueIndex, testValues, falseLikelihood, variableNode);
                 }
 
                 // Ok we can work with that, add the test value to the list
@@ -327,21 +233,27 @@ bool Compiler::optSwitchDetectAndConvert(BasicBlock* firstBlock)
                 if (testValueIndex == SWITCH_MAX_DISTANCE)
                 {
                     // Too many suitable tests found - stop and process what we already have.
-                    return optSwitchConvert(firstBlock, testValueIndex, testValues, falseLikelihood, variableNode);
+                    return !testingForConversion &&
+                           optSwitchConvert(firstBlock, testValueIndex, testValues, falseLikelihood, variableNode);
                 }
 
                 if (isReversed)
                 {
                     // We only support reversed test (GT_NE) for the last block.
-                    return optSwitchConvert(firstBlock, testValueIndex, testValues, falseLikelihood, variableNode);
+                    return !testingForConversion &&
+                           optSwitchConvert(firstBlock, testValueIndex, testValues, falseLikelihood, variableNode);
                 }
+
+                if (testingForConversion)
+                    return true;
 
                 prevBlock = currBb;
             }
             else
             {
                 // Current block is not a suitable test, stop searching and process what we already have.
-                return optSwitchConvert(firstBlock, testValueIndex, testValues, falseLikelihood, variableNode);
+                return !testingForConversion &&
+                       optSwitchConvert(firstBlock, testValueIndex, testValues, falseLikelihood, variableNode);
             }
         }
     }

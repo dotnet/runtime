@@ -4451,7 +4451,8 @@ inline unsigned emitter::insEncodeRegSIB(const instrDesc* id, regNumber reg, cod
             }
             else if (hasEvexPrefix(*code))
             {
-                // Note that APX-EVEX use EVEX.X4 as the MSB of the INDEX register to address GPRs, and the original EVEX.V4 is used for VSIB addressing.
+                // Note that APX-EVEX use EVEX.X4 as the MSB of the INDEX register to address GPRs, and the original
+                // EVEX.V4 is used for VSIB addressing.
                 *code &= 0xFFFFFBFFFFFFFFFFULL; // EVEX.X4
             }
             else
@@ -15407,7 +15408,7 @@ BYTE* emitter::emitOutputSV(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
                     {
                         code |= EXTENDED_EVEX_PP_BITS;
                     }
-#endif  // TARGET_AMD64
+#endif // TARGET_AMD64
                 }
                 FALLTHROUGH;
 
@@ -17034,15 +17035,14 @@ BYTE* emitter::emitOutputRI(BYTE* dst, instrDesc* id)
         code = insCodeACC(ins);
         assert(code < 0x100);
 
-        
         // This is INS_mov and will not take VEX prefix
         assert(!TakesVexPrefix(ins));
-        
+
         code = AddX86PrefixIfNeededAndNotPresent(id, code, size);
         code |= 0x08; // Set the 'w' bit
         unsigned regcode = insEncodeReg012(id, reg, size, &code);
         code |= regcode;
-        
+
         if (TakesRexWPrefix(id))
         {
             code = AddRexWPrefix(id, code);
