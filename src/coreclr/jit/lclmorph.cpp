@@ -175,29 +175,6 @@ void Compiler::fgSequenceLocals(Statement* stmt)
     seq.Sequence(stmt);
 }
 
-// Data structure that keeps track of local definitions inside loops.
-class LoopDefinitions
-{
-    typedef JitHashTable<unsigned, JitSmallPrimitiveKeyFuncs<unsigned>, bool> LocalDefinitionsMap;
-
-    FlowGraphNaturalLoops* m_loops;
-    // For every loop, we track all definitions exclusive to that loop.
-    // Definitions in descendant loops are not kept in their ancestor's maps.
-    LocalDefinitionsMap** m_maps;
-    // Blocks whose IR we have visited to find local definitions in.
-    BitVec m_visitedBlocks;
-
-    LocalDefinitionsMap* GetOrCreateMap(FlowGraphNaturalLoop* loop);
-
-    template <typename TFunc>
-    bool VisitLoopNestMaps(FlowGraphNaturalLoop* loop, TFunc& func);
-public:
-    LoopDefinitions(FlowGraphNaturalLoops* loops);
-
-    template <typename TFunc>
-    void VisitDefinedLocalNums(FlowGraphNaturalLoop* loop, TFunc func);
-};
-
 LoopDefinitions::LoopDefinitions(FlowGraphNaturalLoops* loops)
     : m_loops(loops)
 {
@@ -263,7 +240,7 @@ LoopDefinitions::LocalDefinitionsMap* LoopDefinitions::GetOrCreateMap(FlowGraphN
         fgWalkResult PreOrderVisit(GenTree** use, GenTree* user)
         {
             GenTreeLclVarCommon* lcl = (*use)->AsLclVarCommon();
-            if (!lcl->OperIsLocalStore())
+            if (!lcl->OperIsLocalStore() && !lcl->OperIs(GT_LCL_ADDR))
             {
                 return Compiler::WALK_CONTINUE;
             }
@@ -318,58 +295,6 @@ LoopDefinitions::LocalDefinitionsMap* LoopDefinitions::GetOrCreateMap(FlowGraphN
     });
 
     return map;
-}
-
-//------------------------------------------------------------------------------
-// LoopDefinitions:VisitLoopNestMaps:
-//   Visit all occurrence maps of the specified loop nest.
-//
-// Type parameters:
-//   TFunc - bool(LocalToOccurrenceMap*) functor that returns true to continue
-//           the visit and false to abort.
-//
-// Parameters:
-//   loop - Root loop of the nest.
-//   func - Functor instance
-//
-// Returns:
-//   True if the visit completed; false if "func" returned false for any map.
-//
-template <typename TFunc>
-bool LoopDefinitions::VisitLoopNestMaps(FlowGraphNaturalLoop* loop, TFunc& func)
-{
-    for (FlowGraphNaturalLoop* child = loop->GetChild(); child != nullptr; child = child->GetSibling())
-    {
-        if (!VisitLoopNestMaps(child, func))
-        {
-            return false;
-        }
-    }
-
-    return func(GetOrCreateMap(loop));
-}
-
-//------------------------------------------------------------------------------
-// LoopDefinitions:VisitDefinedLocalNums:
-//   Call a callback for all locals that are defined in the specified loop.
-//
-// Parameters:
-//   loop - The loop
-//   func - The callback
-//
-template <typename TFunc>
-void LoopDefinitions::VisitDefinedLocalNums(FlowGraphNaturalLoop* loop, TFunc func)
-{
-    auto visit = [=, &func](LocalDefinitionsMap* map) {
-        for (unsigned lclNum : LocalDefinitionsMap::KeyIteration(map))
-        {
-            func(lclNum);
-        }
-
-        return true;
-    };
-
-    VisitLoopNestMaps(loop, visit);
 }
 
 struct LocalEqualsLocalAddrAssertion

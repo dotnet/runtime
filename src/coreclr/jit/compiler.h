@@ -2514,6 +2514,29 @@ struct LoopSideEffects
     void AddModifiedElemType(Compiler* comp, CORINFO_CLASS_HANDLE structHnd);
 };
 
+// Data structure that keeps track of local definitions inside loops.
+class LoopDefinitions
+{
+    typedef JitHashTable<unsigned, JitSmallPrimitiveKeyFuncs<unsigned>, bool> LocalDefinitionsMap;
+
+    FlowGraphNaturalLoops* m_loops;
+    // For every loop, we track all definitions exclusive to that loop.
+    // Definitions in descendant loops are not kept in their ancestor's maps.
+    LocalDefinitionsMap** m_maps;
+    // Blocks whose IR we have visited to find local definitions in.
+    BitVec m_visitedBlocks;
+
+    LocalDefinitionsMap* GetOrCreateMap(FlowGraphNaturalLoop* loop);
+
+    template <typename TFunc>
+    bool VisitLoopNestMaps(FlowGraphNaturalLoop* loop, TFunc& func);
+public:
+    LoopDefinitions(FlowGraphNaturalLoops* loops);
+
+    template <typename TFunc>
+    void VisitDefinedLocalNums(FlowGraphNaturalLoop* loop, TFunc func);
+};
+
 //  The following holds information about instr offsets in terms of generated code.
 
 enum class IPmappingDscKind

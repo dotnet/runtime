@@ -1625,11 +1625,32 @@ GenTree* Promotion::CreateReadBack(Compiler* compiler, unsigned structLclNum, co
     return store;
 }
 
+ReplaceVisitor::ReplaceVisitor(Promotion* prom, AggregateInfoMap& aggregates, PromotionLiveness* liveness, LoopDefinitions* loopDefs)
+    : GenTreeVisitor(prom->m_compiler)
+    , m_promotion(prom)
+    , m_aggregates(aggregates)
+    , m_liveness(liveness)
+    , m_loopDefs(loopDefs)
+    , m_replacementTraits(0, prom->m_compiler)
+{
+    unsigned numReplacements = 0;
+    for (AggregateInfo* agg : m_aggregates)
+    {
+        for (Replacement& rep : agg->Replacements)
+        {
+            rep.VarIndex = numReplacements++;
+        }
+    }
+
+    m_replacementTraits = BitVecTraits(numReplacements, m_compiler);
+    m_writeBacksNeededOut = new (m_compiler, CMK_Promotion) BitVec[m_compiler->m_dfsTree->GetPostOrderCount()] {};
+}
+
 //------------------------------------------------------------------------
 // StartBlock:
 //   Handle reaching the end of the currently started block by preparing
 //   internal state for upcoming basic blocks, and inserting any necessary
-//   readbacks.
+//   readbacks. Must be called in RPO.
 //
 // Parameters:
 //   block - The block
@@ -1642,19 +1663,58 @@ Statement* ReplaceVisitor::StartBlock(BasicBlock* block)
     m_currentBlock = block;
 
 #ifdef DEBUG
-    // At the start of every block we expect all replacements to be in their
-    // local home.
+    // At the start of every block we expect all replacements to be up to date in their local.
     for (AggregateInfo* agg : m_aggregates)
     {
         for (Replacement& rep : agg->Replacements)
         {
             assert(!rep.NeedsReadBack);
-            assert(rep.NeedsWriteBack);
         }
     }
 
     assert(m_numPendingReadBacks == 0);
 #endif
+
+    // Find the set of variables that need write-backs.
+    m_writeBacksNeeded = BitVecOps::MakeEmpty(&m_replacementTraits);
+
+    FlowGraphNaturalLoop* loop = nullptr;
+    for (FlowEdge* edge = m_compiler->BlockPredsWithEH(block); edge != nullptr; edge = edge->getNextPredEdge())
+    {
+        BasicBlock* pred = edge->getSourceBlock();
+        if (pred->bbPostorderNum <= block->bbPostorderNum)
+        {
+            loop = m_compiler->m_loops->GetLoopByHeader(block);
+
+            if (loop != nullptr)
+            {
+                // Ignore the loop backedge. We will set write backs for
+                // defined locals after processing other preds.
+                continue;
+            }
+
+            // Non natural loop backedge. Go conservative.
+            BitVecOps::FillD(&m_replacementTraits, m_writeBacksNeeded);
+            continue;
+        }
+
+        const BitVec& predBitVec = m_writeBacksNeededOut[pred->bbPostorderNum];
+        BitVecOps::UnionD(&m_replacementTraits, m_writeBacksNeeded, predBitVec);
+    }
+
+    if (loop != nullptr)
+    {
+        m_loopDefs->VisitDefinedLocalNums(loop, [=](unsigned lclNum) {
+            AggregateInfo* agg = m_aggregates.Lookup(lclNum);
+            if (agg != nullptr)
+            {
+                for (Replacement& rep : agg->Replacements)
+                {
+                    BitVecOps::AddElemD(&m_replacementTraits, m_writeBacksNeeded, rep.VarIndex);
+                }
+            }
+            });
+    }
 
     // OSR locals and parameters may need an initial read back, which we mark
     // when we start the initial BB.
@@ -1726,9 +1786,8 @@ Statement* ReplaceVisitor::StartBlock(BasicBlock* block)
 // Remarks:
 //   We currently expect all fields to be most up-to-date in their field locals
 //   at the beginning of every basic block. That means all replacements should
-//   have Replacement::NeedsReadBack == false and Replacement::NeedsWriteBack
-//   == true at the beginning of every block. This function makes it so that is
-//   the case.
+//   have Replacement::NeedsReadBack == false at the beginning of every block.
+//   This function makes it so that is the case.
 //
 void ReplaceVisitor::EndBlock()
 {
@@ -1737,7 +1796,7 @@ void ReplaceVisitor::EndBlock()
         for (size_t i = 0; i < agg->Replacements.size(); i++)
         {
             Replacement& rep = agg->Replacements[i];
-            assert(!rep.NeedsReadBack || !rep.NeedsWriteBack);
+            assert(!rep.NeedsReadBack || !NeedsWriteBack(rep));
             if (rep.NeedsReadBack)
             {
                 if (m_liveness->IsReplacementLiveOut(m_currentBlock, agg->LclNum, (unsigned)i))
@@ -1776,12 +1835,12 @@ void ReplaceVisitor::EndBlock()
 
                 ClearNeedsReadBack(rep);
             }
-
-            SetNeedsWriteBack(rep);
         }
     }
 
     assert(m_numPendingReadBacks == 0);
+
+    m_writeBacksNeededOut[m_currentBlock->bbPostorderNum] = m_writeBacksNeeded;
 }
 
 //------------------------------------------------------------------------
@@ -1849,6 +1908,11 @@ Compiler::fgWalkResult ReplaceVisitor::PostOrderVisit(GenTree** use, GenTree* us
     return fgWalkResult::WALK_CONTINUE;
 }
 
+bool ReplaceVisitor::NeedsWriteBack(Replacement& rep)
+{
+    return BitVecOps::IsMember(&m_replacementTraits, m_writeBacksNeeded, rep.VarIndex);
+}
+
 //------------------------------------------------------------------------
 // SetNeedsWriteBack:
 //   Track that a replacement is more up-to-date in the field local than the
@@ -1860,7 +1924,7 @@ Compiler::fgWalkResult ReplaceVisitor::PostOrderVisit(GenTree** use, GenTree* us
 //
 void ReplaceVisitor::SetNeedsWriteBack(Replacement& rep)
 {
-    rep.NeedsWriteBack = true;
+    BitVecOps::AddElemD(&m_replacementTraits, m_writeBacksNeeded, rep.VarIndex);
     assert(!rep.NeedsReadBack);
 }
 
@@ -1871,7 +1935,7 @@ void ReplaceVisitor::SetNeedsWriteBack(Replacement& rep)
 //
 void ReplaceVisitor::ClearNeedsWriteBack(Replacement& rep)
 {
-    rep.NeedsWriteBack = false;
+    BitVecOps::RemoveElemD(&m_replacementTraits, m_writeBacksNeeded, rep.VarIndex);
 }
 
 //------------------------------------------------------------------------
@@ -2716,12 +2780,15 @@ void ReplaceVisitor::ReplaceLocal(GenTree** use, GenTree* user)
                 lcl->gtFlags |= GTF_VAR_DEATH;
                 CheckForwardSubForLastUse(lclNum);
 
-                // Relying on the values in the struct local after this struct use
-                // would effectively introduce another use of the struct, so
-                // indicate that no replacements are up to date.
-                for (Replacement& rep : replacements)
+                // Call arguments that are marked as dying can be mutated due
+                // to omission of copies for implicit byrefs. We thus cannot
+                // assume the struct local is up to date.
+                //if (user->IsCall())
                 {
-                    SetNeedsWriteBack(rep);
+                    for (Replacement& rep : replacements)
+                    {
+                        SetNeedsWriteBack(rep);
+                    }
                 }
             }
         }
@@ -2852,7 +2919,7 @@ void ReplaceVisitor::CheckForwardSubForLastUse(unsigned lclNum)
 void ReplaceVisitor::WriteBackBeforeCurrentStatement(unsigned lcl, unsigned offs, unsigned size)
 {
     VisitOverlappingReplacements(lcl, offs, size, [this, lcl](Replacement& rep) {
-        if (!rep.NeedsWriteBack)
+        if (!NeedsWriteBack(rep))
         {
             return true;
         }
@@ -2881,7 +2948,7 @@ void ReplaceVisitor::WriteBackBeforeCurrentStatement(unsigned lcl, unsigned offs
 void ReplaceVisitor::WriteBackBeforeUse(GenTree** use, unsigned lcl, unsigned offs, unsigned size)
 {
     VisitOverlappingReplacements(lcl, offs, size, [this, &use, lcl](Replacement& rep) {
-        if (!rep.NeedsWriteBack)
+        if (!NeedsWriteBack(rep))
         {
             return true;
         }
@@ -3006,20 +3073,31 @@ PhaseStatus Promotion::Run()
         return PhaseStatus::MODIFIED_NOTHING;
     }
 
-    // We should have a proper entry BB where we can put IR that will only be
-    // run once into. This is a precondition of the phase.
-    assert(m_compiler->fgFirstBB->bbPreds == nullptr);
-
     // Compute liveness for the fields and remainders.
     PromotionLiveness liveness(m_compiler, aggregates);
     liveness.Run();
 
+    // Compute DFS, loops and loop definitions to use for flow-sensitive
+    // knowledge about when the stack home is up to date.
+    if (m_compiler->m_dfsTree == nullptr)
+    {
+        m_compiler->m_dfsTree = m_compiler->fgComputeDfs();
+    }
+
+    if (m_compiler->m_loops == nullptr)
+    {
+        m_compiler->m_loops = FlowGraphNaturalLoops::Find(m_compiler->m_dfsTree);
+    }
+
+    LoopDefinitions loopDefs(m_compiler->m_loops);
+
     JITDUMP("Making replacements\n\n");
 
     // Make all replacements we decided on.
-    ReplaceVisitor replacer(this, aggregates, &liveness);
-    for (BasicBlock* bb : m_compiler->Blocks())
+    ReplaceVisitor replacer(this, aggregates, &liveness, &loopDefs);
+    for (unsigned i = m_compiler->m_dfsTree->GetPostOrderCount(); i != 0; i--)
     {
+        BasicBlock* bb       = m_compiler->m_dfsTree->GetPostOrder(i - 1);
         Statement* firstStmt = replacer.StartBlock(bb);
 
         JITDUMP("\nReplacing in ");
