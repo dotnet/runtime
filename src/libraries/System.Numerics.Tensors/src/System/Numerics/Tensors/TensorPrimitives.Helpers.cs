@@ -11,14 +11,29 @@ namespace System.Numerics.Tensors
     /// <summary>Performs primitive tensor operations over spans of memory.</summary>
     public static partial class TensorPrimitives
     {
-        /// <summary>Throws an exception if the <paramref name="input"/> and <paramref name="output"/> spans overlap and don't begin at the same memory location.</summary>
+        /// <summary>Throws an exception if the <paramref name="input"/> and <paramref name="destination"/> spans overlap and don't begin at the same memory location.</summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static void ValidateInputOutputSpanNonOverlapping<T>(ReadOnlySpan<T> input, Span<T> output)
+        private static void ValidateInputOutputSpanNonOverlapping<T>(ReadOnlySpan<T> input, Span<T> destination)
         {
-            if (!Unsafe.AreSame(ref MemoryMarshal.GetReference(input), ref MemoryMarshal.GetReference(output)) &&
-                input.Overlaps(output))
+            if (!Unsafe.AreSame(ref MemoryMarshal.GetReference(input), ref MemoryMarshal.GetReference(destination)) &&
+                input.Overlaps(destination))
             {
                 ThrowHelper.ThrowArgument_InputAndDestinationSpanMustNotOverlap();
+            }
+        }
+
+        /// <summary>
+        /// Throws an exception if the region of <paramref name="destination1"/> that will store results and the
+        /// region of <paramref name="destination2"/> that will store results overlap.
+        /// </summary>
+        private static void ValidateOutputSpansNonOverlapping<T>(int inputLength, Span<T> destination1, Span<T> destination2)
+        {
+            Debug.Assert(destination1.Length >= inputLength);
+            Debug.Assert(destination1.Length >= inputLength);
+
+            if (destination1.Slice(0, inputLength).Overlaps(destination2.Slice(0, inputLength)))
+            {
+                ThrowHelper.ThrowArgument_DestinationSpansMustNotOverlap();
             }
         }
 
