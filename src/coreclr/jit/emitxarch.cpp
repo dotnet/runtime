@@ -359,12 +359,13 @@ bool emitter::IsApxNFEncodableInstruction(instruction ins) const
 //
 bool emitter::IsApxExtendedEvexInstruction(instruction ins) const
 {
+#ifdef TARGET_AMD64
     if (!UsePromotedEVEXEncoding())
     {
         return false;
     }
 
-    if (HasApxNdd(ins) || HasApxNf(ins))
+    if (HasApxNdd(ins) || HasApxNf(ins) || (ins == INS_crc32_apx))
     {
         return true;
     }
@@ -375,6 +376,9 @@ bool emitter::IsApxExtendedEvexInstruction(instruction ins) const
     }
 
     return false;
+#else // !TARGET_AMD64
+    return false;
+#endif
 }
 
 //------------------------------------------------------------------------
@@ -1711,6 +1715,15 @@ bool emitter::TakesEvexPrefix(const instrDesc* id) const
     if (HasHighSIMDReg(id) || (id->idOpSize() == EA_64BYTE) || HasMaskReg(id))
     {
         // Requires the EVEX encoding due to used registers
+#ifdef TARGET_AMD64
+        // A special case here is KMOV, the original KMOV introduced in Avx512 can only be encoded in VEX, APX promoted
+        // them to EVEX, so only return true when APX is available.
+        if ((ins == INS_kmovb_msk) || (ins == INS_kmovw_msk) || (ins == INS_kmovd_msk) || (ins == INS_kmovq_msk))
+        {
+            // Use EVEX only when needed.
+            return HasExtendedGPReg(id);
+        }
+#endif // TARGET_AMD64
         return true;
     }
 
@@ -1722,6 +1735,8 @@ bool emitter::TakesEvexPrefix(const instrDesc* id) const
 
     if (HasExtendedGPReg(id))
     {
+        // TODO-XArch-apx:
+        // revisit this part: this may have some conflicts with REX2 prefix, we may prefer REX2 if only EGPR is involved.
         return true;
     }
 
@@ -1778,6 +1793,7 @@ bool emitter::TakesEvexPrefix(const instrDesc* id) const
 //
 bool emitter::TakesRex2Prefix(const instrDesc* id) const
 {
+#ifdef TARGET_AMD64
     // Return true iff the instruction supports REX2 encoding, and it requires to access EGPRs.
 
     // TODO-xarch-apx:
@@ -1808,6 +1824,9 @@ bool emitter::TakesRex2Prefix(const instrDesc* id) const
 #endif // DEBUG
 
     return false;
+#else // !TARGET_AMD64
+    return false;
+#endif
 }
 
 //------------------------------------------------------------------------
@@ -1845,6 +1864,11 @@ bool emitter::TakesApxExtendedEvexPrefix(const instrDesc* id) const
     }
 
     if (id->idIsEvexNfContextSet())
+    {
+        return true;
+    }
+
+    if (ins == INS_crc32_apx)
     {
         return true;
     }
@@ -2393,7 +2417,12 @@ bool emitter::HasMaskReg(const instrDesc* id) const
     }
 
 #if defined(DEBUG)
-    assert(!isMaskReg(id->idReg2()));
+    // After APX, KMOV instructions can be encoded in EVEX.
+    if (isMaskReg(id->idReg2()))
+    {
+        assert(IsKInstruction(id->idIns()));
+        assert(UsePromotedEVEXEncoding());
+    }
 
     if (!id->idIsSmallDsc())
     {
@@ -2828,13 +2857,45 @@ emitter::code_t emitter::emitExtractEvexPrefix(instruction ins, code_t& code) co
             {
                 case 0x66:
                 {
-                    // None of the existing BMI instructions should be EVEX encoded.
-                    // After APX, BMI instructions can be EVEX encoded with NF feature.
+                    // After APX, BMI instructions can be encoded in EVEX.
                     if (IsBMIInstruction(ins))
                     {
-                        // if BMI instructions reaches this part, then it should be APX-EVEX.
-                        // although the opcode of all the BMI instructions are defined with 0x66,
-                        // but it should not, skip this check.
+                        switch (ins)
+                        {
+                            case INS_rorx:
+                            case INS_pdep:
+                            case INS_mulx:
+// TODO: Unblock when enabled for x86
+#ifdef TARGET_AMD64
+                            case INS_shrx:
+#endif
+                            {
+                                evexPrefix |= (0x03 << 8);
+                                break;
+                            }
+
+                            case INS_pext:
+// TODO: Unblock when enabled for x86
+#ifdef TARGET_AMD64
+                            case INS_sarx:
+#endif
+                            {
+                                evexPrefix |= (0x02 << 8);
+                                break;
+                            }
+// TODO: Unblock when enabled for x86
+#ifdef TARGET_AMD64
+                            case INS_shlx:
+                            {
+                                evexPrefix |= (0x01 << 8);
+                                break;
+                            }
+#endif
+                            default:
+                            {
+                                break;
+                            }
+                        }
                         break;
                     }
                     assert(!IsBMIInstruction(ins));
@@ -14580,6 +14641,12 @@ BYTE* emitter::emitOutputAM(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
                 NO_WAY("unexpected size");
                 break;
         }
+#ifdef TARGET_AMD64
+        if (ins == INS_crc32_apx)
+        {
+            code |= (insEncodeReg345(id, id->idReg1(), size, &code) << 8);
+        }
+#endif // TARGET_AMD64
     }
 
     // Output the REX prefix
@@ -15453,6 +15520,14 @@ BYTE* emitter::emitOutputSV(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
                 NO_WAY("unexpected size");
                 break;
         }
+        #ifdef TARGET_AMD64
+        if (ins == INS_crc32_apx)
+        {
+        // The promoted CRC32 is in 1-byte opcode, unlike other instructions on this path, the register encoding for
+        // CRC32 need to be done here.
+        code |= (insEncodeReg345(id, id->idReg1(), size, &code) << 8);
+        }
+        #endif // TARGET_AMD64
     }
 
     // Output the REX prefix
@@ -16565,7 +16640,7 @@ BYTE* emitter::emitOutputRR(BYTE* dst, instrDesc* id)
     else if ((ins == INS_bsf) || (ins == INS_bsr) || (ins == INS_crc32) || (ins == INS_lzcnt) || (ins == INS_popcnt) ||
              (ins == INS_tzcnt)
 #ifdef TARGET_AMD64
-             || (ins == INS_lzcnt_apx) || (ins == INS_tzcnt_apx) || (ins == INS_popcnt_apx)
+             || (ins == INS_lzcnt_apx) || (ins == INS_tzcnt_apx) || (ins == INS_popcnt_apx) || (ins == INS_crc32_apx)
 #endif // TARGET_AMD64
     )
     {
@@ -16577,11 +16652,24 @@ BYTE* emitter::emitOutputRR(BYTE* dst, instrDesc* id)
         {
             code |= 0x0100;
         }
-
-        if (size == EA_2BYTE && !TakesApxExtendedEvexPrefix(id))
+#ifdef TARGET_AMD64
+        if ((ins == INS_crc32_apx) && (size > EA_1BYTE))
         {
-            assert(ins == INS_crc32);
-            dst += emitOutputByte(dst, 0x66);
+            code |= 0x01;
+        }
+#endif // TARGET_AMD64
+
+        if (size == EA_2BYTE)
+        {
+            if (!TakesApxExtendedEvexPrefix(id))
+            {
+                assert(ins == INS_crc32);
+                dst += emitOutputByte(dst, 0x66);
+            }
+            else
+            {
+                code |= EXTENDED_EVEX_PP_BITS;
+            }
         }
         else if (size == EA_8BYTE)
         {
@@ -21397,6 +21485,7 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
         case INS_popcnt_apx:
         case INS_lzcnt_apx:
         case INS_tzcnt_apx:
+        case INS_crc32_apx:
 #endif // TARGET_AMD64
         {
             result.insThroughput = PERFSCORE_THROUGHPUT_1C;
