@@ -4,21 +4,25 @@
 
   <PropertyGroup>
     <!--
-      By default, we don't use the default artifacts settings for signing or publishing.
+      By default, we will use RID-specific package publishing.
       Every job will publish their RID-specific packages.
-      For non-RID-specific packages, we have various rules:
+      Some RIDs also have OS or arch-specific packages that are published by that RID.
+      
+      For jobs that don't meet the above rules, we have various controls:
 
-      - A job can specify EnableDefaultArtifacts=true as a global property to publish all packages it produces.
+      - A job can specify EnableDefaultRidSpecificArtifacts=false as a global property to publish all packages it produces.
         We have specific jobs that produce RID-agnostic packages or packages for multiple RIDs set this property.
-      - For some target RIDs, we also include specific RID-agnostic packages.
+      - Mono AOT LLVM builds only publish LLVM-specific packages always.
 
-      VMR jobs control whether or not a vertical has EnableDefaultArtifacts set to true or false in DotNetBuild.props.
+      VMR jobs can control whether or not a vertical has EnableDefaultRidSpecificArtifacts set to true or false in DotNetBuild.props.
 
       Packages that do not meet the above rules are added with Vertical visibility in the VMR and excluded in non-VMR builds.
     -->
-    <EnableDefaultArtifacts Condition="'$(DotNetBuildOrchestrator)' != 'true'">false</EnableDefaultArtifacts>
+    <EnableDefaultArtifacts Condition="'$(MonoAOTEnableLLVM)' == 'true'">false</EnableDefaultArtifacts>
     <EnableBlobArtifacts>true</EnableBlobArtifacts>
     <EnableBlobArtifacts Condition="'$(MonoAOTEnableLLVM)' == 'true'">false</EnableBlobArtifacts>
+
+    <EnableDefaultRidSpecificArtifacts Condition="'$(EnableDefaultRidSpecificArtifacts)' == ''">true</EnableDefaultRidSpecificArtifacts>
 
     <UseDotNetCertificate>true</UseDotNetCertificate>
   </PropertyGroup>
@@ -70,7 +74,6 @@
     <FileSignInfo Include="@(AzureLinuxPrereqsRPM->'%(Filename)%(Extension)')" CertificateName="LinuxSignMariner" />
   </ItemGroup>
 
-  <!-- In build signing and publishing without a join point -->
   <ItemGroup Condition="'$(EnableBlobArtifacts)' == 'true'">
     <Artifact Include="$(ArtifactsPackagesDir)**\*.tar.gz;
                        $(ArtifactsPackagesDir)**\*.zip;
@@ -111,11 +114,7 @@
                   Kind="Package" />
       </ItemGroup>
     </When>
-    <When Condition="'$(EnableDefaultArtifacts)' != 'true'">
-      <ItemGroup>
-        <PackageArtifacts Include="$(ArtifactsPackagesDir)**\*.$(PackageRID).*.nupkg" />
-      </ItemGroup>
-
+    <When Condition="'$(EnableDefaultRidSpecificArtifacts)' == 'true'">
       <ItemGroup Condition="'$(PackageRID)' == 'ios-arm64'">
         <PackageArtifacts
           Include="$(ArtifactsPackagesDir)**\Microsoft.NET.Runtime.iOS.Sample.Mono.*.nupkg;
@@ -141,26 +140,14 @@
                   $(ArtifactsPackagesDir)**\Microsoft.NET.Sdk.WebAssembly.Pack.*.nupkg;
                   $(ArtifactsPackagesDir)**\Microsoft.NET.Workload.Mono.ToolChain.*.nupkg" />
       </ItemGroup>
-      <ItemGroup Condition="$(PackageRID.StartsWith('win-'))">
-        <PackageArtifacts
-          Include="$(ArtifactsPackagesDir)**\VS.Redist.Common.NetCore.*.nupkg" />
-      </ItemGroup>
 
       <ItemGroup>
-        <VerticalOnlyPackageArtifacts Include="$(ArtifactsPackagesDir)**\*.nupkg" Exclude="@(PackageArtifacts)" />
         <!--
-          In non-VMR builds, we can skip publishing RID-agnostic packages entirely when we're not the lane that is supposed to publish them.
-          In VMR builds, we need to publish them for upstack jobs to consume.
+          Include the non-RID-specific packages for this RID.
         -->
         <Artifact Include="@(PackageArtifacts)"
                   IsShipping="$([System.String]::Copy('%(RecursiveDir)').StartsWith('Shipping'))"
                   Kind="Package" />
-
-        <Artifact Include="@(VerticalOnlyPackageArtifacts)"
-                  IsShipping="false"
-                  Visibility="Vertical"
-                  Kind="Package"
-                  Condition="'$(DotNetBuildOrchestrator)' == 'true'" />
       </ItemGroup>
     </When>
     <Otherwise>

@@ -73,7 +73,7 @@ extends:
             - name: _SignDiagnosticFilesArgs
               value: ''
             - name: _EnableDefaultArtifactsArg
-              value: $[iif(and(eq(variables.osGroup, 'windows'), eq(variables.archType, 'x64')),'/p:EnableDefaultArtifacts=true','')]
+              value: $[iif(and(eq(variables.osGroup, 'windows'), eq(variables.archType, 'x64')),'/p:EnableDefaultRidSpecificArtifacts=false','')]
           jobParameters:
             templatePath: 'templates-official'
             preBuildSteps:
@@ -230,7 +230,7 @@ extends:
           - windows_x64
           jobParameters:
             templatePath: 'templates-official'
-            buildArgs: -s tools+libs -restore -build -pack -sign -publish -c $(_BuildConfig) /p:TestAssemblies=false /p:TestPackages=true /p:EnableDefaultArtifacts=true
+            buildArgs: -s tools+libs -restore -build -pack -sign -publish -c $(_BuildConfig) /p:TestAssemblies=false /p:TestPackages=true /p:EnableDefaultRidSpecificArtifacts=false
             nameSuffix: Libraries_WithPackages
             isOfficialBuild: ${{ variables.isOfficialBuild }}
             timeoutInMinutes: 95
@@ -314,7 +314,7 @@ extends:
                   PackageArtifacts/Microsoft.NETCore.App.Runtime.win-x86*.nupkg
                   PackageArtifacts/Microsoft.NET.Sdk.WebAssembly.Pack*.nupkg
 
-            buildArgs: -s mono.workloads -c $(_BuildConfig) -restore -build -sign -publish /p:PackageSource=$(Build.SourcesDirectory)/artifacts/workloadPackages /p:WorkloadOutputPath=$(Build.SourcesDirectory)/artifacts/workloads /p:ShouldGenerateProductVersionFiles=true /p:EnableDefaultArtifacts=true
+            buildArgs: -s mono.workloads -c $(_BuildConfig) -restore -build -sign -publish /p:PackageSource=$(Build.SourcesDirectory)/artifacts/workloadPackages /p:WorkloadOutputPath=$(Build.SourcesDirectory)/artifacts/workloads /p:ShouldGenerateProductVersionFiles=true /p:EnableDefaultRidSpecificArtifacts=false
 
             isOfficialBuild: ${{ variables.isOfficialBuild }}
             timeoutInMinutes: 120
