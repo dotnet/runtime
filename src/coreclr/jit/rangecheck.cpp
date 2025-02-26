@@ -72,6 +72,14 @@ RangeCheck::RangeMap* RangeCheck::GetRangeMap()
     return m_pRangeMap;
 }
 
+void RangeCheck::ClearRangeMap()
+{
+    if (m_pRangeMap != nullptr)
+    {
+        m_pRangeMap->RemoveAll();
+    }
+}
+
 // Get the overflow map in which computed overflows are cached.
 RangeCheck::OverflowMap* RangeCheck::GetOverflowMap()
 {
@@ -82,6 +90,14 @@ RangeCheck::OverflowMap* RangeCheck::GetOverflowMap()
     return m_pOverflowMap;
 }
 
+void RangeCheck::ClearOverflowMap()
+{
+    if (m_pOverflowMap != nullptr)
+    {
+        m_pOverflowMap->RemoveAll();
+    }
+}
+
 RangeCheck::SearchPath* RangeCheck::GetSearchPath()
 {
     if (m_pSearchPath == nullptr)
@@ -89,6 +105,14 @@ RangeCheck::SearchPath* RangeCheck::GetSearchPath()
         m_pSearchPath = new (m_alloc) SearchPath(m_alloc);
     }
     return m_pSearchPath;
+}
+
+void RangeCheck::ClearSearchPath()
+{
+    if (m_pSearchPath != nullptr)
+    {
+        m_pSearchPath->RemoveAll();
+    }
 }
 
 // Get the length of the array vn, if it is new.
@@ -327,8 +351,8 @@ void RangeCheck::OptimizeRangeCheck(BasicBlock* block, Statement* stmt, GenTree*
             //   bool result = (arr.Length == 0) || (arr[arr.Length - 1] == 0);
             //
             // here for the array access we know that arr.Length >= 1
-            Range arrLenRange = GetRange(block, bndsChk->GetArrayLength());
-            if (arrLenRange.LowerLimit().IsConstant())
+            Range arrLenRange = Range(Limit(Limit::keUndef));
+            if (TryGetRange(block, bndsChk->GetArrayLength(), &arrLenRange) && arrLenRange.LowerLimit().IsConstant())
             {
                 // Lower known limit of ArrLen:
                 const int lenLowerLimit = arrLenRange.LowerLimit().GetConstant();
@@ -363,7 +387,12 @@ void RangeCheck::OptimizeRangeCheck(BasicBlock* block, Statement* stmt, GenTree*
     }
 
     // Get the range for this index.
-    Range range = GetRange(block, treeIndex);
+    Range range = Range(Limit(Limit::keUndef));
+    if (!TryGetRange(block, treeIndex, &range))
+    {
+        JITDUMP("Failed to get range\n");
+        return;
+    }
 
     // If upper or lower limit is found to be unknown (top), or it was found to
     // be unknown because of over budget or a deep search, then return early.
@@ -374,14 +403,8 @@ void RangeCheck::OptimizeRangeCheck(BasicBlock* block, Statement* stmt, GenTree*
         return;
     }
 
-    if (DoesOverflow(block, treeIndex, range))
-    {
-        JITDUMP("Method determined to overflow.\n");
-        return;
-    }
-
     JITDUMP("Range value %s\n", range.ToString(m_pCompiler));
-    GetSearchPath()->RemoveAll();
+    ClearSearchPath();
     Widen(block, treeIndex, &range);
 
     // If upper or lower limit is unknown, then return.
@@ -420,7 +443,7 @@ void RangeCheck::Widen(BasicBlock* block, GenTree* tree, Range* pRange)
         if (increasing)
         {
             JITDUMP("[%06d] is monotonically increasing.\n", Compiler::dspTreeID(tree));
-            GetRangeMap()->RemoveAll();
+            ClearRangeMap();
             *pRange = GetRangeWorker(block, tree, true DEBUGARG(0));
         }
     }
@@ -725,7 +748,7 @@ void RangeCheck::MergeEdgeAssertions(Compiler*        comp,
                 continue;
             }
 
-           int cnstLimit = (int)curAssertion->op2.u1.iconVal;
+            int cnstLimit = (int)curAssertion->op2.u1.iconVal;
             assert(cnstLimit == comp->vnStore->CoercedConstantValue<int>(curAssertion->op2.vn));
 
             if ((cnstLimit == 0) && (curAssertion->assertionKind == Compiler::OAK_NOT_EQUAL) &&
@@ -1610,23 +1633,38 @@ void Indent(int indent)
 #endif
 
 //------------------------------------------------------------------------
-// GetRange: Get the range for the given expression.
+// TryGetRange: Try to obtain the range of an expression.
 //
 // Arguments:
-//    block - the block that contains `expr`;
-//    expr  - expression to compute the range for;
+//    block  - the block that contains `expr`;
+//    expr   - expression to compute the range for;
+//    pRange - [Out] range of the expression;
 //
 // Return Value:
-//    expr's range
+//    false if the range is unknown or determined to overflow.
 //
-Range RangeCheck::GetRange(BasicBlock* block, GenTree* expr)
+bool RangeCheck::TryGetRange(BasicBlock* block, GenTree* expr, Range* pRange)
 {
     // Reset the maps.
-    GetRangeMap()->RemoveAll();
-    GetOverflowMap()->RemoveAll();
-    GetSearchPath()->RemoveAll();
+    ClearRangeMap();
+    ClearOverflowMap();
+    ClearSearchPath();
 
-    return GetRangeWorker(block, expr, false DEBUGARG(0));
+    Range range = GetRangeWorker(block, expr, false DEBUGARG(0));
+    if (range.UpperLimit().IsUnknown() && range.LowerLimit().IsUnknown())
+    {
+        JITDUMP("Range is completely unknown.\n");
+        return false;
+    }
+
+    if (DoesOverflow(block, expr, range))
+    {
+        JITDUMP("Range determined to overflow.\n");
+        return false;
+    }
+
+    *pRange = range;
+    return true;
 }
 
 //------------------------------------------------------------------------

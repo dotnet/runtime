@@ -593,6 +593,29 @@ public:
     // Constructor
     RangeCheck(Compiler* pCompiler);
 
+    // Entry point to optimize range checks in the method. Assumes value numbering
+    // and assertion prop phases are completed.
+    bool OptimizeRangeChecks();
+
+    // Inspect the assertions about the current ValueNum to refine pRange
+    static void MergeEdgeAssertions(Compiler*        comp,
+                                    ValueNum         num,
+                                    ValueNum         preferredBoundVN,
+                                    ASSERT_VALARG_TP assertions,
+                                    Range*           pRange,
+                                    bool             log = true);
+
+    // Given the index expression try to find its range.
+    // The range of a variable depends on its rhs which in turn depends on its constituent variables.
+    // The "path" is the path taken in the search for the rhs' range and its constituents' range.
+    // If "monIncreasing" is true, the calculations are made more liberally assuming initial values
+    // at phi definitions for the lower bound.
+    bool TryGetRange(BasicBlock* block, GenTree* expr, Range* pRange);
+
+    // Does the current "expr", which is a use, involve a definition that overflows.
+    bool DoesOverflow(BasicBlock* block, GenTree* tree, const Range& range);
+
+private:
     typedef JitHashTable<GenTree*, JitPtrKeyFuncs<GenTree>, bool>        OverflowMap;
     typedef JitHashTable<GenTree*, JitPtrKeyFuncs<GenTree>, Range*>      RangeMap;
     typedef JitHashTable<GenTree*, JitPtrKeyFuncs<GenTree>, BasicBlock*> SearchPath;
@@ -605,21 +628,10 @@ public:
     // TODO-CQ: This is not general enough.
     bool BetweenBounds(Range& range, GenTree* upper, int arrSize);
 
-    // Entry point to optimize range checks in the method. Assumes value numbering
-    // and assertion prop phases are completed.
-    bool OptimizeRangeChecks();
-
     // Given a "tree" node, check if it contains array bounds check node and
     // optimize to remove it, if possible. Requires "stmt" and "block" that
     // contain the tree.
     void OptimizeRangeCheck(BasicBlock* block, Statement* stmt, GenTree* tree);
-
-    // Given the index expression try to find its range.
-    // The range of a variable depends on its rhs which in turn depends on its constituent variables.
-    // The "path" is the path taken in the search for the rhs' range and its constituents' range.
-    // If "monIncreasing" is true, the calculations are made more liberally assuming initial values
-    // at phi definitions for the lower bound.
-    Range GetRange(BasicBlock* block, GenTree* expr);
 
     // Internal worker for GetRange.
     Range GetRangeWorker(BasicBlock* block, GenTree* expr, bool monIncreasing DEBUGARG(int indent));
@@ -645,14 +657,6 @@ public:
     // refine the "pRange" value.
     void MergeEdgeAssertions(GenTreeLclVarCommon* lcl, ASSERT_VALARG_TP assertions, Range* pRange);
 
-    // Inspect the assertions about the current ValueNum to refine pRange
-    static void MergeEdgeAssertions(Compiler*        comp,
-                                    ValueNum         num,
-                                    ValueNum         preferredBoundVN,
-                                    ASSERT_VALARG_TP assertions,
-                                    Range*           pRange,
-                                    bool             log = true);
-
     // The maximum possible value of the given "limit". If such a value could not be determined
     // return "false". For example: CORINFO_Array_MaxLength for array length.
     bool GetLimitMax(Limit& limit, int* pMax);
@@ -675,9 +679,6 @@ public:
 
     bool ComputeDoesOverflow(BasicBlock* block, GenTree* expr, const Range& range);
 
-    // Does the current "expr", which is a use, involve a definition that overflows.
-    bool DoesOverflow(BasicBlock* block, GenTree* tree, const Range& range);
-
     // Widen the range by first checking if the induction variable is monotonically increasing.
     // Requires "pRange" to be partially computed.
     void Widen(BasicBlock* block, GenTree* tree, Range* pRange);
@@ -693,7 +694,6 @@ public:
     // will be applied for the currently compiled method.
     bool IsOverBudget();
 
-private:
     // Given a lclvar use, try to find the lclvar's defining store and its containing block.
     LclSsaVarDsc* GetSsaDefStore(GenTreeLclVarCommon* lclUse);
 
@@ -702,13 +702,16 @@ private:
 
     // Get the cached overflow values.
     OverflowMap* GetOverflowMap();
+    void         ClearOverflowMap();
     OverflowMap* m_pOverflowMap;
 
     // Get the cached range values.
     RangeMap* GetRangeMap();
+    void      ClearRangeMap();
     RangeMap* m_pRangeMap;
 
     SearchPath* GetSearchPath();
+    void        ClearSearchPath();
     SearchPath* m_pSearchPath;
 
     Compiler*     m_pCompiler;
