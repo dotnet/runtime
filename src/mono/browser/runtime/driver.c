@@ -535,8 +535,8 @@ EMSCRIPTEN_KEEPALIVE const char * mono_wasm_method_get_name (MonoMethod *method)
 }
 
 EMSCRIPTEN_KEEPALIVE char * mono_wasm_method_get_name_ex (MonoMethod *method) {
-	MONO_ENTER_GC_UNSAFE;
 	char *res;
+	MONO_ENTER_GC_UNSAFE;
 	const char *method_name = mono_method_get_name (method);
 	// starts with .ctor or .cctor
 	if (mono_method_get_flags (method, NULL) & 0x0800 /* METHOD_ATTRIBUTE_SPECIAL_NAME */ && strlen (res) < 7) {
