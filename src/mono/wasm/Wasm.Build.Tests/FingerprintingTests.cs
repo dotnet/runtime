@@ -26,6 +26,9 @@ public class FingerprintingTests : WasmTemplateTestsBase
         var config = Configuration.Release;
         string extraProperties = "<WriteImportMapToHtml>true</WriteImportMapToHtml>";
         ProjectInfo info = CopyTestAsset(config, aot: false, TestAsset.WasmBasicTestApp, "WriteImportMapToHtml", extraProperties: extraProperties);
+        UpdateFile(Path.Combine("wwwroot", "index.html"), new Dictionary<string, string> {
+            { """<script type='module' src="./main.js"></script>""", """<script type="importmap"></script> <script type='module' src="./main.js"></script>""" }
+        });
         BuildProject(info, config, wasmFingerprintDotnetJs: true);
         BrowserRunOptions runOptions = new(config, TestScenario: "DotnetRun");
         await RunForBuildWithDotnetRun(runOptions);
