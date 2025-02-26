@@ -725,7 +725,8 @@ void RangeCheck::MergeEdgeAssertions(Compiler*        comp,
                 continue;
             }
 
-            int cnstLimit = comp->vnStore->CoercedConstantValue<int>(curAssertion->op2.vn);
+           int cnstLimit = (int)curAssertion->op2.u1.iconVal;
+            assert(cnstLimit == comp->vnStore->CoercedConstantValue<int>(curAssertion->op2.vn));
 
             if ((cnstLimit == 0) && (curAssertion->assertionKind == Compiler::OAK_NOT_EQUAL) &&
                 comp->vnStore->IsVNCheckedBound(curAssertion->op1.vn))
