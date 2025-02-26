@@ -13932,10 +13932,10 @@ bool Compiler::impImportDivisionWithChecks(genTreeOps oper)
         impCloneExpr(dividend, &dividendCopy, CHECK_SPILL_ALL, nullptr DEBUGARG("dividend used in runtime checks"));
 
     // Expand division into QMark containing runtime checks.
-    // We can skip this when both the dividend and divisor are unsigned.
-    if ((oper == GT_DIV) && !(varTypeIsUnsigned(dividend) && varTypeIsUnsigned(divisor)))
+    if (oper == GT_DIV)
     {
-        const ssize_t minValue = genActualType(dividendCopy) == TYP_LONG ? INT64_MIN : INT32_MIN;
+        assert(!(varTypeIsUnsigned(dividend) || varTypeIsUnsigned(divisor)));
+
 
         // (dividend == MinValue && divisor == -1)
         GenTreeOp* const divisorIsMinusOne =
