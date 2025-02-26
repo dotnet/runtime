@@ -82,6 +82,12 @@ namespace System.Linq
                 // Try to optimize by using reservoir sampling to get a random sample of count elements.
                 return new ShuffleTakeIterator<TSource>(_source, count);
             }
+
+            public override bool Contains(TSource value)
+            {
+                // The shuffle is irrelevant, as order doesn't matter for whether the element exists or not.
+                return _source.Contains(value);
+            }
         }
 
         private sealed partial class ShuffleTakeIterator<TSource> : Iterator<TSource>
@@ -274,6 +280,102 @@ namespace System.Linq
                 }
 
                 return reservoir;
+            }
+
+            public override bool Contains(TSource value)
+            {
+                long totalCount, equalCount = 0;
+
+                // If we can easily get the number of elements in the source, and the take count is larger,
+                // then we can ignore the shuffle and just check whether the item is in the source.
+                // Otherwise, count how many elements are in the source and how many of those elements match.
+                if (_source is IList<TSource> list)
+                {
+                    if (list.Count <= _takeCount)
+                    {
+                        return list.Contains(value);
+                    }
+
+                    totalCount = list.Count;
+                    if (list.TryGetSpan(out ReadOnlySpan<TSource> span))
+                    {
+                        equalCount = span.Count(value);
+                    }
+                    else
+                    {
+                        for (int i = 0; i < totalCount; i++)
+                        {
+                            if (EqualityComparer<TSource>.Default.Equals(list[i], value))
+                            {
+                                equalCount++;
+                            }
+                        }
+                    }
+                }
+                else if (_source is Iterator<TSource> iterator &&
+                    iterator.GetCount(onlyIfCheap: true) is int iteratorCount &&
+                    iteratorCount >= 0)
+                {
+                    if (iteratorCount <= _takeCount)
+                    {
+                        return iterator.Contains(value);
+                    }
+
+                    totalCount = iteratorCount;
+                    foreach (TSource item in iterator)
+                    {
+                        if (EqualityComparer<TSource>.Default.Equals(item, value))
+                        {
+                            equalCount++;
+                        }
+                    }
+                }
+                else
+                {
+                    totalCount = 0;
+                    foreach (TSource item in _source)
+                    {
+                        totalCount++;
+                        if (EqualityComparer<TSource>.Default.Equals(item, value))
+                        {
+                            equalCount++;
+                        }
+                    }
+                }
+
+                // If nothing matched, the item isn't in the sample.
+                if (equalCount == 0)
+                {
+                    return false;
+                }
+
+                // If everything matched, the item is definitely in the sample.
+                if (equalCount == totalCount)
+                {
+                    Debug.Assert(_takeCount > 0, $"Expected positive {nameof(_takeCount)}.");
+                    return true;
+                }
+
+                // If the sample is larger than the source, the item is in the sample if the item is in the source.
+                if (totalCount <= _takeCount)
+                {
+                    return equalCount > 0;
+                }
+
+                // Otherwise, given totalCount items of which equalCount match the target, we're going to sample
+                // _takeCount items, and we need to determine how likely it is that at least one of those sampled
+                // items is one of the equalCount items. For that, we'll use hypergeometric distribution to determine
+                // the probability of drawing zero matches in our sample, at which point the chance of getting at least
+                // one match is the inverse.
+                double probOfDrawingZeroMatches = 1;
+                for (long i = 0; i < _takeCount; i++)
+                {
+                    probOfDrawingZeroMatches *=
+                        (double)(totalCount - equalCount - i) / // number of non-matching items left to draw from
+                        (totalCount - i); // number of items left to draw from
+                }
+
+                return Random.Shared.NextDouble() > probOfDrawingZeroMatches;
             }
         }
     }

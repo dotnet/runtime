@@ -1189,8 +1189,6 @@ inline bool isRegParamType(var_types type)
 //    type      - the basic jit var_type for the item being queried
 //    typeClass - the handle for the struct when 'type' is TYP_STRUCT
 //    typeSize  - Out param (if non-null) is updated with the size of 'type'.
-//    forReturn - this is true when we asking about a GT_RETURN context;
-//                this is false when we are asking about an argument context
 //    isVarArg  - whether or not this is a vararg fixed arg or variable argument
 //              - if so on arm64 windows getArgTypeForStruct will ignore HFA
 //              - types
@@ -1199,7 +1197,6 @@ inline bool isRegParamType(var_types type)
 inline bool Compiler::VarTypeIsMultiByteAndCanEnreg(var_types                type,
                                                     CORINFO_CLASS_HANDLE     typeClass,
                                                     unsigned*                typeSize,
-                                                    bool                     forReturn,
                                                     bool                     isVarArg,
                                                     CorInfoCallConvExtension callConv)
 {
@@ -1210,16 +1207,8 @@ inline bool Compiler::VarTypeIsMultiByteAndCanEnreg(var_types                typ
     {
         assert(typeClass != nullptr);
         size = info.compCompHnd->getClassSize(typeClass);
-        if (forReturn)
-        {
-            structPassingKind howToReturnStruct;
-            type = getReturnTypeForStruct(typeClass, callConv, &howToReturnStruct, size);
-        }
-        else
-        {
-            structPassingKind howToPassStruct;
-            type = getArgTypeForStruct(typeClass, &howToPassStruct, isVarArg, size);
-        }
+        structPassingKind howToReturnStruct;
+        type = getReturnTypeForStruct(typeClass, callConv, &howToReturnStruct, size);
         if (type != TYP_UNKNOWN)
         {
             result = true;
@@ -4085,6 +4074,17 @@ inline bool Compiler::impIsPrimitive(CorInfoType jitType)
 
 inline Compiler::lvaPromotionType Compiler::lvaGetPromotionType(const LclVarDsc* varDsc)
 {
+    // TODO-Review: Sometimes we get called on ARM with HFA struct variables that have been promoted,
+    // where the struct itself is no longer used because all access is via its member fields.
+    // When that happens, the struct is marked as unused and its type has been changed to
+    // TYP_INT (to keep the GC tracking code from looking at it).
+    // See Compiler::raAssignVars() for details. For example:
+    //      N002 (  4,  3) [00EA067C] -------------               return    struct $346
+    //      N001 (  3,  2) [00EA0628] -------------                  lclVar    struct(U) V03 loc2
+    //                                                                        float  V03.f1 (offs=0x00) -> V12 tmp7
+    //                                                                        f8 (last use) (last use) $345
+    // Here, the "struct(U)" shows that the "V03 loc2" variable is unused. Not shown is that V03
+    // is now TYP_INT in the local variable table. It's not really unused, because it's in the tree.
     assert(!varDsc->lvPromoted || varTypeIsPromotable(varDsc) || varDsc->lvUnusedStruct);
 
     if (!varDsc->lvPromoted)
@@ -4322,19 +4322,20 @@ bool Compiler::fgVarNeedsExplicitZeroInit(unsigned varNum, bool bbInALoop, bool 
             return false;
         }
 
-// Below conditions guarantee block initialization, which will initialize
-// all struct fields. If the logic for block initialization in CodeGen::genCheckUseBlockInit()
-// changes, these conditions need to be updated.
+        // Below conditions guarantee block initialization, which will initialize
+        // all struct fields. If the logic for block initialization in CodeGen::genCheckUseBlockInit()
+        // changes, these conditions need to be updated.
+        unsigned stackHomeSize = lvaLclStackHomeSize(varNum);
 #ifdef TARGET_64BIT
 #if defined(TARGET_AMD64)
         // We can clear using aligned SIMD so the threshold is lower,
         // and clears in order which is better for auto-prefetching
-        if (roundUp(varDsc->lvSize(), TARGET_POINTER_SIZE) / sizeof(int) > 4)
+        if (roundUp(stackHomeSize, TARGET_POINTER_SIZE) / sizeof(int) > 4)
 #else // !defined(TARGET_AMD64)
-        if (roundUp(varDsc->lvSize(), TARGET_POINTER_SIZE) / sizeof(int) > 8)
+        if (roundUp(stackHomeSize, TARGET_POINTER_SIZE) / sizeof(int) > 8)
 #endif
 #else
-        if (roundUp(varDsc->lvSize(), TARGET_POINTER_SIZE) / sizeof(int) > 4)
+        if (roundUp(stackHomeSize, TARGET_POINTER_SIZE) / sizeof(int) > 4)
 #endif
         {
             return false;
