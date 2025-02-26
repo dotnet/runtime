@@ -51,7 +51,7 @@ public class WasmTemplateTestsBase : BuildTestBase
     {
         string projectName = GetProjectName(idPrefix, config, aot, appendUnicodeToPath, avoidAotLongPathIssue);
         (string logPath, string nugetDir) = InitPaths(projectName);
-        InitProjectDir(_projectDir, addNuGetSourceForLocalPackages: true, DefaultTargetFramework);
+        InitProjectDir(_projectDir, DefaultTargetFramework, addNuGetSourceForLocalPackages: true);
         return (projectName, logPath, nugetDir);
     }
 

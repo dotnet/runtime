@@ -143,7 +143,7 @@ namespace Wasm.Build.Tests
             Directory.CreateDirectory(_logPath);
         }
 
-        protected void InitProjectDir(string dir, bool addNuGetSourceForLocalPackages = false, string targetFramework)
+        protected void InitProjectDir(string dir, string targetFramework, bool addNuGetSourceForLocalPackages = false)
         {
             Directory.CreateDirectory(dir);
             File.WriteAllText(Path.Combine(dir, "Directory.Build.props"), s_buildEnv.DirectoryBuildPropsContents);
@@ -164,7 +164,7 @@ namespace Wasm.Build.Tests
             }
         }
 
-        protected const string SimpleProjectTemplate =
+        protected static readonly string SimpleProjectTemplate =
             @$"<Project Sdk=""Microsoft.NET.Sdk"">
               <PropertyGroup>
                 <TargetFramework>{DefaultTargetFramework}</TargetFramework>
@@ -178,8 +178,9 @@ namespace Wasm.Build.Tests
               ##INSERT_AT_END##
             </Project>";
 
-        protected static BuildArgs ExpandBuildArgs(BuildArgs buildArgs, string extraProperties="", string extraItems="", string insertAtEnd="", string projectTemplate=SimpleProjectTemplate)
+        protected static BuildArgs ExpandBuildArgs(BuildArgs buildArgs, string extraProperties="", string extraItems="", string insertAtEnd="")
         {
+            string projectTemplate=SimpleProjectTemplate;
             if (buildArgs.AOT)
             {
                 extraProperties = $"{extraProperties}\n<RunAOTCompilation>true</RunAOTCompilation>";
@@ -213,7 +214,7 @@ namespace Wasm.Build.Tests
             if (options.CreateProject)
             {
                 InitPaths(id);
-                InitProjectDir(_projectDir, true, DefaultTargetFramework);
+                InitProjectDir(_projectDir, DefaultTargetFramework, true);
                 options.InitProject?.Invoke();
 
                 File.WriteAllText(Path.Combine(_projectDir, $"{buildArgs.ProjectName}.csproj"), buildArgs.ProjectFileContents);
@@ -300,7 +301,7 @@ namespace Wasm.Build.Tests
         public string CreateWasmTemplateProject(string id, string template = "wasmbrowser", string extraArgs = "", bool runAnalyzers = true, string? projectParentDir = null)
         {
             InitPaths(id, projectParentDir);
-            InitProjectDir(_projectDir, addNuGetSourceForLocalPackages: true, DefaultTargetFramework);
+            InitProjectDir(_projectDir, DefaultTargetFramework, addNuGetSourceForLocalPackages: true);
 
             File.WriteAllText(Path.Combine(_projectDir, "Directory.Build.props"), "<Project />");
             File.WriteAllText(Path.Combine(_projectDir, "Directory.Build.targets"),
@@ -657,7 +658,7 @@ namespace Wasm.Build.Tests
         internal BuildPaths GetBuildPaths(BuildArgs buildArgs, bool forPublish=true)
         {
             string objDir = GetObjDir(buildArgs.Config, DefaultTargetFramework);
-            string bundleDir = Path.Combine(GetBinDir(baseDir: _projectDir, config: buildArgs.Config), "AppBundle");
+            string bundleDir = Path.Combine(GetBinDir(buildArgs.Config, DefaultTargetFramework, _projectDir), "AppBundle");
             string wasmDir = Path.Combine(objDir, "wasm", forPublish ? "for-publish" : "for-build");
 
             return new BuildPaths(wasmDir, objDir, GetBinDir(buildArgs.Config, DefaultTargetFramework), bundleDir);

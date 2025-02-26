@@ -104,7 +104,7 @@ public class NonWasmTemplateBuildTests : WasmTemplateTestsBase
     {
         string id = $"nonwasm_{targetFramework}_{config}_{GetRandomId()}";
         InitPaths(id);
-        InitProjectDir(_projectDir, true, DefaultTargetFramework);
+        InitProjectDir(_projectDir, DefaultTargetFramework, true);
 
         directoryBuildTargets ??= targetFramework == s_previousTargetFramework
                                     ? s_directoryBuildTargetsForPreviousTFM
