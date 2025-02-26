@@ -49,7 +49,7 @@ export const globalObjectsRoot: GlobalObjects = {
     module: emscriptenModule,
     loaderHelpers,
     runtimeHelpers,
-    diagnosticsHelpers: diagnosticHelpers,
+    diagnosticHelpers: diagnosticHelpers,
     api: exportedRuntimeAPI,
 } as any;
 

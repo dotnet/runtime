@@ -4,14 +4,14 @@
   <UsingTask TaskName="ILStrip" AssemblyFile="$(MonoTargetsTasksAssemblyPath)" TaskFactory="TaskHostFactory" />
   <UsingTask TaskName="RuntimeConfigParserTask" AssemblyFile="$(MonoTargetsTasksAssemblyPath)" TaskFactory="TaskHostFactory" />
 
+  <PropertyGroup>
+    <FeaturePerfTracing Condition="'$(FeaturePerfTracing)' == '' and '$(WasmProfilers)' == ''">true</FeaturePerfTracing>
+  </PropertyGroup>
+
   <!-- TODO: this breaks runtime tests on Helix due to the file not being there for some reason. Once this is fixed we can remove the UpdateRuntimePack target here -->
   <Import Project="$(RepositoryEngineeringDir)targetingpacks.targets" Condition="'$(TargetingpacksTargetsImported)' != 'true' and '$(ImportTargetingPacksTargetsInWasmAppTargets)' == 'true'"/>
   <Import Project="$(MSBuildThisFileDirectory)BrowserWasmApp.targets" Condition="'$(UsingNativeAOT)' != 'true'" />
   <Import Project="$(MSBuildThisFileDirectory)EmSdkRepo.Defaults.props" Condition="'$(UsingNativeAOT)' == 'true' and '$(EMSDK_PATH)' != ''" />
-
-  <PropertyGroup>
-    <FeaturePerfTracing Condition="'$(FeaturePerfTracing)' == '' and '$(WasmProfilers)' == ''">true</FeaturePerfTracing>
-  </PropertyGroup>
 
   <!-- FIXME: use proper dependency -->
   <Target Name="SetupAppHostConfig" BeforeTargets="_WasmGenerateAppBundle">
