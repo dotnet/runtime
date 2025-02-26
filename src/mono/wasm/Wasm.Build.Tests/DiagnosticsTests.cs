@@ -34,7 +34,7 @@ public class DiagnosticsTests : WasmTemplateTestsBase
         var match = result.TestOutput
             .Select(line => regex.Match(line))
             .FirstOrDefault(m => m.Success);
-        Assert.True(match != null, $"TestOuptup did not contain log matching {regex}");
+        Assert.True(match != null, $"TestOutput did not contain log matching {regex}");
         if (!int.TryParse(match.Groups[1].Value, out int fileSize))
         {
             Assert.Fail($"Failed to parse profile size from {match.Groups[1].Value} to int");
