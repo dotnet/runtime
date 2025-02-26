@@ -4841,8 +4841,8 @@ void CodeGen::genPutArgStk(GenTreePutArgStk* treeNode)
                 assert(varDsc->lvType == TYP_STRUCT);
                 assert(varDsc->lvOnFrame && !varDsc->lvRegister);
 
-                srcSize = varDsc->lvSize(); // This yields the roundUp size, but that is fine
-                                            // as that is how much stack is allocated for this LclVar
+                srcSize = compiler->lvaLclStackHomeSize(varNode->GetLclNum());
+
                 layout = varDsc->GetLayout();
             }
             else // we must have a GT_BLK
@@ -4870,8 +4870,7 @@ void CodeGen::genPutArgStk(GenTreePutArgStk* treeNode)
                 if (varNode != nullptr)
                 {
                     // If we have a varNode, even if it was casted using `OBJ`, we can read its original memory size.
-                    const LclVarDsc* varDsc       = compiler->lvaGetDesc(varNode);
-                    const unsigned   varStackSize = varDsc->lvSize();
+                    const unsigned varStackSize = compiler->lvaLclStackHomeSize(varNode->GetLclNum());
                     if (varStackSize >= srcSize)
                     {
                         srcSize = varStackSize;

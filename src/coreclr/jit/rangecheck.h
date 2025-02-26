@@ -686,12 +686,7 @@ public:
     void MergeEdgeAssertions(GenTreeLclVarCommon* lcl, ASSERT_VALARG_TP assertions, Range* pRange);
 
     // Inspect the assertions about the current ValueNum to refine pRange
-    static void MergeEdgeAssertions(Compiler*        comp,
-                                    ValueNum         num,
-                                    ValueNum         preferredBoundVN,
-                                    ASSERT_VALARG_TP assertions,
-                                    Range*           pRange,
-                                    bool             log = true);
+    void MergeEdgeAssertions(ValueNum num, ASSERT_VALARG_TP assertions, Range* pRange);
 
     // The maximum possible value of the given "limit". If such a value could not be determined
     // return "false". For example: CORINFO_Array_MaxLength for array length.
