@@ -20,6 +20,7 @@ namespace System.IO
 
         internal FileInfo(string originalPath, string? fullPath = null, string? fileName = null, bool isNormalized = false)
         {
+            originalPath = originalPath.Trim();
             OriginalPath = originalPath;
 
             fullPath ??= originalPath;
