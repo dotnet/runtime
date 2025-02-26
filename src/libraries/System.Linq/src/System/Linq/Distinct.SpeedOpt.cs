@@ -22,7 +22,7 @@ namespace System.Linq
                 // source.Contains(value), as the Distinct() won't remove anything that could have caused
                 // Contains to return true. If, however, there is a custom comparer, Distinct might remove
                 // the elements that would have matched, and thus we can't skip it.
-                _comparer is null || _comparer == EqualityComparer<TSource>.Default ? _source.Contains(value) :
+                _comparer is null ? _source.Contains(value) :
                 base.Contains(value);
         }
     }
