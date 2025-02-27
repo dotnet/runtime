@@ -195,7 +195,7 @@ private:
     PTR_PEImageLayout CreateLoadedLayout(bool throwOnFailure);
 
     // Create the flat layout
-    PTR_PEImageLayout CreateFlatLayout();
+    PTR_PEImageLayout CreateFlatLayout(BOOL bIsLoadedLayoutSuitable);
 
     void   SetLayout(DWORD dwLayout, PTR_PEImageLayout pLayout);
 #endif

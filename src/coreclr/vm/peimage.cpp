@@ -705,8 +705,18 @@ PTR_PEImageLayout PEImage::GetOrCreateLayoutInternal(DWORD imageLayoutMask)
         {
             bIsLoadedLayoutPreferred = TRUE;
         }
-#endif // !TARGET_UNIX
+#elif defined (TARGET_UNIX)
+        // Check for R2R image, prefer LoadedLayout for R2R
+        if (bIsLoadedLayoutSuitable && bIsFlatLayoutSuitable)
+        {
+            pRetVal = PEImage::CreateFlatLayout(bIsLoadedLayoutSuitable);
 
+            if (pRetVal == NULL)
+            {
+                bIsLoadedLayoutPreferred = TRUE;
+            }
+        }
+#endif // TARGET_UNIX
         _ASSERTE(bIsLoadedLayoutSuitable || bIsFlatLayoutSuitable);
 
         if (bIsLoadedLayoutPreferred)
@@ -718,7 +728,7 @@ PTR_PEImageLayout PEImage::GetOrCreateLayoutInternal(DWORD imageLayoutMask)
         if (pRetVal == NULL)
         {
             _ASSERTE(bIsFlatLayoutSuitable);
-            pRetVal = PEImage::CreateFlatLayout();
+            pRetVal = PEImage::CreateFlatLayout(false);
             _ASSERTE(pRetVal != NULL);
         }
     }
@@ -764,7 +774,7 @@ PTR_PEImageLayout PEImage::CreateLoadedLayout(bool throwOnFailure)
     return pLoadLayout;
 }
 
-PTR_PEImageLayout PEImage::CreateFlatLayout()
+PTR_PEImageLayout PEImage::CreateFlatLayout(BOOL bCheckReadyToRunHeader)
 {
     CONTRACTL
     {
@@ -775,8 +785,19 @@ PTR_PEImageLayout PEImage::CreateFlatLayout()
     CONTRACTL_END;
 
     PTR_PEImageLayout pFlatLayout = PEImageLayout::LoadFlat(this);
-    SetLayout(IMAGE_FLAT, pFlatLayout);
-    return pFlatLayout;
+
+    if (bCheckReadyToRunHeader && pFlatLayout->HasReadyToRunHeader())
+    {
+        pFlatLayout->Release();
+
+        return NULL;
+    }
+    else
+    {
+        SetLayout(IMAGE_FLAT, pFlatLayout);
+
+        return pFlatLayout;
+    }
 }
 
 /* static */
