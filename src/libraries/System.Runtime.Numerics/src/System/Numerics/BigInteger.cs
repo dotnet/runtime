@@ -5264,13 +5264,32 @@ namespace System.Numerics
 
             BigInteger result;
 
+            bool negx = value._sign < 0;
+            uint smallBits = NumericsHelpers.Abs(value._sign);
+            scoped ReadOnlySpan<uint> bits = value._bits;
+            if (bits.IsEmpty)
+            {
+                bits = new ReadOnlySpan<uint>(in smallBits);
+            }
+
+            int xl = bits.Length;
+            if (negx && (bits[^1] >= kuMaskHighBit) && ((bits[^1] != kuMaskHighBit) || bits.IndexOfAnyExcept(0u) != (bits.Length - 1)))
+            {
+                // For a shift of N x 32 bit,
+                // We check for a special case where its sign bit could be outside the uint array after 2's complement conversion.
+                // For example given [0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF], its 2's complement is [0x01, 0x00, 0x00]
+                // After a 32 bit right shift, it becomes [0x00, 0x00] which is [0x00, 0x00] when converted back.
+                // The expected result is [0x00, 0x00, 0xFFFFFFFF] (2's complement) or [0x00, 0x00, 0x01] when converted back
+                // If the 2's component's last element is a 0, we will track the sign externally
+                ++xl;
+            }
+
             uint[]? xdFromPool = null;
-            int xl = value._bits?.Length ?? 1;
             Span<uint> xd = (xl <= BigIntegerCalculator.StackAllocThreshold
                           ? stackalloc uint[BigIntegerCalculator.StackAllocThreshold]
                           : xdFromPool = ArrayPool<uint>.Shared.Rent(xl)).Slice(0, xl);
-
-            bool negx = value.GetPartsForBitManipulation(xd);
+            xd[^1] = 0;
+            bits.CopyTo(xd);
 
             if (negx)
             {
