@@ -23,16 +23,6 @@
     <Message Text="Used runtime pack: %(ResolvedRuntimePack.PackageDirectory)" Importance="high" />
   </Target>
 
-  <!-- Android Studio only shows debug symbols when they end with .so as opposed to .dbg. Rename so they can be associated with the libs -->
-  <Target Name="_PrepDebuggingSymbols" 
-          Condition="'$(StripDebugSymbols)' != 'true'"
-          AfterTargets="_InitializeCommonProperties">
-    <ItemGroup>
-      <_SymbolFiles Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)*.so.dbg" />
-    </ItemGroup>
-    <Copy SourceFiles="@(_SymbolFiles)" DestinationFiles="@(_SymbolFiles->'%(RootDir)%(Directory)%(Filename).so')" />
-  </Target>
-
   <!-- Override the ResolveReadyToRunCompilers target to use the in-build crossgen2.
        This needs to be imported after SDK targets, so any project requiring this should set AfterMicrosoftNETSdkTargets -->
   <Target Name="ResolveReadyToRunCompilers" Condition="'$(PublishReadyToRun)' == true" DependsOnTargets="ResolveRuntimeFilesFromLocalBuild">
