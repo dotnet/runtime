@@ -148,8 +148,9 @@ endif()
 include_directories("pal/prebuilt/inc")
 include_directories(${CLR_ARTIFACTS_OBJ_DIR})
 
-add_subdirectory(tools/aot/jitinterface)
-
+if (NOT CLR_CMAKE_TARGET_BROWSER)
+  add_subdirectory(tools/aot/jitinterface)
+endif (NOT CLR_CMAKE_TARGET_BROWSER)
 
 if(NOT CLR_CROSS_COMPONENTS_BUILD)
   # NativeAOT only buildable for a subset of CoreCLR-supported configurations
