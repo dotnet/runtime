@@ -1,8 +1,8 @@
-if(CLR_CMAKE_TARGET_APPLE OR CLR_CMAKE_TARGET_FREEBSD OR CLR_CMAKE_TARGET_HAIKU OR CLR_CMAKE_TARGET_BROWSER)
+if(CLR_CMAKE_TARGET_APPLE OR CLR_CMAKE_TARGET_FREEBSD OR CLR_CMAKE_TARGET_HAIKU)
   # On OSX and *BSD, we use the libunwind that's part of the OS
   # On Haiku, we used a special port of libunwind
   set(CLR_CMAKE_USE_SYSTEM_LIBUNWIND 1)
-endif(CLR_CMAKE_TARGET_APPLE OR CLR_CMAKE_TARGET_FREEBSD OR CLR_CMAKE_TARGET_HAIKU OR CLR_CMAKE_TARGET_BROWSER)
+endif(CLR_CMAKE_TARGET_APPLE OR CLR_CMAKE_TARGET_FREEBSD OR CLR_CMAKE_TARGET_HAIKU)
 
 if(NOT DEFINED ENV{ROOTFS_DIR})
   include_directories(SYSTEM /usr/local/include)
@@ -10,7 +10,7 @@ elseif (CLR_CMAKE_TARGET_FREEBSD)
   include_directories(SYSTEM $ENV{ROOTFS_DIR}/usr/local/include)
 endif()
 
-if(NOT CLR_CMAKE_USE_SYSTEM_LIBUNWIND)
+if(NOT CLR_CMAKE_USE_SYSTEM_LIBUNWIND AND NOT CLR_CMAKE_TARGET_BROWSER)
   include_directories(${CLR_SRC_NATIVE_DIR}/external/libunwind/include)
   include_directories(${CLR_SRC_NATIVE_DIR}/external/libunwind/include/tdep)
   include_directories(${CLR_ARTIFACTS_OBJ_DIR}/external/libunwind/include)
@@ -21,7 +21,7 @@ elseif(NOT CLR_CMAKE_TARGET_APPLE)
   find_unwind_libs(UNWIND_LIBS)
 else()
   add_subdirectory(${CLR_SRC_NATIVE_DIR}/external/libunwind_extras ${CLR_ARTIFACTS_OBJ_DIR}/external/libunwind)
-endif(NOT CLR_CMAKE_USE_SYSTEM_LIBUNWIND)
+endif(NOT CLR_CMAKE_USE_SYSTEM_LIBUNWIND AND NOT CLR_CMAKE_TARGET_BROWSER)
 
 include(configure.cmake)
 
@@ -220,9 +220,9 @@ set_source_files_properties(
     INCLUDE_DIRECTORIES ${CMAKE_CURRENT_SOURCE_DIR}/../inc/rt
 )
 
-if(NOT CLR_CMAKE_USE_SYSTEM_LIBUNWIND)
+if(NOT CLR_CMAKE_USE_SYSTEM_LIBUNWIND AND NOT CLR_CMAKE_TARGET_BROWSER)
   set(LIBUNWIND_OBJECTS $<TARGET_OBJECTS:libunwind>)
-endif(NOT CLR_CMAKE_USE_SYSTEM_LIBUNWIND)
+endif(NOT CLR_CMAKE_USE_SYSTEM_LIBUNWIND AND NOT CLR_CMAKE_TARGET_BROWSER)
 
 add_library(coreclrpal
   STATIC
