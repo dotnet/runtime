@@ -616,16 +616,27 @@ FlatImageLayout::FlatImageLayout(PEImage* pOwner)
         PRECONDITION(CheckPointer(pOwner));
     }
     CONTRACTL_END;
-    m_pOwner=pOwner;
-
-    HANDLE hFile = pOwner->GetFileHandle();
-    INT64 offset = pOwner->GetOffset();
-    INT64 size = pOwner->GetSize();
+    m_pOwner = pOwner;
 
 #ifdef LOGGING
     SString ownerPath{ pOwner->GetPath() };
     LOG((LF_LOADER, LL_INFO100, "PEImage: Opening flat %s\n", ownerPath.GetUTF8()));
 #endif // LOGGING
+
+    INT64 dataSize;
+    void* data = pOwner->GetExternalData(&dataSize);
+    if (data != nullptr)
+    {
+        // Image was provided as flat data via external assembly probing.
+        // We do not manage the data - just initialize with it directly.
+        _ASSERTE(dataSize != 0);
+        Init(data, (COUNT_T)dataSize);
+        return;
+    }
+
+    HANDLE hFile = pOwner->GetFileHandle();
+    INT64 offset = pOwner->GetOffset();
+    INT64 size = pOwner->GetSize();
 
     // If a size is not specified, load the whole file
     if (size == 0)

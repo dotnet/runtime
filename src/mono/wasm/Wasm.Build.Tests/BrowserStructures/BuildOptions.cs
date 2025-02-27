@@ -25,7 +25,8 @@ public record BuildOptions : MSBuildOptions
         IDictionary<string, string>? ExtraBuildEnvironmentVariables = null,
         string BootConfigFileName                                   = "dotnet.boot.js",
         string NonDefaultFrameworkDir                               = "",
-        string ExtraMSBuildArgs                                     = ""
+        string ExtraMSBuildArgs                                     = "",
+        bool FeaturePerfTracing                                     = false
     ) : base(
         IsPublish,
         AOT,
@@ -42,7 +43,8 @@ public record BuildOptions : MSBuildOptions
         ExtraBuildEnvironmentVariables,
         BootConfigFileName,
         NonDefaultFrameworkDir,
-        ExtraMSBuildArgs
+        ExtraMSBuildArgs,
+        FeaturePerfTracing
     )
     {
     }
