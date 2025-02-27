@@ -439,11 +439,13 @@ HeapList* HostCodeHeap::InitializeHeapList(CodeHeapRequestInfo *pInfo)
 
     TrackAllocation *pTracker = NULL;
 
+#ifdef FEATURE_INTERPRETER
     if (pInfo->IsInterpreted())
     {
         pHp->CLRPersonalityRoutine = NULL;
     }
     else
+#endif // FEATURE_INTERPRETER
     {
 #if defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
 

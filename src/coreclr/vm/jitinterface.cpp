@@ -10904,7 +10904,7 @@ void CEECodeGenInfo::WriteCodeBytes()
     if (m_pRealCodeHeader != NULL)
     {
         // Restore the read only version of the real code header
-        m_CodeHeaderRW->SetRealCodeHeader(m_pRealCodeHeader);
+        m_jitManager->SetRealCodeHeader(m_CodeHeaderRW, m_pRealCodeHeader);
         m_pRealCodeHeader = NULL;
     }
 
@@ -10927,7 +10927,7 @@ void CEECodeGenInfo::BackoutJitData(EECodeGenManager * jitMgr)
     // the code bytes to the target memory location.
     WriteCodeBytes();
 
-    CodeHeader* pCodeHeader = m_CodeHeader;
+    void* pCodeHeader = m_CodeHeader;
     if (pCodeHeader)
         jitMgr->RemoveJitData(pCodeHeader, m_GCinfo_len, m_EHinfo_len);
 }
@@ -10940,16 +10940,25 @@ void CEEJitInfo::WriteCode(EECodeGenManager * jitMgr)
         GC_TRIGGERS;
     } CONTRACTL_END;
 
-    CEECodeGenInfo::WriteCode(jitMgr);
+    WriteCodeBytes();
+
+    CodeHeader* pCodeHeader = (CodeHeader*)m_CodeHeader;
+
+    // Now that the code header was written to the final location, publish the code via the nibble map
+    // m_codeWriteBufferSize is the size of the code region + code header. The nibble map should only use
+    // the code region, therefore we subtract the size of the CodeHeader.
+    jitMgr->NibbleMapSet(m_pCodeHeap, pCodeHeader->GetCodeStartAddress(), m_codeWriteBufferSize - sizeof(CodeHeader));
 
 #if defined(TARGET_AMD64)
     // Publish the new unwind information in a way that the ETW stack crawler can find
     _ASSERTE(m_usedUnwindInfos == m_totalUnwindInfos);
-    UnwindInfoTable::PublishUnwindInfoForMethod(m_moduleBase, ((JitCodeHeader*)m_CodeHeader)->GetUnwindInfo(0), m_totalUnwindInfos);
+    UnwindInfoTable::PublishUnwindInfoForMethod(m_moduleBase, pCodeHeader->GetUnwindInfo(0), m_totalUnwindInfos);
 #endif // defined(TARGET_AMD64)
 }
 
-void CEECodeGenInfo::WriteCode(EECodeGenManager * jitMgr)
+#ifdef FEATURE_INTERPRETER
+/*********************************************************************/
+void CInterpreterJitInfo::WriteCode(EECodeGenManager * jitMgr)
 {
     CONTRACTL {
         THROWS;
@@ -10958,12 +10967,14 @@ void CEECodeGenInfo::WriteCode(EECodeGenManager * jitMgr)
 
     WriteCodeBytes();
 
+    InterpreterCodeHeader* pCodeHeader = (InterpreterCodeHeader*)m_CodeHeader;
+
     // Now that the code header was written to the final location, publish the code via the nibble map
     // m_codeWriteBufferSize is the size of the code region + code header. The nibble map should only use
     // the code region, therefore we subtract the size of the CodeHeader.
-    jitMgr->NibbleMapSet(m_pCodeHeap, m_CodeHeader->GetCodeStartAddress(), m_codeWriteBufferSize - sizeof(CodeHeader));
+    jitMgr->NibbleMapSet(m_pCodeHeap, pCodeHeader->GetCodeStartAddress(), m_codeWriteBufferSize - sizeof(InterpreterCodeHeader));
 }
-
+#endif // FEATURE_INTERPRETER
 
 /*********************************************************************/
 // Route jit information to the Jit Debug store.
@@ -11122,7 +11133,7 @@ void CEECodeGenInfo::CompressDebugInfo()
 #ifdef FEATURE_ON_STACK_REPLACEMENT
         writeFlagByte = TRUE;
 #endif
-        if (((EEJitManager*)m_jitManager)->IsStoringRichDebugInfo())
+        if (m_jitManager->IsStoringRichDebugInfo())
             writeFlagByte = TRUE;
 
         PTR_BYTE pDebugInfo = CompressDebugInfo::CompressBoundariesAndVars(
@@ -11134,7 +11145,7 @@ void CEECodeGenInfo::CompressDebugInfo()
             writeFlagByte,
             m_pMethodBeingCompiled->GetLoaderAllocator()->GetLowFrequencyHeap());
 
-        m_CodeHeaderRW->SetDebugInfo(pDebugInfo);
+        m_jitManager->SetDebugInfo(m_CodeHeaderRW, pDebugInfo);
     }
     EX_CATCH
     {
@@ -11290,7 +11301,9 @@ void CEEJitInfo::allocUnwindInfo (
         _ASSERTE(m_usedUnwindInfos > 0);
     }
 
-    PT_RUNTIME_FUNCTION pRuntimeFunction = ((JitCodeHeader*)m_CodeHeaderRW)->GetUnwindInfo(m_usedUnwindInfos);
+    CodeHeader *pCodeHeaderRW = (CodeHeader *)m_CodeHeaderRW;
+
+    PT_RUNTIME_FUNCTION pRuntimeFunction = pCodeHeaderRW->GetUnwindInfo(m_usedUnwindInfos);
 
     m_usedUnwindInfos++;
 
@@ -11360,7 +11373,7 @@ void CEEJitInfo::allocUnwindInfo (
 
         for (ULONG iUnwindInfo = 0; iUnwindInfo < m_usedUnwindInfos - 1; iUnwindInfo++)
         {
-            PT_RUNTIME_FUNCTION pOtherFunction = ((JitCodeHeader*)m_CodeHeaderRW)->GetUnwindInfo(iUnwindInfo);
+            PT_RUNTIME_FUNCTION pOtherFunction = pCodeHeaderRW->GetUnwindInfo(iUnwindInfo);
             _ASSERTE((   RUNTIME_FUNCTION__BeginAddress(pOtherFunction) >= RUNTIME_FUNCTION__EndAddress(pRuntimeFunction, baseAddress + writeableOffset)
                      || RUNTIME_FUNCTION__EndAddress(pOtherFunction, baseAddress + writeableOffset) <= RUNTIME_FUNCTION__BeginAddress(pRuntimeFunction)));
         }
@@ -11716,6 +11729,15 @@ void CEEInfo::JitProcessShutdownWork()
         jitMgr->m_alternateJit->ProcessShutdownWork(this);
     }
 #endif // ALLOW_SXS_JIT
+
+#ifdef FEATURE_INTERPRETER
+    InterpreterJitManager* interpreterMgr = ExecutionManager::GetInterpreterJitManager();
+
+    if (interpreterMgr->m_interpreter != NULL)
+    {
+        interpreterMgr->m_interpreter->ProcessShutdownWork(this);
+    }
+#endif // FEATURE_INTERPRETER
 }
 
 /*********************************************************************/
@@ -12212,9 +12234,9 @@ void CEEJitInfo::allocMem (AllocMemArgs *pArgs)
 
     JIT_TO_EE_TRANSITION();
 
-    CEECodeGenInfo::allocMem(pArgs, GetReserveForJumpStubs()
+    allocMemWorker(pArgs, GetReserveForJumpStubs()
 #ifdef FEATURE_EH_FUNCLETS
-                           , m_totalUnwindInfos, m_totalUnwindSize, &m_theUnwindBlock
+                 , m_totalUnwindInfos, m_totalUnwindSize, &m_theUnwindBlock
 #endif
     );
 
@@ -12235,18 +12257,18 @@ void CInterpreterJitInfo::allocMem(AllocMemArgs *pArgs)
 
     JIT_TO_EE_TRANSITION();
 
-    CEECodeGenInfo::allocMem(pArgs, 0 /* reserveForJumpStubs */
+    allocMemWorker(pArgs, 0 /* reserveForJumpStubs */
 #ifdef FEATURE_EH_FUNCLETS
-                           , 0 /* unwindInfoCount */, 0 /* unwindSize */, NULL /* ppUnwindBlock */
+                 , 0 /* unwindInfoCount */, 0 /* unwindSize */, NULL /* ppUnwindBlock */
 #endif
     );
 
     EE_TO_JIT_TRANSITION();
 }
 
-void CEECodeGenInfo::allocMem(AllocMemArgs *pArgs, size_t reserveForJumpStubs
+void CEECodeGenInfo::allocMemWorker(AllocMemArgs *pArgs, size_t reserveForJumpStubs
 #ifdef FEATURE_EH_FUNCLETS
-                            , ULONG unwindInfoCount, ULONG unwindSize, BYTE** ppUnwindBlock
+                                  , ULONG unwindInfoCount, ULONG unwindSize, BYTE** ppUnwindBlock
 #endif    
 )
 {
@@ -12350,7 +12372,7 @@ void CEECodeGenInfo::allocMem(AllocMemArgs *pArgs, size_t reserveForJumpStubs
 #endif
                           );
 
-    BYTE* current = (BYTE *)m_CodeHeader->GetCodeStartAddress();
+    BYTE* current = (BYTE *)m_jitManager->GetCodeStartAddress(m_CodeHeader);
     size_t writeableOffset = (BYTE *)m_CodeHeaderRW - (BYTE *)m_CodeHeader;
 
     *codeBlock = current;
@@ -12379,7 +12401,7 @@ void CEECodeGenInfo::allocMem(AllocMemArgs *pArgs, size_t reserveForJumpStubs
     }
 #endif
 
-    _ASSERTE((SIZE_T)(current - (BYTE *)m_CodeHeader->GetCodeStartAddress()) <= totalSize.Value());
+    _ASSERTE((SIZE_T)(current - (BYTE *)m_jitManager->GetCodeStartAddress(m_CodeHeader)) <= totalSize.Value());
 
 #ifdef _DEBUG
     m_codeSize = codeSize;
@@ -12387,7 +12409,7 @@ void CEECodeGenInfo::allocMem(AllocMemArgs *pArgs, size_t reserveForJumpStubs
 }
 
 /*********************************************************************/
-void * CEEJitInfo::allocGCInfo (size_t size)
+void * CEECodeGenInfo::allocGCInfo (size_t size)
 {
     CONTRACTL {
         THROWS;
@@ -12400,7 +12422,7 @@ void * CEEJitInfo::allocGCInfo (size_t size)
     JIT_TO_EE_TRANSITION();
 
     _ASSERTE(m_CodeHeaderRW != 0);
-    _ASSERTE(m_CodeHeaderRW->GetGCInfo() == 0);
+    _ASSERTE(m_jitManager->GetGCInfo(m_CodeHeaderRW) == 0);
 
 #ifdef HOST_64BIT
     if (size & 0xFFFFFFFF80000000LL)
@@ -12415,7 +12437,7 @@ void * CEEJitInfo::allocGCInfo (size_t size)
         COMPlusThrowHR(CORJIT_OUTOFMEM);
     }
 
-    _ASSERTE(m_CodeHeaderRW->GetGCInfo() != 0 && block == m_CodeHeaderRW->GetGCInfo());
+    _ASSERTE(m_jitManager->GetGCInfo(m_CodeHeaderRW) != 0 && block == m_jitManager->GetGCInfo(m_CodeHeaderRW));
 
     EE_TO_JIT_TRANSITION();
 
@@ -12423,7 +12445,7 @@ void * CEEJitInfo::allocGCInfo (size_t size)
 }
 
 /*********************************************************************/
-void CEEJitInfo::setEHcount (
+void CEECodeGenInfo::setEHcount (
         unsigned      cEH)
 {
     CONTRACTL {
@@ -12436,19 +12458,20 @@ void CEEJitInfo::setEHcount (
 
     _ASSERTE(cEH != 0);
     _ASSERTE(m_CodeHeaderRW != 0);
-    _ASSERTE(m_CodeHeaderRW->GetEHInfo() == 0);
+    _ASSERTE(m_jitManager->GetEHInfo(m_CodeHeaderRW) == 0);
 
     EE_ILEXCEPTION* ret;
     ret = m_jitManager->allocEHInfo(m_CodeHeaderRW,cEH, &m_EHinfo_len);
     _ASSERTE(ret);      // allocEHInfo throws if there's not enough memory
 
-    _ASSERTE(m_CodeHeaderRW->GetEHInfo() != 0 && m_CodeHeaderRW->GetEHInfo()->EHCount() == cEH);
+    _ASSERTE(m_jitManager->GetEHInfo(m_CodeHeaderRW) != 0 && m_jitManager->GetEHInfo(m_CodeHeaderRW)->EHCount() == cEH);
 
     EE_TO_JIT_TRANSITION();
 }
 
 /*********************************************************************/
-void CEEJitInfo::setEHinfo (
+
+void CEECodeGenInfo::setEHinfo (
         unsigned      EHnumber,
         const CORINFO_EH_CLAUSE* clause)
 {
@@ -12461,9 +12484,10 @@ void CEEJitInfo::setEHinfo (
     JIT_TO_EE_TRANSITION();
 
     // <REVISIT_TODO> Fix make the Code Manager EH clauses EH_INFO+</REVISIT_TODO>
-    _ASSERTE(m_CodeHeaderRW->GetEHInfo() != 0 && EHnumber < m_CodeHeaderRW->GetEHInfo()->EHCount());
+    EE_ILEXCEPTION *pEHInfo = m_jitManager->GetEHInfo(m_CodeHeaderRW);
+    _ASSERTE(pEHInfo != 0 && EHnumber < pEHInfo->EHCount());
 
-    EE_ILEXCEPTION_CLAUSE* pEHClause = m_CodeHeaderRW->GetEHInfo()->EHClause(EHnumber);
+    EE_ILEXCEPTION_CLAUSE* pEHClause = pEHInfo->EHClause(EHnumber);
 
     pEHClause->TryStartPC     = clause->TryOffset;
     pEHClause->TryEndPC       = clause->TryLength;
@@ -12495,9 +12519,10 @@ void CEEJitInfo::setEHinfo (
     EE_TO_JIT_TRANSITION();
 }
 
+
 /*********************************************************************/
 // get individual exception handler
-void CEEJitInfo::getEHinfo(
+void CEECodeGenInfo::getEHinfo(
                               CORINFO_METHOD_HANDLE  ftn,      /* IN  */
                               unsigned               EHnumber, /* IN  */
                               CORINFO_EH_CLAUSE*     clause)   /* OUT */
@@ -12861,7 +12886,8 @@ BOOL g_fAllowRel32 = TRUE;
 #endif
 
 
-PCODE UnsafeJitFunctionWorker(EECodeGenManager *pJitMgr, CEECodeGenInfo *pJitInfo, CORJIT_FLAGS* pJitFlags, CORINFO_METHOD_INFO methodInfo, MethodInfoHelperContext *pCxt, NativeCodeVersion nativeCodeVersion)
+PCODE UnsafeJitFunctionWorker(EECodeGenManager *pJitMgr, CEECodeGenInfo *pJitInfo, CORJIT_FLAGS* pJitFlags, CORINFO_METHOD_INFO methodInfo,
+                              MethodInfoHelperContext *pCxt, NativeCodeVersion nativeCodeVersion, ULONG* pSizeOfCode)
 {
     STANDARD_VM_CONTRACT;
     if (pCxt->HasTransientMethodDetails())
@@ -13126,35 +13152,35 @@ PCODE UnsafeJitFunction(PrepareCodeConfig* config,
 
     *pJitFlags = GetCompileFlags(config, ftn, &methodInfo);
 
-#if defined(TARGET_AMD64) || defined(TARGET_ARM64)
-    BOOL fForceJumpStubOverflow = FALSE;
-
-#ifdef _DEBUG
-    // Always exercise the overflow codepath with force relocs
-    if (PEDecoder::GetForceRelocs())
-        fForceJumpStubOverflow = TRUE;
-#endif
-
-#if defined(TARGET_AMD64)
-    BOOL fAllowRel32 = (g_fAllowRel32 | fForceJumpStubOverflow) && g_pConfig->JitEnableOptionalRelocs();
-#endif
-
-    size_t reserveForJumpStubs = 0;
-
-#endif // defined(TARGET_AMD64) || defined(TARGET_ARM64)
-
 #ifdef FEATURE_INTERPRETER
     bool useInterpreter = interpreterMgr->IsInterpreterLoaded();
 
     if (useInterpreter)
     {
         CInterpreterJitInfo jitInfo(ftn, ILHeader, interpreterMgr, !pJitFlags->IsSet(CORJIT_FLAGS::CORJIT_FLAG_NO_INLINING));
-        ret = UnsafeJitFunctionWorker(interpreterMgr, &jitInfo, pJitFlags, methodInfo, &cxt, nativeCodeVersion);
+        ret = UnsafeJitFunctionWorker(interpreterMgr, &jitInfo, pJitFlags, methodInfo, &cxt, nativeCodeVersion, pSizeOfCode);
     }
 #endif // FEATURE_INTERPRETER
 
     if (ret == NULL)
     {
+#if defined(TARGET_AMD64) || defined(TARGET_ARM64)
+        BOOL fForceJumpStubOverflow = FALSE;
+
+#ifdef _DEBUG
+        // Always exercise the overflow codepath with force relocs
+        if (PEDecoder::GetForceRelocs())
+            fForceJumpStubOverflow = TRUE;
+#endif
+
+#if defined(TARGET_AMD64)
+        BOOL fAllowRel32 = (g_fAllowRel32 | fForceJumpStubOverflow) && g_pConfig->JitEnableOptionalRelocs();
+#endif
+
+        size_t reserveForJumpStubs = 0;
+
+#endif // defined(TARGET_AMD64) || defined(TARGET_ARM64)
+
         while (true)
         {
             CEEJitInfo jitInfo(ftn, ILHeader, jitMgr, !pJitFlags->IsSet(CORJIT_FLAGS::CORJIT_FLAG_NO_INLINING));
@@ -13181,7 +13207,7 @@ PCODE UnsafeJitFunction(PrepareCodeConfig* config,
             }
 #endif // FEATURE_ON_STACK_REPLACEMENT
 
-            ret = UnsafeJitFunctionWorker(jitMgr, &jitInfo, pJitFlags, methodInfo, &cxt, nativeCodeVersion);
+            ret = UnsafeJitFunctionWorker(jitMgr, &jitInfo, pJitFlags, methodInfo, &cxt, nativeCodeVersion, pSizeOfCode);
             if (!ret)
                 COMPlusThrow(kInvalidProgramException);
 

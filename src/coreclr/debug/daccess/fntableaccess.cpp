@@ -137,7 +137,7 @@ static NTSTATUS OutOfProcessFindHeader(ReadMemoryFunction fpReadMemory,PVOID pUs
     return STATUS_SUCCESS;
 }
 
-#define CODE_HEADER FakeJitRealCodeHeader
+#define CODE_HEADER FakeRealCodeHeader
 #define ResolveCodeHeader(pHeader)                          \
     if (pHeader)                                            \
     {                                                       \
