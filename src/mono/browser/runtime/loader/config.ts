@@ -5,7 +5,7 @@ import BuildConfiguration from "consts:configuration";
 import WasmEnableThreads from "consts:wasmEnableThreads";
 
 import { type DotnetModuleInternal, type MonoConfigInternal, JSThreadBlockingMode } from "../types/internal";
-import type { DotnetModuleConfig, MonoConfig, ResourceGroups, ResourceList } from "../types";
+import type { BootModule, DotnetModuleConfig, MonoConfig, ResourceGroups, ResourceList } from "../types";
 import { exportedRuntimeAPI, loaderHelpers, runtimeHelpers } from "./globals";
 import { mono_log_error, mono_log_debug } from "./logging";
 import { importLibraryInitializers, invokeLibraryInitializers } from "./libraryInitializers";
@@ -291,34 +291,33 @@ async function loadBootConfig (module: DotnetModuleInternal): Promise<void> {
         loaderResponse = loaderHelpers.loadBootResource("manifest", "blazor.boot.json", defaultConfigSrc, "", "manifest");
     }
 
-    let loadConfigResponse: Response;
-
+    let loadedConfigResponse: Response | null = null;
+    let loadedConfig: MonoConfig;
     if (!loaderResponse) {
         if (defaultConfigSrc.includes(".json")) {
-            loadConfigResponse = await fetchBootConfig(appendUniqueQuery(defaultConfigSrc, "manifest"));
+            loadedConfigResponse = await fetchBootConfig(appendUniqueQuery(defaultConfigSrc, "manifest"));
+            loadedConfig = await readBootConfigResponse(loadedConfigResponse);
         } else {
-            const loadedConfig = await importBootConfig(appendUniqueQuery(defaultConfigSrc, "manifest"));
-            deep_merge_config(loaderHelpers.config, loadedConfig);
-            return;
+            loadedConfig = (await import(appendUniqueQuery(defaultConfigSrc, "manifest"))).config;
         }
     } else if (typeof loaderResponse === "string") {
         if (loaderResponse.includes(".json")) {
-            loadConfigResponse = await fetchBootConfig(makeURLAbsoluteWithApplicationBase(loaderResponse));
+            loadedConfigResponse = await fetchBootConfig(makeURLAbsoluteWithApplicationBase(loaderResponse));
+            loadedConfig = await readBootConfigResponse(loadedConfigResponse);
         } else {
-            const loadedConfig = await importBootConfig(makeURLAbsoluteWithApplicationBase(loaderResponse));
-            deep_merge_config(loaderHelpers.config, loadedConfig);
-            return;
+            loadedConfig = (await import(makeURLAbsoluteWithApplicationBase(loaderResponse))).config;
         }
     } else {
-        loadConfigResponse = await loaderResponse;
-        if (typeof loadConfigResponse.json != "function") {
+        const loadedResponse = await loaderResponse;
+        if (typeof (loadedResponse as Response).json == "function") {
+            loadedConfigResponse = loadedResponse as Response;
+            loadedConfig = await readBootConfigResponse(loadedConfigResponse);
+        } else {
             // If the response doesn't contain .json(), consider it an imported module.
-            deep_merge_config(loaderHelpers.config, (loadConfigResponse as any).config);
-            return;
+            loadedConfig = (loadedResponse as BootModule).config;
         }
     }
 
-    const loadedConfig: MonoConfig = await readBootConfigResponse(loadConfigResponse);
     deep_merge_config(loaderHelpers.config, loadedConfig);
 
     function fetchBootConfig (url: string): Promise<Response> {
@@ -327,11 +326,6 @@ async function loadBootConfig (module: DotnetModuleInternal): Promise<void> {
             credentials: "include",
             cache: "no-cache",
         });
-    }
-
-    async function importBootConfig (url: string): Promise<MonoConfig> {
-        const loadedModule = await import(url);
-        return loadedModule.config;
     }
 }
 

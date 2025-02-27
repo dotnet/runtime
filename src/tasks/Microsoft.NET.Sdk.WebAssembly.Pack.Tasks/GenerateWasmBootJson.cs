@@ -90,7 +90,7 @@ public class GenerateWasmBootJson : Task
 
         try
         {
-            WriteBootJson(entryAssemblyName);
+            WriteBootConfig(entryAssemblyName);
         }
         catch (Exception ex)
         {
@@ -100,7 +100,7 @@ public class GenerateWasmBootJson : Task
         return !Log.HasLoggedErrors;
     }
 
-    private void WriteBootJson(string entryAssemblyName)
+    private void WriteBootConfig(string entryAssemblyName)
     {
         var helper = new BootJsonBuilderHelper(Log, DebugLevel, IsMultiThreaded, IsPublish);
 
