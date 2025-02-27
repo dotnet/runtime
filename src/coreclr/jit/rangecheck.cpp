@@ -351,8 +351,8 @@ void RangeCheck::OptimizeRangeCheck(BasicBlock* block, Statement* stmt, GenTree*
             //   bool result = (arr.Length == 0) || (arr[arr.Length - 1] == 0);
             //
             // here for the array access we know that arr.Length >= 1
-            Range arrLenRange = Range(Limit(Limit::keUndef));
-            if (TryGetRange(block, bndsChk->GetArrayLength(), &arrLenRange) && arrLenRange.LowerLimit().IsConstant())
+            Range arrLenRange = GetRangeWorker(block, bndsChk->GetArrayLength(), false DEBUGARG(indent));
+            if (arrLenRange.LowerLimit().IsConstant())
             {
                 // Lower known limit of ArrLen:
                 const int lenLowerLimit = arrLenRange.LowerLimit().GetConstant();
