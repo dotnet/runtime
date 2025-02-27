@@ -1230,7 +1230,6 @@ AGAIN:
 
                     goto AGAIN;
 
-#ifndef TARGET_RISCV64
                 // TODO-ARM-CQ: For now we don't try to create a scaled index.
                 case GT_MUL:
                     if (op1->gtOverflow())
@@ -1255,7 +1254,6 @@ AGAIN:
                     }
                     break;
                 }
-#endif // !TARGET_RISCV64
 
                 default:
                     break;
@@ -1300,7 +1298,6 @@ AGAIN:
             break;
 #endif // TARGET_XARCH || TARGET_RISCV64
 
-#ifndef TARGET_RISCV64
         case GT_MUL:
 
             if (op1->gtOverflow())
@@ -1342,7 +1339,6 @@ AGAIN:
             }
             break;
         }
-#endif // !TARGET_RISCV64
 
         case GT_COMMA:
 
@@ -1381,7 +1377,6 @@ AGAIN:
             break;
 #endif // TARGET_XARCH || TARGET_RISCV64
 
-#ifndef TARGET_RISCV64
         case GT_MUL:
 
             if (op2->gtOverflow())
@@ -1419,7 +1414,6 @@ AGAIN:
             }
             break;
         }
-#endif // !TARGET_RISCV64
 
         case GT_COMMA:
 
