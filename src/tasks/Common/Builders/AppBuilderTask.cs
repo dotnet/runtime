@@ -30,7 +30,7 @@ public class AppBuilderTask : Task
     /// Path to Mono public headers (*.h)
     /// </summary>
     [Required]
-    public string[] MonoRuntimeHeaders { get; set; } = Array.Empty<string>();
+    public string[] MonoRuntimeHeaders { get; set; } = [];
 
     /// <summary>
     /// Path to store build artifacts

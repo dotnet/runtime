@@ -47,7 +47,7 @@ public class AppleAppBuilderTask : Task
     /// <summary>
     /// Path to Mono public headers (*.h)
     /// </summary>
-    public string[] MonoRuntimeHeaders { get; set; } = Array.Empty<string>();
+    public string[] MonoRuntimeHeaders { get; set; } = [];
 
     /// <summary>
     /// This library will be used as an entry point (e.g. TestRunner.dll). Can

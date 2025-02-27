@@ -10,7 +10,7 @@ using Microsoft.Build.Utilities;
 public class AndroidAppBuilderTask : Task
 {
     [Required]
-    public string[] RuntimeHeaders { get; set; } = Array.Empty<string>()!;
+    public string[] RuntimeHeaders { get; set; } = [];
 
     /// <summary>
     /// Target directory with *dll and other content to be AOT'd and/or bundled
