@@ -106,8 +106,8 @@ namespace MonoTargetsTasks
 
         private bool IsDisableRuntimeMarshallingAttribute (MetadataReader mdtReader, StringHandle ns, StringHandle name)
         {
-            return mdtReader.GetString(ns) == "System.Runtime.CompilerServices" &&
-                   mdtReader.GetString(name) == "DisableRuntimeMarshallingAttribute";
+            return mdtReader.StringComparer.Equals(ns, "System.Runtime.CompilerServices") &&
+                   mdtReader.StringComparer.Equals(name, "DisableRuntimeMarshallingAttribute");
         }
 
         private bool IsAssemblyIncompatible(string assyPath, MinimalMarshalingTypeCompatibilityProvider mmtcp)
