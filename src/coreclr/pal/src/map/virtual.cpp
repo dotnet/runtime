@@ -1056,7 +1056,7 @@ VirtualFree(
             goto VirtualFreeExit;
         }
 
-        TRACE( "Un-committing the following page(s) %d to %d.\n",
+        TRACE( "Un-committing the following page(s) %p to %p.\n",
                StartBoundary, StartBoundary + MemSize );
 
         // mmap support on emscripten/wasm is very limited and doesn't support location hints
