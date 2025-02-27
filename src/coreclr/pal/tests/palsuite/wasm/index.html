@@ -47,6 +47,10 @@
         }
 
         Module = {
+            preRun: function () {
+                // ENV.PAL_DBG_CHANNELS="+all.all";
+                ENV.PAL_DBG_CHANNELS="+all.ERROR";
+            },
             arguments: capturingTestCaseNames
                 ? ["PrintPalTests"]
                 : [nextTestName],
