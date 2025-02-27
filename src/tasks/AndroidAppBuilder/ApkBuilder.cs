@@ -493,6 +493,20 @@ public partial class ApkBuilder
             // NOTE: we can run android-strip tool from NDK to shrink native binaries here even more.
 
             File.Copy(dynamicLib, Path.Combine(OutputDir, destRelative), true);
+
+            if (!StripDebugSymbols)
+            {
+                // symbol files need to end in .so.so so they'll show up in android studio
+                string debugLib = dynamicLib + ".dbg";
+                string destDebugLib = destRelative + ".so";
+
+                if (File.Exists(debugLib))
+                {
+                    File.Copy(debugLib, Path.Combine(OutputDir, destDebugLib), true);
+                    Utils.RunProcess(logger, androidSdkHelper.AaptPath, $"add {apkFile} {NormalizePathToUnix(destDebugLib)}", workingDir: OutputDir);
+                }
+            }
+
             Utils.RunProcess(logger, androidSdkHelper.AaptPath, $"add {apkFile} {NormalizePathToUnix(destRelative)}", workingDir: OutputDir);
         }
         Utils.RunProcess(logger, androidSdkHelper.AaptPath, $"add {apkFile} classes.dex", workingDir: OutputDir);
