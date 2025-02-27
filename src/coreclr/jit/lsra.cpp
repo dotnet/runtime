@@ -275,11 +275,8 @@ SingleTypeRegSet LinearScan::lowSIMDRegs()
 #endif
 }
 
-void LinearScan::updateNextFixedRef(RegRecord* regRecord)
+void LinearScan::updateNextFixedRef(RegRecord* regRecord, RefPosition* nextRefPosition, RefPosition* nextKill)
 {
-    RefPosition* nextRefPosition =
-        regRecord->recentRefPosition == nullptr ? regRecord->firstRefPosition : regRecord->recentRefPosition->nextRefPosition;
-
     LsraLocation nextLocation = nextRefPosition == nullptr ? MaxLocation : nextRefPosition->nodeLocation;
 
     RefPosition* kill = nextKill;
@@ -293,30 +290,17 @@ void LinearScan::updateNextFixedRef(RegRecord* regRecord)
 
         kill = kill->nextRefPosition;
     }
+
+    if (nextLocation == MaxLocation)
+    {
+        fixedRegs.RemoveRegNumFromMask(regRecord->regNum);
+    }
+    else
+    {
+        fixedRegs.AddRegNumInMask(regRecord->regNum);
+    }
+
     nextFixedRef[regRecord->regNum] = nextLocation;
-}
-
-LsraLocation LinearScan::getNextFixedRef(regNumber regNum, var_types regType)
-{
-    if (nextFixedRef[regNum] < currentLoc)
-    {
-        updateNextFixedRef(getRegisterRecord(regNum));
-    }
-#ifdef TARGET_ARM
-    if ((regType == TYP_DOUBLE) && (nextFixedRef[regNum + 1] < currentLoc))
-    {
-        updateNextFixedRef(getRegisterRecord(REG_NEXT(regNum)));
-    }
-#endif
-
-    LsraLocation loc = nextFixedRef[regNum];
-#ifdef TARGET_ARM
-    if (regType == TYP_DOUBLE)
-    {
-        loc = Min(loc, nextFixedRef[regNum + 1]);
-    }
-#endif
-    return loc;
 }
 
 SingleTypeRegSet LinearScan::getMatchingConstants(SingleTypeRegSet mask,
@@ -710,7 +694,7 @@ bool LinearScan::conflictingFixedRegReference(regNumber regNum, RefPosition* ref
         return true;
     }
 
-    LsraLocation nextPhysRefLocation = getNextFixedRef(regNum, TYP_UNDEF);
+    LsraLocation nextPhysRefLocation = nextFixedRef[regNum];
     if (nextPhysRefLocation == refLocation || (refPosition->delayRegFree && nextPhysRefLocation == (refLocation + 1)))
     {
         return true;
@@ -804,8 +788,6 @@ LinearScan::LinearScan(Compiler* theCompiler)
     , refPositions(theCompiler->getAllocator(CMK_LSRA_RefPosition))
     , killHead(nullptr)
     , killTail(&killHead)
-    , nextKill(nullptr)
-    , fixedRegs(RBM_NONE)
     , listNodePool(theCompiler)
 {
     availableRegCount       = ACTUAL_REG_COUNT;
@@ -3885,6 +3867,12 @@ void LinearScan::processKills(RefPosition* killRefPosition)
             clearConstantReg(regRecord->regNum, assignedInterval->registerType);
             makeRegAvailable(regRecord->regNum, assignedInterval->registerType);
         }
+
+        assert((nextFixedRef[killedReg] == killRefPosition->nodeLocation) || (killedReg >= AVAILABLE_REG_COUNT));
+        RefPosition* regNextRefPos = regRecord->recentRefPosition == nullptr
+                                         ? regRecord->firstRefPosition
+                                         : regRecord->recentRefPosition->nextRefPosition;
+        updateNextFixedRef(regRecord, regNextRefPos, nextKill);
     }
 
     regsBusyUntilKill &= ~killRefPosition->getKilledRegisters();
@@ -4806,17 +4794,11 @@ void LinearScan::allocateRegistersMinimal()
     clearAllNextIntervalRef();
     clearAllSpillCost();
 
-    nextKill = killHead;
-
     for (regNumber reg = REG_FIRST; reg < AVAILABLE_REG_COUNT; reg = REG_NEXT(reg))
     {
         RegRecord* physRegRecord         = getRegisterRecord(reg);
         physRegRecord->recentRefPosition = nullptr;
-        if (physRegRecord->firstRefPosition != nullptr)
-        {
-            fixedRegs |= genRegMask(reg);
-        }
-        nextFixedRef[reg] = MinLocation;
+        updateNextFixedRef(physRegRecord, physRegRecord->firstRefPosition, killHead);
         assert(physRegRecord->assignedInterval == nullptr);
     }
 
@@ -4838,6 +4820,7 @@ void LinearScan::allocateRegistersMinimal()
 #endif // DEBUG
 
     BasicBlock*  currentBlock = nullptr;
+    RefPosition* nextKill     = killHead;
 
     LsraLocation prevLocation            = MinLocation;
     regMaskTP    regsToFree              = RBM_NONE;
@@ -5033,6 +5016,8 @@ void LinearScan::allocateRegistersMinimal()
         {
             RegRecord* regRecord        = currentRefPosition.getReg();
             Interval*  assignedInterval = regRecord->assignedInterval;
+
+            updateNextFixedRef(regRecord, currentRefPosition.nextRefPosition, nextKill);
 
             // This is a FixedReg. Disassociate any inactive constant interval from this register.
             if (assignedInterval != nullptr && !assignedInterval->isActive && assignedInterval->isConstant)
@@ -5472,18 +5457,12 @@ void LinearScan::allocateRegisters()
     }
 #endif // FEATURE_PARTIAL_SIMD_CALLEE_SAVE
 
-    nextKill = killHead;
-
     resetRegState();
     for (regNumber reg = REG_FIRST; reg < AVAILABLE_REG_COUNT; reg = REG_NEXT(reg))
     {
         RegRecord* physRegRecord         = getRegisterRecord(reg);
         physRegRecord->recentRefPosition = nullptr;
-        if (physRegRecord->firstRefPosition != nullptr)
-        {
-            fixedRegs |= genRegMask(reg);
-        }
-        nextFixedRef[reg] = MinLocation;
+        updateNextFixedRef(physRegRecord, physRegRecord->firstRefPosition, killHead);
 
         // Is this an incoming arg register? (Note that we don't, currently, consider reassigning
         // an incoming arg register as having spill cost.)
@@ -5525,7 +5504,7 @@ void LinearScan::allocateRegisters()
 #endif // DEBUG
 
     BasicBlock*  currentBlock = nullptr;
-    nextKill     = killHead;
+    RefPosition* nextKill     = killHead;
 
     LsraLocation prevLocation            = MinLocation;
     regMaskTP    regsToFree              = RBM_NONE;
@@ -5751,6 +5730,8 @@ void LinearScan::allocateRegisters()
         {
             RegRecord* regRecord        = currentRefPosition.getReg();
             Interval*  assignedInterval = regRecord->assignedInterval;
+
+            updateNextFixedRef(regRecord, currentRefPosition.nextRefPosition, nextKill);
 
             // This is a FixedReg. Disassociate any inactive constant interval from this register.
             if (assignedInterval != nullptr && !assignedInterval->isActive && assignedInterval->isConstant)
@@ -6011,7 +5992,7 @@ void LinearScan::allocateRegisters()
                 // as special.
                 if (srcInterval->isActive &&
                     genSingleTypeRegMask(srcInterval->physReg) == currentRefPosition.registerAssignment &&
-                    currentInterval->getNextRefLocation() == getNextFixedRef(srcInterval->physReg, TYP_UNDEF))
+                    currentInterval->getNextRefLocation() == nextFixedRef[srcInterval->physReg])
                 {
                     assert(physRegRecord->regNum == srcInterval->physReg);
 
@@ -6102,7 +6083,7 @@ void LinearScan::allocateRegisters()
 
                 // Will the assigned register cover the lifetime?  If not, does it at least
                 // meet the preferences for the next RefPosition?
-                LsraLocation nextPhysRegLocation = getNextFixedRef(assignedRegister, TYP_UNDEF);
+                LsraLocation nextPhysRegLocation = nextFixedRef[assignedRegister];
                 if (nextPhysRegLocation <= currentInterval->lastRefPosition->nodeLocation)
                 {
                     // Check to see if the existing assignment matches the preferences (e.g. callee save registers)
@@ -13083,7 +13064,7 @@ void LinearScan::RegisterSelection::try_FAR_NEXT_REF()
         // Find the next RefPosition of the register.
         LsraLocation nextIntervalLocation =
             linearScan->getNextIntervalRef(farthestCandidateRegNum, currentInterval->registerType);
-        LsraLocation nextPhysRefLocation = Min(linearScan->getNextFixedRef(farthestCandidateRegNum, TYP_UNDEF), nextIntervalLocation);
+        LsraLocation nextPhysRefLocation = Min(linearScan->nextFixedRef[farthestCandidateRegNum], nextIntervalLocation);
         if (nextPhysRefLocation == farthestLocation)
         {
             farthestSet |= farthestCandidateBit;
@@ -13548,31 +13529,22 @@ SingleTypeRegSet LinearScan::RegisterSelection::select(Interval*                
         // Also eliminate as busy any register with a conflicting fixed reference at this or
         // the next location.
         // Note that this will eliminate the fixedReg, if any, but we'll add it back below.
-        LsraLocation eliminateLoc = refPosition->nodeLocation;
-        if (refPosition->delayRegFree)
-        {
-            eliminateLoc++;
-        }
-        for (RefPosition* kill = linearScan->nextKill; (kill != nullptr) && (kill->nodeLocation) <= eliminateLoc; kill = kill->nextRefPosition)
-        {
-            INDEBUG(inUseOrBusyRegsMask |= candidates & kill->registerAssignment);
-            candidates &= ~kill->registerAssignment;
-        }
         SingleTypeRegSet checkConflictMask = candidates & linearScan->fixedRegs.GetRegSetForType(regType);
         while (checkConflictMask != RBM_NONE)
         {
-            regNumber checkConflictReg = genFirstRegNumFromMaskAndToggle(checkConflictMask, regType);
-            RegRecord* regRecord = linearScan->getRegisterRecord(checkConflictReg);
-            assert(regRecord != nullptr);
-            RefPosition* nextRefPos = regRecord->recentRefPosition == nullptr ? regRecord->firstRefPosition : regRecord->recentRefPosition->nextRefPosition;
-            if (nextRefPos == nullptr)
+            regNumber        checkConflictReg = genFirstRegNumFromMask(checkConflictMask, regType);
+            SingleTypeRegSet checkConflictBit = genSingleTypeRegMask(checkConflictReg);
+            checkConflictMask ^= checkConflictBit;
+
+            LsraLocation checkConflictLocation = linearScan->nextFixedRef[checkConflictReg];
+
+            if ((checkConflictLocation == refPosition->nodeLocation) ||
+                (refPosition->delayRegFree && (checkConflictLocation == (refPosition->nodeLocation + 1))))
             {
-                linearScan->fixedRegs &= ~genRegMask(checkConflictReg);
-            }
-            else if (nextRefPos->nodeLocation <= eliminateLoc)
-            {
-                candidates &= ~genSingleTypeRegMask(checkConflictReg, regType);
-                INDEBUG(inUseOrBusyRegsMask |= genSingleTypeRegMask(checkConflictReg));
+                candidates &= ~checkConflictBit;
+#ifdef DEBUG
+                inUseOrBusyRegsMask |= checkConflictBit;
+#endif
             }
         }
         candidates |= fixedRegMask;
@@ -13876,29 +13848,19 @@ SingleTypeRegSet LinearScan::RegisterSelection::selectMinimal(
     // Also eliminate as busy any register with a conflicting fixed reference at this or
     // the next location.
     // Note that this will eliminate the fixedReg, if any, but we'll add it back below.
-    LsraLocation eliminateLoc = refPosition->nodeLocation;
-    if (refPosition->delayRegFree)
-    {
-        eliminateLoc++;
-    }
-    for (RefPosition* kill = linearScan->nextKill; (kill != nullptr) && (kill->nodeLocation) <= eliminateLoc; kill = kill->nextRefPosition)
-    {
-        candidates &= ~kill->registerAssignment;
-    }
     SingleTypeRegSet checkConflictMask = candidates & linearScan->fixedRegs.GetRegSetForType(regType);
     while (checkConflictMask != RBM_NONE)
     {
-        regNumber checkConflictReg = genFirstRegNumFromMaskAndToggle(checkConflictMask, regType);
-        RegRecord* regRecord = linearScan->getRegisterRecord(checkConflictReg);
-        assert(regRecord != nullptr);
-        RefPosition* nextRefPos = regRecord->recentRefPosition == nullptr ? regRecord->firstRefPosition : regRecord->recentRefPosition->nextRefPosition;
-        if (nextRefPos == nullptr)
+        regNumber        checkConflictReg = genFirstRegNumFromMask(checkConflictMask, regType);
+        SingleTypeRegSet checkConflictBit = genSingleTypeRegMask(checkConflictReg);
+        checkConflictMask ^= checkConflictBit;
+
+        LsraLocation checkConflictLocation = linearScan->nextFixedRef[checkConflictReg];
+
+        if ((checkConflictLocation == refPosition->nodeLocation) ||
+            (refPosition->delayRegFree && (checkConflictLocation == (refPosition->nodeLocation + 1))))
         {
-            linearScan->fixedRegs &= ~genRegMask(checkConflictReg);
-        }
-        else if (nextRefPos->nodeLocation <= eliminateLoc)
-        {
-            candidates &= ~genSingleTypeRegMask(checkConflictReg, regType);
+            candidates &= ~checkConflictBit;
         }
     }
     candidates |= fixedRegMask;
