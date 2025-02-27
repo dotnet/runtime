@@ -41,11 +41,18 @@ This contract depends on the following descriptors:
 | `InlinedCallFrame` | `CalleeSavedFP` | FP saved in Frame |
 | `SoftwareExceptionFrame` | `TargetContext` | Context object saved in Frame |
 | `SoftwareExceptionFrame` | `ReturnAddress` | Return address saved in Frame |
+| `FramedMethodFrame` | `TransitionBlockPtr` | Pointer to Frame's TransitionBlock |
+| `TransitionBlock` | `ReturnAddress` | Return address associated with the TransitionBlock |
+| `TransitionBlock` | `CalleeSavedRegisters` | Platform specific CalleeSavedRegisters struct associated with the TransitionBlock |
+| `FuncEvalFrame` | `DebuggerEvalPtr` | Pointer to the Frame's DebuggerEval object |
+| `DebuggerEval` | `TargetContext` | Context saved inside DebuggerEval |
+| `DebuggerEval` | `EvalDuringException` | Flag used in processing FuncEvalFrame |
 
 Global variables used:
 | Global Name | Type | Purpose |
 | --- | --- | --- |
-| For each FrameType `<frameType>`, `<frameType>##Identifier` | FrameIdentifier enum value | Identifier used to determine concrete type of Frames |
+| For each FrameType `<frameType>`, `<frameType>##Identifier` | `FrameIdentifier` enum value | Identifier used to determine concrete type of Frames |
+| `UnixAmd64ABI` | `uint8` | Denotes if the Unix amd64 ABI is used. This changes which registers are volatile. |
 
 Contracts used:
 | Contract Name |
