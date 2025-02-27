@@ -8616,7 +8616,7 @@ extern "C" bool QCALLTYPE SfiNext(StackFrameIterator* pThis, uint* uExCollideCla
 #ifdef HOST_UNIX
                 // Don't allow propagating exceptions from managed to native code except for the case when it is called by the
                 // CallDescrWorkerInternal.
-                || IsCallDescrWorkerInternalReturnAddress(GetControlPC(pThis->m_crawl.GetRegisterSet())) 
+                || !IsCallDescrWorkerInternalReturnAddress(GetControlPC(pThis->m_crawl.GetRegisterSet()))
 #endif
                )
             {
