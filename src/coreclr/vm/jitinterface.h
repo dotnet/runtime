@@ -688,21 +688,36 @@ public:
 
     void reportMetadata(const char* key, const void* value, size_t length) override final;
 
-    virtual void WriteCode(EECodeGenManager * jitMgr);
+    virtual void WriteCode(EECodeGenManager * jitMgr) = 0;
 
 protected:
 
-    void allocMem (AllocMemArgs *pArgs, size_t reserveForJumpStubs
+    void allocMemWorker(AllocMemArgs *pArgs, size_t reserveForJumpStubs
 #ifdef FEATURE_EH_FUNCLETS
-                   , ULONG unwindInfoSize, ULONG unwindSize, BYTE** ppUnwindBlock
+                      , ULONG unwindInfoSize, ULONG unwindSize, BYTE** ppUnwindBlock
 #endif
     );
 
     void WriteCodeBytes();
 
+    virtual void getEHinfo(
+                            CORINFO_METHOD_HANDLE ftn,              /* IN  */
+                            unsigned      EHnumber,                 /* IN */
+                            CORINFO_EH_CLAUSE* clause               /* OUT */
+                          ) override final;
+
+    virtual void * allocGCInfo (size_t  size) override final;
+
+    virtual void setEHcount (unsigned cEH) override final;
+
+    virtual void setEHinfo (
+                            unsigned      EHnumber,
+                            const CORINFO_EH_CLAUSE* clause
+                           ) override final;
+
     EECodeGenManager*       m_jitManager;   // responsible for allocating memory
-    CodeHeader*             m_CodeHeader;   // descriptor for JITTED code - read/execute address
-    CodeHeader*             m_CodeHeaderRW; // descriptor for JITTED code - code write scratch buffer address
+    void*                   m_CodeHeader;   // descriptor for JITTED code - read/execute address
+    void*                   m_CodeHeaderRW; // descriptor for JITTED code - code write scratch buffer address
     size_t                  m_codeWriteBufferSize;
     BYTE*                   m_pRealCodeHeader;
     HeapList*               m_pCodeHeap;
@@ -755,6 +770,8 @@ public:
 
     void allocMem (AllocMemArgs *pArgs) override final;
 
+    void WriteCode(EECodeGenManager * jitMgr) override final;
+
     void reserveUnwindInfo(bool isFunclet, bool isColdCode, uint32_t unwindSize) override final;
 
     void allocUnwindInfo (
@@ -765,20 +782,6 @@ public:
             uint32_t  unwindSize,            /* IN */
             uint8_t * pUnwindBlock,          /* IN */
             CorJitFuncKind funcKind       /* IN */
-            ) override final;
-
-    void * allocGCInfo (size_t  size) override final;
-
-    void setEHcount (unsigned cEH) override final;
-
-    void setEHinfo (
-            unsigned      EHnumber,
-            const CORINFO_EH_CLAUSE* clause) override final;
-
-    void getEHinfo(
-            CORINFO_METHOD_HANDLE ftn,              /* IN  */
-            unsigned      EHnumber,                 /* IN */
-            CORINFO_EH_CLAUSE* clause               /* OUT */
             ) override final;
 
     HRESULT allocPgoInstrumentationBySchema(
@@ -879,7 +882,7 @@ public:
         m_reserveForJumpStubs = value;
     }
 
-    virtual PatchpointInfo* GetPatchpointInfo()
+    virtual PatchpointInfo* GetPatchpointInfo() override final
     {
 #ifdef FEATURE_ON_STACK_REPLACEMENT
         return m_pPatchpointInfoFromJit;
@@ -915,24 +918,24 @@ public:
 
     CEEJitInfo(MethodDesc* fd, COR_ILMETHOD_DECODER* header,
                EECodeGenManager* jm, bool allowInlining = true)
-        : CEECodeGenInfo(fd, header, jm, allowInlining),
+        : CEECodeGenInfo(fd, header, jm, allowInlining)
 #ifdef FEATURE_EH_FUNCLETS
-          m_moduleBase(0),
+        , m_moduleBase(0),
           m_totalUnwindSize(0),
           m_usedUnwindSize(0),
           m_theUnwindBlock(NULL),
           m_totalUnwindInfos(0),
-          m_usedUnwindInfos(0),
+          m_usedUnwindInfos(0)
 #endif
 #ifdef TARGET_AMD64
-          m_fAllowRel32(FALSE),
+        , m_fAllowRel32(FALSE)
 #endif
 #if defined(TARGET_AMD64) || defined(TARGET_ARM64)
-          m_fJumpStubOverflow(FALSE),
-          m_reserveForJumpStubs(0),
+        , m_fJumpStubOverflow(FALSE),
+          m_reserveForJumpStubs(0)
 #endif
 #ifdef FEATURE_ON_STACK_REPLACEMENT
-          m_pPatchpointInfoFromJit(NULL),
+        , m_pPatchpointInfoFromJit(NULL),
           m_pPatchpointInfoFromRuntime(NULL),
           m_ilOffset(0)
 #endif
@@ -991,8 +994,6 @@ public:
     InfoAccessType emptyStringLiteral(void ** ppValue) override final;
     CORINFO_CLASS_HANDLE getStaticFieldCurrentClass(CORINFO_FIELD_HANDLE field, bool* pIsSpeculative) override final;
     void* getMethodSync(CORINFO_METHOD_HANDLE ftnHnd, void **ppIndirection) override final;
-
-    virtual void WriteCode(EECodeGenManager * jitMgr) override;
 
     void setPatchpointInfo(PatchpointInfo* patchpointInfo) override final;
     PatchpointInfo* getOSRInfo(unsigned* ilOffset) override final;
@@ -1062,6 +1063,8 @@ public:
     }
 
     void allocMem (AllocMemArgs *pArgs) override final;
+
+    void WriteCode(EECodeGenManager * jitMgr) override final;
 
     void ResetForJitRetry()
     {
