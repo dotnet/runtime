@@ -542,6 +542,8 @@ fi
 if [[ "$os" == "browser" ]]; then
     # override default arch for Browser, we only support wasm
     arch=wasm
+    export DOTNET_GCHighMemPercent="10"
+    export DOTNET_GCHeapHardLimitPercent="20"
 fi
 if [[ "$os" == "wasi" ]]; then
     # override default arch for wasi, we only support wasm
