@@ -19,21 +19,18 @@ extern "C"
 }
 #endif
 
-namespace
+static bool AllowR2RForImage(PEImage* pOwner)
 {
-    bool AllowR2RForImage(PEImage* pOwner)
-    {
-        // Allow R2R for files
-        if (pOwner->IsFile())
-            return true;
+    // Allow R2R for files
+    if (pOwner->IsFile())
+        return true;
 
-        // Allow R2R for externally provided images
-        INT64 size;
-        if (pOwner->GetExternalData(&size) != NULL && size > 0)
-            return true;
+    // Allow R2R for externally provided images
+    INT64 size;
+    if (pOwner->GetExternalData(&size) != NULL && size > 0)
+        return true;
 
-        return false;
-    }
+    return false;
 }
 
 #ifndef DACCESS_COMPILE
