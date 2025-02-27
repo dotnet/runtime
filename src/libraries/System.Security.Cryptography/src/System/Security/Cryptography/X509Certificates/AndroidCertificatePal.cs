@@ -11,6 +11,7 @@ using System.Runtime.InteropServices;
 using System.Security.Cryptography.Asn1;
 using System.Security.Cryptography.X509Certificates.Asn1;
 using System.Text;
+using Internal.Cryptography;
 using Microsoft.Win32.SafeHandles;
 
 using SafeJObjectHandle = Interop.JObjectLifetime.SafeJObjectHandle;
@@ -560,6 +561,22 @@ namespace System.Security.Cryptography.X509Certificates
                 byte[]? exported = storePal.Export(contentType, password);
                 Debug.Assert(exported != null);
                 return exported;
+            }
+        }
+
+        public byte[] ExportPkcs12(Pkcs12ExportPbeParameters exportParameters, SafePasswordHandle password)
+        {
+            using (IExportPal storePal = StorePal.FromCertificate(this))
+            {
+                return storePal.ExportPkcs12(exportParameters, password);
+            }
+        }
+
+        public byte[] ExportPkcs12(PbeParameters exportParameters, SafePasswordHandle password)
+        {
+            using (IExportPal storePal = StorePal.FromCertificate(this))
+            {
+                return storePal.ExportPkcs12(exportParameters, password);
             }
         }
 
