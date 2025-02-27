@@ -914,7 +914,7 @@ public:
         {
             alloc_list* al = &(allocator_to_copy->alloc_list_of (i));
             alloc_list_tail_of(i) = al->alloc_list_tail();
-#if !defined(TARGET_AMD64) && !defined(TARGET_X86)
+#if !defined(TARGET_AMD64) && !defined(TARGET_X86) && !defined(TARGET_BROWSER)
             // ensure that the write to the tail is seen by
             // the allocating thread *before* the write to the head
             MemoryBarrier();

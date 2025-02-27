@@ -35,6 +35,10 @@ endif()
 
 OPTION(CLR_CMAKE_ENABLE_CODE_COVERAGE "Enable code coverage" OFF)
 
+if (DEFINED CLR_CMAKE_ICU_DIR)
+  include_directories(${CLR_CMAKE_ICU_DIR}/include)
+endif(DEFINED CLR_CMAKE_ICU_DIR)
+
 #----------------------------------------------------
 # Cross target Component build specific configuration
 #----------------------------------------------------

@@ -432,7 +432,7 @@ inline UINT AlignmentTrim(UINT64 value, UINT alignment)
     return ((UINT)value)&(alignment-1);
 }
 
-#ifdef __APPLE__
+#if defined(__APPLE__) || defined(__wasm__)
 inline UINT AlignmentTrim(SIZE_T value, UINT alignment)
 {
     STATIC_CONTRACT_LEAF;

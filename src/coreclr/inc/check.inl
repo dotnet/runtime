@@ -200,6 +200,7 @@ inline CHECK CheckOverflow(SIZE_T value1, SIZE_T value2)
 }
 #endif
 
+#ifndef __wasm__
 inline CHECK CheckOverflow(PTR_CVOID address, UINT offset)
 {
     TADDR targetAddr = dac_cast<TADDR>(address);
@@ -211,6 +212,7 @@ inline CHECK CheckOverflow(PTR_CVOID address, UINT offset)
 
     CHECK_OK;
 }
+#endif
 
 #if defined(_MSC_VER)
 inline CHECK CheckOverflow(const void *address, ULONG offset)
