@@ -87,13 +87,11 @@ PEImageLayout* PEImageLayout::LoadConverted(PEImage* pOwner, bool disableMapping
         pFlat = (FlatImageLayout*)pOwner->GetFlatLayout();
         pFlat->AddRef();
     }
-    else
+    else if (AllowR2RForImage(pOwner))
     {
-        INT64 dataSize;
-        if (pOwner->IsFile() || pOwner->GetExternalData(&dataSize) != NULL)
-        {
-            pFlat = new FlatImageLayout(pOwner);
-        }
+        // We only expect to be converting images that aren't already opened in the R2R composite case
+        pFlat = new FlatImageLayout(pOwner);
+        _ASSERTE(pFlat->HasReadyToRunHeader());
     }
 
     if (pFlat == NULL || !pFlat->CheckILOnlyFormat())
