@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Net.WebSockets;
 using System.Text;
 using System.Threading;
@@ -21,7 +22,9 @@ namespace System.Net.Test.Common
             // Stay in loop while websocket is open
             while (socket.State == WebSocketState.Open || socket.State == WebSocketState.CloseSent)
             {
+                //Console.WriteLine($"[Server - {nameof(RunEchoAll)} Waiting for messages...");
                 var receiveResult = await socket.ReceiveAsync(new ArraySegment<byte>(receiveBuffer), cancellationToken);
+
                 if (receiveResult.MessageType == WebSocketMessageType.Close)
                 {
                     if (receiveResult.CloseStatus == WebSocketCloseStatus.Empty)
@@ -46,6 +49,7 @@ namespace System.Net.Test.Common
                 int offset = receiveResult.Count;
                 while (receiveResult.EndOfMessage == false)
                 {
+                    //Console.WriteLine($"[Server - {nameof(RunEchoAll)} Incomplete message, waiting for continuations...");
                     if (offset < MaxBufferSize)
                     {
                         receiveResult = await socket.ReceiveAsync(
@@ -65,10 +69,12 @@ namespace System.Net.Test.Common
                 // Close socket if the message was too big.
                 if (offset > MaxBufferSize)
                 {
+                    //Console.WriteLine($"[Server - {nameof(RunEchoAll)} Full close (MessageTooBig)");
                     await socket.CloseAsync(
                         WebSocketCloseStatus.MessageTooBig,
                         string.Format("{0}: {1} > {2}", WebSocketCloseStatus.MessageTooBig.ToString(), offset, MaxBufferSize),
                         cancellationToken);
+                    //Console.WriteLine($"[Server - {nameof(RunEchoAll)} Closed");
 
                     continue;
                 }
@@ -78,32 +84,44 @@ namespace System.Net.Test.Common
                 if (receiveResult.MessageType == WebSocketMessageType.Text)
                 {
                     receivedMessage = Encoding.UTF8.GetString(receiveBuffer, 0, offset);
+                    //Console.WriteLine($"[Server - {nameof(RunEchoAll)} Received message: '{receivedMessage}'");
                     if (receivedMessage == ".close")
                     {
+                        //Console.WriteLine($"[Server - {nameof(RunEchoAll)} Full close...");
                         await socket.CloseAsync(WebSocketCloseStatus.NormalClosure, receivedMessage, cancellationToken);
+                        //Console.WriteLine($"[Server - {nameof(RunEchoAll)} Closed");
                     }
                     else if (receivedMessage == ".shutdown")
                     {
+                        //Console.WriteLine($"[Server - {nameof(RunEchoAll)} Shutdown writes only...");
                         await socket.CloseOutputAsync(WebSocketCloseStatus.NormalClosure, receivedMessage, cancellationToken);
+                        //Console.WriteLine($"[Server - {nameof(RunEchoAll)} Writes closed");
                     }
                     else if (receivedMessage == ".abort")
                     {
                         socket.Abort();
+                        //Console.WriteLine($"[Server - {nameof(RunEchoAll)} Aborted");
                     }
                     else if (receivedMessage == ".delay5sec")
                     {
+                        //Console.WriteLine($"[Server - {nameof(RunEchoAll)} Waiting for 5 seconds without sending any messages.");
                         await Task.Delay(5000);
+                        //Console.WriteLine($"[Server - {nameof(RunEchoAll)} Wait completed.");
                     }
                     else if (receivedMessage == ".receiveMessageAfterClose")
                     {
                         string message = $"{receivedMessage} {DateTime.Now:HH:mm:ss}";
+                        //Console.WriteLine($"[Server - {nameof(RunEchoAll)} Sending message: '{message}'");
                         byte[] buffer = Encoding.UTF8.GetBytes(message);
                         await socket.SendAsync(
                             new ArraySegment<byte>(buffer, 0, message.Length),
                             WebSocketMessageType.Text,
                             true,
                             cancellationToken);
+                        //Console.WriteLine($"[Server - {nameof(RunEchoAll)} Sent");
+                        //Console.WriteLine($"[Server - {nameof(RunEchoAll)} Full close...");
                         await socket.CloseAsync(WebSocketCloseStatus.NormalClosure, receivedMessage, cancellationToken);
+                        //Console.WriteLine($"[Server - {nameof(RunEchoAll)} Closed");
                     }
                     else if (socket.State == WebSocketState.Open)
                     {
@@ -112,24 +130,31 @@ namespace System.Net.Test.Common
                 }
                 else
                 {
+                    //Console.WriteLine($"[Server - {nameof(RunEchoAll)} Received message type {receiveResult.MessageType}");
                     sendMessage = true;
                 }
 
                 if (sendMessage)
                 {
+                    //Console.WriteLine($"[Server - {nameof(RunEchoAll)} Echo message");
                     await socket.SendAsync(
                             new ArraySegment<byte>(receiveBuffer, 0, offset),
                             receiveResult.MessageType,
                             !replyWithPartialMessages,
                             cancellationToken);
+                    //Console.WriteLine($"[Server - {nameof(RunEchoAll)} Sent");
                 }
                 if (receivedMessage == ".closeafter")
                 {
+                    //Console.WriteLine($"[Server - {nameof(RunEchoAll)} Full close...");
                     await socket.CloseAsync(WebSocketCloseStatus.NormalClosure, receivedMessage, cancellationToken);
+                    //Console.WriteLine($"[Server - {nameof(RunEchoAll)} Closed");
                 }
                 else if (receivedMessage == ".shutdownafter")
                 {
+                    //Console.WriteLine($"[Server - {nameof(RunEchoAll)} Shutdown writes only...");
                     await socket.CloseOutputAsync(WebSocketCloseStatus.NormalClosure, receivedMessage, cancellationToken);
+                    //Console.WriteLine($"[Server - {nameof(RunEchoAll)} Writes closed");
                 }
             }
         }
@@ -178,9 +203,11 @@ namespace System.Net.Test.Common
 
         public static async ValueTask<WebSocketEchoOptions> ProcessOptions(string queryString, CancellationToken cancellationToken = default)
         {
+            //Console.WriteLine($"Server: Processing echo oprions from query string = '{queryString}'");
             WebSocketEchoOptions options = WebSocketEchoOptions.Parse(queryString);
             if (options.Delay is TimeSpan d)
             {
+                //Console.WriteLine($"Server: delay = {d}");
                 await Task.Delay(d, cancellationToken).ConfigureAwait(false);
             }
             return options;

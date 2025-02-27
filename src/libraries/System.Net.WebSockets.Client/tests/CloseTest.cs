@@ -438,53 +438,6 @@ namespace System.Net.WebSockets.Client.Tests
                 }
             }
         }
-
-        [ConditionalFact(nameof(WebSocketsSupported))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/54153", TestPlatforms.Browser)]
-        public async Task CloseAsync_CancelableEvenWhenPendingReceive_Throws()
-        {
-            var tcs = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
-
-            await LoopbackServer.CreateClientAndServerAsync(async uri =>
-            {
-                try
-                {
-                    using (var cws = new ClientWebSocket())
-                    using (var testTimeoutCts = new CancellationTokenSource(TimeOutMilliseconds))
-                    {
-                        await ConnectAsync(cws, uri, testTimeoutCts.Token);
-
-                        Task receiveTask = cws.ReceiveAsync(new byte[1], testTimeoutCts.Token);
-
-                        var cancelCloseCts = new CancellationTokenSource();
-                        await Assert.ThrowsAnyAsync<OperationCanceledException>(async () =>
-                        {
-                            Task t = cws.CloseAsync(WebSocketCloseStatus.NormalClosure, null, cancelCloseCts.Token);
-                            cancelCloseCts.Cancel();
-                            await t;
-                        });
-
-                        Assert.True(cancelCloseCts.Token.IsCancellationRequested);
-                        Assert.False(testTimeoutCts.Token.IsCancellationRequested);
-
-                        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => receiveTask);
-
-                        Assert.False(testTimeoutCts.Token.IsCancellationRequested);
-                    }
-                }
-                finally
-                {
-                    tcs.SetResult();
-                }
-            }, server => server.AcceptConnectionAsync(async connection =>
-            {
-                Dictionary<string, string> headers = await LoopbackHelper.WebSocketHandshakeAsync(connection);
-                Assert.NotNull(headers);
-
-                await tcs.Task;
-
-            }), new LoopbackServer.Options { WebSocketEndpoint = true });
-        }
     }
 
     [OuterLoop("Uses external servers", typeof(PlatformDetection), nameof(PlatformDetection.LocalEchoServerIsNotAvailable))]

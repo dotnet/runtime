@@ -1,10 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Collections.Generic;
-using System.IO;
-using System.Net.Sockets;
-using System.Net.Test.Common;
 using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
@@ -14,9 +10,9 @@ namespace System.Net.WebSockets.Client.Tests
 {
     [ConditionalClass(typeof(ClientWebSocketTestBase), nameof(WebSocketsSupported))]
     [SkipOnPlatform(TestPlatforms.Browser, "System.Net.Sockets are not supported on browser")]
-    public abstract class AbortTest_Loopback : AbortTestBase
+    public abstract class AbortTest_LoopbackBase : AbortTestBase
     {
-        public AbortTest_Loopback(ITestOutputHelper output) : base(output) { }
+        public AbortTest_LoopbackBase(ITestOutputHelper output) : base(output) { }
 
         public static object[][] AbortClient_MemberData = ToMemberData(Enum.GetValues<AbortType>(), UseSsl_Values, /* verifySendReceive */ Bool_Values);
 
@@ -190,75 +186,94 @@ namespace System.Net.WebSockets.Client.Tests
             await sendTask.ConfigureAwait(false);
             await remoteAck.WaitAsync(cancellationToken).ConfigureAwait(false);
         }
+    }
 
-        /*[Theory, MemberData(nameof(UseSsl_MemberData))]
-        public Task Abort_ConnectAndAbort_ThrowsWebSocketExceptionWithMessage(bool useSsl)
-        {
-            var timeoutCts = new CancellationTokenSource(TimeOutMilliseconds);
+    // --- Loopback Echo Server "overrides" ---
 
-            return LoopbackWebSocketServer.RunEchoAsync(
-                RunClient_Abort_SendAndAbort_Success,
-                new LoopbackWebSocketServer.Options
-                {
-                    HttpVersion = HttpVersion,
-                    UseSsl = useSsl,
-                    HttpInvoker = GetInvoker(),
-                    IgnoreServerErrors = true
-                },
-                timeoutCts.Token);
-        }*/
+    public abstract class AbortTest_Loopback : AbortTest_LoopbackBase
+    {
+        public AbortTest_Loopback(ITestOutputHelper output) : base(output) { }
 
-        /*//[Theory, MemberData(nameof(EchoServers))]
-        public Task Abort_SendAndAbort_Success()
-            => RunClient_Abort_SendAndAbort_Success(server);
+        [Theory, MemberData(nameof(UseSsl_MemberData))]
+        public Task Abort_ConnectAndAbort_ThrowsWebSocketExceptionWithMessage(bool useSsl) => RunEchoAsync(
+            RunClient_Abort_ConnectAndAbort_ThrowsWebSocketExceptionWithMessage, useSsl);
 
-        //[Theory, MemberData(nameof(EchoServers))]
-        public Task Abort_ReceiveAndAbort_Success()
-            => RunClient_Abort_ReceiveAndAbort_Success(server);
+        [Theory, MemberData(nameof(UseSsl_MemberData))]
+        public Task Abort_SendAndAbort_Success(bool useSsl) => RunEchoAsync(
+            RunClient_Abort_SendAndAbort_Success, useSsl);
 
-        //[Theory, MemberData(nameof(EchoServers))]
-        public Task Abort_CloseAndAbort_Success()
-            => RunClient_Abort_CloseAndAbort_Success(server);
+        [Theory, MemberData(nameof(UseSsl_MemberData))]
+        public Task Abort_ReceiveAndAbort_Success(bool useSsl) => RunEchoAsync(
+            RunClient_Abort_ReceiveAndAbort_Success, useSsl);
 
-        //[Theory, MemberData(nameof(EchoServers))]
-        public Task ClientWebSocket_Abort_CloseOutputAsync()
-            => RunClient_ClientWebSocket_Abort_CloseOutputAsync(server);*/
+        [Theory, MemberData(nameof(UseSsl_MemberData))]
+        public Task Abort_CloseAndAbort_Success(bool useSsl) => RunEchoAsync(
+            RunClient_Abort_CloseAndAbort_Success, useSsl);
+
+        [Theory, MemberData(nameof(UseSsl_MemberData))]
+        public Task ClientWebSocket_Abort_CloseOutputAsync(bool useSsl) => RunEchoAsync(
+            RunClient_ClientWebSocket_Abort_CloseOutputAsync, useSsl);
     }
 
     // --- HTTP/1.1 WebSocket loopback tests ---
 
-    public class AbortTest_Invoker_Loopback : AbortTest_Loopback
+    public sealed class AbortTest_Invoker_Loopback : AbortTest_Loopback
     {
         public AbortTest_Invoker_Loopback(ITestOutputHelper output) : base(output) { }
         protected override bool UseCustomInvoker => true;
     }
 
-    public class AbortTest_HttpClient_Loopback : AbortTest_Loopback
+    public sealed class AbortTest_HttpClient_Loopback : AbortTest_Loopback
     {
         public AbortTest_HttpClient_Loopback(ITestOutputHelper output) : base(output) { }
         protected override bool UseHttpClient => true;
     }
 
-    public class AbortTest_SharedHandler_Loopback : AbortTest_Loopback
+    // TODO
+    public sealed class AbortTest_SharedHandler_Loopback : AbortTest_LoopbackBase //!
     {
         public AbortTest_SharedHandler_Loopback(ITestOutputHelper output) : base(output) { }
+
+        [Fact]
+        public Task Abort_ConnectAndAbort_ThrowsWebSocketExceptionWithMessage() => RunEchoAsync(
+            RunClient_Abort_ConnectAndAbort_ThrowsWebSocketExceptionWithMessage, useSsl: false);
+
+        [Fact]
+        public Task Abort_SendAndAbort_Success() => RunEchoAsync(
+            RunClient_Abort_SendAndAbort_Success, useSsl: false);
+
+        [Fact]
+        public Task Abort_ReceiveAndAbort_Success() => RunEchoAsync(
+            RunClient_Abort_ReceiveAndAbort_Success, useSsl: false);
+
+        [Fact]
+        public Task Abort_CloseAndAbort_Success() => RunEchoAsync(
+            RunClient_Abort_CloseAndAbort_Success, useSsl: false);
+
+        [Fact]
+        public Task ClientWebSocket_Abort_CloseOutputAsync() => RunEchoAsync(
+            RunClient_ClientWebSocket_Abort_CloseOutputAsync, useSsl: false);
     }
 
     // --- HTTP/2 WebSocket loopback tests ---
 
-    public class AbortTest_Invoker_Http2 : AbortTest_Invoker_Loopback
+    public abstract class AbortTest_Http2Loopback : AbortTest_Loopback
     {
-        public AbortTest_Invoker_Http2(ITestOutputHelper output) : base(output) { }
+        public AbortTest_Http2Loopback(ITestOutputHelper output) : base(output) { }
         internal override Version HttpVersion => Net.HttpVersion.Version20;
         protected override Task SendServerResponseAndEosAsync(WebSocketRequestData rd, ServerEosType eos, Func<WebSocketRequestData, CancellationToken, Task> callback, CancellationToken ct)
             => WebSocketHandshakeHelper.SendHttp2ServerResponseAndEosAsync(rd, eosInHeadersFrame: eos == ServerEosType.WithHeaders, callback, ct);
     }
 
-    public class AbortTest_HttpClient_Http2 : AbortTest_HttpClient_Loopback
+    public sealed class AbortTest_Invoker_Http2Loopback : AbortTest_Http2Loopback
     {
-        public AbortTest_HttpClient_Http2(ITestOutputHelper output) : base(output) { }
-        internal override Version HttpVersion => Net.HttpVersion.Version20;
-        protected override Task SendServerResponseAndEosAsync(WebSocketRequestData rd, ServerEosType eos, Func<WebSocketRequestData, CancellationToken, Task> callback, CancellationToken ct)
-            => WebSocketHandshakeHelper.SendHttp2ServerResponseAndEosAsync(rd, eosInHeadersFrame: eos == ServerEosType.WithHeaders, callback, ct);
+        public AbortTest_Invoker_Http2Loopback(ITestOutputHelper output) : base(output) { }
+        protected override bool UseCustomInvoker => true;
+    }
+
+    public sealed class AbortTest_HttpClient_Http2Loopback : AbortTest_Http2Loopback
+    {
+        public AbortTest_HttpClient_Http2Loopback(ITestOutputHelper output) : base(output) { }
+        protected override bool UseHttpClient => true;
     }
 }

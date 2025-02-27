@@ -13,9 +13,15 @@ namespace System.Net.WebSockets.Client.Tests
 {
     public static class WebSocketHandshakeHelper
     {
-        public static async Task<WebSocketRequestData> ProcessHttp11RequestAsync(LoopbackServer.Connection connection, bool skipServerHandshakeResponse = false, CancellationToken cancellationToken = default)
+        public static async Task<WebSocketRequestData> ProcessHttp11RequestAsync(
+            LoopbackServer.Connection connection,
+            bool skipServerHandshakeResponse = false,
+            bool parseEchoOptions = false,
+            CancellationToken cancellationToken = default)
         {
+            //Console.WriteLine($"[Server - {nameof(ProcessHttp11RequestAsync)}] Handling HTTP/1.1 request on {connection.Socket.LocalEndPoint}...");
             List<string> headers = await connection.ReadRequestHeaderAsync().WaitAsync(cancellationToken).ConfigureAwait(false);
+            //Console.WriteLine($"[Server - {nameof(ProcessHttp11RequestAsync)}] Received headers: {string.Join(", ", headers)}");
 
             var data = new WebSocketRequestData()
             {
@@ -23,13 +29,28 @@ namespace System.Net.WebSockets.Client.Tests
                 Http11Connection = connection
             };
 
-            // extract query with leading '?' from request line
-            // e.g. GET /echo?query=string HTTP/1.1 => "?query=string"
-            int queryIndex = headers[0].IndexOf('?');
-            if (queryIndex != -1)
+            if (parseEchoOptions)
             {
-                int spaceIndex = headers[0].IndexOf(' ', queryIndex);
-                data.Query = headers[0].Substring(queryIndex, spaceIndex - queryIndex);
+                // extract query with leading '?' from request line
+                // e.g. GET /echo?query=string HTTP/1.1 => "?query=string"
+                int queryIndex = headers[0].IndexOf('?');
+                if (queryIndex != -1)
+                {
+                    int spaceIndex = headers[0].IndexOf(' ', queryIndex);
+                    string query = headers[0].Substring(queryIndex, spaceIndex - queryIndex);
+                    //Console.WriteLine($"[Server - {nameof(ProcessHttp11RequestAsync)}] query: {query}");
+
+                    // NOTE: ProcessOptions needs to be called before sending the server response
+                    // because it may be configured to delay the response.
+
+                    //Console.WriteLine($"[Server - {nameof(ProcessHttp11RequestAsync)}] Processing options...");
+                    data.EchoOptions = await WebSocketEchoHelper.ProcessOptions(query).ConfigureAwait(false);
+                    //Console.WriteLine($"[Server - {nameof(ProcessHttp11RequestAsync)}] Parsed options: {data.EchoOptions}");
+                }
+                else
+                {
+                    data.EchoOptions = WebSocketEchoOptions.Default;
+                }
             }
 
             for (int i = 1; i < headers.Count; ++i)
@@ -48,7 +69,9 @@ namespace System.Net.WebSockets.Client.Tests
 
             if (!skipServerHandshakeResponse)
             {
+                //Console.WriteLine($"[Server - {nameof(ProcessHttp11RequestAsync)}] Sending server handshake response...");
                 await SendHttp11ServerResponseAsync(connection, secWebSocketKey, cancellationToken).ConfigureAwait(false);
+                //Console.WriteLine($"[Server - {nameof(ProcessHttp11RequestAsync)}] Sent server handshake response.");
             }
 
             data.TransportStream = connection.Stream;
@@ -61,7 +84,11 @@ namespace System.Net.WebSockets.Client.Tests
             await connection.WriteStringAsync(serverResponse).WaitAsync(cancellationToken).ConfigureAwait(false);
         }
 
-        public static async Task<WebSocketRequestData> ProcessHttp2RequestAsync(Http2LoopbackServer server, bool skipServerHandshakeResponse = false, CancellationToken cancellationToken = default)
+        public static async Task<WebSocketRequestData> ProcessHttp2RequestAsync(
+            Http2LoopbackServer server,
+            bool skipServerHandshakeResponse = false,
+            bool parseEchoOptions = false,
+            CancellationToken cancellationToken = default)
         {
             var connection = await server.EstablishConnectionAsync(new SettingsEntry { SettingId = SettingId.EnableConnect, Value = 1 })
                 .WaitAsync(cancellationToken).ConfigureAwait(false);
@@ -86,11 +113,23 @@ namespace System.Net.WebSockets.Client.Tests
             var isValidOpeningHandshake = httpRequestData.Method == HttpMethod.Connect.ToString() && data.Headers.ContainsKey(":protocol");
             Assert.True(isValidOpeningHandshake);
 
-            // HTTP/2 CONNECT requests drop path and query from the request URI,
-            // see https://datatracker.ietf.org/doc/html/rfc7540#section-8.3:
-            // > The ":scheme" and ":path" pseudo-header fields MUST be omitted.
-            // The original query string was passed in a custom header.
-            data.Query = data.Headers.GetValueOrDefault(WebSocketHelper.OriginalQueryStringHeader);
+            if (parseEchoOptions)
+            {
+                // HTTP/2 CONNECT requests drop path and query from the request URI,
+                // see https://datatracker.ietf.org/doc/html/rfc7540#section-8.3:
+                // > The ":scheme" and ":path" pseudo-header fields MUST be omitted.
+                // The original query string was passed in a custom header.
+                if (data.Headers.TryGetValue(WebSocketHelper.OriginalQueryStringHeader, out var query))
+                {
+                    // NOTE: ProcessOptions needs to be called before sending the server response
+                    // because it may be configured to delay the response.
+                    data.EchoOptions = await WebSocketEchoHelper.ProcessOptions(query).ConfigureAwait(false);
+                }
+                else
+                {
+                    data.EchoOptions = WebSocketEchoOptions.Default;
+                }
+            }
 
             if (!skipServerHandshakeResponse)
             {

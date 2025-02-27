@@ -1,25 +1,22 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Collections.Generic;
-using System.Text;
-using System.Threading;
-using System.Threading.Tasks;
-
 namespace System.Net.Test.Common
 {
-    public struct WebSocketEchoOptions
+    public readonly struct WebSocketEchoOptions
     {
-        public bool ReplyWithPartialMessages { get; set; }
-        public bool ReplyWithEnhancedCloseMessage { get; set; }
-        public string SubProtocol { get; set; }
-        public TimeSpan? Delay { get; set; }
+        public static readonly WebSocketEchoOptions Default = new();
+
+        public bool ReplyWithPartialMessages { get; init; }
+        public bool ReplyWithEnhancedCloseMessage { get; init; }
+        public string SubProtocol { get; init; }
+        public TimeSpan? Delay { get; init; }
 
         public static WebSocketEchoOptions Parse(string query)
         {
             if (query is null or "" or "?")
             {
-                return default;
+                return Default;
             }
 
             return new WebSocketEchoOptions

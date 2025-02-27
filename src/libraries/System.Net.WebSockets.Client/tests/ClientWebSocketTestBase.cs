@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Net.Http;
+using System.Net.Test.Common;
 using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
@@ -29,6 +30,7 @@ namespace System.Net.WebSockets.Client.Tests
         public static readonly bool[] Bool_Values = new[] { false, true };
         public static readonly bool[] UseSsl_Values = PlatformDetection.SupportsAlpn ? Bool_Values : new[] { false };
         public static readonly object[][] UseSsl_MemberData = ToMemberData(UseSsl_Values);
+        public static readonly object[][] UseSslAndBoolean = ToMemberData(UseSsl_Values, Bool_Values);
 
         public static object[][] ToMemberData<T>(IEnumerable<T> data)
             => data.Select(a => new object[] { a }).ToArray();
@@ -119,17 +121,22 @@ namespace System.Net.WebSockets.Client.Tests
             }
         }
 
-        protected TestConfig _defaultConfig = null!;
-        protected TestConfig DefaultConfig => _defaultConfig ??= new TestConfig
+        /*private TestConfig? _config = null!;
+        protected TestConfig Config => _config ??= new TestConfig
             {
-                InvokerType = UseCustomInvoker
-                    ? HttpInvokerType.HttpMessageInvoker
-                    : UseHttpClient
-                        ? HttpInvokerType.HttpClient
-                        : HttpInvokerType.Shared,
+                InvokerType = InvokerType,
                 ConfigureHttpHandler = ConfigureCustomHandler,
                 HttpVersion = HttpVersion,
-            };
+            };*/
+
+        /*protected bool? UseSsl { get; set; }
+        protected Uri? ServerUri { get; set; }
+
+        protected HttpInvokerType InvokerType => UseCustomInvoker
+            ? HttpInvokerType.HttpMessageInvoker
+            : UseHttpClient
+                ? HttpInvokerType.HttpClient
+                : HttpInvokerType.Shared;*/
 
         protected virtual bool UseCustomInvoker => false;
 
@@ -141,7 +148,31 @@ namespace System.Net.WebSockets.Client.Tests
 
         internal virtual Version HttpVersion => Net.HttpVersion.Version11;
 
-        internal HttpMessageInvoker? GetInvoker() => DefaultConfig.Invoker;
+        internal HttpMessageInvoker? GetInvoker()
+        {
+            if (UseSharedHandler)
+            {
+                return null;
+            }
+
+            var handler = new HttpClientHandler();
+
+            if (PlatformDetection.IsNotBrowser)
+            {
+                handler.ServerCertificateCustomValidationCallback = HttpClientHandler.DangerousAcceptAnyServerCertificateValidator;
+            }
+
+            ConfigureCustomHandler?.Invoke(handler);
+
+            if (UseCustomInvoker)
+            {
+                Debug.Assert(!UseHttpClient);
+                return new HttpMessageInvoker(handler);
+            }
+
+            Debug.Assert(UseHttpClient);
+            return new HttpClient(handler);
+        }
 
         protected Task<ClientWebSocket> GetConnectedWebSocket(Uri uri, int timeOutMilliseconds, ITestOutputHelper output)
             => WebSocketHelper.GetConnectedWebSocket(uri, timeOutMilliseconds, output, o => ConfigureHttpVersion(o, uri), GetInvoker());
@@ -152,6 +183,7 @@ namespace System.Net.WebSockets.Client.Tests
         protected Task ConnectAsync(ClientWebSocket cws, Uri uri, CancellationToken cancellationToken)
         {
             ConfigureHttpVersion(cws.Options, uri);
+            //Console.WriteLine($"Client: starting ConnectAsync");
             return cws.ConnectAsync(uri, GetInvoker(), cancellationToken);
         }
 
@@ -169,6 +201,8 @@ namespace System.Net.WebSockets.Client.Tests
                 return;
             }
 
+            //Console.WriteLine($"Client: Original query string = '{uri.Query}'; HttpVersion = {HttpVersion}");
+
             options.HttpVersion = HttpVersion;
             options.HttpVersionPolicy = HttpVersionPolicy.RequestVersionExact;
 
@@ -184,11 +218,13 @@ namespace System.Net.WebSockets.Client.Tests
 
         public static bool WebSocketsSupported { get { return WebSocketHelper.WebSocketsSupported; } }
 
-        public record class TestConfig
+        /*public record class TestConfig
         {
             public HttpInvokerType InvokerType { get; set; }
             public Action<HttpClientHandler>? ConfigureHttpHandler { get; set; }
-            public HttpMessageInvoker? Invoker => CreateInvoker();
+
+            private HttpMessageInvoker? _invoker = null;
+            public HttpMessageInvoker? Invoker => _invoker ??= CreateInvoker();
 
             public Version HttpVersion { get; set; }
             public bool? UseSsl { get; set; }
@@ -196,6 +232,11 @@ namespace System.Net.WebSockets.Client.Tests
 
             private HttpMessageInvoker? CreateInvoker()
             {
+                if (InvokerType == HttpInvokerType.Shared)
+                {
+                    return null;
+                }
+
                 var handler = new HttpClientHandler();
 
                 if (PlatformDetection.IsNotBrowser)
@@ -207,7 +248,6 @@ namespace System.Net.WebSockets.Client.Tests
 
                 return InvokerType switch
                 {
-                    HttpInvokerType.Shared => null,
                     HttpInvokerType.HttpClient => new HttpClient(handler),
                     HttpInvokerType.HttpMessageInvoker => new HttpMessageInvoker(handler),
                     _ => throw new NotImplementedException()
@@ -221,6 +261,38 @@ namespace System.Net.WebSockets.Client.Tests
             Shared = 0,
             HttpClient,
             HttpMessageInvoker
+        }*/
+
+#if !TARGET_BROWSER
+        // Loopback server related functions
+        protected Task RunEchoAsync(Func<Uri, Task> clientFunc, bool useSsl)
+            => LoopbackWebSocketServer.RunEchoAsync(clientFunc, HttpVersion, useSsl, TimeOutMilliseconds);
+
+        protected Task RunEchoHeadersAsync(Func<Uri, Task> clientFunc, bool useSsl)
+        {
+            var timeoutCts = new CancellationTokenSource(TimeOutMilliseconds);
+            var options = new LoopbackWebSocketServer.Options
+            {
+                HttpVersion = HttpVersion,
+                UseSsl = useSsl,
+                IgnoreServerErrors = true,
+                AbortServerOnClientExit = true
+            };
+
+            return LoopbackWebSocketServer.RunAsync(
+                clientFunc,
+                async (requestData, token) =>
+                {
+                    var serverWebSocket = WebSocket.CreateFromStream(
+                        requestData.TransportStream,
+                        new WebSocketCreationOptions { IsServer = true });
+
+                    using var registration = token.Register(serverWebSocket.Abort);
+                    await WebSocketEchoHelper.RunEchoHeaders(serverWebSocket, requestData.Headers, token);
+                },
+                options,
+                timeoutCts.Token);
         }
+#endif
     }
 }

@@ -1,7 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.IO;
 using System.Net.Http;
+using System.Net.Sockets;
 using System.Net.Test.Common;
 using System.Threading;
 using System.Threading.Tasks;
@@ -40,49 +42,157 @@ namespace System.Net.WebSockets.Client.Tests
             return RunAsyncPrivate(loopbackClientFunc, loopbackServerFunc, options, cancellationToken);
         }
 
-        public static Task RunEchoAsync(Func<Uri, Task> loopbackClientFunc, Options options, CancellationToken cancellationToken)
+        public static Task RunEchoAsync(Func<Uri, Task> loopbackClientFunc, Version httpVersion, bool useSsl, int timeOutMilliseconds)
         {
-            Assert.False(options.DisposeClientWebSocket, "Not supported in this overload");
-            Assert.False(options.DisposeHttpInvoker, "Not supported in this overload");
-            Assert.Null(options.HttpInvoker); // Not supported in this overload
+            var timeoutCts = new CancellationTokenSource(timeOutMilliseconds);
+            var options = new Options
+            {
+                HttpVersion = httpVersion,
+                UseSsl = useSsl,
+                IgnoreServerErrors = true,
+                AbortServerOnClientExit = true,
+                ParseEchoOptions = true
+            };
 
-            return RunAsyncPrivate(loopbackClientFunc, (data, token) => RunEchoServerAsync(data, options, token), options, cancellationToken);
+            //Console.WriteLine($"[{nameof(RunEchoAsync)}] Starting Echo test");
+
+            return RunAsyncPrivate(
+                loopbackClientFunc,
+                (data, token) => RunEchoServerAsync(data, options, token),
+                options,
+                timeoutCts.Token);
         }
 
         private static Task RunAsyncPrivate(
             Func<Uri, Task> loopbackClientFunc,
             Func<WebSocketRequestData, CancellationToken, Task> loopbackServerFunc,
             Options options,
-            CancellationToken cancellationToken)
+            CancellationToken globalCt)
         {
+            Func<Uri, Task> clientFunc;
+            CancellationToken cancellationToken;
+            CancellationToken clientExitCt;
+
+            if (options.AbortServerOnClientExit)
+            {
+                //Console.WriteLine($"[{nameof(RunAsyncPrivate)}] AbortServerOnClientExit=true");
+                CancellationTokenSource clientExitCts = new CancellationTokenSource();
+                clientExitCt = clientExitCts.Token;
+                cancellationToken = CancellationTokenSource.CreateLinkedTokenSource(globalCt, clientExitCt).Token;
+
+                clientFunc = async uri =>
+                {
+                    //Console.WriteLine($"[Client - {nameof(clientFunc)}] clientExitCt canceled={clientExitCt.IsCancellationRequested}, cancellationToken canceled={cancellationToken.IsCancellationRequested}");
+                    try
+                    {
+                        //Console.WriteLine($"[Client - {nameof(clientFunc)}] Starting client");
+                        await loopbackClientFunc(uri).ConfigureAwait(false);
+                        //Console.WriteLine($"[Client - {nameof(clientFunc)}] Client completed SUCCESSFULLY");
+                    }
+                    //catch (Exception ex)
+                    //{
+                        //Console.WriteLine($"[Client - {nameof(clientFunc)}] Client FAILED with exception: {ex.Message}");
+                    //    throw;
+                    //}
+                    finally
+                    {
+                        clientExitCts.Cancel();
+                        //Console.WriteLine($"[Client - {nameof(clientFunc)}] clientExitCts cancelled (clientExitCt canceled={clientExitCt.IsCancellationRequested}, cancellationToken canceled={cancellationToken.IsCancellationRequested})");
+                    }
+                };
+            }
+            else
+            {
+                //Console.WriteLine($"[{nameof(RunAsyncPrivate)}] AbortServerOnClientExit=false");
+                clientFunc = loopbackClientFunc;
+                cancellationToken = globalCt;
+                clientExitCt = CancellationToken.None;
+            }
+
+            async Task RunHttpServer<TServer>(
+                TServer server,
+                Func<TServer, Func<WebSocketRequestData, CancellationToken, Task>, Options, CancellationToken, Task> serverFunc
+            ) where TServer : GenericLoopbackServer
+            {
+                try
+                {
+                    //Console.WriteLine($"[Server - {nameof(RunHttpServer)}<{typeof(TServer).Name}>] Starting server");
+                    await Task.Run(() =>
+                        serverFunc(server, loopbackServerFunc, options, cancellationToken),
+                        cancellationToken);
+                    //Console.WriteLine($"[Server - {nameof(RunHttpServer)}<{typeof(TServer).Name}>] Server completed SUCCESSFULLY");
+                }
+                catch (OperationCanceledException) when (options.AbortServerOnClientExit && clientExitCt.IsCancellationRequested) { } // expected
+                catch (WebSocketException we) when (options.AbortServerOnClientExit && we.WebSocketErrorCode == WebSocketError.ConnectionClosedPrematurely) { } // expected
+                catch (SocketException se) when (options.AbortServerOnClientExit && se.SocketErrorCode == SocketError.ConnectionReset) { } // expected
+                catch (IOException ie) when (options.AbortServerOnClientExit && ie.InnerException is SocketException se && se.SocketErrorCode == SocketError.ConnectionReset) { } // expected
+                catch (SocketException) when (options.IgnoreServerErrors) { } // ignore
+                catch (IOException) when (options.IgnoreServerErrors) { } // ignore
+                catch (WebSocketException we) when (options.IgnoreServerErrors)
+                {
+                    if (we.WebSocketErrorCode == WebSocketError.InvalidState)
+                    {
+                        const string closeOnClosedMsg = "The WebSocket is in an invalid state ('Closed') for this operation. Valid states are: 'Open, CloseSent, CloseReceived'";
+                        const string closeOnAbortedMsg = "The WebSocket is in an invalid state ('Aborted') for this operation. Valid states are: 'Open, CloseSent, CloseReceived'";
+                        if (we.Message == closeOnClosedMsg || we.Message == closeOnAbortedMsg)
+                        {
+                            return; // ignore
+                        }
+                    }
+
+                    Console.WriteLine($"[Server - {nameof(RunHttpServer)}<{typeof(TServer).Name}>] Abort on an ignored WebSocketException ({we.WebSocketErrorCode}): {we.Message}");
+                }
+                catch (Exception e) when (options.IgnoreServerErrors)
+                {
+                    Console.WriteLine($"[Server - {nameof(RunHttpServer)}<{typeof(TServer).Name}>] Abort on an ignored exception: {e}");
+                }
+            }
+
             if (options.HttpVersion == HttpVersion.Version11)
             {
-                return LoopbackServer.CreateClientAndServerAsync(
-                    loopbackClientFunc,
-                    async server =>
-                    {
-                        await server.AcceptConnectionAsync(async connection =>
+                //Console.WriteLine($"[Server - {nameof(RunHttp11Server)}] Waiting for client connection...");
+
+                static Task RunHttp11Server(LoopbackServer server, Func<WebSocketRequestData, CancellationToken, Task> loopbackServerFunc, Options options, CancellationToken cancellationToken)
+                    => server.AcceptConnectionAsync(async connection =>
                         {
-                            var requestData = await WebSocketHandshakeHelper.ProcessHttp11RequestAsync(connection, options.SkipServerHandshakeResponse, cancellationToken).ConfigureAwait(false);
+                            //Console.WriteLine($"[Server - {nameof(RunHttp11Server)}] Processing HTTP/1.1 request...");
+                            var requestData = await WebSocketHandshakeHelper.ProcessHttp11RequestAsync(
+                                connection,
+                                options.SkipServerHandshakeResponse,
+                                options.ParseEchoOptions,
+                                cancellationToken).ConfigureAwait(false);
+                            //Console.WriteLine($"[Server - {nameof(RunHttp11Server)}] WebSocketRequestData: {requestData}");
                             await loopbackServerFunc(requestData, cancellationToken).ConfigureAwait(false);
+                            //Console.WriteLine($"[Server - {nameof(RunHttp11Server)}] loopbackServerFunc completed");
                         });
-                    },
+
+                return LoopbackServer.CreateClientAndServerAsync(
+                    clientFunc,
+                    server => RunHttpServer(server, RunHttp11Server),
                     new LoopbackServer.Options { WebSocketEndpoint = true, UseSsl = options.UseSsl });
             }
             else if (options.HttpVersion == HttpVersion.Version20)
             {
+                //Console.WriteLine($"[Server - {nameof(RunHttp2Server)}] Waiting for client connection...");
+                static async Task RunHttp2Server(Http2LoopbackServer server, Func<WebSocketRequestData, CancellationToken, Task> loopbackServerFunc, Options options, CancellationToken cancellationToken)
+                {
+                    var requestData = await WebSocketHandshakeHelper.ProcessHttp2RequestAsync(
+                        server,
+                        options.SkipServerHandshakeResponse,
+                        options.ParseEchoOptions,
+                        cancellationToken).ConfigureAwait(false);
+                    //Console.WriteLine($"[Server - {nameof(RunHttp2Server)}] WebSocketRequestData: {requestData}");
+                    await loopbackServerFunc(requestData, cancellationToken).ConfigureAwait(false);
+                    //Console.WriteLine($"[Server - {nameof(RunHttp2Server)}] loopbackServerFunc completed");
+                    //Console.WriteLine($"[Server - {nameof(RunHttp2Server)}] Shutting down HTTP/2 connection...");
+                    await requestData.Http2Connection!.ShutdownIgnoringErrorsAsync(
+                        requestData.Http2StreamId.Value);
+                    //Console.WriteLine($"[Server - {nameof(RunHttp2Server)}] HTTP/2 connection shutdown completed");
+                };
+
                 return Http2LoopbackServer.CreateClientAndServerAsync(
-                    loopbackClientFunc,
-                    async server =>
-                    {
-                        var requestData = await WebSocketHandshakeHelper.ProcessHttp2RequestAsync(server, options.SkipServerHandshakeResponse, cancellationToken).ConfigureAwait(false);
-                        var http2Connection = requestData.Http2Connection!;
-                        var http2StreamId = requestData.Http2StreamId.Value;
-
-                        await loopbackServerFunc(requestData, cancellationToken).ConfigureAwait(false);
-
-                        await http2Connection.ShutdownIgnoringErrorsAsync(http2StreamId).ConfigureAwait(false);
-                    },
+                    clientFunc,
+                    server => RunHttpServer(server, RunHttp2Server),
                     new Http2Options { WebSocketEndpoint = true, UseSsl = options.UseSsl });
             }
             else
@@ -97,64 +207,52 @@ namespace System.Net.WebSockets.Client.Tests
             Options options,
             CancellationToken cancellationToken)
         {
-            WebSocket serverWebSocket = null!;
-            CancellationTokenRegistration registration = default;
-            try
-            {
-                var wsOptions = new WebSocketCreationOptions { IsServer = true };
-                options.ConfigureServerOptions?.Invoke(wsOptions);
+            var wsOptions = new WebSocketCreationOptions { IsServer = true };
+            options.ConfigureServerOptions?.Invoke(wsOptions);
 
-                serverWebSocket = WebSocket.CreateFromStream(requestData.TransportStream, wsOptions);
-                registration = cancellationToken.Register(() => serverWebSocket.Abort());
+            var serverWebSocket = WebSocket.CreateFromStream(requestData.TransportStream, wsOptions);
+            //Console.WriteLine($"[Server - {nameof(RunServerAsync)}] Created server websocket");
+            using var registration = cancellationToken.Register(serverWebSocket.Abort);
 
-                await serverWebSocketFunc(serverWebSocket, cancellationToken).ConfigureAwait(false);
-            }
-            catch (Exception) when (options.IgnoreServerErrors)
+            //Console.WriteLine($"[Server - {nameof(RunServerAsync)}] Processing...");
+            await serverWebSocketFunc(serverWebSocket, cancellationToken).ConfigureAwait(false);
+            //Console.WriteLine($"[Server - {nameof(RunServerAsync)}] Completed");
+
+            if (options.DisposeServerWebSocket)
             {
-                // ignore
-            }
-            finally
-            {
-                registration.Dispose();
-                if (options.DisposeServerWebSocket)
-                {
-                    serverWebSocket?.Dispose();
-                }
+                serverWebSocket?.Dispose();
             }
         }
 
-        private static async Task RunEchoServerAsync(WebSocketRequestData data, Options options, CancellationToken cancellationToken)
+        private static Task RunEchoServerAsync(WebSocketRequestData data, Options options, CancellationToken cancellationToken)
         {
-            try
-            {
-                WebSocketEchoOptions echoOptions = await WebSocketEchoHelper.ProcessOptions(data.Query, cancellationToken);
+            Assert.NotNull(data.EchoOptions);
+            WebSocketEchoOptions echoOptions = data.EchoOptions.Value;
 
-                if (options.ConfigureServerOptions is not null && echoOptions.SubProtocol is not null)
+            if (echoOptions.SubProtocol is not null)
+            {
+                Options original = options;
+                Action<WebSocketCreationOptions> originalConfigure = original.ConfigureServerOptions;
+                Action<WebSocketCreationOptions> combinedConfigure = o =>
                 {
-                    Options copy = options;
-                    options = copy with {
-                        ConfigureServerOptions = o =>
-                        {
-                            o.SubProtocol = echoOptions.SubProtocol;
-                            copy.ConfigureServerOptions.Invoke(o);
-                        }
-                    };
-                }
+                    o.SubProtocol = echoOptions.SubProtocol;
+                    originalConfigure?.Invoke(o);
+                };
 
-                await RunServerAsync(
-                    data,
-                    (serverWebSocket, token) => WebSocketEchoHelper.RunEchoAll(
-                        serverWebSocket,
-                        echoOptions.ReplyWithPartialMessages,
-                        echoOptions.ReplyWithEnhancedCloseMessage,
-                        token),
-                    options,
-                    cancellationToken);
+                options = original with { ConfigureServerOptions = combinedConfigure };
             }
-            catch (Exception) when (options.IgnoreServerErrors)
-            {
-                // ignore
-            }
+
+            //Console.WriteLine($"[Server - {nameof(RunEchoServerAsync)}] Starting Echo server");
+
+            return RunServerAsync(
+                data,
+                (serverWebSocket, token) => WebSocketEchoHelper.RunEchoAll(
+                    serverWebSocket,
+                    echoOptions.ReplyWithPartialMessages,
+                    echoOptions.ReplyWithEnhancedCloseMessage,
+                    token),
+                options,
+                cancellationToken);
         }
 
         private static async Task RunClientAsync(
@@ -204,7 +302,9 @@ namespace System.Net.WebSockets.Client.Tests
 
             public bool DisposeServerWebSocket { get; set; }
             public bool SkipServerHandshakeResponse { get; set; }
+            public bool ParseEchoOptions { get; set; }
             public bool IgnoreServerErrors { get; set; }
+            public bool AbortServerOnClientExit { get; set; }
             public Action<WebSocketCreationOptions>? ConfigureServerOptions { get; set; }
 
             public bool DisposeClientWebSocket { get; set; }

@@ -52,12 +52,15 @@
     <Compile Include="AbortTest.cs" />
     <Compile Include="AbortTest.Loopback.cs" />
     <Compile Include="CancelTest.cs" />
+    <Compile Include="CancelTest.Loopback.cs" />
     <Compile Include="ClientWebSocketOptionsTests.cs" />
     <Compile Include="ClientWebSocketTestBase.cs" />
     <Compile Include="ClientWebSocketUnitTest.cs" />
     <Compile Include="CloseTest.cs" />
+    <Compile Include="CloseTest.Loopback.cs" />
     <Compile Include="ConnectTest.Http2.cs" />
     <Compile Include="ConnectTest.cs" />
+    <Compile Include="ConnectTest.Loopback.cs" />
     <Compile Include="KeepAliveTest.cs" />
     <Compile Include="KeepAliveTest.Loopback.cs" />
     <Compile Include="LoopbackHelper.cs" />
