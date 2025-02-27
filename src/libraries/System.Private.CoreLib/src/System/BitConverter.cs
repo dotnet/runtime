@@ -54,7 +54,7 @@ namespace System
         public static byte[] GetBytes(char value)
         {
             byte[] bytes = new byte[sizeof(char)];
-            Unsafe.WriteUnaligned(ref bytes[0], value);
+            MemoryMarshal.Write(bytes, value);
             return bytes;
         }
 
@@ -81,7 +81,7 @@ namespace System
         public static byte[] GetBytes(short value)
         {
             byte[] bytes = new byte[sizeof(short)];
-            Unsafe.WriteUnaligned(ref bytes[0], value);
+            MemoryMarshal.Write(bytes, value);
             return bytes;
         }
 
@@ -108,7 +108,7 @@ namespace System
         public static byte[] GetBytes(int value)
         {
             byte[] bytes = new byte[sizeof(int)];
-            Unsafe.WriteUnaligned(ref bytes[0], value);
+            MemoryMarshal.Write(bytes, value);
             return bytes;
         }
 
@@ -135,7 +135,7 @@ namespace System
         public static byte[] GetBytes(long value)
         {
             byte[] bytes = new byte[sizeof(long)];
-            Unsafe.WriteUnaligned(ref bytes[0], value);
+            MemoryMarshal.Write(bytes, value);
             return bytes;
         }
 
@@ -162,7 +162,7 @@ namespace System
         public static byte[] GetBytes(Int128 value)
         {
             byte[] bytes = new byte[Int128.Size];
-            Unsafe.WriteUnaligned(ref bytes[0], value);
+            MemoryMarshal.Write(bytes, value);
             return bytes;
         }
 
@@ -190,7 +190,7 @@ namespace System
         public static byte[] GetBytes(ushort value)
         {
             byte[] bytes = new byte[sizeof(ushort)];
-            Unsafe.WriteUnaligned(ref bytes[0], value);
+            MemoryMarshal.Write(bytes, value);
             return bytes;
         }
 
@@ -219,7 +219,7 @@ namespace System
         public static byte[] GetBytes(uint value)
         {
             byte[] bytes = new byte[sizeof(uint)];
-            Unsafe.WriteUnaligned(ref bytes[0], value);
+            MemoryMarshal.Write(bytes, value);
             return bytes;
         }
 
@@ -248,7 +248,7 @@ namespace System
         public static byte[] GetBytes(ulong value)
         {
             byte[] bytes = new byte[sizeof(ulong)];
-            Unsafe.WriteUnaligned(ref bytes[0], value);
+            MemoryMarshal.Write(bytes, value);
             return bytes;
         }
 
@@ -277,7 +277,7 @@ namespace System
         public static byte[] GetBytes(UInt128 value)
         {
             byte[] bytes = new byte[UInt128.Size];
-            Unsafe.WriteUnaligned(ref bytes[0], value);
+            MemoryMarshal.Write(bytes, value);
             return bytes;
         }
 
@@ -305,7 +305,7 @@ namespace System
         public static unsafe byte[] GetBytes(Half value)
         {
             byte[] bytes = new byte[sizeof(Half)];
-            Unsafe.WriteUnaligned(ref bytes[0], value);
+            MemoryMarshal.Write(bytes, value);
             return bytes;
         }
 
@@ -332,7 +332,7 @@ namespace System
         public static byte[] GetBytes(float value)
         {
             byte[] bytes = new byte[sizeof(float)];
-            Unsafe.WriteUnaligned(ref bytes[0], value);
+            MemoryMarshal.Write(bytes, value);
             return bytes;
         }
 
@@ -359,7 +359,7 @@ namespace System
         public static byte[] GetBytes(double value)
         {
             byte[] bytes = new byte[sizeof(double)];
-            Unsafe.WriteUnaligned(ref bytes[0], value);
+            MemoryMarshal.Write(bytes, value);
             return bytes;
         }
 
