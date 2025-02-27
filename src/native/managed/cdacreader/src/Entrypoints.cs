@@ -122,8 +122,9 @@ internal static class Entrypoints
 
         using PEDecoder peDecoder = new(new DataTargetStream(dataTarget, baseAddress));
         using ELFDecoder elfDecoder = new(new DataTargetStream(dataTarget, baseAddress), baseAddress);
+        using MachODecoder machODecoder = new(new DataTargetStream(dataTarget, baseAddress), baseAddress);
 
-        Console.WriteLine($"PE: {peDecoder.IsValid} ELF: {elfDecoder.IsValid}");
+        Console.WriteLine($"PE: {peDecoder.IsValid} ELF: {elfDecoder.IsValid} MachO: {machODecoder.IsValid}");
 
         if (!elfDecoder.TryGetRelativeSymbolAddress("DotNetRuntimeContractDescriptor", out ulong contractDescriptor))
         {
