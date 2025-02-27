@@ -2574,6 +2574,23 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
 #endif // DEBUG
     }
 
+    bool enableInliningMethodsWithEH = false;
+
+#ifdef DEBUG
+    enableInliningMethodsWithEH = JitConfig.JitInlineMethodsWithEH() > 0;
+    static ConfigMethodRange JitInlineMethodsWithEHRange;
+    JitInlineMethodsWithEHRange.EnsureInit(JitConfig.JitInlineMethodsWithEHRange());
+    const unsigned hash    = impInlineRoot()->info.compMethodHash();
+    const bool     inRange = JitInlineMethodsWithEHRange.Contains(hash);
+    enableInliningMethodsWithEH &= inRange;
+    if (enableInliningMethodsWithEH)
+    {
+        JITDUMP("#### enabling EH inlining in %s (0x%08x)\n", info.compFullName, hash);
+    }
+#endif
+
+    opts.compInlineMethodsWithEH = enableInliningMethodsWithEH;
+
     if (compIsForInlining())
     {
         return;

@@ -10470,6 +10470,9 @@ public:
         // Collect 64 bit counts for PGO data.
         bool compCollect64BitCounts;
 
+        // Allow inlining of methods with EH.
+        bool compInlineMethodsWithEH;
+
     } opts;
 
     static bool                s_pAltJitExcludeAssembliesListInitialized;

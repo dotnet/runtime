@@ -3429,7 +3429,7 @@ void Compiler::fgFindBasicBlocks()
 
     if (info.compXcptnsCount > 0)
     {
-        noway_assert(!compIsForInlining());
+        assert(!compIsForInlining() || opts.compInlineMethodsWithEH);
 
         /* Check and mark all the exception handlers */
 
@@ -3577,8 +3577,6 @@ void Compiler::fgFindBasicBlocks()
                 lvaInlineeReturnSpillTempFreshlyCreated = true;
             }
         }
-
-        return;
     }
 
     /* Mark all blocks within 'try' blocks as such */

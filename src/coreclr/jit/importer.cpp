@@ -6974,9 +6974,9 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
             case CEE_ENDFINALLY:
 
-                if (compIsForInlining())
+                if (compIsForInlining() && !opts.compInlineMethodsWithEH)
                 {
-                    assert(!"Shouldn't have exception handlers in the inliner!");
+                    assert(!"Shouldn't have exception handlers in the inlinee!");
                     compInlineResult->NoteFatal(InlineObservation::CALLEE_HAS_ENDFINALLY);
                     return;
                 }
@@ -6998,9 +6998,9 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
             case CEE_ENDFILTER:
 
-                if (compIsForInlining())
+                if (compIsForInlining() && !opts.compInlineMethodsWithEH)
                 {
-                    assert(!"Shouldn't have exception handlers in the inliner!");
+                    assert(!"Shouldn't have exception handlers in the inlinee!");
                     compInlineResult->NoteFatal(InlineObservation::CALLEE_HAS_ENDFILTER);
                     return;
                 }
@@ -7572,7 +7572,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
             LEAVE:
 
-                if (compIsForInlining())
+                if (compIsForInlining() && !opts.compInlineMethodsWithEH)
                 {
                     compInlineResult->NoteFatal(InlineObservation::CALLEE_HAS_LEAVE);
                     return;
@@ -11482,7 +11482,7 @@ inline void Compiler::impReimportMarkBlock(BasicBlock* block)
 void Compiler::impVerifyEHBlock(BasicBlock* block)
 {
     assert(block->hasTryIndex());
-    assert(!compIsForInlining());
+    assert(!compIsForInlining() || opts.compInlineMethodsWithEH);
 
     unsigned  tryIndex = block->getTryIndex();
     EHblkDsc* HBtab    = ehGetDsc(tryIndex);
@@ -12555,7 +12555,8 @@ void Compiler::impImport()
     // (notably those from BBJ_EHFINALLYRET blocks). Add them.
     // Only needed for the root method, since inlinees can't have EH.
     //
-    if (!compIsForInlining() && (info.compXcptnsCount > 0))
+    // TODO --------------- if haseh...
+    if (info.compXcptnsCount > 0)
     {
         impFixPredLists();
         JITDUMP("\nAfter impImport() added blocks for try,catch,finally");
@@ -12977,10 +12978,13 @@ void Compiler::impCanInlineIL(CORINFO_METHOD_HANDLE fncHandle,
     // We shouldn't have made up our minds yet...
     assert(!inlineResult->IsDecided());
 
-    if (methInfo->EHcount)
+    if (methInfo->EHcount > 0)
     {
-        inlineResult->NoteFatal(InlineObservation::CALLEE_HAS_EH);
-        return;
+        if (!opts.compInlineMethodsWithEH)
+        {
+            inlineResult->NoteFatal(InlineObservation::CALLEE_HAS_EH);
+            return;
+        }
     }
 
     if ((methInfo->ILCode == nullptr) || (codeSize == 0))
