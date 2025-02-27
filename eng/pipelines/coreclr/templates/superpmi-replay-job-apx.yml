@@ -1,0 +1,40 @@
+parameters:
+  buildConfig: ''                 # required -- build configuration
+  archType: ''                    # required -- targeting CPU architecture
+  osGroup: ''                     # required -- operating system for the job
+  osSubgroup: ''                  # optional -- operating system subgroup
+  condition: true
+  pool: ''
+  timeoutInMinutes: 320           # build timeout
+  variables: {}
+  helixQueues: ''
+  runJobTemplate: '/eng/pipelines/coreclr/templates/run-superpmi-replay-job.yml'
+
+jobs:
+- template: ${{ parameters.runJobTemplate }}
+  parameters:
+    jobName: ${{ format('apx_superpmi_replay_{0}{1}_{2}_{3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
+    displayName: ${{ format('APX SuperPMI replay {0}{1} {2} {3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
+    pool: ${{ parameters.pool }}
+    buildConfig: ${{ parameters.buildConfig }}
+    archType: ${{ parameters.archType }}
+    osGroup: ${{ parameters.osGroup }}
+    osSubgroup: ${{ parameters.osSubgroup }}
+    condition: ${{ parameters.condition }}
+    timeoutInMinutes: ${{ parameters.timeoutInMinutes }}
+    helixQueues: ${{ parameters.helixQueues }}
+    dependsOn:
+      - 'build_${{ parameters.osGroup }}${{ parameters.osSubgroup }}_${{ parameters.archType }}_${{ parameters.buildConfig }}_'
+
+    variables: ${{ parameters.variables }}
+
+    steps:
+
+    # Download jit builds
+    - template: /eng/pipelines/common/download-artifact-step.yml
+      parameters:
+        unpackFolder: $(Build.SourcesDirectory)/artifacts/bin/coreclr
+        artifactFileName: 'CheckedJIT_$(osGroup)$(osSubgroup)_$(archType)$(archiveExtension)'
+        artifactName: 'CheckedJIT_$(osGroup)$(osSubgroup)_$(archType)'
+        displayName: 'JIT checked build'
+        cleanUnpackFolder: false
