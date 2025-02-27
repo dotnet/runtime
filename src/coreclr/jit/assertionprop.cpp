@@ -4212,7 +4212,7 @@ void Compiler::optAssertionProp_RangeProperties(ASSERT_VALARG_TP assertions,
                 {
                     *isKnownNonNegative = true;
                 }
-                if (lowerBound.GetConstant() > 0)
+                if (lowerBound.GetConstant() != 0)
                 {
                     *isKnownNonZero = true;
                 }
