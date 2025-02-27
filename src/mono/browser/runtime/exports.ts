@@ -25,6 +25,7 @@ import { forceDisposeProxies } from "./gc-handles";
 import { mono_wasm_dump_threads } from "./pthreads";
 
 import { threads_c_functions as tcwraps } from "./cwraps";
+import { utf8ToString } from "./strings";
 
 export let runtimeList: RuntimeList;
 
@@ -40,7 +41,9 @@ function initializeExports (globalObjects: GlobalObjects): RuntimeAPI {
         instantiate_asset,
         jiterpreter_dump_stats,
         forceDisposeProxies,
-
+        utf8ToString,
+        mono_background_exec: () => tcwraps.mono_background_exec(),
+        mono_wasm_ds_exec: () => tcwraps.mono_wasm_ds_exec(),
     };
     if (WasmEnableThreads) {
         rh.dumpThreads = mono_wasm_dump_threads;

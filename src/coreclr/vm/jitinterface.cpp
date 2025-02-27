@@ -10142,19 +10142,17 @@ void InlinedCallFrame::GetEEInfo(CORINFO_EE_INFO::InlinedCallFrameInfo *pInfo)
 {
     LIMITED_METHOD_CONTRACT;
 
-    pInfo->size                          = sizeof(GSCookie) + sizeof(InlinedCallFrame);
-    pInfo->sizeWithSecretStubArg         = sizeof(GSCookie) + sizeof(InlinedCallFrame) + sizeof(PTR_VOID);
+    pInfo->size                          = sizeof(InlinedCallFrame);
+    pInfo->sizeWithSecretStubArg         = sizeof(InlinedCallFrame) + sizeof(PTR_VOID);
 
-    pInfo->offsetOfGSCookie              = 0;
-    pInfo->offsetOfFrameVptr             = sizeof(GSCookie);
-    pInfo->offsetOfFrameLink             = sizeof(GSCookie) + Frame::GetOffsetOfNextLink();
-    pInfo->offsetOfCallSiteSP            = sizeof(GSCookie) + offsetof(InlinedCallFrame, m_pCallSiteSP);
-    pInfo->offsetOfCalleeSavedFP         = sizeof(GSCookie) + offsetof(InlinedCallFrame, m_pCalleeSavedFP);
-    pInfo->offsetOfCallTarget            = sizeof(GSCookie) + offsetof(InlinedCallFrame, m_Datum);
-    pInfo->offsetOfReturnAddress         = sizeof(GSCookie) + offsetof(InlinedCallFrame, m_pCallerReturnAddress);
-    pInfo->offsetOfSecretStubArg         = sizeof(GSCookie) + sizeof(InlinedCallFrame);
+    pInfo->offsetOfFrameLink             = Frame::GetOffsetOfNextLink();
+    pInfo->offsetOfCallSiteSP            = offsetof(InlinedCallFrame, m_pCallSiteSP);
+    pInfo->offsetOfCalleeSavedFP         = offsetof(InlinedCallFrame, m_pCalleeSavedFP);
+    pInfo->offsetOfCallTarget            = offsetof(InlinedCallFrame, m_Datum);
+    pInfo->offsetOfReturnAddress         = offsetof(InlinedCallFrame, m_pCallerReturnAddress);
+    pInfo->offsetOfSecretStubArg         = sizeof(InlinedCallFrame);
 #ifdef TARGET_ARM
-    pInfo->offsetOfSPAfterProlog         = sizeof(GSCookie) + offsetof(InlinedCallFrame, m_pSPAfterProlog);
+    pInfo->offsetOfSPAfterProlog         = offsetof(InlinedCallFrame, m_pSPAfterProlog);
 #endif // TARGET_ARM
 }
 
