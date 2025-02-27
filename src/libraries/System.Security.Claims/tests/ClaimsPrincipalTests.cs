@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -240,6 +241,53 @@ namespace System.Security.Claims
                 Thread.CurrentPrincipal = null;
                 Assert.IsType<GenericPrincipal>(ClaimsPrincipal.Current);
             }).Dispose();
+        }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public void PrimaryIdentitySelector_Default()
+        {
+            RemoteExecutor.Invoke(static () =>
+            {
+                ClaimsIdentity identity0 = null;
+                ClaimsIdentity identity1 = new([new Claim("type", "value")]);
+                ClaimsIdentity identity2 = new([new Claim("type", "value")]);
+                IEnumerable<ClaimsIdentity> identities = [identity0, identity1, identity2];
+                Func<IEnumerable<ClaimsIdentity>, ClaimsIdentity> selector = ClaimsPrincipal.PrimaryIdentitySelector;
+
+                Assert.Same(identity1, selector(identities));
+                Assert.Null(selector([]));
+                AssertExtensions.Throws<ArgumentNullException>("identities", () => selector(null));
+            }).Dispose();
+        }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public void PrimaryIdentitySelector_DefaultOnlySpecialCasesList()
+        {
+            RemoteExecutor.Invoke(static () =>
+            {
+                ClaimsIdentity identity0 = null;
+                ClaimsIdentity identity1 = new([new Claim("type", "value")]);
+                ClaimsIdentity identity2 = new([new Claim("type", "value")]);
+                ClaimsIdentityList identities = [identity0, identity1, identity2];
+                Func<ClaimsIdentityList, ClaimsIdentity> selector = ClaimsPrincipal.PrimaryIdentitySelector;
+
+                Assert.Same(identity1, selector(identities));
+                Assert.Equal(1, identities.GetEnumeratorCount);
+                Assert.Null(selector(new ClaimsIdentityList()));
+            }).Dispose();
+        }
+
+        private sealed class ClaimsIdentityList : List<ClaimsIdentity>, IEnumerable<ClaimsIdentity>
+        {
+            private readonly List<ClaimsIdentity> _claimsIdentities = [];
+
+            public int GetEnumeratorCount { get; private set; }
+
+            public new IEnumerator<ClaimsIdentity> GetEnumerator()
+            {
+                GetEnumeratorCount++;
+                return base.GetEnumerator();
+            }
         }
 
         private class NonClaimsPrincipal : IPrincipal
