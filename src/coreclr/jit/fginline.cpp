@@ -1692,11 +1692,6 @@ void Compiler::fgInsertInlineeBlocks(InlineInfo* pInlineInfo)
                     ebd->ebdEnclosingHndIndex = (unsigned short)enclosingHndIndex;
                 }
             }
-
-            if (verbose)
-            {
-                fgDispHandlerTab();
-            }
         }
 
         // Fetch the new enclosing try/handler indicies for blocks.
@@ -1786,12 +1781,6 @@ void Compiler::fgInsertInlineeBlocks(InlineInfo* pInlineInfo)
 
         topBlock->SetNext(InlineeCompiler->fgFirstBB);
         InlineeCompiler->fgLastBB->SetNext(bottomBlock);
-
-        if (verbose)
-        {
-            fgDispBasicBlocks();
-            fgDispHandlerTab();
-        }
 
         //
         // Add inlinee's block count to inliner's.
