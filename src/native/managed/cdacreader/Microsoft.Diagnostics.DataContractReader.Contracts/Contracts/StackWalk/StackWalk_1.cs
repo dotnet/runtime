@@ -174,10 +174,9 @@ internal readonly struct StackWalk_1 : IStackWalk
     {
         byte[] bytes = new byte[context.Size];
         Span<byte> buffer = new Span<byte>(bytes);
-        int hr = _target.GetThreadContext((uint)threadData.OSId.Value, context.DefaultContextFlags, context.Size, buffer);
-        if (hr != 0)
+        if (!_target.TryGetThreadContext(threadData.OSId.Value, context.DefaultContextFlags, buffer))
         {
-            throw new InvalidOperationException($"GetThreadContext failed with hr={hr}");
+            throw new InvalidOperationException($"GetThreadContext failed for thread {threadData.OSId.Value}");
         }
 
         context.FillFromBuffer(buffer);

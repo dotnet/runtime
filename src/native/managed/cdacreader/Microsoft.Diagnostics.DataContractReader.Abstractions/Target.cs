@@ -58,11 +58,9 @@ public abstract class Target
     /// </summary>
     /// <param name="threadId">The identifier of the thread whose context is to be retrieved. The identifier is defined by the operating system.</param>
     /// <param name="contextFlags">A bitwise combination of platform-dependent flags that indicate which portions of the context should be read.</param>
-    /// <param name="contextSize">Size of <paramref name="buffer"/>.</param>
-    /// <param name="buffer">Buffer filled with thread context.</param>
-    /// <returns>HResult</returns>
-    public abstract int GetThreadContext(uint threadId, uint contextFlags, uint contextSize, Span<byte> buffer);
-
+    /// <param name="buffer">Buffer to be filled with thread context.</param>
+    /// <returns>true if successful, false otherwise</returns>
+    public abstract bool TryGetThreadContext(ulong threadId, uint contextFlags, Span<byte> buffer);
 
     /// <summary>
     /// Reads a well-known global pointer value from the target process

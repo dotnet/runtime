@@ -180,18 +180,6 @@ internal sealed partial class ExecutionManagerCore<T> : IExecutionManager
         return info.StartAddress;
     }
 
-    TargetPointer IExecutionManager.GetModuleBaseAddress(CodeBlockHandle codeInfoHandle)
-    {
-        if (!_codeInfos.TryGetValue(codeInfoHandle.Address, out CodeBlock? info))
-            throw new InvalidOperationException($"{nameof(CodeBlock)} not found for {codeInfoHandle.Address}");
-
-        RangeSection range = RangeSection.Find(_target, _topRangeSectionMap, _rangeSectionMapLookup, new TargetCodePointer(codeInfoHandle.Address));
-        if (range.Data == null)
-            throw new InvalidOperationException($"{nameof(RangeSection)} not found for {codeInfoHandle.Address}");
-
-        return range.Data.RangeBegin;
-    }
-
     TargetPointer IExecutionManager.GetUnwindInfo(CodeBlockHandle codeInfoHandle, TargetCodePointer ip)
     {
         if (!_codeInfos.TryGetValue(codeInfoHandle.Address, out CodeBlock? info))
@@ -204,5 +192,17 @@ internal sealed partial class ExecutionManagerCore<T> : IExecutionManager
         JitManager jitManager = GetJitManager(range.Data);
 
         return jitManager.GetUnwindInfo(range, ip);
+    }
+
+    TargetPointer IExecutionManager.GetUnwindInfoBaseAddress(CodeBlockHandle codeInfoHandle)
+    {
+        if (!_codeInfos.TryGetValue(codeInfoHandle.Address, out CodeBlock? info))
+            throw new InvalidOperationException($"{nameof(CodeBlock)} not found for {codeInfoHandle.Address}");
+
+        RangeSection range = RangeSection.Find(_target, _topRangeSectionMap, _rangeSectionMapLookup, new TargetCodePointer(codeInfoHandle.Address));
+        if (range.Data == null)
+            throw new InvalidOperationException($"{nameof(RangeSection)} not found for {codeInfoHandle.Address}");
+
+        return range.Data.RangeBegin;
     }
 }

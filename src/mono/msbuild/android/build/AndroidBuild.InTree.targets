@@ -22,4 +22,19 @@
     </ItemGroup>
     <Message Text="Used runtime pack: %(ResolvedRuntimePack.PackageDirectory)" Importance="high" />
   </Target>
+
+  <!-- Override the ResolveReadyToRunCompilers target to use the in-build crossgen2.
+       This needs to be imported after SDK targets, so any project requiring this should set AfterMicrosoftNETSdkTargets -->
+  <Target Name="ResolveReadyToRunCompilers" Condition="'$(PublishReadyToRun)' == true" DependsOnTargets="ResolveRuntimeFilesFromLocalBuild">
+    <PropertyGroup>
+      <Crossgen2Path>$([MSBuild]::NormalizePath('$(Crossgen2InBuildDir)', 'crossgen2$(ExeSuffix)'))</Crossgen2Path>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <Crossgen2Tool Include="$(Crossgen2Path)"
+                     TargetArch="$(TargetArchitecture)"
+                     TargetOS="linux"
+                     PerfmapFormatVersion="$(PublishReadyToRunPerfmapFormatVersion)"/>
+    </ItemGroup>
+  </Target>
 </Project>

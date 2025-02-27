@@ -130,11 +130,11 @@ internal static unsafe partial class Unwinder
 
     // cDAC version of GetRuntimeStackWalkInfo defined in codeman.cpp
     // To maintain the same signature as the original function, this returns void.
-    // If the moduleBase or funcEntry can not be found, both will be 0.
+    // If the unwindInfoBase or funcEntry can not be found, both will be 0.
     [UnmanagedCallersOnly]
-    private static unsafe void GetStackWalkInfo(ulong controlPC, void* pModuleBase, void* pFuncEntry, void* context)
+    private static unsafe void GetStackWalkInfo(ulong controlPC, void* pUnwindInfoBase, void* pFuncEntry, void* context)
     {
-        if ((nuint)pModuleBase != 0) *(nuint*)pModuleBase = 0;
+        if ((nuint)pUnwindInfoBase != 0) *(nuint*)pUnwindInfoBase = 0;
         if ((nuint)pFuncEntry != 0) *(nuint*)pFuncEntry = 0;
 
         if (GCHandle.FromIntPtr((IntPtr)context).Target is not CallbackContext callbackContext)
@@ -148,9 +148,9 @@ internal static unsafe partial class Unwinder
             if (eman.GetCodeBlockHandle(controlPC) is CodeBlockHandle cbh)
             {
                 TargetPointer methodDesc = eman.GetMethodDesc(cbh);
-                TargetPointer moduleBase = eman.GetModuleBaseAddress(cbh);
+                TargetPointer unwindInfoBase = eman.GetUnwindInfoBaseAddress(cbh);
                 TargetPointer unwindInfo = eman.GetUnwindInfo(cbh, controlPC);
-                if ((nuint)pModuleBase != 0) *(nuint*)pModuleBase = (nuint)moduleBase.Value;
+                if ((nuint)pUnwindInfoBase != 0) *(nuint*)pUnwindInfoBase = (nuint)unwindInfoBase.Value;
                 if ((nuint)pFuncEntry != 0) *(nuint*)pFuncEntry = (nuint)unwindInfo.Value;
             }
         }

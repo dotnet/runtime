@@ -549,8 +549,14 @@ GenTree* Lowering::LowerNode(GenTree* node)
         break;
 
         case GT_BITCAST:
-            ContainCheckBitCast(node);
-            break;
+        {
+            GenTree* next = node->gtNext;
+            if (!TryRemoveBitCast(node->AsUnOp()))
+            {
+                ContainCheckBitCast(node->AsUnOp());
+            }
+            return next;
+        }
 
 #if defined(TARGET_XARCH) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
         case GT_BOUNDS_CHECK:
@@ -1533,308 +1539,35 @@ bool Lowering::TryLowerSwitchToBitTest(FlowEdge*   jumpTable[],
 }
 
 //------------------------------------------------------------------------
-// ReplaceArgWithPutArgOrBitcast: Insert a PUTARG_* node in the right location
-// and replace the call operand with that node.
-//
-// Arguments:
-//    argSlot         - slot in call of argument
-//    putArgOrBitcast - the node that is being inserted
-//
-void Lowering::ReplaceArgWithPutArgOrBitcast(GenTree** argSlot, GenTree* putArgOrBitcast)
-{
-    assert(argSlot != nullptr);
-    assert(*argSlot != nullptr);
-    assert(putArgOrBitcast->OperIsPutArg() || putArgOrBitcast->OperIs(GT_BITCAST));
-
-    GenTree* arg = *argSlot;
-
-    // Replace the argument with the putarg/copy
-    *argSlot                       = putArgOrBitcast;
-    putArgOrBitcast->AsOp()->gtOp1 = arg;
-
-    // Insert the putarg/copy into the block
-    BlockRange().InsertAfter(arg, putArgOrBitcast);
-}
-
-//------------------------------------------------------------------------
-// NewPutArg: rewrites the tree to put an arg in a register or on the stack.
-//
-// Arguments:
-//    call - the call whose arg is being rewritten.
-//    arg  - the arg being rewritten.
-//    callArg - the CallArg for the argument.
-//    type - the type of the argument.
-//
-// Return Value:
-//    The new tree that was created to put the arg in the right place
-//    or the incoming arg if the arg tree was not rewritten.
-//
-// Assumptions:
-//    call, arg, and info must be non-null.
-//
-// Notes:
-//    For System V systems with native struct passing (i.e. UNIX_AMD64_ABI defined)
-//    this method allocates a single GT_PUTARG_REG for 1 eightbyte structs and a GT_FIELD_LIST of two GT_PUTARG_REGs
-//    for two eightbyte structs. For STK passed structs the method generates GT_PUTARG_STK tree.
-//
-GenTree* Lowering::NewPutArg(GenTreeCall* call, GenTree* arg, CallArg* callArg, var_types type)
-{
-    assert(call != nullptr);
-    assert(arg != nullptr);
-    assert(callArg != nullptr);
-
-    GenTree* putArg = nullptr;
-
-    bool isOnStack = (callArg->AbiInfo.GetRegNum() == REG_STK);
-
-#if FEATURE_ARG_SPLIT
-    // Struct can be split into register(s) and stack on ARM
-    if (compFeatureArgSplit() && callArg->AbiInfo.IsSplit())
-    {
-        assert(arg->OperIs(GT_BLK, GT_FIELD_LIST) || arg->OperIsLocalRead());
-        // TODO: Need to check correctness for FastTailCall
-        if (call->IsFastTailCall())
-        {
-#ifdef TARGET_ARM
-            NYI_ARM("lower: struct argument by fast tail call");
-#endif // TARGET_ARM
-        }
-
-        const unsigned slotNumber           = callArg->AbiInfo.ByteOffset / TARGET_POINTER_SIZE;
-        const bool     putInIncomingArgArea = call->IsFastTailCall();
-
-        putArg = new (comp, GT_PUTARG_SPLIT) GenTreePutArgSplit(arg, callArg->AbiInfo.ByteOffset,
-#ifdef FEATURE_PUT_STRUCT_ARG_STK
-                                                                callArg->AbiInfo.GetStackByteSize(),
-#endif
-                                                                callArg->AbiInfo.NumRegs, call, putInIncomingArgArea);
-
-        GenTreePutArgSplit* argSplit = putArg->AsPutArgSplit();
-        for (unsigned regIndex = 0; regIndex < callArg->AbiInfo.NumRegs; regIndex++)
-        {
-            argSplit->SetRegNumByIdx(callArg->AbiInfo.GetRegNum(regIndex), regIndex);
-        }
-
-        if (arg->OperIs(GT_FIELD_LIST))
-        {
-            unsigned regIndex = 0;
-            for (GenTreeFieldList::Use& use : arg->AsFieldList()->Uses())
-            {
-                if (regIndex >= callArg->AbiInfo.NumRegs)
-                {
-                    break;
-                }
-                var_types regType = use.GetNode()->TypeGet();
-                // Account for the possibility that float fields may be passed in integer registers.
-                if (varTypeIsFloating(regType) && !genIsValidFloatReg(argSplit->GetRegNumByIdx(regIndex)))
-                {
-                    regType = (regType == TYP_FLOAT) ? TYP_INT : TYP_LONG;
-                }
-                argSplit->m_regType[regIndex] = regType;
-                regIndex++;
-            }
-
-            // Clear the register assignment on the fieldList node, as these are contained.
-            arg->SetRegNum(REG_NA);
-        }
-        else
-        {
-            ClassLayout* layout = arg->GetLayout(comp);
-
-            // Set type of registers
-            for (unsigned index = 0; index < callArg->AbiInfo.NumRegs; index++)
-            {
-                argSplit->m_regType[index] = layout->GetGCPtrType(index);
-            }
-        }
-    }
-    else
-#endif // FEATURE_ARG_SPLIT
-    {
-        if (!isOnStack)
-        {
-#if FEATURE_MULTIREG_ARGS
-            if ((callArg->AbiInfo.NumRegs > 1) && (arg->OperGet() == GT_FIELD_LIST))
-            {
-                unsigned int regIndex = 0;
-                for (GenTreeFieldList::Use& use : arg->AsFieldList()->Uses())
-                {
-                    regNumber argReg = callArg->AbiInfo.GetRegNum(regIndex);
-                    GenTree*  curOp  = use.GetNode();
-                    var_types curTyp = curOp->TypeGet();
-
-                    // Create a new GT_PUTARG_REG node with op1
-                    GenTree* newOper = comp->gtNewPutArgReg(curTyp, curOp, argReg);
-
-                    // Splice in the new GT_PUTARG_REG node in the GT_FIELD_LIST
-                    ReplaceArgWithPutArgOrBitcast(&use.NodeRef(), newOper);
-                    regIndex++;
-                }
-
-                // Just return arg. The GT_FIELD_LIST is not replaced.
-                // Nothing more to do.
-                return arg;
-            }
-            else
-#endif // FEATURE_MULTIREG_ARGS
-            {
-                putArg = comp->gtNewPutArgReg(type, arg, callArg->AbiInfo.GetRegNum());
-            }
-        }
-        else
-        {
-            // Mark this one as tail call arg if it is a fast tail call.
-            // This provides the info to put this argument in in-coming arg area slot
-            // instead of in out-going arg area slot.
-
-#ifdef DEBUG
-            // Make sure state is correct. The PUTARG_STK has TYP_VOID, as it doesn't produce
-            // a result. So the type of its operand must be the correct type to push on the stack.
-            callArg->CheckIsStruct();
-#endif
-
-            if ((arg->OperGet() != GT_FIELD_LIST))
-            {
-#if defined(FEATURE_SIMD) && defined(FEATURE_PUT_STRUCT_ARG_STK)
-                if (type == TYP_SIMD12)
-                {
-#if !defined(TARGET_64BIT)
-                    assert(callArg->AbiInfo.ByteSize == 12);
-#else  // TARGET_64BIT
-                    if (compAppleArm64Abi())
-                    {
-                        assert(callArg->AbiInfo.ByteSize == 12);
-                    }
-                    else
-                    {
-                        assert(callArg->AbiInfo.ByteSize == 16);
-                    }
-#endif // TARGET_64BIT
-                }
-                else
-#endif // defined(FEATURE_SIMD) && defined(FEATURE_PUT_STRUCT_ARG_STK)
-                {
-                    assert(genActualType(arg->TypeGet()) == type);
-                }
-            }
-            const unsigned slotNumber           = callArg->AbiInfo.ByteOffset / TARGET_POINTER_SIZE;
-            const bool     putInIncomingArgArea = call->IsFastTailCall();
-
-            putArg =
-                new (comp, GT_PUTARG_STK) GenTreePutArgStk(GT_PUTARG_STK, TYP_VOID, arg, callArg->AbiInfo.ByteOffset,
-#ifdef FEATURE_PUT_STRUCT_ARG_STK
-                                                           callArg->AbiInfo.GetStackByteSize(),
-#endif
-                                                           call, putInIncomingArgArea);
-
-#if defined(DEBUG) && defined(FEATURE_PUT_STRUCT_ARG_STK)
-            if (varTypeIsStruct(callArg->GetSignatureType()))
-            {
-                // We use GT_BLK only for non-SIMD struct arguments.
-                if (arg->OperIs(GT_BLK))
-                {
-                    assert(!varTypeIsSIMD(arg));
-                }
-                else if (!arg->TypeIs(TYP_STRUCT))
-                {
-#ifdef TARGET_ARM
-                    assert((callArg->AbiInfo.GetStackSlotsNumber() == 1) ||
-                           ((arg->TypeGet() == TYP_DOUBLE) && (callArg->AbiInfo.GetStackSlotsNumber() == 2)));
-#else
-                    assert(varTypeIsSIMD(arg) || (callArg->AbiInfo.GetStackSlotsNumber() == 1));
-#endif
-                }
-            }
-#endif // defined(DEBUG) && defined(FEATURE_PUT_STRUCT_ARG_STK)
-        }
-    }
-
-    JITDUMP("new node is : ");
-    DISPNODE(putArg);
-    JITDUMP("\n");
-
-    return putArg;
-}
-
-//------------------------------------------------------------------------
-// LowerArg: Lower one argument of a call. This entails splicing a "putarg" node between
-// the argument evaluation and the call. This is the point at which the source is
-// consumed and the value transitions from control of the register allocator to the calling
-// convention.
+// LowerArg:
+//   Lower one argument of a call. This entails inserting putarg nodes between
+//   the call and the argument. This is the point at which the source is
+//   consumed and the value transitions from control of the register allocator
+//   to the calling convention.
 //
 // Arguments:
 //    call    - The call node
 //    callArg - Call argument
-//    late    - Whether it is the late arg that is being lowered.
 //
-// Return Value:
-//    None.
-//
-void Lowering::LowerArg(GenTreeCall* call, CallArg* callArg, bool late)
+void Lowering::LowerArg(GenTreeCall* call, CallArg* callArg)
 {
-    GenTree** ppArg = late ? &callArg->LateNodeRef() : &callArg->EarlyNodeRef();
+    GenTree** ppArg = &callArg->NodeRef();
     GenTree*  arg   = *ppArg;
     assert(arg != nullptr);
 
-    JITDUMP("lowering arg : ");
-    DISPNODE(arg);
+    JITDUMP("Lowering arg: ");
+    DISPTREERANGE(BlockRange(), arg);
     assert(arg->IsValue());
-
-    var_types type = genActualType(arg);
-
-#if defined(FEATURE_SIMD)
-#if defined(TARGET_X86)
-    // Non-param TYP_SIMD12 local var nodes are massaged in Lower to TYP_SIMD16 to match their
-    // allocated size (see lvSize()). However, when passing the variables as arguments, and
-    // storing the variables to the outgoing argument area on the stack, we must use their
-    // actual TYP_SIMD12 type, so exactly 12 bytes is allocated and written.
-    if (type == TYP_SIMD16)
-    {
-        if ((arg->OperGet() == GT_LCL_VAR) || (arg->OperGet() == GT_STORE_LCL_VAR))
-        {
-            const LclVarDsc* varDsc = comp->lvaGetDesc(arg->AsLclVarCommon());
-            type                    = varDsc->lvType;
-        }
-        else if (arg->OperIs(GT_HWINTRINSIC))
-        {
-            GenTreeHWIntrinsic* hwintrinsic = arg->AsHWIntrinsic();
-
-            // For HWIntrinsic, there are some intrinsics like ExtractVector128 which have
-            // a gtType of TYP_SIMD16 but a SimdSize of 32, so we can't necessarily assert
-            // the simd size
-
-            if (hwintrinsic->GetSimdSize() == 12)
-            {
-                if (hwintrinsic->GetHWIntrinsicId() != NI_Vector128_AsVector128Unsafe)
-                {
-                    // Most nodes that have a simdSize of 12 are actually producing a TYP_SIMD12
-                    // and have been massaged to TYP_SIMD16 to match the actual product size. This
-                    // is not the case for NI_Vector128_AsVector128Unsafe which is explicitly taking
-                    // a TYP_SIMD12 and producing a TYP_SIMD16.
-
-                    type = TYP_SIMD12;
-                }
-            }
-        }
-    }
-#elif defined(TARGET_AMD64)
-    // TYP_SIMD8 parameters that are passed as longs
-    if (type == TYP_SIMD8 && genIsValidIntReg(callArg->AbiInfo.GetRegNum()))
-    {
-        GenTree* bitcast = comp->gtNewBitCastNode(TYP_LONG, arg);
-        BlockRange().InsertAfter(arg, bitcast);
-
-        *ppArg = arg = bitcast;
-        type         = TYP_LONG;
-    }
-#endif // defined(TARGET_X86)
-#endif // defined(FEATURE_SIMD)
 
     // If we hit this we are probably double-lowering.
     assert(!arg->OperIsPutArg());
 
+    const ABIPassingInformation& abiInfo = callArg->AbiInfo;
+    JITDUMP("Passed in ");
+    DBEXEC(comp->verbose, abiInfo.Dump());
+
 #if !defined(TARGET_64BIT)
-    if (comp->opts.compUseSoftFP && (type == TYP_DOUBLE))
+    if (comp->opts.compUseSoftFP && arg->TypeIs(TYP_DOUBLE))
     {
         // Unlike TYP_LONG we do no decomposition for doubles, yet we maintain
         // it as a primitive type until lowering. So we need to get it into the
@@ -1848,183 +1581,216 @@ void Lowering::LowerArg(GenTreeCall* call, CallArg* callArg, bool late)
         BlockRange().InsertAfter(arg, store, low, high, longNode);
 
         *ppArg = arg = longNode;
-        type         = TYP_LONG;
 
         comp->lvaSetVarDoNotEnregister(argLclNum DEBUGARG(DoNotEnregisterReason::LocalField));
 
-        JITDUMP("Created new nodes for double-typed arg on softFP:\n");
-        DISPRANGE(LIR::ReadOnlyRange(store, longNode));
+        JITDUMP("Transformed double-typed arg on softFP to LONG node\n");
     }
 
-    if (varTypeIsLong(type))
+    if (varTypeIsLong(arg))
     {
+        assert(callArg->AbiInfo.CountRegsAndStackSlots() == 2);
+
         noway_assert(arg->OperIs(GT_LONG));
         GenTreeFieldList* fieldList = new (comp, GT_FIELD_LIST) GenTreeFieldList();
-        fieldList->AddFieldLIR(comp, arg->AsOp()->gtGetOp1(), 0, TYP_INT);
-        fieldList->AddFieldLIR(comp, arg->AsOp()->gtGetOp2(), 4, TYP_INT);
-        GenTree* newArg = NewPutArg(call, fieldList, callArg, type);
+        fieldList->AddFieldLIR(comp, arg->gtGetOp1(), 0, TYP_INT);
+        fieldList->AddFieldLIR(comp, arg->gtGetOp2(), 4, TYP_INT);
+        BlockRange().InsertBefore(arg, fieldList);
 
-        if (callArg->AbiInfo.GetRegNum() != REG_STK)
+        BlockRange().Remove(arg);
+        *ppArg = arg = fieldList;
+
+        JITDUMP("Transformed long arg on 32-bit to FIELD_LIST node\n");
+    }
+#endif
+
+#if FEATURE_ARG_SPLIT
+    // Structs can be split into register(s) and stack on some targets
+    if (compFeatureArgSplit() && abiInfo.IsSplitAcrossRegistersAndStack())
+    {
+        assert(arg->OperIs(GT_BLK, GT_FIELD_LIST) || arg->OperIsLocalRead());
+        assert(!call->IsFastTailCall());
+
+#ifdef DEBUG
+        for (unsigned i = 0; i < abiInfo.NumSegments; i++)
         {
-            assert(callArg->AbiInfo.NumRegs == 2);
-            // In the register argument case, NewPutArg replaces the original field list args with new
-            // GT_PUTARG_REG nodes, inserts them in linear order and returns the field list. So the
-            // only thing left to do is to insert the field list itself in linear order.
-            assert(newArg == fieldList);
-            BlockRange().InsertBefore(arg, newArg);
+            assert((i < abiInfo.NumSegments - 1) == abiInfo.Segment(i).IsPassedInRegister());
+        }
+#endif
+
+        unsigned                 numRegs  = abiInfo.NumSegments - 1;
+        const ABIPassingSegment& stackSeg = abiInfo.Segment(abiInfo.NumSegments - 1);
+
+        assert(!call->IsFastTailCall());
+        GenTree* putArg = new (comp, GT_PUTARG_SPLIT)
+            GenTreePutArgSplit(arg, stackSeg.GetStackOffset(), stackSeg.GetStackSize(), abiInfo.NumSegments - 1, call,
+                               /* putInIncomingArgArea */ false);
+
+        GenTreePutArgSplit* argSplit = putArg->AsPutArgSplit();
+        for (unsigned regIndex = 0; regIndex < numRegs; regIndex++)
+        {
+            argSplit->SetRegNumByIdx(abiInfo.Segment(regIndex).GetRegister(), regIndex);
+        }
+
+        if (arg->OperIs(GT_FIELD_LIST))
+        {
+            unsigned regIndex = 0;
+            for (GenTreeFieldList::Use& use : arg->AsFieldList()->Uses())
+            {
+                if (regIndex >= numRegs)
+                {
+                    break;
+                }
+
+                InsertBitCastIfNecessary(&use.NodeRef(), abiInfo.Segment(regIndex));
+                argSplit->m_regType[regIndex] = use.GetNode()->TypeGet();
+                regIndex++;
+            }
+
+            // Clear the register assignment on the fieldList node, as these are contained.
+            arg->SetRegNum(REG_NA);
         }
         else
         {
-            // For longs, we will replace the GT_LONG with a GT_FIELD_LIST, and put that under a PUTARG_STK.
-            // Although the hi argument needs to be pushed first, that will be handled by the general case,
-            // in which the fields will be reversed.
-            assert(callArg->AbiInfo.GetStackSlotsNumber() == 2);
-            newArg->SetRegNum(REG_STK);
-            BlockRange().InsertBefore(arg, fieldList, newArg);
-        }
+            ClassLayout* layout = arg->GetLayout(comp);
 
-        *ppArg = newArg;
-        BlockRange().Remove(arg);
-    }
-    else
-#endif // !defined(TARGET_64BIT)
-    {
-
-#if defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
-        if (call->IsVarargs() || comp->opts.compUseSoftFP || callArg->AbiInfo.IsMismatchedArgType())
-        {
-            // Insert copies as needed to move float value to integer register
-            // if the ABI requires it.
-            GenTree* newNode = LowerFloatArg(ppArg, callArg);
-            if (newNode != nullptr)
+            for (unsigned index = 0; index < numRegs; index++)
             {
-                type = newNode->TypeGet();
+                argSplit->m_regType[index] = layout->GetGCPtrType(index);
             }
         }
-#endif // TARGET_ARMARCH || TARGET_LOONGARCH64 || TARGET_RISCV64
 
-        GenTree* putArg = NewPutArg(call, arg, callArg, type);
-
-        // In the case of register passable struct (in one or two registers)
-        // the NewPutArg returns a new node (GT_PUTARG_REG or a GT_FIELD_LIST with two GT_PUTARG_REGs.)
-        // If an extra node is returned, splice it in the right place in the tree.
-        if (arg != putArg)
+        BlockRange().InsertAfter(arg, argSplit);
+        *ppArg = arg = argSplit;
+    }
+    else
+#endif // FEATURE_ARG_SPLIT
+    {
+        if (abiInfo.HasAnyRegisterSegment())
         {
-            ReplaceArgWithPutArgOrBitcast(ppArg, putArg);
+#if FEATURE_MULTIREG_ARGS
+            if ((abiInfo.NumSegments > 1) && arg->OperIs(GT_FIELD_LIST))
+            {
+                unsigned int regIndex = 0;
+                for (GenTreeFieldList::Use& use : arg->AsFieldList()->Uses())
+                {
+                    const ABIPassingSegment& segment = abiInfo.Segment(regIndex);
+                    InsertPutArgReg(&use.NodeRef(), segment);
+
+                    regIndex++;
+                }
+            }
+            else
+#endif // FEATURE_MULTIREG_ARGS
+            {
+                assert(abiInfo.HasExactlyOneRegisterSegment());
+                InsertPutArgReg(ppArg, abiInfo.Segment(0));
+                arg = *ppArg;
+            }
+        }
+        else
+        {
+            assert(abiInfo.NumSegments == 1);
+            const ABIPassingSegment& stackSeg             = abiInfo.Segment(0);
+            const bool               putInIncomingArgArea = call->IsFastTailCall();
+
+            GenTree* putArg =
+                new (comp, GT_PUTARG_STK) GenTreePutArgStk(GT_PUTARG_STK, TYP_VOID, arg, stackSeg.GetStackOffset(),
+                                                           stackSeg.GetStackSize(), call, putInIncomingArgArea);
+
+            BlockRange().InsertAfter(arg, putArg);
+            *ppArg = arg = putArg;
         }
     }
-
-    arg = *ppArg;
 
     if (arg->OperIsPutArgStk() || arg->OperIsPutArgSplit())
     {
         LowerPutArgStkOrSplit(arg->AsPutArgStk());
     }
+
+    DISPTREERANGE(BlockRange(), arg);
 }
 
-#if defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
 //------------------------------------------------------------------------
-// LowerFloatArg: Lower float call arguments on the arm/LoongArch64/RiscV64 platform.
+// InsertBitCastIfNecessary:
+//   Insert a bitcast if a primitive argument being passed in a register is not
+//   evaluated in the right type of register.
 //
 // Arguments:
-//    arg  - The arg node
-//    callArg - call argument info
+//    argNode         - Edge for the argument
+//    registerSegment - Register that the argument is going into
 //
-// Return Value:
-//    Return nullptr, if no transformation was done;
-//    return arg if there was in place transformation;
-//    return a new tree if the root was changed.
-//
-// Notes:
-//    This must handle scalar float arguments as well as GT_FIELD_LISTs
-//    with floating point fields.
-//
-GenTree* Lowering::LowerFloatArg(GenTree** pArg, CallArg* callArg)
+void Lowering::InsertBitCastIfNecessary(GenTree** argNode, const ABIPassingSegment& registerSegment)
 {
-    GenTree* arg = *pArg;
-    if (callArg->AbiInfo.GetRegNum() != REG_STK)
+    if (varTypeUsesIntReg(*argNode) == genIsValidIntReg(registerSegment.GetRegister()))
     {
-        if (arg->OperIs(GT_FIELD_LIST))
-        {
-            // Transform fields that are passed as registers in place.
-            regNumber currRegNumber = callArg->AbiInfo.GetRegNum();
-            unsigned  regIndex      = 0;
-            for (GenTreeFieldList::Use& use : arg->AsFieldList()->Uses())
-            {
-                if (regIndex >= callArg->AbiInfo.NumRegs)
-                {
-                    break;
-                }
-                GenTree* node = use.GetNode();
-                if (varTypeUsesFloatReg(node))
-                {
-                    GenTree* intNode = LowerFloatArgReg(node, currRegNumber);
-                    assert(intNode != nullptr);
-
-                    ReplaceArgWithPutArgOrBitcast(&use.NodeRef(), intNode);
-                }
-
-                if (node->TypeGet() == TYP_DOUBLE)
-                {
-                    currRegNumber = REG_NEXT(REG_NEXT(currRegNumber));
-                    regIndex += 2;
-                }
-                else
-                {
-                    currRegNumber = REG_NEXT(currRegNumber);
-                    regIndex += 1;
-                }
-            }
-            // List fields were replaced in place.
-            return arg;
-        }
-        else if (varTypeUsesFloatReg(arg))
-        {
-            GenTree* intNode = LowerFloatArgReg(arg, callArg->AbiInfo.GetRegNum());
-            assert(intNode != nullptr);
-            ReplaceArgWithPutArgOrBitcast(pArg, intNode);
-            return *pArg;
-        }
+        return;
     }
-    return nullptr;
+
+    JITDUMP("Argument node [%06u] needs to be passed in %s; inserting bitcast\n", Compiler::dspTreeID(*argNode),
+            getRegName(registerSegment.GetRegister()));
+
+    // Due to padding the node may be smaller than the register segment. In
+    // such cases we cut off the end of the segment to get an appropriate
+    // register type for the bitcast.
+    ABIPassingSegment cutRegisterSegment = registerSegment;
+    unsigned          argNodeSize        = genTypeSize(genActualType(*argNode));
+    if (registerSegment.Size > argNodeSize)
+    {
+        cutRegisterSegment =
+            ABIPassingSegment::InRegister(registerSegment.GetRegister(), registerSegment.Offset, argNodeSize);
+    }
+
+    var_types bitCastType = cutRegisterSegment.GetRegisterType();
+
+    GenTreeUnOp* bitCast = comp->gtNewBitCastNode(bitCastType, *argNode);
+    BlockRange().InsertAfter(*argNode, bitCast);
+
+    *argNode = bitCast;
+    if (!TryRemoveBitCast(bitCast))
+    {
+        ContainCheckBitCast(bitCast);
+    }
 }
 
 //------------------------------------------------------------------------
-// LowerFloatArgReg: Lower the float call argument node that is passed via register.
+// InsertPutArgReg:
+//   Insert a PUTARG_REG node for the specified edge. If the argument node does
+//   not fit the register type, then also insert a bitcast.
 //
 // Arguments:
-//    arg    - The arg node
-//    regNum - register number
+//    argNode         - Edge for the argument
+//    registerSegment - Register that the argument is going into
 //
-// Return Value:
-//    Return new bitcast node, that moves float to int register.
-//
-GenTree* Lowering::LowerFloatArgReg(GenTree* arg, regNumber regNum)
+void Lowering::InsertPutArgReg(GenTree** argNode, const ABIPassingSegment& registerSegment)
 {
-    assert(varTypeUsesFloatReg(arg));
+    assert(registerSegment.IsPassedInRegister());
 
-    var_types floatType = arg->TypeGet();
-    var_types intType   = (floatType == TYP_FLOAT) ? TYP_INT : TYP_LONG;
-    GenTree*  intArg    = comp->gtNewBitCastNode(intType, arg);
-    intArg->SetRegNum(regNum);
-
-    return intArg;
+    InsertBitCastIfNecessary(argNode, registerSegment);
+    GenTree* putArg = comp->gtNewPutArgReg(genActualType(*argNode), *argNode, registerSegment.GetRegister());
+    BlockRange().InsertAfter(*argNode, putArg);
+    *argNode = putArg;
 }
-#endif
 
-// do lowering steps for each arg of a call
+//------------------------------------------------------------------------
+// LowerArgsForCall:
+//   Lower the arguments of a call node.
+//
+// Arguments:
+//    call - Call node
+//
 void Lowering::LowerArgsForCall(GenTreeCall* call)
 {
-    JITDUMP("args:\n======\n");
+    JITDUMP("Args:\n======\n");
     for (CallArg& arg : call->gtArgs.EarlyArgs())
     {
-        LowerArg(call, &arg, false);
+        LowerArg(call, &arg);
     }
 
-    JITDUMP("\nlate:\n======\n");
+    JITDUMP("\nLate args:\n======\n");
     for (CallArg& arg : call->gtArgs.LateArgs())
     {
-        LowerArg(call, &arg, true);
+        LowerArg(call, &arg);
     }
 
 #if defined(TARGET_X86) && defined(FEATURE_IJW)
@@ -3261,7 +3027,6 @@ void Lowering::LowerFastTailCall(GenTreeCall* call)
 
             unsigned int overwrittenStart = put->getArgOffset();
             unsigned int overwrittenEnd   = overwrittenStart + put->GetStackByteSize();
-            int          baseOff          = -1; // Stack offset of first arg on stack
 
             for (unsigned callerArgLclNum = 0; callerArgLclNum < comp->info.compArgsCount; callerArgLclNum++)
             {
@@ -3272,34 +3037,12 @@ void Lowering::LowerFastTailCall(GenTreeCall* call)
                     continue;
                 }
 
-                unsigned int argStart;
-                unsigned int argEnd;
-#if defined(TARGET_AMD64)
-                if (TargetOS::IsWindows)
-                {
-                    // On Windows x64, the argument position determines the stack slot uniquely, and even the
-                    // register args take up space in the stack frame (shadow space).
-                    argStart = callerArgLclNum * TARGET_POINTER_SIZE;
-                    argEnd   = argStart + static_cast<unsigned int>(callerArgDsc->lvArgStackSize());
-                }
-                else
-#endif // TARGET_AMD64
-                {
-                    assert(callerArgDsc->GetStackOffset() != BAD_STK_OFFS);
+                const ABIPassingInformation& abiInfo = comp->lvaGetParameterABIInfo(callerArgLclNum);
+                assert(abiInfo.HasExactlyOneStackSegment());
+                const ABIPassingSegment& seg = abiInfo.Segment(0);
 
-                    if (baseOff == -1)
-                    {
-                        baseOff = callerArgDsc->GetStackOffset();
-                    }
-
-                    // On all ABIs where we fast tail call the stack args should come in order.
-                    assert(baseOff <= callerArgDsc->GetStackOffset());
-
-                    // Compute offset of this stack argument relative to the first stack arg.
-                    // This will be its offset into the incoming arg space area.
-                    argStart = static_cast<unsigned int>(callerArgDsc->GetStackOffset() - baseOff);
-                    argEnd   = argStart + comp->lvaLclSize(callerArgLclNum);
-                }
+                unsigned argStart = seg.GetStackOffset();
+                unsigned argEnd   = argStart + seg.GetStackSize();
 
                 // If ranges do not overlap then this PUTARG_STK will not mess up the arg.
                 if ((overwrittenEnd <= argStart) || (overwrittenStart >= argEnd))
@@ -3765,17 +3508,13 @@ void Lowering::LowerCFGCall(GenTreeCall* call)
             call->gtArgs.PushLateBack(targetArg);
 
             // Set up ABI information for this arg.
-            targetArg->NewAbiInfo =
+            targetArg->AbiInfo =
                 ABIPassingInformation::FromSegmentByValue(comp,
                                                           ABIPassingSegment::InRegister(REG_DISPATCH_INDIRECT_CALL_ADDR,
                                                                                         0, TARGET_POINTER_SIZE));
-            targetArg->AbiInfo.ArgType = callTarget->TypeGet();
-            targetArg->AbiInfo.SetRegNum(0, REG_DISPATCH_INDIRECT_CALL_ADDR);
-            targetArg->AbiInfo.NumRegs  = 1;
-            targetArg->AbiInfo.ByteSize = TARGET_POINTER_SIZE;
 
             // Lower the newly added args now that call is updated
-            LowerArg(call, targetArg, true /* late */);
+            LowerArg(call, targetArg);
 
             // Finally update the call to be a helper call
             call->gtCallType    = CT_HELPER;
@@ -4409,6 +4148,26 @@ GenTree* Lowering::OptimizeConstCompare(GenTree* cmp)
         }
     }
 
+    // Optimize EQ/NE(op_that_sets_zf, 0) into op_that_sets_zf with GTF_SET_FLAGS + SETCC.
+    LIR::Use use;
+    if (cmp->OperIs(GT_EQ, GT_NE) && op2->IsIntegralConst(0) && op1->SupportsSettingZeroFlag() &&
+        BlockRange().TryGetUse(cmp, &use))
+    {
+        op1->gtFlags |= GTF_SET_FLAGS;
+        op1->SetUnusedValue();
+
+        GenTree* next = cmp->gtNext;
+        BlockRange().Remove(cmp);
+        BlockRange().Remove(op2);
+
+        GenCondition cmpCondition = GenCondition::FromRelop(cmp);
+        GenTreeCC*   setcc        = comp->gtNewCC(GT_SETCC, cmp->TypeGet(), cmpCondition);
+        BlockRange().InsertAfter(op1, setcc);
+
+        use.ReplaceWith(setcc);
+        return next;
+    }
+
     return cmp;
 }
 
@@ -4673,50 +4432,35 @@ bool Lowering::TryLowerConditionToFlagsNode(GenTree* parent, GenTree* condition,
         }
 #endif
 
-        // Optimize EQ/NE(op_that_sets_zf, 0) into op_that_sets_zf with GTF_SET_FLAGS.
-        if (optimizing && relop->OperIs(GT_EQ, GT_NE) && relopOp2->IsIntegralConst(0) &&
-            relopOp1->SupportsSettingZeroFlag() && IsInvariantInRange(relopOp1, parent))
-        {
-            relopOp1->gtFlags |= GTF_SET_FLAGS;
-            relopOp1->SetUnusedValue();
+        relop->gtType = TYP_VOID;
+        relop->gtFlags |= GTF_SET_FLAGS;
 
-            BlockRange().Remove(relopOp1);
-            BlockRange().InsertBefore(parent, relopOp1);
-            BlockRange().Remove(relop);
-            BlockRange().Remove(relopOp2);
+        if (relop->OperIs(GT_EQ, GT_NE, GT_LT, GT_LE, GT_GE, GT_GT))
+        {
+            relop->SetOper(GT_CMP);
+
+            if (cond->PreferSwap())
+            {
+                std::swap(relop->gtOp1, relop->gtOp2);
+                *cond = GenCondition::Swap(*cond);
+            }
         }
+#ifdef TARGET_XARCH
+        else if (relop->OperIs(GT_BITTEST_EQ, GT_BITTEST_NE))
+        {
+            relop->SetOper(GT_BT);
+        }
+#endif
         else
         {
-            relop->gtType = TYP_VOID;
-            relop->gtFlags |= GTF_SET_FLAGS;
+            assert(relop->OperIs(GT_TEST_EQ, GT_TEST_NE));
+            relop->SetOper(GT_TEST);
+        }
 
-            if (relop->OperIs(GT_EQ, GT_NE, GT_LT, GT_LE, GT_GE, GT_GT))
-            {
-                relop->SetOper(GT_CMP);
-
-                if (cond->PreferSwap())
-                {
-                    std::swap(relop->gtOp1, relop->gtOp2);
-                    *cond = GenCondition::Swap(*cond);
-                }
-            }
-#ifdef TARGET_XARCH
-            else if (relop->OperIs(GT_BITTEST_EQ, GT_BITTEST_NE))
-            {
-                relop->SetOper(GT_BT);
-            }
-#endif
-            else
-            {
-                assert(relop->OperIs(GT_TEST_EQ, GT_TEST_NE));
-                relop->SetOper(GT_TEST);
-            }
-
-            if (relop->gtNext != parent)
-            {
-                BlockRange().Remove(relop);
-                BlockRange().InsertBefore(parent, relop);
-            }
+        if (relop->gtNext != parent)
+        {
+            BlockRange().Remove(relop);
+            BlockRange().InsertBefore(parent, relop);
         }
 
         return true;
@@ -4886,7 +4630,7 @@ void Lowering::LowerRet(GenTreeOp* ret)
     //   - We're returning a floating type as an integral type or vice-versa, or
     // - If we're returning a struct as a primitive type, we change the type of
     // 'retval' in 'LowerRetStructLclVar()'
-    bool needBitcast        = (ret->TypeGet() != TYP_VOID) && !varTypeUsesSameRegType(ret, retVal);
+    bool needBitcast        = !ret->TypeIs(TYP_VOID) && !varTypeUsesSameRegType(ret, retVal);
     bool doPrimitiveBitcast = false;
     if (needBitcast)
     {
@@ -4901,12 +4645,12 @@ void Lowering::LowerRet(GenTreeOp* ret)
         assert(!varTypeIsStruct(ret) && !varTypeIsStruct(retVal));
 #endif
 
-        GenTree* bitcast = comp->gtNewBitCastNode(ret->TypeGet(), retVal);
+        GenTreeUnOp* bitcast = comp->gtNewBitCastNode(ret->TypeGet(), retVal);
         ret->SetReturnValue(bitcast);
         BlockRange().InsertBefore(ret, bitcast);
         ContainCheckBitCast(bitcast);
     }
-    else if (ret->TypeGet() != TYP_VOID)
+    else if (!ret->TypeIs(TYP_VOID))
     {
 #if FEATURE_MULTIREG_RET
         if (comp->compMethodReturnsMultiRegRetType() && retVal->OperIs(GT_LCL_VAR))
@@ -4935,7 +4679,11 @@ void Lowering::LowerRet(GenTreeOp* ret)
         }
 #endif // DEBUG
 
-        if (varTypeIsStruct(ret))
+        if (retVal->OperIsFieldList())
+        {
+            LowerRetFieldList(ret, retVal->AsFieldList());
+        }
+        else if (varTypeIsStruct(ret))
         {
             LowerRetStruct(ret);
         }
@@ -4947,12 +4695,134 @@ void Lowering::LowerRet(GenTreeOp* ret)
         }
     }
 
-    // Method doing PInvokes has exactly one return block unless it has tail calls.
     if (comp->compMethodRequiresPInvokeFrame())
     {
         InsertPInvokeMethodEpilog(comp->compCurBB DEBUGARG(ret));
     }
     ContainCheckRet(ret);
+}
+
+//----------------------------------------------------------------------------------------------
+// LowerRetFieldList:
+//   Lower a returned FIELD_LIST node.
+//
+// Arguments:
+//     ret       - The return node
+//     fieldList - The field list
+//
+void Lowering::LowerRetFieldList(GenTreeOp* ret, GenTreeFieldList* fieldList)
+{
+    const ReturnTypeDesc& retDesc = comp->compRetTypeDesc;
+    unsigned              numRegs = retDesc.GetReturnRegCount();
+
+    bool isCompatible = IsFieldListCompatibleWithReturn(fieldList);
+    if (!isCompatible)
+    {
+        JITDUMP("Spilling field list [%06u] to stack\n", Compiler::dspTreeID(fieldList));
+        unsigned   lclNum = comp->lvaGrabTemp(true DEBUGARG("Spilled local for return value"));
+        LclVarDsc* varDsc = comp->lvaGetDesc(lclNum);
+        comp->lvaSetStruct(lclNum, comp->info.compMethodInfo->args.retTypeClass, false);
+        comp->lvaSetVarDoNotEnregister(lclNum DEBUGARG(DoNotEnregisterReason::BlockOpRet));
+
+        for (GenTreeFieldList::Use& use : fieldList->Uses())
+        {
+            GenTree* store = comp->gtNewStoreLclFldNode(lclNum, use.GetType(), use.GetOffset(), use.GetNode());
+            BlockRange().InsertAfter(use.GetNode(), store);
+            LowerNode(store);
+        }
+
+        GenTree* retValue = comp->gtNewLclvNode(lclNum, varDsc->TypeGet());
+        ret->SetReturnValue(retValue);
+        BlockRange().InsertBefore(ret, retValue);
+        LowerNode(retValue);
+
+        BlockRange().Remove(fieldList);
+
+        if (numRegs == 1)
+        {
+            var_types nativeReturnType = comp->info.compRetNativeType;
+            ret->ChangeType(genActualType(nativeReturnType));
+            LowerRetSingleRegStructLclVar(ret);
+        }
+        else
+        {
+            varDsc->lvIsMultiRegRet = true;
+        }
+
+        return;
+    }
+
+    unsigned regIndex = 0;
+    for (GenTreeFieldList::Use& use : fieldList->Uses())
+    {
+        var_types regType = retDesc.GetReturnRegType(regIndex);
+        if (varTypeUsesIntReg(regType) != varTypeUsesIntReg(use.GetNode()))
+        {
+            GenTree* bitcast = comp->gtNewOperNode(GT_BITCAST, regType, use.GetNode());
+            BlockRange().InsertBefore(fieldList, bitcast);
+            use.SetNode(bitcast);
+            LowerNode(bitcast);
+        }
+
+        regIndex++;
+    }
+}
+
+//----------------------------------------------------------------------------------------------
+// IsFieldListCompatibleWithReturn:
+//   Check if the fields of a FIELD_LIST are compatible with the registers
+//   being returned.
+//
+// Arguments:
+//   fieldList - The FIELD_LIST node
+//
+// Returns:
+//   True if the fields of the FIELD_LIST map cleanly to the ABI returned
+//   registers. Insertions of bitcasts may still be required.
+//
+bool Lowering::IsFieldListCompatibleWithReturn(GenTreeFieldList* fieldList)
+{
+    JITDUMP("Checking if field list [%06u] is compatible with return ABI: ", Compiler::dspTreeID(fieldList));
+    const ReturnTypeDesc& retDesc    = comp->compRetTypeDesc;
+    unsigned              numRetRegs = retDesc.GetReturnRegCount();
+    unsigned              regIndex   = 0;
+
+    for (const GenTreeFieldList::Use& use : fieldList->Uses())
+    {
+        if (regIndex >= numRetRegs)
+        {
+            JITDUMP("it is not; too many fields\n");
+            return false;
+        }
+
+        unsigned offset = retDesc.GetReturnFieldOffset(regIndex);
+        if (offset != use.GetOffset())
+        {
+            JITDUMP("it is not; field %u register starts at offset %u, but field starts at offset %u\n", regIndex,
+                    offset, use.GetOffset());
+            return false;
+        }
+
+        var_types fieldType = genActualType(use.GetNode());
+        var_types regType   = genActualType(retDesc.GetReturnRegType(regIndex));
+        if (genTypeSize(fieldType) != genTypeSize(regType))
+        {
+            JITDUMP("it is not; field %u register has type %s but field has type %s\n", regIndex, varTypeName(regType),
+                    varTypeName(fieldType));
+            return false;
+        }
+
+        regIndex++;
+    }
+
+    if (regIndex != numRetRegs)
+    {
+        JITDUMP("it is not; too few fields\n");
+        return false;
+    }
+
+    JITDUMP("it is\n");
+    return true;
 }
 
 //----------------------------------------------------------------------------------------------
@@ -5159,9 +5029,9 @@ GenTree* Lowering::LowerStoreLocCommon(GenTreeLclVarCommon* lclStore)
         assert(lclStore->OperIsLocalStore());
         assert(lclRegType != TYP_UNDEF);
 
-        GenTree* bitcast = comp->gtNewBitCastNode(lclRegType, src);
-        lclStore->gtOp1  = bitcast;
-        src              = lclStore->gtGetOp1();
+        GenTreeUnOp* bitcast = comp->gtNewBitCastNode(lclRegType, src);
+        lclStore->gtOp1      = bitcast;
+        src                  = lclStore->gtGetOp1();
         BlockRange().InsertBefore(lclStore, bitcast);
         ContainCheckBitCast(bitcast);
     }
@@ -5276,8 +5146,8 @@ void Lowering::LowerRetStruct(GenTreeUnOp* ret)
             assert(varTypeIsEnregisterable(retVal));
             if (!varTypeUsesSameRegType(ret, retVal))
             {
-                GenTree* bitcast = comp->gtNewBitCastNode(ret->TypeGet(), retVal);
-                ret->gtOp1       = bitcast;
+                GenTreeUnOp* bitcast = comp->gtNewBitCastNode(ret->TypeGet(), retVal);
+                ret->gtOp1           = bitcast;
                 BlockRange().InsertBefore(ret, bitcast);
                 ContainCheckBitCast(bitcast);
             }
@@ -5348,7 +5218,7 @@ void Lowering::LowerRetSingleRegStructLclVar(GenTreeUnOp* ret)
 
         if (!varTypeUsesSameRegType(ret, lclVarType))
         {
-            GenTree* bitcast = comp->gtNewBitCastNode(ret->TypeGet(), ret->gtOp1);
+            GenTreeUnOp* bitcast = comp->gtNewBitCastNode(ret->TypeGet(), ret->gtOp1);
             ret->AsOp()->SetReturnValue(bitcast);
             BlockRange().InsertBefore(ret, bitcast);
             ContainCheckBitCast(bitcast);
@@ -5422,7 +5292,8 @@ void Lowering::LowerCallStruct(GenTreeCall* call)
                 break;
 
             case GT_CALL:
-                // Argument lowering will deal with register file mismatches if needed.
+            case GT_FIELD_LIST:
+                // Argument/return lowering will deal with register file mismatches if needed.
                 assert(varTypeIsSIMD(origType));
                 break;
 
@@ -5446,7 +5317,7 @@ void Lowering::LowerCallStruct(GenTreeCall* call)
             {
                 if (!varTypeUsesSameRegType(returnType, origType))
                 {
-                    GenTree* bitCast = comp->gtNewBitCastNode(origType, call);
+                    GenTreeUnOp* bitCast = comp->gtNewBitCastNode(origType, call);
                     BlockRange().InsertAfter(call, bitCast);
                     callUse.ReplaceWith(bitCast);
                     ContainCheckBitCast(bitCast);
@@ -7859,9 +7730,7 @@ void Lowering::WidenSIMD12IfNecessary(GenTreeLclVarCommon* node)
         // as a return buffer pointer. The callee doesn't write the high 4 bytes, and we don't need to clear
         // it either.
 
-        LclVarDsc* varDsc = comp->lvaGetDesc(node->AsLclVarCommon());
-
-        if (comp->lvaMapSimd12ToSimd16(varDsc))
+        if (comp->lvaMapSimd12ToSimd16(node->AsLclVarCommon()->GetLclNum()))
         {
             JITDUMP("Mapping TYP_SIMD12 lclvar node to TYP_SIMD16:\n");
             DISPNODE(node);
@@ -8411,7 +8280,8 @@ void Lowering::CheckNode(Compiler* compiler, GenTree* node)
 #if defined(FEATURE_SIMD) && defined(TARGET_64BIT)
             if (node->TypeIs(TYP_SIMD12))
             {
-                assert(compiler->lvaIsFieldOfDependentlyPromotedStruct(varDsc) || (varDsc->lvSize() == 12));
+                assert(compiler->lvaIsFieldOfDependentlyPromotedStruct(varDsc) ||
+                       (compiler->lvaLclStackHomeSize(node->AsLclVar()->GetLclNum()) == 12));
             }
 #endif // FEATURE_SIMD && TARGET_64BIT
             if (varDsc->lvPromoted)
@@ -8806,7 +8676,7 @@ void Lowering::ContainCheckNode(GenTree* node)
             ContainCheckCast(node->AsCast());
             break;
         case GT_BITCAST:
-            ContainCheckBitCast(node);
+            ContainCheckBitCast(node->AsUnOp());
             break;
         case GT_LCLHEAP:
             ContainCheckLclHeap(node->AsOp());
@@ -8907,7 +8777,7 @@ void Lowering::ContainCheckRet(GenTreeUnOp* ret)
         {
             const LclVarDsc* varDsc = comp->lvaGetDesc(op1->AsLclVarCommon());
             // This must be a multi-reg return or an HFA of a single element.
-            assert(varDsc->lvIsMultiRegRet || (varDsc->lvIsHfa() && varTypeIsValidHfaType(varDsc->lvType)));
+            assert(varDsc->lvIsMultiRegRet);
 
             // Mark var as contained if not enregisterable.
             if (!varDsc->IsEnregisterableLcl())
@@ -8923,14 +8793,104 @@ void Lowering::ContainCheckRet(GenTreeUnOp* ret)
 }
 
 //------------------------------------------------------------------------
+// TryRemoveBitCast:
+//   Try to remove a bitcast node by changing its operand.
+//
+// Arguments:
+//    node - Bitcast node
+//
+// Returns:
+//   True if the bitcast was removed.
+//
+bool Lowering::TryRemoveBitCast(GenTreeUnOp* node)
+{
+    if (comp->opts.OptimizationDisabled())
+    {
+        return false;
+    }
+
+    GenTree* op = node->gtGetOp1();
+    assert(genTypeSize(node) == genTypeSize(genActualType(op)));
+
+    bool changed = false;
+#ifdef FEATURE_SIMD
+    bool isConst = op->OperIs(GT_CNS_INT, GT_CNS_DBL, GT_CNS_VEC);
+#else
+    bool isConst = op->OperIs(GT_CNS_INT, GT_CNS_DBL);
+#endif
+
+    if (isConst)
+    {
+        uint8_t bits[sizeof(simd_t)];
+        assert(sizeof(bits) >= genTypeSize(genActualType(op)));
+        if (op->OperIs(GT_CNS_INT))
+        {
+            ssize_t cns = op->AsIntCon()->IconValue();
+            assert(sizeof(ssize_t) >= genTypeSize(genActualType(op)));
+            memcpy(bits, &cns, genTypeSize(genActualType(op)));
+        }
+#ifdef FEATURE_SIMD
+        else if (op->OperIs(GT_CNS_VEC))
+        {
+            memcpy(bits, &op->AsVecCon()->gtSimdVal, genTypeSize(op));
+        }
+#endif
+        else
+        {
+            if (op->TypeIs(TYP_FLOAT))
+            {
+                float floatVal = FloatingPointUtils::convertToSingle(op->AsDblCon()->DconValue());
+                memcpy(bits, &floatVal, sizeof(float));
+            }
+            else
+            {
+                double doubleVal = op->AsDblCon()->DconValue();
+                memcpy(bits, &doubleVal, sizeof(double));
+            }
+        }
+
+        GenTree* newCon = comp->gtNewGenericCon(node->TypeGet(), bits);
+        BlockRange().InsertAfter(op, newCon);
+        BlockRange().Remove(op);
+
+        node->gtOp1 = op = newCon;
+
+        changed = true;
+    }
+    else if (op->OperIs(GT_LCL_FLD, GT_IND))
+    {
+        op->ChangeType(node->TypeGet());
+        changed = true;
+    }
+
+    if (!changed)
+    {
+        return false;
+    }
+
+    LIR::Use use;
+    if (BlockRange().TryGetUse(node, &use))
+    {
+        use.ReplaceWith(op);
+    }
+    else
+    {
+        op->SetUnusedValue();
+    }
+
+    BlockRange().Remove(node);
+    return true;
+}
+
+//------------------------------------------------------------------------
 // ContainCheckBitCast: determine whether the source of a BITCAST should be contained.
 //
 // Arguments:
 //    node - pointer to the node
 //
-void Lowering::ContainCheckBitCast(GenTree* node)
+void Lowering::ContainCheckBitCast(GenTreeUnOp* node)
 {
-    GenTree* const op1 = node->AsOp()->gtOp1;
+    GenTree* const op1 = node->gtGetOp1();
     if (op1->OperIs(GT_LCL_VAR) && (genTypeSize(op1) == genTypeSize(node)))
     {
         if (IsContainableMemoryOp(op1) && IsSafeToContainMem(node, op1))
@@ -10942,5 +10902,38 @@ void Lowering::FinalizeOutgoingArgSpace()
     comp->lvaOutgoingArgSpaceSize = m_outgoingArgSpaceSize;
     comp->lvaOutgoingArgSpaceSize.MarkAsReadOnly();
     comp->lvaGetDesc(comp->lvaOutgoingArgSpaceVar)->GrowBlockLayout(comp->typGetBlkLayout(m_outgoingArgSpaceSize));
+
+    SetFramePointerFromArgSpaceSize();
 #endif
+}
+
+//----------------------------------------------------------------------------------------------
+// Lowering::SetFramePointerFromArgSpaceSize:
+//   Set the frame pointer from the arg space size. This is a quirk because
+//   StackLevelSetter used to do this even outside x86.
+//
+void Lowering::SetFramePointerFromArgSpaceSize()
+{
+    unsigned stackLevelSpace = m_outgoingArgSpaceSize;
+
+    if (comp->compTailCallUsed)
+    {
+        // StackLevelSetter also used to count tailcalls.
+        for (BasicBlock* block : comp->Blocks())
+        {
+            GenTreeCall* tailCall;
+            if (block->endsWithTailCall(comp, true, false, &tailCall))
+            {
+                stackLevelSpace = max(stackLevelSpace, tailCall->gtArgs.OutgoingArgsStackSize());
+            }
+        }
+    }
+
+    unsigned stackLevel =
+        (max(stackLevelSpace, (unsigned)MIN_ARG_AREA_FOR_CALL) - MIN_ARG_AREA_FOR_CALL) / TARGET_POINTER_SIZE;
+
+    if (stackLevel >= 4)
+    {
+        comp->codeGen->setFramePointerRequired(true);
+    }
 }
