@@ -5072,7 +5072,7 @@ namespace System.Numerics
                 if (bits[^1] == kuMaskHighBit && negLeadingZeroCount == bits.Length - 1)
                 {
                     // When bits are [0, ..., 0, 0x80000000], special handling is required.
-                    // Since the bit length remains unchanged in twoÅfs complement, the result must be computed directly.
+                    // Since the bit length remains unchanged in two's complement, the result must be computed directly.
                     --zLength;
                     if (zLength <= 0)
                         return s_bnMinusOneInt;
@@ -5100,7 +5100,7 @@ namespace System.Numerics
 
             if (neg)
             {
-                // Calculate the twoÅfs complement. The least significant nonzero bit has already been computed.
+                // Calculate the two's complement. The least significant nonzero bit has already been computed.
                 negLeadingZeroCount -= digitShift;
 
                 if ((uint)negLeadingZeroCount < (uint)zd.Length) // is equivalent to negLeadingZeroCount >= 0 && negLeadingZeroCount < zd.Length
