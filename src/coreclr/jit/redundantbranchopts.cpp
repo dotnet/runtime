@@ -663,8 +663,8 @@ bool Compiler::optRelopTryInferWithTreePlusOne(const VNFuncApp&      domApp,
     // clang-format off
     static const RelopImplicationRule implicationRules[] = {
         // domRelop, inferFromTrue, inferFromFalse, treeRelop, reverse
-        {  U(GE),    false,         true,           U(LE),     true  },
-        {  U(LT),    true,          false,          U(LE),     true  },
+        {  U(GE),    false,         true,           U(LE),     false  },
+        {  U(LT),    true,          false,          U(LE),     false  },
     };
     // clang-format on
 
@@ -700,11 +700,6 @@ bool Compiler::optRelopTryInferWithOneEqualOperand(const VNFuncApp&      domApp,
                                                    const VNFuncApp&      treeApp,
                                                    RelopImplicationInfo* rii)
 {
-    if (optRelopTryInferWithTreePlusOne(domApp, treeApp, rii))
-    {
-        return true;
-    }
-
     // Canonicalize constants to be on the right.
     VNFunc   domFunc = domApp.m_func;
     ValueNum domOp1  = domApp.m_args[0];
@@ -726,12 +721,6 @@ bool Compiler::optRelopTryInferWithOneEqualOperand(const VNFuncApp&      domApp,
         treeFunc = ValueNumStore::SwapRelop(treeFunc);
     }
 
-    // Given R(x, cns1) and R*(x, cns2) see if we can infer R* from R.
-    if ((treeOp1 != domOp1) || !vnStore->IsVNConstant(treeOp2) || !vnStore->IsVNConstant(domOp2))
-    {
-        return false;
-    }
-
     var_types treeOp1Type = vnStore->TypeOfVN(treeOp1);
     var_types treeOp2Type = vnStore->TypeOfVN(treeOp2);
     var_types domOp1Type  = vnStore->TypeOfVN(domOp1);
@@ -740,6 +729,19 @@ bool Compiler::optRelopTryInferWithOneEqualOperand(const VNFuncApp&      domApp,
     {
         return false;
     }
+
+    if (optRelopTryInferWithTreePlusOne(domApp, treeApp, rii))
+    {
+        return true;
+    }
+
+    // Given R(x, cns1) and R*(x, cns2) see if we can infer R* from R.
+    if ((treeOp1 != domOp1) || !vnStore->IsVNConstant(treeOp2) || !vnStore->IsVNConstant(domOp2))
+    {
+        return false;
+    }
+
+
     // We currently don't handle VNF_relop_UN funcs here
     if (!ValueNumStore::VNFuncIsSignedComparison(domFunc) || !ValueNumStore::VNFuncIsSignedComparison(treeFunc))
     {
