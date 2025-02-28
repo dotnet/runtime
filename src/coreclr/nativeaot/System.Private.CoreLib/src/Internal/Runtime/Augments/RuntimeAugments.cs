@@ -71,6 +71,20 @@ namespace Internal.Runtime.Augments
             return RuntimeImports.RhNewObject(typeHandle.ToMethodTable());
         }
 
+        internal static void EnsureMethodTableSafeToAllocate(MethodTable* mt)
+        {
+            // We might be dealing with a "necessary" MethodTable (in the ILCompiler terms).
+            // This MethodTable is okay for casting, but must not be allocated on the GC heap.
+            Debug.Assert(MethodTable.Of<object>()->NumVtableSlots > 0);
+            if (mt->NumVtableSlots == 0)
+            {
+                // This is a type without a vtable or GCDesc. We must not allow creating an instance of it
+                throw ReflectionCoreExecution.ExecutionEnvironment.CreateMissingMetadataException(Type.GetTypeFromMethodTable(mt));
+            }
+            // Paranoid check: not-meant-for-GC-heap types should be reliably identifiable by empty vtable.
+            Debug.Assert(!mt->ContainsGCPointers || RuntimeImports.RhGetGCDescSize(mt) != 0);
+        }
+
         //
         // Perform the equivalent of a "newarr" The resulting array is zero-initialized.
         //
@@ -81,13 +95,7 @@ namespace Internal.Runtime.Augments
 
             MethodTable* mt = typeHandleForArrayType.ToMethodTable();
 
-            if (mt->NumVtableSlots == 0)
-            {
-                // This is a type without a vtable or GCDesc. We must not allow creating an instance of it
-                throw ReflectionCoreExecution.ExecutionEnvironment.CreateMissingMetadataException(Type.GetTypeFromHandle(typeHandleForArrayType));
-            }
-            // Paranoid check: not-meant-for-GC-heap types should be reliably identifiable by empty vtable.
-            Debug.Assert(!mt->ContainsGCPointers || RuntimeImports.RhGetGCDescSize(mt) != 0);
+            EnsureMethodTableSafeToAllocate(mt);
 
             return RuntimeImports.RhNewArray(mt, count);
         }
