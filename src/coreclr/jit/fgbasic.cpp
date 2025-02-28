@@ -3439,6 +3439,28 @@ void Compiler::fgFindBasicBlocks()
             info.compCompHnd->getEHinfo(info.compMethodHnd, XTnum, &clause);
             noway_assert(clause.HandlerLength != (unsigned)-1);
 
+            // If we're inlining, and the inlinee hasa catch, we are currently
+            // unable to convey the type of the catch properly, as it is represented
+            // by a token. So, abandon inlining.
+            //
+            // TODO: if inlining methods with catches is rare, consider
+            // transforming class catches into runtime filters like we do in
+            // fgCreateFiltersForGenericExceptions
+            //
+            if (compIsForInlining())
+            {
+                const bool isFinallyFaultOrFilter =
+                    (clause.Flags & (CORINFO_EH_CLAUSE_FINALLY | CORINFO_EH_CLAUSE_FAULT | CORINFO_EH_CLAUSE_FILTER)) !=
+                    0;
+
+                if (!isFinallyFaultOrFilter)
+                {
+                    JITDUMP("Inlinee EH clause %u is a catch; we can't inline these (yet)\n", XTnum);
+                    compInlineResult->NoteFatal(InlineObservation::CALLEE_HAS_EH);
+                    return;
+                }
+            }
+
             if (clause.TryLength <= 0)
             {
                 BADCODE("try block length <=0");
