@@ -2968,12 +2968,14 @@ private:
 
 };
 
+#ifdef FEATURE_INTERPRETER
 inline void * InterpreterJitManager::GetCodeHeader(const METHODTOKEN& MethodToken)
 {
     LIMITED_METHOD_DAC_CONTRACT;
     _ASSERTE(!MethodToken.IsNull());
     return dac_cast<PTR_InterpreterCodeHeader>(MethodToken.m_pCodeHeader);
 }
+#endif // FEATURE_INTERPRETER
 
 #include "codeman.inl"
 

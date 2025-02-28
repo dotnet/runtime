@@ -12247,6 +12247,7 @@ void CEEJitInfo::allocMem (AllocMemArgs *pArgs)
     EE_TO_JIT_TRANSITION();
 }
 
+#ifdef FEATURE_INTERPRETER
 void CInterpreterJitInfo::allocMem(AllocMemArgs *pArgs)
 {
     CONTRACTL {
@@ -12265,6 +12266,7 @@ void CInterpreterJitInfo::allocMem(AllocMemArgs *pArgs)
 
     EE_TO_JIT_TRANSITION();
 }
+#endif // FEATURE_INTERPRETER
 
 void CEECodeGenInfo::allocMemWorker(AllocMemArgs *pArgs, size_t reserveForJumpStubs
 #ifdef FEATURE_EH_FUNCLETS

@@ -1045,6 +1045,7 @@ protected :
 
 };
 
+#ifdef FEATURE_INTERPRETER
 class CInterpreterJitInfo : public CEECodeGenInfo
 {
 public:
@@ -1076,6 +1077,7 @@ public:
         CEECodeGenInfo::ResetForJitRetry();
     }
 };
+#endif // FEATURE_INTERPRETER
 
 /*********************************************************************/
 /*********************************************************************/
