@@ -524,8 +524,8 @@ public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string?
         var knownSet = GetAllKnownDotnetFilesToFingerprintMap(options);
         foreach (string expectedFilename in expected)
         {
-            // FIXME: Find a systematic solution for skipping dotnet.js from boot json check
-            if (expectedFilename == "dotnet.js" || Path.GetExtension(expectedFilename) == ".map")
+            // FIXME: Find a systematic solution for skipping dotnet.js & dotnet.boot.js from boot json check
+            if (expectedFilename == "dotnet.js" || expectedFilename == "dotnet.boot.js" || Path.GetExtension(expectedFilename) == ".map")
                 continue;
 
             bool expectFingerprint = knownSet[expectedFilename];
