@@ -13,7 +13,6 @@ import { mono_wasm_resolve_or_reject_promise } from "./marshal-to-js";
 import { mono_wasm_schedule_timer, schedule_background_exec } from "./scheduling";
 import { mono_wasm_asm_loaded } from "./startup";
 import { mono_log_warn, mono_wasm_console_clear, mono_wasm_trace_logger } from "./logging";
-import { mono_wasm_profiler_record, mono_wasm_profiler_now, ds_rt_websocket_close, ds_rt_websocket_create, ds_rt_websocket_poll, ds_rt_websocket_recv, ds_rt_websocket_send } from "./profiler";
 import { mono_wasm_browser_entropy } from "./crypto";
 import { mono_wasm_cancel_promise } from "./cancelable-promise";
 
@@ -24,7 +23,10 @@ import {
 } from "./pthreads";
 import { mono_wasm_dump_threads } from "./pthreads/ui-thread";
 import { mono_wasm_schedule_synchronization_context } from "./pthreads/shared";
-import { mono_wasm_js_globalization_imports } from "./globalization";
+import { mono_wasm_get_locale_info } from "./globalization-locale";
+
+import { mono_wasm_profiler_record, mono_wasm_profiler_now } from "./profiler";
+import { ds_rt_websocket_create, ds_rt_websocket_send, ds_rt_websocket_poll, ds_rt_websocket_recv, ds_rt_websocket_close } from "./diagnostics";
 
 // the JS methods would be visible to EMCC linker and become imports of the WASM module
 
@@ -46,6 +48,15 @@ export const mono_wasm_threads_imports = !WasmEnableThreads ? [] : [
     mono_wasm_uninstall_js_worker_interop,
     mono_wasm_invoke_jsimport_MT,
     mono_wasm_warn_about_blocking_wait,
+];
+
+export const mono_wasm_diagnostic_imports = [
+    //event pipe
+    ds_rt_websocket_create,
+    ds_rt_websocket_send,
+    ds_rt_websocket_poll,
+    ds_rt_websocket_recv,
+    ds_rt_websocket_close,
 ];
 
 export const mono_wasm_imports = [
@@ -70,6 +81,7 @@ export const mono_wasm_imports = [
     mono_interp_flush_jitcall_queue,
     mono_wasm_free_method_data,
 
+    // browser.c
     mono_wasm_profiler_now,
     mono_wasm_profiler_record,
 
@@ -88,22 +100,16 @@ export const mono_wasm_imports = [
     mono_wasm_invoke_jsimport_ST,
     mono_wasm_resolve_or_reject_promise,
     mono_wasm_cancel_promise,
-
-    //event pipe
-    ds_rt_websocket_create,
-    ds_rt_websocket_send,
-    ds_rt_websocket_poll,
-    ds_rt_websocket_recv,
-    ds_rt_websocket_close,
+    mono_wasm_get_locale_info,
 ];
 
-
+// !!! Keep in sync with exports-linker.ts
 const wasmImports: Function[] = [
     ...mono_wasm_imports,
+    // diagnostic server exports, when enabled
+    ...mono_wasm_diagnostic_imports,
     // threading exports, if threading is enabled
     ...mono_wasm_threads_imports,
-    // globalization exports
-    ...mono_wasm_js_globalization_imports,
 ];
 
 export function replace_linker_placeholders (imports: WebAssembly.Imports) {

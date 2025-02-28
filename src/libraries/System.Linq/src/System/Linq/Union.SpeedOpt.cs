@@ -52,7 +52,7 @@ namespace System.Linq
                 // source1.Contains(value) || source2.Contains(value), as Union's set semantics won't remove
                 // anything from either that could have matched. However, if there is a comparer, it's possible
                 // the Union could end up removing items that would have matched, and thus we can't skip it.
-                if (_comparer is null || _comparer == EqualityComparer<TSource>.Default)
+                if (_comparer is null)
                 {
                     IEnumerable<TSource>? source;
                     for (int i = 0; (source = GetEnumerable(i)) is not null; i++)
