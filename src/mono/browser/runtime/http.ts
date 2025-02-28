@@ -254,7 +254,10 @@ export function http_wasm_get_streamed_response_bytes (controller: HttpControlle
     return wrap_as_cancelable_promise(async () => {
         await controller.responsePromise;
         mono_assert(controller.response, "expected response");
-        mono_assert(controller.response.body, "expected response.body");
+        if (!controller.response.body) {
+            // in FF when the verb is HEAD, the body is null
+            return 0;
+        }
         if (!controller.streamReader) {
             controller.streamReader = controller.response.body.getReader();
             mute_unhandledrejection(controller.streamReader.closed);
