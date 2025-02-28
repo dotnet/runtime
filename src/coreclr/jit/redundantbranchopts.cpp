@@ -660,11 +660,13 @@ bool Compiler::optRelopTryInferWithTreePlusOne(const VNFuncApp&      domApp,
         return false;
     }
 
+    // clang-format off
     static const RelopImplicationRule implicationRules[] = {
         // domRelop, inferFromTrue, inferFromFalse, treeRelop, reverse
-        {U(GE), false, true, U(LE), true},
-        {U(LE), true, false, U(LE), true},
+        {  U(GE),    false,         true,           U(LE),     true  },
+        {  U(LT),    true,          false,          U(LE),     true  },
     };
+    // clang-format on
 
     for (const RelopImplicationRule& rule : implicationRules)
     {
