@@ -123,7 +123,7 @@ namespace System.Net.WebSockets.Client.Tests
             var ub = new UriBuilder(server);
             ub.Query = "replyWithPartialMessages";
 
-            using (ClientWebSocket cws = await WebSocketHelper.GetConnectedWebSocket(ub.Uri, TimeOutMilliseconds, _output))
+            using (ClientWebSocket cws = await GetConnectedWebSocket(ub.Uri))
             {
                 var ctsDefault = new CancellationTokenSource(TimeOutMilliseconds);
 

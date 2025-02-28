@@ -101,6 +101,10 @@ namespace System.Net.WebSockets.Client.Tests
             {
                 var cws = new ClientWebSocket();
                 configureOptions(cws.Options);
+                if (PlatformDetection.IsNotBrowser && invoker == null && server.Scheme == "wss")
+                {
+                    cws.Options.RemoteCertificateValidationCallback ??= (_, _, _, _) => true;
+                }
 
                 using (var cts = new CancellationTokenSource(timeOutMilliseconds))
                 {

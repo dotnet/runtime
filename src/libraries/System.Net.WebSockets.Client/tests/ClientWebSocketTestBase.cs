@@ -159,7 +159,7 @@ namespace System.Net.WebSockets.Client.Tests
 
             if (PlatformDetection.IsNotBrowser)
             {
-                handler.ServerCertificateCustomValidationCallback = HttpClientHandler.DangerousAcceptAnyServerCertificateValidator;
+                handler.ServerCertificateCustomValidationCallback = (_, _, _, _) => true;
             }
 
             ConfigureCustomHandler?.Invoke(handler);
@@ -183,7 +183,6 @@ namespace System.Net.WebSockets.Client.Tests
         protected Task ConnectAsync(ClientWebSocket cws, Uri uri, CancellationToken cancellationToken)
         {
             ConfigureHttpVersion(cws.Options, uri);
-            //Console.WriteLine($"Client: starting ConnectAsync");
             return cws.ConnectAsync(uri, GetInvoker(), cancellationToken);
         }
 
@@ -201,10 +200,13 @@ namespace System.Net.WebSockets.Client.Tests
                 return;
             }
 
-            //Console.WriteLine($"Client: Original query string = '{uri.Query}'; HttpVersion = {HttpVersion}");
-
             options.HttpVersion = HttpVersion;
             options.HttpVersionPolicy = HttpVersionPolicy.RequestVersionExact;
+
+            if (UseSharedHandler && uri.Scheme == "wss")
+            {
+                options.RemoteCertificateValidationCallback = (_, _, _, _) => true;
+            }
 
             if (HttpVersion == Net.HttpVersion.Version20 && uri.Query is not null or "" or "?")
             {
@@ -283,12 +285,15 @@ namespace System.Net.WebSockets.Client.Tests
                 clientFunc,
                 async (requestData, token) =>
                 {
+                    // Console.WriteLine($"[Server - {nameof(RunEchoHeadersAsync)}] WebSocket.CreateFromStream");
                     var serverWebSocket = WebSocket.CreateFromStream(
                         requestData.TransportStream,
                         new WebSocketCreationOptions { IsServer = true });
 
                     using var registration = token.Register(serverWebSocket.Abort);
+                    // Console.WriteLine($"[Server - {nameof(RunEchoHeadersAsync)}] RunEchoHeaders");
                     await WebSocketEchoHelper.RunEchoHeaders(serverWebSocket, requestData.Headers, token);
+                    // Console.WriteLine($"[Server - {nameof(RunEchoHeadersAsync)}] RunEchoHeaders completed");
                 },
                 options,
                 timeoutCts.Token);

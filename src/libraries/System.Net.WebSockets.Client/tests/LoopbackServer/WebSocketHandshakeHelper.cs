@@ -104,10 +104,13 @@ namespace System.Net.WebSockets.Client.Tests
                 Http2StreamId = streamId
             };
 
+            //Console.WriteLine($"[Server - {nameof(ProcessHttp2RequestAsync)}] Headers:");
+
             foreach (var header in httpRequestData.Headers)
             {
                 Assert.NotNull(header.Name);
                 data.Headers.Add(header.Name, header.Value);
+                //Console.WriteLine($"[Server - {nameof(ProcessHttp2RequestAsync)}] {header.Name}: {data.Headers[header.Name] ?? "<null>"}");
             }
 
             var isValidOpeningHandshake = httpRequestData.Method == HttpMethod.Connect.ToString() && data.Headers.ContainsKey(":protocol");

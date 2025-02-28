@@ -20,61 +20,68 @@ namespace System.Net.WebSockets.Client.Tests
 
         // --- Loopback Echo Server "overrides" ---
 
-
-
         //[ActiveIssue("https://github.com/dotnet/runtime/issues/1895")]
         //[Theory, MemberData(nameof(UnavailableWebSocketServers))]
         //public Task ConnectAsync_NotWebSocketServer_ThrowsWebSocketExceptionWithMessage(Uri server, string exceptionMessage, WebSocketError errorCode)
         //    => RunClient_ConnectAsync_NotWebSocketServer_ThrowsWebSocketExceptionWithMessage(server, exceptionMessage, errorCode);
 
-        /*[ConditionalTheory, MemberData(nameof(UseSsl_MemberData))]
+        [Theory, MemberData(nameof(UseSsl_MemberData))]
         public Task EchoBinaryMessage_Success(bool useSsl) => RunEchoAsync(
             RunClient_EchoBinaryMessage_Success, useSsl);
 
-        [ConditionalTheory, MemberData(nameof(UseSsl_MemberData))]
+        [Theory, MemberData(nameof(UseSsl_MemberData))]
         public Task EchoTextMessage_Success(bool useSsl) => RunEchoAsync(
             RunClient_EchoTextMessage_Success, useSsl);
 
-        [SkipOnPlatform(TestPlatforms.Browser, "SetRequestHeader not supported on browser")]
-        [ConditionalTheory, MemberData(nameof(UseSsl_MemberData))]
+        [Theory, MemberData(nameof(UseSsl_MemberData))]
         public Task ConnectAsync_AddCustomHeaders_Success(bool useSsl) => RunEchoHeadersAsync(
             RunClient_ConnectAsync_AddCustomHeaders_Success, useSsl);
 
-        [SkipOnPlatform(TestPlatforms.Browser, "Cookies not supported on browser")]
-        [ConditionalTheory, MemberData(nameof(UseSsl_MemberData))]
+        [Theory, MemberData(nameof(UseSsl_MemberData))]
         public Task ConnectAsync_CookieHeaders_Success(bool useSsl) => RunEchoHeadersAsync(
             RunClient_ConnectAsync_CookieHeaders_Success, useSsl);
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/101115", typeof(PlatformDetection), nameof(PlatformDetection.IsFirefox))]
-        [ConditionalTheory, MemberData(nameof(UseSsl_MemberData))]
+        /*[Theory, MemberData(nameof(UseSsl_MemberData))]
         public Task ConnectAsync_PassNoSubProtocol_ServerRequires_ThrowsWebSocketException(bool useSsl) => RunEchoAsync(
             RunClient_ConnectAsync_PassNoSubProtocol_ServerRequires_ThrowsWebSocketException, useSsl);
 
-        [ConditionalTheory, MemberData(nameof(UseSsl_MemberData))]
+        [Theory, MemberData(nameof(UseSsl_MemberData))]
         public Task ConnectAsync_PassMultipleSubProtocols_ServerRequires_ConnectionUsesAgreedSubProtocol(bool useSsl) => RunEchoAsync(
-            RunClient_ConnectAsync_PassMultipleSubProtocols_ServerRequires_ConnectionUsesAgreedSubProtocol, useSsl);
+            RunClient_ConnectAsync_PassMultipleSubProtocols_ServerRequires_ConnectionUsesAgreedSubProtocol, useSsl);*/
 
-        [SkipOnPlatform(TestPlatforms.Browser, "Proxy not supported on Browser")]
-        [ConditionalTheory, MemberData(nameof(UseSsl_MemberData))]
-        public Task ConnectAndCloseAsync_UseProxyServer_ExpectedClosedState(bool useSsl) => RunEchoAsync(
-            RunClient_ConnectAndCloseAsync_UseProxyServer_ExpectedClosedState, useSsl);*/
+        // TODO: this test is HTTP/1.1 only
+        //[Theory, MemberData(nameof(UseSsl_MemberData))]
+        //public Task ConnectAndCloseAsync_UseProxyServer_ExpectedClosedState(bool useSsl) => RunEchoAsync(
+        //    RunClient_ConnectAndCloseAsync_UseProxyServer_ExpectedClosedState, useSsl);
     }
 
     // --- HTTP/1.1 WebSocket loopback tests ---
 
-    /*public class ConnectTest_Invoker_Loopback : ConnectTest_Loopback
+    // TODO
+    public abstract class ConnectTest_Loopback_Http11Only : ConnectTest_Loopback
+    {
+        public ConnectTest_Loopback_Http11Only(ITestOutputHelper output) : base(output) { }
+
+        // TODO: this test is HTTP/1.1 only
+        [Theory, MemberData(nameof(UseSsl_MemberData))]
+        public Task ConnectAndCloseAsync_UseProxyServer_ExpectedClosedState(bool useSsl) => RunEchoAsync(
+            RunClient_ConnectAndCloseAsync_UseProxyServer_ExpectedClosedState, useSsl);
+    }
+
+    public sealed class ConnectTest_Invoker_Loopback : ConnectTest_Loopback_Http11Only //!
     {
         public ConnectTest_Invoker_Loopback(ITestOutputHelper output) : base(output) { }
         protected override bool UseCustomInvoker => true;
-    }*/
+    }
 
-    /*public class ConnectTest_HttpClient_Loopback : ConnectTest_Loopback
+    public sealed class ConnectTest_HttpClient_Loopback : ConnectTest_Loopback_Http11Only //!
     {
         public ConnectTest_HttpClient_Loopback(ITestOutputHelper output) : base(output) { }
         protected override bool UseHttpClient => true;
-    }*/
+    }
 
-    public class ConnectTest_SharedHandler_Loopback : ConnectTest_Loopback
+    // TODO
+    public sealed class ConnectTest_SharedHandler_Loopback : ConnectTestBase //!
     {
         public ConnectTest_SharedHandler_Loopback(ITestOutputHelper output) : base(output) { }
 
@@ -211,18 +218,51 @@ namespace System.Net.WebSockets.Client.Tests
                 Assert.Equal(expectedHost, host);
             }), new LoopbackServer.Options { WebSocketEndpoint = true });
         }
+
+        //[ActiveIssue("https://github.com/dotnet/runtime/issues/1895")]
+        //[Theory, MemberData(nameof(UnavailableWebSocketServers))]
+        //public Task ConnectAsync_NotWebSocketServer_ThrowsWebSocketExceptionWithMessage(Uri server, string exceptionMessage, WebSocketError errorCode)
+        //    => RunClient_ConnectAsync_NotWebSocketServer_ThrowsWebSocketExceptionWithMessage(server, exceptionMessage, errorCode);
+
+        [Fact]
+        public Task EchoBinaryMessage_Success() => RunEchoAsync(
+            RunClient_EchoBinaryMessage_Success, useSsl: false);
+
+        [Fact]
+        public Task EchoTextMessage_Success() => RunEchoAsync(
+            RunClient_EchoTextMessage_Success, useSsl: false);
+
+        [Fact]
+        public Task ConnectAsync_AddCustomHeaders_Success() => RunEchoHeadersAsync(
+            RunClient_ConnectAsync_AddCustomHeaders_Success, useSsl: false);
+
+        [Fact]
+        public Task ConnectAsync_CookieHeaders_Success() => RunEchoHeadersAsync(
+            RunClient_ConnectAsync_CookieHeaders_Success, useSsl: false);
+
+        /*[Fact]
+        public Task ConnectAsync_PassNoSubProtocol_ServerRequires_ThrowsWebSocketException() => RunEchoAsync(
+            RunClient_ConnectAsync_PassNoSubProtocol_ServerRequires_ThrowsWebSocketException, useSsl: false);
+
+        [Fact]
+        public Task ConnectAsync_PassMultipleSubProtocols_ServerRequires_ConnectionUsesAgreedSubProtocol() => RunEchoAsync(
+            RunClient_ConnectAsync_PassMultipleSubProtocols_ServerRequires_ConnectionUsesAgreedSubProtocol, useSsl: false);*/
+
+        [Fact]
+        public Task ConnectAndCloseAsync_UseProxyServer_ExpectedClosedState() => RunEchoAsync(
+            RunClient_ConnectAndCloseAsync_UseProxyServer_ExpectedClosedState, useSsl: false);
     }
 
     // --- HTTP/2 WebSocket loopback tests ---
 
-    /*public class ConnectTest_Invoker_Http2 : ConnectTest_Loopback
+    public sealed class ConnectTest_Invoker_Http2 : ConnectTest_Loopback
     {
         public ConnectTest_Invoker_Http2(ITestOutputHelper output) : base(output) { }
         protected override bool UseCustomInvoker => true;
         internal override Version HttpVersion => Net.HttpVersion.Version20;
-    }*/
+    }
 
-    /*public class ConnectTest_HttpClient_Http2 : ConnectTest_Loopback
+    /*public sealed class ConnectTest_HttpClient_Http2 : ConnectTest_Loopback
     {
         public ConnectTest_HttpClient_Http2(ITestOutputHelper output) : base(output) { }
         protected override bool UseHttpClient => true;

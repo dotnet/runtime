@@ -85,9 +85,9 @@ namespace System.Net.WebSockets.Client.Tests
                     //Console.WriteLine($"[Client - {nameof(clientFunc)}] clientExitCt canceled={clientExitCt.IsCancellationRequested}, cancellationToken canceled={cancellationToken.IsCancellationRequested}");
                     try
                     {
-                        //Console.WriteLine($"[Client - {nameof(clientFunc)}] Starting client");
+                        // Console.WriteLine($"[Client - {nameof(clientFunc)}] Starting client");
                         await loopbackClientFunc(uri).ConfigureAwait(false);
-                        //Console.WriteLine($"[Client - {nameof(clientFunc)}] Client completed SUCCESSFULLY");
+                        // Console.WriteLine($"[Client - {nameof(clientFunc)}] Client completed SUCCESSFULLY");
                     }
                     //catch (Exception ex)
                     //{
@@ -116,11 +116,11 @@ namespace System.Net.WebSockets.Client.Tests
             {
                 try
                 {
-                    //Console.WriteLine($"[Server - {nameof(RunHttpServer)}<{typeof(TServer).Name}>] Starting server");
+                    // Console.WriteLine($"[Server - {nameof(RunHttpServer)}<{typeof(TServer).Name}>] Starting server");
                     await Task.Run(() =>
                         serverFunc(server, loopbackServerFunc, options, cancellationToken),
                         cancellationToken);
-                    //Console.WriteLine($"[Server - {nameof(RunHttpServer)}<{typeof(TServer).Name}>] Server completed SUCCESSFULLY");
+                    // Console.WriteLine($"[Server - {nameof(RunHttpServer)}<{typeof(TServer).Name}>] Server completed SUCCESSFULLY");
                 }
                 catch (OperationCanceledException) when (options.AbortServerOnClientExit && clientExitCt.IsCancellationRequested) { } // expected
                 catch (WebSocketException we) when (options.AbortServerOnClientExit && we.WebSocketErrorCode == WebSocketError.ConnectionClosedPrematurely) { } // expected
@@ -173,7 +173,7 @@ namespace System.Net.WebSockets.Client.Tests
             }
             else if (options.HttpVersion == HttpVersion.Version20)
             {
-                //Console.WriteLine($"[Server - {nameof(RunHttp2Server)}] Waiting for client connection...");
+                // Console.WriteLine($"[Server - {nameof(RunHttp2Server)}] Waiting for client connection...");
                 static async Task RunHttp2Server(Http2LoopbackServer server, Func<WebSocketRequestData, CancellationToken, Task> loopbackServerFunc, Options options, CancellationToken cancellationToken)
                 {
                     var requestData = await WebSocketHandshakeHelper.ProcessHttp2RequestAsync(
@@ -181,13 +181,13 @@ namespace System.Net.WebSockets.Client.Tests
                         options.SkipServerHandshakeResponse,
                         options.ParseEchoOptions,
                         cancellationToken).ConfigureAwait(false);
-                    //Console.WriteLine($"[Server - {nameof(RunHttp2Server)}] WebSocketRequestData: {requestData}");
+                    // Console.WriteLine($"[Server - {nameof(RunHttp2Server)}] WebSocketRequestData: {requestData}");
                     await loopbackServerFunc(requestData, cancellationToken).ConfigureAwait(false);
-                    //Console.WriteLine($"[Server - {nameof(RunHttp2Server)}] loopbackServerFunc completed");
-                    //Console.WriteLine($"[Server - {nameof(RunHttp2Server)}] Shutting down HTTP/2 connection...");
+                    // Console.WriteLine($"[Server - {nameof(RunHttp2Server)}] loopbackServerFunc completed");
+                    // Console.WriteLine($"[Server - {nameof(RunHttp2Server)}] Shutting down HTTP/2 connection...");
                     await requestData.Http2Connection!.ShutdownIgnoringErrorsAsync(
                         requestData.Http2StreamId.Value);
-                    //Console.WriteLine($"[Server - {nameof(RunHttp2Server)}] HTTP/2 connection shutdown completed");
+                    // Console.WriteLine($"[Server - {nameof(RunHttp2Server)}] HTTP/2 connection shutdown completed");
                 };
 
                 var http2Options = new Http2Options { WebSocketEndpoint = true, UseSsl = options.UseSsl };
@@ -214,12 +214,12 @@ namespace System.Net.WebSockets.Client.Tests
             options.ConfigureServerOptions?.Invoke(wsOptions);
 
             var serverWebSocket = WebSocket.CreateFromStream(requestData.TransportStream, wsOptions);
-            //Console.WriteLine($"[Server - {nameof(RunServerAsync)}] Created server websocket");
+            // Console.WriteLine($"[Server - {nameof(RunServerAsync)}] Created server websocket");
             using var registration = cancellationToken.Register(serverWebSocket.Abort);
 
-            //Console.WriteLine($"[Server - {nameof(RunServerAsync)}] Processing...");
+            // Console.WriteLine($"[Server - {nameof(RunServerAsync)}] Processing...");
             await serverWebSocketFunc(serverWebSocket, cancellationToken).ConfigureAwait(false);
-            //Console.WriteLine($"[Server - {nameof(RunServerAsync)}] Completed");
+            // Console.WriteLine($"[Server - {nameof(RunServerAsync)}] Completed");
 
             if (options.DisposeServerWebSocket)
             {

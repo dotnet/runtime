@@ -162,8 +162,8 @@ namespace System.Net.WebSockets.Client.Tests
 
                 Assert.Equal(WebSocketMessageType.Text, recvResult.MessageType);
                 string headers = WebSocketData.GetTextFromBuffer(new ArraySegment<byte>(buffer, 0, recvResult.Count));
-                Assert.Contains("X-CustomHeader1:Value1", headers);
-                Assert.Contains("X-CustomHeader2:Value2", headers);
+                Assert.Contains("X-CustomHeader1:Value1", headers, StringComparison.OrdinalIgnoreCase);
+                Assert.Contains("X-CustomHeader2:Value2", headers, StringComparison.OrdinalIgnoreCase);
 
                 await cws.CloseAsync(WebSocketCloseStatus.NormalClosure, string.Empty, CancellationToken.None);
             }
@@ -174,20 +174,29 @@ namespace System.Net.WebSockets.Client.Tests
             using (var cws = new ClientWebSocket())
             {
                 Assert.Null(cws.Options.Cookies);
-                cws.Options.Cookies = new CookieContainer();
+
+                var cookies = new CookieContainer();
 
                 Cookie cookie1 = new Cookie("Cookies", "Are Yummy");
                 Cookie cookie2 = new Cookie("Especially", "Chocolate Chip");
-                Cookie secureCookie = new Cookie("Occasionally", "Raisin");
-                secureCookie.Secure = true;
+                Cookie secureCookie = new Cookie("Occasionally", "Raisin") { Secure = true };
 
-                cws.Options.Cookies.Add(server, cookie1);
-                cws.Options.Cookies.Add(server, cookie2);
-                cws.Options.Cookies.Add(server, secureCookie);
+                cookies.Add(server, cookie1);
+                cookies.Add(server, cookie2);
+                cookies.Add(server, secureCookie);
+
+                if (UseSharedHandler)
+                {
+                    cws.Options.Cookies = cookies;
+                }
+                else
+                {
+                    ConfigureCustomHandler = handler => handler.CookieContainer = cookies;
+                }
 
                 using (var cts = new CancellationTokenSource(TimeOutMilliseconds))
                 {
-                    Task taskConnect = cws.ConnectAsync(server, cts.Token);
+                    Task taskConnect = ConnectAsync(cws, server, cts.Token);
                     Assert.True(
                         cws.State == WebSocketState.None ||
                         cws.State == WebSocketState.Connecting ||
@@ -207,6 +216,8 @@ namespace System.Net.WebSockets.Client.Tests
 
                 Assert.Equal(WebSocketMessageType.Text, recvResult.MessageType);
                 string headers = WebSocketData.GetTextFromBuffer(new ArraySegment<byte>(buffer, 0, recvResult.Count));
+
+                // Console.WriteLine(headers);
 
                 Assert.Contains("Cookies=Are Yummy", headers);
                 Assert.Contains("Especially=Chocolate Chip", headers);
