@@ -138,6 +138,14 @@ bool emitter::emitInsWritesToLclVarStackLoc(instrDesc* id)
 };
 // clang-format on
 
+emitter::MajorOpcode emitter::GetMajorOpcode(code_t code)
+{
+    assert((code & 0b11) == 0b11); // 16-bit instructions unsupported
+    code_t opcode = (code >> 2) & 0b11111;
+    assert((opcode & 0b111) != 0b111); // 48-bit and larger instructions unsupported
+    return (MajorOpcode)opcode;
+}
+
 inline bool emitter::emitInsMayWriteToGCReg(instruction ins)
 {
     assert(ins != INS_invalid);
@@ -148,25 +156,28 @@ inline bool emitter::emitInsMayWriteToGCReg(instruction ins)
         return true;
 
     code_t code = emitInsCode(ins);
-    assert((code & 0b11) == 0b11); // 16-bit instructions unsupported
-    code_t majorOpcode = (code >> 2) & 0b11111;
-    assert((majorOpcode & 0b111) != 0b111); // 48-bit and larger instructions unsupported
-    switch (majorOpcode)
+    switch (GetMajorOpcode(code))
     {
-        // Opcodes with no destination register or a floating-point destination register
-        case 0b00001: // LOAD-FP
-        case 0b01000: // STORE
-        case 0b01001: // STORE-FP
-        case 0b00011: // MISC-MEM
-        case 0b10000: // MADD
-        case 0b10001: // MSUB
-        case 0b10010: // NMSUB
-        case 0b10011: // NMADD
-        case 0b11000: // BRANCH
-        case 0b11100: // SYSTEM
+        // Opcodes with no destination register
+        case MajorOpcode::Store:
+        case MajorOpcode::StoreFp:
+        case MajorOpcode::MiscMem:
+        case MajorOpcode::Branch:
+        // Opcodes with a floating-point destination register
+        case MajorOpcode::LoadFp:
+        case MajorOpcode::MAdd:
+        case MajorOpcode::MSub:
+        case MajorOpcode::NmSub:
+        case MajorOpcode::NmAdd:
             return false;
 
-        case 0b10100: // OP-FP
+        case MajorOpcode::System:
+        {
+            code_t funct3 = (code >> 12) & 0b111;
+            return (funct3 != 0); // CSR read/writes
+        }
+
+        case MajorOpcode::OpFp:
         {
             // Lowest 2 bits of funct7 distinguish single, double, half, and quad floats; we don't care
             code_t funct7 = code >> (25 + 2);
@@ -181,13 +192,13 @@ inline bool emitter::emitInsMayWriteToGCReg(instruction ins)
             }
         }
 
-        case 0b00010: // custom-0
-        case 0b01010: // custom-1
-        case 0b10101: // OP-V
-        case 0b10110: // custom-2/rv128
-        case 0b11110: // custom-3/rv128
-        case 0b11010: // reserved
-        case 0b11101: // reserved
+        case MajorOpcode::Custom0:
+        case MajorOpcode::Custom1:
+        case MajorOpcode::Custom2Rv128:
+        case MajorOpcode::Custom3Rv128:
+        case MajorOpcode::OpV:
+        case MajorOpcode::OpVe:
+        case MajorOpcode::Reserved:
             assert(!"unsupported major opcode");
             FALLTHROUGH;
 
@@ -5248,7 +5259,8 @@ unsigned emitter::get_curTotalCodeSize()
 
 //----------------------------------------------------------------------------------------
 // getInsExecutionCharacteristics:
-//    Returns the current instruction execution characteristics
+//    Returns the current instruction execution characteristics based on the SiFive U74 core:
+//    https://www.starfivetech.com/uploads/u74_core_complex_manual_21G1.pdf
 //
 // Arguments:
 //    id  - The current instruction descriptor to be evaluated
@@ -5261,12 +5273,178 @@ unsigned emitter::get_curTotalCodeSize()
 //    are NOT accurate and just a function feature.
 emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(instrDesc* id)
 {
-    insExecutionCharacteristics result;
+    insExecutionCharacteristics result = {
+        .insThroughput       = PERFSCORE_LATENCY_1C,
+        .insLatency          = PERFSCORE_THROUGHPUT_1C,
+        .insMemoryAccessKind = PERFSCORE_MEMORY_NONE,
+    };
 
-    // TODO-RISCV64: support this function.
-    result.insThroughput       = PERFSCORE_THROUGHPUT_ZERO;
-    result.insLatency          = PERFSCORE_LATENCY_ZERO;
-    result.insMemoryAccessKind = PERFSCORE_MEMORY_NONE;
+    unsigned codeSize = id->idCodeSize();
+    assert((codeSize >= 4) && (codeSize % sizeof(code_t) == 0));
+    // Some instructions like jumps or loads may have not-yet-known simple auxilliary instructions (lui, addi, slli,
+    // etc) for building immediates, assume cost of one each.
+    float immediateBuildingCost = ((codeSize / sizeof(code_t)) - 1) * PERFSCORE_LATENCY_1C;
+
+    instruction ins = id->idIns();
+    assert(ins != INS_invalid);
+    if (ins == INS_lea)
+    {
+        result.insLatency += immediateBuildingCost;
+        result.insThroughput += immediateBuildingCost;
+        return result;
+    }
+
+    MajorOpcode opcode = GetMajorOpcode(emitInsCode(ins));
+    switch (opcode)
+    {
+        case MajorOpcode::OpImm:
+        case MajorOpcode::OpImm32:
+        case MajorOpcode::Lui:
+        case MajorOpcode::Auipc:
+            result.insLatency    = PERFSCORE_LATENCY_1C;
+            result.insThroughput = PERFSCORE_THROUGHPUT_2X;
+            break;
+
+        case MajorOpcode::Op:
+        case MajorOpcode::Op32:
+            if (id->idInsIs(INS_mul, INS_mulh, INS_mulhu, INS_mulhsu, INS_mulw))
+            {
+                result.insLatency = PERFSCORE_LATENCY_3C;
+            }
+            else if (id->idInsIs(INS_div, INS_divu, INS_rem, INS_remu))
+            {
+                result.insLatency = result.insThroughput = (6.0f + 68.0f) / 2;
+            }
+            else if (id->idInsIs(INS_divw, INS_divuw, INS_remw, INS_remuw))
+            {
+                result.insLatency = result.insThroughput = (6.0f + 36.0f) / 2;
+            }
+            else
+            {
+                result.insThroughput = PERFSCORE_THROUGHPUT_2X;
+            }
+            break;
+
+        case MajorOpcode::MAdd:
+        case MajorOpcode::MSub:
+        case MajorOpcode::NmAdd:
+        case MajorOpcode::NmSub:
+        case MajorOpcode::OpFp:
+            if (id->idInsIs(INS_fadd_s, INS_fsub_s, INS_fmul_s, INS_fmadd_s, INS_fmsub_s, INS_fnmadd_s, INS_fnmsub_s))
+            {
+                result.insLatency = PERFSCORE_LATENCY_5C;
+            }
+            else if (id->idInsIs(INS_fadd_d, INS_fsub_d, INS_fmul_d, INS_fmadd_d, INS_fmsub_d, INS_fnmadd_d,
+                                 INS_fnmsub_d))
+            {
+                result.insLatency = PERFSCORE_LATENCY_7C;
+            }
+            else if (id->idInsIs(INS_fdiv_s))
+            {
+                result.insLatency    = (9.0f + 36.0f) / 2;
+                result.insThroughput = (8.0f + 33.0f) / 2;
+            }
+            else if (id->idInsIs(INS_fsqrt_s))
+            {
+                result.insLatency    = (9.0f + 28.0f) / 2;
+                result.insThroughput = (8.0f + 33.0f) / 2;
+            }
+            else if (id->idInsIs(INS_fdiv_d))
+            {
+                result.insLatency    = (9.0f + 58.0f) / 2;
+                result.insThroughput = (8.0f + 58.0f) / 2;
+            }
+            else if (id->idInsIs(INS_fsqrt_d))
+            {
+                result.insLatency    = (9.0f + 57.0f) / 2;
+                result.insThroughput = (8.0f + 58.0f) / 2;
+            }
+            else if (id->idInsIs(INS_feq_s, INS_fle_s, INS_flt_s, INS_fclass_s, INS_feq_d, INS_fle_d, INS_flt_d,
+                                 INS_fclass_d, INS_fcvt_w_s, INS_fcvt_l_s, INS_fcvt_s_l, INS_fcvt_wu_s, INS_fcvt_lu_s,
+                                 INS_fcvt_s_lu, INS_fcvt_w_d, INS_fcvt_l_d, INS_fcvt_wu_d, INS_fcvt_lu_d))
+            {
+                result.insLatency = PERFSCORE_LATENCY_4C;
+            }
+            else if (id->idInsIs(INS_fcvt_d_l, INS_fcvt_d_lu, INS_fmv_d_x))
+            {
+                result.insLatency = PERFSCORE_LATENCY_6C;
+            }
+            else if (id->idInsIs(INS_fmv_x_w, INS_fmv_x_d))
+            {
+                result.insLatency = PERFSCORE_LATENCY_1C;
+            }
+            else
+            {
+                result.insLatency = PERFSCORE_LATENCY_2C;
+            }
+            break;
+
+        case MajorOpcode::Amo:
+            result.insLatency = result.insThroughput = PERFSCORE_LATENCY_5C;
+            result.insMemoryAccessKind               = PERFSCORE_MEMORY_READ_WRITE;
+            break;
+
+        case MajorOpcode::Branch:
+            result.insLatency = result.insThroughput =
+                immediateBuildingCost + (PERFSCORE_LATENCY_1C + PERFSCORE_LATENCY_6C) / 2;
+            break;
+
+        case MajorOpcode::Jalr:
+            result.insLatency = result.insThroughput =
+                immediateBuildingCost + (PERFSCORE_LATENCY_1C + PERFSCORE_LATENCY_5C) / 2;
+            break;
+
+        case MajorOpcode::Jal:
+            result.insLatency = result.insThroughput =
+                immediateBuildingCost + (PERFSCORE_LATENCY_1C + PERFSCORE_LATENCY_2C) / 2;
+            break;
+
+        case MajorOpcode::System:
+        {
+            code_t code   = id->idAddr()->iiaGetInstrEncode();
+            code_t funct3 = (code >> 12) & 0b111;
+            if (funct3 != 0)
+            {
+                bool isCsrrw      = ((funct3 & 0b11) == 0b01);
+                bool isZero       = (((code >> 15) & 0b11111) == 0); // source register or 5-bit immediate is zero
+                bool isWrite      = (isCsrrw || !isZero);
+                result.insLatency = isWrite ? PERFSCORE_LATENCY_7C : PERFSCORE_LATENCY_1C;
+            }
+            break;
+        }
+
+        case MajorOpcode::Load:
+        case MajorOpcode::Store:
+        case MajorOpcode::LoadFp:
+        case MajorOpcode::StoreFp:
+        {
+            bool isLoad = (opcode == MajorOpcode::Load || opcode == MajorOpcode::LoadFp);
+
+            result.insLatency = isLoad ? PERFSCORE_LATENCY_2C : PERFSCORE_LATENCY_4C;
+            if (isLoad)
+            {
+                code_t log2Size = (emitInsCode(ins) >> 12) & 0b11;
+                if (log2Size < 2) // sub-word loads
+                    result.insLatency += PERFSCORE_LATENCY_1C;
+            }
+
+            regNumber baseReg = id->idReg2();
+            if (baseReg != REG_SP || baseReg != REG_FP)
+                result.insLatency += PERFSCORE_LATENCY_1C; // assume non-stack load/stores are more likely to cache-miss
+
+            result.insThroughput += immediateBuildingCost;
+            result.insMemoryAccessKind = isLoad ? PERFSCORE_MEMORY_READ : PERFSCORE_MEMORY_WRITE;
+            break;
+        }
+
+        case MajorOpcode::MiscMem:
+            result.insLatency    = PERFSCORE_LATENCY_5C;
+            result.insThroughput = PERFSCORE_THROUGHPUT_5C;
+            break;
+
+        default:
+            perfScoreUnhandledInstruction(id, &result);
+    }
 
     return result;
 }
