@@ -589,6 +589,99 @@ void Compiler::optRelopImpliesRelop(RelopImplicationInfo* rii)
 }
 
 //------------------------------------------------------------------------
+// optRelopTryInferWithTreePlusOne:
+//
+// Arguments:
+//   domApp  - The dominating relop R(x, y)
+//   treeApp - The dominated relop R*(x + y, y)
+//   rii     - [out] struct with relop implication information
+//
+// Returns:
+//   True if something was inferred; otherwise false.
+//
+bool Compiler::optRelopTryInferWithTreePlusOne(const VNFuncApp&      domApp,
+                                               const VNFuncApp&      treeApp,
+                                               RelopImplicationInfo* rii)
+{
+    VNFunc   domFunc = domApp.m_func;
+    ValueNum domOp1  = domApp.m_args[0];
+    ValueNum domOp2  = domApp.m_args[1];
+
+    VNFunc   treeFunc = treeApp.m_func;
+    ValueNum treeOp1  = treeApp.m_args[0];
+    ValueNum treeOp2  = treeApp.m_args[1];
+
+    // One of the operands in both compares is the same, normalize it to be on the right.
+    if (domOp2 != treeOp2)
+    {
+        if (domOp2 == treeOp1)
+        {
+            std::swap(treeOp1, treeOp2);
+            treeFunc = ValueNumStore::SwapRelop(treeFunc);
+        }
+        else if (domOp1 == treeOp1)
+        {
+            std::swap(domOp1, domOp2);
+            std::swap(treeOp1, treeOp2);
+            domFunc  = ValueNumStore::SwapRelop(domFunc);
+            treeFunc = ValueNumStore::SwapRelop(treeFunc);
+        }
+        else if (domOp1 == treeOp2)
+        {
+            std::swap(domOp1, domOp2);
+            domFunc = ValueNumStore::SwapRelop(domFunc);
+        }
+    }
+    assert(domOp2 == treeOp2);
+
+    // Now see if treeOp1 is ADD(domOp1, cns)
+    VNFuncApp treeOp1App;
+    if (!vnStore->GetVNFunc(treeOp1, &treeOp1App) || (treeOp1App.m_func != VNF_ADD))
+    {
+        return false;
+    }
+
+    ValueNum treeOp1Arg = treeOp1App.m_args[0];
+    ValueNum treeOp1Cns = treeOp1App.m_args[1];
+
+    ssize_t cnsOffset;
+    if (vnStore->IsVNIntegralConstant<ssize_t>(treeOp1Arg, &cnsOffset) && (cnsOffset == 1))
+    {
+        std::swap(treeOp1Arg, treeOp1Cns);
+    }
+    else if (!vnStore->IsVNIntegralConstant<ssize_t>(treeOp1Cns, &cnsOffset) || (cnsOffset != 1))
+    {
+        return false;
+    }
+    // TODO-CQ: support -1 as well
+
+    if (domOp1 != treeOp1Arg)
+    {
+        return false;
+    }
+
+    static const RelopImplicationRule implicationRules[] = {
+        // domRelop, inferFromTrue, inferFromFalse, treeRelop, reverse
+        {U(GE), false, true, U(LE), true},
+        {U(LE), true, false, U(LE), true},
+    };
+
+    for (const RelopImplicationRule& rule : implicationRules)
+    {
+        if ((rule.domRelop == domFunc) && (rule.treeRelop == treeFunc))
+        {
+            rii->canInfer          = true;
+            rii->vnRelation        = ValueNumStore::VN_RELATION_KIND::VRK_Inferred;
+            rii->canInferFromTrue  = rule.canInferFromTrue;
+            rii->canInferFromFalse = rule.canInferFromFalse;
+            rii->reverseSense      = rule.reverse;
+            return true;
+        }
+    }
+    return false;
+}
+
+//------------------------------------------------------------------------
 // optRelopTryInferWithOneEqualOperand: Given a domnating relop R(x, y) and
 // another relop R*(a, b) that share an operand, try to see if we can infer
 // something about R*(a, b).
@@ -605,6 +698,11 @@ bool Compiler::optRelopTryInferWithOneEqualOperand(const VNFuncApp&      domApp,
                                                    const VNFuncApp&      treeApp,
                                                    RelopImplicationInfo* rii)
 {
+    if (optRelopTryInferWithTreePlusOne(domApp, treeApp, rii))
+    {
+        return true;
+    }
+
     // Canonicalize constants to be on the right.
     VNFunc   domFunc = domApp.m_func;
     ValueNum domOp1  = domApp.m_args[0];
