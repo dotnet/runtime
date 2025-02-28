@@ -19,7 +19,7 @@ namespace System.Numerics.Tensors
             static abstract Vector512<T> Invoke(Vector512<T> x, Vector512<T> y, Vector512<T> z);
         }
 
-        private readonly struct InvertYZTernaryOperator<TOperator, T> : ITernaryOperator<T>
+        private readonly struct SwappedYZTernaryOperator<TOperator, T> : ITernaryOperator<T>
             where TOperator : struct, ITernaryOperator<T>
         {
             public static T Invoke(T x, T y, T z) => TOperator.Invoke(x, z, y);
@@ -2996,7 +2996,7 @@ namespace System.Numerics.Tensors
         private static void InvokeSpanScalarSpanIntoSpan<T, TTernaryOperator>(
             ReadOnlySpan<T> x, T y, ReadOnlySpan<T> z, Span<T> destination)
             where TTernaryOperator : struct, ITernaryOperator<T> =>
-            InvokeSpanSpanScalarIntoSpan<T, InvertYZTernaryOperator<TTernaryOperator, T>>(x, z, y, destination);
+            InvokeSpanSpanScalarIntoSpan<T, SwappedYZTernaryOperator<TTernaryOperator, T>>(x, z, y, destination);
 
         /// <summary>
         /// Performs an element-wise operation on <paramref name="x"/>, <paramref name="y"/>, and <paramref name="z"/>,

@@ -72,7 +72,7 @@ namespace System.Numerics.Tensors
         /// </remarks>
         public static void DivRem<T>(T x, ReadOnlySpan<T> y, Span<T> quotientDestination, Span<T> remainderDestination)
             where T : IBinaryInteger<T> =>
-            InvokeSpanScalarIntoSpanSpan<T, InvertedBinaryInputBinaryOutput<DivRemOperator<T>, T>>(y, x, quotientDestination, remainderDestination);
+            InvokeSpanScalarIntoSpanSpan<T, SwappedBinaryInputBinaryOutput<DivRemOperator<T>, T>>(y, x, quotientDestination, remainderDestination);
 
         /// <summary>Math.DivRem(x, y)</summary>
         private readonly struct DivRemOperator<T> : IBinaryInputBinaryOutput<T> where T : IBinaryInteger<T>

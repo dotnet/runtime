@@ -93,44 +93,6 @@ namespace System.Numerics.Tensors.Tests
             ConvertCheckedImpl<long, int>(42, int.MaxValue + 1L);
         }
 
-        [Fact]
-        public void ConvertToInteger()
-        {
-            ConvertToIntegerImpl<Half, ushort>();
-            ConvertToIntegerImpl<Half, int>();
-            ConvertToIntegerImpl<Half, uint>();
-            ConvertToIntegerImpl<Half, ulong>();
-
-            ConvertToIntegerImpl<float, ushort>();
-            ConvertToIntegerImpl<float, int>();
-            ConvertToIntegerImpl<float, uint>();
-            ConvertToIntegerImpl<float, ulong>();
-
-            ConvertToIntegerImpl<double, ushort>();
-            ConvertToIntegerImpl<double, int>();
-            ConvertToIntegerImpl<double, long>();
-            ConvertToIntegerImpl<double, ulong>();
-        }
-
-        [Fact]
-        public void ConvertToIntegerNative()
-        {
-            ConvertToIntegerNativeImpl<Half, ushort>();
-            ConvertToIntegerNativeImpl<Half, int>();
-            ConvertToIntegerNativeImpl<Half, uint>();
-            ConvertToIntegerNativeImpl<Half, ulong>();
-
-            ConvertToIntegerNativeImpl<float, ushort>();
-            ConvertToIntegerNativeImpl<float, int>();
-            ConvertToIntegerNativeImpl<float, uint>();
-            ConvertToIntegerNativeImpl<float, ulong>();
-
-            ConvertToIntegerNativeImpl<double, ushort>();
-            ConvertToIntegerNativeImpl<double, int>();
-            ConvertToIntegerNativeImpl<double, long>();
-            ConvertToIntegerNativeImpl<double, ulong>();
-        }
-
         private static void ConvertTruncatingImpl<TFrom, TTo>()
             where TFrom : unmanaged, INumber<TFrom>
             where TTo : unmanaged, INumber<TTo>
@@ -254,6 +216,45 @@ namespace System.Numerics.Tensors.Tests
             }
         }
 
+#if !SNT_NET8_TESTS
+        [Fact]
+        public void ConvertToInteger()
+        {
+            ConvertToIntegerImpl<Half, ushort>();
+            ConvertToIntegerImpl<Half, int>();
+            ConvertToIntegerImpl<Half, uint>();
+            ConvertToIntegerImpl<Half, ulong>();
+
+            ConvertToIntegerImpl<float, ushort>();
+            ConvertToIntegerImpl<float, int>();
+            ConvertToIntegerImpl<float, uint>();
+            ConvertToIntegerImpl<float, ulong>();
+
+            ConvertToIntegerImpl<double, ushort>();
+            ConvertToIntegerImpl<double, int>();
+            ConvertToIntegerImpl<double, long>();
+            ConvertToIntegerImpl<double, ulong>();
+        }
+
+        [Fact]
+        public void ConvertToIntegerNative()
+        {
+            ConvertToIntegerNativeImpl<Half, ushort>();
+            ConvertToIntegerNativeImpl<Half, int>();
+            ConvertToIntegerNativeImpl<Half, uint>();
+            ConvertToIntegerNativeImpl<Half, ulong>();
+
+            ConvertToIntegerNativeImpl<float, ushort>();
+            ConvertToIntegerNativeImpl<float, int>();
+            ConvertToIntegerNativeImpl<float, uint>();
+            ConvertToIntegerNativeImpl<float, ulong>();
+
+            ConvertToIntegerNativeImpl<double, ushort>();
+            ConvertToIntegerNativeImpl<double, int>();
+            ConvertToIntegerNativeImpl<double, long>();
+            ConvertToIntegerNativeImpl<double, ulong>();
+        }
+
         private static void ConvertToIntegerImpl<TFrom, TTo>()
             where TFrom : unmanaged, IFloatingPoint<TFrom>
             where TTo : unmanaged, IBinaryInteger<TTo>
@@ -276,12 +277,7 @@ namespace System.Numerics.Tensors.Tests
 
                 for (int i = 0; i < tensorLength; i++)
                 {
-                    TTo expected =
-#if SNT_NET8_TESTS
-                        TTo.CreateSaturating(source.Span[i]);
-#else
-                        TFrom.ConvertToInteger<TTo>(source.Span[i]);
-#endif
+                    TTo expected = TFrom.ConvertToInteger<TTo>(source.Span[i]);
                     if (!Helpers.IsEqualWithTolerance(expected, destination.Span[i]))
                     {
                         throw new XunitException($"{typeof(TFrom).Name} => {typeof(TTo).Name}. Input: {source.Span[i]}. Expected: {expected}. Actual: {destination.Span[i]}.");
@@ -312,12 +308,7 @@ namespace System.Numerics.Tensors.Tests
 
                 for (int i = 0; i < tensorLength; i++)
                 {
-                    TTo expected =
-#if SNT_NET8_TESTS
-                        TTo.CreateSaturating(source.Span[i]);
-#else
-                        TFrom.ConvertToIntegerNative<TTo>(source.Span[i]);
-#endif
+                    TTo expected = TFrom.ConvertToIntegerNative<TTo>(source.Span[i]);
                     if (!Helpers.IsEqualWithTolerance(expected, destination.Span[i]))
                     {
                         throw new XunitException($"{typeof(TFrom).Name} => {typeof(TTo).Name}. Input: {source.Span[i]}. Expected: {expected}. Actual: {destination.Span[i]}.");
@@ -325,6 +316,7 @@ namespace System.Numerics.Tensors.Tests
                 }
             }
         }
+#endif
     }
 
     // The tests for some types have been marked as OuterLoop simply to decrease inner loop testing time.

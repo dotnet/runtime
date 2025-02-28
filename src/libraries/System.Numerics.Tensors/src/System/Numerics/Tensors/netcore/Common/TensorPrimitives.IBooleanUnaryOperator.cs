@@ -258,8 +258,7 @@ namespace System.Numerics.Tensors
                         {
                             Vector512<byte> v = TOperator.Invoke(Vector512.LoadUnsafe(ref xRef, (uint)i)).AsByte();
 
-                            Vector512.ConditionalSelect(v, Vector512<byte>.One, Vector512<byte>.Zero)
-                                .StoreUnsafe(ref Unsafe.As<bool, byte>(ref destinationRef), (uint)i);
+                            (v & Vector512<byte>.One).StoreUnsafe(ref Unsafe.As<bool, byte>(ref destinationRef), (uint)i);
                         }
                     }
                 }
@@ -290,8 +289,7 @@ namespace System.Numerics.Tensors
                         {
                             Vector256<byte> v = TOperator.Invoke(Vector256.LoadUnsafe(ref xRef, (uint)i)).AsByte();
 
-                            Vector256.ConditionalSelect(v, Vector256<byte>.One, Vector256<byte>.Zero)
-                                .StoreUnsafe(ref Unsafe.As<bool, byte>(ref destinationRef), (uint)i);
+                            (v & Vector256<byte>.One).StoreUnsafe(ref Unsafe.As<bool, byte>(ref destinationRef), (uint)i);
                         }
                     }
                 }
@@ -322,8 +320,7 @@ namespace System.Numerics.Tensors
                         {
                             Vector128<byte> v = TOperator.Invoke(Vector128.LoadUnsafe(ref xRef, (uint)i)).AsByte();
 
-                            Vector128.ConditionalSelect(v, Vector128<byte>.One, Vector128<byte>.Zero)
-                                .StoreUnsafe(ref Unsafe.As<bool, byte>(ref destinationRef), (uint)i);
+                            (v & Vector128<byte>.One).StoreUnsafe(ref Unsafe.As<bool, byte>(ref destinationRef), (uint)i);
                         }
                     }
                 }
@@ -372,8 +369,7 @@ namespace System.Numerics.Tensors
                                     TOperator.Invoke(Vector512.LoadUnsafe(ref xRef, (uint)i)).AsUInt16(),
                                     TOperator.Invoke(Vector512.LoadUnsafe(ref xRef, (uint)(i + Vector512<T>.Count))).AsUInt16());
 
-                            Vector512.ConditionalSelect(v, Vector512<byte>.One, Vector512<byte>.Zero)
-                                .StoreUnsafe(ref Unsafe.As<bool, byte>(ref destinationRef), (uint)i);
+                            (v & Vector512<byte>.One).StoreUnsafe(ref Unsafe.As<bool, byte>(ref destinationRef), (uint)i);
                         }
                     }
                 }
@@ -407,8 +403,7 @@ namespace System.Numerics.Tensors
                                     TOperator.Invoke(Vector256.LoadUnsafe(ref xRef, (uint)i)).AsUInt16(),
                                     TOperator.Invoke(Vector256.LoadUnsafe(ref xRef, (uint)(i + Vector256<T>.Count))).AsUInt16());
 
-                            Vector256.ConditionalSelect(v, Vector256<byte>.One, Vector256<byte>.Zero)
-                                .StoreUnsafe(ref Unsafe.As<bool, byte>(ref destinationRef), (uint)i);
+                            (v & Vector256<byte>.One).StoreUnsafe(ref Unsafe.As<bool, byte>(ref destinationRef), (uint)i);
                         }
                     }
                 }
@@ -442,8 +437,7 @@ namespace System.Numerics.Tensors
                                     TOperator.Invoke(Vector128.LoadUnsafe(ref xRef, (uint)i)).AsUInt16(),
                                     TOperator.Invoke(Vector128.LoadUnsafe(ref xRef, (uint)(i + Vector128<T>.Count))).AsUInt16());
 
-                            Vector128.ConditionalSelect(v, Vector128<byte>.One, Vector128<byte>.Zero)
-                                .StoreUnsafe(ref Unsafe.As<bool, byte>(ref destinationRef), (uint)i);
+                            (v & Vector128<byte>.One).StoreUnsafe(ref Unsafe.As<bool, byte>(ref destinationRef), (uint)i);
                         }
                     }
                 }
@@ -496,8 +490,7 @@ namespace System.Numerics.Tensors
                                         TOperator.Invoke(Vector512.LoadUnsafe(ref xRef, (uint)(i + (2 * Vector512<T>.Count)))).AsUInt32(),
                                         TOperator.Invoke(Vector512.LoadUnsafe(ref xRef, (uint)(i + (3 * Vector512<T>.Count)))).AsUInt32()));
 
-                            Vector512.ConditionalSelect(v, Vector512<byte>.One, Vector512<byte>.Zero)
-                                .StoreUnsafe(ref Unsafe.As<bool, byte>(ref destinationRef), (uint)i);
+                            (v & Vector512<byte>.One).StoreUnsafe(ref Unsafe.As<bool, byte>(ref destinationRef), (uint)i);
                         }
                     }
                 }
@@ -535,8 +528,7 @@ namespace System.Numerics.Tensors
                                         TOperator.Invoke(Vector256.LoadUnsafe(ref xRef, (uint)(i + (2 * Vector256<T>.Count)))).AsUInt32(),
                                         TOperator.Invoke(Vector256.LoadUnsafe(ref xRef, (uint)(i + (3 * Vector256<T>.Count)))).AsUInt32()));
 
-                            Vector256.ConditionalSelect(v, Vector256<byte>.One, Vector256<byte>.Zero)
-                                .StoreUnsafe(ref Unsafe.As<bool, byte>(ref destinationRef), (uint)i);
+                            (v & Vector256<byte>.One).StoreUnsafe(ref Unsafe.As<bool, byte>(ref destinationRef), (uint)i);
                         }
                     }
                 }
@@ -574,8 +566,7 @@ namespace System.Numerics.Tensors
                                         TOperator.Invoke(Vector128.LoadUnsafe(ref xRef, (uint)(i + (2 * Vector128<T>.Count)))).AsUInt32(),
                                         TOperator.Invoke(Vector128.LoadUnsafe(ref xRef, (uint)(i + (3 * Vector128<T>.Count)))).AsUInt32()));
 
-                            Vector128.ConditionalSelect(v, Vector128<byte>.One, Vector128<byte>.Zero)
-                                .StoreUnsafe(ref Unsafe.As<bool, byte>(ref destinationRef), (uint)i);
+                            (v & Vector128<byte>.One).StoreUnsafe(ref Unsafe.As<bool, byte>(ref destinationRef), (uint)i);
                         }
                     }
                 }
@@ -636,8 +627,7 @@ namespace System.Numerics.Tensors
                                             TOperator.Invoke(Vector512.LoadUnsafe(ref xRef, (uint)(i + (6 * Vector512<T>.Count)))).AsUInt64(),
                                             TOperator.Invoke(Vector512.LoadUnsafe(ref xRef, (uint)(i + (7 * Vector512<T>.Count)))).AsUInt64())));
 
-                            Vector512.ConditionalSelect(v, Vector512<byte>.One, Vector512<byte>.Zero)
-                                .StoreUnsafe(ref Unsafe.As<bool, byte>(ref destinationRef), (uint)i);
+                            (v & Vector512<byte>.One).StoreUnsafe(ref Unsafe.As<bool, byte>(ref destinationRef), (uint)i);
                         }
                     }
                 }
@@ -685,8 +675,7 @@ namespace System.Numerics.Tensors
                                             TOperator.Invoke(Vector256.LoadUnsafe(ref xRef, (uint)(i + (6 * Vector256<T>.Count)))).AsUInt64(),
                                             TOperator.Invoke(Vector256.LoadUnsafe(ref xRef, (uint)(i + (7 * Vector256<T>.Count)))).AsUInt64())));
 
-                            Vector256.ConditionalSelect(v, Vector256<byte>.One, Vector256<byte>.Zero)
-                                .StoreUnsafe(ref Unsafe.As<bool, byte>(ref destinationRef), (uint)i);
+                            (v & Vector256<byte>.One).StoreUnsafe(ref Unsafe.As<bool, byte>(ref destinationRef), (uint)i);
                         }
                     }
                 }
@@ -734,8 +723,7 @@ namespace System.Numerics.Tensors
                                             TOperator.Invoke(Vector128.LoadUnsafe(ref xRef, (uint)(i + (6 * Vector128<T>.Count)))).AsUInt64(),
                                             TOperator.Invoke(Vector128.LoadUnsafe(ref xRef, (uint)(i + (7 * Vector128<T>.Count)))).AsUInt64())));
 
-                            Vector128.ConditionalSelect(v, Vector128<byte>.One, Vector128<byte>.Zero)
-                                .StoreUnsafe(ref Unsafe.As<bool, byte>(ref destinationRef), (uint)i);
+                            (v & Vector128<byte>.One).StoreUnsafe(ref Unsafe.As<bool, byte>(ref destinationRef), (uint)i);
                         }
                     }
                 }

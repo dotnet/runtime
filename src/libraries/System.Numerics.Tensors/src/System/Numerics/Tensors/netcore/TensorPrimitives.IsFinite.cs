@@ -60,13 +60,8 @@ namespace System.Numerics.Tensors
 
         /// <summary>Gets whether all values of the specified type are always finite.</summary>
         private static bool AlwaysFinite<T>() =>
-            typeof(T) == typeof(decimal) ||
-            typeof(T) == typeof(sbyte) || typeof(T) == typeof(byte) ||
-            typeof(T) == typeof(short) || typeof(T) == typeof(ushort) || typeof(T) == typeof(char) ||
-            typeof(T) == typeof(int) || typeof(T) == typeof(uint) ||
-            typeof(T) == typeof(long) || typeof(T) == typeof(ulong) ||
-            typeof(T) == typeof(nint) || typeof(T) == typeof(nuint) ||
-            typeof(T) == typeof(Int128) || typeof(T) == typeof(UInt128);
+            IsPrimitiveBinaryInteger<T>() ||
+            typeof(T) == typeof(decimal);
 
         /// <summary>T.IsFinite(x)</summary>
         private readonly struct IsFiniteOperator<T> : IBooleanUnaryOperator<T>

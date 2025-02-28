@@ -31,7 +31,7 @@ namespace System.Numerics.Tensors
             static abstract T RemainderMaskValue { get; }
         }
 
-        private readonly struct InvertedBinaryInputBinaryOutput<TOperator, T> : IBinaryInputBinaryOutput<T>
+        private readonly struct SwappedBinaryInputBinaryOutput<TOperator, T> : IBinaryInputBinaryOutput<T>
             where TOperator : struct, IBinaryInputBinaryOutput<T>
         {
             public static bool Vectorizable => TOperator.Vectorizable;
@@ -546,6 +546,6 @@ namespace System.Numerics.Tensors
         private static void InvokeScalarSpanIntoSpanSpan<T, TOperator>(
             T x, ReadOnlySpan<T> y, Span<T> destination1, Span<T> destination2)
             where TOperator : struct, IBinaryInputBinaryOutput<T> =>
-            InvokeSpanScalarIntoSpanSpan<T, InvertedBinaryInputBinaryOutput<TOperator, T>>(y, x, destination1, destination2);
+            InvokeSpanScalarIntoSpanSpan<T, SwappedBinaryInputBinaryOutput<TOperator, T>>(y, x, destination1, destination2);
     }
 }

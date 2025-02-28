@@ -70,8 +70,6 @@
     <Compile Include="System\Numerics\Tensors\netcore\TensorPrimitives.ConvertHelpers.cs" />
     <Compile Include="System\Numerics\Tensors\netcore\TensorPrimitives.ConvertSaturating.cs" />
     <Compile Include="System\Numerics\Tensors\netcore\TensorPrimitives.ConvertTruncating.cs" />
-    <Compile Include="System\Numerics\Tensors\netcore\TensorPrimitives.ConvertToInteger.cs" />
-    <Compile Include="System\Numerics\Tensors\netcore\TensorPrimitives.ConvertToIntegerNative.cs" />
     <Compile Include="System\Numerics\Tensors\netcore\TensorPrimitives.CopySign.cs" />
     <Compile Include="System\Numerics\Tensors\netcore\TensorPrimitives.Cos.cs" />
     <Compile Include="System\Numerics\Tensors\netcore\TensorPrimitives.Cosh.cs" />
@@ -172,6 +170,11 @@
     <Compile Include="System\Numerics\Tensors\netcore\TensorPrimitives.TrailingZeroCount.cs" />
     <Compile Include="System\Numerics\Tensors\netcore\TensorPrimitives.Truncate.cs" />
     <Compile Include="System\Numerics\Tensors\netcore\TensorPrimitives.Xor.cs" />
+  </ItemGroup>
+
+  <ItemGroup Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net9.0'))">
+    <Compile Include="System\Numerics\Tensors\netcore\TensorPrimitives.ConvertToInteger.cs" />
+    <Compile Include="System\Numerics\Tensors\netcore\TensorPrimitives.ConvertToIntegerNative.cs" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">

@@ -123,7 +123,7 @@ namespace System.Numerics.Tensors
                 ThrowHelper.ThrowArgument_MinGreaterThanMax();
             }
 
-            InvokeSpanScalarScalarIntoSpan<T, ClampOperatorXMinMaxNoValidation<T>>(x, min, max, destination);
+            InvokeSpanScalarScalarIntoSpan<T, ClampOperatorXMinMax<T>>(x, min, max, destination);
         }
 
         /// <summary>
@@ -172,9 +172,13 @@ namespace System.Numerics.Tensors
         {
             public static bool Vectorizable => true;
 
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public static T Invoke(T x, T min, T max) => T.Clamp(x, min, max);
 
+#if NET9_0_OR_GREATER
+            public static Vector128<T> Invoke(Vector128<T> x, Vector128<T> min, Vector128<T> max) => Vector128.Clamp(x, min, max);
+            public static Vector256<T> Invoke(Vector256<T> x, Vector256<T> min, Vector256<T> max) => Vector256.Clamp(x, min, max);
+            public static Vector512<T> Invoke(Vector512<T> x, Vector512<T> min, Vector512<T> max) => Vector512.Clamp(x, min, max);
+#else
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public static Vector128<T> Invoke(Vector128<T> x, Vector128<T> min, Vector128<T> max)
             {
@@ -207,29 +211,7 @@ namespace System.Numerics.Tensors
 
                 return MinOperator<T>.Invoke(MaxOperator<T>.Invoke(x, min), max);
             }
-        }
-
-        /// <summary>T.Clamp(x, min, max) without per vector validation of min &lt;= max</summary>
-        internal readonly struct ClampOperatorXMinMaxNoValidation<T> : ITernaryOperator<T>
-            where T : INumber<T>
-        {
-            public static bool Vectorizable => true;
-
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public static T Invoke(T x, T min, T max) =>
-                T.Min(T.Max(x, min), max);
-
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public static Vector128<T> Invoke(Vector128<T> x, Vector128<T> min, Vector128<T> max) =>
-                MinOperator<T>.Invoke(MaxOperator<T>.Invoke(x, min), max);
-
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public static Vector256<T> Invoke(Vector256<T> x, Vector256<T> min, Vector256<T> max) =>
-                MinOperator<T>.Invoke(MaxOperator<T>.Invoke(x, min), max);
-
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public static Vector512<T> Invoke(Vector512<T> x, Vector512<T> min, Vector512<T> max) =>
-                MinOperator<T>.Invoke(MaxOperator<T>.Invoke(x, min), max);
+#endif
         }
 
         /// <summary>T.Clamp(min, max, x)</summary>
@@ -238,9 +220,13 @@ namespace System.Numerics.Tensors
         {
             public static bool Vectorizable => true;
 
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public static T Invoke(T min, T max, T x) => T.Clamp(x, min, max);
 
+#if NET9_0_OR_GREATER
+            public static Vector128<T> Invoke(Vector128<T> min, Vector128<T> max, Vector128<T> x) => Vector128.Clamp(x, min, max);
+            public static Vector256<T> Invoke(Vector256<T> min, Vector256<T> max, Vector256<T> x) => Vector256.Clamp(x, min, max);
+            public static Vector512<T> Invoke(Vector512<T> min, Vector512<T> max, Vector512<T> x) => Vector512.Clamp(x, min, max);
+#else
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public static Vector128<T> Invoke(Vector128<T> min, Vector128<T> max, Vector128<T> x)
             {
@@ -273,6 +259,7 @@ namespace System.Numerics.Tensors
 
                 return MinOperator<T>.Invoke(MaxOperator<T>.Invoke(x, min), max);
             }
+#endif
         }
 
         /// <summary>T.Clamp(max, x, min)</summary>
@@ -281,9 +268,14 @@ namespace System.Numerics.Tensors
         {
             public static bool Vectorizable => true;
 
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public static T Invoke(T max, T x, T min) => T.Clamp(x, min, max);
 
+
+#if NET9_0_OR_GREATER
+            public static Vector128<T> Invoke(Vector128<T> max, Vector128<T> x, Vector128<T> min) => Vector128.Clamp(x, min, max);
+            public static Vector256<T> Invoke(Vector256<T> max, Vector256<T> x, Vector256<T> min) => Vector256.Clamp(x, min, max);
+            public static Vector512<T> Invoke(Vector512<T> max, Vector512<T> x, Vector512<T> min) => Vector512.Clamp(x, min, max);
+#else
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public static Vector128<T> Invoke(Vector128<T> max, Vector128<T> x, Vector128<T> min)
             {
@@ -316,6 +308,7 @@ namespace System.Numerics.Tensors
 
                 return MinOperator<T>.Invoke(MaxOperator<T>.Invoke(x, min), max);
             }
+#endif
         }
     }
 }

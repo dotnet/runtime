@@ -72,6 +72,25 @@ namespace System.Numerics.Tensors
 #endif
         }
 
+        /// <summary>Gets whether <typeparamref name="T"/> is a built-in binary integer type.</summary>
+        private static bool IsPrimitiveBinaryInteger<T>() =>
+#if NET
+            typeof(T) == typeof(Int128) || typeof(T) == typeof(UInt128) ||
+#endif
+            typeof(T) == typeof(sbyte) || typeof(T) == typeof(byte) ||
+            typeof(T) == typeof(short) || typeof(T) == typeof(ushort) || typeof(T) == typeof(char) ||
+            typeof(T) == typeof(int) || typeof(T) == typeof(uint) ||
+            typeof(T) == typeof(long) || typeof(T) == typeof(ulong) ||
+            typeof(T) == typeof(nint) || typeof(T) == typeof(nuint);
+
+        private static bool IsPrimitiveFloatingPoint<T>() =>
+#if NET
+            typeof(T) == typeof(Half) ||
+            typeof(T) == typeof(NFloat) ||
+#endif
+            typeof(T) == typeof(float) ||
+            typeof(T) == typeof(double);
+
         /// <summary>Mask used to handle alignment elements before vectorized handling of the input.</summary>
         /// <remarks>
         /// Logically 64 rows of 64 bytes. The Nth row should be used to handle N alignment elements at the

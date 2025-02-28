@@ -29,12 +29,7 @@ namespace System.Numerics.Tensors
             where TFrom : IFloatingPoint<TFrom>
             where TTo : IBinaryInteger<TTo>
         {
-            public static TTo Invoke(TFrom x) =>
-#if NET9_0_OR_GREATER
-                TFrom.ConvertToInteger<TTo>(x);
-#else
-                TTo.CreateSaturating(x);
-#endif
+            public static TTo Invoke(TFrom x) => TFrom.ConvertToInteger<TTo>(x);
 
             public static bool Vectorizable =>
                 (typeof(TFrom) == typeof(float) && typeof(TTo) == typeof(int)) ||

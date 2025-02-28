@@ -29,7 +29,6 @@ namespace System.Numerics.Tensors
             where TFrom : IFloatingPoint<TFrom>
             where TTo : IBinaryInteger<TTo>
         {
-#if NET9_0_OR_GREATER
             public static TTo Invoke(TFrom x) => TFrom.ConvertToIntegerNative<TTo>(x);
 
             public static bool Vectorizable =>
@@ -88,15 +87,6 @@ namespace System.Numerics.Tensors
 
                 throw new NotSupportedException();
             }
-#else
-            public static TTo Invoke(TFrom x) => TTo.CreateSaturating(x);
-
-            public static bool Vectorizable => false;
-
-            public static Vector128<TTo> Invoke(Vector128<TFrom> x) => throw new NotSupportedException();
-            public static Vector256<TTo> Invoke(Vector256<TFrom> x) => throw new NotSupportedException();
-            public static Vector512<TTo> Invoke(Vector512<TFrom> x) => throw new NotSupportedException();
-#endif
         }
     }
 }
