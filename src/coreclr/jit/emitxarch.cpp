@@ -1720,6 +1720,11 @@ bool emitter::TakesEvexPrefix(const instrDesc* id) const
         return true;
     }
 
+    if (HasExtendedGPReg(id))
+    {
+        return true;
+    }
+
     if (id->idIsEvexNfContextSet() && IsBMIInstruction(ins))
     {
         // Only a few BMI instructions shall be promoted to APX-EVEX due to NF feature.
@@ -1816,9 +1821,7 @@ bool emitter::TakesRex2Prefix(const instrDesc* id) const
 //
 bool emitter::TakesApxExtendedEvexPrefix(const instrDesc* id) const
 {
-    // TODO-XArch-APX:
-    // Isolating legacy-promoted-EVEX case out from VEX/EVEX-promoted-EVEX,
-    // as the latter ones are relatively simple, providing EGPRs functionality,
+#ifdef TARGET_AMD64
     instruction ins = id->idIns();
     if (!IsApxExtendedEvexInstruction(ins))
     {
@@ -1858,6 +1861,9 @@ bool emitter::TakesApxExtendedEvexPrefix(const instrDesc* id) const
     }
 
     return false;
+#else // !TARGET_AMD64
+    return false;
+#endif
 }
 
 // Intel AVX-512 encoding is defined in "Intel 64 and ia-32 architectures software developer's manual volume 2", Section
@@ -2733,7 +2739,7 @@ emitter::code_t emitter::AddRexPrefix(instruction ins, code_t code)
 emitter::code_t emitter::AddEvexVPrimePrefix(code_t code)
 {
 #if defined(TARGET_AMD64)
-    assert(UseEvexEncoding() && hasEvexPrefix(code));
+    assert((UseEvexEncoding() || UsePromotedEVEXEncoding()) && hasEvexPrefix(code));
     return emitter::code_t(code & 0xFFFFFFF7FFFFFFFFULL);
 #else
     unreached();
@@ -2753,7 +2759,7 @@ emitter::code_t emitter::AddEvexVPrimePrefix(code_t code)
 emitter::code_t emitter::AddEvexRPrimePrefix(code_t code)
 {
 #if defined(TARGET_AMD64)
-    assert(UseEvexEncoding() && hasEvexPrefix(code));
+    assert((UseEvexEncoding() || UsePromotedEVEXEncoding()) && hasEvexPrefix(code));
     return emitter::code_t(code & 0xFFEFFFFFFFFFFFFFULL);
 #else
     unreached();
@@ -4231,8 +4237,19 @@ inline unsigned emitter::insEncodeReg012(const instrDesc* id, regNumber reg, emi
         if (IsExtendedGPReg(reg))
         {
             // Seperate the encoding for REX2.B3/B4, REX2.B3 will be handled in `AddRexBPrefix`.
-            assert(TakesRex2Prefix(id));
-            *code |= 0x001000000000ULL; // REX2.B4
+            assert(TakesRex2Prefix(id) || TakesApxExtendedEvexPrefix(id) || TakesEvexPrefix(id));
+            if (hasRex2Prefix(*code))
+            {
+                *code |= 0x001000000000ULL; // REX2.B4
+            }
+            else if (hasEvexPrefix(*code))
+            {
+                *code |= 0x8000000000000ULL; // EVEX.B4
+            }
+            else
+            {
+                // There are cases when this method is called before prefix is attached.
+            }
         }
     }
     else if ((EA_SIZE(size) == EA_1BYTE) && (reg > REG_RBX) && (code != nullptr))
@@ -4280,8 +4297,19 @@ inline unsigned emitter::insEncodeReg345(const instrDesc* id, regNumber reg, emi
         if (IsExtendedGPReg(reg))
         {
             // Seperate the encoding for REX2.R3/R4, REX2.R3 will be handled in `AddRexRPrefix`.
-            assert(TakesRex2Prefix(id));
-            *code |= 0x004000000000ULL; // REX2.R4
+            assert(TakesRex2Prefix(id) || TakesApxExtendedEvexPrefix(id) || TakesEvexPrefix(id));
+            if (hasRex2Prefix(*code))
+            {
+                *code |= 0x004000000000ULL; // REX2.R4
+            }
+            else if (hasEvexPrefix(*code))
+            {
+                *code = AddEvexRPrimePrefix(*code); // EVEX.R4
+            }
+            else
+            {
+                // There are cases when this method is called before prefix is attached.
+            }
         }
     }
     else if ((EA_SIZE(size) == EA_1BYTE) && (reg > REG_RBX) && (code != nullptr))
@@ -4339,6 +4367,12 @@ inline emitter::code_t emitter::insEncodeReg3456(const instrDesc* id, regNumber 
                 // Have to set the EVEX V' bit
                 code = AddEvexVPrimePrefix(code);
             }
+
+            if (isHighGPReg(reg) && IsBMIInstruction(ins))
+            {
+                // APX: BMI instructions use RVM operand encoding
+                code = AddEvexVPrimePrefix(code);
+            }
 #endif
 
             // Shift count = 5-bytes of opcode + 0-2 bits for EVEX
@@ -4364,7 +4398,7 @@ inline emitter::code_t emitter::insEncodeReg3456(const instrDesc* id, regNumber 
         // Rather see these paths cleaned up.
         regBits = HighAwareRegEncoding(reg);
 
-        if (false /*reg >= REG_R16 && reg <= REG_R31*/)
+        if (isHighGPReg(reg))
         {
             // Have to set the EVEX V' bit
             code = AddEvexVPrimePrefix(code);
@@ -4410,8 +4444,20 @@ inline unsigned emitter::insEncodeRegSIB(const instrDesc* id, regNumber reg, cod
         if (IsExtendedGPReg(reg))
         {
             // Separate the encoding for REX2.X3/X4, REX2.X3 will be handled in `AddRexXPrefix`.
-            assert(TakesRex2Prefix(id));
-            *code |= 0x002000000000ULL; // REX2.X4
+            assert(TakesRex2Prefix(id) || TakesApxExtendedEvexPrefix(id) || TakesEvexPrefix(id));
+            if (hasRex2Prefix(*code))
+            {
+                *code |= 0x002000000000ULL; // REX2.X4
+            }
+            else if (hasEvexPrefix(*code))
+            {
+                // Note that APX-EVEX use EVEX.X4 as the MSB of the INDEX register to address GPRs, and the original EVEX.V4 is used for VSIB addressing.
+                *code &= 0xFFFFFBFFFFFFFFFFULL; // EVEX.X4
+            }
+            else
+            {
+                // There are cases when this method is called before prefix is attached.
+            }
         }
     }
     unsigned regBits = RegEncoding(reg);
@@ -15356,6 +15402,12 @@ BYTE* emitter::emitOutputSV(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
                     {
                         dst += emitOutputByte(dst, 0x66);
                     }
+#ifdef TARGET_AMD64
+                    else
+                    {
+                        code |= EXTENDED_EVEX_PP_BITS;
+                    }
+#endif  // TARGET_AMD64
                 }
                 FALLTHROUGH;
 
@@ -16982,15 +17034,15 @@ BYTE* emitter::emitOutputRI(BYTE* dst, instrDesc* id)
         code = insCodeACC(ins);
         assert(code < 0x100);
 
+        
+        // This is INS_mov and will not take VEX prefix
+        assert(!TakesVexPrefix(ins));
+        
+        code = AddX86PrefixIfNeededAndNotPresent(id, code, size);
         code |= 0x08; // Set the 'w' bit
         unsigned regcode = insEncodeReg012(id, reg, size, &code);
         code |= regcode;
-
-        // This is INS_mov and will not take VEX prefix
-        assert(!TakesVexPrefix(ins));
-
-        code = AddX86PrefixIfNeededAndNotPresent(id, code, size);
-
+        
         if (TakesRexWPrefix(id))
         {
             code = AddRexWPrefix(id, code);
