@@ -41,7 +41,7 @@ static const char* g_executable_path = NULL;
 static unsigned int g_coreclr_domainId = 0;
 static void* g_coreclr_handle = NULL;
 
-#define MAX_MAPPED_COUNT 50 // Arbitrarily 'large enough' number
+#define MAX_MAPPED_COUNT 256 // Arbitrarily 'large enough' number
 static void* g_mapped_files[MAX_MAPPED_COUNT];
 static size_t g_mapped_file_sizes[MAX_MAPPED_COUNT];
 static unsigned int g_mapped_files_count = 0;
