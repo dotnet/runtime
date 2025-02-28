@@ -313,4 +313,3 @@ Diagnostic id values for experimental APIs must not be recycled, as that could s
 |  __`SYSLIB5002`__ |     .NET 9 |     TBD | `SystemColors` alternate colors are experimental |
 |  __`SYSLIB5003`__ |     .NET 9 |     TBD | `System.Runtime.Intrinsics.Arm.Sve` is experimental |
 |  __`SYSLIB5004`__ |     .NET 9 |     TBD | `X86Base.DivRem` is experimental since performance is not as optimized as `T.DivRem` |
-|  __`SYSLIB5005`__ |     .NET 9 |     TBD | `System.Formats.Nrbf` is experimental |
