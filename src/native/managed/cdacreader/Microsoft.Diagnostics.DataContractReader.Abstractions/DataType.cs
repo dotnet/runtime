@@ -97,4 +97,5 @@ public enum DataType
     SoftwareExceptionFrame,
     FramedMethodFrame,
     FuncEvalFrame,
+    ResumableFrame,
 }

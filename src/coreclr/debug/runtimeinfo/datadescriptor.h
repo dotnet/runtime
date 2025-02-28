@@ -670,6 +670,15 @@ CDAC_TYPE_FIELD(DebuggerEval, /*bool*/, EvalDuringException, offsetof(DebuggerEv
 CDAC_TYPE_END(DebuggerEval)
 #endif // DEBUGGING_SUPPORTED
 
+#ifdef FEATURE_HIJACK
+
+CDAC_TYPE_BEGIN(ResumableFrame)
+CDAC_TYPE_SIZE(sizeof(ResumableFrame))
+CDAC_TYPE_FIELD(ResumableFrame, /*pointer*/, TargetContextPtr, cdac_data<ResumableFrame>::TargetContextPtr)
+CDAC_TYPE_END(ResumableFrame)
+
+#endif // FEATURE_HIJACK
+
 CDAC_TYPES_END()
 
 CDAC_GLOBALS_BEGIN()

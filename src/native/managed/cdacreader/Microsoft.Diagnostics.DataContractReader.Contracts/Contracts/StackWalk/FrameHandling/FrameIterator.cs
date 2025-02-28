@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using Microsoft.Diagnostics.DataContractReader.Contracts.StackWalkHelpers;
 
 namespace Microsoft.Diagnostics.DataContractReader.Contracts.StackWalkHelpers;
 
@@ -15,7 +14,7 @@ internal sealed class FrameIterator
         InlinedCallFrame,
         SoftwareExceptionFrame,
 
-        /* Transition Frame Types */
+        /* TransitionFrame Types */
         FramedMethodFrame,
         CLRToCOMMethodFrame,
         PInvokeCalliFrame,
@@ -26,6 +25,10 @@ internal sealed class FrameIterator
         DynamicHelperFrame,
 
         FuncEvalFrame,
+
+        /* ResumableFrame Types */
+        ResumableFrame,
+        RedirectedThreadFrame,
     }
 
     private readonly Target target;
@@ -90,6 +93,12 @@ internal sealed class FrameIterator
                 Data.FuncEvalFrame funcEvalFrame = target.ProcessedData.GetOrAdd<Data.FuncEvalFrame>(CurrentFrame.Address);
                 Data.DebuggerEval debuggerEval = target.ProcessedData.GetOrAdd<Data.DebuggerEval>(funcEvalFrame.DebuggerEvalPtr);
                 return GetFrameHandler(context).HandleFuncEvalFrame(funcEvalFrame, debuggerEval);
+
+            // ResumableFrame type frames
+            case FrameType.ResumableFrame:
+            case FrameType.RedirectedThreadFrame:
+                Data.ResumableFrame resumableFrame = target.ProcessedData.GetOrAdd<Data.ResumableFrame>(CurrentFrame.Address);
+                return GetFrameHandler(context).HandleResumableFrame(resumableFrame);
             default:
                 return false;
         }

@@ -70,6 +70,11 @@ internal class ARM64FrameHandler(Target target, ContextHolder<ARM64Context> cont
         return true;
     }
 
+    bool IPlatformFrameHandler.HandleResumableFrame(ResumableFrame frame)
+    {
+        _context.ReadFromAddress(_target, frame.TargetContextPtr);
+        return true;
+    }
     private void UpdateFromCalleeSavedRegisters(TargetPointer calleeSavedRegisters)
     {
         // Order of registers is hardcoded in the runtime. See vm/arm64/cgencpu.h CalleeSavedRegisters

@@ -742,6 +742,14 @@ public:
 
 protected:
     PTR_CONTEXT m_Regs;
+
+    friend struct cdac_data<ResumableFrame>;
+};
+
+template<>
+struct cdac_data<ResumableFrame>
+{
+    static constexpr size_t TargetContextPtr = offsetof(ResumableFrame, m_Regs);
 };
 
 

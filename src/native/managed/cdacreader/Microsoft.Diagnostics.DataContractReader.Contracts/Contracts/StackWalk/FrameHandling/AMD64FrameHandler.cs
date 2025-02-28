@@ -59,6 +59,12 @@ internal class AMD64FrameHandler(Target target, ContextHolder<AMD64Context> cont
         return true;
     }
 
+    bool IPlatformFrameHandler.HandleResumableFrame(ResumableFrame frame)
+    {
+        _context.ReadFromAddress(_target, frame.TargetContextPtr);
+        return true;
+    }
+
     private void UpdateFromCalleeSavedRegisters(TargetPointer calleeSavedRegisters)
     {
         bool unixAmd64Abi = _target.ReadGlobal<byte>(Constants.Globals.UnixAmd64ABI) != 0;
