@@ -2515,7 +2515,7 @@ inline bool Compiler::lvaKeepAliveAndReportThis()
     {
         // TODO: Check if any of the exception clauses are
         // typed using a generic type. Else, we do not need to report this.
-        if (info.compXcptnsCount > 0)
+        if (compHndBBtabCount > 0)
             return true;
 
         if (opts.compDbgCode)
