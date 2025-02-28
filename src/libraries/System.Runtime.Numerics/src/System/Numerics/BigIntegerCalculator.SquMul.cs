@@ -47,7 +47,9 @@ namespace System.Numerics
                 Debug.Assert(bits.Length >= value.Length + value.Length);
                 Debug.Assert(bits.Trim(0u).IsEmpty);
 
-                // Based on the Toom-Cook multiplication.
+                // Based on the Toom-Cook multiplication we split left/right
+                // into some smaller values, doing recursive multiplication.
+                // Replace m in Wikipedia with left and n in Wikipedia with right.
                 // https://en.wikipedia.org/wiki/Toom-Cook_multiplication
 
                 int n = (value.Length + 2) / 3;
@@ -82,13 +84,9 @@ namespace System.Numerics
                 Debug.Assert(bits.Length == value.Length + value.Length);
                 Debug.Assert(bits.Trim(0u).IsEmpty);
 
-                // Based on the Toom-Cook multiplication we split value
-                // into two smaller values, doing recursive squaring.
-                // The special form of this multiplication, where we
+                // The special form of the Toom-Cook multiplication, where we
                 // split both operands into two operands, is also known
                 // as the Karatsuba algorithm...
-
-                // https://en.wikipedia.org/wiki/Toom-Cook_multiplication
                 // https://en.wikipedia.org/wiki/Karatsuba_algorithm
 
                 // Say we want to compute z = a * a ...
@@ -260,7 +258,8 @@ namespace System.Numerics
                 Debug.Assert(bits.Length >= left.Length + right.Length);
                 Debug.Assert(bits.Trim(0u).IsEmpty);
 
-                // Based on the Toom-Cook multiplication.
+                // Based on the Toom-Cook multiplication we split left/right
+                // into some smaller values, doing recursive multiplication.
                 // Replace m in Wikipedia with left and n in Wikipedia with right.
                 // https://en.wikipedia.org/wiki/Toom-Cook_multiplication
 
@@ -406,14 +405,9 @@ namespace System.Numerics
                 //    = (a0 + a1) * (b0 + b1) - a0 * b0 - a1 * b1
                 //    = (a0 + a1) * (b0 + b1) - z0 - z2
 
-
-                // Based on the Toom-Cook multiplication we split left/right
-                // into two smaller values, doing recursive multiplication.
-                // The special form of this multiplication, where we
+                // The special form of the Toom-Cook multiplication, where we
                 // split both operands into two operands, is also known
                 // as the Karatsuba algorithm...
-
-                // https://en.wikipedia.org/wiki/Toom-Cook_multiplication
                 // https://en.wikipedia.org/wiki/Karatsuba_algorithm
 
                 // Say we want to compute z = a * b ...
