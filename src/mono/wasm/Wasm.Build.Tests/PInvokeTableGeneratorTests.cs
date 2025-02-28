@@ -214,7 +214,7 @@ namespace Wasm.Build.Tests
             _projectDir = Path.Combine(_projectDir, "..", "Library");
             bool isPublish = false;
             // libraries do not have framework dirs
-            string hypotheticalFrameworkDir = Path.Combine(GetBinFrameworkDir(config, isPublish, DefaultTargetFramework));
+            string hypotheticalFrameworkDir = Path.Combine(GetBinFrameworkDir(config, isPublish));
             string libAssemblyPath = Path.Combine(hypotheticalFrameworkDir, "..", "..");
             BuildProject(info, config, new BuildOptions(AssertAppBundle: false, AOT: aot));
             // restore the project directory
@@ -258,7 +258,7 @@ namespace Wasm.Build.Tests
             _testOutput.WriteLine ("Using WasmAppBuilder.dll from {0}", taskPath);
 
             string AddAssembly(string assemblyLocation, string name) => $"<WasmPInvokeAssembly Include=\"{Path.Combine(assemblyLocation, name + ".dll")}\" />";
-            string frameworkDir = Path.Combine(GetBinFrameworkDir(config, isPublish, DefaultTargetFramework));
+            string frameworkDir = Path.Combine(GetBinFrameworkDir(config, isPublish));
             string appAssemblyPath = Path.Combine(frameworkDir, "..", "..");
             string pinvokeReplacement =
                 AddAssembly(appAssemblyPath, "System.Private.CoreLib") +

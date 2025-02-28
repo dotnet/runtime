@@ -109,11 +109,11 @@ public class BuildPublishTests : BlazorWasmTestBase
 
         // Build and assert resource dlls
         BlazorBuild(info, config);
-        AssertResourcesDlls(GetBlazorBinFrameworkDir(config, forPublish: false, DefaultTargetFrameworkForBlazor));
+        AssertResourcesDlls(GetBlazorBinFrameworkDir(config, forPublish: false));
 
         // Publish and assert resource dlls
         BlazorPublish(info, config, new PublishOptions(UseCache: false));
-        AssertResourcesDlls(GetBlazorBinFrameworkDir(config, forPublish: true, DefaultTargetFrameworkForBlazor));
+        AssertResourcesDlls(GetBlazorBinFrameworkDir(config, forPublish: true));
 
         void AssertResourcesDlls(string basePath)
         {

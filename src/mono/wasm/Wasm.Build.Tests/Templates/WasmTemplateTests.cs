@@ -37,7 +37,7 @@ namespace Wasm.Build.Tests
                     """;
             ProjectInfo info = CreateWasmTemplateProject(Template.WasmBrowser, config, aot: false, "browser", insertAtEnd: atEnd);
             UpdateBrowserProgramFile();
-            UpdateBrowserMainJs(DefaultTargetFramework);
+            UpdateBrowserMainJs();
 
             BuildProject(info, config);
 
@@ -80,7 +80,7 @@ namespace Wasm.Build.Tests
         {
             ProjectInfo info = CreateWasmTemplateProject(Template.WasmBrowser, config, aot: false, "browser", extraProperties: extraProperties);
             UpdateBrowserProgramFile();
-            UpdateBrowserMainJs(DefaultTargetFramework);
+            UpdateBrowserMainJs();
 
             string workingDir = runOutsideProjectDirectory ? BuildEnvironment.TmpPath : _projectDir;
 
@@ -158,14 +158,14 @@ namespace Wasm.Build.Tests
         {
             ProjectInfo info = CreateWasmTemplateProject(Template.WasmBrowser, config, aot: false);
             UpdateBrowserProgramFile();
-            UpdateBrowserMainJs(DefaultTargetFramework);
+            UpdateBrowserMainJs();
 
             bool isPublish = false;
             string projectDirectory = Path.GetDirectoryName(info.ProjectFilePath) ?? "";
             // browser app does not allow appending RID
             string frameworkDir = useArtifacts ?
                 Path.Combine(projectDirectory, "bin", info.ProjectName, config.ToString().ToLower(), "wwwroot", "_framework") :
-                GetBinFrameworkDir(config, isPublish, DefaultTargetFramework);
+                GetBinFrameworkDir(config, isPublish);
 
             string extraPropertiesForDBP = string.Empty;
             if (useArtifacts)
@@ -197,7 +197,7 @@ namespace Wasm.Build.Tests
             ProjectInfo info = CreateWasmTemplateProject(Template.WasmBrowser, config, aot, "strip", extraProperties: extraProperties);
 
             UpdateBrowserProgramFile();
-            UpdateBrowserMainJs(DefaultTargetFramework);
+            UpdateBrowserMainJs();
 
             PublishProject(info, config, new PublishOptions(UseCache: false, AssertAppBundle: false));
             await RunForBuildWithDotnetRun(new BrowserRunOptions(config, ExpectedExitCode: 42));
@@ -205,7 +205,7 @@ namespace Wasm.Build.Tests
             string projectDirectory = Path.GetDirectoryName(info.ProjectFilePath)!;
             string objBuildDir = Path.Combine(projectDirectory, "obj", config.ToString(), BuildTestBase.DefaultTargetFramework, "wasm", "for-publish");
 
-            string frameworkDir = GetBinFrameworkDir(config, forPublish: true, DefaultTargetFramework);
+            string frameworkDir = GetBinFrameworkDir(config, forPublish: true);
             TestWasmStripILAfterAOTOutput(objBuildDir, frameworkDir, expectILStripping, _testOutput);
         }
 
@@ -273,7 +273,7 @@ namespace Wasm.Build.Tests
             ProjectInfo info = CreateWasmTemplateProject(Template.WasmBrowser, config, aot: false, "publishpdb", extraProperties: extraProperties);
 
             PublishProject(info, config, new PublishOptions(ExtraMSBuildArgs: "-p:CompressionEnabled=true"));
-            string publishPath = GetBinFrameworkDir(config, forPublish: true, DefaultTargetFramework);
+            string publishPath = GetBinFrameworkDir(config, forPublish: true);
             AssertFile(".pdb");
             AssertFile(".pdb.gz");
             AssertFile(".pdb.br");

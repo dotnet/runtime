@@ -55,7 +55,7 @@ namespace Wasm.Build.Tests
         public static bool IsUsingWorkloads => s_buildEnv.IsWorkload;
         public static bool IsNotUsingWorkloads => !s_buildEnv.IsWorkload;
         public static string GetNuGetConfigPathFor(string targetFramework) =>
-            Path.Combine(BuildEnvironment.TestDataPath, "nuget10.config");
+            Path.Combine(BuildEnvironment.TestDataPath, $"nuget{Environment.Version.Major}.config");
 
         static BuildTestBase()
         {
@@ -143,8 +143,9 @@ namespace Wasm.Build.Tests
             Directory.CreateDirectory(_logPath);
         }
 
-        protected void InitProjectDir(string dir, string targetFramework, bool addNuGetSourceForLocalPackages = false)
+        protected void InitProjectDir(string dir, bool addNuGetSourceForLocalPackages = false, string? targetFramework = null)
         {
+            targetFramework ??= DefaultTargetFramework;
             Directory.CreateDirectory(dir);
             File.WriteAllText(Path.Combine(dir, "Directory.Build.props"), s_buildEnv.DirectoryBuildPropsContents);
             File.WriteAllText(Path.Combine(dir, "Directory.Build.targets"), s_buildEnv.DirectoryBuildTargetsContents);
@@ -180,7 +181,7 @@ namespace Wasm.Build.Tests
 
         protected static BuildArgs ExpandBuildArgs(BuildArgs buildArgs, string extraProperties="", string extraItems="", string insertAtEnd="")
         {
-            string projectTemplate=SimpleProjectTemplate;
+            string projectTemplate = SimpleProjectTemplate;
             if (buildArgs.AOT)
             {
                 extraProperties = $"{extraProperties}\n<RunAOTCompilation>true</RunAOTCompilation>";
@@ -214,7 +215,7 @@ namespace Wasm.Build.Tests
             if (options.CreateProject)
             {
                 InitPaths(id);
-                InitProjectDir(_projectDir, DefaultTargetFramework, true);
+                InitProjectDir(_projectDir);
                 options.InitProject?.Invoke();
 
                 File.WriteAllText(Path.Combine(_projectDir, $"{buildArgs.ProjectName}.csproj"), buildArgs.ProjectFileContents);
@@ -301,7 +302,7 @@ namespace Wasm.Build.Tests
         public string CreateWasmTemplateProject(string id, string template = "wasmbrowser", string extraArgs = "", bool runAnalyzers = true, string? projectParentDir = null)
         {
             InitPaths(id, projectParentDir);
-            InitProjectDir(_projectDir, DefaultTargetFramework, addNuGetSourceForLocalPackages: true);
+            InitProjectDir(_projectDir, addNuGetSourceForLocalPackages: true);
 
             File.WriteAllText(Path.Combine(_projectDir, "Directory.Build.props"), "<Project />");
             File.WriteAllText(Path.Combine(_projectDir, "Directory.Build.targets"),
@@ -462,15 +463,17 @@ namespace Wasm.Build.Tests
             return first ?? Path.Combine(parentDir, dirName);
         }
 
-        protected string GetBinDir(string config, string targetFramework, string? baseDir=null)
+        protected string GetBinDir(string config, string? targetFramework = null, string? baseDir=null)
         {
+            targetFramework ??= DefaultTargetFramework;
             var dir = baseDir ?? _projectDir;
             Assert.NotNull(dir);
             return Path.Combine(dir!, "bin", config, targetFramework, BuildEnvironment.DefaultRuntimeIdentifier);
         }
 
-        protected string GetObjDir(string config, string targetFramework, string? baseDir=null)
+        protected string GetObjDir(string config, string? targetFramework = null, string? baseDir=null)
         {
+            targetFramework ??= DefaultTargetFramework;
             var dir = baseDir ?? _projectDir;
             Assert.NotNull(dir);
             return Path.Combine(dir!, "obj", config, targetFramework, BuildEnvironment.DefaultRuntimeIdentifier);
@@ -657,11 +660,11 @@ namespace Wasm.Build.Tests
 
         internal BuildPaths GetBuildPaths(BuildArgs buildArgs, bool forPublish=true)
         {
-            string objDir = GetObjDir(buildArgs.Config, DefaultTargetFramework);
-            string bundleDir = Path.Combine(GetBinDir(buildArgs.Config, DefaultTargetFramework, _projectDir), "AppBundle");
+            string objDir = GetObjDir(buildArgs.Config);
+            string bundleDir = Path.Combine(GetBinDir(baseDir: _projectDir, config: buildArgs.Config), "AppBundle");
             string wasmDir = Path.Combine(objDir, "wasm", forPublish ? "for-publish" : "for-build");
 
-            return new BuildPaths(wasmDir, objDir, GetBinDir(buildArgs.Config, DefaultTargetFramework), bundleDir);
+            return new BuildPaths(wasmDir, objDir, GetBinDir(buildArgs.Config), bundleDir);
         }
 
         internal IDictionary<string, FileStat> StatFiles(IEnumerable<string> fullpaths)

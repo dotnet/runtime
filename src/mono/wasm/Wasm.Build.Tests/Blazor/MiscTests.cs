@@ -90,7 +90,7 @@ public class MiscTests : BlazorWasmTestBase
         BlazorPublish(info, config, new PublishOptions(UseCache: false));
 
         // publish/wwwroot/_framework/blazor.boot.json
-        string frameworkDir = GetBlazorBinFrameworkDir(config, forPublish: true, DefaultTargetFrameworkForBlazor);
+        string frameworkDir = GetBlazorBinFrameworkDir(config, forPublish: true);
         string bootJson = Path.Combine(frameworkDir, "blazor.boot.json");
 
         Assert.True(File.Exists(bootJson), $"Could not find {bootJson}");

@@ -72,7 +72,7 @@ namespace Wasm.Build.Templates.Tests
             );
             string nativeCode = "void call_needing_marhsal_ilgen(void *x) {}";
             File.WriteAllText(path: Path.Combine(_projectDir, nativeSourceFilename), nativeCode);
-            UpdateBrowserMainJs(DefaultTargetFramework);
+            UpdateBrowserMainJs();
             ReplaceFile("Program.cs", Path.Combine(BuildEnvironment.TestAssetsPath, "marshal_ilgen_test.cs"));
 
             (string _, string buildOutput) = BuildProject(info, config, new BuildOptions(AssertAppBundle: false), isNativeBuild: true);

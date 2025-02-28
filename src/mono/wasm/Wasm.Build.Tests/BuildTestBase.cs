@@ -62,7 +62,7 @@ namespace Wasm.Build.Tests
         public static bool IsWorkloadWithMultiThreadingForDefaultFramework => s_buildEnv.IsWorkloadWithMultiThreadingForDefaultFramework;
         public static bool UseWebcil => s_buildEnv.UseWebcil;
         public static string GetNuGetConfigPathFor(string targetFramework)
-            => Path.Combine(BuildEnvironment.TestDataPath, targetFramework == DefaultTargetFramework ? "nuget10.config" : "nuget9.config");
+            => Path.Combine(BuildEnvironment.TestDataPath, targetFramework == DefaultTargetFramework ? $"nuget{Environment.Version.Major}.config" : $"nuget{Environment.Version.Major - 1}.config");
 
         public TProvider GetProvider<TProvider>() where TProvider : ProjectProviderBase
             => (TProvider)_providerOfBaseType;
@@ -230,8 +230,9 @@ namespace Wasm.Build.Tests
             return (_logPath, _nugetPackagesDir);
         }
 
-        protected void InitProjectDir(string dir, string targetFramework, bool addNuGetSourceForLocalPackages)
+        protected void InitProjectDir(string dir, bool addNuGetSourceForLocalPackages = true, string? targetFramework = null)
         {
+            targetFramework ??= DefaultTargetFramework;
             if (Directory.Exists(dir))
                 Directory.Delete(dir, recursive: true);
             Directory.CreateDirectory(dir);
