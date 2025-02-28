@@ -126,19 +126,60 @@ internal static class Entrypoints
 
         Console.WriteLine($"PE: {peDecoder.IsValid} ELF: {elfDecoder.IsValid} MachO: {machODecoder.IsValid}");
 
-        if (!elfDecoder.TryGetRelativeSymbolAddress("DotNetRuntimeContractDescriptor", out ulong contractDescriptor))
+        Target.CorDebugPlatform targetPlatform;
+        ulong contractDescriptor;
+        if (peDecoder.IsValid)
+        {
+            targetPlatform = Target.CorDebugPlatform.CORDB_PLATFORM_WINDOWS_AMD64;
+            if (!peDecoder.TryGetRelativeSymbolAddress("DotNetRuntimeContractDescriptor", out contractDescriptor))
+            {
+                return -1;
+            }
+        }
+        else if (elfDecoder.IsValid)
+        {
+            targetPlatform = Target.CorDebugPlatform.CORDB_PLATFORM_POSIX_ARM64;
+            if (!elfDecoder.TryGetRelativeSymbolAddress("DotNetRuntimeContractDescriptor", out contractDescriptor))
+            {
+                return -1;
+            }
+        }
+        else if (machODecoder.IsValid)
+        {
+            targetPlatform = Target.CorDebugPlatform.CORDB_PLATFORM_POSIX_ARM64;
+            if (!machODecoder.TryGetRelativeSymbolAddress("DotNetRuntimeContractDescriptor", out contractDescriptor))
+            {
+                return -1;
+            }
+        }
+        else
         {
             return -1;
         }
 
-        if (!ContractDescriptorTarget.TryCreate(baseAddress + contractDescriptor, (address, buffer) =>
-        {
-            fixed (byte* bufferPtr = buffer)
+        if (!ContractDescriptorTarget.TryCreate(
+            baseAddress + contractDescriptor,
+            (address, buffer) =>
             {
-                uint bytesRead;
-                return dataTarget.ReadVirtual(address, bufferPtr, (uint)buffer.Length, &bytesRead);
-            }
-        }, out ContractDescriptorTarget? target))
+                fixed (byte* bufferPtr = buffer)
+                {
+                    uint bytesRead;
+                    return dataTarget.ReadVirtual(address, bufferPtr, (uint)buffer.Length, &bytesRead);
+                }
+            },
+            (threadId, contextFlags, contextSize, bufferToFill) =>
+            {
+                fixed (byte* bufferPtr = bufferToFill)
+                {
+                    return dataTarget.GetThreadContext(threadId, contextFlags, contextSize, bufferPtr);
+                }
+            },
+            (out platform) =>
+            {
+                platform = (int)targetPlatform;
+                return 0;
+            },
+            out ContractDescriptorTarget? target))
         {
             return -1;
         }
