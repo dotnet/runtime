@@ -7635,6 +7635,15 @@ void Compiler::impMarkInlineCandidateHelper(GenTreeCall*           call,
         return;
     }
 
+    // The inliner gets confused when the unmanaged convention reverses arg order (like x86).
+    // Just suppress for all targets for now.
+    //
+    if (call->GetUnmanagedCallConv() != CorInfoCallConvExtension::Managed)
+    {
+        inlineResult->NoteFatal(InlineObservation::CALLEE_HAS_UNMANAGED_CALLCONV);
+        return;
+    }
+
     /* I removed the check for BBJ_THROW.  BBJ_THROW is usually marked as rarely run.  This more or less
      * restricts the inliner to non-expanding inlines.  I removed the check to allow for non-expanding
      * inlining in throw blocks.  I should consider the same thing for catch and filter regions. */

@@ -2704,7 +2704,7 @@ public:
 
     bool ehNeedsShadowSPslots()
     {
-        return (info.compXcptnsCount || opts.compDbgEnC);
+        return ((compHndBBtabCount > 0) || opts.compDbgEnC);
     }
 
     // 0 for methods with no EH
@@ -2714,6 +2714,9 @@ public:
     unsigned ehMaxHndNestingCount = 0;
 
 #endif // FEATURE_EH_WINDOWS_X86
+
+    bool ehTableFinalized = false;
+    void FinalizeEH();
 
     static bool jitIsBetween(unsigned value, unsigned start, unsigned end);
     static bool jitIsBetweenInclusive(unsigned value, unsigned start, unsigned end);
