@@ -2715,6 +2715,9 @@ public:
 
 #endif // FEATURE_EH_WINDOWS_X86
 
+    bool ehTableFinalized = false;
+    void FinalizeEH();
+
     static bool jitIsBetween(unsigned value, unsigned start, unsigned end);
     static bool jitIsBetweenInclusive(unsigned value, unsigned start, unsigned end);
 
