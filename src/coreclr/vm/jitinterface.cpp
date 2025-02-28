@@ -13003,7 +13003,7 @@ PCODE UnsafeJitFunctionWorker(EECodeGenManager *pJitMgr, CEECodeGenInfo *pJitInf
     if (res == CORJIT_SKIPPED)
     {
         // We are done
-        return NULL;
+        return 0;
     }
 
     if (SUCCEEDED(res))
@@ -13164,7 +13164,7 @@ PCODE UnsafeJitFunction(PrepareCodeConfig* config,
     }
 #endif // FEATURE_INTERPRETER
 
-    if (ret == NULL)
+    if (!ret)
     {
 #if defined(TARGET_AMD64) || defined(TARGET_ARM64)
         BOOL fForceJumpStubOverflow = FALSE;
