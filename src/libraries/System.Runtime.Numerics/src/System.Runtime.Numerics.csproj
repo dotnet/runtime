@@ -15,6 +15,7 @@
     <Compile Include="System\Numerics\BigIntegerCalculator.GcdInv.cs" />
     <Compile Include="System\Numerics\BigIntegerCalculator.PowMod.cs" />
     <Compile Include="System\Numerics\BigIntegerCalculator.SquMul.cs" />
+    <Compile Include="System\Numerics\BigIntegerCalculator.ShiftRot.cs" />
     <Compile Include="System\Numerics\BigIntegerCalculator.Utils.cs" />
     <Compile Include="System\Numerics\BigInteger.cs" />
     <Compile Include="System\Number.BigInteger.cs" />
