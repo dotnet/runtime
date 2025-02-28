@@ -1427,6 +1427,33 @@ namespace Microsoft.Extensions.Hosting.Internal
         }
 
         /// <summary>
+        /// Tests that an exception is logged if a hosted service factory fails.
+        /// </summary>
+        [Fact]
+        public async Task HostedServiceFactoryExceptionGetsLogged()
+        {
+            TestLoggerProvider logger = new TestLoggerProvider();
+
+            using IHost host = CreateBuilder()
+                .ConfigureLogging(logging =>
+                {
+                    logging.AddProvider(logger);
+                })
+                .ConfigureServices((hostContext, services) =>
+                {
+                    services.AddHostedService<WorkerTemplateService>(p => throw new InvalidOperationException("factory failed"));
+                })
+                .Build();
+
+            await Assert.ThrowsAsync<InvalidOperationException>(() => host.StartAsync());
+
+            LogEvent[] events = logger.GetEvents();
+            Assert.Single(events);
+            Assert.Equal(LogLevel.Error, events[0].LogLevel);
+            Assert.Equal("HostedServiceStartupFaulted", events[0].EventId.Name);
+        }
+
+        /// <summary>
         /// Tests that when a BackgroundService is canceled when stopping the host,
         /// no error is logged.
         /// </summary>

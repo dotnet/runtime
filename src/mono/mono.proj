@@ -698,10 +698,18 @@ JS_ENGINES = [NODE_JS]
       <_MonoCMakeArgs Include="-DFEATURE_PERFTRACING_DISABLE_DEFAULT_LISTEN_PORT=1"/>
     </ItemGroup>
 
-    <ItemGroup Condition="'$(TargetsBrowser)' == 'true' or '$(TargetsWasi)' == 'true'">
+    <ItemGroup Condition="'$(TargetsWasi)' == 'true'">
       <_MonoCMakeArgs Include="-DFEATURE_PERFTRACING_DISABLE_PERFTRACING_LISTEN_PORTS=1"/>
       <_MonoCMakeArgs Include="-DFEATURE_PERFTRACING_DISABLE_DEFAULT_LISTEN_PORT=1"/>
       <_MonoCMakeArgs Include="-DFEATURE_PERFTRACING_DISABLE_CONNECT_PORTS=1" />
+      <_MonoCMakeArgs Include="-DFEATURE_PERFTRACING_DISABLE_THREADS=1" Condition="'$(WasmEnableThreads)' != 'true'" />
+    </ItemGroup>
+
+    <ItemGroup Condition="'$(TargetsBrowser)' == 'true'">
+      <_MonoCMakeArgs Include="-DFEATURE_PERFTRACING_PAL_WS=1"/>
+      <_MonoCMakeArgs Include="-DFEATURE_PERFTRACING_DISABLE_PERFTRACING_LISTEN_PORTS=1"/>
+      <_MonoCMakeArgs Include="-DFEATURE_PERFTRACING_DISABLE_DEFAULT_LISTEN_PORT=1"/>
+      <_MonoCMakeArgs Include="-DFEATURE_PERFTRACING_DISABLE_THREADS=1" Condition="'$(WasmEnableThreads)' != 'true'" />
     </ItemGroup>
 
     <!-- Components -->

@@ -1741,7 +1741,6 @@ void CodeGen::genConsumeMultiOpOperands(GenTreeMultiOp* tree)
 }
 #endif // defined(FEATURE_SIMD) || defined(FEATURE_HW_INTRINSICS)
 
-#if FEATURE_PUT_STRUCT_ARG_STK
 //------------------------------------------------------------------------
 // genConsumePutStructArgStk: Do liveness update for the operands of a PutArgStk node.
 //                      Also loads in the right register the addresses of the
@@ -1824,7 +1823,6 @@ void CodeGen::genConsumePutStructArgStk(GenTreePutArgStk* putArgNode,
         inst_RV_IV(INS_mov, sizeReg, size, EA_PTRSIZE);
     }
 }
-#endif // FEATURE_PUT_STRUCT_ARG_STK
 
 #if FEATURE_ARG_SPLIT
 //------------------------------------------------------------------------
@@ -1895,11 +1893,11 @@ void CodeGen::genPutArgStkFieldList(GenTreePutArgStk* putArgStk, unsigned outArg
 // We can't write beyond the arg area unless this is a tail call, in which case we use
 // the first stack arg as the base of the incoming arg area.
 #ifdef DEBUG
-        unsigned areaSize = compiler->lvaLclSize(outArgVarNum);
+        unsigned areaSize = compiler->lvaLclStackHomeSize(outArgVarNum);
 #if FEATURE_FASTTAILCALL
         if (putArgStk->gtCall->IsFastTailCall())
         {
-            areaSize = compiler->info.compArgStackSize;
+            areaSize = compiler->lvaParameterStackSize;
         }
 #endif
 

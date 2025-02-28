@@ -822,20 +822,6 @@ extends:
           scenarios:
             - WasmTestOnChrome
 
-      # Library tests with full threading
-      - template: /eng/pipelines/common/templates/wasm-library-tests.yml
-        parameters:
-          platforms:
-            - browser_wasm
-            #- browser_wasm_win
-          nameSuffix: _Threading
-          extraBuildArgs: /p:WasmEnableThreads=true /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
-          extraHelixArguments: /p:WasmEnableThreads=true
-          alwaysRun: ${{ variables.isRollingBuild }}
-          shouldRunSmokeOnly: onLibrariesAndIllinkChanges
-          scenarios:
-            - WasmTestOnChrome
-
       # EAT Library tests - only run on linux
       - template: /eng/pipelines/common/templates/wasm-library-aot-tests.yml
         parameters:
@@ -900,18 +886,6 @@ extends:
           extraBuildArgs: /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
 
       # WASI/WASM
-
-      - template: /eng/pipelines/common/templates/wasm-library-tests.yml
-        parameters:
-          platforms:
-            - wasi_wasm
-            - wasi_wasm_win
-          nameSuffix: '_Smoke'
-          extraBuildArgs: /p:EnableAggressiveTrimming=true /p:RunWasmSamples=true /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
-          shouldRunSmokeOnly: true
-          alwaysRun: ${{ variables.isRollingBuild }}
-          scenarios:
-            - WasmTestOnWasmtime
 
       - template: /eng/pipelines/common/templates/simple-wasm-build-tests.yml
         parameters:
@@ -1270,7 +1244,7 @@ extends:
           platforms:
           - windows_x64
           jobParameters:
-            buildArgs: -test -s tools+libs+libs.tests -pack -c $(_BuildConfig) /p:TestAssemblies=false /p:TestPackages=true
+            buildArgs: -test -s tools.illink+libs+libs.tests -pack -c $(_BuildConfig) /p:TestAssemblies=false /p:TestPackages=true
             nameSuffix: Libraries_WithPackages
             timeoutInMinutes: 150
             condition: >-
