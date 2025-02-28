@@ -556,57 +556,57 @@ class Tests
 		if (x.GetLowerBound (1) != -3)
 			return 2;
 
-		x.SetValue (10, new int [] { -2, -3 });
-		x.SetValue (20, new int [] { -2, -2 });
-		x.SetValue (30, new int [] { -1, -3 });
-		x.SetValue (40, new int [] { -1, -2 });
+		x.SetValue (10, [ -2, -3 ]);
+		x.SetValue (20, [ -2, -2 ]);
+		x.SetValue (30, [ -1, -3 ]);
+		x.SetValue (40, [ -1, -2 ]);
 
 		try {
-			x.SetValue (10, new int [] { -3, -3 });
+			x.SetValue (10, [ -3, -3 ]);
 			return 3;
 		} catch (IndexOutOfRangeException) { }
 
 		try {
-			x.SetValue (10, new int [] { -2, -4 });
+			x.SetValue (10, [ -2, -4 ]);
 			return 4;
 		} catch (IndexOutOfRangeException) { }
 
 		try {
-			x.SetValue (10, new int [] { 0, -3 });
+			x.SetValue (10, [ 0, -3 ]);
 			return 5;
 		} catch (IndexOutOfRangeException) { }
 
 		try {
-			x.SetValue (10, new int [] { -1, -1 });
+			x.SetValue (10, [ -1, -1 ]);
 			return 6;
 		} catch (IndexOutOfRangeException) { }
 
-		if ((int)x.GetValue (new int [] { -2, -3 }) != 10)
+		if ((int)x.GetValue ([ -2, -3 ]) != 10)
 			return 7;
-		if ((int)x.GetValue (new int [] { -2, -2 }) != 20)
+		if ((int)x.GetValue ([ -2, -2 ]) != 20)
 			return 8;
-		if ((int)x.GetValue (new int [] { -1, -3 }) != 30)
+		if ((int)x.GetValue ([ -1, -3 ]) != 30)
 			return 9;
-		if ((int)x.GetValue (new int [] { -1, -2 }) != 40)
+		if ((int)x.GetValue ([ -1, -2 ]) != 40)
 			return 10;
 
 		try {
-			x.GetValue (new int [] { -3, -3 });
+			x.GetValue ([ -3, -3 ]);
 			return 11;
 		} catch (IndexOutOfRangeException) { }
 
 		try {
-			x.GetValue ( new int [] { -2, -4 });
+			x.GetValue ( [ -2, -4 ]);
 			return 12;
 		} catch (IndexOutOfRangeException) { }
 
 		try {
-			x.GetValue (new int [] { 0, -3 });
+			x.GetValue ([ 0, -3 ]);
 			return 13;
 		} catch (IndexOutOfRangeException) { }
 
 		try {
-			x.GetValue (new int [] { -1, -1 });
+			x.GetValue ([ -1, -1 ]);
 			return 14;
 		} catch (IndexOutOfRangeException) { }
 		return 0;
@@ -847,11 +847,11 @@ class Tests
 		public int[][] a;
 
 		public JaggedClass () {
-			a = new int[][]{
-				new int[]{1,2,3},
-				new int[]{4,5,6},
-				new int[]{7,8,9}
-			};
+			a = [
+				[1,2,3],
+				[4,5,6],
+				[7,8,9]
+			];
 		}
 	}
 
