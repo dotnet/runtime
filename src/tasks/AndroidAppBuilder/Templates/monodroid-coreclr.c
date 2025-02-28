@@ -74,66 +74,6 @@ strncpy_str (JNIEnv *env, char *buff, jstring str, int nbuff)
         (*env)->ReleaseStringUTFChars (env, str, copy_buff);
 }
 
-/*
-* Get the list of trusted assemblies from a specified @dir_path.
-* The path is searched for .dll files which when found are concatenated
-* to the output string @tpas separated by ':'.
-* The output string should be freed by the caller.
-* The return value is the length of the output string.
-*/
-static size_t
-get_tpas_from_path(const char* dir_path, const char** tpas)
-{
-    DIR *dir = opendir(dir_path);
-    if (dir == NULL)
-    {
-        LOG_ERROR("Failed to open directory at: %s", dir_path);
-        return -1;
-    }
-
-    struct dirent *dir_entry;
-    size_t dir_path_len = strlen(dir_path);
-    char *concat_dll_paths = NULL;
-    size_t concat_dll_paths_len = 0;
-
-    while ((dir_entry = readdir(dir)))
-    {
-        if (dir_entry->d_type == DT_REG)
-        {
-            size_t file_name_len = strlen(dir_entry->d_name);
-            // filter out .dll files
-            if (file_name_len > 4 && strcmp(dir_entry->d_name + file_name_len - 4, ".dll") == 0)
-            {
-                size_t curr_dll_path = dir_path_len + file_name_len + 2; // +2 for '/' and ':'
-                concat_dll_paths_len += curr_dll_path;
-                concat_dll_paths = realloc(concat_dll_paths, concat_dll_paths_len);
-                if (concat_dll_paths == NULL)
-                {
-                    LOG_ERROR("realloc failed while resolving: %s", dir_entry->d_name);
-                    closedir(dir);
-                    return -1;
-                }
-                concat_dll_paths[concat_dll_paths_len-curr_dll_path] = '\0'; // adjust previous string end
-                size_t ret = sprintf(concat_dll_paths, "%s%s/%s:", concat_dll_paths, dir_path, dir_entry->d_name); // concat the current dll path
-                if (ret != concat_dll_paths_len)
-                {
-                    LOG_ERROR("sprintf failed while resolving: %s", dir_entry->d_name);
-                    closedir(dir);
-                    return -1;
-                }
-            }
-        }
-    }
-    closedir(dir);
-
-    if (concat_dll_paths != NULL && concat_dll_paths_len > 0) {
-        concat_dll_paths[concat_dll_paths_len - 1] = '\0'; // remove the trailing ':'
-    }
-
-    *tpas = concat_dll_paths;
-    return concat_dll_paths_len;
-}
-
 static int
 bundle_executable_path (const char* executable, const char* bundle_path, const char** executable_path)
 {
