@@ -42,6 +42,8 @@ public class WasmSdkBasedProjectProvider : ProjectProviderBase
 
         if (assertOptions.BuildOptions.BootConfigFileName.EndsWith(".js"))
             result[assertOptions.BuildOptions.BootConfigFileName] = false;
+
+        return result;
     }
 
     protected override IReadOnlySet<string> GetDotNetFilesExpectedSet(AssertBundleOptions assertOptions)
