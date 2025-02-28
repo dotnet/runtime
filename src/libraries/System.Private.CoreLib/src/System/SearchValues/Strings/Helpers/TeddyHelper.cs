@@ -66,7 +66,7 @@ namespace System.Buffers
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        [CompExactlyDependsOn(typeof(Avx512BW))]
+        [CompExactlyDependsOn(typeof(Avx512Vbmi))]
         public static (Vector512<byte> Result, Vector512<byte> Prev0) ProcessInputN2(
             Vector512<byte> input,
             Vector512<byte> prev0,
@@ -183,7 +183,7 @@ namespace System.Buffers
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        [CompExactlyDependsOn(typeof(Avx512BW))]
+        [CompExactlyDependsOn(typeof(Avx512Vbmi))]
         public static (Vector512<byte> Result, Vector512<byte> Prev0, Vector512<byte> Prev1) ProcessInputN3(
             Vector512<byte> input,
             Vector512<byte> prev0, Vector512<byte> prev1,
@@ -414,7 +414,7 @@ namespace System.Buffers
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        [CompExactlyDependsOn(typeof(Avx512BW))]
+        [CompExactlyDependsOn(typeof(Avx512Vbmi))]
         private static Vector512<byte> RightShift1(Vector512<byte> left, Vector512<byte> right)
         {
             // Given input vectors like
@@ -422,28 +422,21 @@ namespace System.Buffers
             // right:   64,  65,  66,  67,  68,  69, ... , 122, 123, 124, 125, 126, 127
             // We want to shift the last element of left (63) to be the first element of the result
             // result: [63], 64,  65,  66,  67,  68, ... , 121, 122, 123, 124, 125, 126
-            //
-            // Avx512BW.AlignRight acts like four separate Ssse3.AlignRight calls on each 128-bit pair of the of the source operands.
-            // Result of Avx512BW.AlignRight(right, left, 15) is
-            // lower: [15],  64,  65,  66,  67,  68,  69,  70,  71,  72,  73,  74,  75,  76,  77,  78, [31],  80,  81,  82,  83,  84,  85,  86,  87,  88,  89,  90,  91,  92,  93,  94,
-            // upper: [47],  96,  97,  98,  99, 100, 101, 102, 103, 104, 105, 106, 107, 108, 109, 110, [63], 112, 113, 114, 115, 116, 117, 118, 119, 120, 121, 122, 123, 124, 125, 126
-            // note how elements at indexes 0, 16, 32 and 48 are off by 48 places.
-            // We want to read 63 instead of 15, 79 instead of 31, 95 instead of 47, and 111 instead of 63.
-            //
-            // Similar to Avx2 above, we create a temporary value where we shift these positions by 48 places - shift 8-byte values by 6 places (PermuteVar8x64x2).
-            // The indices vector below could be [6, 7, 8, 9, 10, 11, 12, 13], but we only care about the last byte in each 128-bit block (positions with value 0 don't affect the result).
 
-            Vector512<byte> leftShifted = Avx512F.PermuteVar8x64x2(left.AsInt64(), Vector512.Create(0, 7, 0, 9, 0, 11, 0, 13), right.AsInt64()).AsByte();
-            return Avx512BW.AlignRight(right, leftShifted, 15);
+            return Avx512Vbmi.PermuteVar64x8x2(left, Vector512.CreateSequence<byte>(63, 1), right);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        [CompExactlyDependsOn(typeof(Avx512BW))]
+        [CompExactlyDependsOn(typeof(Avx512Vbmi))]
         private static Vector512<byte> RightShift2(Vector512<byte> left, Vector512<byte> right)
         {
-            // See comments in 'RightShift1(Vector512<byte> left, Vector512<byte> right)' above.
-            Vector512<byte> leftShifted = Avx512F.PermuteVar8x64x2(left.AsInt64(), Vector512.Create(0, 7, 0, 9, 0, 11, 0, 13), right.AsInt64()).AsByte();
-            return Avx512BW.AlignRight(right, leftShifted, 14);
+            // Given input vectors like
+            // left:     0,   1,   2,   3,   4,   5, ... ,  58,  59,  60,  61, [62], [63]
+            // right:   64,  65,  66,  67,  68,  69, ... , 122, 123, 124, 125, 126, 127
+            // We want to shift the last two elements of left (62, 63) to be the first elements of the result
+            // result: [62], [63], 64,  65,  66,  67,  68, ... , 121, 122, 123, 124, 125
+
+            return Avx512Vbmi.PermuteVar64x8x2(left, Vector512.CreateSequence<byte>(62, 1), right);
         }
     }
 }
