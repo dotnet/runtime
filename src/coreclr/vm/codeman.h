@@ -2770,14 +2770,14 @@ public:
     {
         // Not used for the interpreter
         _ASSERTE(FALSE);
-        return NULL;
+        return PTR_NULL;
     }
 
     virtual TADDR GetFuncletStartAddress(EECodeInfo * pCodeInfo)
     {
         // Not used for the interpreter
         _ASSERTE(FALSE);
-        return NULL;
+        return 0;
     }
 
     virtual DWORD GetFuncletStartOffsets(const METHODTOKEN& MethodToken, DWORD* pStartFuncletOffsets, DWORD dwLength)
