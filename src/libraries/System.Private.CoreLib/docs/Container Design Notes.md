@@ -53,8 +53,4 @@ Serialization preserves the order of all key/value pairs in addition to the inte
 
 ## HashSet
 
-HashSet's implementation is based on Dictionary's so it inherits most of the same guarantees and traits as that container.
-
-### Unsafe Removal During Enumeration
-
-The documentation for HashSet does *not* specify that it is safe to Remove or Clear during enumeration of a HashSet. However, the current implementation does not increment `_version` inside of Clear or Remove, so it is possible that there is code in the wild that depends on this undocumented behavior. TrimExcess *does* invalidate enumerators, as it does in Dictionary.
+HashSet's implementation is based on Dictionary's so it inherits the same guarantees and traits as that container.
