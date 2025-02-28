@@ -326,6 +326,10 @@ async function loadBootConfig (module: DotnetModuleInternal): Promise<void> {
 
     deep_merge_config(loaderHelpers.config, loadedConfig);
 
+    if (!loaderHelpers.config.applicationEnvironment) {
+        loaderHelpers.config.applicationEnvironment = "Production";
+    }
+
     function fetchBootConfig (url: string): Promise<Response> {
         return loaderHelpers.fetch_like(url, {
             method: "GET",
@@ -340,7 +344,7 @@ async function readBootConfigResponse (loadConfigResponse: Response): Promise<Mo
     const loadedConfig: MonoConfig = await loadConfigResponse.json();
 
     if (!config.applicationEnvironment) {
-        loadedConfig.applicationEnvironment = loadConfigResponse.headers.get("Blazor-Environment") || loadConfigResponse.headers.get("DotNet-Environment") || "Production";
+        loadedConfig.applicationEnvironment = loadConfigResponse.headers.get("Blazor-Environment") || loadConfigResponse.headers.get("DotNet-Environment") || undefined;
     }
 
     if (!loadedConfig.environmentVariables)
