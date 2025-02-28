@@ -51,13 +51,15 @@ namespace System.Numerics
                 // https://en.wikipedia.org/wiki/Toom-Cook_multiplication
 
                 int n = (value.Length + 2) / 3;
+
                 int pLength = n + 1;
+
+                // The threshold for Toom-3 is expected to be greater than
+                // StackAllocThreshold, so ArrayPool is always used.
+
                 int pAndQAllLength = pLength * 3;
-                uint[]? pAndQAllFromPool = null;
-                Span<uint> pAndQAll = (
-                    (uint)pAndQAllLength <= StackAllocThreshold
-                    ? stackalloc uint[StackAllocThreshold]
-                    : pAndQAllFromPool = ArrayPool<uint>.Shared.Rent(pAndQAllLength)).Slice(0, pAndQAllLength);
+                uint[] pAndQAllFromPool = ArrayPool<uint>.Shared.Rent(pAndQAllLength);
+                Span<uint> pAndQAll = pAndQAllFromPool.AsSpan(0, pAndQAllLength);
                 pAndQAll.Clear();
 
                 Toom3Data p = Toom3Data.Build(value, n, pAndQAll.Slice(0, 3 * pLength));
@@ -65,20 +67,14 @@ namespace System.Numerics
                 // Replace r_n in Wikipedia with z_n
                 int rLength = pLength + pLength + 1;
                 int rAndZAllLength = rLength * 3;
-                uint[]? rAndZAllFromPool = null;
-                Span<uint> rAndZAll = (
-                    (uint)rAndZAllLength <= StackAllocThreshold
-                    ? stackalloc uint[StackAllocThreshold]
-                    : rAndZAllFromPool = ArrayPool<uint>.Shared.Rent(rAndZAllLength)).Slice(0, rAndZAllLength);
+                uint[] rAndZAllFromPool = ArrayPool<uint>.Shared.Rent(rAndZAllLength);
+                Span<uint> rAndZAll = rAndZAllFromPool.AsSpan(0, rAndZAllLength);
                 rAndZAll.Clear();
 
                 p.Square(n, bits, rAndZAll);
 
-                if (pAndQAllFromPool != null)
-                    ArrayPool<uint>.Shared.Return(pAndQAllFromPool);
-
-                if (rAndZAllFromPool != null)
-                    ArrayPool<uint>.Shared.Return(rAndZAllFromPool);
+                ArrayPool<uint>.Shared.Return(pAndQAllFromPool);
+                ArrayPool<uint>.Shared.Return(rAndZAllFromPool);
             }
 
             static void Karatsuba(ReadOnlySpan<uint> value, Span<uint> bits)
@@ -279,11 +275,11 @@ namespace System.Numerics
 
                 int pLength = n + 1;
                 int pAndQAllLength = pLength * 6;
-                uint[]? pAndQAllFromPool = null;
-                Span<uint> pAndQAll = (
-                    (uint)pAndQAllLength <= StackAllocThreshold
-                    ? stackalloc uint[StackAllocThreshold]
-                    : pAndQAllFromPool = ArrayPool<uint>.Shared.Rent(pAndQAllLength)).Slice(0, pAndQAllLength);
+
+                // The threshold for Toom-3 is expected to be greater than
+                // StackAllocThreshold, so ArrayPool is always used.
+                uint[] pAndQAllFromPool = ArrayPool<uint>.Shared.Rent(pAndQAllLength);
+                Span<uint> pAndQAll = pAndQAllFromPool.AsSpan(0, pAndQAllLength);
                 pAndQAll.Clear();
 
                 Toom3Data p = Toom3Data.Build(left, n, pAndQAll.Slice(0, 3 * pLength));
@@ -292,20 +288,14 @@ namespace System.Numerics
                 // Replace r_n in Wikipedia with z_n
                 int rLength = pLength + pLength + 1;
                 int rAndZAllLength = rLength * 3;
-                uint[]? rAndZAllFromPool = null;
-                Span<uint> rAndZAll = (
-                    (uint)rAndZAllLength <= StackAllocThreshold
-                    ? stackalloc uint[StackAllocThreshold]
-                    : rAndZAllFromPool = ArrayPool<uint>.Shared.Rent(rAndZAllLength)).Slice(0, rAndZAllLength);
+                uint[] rAndZAllFromPool = ArrayPool<uint>.Shared.Rent(rAndZAllLength);
+                Span<uint> rAndZAll = rAndZAllFromPool.AsSpan(0, rAndZAllLength);
                 rAndZAll.Clear();
 
                 p.MultiplyOther(q, n, bits, rAndZAll);
 
-                if (pAndQAllFromPool != null)
-                    ArrayPool<uint>.Shared.Return(pAndQAllFromPool);
-
-                if (rAndZAllFromPool != null)
-                    ArrayPool<uint>.Shared.Return(rAndZAllFromPool);
+                ArrayPool<uint>.Shared.Return(pAndQAllFromPool);
+                ArrayPool<uint>.Shared.Return(rAndZAllFromPool);
             }
 
             static void Toom25(ReadOnlySpan<uint> left, ReadOnlySpan<uint> right, Span<uint> bits, int n)
@@ -332,11 +322,11 @@ namespace System.Numerics
 
                 int pLength = n + 1;
                 int pAndQAllLength = pLength * 4;
-                uint[]? pAndQFromPool = null;
-                Span<uint> pAndQAll = (
-                    (uint)pAndQAllLength <= StackAllocThreshold
-                    ? stackalloc uint[StackAllocThreshold]
-                    : pAndQFromPool = ArrayPool<uint>.Shared.Rent(pAndQAllLength)).Slice(0, pAndQAllLength);
+
+                // The threshold for Toom-3 is expected to be greater than
+                // StackAllocThreshold, so ArrayPool is always used.
+                uint[] pAndQAllFromPool = ArrayPool<uint>.Shared.Rent(pAndQAllLength);
+                Span<uint> pAndQAll = pAndQAllFromPool.AsSpan(0, pAndQAllLength);
                 pAndQAll.Clear();
 
                 Span<uint> p1 = pAndQAll.Slice(0, pLength);
@@ -367,11 +357,8 @@ namespace System.Numerics
 
                 int cLength = pLength * 2 + 1;
                 int cAllLength = cLength * 3;
-                uint[]? cFromPool = null;
-                Span<uint> cAll = (
-                    (uint)cAllLength <= StackAllocThreshold
-                    ? stackalloc uint[StackAllocThreshold]
-                    : cFromPool = ArrayPool<uint>.Shared.Rent(cAllLength)).Slice(0, cAllLength);
+                uint[] cAllFromPool = ArrayPool<uint>.Shared.Rent(cAllLength);
+                Span<uint> cAll = cAllFromPool.AsSpan(0, cAllLength);
                 cAll.Clear();
 
                 Span<uint> z1 = cAll.Slice(0, cLength);
@@ -396,14 +383,12 @@ namespace System.Numerics
                 RightShiftOne(z1);
                 AddSelf(z1, z0.TrimEnd(0u));
 
-                if (pAndQFromPool != null)
-                    ArrayPool<uint>.Shared.Return(pAndQFromPool);
+                ArrayPool<uint>.Shared.Return(pAndQAllFromPool);
 
                 AddSelf(bits.Slice(n), z1.TrimEnd(0u));
                 AddSelf(bits.Slice(n * 2), z2.TrimEnd(0u));
 
-                if (cFromPool != null)
-                    ArrayPool<uint>.Shared.Return(cFromPool);
+                ArrayPool<uint>.Shared.Return(cAllFromPool);
             }
 
             static void Karatsuba(ReadOnlySpan<uint> left, ReadOnlySpan<uint> right, Span<uint> bits, int n)
