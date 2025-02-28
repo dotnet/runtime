@@ -456,7 +456,7 @@ ConvertedImageLayout::ConvertedImageLayout(FlatImageLayout* source, bool disable
     LOG((LF_LOADER, LL_INFO100, "PEImage: Opening manually mapped stream\n"));
 
 #ifdef TARGET_WINDOWS
-    if (!disableMapping)
+    if (!disableMapping && m_pOwner->IsFile())
     {
         loadedImage = source->LoadImageByMappingParts(this->m_imageParts);
         if (loadedImage == NULL)
