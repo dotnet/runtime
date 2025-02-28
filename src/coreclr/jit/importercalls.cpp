@@ -7763,6 +7763,14 @@ void Compiler::impMarkInlineCandidateHelper(GenTreeCall*           call,
         return;
     }
 
+    // We cannot inline methods with EH into filter clauses, even if marked as aggressive inline
+    //
+    if ((inlineCandidateInfo->methInfo.EHcount > 0) && bbInFilterBBRange(compCurBB))
+    {
+        inlineResult->NoteFatal(InlineObservation::CALLSITE_IS_WITHIN_FILTER);
+        return;
+    }
+
     // The old value should be null OR this call should be a guarded devirtualization candidate.
     assert(call->IsGuardedDevirtualizationCandidate() || (call->GetSingleInlineCandidateInfo() == nullptr));
 
