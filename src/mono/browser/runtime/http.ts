@@ -76,7 +76,7 @@ export function http_wasm_create_controller (): HttpController {
 function mute_unhandledrejection (promise:Promise<any>) {
     promise.catch((err) => {
         if (err && err !== "AbortError" && err.name !== "AbortError" ) {
-            mono_log_debug("http muted" + err);
+            mono_log_debug("http muted: " + err);
         }
     });
 }
