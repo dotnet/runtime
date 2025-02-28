@@ -24,6 +24,7 @@ namespace System.Numerics
         public static void Square(ReadOnlySpan<uint> value, Span<uint> bits)
         {
             Debug.Assert(bits.Length == value.Length + value.Length);
+            Debug.Assert(!bits.ContainsAnyExcept(0u));
 
             // Executes different algorithms for computing z = a * a
             // based on the actual length of a. If a is "small" enough
@@ -210,6 +211,8 @@ namespace System.Numerics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void Multiply(ReadOnlySpan<uint> left, ReadOnlySpan<uint> right, Span<uint> bits)
         {
+            Debug.Assert(!bits.ContainsAnyExcept(0u));
+
             if (left.Length < right.Length)
             {
                 if (left.Length > 0)
