@@ -118,14 +118,14 @@ Based on this PGO data, the JIT first translates the above into something like t
     IEnumerator<int> tt = null;
     if (o.GetType().Equals(typeof(int[])))
     {
-        a = (int[]) o;
+        var a = (int[]) o;
         tt = a.GetEnumerator();
     }
     else
     {
         tt = o.GetEnumerator();
     }
-    e = tt;
+    var e = tt;
     // -------------- End GDV "diamond"
 
     try
@@ -134,7 +134,7 @@ Based on this PGO data, the JIT first translates the above into something like t
         bool b0 = false;
         if (e.GetType().Equals(typeof(SZGenericArrayEnumerator<int>)))
         {
-            ea = (SZGenericArrayEnumerator<int>) e;
+            var ea = (SZGenericArrayEnumerator<int>) e;
             b0 = ea.MoveNext();
         }
         else
@@ -334,21 +334,21 @@ The eventual set of surviving allocations are then transformed to be new struct-
     IEnumerable<int> t = null;
     if (o.Type == O)
     {
-        ac = new E();
+        var ac = new E();
         t = ac;
     }
     else
     {
         t = o.GetEnumerator();
     }
-    e = t;
+    var e = t;
 
     if (e.Type == E)
     {
         // inlined e.MoveNext
-        ea = (E) e;
+        var ea = (E) e;
         // enumerator ref may be copied to other locals
-        tt = ea;
+        var tt = ea;
         tt.field--;
     }
     else
