@@ -19,6 +19,20 @@ extern "C"
 }
 #endif
 
+static bool AllowR2RForImage(PEImage* pOwner)
+{
+    // Allow R2R for files
+    if (pOwner->IsFile())
+        return true;
+
+    // Allow R2R for externally provided images
+    INT64 size;
+    if (pOwner->GetExternalData(&size) != NULL && size > 0)
+        return true;
+
+    return false;
+}
+
 #ifndef DACCESS_COMPILE
 PEImageLayout* PEImageLayout::CreateFromByteArray(PEImage* pOwner, const BYTE* array, COUNT_T size)
 {
@@ -70,9 +84,11 @@ PEImageLayout* PEImageLayout::LoadConverted(PEImage* pOwner, bool disableMapping
         pFlat = (FlatImageLayout*)pOwner->GetFlatLayout();
         pFlat->AddRef();
     }
-    else if (pOwner->IsFile())
+    else if (AllowR2RForImage(pOwner))
     {
+        // We only expect to be converting images that aren't already opened in the R2R composite case
         pFlat = new FlatImageLayout(pOwner);
+        _ASSERTE(pFlat->HasReadyToRunHeader());
     }
 
     if (pFlat == NULL || !pFlat->CheckILOnlyFormat())
@@ -88,9 +104,8 @@ PEImageLayout* PEImageLayout::LoadConverted(PEImage* pOwner, bool disableMapping
     _ASSERTE(!pOwner->IsFile() || !pFlat->HasReadyToRunHeader() || disableMapping);
 #endif
 
-    // ignore R2R if the image is not a file.
-    if ((pFlat->HasReadyToRunHeader() && pOwner->IsFile()) ||
-        pFlat->HasWriteableSections())
+    if ((pFlat->HasReadyToRunHeader() && AllowR2RForImage(pOwner))
+        || pFlat->HasWriteableSections())
     {
         return new ConvertedImageLayout(pFlat, disableMapping);
     }
@@ -462,7 +477,7 @@ ConvertedImageLayout::ConvertedImageLayout(FlatImageLayout* source, bool disable
 
     IfFailThrow(Init(loadedImage));
 
-    if (m_pOwner->IsFile() && IsNativeMachineFormat())
+    if (AllowR2RForImage(m_pOwner) && IsNativeMachineFormat())
     {
         // Do base relocation and exception hookup, if necessary.
         // otherwise R2R will be disabled for this image.
