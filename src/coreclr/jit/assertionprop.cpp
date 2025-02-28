@@ -4043,6 +4043,7 @@ void Compiler::optAssertionProp_RangeProperties(ASSERT_VALARG_TP assertions,
                                                 GenTree*         tree,
                                                 Statement*       stmt,
                                                 BasicBlock*      block,
+                                                bool             onlyIfCheap,
                                                 bool*            isKnownNonZero,
                                                 bool*            isKnownNonNegative)
 {
@@ -4169,6 +4170,29 @@ void Compiler::optAssertionProp_RangeProperties(ASSERT_VALARG_TP assertions,
     // Let's see if MergeEdgeAssertions can help us:
     if (tree->TypeIs(TYP_INT))
     {
+        if (!onlyIfCheap)
+        {
+            // For SSA-based we also need to check whether it overflows or not.
+            Range range = Range(Limit(Limit::keUndef));
+            if (GetRangeCheck()->TryGetRange(block, tree, &range))
+            {
+                if (range.LowerLimit().IsConstant())
+                {
+                    if (range.LowerLimit().IsConstant())
+                    {
+                        if (range.LowerLimit().GetConstant() >= 0)
+                        {
+                            *isKnownNonNegative = true;
+                        }
+                        if (range.LowerLimit().GetConstant() > 0)
+                        {
+                            *isKnownNonZero = true;
+                        }
+                    }
+                }
+            }
+        }
+
         // See if (X + CNS) is known to be non-negative
         if (tree->OperIs(GT_ADD) && tree->gtGetOp2()->IsIntCnsFitsInI32())
         {
@@ -4257,8 +4281,8 @@ GenTree* Compiler::optAssertionProp_ModDiv(ASSERT_VALARG_TP assertions,
     bool op2IsNotZero;
     bool op1IsNotNegative;
     bool op2IsNotNegative;
-    optAssertionProp_RangeProperties(assertions, op1, stmt, block, &op1IsNotZero, &op1IsNotNegative);
-    optAssertionProp_RangeProperties(assertions, op2, stmt, block, &op2IsNotZero, &op2IsNotNegative);
+    optAssertionProp_RangeProperties(assertions, op1, stmt, block, false, &op1IsNotZero, &op1IsNotNegative);
+    optAssertionProp_RangeProperties(assertions, op2, stmt, block, false, &op2IsNotZero, &op2IsNotNegative);
 
     bool changed = false;
     if (op1IsNotNegative && op2IsNotNegative && tree->OperIs(GT_DIV, GT_MOD))
@@ -4561,7 +4585,7 @@ GenTree* Compiler::optAssertionPropGlobal_RelOp(ASSERT_VALARG_TP assertions,
     if (op2->IsIntegralConst(0) && tree->OperIsCmpCompare())
     {
         bool isNonZero, isNeverNegative;
-        optAssertionProp_RangeProperties(assertions, op1, stmt, block, &isNonZero, &isNeverNegative);
+        optAssertionProp_RangeProperties(assertions, op1, stmt, block, true, &isNonZero, &isNeverNegative);
 
         if (tree->OperIs(GT_GE, GT_LT) && isNeverNegative)
         {
@@ -4592,6 +4616,25 @@ GenTree* Compiler::optAssertionPropGlobal_RelOp(ASSERT_VALARG_TP assertions,
         {
             newTree = gtWrapWithSideEffects(newTree, tree, GTF_ALL_EFFECT);
             return optAssertionProp_Update(newTree, tree, stmt);
+        }
+    }
+
+    if (tree->OperIsCmpCompare() && op1->TypeIs(TYP_INT) && op2->IsIntCnsFitsInI32() &&
+        // JIT-TP: Ignore "X relop 0" - it will be handled below
+        !op2->IsIntegralConst(0))
+    {
+        // NOTE: we can call GetRange for op2 as well, but that will be even more expensive,
+        Range rng1 = Range(Limit(Limit::keUndef));
+        if (GetRangeCheck()->TryGetRange(block, op1, &rng1))
+        {
+            Range rng2 = Range(Limit(Limit::keConstant, static_cast<int>(op2->AsIntCon()->IconValue())));
+            RangeOps::RelationKind kind = RangeOps::EvalRelop(tree->OperGet(), tree->IsUnsigned(), rng1, rng2);
+            if ((kind != RangeOps::RelationKind::Unknown))
+            {
+                newTree = kind == RangeOps::RelationKind::AlwaysTrue ? gtNewTrue() : gtNewFalse();
+                newTree = gtWrapWithSideEffects(newTree, tree, GTF_ALL_EFFECT);
+                return optAssertionProp_Update(newTree, tree, stmt);
+            }
         }
     }
 
@@ -4975,7 +5018,7 @@ GenTree* Compiler::optAssertionProp_Cast(ASSERT_VALARG_TP assertions,
     {
         bool isKnownNonZero;
         bool isKnownNonNegative;
-        optAssertionProp_RangeProperties(assertions, lcl, stmt, block, &isKnownNonZero, &isKnownNonNegative);
+        optAssertionProp_RangeProperties(assertions, lcl, stmt, block, false, &isKnownNonZero, &isKnownNonNegative);
         if (isKnownNonNegative)
         {
             cast->SetUnsigned();

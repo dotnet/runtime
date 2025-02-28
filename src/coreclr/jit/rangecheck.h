@@ -585,6 +585,99 @@ struct RangeOps
         result.uLimit = Limit(Limit::keConstant, -lo);
         return result;
     }
+
+    enum class RelationKind
+    {
+        AlwaysTrue,
+        AlwaysFalse,
+        Unknown
+    };
+
+    //------------------------------------------------------------------------
+    // EvalRelop: Evaluate the relation between two ranges for the given relop
+    //    Example: "x >= y" is AlwaysTrue when "x.LowerLimit() >= y.UpperLimit()"
+    //
+    // Arguments:
+    //    relop      - The relational operator (LE,LT,GE,GT,EQ,NE)
+    //    isUnsigned - True if the comparison is unsigned
+    //    x          - The left range
+    //    y          - The right range
+    //
+    // Returns:
+    //    AlwaysTrue when the given relop always evaluates to true for the given ranges
+    //    AlwaysFalse when the given relop always evaluates to false for the given ranges
+    //    Otherwise Unknown
+    //
+    static RelationKind EvalRelop(const genTreeOps relop, bool isUnsigned, const Range& x, const Range& y)
+    {
+        // NOTE: we can also handle BinOpArray here, but it doesn't seem worth it
+
+        // For unsigned comparisons, we only support non-negative ranges.
+        if (isUnsigned)
+        {
+            if ((!x.LowerLimit().IsConstant() || !y.UpperLimit().IsConstant()) ||
+                (x.LowerLimit().GetConstant() < 0 || y.LowerLimit().GetConstant() < 0))
+            {
+                return RelationKind::Unknown;
+            }
+        }
+
+        switch (relop)
+        {
+            case GT_GE:
+            case GT_LT:
+            {
+                if (x.LowerLimit().IsConstant() && y.UpperLimit().IsConstant() &&
+                    x.LowerLimit().GetConstant() >= y.UpperLimit().GetConstant())
+                {
+                    return relop == GT_GE ? RelationKind::AlwaysTrue : RelationKind::AlwaysFalse;
+                }
+
+                if (x.UpperLimit().IsConstant() && y.LowerLimit().IsConstant() &&
+                    x.UpperLimit().GetConstant() < y.LowerLimit().GetConstant())
+                {
+                    return relop == GT_GE ? RelationKind::AlwaysFalse : RelationKind::AlwaysTrue;
+                }
+                break;
+            }
+
+            case GT_GT:
+            case GT_LE:
+            {
+                if (x.LowerLimit().IsConstant() && y.UpperLimit().IsConstant() &&
+                    x.LowerLimit().GetConstant() > y.UpperLimit().GetConstant())
+                {
+                    return relop == GT_GT ? RelationKind::AlwaysTrue : RelationKind::AlwaysFalse;
+                }
+
+                if (x.UpperLimit().IsConstant() && y.LowerLimit().IsConstant() &&
+                    x.UpperLimit().GetConstant() <= y.LowerLimit().GetConstant())
+                {
+                    return relop == GT_GT ? RelationKind::AlwaysFalse : RelationKind::AlwaysTrue;
+                }
+                break;
+            }
+
+            case GT_EQ:
+            case GT_NE:
+            {
+                if ((x.LowerLimit().IsConstant() && y.UpperLimit().IsConstant() &&
+                     x.LowerLimit().GetConstant() > y.UpperLimit().GetConstant()) ||
+                    (x.UpperLimit().IsConstant() && y.LowerLimit().IsConstant() &&
+                     x.UpperLimit().GetConstant() < y.LowerLimit().GetConstant()))
+                {
+                    return relop == GT_EQ ? RelationKind::AlwaysFalse : RelationKind::AlwaysTrue;
+                }
+
+                break;
+            }
+
+            default:
+                assert(!"unknown comparison operator");
+                break;
+        }
+        return RelationKind::Unknown;
+    }
 };
 
 class RangeCheck
