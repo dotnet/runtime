@@ -1662,8 +1662,13 @@ void Indent(int indent)
 // Return Value:
 //    false if the range is unknown or determined to overflow.
 //
-bool RangeCheck::TryGetRange(BasicBlock* block, GenTree* expr, Range* pRange)
+bool RangeCheck::TryGetRange(BasicBlock* block, GenTree* expr, Range* pRange, int budget)
 {
+    if (budget != -1)
+    {
+        m_nVisitBudget = budget;
+    }
+
     // Reset the maps.
     ClearRangeMap();
     ClearOverflowMap();

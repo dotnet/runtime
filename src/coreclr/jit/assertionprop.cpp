@@ -4167,88 +4167,34 @@ void Compiler::optAssertionProp_RangeProperties(ASSERT_VALARG_TP assertions,
         return;
     }
 
-    // Let's see if MergeEdgeAssertions can help us:
     if (tree->TypeIs(TYP_INT))
     {
-        if (!onlyIfCheap)
+        Limit lowerBound(Limit::keUnknown);
+        Range rng = Range(Limit(Limit::keUnknown));
+        if (onlyIfCheap)
         {
-            // For SSA-based we also need to check whether it overflows or not.
-            Range range = Range(Limit(Limit::keUndef));
-            if (GetRangeCheck()->TryGetRange(block, tree, &range))
+            if (RangeCheck::TryGetRangeFromAssertions(this, treeVN, assertions, &rng))
             {
-                if (range.LowerLimit().IsConstant())
-                {
-                    if (range.LowerLimit().IsConstant())
-                    {
-                        if (range.LowerLimit().GetConstant() >= 0)
-                        {
-                            *isKnownNonNegative = true;
-                        }
-                        if (range.LowerLimit().GetConstant() > 0)
-                        {
-                            *isKnownNonZero = true;
-                        }
-                    }
-                }
-            }
-        }
-
-        // See if (X + CNS) is known to be non-negative
-        if (tree->OperIs(GT_ADD) && tree->gtGetOp2()->IsIntCnsFitsInI32())
-        {
-            Range    rng = Range(Limit(Limit::keDependent));
-            ValueNum vn  = vnStore->VNConservativeNormalValue(tree->gtGetOp1()->gtVNPair);
-            if (!RangeCheck::TryGetRangeFromAssertions(this, vn, assertions, &rng))
-            {
-                return;
-            }
-
-            int cns = static_cast<int>(tree->gtGetOp2()->AsIntCon()->IconValue());
-            rng.LowerLimit().AddConstant(cns);
-
-            if ((rng.LowerLimit().IsConstant() && !rng.LowerLimit().AddConstant(cns)) ||
-                (rng.UpperLimit().IsConstant() && !rng.UpperLimit().AddConstant(cns)))
-            {
-                // Add cns to both bounds if they are constants. Make sure the addition doesn't overflow.
-                return;
-            }
-
-            if (rng.LowerLimit().IsConstant())
-            {
-                // E.g. "X + -8" when X's range is [8..unknown]
-                // it's safe to say "X + -8" is non-negative
-                if ((rng.LowerLimit().GetConstant() == 0))
-                {
-                    *isKnownNonNegative = true;
-                }
-
-                // E.g. "X + 8" when X's range is [0..CNS]
-                // Here we have to check the upper bound as well to avoid overflow
-                if ((rng.LowerLimit().GetConstant() > 0) && rng.UpperLimit().IsConstant() &&
-                    rng.UpperLimit().GetConstant() > rng.LowerLimit().GetConstant())
-                {
-                    *isKnownNonNegative = true;
-                    *isKnownNonZero     = true;
-                }
+                lowerBound = rng.LowerLimit();
             }
         }
         else
         {
-            Range rng = Range(Limit(Limit::keUnknown));
-            if (RangeCheck::TryGetRangeFromAssertions(this, treeVN, assertions, &rng))
+            if (GetRangeCheck()->TryGetRange(block, tree, &rng))
             {
-                Limit lowerBound = rng.LowerLimit();
-                if (lowerBound.IsConstant())
-                {
-                    if (lowerBound.GetConstant() >= 0)
-                    {
-                        *isKnownNonNegative = true;
-                    }
-                    if (lowerBound.GetConstant() > 0)
-                    {
-                        *isKnownNonZero = true;
-                    }
-                }
+                lowerBound = rng.LowerLimit();
+            }
+        }
+
+        if (lowerBound.IsConstant())
+        {
+            if (lowerBound.GetConstant() >= 0)
+            {
+                *isKnownNonNegative = true;
+            }
+            if (lowerBound.GetConstant() > 0)
+            {
+                *isKnownNonZero = true;
             }
         }
     }
@@ -4581,6 +4527,25 @@ GenTree* Compiler::optAssertionPropGlobal_RelOp(ASSERT_VALARG_TP assertions,
     GenTree* op1     = tree->AsOp()->gtOp1;
     GenTree* op2     = tree->AsOp()->gtOp2;
 
+    if (tree->OperIsCmpCompare() && op1->TypeIs(TYP_INT) && op2->IsIntCnsFitsInI32() &&
+        // JIT-TP: Ignore "X relop 0" - it will be handled below
+        !op2->IsIntegralConst(0))
+    {
+        // NOTE: we can call GetRange for op2 as well, but that will be even more expensive,
+        Range rng1 = Range(Limit(Limit::keUndef));
+        if (GetRangeCheck()->TryGetRange(block, op1, &rng1, 12))
+        {
+            Range rng2 = Range(Limit(Limit::keConstant, static_cast<int>(op2->AsIntCon()->IconValue())));
+            RangeOps::RelationKind kind = RangeOps::EvalRelop(tree->OperGet(), tree->IsUnsigned(), rng1, rng2);
+            if ((kind != RangeOps::RelationKind::Unknown))
+            {
+                newTree = kind == RangeOps::RelationKind::AlwaysTrue ? gtNewTrue() : gtNewFalse();
+                newTree = gtWrapWithSideEffects(newTree, tree, GTF_ALL_EFFECT);
+                return optAssertionProp_Update(newTree, tree, stmt);
+            }
+        }
+    }
+
     // Can we fold "X relop 0" based on assertions?
     if (op2->IsIntegralConst(0) && tree->OperIsCmpCompare())
     {
@@ -4616,25 +4581,6 @@ GenTree* Compiler::optAssertionPropGlobal_RelOp(ASSERT_VALARG_TP assertions,
         {
             newTree = gtWrapWithSideEffects(newTree, tree, GTF_ALL_EFFECT);
             return optAssertionProp_Update(newTree, tree, stmt);
-        }
-    }
-
-    if (tree->OperIsCmpCompare() && op1->TypeIs(TYP_INT) && op2->IsIntCnsFitsInI32() &&
-        // JIT-TP: Ignore "X relop 0" - it will be handled below
-        !op2->IsIntegralConst(0))
-    {
-        // NOTE: we can call GetRange for op2 as well, but that will be even more expensive,
-        Range rng1 = Range(Limit(Limit::keUndef));
-        if (GetRangeCheck()->TryGetRange(block, op1, &rng1))
-        {
-            Range rng2 = Range(Limit(Limit::keConstant, static_cast<int>(op2->AsIntCon()->IconValue())));
-            RangeOps::RelationKind kind = RangeOps::EvalRelop(tree->OperGet(), tree->IsUnsigned(), rng1, rng2);
-            if ((kind != RangeOps::RelationKind::Unknown))
-            {
-                newTree = kind == RangeOps::RelationKind::AlwaysTrue ? gtNewTrue() : gtNewFalse();
-                newTree = gtWrapWithSideEffects(newTree, tree, GTF_ALL_EFFECT);
-                return optAssertionProp_Update(newTree, tree, stmt);
-            }
         }
     }
 
