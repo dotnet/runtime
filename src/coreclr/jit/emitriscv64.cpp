@@ -3565,10 +3565,6 @@ void emitter::emitDispInsName(
     static constexpr int kMaxInstructionLength = 14;
 
     const BYTE* insAdr = addr - writeableOffset;
-
-    unsigned int opcode = code & 0x7f;
-    assert((opcode & 0x3) == 0x3); // only 32-bit encodings supported
-
     emitDispInsAddr(insAdr);
     emitDispInsOffs(insOffset, doffs);
 
@@ -3577,9 +3573,9 @@ void emitter::emitDispInsName(
 
     printf("      ");
 
-    switch (opcode)
+    switch (GetMajorOpcode(code))
     {
-        case 0x37: // LUI
+        case MajorOpcode::Lui:
         {
             const char* rd    = RegNames[(code >> 7) & 0x1f];
             int         imm20 = (code >> 12) & 0xfffff;
@@ -3590,7 +3586,7 @@ void emitter::emitDispInsName(
             printf("lui            %s, %d\n", rd, imm20);
             return;
         }
-        case 0x17: // AUIPC
+        case MajorOpcode::Auipc:
         {
             const char* rd    = RegNames[(code >> 7) & 0x1f];
             int         imm20 = (code >> 12) & 0xfffff;
@@ -3601,7 +3597,7 @@ void emitter::emitDispInsName(
             printf("auipc          %s, %d\n", rd, imm20);
             return;
         }
-        case 0x13:
+        case MajorOpcode::OpImm:
         {
             unsigned opcode2      = (code >> 12) & 0x7;
             unsigned rd           = (code >> 7) & 0x1f;
@@ -3693,7 +3689,7 @@ void emitter::emitDispInsName(
 
             return;
         }
-        case 0x1b:
+        case MajorOpcode::OpImm32:
         {
             unsigned int opcode2 = (code >> 12) & 0x7;
             const char*  rd      = RegNames[(code >> 7) & 0x1f];
@@ -3755,7 +3751,7 @@ void emitter::emitDispInsName(
                     return emitDispIllegalInstruction(code);
             }
         }
-        case 0x33:
+        case MajorOpcode::Op:
         {
             unsigned int opcode2 = (code >> 25) & 0x7f;
             unsigned int opcode3 = (code >> 12) & 0x7;
@@ -3844,7 +3840,7 @@ void emitter::emitDispInsName(
                     return emitDispIllegalInstruction(code);
             }
         }
-        case 0x3b:
+        case MajorOpcode::Op32:
         {
             unsigned int opcode2 = (code >> 25) & 0x7f;
             unsigned int opcode3 = (code >> 12) & 0x7;
@@ -3909,7 +3905,7 @@ void emitter::emitDispInsName(
                     return emitDispIllegalInstruction(code);
             }
         }
-        case 0x23:
+        case MajorOpcode::Store:
         {
             unsigned int opcode2 = (code >> 12) & 0x7;
             const char*  rs1     = RegNames[(code >> 15) & 0x1f];
@@ -3939,7 +3935,7 @@ void emitter::emitDispInsName(
                     return;
             }
         }
-        case 0x63: // BRANCH
+        case MajorOpcode::Branch:
         {
             unsigned opcode2 = (code >> 12) & 0x7;
             unsigned rs1     = (code >> 15) & 0x1f;
@@ -3956,7 +3952,7 @@ void emitter::emitDispInsName(
             }
             return;
         }
-        case 0x03:
+        case MajorOpcode::Load:
         {
             unsigned int opcode2 = (code >> 12) & 0x7;
             const char*  rs1     = RegNames[(code >> 15) & 0x1f];
@@ -3995,7 +3991,7 @@ void emitter::emitDispInsName(
                     return;
             }
         }
-        case 0x67:
+        case MajorOpcode::Jalr:
         {
             const unsigned rs1    = (code >> 15) & 0x1f;
             const unsigned rd     = (code >> 7) & 0x1f;
@@ -4025,7 +4021,7 @@ void emitter::emitDispInsName(
             printf("\n");
             return;
         }
-        case 0x6f:
+        case MajorOpcode::Jal:
         {
             unsigned rd = (code >> 7) & 0x1f;
             int offset  = (((code >> 31) & 0x1) << 20) | (((code >> 12) & 0xff) << 12) | (((code >> 20) & 0x1) << 11) |
@@ -4061,14 +4057,14 @@ void emitter::emitDispInsName(
             printf("\n");
             return;
         }
-        case 0x0f:
+        case MajorOpcode::MiscMem:
         {
             int pred = ((code) >> 24) & 0xf;
             int succ = ((code) >> 20) & 0xf;
             printf("fence          %d, %d\n", pred, succ);
             return;
         }
-        case 0x73:
+        case MajorOpcode::System:
         {
             unsigned int opcode2 = (code >> 12) & 0x7;
             if (opcode2 != 0)
@@ -4119,13 +4115,17 @@ void emitter::emitDispInsName(
             {
                 printf("ebreak\n");
             }
+            else if (code == emitInsCode(INS_ecall))
+            {
+                printf("ecall\n");
+            }
             else
             {
                 NYI_RISCV64("illegal ins within emitDisInsName!");
             }
             return;
         }
-        case 0x53:
+        case MajorOpcode::OpFp:
         {
             unsigned int opcode2 = (code >> 25) & 0x7f;
             unsigned int opcode3 = (code >> 20) & 0x1f;
@@ -4423,7 +4423,7 @@ void emitter::emitDispInsName(
             }
             return;
         }
-        case 0x27:
+        case MajorOpcode::StoreFp:
         {
             unsigned int opcode2 = (code >> 12) & 0x7;
 
@@ -4448,7 +4448,7 @@ void emitter::emitDispInsName(
             }
             return;
         }
-        case 0x7:
+        case MajorOpcode::LoadFp:
         {
             unsigned int opcode2 = (code >> 12) & 0x7;
             const char*  rs1     = RegNames[(code >> 15) & 0x1f];
@@ -4472,7 +4472,7 @@ void emitter::emitDispInsName(
             }
             return;
         }
-        case 0x2f: // AMO - atomic memory operation
+        case MajorOpcode::Amo:
         {
             bool        hasDataReg = true;
             const char* name;
