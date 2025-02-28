@@ -147,8 +147,6 @@ namespace System.Numerics
                     ArrayPool<uint>.Shared.Return(coreFromPool);
             }
 
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-
             static void Naive(ReadOnlySpan<uint> value, Span<uint> bits)
             {
                 Debug.Assert(bits.Length == value.Length + value.Length);
@@ -230,6 +228,7 @@ namespace System.Numerics
             }
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void MultiplyImpl(ReadOnlySpan<uint> left, ReadOnlySpan<uint> right, Span<uint> bits)
         {
             Debug.Assert(left.Length >= right.Length);
