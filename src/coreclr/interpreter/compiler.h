@@ -58,6 +58,11 @@ struct InterpCallInfo
 
 struct InterpBasicBlock;
 
+enum InterpInstFlags
+{
+    INTERP_INST_FLAG_CALL              = 0x01,
+};
+
 struct InterpInst
 {
     InterpInst *pNext, *pPrev;
@@ -186,6 +191,7 @@ class InterpCompiler
 {
 private:
     CORINFO_METHOD_HANDLE m_methodHnd;
+    CORINFO_MODULE_HANDLE m_compScopeHnd;
     COMP_HANDLE m_compHnd;
     CORINFO_METHOD_INFO* m_methodInfo;
 
@@ -194,6 +200,11 @@ private:
     uint8_t* m_ip;
     uint8_t* m_pILCode;
     int32_t m_ILCodeSize;
+
+    // FIXME during compilation this should be a hashtable for fast lookup of duplicates
+    PtrArray<void*> m_dataItems;
+    int32_t GetDataItemIndex(void* data);
+    int32_t GetMethodDataItemIndex(CORINFO_METHOD_HANDLE mHandle);
 
     int GenerateCode(CORINFO_METHOD_INFO* methodInfo);
 
@@ -276,6 +287,7 @@ private:
     void    EmitUnaryArithmeticOp(int32_t opBase);
     void    EmitShiftOp(int32_t opBase);
     void    EmitCompareOp(int32_t opBase);
+    void    EmitCall(CORINFO_CLASS_HANDLE constrainedClass, bool readonly, bool tailcall);
 
     // Passes
     int32_t* m_pMethodCode;

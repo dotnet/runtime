@@ -39,18 +39,28 @@ public:
         return m_size;
     }
 
-    void Add(T element)
+    int32_t Add(T element)
     {
         if (m_size == m_capacity)
             Grow();
         m_array[m_size] = element;
-        m_size++;
+        return m_size++;
     }
 
     T Get(int32_t index)
     {
         assert(index < m_size);
         return m_array[index];
+    }
+
+    int32_t Find(T element)
+    {
+        for (int i = 0; i < m_size; i++)
+        {
+            if (element == m_array[i])
+                return i;
+        }
+        return -1;
     }
 };
 

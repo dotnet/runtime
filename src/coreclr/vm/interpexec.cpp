@@ -41,6 +41,9 @@ void InterpExecMethod(InterpMethodContextFrame *pFrame, InterpThreadContext *pTh
     ip = pFrame->startIp + sizeof(InterpMethod*) / sizeof(int32_t);
     stack = pFrame->pStack;
 
+    int32_t returnOffset, callArgsOffset;
+
+MAIN_LOOP:
     while (true)
     {
         switch (*ip)
@@ -669,6 +672,60 @@ void InterpExecMethod(InterpMethodContextFrame *pFrame, InterpThreadContext *pTh
             case INTOP_CLT_UN_R8:
                 CMP_BINOP_FP(double, <, 1);
                 break;
+
+            case INTOP_CALL:
+            {
+                size_t targetMethod = (size_t)pMethod->pDataItems[ip[3]];
+                returnOffset = ip[1];
+                callArgsOffset = ip[2];
+                const int32_t *targetIp;
+
+                if (targetMethod & INTERP_METHOD_DESC_TAG)
+                {
+                    // First execution of this call. Ensure target method is compiled and
+                    // patch the data item slot with the actual method code.
+                    MethodDesc *pMD = (MethodDesc*)(targetMethod & ~INTERP_METHOD_DESC_TAG);
+                    PCODE code = pMD->GetNativeCode();
+                    if (!code) {
+                        pMD->PrepareInitialCode(CallerGCMode::Coop);
+                        code = pMD->GetNativeCode();
+                    }
+                    pMethod->pDataItems[ip[3]] = (void*)code;
+                    targetIp = (const int32_t*)code;
+                }
+                else
+                {
+                    // At this stage in the implementation, we assume this is pointer to
+                    // interpreter code. In the future, this should probably be tagged pointer
+                    // for interpreter call or normal pointer for JIT/R2R call.
+                    targetIp = (const int32_t*)targetMethod;
+                }
+
+                // Save current execution state once we return from called method
+                pFrame->ip = ip + 4;
+
+                // Allocate child frame.
+                {
+                    InterpMethodContextFrame *pChildFrame = pFrame->pNextFree;
+                    if (!pChildFrame)
+                    {
+                        pChildFrame = (InterpMethodContextFrame*)alloca(sizeof(InterpMethodContextFrame));
+                        pChildFrame->pNextFree = NULL;
+                        // Not free currently, but will be when allocation attempted.
+                        pFrame->pNextFree = pChildFrame;
+                    }
+                    pChildFrame->ReInit(pFrame, targetIp, stack + returnOffset, stack + callArgsOffset);
+                    pFrame = pChildFrame;
+                }
+                assert (((size_t)pFrame->pStack % INTERP_STACK_ALIGNMENT) == 0);
+
+                // Set execution state for the new frame
+                pMethod = *(InterpMethod**)pFrame->startIp;
+                stack = pFrame->pStack;
+                ip = pFrame->startIp + sizeof(InterpMethod*) / sizeof(int32_t);
+                pThreadContext->pStackPointer = stack + pMethod->allocaSize;
+                break;
+            }
             default:
                 assert(0);
                 break;
@@ -676,6 +733,19 @@ void InterpExecMethod(InterpMethodContextFrame *pFrame, InterpThreadContext *pTh
     }
 
 EXIT_FRAME:
+    if (pFrame->pParent && pFrame->pParent->ip)
+    {
+        // Return to the main loop after a non-recursive interpreter call
+        pFrame = pFrame->pParent;
+        ip = pFrame->ip;
+        stack = pFrame->pStack;
+        pMethod = *(InterpMethod**)pFrame->startIp;
+        pFrame->ip = NULL;
+
+        pThreadContext->pStackPointer = pFrame->pStack + pMethod->allocaSize;
+        goto MAIN_LOOP;
+    }
+
     pThreadContext->pStackPointer = pFrame->pStack;
 }
 

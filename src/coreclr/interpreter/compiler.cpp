@@ -682,7 +682,13 @@ void InterpCompiler::EmitCode()
 
 InterpMethod* InterpCompiler::CreateInterpMethod()
 {
-    InterpMethod *pMethod = new InterpMethod(m_methodHnd, m_totalVarsStackSize);
+    int numDataItems = m_dataItems.GetSize();
+    void **pDataItems = (void**)AllocMethodData(numDataItems * sizeof(void*));
+
+    for (int i = 0; i < numDataItems; i++)
+        pDataItems[i] = m_dataItems.Get(i);
+
+    InterpMethod *pMethod = new InterpMethod(m_methodHnd, m_totalVarsStackSize, pDataItems);
 
     return pMethod;
 }
@@ -697,6 +703,7 @@ InterpCompiler::InterpCompiler(COMP_HANDLE compHnd,
                                CORINFO_METHOD_INFO* methodInfo)
 {
     m_methodHnd = methodInfo->ftn;
+    m_compScopeHnd = methodInfo->scope;
     m_compHnd = compHnd;
     m_methodInfo = methodInfo;
 }
@@ -1291,8 +1298,91 @@ void InterpCompiler::EmitCompareOp(int32_t opBase)
     m_pLastIns->SetDVar(m_pStackPointer[-1].var);
 }
 
+int32_t InterpCompiler::GetDataItemIndex(void *data)
+{
+    int32_t index = m_dataItems.Find(data);
+    if (index != -1)
+        return index;
+
+    return m_dataItems.Add(data);
+}
+
+int32_t InterpCompiler::GetMethodDataItemIndex(CORINFO_METHOD_HANDLE mHandle)
+{
+    size_t data = (size_t)mHandle | INTERP_METHOD_DESC_TAG;
+    return GetDataItemIndex((void*)data);
+}
+
+void InterpCompiler::EmitCall(CORINFO_CLASS_HANDLE constrainedClass, bool readonly, bool tailcall)
+{
+    uint32_t token = getU4LittleEndian(m_ip + 1);
+    CORINFO_RESOLVED_TOKEN resolvedToken;
+
+    resolvedToken.tokenScope = m_compScopeHnd;
+    resolvedToken.tokenContext = METHOD_BEING_COMPILED_CONTEXT();
+    resolvedToken.token = token;
+    resolvedToken.tokenType = CORINFO_TOKENKIND_Method;
+    m_compHnd->resolveToken(&resolvedToken);
+
+    CORINFO_METHOD_HANDLE targetMethod = resolvedToken.hMethod;
+
+    CORINFO_SIG_INFO targetSignature;
+    m_compHnd->getMethodSig(targetMethod, &targetSignature);
+
+    // Process sVars
+    int numArgs = targetSignature.numArgs + targetSignature.hasThis();
+    m_pStackPointer -= numArgs;
+
+    int *callArgs = (int*) AllocMemPool((numArgs + 1) * sizeof(int));
+    for (int i = 0; i < numArgs; i++)
+        callArgs[i] = m_pStackPointer [i].var;
+    callArgs[numArgs] = -1;
+
+    // Process dVar
+    int32_t dVar;
+    if (targetSignature.retType != CORINFO_TYPE_VOID)
+    {
+        InterpType interpType = GetInterpType(targetSignature.retType);
+
+        if (interpType == InterpTypeVT)
+        {
+            int32_t size = m_compHnd->getClassSize(targetSignature.retTypeClass);
+            PushTypeVT(targetSignature.retTypeClass, size);
+        }
+        else
+        {
+            PushInterpType(interpType, NULL);
+        }
+        dVar = m_pStackPointer[-1].var;
+    }
+    else
+    {
+        // Create a new dummy var to serve as the dVar of the call
+        // FIXME Consider adding special dVar type (ex -1), that is
+        // resolved to null offset. The opcode shouldn't really write to it
+        PushStackType(StackTypeI4, NULL);
+        m_pStackPointer--;
+        dVar = m_pStackPointer[0].var;
+    }
+
+    // Emit call instruction
+    AddIns(INTOP_CALL);
+    m_pLastIns->SetDVar(dVar);
+    m_pLastIns->SetSVar(CALL_ARGS_SVAR);
+    m_pLastIns->data[0] = GetMethodDataItemIndex(targetMethod);
+
+    m_pLastIns->flags |= INTERP_INST_FLAG_CALL;
+    m_pLastIns->info.pCallInfo = (InterpCallInfo*)AllocMemPool0(sizeof (InterpCallInfo));
+    m_pLastIns->info.pCallInfo->pCallArgs = callArgs;
+
+    m_ip += 5;
+}
+
 int InterpCompiler::GenerateCode(CORINFO_METHOD_INFO* methodInfo)
 {
+    bool readonly = false;
+    bool tailcall = false;
+    CORINFO_CLASS_HANDLE constrainedClass = NULL;
     uint8_t *codeEnd;
     int numArgs = m_methodInfo->args.hasThis() + m_methodInfo->args.numArgs;
     bool emittedBBlocks, linkBBlocks, needsRetryEmit;
@@ -2019,6 +2109,12 @@ retry_emit:
                 EmitUnaryArithmeticOp(INTOP_NOT_I4);
                 m_ip++;
                 break;
+            case CEE_CALL:
+                EmitCall(constrainedClass, readonly, tailcall);
+                constrainedClass = NULL;
+                readonly = false;
+                tailcall = false;
+                break;
 
             case CEE_PREFIX1:
                 m_ip++;
@@ -2058,6 +2154,28 @@ retry_emit:
                         break;
                     case CEE_CLT_UN:
                         EmitCompareOp(INTOP_CLT_UN_I4);
+                        m_ip++;
+                        break;
+                    case CEE_CONSTRAINED:
+                    {
+                        uint32_t token = getU4LittleEndian(m_ip + 1);
+                        CORINFO_RESOLVED_TOKEN resolvedToken;
+
+                        resolvedToken.tokenScope = m_compScopeHnd;
+                        resolvedToken.tokenContext = METHOD_BEING_COMPILED_CONTEXT();
+                        resolvedToken.token = token;
+                        resolvedToken.tokenType = CORINFO_TOKENKIND_Constrained;
+                        m_compHnd->resolveToken(&resolvedToken);
+                        constrainedClass = resolvedToken.hClass;
+                        m_ip += 5;
+                        break;
+                    }
+                    case CEE_READONLY:
+                        readonly = true;
+                        m_ip++;
+                        break;
+                    case CEE_TAILCALL:
+                        tailcall = true;
                         m_ip++;
                         break;
                     default:

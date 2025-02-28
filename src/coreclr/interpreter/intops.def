@@ -185,3 +185,6 @@ OPDEF(INTOP_CLT_UN_I8, "clt.un.i8", 4, 1, 2, InterpOpNoArgs)
 OPDEF(INTOP_CLT_UN_R4, "clt.un.r4", 4, 1, 2, InterpOpNoArgs)
 OPDEF(INTOP_CLT_UN_R8, "clt.un.r8", 4, 1, 2, InterpOpNoArgs)
 // Binary operations end
+
+// Calls
+OPDEF(INTOP_CALL, "call", 4, 1, 1, InterpOpMethodToken)
