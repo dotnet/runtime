@@ -183,7 +183,6 @@ export function http_wasm_fetch (controller: HttpController, url: string, header
     controller.responsePromise.then((res: Response) => {
         controller.response = res;
         mono_assert(controller.response, "expected response");
-        mono_assert(controller.response.body, "expected response.body");
         controller.responseHeaderNames = [];
         controller.responseHeaderValues = [];
         if (res.headers && (<any>res.headers).entries) {
