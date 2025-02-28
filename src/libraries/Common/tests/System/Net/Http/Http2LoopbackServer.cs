@@ -185,6 +185,7 @@ namespace System.Net.Test.Common
         public bool ClientCertificateRequired { get; set; }
 
         public bool EnableTransparentPingResponse { get; set; } = true;
+        public bool EnsureThreadSafeIO { get; set; }
 
         public Http2Options()
         {

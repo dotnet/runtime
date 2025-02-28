@@ -190,10 +190,13 @@ namespace System.Net.WebSockets.Client.Tests
                     //Console.WriteLine($"[Server - {nameof(RunHttp2Server)}] HTTP/2 connection shutdown completed");
                 };
 
+                var http2Options = new Http2Options { WebSocketEndpoint = true, UseSsl = options.UseSsl };
+                options.ConfigureHttp2Options?.Invoke(http2Options);
+
                 return Http2LoopbackServer.CreateClientAndServerAsync(
                     clientFunc,
                     server => RunHttpServer(server, RunHttp2Server),
-                    new Http2Options { WebSocketEndpoint = true, UseSsl = options.UseSsl });
+                    http2Options);
             }
             else
             {
@@ -306,6 +309,7 @@ namespace System.Net.WebSockets.Client.Tests
             public bool IgnoreServerErrors { get; set; }
             public bool AbortServerOnClientExit { get; set; }
             public Action<WebSocketCreationOptions>? ConfigureServerOptions { get; set; }
+            public Action<Http2Options>? ConfigureHttp2Options { get; set; }
 
             public bool DisposeClientWebSocket { get; set; }
             public bool DisposeHttpInvoker { get; set; }

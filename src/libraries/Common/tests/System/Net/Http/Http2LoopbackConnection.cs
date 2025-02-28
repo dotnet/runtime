@@ -28,6 +28,8 @@ namespace System.Net.Test.Common
         private readonly TimeSpan _timeout;
         private int _lastStreamId;
         private bool _expectClientDisconnect;
+        private readonly SemaphoreSlim? _readLock;
+        private readonly SemaphoreSlim? _writeLock;
 
         private readonly byte[] _prefix = new byte[24];
         public string PrefixString => Encoding.UTF8.GetString(_prefix, 0, _prefix.Length);
@@ -35,12 +37,60 @@ namespace System.Net.Test.Common
         public Stream Stream => _connectionStream;
         public Task<bool> SettingAckWaiter => _ignoredSettingsAckPromise?.Task;
 
-        private Http2LoopbackConnection(SocketWrapper socket, Stream stream, TimeSpan timeout, bool transparentPingResponse)
+        private Http2LoopbackConnection(SocketWrapper socket, Stream stream, TimeSpan timeout, Http2Options httpOptions)
         {
             _connectionSocket = socket;
             _connectionStream = stream;
             _timeout = timeout;
-            _transparentPingResponse = transparentPingResponse;
+            _transparentPingResponse = httpOptions.EnableTransparentPingResponse;
+
+            if (httpOptions.EnsureThreadSafeIO)
+            {
+                _readLock = new SemaphoreSlim(1, 1);
+                _writeLock = new SemaphoreSlim(1, 1);
+
+                _connectionStream = new DelegateStream(
+                    canReadFunc: () => true,
+                    canWriteFunc: () => true,
+                    readAsyncFunc: async (buffer, offset, count, cancellationToken) =>
+                    {
+                        await _readLock.WaitAsync(cancellationToken);
+                        try
+                        {
+                            return await stream.ReadAsync(buffer, offset, count, cancellationToken).ConfigureAwait(false);
+                        }
+                        finally
+                        {
+                            _readLock.Release();
+                        }
+                    },
+                    writeAsyncFunc: async (buffer, offset, count, cancellationToken) =>
+                    {
+                        await _writeLock.WaitAsync(cancellationToken);
+                        try
+                        {
+                            await stream.WriteAsync(buffer, offset, count, cancellationToken);
+                        }
+                        finally
+                        {
+                            _writeLock.Release();
+                        }
+                    },
+                    flushAsyncFunc: async (cancellationToken) =>
+                    {
+                        await _writeLock.WaitAsync(cancellationToken);
+                        try
+                        {
+                            await stream.FlushAsync(cancellationToken).ConfigureAwait(false);
+                        }
+                        finally
+                        {
+                            _writeLock.Release();
+                        }
+                    },
+                    disposeFunc: (disposing) => stream.Dispose()
+                );
+            }
         }
 
         public override string ToString()
@@ -83,7 +133,7 @@ namespace System.Net.Test.Common
                 stream = sslStream;
             }
 
-            var con = new Http2LoopbackConnection(socket, stream, timeout, httpOptions.EnableTransparentPingResponse);
+            var con = new Http2LoopbackConnection(socket, stream, timeout, httpOptions);
             await con.ReadPrefixAsync().ConfigureAwait(false);
 
             return con;

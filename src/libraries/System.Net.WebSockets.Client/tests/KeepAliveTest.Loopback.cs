@@ -38,7 +38,8 @@ namespace System.Net.WebSockets.Client.Tests
                 {
                     clientOptions.KeepAliveInterval = TimeSpan.FromMilliseconds(100);
                     clientOptions.KeepAliveTimeout = TimeSpan.FromSeconds(1);
-                }
+                },
+                ConfigureHttp2Options = http2Options => http2Options.EnsureThreadSafeIO = true
             };
 
             return LoopbackWebSocketServer.RunAsync(
