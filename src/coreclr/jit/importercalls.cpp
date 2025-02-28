@@ -4926,7 +4926,7 @@ GenTree* Compiler::impSRCSUnsafeIntrinsic(NamedIntrinsic          intrinsic,
                 op2           = gtNewOperNode(GT_MUL, TYP_I_IMPL, op2, size);
             }
 
-            var_types type = impGetByRefResultType(GT_ADD, /* uns */ false, &op1, &op2);
+            var_types type = impProcessResultType(GT_ADD, /* uns */ false, &op1, &op2);
             return gtNewOperNode(GT_ADD, type, op1, op2);
         }
 
@@ -4943,7 +4943,7 @@ GenTree* Compiler::impSRCSUnsafeIntrinsic(NamedIntrinsic          intrinsic,
             GenTree* op1 = impPopStack().val;
             impBashVarAddrsToI(op1, op2);
 
-            var_types type = impGetByRefResultType(GT_ADD, /* uns */ false, &op1, &op2);
+            var_types type = impProcessResultType(GT_ADD, /* uns */ false, &op1, &op2);
             return gtNewOperNode(GT_ADD, type, op1, op2);
         }
 
@@ -5387,7 +5387,7 @@ GenTree* Compiler::impSRCSUnsafeIntrinsic(NamedIntrinsic          intrinsic,
                 op2           = gtNewOperNode(GT_MUL, TYP_I_IMPL, op2, size);
             }
 
-            var_types type = impGetByRefResultType(GT_SUB, /* uns */ false, &op1, &op2);
+            var_types type = impProcessResultType(GT_SUB, /* uns */ false, &op1, &op2);
             return gtNewOperNode(GT_SUB, type, op1, op2);
         }
 
@@ -5404,7 +5404,7 @@ GenTree* Compiler::impSRCSUnsafeIntrinsic(NamedIntrinsic          intrinsic,
             GenTree* op1 = impPopStack().val;
             impBashVarAddrsToI(op1, op2);
 
-            var_types type = impGetByRefResultType(GT_SUB, /* uns */ false, &op1, &op2);
+            var_types type = impProcessResultType(GT_SUB, /* uns */ false, &op1, &op2);
             return gtNewOperNode(GT_SUB, type, op1, op2);
         }
 

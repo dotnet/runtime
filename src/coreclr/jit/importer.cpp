@@ -5422,7 +5422,7 @@ void Compiler::impValidateMemoryAccessOpcode(const BYTE* codeAddr, const BYTE* c
  *  On 64-bit inserts upcasts when native int is mixed with int32
  *  Also inserts upcasts to double when float and double are mixed.
  */
-var_types Compiler::impGetByRefResultType(genTreeOps oper, bool fUnsigned, GenTree** pOp1, GenTree** pOp2)
+var_types Compiler::impProcessResultType(genTreeOps oper, bool fUnsigned, GenTree** pOp1, GenTree** pOp2)
 {
     var_types type = TYP_UNDEF;
     GenTree*  op1  = *pOp1;
@@ -7386,7 +7386,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 // if it is in the stack)
                 impBashVarAddrsToI(op1, op2);
 
-                type = impGetByRefResultType(oper, uns, &op1, &op2);
+                type = impProcessResultType(oper, uns, &op1, &op2);
 
                 assert(!ovfl || !varTypeIsFloating(op1->gtType));
 
@@ -13897,7 +13897,9 @@ bool Compiler::impImportDivisionWithChecks(genTreeOps oper)
         return false;
     }
 
-    var_types resultType = genActualType(dividend);
+    impBashVarAddrsToI(dividend, divisor);
+
+    var_types resultType = impProcessResultType(oper, oper == GT_UDIV, &dividend, &divisor);
 
     // The node is allocated as large because some optimizations may bash the node into a GT_CAST node in lowering.
     GenTree* divNode = gtNewLargeOperNode(oper, resultType, dividend, divisor);
