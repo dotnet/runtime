@@ -24,6 +24,10 @@ jobs:
     variables:
       - name: '_SignType'
         value: $[ coalesce(variables.OfficialSignType, 'real') ]
+      - name: 'DisableComponentGovernance'
+        value: true
+      - name: 'Skip.CreateSbom'
+        value: true
       
     templateContext:
       inputs:
@@ -57,7 +61,7 @@ jobs:
       parameters:
         BuildDropPath: $(Build.SourcesDirectory)\artifacts
         PackageVersion: $(Version)
-    
+
     - task: CopyFiles@2
       displayName: Copy Files to $(Build.StagingDirectory)\BuildLogs
       inputs:
