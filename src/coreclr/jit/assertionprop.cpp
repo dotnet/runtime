@@ -4529,7 +4529,7 @@ GenTree* Compiler::optAssertionPropGlobal_RelOp(ASSERT_VALARG_TP assertions,
 
     if (tree->OperIsCmpCompare() && op1->TypeIs(TYP_INT) && op2->IsIntCnsFitsInI32() &&
         // JIT-TP: Ignore "X relop 0" - it will be handled below
-        !op2->IsIntegralConst(0))
+        !op2->IsIntegralConst(0) && !block->isRunRarely())
     {
         // NOTE: we can call GetRange for op2 as well, but that will be even more expensive,
         Range rng1 = Range(Limit(Limit::keUndef));
