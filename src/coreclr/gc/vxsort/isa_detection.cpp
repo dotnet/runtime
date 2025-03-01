@@ -6,6 +6,8 @@
 #ifdef TARGET_WINDOWS
 #include <intrin.h>
 #include <windows.h>
+#else
+#include <minipal/cpufeatures.h>
 #endif
 
 #include "do_vxsort.h"
@@ -84,10 +86,10 @@ SupportedISA DetermineSupportedISA()
 
 SupportedISA DetermineSupportedISA()
 {
-    __builtin_cpu_init();
-    if (__builtin_cpu_supports("avx2"))
+    int cpuFeatures = minipal_getcpufeatures();
+    if ((cpuFeatures & XArchIntrinsicConstants_Avx2) != 0)
     {
-        if (__builtin_cpu_supports("avx512f"))
+        if ((cpuFeatures & XArchIntrinsicConstants_Avx512) != 0)
             return (SupportedISA)((int)SupportedISA::AVX2 | (int)SupportedISA::AVX512F);
         else
             return SupportedISA::AVX2;
