@@ -3654,7 +3654,6 @@ void Lowering::LowerCFGCall(GenTreeCall* call)
         call->gtEntryPoint.accessType = IAT_VALUE;
 #endif
 
-
         if (callTarget != nullptr)
         {
             callTarget->SetUnusedValue();
