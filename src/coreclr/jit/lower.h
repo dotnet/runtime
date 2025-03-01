@@ -171,6 +171,7 @@ private:
     void       LowerRetSingleRegStructLclVar(GenTreeUnOp* ret);
     void       LowerRetFieldList(GenTreeOp* ret, GenTreeFieldList* fieldList);
     bool       IsFieldListCompatibleWithReturn(GenTreeFieldList* fieldList);
+    void       LowerFieldListToFieldListOfRegisters(GenTreeFieldList* fieldList);
     void       LowerCallStruct(GenTreeCall* call);
     void       LowerStoreSingleRegCallStruct(GenTreeBlk* store);
 #if !defined(WINDOWS_AMD64_ABI)

@@ -2295,10 +2295,10 @@ bool ReplaceVisitor::ReplaceReturnedStructLocal(GenTreeOp* ret, GenTreeLclVarCom
         return false;
     }
 
-    if (!IsReturnProfitableAsFieldList(value))
-    {
-        return false;
-    }
+    //if (!IsReturnProfitableAsFieldList(value))
+    //{
+    //    return false;
+    //}
 
     StructDeaths      deaths    = m_liveness->GetDeathsForStructLocal(value);
     GenTreeFieldList* fieldList = m_compiler->gtNewFieldList();
