@@ -2153,7 +2153,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                     lengthFieldAddr->SetIsSpanLength(true);
 
                     // Bounds check for it
-                    GenTreeIntCon* idx   = gtNewIconNode(getSIMDVectorLength(simdSize, simdBaseType), TYP_INT);
+                    GenTreeIntCon* idx   = gtNewIconNode(getSIMDVectorLength(simdSize, simdBaseType) - 1, TYP_INT);
                     GenTree* boundsCheck = new (this, GT_BOUNDS_CHECK) GenTreeBoundsChk(idx, length, SCK_RNGCHK_FAIL);
 
                     // Load the SIMD vector from the Span._reference wrapped in a bounds check
