@@ -33,8 +33,6 @@ NESTED_ENTRY ResolveWorkerAsmStub, _TEXT
 
         call            VSD_ResolveWorker
 
-        mov             rcx, [rsp + __PWTB_TransitionBlock]
-
         EPILOG_WITH_TRANSITION_BLOCK_TAILCALL
         TAILJMP_RAX
 
