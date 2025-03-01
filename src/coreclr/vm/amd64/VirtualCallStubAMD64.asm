@@ -33,6 +33,8 @@ NESTED_ENTRY ResolveWorkerAsmStub, _TEXT
 
         call            VSD_ResolveWorker
 
+        mov             rcx, [rsp + __PWTB_TransitionBlock]
+
         EPILOG_WITH_TRANSITION_BLOCK_TAILCALL
         TAILJMP_RAX
 
@@ -84,7 +86,10 @@ Fail:
 LEAF_END ResolveWorkerChainLookupAsmStub, _TEXT
 
 ;; On Input:
+;;    rcx                    contains object 'this' pointer
 ;;    r11                    contains the address of the indirection cell (with the flags in the low bits)
+;;
+;; Preserves all argument registers
 NESTED_ENTRY JIT_InterfaceLookupForSlot, _TEXT
 
         PROLOG_WITH_TRANSITION_BLOCK
@@ -96,6 +101,8 @@ NESTED_ENTRY JIT_InterfaceLookupForSlot, _TEXT
 
         call            VSD_ResolveWorker
 
+        RESTORE_FLOAT_ARGUMENT_REGISTERS __PWTB_FloatArgumentRegisters
+        RESTORE_ARGUMENT_REGISTERS __PWTB_ArgumentRegisters
         EPILOG_WITH_TRANSITION_BLOCK_RETURN
         TAILJMP_RAX
 
