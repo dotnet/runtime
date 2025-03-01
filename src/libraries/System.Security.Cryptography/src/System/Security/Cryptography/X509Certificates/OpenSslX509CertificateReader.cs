@@ -838,6 +838,22 @@ namespace System.Security.Cryptography.X509Certificates
             }
         }
 
+        public byte[] ExportPkcs12(Pkcs12ExportPbeParameters exportParameters, SafePasswordHandle password)
+        {
+            using (IExportPal storePal = StorePal.FromCertificate(this))
+            {
+                return storePal.ExportPkcs12(exportParameters, password);
+            }
+        }
+
+        public byte[] ExportPkcs12(PbeParameters exportParameters, SafePasswordHandle password)
+        {
+            using (IExportPal storePal = StorePal.FromCertificate(this))
+            {
+                return storePal.ExportPkcs12(exportParameters, password);
+            }
+        }
+
         private T UseCertInteriorData<T>(Func<SafeX509Handle, T> callback)
         {
             // Many of the reader's APIs perform two steps of getting an IntPtr to

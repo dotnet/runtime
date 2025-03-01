@@ -226,7 +226,7 @@ enum class FrameIdentifier : TADDR
 {
     None = 0,
 #define FRAME_TYPE_NAME(frameType) frameType,
-#include "FrameTypes.h"    
+#include "FrameTypes.h"
     CountPlusOne
 };
 
@@ -557,8 +557,9 @@ public:
     static void __stdcall LogTransition(Frame* frame);
     void LogFrame(int LF, int LL);       // General purpose logging.
     void LogFrameChain(int LF, int LL);  // Log the whole chain.
-    static PTR_CSTR GetFrameTypeName(FrameIdentifier frameIdentifier);
 #endif
+
+    static LPCSTR GetFrameTypeName(FrameIdentifier frameIdentifier);
 
 private:
     FrameIdentifier _frameIdentifier;
@@ -627,8 +628,15 @@ protected:
 
     void PopIfChained();
 #endif // TARGET_UNIX && !DACCESS_COMPILE
+
+    friend struct ::cdac_data<Frame>;
 };
 
+template<>
+struct cdac_data<Frame>
+{
+    static constexpr size_t Next = offsetof(Frame, m_Next);
+};
 
 //-----------------------------------------------------------------------------
 // This frame provides a context for a code location at which
@@ -1061,8 +1069,15 @@ public:
     }
 
     void UpdateRegDisplay_Impl(const PREGDISPLAY, bool updateFloats = false);
-};
 
+    friend struct ::cdac_data<SoftwareExceptionFrame>;
+};
+template<>
+struct cdac_data<SoftwareExceptionFrame>
+{
+    static constexpr size_t TargetContext = offsetof(SoftwareExceptionFrame, m_Context);
+    static constexpr size_t ReturnAddress = offsetof(SoftwareExceptionFrame, m_ReturnAddress);
+};
 #endif // FEATURE_EH_FUNCLETS
 
 //-----------------------------------------------------------------------
@@ -2496,13 +2511,15 @@ class DebuggerU2MCatchHandlerFrame : public Frame
 {
 public:
 #ifndef DACCESS_COMPILE
-    DebuggerU2MCatchHandlerFrame() : Frame(FrameIdentifier::DebuggerU2MCatchHandlerFrame)
+    DebuggerU2MCatchHandlerFrame(bool catchesAllExceptions) : Frame(FrameIdentifier::DebuggerU2MCatchHandlerFrame),
+                                                              m_catchesAllExceptions(catchesAllExceptions)
     {
         WRAPPER_NO_CONTRACT;
         Frame::Push();
     }
 
-    DebuggerU2MCatchHandlerFrame(Thread * pThread) : Frame(FrameIdentifier::DebuggerU2MCatchHandlerFrame)
+    DebuggerU2MCatchHandlerFrame(Thread * pThread, bool catchesAllExceptions) : Frame(FrameIdentifier::DebuggerU2MCatchHandlerFrame),
+                                                                                m_catchesAllExceptions(catchesAllExceptions)
     {
         WRAPPER_NO_CONTRACT;
         Frame::Push(pThread);
@@ -2514,6 +2531,16 @@ public:
         LIMITED_METHOD_DAC_CONTRACT;
         return TT_U2M;
     }
+
+    bool CatchesAllExceptions()
+    {
+        LIMITED_METHOD_DAC_CONTRACT;
+        return m_catchesAllExceptions;
+    }
+
+private:
+    // The catch handled marked by the DebuggerU2MCatchHandlerFrame catches all exceptions.
+    bool m_catchesAllExceptions;
 };
 
 // Frame for the Reverse PInvoke (i.e. UnmanagedCallersOnlyAttribute).

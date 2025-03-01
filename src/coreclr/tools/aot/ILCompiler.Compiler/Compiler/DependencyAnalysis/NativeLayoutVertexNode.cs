@@ -569,7 +569,8 @@ namespace ILCompiler.DependencyAnalysis
                     //            A necessary EEType might be enough for some cases.
                     //            But we definitely need constructed if this is e.g. layout for a typehandle.
                     //            Measurements show this doesn't amount to much (0.004% - 0.3% size cost vs Necessary).
-                    new DependencyListEntry(context.MaximallyConstructableType(_type), "NativeLayoutEETypeVertexNode containing type signature")
+                    new DependencyListEntry(_type.IsGenericDefinition ? context.NecessaryTypeSymbol(_type) : context.MaximallyConstructableType(_type),
+                    "NativeLayoutEETypeVertexNode containing type signature")
                 };
             }
             public override Vertex WriteVertex(NodeFactory factory)

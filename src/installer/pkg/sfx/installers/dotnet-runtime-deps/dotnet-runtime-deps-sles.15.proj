@@ -1,0 +1,11 @@
+<Project Sdk="Microsoft.Build.NoTargets">
+  <PropertyGroup>
+    <BuildDebPackage>false</BuildDebPackage>
+    <BuildRpmPackage>true</BuildRpmPackage>
+    <PackageTargetOS>sles.15</PackageTargetOS>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <LinuxPackageDependency Include="libopenssl3;libicu;krb5" />
+  </ItemGroup>
+</Project>
