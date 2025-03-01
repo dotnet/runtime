@@ -5183,8 +5183,8 @@ void Compiler::FinalizeEH()
     {
         // Recompute the handler nesting levels, as they may have changed.
         //
-        unsigned oldHandlerNestingLevel = ehMaxHndNestingCount;
-        ehMaxHndNestingCount            = 0;
+        unsigned const oldHandlerNestingCount = ehMaxHndNestingCount;
+        ehMaxHndNestingCount                  = 0;
 
         if (compHndBBtabCount > 0)
         {
@@ -5209,11 +5209,15 @@ void Compiler::FinalizeEH()
                     HBtab->ebdHandlerNestingLevel = 0;
                 }
             }
+
+            // When there is EH, we need to record nesting level + 1
+            //
+            ehMaxHndNestingCount++;
         }
 
-        if (oldHandlerNestingLevel != ehMaxHndNestingCount)
+        if (oldHandlerNestingCount != ehMaxHndNestingCount)
         {
-            JITDUMP("Finalize EH: max handler nesting level now %u (was %u)\n", oldHandlerNestingLevel,
+            JITDUMP("Finalize EH: max handler nesting count now %u (was %u)\n", oldHandlerNestingCount,
                     ehMaxHndNestingCount);
         }
 
