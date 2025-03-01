@@ -1457,14 +1457,14 @@ namespace System.Diagnostics.Metrics.Tests
                 Assert.Equal("2.0", meter2.Version);
                 Assert.Equal(new[] { new KeyValuePair<string, object?>("Key1", "Value1") }, meter2.Tags);
                 Assert.Null(meter2.Scope);
-                Assert.Null(meter1.TelemetrySchemaUrl);
+                Assert.Null(meter2.TelemetrySchemaUrl);
 
                 using Meter meter3 = new Meter("TestMeterCreationWithOptions3", "3.0", new TagList() { { "Key3", "Value3" } }, "Scope");
                 Assert.Equal("TestMeterCreationWithOptions3", meter3.Name);
                 Assert.Equal("3.0", meter3.Version);
                 Assert.Equal(new[] { new KeyValuePair<string, object?>("Key3", "Value3") }, meter3.Tags);
                 Assert.Equal("Scope", meter3.Scope);
-                Assert.Null(meter1.TelemetrySchemaUrl);
+                Assert.Null(meter3.TelemetrySchemaUrl);
 
                 Assert.Throws<ArgumentNullException>(() => new MeterOptions(null!));
                 Assert.Throws<ArgumentNullException>(() => new MeterOptions("Something").Name = null!);
