@@ -3,17 +3,26 @@
 
 using System.Collections.Generic;
 
-namespace System.Diagnostics.Metrics
+namespace System.Diagnostics
 {
     /// <summary>
-    /// Options for creating a <see cref="Meter"/>.
+    /// Options for creating a <see cref="ActivitySource"/>.
     /// </summary>
-    public class MeterOptions
+    public class ActivitySourceOptions
     {
         private string _name;
 
         /// <summary>
-        /// The Meter name.
+        /// Constructs a new instance of <see cref="ActivitySourceOptions"/>.
+        /// </summary>
+        /// <param name="name">The name of the <see cref="ActivitySourceOptions"/> object</param>
+        public ActivitySourceOptions(string name)
+        {
+            _name = name ?? throw new ArgumentNullException(nameof(name));
+        }
+
+        /// <summary>
+        /// Get or set the <see cref="ActivitySourceOptions"/> object name. Cannot be null.
         /// </summary>
         public string Name
         {
@@ -30,35 +39,19 @@ namespace System.Diagnostics.Metrics
         }
 
         /// <summary>
-        /// The optional Meter version.
+        /// The optional <see cref="ActivitySourceOptions"/> version. Defaulted to empty string.
         /// </summary>
-        public string? Version { get; set; }
+        public string? Version { get; set; } = string.Empty;
 
         /// <summary>
-        /// The optional list of key-value pair tags associated with the Meter.
+        /// The optional list of key-value pair tags associated with the <see cref="ActivitySourceOptions"/>.
         /// </summary>
         public IEnumerable<KeyValuePair<string, object?>>? Tags { get; set; }
-
-        /// <summary>
-        /// The optional opaque object to attach to the Meter. The scope object can be attached to multiple meters for scoping purposes.
-        /// </summary>
-        public object? Scope { get; set; }
 
         /// <summary>
         /// The optional schema URL specifies a location of a <see href="https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/schemas/file_format_v1.1.0.md">Schema File</see> that
         /// can be retrieved using HTTP or HTTPS protocol.
         /// </summary>
         public string? TelemetrySchemaUrl { get; set; }
-
-        /// <summary>
-        /// Constructs a new instance of <see cref="MeterOptions"/>.
-        /// </summary>
-        /// <param name="name">The Meter name.</param>
-        public MeterOptions(string name)
-        {
-            Name = name;
-
-            Debug.Assert(_name is not null);
-        }
     }
 }
