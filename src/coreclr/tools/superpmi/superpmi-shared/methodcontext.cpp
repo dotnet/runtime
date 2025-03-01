@@ -791,6 +791,43 @@ bool MethodContext::repNotifyMethodInfoUsage(CORINFO_METHOD_HANDLE ftn)
     return value != 0;
 }
 
+void MethodContext::recNotifyInstructionSetUsage(CORINFO_InstructionSet isa, bool supported, bool result)
+{
+    if (NotifyInstructionSetUsage == nullptr)
+        NotifyInstructionSetUsage = new LightWeightMap<DD, DWORD>();
+
+    DD key{};
+    key.A = (DWORD)isa;
+    key.B = supported ? 1 : 0;
+    NotifyInstructionSetUsage->Add(key, result ? 1 : 0);
+    DEBUG_REC(dmpNotifyInstructionSetUsage(key, result ? 1 : 0));
+}
+void MethodContext::dmpNotifyInstructionSetUsage(DD key, DWORD value)
+{
+    printf("NotifyInstructionSetUsage key isa-%u, supported-%u, res-%u", key.A, key.B, value);
+}
+bool MethodContext::repNotifyInstructionSetUsage(CORINFO_InstructionSet isa, bool supported)
+{
+    DD key{};
+    key.A = (DWORD)isa;
+    key.B = supported ? 1 : 0;
+
+    if (NotifyInstructionSetUsage != nullptr)
+    {
+        int index = NotifyInstructionSetUsage->GetIndex(key);
+        if (index != -1)
+        {
+            DWORD value = NotifyInstructionSetUsage->GetItem(index);
+            DEBUG_REP(dmpNotifyInstructionSetUsage(key, value));
+            return value != 0;
+        }
+    }
+
+    // Fall back to most likely implementation instead of missing, since ISA
+    // usage changes are quite common on normal JIT changes.
+    return supported;
+}
+
 void MethodContext::recGetMethodAttribs(CORINFO_METHOD_HANDLE methodHandle, DWORD attribs)
 {
     if (GetMethodAttribs == nullptr)

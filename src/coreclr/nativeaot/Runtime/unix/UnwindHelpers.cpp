@@ -1140,8 +1140,13 @@ bool Registers_REGDISPLAY::validVectorRegister(int num) const
 
 inline uint64_t Registers_REGDISPLAY::getRegister(int regNum) const {
     switch (regNum) {
+    case UNW_REG_IP:
+        return IP;
     case UNW_RISCV_X1:
         return *pRA;
+    case UNW_REG_SP:
+    case UNW_RISCV_X2:
+        return SP;
     case UNW_RISCV_X3:
         return *pGP;
     case UNW_RISCV_X4:
@@ -1255,60 +1260,79 @@ inline uint64_t Registers_REGDISPLAY::getRegister(int regNum) const {
 void Registers_REGDISPLAY::setRegister(int regNum, uint64_t value, uint64_t location)
 {
     switch (regNum) {
+    case UNW_REG_IP:
+        IP = (uintptr_t)value;
+        break;
     case UNW_RISCV_X1:
-        *pRA = value;
+        pRA = (PTR_uintptr_t)location;
+        break;
+    case UNW_REG_SP:
+    case UNW_RISCV_X2:
+        SP = (uintptr_t)value;
         break;
     case UNW_RISCV_X3:
-        *pGP = value;
+        pGP = (PTR_uintptr_t)location;
         break;
     case UNW_RISCV_X4:
-        *pTP = value;
+        pTP = (PTR_uintptr_t)location;
         break;
     case UNW_RISCV_X5:
-        *pT0 = value;
+        pT0 = (PTR_uintptr_t)location;
         break;
     case UNW_RISCV_X6:
-        *pT1 = value;
+        pT1 = (PTR_uintptr_t)location;
         break;
     case UNW_RISCV_X7:
-        *pT2 = value;
+        pT2 = (PTR_uintptr_t)location;
         break;
     case UNW_RISCV_X28:
-        *pT3 = value;
+        pT3 = (PTR_uintptr_t)location;
         break;
     case UNW_RISCV_X29:
-        *pT4 = value;
+        pT4 = (PTR_uintptr_t)location;
         break;
     case UNW_RISCV_X30:
-        *pT5 = value;
+        pT5 = (PTR_uintptr_t)location;
         break;
     case UNW_RISCV_X31:
-        *pT6 = value;
+        pT6 = (PTR_uintptr_t)location;
         break;
 
     case UNW_RISCV_X8:
-        *pFP = value;
+        pFP = (PTR_uintptr_t)location;
         break;
     case UNW_RISCV_X9:
-        *pS1 = value;
+        pS1 = (PTR_uintptr_t)location;
         break;
     case UNW_RISCV_X18:
-        *pS2 = value;
+        pS2 = (PTR_uintptr_t)location;
         break;
     case UNW_RISCV_X19:
-        *pS3 = value;
+        pS3 = (PTR_uintptr_t)location;
         break;
     case UNW_RISCV_X20:
-        *pS4 = value;
+        pS4 = (PTR_uintptr_t)location;
         break;
     case UNW_RISCV_X21:
-        *pS5 = value;
+        pS5 = (PTR_uintptr_t)location;
         break;
     case UNW_RISCV_X22:
-        *pS6 = value;
+        pS6 = (PTR_uintptr_t)location;
         break;
     case UNW_RISCV_X23:
-        *pS7 = value;
+        pS7 = (PTR_uintptr_t)location;
+        break;
+    case UNW_RISCV_X24:
+        pS8 = (PTR_uintptr_t)location;
+        break;
+    case UNW_RISCV_X25:
+        pS9 = (PTR_uintptr_t)location;
+        break;
+    case UNW_RISCV_X26:
+        pS10 = (PTR_uintptr_t)location;
+        break;
+    case UNW_RISCV_X27:
+        pS11 = (PTR_uintptr_t)location;
         break;
 
     // Add other general-purpose registers if needed

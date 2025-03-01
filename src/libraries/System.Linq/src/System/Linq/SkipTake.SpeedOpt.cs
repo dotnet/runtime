@@ -101,18 +101,16 @@ namespace System.Linq
                 return default;
             }
 
-            public int Count
-            {
-                get
-                {
-                    int count = _source.Count;
-                    if (count <= _minIndexInclusive)
-                    {
-                        return 0;
-                    }
+            public int Count => GetAdjustedCount(_minIndexInclusive, _maxIndexInclusive, _source.Count);
 
-                    return Math.Min(count - 1, _maxIndexInclusive) - _minIndexInclusive + 1;
+            private static int GetAdjustedCount(int minIndexInclusive, int maxIndexInclusive, int sourceCount)
+            {
+                if (sourceCount <= minIndexInclusive)
+                {
+                    return 0;
                 }
+
+                return Math.Min(sourceCount - 1, maxIndexInclusive) - minIndexInclusive + 1;
             }
 
             public override int GetCount(bool onlyIfCheap) => Count;
@@ -160,7 +158,7 @@ namespace System.Linq
                 }
             }
 
-            public bool Contains(TSource item) => IndexOf(item) >= 0;
+            public override bool Contains(TSource item) => IndexOf(item) >= 0;
 
             public int IndexOf(TSource item)
             {
@@ -168,15 +166,21 @@ namespace System.Linq
 
                 if (source.TryGetSpan(out ReadOnlySpan<TSource> span))
                 {
-                    return span.Slice(_minIndexInclusive, Count).IndexOf(item);
-                }
-
-                int end = _minIndexInclusive + Count;
-                for (int i = _minIndexInclusive; i < end; i++)
-                {
-                    if (EqualityComparer<TSource>.Default.Equals(source[i], item))
+                    int minInclusive = _minIndexInclusive;
+                    if (minInclusive < span.Length)
                     {
-                        return i - _minIndexInclusive;
+                        return span.Slice(minInclusive, GetAdjustedCount(minInclusive, _maxIndexInclusive, span.Length)).IndexOf(item);
+                    }
+                }
+                else
+                {
+                    int end = _minIndexInclusive + Count;
+                    for (int i = _minIndexInclusive; i < end; i++)
+                    {
+                        if (EqualityComparer<TSource>.Default.Equals(source[i], item))
+                        {
+                            return i - _minIndexInclusive;
+                        }
                     }
                 }
 
