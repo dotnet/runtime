@@ -118,10 +118,3 @@ BundleFileLocation Bundle::Probe(const SString& path, bool pathIsBundleRelative)
 
     return BundleFileLocation::Invalid();
 }
-
-BundleFileLocation Bundle::ProbeAppBundle(const SString& path, bool pathIsBundleRelative)
-{
-    STANDARD_VM_CONTRACT;
-
-    return AppIsBundle() ? AppBundle->Probe(path, pathIsBundleRelative) : BundleFileLocation::Invalid();
-}

@@ -36,7 +36,7 @@ inline const SString& PEImage::GetPathToLoad()
 {
     LIMITED_METHOD_DAC_CONTRACT;
 
-    return IsInBundle() ? m_bundleFileLocation.Path() : m_path;
+    return IsInBundle() ? m_probeExtensionResult.BundleLocation.Path() : m_path;
 }
 
 inline void* PEImage::GetExternalData(INT64* size)
@@ -45,34 +45,34 @@ inline void* PEImage::GetExternalData(INT64* size)
 
     _ASSERTE(size != nullptr);
 
-    *size = m_bundleFileLocation.Size;
-    return m_bundleFileLocation.DataStart;
+    *size = m_probeExtensionResult.BundleLocation.Size;
+    return m_probeExtensionResult.BundleLocation.DataStart;
 }
 
 inline INT64 PEImage::GetOffset() const
 {
     LIMITED_METHOD_CONTRACT;
 
-    return m_bundleFileLocation.Offset;
+    return m_probeExtensionResult.BundleLocation.Offset;
 }
 
 inline BOOL PEImage::IsInBundle() const
 {
     LIMITED_METHOD_CONTRACT;
 
-    return m_bundleFileLocation.IsValid();
+    return m_probeExtensionResult.IsValid() && m_probeExtensionResult.Type == ProbeExtensionResult::Type::Bundle;
 }
 
 inline INT64 PEImage::GetSize() const
 {
     LIMITED_METHOD_CONTRACT;
-    return m_bundleFileLocation.Size;
+    return m_probeExtensionResult.BundleLocation.Size;
 }
 
 inline INT64 PEImage::GetUncompressedSize() const
 {
     LIMITED_METHOD_CONTRACT;
-    return m_bundleFileLocation.UncompresedSize;
+    return m_probeExtensionResult.BundleLocation.UncompresedSize;
 }
 
 inline void PEImage::SetModuleFileNameHintForDAC()
@@ -108,7 +108,7 @@ inline const SString &PEImage::GetModuleFileNameHintForDAC()
 inline BOOL PEImage::IsFile()
 {
     WRAPPER_NO_CONTRACT;
-    return m_bundleFileLocation.DataStart == nullptr && !GetPathToLoad().IsEmpty();
+    return m_probeExtensionResult.BundleLocation.DataStart == nullptr && !GetPathToLoad().IsEmpty();
 }
 
 //
@@ -281,7 +281,7 @@ inline CHECK PEImage::CheckFormat()
     CHECK_OK;
 }
 
-inline void  PEImage::Init(BundleFileLocation bundleFileLocation)
+inline void  PEImage::Init(ProbeExtensionResult probeExtensionResult)
 {
     CONTRACTL
     {
@@ -292,7 +292,7 @@ inline void  PEImage::Init(BundleFileLocation bundleFileLocation)
     CONTRACTL_END;
 
     m_pathHash = m_path.HashCaseInsensitive();
-    m_bundleFileLocation = bundleFileLocation;
+    m_probeExtensionResult = probeExtensionResult;
     SetModuleFileNameHintForDAC();
 }
 #ifndef DACCESS_COMPILE
@@ -319,19 +319,19 @@ inline PTR_PEImage PEImage::FindByPath(LPCWSTR pPath, BOOL isInBundle)
 }
 
 /* static */
-inline PTR_PEImage PEImage::OpenImage(LPCWSTR pPath, MDInternalImportFlags flags /* = MDInternalImport_Default */, BundleFileLocation bundleFileLocation /* = BundleFileLocation::Invalid() */)
+inline PTR_PEImage PEImage::OpenImage(LPCWSTR pPath, MDInternalImportFlags flags /* = MDInternalImport_Default */, ProbeExtensionResult probeExtensionResult /* = ProbeExtensionResult::Invalid() */)
 {
     BOOL forbidCache = (flags & MDInternalImport_NoCache);
     if (forbidCache)
     {
         PEImageHolder pImage(new PEImage{pPath});
-        pImage->Init(bundleFileLocation);
+        pImage->Init(probeExtensionResult);
         return dac_cast<PTR_PEImage>(pImage.Extract());
     }
 
     CrstHolder holder(&s_hashLock);
 
-    PEImage* found = FindByPath(pPath, bundleFileLocation.IsValid());
+    PEImage* found = FindByPath(pPath, probeExtensionResult.IsValid());
     if (found == (PEImage*) INVALIDENTRY)
     {
         // We did not find the entry in the Cache, and we've been asked to only use the cache.
@@ -341,7 +341,7 @@ inline PTR_PEImage PEImage::OpenImage(LPCWSTR pPath, MDInternalImportFlags flags
         }
 
         PEImageHolder pImage(new PEImage{pPath});
-        pImage->Init(bundleFileLocation);
+        pImage->Init(probeExtensionResult);
 
         pImage->AddToHashMap();
         return dac_cast<PTR_PEImage>(pImage.Extract());

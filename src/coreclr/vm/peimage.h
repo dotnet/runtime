@@ -18,7 +18,7 @@
 #include "peimagelayout.h"
 #include "sstring.h"
 #include "holder.h"
-#include <bundle.h>
+#include <assemblyprobeextension.h>
 
 class SimpleRWLock;
 // --------------------------------------------------------------------------------
@@ -119,7 +119,7 @@ public:
     static PTR_PEImage OpenImage(
         LPCWSTR pPath,
         MDInternalImportFlags flags = MDInternalImport_Default,
-        BundleFileLocation bundleFileLocation = BundleFileLocation::Invalid());
+        ProbeExtensionResult probeExtensionResult = ProbeExtensionResult::Invalid());
 
     static PTR_PEImage FindByPath(LPCWSTR pPath, BOOL isInBundle);
     void AddToHashMap();
@@ -207,7 +207,7 @@ private:
     // Private routines
     // ------------------------------------------------------------
 
-    void Init(BundleFileLocation bundleFileLocation);
+    void Init(ProbeExtensionResult probeExtensionResult);
 
     struct PEImageLocator
     {
@@ -293,9 +293,9 @@ private:
     // means this is a unique (deduped) instance.
     BOOL      m_bInHashMap;
 
-    // If this image is located within a single-file bundle, the location within the bundle.
-    // If m_bundleFileLocation is valid, it takes precedence over m_path for loading.
-    BundleFileLocation m_bundleFileLocation;
+    // Valid if this image is from a probe extension (single-file bundle, external data).
+    // If m_probeExtensionResult is valid, it takes precedence over m_path for loading.
+    ProbeExtensionResult m_probeExtensionResult;
 
     // valid handle if we tried to open the file/path and succeeded.
     HANDLE m_hFile;

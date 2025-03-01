@@ -621,7 +621,7 @@ PEImage::PEImage(const WCHAR* path):
     m_pathHash(0),
     m_refCount(1),
     m_bInHashMap(FALSE),
-    m_bundleFileLocation(),
+    m_probeExtensionResult(),
     m_hFile(INVALID_HANDLE_VALUE),
     m_dwPEKind(0),
     m_dwMachine(0),
