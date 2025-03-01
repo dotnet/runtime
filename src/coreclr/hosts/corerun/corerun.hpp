@@ -151,6 +151,7 @@ namespace pal
         if (mapped_local == nullptr)
         {
             ::CloseHandle(file);
+            ::CloseHandle(file_mapping);
             return false;
         }
 
