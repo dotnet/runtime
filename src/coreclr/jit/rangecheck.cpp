@@ -1658,14 +1658,17 @@ void Indent(int indent)
 //    block  - the block that contains `expr`;
 //    expr   - expression to compute the range for;
 //    pRange - [Out] range of the expression;
+//    budget - maximum number of nodes to visit. If it's not set, then the global budget is used.
 //
 // Return Value:
 //    false if the range is unknown or determined to overflow.
 //
 bool RangeCheck::TryGetRange(BasicBlock* block, GenTree* expr, Range* pRange, int budget)
 {
+    int oldBudget = m_nVisitBudget;
     if (budget != -1)
     {
+        // Custom budget is set.
         m_nVisitBudget = budget;
     }
 
@@ -1675,6 +1678,13 @@ bool RangeCheck::TryGetRange(BasicBlock* block, GenTree* expr, Range* pRange, in
     ClearSearchPath();
 
     Range range = GetRangeWorker(block, expr, false DEBUGARG(0));
+
+    if (budget != -1)
+    {
+        // Restore the previous budget.
+        m_nVisitBudget = oldBudget;
+    }
+
     if (range.UpperLimit().IsUnknown() && range.LowerLimit().IsUnknown())
     {
         JITDUMP("Range is completely unknown.\n");

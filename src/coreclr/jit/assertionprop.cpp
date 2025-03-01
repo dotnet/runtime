@@ -4589,13 +4589,14 @@ GenTree* Compiler::optAssertionPropGlobal_RelOp(ASSERT_VALARG_TP assertions,
         return optAssertionProp_Update(newTree, tree, stmt);
     }
 
+    // See if we can optimize a relop based on SSA-based TryGetRange. It's not a cheap operation,
+    // so the following checks are driven by the TP-diffs to maintain the TP/CQ balance.
     if (tree->OperIs(GT_GE, GT_GT, GT_LE, GT_LT) && op1->TypeIs(TYP_INT) && op2->IsIntCnsFitsInI32() &&
-        // JIT-TP: Ignore "X relop 0" - it will be handled below
         !op2->IsIntegralConst(0) && !block->isRunRarely())
     {
         // NOTE: we can call GetRange for op2 as well, but that will be even more expensive,
         Range rng1 = Range(Limit(Limit::keUndef));
-        if (GetRangeCheck()->TryGetRange(block, op1, &rng1, 12))
+        if (GetRangeCheck()->TryGetRange(block, op1, &rng1, /*budget*/ 12))
         {
             Range rng2 = Range(Limit(Limit::keConstant, static_cast<int>(op2->AsIntCon()->IconValue())));
             RangeOps::RelationKind kind = RangeOps::EvalRelop(tree->OperGet(), tree->IsUnsigned(), rng1, rng2);
