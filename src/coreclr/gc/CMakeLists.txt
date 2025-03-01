@@ -90,12 +90,8 @@ set (GC_LINK_LIBRARIES ${GC_LINK_LIBRARIES} gc_pal)
 if(CLR_CMAKE_TARGET_ARCH_AMD64)
     list(APPEND GC_LINK_LIBRARIES
         gc_vxsort
+        minipal
     )
-    if(CLR_CMAKE_HOST_UNIX)
-      list(APPEND GC_LINK_LIBRARIES
-          minipal
-      )
-    endif(CLR_CMAKE_HOST_UNIX)
 endif(CLR_CMAKE_TARGET_ARCH_AMD64)
 
 
