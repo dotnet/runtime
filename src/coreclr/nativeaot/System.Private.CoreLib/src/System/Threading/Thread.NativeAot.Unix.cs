@@ -87,14 +87,14 @@ namespace System.Threading
             }
         }
 
-        private unsafe bool CreateThread(GCHandle thisThreadHandle)
+        private unsafe bool CreateThread(GCHandle<Thread> thisThreadHandle)
         {
             // Create the Stop event before starting the thread to make sure
             // it is ready to be signaled at thread shutdown time.
             // This also avoids OOM after creating the thread.
             _stopped = new ManualResetEvent(false);
 
-            if (!Interop.Sys.CreateThread((IntPtr)_startHelper!._maxStackSize, &ThreadEntryPoint, (IntPtr)thisThreadHandle))
+            if (!Interop.Sys.CreateThread((IntPtr)_startHelper!._maxStackSize, &ThreadEntryPoint, GCHandle<Thread>.ToIntPtr(thisThreadHandle)))
             {
                 return false;
             }

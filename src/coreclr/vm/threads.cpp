@@ -305,7 +305,7 @@ bool Thread::DetectHandleILStubsForDebugger()
         while (pFrame != FRAME_TOP)
         {
             // Check for HMF's.  See the comment at the beginning of this function.
-            if (pFrame->GetVTablePtr() == HelperMethodFrame::GetMethodFrameVPtr())
+            if (pFrame->GetFrameIdentifier() == FrameIdentifier::HelperMethodFrame)
             {
                 break;
             }
@@ -353,13 +353,23 @@ void SetThread(Thread* t)
 {
     LIMITED_METHOD_CONTRACT
 
+    Thread* origThread = gCurrentThreadInfo.m_pThread;
     gCurrentThreadInfo.m_pThread = t;
     if (t != NULL)
     {
+        _ASSERTE(origThread == NULL);
         InitializeCurrentThreadsStaticData(t);
         EnsureTlsDestructionMonitor();
         t->InitRuntimeThreadLocals();
     }
+#ifdef TARGET_WINDOWS
+    else if (origThread != NULL)
+    {
+        // Unregister from OS notifications
+        // This can return false if a thread did not register for OS notification.
+        OsDetachThread(origThread);
+    }
+#endif
 
     // Clear or set the app domain to the one domain based on if the thread is being nulled out or set
     gCurrentThreadInfo.m_pAppDomain = t == NULL ? NULL : AppDomain::GetCurrentDomain();
@@ -865,7 +875,7 @@ void DestroyThread(Thread *th)
 // Public function: DetachThread()
 // Marks the thread as needing to be destroyed, but doesn't destroy it yet.
 //-------------------------------------------------------------------------
-HRESULT Thread::DetachThread(BOOL fDLLThreadDetach)
+HRESULT Thread::DetachThread(BOOL inTerminationCallback)
 {
     // !!! Can not use contract here.
     // !!! Contract depends on Thread object for GC_TRIGGERS.
@@ -890,9 +900,9 @@ HRESULT Thread::DetachThread(BOOL fDLLThreadDetach)
         pErrorInfo->Release();
     }
 
-    // Revoke our IInitializeSpy registration only if we are not in DLL_THREAD_DETACH
+    // Revoke our IInitializeSpy registration only if we are not in a thread termination callback
     // (COM will do it or may have already done it automatically in that case).
-    if (!fDLLThreadDetach)
+    if (!inTerminationCallback)
     {
         RevokeApartmentSpy();
     }
@@ -7206,7 +7216,7 @@ static void ManagedThreadBase_DispatchOuter(ManagedThreadCallState *pCallState)
     // The sole purpose of having this frame is to tell the debugger that we have a catch handler here
     // which may swallow managed exceptions.  The debugger needs this in order to send a
     // CatchHandlerFound (CHF) notification.
-    FrameWithCookie<DebuggerU2MCatchHandlerFrame> catchFrame;
+    DebuggerU2MCatchHandlerFrame catchFrame(false /* catchesAllExceptions */);
 
     TryParam param(pCallState);
     param.pFrame = &catchFrame;

@@ -292,9 +292,10 @@ int coreclr_initialize(
 
     ConstWStringHolder appDomainFriendlyNameW = StringToUnicode(appDomainFriendlyName);
 
-    if (bundleProbe != nullptr)
+    ExternalAssemblyProbeFn* externalAssemblyProbe = hostContract != nullptr ? hostContract->external_assembly_probe : nullptr;
+    if (bundleProbe != nullptr || externalAssemblyProbe != nullptr)
     {
-        static Bundle bundle(exePath, bundleProbe);
+        static Bundle bundle(exePath, bundleProbe, externalAssemblyProbe);
         Bundle::AppBundle = &bundle;
     }
 

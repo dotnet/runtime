@@ -63,6 +63,20 @@ build_native()
     # All set to commence the build
     echo "Commencing build of \"$target\" target in \"$message\" for $__TargetOS.$__TargetArch.$__BuildType in $intermediatesDir"
 
+    SAVED_CFLAGS="${CFLAGS}"
+    SAVED_CXXFLAGS="${CXXFLAGS}"
+    SAVED_LDFLAGS="${LDFLAGS}"
+
+    # Let users provide additional compiler/linker flags via EXTRA_CFLAGS/EXTRA_CXXFLAGS/EXTRA_LDFLAGS.
+    # If users directly override CFLAG/CXXFLAGS/LDFLAGS, that may lead to some configure tests working incorrectly.
+    # See https://github.com/dotnet/runtime/issues/35727 for more information.
+    # 
+    # These flags MUST be exported before gen-buildsys.sh runs or cmake will ignore them
+    #
+    export CFLAGS="${CFLAGS} ${EXTRA_CFLAGS}"
+    export CXXFLAGS="${CXXFLAGS} ${EXTRA_CXXFLAGS}"
+    export LDFLAGS="${LDFLAGS} ${EXTRA_LDFLAGS}"
+
     if [[ "$targetOS" == osx || "$targetOS" == maccatalyst ]]; then
         if [[ "$hostArch" == x64 ]]; then
             cmakeArgs="-DCMAKE_OSX_ARCHITECTURES=\"x86_64\" $cmakeArgs"
@@ -86,10 +100,7 @@ build_native()
             exit 1
         fi
 
-        # cmake cache scripts can't see command line args
-        export ANDROID_BUILD=1
-
-        cmakeArgs="-C $__RepoRootDir/eng/native/tryrun.cmake $cmakeArgs"
+        cmakeArgs="-DANDROID_BUILD=1 -C $__RepoRootDir/eng/native/tryrun.cmake $cmakeArgs"
         cmakeArgs="-DCMAKE_TOOLCHAIN_FILE=$ANDROID_NDK_ROOT/build/cmake/android.toolchain.cmake -DANDROID_PLATFORM=android-${ANDROID_API_LEVEL} -DANDROID_NATIVE_API_LEVEL=${ANDROID_API_LEVEL} $cmakeArgs"
 
         # Don't try to set CC/CXX in init-compiler.sh - it's handled in android.toolchain.cmake already
@@ -196,17 +207,6 @@ build_native()
         echo "Finish configuration & skipping \"$message\" build."
         return
     fi
-
-    SAVED_CFLAGS="${CFLAGS}"
-    SAVED_CXXFLAGS="${CXXFLAGS}"
-    SAVED_LDFLAGS="${LDFLAGS}"
-
-    # Let users provide additional compiler/linker flags via EXTRA_CFLAGS/EXTRA_CXXFLAGS/EXTRA_LDFLAGS.
-    # If users directly override CFLAG/CXXFLAGS/LDFLAGS, that may lead to some configure tests working incorrectly.
-    # See https://github.com/dotnet/runtime/issues/35727 for more information.
-    export CFLAGS="${CFLAGS} ${EXTRA_CFLAGS}"
-    export CXXFLAGS="${CXXFLAGS} ${EXTRA_CXXFLAGS}"
-    export LDFLAGS="${LDFLAGS} ${EXTRA_LDFLAGS}"
 
     local exit_code
     if [[ "$__StaticAnalyzer" == 1 ]]; then
