@@ -2125,6 +2125,45 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
         {
             if (sig->numArgs == 1)
             {
+                if (varTypeIsStruct(impStackTop().val))
+                {
+                    assert(sig->sigInst.methInstCount == 1);
+                    assert(eeIsValueClass(sig->sigInst.methInst[0]));
+
+                    GenTreeFlags indirFlags = GTF_EMPTY;
+                    GenTree*     destAddr   = impGetNodeAddr(impPopStack().val, CHECK_SPILL_ALL, &indirFlags);
+
+                    CORINFO_CLASS_HANDLE spanClass;
+                    info.compCompHnd->getArgType(sig, sig->args, &spanClass);
+
+                    // Get the field handles for Span<> (for _reference and _length) and their offsets
+                    CORINFO_FIELD_HANDLE ptrHnd       = info.compCompHnd->getFieldInClass(spanClass, 0);
+                    CORINFO_FIELD_HANDLE lengthHnd    = info.compCompHnd->getFieldInClass(spanClass, 1);
+                    const unsigned       ptrOffset    = info.compCompHnd->getFieldOffset(ptrHnd);
+                    const unsigned       lengthOffset = info.compCompHnd->getFieldOffset(lengthHnd);
+
+                    // Span._reference node
+                    GenTreeFieldAddr* dataFieldAddr = gtNewFieldAddrNode(ptrHnd, destAddr, ptrOffset);
+                    GenTree*          data          = gtNewIndir(TYP_BYREF, dataFieldAddr);
+
+                    // Span._length node
+                    GenTreeFieldAddr* lengthFieldAddr =
+                        gtNewFieldAddrNode(lengthHnd, gtCloneExpr(destAddr), lengthOffset);
+                    GenTree* length = gtNewIndir(TYP_INT, lengthFieldAddr);
+                    lengthFieldAddr->SetIsSpanLength(true);
+
+                    // Bounds check for it
+                    GenTreeIntCon* idx   = gtNewIconNode(getSIMDVectorLength(simdSize, simdBaseType), TYP_INT);
+                    GenTree* boundsCheck = new (this, GT_BOUNDS_CHECK) GenTreeBoundsChk(idx, length, SCK_RNGCHK_FAIL);
+
+                    // Load the SIMD vector from the Span._reference wrapped in a bounds check
+                    retNode = gtNewIndir(retType, data, GTF_IND_UNALIGNED);
+                    retNode->SetHasOrderingSideEffect();
+                    boundsCheck->SetHasOrderingSideEffect();
+                    retNode = gtNewOperNode(GT_COMMA, retType, boundsCheck, retNode);
+                    break;
+                }
+
 #if defined(TARGET_X86)
                 if (varTypeIsLong(simdBaseType) && !impStackTop(0).val->IsIntegralConst())
                 {
