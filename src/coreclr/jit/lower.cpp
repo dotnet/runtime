@@ -3648,10 +3648,12 @@ void Lowering::LowerCFGCall(GenTreeCall* call)
         call->gtCallType = CT_INDIRECT;
         call->gtFlags &= ~GTF_CALL_VIRT_STUB;
         call->gtCallAddr = resolve;
+        call->gtCallCookie = nullptr;
 #ifdef FEATURE_READYTORUN
         call->gtEntryPoint.addr       = nullptr;
         call->gtEntryPoint.accessType = IAT_VALUE;
 #endif
+
 
         if (callTarget != nullptr)
         {
