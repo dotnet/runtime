@@ -43,7 +43,7 @@ namespace System.Net.WebSockets.Client.Tests
             return null;
         }
 
-        public static string GetServerResponseString(string secWebSocketKey, string? extensions = null)
+        public static string GetServerResponseString(string secWebSocketKey, string? extensions = null, string? subProtocol = null)
         {
             var responseSecurityAcceptValue = ComputeWebSocketHandshakeSecurityAcceptValue(secWebSocketKey);
             return
@@ -52,6 +52,7 @@ namespace System.Net.WebSockets.Client.Tests
                 "Upgrade: websocket\r\n" +
                 "Connection: Upgrade\r\n" +
                 (extensions is null ? null : $"Sec-WebSocket-Extensions: {extensions}\r\n") +
+                (subProtocol is null ? null : $"Sec-WebSocket-Protocol: {subProtocol}\r\n") +
                 "Sec-WebSocket-Accept: " + responseSecurityAcceptValue + "\r\n\r\n";
         }
 

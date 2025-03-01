@@ -2,9 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Linq;
 using System.Net.Http;
 using System.Net.Sockets;
 using System.Net.Test.Common;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
@@ -69,8 +71,16 @@ namespace System.Net.WebSockets.Client.Tests
 
             if (!skipServerHandshakeResponse)
             {
+                foreach (string headerName in new[] { "Sec-WebSocket-Extensions", "Sec-WebSocket-Protocol" })
+                {
+                    if (data.Headers.TryGetValue(headerName, out var headerValue))
+                    {
+                        Assert.Fail($"Header `{headerName}: {headerValue}` requires a custom server response, use skipServerHandshakeResponse=true");
+                    }
+                }
+
                 //Console.WriteLine($"[Server - {nameof(ProcessHttp11RequestAsync)}] Sending server handshake response...");
-                await SendHttp11ServerResponseAsync(connection, secWebSocketKey, cancellationToken).ConfigureAwait(false);
+                await SendHttp11ServerResponseAsync(connection, secWebSocketKey, cancellationToken: cancellationToken).ConfigureAwait(false);
                 //Console.WriteLine($"[Server - {nameof(ProcessHttp11RequestAsync)}] Sent server handshake response.");
             }
 
@@ -78,9 +88,14 @@ namespace System.Net.WebSockets.Client.Tests
             return data;
         }
 
-        private static async Task SendHttp11ServerResponseAsync(LoopbackServer.Connection connection, string secWebSocketKey, CancellationToken cancellationToken)
+        public static async Task SendHttp11ServerResponseAsync(
+            LoopbackServer.Connection connection,
+            string secWebSocketKey,
+            string? negotiatedSubProtocol = null,
+            string? negotiatedExtensions = null,
+            CancellationToken cancellationToken = default)
         {
-            var serverResponse = LoopbackHelper.GetServerResponseString(secWebSocketKey);
+            var serverResponse = LoopbackHelper.GetServerResponseString(secWebSocketKey, negotiatedExtensions, negotiatedSubProtocol);
             await connection.WriteStringAsync(serverResponse).WaitAsync(cancellationToken).ConfigureAwait(false);
         }
 
@@ -118,10 +133,12 @@ namespace System.Net.WebSockets.Client.Tests
 
             if (parseEchoOptions)
             {
-                // HTTP/2 CONNECT requests drop path and query from the request URI,
-                // see https://datatracker.ietf.org/doc/html/rfc7540#section-8.3:
-                // > The ":scheme" and ":path" pseudo-header fields MUST be omitted.
-                // The original query string was passed in a custom header.
+                // RFC 7540, section 8.3. The CONNECT Method:
+                //  > The ":scheme" and ":path" pseudo-header fields MUST be omitted.
+                //
+                // HTTP/2 CONNECT requests must drop query (containing echo options) from the request URI.
+                // The information needs to be passed in a different way, e.g. in a custom header.
+
                 if (data.Headers.TryGetValue(WebSocketHelper.OriginalQueryStringHeader, out var query))
                 {
                     // NOTE: ProcessOptions needs to be called before sending the server response
@@ -136,6 +153,14 @@ namespace System.Net.WebSockets.Client.Tests
 
             if (!skipServerHandshakeResponse)
             {
+                foreach (string headerName in new[] { "Sec-WebSocket-Extensions", "Sec-WebSocket-Protocol" })
+                {
+                    if (data.Headers.TryGetValue(headerName, out var headerValue))
+                    {
+                        Assert.Fail($"Header `{headerName}: {headerValue}` requires a custom server response, use skipServerHandshakeResponse=true");
+                    }
+                }
+
                 await SendHttp2ServerResponseAsync(connection, streamId, cancellationToken: cancellationToken).ConfigureAwait(false);
             }
 
@@ -143,12 +168,28 @@ namespace System.Net.WebSockets.Client.Tests
             return data;
         }
 
-        private static async Task SendHttp2ServerResponseAsync(Http2LoopbackConnection connection, int streamId, bool endStream = false, CancellationToken cancellationToken = default)
+        public static async Task SendHttp2ServerResponseAsync(
+            Http2LoopbackConnection connection,
+            int streamId,
+            string? negotiatedSubProtocol = null,
+            string? negotiatedExtensions = null,
+            bool endStream = false,
+            CancellationToken cancellationToken = default)
         {
+            var negotiatedValues = new List<HttpHeaderData>();
+            if (negotiatedExtensions is not null)
+            {
+                negotiatedValues.Add(new HttpHeaderData("Sec-WebSocket-Extensions", negotiatedExtensions));
+            }
+            if (negotiatedSubProtocol is not null)
+            {
+                negotiatedValues.Add(new HttpHeaderData("Sec-WebSocket-Protocol", negotiatedSubProtocol));
+            }
+
             // send status 200 OK to establish websocket
-            // we don't need to send anything additional as Sec-WebSocket-Key is not used for HTTP/2
+            // we don't need to send Sec-WebSocket-Accept as Sec-WebSocket-Key is not used for HTTP/2
             // note: endStream=true is abnormal and used for testing premature EOS scenarios only
-            await connection.SendResponseHeadersAsync(streamId, endStream: endStream).WaitAsync(cancellationToken).ConfigureAwait(false);
+            await connection.SendResponseHeadersAsync(streamId, endStream: endStream, headers: negotiatedValues).WaitAsync(cancellationToken).ConfigureAwait(false);
         }
 
         public static async Task SendHttp11ServerResponseAndEosAsync(WebSocketRequestData requestData, Func<WebSocketRequestData, CancellationToken, Task>? requestDataCallback, CancellationToken cancellationToken)
@@ -156,7 +197,7 @@ namespace System.Net.WebSockets.Client.Tests
             Assert.Equal(HttpVersion.Version11, requestData.HttpVersion);
 
             // sending default handshake response
-            await SendHttp11ServerResponseAsync(requestData.Http11Connection!, requestData.Headers["Sec-WebSocket-Key"], cancellationToken).ConfigureAwait(false);
+            await SendHttp11ServerResponseAsync(requestData.Http11Connection!, requestData.Headers["Sec-WebSocket-Key"], cancellationToken: cancellationToken).ConfigureAwait(false);
 
             if (requestDataCallback is not null)
             {
@@ -174,7 +215,7 @@ namespace System.Net.WebSockets.Client.Tests
             var connection = requestData.Http2Connection!;
             var streamId = requestData.Http2StreamId!.Value;
 
-            await SendHttp2ServerResponseAsync(connection, streamId, endStream: eosInHeadersFrame, cancellationToken).ConfigureAwait(false);
+            await SendHttp2ServerResponseAsync(connection, streamId, endStream: eosInHeadersFrame, cancellationToken: cancellationToken).ConfigureAwait(false);
 
             if (requestDataCallback is not null)
             {

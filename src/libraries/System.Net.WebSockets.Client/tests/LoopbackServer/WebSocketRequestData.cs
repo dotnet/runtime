@@ -9,7 +9,7 @@ namespace System.Net.WebSockets.Client.Tests
 {
     public class WebSocketRequestData
     {
-        public Dictionary<string, string?> Headers { get; set; } = new Dictionary<string, string?>();
+        public Dictionary<string, string?> Headers { get; set; } = new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase);
         public WebSocketEchoOptions? EchoOptions { get; set; }
 
         public Stream? TransportStream { get; set; }

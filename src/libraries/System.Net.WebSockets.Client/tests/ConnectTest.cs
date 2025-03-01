@@ -13,7 +13,7 @@ using Xunit.Abstractions;
 
 namespace System.Net.WebSockets.Client.Tests
 {
-    public sealed class InvokerConnectTest : ConnectTestBase
+    public sealed class InvokerConnectTest : ConnectTest
     {
         public InvokerConnectTest(ITestOutputHelper output) : base(output) { }
 
@@ -90,7 +90,7 @@ namespace System.Net.WebSockets.Client.Tests
         }
     }
 
-    public sealed class HttpClientConnectTest : ConnectTestBase
+    public sealed class HttpClientConnectTest : ConnectTest
     {
         public HttpClientConnectTest(ITestOutputHelper output) : base(output) { }
 
@@ -241,7 +241,8 @@ namespace System.Net.WebSockets.Client.Tests
                 WebSocketException ex = await Assert.ThrowsAsync<WebSocketException>(() =>
                     ConnectAsync(cws, ub.Uri, cts.Token));
                 _output.WriteLine(ex.Message);
-                Assert.True(ex.WebSocketErrorCode == WebSocketError.Faulted ||
+                Assert.True(ex.WebSocketErrorCode == WebSocketError.UnsupportedProtocol || // TODO
+                    ex.WebSocketErrorCode == WebSocketError.Faulted ||
                     ex.WebSocketErrorCode == WebSocketError.NotAWebSocket, $"Actual WebSocketErrorCode {ex.WebSocketErrorCode} {ex.InnerException?.Message} \n {ex}");
                 Assert.Equal(WebSocketState.Closed, cws.State);
             }

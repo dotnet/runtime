@@ -208,12 +208,14 @@ namespace System.Net.WebSockets.Client.Tests
                 options.RemoteCertificateValidationCallback = (_, _, _, _) => true;
             }
 
-            if (HttpVersion == Net.HttpVersion.Version20 && uri.Query is not null or "" or "?")
+            if (HttpVersion == Net.HttpVersion.Version20 && uri.Query is not (null or "" or "?"))
             {
-                // HTTP/2 CONNECT requests drop path and query from the request URI,
-                // see https://datatracker.ietf.org/doc/html/rfc7540#section-8.3:
-                // > The ":scheme" and ":path" pseudo-header fields MUST be omitted.
-                // Saving the original query string in a custom header.
+                // RFC 7540, section 8.3. The CONNECT Method:
+                //  > The ":scheme" and ":path" pseudo-header fields MUST be omitted.
+                //
+                // HTTP/2 CONNECT requests must drop query (containing echo options) from the request URI.
+                // The information needs to be passed in a different way, e.g. in a custom header.
+
                 options.SetRequestHeader(WebSocketHelper.OriginalQueryStringHeader, uri.Query);
             }
         }

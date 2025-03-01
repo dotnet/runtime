@@ -4,6 +4,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Net.Test.Common;
+using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.DotNet.XUnitExtensions;
@@ -41,13 +42,13 @@ namespace System.Net.WebSockets.Client.Tests
         public Task ConnectAsync_CookieHeaders_Success(bool useSsl) => RunEchoHeadersAsync(
             RunClient_ConnectAsync_CookieHeaders_Success, useSsl);
 
-        /*[Theory, MemberData(nameof(UseSsl_MemberData))]
+        [Theory, MemberData(nameof(UseSsl_MemberData))]
         public Task ConnectAsync_PassNoSubProtocol_ServerRequires_ThrowsWebSocketException(bool useSsl) => RunEchoAsync(
             RunClient_ConnectAsync_PassNoSubProtocol_ServerRequires_ThrowsWebSocketException, useSsl);
 
         [Theory, MemberData(nameof(UseSsl_MemberData))]
         public Task ConnectAsync_PassMultipleSubProtocols_ServerRequires_ConnectionUsesAgreedSubProtocol(bool useSsl) => RunEchoAsync(
-            RunClient_ConnectAsync_PassMultipleSubProtocols_ServerRequires_ConnectionUsesAgreedSubProtocol, useSsl);*/
+            RunClient_ConnectAsync_PassMultipleSubProtocols_ServerRequires_ConnectionUsesAgreedSubProtocol, useSsl);
 
         // TODO: this test is HTTP/1.1 only
         //[Theory, MemberData(nameof(UseSsl_MemberData))]
@@ -242,11 +243,11 @@ namespace System.Net.WebSockets.Client.Tests
 
         /*[Fact]
         public Task ConnectAsync_PassNoSubProtocol_ServerRequires_ThrowsWebSocketException() => RunEchoAsync(
-            RunClient_ConnectAsync_PassNoSubProtocol_ServerRequires_ThrowsWebSocketException, useSsl: false);
+            RunClient_ConnectAsync_PassNoSubProtocol_ServerRequires_ThrowsWebSocketException, useSsl: false);*/
 
         [Fact]
         public Task ConnectAsync_PassMultipleSubProtocols_ServerRequires_ConnectionUsesAgreedSubProtocol() => RunEchoAsync(
-            RunClient_ConnectAsync_PassMultipleSubProtocols_ServerRequires_ConnectionUsesAgreedSubProtocol, useSsl: false);*/
+            RunClient_ConnectAsync_PassMultipleSubProtocols_ServerRequires_ConnectionUsesAgreedSubProtocol, useSsl: false);
 
         [Fact]
         public Task ConnectAndCloseAsync_UseProxyServer_ExpectedClosedState() => RunEchoAsync(
