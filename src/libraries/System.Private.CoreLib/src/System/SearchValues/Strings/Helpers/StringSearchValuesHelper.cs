@@ -178,6 +178,50 @@ namespace System.Buffers
                     }
                 }
             }
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public bool MatchesLength9To16_CaseSensitive(ref char matchStart)
+            {
+                Debug.Assert(Value.Length is >= 9 and <= 16);
+                Debug.Assert(ToUpperMask256 == default);
+
+                if (Vector256.IsHardwareAccelerated)
+                {
+                    Vector256<ushort> input = Vector256.Create(
+                        Vector128.LoadUnsafe(ref matchStart),
+                        Vector128.LoadUnsafe(ref Unsafe.AddByteOffset(ref matchStart, SecondReadByteOffset)));
+
+                    return input == Value256;
+                }
+                else
+                {
+                    Vector128<ushort> different = Vector128.LoadUnsafe(ref matchStart) ^ Value256.GetLower();
+                    different |= Vector128.LoadUnsafe(ref Unsafe.AddByteOffset(ref matchStart, SecondReadByteOffset)) ^ Value256.GetUpper();
+                    return different == Vector128<ushort>.Zero;
+                }
+            }
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public bool MatchesLength9To16_CaseInsensitiveAscii(ref char matchStart)
+            {
+                Debug.Assert(Value.Length is >= 9 and <= 16);
+                Debug.Assert(ToUpperMask256 != default);
+
+                if (Vector256.IsHardwareAccelerated)
+                {
+                    Vector256<ushort> input = Vector256.Create(
+                        Vector128.LoadUnsafe(ref matchStart),
+                        Vector128.LoadUnsafe(ref Unsafe.AddByteOffset(ref matchStart, SecondReadByteOffset)));
+
+                    return (input & ToUpperMask256) == Value256;
+                }
+                else
+                {
+                    Vector128<ushort> different = (Vector128.LoadUnsafe(ref matchStart) & ToUpperMask256.GetLower()) ^ Value256.GetLower();
+                    different |= (Vector128.LoadUnsafe(ref Unsafe.AddByteOffset(ref matchStart, SecondReadByteOffset)) & ToUpperMask256.GetUpper()) ^ Value256.GetUpper();
+                    return different == Vector128<ushort>.Zero;
+                }
+            }
         }
 
         public interface ICaseSensitivity
@@ -214,11 +258,7 @@ namespace System.Buffers
                 }
                 else if (typeof(TValueLength) == typeof(ValueLength9To16))
                 {
-                    Vector256<ushort> input = Vector256.Create(
-                        Vector128.LoadUnsafe(ref matchStart),
-                        Vector128.LoadUnsafe(ref Unsafe.AddByteOffset(ref matchStart, state.SecondReadByteOffset)));
-
-                    return input == state.Value256;
+                    return state.MatchesLength9To16_CaseSensitive(ref matchStart);
                 }
                 else if (typeof(TValueLength) == typeof(ValueLength4To8))
                 {
@@ -266,11 +306,7 @@ namespace System.Buffers
                 }
                 else if (typeof(TValueLength) == typeof(ValueLength9To16))
                 {
-                    Vector256<ushort> input = Vector256.Create(
-                        Vector128.LoadUnsafe(ref matchStart),
-                        Vector128.LoadUnsafe(ref Unsafe.AddByteOffset(ref matchStart, state.SecondReadByteOffset)));
-
-                    return (input & state.ToUpperMask256) == state.Value256;
+                    return state.MatchesLength9To16_CaseInsensitiveAscii(ref matchStart);
                 }
                 else if (typeof(TValueLength) == typeof(ValueLength4To8))
                 {
@@ -344,11 +380,7 @@ namespace System.Buffers
                 }
                 else if (typeof(TValueLength) == typeof(ValueLength9To16))
                 {
-                    Vector256<ushort> input = Vector256.Create(
-                        Vector128.LoadUnsafe(ref matchStart),
-                        Vector128.LoadUnsafe(ref Unsafe.AddByteOffset(ref matchStart, state.SecondReadByteOffset)));
-
-                    return (input & state.ToUpperMask256) == state.Value256;
+                    return state.MatchesLength9To16_CaseInsensitiveAscii(ref matchStart);
                 }
                 else if (typeof(TValueLength) == typeof(ValueLength4To8))
                 {
