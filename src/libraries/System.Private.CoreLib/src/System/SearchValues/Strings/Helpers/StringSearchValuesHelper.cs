@@ -121,7 +121,7 @@ namespace System.Buffers
 
                 Value = value;
 
-                // We precompute vectors specifc to this value to speed up later comparisons.
+                // We precompute vectors specific to this value to speed up later comparisons.
                 // We group values depending on their length (2-3, 4-8, 9-16).
                 // For any of those lengths, we can load the whole value with two overlapped reads (e.g. 2x 8 characters for lengths 9-16).
                 // For a string "Hello World", we would load
@@ -133,9 +133,12 @@ namespace System.Buffers
                 // Value256:       [HELLO WOLO WORLD] (note that the value is already converted to uppercase if we're ignoring casing)
                 // ToUpperMask256: [xxxxx xxxx xxxxx] (x = ~0x20 for ASCII letters, 0xFFFF otherwise)
                 //
-                // Given a potential match, we can now confirm whether we found a match by loading the candidate in the same way and appliying this mask:
+                // Given a potential match, we can now confirm whether we found a match by loading the candidate in the same way and applying this mask:
                 // Vector256 input = [Vector128.Load(candidate), Vector128.Load(candidate + 6 bytes)];
                 // bool matches = (input & ToUpperMask256) == Value256;
+
+                // The two vectors may overlap completely for Length == 2 or Length == 4, and that's fine.
+                // The second comparison during validation is redundant in such cases, but the alternative is to introduce more IValueLength specializations.
 
                 if (value.Length <= 16)
                 {
@@ -156,6 +159,8 @@ namespace System.Buffers
                     }
                     else
                     {
+                        Debug.Assert(value.Length is 2 or 3);
+
                         SecondReadByteOffset = (value.Length - 2) * sizeof(char);
                         Value256 = Vector256.Create(Vector128.Create(Vector64.Create(
                             Unsafe.ReadUnaligned<uint>(ref value.GetRawStringDataAsUInt8()),
