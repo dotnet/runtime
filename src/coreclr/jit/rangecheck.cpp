@@ -991,6 +991,11 @@ void RangeCheck::MergeEdgeAssertions(Compiler*        comp,
                 if (!isUnsigned)
                 {
                     pRange->lLimit = limit;
+                    // INT32_MAX as the upper limit is better than UNKNOWN for a constant lower limit.
+                    if (limit.IsConstant() && pRange->UpperLimit().IsUnknown())
+                    {
+                        pRange->uLimit = Limit(Limit::keConstant, INT32_MAX);
+                    }
                 }
                 break;
 
