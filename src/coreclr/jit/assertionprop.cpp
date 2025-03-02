@@ -4585,9 +4585,11 @@ GenTree* Compiler::optAssertionPropGlobal_RelOp(ASSERT_VALARG_TP assertions,
         return optAssertionProp_Update(newTree, tree, stmt);
     }
 
-    // See if we can fold "X relop CNS" using TryGetRangeFromAssertions. We can also use a more
-    // powerful SSA-based TryGetRange, but it's too expensive to call for every relop.
-    if (tree->OperIsCmpCompare() && genActualTypeIsInt(op1) && op2->IsIntCnsFitsInI32())
+    // See if we can fold "X relop CNS" using RangeCheck.
+    if (tree->OperIsCmpCompare() &&
+        // We can also use a more powerful SSA-based TryGetRange, but it's too expensive to call for every relop.
+        // Hence, the following checks are driven by TP/CQ balance:
+        op1->TypeIs(TYP_INT) && op2->IsIntCnsFitsInI32() && !op2->IsIntegralConst(0))
     {
         // NOTE: we can call TryGetRangeFromAssertions for op2 as well if we want, but it's not cheap.
         Range rng1 = Range(Limit(Limit::keUndef));
