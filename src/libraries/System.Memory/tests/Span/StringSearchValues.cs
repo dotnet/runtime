@@ -7,6 +7,7 @@ using System.Globalization;
 using System.Linq;
 using System.Runtime.ExceptionServices;
 using System.Runtime.InteropServices;
+using System.Runtime.Intrinsics.X86;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.DotNet.RemoteExecutor;
@@ -508,6 +509,20 @@ namespace System.Memory.Tests.Span
         public static void TestIndexOfAny_RandomInputs_Stress()
         {
             RunStress();
+
+            if (RemoteExecutor.IsSupported && Avx512F.IsSupported)
+            {
+                var psi = new ProcessStartInfo();
+                psi.Environment.Add("DOTNET_EnableAVX512F", "0");
+                RemoteExecutor.Invoke(RunStress, new RemoteInvokeOptions { StartInfo = psi, TimeOut = 10 * 60 * 1000 }).Dispose();
+            }
+
+            if (RemoteExecutor.IsSupported && Avx2.IsSupported)
+            {
+                var psi = new ProcessStartInfo();
+                psi.Environment.Add("DOTNET_EnableAVX2", "0");
+                RemoteExecutor.Invoke(RunStress, new RemoteInvokeOptions { StartInfo = psi, TimeOut = 10 * 60 * 1000 }).Dispose();
+            }
 
             if (CanTestInvariantCulture)
             {
