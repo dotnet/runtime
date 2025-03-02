@@ -384,7 +384,7 @@ bool Lowering::IsContainableUnaryOrBinaryOp(GenTree* parentNode, GenTree* childN
     if (childNode->OperIs(GT_NEG))
     {
         // If we have a contained LSH, RSH or RSZ, we can still contain NEG if the parent is a EQ or NE.
-        if (childNode->gtGetOp1()->isContained() && !childNode->gtGetOp1()->OperIs(GT_LSH, GT_RSH, GT_RSZ))
+        if (childNode->gtGetOp1()->isContained() && !childNode->gtGetOp1()->OperIs(GT_LSH, GT_RSH, GT_RSZ, GT_CAST))
         {
             // Cannot contain if the childs op1 is already contained
             return false;
@@ -399,10 +399,23 @@ bool Lowering::IsContainableUnaryOrBinaryOp(GenTree* parentNode, GenTree* childN
         // EQ and NE are the only valid comparison ops that can contain NEG.
         if (parentNode->OperIs(GT_EQ, GT_NE))
         {
-            if (IsInvariantInRange(childNode, parentNode))
+            if (!IsInvariantInRange(childNode, parentNode))
             {
-                return true;
+                return false;
             }
+
+            if (childNode->gtGetOp1()->OperIs(GT_CAST))
+            {
+                // Grab the cast as well, we can contain this with cmn.
+                GenTreeCast* cast = childNode->gtGetOp1()->AsCast();
+
+                assert(!cast->gtOverflow());
+                assert(varTypeIsIntegral(cast) && varTypeIsIntegral(cast->CastToType()));
+
+                MakeSrcContained(childNode, cast);
+            }
+
+            return true;
         }
 
         return false;
@@ -435,14 +448,15 @@ bool Lowering::IsContainableUnaryOrBinaryOp(GenTree* parentNode, GenTree* childN
             return false;
         }
 
+        if (!IsInvariantInRange(childNode, parentNode))
+        {
+            return false;
+        }
+
         if (parentNode->OperIs(GT_ADD, GT_SUB))
         {
             // These operations can still report flags
-
-            if (IsInvariantInRange(childNode, parentNode))
-            {
-                return true;
-            }
+            return true;
         }
 
         if ((parentNode->gtFlags & GTF_SET_FLAGS) != 0)
@@ -453,13 +467,29 @@ bool Lowering::IsContainableUnaryOrBinaryOp(GenTree* parentNode, GenTree* childN
 
         if (parentNode->OperIs(GT_CMP))
         {
-            if (IsInvariantInRange(childNode, parentNode))
-            {
-                return true;
-            }
+            return true;
         }
 
-        // TODO: Handle CMN
+        if (parentNode->OperIsCmpCompare())
+        {
+            if (castOp->isContained())
+            {
+                return false;
+            }
+
+            if (IsContainableMemoryOp(castOp))
+            {
+                // The cast node will contain a memory operation which will perform
+                // the cast on load/store, so we don't need to contain it here.
+                // This check won't catch spills, so if register pressure is high
+                // this can result in cmp (extended-register) taking higher priority
+                // over a load/store with extension.
+                return false;
+            }
+
+            return true;
+        }
+
         return false;
     }
 
@@ -2834,25 +2864,24 @@ void Lowering::ContainCheckBinary(GenTreeOp* node)
     {
         if (IsContainableUnaryOrBinaryOp(node, op2))
         {
-            if (op2->OperIs(GT_CAST))
+            if (node->OperIs(GT_ADD, GT_SUB, GT_CMP) && op2->OperIs(GT_CAST))
             {
                 // We want to prefer the combined op here over containment of the cast op
                 op2->AsCast()->CastOp()->ClearContained();
             }
-            MakeSrcContained(node, op2);
 
+            MakeSrcContained(node, op2);
             return;
         }
-
         if (node->OperIsCommutative() && IsContainableUnaryOrBinaryOp(node, op1))
         {
-            if (op1->OperIs(GT_CAST))
+            if (node->OperIs(GT_ADD, GT_SUB, GT_CMP) && op1->OperIs(GT_CAST))
             {
                 // We want to prefer the combined op here over containment of the cast op
                 op1->AsCast()->CastOp()->ClearContained();
             }
-            MakeSrcContained(node, op1);
 
+            MakeSrcContained(node, op1);
             std::swap(node->gtOp1, node->gtOp2);
             return;
         }
@@ -3068,12 +3097,22 @@ void Lowering::ContainCheckCompare(GenTreeOp* cmp)
     {
         if (IsContainableUnaryOrBinaryOp(cmp, op2))
         {
+            if (cmp->OperIsCmpCompare() && op2->OperIs(GT_CAST))
+            {
+                op2->AsCast()->CastOp()->ClearRegOptional();
+            }
+
             MakeSrcContained(cmp, op2);
             return;
         }
 
         if (IsContainableUnaryOrBinaryOp(cmp, op1))
         {
+            if (cmp->OperIsCmpCompare() && op1->OperIs(GT_CAST))
+            {
+                op1->AsCast()->CastOp()->ClearRegOptional();
+            }
+
             MakeSrcContained(cmp, op1);
             std::swap(cmp->gtOp1, cmp->gtOp2);
             if (cmp->OperIsCompare())

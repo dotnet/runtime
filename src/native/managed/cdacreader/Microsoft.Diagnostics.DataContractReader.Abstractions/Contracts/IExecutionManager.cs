@@ -18,6 +18,8 @@ public interface IExecutionManager : IContract
     CodeBlockHandle? GetCodeBlockHandle(TargetCodePointer ip) => throw new NotImplementedException();
     TargetPointer GetMethodDesc(CodeBlockHandle codeInfoHandle) => throw new NotImplementedException();
     TargetCodePointer GetStartAddress(CodeBlockHandle codeInfoHandle) => throw new NotImplementedException();
+    TargetPointer GetUnwindInfo(CodeBlockHandle codeInfoHandle, TargetCodePointer ip) => throw new NotImplementedException();
+    TargetPointer GetUnwindInfoBaseAddress(CodeBlockHandle codeInfoHandle) => throw new NotImplementedException();
 }
 
 public readonly struct ExecutionManager : IExecutionManager

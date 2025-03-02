@@ -19,6 +19,20 @@ extern "C"
 }
 #endif
 
+static bool AllowR2RForImage(PEImage* pOwner)
+{
+    // Allow R2R for files
+    if (pOwner->IsFile())
+        return true;
+
+    // Allow R2R for externally provided images
+    INT64 size;
+    if (pOwner->GetExternalData(&size) != NULL && size > 0)
+        return true;
+
+    return false;
+}
+
 #ifndef DACCESS_COMPILE
 PEImageLayout* PEImageLayout::CreateFromByteArray(PEImage* pOwner, const BYTE* array, COUNT_T size)
 {
@@ -70,9 +84,11 @@ PEImageLayout* PEImageLayout::LoadConverted(PEImage* pOwner, bool disableMapping
         pFlat = (FlatImageLayout*)pOwner->GetFlatLayout();
         pFlat->AddRef();
     }
-    else if (pOwner->IsFile())
+    else if (AllowR2RForImage(pOwner))
     {
+        // We only expect to be converting images that aren't already opened in the R2R composite case
         pFlat = new FlatImageLayout(pOwner);
+        _ASSERTE(pFlat->HasReadyToRunHeader());
     }
 
     if (pFlat == NULL || !pFlat->CheckILOnlyFormat())
@@ -88,9 +104,8 @@ PEImageLayout* PEImageLayout::LoadConverted(PEImage* pOwner, bool disableMapping
     _ASSERTE(!pOwner->IsFile() || !pFlat->HasReadyToRunHeader() || disableMapping);
 #endif
 
-    // ignore R2R if the image is not a file.
-    if ((pFlat->HasReadyToRunHeader() && pOwner->IsFile()) ||
-        pFlat->HasWriteableSections())
+    if ((pFlat->HasReadyToRunHeader() && AllowR2RForImage(pOwner))
+        || pFlat->HasWriteableSections())
     {
         return new ConvertedImageLayout(pFlat, disableMapping);
     }
@@ -462,7 +477,7 @@ ConvertedImageLayout::ConvertedImageLayout(FlatImageLayout* source, bool disable
 
     IfFailThrow(Init(loadedImage));
 
-    if (m_pOwner->IsFile() && IsNativeMachineFormat())
+    if (AllowR2RForImage(m_pOwner) && IsNativeMachineFormat())
     {
         // Do base relocation and exception hookup, if necessary.
         // otherwise R2R will be disabled for this image.
@@ -695,7 +710,7 @@ FlatImageLayout::FlatImageLayout(PEImage* pOwner)
             if (anonMap == NULL)
                 ThrowLastError();
 
-            LPVOID anonView = CLRMapViewOfFile(anonMap, FILE_MAP_READ | FILE_MAP_WRITE, 0, 0, 0);
+            CLRMapViewHolder anonView = CLRMapViewOfFile(anonMap, FILE_MAP_READ | FILE_MAP_WRITE, 0, 0, 0);
             if (anonView == NULL)
                 ThrowLastError();
 
@@ -704,7 +719,7 @@ FlatImageLayout::FlatImageLayout(PEImage* pOwner)
             PAL_ZStream zStream;
             zStream.nextIn = (uint8_t*)addr;
             zStream.availIn = (uint32_t)size;
-            zStream.nextOut = (uint8_t*)anonView;
+            zStream.nextOut = (uint8_t*)(void*)anonView;
             zStream.availOut = (uint32_t)uncompressedSize;
 
             // we match the compression side here. 15 is the window sise, negative means no zlib header.
@@ -728,9 +743,8 @@ FlatImageLayout::FlatImageLayout(PEImage* pOwner)
             addr = anonView;
             size = uncompressedSize;
             // Replace file handles with the handles to anonymous map. This will release the handles to the original view and map.
-            m_FileView.Assign(anonView);
-            m_FileMap.Assign(anonMap);
-
+            m_FileView.Assign(anonView.Extract());
+            m_FileMap.Assign(anonMap.Extract());
 #else
             _ASSERTE(!"Failure extracting contents of the application bundle. Compressed files used with a standalone (not singlefile) apphost.");
             ThrowHR(E_FAIL); // we don't have any indication of what kind of failure. Possibly a corrupt image.

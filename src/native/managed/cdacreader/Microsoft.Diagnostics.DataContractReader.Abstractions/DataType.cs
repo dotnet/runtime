@@ -89,4 +89,8 @@ public enum DataType
     MethodImpl,
     NativeCodeSlot,
     GCCoverageInfo,
+
+    Frame,
+    InlinedCallFrame,
+    SoftwareExceptionFrame,
 }

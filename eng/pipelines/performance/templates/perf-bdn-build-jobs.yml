@@ -1,0 +1,39 @@
+parameters:
+  perfBranch: 'main' # Currently only used for building the BDN App
+  mauiFramework: '' # Framework version to get versions for and build for (e.g. net9.0)
+
+jobs:
+  # build mono for AOT
+  - template: /eng/pipelines/performance/templates/perf-mono-build-jobs.yml
+    parameters:
+      monoAndroidPacks: true
+
+  # build PerfBDN app
+  - template: /eng/pipelines/common/platform-matrix.yml
+    parameters:
+      jobTemplate: /eng/pipelines/common/global-build-job.yml
+      buildConfig: release
+      runtimeFlavor: mono
+      platforms:
+      - ios_arm64
+      jobParameters:
+        dependsOn:
+        - Build_android_arm64_release_Mono_Packs
+        buildArgs: -s mono -c $(_BuildConfig)
+        nameSuffix: PerfBDNApp
+        isOfficialBuild: false
+        pool:
+          vmImage: 'macos-13'
+        postBuildSteps:
+          - template: /eng/pipelines/performance/templates/build-perf-bdn-app.yml
+            parameters:
+              rootFolder: '$(Build.SourcesDirectory)/artifacts/'
+              includeRootFolder: true
+              displayName: Android BDN App Artifacts
+              artifactName: PerfBDNAppArm
+              archiveExtension: '.tar.gz'
+              archiveType: tar
+              tarCompression: gz
+              perfBranch: ${{ parameters.perfBranch }}
+              ${{ if parameters.mauiFramework }}:
+                framework: ${{ parameters.mauiFramework }}

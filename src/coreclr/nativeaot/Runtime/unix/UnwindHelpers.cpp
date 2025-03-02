@@ -1129,6 +1129,12 @@ inline bool Registers_REGDISPLAY::validRegister(int num) const {
     if (num >= UNW_RISCV_X0 && num <= UNW_RISCV_X31)
         return true;
 
+    if (num == UNW_RISCV_F8 || num == UNW_RISCV_F9)
+        return true;
+
+    if (num >= UNW_RISCV_F18 && num <= UNW_RISCV_F27)
+        return true;
+
     return false;
 }
 

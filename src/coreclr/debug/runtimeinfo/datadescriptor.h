@@ -573,6 +573,10 @@ CDAC_TYPE_END(RangeSection)
 CDAC_TYPE_BEGIN(RealCodeHeader)
 CDAC_TYPE_INDETERMINATE(RealCodeHeader)
 CDAC_TYPE_FIELD(RealCodeHeader, /*pointer*/, MethodDesc, offsetof(RealCodeHeader, phdrMDesc))
+#ifdef FEATURE_EH_FUNCLETS
+CDAC_TYPE_FIELD(RealCodeHeader, /*uint32*/, NumUnwindInfos, offsetof(RealCodeHeader, nUnwindInfos))
+CDAC_TYPE_FIELD(RealCodeHeader, /* T_RUNTIME_FUNCTION */, UnwindInfos, offsetof(RealCodeHeader, unwindInfos))
+#endif // FEATURE_EH_FUNCLETS
 CDAC_TYPE_END(RealCodeHeader)
 
 CDAC_TYPE_BEGIN(CodeHeapListNode)
@@ -622,6 +626,26 @@ CDAC_TYPE_FIELD(GCCoverageInfo, /*pointer*/, SavedCode, offsetof(GCCoverageInfo,
 CDAC_TYPE_END(GCCoverageInfo)
 #endif // HAVE_GCCOVER
 
+CDAC_TYPE_BEGIN(Frame)
+CDAC_TYPE_INDETERMINATE(Frame)
+CDAC_TYPE_FIELD(Frame, /*pointer*/, Next, cdac_data<Frame>::Next)
+CDAC_TYPE_END(Frame)
+
+CDAC_TYPE_BEGIN(InlinedCallFrame)
+CDAC_TYPE_SIZE(sizeof(InlinedCallFrame))
+CDAC_TYPE_FIELD(InlinedCallFrame, /*pointer*/, CallSiteSP, offsetof(InlinedCallFrame, m_pCallSiteSP))
+CDAC_TYPE_FIELD(InlinedCallFrame, /*pointer*/, CallerReturnAddress, offsetof(InlinedCallFrame, m_pCallerReturnAddress))
+CDAC_TYPE_FIELD(InlinedCallFrame, /*pointer*/, CalleeSavedFP, offsetof(InlinedCallFrame, m_pCalleeSavedFP))
+CDAC_TYPE_END(InlinedCallFrame)
+
+#ifdef FEATURE_EH_FUNCLETS
+CDAC_TYPE_BEGIN(SoftwareExceptionFrame)
+CDAC_TYPE_SIZE(sizeof(SoftwareExceptionFrame))
+CDAC_TYPE_FIELD(SoftwareExceptionFrame, /*T_CONTEXT*/, TargetContext, cdac_data<SoftwareExceptionFrame>::TargetContext)
+CDAC_TYPE_FIELD(SoftwareExceptionFrame, /*pointer*/, ReturnAddress, cdac_data<SoftwareExceptionFrame>::ReturnAddress)
+CDAC_TYPE_END(SoftwareExceptionFrame)
+#endif // FEATURE_EH_FUNCLETS
+
 CDAC_TYPES_END()
 
 CDAC_GLOBALS_BEGIN()
@@ -629,6 +653,14 @@ CDAC_GLOBAL_POINTER(AppDomain, &AppDomain::m_pTheAppDomain)
 CDAC_GLOBAL_POINTER(ThreadStore, &ThreadStore::s_pThreadStore)
 CDAC_GLOBAL_POINTER(FinalizerThread, &::g_pFinalizerThread)
 CDAC_GLOBAL_POINTER(GCThread, &::g_pSuspensionThread)
+
+// Add FrameIdentifier for all defined Frame types. Used to differentiate Frame objects.
+#define FRAME_TYPE_NAME(frameType) \
+    CDAC_GLOBAL_POINTER(frameType##Identifier, FrameIdentifier::frameType)
+
+    #include "frames.h"
+#undef FRAME_TYPE_NAME
+
 CDAC_GLOBAL(MethodDescTokenRemainderBitCount, uint8, METHOD_TOKEN_REMAINDER_BIT_COUNT)
 #if FEATURE_EH_FUNCLETS
 CDAC_GLOBAL(FeatureEHFunclets, uint8, 1)
