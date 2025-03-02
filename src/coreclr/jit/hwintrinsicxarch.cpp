@@ -3648,8 +3648,8 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             assert((sig->numArgs == 2) || (sig->numArgs == 3));
 
             // The Native variants are non-deterministic on xarch
-            bool isShuffleNative = intrinsic == NI_Vector128_ShuffleNative || intrinsic == NI_Vector256_ShuffleNative ||
-                                   intrinsic == NI_Vector512_ShuffleNative;
+            bool isShuffleNative = (intrinsic == NI_Vector128_ShuffleNative) || (intrinsic == NI_Vector256_ShuffleNative) ||
+                                   (intrinsic == NI_Vector512_ShuffleNative);
             if (isShuffleNative && BlockNonDeterministicIntrinsics(mustExpand))
             {
                 break;
@@ -3661,7 +3661,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             // indices that might become possible to emit later (due to them becoming constant), this will be
             // indicated in canBecomeValidForShuffle; otherwise, it's just the same as validForShuffle.
             bool canBecomeValidForShuffle = false;
-            bool validForShuffle = IsValidForShuffle(indices, simdSize, simdBaseType, &canBecomeValidForShuffle);
+            bool validForShuffle = IsValidForShuffle(indices, simdSize, simdBaseType, &canBecomeValidForShuffle, isShuffleNative);
 
             // If it isn't valid for shuffle (and can't become valid later), then give up now.
             if (!canBecomeValidForShuffle)
@@ -3670,7 +3670,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             }
 
             // If the indices might become constant later, then we don't emit for now, delay until later.
-            if (!validForShuffle || !indices->IsCnsVec())
+            if ((!validForShuffle) || (!indices->IsCnsVec()))
             {
                 assert(sig->numArgs == 2);
 
@@ -3692,16 +3692,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             {
                 op2 = impSIMDPopStack();
                 op1 = impSIMDPopStack();
-
-                if (indices->IsCnsVec())
-                {
-                    retNode = gtNewSimdShuffleNode(retType, op1, op2, simdBaseJitType, simdSize, isShuffleNative);
-                }
-                else
-                {
-                    retNode =
-                        gtNewSimdShuffleNodeVariable(retType, op1, op2, simdBaseJitType, simdSize, isShuffleNative);
-                }
+                retNode = gtNewSimdShuffleNode(retType, op1, op2, simdBaseJitType, simdSize, isShuffleNative);
             }
             break;
         }

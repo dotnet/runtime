@@ -2258,8 +2258,8 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             assert((simdSize == 8) || (simdSize == 16));
 
             // The Native variants are non-deterministic on arm64 (for element size > 1)
-            bool isShuffleNative = intrinsic == NI_Vector64_ShuffleNative || intrinsic == NI_Vector128_ShuffleNative;
-            if (isShuffleNative && genTypeSize(simdBaseType) > 1 && BlockNonDeterministicIntrinsics(mustExpand))
+            bool isShuffleNative = (intrinsic == NI_Vector64_ShuffleNative) || (intrinsic == NI_Vector128_ShuffleNative);
+            if (isShuffleNative && (genTypeSize(simdBaseType) > 1) && BlockNonDeterministicIntrinsics(mustExpand))
             {
                 break;
             }
@@ -2268,7 +2268,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
             // Check if the required intrinsics to emit are available.
             bool canBecomeValidForShuffle = false;
-            if (!IsValidForShuffle(indices, simdSize, simdBaseType, &canBecomeValidForShuffle))
+            if (!IsValidForShuffle(indices, simdSize, simdBaseType, &canBecomeValidForShuffle, isShuffleNative))
             {
                 // All cases on arm64 are either valid or invalid, they cannot become valid later
                 assert(!canBecomeValidForShuffle);
@@ -2298,16 +2298,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             {
                 op2 = impSIMDPopStack();
                 op1 = impSIMDPopStack();
-
-                if (indices->IsCnsVec())
-                {
-                    retNode = gtNewSimdShuffleNode(retType, op1, op2, simdBaseJitType, simdSize, isShuffleNative);
-                }
-                else
-                {
-                    retNode =
-                        gtNewSimdShuffleNodeVariable(retType, op1, op2, simdBaseJitType, simdSize, isShuffleNative);
-                }
+                retNode = gtNewSimdShuffleNode(retType, op1, op2, simdBaseJitType, simdSize, isShuffleNative);
             }
             break;
         }

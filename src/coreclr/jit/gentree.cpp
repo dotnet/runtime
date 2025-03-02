@@ -18393,10 +18393,11 @@ unsigned GenTreeVecCon::ElementCount(unsigned simdSize, var_types simdBaseType)
 bool Compiler::IsValidForShuffle(GenTree*  indices,
                                  unsigned  simdSize,
                                  var_types simdBaseType,
-                                 bool*     canBecomeValid) const
+                                 bool*     canBecomeValid,
+                                 bool      isShuffleNative) const
 {
 #if defined(TARGET_XARCH)
-    if (canBecomeValid)
+    if (canBecomeValid != nullptr)
     {
         *canBecomeValid = false;
     }
@@ -18414,7 +18415,7 @@ bool Compiler::IsValidForShuffle(GenTree*  indices,
     }
     else if (simdSize == 64)
     {
-        if (varTypeIsByte(simdBaseType) && !compOpportunisticallyDependsOn(InstructionSet_AVX512VBMI))
+        if (varTypeIsByte(simdBaseType) && (!compOpportunisticallyDependsOn(InstructionSet_AVX512VBMI)))
         {
             // TYP_BYTE, TYP_UBYTE need AVX512VBMI.
             return false;
@@ -18424,13 +18425,27 @@ bool Compiler::IsValidForShuffle(GenTree*  indices,
     {
         assert(simdSize == 16);
 
-        if (varTypeIsSmall(simdBaseType) && !compOpportunisticallyDependsOn(InstructionSet_SSSE3))
+        if (varTypeIsSmall(simdBaseType) && (!compOpportunisticallyDependsOn(InstructionSet_SSSE3)))
         {
             // TYP_BYTE, TYP_UBYTE, TYP_SHORT, and TYP_USHORT need SSSE3 to be able to shuffle any operation
             return false;
         }
 
-        if (!indices->IsCnsVec() && !compOpportunisticallyDependsOn(InstructionSet_SSSE3))
+        bool isVariableShuffle = !indices->IsCnsVec();
+        if ((!isVariableShuffle) && isShuffleNative)
+        {
+            // ShuffleNative with constant indices with 1 or more out of range indices is emitted as variable indices.
+            for (size_t index = 0; index < elementCount; index++)
+            {
+                uint64_t value = op2->GetIntegralVectorConstElement(index, simdBaseType);
+                if (value >= elementCount)
+                {
+                    isVariableShuffle = true;
+                    break;
+                }
+            }
+        }
+        if (isVariableShuffle && (!compOpportunisticallyDependsOn(InstructionSet_SSSE3)))
         {
             // the variable implementation for Vector128 Shuffle always needs SSSE3
             // however, this can become valid later if it becomes constant
@@ -18443,7 +18458,7 @@ bool Compiler::IsValidForShuffle(GenTree*  indices,
     }
 #endif // TARGET_XARCH
 
-    if (canBecomeValid)
+    if (canBecomeValid != nullptr)
     {
         *canBecomeValid = true;
     }
@@ -25391,7 +25406,23 @@ GenTree* Compiler::gtNewSimdRoundNode(var_types type, GenTree* op1, CorInfoType 
     return gtNewSimdHWIntrinsicNode(type, op1, intrinsic, simdBaseJitType, simdSize);
 }
 
-GenTree* Compiler::gtNewSimdShuffleNodeVariable(
+//------------------------------------------------------------------------
+// gtNewSimdShuffleVariableNode: Creates a new simd shuffle node (with variable indices, or a case isn't handled in
+// gtNewSimdShuffleNode for ShuffleUnsafe with out of bounds indices) - this is a helper function for
+// gtNewSimdShuffleNode & should just be invoked by it indirectly, instead of other callers using it
+//
+// Arguments:
+//    type            -- The type of the node
+//    op1             -- The values to shuffle
+//    op2             -- The indices to pick from (variable)
+//    simdBaseJitType -- The base jit type of the node
+//    simdSize        -- The simd size of the node
+//    isShuffleNative -- Whether we're making a ShuffleNative node vs a Shuffle one
+//
+// Return Value:
+//    The shuffle node
+//
+GenTree* Compiler::gtNewSimdShuffleVariableNode(
     var_types type, GenTree* op1, GenTree* op2, CorInfoType simdBaseJitType, unsigned simdSize, bool isShuffleNative)
 {
     assert(IsBaselineSimdIsaSupportedDebugOnly());
@@ -25405,7 +25436,7 @@ GenTree* Compiler::gtNewSimdShuffleNodeVariable(
     var_types simdBaseType = JitType2PreciseVarType(simdBaseJitType);
     assert(op2 != nullptr);
     assert(op2->TypeIs(type));
-    assert(!op2->IsCnsVec() || isShuffleNative);
+    assert((!op2->IsCnsVec()) || isShuffleNative);
 
     GenTree* retNode = nullptr;
     GenTree* cnsNode = nullptr;
@@ -25419,7 +25450,7 @@ GenTree* Compiler::gtNewSimdShuffleNodeVariable(
 #if defined(TARGET_XARCH)
     if (!isShuffleNative)
 #elif defined(TARGET_ARM64)
-    if (!isShuffleNative && elementSize > 1)
+    if ((!isShuffleNative) && (elementSize > 1))
 #else
 #error Unsupported platform
 #endif // !TARGET_XARCH && !TARGET_ARM64
@@ -25474,7 +25505,7 @@ GenTree* Compiler::gtNewSimdShuffleNodeVariable(
             retNode->SetReverseOp();
         }
     }
-    else if (elementSize == 1 && simdSize == 16)
+    else if ((elementSize == 1) && (simdSize == 16))
     {
         assert(compIsaSupportedDebugOnly(InstructionSet_SSSE3));
 
@@ -25483,7 +25514,7 @@ GenTree* Compiler::gtNewSimdShuffleNodeVariable(
         // high bit on index gives 0 already
         canUseSignedComparisonHint = true;
     }
-    else if (elementSize == 1 && simdSize == 32 &&
+    else if ((elementSize == 1) && (simdSize == 32) &&
              compIsEvexOpportunisticallySupported(isV512Supported, InstructionSet_AVX512VBMI_VL))
     {
         NamedIntrinsic intrinsic = isV512Supported ? NI_AVX512VBMI_VL_PermuteVar32x8 : NI_AVX10v1_PermuteVar32x8;
@@ -25492,26 +25523,26 @@ GenTree* Compiler::gtNewSimdShuffleNodeVariable(
         retNode = gtNewSimdHWIntrinsicNode(type, op2, op1, intrinsic, simdBaseJitType, simdSize);
         retNode->SetReverseOp();
     }
-    else if (elementSize == 2 && compIsEvexOpportunisticallySupported(isV512Supported, InstructionSet_AVX512BW_VL))
+    else if ((elementSize == 2) && compIsEvexOpportunisticallySupported(isV512Supported, InstructionSet_AVX512BW_VL))
     {
-        assert(simdSize == 16 || simdSize == 32);
+        assert((simdSize == 16) || (simdSize == 32));
         NamedIntrinsic intrinsic;
         if (isV512Supported)
         {
-            intrinsic = simdSize == 16 ? NI_AVX512BW_VL_PermuteVar8x16 : NI_AVX512BW_VL_PermuteVar16x16;
+            intrinsic = (simdSize == 16) ? NI_AVX512BW_VL_PermuteVar8x16 : NI_AVX512BW_VL_PermuteVar16x16;
         }
         else
         {
-            intrinsic = simdSize == 16 ? NI_AVX10v1_PermuteVar8x16 : NI_AVX10v1_PermuteVar16x16;
+            intrinsic = (simdSize == 16) ? NI_AVX10v1_PermuteVar8x16 : NI_AVX10v1_PermuteVar16x16;
         }
 
         // swap the operands to match the encoding requirements
         retNode = gtNewSimdHWIntrinsicNode(type, op2, op1, intrinsic, simdBaseJitType, simdSize);
         retNode->SetReverseOp();
     }
-    else if (elementSize == 4 && (simdSize == 32 || compOpportunisticallyDependsOn(InstructionSet_AVX)))
+    else if ((elementSize == 4) && ((simdSize == 32) || compOpportunisticallyDependsOn(InstructionSet_AVX)))
     {
-        assert(simdSize == 16 || simdSize == 32);
+        assert((simdSize == 16) || (simdSize == 32));
 
         if (simdSize == 32)
         {
@@ -25528,7 +25559,7 @@ GenTree* Compiler::gtNewSimdShuffleNodeVariable(
             retNode = gtNewSimdHWIntrinsicNode(type, op1, op2, NI_AVX_PermuteVar, CORINFO_TYPE_FLOAT, simdSize);
         }
     }
-    else if (elementSize == 8 && simdSize == 32 &&
+    else if ((elementSize == 8) && (simdSize == 32) &&
              compIsEvexOpportunisticallySupported(isV512Supported, InstructionSet_AVX512F_VL))
     {
         NamedIntrinsic intrinsic = isV512Supported ? NI_AVX512F_VL_PermuteVar4x64 : NI_AVX10v1_PermuteVar4x64;
@@ -25537,7 +25568,7 @@ GenTree* Compiler::gtNewSimdShuffleNodeVariable(
         retNode = gtNewSimdHWIntrinsicNode(type, op2, op1, intrinsic, simdBaseJitType, simdSize);
         retNode->SetReverseOp();
     }
-    else if (elementSize == 8 && simdSize == 16 &&
+    else if ((elementSize == 8) && (simdSize == 16) &&
              compIsEvexOpportunisticallySupported(isV512Supported, InstructionSet_AVX512F_VL))
     {
         GenTree*       op1Copy   = fgMakeMultiUse(&op1); // just use op1 again for the other variable
@@ -25546,12 +25577,12 @@ GenTree* Compiler::gtNewSimdShuffleNodeVariable(
     }
     else
     {
-        assert((elementSize == 1 && simdSize == 32) || elementSize == 2 || (elementSize == 4 && simdSize == 16) ||
-               elementSize == 8);
+        assert(((elementSize == 1) && (simdSize == 32)) || (elementSize == 2) || ((elementSize == 4) && (simdSize == 16)) ||
+               (elementSize == 8));
 
-        if (elementSize == 8 && (simdSize == 32 || compOpportunisticallyDependsOn(InstructionSet_AVX)))
+        if ((elementSize == 8) && ((simdSize == 32) || compOpportunisticallyDependsOn(InstructionSet_AVX)))
         {
-            assert(simdSize == 16 || simdSize == 32);
+            assert((simdSize == 16) || (simdSize == 32));
             if (simdSize == 32)
             {
                 assert(compIsaSupportedDebugOnly(InstructionSet_AVX2));
@@ -25715,7 +25746,7 @@ GenTree* Compiler::gtNewSimdShuffleNodeVariable(
             else
             {
                 // create required clones of op2
-                op2Dup1 = op2DupSafe != nullptr ? gtCloneExpr(op2DupSafe) : fgMakeMultiUse(&op2);
+                op2Dup1 = (op2DupSafe != nullptr) ? gtCloneExpr(op2DupSafe) : fgMakeMultiUse(&op2);
                 op2Dup2 = gtCloneExpr(op2Dup1);
             }
 
@@ -25868,7 +25899,7 @@ GenTree* Compiler::gtNewSimdShuffleNodeVariable(
                 simdBaseJitType = CORINFO_TYPE_LONG;
             }
         }
-        if (simdSize == 16 && simdBaseJitType == CORINFO_TYPE_INT)
+        if ((simdSize == 16) && (simdBaseJitType == CORINFO_TYPE_INT))
         {
             simdBaseJitType = CORINFO_TYPE_UINT;
         }
@@ -25915,7 +25946,7 @@ GenTree* Compiler::gtNewSimdShuffleNodeVariable(
 #if defined(TARGET_XARCH)
     if (!isShuffleNative)
 #elif defined(TARGET_ARM64)
-    if (!isShuffleNative && elementSize > 1)
+    if ((!isShuffleNative) && (elementSize > 1))
 #else
 #error Unsupported platform
 #endif // !TARGET_XARCH && !TARGET_ARM64
@@ -25945,9 +25976,9 @@ GenTree* Compiler::gtNewSimdShuffleNodeVariable(
 #if defined(TARGET_XARCH)
         // check if we have hardware accelerated unsigned comparison
         bool hardwareAcceleratedUnsignedComparison =
-            simdSize == 64 ||
-            (elementSize < 4 && compIsEvexOpportunisticallySupported(isV512Supported, InstructionSet_AVX512BW_VL)) ||
-            (elementSize >= 4 && compIsEvexOpportunisticallySupported(isV512Supported, InstructionSet_AVX512F_VL));
+            (simdSize == 64) ||
+            ((elementSize < 4) && compIsEvexOpportunisticallySupported(isV512Supported, InstructionSet_AVX512BW_VL)) ||
+            ((elementSize >= 4) && compIsEvexOpportunisticallySupported(isV512Supported, InstructionSet_AVX512F_VL));
 
         // if the hardware doesn't support direct unsigned comparison, we attempt to use signed comparison
         if (!hardwareAcceleratedUnsignedComparison)
@@ -26003,6 +26034,20 @@ GenTree* Compiler::gtNewSimdShuffleNodeVariable(
     return retNode;
 }
 
+//------------------------------------------------------------------------
+// gtNewSimdShuffleNode: Creates a new simd shuffle node
+//
+// Arguments:
+//    type            -- The type of the node
+//    op1             -- The values to shuffle
+//    op2             -- The indices to pick from
+//    simdBaseJitType -- The base jit type of the node
+//    simdSize        -- The simd size of the node
+//    isShuffleNative -- Whether we're making a ShuffleNative node vs a Shuffle one
+//
+// Return Value:
+//    The shuffle node
+//
 GenTree* Compiler::gtNewSimdShuffleNode(
     var_types type, GenTree* op1, GenTree* op2, CorInfoType simdBaseJitType, unsigned simdSize, bool isShuffleNative)
 {
@@ -26016,7 +26061,12 @@ GenTree* Compiler::gtNewSimdShuffleNode(
 
     assert(op2 != nullptr);
     assert(op2->TypeIs(type));
-    assert(op2->IsCnsVec());
+
+    // If op2 is not constant, call into the gtNewSimdShuffleVariableNode routine
+    if (!op2->IsCnsVec())
+    {
+        return gtNewSimdShuffleVariableNode(type, op1, op2, simdBaseJitType, simdSize, isShuffleNative);
+    }
 
     var_types simdBaseType = JitType2PreciseVarType(simdBaseJitType);
     assert(varTypeIsArithmetic(simdBaseType));
@@ -26051,7 +26101,7 @@ GenTree* Compiler::gtNewSimdShuffleNode(
     if (isShuffleNative && gotInvalidIndex)
     {
         // Call variable implementation.
-        return gtNewSimdShuffleNodeVariable(type, op1, op2, simdBaseJitType, simdSize, isShuffleNative);
+        return gtNewSimdShuffleVariableNode(type, op1, op2, simdBaseJitType, simdSize, isShuffleNative);
     }
     if (hasIdentityShuffle)
     {
@@ -26139,9 +26189,12 @@ GenTree* Compiler::gtNewSimdShuffleNode(
             }
         }
 
-        // Check if the value differs in this lane vs any other lane
+        // Check if the value differs in this lane vs any other lane (note: lane is 128 bits, or 16 bytes)
         if (index * elementSize >= 16)
         {
+            // Check if the element, masked to the lane, is the same as the element in the same position of earlier lanes.
+            // If it differs, differsByLane will be set to true. We just compare to the first lane, as we already compared
+            // it to any other in between lanes.
             differsByLane |= ((vecCns.u8[index * elementSize] ^ vecCns.u8[(index * elementSize) & 15]) & 15) != 0;
         }
     }
@@ -26151,12 +26204,12 @@ GenTree* Compiler::gtNewSimdShuffleNode(
         assert(compIsaSupportedDebugOnly(InstructionSet_AVX2));
         bool isV512Supported = false;
         if ((varTypeIsByte(simdBaseType) &&
-             !compIsEvexOpportunisticallySupported(isV512Supported, InstructionSet_AVX512VBMI_VL)) ||
+             (!compIsEvexOpportunisticallySupported(isV512Supported, InstructionSet_AVX512VBMI_VL))) ||
             (varTypeIsShort(simdBaseType) &&
-             !compIsEvexOpportunisticallySupported(isV512Supported, InstructionSet_AVX512BW_VL)) ||
+             (!compIsEvexOpportunisticallySupported(isV512Supported, InstructionSet_AVX512BW_VL))) ||
             // This condition is the condition for when we'd have to emit something slower than what we can do with
             // NI_AVX2_Shuffle directly:
-            (!crossLane && (needsZero || elementSize < 4 || (elementSize == 4 && differsByLane))))
+            ((!crossLane) && (needsZero || (elementSize < 4) || ((elementSize == 4) && differsByLane))))
         {
             // we want to treat our type like byte here
             simdBaseJitType = varTypeIsUnsigned(simdBaseType) ? CORINFO_TYPE_UBYTE : CORINFO_TYPE_BYTE;
@@ -26170,7 +26223,7 @@ GenTree* Compiler::gtNewSimdShuffleNode(
             for (size_t index = 0; index < simdSize; index++)
             {
                 // get pointer to our leftWants/rightWants
-                uint8_t* wants = (index < 16) ? &leftWants : &rightWants;
+                uint8_t* wants = (index < 16) ? (&leftWants) : (&rightWants);
 
                 // update our wants based on which values we use
                 value = vecCns.u8[index];
@@ -26185,7 +26238,7 @@ GenTree* Compiler::gtNewSimdShuffleNode(
 
                 // update our conditional select mask for if we need 2 shuffles
                 value ^= static_cast<uint64_t>(index & 0x10);
-                selCns.u8[index] = (value < 32 && value >= 16) ? 0xFF : 0;
+                selCns.u8[index] = ((value < 32) && (value >= 16)) ? 0xFF : 0;
 
                 // normalise our shuffle mask, and check if it's default
                 if (vecCns.u8[index] < 32)
@@ -26200,7 +26253,7 @@ GenTree* Compiler::gtNewSimdShuffleNode(
 
             // we might be able to get away with only 1 shuffle, this is the case if neither leftWants nor
             // rightWants are 3 (indicating only 0/1 side used)
-            if (leftWants != 3 && rightWants != 3)
+            if ((leftWants != 3) && (rightWants != 3))
             {
                 // set result to its initial value
                 retNode = op1;
@@ -26277,7 +26330,7 @@ GenTree* Compiler::gtNewSimdShuffleNode(
         if (elementSize == 4)
         {
             // try to use vpshufd/vshufps instead of vpermd/vpermps.
-            if (!crossLane && !differsByLane)
+            if ((!crossLane) && (!differsByLane))
             {
                 assert(!needsZero);
                 unsigned immediate = (unsigned)0;
@@ -26378,7 +26431,7 @@ GenTree* Compiler::gtNewSimdShuffleNode(
         if (!crossLane)
         {
             // if element size is 64-bit, try to use vshufpd instead of vpshufb.
-            if (elementSize == 8 && !needsZero)
+            if ((elementSize == 8) && (!needsZero))
             {
                 unsigned immediate = (unsigned)0;
                 for (size_t i = 0; i < elementCount; i++)
@@ -26394,7 +26447,7 @@ GenTree* Compiler::gtNewSimdShuffleNode(
 
             // if the element size is 32-bit, try to use vpshufd/vshufps instead of vpshufb,
             // if the indices (when masked to within the lane) are the same for every lane.
-            if (elementSize == 4 && !needsZero && !differsByLane)
+            if ((elementSize == 4) && (!needsZero) && (!differsByLane))
             {
                 unsigned immediate = (unsigned)0;
                 for (size_t i = 0; i < 4; i++)
@@ -26530,7 +26583,7 @@ GenTree* Compiler::gtNewSimdShuffleNode(
 
     if (needsZero)
     {
-        assert((simdSize == 32) || !compIsaSupportedDebugOnly(InstructionSet_SSSE3));
+        assert((simdSize == 32) || (!compIsaSupportedDebugOnly(InstructionSet_SSSE3)));
 
         op2                        = gtNewVconNode(type);
         op2->AsVecCon()->gtSimdVal = mskCns;

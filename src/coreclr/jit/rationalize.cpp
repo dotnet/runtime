@@ -358,33 +358,26 @@ void Rationalizer::RewriteHWIntrinsicAsUserCall(GenTree** use, ArrayStack<GenTre
 #else
             assert((simdSize == 8) || (simdSize == 16));
 #endif
+            assert(((*use)->gtFlags & GTF_REVERSE_OPS) == 0); // gtNewSimdShuffleNode with reverse ops is not supported
 
             GenTree* op1 = operands[0];
             GenTree* op2 = operands[1];
 
+            bool isShuffleNative = intrinsicId == NI_Vector128_ShuffleNative;
+#if defined(TARGET_XARCH)
+            isShuffleNative = isShuffleNative || (intrinsicId == NI_Vector256_ShuffleNative) ||
+                              (intrinsicId == NI_Vector512_ShuffleNative);
+#elif defined(TARGET_ARM64)
+            isShuffleNative = isShuffleNative || (intrinsicId == NI_Vector64_ShuffleNative);
+#endif
+
             // Check if the required intrinsics to emit are available.
-            if (!comp->IsValidForShuffle(op2, simdSize, simdBaseType, nullptr))
+            if (!comp->IsValidForShuffle(op2, simdSize, simdBaseType, nullptr, isShuffleNative))
             {
                 break;
             }
 
-            bool isShuffleNative = intrinsicId == NI_Vector128_ShuffleNative;
-#if defined(TARGET_XARCH)
-            isShuffleNative = isShuffleNative || intrinsicId == NI_Vector256_ShuffleNative ||
-                              intrinsicId == NI_Vector512_ShuffleNative;
-#elif defined(TARGET_ARM64)
-            isShuffleNative = isShuffleNative || intrinsicId == NI_Vector64_ShuffleNative;
-#endif
-
-            if (op2->IsCnsVec())
-            {
-                result = comp->gtNewSimdShuffleNode(retType, op1, op2, simdBaseJitType, simdSize, isShuffleNative);
-            }
-            else
-            {
-                result =
-                    comp->gtNewSimdShuffleNodeVariable(retType, op1, op2, simdBaseJitType, simdSize, isShuffleNative);
-            }
+            result = comp->gtNewSimdShuffleNode(retType, op1, op2, simdBaseJitType, simdSize, isShuffleNative);
             break;
         }
 
