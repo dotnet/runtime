@@ -4589,7 +4589,7 @@ GenTree* Compiler::optAssertionPropGlobal_RelOp(ASSERT_VALARG_TP assertions,
     if (tree->OperIsCmpCompare() && op1->TypeIs(TYP_INT) && op2->IsIntCnsFitsInI32() &&
         // It's not a cheap operation, so the following checks are driven by the
         // TP-diffs to maintain the TP/CQ balance:
-        !op2->IsIntegralConst(0) && !block->isRunRarely() && !tree->IsUnsigned())
+        !op2->IsIntegralConst(0) && !block->isRunRarely())
     {
         // NOTE: we can call TryGetRange for op2 as well, but that will be even more expensive,
         Range rng1 = Range(Limit(Limit::keUndef));
