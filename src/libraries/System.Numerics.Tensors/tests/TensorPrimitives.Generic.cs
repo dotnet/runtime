@@ -501,7 +501,7 @@ namespace System.Numerics.Tensors.Tests
 
         [Theory]
         [MemberData(nameof(SpanDestinationFunctionsToTest))]
-        public void SpanDestinationFunctions_ThrowsForOverlapppingInputsWithOutputs(SpanDestinationDelegate tensorPrimitivesMethod, Func<T, T> expectedMethod, T? tolerance = null)
+        public void SpanDestinationFunctions_ThrowsForOverlappingInputsWithOutputs(SpanDestinationDelegate tensorPrimitivesMethod, Func<T, T> expectedMethod, T? tolerance = null)
         {
             _ = expectedMethod;
             _ = tolerance;
@@ -639,7 +639,7 @@ namespace System.Numerics.Tensors.Tests
 
         [Theory]
         [MemberData(nameof(SpanSpanDestinationFunctionsToTest))]
-        public void SpanSpanDestination_ThrowsForOverlapppingInputsWithOutputs(SpanSpanDestinationDelegate tensorPrimitivesMethod, Func<T, T, T> expectedMethod, T? tolerance = null)
+        public void SpanSpanDestination_ThrowsForOverlappingInputsWithOutputs(SpanSpanDestinationDelegate tensorPrimitivesMethod, Func<T, T, T> expectedMethod, T? tolerance = null)
         {
             _ = expectedMethod;
             _ = tolerance;
@@ -751,7 +751,7 @@ namespace System.Numerics.Tensors.Tests
 
         [Theory]
         [MemberData(nameof(SpanScalarDestinationFunctionsToTest))]
-        public void SpanScalarDestination_ThrowsForOverlapppingInputsWithOutputs(SpanScalarDestinationDelegate<T, T, T> tensorPrimitivesMethod, Func<T, T, T> expectedMethod, T? tolerance = null)
+        public void SpanScalarDestination_ThrowsForOverlappingInputsWithOutputs(SpanScalarDestinationDelegate<T, T, T> tensorPrimitivesMethod, Func<T, T, T> expectedMethod, T? tolerance = null)
         {
             _ = expectedMethod;
             _ = tolerance;
@@ -851,7 +851,7 @@ namespace System.Numerics.Tensors.Tests
 
         [Theory]
         [MemberData(nameof(ScalarSpanFloatDestinationFunctionsToTest))]
-        public void SpanScalarFloatDestination_ThrowsForOverlapppingInputsWithOutputs(ScalarSpanDestinationDelegate tensorPrimitivesMethod, Func<T, T, T> expectedMethod, T? tolerance = null)
+        public void SpanScalarFloatDestination_ThrowsForOverlappingInputsWithOutputs(ScalarSpanDestinationDelegate tensorPrimitivesMethod, Func<T, T, T> expectedMethod, T? tolerance = null)
         {
             _ = expectedMethod;
             _ = tolerance;
@@ -949,7 +949,7 @@ namespace System.Numerics.Tensors.Tests
 
         [Theory]
         [MemberData(nameof(SpanIntDestinationFunctionsToTest))]
-        public void SpanIntDestination_ThrowsForOverlapppingInputsWithOutputs(SpanScalarDestinationDelegate<T, int, T> tensorPrimitivesMethod, Func<T, int, T> expectedMethod, T? tolerance = null)
+        public void SpanIntDestination_ThrowsForOverlappingInputsWithOutputs(SpanScalarDestinationDelegate<T, int, T> tensorPrimitivesMethod, Func<T, int, T> expectedMethod, T? tolerance = null)
         {
             _ = expectedMethod;
             _ = tolerance;
@@ -1091,7 +1091,7 @@ namespace System.Numerics.Tensors.Tests
 
         [Theory]
         [MemberData(nameof(SpanSpanSpanDestinationFunctionsToTest))]
-        public void SpanSpanSpanDestination_ThrowsForOverlapppingInputsWithOutputs(SpanSpanSpanDestinationDelegate tensorPrimitivesMethod, Func<T, T, T, T> expectedMethod, T? tolerance = null)
+        public void SpanSpanSpanDestination_ThrowsForOverlappingInputsWithOutputs(SpanSpanSpanDestinationDelegate tensorPrimitivesMethod, Func<T, T, T, T> expectedMethod, T? tolerance = null)
         {
             _ = expectedMethod;
             _ = tolerance;
@@ -1206,7 +1206,7 @@ namespace System.Numerics.Tensors.Tests
 
         [Theory]
         [MemberData(nameof(SpanSpanScalarDestinationFunctionsToTest))]
-        public void SpanSpanScalarDestination_ThrowsForOverlapppingInputsWithOutputs(SpanSpanScalarDestinationDelegate tensorPrimitivesMethod, Func<T, T, T, T> expectedMethod, T? tolerance = null)
+        public void SpanSpanScalarDestination_ThrowsForOverlappingInputsWithOutputs(SpanSpanScalarDestinationDelegate tensorPrimitivesMethod, Func<T, T, T, T> expectedMethod, T? tolerance = null)
         {
             _ = expectedMethod;
             _ = tolerance;
@@ -1320,7 +1320,7 @@ namespace System.Numerics.Tensors.Tests
 
         [Theory]
         [MemberData(nameof(SpanScalarSpanDestinationFunctionsToTest))]
-        public void SpanScalarSpanDestination_ThrowsForOverlapppingInputsWithOutputs(SpanScalarSpanDestinationDelegate tensorPrimitivesMethod, Func<T, T, T, T> expectedMethod, T? tolerance = null)
+        public void SpanScalarSpanDestination_ThrowsForOverlappingInputsWithOutputs(SpanScalarSpanDestinationDelegate tensorPrimitivesMethod, Func<T, T, T, T> expectedMethod, T? tolerance = null)
         {
             _ = expectedMethod;
             _ = tolerance;
@@ -1474,7 +1474,7 @@ namespace System.Numerics.Tensors.Tests
 
         [Theory]
         [MemberData(nameof(SpanDestinationDestinationFunctionsToTest))]
-        public void SpanDestinationDestinationFunctions_ThrowsForOverlapppingInputsWithOutputs(SpanDestinationDestinationDelegate tensorPrimitivesMethod, Func<T, (T, T)> _)
+        public void SpanDestinationDestinationFunctions_ThrowsForOverlappingInputsWithOutputs(SpanDestinationDestinationDelegate tensorPrimitivesMethod, Func<T, (T, T)> _)
         {
             T[] array = new T[10];
             Assert.Throws<ArgumentException>(() => tensorPrimitivesMethod(array.AsSpan(1, 2), array.AsSpan(0, 2), array.AsSpan(4, 2)));
@@ -1747,7 +1747,7 @@ namespace System.Numerics.Tensors.Tests
 
         [Theory]
         [MemberData(nameof(SpanDestinationFunctionsToTest))]
-        public void SpanDestinationFunctions_ThrowsForOverlapppingInputsWithOutputs(SpanDestinationDelegate tensorPrimitivesMethod, Func<T, T> _)
+        public void SpanDestinationFunctions_ThrowsForOverlappingInputsWithOutputs(SpanDestinationDelegate tensorPrimitivesMethod, Func<T, T> _)
         {
             T[] array = new T[10];
             AssertExtensions.Throws<ArgumentException>("destination", () => tensorPrimitivesMethod(array.AsSpan(1, 2), array.AsSpan(0, 2)));
@@ -1833,7 +1833,7 @@ namespace System.Numerics.Tensors.Tests
 
         [Theory]
         [MemberData(nameof(SpanSpanDestinationFunctionsToTest))]
-        public void SpanSpanDestination_ThrowsForOverlapppingInputsWithOutputs(SpanSpanDestinationDelegate tensorPrimitivesMethod, Func<T, T, T> _)
+        public void SpanSpanDestination_ThrowsForOverlappingInputsWithOutputs(SpanSpanDestinationDelegate tensorPrimitivesMethod, Func<T, T, T> _)
         {
             T[] array = new T[10];
             AssertExtensions.Throws<ArgumentException>("destination", () => tensorPrimitivesMethod(array.AsSpan(1, 2), array.AsSpan(5, 2), array.AsSpan(0, 2)));
@@ -1915,7 +1915,7 @@ namespace System.Numerics.Tensors.Tests
 
         [Theory]
         [MemberData(nameof(SpanScalarDestinationFunctionsToTest))]
-        public void SpanScalarDestination_ThrowsForOverlapppingInputWithOutputs(SpanScalarDestinationDelegate<T, T, T> tensorPrimitivesMethod, Func<T, T, T> _)
+        public void SpanScalarDestination_ThrowsForOverlappingInputWithOutputs(SpanScalarDestinationDelegate<T, T, T> tensorPrimitivesMethod, Func<T, T, T> _)
         {
             T[] array = new T[10];
             T y = NextRandom();
@@ -2053,7 +2053,7 @@ namespace System.Numerics.Tensors.Tests
 
         [Theory]
         [MemberData(nameof(SpanSpanSpanDestinationFunctionsToTest))]
-        public void SpanSpanSpanDestination_ThrowsForOverlapppingInputsWithOutputs(SpanSpanSpanDestinationDelegate tensorPrimitivesMethod, Func<T, T, T, T> expectedMethod, T? tolerance = null)
+        public void SpanSpanSpanDestination_ThrowsForOverlappingInputsWithOutputs(SpanSpanSpanDestinationDelegate tensorPrimitivesMethod, Func<T, T, T, T> expectedMethod, T? tolerance = null)
         {
             _ = expectedMethod;
             _ = tolerance;
@@ -2132,7 +2132,7 @@ namespace System.Numerics.Tensors.Tests
 
         [Theory]
         [MemberData(nameof(ShiftRotateDestinationFunctionsToTest))]
-        public void ShiftRotateDestination_ThrowsForOverlapppingInputWithOutputs(SpanScalarDestinationDelegate<T, int, T> tensorPrimitivesMethod, Func<T, int, T> _)
+        public void ShiftRotateDestination_ThrowsForOverlappingInputWithOutputs(SpanScalarDestinationDelegate<T, int, T> tensorPrimitivesMethod, Func<T, int, T> _)
         {
             T[] array = new T[10];
             AssertExtensions.Throws<ArgumentException>("destination", () => tensorPrimitivesMethod(array.AsSpan(1, 2), default, array.AsSpan(0, 2)));
@@ -2227,7 +2227,7 @@ namespace System.Numerics.Tensors.Tests
         }
 
         [Fact]
-        public void CopySign_ThrowsForOverlapppingInputsWithOutputs()
+        public void CopySign_ThrowsForOverlappingInputsWithOutputs()
         {
             T[] array = new T[10];
 
@@ -2490,7 +2490,7 @@ namespace System.Numerics.Tensors.Tests
 
         [Theory]
         [MemberData(nameof(ScalarSpanDestinationFunctionsToTest))]
-        public void ScalarSpanDestination_ThrowsForOverlapppingInputsWithOutputs(ScalarSpanDestinationDelegate tensorPrimitivesMethod, Func<T, T, T> _)
+        public void ScalarSpanDestination_ThrowsForOverlappingInputsWithOutputs(ScalarSpanDestinationDelegate tensorPrimitivesMethod, Func<T, T, T> _)
         {
             T[] array = new T[10];
             AssertExtensions.Throws<ArgumentException>("destination", () => tensorPrimitivesMethod(default, array.AsSpan(4, 2), array.AsSpan(3, 2)));
