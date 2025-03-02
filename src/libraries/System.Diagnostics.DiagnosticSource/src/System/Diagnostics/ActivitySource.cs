@@ -40,7 +40,7 @@ namespace System.Diagnostics
         /// Initialize a new instance of the ActivitySource object using the <see cref="ActivitySourceOptions" />.
         /// </summary>
         /// <param name="options">The <see cref="ActivitySourceOptions" /> object to use for initializing the ActivitySource object.</param>
-        public ActivitySource(ActivitySourceOptions options) : this(options?.Name ?? throw new ArgumentNullException(nameof(options)), options.Version, options.Tags, options.TelemetrySchemaUrl) {}
+        public ActivitySource(ActivitySourceOptions options) : this((options ?? throw new ArgumentNullException(nameof(options))).Name, options.Version, options.Tags, options.TelemetrySchemaUrl) {}
 
         private ActivitySource(string name, string? version, IEnumerable<KeyValuePair<string, object?>>? tags, string? telemetrySchemaUrl)
         {

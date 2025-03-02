@@ -18,15 +18,7 @@ namespace System.Diagnostics.Metrics
         public string Name
         {
             get => _name;
-            set
-            {
-                if (value is null)
-                {
-                    throw new ArgumentNullException(nameof(value));
-                }
-
-                _name = value;
-            }
+            set => _name = value ?? throw new ArgumentNullException(nameof(value));
         }
 
         /// <summary>
