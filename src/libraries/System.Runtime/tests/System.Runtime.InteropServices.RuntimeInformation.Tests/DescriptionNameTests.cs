@@ -259,5 +259,11 @@ namespace System.Runtime.InteropServices.RuntimeInformationTests
         {
             Assert.Contains("darwin", RuntimeInformation.OSDescription, StringComparison.OrdinalIgnoreCase);
         }
+
+        [Fact, PlatformSpecific(TestPlatforms.Android)]  // Checks Android name in RuntimeInformation
+        public void VerifyAndroidName()
+        {
+            Assert.Contains("Android", RuntimeInformation.OSDescription, StringComparison.OrdinalIgnoreCase);
+        }
     }
 }

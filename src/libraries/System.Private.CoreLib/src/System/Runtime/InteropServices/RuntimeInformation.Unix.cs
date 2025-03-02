@@ -38,6 +38,11 @@ namespace System.Runtime.InteropServices
                 return Interop.OSReleaseFile.GetPrettyName();
             }
 
+            if (OperatingSystem.IsAndroid())
+            {
+                return $"Android (API {Environment.OSVersion.Version.Major})";
+            }
+
             return null;
         }
     }
