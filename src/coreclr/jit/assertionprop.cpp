@@ -4585,16 +4585,16 @@ GenTree* Compiler::optAssertionPropGlobal_RelOp(ASSERT_VALARG_TP assertions,
         return optAssertionProp_Update(newTree, tree, stmt);
     }
 
-    // See if we can optimize a relop based on SSA-based TryGetRange.
-    if (tree->OperIsCmpCompare() && op1->TypeIs(TYP_INT) && op2->IsIntCnsFitsInI32() &&
-        // It's not a cheap operation, so the following checks are driven by the
-        // TP-diffs to maintain the TP/CQ balance:
-        !op2->IsIntegralConst(0) && !block->isRunRarely())
+    // See if we can fold "X relop CNS" using TryGetRangeFromAssertions. We can also use a more
+    // powerful SSA-based TryGetRange, but it's too expensive to call for every relop.
+    if (tree->OperIsCmpCompare() && genActualTypeIsInt(op1) && op2->IsIntCnsFitsInI32())
     {
-        // NOTE: we can call TryGetRange for op2 as well, but that will be even more expensive,
+        // NOTE: we can call TryGetRangeFromAssertions for op2 as well if we want, but it's not cheap.
         Range rng1 = Range(Limit(Limit::keUndef));
         Range rng2 = Range(Limit(Limit::keConstant, static_cast<int>(op2->AsIntCon()->IconValue())));
-        if (GetRangeCheck()->TryGetRange(block, op1, &rng1, /*budget*/ 12))
+
+        ValueNum op1VN = vnStore->VNConservativeNormalValue(op1->gtVNPair);
+        if (RangeCheck::TryGetRangeFromAssertions(this, op1VN, assertions, &rng1))
         {
             RangeOps::RelationKind kind = RangeOps::EvalRelop(tree->OperGet(), tree->IsUnsigned(), rng1, rng2);
             if ((kind != RangeOps::RelationKind::Unknown))
