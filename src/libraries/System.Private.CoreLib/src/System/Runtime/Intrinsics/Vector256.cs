@@ -3125,6 +3125,74 @@ namespace System.Runtime.Intrinsics
         [CLSCompliant(false)]
         public static Vector256<ulong> ShiftRightLogical(Vector256<ulong> vector, int shiftCount) => vector >>> shiftCount;
 
+        // These fallback methods only exist so that ShuffleNative has the same behaviour when called directly or via
+        // reflection - reflecting into internal runtime methods is not supported, so we don't worry about others
+        // reflecting into these. TODO: figure out if this can be solved in a nicer way.
+
+        [Intrinsic]
+        internal static Vector256<byte> ShuffleNativeFallback(Vector256<byte> vector, Vector256<byte> indices)
+        {
+            Shuffle(vector, indices);
+        }
+
+        [Intrinsic]
+        [CLSCompliant(false)]
+        internal static Vector256<sbyte> ShuffleNativeFallback(Vector256<sbyte> vector, Vector256<sbyte> indices)
+        {
+            Shuffle(vector, indices);
+        }
+
+        [Intrinsic]
+        internal static Vector256<short> ShuffleNativeFallback(Vector256<short> vector, Vector256<short> indices)
+        {
+            Shuffle(vector, indices);
+        }
+
+        [Intrinsic]
+        [CLSCompliant(false)]
+        internal static Vector256<ushort> ShuffleNativeFallback(Vector256<ushort> vector, Vector256<ushort> indices)
+        {
+            Shuffle(vector, indices);
+        }
+
+        [Intrinsic]
+        internal static Vector256<int> ShuffleNativeFallback(Vector256<int> vector, Vector256<int> indices)
+        {
+            Shuffle(vector, indices);
+        }
+
+        [Intrinsic]
+        [CLSCompliant(false)]
+        internal static Vector256<uint> ShuffleNativeFallback(Vector256<uint> vector, Vector256<uint> indices)
+        {
+            Shuffle(vector, indices);
+        }
+
+        [Intrinsic]
+        internal static Vector256<float> ShuffleNativeFallback(Vector256<float> vector, Vector256<int> indices)
+        {
+            Shuffle(vector, indices);
+        }
+
+        [Intrinsic]
+        internal static Vector256<long> ShuffleNativeFallback(Vector256<long> vector, Vector256<long> indices)
+        {
+            Shuffle(vector, indices);
+        }
+
+        [Intrinsic]
+        [CLSCompliant(false)]
+        internal static Vector256<ulong> ShuffleNativeFallback(Vector256<ulong> vector, Vector256<ulong> indices)
+        {
+            Shuffle(vector, indices);
+        }
+
+        [Intrinsic]
+        internal static Vector256<double> ShuffleNativeFallback(Vector256<double> vector, Vector256<long> indices)
+        {
+            Shuffle(vector, indices);
+        }
+
         /// <summary>Creates a new vector by selecting values from an input vector using a set of indices.</summary>
         /// <param name="vector">The input vector from which values are selected.</param>
         /// <param name="indices">The per-element indices used to select a value from <paramref name="vector" />.</param>
@@ -3183,7 +3251,7 @@ namespace System.Runtime.Intrinsics
         [Intrinsic]
         public static Vector256<byte> ShuffleNative(Vector256<byte> vector, Vector256<byte> indices)
         {
-            return Shuffle(vector, indices);
+            return ShuffleNativeFallback(vector, indices);
         }
 
         /// <summary>Creates a new vector by selecting values from an input vector using a set of indices.
@@ -3196,7 +3264,7 @@ namespace System.Runtime.Intrinsics
         [CLSCompliant(false)]
         public static Vector256<sbyte> ShuffleNative(Vector256<sbyte> vector, Vector256<sbyte> indices)
         {
-            return Shuffle(vector, indices);
+            return ShuffleNativeFallback(vector, indices);
         }
 
         /// <summary>Creates a new vector by selecting values from an input vector using a set of indices.</summary>
@@ -3256,7 +3324,7 @@ namespace System.Runtime.Intrinsics
         [Intrinsic]
         public static Vector256<short> ShuffleNative(Vector256<short> vector, Vector256<short> indices)
         {
-            return Shuffle(vector, indices);
+            return ShuffleNativeFallback(vector, indices);
         }
 
         /// <summary>Creates a new vector by selecting values from an input vector using a set of indices.</summary>
@@ -3268,7 +3336,7 @@ namespace System.Runtime.Intrinsics
         [CLSCompliant(false)]
         public static Vector256<ushort> ShuffleNative(Vector256<ushort> vector, Vector256<ushort> indices)
         {
-            return Shuffle(vector, indices);
+            return ShuffleNativeFallback(vector, indices);
         }
 
         /// <summary>Creates a new vector by selecting values from an input vector using a set of indices.</summary>
@@ -3352,7 +3420,7 @@ namespace System.Runtime.Intrinsics
         [Intrinsic]
         public static Vector256<int> ShuffleNative(Vector256<int> vector, Vector256<int> indices)
         {
-            return Shuffle(vector, indices);
+            return ShuffleNativeFallback(vector, indices);
         }
 
         /// <summary>Creates a new vector by selecting values from an input vector using a set of indices.</summary>
@@ -3364,7 +3432,7 @@ namespace System.Runtime.Intrinsics
         [CLSCompliant(false)]
         public static Vector256<uint> ShuffleNative(Vector256<uint> vector, Vector256<uint> indices)
         {
-            return Shuffle(vector, indices);
+            return ShuffleNativeFallback(vector, indices);
         }
 
         /// <summary>Creates a new vector by selecting values from an input vector using a set of indices.</summary>
@@ -3375,7 +3443,7 @@ namespace System.Runtime.Intrinsics
         [Intrinsic]
         public static Vector256<float> ShuffleNative(Vector256<float> vector, Vector256<int> indices)
         {
-            return Shuffle(vector, indices);
+            return ShuffleNativeFallback(vector, indices);
         }
 
         /// <summary>Creates a new vector by selecting values from an input vector using a set of indices.</summary>
@@ -3459,7 +3527,7 @@ namespace System.Runtime.Intrinsics
         [Intrinsic]
         public static Vector256<long> ShuffleNative(Vector256<long> vector, Vector256<long> indices)
         {
-            return Shuffle(vector, indices);
+            return ShuffleNativeFallback(vector, indices);
         }
 
         /// <summary>Creates a new vector by selecting values from an input vector using a set of indices.</summary>
@@ -3471,7 +3539,7 @@ namespace System.Runtime.Intrinsics
         [CLSCompliant(false)]
         public static Vector256<ulong> ShuffleNative(Vector256<ulong> vector, Vector256<ulong> indices)
         {
-            return Shuffle(vector, indices);
+            return ShuffleNativeFallback(vector, indices);
         }
 
         /// <summary>Creates a new vector by selecting values from an input vector using a set of indices.</summary>
@@ -3482,7 +3550,7 @@ namespace System.Runtime.Intrinsics
         [Intrinsic]
         public static Vector256<double> ShuffleNative(Vector256<double> vector, Vector256<long> indices)
         {
-            return Shuffle(vector, indices);
+            return ShuffleNativeFallback(vector, indices);
         }
 
         /// <inheritdoc cref="Vector128.Sin(Vector128{double})" />

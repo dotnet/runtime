@@ -342,14 +342,18 @@ void Rationalizer::RewriteHWIntrinsicAsUserCall(GenTree** use, ArrayStack<GenTre
     {
         case NI_Vector128_Shuffle:
         case NI_Vector128_ShuffleNative:
+        case NI_Vector128_ShuffleNativeFallback:
 #if defined(TARGET_XARCH)
         case NI_Vector256_Shuffle:
         case NI_Vector256_ShuffleNative:
+        case NI_Vector256_ShuffleNativeFallback:
         case NI_Vector512_Shuffle:
         case NI_Vector512_ShuffleNative:
+        case NI_Vector512_ShuffleNativeFallback:
 #elif defined(TARGET_ARM64)
         case NI_Vector64_Shuffle:
         case NI_Vector64_ShuffleNative:
+        case NI_Vector64_ShuffleNativeFallback:
 #endif
         {
             assert(operandCount == 2);
@@ -363,12 +367,12 @@ void Rationalizer::RewriteHWIntrinsicAsUserCall(GenTree** use, ArrayStack<GenTre
             GenTree* op1 = operands[0];
             GenTree* op2 = operands[1];
 
-            bool isShuffleNative = intrinsicId == NI_Vector128_ShuffleNative;
+            bool isShuffleNative = intrinsicId != NI_Vector128_Shuffle;
 #if defined(TARGET_XARCH)
-            isShuffleNative = isShuffleNative || (intrinsicId == NI_Vector256_ShuffleNative) ||
-                              (intrinsicId == NI_Vector512_ShuffleNative);
+            isShuffleNative = isShuffleNative && (intrinsicId != NI_Vector256_Shuffle) &&
+                              (intrinsicId != NI_Vector512_Shuffle);
 #elif defined(TARGET_ARM64)
-            isShuffleNative = isShuffleNative || (intrinsicId == NI_Vector64_ShuffleNative);
+            isShuffleNative = isShuffleNative && (intrinsicId != NI_Vector64_Shuffle);
 #endif
 
             // Check if the required intrinsics to emit are available.

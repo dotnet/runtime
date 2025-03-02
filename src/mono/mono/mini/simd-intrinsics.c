@@ -1668,6 +1668,7 @@ static guint16 sri_vector_methods [] = {
 	SN_OnesComplement,
 	SN_Shuffle,
 	SN_ShuffleNative,
+	SN_ShuffleNativeFallback,
 	SN_Sqrt,
 	SN_Subtract,
 	SN_Sum,
@@ -3005,7 +3006,8 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 		return emit_simd_ins_for_unary_op (cfg, klass, fsig, args, arg0_type, id);
 	}
 	case SN_Shuffle:
-	case SN_ShuffleNative: {
+	case SN_ShuffleNative:
+	case SN_ShuffleNativeFallback: {
 		MonoType *etype = get_vector_t_elem_type (fsig->ret);
 		if (!MONO_TYPE_IS_VECTOR_PRIMITIVE (etype))
 			return NULL;
@@ -3051,7 +3053,7 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 			if (vector_size != 128) {
 				return NULL;
 			}
-			if (!is_xconst (args [1]) && id != SN_ShuffleNative) {
+			if (!is_xconst (args [1]) && id == SN_Shuffle) {
 				return NULL;
 			}
 			MonoType *op_etype = etype;
@@ -3059,7 +3061,7 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 			int vsize = mono_class_value_size (klass, NULL);
 			int esize = mono_class_value_size (mono_class_from_mono_type_internal (etype), NULL);
 			int ecount = vsize / esize;
-			if (id == SN_ShuffleNative) {
+			if (id != SN_Shuffle) {
 				if (ecount != 16) {
 					return NULL;
 				} else {
