@@ -16,7 +16,6 @@ import { mono_assert } from "./globals";
 type SigLine = [lazyOrSkip: boolean | (() => boolean), name: string, returnType: string | null, argTypes?: string[], opts?: any];
 
 const threading_cwraps: SigLine[] = WasmEnableThreads ? [
-    // MONO.diagnostics
     [false, "mono_wasm_init_finalizer_thread", null, []],
     [false, "mono_wasm_invoke_jsexport_async_post", "void", ["number", "number", "number"]],
     [false, "mono_wasm_invoke_jsexport_sync_send", "void", ["number", "number", "number"]],
@@ -42,6 +41,7 @@ const fn_signatures: SigLine[] = [
     [true, "mono_wasm_parse_runtime_options", null, ["number", "number"]],
     [true, "mono_wasm_strdup", "number", ["string"]],
     [true, "mono_background_exec", null, []],
+    [true, "mono_wasm_ds_exec", null, []],
     [true, "mono_wasm_execute_timer", null, []],
     [true, "mono_wasm_load_icu_data", "number", ["number"]],
     [false, "mono_wasm_add_assembly", "number", ["string", "number", "number"]],
@@ -62,7 +62,6 @@ const fn_signatures: SigLine[] = [
     [() => !runtimeHelpers.emscriptenBuildOptions.enableAotProfiler, "mono_wasm_profiler_init_aot", "void", ["string"]],
     [() => !runtimeHelpers.emscriptenBuildOptions.enableBrowserProfiler, "mono_wasm_profiler_init_browser", "void", ["string"]],
     [() => !runtimeHelpers.emscriptenBuildOptions.enableLogProfiler, "mono_wasm_profiler_init_log", "void", ["string"]],
-    [true, "mono_wasm_profiler_init_browser", "void", ["number"]],
     [false, "mono_wasm_exec_regression", "number", ["number", "string"]],
     [false, "mono_wasm_invoke_jsexport", "void", ["number", "number"]],
     [true, "mono_wasm_write_managed_pointer_unsafe", "void", ["number", "number"]],
@@ -72,6 +71,7 @@ const fn_signatures: SigLine[] = [
     [true, "mono_wasm_f64_to_i52", "number", ["number", "number"]],
     [true, "mono_wasm_f64_to_u52", "number", ["number", "number"]],
     [true, "mono_wasm_method_get_name", "number", ["number"]],
+    [true, "mono_wasm_method_get_name_ex", "number", ["number"]],
     [true, "mono_wasm_method_get_full_name", "number", ["number"]],
     [true, "mono_wasm_gc_lock", "void", []],
     [true, "mono_wasm_gc_unlock", "void", []],
@@ -130,12 +130,14 @@ const fn_signatures: SigLine[] = [
     [true, "mono_jiterp_end_catch", "void", []],
     [true, "mono_interp_pgo_load_table", "number", ["number", "number"]],
     [true, "mono_interp_pgo_save_table", "number", ["number", "number"]],
+    [() => !runtimeHelpers.emscriptenBuildOptions.enablePerfTracing, "mono_jiterp_prof_enter", "void", ["number", "number"]],
+    [() => !runtimeHelpers.emscriptenBuildOptions.enablePerfTracing, "mono_jiterp_prof_samplepoint", "void", ["number", "number"]],
+    [() => !runtimeHelpers.emscriptenBuildOptions.enablePerfTracing, "mono_jiterp_prof_leave", "void", ["number", "number"]],
 
     ...threading_cwraps,
 ];
 
 export interface t_ThreadingCwraps {
-    // MONO.diagnostics
     mono_wasm_init_finalizer_thread(): void;
     mono_wasm_invoke_jsexport_async_post(targetTID: PThreadPtr, method: MonoMethod, args: VoidPtr): void;
     mono_wasm_invoke_jsexport_sync_send(targetTID: PThreadPtr, method: MonoMethod, args: VoidPtr): void;
@@ -166,6 +168,7 @@ export interface t_Cwraps {
     mono_wasm_strdup(value: string): number;
     mono_wasm_parse_runtime_options(length: number, argv: VoidPtr): void;
     mono_background_exec(): void;
+    mono_wasm_ds_exec(): void;
     mono_wasm_execute_timer(): void;
     mono_wasm_load_icu_data(offset: VoidPtr): number;
     mono_wasm_add_assembly(name: string, data: VoidPtr, size: number): number;
@@ -191,6 +194,7 @@ export interface t_Cwraps {
     mono_wasm_f64_to_i52(destination: VoidPtr, value: number): I52Error;
     mono_wasm_f64_to_u52(destination: VoidPtr, value: number): I52Error;
     mono_wasm_method_get_name(method: MonoMethod): CharPtr;
+    mono_wasm_method_get_name_ex(method: MonoMethod): CharPtr;
     mono_wasm_method_get_full_name(method: MonoMethod): CharPtr;
     mono_wasm_gc_lock(): void;
     mono_wasm_gc_unlock(): void;

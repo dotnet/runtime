@@ -10,14 +10,13 @@
 #include <cwchar>
 #include <sal.h>
 #include "config.h"
-#include "UnixHandle.h"
 #include <pthread.h>
 #include "gcenv.h"
 #include "gcenv.ee.h"
 #include "gcconfig.h"
 #include "holder.h"
 #include "UnixSignals.h"
-#include "UnixContext.h"
+#include "NativeContext.h"
 #include "HardwareExceptions.h"
 #include "PalCreateDump.h"
 #include "cgroupcpu.h"
@@ -332,22 +331,6 @@ public:
     }
 };
 
-class EventUnixHandle : public UnixHandle<UnixHandleType::Event, UnixEvent>
-{
-public:
-    EventUnixHandle(UnixEvent event)
-    : UnixHandle<UnixHandleType::Event, UnixEvent>(event)
-    {
-    }
-
-    virtual bool Destroy()
-    {
-        return m_object.Destroy();
-    }
-};
-
-typedef UnixHandle<UnixHandleType::Thread, pthread_t> ThreadUnixHandle;
-
 // This functions configures behavior of the signals that are not
 // related to hardware exception handling.
 void ConfigureSignals()
@@ -423,6 +406,10 @@ REDHAWK_PALEXPORT uint32_t REDHAWK_PALAPI PalGetOsPageSize()
 static pthread_key_t key;
 #endif
 
+#ifdef FEATURE_HIJACK
+bool InitializeSignalHandling();
+#endif
+
 // The Redhawk PAL must be initialized before any of its exports can be called. Returns true for a successful
 // initialization and false on failure.
 REDHAWK_PALEXPORT bool REDHAWK_PALAPI PalInit()
@@ -453,6 +440,13 @@ REDHAWK_PALEXPORT bool REDHAWK_PALAPI PalInit()
     InitializeCurrentProcessCpuCount();
 
     InitializeOsPageSize();
+
+#ifdef FEATURE_HIJACK
+    if (!InitializeSignalHandling())
+    {
+        return false;
+    }
+#endif
 
 #if defined(TARGET_LINUX) || defined(TARGET_ANDROID)
     if (pthread_key_create(&key, RuntimeThreadShutdown) != 0)
@@ -656,31 +650,26 @@ extern "C" UInt32_BOOL CloseHandle(HANDLE handle)
         return UInt32_FALSE;
     }
 
-    UnixHandleBase* handleBase = (UnixHandleBase*)handle;
-
-    bool success = handleBase->Destroy();
-
-    delete handleBase;
+    UnixEvent* event = (UnixEvent*)handle;
+    bool success = event->Destroy();
+    delete event;
 
     return success ? UInt32_TRUE : UInt32_FALSE;
 }
 
 REDHAWK_PALEXPORT HANDLE REDHAWK_PALAPI PalCreateEventW(_In_opt_ LPSECURITY_ATTRIBUTES pEventAttributes, UInt32_BOOL manualReset, UInt32_BOOL initialState, _In_opt_z_ const WCHAR* pName)
 {
-    UnixEvent event = UnixEvent(manualReset, initialState);
-    if (!event.Initialize())
+    UnixEvent* event = new (nothrow) UnixEvent(manualReset, initialState);
+    if (event == NULL)
     {
         return INVALID_HANDLE_VALUE;
     }
-
-    EventUnixHandle* handle = new (nothrow) EventUnixHandle(event);
-
-    if (handle == NULL)
+    if (!event->Initialize())
     {
+        delete event;
         return INVALID_HANDLE_VALUE;
     }
-
-    return handle;
+    return (HANDLE)event;
 }
 
 typedef uint32_t(__stdcall *BackgroundCallback)(_In_opt_ void* pCallbackContext);
@@ -845,8 +834,10 @@ REDHAWK_PALEXPORT _Ret_maybenull_ _Post_writable_byte_size_(size) void* REDHAWK_
         flags |= MAP_JIT;
     }
 #endif
-
-    return mmap(NULL, size, unixProtect, flags, -1, 0);
+    void* pMappedMemory = mmap(NULL, size, unixProtect, flags, -1, 0);
+    if (pMappedMemory == MAP_FAILED)
+        return NULL;
+    return pMappedMemory;
 }
 
 REDHAWK_PALEXPORT void REDHAWK_PALAPI PalVirtualFree(_In_ void* pAddress, size_t size)
@@ -897,37 +888,9 @@ REDHAWK_PALEXPORT void PalFlushInstructionCache(_In_ void* pAddress, size_t size
 #endif
 }
 
-extern "C" HANDLE GetCurrentProcess()
-{
-    return (HANDLE)-1;
-}
-
 extern "C" uint32_t GetCurrentProcessId()
 {
     return getpid();
-}
-
-extern "C" HANDLE GetCurrentThread()
-{
-    return (HANDLE)-2;
-}
-
-extern "C" UInt32_BOOL DuplicateHandle(
-    HANDLE hSourceProcessHandle,
-    HANDLE hSourceHandle,
-    HANDLE hTargetProcessHandle,
-    HANDLE * lpTargetHandle,
-    uint32_t dwDesiredAccess,
-    UInt32_BOOL bInheritHandle,
-    uint32_t dwOptions)
-{
-    // We can only duplicate the current thread handle. That is all that the MRT uses.
-    ASSERT(hSourceProcessHandle == GetCurrentProcess());
-    ASSERT(hTargetProcessHandle == GetCurrentProcess());
-    ASSERT(hSourceHandle == GetCurrentThread());
-    *lpTargetHandle = new (nothrow) ThreadUnixHandle(pthread_self());
-
-    return lpTargetHandle != nullptr;
 }
 
 extern "C" UInt32_BOOL InitializeCriticalSection(CRITICAL_SECTION * lpCriticalSection)
@@ -973,17 +936,15 @@ extern "C" void LeaveCriticalSection(CRITICAL_SECTION * lpCriticalSection)
 
 extern "C" UInt32_BOOL SetEvent(HANDLE event)
 {
-    EventUnixHandle* unixHandle = (EventUnixHandle*)event;
-    unixHandle->GetObject()->Set();
-
+    UnixEvent* unixEvent = (UnixEvent*)event;
+    unixEvent->Set();
     return UInt32_TRUE;
 }
 
 extern "C" UInt32_BOOL ResetEvent(HANDLE event)
 {
-    EventUnixHandle* unixHandle = (EventUnixHandle*)event;
-    unixHandle->GetObject()->Reset();
-
+    UnixEvent* unixEvent = (UnixEvent*)event;
+    unixEvent->Reset();
     return UInt32_TRUE;
 }
 
@@ -1013,23 +974,22 @@ extern "C" uint16_t RtlCaptureStackBackTrace(uint32_t arg1, uint32_t arg2, void*
 }
 
 #ifdef FEATURE_HIJACK
-static PalHijackCallback g_pHijackCallback;
 static struct sigaction g_previousActivationHandler;
 
 static void ActivationHandler(int code, siginfo_t* siginfo, void* context)
 {
     // Only accept activations from the current process
-    if (g_pHijackCallback != NULL && (siginfo->si_pid == getpid()
+    if (siginfo->si_pid == getpid()
 #ifdef HOST_APPLE
         // On Apple platforms si_pid is sometimes 0. It was confirmed by Apple to be expected, as the si_pid is tracked at the process level. So when multiple
         // signals are in flight in the same process at the same time, it may be overwritten / zeroed.
         || siginfo->si_pid == 0
 #endif
-        ))
+        )
     {
         // Make sure that errno is not modified
         int savedErrNo = errno;
-        g_pHijackCallback((NATIVE_CONTEXT*)context, NULL);
+        Thread::HijackCallback((NATIVE_CONTEXT*)context, NULL);
         errno = savedErrNo;
     }
 
@@ -1056,11 +1016,8 @@ static void ActivationHandler(int code, siginfo_t* siginfo, void* context)
     }
 }
 
-REDHAWK_PALEXPORT UInt32_BOOL REDHAWK_PALAPI PalRegisterHijackCallback(_In_ PalHijackCallback callback)
+bool InitializeSignalHandling()
 {
-    ASSERT(g_pHijackCallback == NULL);
-    g_pHijackCallback = callback;
-
 #ifdef __APPLE__
     void *libSystem = dlopen("/usr/lib/libSystem.dylib", RTLD_LAZY);
     if (libSystem != NULL)
@@ -1090,13 +1047,11 @@ REDHAWK_PALIMPORT HijackFunc* REDHAWK_PALAPI PalGetHijackTarget(HijackFunc* defa
     return defaultHijackTarget;
 }
 
-REDHAWK_PALEXPORT void REDHAWK_PALAPI PalHijack(HANDLE hThread, _In_opt_ void* pThreadToHijack)
+REDHAWK_PALEXPORT void REDHAWK_PALAPI PalHijack(Thread* pThreadToHijack)
 {
-    ThreadUnixHandle* threadHandle = (ThreadUnixHandle*)hThread;
-    Thread* pThread = (Thread*)pThreadToHijack;
-    pThread->SetActivationPending(true);
+    pThreadToHijack->SetActivationPending(true);
 
-    int status = pthread_kill(*threadHandle->GetObject(), INJECT_ACTIVATION_SIGNAL);
+    int status = pthread_kill(pThreadToHijack->GetOSThreadHandle(), INJECT_ACTIVATION_SIGNAL);
 
     // We can get EAGAIN when printing stack overflow stack trace and when other threads hit
     // stack overflow too. Those are held in the sigsegv_handler with blocked signals until
@@ -1110,7 +1065,7 @@ REDHAWK_PALEXPORT void REDHAWK_PALAPI PalHijack(HANDLE hThread, _In_opt_ void* p
 #endif
        )
     {
-        pThread->SetActivationPending(false);
+        pThreadToHijack->SetActivationPending(false);
         return;
     }
 
@@ -1129,13 +1084,8 @@ REDHAWK_PALEXPORT void REDHAWK_PALAPI PalHijack(HANDLE hThread, _In_opt_ void* p
 
 extern "C" uint32_t WaitForSingleObjectEx(HANDLE handle, uint32_t milliseconds, UInt32_BOOL alertable)
 {
-    // The handle can only represent an event here
-    // TODO: encapsulate this stuff
-    UnixHandleBase* handleBase = (UnixHandleBase*)handle;
-    ASSERT(handleBase->GetType() == UnixHandleType::Event);
-    EventUnixHandle* unixHandle = (EventUnixHandle*)handleBase;
-
-    return unixHandle->GetObject()->Wait(milliseconds);
+    UnixEvent* unixEvent = (UnixEvent*)handle;
+    return unixEvent->Wait(milliseconds);
 }
 
 REDHAWK_PALEXPORT uint32_t REDHAWK_PALAPI PalCompatibleWaitAny(UInt32_BOOL alertable, uint32_t timeout, uint32_t handleCount, HANDLE* pHandles, UInt32_BOOL allowReentrantWait)
@@ -1164,14 +1114,6 @@ extern "C" void _mm_pause()
 extern "C" int32_t _stricmp(const char *string1, const char *string2)
 {
     return strcasecmp(string1, string2);
-}
-
-REDHAWK_PALIMPORT void REDHAWK_PALAPI PopulateControlSegmentRegisters(CONTEXT* pContext)
-{
-#if defined(TARGET_X86) || defined(TARGET_AMD64)
-    // Currently the CONTEXT is only used on Windows for RaiseFailFastException.
-    // So we punt on filling in SegCs and SegSs for now.
-#endif
 }
 
 uint32_t g_RhNumberOfProcessors;

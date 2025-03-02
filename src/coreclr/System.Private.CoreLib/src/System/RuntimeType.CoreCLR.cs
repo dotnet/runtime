@@ -335,31 +335,16 @@ namespace System
                     if (string.IsNullOrEmpty(name) ||
                         (cacheType == CacheType.Constructor && name[0] != '.' && name[0] != '*'))
                     {
-                        list = GetListByName(null, 0, null, 0, listType, cacheType);
+                        list = GetListByName(string.Empty, Span<byte>.Empty, listType, cacheType);
                     }
                     else
                     {
-                        int cNameLen = name.Length;
-                        fixed (char* pName = name)
-                        {
-                            int cUtf8Name = Encoding.UTF8.GetByteCount(pName, cNameLen);
-                            // allocating on the stack is faster than allocating on the GC heap
-                            // but we surely don't want to cause a stack overflow
-                            // no one should be looking for a member whose name is longer than 1024
-                            if (cUtf8Name > MAXNAMELEN)
-                            {
-                                byte[] utf8Name = new byte[cUtf8Name];
-                                fixed (byte* pUtf8Name = &utf8Name[0])
-                                {
-                                    list = GetListByName(pName, cNameLen, pUtf8Name, cUtf8Name, listType, cacheType);
-                                }
-                            }
-                            else
-                            {
-                                byte* pUtf8Name = stackalloc byte[cUtf8Name];
-                                list = GetListByName(pName, cNameLen, pUtf8Name, cUtf8Name, listType, cacheType);
-                            }
-                        }
+                        int cUtf8Name = Encoding.UTF8.GetByteCount(name);
+                        // allocating on the stack is faster than allocating on the GC heap
+                        // but we surely don't want to cause a stack overflow
+                        // no one should be looking for a member whose name is longer than 1024
+                        Span<byte> utf8Name = (uint)cUtf8Name > MAXNAMELEN ? new byte[cUtf8Name] : stackalloc byte[cUtf8Name];
+                        list = GetListByName(name, utf8Name, listType, cacheType);
                     }
 
                     Insert(ref list, name, listType);
@@ -367,43 +352,45 @@ namespace System
                     return list;
                 }
 
-                private unsafe T[] GetListByName(char* pName, int cNameLen, byte* pUtf8Name, int cUtf8Name, MemberListType listType, CacheType cacheType)
+                private unsafe T[] GetListByName(string name, Span<byte> utf8Name, MemberListType listType, CacheType cacheType)
                 {
-                    if (cNameLen != 0)
-                        Encoding.UTF8.GetBytes(pName, cNameLen, pUtf8Name, cUtf8Name);
+                    if (name.Length != 0)
+                        Encoding.UTF8.GetBytes(name, utf8Name);
 
-                    Filter filter = new Filter(pUtf8Name, cUtf8Name, listType);
-                    object list = null!;
-
-                    switch (cacheType)
+                    fixed (byte* pUtf8Name = utf8Name)
                     {
-                        case CacheType.Method:
-                            list = PopulateMethods(filter);
-                            break;
-                        case CacheType.Field:
-                            list = PopulateFields(filter);
-                            break;
-                        case CacheType.Constructor:
-                            list = PopulateConstructors(filter);
-                            break;
-                        case CacheType.Property:
-                            list = PopulateProperties(filter);
-                            break;
-                        case CacheType.Event:
-                            list = PopulateEvents(filter);
-                            break;
-                        case CacheType.NestedType:
-                            list = PopulateNestedClasses(filter);
-                            break;
-                        case CacheType.Interface:
-                            list = PopulateInterfaces(filter);
-                            break;
-                        default:
-                            Debug.Fail("Invalid CacheType");
-                            break;
-                    }
+                        Filter filter = new Filter(pUtf8Name, utf8Name.Length, listType);
+                        object list = null!;
 
-                    return (T[])list;
+                        switch (cacheType)
+                        {
+                            case CacheType.Method:
+                                list = PopulateMethods(filter);
+                                break;
+                            case CacheType.Field:
+                                list = PopulateFields(filter);
+                                break;
+                            case CacheType.Constructor:
+                                list = PopulateConstructors(filter);
+                                break;
+                            case CacheType.Property:
+                                list = PopulateProperties(filter);
+                                break;
+                            case CacheType.Event:
+                                list = PopulateEvents(filter);
+                                break;
+                            case CacheType.NestedType:
+                                list = PopulateNestedClasses(filter);
+                                break;
+                            case CacheType.Interface:
+                                list = PopulateInterfaces(filter);
+                                break;
+                            default:
+                                Debug.Fail("Invalid CacheType");
+                                break;
+                        }
+                        return (T[])list;
+                    }
                 }
 
                 // May replace the list with a new one if certain cache
@@ -650,8 +637,10 @@ namespace System
 
                         int numVirtuals = RuntimeTypeHandle.GetNumVirtuals(declaringType);
 
-                        bool* overrides = stackalloc bool[numVirtuals];
-                        new Span<bool>(overrides, numVirtuals).Clear();
+                        // We don't expect too many virtual methods on a type, but let's be safe
+                        // and switch to heap allocation if we have more than 512 (arbitrary limit).
+                        Span<bool> overrides = (uint)numVirtuals > 512 ? new bool[numVirtuals] : stackalloc bool[numVirtuals];
+                        overrides.Clear();
 
                         bool isValueType = declaringType.IsActualValueType;
 
@@ -1235,16 +1224,8 @@ namespace System
 
                         // All elements initialized to false.
                         int numVirtuals = RuntimeTypeHandle.GetNumVirtuals(declaringType);
-                        scoped Span<bool> usedSlots;
-                        if (numVirtuals <= 128) // arbitrary stack limit
-                        {
-                            usedSlots = stackalloc bool[numVirtuals];
-                            usedSlots.Clear();
-                        }
-                        else
-                        {
-                            usedSlots = new bool[numVirtuals];
-                        }
+                        Span<bool> usedSlots = (uint)numVirtuals > 128 ? new bool[numVirtuals] : stackalloc bool[numVirtuals];
+                        usedSlots.Clear(); // we don't have to clear it for > 128, but we assume it's a rare case.
 
                         // Populate associates off of the class hierarchy
                         RuntimeType? populatingType = declaringType;
@@ -3384,6 +3365,7 @@ namespace System
 
                 Guid result;
 #if FEATURE_COMINTEROP
+                Debug.Assert(OperatingSystem.IsWindows());
                 // The fully qualified name is needed since the RuntimeType has a TypeHandle property.
                 if (System.Runtime.CompilerServices.TypeHandle.AreSameType(th, System.Runtime.CompilerServices.TypeHandle.TypeHandleOf<__ComObject>()))
                 {
@@ -3586,18 +3568,18 @@ namespace System
         }
 
         [RequiresUnreferencedCode("If some of the generic arguments are annotated (either with DynamicallyAccessedMembersAttribute, or generic constraints), trimming can't validate that the requirements of those annotations are met.")]
-        public override Type MakeGenericType(Type[] instantiation)
+        public override Type MakeGenericType(Type[] typeArguments)
         {
-            ArgumentNullException.ThrowIfNull(instantiation);
+            ArgumentNullException.ThrowIfNull(typeArguments);
 
             if (!IsGenericTypeDefinition)
                 throw new InvalidOperationException(SR.Format(SR.Arg_NotGenericTypeDefinition, this));
 
             RuntimeType[] genericParameters = GetGenericArgumentsInternal();
-            if (genericParameters.Length != instantiation.Length)
-                throw new ArgumentException(SR.Argument_GenericArgsCount, nameof(instantiation));
+            if (genericParameters.Length != typeArguments.Length)
+                throw new ArgumentException(SR.Argument_GenericArgsCount, nameof(typeArguments));
 
-            if (instantiation.Length == 1 && instantiation[0] is RuntimeType rt)
+            if (typeArguments.Length == 1 && typeArguments[0] is RuntimeType rt)
             {
                 ThrowIfTypeNeverValidGenericArgument(rt);
                 try
@@ -3611,13 +3593,13 @@ namespace System
                 }
             }
 
-            RuntimeType[] instantiationRuntimeType = new RuntimeType[instantiation.Length];
+            RuntimeType[] instantiationRuntimeType = new RuntimeType[typeArguments.Length];
 
             bool foundSigType = false;
             bool foundNonRuntimeType = false;
-            for (int i = 0; i < instantiation.Length; i++)
+            for (int i = 0; i < typeArguments.Length; i++)
             {
-                Type instantiationElem = instantiation[i] ?? throw new ArgumentNullException();
+                Type instantiationElem = typeArguments[i] ?? throw new ArgumentNullException();
                 RuntimeType? rtInstantiationElem = instantiationElem as RuntimeType;
 
                 if (rtInstantiationElem == null)
@@ -3635,9 +3617,9 @@ namespace System
             if (foundNonRuntimeType)
             {
                 if (foundSigType)
-                    return new SignatureConstructedGenericType(this, instantiation);
+                    return new SignatureConstructedGenericType(this, typeArguments);
 
-                return Reflection.Emit.TypeBuilderInstantiation.MakeGenericType(this, (Type[])(instantiation.Clone()));
+                return Reflection.Emit.TypeBuilderInstantiation.MakeGenericType(this, (Type[])(typeArguments.Clone()));
             }
 
             SanityCheckGenericArguments(instantiationRuntimeType, genericParameters);

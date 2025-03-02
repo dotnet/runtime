@@ -6,6 +6,46 @@
 #ifndef __unwinder_h__
 #define __unwinder_h__
 
+#ifdef FEATURE_CDAC_UNWINDER
+using ReadFromTarget = LONG (*)(ULONG64 addr, PVOID pBuffer, LONG bufferSize, PVOID callbackContext);
+using GetAllocatedBuffer = LONG (*)(LONG bufferSize, PVOID* ppBuffer, PVOID callbackContext);
+using GetStackWalkInfo = VOID (*)(ULONG64 controlPC, UINT_PTR* pUnwindInfoBase, UINT_PTR* pFuncEntry, PVOID callbackContext);
+using UnwinderFail = VOID (*)();
+
+class CDACCallbacks
+{
+public:
+    CDACCallbacks(ReadFromTarget readFromTarget,
+        GetAllocatedBuffer getAllocatedBuffer,
+        GetStackWalkInfo getStackWalkInfo,
+        UnwinderFail unwinderFail,
+        void* callbackContext)
+        : readFromTarget(readFromTarget),
+          getAllocatedBuffer(getAllocatedBuffer),
+          getStackWalkInfo(getStackWalkInfo),
+          unwinderFail(unwinderFail),
+          callbackContext(callbackContext)
+    { }
+
+    ReadFromTarget readFromTarget;
+    GetAllocatedBuffer getAllocatedBuffer;
+    GetStackWalkInfo getStackWalkInfo;
+    UnwinderFail unwinderFail;
+    void* callbackContext;
+};
+
+// thread_local used to access cDAC callbacks outside of unwinder.
+extern thread_local CDACCallbacks* t_pCallbacks;
+#endif // FEATURE_CDAC_UNWINDER
+
+// Report failure in the unwinder if the condition is FALSE
+#if defined(FEATURE_CDAC_UNWINDER)
+#define UNWINDER_ASSERT(Condition) if (!(Condition)) t_pCallbacks->unwinderFail()
+#elif defined(DACCESS_COMPILE)
+#define UNWINDER_ASSERT(Condition) if (!(Condition)) DacError(CORDBG_E_TARGET_INCONSISTENT)
+#else // !DACCESS_COMPILE AND !FEATURE_CDAC_UNWINDER
+#define UNWINDER_ASSERT _ASSERTE
+#endif
 
 //---------------------------------------------------------------------------------------
 //
@@ -14,7 +54,7 @@
 // are actually borrowed from dbghelp.dll.  (StackWalk64() is built on top of these classes.)  We have ripped
 // out everything we don't need such as symbol lookup and various state, and keep just enough code to support
 // VirtualUnwind().  The managed debugging infrastructure can't call RtlVirtualUnwind() because it doesn't
-// work from out-of-processr
+// work from out-of-processor
 //
 // Notes:
 //    To see what we have changed in the borrowed source, you can diff the original version and our version.

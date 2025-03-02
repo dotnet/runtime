@@ -2414,89 +2414,50 @@ instruction CodeGen::ins_MathOp(genTreeOps oper, var_types type)
 // Arguments:
 //    to - Destination type.
 //    from - Source type.
-//    attr - Input size.
 //
 // Returns:
 //    The correct conversion instruction to use based on src and dst types.
 //
-instruction CodeGen::ins_FloatConv(var_types to, var_types from, emitAttr attr)
+instruction CodeGen::ins_FloatConv(var_types to, var_types from)
 {
     // AVX: Supports following conversions
     //   srcType = int16/int64                     castToType = float
     // AVX512: Supports following conversions
     //   srcType = ulong                           castToType = double/float
-
+    bool isAvx10v2 = false;
     switch (from)
     {
-        // int/long -> float/double use the same instruction but type size would be different.
         case TYP_INT:
+            switch (to)
+            {
+                case TYP_FLOAT:
+                    return INS_cvtsi2ss32;
+                case TYP_DOUBLE:
+                    return INS_cvtsi2sd32;
+                default:
+                    unreached();
+            }
+            break;
+
         case TYP_LONG:
             switch (to)
             {
                 case TYP_FLOAT:
-                {
-                    if (EA_SIZE(attr) == EA_4BYTE)
-                    {
-                        return INS_cvtsi2ss32;
-                    }
-                    else if (EA_SIZE(attr) == EA_8BYTE)
-                    {
-                        return INS_cvtsi2ss64;
-                    }
-                    unreached();
-                }
+                    return INS_cvtsi2ss64;
                 case TYP_DOUBLE:
-                {
-                    if (EA_SIZE(attr) == EA_4BYTE)
-                    {
-                        return INS_cvtsi2sd32;
-                    }
-                    else if (EA_SIZE(attr) == EA_8BYTE)
-                    {
-                        return INS_cvtsi2sd64;
-                    }
-                    unreached();
-                }
+                    return INS_cvtsi2sd64;
                 default:
                     unreached();
             }
             break;
 
-        case TYP_FLOAT:
+        case TYP_UINT:
             switch (to)
             {
-                case TYP_INT:
-                    return INS_cvttss2si32;
-                case TYP_LONG:
-                    return INS_cvttss2si64;
                 case TYP_FLOAT:
-                    return ins_Move_Extend(TYP_FLOAT, false);
+                    return INS_vcvtusi2ss32;
                 case TYP_DOUBLE:
-                    return INS_cvtss2sd;
-                case TYP_ULONG:
-                    return INS_vcvttss2usi64;
-                case TYP_UINT:
-                    return INS_vcvttss2usi32;
-                default:
-                    unreached();
-            }
-            break;
-
-        case TYP_DOUBLE:
-            switch (to)
-            {
-                case TYP_INT:
-                    return INS_cvttsd2si32;
-                case TYP_LONG:
-                    return INS_cvttsd2si64;
-                case TYP_FLOAT:
-                    return INS_cvtsd2ss;
-                case TYP_DOUBLE:
-                    return ins_Move_Extend(TYP_DOUBLE, false);
-                case TYP_ULONG:
-                    return INS_vcvttsd2usi64;
-                case TYP_UINT:
-                    return INS_vcvttsd2usi32;
+                    return INS_vcvtusi2sd32;
                 default:
                     unreached();
             }
@@ -2505,13 +2466,66 @@ instruction CodeGen::ins_FloatConv(var_types to, var_types from, emitAttr attr)
         case TYP_ULONG:
             switch (to)
             {
-                case TYP_DOUBLE:
-                    return INS_vcvtusi2sd64;
                 case TYP_FLOAT:
                     return INS_vcvtusi2ss64;
+                case TYP_DOUBLE:
+                    return INS_vcvtusi2sd64;
                 default:
                     unreached();
             }
+            break;
+
+        case TYP_FLOAT:
+            if (to == TYP_FLOAT)
+            {
+                return ins_Move_Extend(TYP_FLOAT, false);
+            }
+            else if (to == TYP_DOUBLE)
+            {
+                return INS_cvtss2sd;
+            }
+            isAvx10v2 = compiler->compOpportunisticallyDependsOn(InstructionSet_AVX10v2);
+
+            switch (to)
+            {
+                case TYP_INT:
+                    return isAvx10v2 ? INS_vcvttss2sis32 : INS_cvttss2si32;
+                case TYP_LONG:
+                    return isAvx10v2 ? INS_vcvttss2sis64 : INS_cvttss2si64;
+                case TYP_ULONG:
+                    return isAvx10v2 ? INS_vcvttss2usis64 : INS_vcvttss2usi64;
+                case TYP_UINT:
+                    return isAvx10v2 ? INS_vcvttss2usis32 : INS_vcvttss2usi32;
+                default:
+                    unreached();
+            }
+            break;
+
+        case TYP_DOUBLE:
+            if (to == TYP_FLOAT)
+            {
+                return INS_cvtsd2ss;
+            }
+            else if (to == TYP_DOUBLE)
+            {
+                return ins_Move_Extend(TYP_DOUBLE, false);
+            }
+            isAvx10v2 = compiler->compOpportunisticallyDependsOn(InstructionSet_AVX10v2);
+
+            switch (to)
+            {
+                case TYP_INT:
+                    return isAvx10v2 ? INS_vcvttsd2sis32 : INS_cvttsd2si32;
+                case TYP_LONG:
+                    return isAvx10v2 ? INS_vcvttsd2sis64 : INS_cvttsd2si64;
+                case TYP_ULONG:
+                    return isAvx10v2 ? INS_vcvttsd2usis64 : INS_vcvttsd2usi64;
+                case TYP_UINT:
+                    return isAvx10v2 ? INS_vcvttsd2usis32 : INS_vcvttsd2usi32;
+                default:
+                    unreached();
+            }
+            break;
 
         default:
             unreached();

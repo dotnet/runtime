@@ -202,6 +202,8 @@ namespace ILCompiler
         }
 
 #if !READYTORUN
+        public virtual bool IsGenericDefinitionMethodTableReflectionVisible(TypeDesc type) => true;
+
         /// <summary>
         /// Gets a value indicating whether it might be possible to obtain a constructed type data structure for the given type
         /// in this compilation (i.e. is it possible to reference a constructed MethodTable symbol for this).

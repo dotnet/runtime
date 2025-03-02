@@ -37,6 +37,7 @@ static const Entry s_sysNative[] =
     DllImportEntry(SystemNative_GetWindowSize)
     DllImportEntry(SystemNative_IsATty)
     DllImportEntry(SystemNative_InitializeTerminalAndSignalHandling)
+    DllImportEntry(SystemNative_UninitializeTerminal)
     DllImportEntry(SystemNative_SetKeypadXmit)
     DllImportEntry(SystemNative_GetControlCharacters)
     DllImportEntry(SystemNative_StdinReady)

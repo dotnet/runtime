@@ -50,12 +50,12 @@ ASM_OFFSET(    0,     0, Thread, m_eeAllocContext)
 ASM_OFFSET(   2c,    40, Thread, m_ThreadStateFlags)
 ASM_OFFSET(   30,    48, Thread, m_pTransitionFrame)
 ASM_OFFSET(   34,    50, Thread, m_pDeferredTransitionFrame)
-ASM_OFFSET(   44,    70, Thread, m_ppvHijackedReturnAddressLocation)
-ASM_OFFSET(   48,    78, Thread, m_pvHijackedReturnAddress)
-ASM_OFFSET(   4c,    80, Thread, m_pExInfoStackHead)
-ASM_OFFSET(   50,    88, Thread, m_threadAbortException)
+ASM_OFFSET(   40,    68, Thread, m_ppvHijackedReturnAddressLocation)
+ASM_OFFSET(   44,    70, Thread, m_pvHijackedReturnAddress)
+ASM_OFFSET(   48,    78, Thread, m_pExInfoStackHead)
+ASM_OFFSET(   4c,    80, Thread, m_threadAbortException)
 #ifdef TARGET_X86
-ASM_OFFSET(   54,    FF, Thread, m_uHijackedReturnValueFlags)
+ASM_OFFSET(   50,    FF, Thread, m_uHijackedReturnValueFlags)
 #endif
 
 ASM_SIZEOF(   14,    20, EHEnum)

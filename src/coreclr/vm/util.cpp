@@ -15,6 +15,9 @@
 
 #ifndef DACCESS_COMPILE
 
+#if defined(TARGET_ANDROID)
+#include <android/log.h>
+#endif // defined(TARGET_ANDROID)
 
 thread_local size_t t_ThreadType;
 
@@ -177,10 +180,13 @@ void PrintToStdErrA(const char *pszString) {
     }
     CONTRACTL_END
 
-    HANDLE  Handle = GetStdHandle(STD_ERROR_HANDLE);
-
+#if defined(TARGET_ANDROID)
+    __android_log_write(ANDROID_LOG_FATAL, MAIN_CLR_MODULE_NAME_A, pszString);
+#else
+    HANDLE Handle = GetStdHandle(STD_ERROR_HANDLE);
     size_t len = strlen(pszString);
     NPrintToHandleA(Handle, pszString, len);
+#endif // defined(TARGET_ANDROID)
 }
 
 void PrintToStdErrW(const WCHAR *pwzString)
@@ -373,7 +379,7 @@ SIZE_T GetRegOffsInCONTEXT(ICorDebugInfo::RegNum regNum)
     {
     case ICorDebugInfo::REGNUM_R0: return offsetof(T_CONTEXT, R0);
     case ICorDebugInfo::REGNUM_RA: return offsetof(T_CONTEXT, Ra);
-    case ICorDebugInfo::REGNUM_TP: return offsetof(T_CONTEXT, Tp);
+    //case ICorDebugInfo::REGNUM_TP: return offsetof(T_CONTEXT, Tp);
     case ICorDebugInfo::REGNUM_SP: return offsetof(T_CONTEXT, Sp);
     case ICorDebugInfo::REGNUM_A0: return offsetof(T_CONTEXT, A0);
     case ICorDebugInfo::REGNUM_A1: return offsetof(T_CONTEXT, A1);

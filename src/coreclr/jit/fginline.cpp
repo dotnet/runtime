@@ -204,7 +204,9 @@ bool Compiler::TypeInstantiationComplexityExceeds(CORINFO_CLASS_HANDLE handle, i
 
 class SubstitutePlaceholdersAndDevirtualizeWalker : public GenTreeVisitor<SubstitutePlaceholdersAndDevirtualizeWalker>
 {
-    bool m_madeChanges = false;
+    bool       m_madeChanges  = false;
+    Statement* m_curStmt      = nullptr;
+    Statement* m_firstNewStmt = nullptr;
 
 public:
     enum
@@ -219,9 +221,27 @@ public:
     {
     }
 
-    bool MadeChanges()
+    bool MadeChanges() const
     {
         return m_madeChanges;
+    }
+
+    // ------------------------------------------------------------------------
+    // WalkStatement: Walk the tree of a statement, and return the first newly
+    // added statement if any, otherwise return the original statement.
+    //
+    // Arguments:
+    //    stmt - the statement to walk.
+    //
+    // Return Value:
+    //    The first newly added statement if any, or the original statement.
+    //
+    Statement* WalkStatement(Statement* stmt)
+    {
+        m_curStmt      = stmt;
+        m_firstNewStmt = nullptr;
+        WalkTree(m_curStmt->GetRootNodePointer(), nullptr);
+        return m_firstNewStmt == nullptr ? m_curStmt : m_firstNewStmt;
     }
 
     fgWalkResult PreOrderVisit(GenTree** use, GenTree* user)
@@ -569,25 +589,65 @@ private:
                 }
 #endif // DEBUG
 
-                CORINFO_CONTEXT_HANDLE context                = nullptr;
+                CORINFO_CONTEXT_HANDLE context                = call->gtLateDevirtualizationInfo->exactContextHnd;
+                InlineContext*         inlinersContext        = call->gtLateDevirtualizationInfo->inlinersContext;
                 CORINFO_METHOD_HANDLE  method                 = call->gtCallMethHnd;
                 unsigned               methodFlags            = 0;
                 const bool             isLateDevirtualization = true;
                 const bool             explicitTailCall       = call->IsTailPrefixedCall();
 
-                if ((call->gtCallMoreFlags & GTF_CALL_M_HAS_LATE_DEVIRT_INFO) != 0)
-                {
-                    context = call->gtLateDevirtualizationInfo->exactContextHnd;
-                    // Note: we might call this multiple times for the same trees.
-                    // If the devirtualization below succeeds, the call becomes
-                    // non-virtual and we won't get here again. If it does not
-                    // succeed we might get here again so we keep the late devirt
-                    // info.
-                }
-
                 CORINFO_CONTEXT_HANDLE contextInput = context;
+                context                             = nullptr;
                 m_compiler->impDevirtualizeCall(call, nullptr, &method, &methodFlags, &contextInput, &context,
                                                 isLateDevirtualization, explicitTailCall);
+
+                if (!call->IsVirtual())
+                {
+                    assert(context != nullptr);
+                    assert(inlinersContext != nullptr);
+                    CORINFO_CALL_INFO callInfo = {};
+                    callInfo.hMethod           = method;
+                    callInfo.methodFlags       = methodFlags;
+                    m_compiler->impMarkInlineCandidate(call, context, false, &callInfo, inlinersContext);
+
+                    if (call->IsInlineCandidate())
+                    {
+                        Statement* newStmt = nullptr;
+                        GenTree**  callUse = nullptr;
+                        if (m_compiler->gtSplitTree(m_compiler->compCurBB, m_curStmt, call, &newStmt, &callUse, true))
+                        {
+                            if (m_firstNewStmt == nullptr)
+                            {
+                                m_firstNewStmt = newStmt;
+                            }
+                        }
+
+                        // If the call is the root expression in a statement, and it returns void,
+                        // we can inline it directly without creating a RET_EXPR.
+                        if (parent != nullptr || call->gtReturnType != TYP_VOID)
+                        {
+                            Statement* stmt = m_compiler->gtNewStmt(call);
+                            m_compiler->fgInsertStmtBefore(m_compiler->compCurBB, m_curStmt, stmt);
+                            if (m_firstNewStmt == nullptr)
+                            {
+                                m_firstNewStmt = stmt;
+                            }
+
+                            GenTreeRetExpr* retExpr =
+                                m_compiler->gtNewInlineCandidateReturnExpr(call->AsCall(),
+                                                                           genActualType(call->TypeGet()));
+                            call->GetSingleInlineCandidateInfo()->retExpr = retExpr;
+
+                            JITDUMP("Creating new RET_EXPR for [%06u]:\n", call->gtTreeID);
+                            DISPTREE(retExpr);
+
+                            *pTree = retExpr;
+                        }
+
+                        JITDUMP("New inline candidate due to late devirtualization:\n");
+                        DISPTREE(call);
+                    }
+                }
                 m_madeChanges = true;
             }
         }
@@ -730,17 +790,10 @@ PhaseStatus Compiler::fgInline()
     do
     {
         // Make the current basic block address available globally
-        compCurBB = block;
-
-        for (Statement* const stmt : block->Statements())
+        compCurBB       = block;
+        Statement* stmt = block->firstStmt();
+        while (stmt != nullptr)
         {
-
-#if defined(DEBUG)
-            // In debug builds we want the inline tree to show all failed
-            // inlines. Some inlines may fail very early and never make it to
-            // candidate stage. So scan the tree looking for those early failures.
-            fgWalkTreePre(stmt->GetRootNodePointer(), fgFindNonInlineCandidate, stmt);
-#endif
             // See if we need to replace some return value place holders.
             // Also, see if this replacement enables further devirtualization.
             //
@@ -755,7 +808,7 @@ PhaseStatus Compiler::fgInline()
             // possible further optimization, as the (now complete) GT_RET_EXPR
             // replacement may have enabled optimizations by providing more
             // specific types for trees or variables.
-            walker.WalkTree(stmt->GetRootNodePointer(), nullptr);
+            stmt = walker.WalkStatement(stmt);
 
             GenTree* expr = stmt->GetRootNode();
 
@@ -805,6 +858,13 @@ PhaseStatus Compiler::fgInline()
                 madeChanges = true;
                 stmt->SetRootNode(expr->AsOp()->gtOp1);
             }
+
+#if defined(DEBUG)
+            // In debug builds we want the inline tree to show all failed
+            // inlines.
+            fgWalkTreePre(stmt->GetRootNodePointer(), fgFindNonInlineCandidate, stmt);
+#endif
+            stmt = stmt->GetNextStmt();
         }
 
         block = block->Next();
@@ -1323,7 +1383,8 @@ void Compiler::fgInvokeInlineeCompiler(GenTreeCall* call, InlineResult* inlineRe
     // (This could happen for example for a BBJ_THROW block fall through a BBJ_RETURN block which
     // causes the BBJ_RETURN block not to be imported at all.)
     // Fail the inlining attempt
-    if ((inlineCandidateInfo->fncRetType != TYP_VOID) && (inlineCandidateInfo->retExpr->gtSubstExpr == nullptr))
+    if ((inlineCandidateInfo->methInfo.args.retType != CORINFO_TYPE_VOID) &&
+        (inlineCandidateInfo->retExpr->gtSubstExpr == nullptr))
     {
 #ifdef DEBUG
         if (verbose)
@@ -1514,7 +1575,7 @@ void Compiler::fgInsertInlineeBlocks(InlineInfo* pInlineInfo)
             noway_assert(!block->hasTryIndex());
             noway_assert(!block->hasHndIndex());
             block->copyEHRegion(iciBlock);
-            block->CopyFlags(iciBlock, BBF_BACKWARD_JUMP);
+            block->CopyFlags(iciBlock, BBF_BACKWARD_JUMP | BBF_PROF_WEIGHT);
 
             // Update block nums appropriately
             //
@@ -1973,20 +2034,32 @@ Statement* Compiler::fgInlinePrependStatements(InlineInfo* inlineInfo)
         }
     }
 
-    // Append the InstParam
-    if (inlineInfo->inlInstParamArgInfo != nullptr)
-    {
-        fgInsertInlineeArgument(*inlineInfo->inlInstParamArgInfo, block, &afterStmt, &newStmt, callDI);
-    }
-
-    // Treat arguments that had to be assigned to temps
-    if (inlineInfo->argCnt)
+#ifdef DEBUG
+    if (call->gtArgs.CountUserArgs() > 0)
     {
         JITDUMP("\nArguments setup:\n");
-        for (unsigned argNum = 0; argNum < inlineInfo->argCnt; argNum++)
+    }
+#endif
+
+    unsigned ilArgNum = 0;
+    for (CallArg& arg : call->gtArgs.Args())
+    {
+        InlArgInfo* argInfo = nullptr;
+        switch (arg.GetWellKnownArg())
         {
-            fgInsertInlineeArgument(inlArgInfo[argNum], block, &afterStmt, &newStmt, callDI);
+            case WellKnownArg::RetBuffer:
+                continue;
+            case WellKnownArg::InstParam:
+                argInfo = inlineInfo->inlInstParamArgInfo;
+                break;
+            default:
+                assert(ilArgNum < inlineInfo->argCnt);
+                argInfo = &inlineInfo->inlArgInfo[ilArgNum++];
+                break;
         }
+
+        assert(argInfo != nullptr);
+        fgInsertInlineeArgument(*argInfo, block, &afterStmt, &newStmt, callDI);
     }
 
     // Add the CCTOR check if asked for.

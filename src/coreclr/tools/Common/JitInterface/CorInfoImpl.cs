@@ -270,9 +270,9 @@ namespace Internal.JitInterface
 
             bool isType = nativeSchema[index + 1].InstrumentationKind == PgoInstrumentationKind.HandleHistogramTypes;
 
-            fixed(PgoInstrumentationSchema* pSchema = &nativeSchema[index])
+            fixed (PgoInstrumentationSchema* pSchema = &nativeSchema[index])
             {
-                fixed(byte* pInstrumentationData = &instrumentationData[0])
+                fixed (byte* pInstrumentationData = &instrumentationData[0])
                 {
                     // We're going to store only the most popular type/method to reduce size of the profile
                     LikelyClassMethodRecord* likelyClassMethods = stackalloc LikelyClassMethodRecord[1];
@@ -1117,9 +1117,9 @@ namespace Internal.JitInterface
             // TODO: Cache inlining hits
             // Check for an inlining directive.
 
-            if (method.IsNoInlining)
+            if (method.IsNoInlining || method.IsNoOptimization)
             {
-                /* Function marked as not inlineable */
+                // NoOptimization implies NoInlining.
                 result |= CorInfoFlag.CORINFO_FLG_DONT_INLINE;
             }
             else if (method.IsAggressiveInlining)

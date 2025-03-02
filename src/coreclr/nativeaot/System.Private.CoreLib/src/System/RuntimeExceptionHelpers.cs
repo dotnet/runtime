@@ -4,6 +4,8 @@
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Threading;
 
 using Internal.Reflection.Augments;
@@ -172,7 +174,7 @@ namespace System
         internal const uint STATUS_STACK_BUFFER_OVERRUN = 0xC0000409;
         internal const uint FAST_FAIL_EXCEPTION_DOTNET_AOT = 0x48;
 
-#pragma warning disable 649
+        [StructLayout(LayoutKind.Sequential)]
         internal unsafe struct EXCEPTION_RECORD
         {
             internal uint ExceptionCode;
@@ -180,13 +182,14 @@ namespace System
             internal IntPtr ExceptionRecord;
             internal IntPtr ExceptionAddress;
             internal uint NumberParameters;
-#if TARGET_64BIT
-            internal fixed ulong ExceptionInformation[15];
-#else
-            internal fixed uint ExceptionInformation[15];
-#endif
+            internal ExceptionInformationArray ExceptionInformation;
+
+            [InlineArray(15)]
+            public struct ExceptionInformationArray
+            {
+                internal nuint _value;
+            }
         }
-#pragma warning restore 649
 
         private static ulong s_crashingThreadId;
 
@@ -307,17 +310,13 @@ namespace System
             exceptionRecord.NumberParameters = 4;
             exceptionRecord.ExceptionInformation[0] = FAST_FAIL_EXCEPTION_DOTNET_AOT;
             exceptionRecord.ExceptionInformation[1] = (uint)errorCode;
-#if TARGET_64BIT
-            exceptionRecord.ExceptionInformation[2] = (ulong)triageBufferAddress;
-#else
-            exceptionRecord.ExceptionInformation[2] = (uint)triageBufferAddress;
-#endif
+            exceptionRecord.ExceptionInformation[2] = (nuint)triageBufferAddress;
             exceptionRecord.ExceptionInformation[3] = (uint)triageBufferSize;
 
 #if TARGET_WINDOWS
             Interop.Kernel32.RaiseFailFastException(new IntPtr(&exceptionRecord), pExContext, pExAddress == IntPtr.Zero ? FAIL_FAST_GENERATE_EXCEPTION_ADDRESS : 0);
 #else
-            RuntimeImports.RhCreateCrashDumpIfEnabled(new IntPtr(&exceptionRecord), pExContext);
+            RuntimeImports.RhCreateCrashDumpIfEnabled(new IntPtr(&exceptionRecord));
             Interop.Sys.Abort();
 #endif
         }

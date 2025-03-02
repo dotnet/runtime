@@ -863,13 +863,15 @@ HRESULT PEImage::TryOpenFile(bool takeLock)
 {
     STANDARD_VM_CONTRACT;
 
+    _ASSERTE(IsFile());
+
     SimpleWriteLockHolder lock(m_pLayoutLock, takeLock);
 
-    if (m_hFile!=INVALID_HANDLE_VALUE)
+    if (m_hFile != INVALID_HANDLE_VALUE)
         return S_OK;
 
     ErrorModeHolder mode{};
-    m_hFile=WszCreateFile((LPCWSTR)GetPathToLoad(),
+    m_hFile = WszCreateFile((LPCWSTR)GetPathToLoad(),
                           GENERIC_READ
 #if TARGET_WINDOWS
                           // the file may have native code sections, make sure we are allowed to execute the file
@@ -881,7 +883,6 @@ HRESULT PEImage::TryOpenFile(bool takeLock)
                           OPEN_EXISTING,
                           FILE_ATTRIBUTE_NORMAL,
                           NULL);
-
     if (m_hFile != INVALID_HANDLE_VALUE)
             return S_OK;
 

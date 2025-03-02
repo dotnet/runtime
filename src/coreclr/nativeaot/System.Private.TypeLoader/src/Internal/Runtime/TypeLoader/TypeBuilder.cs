@@ -296,11 +296,11 @@ namespace Internal.Runtime.TypeLoader
 
             InstantiatedMethod nonTemplateMethod = method;
 
-            // Templates are always non-unboxing stubs
-            if (method.UnboxingStub)
+            // Templates are always unboxing stubs for valuetype instance methods
+            if (!method.UnboxingStub && method.OwningType.IsValueType && !TypeLoaderEnvironment.IsStaticMethodSignature(method.NameAndSignature))
             {
-                // Strip unboxing stub, note the first parameter which is false
-                nonTemplateMethod = (InstantiatedMethod)method.Context.ResolveGenericMethodInstantiation(false, (DefType)method.OwningType, method.NameAndSignature, method.Instantiation);
+                // Make it an unboxing stub, note the first parameter which is true
+                nonTemplateMethod = (InstantiatedMethod)method.Context.ResolveGenericMethodInstantiation(true, (DefType)method.OwningType, method.NameAndSignature, method.Instantiation);
             }
 
             uint nativeLayoutInfoToken;
@@ -311,11 +311,15 @@ namespace Internal.Runtime.TypeLoader
                 throw new MissingTemplateException();
             }
 
-            // We might have a mismatch between unboxing/non-unboxing variants so only remember it for static methods
-            if (TypeLoaderEnvironment.IsStaticMethodSignature(templateMethod.NameAndSignature)
-                && templateMethod.FunctionPointer != IntPtr.Zero)
+            if (templateMethod.FunctionPointer != IntPtr.Zero)
             {
                 nonTemplateMethod.SetFunctionPointer(templateMethod.FunctionPointer);
+
+                // Compensate for the template being an unboxing stub
+                if (nonTemplateMethod != method)
+                {
+                    method.SetFunctionPointer(TypeLoaderEnvironment.ConvertUnboxingFunctionPointerToUnderlyingNonUnboxingPointer(templateMethod.FunctionPointer, templateMethod.OwningType.RuntimeTypeHandle));
+                }
             }
 
             // Ensure that if this method is non-shareable from a normal canonical perspective, then

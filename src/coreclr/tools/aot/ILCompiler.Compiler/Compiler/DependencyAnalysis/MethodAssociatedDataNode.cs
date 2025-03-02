@@ -55,7 +55,7 @@ namespace ILCompiler.DependencyAnalysis
         {
             // Instantiating unboxing stubs. We need to store their non-unboxing target pointer (looked up by runtime)
             ISpecialUnboxThunkNode unboxThunk = methodNode as ISpecialUnboxThunkNode;
-            if(unboxThunk != null && unboxThunk.IsSpecialUnboxingThunk)
+            if (unboxThunk != null && unboxThunk.IsSpecialUnboxingThunk)
                 return true;
 
             return false;

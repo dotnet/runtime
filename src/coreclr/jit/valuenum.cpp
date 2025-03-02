@@ -6245,7 +6245,19 @@ void Compiler::fgValueNumberArrayElemLoad(GenTree* loadTree, VNFuncApp* addrFunc
     ValueNum  loadValueVN = vnStore->VNForLoad(VNK_Liberal, wholeElem, elemSize, loadType, offset, loadSize);
 
     loadTree->gtVNPair.SetLiberal(loadValueVN);
-    loadTree->gtVNPair.SetConservative(vnStore->VNForExpr(compCurBB, loadType));
+
+    // If this is a local array, there are no asyncronous modifications, so we can set the
+    // conservative VN to the liberal VN.
+    //
+    VNFuncApp arrFn;
+    if (vnStore->IsVNNewLocalArr(arrVN, &arrFn))
+    {
+        loadTree->gtVNPair.SetConservative(loadValueVN);
+    }
+    else
+    {
+        loadTree->gtVNPair.SetConservative(vnStore->VNForExpr(compCurBB, loadType));
+    }
 }
 
 //------------------------------------------------------------------------
@@ -7359,7 +7371,22 @@ bool ValueNumStore::IsVNNewArr(ValueNum vn, VNFuncApp* funcApp)
     bool result = false;
     if (GetVNFunc(vn, funcApp))
     {
-        result = (funcApp->m_func == VNF_JitNewArr) || (funcApp->m_func == VNF_JitReadyToRunNewArr);
+        result = (funcApp->m_func == VNF_JitNewArr) || (funcApp->m_func == VNF_JitNewLclArr) ||
+                 (funcApp->m_func == VNF_JitReadyToRunNewArr) || (funcApp->m_func == VNF_JitReadyToRunNewLclArr);
+    }
+    return result;
+}
+
+bool ValueNumStore::IsVNNewLocalArr(ValueNum vn, VNFuncApp* funcApp)
+{
+    if (vn == NoVN)
+    {
+        return false;
+    }
+    bool result = false;
+    if (GetVNFunc(vn, funcApp))
+    {
+        result = (funcApp->m_func == VNF_JitNewLclArr) || (funcApp->m_func == VNF_JitReadyToRunNewLclArr);
     }
     return result;
 }
@@ -8244,8 +8271,8 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunBinary(
 
         if (oper != GT_NONE)
         {
-            // We shouldn't find AND_NOT nodes since it should only be produced in lowering
-            assert(oper != GT_AND_NOT);
+            // We shouldn't find AND_NOT, OR_NOT or XOR_NOT nodes since it should only be produced in lowering
+            assert((oper != GT_AND_NOT) && (oper != GT_OR_NOT) && (oper != GT_XOR_NOT));
 
             if (varTypeIsMask(type))
             {
@@ -8388,7 +8415,7 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunBinary(
         genTreeOps oper     = tree->GetOperForHWIntrinsicId(&isScalar);
 
         // We shouldn't find AND_NOT nodes since it should only be produced in lowering
-        assert(oper != GT_AND_NOT);
+        assert((oper != GT_AND_NOT) && (oper != GT_OR_NOT) && (oper != GT_XOR_NOT));
 
         if (isScalar)
         {
@@ -8876,7 +8903,7 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunBinary(
         genTreeOps oper     = tree->GetOperForHWIntrinsicId(&isScalar);
 
         // We shouldn't find AND_NOT nodes since it should only be produced in lowering
-        assert(oper != GT_AND_NOT);
+        assert((oper != GT_AND_NOT) && (oper != GT_OR_NOT) && (oper != GT_XOR_NOT));
 
         if (isScalar)
         {
@@ -12096,27 +12123,14 @@ bool Compiler::GetObjectHandleAndOffset(GenTree* tree, ssize_t* byteOffset, CORI
         return false;
     }
 
-    ValueNum       treeVN = tree->gtVNPair.GetLiberal();
-    VNFuncApp      funcApp;
-    target_ssize_t offset = 0;
-    while (vnStore->GetVNFunc(treeVN, &funcApp) && (funcApp.m_func == (VNFunc)GT_ADD))
+    ValueNum treeVN = tree->gtVNPair.GetLiberal();
+    if (treeVN == ValueNumStore::NoVN)
     {
-        if (vnStore->IsVNConstantNonHandle(funcApp.m_args[0]) && (vnStore->TypeOfVN(funcApp.m_args[0]) == TYP_I_IMPL))
-        {
-            offset += vnStore->ConstantValue<target_ssize_t>(funcApp.m_args[0]);
-            treeVN = funcApp.m_args[1];
-        }
-        else if (vnStore->IsVNConstantNonHandle(funcApp.m_args[1]) &&
-                 (vnStore->TypeOfVN(funcApp.m_args[1]) == TYP_I_IMPL))
-        {
-            offset += vnStore->ConstantValue<target_ssize_t>(funcApp.m_args[1]);
-            treeVN = funcApp.m_args[0];
-        }
-        else
-        {
-            return false;
-        }
+        return false;
     }
+
+    target_ssize_t offset = 0;
+    vnStore->PeelOffsets(&treeVN, &offset);
 
     if (vnStore->IsVNObjHandle(treeVN))
     {
@@ -12242,7 +12256,6 @@ bool Compiler::fgValueNumberConstLoad(GenTreeIndir* tree)
     size_t                index     = -1;
 
     // First, let see if we have PtrToArrElem
-    ValueNum addr = funcApp.m_args[0];
     if (funcApp.m_func == VNF_PtrToArrElem)
     {
         ValueNum arrVN  = funcApp.m_args[1];
@@ -12256,34 +12269,9 @@ bool Compiler::fgValueNumberConstLoad(GenTreeIndir* tree)
     }
     else if (funcApp.m_func == (VNFunc)GT_ADD)
     {
-        ssize_t  dataOffset = 0;
-        ValueNum baseVN     = ValueNumStore::NoVN;
-
-        // Loop to accumulate total dataOffset, e.g.:
-        // ADD(C1, ADD(ObjHandle, C2)) -> C1 + C2
-        do
-        {
-            ValueNum op1VN = funcApp.m_args[0];
-            ValueNum op2VN = funcApp.m_args[1];
-
-            if (vnStore->IsVNConstant(op1VN) && varTypeIsIntegral(vnStore->TypeOfVN(op1VN)) &&
-                !isCnsObjHandle(vnStore, op1VN, &objHandle))
-            {
-                dataOffset += vnStore->CoercedConstantValue<ssize_t>(op1VN);
-                baseVN = op2VN;
-            }
-            else if (vnStore->IsVNConstant(op2VN) && varTypeIsIntegral(vnStore->TypeOfVN(op2VN)) &&
-                     !isCnsObjHandle(vnStore, op2VN, &objHandle))
-            {
-                dataOffset += vnStore->CoercedConstantValue<ssize_t>(op2VN);
-                baseVN = op1VN;
-            }
-            else
-            {
-                // one of the args is expected to be an integer constant
-                return false;
-            }
-        } while (vnStore->GetVNFunc(baseVN, &funcApp) && (funcApp.m_func == (VNFunc)GT_ADD));
+        target_ssize_t dataOffset = 0;
+        vnStore->PeelOffsets(&addrVN, &dataOffset);
+        ValueNum baseVN = addrVN;
 
         if (isCnsObjHandle(vnStore, baseVN, &objHandle) && (dataOffset >= (ssize_t)OFFSETOF__CORINFO_String__chars) &&
             ((dataOffset % 2) == 0))
@@ -13489,6 +13477,7 @@ void Compiler::fgValueNumberHelperCallFunc(GenTreeCall* call, VNFunc vnf, ValueN
         break;
 
         case VNF_JitNewArr:
+        case VNF_JitNewLclArr:
         {
             generateUniqueVN  = true;
             ValueNumPair vnp1 = vnStore->VNPNormalPair(args->GetArgByIndex(1)->GetNode()->gtVNPair);
@@ -13527,6 +13516,7 @@ void Compiler::fgValueNumberHelperCallFunc(GenTreeCall* call, VNFunc vnf, ValueN
         break;
 
         case VNF_JitReadyToRunNewArr:
+        case VNF_JitReadyToRunNewLclArr:
         {
             generateUniqueVN  = true;
             ValueNumPair vnp1 = vnStore->VNPNormalPair(args->GetArgByIndex(0)->GetNode()->gtVNPair);
@@ -13558,7 +13548,7 @@ void Compiler::fgValueNumberHelperCallFunc(GenTreeCall* call, VNFunc vnf, ValueN
 #ifdef DEBUG
             for (CallArg& arg : call->gtArgs.Args())
             {
-                assert(!arg.AbiInfo.PassedByRef &&
+                assert(!arg.AbiInfo.IsPassedByReference() &&
                        "Helpers taking implicit byref arguments should not be marked as pure");
             }
 #endif
@@ -14338,7 +14328,22 @@ bool Compiler::fgValueNumberHelperCall(GenTreeCall* call)
                 }
             }
 
+            if (isAlloc && ((call->gtCallMoreFlags & GTF_CALL_M_STACK_ARRAY) != 0))
+            {
+                if (vnf == VNF_JitNewArr)
+                {
+                    vnf = VNF_JitNewLclArr;
+                    // modHeap = false;
+                }
+                else if (vnf == VNF_JitReadyToRunNewArr)
+                {
+                    vnf = VNF_JitReadyToRunNewLclArr;
+                    // modHeap = false;
+                }
+            }
+
             fgValueNumberHelperCallFunc(call, vnf, vnpExc);
+
             return modHeap;
         }
         else
@@ -14390,67 +14395,27 @@ void Compiler::fgValueNumberAddExceptionSetForIndirection(GenTree* tree, GenTree
     ValueNumPair baseVNP = vnStore->VNPNormalPair(baseAddr->gtVNPair);
     ValueNum     baseLVN = baseVNP.GetLiberal();
     ValueNum     baseCVN = baseVNP.GetConservative();
-    ssize_t      offsetL = 0;
-    ssize_t      offsetC = 0;
-    VNFuncApp    funcAttr;
 
-    while (vnStore->GetVNFunc(baseLVN, &funcAttr) && (funcAttr.m_func == (VNFunc)GT_ADD) &&
-           (vnStore->TypeOfVN(baseLVN) == TYP_BYREF))
+    assert(baseVNP.BothDefined());
+
+    target_ssize_t offsetL = 0;
+    target_ssize_t offsetC = 0;
+
+    // baseAddr could be a SIMD for certain implicit indirs, e.g. GatherVector API.
+    if (!varTypeIsSIMD(baseAddr))
     {
-        // The arguments in value numbering functions are sorted in increasing order
-        // Thus either arg could be the constant.
-        if (vnStore->IsVNConstant(funcAttr.m_args[0]) && varTypeIsIntegral(vnStore->TypeOfVN(funcAttr.m_args[0])))
-        {
-            offsetL += vnStore->CoercedConstantValue<ssize_t>(funcAttr.m_args[0]);
-            baseLVN = funcAttr.m_args[1];
-        }
-        else if (vnStore->IsVNConstant(funcAttr.m_args[1]) && varTypeIsIntegral(vnStore->TypeOfVN(funcAttr.m_args[1])))
-        {
-            offsetL += vnStore->CoercedConstantValue<ssize_t>(funcAttr.m_args[1]);
-            baseLVN = funcAttr.m_args[0];
-        }
-        else // neither argument is a constant
-        {
-            break;
-        }
-
+        vnStore->PeelOffsets(&baseLVN, &offsetL);
         if (fgIsBigOffset(offsetL))
         {
-            // Failure: Exit this loop if we have a "big" offset
-
-            // reset baseLVN back to the full address expression
+            // Reset baseLVN back to the full address expression
             baseLVN = baseVNP.GetLiberal();
-            break;
-        }
-    }
-
-    while (vnStore->GetVNFunc(baseCVN, &funcAttr) && (funcAttr.m_func == (VNFunc)GT_ADD) &&
-           (vnStore->TypeOfVN(baseCVN) == TYP_BYREF))
-    {
-        // The arguments in value numbering functions are sorted in increasing order
-        // Thus either arg could be the constant.
-        if (vnStore->IsVNConstant(funcAttr.m_args[0]) && varTypeIsIntegral(vnStore->TypeOfVN(funcAttr.m_args[0])))
-        {
-            offsetL += vnStore->CoercedConstantValue<ssize_t>(funcAttr.m_args[0]);
-            baseCVN = funcAttr.m_args[1];
-        }
-        else if (vnStore->IsVNConstant(funcAttr.m_args[1]) && varTypeIsIntegral(vnStore->TypeOfVN(funcAttr.m_args[1])))
-        {
-            offsetC += vnStore->CoercedConstantValue<ssize_t>(funcAttr.m_args[1]);
-            baseCVN = funcAttr.m_args[0];
-        }
-        else // neither argument is a constant
-        {
-            break;
         }
 
+        vnStore->PeelOffsets(&baseCVN, &offsetC);
         if (fgIsBigOffset(offsetC))
         {
-            // Failure: Exit this loop if we have a "big" offset
-
-            // reset baseCVN back to the full address expression
+            // Reset baseCVN back to the full address expression
             baseCVN = baseVNP.GetConservative();
-            break;
         }
     }
 
@@ -15109,8 +15074,8 @@ void Compiler::vnPrint(ValueNum vn, unsigned level)
 
 // Methods of ValueNumPair.
 ValueNumPair::ValueNumPair()
-    : m_liberal(ValueNumStore::NoVN)
-    , m_conservative(ValueNumStore::NoVN)
+    : m_conservative(ValueNumStore::NoVN)
+    , m_liberal(ValueNumStore::NoVN)
 {
 }
 
@@ -15203,15 +15168,56 @@ void ValueNumStore::PeelOffsets(ValueNum* vn, target_ssize_t* offset)
     VNFuncApp app;
     while (GetVNFunc(*vn, &app) && (app.m_func == VNF_ADD))
     {
-        if (IsVNConstantNonHandle(app.m_args[0]))
+        // We don't treat handles and null as constant offset.
+
+        if (IsVNConstantNonHandle(app.m_args[0]) && (app.m_args[0] != VNForNull()))
         {
             *offset += ConstantValue<target_ssize_t>(app.m_args[0]);
             *vn = app.m_args[1];
         }
-        else if (IsVNConstantNonHandle(app.m_args[1]))
+        else if (IsVNConstantNonHandle(app.m_args[1]) && (app.m_args[1] != VNForNull()))
         {
             *offset += ConstantValue<target_ssize_t>(app.m_args[1]);
             *vn = app.m_args[0];
+        }
+        else
+        {
+            break;
+        }
+    }
+}
+
+//--------------------------------------------------------------------------------
+// PeelOffsetsI32: Peel all additions with a TYP_INT constant offset away from the
+// specified VN.
+//
+// Arguments:
+//    vn     - [in, out] The VN. Will be modified to the base VN that the offsets are added to.
+//    offset - [out] The offsets peeled out of the VNF_ADD funcs.
+//
+void ValueNumStore::PeelOffsetsI32(ValueNum* vn, int* offset)
+{
+    *offset = 0;
+    VNFuncApp app;
+    while (GetVNFunc(*vn, &app) && (app.m_func == VNF_ADD))
+    {
+        ValueNum op1 = app.m_args[0];
+        ValueNum op2 = app.m_args[1];
+
+        if ((TypeOfVN(op1) != TYP_INT) || (TypeOfVN(op2) != TYP_INT))
+        {
+            break;
+        }
+
+        if (IsVNInt32Constant(op1) && !IsVNHandle(op1))
+        {
+            *offset += ConstantValue<int>(op1);
+            *vn = op2;
+        }
+        else if (IsVNInt32Constant(op2) && !IsVNHandle(op2))
+        {
+            *offset += ConstantValue<int>(op2);
+            *vn = op1;
         }
         else
         {

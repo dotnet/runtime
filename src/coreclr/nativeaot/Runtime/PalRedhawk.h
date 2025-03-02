@@ -104,520 +104,7 @@ struct FILETIME
     uint32_t dwHighDateTime;
 };
 
-#ifdef HOST_AMD64
-
-#define CONTEXT_AMD64   0x00100000L
-
-#define CONTEXT_CONTROL         (CONTEXT_AMD64 | 0x00000001L)
-#define CONTEXT_INTEGER         (CONTEXT_AMD64 | 0x00000002L)
-
-typedef struct DECLSPEC_ALIGN(16) _XSAVE_FORMAT {
-    uint16_t  ControlWord;
-    uint16_t  StatusWord;
-    uint8_t   TagWord;
-    uint8_t   Reserved1;
-    uint16_t  ErrorOpcode;
-    uint32_t  ErrorOffset;
-    uint16_t  ErrorSelector;
-    uint16_t  Reserved2;
-    uint32_t  DataOffset;
-    uint16_t  DataSelector;
-    uint16_t  Reserved3;
-    uint32_t  MxCsr;
-    uint32_t  MxCsr_Mask;
-    Fp128   FloatRegisters[8];
-#if defined(HOST_64BIT)
-    Fp128   XmmRegisters[16];
-    uint8_t   Reserved4[96];
-#else
-    Fp128   XmmRegisters[8];
-    uint8_t   Reserved4[220];
-    uint32_t  Cr0NpxState;
-#endif
-} XSAVE_FORMAT, *PXSAVE_FORMAT;
-
-
-typedef XSAVE_FORMAT XMM_SAVE_AREA32, *PXMM_SAVE_AREA32;
-
-typedef struct DECLSPEC_ALIGN(16) _CONTEXT {
-    uint64_t P1Home;
-    uint64_t P2Home;
-    uint64_t P3Home;
-    uint64_t P4Home;
-    uint64_t P5Home;
-    uint64_t P6Home;
-    uint32_t ContextFlags;
-    uint32_t MxCsr;
-    uint16_t SegCs;
-    uint16_t SegDs;
-    uint16_t SegEs;
-    uint16_t SegFs;
-    uint16_t SegGs;
-    uint16_t SegSs;
-    uint32_t EFlags;
-    uint64_t Dr0;
-    uint64_t Dr1;
-    uint64_t Dr2;
-    uint64_t Dr3;
-    uint64_t Dr6;
-    uint64_t Dr7;
-    uint64_t Rax;
-    uint64_t Rcx;
-    uint64_t Rdx;
-    uint64_t Rbx;
-    uint64_t Rsp;
-    uint64_t Rbp;
-    uint64_t Rsi;
-    uint64_t Rdi;
-    uint64_t R8;
-    uint64_t R9;
-    uint64_t R10;
-    uint64_t R11;
-    uint64_t R12;
-    uint64_t R13;
-    uint64_t R14;
-    uint64_t R15;
-    uint64_t Rip;
-    union {
-        XMM_SAVE_AREA32 FltSave;
-        struct {
-            Fp128 Header[2];
-            Fp128 Legacy[8];
-            Fp128 Xmm0;
-            Fp128 Xmm1;
-            Fp128 Xmm2;
-            Fp128 Xmm3;
-            Fp128 Xmm4;
-            Fp128 Xmm5;
-            Fp128 Xmm6;
-            Fp128 Xmm7;
-            Fp128 Xmm8;
-            Fp128 Xmm9;
-            Fp128 Xmm10;
-            Fp128 Xmm11;
-            Fp128 Xmm12;
-            Fp128 Xmm13;
-            Fp128 Xmm14;
-            Fp128 Xmm15;
-        } DUMMYSTRUCTNAME;
-    } DUMMYUNIONNAME;
-    Fp128 VectorRegister[26];
-    uint64_t VectorControl;
-    uint64_t DebugControl;
-    uint64_t LastBranchToRip;
-    uint64_t LastBranchFromRip;
-    uint64_t LastExceptionToRip;
-    uint64_t LastExceptionFromRip;
-
-    void SetIp(uintptr_t ip) { Rip = ip; }
-    void SetSp(uintptr_t sp) { Rsp = sp; }
-#ifdef UNIX_AMD64_ABI
-    void SetArg0Reg(uintptr_t val) { Rdi = val; }
-    void SetArg1Reg(uintptr_t val) { Rsi = val; }
-#else // UNIX_AMD64_ABI
-    void SetArg0Reg(uintptr_t val) { Rcx = val; }
-    void SetArg1Reg(uintptr_t val) { Rdx = val; }
-#endif // UNIX_AMD64_ABI
-    uintptr_t GetIp() { return Rip; }
-    uintptr_t GetSp() { return Rsp; }
-
-    template <typename F>
-    void ForEachPossibleObjectRef(F lambda)
-    {
-        for (uint64_t* pReg = &Rax; pReg < &Rip; pReg++)
-            lambda((size_t*)pReg);
-    }
-
-} CONTEXT, *PCONTEXT;
-#elif defined(HOST_ARM)
-
-#define CONTEXT_ARM   0x00200000L
-
-#define CONTEXT_CONTROL (CONTEXT_ARM | 0x1L)
-#define CONTEXT_INTEGER (CONTEXT_ARM | 0x2L)
-
-#define ARM_MAX_BREAKPOINTS     8
-#define ARM_MAX_WATCHPOINTS     1
-
-typedef struct DECLSPEC_ALIGN(8) _CONTEXT {
-    uint32_t ContextFlags;
-    uint32_t R0;
-    uint32_t R1;
-    uint32_t R2;
-    uint32_t R3;
-    uint32_t R4;
-    uint32_t R5;
-    uint32_t R6;
-    uint32_t R7;
-    uint32_t R8;
-    uint32_t R9;
-    uint32_t R10;
-    uint32_t R11;
-    uint32_t R12;
-    uint32_t Sp; // R13
-    uint32_t Lr; // R14
-    uint32_t Pc; // R15
-    uint32_t Cpsr;
-    uint32_t Fpscr;
-    uint32_t Padding;
-    union {
-        Fp128  Q[16];
-        uint64_t D[32];
-        uint32_t S[32];
-    } DUMMYUNIONNAME;
-    uint32_t Bvr[ARM_MAX_BREAKPOINTS];
-    uint32_t Bcr[ARM_MAX_BREAKPOINTS];
-    uint32_t Wvr[ARM_MAX_WATCHPOINTS];
-    uint32_t Wcr[ARM_MAX_WATCHPOINTS];
-    uint32_t Padding2[2];
-
-    void SetIp(uintptr_t ip) { Pc = ip; }
-    void SetArg0Reg(uintptr_t val) { R0 = val; }
-    void SetArg1Reg(uintptr_t val) { R1 = val; }
-    uintptr_t GetIp() { return Pc; }
-    uintptr_t GetLr() { return Lr; }
-} CONTEXT, *PCONTEXT;
-
-#elif defined(HOST_X86)
-
-#define CONTEXT_i386    0x00010000L
-
-#define CONTEXT_CONTROL         (CONTEXT_i386 | 0x00000001L) // SS:SP, CS:IP, FLAGS, BP
-#define CONTEXT_INTEGER         (CONTEXT_i386 | 0x00000002L) // AX, BX, CX, DX, SI, DI
-
-#define SIZE_OF_80387_REGISTERS      80
-#define MAXIMUM_SUPPORTED_EXTENSION  512
-
-typedef struct _FLOATING_SAVE_AREA {
-    uint32_t ControlWord;
-    uint32_t StatusWord;
-    uint32_t TagWord;
-    uint32_t ErrorOffset;
-    uint32_t ErrorSelector;
-    uint32_t DataOffset;
-    uint32_t DataSelector;
-    uint8_t  RegisterArea[SIZE_OF_80387_REGISTERS];
-    uint32_t Cr0NpxState;
-} FLOATING_SAVE_AREA;
-
-#include "pshpack4.h"
-typedef struct _CONTEXT {
-    uint32_t ContextFlags;
-    uint32_t Dr0;
-    uint32_t Dr1;
-    uint32_t Dr2;
-    uint32_t Dr3;
-    uint32_t Dr6;
-    uint32_t Dr7;
-    FLOATING_SAVE_AREA FloatSave;
-    uint32_t SegGs;
-    uint32_t SegFs;
-    uint32_t SegEs;
-    uint32_t SegDs;
-    uint32_t Edi;
-    uint32_t Esi;
-    uint32_t Ebx;
-    uint32_t Edx;
-    uint32_t Ecx;
-    uint32_t Eax;
-    uint32_t Ebp;
-    uint32_t Eip;
-    uint32_t SegCs;
-    uint32_t EFlags;
-    uint32_t Esp;
-    uint32_t SegSs;
-    uint8_t  ExtendedRegisters[MAXIMUM_SUPPORTED_EXTENSION];
-
-    void SetIp(uintptr_t ip) { Eip = ip; }
-    void SetSp(uintptr_t sp) { Esp = sp; }
-    void SetArg0Reg(uintptr_t val) { Ecx = val; }
-    void SetArg1Reg(uintptr_t val) { Edx = val; }
-    uintptr_t GetIp() { return Eip; }
-    uintptr_t GetSp() { return Esp; }
-
-    template <typename F>
-    void ForEachPossibleObjectRef(F lambda)
-    {
-        for (uint32_t* pReg = &Eax; pReg < &Eip; pReg++)
-            lambda((size_t*)pReg);
-    }
-} CONTEXT, *PCONTEXT;
-#include "poppack.h"
-
-#elif defined(HOST_ARM64)
-
-#define CONTEXT_ARM64   0x00400000L
-
-#define CONTEXT_CONTROL (CONTEXT_ARM64 | 0x1L)
-#define CONTEXT_INTEGER (CONTEXT_ARM64 | 0x2L)
-
-// Specify the number of breakpoints and watchpoints that the OS
-// will track. Architecturally, ARM64 supports up to 16. In practice,
-// however, almost no one implements more than 4 of each.
-
-#define ARM64_MAX_BREAKPOINTS     8
-#define ARM64_MAX_WATCHPOINTS     2
-
-typedef struct _NEON128 {
-    uint64_t Low;
-    int64_t High;
-} NEON128, *PNEON128;
-
-typedef struct DECLSPEC_ALIGN(16) _CONTEXT {
-    //
-    // Control flags.
-    //
-    uint32_t ContextFlags;
-
-    //
-    // Integer registers
-    //
-    uint32_t Cpsr;       // NZVF + DAIF + CurrentEL + SPSel
-    union {
-        struct {
-            uint64_t X0;
-            uint64_t X1;
-            uint64_t X2;
-            uint64_t X3;
-            uint64_t X4;
-            uint64_t X5;
-            uint64_t X6;
-            uint64_t X7;
-            uint64_t X8;
-            uint64_t X9;
-            uint64_t X10;
-            uint64_t X11;
-            uint64_t X12;
-            uint64_t X13;
-            uint64_t X14;
-            uint64_t X15;
-            uint64_t X16;
-            uint64_t X17;
-            uint64_t X18;
-            uint64_t X19;
-            uint64_t X20;
-            uint64_t X21;
-            uint64_t X22;
-            uint64_t X23;
-            uint64_t X24;
-            uint64_t X25;
-            uint64_t X26;
-            uint64_t X27;
-            uint64_t X28;
-#pragma warning(push)
-#pragma warning(disable:4201) // nameless struct
-        };
-        uint64_t X[29];
-    };
-#pragma warning(pop)
-    uint64_t Fp; // X29
-    uint64_t Lr; // X30
-    uint64_t Sp;
-    uint64_t Pc;
-
-    //
-    // Floating Point/NEON Registers
-    //
-    NEON128 V[32];
-    uint32_t Fpcr;
-    uint32_t Fpsr;
-
-    //
-    // Debug registers
-    //
-    uint32_t Bcr[ARM64_MAX_BREAKPOINTS];
-    uint64_t Bvr[ARM64_MAX_BREAKPOINTS];
-    uint32_t Wcr[ARM64_MAX_WATCHPOINTS];
-    uint64_t Wvr[ARM64_MAX_WATCHPOINTS];
-
-    void SetIp(uintptr_t ip) { Pc = ip; }
-    void SetArg0Reg(uintptr_t val) { X0 = val; }
-    void SetArg1Reg(uintptr_t val) { X1 = val; }
-    uintptr_t GetIp() { return Pc; }
-    uintptr_t GetLr() { return Lr; }
-    uintptr_t GetSp() { return Sp; }
-    void SetSp(uintptr_t sp) { Sp = sp; }
-
-    template <typename F>
-    void ForEachPossibleObjectRef(F lambda)
-    {
-        for (uint64_t* pReg = &X0; pReg <= &X28; pReg++)
-            lambda((size_t*)pReg);
-
-        // Lr can be used as a scratch register
-        lambda((size_t*)&Lr);
-    }
-} CONTEXT, *PCONTEXT;
-
-#elif defined(HOST_LOONGARCH64)
-
-#define CONTEXT_LOONGARCH64   0x00800000L
-
-#define CONTEXT_CONTROL (CONTEXT_LOONGARCH64 | 0x1L)
-#define CONTEXT_INTEGER (CONTEXT_LOONGARCH64 | 0x2L)
-
-// Specify the number of breakpoints and watchpoints that the OS
-// will track. Architecturally, LOONGARCH64 supports up to 16. In practice,
-// however, almost no one implements more than 4 of each.
-
-#define LOONGARCH64_MAX_BREAKPOINTS     8
-#define LOONGARCH64_MAX_WATCHPOINTS     2
-
-typedef struct DECLSPEC_ALIGN(16) _CONTEXT {
-    //
-    // Control flags.
-    //
-    uint32_t ContextFlags;
-
-    //
-    // Integer registers
-    //
-    uint64_t R0;
-    uint64_t Ra;
-    uint64_t R2;
-    uint64_t Sp;
-    uint64_t R4;
-    uint64_t R5;
-    uint64_t R6;
-    uint64_t R7;
-    uint64_t R8;
-    uint64_t R9;
-    uint64_t R10;
-    uint64_t R11;
-    uint64_t R12;
-    uint64_t R13;
-    uint64_t R14;
-    uint64_t R15;
-    uint64_t R16;
-    uint64_t R17;
-    uint64_t R18;
-    uint64_t R19;
-    uint64_t R20;
-    uint64_t R21;
-    uint64_t Fp;
-    uint64_t R23;
-    uint64_t R24;
-    uint64_t R25;
-    uint64_t R26;
-    uint64_t R27;
-    uint64_t R28;
-    uint64_t R29;
-    uint64_t R30;
-    uint64_t R31;
-    uint64_t Pc;
-
-    //
-    // Floating Point Registers: FPR64/LSX/LASX.
-    //
-    uint64_t F[4*32];
-    uint64_t Fcc;
-    uint32_t Fcsr;
-
-    void SetIp(uintptr_t ip) { Pc = ip; }
-    void SetArg0Reg(uintptr_t val) { R4 = val; }
-    void SetArg1Reg(uintptr_t val) { R5 = val; }
-    uintptr_t GetIp() { return Pc; }
-    uintptr_t GetRa() { return Ra; }
-    uintptr_t GetSp() { return Sp; }
-
-    template <typename F>
-    void ForEachPossibleObjectRef(F lambda)
-    {
-        for (uint64_t* pReg = &R0; pReg <= &R31; pReg++)
-            lambda((size_t*)pReg);
-
-        // Ra can be used as a scratch register
-        lambda((size_t*)&Ra);
-    }
-} CONTEXT, *PCONTEXT;
-
-#elif defined(TARGET_RISCV64)
-
-#define CONTEXT_RISCV64   0x01000000L
-
-#define CONTEXT_CONTROL (CONTEXT_RISCV64 | 0x1L)
-#define CONTEXT_INTEGER (CONTEXT_RISCV64 | 0x2L)
-
-#define RISCV64_MAX_BREAKPOINTS     8
-#define RISCV64_MAX_WATCHPOINTS     2
-
-typedef struct DECLSPEC_ALIGN(16) _CONTEXT {
-    //
-    // Control flags.
-    //
-    uint32_t ContextFlags;
-
-    //
-    // Integer registers
-    //
-    uint64_t X0;
-    uint64_t Ra;
-    uint64_t Sp;
-    uint64_t Gp;
-    uint64_t Tp;
-    uint64_t T0;
-    uint64_t T1;
-    uint64_t T2;
-    uint64_t Fp;
-    uint64_t S1;
-    uint64_t A0;
-    uint64_t A1;
-    uint64_t A2;
-    uint64_t A3;
-    uint64_t A4;
-    uint64_t A5;
-    uint64_t A6;
-    uint64_t A7;
-    uint64_t S2;
-    uint64_t S3;
-    uint64_t S4;
-    uint64_t S5;
-    uint64_t S6;
-    uint64_t S7;
-    uint64_t S8;
-    uint64_t S9;
-    uint64_t S10;
-    uint64_t S11;
-    uint64_t T3;
-    uint64_t T4;
-    uint64_t T5;
-    uint64_t T6;
-    uint64_t Pc;
-
-    //
-    // Floating Point Registers
-    //
-    uint64_t F[32];
-    uint32_t Fcsr;
-
-    void SetIp(uintptr_t ip) { Pc = ip; }
-    void SetArg0Reg(uintptr_t val) { A0 = val; }
-    void SetArg1Reg(uintptr_t val) { A1 = val; }
-    uintptr_t GetIp() { return Pc; }
-    uintptr_t GetRa() { return Ra; }
-    uintptr_t GetSp() { return Sp; }
-
-    template <typename F>
-    void ForEachPossibleObjectRef(F lambda)
-    {
-        for (uint64_t* pReg = &X0; pReg <= &T6; pReg++)
-            lambda((size_t*)pReg);
-
-        // RA can be used as a scratch register
-        lambda((size_t*)&Ra);
-    }
-} CONTEXT, *PCONTEXT;
-
-#elif defined(HOST_WASM)
-
-typedef struct DECLSPEC_ALIGN(8) _CONTEXT {
-    // TODO: Figure out if WebAssembly has a meaningful context available
-    void SetIp(uintptr_t ip) {  }
-    void SetArg0Reg(uintptr_t val) {  }
-    void SetArg1Reg(uintptr_t val) {  }
-    uintptr_t GetIp() { return 0; }
-} CONTEXT, *PCONTEXT;
-#endif
+typedef struct _CONTEXT CONTEXT, *PCONTEXT;
 
 #define EXCEPTION_MAXIMUM_PARAMETERS 15 // maximum number of exception parameters
 
@@ -629,11 +116,6 @@ typedef struct _EXCEPTION_RECORD32 {
     uint32_t      NumberParameters;
     uintptr_t  ExceptionInformation[EXCEPTION_MAXIMUM_PARAMETERS];
 } EXCEPTION_RECORD, *PEXCEPTION_RECORD;
-
-typedef struct _EXCEPTION_POINTERS {
-    PEXCEPTION_RECORD   ExceptionRecord;
-    PCONTEXT            ContextRecord;
-} EXCEPTION_POINTERS, *PEXCEPTION_POINTERS;
 
 #define EXCEPTION_CONTINUE_EXECUTION (-1)
 #define EXCEPTION_CONTINUE_SEARCH (0)
@@ -650,6 +132,9 @@ typedef enum _EXCEPTION_DISPOSITION {
 #define STATUS_SINGLE_STEP                             ((uint32_t   )0x80000004L)
 #define STATUS_ACCESS_VIOLATION                        ((uint32_t   )0xC0000005L)
 #define STATUS_STACK_OVERFLOW                          ((uint32_t   )0xC00000FDL)
+
+#endif // !_INC_WINDOWS
+
 #define STATUS_REDHAWK_NULL_REFERENCE                  ((uint32_t   )0x00000000L)
 #define STATUS_REDHAWK_UNMANAGED_HELPER_NULL_REFERENCE ((uint32_t   )0x00000042L)
 
@@ -658,9 +143,6 @@ typedef enum _EXCEPTION_DISPOSITION {
 #else
 #define NULL_AREA_SIZE                   (64*1024)
 #endif
-
-#endif // !_INC_WINDOWS
-
 
 
 #ifndef DACCESS_COMPILE
@@ -730,15 +212,19 @@ REDHAWK_PALIMPORT bool REDHAWK_PALAPI PalInit();
 // Given the OS handle of a loaded module, compute the upper and lower virtual address bounds (inclusive).
 REDHAWK_PALIMPORT void REDHAWK_PALAPI PalGetModuleBounds(HANDLE hOsHandle, _Out_ uint8_t ** ppLowerBound, _Out_ uint8_t ** ppUpperBound);
 
-REDHAWK_PALIMPORT CONTEXT* PalAllocateCompleteOSContext(_Out_ uint8_t** contextBuffer);
-REDHAWK_PALIMPORT bool REDHAWK_PALAPI PalGetCompleteThreadContext(HANDLE hThread, _Out_ CONTEXT * pCtx);
-REDHAWK_PALIMPORT bool REDHAWK_PALAPI PalSetThreadContext(HANDLE hThread, _Out_ CONTEXT * pCtx);
-REDHAWK_PALIMPORT void REDHAWK_PALAPI PalRestoreContext(CONTEXT * pCtx);
+struct NATIVE_CONTEXT;
+
+#if _WIN32
+REDHAWK_PALIMPORT NATIVE_CONTEXT* PalAllocateCompleteOSContext(_Out_ uint8_t** contextBuffer);
+REDHAWK_PALIMPORT bool REDHAWK_PALAPI PalGetCompleteThreadContext(HANDLE hThread, _Out_ NATIVE_CONTEXT * pCtx);
+REDHAWK_PALIMPORT bool REDHAWK_PALAPI PalSetThreadContext(HANDLE hThread, _Out_ NATIVE_CONTEXT * pCtx);
+REDHAWK_PALIMPORT void REDHAWK_PALAPI PalRestoreContext(NATIVE_CONTEXT * pCtx);
 
 // For platforms that have segment registers in the CONTEXT_CONTROL set that
 // are not saved in PAL_LIMITED_CONTEXT, this captures them from the current
 // thread and saves them in `pContext`.
-REDHAWK_PALIMPORT void REDHAWK_PALAPI PopulateControlSegmentRegisters(CONTEXT* pContext);
+REDHAWK_PALIMPORT void REDHAWK_PALAPI PopulateControlSegmentRegisters(CONTEXT * pContext);
+#endif
 
 REDHAWK_PALIMPORT int32_t REDHAWK_PALAPI PalGetProcessCpuCount();
 
@@ -759,9 +245,6 @@ EXTERN_C unsigned long __readfsdword(unsigned long Offset);
 #elif defined(HOST_AMD64)
 EXTERN_C unsigned __int64  __readgsqword(unsigned long Offset);
 #pragma intrinsic(__readgsqword)
-#elif defined(HOST_ARM)
-EXTERN_C unsigned int _MoveFromCoprocessor(unsigned int, unsigned int, unsigned int, unsigned int, unsigned int);
-#pragma intrinsic(_MoveFromCoprocessor)
 #elif defined(HOST_ARM64)
 EXTERN_C unsigned __int64 __getReg(int);
 #pragma intrinsic(__getReg)
@@ -776,8 +259,6 @@ inline uint8_t * PalNtCurrentTeb()
     return (uint8_t*)__readfsdword(0x18);
 #elif defined(HOST_AMD64)
     return (uint8_t*)__readgsqword(0x30);
-#elif defined(HOST_ARM)
-    return (uint8_t*)_MoveFromCoprocessor(15, 0, 13,  0, 2);
 #elif defined(HOST_ARM64)
     return (uint8_t*)__getReg(18);
 #else
@@ -792,28 +273,7 @@ inline uint8_t * PalNtCurrentTeb()
 #define OFFSETOF__TEB__ThreadLocalStoragePointer 0x2c
 #endif
 
-#else // _WIN32
-
-inline uint8_t * PalNtCurrentTeb()
-{
-    // UNIXTODO: Implement PalNtCurrentTeb
-    return NULL;
-}
-
-#define OFFSETOF__TEB__ThreadLocalStoragePointer 0
-
 #endif // _WIN32
-
-//
-// Compiler intrinsic definitions. In the interest of performance the PAL doesn't provide exports of these
-// (that would defeat the purpose of having an intrinsic in the first place). Instead we place the necessary
-// compiler linkage directly inline in this header. As a result this section may have platform specific
-// conditional compilation (upto and including defining an export of functionality that isn't a supported
-// intrinsic on that platform).
-//
-
-EXTERN_C void * __cdecl _alloca(size_t);
-#pragma intrinsic(_alloca)
 
 REDHAWK_PALIMPORT _Ret_maybenull_ _Post_writable_byte_size_(size) void* REDHAWK_PALAPI PalVirtualAlloc(uintptr_t size, uint32_t protect);
 REDHAWK_PALIMPORT void REDHAWK_PALAPI PalVirtualFree(_In_ void* pAddress, uintptr_t size);
@@ -825,13 +285,6 @@ REDHAWK_PALIMPORT UInt32_BOOL REDHAWK_PALAPI PalAreShadowStacksEnabled();
 REDHAWK_PALIMPORT HANDLE REDHAWK_PALAPI PalCreateEventW(_In_opt_ LPSECURITY_ATTRIBUTES pEventAttributes, UInt32_BOOL manualReset, UInt32_BOOL initialState, _In_opt_z_ LPCWSTR pName);
 REDHAWK_PALIMPORT uint64_t REDHAWK_PALAPI PalGetTickCount64();
 REDHAWK_PALIMPORT HANDLE REDHAWK_PALAPI PalGetModuleHandleFromPointer(_In_ void* pointer);
-
-#ifdef TARGET_UNIX
-struct UNIX_CONTEXT;
-#define NATIVE_CONTEXT UNIX_CONTEXT
-#else
-#define NATIVE_CONTEXT CONTEXT
-#endif
 
 #ifdef TARGET_UNIX
 REDHAWK_PALIMPORT uint32_t REDHAWK_PALAPI PalGetOsPageSize();
@@ -848,9 +301,8 @@ REDHAWK_PALIMPORT bool REDHAWK_PALAPI PalStartFinalizerThread(_In_ BackgroundCal
 REDHAWK_PALIMPORT bool REDHAWK_PALAPI PalStartEventPipeHelperThread(_In_ BackgroundCallback callback, _In_opt_ void* pCallbackContext);
 
 #ifdef FEATURE_HIJACK
-typedef void (*PalHijackCallback)(_In_ NATIVE_CONTEXT* pThreadContext, _In_opt_ void* pThreadToHijack);
-REDHAWK_PALIMPORT void REDHAWK_PALAPI PalHijack(HANDLE hThread, _In_opt_ void* pThreadToHijack);
-REDHAWK_PALIMPORT UInt32_BOOL REDHAWK_PALAPI PalRegisterHijackCallback(_In_ PalHijackCallback callback);
+class Thread;
+REDHAWK_PALIMPORT void REDHAWK_PALAPI PalHijack(Thread* pThreadToHijack);
 REDHAWK_PALIMPORT HijackFunc* REDHAWK_PALAPI PalGetHijackTarget(_In_ HijackFunc* defaultHijackTarget);
 #endif
 

@@ -1302,5 +1302,6 @@ namespace System.Runtime.InteropServices
     {
         public static System.Collections.Immutable.ImmutableArray<T> AsImmutableArray<T>(T[]? array) { throw null; }
         public static T[]? AsArray<T>(System.Collections.Immutable.ImmutableArray<T> array) { throw null; }
+        public static System.Memory<T> AsMemory<T>(System.Collections.Immutable.ImmutableArray<T>.Builder? builder) { throw null; }
     }
 }

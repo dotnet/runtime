@@ -1,0 +1,104 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppPrevious);$(NetCoreAppMinimum);netstandard2.0;$(NetFrameworkMinimum)</TargetFrameworks>
+    <IsPackable>true</IsPackable>
+    <NoWarn>$(NoWarn);CS1998</NoWarn> <!-- Various IAsyncEnumerable implementations that don't need to use await -->
+
+    <!-- Disabling baseline validation since this is a brand new package.
+         Once this package has shipped a stable version, the following line
+         should be removed in order to re-enable validation. -->
+    <DisablePackageBaselineValidation>true</DisablePackageBaselineValidation>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="System\Linq\Shuffle.cs" />
+    <Compile Include="System\Linq\SkipLast.cs" />
+    <Compile Include="System\Linq\SkipWhile.cs" />
+    <Compile Include="System\Linq\Append.cs" />
+    <Compile Include="System\Linq\Empty.cs" />
+    <Compile Include="System\Linq\MaxByAsync.cs" />
+    <Compile Include="System\Linq\MinAsync.cs" />
+    <Compile Include="System\Linq\Cast.cs" />
+    <Compile Include="System\Linq\AsyncEnumerable.cs" />
+    <Compile Include="System\Linq\TakeLast.cs" />
+    <Compile Include="System\Linq\TakeWhile.cs" />
+    <Compile Include="System\Linq\UnionBy.cs" />
+    <Compile Include="System\Linq\AggregateAsync.cs" />
+    <Compile Include="System\Linq\AnyAsync.cs" />
+    <Compile Include="System\Linq\AllAsync.cs" />
+    <Compile Include="System\Linq\Prepend.cs" />
+    <Compile Include="System\Linq\AverageAsync.cs" />
+    <Compile Include="System\Linq\Chunk.cs" />
+    <Compile Include="System\Linq\Concat.cs" />
+    <Compile Include="System\Linq\ContainsAsync.cs" />
+    <Compile Include="System\Linq\AggregateBy.cs" />
+    <Compile Include="System\Linq\CountBy.cs" />
+    <Compile Include="System\Linq\CountAsync.cs" />
+    <Compile Include="System\Linq\DefaultIfEmpty.cs" />
+    <Compile Include="System\Linq\DistinctBy.cs" />
+    <Compile Include="System\Linq\Distinct.cs" />
+    <Compile Include="System\Linq\ElementAtAsync.cs" />
+    <Compile Include="System\Linq\ToAsyncEnumerable.cs" />
+    <Compile Include="System\Linq\ExceptBy.cs" />
+    <Compile Include="System\Linq\Except.cs" />
+    <Compile Include="System\Linq\FirstAsync.cs" />
+    <Compile Include="System\Linq\GroupBy.cs" />
+    <Compile Include="System\Linq\GroupJoin.cs" />
+    <Compile Include="System\Linq\Index.cs" />
+    <Compile Include="System\Linq\IntersectBy.cs" />
+    <Compile Include="System\Linq\Intersect.cs" />
+    <Compile Include="System\Linq\Join.cs" />
+    <Compile Include="System\Linq\LastAsync.cs" />
+    <Compile Include="System\Linq\LeftJoin.cs" />
+    <Compile Include="System\Linq\ToArrayAsync.cs" />
+    <Compile Include="System\Linq\ToDictionaryAsync.cs" />
+    <Compile Include="System\Linq\ToListAsync.cs" />
+    <Compile Include="System\Linq\ToLookupAsync.cs" />
+    <Compile Include="System\Linq\MaxAsync.cs" />
+    <Compile Include="System\Linq\MinByAsync.cs" />
+    <Compile Include="System\Linq\OfType.cs" />
+    <Compile Include="System\Linq\OrderBy.cs" />
+    <Compile Include="System\Linq\Range.cs" />
+    <Compile Include="System\Linq\Repeat.cs" />
+    <Compile Include="System\Linq\Reverse.cs" />
+    <Compile Include="System\Linq\RightJoin.cs" />
+    <Compile Include="System\Linq\Select.cs" />
+    <Compile Include="System\Linq\SelectMany.cs" />
+    <Compile Include="System\Linq\SequenceEqualAsync.cs" />
+    <Compile Include="System\Linq\SingleAsync.cs" />
+    <Compile Include="System\Linq\Skip.cs" />
+    <Compile Include="System\Linq\SumAsync.cs" />
+    <Compile Include="System\Linq\Take.cs" />
+    <Compile Include="System\Linq\ThrowHelper.cs" />
+    <Compile Include="System\Linq\ToHashSetAsync.cs" />
+    <Compile Include="System\Linq\Union.cs" />
+    <Compile Include="System\Linq\Where.cs" />
+    <Compile Include="System\Linq\Zip.cs" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)'">
+    <Reference Include="System.Collections" />
+    <Reference Include="System.Linq" />
+    <Reference Include="System.Memory" />
+    <Reference Include="System.Runtime" />
+    <Reference Include="System.Runtime.InteropServices" />
+  </ItemGroup>
+
+  <ItemGroup Condition="!$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net9.0'))">
+    <Compile Include="$(CoreLibSharedDir)System\Runtime\CompilerServices\OverloadResolutionPriorityAttribute.cs" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
+    <Compile Include="$(CoreLibSharedDir)System\Runtime\CompilerServices\CallerArgumentExpressionAttribute.cs" />
+    
+    <PackageReference Include="System.Threading.Tasks.Extensions" Version="$(SystemThreadingTasksExtensionsVersion)" />
+    <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Bcl.AsyncInterfaces\src\Microsoft.Bcl.AsyncInterfaces.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Bcl.Memory\src\Microsoft.Bcl.Memory.csproj" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">
+    <PackageReference Include="System.ValueTuple" Version="$(SystemValueTupleVersion)" />
+  </ItemGroup>
+
+</Project>

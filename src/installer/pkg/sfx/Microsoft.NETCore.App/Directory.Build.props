@@ -101,6 +101,7 @@
     <PlatformManifestFileEntry Include="coreclr.dll" IsNative="true" />
     <PlatformManifestFileEntry Include="libcoreclr.so" IsNative="true" />
     <PlatformManifestFileEntry Include="libcoreclr.dylib" IsNative="true" />
+    <PlatformManifestFileEntry Include="libcoreclr_static.a" IsNative="true" />
     <PlatformManifestFileEntry Include="clrgc.dll" IsNative="true" />
     <PlatformManifestFileEntry Include="libclrgc.so" IsNative="true" />
     <PlatformManifestFileEntry Include="libclrgc.dylib" IsNative="true" />
@@ -223,6 +224,8 @@
     <PlatformManifestFileEntry Include="dotnet.js.map" IsNative="true" />
     <PlatformManifestFileEntry Include="dotnet.runtime.js" IsNative="true" />
     <PlatformManifestFileEntry Include="dotnet.runtime.js.map" IsNative="true" />
+    <PlatformManifestFileEntry Include="dotnet.diagnostics.js" IsNative="true" />
+    <PlatformManifestFileEntry Include="dotnet.diagnostics.js.map" IsNative="true" />
     <PlatformManifestFileEntry Include="dotnet.native.js" IsNative="true" />
     <PlatformManifestFileEntry Include="dotnet.native.worker.mjs" IsNative="true" />
     <PlatformManifestFileEntry Include="dotnet.native.js.symbols" IsNative="true" />
@@ -253,7 +256,6 @@
     <PlatformManifestFileEntry Include="wasi-link.rsp" IsNative="true" />
     <PlatformManifestFileEntry Include="ILLink.Substitutions.WasmIntrinsics.xml" IsNative="true" />
     <PlatformManifestFileEntry Include="ILLink.Substitutions.NoWasmIntrinsics.xml" IsNative="true" />
-    <PlatformManifestFileEntry Include="ILLink.Substitutions.LegacyJsInterop.xml" IsNative="true" />
     <!-- wasi specific -->
     <PlatformManifestFileEntry Include="main.c" IsNative="true" />
     <PlatformManifestFileEntry Include="driver.h" IsNative="true" />

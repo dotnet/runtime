@@ -327,7 +327,7 @@ internal struct TypeNameBuilder
     // The following flags in the FormatFlags argument are significant: FormatNamespace FormatFullInst FormatAssembly FormatNoVersion
     private static void AppendInst(Target target, StringBuilder stringBuilder, ReadOnlySpan<TypeHandle> inst, TypeNameFormat format)
     {
-        TypeNameBuilder tnb = new (stringBuilder, target, format, initialStateIsName: true);
+        TypeNameBuilder tnb = new(stringBuilder, target, format, initialStateIsName: true);
         AppendInst(ref tnb, inst, format);
     }
 

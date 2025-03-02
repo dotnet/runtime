@@ -110,15 +110,33 @@ public static class Program
             "https://github.com/Metalnem/libfuzzer-dotnet/releases/download/v2023.06.26.1359/libfuzzer-dotnet-windows.exe",
             "cbc1f510caaec01b17b5e89fc780f426710acee7429151634bbf4d0c57583458").ConfigureAwait(false);
 
-        foreach (IFuzzer fuzzer in fuzzers)
-        {
-            Console.WriteLine();
-            Console.WriteLine($"Preparing {fuzzer.Name} ...");
+        Console.WriteLine("Preparing fuzzers ...");
 
+        List<string> exceptions = new();
+
+        Parallel.ForEach(fuzzers, fuzzer =>
+        {
+            try
+            {
+                PrepareFuzzer(fuzzer);
+            }
+            catch (Exception ex)
+            {
+                exceptions.Add($"Failed to prepare {fuzzer.Name}: {ex.Message}");
+            }
+        });
+
+        if (exceptions.Count != 0)
+        {
+            Console.WriteLine(string.Join('\n', exceptions));
+            throw new Exception($"Failed to prepare {exceptions.Count} fuzzers.");
+        }
+
+        void PrepareFuzzer(IFuzzer fuzzer)
+        {
             string fuzzerDirectory = Path.Combine(outputDirectory, fuzzer.Name);
             Directory.CreateDirectory(fuzzerDirectory);
 
-            Console.WriteLine($"Copying artifacts to {fuzzerDirectory}");
             // NOTE: The expected fuzzer directory structure is currently flat.
             // If we ever need to support subdirectories, OneFuzzConfig.json must also be updated to use PreservePathsJobDependencies.
             foreach (string file in Directory.GetFiles(publishDirectory))
@@ -138,10 +156,7 @@ public static class Program
 
             InstrumentAssemblies(fuzzer, fuzzerDirectory);
 
-            Console.WriteLine("Generating OneFuzzConfig.json");
             File.WriteAllText(Path.Combine(fuzzerDirectory, "OneFuzzConfig.json"), GenerateOneFuzzConfigJson(fuzzer));
-
-            Console.WriteLine("Generating local-run.bat");
             File.WriteAllText(Path.Combine(fuzzerDirectory, "local-run.bat"), GenerateLocalRunHelperScript(fuzzer));
         }
 
@@ -195,8 +210,6 @@ public static class Program
     {
         foreach (var (assembly, prefixes) in GetInstrumentationTargets(fuzzer))
         {
-            Console.WriteLine($"Instrumenting {assembly} {(prefixes is null ? "" : $"({prefixes})")}");
-
             string path = Path.Combine(fuzzerDirectory, assembly);
             if (!File.Exists(path))
             {

@@ -18,4 +18,7 @@
     <ProjectReference Include="nonentrypointassembly\nonentrypointassembly.csproj" />
   </ItemGroup>
 
+  <ItemGroup Condition="'$(TargetsAppleMobile)' == 'true' and '$(EnableAggressiveTrimming)' == 'true' and '$(UseNativeAotRuntime)' != 'true'" >
+    <TrimmerRootAssembly Include="nonentrypointassembly" />
+  </ItemGroup>
 </Project>

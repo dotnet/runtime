@@ -421,7 +421,6 @@ LEAF_ENTRY HelperMethodFrameRestoreState, _TEXT
     RestoreRegMS  30, s7
     RestoreRegMS  31, s8
     RestoreRegMS  32, fp  //NOTE: here 32 is not the real fp register number.
-    RestoreRegMS  33, tp  //NOTE: here 33 is not the real tp register number.
 LOCAL_LABEL(Done):
     // Its imperative that the return value of HelperMethodFrameRestoreState is zero
     // as it is used in the state machine to loop until it becomes zero.
@@ -455,7 +454,6 @@ LEAF_ENTRY LazyMachStateCaptureState, _TEXT
     st.d  $s7, $a1, 56
     st.d  $s8, $a1, 64
     st.d  $fp, $a1, 72
-    st.d  $tp, $a1, 80
 
     jirl  $r0, $ra, 0
 LEAF_END LazyMachStateCaptureState, _TEXT
@@ -599,8 +597,8 @@ NESTED_ENTRY TheUMEntryPrestub, _TEXT, UnhandledExceptionHandlerUnix
 NESTED_END TheUMEntryPrestub, _TEXT
 
 // Make sure the `FaultingExceptionFrame_StackAlloc` is 16-byte aligned.
-#define FaultingExceptionFrame_StackAlloc (SIZEOF__GSCookie + SIZEOF__FaultingExceptionFrame + 0x8)
-#define FaultingExceptionFrame_FrameOffset SIZEOF__GSCookie
+#define FaultingExceptionFrame_StackAlloc (SIZEOF__FaultingExceptionFrame)
+#define FaultingExceptionFrame_FrameOffset 0
 
 .macro GenerateRedirectedStubWithFrame stub, target
 
@@ -773,15 +771,15 @@ NESTED_ENTRY OnHijackTripThread, _TEXT, NoHandler
     PROLOG_SAVE_REG_PAIR   25, 26, 32
     PROLOG_SAVE_REG_PAIR   27, 28, 48
     PROLOG_SAVE_REG_PAIR   29, 30, 64
-    PROLOG_SAVE_REG_PAIR   31, 2, 80
+    PROLOG_SAVE_REG        31,     80
 
     // save any integral return value(s)
-    st.d  $a0, $sp, 96
-    st.d  $a1, $sp, 104
+    st.d  $a0, $sp, 88
+    st.d  $a1, $sp, 96
 
     // save any FP return value(s)
-    fst.d  $f0, $sp, 112
-    fst.d  $f1, $sp, 120
+    fst.d  $f0, $sp, 104
+    fst.d  $f1, $sp, 112
 
     ori  $a0, $sp, 0
     bl C_FUNC(OnHijackWorker)
@@ -789,18 +787,18 @@ NESTED_ENTRY OnHijackTripThread, _TEXT, NoHandler
     // restore callee saved registers
 
     // restore any integral return value(s)
-    ld.d  $a0, $sp, 96
-    ld.d  $a1, $sp, 104
+    ld.d  $a0, $sp, 88
+    ld.d  $a1, $sp, 96
 
     // restore any FP return value(s)
-    fld.d  $f0, $sp, 112
-    fld.d  $f1, $sp, 120
+    fld.d  $f0, $sp, 104
+    fld.d  $f1, $sp, 112
 
     EPILOG_RESTORE_REG_PAIR   23, 24, 16
     EPILOG_RESTORE_REG_PAIR   25, 26, 32
     EPILOG_RESTORE_REG_PAIR   27, 28, 48
     EPILOG_RESTORE_REG_PAIR   29, 30, 64
-    EPILOG_RESTORE_REG_PAIR   31, 2,  80
+    EPILOG_RESTORE_REG        31,     80
     //                              $fp,$ra
     EPILOG_RESTORE_REG_PAIR_INDEXED  22, 1, 0x80
     EPILOG_RETURN
@@ -843,14 +841,11 @@ NESTED_ENTRY CallEHFunclet, _TEXT, NoHandler
     PROLOG_SAVE_REG_PAIR   25, 26, 32
     PROLOG_SAVE_REG_PAIR   27, 28, 48
     PROLOG_SAVE_REG_PAIR   29, 30, 64
-    //                    $s8,$tp
-    PROLOG_SAVE_REG_PAIR   31, 2,  80
-    //PROLOG_SAVE_REG 31, 80
+    PROLOG_SAVE_REG        31,     80
 
     // Save the SP of this function
     st.d  $sp, $a3, 0
 
-    ld.d  $tp, $a2, -168  // offset of tp in PCONTEXT relative to S0.
     ld.d  $fp, $a2, -8  // offset of fp in PCONTEXT relative to S0.
     ld.d  $s0, $a2, 0
     ld.d  $s1, $a2, 8
@@ -860,7 +855,7 @@ NESTED_ENTRY CallEHFunclet, _TEXT, NoHandler
     ld.d  $s5, $a2, 40
     ld.d  $s6, $a2, 48
     ld.d  $s7, $a2, 56
-    ld.d  $s8, $a2, 64  // offset of fp in PCONTEXT relative to S0.
+    ld.d  $s8, $a2, 64
 
     // Invoke the funclet
     jirl $ra, $a1, 0
@@ -869,8 +864,7 @@ NESTED_ENTRY CallEHFunclet, _TEXT, NoHandler
     EPILOG_RESTORE_REG_PAIR   25, 26, 32
     EPILOG_RESTORE_REG_PAIR   27, 28, 48
     EPILOG_RESTORE_REG_PAIR   29, 30, 64
-    EPILOG_RESTORE_REG_PAIR   31,  2, 80
-    //EPILOG_RESTORE_REG  31, 80
+    EPILOG_RESTORE_REG        31,     80
     //                              $fp,$ra
     EPILOG_RESTORE_REG_PAIR_INDEXED   22, 1, 96
     EPILOG_RETURN
@@ -890,7 +884,7 @@ NESTED_ENTRY CallEHFilterFunclet, _TEXT, NoHandler
     // $a3 = address of the location where the SP of funclet's caller (i.e. this helper) should be saved.
     //
     // Save the SP of this function
-    st.d $fp, $a3, 0
+    st.d  $fp, $a3, 0
     // Invoke the filter funclet
     jirl  $ra, $a2, 0
 
@@ -1091,6 +1085,22 @@ NESTED_ENTRY OnCallCountThresholdReachedStub, _TEXT, NoHandler
     EPILOG_BRANCH_REG $t4
 NESTED_END OnCallCountThresholdReachedStub, _TEXT
 
+NESTED_ENTRY JIT_Patchpoint, _TEXT, NoHandler
+    PROLOG_WITH_TRANSITION_BLOCK
+
+    addi.d  $a0, $sp, __PWTB_TransitionBlock // TransitionBlock *
+    bl      C_FUNC(JIT_PatchpointWorkerWorkerWithPolicy)
+
+    EPILOG_WITH_TRANSITION_BLOCK_RETURN
+NESTED_END JIT_Patchpoint, _TEXT
+
+// first arg register holds iloffset, which needs to be moved to the second register, and the first register filled with NULL
+LEAF_ENTRY JIT_PartialCompilationPatchpoint, _TEXT
+    move    $a1, $a0
+    li.d    $a0, 0
+    b C_FUNC(JIT_Patchpoint)
+LEAF_END JIT_PartialCompilationPatchpoint, _TEXT
+
 #endif // FEATURE_TIERED_COMPILATION
 
 // ------------------------------------------------------------------
@@ -1121,3 +1131,14 @@ LEAF_ENTRY GetTLSResolverAddress, _TEXT
         EPILOG_RETURN
 LEAF_END GetTLSResolverAddress, _TEXT
 // ------------------------------------------------------------------
+
+LEAF_ENTRY JIT_PollGC, _TEXT
+        PREPARE_EXTERNAL_VAR g_TrapReturningThreads, $t0
+        ld.w    $t0, $t0, 0
+        bne     $t0, $zero, LOCAL_LABEL(JIT_PollGCRarePath)
+        jirl $r0, $ra, 0
+LOCAL_LABEL(JIT_PollGCRarePath):
+        PREPARE_EXTERNAL_VAR g_pPollGC, $t0
+        ld.d    $t0, $t0, 0
+        EPILOG_BRANCH_REG $t0
+LEAF_END JIT_PollGC, _TEXT

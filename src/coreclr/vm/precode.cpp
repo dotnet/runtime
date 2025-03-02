@@ -184,6 +184,26 @@ PCODE Precode::TryToSkipFixupPrecode(PCODE addr)
 
 #ifndef DACCESS_COMPILE
 
+#ifdef FEATURE_INTERPRETER
+InterpreterPrecode* Precode::AllocateInterpreterPrecode(PCODE byteCode,
+                                                        LoaderAllocator *  pLoaderAllocator,
+                                                        AllocMemTracker *  pamTracker)
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_NOTRIGGER;
+        MODE_ANY;
+    }
+    CONTRACTL_END;
+
+    SIZE_T size = sizeof(InterpreterPrecode);
+    InterpreterPrecode* pPrecode = (InterpreterPrecode*)pamTracker->Track(pLoaderAllocator->GetNewStubPrecodeHeap()->AllocAlignedMem(size, 1));
+    pPrecode->Init(pPrecode, byteCode);
+    return pPrecode;
+}
+#endif // FEATURE_INTERPRETER
+
 Precode* Precode::Allocate(PrecodeType t, MethodDesc* pMD,
                            LoaderAllocator *  pLoaderAllocator,
                            AllocMemTracker *  pamTracker)
@@ -482,6 +502,18 @@ BOOL StubPrecode::IsStubPrecodeByASM(PCODE addr)
     return pTemplateInstr == pTemplateInstrEnd;
 #endif // TARGET_X86
 }
+
+#ifdef FEATURE_INTERPRETER
+void InterpreterPrecode::Init(InterpreterPrecode* pPrecodeRX, TADDR byteCodeAddr)
+{
+    WRAPPER_NO_CONTRACT;
+    InterpreterPrecodeData *pStubData = GetData();
+
+    pStubData->Target = (PCODE)InterpreterStub;
+    pStubData->ByteCodeAddr = byteCodeAddr;
+    pStubData->Type = InterpreterPrecode::Type;
+}
+#endif // FEATURE_INTERPRETER
 
 #ifdef HAS_NDIRECT_IMPORT_PRECODE
 

@@ -28,7 +28,7 @@ endif()
 
 %Defines%
 
-if(NOT %UseNativeAOTRuntime%)
+if(NOT "%MonoInclude%" STREQUAL "")
     include_directories("%MonoInclude%")
 endif()
 

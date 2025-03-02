@@ -81,7 +81,7 @@ namespace ILCompiler.Reflection.ReadyToRun.x86
                 sb.Append($"            LowBits: ");
                 if ((Flags & GcSlotFlags.GC_SLOT_UNTRACKED) != 0)
                 {
-                    if((LowBits & pinned_OFFSET_FLAG) != 0) sb.Append("pinned ");
+                    if ((LowBits & pinned_OFFSET_FLAG) != 0) sb.Append("pinned ");
                     if ((LowBits & byref_OFFSET_FLAG) != 0) sb.Append("byref ");
                 }
                 sb.AppendLine();

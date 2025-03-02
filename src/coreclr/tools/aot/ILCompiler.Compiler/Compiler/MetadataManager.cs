@@ -41,7 +41,7 @@ namespace ILCompiler
     /// </summary>
     public abstract class MetadataManager : ICompilationRootProvider
     {
-        internal const int MetadataOffsetMask = 0xFFFFFF;
+        internal const int MetadataOffsetMask = 0x1FFFFFF;
 
         protected readonly MetadataManagerOptions _options;
 
@@ -776,10 +776,10 @@ namespace ILCompiler
 
             metadataBlob = ms.ToArray();
 
-            const int MaxAllowedMetadataOffset = 0xFFFFFF;
+            const int MaxAllowedMetadataOffset = 0x1FFFFFF;
             if (metadataBlob.Length > MaxAllowedMetadataOffset)
             {
-                // Offset portion of metadata handles is limited to 16 MB.
+                // Offset portion of metadata handles is limited to 32 MB.
                 throw new InvalidOperationException($"Metadata blob exceeded the addressing range (allowed: {MaxAllowedMetadataOffset}, actual: {metadataBlob.Length})");
             }
 

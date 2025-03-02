@@ -26,6 +26,7 @@ import { mono_jiterp_free_method_data_interp_entry } from "./jiterpreter-interp-
 import { mono_jiterp_free_method_data_jit_call } from "./jiterpreter-jit-call";
 import { mono_log_error, mono_log_info, mono_log_warn } from "./logging";
 import { utf8ToString } from "./strings";
+import { mono_wasm_profiler_free_method } from "./profiler";
 
 // Controls miscellaneous diagnostic output.
 export const trace = 0;
@@ -297,6 +298,12 @@ function getTraceImports () {
 
     if (nullCheckValidation)
         traceImports.push(importDef("notnull", assert_not_null));
+
+    if (runtimeHelpers.emscriptenBuildOptions.enablePerfTracing) {
+        traceImports.push(importDef("prof_enter", getRawCwrap("mono_jiterp_prof_enter")));
+        traceImports.push(importDef("prof_samplepoint", getRawCwrap("mono_jiterp_prof_samplepoint")));
+        traceImports.push(importDef("prof_leave", getRawCwrap("mono_jiterp_prof_leave")));
+    }
 
     const pushMathOps = (list: string[], type: string) => {
         for (let i = 0; i < list.length; i++) {
@@ -573,6 +580,30 @@ function initialize_builder (builder: WasmBuilder) {
     );
     builder.defineType(
         "safepoint",
+        {
+            "frame": WasmValtype.i32,
+            "ip": WasmValtype.i32,
+        },
+        WasmValtype.void, true
+    );
+    builder.defineType(
+        "prof_enter",
+        {
+            "frame": WasmValtype.i32,
+            "ip": WasmValtype.i32,
+        },
+        WasmValtype.void, true
+    );
+    builder.defineType(
+        "prof_samplepoint",
+        {
+            "frame": WasmValtype.i32,
+            "ip": WasmValtype.i32,
+        },
+        WasmValtype.void, true
+    );
+    builder.defineType(
+        "prof_leave",
         {
             "frame": WasmValtype.i32,
             "ip": WasmValtype.i32,
@@ -1050,9 +1081,13 @@ export function mono_interp_tier_prepare_jiterpreter (
 
 // NOTE: This will potentially be called once for every trace entry point
 //  in a given method, not just once per method
-export function mono_jiterp_free_method_data_js (
+export function mono_wasm_free_method_data (
     method: MonoMethod, imethod: number, traceIndex: number
 ) {
+    if (runtimeHelpers.emscriptenBuildOptions.enablePerfTracing) {
+        mono_wasm_profiler_free_method(method);
+    }
+
     // TODO: Uninstall the trace function pointer from the function pointer table,
     //  so that the compiled trace module can be freed by the browser eventually
     // Release the trace info object, if present

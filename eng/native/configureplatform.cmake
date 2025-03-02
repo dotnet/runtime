@@ -29,6 +29,8 @@ if(CLR_CMAKE_HOST_OS STREQUAL linux)
             set(CLR_CMAKE_HOST_UNIX_X86 1)
         elseif(CMAKE_HOST_SYSTEM_PROCESSOR STREQUAL aarch64)
             set(CLR_CMAKE_HOST_UNIX_ARM64 1)
+        elseif(CMAKE_HOST_SYSTEM_PROCESSOR STREQUAL riscv64)
+            set(CLR_CMAKE_HOST_UNIX_RISCV64 1)
         else()
             clr_unknown_arch()
         endif()
@@ -368,6 +370,11 @@ if(CLR_CMAKE_HOST_LINUX_MUSL OR CLR_CMAKE_TARGET_OS STREQUAL alpine)
     set(CLR_CMAKE_TARGET_LINUX_MUSL 1)
 endif(CLR_CMAKE_HOST_LINUX_MUSL OR CLR_CMAKE_TARGET_OS STREQUAL alpine)
 
+macro(set_cache_value)
+  set(${ARGV0} ${ARGV1} CACHE STRING "Result from TRY_RUN" FORCE)
+  set(${ARGV0}__TRYRUN_OUTPUT "dummy output" CACHE STRING "Output from TRY_RUN" FORCE)
+endmacro()
+
 if(CLR_CMAKE_TARGET_OS STREQUAL android)
     set(CLR_CMAKE_TARGET_UNIX 1)
     set(CLR_CMAKE_TARGET_LINUX 1)
@@ -471,7 +478,7 @@ if(CLR_CMAKE_TARGET_OS STREQUAL windows)
 endif()
 
 # check if host & target os/arch combination are valid
-if (NOT (CLR_CMAKE_TARGET_OS STREQUAL CLR_CMAKE_HOST_OS) AND NOT CLR_CMAKE_TARGET_WASI)
+if (NOT (CLR_CMAKE_TARGET_OS STREQUAL CLR_CMAKE_HOST_OS) AND NOT CLR_CMAKE_TARGET_WASI AND NOT CLR_CMAKE_TARGET_ANDROID)
     if(NOT (CLR_CMAKE_HOST_OS STREQUAL windows))
         message(FATAL_ERROR "Invalid host and target os/arch combination. Host OS: ${CLR_CMAKE_HOST_OS}")
     endif()
@@ -494,7 +501,7 @@ if(NOT CLR_CMAKE_TARGET_BROWSER AND NOT CLR_CMAKE_TARGET_WASI)
     set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 endif()
 
-if (CLR_CMAKE_TARGET_ANDROID)
+if (CLR_CMAKE_HOST_ANDROID)
     # Google requires all the native libraries to be aligned to 16 bytes (for 16k memory page size)
     # This applies only to 64-bit binaries
     if(CLR_CMAKE_TARGET_ARCH_ARM64 OR CLR_CMAKE_TARGET_ARCH_AMD64)
@@ -513,4 +520,9 @@ if (CLR_CMAKE_TARGET_ANDROID OR CLR_CMAKE_TARGET_MACCATALYST OR CLR_CMAKE_TARGET
     # - Android and iOS-like platforms: concerns about extra binary size
     # - Armv6: zlib-ng has build breaks
     set(CLR_CMAKE_USE_SYSTEM_ZLIB 1)
+endif()
+
+if (NOT CLR_CMAKE_TARGET_ANDROID)
+    # opt into building tools like ildasm/ilasm
+    set(CLR_CMAKE_BUILD_TOOLS 1)
 endif()

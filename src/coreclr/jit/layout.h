@@ -5,14 +5,54 @@
 #define LAYOUT_H
 
 #include "jit.h"
+#include "segmentlist.h"
+
+// Builder for class layouts
+//
+class ClassLayoutBuilder
+{
+    friend class ClassLayout;
+    friend class ClassLayoutTable;
+    friend struct CustomLayoutKey;
+
+    Compiler*    m_compiler;
+    BYTE*        m_gcPtrs = nullptr;
+    unsigned     m_size;
+    unsigned     m_gcPtrCount = 0;
+    SegmentList* m_nonPadding = nullptr;
+#ifdef DEBUG
+    const char* m_name      = "UNNAMED";
+    const char* m_shortName = "UNNAMED";
+#endif
+
+    BYTE*        GetOrCreateGCPtrs();
+    void         SetGCPtr(unsigned slot, CorInfoGCType type);
+    SegmentList* GetOrCreateNonPadding();
+public:
+    // Create a class layout builder.
+    //
+    ClassLayoutBuilder(Compiler* compiler, unsigned size);
+
+    void SetGCPtrType(unsigned slot, var_types type);
+    void CopyInfoFrom(unsigned offset, ClassLayout* layout, bool copyPadding);
+    void AddPadding(const SegmentList::Segment& padding);
+    void RemovePadding(const SegmentList::Segment& nonPadding);
+
+#ifdef DEBUG
+    void SetName(const char* name, const char* shortName);
+#endif
+
+    static ClassLayoutBuilder BuildArray(Compiler* compiler, CORINFO_CLASS_HANDLE arrayType, unsigned length);
+};
 
 // Encapsulates layout information about a class (typically a value class but this can also be
 // be used for reference classes when they are stack allocated). The class handle is optional,
-// allowing the creation of "block" layout objects having a specific size but lacking any other
-// layout information. The JIT uses such layout objects in cases where a class handle is not
-// available (cpblk/initblk operations) or not necessary (classes that do not contain GC pointers).
+// allowing the creation of custom layout objects having a specific size where the offsets of
+// GC fields can be specified during creation.
 class ClassLayout
 {
+private:
+
     // Class handle or NO_CLASS_HANDLE for "block" layouts.
     const CORINFO_CLASS_HANDLE m_classHandle;
 
@@ -22,7 +62,6 @@ class ClassLayout
     const unsigned m_size;
 
     const unsigned m_isValueClass : 1;
-    INDEBUG(unsigned m_gcPtrsInitialized : 1;)
     // The number of GC pointers in this layout. Since the maximum size is 2^32-1 the count
     // can fit in at most 30 bits.
     unsigned m_gcPtrCount : 30;
@@ -36,36 +75,38 @@ class ClassLayout
         BYTE  m_gcPtrsArray[sizeof(BYTE*)];
     };
 
+    class SegmentList* m_nonPadding = nullptr;
+
     // The normalized type to use in IR for block nodes with this layout.
     const var_types m_type;
 
-    // Class name as reported by ICorJitInfo::getClassName
-    INDEBUG(const char* m_className;)
+    // Name of the layout
+    INDEBUG(const char* m_name;)
 
-    // Shortened class name as constructed by Compiler::eeGetShortClassName()
-    INDEBUG(const char* m_shortClassName;)
+    // Short name of the layout
+    INDEBUG(const char* m_shortName;)
 
     // ClassLayout instances should only be obtained via ClassLayoutTable.
     friend class ClassLayoutTable;
+    friend class ClassLayoutBuilder;
+    friend struct CustomLayoutKey;
 
     ClassLayout(unsigned size)
         : m_classHandle(NO_CLASS_HANDLE)
         , m_size(size)
         , m_isValueClass(false)
-#ifdef DEBUG
-        , m_gcPtrsInitialized(true)
-#endif
         , m_gcPtrCount(0)
         , m_gcPtrs(nullptr)
         , m_type(TYP_STRUCT)
 #ifdef DEBUG
-        , m_className("block")
-        , m_shortClassName("block")
+        , m_name(size == 0 ? "Empty" : "Custom")
+        , m_shortName(size == 0 ? "Empty" : "Custom")
 #endif
     {
     }
 
     static ClassLayout* Create(Compiler* compiler, CORINFO_CLASS_HANDLE classHandle);
+    static ClassLayout* Create(Compiler* compiler, const ClassLayoutBuilder& builder);
 
     ClassLayout(CORINFO_CLASS_HANDLE classHandle,
                 bool                 isValueClass,
@@ -74,43 +115,43 @@ class ClassLayout
         : m_classHandle(classHandle)
         , m_size(size)
         , m_isValueClass(isValueClass)
-#ifdef DEBUG
-        , m_gcPtrsInitialized(false)
-#endif
         , m_gcPtrCount(0)
         , m_gcPtrs(nullptr)
         , m_type(type)
 #ifdef DEBUG
-        , m_className(className)
-        , m_shortClassName(shortClassName)
+        , m_name(className)
+        , m_shortName(shortClassName)
 #endif
     {
         assert(size != 0);
     }
-
-    void InitializeGCPtrs(Compiler* compiler);
-
 public:
+
     CORINFO_CLASS_HANDLE GetClassHandle() const
     {
         return m_classHandle;
     }
 
-    bool IsBlockLayout() const
+    bool IsCustomLayout() const
     {
         return m_classHandle == NO_CLASS_HANDLE;
+    }
+
+    bool IsBlockLayout() const
+    {
+        return IsCustomLayout() && !HasGCPtr();
     }
 
 #ifdef DEBUG
 
     const char* GetClassName() const
     {
-        return m_className;
+        return m_name;
     }
 
     const char* GetShortClassName() const
     {
-        return m_shortClassName;
+        return m_shortName;
     }
 
 #endif // DEBUG
@@ -134,7 +175,7 @@ public:
     // GetRegisterType: Determine register type for the layout.
     //
     // Return Value:
-    //    TYP_UNDEF if the layout is enregistrable, register type otherwise.
+    //    TYP_UNDEF if the layout is not enregistrable, register type otherwise.
     //
     var_types GetRegisterType() const
     {
@@ -173,15 +214,11 @@ public:
 
     unsigned GetGCPtrCount() const
     {
-        assert(m_gcPtrsInitialized);
-
         return m_gcPtrCount;
     }
 
     bool HasGCPtr() const
     {
-        assert(m_gcPtrsInitialized);
-
         return m_gcPtrCount != 0;
     }
 
@@ -219,20 +256,18 @@ public:
 
     bool IntersectsGCPtr(unsigned offset, unsigned size) const;
 
+    const SegmentList& GetNonPadding(Compiler* comp);
+
     static bool AreCompatible(const ClassLayout* layout1, const ClassLayout* layout2);
 
 private:
     const BYTE* GetGCPtrs() const
     {
-        assert(m_gcPtrsInitialized);
-        assert(!IsBlockLayout());
-
         return (GetSlotCount() > sizeof(m_gcPtrsArray)) ? m_gcPtrs : m_gcPtrsArray;
     }
 
     CorInfoGCType GetGCPtr(unsigned slot) const
     {
-        assert(m_gcPtrsInitialized);
         assert(slot < GetSlotCount());
 
         if (m_gcPtrCount == 0)

@@ -1638,10 +1638,18 @@ static guint16 sri_vector_methods [] = {
 	SN_GreaterThanOrEqual,
 	SN_GreaterThanOrEqualAll,
 	SN_GreaterThanOrEqualAny,
+	SN_IsEvenInteger,
+	SN_IsFinite,
+	SN_IsInfinity,
+	SN_IsInteger,
 	SN_IsNaN,
 	SN_IsNegative,
+	SN_IsNegativeInfinity,
+	SN_IsNormal,
+	SN_IsOddInteger,
 	SN_IsPositive,
 	SN_IsPositiveInfinity,
+	SN_IsSubnormal,
 	SN_IsZero,
 	SN_LessThan,
 	SN_LessThanAll,
@@ -2395,13 +2403,28 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 	case SN_ExtractMostSignificantBits: {
 		if (!is_element_type_primitive (fsig->params [0]))
 			return NULL;
+
+		MonoClass *arg_class = mono_class_from_mono_type_internal (fsig->params [0]);
+
+		if (fsig->params [0]->type != MONO_TYPE_GENERICINST) {
+			// This exists to handle the static extension methods for Vector2/3/4, Quaternion, and Plane
+			// which live on System.Numerics.Vector
+
+			arg0_type = MONO_TYPE_R4;
+		}
+
+		int size = mono_class_value_size (arg_class, NULL);
+
+		if (size != 16) {
+			// FIXME: Add support for Vector2/3
+			return NULL;
+		}
 #ifdef TARGET_WASM
 		if (type_enum_is_float (arg0_type))
 			return NULL;
 
 		return emit_simd_ins_for_sig (cfg, klass, OP_WASM_SIMD_BITMASK, -1, -1, fsig, args);
 #elif defined(TARGET_ARM64)
-		MonoClass* arg_class;
 		if (type_enum_is_float (arg0_type)) {
 			MonoClass* cast_class;
 			if (arg0_type == MONO_TYPE_R4) {
@@ -2411,15 +2434,23 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 				arg0_type = MONO_TYPE_I8;
 				cast_class = mono_defaults.int64_class;
 			}
-			arg_class = create_class_instance ("System.Runtime.Intrinsics", m_class_get_name (klass), m_class_get_byval_arg (cast_class));
+
+			const char *klass_name = m_class_get_name (klass);
+
+			if (!strcmp (klass_name, "Vector4")) {
+				klass_name = "Vector128`1";
+			}
+			arg_class = create_class_instance ("System.Runtime.Intrinsics", klass_name, m_class_get_byval_arg (cast_class));
 		} else {
 			arg_class = mono_class_from_mono_type_internal (fsig->params [0]);
 		}
 
-		// FIXME: Add support for Vector64 on arm64 https://github.com/dotnet/runtime/issues/90402
-		int size = mono_class_value_size (arg_class, NULL);
-		if (size != 16)
+		size = mono_class_value_size (arg_class, NULL);
+
+		if (size != 16) {
+			// FIXME: Add support for Vector64 on arm64 https://github.com/dotnet/runtime/issues/90402
 			return NULL;
+		}
 
 		MonoInst* msb_mask_vec = emit_msb_vector_mask (cfg, arg_class, arg0_type);
 		MonoInst* and_res_vec = emit_simd_ins_for_binary_op (cfg, arg_class, fsig, args, arg0_type, SN_BitwiseAnd);
@@ -2459,7 +2490,7 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 					return NULL;
 
 				type = type_enum_is_unsigned (arg0_type) ? MONO_TYPE_U1 : MONO_TYPE_I1;
-				MonoClass* arg_class = mono_class_from_mono_type_internal (fsig->params [0]);
+				arg_class = mono_class_from_mono_type_internal (fsig->params [0]);
 
 				guint64 shuffle_mask[2];
 				shuffle_mask[0] = 0x0F0D0B0907050301; // Place odd bytes in the lower half of vector
@@ -2504,18 +2535,25 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 			return NULL;
 
 		MonoClass *arg_class = mono_class_from_mono_type_internal (fsig->params [0]);
+		int esize;
 
 		if (fsig->params [0]->type == MONO_TYPE_GENERICINST) {
 			MonoType *etype = mono_class_get_context (arg_class)->class_inst->type_argv [0];
-			int size = mono_class_value_size (arg_class, NULL);
-			int esize = mono_class_value_size (mono_class_from_mono_type_internal (etype), NULL);
-			elems = size / esize;
+			esize = mono_class_value_size (mono_class_from_mono_type_internal (etype), NULL);
 		} else {
 			// This exists to handle the static extension methods for Vector2/3/4, Quaternion, and Plane
 			// which live on System.Numerics.Vector
 
 			arg0_type = MONO_TYPE_R4;
-			elems = 4;
+			esize = 4;
+		}
+
+		int size = mono_class_value_size (arg_class, NULL);
+		elems = size / esize;
+
+		if (size != 16) {
+			// FIXME: Add support for Vector2/3
+			return NULL;
 		}
 
 		if (args [1]->opcode == OP_ICONST) {
@@ -2642,6 +2680,61 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 			return ret;
 		}
 	}
+	case SN_IsEvenInteger:
+	case SN_IsOddInteger: {
+		if (!is_element_type_primitive (fsig->params [0]))
+			return NULL;
+		if (type_enum_is_float(arg0_type))
+			return NULL;
+
+		// TODO: This requires a centralized way for get_One()
+		//
+		// IsEvenInteger:
+		//   x = And(x, get_One())
+		//   return IntEqCmp(x, zero)
+		//
+		// IsOddInteger
+		//   x = And(x, get_One())
+		//   return IntNeCmp(x, zero)
+
+		return NULL;
+	}
+	case SN_IsFinite: {
+		if (!is_element_type_primitive (fsig->params [0]))
+			return NULL;
+		if (!type_enum_is_float(arg0_type))
+			return emit_xones (cfg, klass);
+
+		// TODO: This requires a centralized way for AndNot(x, y)
+		//
+		// x = AndNot(PositiveInfinityBits, x)
+		// return IntNeCmp(x, zero)
+
+		return NULL;
+	}
+	case SN_IsInfinity: {
+		// TODO: This requires a centralized way for Abs(x) and IsPositiveInfinity(x)
+		//
+		// x = Abs(x)
+		// return IsPositiveInfinity(x)
+
+		return NULL;
+	}
+	case SN_IsInteger: {
+		if (!is_element_type_primitive (fsig->params [0]))
+			return NULL;
+		if (!type_enum_is_float(arg0_type))
+			return emit_xones (cfg, klass);
+
+		// TODO: This requires a centralized way for IsFinite(x) and Trunc(c)
+		//
+		// tmp1 = IsFinite(x)
+		// tmp2 = Trunc(x)
+		// tmp2 = FltEqCmp(x, tmp2)
+		// return And(tmp1, tmp2)
+
+		return NULL;
+	}
 	case SN_IsNaN: {
 		if (!is_element_type_primitive (fsig->params [0]))
 			return NULL;
@@ -2695,29 +2788,83 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 		}
 		return ins;
 	}
+	case SN_IsNegativeInfinity:
 	case SN_IsPositiveInfinity: {
 		if (!is_element_type_primitive (fsig->params [0]))
 			return NULL;
 		if (arg0_type == MONO_TYPE_R4) {
 			guint32 value[4];
 
-			value [0] = 0x7F800000;
-			value [1] = 0x7F800000;
-			value [2] = 0x7F800000;
-			value [3] = 0x7F800000;
+			if (id == SN_IsNegativeInfinity)
+			{
+				value [0] = 0xFF800000;
+				value [1] = 0xFF800000;
+				value [2] = 0xFF800000;
+				value [3] = 0xFF800000;
+			}
+			else
+			{
+				value [0] = 0x7F800000;
+				value [1] = 0x7F800000;
+				value [2] = 0x7F800000;
+				value [3] = 0x7F800000;
+			}
 
 			MonoInst *arg1 = emit_xconst_v128 (cfg, klass, (guint8*)value);
 			return emit_xcompare (cfg, klass, arg0_type, args [0], arg1);
 		} else if (arg0_type == MONO_TYPE_R8) {
 			guint64 value[2];
 
-			value [0] = 0x7FF0000000000000;
-			value [1] = 0x7FF0000000000000;
+			if (id == SN_IsNegativeInfinity)
+			{
+				value [0] = 0xFFF0000000000000;
+				value [1] = 0xFFF0000000000000;
+			}
+			else
+			{
+				value [0] = 0x7FF0000000000000;
+				value [1] = 0x7FF0000000000000;
+			}
 
 			MonoInst *arg1 = emit_xconst_v128 (cfg, klass, (guint8*)value);
 			return emit_xcompare (cfg, klass, arg0_type, args [0], arg1);
 		}
 		return emit_xzero (cfg, klass);
+	}
+	case SN_IsNormal: {
+		if (!is_element_type_primitive (fsig->params [0]))
+			return NULL;
+		if (!type_enum_is_float(arg0_type)) {
+			// TODO: This requires a centralized way for OnesComplement(x)
+			//
+			// x = UIntEqCmp(x, Zero)
+			// return OnesComplement(x)
+			return NULL;
+		}
+
+		// TODO: This requires a centralized way for Abs(x)
+		// and retyping from float to the same sized unsigned integer
+		//
+		// x = FltAbs(x)
+		// x = UIntSub(x, SmallestNormalBits)
+		// return UIntLtCmp(x, PositiveInfinityBits - SmallestNormalBits)
+
+		return NULL;
+	}
+	case SN_IsSubnormal: {
+		if (!is_element_type_primitive (fsig->params [0]))
+			return NULL;
+		if (!type_enum_is_float(arg0_type))
+			return emit_xzero (cfg, klass);
+
+		// TODO: This requires a centralized way for Abs(x)
+		// and retyping from float to the same sized unsigned integer
+		//
+		// x = FltAbs(x)
+		// x = UIntSub(x, 1)
+		// return UIntLtCmp(x, MaxTrailingSignificand)
+
+		return NULL;
 	}
 	case SN_IsZero: {
 		if (!is_element_type_primitive (fsig->params [0]))
@@ -3026,6 +3173,23 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 	case SN_ToScalar: {
 		if (!is_element_type_primitive (fsig->params [0]))
 			return NULL;
+
+		MonoClass *arg_class = mono_class_from_mono_type_internal (fsig->params [0]);
+
+		if (fsig->params [0]->type != MONO_TYPE_GENERICINST) {
+			// This exists to handle the static extension methods for Vector2/3/4, Quaternion, and Plane
+			// which live on System.Numerics.Vector
+
+			arg0_type = MONO_TYPE_R4;
+		}
+
+		int size = mono_class_value_size (arg_class, NULL);
+
+		if (size != 16) {
+			// FIXME: Add support for Vector2/3
+			return NULL;
+		}
+
 		int extract_op = type_to_extract_op (arg0_type);
 		return emit_simd_ins_for_sig (cfg, klass, extract_op, 0, arg0_type, fsig, args);
 	}
@@ -3043,18 +3207,25 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 			return NULL;
 
 		MonoClass *arg_class = mono_class_from_mono_type_internal (fsig->params [0]);
+		int esize;
 
 		if (fsig->params [0]->type == MONO_TYPE_GENERICINST) {
 			MonoType *etype = mono_class_get_context (arg_class)->class_inst->type_argv [0];
-			int size = mono_class_value_size (arg_class, NULL);
-			int esize = mono_class_value_size (mono_class_from_mono_type_internal (etype), NULL);
-			elems = size / esize;
+			esize = mono_class_value_size (mono_class_from_mono_type_internal (etype), NULL);
 		} else {
 			// This exists to handle the static extension methods for Vector2/3/4, Quaternion, and Plane
 			// which live on System.Numerics.Vector
 
 			arg0_type = MONO_TYPE_R4;
-			elems = 4;
+			esize = 4;
+		}
+
+		int size = mono_class_value_size (arg_class, NULL);
+		elems = size / esize;
+
+		if (size != 16) {
+			// FIXME: Add support for Vector2/3
+			return NULL;
 		}
 
 		if (args [1]->opcode == OP_ICONST) {
@@ -6525,6 +6696,7 @@ emit_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 MonoInst*
 mono_emit_simd_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig, MonoInst **args)
 {
+	// TODO: We shouldn't be processing any methods which aren't marked [Intrinsic]
 	return emit_intrinsics (cfg, cmethod, fsig, args, emit_simd_intrinsics);
 }
 

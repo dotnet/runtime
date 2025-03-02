@@ -333,6 +333,7 @@ set(VM_SOURCES_WKS
     ilmarshalers.cpp
     interopconverter.cpp
     interoputil.cpp
+    interpexec.cpp
     invokeutil.cpp
     jithelpers.cpp
     managedmdimport.cpp
@@ -430,6 +431,7 @@ set(VM_HEADERS_WKS
     interopconverter.h
     interoputil.h
     interoputil.inl
+    interpexec.h
     invokeutil.h
     managedmdimport.hpp
     marshalnative.h
@@ -854,12 +856,6 @@ elseif(CLR_CMAKE_TARGET_ARCH_RISCV64)
         gcinfodecoder.cpp
     )
 endif()
-
-if(CLR_CMAKE_HOST_UNIX)
-    list(APPEND VM_SOURCES_WKS_ARCH
-        ${ARCH_SOURCES_DIR}/unixstubs.cpp
-    )
-endif(CLR_CMAKE_HOST_UNIX)
 
 set(VM_SOURCES_DAC_ARCH
     exceptionhandling.cpp

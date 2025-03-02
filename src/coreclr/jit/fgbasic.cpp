@@ -156,14 +156,29 @@ void Compiler::fgConvertBBToThrowBB(BasicBlock* block)
     }
 
     // Scrub this block from the pred lists of any successors
-    fgRemoveBlockAsPred(block);
+    bool profileInconsistent = false;
+
+    for (BasicBlock* const succBlock : block->Succs(this))
+    {
+        FlowEdge* const succEdge = fgRemoveAllRefPreds(succBlock, block);
+
+        if (block->hasProfileWeight() && succBlock->hasProfileWeight())
+        {
+            succBlock->decreaseBBProfileWeight(succEdge->getLikelyWeight());
+            profileInconsistent |= (succBlock->NumSucc() > 0);
+        }
+    }
+
+    if (profileInconsistent)
+    {
+        JITDUMP("Flow removal of " FMT_BB " needs to be propagated. Data %s inconsistent.\n", block->bbNum,
+                fgPgoConsistent ? "is now" : "was already");
+        fgPgoConsistent = false;
+    }
 
     // Update jump kind after the scrub.
     block->SetKindAndTargetEdge(BBJ_THROW);
     block->RemoveFlags(BBF_RETLESS_CALL); // no longer a BBJ_CALLFINALLY
-
-    // Any block with a throw is rare
-    block->bbSetRunRarely();
 }
 
 /*****************************************************************************
@@ -1036,6 +1051,24 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
                         {
                             codeAddr += toSkip;
                         }
+                    }
+                }
+                break;
+            }
+
+            case CEE_UNBOX:
+            case CEE_UNBOX_ANY:
+            {
+                if (makeInlineObservations)
+                {
+                    FgStack::FgSlot slot = pushedStack.Top();
+                    if (FgStack::IsExactArgument(slot, impInlineInfo))
+                    {
+                        compInlineResult->Note(InlineObservation::CALLSITE_UNBOX_EXACT_ARG);
+                    }
+                    else if (FgStack::IsArgument(slot))
+                    {
+                        compInlineResult->Note(InlineObservation::CALLEE_UNBOX_ARG);
                     }
                 }
                 break;
@@ -3480,13 +3513,6 @@ void Compiler::fgFindBasicBlocks()
             return;
         }
 
-        noway_assert(info.compXcptnsCount == 0);
-        compHndBBtab = impInlineInfo->InlinerCompiler->compHndBBtab;
-        compHndBBtabAllocCount =
-            impInlineInfo->InlinerCompiler->compHndBBtabAllocCount; // we probably only use the table, not add to it.
-        compHndBBtabCount    = impInlineInfo->InlinerCompiler->compHndBBtabCount;
-        info.compXcptnsCount = impInlineInfo->InlinerCompiler->info.compXcptnsCount;
-
         // Use a spill temp for the return value if there are multiple return blocks,
         // or if the inlinee has GC ref locals.
         if ((info.compRetNativeType != TYP_VOID) && ((fgReturnCount > 1) || impInlineInfo->HasGcRefLocals()))
@@ -3547,6 +3573,8 @@ void Compiler::fgFindBasicBlocks()
                         lvaSetClass(lvaInlineeReturnSpillTemp, retClassHnd);
                     }
                 }
+
+                lvaInlineeReturnSpillTempFreshlyCreated = true;
             }
         }
 
@@ -4011,18 +4039,13 @@ void Compiler::fgFixEntryFlowForOSR()
 
     fgRedirectTargetEdge(fgFirstBB, fgOSREntryBB);
 
-    // We don't know the right weight for this block, since
-    // execution of the method was interrupted within the
-    // loop containing fgOSREntryBB.
-    //
-    // A plausible guess might be to sum the non-backedge
-    // weights of fgOSREntryBB and use those, but we don't
-    // have edge weights available yet. Note that might be
-    // an underestimate.
-    //
-    // For now we just guess that the loop will execute 100x.
-    //
-    fgFirstBB->inheritWeightPercentage(fgOSREntryBB, 1);
+    fgFirstBB->bbWeight = fgCalledCount;
+    fgFirstBB->CopyFlags(fgEntryBB, BBF_PROF_WEIGHT);
+
+    if (fgCalledCount == BB_ZERO_WEIGHT)
+    {
+        fgFirstBB->bbSetRunRarely();
+    }
 
     JITDUMP("OSR: redirecting flow at method entry from " FMT_BB " to OSR entry " FMT_BB " for the importer\n",
             fgFirstBB->bbNum, fgOSREntryBB->bbNum);

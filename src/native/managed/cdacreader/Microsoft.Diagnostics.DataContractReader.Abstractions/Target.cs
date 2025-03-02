@@ -16,8 +16,29 @@ namespace Microsoft.Diagnostics.DataContractReader;
 /// information. Like the contracts themselves in cdacreader, these are throwing APIs. Any callers at the boundaries
 /// (for example, unmanaged entry points, COM) should handle any exceptions.
 /// </remarks>
-internal abstract class Target
+public abstract class Target
 {
+    /// <summary>
+    /// CorDebugPlatform represents the platform of the target.
+    /// </summary>
+    public enum CorDebugPlatform : int
+    {
+        CORDB_PLATFORM_WINDOWS_X86 = 0,
+        CORDB_PLATFORM_WINDOWS_AMD64 = 1,
+        CORDB_PLATFORM_WINDOWS_IA64 = 2,
+        CORDB_PLATFORM_MAC_PPC = 3,
+        CORDB_PLATFORM_MAC_X86 = 4,
+        CORDB_PLATFORM_WINDOWS_ARM = 5,
+        CORDB_PLATFORM_MAC_AMD64 = 6,
+        CORDB_PLATFORM_WINDOWS_ARM64 = 7,
+        CORDB_PLATFORM_POSIX_AMD64 = 8,
+        CORDB_PLATFORM_POSIX_X86 = 9,
+        CORDB_PLATFORM_POSIX_ARM = 10,
+        CORDB_PLATFORM_POSIX_ARM64 = 11,
+        CORDB_PLATFORM_POSIX_LOONGARCH64 = 12,
+        CORDB_PLATFORM_POSIX_RISCV64 = 13,
+    }
+
     /// <summary>
     /// Pointer size of the target
     /// </summary>
@@ -26,6 +47,20 @@ internal abstract class Target
     ///  Endianness of the target
     /// </summary>
     public abstract bool IsLittleEndian { get; }
+
+    /// <summary>
+    /// Platform of the target
+    /// </summary>
+    public abstract CorDebugPlatform Platform { get; }
+
+    /// <summary>
+    /// Fills a buffer with the context of the given thread
+    /// </summary>
+    /// <param name="threadId">The identifier of the thread whose context is to be retrieved. The identifier is defined by the operating system.</param>
+    /// <param name="contextFlags">A bitwise combination of platform-dependent flags that indicate which portions of the context should be read.</param>
+    /// <param name="buffer">Buffer to be filled with thread context.</param>
+    /// <returns>true if successful, false otherwise</returns>
+    public abstract bool TryGetThreadContext(ulong threadId, uint contextFlags, Span<byte> buffer);
 
     /// <summary>
     /// Reads a well-known global pointer value from the target process

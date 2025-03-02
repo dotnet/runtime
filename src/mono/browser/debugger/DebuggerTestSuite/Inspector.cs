@@ -24,9 +24,9 @@ namespace DebuggerTests
         // https://console.spec.whatwg.org/#formatting-specifiers
         private static Regex _consoleArgsRegex = new(@"(%[sdifoOc])", RegexOptions.Compiled);
 
-        ConcurrentDictionary<string, TaskCompletionSource<JObject>> notifications = new ();
-        ConcurrentDictionary<string, Func<JObject, CancellationToken, Task<ProtocolEventHandlerReturn>>> eventListeners = new ();
-        ConcurrentQueue<(string, JObject)> nextNotifications = new (); //in a multithreaded runtime we can receive more than one pause at same time
+        ConcurrentDictionary<string, TaskCompletionSource<JObject>> notifications = new();
+        ConcurrentDictionary<string, Func<JObject, CancellationToken, Task<ProtocolEventHandlerReturn>>> eventListeners = new();
+        ConcurrentQueue<(string, JObject)> nextNotifications = new(); //in a multithreaded runtime we can receive more than one pause at same time
         public const string PAUSE = "pause";
         public const string APP_READY = "app-ready";
         public CancellationToken Token { get; set; }

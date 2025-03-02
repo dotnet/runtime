@@ -4,6 +4,7 @@
     <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-unix;$(NetCoreAppCurrent)-browser;$(NetCoreAppCurrent)-wasi;$(NetCoreAppCurrent)</TargetFrameworks>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <UseCompilerGeneratedDocXmlFile>false</UseCompilerGeneratedDocXmlFile>
+    <GenAPIExcludeApiList>ReferenceAssemblyExclusions.txt</GenAPIExcludeApiList>
   </PropertyGroup>
 
   <!-- DesignTimeBuild requires all the TargetFramework Derived Properties to not be present in the first property group. -->
@@ -18,6 +19,8 @@
     <Compile Include="$(SharedOpenSourcePath)System\IO\Compression\ZipArchiveEntry.cs" />
     <Compile Include="$(SharedOpenSourcePath)System\IO\Compression\ZipArchiveMode.cs" />
     <Compile Include="$(SharedOpenSourcePath)System\IO\Compression\ZipBlocks.cs" />
+    <Compile Include="$(SharedOpenSourcePath)System\IO\Compression\ZipBlocks.FieldLengths.cs" />
+    <Compile Include="$(SharedOpenSourcePath)System\IO\Compression\ZipBlocks.FieldLocations.cs" />
     <Compile Include="$(SharedOpenSourcePath)System\IO\Compression\ZipCustomStreams.cs" />
     <Compile Include="$(SharedOpenSourcePath)System\IO\Compression\ZipHelper.cs" />
     <Compile Include="$(SharedOpenSourcePath)System\IO\Compression\ZipVersion.cs" />

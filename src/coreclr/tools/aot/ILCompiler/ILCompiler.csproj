@@ -5,20 +5,4 @@
   </PropertyGroup>
 
   <Import Project="ILCompiler.props" />
-
-
-  <!-- BEGIN: Workaround for https://github.com/dotnet/runtime/issues/67742 -->
-  <PropertyGroup Condition="'$(BuildingInsideVisualStudio)' != 'true'">
-    <PublishDir>$(RuntimeBinDir)ilc-published/</PublishDir>
-    <PublishAot Condition="'$(UseNativeAotForComponents)' == 'true'">true</PublishAot>
-    <PublishReadyToRun Condition="'$(UseNativeAotForComponents)' != 'true'">true</PublishReadyToRun>
-    <PublishSingleFile Condition="'$(UseNativeAotForComponents)' != 'true'">true</PublishSingleFile>
-    <PublishTrimmed Condition="'$(UseNativeAotForComponents)' != 'true'">true</PublishTrimmed>
-  </PropertyGroup>
-
-  <Target Name="PublishCompiler"
-          Condition="'$(BuildingInsideVisualStudio)' != 'true'"
-          AfterTargets="Build"
-          DependsOnTargets="Publish" />
-
 </Project>

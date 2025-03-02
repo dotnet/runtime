@@ -1,18 +1,19 @@
 <Project Sdk="Microsoft.NET.Sdk">
+
   <PropertyGroup>
-    <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
     <TargetFrameworks>$(NetCoreAppCurrent);$(NetFrameworkCurrent)</TargetFrameworks>
+    <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
   </PropertyGroup>
+
+  <!-- DesignTimeBuild requires all the TargetFramework Derived Properties to not be present in the first property group. -->
   <PropertyGroup>
     <DefineConstants Condition="$([MSBuild]::GetTargetFrameworkIdentifier('$(TargetFramework)')) == '.NETCoreApp'">$(DefineConstants);MEMORYMARSHAL_SUPPORT</DefineConstants>
   </PropertyGroup>
+
   <ItemGroup>
     <RdXmlFile Include="default.rd.xml" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
-    <Compile Include="DiagnosticSourceEventSourceBridgeTests.cs" />
-    <Compile Include="TestNotSupported.cs" />
-  </ItemGroup>
+
   <ItemGroup>
     <Compile Include="..\src\System\Diagnostics\DsesSamplerBuilder.cs" Link="DsesSamplerBuilder.cs" />
     <Compile Include="..\src\System\Diagnostics\Helpers.cs" Link="Helpers.cs" />
@@ -39,19 +40,24 @@
     <Compile Include="PropagatorTests.cs" />
     <Compile Include="TagListTests.cs" />
   </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
+    <Compile Include="DiagnosticSourceEventSourceBridgeTests.cs" />
+    <Compile Include="RuntimeMetricsTests.cs" />
+    <Compile Include="TestNotSupported.cs" />
+  </ItemGroup>
+
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">
     <Compile Include="HttpHandlerDiagnosticListenerTests.cs" />
     <Compile Include="ActivityDateTimeTests.cs" />
     <Compile Include="$(CommonTestPath)System\Net\Configuration.cs" Link="Common\System\Net\Configuration.cs" />
     <Compile Include="$(CommonTestPath)System\Net\Configuration.Http.cs" Link="Common\System\Net\Configuration.Http.cs" />
   </ItemGroup>
-  <ItemGroup Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net9.0'))">
-    <Compile Include="RuntimeMetricsTests.cs" />
-  </ItemGroup>
+
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">
+    <ProjectReference Include="..\src\System.Diagnostics.DiagnosticSource.csproj" />
+
     <Reference Include="System.Net.Http" />
   </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\src\System.Diagnostics.DiagnosticSource.csproj" />
-  </ItemGroup>
+
 </Project>

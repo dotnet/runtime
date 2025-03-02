@@ -17,7 +17,10 @@
     <!-- SYSLIB1223: Suppress derived JsonConverterAttribute warnings -->
     <!-- SYSLIB1030: Suppress warnings from skipped ref struct members -->
     <NoWarn>$(NoWarn);SYSLIB0020;SYSLIB0049;SYSLIB1030;SYSLIB1034;SYSLIB1037;SYSLIB1038;SYSLIB1039;SYSLIB1220;SYSLIB1222;SYSLIB1223;SYSLIB1225</NoWarn>
-    <IgnoreForCI Condition="'$(TargetsMobile)' == 'true' or '$(TargetsLinuxBionic)' == 'true' or '$(TargetArchitecture)' == 'ARMv6'">true</IgnoreForCI> 
+    <IgnoreForCI Condition="'$(TargetsMobile)' == 'true' or '$(TargetsLinuxBionic)' == 'true' or '$(TargetArchitecture)' == 'ARMv6'">true</IgnoreForCI>
+    <!-- NuGet warns about a transitive P2P to System.Text.Json that can't be pruned.
+         This is a false positive: https://github.com/NuGet/Home/issues/14103 -->
+    <NoWarn>$(NoWarn);NU1511</NoWarn>
   </PropertyGroup>
 
   <PropertyGroup>
@@ -148,6 +151,7 @@
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">
     <ProjectReference Include="..\..\src\System.Text.Json.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.Collections.Immutable\src\System.Collections.Immutable.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Linq.AsyncEnumerable\src\System.Linq.AsyncEnumerable.csproj" />
     <Reference Include="System.ComponentModel.DataAnnotations" />
     <PackageReference Include="System.ComponentModel.Annotations" Version="$(SystemComponentModelAnnotationsVersion)"/>
   </ItemGroup>

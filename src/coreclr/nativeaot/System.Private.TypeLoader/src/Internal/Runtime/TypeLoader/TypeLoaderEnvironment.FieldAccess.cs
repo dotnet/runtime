@@ -129,7 +129,7 @@ namespace Internal.Runtime.TypeLoader
 
                     if ((entryFlags & FieldTableFlags.HasMetadataHandle) != 0)
                     {
-                        Handle entryFieldHandle = (((int)HandleType.Field << 24) | (int)entryParser.GetUnsigned()).AsHandle();
+                        Handle entryFieldHandle = (((int)HandleType.Field << 25) | (int)entryParser.GetUnsigned()).AsHandle();
                         if (!fieldHandle.Equals(entryFieldHandle))
                             continue;
                     }

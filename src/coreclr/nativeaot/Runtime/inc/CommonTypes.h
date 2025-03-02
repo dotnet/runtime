@@ -53,12 +53,6 @@ typedef uint32_t ULONG;
 typedef int64_t LONGLONG;
 typedef uint8_t BYTE;
 typedef uint16_t UINT16;
-typedef struct _GUID {
-    uint32_t Data1;
-    uint16_t Data2;
-    uint16_t Data3;
-    uint8_t Data4[8];
-} GUID;
 #endif // FEATURE_EVENT_TRACE && !_INC_WINDOWS
 
 // Hijack funcs are not called, they are "returned to". And when done, they return to the actual caller.

@@ -2077,7 +2077,6 @@ typedef struct _KNONVOLATILE_CONTEXT_POINTERS {
     PDWORD64 S7;
     PDWORD64 S8;
     PDWORD64 Fp;
-    PDWORD64 Tp;
     PDWORD64 Ra;
 
     PDWORD64 F24;
@@ -2871,14 +2870,14 @@ VirtualFree(
         IN DWORD dwFreeType);
 
 
-#if defined(HOST_OSX) && defined(HOST_ARM64)
+#if defined(HOST_APPLE) && defined(HOST_ARM64)
 
 PALIMPORT
 VOID
 PALAPI
 PAL_JitWriteProtect(bool writeEnable);
 
-#endif // defined(HOST_OSX) && defined(HOST_ARM64)
+#endif // defined(HOST_APPLE) && defined(HOST_ARM64)
 
 
 PALIMPORT

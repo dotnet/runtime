@@ -101,7 +101,8 @@ namespace ILCompiler
                 Debug.Assert((GetMetadataCategory(refType.Entity.GetTypeDefinition()) & MetadataCategory.Description)
                     == (GetMetadataCategory(refType.Entity) & MetadataCategory.Description));
 
-                Debug.Assert(!(refType.Entity is MetadataType) || moduleHash.Contains(((MetadataType)refType.Entity).Module));
+                Debug.Assert((refType.Category & MetadataCategory.Description) == 0 ||
+                    !(refType.Entity is MetadataType) || moduleHash.Contains(((MetadataType)refType.Entity).Module));
             }
 
             foreach (var refMethod in reflectableMethods)

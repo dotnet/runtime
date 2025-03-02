@@ -26,13 +26,13 @@ The main Docker images are the most commonly used ones, and the ones you will pr
 
 | Host OS           | Target OS    | Target Arch     | Image                                                                                  | crossrootfs dir      |
 | ----------------- | ------------ | --------------- | -------------------------------------------------------------------------------------- | -------------------- |
-| Azure Linux (x64) | Alpine 3.13  | x64             | `mcr.microsoft.com/dotnet-buildtools/prereqs:azurelinux-3.0-net10.0-cross-amd64-musl` | `/crossrootfs/x64`   |
-| Azure Linux (x64) | Ubuntu 16.04 | x64             | `mcr.microsoft.com/dotnet-buildtools/prereqs:azurelinux-3.0-net10.0-cross-amd64`        | `/crossrootfs/x64`   |
-| Azure Linux (x64) | Alpine 3.13  | Arm32 (armhf)   | `mcr.microsoft.com/dotnet-buildtools/prereqs:azurelinux-3.0-net10.0-cross-arm-musl`   | `/crossrootfs/arm`   |
+| Azure Linux (x64) | Alpine 3.17  | x64             | `mcr.microsoft.com/dotnet-buildtools/prereqs:azurelinux-3.0-net10.0-cross-amd64-musl` | `/crossrootfs/x64`   |
+| Azure Linux (x64) | Ubuntu 18.04 | x64             | `mcr.microsoft.com/dotnet-buildtools/prereqs:azurelinux-3.0-net10.0-cross-amd64`        | `/crossrootfs/x64`   |
+| Azure Linux (x64) | Alpine 3.17  | Arm32 (armhf)   | `mcr.microsoft.com/dotnet-buildtools/prereqs:azurelinux-3.0-net10.0-cross-arm-musl`   | `/crossrootfs/arm`   |
 | Azure Linux (x64) | Ubuntu 22.04 | Arm32 (armhf)   | `mcr.microsoft.com/dotnet-buildtools/prereqs:azurelinux-3.0-net10.0-cross-arm`          | `/crossrootfs/arm`   |
-| Azure Linux (x64) | Alpine 3.13  | Arm64 (arm64v8) | `mcr.microsoft.com/dotnet-buildtools/prereqs:azurelinux-3.0-net10.0-cross-arm64-musl` | `/crossrootfs/arm64` |
-| Azure Linux (x64) | Ubuntu 16.04 | Arm64 (arm64v8) | `mcr.microsoft.com/dotnet-buildtools/prereqs:azurelinux-3.0-net10.0-cross-arm64`        | `/crossrootfs/arm64` |
-| Azure Linux (x64) | Ubuntu 16.04 | x86             | `mcr.microsoft.com/dotnet-buildtools/prereqs:azurelinux-3.0-net10.0-cross-x86`          | `/crossrootfs/x86`   |
+| Azure Linux (x64) | Alpine 3.17  | Arm64 (arm64v8) | `mcr.microsoft.com/dotnet-buildtools/prereqs:azurelinux-3.0-net10.0-cross-arm64-musl` | `/crossrootfs/arm64` |
+| Azure Linux (x64) | Ubuntu 18.04 | Arm64 (arm64v8) | `mcr.microsoft.com/dotnet-buildtools/prereqs:azurelinux-3.0-net10.0-cross-arm64`        | `/crossrootfs/arm64` |
+| Azure Linux (x64) | Ubuntu 18.04 | x86             | `mcr.microsoft.com/dotnet-buildtools/prereqs:azurelinux-3.0-net10.0-cross-x86`          | `/crossrootfs/x86`   |
 
 **Extended Docker Images**
 
@@ -46,7 +46,7 @@ The main Docker images are the most commonly used ones, and the ones you will pr
 | Azure Linux (x64) | Ubuntu 24.04               | RISC-V        | `mcr.microsoft.com/dotnet-buildtools/prereqs:azurelinux-3.0-net10.0-cross-riscv64`       | `/crossrootfs/riscv64` |
 | Azure Linux (x64) | Debian sid                 | LoongArch     | `mcr.microsoft.com/dotnet-buildtools/prereqs:azurelinux-3.0-net10.0-cross-loongarch64`   | `/crossrootfs/loongarch64` |
 | Azure Linux (x64) | Ubuntu 18.04               | S390x         | `mcr.microsoft.com/dotnet-buildtools/prereqs:azurelinux-3.0-net10.0-cross-s390x`         | `/crossrootfs/s390x`   |
-| Azure Linux (x64) | Ubuntu 16.04 (Wasm)        | x64           | `mcr.microsoft.com/dotnet-buildtools/prereqs:azurelinux-3.0-net10.0-webassembly-amd64`   | `/crossrootfs/x64`     |
+| Azure Linux (x64) | Ubuntu 18.04 (Wasm)        | x64           | `mcr.microsoft.com/dotnet-buildtools/prereqs:azurelinux-3.0-net10.0-webassembly-amd64`   | `/crossrootfs/x64`     |
 | Debian (x64)      | Debian 12                  | x64           | `mcr.microsoft.com/dotnet-buildtools/prereqs:debian-12-gcc14-amd64`                     |        *N/A*           |
 | Ubuntu (x64)      | Tizen 9.0                  | Arm32 (armel) | `mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-22.04-cross-armel-tizen`            | `/crossrootfs/armel`   |
 | Ubuntu (x64)      | Ubuntu 20.04               | Arm32 (v6)    | `mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-20.04-cross-armv6-raspbian-10`      | `/crossrootfs/armv6`   |
@@ -59,8 +59,9 @@ Once you've chosen the image that suits your needs, you can issue `docker run` w
 docker run --rm \
   -v <RUNTIME_REPO_PATH>:/runtime \
   -w /runtime \
+  -e ROOTFS_DIR=/crossrootfs/x64/ \
   mcr.microsoft.com/dotnet-buildtools/prereqs:azurelinux-3.0-net10.0-cross-amd64 \
-  ./build.sh --subset clr --configuration Checked
+  ./build.sh -s clr --cross -c Checked
 ```
 
 Now, dissecting the command:
@@ -68,9 +69,9 @@ Now, dissecting the command:
 - `--rm`: Erase the created container after it finishes running.
 - `-v <RUNTIME_REPO_PATH>:/runtime`: Mount the runtime repo clone located in `<RUNTIME_REPO_PATH>` to the container path `/runtime`.
 - `-w /runtime`: Start the container in the `/runtime` directory.
+- `-e ROOTFS_DIR=/crossrootfs/x64/` sets up the environment variable for crossbuilding.
 - `mcr.microsoft.com/dotnet-buildtools/prereqs:azurelinux-3.0-net10.0-cross-amd64`: The fully qualified name of the Docker image to download. In this case, we want to use an *Azure Linux* image to target the *x64* architecture.
-- `./build.sh --subset clr --configuration Checked`: The build command to run in the repo. In this case, we want to build the *Clr* subset in the *Checked* configuration.
+- `./build.sh -s clr --cross -c Checked`: The build command to run in the repo. In this case, we want to build the *Clr* subset in the *Checked* configuration with the cross compilation option.
 
 You might also want to interact with the container directly for a myriad of reasons, like running multiple builds in different paths for example. In this case, instead of passing the build script command to the `docker` command-line, pass the flag `-it`. When you do this, you will get access to a small shell within the container, which allows you to explore it, run builds manually, and so on, like you would on a regular terminal in your machine. Note that the containers' shell's built-in tools are very limited in comparison to the ones you probably have on your machine, so don't expect to be able to do full work there.
 
-To do cross-building using Docker, make sure to select the appropriate image that targets the platform you want to build for. As for the commands to run, follow the same instructions from the cross-building doc [over here](/docs/workflow/building/coreclr/cross-building.md), with the difference that you don't need to generate the *ROOTFS*, as the cross-building images already include it.

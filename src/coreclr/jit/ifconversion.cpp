@@ -740,8 +740,10 @@ bool OptIfConversionDsc::optIfConvert()
     }
 
     // Update the flow from the original block.
-    m_comp->fgRemoveAllRefPreds(m_startBlock->GetFalseTarget(), m_startBlock);
-    m_startBlock->SetKindAndTargetEdge(BBJ_ALWAYS, m_startBlock->GetTrueEdge());
+    FlowEdge* const removedEdge  = m_comp->fgRemoveAllRefPreds(m_startBlock->GetFalseTarget(), m_startBlock);
+    FlowEdge* const retainedEdge = m_startBlock->GetTrueEdge();
+    m_startBlock->SetKindAndTargetEdge(BBJ_ALWAYS, retainedEdge);
+    m_comp->fgRepairProfileCondToUncond(m_startBlock, retainedEdge, removedEdge);
 
 #ifdef DEBUG
     if (m_comp->verbose)

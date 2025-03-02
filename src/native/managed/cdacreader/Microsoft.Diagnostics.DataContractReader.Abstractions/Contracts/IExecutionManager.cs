@@ -5,21 +5,24 @@ using System;
 
 namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 
-internal struct CodeBlockHandle
+public struct CodeBlockHandle
 {
+    // TODO-Layering: These members should be accessible only to contract implementations.
     public readonly TargetPointer Address;
-    internal CodeBlockHandle(TargetPointer address) => Address = address;
+    public CodeBlockHandle(TargetPointer address) => Address = address;
 }
 
-internal interface IExecutionManager : IContract
+public interface IExecutionManager : IContract
 {
     static string IContract.Name { get; } = nameof(ExecutionManager);
     CodeBlockHandle? GetCodeBlockHandle(TargetCodePointer ip) => throw new NotImplementedException();
     TargetPointer GetMethodDesc(CodeBlockHandle codeInfoHandle) => throw new NotImplementedException();
     TargetCodePointer GetStartAddress(CodeBlockHandle codeInfoHandle) => throw new NotImplementedException();
+    TargetPointer GetUnwindInfo(CodeBlockHandle codeInfoHandle, TargetCodePointer ip) => throw new NotImplementedException();
+    TargetPointer GetUnwindInfoBaseAddress(CodeBlockHandle codeInfoHandle) => throw new NotImplementedException();
 }
 
-internal readonly struct ExecutionManager : IExecutionManager
+public readonly struct ExecutionManager : IExecutionManager
 {
 
 }

@@ -149,8 +149,8 @@
 
     // GC support
     DYNAMICJITHELPER(CORINFO_HELP_STOP_FOR_GC,  JIT_RareDisableHelper,  METHOD__NIL)
-    JITHELPER(CORINFO_HELP_POLL_GC,             JIT_PollGC,         METHOD__NIL)
-
+    DYNAMICJITHELPER(CORINFO_HELP_POLL_GC,      JIT_PollGC,         METHOD__THREAD__POLLGC)
+    
     JITHELPER(CORINFO_HELP_CHECK_OBJ,           JIT_CheckObj,       METHOD__NIL)
 
     // GC Write barrier support

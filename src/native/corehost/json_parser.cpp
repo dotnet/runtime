@@ -17,33 +17,9 @@
 
 namespace {
 
-// Try to match 0xEF 0xBB 0xBF byte sequence (no endianness here.)
-std::streampos get_utf8_bom_length(pal::istream_t& stream)
-{
-    if (stream.eof())
-    {
-        return 0;
-    }
-
-    auto peeked = stream.peek();
-    if (peeked == EOF || ((peeked & 0xFF) != 0xEF))
-    {
-        return 0;
-    }
-
-    unsigned char bytes[3];
-    stream.read(reinterpret_cast<char*>(bytes), 3);
-    if ((stream.gcount() < 3) || (bytes[1] != 0xBB) || (bytes[2] != 0xBF))
-    {
-        return 0;
-    }
-
-    return 3;
-}
-
 void get_line_column_from_offset(const char* data, uint64_t size, size_t offset, int *line, int *column)
 {
-    assert(offset < size);
+    assert(offset <= size);
 
     *line = *column = 1;
 
@@ -67,12 +43,6 @@ void get_line_column_from_offset(const char* data, uint64_t size, size_t offset,
 }
 
 } // empty namespace
-
-void json_parser_t::realloc_buffer(size_t size)
-{
-    m_json.resize(size + 1);
-    m_json[size] = '\0';
-}
 
 bool json_parser_t::parse_raw_data(char* data, int64_t size, const pal::string_t& context)
 {
@@ -115,7 +85,7 @@ bool json_parser_t::parse_file(const pal::string_t& path)
 {
     // This code assumes that the caller has checked that the file `path` exists
     // either within the bundle, or as a real file on disk.
-    assert(m_bundle_data == nullptr);
+    assert(m_data == nullptr);
     assert(m_bundle_location == nullptr);
 
     if (bundle::info_t::is_single_file_bundle())
@@ -123,43 +93,56 @@ bool json_parser_t::parse_file(const pal::string_t& path)
         // Due to in-situ parsing on Linux,
         //  * The json file is mapped as copy-on-write.
         //  * The mapping cannot be immediately released, and will be unmapped by the json_parser destructor.
-        m_bundle_data = bundle::info_t::config_t::map(path, m_bundle_location);
+        m_data = bundle::info_t::config_t::map(path, m_bundle_location);
 
-        if (m_bundle_data != nullptr)
+        if (m_data != nullptr)
         {
-            bool result = parse_raw_data(m_bundle_data, m_bundle_location->size, path);
-            return result;
+            m_size = (size_t)m_bundle_location->size;
         }
     }
 
-    pal::ifstream_t file{ path };
-    if (!file.good())
+    if (m_data == nullptr)
     {
-        trace::error(_X("Cannot use file stream for [%s]: %s"), path.c_str(), pal::strerror(errno).c_str());
-        return false;
+#ifdef _WIN32
+        // We can't use in-situ parsing on Windows, as JSON data is encoded in
+        // UTF-8 and the host expects wide strings.
+        // We do not need copy-on-write, so read-only mapping will be enough.
+        m_data = (char*)pal::mmap_read(path, &m_size);
+#else // _WIN32
+        m_data = (char*)pal::mmap_copy_on_write(path, &m_size);
+#endif // _WIN32
+
+        if (m_data == nullptr)
+        {
+            trace::error(_X("Cannot use file stream for [%s]: %s"), path.c_str(), pal::strerror(errno).c_str());
+            return false;
+        }
     }
 
-    auto current_pos = ::get_utf8_bom_length(file);
-    file.seekg(0, file.end);
-    auto stream_size = file.tellg();
-    if (stream_size == -1)
+    char *data = m_data;
+    size_t size = m_size;
+
+    // Skip over UTF-8 BOM, if present
+    if (size >= 3 && data[0] == 0xEF && data[1] == 0xBB && data[1] == 0xBF)
     {
-        trace::error(_X("Failed to get size of file [%s]"), path.c_str());
-        return false;
+        size -= 3;
+        data += 3;
     }
 
-    file.seekg(current_pos, file.beg);
-
-    realloc_buffer(static_cast<size_t>(stream_size - current_pos));
-    file.read(m_json.data(), stream_size - current_pos);
-
-    return parse_raw_data(m_json.data(), m_json.size(), path);
+    return parse_raw_data(data, size, path);
 }
 
 json_parser_t::~json_parser_t()
 {
-    if (m_bundle_data != nullptr)
+    if (m_data != nullptr)
     {
-        bundle::info_t::config_t::unmap(m_bundle_data, m_bundle_location);
+        if (m_bundle_location != nullptr)
+        {
+            bundle::info_t::config_t::unmap(m_data, m_bundle_location);
+        }
+        else
+        {
+            pal::munmap((void*)m_data, m_size);
+        }
     }
 }

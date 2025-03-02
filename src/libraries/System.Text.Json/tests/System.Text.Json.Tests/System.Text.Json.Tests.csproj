@@ -1,4 +1,5 @@
 <Project Sdk="Microsoft.NET.Sdk">
+
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent);$(NetFrameworkMinimum)</TargetFrameworks>
     <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
@@ -20,11 +21,13 @@
          Enable reflection and preserve required assemblies -->
     <JsonSerializerIsReflectionEnabledByDefault Condition="'$(EnableAggressiveTrimming)' == 'true' and '$(UseNativeAotRuntime)' != 'true'">true</JsonSerializerIsReflectionEnabledByDefault>
     <!-- Disable nullability public only feature for NullabilityInfoContextTests -->
-    <Features>$(Features.Replace('nullablePublicOnly', '')</Features>
+    <Features>$(Features.Replace('nullablePublicOnly', ''))</Features>
   </PropertyGroup>
+
   <PropertyGroup Condition="'$(TargetOS)' == 'browser'">
     <WasmXHarnessMaxParallelThreads>1</WasmXHarnessMaxParallelThreads>
   </PropertyGroup>
+
   <ItemGroup Condition="'$(ContinuousIntegrationBuild)' == 'true'">
     <HighAotMemoryUsageAssembly Include="System.Text.Json.Tests.dll" />
   </ItemGroup>
@@ -266,17 +269,17 @@
     <Compile Include="$(CoreLibSharedDir)System\Runtime\CompilerServices\RequiredMemberAttribute.cs" Link="System.Private.CoreLib\System\Runtime\CompilerServices\RequiredMemberAttribute.cs" />
   </ItemGroup>
 
-  <ItemGroup>
-    <ProjectReference Include="..\..\src\System.Text.Json.csproj" />
-    <ProjectReference Include="$(LibrariesProjectRoot)System.IO.Pipelines\src\System.IO.Pipelines.csproj" />
-  </ItemGroup>
-
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">
     <ProjectReference Include="..\..\gen\System.Text.Json.SourceGeneration.Roslyn4.0.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
+    <ProjectReference Include="..\..\src\System.Text.Json.csproj"  />
     <ProjectReference Include="$(LibrariesProjectRoot)System.Collections.Immutable\src\System.Collections.Immutable.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.IO.Pipelines\src\System.IO.Pipelines.csproj" Condition="'$(TargetFramework)' != '$(NetCoreAppCurrent)'" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Linq.AsyncEnumerable\src\System.Linq.AsyncEnumerable.csproj" />
+
     <Reference Include="Microsoft.CSharp" />
     <PackageReference Include="System.ComponentModel.Annotations" Version="$(SystemComponentModelAnnotationsVersion)" />
   </ItemGroup>
+
   <ItemGroup>
     <!-- Apple mobile trimming descriptor for Mono runtime -->
     <TrimmerRootDescriptor Condition="'$(TargetsAppleMobile)' == 'true' and '$(EnableAggressiveTrimming)' == 'true' and '$(UseNativeAotRuntime)' != 'true'" Include="$(MSBuildThisFileDirectory)ILLink.Descriptors.xml" />
@@ -285,4 +288,5 @@
   <ItemGroup>
     <PackageReference Include="JsonSchema.Net" Version="$(JsonSchemaNetVersion)" />
   </ItemGroup>
+
 </Project>

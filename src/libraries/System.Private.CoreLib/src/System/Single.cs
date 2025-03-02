@@ -177,8 +177,8 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool IsInfinity(float f)
         {
-            uint bits = BitConverter.SingleToUInt32Bits(f);
-            return (bits & ~SignMask) == PositiveInfinityBits;
+            uint bits = BitConverter.SingleToUInt32Bits(Abs(f));
+            return bits == PositiveInfinityBits;
         }
 
         /// <summary>Determines whether the specified value is NaN.</summary>
@@ -224,8 +224,8 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool IsNormal(float f)
         {
-            uint bits = BitConverter.SingleToUInt32Bits(f);
-            return ((bits & ~SignMask) - SmallestNormalBits) < (PositiveInfinityBits - SmallestNormalBits);
+            uint bits = BitConverter.SingleToUInt32Bits(Abs(f));
+            return (bits - SmallestNormalBits) < (PositiveInfinityBits - SmallestNormalBits);
         }
 
         /// <summary>Determines whether the specified value is positive infinity.</summary>
@@ -242,8 +242,8 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool IsSubnormal(float f)
         {
-            uint bits = BitConverter.SingleToUInt32Bits(f);
-            return ((bits & ~SignMask) - 1) < MaxTrailingSignificand;
+            uint bits = BitConverter.SingleToUInt32Bits(Abs(f));
+            return (bits - 1) < MaxTrailingSignificand;
         }
 
         [NonVersionable]
@@ -660,15 +660,12 @@ namespace System
         public static TInteger ConvertToIntegerNative<TInteger>(float value)
             where TInteger : IBinaryInteger<TInteger>
         {
-#if !MONO
             if (typeof(TInteger).IsPrimitive)
             {
                 // We need this to be recursive so indirect calls (delegates
                 // for example) produce the same result as direct invocation
                 return ConvertToIntegerNative<TInteger>(value);
             }
-#endif
-
             return TInteger.CreateSaturating(value);
         }
 
@@ -938,7 +935,24 @@ namespace System
         //
 
         /// <inheritdoc cref="INumber{TSelf}.Clamp(TSelf, TSelf, TSelf)" />
-        public static float Clamp(float value, float min, float max) => Math.Clamp(value, min, max);
+        public static float Clamp(float value, float min, float max)
+        {
+            if (min > max)
+            {
+                Math.ThrowMinMaxException(min, max);
+            }
+            return Min(Max(value, min), max);
+        }
+
+        /// <inheritdoc cref="INumber{TSelf}.ClampNative(TSelf, TSelf, TSelf)" />
+        public static float ClampNative(float value, float min, float max)
+        {
+            if (min > max)
+            {
+                Math.ThrowMinMaxException(min, max);
+            }
+            return MinNative(MaxNative(value, min), max);
+        }
 
         /// <inheritdoc cref="INumber{TSelf}.CopySign(TSelf, TSelf)" />
         public static float CopySign(float value, float sign) => MathF.CopySign(value, sign);
@@ -946,6 +960,10 @@ namespace System
         /// <inheritdoc cref="INumber{TSelf}.Max(TSelf, TSelf)" />
         [Intrinsic]
         public static float Max(float x, float y) => MathF.Max(x, y);
+
+        /// <inheritdoc cref="INumber{TSelf}.MaxNative(TSelf, TSelf)" />
+        [Intrinsic]
+        public static float MaxNative(float x, float y) => (x > y) ? x : y;
 
         /// <inheritdoc cref="INumber{TSelf}.MaxNumber(TSelf, TSelf)" />
         [Intrinsic]
@@ -973,6 +991,10 @@ namespace System
         /// <inheritdoc cref="INumber{TSelf}.Min(TSelf, TSelf)" />
         [Intrinsic]
         public static float Min(float x, float y) => MathF.Min(x, y);
+
+        /// <inheritdoc cref="INumber{TSelf}.MinNative(TSelf, TSelf)" />
+        [Intrinsic]
+        public static float MinNative(float x, float y) => (x < y) ? x : y;
 
         /// <inheritdoc cref="INumber{TSelf}.MinNumber(TSelf, TSelf)" />
         [Intrinsic]
@@ -1081,7 +1103,27 @@ namespace System
         static bool INumberBase<float>.IsComplexNumber(float value) => false;
 
         /// <inheritdoc cref="INumberBase{TSelf}.IsEvenInteger(TSelf)" />
-        public static bool IsEvenInteger(float value) => IsInteger(value) && (Abs(value % 2) == 0);
+        public static bool IsEvenInteger(float value)
+        {
+            uint bits = BitConverter.SingleToUInt32Bits(Abs(value));
+
+            if (bits < 0x3F80_0000)
+            {
+                return bits == 0;
+            }
+
+            if (bits >= 0x4B80_0000)
+            {
+                return bits < 0x7F80_0000;
+            }
+
+            uint exponent = ((bits >> 23) & 0xFF) - 127;
+            uint fractionalBits = 23 - exponent;
+            uint firstIntegerBit = 1u << (int)fractionalBits;
+            uint fractionalBitMask = firstIntegerBit - 1;
+
+            return ((bits & fractionalBitMask) == 0) && ((bits & firstIntegerBit) == 0);
+        }
 
         /// <inheritdoc cref="INumberBase{TSelf}.IsImaginaryNumber(TSelf)" />
         static bool INumberBase<float>.IsImaginaryNumber(float value) => false;
@@ -1203,6 +1245,7 @@ namespace System
             return TryConvertFrom(value, out result);
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static bool TryConvertFrom<TOther>(TOther value, out float result)
             where TOther : INumberBase<TOther>
         {
@@ -1352,6 +1395,7 @@ namespace System
             return TryConvertTo(value, out result);
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static bool TryConvertTo<TOther>(float value, [MaybeNullWhen(false)] out TOther result)
             where TOther : INumberBase<TOther>
         {

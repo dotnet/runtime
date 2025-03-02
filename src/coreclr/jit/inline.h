@@ -622,10 +622,7 @@ struct InlineCandidateInfo : public HandleHistogramProfileCandidateInfo
     unsigned clsAttr;
     unsigned methAttr;
 
-    // actual IL offset of instruction that resulted in this inline candidate
-    IL_OFFSET              ilOffset;
     CorInfoInitClassResult initClassResult;
-    var_types              fncRetType;
     bool                   exactContextNeedsRuntimeLookup;
     InlineContext*         inlinersContext;
 };
@@ -637,6 +634,7 @@ struct InlineCandidateInfo : public HandleHistogramProfileCandidateInfo
 struct LateDevirtualizationInfo
 {
     CORINFO_CONTEXT_HANDLE exactContextHnd;
+    InlineContext*         inlinersContext;
 };
 
 // InlArgInfo describes inline candidate argument properties.

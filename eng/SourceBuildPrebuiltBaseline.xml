@@ -16,6 +16,7 @@
     <UsagePattern IdentityGlob="*Microsoft.DotNet.ILCompiler/*10.*" />
 
     <!-- Allowed and pinned to SDK version -->
+    <UsagePattern IdentityGlob="Microsoft.DotNet.ApiCompat.Task/*10.*" />
     <UsagePattern IdentityGlob="Microsoft.NET.ILLink.Tasks/*10.*" />
 
     <!-- This version is brought in transitively from NuGet.Packaging.6.2.4.

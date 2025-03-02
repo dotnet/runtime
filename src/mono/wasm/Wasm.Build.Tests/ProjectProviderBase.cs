@@ -83,8 +83,10 @@ public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string?
         EnsureProjectDirIsSet();
         return FindAndAssertDotnetFiles(binFrameworkDir: assertOptions.BinFrameworkDir,
                                         expectFingerprintOnDotnetJs: IsFingerprintingOnDotnetJsEnabled,
+                                        assertOptions,
                                         superSet: GetAllKnownDotnetFilesToFingerprintMap(assertOptions),
-                                        expected: GetDotNetFilesExpectedSet(assertOptions));
+                                        expected: GetDotNetFilesExpectedSet(assertOptions)
+                                        );
     }
 
     protected abstract IReadOnlyDictionary<string, bool> GetAllKnownDotnetFilesToFingerprintMap(AssertBundleOptions assertOptions);
@@ -93,15 +95,15 @@ public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string?
     public IReadOnlyDictionary<string, DotNetFileName> FindAndAssertDotnetFiles(
         string binFrameworkDir,
         bool expectFingerprintOnDotnetJs,
+        AssertBundleOptions assertOptions,
         IReadOnlyDictionary<string, bool> superSet,
-        IReadOnlySet<string>? expected)
+        IReadOnlySet<string> expected)
     {
         EnsureProjectDirIsSet();
         var actual = new SortedDictionary<string, DotNetFileName>();
 
         if (!Directory.Exists(binFrameworkDir))
             throw new XunitException($"Could not find bundle directory {binFrameworkDir}");
-
         IList<string> dotnetFiles = Directory.EnumerateFiles(binFrameworkDir,
                                                              "dotnet.*",
                                                              SearchOption.TopDirectoryOnly)
@@ -155,15 +157,19 @@ public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string?
         {
             throw new XunitException($"Found unknown files in {binFrameworkDir}:{Environment.NewLine}    " +
                     $"{string.Join($"{Environment.NewLine}  ", dotnetFiles.Select(f => Path.GetRelativePath(binFrameworkDir, f)))}{Environment.NewLine}" +
-                    $"Add these to {nameof(GetAllKnownDotnetFilesToFingerprintMap)} method");
+                    $"Add these to {nameof(GetAllKnownDotnetFilesToFingerprintMap)} method{Environment.NewLine}" + 
+                    $"Expected {string.Join($"{Environment.NewLine}  ", expected)}{Environment.NewLine}" + 
+                    $"Options {assertOptions} {Environment.NewLine}"
+                    );
         }
 
         if (expected is not null)
-            AssertDotNetFilesSet(expected, superSet, actual, expectFingerprintOnDotnetJs, binFrameworkDir);
+            AssertDotNetFilesSet(assertOptions, expected, superSet, actual, expectFingerprintOnDotnetJs, binFrameworkDir);
         return actual;
     }
 
     private void AssertDotNetFilesSet(
+        AssertBundleOptions assertOptions,
         IReadOnlySet<string> expected,
         IReadOnlyDictionary<string, bool> superSet,
         IReadOnlyDictionary<string, DotNetFileName> actualReadOnly,
@@ -177,7 +183,7 @@ public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string?
         {
             bool expectFingerprint = superSet[expectedFilename];
 
-            Assert.True(actual.ContainsKey(expectedFilename), $"Could not find {expectedFilename} in bundle directory: {bundleDir}. Actual files on disk: {string.Join(", ", actual.Keys)}");
+            Assert.True(actual.ContainsKey(expectedFilename), $"Could not find {expectedFilename} in bundle directory: {bundleDir}. Actual files on disk: {string.Join(", ", actual.Keys)} Options {assertOptions}");
 
             // Check that the version and hash are present or not present as expected
             if (ShouldCheckFingerprint(expectedFilename: expectedFilename,
@@ -185,12 +191,12 @@ public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string?
                                        expectFingerprintForThisFile: expectFingerprint))
             {
                 if (string.IsNullOrEmpty(actual[expectedFilename].Hash))
-                    throw new XunitException($"Expected hash in filename: {actual[expectedFilename].ActualPath}");
+                    throw new XunitException($"Expected hash in filename: {actual[expectedFilename].ActualPath} Options {assertOptions}");
             }
             else
             {
                 if (!string.IsNullOrEmpty(actual[expectedFilename].Hash))
-                    throw new XunitException($"Expected no hash in filename: {actual[expectedFilename].ActualPath}");
+                    throw new XunitException($"Expected no hash in filename: {actual[expectedFilename].ActualPath} Options {assertOptions}");
             }
             actual.Remove(expectedFilename);
         }
@@ -198,7 +204,7 @@ public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string?
         if (actual.Any())
         {
             var actualFileNames = actual.Values.Select(x => x.ActualPath).Order();
-            throw new XunitException($"Found unexpected files: {string.Join(", ", actualFileNames)}");
+            throw new XunitException($"Found unexpected files: {string.Join(", ", actualFileNames)} Options {assertOptions}");
         }
     }
 
@@ -508,7 +514,7 @@ public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string?
             .Union(bootJson.resources.wasmNative.Keys)
             .Union(bootJson.resources.jsModuleRuntime.Keys)
             .Union(bootJson.resources.jsModuleWorker?.Keys ?? Enumerable.Empty<string>())
-            .Union(bootJson.resources.jsModuleGlobalization?.Keys ?? Enumerable.Empty<string>())
+            .Union(bootJson.resources.jsModuleDiagnostics?.Keys ?? Enumerable.Empty<string>())
             .Union(bootJson.resources.wasmSymbols?.Keys ?? Enumerable.Empty<string>())
             .ToArray();
 

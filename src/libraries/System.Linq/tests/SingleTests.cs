@@ -37,53 +37,31 @@ namespace System.Linq.Tests
         }
 
         [Fact]
-        public void EmptyIList()
+        public void Empty()
         {
-            int[] source = [];
-
-            Assert.Throws<InvalidOperationException>(() => source.Single());
+            foreach (IEnumerable<int> source in CreateSources<int>([]))
+            {
+                Assert.Throws<InvalidOperationException>(() => source.Single());
+            }
         }
 
         [Fact]
-        public void SingleElementIList()
+        public void SingleElement()
         {
-            int[] source = [4];
             int expected = 4;
-
-            Assert.Equal(expected, source.Single());
+            foreach (IEnumerable<int> source in CreateSources([4]))
+            {
+                Assert.Equal(expected, source.Single());
+            }
         }
 
         [Fact]
-        public void ManyElementIList()
+        public void ManyElement()
         {
-            int[] source = [4, 4, 4, 4, 4];
-
-            Assert.Throws<InvalidOperationException>(() => source.Single());
-        }
-
-        [Fact]
-        public void EmptyNotIList()
-        {
-            IEnumerable<int> source = RepeatedNumberGuaranteedNotCollectionType(0, 0);
-
-            Assert.Throws<InvalidOperationException>(() => source.Single());
-        }
-
-        [Fact]
-        public void SingleElementNotIList()
-        {
-            IEnumerable<int> source = RepeatedNumberGuaranteedNotCollectionType(-5, 1);
-            int expected = -5;
-
-            Assert.Equal(expected, source.Single());
-        }
-
-        [Fact]
-        public void ManyElementNotIList()
-        {
-            IEnumerable<int> source = RepeatedNumberGuaranteedNotCollectionType(3, 5);
-
-            Assert.Throws<InvalidOperationException>(() => source.Single());
+            foreach (IEnumerable<int> source in CreateSources([4, 4, 4, 4, 4]))
+            {
+                Assert.Throws<InvalidOperationException>(() => source.Single());
+            }
         }
 
         [Fact]

@@ -225,7 +225,12 @@ namespace System.Net.Http
 
                 // Processing the incoming frames before sending the client preface and SETTINGS is necessary when using a NamedPipe as a transport.
                 // If the preface and SETTINGS coming from the server are not read first the below WriteAsync and the ProcessIncomingFramesAsync fall into a deadlock.
-                _ = ProcessIncomingFramesAsync();
+                // Avoid capturing the initial request's ExecutionContext for the entire lifetime of the new connection.
+                using (ExecutionContext.SuppressFlow())
+                {
+                    _ = ProcessIncomingFramesAsync();
+                }
+
                 await _stream.WriteAsync(_outgoingBuffer.ActiveMemory, cancellationToken).ConfigureAwait(false);
                 _rttEstimator.OnInitialSettingsSent();
                 _outgoingBuffer.ClearAndReturnBuffer();
@@ -249,7 +254,11 @@ namespace System.Net.Http
                 throw new IOException(SR.net_http_http2_connection_not_established, e);
             }
 
-            _ = ProcessOutgoingFramesAsync();
+            // Avoid capturing the initial request's ExecutionContext for the entire lifetime of the new connection.
+            using (ExecutionContext.SuppressFlow())
+            {
+                _ = ProcessOutgoingFramesAsync();
+            }
         }
 
         private void Shutdown()

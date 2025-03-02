@@ -19,7 +19,7 @@ internal sealed class RuntimeFunction : IData<RuntimeFunction>
             EndAddress = target.Read<uint>(address + (ulong)type.Fields[nameof(EndAddress)].Offset);
 
         UnwindData = target.Read<uint>(address + (ulong)type.Fields[nameof(UnwindData)].Offset);
-     }
+    }
 
     public uint BeginAddress { get; }
     public uint? EndAddress { get; }

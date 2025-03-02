@@ -126,7 +126,7 @@ namespace System.Security.Cryptography
                     byte[]? rent = null;
 
                     // RSA up through 4096 stackalloc
-                    if (keySizeBytes <= 512)
+                    if ((uint)keySizeBytes <= 512)
                     {
                         tmp = stackalloc byte[keySizeBytes];
                     }

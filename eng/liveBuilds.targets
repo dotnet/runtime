@@ -24,7 +24,7 @@
   <PropertyGroup>
     <CoreCLRSharedFrameworkDir>$([MSBuild]::NormalizeDirectory('$(CoreCLRArtifactsPath)', 'sharedFramework'))</CoreCLRSharedFrameworkDir>
     <CoreCLRILCompilerDir>$([MSBuild]::NormalizeDirectory('$(CoreCLRArtifactsPath)', 'ilc-published'))</CoreCLRILCompilerDir>
-    <CoreCLRCrossILCompilerDir Condition="'$(CrossBuild)' == 'true' or '$(BuildArchitecture)' != '$(TargetArchitecture)' or '$(HostOS)' != '$(TargetOS)' or '$(EnableNativeSanitizers)' != ''">$([MSBuild]::NormalizeDirectory('$(CoreCLRArtifactsPath)', '$(BuildArchitecture)', 'ilc'))</CoreCLRCrossILCompilerDir>
+    <CoreCLRCrossILCompilerDir>$([MSBuild]::NormalizeDirectory('$(CoreCLRArtifactsPath)', '$(BuildArchitecture)', 'ilc'))</CoreCLRCrossILCompilerDir>
     <CoreCLRAotSdkDir>$([MSBuild]::NormalizeDirectory('$(CoreCLRArtifactsPath)', 'aotsdk'))</CoreCLRAotSdkDir>
     <CoreCLRBuildIntegrationDir>$([MSBuild]::NormalizeDirectory('$(CoreCLRArtifactsPath)', 'build'))</CoreCLRBuildIntegrationDir>
 
@@ -209,6 +209,8 @@
         $(LibrariesNativeArtifactsPath)dotnet.native.js;
         $(LibrariesNativeArtifactsPath)dotnet.runtime.js;
         $(LibrariesNativeArtifactsPath)dotnet.runtime.js.map;
+        $(LibrariesNativeArtifactsPath)dotnet.diagnostics.js;
+        $(LibrariesNativeArtifactsPath)dotnet.diagnostics.js.map;
         $(LibrariesNativeArtifactsPath)dotnet.d.ts;
         $(LibrariesNativeArtifactsPath)package.json;
         $(LibrariesNativeArtifactsPath)dotnet.native.wasm;

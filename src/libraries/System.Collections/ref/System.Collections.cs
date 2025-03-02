@@ -287,6 +287,7 @@ namespace System.Collections.Generic
         public PriorityQueue(int initialCapacity, System.Collections.Generic.IComparer<TPriority>? comparer) { }
         public System.Collections.Generic.IComparer<TPriority> Comparer { get { throw null; } }
         public int Count { get { throw null; } }
+        public int Capacity { get { throw null; } }
         public System.Collections.Generic.PriorityQueue<TElement, TPriority>.UnorderedItemsCollection UnorderedItems { get { throw null; } }
         public void Clear() { }
         public TElement Dequeue() { throw null; }

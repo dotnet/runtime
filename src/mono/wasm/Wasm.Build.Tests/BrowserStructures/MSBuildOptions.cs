@@ -24,5 +24,6 @@ public abstract record MSBuildOptions
     IDictionary<string, string>?    ExtraBuildEnvironmentVariables  = null,
     string                          BootConfigFileName              = "blazor.boot.json",
     string                          NonDefaultFrameworkDir          = "",
-    string                          ExtraMSBuildArgs                = ""
+    string                          ExtraMSBuildArgs                = "",
+    bool                            FeaturePerfTracing              = false
 );
