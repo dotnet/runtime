@@ -4169,30 +4169,26 @@ void Compiler::optAssertionProp_RangeProperties(ASSERT_VALARG_TP assertions,
 
     if (tree->TypeIs(TYP_INT))
     {
-        Limit lowerBound(Limit::keUnknown);
         Range rng = Range(Limit(Limit::keUnknown));
         if (onlyIfCheap)
         {
-            if (RangeCheck::TryGetRangeFromAssertions(this, treeVN, assertions, &rng))
+            if (!RangeCheck::TryGetRangeFromAssertions(this, treeVN, assertions, &rng))
             {
-                lowerBound = rng.LowerLimit();
+                return;
             }
         }
-        else
+        else if (!GetRangeCheck()->TryGetRange(block, tree, &rng))
         {
-            if (GetRangeCheck()->TryGetRange(block, tree, &rng))
-            {
-                lowerBound = rng.LowerLimit();
-            }
+            return;
         }
 
-        if (lowerBound.IsConstant())
+        if (rng.LowerLimit().IsConstant())
         {
-            if (lowerBound.GetConstant() >= 0)
+            if (rng.LowerLimit().GetConstant() >= 0)
             {
                 *isKnownNonNegative = true;
             }
-            if (lowerBound.GetConstant() > 0)
+            if (rng.LowerLimit().GetConstant() > 0)
             {
                 *isKnownNonZero = true;
             }
@@ -4589,16 +4585,17 @@ GenTree* Compiler::optAssertionPropGlobal_RelOp(ASSERT_VALARG_TP assertions,
         return optAssertionProp_Update(newTree, tree, stmt);
     }
 
-    // See if we can optimize a relop based on SSA-based TryGetRange. It's not a cheap operation,
-    // so the following checks are driven by the TP-diffs to maintain the TP/CQ balance.
-    if (tree->OperIs(GT_GE, GT_GT, GT_LE, GT_LT) && op1->TypeIs(TYP_INT) && op2->IsIntCnsFitsInI32() &&
-        !op2->IsIntegralConst(0) && !block->isRunRarely())
+    // See if we can optimize a relop based on SSA-based TryGetRange.
+    if (tree->OperIsCmpCompare() && op1->TypeIs(TYP_INT) && op2->IsIntCnsFitsInI32() &&
+        // It's not a cheap operation, so the following checks are driven by the
+        // TP-diffs to maintain the TP/CQ balance:
+        !op2->IsIntegralConst(0) && !block->isRunRarely() && !tree->IsUnsigned())
     {
-        // NOTE: we can call GetRange for op2 as well, but that will be even more expensive,
+        // NOTE: we can call TryGetRange for op2 as well, but that will be even more expensive,
         Range rng1 = Range(Limit(Limit::keUndef));
+        Range rng2 = Range(Limit(Limit::keConstant, static_cast<int>(op2->AsIntCon()->IconValue())));
         if (GetRangeCheck()->TryGetRange(block, op1, &rng1, /*budget*/ 12))
         {
-            Range rng2 = Range(Limit(Limit::keConstant, static_cast<int>(op2->AsIntCon()->IconValue())));
             RangeOps::RelationKind kind = RangeOps::EvalRelop(tree->OperGet(), tree->IsUnsigned(), rng1, rng2);
             if ((kind != RangeOps::RelationKind::Unknown))
             {
