@@ -680,7 +680,7 @@ public:
     // and assertion prop phases are completed.
     bool OptimizeRangeChecks();
 
-    bool TryGetRange(BasicBlock* block, GenTree* expr, Range* pRange, int budget = -1);
+    bool TryGetRange(BasicBlock* block, GenTree* expr, Range* pRange);
 
     // Cheaper version of TryGetRange that is based only on incoming assertions.
     static bool TryGetRangeFromAssertions(Compiler* comp, ValueNum num, ASSERT_VALARG_TP assertions, Range* pRange);
