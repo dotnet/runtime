@@ -320,6 +320,8 @@ void CallCountingStub::StaticInitialize()
 
 void CallCountingStub::GenerateCodePage(BYTE* pageBase, BYTE* pageBaseRX, SIZE_T pageSize)
 {
+    SIZE_T actualSize = (SIZE_T)((BYTE*)CallCountingStubCode_End - (BYTE*)CallCountingStubCode);
+    SIZE_T paddingSize= CallCountingStub::CodeSize - actualSize;
 #ifdef TARGET_X86
     int totalCodeSize = (pageSize / CallCountingStub::CodeSize) * CallCountingStub::CodeSize;
 
@@ -338,7 +340,7 @@ void CallCountingStub::GenerateCodePage(BYTE* pageBase, BYTE* pageBaseRX, SIZE_T
         *(BYTE**)(pageBase + i + SYMBOL_VALUE(CallCountingStubCode_TargetForThresholdReached_Offset)) = pCountReachedZeroSlot;
     }
 #else // TARGET_X86
-    FillStubCodePage(pageBase, (const void*)PCODEToPINSTR((PCODE)CallCountingStubCode), CallCountingStub::CodeSize, pageSize);
+    FillStubCodePage(pageBase, (const void*)PCODEToPINSTR((PCODE)CallCountingStubCode), CallCountingStub::CodeSize, pageSize, paddingSize);
 #endif
 }
 
