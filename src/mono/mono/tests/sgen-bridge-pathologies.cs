@@ -18,6 +18,11 @@ public class NonBridge
 	public object Link;
 }
 
+public class NonBridge2 : NonBridge
+{
+	public object Link2;
+}
+
 class Driver {
 	const int OBJ_COUNT = 200 * 1000;
 	const int LINK_COUNT = 2;
@@ -207,6 +212,61 @@ class Driver {
 		c.Links.Add (last_level);
 	}
 
+	/*
+	 * Simulates a graph with two nested cycles that is produces by
+	 * the async state machine when `async Task M()` method gets its
+	 * continuation rooted by an Action held by RunnableImplementor
+	 * (ie. the task continuation is hooked through the SynchronizationContext
+	 * implentation and rooted only by Android bridge objects).
+	 */
+	static void NestedCycles ()
+	{ 
+		Bridge runnableImplementor = new Bridge ();
+		Bridge byteArrayOutputStream = new Bridge ();
+		NonBridge2 action = new NonBridge2 ();
+		NonBridge displayClass = new NonBridge ();
+		NonBridge2 asyncStateMachineBox = new NonBridge2 ();
+		NonBridge2 asyncStreamWriter = new NonBridge2 ();
+
+		runnableImplementor.Links.Add(action);
+		action.Link = displayClass;
+		action.Link2 = asyncStateMachineBox;
+		displayClass.Link = action;
+		asyncStateMachineBox.Link = asyncStreamWriter;
+		asyncStateMachineBox.Link2 = action;
+		asyncStreamWriter.Link = byteArrayOutputStream;
+		asyncStreamWriter.Link2 = asyncStateMachineBox;
+	}
+
+	/*
+	 * Simulates a graph where a heavy node has its fanout components
+	 * represented by cycles with back-references to the heavy node and
+	 * references to the same bridge objects.
+	 * This enters a pathological path in the SCC contraction where the
+	 * links to the bridge objects need to be correctly deduplicated. The
+	 * deduplication causes the heavy node to no longer be heavy.
+	 */
+	static void FauxHeavyNodeWithCycles ()
+	{
+		Bridge fanout = new Bridge ();
+
+		// Need enough edges for the node to be considered heavy by bridgeless_color_is_heavy
+		NonBridge[] fauxHeavyNode = new NonBridge [100];
+		for (int i = 0; i < fauxHeavyNode.Length; i++) {
+			NonBridge2 cycle = new NonBridge2 ();
+			cycle.Link = fanout;
+			cycle.Link2 = fauxHeavyNode;
+			fauxHeavyNode[i] = cycle;
+		}
+
+		// Need at least HEAVY_REFS_MIN + 1 fan-in nodes
+		Bridge[] faninNodes = new Bridge [3];
+		for (int i = 0; i < faninNodes.Length; i++) {
+			faninNodes[i] = new Bridge ();
+			faninNodes[i].Links.Add (fauxHeavyNode);
+		}
+	}
+
 	static void RunTest (ThreadStart setup)
 	{
 		var t = new Thread (setup);
@@ -231,6 +291,8 @@ class Driver {
 		RunTest (SetupDeadList);
 		RunTest (SetupSelfLinks);
 		RunTest (Spider);
+		RunTest (NestedCycles);
+		RunTest (FauxHeavyNodeWithCycles);
 
 		for (int i = 0; i < 0; ++i) {
 			GC.Collect ();
