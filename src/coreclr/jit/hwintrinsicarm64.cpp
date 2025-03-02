@@ -2298,8 +2298,8 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
             if (sig->numArgs == 2)
             {
-                op2 = impSIMDPopStack();
-                op1 = impSIMDPopStack();
+                op2     = impSIMDPopStack();
+                op1     = impSIMDPopStack();
                 retNode = gtNewSimdShuffleNode(retType, op1, op2, simdBaseJitType, simdSize, isShuffleNative);
             }
             break;

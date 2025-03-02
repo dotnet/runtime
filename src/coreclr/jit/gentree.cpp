@@ -18390,11 +18390,8 @@ unsigned GenTreeVecCon::ElementCount(unsigned simdSize, var_types simdBaseType)
     return simdSize / genTypeSize(simdBaseType);
 }
 
-bool Compiler::IsValidForShuffle(GenTree*  indices,
-                                 unsigned  simdSize,
-                                 var_types simdBaseType,
-                                 bool*     canBecomeValid,
-                                 bool      isShuffleNative) const
+bool Compiler::IsValidForShuffle(
+    GenTree* indices, unsigned simdSize, var_types simdBaseType, bool* canBecomeValid, bool isShuffleNative) const
 {
 #if defined(TARGET_XARCH)
     if (canBecomeValid != nullptr)
@@ -18437,7 +18434,7 @@ bool Compiler::IsValidForShuffle(GenTree*  indices,
             // ShuffleNative with constant indices with 1 or more out of range indices is emitted as variable indices.
             for (size_t index = 0; index < elementCount; index++)
             {
-                uint64_t value = op2->GetIntegralVectorConstElement(index, simdBaseType);
+                uint64_t value = indices->GetIntegralVectorConstElement(index, simdBaseType);
                 if (value >= elementCount)
                 {
                     isVariableShuffle = true;
@@ -25577,8 +25574,8 @@ GenTree* Compiler::gtNewSimdShuffleVariableNode(
     }
     else
     {
-        assert(((elementSize == 1) && (simdSize == 32)) || (elementSize == 2) || ((elementSize == 4) && (simdSize == 16)) ||
-               (elementSize == 8));
+        assert(((elementSize == 1) && (simdSize == 32)) || (elementSize == 2) ||
+               ((elementSize == 4) && (simdSize == 16)) || (elementSize == 8));
 
         if ((elementSize == 8) && ((simdSize == 32) || compOpportunisticallyDependsOn(InstructionSet_AVX)))
         {
@@ -26192,9 +26189,9 @@ GenTree* Compiler::gtNewSimdShuffleNode(
         // Check if the value differs in this lane vs any other lane (note: lane is 128 bits, or 16 bytes)
         if (index * elementSize >= 16)
         {
-            // Check if the element, masked to the lane, is the same as the element in the same position of earlier lanes.
-            // If it differs, differsByLane will be set to true. We just compare to the first lane, as we already compared
-            // it to any other in between lanes.
+            // Check if the element, masked to the lane, is the same as the element in the same position of earlier
+            // lanes. If it differs, differsByLane will be set to true. We just compare to the first lane, as we already
+            // compared it to any other in between lanes.
             differsByLane |= ((vecCns.u8[index * elementSize] ^ vecCns.u8[(index * elementSize) & 15]) & 15) != 0;
         }
     }
