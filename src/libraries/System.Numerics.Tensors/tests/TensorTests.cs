@@ -1124,6 +1124,15 @@ namespace System.Numerics.Tensors.Tests
             Tensor<float> t0 = Tensor.Create<float>((Enumerable.Range(0, 4).Select(i => (float)i)), [2, 2]);
 
             Assert.Equal(StdDev([0, 1, 2, 3]), Tensor.StdDev<float>(t0), .1);
+
+            // Test that non-contiguous calculations work
+            Tensor<float> fourByFour = Tensor.Create<float>([4, 4]);
+            fourByFour[[0, 0]] = 1f;
+            fourByFour[[0, 1]] = 1f;
+            fourByFour[[1, 0]] = 1f;
+            fourByFour[[1, 1]] = 1f;
+            ReadOnlyTensorSpan<float> upperLeft = fourByFour.AsReadOnlyTensorSpan().Slice([0..2, 0..2]);
+            Assert.Equal(0f, Tensor.StdDev(upperLeft));
         }
 
         public static float StdDev(float[] values)

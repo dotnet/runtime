@@ -1,11 +1,12 @@
 <Project Sdk="Microsoft.NET.Sdk">
+
   <PropertyGroup>
+    <TargetFrameworks>$(NetCoreAppCurrent);$(NetFrameworkCurrent)</TargetFrameworks>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
     <!-- xUnit2008 is about regexes and isn't appropriate in the test project for regexes -->
     <!-- SYSLIB0036 is about obsoletion of regex members -->
     <!-- SYSLIB1045 is for switching to GeneratedRegex -->
     <NoWarn>$(NoWarn);xUnit2008;SYSLIB0036;SYSLIB1045</NoWarn>
-    <TargetFrameworks>$(NetCoreAppCurrent);$(NetFrameworkCurrent)</TargetFrameworks>
     <DebuggerSupport Condition="'$(DebuggerSupport)' == '' and '$(TargetOS)' == 'browser'">true</DebuggerSupport>
     <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
     <IsHighAotMemoryUsageTest>true</IsHighAotMemoryUsageTest> <!-- to avoid OOMs with source generation in wasm: https://github.com/dotnet/runtime/pull/60701 -->
@@ -13,6 +14,7 @@
      <!-- some tests require full ICU data, force it -->
     <WasmIncludeFullIcuData>true</WasmIncludeFullIcuData>
   </PropertyGroup>
+
   <ItemGroup>
     <Compile Include="AttRegexTests.cs" />
     <Compile Include="CaptureCollectionTests.cs" />
@@ -39,14 +41,17 @@
     <Compile Include="RegexPcreTests.cs" />
     <Compile Include="RegexRustTests.cs" />
   </ItemGroup>
+
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">
     <Compile Include="..\..\src\System\Text\RegularExpressions\RegexParseError.cs" Link="System\Text\RegularExpressions\RegexParseError.cs" />
     <Compile Include="RegexAssert.netfx.cs" />
     <Compile Include="RegexParserTests.netfx.cs" />
     <Compile Include="RegexGeneratorHelper.netfx.cs" />
     <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\StringSyntaxAttribute.cs" />
+
     <ProjectReference Include="$(LibrariesProjectRoot)System.Text.Json\src\System.Text.Json.csproj" />
   </ItemGroup>
+
   <ItemGroup Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)'">
     <Compile Include="CustomDerivedRegexScenarioTest.cs" />
     <Compile Include="CSharpCodeFixVerifier`2.cs" />
@@ -76,14 +81,6 @@
     <PackageReference Include="Microsoft.CodeAnalysis.CSharp.CodeFix.Testing" Version="$(CompilerPlatformTestingVersion)" />
     <PackageReference Include="Microsoft.CodeAnalysis" Version="$(MicrosoftCodeAnalysisVersion)" />
 
-    <!-- Upgrade transitive references of Microsoft.CodeAnalysis.Analyzer.Testing which bring in NS 1.x deps -->
-    <PackageReference Include="DiffPlex" Version="$(CompilerPlatformTestingDiffPlexVersion)" />
-    <PackageReference Include="Microsoft.VisualBasic" Version="$(CompilerPlatformTestingMicrosoftVisualBasicVersion)" />
-    <PackageReference Include="Microsoft.VisualStudio.Composition" Version="$(CompilerPlatformTestingMicrosoftVisualStudioCompositionVersion)" />
-
-    <!-- Upgrade to a non-vulnerable version of Asn1 - which will be dropped by conflict resolution -->
-    <PackageReference Include="System.Formats.Asn1" Version="$(SystemFormatsAsn1Version)" ExcludeAssets="All" />
-
     <ProjectReference Include="..\..\gen\System.Text.RegularExpressions.Generator.csproj"
                       SetTargetFramework="TargetFramework=netstandard2.0"
                       OutputItemType="Analyzer"
@@ -94,10 +91,13 @@
                       Private="true"
                       SetTargetFramework="TargetFramework=$(NetCoreAppMinimum)" />
   </ItemGroup>
+
   <ItemGroup>
     <PackageReference Include="System.Text.RegularExpressions.TestData" Version="$(SystemTextRegularExpressionsTestDataVersion)" />
   </ItemGroup>
+
   <ItemGroup>
     <HighAotMemoryUsageAssembly Include="Microsoft.CodeAnalysis.CSharp.dll" />
   </ItemGroup>
+
 </Project>

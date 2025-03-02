@@ -355,6 +355,28 @@ bool Compiler::bbInFilterILRange(BasicBlock* blk)
 }
 
 //------------------------------------------------------------------------
+// bbInCatchHandlerBBRange:
+//     Check if this block is part of a catch handler.
+//
+// Arguments:
+//    blk - The block
+//
+// Return Value:
+//    True if the block is part of a catch handler clause. Otherwise false.
+//
+bool Compiler::bbInCatchHandlerBBRange(BasicBlock* blk)
+{
+    EHblkDsc* HBtab = ehGetBlockHndDsc(blk);
+
+    if (HBtab == nullptr)
+    {
+        return false;
+    }
+
+    return HBtab->HasCatchHandler() && HBtab->InHndRegionBBRange(blk);
+}
+
+//------------------------------------------------------------------------
 // bbInFilterBBRange:
 //     Check if this block is part of a filter.
 //
@@ -1491,6 +1513,7 @@ void Compiler::fgRemoveEHTableEntry(unsigned XTnum)
 {
     assert(compHndBBtabCount > 0);
     assert(XTnum < compHndBBtabCount);
+    assert(!ehTableFinalized);
 
     EHblkDsc* HBtab;
 
@@ -1705,6 +1728,8 @@ void Compiler::fgRemoveEHTableEntry(unsigned XTnum)
 //
 EHblkDsc* Compiler::fgTryAddEHTableEntries(unsigned XTnum, unsigned count, bool deferAdding)
 {
+    assert(!ehTableFinalized);
+
     bool           reallocate = false;
     bool const     insert     = (XTnum != compHndBBtabCount);
     unsigned const newCount   = compHndBBtabCount + count;
@@ -2638,7 +2663,7 @@ bool Compiler::fgCreateFiltersForGenericExceptions()
             filterBb->bbCodeOffs = handlerBb->bbCodeOffs;
             filterBb->bbHndIndex = handlerBb->bbHndIndex;
             filterBb->bbTryIndex = handlerBb->bbTryIndex;
-            filterBb->bbSetRunRarely();
+            filterBb->inheritWeightPercentage(handlerBb, 0);
             filterBb->SetFlags(BBF_INTERNAL | BBF_DONT_REMOVE);
 
             handlerBb->bbCatchTyp = BBCT_FILTER_HANDLER;

@@ -143,10 +143,22 @@ int LinearScan::BuildNode(GenTree* tree)
 
         case GT_CNS_DBL:
         {
-            // There is no instruction for loading float/double imm directly into FPR.
-            // Reserve int to load constant from memory (IF_LARGELDC)
-            buildInternalIntRegisterDefForNode(tree);
-            buildInternalRegisterUses();
+            emitAttr size = emitActualTypeSize(tree);
+
+            double constValue = tree->AsDblCon()->DconValue();
+            if (!FloatingPointUtils::isPositiveZero(constValue))
+            {
+                int64_t bits =
+                    (size == EA_4BYTE)
+                        ? (int32_t)BitOperations::SingleToUInt32Bits(FloatingPointUtils::convertToSingle(constValue))
+                        : (int64_t)BitOperations::DoubleToUInt64Bits(constValue);
+                bool fitsInLui = ((bits & 0xfff) == 0) && emitter::isValidSimm20(bits >> 12);
+                if (fitsInLui || emitter::isValidSimm12(bits)) // can we synthesize bits with a single instruction?
+                {
+                    buildInternalIntRegisterDefForNode(tree);
+                    buildInternalRegisterUses();
+                }
+            }
         }
             FALLTHROUGH;
 

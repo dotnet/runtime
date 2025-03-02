@@ -1854,7 +1854,7 @@ bool Compiler::optIsLoopClonable(FlowGraphNaturalLoop* loop, LoopCloneContext* c
         return false;
     }
 
-    bool cloneLoopsWithEH = false;
+    bool cloneLoopsWithEH = true;
     INDEBUG(cloneLoopsWithEH = (JitConfig.JitCloneLoopsWithEH() > 0);)
     INDEBUG(const char* reason);
 
@@ -2008,7 +2008,7 @@ void Compiler::optCloneLoop(FlowGraphNaturalLoop* loop, LoopCloneContext* contex
     }
 #endif
 
-    bool cloneLoopsWithEH = false;
+    bool cloneLoopsWithEH = true;
     INDEBUG(cloneLoopsWithEH = (JitConfig.JitCloneLoopsWithEH() > 0);)
 
     assert(loop->EntryEdges().size() == 1);
