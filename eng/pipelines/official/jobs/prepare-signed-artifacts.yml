@@ -8,6 +8,11 @@ jobs:
   parameters:
     name: 'PrepareSignedArtifacts'
     displayName: 'Prepare Signed Artifacts'
+    
+    # Disable SBOM at job template level
+    skipComponentGovernanceDetection: true
+    enableSbom: false
+    disableSbom: true
 
     pool:
       name: $(DncEngInternalBuildPool)
@@ -24,10 +29,7 @@ jobs:
     variables:
       - name: '_SignType'
         value: $[ coalesce(variables.OfficialSignType, 'real') ]
-      - name: 'DisableComponentGovernance'
-        value: true
-      - name: 'Skip.CreateSbom'
-        value: true
+      - DISABLE_SBOM: 'true'
       
     templateContext:
       inputs:
