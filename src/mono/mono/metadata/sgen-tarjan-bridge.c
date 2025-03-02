@@ -1109,6 +1109,13 @@ processing_build_callback_data (int generation)
 			gather_xrefs (cd);
 			reset_xrefs (cd);
 			dyn_array_ptr_set_all (&cd->other_colors, &color_merge_array);
+
+			// Deduplicating the xrefs can cause the heaviness of this graph
+			// node to change. The duplicates can be introduced in create_scc,
+			// see comment there.
+			if (!color_visible_to_client (cd))
+				continue;
+
 			xref_count += dyn_array_ptr_size (&cd->other_colors);
 		}
 	}
