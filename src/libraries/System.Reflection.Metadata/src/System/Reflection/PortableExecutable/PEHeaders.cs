@@ -93,13 +93,26 @@ namespace System.Reflection.PortableExecutable
             _coffHeaderStartOffset = reader.Offset;
             _coffHeader = new CoffHeader(ref reader);
 
-            if (!isCoffOnly)
+            if (isCoffOnly)
+            {
+                // These characteristics bits are documented in https://learn.microsoft.com/en-us/windows/win32/debug/pe-format#coff-file-header-object-and-image
+                // that should be set only on image files.
+                const Characteristics ImageOnlyCharacteristics = Characteristics.RelocsStripped | Characteristics.ExecutableImage;
+                // Because COFF files do not have a magic number, perform some additional checks to catch outright invalid files.
+                if (_coffHeader.SizeOfOptionalHeader != 0
+                    || _coffHeader.PointerToSymbolTable >= size
+                    || (_coffHeader.Characteristics & ImageOnlyCharacteristics) != 0)
+                {
+                    throw new BadImageFormatException(SR.UnknownFileFormat);
+                }
+            }
+            else
             {
                 _peHeaderStartOffset = reader.Offset;
                 _peHeader = new PEHeader(ref reader);
             }
 
-            _sectionHeaders = ReadSectionHeaders(ref reader);
+            _sectionHeaders = ReadSectionHeaders(ref reader, size, isCoffOnly);
 
             if (!isCoffOnly)
             {
@@ -289,10 +302,10 @@ namespace System.Reflection.PortableExecutable
             }
         }
 
-        private ImmutableArray<SectionHeader> ReadSectionHeaders(ref PEBinaryReader reader)
+        private ImmutableArray<SectionHeader> ReadSectionHeaders(ref PEBinaryReader reader, int size, bool isCoffOnly)
         {
             int numberOfSections = _coffHeader.NumberOfSections;
-            if (numberOfSections < 0)
+            if (numberOfSections < 0 || numberOfSections * SectionHeader.Size > size - reader.Offset)
             {
                 throw new BadImageFormatException(SR.InvalidNumberOfSections);
             }
@@ -301,7 +314,12 @@ namespace System.Reflection.PortableExecutable
 
             for (int i = 0; i < numberOfSections; i++)
             {
-                builder.Add(new SectionHeader(ref reader));
+                var sectionHeader = new SectionHeader(ref reader);
+                if (isCoffOnly && sectionHeader.VirtualSize != 0)
+                {
+                    throw new BadImageFormatException(SR.UnknownFileFormat);
+                }
+                builder.Add(sectionHeader);
             }
 
             return builder.MoveToImmutable();
