@@ -1,7 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
 using Microsoft.Diagnostics.DataContractReader.Data;
+using static Microsoft.Diagnostics.DataContractReader.Contracts.StackWalkHelpers.ARM64Context;
 
 namespace Microsoft.Diagnostics.DataContractReader.Contracts.StackWalkHelpers;
 
@@ -67,6 +69,20 @@ internal class ARM64FrameHandler(Target target, ContextHolder<ARM64Context> cont
             return false;
         }
         _context.ReadFromAddress(_target, debuggerEval.TargetContext);
+        return true;
+    }
+
+    bool IPlatformFrameHandler.HandleFaultingExceptionFrame(FaultingExceptionFrame frame)
+    {
+        if (frame.TargetContext is not TargetPointer targetContext)
+        {
+            throw new InvalidOperationException("Unexpected null context pointer on FaultingExceptionFrame");
+        }
+        _context.ReadFromAddress(_target, targetContext);
+
+        // Clear the CONTEXT_XSTATE, since the AMD64Context contains just plain CONTEXT structure
+        // that does not support holding any extended state.
+        _context.Context.ContextFlags &= ~(uint)(ContextFlagsValues.CONTEXT_XSTATE & ContextFlagsValues.CONTEXT_AREA_MASK);
         return true;
     }
 

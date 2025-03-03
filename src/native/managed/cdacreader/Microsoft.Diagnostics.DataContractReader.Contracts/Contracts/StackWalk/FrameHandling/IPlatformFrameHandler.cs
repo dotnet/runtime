@@ -17,4 +17,5 @@ internal interface IPlatformFrameHandler
     public abstract bool HandleTransitionFrame(Data.FramedMethodFrame frame, Data.TransitionBlock transitionBlock, uint transitionBlockSize);
     public abstract bool HandleFuncEvalFrame(Data.FuncEvalFrame frame, Data.DebuggerEval debuggerEval);
     public abstract bool HandleResumableFrame(Data.ResumableFrame frame);
+    public abstract bool HandleFaultingExceptionFrame(Data.FaultingExceptionFrame frame);
 }

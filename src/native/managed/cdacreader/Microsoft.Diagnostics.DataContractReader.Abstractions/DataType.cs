@@ -98,4 +98,5 @@ public enum DataType
     FramedMethodFrame,
     FuncEvalFrame,
     ResumableFrame,
+    FaultingExceptionFrame,
 }

@@ -29,6 +29,8 @@ internal sealed class FrameIterator
         /* ResumableFrame Types */
         ResumableFrame,
         RedirectedThreadFrame,
+
+        FaultingExceptionFrame,
     }
 
     private readonly Target target;
@@ -99,6 +101,10 @@ internal sealed class FrameIterator
             case FrameType.RedirectedThreadFrame:
                 Data.ResumableFrame resumableFrame = target.ProcessedData.GetOrAdd<Data.ResumableFrame>(CurrentFrame.Address);
                 return GetFrameHandler(context).HandleResumableFrame(resumableFrame);
+
+            case FrameType.FaultingExceptionFrame:
+                Data.FaultingExceptionFrame faultingExceptionFrame = target.ProcessedData.GetOrAdd<Data.FaultingExceptionFrame>(CurrentFrame.Address);
+                return GetFrameHandler(context).HandleFaultingExceptionFrame(faultingExceptionFrame);
             default:
                 return false;
         }

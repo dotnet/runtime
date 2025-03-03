@@ -1019,6 +1019,16 @@ public:
     }
 
     void UpdateRegDisplay_Impl(const PREGDISPLAY, bool updateFloats = false);
+
+    friend struct ::cdac_data<FaultingExceptionFrame>;
+};
+
+template<>
+struct cdac_data<FaultingExceptionFrame>
+{
+#ifdef FEATURE_EH_FUNCLETS
+    static constexpr size_t TargetContext = offsetof(FaultingExceptionFrame, m_ctx);
+#endif // FEATURE_EH_FUNCLETS
 };
 
 #ifdef FEATURE_EH_FUNCLETS

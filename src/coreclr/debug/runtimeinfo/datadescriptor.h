@@ -671,13 +671,18 @@ CDAC_TYPE_END(DebuggerEval)
 #endif // DEBUGGING_SUPPORTED
 
 #ifdef FEATURE_HIJACK
-
 CDAC_TYPE_BEGIN(ResumableFrame)
 CDAC_TYPE_SIZE(sizeof(ResumableFrame))
 CDAC_TYPE_FIELD(ResumableFrame, /*pointer*/, TargetContextPtr, cdac_data<ResumableFrame>::TargetContextPtr)
 CDAC_TYPE_END(ResumableFrame)
-
 #endif // FEATURE_HIJACK
+
+CDAC_TYPE_BEGIN(FaultingExceptionFrame)
+CDAC_TYPE_SIZE(sizeof(FaultingExceptionFrame))
+#ifdef FEATURE_EH_FUNCLETS
+CDAC_TYPE_FIELD(FaultingExceptionFrame, /*T_CONTEXT*/, TargetContext, cdac_data<FaultingExceptionFrame>::TargetContext)
+#endif // FEATURE_EH_FUNCLETS
+CDAC_TYPE_END(FaultingExceptionFrame)
 
 CDAC_TYPES_END()
 
