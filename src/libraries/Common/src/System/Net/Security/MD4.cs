@@ -80,6 +80,7 @@ namespace System.Net.Security
             // Pad out to 56 mod 64
             uint index = ((count[0] >> 3) & 0x3f);
             int padLen = (int)((index < 56) ? (56 - index) : (120 - index));
+            Debug.Assert(padLen is >= 0 and <= 120);
             Span<byte> padding = stackalloc byte[padLen];
             padding.Clear();
             padding[0] = 0x80;

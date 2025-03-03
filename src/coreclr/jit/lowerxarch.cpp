@@ -443,14 +443,15 @@ void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
 
         ClassLayout* layout               = blkNode->GetLayout();
         bool         doCpObj              = layout->HasGCPtr();
-        unsigned     copyBlockUnrollLimit = comp->getUnrollThreshold(Compiler::UnrollKind::Memcpy, false);
+        bool         isNotHeap            = blkNode->IsAddressNotOnHeap(comp);
+        bool         canUseSimd           = !doCpObj || isNotHeap;
+        unsigned     copyBlockUnrollLimit = comp->getUnrollThreshold(Compiler::UnrollKind::Memcpy, canUseSimd);
 
 #ifndef JIT32_GCENCODER
         if (doCpObj && (size <= copyBlockUnrollLimit))
         {
-            // No write barriers are needed on the stack.
-            // If the layout is byref-like, then we know it must live on the stack.
-            if (dstAddr->OperIs(GT_LCL_ADDR) || layout->IsStackOnly(comp))
+            // No write barriers are needed if the destination is known to be outside of the GC heap.
+            if (isNotHeap)
             {
                 // If the size is small enough to unroll then we need to mark the block as non-interruptible
                 // to actually allow unrolling. The generated code does not report GC references loaded in the
@@ -477,7 +478,7 @@ void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
             // the entire operation takes 20 cycles and encodes in 5 bytes (loading RCX and REP MOVSD/Q).
             unsigned nonGCSlots = 0;
 
-            if (dstAddr->OperIs(GT_LCL_ADDR) || layout->IsStackOnly(comp))
+            if (blkNode->IsAddressNotOnHeap(comp))
             {
                 // If the destination is on the stack then no write barriers are needed.
                 nonGCSlots = layout->GetSlotCount();
@@ -515,7 +516,7 @@ void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
             }
         }
         else if (blkNode->OperIs(GT_STORE_BLK) &&
-                 (size <= comp->getUnrollThreshold(Compiler::UnrollKind::Memcpy, !layout->HasGCPtr())))
+                 (size <= comp->getUnrollThreshold(Compiler::UnrollKind::Memcpy, canUseSimd)))
         {
             blkNode->gtBlkOpKind = GenTreeBlk::BlkOpKindUnroll;
 
@@ -668,7 +669,6 @@ void Lowering::LowerPutArgStk(GenTreePutArgStk* putArgStk)
         return;
     }
 
-#ifdef FEATURE_PUT_STRUCT_ARG_STK
     if (src->TypeIs(TYP_STRUCT))
     {
         assert(src->OperIs(GT_BLK) || src->OperIsLocalRead());
@@ -755,7 +755,6 @@ void Lowering::LowerPutArgStk(GenTreePutArgStk* putArgStk)
     {
         return;
     }
-#endif // FEATURE_PUT_STRUCT_ARG_STK
 
     assert(!src->TypeIs(TYP_STRUCT));
 
@@ -800,10 +799,9 @@ void Lowering::LowerPutArgStk(GenTreePutArgStk* putArgStk)
  * GT_CAST(int16, float/double)    =   GT_CAST(GT_CAST(int16, int32), float/double)
  * GT_CAST(uint16, float/double)   =   GT_CAST(GT_CAST(uint16, int32), float/double)
  *
- * SSE2 conversion instructions operate on signed integers. casts from Uint32/Uint64
+ * Unless the EVEX conversion instructions are available, casts from Uint32
  * are morphed as follows by front-end and hence should not be seen here.
  * GT_CAST(uint32, float/double)   =   GT_CAST(GT_CAST(uint32, long), float/double)
- * GT_CAST(uint64, float)          =   GT_CAST(GT_CAST(uint64, double), float)
  *
  *
  * Similarly casts from float/double to a smaller int type are transformed as follows:
@@ -812,64 +810,52 @@ void Lowering::LowerPutArgStk(GenTreePutArgStk* putArgStk)
  * GT_CAST(float/double, int16)    =   GT_CAST(GT_CAST(double/double, int32), int16)
  * GT_CAST(float/double, uint16)   =   GT_CAST(GT_CAST(double/double, int32), uint16)
  *
- * SSE2 has instructions to convert a float/double vlaue into a signed 32/64-bit
- * integer.  The above transformations help us to leverage those instructions.
- *
  * Note that for the following conversions we still depend on helper calls and
  * don't expect to see them here.
- *  i) GT_CAST(float/double, uint64)
+ *  i) GT_CAST(float/double, uint64) when EVEX is not available
  * ii) GT_CAST(float/double, int type with overflow detection)
- *
- * TODO-XArch-CQ: (Low-pri): Jit64 generates in-line code of 8 instructions for (i) above.
- * There are hardly any occurrences of this conversion operation in platform
- * assemblies or in CQ perf benchmarks (1 occurrence in corelib, microsoft.jscript,
- * 1 occurrence in Roslyn and no occurrences in system, system.core, system.numerics
- * system.windows.forms, scimark, fractals, bio mums). If we ever find evidence that
- * doing this optimization is a win, should consider generating in-lined code.
  */
 GenTree* Lowering::LowerCast(GenTree* tree)
 {
-    assert(tree->OperGet() == GT_CAST);
+    assert(tree->OperIs(GT_CAST));
 
     GenTree*  castOp     = tree->AsCast()->CastOp();
     var_types castToType = tree->CastToType();
     var_types dstType    = castToType;
     var_types srcType    = castOp->TypeGet();
-    var_types tmpType    = TYP_UNDEF;
 
     // force the srcType to unsigned if GT_UNSIGNED flag is set
-    if (tree->gtFlags & GTF_UNSIGNED)
+    if (tree->IsUnsigned())
     {
         srcType = varTypeToUnsigned(srcType);
     }
 
-    // We should never see the following casts as they are expected to be lowered
-    // appropriately or converted into helper calls by front-end.
+    // We should not see the following casts unless directly supported by hardware,
+    // as they are expected to be lowered appropriately or converted into helper calls by front-end.
     //   srcType = float/double                    castToType = * and overflow detecting cast
     //       Reason: must be converted to a helper call
     //   srcType = float/double,                   castToType = ulong
     //       Reason: must be converted to a helper call
+    //   srcType = float/double,                   castToType = byte/sbyte/ushort/short
+    //       Reason: must have intermediate cast to int
     //   srcType = uint                            castToType = float/double
     //       Reason: uint -> float/double = uint -> long -> float/double
-    //   srcType = ulong                           castToType = float
-    //       Reason: ulong -> float = ulong -> double -> float
     if (varTypeIsFloating(srcType))
     {
         noway_assert(!tree->gtOverflow());
-        assert(castToType != TYP_ULONG || comp->canUseEvexEncoding());
+        assert(!varTypeIsSmall(dstType));
+        assert(castToType != TYP_ULONG || comp->canUseEvexEncodingDebugOnly());
     }
     else if (srcType == TYP_UINT)
     {
-        noway_assert(!varTypeIsFloating(castToType));
-    }
-    else if (srcType == TYP_ULONG)
-    {
-        assert(castToType != TYP_FLOAT || comp->canUseEvexEncoding());
+        assert(castToType != TYP_FLOAT || comp->canUseEvexEncodingDebugOnly());
     }
 
 #if defined(TARGET_AMD64)
     // Handle saturation logic for X64
-    if (varTypeIsFloating(srcType) && varTypeIsIntegral(dstType) && !varTypeIsSmall(dstType))
+    // Let InstructionSet_AVX10v2 pass through since it can handle the saturation
+    if (varTypeIsFloating(srcType) && varTypeIsIntegral(dstType) && !varTypeIsSmall(dstType) &&
+        !comp->compOpportunisticallyDependsOn(InstructionSet_AVX10v2))
     {
         // We should have filtered out float -> long conversion and
         // converted it to float -> double -> long conversion.
@@ -886,10 +872,8 @@ GenTree* Lowering::LowerCast(GenTree* tree)
         bool isV512Supported = false;
         /*The code below is to introduce saturating conversions on X86/X64.
         The C# equivalence of the code is given below -->
-
                 // Replace QNaN and SNaN with Zero
                 op1 = Avx512F.Fixup(op1, op1, Vector128.Create<long>(0x88), 0);
-
                 // Convert from double to long, replacing any values that were greater than or equal to MaxValue
         with MaxValue
                 // Values that were less than or equal to MinValue will already be MinValue
@@ -984,7 +968,7 @@ GenTree* Lowering::LowerCast(GenTree* tree)
                 BlockRange().InsertAfter(newCast, newTree);
                 LowerNode(newTree);
 
-                // usage 2 --> use thecompared mask with input value and max value to blend
+                // usage 2 --> use the compared mask with input value and max value to blend
                 GenTree* control = comp->gtNewIconNode(0xCA); // (B & A) | (C & ~A)
                 BlockRange().InsertAfter(newTree, control);
                 GenTree* cndSelect = comp->gtNewSimdTernaryLogicNode(TYP_SIMD16, compMask, maxValDstType, newTree,
@@ -1182,30 +1166,6 @@ GenTree* Lowering::LowerCast(GenTree* tree)
     }
 #endif // TARGET_AMD64
 
-    // Case of src is a small type and dst is a floating point type.
-    if (varTypeIsSmall(srcType) && varTypeIsFloating(castToType))
-    {
-        // These conversions can never be overflow detecting ones.
-        noway_assert(!tree->gtOverflow());
-        tmpType = TYP_INT;
-    }
-    // case of src is a floating point type and dst is a small type.
-    else if (varTypeIsFloating(srcType) && varTypeIsSmall(castToType))
-    {
-        tmpType = TYP_INT;
-    }
-
-    if (tmpType != TYP_UNDEF)
-    {
-        GenTree* tmp = comp->gtNewCastNode(tmpType, castOp, tree->IsUnsigned(), tmpType);
-        tmp->gtFlags |= (tree->gtFlags & (GTF_OVERFLOW | GTF_EXCEPT));
-
-        tree->gtFlags &= ~GTF_UNSIGNED;
-        tree->AsOp()->gtOp1 = tmp;
-        BlockRange().InsertAfter(castOp, tmp);
-        ContainCheckCast(tmp->AsCast());
-    }
-
     // Now determine if we have operands that should be contained.
     ContainCheckCast(tree->AsCast());
     return nullptr;
@@ -1330,49 +1290,29 @@ void Lowering::LowerHWIntrinsicCC(GenTreeHWIntrinsic* node, NamedIntrinsic newIn
 void Lowering::LowerFusedMultiplyAdd(GenTreeHWIntrinsic* node)
 {
     assert(node->GetHWIntrinsicId() == NI_FMA_MultiplyAddScalar);
-    GenTreeHWIntrinsic* createScalarOps[3];
+    assert(node->GetOperandCount() == 3);
 
+    bool negatedArgs[3] = {};
     for (size_t i = 1; i <= 3; i++)
     {
         GenTree* arg = node->Op(i);
-
-        if (!arg->OperIsHWIntrinsic() || (arg->AsHWIntrinsic()->GetHWIntrinsicId() != NI_Vector128_CreateScalarUnsafe))
+        if (arg->OperIsHWIntrinsic(NI_Vector128_CreateScalarUnsafe))
         {
-            return;
+            GenTree*& argOp = arg->AsHWIntrinsic()->Op(1);
+            if (argOp->OperIs(GT_NEG))
+            {
+                BlockRange().Remove(argOp);
+                argOp = argOp->gtGetOp1();
+                argOp->ClearContained();
+                ContainCheckHWIntrinsic(arg->AsHWIntrinsic());
+                negatedArgs[i - 1] = true;
+            }
         }
-
-        createScalarOps[i - 1] = arg->AsHWIntrinsic();
     }
 
-    GenTree* argX = createScalarOps[0]->Op(1);
-    GenTree* argY = createScalarOps[1]->Op(1);
-    GenTree* argZ = createScalarOps[2]->Op(1);
-
-    const bool negMul = argX->OperIs(GT_NEG) != argY->OperIs(GT_NEG);
-    if (argX->OperIs(GT_NEG))
+    bool negMul = negatedArgs[0] ^ negatedArgs[1];
+    if (negatedArgs[2])
     {
-        createScalarOps[0]->Op(1) = argX->gtGetOp1();
-        BlockRange().Remove(argX);
-
-        createScalarOps[0]->Op(1)->ClearContained();
-        ContainCheckHWIntrinsic(createScalarOps[0]);
-    }
-    if (argY->OperIs(GT_NEG))
-    {
-        createScalarOps[1]->Op(1) = argY->gtGetOp1();
-        BlockRange().Remove(argY);
-
-        createScalarOps[1]->Op(1)->ClearContained();
-        ContainCheckHWIntrinsic(createScalarOps[1]);
-    }
-    if (argZ->OperIs(GT_NEG))
-    {
-        createScalarOps[2]->Op(1) = argZ->gtGetOp1();
-        BlockRange().Remove(argZ);
-
-        createScalarOps[2]->Op(1)->ClearContained();
-        ContainCheckHWIntrinsic(createScalarOps[2]);
-
         node->ChangeHWIntrinsicId(negMul ? NI_FMA_MultiplySubtractNegatedScalar : NI_FMA_MultiplySubtractScalar);
     }
     else
@@ -7129,9 +7069,9 @@ GenTree* Lowering::TryLowerAndOpToResetLowestSetBit(GenTreeOp* andNode)
     JITDUMP("to:\n");
     DISPNODE(blsrNode);
 
+    BlockRange().InsertBefore(andNode, blsrNode);
     use.ReplaceWith(blsrNode);
 
-    BlockRange().InsertBefore(andNode, blsrNode);
     BlockRange().Remove(andNode);
     BlockRange().Remove(op2);
     BlockRange().Remove(addOp1);
@@ -7214,9 +7154,9 @@ GenTree* Lowering::TryLowerAndOpToExtractLowestSetBit(GenTreeOp* andNode)
     JITDUMP("to:\n");
     DISPNODE(blsiNode);
 
+    BlockRange().InsertBefore(andNode, blsiNode);
     use.ReplaceWith(blsiNode);
 
-    BlockRange().InsertBefore(andNode, blsiNode);
     BlockRange().Remove(andNode);
     BlockRange().Remove(negNode);
     BlockRange().Remove(negOp);
@@ -7301,9 +7241,9 @@ GenTree* Lowering::TryLowerAndOpToAndNot(GenTreeOp* andNode)
     JITDUMP("to:\n");
     DISPNODE(andnNode);
 
+    BlockRange().InsertBefore(andNode, andnNode);
     use.ReplaceWith(andnNode);
 
-    BlockRange().InsertBefore(andNode, andnNode);
     BlockRange().Remove(andNode);
     BlockRange().Remove(notNode);
 
@@ -7386,9 +7326,9 @@ GenTree* Lowering::TryLowerXorOpToGetMaskUpToLowestSetBit(GenTreeOp* xorNode)
     JITDUMP("to:\n");
     DISPNODE(blsmskNode);
 
+    BlockRange().InsertBefore(xorNode, blsmskNode);
     use.ReplaceWith(blsmskNode);
 
-    BlockRange().InsertBefore(xorNode, blsmskNode);
     BlockRange().Remove(xorNode);
     BlockRange().Remove(op2);
     BlockRange().Remove(addOp1);
@@ -8605,26 +8545,14 @@ void Lowering::ContainCheckCast(GenTreeCast* node)
 
         if (varTypeIsFloating(castToType) || varTypeIsFloating(srcType))
         {
-#ifdef DEBUG
-            // If converting to float/double, the operand must be 4 or 8 byte in size.
-            if (varTypeIsFloating(castToType))
+            if (castOp->IsCnsNonZeroFltOrDbl())
             {
-                unsigned opSize = genTypeSize(srcType);
-                assert(opSize == 4 || opSize == 8);
+                MakeSrcContained(node, castOp);
             }
-#endif // DEBUG
-
-            // U8 -> R8 conversion requires that the operand be in a register.
-            if (srcType != TYP_ULONG)
+            else
             {
-                if (castOp->IsCnsNonZeroFltOrDbl())
-                {
-                    MakeSrcContained(node, castOp);
-                }
-                else
-                {
-                    srcIsContainable = true;
-                }
+                // The ulong->floating SSE2 fallback requires the source to be in register
+                srcIsContainable = !varTypeIsSmall(srcType) && ((srcType != TYP_ULONG) || comp->canUseEvexEncoding());
             }
         }
         else if (comp->opts.OptimizationEnabled() && varTypeIsIntegral(castOp) && varTypeIsIntegral(castToType))
@@ -9622,10 +9550,6 @@ void Lowering::TryFoldCnsVecForEmbeddedBroadcast(GenTreeHWIntrinsic* parentNode,
 {
     assert(!childNode->IsAllBitsSet());
     assert(!childNode->IsZero());
-    var_types   simdType            = parentNode->TypeGet();
-    var_types   simdBaseType        = parentNode->GetSimdBaseType();
-    CorInfoType simdBaseJitType     = parentNode->GetSimdBaseJitType();
-    bool        isCreatedFromScalar = true;
 
     if (!comp->canUseEmbeddedBroadcast())
     {
@@ -9633,10 +9557,16 @@ void Lowering::TryFoldCnsVecForEmbeddedBroadcast(GenTreeHWIntrinsic* parentNode,
         return;
     }
 
-    if (simdType == TYP_MASK)
-    {
-        simdType = Compiler::getSIMDTypeForSize(parentNode->GetSimdSize());
-    }
+    // We use the child node's size for the broadcast node, because the parent may consume more than its own size.
+    // The containment check has already validated that the child is sufficiently large.
+    //
+    // We use the parent node's base type, because we must ensure that the constant repeats correctly for that size,
+    // regardless of how the constant vector was created.
+
+    var_types   simdType            = childNode->TypeGet();
+    var_types   simdBaseType        = parentNode->GetSimdBaseType();
+    CorInfoType simdBaseJitType     = parentNode->GetSimdBaseJitType();
+    bool        isCreatedFromScalar = true;
 
     if (varTypeIsSmall(simdBaseType))
     {
@@ -10456,6 +10386,12 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                             break;
                         }
 
+                        case NI_Vector128_op_Division:
+                        case NI_Vector256_op_Division:
+                        {
+                            break;
+                        }
+
                         default:
                         {
                             assert(!"Unhandled containment for helper binary hardware intrinsic");
@@ -10991,6 +10927,10 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                         case NI_AVX10v1_V512_InsertVector128:
                         case NI_AVX10v1_V512_InsertVector256:
                         case NI_AVX10v1_V512_Range:
+                        case NI_AVX10v2_MinMaxScalar:
+                        case NI_AVX10v2_MinMax:
+                        case NI_AVX10v2_V512_MinMax:
+                        case NI_AVX10v2_V512_MultipleSumAbsoluteDifferences:
                         case NI_GFNI_GaloisFieldAffineTransform:
                         case NI_GFNI_GaloisFieldAffineTransformInverse:
                         case NI_GFNI_V256_GaloisFieldAffineTransform:

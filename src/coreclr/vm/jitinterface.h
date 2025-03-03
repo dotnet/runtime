@@ -103,11 +103,17 @@ BOOL LoadDynamicInfoEntry(Module *currentModule,
 
 #endif // TARGET_X86
 
+// These must be implemented in assembly and generate a TransitionBlock then calling JIT_PatchpointWorkerWithPolicy in order to actually be used.
+EXTERN_C FCDECL2(void, JIT_Patchpoint, int* counter, int ilOffset);
+EXTERN_C FCDECL1(void, JIT_PartialCompilationPatchpoint, int ilOffset);
+
 //
 // JIT HELPER ALIASING FOR PORTABILITY.
 //
 // The portable helper is used if the platform does not provide optimized implementation.
 //
+
+EXTERN_C FCDECL0(void, JIT_PollGC);
 
 #ifndef JIT_MonEnter
 #define JIT_MonEnter JIT_MonEnter_Portable
@@ -1027,7 +1033,6 @@ OBJECTHANDLE ConstructStringLiteral(CORINFO_MODULE_HANDLE scopeHnd, mdToken meta
 
 FCDECL2(Object*, JIT_Box_MP_FastPortable, CORINFO_CLASS_HANDLE type, void* data);
 FCDECL2(Object*, JIT_Box, CORINFO_CLASS_HANDLE type, void* data);
-FCDECL0(VOID, JIT_PollGC);
 
 BOOL ObjIsInstanceOf(Object *pObject, TypeHandle toTypeHnd, BOOL throwCastException = FALSE);
 
