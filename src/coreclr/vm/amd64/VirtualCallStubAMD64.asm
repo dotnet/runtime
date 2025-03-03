@@ -7,6 +7,7 @@ include AsmConstants.inc
 CHAIN_SUCCESS_COUNTER  equ ?g_dispatch_cache_chain_success_counter@@3_KA
 
         extern  VSD_ResolveWorker:proc
+        extern  VSD_ResolveWorkerForInterfaceLookupSlot:proc
         extern  CHAIN_SUCCESS_COUNTER:dword
 
 BACKPATCH_FLAG                  equ    1        ;; Also known as SDF_ResolveBackPatch    in the EE
@@ -94,10 +95,8 @@ NESTED_ENTRY JIT_InterfaceLookupForSlot, _TEXT
         
         lea             rcx, [rsp + __PWTB_TransitionBlock]         ; pTransitionBlock
         mov             rdx, r11                                    ; indirection cell
-        mov             r8, 7FFFFFFFFFFFFFFFh                       ; INVALID_TOKEN
-        xor             r9, r9                                      ; flags
 
-        call            VSD_ResolveWorker
+        call            VSD_ResolveWorkerForInterfaceLookupSlot
 
         RESTORE_FLOAT_ARGUMENT_REGISTERS __PWTB_FloatArgumentRegisters
         RESTORE_ARGUMENT_REGISTERS __PWTB_ArgumentRegisters

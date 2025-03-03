@@ -1346,12 +1346,6 @@ PCODE VSD_ResolveWorker(TransitionBlock * pTransitionBlock,
     pSDFrame->SetCallSite(NULL, (TADDR)callSite.GetIndirectCell());
 
     DispatchToken representativeToken(token);
-    if (!representativeToken.IsValid())
-    {
-        // Used by JIT_InterfaceLookupForSlot
-        representativeToken = DispatchToken(VirtualCallStubManager::GetTokenFromStub(callSite.GetSiteTarget()));
-    }
-
     MethodTable * pRepresentativeMT = pObj->GetMethodTable();
     if (representativeToken.IsTypedToken())
     {
@@ -1397,6 +1391,99 @@ PCODE VSD_ResolveWorker(TransitionBlock * pTransitionBlock,
     }
 #endif // _DEBUG
 
+    GCPROTECT_END();
+
+    UNINSTALL_UNWIND_AND_CONTINUE_HANDLER_EX(propagateExceptionToNativeCode);
+    UNINSTALL_MANAGED_EXCEPTION_DISPATCHER_EX(propagateExceptionToNativeCode);
+    pSDFrame->Pop(CURRENT_THREAD);
+
+    return target;
+}
+
+PCODE VSD_ResolveWorkerForInterfaceLookupSlot(TransitionBlock * pTransitionBlock, TADDR siteAddrForRegisterIndirect)
+{
+    CONTRACTL {
+        THROWS;
+        GC_TRIGGERS;
+        INJECT_FAULT(COMPlusThrowOM(););
+        PRECONDITION(CheckPointer(pTransitionBlock));
+        MODE_COOPERATIVE;
+    } CONTRACTL_END;
+
+    MAKE_CURRENT_THREAD_AVAILABLE();
+
+#ifdef _DEBUG
+    Thread::ObjectRefFlush(CURRENT_THREAD);
+#endif
+
+    StubDispatchFrame frame(pTransitionBlock);
+    StubDispatchFrame * pSDFrame = &frame;
+
+    PCODE returnAddress = pSDFrame->GetUnadjustedReturnAddress();
+
+    StubCallSite callSite(siteAddrForRegisterIndirect, returnAddress);
+
+    OBJECTREF *protectedObj = pSDFrame->GetThisPtr();
+    _ASSERTE(protectedObj != NULL);
+    OBJECTREF pObj = *protectedObj;
+
+    PCODE target = (PCODE)NULL;
+
+    bool propagateExceptionToNativeCode = IsCallDescrWorkerInternalReturnAddress(pTransitionBlock->m_ReturnAddress);
+
+    if (pObj == NULL) {
+        pSDFrame->Push(CURRENT_THREAD);
+        INSTALL_MANAGED_EXCEPTION_DISPATCHER_EX;
+        INSTALL_UNWIND_AND_CONTINUE_HANDLER_EX;
+        COMPlusThrow(kNullReferenceException);
+        UNINSTALL_UNWIND_AND_CONTINUE_HANDLER_EX(propagateExceptionToNativeCode);
+        UNINSTALL_MANAGED_EXCEPTION_DISPATCHER_EX(propagateExceptionToNativeCode);
+        _ASSERTE(!"Throw returned");
+    }
+
+    pSDFrame->SetCallSite(NULL, (TADDR)callSite.GetIndirectCell());
+
+    DispatchToken representativeToken = DispatchToken(VirtualCallStubManager::GetTokenFromStub(callSite.GetSiteTarget()));
+
+    MethodTable * pRepresentativeMT = pObj->GetMethodTable();
+    if (representativeToken.IsTypedToken())
+    {
+        pRepresentativeMT = AppDomain::GetCurrentDomain()->LookupType(representativeToken.GetTypeID());
+        CONSISTENCY_CHECK(CheckPointer(pRepresentativeMT));
+    }
+
+    pSDFrame->Push(CURRENT_THREAD);
+
+    INSTALL_MANAGED_EXCEPTION_DISPATCHER_EX;
+    INSTALL_UNWIND_AND_CONTINUE_HANDLER_EX;
+
+    GCPROTECT_BEGIN(*protectedObj);
+
+    // For Virtual Delegates the m_siteAddr is a field of a managed object
+    // Thus we have to report it as an interior pointer,
+    // so that it is updated during a gc
+    GCPROTECT_BEGININTERIOR( *(callSite.GetIndirectCellAddress()) );
+
+    GCStress<vsd_on_resolve>::MaybeTriggerAndProtect(pObj);
+
+    PCODE callSiteTarget = callSite.GetSiteTarget();
+    CONSISTENCY_CHECK(callSiteTarget != (PCODE)NULL);
+
+    StubCodeBlockKind   stubKind = STUB_CODE_BLOCK_UNKNOWN;
+    VirtualCallStubManager *pMgr = VirtualCallStubManager::FindStubManager(callSiteTarget, &stubKind);
+    PREFIX_ASSUME(pMgr != NULL);
+
+    target = pMgr->ResolveWorker(&callSite, protectedObj, representativeToken, stubKind);
+
+#if _DEBUG
+    if (pSDFrame->GetGCRefMap() != NULL)
+    {
+        GCX_PREEMP();
+        _ASSERTE(CheckGCRefMapEqual(pSDFrame->GetGCRefMap(), pSDFrame->GetFunction(), true));
+    }
+#endif // _DEBUG
+
+    GCPROTECT_END();
     GCPROTECT_END();
 
     UNINSTALL_UNWIND_AND_CONTINUE_HANDLER_EX(propagateExceptionToNativeCode);
