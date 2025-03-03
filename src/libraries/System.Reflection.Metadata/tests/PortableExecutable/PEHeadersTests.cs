@@ -51,6 +51,13 @@ namespace System.Reflection.PortableExecutable.Tests
         }
 
         [Fact]
+        public void Ctor_InvalidFile()
+        {
+            using var stream = new MemoryStream(Misc.KeyPair);
+            Assert.Throws<BadImageFormatException>(() => new PEHeaders(stream));
+        }
+
+        [Fact]
         public void FromEmptyStream()
         {
             Assert.Throws<BadImageFormatException>(() => new PEHeaders(new MemoryStream()));
