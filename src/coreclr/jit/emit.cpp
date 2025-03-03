@@ -10354,12 +10354,12 @@ regMaskTP emitter::emitGetGCRegsSavedOrModified(CORINFO_METHOD_HANDLE methHnd)
 {
     // Is it a helper with a special saved set?
     bool isNoGCHelper = emitNoGChelper(methHnd);
+    CorInfoHelpFunc helper = Compiler::eeGetHelperNum(methHnd);
+
     if (isNoGCHelper)
     {
-        CorInfoHelpFunc helpFunc = Compiler::eeGetHelperNum(methHnd);
-
         // Get the set of registers that this call kills and remove it from the saved set.
-        regMaskTP savedSet = RBM_ALLINT & ~emitGetGCRegsKilledByNoGCCall(helpFunc);
+        regMaskTP savedSet = RBM_ALLINT & ~emitGetGCRegsKilledByNoGCCall(helper);
 
 #ifdef DEBUG
         if (emitComp->verbose)
@@ -10371,6 +10371,11 @@ regMaskTP emitter::emitGetGCRegsSavedOrModified(CORINFO_METHOD_HANDLE methHnd)
         }
 #endif
         return savedSet;
+    }
+    else if (helper == CORINFO_HELP_INTERFACELOOKUP_FOR_SLOT)
+    {
+        // This one is not no-gc, but it preserves arg registers.
+        return RBM_ALLINT & ~RBM_INTERFACELOOKUP_FOR_SLOT_TRASH;
     }
     else
     {
