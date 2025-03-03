@@ -115,7 +115,7 @@ endif(CLR_CMAKE_TARGET_HAIKU)
 # turn off capability to remove unused functions (which was enabled in debug build with sanitizers)
 set(CMAKE_SHARED_LINKER_FLAGS_DEBUG "${CMAKE_SHARED_LINKER_FLAGS_DEBUG} -Wl,--no-gc-sections")
 
-if (NOT CLR_CMAKE_TARGET_BROWSER)
+if (NOT CLR_CMAKE_TARGET_ARCH_WASM)
   set(ARCH_SOURCES
     arch/${PAL_ARCH_SOURCES_DIR}/context2.S
     arch/${PAL_ARCH_SOURCES_DIR}/debugbreak.S
