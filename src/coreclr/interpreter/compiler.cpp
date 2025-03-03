@@ -58,6 +58,13 @@ void* InterpCompiler::AllocTemporary(size_t numBytes)
     return malloc(numBytes);
 }
 
+void* InterpCompiler::AllocTemporary0(size_t numBytes)
+{
+    void *ptr = AllocTemporary(numBytes);
+    memset(ptr, 0, numBytes);
+    return ptr;
+}
+
 void* InterpCompiler::ReallocTemporary(void* ptr, size_t numBytes)
 {
     return realloc(ptr, numBytes);
@@ -456,13 +463,14 @@ int32_t InterpCompiler::CreateVarExplicit(InterpType interpType, CORINFO_CLASS_H
         m_pVars = (InterpVar*) ReallocTemporary(m_pVars, m_varsCapacity * sizeof(InterpVar));
     }
     InterpVar *var = &m_pVars[m_varsSize];
+    memset(var, 0, sizeof(InterpVar));
 
     var->interpType = interpType;
     var->clsHnd = clsHnd;
     var->size = size;
-    var->indirects = 0;
     var->offset = -1;
     var->liveStart = -1;
+    var->bbIndex = -1;
 
     m_varsSize++;
     return m_varsSize - 1;
@@ -557,7 +565,7 @@ int32_t InterpCompiler::ComputeCodeSize()
     return codeSize;
 }
 
-int32_t* InterpCompiler::EmitCodeIns(int32_t *ip, InterpInst *ins, PtrArray<Reloc*> *relocs)
+int32_t* InterpCompiler::EmitCodeIns(int32_t *ip, InterpInst *ins, TArray<Reloc*> *relocs)
 {
     int32_t opcode = ins->opcode;
     int32_t *startIp = ip;
@@ -636,7 +644,7 @@ int32_t* InterpCompiler::EmitCodeIns(int32_t *ip, InterpInst *ins, PtrArray<Relo
     return ip;
 }
 
-void InterpCompiler::PatchRelocations(PtrArray<Reloc*> *relocs)
+void InterpCompiler::PatchRelocations(TArray<Reloc*> *relocs)
 {
     int32_t size = relocs->GetSize();
 
@@ -660,7 +668,7 @@ void InterpCompiler::PatchRelocations(PtrArray<Reloc*> *relocs)
 
 void InterpCompiler::EmitCode()
 {
-    PtrArray<Reloc*> relocs;
+    TArray<Reloc*> relocs;
     int32_t codeSize = ComputeCodeSize();
     m_pMethodCode = (int32_t*)AllocMethodData(codeSize * sizeof(int32_t));
 
@@ -815,7 +823,7 @@ void InterpCompiler::CreateILVars()
 
     // add some starting extra space for new vars
     m_varsCapacity = numILVars + 64;
-    m_pVars = (InterpVar*)AllocTemporary(m_varsCapacity * sizeof (InterpVar));
+    m_pVars = (InterpVar*)AllocTemporary0(m_varsCapacity * sizeof (InterpVar));
     m_varsSize = numILVars;
 
     offset = 0;
@@ -844,7 +852,6 @@ void InterpCompiler::CreateILVars()
         m_pVars[i].clsHnd = argClass;
         m_pVars[i].global = true;
         m_pVars[i].ILGlobal = true;
-        m_pVars[i].indirects = 0;
 
         size = GetInterpTypeSize(argClass, interpType, &align);
         m_pVars[i].size = size;
@@ -869,7 +876,6 @@ void InterpCompiler::CreateILVars()
         m_pVars[index].clsHnd = argClass;
         m_pVars[index].global = true;
         m_pVars[index].ILGlobal = true;
-        m_pVars[index].indirects = 0;
 
         size = GetInterpTypeSize(argClass, interpType, &align);
         m_pVars[index].size = size;

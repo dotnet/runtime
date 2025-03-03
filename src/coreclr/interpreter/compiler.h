@@ -47,20 +47,29 @@ enum InterpType {
 #endif
 };
 
+struct InterpInst;
+struct InterpBasicBlock;
+
 struct InterpCallInfo
 {
     // For call instructions, this represents an array of all call arg vars
     // in the order they are pushed to the stack. This makes it easy to find
     // all source vars for these types of opcodes. This is terminated with -1.
-    int *pCallArgs;
-    int callOffset;
+    int32_t *pCallArgs;
+    int32_t callOffset;
+    union {
+        // Array of call dependencies that need to be resolved before
+        TSList<InterpInst*> *callDeps;
+        // Stack end offset of call arguments
+        int32_t callEndOffset;
+    };
 };
-
-struct InterpBasicBlock;
 
 enum InterpInstFlags
 {
-    INTERP_INST_FLAG_CALL              = 0x01,
+    INTERP_INST_FLAG_CALL               = 0x01,
+    // Flag used internally by the var offset allocator
+    INTERP_INST_FLAG_ACTIVE_CALL        = 0x02
 };
 
 struct InterpInst
@@ -143,9 +152,17 @@ struct InterpVar
     // live_start and live_end are used by the offset allocator
     int liveStart;
     int liveEnd;
+    // index of first basic block where this var is used
+    int bbIndex;
+    // If var is callArgs, this is the call instruction using it.
+    // Only used by the var offset allocator
+    InterpInst *call;
 
+    unsigned int callArgs : 1; // Var used as argument to a call
+    unsigned int noCallArgs : 1; // Var can't be used as argument to a call, needs to be copied to temp
     unsigned int global : 1; // Dedicated stack offset throughout method execution
     unsigned int ILGlobal : 1; // Args and IL locals
+    unsigned int alive : 1; // Used internally by the var offset allocator
 };
 
 struct StackInfo
@@ -202,7 +219,7 @@ private:
     int32_t m_ILCodeSize;
 
     // FIXME during compilation this should be a hashtable for fast lookup of duplicates
-    PtrArray<void*> m_dataItems;
+    TArray<void*> m_dataItems;
     int32_t GetDataItemIndex(void* data);
     int32_t GetMethodDataItemIndex(CORINFO_METHOD_HANDLE mHandle);
 
@@ -212,6 +229,7 @@ private:
     void* AllocMemPool(size_t numBytes);
     void* AllocMemPool0(size_t numBytes);
     void* AllocTemporary(size_t numBytes);
+    void* AllocTemporary0(size_t numBytes);
     void* ReallocTemporary(void* ptr, size_t numBytes);
     void  FreeTemporary(void* ptr);
 
@@ -289,6 +307,20 @@ private:
     void    EmitCompareOp(int32_t opBase);
     void    EmitCall(CORINFO_CLASS_HANDLE constrainedClass, bool readonly, bool tailcall);
 
+    // Var Offset allocator
+    TArray<InterpInst*> *m_pActiveCalls;
+    TArray<int32_t> *m_pActiveVars;
+    TSList<InterpInst*> *m_pDeferredCalls;
+
+    int32_t AllocGlobalVarOffset(int var);
+    void    SetVarLiveRange(int32_t var, int insIndex);
+    void    SetVarLiveRangeCB(int32_t *pVar, void *pData);
+    void    InitializeGlobalVar(int32_t var, int bbIndex);
+    void    InitializeGlobalVarCB(int32_t *pVar, void *pData);
+    void    InitializeGlobalVars();
+    void    EndActiveCall(InterpInst *call);
+    void    CompactActiveVars(int32_t *current_offset);
+
     // Passes
     int32_t* m_pMethodCode;
     int32_t m_MethodCodeSize; // in int32_t
@@ -296,8 +328,8 @@ private:
     void AllocOffsets();
     int32_t ComputeCodeSize();
     void EmitCode();
-    int32_t* EmitCodeIns(int32_t *ip, InterpInst *pIns, PtrArray<Reloc*> *relocs);
-    void PatchRelocations(PtrArray<Reloc*> *relocs);
+    int32_t* EmitCodeIns(int32_t *ip, InterpInst *pIns, TArray<Reloc*> *relocs);
+    void PatchRelocations(TArray<Reloc*> *relocs);
     InterpMethod* CreateInterpMethod();
     bool CreateBasicBlocks(CORINFO_METHOD_INFO* methodInfo);
 public:
