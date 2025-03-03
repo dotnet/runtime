@@ -56,7 +56,7 @@ extends:
           parameters:
             sourceIndexBuildCommand: build.cmd -subset libs.sfx+libs.oob -binarylog -os linux -ci /p:SkipLibrariesNativeRuntimePackages=true
     buildStage:
-    - stage: Build
+      stage: Build
       jobs:
       #
       # Build CoreCLR runtime packs
