@@ -1600,6 +1600,27 @@ export const _now = (globalThis.performance && globalThis.performance.now)
 
 let scratchBuffer: NativePointer = <any>0;
 
+export function append_profiler_event (builder: WasmBuilder, ip: MintOpcodePtr, opcode: MintOpcode) {
+    let event_name:string;
+    switch (opcode) {
+        case MintOpcode.MINT_PROF_ENTER:
+            event_name = "prof_enter";
+            break;
+        case MintOpcode.MINT_PROF_SAMPLEPOINT:
+            event_name = "prof_samplepoint";
+            break;
+        case MintOpcode.MINT_PROF_EXIT:
+        case MintOpcode.MINT_PROF_EXIT_VOID:
+            event_name = "prof_leave";
+            break;
+        default:
+            throw new Error(`Unimplemented profiler event ${opcode}`);
+    }
+    builder.local("frame");
+    builder.i32_const(ip);
+    builder.callImport(event_name);
+}
+
 export function append_safepoint (builder: WasmBuilder, ip: MintOpcodePtr) {
     // safepoints are never triggered in a single-threaded build
     if (!WasmEnableThreads)

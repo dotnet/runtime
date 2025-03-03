@@ -340,6 +340,8 @@
       { "identity": "WasmSingleFileBundle",         "defaultValueInRuntimePack": "$(WasmSingleFileBundle)" },
       { "identity": "WasmEnableSIMD",               "defaultValueInRuntimePack": "$(WasmEnableSIMD)" },
       { "identity": "WasmEnableExceptionHandling",  "defaultValueInRuntimePack": "$(WasmEnableExceptionHandling)" },
+      { "identity": "FeaturePerfTracing",           "defaultValueInRuntimePack": "$(FeaturePerfTracing)" },
+      { "identity": "WasmProfilers",                "defaultValueInRuntimePack": "$(WasmProfilers)" },
       { "identity": "EmccMaximumHeapSize",          "defaultValueInRuntimePack": "$(EmccMaximumHeapSize)" }
     ]
   }
@@ -497,6 +499,8 @@
                        $(NativeBinDir)dotnet.js.map;
                        $(NativeBinDir)dotnet.runtime.js;
                        $(NativeBinDir)dotnet.runtime.js.map;
+                       $(NativeBinDir)dotnet.diagnostics.js;
+                       $(NativeBinDir)dotnet.diagnostics.js.map;
                        $(NativeBinDir)dotnet.native.js;
                        $(NativeBinDir)dotnet.d.ts;
                        $(NativeBinDir)package.json;

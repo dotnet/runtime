@@ -25,6 +25,11 @@ namespace ILCompiler.DependencyAnalysis.RiscV64
             Builder.EmitUInt(0x00100073);
         }
 
+        public void EmitFENCE_R_RW()
+        {
+            Builder.EmitUInt(0x0230000f);
+        }
+
         public void EmitLI(Register regDst, int offset)
         {
             Debug.Assert((offset >= -2048) && (offset <= 2047));

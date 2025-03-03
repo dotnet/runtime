@@ -672,11 +672,7 @@ namespace System.Security.Cryptography.Pkcs
                         writer.PopSetOf();
 
 #if NET9_0_OR_GREATER
-                        writer.Encode(hasher, static (hasher, encoded) =>
-                        {
-                            hasher.AppendData(encoded);
-                            return (object?)null;
-                        });
+                        writer.Encode(hasher, static (hasher, encoded) => hasher.AppendData(encoded));
 #else
                         hasher.AppendData(writer.Encode());
 #endif

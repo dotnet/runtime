@@ -96,6 +96,7 @@
       System.Net.Quic;
       System.Net.Requests;
       System.Net.Security;
+      System.Net.ServerSentEvents;
       System.Net.ServicePoint;
       System.Net.Sockets;
       System.Net.WebClient;
