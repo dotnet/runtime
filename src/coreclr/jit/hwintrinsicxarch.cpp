@@ -3652,7 +3652,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
             // The Native variants are non-deterministic on xarch
             bool isShuffleNative = (intrinsic != NI_Vector128_Shuffle) && (intrinsic != NI_Vector256_Shuffle) &&
-                                   (intrinsic == NI_Vector512_Shuffle);
+                                   (intrinsic != NI_Vector512_Shuffle);
             if (isShuffleNative && BlockNonDeterministicIntrinsics(mustExpand))
             {
                 break;
