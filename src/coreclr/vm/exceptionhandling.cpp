@@ -8565,6 +8565,8 @@ extern "C" bool QCALLTYPE SfiNext(StackFrameIterator* pThis, uint* uExCollideCla
         DecodeGCHdrInfo(pThis->m_crawl.GetCodeInfo()->GetGCInfoToken(), 0, &gcHdrInfo);
         invalidRevPInvoke = gcHdrInfo.revPInvokeOffset != INVALID_REV_PINVOKE_OFFSET;
 #endif // USE_GC_INFO_DECODER
+        bool isFilterFunclet = false;
+        bool isPropagatingToExternalNativeCode = false;
 
         if (invalidRevPInvoke)
         {
@@ -8580,6 +8582,10 @@ extern "C" bool QCALLTYPE SfiNext(StackFrameIterator* pThis, uint* uExCollideCla
                 pTopExInfo->m_propagateExceptionCallback = callback;
                 pTopExInfo->m_propagateExceptionContext = callbackCxt;
             }
+            else
+            {
+                isPropagatingToExternalNativeCode = true;
+            }
 #endif // HOST_UNIX
         }
         else
@@ -8591,6 +8597,10 @@ extern "C" bool QCALLTYPE SfiNext(StackFrameIterator* pThis, uint* uExCollideCla
             else if (pThis->m_crawl.IsFilterFunclet())
             {
                 invalidRevPInvoke = true;
+            }
+            else
+            {
+                isPropagatingToExternalNativeCode = true;
             }
         }
 
@@ -8614,9 +8624,8 @@ extern "C" bool QCALLTYPE SfiNext(StackFrameIterator* pThis, uint* uExCollideCla
             if ((pFrame == FRAME_TOP) ||
                 (IsTopmostDebuggerU2MCatchHandlerFrame(pFrame) && !((DebuggerU2MCatchHandlerFrame*)pFrame)->CatchesAllExceptions())
 #ifdef HOST_UNIX
-                // Don't allow propagating exceptions from managed to native code except for the case when it is called by the
-                // CallDescrWorkerInternal.
-                || !IsCallDescrWorkerInternalReturnAddress(GetControlPC(pThis->m_crawl.GetRegisterSet()))
+                // Don't allow propagating exceptions from managed to non-runtime native code
+                || isPropagatingToExternalNativeCode
 #endif
                )
             {
