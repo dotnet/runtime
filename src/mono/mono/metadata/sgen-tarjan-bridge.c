@@ -807,6 +807,8 @@ create_scc (ScanData *data)
 			// and xrefs were populated from color_merge_array, which is already
 			// deduplicated and every entry is marked as visited.
 			add_other_colors (color_data, &other->xrefs, TRUE);
+		} else {
+			g_assert (dyn_array_ptr_size (&other->xrefs) == 0);
 		}
 		dyn_array_ptr_uninit (&other->xrefs);
 
