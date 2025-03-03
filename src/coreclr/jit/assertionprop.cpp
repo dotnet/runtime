@@ -4043,7 +4043,6 @@ void Compiler::optAssertionProp_RangeProperties(ASSERT_VALARG_TP assertions,
                                                 GenTree*         tree,
                                                 Statement*       stmt,
                                                 BasicBlock*      block,
-                                                bool             onlyIfCheap,
                                                 bool*            isKnownNonZero,
                                                 bool*            isKnownNonNegative)
 {
@@ -4167,30 +4166,65 @@ void Compiler::optAssertionProp_RangeProperties(ASSERT_VALARG_TP assertions,
         return;
     }
 
+    // Let's see if MergeEdgeAssertions can help us:
     if (tree->TypeIs(TYP_INT))
     {
-        Range rng = Range(Limit(Limit::keUnknown));
-        if (onlyIfCheap)
+        // See if (X + CNS) is known to be non-negative
+        if (tree->OperIs(GT_ADD) && tree->gtGetOp2()->IsIntCnsFitsInI32())
         {
-            if (!RangeCheck::TryGetRangeFromAssertions(this, treeVN, assertions, &rng))
+            Range    rng = Range(Limit(Limit::keDependent));
+            ValueNum vn  = vnStore->VNConservativeNormalValue(tree->gtGetOp1()->gtVNPair);
+            if (!RangeCheck::TryGetRangeFromAssertions(this, vn, assertions, &rng))
             {
                 return;
             }
-        }
-        else if (!GetRangeCheck()->TryGetRange(block, tree, &rng))
-        {
-            return;
-        }
 
-        if (rng.LowerLimit().IsConstant())
-        {
-            if (rng.LowerLimit().GetConstant() >= 0)
+            int cns = static_cast<int>(tree->gtGetOp2()->AsIntCon()->IconValue());
+            rng.LowerLimit().AddConstant(cns);
+
+            if ((rng.LowerLimit().IsConstant() && !rng.LowerLimit().AddConstant(cns)) ||
+                (rng.UpperLimit().IsConstant() && !rng.UpperLimit().AddConstant(cns)))
             {
-                *isKnownNonNegative = true;
+                // Add cns to both bounds if they are constants. Make sure the addition doesn't overflow.
+                return;
             }
-            if (rng.LowerLimit().GetConstant() > 0)
+
+            if (rng.LowerLimit().IsConstant())
             {
-                *isKnownNonZero = true;
+                // E.g. "X + -8" when X's range is [8..unknown]
+                // it's safe to say "X + -8" is non-negative
+                if ((rng.LowerLimit().GetConstant() == 0))
+                {
+                    *isKnownNonNegative = true;
+                }
+
+                // E.g. "X + 8" when X's range is [0..CNS]
+                // Here we have to check the upper bound as well to avoid overflow
+                if ((rng.LowerLimit().GetConstant() > 0) && rng.UpperLimit().IsConstant() &&
+                    rng.UpperLimit().GetConstant() > rng.LowerLimit().GetConstant())
+                {
+                    *isKnownNonNegative = true;
+                    *isKnownNonZero     = true;
+                }
+            }
+        }
+        else
+        {
+            Range rng = Range(Limit(Limit::keUnknown));
+            if (RangeCheck::TryGetRangeFromAssertions(this, treeVN, assertions, &rng))
+            {
+                Limit lowerBound = rng.LowerLimit();
+                if (lowerBound.IsConstant())
+                {
+                    if (lowerBound.GetConstant() >= 0)
+                    {
+                        *isKnownNonNegative = true;
+                    }
+                    if (lowerBound.GetConstant() > 0)
+                    {
+                        *isKnownNonZero = true;
+                    }
+                }
             }
         }
     }
@@ -4223,8 +4257,8 @@ GenTree* Compiler::optAssertionProp_ModDiv(ASSERT_VALARG_TP assertions,
     bool op2IsNotZero;
     bool op1IsNotNegative;
     bool op2IsNotNegative;
-    optAssertionProp_RangeProperties(assertions, op1, stmt, block, false, &op1IsNotZero, &op1IsNotNegative);
-    optAssertionProp_RangeProperties(assertions, op2, stmt, block, false, &op2IsNotZero, &op2IsNotNegative);
+    optAssertionProp_RangeProperties(assertions, op1, stmt, block, &op1IsNotZero, &op1IsNotNegative);
+    optAssertionProp_RangeProperties(assertions, op2, stmt, block, &op2IsNotZero, &op2IsNotNegative);
 
     bool changed = false;
     if (op1IsNotNegative && op2IsNotNegative && tree->OperIs(GT_DIV, GT_MOD))
@@ -4527,7 +4561,7 @@ GenTree* Compiler::optAssertionPropGlobal_RelOp(ASSERT_VALARG_TP assertions,
     if (op2->IsIntegralConst(0) && tree->OperIsCmpCompare())
     {
         bool isNonZero, isNeverNegative;
-        optAssertionProp_RangeProperties(assertions, op1, stmt, block, true, &isNonZero, &isNeverNegative);
+        optAssertionProp_RangeProperties(assertions, op1, stmt, block, &isNonZero, &isNeverNegative);
 
         if (tree->OperIs(GT_GE, GT_LT) && isNeverNegative)
         {
@@ -4964,7 +4998,7 @@ GenTree* Compiler::optAssertionProp_Cast(ASSERT_VALARG_TP assertions,
     {
         bool isKnownNonZero;
         bool isKnownNonNegative;
-        optAssertionProp_RangeProperties(assertions, lcl, stmt, block, false, &isKnownNonZero, &isKnownNonNegative);
+        optAssertionProp_RangeProperties(assertions, lcl, stmt, block, &isKnownNonZero, &isKnownNonNegative);
         if (isKnownNonNegative)
         {
             cast->SetUnsigned();

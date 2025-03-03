@@ -8129,7 +8129,6 @@ public:
                                           GenTree*         tree,
                                           Statement*       stmt,
                                           BasicBlock*      block,
-                                          bool             onlyIfCheap,
                                           bool*            isKnownNonZero,
                                           bool*            isKnownNonNegative);
 
