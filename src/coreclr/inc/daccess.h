@@ -699,7 +699,6 @@ PWSTR   DacInstantiateStringW(TADDR addr, ULONG32 maxChars, bool throwEx);
 TADDR   DacGetTargetAddrForHostAddr(LPCVOID ptr, bool throwEx);
 TADDR   DacGetTargetAddrForHostInteriorAddr(LPCVOID ptr, bool throwEx);
 TADDR   DacGetTargetVtForHostVt(LPCVOID vtHost, bool throwEx);
-PWSTR   DacGetFrameNameW(TADDR frameIdentifier);
 
 // Report a region of memory to the debugger
 bool    DacEnumMemoryRegion(TADDR addr, TSIZE_T size, bool fExpectSuccess = true);

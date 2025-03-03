@@ -367,7 +367,7 @@ extends:
           - windows_x64
           jobParameters:
             templatePath: 'templates-official'
-            buildArgs: -s tools+libs -pack -c $(_BuildConfig) /p:TestAssemblies=false /p:TestPackages=true
+            buildArgs: -s tools.illink+libs -pack -c $(_BuildConfig) /p:TestAssemblies=false /p:TestPackages=true
             nameSuffix: Libraries_WithPackages
             isOfficialBuild: ${{ variables.isOfficialBuild }}
             postBuildSteps:

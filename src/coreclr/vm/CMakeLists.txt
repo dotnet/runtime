@@ -333,6 +333,7 @@ set(VM_SOURCES_WKS
     ilmarshalers.cpp
     interopconverter.cpp
     interoputil.cpp
+    interpexec.cpp
     invokeutil.cpp
     jithelpers.cpp
     managedmdimport.cpp
@@ -430,6 +431,7 @@ set(VM_HEADERS_WKS
     interopconverter.h
     interoputil.h
     interoputil.inl
+    interpexec.h
     invokeutil.h
     managedmdimport.hpp
     marshalnative.h
