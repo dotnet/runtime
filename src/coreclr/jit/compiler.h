@@ -87,6 +87,7 @@ class OptBoolsDsc;          // defined in optimizer.cpp
 struct JumpThreadInfo;      // defined in redundantbranchopts.cpp
 class ProfileSynthesis;     // defined in profilesynthesis.h
 class LoopLocalOccurrences; // defined in inductionvariableopts.cpp
+class RangeCheck;           // defined in rangecheck.h
 #ifdef DEBUG
 struct IndentStack;
 #endif
@@ -2704,7 +2705,7 @@ public:
 
     bool ehNeedsShadowSPslots()
     {
-        return (info.compXcptnsCount || opts.compDbgEnC);
+        return ((compHndBBtabCount > 0) || opts.compDbgEnC);
     }
 
     // 0 for methods with no EH
@@ -2714,6 +2715,9 @@ public:
     unsigned ehMaxHndNestingCount = 0;
 
 #endif // FEATURE_EH_WINDOWS_X86
+
+    bool ehTableFinalized = false;
+    void FinalizeEH();
 
     static bool jitIsBetween(unsigned value, unsigned start, unsigned end);
     static bool jitIsBetweenInclusive(unsigned value, unsigned start, unsigned end);
@@ -2900,7 +2904,7 @@ public:
 
     void fgSetHndEnd(EHblkDsc* handlerTab, BasicBlock* newHndLast);
 
-    void fgRebuildEHRegions();
+    void fgFindTryRegionEnds();
 
     void fgSkipRmvdBlocks(EHblkDsc* handlerTab);
 
@@ -6175,9 +6179,7 @@ public:
     bool fgComputeMissingBlockWeights();
 
     bool fgReorderBlocks(bool useProfile);
-    void fgDoReversePostOrderLayout();
-    void fgMoveColdBlocks();
-    void fgSearchImprovedLayout();
+    PhaseStatus fgSearchImprovedLayout();
 
     class ThreeOptLayout
     {
@@ -6204,12 +6206,13 @@ public:
         void AddNonFallthroughPreds(unsigned blockPos);
         bool RunGreedyThreeOptPass(unsigned startPos, unsigned endPos);
 
-        bool CompactHotJumps();
-        bool RunThreeOpt();
+        void RunThreeOpt();
+        void CompactHotJumps();
+        bool ReorderBlockList();
 
     public:
-        ThreeOptLayout(Compiler* comp);
-        void Run();
+        ThreeOptLayout(Compiler* comp, BasicBlock** initialLayout, unsigned numHotBlocks);
+        bool Run();
     };
 
     bool fgFuncletsAreCold();
@@ -7995,6 +7998,9 @@ protected:
     bool           optCanPropBndsChk;
     bool           optCanPropSubRange;
 
+    RangeCheck* optRangeCheck = nullptr;
+    RangeCheck* GetRangeCheck();
+
 public:
     void         optVnNonNullPropCurStmt(BasicBlock* block, Statement* stmt, GenTree* tree);
     fgWalkResult optVNBasedFoldCurStmt(BasicBlock* block, Statement* stmt, GenTree* parent, GenTree* tree);
@@ -8095,15 +8101,18 @@ public:
     GenTree* optAssertionProp_LclFld(ASSERT_VALARG_TP assertions, GenTreeLclVarCommon* tree, Statement* stmt);
     GenTree* optAssertionProp_LocalStore(ASSERT_VALARG_TP assertions, GenTreeLclVarCommon* store, Statement* stmt);
     GenTree* optAssertionProp_BlockStore(ASSERT_VALARG_TP assertions, GenTreeBlk* store, Statement* stmt);
-    GenTree* optAssertionProp_ModDiv(ASSERT_VALARG_TP assertions, GenTreeOp* tree, Statement* stmt);
+    GenTree* optAssertionProp_ModDiv(ASSERT_VALARG_TP assertions, GenTreeOp* tree, Statement* stmt, BasicBlock* block);
     GenTree* optAssertionProp_Return(ASSERT_VALARG_TP assertions, GenTreeOp* ret, Statement* stmt);
     GenTree* optAssertionProp_Ind(ASSERT_VALARG_TP assertions, GenTree* tree, Statement* stmt);
-    GenTree* optAssertionProp_Cast(ASSERT_VALARG_TP assertions, GenTreeCast* cast, Statement* stmt);
+    GenTree* optAssertionProp_Cast(ASSERT_VALARG_TP assertions, GenTreeCast* cast, Statement* stmt, BasicBlock* block);
     GenTree* optAssertionProp_Call(ASSERT_VALARG_TP assertions, GenTreeCall* call, Statement* stmt);
-    GenTree* optAssertionProp_RelOp(ASSERT_VALARG_TP assertions, GenTree* tree, Statement* stmt);
+    GenTree* optAssertionProp_RelOp(ASSERT_VALARG_TP assertions, GenTree* tree, Statement* stmt, BasicBlock* block);
     GenTree* optAssertionProp_Comma(ASSERT_VALARG_TP assertions, GenTree* tree, Statement* stmt);
     GenTree* optAssertionProp_BndsChk(ASSERT_VALARG_TP assertions, GenTree* tree, Statement* stmt);
-    GenTree* optAssertionPropGlobal_RelOp(ASSERT_VALARG_TP assertions, GenTree* tree, Statement* stmt);
+    GenTree* optAssertionPropGlobal_RelOp(ASSERT_VALARG_TP assertions,
+                                          GenTree*         tree,
+                                          Statement*       stmt,
+                                          BasicBlock*      block);
     GenTree* optAssertionPropLocal_RelOp(ASSERT_VALARG_TP assertions, GenTree* tree, Statement* stmt);
     GenTree* optAssertionProp_Update(GenTree* newTree, GenTree* tree, Statement* stmt);
     GenTree* optNonNullAssertionProp_Call(ASSERT_VALARG_TP assertions, GenTreeCall* call);
@@ -8120,6 +8129,8 @@ public:
 
     void optAssertionProp_RangeProperties(ASSERT_VALARG_TP assertions,
                                           GenTree*         tree,
+                                          Statement*       stmt,
+                                          BasicBlock*      block,
                                           bool*            isKnownNonZero,
                                           bool*            isKnownNonNegative);
 
