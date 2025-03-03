@@ -112,8 +112,8 @@ namespace Wasm.Build.Tests
 
             if (EnvironmentVariables.WorkloadsTestPreviousVersions)
             {
-                yield return new object?[] { "-f net9.0", "net9.0", DefaultRuntimeAssetsRelativePath };
-                yield return new object?[] { "-f net8.0", "net8.0", DefaultRuntimeAssetsRelativePath };
+                yield return new object?[] { $"-f {PreviousTargetFramework}", PreviousTargetFramework, DefaultRuntimeAssetsRelativePath };
+                yield return new object?[] { $"-f {Previous2TargetFramework}", Previous2TargetFramework, DefaultRuntimeAssetsRelativePath };
             }
 
             // ActiveIssue("https://github.com/dotnet/runtime/issues/90979")

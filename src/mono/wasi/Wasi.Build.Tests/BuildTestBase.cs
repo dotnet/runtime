@@ -55,7 +55,7 @@ namespace Wasm.Build.Tests
         public static bool IsUsingWorkloads => s_buildEnv.IsWorkload;
         public static bool IsNotUsingWorkloads => !s_buildEnv.IsWorkload;
         public static string GetNuGetConfigPathFor(string targetFramework) =>
-            Path.Combine(BuildEnvironment.TestDataPath, $"nuget{Environment.Version.Major}.config");
+            Path.Combine(BuildEnvironment.TestDataPath, "nuget.config");
 
         static BuildTestBase()
         {
@@ -219,8 +219,7 @@ namespace Wasm.Build.Tests
                 options.InitProject?.Invoke();
 
                 File.WriteAllText(Path.Combine(_projectDir, $"{buildArgs.ProjectName}.csproj"), buildArgs.ProjectFileContents);
-                File.Copy(Path.Combine(AppContext.BaseDirectory,
-                                        options.TargetFramework == "net7.0" ? "data/test-main-7.0.js" : "test-main.js"),
+                File.Copy(Path.Combine(AppContext.BaseDirectory, "test-main.js"),
                             Path.Combine(_projectDir, "test-main.js"));
             }
             else if (_projectDir is null)

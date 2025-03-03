@@ -70,7 +70,6 @@ public class NonWasmTemplateBuildTests : WasmTemplateTestsBase
         (
             EnvironmentVariables.WorkloadsTestPreviousVersions
                 ? [
-                    "net6.0",
                     s_previousTargetFramework,
                     s_latestTargetFramework
                 ]
@@ -84,7 +83,6 @@ public class NonWasmTemplateBuildTests : WasmTemplateTestsBase
         => NonWasmConsoleBuild(config,
                                extraBuildArgs,
                                targetFramework,
-                               // net6 is sdk would be needed to run the app
                                shouldRun: targetFramework == s_latestTargetFramework);
 
     [Theory]
@@ -93,7 +91,6 @@ public class NonWasmTemplateBuildTests : WasmTemplateTestsBase
         => NonWasmConsoleBuild(config,
                                extraBuildArgs,
                                targetFramework,
-                               // net6 is sdk would be needed to run the app
                                shouldRun: targetFramework == s_latestTargetFramework);
 
     private void NonWasmConsoleBuild(Configuration config,

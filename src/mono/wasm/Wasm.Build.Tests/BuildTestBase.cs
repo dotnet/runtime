@@ -27,6 +27,8 @@ namespace Wasm.Build.Tests
     public abstract class BuildTestBase : IClassFixture<SharedBuildPerTestClassFixture>, IDisposable
     {
         public static readonly string DefaultTargetFramework = $"net{Environment.Version.Major}.0";
+        public static readonly string PreviousTargetFramework = $"net{Environment.Version.Major - 1}.0";
+        public static readonly string Previous2TargetFramework = $"net{Environment.Version.Major - 2}.0";
         public static readonly string DefaultTargetFrameworkForBlazor = $"net{Environment.Version.Major}.0";
         public static readonly string TargetFrameworkForTasks = $"net{Environment.Version.Major}.0";
         private const string DefaultEnvironmentLocale = "en-US";
@@ -62,7 +64,7 @@ namespace Wasm.Build.Tests
         public static bool IsWorkloadWithMultiThreadingForDefaultFramework => s_buildEnv.IsWorkloadWithMultiThreadingForDefaultFramework;
         public static bool UseWebcil => s_buildEnv.UseWebcil;
         public static string GetNuGetConfigPathFor(string targetFramework)
-            => Path.Combine(BuildEnvironment.TestDataPath, targetFramework == DefaultTargetFramework ? $"nuget{Environment.Version.Major}.config" : $"nuget{Environment.Version.Major - 1}.config");
+            => Path.Combine(BuildEnvironment.TestDataPath, "nuget.config");
 
         public TProvider GetProvider<TProvider>() where TProvider : ProjectProviderBase
             => (TProvider)_providerOfBaseType;
