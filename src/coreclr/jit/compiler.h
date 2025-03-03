@@ -6181,6 +6181,7 @@ public:
     bool fgReorderBlocks(bool useProfile);
     PhaseStatus fgSearchImprovedLayout();
 
+    template <bool hasEH>
     class ThreeOptLayout
     {
         static bool EdgeCmp(const FlowEdge* left, const FlowEdge* right);
@@ -6192,10 +6193,9 @@ public:
         BasicBlock** tempOrder;
         unsigned numCandidateBlocks;
 
-#ifdef DEBUG
-        weight_t GetLayoutCost(unsigned startPos, unsigned endPos);
-#endif // DEBUG
+        bool IsCandidateBlock(BasicBlock* block) const;
 
+        INDEBUG(weight_t GetLayoutCost(unsigned startPos, unsigned endPos);)
         weight_t GetCost(BasicBlock* block, BasicBlock* next);
         weight_t GetPartitionCostDelta(unsigned s2Start, unsigned s3Start, unsigned s3End, unsigned s4End);
         void SwapPartitions(unsigned s1Start, unsigned s2Start, unsigned s3Start, unsigned s3End, unsigned s4End);
