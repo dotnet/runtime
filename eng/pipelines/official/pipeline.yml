@@ -9,7 +9,8 @@ extends:
   parameters:
     isOfficialBuild: true
     stages:
-    - ${{ insert }}: ${{ parameters.otherStages }}
+    - ${{ each stage in parameters.otherStages }}:
+      - ${{ insert }}: ${{ stage }}
     - ${{ insert }}: ${{ parameters.buildStage }}
 
     - stage: Publish
