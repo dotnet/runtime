@@ -10353,8 +10353,8 @@ const char* emitter::emitOffsetToLabel(unsigned offs)
 regMaskTP emitter::emitGetGCRegsSavedOrModified(CORINFO_METHOD_HANDLE methHnd)
 {
     // Is it a helper with a special saved set?
-    bool isNoGCHelper = emitNoGChelper(methHnd);
-    CorInfoHelpFunc helper = Compiler::eeGetHelperNum(methHnd);
+    bool            isNoGCHelper = emitNoGChelper(methHnd);
+    CorInfoHelpFunc helper       = Compiler::eeGetHelperNum(methHnd);
 
     if (isNoGCHelper)
     {
@@ -10372,11 +10372,13 @@ regMaskTP emitter::emitGetGCRegsSavedOrModified(CORINFO_METHOD_HANDLE methHnd)
 #endif
         return savedSet;
     }
+#ifdef RBM_INTERFACELOOKUP_FOR_SLOT_TRASH
     else if (helper == CORINFO_HELP_INTERFACELOOKUP_FOR_SLOT)
     {
         // This one is not no-gc, but it preserves arg registers.
         return RBM_ALLINT & ~RBM_INTERFACELOOKUP_FOR_SLOT_TRASH;
     }
+#endif
     else
     {
         // This is the saved set of registers after a normal call.
