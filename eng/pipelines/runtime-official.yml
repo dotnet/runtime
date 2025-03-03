@@ -200,7 +200,6 @@ extends:
             nameSuffix: Mono_multithread
             isOfficialBuild: true
             runtimeVariant: multithread
-            officialBuildArtifactName: $(osGroup)$(osSubGroup)_$(archType)_multithread_Artifacts
 
       #
       # Build Mono LLVM runtime packs
@@ -220,7 +219,6 @@ extends:
                         /p:MonoEnableLLVM=true /p:MonoAOTEnableLLVM=true /p:MonoBundleLLVMOptimizer=true
             nameSuffix: Mono_LLVMAOT
             runtimeVariant: LLVMAOT
-            officialBuildArtifactName: $(osGroup)$(osSubGroup)_$(archType)_LLVMAOT_Artifacts
             isOfficialBuild: true
 
       #
@@ -238,7 +236,6 @@ extends:
             nameSuffix: Libraries_WithPackages
             isOfficialBuild: true
             timeoutInMinutes: 95
-            officialBuildArtifactName: Libraries_WithPackages_Artifacts
       #
       # Build SourceBuild packages
       #
@@ -269,7 +266,6 @@ extends:
             isOfficialBuild: true
             nameSuffix: PGO
             timeoutInMinutes: 95
-            officialBuildArtifactName: $(osGroup)$(osSubGroup)_$(archType)_PGO_Artifacts
 
       #
       # Build Workloads
@@ -286,7 +282,7 @@ extends:
             templateContext:
               inputs:
                 - input: pipelineArtifact
-                  artifactName: windows_x64_Artifacts
+                  artifactName: Build_Build_windows_x64_release_AllRuntimes_Artifacts
                   targetPath: $(Build.SourcesDirectory)/artifacts/workloadPackages
                   itemPattern: |
                     Microsoft.NETCore.App.Runtime.AOT.win-x64.Cross.android-*.nupkg
@@ -294,7 +290,7 @@ extends:
                     Microsoft.NETCore.App.Runtime.AOT.win-x64.Cross.wasi-wasm*.nupkg
                     Microsoft.NETCore.App.Runtime.win-x64*.nupkg
                 - input: pipelineArtifact
-                  artifactName: windows_arm64_Artifacts
+                  artifactName: Build_windows_arm64_release_AllRuntimes_Artifacts
                   targetPath: $(Build.SourcesDirectory)/artifacts/workloadPackages
                   itemPattern: |
                     Microsoft.NETCore.App.Runtime.AOT.win-arm64.Cross.android-*.nupkg
@@ -302,32 +298,32 @@ extends:
                     Microsoft.NETCore.App.Runtime.AOT.win-arm64.Cross.wasi-wasm*.nupkg
                     Microsoft.NETCore.App.Runtime.win-arm64*.nupkg
                 - input: pipelineArtifact
-                  artifactName: windows_x86_Artifacts
+                  artifactName: Build_windows_x86_release_AllRuntimes_Artifacts
                   targetPath: $(Build.SourcesDirectory)/artifacts/workloadPackages
                   itemPattern: |
                     Microsoft.NETCore.App.Runtime.win-x86*.nupkg
                 - input: pipelineArtifact
-                  artifactName: android_x64_Artifacts
+                  artifactName: Build_android_x64_release_AllRuntimes_Artifacts
                   targetPath: $(Build.SourcesDirectory)/artifacts/workloadPackages
                   itemPattern: |
                     Microsoft.NETCore.App.Runtime.Mono.android-*.nupkg
                 - input: pipelineArtifact
-                  artifactName: android_x86_Artifacts
+                  artifactName: Build_android_x86_release_AllRuntimes_Artifacts
                   targetPath: $(Build.SourcesDirectory)/artifacts/workloadPackages
                   itemPattern: |
                     Microsoft.NETCore.App.Runtime.Mono.android-*.nupkg
                 - input: pipelineArtifact
-                  artifactName: android_arm_Artifacts
+                  artifactName: Build_android_arm_release_AllRuntimes_Artifacts
                   targetPath: $(Build.SourcesDirectory)/artifacts/workloadPackages
                   itemPattern: |
                     Microsoft.NETCore.App.Runtime.Mono.android-*.nupkg
                 - input: pipelineArtifact
-                  artifactName: android_arm64_Artifacts
+                  artifactName: Build_android_arm64_release_AllRuntimes_Artifacts
                   targetPath: $(Build.SourcesDirectory)/artifacts/workloadPackages
                   itemPattern: |
                     Microsoft.NETCore.App.Runtime.Mono.android-*.nupkg
                 - input: pipelineArtifact
-                  artifactName: browser_wasm_Artifacts
+                  artifactName: Build_browser_wasm_Linux_release_AllRuntimes_Artifacts
                   targetPath: $(Build.SourcesDirectory)/artifacts/workloadPackages
                   itemPattern: |
                     Microsoft.NET.Runtime.MonoAOTCompiler.Task*.nupkg
@@ -342,60 +338,59 @@ extends:
                     Microsoft.NET.Runtime.WebAssembly.Templates*.nupkg
                     Microsoft.NET.Sdk.WebAssembly.Pack*.nupkg
                 - input: pipelineArtifact
-                  artifactName: browser_wasm_multithread_Artifacts
+                  artifactName: Build_browser_wasm_Linux_Mono_Multithread_Artifacts
                   targetPath: $(Build.SourcesDirectory)/artifacts/workloadPackages
                   itemPattern: |
                     Microsoft.NETCore.App.Runtime.Mono.multithread.browser-wasm*.nupkg
                 - input: pipelineArtifact 
-                  artifactName: wasi_wasm_Artifacts
+                  artifactName: Build_wasi_wasm_Linux_release_AllRuntimes_Artifacts
                   targetPath: $(Build.SourcesDirectory)/artifacts/workloadPackages
                   itemPattern: |
                     Microsoft.NET.Runtime.WebAssembly.Wasi*.nupkg
                     Microsoft.NETCore.App.Runtime.Mono.wasi-wasm*.nupkg
                 - input: pipelineArtifact
-                  artifactName: ios_arm64_Artifacts
+                  artifactName: Build_ios_arm64_release_AllRuntimes_Artifacts
                   targetPath: $(Build.SourcesDirectory)/artifacts/workloadPackages
                   itemPattern: |
                     Microsoft.NETCore.App.Runtime.Mono.ios-*.nupkg
                 - input: pipelineArtifact
-                  artifactName: iossimulator_x64_Artifacts
+                  artifactName: Build_iossimulator_x64_release_AllRuntimes_Artifacts
                   targetPath: $(Build.SourcesDirectory)/artifacts/workloadPackages
                   itemPattern: |
                     Microsoft.NETCore.App.Runtime.Mono.iossimulator-*.nupkg
                 - input: pipelineArtifact
-                  artifactName: iossimulator_arm64_Artifacts
+                  artifactName: Build_iossimulator_arm64_release_AllRuntimes_Artifacts
                   targetPath: $(Build.SourcesDirectory)/artifacts/workloadPackages
                   itemPattern: |
                     Microsoft.NETCore.App.Runtime.Mono.iossimulator-*.nupkg
                 - input: pipelineArtifact
-                  artifactName: maccatalyst_x64_Artifacts
+                  artifactName: Build_maccatalyst_x64_release_AllRuntimes_Artifacts
                   targetPath: $(Build.SourcesDirectory)/artifacts/workloadPackages
                   itemPattern: |
                     Microsoft.NETCore.App.Runtime.Mono.maccatalyst-*.nupkg
                 - input: pipelineArtifact
-                  artifactName: maccatalyst_arm64_Artifacts
+                  artifactName: Build_maccatalyst_arm64_release_AllRuntimes_Artifacts
                   targetPath: $(Build.SourcesDirectory)/artifacts/workloadPackages
                   itemPattern: |
                     Microsoft.NETCore.App.Runtime.Mono.maccatalyst-*.nupkg
                 - input: pipelineArtifact
-                  artifactName: tvos_arm64_Artifacts
+                  artifactName: Build_tvos_arm64_release_AllRuntimes_Artifacts
                   targetPath: $(Build.SourcesDirectory)/artifacts/workloadPackages
                   itemPattern: |
                     Microsoft.NETCore.App.Runtime.Mono.tvos-*.nupkg
                 - input: pipelineArtifact
-                  artifactName: tvossimulator_x64_Artifacts
+                  artifactName: Build_tvossimulator_x64_release_AllRuntimes_Artifacts
                   targetPath: $(Build.SourcesDirectory)/artifacts/workloadPackages
                   itemPattern: |
                     Microsoft.NETCore.App.Runtime.Mono.tvossimulator-*.nupkg
                 - input: pipelineArtifact
-                  artifactName: tvossimulator_arm64_Artifacts
+                  artifactName: Build_tvossimulator_arm64_release_AllRuntimes_Artifacts
                   targetPath: $(Build.SourcesDirectory)/artifacts/workloadPackages
                   itemPattern: |
                     Microsoft.NETCore.App.Runtime.Mono.tvossimulator-*.nupkg
 
             buildArgs: -s mono.workloads -c $(_BuildConfig) -restore -build -publish /p:PackageSource=$(Build.SourcesDirectory)/artifacts/workloadPackages /p:WorkloadOutputPath=$(Build.SourcesDirectory)/artifacts/workloads /p:ShouldGenerateProductVersionFiles=true /p:EnableDefaultRidSpecificArtifacts=false
 
-            officialBuildArtifactName: Workloads_Artifacts
             isOfficialBuild: true
             timeoutInMinutes: 120
             dependsOn:
@@ -416,3 +411,4 @@ extends:
             - Build_windows_x64_release_AllRuntimes
             - Build_windows_x86_release_AllRuntimes
             - Build_windows_arm64_release_AllRuntimes
+            - Build_browser_wasm_Linux_Mono_multithread

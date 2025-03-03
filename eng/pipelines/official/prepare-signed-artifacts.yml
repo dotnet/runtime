@@ -35,7 +35,7 @@ jobs:
         fetchDepth: 20
       - ${{ each job in parameters.buildStage.jobs }}:
         - input: pipelineArtifact
-          artifactName: ${{ job.templateContext.artifactName }}
+          artifactName: ${{ job.job }}_Artifacts
           targetPath: $(Build.SourcesDirectory)\artifacts\packages\
           itemPattern: |
             **/*
