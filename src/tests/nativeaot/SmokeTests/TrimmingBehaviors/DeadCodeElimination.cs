@@ -32,6 +32,7 @@ class DeadCodeElimination
         TestUnmodifiableInstanceFieldOptimization.Run();
         TestGetMethodOptimization.Run();
         TestTypeOfCodegenBranchElimination.Run();
+        TestInvisibleGenericsTrimming.Run();
 
         return 100;
     }
@@ -1044,6 +1045,39 @@ class DeadCodeElimination
 
             [MethodImpl(MethodImplOptions.NoInlining)]
             static Type GetAtom1() => typeof(Atom1);
+        }
+    }
+
+    class TestInvisibleGenericsTrimming
+    {
+        class NotPresentType1<T>;
+        class NotPresentType2<T>;
+
+        class PresentType<T>;
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static bool IsNotPresentType1(object o) => o is NotPresentType1<object>;
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static bool IsNotPresentType2(object o) => o.GetType() == typeof(NotPresentType2<object>);
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static bool IsPresentType(object o) => o.GetType() == typeof(PresentType<object>);
+
+        public static void Run()
+        {
+            IsNotPresentType1(new object());
+#if !DEBUG
+            ThrowIfPresent(typeof(TestInvisibleGenericsTrimming), "NotPresentType1`1");
+#endif
+
+            IsNotPresentType2(new object());
+#if !DEBUG
+            ThrowIfPresent(typeof(TestInvisibleGenericsTrimming), "NotPresentType2`1");
+#endif
+
+            IsPresentType(new PresentType<object>());
+            ThrowIfNotPresent(typeof(TestInvisibleGenericsTrimming), "PresentType`1");
         }
     }
 

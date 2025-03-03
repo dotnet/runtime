@@ -1513,6 +1513,7 @@ void Compiler::fgRemoveEHTableEntry(unsigned XTnum)
 {
     assert(compHndBBtabCount > 0);
     assert(XTnum < compHndBBtabCount);
+    assert(!ehTableFinalized);
 
     EHblkDsc* HBtab;
 
@@ -1727,6 +1728,8 @@ void Compiler::fgRemoveEHTableEntry(unsigned XTnum)
 //
 EHblkDsc* Compiler::fgTryAddEHTableEntries(unsigned XTnum, unsigned count, bool deferAdding)
 {
+    assert(!ehTableFinalized);
+
     bool           reallocate = false;
     bool const     insert     = (XTnum != compHndBBtabCount);
     unsigned const newCount   = compHndBBtabCount + count;

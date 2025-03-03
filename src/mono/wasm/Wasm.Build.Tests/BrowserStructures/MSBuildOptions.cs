@@ -10,9 +10,9 @@ namespace Wasm.Build.Tests;
 public abstract record MSBuildOptions
 (
     bool                            IsPublish,
+    string                          TargetFramework,
     bool                            AOT                             = false,
     NativeFilesType                 ExpectedFileType                = NativeFilesType.FromRuntimePack,
-    string                          TargetFramework                 = BuildTestBase.DefaultTargetFramework,
     GlobalizationMode               GlobalizationMode               = GlobalizationMode.Sharded,
     string                          CustomIcuFile                   = "",
     bool                            UseCache                        = true,
@@ -24,5 +24,6 @@ public abstract record MSBuildOptions
     IDictionary<string, string>?    ExtraBuildEnvironmentVariables  = null,
     string                          BootConfigFileName              = "blazor.boot.json",
     string                          NonDefaultFrameworkDir          = "",
-    string                          ExtraMSBuildArgs                = ""
+    string                          ExtraMSBuildArgs                = "",
+    bool                            FeaturePerfTracing              = false
 );

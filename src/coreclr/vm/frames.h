@@ -226,7 +226,7 @@ enum class FrameIdentifier : TADDR
 {
     None = 0,
 #define FRAME_TYPE_NAME(frameType) frameType,
-#include "FrameTypes.h"    
+#include "FrameTypes.h"
     CountPlusOne
 };
 
@@ -628,8 +628,15 @@ protected:
 
     void PopIfChained();
 #endif // TARGET_UNIX && !DACCESS_COMPILE
+
+    friend struct ::cdac_data<Frame>;
 };
 
+template<>
+struct cdac_data<Frame>
+{
+    static constexpr size_t Next = offsetof(Frame, m_Next);
+};
 
 //-----------------------------------------------------------------------------
 // This frame provides a context for a code location at which
@@ -1062,8 +1069,15 @@ public:
     }
 
     void UpdateRegDisplay_Impl(const PREGDISPLAY, bool updateFloats = false);
-};
 
+    friend struct ::cdac_data<SoftwareExceptionFrame>;
+};
+template<>
+struct cdac_data<SoftwareExceptionFrame>
+{
+    static constexpr size_t TargetContext = offsetof(SoftwareExceptionFrame, m_Context);
+    static constexpr size_t ReturnAddress = offsetof(SoftwareExceptionFrame, m_ReturnAddress);
+};
 #endif // FEATURE_EH_FUNCLETS
 
 //-----------------------------------------------------------------------
