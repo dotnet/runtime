@@ -4544,37 +4544,30 @@ struct ExecutionState
     ExecutionState() : m_FirstPass(TRUE) {LIMITED_METHOD_CONTRACT;  }
 };
 
-#if defined(TARGET_ARM64)
+#if defined(TARGET_ARM64) && defined(__GNUC__)
 static inline void* PacSignPtr(void* ptr)
 {
-    #if defined(_MSC_VER)
-    __asm paciza ptr
-    #else
+
     __asm__ volatile (".arch_extension pauth\n"
                       "paciza %0"
                       : "+r" (ptr)
                       :
                       : "memory"                // Memory is affected, prevent reordering
                       );
-    #endif // _MSC_VER
     return ptr;
 }
 
 static inline void* PacStripPtr(void* ptr)
 {
-    #if defined(_MSC_VER)
-    __asm xpaci ptr
-    #else
     __asm__ volatile (".arch_extension pauth\n"
                       "xpaci %0"
                       : "+r" (ptr)
                       :
                       : "memory"                // Memory is affected, prevent reordering
                       );
-    #endif // _MSC_VER
     return ptr;
 }
-#endif // TARGET_ARM64
+#endif // TARGET_ARM64 && __GNUC__
 
 // Client is responsible for suspending the thread before calling
 void Thread::HijackThread(ExecutionState *esb X86_ARG(ReturnKind returnKind))
@@ -4633,9 +4626,9 @@ void Thread::HijackThread(ExecutionState *esb X86_ARG(ReturnKind returnKind))
 
     // Remember the place that the return would have gone
     m_pvHJRetAddr = *esb->m_ppvRetAddrPtr;
-#if defined(TARGET_ARM64)
+#if defined(TARGET_ARM64) && defined(__GNUC__)
     m_pvHJRetAddr = PacStripPtr(m_pvHJRetAddr);
-#endif // TARGET_ARM64
+#endif // TARGET_ARM64 && __GNUC__
 
     IS_VALID_CODE_PTR((FARPROC) (TADDR)m_pvHJRetAddr);
     // TODO [DAVBR]: For the full fix for VsWhidbey 450273, the below
@@ -4648,9 +4641,9 @@ void Thread::HijackThread(ExecutionState *esb X86_ARG(ReturnKind returnKind))
     m_HijackedFunction = esb->m_pFD;
 
     // Bash the stack to return to one of our stubs
-#if defined(TARGET_ARM64)
+#if defined(TARGET_ARM64) && defined(__GNUC__)
     pvHijackAddr = PacSignPtr(pvHijackAddr);
-#endif // TARGET_ARM64
+#endif // TARGET_ARM64 && __GNUC__
 
     *esb->m_ppvRetAddrPtr = pvHijackAddr;
     SetThreadState(TS_Hijacked);
