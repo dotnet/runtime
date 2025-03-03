@@ -2241,7 +2241,7 @@ static inline void assertCodeLength(size_t code, uint8_t size)
  *
  *  Emit a 32-bit RISCV64 R-Type instruction
  *
- *  Note: Instruction types as per RISC-V Spec, Chapter 24 RV32/64G Instruction Set Listings
+ *  Note: Instruction types as per RISC-V Spec, Chapter "RV32/64G Instruction Set Listings"
  *  R-Type layout:
  *  31-------25-24---20-19--15-14------12-11-----------7-6------------0
  *  | funct7   |  rs2  | rs1  |  funct3  |      rd      |   opcode    |
@@ -2265,7 +2265,7 @@ static inline void assertCodeLength(size_t code, uint8_t size)
  *
  *  Emit a 32-bit RISCV64 I-Type instruction
  *
- *  Note: Instruction types as per RISC-V Spec, Chapter 24 RV32/64G Instruction Set Listings
+ *  Note: Instruction types as per RISC-V Spec, Chapter "RV32/64G Instruction Set Listings"
  *  I-Type layout:
  *  31------------20-19-----15-14------12-11-----------7-6------------0
  *  |   imm[11:0]   |   rs1   |  funct3  |      rd      |   opcode    |
@@ -2289,7 +2289,7 @@ static inline void assertCodeLength(size_t code, uint8_t size)
  *
  *  Emit a 32-bit RISCV64 S-Type instruction
  *
- *  Note: Instruction types as per RISC-V Spec, Chapter 24 RV32/64G Instruction Set Listings
+ *  Note: Instruction types as per RISC-V Spec, Chapter "RV32/64G Instruction Set Listings"
  *  S-Type layout:
  *  31-------25-24---20-19--15-14------12-11-----------7-6------------0
  *  |imm[11:5] |  rs2  | rs1  |  funct3  |   imm[4:0]   |   opcode    |
@@ -2319,7 +2319,7 @@ static inline void assertCodeLength(size_t code, uint8_t size)
  *
  *  Emit a 32-bit RISCV64 U-Type instruction
  *
- *  Note: Instruction types as per RISC-V Spec, Chapter 24 RV32/64G Instruction Set Listings
+ *  Note: Instruction types as per RISC-V Spec, Chapter "RV32/64G Instruction Set Listings"
  *  U-Type layout:
  *  31---------------------------------12-11-----------7-6------------0
  *  |             imm[31:12]             |      rd      |   opcode    |
@@ -2340,7 +2340,7 @@ static inline void assertCodeLength(size_t code, uint8_t size)
  *
  *  Emit a 32-bit RISCV64 B-Type instruction
  *
- *  Note: Instruction types as per RISC-V Spec, Chapter 24 RV32/64G Instruction Set Listings
+ *  Note: Instruction types as per RISC-V Spec, Chapter "RV32/64G Instruction Set Listings"
  *  B-Type layout:
  *  31-------30-----25-24-20-19-15-14--12-11-------8----7----6--------0
  *  |imm[12]|imm[10:5]| rs2 | rs1 |funct3|  imm[4:1]|imm[11]| opcode  |
@@ -2376,7 +2376,7 @@ static inline void assertCodeLength(size_t code, uint8_t size)
  *
  *  Emit a 32-bit RISCV64 J-Type instruction
  *
- *  Note: Instruction types as per RISC-V Spec, Chapter 24 RV32/64G Instruction Set Listings
+ *  Note: Instruction types as per RISC-V Spec, Chapter "RV32/64G Instruction Set Listings"
  *  J-Type layout:
  *  31-------30--------21----20---19----------12-11----7-6------------0
  *  |imm[20]| imm[10:1]  |imm[11]|  imm[19:12]  |  rd   |   opcode    |
