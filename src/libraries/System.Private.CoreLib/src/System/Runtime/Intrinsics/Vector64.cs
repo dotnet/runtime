@@ -3260,7 +3260,6 @@ namespace System.Runtime.Intrinsics
         }
 
         [Intrinsic]
-        [CLSCompliant(false)]
         internal static Vector64<sbyte> ShuffleNativeFallback(Vector64<sbyte> vector, Vector64<sbyte> indices)
         {
             Shuffle(vector, indices);
@@ -3273,7 +3272,6 @@ namespace System.Runtime.Intrinsics
         }
 
         [Intrinsic]
-        [CLSCompliant(false)]
         internal static Vector64<ushort> ShuffleNativeFallback(Vector64<ushort> vector, Vector64<ushort> indices)
         {
             Shuffle(vector, indices);
@@ -3286,7 +3284,6 @@ namespace System.Runtime.Intrinsics
         }
 
         [Intrinsic]
-        [CLSCompliant(false)]
         internal static Vector64<uint> ShuffleNativeFallback(Vector64<uint> vector, Vector64<uint> indices)
         {
             Shuffle(vector, indices);

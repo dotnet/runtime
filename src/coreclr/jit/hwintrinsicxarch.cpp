@@ -3664,7 +3664,8 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             // indices that might become possible to emit later (due to them becoming constant), this will be
             // indicated in canBecomeValidForShuffle; otherwise, it's just the same as validForShuffle.
             bool canBecomeValidForShuffle = false;
-            bool validForShuffle = IsValidForShuffle(indices, simdSize, simdBaseType, &canBecomeValidForShuffle, isShuffleNative);
+            bool validForShuffle =
+                IsValidForShuffle(indices, simdSize, simdBaseType, &canBecomeValidForShuffle, isShuffleNative);
 
             // If it isn't valid for shuffle (and can't become valid later), then give up now.
             if (!canBecomeValidForShuffle)
