@@ -130,7 +130,6 @@ namespace System.Numerics.Tensors
                 }
                 else if (typeof(T) == typeof(float))
                 {
-                    Debug.Assert(typeof(T) == typeof(float));
                     return Vector128.MultiplyAddEstimate(x.AsSingle(), y.AsSingle(), z.AsSingle()).As<float, T>();
                 }
 #else
@@ -164,7 +163,6 @@ namespace System.Numerics.Tensors
                 }
                 else if (typeof(T) == typeof(float))
                 {
-                    Debug.Assert(typeof(T) == typeof(float));
                     return Vector256.MultiplyAddEstimate(x.AsSingle(), y.AsSingle(), z.AsSingle()).As<float, T>();
                 }
 #else
@@ -188,7 +186,6 @@ namespace System.Numerics.Tensors
                 }
                 else if (typeof(T) == typeof(float))
                 {
-                    Debug.Assert(typeof(T) == typeof(float));
                     return Vector512.MultiplyAddEstimate(x.AsSingle(), y.AsSingle(), z.AsSingle()).As<float, T>();
                 }
 #else
