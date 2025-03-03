@@ -1397,6 +1397,10 @@ void GcInfoEncoder::Build()
 
                     liveState.WriteBit(slotIndex, becomesLive);
                 }
+                else
+                {
+                    assert(!"Saw untracked slot");
+                }
                 pCurrent++;
             }
         }
