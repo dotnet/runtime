@@ -37,7 +37,7 @@ parameters:
   templateContext: ''
   disableComponentGovernance: ''
   # In official builds, the expected artifact name
-  officialBuildArtifactName: ${{ parameters.osGroup }}${{ parameters.osSubgroup }}_${{ parameters.archType }}${{ replace(format('_{0}', parameters.runtimeVariant, 'normal'), '_normal', '') }}_Artifacts
+  officialBuildArtifactName: $(defaultOfficialBuildArtifactName)
 
 jobs:
 - template: /eng/common/${{ parameters.templatePath }}/job/job.yml
@@ -159,6 +159,9 @@ jobs:
       # Set no native sanitizers by default
       - name: _nativeSanitizersArg
         value: ''
+
+      - name: defaultOfficialBuildArtifactName
+        value: ${{ parameters.osGroup }}${{ parameters.osSubgroup }}_${{ parameters.archType }}${{ replace(format('_{0}', parameters.runtimeVariant, 'normal'), '_normal', '') }}_Artifacts
 
       - ${{ each variableTemplate in parameters.extraVariablesTemplates }}:
         - template: ${{ variableTemplate.template }}
