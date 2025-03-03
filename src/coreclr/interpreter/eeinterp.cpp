@@ -73,7 +73,7 @@ CorJitResult CILInterp::compileMethod(ICorJitInfo*         compHnd,
     uint32_t sizeOfCode = sizeof(InterpMethod*) + IRCodeSize * sizeof(int32_t);
     uint8_t unwindInfo[8] = {0, 0, 0, 0, 0, 0, 0, 0};
 
-    AllocMemArgs args;
+    AllocMemArgs args {};
     args.hotCodeSize = sizeOfCode;
     args.coldCodeSize = 0;
     args.roDataSize = 0;
