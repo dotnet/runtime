@@ -7,13 +7,7 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.CodeAnalysis" Version="$(RoslynApiVersion)" />
-    <!-- Ensure we are using live dependencies for CodeAnalysis rather than old packages -->
-    <PackageReference Include="NETStandard.Library" Version="$(NETStandardLibraryVersion)" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.Composition\src\System.Composition.csproj" />
-    <ProjectReference Include="$(LibrariesProjectRoot)System.IO.Pipelines\src\System.IO.Pipelines.csproj" />
-    <ProjectReference Include="$(LibrariesProjectRoot)System.Reflection.Metadata\src\System.Reflection.Metadata.csproj" />
-
-    <ProjectReference Include="..\..\src\System.Text.Json.csproj" />
   </ItemGroup>
 
   <ItemGroup>
@@ -25,6 +19,10 @@
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">
+    <ProjectReference Include="..\..\src\System.Text.Json.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.IO.Pipelines\src\System.IO.Pipelines.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Reflection.Metadata\src\System.Reflection.Metadata.csproj" />
+
     <Reference Include="System" />
   </ItemGroup>
 

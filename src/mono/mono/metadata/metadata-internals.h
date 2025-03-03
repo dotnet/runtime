@@ -23,6 +23,7 @@
 #include "../native/containers/dn-simdhash-specializations.h"
 
 struct _MonoType {
+	/* don't access directly, use m_type_data_get_<name> and m_type_data_set_<name> */
 	union {
 		MonoClass *klass; /* for VALUETYPE and CLASS */
 		MonoType *type;   /* for PTR */
@@ -30,7 +31,7 @@ struct _MonoType {
 		MonoMethodSignature *method;
 		MonoGenericParam *generic_param; /* for VAR and MVAR */
 		MonoGenericClass *generic_class; /* for GENERICINST */
-	} data;
+	} data__;
 	unsigned int attrs    : 16; /* param attributes or field flags */
 	MonoTypeEnum type     : 8;
 	unsigned int has_cmods : 1;
@@ -1281,7 +1282,7 @@ static inline MonoMethodSignature*
 mono_type_get_signature_internal (MonoType *type)
 {
 	g_assert (type->type == MONO_TYPE_FNPTR);
-	return type->data.method;
+	return type->data__.method;
 }
 
 /**
@@ -1296,6 +1297,115 @@ m_type_is_byref (const MonoType *type)
 	return type->byref__;
 }
 
+static MONO_NEVER_INLINE void
+m_type_invalid_access (const char *fn_name, MonoTypeEnum actual_type)
+{
+	g_error ("MonoType with type %d accessed by %s", actual_type, fn_name);
+}
+
+static inline gboolean
+m_type_data_is_klass_valid (const MonoType *type) {
+	switch (type->type) {
+		// list based on class.c mono_class_from_mono_type_internal cases
+		case MONO_TYPE_OBJECT:
+		case MONO_TYPE_VOID:
+		case MONO_TYPE_BOOLEAN:
+		case MONO_TYPE_CHAR:
+		case MONO_TYPE_I1:
+		case MONO_TYPE_U1:
+		case MONO_TYPE_I2:
+		case MONO_TYPE_U2:
+		case MONO_TYPE_I4:
+		case MONO_TYPE_U4:
+		case MONO_TYPE_I:
+		case MONO_TYPE_U:
+		case MONO_TYPE_I8:
+		case MONO_TYPE_U8:
+		case MONO_TYPE_R4:
+		case MONO_TYPE_R8:
+		case MONO_TYPE_STRING:
+		case MONO_TYPE_TYPEDBYREF:
+		case MONO_TYPE_CLASS:
+		case MONO_TYPE_VALUETYPE:
+		case MONO_TYPE_SZARRAY:
+			return TRUE;
+		default:
+			return FALSE;
+	}
+}
+
+/**
+ * when using _unchecked accessors for performance, it is your responsibility to check
+ * MonoType->type first and make sure you are accessing the correct member!
+ * m_type_data_xxx_klass is legal for \c MONO_TYPE_CLASS, \c MONO_TYPE_VALUETYPE, and \c MONO_TYPE_SZARRAY.
+ *  It may work for other types but you should really use \c mono_class_from_mono_type_internal instead.
+ * m_type_data_xxx_generic_param is legal for \c MONO_TYPE_VAR and \c MONO_TYPE_MVAR.
+ * m_type_data_xxx_array is legal for \c MONO_TYPE_ARRAY but *not* \c MONO_TYPE_SZARRAY.
+ * m_type_data_xxx_type is legal for \c MONO_TYPE_PTR.
+ * m_type_data_xxx_method is legal for \c MONO_TYPE_FNPTR.
+ * m_type_data_xxx_generic_class is legal for \c MONO_TYPE_GENERICINST.
+ */
+#define DEFINE_TYPE_DATA_MEMBER_CHECKED_ACCESSORS(field_type, field_name, predicate) \
+	static inline field_type \
+	m_type_data_get_ ## field_name (const MonoType *type) \
+	{ \
+		if (G_LIKELY(predicate)) \
+			return type->data__.field_name; \
+		m_type_invalid_access (__func__, type->type); \
+		return NULL; \
+	} \
+	\
+	static inline void \
+	m_type_data_set_ ## field_name (MonoType *type, field_type value) \
+	{ \
+		if (!G_LIKELY(predicate)) \
+			m_type_invalid_access (__func__, type->type); \
+		else \
+			type->data__.field_name = value; \
+	}
+
+#if (defined(ENABLE_CHECKED_BUILD) || defined(_DEBUG) || defined(DEBUG))
+
+#define DEFINE_TYPE_DATA_MEMBER(field_type, field_name, predicate) \
+	DEFINE_TYPE_DATA_MEMBER_CHECKED_ACCESSORS(field_type, field_name, predicate) \
+	static inline field_type \
+	m_type_data_get_ ## field_name ## _unchecked (const MonoType *type) \
+	{ \
+		return m_type_data_get_ ## field_name (type); \
+	} \
+	static inline void \
+	m_type_data_set_ ## field_name ## _unchecked (MonoType *type, field_type value) \
+	{ \
+		m_type_data_set_ ## field_name (type, value); \
+	}
+
+#else // ENABLE_CHECKED_BUILD || _DEBUG || DEBUG
+
+#define DEFINE_TYPE_DATA_MEMBER(field_type, field_name, predicate) \
+	DEFINE_TYPE_DATA_MEMBER_CHECKED_ACCESSORS(field_type, field_name, predicate) \
+	static inline field_type \
+	m_type_data_get_ ## field_name ## _unchecked (const MonoType *type) \
+	{ \
+		return type->data__.field_name; \
+	} \
+	static inline void \
+	m_type_data_set_ ## field_name ## _unchecked (MonoType *type, field_type value) \
+	{ \
+		type->data__.field_name = value; \
+	}
+
+#endif // ENABLE_CHECKED_BUILD || _DEBUG || DEBUG
+
+DEFINE_TYPE_DATA_MEMBER(MonoClass *, klass, (m_type_data_is_klass_valid (type)));
+DEFINE_TYPE_DATA_MEMBER(MonoGenericParam *, generic_param, ((type->type == MONO_TYPE_VAR) || (type->type == MONO_TYPE_MVAR)));
+DEFINE_TYPE_DATA_MEMBER(MonoArrayType *, array, (type->type == MONO_TYPE_ARRAY));
+DEFINE_TYPE_DATA_MEMBER(MonoType *, type, (type->type == MONO_TYPE_PTR));
+DEFINE_TYPE_DATA_MEMBER(MonoMethodSignature *, method, (type->type == MONO_TYPE_FNPTR));
+DEFINE_TYPE_DATA_MEMBER(MonoGenericClass *, generic_class, (type->type == MONO_TYPE_GENERICINST));
+
+#undef DEFINE_TYPE_DATA_MEMBER_CHECKED_ACCESSORS
+#undef DEFINE_TYPE_DATA_MEMBER
+
 /**
  * mono_type_get_class_internal:
  * \param type the \c MonoType operated on
@@ -1308,7 +1418,7 @@ static inline MonoClass*
 mono_type_get_class_internal (MonoType *type)
 {
 	/* FIXME: review the runtime users before adding the assert here */
-	return type->data.klass;
+	return m_type_data_get_klass (type);
 }
 
 /**
@@ -1322,7 +1432,7 @@ mono_type_get_class_internal (MonoType *type)
 static inline MonoArrayType*
 mono_type_get_array_type_internal (MonoType *type)
 {
-	return type->data.array;
+	return m_type_data_get_array (type);
 }
 
 static inline int
