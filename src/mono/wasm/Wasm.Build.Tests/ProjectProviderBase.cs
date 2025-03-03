@@ -315,7 +315,7 @@ public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string?
 
         // filter files with a single fingerprint segment, e.g. "dotnet*.js" should not catch "dotnet.native.d1au9i.js" but should catch "dotnet.js"
         string pattern = $@"^{Regex.Escape(fileNameWithoutExtensionAndFingerprinting)}(\.[^.]+)?{Regex.Escape(fileExtension)}$";
-        var tmp = files.Where(f => Regex.IsMatch(Path.GetFileName(f), pattern)).ToArray();
+        var tmp = files.Where(f => Regex.IsMatch(Path.GetFileName(f), pattern)).Where(f => !f.Contains("dotnet.boot")).ToArray();
         return tmp;
     }
 
