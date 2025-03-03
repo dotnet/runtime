@@ -35,8 +35,7 @@ namespace AppHost.Bundle.Tests
             };
 
             var result = Command.Create(singleFile, $"host_runtime_contract.bundle_probe {string.Join(" ", itemsToProbe.Select(i => i.Path))}")
-                .CaptureStdErr()
-                .CaptureStdOut()
+                .EnableTracingAndCaptureOutputs()
                 .Execute();
 
             result.Should().Pass();

@@ -452,9 +452,9 @@ ComMTMethodProps * DispatchMemberInfo::GetMemberProps(OBJECTREF MemberInfoObj, C
         }
         else if (CoreLibBinder::IsClass(pMemberInfoClass, CLASS__RT_FIELD_INFO))
         {
-            MethodDescCallSite getFieldHandle(METHOD__RTFIELD__GET_FIELDHANDLE, &MemberInfoObj);
+            MethodDescCallSite getFieldDesc(METHOD__RTFIELD__GET_FIELDESC, &MemberInfoObj);
             ARG_SLOT arg = ObjToArgSlot(MemberInfoObj);
-            FieldDesc* pFld = (FieldDesc*) getFieldHandle.Call_RetLPVOID(&arg);
+            FieldDesc* pFld = (FieldDesc*) getFieldDesc.Call_RetLPVOID(&arg);
             if (pFld)
                 pMemberProps = pMemberMap->GetMethodProps(pFld->GetMemberDef(), pFld->GetModule());
         }
@@ -936,8 +936,8 @@ void DispatchMemberInfo::SetUpMethodMarshalerInfo(MethodDesc *pMD, BOOL bReturnV
             iParam++;
         }
 
-        // Make sure that there are not more param def tokens then there are COM+ arguments.
-        _ASSERTE( usSequence == (USHORT)-1 && "There are more parameter information tokens then there are COM+ arguments" );
+        // Make sure that there are not more param def tokens then there are CLR arguments.
+        _ASSERTE( usSequence == (USHORT)-1 && "There are more parameter information tokens then there are CLR arguments" );
     }
 
     //
@@ -1256,7 +1256,7 @@ void DispatchInfo::InvokeMemberWorker(DispatchMemberInfo*   pDispMemberInfo,
     EnumMemberTypes MemberType;
 
     Thread* pThread = GetThread();
-    AppDomain* pAppDomain = pThread->GetDomain();
+    AppDomain* pAppDomain = AppDomain::GetCurrentDomain();
 
     SafeArrayPtrHolder pSA = NULL;
     VARIANT safeArrayVar;
@@ -1826,7 +1826,7 @@ void DispatchInfo::InvokeMemberWorker(DispatchMemberInfo*   pDispMemberInfo,
         }
     }
 
-    // Convert the return COM+ object to an OLE variant.
+    // Convert the return CLR object to an OLE variant.
     if (pVarRes)
         MarshalReturnValueManagedToNative(pDispMemberInfo, &pObjs->RetVal, pVarRes);
 }
@@ -2164,7 +2164,7 @@ HRESULT DispatchInfo::InvokeMember(SimpleComCallWrapper *pSimpleWrap, DISPID id,
         // The sole purpose of having this frame is to tell the debugger that we have a catch handler here
         // which may swallow managed exceptions.  The debugger needs this in order to send a
         // CatchHandlerFound (CHF) notification.
-        FrameWithCookie<DebuggerU2MCatchHandlerFrame> catchFrame;
+        DebuggerU2MCatchHandlerFrame catchFrame(true /* catchesAllExceptions */);
         EX_TRY
         {
             InvokeMemberDebuggerWrapper(pDispMemberInfo,
@@ -2578,10 +2578,9 @@ bool DispatchInfo::IsPropertyAccessorVisible(bool fIsSetter, OBJECTREF* pMemberI
 
         // Check to see if the new method is a property accessor.
         mdToken tkMember = mdTokenNil;
-        MethodTable *pDeclaringMT = pMDForProperty->GetMethodTable();
-        if (pMDForProperty->GetModule()->GetPropertyInfoForMethodDef(pMDForProperty->GetMemberDef(), &tkMember, NULL, NULL) == S_OK)
+        if (pMDForProperty->GetMDImport()->GetPropertyInfoForMethodDef(pMDForProperty->GetMemberDef(), &tkMember, NULL, NULL) == S_OK)
         {
-            if (IsMemberVisibleFromCom(pDeclaringMT, tkMember, pMDForProperty->GetMemberDef()))
+            if (IsMemberVisibleFromCom(pMDForProperty->GetMethodTable(), tkMember, pMDForProperty->GetMemberDef()))
                 return true;
         }
     }

@@ -44,7 +44,7 @@ public:
         MP_ALLOCATOR = 0x1,
         SIZE_IN_EAX  = 0x2,
         OBJ_ARRAY    = 0x4,
-        ALIGN8       = 0x8,     // insert a dummy object to insure 8 byte alignment (until the next GC)
+        ALIGN8       = 0x8,     // insert a dummy object to ensure 8 byte alignment (until the next GC)
         ALIGN8OBJ    = 0x10,
     };
 
@@ -96,51 +96,7 @@ extern "C" void STDCALL WriteBarrierAssert(BYTE* ptr, Object* obj)
 
 #endif // _DEBUG
 
-#ifndef TARGET_UNIX
-
-HCIMPL1_V(INT32, JIT_Dbl2IntOvf, double val)
-{
-    FCALL_CONTRACT;
-
-    INT64 ret = HCCALL1_V(JIT_Dbl2Lng, val);
-
-    if (ret != (INT32) ret)
-        goto THROW;
-
-    return (INT32) ret;
-
-THROW:
-    FCThrow(kOverflowException);
-}
-HCIMPLEND
-#endif // TARGET_UNIX
-
-
-FCDECL1(Object*, JIT_New, CORINFO_CLASS_HANDLE typeHnd_);
-
-
-HCIMPL1(Object*, AllocObjectWrapper, MethodTable *pMT)
-{
-    CONTRACTL
-    {
-        FCALL_CHECK;
-    }
-    CONTRACTL_END;
-
-    OBJECTREF newObj = NULL;
-    HELPER_METHOD_FRAME_BEGIN_RET_0();    // Set up a frame
-    newObj = AllocateObject(pMT);
-    HELPER_METHOD_FRAME_END();
-    return OBJECTREFToObject(newObj);
-}
-HCIMPLEND
-
 /*********************************************************************/
-#ifndef UNIX_X86_ABI
-extern "C" void* g_TailCallFrameVptr;
-void* g_TailCallFrameVptr;
-#endif // !UNI_X86_ABI
-
 #ifdef FEATURE_HIJACK
 extern "C" void STDCALL JIT_TailCallHelper(Thread * pThread);
 void STDCALL JIT_TailCallHelper(Thread * pThread)
@@ -250,15 +206,15 @@ void JIT_TrialAlloc::EmitCore(CPUSTUBLINKER *psl, CodeLabel *noLock, CodeLabel *
                  && "EAX should contain size for allocation and it doesnt!!!");
 
         // Fetch current thread into EDX, preserving EAX and ECX
-        psl->X86EmitCurrentThreadFetch(kEDX, (1 << kEAX) | (1 << kECX));
+        psl->X86EmitCurrentThreadAllocContextFetch(kEDX, (1 << kEAX) | (1 << kECX));
 
         // Try the allocation.
 
 
         if (flags & (ALIGN8 | SIZE_IN_EAX | ALIGN8OBJ))
         {
-            // MOV EBX, [edx]Thread.m_alloc_context.alloc_ptr
-            psl->X86EmitOffsetModRM(0x8B, kEBX, kEDX, offsetof(Thread, m_alloc_context) + offsetof(gc_alloc_context, alloc_ptr));
+            // MOV EBX, [edx]alloc_context.m_GCAllocContext.alloc_ptr
+            psl->X86EmitOffsetModRM(0x8B, kEBX, kEDX, ee_alloc_context::getAllocPtrFieldOffset());
             // add EAX, EBX
             psl->Emit16(0xC303);
             if (flags & ALIGN8)
@@ -266,20 +222,20 @@ void JIT_TrialAlloc::EmitCore(CPUSTUBLINKER *psl, CodeLabel *noLock, CodeLabel *
         }
         else
         {
-            // add             eax, [edx]Thread.m_alloc_context.alloc_ptr
-            psl->X86EmitOffsetModRM(0x03, kEAX, kEDX, offsetof(Thread, m_alloc_context) + offsetof(gc_alloc_context, alloc_ptr));
+            // add             eax, [edx]alloc_context.m_GCAllocContext.alloc_ptr
+            psl->X86EmitOffsetModRM(0x03, kEAX, kEDX, ee_alloc_context::getAllocPtrFieldOffset());
         }
 
-        // cmp             eax, [edx]Thread.m_alloc_context.alloc_limit
-        psl->X86EmitOffsetModRM(0x3b, kEAX, kEDX, offsetof(Thread, m_alloc_context) + offsetof(gc_alloc_context, alloc_limit));
+        // cmp             eax, [edx]alloc_context.m_CombinedLimit
+        psl->X86EmitOffsetModRM(0x3b, kEAX, kEDX, ee_alloc_context::getCombinedLimitFieldOffset());
 
         // ja              noAlloc
         psl->X86EmitCondJump(noAlloc, X86CondCode::kJA);
 
         // Fill in the allocation and get out.
 
-        // mov             [edx]Thread.m_alloc_context.alloc_ptr, eax
-        psl->X86EmitIndexRegStore(kEDX, offsetof(Thread, m_alloc_context) + offsetof(gc_alloc_context, alloc_ptr), kEAX);
+        // mov             [edx]alloc_context.m_GCAllocContext.alloc_ptr, eax
+        psl->X86EmitIndexRegStore(kEDX, ee_alloc_context::getAllocPtrFieldOffset(), kEAX);
 
         if (flags & (ALIGN8 | SIZE_IN_EAX | ALIGN8OBJ))
         {
@@ -321,9 +277,9 @@ void JIT_TrialAlloc::EmitCore(CPUSTUBLINKER *psl, CodeLabel *noLock, CodeLabel *
             psl->X86EmitIndexRegLoad(kEDX, kECX, offsetof(MethodTable, m_BaseSize));
         }
 
-        // mov             eax, dword ptr [g_global_alloc_context]
+        // mov             eax, dword ptr [g_global_alloc_context.m_GCAllocContext.alloc_ptr]
         psl->Emit8(0xA1);
-        psl->Emit32((int)(size_t)&g_global_alloc_context);
+        psl->Emit32((int)(size_t)&g_global_alloc_context + ee_alloc_context::getAllocPtrFieldOffset());
 
         // Try the allocation.
         // add             edx, eax
@@ -332,17 +288,17 @@ void JIT_TrialAlloc::EmitCore(CPUSTUBLINKER *psl, CodeLabel *noLock, CodeLabel *
         if (flags & (ALIGN8 | ALIGN8OBJ))
             EmitAlignmentRoundup(psl, kEAX, kEDX, flags);      // bump up EDX size by 12 if EAX unaligned (so that we are aligned)
 
-        // cmp             edx, dword ptr [g_global_alloc_context+4]
+        // cmp             edx, dword ptr [g_global_alloc_context.m_CombinedLimit]
         psl->Emit16(0x153b);
-        psl->Emit32((int)(size_t)&g_global_alloc_context + 4);
+        psl->Emit32((int)(size_t)&g_global_alloc_context + ee_alloc_context::getCombinedLimitFieldOffset());
 
         // ja              noAlloc
         psl->X86EmitCondJump(noAlloc, X86CondCode::kJA);
 
         // Fill in the allocation and get out.
-        // mov             dword ptr [g_global_alloc_context], edx
+        // mov             dword ptr [g_global_alloc_context.m_GCAllocContext.alloc_ptr], edx
         psl->Emit16(0x1589);
-        psl->Emit32((int)(size_t)&g_global_alloc_context);
+        psl->Emit32((int)(size_t)&g_global_alloc_context + ee_alloc_context::getAllocPtrFieldOffset());
 
         if (flags & (ALIGN8 | ALIGN8OBJ))
             EmitDummyObject(psl, kEAX, flags);
@@ -380,6 +336,8 @@ void JIT_TrialAlloc::EmitNoAllocCode(CPUSTUBLINKER *psl, Flags flags)
         psl->Emit32(0xFFFFFFFF);
     }
 }
+
+FCDECL1(Object*, JIT_New, CORINFO_CLASS_HANDLE typeHnd_);
 
 void *JIT_TrialAlloc::GenAllocSFast(Flags flags)
 {
@@ -441,9 +399,9 @@ void *JIT_TrialAlloc::GenBox(Flags flags)
     // Here we are at the end of the success case
 
     // Check whether the object contains pointers
-    // test [ecx]MethodTable.m_dwFlags,MethodTable::enum_flag_ContainsPointers
+    // test [ecx]MethodTable.m_dwFlags,MethodTable::enum_flag_ContainsGCPointers
     sl.X86EmitOffsetModRM(0xf7, (X86Reg)0x0, kECX, offsetof(MethodTable, m_dwFlags));
-    sl.Emit32(MethodTable::enum_flag_ContainsPointers);
+    sl.Emit32(MethodTable::enum_flag_ContainsGCPointers);
 
     CodeLabel *pointerLabel = sl.NewCodeLabel();
 
@@ -790,113 +748,6 @@ void *JIT_TrialAlloc::GenAllocString(Flags flags)
 
     return (void *)pStub->GetEntryPoint();
 }
-// For this helper,
-// If bCCtorCheck == true
-//          ECX contains the domain neutral module ID
-//          EDX contains the class domain ID, and the
-// else
-//          ECX contains the domain neutral module ID
-//          EDX is junk
-// shared static base is returned in EAX.
-
-// "init" should be the address of a routine which takes an argument of
-// the module domain ID, the class domain ID, and returns the static base pointer
-void EmitFastGetSharedStaticBase(CPUSTUBLINKER *psl, CodeLabel *init, bool bCCtorCheck, bool bGCStatic)
-{
-    STANDARD_VM_CONTRACT;
-
-    CodeLabel *DoInit = 0;
-    if (bCCtorCheck)
-    {
-        DoInit = psl->NewCodeLabel();
-    }
-
-    // mov eax, ecx
-    psl->Emit8(0x89);
-    psl->Emit8(0xc8);
-
-    if (bCCtorCheck)
-    {
-        // test [eax + edx + offsetof(DomainLocalModule, m_pDataBlob], ClassInitFlags::INITIALIZED_FLAG       // Is class inited
-        _ASSERTE(FitsInI1(ClassInitFlags::INITIALIZED_FLAG));
-        _ASSERTE(FitsInI1(DomainLocalModule::GetOffsetOfDataBlob()));
-
-        BYTE testClassInit[] = { 0xF6, 0x44, 0x10,
-            (BYTE) DomainLocalModule::GetOffsetOfDataBlob(), (BYTE)ClassInitFlags::INITIALIZED_FLAG };
-
-        psl->EmitBytes(testClassInit, sizeof(testClassInit));
-
-        // jz  init                                    // no, init it
-        psl->X86EmitCondJump(DoInit, X86CondCode::kJZ);
-    }
-
-    if (bGCStatic)
-    {
-        // Indirect to get the pointer to the first GC Static
-        psl->X86EmitIndexRegLoad(kEAX, kEAX, (__int32) DomainLocalModule::GetOffsetOfGCStaticPointer());
-    }
-
-    // ret
-    psl->X86EmitReturn(0);
-
-    if (bCCtorCheck)
-    {
-        // DoInit:
-        psl->EmitLabel(DoInit);
-
-        psl->X86EmitPushEBPframe();
-
-#ifdef UNIX_X86_ABI
-#define STACK_ALIGN_PADDING 4
-        // sub esp, STACK_ALIGN_PADDING; to align the stack
-        psl->X86EmitSubEsp(STACK_ALIGN_PADDING);
-#endif // UNIX_X86_ABI
-
-        // push edx (must be preserved)
-        psl->X86EmitPushReg(kEDX);
-
-        // call init
-        psl->X86EmitCall(init, 0);
-
-        // pop edx
-        psl->X86EmitPopReg(kEDX);
-
-#ifdef UNIX_X86_ABI
-        // add esp, STACK_ALIGN_PADDING
-        psl->X86EmitAddEsp(STACK_ALIGN_PADDING);
-#undef STACK_ALIGN_PADDING
-#endif // UNIX_X86_ABI
-
-        psl->X86EmitPopReg(kEBP);
-
-        // ret
-        psl->X86EmitReturn(0);
-    }
-
-}
-
-void *GenFastGetSharedStaticBase(bool bCheckCCtor, bool bGCStatic)
-{
-    STANDARD_VM_CONTRACT;
-
-    CPUSTUBLINKER sl;
-
-    CodeLabel *init;
-    if (bGCStatic)
-    {
-        init = sl.NewExternalCodeLabel((LPVOID)JIT_GetSharedGCStaticBase);
-    }
-    else
-    {
-        init = sl.NewExternalCodeLabel((LPVOID)JIT_GetSharedNonGCStaticBase);
-    }
-
-    EmitFastGetSharedStaticBase(&sl, init, bCheckCCtor, bGCStatic);
-
-    Stub *pStub = sl.Link(SystemDomain::GetGlobalLoaderAllocator()->GetExecutableHeap());
-
-    return (void*) pStub->GetEntryPoint();
-}
 
 #define NUM_WRITE_BARRIERS 6
 
@@ -929,8 +780,6 @@ static const void * const c_rgDebugWriteBarriers[NUM_WRITE_BARRIERS] = {
 };
 #endif // WRITE_BARRIER_CHECK
 
-#define DEBUG_RANDOM_BARRIER_CHECK DbgGetEXETimeStamp() % 7 == 4
-
 /*********************************************************************/
 // Initialize the part of the JIT helpers that require very little of
 // EE infrastructure to be in place.
@@ -961,32 +810,6 @@ void InitJITHelpers1()
     JIT_TrialAlloc::Flags flags = GCHeapUtilities::UseThreadAllocationContexts() ?
         JIT_TrialAlloc::MP_ALLOCATOR : JIT_TrialAlloc::NORMAL;
 
-    // Get CPU features and check for SSE2 support.
-    // This code should eventually probably be moved into codeman.cpp,
-    // where we set the cpu feature flags for the JIT based on CPU type and features.
-    int cpuFeatures[4];
-    __cpuid(cpuFeatures, 1);
-
-    DWORD dwCPUFeaturesECX = cpuFeatures[2];
-    DWORD dwCPUFeaturesEDX = cpuFeatures[3];
-
-    //  If bit 26 (SSE2) is set, then we can use the SSE2 flavors
-    //  and faster x87 implementation for the P4 of Dbl2Lng.
-    if (dwCPUFeaturesEDX & (1<<26))
-    {
-        SetJitHelperFunction(CORINFO_HELP_DBL2INT, JIT_Dbl2IntSSE2);
-        if (dwCPUFeaturesECX & 1)  // check SSE3
-        {
-            SetJitHelperFunction(CORINFO_HELP_DBL2UINT, JIT_Dbl2LngSSE3);
-            SetJitHelperFunction(CORINFO_HELP_DBL2LNG, JIT_Dbl2LngSSE3);
-	}
-        else
-        {
-            SetJitHelperFunction(CORINFO_HELP_DBL2UINT, JIT_Dbl2LngP4x87);   // SSE2 only for signed
-            SetJitHelperFunction(CORINFO_HELP_DBL2LNG, JIT_Dbl2LngP4x87);
-        }
-    }
-
     if (!(TrackAllocationsEnabled()
         || LoggingOn(LF_GCALLOC, LL_INFO10)
 #ifdef _DEBUG
@@ -1014,16 +837,6 @@ void InitJITHelpers1()
         // generated method. Find this workaround in Ecall::Init() in ecall.cpp.
         ECall::DynamicallyAssignFCallImpl((PCODE) JIT_TrialAlloc::GenAllocString(flags), ECall::FastAllocateString);
     }
-
-    // Replace static helpers with faster assembly versions
-    pMethodAddresses[6] = GenFastGetSharedStaticBase(true, true);
-    SetJitHelperFunction(CORINFO_HELP_GETSHARED_GCSTATIC_BASE, pMethodAddresses[6]);
-    pMethodAddresses[7] = GenFastGetSharedStaticBase(true, false);
-    SetJitHelperFunction(CORINFO_HELP_GETSHARED_NONGCSTATIC_BASE, pMethodAddresses[7]);
-    pMethodAddresses[8] = GenFastGetSharedStaticBase(false, true);
-    SetJitHelperFunction(CORINFO_HELP_GETSHARED_GCSTATIC_BASE_NOCTOR, pMethodAddresses[8]);
-    pMethodAddresses[9] = GenFastGetSharedStaticBase(false, false);
-    SetJitHelperFunction(CORINFO_HELP_GETSHARED_NONGCSTATIC_BASE_NOCTOR, pMethodAddresses[9]);
 
     ETW::MethodLog::StubsInitialized(pMethodAddresses, (PVOID *)pHelperNames, ETW_NUM_JIT_HELPERS);
 
@@ -1076,9 +889,8 @@ void InitJITHelpers1()
 
 #ifdef WRITE_BARRIER_CHECK
         // Don't do the fancy optimization just jump to the old one
-        // Use the slow one from time to time in a debug build because
-        // there are some good asserts in the unoptimized one
-        if ((g_pConfig->GetHeapVerifyLevel() & EEConfig::HEAPVERIFY_BARRIERCHECK) || DEBUG_RANDOM_BARRIER_CHECK) {
+        // Use the slow one for write barrier checks build because it has some good asserts
+        if (g_pConfig->GetHeapVerifyLevel() & EEConfig::HEAPVERIFY_BARRIERCHECK) {
             pfunc = &pBufRW[0];
             *pfunc++ = 0xE9;                // JMP c_rgDebugWriteBarriers[iBarrier]
             *((DWORD*) pfunc) = (BYTE*) c_rgDebugWriteBarriers[iBarrier] - (&pBuf[1] + sizeof(DWORD));
@@ -1091,11 +903,6 @@ void InitJITHelpers1()
 #endif
 
     // Leave the patched region writable for StompWriteBarrierEphemeral(), StompWriteBarrierResize()
-
-#ifndef UNIX_X86_ABI
-    // Initialize g_TailCallFrameVptr for JIT_TailCall helper
-    g_TailCallFrameVptr = (void*)TailCallFrame::GetMethodFrameVPtr();
-#endif // !UNIX_X86_ABI
 }
 #pragma warning (default : 4731)
 
@@ -1122,7 +929,7 @@ void ValidateWriteBarrierHelpers()
 
 #ifdef WRITE_BARRIER_CHECK
     // write barrier checking uses the slower helpers that we don't bash so there is no need for validation
-    if ((g_pConfig->GetHeapVerifyLevel() & EEConfig::HEAPVERIFY_BARRIERCHECK) || DEBUG_RANDOM_BARRIER_CHECK)
+    if (g_pConfig->GetHeapVerifyLevel() & EEConfig::HEAPVERIFY_BARRIERCHECK)
         return;
 #endif // WRITE_BARRIER_CHECK
 

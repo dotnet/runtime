@@ -25,8 +25,14 @@ extern EVENTPIPE_TRACE_CONTEXT MICROSOFT_WINDOWS_DOTNETRUNTIME_RUNDOWN_PROVIDER_
 #define NUM_NANOSECONDS_IN_1_MS 1000000
 
 // Sample profiler.
+#ifndef PERFTRACING_DISABLE_THREADS
 static GArray * _sampled_thread_callstacks = NULL;
 static uint32_t _max_sampled_thread_count = 32;
+#else
+MonoProfilerHandle _ep_rt_mono_sampling_profiler_provider;
+static EventPipeEvent *current_sampling_event = NULL;
+static ep_rt_thread_handle_t current_sampling_thread = NULL;
+#endif
 
 // Mono profilers.
 extern MonoProfilerHandle _ep_rt_mono_default_profiler_provider;
@@ -187,7 +193,7 @@ typedef struct _AssemblyEventData AssemblyEventData;
 typedef enum {
 	TYPE_FLAGS_DELEGATE = 0x1,
 	TYPE_FLAGS_FINALIZABLE = 0x2,
-	TYPE_FLAGS_EXTERNALLY_IMPLEMENTED_COM_OBJECT = 0x4,
+	// unused = 0x4,
 	TYPE_FLAGS_ARRAY = 0x8,
 
 	TYPE_FLAGS_ARRAY_RANK_MASK = 0x3F00,
@@ -779,6 +785,8 @@ include_method (MonoMethod *method)
 		return false;
 	} else if (!m_method_is_wrapper (method)) {
 		return true;
+	} else if (method->wrapper_type == MONO_WRAPPER_DYNAMIC_METHOD){
+		return true;
 	} else {
 		WrapperInfo *wrapper = mono_marshal_get_wrapper_info (method);
 		return (wrapper && wrapper->subtype == WRAPPER_SUBTYPE_PINVOKE) ? true : false;
@@ -813,7 +821,7 @@ get_module_event_data (
 		module_data->module_flags = MODULE_FLAGS_MANIFEST_MODULE;
 		if (image && image->dynamic)
 			module_data->module_flags |= MODULE_FLAGS_DYNAMIC_MODULE;
-		if (image && image->aot_module)
+		if (image && image->aot_module && (image->aot_module != AOT_MODULE_NOT_FOUND))
 			module_data->module_flags |= MODULE_FLAGS_NATIVE_MODULE;
 
 		module_data->module_il_path = NULL;
@@ -903,7 +911,7 @@ fire_assembly_events (
 	if (assembly->dynamic)
 		assembly_flags |= ASSEMBLY_FLAGS_DYNAMIC_ASSEMBLY;
 
-	if (assembly->image && assembly->image->aot_module) {
+	if (assembly->image && assembly->image->aot_module && (assembly->image->aot_module != AOT_MODULE_NOT_FOUND)) {
 		assembly_flags |= ASSEMBLY_FLAGS_NATIVE_ASSEMBLY;
 	}
 
@@ -1205,6 +1213,7 @@ ep_rt_mono_walk_managed_stack_for_thread (
 	return true;
 }
 
+#ifndef PERFTRACING_DISABLE_THREADS
 bool
 ep_rt_mono_sample_profiler_write_sampling_event_for_threads (
 	ep_rt_thread_handle_t sampling_thread,
@@ -1303,6 +1312,116 @@ ep_rt_mono_sample_profiler_write_sampling_event_for_threads (
 
 	return true;
 }
+
+void
+ep_rt_mono_sampling_provider_component_init (void)
+{
+}
+
+void
+ep_rt_mono_sampling_provider_component_fini (void)
+{
+}
+
+void
+ep_rt_mono_sample_profiler_enabled (EventPipeEvent *sampling_event)
+{
+}
+
+void
+ep_rt_mono_sample_profiler_disabled (void)
+{
+}
+
+#else // PERFTRACING_DISABLE_THREADS
+
+bool
+ep_rt_mono_sample_profiler_write_sampling_event_for_threads (
+	ep_rt_thread_handle_t sampling_thread,
+	EventPipeEvent *sampling_event)
+{
+	EP_UNREACHABLE ("Not supported by single threaded runtime.");
+}
+
+static void
+method_enter (MonoProfiler *prof, MonoMethod *method, MonoProfilerCallContext *ctx)
+{
+	MonoThreadInfo *thread_info = mono_thread_info_current ();
+	SampleProfileStackWalkData stack_walk_data;
+	SampleProfileStackWalkData *data= &stack_walk_data;
+	THREAD_INFO_TYPE adapter = { { 0 } };
+
+	data->thread_id = ep_rt_thread_id_t_to_uint64_t (mono_thread_info_get_tid (thread_info));
+	data->thread_ip = (uintptr_t)MONO_CONTEXT_GET_IP (&ctx->context);
+	data->payload_data = EP_SAMPLE_PROFILER_SAMPLE_TYPE_ERROR;
+	data->stack_walk_data.stack_contents = &data->stack_contents;
+	data->stack_walk_data.top_frame = true;
+	data->stack_walk_data.async_frame = false;
+	data->stack_walk_data.safe_point_frame = false;
+	data->stack_walk_data.runtime_invoke_frame = false;
+	ep_stack_contents_reset (&data->stack_contents);
+
+	mono_get_eh_callbacks ()->mono_walk_stack_with_ctx (sample_profiler_walk_managed_stack_for_thread_callback, &ctx->context, MONO_UNWIND_SIGNAL_SAFE, &stack_walk_data);
+	if (data->payload_data == EP_SAMPLE_PROFILER_SAMPLE_TYPE_EXTERNAL && (data->stack_walk_data.safe_point_frame || data->stack_walk_data.runtime_invoke_frame)) {
+		data->payload_data = EP_SAMPLE_PROFILER_SAMPLE_TYPE_MANAGED;
+	}
+	if (data->stack_walk_data.top_frame && ep_stack_contents_get_length (&data->stack_contents) == 0) {
+		data->payload_data = EP_SAMPLE_PROFILER_SAMPLE_TYPE_EXTERNAL;
+	}
+
+	if ((data->stack_walk_data.top_frame && data->payload_data == EP_SAMPLE_PROFILER_SAMPLE_TYPE_EXTERNAL) || (data->payload_data != EP_SAMPLE_PROFILER_SAMPLE_TYPE_ERROR && ep_stack_contents_get_length (&data->stack_contents) > 0)) {
+		if (data->stack_walk_data.async_frame) {
+			for (uint32_t frame_count = 0; frame_count < data->stack_contents.next_available_frame; ++frame_count)
+				mono_jit_info_table_find_internal ((gpointer)data->stack_contents.stack_frames [frame_count], TRUE, FALSE);
+		}
+		mono_thread_info_set_tid (&adapter, ep_rt_uint64_t_to_thread_id_t (data->thread_id));
+		uint32_t payload_data = ep_rt_val_uint32_t (data->payload_data);
+		ep_write_sample_profile_event (current_sampling_thread, current_sampling_event, &adapter, &data->stack_contents, (uint8_t *)&payload_data, sizeof (payload_data));
+	}
+}
+
+static MonoProfilerCallInstrumentationFlags
+method_filter (MonoProfiler *prof, MonoMethod *method)
+{
+	// TODO add more instrumentation, something like MINT_SDB_SEQ_POINT
+	return MONO_PROFILER_CALL_INSTRUMENTATION_ENTER;
+}
+
+
+void
+ep_rt_mono_sampling_provider_component_init (void)
+{
+	// in single-threaded mode, we install instrumentation callbacks on the mono profiler, instead of stop-the-world
+	_ep_rt_mono_sampling_profiler_provider = mono_profiler_create (NULL);
+	// this has negative performance impact even when the EP client is not connected!
+	// but it has to be enabled before managed code starts running, because the instrumentation needs to be in place
+	mono_profiler_set_call_instrumentation_filter_callback (_ep_rt_mono_sampling_profiler_provider, method_filter);
+}
+
+void
+ep_rt_mono_sampling_provider_component_fini (void)
+{
+	EP_ASSERT (_ep_rt_mono_sampling_profiler_provider != NULL);
+	mono_profiler_set_call_instrumentation_filter_callback (_ep_rt_mono_sampling_profiler_provider, NULL);
+}
+
+void
+ep_rt_mono_sample_profiler_enabled (EventPipeEvent *sampling_event)
+{
+	current_sampling_event = sampling_event;
+	current_sampling_thread = ep_rt_thread_get_handle ();
+	EP_ASSERT (_ep_rt_mono_sampling_profiler_provider != NULL);
+	mono_profiler_set_method_enter_callback (_ep_rt_mono_sampling_profiler_provider, method_enter);
+}
+
+void
+ep_rt_mono_sample_profiler_disabled (void)
+{
+	EP_ASSERT (_ep_rt_mono_sampling_profiler_provider != NULL);
+	mono_profiler_set_method_enter_callback (_ep_rt_mono_sampling_profiler_provider, NULL);
+}
+
+#endif // PERFTRACING_DISABLE_THREADS
 
 void
 ep_rt_mono_execute_rundown (dn_vector_ptr_t *execution_checkpoints)
@@ -1547,27 +1666,32 @@ bulk_type_log_single_type (
 		val->fixed_sized_data.flags |= TYPE_FLAGS_FINALIZABLE;
 	if (m_class_is_delegate (klass))
 		val->fixed_sized_data.flags |= TYPE_FLAGS_DELEGATE;
-	if (mono_class_is_com_object (klass))
-		val->fixed_sized_data.flags |= TYPE_FLAGS_EXTERNALLY_IMPLEMENTED_COM_OBJECT;
 	val->fixed_sized_data.cor_element_type = (uint8_t)mono_underlying_type->type;
 
 	// Sets val variable sized parameter type data, type_parameters_count, and mono_type_parameters associated
 	// with arrays or generics to be recursively batched in the same ep_rt_mono_log_type_and_parameters call
 	switch (mono_underlying_type->type) {
-	case MONO_TYPE_ARRAY:
 	case MONO_TYPE_SZARRAY:
+	{
+		// FIXME: Previously was handled by below ARRAY block but that is incorrect; this implementation is speculative -kg
+		val->fixed_sized_data.flags |= TYPE_FLAGS_ARRAY;
+		// mono arrays are always arrays of by value types
+		val->mono_type_parameters = mono_mempool_alloc0 (type_logger->mem_pool, 1 * sizeof (MonoType*));
+		*val->mono_type_parameters = m_class_get_byval_arg (m_type_data_get_klass_unchecked (mono_underlying_type));
+		val->type_parameters_count++;
+		break;
+	}
+	case MONO_TYPE_ARRAY:
 	{
 		MonoArrayType *mono_array_type = mono_type_get_array_type (mono_type);
 		val->fixed_sized_data.flags |= TYPE_FLAGS_ARRAY;
-		if (mono_underlying_type->type == MONO_TYPE_ARRAY) {
-			// Only ranks less than TypeFlagsArrayRankMax are supported.
-			// Fortunately TypeFlagsArrayRankMax should be greater than the
-			// number of ranks the type loader will support
-			uint32_t rank = mono_array_type->rank;
-			if (rank < TYPE_FLAGS_ARRAY_RANK_MAX) {
-				rank <<= 8;
-				val->fixed_sized_data.flags |= rank;
-			}
+		// Only ranks less than TypeFlagsArrayRankMax are supported.
+		// Fortunately TypeFlagsArrayRankMax should be greater than the
+		// number of ranks the type loader will support
+		uint32_t rank = mono_array_type->rank;
+		if (rank < TYPE_FLAGS_ARRAY_RANK_MAX) {
+			rank <<= 8;
+			val->fixed_sized_data.flags |= rank;
 		}
 
 		// mono arrays are always arrays of by value types
@@ -1578,7 +1702,7 @@ bulk_type_log_single_type (
 	}
 	case MONO_TYPE_GENERICINST:
 	{
-		MonoGenericInst *class_inst = mono_type->data.generic_class->context.class_inst;
+		MonoGenericInst *class_inst = m_type_data_get_generic_class_unchecked (mono_type)->context.class_inst;
 		val->type_parameters_count = class_inst->type_argc;
 		val->mono_type_parameters = mono_mempool_alloc0 (type_logger->mem_pool, val->type_parameters_count * sizeof (MonoType*));
 		memcpy (val->mono_type_parameters, class_inst->type_argv, val->type_parameters_count * sizeof (MonoType*));
@@ -2152,7 +2276,7 @@ get_assembly_event_data (
 		if (assembly->dynamic)
 			assembly_data->assembly_flags |= ASSEMBLY_FLAGS_DYNAMIC_ASSEMBLY;
 
-		if (assembly->image && assembly->image->aot_module)
+		if (assembly->image && assembly->image->aot_module && (assembly->image->aot_module != AOT_MODULE_NOT_FOUND))
 			assembly_data->assembly_flags |= ASSEMBLY_FLAGS_NATIVE_ASSEMBLY;
 
 		assembly_data->assembly_name = mono_stringify_assembly_name (&assembly->aname);
@@ -4630,26 +4754,10 @@ ep_rt_mono_runtime_provider_init (void)
 void
 ep_rt_mono_runtime_provider_fini (void)
 {
-	if (_sampled_thread_callstacks)
-		g_array_free (_sampled_thread_callstacks, TRUE);
-	_sampled_thread_callstacks = NULL;
-
-	_max_sampled_thread_count = 32;
-
-	g_free (_runtime_helper_compile_method_jitinfo);
-	_runtime_helper_compile_method_jitinfo = NULL;
-
-	if (_runtime_helper_compile_method)
-		mono_free_method (_runtime_helper_compile_method);
-	_runtime_helper_compile_method = NULL;
-
-	g_free (_monitor_enter_method_jitinfo);
-	_monitor_enter_method_jitinfo = NULL;
-	_monitor_enter_method = NULL;
-
-	g_free (_monitor_enter_v4_method_jitinfo);
-	_monitor_enter_v4_method_jitinfo = NULL;
-	_monitor_enter_v4_method = NULL;
+	// We were cleaning up resources (mutexes, tls data, etc) here but it races with
+	// other threads on shutdown. Skipping cleanup to prevent failures. If unloading
+	// and not leaking these threads becomes a priority we will have to reimplement
+	// cleanup here.
 
 	if (_ep_rt_mono_default_profiler_provider) {
 		mono_profiler_set_jit_begin_callback (_ep_rt_mono_default_profiler_provider, NULL);
@@ -4680,14 +4788,6 @@ ep_rt_mono_runtime_provider_fini (void)
 	_gc_heap_dump_requests = 0;
 	_gc_heap_dump_count = 0;
 	_gc_heap_dump_trigger_count = 0;
-
-	dn_vector_dispose (&_gc_heap_dump_requests_data);
-	memset (&_gc_heap_dump_requests_data, 0, sizeof (_gc_heap_dump_requests_data));
-
-	dn_umap_dispose (&_gc_roots_table);
-	memset (&_gc_roots_table, 0, sizeof (_gc_roots_table));
-
-	ep_rt_spin_lock_free (&_gc_lock);
 }
 
 void

@@ -41,6 +41,14 @@
              Link="Common\System\Net\SocketProtocolSupportPal.Unix.cs" />
     <Compile Include="$(CommonPath)System\Net\NetworkInformation\UnixCommandLinePing.cs"
              Link="Common\System\Net\NetworkInformation\UnixCommandLinePing.cs" />
+    <Compile Include="$(CommonPath)System\Net\IPEndPointExtensions.cs"
+             Link="Common\System\Net\IPEndPointExtensions.cs" />
+    <Compile Include="$(CommonPath)System\Net\SocketAddressPal.Unix.cs"
+             Link="Common\System\Net\SocketAddressPal.Unix.cs" />
+    <Compile Include="$(CommonPath)System\Net\IPAddressParserStatics.cs"
+                 Link="Common\System\Net\IPAddressParserStatics.cs" />
+    <Compile Include="$(CommonPath)System\Net\Sockets\SocketErrorPal.Unix.cs"
+                 Link="Common\System\Net\Sockets\SocketErrorPal.Unix" />
     <!-- Interop -->
     <Compile Include="$(CommonPath)Interop\Unix\Interop.DefaultPathBufferSize.cs"
              Link="Common\Interop\Unix\Interop.DefaultPathBufferSize.cs" />
@@ -48,8 +56,14 @@
              Link="Common\Interop\Unix\Interop.Errors.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\Interop.Libraries.cs"
              Link="Common\Interop\Unix\Interop.Libraries.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.IOVector.cs"
+             Link="Common\Interop\Unix\System.Native\Interop.IOVector.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.ReceiveSocketError.cs"
+             Link="Common\Interop\Unix\System.Native\Interop.ReceiveSocketError.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Close.cs"
              Link="Common\Interop\Unix\System.Native\Interop.Close.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.MessageHeader.cs"
+             Link="Common\Interop\Unix\System.Native\Interop.MessageHeader.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Socket.cs"
              Link="Common\Interop\Unix\System.Native\Interop.Socket.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.SocketAddress.cs"
@@ -99,6 +113,7 @@
 
   <ItemGroup>
     <Reference Include="Microsoft.Win32.Primitives" />
+    <Reference Include="System.Collections" />
     <Reference Include="System.ComponentModel.EventBasedAsync" />
     <Reference Include="System.ComponentModel.Primitives" />
     <Reference Include="System.Diagnostics.Tracing" />

@@ -48,6 +48,9 @@ End_Orphan_3:
 } catch [mscorlib]System.OverflowException {
   pop
   leave the_end
+} catch [mscorlib]System.DivideByZeroException {
+  pop
+  leave the_end
 }
 the_end:
 ldc.i4 100

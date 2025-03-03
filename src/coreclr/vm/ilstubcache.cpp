@@ -55,7 +55,7 @@ void CreateModuleIndependentSignature(LoaderHeap* pCreationHeap,
     SigPointer  sigPtr(pSig, cbSig);
 
     SigBuilder sigBuilder;
-    sigPtr.ConvertToInternalSignature(pSigModule, pTypeContext, &sigBuilder);
+    sigPtr.ConvertToInternalSignature(pSigModule, pTypeContext, &sigBuilder, /* bSkipCustomModifier */ FALSE);
 
     DWORD cbNewSig;
     PVOID pConvertedSig = sigBuilder.GetSignature(&cbNewSig);
@@ -146,12 +146,9 @@ namespace
             case DynamicMethodDesc::StubNativeToCLRInterop: return "IL_STUB_ReversePInvoke";
             case DynamicMethodDesc::StubCOMToCLRInterop:    return "IL_STUB_COMtoCLR";
             case DynamicMethodDesc::StubStructMarshalInterop: return "IL_STUB_StructMarshal";
-#ifdef FEATURE_ARRAYSTUB_AS_IL
             case DynamicMethodDesc::StubArrayOp:            return "IL_STUB_Array";
-#endif
-#ifdef FEATURE_MULTICASTSTUB_AS_IL
             case DynamicMethodDesc::StubMulticastDelegate:  return "IL_STUB_MulticastDelegate_Invoke";
-#endif
+            case DynamicMethodDesc::StubDelegateInvokeMethod:  return "IL_STUB_Delegate_Invoke";
 #ifdef FEATURE_INSTANTIATINGSTUB_AS_IL
             case DynamicMethodDesc::StubUnboxingIL:         return "IL_STUB_UnboxingStub";
             case DynamicMethodDesc::StubInstantiating:      return "IL_STUB_InstantiatingStub";
@@ -159,7 +156,8 @@ namespace
             case DynamicMethodDesc::StubWrapperDelegate:    return "IL_STUB_WrapperDelegate_Invoke";
             case DynamicMethodDesc::StubTailCallStoreArgs:  return "IL_STUB_StoreTailCallArgs";
             case DynamicMethodDesc::StubTailCallCallTarget: return "IL_STUB_CallTailCallTarget";
-            case DynamicMethodDesc::StubVirtualStaticMethodDispatch: return "IL_STUB_bVirtualStaticMethodDispatch";
+            case DynamicMethodDesc::StubVirtualStaticMethodDispatch: return "IL_STUB_VirtualStaticMethodDispatch";
+            case DynamicMethodDesc::StubDelegateShuffleThunk: return "IL_STUB_DelegateShuffleThunk";
             default:
                 UNREACHABLE_MSG("Unknown stub type");
         }
@@ -197,7 +195,7 @@ MethodDesc* ILStubCache::CreateNewMethodDesc(LoaderHeap* pCreationHeap, MethodTa
     // the no metadata part of the method desc
     pMD->m_pszMethodName = (PTR_CUTF8)"IL_STUB";
     pMD->InitializeFlags(DynamicMethodDesc::FlagPublic | DynamicMethodDesc::FlagIsILStub);
-    pMD->SetTemporaryEntryPoint(pMT->GetLoaderAllocator(), pamTracker);
+    pMD->SetTemporaryEntryPoint(pamTracker);
 
     //
     // convert signature to a compatible signature if needed
@@ -236,20 +234,21 @@ MethodDesc* ILStubCache::CreateNewMethodDesc(LoaderHeap* pCreationHeap, MethodTa
 #endif // _DEBUG
     pMD->m_pResolver = new (pMD->m_pResolver) ILStubResolver();
 
-#ifdef FEATURE_ARRAYSTUB_AS_IL
     if (SF_IsArrayOpStub(dwStubFlags))
     {
         pMD->SetILStubType(DynamicMethodDesc::StubArrayOp);
     }
     else
-#endif
-#ifdef FEATURE_MULTICASTSTUB_AS_IL
     if (SF_IsMulticastDelegateStub(dwStubFlags))
     {
         pMD->SetILStubType(DynamicMethodDesc::StubMulticastDelegate);
     }
     else
-#endif
+    if (SF_IsDelegateInvokeMethod(dwStubFlags))
+    {
+        pMD->SetILStubType(DynamicMethodDesc::StubDelegateInvokeMethod);
+    }
+    else
     if (SF_IsWrapperDelegateStub(dwStubFlags))
     {
         pMD->SetILStubType(DynamicMethodDesc::StubWrapperDelegate);
@@ -300,6 +299,16 @@ MethodDesc* ILStubCache::CreateNewMethodDesc(LoaderHeap* pCreationHeap, MethodTa
         pMD->SetILStubType(DynamicMethodDesc::StubStructMarshalInterop);
     }
     else
+    if (SF_IsVirtualStaticMethodDispatchStub(dwStubFlags))
+    {
+        pMD->SetILStubType(DynamicMethodDesc::StubVirtualStaticMethodDispatch);
+    }
+    else
+    if (SF_IsDelegateShuffleThunk(dwStubFlags))
+    {
+        pMD->SetILStubType(DynamicMethodDesc::StubDelegateShuffleThunk);
+    }
+    else
     {
         // mark certain types of stub MDs with random flags so ILStubManager recognizes them
         if (SF_IsReverseStub(dwStubFlags))
@@ -320,13 +329,7 @@ MethodDesc* ILStubCache::CreateNewMethodDesc(LoaderHeap* pCreationHeap, MethodTa
         }
     }
 
-    if (SF_IsVirtualStaticMethodDispatchStub(dwStubFlags))
-    {
-        pMD->SetILStubType(DynamicMethodDesc::StubVirtualStaticMethodDispatch);
-    }
-
 // if we made it this far, we can set a more descriptive stub name
-#ifdef FEATURE_ARRAYSTUB_AS_IL
     if (SF_IsArrayOpStub(dwStubFlags))
     {
         switch(dwStubFlags)
@@ -341,7 +344,6 @@ MethodDesc* ILStubCache::CreateNewMethodDesc(LoaderHeap* pCreationHeap, MethodTa
         }
     }
     else
-#endif
     {
         pMD->m_pszMethodName = GetStubMethodName(pMD->GetILStubType());
     }
@@ -457,9 +459,9 @@ MethodDesc* ILStubCache::InsertStubMethodDesc(MethodDesc *pMD, ILStubHashBlob* p
 //
 // JIT'ed IL stubs
 //
-//    - The ILStubCache is per-BaseDomain
+//    - The ILStubCache is per-LoaderAllocator
 //
-//    - Each BaseDomain's ILStubCache will lazily create a "minimal MethodTable" to
+//    - Each LoaderAllocator's ILStubCache will lazily create a "minimal MethodTable" to
 //      serve as the home for IL stub MethodDescs
 //
 //    - The created MethodTables will use the Module belonging to one of the
@@ -473,10 +475,7 @@ MethodDesc* ILStubCache::InsertStubMethodDesc(MethodDesc *pMD, ILStubHashBlob* p
 //
 // It's important to point out that the Module we latch onto here has no knowledge
 // of the MethodTable that we've just "added" to it.  There only exists a "back
-// pointer" to the Module from the MethodTable itself.  So we're really only using
-// that module to answer the question of what BaseDomain the MethodTable lives in.
-// So as long as the BaseDomain for that module is the same as the BaseDomain the
-// ILStubCache lives in, I think we have a fairly consistent story here.
+// pointer" to the Module from the MethodTable itself.
 //
 // We're relying on the fact that a VASigCookie may only mention types within the
 // corresponding module used to qualify the signature and the fact that interop
@@ -485,14 +484,7 @@ MethodDesc* ILStubCache::InsertStubMethodDesc(MethodDesc *pMD, ILStubHashBlob* p
 // ELEMENT_TYPE_INTERNAL, which may refer to any type.
 //
 // We can only access E_T_INTERNAL through LCG, which does not permit referring
-// to types in other BaseDomains.
-//
-//
-// Places for improvement:
-//
-//    - allow NGEN'ing of CALLI pinvoke and vararg pinvoke
-//
-//    - pre-populate the per-BaseDomain cache with IL stubs from  NGEN'ed image
+// to types in other AppDomains.
 //
 
 MethodDesc* ILStubCache::GetStubMethodDesc(
@@ -500,8 +492,10 @@ MethodDesc* ILStubCache::GetStubMethodDesc(
     ILStubHashBlob* pHashBlob,
     DWORD dwStubFlags,
     Module* pSigModule,
+    Module* pSigLoaderModule,
     PCCOR_SIGNATURE pSig,
     DWORD cbSig,
+    SigTypeContext* pTypeContext,
     AllocMemTracker* pamTracker,
     bool& bILStubCreator,
     MethodDesc *pLastMD)
@@ -538,22 +532,23 @@ MethodDesc* ILStubCache::GetStubMethodDesc(
         // Couldn't find it, let's make a new one.
         //
 
-        Module *pContainingModule = pSigModule;
-        if (pTargetMD != NULL)
+        if (pSigLoaderModule == NULL)
         {
-            // loader module may be different from signature module for generic targets
-            pContainingModule = pTargetMD->GetLoaderModule();
+            pSigLoaderModule = (pTargetMD != NULL) ? pTargetMD->GetLoaderModule() : pSigModule;
         }
-
-        MethodTable *pStubMT = GetOrCreateStubMethodTable(pContainingModule);
 
         SigTypeContext typeContext;
-        if (pTargetMD != NULL)
+        if (pTypeContext == NULL)
         {
-            SigTypeContext::InitTypeContext(pTargetMD, &typeContext);
+            if (pTargetMD != NULL)
+            {
+                SigTypeContext::InitTypeContext(pTargetMD, &typeContext);
+            }
+            pTypeContext = &typeContext;
         }
 
-        pMD = ILStubCache::CreateNewMethodDesc(m_pAllocator->GetHighFrequencyHeap(), pStubMT, dwStubFlags, pSigModule, pSig, cbSig, &typeContext, pamTracker);
+        MethodTable *pStubMT = GetOrCreateStubMethodTable(pSigLoaderModule);
+        pMD = ILStubCache::CreateNewMethodDesc(m_pAllocator->GetHighFrequencyHeap(), pStubMT, dwStubFlags, pSigModule, pSig, cbSig, pTypeContext, pamTracker);
 
         if (SF_IsSharedStub(dwStubFlags))
         {

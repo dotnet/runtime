@@ -1,7 +1,7 @@
 <Project>
   <PropertyGroup>
-    <MonoTargetsTasksAssemblyPath Condition="'$(MSBuildRuntimeType)' == 'Core'">$(MSBuildThisFileDirectory)..\tasks\${TargetFrameworkForNETCoreTasks}\MonoTargetsTasks.dll</MonoTargetsTasksAssemblyPath>
-    <MonoTargetsTasksAssemblyPath Condition="'$(MSBuildRuntimeType)' != 'Core'">$(MSBuildThisFileDirectory)..\tasks\${TargetFrameworkForNETFrameworkTasks}\MonoTargetsTasks.dll</MonoTargetsTasksAssemblyPath>
+    <MonoTargetsTasksAssemblyPath Condition="'$(MSBuildRuntimeType)' == 'Core'">$(MSBuildThisFileDirectory)..\tasks\${NetCoreAppToolCurrent}\MonoTargetsTasks.dll</MonoTargetsTasksAssemblyPath>
+    <MonoTargetsTasksAssemblyPath Condition="'$(MSBuildRuntimeType)' != 'Core'">$(MSBuildThisFileDirectory)..\tasks\${NetFrameworkToolCurrent}\MonoTargetsTasks.dll</MonoTargetsTasksAssemblyPath>
   </PropertyGroup>
   <!-- ILStrip -->
   <UsingTask TaskName="ILStrip" AssemblyFile="$(MonoTargetsTasksAssemblyPath)" />

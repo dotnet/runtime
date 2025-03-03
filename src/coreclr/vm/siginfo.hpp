@@ -49,6 +49,8 @@ unsigned GetSizeForCorElementType(CorElementType etyp);
 
 class SigBuilder;
 class ArgDestination;
+class TokenLookupMap;
+class DynamicResolver;
 
 typedef const struct HardCodedMetaSig *LPHARDCODEDMETASIG;
 
@@ -83,7 +85,7 @@ class SigPointer : public SigParser
 
 public:
     // Constructor.
-    SigPointer() { LIMITED_METHOD_DAC_CONTRACT; }
+    SigPointer() : SigParser() { LIMITED_METHOD_DAC_CONTRACT; }
 
     // Copy constructor.
     SigPointer(const SigPointer & sig) : SigParser(sig)
@@ -277,7 +279,7 @@ public:
         //------------------------------------------------------------------------
         // Tests for the existence of a custom modifier
         //------------------------------------------------------------------------
-        BOOL HasCustomModifier(Module *pModule, LPCSTR szModName, CorElementType cmodtype) const;
+        BOOL HasCustomModifier(Module *pModule, LPCSTR szModName, CorElementType cmodtype, Module** pModifierScope = NULL, mdToken* pModifierType = NULL) const;
 
         //------------------------------------------------------------------------
         // Tests for ELEMENT_TYPE_CLASS or ELEMENT_TYPE_VALUETYPE followed by a TypeDef,
@@ -394,7 +396,7 @@ public:
 
     Substitution(
         ModuleBase *         pModuleArg,
-        const SigPointer &   sigInst,
+        SigPointer           sigInst,
         const Substitution * pNextSubstitution)
     {
         LIMITED_METHOD_CONTRACT;
@@ -944,6 +946,14 @@ class MetaSig
         // can never be ELEMENT_TYPE_BYREF.
         //------------------------------------------------------------------
         CorElementType GetByRefType(TypeHandle* pTy) const;
+
+        //------------------------------------------------------------------
+        // Consume the custom modifiers, if any, in the current signature
+        // and update it.
+        // This is a non destructive operation if the current signature is not
+        // pointing at a sequence of ELEMENT_TYPE_CMOD_REQD or ELEMENT_TYPE_CMOD_OPT.
+        //------------------------------------------------------------------
+        static void ConsumeCustomModifiers(PCCOR_SIGNATURE& pSig, PCCOR_SIGNATURE pEndSig);
 
         // Struct used to capture in/out state during the comparison
         // of element types.

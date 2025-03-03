@@ -395,75 +395,29 @@ namespace System.Tests
         {
             Uri uri2 = obj as Uri;
 
-            if (uri1 != null)
+            if (uri1 is not null)
             {
                 Assert.Equal(expected, uri1.Equals(obj));
 
-                if (uri2 != null && expected)
+                if (uri2 is not null)
                 {
-                    Assert.Equal(uri1.GetHashCode(), uri2.GetHashCode());
+                    Assert.Equal(expected, uri1.Equals(uri2));
+                    Assert.Equal(expected, uri2.Equals(uri1));
+
+                    if (expected)
+                    {
+                        Assert.Equal(uri1.GetHashCode(), uri2.GetHashCode());
+                    }
                 }
             }
 
-            if (!(obj is string))
+            if (obj is not string)
             {
                 Assert.Equal(expected, uri1 == uri2);
+                Assert.Equal(expected, uri2 == uri1);
                 Assert.Equal(!expected, uri1 != uri2);
+                Assert.Equal(!expected, uri2 != uri1);
             }
-        }
-
-        [Theory]
-        [InlineData("", "")]
-        [InlineData("Hello", "Hello")]
-        [InlineData("He\\l/lo", "He%5Cl%2Flo")]
-        [InlineData("\uD800\uDC00", "%F0%90%80%80")] // With surrogate pair
-        public void EscapeDataString(string stringToEscape, string expected)
-        {
-            Assert.Equal(expected, Uri.EscapeDataString(stringToEscape));
-        }
-
-        [Fact]
-        public void EscapeDataString_InvalidSurrogatePairs()
-        {
-            EscapeDataString("\uD800", "%EF%BF%BD");
-            EscapeDataString("abc\uD800", "abc%EF%BF%BD");
-            EscapeDataString("abc\uD800\uD800abc", "abc%EF%BF%BD%EF%BF%BDabc");
-            EscapeDataString("\xD800\xD800\xDFFF", "%EF%BF%BD%F0%90%8F%BF");
-        }
-
-        [Fact]
-        public void EscapeDataString_Long_Success()
-        {
-            string s;
-            const int LongCount = 65520 + 1;
-
-            s = new string('a', LongCount);
-            Assert.Equal(s, Uri.EscapeDataString(s));
-
-            s = new string('/', LongCount);
-            Assert.Equal(string.Concat(Enumerable.Repeat("%2F", LongCount)), Uri.EscapeDataString(s));
-        }
-
-        [Fact]
-        public void EscapeDataString_NullArgument()
-        {
-            AssertExtensions.Throws<ArgumentNullException>("stringToEscape", () => Uri.EscapeDataString(null));
-        }
-
-        [Theory]
-        [InlineData("", "")]
-        [InlineData("Hello", "Hello")]
-        [InlineData("He%5Cl/lo", "He\\l/lo")]
-        [InlineData("%F0%90%80%80", "\uD800\uDC00")] // Surrogate pair
-        public void UnescapeDataString(string stringToUnEscape, string expected)
-        {
-            Assert.Equal(expected, Uri.UnescapeDataString(stringToUnEscape));
-        }
-
-        [Fact]
-        public void UnescapedDataString_Null_ThrowsArgumentNullException()
-        {
-            AssertExtensions.Throws<ArgumentNullException>("stringToUnescape", () => Uri.UnescapeDataString(null)); // StringToUnescape is null
         }
 
         [Theory]

@@ -30,7 +30,7 @@
 // assertions. The problem is that the real LookupAssembly can throw an OOM
 // simply because it can't allocate scratch space. For the sake of asserting,
 // we can treat those as successful lookups.
-BOOL UnsafeVerifyLookupAssembly(AssemblySpecBindingCache *pCache, AssemblySpec *pSpec, DomainAssembly *pComparator)
+BOOL UnsafeVerifyLookupAssembly(AssemblySpecBindingCache *pCache, AssemblySpec *pSpec, Assembly *pComparator)
 {
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_TRIGGERS;
@@ -148,7 +148,7 @@ AssemblySpecHash::~AssemblySpecHash()
 
 HRESULT AssemblySpec::InitializeSpecInternal(mdToken kAssemblyToken,
                                   IMDInternalImport *pImport,
-                                  DomainAssembly *pStaticParent)
+                                  Assembly *pStaticParent)
 {
     CONTRACTL
     {
@@ -295,73 +295,6 @@ void AssemblySpec::InitializeAssemblyNameRef(_In_ BINDER_SPACE::AssemblyName* as
     spec.AssemblyNameInit(assemblyNameRef);
 }
 
-
-// Check if the supplied assembly's public key matches up with the one in the Spec, if any
-// Throws an appropriate exception in case of a mismatch
-void AssemblySpec::MatchPublicKeys(Assembly *pAssembly)
-{
-    CONTRACTL
-    {
-        INSTANCE_CHECK;
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-    // Check that the public keys are the same as in the AR.
-    if (!IsStrongNamed())
-        return;
-
-    const void *pbPublicKey;
-    DWORD cbPublicKey;
-    pbPublicKey = pAssembly->GetPublicKey(&cbPublicKey);
-    if (cbPublicKey == 0)
-        ThrowHR(FUSION_E_PRIVATE_ASM_DISALLOWED);
-
-    if (IsAfPublicKey(m_dwFlags))
-    {
-        if ((m_cbPublicKeyOrToken != cbPublicKey) ||
-            memcmp(m_pbPublicKeyOrToken, pbPublicKey, m_cbPublicKeyOrToken))
-        {
-            ThrowHR(FUSION_E_REF_DEF_MISMATCH);
-        }
-    }
-    else
-    {
-        // Ref has a token
-        StrongNameToken strongNameToken;
-
-        IfFailThrow(StrongNameTokenFromPublicKey((BYTE*)pbPublicKey,
-            cbPublicKey,
-            &strongNameToken));
-
-        if ((m_cbPublicKeyOrToken != StrongNameToken::SIZEOF_TOKEN) ||
-            memcmp(m_pbPublicKeyOrToken, &strongNameToken, StrongNameToken::SIZEOF_TOKEN))
-        {
-            ThrowHR(FUSION_E_REF_DEF_MISMATCH);
-        }
-    }
-}
-
-Assembly *AssemblySpec::LoadAssembly(FileLoadLevel targetLevel, BOOL fThrowOnFileNotFound)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-    DomainAssembly * pDomainAssembly = LoadDomainAssembly(targetLevel, fThrowOnFileNotFound);
-    if (pDomainAssembly == NULL) {
-        _ASSERTE(!fThrowOnFileNotFound);
-        return NULL;
-    }
-    return pDomainAssembly->GetAssembly();
-}
-
 AssemblyBinder* AssemblySpec::GetBinderFromParentAssembly(AppDomain *pDomain)
 {
     CONTRACTL
@@ -374,12 +307,12 @@ AssemblyBinder* AssemblySpec::GetBinderFromParentAssembly(AppDomain *pDomain)
     CONTRACTL_END;
 
     AssemblyBinder *pParentAssemblyBinder = NULL;
-    DomainAssembly *pParentDomainAssembly = GetParentAssembly();
+    Assembly *pParentAssembly = GetParentAssembly();
 
-    if(pParentDomainAssembly != NULL)
+    if(pParentAssembly != NULL)
     {
         // Get the PEAssembly associated with the parent's domain assembly
-        PEAssembly *pParentPEAssembly = pParentDomainAssembly->GetPEAssembly();
+        PEAssembly *pParentPEAssembly = pParentAssembly->GetPEAssembly();
         pParentAssemblyBinder = pParentPEAssembly->GetAssemblyBinder();
     }
 
@@ -421,10 +354,10 @@ AssemblyBinder* AssemblySpec::GetBinderFromParentAssembly(AppDomain *pDomain)
     return pParentAssemblyBinder;
 }
 
-DomainAssembly *AssemblySpec::LoadDomainAssembly(FileLoadLevel targetLevel,
-                                                 BOOL fThrowOnFileNotFound)
+Assembly *AssemblySpec::LoadAssembly(FileLoadLevel targetLevel,
+                                     BOOL fThrowOnFileNotFound)
 {
-    CONTRACT(DomainAssembly *)
+    CONTRACT(Assembly *)
     {
         INSTANCE_CHECK;
         THROWS;
@@ -439,23 +372,21 @@ DomainAssembly *AssemblySpec::LoadDomainAssembly(FileLoadLevel targetLevel,
     ETWOnStartup (LoaderCatchCall_V1, LoaderCatchCallEnd_V1);
     AppDomain* pDomain = GetAppDomain();
 
-    DomainAssembly* pAssembly = pDomain->FindCachedAssembly(this);
-    if (pAssembly)
+    Assembly* assembly = pDomain->FindCachedAssembly(this);
+    if (assembly)
     {
         BinderTracing::AssemblyBindOperation bindOperation(this);
-        bindOperation.SetResult(pAssembly->GetPEAssembly(), true /*cached*/);
+        bindOperation.SetResult(assembly->GetPEAssembly(), true /*cached*/);
 
-        pDomain->LoadDomainAssembly(pAssembly, targetLevel);
-        RETURN pAssembly;
+        pDomain->LoadAssembly(assembly, targetLevel);
+        RETURN assembly;
     }
 
     PEAssemblyHolder pFile(pDomain->BindAssemblySpec(this, fThrowOnFileNotFound));
     if (pFile == NULL)
         RETURN NULL;
 
-    pAssembly = pDomain->LoadDomainAssembly(this, pFile, targetLevel);
-
-    RETURN pAssembly;
+    RETURN pDomain->LoadAssembly(this, pFile, targetLevel);
 }
 
 /* static */
@@ -730,10 +661,10 @@ BOOL AssemblySpecBindingCache::Contains(AssemblySpec *pSpec)
     return (LookupInternal(pSpec, TRUE) != (AssemblyBinding *) INVALIDENTRY);
 }
 
-DomainAssembly *AssemblySpecBindingCache::LookupAssembly(AssemblySpec *pSpec,
+Assembly *AssemblySpecBindingCache::LookupAssembly(AssemblySpec *pSpec,
                                                          BOOL fThrow /*=TRUE*/)
 {
-    CONTRACT(DomainAssembly *)
+    CONTRACT(Assembly *)
     {
         INSTANCE_CHECK;
         if (fThrow) {
@@ -899,7 +830,7 @@ private:
 // 2 -> 4
 
 
-BOOL AssemblySpecBindingCache::StoreAssembly(AssemblySpec *pSpec, DomainAssembly *pAssembly)
+BOOL AssemblySpecBindingCache::StoreAssembly(AssemblySpec *pSpec, Assembly *pAssembly)
 {
     CONTRACT(BOOL)
     {
@@ -907,8 +838,7 @@ BOOL AssemblySpecBindingCache::StoreAssembly(AssemblySpec *pSpec, DomainAssembly
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
-        POSTCONDITION(UnsafeContains(this, pSpec));
-        POSTCONDITION(UnsafeVerifyLookupAssembly(this, pSpec, pAssembly));
+        POSTCONDITION((!RETVAL) || (UnsafeContains(this, pSpec) && UnsafeVerifyLookupAssembly(this, pSpec, pAssembly)));
         INJECT_FAULT(COMPlusThrowOM(););
     }
     CONTRACT_END;
@@ -936,13 +866,13 @@ BOOL AssemblySpecBindingCache::StoreAssembly(AssemblySpec *pSpec, DomainAssembly
         }
 
         entry = abHolder.CreateAssemblyBinding(pHeap);
-        entry->Init(pSpec,pAssembly->GetPEAssembly(),pAssembly,NULL,pHeap, abHolder.GetPamTracker());
+        entry->Init(pSpec, pAssembly->GetPEAssembly(), pAssembly, NULL, pHeap, abHolder.GetPamTracker());
 
         m_map.InsertValue(key, entry);
 
         abHolder.SuppressRelease();
 
-        STRESS_LOG2(LF_CLASSLOADER,LL_INFO10,"StorePEAssembly (StoreAssembly): Add cached entry (%p) with PEAssembly %p",entry,pAssembly->GetPEAssembly());
+        STRESS_LOG2(LF_CLASSLOADER,LL_INFO10,"StorePEAssembly (StoreAssembly): Add cached entry (%p) with PEAssembly %p\n",entry,pAssembly->GetPEAssembly());
         RETURN TRUE;
     }
     else
@@ -1092,7 +1022,7 @@ BOOL AssemblySpecBindingCache::StoreException(AssemblySpec *pSpec, Exception* pE
         m_map.InsertValue(key, entry);
         abHolder.SuppressRelease();
 
-        STRESS_LOG2(LF_CLASSLOADER,LL_INFO10,"StorePEAssembly (StoreException): Add cached entry (%p) with exception %p",entry,pEx);
+        STRESS_LOG2(LF_CLASSLOADER,LL_INFO10,"StorePEAssembly (StoreException): Add cached entry (%p) with exception %p\n",entry,pEx);
         RETURN TRUE;
     }
     else
@@ -1118,7 +1048,7 @@ BOOL AssemblySpecBindingCache::StoreException(AssemblySpec *pSpec, Exception* pE
     }
 }
 
-BOOL AssemblySpecBindingCache::RemoveAssembly(DomainAssembly* pAssembly)
+BOOL AssemblySpecBindingCache::RemoveAssembly(Assembly* pAssembly)
 {
     CONTRACT(BOOL)
     {
@@ -1170,7 +1100,7 @@ BOOL AssemblySpecBindingCache::CompareSpecs(UPTR u1, UPTR u2)
     return a1->CompareEx(a2);
 }
 
-DomainAssembly * AssemblySpec::GetParentAssembly()
+Assembly * AssemblySpec::GetParentAssembly()
 {
     LIMITED_METHOD_CONTRACT;
     return m_pParentAssembly;

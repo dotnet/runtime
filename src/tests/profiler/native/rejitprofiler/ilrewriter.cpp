@@ -4,6 +4,8 @@
 #define _ASSERTE(e) ((void)0)
 
 #include <cstring>
+#include <cstdlib>
+#include <corhlpr.h>
 #include <corhlpr.cpp>
 #include "ilrewriter.h"
 #include "sigparse.h"

@@ -41,7 +41,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
  *    This should only be needed if some basic block are deleted/out of order,
  *    etc.
  *  Also,
- *  o At every assignment to a variable, siCheckVarScope() adds an open scope
+ *  o At every store to a variable, siCheckVarScope() adds an open scope
  *    for the variable being assigned to.
  *  o UpdateLifeVar() calls siUpdate() which closes scopes for variables which
  *    are not live anymore.
@@ -301,6 +301,9 @@ void CodeGenInterface::siVarLoc::siFillStackVarLoc(
         case TYP_LONG:
         case TYP_DOUBLE:
 #endif // TARGET_64BIT
+#if defined(FEATURE_MASKED_HW_INTRINSICS)
+        case TYP_MASK:
+#endif // FEATURE_MASKED_HW_INTRINSICS
 #if FEATURE_IMPLICIT_BYREFS
             // In the AMD64 ABI we are supposed to pass a struct by reference when its
             // size is not 1, 2, 4 or 8 bytes in size. During fgMorph, the compiler modifies
@@ -433,6 +436,9 @@ void CodeGenInterface::siVarLoc::siFillRegisterVarLoc(
         case TYP_SIMD32:
         case TYP_SIMD64:
 #endif // TARGET_XARCH
+#if defined(FEATURE_MASKED_HW_INTRINSICS)
+        case TYP_MASK:
+#endif // FEATURE_MASKED_HW_INTRINSICS
         {
             this->vlType = VLT_REG_FP;
 
@@ -784,11 +790,9 @@ void CodeGenInterface::VariableLiveKeeper::VariableLiveDescriptor::startLiveRang
     else
     {
         JITDUMP("Debug: New V%02u debug range: %s\n", m_varNum,
-                m_VariableLiveRanges->empty()
-                    ? "first"
-                    : siVarLoc::Equals(&varLocation, &(m_VariableLiveRanges->back().m_VarLocation))
-                          ? "new var or location"
-                          : "not adjacent");
+                m_VariableLiveRanges->empty()                                                   ? "first"
+                : siVarLoc::Equals(&varLocation, &(m_VariableLiveRanges->back().m_VarLocation)) ? "new var or location"
+                                                                                                : "not adjacent");
         // Creates new live range with invalid end
         m_VariableLiveRanges->emplace_back(varLocation, emitLocation(), emitLocation());
         m_VariableLiveRanges->back().m_StartEmitLocation.CaptureLocation(emit);
@@ -1445,12 +1449,10 @@ void CodeGen::siInit()
 
     assert(compiler->opts.compScopeInfo);
 
-#if defined(FEATURE_EH_FUNCLETS)
     if (compiler->info.compVarScopesCount > 0)
     {
         siInFuncletRegion = false;
     }
-#endif // FEATURE_EH_FUNCLETS
 
     siLastEndOffs = 0;
 
@@ -1478,7 +1480,6 @@ void CodeGen::siBeginBlock(BasicBlock* block)
         return;
     }
 
-#if defined(FEATURE_EH_FUNCLETS)
     if (siInFuncletRegion)
     {
         return;
@@ -1494,7 +1495,6 @@ void CodeGen::siBeginBlock(BasicBlock* block)
 
         return;
     }
-#endif // FEATURE_EH_FUNCLETS
 
 #ifdef DEBUG
     if (verbose)
@@ -1553,44 +1553,43 @@ void CodeGen::siOpenScopesForNonTrackedVars(const BasicBlock* block, unsigned in
         // Check if there are any scopes on the current block's start boundary.
         VarScopeDsc* varScope = nullptr;
 
-#if defined(FEATURE_EH_FUNCLETS)
-
-        // If we find a spot where the code offset isn't what we expect, because
-        // there is a gap, it might be because we've moved the funclets out of
-        // line. Catch up with the enter and exit scopes of the current block.
-        // Ignore the enter/exit scope changes of the missing scopes, which for
-        // funclets must be matched.
-        if (lastBlockILEndOffset != beginOffs)
+        if (compiler->UsesFunclets())
         {
-            assert(beginOffs > 0);
-            assert(lastBlockILEndOffset < beginOffs);
-
-            JITDUMP("Scope info: found offset hole. lastOffs=%u, currOffs=%u\n", lastBlockILEndOffset, beginOffs);
-
-            // Skip enter scopes
-            while ((varScope = compiler->compGetNextEnterScope(beginOffs - 1, true)) != nullptr)
+            // If we find a spot where the code offset isn't what we expect, because
+            // there is a gap, it might be because we've moved the funclets out of
+            // line. Catch up with the enter and exit scopes of the current block.
+            // Ignore the enter/exit scope changes of the missing scopes, which for
+            // funclets must be matched.
+            if (lastBlockILEndOffset != beginOffs)
             {
-                /* do nothing */
-                JITDUMP("Scope info: skipping enter scope, LVnum=%u\n", varScope->vsdLVnum);
-            }
+                assert(beginOffs > 0);
+                assert(lastBlockILEndOffset < beginOffs);
 
-            // Skip exit scopes
-            while ((varScope = compiler->compGetNextExitScope(beginOffs - 1, true)) != nullptr)
-            {
-                /* do nothing */
-                JITDUMP("Scope info: skipping exit scope, LVnum=%u\n", varScope->vsdLVnum);
+                JITDUMP("Scope info: found offset hole. lastOffs=%u, currOffs=%u\n", lastBlockILEndOffset, beginOffs);
+
+                // Skip enter scopes
+                while ((varScope = compiler->compGetNextEnterScope(beginOffs - 1, true)) != nullptr)
+                {
+                    /* do nothing */
+                    JITDUMP("Scope info: skipping enter scope, LVnum=%u\n", varScope->vsdLVnum);
+                }
+
+                // Skip exit scopes
+                while ((varScope = compiler->compGetNextExitScope(beginOffs - 1, true)) != nullptr)
+                {
+                    /* do nothing */
+                    JITDUMP("Scope info: skipping exit scope, LVnum=%u\n", varScope->vsdLVnum);
+                }
             }
         }
-
-#else // !FEATURE_EH_FUNCLETS
-
-        if (lastBlockILEndOffset != beginOffs)
+        else
         {
-            assert(lastBlockILEndOffset < beginOffs);
-            return;
+            if (lastBlockILEndOffset != beginOffs)
+            {
+                assert(lastBlockILEndOffset < beginOffs);
+                return;
+            }
         }
-
-#endif // !FEATURE_EH_FUNCLETS
 
         while ((varScope = compiler->compGetNextEnterScope(beginOffs)) != nullptr)
         {
@@ -1628,12 +1627,10 @@ void CodeGen::siEndBlock(BasicBlock* block)
 {
     assert(compiler->opts.compScopeInfo && (compiler->info.compVarScopesCount > 0));
 
-#if defined(FEATURE_EH_FUNCLETS)
     if (siInFuncletRegion)
     {
         return;
     }
-#endif // FEATURE_EH_FUNCLETS
 
     unsigned endOffs = block->bbCodeOffsEnd;
 
@@ -1679,9 +1676,9 @@ NATIVE_OFFSET CodeGen::psiGetVarStackOffset(const LclVarDsc* lclVarDsc) const
 }
 
 /*============================================================================
-*           INTERFACE (public) Functions for PrologScopeInfo
-*============================================================================
-*/
+ *           INTERFACE (public) Functions for PrologScopeInfo
+ *============================================================================
+ */
 
 //------------------------------------------------------------------------
 // psiBegProlog: Initializes the PrologScopeInfo creating open psiScopes or
@@ -1705,94 +1702,39 @@ void CodeGen::psiBegProlog()
         }
         siVarLoc varLocation;
 
-        if (lclVarDsc->lvIsRegArg)
+        regNumber reg1 = REG_NA;
+        regNumber reg2 = REG_NA;
+
+        const ABIPassingInformation& abiInfo = compiler->lvaGetParameterABIInfo(varScope->vsdVarNum);
+        for (const ABIPassingSegment& segment : abiInfo.Segments())
         {
-            bool isStructHandled = false;
-#if defined(UNIX_AMD64_ABI)
-            SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR structDesc;
-            if (varTypeIsStruct(lclVarDsc))
+            if (segment.IsPassedInRegister())
             {
-                CORINFO_CLASS_HANDLE typeHnd = lclVarDsc->GetLayout()->GetClassHandle();
-                assert(typeHnd != nullptr);
-                compiler->eeGetSystemVAmd64PassStructInRegisterDescriptor(typeHnd, &structDesc);
-                if (structDesc.passedInRegisters)
+                if (reg1 == REG_NA)
                 {
-                    regNumber regNum      = REG_NA;
-                    regNumber otherRegNum = REG_NA;
-                    for (unsigned nCnt = 0; nCnt < structDesc.eightByteCount; nCnt++)
-                    {
-                        var_types regType = TYP_UNDEF;
-
-                        if (nCnt == 0)
-                        {
-                            regNum = lclVarDsc->GetArgReg();
-                        }
-                        else if (nCnt == 1)
-                        {
-                            otherRegNum = lclVarDsc->GetOtherArgReg();
-                        }
-                        else
-                        {
-                            assert(false && "Invalid eightbyte number.");
-                        }
-
-                        regType = compiler->GetEightByteType(structDesc, nCnt);
-#ifdef DEBUG
-                        regType = compiler->mangleVarArgsType(regType);
-                        assert(genMapRegNumToRegArgNum((nCnt == 0 ? regNum : otherRegNum), regType) != (unsigned)-1);
-#endif // DEBUG
-                    }
-
-                    varLocation.storeVariableInRegisters(regNum, otherRegNum);
+                    reg1 = segment.GetRegister();
                 }
                 else
                 {
-                    // Stack passed argument. Get the offset from the  caller's frame.
-                    varLocation.storeVariableOnStack(REG_SPBASE, psiGetVarStackOffset(lclVarDsc));
+                    reg2 = segment.GetRegister();
+                    break;
                 }
-
-                isStructHandled = true;
             }
-#endif // !defined(UNIX_AMD64_ABI)
-            if (!isStructHandled)
+            else
             {
-#ifdef DEBUG
-#if defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
-                var_types regType;
-                if (varTypeIsStruct(lclVarDsc))
-                {
-                    // Must be <= 16 bytes or else it wouldn't be passed in registers,
-                    // which can be bigger (and is handled above).
-                    noway_assert(EA_SIZE_IN_BYTES(lclVarDsc->lvSize()) <= 16);
-                    if (emitter::isFloatReg(lclVarDsc->GetArgReg()))
-                    {
-                        regType = TYP_DOUBLE;
-                    }
-                    else
-                    {
-                        regType = lclVarDsc->GetLayout()->GetGCPtrType(0);
-                    }
-                }
-                else
-                {
-                    regType = compiler->mangleVarArgsType(lclVarDsc->TypeGet());
-                    if (emitter::isGeneralRegisterOrR0(lclVarDsc->GetArgReg()) && isFloatRegType(regType))
-                    {
-                        // For LoongArch64 and RISCV64's ABI, the float args may be passed by integer register.
-                        regType = TYP_LONG;
-                    }
-                }
-#else
-                var_types regType = compiler->mangleVarArgsType(lclVarDsc->TypeGet());
-                if (lclVarDsc->lvIsHfaRegArg())
-                {
-                    regType = lclVarDsc->GetHfaType();
-                }
-#endif // defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
-                assert(genMapRegNumToRegArgNum(lclVarDsc->GetArgReg(), regType) != (unsigned)-1);
-#endif // DEBUG
-                varLocation.storeVariableInRegisters(lclVarDsc->GetArgReg(), REG_NA);
+                break;
             }
+        }
+
+        // We only report multiple registers on SysV ABI. On other ABIs we
+        // report only the first register.
+#ifndef UNIX_AMD64_ABI
+        reg2 = REG_NA;
+#endif
+
+        if (reg1 != REG_NA)
+        {
+            varLocation.storeVariableInRegisters(reg1, reg2);
         }
         else
         {
@@ -2022,7 +1964,7 @@ void CodeGen::genSetScopeInfo(unsigned       which,
 
         noway_assert(cookieOffset < varOffset);
         unsigned offset     = varOffset - cookieOffset;
-        unsigned stkArgSize = compiler->compArgSize - intRegState.rsCalleeRegArgCount * REGSIZE_BYTES;
+        unsigned stkArgSize = compiler->lvaParameterStackSize;
         noway_assert(offset < stkArgSize);
         offset = stkArgSize - offset;
 

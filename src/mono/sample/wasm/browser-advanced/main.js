@@ -15,6 +15,8 @@ let testAbort = true;
 let testError = true;
 
 try {
+    console.log(`crossOriginIsolated: ${globalThis.crossOriginIsolated}`);
+
     const originalFetch = globalThis.fetch;
     globalThis.fetch = (url, fetchArgs) => {
         console.log("fetching " + url);
@@ -29,7 +31,7 @@ try {
         }
         return originalFetch(url, fetchArgs);
     };
-    const { runtimeBuildInfo, setModuleImports, getAssemblyExports, runMain, getConfig, Module } = await dotnet
+    dotnet
         .withElementOnExit()
         // 'withModuleConfig' is internal lower level API 
         // here we show how emscripten could be further configured
@@ -50,7 +52,10 @@ try {
                 console.log('user code Module.onConfigLoaded');
                 // config is loaded and could be tweaked before the rest of the runtime startup sequence
                 config.environmentVariables["MONO_LOG_LEVEL"] = "debug";
-                config.browserProfilerOptions = {};
+                config.browserProfilerOptions = {
+                    sampleIntervalMs: 5.15,
+                    callSpec: "N:Sample" // needs to match AOT profile
+                };
             },
             preInit: () => { console.log('user code Module.preInit'); },
             preRun: () => { console.log('user code Module.preRun'); },
@@ -64,12 +69,16 @@ try {
                 console.log('user code Module.onDotnetReady');
             },
             postRun: () => { console.log('user code Module.postRun'); },
+            out: (text) => { console.log("ADVANCED:" + text) },
         })
         .withResourceLoader((type, name, defaultUri, integrity, behavior) => {
             // loadBootResource could return string with unqualified name of resource. It assumes that we resolve it with document.baseURI
             return name;
-        })
-        .create();
+        });
+
+    await dotnet.download();
+
+    const { runtimeBuildInfo, setModuleImports, getAssemblyExports, runMain, getConfig, Module } = await dotnet.create();
 
     // at this point both emscripten and monoVM are fully initialized.
     console.log('user code after dotnet.create');
@@ -98,6 +107,8 @@ try {
 
     const deepMeaning = new Promise(resolve => setTimeout(() => resolve(meaning), 100));
     exports.Sample.Test.PrintMeaning(deepMeaning);
+
+    exports.Sample.Test.SillyLoop();
 
     let exit_code = await runMain(config.mainAssemblyName, []);
     exit(exit_code);

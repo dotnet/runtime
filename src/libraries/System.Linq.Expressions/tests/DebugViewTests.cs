@@ -316,7 +316,7 @@ namespace System.Linq.Expressions.Tests
             Check(".Call $x.ToString()", Expression.Call(x, typeof(int).GetMethod("ToString", Type.EmptyTypes)));
             Check(".Call $s.Substring($x)", Expression.Call(s, typeof(string).GetMethod("Substring", new[] { typeof(int) }), x));
             Check(".Call $s.Substring(\\r\\n    $x,\\r\\n    $y)", Expression.Call(s, typeof(string).GetMethod("Substring", new[] { typeof(int), typeof(int) }), x, y));
-            Check(".Call System.TimeSpan.FromSeconds($d)", Expression.Call(null, typeof(TimeSpan).GetMethod("FromSeconds", new[] { typeof(int) }), d));
+            Check(".Call System.TimeSpan.FromSeconds($d)", Expression.Call(null, typeof(TimeSpan).GetMethod("FromSeconds", new[] { typeof(double) }), d));
         }
 
         [Fact]

@@ -12,194 +12,346 @@
 
 #ifndef DACCESS_COMPILE
 
+#ifdef PENDING_TYPE_LOAD_TABLE_STATS
+// Enable PENDING_TYPE_LOAD_TABLE_STATS to gather counts of Entry structures which are allocated
 
-// ============================================================================
-// Pending type load hash table methods
-// ============================================================================
-/*static */ PendingTypeLoadTable* PendingTypeLoadTable::Create(LoaderHeap *pHeap,
-                                                               DWORD dwNumBuckets,
-                                                               AllocMemTracker *pamTracker)
+static LONG pendingTypeLoadEntryDynamicAllocations = 0;
+void PendingTypeLoadEntryDynamicAlloc()
+{
+    InterlockedIncrement(&pendingTypeLoadEntryDynamicAllocations);
+}
+#endif // PENDING_TYPE_LOAD_TABLE_STATS
+
+PendingTypeLoadTable PendingTypeLoadTable::s_table;
+
+PendingTypeLoadTable::Entry::Entry()
+    : m_typeKey(TypeKey::InvalidTypeKey()),
+        m_fIsPreallocated(true)
+{
+}
+
+PendingTypeLoadTable::Entry::Entry(const TypeKey& typeKey)
+    : m_typeKey(typeKey),
+        m_fIsPreallocated(false)
+{
+#ifdef PENDING_TYPE_LOAD_TABLE_STATS
+    PendingTypeLoadEntryDynamicAlloc();
+#endif // PENDING_TYPE_LOAD_TABLE_STATS
+}
+
+void PendingTypeLoadTable::Entry::SetTypeKey(TypeKey typeKey)
+{
+    m_typeKey = typeKey;
+}
+
+void PendingTypeLoadTable::Entry::InitCrst()
+{
+    WRAPPER_NO_CONTRACT;
+    m_Crst.Init(CrstPendingTypeLoadEntry,
+                CrstFlags(CRST_HOST_BREAKABLE|CRST_UNSAFE_SAMELEVEL));
+}
+
+void PendingTypeLoadTable::Entry::Init(Entry *pNext, DWORD hash, TypeHandle typeHnd)
+{
+    WRAPPER_NO_CONTRACT;
+
+    _ASSERTE(m_fIsUnused);
+    m_dwHash = hash;
+    m_pNext = pNext;
+    m_typeHandle = typeHnd;
+    m_dwWaitCount = 1;
+    m_hrResult = S_OK;
+    m_pException = NULL;
+#ifdef _DEBUG
+    if (LoggingOn(LF_CLASSLOADER, LL_INFO10000))
+    {
+        SString name;
+        TypeString::AppendTypeKeyDebug(name, &m_typeKey);
+        LOG((LF_CLASSLOADER, LL_INFO10000, "PHASEDLOAD: Creating loading entry for type %s\n", name.GetUTF8()));
+    }
+#endif
+
+    m_fIsUnused = false;
+    m_fLockAcquired = TRUE;
+
+    //---------------------------------------------------------------------------
+    // The PendingTypeLoadEntry() lock has a higher level than UnresolvedClassLock.
+    // But whenever we create one, we have to acquire it while holding the UnresolvedClassLock.
+    // This is safe since we're the ones that created the lock and are guaranteed to acquire
+    // it without blocking. But to prevent the crstlevel system from asserting, we
+    // must acquire using a special method.
+    //---------------------------------------------------------------------------
+    m_Crst.Enter(INDEBUG(Crst::CRST_NO_LEVEL_CHECK));
+}
+
+void PendingTypeLoadTable::Entry::Reset()
+{
+    LIMITED_METHOD_CONTRACT;
+
+    if (m_fLockAcquired)
+    {
+        m_Crst.Leave();
+        m_fLockAcquired = false;
+    }
+
+    if (m_pException && !m_pException->IsPreallocatedException()) {
+        delete m_pException;
+        m_pException = NULL;
+    }
+}
+
+bool PendingTypeLoadTable::Entry::IsUnused()
+{
+    // This VolatileLoad synchrnonizes with the Release()
+    return (m_fIsUnused && VolatileLoad(&m_fIsUnused));
+}
+
+#ifdef _DEBUG
+bool PendingTypeLoadTable::Entry::HasLock()
+{
+    LIMITED_METHOD_CONTRACT;
+    return !!m_Crst.OwnedByCurrentThread();
+}
+#endif
+
+VOID DECLSPEC_NORETURN PendingTypeLoadTable::Entry::ThrowException()
 {
     CONTRACTL
     {
-        STANDARD_VM_CHECK;
-        PRECONDITION(CheckPointer(pHeap));
+        THROWS;
+        GC_TRIGGERS;
+        INJECT_FAULT(COMPlusThrowOM(););
     }
     CONTRACTL_END;
 
-    size_t                  size = sizeof(PendingTypeLoadTable);
-    BYTE *                  pMem;
-    PendingTypeLoadTable * pThis;
+    if (m_pException)
+        PAL_CPP_THROW(Exception *, m_pException->Clone());
 
-    _ASSERT( dwNumBuckets >= 0 );
-    S_SIZE_T allocSize = S_SIZE_T( dwNumBuckets )
-                                        * S_SIZE_T( sizeof(PendingTypeLoadTable::TableEntry*) )
-                                        + S_SIZE_T( size );
-    if( allocSize.IsOverflow() )
+    _ASSERTE(FAILED(m_hrResult));
+
+    if (m_hrResult == COR_E_TYPELOAD)
     {
-        ThrowHR(E_INVALIDARG);
+        ClassLoader::ThrowTypeLoadException(GetTypeKey(),
+                                            IDS_CLASSLOAD_GENERAL);
+
     }
-    pMem = (BYTE *) pamTracker->Track(pHeap->AllocMem( allocSize ));
-
-    pThis = (PendingTypeLoadTable *) pMem;
-
-#ifdef _DEBUG
-    pThis->m_dwDebugMemory = (DWORD)(size + dwNumBuckets*sizeof(PendingTypeLoadTable::TableEntry*));
-#endif
-
-    pThis->m_dwNumBuckets = dwNumBuckets;
-    pThis->m_pBuckets = (PendingTypeLoadTable::TableEntry**) (pMem + size);
-
-    // Don't need to memset() since this was ClrVirtualAlloc()'d memory
-    // memset(pThis->m_pBuckets, 0, dwNumBuckets*sizeof(PendingTypeLoadTable::TableEntry*));
-
-    return pThis;
+    else
+        EX_THROW(EEMessageException, (m_hrResult));
 }
 
-
-
-PendingTypeLoadTable::TableEntry *PendingTypeLoadTable::AllocNewEntry()
+void PendingTypeLoadTable::Entry::SetException(Exception *pException)
 {
     CONTRACTL
     {
         NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-        INJECT_FAULT( return NULL; );
+        PRECONDITION(HasLock());
+        PRECONDITION(m_pException == NULL);
+        PRECONDITION(m_dwWaitCount > 0);
     }
-    CONTRACTL_END
+    CONTRACTL_END;
 
-#ifdef _DEBUG
-    m_dwDebugMemory += (DWORD) (sizeof(PendingTypeLoadTable::TableEntry));
-#endif
+    m_typeHandle = TypeHandle();
+    m_hrResult = COR_E_TYPELOAD;
 
-    return (PendingTypeLoadTable::TableEntry *) new (nothrow) BYTE[sizeof(PendingTypeLoadTable::TableEntry)];
+    // we don't care if this fails
+    // we already know the HRESULT so if we can't store
+    // the details - so be it
+    EX_TRY
+    {
+        FAULT_NOT_FATAL();
+        m_pException = pException->Clone();
+    }
+    EX_CATCH
+    {
+        m_pException=NULL;
+    }
+    EX_END_CATCH(SwallowAllExceptions);
 }
 
-
-void PendingTypeLoadTable::FreeEntry(PendingTypeLoadTable::TableEntry * pEntry)
+void PendingTypeLoadTable::Entry::SetResult(TypeHandle typeHnd)
 {
     CONTRACTL
     {
         NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
+        PRECONDITION(HasLock());
+        PRECONDITION(m_pException == NULL);
+        PRECONDITION(m_dwWaitCount > 0);
     }
-    CONTRACTL_END
+    CONTRACTL_END;
 
-    // keep in sync with the allocator used in AllocNewEntry
-    delete[] ((BYTE*)pEntry);
-
-#ifdef _DEBUG
-    m_dwDebugMemory -= (DWORD) (sizeof(PendingTypeLoadTable::TableEntry));
-#endif
+    m_typeHandle = typeHnd;
 }
 
-
-//
-// Does not handle duplicates!
-//
-BOOL PendingTypeLoadTable::InsertValue(PendingTypeLoadEntry *pData)
+void PendingTypeLoadTable::Entry::UnblockWaiters()
 {
     CONTRACTL
     {
         NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-        INJECT_FAULT( return FALSE; );
-        PRECONDITION(CheckPointer(pData));
-        PRECONDITION(FindItem(&pData->GetTypeKey()) == NULL);
+        PRECONDITION(HasLock());
+        PRECONDITION(m_dwWaitCount > 0);
     }
-    CONTRACTL_END
+    CONTRACTL_END;
 
-    _ASSERTE(m_dwNumBuckets != 0);
-
-    DWORD           dwHash = HashTypeKey(&pData->GetTypeKey());
-    DWORD           dwBucket = dwHash % m_dwNumBuckets;
-    PendingTypeLoadTable::TableEntry * pNewEntry = AllocNewEntry();
-    if (pNewEntry == NULL)
-        return FALSE;
-
-    // Insert at head of bucket
-    pNewEntry->pNext        = m_pBuckets[dwBucket];
-    pNewEntry->pData        = pData;
-    pNewEntry->dwHashValue  = dwHash;
-
-    m_pBuckets[dwBucket] = pNewEntry;
-
-    return TRUE;
+    _ASSERTE(m_fLockAcquired);
+    m_Crst.Leave();
+    m_fLockAcquired = FALSE;
 }
 
-BOOL PendingTypeLoadTable::DeleteValue(TypeKey *pKey)
+const TypeKey* PendingTypeLoadTable::Entry::GetTypeKey()
 {
-    CONTRACTL
+    LIMITED_METHOD_CONTRACT;
+    return &m_typeKey;
+}
+
+void PendingTypeLoadTable::Entry::AddRef()
+{
+    LIMITED_METHOD_CONTRACT;
+    InterlockedIncrement(&m_dwWaitCount);
+}
+
+void PendingTypeLoadTable::Entry::Release()
+{
+    LIMITED_METHOD_CONTRACT;
+    if (InterlockedDecrement(&m_dwWaitCount) == 0)
     {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-        FORBID_FAULT;
-        PRECONDITION(CheckPointer(pKey));
-    }
-    CONTRACTL_END
+        Reset();
 
-    _ASSERTE(m_dwNumBuckets != 0);
-
-    DWORD           dwHash = HashTypeKey(pKey);
-    DWORD           dwBucket = dwHash % m_dwNumBuckets;
-    PendingTypeLoadTable::TableEntry * pSearch;
-    PendingTypeLoadTable::TableEntry **ppPrev = &m_pBuckets[dwBucket];
-
-    for (pSearch = m_pBuckets[dwBucket]; pSearch; pSearch = pSearch->pNext)
-    {
-        TypeKey entryTypeKey = pSearch->pData->GetTypeKey();
-        if (pSearch->dwHashValue == dwHash && TypeKey::Equals(pKey, &entryTypeKey))
+        if (this->m_fIsPreallocated)
         {
-            *ppPrev = pSearch->pNext;
-            FreeEntry(pSearch);
-            return TRUE;
+            // We won't be holding the lock while Releasing, so use a VolatileStore to ensure all writes during Reset are complete.
+            VolatileStore(&m_fIsUnused, true);
         }
-
-        ppPrev = &pSearch->pNext;
+        else
+        {
+            // Call the derived type with a destructor
+            delete static_cast<DynamicallyAllocatedEntry*>(this);
+        }
     }
-
-    return FALSE;
 }
 
-
-PendingTypeLoadTable::TableEntry *PendingTypeLoadTable::FindItem(TypeKey *pKey)
+bool PendingTypeLoadTable::Entry::HasWaiters()
 {
-    CONTRACTL
+    LIMITED_METHOD_CONTRACT;
+    return m_dwWaitCount > 1;
+}
+
+HRESULT PendingTypeLoadTable::Entry::DelayForProgress(TypeHandle* typeHndWithProgress)
+{
+    STANDARD_VM_CONTRACT;
+    HRESULT hr = S_OK;
     {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-        FORBID_FAULT;
-        PRECONDITION(CheckPointer(pKey));
-    }
-    CONTRACTL_END
+        CrstHolder crstHolder(&m_Crst);
+        _ASSERTE(HasLock());
+        hr = m_hrResult;
 
-    _ASSERTE(m_dwNumBuckets != 0);
-
-
-    DWORD           dwHash = HashTypeKey(pKey);
-    DWORD           dwBucket = dwHash % m_dwNumBuckets;
-    PendingTypeLoadTable::TableEntry * pSearch;
-
-    for (pSearch = m_pBuckets[dwBucket]; pSearch; pSearch = pSearch->pNext)
-    {
-        TypeKey entryTypeKey = pSearch->pData->GetTypeKey();
-        if (pSearch->dwHashValue == dwHash && TypeKey::Equals(pKey, &entryTypeKey))
+        if (SUCCEEDED(hr))
         {
-            return pSearch;
+            *typeHndWithProgress = m_typeHandle;
+        }
+    }
+
+    return hr;
+}
+
+void PendingTypeLoadTable::Shard::Init()
+{
+    m_shardCrst.Init(CrstUnresolvedClassLock);
+    for (int i = 0; i < PreallocatedEntryCount; i++)
+    {
+        m_preAllocatedEntries[i].InitCrst();
+    }
+}
+
+PendingTypeLoadTable::Entry* PendingTypeLoadTable::Shard::FindPendingTypeLoadEntry(DWORD hash, const TypeKey& typeKey)
+{
+    WRAPPER_NO_CONTRACT;
+    for (PendingTypeLoadTable::Entry *current = m_pLinkedListOfActiveEntries; current != NULL; current = current->m_pNext)
+    {
+        if (current->m_dwHash != hash)
+            continue;
+        if (TypeKey::Equals(&typeKey, current->GetTypeKey()))
+        {
+            return current;
         }
     }
 
     return NULL;
 }
 
+void PendingTypeLoadTable::Shard::RemovePendingTypeLoadEntry(Entry* pEntry)
+{
+    LIMITED_METHOD_CONTRACT;
+
+    Entry **pCurrent = &m_pLinkedListOfActiveEntries;
+
+    while (*pCurrent != pEntry)
+    {
+        pCurrent = &((*pCurrent)->m_pNext);
+    }
+    *pCurrent = (*pCurrent)->m_pNext;
+}
+
+PendingTypeLoadTable::Entry* PendingTypeLoadTable::Shard::InsertPendingTypeLoadEntry(DWORD hash, const TypeKey& typeKey, TypeHandle typeHnd)
+{
+    STANDARD_VM_CONTRACT;
+    Entry* result = NULL;
+
+    for (int iEntry = 0; iEntry < PreallocatedEntryCount; iEntry++)
+    {
+        if (m_preAllocatedEntries[iEntry].IsUnused())
+        {
+            result = &m_preAllocatedEntries[iEntry];
+            result->SetTypeKey(typeKey);
+            result->Init(m_pLinkedListOfActiveEntries, hash, typeHnd);
+            break;
+        }
+    }
+    if (result == NULL)
+    {
+        NewHolder<DynamicallyAllocatedEntry> dynamicResult(new DynamicallyAllocatedEntry(typeKey));
+        dynamicResult->Init(m_pLinkedListOfActiveEntries, hash, typeHnd);
+        result = dynamicResult.Extract();
+    }
+    
+    m_pLinkedListOfActiveEntries = result;
+    return result;
+}
+
+/*static*/
+PendingTypeLoadTable* PendingTypeLoadTable::GetTable()
+{
+    LIMITED_METHOD_CONTRACT;
+    return &s_table;
+}
+
+/*static*/
+void PendingTypeLoadTable::Init()
+{
+    STANDARD_VM_CONTRACT;
+    for (int i = 0; i < PendingTypeLoadTableShardCount; i++)
+        GetTable()->m_shards[i].Init();
+}
+
+PendingTypeLoadTable::Shard* PendingTypeLoadTable::GetShard(const TypeKey &typeKey, ClassLoader* pClassLoader, DWORD *pHashCodeForType)
+{
+    STANDARD_VM_CONTRACT;
+    DWORD hash = HashTypeKey(&typeKey) ^ (DWORD)(size_t)pClassLoader; // Mix in some entropy about which classloader is in use
+    *pHashCodeForType = hash;
+    return &m_shards[hash % PendingTypeLoadTableShardCount];
+}
 
 #ifdef _DEBUG
 void PendingTypeLoadTable::Dump()
+{
+    STANDARD_VM_CONTRACT;
+    for (int iShard = 0; iShard < PendingTypeLoadTableShardCount; iShard++)
+    {
+        CrstHolder unresolvedClassLockHolder(m_shards[iShard].GetCrst());
+        m_shards[iShard].Dump();
+    }
+}
+
+void PendingTypeLoadTable::Shard::Dump()
 {
     CONTRACTL
     {
@@ -209,44 +361,16 @@ void PendingTypeLoadTable::Dump()
     }
     CONTRACTL_END
 
-    LOG((LF_CLASSLOADER, LL_INFO10000, "PHASEDLOAD: table contains:\n"));
-    for (DWORD i = 0; i < m_dwNumBuckets; i++)
+    LOG((LF_CLASSLOADER, LL_INFO10000, "PHASEDLOAD: shard contains:\n"));
+    for (Entry *pSearch = this->m_pLinkedListOfActiveEntries; pSearch; pSearch = pSearch->m_pNext)
     {
-        for (TableEntry *pSearch = m_pBuckets[i]; pSearch; pSearch = pSearch->pNext)
-        {
-            SString name;
-            TypeKey entryTypeKey = pSearch->pData->GetTypeKey();
-            TypeString::AppendTypeKeyDebug(name, &entryTypeKey);
-            LOG((LF_CLASSLOADER, LL_INFO10000, "  Entry %s with handle %p at level %s\n", name.GetUTF8(), pSearch->pData->m_typeHandle.AsPtr(),
-                 pSearch->pData->m_typeHandle.IsNull() ? "not-applicable" : classLoadLevelName[pSearch->pData->m_typeHandle.GetLoadLevel()]));
-        }
+        SString name;
+        TypeString::AppendTypeKeyDebug(name, pSearch->GetTypeKey());
+        LOG((LF_CLASSLOADER, LL_INFO10000, "  Entry %s with handle %p at level %s\n", name.GetUTF8(), pSearch->m_typeHandle.AsPtr(),
+                pSearch->m_typeHandle.IsNull() ? "not-applicable" : classLoadLevelName[pSearch->m_typeHandle.GetLoadLevel()]));
     }
 }
 #endif
-
-PendingTypeLoadEntry* PendingTypeLoadTable::GetValue(TypeKey *pKey)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-        FORBID_FAULT;
-        PRECONDITION(CheckPointer(pKey));
-    }
-    CONTRACTL_END
-
-    PendingTypeLoadTable::TableEntry *pItem = FindItem(pKey);
-
-    if (pItem != NULL)
-    {
-        return pItem->pData;
-    }
-    else
-    {
-        return NULL;
-    }
-}
 
 #endif // #ifndef DACCESS_COMPILE
 

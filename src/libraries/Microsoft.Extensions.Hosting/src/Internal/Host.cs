@@ -29,7 +29,6 @@ namespace Microsoft.Extensions.Hosting.Internal
         private IEnumerable<IHostedService>? _hostedServices;
         private IEnumerable<IHostedLifecycleService>? _hostedLifecycleServices;
         private bool _hostStarting;
-        private volatile bool _stopCalled;
         private bool _hostStopped;
 
         public Host(IServiceProvider services,
@@ -86,28 +85,27 @@ namespace Microsoft.Extensions.Hosting.Internal
                 cancellationToken.ThrowIfCancellationRequested();
 
                 List<Exception> exceptions = new();
-                _hostedServices ??= Services.GetRequiredService<IEnumerable<IHostedService>>();
-                _hostedLifecycleServices = GetHostLifecycles(_hostedServices);
                 _hostStarting = true;
                 bool concurrent = _options.ServicesStartConcurrently;
                 bool abortOnFirstException = !concurrent;
 
-                // Call startup validators.
-                IStartupValidator? validator = Services.GetService<IStartupValidator>();
-                if (validator is not null)
+                try
                 {
-                    try
-                    {
-                        validator.Validate();
-                    }
-                    catch (Exception ex)
-                    {
-                        exceptions.Add(ex);
+                    _hostedServices ??= Services.GetRequiredService<IEnumerable<IHostedService>>();
+                    _hostedLifecycleServices = GetHostLifecycles(_hostedServices);
 
-                        // Validation errors cause startup to be aborted.
-                        LogAndRethrow();
-                    }
+                    // Call startup validators.
+                    IStartupValidator? validator = Services.GetService<IStartupValidator>();
+                    validator?.Validate();
                 }
+                catch (Exception ex)
+                {
+                    // service factory or validation failed, abort startup.
+                    exceptions.Add(ex);
+                    LogAndRethrow();
+                    return; // unreachable
+                }
+
 
                 // Call StartingAsync().
                 if (_hostedLifecycleServices is not null)
@@ -190,7 +188,7 @@ namespace Microsoft.Extensions.Hosting.Internal
             {
                 // When the host is being stopped, it cancels the background services.
                 // This isn't an error condition, so don't log it as an error.
-                if (_stopCalled && backgroundTask.IsCanceled && ex is OperationCanceledException)
+                if (_applicationLifetime.ApplicationStopping.IsCancellationRequested && backgroundTask.IsCanceled && ex is OperationCanceledException)
                 {
                     return;
                 }
@@ -217,7 +215,6 @@ namespace Microsoft.Extensions.Hosting.Internal
         /// </summary>
         public async Task StopAsync(CancellationToken cancellationToken = default)
         {
-            _stopCalled = true;
             _logger.Stopping();
 
             CancellationTokenSource? cts = null;

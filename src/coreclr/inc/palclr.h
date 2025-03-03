@@ -481,6 +481,8 @@
 #define PAL_CPP_THROW(type, obj) do { SCAN_THROW_MARKER; throw obj; } while (false)
 #define PAL_CPP_RETHROW do { SCAN_THROW_MARKER; throw; } while (false)
 #define PAL_CPP_CATCH_DERIVED(type, obj) catch (type * obj)
+#define PAL_CPP_CATCH_NON_DERIVED(type, obj) catch (type obj)
+#define PAL_CPP_CATCH_NON_DERIVED_NOARG(type) catch (type)
 #define PAL_CPP_CATCH_ALL catch (...)
 #define PAL_CPP_CATCH_EXCEPTION_NOARG catch (Exception *)
 
@@ -608,6 +610,10 @@
 
 #ifndef IMAGE_FILE_MACHINE_LOONGARCH64
 #define IMAGE_FILE_MACHINE_LOONGARCH64       0x6264  // LOONGARCH64.
+#endif
+
+#ifndef IMAGE_FILE_MACHINE_RISCV64
+#define IMAGE_FILE_MACHINE_RISCV64       0x5064  // RISCV64.
 #endif
 
 #endif // defined(HOST_WINDOWS)

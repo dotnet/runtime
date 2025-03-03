@@ -95,16 +95,16 @@ void MakeProperSourceFileName(_In_ __nullterminated WCHAR* wzOrigName,
         }
     }
     while(j);
-    WszWideCharToMultiByte(uCodePage,0,wzProperName,-1,szProperName,MAX_FILENAME_LENGTH*3-1,NULL,NULL);
+    WideCharToMultiByte(uCodePage,0,wzProperName,-1,szProperName,MAX_FILENAME_LENGTH*3-1,NULL,NULL);
 }
 
 char* FullFileName(_In_ __nullterminated WCHAR* wzFileName, unsigned uCodePage)
 {
     static WCHAR wzFullPath[MAX_FILENAME_LENGTH];
     WCHAR* pwz;
-    WszGetFullPathName(wzFileName,MAX_FILENAME_LENGTH,wzFullPath,&pwz);
+    GetFullPathName(wzFileName,MAX_FILENAME_LENGTH,wzFullPath,&pwz);
     char szFullPath[MAX_FILENAME_LENGTH*3];
-    WszWideCharToMultiByte(uCodePage,0,wzFullPath,-1,szFullPath,MAX_FILENAME_LENGTH*3-1,NULL,NULL);
+    WideCharToMultiByte(uCodePage,0,wzFullPath,-1,szFullPath,MAX_FILENAME_LENGTH*3-1,NULL,NULL);
     char* sz = new char[strlen(szFullPath)+1];
     if(sz) strcpy_s(sz,strlen(szFullPath)+1,szFullPath);
     return sz;
@@ -151,11 +151,6 @@ extern "C" int _cdecl wmain(int argc, _In_ WCHAR **argv)
     memset(wzOutputFilename,0,sizeof(wzOutputFilename));
     memset(wzPdbFilename, 0, sizeof(wzPdbFilename));
 
-#ifdef _DEBUG
-    DisableThrowCheck();
-    //CONTRACT_VIOLATION(ThrowsViolation);
-#endif
-
     if(argc < 2) goto ErrorExit;
 #ifdef _PREFAST_
 #pragma warning(push)
@@ -185,6 +180,7 @@ extern "C" int _cdecl wmain(int argc, _In_ WCHAR **argv)
       printf("\n/DEBUG          Disable JIT optimization, create PDB file, use sequence points from PDB");
       printf("\n/DEBUG=IMPL     Disable JIT optimization, create PDB file, use implicit sequence points");
       printf("\n/DEBUG=OPT      Enable JIT optimization, create PDB file, use implicit sequence points");
+      printf("\n/DET            Produce deterministic outputs");
       printf("\n/OPTIMIZE       Optimize long instructions to short");
       printf("\n/FOLD           Fold the identical method bodies into one");
       printf("\n/CLOCK          Measure and report compilation times");
@@ -193,6 +189,7 @@ extern "C" int _cdecl wmain(int argc, _In_ WCHAR **argv)
       printf("\n/OUTPUT=<targetfile>    Compile to file with specified name \n\t\t\t(user must provide extension, if any)");
       printf("\n/KEY=<keyfile>      Compile with strong signature \n\t\t\t(<keyfile> contains private key)");
       printf("\n/KEY=@<keysource>   Compile with strong signature \n\t\t\t(<keysource> is the private key source name)");
+      printf("\n/ANAME=<asmname>    Override the name of the compiled assembly");
       printf("\n/INCLUDE=<path>     Set path to search for #include'd files");
       printf("\n/SUBSYSTEM=<int>    Set Subsystem value in the NT Optional header");
       printf("\n/SSVER=<int>.<int>  Set Subsystem version number in the NT Optional header");
@@ -239,7 +236,7 @@ extern "C" int _cdecl wmain(int argc, _In_ WCHAR **argv)
 #endif
                 {
                     char szOpt[3 + 1] = { 0 };
-                    WszWideCharToMultiByte(uCodePage, 0, &argv[i][1], 3, szOpt, sizeof(szOpt), NULL, NULL);
+                    WideCharToMultiByte(uCodePage, 0, &argv[i][1], 3, szOpt, sizeof(szOpt), NULL, NULL);
                     if (!_stricmp(szOpt, "NOA"))
                     {
                         pAsm->m_fAutoInheritFromObject = FALSE;
@@ -320,6 +317,10 @@ extern "C" int _cdecl wmain(int argc, _In_ WCHAR **argv)
                     {
                       pAsm->m_fOptimize = TRUE;
                     }
+                    else if (!_stricmp(szOpt, "DET"))
+                    {
+                      pAsm->m_fDeterministic = TRUE;
+                    }
                     else if (!_stricmp(szOpt, "X64"))
                     {
                       pAsm->m_dwCeeFileFlags &= ~ICEE_CREATE_MACHINE_MASK;
@@ -331,7 +332,7 @@ extern "C" int _cdecl wmain(int argc, _In_ WCHAR **argv)
                         // We could change it to be longer, but that would affect the existing usability (ARM64 was
                         // added much later). Thus, just distinguish the two here.
                         char szOpt2[5 + 1] = { 0 };
-                        WszWideCharToMultiByte(uCodePage, 0, &argv[i][1], 5, szOpt2, sizeof(szOpt2), NULL, NULL);
+                        WideCharToMultiByte(uCodePage, 0, &argv[i][1], 5, szOpt2, sizeof(szOpt2), NULL, NULL);
                         if (!_stricmp(szOpt2, "ARM"))
                         {
                             pAsm->m_dwCeeFileFlags &= ~ICEE_CREATE_MACHINE_MASK;
@@ -528,10 +529,18 @@ extern "C" int _cdecl wmain(int argc, _In_ WCHAR **argv)
                         if(sscanf_s(str,pFmt,&g_dwTestRepeat)!=1) goto InvalidOption;
                     }
 #endif
+                    else if (!_stricmp(szOpt, "ANA"))
+                    {
+                        WCHAR *pEqualOrColon = EqualOrColon(argv[i]);
+                        if (pEqualOrColon == NULL) goto InvalidOption;
+                        MAKE_UTF8PTR_FROMWIDE_NOTHROW(anameOverride, pEqualOrColon + 1);
+                        pAsm->m_pOverrideAssemblyName = _strdup(anameOverride);
+                    }
                     else
                     {
                     InvalidOption:
-                        fprintf(stderr, "Error : Invalid Option: %LS\n", argv[i]);
+                        MAKE_UTF8PTR_FROMWIDE_NOTHROW(invalidOpt, argv[i]);
+                        fprintf(stderr, "Error : Invalid Option: %s\n", invalidOpt);
                         goto ErrorExit;
                     }
                 }
@@ -691,7 +700,7 @@ extern "C" int _cdecl wmain(int argc, _In_ WCHAR **argv)
                             {
                                 char szOutputFilename[MAX_FILENAME_LENGTH*3];
                                 memset(szOutputFilename,0,sizeof(szOutputFilename));
-                                WszWideCharToMultiByte(uCodePage,0,wzOutputFilename,-1,szOutputFilename,MAX_FILENAME_LENGTH*3-1,NULL,NULL);
+                                WideCharToMultiByte(uCodePage,0,wzOutputFilename,-1,szOutputFilename,MAX_FILENAME_LENGTH*3-1,NULL,NULL);
                                 pParser->msg(" --> '%s'\n", szOutputFilename);
                             }
                         }

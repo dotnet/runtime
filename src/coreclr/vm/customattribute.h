@@ -8,12 +8,11 @@
 #include "fcall.h"
 #include "../md/compiler/custattr.h"
 
-typedef Factory< SArray<CaValue> > CaValueArrayFactory;
+using CaValueArrayFactory = Factory<SArray<CaValue>>;
 
-class Attribute
+namespace CustomAttribute
 {
-public:
-    static HRESULT ParseAttributeArgumentValues(
+    HRESULT ParseArgumentValues(
         void* pCa,
         INT32 cCa,
         CaValueArrayFactory* pCaValueArrayFactory,
@@ -21,57 +20,32 @@ public:
         COUNT_T cArgs,
         CaNamedArg* pCaNamedArgs,
         COUNT_T cNamedArgs,
-        DomainAssembly* pDomainAssembly);
-};
+        Assembly* pAssembly);
+}
 
-class COMCustomAttribute
-{
-public:
+extern "C" BOOL QCALLTYPE CustomAttribute_ParseAttributeUsageAttribute(
+    PVOID pData,
+    ULONG cData,
+    ULONG* pTargets,
+    BOOL* pAllowMultiple,
+    BOOL* pInherited);
 
-    // custom attributes utility functions
-    static FCDECL5(VOID, ParseAttributeUsageAttribute, PVOID pData, ULONG cData, ULONG* pTargets, CLR_BOOL* pInherited, CLR_BOOL* pAllowMultiple);
-    static FCDECL6(LPVOID, CreateCaObject, ReflectModuleBaseObject* pAttributedModuleUNSAFE, ReflectClassBaseObject* pCaTypeUNSAFE, ReflectMethodObject *pMethodUNSAFE, BYTE** ppBlob, BYTE* pEndBlob, INT32* pcNamedArgs);
-    static FCDECL7(void, GetPropertyOrFieldData, ReflectModuleBaseObject *pModuleUNSAFE, BYTE** ppBlobStart, BYTE* pBlobEnd, STRINGREF* pName, CLR_BOOL* pbIsProperty, OBJECTREF* pType, OBJECTREF* value);
+extern "C" void QCALLTYPE CustomAttribute_CreateCustomAttributeInstance(
+    QCall::ModuleHandle pModule,
+    QCall::ObjectHandleOnStack pCaType,
+    QCall::ObjectHandleOnStack pMethod,
+    BYTE** ppBlob,
+    BYTE* pEndBlob,
+    INT32* pcNamedArgs,
+    QCall::ObjectHandleOnStack result);
 
-private:
+extern "C" void QCALLTYPE CustomAttribute_CreatePropertyOrFieldData(
+    QCall::ModuleHandle pModule,
+    BYTE** ppBlobStart,
+    BYTE* pBlobEnd,
+    QCall::StringHandleOnStack pName,
+    BOOL* pbIsProperty,
+    QCall::ObjectHandleOnStack pType,
+    QCall::ObjectHandleOnStack value);
 
-    static TypeHandle GetTypeHandleFromBlob(
-        Assembly *pCtorAssembly,
-        CorSerializationType objType,
-        BYTE **pBlob,
-        const BYTE *endBlob,
-        Module *pModule);
-
-    static ARG_SLOT GetDataFromBlob(
-        Assembly *pCtorAssembly,
-        CorSerializationType type,
-        TypeHandle th,
-        BYTE **pBlob,
-        const BYTE *endBlob,
-        Module *pModule,
-        BOOL *bObjectCreated);
-
-    static void ReadArray(
-        Assembly *pCtorAssembly,
-        CorSerializationType arrayType,
-        int size,
-        TypeHandle th,
-        BYTE **pBlob,
-        const BYTE *endBlob,
-        Module *pModule,
-        BASEARRAYREF *pArray);
-
-    static int GetStringSize(
-        BYTE **pBlob,
-        const BYTE *endBlob);
-
-    template < typename T >
-    static BOOL CopyArrayVAL(
-        BASEARRAYREF pArray,
-        int nElements,
-        BYTE **pBlob,
-        const BYTE *endBlob);
-};
-
-#endif
-
+#endif // _CUSTOMATTRIBUTE_H_

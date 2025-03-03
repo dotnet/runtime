@@ -41,6 +41,16 @@ namespace LibraryImportGenerator.IntegrationTests
             PointerFields input,
             ref PointerFields result);
     }
+    public static partial class IntStructExtensions
+    {
+        [LibraryImport(NativeExportsNE.NativeExportsNE_Binary, EntryPoint = "blittablestructs_return_instance")]
+        public static partial IntFields DoubleIntFields(this IntFields result);
+        
+        [LibraryImport(NativeExportsNE.NativeExportsNE_Binary, EntryPoint = "blittablestructs_double_intfields_refreturn")]
+        public static partial void DoubleIntFieldsOutReturn(
+            this IntFields input,
+            out IntFields result);
+    }
 
     public class BlittableStructTests
     {
@@ -68,6 +78,11 @@ namespace LibraryImportGenerator.IntegrationTests
                 Assert.Equal(expected, result);
             }
             {
+                var result = input.DoubleIntFields();
+                Assert.Equal(initial, input);
+                Assert.Equal(expected, result);
+            }
+            {
                 var result = new IntFields();
                 NativeExportsNE.DoubleIntFieldsRefReturn(input, ref result);
                 Assert.Equal(initial, input);
@@ -77,6 +92,12 @@ namespace LibraryImportGenerator.IntegrationTests
             {
                 IntFields result;
                 NativeExportsNE.DoubleIntFieldsOutReturn(input, out result);
+                Assert.Equal(initial, input);
+                Assert.Equal(expected, result);
+            }
+            {
+                IntFields result;
+                input.DoubleIntFieldsOutReturn(out result);
                 Assert.Equal(initial, input);
                 Assert.Equal(expected, result);
             }

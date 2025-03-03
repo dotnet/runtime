@@ -43,6 +43,7 @@ EXTERN_C VOID STDCALL PrecodeRemotingThunk();
 
 #define SIZEOF_PRECODE_BASE         CODE_SIZE_ALIGN
 #define OFFSETOF_PRECODE_TYPE       0
+#define SHIFTOF_PRECODE_TYPE        5
 
 #elif defined(TARGET_RISCV64)
 
@@ -87,6 +88,10 @@ extern "C" void StubPrecodeCode();
 extern "C" void StubPrecodeCode_End();
 #endif
 
+#ifdef FEATURE_INTERPRETER
+extern "C" void InterpreterStub();
+#endif
+
 // Regular precode
 struct StubPrecode
 {
@@ -117,7 +122,7 @@ struct StubPrecode
     static void (*StubPrecodeCode_End)();
 #endif
 
-    void Init(StubPrecode* pPrecodeRX, MethodDesc* pMD, LoaderAllocator *pLoaderAllocator = NULL, BYTE type = StubPrecode::Type, TADDR target = NULL);
+    void Init(StubPrecode* pPrecodeRX, MethodDesc* pMD, LoaderAllocator *pLoaderAllocator = NULL, BYTE type = StubPrecode::Type, TADDR target = 0);
 
     static void StaticInitialize();
 
@@ -203,13 +208,44 @@ typedef DPTR(NDirectImportPrecode) PTR_NDirectImportPrecode;
 
 #endif // HAS_NDIRECT_IMPORT_PRECODE
 
+#ifdef FEATURE_INTERPRETER
+struct InterpreterPrecodeData
+{
+    TADDR ByteCodeAddr;
+    PCODE Target;
+    BYTE Type;
+};
+
+typedef DPTR(InterpreterPrecodeData) PTR_InterpreterPrecodeData;
+
+struct InterpreterPrecode
+{
+    static const int Type = 0x06;
+
+    BYTE m_code[StubPrecode::CodeSize];
+
+    void Init(InterpreterPrecode* pPrecodeRX, TADDR byteCodeAddr);
+
+    PTR_InterpreterPrecodeData GetData() const
+    {
+        LIMITED_METHOD_CONTRACT;
+        return dac_cast<PTR_InterpreterPrecodeData>(dac_cast<TADDR>(this) + GetStubCodePageSize());
+    }
+
+    PCODE GetEntryPoint()
+    {
+        LIMITED_METHOD_CONTRACT;
+        return PINSTRToPCODE(dac_cast<TADDR>(this));
+    }
+};
+#endif // FEATURE_INTERPRETER
 
 #ifdef HAS_FIXUP_PRECODE
 
 struct FixupPrecodeData
 {
     PCODE Target;
-    MethodDesc *MethodDesc;
+    class MethodDesc *MethodDesc;
     PCODE PrecodeFixupThunk;
 };
 
@@ -346,6 +382,9 @@ typedef DPTR(class Precode) PTR_Precode;
 enum PrecodeType {
     PRECODE_INVALID         = InvalidPrecode::Type,
     PRECODE_STUB            = StubPrecode::Type,
+#ifdef FEATURE_INTERPRETER
+    PRECODE_INTERPRETER     = InterpreterPrecode::Type,
+#endif // FEATURE_INTERPRETER
 #ifdef HAS_NDIRECT_IMPORT_PRECODE
     PRECODE_NDIRECT_IMPORT  = NDirectImportPrecode::Type,
 #endif // HAS_NDIRECT_IMPORT_PRECODE
@@ -438,12 +477,16 @@ public:
 
 #if defined(TARGET_LOONGARCH64)
         assert(0 == OFFSETOF_PRECODE_TYPE);
+        static_assert(5 == SHIFTOF_PRECODE_TYPE, "expected shift of 5");
         short type = *((short*)m_data);
-        type >>= 5;
+        type >>= SHIFTOF_PRECODE_TYPE;
 #elif defined(TARGET_RISCV64)
         assert(0 == OFFSETOF_PRECODE_TYPE);
         BYTE type = *((BYTE*)m_data + OFFSETOF_PRECODE_TYPE);
 #else
+#if defined(SHIFTOF_PRECODE_TYPE)
+#error "did not expect SHIFTOF_PRECODE_TYPE to be defined"
+#endif
         BYTE type = m_data[OFFSETOF_PRECODE_TYPE];
 #endif
 
@@ -467,12 +510,6 @@ public:
     {
         SUPPORTS_DAC;
         unsigned int align = PRECODE_ALIGNMENT;
-
-#if defined(TARGET_ARM) && defined(HAS_COMPACT_ENTRYPOINTS)
-        // Precodes have to be aligned to allow fast compact entry points check
-        _ASSERTE (align >= sizeof(void*));
-#endif // TARGET_ARM && HAS_COMPACT_ENTRYPOINTS
-
         return align;
     }
 
@@ -532,10 +569,13 @@ public:
     PTR_PCODE GetTargetSlot();
 
     MethodDesc *  GetMethodDesc(BOOL fSpeculative = FALSE);
-    BOOL          IsCorrectMethodDesc(MethodDesc *  pMD);
 
     static Precode* Allocate(PrecodeType t, MethodDesc* pMD,
         LoaderAllocator *pLoaderAllocator, AllocMemTracker *pamTracker);
+#ifdef FEATURE_INTERPRETER
+    static InterpreterPrecode* AllocateInterpreterPrecode(PCODE byteCode,
+        LoaderAllocator *  pLoaderAllocator, AllocMemTracker *  pamTracker);
+#endif // FEATURE_INTERPRETER
     void Init(Precode* pPrecodeRX, PrecodeType t, MethodDesc* pMD, LoaderAllocator *pLoaderAllocator);
 
 #ifndef DACCESS_COMPILE
@@ -585,22 +625,6 @@ public:
         return ALIGN_UP(SizeOf(t), AlignOf(t));
     }
 
-    static Precode * GetPrecodeForTemporaryEntryPoint(TADDR temporaryEntryPoints, int index);
-
-    static SIZE_T SizeOfTemporaryEntryPoints(PrecodeType t, int count);
-    static SIZE_T SizeOfTemporaryEntryPoints(TADDR temporaryEntryPoints, int count);
-
-    static TADDR AllocateTemporaryEntryPoints(MethodDescChunk* pChunk,
-        LoaderAllocator *pLoaderAllocator, AllocMemTracker *pamTracker);
-
-    static DWORD GetMaxTemporaryEntryPointsCount()
-    {
-        SIZE_T maxPrecodeCodeSize = Max(FixupPrecode::CodeSize, StubPrecode::CodeSize);
-        SIZE_T count = GetStubCodePageSize() / maxPrecodeCodeSize;
-        _ASSERTE(count < MAXDWORD);
-        return (DWORD)count;
-    }
-
 #ifdef DACCESS_COMPILE
     void EnumMemoryRegions(CLRDataEnumMemoryFlags flags);
 #endif
@@ -618,4 +642,41 @@ static_assert_no_msg(NDirectImportPrecode::Type != ThisPtrRetBufPrecode::Type);
 static_assert_no_msg(sizeof(Precode) <= sizeof(NDirectImportPrecode));
 static_assert_no_msg(sizeof(Precode) <= sizeof(FixupPrecode));
 static_assert_no_msg(sizeof(Precode) <= sizeof(ThisPtrRetBufPrecode));
+
+#ifndef DACCESS_COMPILE
+// A summary of the precode layout for diagnostic purposes
+struct PrecodeMachineDescriptor
+{
+    uint32_t StubCodePageSize;
+
+    uint8_t OffsetOfPrecodeType;
+    // cDAC will do (where N = 8*ReadWidthOfPrecodeType):
+    //   uintN_t PrecodeType = *(uintN_t*)(pPrecode + OffsetOfPrecodeType);
+    //   PrecodeType >>= ShiftOfPrecodeType;
+    //   return (byte)PrecodeType;
+    uint8_t ReadWidthOfPrecodeType;
+    uint8_t ShiftOfPrecodeType;
+
+    uint8_t InvalidPrecodeType;
+    uint8_t StubPrecodeType;
+#ifdef HAS_NDIRECT_IMPORT_PRECODE
+    uint8_t PInvokeImportPrecodeType;
+#endif
+
+#ifdef HAS_FIXUP_PRECODE
+    uint8_t FixupPrecodeType;
+#endif
+
+#ifdef HAS_THISPTR_RETBUF_PRECODE
+    uint8_t ThisPointerRetBufPrecodeType;
+#endif
+
+public:
+    PrecodeMachineDescriptor() = default;
+    PrecodeMachineDescriptor(const PrecodeMachineDescriptor&) = delete;
+    PrecodeMachineDescriptor& operator=(const PrecodeMachineDescriptor&) = delete;
+    static void Init(PrecodeMachineDescriptor* dest);
+};
+#endif //DACCESS_COMPILE
+
 #endif // __PRECODE_H__

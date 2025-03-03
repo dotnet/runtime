@@ -107,6 +107,8 @@ namespace ILCompiler.DependencyAnalysis
 
         public MethodDesc Method => _method;
 
+        public virtual bool IsUnboxingStub => _method.OwningType.IsValueType && !_method.Signature.IsStatic;
+
         public NativeLayoutMethodEntryVertexNode(NodeFactory factory, MethodDesc method, MethodEntryFlags flags)
         {
             _method = method;
@@ -148,7 +150,7 @@ namespace ILCompiler.DependencyAnalysis
 
             if ((_flags & MethodEntryFlags.SaveEntryPoint) != 0)
             {
-                IMethodNode methodEntryPointNode = GetMethodEntrypointNode(context, out _);
+                IMethodNode methodEntryPointNode = GetMethodEntrypointNode(context);
                 dependencies.Add(new DependencyListEntry(methodEntryPointNode, "NativeLayoutMethodEntryVertexNode entrypoint"));
             }
 
@@ -187,17 +189,17 @@ namespace ILCompiler.DependencyAnalysis
                 }
             }
 
+            if (IsUnboxingStub)
+                flags |= MethodFlags.IsUnboxingStub;
+
             uint fptrReferenceId = 0;
             if ((_flags & MethodEntryFlags.SaveEntryPoint) != 0)
             {
                 flags |= MethodFlags.HasFunctionPointer;
 
-                bool unboxingStub;
-                IMethodNode methodEntryPointNode = GetMethodEntrypointNode(factory, out unboxingStub);
+                IMethodNode methodEntryPointNode = GetMethodEntrypointNode(factory);
                 fptrReferenceId = factory.MetadataManager.NativeLayoutInfo.ExternalReferences.GetIndex(methodEntryPointNode);
 
-                if (unboxingStub)
-                    flags |= MethodFlags.IsUnboxingStub;
                 if (methodEntryPointNode.Method.IsCanonicalMethod(CanonicalFormKind.Universal))
                     flags |= MethodFlags.FunctionPointerIsUSG;
             }
@@ -219,10 +221,9 @@ namespace ILCompiler.DependencyAnalysis
             }
         }
 
-        protected virtual IMethodNode GetMethodEntrypointNode(NodeFactory factory, out bool unboxingStub)
+        protected virtual IMethodNode GetMethodEntrypointNode(NodeFactory factory)
         {
-            unboxingStub = _method.OwningType.IsValueType && !_method.Signature.IsStatic;
-            IMethodNode methodEntryPointNode = factory.MethodEntrypoint(_method, unboxingStub);
+            IMethodNode methodEntryPointNode = factory.MethodEntrypoint(_method, IsUnboxingStub);
             return methodEntryPointNode;
         }
     }
@@ -232,7 +233,7 @@ namespace ILCompiler.DependencyAnalysis
         protected override string GetName(NodeFactory factory) => "NativeLayoutMethodLdTokenVertexNode_" + factory.NameMangler.GetMangledMethodName(_method);
 
         public NativeLayoutMethodLdTokenVertexNode(NodeFactory factory, MethodDesc method)
-            : base(factory, method, 0)
+            : base(factory, method, method.IsRuntimeDeterminedExactMethod || method.IsGenericMethodDefinition ? 0 : MethodEntryFlags.CreateInstantiatedSignature)
         {
         }
 
@@ -568,7 +569,8 @@ namespace ILCompiler.DependencyAnalysis
                     //            A necessary EEType might be enough for some cases.
                     //            But we definitely need constructed if this is e.g. layout for a typehandle.
                     //            Measurements show this doesn't amount to much (0.004% - 0.3% size cost vs Necessary).
-                    new DependencyListEntry(context.MaximallyConstructableType(_type), "NativeLayoutEETypeVertexNode containing type signature")
+                    new DependencyListEntry(_type.IsGenericDefinition ? context.NecessaryTypeSymbol(_type) : context.MaximallyConstructableType(_type),
+                    "NativeLayoutEETypeVertexNode containing type signature")
                 };
             }
             public override Vertex WriteVertex(NodeFactory factory)
@@ -748,14 +750,11 @@ namespace ILCompiler.DependencyAnalysis
             return SetSavedVertex(factory.MetadataManager.NativeLayoutInfo.TemplatesSection.Place(methodEntryVertex));
         }
 
-        protected override IMethodNode GetMethodEntrypointNode(NodeFactory factory, out bool unboxingStub)
+        protected override IMethodNode GetMethodEntrypointNode(NodeFactory factory)
         {
             Debug.Assert(NeedsEntrypoint(_method));
-            unboxingStub = _method.OwningType.IsValueType && !_method.Signature.IsStatic;
-            IMethodNode methodEntryPointNode = factory.MethodEntrypoint(_method, unboxingStub);
-            // Note: We don't set the IsUnboxingStub flag on template methods (all template lookups performed at runtime are performed with this flag not set,
-            // since it can't always be conveniently computed for a concrete method before looking up its template)
-            unboxingStub = false;
+            // TODO-SIZE: this is only address taken if it's a target of a delegate
+            IMethodNode methodEntryPointNode = factory.AddressTakenMethodEntrypoint(_method, IsUnboxingStub);
             return methodEntryPointNode;
         }
 
@@ -909,6 +908,15 @@ namespace ILCompiler.DependencyAnalysis
                 }
             }
 
+            foreach (GenericParameterDesc genericParam in _method.GetTypicalMethodDefinition().Instantiation)
+            {
+                foreach (TypeDesc typeConstraint in genericParam.TypeConstraints)
+                {
+                    if (typeConstraint.IsInterface)
+                        yield return new DependencyListEntry(context.InterfaceUse(typeConstraint.GetTypeDefinition()), "Used as constraint");
+                }
+            }
+
             yield return new DependencyListEntry(context.GenericDictionaryLayout(_method), "Dictionary layout");
         }
 
@@ -983,7 +991,8 @@ namespace ILCompiler.DependencyAnalysis
         private ISymbolNode GetStaticsNode(NodeFactory context, out BagElementKind staticsBagKind)
         {
             MetadataType closestCanonDefType = (MetadataType)_type.GetClosestDefType().ConvertToCanonForm(CanonicalFormKind.Specific);
-            ISymbolNode symbol = context.GCStaticEEType(GCPointerMap.FromStaticLayout(closestCanonDefType));
+            bool requiresAlign8 = closestCanonDefType.GCStaticFieldAlignment.AsInt > context.Target.PointerSize;
+            ISymbolNode symbol = context.GCStaticEEType(GCPointerMap.FromStaticLayout(closestCanonDefType), requiresAlign8);
             staticsBagKind = BagElementKind.GcStaticDesc;
 
             return symbol;
@@ -992,7 +1001,8 @@ namespace ILCompiler.DependencyAnalysis
         private ISymbolNode GetThreadStaticsNode(NodeFactory context, out BagElementKind staticsBagKind)
         {
             MetadataType closestCanonDefType = (MetadataType)_type.GetClosestDefType().ConvertToCanonForm(CanonicalFormKind.Specific);
-            ISymbolNode symbol = context.GCStaticEEType(GCPointerMap.FromThreadStaticLayout(closestCanonDefType));
+            bool requiresAlign8 = closestCanonDefType.ThreadGcStaticFieldAlignment.AsInt > context.Target.PointerSize;
+            ISymbolNode symbol = context.GCStaticEEType(GCPointerMap.FromThreadStaticLayout(closestCanonDefType), requiresAlign8);
             staticsBagKind = BagElementKind.ThreadStaticDesc;
 
             return symbol;
@@ -1024,6 +1034,15 @@ namespace ILCompiler.DependencyAnalysis
             if (context.PreinitializationManager.HasLazyStaticConstructor(_type.ConvertToCanonForm(CanonicalFormKind.Specific)))
             {
                 yield return new DependencyListEntry(context.MethodEntrypoint(_type.GetStaticConstructor().GetCanonMethodTarget(CanonicalFormKind.Specific)), "cctor for template");
+            }
+
+            foreach (GenericParameterDesc genericParam in _type.GetTypeDefinition().Instantiation)
+            {
+                foreach (TypeDesc typeConstraint in genericParam.TypeConstraints)
+                {
+                    if (typeConstraint.IsInterface)
+                        yield return new DependencyListEntry(context.InterfaceUse(typeConstraint.GetTypeDefinition()), "Used as constraint");
+                }
             }
 
             if (!_isUniversalCanon)
@@ -1387,7 +1406,7 @@ namespace ILCompiler.DependencyAnalysis
                         break;
 
                     case VTableEntriesToProcess.AllOnTypesThatShouldProduceFullVTables:
-                        if (factory.VTable(declType).HasFixedSlots)
+                        if (factory.VTable(declType).HasKnownVirtualMethodUse)
                         {
                             vtableEntriesToProcess = factory.VTable(declType).Slots;
                         }
@@ -1398,7 +1417,7 @@ namespace ILCompiler.DependencyAnalysis
                         break;
 
                     case VTableEntriesToProcess.AllOnTypesThatProducePartialVTables:
-                        if (factory.VTable(declType).HasFixedSlots)
+                        if (factory.VTable(declType).HasKnownVirtualMethodUse)
                         {
                             vtableEntriesToProcess = Array.Empty<MethodDesc>();
                         }
@@ -1433,7 +1452,7 @@ namespace ILCompiler.DependencyAnalysis
 
                 MethodDesc implMethod = closestDefType.FindVirtualFunctionTargetMethodOnObjectType(declMethod);
 
-                if (implMethod.CanMethodBeInSealedVTable() && !implType.IsArrayTypeWithoutGenericInterfaces())
+                if (implMethod.CanMethodBeInSealedVTable(factory) && !implType.IsArrayTypeWithoutGenericInterfaces())
                 {
                     // Sealed vtable entries on other types in the hierarchy should not be reported (types read entries
                     // from their own sealed vtables, and not from the sealed vtables of base types).
@@ -1621,7 +1640,7 @@ namespace ILCompiler.DependencyAnalysis
             if (method.IsRuntimeDeterminedExactMethod)
                 method = method.GetCanonMethodTarget(CanonicalFormKind.Specific);
 
-            if (!factory.VTable(method.OwningType).HasFixedSlots)
+            if (!factory.VTable(method.OwningType).HasKnownVirtualMethodUse)
             {
                 yield return new DependencyListEntry(factory.VirtualMethodUse(method), "Slot number");
             }
@@ -1656,7 +1675,7 @@ namespace ILCompiler.DependencyAnalysis
             {
             }
 
-            protected override IMethodNode GetMethodEntrypointNode(NodeFactory factory, out bool unboxingStub)
+            protected override IMethodNode GetMethodEntrypointNode(NodeFactory factory)
             {
                 throw new NotSupportedException();
             }
@@ -1882,6 +1901,8 @@ namespace ILCompiler.DependencyAnalysis
             public bool _unboxingStub;
             public IMethodNode _functionPointerNode;
 
+            public override bool IsUnboxingStub => _unboxingStub;
+
             public WrappedMethodEntryVertexNode(NodeFactory factory, MethodDesc method, bool unboxingStub, IMethodNode functionPointerNode) :
                 base(factory, method, functionPointerNode != null ? MethodEntryFlags.SaveEntryPoint : default(MethodEntryFlags))
             {
@@ -1889,9 +1910,8 @@ namespace ILCompiler.DependencyAnalysis
                 _functionPointerNode = functionPointerNode;
             }
 
-            protected override IMethodNode GetMethodEntrypointNode(NodeFactory factory, out bool unboxingStub)
+            protected override IMethodNode GetMethodEntrypointNode(NodeFactory factory)
             {
-                unboxingStub = _unboxingStub;
                 return _functionPointerNode;
             }
 

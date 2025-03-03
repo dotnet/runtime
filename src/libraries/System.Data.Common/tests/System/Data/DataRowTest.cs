@@ -29,7 +29,7 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
-
+using System.Reflection;
 using Xunit;
 
 namespace System.Data.Tests
@@ -875,6 +875,16 @@ namespace System.Data.Tests
             childRow.SetParentRow(parentRow);
             Assert.Equal(DBNull.Value, childRow[childColumn1]);
             Assert.Equal("value", childRow[childColumn2]);
+        }
+
+        [Fact]
+        public void MethodsCalledByReflectionSerializersAreNotTrimmed()
+        {
+            Assert.False(ShouldSerializeExists("LastChangedColumn"));
+            Assert.True(ResetExists("LastChangedColumn"));
+
+            bool ShouldSerializeExists(string name) => typeof(DataRow).GetProperty("ShouldSerialize" + name, BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public) != null;
+            bool ResetExists(string name) => typeof(DataRow).GetMethod("Reset" + name, BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public) != null;
         }
     }
 }

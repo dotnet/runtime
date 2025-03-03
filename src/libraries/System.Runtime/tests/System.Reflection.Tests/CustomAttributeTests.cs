@@ -237,5 +237,43 @@ namespace System.Reflection.Tests
             Assert.Equal(typeof(MyParameterAttribute), customAttributesData[0].AttributeType);
             Assert.Equal(typeof(MyPropertyAttribute), customAttributesData[1].AttributeType);
         }
+
+        internal enum EnumForArrays { Zero, One, Two }
+
+        [CustomAttributeWithObjects(EnumForArrays.One, new object[] { EnumForArrays.One }, new EnumForArrays[] { EnumForArrays.Two },
+                B1 = EnumForArrays.One, B2 = new object[] { EnumForArrays.One }, B3 = new EnumForArrays[] { EnumForArrays.Two })]
+        internal class ClassWithObjectEnums { }
+
+        internal class CustomAttributeWithObjectsAttribute(object a1, object a2, object a3) : Attribute
+        {
+            public object A1 => a1;
+            public object A2 => a2;
+            public object A3 => a3;
+
+            public object B1 { get; set; }
+            public object B2 { get; set; }
+            public object B3 { get; set; }
+        }
+
+        [Fact]
+        public void BoxedEnumAttributes()
+        {
+            CustomAttributeWithObjectsAttribute att = typeof(ClassWithObjectEnums)
+                .GetCustomAttribute<CustomAttributeWithObjectsAttribute>()!;
+
+            Assert.Equal(typeof(EnumForArrays), att.A1.GetType());
+            Assert.Equal(typeof(object[]), att.A2.GetType());
+            Assert.Equal(typeof(EnumForArrays), ((object[])att.A2)[0].GetType());
+            Assert.Equal(EnumForArrays.One, ((object[])att.A2)[0]);
+            Assert.Equal(typeof(EnumForArrays[]), att.A3.GetType());
+            Assert.Equal(EnumForArrays.Two, ((EnumForArrays[])att.A3)[0]);
+
+            Assert.Equal(typeof(EnumForArrays), att.B1.GetType());
+            Assert.Equal(typeof(object[]), att.B2.GetType());
+            Assert.Equal(typeof(EnumForArrays), ((object[])att.B2)[0].GetType());
+            Assert.Equal(EnumForArrays.One, ((object[])att.B2)[0]);
+            Assert.Equal(typeof(EnumForArrays[]), att.B3.GetType());
+            Assert.Equal(EnumForArrays.Two, ((EnumForArrays[])att.B3)[0]);
+        }
     }
 }

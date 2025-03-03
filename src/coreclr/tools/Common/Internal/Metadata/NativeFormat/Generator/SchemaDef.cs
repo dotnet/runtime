@@ -221,8 +221,7 @@ internal sealed class SchemaDef
             members: new MemberDef[] {
                 new MemberDef(name: "PublicKey", value: "0x1", comment: "The assembly reference holds the full (unhashed) public key."),
                 new MemberDef(name: "Retargetable", value: "0x100", comment: "The implementation of this assembly used at runtime is not expected to match the version seen at compile time."),
-                new MemberDef(name: "DisableJITcompileOptimizer", value: "0x4000", comment: "Reserved."),
-                new MemberDef(name: "EnableJITcompileTracking", value: "0x8000", comment: "Reserved."),
+                new MemberDef(name: "ContentTypeMask", value: "0x00000e00", comment: "Content type mask. Masked bits correspond to values of System.Reflection.AssemblyContentType"),
             }
         ),
         // AssemblyHashAlgorithm - as defined in ECMA
@@ -314,6 +313,13 @@ internal sealed class SchemaDef
                     name: "ConstantStringValue",
                     members: new MemberDef[] {
                         new MemberDef(name: "Value", typeName: "string")
+                    }
+                ),
+                new RecordDef(
+                    name: "ConstantEnumValue",
+                    members: new MemberDef[] {
+                        new MemberDef("Value", EnumConstantValue, MemberDefFlags.RecordRef | MemberDefFlags.Child),
+                        new MemberDef("Type", TypeDefOrRefOrSpec, MemberDefFlags.RecordRef)
                     }
                 )
             }
@@ -628,13 +634,6 @@ internal sealed class SchemaDef
                 new MemberDef("Name", "ConstantStringValue", MemberDefFlags.RecordRef | MemberDefFlags.Child),
                 new MemberDef("Type", TypeDefOrRefOrSpec, MemberDefFlags.RecordRef),
                 new MemberDef("Value", TypeDefOrRefOrSpecOrConstant, MemberDefFlags.RecordRef),
-            }
-        ),
-        new RecordDef(
-            name: "ConstantBoxedEnumValue",
-            members: new MemberDef[] {
-                new MemberDef("Value", EnumConstantValue, MemberDefFlags.RecordRef | MemberDefFlags.Child),
-                new MemberDef("Type", TypeDefOrRefOrSpec, MemberDefFlags.RecordRef)
             }
         ),
         new RecordDef(

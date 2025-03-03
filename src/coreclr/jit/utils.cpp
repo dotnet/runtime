@@ -1,4 +1,4 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 // ===================================================================================================
@@ -282,14 +282,14 @@ const char* getRegNameFloat(regNumber reg, var_types type)
  */
 const char* dspRegRange(regMaskTP regMask, size_t& minSiz, const char* sep, regNumber regFirst, regNumber regLast)
 {
-#ifdef TARGET_XARCH
+#ifdef FEATURE_MASKED_HW_INTRINSICS
     assert(((regFirst == REG_INT_FIRST) && (regLast == REG_INT_LAST)) ||
            ((regFirst == REG_FP_FIRST) && (regLast == REG_FP_LAST)) ||
            ((regFirst == REG_MASK_FIRST) && (regLast == REG_MASK_LAST)));
 #else
     assert(((regFirst == REG_INT_FIRST) && (regLast == REG_INT_LAST)) ||
            ((regFirst == REG_FP_FIRST) && (regLast == REG_FP_LAST)));
-#endif
+#endif // FEATURE_MASKED_HW_INTRINSICS
 
     if (strlen(sep) > 0)
     {
@@ -306,7 +306,7 @@ const char* dspRegRange(regMaskTP regMask, size_t& minSiz, const char* sep, regN
     {
         regMaskTP regBit = genRegMask(regNum);
 
-        if ((regMask & regBit) != 0)
+        if ((regMask & regBit).IsNonEmpty())
         {
             // We have a register to display. It gets displayed now if:
             // 1. This is the first register to display of a new range of registers (possibly because
@@ -321,7 +321,6 @@ const char* dspRegRange(regMaskTP regMask, size_t& minSiz, const char* sep, regN
                 minSiz -= strlen(sep) + strlen(nam);
 
                 // What kind of separator should we use for this range (if it is indeed going to be a range)?
-                CLANG_FORMAT_COMMENT_ANCHOR;
 
                 if (genIsValidIntReg(regNum))
                 {
@@ -353,7 +352,6 @@ const char* dspRegRange(regMaskTP regMask, size_t& minSiz, const char* sep, regN
                     }
 #elif defined(TARGET_X86)
                     // No register ranges
-                    CLANG_FORMAT_COMMENT_ANCHOR;
 #elif defined(TARGET_LOONGARCH64)
                     if (REG_A0 <= regNum && regNum <= REG_T8)
                     {
@@ -417,11 +415,6 @@ const char* dspRegRange(regMaskTP regMask, size_t& minSiz, const char* sep, regN
             sep        = " ";
         }
 
-        if (regBit > regMask)
-        {
-            break;
-        }
-
         regPrev = regNum;
     }
 
@@ -441,10 +434,9 @@ void dspRegMask(regMaskTP regMask, size_t minSiz)
 
     sep = dspRegRange(regMask, minSiz, sep, REG_INT_FIRST, REG_INT_LAST);
     sep = dspRegRange(regMask, minSiz, sep, REG_FP_FIRST, REG_FP_LAST);
-
-#ifdef TARGET_XARCH
+#ifdef FEATURE_MASKED_HW_INTRINSICS
     sep = dspRegRange(regMask, minSiz, sep, REG_MASK_FIRST, REG_MASK_LAST);
-#endif // TARGET_XARCH
+#endif // FEATURE_MASKED_HW_INTRINSICS
 
     printf("]");
 
@@ -505,7 +497,7 @@ unsigned dumpSingleInstr(const BYTE* const codeAddr, IL_OFFSET offs, const char*
     }
 
     OPCODE opcode = (OPCODE)getU1LittleEndian(opcodePtr);
-    opcodePtr += sizeof(__int8);
+    opcodePtr += sizeof(int8_t);
 
 DECODE_OPCODE:
 
@@ -526,12 +518,12 @@ DECODE_OPCODE:
     {
         case CEE_PREFIX1:
             opcode = OPCODE(getU1LittleEndian(opcodePtr) + 256);
-            opcodePtr += sizeof(__int8);
+            opcodePtr += sizeof(int8_t);
             goto DECODE_OPCODE;
 
         default:
         {
-            __int64 iOp;
+            int64_t iOp;
             double  dOp;
             int     jOp;
             DWORD   jOp2;
@@ -563,7 +555,7 @@ DECODE_OPCODE:
                     goto INT_OP;
                 case InlineI8:
                     iOp = getU4LittleEndian(opcodePtr);
-                    iOp |= (__int64)getU4LittleEndian(opcodePtr + 4) << 32;
+                    iOp |= (int64_t)getU4LittleEndian(opcodePtr + 4) << 32;
                     goto INT_OP;
 
                 INT_OP:
@@ -765,7 +757,7 @@ bool ConfigMethodRange::Contains(unsigned hash)
 //    because of bad characters or too many entries, or had values
 //    that were too large to represent.
 
-void ConfigMethodRange::InitRanges(const WCHAR* rangeStr, unsigned capacity)
+void ConfigMethodRange::InitRanges(const char* rangeStr, unsigned capacity)
 {
     // Make sure that the memory was zero initialized
     assert(m_inited == 0 || m_inited == 1);
@@ -787,34 +779,34 @@ void ConfigMethodRange::InitRanges(const WCHAR* rangeStr, unsigned capacity)
     m_ranges             = (Range*)jitHost->allocateMemory(capacity * sizeof(Range));
     m_entries            = capacity;
 
-    const WCHAR* p           = rangeStr;
-    unsigned     lastRange   = 0;
-    bool         setHighPart = false;
+    const char* p           = rangeStr;
+    unsigned    lastRange   = 0;
+    bool        setHighPart = false;
 
     while ((*p != 0) && (lastRange < m_entries))
     {
-        while ((*p == L' ') || (*p == L','))
+        while ((*p == ' ') || (*p == ','))
         {
             p++;
         }
 
         int i = 0;
 
-        while (((L'0' <= *p) && (*p <= L'9')) || ((L'A' <= *p) && (*p <= L'F')) || ((L'a' <= *p) && (*p <= L'f')))
+        while ((('0' <= *p) && (*p <= '9')) || (('A' <= *p) && (*p <= 'F')) || (('a' <= *p) && (*p <= 'f')))
         {
             int n = 0;
 
-            if ((L'0' <= *p) && (*p <= L'9'))
+            if (('0' <= *p) && (*p <= '9'))
             {
-                n = (*p++) - L'0';
+                n = (*p++) - '0';
             }
-            else if ((L'A' <= *p) && (*p <= L'F'))
+            else if (('A' <= *p) && (*p <= 'F'))
             {
-                n = (*p++) - L'A' + 10;
+                n = (*p++) - 'A' + 10;
             }
-            else if ((L'a' <= *p) && (*p <= L'f'))
+            else if (('a' <= *p) && (*p <= 'f'))
             {
-                n = (*p++) - L'a' + 10;
+                n = (*p++) - 'a' + 10;
             }
 
             int j = 16 * i + n;
@@ -848,13 +840,13 @@ void ConfigMethodRange::InitRanges(const WCHAR* rangeStr, unsigned capacity)
         // Must have been looking for the low part of a range
         m_ranges[lastRange].m_low = i;
 
-        while (*p == L' ')
+        while (*p == ' ')
         {
             p++;
         }
 
         // Was that the low part of a low-high pair?
-        if (*p == L'-')
+        if (*p == '-')
         {
             // Yep, skip the dash and set high part next time around.
             p++;
@@ -917,15 +909,196 @@ void ConfigMethodRange::Dump()
     }
 }
 
+//------------------------------------------------------------------------
+// Init: parse a string to set up a ConfigIntArray
+//
+// Arguments:
+//    str -- string to parse (may be nullptr)
+//
+// Notes:
+//    Values are separated decimal with no whitespace.
+//    Separators are any digit not '-' or '0-9'
+//
+void ConfigIntArray::Init(const char* str)
+{
+    // Count the number of values
+    //
+    const char* p         = str;
+    unsigned    numValues = 0;
+    while (*p != 0)
+    {
+        if ((*p == '-') || (('0' <= *p) && (*p <= '9')))
+        {
+            if (*p == '-')
+            {
+                p++;
+            }
+
+            while (('0' <= *p) && (*p <= '9'))
+            {
+                p++;
+            }
+
+            numValues++;
+        }
+        else
+        {
+            p++;
+        }
+    }
+
+    m_length = numValues;
+    m_values = (int*)g_jitHost->allocateMemory(numValues * sizeof(int));
+
+    numValues         = 0;
+    p                 = str;
+    int  currentValue = 0;
+    bool isNegative   = false;
+    while (*p != 0)
+    {
+        if ((*p == '-') || (('0' <= *p) && (*p <= '9')))
+        {
+            if (*p == '-')
+            {
+                isNegative = true;
+                p++;
+            }
+
+            while (('0' <= *p) && (*p <= '9'))
+            {
+                currentValue = currentValue * 10 + (*p++) - '0';
+            }
+
+            if (isNegative)
+            {
+                currentValue = -currentValue;
+            }
+
+            m_values[numValues++] = currentValue;
+            currentValue          = 0;
+        }
+        else
+        {
+            p++;
+        }
+    }
+}
+
+//------------------------------------------------------------------------
+// Dump: dump config array to stdout
+//
+void ConfigIntArray::Dump()
+{
+    if (m_values == nullptr)
+    {
+        printf("<uninitialized config int array>\n");
+        return;
+    }
+
+    if (m_length == 0)
+    {
+        printf("<empty config int array>\n");
+        return;
+    }
+
+    for (unsigned i = 0; i < m_length; i++)
+    {
+        printf("%s%i", i == 0 ? "" : ", ", m_values[i]);
+    }
+}
+
+//------------------------------------------------------------------------
+// Init: parse a string to set up a ConfigDoubleArray
+//
+// Arguments:
+//    str -- string to parse (may be nullptr)
+//
+// Notes:
+//    Values are comma, tab or space separated.
+//    Consecutive separators are ignored
+//
+void ConfigDoubleArray::Init(const char* str)
+{
+    // Count the number of values
+    //
+    const char* p         = str;
+    unsigned    numValues = 0;
+    while (*p != 0)
+    {
+        if (*p == ',')
+        {
+            p++;
+            continue;
+        }
+        char* pNext = nullptr;
+        strtod(p, &pNext);
+        if (errno == 0)
+        {
+            numValues++;
+        }
+        p = pNext;
+    }
+
+    m_length  = numValues;
+    m_values  = (double*)g_jitHost->allocateMemory(numValues * sizeof(double));
+    p         = str;
+    numValues = 0;
+    while (*p != 0)
+    {
+        if (*p == ',')
+        {
+            p++;
+            continue;
+        }
+
+        char*  pNext = nullptr;
+        double val   = strtod(p, &pNext);
+        if (errno == 0)
+        {
+            m_values[numValues++] = val;
+        }
+        p = pNext;
+    }
+}
+
+//------------------------------------------------------------------------
+// Dump: dump config array to stdout
+//
+void ConfigDoubleArray::Dump()
+{
+    if (m_values == nullptr)
+    {
+        printf("<uninitialized config double array>\n");
+        return;
+    }
+
+    if (m_length == 0)
+    {
+        printf("<empty config double array>\n");
+        return;
+    }
+
+    for (unsigned i = 0; i < m_length; i++)
+    {
+        printf("%s%f ", i == 0 ? "" : ",", m_values[i]);
+    }
+}
+
 #endif // defined(DEBUG)
 
 #if CALL_ARG_STATS || COUNT_BASIC_BLOCKS || COUNT_LOOPS || EMITTER_STATS || MEASURE_NODE_SIZE || MEASURE_MEM_ALLOC
+
+void Counter::dump(FILE* output)
+{
+    fprintf(output, "%lld\n", (long long)Value);
+}
 
 /*****************************************************************************
  *  Histogram class.
  */
 
-Histogram::Histogram(const unsigned* const sizeTable) : m_sizeTable(sizeTable)
+Histogram::Histogram(const unsigned* const sizeTable)
+    : m_sizeTable(sizeTable)
 {
     unsigned sizeCount = 0;
     do
@@ -1041,8 +1214,8 @@ void NodeCounts::record(genTreeOps oper)
 
 struct DumpOnShutdownEntry
 {
-    const char* Name;
-    Dumpable*   Dumpable;
+    const char*     Name;
+    class Dumpable* Dumpable;
 };
 
 static DumpOnShutdownEntry s_dumpOnShutdown[16];
@@ -1344,6 +1517,8 @@ void HelperCallProperties::init()
         bool isAllocator   = false; // true if the result is usually a newly created heap item, or may throw OutOfMemory
         bool mutatesHeap   = false; // true if any previous heap objects [are|can be] modified
         bool mayRunCctor   = false; // true if the helper call may cause a static constructor to be run.
+        bool isNoEscape    = false; // true if none of the GC ref arguments can escape
+        bool isNoGC        = false; // true is the helper cannot trigger GC
 
         switch (helper)
         {
@@ -1351,6 +1526,8 @@ void HelperCallProperties::init()
             case CORINFO_HELP_LLSH:
             case CORINFO_HELP_LRSH:
             case CORINFO_HELP_LRSZ:
+                isNoGC = true;
+                FALLTHROUGH;
             case CORINFO_HELP_LMUL:
             case CORINFO_HELP_LNG2DBL:
             case CORINFO_HELP_ULNG2DBL:
@@ -1360,9 +1537,6 @@ void HelperCallProperties::init()
             case CORINFO_HELP_DBL2ULNG:
             case CORINFO_HELP_FLTREM:
             case CORINFO_HELP_DBLREM:
-            case CORINFO_HELP_FLTROUND:
-            case CORINFO_HELP_DBLROUND:
-
                 isPure  = true;
                 noThrow = true;
                 break;
@@ -1450,8 +1624,6 @@ void HelperCallProperties::init()
 
             case CORINFO_HELP_RUNTIMEHANDLE_METHOD:
             case CORINFO_HELP_RUNTIMEHANDLE_CLASS:
-            case CORINFO_HELP_RUNTIMEHANDLE_METHOD_LOG:
-            case CORINFO_HELP_RUNTIMEHANDLE_CLASS_LOG:
             case CORINFO_HELP_READYTORUN_GENERIC_HANDLE:
                 // logging helpers are not technically pure but can be optimized away
                 isPure        = true;
@@ -1484,6 +1656,7 @@ void HelperCallProperties::init()
             case CORINFO_HELP_CHKCASTANY:
             case CORINFO_HELP_CHKCASTCLASS_SPECIAL:
             case CORINFO_HELP_READYTORUN_CHKCAST:
+            case CORINFO_HELP_UNBOX_TYPETEST:
 
                 // These throw for a failing cast
                 // But if given a null input arg will return null
@@ -1492,8 +1665,11 @@ void HelperCallProperties::init()
 
             // helpers returning addresses, these can also throw
             case CORINFO_HELP_UNBOX:
-            case CORINFO_HELP_LDELEMA_REF:
+                isNoEscape = true;
+                isPure     = true;
+                break;
 
+            case CORINFO_HELP_LDELEMA_REF:
                 isPure = true;
                 break;
 
@@ -1516,20 +1692,17 @@ void HelperCallProperties::init()
             // Helpers that load the base address for static variables.
             // We divide these between those that may and may not invoke
             // static class constructors.
-            case CORINFO_HELP_GETSHARED_GCSTATIC_BASE:
-            case CORINFO_HELP_GETSHARED_NONGCSTATIC_BASE:
-            case CORINFO_HELP_GETSHARED_GCSTATIC_BASE_DYNAMICCLASS:
-            case CORINFO_HELP_GETSHARED_NONGCSTATIC_BASE_DYNAMICCLASS:
-            case CORINFO_HELP_GETGENERICS_GCTHREADSTATIC_BASE:
-            case CORINFO_HELP_GETGENERICS_NONGCTHREADSTATIC_BASE:
-            case CORINFO_HELP_GETSHARED_GCTHREADSTATIC_BASE:
-            case CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE:
-            case CORINFO_HELP_CLASSINIT_SHARED_DYNAMICCLASS:
-            case CORINFO_HELP_GETSHARED_GCTHREADSTATIC_BASE_DYNAMICCLASS:
-            case CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE_DYNAMICCLASS:
+            case CORINFO_HELP_GET_GCSTATIC_BASE:
+            case CORINFO_HELP_GET_NONGCSTATIC_BASE:
+            case CORINFO_HELP_GETDYNAMIC_GCSTATIC_BASE:
+            case CORINFO_HELP_GETDYNAMIC_NONGCSTATIC_BASE:
+            case CORINFO_HELP_GETPINNED_GCSTATIC_BASE:
+            case CORINFO_HELP_GETPINNED_NONGCSTATIC_BASE:
+            case CORINFO_HELP_GET_GCTHREADSTATIC_BASE:
+            case CORINFO_HELP_GET_NONGCTHREADSTATIC_BASE:
+            case CORINFO_HELP_GETDYNAMIC_GCTHREADSTATIC_BASE:
+            case CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE:
             case CORINFO_HELP_GETSTATICFIELDADDR_TLS:
-            case CORINFO_HELP_GETGENERICS_GCSTATIC_BASE:
-            case CORINFO_HELP_GETGENERICS_NONGCSTATIC_BASE:
             case CORINFO_HELP_READYTORUN_GCSTATIC_BASE:
             case CORINFO_HELP_READYTORUN_NONGCSTATIC_BASE:
             case CORINFO_HELP_READYTORUN_THREADSTATIC_BASE:
@@ -1544,12 +1717,28 @@ void HelperCallProperties::init()
                 mayRunCctor   = true;
                 break;
 
-            case CORINFO_HELP_GETSHARED_GCSTATIC_BASE_NOCTOR:
-            case CORINFO_HELP_GETSHARED_NONGCSTATIC_BASE_NOCTOR:
-            case CORINFO_HELP_GETSHARED_GCTHREADSTATIC_BASE_NOCTOR:
-            case CORINFO_HELP_GETSHARED_GCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED:
-            case CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE_NOCTOR:
-            case CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED:
+            case CORINFO_HELP_INITCLASS:
+            case CORINFO_HELP_INITINSTCLASS:
+                isPure      = true;
+                mayRunCctor = true;
+                break;
+
+            case CORINFO_HELP_GET_GCSTATIC_BASE_NOCTOR:
+            case CORINFO_HELP_GET_NONGCSTATIC_BASE_NOCTOR:
+                isNoGC = true;
+                FALLTHROUGH;
+            case CORINFO_HELP_GETDYNAMIC_GCSTATIC_BASE_NOCTOR:
+            case CORINFO_HELP_GETDYNAMIC_NONGCSTATIC_BASE_NOCTOR:
+            case CORINFO_HELP_GETPINNED_GCSTATIC_BASE_NOCTOR:
+            case CORINFO_HELP_GETPINNED_NONGCSTATIC_BASE_NOCTOR:
+            case CORINFO_HELP_GET_GCTHREADSTATIC_BASE_NOCTOR:
+            case CORINFO_HELP_GET_NONGCTHREADSTATIC_BASE_NOCTOR:
+            case CORINFO_HELP_GETDYNAMIC_GCTHREADSTATIC_BASE_NOCTOR:
+            case CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_NOCTOR:
+            case CORINFO_HELP_GETDYNAMIC_GCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED:
+            case CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED:
+            case CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED2:
+            case CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED2_NOJITOPT:
             case CORINFO_HELP_READYTORUN_THREADSTATIC_BASE_NOCTOR:
 
                 // These do not invoke static class constructors
@@ -1559,30 +1748,41 @@ void HelperCallProperties::init()
                 nonNullReturn = true;
                 break;
 
+#ifdef TARGET_X86
+            case CORINFO_HELP_ASSIGN_REF_EAX:
+            case CORINFO_HELP_ASSIGN_REF_ECX:
+            case CORINFO_HELP_ASSIGN_REF_EBX:
+            case CORINFO_HELP_ASSIGN_REF_EBP:
+            case CORINFO_HELP_ASSIGN_REF_ESI:
+            case CORINFO_HELP_ASSIGN_REF_EDI:
+            case CORINFO_HELP_CHECKED_ASSIGN_REF_EAX:
+            case CORINFO_HELP_CHECKED_ASSIGN_REF_ECX:
+            case CORINFO_HELP_CHECKED_ASSIGN_REF_EBX:
+            case CORINFO_HELP_CHECKED_ASSIGN_REF_EBP:
+            case CORINFO_HELP_CHECKED_ASSIGN_REF_ESI:
+            case CORINFO_HELP_CHECKED_ASSIGN_REF_EDI:
+#endif
             // GC Write barrier support
             // TODO-ARM64-Bug?: Can these throw or not?
             case CORINFO_HELP_ASSIGN_REF:
             case CORINFO_HELP_CHECKED_ASSIGN_REF:
-            case CORINFO_HELP_ASSIGN_REF_ENSURE_NONHEAP:
             case CORINFO_HELP_ASSIGN_BYREF:
-            case CORINFO_HELP_ASSIGN_STRUCT:
-
+                isNoGC = true;
+                FALLTHROUGH;
+            case CORINFO_HELP_ASSIGN_REF_ENSURE_NONHEAP:
+            case CORINFO_HELP_BULK_WRITEBARRIER:
                 mutatesHeap = true;
                 break;
 
             // Accessing fields (write)
-            case CORINFO_HELP_SETFIELD32:
-            case CORINFO_HELP_SETFIELD64:
-            case CORINFO_HELP_SETFIELDOBJ:
-            case CORINFO_HELP_SETFIELDSTRUCT:
-            case CORINFO_HELP_SETFIELDFLOAT:
-            case CORINFO_HELP_SETFIELDDOUBLE:
             case CORINFO_HELP_ARRADDR_ST:
-
                 mutatesHeap = true;
                 break;
 
             // These helper calls always throw an exception
+            case CORINFO_HELP_FAIL_FAST:
+                isNoGC = true;
+                FALLTHROUGH;
             case CORINFO_HELP_OVERFLOW:
             case CORINFO_HELP_VERIFICATION:
             case CORINFO_HELP_RNGCHKFAIL:
@@ -1595,17 +1795,10 @@ void HelperCallProperties::init()
             case CORINFO_HELP_THROW_NOT_IMPLEMENTED:
             case CORINFO_HELP_THROW_PLATFORM_NOT_SUPPORTED:
             case CORINFO_HELP_THROW_TYPE_NOT_SUPPORTED:
-            case CORINFO_HELP_FAIL_FAST:
             case CORINFO_HELP_METHOD_ACCESS_EXCEPTION:
             case CORINFO_HELP_FIELD_ACCESS_EXCEPTION:
             case CORINFO_HELP_CLASS_ACCESS_EXCEPTION:
-
                 alwaysThrow = true;
-                break;
-
-            // These helper calls may throw an exception
-            case CORINFO_HELP_MON_EXIT_STATIC:
-
                 break;
 
             // This is a debugging aid; it simply returns a constant address.
@@ -1614,26 +1807,34 @@ void HelperCallProperties::init()
                 noThrow = true;
                 break;
 
+            case CORINFO_HELP_INIT_PINVOKE_FRAME:
+            case CORINFO_HELP_JIT_REVERSE_PINVOKE_ENTER: // Never present on stack at the time of GC.
+            case CORINFO_HELP_JIT_REVERSE_PINVOKE_ENTER_TRACK_TRANSITIONS:
+                isNoGC = true;
+                FALLTHROUGH;
             case CORINFO_HELP_DBG_IS_JUST_MY_CODE:
-            case CORINFO_HELP_BBT_FCN_ENTER:
             case CORINFO_HELP_POLL_GC:
             case CORINFO_HELP_MON_ENTER:
             case CORINFO_HELP_MON_EXIT:
-            case CORINFO_HELP_MON_ENTER_STATIC:
-            case CORINFO_HELP_JIT_REVERSE_PINVOKE_ENTER:
             case CORINFO_HELP_JIT_REVERSE_PINVOKE_EXIT:
-            case CORINFO_HELP_GETFIELDADDR:
-            case CORINFO_HELP_INIT_PINVOKE_FRAME:
             case CORINFO_HELP_JIT_PINVOKE_BEGIN:
             case CORINFO_HELP_JIT_PINVOKE_END:
-
                 noThrow = true;
                 break;
 
-            // Not sure how to handle optimization involving the rest of these  helpers
-            default:
+            case CORINFO_HELP_TAILCALL: // Never present on stack at the time of GC.
+            case CORINFO_HELP_STACK_PROBE:
+            case CORINFO_HELP_CHECK_OBJ:
+            case CORINFO_HELP_VALIDATE_INDIRECT_CALL:
+            case CORINFO_HELP_PROF_FCN_LEAVE:
+            case CORINFO_HELP_PROF_FCN_ENTER:
+            case CORINFO_HELP_PROF_FCN_TAILCALL:
+                isNoGC      = true;
+                mutatesHeap = true; // Conservatively.
+                break;
 
-                // The most pessimistic results are returned for these helpers
+            default:
+                // The most pessimistic results are returned for these helpers.
                 mutatesHeap = true;
                 break;
         }
@@ -1645,6 +1846,8 @@ void HelperCallProperties::init()
         m_isAllocator[helper]   = isAllocator;
         m_mutatesHeap[helper]   = mutatesHeap;
         m_mayRunCctor[helper]   = mayRunCctor;
+        m_isNoEscape[helper]    = isNoEscape;
+        m_isNoGC[helper]        = isNoGC;
     }
 }
 
@@ -1657,17 +1860,18 @@ void HelperCallProperties::init()
 //
 // You must use ';' as a separator; whitespace no longer works
 
-AssemblyNamesList2::AssemblyNamesList2(const WCHAR* list, HostAllocator alloc) : m_alloc(alloc)
+AssemblyNamesList2::AssemblyNamesList2(const char* list, HostAllocator alloc)
+    : m_alloc(alloc)
 {
-    WCHAR          prevChar   = '?';     // dummy
-    LPWSTR         nameStart  = nullptr; // start of the name currently being processed. nullptr if no current name
+    char           prevChar   = '?';     // dummy
+    const char*    nameStart  = nullptr; // start of the name currently being processed. nullptr if no current name
     AssemblyName** ppPrevLink = &m_pNames;
 
-    for (LPWSTR listWalk = const_cast<LPWSTR>(list); prevChar != '\0'; prevChar = *listWalk, listWalk++)
+    for (const char* listWalk = list; prevChar != '\0'; prevChar = *listWalk, listWalk++)
     {
-        WCHAR curChar = *listWalk;
+        char curChar = *listWalk;
 
-        if (curChar == W(';') || curChar == W('\0'))
+        if (curChar == ';' || curChar == '\0')
         {
             // Found separator or end of string
             if (nameStart)
@@ -1676,29 +1880,15 @@ AssemblyNamesList2::AssemblyNamesList2(const WCHAR* list, HostAllocator alloc) :
 
                 AssemblyName* newName = new (m_alloc) AssemblyName();
 
-                // Null out the current character so we can do zero-terminated string work; we'll restore it later.
-                *listWalk = W('\0');
+                ptrdiff_t nameLen       = listWalk - nameStart;
+                newName->m_assemblyName = new (m_alloc) char[nameLen + 1];
+                memcpy(newName->m_assemblyName, nameStart, nameLen * sizeof(char));
+                newName->m_assemblyName[nameLen] = '\0';
 
-                // How much space do we need?
-                int convertedNameLenBytes =
-                    WszWideCharToMultiByte(CP_UTF8, 0, nameStart, -1, nullptr, 0, nullptr, nullptr);
-                newName->m_assemblyName = new (m_alloc) char[convertedNameLenBytes]; // convertedNameLenBytes includes
-                                                                                     // the trailing null character
-                if (WszWideCharToMultiByte(CP_UTF8, 0, nameStart, -1, newName->m_assemblyName, convertedNameLenBytes,
-                                           nullptr, nullptr) != 0)
-                {
-                    *ppPrevLink = newName;
-                    ppPrevLink  = &newName->m_next;
-                }
-                else
-                {
-                    // Failed to convert the string. Ignore this string (and leak the memory).
-                }
+                *ppPrevLink = newName;
+                ppPrevLink  = &newName->m_next;
 
                 nameStart = nullptr;
-
-                // Restore the current character.
-                *listWalk = curChar;
             }
         }
         else if (!nameStart)
@@ -1744,9 +1934,11 @@ bool AssemblyNamesList2::IsInList(const char* assemblyName)
 // MethodSet
 //=============================================================================
 
-MethodSet::MethodSet(const WCHAR* filename, HostAllocator alloc) : m_pInfos(nullptr), m_alloc(alloc)
+MethodSet::MethodSet(const char* filename, HostAllocator alloc)
+    : m_pInfos(nullptr)
+    , m_alloc(alloc)
 {
-    FILE* methodSetFile = _wfopen(filename, W("r"));
+    FILE* methodSetFile = fopen_utf8(filename, "r");
     if (methodSetFile == nullptr)
     {
         return;
@@ -1845,16 +2037,16 @@ MethodSet::MethodSet(const WCHAR* filename, HostAllocator alloc) : m_pInfos(null
 
     if (fclose(methodSetFile))
     {
-        JITDUMP("Unable to close %ws\n", filename);
+        JITDUMP("Unable to close %s\n", filename);
     }
 
     if (m_pInfos == nullptr)
     {
-        JITDUMP("No methods read from %ws\n", filename);
+        JITDUMP("No methods read from %s\n", filename);
     }
     else
     {
-        JITDUMP("Methods read from %ws:\n", filename);
+        JITDUMP("Methods read from %s:\n", filename);
 
         int methodCount = 0;
         for (MethodInfo* pInfo = m_pInfos; pInfo != nullptr; pInfo = pInfo->m_next)
@@ -1973,11 +2165,12 @@ double CachedCyclesPerSecond()
 }
 
 #ifdef FEATURE_JIT_METHOD_PERF
-CycleCount::CycleCount() : cps(CachedCyclesPerSecond())
+CycleCount::CycleCount()
+    : cps(CachedCyclesPerSecond())
 {
 }
 
-bool CycleCount::GetCycles(unsigned __int64* time)
+bool CycleCount::GetCycles(uint64_t* time)
 {
     return CycleTimer::GetThreadCyclesS(time);
 }
@@ -1989,7 +2182,7 @@ bool CycleCount::Start()
 
 double CycleCount::ElapsedTime()
 {
-    unsigned __int64 nowCycles;
+    uint64_t nowCycles;
     (void)GetCycles(&nowCycles);
     return ((double)(nowCycles - beginCycles) / cps) * 1000.0;
 }
@@ -2048,79 +2241,19 @@ unsigned CountDigits(double num, unsigned base /* = 10 */)
 
 #endif // DEBUG
 
-double FloatingPointUtils::convertUInt64ToDouble(unsigned __int64 uIntVal)
+double FloatingPointUtils::convertUInt64ToDouble(uint64_t uIntVal)
 {
-    __int64 s64 = uIntVal;
-    double  d;
-    if (s64 < 0)
-    {
-#if defined(TARGET_XARCH)
-        // RyuJIT codegen and clang (or gcc) may produce different results for casting uint64 to
-        // double, and the clang result is more accurate. For example,
-        //    1) (double)0x84595161401484A0UL --> 43e08b2a2c280290  (RyuJIT codegen or VC++)
-        //    2) (double)0x84595161401484A0UL --> 43e08b2a2c280291  (clang or gcc)
-        // If the folding optimization below is implemented by simple casting of (double)uint64_val
-        // and it is compiled by clang, casting result can be inconsistent, depending on whether
-        // the folding optimization is triggered or the codegen generates instructions for casting. //
-        // The current solution is to force the same math as the codegen does, so that casting
-        // result is always consistent.
-
-        // d = (double)(int64_t)uint64 + 0x1p64
-        uint64_t adjHex = 0x43F0000000000000UL;
-        d               = (double)s64 + *(double*)&adjHex;
-#else
-        d = (double)uIntVal;
-#endif
-    }
-    else
-    {
-        d = (double)uIntVal;
-    }
-    return d;
+    return (double)uIntVal;
 }
 
-float FloatingPointUtils::convertUInt64ToFloat(unsigned __int64 u64)
+float FloatingPointUtils::convertUInt64ToFloat(uint64_t u64)
 {
-    double d = convertUInt64ToDouble(u64);
-    return (float)d;
+    return (float)u64;
 }
 
-unsigned __int64 FloatingPointUtils::convertDoubleToUInt64(double d)
+uint64_t FloatingPointUtils::convertDoubleToUInt64(double d)
 {
-    unsigned __int64 u64;
-    if (d >= 0.0)
-    {
-        // Work around a C++ issue where it doesn't properly convert large positive doubles
-        const double two63 = 2147483648.0 * 4294967296.0;
-        if (d < two63)
-        {
-            u64 = UINT64(d);
-        }
-        else
-        {
-            // subtract 0x8000000000000000, do the convert then add it back again
-            u64 = INT64(d - two63) + I64(0x8000000000000000);
-        }
-        return u64;
-    }
-
-#ifdef TARGET_XARCH
-
-    // While the Ecma spec does not specifically call this out,
-    // the case of conversion from negative double to unsigned integer is
-    // effectively an overflow and therefore the result is unspecified.
-    // With MSVC for x86/x64, such a conversion results in the bit-equivalent
-    // unsigned value of the conversion to integer. Other compilers convert
-    // negative doubles to zero when the target is unsigned.
-    // To make the behavior consistent across OS's on TARGET_XARCH,
-    // this double cast is needed to conform MSVC behavior.
-
-    u64 = UINT64(INT64(d));
-#else
-    u64   = UINT64(d);
-#endif // TARGET_XARCH
-
-    return u64;
+    return (uint64_t)d;
 }
 
 //------------------------------------------------------------------------
@@ -2196,78 +2329,35 @@ double FloatingPointUtils::round(double x)
     //            MathF.Round(float), and FloatingPointUtils::round(float)
     // ************************************************************************************
 
-    // This is based on the 'Berkeley SoftFloat Release 3e' algorithm
+    // This represents the boundary at which point we can only represent whole integers
+    const double IntegerBoundary = 4503599627370496.0; // 2^52
 
-    uint64_t bits     = *reinterpret_cast<uint64_t*>(&x);
-    int32_t  exponent = (int32_t)(bits >> 52) & 0x07FF;
-
-    if (exponent <= 0x03FE)
+    if (fabs(x) >= IntegerBoundary)
     {
-        if ((bits << 1) == 0)
-        {
-            // Exactly +/- zero should return the original value
-            return x;
-        }
-
-        // Any value less than or equal to 0.5 will always round to exactly zero
-        // and any value greater than 0.5 will always round to exactly one. However,
-        // we need to preserve the original sign for IEEE compliance.
-
-        double result = ((exponent == 0x03FE) && ((bits & UI64(0x000FFFFFFFFFFFFF)) != 0)) ? 1.0 : 0.0;
-        return _copysign(result, x);
-    }
-
-    if (exponent >= 0x0433)
-    {
-        // Any value greater than or equal to 2^52 cannot have a fractional part,
-        // So it will always round to exactly itself.
-
+        // Values above this boundary don't have a fractional
+        // portion and so we can simply return them as-is.
         return x;
     }
 
-    // The absolute value should be greater than or equal to 1.0 and less than 2^52
-    assert((0x03FF <= exponent) && (exponent <= 0x0432));
+    // Otherwise, since floating-point takes the inputs, performs
+    // the computation as if to infinite precision and unbounded
+    // range, and then rounds to the nearest representable result
+    // using the current rounding mode, we can rely on this to
+    // cheaply round.
+    //
+    // In particular, .NET doesn't support changing the rounding
+    // mode and defaults to "round to nearest, ties to even", thus
+    // by adding the original value to the IntegerBoundary we get
+    // an exactly represented whole integer that is precisely the
+    // IntegerBoundary greater in magnitude than the answer we want.
+    //
+    // We can then simply remove that offset to get the correct answer,
+    // noting that we also need to copy back the original sign to
+    // correctly handle -0.0
 
-    // Determine the last bit that represents the integral portion of the value
-    // and the bits representing the fractional portion
-
-    uint64_t lastBitMask   = UI64(1) << (0x0433 - exponent);
-    uint64_t roundBitsMask = lastBitMask - 1;
-
-    // Increment the first fractional bit, which represents the midpoint between
-    // two integral values in the current window.
-
-    bits += lastBitMask >> 1;
-
-    if ((bits & roundBitsMask) == 0)
-    {
-        // If that overflowed and the rest of the fractional bits are zero
-        // then we were exactly x.5 and we want to round to the even result
-
-        bits &= ~lastBitMask;
-    }
-    else
-    {
-        // Otherwise, we just want to strip the fractional bits off, truncating
-        // to the current integer value.
-
-        bits &= ~roundBitsMask;
-    }
-
-    return *reinterpret_cast<double*>(&bits);
+    double temp = copysign(IntegerBoundary, x);
+    return copysign((x + temp) - temp, x);
 }
-
-// Windows x86 and Windows ARM/ARM64 may not define _copysignf() but they do define _copysign().
-// We will redirect the macro to this other functions if the macro is not defined for the platform.
-// This has the side effect of a possible implicit upcasting for arguments passed in and an explicit
-// downcasting for the _copysign() call.
-#if (defined(TARGET_X86) || defined(TARGET_ARM) || defined(TARGET_ARM64)) && !defined(TARGET_UNIX)
-
-#if !defined(_copysignf)
-#define _copysignf (float)_copysign
-#endif
-
-#endif
 
 // Rounds a single-precision floating-point value to the nearest integer,
 // and rounds midpoint values to the nearest even number.
@@ -2278,65 +2368,40 @@ float FloatingPointUtils::round(float x)
     //            Math.Round(double), and FloatingPointUtils::round(double)
     // ************************************************************************************
 
-    // This is based on the 'Berkeley SoftFloat Release 3e' algorithm
+    // This code is based on `nearbyint` from amd/aocl-libm-ose
+    // Copyright (C) 2008-2022 Advanced Micro Devices, Inc. All rights reserved.
+    //
+    // Licensed under the BSD 3-Clause "New" or "Revised" License
+    // See THIRD-PARTY-NOTICES.TXT for the full license text
 
-    uint32_t bits     = *reinterpret_cast<uint32_t*>(&x);
-    int32_t  exponent = (int32_t)(bits >> 23) & 0xFF;
+    // This represents the boundary at which point we can only represent whole integers
+    const float IntegerBoundary = 8388608.0f; // 2^23
 
-    if (exponent <= 0x7E)
+    if (fabsf(x) >= IntegerBoundary)
     {
-        if ((bits << 1) == 0)
-        {
-            // Exactly +/- zero should return the original value
-            return x;
-        }
-
-        // Any value less than or equal to 0.5 will always round to exactly zero
-        // and any value greater than 0.5 will always round to exactly one. However,
-        // we need to preserve the original sign for IEEE compliance.
-
-        float result = ((exponent == 0x7E) && ((bits & 0x007FFFFF) != 0)) ? 1.0f : 0.0f;
-        return _copysignf(result, x);
-    }
-
-    if (exponent >= 0x96)
-    {
-        // Any value greater than or equal to 2^52 cannot have a fractional part,
-        // So it will always round to exactly itself.
-
+        // Values above this boundary don't have a fractional
+        // portion and so we can simply return them as-is.
         return x;
     }
 
-    // The absolute value should be greater than or equal to 1.0 and less than 2^52
-    assert((0x7F <= exponent) && (exponent <= 0x95));
+    // Otherwise, since floating-point takes the inputs, performs
+    // the computation as if to infinite precision and unbounded
+    // range, and then rounds to the nearest representable result
+    // using the current rounding mode, we can rely on this to
+    // cheaply round.
+    //
+    // In particular, .NET doesn't support changing the rounding
+    // mode and defaults to "round to nearest, ties to even", thus
+    // by adding the original value to the IntegerBoundary we get
+    // an exactly represented whole integer that is precisely the
+    // IntegerBoundary greater in magnitude than the answer we want.
+    //
+    // We can then simply remove that offset to get the correct answer,
+    // noting that we also need to copy back the original sign to
+    // correctly handle -0.0
 
-    // Determine the last bit that represents the integral portion of the value
-    // and the bits representing the fractional portion
-
-    uint32_t lastBitMask   = 1U << (0x96 - exponent);
-    uint32_t roundBitsMask = lastBitMask - 1;
-
-    // Increment the first fractional bit, which represents the midpoint between
-    // two integral values in the current window.
-
-    bits += lastBitMask >> 1;
-
-    if ((bits & roundBitsMask) == 0)
-    {
-        // If that overflowed and the rest of the fractional bits are zero
-        // then we were exactly x.5 and we want to round to the even result
-
-        bits &= ~lastBitMask;
-    }
-    else
-    {
-        // Otherwise, we just want to strip the fractional bits off, truncating
-        // to the current integer value.
-
-        bits &= ~roundBitsMask;
-    }
-
-    return *reinterpret_cast<float*>(&bits);
+    float temp = copysignf(IntegerBoundary, x);
+    return copysignf((x + temp) - temp, x);
 }
 
 bool FloatingPointUtils::isNormal(double x)
@@ -2461,6 +2526,38 @@ bool FloatingPointUtils::isAllBitsSet(double val)
 {
     UINT64 bits = *reinterpret_cast<UINT64*>(&val);
     return bits == 0xFFFFFFFFFFFFFFFFULL;
+}
+
+//------------------------------------------------------------------------
+// isFinite: Determines whether the specified value is finite
+//
+// Arguments:
+//    val - value to check is not NaN or infinity
+//
+// Return Value:
+//    True if val is finite
+//
+
+bool FloatingPointUtils::isFinite(float val)
+{
+    UINT32 bits = *reinterpret_cast<UINT32*>(&val);
+    return (~bits & 0x7F800000U) != 0;
+}
+
+//------------------------------------------------------------------------
+// isFinite: Determines whether the specified value is finite
+//
+// Arguments:
+//    val - value to check is not NaN or infinity
+//
+// Return Value:
+//    True if val is finite
+//
+
+bool FloatingPointUtils::isFinite(double val)
+{
+    UINT64 bits = *reinterpret_cast<UINT64*>(&val);
+    return (~bits & 0x7FF0000000000000ULL) != 0;
 }
 
 //------------------------------------------------------------------------
@@ -3079,6 +3176,32 @@ double FloatingPointUtils::normalize(double value)
 #else
     return value;
 #endif
+}
+
+int FloatingPointUtils::ilogb(double value)
+{
+    if (value == 0.0)
+    {
+        return -2147483648;
+    }
+    else if (isNaN(value))
+    {
+        return 2147483647;
+    }
+    return ilogb(value);
+}
+
+int FloatingPointUtils::ilogb(float value)
+{
+    if (value == 0.0f)
+    {
+        return -2147483648;
+    }
+    else if (isNaN(value))
+    {
+        return 2147483647;
+    }
+    return ilogbf(value);
 }
 
 //------------------------------------------------------------------------
@@ -3865,7 +3988,7 @@ T GetSignedMagic(T denom, int* shift /*out*/)
     UT  t;
     T   result_magic;
 
-    absDenom = abs(denom);
+    absDenom = std::abs(denom);
     t        = two_nminus1 + (UT(denom) >> bits_minus_1);
     absNc    = t - 1 - (t % absDenom);        // absolute value of nc
     p        = bits_minus_1;                  // initialize p
@@ -3919,7 +4042,7 @@ int64_t GetSigned64Magic(int64_t d, int* shift /*out*/)
     return GetSignedMagic<int64_t>(d, shift);
 }
 #endif
-}
+} // namespace MagicDivide
 
 namespace CheckedOps
 {
@@ -4113,4 +4236,82 @@ bool CastFromDoubleOverflows(double fromValue, var_types toType)
             unreached();
     }
 }
+} // namespace CheckedOps
+
+template <size_t bufferSize>
+class Utf16String
+{
+private:
+    WCHAR  m_bufferUnsafe[bufferSize];
+    WCHAR* m_pBuffer = nullptr;
+
+public:
+    Utf16String(const char* str)
+    {
+        int strBufferSize = MultiByteToWideChar(CP_UTF8, 0, str, -1, nullptr, 0);
+        if (strBufferSize == 0)
+        {
+            return;
+        }
+
+        if (strBufferSize > bufferSize)
+        {
+            m_pBuffer = new WCHAR[strBufferSize];
+        }
+        else
+        {
+            m_pBuffer = m_bufferUnsafe;
+        }
+
+        if (MultiByteToWideChar(CP_UTF8, 0, str, -1, m_pBuffer, strBufferSize) == 0)
+        {
+            if (m_pBuffer != m_bufferUnsafe)
+            {
+                delete[] m_pBuffer;
+            }
+
+            m_pBuffer = nullptr;
+        }
+    }
+
+    ~Utf16String()
+    {
+        if (m_pBuffer != m_bufferUnsafe)
+        {
+            delete[] m_pBuffer;
+            m_pBuffer = nullptr;
+        }
+    }
+
+    const WCHAR* Result()
+    {
+        return m_pBuffer;
+    }
+};
+
+//------------------------------------------------------------------------
+// fopen_utf8: Open the file at the specified UTF8 path with the specified mode.
+//
+// Arguments:
+//   path - UTF8 path
+//   mode - UTF8 mode
+//
+// Returns:
+//    Opened file handle
+//
+FILE* fopen_utf8(const char* path, const char* mode)
+{
+#ifdef HOST_WINDOWS
+    Utf16String<256> pathWide(path);
+    Utf16String<16>  modeWide(mode);
+
+    if ((pathWide.Result() == nullptr) || (modeWide.Result() == nullptr))
+    {
+        return nullptr;
+    }
+
+    return _wfopen(pathWide.Result(), modeWide.Result());
+#else
+    return fopen(path, mode);
+#endif
 }

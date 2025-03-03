@@ -132,6 +132,16 @@
         <target state="translated">Microsoft.Extensions.Logging.ILogger 형식의 필드가 여러 개 있음</target>
         <note>{Locked="Microsoft.Extensions.Logging.ILogger"}</note>
       </trans-unit>
+      <trans-unit id="PrimaryConstructorParameterLoggerHiddenMessage">
+        <source>Class '{0}' has a primary constructor parameter of type Microsoft.Extensions.Logging.ILogger that is hidden by a field in the class or a base class, preventing its use</source>
+        <target state="translated">클래스 '{0}'에는 클래스 또는 기본 클래스의 필드에 의해 숨겨진 Microsoft.Extensions.Logging.ILogger 형식의 기본 생성자 매개 변수가 있으므로 해당 매개 변수를 사용할 수 없습니다.</target>
+        <note>{Locked="Microsoft.Extensions.Logging.ILogger"}</note>
+      </trans-unit>
+      <trans-unit id="PrimaryConstructorParameterLoggerHiddenTitle">
+        <source>Primary constructor parameter of type Microsoft.Extensions.Logging.ILogger is hidden by a field</source>
+        <target state="translated">필드에 의해 Microsoft.Extensions.Logging.ILogger 형식의 기본 생성자 매개 변수가 숨겨집니다.</target>
+        <note>{Locked="Microsoft.Extensions.Logging.ILogger"}</note>
+      </trans-unit>
       <trans-unit id="RedundantQualifierInMessageMessage">
         <source>Remove redundant qualifier (Info:, Warning:, Error:, etc) from the logging message since it is implicit in the specified log level.</source>
         <target state="translated">중복 한정자(정보:, 경고:, 오류: 등)가 지정된 로그 수준에서 암시적이기 때문에 로깅 메시지에서 제거합니다.</target>

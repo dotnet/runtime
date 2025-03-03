@@ -34,7 +34,7 @@
 //  Cast operations: requires a QI, unless a QI for that interface was done previously
 //
 //  Threading : apartment model COM objects have thread affinity
-//              choices: COM+ can guarantee thread affinity by making sure
+//              choices: CLR can guarantee thread affinity by making sure
 //                       the calls are always made on the right thread
 //              Advantanges: avoid an extra marshalling
 //              Dis.Advt.  : need to make sure legacy apartment semantics are preserved
@@ -62,7 +62,6 @@
 #include "vars.hpp"
 #include "spinlock.h"
 #include "interoputil.h"
-#include "mngstdinterfaces.h"
 #include "excep.h"
 #include "comcache.h"
 #include "threads.h"
@@ -124,7 +123,7 @@ struct RCW
 
             if (m_InlineCacheIndex >= INTERFACE_ENTRY_CACHE_SIZE)
                 return FALSE;
-    
+
             // stop incrementing m_InlineCacheIndex once we reach INTERFACE_ENTRY_CACHE_SIZE
             if (++m_InlineCacheIndex < INTERFACE_ENTRY_CACHE_SIZE)
                 return TRUE;
@@ -175,9 +174,8 @@ struct RCW
     enum MarshalingType
      {
          MarshalingType_Unknown = 0,      /* The MarshalingType has not been set*/
-         MarshalingType_Inhibit = 1,      /* This value is same as the MarshalingType.Inhibit*/
-         MarshalingType_FreeThreaded = 2, /* This value is same as the MarshalingType.FreeThreaded*/
-         MarshalingType_Standard = 3      /* This value is same as the MarshalingType.Standard*/
+         MarshalingType_Inhibit = 1,      /* Type implements INoMarshal */
+         MarshalingType_FreeThreaded = 2, /* Type aggregates the FreeThreaded marshaller */
      };
 
     //-------------------------------------------------
@@ -452,12 +450,6 @@ struct RCW
         return CachedInterfaceEntryIterator(dac_cast<PTR_RCW>(this));
     }
 
-    //---------------------------------------------------------------------
-    // Returns true iff pItfMT is a "standard managed" interface, such as
-    // IEnumerator, and the RCW supports the interface through classic COM
-    // interop mechanisms.
-    bool SupportsMngStdInterface(MethodTable *pItfMT);
-
 #ifdef _DEBUG
     // Does not throw if m_UnkEntry.m_pUnknown is no longer valid, debug only.
     IUnknown *GetRawIUnknown_NoAddRef_NoThrow()
@@ -564,8 +556,8 @@ public:
             static_assert((1 << 3) >= GCPressureSize_COUNT, "m_GCPressure needs a bigger data type");
             DWORD       m_GCPressure:3;            // index into s_rGCPressureTable
 
-            // Reserve 2 bits for marshaling behavior
-            DWORD       m_MarshalingType:2;        // MarshalingBehavior of the COM object.
+            // Reserve 2 bits for marshaling type
+            DWORD       m_MarshalingType:2;        // Marshaling type of the COM object.
 
             DWORD       m_Detached:1;              // set if the RCW was found dead during GC
         };
@@ -749,7 +741,7 @@ protected :
 private:
     //-------------------------------------------------------------
     // ComClassFactory::CreateAggregatedInstance(MethodTable* pMTClass)
-    // create a COM+ instance that aggregates a COM instance
+    // create a CLR instance that aggregates a COM instance
     OBJECTREF CreateAggregatedInstance(MethodTable* pMTClass, BOOL ForManaged);
 
     //--------------------------------------------------------------
@@ -788,11 +780,11 @@ FORCEINLINE void NewRCWHolderRelease(RCW* p)
     }
 };
 
-class NewRCWHolder : public Wrapper<RCW*, NewRCWHolderDoNothing, NewRCWHolderRelease, NULL>
+class NewRCWHolder : public Wrapper<RCW*, NewRCWHolderDoNothing, NewRCWHolderRelease, 0>
 {
 public:
     NewRCWHolder(RCW* p = NULL)
-        : Wrapper<RCW*, NewRCWHolderDoNothing, NewRCWHolderRelease, NULL>(p)
+        : Wrapper<RCW*, NewRCWHolderDoNothing, NewRCWHolderRelease, 0>(p)
     {
         WRAPPER_NO_CONTRACT;
     }
@@ -800,7 +792,7 @@ public:
     FORCEINLINE void operator=(RCW* p)
     {
         WRAPPER_NO_CONTRACT;
-        Wrapper<RCW*, NewRCWHolderDoNothing, NewRCWHolderRelease, NULL>::operator=(p);
+        Wrapper<RCW*, NewRCWHolderDoNothing, NewRCWHolderRelease, 0>::operator=(p);
     }
 };
 
@@ -1325,7 +1317,7 @@ class RCWCleanupList
 public:
     RCWCleanupList()
         : m_pFirstBucket(NULL), m_lock(CrstRCWCleanupList, CRST_UNSAFE_ANYMODE),
-          m_pCurCleanupThread(NULL), m_doCleanupInContexts(FALSE)         
+          m_pCurCleanupThread(NULL), m_doCleanupInContexts(FALSE)
     {
         WRAPPER_NO_CONTRACT;
     }
@@ -1424,11 +1416,11 @@ FORCEINLINE void CtxEntryHolderRelease(CtxEntry *p)
     }
 }
 
-class CtxEntryHolder : public Wrapper<CtxEntry *, CtxEntryDoNothing, CtxEntryHolderRelease, NULL>
+class CtxEntryHolder : public Wrapper<CtxEntry *, CtxEntryDoNothing, CtxEntryHolderRelease, 0>
 {
 public:
     CtxEntryHolder(CtxEntry *p = NULL)
-        : Wrapper<CtxEntry *, CtxEntryDoNothing, CtxEntryHolderRelease, NULL>(p)
+        : Wrapper<CtxEntry *, CtxEntryDoNothing, CtxEntryHolderRelease, 0>(p)
     {
         WRAPPER_NO_CONTRACT;
     }
@@ -1437,7 +1429,7 @@ public:
     {
         WRAPPER_NO_CONTRACT;
 
-        Wrapper<CtxEntry *, CtxEntryDoNothing, CtxEntryHolderRelease, NULL>::operator=(p);
+        Wrapper<CtxEntry *, CtxEntryDoNothing, CtxEntryHolderRelease, 0>::operator=(p);
     }
 
 };

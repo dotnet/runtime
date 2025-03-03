@@ -22,7 +22,8 @@ ProcessCLRException(IN     PEXCEPTION_RECORD     pExceptionRecord,
                     IN OUT PT_CONTEXT            pContextRecord,
                     IN OUT PT_DISPATCHER_CONTEXT pDispatcherContext);
 
-VOID DECLSPEC_NORETURN DispatchManagedException(OBJECTREF throwable, bool preserveStackTrace = true);
+VOID DECLSPEC_NORETURN DispatchManagedException(OBJECTREF throwable, CONTEXT *pExceptionContext, EXCEPTION_RECORD *pExceptionRecord = NULL);
+VOID DECLSPEC_NORETURN DispatchManagedException(OBJECTREF throwable);
 VOID DECLSPEC_NORETURN DispatchManagedException(RuntimeExceptionKind reKind);
 
 enum CLRUnwindStatus { UnwindPending, FirstPassComplete, SecondPassComplete };
@@ -50,8 +51,13 @@ typedef DPTR(ExInfo) PTR_ExInfo;
 // InlinedCallFrame::m_Datum field for details).
 enum class InlinedCallFrameMarker
 {
+#ifdef HOST_64BIT
     ExceptionHandlingHelper = 2,
     SecondPassFuncletCaller = 4,
+#else // HOST_64BIT
+    ExceptionHandlingHelper = 1,
+    SecondPassFuncletCaller = 2,
+#endif // HOST_64BIT
     Mask = ExceptionHandlingHelper | SecondPassFuncletCaller
 };
 
@@ -95,8 +101,6 @@ struct ExceptionTrackerBase
     OBJECTHANDLE    m_hThrowable;
     // EXCEPTION_RECORD and CONTEXT_RECORD describing the exception and its location
     DAC_EXCEPTION_POINTERS m_ptrs;
-    // Stack trace of the current exception
-    StackTraceInfo m_StackTraceInfo;
     // Information for the funclet we are calling
     EHClauseInfo   m_EHClauseInfo;
     // Flags representing exception handling state (exception is rethrown, unwind has started, various debugger notifications sent etc)
@@ -126,14 +130,11 @@ public:
 
     ExceptionTrackerBase(PTR_EXCEPTION_RECORD pExceptionRecord, PTR_CONTEXT pExceptionContext, PTR_ExceptionTrackerBase pPrevNestedInfo) :
         m_pPrevNestedInfo(pPrevNestedInfo),
-        m_hThrowable(NULL),
+        m_hThrowable{},
         m_ptrs({pExceptionRecord, pExceptionContext}),
         m_fDeliveredFirstChanceNotification(FALSE),
         m_ExceptionCode((pExceptionRecord != PTR_NULL) ? pExceptionRecord->ExceptionCode : 0)
     {
-#ifndef DACCESS_COMPILE
-        m_StackTraceInfo.Init();
-#endif //  DACCESS_COMPILE
 #ifndef TARGET_UNIX
         // Init the WatsonBucketTracker
         m_WatsonBucketTracker.Init();
@@ -158,7 +159,7 @@ public:
         }
         CONTRACTL_END;
 
-        if (NULL != m_hThrowable)
+        if (0 != m_hThrowable)
         {
             return ObjectFromHandle(m_hThrowable);
         }
@@ -259,7 +260,7 @@ public:
                      PTR_CONTEXT           pContextRecord) :
         ExceptionTrackerBase(pExceptionRecord, pContextRecord, PTR_NULL),
         m_pThread(GetThread()),
-        m_uCatchToCallPC(NULL),
+        m_uCatchToCallPC{},
         m_pSkipToParentFunctionMD(NULL),
 // these members were added for resume frame processing
         m_pClauseForCatchToken(NULL)
@@ -509,8 +510,6 @@ private:
 
     static bool
         IsFilterStartOffset(EE_ILEXCEPTION_CLAUSE* pEHClause, DWORD_PTR dwHandlerStartPC);
-
-    void SaveStackTrace();
 
     inline BOOL CanAllocateMemory()
     {

@@ -50,7 +50,7 @@ namespace System.Speech.Recognition
 
         #region Private Fields
 
-        private static Uri s_defaultDictationUri = new("grammar:dictation");
+        private static readonly Uri s_defaultDictationUri = new("grammar:dictation");
 
         #endregion
     }

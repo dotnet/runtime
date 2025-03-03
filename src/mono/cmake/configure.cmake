@@ -27,7 +27,7 @@ if(HOST_HAIKU)
 endif()
 
 if(HOST_WASI)
-  set(CMAKE_REQUIRED_DEFINITIONS "${CMAKE_REQUIRED_DEFINITIONS} -D_WASI_EMULATED_PROCESS_CLOCKS -D_WASI_EMULATED_SIGNAL -D_WASI_EMULATED_MMAN")
+  set(CMAKE_REQUIRED_DEFINITIONS "${CMAKE_REQUIRED_DEFINITIONS} -D_WASI_EMULATED_PROCESS_CLOCKS -D_WASI_EMULATED_SIGNAL -D_WASI_EMULATED_MMAN -D_WASI_EMULATED_PTHREAD")
 endif()
 
 function(ac_check_headers)
@@ -68,6 +68,7 @@ function(ac_check_type type suffix includes)
   set(CMAKE_EXTRA_INCLUDE_FILES)
 endfunction()
 
+if (NOT HOST_WIN32)
 ac_check_headers (
   sys/types.h sys/stat.h sys/sockio.h sys/un.h sys/syscall.h sys/uio.h sys/param.h
   sys/prctl.h sys/socket.h sys/utsname.h sys/select.h sys/poll.h sys/wait.h sys/resource.h
@@ -130,12 +131,6 @@ check_struct_has_member("struct sockaddr_in6" sin6_len "netinet/in.h" HAVE_SOCKA
 if (HOST_DARWIN)
   check_struct_has_member("struct objc_super" super_class "objc/runtime.h;objc/message.h" HAVE_OBJC_SUPER_SUPER_CLASS)
 endif()
-
-check_type_size("int" SIZEOF_INT)
-check_type_size("void*" SIZEOF_VOID_P)
-check_type_size("long" SIZEOF_LONG)
-check_type_size("long long" SIZEOF_LONG_LONG)
-check_type_size("size_t" SIZEOF_SIZE_T)
 
 if (HOST_LINUX)
   set(CMAKE_REQUIRED_DEFINITIONS -D_GNU_SOURCE)
@@ -223,18 +218,34 @@ if (TARGET_RISCV32 OR TARGET_RISCV64)
         set(RISCV_FPABI_DOUBLE 1)
     endif()
 endif()
+endif()
+
+check_type_size("int" SIZEOF_INT)
+check_type_size("void*" SIZEOF_VOID_P)
+check_type_size("long" SIZEOF_LONG)
+check_type_size("long long" SIZEOF_LONG_LONG)
+check_type_size("size_t" SIZEOF_SIZE_T)
 
 #
 # Override checks
 #
 
 if(HOST_WIN32)
-  # checking for this doesn't work for some reason, hardcode result
-  set(HAVE_WINTERNL_H 1)
+  # Dynamic lookup using ac_check_headers/ac_check_functions is extremly slow on Windows, espacially on msbuild.
+  # Since majority of the checks above will fail on Windows host, we can just directly define the available static
+  # API surface.
   set(HAVE_GETADDRINFO 1)
-  set(HAVE_STRUCT_SOCKADDR_IN6 1)
+  set(HAVE_GETPEERNAME 1)
+  set(HAVE_GETHOSTBYNAME 1)
+  set(HAVE_STDINT_H 1)
   set(HAVE_STRTOK_R 1)
-  set(HAVE_EXECVP 0)
+  set(HAVE_STRUCT_SOCKADDR_IN6 1)
+  set(HAVE_SYS_STAT_H 1)
+  set(HAVE_SYS_TYPES_H 1)
+  set(HAVE_SYS_UTIME_H 1)
+  set(HAVE_SYSTEM 1)
+  set(HAVE_WCHAR_H 1)
+  set(HAVE_WINTERNL_H 1)
 elseif(HOST_IOS OR HOST_TVOS OR HOST_MACCAT)
   set(HAVE_SYSTEM 0)
   # getentropy isn't allowed in the AppStore: https://github.com/rust-lang/rust/issues/102643
@@ -256,9 +267,7 @@ elseif(HOST_WASI)
   # Redirected to errno.h
   set(SYS_ERRNO_H 0)
   # Some headers exist, but don't compile (wasi sdk 12.0)
-  set(HAVE_SYS_SOCKET_H 0)
   set(HAVE_SYS_UN_H 0)
-  set(HAVE_NETINET_TCP_H 0)
   set(HAVE_ARPA_INET_H 0)
   set(HAVE_MKDTEMP 0)
   set(HAVE_FORK 0)
@@ -273,7 +282,6 @@ elseif(HOST_WASI)
   set(HAVE_READ_REAL_TIME 0)
   set(HAVE_SCHED_GETAFFINITY 0)
   set(HAVE_SCHED_SETAFFINITY 0)
-  set(HAVE_GETADDRINFO 0)
   set(HAVE_GETHOSTBYNAME 0)
   set(HAVE_GETHOSTBYNAME2 0)
   set(HAVE_EXECVP 0)

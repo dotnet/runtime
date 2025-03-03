@@ -7,7 +7,7 @@ import { loaderHelpers } from "./globals";
 import { mono_exit } from "./exit";
 import { ResourceList } from "../types";
 
-export async function importLibraryInitializers(libraryInitializers: ResourceList | undefined): Promise<void> {
+export async function importLibraryInitializers (libraryInitializers: ResourceList | undefined): Promise<void> {
     if (!libraryInitializers) {
         return;
     }
@@ -15,10 +15,10 @@ export async function importLibraryInitializers(libraryInitializers: ResourceLis
     const initializerFiles = Object.keys(libraryInitializers);
     await Promise.all(initializerFiles.map(f => importInitializer(f)));
 
-    async function importInitializer(path: string): Promise<void> {
+    async function importInitializer (path: string): Promise<void> {
         try {
             const adjustedPath = appendUniqueQuery(loaderHelpers.locateFile(path), "js-module-library-initializer");
-            mono_log_debug(`Attempting to import '${adjustedPath}' for ${path}`);
+            mono_log_debug(() => `Attempting to import '${adjustedPath}' for ${path}`);
             const initializer = await import(/*! webpackIgnore: true */ adjustedPath);
 
             loaderHelpers.libraryInitializers!.push({ scriptName: path, exports: initializer });
@@ -28,7 +28,7 @@ export async function importLibraryInitializers(libraryInitializers: ResourceLis
     }
 }
 
-export async function invokeLibraryInitializers(functionName: string, args: any[]) {
+export async function invokeLibraryInitializers (functionName: string, args: any[]) {
     if (!loaderHelpers.libraryInitializers) {
         return;
     }
@@ -44,7 +44,7 @@ export async function invokeLibraryInitializers(functionName: string, args: any[
     await Promise.all(promises);
 }
 
-async function abortStartupOnError(scriptName: string, methodName: string, callback: () => Promise<void> | undefined): Promise<void> {
+async function abortStartupOnError (scriptName: string, methodName: string, callback: () => Promise<void> | undefined): Promise<void> {
     try {
         await callback();
     } catch (err) {

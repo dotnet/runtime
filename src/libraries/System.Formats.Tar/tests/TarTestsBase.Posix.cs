@@ -19,6 +19,9 @@ namespace System.Formats.Tar.Tests
 
         private void SetBlockDeviceProperties(PosixTarEntry device)
         {
+            // The octal format limits the representable range.
+            bool formatIsOctalOnly = device.Format is not TarEntryFormat.Pax and not TarEntryFormat.Gnu;
+
             Assert.NotNull(device);
             Assert.Equal(TarEntryType.BlockDevice, device.EntryType);
             SetCommonProperties(device);
@@ -27,18 +30,35 @@ namespace System.Formats.Tar.Tests
             // DeviceMajor
             Assert.Equal(DefaultDeviceMajor, device.DeviceMajor);
             Assert.Throws<ArgumentOutOfRangeException>(() => device.DeviceMajor = -1);
-            Assert.Throws<ArgumentOutOfRangeException>(() => device.DeviceMajor = 2097152);
+            if (formatIsOctalOnly)
+            {
+                Assert.Throws<ArgumentOutOfRangeException>(() => device.DeviceMajor = 2097152);
+            }
+            else
+            {
+                device.DeviceMajor = 2097152;
+            }
             device.DeviceMajor = TestBlockDeviceMajor;
 
             // DeviceMinor
             Assert.Equal(DefaultDeviceMinor, device.DeviceMinor);
             Assert.Throws<ArgumentOutOfRangeException>(() => device.DeviceMinor = -1);
-            Assert.Throws<ArgumentOutOfRangeException>(() => device.DeviceMinor = 2097152);
+            if (formatIsOctalOnly)
+            {
+                Assert.Throws<ArgumentOutOfRangeException>(() => device.DeviceMinor = 2097152);
+            }
+            else
+            {
+                device.DeviceMinor = 2097152;
+            }
             device.DeviceMinor = TestBlockDeviceMinor;
         }
 
         private void SetCharacterDeviceProperties(PosixTarEntry device)
         {
+            // The octal format limits the representable range.
+            bool formatIsOctalOnly = device.Format is not TarEntryFormat.Pax and not TarEntryFormat.Gnu;
+
             Assert.NotNull(device);
             Assert.Equal(TarEntryType.CharacterDevice, device.EntryType);
             SetCommonProperties(device);
@@ -47,13 +67,27 @@ namespace System.Formats.Tar.Tests
             // DeviceMajor
             Assert.Equal(DefaultDeviceMajor, device.DeviceMajor);
             Assert.Throws<ArgumentOutOfRangeException>(() => device.DeviceMajor = -1);
-            Assert.Throws<ArgumentOutOfRangeException>(() => device.DeviceMajor = 2097152);
+            if (formatIsOctalOnly)
+            {
+                Assert.Throws<ArgumentOutOfRangeException>(() => device.DeviceMajor = 2097152);
+            }
+            else
+            {
+                device.DeviceMajor = 2097152;
+            }
             device.DeviceMajor = TestCharacterDeviceMajor;
 
             // DeviceMinor
             Assert.Equal(DefaultDeviceMinor, device.DeviceMinor);
             Assert.Throws<ArgumentOutOfRangeException>(() => device.DeviceMinor = -1);
-            Assert.Throws<ArgumentOutOfRangeException>(() => device.DeviceMinor = 2097152);
+            if (formatIsOctalOnly)
+            {
+                Assert.Throws<ArgumentOutOfRangeException>(() => device.DeviceMinor = 2097152);
+            }
+            else
+            {
+                device.DeviceMinor = 2097152;
+            }
             device.DeviceMinor = TestCharacterDeviceMinor;
         }
 

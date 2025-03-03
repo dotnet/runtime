@@ -35,7 +35,7 @@ public:
     OBJECTHANDLE ConstructStringLiteral(mdToken metaTok);
     BOOL IsValidStringRef(mdToken metaTok);
     STRINGREF GetStringLiteral(mdToken metaTok);
-    void ResolveToken(mdToken token, TypeHandle * pTH, MethodDesc ** ppMD, FieldDesc ** ppFD);
+    void ResolveToken(mdToken token, ResolvedToken* resolvedToken);
     SigPointer ResolveSignature(mdToken token);
     SigPointer ResolveSignatureForVarArg(mdToken token);
     void GetEHInfo(unsigned EHnumber, CORINFO_EH_CLAUSE* clause);
@@ -76,7 +76,7 @@ protected:
 
     enum CompileTimeStatePtrSpecialValues
     {
-        ILNotYetGenerated   = NULL,
+        ILNotYetGenerated   = 0,
         ILGeneratedAndFreed = 1,
     };
 
@@ -106,7 +106,7 @@ protected:
     PTR_LoaderHeap          m_loaderHeap;
 };
 
-typedef Holder<ILStubResolver*, DoNothing<ILStubResolver*>, ILStubResolver::StubGenFailed, NULL> ILStubGenHolder;
+typedef Holder<ILStubResolver*, DoNothing<ILStubResolver*>, ILStubResolver::StubGenFailed, 0> ILStubGenHolder;
 
 
 #endif // __ILSTUBRESOLVER_H__

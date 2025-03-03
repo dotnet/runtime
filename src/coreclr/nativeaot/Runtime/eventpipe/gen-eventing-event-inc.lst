@@ -1,5 +1,6 @@
 # Native runtime events supported by aot runtime.
 
+AllocationSampled
 BGC1stConEnd
 BGC1stNonConEnd
 BGC1stSweepEnd
@@ -46,6 +47,7 @@ GCBulkSurvivingObjectRanges
 GCCreateConcurrentThread_V1
 GCCreateSegment_V1
 GCDecision_V1
+GCDynamicEvent
 GCEnd_V1
 GCFinalizersBegin_V1
 GCFinalizersEnd_V1
@@ -112,3 +114,4 @@ ThreadPoolWorkingThreadCount
 ThreadRunning
 WaitHandleWaitStart
 WaitHandleWaitStop
+YieldProcessorMeasurement

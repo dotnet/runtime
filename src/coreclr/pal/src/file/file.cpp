@@ -18,7 +18,6 @@ SET_DEFAULT_DEBUG_CHANNEL(FILE); // some headers have code with asserts, so do t
 
 #include "pal/thread.hpp"
 #include "pal/file.hpp"
-#include "pal/malloc.hpp"
 #include "pal/stackstring.hpp"
 
 #include "pal/palinternal.h"
@@ -32,9 +31,13 @@ SET_DEFAULT_DEBUG_CHANNEL(FILE); // some headers have code with asserts, so do t
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <sys/param.h>
-#include <sys/mount.h>
 #include <errno.h>
 #include <limits.h>
+#include <fcntl.h>
+
+#if HAVE_SYS_MOUNT_H
+#include <sys/mount.h>
+#endif
 
 using namespace CorUnix;
 
@@ -59,25 +62,17 @@ void
 FileCleanupRoutine(
     CPalThread *pThread,
     IPalObject *pObjectToCleanup,
-    bool fShutdown,
-    bool fCleanupSharedState
+    bool fShutdown
     );
 
 CObjectType CorUnix::otFile(
                 otiFile,
                 FileCleanupRoutine,
-                NULL,   // No initialization routine
                 0,      // No immutable data
                 NULL,   // No immutable data copy routine
                 NULL,   // No immutable data cleanup routine
                 sizeof(CFileProcessLocalData),
                 CFileProcessLocalDataCleanupRoutine,
-                0,      // No shared data
-                GENERIC_READ|GENERIC_WRITE,  // Ignored -- no Win32 object security support
-                CObjectType::SecuritySupported,
-                CObjectType::OSPersistedSecurityInfo,
-                CObjectType::UnnamedObject,
-                CObjectType::LocalDuplicationOnly,
                 CObjectType::UnwaitableObject,
                 CObjectType::SignalingNotApplicable,
                 CObjectType::ThreadReleaseNotApplicable,
@@ -118,8 +113,7 @@ void
 FileCleanupRoutine(
     CPalThread *pThread,
     IPalObject *pObjectToCleanup,
-    bool fShutdown,
-    bool fCleanupSharedState
+    bool fShutdown
     )
 {
     PAL_ERROR palError;
@@ -331,7 +325,6 @@ CorUnix::InternalCanonicalizeRealPath(LPCSTR lpUnixPath, PathCharString& lpBuffe
     }
     else
     {
-#if defined(HOST_AMD64)
         bool fSetFilename = true;
         // Since realpath implementation cannot handle inexistent filenames,
         // check if we are going to truncate the "/" corresponding to the
@@ -355,8 +348,9 @@ CorUnix::InternalCanonicalizeRealPath(LPCSTR lpUnixPath, PathCharString& lpBuffe
             fSetFilename = false;
         }
         else
-#endif // defined(HOST_AMD64)
+        {
             *pchSeparator = '\0';
+        }
 
         if (!RealPathHelper(lpExistingPath, lpBuffer))
         {
@@ -365,16 +359,12 @@ CorUnix::InternalCanonicalizeRealPath(LPCSTR lpUnixPath, PathCharString& lpBuffe
             goto LExit;
         }
 
-#if defined(HOST_AMD64)
         if (fSetFilename == true)
-#endif // defined(HOST_AMD64)
             lpFilename = pchSeparator + 1;
     }
 
-#if defined(HOST_AMD64)
     if (lpFilename == NULL)
         goto LExit;
-#endif // HOST_AMD64
 
     if (!lpBuffer.Append("/",1) || !lpBuffer.Append(lpFilename, strlen(lpFilename)))
     {
@@ -1529,6 +1519,52 @@ done:
     return bRet;
 }
 
+/*++
+InternalOpen
+
+Wrapper for open.
+
+Input parameters:
+
+szPath = pointer to a pathname of a file to be opened
+nFlags = arguments that control how the file should be accessed
+mode = file permission settings that are used only when a file is created
+
+Return value:
+    File descriptor on success, -1 on failure
+--*/
+int
+CorUnix::InternalOpen(
+    const char *szPath,
+    int nFlags,
+    ...
+    )
+{
+    int nRet = -1;
+    int mode = 0;
+    va_list ap;
+
+    // If nFlags does not contain O_CREAT, the mode parameter will be ignored.
+    if (nFlags & O_CREAT)
+    {
+        va_start(ap, nFlags);
+        mode = va_arg(ap, int);
+        va_end(ap);
+    }
+
+    do
+    {
+#if OPEN64_IS_USED_INSTEAD_OF_OPEN
+        nRet = open64(szPath, nFlags, mode);
+#else
+        nRet = open(szPath, nFlags, mode);
+#endif
+    }
+    while ((nRet == -1) && (errno == EINTR));
+
+    return nRet;
+}
+
 PAL_ERROR
 CorUnix::InternalWriteFile(
     CPalThread *pThread,
@@ -1939,8 +1975,8 @@ InternalSetFilePointerForUnixFd(
 {
     PAL_ERROR palError = NO_ERROR;
     int     seek_whence = 0;
-    __int64 seek_offset = 0LL;
-    __int64 seek_res = 0LL;
+    int64_t seek_offset = 0LL;
+    int64_t seek_res = 0LL;
     off_t old_offset;
 
     switch( dwMoveMethod )
@@ -1969,7 +2005,7 @@ InternalSetFilePointerForUnixFd(
     if ( lpDistanceToMoveHigh )
     {
         /* set the high 32 bits of the offset */
-        seek_offset = ((__int64)*lpDistanceToMoveHigh << 32);
+        seek_offset = ((int64_t)*lpDistanceToMoveHigh << 32);
 
         /* set the low 32 bits */
         /* cast to unsigned long to avoid sign extension */
@@ -2026,7 +2062,7 @@ InternalSetFilePointerForUnixFd(
         }
     }
 
-    seek_res = (__int64)lseek( iUnixFd,
+    seek_res = (int64_t)lseek( iUnixFd,
                                seek_offset,
                                seek_whence );
     if ( seek_res < 0 )
@@ -2835,7 +2871,7 @@ GetTempFileNameW(
         prefix_stringPS.CloseBuffer(prefix_size - 1);
     }
 
-    tempfile_name = (char*)InternalMalloc(MAX_LONGPATH);
+    tempfile_name = (char*)malloc(MAX_LONGPATH);
     if (tempfile_name == NULL)
     {
         pThread->SetLastError(ERROR_NOT_ENOUGH_MEMORY);
@@ -3546,43 +3582,4 @@ fail:
     pStdOut = INVALID_HANDLE_VALUE;
     pStdErr = INVALID_HANDLE_VALUE;
     return FALSE;
-}
-
-/*++
-FILECleanupStdHandles
-
-Remove all regions, locked by a file pointer, from shared memory
-
-(no parameters)
-
---*/
-void FILECleanupStdHandles(void)
-{
-    HANDLE stdin_handle;
-    HANDLE stdout_handle;
-    HANDLE stderr_handle;
-
-    TRACE("closing standard handles\n");
-    stdin_handle = pStdIn;
-    stdout_handle = pStdOut;
-    stderr_handle = pStdErr;
-
-    pStdIn = INVALID_HANDLE_VALUE;
-    pStdOut = INVALID_HANDLE_VALUE;
-    pStdErr = INVALID_HANDLE_VALUE;
-
-    if (stdin_handle != INVALID_HANDLE_VALUE)
-    {
-        CloseHandle(stdin_handle);
-    }
-
-    if (stdout_handle != INVALID_HANDLE_VALUE)
-    {
-        CloseHandle(stdout_handle);
-    }
-
-    if (stderr_handle != INVALID_HANDLE_VALUE)
-    {
-        CloseHandle(stderr_handle);
-    }
 }

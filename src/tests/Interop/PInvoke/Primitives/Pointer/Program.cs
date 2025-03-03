@@ -5,23 +5,61 @@ using System;
 using System.Runtime.InteropServices;
 using Xunit;
 
-namespace NonBlittablePointer
+namespace Pointer
 {
-    static class NonBlittablePointerNative
+    static class PointerNative
     {
-        [DllImport(nameof(NonBlittablePointerNative))]
+        [DllImport(nameof(PointerNative))]
         public static unsafe extern void Negate(bool* ptr);
+
+        [DllImport(nameof(PointerNative))]
+        public static unsafe extern void GetNaN(float* ptr);
+
+        [DllImport(nameof(PointerNative))]
+        public static unsafe extern void NegateDecimal(decimal* ptr);
+
+        [DllImport(nameof(PointerNative))]
+        public static unsafe extern void GetNaN(BlittableWrapper<float>* ptr);
+
+        public struct BlittableWrapper<T>
+        {
+            public T Value;
+        }
     }
 
     [ActiveIssue("https://github.com/dotnet/runtime/issues/91388", typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.PlatformDoesNotSupportNativeTestAssets))]
     public class Program
     {
         [Fact]
-        public static unsafe int TestEntryPoint()
+        public static unsafe void PointerToBool()
         {
             bool value = true;
-            NonBlittablePointerNative.Negate(&value);
-            return value == false ? 100 : 101;
+            PointerNative.Negate(&value);
+            Assert.False(value);
+        }
+
+        [Fact]
+        public static unsafe void PointerToFloat()
+        {
+            float value = 1.0f;
+            PointerNative.GetNaN(&value);
+            Assert.True(float.IsNaN(value));
+        }
+
+        [Fact]
+        public static unsafe void PointerToDecimal()
+        {
+            decimal value = 1.0m;
+            PointerNative.NegateDecimal(&value);
+            Assert.Equal(-1.0m, value);
+        }
+
+        [Fact]
+        public static unsafe void PointerToStructOfGeneric()
+        {
+            PointerNative.BlittableWrapper<float> wrapper = new(){ Value = 1.0f };
+            PointerNative.GetNaN(&wrapper);
+            Assert.True(float.IsNaN(wrapper.Value));
         }
     }
 }

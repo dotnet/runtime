@@ -23,17 +23,6 @@ namespace Internal.Runtime.TypeLoader
             while (list.Count < count)
                 list.Add(default(T));
         }
-
-        public static bool HasSetBits(this LowLevelList<bool> list)
-        {
-            for (int index = 0; index < list.Count; index++)
-            {
-                if (list[index])
-                    return true;
-            }
-
-            return false;
-        }
     }
 
     internal class TypeBuilder
@@ -307,11 +296,11 @@ namespace Internal.Runtime.TypeLoader
 
             InstantiatedMethod nonTemplateMethod = method;
 
-            // Templates are always non-unboxing stubs
-            if (method.UnboxingStub)
+            // Templates are always unboxing stubs for valuetype instance methods
+            if (!method.UnboxingStub && method.OwningType.IsValueType && !TypeLoaderEnvironment.IsStaticMethodSignature(method.NameAndSignature))
             {
-                // Strip unboxing stub, note the first parameter which is false
-                nonTemplateMethod = (InstantiatedMethod)method.Context.ResolveGenericMethodInstantiation(false, (DefType)method.OwningType, method.NameAndSignature, method.Instantiation, IntPtr.Zero, false);
+                // Make it an unboxing stub, note the first parameter which is true
+                nonTemplateMethod = (InstantiatedMethod)method.Context.ResolveGenericMethodInstantiation(true, (DefType)method.OwningType, method.NameAndSignature, method.Instantiation);
             }
 
             uint nativeLayoutInfoToken;
@@ -324,7 +313,13 @@ namespace Internal.Runtime.TypeLoader
 
             if (templateMethod.FunctionPointer != IntPtr.Zero)
             {
-                nonTemplateMethod.SetFunctionPointer(templateMethod.FunctionPointer, isFunctionPointerUSG: false);
+                nonTemplateMethod.SetFunctionPointer(templateMethod.FunctionPointer);
+
+                // Compensate for the template being an unboxing stub
+                if (nonTemplateMethod != method)
+                {
+                    method.SetFunctionPointer(TypeLoaderEnvironment.ConvertUnboxingFunctionPointerToUnderlyingNonUnboxingPointer(templateMethod.FunctionPointer, templateMethod.OwningType.RuntimeTypeHandle));
+                }
             }
 
             // Ensure that if this method is non-shareable from a normal canonical perspective, then
@@ -1091,7 +1086,7 @@ namespace Internal.Runtime.TypeLoader
 
             // The first is a pointer that points to the TypeManager indirection cell.
             // The second is the offset into the native layout info blob in that TypeManager, where the native signature is encoded.
-            IntPtr** lazySignature = (IntPtr**)signature.ToPointer();
+            IntPtr** lazySignature = (IntPtr**)signature;
             typeManager = new TypeManagerHandle(lazySignature[0][0]);
             offset = checked((uint)new IntPtr(lazySignature[1]).ToInt32());
             reader = TypeLoaderEnvironment.GetNativeLayoutInfoReader(typeManager);
@@ -1324,45 +1319,6 @@ namespace Internal.Runtime.TypeLoader
                 methodDictionary = IntPtr.Zero;
                 return false;
             }
-        }
-
-        private void ResolveSingleCell_Worker(GenericDictionaryCell cell, out IntPtr fixupResolution)
-        {
-            cell.Prepare(this);
-
-            // Process the pending types
-            ProcessTypesNeedingPreparation();
-            FinishTypeAndMethodBuilding();
-
-            // At this stage the pointer we need is accessible via a call to Create on the prepared cell
-            fixupResolution = cell.Create(this);
-        }
-
-        private void ResolveMultipleCells_Worker(GenericDictionaryCell[] cells, out IntPtr[] fixups)
-        {
-            foreach (var cell in cells)
-            {
-                cell.Prepare(this);
-            }
-
-            // Process the pending types
-            ProcessTypesNeedingPreparation();
-            FinishTypeAndMethodBuilding();
-
-            // At this stage the pointer we need is accessible via a call to Create on the prepared cell
-            fixups = new IntPtr[cells.Length];
-            for (int i = 0; i < fixups.Length; i++)
-                fixups[i] = cells[i].Create(this);
-        }
-
-        internal static void ResolveSingleCell(GenericDictionaryCell cell, out IntPtr fixupResolution)
-        {
-            new TypeBuilder().ResolveSingleCell_Worker(cell, out fixupResolution);
-        }
-
-        public static void ResolveMultipleCells(GenericDictionaryCell[] cells, out IntPtr[] fixups)
-        {
-            new TypeBuilder().ResolveMultipleCells_Worker(cells, out fixups);
         }
 
         public static IntPtr BuildGenericLookupTarget(IntPtr typeContext, IntPtr signature, out IntPtr auxResult)

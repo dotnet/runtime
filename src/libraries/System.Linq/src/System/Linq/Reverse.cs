@@ -10,12 +10,27 @@ namespace System.Linq
     {
         public static IEnumerable<TSource> Reverse<TSource>(this IEnumerable<TSource> source)
         {
-            if (source == null)
+            if (source is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
             }
 
             if (IsEmptyArray(source))
+            {
+                return [];
+            }
+
+            return new ReverseIterator<TSource>(source);
+        }
+
+        public static IEnumerable<TSource> Reverse<TSource>(this TSource[] source)
+        {
+            if (source is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
+            }
+
+            if (source.Length == 0)
             {
                 return [];
             }
@@ -34,11 +49,11 @@ namespace System.Linq
 
             public ReverseIterator(IEnumerable<TSource> source)
             {
-                Debug.Assert(source != null);
+                Debug.Assert(source is not null);
                 _source = source;
             }
 
-            public override Iterator<TSource> Clone() => new ReverseIterator<TSource>(_source);
+            private protected override Iterator<TSource> Clone() => new ReverseIterator<TSource>(_source);
 
             public override bool MoveNext()
             {
@@ -70,7 +85,7 @@ namespace System.Linq
                         int index = _state - 3;
                         if (index != -1)
                         {
-                            Debug.Assert(_buffer != null);
+                            Debug.Assert(_buffer is not null);
                             _current = _buffer[index];
                             --_state;
                             return true;

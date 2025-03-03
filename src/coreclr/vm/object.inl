@@ -3,7 +3,7 @@
 //
 // OBJECT.INL
 //
-// Definitions inline functions of a Com+ Object
+// Definitions inline functions of a CLR Object
 //
 
 
@@ -91,7 +91,7 @@ inline void Object::EnumMemoryRegions(void)
     // Unfortunately, DacEnumMemoryRegion takes only ULONG32 as size argument
     while (size > 0) {
         // Use 0x10000000 instead of MAX_ULONG32 so that the chunks stays aligned
-        SIZE_T chunk = min(size, 0x10000000);
+        SIZE_T chunk = min(size, (SIZE_T)0x10000000);
         // If for any reason we can't enumerate the memory, stop.  This would generally mean
         // that we have target corruption, or that the target is executing, etc.
         if (!DacEnumMemoryRegion(ptr, chunk))
@@ -114,7 +114,7 @@ FORCEINLINE bool Object::TryEnterObjMonitorSpinHelper()
     } CONTRACTL_END;
 
     Thread *pCurThread = GetThread();
-    if (pCurThread->CatchAtSafePointOpportunistic())
+    if (pCurThread->CatchAtSafePoint())
     {
         return false;
     }
@@ -213,18 +213,6 @@ __forceinline BOOL Nullable::IsNullableForType(TypeHandle type, MethodTable* par
     if (!type.AsMethodTable()->HasInstantiation())            // shortcut, if it is not generic it can't be Nullable<T>
         return FALSE;
     return Nullable::IsNullableForTypeHelper(type.AsMethodTable(), paramMT);
-}
-
-//===============================================================================
-// Returns true if this pMT is Nullable<T> for T == paramMT
-
-__forceinline BOOL Nullable::IsNullableForTypeNoGC(TypeHandle type, MethodTable* paramMT)
-{
-    if (type.IsTypeDesc())
-        return FALSE;
-    if (!type.AsMethodTable()->HasInstantiation())            // shortcut, if it is not generic it can't be Nullable<T>
-        return FALSE;
-    return Nullable::IsNullableForTypeHelperNoGC(type.AsMethodTable(), paramMT);
 }
 
 //===============================================================================

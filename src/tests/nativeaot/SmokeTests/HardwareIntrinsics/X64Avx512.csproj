@@ -9,6 +9,8 @@
     <CLRTestTargetUnsupported Condition="'$(TargetsAppleMobile)' == 'true'">true</CLRTestTargetUnsupported>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <DefineConstants>$(DefineConstants);AVX512_INTRINSICS;VECTORT256_INTRINSICS</DefineConstants>
+    <RequiresProcessIsolation>true</RequiresProcessIsolation>
+    <ReferenceXUnitWrapperGenerator>false</ReferenceXUnitWrapperGenerator>
   </PropertyGroup>
 
   <ItemGroup>
@@ -18,13 +20,22 @@
   <PropertyGroup>
     <CLRTestBashPreCommands><![CDATA[
 $(CLRTestBashPreCommands)
-    if [[ "$OSTYPE" == "linux"* ]]; then
-        if ! grep -q '^flags.*avx512' /proc/cpuinfo 2>/dev/null; then
-          echo No support for AVX512, test not applicable.
-          exit 0
-        fi
+    if ! cc -dM -E -march=native - < /dev/null 2>/dev/null | grep -q __AVX512; then
+      echo No support for AVX512, test not applicable.
+      exit 0
     fi
 ]]></CLRTestBashPreCommands>
+
+    <CLRTestBatchPreCommands><![CDATA[
+$(CLRTestBatchPreCommands)
+    powershell -Command "exit (Add-Type -MemberDefinition '[DllImport(\"kernel32.dll\")] public static extern int IsProcessorFeaturePresent(int ProcessorFeature)%3B' -Name W -PassThru)::IsProcessorFeaturePresent(41)"
+    IF %ERRORLEVEL% EQU 0 (
+      echo No support for AVX512, test not applicable.
+      exit /B 0
+    )
+]]></CLRTestBatchPreCommands>
+
+
   </PropertyGroup>
 
   <ItemGroup>

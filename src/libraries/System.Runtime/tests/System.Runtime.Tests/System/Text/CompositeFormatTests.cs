@@ -68,12 +68,15 @@ namespace System.Text.Tests
 
             Assert.Equal(expected, cf.MinimumArgumentCount);
 
-            string s = string.Format(null, cf, Enumerable.Repeat((object)"arg", expected).ToArray());
-            Assert.NotNull(s);
+            object[] args = Enumerable.Repeat((object)"arg", expected).ToArray();
+            Assert.NotNull(string.Format(null, cf, args));
+            Assert.NotNull(string.Format(null, cf, (ReadOnlySpan<object>)args));
 
             if (expected != 0)
             {
-                Assert.Throws<FormatException>(() => string.Format(null, cf, Enumerable.Repeat((object)"arg", expected - 1).ToArray()));
+                args = Enumerable.Repeat((object)"arg", expected - 1).ToArray();
+                Assert.Throws<FormatException>(() => string.Format(null, cf, args));
+                Assert.Throws<FormatException>(() => string.Format(null, cf, (ReadOnlySpan<object>)args));
             }
         }
 
@@ -86,21 +89,20 @@ namespace System.Text.Tests
             Assert.Same(format, cf.Format);
 
             Assert.Equal(expected, string.Format(provider, cf, values));
-
-            Assert.Equal(expected, string.Format(provider, cf, (ReadOnlySpan<object?>)values));
+            Assert.Equal(expected, string.Format(provider, cf, (ReadOnlySpan<object>)values));
 
             switch (values.Length)
             {
                 case 1:
-                    Assert.Equal(expected, string.Format(provider, cf, values[0]));
+                    Assert.Equal(expected, string.Format<object>(provider, cf, arg0: values[0]));
                     break;
 
                 case 2:
-                    Assert.Equal(expected, string.Format(provider, cf, values[0], values[1]));
+                    Assert.Equal(expected, string.Format<object, object>(provider, cf, arg0: values[0], arg1: values[1]));
                     break;
 
                 case 3:
-                    Assert.Equal(expected, string.Format(provider, cf, values[0], values[1], values[2]));
+                    Assert.Equal(expected, string.Format<object, object, object>(provider, cf, arg0: values[0], arg1: values[1], arg2: values[2]));
                     break;
             }
         }
@@ -188,6 +190,8 @@ namespace System.Text.Tests
                 dest = new char[expected.Length - 1];
                 Assert.False(dest.AsSpan().TryWrite(provider, cf, out charsWritten, values));
                 Assert.Equal(0, charsWritten);
+                Assert.False(dest.AsSpan().TryWrite(provider, cf, out charsWritten, (ReadOnlySpan<object>)values));
+                Assert.Equal(0, charsWritten);
             }
         }
 
@@ -209,16 +213,17 @@ namespace System.Text.Tests
             Assert.NotNull(cf);
 
             Assert.Throws<FormatException>(() => string.Format(provider, cf, args));
+            Assert.Throws<FormatException>(() => string.Format(provider, cf, (ReadOnlySpan<object>)args));
             switch (args.Length)
             {
                 case 1:
-                    Assert.Throws<FormatException>(() => string.Format(provider, cf, args[0]));
+                    Assert.Throws<FormatException>(() => string.Format<object>(provider, cf, arg0: args[0]));
                     break;
                 case 2:
-                    Assert.Throws<FormatException>(() => string.Format(provider, cf, args[0], args[1]));
+                    Assert.Throws<FormatException>(() => string.Format<object, object>(provider, cf, arg0: args[0], arg1: args[1]));
                     break;
                 case 3:
-                    Assert.Throws<FormatException>(() => string.Format(provider, cf, args[0], args[1], args[2]));
+                    Assert.Throws<FormatException>(() => string.Format<object, object, object>(provider, cf, arg0: args[0], arg1: args[1], arg2: args[2]));
                     break;
             }
         }
@@ -233,16 +238,17 @@ namespace System.Text.Tests
             var sb = new StringBuilder();
 
             Assert.Throws<FormatException>(() => sb.AppendFormat(provider, cf, args));
+            Assert.Throws<FormatException>(() => sb.AppendFormat(provider, cf, (ReadOnlySpan<object>)args));
             switch (args.Length)
             {
                 case 1:
-                    Assert.Throws<FormatException>(() => sb.AppendFormat(provider, cf, args[0]));
+                    Assert.Throws<FormatException>(() => sb.AppendFormat<object>(provider, cf, arg0: args[0]));
                     break;
                 case 2:
-                    Assert.Throws<FormatException>(() => sb.AppendFormat(provider, cf, args[0], args[1]));
+                    Assert.Throws<FormatException>(() => sb.AppendFormat<object, object>(provider, cf, arg0: args[0], arg1: args[1]));
                     break;
                 case 3:
-                    Assert.Throws<FormatException>(() => sb.AppendFormat(provider, cf, args[0], args[1], args[2]));
+                    Assert.Throws<FormatException>(() => sb.AppendFormat<object, object, object>(provider, cf, arg0: args[0], arg1: args[1], arg2: args[2]));
                     break;
             }
         }
@@ -257,16 +263,17 @@ namespace System.Text.Tests
             char[] dest = new char[1024];
 
             Assert.Throws<FormatException>(() => new Span<char>(dest).TryWrite(provider, cf, out _, args));
+            Assert.Throws<FormatException>(() => new Span<char>(dest).TryWrite(provider, cf, out _, (ReadOnlySpan<object>)args));
             switch (args.Length)
             {
                 case 1:
                     Assert.Throws<FormatException>(() => new Span<char>(dest).TryWrite(provider, cf, out _, args[0]));
                     break;
                 case 2:
-                    Assert.Throws<FormatException>(() => new Span<char>(dest).TryWrite(provider, cf, out _, args[0], args[1]));
+                    Assert.Throws<FormatException>(() => new Span<char>(dest).TryWrite<object, object>(provider, cf, out _, arg0: args[0], arg1: args[1]));
                     break;
                 case 3:
-                    Assert.Throws<FormatException>(() => new Span<char>(dest).TryWrite(provider, cf, out _, args[0], args[1], args[2]));
+                    Assert.Throws<FormatException>(() => new Span<char>(dest).TryWrite<object, object, object>(provider, cf, out _, arg0: args[0], arg1: args[1], arg2: args[2]));
                     break;
             }
         }

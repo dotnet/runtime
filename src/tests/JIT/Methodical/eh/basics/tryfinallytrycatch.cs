@@ -46,6 +46,7 @@ namespace hello_tryfinallytrycatch_basics_cs
         }
 
         [Fact]
+        [OuterLoop]
         static public int TestEntryPoint()
         {
             //Start recording

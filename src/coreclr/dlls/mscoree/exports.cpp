@@ -26,7 +26,7 @@
 #define ASSERTE_ALL_BUILDS(expr) _ASSERTE_ALL_BUILDS((expr))
 
 #ifdef TARGET_UNIX
-#define NO_HOSTING_API_RETURN_ADDRESS ((void*)ULONG_PTR_MAX)
+#define NO_HOSTING_API_RETURN_ADDRESS ((void*)UINTPTR_MAX)
 void* g_hostingApiReturnAddress = NO_HOSTING_API_RETURN_ADDRESS;
 
 class HostingApiFrameHolder
@@ -292,9 +292,10 @@ int coreclr_initialize(
 
     ConstWStringHolder appDomainFriendlyNameW = StringToUnicode(appDomainFriendlyName);
 
-    if (bundleProbe != nullptr)
+    ExternalAssemblyProbeFn* externalAssemblyProbe = hostContract != nullptr ? hostContract->external_assembly_probe : nullptr;
+    if (bundleProbe != nullptr || externalAssemblyProbe != nullptr)
     {
-        static Bundle bundle(exePath, bundleProbe);
+        static Bundle bundle(exePath, bundleProbe, externalAssemblyProbe);
         Bundle::AppBundle = &bundle;
     }
 

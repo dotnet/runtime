@@ -213,7 +213,7 @@ namespace System.IO
         }
 
         // In the context of a FileStream, the only ACCESS_MASK ACE rights we care about are reading/writing data and the generic read/write rights.
-        // See: https://docs.microsoft.com/en-us/windows/win32/secauthz/access-mask
+        // See: https://learn.microsoft.com/windows/win32/secauthz/access-mask
         private static FileAccess GetFileAccessFromRights(FileSystemRights rights)
         {
             FileAccess access = 0;
@@ -290,7 +290,7 @@ namespace System.IO
 
             return handle;
 
-            static unsafe SafeFileHandle CreateFileHandleInternal(string fullPath, FileMode mode, FileSystemRights rights, FileShare share, int flagsAndAttributes, Interop.Kernel32.SECURITY_ATTRIBUTES* secAttrs)
+            static SafeFileHandle CreateFileHandleInternal(string fullPath, FileMode mode, FileSystemRights rights, FileShare share, int flagsAndAttributes, Interop.Kernel32.SECURITY_ATTRIBUTES* secAttrs)
             {
                 SafeFileHandle handle;
                 using (DisableMediaInsertionPrompt.Create())

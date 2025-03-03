@@ -85,18 +85,5 @@ namespace Internal.Runtime.TypeLoader
             else
                 return _typeToFind.Equals(other);
         }
-
-        public bool ConversionToCanonFormIsAChange()
-        {
-            if (_defType != null)
-            {
-                return _defType.ConvertToCanonForm(_canonKind) != _defType;
-            }
-
-            if (_genericArgs != null)
-                return TypeLoaderEnvironment.Instance.ConversionToCanonFormIsAChange(_genericArgs, _canonKind);
-
-            return false;
-        }
     }
 }

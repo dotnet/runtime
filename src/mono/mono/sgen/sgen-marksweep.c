@@ -33,6 +33,7 @@
 #include "mono/sgen/sgen-client.h"
 #include "mono/utils/mono-memory-model.h"
 #include "mono/utils/mono-proclib.h"
+#include "mono/utils/options.h"
 
 static int ms_block_size;
 
@@ -48,7 +49,13 @@ static int ms_block_size;
  * Don't allocate single blocks, but alloc a contingent of this many
  * blocks in one swoop.  This must be a power of two.
  */
+#ifndef TARGET_WASM
 #define MS_BLOCK_ALLOC_NUM	32
+#else
+// WASM doesn't support partial munmap, so we can't free individual blocks
+// we use posix_memalign and free the whole block at once
+#define MS_BLOCK_ALLOC_NUM	1
+#endif
 
 #define MS_NUM_MARK_WORDS	((ms_block_size / SGEN_ALLOC_ALIGN + sizeof (guint32) * 8 - 1) / (sizeof (guint32) * 8))
 
@@ -1524,6 +1531,7 @@ static size_t *sweep_num_blocks;
 
 static volatile size_t num_major_sections_before_sweep;
 static volatile size_t num_major_sections_freed_in_sweep;
+static volatile size_t num_major_sections_survived_in_sweep;
 
 static void
 sgen_worker_clear_free_block_lists (WorkerData *worker)
@@ -1707,6 +1715,7 @@ ensure_block_is_checked_for_sweeping (guint32 block_index, gboolean wait, gboole
 
 		/* FIXME: Do we need the heap boundaries while we do nursery collections? */
 		update_heap_boundaries_for_block (block);
+		SGEN_ATOMIC_ADD_P (num_major_sections_survived_in_sweep, 1);
 	} else {
 		/*
 		 * Blocks without live objects are removed from the
@@ -1842,6 +1851,7 @@ major_sweep (void)
 
 	num_major_sections_before_sweep = num_major_sections;
 	num_major_sections_freed_in_sweep = 0;
+	num_major_sections_survived_in_sweep = 0;
 
 	SGEN_ASSERT (0, !sweep_job, "We haven't finished the last sweep?");
 	if (concurrent_sweep) {
@@ -2130,7 +2140,7 @@ major_free_swept_blocks (size_t section_reserve)
 {
 	SGEN_ASSERT (0, sweep_state == SWEEP_STATE_SWEPT, "Sweeping must have finished before freeing blocks");
 
-#if defined(HOST_WIN32) || defined(HOST_ORBIS) || defined (HOST_WASM)
+#if defined(HOST_WIN32) || defined(HOST_ORBIS)
 		/*
 		 * sgen_free_os_memory () asserts in mono_vfree () because windows doesn't like freeing the middle of
 		 * a VirtualAlloc ()-ed block.
@@ -2317,6 +2327,28 @@ static size_t
 get_num_major_sections (void)
 {
 	return num_major_sections;
+}
+
+// Conservative values for computing trigger size, without needing concurrent sweep to finish
+// As concurrent sweep job advances in execution, these values get closer to the real value.
+// This contains at least the number of blocks determined to be live by sweep job (which increases
+// as sweep progresses) plus any new blocks allocated by the application.
+static size_t
+get_min_live_major_sections (void)
+{
+	// Note that num_major_sections gets decremented for each freed block, so to obtain the real block count
+	// we would need to add back num_major_sections_freed_in_sweep, but this is racy so we are being conservative.
+	if (num_major_sections > num_major_sections_before_sweep)
+		return num_major_sections_survived_in_sweep + (num_major_sections - num_major_sections_before_sweep);
+	else
+		return num_major_sections_survived_in_sweep;
+}
+
+static size_t
+get_max_last_major_survived_sections (void)
+{
+	// num_major_sections_freed_in_sweep increases as sweep progresses.
+	return num_major_sections_before_sweep - num_major_sections_freed_in_sweep;
 }
 
 static size_t
@@ -2886,6 +2918,8 @@ sgen_marksweep_init_internal (SgenMajorCollector *collector, gboolean is_concurr
 	collector->ptr_is_from_pinned_alloc = ptr_is_from_pinned_alloc;
 	collector->report_pinned_memory_usage = major_report_pinned_memory_usage;
 	collector->get_num_major_sections = get_num_major_sections;
+	collector->get_min_live_major_sections = get_min_live_major_sections;
+	collector->get_max_last_major_survived_sections = get_max_last_major_survived_sections;
 	collector->get_num_empty_blocks = get_num_empty_blocks;
 	collector->get_bytes_survived_last_sweep = get_bytes_survived_last_sweep;
 	collector->handle_gc_param = major_handle_gc_param;

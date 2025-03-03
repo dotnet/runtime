@@ -231,6 +231,9 @@ inline SString::SString(const WCHAR *string)
 
     Set(string);
 
+    _ASSERTE(IsRepresentation(REPRESENTATION_UNICODE));
+    SetNormalized();
+
     SS_RETURN;
 }
 
@@ -248,6 +251,9 @@ inline SString::SString(const WCHAR *string, COUNT_T count)
     SS_CONTRACT_END;
 
     Set(string, count);
+
+    _ASSERTE(IsRepresentation(REPRESENTATION_UNICODE));
+    SetNormalized();
 
     SS_RETURN;
 }

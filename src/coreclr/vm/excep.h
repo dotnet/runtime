@@ -11,8 +11,8 @@
 
 #include "exstatecommon.h"
 #include "exceptmacros.h"
-#include "corerror.h"  // HResults for the COM+ Runtime
-#include "corexcep.h"  // Exception codes for the COM+ Runtime
+#include "corerror.h"
+#include "corexcep.h"
 
 class Thread;
 
@@ -65,14 +65,13 @@ struct ThrowCallbackType
     int     dHandler;       // the index of the handler whose filter returned catch indication
     BOOL    bIsUnwind;      // are we currently unwinding an exception
     BOOL    bUnwindStack;   // reset the stack before calling the handler? (Stack overflow only)
-    BOOL    bAllowAllocMem; // are we allowed to allocate memory?
     BOOL    bDontCatch;     // can we catch this exception?
     BYTE    *pStack;
     Frame * pTopFrame;
     Frame * pBottomFrame;
     MethodDesc * pProfilerNotify;   // Context for profiler callbacks -- see COMPlusFrameHandler().
-    BOOL    bReplaceStack;  // Used to pass info to SaveStackTrace call
-    BOOL    bSkipLastElement;// Used to pass info to SaveStackTrace call
+    BOOL    bIsNewException;
+    BOOL    bSkipLastElement;// Used to skip calling StackTraceInfo::AppendElement
 #ifdef _DEBUG
     void * pCurrentExceptionRecord;
     void * pPrevExceptionRecord;
@@ -86,13 +85,12 @@ struct ThrowCallbackType
         dHandler = 0;
         bIsUnwind = FALSE;
         bUnwindStack = FALSE;
-        bAllowAllocMem = TRUE;
         bDontCatch = FALSE;
         pStack = NULL;
         pTopFrame = (Frame *)-1;
         pBottomFrame = (Frame *)-1;
         pProfilerNotify = NULL;
-        bReplaceStack = FALSE;
+        bIsNewException = FALSE;
         bSkipLastElement = FALSE;
 #ifdef _DEBUG
         pCurrentExceptionRecord = 0;
@@ -107,7 +105,6 @@ struct EE_ILEXCEPTION_CLAUSE;
 
 void InitializeExceptionHandling();
 void CLRAddVectoredHandlers(void);
-void CLRRemoveVectoredHandlers(void);
 void TerminateExceptionHandling();
 
 // Prototypes
@@ -240,7 +237,7 @@ void ResMgrGetString(LPCWSTR wszResourceName, STRINGREF * ppMessage);
 // externs
 
 //==========================================================================
-// Various routines to throw COM+ objects.
+// Various routines to throw CLR objects.
 //==========================================================================
 
 //==========================================================================
@@ -256,7 +253,7 @@ VOID DECLSPEC_NORETURN RealCOMPlusThrowNonLocalized(RuntimeExceptionKind reKind,
 //==========================================================================
 
 VOID DECLSPEC_NORETURN RealCOMPlusThrow(OBJECTREF throwable);
-VOID DECLSPEC_NORETURN RealCOMPlusThrow(Object *exceptionObj);
+VOID DECLSPEC_NORETURN PropagateExceptionThroughNativeFrames(Object *exceptionObj);
 
 //==========================================================================
 // Throw an undecorated runtime exception.
@@ -287,7 +284,9 @@ VOID DECLSPEC_NORETURN RealCOMPlusThrow(RuntimeExceptionKind  reKind, UINT resID
 // passed as the first substitution string (%1).
 //==========================================================================
 
+#ifdef FEATURE_COMINTEROP
 VOID DECLSPEC_NORETURN RealCOMPlusThrowHR(HRESULT hr, IErrorInfo* pErrInfo, Exception * pInnerException = NULL);
+#endif // FEATURE_COMINTEROP
 VOID DECLSPEC_NORETURN RealCOMPlusThrowHR(HRESULT hr);
 VOID DECLSPEC_NORETURN RealCOMPlusThrowHR(HRESULT hr, UINT resID, LPCWSTR wszArg1 = NULL, LPCWSTR wszArg2 = NULL,
                                           LPCWSTR wszArg3 = NULL, LPCWSTR wszArg4 = NULL, LPCWSTR wszArg5 = NULL,
@@ -360,7 +359,9 @@ void ExceptionPreserveStackTrace(OBJECTREF throwable);
 // Create an exception object for an HRESULT
 //==========================================================================
 
+#ifdef FEATURE_COMINTEROP
 void GetExceptionForHR(HRESULT hr, IErrorInfo* pErrInfo, OBJECTREF* pProtectedThrowable);
+#endif // FEATURE_COMINTEROP
 void GetExceptionForHR(HRESULT hr, OBJECTREF* pProtectedThrowable);
 HRESULT GetHRFromThrowable(OBJECTREF throwable);
 
@@ -504,7 +505,7 @@ extern "C" BOOL ExceptionIsOfRightType(TypeHandle clauseType, TypeHandle thrownT
 
 
 // Specify NULL for uTryCatchResumeAddress when not checking for a InducedThreadRedirectAtEndOfCatch
-EXTERN_C LPVOID COMPlusCheckForAbort(UINT_PTR uTryCatchResumeAddress = NULL);
+EXTERN_C LPVOID COMPlusCheckForAbort(UINT_PTR uTryCatchResumeAddress = 0);
 
 BOOL        IsThreadHijackedForThreadStop(Thread* pThread, EXCEPTION_RECORD* pExceptionRecord);
 void        AdjustContextForThreadStop(Thread* pThread, T_CONTEXT* pContext);
@@ -518,11 +519,11 @@ EXCEPTION_HANDLER_DECL(COMPlusFrameHandlerRevCom);
 #endif // FEATURE_COMINTEROP
 
 // Pop off any SEH handlers we have registered below pTargetSP
-VOID __cdecl PopSEHRecords(LPVOID pTargetSP);
+VOID PopSEHRecords(LPVOID pTargetSP);
 
-#if defined(TARGET_X86) && defined(DEBUGGING_SUPPORTED)
+#ifdef DEBUGGING_SUPPORTED
 VOID UnwindExceptionTrackerAndResumeInInterceptionFrame(ExInfo* pExInfo, EHContext* context);
-#endif // TARGET_X86 && DEBUGGING_SUPPORTED
+#endif // DEBUGGING_SUPPORTED
 
 BOOL PopNestedExceptionRecords(LPVOID pTargetSP, BOOL bCheckForUnknownHandlers = FALSE);
 VOID PopNestedExceptionRecords(LPVOID pTargetSP, T_CONTEXT *pCtx, void *pSEH);
@@ -551,7 +552,7 @@ void VerifyValidTransitionFromManagedCode(Thread *pThread, CrawlFrame *pCF);
 
 //==========================================================================
 // This is a workaround designed to allow the use of the StubLinker object at bootup
-// time where the EE isn't sufficient awake to create COM+ exception objects.
+// time where the EE isn't sufficient awake to create CLR exception objects.
 // Instead, COMPlusThrow(rexcep) does a simple RaiseException using this code.
 //==========================================================================
 #define BOOTUP_EXCEPTION_COMPLUS  0xC0020001
@@ -845,6 +846,10 @@ void ResetThreadAbortState(PTR_Thread pThread, CrawlFrame *pCf, StackFrame sfCur
 #endif
 
 X86_ONLY(EXCEPTION_REGISTRATION_RECORD* GetNextCOMPlusSEHRecord(EXCEPTION_REGISTRATION_RECORD* pRec);)
+
+#ifdef FEATURE_EH_FUNCLETS
+VOID DECLSPEC_NORETURN ContinueExceptionInterceptionUnwind();
+#endif // FEATURE_EH_FUNCLETS
 
 #endif // !DACCESS_COMPILE
 

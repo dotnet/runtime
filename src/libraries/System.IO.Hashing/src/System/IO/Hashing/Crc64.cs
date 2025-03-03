@@ -167,7 +167,7 @@ namespace System.IO.Hashing
 
         private static ulong Update(ulong crc, ReadOnlySpan<byte> source)
         {
-#if NET7_0_OR_GREATER
+#if NET
             if (CanBeVectorized(source))
             {
                 return UpdateVectorized(crc, source);

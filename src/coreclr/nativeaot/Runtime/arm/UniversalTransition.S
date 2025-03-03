@@ -123,11 +123,7 @@ NESTED_ENTRY Rhp\FunctionName, _TEXT, NoHandler
         add         r0, sp, #DISTANCE_FROM_CHILDSP_TO_RETURN_BLOCK  // First parameter to target function is a pointer to the return block
         blx         r12
 
-        EXPORT_POINTER_TO_ADDRESS PointerToReturnFrom\FunctionName
-
-        // We cannot make the label public as that tricks DIA stackwalker into thinking
-        // it's the beginning of a method. For this reason we export an auxiliary variable
-        // holding the address instead.
+GLOBAL_LABEL ReturnFrom\FunctionName
 
         // Move the result (the target address) to r12 so it doesn't get overridden when we restore the
         // argument registers. Additionally make sure the thumb2 bit is set.

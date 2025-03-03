@@ -47,7 +47,12 @@ extends:
             nameSuffix: AllSubsets_CoreCLR
             isOfficialBuild: ${{ variables.isOfficialBuild }}
             timeoutInMinutes: 360
-            isManualCodeQLBuild: true
+            preBuildSteps:
+              - task: CodeQL3000Init@0
+                displayName: Initialize CodeQL (manually-injected)
+            postBuildSteps:
+              - task: CodeQL3000Finalize@0
+                displayName: Finalize CodeQL (manually-injected)
 
       #
       # Build Mono runtime packs
@@ -65,4 +70,9 @@ extends:
             nameSuffix: AllSubsets_Mono
             isOfficialBuild: ${{ variables.isOfficialBuild }}
             timeoutInMinutes: 360
-            isManualCodeQLBuild: true
+            preBuildSteps:
+              - task: CodeQL3000Init@0
+                displayName: Initialize CodeQL (manually-injected)
+            postBuildSteps:
+              - task: CodeQL3000Finalize@0
+                displayName: Finalize CodeQL (manually-injected)

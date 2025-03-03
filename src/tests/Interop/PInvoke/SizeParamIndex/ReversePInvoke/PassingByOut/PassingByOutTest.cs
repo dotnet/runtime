@@ -159,7 +159,7 @@ public class PassingByOutTest
 
         Console.WriteLine("\tScenario 3 : short ==> int16_t, Array_Size = -1, Return_Array_Size = 20");
         Assert.True(DoCallBack_MarshalShortArray_AsParam_AsByOut(new DelShortArrByOutAsCdeclCaller(TestMethodForShortArray_AsReversePInvokeByOut_AsCdecl)));
-        Console.WriteLine("\t\tMarshalShortArray_AsReversePInvokeByOut_AsCdecl Failed!");
+        Console.WriteLine("\t\tMarshalShortArray_AsReversePInvokeByOut_AsCdecl Passed!");
 
         Console.WriteLine("\tScenario 4 : short ==> int16_t, Array_Size = 10, Return_Array_Size = -1");
         Assert.True(DoCallBack_MarshalShortArrayReturnNegativeSize_AsParam_AsByOut(new DelShortArrByOutAsCdeclCaller(TestMethodForShortArrayReturnNegativeSize_AsReversePInvokeByOut_AsCdecl)));

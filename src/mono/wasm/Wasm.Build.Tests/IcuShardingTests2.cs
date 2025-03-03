@@ -3,6 +3,8 @@
 
 using System;
 using System.IO;
+using System.Linq;
+using System.Threading.Tasks;
 using Xunit;
 using Xunit.Abstractions;
 using Xunit.Sdk;
@@ -17,23 +19,25 @@ public class IcuShardingTests2 : IcuTestsBase
     public IcuShardingTests2(ITestOutputHelper output, SharedBuildPerTestClassFixture buildContext)
         : base(output, buildContext) { }
 
-    public static IEnumerable<object?[]> IcuExpectedAndMissingShardFromRuntimePackTestData(bool aot, RunHost host)
-        => ConfigWithAOTData(aot)
-            .Multiply(
-                new object[] { "icudt.dat",
-                                $@"new Locale[] {{
+    public static IEnumerable<object[]> IcuExpectedAndMissingShardFromRuntimePackTestData(Configuration config)
+    {
+        var locales = new Dictionary<string, string>
+        {
+            { "icudt.dat", $@"new Locale[] {{
                                     new Locale(""en-GB"", ""{SundayNames.English}""), new Locale(""zh-CN"", ""{SundayNames.Chinese}""), new Locale(""sk-SK"", ""{SundayNames.Slovak}""),
                                     new Locale(""xx-yy"", null) }}" },
-                new object[] { "icudt_EFIGS.dat", GetEfigsTestedLocales() },
-                new object[] { "icudt_CJK.dat", GetCjkTestedLocales() },
-                new object[] { "icudt_no_CJK.dat", GetNocjkTestedLocales() })
-            .WithRunHosts(host)
-            .UnwrapItemsAsArrays();
-
+            { "icudt_EFIGS.dat", GetEfigsTestedLocales() },
+            { "icudt_CJK.dat", GetCjkTestedLocales() },
+            { "icudt_no_CJK.dat", GetNocjkTestedLocales() }
+        }; 
+        return
+            from aot in boolOptions
+            from locale in locales
+            select new object[] { config, aot, locale.Key, locale.Value };
+    }
 
     [Theory]
-    [MemberData(nameof(IcuExpectedAndMissingShardFromRuntimePackTestData), parameters: new object[] { false, RunHost.NodeJS | RunHost.Chrome })]
-    [MemberData(nameof(IcuExpectedAndMissingShardFromRuntimePackTestData), parameters: new object[] { true, RunHost.NodeJS | RunHost.Chrome })]
-    public void DefaultAvailableIcuShardsFromRuntimePack(BuildArgs buildArgs, string shardName, string testedLocales, RunHost host, string id) =>
-        TestIcuShards(buildArgs, shardName, testedLocales, host, id);
+    [MemberData(nameof(IcuExpectedAndMissingShardFromRuntimePackTestData), parameters: new object[] { Configuration.Release })]
+    public async Task DefaultAvailableIcuShardsFromRuntimePack(Configuration config, bool aot, string shardName, string testedLocales) =>
+        await TestIcuShards(config, Template.WasmBrowser, aot, shardName, testedLocales, GlobalizationMode.Custom);
 }

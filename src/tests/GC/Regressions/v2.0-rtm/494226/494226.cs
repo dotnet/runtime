@@ -4,11 +4,13 @@
 using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
+using Xunit;
 
 public class Test_494226
 {
     [System.Security.SecuritySafeCritical]
-    public static int Main()
+    [Fact]
+    public static void TestEntryPoint()
     {
         List<GCHandle> list = new List<GCHandle>();
         List<byte[]> blist = new List<byte[]>();
@@ -34,7 +36,6 @@ public class Test_494226
         }
 
         Console.WriteLine("Test passed");
-        return 100;
     }
 }
 

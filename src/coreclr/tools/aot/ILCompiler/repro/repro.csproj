@@ -6,7 +6,6 @@
     <PlatformTarget>AnyCPU</PlatformTarget>
     <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
     <AppendRuntimeIdentifierToOutputPath>false</AppendRuntimeIdentifierToOutputPath>
-    <RuntimeIdentifiers>linux-x64;win-x64;osx-x64;freebsd-x64;freebsd-arm64</RuntimeIdentifiers>
     <Configurations>Debug;Release;Checked</Configurations>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <RunAnalyzers>false</RunAnalyzers>
@@ -18,13 +17,14 @@
 
     <ItemGroup>
       <ReproResponseLines Include="$(OutputPath)$(AssemblyName)$(TargetExt)" />
+      <ReproResponseLines Include="--targetarch:$(Platform)" />
       <ReproResponseLines Include="-o:$(OutputPath)$(AssemblyName).obj" />
       <ReproResponseLines Include="-r:$(RuntimeBinDir)aotsdk\*.dll" />
       <ReproResponseLines Include="-r:$(MicrosoftNetCoreAppRuntimePackRidLibTfmDir)*.dll" />
       <ReproResponseLines Include="-g" />
       <ReproResponseLines Include="-O" Condition="'$(Optimize)' == 'true'" />
       <ReproResponseLines Include="--dehydrate" />
-      <ReproResponseLines Include="--generateunmanagedentrypoints:System.Private.CoreLib" />
+      <ReproResponseLines Include="--generateunmanagedentrypoints:System.Private.CoreLib,HIDDEN" />
       <ReproResponseLines Include="--initassembly:System.Private.CoreLib" />
       <ReproResponseLines Include="--initassembly:System.Private.StackTraceMetadata" />
       <ReproResponseLines Include="--initassembly:System.Private.TypeLoader" />

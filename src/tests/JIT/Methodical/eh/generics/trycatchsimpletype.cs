@@ -5,6 +5,7 @@ using System;
 using System.IO;
 using Xunit;
 
+namespace JIT.Methodical.eh.generics.trycatchsimpletype;
 
 public class GenException<T> : Exception
 {

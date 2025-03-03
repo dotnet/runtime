@@ -1,11 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
+
 // ===========================================================================
 // File: UTIL.CPP
-//
-
 // ===========================================================================
-
 
 #include "common.h"
 #include "excep.h"
@@ -17,6 +15,9 @@
 
 #ifndef DACCESS_COMPILE
 
+#if defined(TARGET_ANDROID)
+#include <android/log.h>
+#endif // defined(TARGET_ANDROID)
 
 thread_local size_t t_ThreadType;
 
@@ -28,12 +29,7 @@ void ClrFlsSetThreadType(TlsThreadTypeFlag flag)
 
     // The historic location of ThreadType slot kept for compatibility with SOS
     // TODO: Introduce DAC API to make this hack unnecessary
-#if defined(_MSC_VER) && defined(HOST_X86)
-    // Workaround for https://developercommunity.visualstudio.com/content/problem/949233/tls-relative-fixup-overflow-tls-section-is-too-lar.html
-    gCurrentThreadInfo.m_EETlsData = (void**)(((size_t)&t_ThreadType ^ 1) - (4 * TlsIdx_ThreadType + 1));
-#else
     gCurrentThreadInfo.m_EETlsData = (void**)&t_ThreadType - TlsIdx_ThreadType;
-#endif
 }
 
 void ClrFlsClearThreadType(TlsThreadTypeFlag flag)
@@ -52,7 +48,7 @@ thread_local size_t t_CantStopCount;
 // Destroying the heap frees all blocks allocated from the heap.
 // Blocks cannot be freed individually.
 //
-// The heap uses COM+ exceptions to report errors.
+// The heap uses CLR exceptions to report errors.
 //
 // The heap does not use any internal synchronization so it is not
 // multithreadsafe.
@@ -184,10 +180,13 @@ void PrintToStdErrA(const char *pszString) {
     }
     CONTRACTL_END
 
-    HANDLE  Handle = GetStdHandle(STD_ERROR_HANDLE);
-
+#if defined(TARGET_ANDROID)
+    __android_log_write(ANDROID_LOG_FATAL, MAIN_CLR_MODULE_NAME_A, pszString);
+#else
+    HANDLE Handle = GetStdHandle(STD_ERROR_HANDLE);
     size_t len = strlen(pszString);
     NPrintToHandleA(Handle, pszString, len);
+#endif // defined(TARGET_ANDROID)
 }
 
 void PrintToStdErrW(const WCHAR *pwzString)
@@ -374,6 +373,86 @@ SIZE_T GetRegOffsInCONTEXT(ICorDebugInfo::RegNum regNum)
     case ICorDebugInfo::REGNUM_AMBIENT_SP: return offsetof(T_CONTEXT, Sp);
     default: _ASSERTE(!"Bad regNum"); return (SIZE_T)(-1);
     }
+#elif defined(TARGET_LOONGARCH64)
+
+    switch(regNum)
+    {
+    case ICorDebugInfo::REGNUM_R0: return offsetof(T_CONTEXT, R0);
+    case ICorDebugInfo::REGNUM_RA: return offsetof(T_CONTEXT, Ra);
+    //case ICorDebugInfo::REGNUM_TP: return offsetof(T_CONTEXT, Tp);
+    case ICorDebugInfo::REGNUM_SP: return offsetof(T_CONTEXT, Sp);
+    case ICorDebugInfo::REGNUM_A0: return offsetof(T_CONTEXT, A0);
+    case ICorDebugInfo::REGNUM_A1: return offsetof(T_CONTEXT, A1);
+    case ICorDebugInfo::REGNUM_A2: return offsetof(T_CONTEXT, A2);
+    case ICorDebugInfo::REGNUM_A3: return offsetof(T_CONTEXT, A3);
+    case ICorDebugInfo::REGNUM_A4: return offsetof(T_CONTEXT, A4);
+    case ICorDebugInfo::REGNUM_A5: return offsetof(T_CONTEXT, A5);
+    case ICorDebugInfo::REGNUM_A6: return offsetof(T_CONTEXT, A6);
+    case ICorDebugInfo::REGNUM_A7: return offsetof(T_CONTEXT, A7);
+    case ICorDebugInfo::REGNUM_T0: return offsetof(T_CONTEXT, T0);
+    case ICorDebugInfo::REGNUM_T1: return offsetof(T_CONTEXT, T1);
+    case ICorDebugInfo::REGNUM_T2: return offsetof(T_CONTEXT, T2);
+    case ICorDebugInfo::REGNUM_T3: return offsetof(T_CONTEXT, T3);
+    case ICorDebugInfo::REGNUM_T4: return offsetof(T_CONTEXT, T4);
+    case ICorDebugInfo::REGNUM_T5: return offsetof(T_CONTEXT, T5);
+    case ICorDebugInfo::REGNUM_T6: return offsetof(T_CONTEXT, T6);
+    case ICorDebugInfo::REGNUM_T7: return offsetof(T_CONTEXT, T7);
+    case ICorDebugInfo::REGNUM_T8: return offsetof(T_CONTEXT, T8);
+    case ICorDebugInfo::REGNUM_X0: return offsetof(T_CONTEXT, X0);
+    case ICorDebugInfo::REGNUM_FP: return offsetof(T_CONTEXT, Fp);
+    case ICorDebugInfo::REGNUM_S0: return offsetof(T_CONTEXT, S0);
+    case ICorDebugInfo::REGNUM_S1: return offsetof(T_CONTEXT, S1);
+    case ICorDebugInfo::REGNUM_S2: return offsetof(T_CONTEXT, S2);
+    case ICorDebugInfo::REGNUM_S3: return offsetof(T_CONTEXT, S3);
+    case ICorDebugInfo::REGNUM_S4: return offsetof(T_CONTEXT, S4);
+    case ICorDebugInfo::REGNUM_S5: return offsetof(T_CONTEXT, S5);
+    case ICorDebugInfo::REGNUM_S6: return offsetof(T_CONTEXT, S6);
+    case ICorDebugInfo::REGNUM_S7: return offsetof(T_CONTEXT, S7);
+    case ICorDebugInfo::REGNUM_S8: return offsetof(T_CONTEXT, S8);
+    case ICorDebugInfo::REGNUM_PC: return offsetof(T_CONTEXT, Pc);
+    case ICorDebugInfo::REGNUM_AMBIENT_SP: return offsetof(T_CONTEXT, Sp);
+    default: _ASSERTE(!"Bad regNum"); return (SIZE_T)(-1);
+    }
+#elif defined(TARGET_RISCV64)
+
+    switch(regNum)
+    {
+    case ICorDebugInfo::REGNUM_R0: return offsetof(T_CONTEXT, R0);
+    case ICorDebugInfo::REGNUM_RA: return offsetof(T_CONTEXT, Ra);
+    case ICorDebugInfo::REGNUM_SP: return offsetof(T_CONTEXT, Sp);
+    case ICorDebugInfo::REGNUM_GP: return offsetof(T_CONTEXT, Gp);
+    case ICorDebugInfo::REGNUM_TP: return offsetof(T_CONTEXT, Tp);
+    case ICorDebugInfo::REGNUM_T0: return offsetof(T_CONTEXT, T0);
+    case ICorDebugInfo::REGNUM_T1: return offsetof(T_CONTEXT, T1);
+    case ICorDebugInfo::REGNUM_T2: return offsetof(T_CONTEXT, T2);
+    case ICorDebugInfo::REGNUM_FP: return offsetof(T_CONTEXT, Fp);
+    case ICorDebugInfo::REGNUM_S1: return offsetof(T_CONTEXT, S1);
+    case ICorDebugInfo::REGNUM_A0: return offsetof(T_CONTEXT, A0);
+    case ICorDebugInfo::REGNUM_A1: return offsetof(T_CONTEXT, A1);
+    case ICorDebugInfo::REGNUM_A2: return offsetof(T_CONTEXT, A2);
+    case ICorDebugInfo::REGNUM_A3: return offsetof(T_CONTEXT, A3);
+    case ICorDebugInfo::REGNUM_A4: return offsetof(T_CONTEXT, A4);
+    case ICorDebugInfo::REGNUM_A5: return offsetof(T_CONTEXT, A5);
+    case ICorDebugInfo::REGNUM_A6: return offsetof(T_CONTEXT, A6);
+    case ICorDebugInfo::REGNUM_A7: return offsetof(T_CONTEXT, A7);
+    case ICorDebugInfo::REGNUM_S2: return offsetof(T_CONTEXT, S2);
+    case ICorDebugInfo::REGNUM_S3: return offsetof(T_CONTEXT, S3);
+    case ICorDebugInfo::REGNUM_S4: return offsetof(T_CONTEXT, S4);
+    case ICorDebugInfo::REGNUM_S5: return offsetof(T_CONTEXT, S5);
+    case ICorDebugInfo::REGNUM_S6: return offsetof(T_CONTEXT, S6);
+    case ICorDebugInfo::REGNUM_S7: return offsetof(T_CONTEXT, S7);
+    case ICorDebugInfo::REGNUM_S8: return offsetof(T_CONTEXT, S8);
+    case ICorDebugInfo::REGNUM_S9: return offsetof(T_CONTEXT, S9);
+    case ICorDebugInfo::REGNUM_S10: return offsetof(T_CONTEXT, S10);
+    case ICorDebugInfo::REGNUM_S11: return offsetof(T_CONTEXT, S11);
+    case ICorDebugInfo::REGNUM_T3: return offsetof(T_CONTEXT, T3);
+    case ICorDebugInfo::REGNUM_T4: return offsetof(T_CONTEXT, T4);
+    case ICorDebugInfo::REGNUM_T5: return offsetof(T_CONTEXT, T5);
+    case ICorDebugInfo::REGNUM_T6: return offsetof(T_CONTEXT, T6);
+    case ICorDebugInfo::REGNUM_PC: return offsetof(T_CONTEXT, Pc);
+    case ICorDebugInfo::REGNUM_AMBIENT_SP: return offsetof(T_CONTEXT, Sp);
+    default: _ASSERTE(!"Bad regNum"); return (SIZE_T)(-1);
+    }
 #else
     PORTABILITY_ASSERT("GetRegOffsInCONTEXT is not implemented on this platform.");
     return (SIZE_T) -1;
@@ -384,13 +463,13 @@ SIZE_T DereferenceByRefVar(SIZE_T addr)
 {
     STATIC_CONTRACT_WRAPPER;
 
-    SIZE_T result = NULL;
+    SIZE_T result = 0;
 
 #if defined(DACCESS_COMPILE)
     HRESULT hr = DacReadAll(addr, &result, sizeof(result), false);
     if (FAILED(hr))
     {
-        result = NULL;
+        result = 0;
     }
 
 #else  // !DACCESS_COMPILE
@@ -1070,7 +1149,7 @@ BOOL JITNotifications::SetAllNotifications(TADDR clrModule,USHORT NType,BOOL *ch
     {
         JITNotification *pCurrent = m_jitTable + i;
         if (!pCurrent->IsFree() &&
-            ((clrModule == NULL) || (pCurrent->clrModule == clrModule))&&
+            ((clrModule == (TADDR)NULL) || (pCurrent->clrModule == clrModule))&&
             pCurrent->state != NType)
         {
             pCurrent->state = NType;
@@ -1102,7 +1181,7 @@ BOOL JITNotifications::SetNotification(TADDR clrModule, mdToken token, USHORT NT
         return FALSE;
     }
 
-    if (clrModule == NULL)
+    if (clrModule == (TADDR)NULL)
     {
         return FALSE;
     }
@@ -1255,7 +1334,7 @@ BOOL UpdateOutOfProcTable(__GlobalPtr<NotificationClass*, DPTR(NotificationClass
         return FALSE;
     }
 
-    if (dac_cast<TADDR>(pHostTable) == NULL)
+    if (dac_cast<TADDR>(pHostTable) == (TADDR)NULL)
     {
         // The table has not been initialized in the target.  Allocate space for it and update the pointer
         // in the target so that we'll use this allocated memory from now on.  Note that we never free this
@@ -1481,7 +1560,7 @@ void DACNotifyExceptionHelper(TADDR *args, UINT argCount)
 
     _ASSERTE(argCount <= MAX_CLR_NOTIFICATION_ARGS);
 
-    if (IsDebuggerPresent() && !CORDebuggerAttached())
+    if (minipal_is_native_debugger_present() && !CORDebuggerAttached())
     {
         CrstHolder lh(&g_clrNotificationCrst);
 
@@ -1492,14 +1571,14 @@ void DACNotifyExceptionHelper(TADDR *args, UINT argCount)
 
         DACRaiseException(args, argCount);
 
-        g_clrNotificationArguments[0] = NULL;
+        g_clrNotificationArguments[0] = 0;
     }
 }
 
 void InitializeClrNotifications()
 {
     g_clrNotificationCrst.Init(CrstClrNotification, CRST_UNSAFE_ANYMODE);
-    g_clrNotificationArguments[0] = NULL;
+    g_clrNotificationArguments[0] = 0;
 }
 
 // <TODO> FIX IN BETA 2
@@ -1774,21 +1853,19 @@ static BOOL TrustMeIAmSafe(void *pLock)
 
 LockOwner g_lockTrustMeIAmThreadSafe = { NULL, TrustMeIAmSafe };
 
-static DangerousNonHostedSpinLock g_randomLock;
-static CLRRandom g_random;
+namespace
+{
+    DangerousNonHostedSpinLock g_randomLock;
+    CLRRandom g_random;
+}
 
 int GetRandomInt(int maxVal)
 {
-    // Use the thread-local Random instance if possible
-    Thread* pThread = GetThreadNULLOk();
-    if (pThread)
-        return pThread->GetRandom()->Next(maxVal);
-
-    // No Thread object - need to fall back to the global generator.
     // In DAC builds we don't need the lock (DAC is single-threaded) and can't get it anyway (DNHSL isn't supported)
 #ifndef DACCESS_COMPILE
-    DangerousNonHostedSpinLockHolder lh(&g_randomLock);
+    DangerousNonHostedSpinLockHolder lockHolder(&g_randomLock);
 #endif
+    // Use the thread-local Random instance
     if (!g_random.IsInitialized())
         g_random.Init();
     return g_random.Next(maxVal);
@@ -1818,62 +1895,6 @@ int __cdecl stricmpUTF8(const char* szStr1, const char* szStr2)
 }
 
 #ifndef DACCESS_COMPILE
-//
-//
-// COMCharacter and Helper functions
-//
-//
-
-#ifndef TARGET_UNIX
-/*============================GetCharacterInfoHelper============================
-**Determines character type info (digit, whitespace, etc) for the given char.
-**Args:   c is the character on which to operate.
-**        CharInfoType is one of CT_CTYPE1, CT_CTYPE2, CT_CTYPE3 and specifies the type
-**        of information being requested.
-**Returns: The bitmask returned by GetStringTypeEx.  The caller needs to know
-**         how to interpret this.
-**Exceptions: ArgumentException if GetStringTypeEx fails.
-==============================================================================*/
-INT32 GetCharacterInfoHelper(WCHAR c, INT32 CharInfoType)
-{
-    WRAPPER_NO_CONTRACT;
-
-    unsigned short result=0;
-    if (!GetStringTypeEx(LOCALE_USER_DEFAULT, CharInfoType, &(c), 1, &result)) {
-        _ASSERTE(!"This should not happen, verify the arguments passed to GetStringTypeEx()");
-    }
-    return(INT32)result;
-}
-#endif // !TARGET_UNIX
-
-/*==============================nativeIsWhiteSpace==============================
-**The locally available version of IsWhiteSpace.  Designed to be called by other
-**native methods.  The work is mostly done by GetCharacterInfoHelper
-**Args:  c -- the character to check.
-**Returns: true if c is whitespace, false otherwise.
-**Exceptions:  Only those thrown by GetCharacterInfoHelper.
-==============================================================================*/
-BOOL COMCharacter::nativeIsWhiteSpace(WCHAR c)
-{
-    WRAPPER_NO_CONTRACT;
-
-#ifndef TARGET_UNIX
-    if (c <= (WCHAR) 0x7F) // common case
-    {
-        BOOL result = (c == ' ') || (c == '\r') || (c == '\n') || (c == '\t') || (c == '\f') || (c == (WCHAR) 0x0B);
-
-        ASSERT(result == ((GetCharacterInfoHelper(c, CT_CTYPE1) & C1_SPACE)!=0));
-
-        return result;
-    }
-
-    // GetCharacterInfoHelper costs around 160 instructions
-    return((GetCharacterInfoHelper(c, CT_CTYPE1) & C1_SPACE)!=0);
-#else // !TARGET_UNIX
-    return iswspace(c);
-#endif // !TARGET_UNIX
-}
-
 BOOL RuntimeFileNotFound(HRESULT hr)
 {
     LIMITED_METHOD_CONTRACT;

@@ -8,15 +8,6 @@ namespace System.Linq
 {
     public static partial class Enumerable
     {
-        private abstract partial class AppendPrependIterator<TSource> : IIListProvider<TSource>
-        {
-            public abstract TSource[] ToArray();
-
-            public abstract List<TSource> ToList();
-
-            public abstract int GetCount(bool onlyIfCheap);
-        }
-
         private sealed partial class AppendPrepend1Iterator<TSource>
         {
             private TSource[] LazyToArray()
@@ -113,7 +104,7 @@ namespace System.Linq
                     return new List<TSource>(1) { _item };
                 }
 
-                List<TSource> list = count == -1 ? new List<TSource>() : new List<TSource>(count);
+                List<TSource> list = count == -1 ? [] : new List<TSource>(count);
                 if (!_appending)
                 {
                     list.Add(_item);
@@ -130,14 +121,65 @@ namespace System.Linq
 
             public override int GetCount(bool onlyIfCheap)
             {
-                if (_source is IIListProvider<TSource> listProv)
+                if (_source is Iterator<TSource> iterator)
                 {
-                    int count = listProv.GetCount(onlyIfCheap);
+                    int count = iterator.GetCount(onlyIfCheap);
                     return count == -1 ? -1 : count + 1;
                 }
 
                 return !onlyIfCheap || _source is ICollection<TSource> ? _source.Count() + 1 : -1;
             }
+
+            public override TSource? TryGetFirst(out bool found)
+            {
+                if (_appending)
+                {
+                    TSource? first = _source.TryGetFirst(out found);
+                    if (found)
+                    {
+                        return first;
+                    }
+                }
+
+                found = true;
+                return _item;
+            }
+
+            public override TSource? TryGetLast(out bool found)
+            {
+                if (!_appending)
+                {
+                    TSource? last = _source.TryGetLast(out found);
+                    if (found)
+                    {
+                        return last;
+                    }
+                }
+
+                found = true;
+                return _item;
+            }
+
+            public override TSource? TryGetElementAt(int index, out bool found)
+            {
+                if (!_appending)
+                {
+                    if (index == 0)
+                    {
+                        found = true;
+                        return _item;
+                    }
+
+                    index--;
+                    return _source.TryGetElementAt(index, out found);
+                }
+
+                return base.TryGetElementAt(index, out found);
+            }
+
+            public override bool Contains(TSource value) =>
+                EqualityComparer<TSource>.Default.Equals(_item, value) ||
+                _source.Contains(value);
         }
 
         private sealed partial class AppendPrependN<TSource>
@@ -187,7 +229,7 @@ namespace System.Linq
 
                 TSource[] array = new TSource[count];
                 int index = 0;
-                for (SingleLinkedNode<TSource>? node = _prepended; node != null; node = node.Linked)
+                for (SingleLinkedNode<TSource>? node = _prepended; node is not null; node = node.Linked)
                 {
                     array[index] = node.Item;
                     ++index;
@@ -207,7 +249,7 @@ namespace System.Linq
                 }
 
                 index = array.Length;
-                for (SingleLinkedNode<TSource>? node = _appended; node != null; node = node.Linked)
+                for (SingleLinkedNode<TSource>? node = _appended; node is not null; node = node.Linked)
                 {
                     --index;
                     array[index] = node.Item;
@@ -219,7 +261,7 @@ namespace System.Linq
             public override List<TSource> ToList()
             {
                 int count = GetCount(onlyIfCheap: true);
-                List<TSource> list = count == -1 ? new List<TSource>() : new List<TSource>(count);
+                List<TSource> list = count == -1 ? [] : new List<TSource>(count);
 
                 _prepended?.Fill(SetCountAndGetSpan(list, _prependCount));
 
@@ -232,13 +274,29 @@ namespace System.Linq
 
             public override int GetCount(bool onlyIfCheap)
             {
-                if (_source is IIListProvider<TSource> listProv)
+                if (_source is Iterator<TSource> iterator)
                 {
-                    int count = listProv.GetCount(onlyIfCheap);
+                    int count = iterator.GetCount(onlyIfCheap);
                     return count == -1 ? -1 : count + _appendCount + _prependCount;
                 }
 
                 return !onlyIfCheap || _source is ICollection<TSource> ? _source.Count() + _appendCount + _prependCount : -1;
+            }
+
+            public override bool Contains(TSource value)
+            {
+                foreach (SingleLinkedNode<TSource>? head in (ReadOnlySpan<SingleLinkedNode<TSource>?>)[_appended, _prepended])
+                {
+                    for (SingleLinkedNode<TSource>? node = head; node is not null; node = node.Linked)
+                    {
+                        if (EqualityComparer<TSource>.Default.Equals(node.Item, value))
+                        {
+                            return true;
+                        }
+                    }
+                }
+
+                return _source.Contains(value);
             }
         }
     }

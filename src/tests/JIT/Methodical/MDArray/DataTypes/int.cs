@@ -5,6 +5,8 @@
 using System;
 using Xunit;
 
+namespace JIT.Methodical.MDArray.DataTypes.@int;
+
 public struct VT
 {
     public int[,] int2darr;
@@ -44,6 +46,7 @@ public class intMDArrTest
 
 
     [Fact]
+    [OuterLoop]
     public static int TestEntryPoint()
     {
 

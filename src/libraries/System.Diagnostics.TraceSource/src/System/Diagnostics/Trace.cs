@@ -3,6 +3,7 @@
 
 #define TRACE
 using System.Diagnostics.CodeAnalysis;
+using System.Runtime.CompilerServices;
 using System.Threading;
 
 namespace System.Diagnostics
@@ -114,6 +115,7 @@ namespace System.Diagnostics
         ///       is <see langword='false'/>.</para>
         /// </devdoc>
         [Conditional("TRACE")]
+        [OverloadResolutionPriority(-1)] // lower priority than (bool, string) overload so that the compiler prefers using CallerArgumentExpression
         public static void Assert([DoesNotReturnIf(false)] bool condition)
         {
             TraceInternal.Assert(condition);
@@ -124,7 +126,7 @@ namespace System.Diagnostics
         ///    <see langword='false'/>. </para>
         /// </devdoc>
         [Conditional("TRACE")]
-        public static void Assert([DoesNotReturnIf(false)] bool condition, string? message)
+        public static void Assert([DoesNotReturnIf(false)] bool condition, [CallerArgumentExpression(nameof(condition))] string? message = null)
         {
             TraceInternal.Assert(condition, message);
         }

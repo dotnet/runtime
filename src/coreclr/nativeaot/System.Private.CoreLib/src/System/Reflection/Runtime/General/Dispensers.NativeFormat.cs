@@ -73,13 +73,6 @@ namespace System.Reflection.Runtime.Assemblies.NativeFormat
             public MetadataReader Reader { get { return _reader; } }
             public ScopeDefinitionHandle Handle { get { return _handle; } }
             public IEnumerable<QScopeDefinition> Overflows { get { return _overflows; } }
-            public ScopeDefinition ScopeDefinition
-            {
-                get
-                {
-                    return _handle.GetScopeDefinition(_reader);
-                }
-            }
 
             public override bool Equals(object obj)
             {

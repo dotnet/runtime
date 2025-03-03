@@ -165,8 +165,6 @@ namespace System.Text.Json
 
         internal static JsonDocument ParseValue(ReadOnlySpan<byte> utf8Json, JsonDocumentOptions options)
         {
-            Debug.Assert(utf8Json != null);
-
             byte[] owned = new byte[utf8Json.Length];
             utf8Json.CopyTo(owned);
 
@@ -835,7 +833,7 @@ namespace System.Text.Json
         }
 
         private static async
-#if NETCOREAPP
+#if NET
             ValueTask<ArraySegment<byte>>
 #else
             Task<ArraySegment<byte>>
@@ -872,15 +870,7 @@ namespace System.Text.Json
                     // No need for checking for growth, the minimal rent sizes both guarantee it'll fit.
                     Debug.Assert(rented.Length >= JsonConstants.Utf8Bom.Length);
 
-                    lastRead = await stream.ReadAsync(
-#if NETCOREAPP
-                        rented.AsMemory(written, utf8BomLength - written),
-#else
-                        rented,
-                        written,
-                        utf8BomLength - written,
-#endif
-                        cancellationToken).ConfigureAwait(false);
+                    lastRead = await stream.ReadAsync(rented.AsMemory(written, utf8BomLength - written), cancellationToken).ConfigureAwait(false);
 
                     written += lastRead;
                 } while (lastRead > 0 && written < utf8BomLength);
@@ -903,15 +893,7 @@ namespace System.Text.Json
                         ArrayPool<byte>.Shared.Return(toReturn, clearArray: true);
                     }
 
-                    lastRead = await stream.ReadAsync(
-#if NETCOREAPP
-                        rented.AsMemory(written),
-#else
-                        rented,
-                        written,
-                        rented.Length - written,
-#endif
-                        cancellationToken).ConfigureAwait(false);
+                    lastRead = await stream.ReadAsync(rented.AsMemory(written), cancellationToken).ConfigureAwait(false);
 
                     written += lastRead;
 

@@ -107,8 +107,7 @@ struct DebuggerFrameData
         this->info.fIsFilter  = false;
 #endif // FEATURE_EH_FUNCLETS
 
-        // Look strange?  Go to definition of this field.  I dare you.
-        this->info.fIgnoreThisFrameIfSuppressingUMChainFromComPlusMethodFrameGeneric = false;
+        this->info.fIgnoreThisFrameIfSuppressingUMChainFromCLRToCOMMethodFrameGeneric = false;
 
 #if defined(_DEBUG)
         this->previousFP = LEAF_MOST_FRAME;
@@ -455,7 +454,7 @@ bool HasExitRuntime(Frame *pFrame, DebuggerFrameData *pData, FramePointer *pPote
 
 #else // TARGET_X86
     // DebuggerExitFrame always return a NULL returnSP on x86.
-    if (pFrame->GetVTablePtr() == DebuggerExitFrame::GetMethodFrameVPtr())
+    if (pFrame->GetFrameIdentifier() == FrameIdentifier::DebuggerExitFrame)
     {
         if (pPotentialFP != NULL)
         {
@@ -463,9 +462,9 @@ bool HasExitRuntime(Frame *pFrame, DebuggerFrameData *pData, FramePointer *pPote
         }
         return true;
     }
-    else if (pFrame->GetVTablePtr() == InlinedCallFrame::GetMethodFrameVPtr())
+    else if (pFrame->GetFrameIdentifier() == FrameIdentifier::InlinedCallFrame)
     {
-        InlinedCallFrame *pInlinedFrame = static_cast<InlinedCallFrame *>(pFrame);
+        InlinedCallFrame *pInlinedFrame = dac_cast<PTR_InlinedCallFrame>(pFrame);
         LPVOID sp = (LPVOID)pInlinedFrame->GetCallSiteSP();
 
         // The sp returned below is the sp of the caller, which is either an IL stub in the normal case
@@ -486,7 +485,7 @@ bool HasExitRuntime(Frame *pFrame, DebuggerFrameData *pData, FramePointer *pPote
     {
         // It'll be nice if there's a way to assert that the current frame is indeed of a
         // derived class of TransitionFrame.
-        TransitionFrame *pTransFrame = static_cast<TransitionFrame*>(pFrame);
+        TransitionFrame *pTransFrame = dac_cast<PTR_TransitionFrame>(pFrame);
         LPVOID sp = (LPVOID)pTransFrame->GetSP();
 
         // The sp returned below is the sp of the caller, which is either an IL stub in the normal case
@@ -760,7 +759,7 @@ void FrameInfo::InitFromStubHelper(
     this->internal    = false;
     this->managed     = true;
     this->relOffset   = 0;
-    this->ambientSP   = NULL;
+    this->ambientSP   = (TADDR)NULL;
 
 
     // Method associated w/a stub will never have a JitManager.
@@ -789,7 +788,7 @@ void FrameInfo::InitForM2UInternalFrame(CrawlFrame * pCF)
     // For a M2U call, there's a managed method wrapping the unmanaged call. Use that.
     Frame * pFrame = pCF->GetFrame();
     _ASSERTE(pFrame->GetTransitionType() == Frame::TT_M2U);
-    FramedMethodFrame * pM2U = static_cast<FramedMethodFrame*> (pFrame);
+    FramedMethodFrame * pM2U = dac_cast<PTR_FramedMethodFrame> (pFrame);
     MethodDesc * pMDWrapper = pM2U->GetFunction();
 
     // Soem M2U transitions may not have a function associated w/ them,
@@ -815,9 +814,9 @@ void FrameInfo::InitForU2MInternalFrame(CrawlFrame * pCF)
     // For regular U2M PInvoke cases, we don't care about MD b/c it's just going to
     // be the next frame.
     // If we're a COM2CLR call, perhaps we can get the MD for the interface.
-    if (pFrame->GetVTablePtr() == ComMethodFrame::GetMethodFrameVPtr())
+    if (pFrame->GetFrameIdentifier() == FrameIdentifier::ComMethodFrame)
     {
-        ComMethodFrame* pCOMFrame = static_cast<ComMethodFrame*> (pFrame);
+        ComMethodFrame* pCOMFrame = dac_cast<PTR_ComMethodFrame> (pFrame);
         ComCallMethodDesc* pCMD = reinterpret_cast<ComCallMethodDesc *> (pCOMFrame->ComMethodFrame::GetDatum());
         pMDHint = pCMD->GetInterfaceMethodDesc();
 
@@ -1019,7 +1018,7 @@ StackWalkAction TrackUMChain(CrawlFrame *pCF, DebuggerFrameData *d)
             // If we have a valid reg-display (non-null IP) then update it.
             // We may have an invalid reg-display if we have an exit frame on an inactive thread.
             REGDISPLAY * pNewRD = pCF->GetRegisterSet();
-            if (GetControlPC(pNewRD) != NULL)
+            if (GetControlPC(pNewRD) != (PCODE)NULL)
             {
                 LOG((LF_CORDB, LL_EVERYTHING, "DWSP. updating RD while tracking UM chain\n"));
                 CopyREGDISPLAY(d->GetUMChainStartRD(), pNewRD);
@@ -1191,17 +1190,17 @@ StackWalkAction TrackUMChain(CrawlFrame *pCF, DebuggerFrameData *d)
 
 #ifdef FEATURE_COMINTEROP
         if ((frame != NULL) &&
-            (frame->GetVTablePtr() == ComPlusMethodFrame::GetMethodFrameVPtr()))
+            (frame->GetFrameIdentifier() == FrameIdentifier::CLRToCOMMethodFrame))
         {
             // This condition is part of the fix for 650903. (See
             // code:ControllerStackInfo::WalkStack and code:DebuggerStepper::TrapStepOut
             // for the other parts.) Here, we know that the frame we're looking it may be
-            // a ComPlusMethodFrameGeneric (this info is not otherwise plubmed down into
+            // a CLRToCOMMethodFrameGeneric (this info is not otherwise plubmed down into
             // the walker; even though the walker does get to see "f.frame", that may not
             // be "frame"). Given this, if the walker chooses to ignore these frames
             // (while doing a Step Out during managed-only debugging), then it can ignore
             // this frame.
-            f.fIgnoreThisFrameIfSuppressingUMChainFromComPlusMethodFrameGeneric = true;
+            f.fIgnoreThisFrameIfSuppressingUMChainFromCLRToCOMMethodFrameGeneric = true;
         }
 #endif // FEATURE_COMINTEROP
 
@@ -1538,7 +1537,7 @@ StackWalkAction DebuggerWalkStackProc(CrawlFrame *pCF, void *data)
 #endif // FEATURE_EH_FUNCLETS
 
     d->info.frame = frame;
-    d->info.ambientSP = NULL;
+    d->info.ambientSP = (TADDR)NULL;
 
     // Record the appdomain that the thread was in when it
     // was running code for this frame.
@@ -1563,9 +1562,7 @@ StackWalkAction DebuggerWalkStackProc(CrawlFrame *pCF, void *data)
     {
         _ASSERTE(md->IsDynamicMethod());
         DynamicMethodDesc* dMD = md->AsDynamicMethodDesc();
-#ifdef FEATURE_MULTICASTSTUB_AS_IL
         use |= dMD->IsMulticastStub();
-#endif
         use |= dMD->GetILStubType() == DynamicMethodDesc::StubTailCallCallTarget;
 
         if (use)
@@ -1720,7 +1717,7 @@ StackWalkAction DebuggerWalkStackProc(CrawlFrame *pCF, void *data)
             // The jitted code on X64 behaves differently.
             //
             // Note that there is a corresponding change in DacDbiInterfaceImpl::GetInternalFrameType().
-            if (frame->GetVTablePtr() == StubDispatchFrame::GetMethodFrameVPtr())
+            if (frame->GetFrameIdentifier() == FrameIdentifier::StubDispatchFrame)
             {
                 use = false;
             }
@@ -1742,7 +1739,7 @@ StackWalkAction DebuggerWalkStackProc(CrawlFrame *pCF, void *data)
 
             {
                 // We only show a FuncEvalFrame if the funceval is not trying to abort the thread.
-                FuncEvalFrame *pFuncEvalFrame = static_cast<FuncEvalFrame *>(frame);
+                FuncEvalFrame *pFuncEvalFrame = dac_cast<PTR_FuncEvalFrame>(frame);
                 use = pFuncEvalFrame->ShowFrame() ? true : false;
             }
 
@@ -1758,28 +1755,6 @@ StackWalkAction DebuggerWalkStackProc(CrawlFrame *pCF, void *data)
                 }
             }
 
-            break;
-
-        // Put frames we want to ignore here:
-        case Frame::TYPE_MULTICAST:
-            LOG((LF_CORDB, LL_INFO100000, "DWSP: Frame type is TYPE_MULTICAST.\n"));
-            if (d->ShouldIgnoreNonmethodFrames())
-            {
-                // Multicast frames exist only to gc protect the arguments
-                // between invocations of a delegate.  They don't have code that
-                // we can (currently) show the user (we could change this with
-                // work, but why bother?  It's an internal stub, and even if the
-                // user could see it, they can't modify it).
-                LOG((LF_CORDB, LL_INFO100000, "DWSP: Skipping frame 0x%x b/c it's "
-                    "a multicast frame!\n", frame));
-                use = false;
-            }
-            else
-            {
-                LOG((LF_CORDB, LL_INFO100000, "DWSP: NOT Skipping frame 0x%x even thought it's "
-                    "a multicast frame!\n", frame));
-                INTERNAL_FRAME_ACTION(d, use);
-            }
             break;
 
         default:
@@ -1900,7 +1875,7 @@ bool ShouldSendUMLeafChain(Thread * pThread)
     // If we're in shutodown, don't bother trying to sniff for an UM leaf chain.
     // @todo - we'd like to never even be trying to stack trace on shutdown, this
     // comes up when we do helper thread duty on shutdown.
-    if (g_fProcessDetach)
+    if (IsAtProcessExit())
     {
         return false;
     }

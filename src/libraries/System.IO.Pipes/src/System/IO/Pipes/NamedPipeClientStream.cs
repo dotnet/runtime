@@ -24,6 +24,7 @@ namespace System.IO.Pipes
         private readonly PipeOptions _pipeOptions;
         private readonly HandleInheritability _inheritability;
         private readonly PipeDirection _direction;
+        private readonly int _accessRights;
 
         // Creates a named pipe client using default server (same machine, or "."), and PipeDirection.InOut
         public NamedPipeClientStream(string pipeName)
@@ -84,6 +85,7 @@ namespace System.IO.Pipes
             _inheritability = inheritability;
             _impersonationLevel = impersonationLevel;
             _pipeOptions = options;
+            _accessRights = AccessRightsFromDirection(direction);
         }
 
         // Create a NamedPipeClientStream from an existing server pipe handle.

@@ -38,14 +38,3 @@ LEAF_ENTRY RhGetCommonStubAddress, _TEXT
     lea rax, [rip + C_FUNC(RhCommonStub)]
     ret
 LEAF_END RhGetCommonStubAddress, _TEXT
-
-
-#ifndef FEATURE_EMULATED_TLS
-LEAF_ENTRY RhGetCurrentThunkContext, _TEXT
-
-    INLINE_GET_TLS_VAR  tls_thunkData
-
-    mov    rax, qword ptr [rax]
-    ret
-LEAF_END RhGetCurrentThunkContext, _TEXT
-#endif //FEATURE_EMULATED_TLS

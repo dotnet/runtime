@@ -6,6 +6,7 @@
 .assembly extern xunit.core {}
 .assembly extern mscorlib {}
 .assembly extern System.Runtime {}
+.assembly extern Microsoft.DotNet.XUnitExtensions { .publickeytoken = (31 BF 38 56 AD 36 4E 35 ) }
 .assembly extern GenericContextCommonCs {}
 .assembly extern GenericContextCommonAndImplementation {}
 .assembly GenericContextTest {}
@@ -19969,6 +19970,11 @@
     .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
         01 00 00 00
     )
+    // [SkipOnCoreClr("GC Stress Incompatible", RuntimeTestModes.AnyGCStress)]
+    .custom instance void [Microsoft.DotNet.XUnitExtensions]Xunit.SkipOnCoreClrAttribute::.ctor(string, valuetype [Microsoft.DotNet.XUnitExtensions]Xunit.RuntimeTestModes) = (
+      01 00 16 47 43 20 53 74 72 65 73 73 20 49 6e 63
+      6f 6d 70 61 74 69 62 6c 65 c0 00 00 00 00 00
+	  )
     .entrypoint
     .locals init (class [System.Runtime]System.Exception V_0)
     .try {

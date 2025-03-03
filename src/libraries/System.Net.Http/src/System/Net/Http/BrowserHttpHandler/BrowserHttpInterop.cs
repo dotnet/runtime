@@ -20,13 +20,8 @@ namespace System.Net.Http
         [JSImport("INTERNAL.http_wasm_create_controller")]
         public static partial JSObject CreateController();
 
-        [JSImport("INTERNAL.http_wasm_abort_request")]
-        public static partial void AbortRequest(
-            JSObject httpController);
-
-        [JSImport("INTERNAL.http_wasm_abort_response")]
-        public static partial void AbortResponse(
-            JSObject httpController);
+        [JSImport("INTERNAL.http_wasm_abort")]
+        public static partial void Abort(JSObject httpController);
 
         [JSImport("INTERNAL.http_wasm_transform_stream_write")]
         public static partial Task TransformStreamWrite(
@@ -140,16 +135,14 @@ namespace System.Net.Http
                 using (var operationRegistration = cancellationToken.Register(static s =>
                 {
                     (Task _promise, JSObject _jsController) = ((Task, JSObject))s!;
-                    CancelablePromise.CancelPromise(_promise, static (JSObject __jsController) =>
+                    CancelablePromise.CancelPromise(_promise);
+                    if (!_jsController.IsDisposed)
                     {
-                        if (!__jsController.IsDisposed)
-                        {
-                            AbortResponse(__jsController);
-                        }
-                    }, _jsController);
+                        Abort(_jsController);
+                    }
                 }, (promise, jsController)))
                 {
-                    await promise.ConfigureAwait(true);
+                    await promise.ConfigureAwait(false);
                 }
             }
             catch (OperationCanceledException oce) when (cancellationToken.IsCancellationRequested)
@@ -161,6 +154,10 @@ namespace System.Net.Http
                 if (jse.Message.StartsWith("AbortError", StringComparison.Ordinal))
                 {
                     throw Http.CancellationHelper.CreateOperationCanceledException(jse, CancellationToken.None);
+                }
+                if (jse.Message.Contains("BrowserHttpWriteStream.Rejected", StringComparison.Ordinal))
+                {
+                    throw; // do not translate
                 }
                 Http.CancellationHelper.ThrowIfCancellationRequested(jse, cancellationToken);
                 throw new HttpRequestException(jse.Message, jse);

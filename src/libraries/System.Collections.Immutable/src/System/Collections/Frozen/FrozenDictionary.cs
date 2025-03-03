@@ -122,6 +122,13 @@ namespace System.Collections.Frozen
             // the Equals/GetHashCode methods to be devirtualized and possibly inlined.
             if (typeof(TKey).IsValueType && ReferenceEquals(comparer, EqualityComparer<TKey>.Default))
             {
+#if NET
+                if (DenseIntegralFrozenDictionary.CreateIfValid(source) is { } denseResult)
+                {
+                    return denseResult;
+                }
+#endif
+
                 if (source.Count <= Constants.MaxItemsInSmallValueTypeFrozenCollection)
                 {
                     // If the key is a something we know we can efficiently compare, use a specialized implementation
@@ -254,7 +261,7 @@ namespace System.Collections.Frozen
     /// </remarks>
     [DebuggerTypeProxy(typeof(ImmutableDictionaryDebuggerProxy<,>))]
     [DebuggerDisplay("Count = {Count}")]
-    public abstract class FrozenDictionary<TKey, TValue> : IDictionary<TKey, TValue>, IReadOnlyDictionary<TKey, TValue>, IDictionary
+    public abstract partial class FrozenDictionary<TKey, TValue> : IDictionary<TKey, TValue>, IReadOnlyDictionary<TKey, TValue>, IDictionary
         where TKey : notnull
     {
         /// <summary>Initialize the dictionary.</summary>
@@ -449,6 +456,59 @@ namespace System.Collections.Frozen
         /// <inheritdoc cref="GetValueRefOrNullRef" />
         private protected abstract ref readonly TValue GetValueRefOrNullRefCore(TKey key);
 
+        /// <summary>
+        /// Retrieves a delegate which calls a method equivalent to <see cref="GetValueRefOrNullRef(TKey)"/>
+        /// for the <typeparamref name="TAlternateKey"/>.
+        /// </summary>
+        /// <remarks>
+        /// This is virtual rather than abstract because only some implementations need to support this, e.g. implementations that
+        /// are only ever used with the default comparer won't ever hit code paths that use this, at least not
+        /// until/if we make `EqualityComparer{string}.Default` implement `IAlternateEqualityComparer{ReadOnlySpan{char}, string}`.
+        ///
+        /// Generic Virtual method invocation is slower than delegate invocation and could negate
+        /// much of the benefit of using Alternate Keys. By retrieving the delegate up-front when
+        /// the lookup is created, we only pay for generic virtual method invocation once.
+        /// </remarks>
+        private protected virtual AlternateLookupDelegate<TAlternateKey> GetAlternateLookupDelegate<TAlternateKey>()
+            where TAlternateKey : notnull
+#if NET9_0_OR_GREATER
+#pragma warning disable SA1001 // Commas should be spaced correctly
+            // This method will only ever be used on .NET 9+. However, because of how everything is structured,
+            // and to avoid a proliferation of conditional files for many of the derived types (in particular
+            // for the OrdinalString* implementations), we still build this method into all builds, even though
+            // it'll be unused. But we can't use the allows ref struct constraint downlevel, hence the #if.
+            , allows ref struct
+#pragma warning restore SA1001
+#endif
+            => AlternateLookupDelegateHolder<TAlternateKey>.ReturnsNullRef;
+
+        /// <summary>
+        /// Invokes a method equivalent to <see cref="GetValueRefOrNullRef(TKey)"/>
+        /// for the <typeparamref name="TAlternateKey"/>.
+        /// </summary>
+        internal delegate ref readonly TValue AlternateLookupDelegate<TAlternateKey>(FrozenDictionary<TKey, TValue> dictionary, TAlternateKey key)
+            where TAlternateKey : notnull
+#if NET9_0_OR_GREATER
+#pragma warning disable SA1001 // Commas should be spaced correctly
+            , allows ref struct
+#pragma warning restore SA1001
+#endif
+            ;
+
+        /// <summary>
+        /// Holds an implementation of <see cref="AlternateLookupDelegate{TAlternateKey}"/> which always returns a null ref.
+        /// </summary>
+        private static class AlternateLookupDelegateHolder<TAlternateKey>
+            where TAlternateKey : notnull
+#if NET9_0_OR_GREATER
+#pragma warning disable SA1001 // Commas should be spaced correctly
+            , allows ref struct
+#pragma warning restore SA1001
+#endif
+        {
+            public static readonly AlternateLookupDelegate<TAlternateKey> ReturnsNullRef = (_, _) => ref Unsafe.NullRef<TValue>();
+        }
+
         /// <summary>Gets a reference to the value associated with the specified key.</summary>
         /// <param name="key">The key of the value to get.</param>
         /// <returns>A reference to the value associated with the specified key.</returns>
@@ -461,7 +521,7 @@ namespace System.Collections.Frozen
 
                 if (Unsafe.IsNullRef(ref Unsafe.AsRef(in valueRef)))
                 {
-                    ThrowHelper.ThrowKeyNotFoundException();
+                    ThrowHelper.ThrowKeyNotFoundException(key);
                 }
 
                 return ref valueRef;

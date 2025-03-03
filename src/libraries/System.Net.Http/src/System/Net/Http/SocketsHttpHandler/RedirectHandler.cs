@@ -55,7 +55,7 @@ namespace System.Net.Http
 
                 if (HttpTelemetry.Log.IsEnabled())
                 {
-                    HttpTelemetry.Log.Redirect(redirectUri.AbsoluteUri);
+                    HttpTelemetry.Log.Redirect(redirectUri);
                 }
                 if (NetEventSource.Log.IsEnabled())
                 {

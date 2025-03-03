@@ -143,7 +143,7 @@ static void ScanStackRoots(Thread * pThread, promote_func* fn, ScanContext* sc)
     if (InlinedCallFrame::FrameHasActiveCall(pTopFrame))
     {
         // It is an InlinedCallFrame with active call. Get SP from it.
-        InlinedCallFrame* pInlinedFrame = (InlinedCallFrame*)pTopFrame;
+        InlinedCallFrame* pInlinedFrame = dac_cast<PTR_InlinedCallFrame>(pTopFrame);
         topStack = (Object **)pInlinedFrame->GetCallSiteSP();
     }
 #endif // FEATURE_CONSERVATIVE_GC || USE_FEF
@@ -201,7 +201,9 @@ static void ScanStackRoots(Thread * pThread, promote_func* fn, ScanContext* sc)
 #if defined(FEATURE_EH_FUNCLETS)
         flagsStackWalk |= GC_FUNCLET_REFERENCE_REPORTING;
 #endif // defined(FEATURE_EH_FUNCLETS)
+        gcctx.pScannedSlots = NULL;
         pThread->StackWalkFrames( GcStackCrawlCallBack, &gcctx, flagsStackWalk);
+        delete gcctx.pScannedSlots;
     }
 
     GCFrame* pGCFrame = pThread->GetGCFrame();
@@ -291,8 +293,10 @@ void GCToEEInterface::GcScanRoots(promote_func* fn, int condemned, int max_gen, 
     Thread* pThread = NULL;
     while ((pThread = ThreadStore::GetThreadList(pThread)) != NULL)
     {
-        if (GCHeapUtilities::GetGCHeap()->IsThreadUsingAllocationContextHeap(
-            pThread->GetAllocContext(), sc->thread_number))
+        gc_alloc_context* palloc_context = pThread->GetAllocContext();
+        if (palloc_context != nullptr
+            && GCHeapUtilities::GetGCHeap()->IsThreadUsingAllocationContextHeap(
+                palloc_context, sc->thread_number))
         {
             STRESS_LOG2(LF_GC | LF_GCROOTS, LL_INFO100, "{ Starting scan of Thread %p ID = %x\n", pThread, pThread->GetThreadId());
 
@@ -302,6 +306,7 @@ void GCToEEInterface::GcScanRoots(promote_func* fn, int condemned, int max_gen, 
 #endif // FEATURE_EVENT_TRACE
             ScanStackRoots(pThread, fn, sc);
             ScanTailCallArgBufferRoots(pThread, fn, sc);
+            ScanThreadStaticRoots(pThread, fn, sc);
 #ifdef FEATURE_EVENT_TRACE
             sc->dwEtwRootKind = kEtwGCRootKindOther;
 #endif // FEATURE_EVENT_TRACE
@@ -435,13 +440,12 @@ gc_alloc_context * GCToEEInterface::GetAllocContext()
 {
     WRAPPER_NO_CONTRACT;
 
-    Thread* pThread = ::GetThreadNULLOk();
-    if (!pThread)
+    if (!::GetThreadNULLOk())
     {
         return nullptr;
     }
 
-    return pThread->GetAllocContext();
+    return &t_runtime_thread_locals.alloc_context.m_GCAllocContext;
 }
 
 void GCToEEInterface::GcEnumAllocContexts(enum_alloc_context_func* fn, void* param)
@@ -458,12 +462,29 @@ void GCToEEInterface::GcEnumAllocContexts(enum_alloc_context_func* fn, void* par
         Thread * pThread = NULL;
         while ((pThread = ThreadStore::GetThreadList(pThread)) != NULL)
         {
-            fn(pThread->GetAllocContext(), param);
+            ee_alloc_context* palloc_context = pThread->GetEEAllocContext();
+            if (palloc_context != nullptr)
+            {
+                gc_alloc_context* ac = &palloc_context->m_GCAllocContext;
+                fn(ac, param);
+                // The GC may zero the alloc_ptr and alloc_limit fields of AC during enumeration and we need to keep
+                // m_CombinedLimit up-to-date. Note that the GC has multiple threads running this enumeration concurrently
+                // with no synchronization. If you need to change this code think carefully about how that concurrency
+                // may affect the results.
+                if (ac->alloc_limit == 0 && palloc_context->m_CombinedLimit != 0)
+                {
+                    palloc_context->m_CombinedLimit = 0;
+                }
+            }
         }
     }
     else
     {
-        fn(&g_global_alloc_context, param);
+        fn(&g_global_alloc_context.m_GCAllocContext, param);
+        if (g_global_alloc_context.m_GCAllocContext.alloc_limit == 0 && g_global_alloc_context.m_CombinedLimit != 0)
+        {
+            g_global_alloc_context.m_CombinedLimit = 0;
+        }
     }
 }
 
@@ -620,6 +641,7 @@ void GcScanRootsForProfilerAndETW(promote_func* fn, int condemned, int max_gen, 
 #endif // FEATURE_EVENT_TRACE
         ScanStackRoots(pThread, fn, sc);
         ScanTailCallArgBufferRoots(pThread, fn, sc);
+        ScanThreadStaticRoots(pThread, fn, sc);
 #ifdef FEATURE_EVENT_TRACE
         sc->dwEtwRootKind = kEtwGCRootKindOther;
 #endif // FEATURE_EVENT_TRACE
@@ -1383,9 +1405,12 @@ struct SuspendableThreadStubArguments
 {
     void* Argument;
     void (*ThreadStart)(void*);
-    Thread* Thread;
+    class Thread* Thread;
     bool HasStarted;
     CLREvent ThreadStartedEvent;
+#ifdef __APPLE__
+    const WCHAR* name;
+#endif //__APPLE__
 };
 
 struct ThreadStubArguments
@@ -1395,6 +1420,9 @@ struct ThreadStubArguments
     HANDLE Thread;
     bool HasStarted;
     CLREvent ThreadStartedEvent;
+#ifdef __APPLE__
+    const WCHAR* name;
+#endif //__APPLE__
 };
 
 namespace
@@ -1413,6 +1441,9 @@ namespace
         args.ThreadStart = threadStart;
         args.Thread = nullptr;
         args.HasStarted = false;
+#ifdef __APPLE__
+        args.name = name;
+#endif //__APPLE__
         if (!args.ThreadStartedEvent.CreateAutoEventNoThrow(FALSE))
         {
             return false;
@@ -1437,6 +1468,10 @@ namespace
         {
             SuspendableThreadStubArguments* args = static_cast<SuspendableThreadStubArguments*>(argument);
             assert(args != nullptr);
+
+#ifdef __APPLE__
+            SetThreadName(GetCurrentThread(), args->name);
+#endif //__APPLE__
 
             ClrFlsSetThreadType(ThreadType_GC);
             args->Thread->SetGCSpecial();
@@ -1495,6 +1530,9 @@ namespace
         args.Argument = argument;
         args.ThreadStart = threadStart;
         args.Thread = INVALID_HANDLE_VALUE;
+#ifdef __APPLE__
+        args.name = name;
+#endif //__APPLE__
         if (!args.ThreadStartedEvent.CreateAutoEventNoThrow(FALSE))
         {
             return false;
@@ -1504,6 +1542,10 @@ namespace
         {
             ThreadStubArguments* args = static_cast<ThreadStubArguments*>(argument);
             assert(args != nullptr);
+
+#ifdef __APPLE__
+            SetThreadName(GetCurrentThread(), args->name);
+#endif //__APPLE__
 
             ClrFlsSetThreadType(ThreadType_GC);
             STRESS_LOG_RESERVE_MEM(GC_STRESSLOG_MULTIPLY);
@@ -1598,7 +1640,7 @@ uint32_t GCToEEInterface::GetTotalNumSizedRefHandles()
 {
     LIMITED_METHOD_CONTRACT;
 
-    return SystemDomain::System()->GetTotalNumSizedRefHandles();
+    return 0;
 }
 
 NormalizedTimer analysisTimer;
@@ -1682,6 +1724,7 @@ void GCToEEInterface::AnalyzeSurvivorsFinished(size_t gcIndex, int condemnedGene
         {
             if (gcGenAnalysisTrace)
             {
+#ifdef FEATURE_PERFTRACING
                 EventPipeAdapter::ResumeSession(gcGenAnalysisEventPipeSession);
                 FireEtwGenAwareBegin((int)gcIndex, GetClrInstanceId());
                 s_forcedGCInProgress = true;
@@ -1690,6 +1733,7 @@ void GCToEEInterface::AnalyzeSurvivorsFinished(size_t gcIndex, int condemnedGene
                 reportGenerationBounds();
                 FireEtwGenAwareEnd((int)gcIndex, GetClrInstanceId());
                 EventPipeAdapter::PauseSession(gcGenAnalysisEventPipeSession);
+#endif //FEATURE_PERFTRACING
             }
             if (gcGenAnalysisDump)
             {
@@ -1730,15 +1774,15 @@ void GCToEEInterface::UpdateGCEventStatus(int currentPublicLevel, int currentPub
     // Refer to the comments in src/gc/gcevents.h see which events are enabled.
 
     // WARNING: To change an event's GC level, perfcollect script needs to be updated simultaneously to reflect it.
-    BOOL keyword_gc_verbose = EventXplatEnabledGCJoin_V2() || EventPipeEventEnabledGCJoin_V2();
-    BOOL keyword_gc_informational = EventXplatEnabledGCStart() || EventPipeEventEnabledGCStart();
+    BOOL keyword_gc_verbose = EventXplatEnabledGCJoin_V2() || EventPipeEventEnabledGCJoin_V2() || UserEventsEventEnabledGCJoin_V2();
+    BOOL keyword_gc_informational = EventXplatEnabledGCStart() || EventPipeEventEnabledGCStart() || UserEventsEventEnabledGCStart();
 
-    BOOL keyword_gc_heapsurvival_and_movement_informational = EventXplatEnabledGCGenerationRange() || EventPipeEventEnabledGCGenerationRange();
-    BOOL keyword_gchandle_informational = EventXplatEnabledSetGCHandle() || EventPipeEventEnabledSetGCHandle();
-    BOOL keyword_gchandle_prv_informational = EventXplatEnabledPrvSetGCHandle() || EventPipeEventEnabledPrvSetGCHandle();
+    BOOL keyword_gc_heapsurvival_and_movement_informational = EventXplatEnabledGCGenerationRange() || EventPipeEventEnabledGCGenerationRange() || UserEventsEventEnabledGCGenerationRange();
+    BOOL keyword_gchandle_informational = EventXplatEnabledSetGCHandle() || EventPipeEventEnabledSetGCHandle() || UserEventsEventEnabledSetGCHandle();
+    BOOL keyword_gchandle_prv_informational = EventXplatEnabledPrvSetGCHandle() || EventPipeEventEnabledPrvSetGCHandle() || UserEventsEventEnabledPrvSetGCHandle();
 
-    BOOL prv_gcprv_informational = EventXplatEnabledBGCBegin() || EventPipeEventEnabledBGCBegin();
-    BOOL prv_gcprv_verbose = EventXplatEnabledPinPlugAtGCTime() || EventPipeEventEnabledPinPlugAtGCTime();
+    BOOL prv_gcprv_informational = EventXplatEnabledBGCBegin() || EventPipeEventEnabledBGCBegin() || UserEventsEventEnabledBGCBegin();
+    BOOL prv_gcprv_verbose = EventXplatEnabledPinPlugAtGCTime() || EventPipeEventEnabledPinPlugAtGCTime() || UserEventsEventEnabledPinPlugAtGCTime();
 
     int publicProviderLevel = keyword_gc_verbose ? GCEventLevel_Verbose :
                                  ((keyword_gc_informational || keyword_gc_heapsurvival_and_movement_informational) ? GCEventLevel_Information : GCEventLevel_None);
@@ -1783,4 +1827,9 @@ void GCToEEInterface::DiagAddNewRegion(int generation, uint8_t* rangeStart, uint
 void GCToEEInterface::LogErrorToHost(const char *message)
 {
     ::LogErrorToHost("GC: %s", message);
+}
+
+uint64_t GCToEEInterface::GetThreadOSThreadId(Thread* thread)
+{
+    return thread->GetOSThreadId64();
 }

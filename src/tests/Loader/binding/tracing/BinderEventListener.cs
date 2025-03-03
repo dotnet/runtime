@@ -190,6 +190,7 @@ namespace BinderTracingTests
                     }
                 }
 
+                Console.WriteLine($"Waiting for bind events for {assemblyName.Name} ({timeWaitedInMs}ms waited) Sleeping for {waitIntervalInMs}ms");
                 Thread.Sleep(waitIntervalInMs);
                 timeWaitedInMs += waitIntervalInMs;
 

@@ -56,7 +56,7 @@ internal static partial class Interop
         {
             fixed (int* pResult = &result)
             {
-#if NETSTANDARD || NETCOREAPP
+#if NETSTANDARD || NET
                 Debug.Assert(RuntimeInformation.IsOSPlatform(OSPlatform.Windows));
 #endif
 

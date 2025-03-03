@@ -7,6 +7,8 @@
 #pragma hdrstop
 #endif
 
+#include "lower.h" // for LowerRange()
+
 // Flowgraph Miscellany
 
 //------------------------------------------------------------------------
@@ -150,13 +152,8 @@ PhaseStatus Compiler::fgInsertGCPolls()
         block = curBasicBlock;
     }
 
-    // If we split a block to create a GC Poll, call fgUpdateChangedFlowGraph.
     // We should never split blocks unless we're optimizing.
-    if (createdPollBlocks)
-    {
-        noway_assert(opts.OptimizationEnabled());
-        fgRenumberBlocks();
-    }
+    assert(!createdPollBlocks || opts.OptimizationEnabled());
 
     return result;
 }
@@ -266,28 +263,19 @@ BasicBlock* Compiler::fgCreateGCPoll(GCPollType pollType, BasicBlock* block)
         // I want to create:
         // top -> poll -> bottom (lexically)
         // so that we jump over poll to get to bottom.
-        BasicBlock* top         = block;
-        BBKinds     oldJumpKind = top->GetKind();
+        BasicBlock* top = block;
 
         BasicBlock* poll = fgNewBBafter(BBJ_ALWAYS, top, true);
         bottom           = fgNewBBafter(top->GetKind(), poll, true);
 
-        poll->SetTarget(bottom);
-        assert(poll->JumpsToNext());
-
-        bottom->TransferTarget(top);
-
         // Update block flags
         const BasicBlockFlags originalFlags = top->GetFlagsRaw() | BBF_GC_SAFE_POINT;
 
-        // We are allowed to split loops and we need to keep a few other flags...
+        // We need to keep a few flags...
         //
-        noway_assert(
-            (originalFlags & (BBF_SPLIT_NONEXIST & ~(BBF_LOOP_HEAD | BBF_LOOP_PREHEADER | BBF_RETLESS_CALL))) == 0);
-        top->SetFlagsRaw(originalFlags &
-                         (~(BBF_SPLIT_LOST | BBF_LOOP_PREHEADER | BBF_RETLESS_CALL) | BBF_GC_SAFE_POINT));
-        bottom->SetFlags(originalFlags &
-                         (BBF_SPLIT_GAINED | BBF_IMPORTED | BBF_GC_SAFE_POINT | BBF_LOOP_PREHEADER | BBF_RETLESS_CALL));
+        noway_assert((originalFlags & (BBF_SPLIT_NONEXIST & ~(BBF_LOOP_HEAD | BBF_RETLESS_CALL))) == 0);
+        top->SetFlagsRaw(originalFlags & (~(BBF_SPLIT_LOST | BBF_RETLESS_CALL) | BBF_GC_SAFE_POINT));
+        bottom->SetFlags(originalFlags & (BBF_SPLIT_GAINED | BBF_IMPORTED | BBF_GC_SAFE_POINT | BBF_RETLESS_CALL));
         bottom->inheritWeight(top);
         poll->SetFlags(originalFlags & (BBF_SPLIT_GAINED | BBF_IMPORTED | BBF_GC_SAFE_POINT));
 
@@ -303,7 +291,7 @@ BasicBlock* Compiler::fgCreateGCPoll(GCPollType pollType, BasicBlock* block)
         }
 
         // Remove the last statement from Top and add it to Bottom if necessary.
-        if ((oldJumpKind == BBJ_COND) || (oldJumpKind == BBJ_RETURN) || (oldJumpKind == BBJ_THROW))
+        if (top->KindIs(BBJ_COND, BBJ_RETURN, BBJ_THROW))
         {
             Statement* stmt = top->firstStmt();
             while (stmt->GetNextStmt() != nullptr)
@@ -319,7 +307,6 @@ BasicBlock* Compiler::fgCreateGCPoll(GCPollType pollType, BasicBlock* block)
         // Create a GT_EQ node that checks against g_TrapReturningThreads.  True jumps to Bottom,
         // false falls through to poll.  Add this to the end of Top.  Top is now BBJ_COND.  Bottom is
         // now a jump target
-        CLANG_FORMAT_COMMENT_ANCHOR;
 
 #ifdef ENABLE_FAST_GCPOLL_HELPER
         // Prefer the fast gc poll helepr over the double indirection
@@ -367,37 +354,47 @@ BasicBlock* Compiler::fgCreateGCPoll(GCPollType pollType, BasicBlock* block)
         }
 #endif
 
-        top->SetCond(bottom, poll);
         // Bottom has Top and Poll as its predecessors.  Poll has just Top as a predecessor.
-        fgAddRefPred(bottom, poll);
-        fgAddRefPred(bottom, top);
-        fgAddRefPred(poll, top);
+        FlowEdge* const trueEdge  = fgAddRefPred(bottom, top);
+        FlowEdge* const falseEdge = fgAddRefPred(poll, top);
+        trueEdge->setLikelihood(1.0);
+        falseEdge->setLikelihood(0.0);
+
+        FlowEdge* const newEdge = fgAddRefPred(bottom, poll);
+        poll->SetTargetEdge(newEdge);
+        assert(poll->JumpsToNext());
 
         // Replace Top with Bottom in the predecessor list of all outgoing edges from Bottom
         // (1 for unconditional branches, 2 for conditional branches, N for switches).
-        switch (oldJumpKind)
+        switch (top->GetKind())
         {
             case BBJ_RETURN:
             case BBJ_THROW:
                 // no successors
                 break;
+
             case BBJ_COND:
                 // replace predecessor in true/false successors.
-                noway_assert(!bottom->IsLast());
-                fgReplacePred(bottom->GetFalseTarget(), top, bottom);
-                fgReplacePred(bottom->GetTrueTarget(), top, bottom);
+                fgReplacePred(top->GetFalseEdge(), bottom);
+                fgReplacePred(top->GetTrueEdge(), bottom);
                 break;
 
             case BBJ_ALWAYS:
             case BBJ_CALLFINALLY:
-                fgReplacePred(bottom->GetTarget(), top, bottom);
+                fgReplacePred(top->GetTargetEdge(), bottom);
                 break;
+
             case BBJ_SWITCH:
                 NO_WAY("SWITCH should be a call rather than an inlined poll.");
                 break;
+
             default:
                 NO_WAY("Unknown block type for updating predecessor lists.");
+                break;
         }
+
+        bottom->TransferTarget(top);
+        top->SetCond(trueEdge, falseEdge);
 
         if (compCurBB == top)
         {
@@ -580,6 +577,19 @@ PhaseStatus Compiler::fgImport()
         compInlineResult->SetImportedILSize(info.compILImportSize);
     }
 
+    // Now that we've made it through the importer, we know the IL was valid.
+    // If we synthesized profile data and though it should be consistent,
+    // but it wasn't, assert now.
+    //
+    if (fgPgoSynthesized && fgPgoConsistent)
+    {
+        assert(!fgPgoDeferredInconsistency);
+
+        // Reset this as it is a one-shot thing.
+        //
+        INDEBUG(fgPgoDeferredInconsistency = false);
+    }
+
     return PhaseStatus::MODIFIED_EVERYTHING;
 }
 
@@ -595,8 +605,9 @@ bool Compiler::fgIsThrow(GenTree* tree)
         return false;
     }
     GenTreeCall* call = tree->AsCall();
-    if ((call->gtCallType == CT_HELPER) && s_helperCallProperties.AlwaysThrow(eeGetHelperNum(call->gtCallMethHnd)))
+    if (call->IsHelperCall() && s_helperCallProperties.AlwaysThrow(eeGetHelperNum(call->gtCallMethHnd)))
     {
+        assert(call->IsNoReturn());
         noway_assert(call->gtFlags & GTF_EXCEPT);
         return true;
     }
@@ -664,8 +675,9 @@ bool Compiler::fgIsCommaThrow(GenTree* tree, bool forFolding /* = false */)
 //    cls       - The class handle
 //    helper    - The helper function
 //    typeIndex - The static block type index. Used only for
-//                CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED or
-//                CORINFO_HELP_GETSHARED_GCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED to cache
+//                CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED,
+//                CORINFO_HELP_GETDYNAMIC_GCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED, or
+//                CORINFO_HELP_GETDYNAMIC_GCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED2 to cache
 //                the static block in an array at index typeIndex.
 //
 // Return Value:
@@ -681,56 +693,50 @@ GenTreeCall* Compiler::fgGetStaticsCCtorHelper(CORINFO_CLASS_HANDLE cls, CorInfo
     // We need the return type.
     switch (helper)
     {
-        case CORINFO_HELP_GETSHARED_GCSTATIC_BASE_NOCTOR:
-        case CORINFO_HELP_GETSHARED_GCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED:
-            bNeedClassID = false;
-            FALLTHROUGH;
-
-        case CORINFO_HELP_GETSHARED_GCTHREADSTATIC_BASE_NOCTOR:
+        case CORINFO_HELP_GET_GCSTATIC_BASE_NOCTOR:
+        case CORINFO_HELP_GET_NONGCSTATIC_BASE_NOCTOR:
+        case CORINFO_HELP_GET_GCTHREADSTATIC_BASE_NOCTOR:
+        case CORINFO_HELP_GET_NONGCTHREADSTATIC_BASE_NOCTOR:
+        case CORINFO_HELP_GETDYNAMIC_GCSTATIC_BASE_NOCTOR:
+        case CORINFO_HELP_GETDYNAMIC_NONGCSTATIC_BASE_NOCTOR:
+        case CORINFO_HELP_GETDYNAMIC_GCTHREADSTATIC_BASE_NOCTOR:
+        case CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_NOCTOR:
+        case CORINFO_HELP_GETDYNAMIC_GCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED:
+        case CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED:
             callFlags |= GTF_CALL_HOISTABLE;
             FALLTHROUGH;
 
-        case CORINFO_HELP_GETSHARED_GCSTATIC_BASE:
-        case CORINFO_HELP_GETSHARED_GCSTATIC_BASE_DYNAMICCLASS:
-        case CORINFO_HELP_GETSHARED_NONGCSTATIC_BASE_DYNAMICCLASS:
-        case CORINFO_HELP_GETSHARED_GCTHREADSTATIC_BASE:
-        case CORINFO_HELP_GETSHARED_GCTHREADSTATIC_BASE_DYNAMICCLASS:
-        case CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE_DYNAMICCLASS:
+        case CORINFO_HELP_GET_GCSTATIC_BASE:
+        case CORINFO_HELP_GET_NONGCSTATIC_BASE:
+        case CORINFO_HELP_GETDYNAMIC_GCSTATIC_BASE:
+        case CORINFO_HELP_GETDYNAMIC_NONGCSTATIC_BASE:
+        case CORINFO_HELP_GET_GCTHREADSTATIC_BASE:
+        case CORINFO_HELP_GET_NONGCTHREADSTATIC_BASE:
+        case CORINFO_HELP_GETDYNAMIC_GCTHREADSTATIC_BASE:
+        case CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE:
             // type = TYP_BYREF;
             break;
 
-        case CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED:
-        case CORINFO_HELP_GETSHARED_NONGCSTATIC_BASE_NOCTOR:
-            bNeedClassID = false;
-            FALLTHROUGH;
-
-        case CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE_NOCTOR:
+        case CORINFO_HELP_GETPINNED_GCSTATIC_BASE_NOCTOR:
+        case CORINFO_HELP_GETPINNED_NONGCSTATIC_BASE_NOCTOR:
+        case CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED2:
+        case CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED2_NOJITOPT:
             callFlags |= GTF_CALL_HOISTABLE;
             FALLTHROUGH;
 
-        case CORINFO_HELP_GETSHARED_NONGCSTATIC_BASE:
-        case CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE:
-        case CORINFO_HELP_CLASSINIT_SHARED_DYNAMICCLASS:
+        case CORINFO_HELP_GETPINNED_GCSTATIC_BASE:
+        case CORINFO_HELP_GETPINNED_NONGCSTATIC_BASE:
             type = TYP_I_IMPL;
+            break;
+
+        case CORINFO_HELP_INITCLASS:
+            type = TYP_VOID;
             break;
 
         default:
             assert(!"unknown shared statics helper");
             break;
     }
-
-    GenTree* opModuleIDArg;
-    GenTree* opClassIDArg;
-
-    // Get the class ID
-    unsigned clsID;
-    size_t   moduleID;
-    void*    pclsID;
-    void*    pmoduleID;
-
-    clsID = info.compCompHnd->getClassDomainID(cls, &pclsID);
-
-    moduleID = info.compCompHnd->getClassModuleIdForStatics(cls, nullptr, &pmoduleID);
 
     if (!(callFlags & GTF_CALL_HOISTABLE))
     {
@@ -740,37 +746,37 @@ GenTreeCall* Compiler::fgGetStaticsCCtorHelper(CORINFO_CLASS_HANDLE cls, CorInfo
         }
     }
 
-    if (pmoduleID)
-    {
-        opModuleIDArg = gtNewIndOfIconHandleNode(TYP_I_IMPL, (size_t)pmoduleID, GTF_ICON_CIDMID_HDL, true);
-    }
-    else
-    {
-        opModuleIDArg = gtNewIconNode((size_t)moduleID, TYP_I_IMPL);
-    }
-
     GenTreeCall* result;
-    if (bNeedClassID)
-    {
-        if (pclsID)
-        {
-            opClassIDArg = gtNewIndOfIconHandleNode(TYP_INT, (size_t)pclsID, GTF_ICON_CIDMID_HDL, true);
-        }
-        else
-        {
-            opClassIDArg = gtNewIconNode(clsID, TYP_INT);
-        }
 
-        result = gtNewHelperCallNode(helper, type, opModuleIDArg, opClassIDArg);
-    }
-    else if ((helper == CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED) ||
-             (helper == CORINFO_HELP_GETSHARED_GCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED))
+    if ((helper == CORINFO_HELP_GETDYNAMIC_GCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED) ||
+        (helper == CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED) ||
+        (helper == CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED2) ||
+        (helper == CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED2_NOJITOPT))
     {
         result = gtNewHelperCallNode(helper, type, gtNewIconNode(typeIndex));
     }
+    else if (helper == CORINFO_HELP_GETDYNAMIC_GCTHREADSTATIC_BASE_NOCTOR ||
+             helper == CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_NOCTOR ||
+             helper == CORINFO_HELP_GETDYNAMIC_GCTHREADSTATIC_BASE ||
+             helper == CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE)
+    {
+        result = gtNewHelperCallNode(helper, type,
+                                     gtNewIconNode((size_t)info.compCompHnd->getClassThreadStaticDynamicInfo(cls),
+                                                   TYP_I_IMPL));
+    }
+    else if (helper == CORINFO_HELP_GETDYNAMIC_GCSTATIC_BASE || helper == CORINFO_HELP_GETDYNAMIC_NONGCSTATIC_BASE ||
+             helper == CORINFO_HELP_GETDYNAMIC_GCSTATIC_BASE_NOCTOR ||
+             helper == CORINFO_HELP_GETDYNAMIC_NONGCSTATIC_BASE_NOCTOR ||
+             helper == CORINFO_HELP_GETPINNED_GCSTATIC_BASE || helper == CORINFO_HELP_GETPINNED_NONGCSTATIC_BASE ||
+             helper == CORINFO_HELP_GETPINNED_GCSTATIC_BASE_NOCTOR ||
+             helper == CORINFO_HELP_GETPINNED_NONGCSTATIC_BASE_NOCTOR)
+    {
+        result = gtNewHelperCallNode(helper, type,
+                                     gtNewIconNode(info.compCompHnd->getClassStaticDynamicInfo(cls), TYP_I_IMPL));
+    }
     else
     {
-        result = gtNewHelperCallNode(helper, type, opModuleIDArg);
+        result = gtNewHelperCallNode(helper, type, gtNewIconEmbClsHndNode(cls));
     }
 
     if (IsStaticHelperEligibleForExpansion(result))
@@ -857,6 +863,9 @@ bool Compiler::fgAddrCouldBeNull(GenTree* addr)
         case GT_ARR_ADDR:
             return (addr->gtFlags & GTF_ARR_ADDR_NONNULL) == 0;
 
+        case GT_BOX:
+            return !addr->IsBoxedValue();
+
         case GT_LCL_VAR:
             return !lvaIsImplicitByRefLocal(addr->AsLclVar()->GetLclNum());
 
@@ -920,6 +929,42 @@ bool Compiler::fgAddrCouldBeNull(GenTree* addr)
     }
 
     return true; // default result: addr could be null.
+}
+
+//------------------------------------------------------------------------------
+// fgAddrCouldBeHeap: Check whether the address tree may represent a heap address.
+//
+// Arguments:
+//    addr - Address to check
+//
+// Return Value:
+//    True if address could be a heap address; false otherwise (i.e. stack, native memory, etc.)
+//
+bool Compiler::fgAddrCouldBeHeap(GenTree* addr)
+{
+    GenTree* op = addr;
+    while (op->OperIs(GT_FIELD_ADDR) && op->AsFieldAddr()->IsInstance())
+    {
+        op = op->AsFieldAddr()->GetFldObj();
+    }
+
+    target_ssize_t offset;
+    gtPeelOffsets(&op, &offset);
+
+    // Ignore the offset for locals
+
+    if (op->OperIs(GT_LCL_ADDR))
+    {
+        return false;
+    }
+
+    if (op->OperIsScalarLocal() && (op->AsLclVarCommon()->GetLclNum() == impInlineRoot()->info.compRetBuffArg))
+    {
+        // RetBuf is known to be on the stack
+        return false;
+    }
+
+    return true;
 }
 
 //------------------------------------------------------------------------------
@@ -1036,7 +1081,7 @@ GenTree* Compiler::fgOptimizeDelegateConstructor(GenTreeCall*            call,
                 GenTree*       targetObjPointers = call->gtArgs.GetArgByIndex(1)->GetNode();
                 CORINFO_LOOKUP pLookup;
                 info.compCompHnd->getReadyToRunDelegateCtorHelper(&ldftnToken->m_token, ldftnToken->m_tokenConstraint,
-                                                                  clsHnd, &pLookup);
+                                                                  clsHnd, info.compMethodHnd, &pLookup);
                 if (!pLookup.lookupKind.needsRuntimeLookup)
                 {
                     call = gtNewHelperCallNode(CORINFO_HELP_READYTORUN_DELEGATE_CTOR, TYP_VOID, thisPointer,
@@ -1046,13 +1091,26 @@ GenTree* Compiler::fgOptimizeDelegateConstructor(GenTreeCall*            call,
                 else
                 {
                     assert(oper != GT_FTN_ADDR);
-                    CORINFO_CONST_LOOKUP genericLookup;
-                    info.compCompHnd->getReadyToRunHelper(&ldftnToken->m_token, &pLookup.lookupKind,
-                                                          CORINFO_HELP_READYTORUN_GENERIC_HANDLE, &genericLookup);
-                    GenTree* ctxTree = getRuntimeContextTree(pLookup.lookupKind.runtimeLookupKind);
-                    call             = gtNewHelperCallNode(CORINFO_HELP_READYTORUN_DELEGATE_CTOR, TYP_VOID, thisPointer,
-                                               targetObjPointers, ctxTree);
-                    call->setEntryPoint(genericLookup);
+
+                    if (pLookup.lookupKind.runtimeLookupKind != CORINFO_LOOKUP_NOT_SUPPORTED)
+                    {
+                        CORINFO_CONST_LOOKUP genericLookup;
+                        info.compCompHnd->getReadyToRunHelper(&ldftnToken->m_token, &pLookup.lookupKind,
+                                                              CORINFO_HELP_READYTORUN_GENERIC_HANDLE,
+                                                              info.compMethodHnd, &genericLookup);
+                        GenTree* ctxTree = getRuntimeContextTree(pLookup.lookupKind.runtimeLookupKind);
+                        call = gtNewHelperCallNode(CORINFO_HELP_READYTORUN_DELEGATE_CTOR, TYP_VOID, thisPointer,
+                                                   targetObjPointers, ctxTree);
+                        call->setEntryPoint(genericLookup);
+                    }
+                    else
+                    {
+                        // Runtime does not support inlining of all shapes of runtime lookups
+                        // Inlining has to be aborted in such a case
+                        assert(compIsForInlining());
+                        compInlineResult->NoteFatal(InlineObservation::CALLSITE_GENERIC_DICTIONARY_LOOKUP);
+                        JITDUMP("not optimized, generic inlining restriction\n");
+                    }
                 }
             }
             else
@@ -1071,7 +1129,7 @@ GenTree* Compiler::fgOptimizeDelegateConstructor(GenTreeCall*            call,
 
             CORINFO_LOOKUP entryPoint;
             info.compCompHnd->getReadyToRunDelegateCtorHelper(&ldftnToken->m_token, ldftnToken->m_tokenConstraint,
-                                                              clsHnd, &entryPoint);
+                                                              clsHnd, info.compMethodHnd, &entryPoint);
             assert(!entryPoint.lookupKind.needsRuntimeLookup);
             call->setEntryPoint(entryPoint.constLookup);
         }
@@ -1148,13 +1206,25 @@ bool Compiler::fgCastNeeded(GenTree* tree, var_types toType)
     //
     // Is the tree as GT_CAST or a GT_CALL ?
     //
-    if (tree->OperGet() == GT_CAST)
+    if (tree->OperIs(GT_CAST))
     {
         fromType = tree->CastToType();
     }
-    else if (tree->OperGet() == GT_CALL)
+    else if (tree->OperIs(GT_CALL))
     {
         fromType = (var_types)tree->AsCall()->gtReturnType;
+    }
+    else if (tree->OperIs(GT_LCL_VAR))
+    {
+        LclVarDsc* varDsc = lvaGetDesc(tree->AsLclVarCommon());
+        if (varDsc->lvNormalizeOnStore())
+        {
+            fromType = varDsc->TypeGet();
+        }
+        else
+        {
+            fromType = tree->TypeGet();
+        }
     }
     else
     {
@@ -1207,11 +1277,23 @@ GenTree* Compiler::fgGetCritSectOfStaticMethod()
 
     if (!kind.needsRuntimeLookup)
     {
-        void *critSect = nullptr, **pCrit = nullptr;
-        critSect = info.compCompHnd->getMethodSync(info.compMethodHnd, (void**)&pCrit);
-        noway_assert((!critSect) != (!pCrit));
+        CORINFO_OBJECT_HANDLE ptr = info.compCompHnd->getRuntimeTypePointer(info.compClassHnd);
+        if (ptr != NULL)
+        {
+            setMethodHasFrozenObjects();
+            tree = gtNewIconEmbHndNode((void*)ptr, nullptr, GTF_ICON_OBJ_HDL, nullptr);
+        }
+        else
+        {
+            void *critSect = nullptr, **pCrit = nullptr;
+            critSect = info.compCompHnd->getMethodSync(info.compMethodHnd, (void**)&pCrit);
+            noway_assert((!critSect) != (!pCrit));
 
-        tree = gtNewIconEmbHndNode(critSect, pCrit, GTF_ICON_GLOBAL_PTR, info.compMethodHnd);
+            tree = gtNewIconEmbHndNode(critSect, pCrit, GTF_ICON_GLOBAL_PTR, info.compMethodHnd);
+
+            // Given the class handle, get the pointer to the Monitor.
+            tree = gtNewHelperCallNode(CORINFO_HELP_GETSYNCFROMCLASSHANDLE, TYP_REF, tree);
+        }
     }
     else
     {
@@ -1257,14 +1339,12 @@ GenTree* Compiler::fgGetCritSectOfStaticMethod()
         noway_assert(tree); // tree should now contain the CORINFO_CLASS_HANDLE for the exact class.
 
         // Given the class handle, get the pointer to the Monitor.
-        tree = gtNewHelperCallNode(CORINFO_HELP_GETSYNCFROMCLASSHANDLE, TYP_I_IMPL, tree);
+        tree = gtNewHelperCallNode(CORINFO_HELP_GETSYNCFROMCLASSHANDLE, TYP_REF, tree);
     }
 
     noway_assert(tree);
     return tree;
 }
-
-#if defined(FEATURE_EH_FUNCLETS)
 
 /*****************************************************************************
  *
@@ -1328,6 +1408,8 @@ GenTree* Compiler::fgGetCritSectOfStaticMethod()
 
 void Compiler::fgAddSyncMethodEnterExit()
 {
+    assert(UsesFunclets());
+
     assert((info.compFlags & CORINFO_FLG_SYNCH) != 0);
 
     // We need to do this transformation before funclets are created.
@@ -1345,22 +1427,10 @@ void Compiler::fgAddSyncMethodEnterExit()
     NYI("No support for synchronized methods");
 #endif // !FEATURE_EH
 
-    // Create a scratch first BB where we can put the new variable initialization.
-    // Don't put the scratch BB in the protected region.
-
-    fgEnsureFirstBBisScratch();
-
     // Create a block for the start of the try region, where the monitor enter call
     // will go.
-    BasicBlock* const tryBegBB  = fgSplitBlockAtEnd(fgFirstBB);
-    BasicBlock* const tryNextBB = tryBegBB->Next();
+    BasicBlock* const tryBegBB  = fgSplitBlockAtBeginning(fgFirstBB);
     BasicBlock* const tryLastBB = fgLastBB;
-
-    // If we have profile data the new block will inherit the next block's weight
-    if (tryNextBB->hasProfileWeight())
-    {
-        tryBegBB->inheritWeight(tryNextBB);
-    }
 
     // Create a block for the fault.
     // It gets an artificial ref count.
@@ -1379,10 +1449,15 @@ void Compiler::fgAddSyncMethodEnterExit()
         // Add the new EH region at the end, since it is the least nested,
         // and thus should be last.
 
-        EHblkDsc* newEntry;
-        unsigned  XTnew = compHndBBtabCount;
+        EHblkDsc* newEntry = nullptr;
+        unsigned  XTnew    = compHndBBtabCount;
 
-        newEntry = fgAddEHTableEntry(XTnew);
+        newEntry = fgTryAddEHTableEntries(XTnew);
+
+        if (newEntry == nullptr)
+        {
+            IMPL_LIMITATION("too many exception clauses");
+        }
 
         // Initialize the new entry
 
@@ -1476,7 +1551,7 @@ void Compiler::fgAddSyncMethodEnterExit()
         GenTree* zero     = gtNewZeroConNode(typeMonAcquired);
         GenTree* initNode = gtNewStoreLclVarNode(lvaMonAcquired, zero);
 
-        fgNewStmtAtEnd(fgFirstBB, initNode);
+        fgNewStmtAtBeg(fgFirstBB, initNode);
 
 #ifdef DEBUG
         if (verbose)
@@ -1502,7 +1577,7 @@ void Compiler::fgAddSyncMethodEnterExit()
         GenTree* thisNode = gtNewLclVarNode(info.compThisArg);
         GenTree* initNode = gtNewStoreLclVarNode(lvaCopyThis, thisNode);
 
-        fgNewStmtAtEnd(tryBegBB, initNode);
+        fgNewStmtAtBeg(tryBegBB, initNode);
     }
 
     // For OSR, we do not need the enter tree as the monitor is acquired by the original method.
@@ -1544,14 +1619,13 @@ GenTree* Compiler::fgCreateMonitorTree(unsigned lvaMonAcquired, unsigned lvaThis
     if (info.compIsStatic)
     {
         tree = fgGetCritSectOfStaticMethod();
-        tree = gtNewHelperCallNode(enter ? CORINFO_HELP_MON_ENTER_STATIC : CORINFO_HELP_MON_EXIT_STATIC, TYP_VOID, tree,
-                                   varAddrNode);
     }
     else
     {
         tree = gtNewLclvNode(lvaThisVar, TYP_REF);
-        tree = gtNewHelperCallNode(enter ? CORINFO_HELP_MON_ENTER : CORINFO_HELP_MON_EXIT, TYP_VOID, tree, varAddrNode);
     }
+
+    tree = gtNewHelperCallNode(enter ? CORINFO_HELP_MON_ENTER : CORINFO_HELP_MON_EXIT, TYP_VOID, tree, varAddrNode);
 
 #ifdef DEBUG
     if (verbose)
@@ -1563,37 +1637,44 @@ GenTree* Compiler::fgCreateMonitorTree(unsigned lvaMonAcquired, unsigned lvaThis
     }
 #endif
 
-    if (block->KindIs(BBJ_RETURN) && block->lastStmt()->GetRootNode()->gtOper == GT_RETURN)
+    if (enter)
     {
-        GenTreeUnOp* retNode = block->lastStmt()->GetRootNode()->AsUnOp();
-        GenTree*     retExpr = retNode->gtOp1;
-
-        if (retExpr != nullptr)
-        {
-            // have to insert this immediately before the GT_RETURN so we transform:
-            // ret(...) ->
-            // ret(comma(comma(tmp=...,call mon_exit), tmp))
-            //
-            TempInfo tempInfo = fgMakeTemp(retExpr);
-            GenTree* lclVar   = tempInfo.load;
-
-            // TODO-1stClassStructs: delete this NO_CSE propagation. Requires handling multi-regs in copy prop.
-            lclVar->gtFlags |= (retExpr->gtFlags & GTF_DONT_CSE);
-
-            retExpr        = gtNewOperNode(GT_COMMA, lclVar->TypeGet(), tree, lclVar);
-            retExpr        = gtNewOperNode(GT_COMMA, lclVar->TypeGet(), tempInfo.store, retExpr);
-            retNode->gtOp1 = retExpr;
-            retNode->AddAllEffectsFlags(retExpr);
-        }
-        else
-        {
-            // Insert this immediately before the GT_RETURN
-            fgNewStmtNearEnd(block, tree);
-        }
+        fgNewStmtAtBeg(block, tree);
     }
     else
     {
-        fgNewStmtAtEnd(block, tree);
+        if (block->KindIs(BBJ_RETURN) && block->lastStmt()->GetRootNode()->OperIs(GT_RETURN))
+        {
+            GenTreeUnOp* retNode = block->lastStmt()->GetRootNode()->AsUnOp();
+            GenTree*     retExpr = retNode->gtOp1;
+
+            if (retExpr != nullptr)
+            {
+                // have to insert this immediately before the GT_RETURN so we transform:
+                // ret(...) ->
+                // ret(comma(comma(tmp=...,call mon_exit), tmp))
+                //
+                TempInfo tempInfo = fgMakeTemp(retExpr);
+                GenTree* lclVar   = tempInfo.load;
+
+                // TODO-1stClassStructs: delete this NO_CSE propagation. Requires handling multi-regs in copy prop.
+                lclVar->gtFlags |= (retExpr->gtFlags & GTF_DONT_CSE);
+
+                retExpr        = gtNewOperNode(GT_COMMA, lclVar->TypeGet(), tree, lclVar);
+                retExpr        = gtNewOperNode(GT_COMMA, lclVar->TypeGet(), tempInfo.store, retExpr);
+                retNode->gtOp1 = retExpr;
+                retNode->AddAllEffectsFlags(retExpr);
+            }
+            else
+            {
+                // Insert this immediately before the GT_RETURN
+                fgNewStmtNearEnd(block, tree);
+            }
+        }
+        else
+        {
+            fgNewStmtAtEnd(block, tree);
+        }
     }
 
     return tree;
@@ -1623,13 +1704,13 @@ void Compiler::fgConvertSyncReturnToLeave(BasicBlock* block)
                                                // try/finally, which must be the last EH region.
 
     EHblkDsc* ehDsc = ehGetDsc(tryIndex);
-    assert(ehDsc->ebdEnclosingTryIndex ==
-           EHblkDsc::NO_ENCLOSING_INDEX); // There are no enclosing regions of the BBJ_RETURN block
+    assert(ehDsc->ebdEnclosingTryIndex == EHblkDsc::NO_ENCLOSING_INDEX); // There are no enclosing regions of the
+                                                                         // BBJ_RETURN block
     assert(ehDsc->ebdEnclosingHndIndex == EHblkDsc::NO_ENCLOSING_INDEX);
 
     // Convert the BBJ_RETURN to BBJ_ALWAYS, jumping to genReturnBB.
-    block->SetKindAndTarget(BBJ_ALWAYS, genReturnBB);
-    fgAddRefPred(genReturnBB, block);
+    FlowEdge* const newEdge = fgAddRefPred(genReturnBB, block);
+    block->SetKindAndTargetEdge(BBJ_ALWAYS, newEdge);
 
 #ifdef DEBUG
     if (verbose)
@@ -1639,8 +1720,6 @@ void Compiler::fgConvertSyncReturnToLeave(BasicBlock* block)
     }
 #endif
 }
-
-#endif // FEATURE_EH_FUNCLETS
 
 //------------------------------------------------------------------------
 // fgAddReversePInvokeEnterExit: Add enter/exit calls for reverse PInvoke methods
@@ -1688,8 +1767,6 @@ void Compiler::fgAddReversePInvokeEnterExit()
     {
         tree = gtNewHelperCallNode(CORINFO_HELP_JIT_REVERSE_PINVOKE_ENTER, TYP_VOID, pInvokeFrameVar);
     }
-
-    fgEnsureFirstBBisScratch();
 
     fgNewStmtAtBeg(fgFirstBB, tree);
 
@@ -1799,7 +1876,8 @@ private:
     bool mergingReturns = false;
 
 public:
-    MergedReturns(Compiler* comp) : comp(comp)
+    MergedReturns(Compiler* comp)
+        : comp(comp)
     {
         comp->fgReturnCount = 0;
     }
@@ -2099,8 +2177,8 @@ private:
 
                     // Change BBJ_RETURN to BBJ_ALWAYS targeting const return block.
                     assert((comp->info.compFlags & CORINFO_FLG_SYNCH) == 0);
-                    returnBlock->SetKindAndTarget(BBJ_ALWAYS, constReturnBlock);
-                    comp->fgAddRefPred(constReturnBlock, returnBlock);
+                    FlowEdge* const newEdge = comp->fgAddRefPred(constReturnBlock, returnBlock);
+                    returnBlock->SetKindAndTargetEdge(BBJ_ALWAYS, newEdge);
 
                     // Remove GT_RETURN since constReturnBlock returns the constant.
                     assert(returnBlock->lastStmt()->GetRootNode()->OperIs(GT_RETURN));
@@ -2242,7 +2320,7 @@ private:
         return nullptr;
     }
 };
-}
+} // namespace
 
 //------------------------------------------------------------------------
 // fgAddInternal: add blocks and trees to express special method semantics
@@ -2267,14 +2345,6 @@ PhaseStatus Compiler::fgAddInternal()
     // For runtime determined Exception types we're going to emit a fake EH filter with isinst for this
     // type with a runtime lookup
     madeChanges |= fgCreateFiltersForGenericExceptions();
-
-    // The backend requires a scratch BB into which it can safely insert a P/Invoke method prolog if one is
-    // required. Similarly, we need a scratch BB for poisoning. Create it here.
-    if (compMethodRequiresPInvokeFrame() || compShouldPoisonFrame())
-    {
-        madeChanges |= fgEnsureFirstBBisScratch();
-        fgFirstBB->SetFlags(BBF_DONT_REMOVE);
-    }
 
     /*
     <BUGNUM> VSW441487 </BUGNUM>
@@ -2301,7 +2371,7 @@ PhaseStatus Compiler::fgAddInternal()
 #ifndef JIT32_GCENCODER
             lva0CopiedForGenericsCtxt = ((info.compMethodInfo->options & CORINFO_GENERICS_CTXT_FROM_THIS) != 0);
 #else  // JIT32_GCENCODER
-            lva0CopiedForGenericsCtxt          = false;
+            lva0CopiedForGenericsCtxt = false;
 #endif // JIT32_GCENCODER
             noway_assert(lva0CopiedForGenericsCtxt || !lvaTable[info.compThisArg].IsAddressExposed());
             noway_assert(!lvaTable[info.compThisArg].lvHasILStoreOp);
@@ -2311,8 +2381,7 @@ PhaseStatus Compiler::fgAddInternal()
             // Now assign the original input "this" to the temp.
             GenTree* store = gtNewStoreLclVarNode(lvaArg0Var, gtNewLclVarNode(info.compThisArg));
 
-            fgEnsureFirstBBisScratch();
-            fgNewStmtAtEnd(fgFirstBB, store);
+            fgNewStmtAtBeg(fgFirstBB, store);
 
             JITDUMP("\nCopy \"this\" to lvaArg0Var in first basic block %s\n", fgFirstBB->dspToString());
             DISPTREE(store);
@@ -2325,17 +2394,15 @@ PhaseStatus Compiler::fgAddInternal()
     // Merge return points if required or beneficial
     MergedReturns merger(this);
 
-#if defined(FEATURE_EH_FUNCLETS)
     // Add the synchronized method enter/exit calls and try/finally protection. Note
     // that this must happen before the one BBJ_RETURN block is created below, so the
     // BBJ_RETURN block gets placed at the top-level, not within an EH region. (Otherwise,
     // we'd have to be really careful when creating the synchronized method try/finally
     // not to include the BBJ_RETURN block.)
-    if ((info.compFlags & CORINFO_FLG_SYNCH) != 0)
+    if (UsesFunclets() && (info.compFlags & CORINFO_FLG_SYNCH) != 0)
     {
         fgAddSyncMethodEnterExit();
     }
-#endif // FEATURE_EH_FUNCLETS
 
     //
     //  We will generate just one epilog (return block)
@@ -2412,7 +2479,10 @@ PhaseStatus Compiler::fgAddInternal()
 
         LclVarDsc* varDsc = lvaGetDesc(lvaInlinedPInvokeFrameVar);
         // Make room for the inlined frame.
-        lvaSetStruct(lvaInlinedPInvokeFrameVar, typGetBlkLayout(eeGetEEInfo()->inlinedCallFrameInfo.size), false);
+        const CORINFO_EE_INFO* eeInfo = eeGetEEInfo();
+        unsigned frameSize            = info.compPublishStubParam ? eeInfo->inlinedCallFrameInfo.sizeWithSecretStubArg
+                                                                  : eeInfo->inlinedCallFrameInfo.size;
+        lvaSetStruct(lvaInlinedPInvokeFrameVar, typGetBlkLayout(frameSize), false);
     }
 
     // Do we need to insert a "JustMyCode" callback?
@@ -2440,17 +2510,16 @@ PhaseStatus Compiler::fgAddInternal()
 
         // Stick the conditional call at the start of the method
 
-        fgEnsureFirstBBisScratch();
-        fgNewStmtAtEnd(fgFirstBB, gtNewQmarkNode(TYP_VOID, guardCheckCond, callback->AsColon()));
+        fgNewStmtAtBeg(fgFirstBB, gtNewQmarkNode(TYP_VOID, guardCheckCond, callback->AsColon()));
 
         madeChanges = true;
     }
 
-#if !defined(FEATURE_EH_FUNCLETS)
+#if defined(FEATURE_EH_WINDOWS_X86)
 
     /* Is this a 'synchronized' method? */
 
-    if (info.compFlags & CORINFO_FLG_SYNCH)
+    if (!UsesFunclets() && (info.compFlags & CORINFO_FLG_SYNCH))
     {
         GenTree* tree = nullptr;
 
@@ -2459,19 +2528,16 @@ PhaseStatus Compiler::fgAddInternal()
         if (info.compIsStatic)
         {
             tree = fgGetCritSectOfStaticMethod();
-            tree = gtNewHelperCallNode(CORINFO_HELP_MON_ENTER_STATIC, TYP_VOID, tree);
         }
         else
         {
             noway_assert(lvaTable[info.compThisArg].lvType == TYP_REF);
             tree = gtNewLclvNode(info.compThisArg, TYP_REF);
-            tree = gtNewHelperCallNode(CORINFO_HELP_MON_ENTER, TYP_VOID, tree);
         }
 
-        /* Create a new basic block and stick the call in it */
+        tree = gtNewHelperCallNode(CORINFO_HELP_MON_ENTER, TYP_VOID, tree);
 
-        fgEnsureFirstBBisScratch();
-        fgNewStmtAtEnd(fgFirstBB, tree);
+        fgNewStmtAtBeg(fgFirstBB, tree);
 
 #ifdef DEBUG
         if (verbose)
@@ -2492,13 +2558,13 @@ PhaseStatus Compiler::fgAddInternal()
         if (info.compIsStatic)
         {
             tree = fgGetCritSectOfStaticMethod();
-            tree = gtNewHelperCallNode(CORINFO_HELP_MON_EXIT_STATIC, TYP_VOID, tree);
         }
         else
         {
             tree = gtNewLclvNode(info.compThisArg, TYP_REF);
-            tree = gtNewHelperCallNode(CORINFO_HELP_MON_EXIT, TYP_VOID, tree);
         }
+
+        tree = gtNewHelperCallNode(CORINFO_HELP_MON_EXIT, TYP_VOID, tree);
 
         fgNewStmtNearEnd(genReturnBB, tree);
 
@@ -2518,7 +2584,7 @@ PhaseStatus Compiler::fgAddInternal()
         madeChanges         = true;
     }
 
-#endif // !FEATURE_EH_FUNCLETS
+#endif // FEATURE_EH_WINDOWS_X86
 
     if (opts.IsReversePInvoke())
     {
@@ -2537,6 +2603,93 @@ PhaseStatus Compiler::fgAddInternal()
 
     return madeChanges ? PhaseStatus::MODIFIED_EVERYTHING : PhaseStatus::MODIFIED_NOTHING;
 }
+
+#ifdef SWIFT_SUPPORT
+//------------------------------------------------------------------------
+// fgAddSwiftErrorReturns: If this method uses Swift error handling,
+// transform all GT_RETURN nodes into GT_SWIFT_ERROR_RET nodes
+// to handle returning the error value alongside the normal return value.
+// Also transform any GT_LCL_VAR uses of lvaSwiftErrorArg (the SwiftError* parameter)
+// into GT_LCL_ADDR uses of lvaSwiftErrorLocal (the SwiftError pseudolocal).
+//
+// Returns:
+//   Suitable phase status.
+//
+PhaseStatus Compiler::fgAddSwiftErrorReturns()
+{
+    if (lvaSwiftErrorArg == BAD_VAR_NUM)
+    {
+        // No Swift error handling in this method
+        return PhaseStatus::MODIFIED_NOTHING;
+    }
+
+    assert(lvaSwiftErrorLocal != BAD_VAR_NUM);
+    assert(info.compCallConv == CorInfoCallConvExtension::Swift);
+
+    struct ReplaceSwiftErrorVisitor final : public GenTreeVisitor<ReplaceSwiftErrorVisitor>
+    {
+        enum
+        {
+            DoPreOrder    = true,
+            DoLclVarsOnly = true,
+        };
+
+        ReplaceSwiftErrorVisitor(Compiler* comp)
+            : GenTreeVisitor(comp)
+        {
+        }
+
+        fgWalkResult PreOrderVisit(GenTree** use, GenTree* user)
+        {
+            if ((*use)->AsLclVarCommon()->GetLclNum() == m_compiler->lvaSwiftErrorArg)
+            {
+                if (!(*use)->OperIs(GT_LCL_VAR))
+                {
+                    BADCODE("Found invalid use of SwiftError* parameter");
+                }
+
+                *use = m_compiler->gtNewLclVarAddrNode(m_compiler->lvaSwiftErrorLocal, genActualType(*use));
+            }
+
+            return fgWalkResult::WALK_CONTINUE;
+        }
+    };
+
+    ReplaceSwiftErrorVisitor visitor(this);
+
+    for (BasicBlock* block : Blocks())
+    {
+        for (Statement* const stmt : block->Statements())
+        {
+            visitor.WalkTree(stmt->GetRootNodePointer(), nullptr);
+        }
+
+        if (block->KindIs(BBJ_RETURN))
+        {
+            GenTree* const ret = block->lastNode();
+            assert(ret->OperIs(GT_RETURN));
+            ret->SetOperRaw(GT_SWIFT_ERROR_RET);
+            ret->AsOp()->gtOp2 = ret->AsOp()->gtOp1;
+
+            // If this is the merged return block, use the merged return error local as the error operand.
+            // Else, load the error value from the SwiftError pseudolocal (this will probably get promoted, anyway).
+            if (block == genReturnBB)
+            {
+                assert(genReturnErrorLocal == BAD_VAR_NUM);
+                genReturnErrorLocal = lvaGrabTemp(true DEBUGARG("Single return block SwiftError value"));
+                lvaGetDesc(genReturnErrorLocal)->lvType = TYP_I_IMPL;
+                ret->AsOp()->gtOp1                      = gtNewLclvNode(genReturnErrorLocal, TYP_I_IMPL);
+            }
+            else
+            {
+                ret->AsOp()->gtOp1 = gtNewLclFldNode(lvaSwiftErrorLocal, TYP_I_IMPL, 0);
+            }
+        }
+    }
+
+    return PhaseStatus::MODIFIED_EVERYTHING;
+}
+#endif // SWIFT_SUPPORT
 
 /*****************************************************************************/
 /*****************************************************************************/
@@ -2704,14 +2857,10 @@ BasicBlock* Compiler::fgGetDomSpeculatively(const BasicBlock* block)
 //
 BasicBlock* Compiler::fgLastBBInMainFunction()
 {
-#if defined(FEATURE_EH_FUNCLETS)
-
     if (fgFirstFuncletBB != nullptr)
     {
         return fgFirstFuncletBB->Prev();
     }
-
-#endif // FEATURE_EH_FUNCLETS
 
     assert(fgLastBB->IsLast());
     return fgLastBB;
@@ -2724,20 +2873,14 @@ BasicBlock* Compiler::fgLastBBInMainFunction()
 //
 BasicBlock* Compiler::fgEndBBAfterMainFunction()
 {
-#if defined(FEATURE_EH_FUNCLETS)
-
     if (fgFirstFuncletBB != nullptr)
     {
         return fgFirstFuncletBB;
     }
 
-#endif // FEATURE_EH_FUNCLETS
-
     assert(fgLastBB->IsLast());
     return nullptr;
 }
-
-#if defined(FEATURE_EH_FUNCLETS)
 
 /*****************************************************************************
  * Introduce a new head block of the handler for the prolog to be put in, ahead
@@ -2754,26 +2897,27 @@ void Compiler::fgInsertFuncletPrologBlock(BasicBlock* block)
     }
 #endif
 
+    assert(UsesFunclets());
     assert(block->hasHndIndex());
     assert(fgFirstBlockOfHandler(block) == block); // this block is the first block of a handler
 
     /* Allocate a new basic block */
 
-    BasicBlock* newHead = BasicBlock::New(this, BBJ_ALWAYS, block);
-    newHead->SetFlags(BBF_INTERNAL | BBF_NONE_QUIRK);
+    BasicBlock* newHead = BasicBlock::New(this);
+    newHead->SetFlags(BBF_INTERNAL);
     newHead->inheritWeight(block);
     newHead->bbRefs = 0;
 
     fgInsertBBbefore(block, newHead); // insert the new block in the block list
-    assert(newHead->JumpsToNext());
-    fgExtendEHRegionBefore(block); // Update the EH table to make the prolog block the first block in the block's EH
-                                   // block.
+    fgExtendEHRegionBefore(block);    // Update the EH table to make the prolog block the first block in the block's EH
+                                      // block.
 
     // Distribute the pred list between newHead and block. Incoming edges coming from outside
     // the handler go to the prolog. Edges coming from with the handler are back-edges, and
     // go to the existing 'block'.
 
-    for (BasicBlock* const predBlock : block->PredBlocks())
+    weight_t incomingWeight = BB_ZERO_WEIGHT;
+    for (BasicBlock* const predBlock : block->PredBlocksEditing())
     {
         if (!fgIsIntraHandlerPred(predBlock, block))
         {
@@ -2783,11 +2927,12 @@ void Compiler::fgInsertFuncletPrologBlock(BasicBlock* block)
             switch (predBlock->GetKind())
             {
                 case BBJ_CALLFINALLY:
+                {
                     noway_assert(predBlock->TargetIs(block));
-                    predBlock->SetTarget(newHead);
-                    fgRemoveRefPred(block, predBlock);
-                    fgAddRefPred(newHead, predBlock);
+                    fgRedirectTargetEdge(predBlock, newHead);
+                    incomingWeight += predBlock->bbWeight;
                     break;
+                }
 
                 default:
                     // The only way into the handler is via a BBJ_CALLFINALLY (to a finally handler), or
@@ -2798,10 +2943,16 @@ void Compiler::fgInsertFuncletPrologBlock(BasicBlock* block)
         }
     }
 
-    assert(nullptr == fgGetPredForBlock(block, newHead));
-    fgAddRefPred(block, newHead);
+    assert(fgGetPredForBlock(block, newHead) == nullptr);
+    FlowEdge* const newEdge = fgAddRefPred(block, newHead);
+    newHead->SetKindAndTargetEdge(BBJ_ALWAYS, newEdge);
+    assert(newHead->JumpsToNext());
 
-    assert(newHead->HasFlag(BBF_INTERNAL));
+    // Update flow into the header block
+    if (block->hasProfileWeight())
+    {
+        newHead->setBBProfileWeight(incomingWeight);
+    }
 }
 
 //------------------------------------------------------------------------
@@ -2817,6 +2968,7 @@ void Compiler::fgInsertFuncletPrologBlock(BasicBlock* block)
 //
 void Compiler::fgCreateFuncletPrologBlocks()
 {
+    assert(UsesFunclets());
     noway_assert(fgPredsComputed);
     assert(!fgFuncletsCreated);
 
@@ -2881,7 +3033,20 @@ void Compiler::fgCreateFuncletPrologBlocks()
 //
 PhaseStatus Compiler::fgCreateFunclets()
 {
+    assert(UsesFunclets());
     assert(!fgFuncletsCreated);
+
+    // Allocate the PSPSym, if needed. PSPSym is not used by the NativeAOT ABI
+    if (!IsTargetAbi(CORINFO_NATIVEAOT_ABI))
+    {
+        if (ehNeedsPSPSym())
+        {
+            lvaPSPSym            = lvaGrabTempWithImplicitUse(false DEBUGARG("PSPSym"));
+            LclVarDsc* lclPSPSym = lvaGetDesc(lvaPSPSym);
+            lclPSPSym->lvType    = TYP_I_IMPL;
+            lvaSetVarDoNotEnregister(lvaPSPSym DEBUGARG(DoNotEnregisterReason::VMNeedsStackAddr));
+        }
+    }
 
     fgCreateFuncletPrologBlocks();
 
@@ -2956,6 +3121,8 @@ PhaseStatus Compiler::fgCreateFunclets()
 //
 bool Compiler::fgFuncletsAreCold()
 {
+    assert(UsesFunclets());
+
     for (BasicBlock* block = fgFirstFuncletBB; block != nullptr; block = block->Next())
     {
         if (!block->isRunRarely())
@@ -2967,8 +3134,6 @@ bool Compiler::fgFuncletsAreCold()
     return true;
 }
 
-#endif // defined(FEATURE_EH_FUNCLETS)
-
 //------------------------------------------------------------------------
 // fgDetermineFirstColdBlock: figure out where we might split the block
 //    list to put some blocks into the cold code section
@@ -2978,17 +3143,12 @@ bool Compiler::fgFuncletsAreCold()
 //
 // Notes:
 //    Walk the basic blocks list to determine the first block to place in the
-//    cold section.  This would be the first of a series of rarely executed blocks
+//    cold section. This would be the first of a series of rarely executed blocks
 //    such that no succeeding blocks are in a try region or an exception handler
 //    or are rarely executed.
 //
 PhaseStatus Compiler::fgDetermineFirstColdBlock()
 {
-    // Since we may need to create a new transition block
-    // we assert that it is OK to create new blocks.
-    //
-    assert(fgPredsComputed);
-    assert(fgSafeBasicBlockCreation);
     assert(fgFirstColdBlock == nullptr);
 
     if (!opts.compProcedureSplitting)
@@ -3029,23 +3189,12 @@ PhaseStatus Compiler::fgDetermineFirstColdBlock()
 
         for (lblk = nullptr, block = fgFirstBB; block != nullptr; lblk = block, block = block->Next())
         {
-            bool blockMustBeInHotSection = false;
-
-#if HANDLER_ENTRY_MUST_BE_IN_HOT_SECTION
-            if (bbIsHandlerBeg(block))
-            {
-                blockMustBeInHotSection = true;
-            }
-#endif // HANDLER_ENTRY_MUST_BE_IN_HOT_SECTION
-
-#ifdef FEATURE_EH_FUNCLETS
             // Make note of if we're in the funclet section,
             // so we can stop the search early.
             if (block == fgFirstFuncletBB)
             {
                 inFuncletSection = true;
             }
-#endif // FEATURE_EH_FUNCLETS
 
             // Do we have a candidate for the first cold block?
             if (firstColdBlock != nullptr)
@@ -3053,13 +3202,12 @@ PhaseStatus Compiler::fgDetermineFirstColdBlock()
                 // We have a candidate for first cold block
 
                 // Is this a hot block?
-                if (blockMustBeInHotSection || (block->isRunRarely() == false))
+                if (!block->isRunRarely())
                 {
                     // We have to restart the search for the first cold block
                     firstColdBlock       = nullptr;
                     prevToFirstColdBlock = nullptr;
 
-#ifdef FEATURE_EH_FUNCLETS
                     // If we're already in the funclet section, try to split
                     // at fgFirstFuncletBB, and stop the search.
                     if (inFuncletSection)
@@ -3072,13 +3220,10 @@ PhaseStatus Compiler::fgDetermineFirstColdBlock()
 
                         break;
                     }
-#endif // FEATURE_EH_FUNCLETS
                 }
             }
             else // (firstColdBlock == NULL) -- we don't have a candidate for first cold block
             {
-
-#ifdef FEATURE_EH_FUNCLETS
                 //
                 // If a function has exception handling and we haven't found the first cold block yet,
                 // consider splitting at the first funclet; do not consider splitting between funclets,
@@ -3094,10 +3239,9 @@ PhaseStatus Compiler::fgDetermineFirstColdBlock()
 
                     break;
                 }
-#endif // FEATURE_EH_FUNCLETS
 
                 // Is this a cold block?
-                if (!blockMustBeInHotSection && block->isRunRarely())
+                if (block->isRunRarely())
                 {
                     //
                     // If the last block that was hot was a BBJ_COND
@@ -3291,16 +3435,19 @@ void Compiler::fgAddCodeRef(BasicBlock* srcBlk, SpecialCodeKind kind)
         return;
     }
 
-    JITDUMP(FMT_BB " requires throw helper block for %s\n", srcBlk->bbNum, sckName(kind));
-
-    unsigned const refData = (kind == SCK_FAIL_FAST) ? 0 : bbThrowIndex(srcBlk);
+    // Fetch block data and designator
+    //
+    AcdKeyDesignator dsg     = AcdKeyDesignator::KD_NONE;
+    unsigned const   refData = (kind == SCK_FAIL_FAST) ? 0 : bbThrowIndex(srcBlk, &dsg);
 
     // Look for an existing entry that matches what we're looking for
     //
-    AddCodeDsc* add = fgFindExcptnTarget(kind, refData);
+    AddCodeDsc* add = fgFindExcptnTarget(kind, srcBlk);
 
     if (add != nullptr)
     {
+        JITDUMP(FMT_BB " requires throw helper block for %s, sharing ACD%u (data 0x%08x)\n", srcBlk->bbNum,
+                sckName(kind), add->acdNum, refData);
         return;
     }
 
@@ -3308,30 +3455,43 @@ void Compiler::fgAddCodeRef(BasicBlock* srcBlk, SpecialCodeKind kind)
 
     // Allocate a new entry and prepend it to the list
     //
-    add          = new (this, CMK_Unknown) AddCodeDsc;
-    add->acdData = refData;
-    add->acdKind = kind;
-    add->acdNext = fgAddCodeList;
-#if !FEATURE_FIXED_OUT_ARGS
-    add->acdStkLvl     = 0;
-    add->acdStkLvlInit = false;
-#endif // !FEATURE_FIXED_OUT_ARGS
+    add              = new (this, CMK_Unknown) AddCodeDsc;
+    add->acdDstBlk   = nullptr;
+    add->acdTryIndex = srcBlk->bbTryIndex;
+
+    // For non-funclet EH we don't constrain ACD placement via handler regions
+    add->acdHndIndex = UsesFunclets() ? srcBlk->bbHndIndex : 0;
+
+    add->acdKeyDsg = dsg;
+    add->acdKind   = kind;
 
     // This gets set true in the stack level setter
     // if there's still a need for this helper
     add->acdUsed = false;
 
-    fgAddCodeList = add;
-
-    // Defer creating of the blocks until later.
-    //
-    add->acdDstBlk = srcBlk;
+#if !FEATURE_FIXED_OUT_ARGS
+    add->acdStkLvl     = 0;
+    add->acdStkLvlInit = false;
+#endif // !FEATURE_FIXED_OUT_ARGS
+    INDEBUG(add->acdNum = acdCount++);
 
     // Add to map
     //
     AddCodeDscMap* const map = fgGetAddCodeDscMap();
-    AddCodeDscKey        key(kind, refData);
+    AddCodeDscKey        key(add);
+    assert(key.Data() == refData);
     map->Set(key, add);
+
+    JITDUMP(FMT_BB " requires throw helper block for %s, created ACD%u with data 0x%08x\n", srcBlk->bbNum,
+            sckName(kind), add->acdNum, key.Data());
+
+#ifdef DEBUG
+    // Verify we can re-lookup...
+    AddCodeDscKey key2(kind, srcBlk, this);
+    AddCodeDsc*   add2 = nullptr;
+    assert(map->Lookup(key2, &add2));
+    assert(add == add2);
+#endif
 }
 
 //------------------------------------------------------------------------
@@ -3342,7 +3502,7 @@ void Compiler::fgAddCodeRef(BasicBlock* srcBlk, SpecialCodeKind kind)
 //
 PhaseStatus Compiler::fgCreateThrowHelperBlocks()
 {
-    if (fgAddCodeList == nullptr)
+    if (fgAddCodeDscMap == nullptr)
     {
         return PhaseStatus::MODIFIED_NOTHING;
     }
@@ -3363,22 +3523,17 @@ PhaseStatus Compiler::fgCreateThrowHelperBlocks()
 
     noway_assert(sizeof(jumpKinds) == SCK_COUNT); // sanity check
 
-    for (AddCodeDsc* add = fgAddCodeList; add != nullptr; add = add->acdNext)
+    for (AddCodeDsc* const add : AddCodeDscMap::ValueIteration(fgAddCodeDscMap))
     {
-        // Create the target basic block in the region indicated by srcBlk.
+        // Create the target basic block in the region indicated by the acd info
         //
-        BasicBlock* const srcBlk = add->acdDstBlk;
-
-        // Double-check that this is a fail fast, or that srcBlk hasn't changed EH
-        // regions since the time the descriptor was created.
-        //
-        assert((add->acdKind == SCK_FAIL_FAST) || (bbThrowIndex(srcBlk) == add->acdData));
         assert(add->acdKind != SCK_NONE);
+        bool const        putInFilter = (add->acdKeyDsg == AcdKeyDesignator::KD_FLT);
+        BasicBlock* const newBlk      = fgNewBBinRegion(jumpKinds[add->acdKind], add->acdTryIndex, add->acdHndIndex,
+                                                        /* nearBlk */ nullptr, putInFilter,
+                                                        /* runRarely */ true, /* insertAtEnd */ true);
 
-        BasicBlock* const newBlk = fgNewBBinRegion(jumpKinds[add->acdKind], srcBlk, /* jumpDest */ nullptr,
-                                                   /* runRarely */ true, /* insertAtEnd */ true);
-
-        // Update the descriptor
+        // Update the descriptor so future lookups can find the block
         //
         add->acdDstBlk = newBlk;
 
@@ -3386,25 +3541,26 @@ PhaseStatus Compiler::fgCreateThrowHelperBlocks()
         if (verbose)
         {
             const char* msgWhere = "";
-            if (!srcBlk->hasTryIndex() && !srcBlk->hasHndIndex())
+            switch (add->acdKeyDsg)
             {
-                msgWhere = "non-EH region";
-            }
-            else if (!srcBlk->hasTryIndex())
-            {
-                msgWhere = "handler";
-            }
-            else if (!srcBlk->hasHndIndex())
-            {
-                msgWhere = "try";
-            }
-            else if (srcBlk->getTryIndex() < srcBlk->getHndIndex())
-            {
-                msgWhere = "try";
-            }
-            else
-            {
-                msgWhere = "handler";
+                case AcdKeyDesignator::KD_NONE:
+                    msgWhere = "non-EH region";
+                    break;
+
+                case AcdKeyDesignator::KD_HND:
+                    msgWhere = "handler";
+                    break;
+
+                case AcdKeyDesignator::KD_TRY:
+                    msgWhere = "try";
+                    break;
+
+                case AcdKeyDesignator::KD_FLT:
+                    msgWhere = "filter";
+                    break;
+
+                default:
+                    msgWhere = "? unexpected";
             }
 
             const char* msg;
@@ -3433,73 +3589,15 @@ PhaseStatus Compiler::fgCreateThrowHelperBlocks()
                     break;
             }
 
-            printf("\nAdding throw helper " FMT_BB " for %s in %s%s (inspired by " FMT_BB ")\n", newBlk->bbNum,
-                   sckName(add->acdKind), msgWhere, msg, srcBlk->bbNum);
+            printf("\nAdding throw helper " FMT_BB " for ACD%u %s in %s%s\n", newBlk->bbNum, add->acdNum,
+                   sckName(add->acdKind), msgWhere, msg);
         }
 #endif // DEBUG
 
-        //  Mark the block as added by the compiler and not removable by future flow
-        // graph optimizations. Note that no bbTarget points to these blocks.
+        // Mark the block as added by the compiler and not removable by future flow
+        // graph optimizations. Note that no target block points to these blocks.
         //
         newBlk->SetFlags(BBF_IMPORTED | BBF_DONT_REMOVE);
-
-        // Figure out what code to insert
-        //
-        int helper = CORINFO_HELP_UNDEF;
-
-        switch (add->acdKind)
-        {
-            case SCK_RNGCHK_FAIL:
-                helper = CORINFO_HELP_RNGCHKFAIL;
-                break;
-
-            case SCK_DIV_BY_ZERO:
-                helper = CORINFO_HELP_THROWDIVZERO;
-                break;
-
-            case SCK_ARITH_EXCPN:
-                helper = CORINFO_HELP_OVERFLOW;
-                noway_assert(SCK_OVERFLOW == SCK_ARITH_EXCPN);
-                break;
-
-            case SCK_ARG_EXCPN:
-                helper = CORINFO_HELP_THROW_ARGUMENTEXCEPTION;
-                break;
-
-            case SCK_ARG_RNG_EXCPN:
-                helper = CORINFO_HELP_THROW_ARGUMENTOUTOFRANGEEXCEPTION;
-                break;
-
-            case SCK_FAIL_FAST:
-                helper = CORINFO_HELP_FAIL_FAST;
-                break;
-
-            default:
-                noway_assert(!"unexpected code addition kind");
-        }
-
-        noway_assert(helper != CORINFO_HELP_UNDEF);
-
-        // Add the appropriate helper call.
-        //
-        GenTreeCall* tree = gtNewHelperCallNode(helper, TYP_VOID);
-
-        // There are no args here but fgMorphArgs has side effects
-        // such as setting the outgoing arg area (which is necessary
-        // on AMD if there are any calls).
-        //
-        tree = fgMorphArgs(tree);
-
-        // Store the tree in the new basic block.
-        //
-        if (fgNodeThreading != NodeThreading::LIR)
-        {
-            fgInsertStmtAtEnd(newBlk, fgNewStmtFromTree(tree));
-        }
-        else
-        {
-            LIR::AsRange(newBlk).InsertAtEnd(LIR::SeqTree(this, tree));
-        }
     }
 
     fgRngChkThrowAdded = true;
@@ -3508,33 +3606,322 @@ PhaseStatus Compiler::fgCreateThrowHelperBlocks()
 }
 
 //------------------------------------------------------------------------
+// fgCreateThrowHelperBlockCode: create the code for throw helper blocks
+//
+void Compiler::fgCreateThrowHelperBlockCode(AddCodeDsc* add)
+{
+    assert(add->acdUsed);
+
+    // Find the block created earlier. It should be empty.
+    //
+    BasicBlock* const block = add->acdDstBlk;
+    assert(block->isEmpty());
+
+    // Figure out what code to insert
+    //
+    int helper = CORINFO_HELP_UNDEF;
+
+    switch (add->acdKind)
+    {
+        case SCK_RNGCHK_FAIL:
+            helper = CORINFO_HELP_RNGCHKFAIL;
+            break;
+
+        case SCK_DIV_BY_ZERO:
+            helper = CORINFO_HELP_THROWDIVZERO;
+            break;
+
+        case SCK_ARITH_EXCPN:
+            helper = CORINFO_HELP_OVERFLOW;
+            noway_assert(SCK_OVERFLOW == SCK_ARITH_EXCPN);
+            break;
+
+        case SCK_ARG_EXCPN:
+            helper = CORINFO_HELP_THROW_ARGUMENTEXCEPTION;
+            break;
+
+        case SCK_ARG_RNG_EXCPN:
+            helper = CORINFO_HELP_THROW_ARGUMENTOUTOFRANGEEXCEPTION;
+            break;
+
+        case SCK_FAIL_FAST:
+            helper = CORINFO_HELP_FAIL_FAST;
+            break;
+
+        default:
+            noway_assert(!"unexpected code addition kind");
+    }
+
+    noway_assert(helper != CORINFO_HELP_UNDEF);
+
+    // Add the appropriate helper call.
+    //
+    GenTreeCall* tree = gtNewHelperCallNode(helper, TYP_VOID);
+
+    // There are no args here but fgMorphArgs has side effects
+    // such as setting the outgoing arg area (which is necessary
+    // on AMD if there are any calls).
+    //
+    tree = fgMorphArgs(tree);
+
+    // Store the tree in the new basic block.
+    //
+    if (fgNodeThreading != NodeThreading::LIR)
+    {
+        fgInsertStmtAtEnd(block, fgNewStmtFromTree(tree));
+    }
+    else
+    {
+        LIR::AsRange(block).InsertAtEnd(tree);
+        LIR::ReadOnlyRange range(tree, tree);
+        m_pLowering->LowerRange(block, range);
+    }
+}
+
+//------------------------------------------------------------------------
 // fgFindExcptnTarget: finds the block to jump to that will throw a given kind of exception
 //
 // Arguments:
 //    kind -- kind of exception to throw
-//    refData -- bbThrowIndex of the block that will jump to the throw helper
+//    fromBlock -- block that will jump to the throw helper
 //
 // Return Value:
 //    Code descriptor for the appropriate throw helper block, or nullptr if no such
 //    descriptor exists.
 //
-Compiler::AddCodeDsc* Compiler::fgFindExcptnTarget(SpecialCodeKind kind, unsigned refData)
+Compiler::AddCodeDsc* Compiler::fgFindExcptnTarget(SpecialCodeKind kind, BasicBlock* fromBlock)
 {
     assert(fgUseThrowHelperBlocks() || (kind == SCK_FAIL_FAST));
     AddCodeDsc*          add = nullptr;
     AddCodeDscMap* const map = fgGetAddCodeDscMap();
-    AddCodeDscKey        key(kind, refData);
+    AddCodeDscKey        key(kind, fromBlock, this);
     map->Lookup(key, &add);
 
     if (add == nullptr)
     {
         // We shouldn't be asking for these blocks late in compilation
         // unless we know there are entries to be found.
+        if (fgRngChkThrowAdded)
+        {
+            JITDUMP(FMT_BB ": unexpected request for new throw helper: kind %d (%s), data 0x%08x\n", fromBlock->bbNum,
+                    kind, sckName(kind), key.Data());
+        }
         assert(!fgRngChkThrowAdded);
     }
 
     return add;
 }
+
+//------------------------------------------------------------------------
+// bbThrowIndex: find acd map key for a given block
+//
+// Arguments:
+//    blk -- block that may eventually throw an exception
+//    dsg [out] -- designator for which region controls throw block placement
+//
+// Return Value:
+//    encoded region value to use in acd key formation
+//
+unsigned Compiler::bbThrowIndex(BasicBlock* blk, AcdKeyDesignator* dsg)
+{
+    if (!UsesFunclets())
+    {
+        if (blk->hasTryIndex())
+        {
+            *dsg = AcdKeyDesignator::KD_TRY;
+        }
+        else
+        {
+            *dsg = AcdKeyDesignator::KD_NONE;
+        }
+        return blk->bbTryIndex;
+    }
+
+    const unsigned tryIndex = blk->bbTryIndex;
+    const unsigned hndIndex = blk->bbHndIndex;
+    const bool     inTry    = tryIndex > 0;
+    const bool     inHnd    = hndIndex > 0;
+
+    if (!inTry && !inHnd)
+    {
+        *dsg = AcdKeyDesignator::KD_NONE;
+        return 0;
+    }
+
+    assert(inTry || inHnd);
+
+    if (inTry && (!inHnd || (tryIndex < hndIndex)))
+    {
+        // The most enclosing region is a try body, use it
+        assert(tryIndex <= 0x3FFFFFFF);
+        *dsg = AcdKeyDesignator::KD_TRY;
+        return tryIndex;
+    }
+
+    // The most enclosing region is a handler which will be a funclet
+    // Now we have to figure out if blk is in the filter or handler
+    assert(hndIndex <= 0x3FFFFFFF);
+    assert(hndIndex >= 1);
+    if (ehGetDsc(hndIndex - 1)->InFilterRegionBBRange(blk))
+    {
+        *dsg = AcdKeyDesignator::KD_FLT;
+        return hndIndex | 0x80000000;
+    }
+
+    *dsg = AcdKeyDesignator::KD_HND;
+    return hndIndex | 0x40000000;
+}
+
+//------------------------------------------------------------------------
+// AddCodedDscKey: construct from kind and block
+//
+// Arguments:
+//    kind - exception kind
+//    block - block throwing (or potentially throwing) an exception
+//
+// Returns:
+//    appropriate lookup key
+//
+Compiler::AddCodeDscKey::AddCodeDscKey(SpecialCodeKind kind, BasicBlock* block, Compiler* comp)
+    : acdKind(kind)
+{
+    if (acdKind == SCK_FAIL_FAST)
+    {
+        acdData = 0;
+    }
+    else
+    {
+        AcdKeyDesignator dsg;
+        acdData = comp->bbThrowIndex(block, &dsg);
+    }
+}
+
+//------------------------------------------------------------------------
+// AddCodedDscKey: construct from AddCodeDsc
+//
+// Arguments:
+//    add - add code dsc in querstion
+//
+// Returns:
+//    appropriate lookup key
+//
+Compiler::AddCodeDscKey::AddCodeDscKey(AddCodeDsc* add)
+    : acdKind(add->acdKind)
+{
+    if (acdKind == SCK_FAIL_FAST)
+    {
+        acdData = 0;
+    }
+    else
+    {
+        switch (add->acdKeyDsg)
+        {
+            case AcdKeyDesignator::KD_NONE:
+                acdData = 0;
+                break;
+            case AcdKeyDesignator::KD_TRY:
+                acdData = add->acdTryIndex;
+                break;
+            case AcdKeyDesignator::KD_HND:
+                acdData = add->acdHndIndex | 0x40000000;
+                break;
+            case AcdKeyDesignator::KD_FLT:
+                acdData = add->acdHndIndex | 0x80000000;
+                break;
+            default:
+                unreached();
+        }
+    }
+}
+
+//------------------------------------------------------------------------
+// UpdateKeyDesignator: determine new key designator after modifying
+//   the region indices.
+//
+// Arguments:
+//   compiler - current compiler instance
+//
+// Returns:
+//   true if the key desinator changes
+//
+bool Compiler::AddCodeDsc::UpdateKeyDesignator(Compiler* compiler)
+{
+    // This ACD may now have a new enclosing region.
+    // Figure out the new parent key designator.
+    //
+    // For example, suppose there is a try that has an array
+    // bounds check and an empty finally, all within a
+    // finally. When we remove the try, the ACD for the bounds
+    // check changes from being enclosed in a try to being
+    // enclosed in a finally.
+    //
+    const bool inHnd = acdHndIndex > 0;
+    const bool inTry = acdTryIndex > 0;
+
+    AcdKeyDesignator newDsg = AcdKeyDesignator::KD_NONE;
+
+    if (!compiler->UsesFunclets())
+    {
+        // Non-funclet case
+        //
+        newDsg = inTry ? AcdKeyDesignator::KD_TRY : AcdKeyDesignator::KD_NONE;
+    }
+    else if (!inTry && !inHnd)
+    {
+        // Moved outside of all EH regions.
+        //
+        newDsg = AcdKeyDesignator::KD_NONE;
+    }
+    else if (inTry && (!inHnd || (acdTryIndex < acdHndIndex)))
+    {
+        // Moved into a parent try region.
+        //
+        newDsg = AcdKeyDesignator::KD_TRY;
+    }
+    else
+    {
+        // Moved into a parent handler region.
+        // Note this cannot be a filter region.
+        //
+        newDsg = AcdKeyDesignator::KD_HND;
+    }
+
+    bool result = (newDsg != acdKeyDsg);
+    acdKeyDsg   = newDsg;
+
+    return result;
+}
+
+#ifdef DEBUG
+//------------------------------------------------------------------------
+// Dump: dump info about an AddCodeDesc
+//
+void Compiler::AddCodeDsc::Dump()
+{
+    printf("ACD%u %s ", acdNum, sckName(acdKind));
+    switch (acdKeyDsg)
+    {
+        case AcdKeyDesignator::KD_NONE:
+            printf("in method region");
+            break;
+        case AcdKeyDesignator::KD_TRY:
+            printf("in try region of EH#%u", acdTryIndex - 1);
+            break;
+        case AcdKeyDesignator::KD_HND:
+            printf("in handler region of EH#%u", acdHndIndex - 1);
+            break;
+        case AcdKeyDesignator::KD_FLT:
+            printf("in filter region of EH#%u", acdHndIndex - 1);
+            break;
+        default:
+            printf("(unexpected region)");
+            break;
+    }
+
+    AddCodeDscKey key(this);
+    printf(" map key 0x%x\n", key.Data());
+}
+#endif
 
 //------------------------------------------------------------------------
 // fgSetTreeSeq: Sequence the tree, setting the "gtPrev" and "gtNext" links.
@@ -3566,7 +3953,9 @@ GenTree* Compiler::fgSetTreeSeq(GenTree* tree, bool isLIR)
         };
 
         SetTreeSeqVisitor(Compiler* compiler, GenTree* tree, bool isLIR)
-            : GenTreeVisitor<SetTreeSeqVisitor>(compiler), m_prevNode(tree), m_isLIR(isLIR)
+            : GenTreeVisitor<SetTreeSeqVisitor>(compiler)
+            , m_prevNode(tree)
+            , m_isLIR(isLIR)
         {
             INDEBUG(tree->gtSeqNum = 0);
         }
@@ -3633,7 +4022,7 @@ PhaseStatus Compiler::fgSetBlockOrder()
     BasicBlock::s_nMaxTrees = 0;
 #endif
 
-    if (compCanEncodePtrArgCntMax() && fgHasCycleWithoutGCSafePoint())
+    if (fgHasCycleWithoutGCSafePoint())
     {
         JITDUMP("Marking method as fully interruptible\n");
         SetInterruptible(true);
@@ -3654,7 +4043,8 @@ PhaseStatus Compiler::fgSetBlockOrder()
 class GCSafePointSuccessorEnumerator
 {
     BasicBlock* m_block;
-    union {
+    union
+    {
         BasicBlock*  m_successors[2];
         BasicBlock** m_pSuccessors;
     };
@@ -3665,7 +4055,8 @@ class GCSafePointSuccessorEnumerator
 public:
     // Constructs an enumerator of successors to be used for checking for GC
     // safe point cycles.
-    GCSafePointSuccessorEnumerator(Compiler* comp, BasicBlock* block) : m_block(block)
+    GCSafePointSuccessorEnumerator(Compiler* comp, BasicBlock* block)
+        : m_block(block)
     {
         m_numSuccs = 0;
         block->VisitRegularSuccs(comp, [this](BasicBlock* succ) {
@@ -3897,14 +4288,25 @@ void Compiler::fgSetBlockOrder(BasicBlock* block)
     return firstNode;
 }
 
-void Compiler::fgLclFldAssign(unsigned lclNum)
+#ifdef DEBUG
+
+//------------------------------------------------------------------------
+// FlowGraphDfsTree::Dump: Dump a textual representation of the DFS tree.
+//
+void FlowGraphDfsTree::Dump() const
 {
-    assert(varTypeIsStruct(lvaTable[lclNum].lvType));
-    if (lvaTable[lclNum].lvPromoted && lvaTable[lclNum].lvFieldCnt > 1)
+    printf("DFS tree. %s.\n", HasCycle() ? "Has cycle" : "No cycle");
+    printf("PO RPO -> BB [pre, post]\n");
+    for (unsigned i = 0; i < GetPostOrderCount(); i++)
     {
-        lvaSetVarDoNotEnregister(lclNum DEBUGARG(DoNotEnregisterReason::LocalField));
+        unsigned          rpoNum = GetPostOrderCount() - i - 1;
+        BasicBlock* const block  = GetPostOrder(i);
+        printf("%02u %02u -> " FMT_BB "[%u, %u]\n", i, rpoNum, block->bbNum, block->bbPreorderNum,
+               block->bbPostorderNum);
     }
 }
+
+#endif // DEBUG
 
 //------------------------------------------------------------------------
 // FlowGraphDfsTree::Contains: Check if a block is contained in the DFS tree;
@@ -3930,8 +4332,8 @@ bool FlowGraphDfsTree::Contains(BasicBlock* block) const
 // block `descendant`
 //
 // Arguments:
-//   ancestor   -- block that is possible ancestor
-//   descendant -- block that is possible descendant
+//   ancestor   - block that is possible ancestor
+//   descendant - block that is possible descendant
 //
 // Returns:
 //   True if `ancestor` is ancestor of `descendant` in the depth first spanning
@@ -3950,6 +4352,9 @@ bool FlowGraphDfsTree::IsAncestor(BasicBlock* ancestor, BasicBlock* descendant) 
 //------------------------------------------------------------------------
 // fgComputeDfs: Compute a depth-first search tree for the flow graph.
 //
+// Type parameters:
+//   useProfile - If true, determines order of successors visited using profile data
+//
 // Returns:
 //   The tree.
 //
@@ -3957,6 +4362,7 @@ bool FlowGraphDfsTree::IsAncestor(BasicBlock* ancestor, BasicBlock* descendant) 
 //   Preorder and postorder numbers are assigned into the BasicBlock structure.
 //   The tree returned contains a postorder of the basic blocks.
 //
+template <const bool useProfile /* = false */>
 FlowGraphDfsTree* Compiler::fgComputeDfs()
 {
     BasicBlock** postOrder = new (this, CMK_DepthFirstSearch) BasicBlock*[fgBBcount];
@@ -3982,9 +4388,16 @@ FlowGraphDfsTree* Compiler::fgComputeDfs()
         }
     };
 
-    unsigned numBlocks = fgRunDfs(visitPreorder, visitPostorder, visitEdge);
-    return new (this, CMK_DepthFirstSearch) FlowGraphDfsTree(this, postOrder, numBlocks, hasCycle);
+    unsigned numBlocks =
+        fgRunDfs<decltype(visitPreorder), decltype(visitPostorder), decltype(visitEdge), useProfile>(visitPreorder,
+                                                                                                     visitPostorder,
+                                                                                                     visitEdge);
+    return new (this, CMK_DepthFirstSearch) FlowGraphDfsTree(this, postOrder, numBlocks, hasCycle, useProfile);
 }
+
+// Add explicit instantiations.
+template FlowGraphDfsTree* Compiler::fgComputeDfs<false>();
+template FlowGraphDfsTree* Compiler::fgComputeDfs<true>();
 
 //------------------------------------------------------------------------
 // fgInvalidateDfsTree: Invalidate computed DFS tree and dependent annotations
@@ -3995,6 +4408,7 @@ void Compiler::fgInvalidateDfsTree()
     m_dfsTree          = nullptr;
     m_loops            = nullptr;
     m_domTree          = nullptr;
+    m_domFrontiers     = nullptr;
     m_reachabilitySets = nullptr;
     fgSsaValid         = false;
 }
@@ -4014,6 +4428,40 @@ FlowGraphNaturalLoop::FlowGraphNaturalLoop(const FlowGraphDfsTree* dfsTree, Basi
     , m_entryEdges(dfsTree->GetCompiler()->getAllocator(CMK_Loops))
     , m_exitEdges(dfsTree->GetCompiler()->getAllocator(CMK_Loops))
 {
+}
+
+//------------------------------------------------------------------------
+// GetPreheader: Get the preheader of this loop, if it has one.
+//
+// Returns:
+//   The preheader, or nullptr if there is no preheader.
+//
+BasicBlock* FlowGraphNaturalLoop::GetPreheader() const
+{
+    if (m_entryEdges.size() != 1)
+    {
+        return nullptr;
+    }
+
+    BasicBlock* preheader = m_entryEdges[0]->getSourceBlock();
+    if (!preheader->KindIs(BBJ_ALWAYS))
+    {
+        return nullptr;
+    }
+
+    return preheader;
+}
+
+//------------------------------------------------------------------------
+// SetEntryEdge: Set the entry edge of a loop
+//
+// Arguments:
+//   entryEdge - The new entry edge
+//
+void FlowGraphNaturalLoop::SetEntryEdge(FlowEdge* entryEdge)
+{
+    m_entryEdges.clear();
+    m_entryEdges.push_back(entryEdge);
 }
 
 //------------------------------------------------------------------------
@@ -4169,10 +4617,13 @@ unsigned FlowGraphNaturalLoop::NumLoopBlocks()
 //   dfs - A DFS tree.
 //
 FlowGraphNaturalLoops::FlowGraphNaturalLoops(const FlowGraphDfsTree* dfsTree)
-    : m_dfsTree(dfsTree), m_loops(m_dfsTree->GetCompiler()->getAllocator(CMK_Loops))
+    : m_dfsTree(dfsTree)
+    , m_loops(m_dfsTree->GetCompiler()->getAllocator(CMK_Loops))
+    , m_improperLoopHeaders(0)
 {
 }
 
+//------------------------------------------------------------------------
 // GetLoopByIndex: Get loop by a specified index.
 //
 // Parameters:
@@ -4187,6 +4638,7 @@ FlowGraphNaturalLoop* FlowGraphNaturalLoops::GetLoopByIndex(unsigned index)
     return m_loops[index];
 }
 
+//------------------------------------------------------------------------
 // GetLoopByHeader: See if a block is a loop header, and if so return the
 // associated loop.
 //
@@ -4198,12 +4650,34 @@ FlowGraphNaturalLoop* FlowGraphNaturalLoops::GetLoopByIndex(unsigned index)
 //
 FlowGraphNaturalLoop* FlowGraphNaturalLoops::GetLoopByHeader(BasicBlock* block)
 {
-    // TODO-TP: This can use binary search based on post order number.
-    for (FlowGraphNaturalLoop* loop : m_loops)
+    if (!m_dfsTree->Contains(block))
     {
-        if (loop->m_header == block)
+        return nullptr;
+    }
+
+    // Loops are stored in reverse post-order,
+    // so we can binary-search for the desired loop's header by its post-order number.
+    size_t min = 0;
+    size_t max = NumLoops();
+
+    while (min < max)
+    {
+        const size_t                mid    = min + ((max - min) / 2);
+        FlowGraphNaturalLoop* const loop   = m_loops[mid];
+        BasicBlock* const           header = loop->m_header;
+
+        if (header == block)
         {
             return loop;
+        }
+        else if (header->bbPostorderNum < block->bbPostorderNum)
+        {
+            max = mid;
+        }
+        else
+        {
+            assert(header->bbPostorderNum > block->bbPostorderNum);
+            min = mid + 1;
         }
     }
 
@@ -4286,7 +4760,6 @@ FlowGraphNaturalLoops* FlowGraphNaturalLoops::Find(const FlowGraphDfsTree* dfsTr
         JITDUMP("%02u -> " FMT_BB "[%u, %u]\n", rpoNum, block->bbNum, block->bbPreorderNum, block->bbPostorderNum);
     }
 
-    unsigned improperLoopHeaders = 0;
 #endif
 
     FlowGraphNaturalLoops* loops = new (comp, CMK_Loops) FlowGraphNaturalLoops(dfsTree);
@@ -4341,7 +4814,17 @@ FlowGraphNaturalLoops* FlowGraphNaturalLoops::Find(const FlowGraphDfsTree* dfsTr
 
         if (!FindNaturalLoopBlocks(loop, worklist))
         {
-            INDEBUG(improperLoopHeaders++);
+            loops->m_improperLoopHeaders++;
+
+            for (FlowGraphNaturalLoop* const otherLoop : loops->InPostOrder())
+            {
+                if (otherLoop->ContainsBlock(header))
+                {
+                    JITDUMP("Noting that " FMT_LP " contains an improper loop header\n", loop->GetIndex());
+                    otherLoop->m_containsImproperHeader = true;
+                }
+            }
+
             continue;
         }
 
@@ -4373,10 +4856,9 @@ FlowGraphNaturalLoops* FlowGraphNaturalLoops::Find(const FlowGraphDfsTree* dfsTr
         for (FlowEdge* const predEdge : loop->m_header->PredEdges())
         {
             BasicBlock* predBlock = predEdge->getSourceBlock();
-            if (dfsTree->Contains(predBlock) && !dfsTree->IsAncestor(header, predEdge->getSourceBlock()))
+            if (dfsTree->Contains(predBlock) && !dfsTree->IsAncestor(header, predBlock))
             {
-                JITDUMP(FMT_BB " -> " FMT_BB " is an entry edge\n", predEdge->getSourceBlock()->bbNum,
-                        loop->m_header->bbNum);
+                JITDUMP(FMT_BB " -> " FMT_BB " is an entry edge\n", predBlock->bbNum, loop->m_header->bbNum);
                 loop->m_entryEdges.push_back(predEdge);
             }
         }
@@ -4447,9 +4929,9 @@ FlowGraphNaturalLoops* FlowGraphNaturalLoops::Find(const FlowGraphDfsTree* dfsTr
         JITDUMP("\nFound %zu loops\n", loops->m_loops.size());
     }
 
-    if (improperLoopHeaders > 0)
+    if (loops->m_improperLoopHeaders > 0)
     {
-        JITDUMP("Rejected %u loop headers\n", improperLoopHeaders);
+        JITDUMP("Rejected %u loop headers\n", loops->m_improperLoopHeaders);
     }
 
     JITDUMPEXEC(Dump(loops));
@@ -4712,14 +5194,8 @@ void FlowGraphNaturalLoop::Dump(FlowGraphNaturalLoop* loop)
         for (FlowEdge* const edge : loop->ExitEdges())
         {
             BasicBlock* const exitingBlock = edge->getSourceBlock();
-            printf("%s" FMT_BB " ->", first ? "" : "; ", exitingBlock->bbNum);
-            exitingBlock->VisitRegularSuccs(comp, [=](BasicBlock* succ) {
-                if (comp->fgGetPredForBlock(succ, exitingBlock) == edge)
-                {
-                    printf(" " FMT_BB, succ->bbNum);
-                }
-                return BasicBlockVisit::Continue;
-            });
+            BasicBlock* const exitBlock    = edge->getDestinationBlock();
+            printf("%s" FMT_BB " -> " FMT_BB, first ? "" : "; ", exitingBlock->bbNum, exitBlock->bbNum);
             first = false;
         }
     }
@@ -4801,7 +5277,9 @@ bool FlowGraphNaturalLoop::VisitDefs(TFunc func)
             DoPreOrder = true,
         };
 
-        VisitDefsVisitor(Compiler* comp, TFunc& func) : GenTreeVisitor<VisitDefsVisitor>(comp), m_func(func)
+        VisitDefsVisitor(Compiler* comp, TFunc& func)
+            : GenTreeVisitor<VisitDefsVisitor>(comp)
+            , m_func(func)
         {
         }
 
@@ -4995,7 +5473,7 @@ bool FlowGraphNaturalLoop::AnalyzeIteration(NaturalLoopIterInfo* info)
         info->TestBlock    = cond;
         info->IterVar      = iterVar;
         info->IterTree     = iterTree;
-        info->ExitedOnTrue = !ContainsBlock(cond->GetTrueTarget());
+        info->ExitedOnTrue = exitEdge->getDestinationBlock() == cond->GetTrueTarget();
         break;
     }
 
@@ -5033,7 +5511,7 @@ bool FlowGraphNaturalLoop::AnalyzeIteration(NaturalLoopIterInfo* info)
 
     if (!CheckLoopConditionBaseCase(initBlock, info))
     {
-        JITDUMP("  Loop condition is not always true\n");
+        JITDUMP("  Loop condition may not be true on the first iteration\n");
         return false;
     }
 
@@ -5267,11 +5745,10 @@ bool FlowGraphNaturalLoop::EvaluateRelop(T op1, T op2, genTreeOps oper)
 
 //------------------------------------------------------------------------
 // CheckLoopConditionBaseCase: Verify that the loop condition is true when the
-// loop is entered (or validated immediately on entry).
+// loop is entered.
 //
 // Returns:
-//   True if we could prove that the condition is true at all interesting
-//   points in the loop.
+//   True if we could prove that the condition is true on entry.
 //
 // Remarks:
 //   Currently handles the following cases:
@@ -5310,18 +5787,137 @@ bool FlowGraphNaturalLoop::CheckLoopConditionBaseCase(BasicBlock* initBlock, Nat
     }
 
     // Do we have a zero-trip test?
-    if (initBlock->KindIs(BBJ_COND))
+    if (initBlock->KindIs(BBJ_COND) && IsZeroTripTest(initBlock, info))
     {
-        GenTree* enteringJTrue = initBlock->lastStmt()->GetRootNode();
-        assert(enteringJTrue->OperIs(GT_JTRUE));
-        if (enteringJTrue->gtGetOp1()->OperIsCompare() && ((enteringJTrue->gtGetOp1()->gtFlags & GTF_RELOP_ZTT) != 0))
+        return true;
+    }
+
+    return false;
+}
+
+//------------------------------------------------------------------------
+// IsZeroTripTest: Check whether `initBlock`, a BBJ_COND block that enters the
+// loop in one case and not in the other, implies that the loop invariant is
+// true on entry.
+//
+// Returns:
+//   True if we could prove that the loop invariant is true on entry through
+//   "initBlock".
+//
+bool FlowGraphNaturalLoop::IsZeroTripTest(BasicBlock* initBlock, NaturalLoopIterInfo* info)
+{
+    assert(initBlock->KindIs(BBJ_COND));
+    GenTree* enteringJTrue = initBlock->lastStmt()->GetRootNode();
+    assert(enteringJTrue->OperIs(GT_JTRUE));
+    GenTree* relop = enteringJTrue->gtGetOp1();
+    if (!relop->OperIsCmpCompare())
+    {
+        return false;
+    }
+
+    // Technically optExtractInitTestIncr only handles the "false"
+    // entry case, and preheader creation should ensure that that's the
+    // only time we'll see a BBJ_COND init block. However, it does not
+    // hurt to let this logic be correct by construction.
+    bool enterOnTrue = InitBlockEntersLoopOnTrue(initBlock);
+
+    JITDUMP("  Init block " FMT_BB " enters the loop when condition [%06u] evaluates to %s\n", initBlock->bbNum,
+            Compiler::dspTreeID(relop), enterOnTrue ? "true" : "false");
+
+    GenTree*   limitCandidate;
+    genTreeOps oper;
+
+    if (relop->gtGetOp1()->OperIsScalarLocal() && (relop->gtGetOp1()->AsLclVarCommon()->GetLclNum() == info->IterVar))
+    {
+        JITDUMP("    op1 is the iteration variable\n");
+        oper           = relop->gtOper;
+        limitCandidate = relop->gtGetOp2();
+    }
+    else if (relop->gtGetOp2()->OperIsScalarLocal() &&
+             (relop->gtGetOp2()->AsLclVarCommon()->GetLclNum() == info->IterVar))
+    {
+        JITDUMP("    op2 is the iteration variable\n");
+        oper           = GenTree::SwapRelop(relop->gtOper);
+        limitCandidate = relop->gtGetOp1();
+    }
+    else
+    {
+        JITDUMP("    Relop does not involve iteration variable\n");
+        return false;
+    }
+
+    if (!enterOnTrue)
+    {
+        oper = GenTree::ReverseRelop(oper);
+    }
+
+    // Here we want to prove that [iterVar] [oper] [limitCandidate] implies
+    // [iterVar] [info->IterOper()] [info->Limit()]. Currently we just do the
+    // simple exact checks, but this could be improved. Note that using
+    // `GenTree::Compare` for the limits is ok for a "same value" check for the
+    // limited shapes of limits we recognize.
+    //
+    if ((relop->IsUnsigned() != info->TestTree->IsUnsigned()) || (oper != info->TestOper()) ||
+        !GenTree::Compare(limitCandidate, info->Limit()))
+    {
+        JITDUMP("    Condition guarantees V%02u %s%s [%06u], but invariant requires V%02u %s%s [%06u]\n", info->IterVar,
+                relop->IsUnsigned() ? "(uns) " : "", GenTree::OpName(oper), Compiler::dspTreeID(limitCandidate),
+                info->IterVar, info->TestTree->IsUnsigned() ? "(uns) " : "", GenTree::OpName(info->TestOper()),
+                Compiler::dspTreeID(info->Limit()));
+        return false;
+    }
+
+    JITDUMP("  Condition is established before entry at [%06u]\n", Compiler::dspTreeID(enteringJTrue->gtGetOp1()));
+    return true;
+}
+
+//------------------------------------------------------------------------
+// InitBlockEntersLoopOnTrue: Determine whether a BBJ_COND init block enters the
+// loop in the false or true case.
+//
+// Parameters:
+//   initBlock - A BBJ_COND block that is assumed to dominate the loop, and
+//   only enter the loop in one of the two cases.
+//
+// Returns:
+//   True if the loop is entered if the condition evaluates to true; otherwise false.
+//
+// Remarks:
+//   Handles only limited cases (optExtractInitTestIncr ensures that we see
+//   only limited cases).
+//
+bool FlowGraphNaturalLoop::InitBlockEntersLoopOnTrue(BasicBlock* initBlock)
+{
+    assert(initBlock->KindIs(BBJ_COND));
+
+    if (initBlock->FalseTargetIs(GetHeader()))
+    {
+        return false;
+    }
+
+    if (initBlock->TrueTargetIs(GetHeader()))
+    {
+        return true;
+    }
+
+    // `optExtractInitTestIncr` may look at preds of preds to find an init
+    // block, so try a little bit harder. Today this always happens since we
+    // always have preheaders created in the places we call
+    // FlowGraphNaturalLoop::AnalyzeIteration.
+    for (FlowEdge* enterEdge : EntryEdges())
+    {
+        BasicBlock* entering = enterEdge->getSourceBlock();
+        if (initBlock->FalseTargetIs(entering))
         {
-            JITDUMP("  Condition is established before entry at [%06u]\n",
-                    Compiler::dspTreeID(enteringJTrue->gtGetOp1()));
+            return false;
+        }
+        if (initBlock->TrueTargetIs(entering))
+        {
             return true;
         }
     }
 
+    assert(!"Could not find init block enter side");
     return false;
 }
 
@@ -5330,7 +5926,7 @@ bool FlowGraphNaturalLoop::CheckLoopConditionBaseCase(BasicBlock* initBlock, Nat
 // the loop.
 //
 // Returns:
-//   Block with highest bbNum.
+//   First block in block order contained in the loop.
 //
 // Remarks:
 //   Mostly exists as a quirk while transitioning from the old loop
@@ -5338,12 +5934,13 @@ bool FlowGraphNaturalLoop::CheckLoopConditionBaseCase(BasicBlock* initBlock, Nat
 //
 BasicBlock* FlowGraphNaturalLoop::GetLexicallyTopMostBlock()
 {
-    BasicBlock* top = m_header;
-    VisitLoopBlocks([&top](BasicBlock* loopBlock) {
-        if (loopBlock->bbNum < top->bbNum)
-            top = loopBlock;
-        return BasicBlockVisit::Continue;
-    });
+    BasicBlock* top = m_dfsTree->GetCompiler()->fgFirstBB;
+
+    while (!ContainsBlock(top))
+    {
+        top = top->Next();
+        assert(top != nullptr);
+    }
 
     return top;
 }
@@ -5353,7 +5950,7 @@ BasicBlock* FlowGraphNaturalLoop::GetLexicallyTopMostBlock()
 // within the loop.
 //
 // Returns:
-//   Block with highest bbNum.
+//   Last block in block order contained in the loop.
 //
 // Remarks:
 //   Mostly exists as a quirk while transitioning from the old loop
@@ -5361,12 +5958,13 @@ BasicBlock* FlowGraphNaturalLoop::GetLexicallyTopMostBlock()
 //
 BasicBlock* FlowGraphNaturalLoop::GetLexicallyBottomMostBlock()
 {
-    BasicBlock* bottom = m_header;
-    VisitLoopBlocks([&bottom](BasicBlock* loopBlock) {
-        if (loopBlock->bbNum > bottom->bbNum)
-            bottom = loopBlock;
-        return BasicBlockVisit::Continue;
-    });
+    BasicBlock* bottom = m_dfsTree->GetCompiler()->fgLastBB;
+
+    while (!ContainsBlock(bottom))
+    {
+        bottom = bottom->Prev();
+        assert(bottom != nullptr);
+    }
 
     return bottom;
 }
@@ -5419,7 +6017,8 @@ bool FlowGraphNaturalLoop::HasDef(unsigned lclNum)
 //   True if the loop can be duplicated.
 //
 // Remarks:
-//   We currently do not support duplicating loops with EH constructs in them.
+//   Does not support duplicating loops with EH constructs in them.
+//   (see CanDuplicateWithEH)
 //
 bool FlowGraphNaturalLoop::CanDuplicate(INDEBUG(const char** reason))
 {
@@ -5433,9 +6032,9 @@ bool FlowGraphNaturalLoop::CanDuplicate(INDEBUG(const char** reason))
 
     Compiler*       comp   = m_dfsTree->GetCompiler();
     BasicBlockVisit result = VisitLoopBlocks([=](BasicBlock* block) {
-        if (comp->bbIsTryBeg(block))
+        if (!BasicBlock::sameEHRegion(block, GetHeader()))
         {
-            INDEBUG(*reason = "Loop has a `try` begin");
+            INDEBUG(*reason = "Loop not entirely within one EH region");
             return BasicBlockVisit::Abort;
         }
 
@@ -5452,24 +6051,14 @@ bool FlowGraphNaturalLoop::CanDuplicate(INDEBUG(const char** reason))
 //   insertAfter            - [in, out] Block to insert duplicated blocks after; updated to last block inserted.
 //   map                    - A map that will have mappings from loop blocks to duplicated blocks added to it.
 //   weightScale            - Factor to scale weight of new blocks by
-//   bottomNeedsRedirection - Whether or not to insert a redirection block for the bottom block in case of fallthrough
 //
-// Remarks:
-//   Due to fallthrough this block may need to insert blocks with no
-//   corresponding source block in "map".
-//
-void FlowGraphNaturalLoop::Duplicate(BasicBlock**     insertAfter,
-                                     BlockToBlockMap* map,
-                                     weight_t         weightScale,
-                                     bool             bottomNeedsRedirection)
+void FlowGraphNaturalLoop::Duplicate(BasicBlock** insertAfter, BlockToBlockMap* map, weight_t weightScale)
 {
     assert(CanDuplicate(nullptr));
 
     Compiler* comp = m_dfsTree->GetCompiler();
 
-    BasicBlock* bottom = GetLexicallyBottomMostBlock();
-
-    VisitLoopBlocksLexical([=](BasicBlock* blk) {
+    VisitLoopBlocks([=](BasicBlock* blk) {
         // Initialize newBlk as BBJ_ALWAYS without jump target, and fix up jump target later
         // with BasicBlock::CopyTarget().
         BasicBlock* newBlk = comp->fgNewBBafter(BBJ_ALWAYS, *insertAfter, /*extendRegion*/ true);
@@ -5484,52 +6073,8 @@ void FlowGraphNaturalLoop::Duplicate(BasicBlock**     insertAfter,
 
         newBlk->scaleBBWeight(weightScale);
 
-        // If the loop we're cloning contains nested loops, we need to clear the pre-header bit on
-        // any nested loop pre-header blocks, since they will no longer be loop pre-headers.
-        //
-        // TODO-Cleanup: BBF_LOOP_PREHEADER can be removed; we do not attempt
-        // to keep it up to date anymore when we do FG changes.
-        //
-        if (newBlk->HasFlag(BBF_LOOP_PREHEADER))
-        {
-            JITDUMP("Removing BBF_LOOP_PREHEADER flag from nested cloned loop block " FMT_BB "\n", newBlk->bbNum);
-            newBlk->RemoveFlags(BBF_LOOP_PREHEADER);
-        }
-
         *insertAfter = newBlk;
         map->Set(blk, newBlk, BlockToBlockMap::Overwrite);
-
-        // If the block falls through to a block outside the loop then we may
-        // need to insert a new block to redirect.
-        // Skip this once we get to the bottom block if our cloned version is
-        // going to fall into the right version anyway.
-        if (blk->bbFallsThrough() && !ContainsBlock(blk->Next()) && ((blk != bottom) || bottomNeedsRedirection))
-        {
-            if (blk->KindIs(BBJ_COND))
-            {
-                BasicBlock* targetBlk = blk->GetFalseTarget();
-                assert(blk->NextIs(targetBlk));
-
-                // Need to insert a block.
-                BasicBlock* newRedirBlk =
-                    comp->fgNewBBafter(BBJ_ALWAYS, *insertAfter, /* extendRegion */ true, targetBlk);
-                newRedirBlk->copyEHRegion(*insertAfter);
-                newRedirBlk->bbWeight = blk->Next()->bbWeight;
-                newRedirBlk->CopyFlags(blk->Next(), (BBF_RUN_RARELY | BBF_PROF_WEIGHT));
-                newRedirBlk->scaleBBWeight(weightScale);
-
-                JITDUMP(FMT_BB " falls through to " FMT_BB "; inserted redirection block " FMT_BB "\n", blk->bbNum,
-                        blk->Next()->bbNum, newRedirBlk->bbNum);
-                // This block isn't part of the loop, so below loop won't add
-                // refs for it.
-                comp->fgAddRefPred(targetBlk, newRedirBlk);
-                *insertAfter = newRedirBlk;
-            }
-            else
-            {
-                assert(!"Cannot handle fallthrough");
-            }
-        }
 
         return BasicBlockVisit::Continue;
     });
@@ -5544,39 +6089,424 @@ void FlowGraphNaturalLoop::Duplicate(BasicBlock**     insertAfter,
         // Jump target should not be set yet
         assert(!newBlk->HasInitializedTarget());
 
-        // First copy the jump destination(s) from "blk".
-        newBlk->CopyTarget(comp, blk);
+        // Redirect the new block according to "blockMap".
+        // optSetMappedBlockTargets will set newBlk's successors, and add pred edges for the successors.
+        comp->optSetMappedBlockTargets(blk, newBlk, map);
 
-        // Now redirect the new block according to "blockMap".
-        comp->optRedirectBlock(newBlk, map);
+        return BasicBlockVisit::Continue;
+    });
+}
 
-        // Add predecessor edges for the new successors, as well as the fall-through paths.
-        switch (newBlk->GetKind())
+//------------------------------------------------------------------------
+// CanDuplicateWithEH: Check if this loop (possibly containing try entries)
+//   can be duplicated.
+//
+// Parameters:
+//   reason - If this function returns false, the reason why.
+//
+// Returns:
+//   True if the loop can be duplicated.
+//
+// Notes:
+//   Extends CanDuplicate to cover loops with try region entries.
+//
+bool FlowGraphNaturalLoop::CanDuplicateWithEH(INDEBUG(const char** reason))
+{
+#ifdef DEBUG
+    const char* localReason;
+    if (reason == nullptr)
+    {
+        reason = &localReason;
+    }
+#endif
+
+    Compiler*         comp   = m_dfsTree->GetCompiler();
+    BasicBlock* const header = GetHeader();
+
+    ArrayStack<BasicBlock*> tryRegionsToClone(comp->getAllocator(CMK_TryRegionClone));
+
+    BasicBlockVisit result = VisitLoopBlocks([=, &tryRegionsToClone](BasicBlock* block) {
+        const bool inSameRegionAsHeader = BasicBlock::sameEHRegion(block, header);
+
+        if (inSameRegionAsHeader)
         {
-            case BBJ_ALWAYS:
-            case BBJ_CALLFINALLY:
-            case BBJ_CALLFINALLYRET:
-                comp->fgAddRefPred(newBlk->GetTarget(), newBlk);
-                break;
+            return BasicBlockVisit::Continue;
+        }
 
-            case BBJ_COND:
-                comp->fgAddRefPred(newBlk->GetFalseTarget(), newBlk);
-                comp->fgAddRefPred(newBlk->GetTrueTarget(), newBlk);
-                break;
+        if (comp->bbIsTryBeg(block))
+        {
+            // Check if this is an "outermost" try within the loop.
+            // If so, we have more checking to do later on.
+            //
+            const bool headerInTry         = header->hasTryIndex();
+            unsigned   blockIndex          = block->getTryIndex();
+            unsigned   outermostBlockIndex = comp->ehTrueEnclosingTryIndexIL(blockIndex);
 
-            case BBJ_SWITCH:
-                for (BasicBlock* const switchDest : newBlk->SwitchTargets())
-                {
-                    comp->fgAddRefPred(switchDest, newBlk);
-                }
-                break;
-
-            default:
-                break;
+            if ((headerInTry && (outermostBlockIndex == header->getTryIndex())) ||
+                (!headerInTry && (outermostBlockIndex == EHblkDsc::NO_ENCLOSING_INDEX)))
+            {
+                tryRegionsToClone.Push(block);
+            }
         }
 
         return BasicBlockVisit::Continue;
     });
+
+    // Check any enclosed try regions to make sure they can be cloned
+    // (note this is potentially misleading with multiple trys as
+    // we are considering cloning each in isolation).
+    //
+    const unsigned numberOfTryRegions = tryRegionsToClone.Height();
+    if ((result != BasicBlockVisit::Abort) && (numberOfTryRegions > 0))
+    {
+        // Possibly limit to just 1 region.
+        //
+        JITDUMP(FMT_LP " contains %u top-level try region%s\n", GetIndex(), numberOfTryRegions,
+                numberOfTryRegions > 1 ? "s" : "");
+
+        while (tryRegionsToClone.Height() > 0)
+        {
+            BasicBlock* const tryEntry    = tryRegionsToClone.Pop();
+            bool const        canCloneTry = comp->fgCanCloneTryRegion(tryEntry);
+
+            if (!canCloneTry)
+            {
+                INDEBUG(*reason = "Loop contains uncloneable try region");
+                result = BasicBlockVisit::Abort;
+                break;
+            }
+        }
+    }
+
+    return result != BasicBlockVisit::Abort;
+}
+
+//------------------------------------------------------------------------
+// DuplicateWithEH: Duplicate the blocks of this loop, inserting them after `insertAfter`,
+//    and also fully clone any try regions
+//
+// Parameters:
+//   insertAfter            - [in, out] Block to insert duplicated blocks after; updated to last block inserted.
+//   map                    - A map that will have mappings from loop blocks to duplicated blocks added to it.
+//   weightScale            - Factor to scale weight of new blocks by
+//
+// Notes:
+//   Extends Duplicate to cover loops with try region entries.
+//
+void FlowGraphNaturalLoop::DuplicateWithEH(BasicBlock** insertAfter, BlockToBlockMap* map, weight_t weightScale)
+{
+    assert(CanDuplicateWithEH(nullptr));
+
+    Compiler* const   comp           = m_dfsTree->GetCompiler();
+    bool              clonedTry      = false;
+    BasicBlock* const insertionPoint = *insertAfter;
+
+    // If the insertion point is within an EH region, remember all the EH regions
+    // current that end at the insertion point, so we can properly extend them
+    // when we're done cloning.
+    //
+    struct RegionEnd
+    {
+        RegionEnd(unsigned regionIndex, BasicBlock* block, bool isTryEnd)
+            : m_regionIndex(regionIndex)
+            , m_block(block)
+            , m_isTryEnd(isTryEnd)
+        {
+        }
+        unsigned    m_regionIndex;
+        BasicBlock* m_block;
+        bool        m_isTryEnd;
+    };
+
+    ArrayStack<RegionEnd> regionEnds(comp->getAllocator(CMK_TryRegionClone));
+
+    // Record enclosing EH region block references,
+    // so we can keep track of what the "before" picture looked like.
+    //
+    if (insertionPoint->hasTryIndex() || insertionPoint->hasHndIndex())
+    {
+        bool     inTry  = false;
+        unsigned region = comp->ehGetMostNestedRegionIndex(insertionPoint, &inTry);
+
+        if (region != 0)
+        {
+            // Convert to true region index
+            region--;
+
+            while (true)
+            {
+                EHblkDsc* const ebd = comp->ehGetDsc(region);
+
+                if (inTry)
+                {
+                    JITDUMP("Noting that enclosing try EH#%02u ends at " FMT_BB "\n", region, ebd->ebdTryLast->bbNum);
+                    regionEnds.Emplace(region, ebd->ebdTryLast, true);
+                }
+                else
+                {
+                    JITDUMP("Noting that enclsoing handler EH#%02u ends at " FMT_BB "\n", region,
+                            ebd->ebdHndLast->bbNum);
+                    regionEnds.Emplace(region, ebd->ebdHndLast, false);
+                }
+
+                region = comp->ehGetEnclosingRegionIndex(region, &inTry);
+
+                if (region == EHblkDsc::NO_ENCLOSING_INDEX)
+                {
+                    break;
+                }
+            }
+        }
+    }
+
+    // Keep track of how much the EH indices change because of EH region cloning.
+    //
+    unsigned ehIndexShift = 0;
+
+    // Keep track of which blocks were handled by EH region cloning
+    //
+    BitVecTraits traits(comp->compBasicBlockID, comp);
+    BitVec       visited(BitVecOps::MakeEmpty(&traits));
+
+    VisitLoopBlocks([=, &traits, &visited, &clonedTry, &ehIndexShift](BasicBlock* blk) {
+        // Try cloning may have already handled this block
+        //
+        if (BitVecOps::IsMember(&traits, visited, blk->bbID))
+        {
+            return BasicBlockVisit::Continue;
+        }
+
+        // If this is a try region entry, clone the entire region now.
+        // Defer adding edges and extending EH regions until later.
+        //
+        // Updates map, and insertAfter.
+        //
+        if (comp->bbIsTryBeg(blk))
+        {
+            CloneTryInfo info(traits);
+            info.Map          = map;
+            info.AddEdges     = false;
+            info.ProfileScale = weightScale;
+
+            BasicBlock* const clonedBlock = comp->fgCloneTryRegion(blk, info, insertAfter);
+
+            assert(clonedBlock != nullptr);
+            BitVecOps::UnionD(&traits, visited, info.Visited);
+            ehIndexShift += info.EHIndexShift;
+            clonedTry = true;
+            return BasicBlockVisit::Continue;
+        }
+        else
+        {
+            // We're not expecting to find enclosed EH regions
+            //
+            assert(!comp->bbIsTryBeg(blk));
+            assert(!comp->bbIsHandlerBeg(blk));
+            assert(!BitVecOps::IsMember(&traits, visited, blk->bbID));
+        }
+
+        // `blk` was not in loop-enclosed try region or companion region.
+        //
+        // Initialize newBlk as BBJ_ALWAYS without jump target; these are fixed up subsequently.
+        //
+        // CloneBlockState puts newBlk in the proper EH region. We will fix enclosing region extents
+        // once cloning is done.
+        //
+        BasicBlock* newBlk = comp->fgNewBBafter(BBJ_ALWAYS, *insertAfter, /* extendRegion */ false);
+        JITDUMP("Adding " FMT_BB " (copy of " FMT_BB ") after " FMT_BB "\n", newBlk->bbNum, blk->bbNum,
+                (*insertAfter)->bbNum);
+        BasicBlock::CloneBlockState(comp, newBlk, blk);
+
+        assert(newBlk->bbRefs == 0);
+        newBlk->scaleBBWeight(weightScale);
+        map->Set(blk, newBlk, BlockToBlockMap::Overwrite);
+        *insertAfter = newBlk;
+
+        return BasicBlockVisit::Continue;
+    });
+
+    // Note the EH table may have grown, if we cloned try regions. If there was
+    // an enclosing EH entry, then its EH table entries will have shifted to
+    // higher index values.
+    //
+    // Update the enclosing EH region ends to reflect the new blocks we added.
+    // (here we assume cloned blocks are placed lexically after their originals, so if a
+    // region-ending block was cloned, the new region end is the last block cloned).
+    //
+    // Note we don't consult the block references in EH table here, since they
+    // may reflect interim updates to region endpoints (by fgCloneTry). Otherwise
+    // we could simply call ehUpdateLastBlocks.
+    //
+    BasicBlock* const lastClonedBlock = *insertAfter;
+
+    while (regionEnds.Height() > 0)
+    {
+        RegionEnd       r   = regionEnds.Pop();
+        EHblkDsc* const ebd = comp->ehGetDsc(r.m_regionIndex + ehIndexShift);
+
+        if (r.m_block == insertionPoint)
+        {
+            if (r.m_isTryEnd)
+            {
+                comp->fgSetTryEnd(ebd, lastClonedBlock);
+            }
+            else
+            {
+                comp->fgSetHndEnd(ebd, lastClonedBlock);
+            }
+        }
+        else
+        {
+            if (r.m_isTryEnd)
+            {
+                comp->fgSetTryEnd(ebd, r.m_block);
+            }
+            else
+            {
+                comp->fgSetHndEnd(ebd, r.m_block);
+            }
+        }
+    }
+
+    // Now go through the new blocks, remapping their jump targets within the loop
+    // and updating the preds lists.
+    //
+    VisitLoopBlocks([=](BasicBlock* blk) {
+        BasicBlock* newBlk = nullptr;
+        bool        b      = map->Lookup(blk, &newBlk);
+        assert(b && newBlk != nullptr);
+
+        JITDUMP("Updating targets: " FMT_BB " mapped to " FMT_BB "\n", blk->bbNum, newBlk->bbNum);
+
+        // Jump target should not be set yet
+        assert(!newBlk->HasInitializedTarget());
+
+        // Redirect the new block according to "blockMap".
+        // optSetMappedBlockTargets will set newBlk's successors, and add pred edges for the successors.
+        comp->optSetMappedBlockTargets(blk, newBlk, map);
+
+        return BasicBlockVisit::Continue;
+    });
+
+    // If we cloned any EH regions, we may have some non-loop blocks to process as well.
+    //
+    if (clonedTry)
+    {
+        for (BasicBlock* const blk : BlockToBlockMap::KeyIteration(map))
+        {
+            if (!ContainsBlock(blk))
+            {
+                BasicBlock* newBlk = nullptr;
+                bool        b      = map->Lookup(blk, &newBlk);
+                assert(b && newBlk != nullptr);
+                assert(!newBlk->HasInitializedTarget());
+                comp->optSetMappedBlockTargets(blk, newBlk, map);
+            }
+        }
+    }
+}
+
+//------------------------------------------------------------------------
+// MayExecuteBlockMultipleTimesPerIteration:
+//   Check if the loop may execute a particular loop block multiple times for
+//   each iteration.
+//
+// Parameters:
+//   block - The basic block
+//
+// Returns:
+//   True if so. May return true even if the true answer is false.
+//
+bool FlowGraphNaturalLoop::MayExecuteBlockMultipleTimesPerIteration(BasicBlock* block)
+{
+    assert(ContainsBlock(block));
+
+    if (ContainsImproperHeader())
+    {
+        // To be more precise we could check if 'block' can reach itself
+        // without going through the header, but this case is rare.
+        return true;
+    }
+
+    for (FlowGraphNaturalLoop* child = GetChild(); child != nullptr; child = child->GetSibling())
+    {
+        if (child->ContainsBlock(block))
+        {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+//------------------------------------------------------------------------
+// IsPostDominatedOnLoopIteration:
+//   Check whether control will always flow through "postDominator" if starting
+//   at "block" and a backedge is taken.
+//
+// Parameters:
+//   block         - The basic block
+//   postDominator - Block to query postdominance of
+//
+// Returns:
+//   True if so.
+//
+bool FlowGraphNaturalLoop::IsPostDominatedOnLoopIteration(BasicBlock* block, BasicBlock* postDominator)
+{
+    assert(ContainsBlock(block) && ContainsBlock(postDominator));
+
+    unsigned index;
+    bool     gotIndex = TryGetLoopBlockBitVecIndex(block, &index);
+    assert(gotIndex);
+
+    Compiler*               comp = m_dfsTree->GetCompiler();
+    ArrayStack<BasicBlock*> stack(comp->getAllocator(CMK_Loops));
+
+    BitVecTraits traits = LoopBlockTraits();
+    BitVec       visited(BitVecOps::MakeEmpty(&traits));
+
+    stack.Push(block);
+    BitVecOps::AddElemD(&traits, visited, index);
+
+    auto queueSuccs = [=, &stack, &traits, &visited](BasicBlock* succ) {
+        if (succ == m_header)
+        {
+            // We managed to reach the header without going through "postDominator".
+            return BasicBlockVisit::Abort;
+        }
+
+        unsigned index;
+        if (!TryGetLoopBlockBitVecIndex(succ, &index) || !BitVecOps::IsMember(&traits, m_blocks, index))
+        {
+            // Block is not inside loop
+            return BasicBlockVisit::Continue;
+        }
+
+        if (!BitVecOps::TryAddElemD(&traits, visited, index))
+        {
+            // Block already visited
+            return BasicBlockVisit::Continue;
+        }
+
+        stack.Push(succ);
+        return BasicBlockVisit::Continue;
+    };
+
+    while (stack.Height() > 0)
+    {
+        BasicBlock* block = stack.Pop();
+        if (block == postDominator)
+        {
+            continue;
+        }
+
+        if (block->VisitAllSuccs(comp, queueSuccs) == BasicBlockVisit::Abort)
+        {
+            return false;
+        }
+    }
+
+    return true;
 }
 
 //------------------------------------------------------------------------
@@ -5782,13 +6712,10 @@ bool NaturalLoopIterInfo::ArrLenLimit(Compiler* comp, ArrIndex* index)
 //   finger2 - A basic block that might share IDom ancestor with finger1.
 //
 // Returns:
-//   A basic block whose IDom is the dominator for finger1 and finger2, or else
-//   nullptr. This may be called while immediate dominators are being computed,
-//   and if the input values are members of the same loop (each reachable from
-//   the other), then one may not yet have its immediate dominator computed
-//   when we are attempting to find the immediate dominator of the other. So a
-//   nullptr return value means that the the two inputs are in a cycle, not
-//   that they don't have a common dominator ancestor.
+//   A basic block that is the dominator for finger1 and finger2. This can be
+//   called while the dominator tree is still being computed, in which case the
+//   returned result may not be the "latest" such dominator (but will converge
+//   towards it with more iterations over the basic blocks).
 //
 // Remarks:
 //   See "A simple, fast dominance algorithm" by Keith D. Cooper, Timothy J.
@@ -5796,23 +6723,19 @@ bool NaturalLoopIterInfo::ArrLenLimit(Compiler* comp, ArrIndex* index)
 //
 BasicBlock* FlowGraphDominatorTree::IntersectDom(BasicBlock* finger1, BasicBlock* finger2)
 {
+    assert((finger1 != nullptr) && (finger2 != nullptr));
+
     while (finger1 != finger2)
     {
-        if ((finger1 == nullptr) || (finger2 == nullptr))
-        {
-            return nullptr;
-        }
-        while ((finger1 != nullptr) && (finger1->bbPostorderNum < finger2->bbPostorderNum))
+        while (finger1->bbPostorderNum < finger2->bbPostorderNum)
         {
             finger1 = finger1->bbIDom;
+            assert(finger1 != nullptr);
         }
-        if (finger1 == nullptr)
-        {
-            return nullptr;
-        }
-        while ((finger2 != nullptr) && (finger2->bbPostorderNum < finger1->bbPostorderNum))
+        while (finger2->bbPostorderNum < finger1->bbPostorderNum)
         {
             finger2 = finger2->bbIDom;
+            assert(finger2 != nullptr);
         }
     }
     return finger1;
@@ -5914,8 +6837,8 @@ FlowGraphDominatorTree* FlowGraphDominatorTree::Build(const FlowGraphDfsTree* df
 
     // First compute immediate dominators.
     unsigned numIters = 0;
-    bool     changed  = true;
-    while (changed)
+    bool     changed;
+    do
     {
         changed = false;
 
@@ -5960,7 +6883,7 @@ FlowGraphDominatorTree* FlowGraphDominatorTree::Build(const FlowGraphDfsTree* df
         }
 
         numIters++;
-    }
+    } while (changed && dfsTree->HasCycle());
 
     // Now build dominator tree.
     DomTreeNode* domTree = new (comp, CMK_DominatorMemory) DomTreeNode[count]{};
@@ -6013,7 +6936,9 @@ FlowGraphDominatorTree* FlowGraphDominatorTree::Build(const FlowGraphDfsTree* df
 
     public:
         NumberDomTreeVisitor(Compiler* comp, unsigned* preorderNums, unsigned* postorderNums)
-            : DomTreeVisitor(comp), m_preorderNums(preorderNums), m_postorderNums(postorderNums)
+            : DomTreeVisitor(comp)
+            , m_preorderNums(preorderNums)
+            , m_postorderNums(postorderNums)
         {
         }
 
@@ -6036,6 +6961,189 @@ FlowGraphDominatorTree* FlowGraphDominatorTree::Build(const FlowGraphDfsTree* df
 
     return new (comp, CMK_DominatorMemory) FlowGraphDominatorTree(dfsTree, domTree, preorderNums, postorderNums);
 }
+
+FlowGraphDominanceFrontiers::FlowGraphDominanceFrontiers(FlowGraphDominatorTree* domTree)
+    : m_domTree(domTree)
+    , m_map(domTree->GetDfsTree()->GetCompiler()->getAllocator(CMK_DominatorMemory))
+    , m_poTraits(domTree->GetDfsTree()->PostOrderTraits())
+    , m_visited(BitVecOps::MakeEmpty(&m_poTraits))
+{
+}
+
+//------------------------------------------------------------------------
+// FlowGraphDominanceFrontiers::Build: Build the dominance frontiers for all
+// blocks.
+//
+// Parameters:
+//   domTree - Dominator tree to build dominance frontiers for
+//
+// Returns:
+//   Data structure representing dominance frontiers.
+//
+// Remarks:
+//   Recall that the dominance frontier of a block B is the set of blocks B3
+//   such that there exists some B2 s.t. B3 is a successor of B2, and B
+//   dominates B2 but not B3. Note that this dominance need not be strict -- B2
+//   and B may be the same node.
+//
+//   In other words, a block B' is in DF(B) if B dominates an immediate
+//   predecessor of B', but does not dominate B'. Intuitively, these blocks are
+//   the "first" blocks that are no longer dominated by B; these are the places
+//   we are interested in inserting phi definitions that may refer to defs in
+//   B.
+//
+//   See "A simple, fast dominance algorithm", by Cooper, Harvey, and Kennedy.
+//
+FlowGraphDominanceFrontiers* FlowGraphDominanceFrontiers::Build(FlowGraphDominatorTree* domTree)
+{
+    const FlowGraphDfsTree* dfsTree = domTree->GetDfsTree();
+    Compiler*               comp    = dfsTree->GetCompiler();
+
+    FlowGraphDominanceFrontiers* result = new (comp, CMK_DominatorMemory) FlowGraphDominanceFrontiers(domTree);
+
+    for (unsigned i = 0; i < dfsTree->GetPostOrderCount(); i++)
+    {
+        BasicBlock* block = dfsTree->GetPostOrder(i);
+
+        // Recall that B3 is in the dom frontier of B1 if there exists a B2
+        // such that B1 dom B2, !(B1 dom B3), and B3 is an immediate successor
+        // of B2.  (Note that B1 might be the same block as B2.)
+        // In that definition, we're considering "block" to be B3, and trying
+        // to find B1's.  To do so, first we consider the predecessors of "block",
+        // searching for candidate B2's -- "block" is obviously an immediate successor
+        // of its immediate predecessors.  If there are zero or one preds, then there
+        // is no pred, or else the single pred dominates "block", so no B2 exists.
+        FlowEdge* blockPreds = comp->BlockPredsWithEH(block);
+
+        // If block has 0/1 predecessor, skip, apart from handler entry blocks
+        // that are always in the dominance frontier of its enclosed blocks.
+        if (!comp->bbIsHandlerBeg(block) && ((blockPreds == nullptr) || (blockPreds->getNextPredEdge() == nullptr)))
+        {
+            continue;
+        }
+
+        // Otherwise, there are > 1 preds.  Each is a candidate B2 in the definition --
+        // *unless* it dominates "block"/B3.
+
+        for (FlowEdge* pred = blockPreds; pred != nullptr; pred = pred->getNextPredEdge())
+        {
+            BasicBlock* predBlock = pred->getSourceBlock();
+
+            if (!dfsTree->Contains(predBlock))
+            {
+                continue;
+            }
+
+            // If we've found a B2, then consider the possible B1's.  We start with
+            // B2, since a block dominates itself, then traverse upwards in the dominator
+            // tree, stopping when we reach the root, or the immediate dominator of "block"/B3.
+            // (Note that we are guaranteed to encounter this immediate dominator of "block"/B3:
+            // a predecessor must be dominated by B3's immediate dominator.)
+            // Along this way, make "block"/B3 part of the dom frontier of the B1.
+            // When we reach this immediate dominator, the definition no longer applies, since this
+            // potential B1 *does* dominate "block"/B3, so we stop.
+            for (BasicBlock* b1 = predBlock; (b1 != nullptr) && (b1 != block->bbIDom); // !root && !loop
+                 b1             = b1->bbIDom)
+            {
+                BlkVector& b1DF = *result->m_map.Emplace(b1, comp->getAllocator(CMK_DominatorMemory));
+                // It's possible to encounter the same DF multiple times, ensure that we don't add duplicates.
+                if (b1DF.empty() || (b1DF.back() != block))
+                {
+                    b1DF.push_back(block);
+                }
+            }
+        }
+    }
+
+    return result;
+}
+
+//------------------------------------------------------------------------
+// ComputeIteratedDominanceFrontier: Compute the iterated dominance frontier of
+// a block. This is the transitive closure of taking dominance frontiers.
+//
+// Parameters:
+//   block  - Block to compute iterated dominance frontier for.
+//   result - Vector to add blocks of IDF into.
+//
+// Remarks:
+//   When we create phi definitions we are creating new definitions that
+//   themselves induce the creation of more phi nodes. Thus, the transitive
+//   closure of DF(B) contains all blocks that may have phi definitions
+//   referring to defs in B, or referring to other phis referring to defs in B.
+//
+void FlowGraphDominanceFrontiers::ComputeIteratedDominanceFrontier(BasicBlock* block, BlkVector* result)
+{
+    assert(result->empty());
+
+    BlkVector* bDF = m_map.LookupPointer(block);
+
+    if (bDF == nullptr)
+    {
+        return;
+    }
+
+    // Compute IDF(b) - start by adding DF(b) to IDF(b).
+    result->reserve(bDF->size());
+    BitVecOps::ClearD(&m_poTraits, m_visited);
+
+    for (BasicBlock* f : *bDF)
+    {
+        BitVecOps::AddElemD(&m_poTraits, m_visited, f->bbPostorderNum);
+        result->push_back(f);
+    }
+
+    // Now for each block f from IDF(b) add DF(f) to IDF(b). This may result in new
+    // blocks being added to IDF(b) and the process repeats until no more new blocks
+    // are added. Note that since we keep adding to bIDF we can't use iterators as
+    // they may get invalidated. This happens to be a convenient way to avoid having
+    // to track newly added blocks in a separate set.
+    for (size_t newIndex = 0; newIndex < result->size(); newIndex++)
+    {
+        BasicBlock* f   = (*result)[newIndex];
+        BlkVector*  fDF = m_map.LookupPointer(f);
+
+        if (fDF == nullptr)
+        {
+            continue;
+        }
+
+        for (BasicBlock* ff : *fDF)
+        {
+            if (BitVecOps::TryAddElemD(&m_poTraits, m_visited, ff->bbPostorderNum))
+            {
+                result->push_back(ff);
+            }
+        }
+    }
+}
+
+#ifdef DEBUG
+//------------------------------------------------------------------------
+// FlowGraphDominanceFrontiers::Dump: Dump a textual representation of the
+// dominance frontiers to jitstdout.
+//
+void FlowGraphDominanceFrontiers::Dump()
+{
+    printf("DF:\n");
+    for (unsigned i = 0; i < m_domTree->GetDfsTree()->GetPostOrderCount(); ++i)
+    {
+        BasicBlock* b = m_domTree->GetDfsTree()->GetPostOrder(i);
+        printf("Block " FMT_BB " := {", b->bbNum);
+
+        BlkVector* bDF = m_map.LookupPointer(b);
+        if (bDF != nullptr)
+        {
+            int index = 0;
+            for (BasicBlock* f : *bDF)
+            {
+                printf("%s" FMT_BB, (index++ == 0) ? "" : ",", f->bbNum);
+            }
+        }
+        printf("}\n");
+    }
+}
+#endif
 
 //------------------------------------------------------------------------
 // BlockToNaturalLoopMap::GetLoop: Map a block back to its most nested
@@ -6098,6 +7206,37 @@ BlockToNaturalLoopMap* BlockToNaturalLoopMap::Build(FlowGraphNaturalLoops* loops
     return new (comp, CMK_Loops) BlockToNaturalLoopMap(loops, indices);
 }
 
+#ifdef DEBUG
+
+//------------------------------------------------------------------------
+// BlockToNaturalLoopMap::Dump: Dump a textual representation of the map.
+//
+void BlockToNaturalLoopMap::Dump() const
+{
+    const FlowGraphDfsTree* dfs        = m_loops->GetDfsTree();
+    unsigned                blockCount = dfs->GetPostOrderCount();
+
+    printf("Block -> natural loop map: %u blocks\n", blockCount);
+    if (blockCount > 0)
+    {
+        printf("block : loop index\n");
+        for (unsigned i = 0; i < blockCount; i++)
+        {
+            if (m_indices[i] == UINT_MAX)
+            {
+                // Just leave the loop space empty if there is no enclosing loop
+                printf(FMT_BB " : \n", dfs->GetPostOrder(i)->bbNum);
+            }
+            else
+            {
+                printf(FMT_BB " : " FMT_LP "\n", dfs->GetPostOrder(i)->bbNum, m_indices[i]);
+            }
+        }
+    }
+}
+
+#endif // DEBUG
+
 //------------------------------------------------------------------------
 // BlockReachabilitySets::Build: Build the reachability sets.
 //
@@ -6111,7 +7250,7 @@ BlockToNaturalLoopMap* BlockToNaturalLoopMap::Build(FlowGraphNaturalLoops* loops
 //   This algorithm consumes O(n^2) memory because we're using dense
 //   bitsets to represent reachability.
 //
-BlockReachabilitySets* BlockReachabilitySets::Build(FlowGraphDfsTree* dfsTree)
+BlockReachabilitySets* BlockReachabilitySets::Build(const FlowGraphDfsTree* dfsTree)
 {
     Compiler*    comp            = dfsTree->GetCompiler();
     BitVecTraits postOrderTraits = dfsTree->PostOrderTraits();

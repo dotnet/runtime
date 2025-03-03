@@ -47,7 +47,7 @@ namespace System.ComponentModel
         /// <summary>
         /// Gets an editor of the specified type for this object.
         /// </summary>
-        [RequiresUnreferencedCode(TypeDescriptor.EditorRequiresUnreferencedCode)]
+        [RequiresUnreferencedCode(TypeDescriptor.DesignTimeAttributeTrimmed)]
         object? GetEditor(Type editorBaseType);
 
         /// <summary>
@@ -78,5 +78,84 @@ namespace System.ComponentModel
         /// Gets the object that directly depends on this value being edited.
         /// </summary>
         object? GetPropertyOwner(PropertyDescriptor? pd);
+
+        /// <summary>
+        /// Gets a type converter for this object that may be registered.
+        /// </summary>
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+            Justification = TypeDescriptionProvider.ForwardFromRegisteredMessage)]
+        TypeConverter? GetConverterFromRegisteredType()
+        {
+            if (RequireRegisteredTypes is null)
+            {
+                if (TypeDescriptor.RequireRegisteredTypes)
+                {
+                    TypeDescriptor.ThrowHelper.ThrowNotImplementedException_CustomTypeProviderMustImplememtMember(nameof(GetConverterFromRegisteredType));
+                }
+            }
+            else if (RequireRegisteredTypes == true)
+            {
+                TypeDescriptor.ThrowHelper.ThrowNotImplementedException_CustomTypeProviderMustImplememtMember(nameof(GetConverterFromRegisteredType));
+            }
+
+            return GetConverter();
+        }
+
+        /// <summary>
+        /// Gets the events for this instance of a component that may be registered.
+        /// </summary>
+        EventDescriptorCollection GetEventsFromRegisteredType()
+        {
+            if (RequireRegisteredTypes is null)
+            {
+                if (TypeDescriptor.RequireRegisteredTypes)
+                {
+                    TypeDescriptor.ThrowHelper.ThrowNotImplementedException_CustomTypeProviderMustImplememtMember(nameof(GetEventsFromRegisteredType));
+                }
+            }
+            else if (RequireRegisteredTypes == true)
+            {
+                TypeDescriptor.ThrowHelper.ThrowNotImplementedException_CustomTypeProviderMustImplememtMember(nameof(GetEventsFromRegisteredType));
+            }
+
+            return GetEvents();
+        }
+
+        /// <summary>
+        /// Gets the properties for this instance of a component that may be registered.
+        /// </summary>
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+            Justification = TypeDescriptionProvider.ForwardFromRegisteredMessage)]
+        PropertyDescriptorCollection GetPropertiesFromRegisteredType()
+        {
+            if (RequireRegisteredTypes is null)
+            {
+                if (TypeDescriptor.RequireRegisteredTypes)
+                {
+                    TypeDescriptor.ThrowHelper.ThrowNotImplementedException_CustomTypeProviderMustImplememtMember(nameof(GetPropertiesFromRegisteredType));
+                }
+            }
+            else if (RequireRegisteredTypes == true)
+            {
+                TypeDescriptor.ThrowHelper.ThrowNotImplementedException_CustomTypeProviderMustImplememtMember(nameof(GetPropertiesFromRegisteredType));
+            }
+
+            return GetProperties();
+        }
+
+        /// <summary>
+        /// Whether types are required to be registered through <see cref="TypeDescriptionProvider.RegisterType{T}"/>.
+        /// </summary>
+        /// <remarks>
+        /// The default value is <see langword="null"/> which means that the type descriptor has not declared whether or not it is compatible registered types.
+        /// A type descriptor needs to implement this to return either <see langword="true"/> or <see langword="false"/> if the feature switch
+        /// 'System.ComponentModel.TypeDescriptor.RequireRegisteredTypes' is enabled.
+        /// If <see langword="true"/> is returned, then the type descriptor must also implement
+        /// <see cref="ICustomTypeDescriptor.GetConverterFromRegisteredType()"/>,
+        /// <see cref="ICustomTypeDescriptor.GetEventsFromRegisteredType()"/>, and
+        /// <see cref="ICustomTypeDescriptor.GetPropertiesFromRegisteredType()"/>.
+        /// <br/>
+        /// </remarks>
+        bool? RequireRegisteredTypes => null;
     }
 }

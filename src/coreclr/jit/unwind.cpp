@@ -15,8 +15,6 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #pragma hdrstop
 #endif
 
-#if defined(FEATURE_EH_FUNCLETS)
-
 //------------------------------------------------------------------------
 // Compiler::unwindGetFuncLocations: Get the start/end emitter locations for this
 // function or funclet. If 'getHotSectionData' is true, get the start/end locations
@@ -53,6 +51,8 @@ void Compiler::unwindGetFuncLocations(FuncInfoDsc*             func,
                                       /* OUT */ emitLocation** ppStartLoc,
                                       /* OUT */ emitLocation** ppEndLoc)
 {
+    assert(UsesFunclets());
+
     if (func->funKind == FUNC_ROOT)
     {
         // Since all funclets are pulled out of line, the main code size is everything
@@ -128,13 +128,11 @@ void Compiler::unwindGetFuncLocations(FuncInfoDsc*             func,
             assert(func->funKind == FUNC_HANDLER);
             *ppStartLoc = new (this, CMK_UnwindInfo) emitLocation(ehEmitCookie(HBtab->ebdHndBeg));
             *ppEndLoc   = HBtab->ebdHndLast->IsLast() ? nullptr
-                                                    : new (this, CMK_UnwindInfo)
+                                                      : new (this, CMK_UnwindInfo)
                                                           emitLocation(ehEmitCookie(HBtab->ebdHndLast->Next()));
         }
     }
 }
-
-#endif // FEATURE_EH_FUNCLETS
 
 #if defined(FEATURE_CFI_SUPPORT)
 
@@ -165,7 +163,13 @@ void Compiler::unwindPushPopCFI(regNumber reg)
 #endif
         ;
 
+#if defined(TARGET_ARM)
+    createCfiCode(func, cbProlog, CFI_ADJUST_CFA_OFFSET, DWARF_REG_ILLEGAL,
+                  reg >= REG_FP_FIRST ? 2 * REGSIZE_BYTES : REGSIZE_BYTES);
+#else
+    assert(reg < REG_FP_FIRST);
     createCfiCode(func, cbProlog, CFI_ADJUST_CFA_OFFSET, DWARF_REG_ILLEGAL, REGSIZE_BYTES);
+#endif
     if (relOffsetMask & genRegMask(reg))
     {
         createCfiCode(func, cbProlog, CFI_REL_OFFSET, mapRegNumToDwarfReg(reg));
@@ -178,21 +182,22 @@ void Compiler::unwindBegPrologCFI()
 {
     assert(compGeneratingProlog);
 
-#if defined(FEATURE_EH_FUNCLETS)
-    FuncInfoDsc* func = funCurrentFunc();
-
-    // There is only one prolog for a function/funclet, and it comes first. So now is
-    // a good time to initialize all the unwind data structures.
-
-    unwindGetFuncLocations(func, true, &func->startLoc, &func->endLoc);
-
-    if (fgFirstColdBlock != nullptr)
+    if (UsesFunclets())
     {
-        unwindGetFuncLocations(func, false, &func->coldStartLoc, &func->coldEndLoc);
-    }
+        FuncInfoDsc* func = funCurrentFunc();
 
-    func->cfiCodes = new (getAllocator(CMK_UnwindInfo)) CFICodeVector(getAllocator());
-#endif // FEATURE_EH_FUNCLETS
+        // There is only one prolog for a function/funclet, and it comes first. So now is
+        // a good time to initialize all the unwind data structures.
+
+        unwindGetFuncLocations(func, true, &func->startLoc, &func->endLoc);
+
+        if (fgFirstColdBlock != nullptr)
+        {
+            unwindGetFuncLocations(func, false, &func->coldStartLoc, &func->coldEndLoc);
+        }
+
+        func->cfiCodes = new (getAllocator(CMK_UnwindInfo)) CFICodeVector(getAllocator());
+    }
 }
 
 void Compiler::unwindPushPopMaskCFI(regMaskTP regMask, bool isFloat)

@@ -9,12 +9,10 @@ using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
 using Microsoft.Win32.SafeHandles;
 
-#pragma warning disable IDE0060
-
 namespace System.Threading
 {
-#if FEATURE_WASM_THREADS
-#error when compiled with FEATURE_WASM_THREADS, we use PortableThreadPool.WorkerThread.Browser.Threads.Mono.cs
+#if FEATURE_WASM_MANAGED_THREADS
+#error when compiled with FEATURE_WASM_MANAGED_THREADS, we use PortableThreadPool.WorkerThread.Browser.Threads.Mono.cs
 #endif
     [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
     public sealed class RegisteredWaitHandle : MarshalByRefObject
@@ -99,10 +97,12 @@ namespace System.Threading
 
         internal static object? GetOrCreateThreadLocalCompletionCountObject() => null;
 
+#pragma warning disable IDE0060
         internal static bool NotifyWorkItemComplete(object? threadLocalCompletionCountObject, int currentTimeMs)
         {
             return true;
         }
+#pragma warning restore IDE0060
 
         private static RegisteredWaitHandle RegisterWaitForSingleObject(
              WaitHandle? waitObject,
@@ -166,10 +166,12 @@ namespace System.Threading
             throw new PlatformNotSupportedException(SR.Arg_PlatformNotSupported); // Replaced by ThreadPoolBoundHandle.BindHandle
         }
 
+#pragma warning disable IDE0060
         [Conditional("unnecessary")]
         internal static void ReportThreadStatus(bool isWorking)
         {
 
         }
+#pragma warning restore IDE0060
     }
 }

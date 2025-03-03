@@ -19,6 +19,20 @@ extern "C"
 }
 #endif
 
+static bool AllowR2RForImage(PEImage* pOwner)
+{
+    // Allow R2R for files
+    if (pOwner->IsFile())
+        return true;
+
+    // Allow R2R for externally provided images
+    INT64 size;
+    if (pOwner->GetExternalData(&size) != NULL && size > 0)
+        return true;
+
+    return false;
+}
+
 #ifndef DACCESS_COMPILE
 PEImageLayout* PEImageLayout::CreateFromByteArray(PEImage* pOwner, const BYTE* array, COUNT_T size)
 {
@@ -38,7 +52,7 @@ PEImageLayout* PEImageLayout::CreateFromHMODULE(HMODULE hModule, PEImage* pOwner
     CONTRACTL_END;
 
     PEImageLayout* pLoadLayout;
-    if (WszGetModuleHandle(NULL) == hModule)
+    if (GetModuleHandle(NULL) == hModule)
     {
         return new LoadedImageLayout(pOwner, hModule);
     }
@@ -70,9 +84,11 @@ PEImageLayout* PEImageLayout::LoadConverted(PEImage* pOwner, bool disableMapping
         pFlat = (FlatImageLayout*)pOwner->GetFlatLayout();
         pFlat->AddRef();
     }
-    else if (pOwner->IsFile())
+    else if (AllowR2RForImage(pOwner))
     {
+        // We only expect to be converting images that aren't already opened in the R2R composite case
         pFlat = new FlatImageLayout(pOwner);
+        _ASSERTE(pFlat->HasReadyToRunHeader());
     }
 
     if (pFlat == NULL || !pFlat->CheckILOnlyFormat())
@@ -88,9 +104,8 @@ PEImageLayout* PEImageLayout::LoadConverted(PEImage* pOwner, bool disableMapping
     _ASSERTE(!pOwner->IsFile() || !pFlat->HasReadyToRunHeader() || disableMapping);
 #endif
 
-    // ignore R2R if the image is not a file.
-    if ((pFlat->HasReadyToRunHeader() && pOwner->IsFile()) ||
-        pFlat->HasWriteableSections())
+    if ((pFlat->HasReadyToRunHeader() && AllowR2RForImage(pOwner))
+        || pFlat->HasWriteableSections())
     {
         return new ConvertedImageLayout(pFlat, disableMapping);
     }
@@ -416,7 +431,7 @@ void ConvertedImageLayout::FreeImageParts()
             CLRUnmapViewOfFile(PtrFromPart(imagePart));
         }
 
-        this->m_imageParts[i] = NULL;
+        this->m_imageParts[i] = 0;
     }
 }
 
@@ -462,7 +477,7 @@ ConvertedImageLayout::ConvertedImageLayout(FlatImageLayout* source, bool disable
 
     IfFailThrow(Init(loadedImage));
 
-    if (m_pOwner->IsFile() && IsNativeMachineFormat())
+    if (AllowR2RForImage(m_pOwner) && IsNativeMachineFormat())
     {
         // Do base relocation and exception hookup, if necessary.
         // otherwise R2R will be disabled for this image.
@@ -616,16 +631,27 @@ FlatImageLayout::FlatImageLayout(PEImage* pOwner)
         PRECONDITION(CheckPointer(pOwner));
     }
     CONTRACTL_END;
-    m_pOwner=pOwner;
-
-    HANDLE hFile = pOwner->GetFileHandle();
-    INT64 offset = pOwner->GetOffset();
-    INT64 size = pOwner->GetSize();
+    m_pOwner = pOwner;
 
 #ifdef LOGGING
     SString ownerPath{ pOwner->GetPath() };
     LOG((LF_LOADER, LL_INFO100, "PEImage: Opening flat %s\n", ownerPath.GetUTF8()));
 #endif // LOGGING
+
+    INT64 dataSize;
+    void* data = pOwner->GetExternalData(&dataSize);
+    if (data != nullptr)
+    {
+        // Image was provided as flat data via external assembly probing.
+        // We do not manage the data - just initialize with it directly.
+        _ASSERTE(dataSize != 0);
+        Init(data, (COUNT_T)dataSize);
+        return;
+    }
+
+    HANDLE hFile = pOwner->GetFileHandle();
+    INT64 offset = pOwner->GetOffset();
+    INT64 size = pOwner->GetSize();
 
     // If a size is not specified, load the whole file
     if (size == 0)
@@ -652,7 +678,7 @@ FlatImageLayout::FlatImageLayout(PEImage* pOwner)
             mapAccess = PAGE_EXECUTE_READ;
         }
 #endif
-        m_FileMap.Assign(WszCreateFileMapping(hFile, NULL, mapAccess, 0, 0, NULL));
+        m_FileMap.Assign(CreateFileMapping(hFile, NULL, mapAccess, 0, 0, NULL));
         if (m_FileMap == NULL)
             ThrowLastError();
 
@@ -680,11 +706,11 @@ FlatImageLayout::FlatImageLayout(PEImage* pOwner)
             // We will create another anonymous memory-only mapping and uncompress file there.
             // The flat image will refer to the anonymous mapping instead and we will release the original mapping.
 
-            HandleHolder anonMap = WszCreateFileMapping(INVALID_HANDLE_VALUE, NULL, PAGE_READWRITE, uncompressedSize >> 32, (DWORD)uncompressedSize, NULL);
+            HandleHolder anonMap = CreateFileMapping(INVALID_HANDLE_VALUE, NULL, PAGE_READWRITE, uncompressedSize >> 32, (DWORD)uncompressedSize, NULL);
             if (anonMap == NULL)
                 ThrowLastError();
 
-            LPVOID anonView = CLRMapViewOfFile(anonMap, FILE_MAP_READ | FILE_MAP_WRITE, 0, 0, 0);
+            CLRMapViewHolder anonView = CLRMapViewOfFile(anonMap, FILE_MAP_READ | FILE_MAP_WRITE, 0, 0, 0);
             if (anonView == NULL)
                 ThrowLastError();
 
@@ -693,7 +719,7 @@ FlatImageLayout::FlatImageLayout(PEImage* pOwner)
             PAL_ZStream zStream;
             zStream.nextIn = (uint8_t*)addr;
             zStream.availIn = (uint32_t)size;
-            zStream.nextOut = (uint8_t*)anonView;
+            zStream.nextOut = (uint8_t*)(void*)anonView;
             zStream.availOut = (uint32_t)uncompressedSize;
 
             // we match the compression side here. 15 is the window sise, negative means no zlib header.
@@ -717,9 +743,8 @@ FlatImageLayout::FlatImageLayout(PEImage* pOwner)
             addr = anonView;
             size = uncompressedSize;
             // Replace file handles with the handles to anonymous map. This will release the handles to the original view and map.
-            m_FileView.Assign(anonView);
-            m_FileMap.Assign(anonMap);
-
+            m_FileView.Assign(anonView.Extract());
+            m_FileMap.Assign(anonMap.Extract());
 #else
             _ASSERTE(!"Failure extracting contents of the application bundle. Compressed files used with a standalone (not singlefile) apphost.");
             ThrowHR(E_FAIL); // we don't have any indication of what kind of failure. Possibly a corrupt image.
@@ -766,7 +791,7 @@ FlatImageLayout::FlatImageLayout(PEImage* pOwner, const BYTE* array, COUNT_T siz
 
 #endif // defined(TARGET_WINDOWS)
 
-        m_FileMap.Assign(WszCreateFileMapping(INVALID_HANDLE_VALUE, NULL, mapAccess, 0, size, NULL));
+        m_FileMap.Assign(CreateFileMapping(INVALID_HANDLE_VALUE, NULL, mapAccess, 0, size, NULL));
         if (m_FileMap == NULL)
             ThrowLastError();
 

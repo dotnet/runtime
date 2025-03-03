@@ -344,6 +344,40 @@ namespace System.Numerics.Tests
 
             BigInteger b1 = new BigInteger(byteArray);
             VerifyComparison(BigInteger.One, false, b1 / b1, false, 0);
+
+            // BigIntegers constructed with a byte[]
+            {
+                int byteLength = 17;
+                var byteArray1 = new byte[byteLength];
+                var byteArray2 = new byte[byteLength];
+
+                byteArray1.AsSpan().Fill(1);
+                byteArray2.AsSpan().Fill(1);
+
+                // Equals
+                byteArray1[0] = 2;
+                byteArray2[0] = 2;
+                VerifyComparison(new BigInteger(byteArray1), false, new BigInteger(byteArray2), false, 0);
+                VerifyComparison(new BigInteger(byteArray1), true, new BigInteger(byteArray2), true, 0);
+                VerifyComparison(new BigInteger(byteArray1), false, new BigInteger(byteArray2), true, 1);
+                VerifyComparison(new BigInteger(byteArray1), true, new BigInteger(byteArray2), false, -1);
+
+                // Smaller
+                byteArray1[0] = 2;
+                byteArray2[0] = 3;
+                VerifyComparison(new BigInteger(byteArray1), false, new BigInteger(byteArray2), false, -1);
+                VerifyComparison(new BigInteger(byteArray1), true, new BigInteger(byteArray2), true, 1);
+                VerifyComparison(new BigInteger(byteArray1), false, new BigInteger(byteArray2), true, 1);
+                VerifyComparison(new BigInteger(byteArray1), true, new BigInteger(byteArray2), false, -1);
+
+                // Larger
+                byteArray1[0] = 3;
+                byteArray2[0] = 2;
+                VerifyComparison(new BigInteger(byteArray1), false, new BigInteger(byteArray2), false, 1);
+                VerifyComparison(new BigInteger(byteArray1), true, new BigInteger(byteArray2), true, -1);
+                VerifyComparison(new BigInteger(byteArray1), false, new BigInteger(byteArray2), true, 1);
+                VerifyComparison(new BigInteger(byteArray1), true, new BigInteger(byteArray2), false, -1);
+            }
         }
 
         private static void RunNegativeTests(Random random)
@@ -636,7 +670,7 @@ namespace System.Numerics.Tests
             Assert.Equal(expectedGreaterThan || expectedEquals, x >= y);
             Assert.Equal(expectedLessThan || expectedEquals, y >= x);
         }
-        
+
         private static void VerifyCompareResult(int expected, int actual)
         {
             if (0 == expected)

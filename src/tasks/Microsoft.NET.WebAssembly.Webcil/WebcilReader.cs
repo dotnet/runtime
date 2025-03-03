@@ -278,7 +278,7 @@ public sealed partial class WebcilReader : IDisposable
         using (var compressedStream = new MemoryStream(compressedBuffer, writable: false))
         using (var deflateStream = new System.IO.Compression.DeflateStream(compressedStream, System.IO.Compression.CompressionMode.Decompress, leaveOpen: true))
         {
-#if NETCOREAPP1_1_OR_GREATER
+#if NET
             decompressedBuffer = GC.AllocateUninitializedArray<byte>(decompressedSize);
 #else
             decompressedBuffer = new byte[decompressedSize];

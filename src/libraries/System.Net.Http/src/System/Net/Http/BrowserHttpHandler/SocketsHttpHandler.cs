@@ -196,6 +196,12 @@ namespace System.Net.Http
             set => throw new PlatformNotSupportedException();
         }
 
+        public bool EnableMultipleHttp3Connections
+        {
+            get => throw new PlatformNotSupportedException();
+            set => throw new PlatformNotSupportedException();
+        }
+
         public Func<SocketsHttpConnectionContext, CancellationToken, ValueTask<Stream>>? ConnectCallback
         {
             get => throw new PlatformNotSupportedException();

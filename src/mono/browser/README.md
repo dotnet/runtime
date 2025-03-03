@@ -117,9 +117,23 @@ The wrapper script used to actually run these tests, accepts:
 
 ### Using a local build of xharness
 
-* set `XHARNESS_CLI_PATH=/path/to/xharness/artifacts/bin/Microsoft.DotNet.XHarness.CLI/Debug/net7.0/Microsoft.DotNet.XHarness.CLI.dll`
+XHarness consists of two pieces for WASM
+
+#### 1. CLI/host
+
+* set `XHARNESS_CLI_PATH=/path/to/xharness/artifacts/bin/Microsoft.DotNet.XHarness.CLI/Debug/net9.0/Microsoft.DotNet.XHarness.CLI.dll`
 
 **Note:** Additional msbuild arguments can be passed with: `make ..  MSBUILD_ARGS="/p:a=b"`
+
+#### 2. Test runner running inside of the browser
+
+All library tests are hosted by `WasmTestRunner.csproj`. The project references XHarness nuget for running tests using Xunit. To make changes and iterate quickly
+
+- Add property `<RestoreAdditionalProjectSources>$(RestoreAdditionalProjectSources);LOCAL_CLONE_OF_XHARNESS\artifacts\packages\Debug\Shipping</RestoreAdditionalProjectSources>` in `WasmTestRunner.csproj`.
+- Set environment variable in your terminal `$env:NUGET_PACKAGES="$pwd\.nuget"` (so that nuget packages are restored to local folder `.nuget`)
+- Run "Pack" in the XHarness solution in Visual Studio on `Microsoft.DotNet.XHarness.TestRunners.Common` or `Microsoft.DotNet.XHarness.TestRunners.Xunit` based on your changes (it will generate a nuget package in `LOCAL_CLONE_OF_XHARNESS\artifacts\packages\Debug\Shipping`).
+- Build WasmTestRunner `.\dotnet.cmd build -c Debug .\src\libraries\Common\tests\WasmTestRunner\WasmTestRunner.csproj`.
+- If you need to iterate, delete Xunit or Common nuget cache `rm -r .\.nuget\microsoft.dotnet.xharness.testrunners.xunit\` or `rm -r .\.nuget\microsoft.dotnet.xharness.testrunners.common\`.
 
 ### Symbolicating traces
 
@@ -143,7 +157,7 @@ To run a test with `FooBar` in the name:
 
 `make run-debugger-tests TEST_FILTER=FooBar`
 
-(See https://docs.microsoft.com/en-us/dotnet/core/testing/selective-unit-tests?pivots=xunit for filter options)
+(See https://learn.microsoft.com/dotnet/core/testing/selective-unit-tests?pivots=xunit for filter options)
 
 Additional arguments for `dotnet test` can be passed via `MSBUILD_ARGS` or `TEST_ARGS`. For example `MSBUILD_ARGS="/p:WasmDebugLevel=5"`. Though only one of `TEST_ARGS`, or `TEST_FILTER` can be used at a time.
 
@@ -175,7 +189,7 @@ Also check [bench](../sample/wasm/browser-bench/README.md) sample to measure mon
 
 The wasm templates, located in the `templates` directory, are templates for `dotnet new`, VS and VS for Mac. They are packaged and distributed as part of the `wasm-experimental` workload. We have 2 templates, `wasmbrowser` and `wasmconsole`, for browser and console WebAssembly applications.
 
-For details about using `dotnet new` see the dotnet tool [documentation](https://docs.microsoft.com/en-us/dotnet/core/tools/dotnet-new).
+For details about using `dotnet new` see the dotnet tool [documentation](https://learn.microsoft.com/dotnet/core/tools/dotnet-new).
 
 To test changes in the templates, use `dotnet new install --force src/mono/wasm/templates/templates/browser`.
 
@@ -184,7 +198,7 @@ Example use of the `wasmconsole` template:
 ```console
 > dotnet new wasmconsole
 > dotnet publish
-> cd bin/Debug/net7.0/browser-wasm/AppBundle
+> cd bin/Debug/net9.0/browser-wasm/AppBundle
 > node main.mjs
 Hello World!
 Args:
@@ -218,7 +232,7 @@ There is also the [wa-edit](https://github.com/radekdoulik/wa-info#wa-edit) tool
 
 Bumping Emscripten version involves these steps:
 
-* update https://github.com/dotnet/runtime/blob/main/src/mono/wasm/emscripten-version.txt
+* update https://github.com/dotnet/runtime/blob/main/src/mono/browser/emscripten-version.txt
 * bump emscripten versions in docker images in https://github.com/dotnet/dotnet-buildtools-prereqs-docker
 * bump emscripten in https://github.com/dotnet/emsdk
 * bump docker images in https://github.com/dotnet/icu, update emscripten files in eng/patches/
@@ -230,7 +244,7 @@ Bumping Emscripten version involves these steps:
 
 Two things to keep in mind:
 
-1. We use the Azure DevOps NPM registry (configured in `src/mono/wasm/runtime/.npmrc`).  When
+1. We use the Azure DevOps NPM registry (configured in `src/mono/browser/runtime/.npmrc`).  When
    updating `package.json`, you will need to be logged in (see instructions for Windows and
    mac/Linux, below) in order for the registry to populate with the correct package versions.
    Otherwise, CI builds will fail.
@@ -261,7 +275,7 @@ npm update --lockfile-version=1
 Go to https://dev.azure.com/dnceng/public/_artifacts/feed/dotnet-public-npm/connect/npm and log in and click on the "Other" tab.
 Follow the instructions to set up your `~/.npmrc` with a personal authentication token.
 
-In folder `src/mono/wasm/runtime/`
+In folder `src/mono/browser/runtime/`
 
 ```sh
 rm -rf node_modules
@@ -274,7 +288,7 @@ npm update --lockfile-version=1
 ## Code style
 
 * Is enforced via [eslint](https://eslint.org/) and rules are in `./.eslintrc.js`
-* You could check the style by running `npm run lint` in `src/mono/wasm/runtime` directory
+* You could check the style by running `npm run lint` in `src/mono/browser/runtime` directory
 * You can install [plugin into your VS Code](https://marketplace.visualstudio.com/items?itemName=dbaeumer.vscode-eslint) to show you the errors as you type
 
 ## Builds on CI
@@ -305,14 +319,12 @@ npm update --lockfile-version=1
 
 * `runtime-wasm*` pipelines are triggered manually, and they only run the jobs that would not run on any default pipelines based on path changes.
 * The `AOT` jobs run only smoke tests on `runtime`, and on `runtime-wasm*` pipelines all the `AOT` tests are run.
-* HG libtests are library test with `HybridGlobalization=true`
 
 | .                 | runtime-wasm               | runtime-wasm-libtests | runtime-wasm-non-libtests |
 | ----------------- | -------------------------- | --------------------  | --------------------      |
 | libtests          | linux+windows: all         | linux+windows: all    | none                      |
 | libtests eat      | linux:         all         | linux:         all    | none                      |
 | libtests aot      | linux+windows: all         | linux+windows: all    | none                      |
-| libtests hg       | linux+windows: all         | linux+windows: all    | none                      |
 | high resource aot | linux+windows: all         | linux+windows: all    | none                      |
 | Wasm.Build.Tests  | linux+windows              | none                  | linux+windows             |
 | Debugger tests    | linux+windows              | none                  | linux+windows             |
@@ -348,18 +360,18 @@ npm update --lockfile-version=1
 
 Tests are run with V8, Chrome, node, and wasmtime for the various jobs.
 
-- V8: the version used is from `eng/testing/ChromeVersions.props`. This is used for all the library tests, and WBT, but *not* runtime tests.
+- V8: the version used is from `eng/testing/BrowserVersions.props`. This is used for all the library tests, and WBT, but *not* runtime tests.
 - Chrome: Same as V8.
 - Node: fixed version from emsdk
 - wasmtime - fixed version in `src/mono/wasi/wasi-sdk-version.txt`.
 
-### `eng/testing/ChromeVersions.props`
+### `eng/testing/BrowserVersions.props`
 
 This file is updated once a week by a github action `.github/workflows/bump-chrome-version.yml`, and the version is obtained by `src/tasks/WasmBuildTasks/GetChromeVersions.cs` task.
 
 # Perf pipeline
 
-- V8 version used to run the microbenchmarks is from `eng/testing/ChromeVersions.props`
+- V8 version used to run the microbenchmarks is from `eng/testing/BrowserVersions.props`
 
 TBD
 

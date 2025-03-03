@@ -1,0 +1,16 @@
+# This file configures CodeQL runs and TSA bug autofiling. For more information, see:
+# https://eng.ms/docs/cloud-ai-platform/devdiv/one-engineering-system-1es/1es-docs/codeql/troubleshooting/bugs/generated-library-code
+# (Access restricted to Microsoft employees only.)
+
+path_classifiers:
+  refs:
+    # The ref/ directories don't contain shipping implementations of code, so they should
+    # be excluded from analysis. If there is a problem at the API layer, the analysis
+    # engine will detect the problem in the src/ implementations anyway.
+    - src/libraries/**/ref/*
+    # exclude artifacts/obj/**/CMakeFiles/**/CheckFunctionExists.c since CMake 
+    # generates random directory names causing creation of duplicate issues 
+    # related to obsolete encryption algorithm used. Note that CheckFuntionExists 
+    # files are generated as part of build-time checks in CMake and are not compiled
+    # or linked into any product binaries.
+    - artifacts/obj/**/CMakeFiles/**/CheckFunctionExists.c

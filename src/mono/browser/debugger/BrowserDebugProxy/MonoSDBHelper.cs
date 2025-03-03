@@ -518,14 +518,14 @@ namespace Microsoft.WebAssembly.Diagnostics
 
         private unsafe T ReadBigEndian<T>() where T : struct
         {
-            Span<byte> data = stackalloc byte[Unsafe.SizeOf<T>()];
+            Span<byte> data = stackalloc byte[sizeof(T)];
             T ret = default;
             Read(data);
             if (BitConverter.IsLittleEndian)
             {
                 data.Reverse();
             }
-            data.CopyTo(new Span<byte>(Unsafe.AsPointer(ref ret), data.Length));
+            data.CopyTo(new Span<byte>(&ret, data.Length));
             return ret;
         }
     }
@@ -545,8 +545,8 @@ namespace Microsoft.WebAssembly.Diagnostics
 
         private unsafe void WriteBigEndian<T>(T val) where T : struct
         {
-            Span<byte> data = stackalloc byte[Unsafe.SizeOf<T>()];
-            new Span<byte>(Unsafe.AsPointer(ref val), data.Length).CopyTo(data);
+            Span<byte> data = stackalloc byte[sizeof(T)];
+            new Span<byte>(&val, data.Length).CopyTo(data);
             if (BitConverter.IsLittleEndian)
             {
                 data.Reverse();
@@ -973,7 +973,7 @@ namespace Microsoft.WebAssembly.Diagnostics
         }
 
         public void ResetTypes() {
-            this.types = new ();
+            this.types = new();
         }
 
         public async Task<AssemblyInfo> GetAssemblyInfo(int assemblyId, CancellationToken token)
@@ -1369,7 +1369,7 @@ namespace Microsoft.WebAssembly.Diagnostics
 
             using var retDebuggerCmdReader = await SendDebuggerAgentCommand(CmdAssembly.GetName, commandParamsWriter, token);
             var name = retDebuggerCmdReader.ReadString();
-            return name.Remove(name.IndexOf(",")) + ".dll";
+            return name.Remove(name.IndexOf(',')) + ".dll";
         }
 
         public async Task<string> GetMethodName(int methodId, CancellationToken token)
@@ -2181,7 +2181,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                         asyncLocal["name"] = match.Groups["varName"].Value;
                     }
                 }
-                else if (fieldName.StartsWith("$"))
+                else if (fieldName.StartsWith('$'))
                 {
                     continue;
                 }

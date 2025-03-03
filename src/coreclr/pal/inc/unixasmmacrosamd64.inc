@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+#define C_VAR(Name) rip + C_FUNC(Name)
+
 .macro NESTED_ENTRY Name, Section, Handler
         LEAF_ENTRY \Name, \Section
         .ifnc \Handler, NoHandler
@@ -14,15 +16,6 @@
 
 .macro NESTED_END Name, Section
         LEAF_END \Name, \Section
-#if defined(__APPLE__)
-        .set LOCAL_LABEL(\Name\()_Size), . - C_FUNC(\Name)
-        .section __LD,__compact_unwind,regular,debug
-        .quad C_FUNC(\Name)
-        .long LOCAL_LABEL(\Name\()_Size)
-        .long 0x04000000 # DWARF
-        .quad 0
-        .quad 0
-#endif
 .endm
 
 .macro PATCH_LABEL Name

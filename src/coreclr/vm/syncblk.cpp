@@ -69,6 +69,10 @@ InteropSyncBlockInfo::~InteropSyncBlockInfo()
     CONTRACTL_END;
 
     FreeUMEntryThunk();
+
+#if defined(FEATURE_COMWRAPPERS)
+    delete m_managedObjectComWrapperMap;
+#endif // FEATURE_COMWRAPPERS
 }
 
 #ifndef TARGET_UNIX
@@ -594,7 +598,7 @@ void SyncBlockCache::CleanupSyncBlocks()
             pParam->psb = NULL;
 
             // pulse GC mode to allow GC to perform its work
-            if (FinalizerThread::GetFinalizerThread()->CatchAtSafePointOpportunistic())
+            if (FinalizerThread::GetFinalizerThread()->CatchAtSafePoint())
             {
                 FinalizerThread::GetFinalizerThread()->PulseGCMode();
             }
@@ -1811,8 +1815,10 @@ BOOL ObjHeader::GetThreadOwningMonitorLock(DWORD *pThreadId, DWORD *pAcquisition
             SyncBlock* psb = g_pSyncTable[(int)index].m_SyncBlock;
 
             _ASSERTE(psb->GetMonitor() != NULL);
-            Thread* pThread = psb->GetMonitor()->GetHoldingThread();
-            if(pThread == NULL)
+            DWORD holdingThreadId = psb->GetMonitor()->GetHoldingThreadId();
+            // If the lock is orphaned during sync block creation, holdingThreadId would be assigned -1.
+            // Otherwise it would be the id of the holding thread if there is one or 0 if there isn't.
+            if (holdingThreadId == 0 || holdingThreadId == (DWORD)-1)
             {
                 *pThreadId = 0;
                 *pAcquisitionCount = 0;
@@ -1820,7 +1826,9 @@ BOOL ObjHeader::GetThreadOwningMonitorLock(DWORD *pThreadId, DWORD *pAcquisition
             }
             else
             {
-                *pThreadId = pThread->GetThreadId();
+                // Notice this id now could have been reused for a different thread (in case the lock was orphaned),
+                // but orphaned locks shouldn't be expected to work correctly anyway.
+                *pThreadId = holdingThreadId;
                 *pAcquisitionCount = psb->GetMonitor()->GetRecursionLevel();
                 return TRUE;
             }
@@ -2093,7 +2101,7 @@ BOOL ObjHeader::Validate (BOOL bVerifySyncBlkIndex)
 // Warning: Assumes you already own the cache lock.
 //          Assumes nothing allocated inside the SyncBlock (only releases the memory, does not destruct.)
 //
-// This holder really just meets GetSyncBlock()'s special needs. It's not a general purpose holder.
+// This holder really just meets GetSyncBlock()'s special requirements. It's not a general purpose holder.
 
 
 // Do not inline this call. (fyuan)
@@ -2104,7 +2112,7 @@ void VoidDeleteSyncBlockMemory(SyncBlock* psb)
     SyncBlockCache::GetSyncBlockCache()->DeleteSyncBlockMemory(psb);
 }
 
-typedef Wrapper<SyncBlock*, DoNothing<SyncBlock*>, VoidDeleteSyncBlockMemory, NULL> SyncBlockMemoryHolder;
+typedef Wrapper<SyncBlock*, DoNothing<SyncBlock*>, VoidDeleteSyncBlockMemory, 0> SyncBlockMemoryHolder;
 
 
 // get the sync block for an existing object
@@ -2186,20 +2194,22 @@ SyncBlock *ObjHeader::GetSyncBlock()
                             _ASSERTE(lockThreadId != 0);
 
                             Thread *pThread = g_pThinLockThreadIdDispenser->IdToThreadWithValidation(lockThreadId);
+                            DWORD threadId = 0;
                             SIZE_T osThreadId;
 
                             if (pThread == NULL)
                             {
                                 // The lock is orphaned.
-                                pThread = (Thread*) -1;
+                                threadId = -1;
                                 osThreadId = (SIZE_T)-1;
                             }
                             else
                             {
+                                threadId = pThread->GetThreadId();
                                 osThreadId = pThread->GetOSThreadId64();
                             }
 
-                            syncBlock->InitState(recursionLevel + 1, pThread, osThreadId);
+                            syncBlock->InitState(recursionLevel + 1, threadId, osThreadId);
                         }
                     }
                     else if ((bits & BIT_SBLK_IS_HASHCODE) != 0)
@@ -2320,6 +2330,17 @@ void ObjHeader::PulseAll()
 //
 // ***************************************************************************
 
+#endif // !DACCESS_COMPILE
+
+// the DAC needs to have this method available
+PTR_Thread AwareLock::GetHoldingThread()
+{
+    LIMITED_METHOD_CONTRACT;
+    return g_pThinLockThreadIdDispenser->IdToThreadWithValidation(m_HoldingThreadId);
+}
+
+#ifndef DACCESS_COMPILE
+
 void AwareLock::AllocLockSemEvent()
 {
     CONTRACTL
@@ -2357,12 +2378,12 @@ void AwareLock::Enter()
 
     Thread *pCurThread = GetThread();
     LockState state = m_lockState.VolatileLoadWithoutBarrier();
-    if (!state.IsLocked() || m_HoldingThread != pCurThread)
+    if (!state.IsLocked() || m_HoldingThreadId != pCurThread->GetThreadId())
     {
         if (m_lockState.InterlockedTryLock_Or_RegisterWaiter(this, state))
         {
             // We get here if we successfully acquired the mutex.
-            m_HoldingThread = pCurThread;
+            m_HoldingThreadId = pCurThread->GetThreadId();
             m_HoldingOSThreadId = pCurThread->GetOSThreadId64();
             m_Recursion = 1;
 
@@ -2418,14 +2439,14 @@ BOOL AwareLock::TryEnter(INT32 timeOut)
     }
 
     LockState state = m_lockState.VolatileLoadWithoutBarrier();
-    if (!state.IsLocked() || m_HoldingThread != pCurThread)
+    if (!state.IsLocked() || m_HoldingThreadId != pCurThread->GetThreadId())
     {
         if (timeOut == 0
                 ? m_lockState.InterlockedTryLock(state)
                 : m_lockState.InterlockedTryLock_Or_RegisterWaiter(this, state))
         {
             // We get here if we successfully acquired the mutex.
-            m_HoldingThread = pCurThread;
+            m_HoldingThreadId = pCurThread->GetThreadId();
             m_HoldingOSThreadId = pCurThread->GetOSThreadId64();
             m_Recursion = 1;
 
@@ -2677,7 +2698,7 @@ BOOL AwareLock::EnterEpilogHelper(Thread* pCurThread, INT32 timeOut)
                 {
                     duration = end - start;
                 }
-                duration = min(duration, (DWORD)timeOut);
+                duration = min(duration, (ULONGLONG)timeOut);
                 timeOut -= (INT32)duration;
             }
         }
@@ -2704,7 +2725,7 @@ BOOL AwareLock::EnterEpilogHelper(Thread* pCurThread, INT32 timeOut)
         return false;
     }
 
-    m_HoldingThread = pCurThread;
+    m_HoldingThreadId = pCurThread->GetThreadId();
     m_HoldingOSThreadId = pCurThread->GetOSThreadId64();
     m_Recursion = 1;
 
@@ -2766,7 +2787,7 @@ LONG AwareLock::LeaveCompletely()
 BOOL AwareLock::OwnedByCurrentThread()
 {
     WRAPPER_NO_CONTRACT;
-    return (GetThread() == m_HoldingThread);
+    return (GetThread()->GetThreadId() == m_HoldingThreadId);
 }
 
 // ***************************************************************************
@@ -2847,21 +2868,22 @@ BOOL SyncBlock::Wait(INT32 timeOut)
 
     _ASSERTE ((SyncBlock*)((DWORD_PTR)walk->m_Next->m_WaitSB & ~1)== this);
 
-    PendingSync   syncState(walk);
-
-    OBJECTREF     obj = m_Monitor.GetOwningObject();
-    syncState.m_Object = OBJECTREFToObject(obj);
-
-    m_Monitor.IncrementTransientPrecious();
-
     // While we are in this frame the thread is considered blocked on the
-    // event of the monitor lock according to the debugger
+    // event of the monitor lock according to the debugger. DebugBlockingItemHolder
+    // can trigger a GC, so set it up before accessing the owning object.
     DebugBlockingItem blockingMonitorInfo;
     blockingMonitorInfo.dwTimeout = timeOut;
     blockingMonitorInfo.pMonitor = &m_Monitor;
     blockingMonitorInfo.pAppDomain = SystemDomain::GetCurrentDomain();
     blockingMonitorInfo.type = DebugBlock_MonitorEvent;
     DebugBlockingItemHolder holder(pCurThread, &blockingMonitorInfo);
+
+    PendingSync   syncState(walk);
+
+    OBJECTREF     obj = m_Monitor.GetOwningObject();
+    syncState.m_Object = OBJECTREFToObject(obj);
+
+    m_Monitor.IncrementTransientPrecious();
 
     GCPROTECT_BEGIN(obj);
     {

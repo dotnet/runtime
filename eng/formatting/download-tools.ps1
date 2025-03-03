@@ -8,16 +8,24 @@ function DownloadClangTool {
         $downloadOutputPath
     )
 
-    $baseUri = "https://clrjit.blob.core.windows.net/clang-tools/windows"
+    $clangVersion = "17.0.6"
+    $clangToolsRootUrl = "https://clrjit2.blob.core.windows.net/clang-tools"
+    $clangPlatform = "windows-x64"
+
+    $toolUrl = "$clangToolsRootUrl/$clangVersion/$clangPlatform/$toolName.exe"
+    $targetPath = "$downloadOutputPath\$toolName.exe" 
 
     if (-not $(ls $downloadOutputPath | Where-Object { $_.Name -eq "$toolName.exe" })) {
 
         Retry({
-            Write-Output "Downloading '$baseUri/$toolName.exe'"
+            Write-Output "Downloading '$toolUrl' to '$targetPath'"
             # Pass -PassThru as otherwise Invoke-WebRequest leaves a corrupted file if the download fails. With -PassThru the download is buffered first.
             # -UseBasicParsing is necessary for older PowerShells when Internet Explorer might not be installed/configured
-            $null = Invoke-WebRequest -Uri "$baseUri/$toolName.exe" -OutFile $(Join-Path $downloadOutputPath -ChildPath "$toolName.exe") -PassThru -UseBasicParsing
+            $null = Invoke-WebRequest -Uri "$toolUrl" -OutFile $(Join-Path $downloadOutputPath -ChildPath "$toolName.exe") -PassThru -UseBasicParsing
         })
+    }
+    else {
+        Write-Output "Found '$targetPath'"
     }
 }
 

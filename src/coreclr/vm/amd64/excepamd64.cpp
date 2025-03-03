@@ -48,12 +48,14 @@ inline PTR_CONTEXT GetCONTEXTFromRedirectedStubStackFrameWorker(UINT_PTR establi
     return *ppContext;
 }
 
+#ifdef TARGET_WINDOWS
 PTR_CONTEXT GetCONTEXTFromRedirectedStubStackFrame(DISPATCHER_CONTEXT * pDispatcherContext)
 {
     LIMITED_METHOD_DAC_CONTRACT;
 
     return GetCONTEXTFromRedirectedStubStackFrameWorker(pDispatcherContext->EstablisherFrame);
 }
+#endif // TARGET_WINDOWS
 
 PTR_CONTEXT GetCONTEXTFromRedirectedStubStackFrame(CONTEXT * pContext)
 {
@@ -63,17 +65,14 @@ PTR_CONTEXT GetCONTEXTFromRedirectedStubStackFrame(CONTEXT * pContext)
 }
 
 #if !defined(DACCESS_COMPILE)
-
+#ifdef TARGET_WINDOWS
 FaultingExceptionFrame *GetFrameFromRedirectedStubStackFrame (DISPATCHER_CONTEXT *pDispatcherContext)
 {
     LIMITED_METHOD_CONTRACT;
 
     return (FaultingExceptionFrame*)(pDispatcherContext->EstablisherFrame + THROWSTUB_ESTABLISHER_OFFSET_FaultingExceptionFrame);
 }
-
-#endif // !DACCESS_COMPILE
-
-#if !defined(DACCESS_COMPILE)
+#endif // TARGET_WINDOWS
 
 #define AMD64_SIZE64_PREFIX 0x48
 #define AMD64_ADD_IMM8_OP 0x83
@@ -200,7 +199,7 @@ RtlVirtualUnwind_Worker (
     BOOL     InEpilogue = FALSE;
     BOOL     HasManagedBreakpoint = FALSE;
     BOOL     HasUnmanagedBreakpoint = FALSE;
-    UCHAR    TempOpcode = NULL;
+    UCHAR    TempOpcode = 0;
     PUCHAR   NextByte;
     ULONG    CurrentOffset;
     ULONG    FrameRegister;

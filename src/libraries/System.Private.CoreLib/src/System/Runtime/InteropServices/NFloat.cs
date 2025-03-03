@@ -780,19 +780,7 @@ namespace System.Runtime.InteropServices
         {
             if (obj is NFloat other)
             {
-                if (_value < other._value) return -1;
-                if (_value > other._value) return 1;
-                if (_value == other._value) return 0;
-
-                // At least one of the values is NaN.
-                if (NativeType.IsNaN(_value))
-                {
-                    return NativeType.IsNaN(other._value) ? 0 : -1;
-                }
-                else
-                {
-                    return 1;
-                }
+                return CompareTo(other);
             }
             else if (obj is null)
             {
@@ -991,6 +979,14 @@ namespace System.Runtime.InteropServices
 
         /// <inheritdoc cref="IFloatingPoint{TSelf}.Ceiling(TSelf)" />
         public static NFloat Ceiling(NFloat x) => new NFloat(NativeType.Ceiling(x._value));
+
+        /// <inheritdoc cref="IFloatingPoint{TSelf}.ConvertToInteger{TInteger}(TSelf)" />
+        public static TInteger ConvertToInteger<TInteger>(NFloat value)
+            where TInteger : IBinaryInteger<TInteger> => TInteger.CreateSaturating(value);
+
+        /// <inheritdoc cref="IFloatingPoint{TSelf}.ConvertToIntegerNative{TInteger}(TSelf)" />
+        public static TInteger ConvertToIntegerNative<TInteger>(NFloat value)
+            where TInteger : IBinaryInteger<TInteger> => TInteger.CreateSaturating(value);
 
         /// <inheritdoc cref="IFloatingPoint{TSelf}.Floor(TSelf)" />
         public static NFloat Floor(NFloat x) => new NFloat(NativeType.Floor(x._value));
@@ -1251,17 +1247,26 @@ namespace System.Runtime.InteropServices
         /// <inheritdoc cref="INumber{TSelf}.Clamp(TSelf, TSelf, TSelf)" />
         public static NFloat Clamp(NFloat value, NFloat min, NFloat max) => new NFloat(NativeType.Clamp(value._value, min._value, max._value));
 
+        /// <inheritdoc cref="INumber{TSelf}.Clamp(TSelf, TSelf, TSelf)" />
+        public static NFloat ClampNative(NFloat value, NFloat min, NFloat max) => new NFloat(NativeType.ClampNative(value._value, min._value, max._value));
+
         /// <inheritdoc cref="INumber{TSelf}.CopySign(TSelf, TSelf)" />
         public static NFloat CopySign(NFloat value, NFloat sign) => new NFloat(NativeType.CopySign(value._value, sign._value));
 
         /// <inheritdoc cref="INumber{TSelf}.Max(TSelf, TSelf)" />
         public static NFloat Max(NFloat x, NFloat y) => new NFloat(NativeType.Max(x._value, y._value));
 
+        /// <inheritdoc cref="INumber{TSelf}.MaxNative(TSelf, TSelf)" />
+        public static NFloat MaxNative(NFloat x, NFloat y) => new NFloat(NativeType.MaxNative(x._value, y._value));
+
         /// <inheritdoc cref="INumber{TSelf}.MaxNumber(TSelf, TSelf)" />
         public static NFloat MaxNumber(NFloat x, NFloat y) => new NFloat(NativeType.MaxNumber(x._value, y._value));
 
         /// <inheritdoc cref="INumber{TSelf}.Min(TSelf, TSelf)" />
         public static NFloat Min(NFloat x, NFloat y) => new NFloat(NativeType.Min(x._value, y._value));
+
+        /// <inheritdoc cref="INumber{TSelf}.MinNative(TSelf, TSelf)" />
+        public static NFloat MinNative(NFloat x, NFloat y) => new NFloat(NativeType.MinNative(x._value, y._value));
 
         /// <inheritdoc cref="INumber{TSelf}.MinNumber(TSelf, TSelf)" />
         public static NFloat MinNumber(NFloat x, NFloat y) => new NFloat(NativeType.MinNumber(x._value, y._value));
@@ -1381,6 +1386,9 @@ namespace System.Runtime.InteropServices
         /// <inheritdoc cref="INumberBase{TSelf}.MinMagnitudeNumber(TSelf, TSelf)" />
         public static NFloat MinMagnitudeNumber(NFloat x, NFloat y) => new NFloat(NativeType.MinMagnitudeNumber(x._value, y._value));
 
+        /// <inheritdoc cref="INumberBase{TSelf}.MultiplyAddEstimate(TSelf, TSelf, TSelf)" />
+        public static NFloat MultiplyAddEstimate(NFloat left, NFloat right, NFloat addend) => new NFloat(NativeType.MultiplyAddEstimate(left._value, right._value, addend._value));
+
         /// <inheritdoc cref="INumberBase{TSelf}.TryConvertFromChecked{TOther}(TOther, out TSelf)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         static bool INumberBase<NFloat>.TryConvertFromChecked<TOther>(TOther value, out NFloat result)
@@ -1402,6 +1410,7 @@ namespace System.Runtime.InteropServices
             return TryConvertFrom(value, out result);
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static bool TryConvertFrom<TOther>(TOther value, out NFloat result)
             where TOther : INumberBase<TOther>
         {
@@ -1641,6 +1650,7 @@ namespace System.Runtime.InteropServices
             return TryConvertTo(value, out result);
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static bool TryConvertTo<TOther>(NFloat value, [MaybeNullWhen(false)] out TOther result)
             where TOther : INumberBase<TOther>
         {

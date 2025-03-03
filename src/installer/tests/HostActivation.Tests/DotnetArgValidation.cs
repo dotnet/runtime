@@ -1,9 +1,11 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using Microsoft.DotNet.Cli.Build;
 using System;
 using System.IO;
+using System.Text;
+using Microsoft.DotNet.Cli.Build;
+using Microsoft.DotNet.TestUtils;
 using Xunit;
 
 namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
@@ -94,6 +96,23 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
         }
 
         [Fact]
+        public void DotNetInfo_Utf8Path()
+        {
+            string installLocation = Encoding.UTF8.GetString("utf8-龯蝌灋齅ㄥ䶱"u8);
+            DotNetCli dotnet = new DotNetBuilder(sharedTestState.BaseDirectory.Location, TestContext.BuiltDotNet.BinPath, installLocation)
+                .Build();
+
+            var result = dotnet.Exec("--info")
+                .DotNetRoot(Path.Combine(sharedTestState.BaseDirectory.Location, installLocation))
+                .CaptureStdErr()
+                .CaptureStdOut(Encoding.UTF8)
+                .Execute();
+
+            result.Should().Pass()
+                .And.HaveStdOutMatching($@"DOTNET_ROOT.*{installLocation}");
+        }
+
+        [Fact]
         public void DotNetInfo_WithSDK()
         {
             DotNetCli dotnet = new DotNetBuilder(sharedTestState.BaseDirectory.Location, TestContext.BuiltDotNet.BinPath, "withSdk")
@@ -118,17 +137,15 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
 
         public class SharedTestState : IDisposable
         {
-            public RepoDirectoriesProvider RepoDirectories { get; }
-
             public TestArtifact BaseDirectory { get; }
 
             public SharedTestState()
             {
-                BaseDirectory = new TestArtifact(SharedFramework.CalculateUniqueTestDirectory(Path.Combine(TestArtifact.TestArtifactsPath, "argValidation")));
+                BaseDirectory = TestArtifact.Create("argValidation");
 
                 // Create an empty global.json file
                 Directory.CreateDirectory(BaseDirectory.Location);
-                File.WriteAllText(Path.Combine(BaseDirectory.Location, "global.json"), "{}");
+                GlobalJson.CreateEmpty(BaseDirectory.Location);
             }
 
             public void Dispose()

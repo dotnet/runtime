@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Concurrent;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Reflection.Runtime.General;
 using System.Reflection.Runtime.MethodInfos;
@@ -36,6 +37,7 @@ namespace System.Reflection.Runtime.General
 {
     internal static partial class TypeUnifier
     {
+        [FeatureSwitchDefinition("System.Reflection.IsTypeConstructionEagerlyValidated")]
         // This can be replaced at native compile time using a feature switch.
         internal static bool IsTypeConstructionEagerlyValidated => true;
 

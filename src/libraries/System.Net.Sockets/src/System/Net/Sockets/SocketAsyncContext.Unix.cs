@@ -30,7 +30,7 @@ namespace System.Net.Sockets
 
     // See comments on OperationQueue below for more details of how the queue coordination works.
 
-    internal sealed class SocketAsyncContext
+    internal sealed partial class SocketAsyncContext
     {
         // Cached operation instances for operations commonly repeated on the same socket instance,
         // e.g. async accepts, sends/receives with single and multiple buffers.  More can be
@@ -119,10 +119,10 @@ namespace System.Net.Sockets
                 Canceled
             }
 
-            private int _state; // Actually AsyncOperation.State.
+            private volatile AsyncOperation.State _state;
 
 #if DEBUG
-            private int _callbackQueued; // When non-zero, the callback has been queued.
+            private bool _callbackQueued; // When true, the callback has been queued.
 #endif
 
             public readonly SocketAsyncContext AssociatedContext;
@@ -141,11 +141,11 @@ namespace System.Net.Sockets
 
             public void Reset()
             {
-                _state = (int)State.Waiting;
+                _state = State.Waiting;
                 Event = null;
                 Next = this;
 #if DEBUG
-                _callbackQueued = 0;
+                _callbackQueued = false;
 #endif
             }
 
@@ -154,34 +154,34 @@ namespace System.Net.Sockets
                 TraceWithContext(context, "Enter");
 
                 // Set state to Running, unless we've been canceled
-                int oldState = Interlocked.CompareExchange(ref _state, (int)State.Running, (int)State.Waiting);
-                if (oldState == (int)State.Canceled)
+                State oldState = Interlocked.CompareExchange(ref _state, State.Running, State.Waiting);
+                if (oldState == State.Canceled)
                 {
                     TraceWithContext(context, "Exit, Previously canceled");
                     return OperationResult.Cancelled;
                 }
 
-                Debug.Assert(oldState == (int)State.Waiting, $"Unexpected operation state: {(State)oldState}");
+                Debug.Assert(oldState == State.Waiting, $"Unexpected operation state: {(State)oldState}");
 
                 // Try to perform the IO
                 if (DoTryComplete(context))
                 {
-                    Debug.Assert((State)Volatile.Read(ref _state) is State.Running or State.RunningWithPendingCancellation, "Unexpected operation state");
+                    Debug.Assert(_state is State.Running or State.RunningWithPendingCancellation, "Unexpected operation state");
 
-                    Volatile.Write(ref _state, (int)State.Complete);
+                    _state = State.Complete;
 
                     TraceWithContext(context, "Exit, Completed");
                     return OperationResult.Completed;
                 }
 
                 // Set state back to Waiting, unless we were canceled, in which case we have to process cancellation now
-                int newState;
+                State newState;
                 while (true)
                 {
-                    int state = Volatile.Read(ref _state);
-                    Debug.Assert(state is (int)State.Running or (int)State.RunningWithPendingCancellation, $"Unexpected operation state: {(State)state}");
+                    State state = _state;
+                    Debug.Assert(state is State.Running or State.RunningWithPendingCancellation, $"Unexpected operation state: {(State)state}");
 
-                    newState = (state == (int)State.Running ? (int)State.Waiting : (int)State.Canceled);
+                    newState = (state == State.Running ? State.Waiting : State.Canceled);
                     if (state == Interlocked.CompareExchange(ref _state, newState, state))
                     {
                         break;
@@ -190,7 +190,7 @@ namespace System.Net.Sockets
                     // Race to update the state. Loop and try again.
                 }
 
-                if (newState == (int)State.Canceled)
+                if (newState == State.Canceled)
                 {
                     ProcessCancellation();
                     TraceWithContext(context, "Exit, Newly cancelled");
@@ -208,16 +208,16 @@ namespace System.Net.Sockets
                 // Note we could be cancelling because of socket close. Regardless, we don't need the registration anymore.
                 CancellationRegistration.Dispose();
 
-                int newState;
+                State newState;
                 while (true)
                 {
-                    int state = Volatile.Read(ref _state);
-                    if (state is (int)State.Complete or (int)State.Canceled or (int)State.RunningWithPendingCancellation)
+                    State state = _state;
+                    if (state is State.Complete or State.Canceled or State.RunningWithPendingCancellation)
                     {
                         return false;
                     }
 
-                    newState = (state == (int)State.Waiting ? (int)State.Canceled : (int)State.RunningWithPendingCancellation);
+                    newState = (state == State.Waiting ? State.Canceled : State.RunningWithPendingCancellation);
                     if (state == Interlocked.CompareExchange(ref _state, newState, state))
                     {
                         break;
@@ -226,7 +226,7 @@ namespace System.Net.Sockets
                     // Race to update the state. Loop and try again.
                 }
 
-                if (newState == (int)State.RunningWithPendingCancellation)
+                if (newState == State.RunningWithPendingCancellation)
                 {
                     // TryComplete will either succeed, or it will see the pending cancellation and deal with it.
                     return false;
@@ -243,7 +243,7 @@ namespace System.Net.Sockets
             {
                 Trace("Enter");
 
-                Debug.Assert(_state == (int)State.Canceled);
+                Debug.Assert(_state == State.Canceled);
 
                 ErrorCode = SocketError.OperationAborted;
 
@@ -255,7 +255,7 @@ namespace System.Net.Sockets
                 else
                 {
 #if DEBUG
-                    Debug.Assert(Interlocked.CompareExchange(ref _callbackQueued, 1, 0) == 0, $"Unexpected _callbackQueued: {_callbackQueued}");
+                    Debug.Assert(!Interlocked.Exchange(ref _callbackQueued, true), $"Unexpected _callbackQueued: {_callbackQueued}");
 #endif
                     // We've marked the operation as canceled, and so should invoke the callback, but
                     // we can't pool the object, as ProcessQueue may still have a reference to it, due to
@@ -362,7 +362,7 @@ namespace System.Net.Sockets
                 Callback!(BytesTransferred, SocketAddress, SocketFlags.None, ErrorCode);
         }
 
-        private sealed class BufferMemorySendOperation : SendOperation
+        private class BufferMemorySendOperation : SendOperation
         {
             public Memory<byte> Buffer;
 
@@ -648,21 +648,42 @@ namespace System.Net.Sockets
             }
         }
 
-        private sealed class ConnectOperation : WriteOperation
+        private sealed class ConnectOperation : BufferMemorySendOperation
         {
             public ConnectOperation(SocketAsyncContext context) : base(context) { }
-
-            public Action<SocketError>? Callback { get; set; }
 
             protected override bool DoTryComplete(SocketAsyncContext context)
             {
                 bool result = SocketPal.TryCompleteConnect(context._socket, out ErrorCode);
                 context._socket.RegisterConnectResult(ErrorCode);
+
+                if (result && ErrorCode == SocketError.Success &&  Buffer.Length > 0)
+                {
+                    SocketError error = context.SendToAsync(Buffer, 0, Buffer.Length, SocketFlags.None, Memory<byte>.Empty, ref BytesTransferred, Callback!, default);
+                    if (error != SocketError.Success && error != SocketError.IOPending)
+                    {
+                        context._socket.RegisterConnectResult(ErrorCode);
+                    }
+                }
                 return result;
             }
 
-            public override void InvokeCallback(bool allowPooling) =>
-                Callback!(ErrorCode);
+            public override unsafe void InvokeCallback(bool allowPooling)
+            {
+                var cb = Callback!;
+                int bt = BytesTransferred;
+                Memory<byte> sa = SocketAddress;
+                SocketError ec = ErrorCode;
+                Memory<byte> buffer = Buffer;
+
+                if (buffer.Length == 0)
+                {
+                    // Invoke callback only when we are completely done.
+                    // In case data were provided for Connect we may or may not send them all.
+                    // If we did not we will need follow-up with Send operation
+                    cb(bt, sa, SocketFlags.None, ec);
+                }
+            }
         }
 
         private sealed class SendFileOperation : WriteOperation
@@ -1235,12 +1256,14 @@ namespace System.Net.Sockets
             }
         }
 
-        private readonly SafeSocketHandle _socket;
+        internal readonly SafeSocketHandle _socket;
         private OperationQueue<ReadOperation> _receiveQueue;
         private OperationQueue<WriteOperation> _sendQueue;
         private SocketAsyncEngine? _asyncEngine;
         private bool IsRegistered => _asyncEngine != null;
-        private bool _isHandleNonBlocking;
+        private bool _isHandleNonBlocking = OperatingSystem.IsWasi(); // WASI sockets are always non-blocking, because we don't have another thread which could be blocked
+        /// <summary>An index into <see cref="SocketAsyncEngine"/>'s table of all contexts that are currently <see cref="IsRegistered"/>.</summary>
+        internal int GlobalContextIndex = -1;
 
         private readonly object _registerLock = new object();
 
@@ -1309,13 +1332,21 @@ namespace System.Net.Sockets
             // We don't need to synchronize with Register.
             // This method is called when the handle gets released.
             // The Register method will throw ODE when it tries to use the handle at this point.
-            _asyncEngine?.UnregisterSocket(_socket.DangerousGetHandle());
+            if (IsRegistered)
+            {
+                SocketAsyncEngine.UnregisterSocket(this);
+            }
 
             return aborted;
         }
 
         public void SetHandleNonBlocking()
         {
+            if (OperatingSystem.IsWasi())
+            {
+                // WASI sockets are always non-blocking, because in ST we don't have another thread which could be blocked
+                return;
+            }
             //
             // Our sockets may start as blocking, and later transition to non-blocking, either because the user
             // explicitly requested non-blocking mode, or because we need non-blocking mode to support async
@@ -1341,6 +1372,7 @@ namespace System.Net.Sockets
         private void PerformSyncOperation<TOperation>(ref OperationQueue<TOperation> queue, TOperation operation, int timeout, int observedSequenceNumber)
             where TOperation : AsyncOperation
         {
+            if (!Socket.OSSupportsThreads) throw new PlatformNotSupportedException();
             Debug.Assert(timeout == -1 || timeout > 0, $"Unexpected timeout: {timeout}");
 
             using (var e = new ManualResetEventSlim(false, 0))
@@ -1477,8 +1509,9 @@ namespace System.Net.Sockets
 
         public SocketError Connect(Memory<byte> socketAddress)
         {
-            Debug.Assert(socketAddress.Length > 0, $"Unexpected socketAddressLen: {socketAddress.Length}");
+            if (!Socket.OSSupportsThreads) throw new PlatformNotSupportedException();
 
+            Debug.Assert(socketAddress.Length > 0, $"Unexpected socketAddressLen: {socketAddress.Length}");
             // Connect is different than the usual "readiness" pattern of other operations.
             // We need to call TryStartConnect to initiate the connect with the OS,
             // before we try to complete it via epoll notification.
@@ -1503,7 +1536,7 @@ namespace System.Net.Sockets
             return operation.ErrorCode;
         }
 
-        public SocketError ConnectAsync(Memory<byte> socketAddress, Action<SocketError> callback)
+        public SocketError ConnectAsync(Memory<byte> socketAddress, Action<int, Memory<byte>, SocketFlags, SocketError> callback, Memory<byte> buffer, out int sentBytes)
         {
             Debug.Assert(socketAddress.Length > 0, $"Unexpected socketAddressLen: {socketAddress.Length}");
             Debug.Assert(callback != null, "Expected non-null callback");
@@ -1516,9 +1549,20 @@ namespace System.Net.Sockets
             SocketError errorCode;
             int observedSequenceNumber;
             _sendQueue.IsReady(this, out observedSequenceNumber);
-            if (SocketPal.TryStartConnect(_socket, socketAddress, out errorCode))
+#if SYSTEM_NET_SOCKETS_APPLE_PLATFROM
+            if (SocketPal.TryStartConnect(_socket, socketAddress, out errorCode, buffer.Span, _socket.TfoEnabled, out sentBytes))
+#else
+            if (SocketPal.TryStartConnect(_socket, socketAddress, out errorCode, buffer.Span, false, out sentBytes)) // In Linux, we can figure it out as needed inside PAL.
+#endif
             {
                 _socket.RegisterConnectResult(errorCode);
+
+                int remains = buffer.Length - sentBytes;
+
+                if (errorCode == SocketError.Success && remains > 0)
+                {
+                    errorCode = SendToAsync(buffer.Slice(sentBytes), 0, remains, SocketFlags.None, Memory<byte>.Empty, ref sentBytes, callback!, default);
+                }
                 return errorCode;
             }
 
@@ -1526,10 +1570,16 @@ namespace System.Net.Sockets
             {
                 Callback = callback,
                 SocketAddress = socketAddress,
+                Buffer = buffer.Slice(sentBytes),
+                BytesTransferred = sentBytes,
             };
 
             if (!_sendQueue.StartAsyncOperation(this, operation, observedSequenceNumber))
             {
+                if (operation.ErrorCode == SocketError.Success)
+                {
+                    sentBytes += operation.BytesTransferred;
+                }
                 return operation.ErrorCode;
             }
 
@@ -1553,6 +1603,8 @@ namespace System.Net.Sockets
 
         public unsafe SocketError ReceiveFrom(Memory<byte> buffer, ref SocketFlags flags, Memory<byte> socketAddress, out int socketAddressLen, int timeout, out int bytesReceived)
         {
+            if (!Socket.OSSupportsThreads) throw new PlatformNotSupportedException();
+
             Debug.Assert(timeout == -1 || timeout > 0, $"Unexpected timeout: {timeout}");
 
             SocketFlags receivedFlags;
@@ -1584,6 +1636,8 @@ namespace System.Net.Sockets
 
         public unsafe SocketError ReceiveFrom(Span<byte> buffer, ref SocketFlags flags, Memory<byte> socketAddress, out int socketAddressLen, int timeout, out int bytesReceived)
         {
+            if (!Socket.OSSupportsThreads) throw new PlatformNotSupportedException();
+
             SocketFlags receivedFlags;
             SocketError errorCode;
             int observedSequenceNumber;
@@ -1694,6 +1748,8 @@ namespace System.Net.Sockets
 
         public unsafe SocketError ReceiveFrom(IList<ArraySegment<byte>> buffers, ref SocketFlags flags, Memory<byte> socketAddress, out int socketAddressLen, int timeout, out int bytesReceived)
         {
+            if (!Socket.OSSupportsThreads) throw new PlatformNotSupportedException();
+
             Debug.Assert(timeout == -1 || timeout > 0, $"Unexpected timeout: {timeout}");
 
             SocketFlags receivedFlags;
@@ -1761,6 +1817,8 @@ namespace System.Net.Sockets
         public SocketError ReceiveMessageFrom(
             Memory<byte> buffer, ref SocketFlags flags, Memory<byte> socketAddress, out int socketAddressLen, bool isIPv4, bool isIPv6, int timeout, out IPPacketInformation ipPacketInformation, out int bytesReceived)
         {
+            if (!Socket.OSSupportsThreads) throw new PlatformNotSupportedException();
+
             Debug.Assert(timeout == -1 || timeout > 0, $"Unexpected timeout: {timeout}");
 
             SocketFlags receivedFlags;
@@ -1796,6 +1854,8 @@ namespace System.Net.Sockets
         public unsafe SocketError ReceiveMessageFrom(
             Span<byte> buffer, ref SocketFlags flags, Memory<byte> socketAddress, out int socketAddressLen, bool isIPv4, bool isIPv6, int timeout, out IPPacketInformation ipPacketInformation, out int bytesReceived)
         {
+            if (!Socket.OSSupportsThreads) throw new PlatformNotSupportedException();
+
             Debug.Assert(timeout == -1 || timeout > 0, $"Unexpected timeout: {timeout}");
 
             SocketFlags receivedFlags;
@@ -1880,11 +1940,14 @@ namespace System.Net.Sockets
 
         public SocketError SendAsync(Memory<byte> buffer, int offset, int count, SocketFlags flags, out int bytesSent, Action<int, Memory<byte>, SocketFlags, SocketError> callback, CancellationToken cancellationToken)
         {
-            return SendToAsync(buffer, offset, count, flags, Memory<byte>.Empty, out bytesSent, callback, cancellationToken);
+            bytesSent = 0;
+            return SendToAsync(buffer, offset, count, flags, Memory<byte>.Empty, ref bytesSent, callback, cancellationToken);
         }
 
         public SocketError SendTo(byte[] buffer, int offset, int count, SocketFlags flags, Memory<byte> socketAddress, int timeout, out int bytesSent)
         {
+            if (!Socket.OSSupportsThreads) throw new PlatformNotSupportedException();
+
             Debug.Assert(timeout == -1 || timeout > 0, $"Unexpected timeout: {timeout}");
 
             bytesSent = 0;
@@ -1915,6 +1978,8 @@ namespace System.Net.Sockets
 
         public unsafe SocketError SendTo(ReadOnlySpan<byte> buffer, SocketFlags flags, Memory<byte> socketAddress, int timeout, out int bytesSent)
         {
+            if (!Socket.OSSupportsThreads) throw new PlatformNotSupportedException();
+
             Debug.Assert(timeout == -1 || timeout > 0, $"Unexpected timeout: {timeout}");
 
             bytesSent = 0;
@@ -1947,11 +2012,10 @@ namespace System.Net.Sockets
             }
         }
 
-        public SocketError SendToAsync(Memory<byte> buffer, int offset, int count, SocketFlags flags, Memory<byte> socketAddress, out int bytesSent, Action<int, Memory<byte>, SocketFlags, SocketError> callback, CancellationToken cancellationToken = default)
+        public SocketError SendToAsync(Memory<byte> buffer, int offset, int count, SocketFlags flags, Memory<byte> socketAddress, ref int bytesSent, Action<int, Memory<byte>, SocketFlags, SocketError> callback, CancellationToken cancellationToken = default)
         {
             SetHandleNonBlocking();
 
-            bytesSent = 0;
             SocketError errorCode;
             int observedSequenceNumber;
             if (_sendQueue.IsReady(this, out observedSequenceNumber) &&
@@ -1993,6 +2057,8 @@ namespace System.Net.Sockets
 
         public SocketError SendTo(IList<ArraySegment<byte>> buffers, SocketFlags flags, Memory<byte> socketAddress, int timeout, out int bytesSent)
         {
+            if (!Socket.OSSupportsThreads) throw new PlatformNotSupportedException();
+
             Debug.Assert(timeout == -1 || timeout > 0, $"Unexpected timeout: {timeout}");
 
             bytesSent = 0;
@@ -2061,6 +2127,8 @@ namespace System.Net.Sockets
 
         public SocketError SendFile(SafeFileHandle fileHandle, long offset, long count, int timeout, out long bytesSent)
         {
+            if (!Socket.OSSupportsThreads) throw new PlatformNotSupportedException();
+
             Debug.Assert(timeout == -1 || timeout > 0, $"Unexpected timeout: {timeout}");
 
             bytesSent = 0;

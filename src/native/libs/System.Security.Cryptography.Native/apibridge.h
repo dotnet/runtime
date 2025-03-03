@@ -7,7 +7,10 @@
 #include "pal_types.h"
 
 int local_ASN1_TIME_to_tm(const ASN1_TIME* s, struct tm* tm);
+int local_BN_abs_is_word(const BIGNUM *a, const BN_ULONG w);
 int local_BN_is_zero(const BIGNUM* a);
+int local_BN_is_odd(const BIGNUM* a);
+int local_BN_is_one(const BIGNUM* a);
 int local_BIO_up_ref(BIO *a);
 const BIGNUM* local_DSA_get0_key(const DSA* dsa, const BIGNUM** pubKey, const BIGNUM** privKey);
 void local_DSA_get0_pqg(const DSA* dsa, const BIGNUM** p, const BIGNUM** q, const BIGNUM** g);
@@ -27,6 +30,7 @@ long local_OpenSSL_version_num(void);
 void local_RSA_get0_crt_params(const RSA* rsa, const BIGNUM** dmp1, const BIGNUM** dmq1, const BIGNUM** iqmp);
 void local_RSA_get0_factors(const RSA* rsa, const BIGNUM** p, const BIGNUM** q);
 void local_RSA_get0_key(const RSA* rsa, const BIGNUM** n, const BIGNUM** e, const BIGNUM** d);
+int local_RSA_get_multi_prime_extra_count(const RSA* r);
 int32_t local_RSA_meth_get_flags(const RSA_METHOD* meth);
 int32_t local_RSA_set0_crt_params(RSA* rsa, BIGNUM* dmp1, BIGNUM* dmq1, BIGNUM* iqmp);
 int32_t local_RSA_set0_factors(RSA* rsa, BIGNUM* p, BIGNUM* q);
@@ -61,3 +65,9 @@ int32_t local_X509_get_version(const X509* x509);
 int32_t local_X509_up_ref(X509* x509);
 typedef void (*SSL_CTX_keylog_cb_func)(const SSL *ssl, const char *line);
 void local_SSL_CTX_set_keylog_callback(SSL_CTX *ctx, SSL_CTX_keylog_cb_func cb);
+
+typedef void *(*CRYPTO_malloc_fn)(size_t num, const char *file, int line);
+typedef void *(*CRYPTO_realloc_fn)(void *addr, size_t num, const char *file, int line);
+typedef void (*CRYPTO_free_fn)(void *addr, const char *file, int line);
+
+int CRYPTO_set_mem_functions(CRYPTO_malloc_fn malloc_fn, CRYPTO_realloc_fn realloc_fn, CRYPTO_free_fn free_fn);

@@ -30,7 +30,6 @@ class SystemDomain;
 class Assembly;
 class ClassLoader;
 class TypeKey;
-class PendingTypeLoadEntry;
 class PendingTypeLoadTable;
 class EEClass;
 class Thread;
@@ -135,7 +134,7 @@ public:
     NameHandle()
     {
         LIMITED_METHOD_CONTRACT;
-        memset((void*) this, NULL, sizeof(*this));
+        memset((void*) this, 0, sizeof(*this));
     }
 
     NameHandle(LPCUTF8 nameSpace, LPCUTF8 name) :
@@ -466,7 +465,7 @@ void DECLSPEC_NORETURN ThrowTypeAccessException(AccessCheckContext* pContext,
 //
 class ClassLoader
 {
-    friend class PendingTypeLoadEntry;
+    friend class PendingTypeLoadTable;
     friend class MethodTableBuilder;
     friend class AppDomain;
     friend class Assembly;
@@ -478,10 +477,6 @@ class ClassLoader
     friend class COMModule;
 
 private:
-    // Classes for which load is in progress
-    PendingTypeLoadTable  * m_pUnresolvedClassHash;
-    CrstExplicitInit        m_UnresolvedClassLock;
-
     // Protects addition of elements to module's m_pAvailableClasses.
     // (indeed thus protects addition of elements to any m_pAvailableClasses in any
     // of the modules managed by this loader)
@@ -549,7 +544,7 @@ public:
     static Module * ComputeLoaderModule(MethodTable * pMT,
                                        mdToken        token,        // the token of the method
                                        Instantiation  methodInst);  // the type arguments to the method (if any)
-    static Module * ComputeLoaderModule(TypeKey * typeKey);
+    static Module * ComputeLoaderModule(const TypeKey * typeKey);
     inline static PTR_Module ComputeLoaderModuleForFunctionPointer(TypeHandle * pRetAndArgTypes, DWORD NumArgsPlusRetType);
     inline static PTR_Module ComputeLoaderModuleForParamType(TypeHandle paramType);
 
@@ -569,16 +564,10 @@ private:
         Module *              pLookInThisModuleOnly,
         Loader::LoadFlag      loadFlag);
 
-    static PTR_Module ComputeLoaderModuleForCompilation(Module *pDefinitionModule,      // the module that declares the generic type or method
-                                                        mdToken token,
-                                                        Instantiation classInst,        // the type arguments to the type (if any)
-                                                        Instantiation methodInst);      // the type arguments to the method (if any)
-
 public:
     void Init(AllocMemTracker *pamTracker);
 
     PTR_Assembly GetAssembly();
-    DomainAssembly* GetDomainAssembly();
 
     void    FreeModules();
 
@@ -724,7 +713,6 @@ public:
                                              BOOL *           pfUsesTypeForwarder = NULL);
 
     static void EnsureLoaded(TypeHandle typeHnd, ClassLoadLevel level = CLASS_LOADED);
-    static void TryEnsureLoaded(TypeHandle typeHnd, ClassLoadLevel level = CLASS_LOADED);
 
 public:
     // Look up a class by name
@@ -798,7 +786,7 @@ public:
 
     // Load canonical shared instantiation for type key (each instantiation argument is
     // substituted by CanonicalizeGenericArg)
-    static TypeHandle LoadCanonicalGenericInstantiation(TypeKey *pTypeKey,
+    static TypeHandle LoadCanonicalGenericInstantiation(const TypeKey *pTypeKey,
                                                         LoadTypesFlag fLoadTypes/*=LoadTypes*/,
                                                         ClassLoadLevel level/*=CLASS_LOADED*/);
 
@@ -880,39 +868,22 @@ public:
     friend class AvailableClasses_LockHolder;
 
 private:
-    static TypeHandle LoadConstructedTypeThrowing(TypeKey *pKey,
+    static TypeHandle LoadConstructedTypeThrowing(const TypeKey *pKey,
                                                   LoadTypesFlag fLoadTypes = LoadTypes,
                                                   ClassLoadLevel level = CLASS_LOADED,
                                                   const InstantiationContext *pInstContext = NULL);
 
-    static TypeHandle LookupTypeKey(TypeKey *pKey, EETypeHashTable *pTable);
+    static TypeHandle LookupTypeKey(const TypeKey *pKey, EETypeHashTable *pTable);
 
-    static TypeHandle LookupInLoaderModule(TypeKey* pKey);
+    static TypeHandle LookupInLoaderModule(const TypeKey* pKey);
 
     // Lookup a handle in the appropriate table
     // (declaring module for TypeDef or loader-module for constructed types)
-    static TypeHandle LookupTypeHandleForTypeKey(TypeKey *pTypeKey);
+    static TypeHandle LookupTypeHandleForTypeKey(const TypeKey *pTypeKey);
 
-    static void DECLSPEC_NORETURN  ThrowTypeLoadException(TypeKey *pKey, UINT resIDWhy);
-
-
-    BOOL IsNested(const NameHandle* pName, mdToken *mdEncloser);
-    static BOOL IsNested(ModuleBase *pModude, mdToken typeDefOrRef, mdToken *mdEncloser);
+    static void DECLSPEC_NORETURN  ThrowTypeLoadException(const TypeKey *pKey, UINT resIDWhy);
 
 public:
-    // Helpers for FindClassModule()
-    BOOL CompareNestedEntryWithTypeDef(IMDInternalImport *pImport,
-                                       mdTypeDef mdCurrent,
-                                       EEClassHashTable *pClassHash,
-                                       PTR_EEClassHashEntry pEntry);
-    BOOL CompareNestedEntryWithTypeRef(IMDInternalImport *pImport,
-                                       mdTypeRef mdCurrent,
-                                       EEClassHashTable *pClassHash,
-                                       PTR_EEClassHashEntry pEntry);
-    BOOL CompareNestedEntryWithExportedType(IMDInternalImport *pImport,
-                                            mdExportedType mdCurrent,
-                                            EEClassHashTable *pClassHash,
-                                            PTR_EEClassHashEntry pEntry);
 
     //Attempts to find/load/create a type handle but does not throw
     // if used in "find" mode.
@@ -926,16 +897,16 @@ private:
 #ifndef DACCESS_COMPILE
     // Perform a single phase of class loading
     // If no type handle has yet been created, typeHnd is null.
-    static TypeHandle DoIncrementalLoad(TypeKey *pTypeKey,
+    static TypeHandle DoIncrementalLoad(const TypeKey *pTypeKey,
                                         TypeHandle typeHnd,
                                         ClassLoadLevel workLevel);
 
     // Phase CLASS_LOAD_CREATE of class loading
-    static TypeHandle CreateTypeHandleForTypeKey(TypeKey *pTypeKey,
+    static TypeHandle CreateTypeHandleForTypeKey(const TypeKey *pTypeKey,
                                                  AllocMemTracker *pamTracker);
 
     // Publish the type in the loader's tables
-    static TypeHandle PublishType(TypeKey *pTypeKey, TypeHandle typeHnd);
+    static TypeHandle PublishType(const TypeKey *pTypeKey, TypeHandle typeHnd);
 
     // Notify profiler and debugger that a type load has completed
     // Also update perf counters
@@ -957,7 +928,7 @@ private:
 
     // Create a non-canonical instantiation of a generic type based off the canonical instantiation
     // (For example, MethodTable for List<string> is based on the MethodTable for List<__Canon>)
-    static TypeHandle CreateTypeHandleForNonCanonicalGenericInstantiation(TypeKey *pTypeKey,
+    static TypeHandle CreateTypeHandleForNonCanonicalGenericInstantiation(const TypeKey *pTypeKey,
                                                                           AllocMemTracker *pamTracker);
 
     // Loads a class. This is the inner call from the multi-threaded load. This load must
@@ -971,12 +942,12 @@ private:
 
     // The token must be a type def.  GC must be enabled.
     // If we're attempting to load a fresh instantiated type then genericArgs should be filled in
-    TypeHandle LoadTypeHandleForTypeKey(TypeKey *pTypeKey,
+    TypeHandle LoadTypeHandleForTypeKey(const TypeKey *pTypeKey,
                                         TypeHandle typeHnd,
                                         ClassLoadLevel level = CLASS_LOADED,
                                         const InstantiationContext *pInstContext = NULL);
 
-    TypeHandle LoadTypeHandleForTypeKeyNoLock(TypeKey *pTypeKey,
+    TypeHandle LoadTypeHandleForTypeKeyNoLock(const TypeKey *pTypeKey,
                                               ClassLoadLevel level = CLASS_LOADED,
                                               const InstantiationContext *pInstContext = NULL);
 
@@ -1020,7 +991,7 @@ private:
                                     AllocMemTracker *pamTracker);
 
     // don't call this directly.
-    TypeHandle LoadTypeHandleForTypeKey_Body(TypeKey *pTypeKey,
+    TypeHandle LoadTypeHandleForTypeKey_Body(const TypeKey *pTypeKey,
                                              TypeHandle typeHnd,
                                              ClassLoadLevel targetLevel);
 #endif //!DACCESS_COMPILE

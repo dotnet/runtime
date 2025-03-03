@@ -3,14 +3,11 @@
 
 using Microsoft.Diagnostics.Tracing;
 using Microsoft.Diagnostics.Tracing.Session;
+using Microsoft.DotNet.XUnitExtensions;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-#if USE_MDT_EVENTSOURCE
-using Microsoft.Diagnostics.Tracing;
-#else
 using System.Diagnostics.Tracing;
-#endif
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
@@ -39,7 +36,7 @@ namespace BasicEventSourceTests
             // Today you have to be Admin to turn on ETW events (anyone can write ETW events).
             if (TraceEventSession.IsElevated() != true)
             {
-                throw new Exception("Need to be elevated to run. ");
+                throw new SkipTestException("Need to be elevated to run. ");
             }
 
             if (dataFileName == null)

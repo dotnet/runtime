@@ -1302,7 +1302,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 DomainController dc = DomainController.GetDomainController(Utils.GetNewDirectoryContext(serverName, DirectoryContextType.DirectoryServer, context));
                 IntPtr handle = dc.Handle;
 
-                Debug.Assert(handle != (IntPtr)0);
+                Debug.Assert(handle != 0);
 
                 void* pDomains = null;
                 // call DsReplicaSyncAllW
@@ -1327,11 +1327,11 @@ namespace System.DirectoryServices.ActiveDirectory
                     IntPtr val = names.rItems;
                     if (count > 0)
                     {
-                        Debug.Assert(val != (IntPtr)0);
-                        IntPtr tmpPtr = (IntPtr)0;
+                        Debug.Assert(val != 0);
+                        IntPtr tmpPtr = 0;
                         for (int i = 0; i < count; i++)
                         {
-                            tmpPtr = IntPtr.Add(val, Marshal.SizeOf(typeof(DS_NAME_RESULT_ITEM)) * i);
+                            tmpPtr = IntPtr.Add(val, Marshal.SizeOf<DS_NAME_RESULT_ITEM>() * i);
                             DS_NAME_RESULT_ITEM nameResult = new DS_NAME_RESULT_ITEM();
                             Marshal.PtrToStructure(tmpPtr, nameResult);
                             if (nameResult.status == DS_NAME_ERROR.DS_NAME_NO_ERROR || nameResult.status == DS_NAME_ERROR.DS_NAME_ERROR_DOMAIN_ONLY)

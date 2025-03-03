@@ -2,10 +2,13 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Collections;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
@@ -15,7 +18,7 @@ using Microsoft.Extensions.Options;
 namespace Microsoft.Extensions.Caching.Memory
 {
     /// <summary>
-    /// An implementation of <see cref="IMemoryCache"/> using a dictionary to
+    /// Implements <see cref="IMemoryCache"/> using a dictionary to
     /// store its entries.
     /// </summary>
     public class MemoryCache : IMemoryCache
@@ -80,15 +83,7 @@ namespace Microsoft.Extensions.Caching.Memory
         /// Gets an enumerable of the all the keys in the <see cref="MemoryCache"/>.
         /// </summary>
         public IEnumerable<object> Keys
-        {
-            get
-            {
-                foreach (KeyValuePair<object, CacheEntry> pairs in _coherentState._entries)
-                {
-                    yield return pairs.Key;
-                }
-            }
-        }
+            => _coherentState.GetAllKeys();
 
         /// <summary>
         /// Internal accessor for Size for testing only.
@@ -140,7 +135,7 @@ namespace Microsoft.Extensions.Caching.Memory
             entry.LastAccessed = utcNow;
 
             CoherentState coherentState = _coherentState; // Clear() can update the reference in the meantime
-            if (coherentState._entries.TryGetValue(entry.Key, out CacheEntry? priorEntry))
+            if (coherentState.TryGetValue(entry.Key, out CacheEntry? priorEntry))
             {
                 priorEntry.SetExpired(EvictionReason.Replaced);
             }
@@ -153,33 +148,25 @@ namespace Microsoft.Extensions.Caching.Memory
                     coherentState.RemoveEntry(priorEntry, _options);
                 }
             }
-            else if (!UpdateCacheSizeExceedsCapacity(entry, coherentState))
+            else if (!UpdateCacheSizeExceedsCapacity(entry, priorEntry, coherentState))
             {
                 bool entryAdded;
                 if (priorEntry == null)
                 {
                     // Try to add the new entry if no previous entries exist.
-                    entryAdded = coherentState._entries.TryAdd(entry.Key, entry);
+                    entryAdded = coherentState.TryAdd(entry.Key, entry);
                 }
                 else
                 {
                     // Try to update with the new entry if a previous entries exist.
-                    entryAdded = coherentState._entries.TryUpdate(entry.Key, entry, priorEntry);
+                    entryAdded = coherentState.TryUpdate(entry.Key, entry, priorEntry);
 
-                    if (entryAdded)
-                    {
-                        if (_options.HasSizeLimit)
-                        {
-                            // The prior entry was removed, decrease the by the prior entry's size
-                            Interlocked.Add(ref coherentState._cacheSize, -priorEntry.Size);
-                        }
-                    }
-                    else
+                    if (!entryAdded)
                     {
                         // The update will fail if the previous entry was removed after retrieval.
                         // Adding the new entry will succeed only if no entry has been added since.
                         // This guarantees removing an old entry does not prevent adding a new entry.
-                        entryAdded = coherentState._entries.TryAdd(entry.Key, entry);
+                        entryAdded = coherentState.TryAdd(entry.Key, entry);
                     }
                 }
 
@@ -192,7 +179,7 @@ namespace Microsoft.Extensions.Caching.Memory
                     if (_options.HasSizeLimit)
                     {
                         // Entry could not be added, reset cache size
-                        Interlocked.Add(ref coherentState._cacheSize, -entry.Size);
+                        Interlocked.Add(ref coherentState._cacheSize, -entry.Size + (priorEntry?.Size).GetValueOrDefault());
                     }
                     entry.SetExpired(EvictionReason.Replaced);
                     entry.InvokeEvictionCallbacks();
@@ -220,13 +207,66 @@ namespace Microsoft.Extensions.Caching.Memory
             ThrowHelper.ThrowIfNull(key);
 
             CheckDisposed();
-
-            DateTime utcNow = UtcNow;
-
             CoherentState coherentState = _coherentState; // Clear() can update the reference in the meantime
-            if (coherentState._entries.TryGetValue(key, out CacheEntry? tmp))
+            coherentState.TryGetValue(key, out CacheEntry? entry); // note we rely on documented "default when fails" contract re the out
+            return PostProcessTryGetValue(coherentState, entry, out result);
+        }
+
+#if NET9_0_OR_GREATER
+        /// <summary>
+        /// Gets the item associated with this key if present.
+        /// </summary>
+        /// <param name="key">A character span corresponding to a <see cref="string"/> identifying the requested entry.</param>
+        /// <param name="value">The located value or null.</param>
+        /// <returns>True if the key was found.</returns>
+        /// <remarks>This method allows values with <see cref="string"/> keys to be queried by content without allocating a new <see cref="string"/> instance.</remarks>
+        [OverloadResolutionPriority(1)]
+        public bool TryGetValue(ReadOnlySpan<char> key, out object? value)
+        {
+            CheckDisposed();
+            CoherentState coherentState = _coherentState; // Clear() can update the reference in the meantime
+            coherentState.TryGetValue(key, out CacheEntry? entry); // note we rely on documented "default when fails" contract re the out
+            return PostProcessTryGetValue(coherentState, entry, out value);
+        }
+
+        /// <summary>
+        /// Gets the item associated with this key if present.
+        /// </summary>
+        /// <param name="key">A character span corresponding to a <see cref="string"/> identifying the requested entry.</param>
+        /// <param name="value">The located value or null.</param>
+        /// <returns>True if the key was found.</returns>
+        /// <remarks>This method allows values with <see cref="string"/> keys to be queried by content without allocating a new <see cref="string"/> instance.</remarks>
+        [OverloadResolutionPriority(1)]
+        public bool TryGetValue<TItem>(ReadOnlySpan<char> key, out TItem? value)
+        {
+            // this implementation intentionally based on (and consistent with) CacheExtensions.TryGetValue<TItem>
+            if (TryGetValue(key, out object? untyped))
             {
-                CacheEntry entry = tmp;
+                if (untyped == null)
+                {
+                    value = default;
+                    return true;
+                }
+
+                if (untyped is TItem item)
+                {
+                    value = item;
+                    return true;
+                }
+            }
+
+            value = default;
+            return false;
+
+        }
+#endif
+
+        private bool PostProcessTryGetValue(CoherentState coherentState, CacheEntry? entry, out object? result)
+        {
+            // shared "get value" logic
+            DateTime utcNow = UtcNow;
+            if (entry is not null)
+            {
                 // Check if expired due to expiration tokens, timers, etc. and if so, remove it.
                 // Allow a stale Replaced value to be returned due to concurrent calls to SetExpired during SetEntry.
                 if (!entry.CheckExpired(utcNow) || entry.EvictionReason == EvictionReason.Replaced)
@@ -283,7 +323,8 @@ namespace Microsoft.Extensions.Caching.Memory
             CheckDisposed();
 
             CoherentState coherentState = _coherentState; // Clear() can update the reference in the meantime
-            if (coherentState._entries.TryRemove(key, out CacheEntry? entry))
+
+            if (coherentState.TryRemove(key, out CacheEntry? entry))
             {
                 if (_options.HasSizeLimit)
                 {
@@ -305,10 +346,10 @@ namespace Microsoft.Extensions.Caching.Memory
             CheckDisposed();
 
             CoherentState oldState = Interlocked.Exchange(ref _coherentState, new CoherentState());
-            foreach (KeyValuePair<object, CacheEntry> entry in oldState._entries)
+            foreach (CacheEntry entry in oldState.GetAllValues())
             {
-                entry.Value.SetExpired(EvictionReason.Removed);
-                entry.Value.InvokeEvictionCallbacks();
+                entry.SetExpired(EvictionReason.Removed);
+                entry.InvokeEvictionCallbacks();
             }
         }
 
@@ -429,10 +470,9 @@ namespace Microsoft.Extensions.Caching.Memory
             DateTime utcNow = _lastExpirationScan = UtcNow;
 
             CoherentState coherentState = _coherentState; // Clear() can update the reference in the meantime
-            foreach (KeyValuePair<object, CacheEntry> item in coherentState._entries)
-            {
-                CacheEntry entry = item.Value;
 
+            foreach (CacheEntry entry in coherentState.GetAllValues())
+            {
                 if (entry.CheckExpired(utcNow))
                 {
                     coherentState.RemoveEntry(entry, _options);
@@ -441,10 +481,14 @@ namespace Microsoft.Extensions.Caching.Memory
         }
 
         /// <summary>
-        /// Returns true if increasing the cache size by the size of entry would
-        /// cause it to exceed any size limit on the cache, otherwise, returns false.
+        /// Determines if increasing the cache size by the size of the
+        /// entry would cause it to exceed any size limit on the cache.
         /// </summary>
-        private bool UpdateCacheSizeExceedsCapacity(CacheEntry entry, CoherentState coherentState)
+        /// <returns>
+        /// <see langword="true" /> if increasing the cache size would
+        /// cause it to exceed the size limit; otherwise, <see langword="false" />.
+        /// </returns>
+        private bool UpdateCacheSizeExceedsCapacity(CacheEntry entry, CacheEntry? priorEntry, CoherentState coherentState)
         {
             long sizeLimit = _options.SizeLimitValue;
             if (sizeLimit < 0)
@@ -456,6 +500,11 @@ namespace Microsoft.Extensions.Caching.Memory
             for (int i = 0; i < 100; i++)
             {
                 long newSize = sizeRead + entry.Size;
+                if (priorEntry != null)
+                {
+                    Debug.Assert(entry.Key == priorEntry.Key);
+                    newSize -= priorEntry.Size;
+                }
 
                 if ((ulong)newSize > (ulong)sizeLimit)
                 {
@@ -474,13 +523,28 @@ namespace Microsoft.Extensions.Caching.Memory
             return true;
         }
 
+        private int lockFlag;
+
         private void TriggerOvercapacityCompaction()
         {
             if (_logger.IsEnabled(LogLevel.Debug))
                 _logger.LogDebug("Overcapacity compaction triggered");
 
-            // Spawn background thread for compaction
-            ThreadPool.QueueUserWorkItem(s => ((MemoryCache)s!).OvercapacityCompaction(), this);
+            // If no threads are currently running compact - enter lock and start compact
+            // If there is already a thread that is running compact - do nothing
+            if (Interlocked.CompareExchange(ref lockFlag, 1, 0) == 0)
+                // Spawn background thread for compaction
+                ThreadPool.QueueUserWorkItem(s =>
+                {
+                    try
+                    {
+                        ((MemoryCache)s!).OvercapacityCompaction();
+                    }
+                    finally
+                    {
+                        lockFlag = 0; // Release the lock
+                    }
+                }, this);
         }
 
         private void OvercapacityCompaction()
@@ -530,9 +594,8 @@ namespace Microsoft.Extensions.Caching.Memory
 
             // Sort items by expired & priority status
             DateTime utcNow = UtcNow;
-            foreach (KeyValuePair<object, CacheEntry> item in coherentState._entries)
+            foreach (CacheEntry entry in coherentState.GetAllValues())
             {
-                CacheEntry entry = item.Value;
                 if (entry.CheckExpired(utcNow))
                 {
                     entriesToRemove.Add(entry);
@@ -608,9 +671,9 @@ namespace Microsoft.Extensions.Caching.Memory
         }
 
         /// <summary>
-        /// Dispose the cache and clear all entries.
+        /// Disposes the cache and clears all entries.
         /// </summary>
-        /// <param name="disposing">Dispose the object resources if true; otherwise, take no action.</param>
+        /// <param name="disposing"><see langword="true" /> to dispose the object resources; <see langword="false" /> to take no action.</param>
         protected virtual void Dispose(bool disposing)
         {
             if (!_disposed)
@@ -659,18 +722,87 @@ namespace Microsoft.Extensions.Caching.Memory
         /// </summary>
         private sealed class CoherentState
         {
-            internal ConcurrentDictionary<object, CacheEntry> _entries = new ConcurrentDictionary<object, CacheEntry>();
+            private readonly ConcurrentDictionary<string, CacheEntry> _stringEntries = new ConcurrentDictionary<string, CacheEntry>(StringKeyComparer.Instance);
+            private readonly ConcurrentDictionary<object, CacheEntry> _nonStringEntries = new ConcurrentDictionary<object, CacheEntry>();
+
+#if NET9_0_OR_GREATER
+            private readonly ConcurrentDictionary<string, CacheEntry>.AlternateLookup<ReadOnlySpan<char>> _stringAltLookup;
+
+            public CoherentState()
+            {
+                _stringAltLookup = _stringEntries.GetAlternateLookup<ReadOnlySpan<char>>();
+            }
+#endif
+
             internal long _cacheSize;
 
-            private ICollection<KeyValuePair<object, CacheEntry>> EntriesCollection => _entries;
+            internal bool TryGetValue(object key, [NotNullWhen(true)] out CacheEntry? entry)
+                => key is string s ? _stringEntries.TryGetValue(s, out entry) : _nonStringEntries.TryGetValue(key, out entry);
 
-            internal int Count => _entries.Count;
+#if NET9_0_OR_GREATER
+            internal bool TryGetValue(ReadOnlySpan<char> key, [NotNullWhen(true)] out CacheEntry? entry)
+                => _stringAltLookup.TryGetValue(key, out entry);
+#endif
+
+
+            internal bool TryRemove(object key, [NotNullWhen(true)] out CacheEntry? entry)
+                => key is string s ? _stringEntries.TryRemove(s, out entry) : _nonStringEntries.TryRemove(key, out entry);
+
+            internal bool TryAdd(object key, CacheEntry entry)
+                => key is string s ? _stringEntries.TryAdd(s, entry) : _nonStringEntries.TryAdd(key, entry);
+
+            internal bool TryUpdate(object key, CacheEntry entry, CacheEntry comparison)
+                => key is string s ? _stringEntries.TryUpdate(s, entry, comparison) : _nonStringEntries.TryUpdate(key, entry, comparison);
+
+            public IEnumerable<CacheEntry> GetAllValues()
+            {
+                // note this mimics the outgoing code in that we don't just access
+                // .Values, which has additional overheads; this is only used for rare
+                // calls - compaction, clear, etc - so the additional overhead of a
+                // generated enumerator is not alarming
+                foreach (KeyValuePair<string, CacheEntry> entry in _stringEntries)
+                {
+                    yield return entry.Value;
+                }
+                foreach (KeyValuePair<object, CacheEntry> entry in _nonStringEntries)
+                {
+                    yield return entry.Value;
+                }
+            }
+
+            public IEnumerable<object> GetAllKeys()
+            {
+                foreach (KeyValuePair<string, CacheEntry> pairs in _stringEntries)
+                {
+                    yield return pairs.Key;
+                }
+                foreach (KeyValuePair<object, CacheEntry> pairs in _nonStringEntries)
+                {
+                    yield return pairs.Key;
+                }
+            }
+
+            private ICollection<KeyValuePair<string, CacheEntry>> StringEntriesCollection => _stringEntries;
+            private ICollection<KeyValuePair<object, CacheEntry>> NonStringEntriesCollection => _nonStringEntries;
+
+            internal int Count => _stringEntries.Count + _nonStringEntries.Count;
 
             internal long Size => Volatile.Read(ref _cacheSize);
 
             internal void RemoveEntry(CacheEntry entry, MemoryCacheOptions options)
             {
-                if (EntriesCollection.Remove(new KeyValuePair<object, CacheEntry>(entry.Key, entry)))
+                if (entry.Key is string s)
+                {
+                    if (StringEntriesCollection.Remove(new KeyValuePair<string, CacheEntry>(s, entry)))
+                    {
+                        if (options.SizeLimit.HasValue)
+                        {
+                            Interlocked.Add(ref _cacheSize, -entry.Size);
+                        }
+                        entry.InvokeEvictionCallbacks();
+                    }
+                }
+                else if (NonStringEntriesCollection.Remove(new KeyValuePair<object, CacheEntry>(entry.Key, entry)))
                 {
                     if (options.SizeLimit.HasValue)
                     {
@@ -679,6 +811,35 @@ namespace Microsoft.Extensions.Caching.Memory
                     entry.InvokeEvictionCallbacks();
                 }
             }
+
+#if NETCOREAPP
+            // on .NET Core, the inbuilt comparer has Marvin built in; no need to intercept
+            private static class StringKeyComparer
+            {
+                internal static IEqualityComparer<string> Instance => EqualityComparer<string>.Default;
+            }
+#else
+            // otherwise, we need a custom comparer that manually implements Marvin
+            private sealed class StringKeyComparer : IEqualityComparer<string>, IEqualityComparer
+            {
+                private StringKeyComparer() { }
+
+                internal static readonly IEqualityComparer<string> Instance = new StringKeyComparer();
+
+                // special-case string keys and use Marvin hashing
+                public int GetHashCode(string? s) => s is null ? 0
+                    : Marvin.ComputeHash32(MemoryMarshal.AsBytes(s.AsSpan()), Marvin.DefaultSeed);
+
+                public bool Equals(string? x, string? y)
+                    => string.Equals(x, y);
+
+                bool IEqualityComparer.Equals(object x, object y)
+                    => object.Equals(x, y);
+
+                int IEqualityComparer.GetHashCode(object obj)
+                    => obj is string s ? GetHashCode(s) : 0;
+            }
+#endif
         }
     }
 }

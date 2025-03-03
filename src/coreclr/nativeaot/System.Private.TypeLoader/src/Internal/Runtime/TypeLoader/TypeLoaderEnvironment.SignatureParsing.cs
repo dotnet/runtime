@@ -101,20 +101,6 @@ namespace Internal.Runtime.TypeLoader
             }
         }
 
-        public bool TryGetMethodNameAndSignatureFromNativeLayoutSignature(RuntimeSignature signature, out MethodNameAndSignature nameAndSignature)
-        {
-            nameAndSignature = null;
-
-            NativeReader reader = GetNativeLayoutInfoReader(signature);
-            NativeParser parser = new NativeParser(reader, signature.NativeLayoutOffset);
-            if (parser.IsNull)
-                return false;
-
-            nameAndSignature = GetMethodNameAndSignature(ref parser, new TypeManagerHandle(signature.ModuleHandle), out _, out _);
-
-            return true;
-        }
-
         public bool TryGetMethodNameAndSignaturePointersFromNativeLayoutSignature(TypeManagerHandle module, uint methodNameAndSigToken, out RuntimeSignature methodNameSig, out RuntimeSignature methodSig)
         {
             methodNameSig = default(RuntimeSignature);
@@ -159,32 +145,6 @@ namespace Internal.Runtime.TypeLoader
         }
 
         #region Private Helpers
-
-        private static bool TryGetTypeFromSimpleTypeSignature(ref NativeParser parser, NativeFormatModuleInfo moduleHandle, out RuntimeTypeHandle typeHandle)
-        {
-            uint data;
-            TypeSignatureKind kind = parser.GetTypeSignatureKind(out data);
-
-            if (kind == TypeSignatureKind.Lookback)
-            {
-                var lookbackParser = parser.GetLookbackParser(data);
-                return TryGetTypeFromSimpleTypeSignature(ref lookbackParser, moduleHandle, out typeHandle);
-            }
-            else if (kind == TypeSignatureKind.External)
-            {
-                typeHandle = GetExternalTypeHandle(moduleHandle, data);
-                return true;
-            }
-            else if (kind == TypeSignatureKind.BuiltIn)
-            {
-                typeHandle = ((WellKnownType)data).GetRuntimeTypeHandle();
-                return true;
-            }
-
-            // Not a simple type signature... requires more work to skip
-            typeHandle = default(RuntimeTypeHandle);
-            return false;
-        }
 
         private static RuntimeTypeHandle GetExternalTypeHandle(NativeFormatModuleInfo moduleHandle, uint typeIndex)
         {

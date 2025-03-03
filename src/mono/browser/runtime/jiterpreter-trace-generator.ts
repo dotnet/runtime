@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+import WasmEnableThreads from "consts:wasmEnableThreads";
 import { MonoMethod } from "./types/internal";
 import { NativePointer } from "./types/emscripten";
 import {
@@ -9,7 +10,7 @@ import {
 } from "./memory";
 import {
     WasmOpcode, WasmSimdOpcode, WasmValtype,
-    getOpcodeName,
+    getOpcodeName, MintOpArgType, WasmAtomicOpcode
 } from "./jiterpreter-opcodes";
 import {
     MintOpcode, SimdInfo,
@@ -27,18 +28,19 @@ import {
     try_append_memmove_fast, getOpcodeTableValue,
     getMemberOffset, isZeroPageReserved, CfgBranchType,
     append_safepoint, modifyCounter, simdFallbackCounters,
+    append_profiler_event,
 } from "./jiterpreter-support";
 import {
     sizeOfDataItem, sizeOfV128, sizeOfStackval,
 
     disabledOpcodes, countCallTargets,
     callTargetCounts,
-    trace, traceOnError, traceOnRuntimeError,
+    trace, traceOnError,
     emitPadding, traceBranchDisplacements,
     traceEip, nullCheckValidation,
     traceNullCheckOptimizations,
-    nullCheckCaching, traceBackBranches,
-    maxCallHandlerReturnAddresses,
+    nullCheckCaching, defaultTraceBackBranches,
+    maxCallHandlerReturnAddresses, moduleHeaderSizeMargin,
 
     mostRecentOptions,
 
@@ -54,61 +56,68 @@ import {
     bitmaskTable, createScalarTable,
     simdExtractTable, simdReplaceTable,
     simdLoadTable, simdStoreTable,
+    xchgTable, cmpxchgTable,
 } from "./jiterpreter-tables";
 import { mono_log_error, mono_log_info } from "./logging";
 import { mono_assert, runtimeHelpers } from "./globals";
 
 // indexPlusOne so that ip[1] in the interpreter becomes getArgU16(ip, 1)
-function getArgU16(ip: MintOpcodePtr, indexPlusOne: number) {
+function getArgU16 (ip: MintOpcodePtr, indexPlusOne: number) {
     return getU16(<any>ip + (2 * indexPlusOne));
 }
 
-function getArgI16(ip: MintOpcodePtr, indexPlusOne: number) {
+function getArgI16 (ip: MintOpcodePtr, indexPlusOne: number) {
     return getI16(<any>ip + (2 * indexPlusOne));
 }
 
-function getArgI32(ip: MintOpcodePtr, indexPlusOne: number) {
+function getArgU32 (ip: MintOpcodePtr, indexPlusOne: number) {
+    const src = <any>ip + (2 * indexPlusOne);
+    return getU32_unaligned(src);
+}
+
+function getArgI32 (ip: MintOpcodePtr, indexPlusOne: number) {
     const src = <any>ip + (2 * indexPlusOne);
     return getI32_unaligned(src);
 }
 
-function getArgF32(ip: MintOpcodePtr, indexPlusOne: number) {
+function getArgF32 (ip: MintOpcodePtr, indexPlusOne: number) {
     const src = <any>ip + (2 * indexPlusOne);
     return getF32_unaligned(src);
 }
 
-function getArgF64(ip: MintOpcodePtr, indexPlusOne: number) {
+function getArgF64 (ip: MintOpcodePtr, indexPlusOne: number) {
     const src = <any>ip + (2 * indexPlusOne);
     return getF64_unaligned(src);
 }
 
-function get_imethod(frame: NativePointer) {
+function get_imethod (frame: NativePointer) {
     // FIXME: Encoding this data directly into the trace will prevent trace reuse
     const iMethod = getU32_unaligned(<any>frame + getMemberOffset(JiterpMember.Imethod));
     return iMethod;
 }
 
-function get_imethod_data(frame: NativePointer, index: number) {
+function get_imethod_data (frame: NativePointer, index: number) {
     // FIXME: Encoding this data directly into the trace will prevent trace reuse
     const pData = getU32_unaligned(get_imethod(frame) + getMemberOffset(JiterpMember.DataItems));
     const dataOffset = pData + (index * sizeOfDataItem);
     return getU32_unaligned(dataOffset);
 }
 
-function get_imethod_clause_data_offset(frame: NativePointer, index: number) {
+function get_imethod_clause_data_offset (frame: NativePointer, index: number) {
     // FIXME: Encoding this data directly into the trace will prevent trace reuse
     const pData = getU32_unaligned(get_imethod(frame) + getMemberOffset(JiterpMember.ClauseDataOffsets));
     const dataOffset = pData + (index * sizeOfDataItem);
     return getU32_unaligned(dataOffset);
 }
 
-function is_backward_branch_target(
+function is_backward_branch_target (
     ip: MintOpcodePtr, startOfBody: MintOpcodePtr,
     backwardBranchTable: Uint16Array | null
 ) {
     if (!backwardBranchTable)
         return false;
 
+    // TODO: sort the table and exploit that for faster scan. Not important yet
     for (let i = 0; i < backwardBranchTable.length; i++) {
         const actualOffset = (backwardBranchTable[i] * 2) + <any>startOfBody;
         if (actualOffset === ip)
@@ -118,17 +127,180 @@ function is_backward_branch_target(
     return false;
 }
 
-type KnownConstantValue = number | Uint8Array;
-const knownConstantValues = new Map<number, KnownConstantValue>();
+interface KnownConstantI32 {
+    type: "i32";
+    value: number;
+}
 
-function get_known_constant_value(builder: WasmBuilder, localOffset: number): KnownConstantValue | undefined {
+interface KnownConstantV128 {
+    type: "v128";
+    value: Uint8Array;
+}
+
+interface KnownConstantLdloca {
+    type: "ldloca";
+    offset: number;
+}
+
+type KnownConstant = KnownConstantI32 | KnownConstantV128 | KnownConstantLdloca;
+type KnownConstantValue = number | Uint8Array;
+const knownConstants = new Map<number, KnownConstant>();
+
+function get_known_constant (builder: WasmBuilder, localOffset: number): KnownConstant | undefined {
     if (isAddressTaken(builder, localOffset))
         return undefined;
 
-    return knownConstantValues.get(localOffset);
+    return knownConstants.get(localOffset);
 }
 
-export function generateWasmBody(
+function get_known_constant_value (builder: WasmBuilder, localOffset: number): KnownConstantValue | undefined {
+    const kc = get_known_constant(builder, localOffset);
+    if (kc === undefined)
+        return undefined;
+
+    switch (kc.type) {
+        case "i32":
+        case "v128":
+            return kc.value;
+    }
+
+    return undefined;
+}
+
+function getOpcodeLengthU16 (ip: MintOpcodePtr, opcode: MintOpcode) {
+    try {
+        const opLengthU16 = cwraps.mono_jiterp_get_opcode_info(opcode, OpcodeInfoType.Length);
+        let result = opLengthU16;
+        if (opcode === MintOpcode.MINT_SWITCH) {
+            // int n = READ32 (ip + 2);
+            // len = MINT_SWITCH_LEN (n);
+            const numDisplacements = getArgU32(ip, 2);
+            // #define MINT_SWITCH_LEN(n) (4 + (n) * 2)
+            result = 4 + (numDisplacements * 2);
+        }
+        return result;
+    } catch (err) {
+        mono_log_error(`Found invalid opcode ${opcode} at ip ${ip}`);
+        throw err;
+    }
+}
+
+function decodeSwitch (ip: MintOpcodePtr) : MintOpcodePtr[] {
+    mono_assert(getU16(ip) === MintOpcode.MINT_SWITCH, "decodeSwitch called on a non-switch");
+    const n = getArgU32(ip, 2);
+    const result = [];
+    /*
+        guint32 val = LOCAL_VAR (ip [1], guint32);
+        guint32 n = READ32 (ip + 2);
+        ip += 4;
+        if (val < n) {
+            ip += 2 * val;
+            int offset = READ32 (ip);
+            ip += offset;
+        } else {
+            ip += 2 * n;
+        }
+    */
+    // mono_log_info(`switch[${n}] @${ip}`);
+    for (let i = 0; i < n; i++) {
+        const base = <any>ip + 8 + (4 * i),
+            offset = getU32_unaligned(base),
+            target = base + (offset * 2);
+        // mono_log_info(`  ${i} -> ${target}`);
+        result.push(target);
+    }
+
+    return result;
+}
+
+// Perform a quick scan through the opcodes potentially in this trace to build a table of
+//  backwards branch targets, compatible with the layout of the old one that was generated in C.
+// We do this here to match the exact way that the jiterp calculates branch targets, since
+//  there were previously corner cases where jiterp and interp disagreed.
+export function generateBackwardBranchTable (
+    ip: MintOpcodePtr, startOfBody: MintOpcodePtr, sizeOfBody: MintOpcodePtr,
+): Uint16Array | null {
+    const endOfBody = <any>startOfBody + <any>sizeOfBody;
+    // TODO: Cache this table object instance and reuse it to reduce gc pressure?
+    const table: number[] = [];
+    // IP of the start of the trace in U16s, relative to startOfBody.
+    const rbase16 = (<any>ip - <any>startOfBody) / 2;
+
+    // FIXME: This will potentially scan the entire method and record branches that won't
+    //  ever run since the trace compilation will end before we reach them.
+    while (ip < endOfBody) {
+        // IP of the current opcode in U16s, relative to startOfBody. This is what the back branch table uses
+        const rip16 = (<any>ip - <any>startOfBody) / 2;
+        const opcode = <MintOpcode>getU16(ip);
+        const opLengthU16 = getOpcodeLengthU16(ip, opcode);
+
+        if (opcode === MintOpcode.MINT_SWITCH) {
+            // FIXME: Once the cfg supports back-branches in jump tables, uncomment this to
+            //  insert the back-branch targets into the table so they'll actually work
+            /*
+            const switchTable = decodeSwitch(ip);
+            for (const target of switchTable) {
+                const rtarget16 = (<any>target - <any>startOfBody) / 2;
+                if (target < ip)
+                    table.push(rtarget16);
+            }
+            */
+        } else {
+            // Any opcode with a branch argtype will have a decoded displacement, even if we don't
+            //  implement the opcode. Everything else will return undefined here and be skipped
+            const displacement = getBranchDisplacement(ip, opcode);
+            if (typeof (displacement) !== "number") {
+                ip += <any>(opLengthU16 * 2);
+                continue;
+            }
+
+            // These checks shouldn't fail unless memory is corrupted or something is wrong with the decoder.
+            // We don't want to cause decoder bugs to make the application exit, though - graceful degradation.
+            if (displacement === 0) {
+                mono_log_info(`opcode @${ip} branch target is self. aborting backbranch table generation`);
+                break;
+            }
+
+            // Only record *backward* branches
+            // We will filter this down further in the Cfg because it takes note of which branches it sees,
+            //  but it is also beneficial to have a null table (further down) due to seeing no potential
+            //  back branch targets at all, as it allows the Cfg to skip additional code generation entirely
+            //  if it knows there will never be any backwards branches in a given trace
+            if (displacement < 0) {
+                const rtarget16 = rip16 + (displacement);
+                if (rtarget16 < 0) {
+                    mono_log_info(`opcode @${ip}'s displacement of ${displacement} goes before body: ${rtarget16}. aborting backbranch table generation`);
+                    break;
+                }
+
+                // If the relative target is before the start of the trace, don't record it.
+                // The trace will be unable to successfully branch to it so it would just make the table bigger.
+                if (rtarget16 >= rbase16)
+                    table.push(rtarget16);
+            }
+
+            switch (opcode) {
+                case MintOpcode.MINT_CALL_HANDLER:
+                case MintOpcode.MINT_CALL_HANDLER_S:
+                    // While this formally isn't a backward branch target, we want to record
+                    //  the offset of its following instruction so that the jiterpreter knows
+                    //  to generate the necessary dispatch code to enable branching back to it.
+                    table.push(rip16 + opLengthU16);
+                    break;
+            }
+        }
+
+        ip += <any>(opLengthU16 * 2);
+    }
+
+    if (table.length <= 0)
+        return null;
+    // Not important yet, so not doing it
+    // table.sort((a, b) => a - b);
+    return new Uint16Array(table);
+}
+
+export function generateWasmBody (
     frame: NativePointer, traceName: string, ip: MintOpcodePtr,
     startOfBody: MintOpcodePtr, endOfBody: MintOpcodePtr,
     builder: WasmBuilder, instrumentedTraceId: number,
@@ -136,19 +308,21 @@ export function generateWasmBody(
 ): number {
     const abort = <MintOpcodePtr><any>0;
     let isFirstInstruction = true, isConditionallyExecuted = false,
-        containsSimd = false,
         pruneOpcodes = false, hasEmittedUnreachable = false;
     let result = 0,
         prologueOpcodeCounter = 0,
         conditionalOpcodeCounter = 0;
+
     eraseInferredState();
 
-    // Skip over the enter opcode
-    const enterSizeU16 = cwraps.mono_jiterp_get_opcode_info(MintOpcode.MINT_TIER_ENTER_JITERPRETER, OpcodeInfoType.Length);
-    ip += <any>(enterSizeU16 * 2);
-    let rip = ip;
+    // If a trace is instrumented, also activate back branch tracing
+    builder.backBranchTraceLevel = instrumentedTraceId
+        ? 2
+        : defaultTraceBackBranches;
 
-    builder.cfg.entry(ip);
+    // Record the address of our prepare_jiterpreter opcode as the entry point, not the opcode after it.
+    // Some back-branches will target prepare_jiterpreter directly, and we need them to work.
+    let rip = builder.cfg.entry(ip);
 
     while (ip) {
         // This means some code went 'ip = abort; continue'
@@ -164,10 +338,7 @@ export function generateWasmBody(
             break;
         }
 
-        // HACK: Browsers set a limit of 4KB, we lower it slightly since a single opcode
-        //  might generate a ton of code and we generate a bit of an epilogue after
-        //  we finish
-        const maxBytesGenerated = 3840,
+        const maxBytesGenerated = builder.options.maxModuleSize - moduleHeaderSizeMargin,
             spaceLeft = maxBytesGenerated - builder.bytesGeneratedSoFar - builder.cfg.overheadBytes;
         if (builder.size >= spaceLeft) {
             // mono_log_info(`trace too big, estimated size is ${builder.size + builder.bytesGeneratedSoFar}`);
@@ -186,7 +357,7 @@ export function generateWasmBody(
         let opcode = getU16(ip);
         const numSregs = cwraps.mono_jiterp_get_opcode_info(opcode, OpcodeInfoType.Sregs),
             numDregs = cwraps.mono_jiterp_get_opcode_info(opcode, OpcodeInfoType.Dregs),
-            opLengthU16 = cwraps.mono_jiterp_get_opcode_info(opcode, OpcodeInfoType.Length);
+            opLengthU16 = getOpcodeLengthU16(ip, opcode);
 
         const isSimdIntrins = (opcode >= MintOpcode.MINT_SIMD_INTRINS_P_P) &&
             (opcode <= MintOpcode.MINT_SIMD_INTRINS_P_PPP);
@@ -223,7 +394,7 @@ export function generateWasmBody(
         // We record the offset of each backward branch we encounter, so that later branch
         //  opcodes know that it's available by branching to the top of the dispatch loop
         if (isBackBranchTarget) {
-            if (traceBackBranches > 1)
+            if (builder.backBranchTraceLevel > 1)
                 mono_log_info(`${traceName} recording back branch target 0x${(<any>ip).toString(16)}`);
             builder.backBranchOffsets.push(ip);
         }
@@ -269,15 +440,19 @@ export function generateWasmBody(
         }
 
         switch (opcode) {
+            case MintOpcode.MINT_SWITCH: {
+                if (!emit_switch(builder, ip, exitOpcodeCounter))
+                    ip = abort;
+                break;
+            }
             case MintOpcode.MINT_NOP: {
                 // This typically means the current opcode was disabled or pruned
                 if (pruneOpcodes) {
                     // We emit an unreachable opcode so that if execution somehow reaches a pruned opcode, we will abort
                     // This should be impossible anyway but it's also useful to have pruning visible in the wasm
-                    // FIXME: Ideally we would stop generating opcodes after the first unreachable, but that causes v8 to hang
                     if (!hasEmittedUnreachable)
                         builder.appendU8(WasmOpcode.unreachable);
-                    // Each unreachable opcode could generate a bunch of native code in a bad wasm jit so generate nops after it
+                    // Don't generate multiple unreachable opcodes in a row
                     hasEmittedUnreachable = true;
                 }
                 break;
@@ -292,7 +467,7 @@ export function generateWasmBody(
             }
             case MintOpcode.MINT_LOCALLOC: {
                 // dest
-                append_ldloca(builder, getArgU16(ip, 1));
+                append_ldloca(builder, getArgU16(ip, 1), 0);
                 // len
                 append_ldloc(builder, getArgU16(ip, 2), WasmOpcode.i32_load);
                 // frame
@@ -300,7 +475,20 @@ export function generateWasmBody(
                 builder.callImport("localloc");
                 break;
             }
-            case MintOpcode.MINT_INITOBJ: {
+            case MintOpcode.MINT_ZEROBLK: {
+                // dest
+                append_ldloc(builder, getArgU16(ip, 1), WasmOpcode.i32_load);
+                // value
+                builder.i32_const(0);
+                // count
+                append_ldloc(builder, getArgU16(ip, 2), WasmOpcode.i32_load);
+                // memset
+                builder.appendU8(WasmOpcode.PREFIX_sat);
+                builder.appendU8(11);
+                builder.appendU8(0);
+                break;
+            }
+            case MintOpcode.MINT_ZEROBLK_IMM: {
                 append_ldloc(builder, getArgU16(ip, 1), WasmOpcode.i32_load);
                 append_memset_dest(builder, 0, getArgU16(ip, 2));
                 break;
@@ -459,11 +647,22 @@ export function generateWasmBody(
                 builder.local("pLocals");
                 // locals[ip[1]] = &locals[ip[2]]
                 const offset = getArgU16(ip, 2),
-                    flag = isAddressTaken(builder, offset);
+                    flag = isAddressTaken(builder, offset),
+                    destOffset = getArgU16(ip, 1),
+                    // Size value stored for us by emit_compacted_instruction so we can do invalidation
+                    size = getArgU16(ip, 3);
                 if (!flag)
                     mono_log_error(`${traceName}: Expected local ${offset} to have address taken flag`);
-                append_ldloca(builder, offset);
-                append_stloc_tail(builder, getArgU16(ip, 1), WasmOpcode.i32_store);
+                append_ldloca(builder, offset, size);
+                append_stloc_tail(builder, destOffset, WasmOpcode.i32_store);
+                // Record this ldloca as a known constant so that later uses of it turn into a lea,
+                //  and the wasm runtime can constant fold them with other constants. It's not uncommon
+                //  to have code that does '&x + c', which (if this optimization works) should
+                //  turn into '&locals + offsetof(x) + c' and get constant folded to have the same cost
+                //  as a regular ldloc
+                knownConstants.set(destOffset, { type: "ldloca", offset: offset });
+                // dreg invalidation would blow the known constant away, so disable it
+                skipDregInvalidation = true;
                 break;
             }
 
@@ -678,9 +877,8 @@ export function generateWasmBody(
             }
 
             case MintOpcode.MINT_LD_DELEGATE_METHOD_PTR: {
-                // FIXME: ldloca invalidation size
-                append_ldloca(builder, getArgU16(ip, 1), 8);
-                append_ldloca(builder, getArgU16(ip, 2), 8);
+                append_ldloca(builder, getArgU16(ip, 1), 4);
+                append_ldloca(builder, getArgU16(ip, 2), 4);
                 builder.callImport("ld_del_ptr");
                 break;
             }
@@ -1083,6 +1281,21 @@ export function generateWasmBody(
                 break;
             }
 
+            case MintOpcode.MINT_NEWARR: {
+                builder.block();
+                append_ldloca(builder, getArgU16(ip, 1), 4);
+                const vtable = get_imethod_data(frame, getArgU16(ip, 3));
+                builder.i32_const(vtable);
+                append_ldloc(builder, getArgU16(ip, 2), WasmOpcode.i32_load);
+                builder.callImport("newarr");
+                // If the newarr operation succeeded, continue, otherwise bailout
+                builder.appendU8(WasmOpcode.br_if);
+                builder.appendULeb(0);
+                append_bailout(builder, ip, BailoutReason.AllocFailed);
+                builder.endBlock();
+                break;
+            }
+
             case MintOpcode.MINT_NEWOBJ_INLINED: {
                 builder.block();
                 // MonoObject *o = mono_gc_alloc_obj (vtable, m_class_get_instance_size (vtable->klass));
@@ -1095,18 +1308,6 @@ export function generateWasmBody(
                 builder.appendULeb(0);
                 append_bailout(builder, ip, BailoutReason.AllocFailed);
                 builder.endBlock();
-                break;
-            }
-
-            case MintOpcode.MINT_NEWOBJ_VT_INLINED: {
-                const ret_size = getArgU16(ip, 3);
-                // memset (this_vt, 0, ret_size);
-                append_ldloca(builder, getArgU16(ip, 2), ret_size);
-                append_memset_dest(builder, 0, ret_size);
-                // LOCAL_VAR (ip [1], gpointer) = this_vt;
-                builder.local("pLocals");
-                append_ldloca(builder, getArgU16(ip, 2), ret_size);
-                append_stloc_tail(builder, getArgU16(ip, 1), WasmOpcode.i32_store);
                 break;
             }
 
@@ -1183,7 +1384,9 @@ export function generateWasmBody(
                     (builder.callHandlerReturnAddresses.length <= maxCallHandlerReturnAddresses)
                 ) {
                     // mono_log_info(`endfinally @0x${(<any>ip).toString(16)}. return addresses:`, builder.callHandlerReturnAddresses.map(ra => (<any>ra).toString(16)));
-                    // FIXME: Clean this codegen up
+                    // FIXME: Replace this with a chain of selects to more efficiently map from RA -> index, then
+                    //  a single jump table at the end to jump to the right place. This will generate much smaller
+                    //  code and be able to handle a larger number of return addresses.
                     // Load ret_ip
                     const clauseIndex = getArgU16(ip, 1),
                         clauseDataOffset = get_imethod_clause_data_offset(frame, clauseIndex);
@@ -1213,9 +1416,15 @@ export function generateWasmBody(
             }
 
             case MintOpcode.MINT_RETHROW:
+                ip = abort;
+                break;
+
+            // call C
+            case MintOpcode.MINT_PROF_ENTER:
+            case MintOpcode.MINT_PROF_SAMPLEPOINT:
             case MintOpcode.MINT_PROF_EXIT:
             case MintOpcode.MINT_PROF_EXIT_VOID:
-                ip = abort;
+                append_profiler_event(builder, ip, opcode);
                 break;
 
             // Generating code for these is kind of complex due to the intersection of JS and int64,
@@ -1344,26 +1553,6 @@ export function generateWasmBody(
                 break;
             }
 
-            case MintOpcode.MINT_MONO_CMPXCHG_I4:
-                builder.local("pLocals");
-                append_ldloc(builder, getArgU16(ip, 2), WasmOpcode.i32_load); // dest
-                append_ldloc(builder, getArgU16(ip, 3), WasmOpcode.i32_load); // newVal
-                append_ldloc(builder, getArgU16(ip, 4), WasmOpcode.i32_load); // expected
-                builder.callImport("cmpxchg_i32");
-                append_stloc_tail(builder, getArgU16(ip, 1), WasmOpcode.i32_store);
-                break;
-            case MintOpcode.MINT_MONO_CMPXCHG_I8:
-                // because i64 values can't pass through JS cleanly (c.f getRawCwrap and
-                // EMSCRIPTEN_KEEPALIVE), we pass addresses of newVal, expected and the return value
-                // to the helper function.  The "dest" for the compare-exchange is already a
-                // pointer, so load it normally
-                append_ldloc(builder, getArgU16(ip, 2), WasmOpcode.i32_load); // dest
-                append_ldloca(builder, getArgU16(ip, 3), 0); // newVal
-                append_ldloca(builder, getArgU16(ip, 4), 0); // expected
-                append_ldloca(builder, getArgU16(ip, 1), 8); // oldVal
-                builder.callImport("cmpxchg_i64");
-                break;
-
             case MintOpcode.MINT_LOG2_I4:
             case MintOpcode.MINT_LOG2_I8: {
                 const isI64 = (opcode === MintOpcode.MINT_LOG2_I8);
@@ -1446,7 +1635,7 @@ export function generateWasmBody(
                     } else
                         ip = abort;
                 } else if (
-                    (opcode >= MintOpcode.MINT_LDC_I4_M1) &&
+                    (opcode >= MintOpcode.MINT_LDC_I4_0) &&
                     (opcode <= MintOpcode.MINT_LDC_R8)
                 ) {
                     if (!emit_ldc(builder, ip, opcode))
@@ -1526,13 +1715,19 @@ export function generateWasmBody(
                     (opcode >= MintOpcode.MINT_SIMD_V128_LDC) &&
                     (opcode <= MintOpcode.MINT_SIMD_INTRINS_P_PPP)
                 ) {
+                    builder.containsSimd = true;
                     if (!emit_simd(builder, ip, opcode, opname, simdIntrinsArgCount, simdIntrinsIndex))
                         ip = abort;
-                    else {
-                        containsSimd = true;
+                    else
                         // We need to do dreg invalidation differently for simd, especially to handle ldc
                         skipDregInvalidation = true;
-                    }
+                } else if (
+                    (opcode >= MintOpcode.MINT_MONO_MEMORY_BARRIER) &&
+                    (opcode <= MintOpcode.MINT_MONO_CMPXCHG_I8)
+                ) {
+                    builder.containsAtomics = true;
+                    if (!emit_atomics(builder, ip, opcode))
+                        ip = abort;
                 } else if (opcodeValue === 0) {
                     // This means it was explicitly marked as no-value in the opcode value table
                     //  so we can just skip over it. This is done for things like nops.
@@ -1558,7 +1753,7 @@ export function generateWasmBody(
                 }
             }
 
-            if ((trace > 1) || traceOnError || traceOnRuntimeError || mostRecentOptions!.dumpTraces || instrumentedTraceId) {
+            if ((trace > 1) || traceOnError || mostRecentOptions!.dumpTraces || instrumentedTraceId) {
                 let stmtText = `${(<any>ip).toString(16)} ${opname} `;
                 const firstDreg = <any>ip + 2;
                 const firstSreg = firstDreg + (numDregs * 2);
@@ -1619,7 +1814,7 @@ export function generateWasmBody(
     // HACK: Traces containing simd will be *much* shorter than non-simd traces,
     //  which will cause both the heuristic and our length requirement outside
     //  to reject them. For now, just add a big constant to the length
-    if (containsSimd)
+    if (builder.containsSimd)
         result += 10240;
     return result;
 }
@@ -1627,29 +1822,29 @@ export function generateWasmBody(
 const notNullSince: Map<number, number> = new Map();
 let cknullOffset = -1;
 
-function eraseInferredState() {
+function eraseInferredState () {
     cknullOffset = -1;
     notNullSince.clear();
-    knownConstantValues.clear();
+    knownConstants.clear();
 }
 
-function invalidate_local(offset: number) {
+function invalidate_local (offset: number) {
     if (cknullOffset === offset)
         cknullOffset = -1;
     notNullSince.delete(offset);
-    knownConstantValues.delete(offset);
+    knownConstants.delete(offset);
 }
 
-function invalidate_local_range(start: number, bytes: number) {
+function invalidate_local_range (start: number, bytes: number) {
     for (let i = 0; i < bytes; i += 1)
         invalidate_local(start + i);
 }
 
-function append_branch_target_block(builder: WasmBuilder, ip: MintOpcodePtr, isBackBranchTarget: boolean) {
+function append_branch_target_block (builder: WasmBuilder, ip: MintOpcodePtr, isBackBranchTarget: boolean) {
     builder.cfg.startBranchBlock(ip, isBackBranchTarget);
 }
 
-function computeMemoryAlignment(offset: number, opcodeOrPrefix: WasmOpcode, simdOpcode?: WasmSimdOpcode) {
+function computeMemoryAlignment (offset: number, opcodeOrPrefix: WasmOpcode, simdOpcode?: WasmSimdOpcode) {
     // First, compute the best possible alignment
     let alignment = 0;
     if (offset % 16 === 0)
@@ -1710,7 +1905,47 @@ function computeMemoryAlignment(offset: number, opcodeOrPrefix: WasmOpcode, simd
     return alignment;
 }
 
-function append_ldloc(builder: WasmBuilder, offset: number, opcodeOrPrefix: WasmOpcode, simdOpcode?: WasmSimdOpcode) {
+function try_append_ldloc_cprop (
+    builder: WasmBuilder, offset: number, opcodeOrPrefix: WasmOpcode,
+    dryRun: boolean, requireNonzero?: boolean
+) {
+    if (builder.options.cprop && (opcodeOrPrefix === WasmOpcode.i32_load)) {
+        // It's common to ldc.i4 or ldloca immediately before using the value
+        // in these cases the known constant analysis will work consistently, and we can skip the extra
+        //  memory load to read the constant we just wrote to a local. the resulting traces should be
+        //  both smaller and faster, while still correct since the ldc still writes to memory
+        // of course, if known constant analysis is broken, this will break too, but it's better to
+        //  learn immediately whether known constant analysis has been broken this whole time
+        // at least on x86 this will enable much better native code generation for the trace, since
+        //  operations like memory stores have forms that accept an immediate as rhs
+        const knownConstant = get_known_constant(builder, offset);
+        if (knownConstant) {
+            switch (knownConstant.type) {
+                case "i32":
+                    if (requireNonzero && (knownConstant.value === 0))
+                        return false;
+                    if (!dryRun)
+                        builder.i32_const(knownConstant.value);
+                    return true;
+                case "ldloca":
+                    // FIXME: Do we need to invalidate the local again? I don't think we do, we invalidated it
+                    //  when the ldloca operation originally happened, and we're just propagating that address
+                    //  constant forward to its point of use
+                    // requireNonzero is a no-op since ldloca always produces a nonzero result
+                    if (!dryRun)
+                        append_ldloca(builder, knownConstant.offset, 0);
+                    return true;
+            }
+        }
+    }
+
+    return false;
+}
+
+function append_ldloc (builder: WasmBuilder, offset: number, opcodeOrPrefix: WasmOpcode, simdOpcode?: WasmSimdOpcode) {
+    if (try_append_ldloc_cprop(builder, offset, opcodeOrPrefix, false))
+        return;
+
     builder.local("pLocals");
     mono_assert(opcodeOrPrefix >= WasmOpcode.i32_load, () => `Expected load opcode but got ${opcodeOrPrefix}`);
     builder.appendU8(opcodeOrPrefix);
@@ -1729,7 +1964,7 @@ function append_ldloc(builder: WasmBuilder, offset: number, opcodeOrPrefix: Wasm
 //  where the offset+alignment pair is referred to as a 'memarg' by the spec.
 // The actual store operation is equivalent to `pBase[offset] = value` (alignment has no
 //  observable impact on behavior, other than causing compilation failures if out of range)
-function append_stloc_tail(builder: WasmBuilder, offset: number, opcodeOrPrefix: WasmOpcode, simdOpcode?: WasmSimdOpcode) {
+function append_stloc_tail (builder: WasmBuilder, offset: number, opcodeOrPrefix: WasmOpcode, simdOpcode?: WasmSimdOpcode) {
     mono_assert(opcodeOrPrefix >= WasmOpcode.i32_store, () => `Expected store opcode but got ${opcodeOrPrefix}`);
     builder.appendU8(opcodeOrPrefix);
     if (simdOpcode !== undefined) {
@@ -1746,18 +1981,13 @@ function append_stloc_tail(builder: WasmBuilder, offset: number, opcodeOrPrefix:
 
 // Pass bytesInvalidated=0 if you are reading from the local and the address will never be
 //  used for writes
-// Pass transient=true if the address will not persist after use (so it can't be used to later
-//  modify the contents of this local)
-function append_ldloca(builder: WasmBuilder, localOffset: number, bytesInvalidated?: number) {
-    if (typeof (bytesInvalidated) !== "number")
-        bytesInvalidated = 512;
-    // FIXME: We need to know how big this variable is so we can invalidate the whole space it occupies
+function append_ldloca (builder: WasmBuilder, localOffset: number, bytesInvalidated: number) {
     if (bytesInvalidated > 0)
         invalidate_local_range(localOffset, bytesInvalidated);
     builder.lea("pLocals", localOffset);
 }
 
-function append_memset_local(builder: WasmBuilder, localOffset: number, value: number, count: number) {
+function append_memset_local (builder: WasmBuilder, localOffset: number, value: number, count: number) {
     invalidate_local_range(localOffset, count);
 
     // spec: pop n, pop val, pop d, fill from d[0] to d[n] with value val
@@ -1769,7 +1999,7 @@ function append_memset_local(builder: WasmBuilder, localOffset: number, value: n
     append_memset_dest(builder, value, count);
 }
 
-function append_memmove_local_local(builder: WasmBuilder, destLocalOffset: number, sourceLocalOffset: number, count: number) {
+function append_memmove_local_local (builder: WasmBuilder, destLocalOffset: number, sourceLocalOffset: number, count: number) {
     invalidate_local_range(destLocalOffset, count);
 
     if (try_append_memmove_fast(builder, destLocalOffset, sourceLocalOffset, count, false))
@@ -1781,12 +2011,12 @@ function append_memmove_local_local(builder: WasmBuilder, destLocalOffset: numbe
     append_memmove_dest_src(builder, count);
 }
 
-function isAddressTaken(builder: WasmBuilder, localOffset: number) {
+function isAddressTaken (builder: WasmBuilder, localOffset: number) {
     return cwraps.mono_jiterp_is_imethod_var_address_taken(<any>get_imethod(builder.frame), localOffset) !== 0;
 }
 
 // Loads the specified i32 value and then bails out if it is null, leaving it in the cknull_ptr local.
-function append_ldloc_cknull(builder: WasmBuilder, localOffset: number, ip: MintOpcodePtr, leaveOnStack: boolean) {
+function append_ldloc_cknull (builder: WasmBuilder, localOffset: number, ip: MintOpcodePtr, leaveOnStack: boolean) {
     const optimize = builder.allowNullCheckOptimization &&
         notNullSince.has(localOffset) &&
         !isAddressTaken(builder, localOffset);
@@ -1838,7 +2068,7 @@ function append_ldloc_cknull(builder: WasmBuilder, localOffset: number, ip: Mint
         cknullOffset = -1;
 }
 
-function emit_ldc(builder: WasmBuilder, ip: MintOpcodePtr, opcode: MintOpcode): boolean {
+function emit_ldc (builder: WasmBuilder, ip: MintOpcodePtr, opcode: MintOpcode): boolean {
     let storeType = WasmOpcode.i32_store;
     let value: number | undefined;
 
@@ -1903,14 +2133,14 @@ function emit_ldc(builder: WasmBuilder, ip: MintOpcodePtr, opcode: MintOpcode): 
     invalidate_local(localOffset);
 
     if (typeof (value) === "number")
-        knownConstantValues.set(localOffset, value);
+        knownConstants.set(localOffset, { type: "i32", value: value });
     else
-        knownConstantValues.delete(localOffset);
+        knownConstants.delete(localOffset);
 
     return true;
 }
 
-function emit_mov(builder: WasmBuilder, ip: MintOpcodePtr, opcode: MintOpcode): boolean {
+function emit_mov (builder: WasmBuilder, ip: MintOpcodePtr, opcode: MintOpcode): boolean {
     let loadOp = WasmOpcode.i32_load, storeOp = WasmOpcode.i32_store;
     switch (opcode) {
         case MintOpcode.MINT_MOV_I4_I1:
@@ -1973,7 +2203,7 @@ function emit_mov(builder: WasmBuilder, ip: MintOpcodePtr, opcode: MintOpcode): 
     return true;
 }
 
-function append_vtable_initialize(builder: WasmBuilder, pVtable: NativePointer, ip: MintOpcodePtr) {
+function append_vtable_initialize (builder: WasmBuilder, pVtable: NativePointer, ip: MintOpcodePtr) {
     // TODO: Actually initialize the vtable instead of just checking and bailing out?
     builder.block();
     // FIXME: This will prevent us from reusing traces between runs since the vtables can move
@@ -1988,7 +2218,7 @@ function append_vtable_initialize(builder: WasmBuilder, pVtable: NativePointer, 
     builder.endBlock();
 }
 
-function emit_fieldop(
+function emit_fieldop (
     builder: WasmBuilder, frame: NativePointer,
     ip: MintOpcodePtr, opcode: MintOpcode
 ): boolean {
@@ -2010,6 +2240,8 @@ function emit_fieldop(
         notNullSince.has(objectOffset) &&
         !isAddressTaken(builder, objectOffset);
 
+    // TODO: Figure out whether this is commonly used to access fields of structs that
+    //  live on the stack, and if so, whether we want to do cprop of the ldloca
     if (
         (opcode !== MintOpcode.MINT_LDFLDA_UNSAFE) &&
         (opcode !== MintOpcode.MINT_STFLD_O)
@@ -2182,7 +2414,7 @@ function emit_fieldop(
     }
 }
 
-function emit_sfieldop(
+function emit_sfieldop (
     builder: WasmBuilder, frame: NativePointer,
     ip: MintOpcodePtr, opcode: MintOpcode
 ): boolean {
@@ -2250,7 +2482,8 @@ function emit_sfieldop(
             builder.ptr_const(pStaticData);
             // src
             append_ldloca(builder, localOffset, 0);
-            // FIXME: Use mono_gc_wbarrier_set_field_internal
+            // We don't need to use gc_wbarrier_set_field_internal here because there's no object
+            //  reference, interp does a raw write
             builder.callImport("copy_ptr");
             return true;
         case MintOpcode.MINT_LDSFLD_VT: {
@@ -2289,7 +2522,7 @@ function emit_sfieldop(
     }
 }
 
-function emit_binop(builder: WasmBuilder, ip: MintOpcodePtr, opcode: MintOpcode): boolean {
+function emit_binop (builder: WasmBuilder, ip: MintOpcodePtr, opcode: MintOpcode): boolean {
     // operands are popped right to left, which means you build the arg list left to right
     let lhsLoadOp: WasmOpcode, rhsLoadOp: WasmOpcode, storeOp: WasmOpcode,
         lhsVar = "math_lhs32", rhsVar = "math_rhs32",
@@ -2441,7 +2674,7 @@ function emit_binop(builder: WasmBuilder, ip: MintOpcodePtr, opcode: MintOpcode)
     return true;
 }
 
-function emit_unop(builder: WasmBuilder, ip: MintOpcodePtr, opcode: MintOpcode): boolean {
+function emit_unop (builder: WasmBuilder, ip: MintOpcodePtr, opcode: MintOpcode): boolean {
     // operands are popped right to left, which means you build the arg list left to right
     const info = unopTable[<any>opcode];
     if (!info)
@@ -2531,6 +2764,8 @@ function emit_unop(builder: WasmBuilder, ip: MintOpcodePtr, opcode: MintOpcode):
 
         case MintOpcode.MINT_ADD_I4_IMM:
         case MintOpcode.MINT_MUL_I4_IMM:
+        case MintOpcode.MINT_AND_I4_IMM:
+        case MintOpcode.MINT_OR_I4_IMM:
         case MintOpcode.MINT_SHL_I4_IMM:
         case MintOpcode.MINT_SHR_I4_IMM:
         case MintOpcode.MINT_SHR_UN_I4_IMM:
@@ -2538,6 +2773,14 @@ function emit_unop(builder: WasmBuilder, ip: MintOpcodePtr, opcode: MintOpcode):
         case MintOpcode.MINT_ROR_I4_IMM:
             append_ldloc(builder, getArgU16(ip, 2), loadOp);
             builder.i32_const(getArgI16(ip, 3));
+            break;
+
+        case MintOpcode.MINT_ADD_I4_IMM2:
+        case MintOpcode.MINT_MUL_I4_IMM2:
+        case MintOpcode.MINT_AND_I4_IMM2:
+        case MintOpcode.MINT_OR_I4_IMM2:
+            append_ldloc(builder, getArgU16(ip, 2), loadOp);
+            builder.i32_const(getArgI32(ip, 3));
             break;
 
         case MintOpcode.MINT_ADD_I8_IMM:
@@ -2549,6 +2792,12 @@ function emit_unop(builder: WasmBuilder, ip: MintOpcodePtr, opcode: MintOpcode):
         case MintOpcode.MINT_ROR_I8_IMM:
             append_ldloc(builder, getArgU16(ip, 2), loadOp);
             builder.i52_const(getArgI16(ip, 3));
+            break;
+
+        case MintOpcode.MINT_ADD_I8_IMM2:
+        case MintOpcode.MINT_MUL_I8_IMM2:
+            append_ldloc(builder, getArgU16(ip, 2), loadOp);
+            builder.i52_const(getArgI32(ip, 3));
             break;
 
         default:
@@ -2564,7 +2813,7 @@ function emit_unop(builder: WasmBuilder, ip: MintOpcodePtr, opcode: MintOpcode):
     return true;
 }
 
-function append_call_handler_store_ret_ip(
+function append_call_handler_store_ret_ip (
     builder: WasmBuilder, ip: MintOpcodePtr,
     frame: NativePointer, opcode: MintOpcode
 ) {
@@ -2584,12 +2833,44 @@ function append_call_handler_store_ret_ip(
     builder.callHandlerReturnAddresses.push(retIp);
 }
 
-function emit_branch(
+function getBranchDisplacement (
+    ip: MintOpcodePtr, opcode: MintOpcode
+): number | undefined {
+    const opArgType = cwraps.mono_jiterp_get_opcode_info(opcode, OpcodeInfoType.OpArgType),
+        payloadOffset = cwraps.mono_jiterp_get_opcode_info(opcode, OpcodeInfoType.Sregs),
+        payloadAddress = <any>ip + 2 + (payloadOffset * 2);
+
+    let result: number;
+    switch (opArgType) {
+        case MintOpArgType.MintOpBranch:
+            result = getI32_unaligned(payloadAddress);
+            break;
+        case MintOpArgType.MintOpShortBranch:
+            result = getI16(payloadAddress);
+            break;
+        case MintOpArgType.MintOpShortAndShortBranch:
+            result = getI16(payloadAddress + 2);
+            break;
+        default:
+            return undefined;
+    }
+
+    if (traceBranchDisplacements)
+        mono_log_info(`${getOpcodeName(opcode)} @${ip} displacement=${result}`);
+
+    return result;
+}
+
+function emit_branch (
     builder: WasmBuilder, ip: MintOpcodePtr,
-    frame: NativePointer, opcode: MintOpcode, displacement?: number
+    frame: NativePointer, opcode: MintOpcode
 ): boolean {
     const isSafepoint = (opcode >= MintOpcode.MINT_BRFALSE_I4_SP) &&
         (opcode <= MintOpcode.MINT_BLT_UN_I8_IMM_SP);
+
+    const displacement = getBranchDisplacement(ip, opcode);
+    if (typeof (displacement) !== "number")
+        return false;
 
     // If the branch is taken we bail out to allow the interpreter to do it.
     // So for brtrue, we want to do 'cond == 0' to produce a bailout only
@@ -2604,15 +2885,7 @@ function emit_branch(
         case MintOpcode.MINT_BR_S: {
             const isCallHandler = (opcode === MintOpcode.MINT_CALL_HANDLER) ||
                 (opcode === MintOpcode.MINT_CALL_HANDLER_S);
-            displacement = (
-                (opcode === MintOpcode.MINT_BR) ||
-                (opcode === MintOpcode.MINT_CALL_HANDLER)
-            )
-                ? getArgI32(ip, 1)
-                : getArgI16(ip, 1);
 
-            if (traceBranchDisplacements)
-                mono_log_info(`br.s @${ip} displacement=${displacement}`);
             const destination = <any>ip + (displacement * 2);
 
             if (displacement <= 0) {
@@ -2620,8 +2893,8 @@ function emit_branch(
                     // We found a backward branch target we can branch to, so we branch out
                     //  to the top of the loop body
                     // append_safepoint(builder, ip);
-                    if (traceBackBranches > 1)
-                        mono_log_info(`performing backward branch to 0x${destination.toString(16)}`);
+                    if (builder.backBranchTraceLevel > 1)
+                        mono_log_info(`0x${(<any>ip).toString(16)} performing backward branch to 0x${destination.toString(16)}`);
                     if (isCallHandler)
                         append_call_handler_store_ret_ip(builder, ip, frame, opcode);
                     builder.cfg.branch(destination, true, CfgBranchType.Unconditional);
@@ -2629,15 +2902,14 @@ function emit_branch(
                     return true;
                 } else {
                     if (destination < builder.cfg.entryIp) {
-                        if ((traceBackBranches > 1) || (builder.cfg.trace > 1))
-                            mono_log_info(`${getOpcodeName(opcode)} target 0x${destination.toString(16)} before start of trace`);
-                    } else if ((traceBackBranches > 0) || (builder.cfg.trace > 0))
+                        if ((builder.backBranchTraceLevel > 1) || (builder.cfg.trace > 1))
+                            mono_log_info(`0x${(<any>ip).toString(16)} ${getOpcodeName(opcode)} target 0x${destination.toString(16)} before start of trace`);
+                    } else if ((builder.backBranchTraceLevel > 0) || (builder.cfg.trace > 0))
                         mono_log_info(`0x${(<any>ip).toString(16)} ${getOpcodeName(opcode)} target 0x${destination.toString(16)} not found in list ` +
                             builder.backBranchOffsets.map(bbo => "0x" + (<any>bbo).toString(16)).join(", ")
                         );
 
                     cwraps.mono_jiterp_boost_back_branch_target(destination);
-                    // FIXME: Should there be a safepoint here?
                     append_bailout(builder, destination, BailoutReason.BackwardBranch);
                     modifyCounter(JiterpCounter.BackBranchesNotEmitted, 1);
                     return true;
@@ -2665,7 +2937,6 @@ function emit_branch(
 
             // Load the condition
 
-            displacement = getArgI16(ip, 2);
             append_ldloc(builder, getArgU16(ip, 1), is64 ? WasmOpcode.i64_load : WasmOpcode.i32_load);
             if (
                 (opcode === MintOpcode.MINT_BRFALSE_I4_S) ||
@@ -2696,26 +2967,21 @@ function emit_branch(
         }
     }
 
-    if (!displacement)
-        throw new Error("Branch had no displacement");
-    else if (traceBranchDisplacements)
-        mono_log_info(`${getOpcodeName(opcode)} @${ip} displacement=${displacement}`);
-
     const destination = <any>ip + (displacement * 2);
 
     if (displacement < 0) {
         if (builder.backBranchOffsets.indexOf(destination) >= 0) {
             // We found a backwards branch target we can reach via our outer trace loop, so
             //  we update eip and branch out to the top of the loop block
-            if (traceBackBranches > 1)
-                mono_log_info(`performing conditional backward branch to 0x${destination.toString(16)}`);
+            if (builder.backBranchTraceLevel > 1)
+                mono_log_info(`0x${(<any>ip).toString(16)} performing conditional backward branch to 0x${destination.toString(16)}`);
             builder.cfg.branch(destination, true, isSafepoint ? CfgBranchType.SafepointConditional : CfgBranchType.Conditional);
             modifyCounter(JiterpCounter.BackBranchesEmitted, 1);
         } else {
             if (destination < builder.cfg.entryIp) {
-                if ((traceBackBranches > 1) || (builder.cfg.trace > 1))
-                    mono_log_info(`${getOpcodeName(opcode)} target 0x${destination.toString(16)} before start of trace`);
-            } else if ((traceBackBranches > 0) || (builder.cfg.trace > 0))
+                if ((builder.backBranchTraceLevel > 1) || (builder.cfg.trace > 1))
+                    mono_log_info(`0x${(<any>ip).toString(16)} ${getOpcodeName(opcode)} target 0x${destination.toString(16)} before start of trace`);
+            } else if ((builder.backBranchTraceLevel > 0) || (builder.cfg.trace > 0))
                 mono_log_info(`0x${(<any>ip).toString(16)} ${getOpcodeName(opcode)} target 0x${destination.toString(16)} not found in list ` +
                     builder.backBranchOffsets.map(bbo => "0x" + (<any>bbo).toString(16)).join(", ")
                 );
@@ -2735,7 +3001,7 @@ function emit_branch(
     return true;
 }
 
-function emit_relop_branch(
+function emit_relop_branch (
     builder: WasmBuilder, ip: MintOpcodePtr,
     frame: NativePointer, opcode: MintOpcode
 ): boolean {
@@ -2752,10 +3018,6 @@ function emit_relop_branch(
 
     if (!relopInfo && !intrinsicFpBinop)
         return false;
-
-    const displacement = getArgI16(ip, 3);
-    if (traceBranchDisplacements)
-        mono_log_info(`relop @${ip} displacement=${displacement}`);
 
     const operandLoadOp = relopInfo
         ? relopInfo[1]
@@ -2791,10 +3053,10 @@ function emit_relop_branch(
         builder.callImport("relop_fp");
     }
 
-    return emit_branch(builder, ip, frame, opcode, displacement);
+    return emit_branch(builder, ip, frame, opcode);
 }
 
-function emit_math_intrinsic(builder: WasmBuilder, ip: MintOpcodePtr, opcode: MintOpcode): boolean {
+function emit_math_intrinsic (builder: WasmBuilder, ip: MintOpcodePtr, opcode: MintOpcode): boolean {
     let isUnary: boolean, isF32: boolean, name: string | undefined;
     let wasmOp: WasmOpcode | undefined;
     const destOffset = getArgU16(ip, 1),
@@ -2842,7 +3104,7 @@ function emit_math_intrinsic(builder: WasmBuilder, ip: MintOpcodePtr, opcode: Mi
     }
 }
 
-function emit_indirectop(builder: WasmBuilder, ip: MintOpcodePtr, opcode: MintOpcode): boolean {
+function emit_indirectop (builder: WasmBuilder, ip: MintOpcodePtr, opcode: MintOpcode): boolean {
     const isLoad = (opcode >= MintOpcode.MINT_LDIND_I1) &&
         (opcode <= MintOpcode.MINT_LDIND_OFFSET_ADD_MUL_IMM_I8);
     const isAddMul = (
@@ -2976,13 +3238,21 @@ function emit_indirectop(builder: WasmBuilder, ip: MintOpcodePtr, opcode: MintOp
             return false;
     }
 
-    append_ldloc_cknull(builder, addressVarIndex, ip, false);
+    // Check whether ldloc cprop is possible for the address var, if it is, skip doing the ldloc_cknull.
+    // We'll also skip loading cknull_ptr later.
+    const addressCprop = try_append_ldloc_cprop(builder, addressVarIndex, WasmOpcode.i32_load, true, true);
+    if (!addressCprop)
+        append_ldloc_cknull(builder, addressVarIndex, ip, false);
 
     if (isLoad) {
         // pre-load pLocals for the store operation
         builder.local("pLocals");
         // Load address
-        builder.local("cknull_ptr");
+        if (addressCprop)
+            mono_assert(try_append_ldloc_cprop(builder, addressVarIndex, WasmOpcode.i32_load, false, true), "Unknown jiterpreter cprop failure");
+        else
+            builder.local("cknull_ptr");
+
         // For ldind_offset we need to load an offset from another local
         //  and then add it to the null checked address
         if (isAddMul) {
@@ -3014,13 +3284,21 @@ function emit_indirectop(builder: WasmBuilder, ip: MintOpcodePtr, opcode: MintOp
         append_stloc_tail(builder, valueVarIndex, setter);
     } else if (opcode === MintOpcode.MINT_STIND_REF) {
         // Load destination address
-        builder.local("cknull_ptr");
+        if (addressCprop)
+            mono_assert(try_append_ldloc_cprop(builder, addressVarIndex, WasmOpcode.i32_load, false, true), "Unknown jiterpreter cprop failure");
+        else
+            builder.local("cknull_ptr");
+
         // Load address of value so that copy_managed_pointer can grab it
         append_ldloca(builder, valueVarIndex, 0);
         builder.callImport("copy_ptr");
     } else {
         // Pre-load address for the store operation
-        builder.local("cknull_ptr");
+        if (addressCprop)
+            mono_assert(try_append_ldloc_cprop(builder, addressVarIndex, WasmOpcode.i32_load, false, true), "Unknown jiterpreter cprop failure");
+        else
+            builder.local("cknull_ptr");
+
         // For ldind_offset we need to load an offset from another local
         //  and then add it to the null checked address
         if (isOffset && offsetVarIndex >= 0) {
@@ -3040,7 +3318,7 @@ function emit_indirectop(builder: WasmBuilder, ip: MintOpcodePtr, opcode: MintOp
     return true;
 }
 
-function append_getelema1(
+function append_getelema1 (
     builder: WasmBuilder, ip: MintOpcodePtr,
     objectOffset: number, indexOffset: number, elementSize: number
 ) {
@@ -3099,7 +3377,7 @@ function append_getelema1(
     // append_getelema1 leaves the address on the stack
 }
 
-function emit_arrayop(builder: WasmBuilder, frame: NativePointer, ip: MintOpcodePtr, opcode: MintOpcode): boolean {
+function emit_arrayop (builder: WasmBuilder, frame: NativePointer, ip: MintOpcodePtr, opcode: MintOpcode): boolean {
     const isLoad = ((opcode <= MintOpcode.MINT_LDELEMA_TC) && (opcode >= MintOpcode.MINT_LDELEM_I1)) ||
         (opcode === MintOpcode.MINT_LDLEN),
         objectOffset = getArgU16(ip, isLoad ? 2 : 1),
@@ -3140,11 +3418,19 @@ function emit_arrayop(builder: WasmBuilder, frame: NativePointer, ip: MintOpcode
             append_ldloc(builder, getArgU16(ip, 2), WasmOpcode.i32_load);
             // value
             append_ldloc(builder, getArgU16(ip, 3), WasmOpcode.i32_load);
-            builder.callImport("stelem_ref");
+            builder.callImport("stelemr_tc");
             builder.appendU8(WasmOpcode.br_if);
             builder.appendULeb(0);
             append_bailout(builder, ip, BailoutReason.ArrayStoreFailed);
             builder.endBlock();
+            return true;
+        }
+        case MintOpcode.MINT_STELEM_REF_UNCHECKED: {
+            // dest
+            append_getelema1(builder, ip, objectOffset, indexOffset, 4);
+            // &value (src)
+            append_ldloca(builder, valueOffset, 0);
+            builder.callImport("copy_ptr");
             return true;
         }
         case MintOpcode.MINT_LDELEM_REF:
@@ -3261,20 +3547,7 @@ function emit_arrayop(builder: WasmBuilder, frame: NativePointer, ip: MintOpcode
     return true;
 }
 
-let wasmSimdSupported: boolean | undefined;
-
-function getIsWasmSimdSupported(): boolean {
-    if (wasmSimdSupported !== undefined)
-        return wasmSimdSupported;
-
-    wasmSimdSupported = runtimeHelpers.featureWasmSimd === true;
-    if (!wasmSimdSupported)
-        mono_log_info("Disabling Jiterpreter SIMD");
-
-    return wasmSimdSupported;
-}
-
-function get_import_name(
+function get_import_name (
     builder: WasmBuilder, typeName: string,
     functionPtr: number
 ): string {
@@ -3285,14 +3558,14 @@ function get_import_name(
     return name;
 }
 
-function emit_simd(
+function emit_simd (
     builder: WasmBuilder, ip: MintOpcodePtr,
     opcode: MintOpcode, opname: string,
     argCount: number, index: number
 ): boolean {
     // First, if compiling an intrinsic attempt to emit the special vectorized implementation
     // We only do this if SIMD is enabled since we'll be using the v128 opcodes.
-    if (builder.options.enableSimd && getIsWasmSimdSupported()) {
+    if (builder.options.enableSimd && runtimeHelpers.featureWasmSimd) {
         switch (argCount) {
             case 2:
                 if (emit_simd_2(builder, ip, <SimdIntrinsic2>index))
@@ -3312,12 +3585,12 @@ function emit_simd(
     // Fall back to a mix of non-vectorized wasm and the interpreter's implementation of the opcodes
     switch (opcode) {
         case MintOpcode.MINT_SIMD_V128_LDC: {
-            if (builder.options.enableSimd && getIsWasmSimdSupported()) {
+            if (builder.options.enableSimd && runtimeHelpers.featureWasmSimd) {
                 builder.local("pLocals");
                 const view = localHeapViewU8().slice(<any>ip + 4, <any>ip + 4 + sizeOfV128);
                 builder.v128_const(view);
                 append_simd_store(builder, ip);
-                knownConstantValues.set(getArgU16(ip, 1), view);
+                knownConstants.set(getArgU16(ip, 1), { type: "v128", value: view });
             } else {
                 // dest
                 append_ldloca(builder, getArgU16(ip, 1), sizeOfV128);
@@ -3386,31 +3659,31 @@ function emit_simd(
     }
 }
 
-function append_simd_store(builder: WasmBuilder, ip: MintOpcodePtr) {
+function append_simd_store (builder: WasmBuilder, ip: MintOpcodePtr) {
     append_stloc_tail(builder, getArgU16(ip, 1), WasmOpcode.PREFIX_simd, WasmSimdOpcode.v128_store);
 }
 
-function append_simd_2_load(builder: WasmBuilder, ip: MintOpcodePtr, loadOp?: WasmSimdOpcode) {
+function append_simd_2_load (builder: WasmBuilder, ip: MintOpcodePtr, loadOp?: WasmSimdOpcode) {
     builder.local("pLocals");
     // This || is harmless since v128_load is 0
     append_ldloc(builder, getArgU16(ip, 2), WasmOpcode.PREFIX_simd, loadOp || WasmSimdOpcode.v128_load);
 }
 
-function append_simd_3_load(builder: WasmBuilder, ip: MintOpcodePtr) {
+function append_simd_3_load (builder: WasmBuilder, ip: MintOpcodePtr) {
     builder.local("pLocals");
     append_ldloc(builder, getArgU16(ip, 2), WasmOpcode.PREFIX_simd, WasmSimdOpcode.v128_load);
     // FIXME: Can rhs be a scalar? We handle shifts separately already
     append_ldloc(builder, getArgU16(ip, 3), WasmOpcode.PREFIX_simd, WasmSimdOpcode.v128_load);
 }
 
-function append_simd_4_load(builder: WasmBuilder, ip: MintOpcodePtr) {
+function append_simd_4_load (builder: WasmBuilder, ip: MintOpcodePtr) {
     builder.local("pLocals");
     append_ldloc(builder, getArgU16(ip, 2), WasmOpcode.PREFIX_simd, WasmSimdOpcode.v128_load);
     append_ldloc(builder, getArgU16(ip, 3), WasmOpcode.PREFIX_simd, WasmSimdOpcode.v128_load);
     append_ldloc(builder, getArgU16(ip, 4), WasmOpcode.PREFIX_simd, WasmSimdOpcode.v128_load);
 }
 
-function emit_simd_2(builder: WasmBuilder, ip: MintOpcodePtr, index: SimdIntrinsic2): boolean {
+function emit_simd_2 (builder: WasmBuilder, ip: MintOpcodePtr, index: SimdIntrinsic2): boolean {
     const simple = <WasmSimdOpcode>cwraps.mono_jiterp_get_simd_opcode(1, index);
     if (simple >= 0) {
         if (simdLoadTable.has(index)) {
@@ -3477,7 +3750,7 @@ function emit_simd_2(builder: WasmBuilder, ip: MintOpcodePtr, index: SimdIntrins
     }
 }
 
-function emit_simd_3(builder: WasmBuilder, ip: MintOpcodePtr, index: SimdIntrinsic3): boolean {
+function emit_simd_3 (builder: WasmBuilder, ip: MintOpcodePtr, index: SimdIntrinsic3): boolean {
     const simple = <WasmSimdOpcode>cwraps.mono_jiterp_get_simd_opcode(2, index);
     if (simple >= 0) {
         const isShift = simdShiftTable.has(index),
@@ -3598,7 +3871,7 @@ function emit_simd_3(builder: WasmBuilder, ip: MintOpcodePtr, index: SimdIntrins
 
 // implement i16 and i32 shuffles on top of wasm's only shuffle opcode by expanding the
 //  element shuffle indices into byte indices
-function emit_shuffle(builder: WasmBuilder, ip: MintOpcodePtr, elementCount: number): boolean {
+function emit_shuffle (builder: WasmBuilder, ip: MintOpcodePtr, elementCount: number): boolean {
     const elementSize = 16 / elementCount,
         indicesOffset = getArgU16(ip, 3),
         constantIndices = get_known_constant_value(builder, indicesOffset);
@@ -3643,15 +3916,19 @@ function emit_shuffle(builder: WasmBuilder, ip: MintOpcodePtr, elementCount: num
                 builder.appendU8(i);
         }
         builder.appendSimd(WasmSimdOpcode.i8x16_swizzle);
-        // multiply indices by 2 to scale from char indices to byte indices
+        // multiply indices by 2 or 4 to scale from elt indices to byte indices
         builder.i32_const(elementCount === 4 ? 2 : 1);
         builder.appendSimd(WasmSimdOpcode.i8x16_shl);
-        // now add 1 to the secondary lane of each char
+        // now add an offset to the additional bytes of each lane, i.e.
+        // 0 1 2 3 0 1 2 3 ...
         builder.appendSimd(WasmSimdOpcode.v128_const);
         for (let i = 0; i < elementCount; i++) {
             for (let j = 0; j < elementSize; j++)
                 builder.appendU8(j);
         }
+        // we can do a bitwise or since we know we previously multiplied all the lanes by 2 or 4,
+        //  so the 1 and 2 bits are already clear
+        builder.appendSimd(WasmSimdOpcode.v128_or);
     }
     // we now have two vectors on the stack, the values and the byte indices
     builder.appendSimd(WasmSimdOpcode.i8x16_swizzle);
@@ -3659,7 +3936,7 @@ function emit_shuffle(builder: WasmBuilder, ip: MintOpcodePtr, elementCount: num
     return true;
 }
 
-function emit_simd_4(builder: WasmBuilder, ip: MintOpcodePtr, index: SimdIntrinsic4): boolean {
+function emit_simd_4 (builder: WasmBuilder, ip: MintOpcodePtr, index: SimdIntrinsic4): boolean {
     const simple = <WasmSimdOpcode>cwraps.mono_jiterp_get_simd_opcode(3, index);
     if (simple >= 0) {
         // [lane count, value load opcode]
@@ -3743,4 +4020,103 @@ function emit_simd_4(builder: WasmBuilder, ip: MintOpcodePtr, index: SimdIntrins
         default:
             return false;
     }
+}
+
+function emit_atomics (
+    builder: WasmBuilder, ip: MintOpcodePtr, opcode: number
+) {
+    if (opcode === MintOpcode.MINT_MONO_MEMORY_BARRIER) {
+        if (WasmEnableThreads) {
+            // Mono memory barriers use sync_synchronize which generates atomic.fence on clang,
+            //  provided you pass -pthread at compile time
+            builder.appendAtomic(WasmAtomicOpcode.atomic_fence);
+            // The text format and other parts of the spec say atomic.fence has no operands,
+            //  but the binary encoding contains a byte specifying whether the barrier is
+            //  sequentially consistent (0) or acquire-release (1)
+            // Mono memory barriers are sync_synchronize which is sequentially consistent.
+            builder.appendU8(0);
+        }
+        return true;
+    }
+
+    if (!builder.options.enableAtomics)
+        return false;
+
+    // FIXME: We could probably unify most of the xchg/cmpxchg implementation into one implementation
+
+    const xchg = xchgTable[opcode];
+    if (xchg) {
+        const is64 = xchg[2] > 2;
+        // TODO: Generate alignment check to produce a better runtime error when address is not aligned?
+        builder.local("pLocals"); // stloc head
+        append_ldloc_cknull(builder, getArgU16(ip, 2), ip, true); // address
+        append_ldloc(builder, getArgU16(ip, 3), is64 ? WasmOpcode.i64_load : WasmOpcode.i32_load); // replacement
+        builder.appendAtomic(xchg[0], false);
+        builder.appendMemarg(0, xchg[2]);
+        // Fixup the result if necessary
+        if (xchg[1] !== WasmOpcode.unreachable)
+            builder.appendU8(xchg[1]);
+        // store old value
+        append_stloc_tail(builder, getArgU16(ip, 1), is64 ? WasmOpcode.i64_store : WasmOpcode.i32_store);
+        return true;
+    }
+
+    const cmpxchg = cmpxchgTable[opcode];
+    if (cmpxchg) {
+        const is64 = cmpxchg[2] > 2;
+        // TODO: Generate alignment check to produce a better runtime error when address is not aligned?
+        builder.local("pLocals"); // stloc head
+        append_ldloc_cknull(builder, getArgU16(ip, 2), ip, true); // address
+        // FIXME: Do these loads need to be sized? I think it's well-defined even if there are garbage bytes in the i32,
+        //  based on language from the spec that looks like this: 'expected wrapped from i32 to i8, 8-bit compare equal'
+        append_ldloc(builder, getArgU16(ip, 4), is64 ? WasmOpcode.i64_load : WasmOpcode.i32_load); // expected
+        append_ldloc(builder, getArgU16(ip, 3), is64 ? WasmOpcode.i64_load : WasmOpcode.i32_load); // replacement
+        builder.appendAtomic(cmpxchg[0], false);
+        builder.appendMemarg(0, cmpxchg[2]);
+        // Fixup the result if necessary
+        if (cmpxchg[1] !== WasmOpcode.unreachable)
+            builder.appendU8(cmpxchg[1]);
+        // store old value
+        append_stloc_tail(builder, getArgU16(ip, 1), is64 ? WasmOpcode.i64_store : WasmOpcode.i32_store);
+        return true;
+    }
+
+    return false;
+}
+
+function emit_switch (builder: WasmBuilder, ip: MintOpcodePtr, exitOpcodeCounter: number) : boolean {
+    const lengthU16 = getOpcodeLengthU16(ip, MintOpcode.MINT_SWITCH),
+        table = decodeSwitch(ip);
+    let failed = false;
+
+    if (table.length > builder.options.maxSwitchSize) {
+        failed = true;
+    } else {
+        // Record all the switch's forward branch targets.
+        // If it contains any back branches they will bailout at runtime.
+        for (const target of table) {
+            if (target > ip)
+                builder.branchTargets.add(target);
+        }
+    }
+
+    if (failed) {
+        modifyCounter(JiterpCounter.SwitchTargetsFailed, table.length);
+        append_bailout(builder, ip, BailoutReason.SwitchSize);
+        return true;
+    }
+
+    const fallthrough = <any>ip + (lengthU16 * 2);
+    builder.branchTargets.add(fallthrough);
+
+    // Jump table needs a block so it can `br 0` for missing targets
+    builder.block();
+    // Load selector
+    append_ldloc(builder, getArgU16(ip, 1), WasmOpcode.i32_load);
+    // Dispatch
+    builder.cfg.jumpTable(table, fallthrough);
+    // Missing target
+    builder.endBlock();
+    append_exit(builder, ip, exitOpcodeCounter, BailoutReason.SwitchTarget);
+    return true;
 }

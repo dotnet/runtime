@@ -17,6 +17,21 @@ namespace System.Runtime.CompilerServices
     public static unsafe class Unsafe
     {
         /// <summary>
+        /// Determines the byte offset from origin to target from the given references.
+        /// </summary>
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static IntPtr ByteOffset<T>(ref readonly T origin, ref readonly T target)
+        {
+            throw new PlatformNotSupportedException();
+
+            // ldarg .1
+            // ldarg .0
+            // sub
+            // ret
+        }
+
+        /// <summary>
         /// Returns a pointer to the given by-ref parameter.
         /// </summary>
         [Intrinsic]
@@ -106,6 +121,46 @@ namespace System.Runtime.CompilerServices
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static ref T AsRef<T>(in T source)
+        {
+            throw new PlatformNotSupportedException();
+        }
+
+        /// <summary>
+        /// Reads a value of type <typeparamref name="T"/> from the given location.
+        /// </summary>
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static T ReadUnaligned<T>(void* source)
+        {
+            throw new PlatformNotSupportedException();
+        }
+
+        /// <summary>
+        /// Reads a value of type <typeparamref name="T"/> from the given location.
+        /// </summary>
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static T ReadUnaligned<T>(ref readonly byte source)
+        {
+            throw new PlatformNotSupportedException();
+        }
+
+        /// <summary>
+        /// Copies bytes from the source address to the destination address.
+        /// </summary>
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void CopyBlock(void* destination, void* source, uint byteCount)
+        {
+            throw new PlatformNotSupportedException();
+        }
+
+        /// <summary>
+        /// Copies bytes from the source address to the destination address.
+        /// </summary>
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void CopyBlock(ref byte destination, ref readonly byte source, uint byteCount)
         {
             throw new PlatformNotSupportedException();
         }

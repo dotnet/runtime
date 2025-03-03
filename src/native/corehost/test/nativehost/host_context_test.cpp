@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 #include <iostream>
+#include <fstream>
 #include <pal.h>
 #include <error_codes.h>
 #include <future>
@@ -917,7 +918,7 @@ bool host_context_test::non_context_mixed(
     hostfxr_exports hostfxr { hostfxr_path };
 
     pal::string_t host_path;
-    if (!pal::get_own_executable_path(&host_path) || !pal::realpath(&host_path))
+    if (!pal::get_own_executable_path(&host_path) || !pal::fullpath(&host_path))
     {
         trace::error(_X("Failed to resolve full path of the current executable [%s]"), host_path.c_str());
         return false;

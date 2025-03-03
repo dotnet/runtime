@@ -11,7 +11,7 @@ namespace System.Reflection
         #region Private Data Members
         private readonly BindingFlags m_bindingFlags;
         protected readonly RuntimeTypeCache m_reflectedTypeCache;
-        protected readonly RuntimeType m_declaringType;
+        protected internal readonly RuntimeType m_declaringType;
         #endregion
 
         #region Constructor

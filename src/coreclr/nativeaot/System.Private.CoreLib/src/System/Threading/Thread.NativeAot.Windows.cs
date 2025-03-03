@@ -15,9 +15,6 @@ namespace System.Threading
     public sealed partial class Thread
     {
         [ThreadStatic]
-        private static int t_reentrantWaitSuppressionCount;
-
-        [ThreadStatic]
         private static ApartmentType t_apartmentType;
 
         [ThreadStatic]
@@ -178,7 +175,7 @@ namespace System.Threading
             }
         }
 
-        private unsafe bool CreateThread(GCHandle thisThreadHandle)
+        private unsafe bool CreateThread(GCHandle<Thread> thisThreadHandle)
         {
             const int AllocationGranularity = 0x10000;  // 64 KiB
 
@@ -200,7 +197,7 @@ namespace System.Threading
             }
 
             _osHandle = Interop.Kernel32.CreateThread(IntPtr.Zero, (IntPtr)stackSize,
-                &ThreadEntryPoint, (IntPtr)thisThreadHandle,
+                &ThreadEntryPoint, GCHandle<Thread>.ToIntPtr(thisThreadHandle),
                 Interop.Kernel32.CREATE_SUSPENDED | Interop.Kernel32.STACK_SIZE_PARAM_IS_A_RESERVATION,
                 out _);
 
@@ -404,24 +401,8 @@ namespace System.Threading
 
         public void Interrupt() { throw new PlatformNotSupportedException(); }
 
-        //
-        // Suppresses reentrant waits on the current thread, until a matching call to RestoreReentrantWaits.
-        // This should be used by code that's expected to be called inside the STA message pump, so that it won't
-        // reenter itself.  In an ASTA, this should only be the CCW implementations of IUnknown and IInspectable.
-        //
-        internal static void SuppressReentrantWaits()
-        {
-            t_reentrantWaitSuppressionCount++;
-        }
-
-        internal static void RestoreReentrantWaits()
-        {
-            Debug.Assert(t_reentrantWaitSuppressionCount > 0);
-            t_reentrantWaitSuppressionCount--;
-        }
-
         internal static bool ReentrantWaitsEnabled =>
-            GetCurrentApartmentType() == ApartmentType.STA && t_reentrantWaitSuppressionCount == 0;
+            GetCurrentApartmentType() == ApartmentType.STA;
 
         internal static ApartmentType GetCurrentApartmentType()
         {

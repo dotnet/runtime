@@ -24,8 +24,8 @@ namespace System.Net
 
         internal static bool EqualDomains(ReadOnlySpan<char> left, ReadOnlySpan<char> right)
         {
-            if (left.Length != 0 && left[0] == '.') left = left.Slice(1);
-            if (right.Length != 0 && right[0] == '.') right = right.Slice(1);
+            if (left.StartsWith('.')) left = left.Slice(1);
+            if (right.StartsWith('.')) right = right.Slice(1);
 
             return left.Equals(right, StringComparison.OrdinalIgnoreCase);
         }

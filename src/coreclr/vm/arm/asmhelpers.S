@@ -127,7 +127,8 @@ LOCAL_LABEL(LReturnDone):
         EPILOG_STACK_RESTORE_OFFSET   r7, #8
         EPILOG_POP              "{r4,r5,r7,pc}"
 
-PATCH_LABEL CallDescrWorkerInternalReturnAddressOffset
+CallDescrWorkerInternalReturnAddressOffset:
+    .global CallDescrWorkerInternalReturnAddressOffset
     .word LOCAL_LABEL(CallDescrWorkerInternalReturnAddress) - C_FUNC(CallDescrWorkerInternal)
 
         NESTED_END CallDescrWorkerInternal,_TEXT
@@ -150,22 +151,6 @@ PATCH_LABEL CallDescrWorkerInternalReturnAddressOffset
         mov     pc, lr
 
     LEAF_END LazyMachStateCaptureState, _TEXT
-
-// void SinglecastDelegateInvokeStub(Delegate *pThis)
-    LEAF_ENTRY SinglecastDelegateInvokeStub, _TEXT
-        cmp     r0, #0
-        beq     LOCAL_LABEL(LNullThis)
-
-        ldr     r12, [r0, #DelegateObject___methodPtr]
-        ldr     r0, [r0, #DelegateObject___target]
-
-        bx      r12
-
-LOCAL_LABEL(LNullThis):
-        mov     r0, #CORINFO_NullReferenceException_ASM
-        b       C_FUNC(JIT_InternalThrow)
-
-    LEAF_END SinglecastDelegateInvokeStub, _TEXT
 
 //
 // r12 = UMEntryThunk*
@@ -209,24 +194,6 @@ LOCAL_LABEL(LNullThis):
 
         NESTED_END ThePreStub, _TEXT
 
-// ------------------------------------------------------------------
-        NESTED_ENTRY ThePreStubCompactARM, _TEXT, NoHandler
-
-        // r12 - address of compact entry point + PC_REG_RELATIVE_OFFSET
-
-        PROLOG_WITH_TRANSITION_BLOCK
-
-        mov         r0, r12
-
-        bl          C_FUNC(PreStubGetMethodDescForCompactEntryPoint)
-
-        mov         r12, r0                                          // pMethodDesc
-
-        EPILOG_WITH_TRANSITION_BLOCK_TAILCALL
-
-        b           C_FUNC(ThePreStub)
-
-        NESTED_END ThePreStubCompactARM, _TEXT
 // ------------------------------------------------------------------
 // This method does nothing. It's just a fixed function for the debugger to put a breakpoint on.
         LEAF_ENTRY ThePreStubPatch, _TEXT
@@ -585,71 +552,6 @@ LOCAL_LABEL(stackProbe_loop):
     NESTED_END JIT_RareDisableHelper, _TEXT
 
 
-#ifdef FEATURE_CORECLR
-//
-// JIT Static access helpers for single appdomain case
-//
-
-// ------------------------------------------------------------------
-// void* JIT_GetSharedNonGCStaticBase(SIZE_T moduleDomainID, DWORD dwClassDomainID)
-
-    LEAF_ENTRY JIT_GetSharedNonGCStaticBase_SingleAppDomain, _TEXT
-
-    // If class is not initialized, bail to C++ helper
-    add     r2, r0, #DomainLocalModule__m_pDataBlob
-    ldrb    r2, [r2, r1]
-    tst     r2, #1
-    beq     LOCAL_LABEL(CallCppHelper1)
-
-    bx      lr
-
-LOCAL_LABEL(CallCppHelper1):
-    // Tail call JIT_GetSharedNonGCStaticBase_Helper
-    b     C_FUNC(JIT_GetSharedNonGCStaticBase_Helper)
-    LEAF_END JIT_GetSharedNonGCStaticBase_SingleAppDomain, _TEXT
-
-
-// ------------------------------------------------------------------
-// void* JIT_GetSharedNonGCStaticBaseNoCtor(SIZE_T moduleDomainID, DWORD dwClassDomainID)
-
-    LEAF_ENTRY JIT_GetSharedNonGCStaticBaseNoCtor_SingleAppDomain, _TEXT
-
-    bx lr
-    LEAF_END JIT_GetSharedNonGCStaticBaseNoCtor_SingleAppDomain, _TEXT
-
-
-// ------------------------------------------------------------------
-// void* JIT_GetSharedGCStaticBase(SIZE_T moduleDomainID, DWORD dwClassDomainID)
-
-    LEAF_ENTRY JIT_GetSharedGCStaticBase_SingleAppDomain, _TEXT
-
-    // If class is not initialized, bail to C++ helper
-    add     r2, r0, #DomainLocalModule__m_pDataBlob
-    ldrb    r2, [r2, r1]
-    tst     r2, #1
-    beq     LOCAL_LABEL(CallCppHelper3)
-
-    ldr     r0, [r0, #DomainLocalModule__m_pGCStatics]
-    bx lr
-
-LOCAL_LABEL(CallCppHelper3):
-    // Tail call Jit_GetSharedGCStaticBase_Helper
-    b     C_FUNC(JIT_GetSharedGCStaticBase_Helper)
-    LEAF_END JIT_GetSharedGCStaticBase_SingleAppDomain, _TEXT
-
-
-// ------------------------------------------------------------------
-// void* JIT_GetSharedGCStaticBaseNoCtor(SIZE_T moduleDomainID, DWORD dwClassDomainID)
-
-    LEAF_ENTRY JIT_GetSharedGCStaticBaseNoCtor_SingleAppDomain, _TEXT
-
-    ldr     r0, [r0, #DomainLocalModule__m_pGCStatics]
-    bx lr
-    LEAF_END JIT_GetSharedGCStaticBaseNoCtor_SingleAppDomain, _TEXT
-
-#endif
-
-
 #define __wbScratch r3
 #define pShadow r7
 
@@ -876,7 +778,6 @@ DelayLoad_MethodCall:
 
     EPILOG_WITH_TRANSITION_BLOCK_TAILCALL
 
-    PATCH_LABEL ExternalMethodFixupPatchLabel
     bx r12
 
     NESTED_END DelayLoad_MethodCall_FakeProlog, _TEXT
@@ -1013,3 +914,26 @@ ProbeLoop:
     NESTED_END OnCallCountThresholdReachedStub, _TEXT
 
 #endif // FEATURE_TIERED_COMPILATION
+
+    LEAF_ENTRY JIT_PollGC, _TEXT
+#if defined(__clang__)
+        ldr     r2, =g_TrapReturningThreads-(1f+4)
+1:
+        add     r2, pc
+#else
+        ldr     r2, =g_TrapReturningThreads
+#endif
+        ldr     r2, [r2]
+        cbnz    r2, LOCAL_LABEL(JIT_PollGCRarePath)
+        bx lr
+LOCAL_LABEL(JIT_PollGCRarePath):
+#if defined(__clang__)
+        ldr     r2, =g_pPollGC-(1f+4)
+1:
+        add     r2, pc
+#else
+        ldr     r2, =g_pPollGC
+#endif
+        ldr     r2, [r2]
+        EPILOG_BRANCH_REG r2
+    LEAF_END JIT_PollGC, _TEXT

@@ -281,6 +281,7 @@ public class TestApp
         throw new Exception();
     }
     [Fact]
+    [OuterLoop]
     public static unsafe int TestEntryPoint()
     {
         AA loc_x = new AA(0, 100);

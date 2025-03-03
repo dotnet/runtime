@@ -169,10 +169,10 @@ namespace System.Numerics.Tests
             {
                 for (int d1 = -2; d1 <= 2; d1++)
                 {
-                    tempByteArray1 = GetRandomByteArray(s_random, BigIntegerCalculator.MultiplyThreshold + d1);
+                    tempByteArray1 = GetRandomByteArray(s_random, BigIntegerCalculator.MultiplyKaratsubaThreshold + d1);
                     for (int d2 = -4; d2 <= 4; d2++)
                     {
-                        tempByteArray2 = GetRandomByteArray(s_random, (BigIntegerCalculator.MultiplyThreshold + 1) * 2 + d2);
+                        tempByteArray2 = GetRandomByteArray(s_random, (BigIntegerCalculator.MultiplyKaratsubaThreshold + 1) * 2 + d2);
                         VerifyMultiplyString(Print(tempByteArray1) + Print(tempByteArray2) + "b*");
                     }
                 }

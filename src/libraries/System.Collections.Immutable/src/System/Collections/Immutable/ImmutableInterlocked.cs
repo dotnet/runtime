@@ -76,6 +76,9 @@ namespace System.Collections.Immutable
         /// invocation of <paramref name="transformer"/> returned the existing value.
         /// </returns>
         public static bool Update<T, TArg>(ref T location, Func<T, TArg, T> transformer, TArg transformerArgument) where T : class?
+#if NET9_0_OR_GREATER
+            where TArg : allows ref struct
+#endif
         {
             Requires.NotNull(transformer, nameof(transformer));
 
@@ -162,6 +165,9 @@ namespace System.Collections.Immutable
         /// invocation of <paramref name="transformer"/> returned the existing value.
         /// </returns>
         public static bool Update<T, TArg>(ref ImmutableArray<T> location, Func<ImmutableArray<T>, TArg, ImmutableArray<T>> transformer, TArg transformerArgument)
+#if NET9_0_OR_GREATER
+            where TArg : allows ref struct
+#endif
         {
             Requires.NotNull(transformer, nameof(transformer));
 
@@ -241,7 +247,11 @@ namespace System.Collections.Immutable
         /// <param name="valueFactory">The function to execute to obtain the value to insert into the dictionary if the key is not found.</param>
         /// <param name="factoryArgument">The argument to pass to the value factory.</param>
         /// <returns>The value obtained from the dictionary or <paramref name="valueFactory"/> if it was not present.</returns>
-        public static TValue GetOrAdd<TKey, TValue, TArg>(ref ImmutableDictionary<TKey, TValue> location, TKey key, Func<TKey, TArg, TValue> valueFactory, TArg factoryArgument) where TKey : notnull
+        public static TValue GetOrAdd<TKey, TValue, TArg>(ref ImmutableDictionary<TKey, TValue> location, TKey key, Func<TKey, TArg, TValue> valueFactory, TArg factoryArgument)
+            where TKey : notnull
+#if NET9_0_OR_GREATER
+            where TArg : allows ref struct
+#endif
         {
             Requires.NotNull(valueFactory, nameof(valueFactory));
 

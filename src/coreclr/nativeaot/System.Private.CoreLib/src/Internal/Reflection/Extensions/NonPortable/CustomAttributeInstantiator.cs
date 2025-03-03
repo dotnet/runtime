@@ -19,7 +19,7 @@ using Internal.Runtime.Augments;
 
 namespace Internal.Reflection.Extensions.NonPortable
 {
-    public static class CustomAttributeInstantiator
+    internal static class CustomAttributeInstantiator
     {
         //
         // Turn a CustomAttributeData into a live Attribute object. There's nothing actually non-portable about this one,

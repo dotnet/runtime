@@ -396,13 +396,13 @@ namespace System.Xml
             {
                 byte[] buffer = GetBuffer(ValueHandleLength.Decimal, out int offset);
                 ReadOnlySpan<byte> bytes = buffer.AsSpan(offset, sizeof(decimal));
-                ReadOnlySpan<int> span = stackalloc int[4]
-                {
+                ReadOnlySpan<int> span =
+                [
                     BinaryPrimitives.ReadInt32LittleEndian(bytes.Slice(8, 4)),
                     BinaryPrimitives.ReadInt32LittleEndian(bytes.Slice(12, 4)),
                     BinaryPrimitives.ReadInt32LittleEndian(bytes.Slice(4, 4)),
                     BinaryPrimitives.ReadInt32LittleEndian(bytes.Slice(0, 4))
-                };
+                ];
 
                 Advance(ValueHandleLength.Decimal);
                 return new decimal(span);
@@ -935,7 +935,6 @@ namespace System.Xml
             return (sbyte)GetByte(offset);
         }
 
-#pragma warning disable 8500 // sizeof of managed types
         private unsafe T ReadRawBytes<T>() where T : unmanaged
         {
             ReadOnlySpan<byte> buffer = GetBuffer(sizeof(T), out int offset)
@@ -948,7 +947,6 @@ namespace System.Xml
 
         private unsafe T ReadRawBytes<T>(int offset) where T : unmanaged
             => MemoryMarshal.Read<T>(_buffer.AsSpan(offset, sizeof(T)));
-#pragma warning restore 8500
 
         public int GetInt16(int offset)
             => BitConverter.IsLittleEndian ? ReadRawBytes<short>(offset) : BinaryPrimitives.ReverseEndianness(ReadRawBytes<short>(offset));
@@ -977,13 +975,13 @@ namespace System.Xml
             else
             {
                 ReadOnlySpan<byte> bytes = _buffer.AsSpan(offset, sizeof(decimal));
-                ReadOnlySpan<int> span = stackalloc int[4]
-                {
+                ReadOnlySpan<int> span =
+                [
                     BinaryPrimitives.ReadInt32LittleEndian(bytes.Slice(8, 4)),
                     BinaryPrimitives.ReadInt32LittleEndian(bytes.Slice(12, 4)),
                     BinaryPrimitives.ReadInt32LittleEndian(bytes.Slice(4, 4)),
                     BinaryPrimitives.ReadInt32LittleEndian(bytes.Slice(0, 4))
-                };
+                ];
 
                 return new decimal(span);
             }

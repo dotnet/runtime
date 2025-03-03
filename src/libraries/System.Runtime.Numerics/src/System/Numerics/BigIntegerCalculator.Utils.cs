@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics;
+
 namespace System.Numerics
 {
     internal static partial class BigIntegerCalculator
@@ -15,25 +17,41 @@ namespace System.Numerics
 
         public static int Compare(ReadOnlySpan<uint> left, ReadOnlySpan<uint> right)
         {
-            if (left.Length < right.Length)
-                return -1;
-            if (left.Length > right.Length)
-                return 1;
+            Debug.Assert(left.Length <= right.Length || left.Slice(right.Length).ContainsAnyExcept(0u));
+            Debug.Assert(left.Length >= right.Length || right.Slice(left.Length).ContainsAnyExcept(0u));
 
-            for (int i = left.Length - 1; i >= 0; i--)
-            {
-                uint leftElement = left[i];
-                uint rightElement = right[i];
-                if (leftElement < rightElement)
-                    return -1;
-                if (leftElement > rightElement)
-                    return 1;
-            }
+            if (left.Length != right.Length)
+                return left.Length < right.Length ? -1 : 1;
 
-            return 0;
+            int iv = left.Length;
+            while (--iv >= 0 && left[iv] == right[iv]) ;
+
+            if (iv < 0)
+                return 0;
+            return left[iv] < right[iv] ? -1 : 1;
         }
 
-        private static int ActualLength(ReadOnlySpan<uint> value)
+        private static int CompareActual(ReadOnlySpan<uint> left, ReadOnlySpan<uint> right)
+        {
+            if (left.Length != right.Length)
+            {
+                if (left.Length < right.Length)
+                {
+                    if (ActualLength(right.Slice(left.Length)) > 0)
+                        return -1;
+                    right = right.Slice(0, left.Length);
+                }
+                else
+                {
+                    if (ActualLength(left.Slice(right.Length)) > 0)
+                        return +1;
+                    left = left.Slice(0, right.Length);
+                }
+            }
+            return Compare(left, right);
+        }
+
+        public static int ActualLength(ReadOnlySpan<uint> value)
         {
             // Since we're reusing memory here, the actual length
             // of a given value may be less then the array's length
@@ -51,11 +69,18 @@ namespace System.Numerics
 
             if (bits.Length >= modulus.Length)
             {
-                Divide(bits, modulus, default);
+                DivRem(bits, modulus, default);
 
                 return ActualLength(bits.Slice(0, modulus.Length));
             }
             return bits.Length;
+        }
+
+        [Conditional("DEBUG")]
+        public static void InitializeForDebug(Span<uint> bits)
+        {
+            // Reproduce the case where the return value of `stackalloc uint` is not initialized to zero.
+            bits.Fill(0xCD);
         }
     }
 }

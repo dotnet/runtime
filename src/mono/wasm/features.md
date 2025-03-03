@@ -23,7 +23,7 @@ Some of these properties require a unique build of the runtime, which means that
 
 ### Multi-threading
 
-Multi-threading support is enabled by `<WasmEnableThreads>true</WasmEnableThreads>`, and is currently disabled by default. It requires a unique build of the runtime.
+Multi-threading experiment is enabled by `<WasmEnableThreads>true</WasmEnableThreads>`, and is currently disabled by default. It requires a unique build of the runtime.
 
 Your HTTPS server and/or proxy must be configured to send HTTP headers similar to `Cross-Origin-Embedder-Policy:require-corp` and `Cross-Origin-Opener-Policy:same-origin` in order to enable multi-threading support in end-user web browsers for security reasons.
 
@@ -40,33 +40,25 @@ It can be enabled with `<WasmEnableSIMD>true</WasmEnableSIMD>` and disabled with
 
 For more information on this feature, see [SIMD.md](https://github.com/WebAssembly/simd/blob/master/proposals/simd/SIMD.md).
 
-Older versions of NodeJS hosts may need `--experimental-wasm-simd` command line option.
-
 ### EH - Exception handling
 WebAssembly exception handling provides higher performance for code containing `try` blocks by allowing exceptions to be caught and thrown natively without the use of JavaScript. It is currently enabled by default and can be disabled via `<WasmEnableExceptionHandling>false</WasmEnableExceptionHandling>`.
 
 For more information on this feature, see [Exceptions.md](https://github.com/WebAssembly/exception-handling/blob/master/proposals/exception-handling/Exceptions.md)
 
-Older versions of NodeJS hosts may need `--experimental-wasm-eh` command line option.
-
 ### BigInt
 Passing Int64 and UInt64 values between JavaScript and C# requires support for the JavaScript `BigInt` type. See [JS-BigInt](https://github.com/WebAssembly/JS-BigInt-integration) for more information on this API.
 
 ### fetch - HTTP client
-If an application uses the [HttpClient](https://learn.microsoft.com/en-us/dotnet/api/system.net.http.httpclient) managed API, your web browser must support the [fetch](https://developer.mozilla.org/en-US/docs/Web/API/Fetch_API) API for it to run.
+If an application uses the [HttpClient](https://learn.microsoft.com/dotnet/api/system.net.http.httpclient) managed API, your web browser must support the [fetch](https://developer.mozilla.org/en-US/docs/Web/API/Fetch_API) API for it to run.
 
 Because web browsers do not expose direct access to sockets, we are unable to provide our own implementation of HTTP, and HttpClient's behavior and feature set will as a result depend also on the browser you use to run the application.
 
 A prominent limitation is that your application must obey `Cross-Origin Resource Sharing` (CORS) rules in order to perform network requests successfully - see [CORS on MDN](https://developer.mozilla.org/en-US/docs/Web/HTTP/CORS) for more information.
 
-For your application to be able to perform HTTP requests in a NodeJS host, you need to install the `node-fetch` and `node-abort-controller` npm packages.
-
 ### WebSocket
-Applications using the [WebSocketClient](https://learn.microsoft.com/en-us/dotnet/api/system.net.websockets.clientwebsocket) managed API will require the browser to support the [WebSocket](https://developer.mozilla.org/en-US/docs/Web/API/WebSockets_API) API.
+Applications using the [WebSocketClient](https://learn.microsoft.com/dotnet/api/system.net.websockets.clientwebsocket) managed API will require the browser to support the [WebSocket](https://developer.mozilla.org/en-US/docs/Web/API/WebSockets_API) API.
 
 As with HTTP and HttpClient, we are unable to ship a custom implementation of this feature, so its behavior will depend on the browser being used to run the application.
-
-WebSocket support in NodeJS hosts requires the `ws` npm package.
 
 ### Initial Memory Size
 By default the .NET runtime will reserve a small amount of memory at startup, and as your application allocates more objects the runtime will attempt to "grow" this memory. This growth operation takes time and could fail if your device's memory is limited, which would result in an application error or "tab crash".
@@ -74,6 +66,17 @@ By default the .NET runtime will reserve a small amount of memory at startup, an
 To reduce startup time and increase the odds that your application will work on devices with limited memory, you can set an initial size for the memory allocation, based on an estimate of how much memory your application typically uses. To set an initial memory size, include an MSBuild property like `<EmccInitialHeapSize>16777216</EmccInitialHeapSize>`, where you have changed the number of bytes to an appropriate value for your application. This value must be a multiple of 16384.
 
 This property requires the [wasm-tools workload](#wasm-tools-workload) to be installed.
+
+### Maximum Memory Size
+When building an app targeting mobile device browsers, especially Safari on iOS, decreasing the maximum memory for the app may be required.
+
+The default value is `2,147,483,648 bytes`, which may be too large and result in the app failing to start, because the browser refuses to grant it.
+To set the maximum memory size, include the MSBuild property like `<EmccMaximumHeapSize>268435456<EmccMaximumHeapSize>`.
+
+This property requires the [wasm-tools workload](#wasm-tools-workload) to be installed.
+
+Recommended size of the memory used by dotnet applications in the desktop browsers is between 256MB and 512MB.
+If you are using more than 1GB, please make sure that you test it properly. Using more than 2GB is experimental.
 
 ### JITerpreter
 The JITerpreter is a browser-specific compiler which will optimize frequently executed code when running in interpreted (non-AOT) mode. While this significantly improves application performance, it will cause increased memory usage. You can disable it via `<BlazorWebAssemblyJiterpreter>false</BlazorWebAssemblyJiterpreter>`, and configure it in more detail via the use of runtime options.
@@ -90,7 +93,7 @@ Trimming will remove unused code from your application, which reduces applicatio
 
 Some applications will break if trimming is used without further configuration due to the trimmer not knowing which code is used, for example any code accessed via reflection or serialization or dependency injection.
 
-One typical source of trimming issues is JSON serialization/deserialization. The solution is to use [Source Generation](https://learn.microsoft.com/en-us/dotnet/standard/serialization/system-text-json/source-generation), as shown below:
+One typical source of trimming issues is JSON serialization/deserialization. The solution is to use [Source Generation](https://learn.microsoft.com/dotnet/standard/serialization/system-text-json/source-generation), as shown below:
 
 ```csharp
 [JsonSerializable(typeof(List<Item>))]
@@ -99,7 +102,7 @@ partial class ItemListSerializerContext : JsonSerializerContext { }
 var json = JsonSerializer.Serialize(items, ItemListSerializerContext.Default.ListItem);
 ```
 
-Please ensure that you have thoroughly tested your application with trimming enabled before deployment, as the issues it causes may only appear in obscure parts of your software. For more advice on how to use trimming, see [trimming guidance](https://learn.microsoft.com/en-us/dotnet/core/deploying/trimming/trim-self-contained).
+Please ensure that you have thoroughly tested your application with trimming enabled before deployment, as the issues it causes may only appear in obscure parts of your software. For more advice on how to use trimming, see [trimming guidance](https://learn.microsoft.com/dotnet/core/deploying/trimming/trim-self-contained).
 
 ### C code or native linked libraries
 Native rebuild will cause the .NET runtime to be re-built alongside your application, which allows you to link additional libraries into the WASM binary or change compiler configuration flags.
@@ -256,8 +259,6 @@ For some use cases, you may wish to override this behavior or create a custom IC
 
 There are also rare use cases where your application does not rely on the contents of the ICU databases. In those scenarios, you can make your application smaller by enabling Invariant Globalization via the `<InvariantGlobalization>true</InvariantGlobalization>` msbuild property. For more details see [globalization-invariant-mode.md](../../../docs/design/features/globalization-invariant-mode.md).
 
-We are currently developing a third approach for locales where we offer a more limited feature set by relying on browser APIs, called "Hybrid Globalization". This provides more functionality than Invariant Culture mode without the need to ship the ICU library or its databases, which improves startup time. You can use the msbuild property `<HybridGlobalization>true</HybridGlobalization>` to test this in-development feature, but be aware that it is currently incomplete and may have performance issues. For more details see [globalization-hybrid-mode.md](../../../docs/design/features/globalization-hybrid-mode.md).
-
 Customized globalization settings require [wasm-tools workload](#wasm-tools-workload) to be installed.
 
 ### Timezones
@@ -291,26 +292,8 @@ Mobile browsers typically have strict limits on the amount of memory they can us
 
 A WebAssembly application that works well on desktop PCs browser may take minutes to download or run out of memory before it is able to start on a mobile device, and the same is true for .NET.
 
-### Shell environments - NodeJS & V8
-While our primary target is web browsers, we have partial support for Node.JS v14 sufficient to pass most of our automated tests. We also have partial support for the D8 command-line shell, version 11 or higher, sufficient to pass most of our automated tests. Both of these environments may lack support for features that are available in the browser.
-
-#### NodeJS < 20
-Until node version 20, you may need to pass these arguments when running the application `--experimental-wasm-simd --experimental-wasm-eh`. When you run the application using `dotnet run`, you can add these to the runtimeconfig template
-
-```json
-"wasmHostProperties": {
-    "perHostConfig": [
-        {
-            "name": "node",
-            ...
-            "host-args": [
-                "--experimental-wasm-simd", // 👈 Enable SIMD support
-                "--experimental-wasm-eh" // 👈 Enable exception handling support
-            ]
-        }
-    ]
-}
-```
+### Shell environments - V8
+While our primary target is web browsers, we have partial support for D8/V8 command-line shell, version 11 or higher, sufficient to pass most of our automated tests. Both of these environments may lack support for features that are available in the browser.
 
 ## Choosing the right platform target
 Every end user has different needs, so the right platform for every application may differ.
@@ -354,7 +337,7 @@ It includes the WASM templates for `dotnet new` and also preview version of mult
 You can use browser dev tools to debug the JavaScript of the application and the runtime.
 
 You could also debug the C# code using our integration with browser dev tools or Visual Studio.
-See detailed [documentation](https://learn.microsoft.com/en-us/aspnet/core/blazor/debug)
+See detailed [documentation](https://learn.microsoft.com/aspnet/core/blazor/debug)
 
 You could also use it to debug the WASM code. In order to see `C` function names and debug symbols DWARF, see [Debug symbols](#Native-debug-symbols)
 
@@ -402,8 +385,8 @@ In Blazor, you can customize the startup in your index.html
 <script src="_framework/blazor.webassembly.js" autostart="false"></script>
 <script>
 Blazor.start({
-    configureRuntime: function (builder) {
-        builder.withConfig({
+    configureRuntime: function (dotnet) {
+        dotnet.withConfig({
             browserProfilerOptions: {}
         });
     }
@@ -418,9 +401,48 @@ import { dotnet } from './dotnet.js'
 await dotnet.withConfig({browserProfilerOptions: {}}).run();
 ```
 
+### Log Profiling for Memory Troubleshooting
+
+You can enable integration with log profiler via following elements in your .csproj:
+
+```xml
+<PropertyGroup>
+  <WasmProfilers>log;</WasmProfilers>
+  <WasmBuildNative>true</WasmBuildNative>
+</PropertyGroup>
+```
+
+In simple browser template, you can add following to your `main.js`
+
+```javascript
+import { dotnet } from './dotnet.js'
+await dotnet.withConfig({
+    logProfilerOptions: {
+        takeHeapshot: "MyApp.Profiling::TakeHeapshot",
+        configuration: "log:alloc,output=output.mlpd"
+    }}).run();
+```
+
+In order to trigger a heap shot, add the following:
+
+```csharp
+namespace MyApp;
+
+class Profiling
+{
+    [JSExport]
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static void TakeHeapshot() { }
+}
+```
+
+Invoke `MyApp.Profiling.TakeHeapshot()` from your code in order to create a memory heap shot and flush the contents of the profile to the VFS. Make sure to align the namespace and class of the `logProfilerOptions.takeHeapshot` with your class.
+
+You can download the mpld file to analyze it.
+
 ### Diagnostic tools
 
-We have initial implementation of diagnostic server and [event pipe](https://learn.microsoft.com/en-us/dotnet/core/diagnostics/eventpipe)
+We have initial implementation of diagnostic server and [event pipe](https://learn.microsoft.com/dotnet/core/diagnostics/eventpipe)
 
 At the moment it requires multi-threaded build of the runtime.
 

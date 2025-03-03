@@ -347,7 +347,7 @@ namespace System.Reflection.Emit
             {
                 foreach (MethodInfo m in override_methods)
                 {
-                    if (m.IsVirtual && !IsVirtual)
+                    if (m.IsVirtual && !IsVirtual && !IsStatic && !ReflectedType!.IsInterface)
                         throw new TypeLoadException(SR.Format(SR.TypeLoad_MethodOverrideNotVirtual, name, m));
                 }
             }
@@ -582,8 +582,7 @@ namespace System.Reflection.Emit
             for (int i = 0; i < names.Length; i++)
             {
                 string item = names[i];
-                if (item == null)
-                    throw new ArgumentNullException(nameof(names));
+                ArgumentNullException.ThrowIfNull(item, nameof(names));
                 generic_params[i] = new RuntimeGenericTypeParameterBuilder(type, this, item, i);
             }
 

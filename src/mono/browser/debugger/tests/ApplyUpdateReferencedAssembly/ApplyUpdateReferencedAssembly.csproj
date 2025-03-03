@@ -14,7 +14,7 @@
     <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
     <EmbedAllSources>true</EmbedAllSources>
 
-    <!-- FIXME: issue -->
+    <!-- workaround to avoid this error: "Expected only one module in the delta, got 0" -->
     <DisableSourceLink>true</DisableSourceLink>
   </PropertyGroup>
 

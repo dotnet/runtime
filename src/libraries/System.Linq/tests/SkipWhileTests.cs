@@ -1,20 +1,25 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Collections;
 using System.Collections.Generic;
 using Xunit;
-using Xunit.Abstractions;
 
 namespace System.Linq.Tests
 {
     public class SkipWhileTests : EnumerableTests
     {
         [Fact]
+        public void Empty()
+        {
+            Assert.Equal([], Enumerable.Empty<int>().SkipWhile(i => i < 40));
+            Assert.Equal([], Enumerable.Empty<int>().SkipWhile((i, index) => i < 40));
+        }
+
+        [Fact]
         public void SkipWhileAllTrue()
         {
-            Assert.Equal(Enumerable.Empty<int>(), Enumerable.Range(0, 20).SkipWhile(i => i < 40));
-            Assert.Equal(Enumerable.Empty<int>(), Enumerable.Range(0, 20).SkipWhile((i, idx) => i == idx));
+            Assert.Equal([], Enumerable.Range(0, 20).SkipWhile(i => i < 40));
+            Assert.Equal([], Enumerable.Range(0, 20).SkipWhile((i, idx) => i == idx));
         }
 
         [Fact]
@@ -37,10 +42,8 @@ namespace System.Linq.Tests
         public void SkipWhilePassesPredicateExceptionWhenEnumerated()
         {
             var source = Enumerable.Range(-2, 5).SkipWhile(i => 1 / i <= 0);
-            using(var en = source.GetEnumerator())
-            {
-                Assert.Throws<DivideByZeroException>(() => en.MoveNext());
-            }
+            using var en = source.GetEnumerator();
+            Assert.Throws<DivideByZeroException>(() => en.MoveNext());
         }
 
         [Fact]
@@ -61,10 +64,8 @@ namespace System.Linq.Tests
         public void SkipErrorWhenSourceErrors()
         {
             var source = NumberRangeGuaranteedNotCollectionType(-2, 5).Select(i => (decimal)i).Select(m => 1 / m).Skip(4);
-            using(var en = source.GetEnumerator())
-            {
-                Assert.Throws<DivideByZeroException>(() => en.MoveNext());
-            }
+            using var en = source.GetEnumerator();
+            Assert.Throws<DivideByZeroException>(() => en.MoveNext());
         }
 
         [Fact]
@@ -90,8 +91,8 @@ namespace System.Linq.Tests
         [Fact]
         public void PredicateManyFalseOnSecond()
         {
-            int[] source = { 8, 3, 12, 4, 6, 10 };
-            int[] expected = { 3, 12, 4, 6, 10 };
+            int[] source = [8, 3, 12, 4, 6, 10];
+            int[] expected = [3, 12, 4, 6, 10];
 
             Assert.Equal(expected, source.SkipWhile(e => e % 2 == 0));
         }
@@ -99,8 +100,8 @@ namespace System.Linq.Tests
         [Fact]
         public void PredicateManyFalseOnSecondIndex()
         {
-            int[] source = { 8, 3, 12, 4, 6, 10 };
-            int[] expected = { 3, 12, 4, 6, 10 };
+            int[] source = [8, 3, 12, 4, 6, 10];
+            int[] expected = [3, 12, 4, 6, 10];
 
             Assert.Equal(expected, source.SkipWhile((e, i) => e % 2 == 0));
         }
@@ -108,8 +109,8 @@ namespace System.Linq.Tests
         [Fact]
         public void PredicateTrueOnSecondFalseOnFirstAndOthers()
         {
-            int[] source = { 3, 2, 4, 12, 6 };
-            int[] expected = { 3, 2, 4, 12, 6 };
+            int[] source = [3, 2, 4, 12, 6];
+            int[] expected = [3, 2, 4, 12, 6];
 
             Assert.Equal(expected, source.SkipWhile(e => e % 2 == 0));
         }
@@ -117,8 +118,8 @@ namespace System.Linq.Tests
         [Fact]
         public void PredicateTrueOnSecondFalseOnFirstAndOthersIndex()
         {
-            int[] source = { 3, 2, 4, 12, 6 };
-            int[] expected = { 3, 2, 4, 12, 6 };
+            int[] source = [3, 2, 4, 12, 6];
+            int[] expected = [3, 2, 4, 12, 6];
 
             Assert.Equal(expected, source.SkipWhile((e, i) => e % 2 == 0));
         }
@@ -126,8 +127,8 @@ namespace System.Linq.Tests
         [Fact]
         public void FirstExcludedByIndex()
         {
-            int[] source = { 6, 2, 5, 3, 8 };
-            int[] expected = { 2, 5, 3, 8 };
+            int[] source = [6, 2, 5, 3, 8];
+            int[] expected = [2, 5, 3, 8];
 
             Assert.Equal(expected, source.SkipWhile((element, index) => index == 0));
         }
@@ -135,8 +136,8 @@ namespace System.Linq.Tests
         [Fact]
         public void AllButLastExcludedByIndex()
         {
-            int[] source = { 6, 2, 5, 3, 8 };
-            int[] expected = { 8 };
+            int[] source = [6, 2, 5, 3, 8];
+            int[] expected = [8];
 
             Assert.Equal(expected, source.SkipWhile((element, index) => index < source.Length - 1));
         }
@@ -146,13 +147,13 @@ namespace System.Linq.Tests
         {
             var skipped = new FastInfiniteEnumerator<int>().SkipWhile((e, i) => true);
 
-            using(var en = skipped.GetEnumerator())
-                Assert.Throws<OverflowException>(() =>
+            using var en = skipped.GetEnumerator();
+            Assert.Throws<OverflowException>(() =>
+            {
+                while(en.MoveNext())
                 {
-                    while(en.MoveNext())
-                    {
-                    }
-                });
+                }
+            });
         }
 
         [Fact]
@@ -161,7 +162,7 @@ namespace System.Linq.Tests
             var iterator = NumberRangeGuaranteedNotCollectionType(0, 3).SkipWhile(e => true);
             // Don't insist on this behaviour, but check it's correct if it happens
             var en = iterator as IEnumerator<int>;
-            Assert.False(en != null && en.MoveNext());
+            Assert.False(en is not null && en.MoveNext());
         }
 
         [Fact]
@@ -170,7 +171,7 @@ namespace System.Linq.Tests
             var iterator = NumberRangeGuaranteedNotCollectionType(0, 3).SkipWhile((e, i) => true);
             // Don't insist on this behaviour, but check it's correct if it happens
             var en = iterator as IEnumerator<int>;
-            Assert.False(en != null && en.MoveNext());
+            Assert.False(en is not null && en.MoveNext());
         }
     }
 }

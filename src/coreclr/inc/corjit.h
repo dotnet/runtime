@@ -5,11 +5,6 @@
 *                                                                             *
 * CorJit.h -    EE / JIT interface                                            *
 *                                                                             *
-*               Version 1.0                                                   *
-*******************************************************************************
-*                                                                             *
-*                                                                     *
-*                                                                             *
 \*****************************************************************************/
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -33,78 +28,17 @@
 
 #include "corjitflags.h"
 
-
-#ifndef MAKE_HRESULT
-// If this header is included without including the windows or PAL headers, then define
-// MAKE_HRESULT, and associated macros
-
-/******************* HRESULT types ****************************************/
-
-#define FACILITY_WINDOWS                 8
-#define FACILITY_URT                     19
-#define FACILITY_UMI                     22
-#define FACILITY_SXS                     23
-#define FACILITY_STORAGE                 3
-#define FACILITY_SSPI                    9
-#define FACILITY_SCARD                   16
-#define FACILITY_SETUPAPI                15
-#define FACILITY_SECURITY                9
-#define FACILITY_RPC                     1
-#define FACILITY_WIN32                   7
-#define FACILITY_CONTROL                 10
-#define FACILITY_NULL                    0
-#define FACILITY_MSMQ                    14
-#define FACILITY_MEDIASERVER             13
-#define FACILITY_INTERNET                12
-#define FACILITY_ITF                     4
-#define FACILITY_DPLAY                   21
-#define FACILITY_DISPATCH                2
-#define FACILITY_COMPLUS                 17
-#define FACILITY_CERT                    11
-#define FACILITY_ACS                     20
-#define FACILITY_AAF                     18
-
-#define NO_ERROR 0L
-
-#define SEVERITY_SUCCESS    0
-#define SEVERITY_ERROR      1
-
-#define SUCCEEDED(Status) ((JITINTERFACE_HRESULT)(Status) >= 0)
-#define FAILED(Status) ((JITINTERFACE_HRESULT)(Status)<0)
-#define IS_ERROR(Status) ((uint32_t)(Status) >> 31 == SEVERITY_ERROR) // diff from win32
-#define HRESULT_CODE(hr)    ((hr) & 0xFFFF)
-#define SCODE_CODE(sc)      ((sc) & 0xFFFF)
-#define HRESULT_FACILITY(hr)  (((hr) >> 16) & 0x1fff)
-#define SCODE_FACILITY(sc)    (((sc) >> 16) & 0x1fff)
-#define HRESULT_SEVERITY(hr)  (((hr) >> 31) & 0x1)
-#define SCODE_SEVERITY(sc)    (((sc) >> 31) & 0x1)
-
-// both macros diff from Win32
-#define MAKE_HRESULT(sev,fac,code) \
-    ((JITINTERFACE_HRESULT) (((uint32_t)(sev)<<31) | ((uint32_t)(fac)<<16) | ((uint32_t)(code))) )
-#define MAKE_SCODE(sev,fac,code) \
-    ((SCODE) (((uint32_t)(sev)<<31) | ((uint32_t)(fac)<<16) | ((LONG)(code))) )
-
-#define FACILITY_NT_BIT                 0x10000000
-#define HRESULT_FROM_WIN32(x) ((JITINTERFACE_HRESULT)(x) <= 0 ? ((JITINTERFACE_HRESULT)(x)) : ((JITINTERFACE_HRESULT) (((x) & 0x0000FFFF) | (FACILITY_WIN32 << 16) | 0x80000000)))
-#define __HRESULT_FROM_WIN32(x) HRESULT_FROM_WIN32(x)
-
-#define HRESULT_FROM_NT(x)      ((JITINTERFACE_HRESULT) ((x) | FACILITY_NT_BIT))
-#endif // MAKE_HRESULT
-
 /*****************************************************************************/
-    // These are error codes returned by CompileMethod
+// These are error codes returned by CompileMethod
 enum CorJitResult
 {
-    // Note that I dont use FACILITY_NULL for the facility number,
-    // we may want to get a 'real' facility number
-    CORJIT_OK            =     NO_ERROR,
-    CORJIT_BADCODE       =     MAKE_HRESULT(SEVERITY_ERROR,FACILITY_NULL, 1),
-    CORJIT_OUTOFMEM      =     MAKE_HRESULT(SEVERITY_ERROR,FACILITY_NULL, 2),
-    CORJIT_INTERNALERROR =     MAKE_HRESULT(SEVERITY_ERROR,FACILITY_NULL, 3),
-    CORJIT_SKIPPED       =     MAKE_HRESULT(SEVERITY_ERROR,FACILITY_NULL, 4),
-    CORJIT_RECOVERABLEERROR =  MAKE_HRESULT(SEVERITY_ERROR,FACILITY_NULL, 5),
-    CORJIT_IMPLLIMITATION=     MAKE_HRESULT(SEVERITY_ERROR,FACILITY_NULL, 6),
+    CORJIT_OK            =     0,
+    CORJIT_BADCODE       =     (JITINTERFACE_HRESULT)0x80000001,
+    CORJIT_OUTOFMEM      =     (JITINTERFACE_HRESULT)0x80000002,
+    CORJIT_INTERNALERROR =     (JITINTERFACE_HRESULT)0x80000003,
+    CORJIT_SKIPPED       =     (JITINTERFACE_HRESULT)0x80000004,
+    CORJIT_RECOVERABLEERROR =  (JITINTERFACE_HRESULT)0x80000005,
+    CORJIT_IMPLLIMITATION=     (JITINTERFACE_HRESULT)0x80000006,
 };
 
 /*****************************************************************************/
@@ -452,7 +386,8 @@ public:
             uint32_t *                 pCountSchemaItems,          // OUT: pointer to the count of schema items in `pSchema` array.
             uint8_t **                 pInstrumentationData,       // OUT: `*pInstrumentationData` is set to the address of the instrumentation data
                                                                    // (pointer will not remain valid after jit completes).
-            PgoSource *                pPgoSource                  // OUT: value describing source of pgo data
+            PgoSource *                pPgoSource,                 // OUT: value describing source of pgo data
+            bool *                     pDynamicPgo                 // OUT: dynamic PGO is enabled (valid even when return value is failure)
             ) = 0;
 
     // Allocate a profile buffer for use in the current process

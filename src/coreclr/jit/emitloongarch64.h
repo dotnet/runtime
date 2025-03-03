@@ -19,10 +19,6 @@ struct CnsVal
     bool    cnsReloc;
 };
 
-#ifdef DEBUG
-/************************************************************************/
-/*             Debug-only routines to display instructions              */
-/************************************************************************/
 enum insDisasmFmt
 {
     DF_G_INVALID = 0,
@@ -104,11 +100,10 @@ enum insDisasmFmt
 #endif
 };
 
-code_t emitGetInsMask(int ins);
+code_t       emitGetInsMask(int ins);
 insDisasmFmt emitGetInsFmt(instruction ins);
-void emitDispInst(instruction ins);
-void emitDisInsName(code_t code, const BYTE* addr, instrDesc* id);
-#endif // DEBUG
+void         emitDispInst(instruction ins);
+void         emitDisInsName(code_t code, const BYTE* addr, instrDesc* id);
 
 void emitIns_J_cond_la(instruction ins, BasicBlock* dst, regNumber reg1 = REG_R0, regNumber reg2 = REG_R0);
 void emitIns_I_la(emitAttr attr, regNumber reg, ssize_t imm);
@@ -175,40 +170,10 @@ static bool isValidSimm12(ssize_t value)
     return -(((int)1) << 11) <= value && value < (((int)1) << 11);
 };
 
-// Returns true if 'value' is a legal signed immediate 16 bit encoding.
-static bool isValidSimm16(ssize_t value)
-{
-    return -(((int)1) << 15) <= value && value < (((int)1) << 15);
-};
-
-// Returns true if 'value' is a legal unsigned immediate 16 bit encoding.
-static bool isValidUimm16(ssize_t value)
-{
-    return (0 == (value >> 16));
-};
-
-// Returns true if 'value' is a legal signed immediate 18 bit encoding.
-static bool isValidSimm18(ssize_t value)
-{
-    return -(((int)1) << 17) <= value && value < (((int)1) << 17);
-};
-
 // Returns true if 'value' is a legal signed immediate 20 bit encoding.
 static bool isValidSimm20(ssize_t value)
 {
     return -(((int)1) << 19) <= value && value < (((int)1) << 19);
-};
-
-// Returns true if 'value' is a legal signed immediate 28 bit encoding.
-static bool isValidSimm28(ssize_t value)
-{
-    return -(((int)1) << 27) <= value && value < (((int)1) << 27);
-};
-
-// Returns true if 'value' is a legal signed immediate 38 bit encoding.
-static bool isValidSimm38(ssize_t value)
-{
-    return -(((ssize_t)1) << 37) <= value && value < (((ssize_t)1) << 37);
 };
 
 // Returns the number of bits used by the given 'size'.
@@ -316,9 +281,9 @@ void emitIns_J_R(instruction ins, emitAttr attr, BasicBlock* dst, regNumber reg)
 
 void emitIns_R_AR(instruction ins, emitAttr attr, regNumber ireg, regNumber reg, int offs);
 
-void emitIns_R_AI(instruction ins,
-                  emitAttr    attr,
-                  regNumber   reg,
+void emitIns_R_AI(instruction  ins,
+                  emitAttr     attr,
+                  regNumber    reg,
                   ssize_t disp DEBUGARG(size_t targetHandle = 0) DEBUGARG(GenTreeFlags gtFlags = GTF_EMPTY));
 
 enum EmitCallType
@@ -333,7 +298,7 @@ enum EmitCallType
 
     EC_FUNC_TOKEN, //   Direct call to a helper/static/nonvirtual/global method
                    //  EC_FUNC_TOKEN_INDIR,    // Indirect call to a helper/static/nonvirtual/global method
-    // EC_FUNC_ADDR,  // Direct call to an absolute address
+                   // EC_FUNC_ADDR,  // Direct call to an absolute address
 
     EC_INDIR_R, // Indirect call via register
 
@@ -343,18 +308,19 @@ enum EmitCallType
 void emitIns_Call(EmitCallType          callType,
                   CORINFO_METHOD_HANDLE methHnd,
                   INDEBUG_LDISASM_COMMA(CORINFO_SIG_INFO* sigInfo) // used to report call sites to the EE
-                  void*    addr,
-                  ssize_t  argSize,
+                  void*            addr,
+                  ssize_t          argSize,
                   emitAttr retSize MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(emitAttr secondRetSize),
                   VARSET_VALARG_TP ptrVars,
                   regMaskTP        gcrefRegs,
                   regMaskTP        byrefRegs,
                   const DebugInfo& di,
-                  regNumber        ireg   = REG_NA,
-                  regNumber        xreg   = REG_NA,
-                  unsigned         xmul   = 0,
-                  ssize_t          disp   = 0,
-                  bool             isJump = false);
+                  regNumber        ireg        = REG_NA,
+                  regNumber        xreg        = REG_NA,
+                  unsigned         xmul        = 0,
+                  ssize_t          disp        = 0,
+                  bool             isJump      = false,
+                  bool             noSafePoint = false);
 
 unsigned emitOutputCall(insGroup* ig, BYTE* dst, instrDesc* id, code_t code);
 

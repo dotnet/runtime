@@ -15,22 +15,36 @@ public static unsafe class CopyCtor
     public static unsafe int StructWithCtorTest(StructWithCtor* ptrStruct, ref StructWithCtor refStruct)
     {
         if (ptrStruct->_instanceField != 1)
+        {
+            Console.WriteLine($"Fail: {ptrStruct->_instanceField} != {1}");
             return 1;
+        }
         if (refStruct._instanceField != 2)
+        {
+            Console.WriteLine($"Fail: {refStruct._instanceField} != {2}");
             return 2;
+        }
 
-        if (StructWithCtor.CopyCtorCallCount != 2)
+        int expectedCallCount = RuntimeInformation.ProcessArchitecture == Architecture.X86 ? 2 : 0;
+
+        if (StructWithCtor.CopyCtorCallCount != expectedCallCount)
+        {
+            Console.WriteLine($"Fail: {StructWithCtor.CopyCtorCallCount} != {expectedCallCount}");
             return 3;
-        if (StructWithCtor.DtorCallCount != 2)
+        }
+        if (StructWithCtor.DtorCallCount != expectedCallCount)
+        {
+            Console.WriteLine($"Fail: {StructWithCtor.DtorCallCount} != {expectedCallCount}");
             return 4;
-
+        }
 
         return 100;
     }
 
-    [Fact]
+    [ConditionalFact(typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.IsWindows))]
     [SkipOnMono("Not supported on Mono")]
     [ActiveIssue("https://github.com/dotnet/runtimelab/issues/155", typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsNativeAot))]
+    [SkipOnCoreClr("JitStress can introduce extra copies", RuntimeTestModes.JitStress)]
     public static unsafe void ValidateCopyConstructorAndDestructorCalled()
     {
         CopyCtorUtil.TestDelegate del = (CopyCtorUtil.TestDelegate)Delegate.CreateDelegate(typeof(CopyCtorUtil.TestDelegate), typeof(CopyCtor).GetMethod("StructWithCtorTest"));

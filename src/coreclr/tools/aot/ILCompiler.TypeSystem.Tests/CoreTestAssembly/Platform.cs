@@ -244,12 +244,19 @@ namespace System.Runtime.CompilerServices
     public static class RuntimeFeature
     {
         public const string ByRefFields = nameof(ByRefFields);
+        public const string ByRefLikeGenerics = nameof(ByRefLikeGenerics);
         public const string UnmanagedSignatureCallingConvention = nameof(UnmanagedSignatureCallingConvention);
         public const string VirtualStaticsInInterfaces = nameof(VirtualStaticsInInterfaces);
+        public const string CovariantReturnsOfClasses = "CovariantReturnsOfClasses";
     }
 
     internal sealed class IntrinsicAttribute : Attribute
     {
+    }
+
+    public sealed partial class PreserveBaseOverridesAttribute : System.Attribute
+    {
+        public PreserveBaseOverridesAttribute() { }
     }
 }
 

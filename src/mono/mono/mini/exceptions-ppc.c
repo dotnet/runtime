@@ -838,5 +838,8 @@ mono_arch_setup_resume_sighandler_ctx (MonoContext *ctx, gpointer func)
 	ctx->regs[2] = (gulong)handler_ftnptr->toc;
 #else
 	MONO_CONTEXT_SET_IP(ctx, (unsigned long) func);
+#ifdef TARGET_POWERPC64
+        ctx->regs[12] = (gulong)func;
+#endif
 #endif
 }

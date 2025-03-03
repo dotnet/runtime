@@ -14,7 +14,7 @@ public:
     TOCElementNode* Next;
     TOCElement      tocElement;
 
-    TOCElementNode(int number, __int64 offset) : Next(nullptr), tocElement(number, offset)
+    TOCElementNode(int number, int64_t offset) : Next(nullptr), tocElement(number, offset)
     {
     }
 };

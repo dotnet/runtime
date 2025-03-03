@@ -365,9 +365,7 @@ namespace System.Reflection
             else if (argCount == 1)
             {
                 ByReference br = ByReference.Create(ref parameters[0]);
-#pragma warning disable CS8500
                 void* pByrefStorage = &br;
-#pragma warning restore CS8500
 
                 // Since no copy of args is required, pass 'parameters' for both arguments.
                 CheckArguments(parameters, pByrefStorage, parameters);
@@ -410,9 +408,7 @@ namespace System.Reflection
             IntPtr* pStorage = stackalloc IntPtr[2 * argCount];
             NativeMemory.Clear(pStorage, (nuint)(2 * argCount) * (nuint)sizeof(IntPtr));
 
-#pragma warning disable 8500
             void* pByRefStorage = (ByReference*)(pStorage + argCount);
-#pragma warning restore 8500
 
             GCFrameRegistration regArgStorage = new((void**)pStorage, (uint)argCount, areByRefs: false);
             GCFrameRegistration regByRefStorage = new((void**)pByRefStorage, (uint)argCount, areByRefs: true);
@@ -461,9 +457,7 @@ namespace System.Reflection
             IntPtr* pStorage = stackalloc IntPtr[2 * argCount];
             NativeMemory.Clear(pStorage, (nuint)(2 * argCount) * (nuint)sizeof(IntPtr));
 
-#pragma warning disable 8500
             void* pByRefStorage = (ByReference*)(pStorage + argCount);
-#pragma warning restore 8500
 
             GCFrameRegistration regArgStorage = new((void**)pStorage, (uint)argCount, areByRefs: false);
             GCFrameRegistration regByRefStorage = new((void**)pByRefStorage, (uint)argCount, areByRefs: true);
@@ -497,14 +491,11 @@ namespace System.Reflection
             object?[] parameters, BinderBundle? binderBundle, bool wrapInTargetInvocationException)
         {
             Debug.Assert(_argumentCount <= MaxStackAllocArgCount);
-            int argCount = _argumentCount;
 
             StackAllocatedArguments argStorage = default;
-            Span<object?> copyOfParameters = argStorage._args.AsSpan(argCount);
+            Span<object?> copyOfParameters = ((Span<object?>)argStorage._args).Slice(0, _argumentCount);
             StackAllocatedByRefs byrefStorage = default;
-#pragma warning disable CS8500
             void* pByRefStorage = (ByReference*)&byrefStorage;
-#pragma warning restore CS8500
 
             CheckArguments(copyOfParameters, pByRefStorage, parameters, binderBundle);
 
@@ -532,14 +523,11 @@ namespace System.Reflection
             IntPtr methodToCall, ref byte thisArg, ref byte ret, Span<object?> parameters)
         {
             Debug.Assert(_argumentCount <= MaxStackAllocArgCount);
-            int argCount = _argumentCount;
 
             StackAllocatedArguments argStorage = default;
-            Span<object?> copyOfParameters = argStorage._args.AsSpan(argCount);
+            Span<object?> copyOfParameters = ((Span<object?>)argStorage._args).Slice(0, _argumentCount);
             StackAllocatedByRefs byrefStorage = default;
-#pragma warning disable CS8500
             void* pByRefStorage = (ByReference*)&byrefStorage;
-#pragma warning restore CS8500
 
             CheckArguments(copyOfParameters, pByRefStorage, parameters);
 
@@ -564,9 +552,7 @@ namespace System.Reflection
             Debug.Assert(_argumentCount <= MaxStackAllocArgCount);
 
             StackAllocatedByRefs byrefStorage = default;
-#pragma warning disable CS8500
             void* pByRefStorage = (ByReference*)&byrefStorage;
-#pragma warning restore CS8500
 
             // Since no copy of args is required, pass 'parameters' for both arguments.
             CheckArguments(parameters, pByRefStorage, parameters);
@@ -688,10 +674,10 @@ namespace System.Reflection
 
                 copyOfParameters[i] = arg!;
 
-#pragma warning disable 8500, 9094
+#pragma warning disable 9094
                 ((ByReference*)byrefParameters)[i] = new ByReference(ref (argumentInfo.Transform & Transform.Reference) != 0 ?
                     ref Unsafe.As<object?, byte>(ref copyOfParameters[i]) : ref arg.GetRawData());
-#pragma warning restore 8500, 9094
+#pragma warning restore 9094
             }
         }
 
@@ -765,10 +751,10 @@ namespace System.Reflection
 
                 copyOfParameters[i] = arg;
 
-#pragma warning disable 8500, 9094
+#pragma warning disable 9094
                 ((ByReference*)byrefParameters)[i] = new ByReference(ref (argumentInfo.Transform & Transform.Reference) != 0 ?
                     ref Unsafe.As<object?, byte>(ref copyOfParameters[i]) : ref arg.GetRawData());
-#pragma warning restore 8500, 9094
+#pragma warning restore 9094
             }
         }
 
@@ -797,7 +783,7 @@ namespace System.Reflection
                     }
                     else
                     {
-                        obj = RuntimeImports.RhBox(
+                        obj = RuntimeExports.RhBox(
                             (transform & Transform.FunctionPointer) != 0 ? MethodTable.Of<IntPtr>() : argumentInfo.Type,
                             ref obj.GetRawData());
                     }
@@ -832,7 +818,7 @@ namespace System.Reflection
                     }
                     else
                     {
-                        obj = RuntimeImports.RhBox(
+                        obj = RuntimeExports.RhBox(
                             (transform & Transform.FunctionPointer) != 0 ? MethodTable.Of<IntPtr>() : argumentInfo.Type,
                             ref obj.GetRawData());
                     }
@@ -863,7 +849,7 @@ namespace System.Reflection
             else if ((_returnTransform & Transform.FunctionPointer) != 0)
             {
                 Debug.Assert(Type.GetTypeFromMethodTable(_returnType).IsFunctionPointer);
-                obj = RuntimeImports.RhBox(MethodTable.Of<IntPtr>(), ref byref);
+                obj = RuntimeExports.RhBox(MethodTable.Of<IntPtr>(), ref byref);
             }
             else if ((_returnTransform & Transform.Reference) != 0)
             {
@@ -873,7 +859,7 @@ namespace System.Reflection
             else
             {
                 Debug.Assert((_returnTransform & (Transform.ByRef | Transform.Nullable)) != 0);
-                obj = RuntimeImports.RhBox(_returnType, ref byref);
+                obj = RuntimeExports.RhBox(_returnType, ref byref);
             }
             return obj;
         }
@@ -884,19 +870,6 @@ namespace System.Reflection
         internal struct ArgumentData<T>
         {
             private T _arg0;
-
-            [UnscopedRef]
-            public Span<T> AsSpan(int length)
-            {
-                Debug.Assert((uint)length <= MaxStackAllocArgCount);
-                return new Span<T>(ref _arg0, length);
-            }
-
-            public void Set(int index, T value)
-            {
-                Debug.Assert((uint)index < MaxStackAllocArgCount);
-                Unsafe.Add(ref _arg0, index) = value;
-            }
         }
 
         // Helper struct to avoid intermediate object[] allocation in calls to the native reflection stack.

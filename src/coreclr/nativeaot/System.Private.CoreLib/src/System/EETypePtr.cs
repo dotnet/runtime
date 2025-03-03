@@ -11,7 +11,6 @@
 ===========================================================*/
 
 using System.Diagnostics;
-using System.Runtime;
 using System.Runtime.InteropServices;
 
 using CorElementType = System.Reflection.CorElementType;
@@ -24,11 +23,6 @@ namespace System
     internal unsafe struct EETypePtr
     {
         private MethodTable* _value;
-
-        public EETypePtr(IntPtr value)
-        {
-            _value = (MethodTable*)value;
-        }
 
         internal EETypePtr(MethodTable* value)
         {
@@ -88,14 +82,6 @@ namespace System
             get
             {
                 return _value->ElementType;
-            }
-        }
-
-        internal RuntimeImports.RhCorElementTypeInfo CorElementTypeInfo
-        {
-            get
-            {
-                return RuntimeImports.GetRhCorElementTypeInfo(CorElementType);
             }
         }
     }

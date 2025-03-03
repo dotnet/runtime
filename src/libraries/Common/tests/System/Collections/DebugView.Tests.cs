@@ -1,7 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Concurrent;
+using System.Collections.Frozen;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Linq;
@@ -47,8 +50,8 @@ namespace System.Collections.Tests
                     new ("[\"Two\"]", "2"),
                 }
             };
-            CustomKeyedCollection<string, int> collection = new ();
-            collection.GetKeyForItemHandler = value =>  (2 * value).ToString();
+            CustomKeyedCollection<string, int> collection = new();
+            collection.GetKeyForItemHandler = value => (2 * value).ToString();
             collection.InsertItem(0, 1);
             collection.InsertItem(1, 3);
             yield return new object[] { collection,
@@ -56,6 +59,53 @@ namespace System.Collections.Tests
                 {
                     new ("[\"2\"]", "1"),
                     new ("[\"6\"]", "3"),
+                }
+            };
+
+            yield return new object[] { new ConcurrentDictionary<int, string>(new KeyValuePair<int, string>[] { new(1, "One"), new(2, "Two") }),
+                new KeyValuePair<string, string>[]
+                {
+                    new ("[1]", "\"One\""),
+                    new ("[2]", "\"Two\""),
+                }
+            };
+        }
+
+        private static IEnumerable<object[]> TestDebuggerAttributes_AdditionalGenericDictionaries()
+        {
+            yield return new object[] { new Dictionary<int, string> { { 1, "One" }, { 2, "Two" } }.ToFrozenDictionary(),
+                new KeyValuePair<string, string>[]
+                {
+                    new ("[1]", "\"One\""),
+                    new ("[2]", "\"Two\""),
+                }
+            };
+            yield return new object[] { new Dictionary<int, string> { { 1, "One" }, { 2, "Two" } }.ToImmutableDictionary(),
+                new KeyValuePair<string, string>[]
+                {
+                    new ("[1]", "\"One\""),
+                    new ("[2]", "\"Two\""),
+                }
+            };
+            yield return new object[] { new Dictionary<int, string> { { 1, "One" }, { 2, "Two" } }.ToImmutableDictionary().ToBuilder(),
+                new KeyValuePair<string, string>[]
+                {
+                    new ("[1]", "\"One\""),
+                    new ("[2]", "\"Two\""),
+                }
+            };
+            yield return new object[] { new Dictionary<int, string> { { 1, "One" }, { 2, "Two" } }.ToImmutableSortedDictionary(),
+                new KeyValuePair<string, string>[]
+                {
+                    new ("[1]", "\"One\""),
+                    new ("[2]", "\"Two\""),
+                }
+            };
+            yield return new object[] { new Dictionary<int, string> { { 1, "One" }, { 2, "Two" } }.ToImmutableSortedDictionary().ToBuilder(),
+                new KeyValuePair<string, string>[]
+                {
+                    new ("[1]", "\"One\""),
+                    new ("[2]", "\"Two\""),
                 }
             };
         }
@@ -150,16 +200,26 @@ namespace System.Collections.Tests
             yield return new object[] { new Dictionary<float, double> { { 1.0f, 1.0 }, { 2.0f, 2.0 } }.Values };
             yield return new object[] { new SortedDictionary<Guid, string> { { Guid.NewGuid(), "One" }, { Guid.NewGuid(), "Two" } }.Keys };
             yield return new object[] { new SortedDictionary<long, Guid> { { 1L, Guid.NewGuid() }, { 2L, Guid.NewGuid() } }.Values };
+#if !NETFRAMEWORK
+            // In .Net Framework 4.8 KeyCollection and ValueCollection from ReadOnlyDictionary are marked with
+            // an incorrect debugger type proxy attribute. Both classes have two template parameters, but
+            // ICollectionDebugView<> used there has only one. Neither VS nor this testing code is able to
+            // create a type proxy in such case.
+            yield return new object[] { new ReadOnlyDictionary<double, float>(new Dictionary<double, float> { { 1.0, 1.0f }, { 2.0, 2.0f } }).Keys };
+            yield return new object[] { new ReadOnlyDictionary<float, double>(new Dictionary<float, double> { { 1.0f, 1.0 }, { 2.0f, 2.0 } }).Values };
+#endif
         }
 
         public static IEnumerable<object[]> TestDebuggerAttributes_InputsPresentedAsDictionary()
         {
+            var testCases = TestDebuggerAttributes_NonGenericDictionaries()
+                .Concat(TestDebuggerAttributes_AdditionalGenericDictionaries());
 #if !NETFRAMEWORK
-            return TestDebuggerAttributes_NonGenericDictionaries()
+            return testCases
                 .Concat(TestDebuggerAttributes_GenericDictionaries());
 #else
-            // In .Net Framework only non-generic dictionaries are displayed in a dictionary format by the debugger.
-            return TestDebuggerAttributes_NonGenericDictionaries();
+            // In .Net Framework, the generic dictionaries that are part of the framework are displayed in a list format by the debugger.
+            return testCases;
 #endif
         }
 
@@ -213,8 +273,7 @@ namespace System.Collections.Tests
         [MemberData(nameof(TestDebuggerAttributes_Inputs))]
         public static void TestDebuggerAttributes_Null(object obj)
         {
-            Type proxyType = DebuggerAttributes.GetProxyType(obj);
-            TargetInvocationException tie = Assert.Throws<TargetInvocationException>(() => Activator.CreateInstance(proxyType, (object)null));
+            TargetInvocationException tie = Assert.Throws<TargetInvocationException>(() => DebuggerAttributes.CreateDebuggerTypeProxyWithNullArgument(obj.GetType()));
             Assert.IsType<ArgumentNullException>(tie.InnerException);
         }
 

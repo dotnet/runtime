@@ -11,7 +11,7 @@ using Xunit;
 
 namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
 {
-    public abstract class RidAssetResolutionBase : ComponentDependencyResolutionBase
+    public abstract class RidAssetResolutionBase
     {
         private static Version UseRidGraphDisabledVersion = new Version(8, 0);
         public class TestSetup
@@ -602,7 +602,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
         {
             IReadOnlyList<RuntimeFallbacks> fallbacks;
             string depsJson = Path.Combine(TestContext.BuiltDotNet.GreatestVersionSharedFxPath, $"{Constants.MicrosoftNETCoreApp}.deps.json");
-            using (FileStream fileStream = File.Open(depsJson, FileMode.Open))
+            using (FileStream fileStream = File.OpenRead(depsJson))
             using (DependencyContextJsonReader reader = new DependencyContextJsonReader())
             {
                 fallbacks = reader.Read(fileStream).RuntimeGraph;

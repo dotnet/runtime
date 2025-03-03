@@ -73,6 +73,7 @@ namespace ILCompiler.Reflection.ReadyToRun
     public class GcInfoTypes
     {
         private Machine _target;
+        private bool _denormalizeCodeOffsets;
 
         internal int SIZE_OF_RETURN_KIND_SLIM { get; } = 2;
         internal int SIZE_OF_RETURN_KIND_FAT { get; } = 2;
@@ -105,9 +106,10 @@ namespace ILCompiler.Reflection.ReadyToRun
         internal int LIVESTATE_RLE_SKIP_ENCBASE { get; } = 4;
         internal int NUM_NORM_CODE_OFFSETS_PER_CHUNK_LOG2 { get; } = 6;
 
-        internal GcInfoTypes(Machine machine)
+        internal GcInfoTypes(Machine machine, bool denormalizeCodeOffsets)
         {
             _target = machine;
+            _denormalizeCodeOffsets = denormalizeCodeOffsets;
 
             switch (machine)
             {
@@ -154,7 +156,7 @@ namespace ILCompiler.Reflection.ReadyToRun
                     STACK_BASE_REGISTER_ENCBASE = 2;
                     NUM_REGISTERS_ENCBASE = 3;
                     break;
-                case (Machine)0x5064: /* TODO: update with RiscV64 */
+                case Machine.RiscV64:
                     SIZE_OF_RETURN_KIND_FAT = 4;
                     STACK_BASE_REGISTER_ENCBASE = 2;
                     NUM_REGISTERS_ENCBASE = 3;
@@ -170,10 +172,38 @@ namespace ILCompiler.Reflection.ReadyToRun
                     return (x << 1);
                 case Machine.Arm64:
                 case Machine.LoongArch64:
-                case (Machine)0x5064: /* TODO: update with RiscV64 */
+                case Machine.RiscV64:
                     return (x << 2);
             }
             return x;
+        }
+
+        internal int NormalizeCodeLength(int x)
+        {
+            switch (_target)
+            {
+                case Machine.ArmThumb2:
+                    return (x >> 1);
+                case Machine.Arm64:
+                case Machine.LoongArch64:
+                case Machine.RiscV64:
+                    return (x >> 2);
+            }
+            return x;
+        }
+
+        internal uint DenormalizeCodeOffset(uint x)
+        {
+            return _denormalizeCodeOffsets ?
+                (uint)DenormalizeCodeLength((int)x) :
+                x;
+        }
+
+        internal uint NormalizeCodeOffset(uint x)
+        {
+            return _denormalizeCodeOffsets ?
+                (uint)NormalizeCodeLength((int)x) :
+                x;
         }
 
         internal int DenormalizeStackSlot(int x)
@@ -186,7 +216,7 @@ namespace ILCompiler.Reflection.ReadyToRun
                     return (x << 2);
                 case Machine.Arm64:
                 case Machine.LoongArch64:
-                case (Machine)0x5064: /* TODO: update with RiscV64 */
+                case Machine.RiscV64:
                     return (x << 3);
             }
             return x;
@@ -204,7 +234,7 @@ namespace ILCompiler.Reflection.ReadyToRun
                     return (x ^ 29);
                 case Machine.LoongArch64:
                     return ((x ^ 22) & 0x3);
-                case (Machine)0x5064: /* TODO: update with RiscV64 */
+                case Machine.RiscV64:
                     return (x ^ 8);
             }
             return x;
@@ -220,7 +250,7 @@ namespace ILCompiler.Reflection.ReadyToRun
                     return (x << 2);
                 case Machine.Arm64:
                 case Machine.LoongArch64:
-                case (Machine)0x5064: /* TODO: update with RiscV64 */
+                case Machine.RiscV64:
                     return (x << 3);
             }
             return x;

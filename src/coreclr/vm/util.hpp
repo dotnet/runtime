@@ -16,14 +16,7 @@
 #include "clrdata.h"
 #include "xclrdata.h"
 #include "posterror.h"
-#include "clr_std/type_traits"
-
-// Hot cache lines need to be aligned to cache line size to improve performance
-#if defined(TARGET_ARM64)
-#define MAX_CACHE_LINE_SIZE 128
-#else
-#define MAX_CACHE_LINE_SIZE 64
-#endif
+#include <type_traits>
 
 #ifndef DACCESS_COMPILE
 #if defined(TARGET_WINDOWS) && defined(TARGET_ARM64)
@@ -43,40 +36,40 @@ void * __cdecl _alloca(size_t);
 #pragma warning(disable:6255)
 #endif // _PREFAST_
 
-BOOL inline FitsInI1(__int64 val)
+BOOL inline FitsInI1(int64_t val)
 {
     LIMITED_METHOD_DAC_CONTRACT;
-    return val == (__int64)(__int8)val;
+    return val == (int64_t)(int8_t)val;
 }
 
-BOOL inline FitsInI2(__int64 val)
+BOOL inline FitsInI2(int64_t val)
 {
     LIMITED_METHOD_CONTRACT;
-    return val == (__int64)(__int16)val;
+    return val == (int64_t)(int16_t)val;
 }
 
-BOOL inline FitsInI4(__int64 val)
+BOOL inline FitsInI4(int64_t val)
 {
     LIMITED_METHOD_DAC_CONTRACT;
-    return val == (__int64)(__int32)val;
+    return val == (int64_t)(int32_t)val;
 }
 
-BOOL inline FitsInU1(unsigned __int64 val)
+BOOL inline FitsInU1(uint64_t val)
 {
     LIMITED_METHOD_CONTRACT;
-    return val == (unsigned __int64)(unsigned __int8)val;
+    return val == (uint64_t)(uint8_t)val;
 }
 
-BOOL inline FitsInU2(unsigned __int64 val)
+BOOL inline FitsInU2(uint64_t val)
 {
     LIMITED_METHOD_CONTRACT;
-    return val == (unsigned __int64)(unsigned __int16)val;
+    return val == (uint64_t)(uint16_t)val;
 }
 
-BOOL inline FitsInU4(unsigned __int64 val)
+BOOL inline FitsInU4(uint64_t val)
 {
     LIMITED_METHOD_DAC_CONTRACT;
-    return val == (unsigned __int64)(unsigned __int32)val;
+    return val == (uint64_t)(uint32_t)val;
 }
 
 #if defined(DACCESS_COMPILE)
@@ -146,7 +139,7 @@ FORCEINLINE LONG FastInterlockedCompareExchangeRelease(
 // Destroying the heap frees all blocks allocated from the heap.
 // Blocks cannot be freed individually.
 //
-// The heap uses COM+ exceptions to report errors.
+// The heap uses exceptions to report errors.
 //
 // The heap does not use any internal synchronization so it is not
 // multithreadsafe.
@@ -542,7 +535,7 @@ FORCEINLINE void VoidFreeNativeLibrary(NATIVE_LIBRARY_HANDLE h)
 #endif
 }
 
-typedef Wrapper<NATIVE_LIBRARY_HANDLE, DoNothing<NATIVE_LIBRARY_HANDLE>, VoidFreeNativeLibrary, NULL> NativeLibraryHandleHolder;
+typedef Wrapper<NATIVE_LIBRARY_HANDLE, DoNothing<NATIVE_LIBRARY_HANDLE>, VoidFreeNativeLibrary, 0> NativeLibraryHandleHolder;
 
 extern thread_local size_t t_CantStopCount;
 
@@ -587,7 +580,7 @@ struct JITNotification
 
     JITNotification() { SetFree(); }
     BOOL IsFree() { return state == CLRDATA_METHNOTIFY_NONE; }
-    void SetFree() { state = CLRDATA_METHNOTIFY_NONE; clrModule = NULL; methodToken = 0; }
+    void SetFree() { state = CLRDATA_METHNOTIFY_NONE; clrModule = 0; methodToken = 0; }
     void SetState(TADDR moduleIn, mdToken tokenIn, USHORT NType)
     {
         _ASSERTE(IsValidMethodCodeNotification(NType));
@@ -799,17 +792,6 @@ int __cdecl stricmpUTF8(const char* szStr1, const char* szStr2);
 BOOL DbgIsExecutable(LPVOID lpMem, SIZE_T length);
 
 int GetRandomInt(int maxVal);
-
-//
-//
-// COMCHARACTER
-//
-//
-class COMCharacter {
-public:
-    //These are here for support from native code.  They are never called from our managed classes.
-    static BOOL nativeIsWhiteSpace(WCHAR c);
-};
 
 // ======================================================================================
 // Simple, reusable 100ns timer for normalizing ticks. For use in Q/FCalls to avoid discrepency with

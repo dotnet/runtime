@@ -59,7 +59,7 @@ include(components.cmake)
 #---------------------------
 # Build the single file host
 #---------------------------
-if(NOT CLR_CROSS_COMPONENTS_BUILD)
+if(NOT CLR_CROSS_COMPONENTS_BUILD AND NOT CLR_CMAKE_TARGET_MACCATALYST AND NOT CLR_CMAKE_TARGET_IOS AND NOT CLR_CMAKE_TARGET_TVOS)
   set(CLR_SINGLE_FILE_HOST_ONLY 1)
   add_subdirectory(${CLR_SRC_NATIVE_DIR}/corehost/apphost/static Corehost.Static)
   add_dependencies(runtime singlefilehost)
@@ -75,9 +75,9 @@ endif()
 # Include libraries native shims
 #-------------------------------
 if(NOT CLR_CROSS_COMPONENTS_BUILD)
-    set(STATIC_LIBS_ONLY 1)
-    add_subdirectory(${CLR_SRC_NATIVE_DIR}/libs libs-native)
-endif(NOT CLR_CROSS_COMPONENTS_BUILD)
+  set(STATIC_LIBS_ONLY 1)
+  add_subdirectory(${CLR_SRC_NATIVE_DIR}/libs libs-native)
+endif()
 
 #-----------------------------------------
 # Add Projects
@@ -101,8 +101,10 @@ if(CLR_CMAKE_HOST_UNIX)
       add_linker_flag(-Wl,-z,notext)
     endif()
 
-    if(NOT CLR_CMAKE_HOST_MACCATALYST AND NOT CLR_CMAKE_HOST_IOS AND NOT CLR_CMAKE_HOST_TVOS)
+    if(NOT CLR_CMAKE_HOST_TVOS)
       add_subdirectory(pal)
+    endif()
+    if(NOT CLR_CMAKE_HOST_MACCATALYST AND NOT CLR_CMAKE_HOST_IOS AND NOT CLR_CMAKE_HOST_TVOS)
       add_subdirectory(hosts)
     endif()
 else()
@@ -125,7 +127,11 @@ add_subdirectory(pal/prebuilt/inc)
 set(EP_GENERATED_HEADER_PATH "${GENERATED_INCLUDE_DIR}")
 include (${CLR_SRC_NATIVE_DIR}/eventpipe/configure.cmake)
 
-if(NOT CLR_CMAKE_HOST_MACCATALYST AND NOT CLR_CMAKE_HOST_IOS AND NOT CLR_CMAKE_HOST_TVOS)
+add_subdirectory(${CLR_SRC_NATIVE_DIR}/containers containers)
+add_subdirectory(${CLR_SRC_NATIVE_DIR}/eventpipe eventpipe)
+add_subdirectory(${CLR_SRC_NATIVE_DIR}/minipal shared_minipal)
+
+if(NOT CLR_CMAKE_HOST_TVOS)
   add_subdirectory(debug/debug-pal)
 endif()
 
@@ -147,7 +153,7 @@ add_subdirectory(tools/aot/jitinterface)
 
 if(NOT CLR_CROSS_COMPONENTS_BUILD)
   # NativeAOT only buildable for a subset of CoreCLR-supported configurations
-  if(CLR_CMAKE_HOST_ARCH_ARM64 OR CLR_CMAKE_HOST_ARCH_AMD64 OR CLR_CMAKE_HOST_ARCH_ARM)
+  if(CLR_CMAKE_HOST_ARCH_ARM64 OR CLR_CMAKE_HOST_ARCH_AMD64 OR CLR_CMAKE_HOST_ARCH_ARM OR CLR_CMAKE_HOST_ARCH_LOONGARCH64 OR CLR_CMAKE_HOST_ARCH_RISCV64 OR (CLR_CMAKE_HOST_ARCH_I386 AND CLR_CMAKE_HOST_WIN32))
     add_subdirectory(nativeaot)
   endif()
 endif(NOT CLR_CROSS_COMPONENTS_BUILD)
@@ -166,10 +172,7 @@ endif(CLR_CMAKE_HOST_WIN32)
 #----------------------------------
 include(clrdefinitions.cmake)
 
-if(FEATURE_STANDALONE_GC)
-  add_definitions(-DFEATURE_STANDALONE_GC)
-  add_subdirectory(gc)
-endif(FEATURE_STANDALONE_GC)
+add_subdirectory(gc)
 
 if (CLR_CMAKE_HOST_UNIX)
   include_directories("pal/inc")
@@ -191,6 +194,8 @@ include_directories("${GENERATED_INCLUDE_DIR}")
 include_directories("hosts/inc")
 include_directories("minipal")
 
+add_subdirectory(interpreter)
+
 if(CLR_CMAKE_TARGET_WIN32 AND FEATURE_EVENT_TRACE)
     include_directories("${GENERATED_INCLUDE_DIR}/etw")
 endif(CLR_CMAKE_TARGET_WIN32 AND FEATURE_EVENT_TRACE)
@@ -202,15 +207,23 @@ if(CLR_CMAKE_HOST_UNIX)
     add_subdirectory(debug/createdump)
   endif(CLR_CMAKE_HOST_OSX OR (CLR_CMAKE_HOST_LINUX AND NOT CLR_CMAKE_HOST_UNIX_X86 AND NOT CLR_CMAKE_HOST_ANDROID))
 
-  # Include the dummy c++ include files
-  include_directories("pal/inc/rt/cpp")
-
-  # This prevents inclusion of standard C compiler headers
-  add_compile_options(-nostdinc)
+  # The CoreCLR PAL used to redefine NULL, which caused a number of null conversion and arithmetic
+  # warnings and errors to be suppressed.
+  # Suppress these warnings here to avoid breaking the build.
+  add_compile_options($<$<COMPILE_LANG_AND_ID:CXX,Clang,AppleClang>:-Wno-null-arithmetic>)
+  add_compile_options($<$<COMPILE_LANG_AND_ID:CXX,Clang>:-Wno-sync-alignment>)
+  add_compile_options($<$<COMPILE_LANG_AND_ID:CXX,GNU>:-Wno-conversion-null>)
+  add_compile_options($<$<COMPILE_LANG_AND_ID:CXX,GNU>:-Wno-pointer-arith>)
 
   set (NATIVE_RESOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/nativeresources)
   include_directories(${NATIVE_RESOURCE_DIR})
-  set (PROCESS_RC_SCRIPT ${NATIVE_RESOURCE_DIR}/processrc.sh)
+
+  # Win32 may be false when cross compiling
+  if (CMAKE_HOST_SYSTEM_NAME STREQUAL "Windows")
+    set (PROCESS_RC_SCRIPT ${NATIVE_RESOURCE_DIR}/processrc.ps1)
+  else()
+    set (PROCESS_RC_SCRIPT ${NATIVE_RESOURCE_DIR}/processrc.sh)
+  endif()
   set (RESOURCE_STRING_HEADER_DIR ${NATIVE_RESOURCE_DIR})
 
   # Create a command to create a C++ source file containing an array of
@@ -218,38 +231,45 @@ if(CLR_CMAKE_HOST_UNIX)
   # given Windows .rc file. The target C++ file path is returned in the
   # variable specified by the TARGET_FILE parameter.
   function(build_resources SOURCE TARGET_NAME TARGET_FILE)
-
+    set_property(SOURCE ${SOURCE} APPEND PROPERTY COMPILE_DEFINITIONS "RC_INVOKED")
     set(PREPROCESSED_SOURCE ${CMAKE_CURRENT_BINARY_DIR}/${TARGET_NAME}.rc.i)
 
     preprocess_file(${SOURCE} ${PREPROCESSED_SOURCE})
 
     set(RESOURCE_ENTRY_ARRAY_CPP ${CMAKE_CURRENT_BINARY_DIR}/${TARGET_NAME}.cpp)
 
-    add_custom_command(
-      OUTPUT ${RESOURCE_ENTRY_ARRAY_CPP}
-      # Convert the preprocessed .rc file to a C++ file which will be used to make a static lib.
-      COMMAND ${PROCESS_RC_SCRIPT} ${PREPROCESSED_SOURCE} ${TARGET_NAME} >${RESOURCE_ENTRY_ARRAY_CPP}
-            DEPENDS ${PREPROCESSED_SOURCE} ${PROCESS_RC_SCRIPT}
-    )
+    # Win32 may be false when cross compiling
+    if (CMAKE_HOST_SYSTEM_NAME STREQUAL "Windows")
+      add_custom_command(
+        OUTPUT ${RESOURCE_ENTRY_ARRAY_CPP}
+        # Convert the preprocessed .rc file to a C++ file which will be used to make a static lib.
+        COMMAND powershell -NoProfile -ExecutionPolicy ByPass -File \"${PROCESS_RC_SCRIPT}\" ${PREPROCESSED_SOURCE} ${TARGET_NAME} >${RESOURCE_ENTRY_ARRAY_CPP}
+        DEPENDS ${PREPROCESSED_SOURCE} ${PROCESS_RC_SCRIPT}
+      )
+    else()
+      add_custom_command(
+        OUTPUT ${RESOURCE_ENTRY_ARRAY_CPP}
+        # Convert the preprocessed .rc file to a C++ file which will be used to make a static lib.
+        COMMAND ${PROCESS_RC_SCRIPT} ${PREPROCESSED_SOURCE} ${TARGET_NAME} >${RESOURCE_ENTRY_ARRAY_CPP}
+        DEPENDS ${PREPROCESSED_SOURCE} ${PROCESS_RC_SCRIPT}
+      )
+    endif()
 
     include_directories(${RESOURCE_STRING_HEADER_DIR})
     set(${TARGET_FILE} ${RESOURCE_ENTRY_ARRAY_CPP} PARENT_SCOPE)
-
   endfunction()
 
   add_subdirectory(nativeresources)
 endif(CLR_CMAKE_HOST_UNIX)
 
-if(NOT CLR_CMAKE_HOST_MACCATALYST AND NOT CLR_CMAKE_HOST_IOS AND NOT CLR_CMAKE_HOST_TVOS)
+if(NOT CLR_CMAKE_HOST_TVOS)
   add_subdirectory(utilcode)
   add_subdirectory(inc)
 
-  if(CLR_CMAKE_HOST_UNIX)
-      add_subdirectory(palrt)
-  endif(CLR_CMAKE_HOST_UNIX)
-
-  add_subdirectory(ilasm)
-  add_subdirectory(ildasm)
+  if (CLR_CMAKE_BUILD_TOOLS)
+    add_subdirectory(ilasm)
+    add_subdirectory(ildasm)
+  endif(CLR_CMAKE_BUILD_TOOLS)
   add_subdirectory(gcinfo)
   add_subdirectory(jit)
   add_subdirectory(vm)
@@ -258,19 +278,14 @@ if(NOT CLR_CMAKE_HOST_MACCATALYST AND NOT CLR_CMAKE_HOST_IOS AND NOT CLR_CMAKE_H
   add_subdirectory(binder)
   add_subdirectory(classlibnative)
   add_subdirectory(dlls)
-  add_subdirectory(tools)
   add_subdirectory(unwinder)
   add_subdirectory(interop)
+endif()
 
-  if(CLR_CMAKE_HOST_WIN32)
-    add_subdirectory(hosts)
-  endif(CLR_CMAKE_HOST_WIN32)
+if(NOT CLR_CMAKE_HOST_MACCATALYST AND NOT CLR_CMAKE_HOST_IOS AND NOT CLR_CMAKE_HOST_TVOS)
+  add_subdirectory(tools)
 endif(NOT CLR_CMAKE_HOST_MACCATALYST AND NOT CLR_CMAKE_HOST_IOS AND NOT CLR_CMAKE_HOST_TVOS)
 
-#----------------------------------------------------
-# Cross target Component install configuration
-#----------------------------------------------------
-if(CLR_CROSS_COMPONENTS_BUILD)
-  include(crosscomponents.cmake)
-endif(CLR_CROSS_COMPONENTS_BUILD)
-
+if(CLR_CMAKE_HOST_WIN32)
+  add_subdirectory(hosts)
+endif(CLR_CMAKE_HOST_WIN32)

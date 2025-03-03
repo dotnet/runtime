@@ -79,7 +79,7 @@ namespace System.Text.Json
             }
             output[BytesPending++] = JsonConstants.Quote;
 
-            Base64EncodeAndWrite(bytes, output, encodingLength);
+            Base64EncodeAndWrite(bytes, output);
 
             output[BytesPending++] = JsonConstants.Quote;
         }
@@ -94,7 +94,7 @@ namespace System.Text.Json
             // as a length longer than that would overflow int.MaxValue when Base64 encoded. However, we
             // also need the indentation + 2 quotes, and optionally a list separate and 1-2 bytes for a new line.
             // Validate the encoded bytes length won't overflow with all of the length.
-            int extraSpaceRequired = indent + 3 + s_newLineLength;
+            int extraSpaceRequired = indent + 3 + _newLineLength;
             int maxLengthAllowed = int.MaxValue / 4 * 3 - extraSpaceRequired;
             if (bytes.Length > maxLengthAllowed)
             {
@@ -130,7 +130,7 @@ namespace System.Text.Json
 
             output[BytesPending++] = JsonConstants.Quote;
 
-            Base64EncodeAndWrite(bytes, output, encodingLength);
+            Base64EncodeAndWrite(bytes, output);
 
             output[BytesPending++] = JsonConstants.Quote;
         }

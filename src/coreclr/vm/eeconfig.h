@@ -1,14 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// EEConfig.H
-//
 
+// EEConfig.H
 //
 // Fetched configuration data from the registry (should we Jit, run GC checks ...)
 //
-//
-
-
 
 #ifndef EECONFIG_H
 #define EECONFIG_H
@@ -17,6 +13,7 @@ class MethodDesc;
 
 #include "shash.h"
 #include "corhost.h"
+#include <minipal/debugger.h>
 
 #ifdef _DEBUG
 class TypeNamesList
@@ -77,6 +74,7 @@ public:
     bool          JitFramed(void)                           const {LIMITED_METHOD_CONTRACT;  return fJitFramed; }
     bool          JitMinOpts(void)                          const {LIMITED_METHOD_CONTRACT;  return fJitMinOpts; }
     bool          JitEnableOptionalRelocs(void)             const {LIMITED_METHOD_CONTRACT;  return fJitEnableOptionalRelocs; }
+    bool          DisableOptimizedThreadStaticAccess(void)  const {LIMITED_METHOD_CONTRACT;  return fDisableOptimizedThreadStaticAccess; }
 
     // Tiered Compilation config
 #if defined(FEATURE_TIERED_COMPILATION)
@@ -272,10 +270,6 @@ public:
     bool SuppressLockViolationsOnReentryFromOS() const {LIMITED_METHOD_CONTRACT;  return fSuppressLockViolationsOnReentryFromOS; }
 #endif
 
-#ifdef STUBLINKER_GENERATES_UNWIND_INFO
-    bool IsStubLinkerUnwindInfoVerificationOn() const { LIMITED_METHOD_CONTRACT; return fStubLinkerUnwindInfoVerificationOn; }
-#endif
-
 #endif // _DEBUG
 
 #ifdef FEATURE_COMINTEROP
@@ -308,12 +302,6 @@ public:
     // not the number of bytes in the array.
     unsigned int  GetDoubleArrayToLargeObjectHeapThreshold() const { LIMITED_METHOD_CONTRACT; return DoubleArrayToLargeObjectHeapThreshold; }
 #endif
-
-    inline bool ProbeForStackOverflow() const
-    {
-        LIMITED_METHOD_CONTRACT;
-        return fProbeForStackOverflow;
-    }
 
 #ifdef TEST_DATA_CONSISTENCY
     // get the value of fTestDataConsistency, which controls whether we test that we can correctly detect
@@ -394,6 +382,7 @@ public:
 #ifdef FEATURE_CONSERVATIVE_GC
     bool    GetGCConservative()             const {LIMITED_METHOD_CONTRACT; return iGCConservative;}
 #endif
+    bool    GetCheckDoubleReporting()       const {LIMITED_METHOD_CONTRACT; return fCheckDoubleReporting; }
 #ifdef HOST_64BIT
     bool    GetGCAllowVeryLargeObjects()    const {LIMITED_METHOD_CONTRACT; return iGCAllowVeryLargeObjects;}
 #endif
@@ -421,10 +410,6 @@ public:
 
     // Loader
     bool    ExcludeReadyToRun(LPCUTF8 assemblyName) const;
-
-    bool    NgenBindOptimizeNonGac()        const { LIMITED_METHOD_CONTRACT; return fNgenBindOptimizeNonGac; }
-
-    DWORD   DisableStackwalkCache()         const {LIMITED_METHOD_CONTRACT;  return dwDisableStackwalkCache; }
 
     bool    StressLog()                     const { LIMITED_METHOD_CONTRACT; return fStressLog; }
     bool    ForceEnc()                      const { LIMITED_METHOD_CONTRACT; return fForceEnc; }
@@ -469,6 +454,7 @@ private: //----------------------------------------------------------------
     bool fJitFramed;                   // Enable/Disable EBP based frames
     bool fJitMinOpts;                  // Enable MinOpts for all jitted methods
     bool fJitEnableOptionalRelocs;     // Allow optional relocs
+    bool fDisableOptimizedThreadStaticAccess; // Disable OptimizedThreadStatic access
 
     unsigned iJitOptimizeType; // 0=Blended,1=SmallCode,2=FastCode,              default is 0=Blended
 
@@ -545,9 +531,6 @@ private: //----------------------------------------------------------------
     bool fSuppressLockViolationsOnReentryFromOS;
 #endif
 
-#ifdef STUBLINKER_GENERATES_UNWIND_INFO
-    bool fStubLinkerUnwindInfoVerificationOn;
-#endif
 #endif // _DEBUG
 #ifdef ENABLE_STARTUP_DELAY
     int iStartupDelayMS; //Adds sleep to startup.
@@ -580,6 +563,8 @@ private: //----------------------------------------------------------------
     bool iGCAllowVeryLargeObjects;
 #endif // HOST_64BIT
 
+    bool fCheckDoubleReporting;
+
     bool fGCBreakOnOOM;
 
 #ifdef _DEBUG
@@ -594,15 +579,9 @@ private: //----------------------------------------------------------------
     // Assemblies which cannot use Ready to Run images.
     AssemblyNamesList * pReadyToRunExcludeList;
 
-    bool fNgenBindOptimizeNonGac;
-
     bool fStressLog;
     bool fForceEnc;
     bool fDebugAssembliesModifiable;
-    bool fProbeForStackOverflow;
-
-    // Stackwalk optimization flag
-    DWORD dwDisableStackwalkCache;
 
 #ifdef _DEBUG
     // interop logging
@@ -734,7 +713,7 @@ public:
             _ASSERTE(str);                                              \
         }                                                               \
         else if (!(str)) {                                              \
-            if (IsDebuggerPresent()) DebugBreak();                      \
+            if (minipal_is_native_debugger_present()) DebugBreak();                      \
         }                                                               \
     } while(0)
 

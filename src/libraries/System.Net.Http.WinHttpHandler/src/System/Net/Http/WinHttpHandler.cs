@@ -39,6 +39,7 @@ namespace System.Net.Http
         // However, these are not part of 'netstandard'. WinHttpHandler currently builds against
         // 'netstandard' so we need to add these definitions here.
         internal static readonly Version HttpVersion20 = new Version(2, 0);
+        internal static readonly Version HttpVersion30 = new Version(3, 0);
         internal static readonly Version HttpVersionUnknown = new Version(0, 0);
         private static readonly TimeSpan s_maxTimeout = TimeSpan.FromMilliseconds(int.MaxValue);
 
@@ -80,16 +81,16 @@ namespace System.Net.Http
         private TimeSpan _receiveDataTimeout = TimeSpan.FromSeconds(30);
 
         // Using OS defaults for "Keep-alive timeout" and "keep-alive interval"
-        // as documented in https://docs.microsoft.com/en-us/windows/win32/winsock/sio-keepalive-vals#remarks
+        // as documented in https://learn.microsoft.com/windows/win32/winsock/sio-keepalive-vals#remarks
         private TimeSpan _tcpKeepAliveTime = TimeSpan.FromHours(2);
         private TimeSpan _tcpKeepAliveInterval = TimeSpan.FromSeconds(1);
         private bool _tcpKeepAliveEnabled;
 
         private int _maxResponseHeadersLength = HttpHandlerDefaults.DefaultMaxResponseHeadersLength;
-        private int _maxResponseDrainSize = 64 * 1024;
+        private int _maxResponseDrainSize = HttpHandlerDefaults.DefaultMaxResponseDrainSize;
         private IDictionary<string, object>? _properties; // Only create dictionary when required.
         private volatile bool _operationStarted;
-        private volatile bool _disposed;
+        private volatile int _disposed;
         private SafeWinHttpHandle? _sessionHandle;
         private readonly WinHttpAuthHelper _authHelper = new WinHttpAuthHelper();
 
@@ -538,13 +539,11 @@ namespace System.Net.Http
 
         protected override void Dispose(bool disposing)
         {
-            if (!_disposed)
+            if (Interlocked.CompareExchange(ref _disposed, 1, 0) == 0)
             {
-                _disposed = true;
-
                 if (disposing && _sessionHandle != null)
                 {
-                    SafeWinHttpHandle.DisposeAndClearHandle(ref _sessionHandle);
+                    _sessionHandle.Dispose();
                 }
             }
 
@@ -877,6 +876,13 @@ namespace System.Net.Http
                 return;
             }
 
+            if (state.RequestMessage.Version != HttpVersion.Version10 && state.RequestMessage.Version != HttpVersion.Version11
+                && state.RequestMessage.Version != HttpVersion20 && state.RequestMessage.Version != HttpVersion30)
+            {
+                state.Tcs.TrySetException(new NotSupportedException(SR.net_http_unsupported_version));
+                return;
+            }
+
             Task? sendRequestBodyTask = null;
             SafeWinHttpHandle? connectHandle = null;
             try
@@ -933,7 +939,14 @@ namespace System.Net.Http
                 // will have the side-effect of WinHTTP cancelling any pending I/O and accelerating its callbacks
                 // on the handle and thus releasing the awaiting tasks in the loop below. This helps to provide
                 // a more timely, cooperative, cancellation pattern.
-                using (state.CancellationToken.Register(s => ((WinHttpRequestState)s!).RequestHandle!.Dispose(), state))
+                using (state.CancellationToken.Register(static s =>
+                {
+                    var state = (WinHttpRequestState)s!;
+                    lock (state.Lock)
+                    {
+                        state.RequestHandle?.Dispose();
+                    }
+                }, state))
                 {
                     do
                     {
@@ -1018,7 +1031,7 @@ namespace System.Net.Http
             }
             finally
             {
-                SafeWinHttpHandle.DisposeAndClearHandle(ref connectHandle);
+                connectHandle?.Dispose();
 
                 try
                 {
@@ -1605,7 +1618,7 @@ namespace System.Net.Http
 
         private void CheckDisposed()
         {
-            if (_disposed)
+            if (_disposed == 1)
             {
                 throw new ObjectDisposedException(GetType().FullName);
             }

@@ -165,7 +165,8 @@ namespace Microsoft.Diagnostics.Tools.Pgo
                 .UseVersion()
                 .UseExtendedHelp(PgoRootCommand.GetExtendedHelp))
             {
-                ResponseFileTokenReplacer = Helpers.TryReadResponseFile
+                ResponseFileTokenReplacer = Helpers.TryReadResponseFile,
+                EnableDefaultExceptionHandler = false,
             }.Invoke(args);
 
         public static void PrintWarning(string warning)
@@ -414,7 +415,7 @@ namespace Microsoft.Diagnostics.Tools.Pgo
             }
 
             HashSet<string> assemblyNamesInBubble = null;
-            AssemblyName[] assemblies = Get(_command.IncludedAssemblies);
+            AssemblyNameInfo[] assemblies = Get(_command.IncludedAssemblies);
             if (assemblies.Length > 0)
             {
                 assemblyNamesInBubble = new HashSet<string>();

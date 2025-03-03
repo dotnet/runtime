@@ -320,7 +320,7 @@ bool get_file_path_from_env(const pal::char_t* env_key, pal::string_t* recv)
     pal::string_t file_path;
     if (pal::getenv(env_key, &file_path))
     {
-        if (pal::realpath(&file_path))
+        if (pal::fullpath(&file_path))
         {
             recv->assign(file_path);
             return true;

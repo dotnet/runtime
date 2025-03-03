@@ -71,14 +71,16 @@ NESTED_ENTRY NDirectImportThunk, _TEXT, NoHandler
         //
         // Save integer parameter registers.
         // Make sure to preserve r11 as well as it is used to pass the stack argument size from JIT
+        // Make sure to preserve rax as well as it is used for the return buffer for Swift calls
         //
         PUSH_ARGUMENT_REGISTERS
         push_register r11
+        push_register rax
 
         //
-        // Allocate space for XMM parameter registers
+        // Allocate space for XMM parameter registers and alignment
         //
-        alloc_stack     0x80
+        alloc_stack     0x88
 
         SAVE_FLOAT_ARGUMENT_REGISTERS 0
 
@@ -89,33 +91,25 @@ NESTED_ENTRY NDirectImportThunk, _TEXT, NoHandler
         //
         mov             rdi, METHODDESC_REGISTER
         call            C_FUNC(NDirectImportWorker)
+        mov             r10, rax
 
         RESTORE_FLOAT_ARGUMENT_REGISTERS 0
 
         //
-        // epilogue, rax contains the native target address
+        // epilogue, r10 contains the native target address
         //
-        free_stack      0x80
+        free_stack      0x88
 
         //
-        // Restore integer parameter registers and r11
+        // Restore integer parameter registers, r11 and rax
         //
+        pop_register rax
         pop_register r11
         POP_ARGUMENT_REGISTERS
 
-    TAILJMP_RAX
+        jmp r10
+    
 NESTED_END NDirectImportThunk, _TEXT
-
-// EXTERN_C void moveOWord(LPVOID* src, LPVOID* target);
-// <NOTE>
-// MOVDQA is not an atomic operation.  You need to call this function in a crst.
-// </NOTE>
-LEAF_ENTRY moveOWord, _TEXT
-        movdqu          xmm0, xmmword ptr [rdi]
-        movdqu          xmmword ptr [rsi], xmm0
-
-        ret
-LEAF_END moveOWord, _TEXT
 
 //------------------------------------------------
 // JIT_RareDisableHelper
@@ -188,23 +182,6 @@ NESTED_END OnHijackTripThread, _TEXT
 
 #endif // FEATURE_HIJACK
 
-LEAF_ENTRY SinglecastDelegateInvokeStub, _TEXT
-
-        test    rdi, rdi
-        jz      NullObject
-
-
-        mov     rax, [rdi + OFFSETOF__DelegateObject___methodPtr]
-        mov     rdi, [rdi + OFFSETOF__DelegateObject___target]  // replace "this" pointer
-
-        jmp     rax
-
-NullObject:
-        mov     rdi, CORINFO_NullReferenceException_ASM
-        jmp     C_FUNC(JIT_InternalThrow)
-
-LEAF_END SinglecastDelegateInvokeStub, _TEXT
-
 #ifdef FEATURE_TIERED_COMPILATION
 
 NESTED_ENTRY OnCallCountThresholdReachedStub, _TEXT, NoHandler
@@ -217,5 +194,21 @@ NESTED_ENTRY OnCallCountThresholdReachedStub, _TEXT, NoHandler
         EPILOG_WITH_TRANSITION_BLOCK_TAILCALL
         TAILJMP_RAX
 NESTED_END OnCallCountThresholdReachedStub, _TEXT
+
+NESTED_ENTRY JIT_Patchpoint, _TEXT, NoHandler
+        PROLOG_WITH_TRANSITION_BLOCK
+
+        lea     rdi, [rsp + __PWTB_TransitionBlock] // TransitionBlock *
+        call    C_FUNC(JIT_PatchpointWorkerWorkerWithPolicy)
+
+        EPILOG_WITH_TRANSITION_BLOCK_RETURN
+NESTED_END JIT_Patchpoint, _TEXT
+
+// first arg register holds iloffset, which needs to be moved to the second register, and the first register filled with NULL
+LEAF_ENTRY JIT_PartialCompilationPatchpoint, _TEXT
+        mov rsi, rdi
+        xor rdi, rdi
+        jmp C_FUNC(JIT_Patchpoint)
+LEAF_END JIT_PartialCompilationPatchpoint, _TEXT
 
 #endif // FEATURE_TIERED_COMPILATION

@@ -9,6 +9,7 @@ using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.Arm;
 using System.Runtime.Intrinsics.X86;
+using System.Text;
 using System.Text.Unicode;
 #endif
 
@@ -192,10 +193,8 @@ namespace System
             }
             return result.ToString();
 #else
-#pragma warning disable CS8500 // takes address of managed type
             return string.Create(bytes.Length * 2, (RosPtr: (IntPtr)(&bytes), casing), static (chars, args) =>
                 EncodeToUtf16(*(ReadOnlySpan<byte>*)args.RosPtr, chars, args.casing));
-#pragma warning restore CS8500
 #endif
         }
 
@@ -261,7 +260,7 @@ namespace System
                 // single UTF8 ASCII vector - the implementation can be shared with UTF8 paths.
                 Vector128<ushort> vec1 = Vector128.LoadUnsafe(ref srcRef, offset);
                 Vector128<ushort> vec2 = Vector128.LoadUnsafe(ref srcRef, offset + (nuint)Vector128<ushort>.Count);
-                Vector128<byte> vec = Vector128.Narrow(vec1, vec2);
+                Vector128<byte> vec = Ascii.ExtractAsciiVector(vec1, vec2);
 
                 // Based on "Algorithm #3" https://github.com/WojciechMula/toys/blob/master/simd-parse-hex/geoff_algorithm.cpp
                 // by Geoff Langdale and Wojciech Mula
@@ -293,13 +292,19 @@ namespace System
                     output = Ssse3.MultiplyAddAdjacent(nibbles,
                         Vector128.Create((short)0x0110).AsSByte()).AsByte();
                 }
-                else
+                else if (AdvSimd.Arm64.IsSupported)
                 {
                     // Workaround for missing MultiplyAddAdjacent on ARM
                     Vector128<short> even = AdvSimd.Arm64.TransposeEven(nibbles, Vector128<byte>.Zero).AsInt16();
                     Vector128<short> odd = AdvSimd.Arm64.TransposeOdd(nibbles, Vector128<byte>.Zero).AsInt16();
                     even = AdvSimd.ShiftLeftLogical(even, 4).AsInt16();
                     output = AdvSimd.AddSaturate(even, odd).AsByte();
+                }
+                else
+                {
+                    // We explicitly recheck each IsSupported query to ensure that the trimmer can see which paths are live/dead
+                    ThrowHelper.ThrowUnreachableException();
+                    output = default;
                 }
                 // Accumulate output in lower INT64 half and take care about endianness
                 output = Vector128.Shuffle(output, Vector128.Create((byte)0, 2, 4, 6, 8, 10, 12, 14, 0, 0, 0, 0, 0, 0, 0, 0));

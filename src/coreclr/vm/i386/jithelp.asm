@@ -36,12 +36,6 @@ JIT_LLsh                        TEXTEQU <_JIT_LLsh@0>
 JIT_LRsh                        TEXTEQU <_JIT_LRsh@0>
 JIT_LRsz                        TEXTEQU <_JIT_LRsz@0>
 JIT_LMul                        TEXTEQU <@JIT_LMul@16>
-JIT_Dbl2LngOvf                  TEXTEQU <@JIT_Dbl2LngOvf@8>
-JIT_Dbl2Lng                     TEXTEQU <@JIT_Dbl2Lng@8>
-JIT_Dbl2IntSSE2                 TEXTEQU <@JIT_Dbl2IntSSE2@8>
-JIT_Dbl2LngP4x87                TEXTEQU <@JIT_Dbl2LngP4x87@8>
-JIT_Dbl2LngSSE3	                TEXTEQU <@JIT_Dbl2LngSSE3@8>
-JIT_InternalThrowFromHelper     TEXTEQU <@JIT_InternalThrowFromHelper@4>
 JIT_WriteBarrierReg_PreGrow     TEXTEQU <_JIT_WriteBarrierReg_PreGrow@0>
 JIT_WriteBarrierReg_PostGrow    TEXTEQU <_JIT_WriteBarrierReg_PostGrow@0>
 JIT_TailCall                    TEXTEQU <_JIT_TailCall@0>
@@ -49,6 +43,9 @@ JIT_TailCallLeave               TEXTEQU <_JIT_TailCallLeave@0>
 JIT_TailCallVSDLeave            TEXTEQU <_JIT_TailCallVSDLeave@0>
 JIT_TailCallHelper              TEXTEQU <_JIT_TailCallHelper@4>
 JIT_TailCallReturnFromVSD       TEXTEQU <_JIT_TailCallReturnFromVSD@0>
+
+g_pPollGC                       TEXTEQU <_g_pPollGC>
+g_TrapReturningThreads          TEXTEQU <_g_TrapReturningThreads>
 
 EXTERN  g_ephemeral_low:DWORD
 EXTERN  g_ephemeral_high:DWORD
@@ -58,13 +55,14 @@ EXTERN  g_card_table:DWORD
 ifdef _DEBUG
 EXTERN  WriteBarrierAssert:PROC
 endif ; _DEBUG
-EXTERN  JIT_InternalThrowFromHelper:PROC
 ifdef FEATURE_HIJACK
 EXTERN  JIT_TailCallHelper:PROC
 endif
-EXTERN _g_TailCallFrameVptr:DWORD
 EXTERN @JIT_FailFast@0:PROC
-EXTERN _s_gsCookie:DWORD
+
+EXTERN g_pPollGC:DWORD
+EXTERN g_TrapReturningThreads:DWORD
+
 
 ifdef WRITE_BARRIER_CHECK
 ; Those global variables are always defined, but should be 0 for Server GC
@@ -75,7 +73,9 @@ EXTERN  g_GCShadowEnd:DWORD
 INVALIDGCVALUE equ 0CCCCCCCDh
 endif
 
+ifndef FEATURE_EH_FUNCLETS
 EXTERN _COMPlusEndCatch@20:PROC
+endif
 
 .686P
 .XMM
@@ -636,182 +636,6 @@ LMul_hard:
 JIT_LMul ENDP
 
 ;*********************************************************************/
-; JIT_Dbl2LngOvf
-
-;Purpose:
-;   converts a double to a long truncating toward zero (C semantics)
-;   with check for overflow
-;
-;       uses stdcall calling conventions
-;
-PUBLIC JIT_Dbl2LngOvf
-JIT_Dbl2LngOvf PROC
-        fnclex
-        fld     qword ptr [esp+4]
-        push    ecx
-        push    ecx
-        fstp    qword ptr [esp]
-        call    JIT_Dbl2Lng
-        mov     ecx,eax
-        fnstsw  ax
-        test    ax,01h
-        jnz     Dbl2LngOvf_throw
-        mov     eax,ecx
-        ret     8
-
-Dbl2LngOvf_throw:
-        mov     ECX, CORINFO_OverflowException_ASM
-        call    JIT_InternalThrowFromHelper
-        ret     8
-JIT_Dbl2LngOvf ENDP
-
-;*********************************************************************/
-; JIT_Dbl2Lng
-
-;Purpose:
-;   converts a double to a long truncating toward zero (C semantics)
-;
-;       uses stdcall calling conventions
-;
-;   note that changing the rounding mode is very expensive.  This
-;   routine basiclly does the truncation semantics without changing
-;   the rounding mode, resulting in a win.
-;
-PUBLIC JIT_Dbl2Lng
-JIT_Dbl2Lng PROC
-        fld qword ptr[ESP+4]            ; fetch arg
-        lea ecx,[esp-8]
-        sub esp,16                      ; allocate frame
-        and ecx,-8                      ; align pointer on boundary of 8
-        fld st(0)                       ; duplciate top of stack
-        fistp qword ptr[ecx]            ; leave arg on stack, also save in temp
-        fild qword ptr[ecx]             ; arg, round(arg) now on stack
-        mov edx,[ecx+4]                 ; high dword of integer
-        mov eax,[ecx]                   ; low dword of integer
-        test eax,eax
-        je integer_QNaN_or_zero
-
-arg_is_not_integer_QNaN:
-        fsubp st(1),st                  ; TOS=d-round(d),
-                                        ; { st(1)=st(1)-st & pop ST }
-        test edx,edx                    ; what's sign of integer
-        jns positive
-                                        ; number is negative
-                                        ; dead cycle
-                                        ; dead cycle
-        fstp dword ptr[ecx]             ; result of subtraction
-        mov ecx,[ecx]                   ; dword of difference(single precision)
-        add esp,16
-        xor ecx,80000000h
-        add ecx,7fffffffh               ; if difference>0 then increment integer
-        adc eax,0                       ; inc eax (add CARRY flag)
-        adc edx,0                       ; propagate carry flag to upper bits
-        ret 8
-
-positive:
-        fstp dword ptr[ecx]             ;17-18 ; result of subtraction
-        mov ecx,[ecx]                   ; dword of difference (single precision)
-        add esp,16
-        add ecx,7fffffffh               ; if difference<0 then decrement integer
-        sbb eax,0                       ; dec eax (subtract CARRY flag)
-        sbb edx,0                       ; propagate carry flag to upper bits
-        ret 8
-
-integer_QNaN_or_zero:
-        test edx,7fffffffh
-        jnz arg_is_not_integer_QNaN
-        fstp st(0)                      ;; pop round(arg)
-        fstp st(0)                      ;; arg
-        add esp,16
-        ret 8
-JIT_Dbl2Lng ENDP
-
-;*********************************************************************/
-; JIT_Dbl2LngP4x87
-
-;Purpose:
-;   converts a double to a long truncating toward zero (C semantics)
-;
-;	uses stdcall calling conventions
-;
-;   This code is faster on a P4 than the Dbl2Lng code above, but is
-;   slower on a PIII.  Hence we choose this code when on a P4 or above.
-;
-PUBLIC JIT_Dbl2LngP4x87
-JIT_Dbl2LngP4x87 PROC
-arg1	equ	<[esp+0Ch]>
-
-    sub 	esp, 8                  ; get some local space
-
-    fld	qword ptr arg1              ; fetch arg
-    fnstcw  word ptr arg1           ; store FPCW
-    movzx   eax, word ptr arg1      ; zero extend - wide
-    or	ah, 0Ch                     ; turn on OE and DE flags
-    mov	dword ptr [esp], eax        ; store new FPCW bits
-    fldcw   word ptr  [esp]         ; reload FPCW with new bits
-    fistp   qword ptr [esp]         ; convert
-    mov	eax, dword ptr [esp]        ; reload FP result
-    mov	edx, dword ptr [esp+4]      ;
-    fldcw   word ptr arg1           ; reload original FPCW value
-
-    add esp, 8                      ; restore stack
-
-    ret	8
-JIT_Dbl2LngP4x87 ENDP
-
-;*********************************************************************/
-; JIT_Dbl2LngSSE3
-
-;Purpose:
-;   converts a double to a long truncating toward zero (C semantics)
-;
-;	uses stdcall calling conventions
-;
-;   This code is faster than the above P4 x87 code for Intel processors
-;   equal or later than Core2 and Atom that have SSE3 support
-;
-.686P
-.XMM
-PUBLIC JIT_Dbl2LngSSE3
-JIT_Dbl2LngSSE3 PROC
-arg1	equ	<[esp+0Ch]>
-
-    sub esp, 8                      ; get some local space
-
-    fld qword ptr arg1              ; fetch arg
-    fisttp qword ptr [esp]          ; convert
-    mov eax, dword ptr [esp]        ; reload FP result
-    mov edx, dword ptr [esp+4]
-
-    add esp, 8                      ; restore stack
-
-    ret	8
-JIT_Dbl2LngSSE3 ENDP
-.586
-
-;*********************************************************************/
-; JIT_Dbl2IntSSE2
-
-;Purpose:
-;   converts a double to a long truncating toward zero (C semantics)
-;
-;	uses stdcall calling conventions
-;
-;   This code is even faster than the P4 x87 code for Dbl2LongP4x87,
-;   but only returns a 32 bit value (only good for int).
-;
-.686P
-.XMM
-PUBLIC JIT_Dbl2IntSSE2
-JIT_Dbl2IntSSE2 PROC
-	$movsd	xmm0, [esp+4]
-	cvttsd2si eax, xmm0
-	ret 8
-JIT_Dbl2IntSSE2 ENDP
-.586
-
-
-;*********************************************************************/
 ; This is the small write barrier thunk we use when we know the
 ; ephemeral generation is higher in memory than older generations.
 ; The 0x0F0F0F0F values are bashed by the two functions above.
@@ -897,26 +721,18 @@ VSDHelperLabel:
 ; m_regs
 ; m_CallerAddress
 ; m_pThread
-; vtbl
-; GSCookie
+; frame identifier
 ; &VSDHelperLabel
-OffsetOfTailCallFrame = 8
+OffsetOfTailCallFrame = 4 ; Offset to start of TailCallFrame, includes only the &VSDHelperLabel
 
 ; ebx = pThread
 
-ifdef _DEBUG
-        mov     esi, _s_gsCookie        ; GetProcessGSCookie()
-        cmp     dword ptr [esp+OffsetOfTailCallFrame-SIZEOF_GSCookie], esi
-        je      TailCallFrameGSCookieIsValid
-        call    @JIT_FailFast@0
-    TailCallFrameGSCookieIsValid:
-endif
         ; remove the padding frame from the chain
         mov     esi, dword ptr [esp+OffsetOfTailCallFrame+4]    ; esi = TailCallFrame::m_Next
         mov     dword ptr [ebx + Thread_m_pFrame], esi
 
         ; skip the frame
-        add     esp, 20     ; &VSDHelperLabel, GSCookie, vtbl, m_Next, m_CallerAddress
+        add     esp, 16     ; &VSDHelperLabel, vtbl, m_Next, m_CallerAddress
 
         pop     edi         ; restore callee saved registers
         pop     esi
@@ -1088,7 +904,7 @@ VSDTailCall:
         ; If there is sufficient space, we will setup the frame and then slide
         ; the arguments up the stack. Else, we first need to slide the arguments
         ; down the stack to make space for the TailCallFrame
-        sub     edi, (SIZEOF_GSCookie + SIZEOF_TailCallFrame)
+        sub     edi, (SIZEOF_TailCallFrame)
         cmp     edi, esi
         jae     VSDSpaceForFrameChecked
 
@@ -1128,29 +944,25 @@ VSDSpaceForFrameChecked:
         ; At this point, we have enough space on the stack for the TailCallFrame,
         ; and we may already have slided down the arguments
 
-        mov     eax, _s_gsCookie                ; GetProcessGSCookie()
-        mov     dword ptr [edi], eax            ; set GSCookie
-        mov     eax, _g_TailCallFrameVptr       ; vptr
         mov     edx, dword ptr [esp+OrigRetAddr]        ; orig return address
-        mov     dword ptr [edi+SIZEOF_GSCookie], eax            ; TailCallFrame::vptr
-        mov     dword ptr [edi+SIZEOF_GSCookie+28], edx         ; TailCallFrame::m_ReturnAddress
+        mov     dword ptr [edi], FRAMETYPE_TailCallFrame  ; FrameIdentifier::TailCallFrame
+        mov     dword ptr [edi+28], edx         ; TailCallFrame::m_ReturnAddress
 
         mov     eax, dword ptr [esp+CallersEdi]         ; restored edi
         mov     edx, dword ptr [esp+CallersEsi]         ; restored esi
-        mov     dword ptr [edi+SIZEOF_GSCookie+12], eax         ; TailCallFrame::m_regs::edi
-        mov     dword ptr [edi+SIZEOF_GSCookie+16], edx         ; TailCallFrame::m_regs::esi
-        mov     dword ptr [edi+SIZEOF_GSCookie+20], ebx         ; TailCallFrame::m_regs::ebx
-        mov     dword ptr [edi+SIZEOF_GSCookie+24], ebp         ; TailCallFrame::m_regs::ebp
+        mov     dword ptr [edi+12], eax         ; TailCallFrame::m_regs::edi
+        mov     dword ptr [edi+16], edx         ; TailCallFrame::m_regs::esi
+        mov     dword ptr [edi+20], ebx         ; TailCallFrame::m_regs::ebx
+        mov     dword ptr [edi+24], ebp         ; TailCallFrame::m_regs::ebp
 
         mov     ebx, dword ptr [esp+pThread]            ; ebx = pThread
 
         mov     eax, dword ptr [ebx+Thread_m_pFrame]
-        lea     edx, [edi+SIZEOF_GSCookie]
-        mov     dword ptr [edi+SIZEOF_GSCookie+4], eax          ; TailCallFrame::m_pNext
-        mov     dword ptr [ebx+Thread_m_pFrame], edx    ; hook the new frame into the chain
+        mov     dword ptr [edi+4], eax          ; TailCallFrame::m_pNext
+        mov     dword ptr [ebx+Thread_m_pFrame], edi    ; hook the new frame into the chain
 
         ; setup ebp chain
-        lea     ebp, [edi+SIZEOF_GSCookie+24]                   ; TailCallFrame::m_regs::ebp
+        lea     ebp, [edi+24]                   ; TailCallFrame::m_regs::ebp
 
         ; Do not copy arguments again if they are in place already
         ; Otherwise, we will need to slide the new arguments up the stack
@@ -1161,7 +973,7 @@ VSDSpaceForFrameChecked:
         ; or the TailCallFrame is a perfect fit
         ; set the caller address
         mov     edx, dword ptr [esp+ExtraSpace+RetAddr] ; caller address
-        mov     dword ptr [edi+SIZEOF_GSCookie+8], edx         ; TailCallFrame::m_CallerAddress
+        mov     dword ptr [edi+8], edx         ; TailCallFrame::m_CallerAddress
 
         ; adjust edi as it would by copying
         neg     ecx
@@ -1172,7 +984,7 @@ VSDSpaceForFrameChecked:
 VSDTailCallFrameInserted_DoSlideUpArgs:
         ; set the caller address
         mov     edx, dword ptr [esp+ExtraSpace+RetAddr] ; caller address
-        mov     dword ptr [edi+SIZEOF_GSCookie+8], edx          ; TailCallFrame::m_CallerAddress
+        mov     dword ptr [edi+8], edx          ; TailCallFrame::m_CallerAddress
 
         ; copy the arguments to the final destination
         test    ecx, ecx
@@ -1211,39 +1023,6 @@ JIT_TailCallVSDLeave:
                             ; call-ret count balanced.
 
 JIT_TailCall ENDP
-
-
-;------------------------------------------------------------------------------
-
-; HCIMPL2_VV(float, JIT_FltRem, float dividend, float divisor)
-@JIT_FltRem@8 proc public
-        fld  dword ptr [esp+4]          ; divisor
-        fld  dword ptr [esp+8]          ; dividend
-fremloop:
-        fprem
-        fstsw   ax
-        fwait
-        sahf
-        jp      fremloop        ; Continue while the FPU status bit C2 is set
-        fxch    ; swap, so divisor is on top and result is in st(1)
-        fstp    ST(0)           ; Pop the divisor from the FP stack
-        retn    8               ; Return value is in st(0)
-@JIT_FltRem@8 endp
-
-; HCIMPL2_VV(float, JIT_DblRem, float dividend, float divisor)
-@JIT_DblRem@16 proc public
-        fld  qword ptr [esp+4]          ; divisor
-        fld  qword ptr [esp+12]         ; dividend
-fremloopd:
-        fprem
-        fstsw   ax
-        fwait
-        sahf
-        jp      fremloopd       ; Continue while the FPU status bit C2 is set
-        fxch    ; swap, so divisor is on top and result is in st(1)
-        fstp    ST(0)           ; Pop the divisor from the FP stack
-        retn    16              ; Return value is in st(0)
-@JIT_DblRem@16 endp
 
 ;------------------------------------------------------------------------------
 
@@ -1298,6 +1077,7 @@ ret
 _JIT_PatchedCodeEnd@0 endp
 
 
+ifndef FEATURE_EH_FUNCLETS
 ; Note that the debugger skips this entirely when doing SetIP,
 ; since COMPlusCheckForAbort should always return 0.  Excep.cpp:LeaveCatch
 ; asserts that to be true.  If this ends up doing more work, then the
@@ -1325,6 +1105,7 @@ JIT_EndCatch PROC stdcall public
     jmp     edx         ; eip = new eip
 
 JIT_EndCatch ENDP
+endif
 
 ; The following helper will access ("probe") a word on each page of the stack
 ; starting with the page right beneath esp down to the one pointed to by eax.
@@ -1360,5 +1141,14 @@ PUBLIC _JIT_StackProbe_End@0
 _JIT_StackProbe_End@0 PROC
     ret
 _JIT_StackProbe_End@0 ENDP
+
+@JIT_PollGC@0 PROC public
+    cmp [g_TrapReturningThreads], 0
+    jnz JIT_PollGCRarePath
+    ret
+JIT_PollGCRarePath:
+    mov eax, g_pPollGC
+    jmp eax
+@JIT_PollGC@0 ENDP
 
     end

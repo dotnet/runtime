@@ -84,6 +84,26 @@ enum instruction : uint32_t
     INS_count = INS_none
 };
 
+//------------------------------------------------------------------------
+// IsSimdInstruction: Is this an Avx512 or Avx or Sse or K (opmask) instruction.
+// Technically, K instructions would be considered under the VEX encoding umbrella, but due to
+// the instruction table encoding had to be pulled out with the rest of the `INST5` definitions.
+//
+// Arguments:
+//    ins - The instruction to check.
+//
+// Returns:
+//    `true` if it is a sse or avx or avx512 instruction.
+//
+inline bool IsSimdInstruction(instruction ins)
+{
+#if defined(TARGET_XARCH)
+    return (ins >= INS_FIRST_SSE_INSTRUCTION) && (ins <= INS_LAST_AVX10v2_INSTRUCTION);
+#else
+    return false;
+#endif // TARGET_XARCH
+}
+
 /*****************************************************************************/
 
 enum insUpdateModes
@@ -193,9 +213,19 @@ enum insFlags : uint64_t
     Encoding_EVEX  = 1ULL << 40,
 
     KInstruction = 1ULL << 41,
+    KInstructionWithLBit = 1ULL << 42,
 
     // EVEX feature: embedded broadcast
-    INS_Flags_EmbeddedBroadcastSupported = 1ULL << 42,
+    INS_Flags_EmbeddedBroadcastSupported = 1ULL << 43,
+
+    // APX: REX2 prefix:
+    Encoding_REX2  = 1ULL << 44,
+
+    // APX: EVEX.ND:
+    INS_Flags_Has_NDD  = 1ULL << 45,    
+    
+    // APX: EVEX.NF:
+    INS_Flags_Has_NF  = 1ULL << 46,
 
     //  TODO-Cleanup:  Remove this flag and its usage from TARGET_XARCH
     INS_FLAGS_DONT_CARE = 0x00ULL,
@@ -205,13 +235,57 @@ enum insOpts: unsigned
 {
     INS_OPTS_NONE = 0,
 
-    INS_OPTS_EVEX_eb_er_rd = 1, // Embedded Broadcast or Round down
+    // Two-bits: 0b0000_0011
+    INS_OPTS_EVEX_b_MASK = 0x03,         // mask for EVEX.b related features.
 
-    INS_OPTS_EVEX_er_ru = 2, // Round up
+    INS_OPTS_EVEX_eb_er_rd = 1,     // Embedded Broadcast or Round down
 
-    INS_OPTS_EVEX_er_rz = 3, // Round towards zero
+    INS_OPTS_EVEX_er_ru = 2,        // Round up
 
-    INS_OPTS_b_MASK = (INS_OPTS_EVEX_eb_er_rd | INS_OPTS_EVEX_er_ru | INS_OPTS_EVEX_er_rz), // mask for Evex.b related features.
+    INS_OPTS_EVEX_er_rz = 3,        // Round towards zero
+
+    // Three-bits: 0b0001_1100
+    INS_OPTS_EVEX_aaa_MASK = 0x1C,  // mask for EVEX.aaa related features
+
+    INS_OPTS_EVEX_em_k1 = 1 << 2,   // Embedded mask uses K1
+
+    INS_OPTS_EVEX_em_k2 = 2 << 2,   // Embedded mask uses K2
+
+    INS_OPTS_EVEX_em_k3 = 3 << 2,   // Embedded mask uses K3
+
+    INS_OPTS_EVEX_em_k4 = 4 << 2,   // Embedded mask uses K4
+
+    INS_OPTS_EVEX_em_k5 = 5 << 2,   // Embedded mask uses K5
+
+    INS_OPTS_EVEX_em_k6 = 6 << 2,   // Embedded mask uses K6
+
+    INS_OPTS_EVEX_em_k7 = 7 << 2,   // Embedded mask uses K7
+
+    // One-bit:  0b0010_0000
+    INS_OPTS_EVEX_z_MASK = 0x20,    // mask for EVEX.z related features
+
+    INS_OPTS_EVEX_em_zero = 1 << 5, // Embedded mask merges with zero
+
+    // One-bit:  0b0100_0000
+    INS_OPTS_EVEX_nd_MASK = 0x40,   // mask for APX-EVEX.nd related features
+
+    INS_OPTS_EVEX_nd = 1 << 6,      // NDD form for legacy instructions
+
+    // One-bit:  0b1000_0000
+    INS_OPTS_EVEX_nf_MASK = 0x80,   // mask for APX-EVEX.nf related features
+
+    INS_OPTS_EVEX_nf = 1 << 7,      // NDD form for legacy instructions
+    INS_OPTS_EVEX_dfv_byte_offset = 8, // save the bit offset for first dfv flag pos
+
+    INS_OPTS_EVEX_dfv_cf = 1 << 8,
+    INS_OPTS_EVEX_dfv_zf = 1 << 9,
+    INS_OPTS_EVEX_dfv_sf = 1 << 10,
+    INS_OPTS_EVEX_dfv_of = 1 << 11,
+
+    INS_OPTS_EVEX_dfv_MASK = 0xF00,
+
+    INS_OPTS_EVEX_NoApxPromotion = 1 << 12,    // Do not promote to APX-EVEX
+
 };
 
 #elif defined(TARGET_ARM) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
@@ -327,14 +401,15 @@ enum insScalableOpts : unsigned
     INS_SCALABLE_OPTS_WITH_PREDICATE_PAIR, // Variants with {<Pd1>.<T>, <Pd2>.<T>} predicate pair (eg whilege)
     INS_SCALABLE_OPTS_VL_2X,               // Variants with a vector length specifier of 2x (eg whilege)
     INS_SCALABLE_OPTS_VL_4X,               // Variants with a vector length specifier of 4x (eg whilege)
-    INS_SCALABLE_OPTS_SHIFT,               // Variants with an optional shift operation (eg dup)
 
     INS_SCALABLE_OPTS_LSL_N,               // Variants with a LSL #N (eg {<Zt>.<T>}, <Pg>, [<Xn|SP>, <Xm>, LSL #2])
     INS_SCALABLE_OPTS_MOD_N,               // Variants with a <mod> #N (eg {<Zt>.S }, <Pg>, [<Xn|SP>, <Zm>.S, <mod> #2])
 
-    // Removable once REG_V0 and REG_P0 are distinct
-    INS_SCALABLE_OPTS_UNPREDICATED,      // Variants without a predicate (eg add)
-    INS_SCALABLE_OPTS_UNPREDICATED_WIDE, // Variants without a predicate and wide elements (eg asr)
+    INS_SCALABLE_OPTS_WITH_VECTOR_PAIR,    // Variants with {<Zn1>.<T>, <Zn2>.<T>} sve register pair (eg splice)
+
+    INS_SCALABLE_OPTS_IMM_BITMASK,         // Variants with an immediate that is a bitmask
+
+    INS_SCALABLE_OPTS_IMM_FIRST,           // Variants with an immediate and a register, where the immediate comes first
 };
 
 // Maps directly to the pattern used in SVE instructions such as cntb.
@@ -354,9 +429,31 @@ enum insSvePattern : unsigned
     SVE_PATTERN_VL64 = 11,  // 64 elements.
     SVE_PATTERN_VL128 = 12, // 128 elements.
     SVE_PATTERN_VL256 = 13, // 256 elements.
-    SVE_PATTERN_MUL4 = 29,  // The largest multiple of 3.
-    SVE_PATTERN_MUL3 = 30,  // The largest multiple of 4.
+    SVE_PATTERN_MUL4 = 29,  // The largest multiple of 4.
+    SVE_PATTERN_MUL3 = 30,  // The largest multiple of 3.
     SVE_PATTERN_ALL = 31    // All available (implicitly a multiple of two).
+};
+
+// Prefetch operation specifier for SVE instructions such as prfb.
+enum insSvePrfop : unsigned
+{
+    SVE_PRFOP_PLDL1KEEP = 0b0000,
+    SVE_PRFOP_PLDL1STRM = 0b0001, 
+    SVE_PRFOP_PLDL2KEEP = 0b0010, 
+    SVE_PRFOP_PLDL2STRM = 0b0011, 
+    SVE_PRFOP_PLDL3KEEP = 0b0100, 
+    SVE_PRFOP_PLDL3STRM = 0b0101, 
+    SVE_PRFOP_PSTL1KEEP = 0b1000, 
+    SVE_PRFOP_PSTL1STRM = 0b1001, 
+    SVE_PRFOP_PSTL2KEEP = 0b1010, 
+    SVE_PRFOP_PSTL2STRM = 0b1011, 
+    SVE_PRFOP_PSTL3KEEP = 0b1100, 
+    SVE_PRFOP_PSTL3STRM = 0b1101,
+
+    SVE_PRFOP_CONST6    = 0b0110,
+    SVE_PRFOP_CONST7    = 0b0111,
+    SVE_PRFOP_CONST14   = 0b1110,
+    SVE_PRFOP_CONST15   = 0b1111
 };
 
 enum insCond : unsigned
@@ -507,6 +604,7 @@ enum emitAttr : unsigned
                 EA_DSP_RELOC_FLG = 0x400, // Is the displacement of the instruction relocatable?
                 EA_CNS_RELOC_FLG = 0x800, // Is the immediate of the instruction relocatable?
                 EA_CNS_SEC_RELOC = 0x1000, // Is the offset immediate that should be relocatable
+                EA_CNS_TLSGD_RELOC = 0x2000, // Is the tlsgd constant to pass to tls_get_addr(). Only on linux/x64/NativeAot
 };
 
 #define EA_ATTR(x)                  ((emitAttr)(x))
@@ -524,6 +622,7 @@ enum emitAttr : unsigned
 #define EA_IS_DSP_RELOC(x)          ((((unsigned)(x)) & ((unsigned)EA_DSP_RELOC_FLG)) != 0)
 #define EA_IS_CNS_RELOC(x)          ((((unsigned)(x)) & ((unsigned)EA_CNS_RELOC_FLG)) != 0)
 #define EA_IS_CNS_SEC_RELOC(x)      ((((unsigned)(x)) & ((unsigned)EA_CNS_SEC_RELOC)) != 0)
+#define EA_IS_CNS_TLSGD_RELOC(x)      ((((unsigned)(x)) & ((unsigned)EA_CNS_TLSGD_RELOC)) != 0)
 #define EA_IS_RELOC(x)              (EA_IS_DSP_RELOC(x) || EA_IS_CNS_RELOC(x))
 #define EA_TYPE(x)                  ((emitAttr)(((unsigned)(x)) & ~(EA_OFFSET_FLG | EA_DSP_RELOC_FLG | EA_CNS_RELOC_FLG)))
 

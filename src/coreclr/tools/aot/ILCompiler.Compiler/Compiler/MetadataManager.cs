@@ -21,6 +21,7 @@ using CombinedDependencyListEntry = ILCompiler.DependencyAnalysisFramework.Depen
 using MethodIL = Internal.IL.MethodIL;
 using CustomAttributeValue = System.Reflection.Metadata.CustomAttributeValue<Internal.TypeSystem.TypeDesc>;
 using MethodSignature = Internal.TypeSystem.MethodSignature;
+using FlowAnnotations = ILLink.Shared.TrimAnalysis.FlowAnnotations;
 
 using MetadataRecord = Internal.Metadata.NativeFormat.Writer.MetadataRecord;
 using MetadataWriter = Internal.Metadata.NativeFormat.Writer.MetadataWriter;
@@ -40,7 +41,7 @@ namespace ILCompiler
     /// </summary>
     public abstract class MetadataManager : ICompilationRootProvider
     {
-        internal const int MetadataOffsetMask = 0xFFFFFF;
+        internal const int MetadataOffsetMask = 0x1FFFFFF;
 
         protected readonly MetadataManagerOptions _options;
 
@@ -77,15 +78,19 @@ namespace ILCompiler
         private readonly SortedSet<TypeDesc> _typeTemplates = new SortedSet<TypeDesc>(TypeSystemComparer.Instance);
         private readonly SortedSet<MetadataType> _typesWithGenericStaticBaseInfo = new SortedSet<MetadataType>(TypeSystemComparer.Instance);
         private readonly SortedSet<MethodDesc> _genericMethodHashtableEntries = new SortedSet<MethodDesc>(TypeSystemComparer.Instance);
+        private readonly SortedSet<MethodDesc> _exactMethodHashtableEntries = new SortedSet<MethodDesc>(TypeSystemComparer.Instance);
+        private readonly HashSet<TypeDesc> _usedInterfaces = new HashSet<TypeDesc>();
 
         private List<(DehydratableObjectNode Node, ObjectNode.ObjectData Data)> _dehydratableData = new List<(DehydratableObjectNode Node, ObjectNode.ObjectData data)>();
+
+        internal FlowAnnotations FlowAnnotations { get; }
 
         internal NativeLayoutInfoNode NativeLayoutInfo { get; private set; }
 
         public MetadataManager(CompilerTypeSystemContext typeSystemContext, MetadataBlockingPolicy blockingPolicy,
             ManifestResourceBlockingPolicy resourceBlockingPolicy, string logFile, StackTraceEmissionPolicy stackTracePolicy,
             DynamicInvokeThunkGenerationPolicy dynamicInvokeThunkGenerationPolicy,
-            MetadataManagerOptions options)
+            MetadataManagerOptions options, FlowAnnotations flowAnnotations)
         {
             _typeSystemContext = typeSystemContext;
             _blockingPolicy = blockingPolicy;
@@ -94,6 +99,8 @@ namespace ILCompiler
             _options = options;
             _metadataLogFile = logFile;
             _stackTraceEmissionPolicy = stackTracePolicy;
+
+            FlowAnnotations = flowAnnotations;
         }
 
         public bool IsDataDehydrated => (_options & MetadataManagerOptions.DehydrateData) != 0;
@@ -328,9 +335,36 @@ namespace ILCompiler
             {
                 _genericMethodHashtableEntries.Add(genericMethodsHashtableEntryNode.Method);
             }
+
+            if (obj is ExactMethodInstantiationsEntryNode exactMethodsHashtableEntryNode)
+            {
+                _exactMethodHashtableEntries.Add(exactMethodsHashtableEntryNode.Method);
+            }
+
+            if (obj is InterfaceUseNode interfaceUse)
+            {
+                _usedInterfaces.Add(interfaceUse.Type);
+            }
         }
 
         protected virtual bool AllMethodsCanBeReflectable => false;
+
+        public bool IsTypeInstantiationReflectionVisible(TypeDesc type)
+        {
+            if (FlowAnnotations == null)
+                return false;
+
+            if (FlowAnnotations.HasGenericParameterAnnotation(type))
+                return true;
+
+            foreach (TypeDesc instArg in type.Instantiation)
+            {
+                if (IsTypeInstantiationReflectionVisible(instArg))
+                    return true;
+            }
+
+            return false;
+        }
 
         /// <summary>
         /// Is a method that is reflectable a method which should be placed into the invoke map as invokable?
@@ -457,6 +491,13 @@ namespace ILCompiler
                     ReflectionInvokeSupportDependencyAlgorithm.GetDependenciesFromParamsArray(ref dependencies, factory, method);
                 }
 
+                if (!method.IsCanonicalMethod(CanonicalFormKind.Any) && method.IsStaticConstructor)
+                {
+                    // Information about the static constructor prefixes the non-GC static base
+                    dependencies ??= new DependencyList();
+                    dependencies.Add(factory.TypeNonGCStaticsSymbol((MetadataType)method.OwningType), "Static constructor is reflection-callable");
+                }
+
                 GenericMethodsTemplateMap.GetTemplateMethodDependencies(ref dependencies, factory, method);
                 GenericTypesTemplateMap.GetTemplateTypeDependencies(ref dependencies, factory, method.OwningType);
             }
@@ -556,6 +597,15 @@ namespace ILCompiler
             // RuntimeFieldHandle data structure.
         }
 
+        public void GetDependenciesDueToDelegateCreation(ref DependencyList dependencies, NodeFactory factory, TypeDesc delegateType, MethodDesc target)
+        {
+            if (target.IsVirtual)
+            {
+                dependencies ??= new DependencyList();
+                dependencies.Add(factory.DelegateTargetVirtualMethod(target), "Delegate to a virtual method created");
+            }
+        }
+
         /// <summary>
         /// This method is an extension point that can provide additional metadata-based dependencies to delegate targets.
         /// </summary>
@@ -566,7 +616,7 @@ namespace ILCompiler
         }
 
         /// <summary>
-        /// This method is an extension point that can provide additional dependencies for overriden methods on constructed types.
+        /// This method is an extension point that can provide additional dependencies for overridden methods on constructed types.
         /// </summary>
         public virtual void GetDependenciesForOverridingMethod(ref CombinedDependencyList dependencies, NodeFactory factory, MethodDesc decl, MethodDesc impl)
         {
@@ -583,11 +633,6 @@ namespace ILCompiler
         /// </summary>
         public void GetDependenciesDueToMethodCodePresence(ref DependencyList dependencies, NodeFactory factory, MethodDesc method, MethodIL methodIL)
         {
-            if (method.HasInstantiation)
-            {
-                ExactMethodInstantiationsNode.GetExactMethodInstantiationDependenciesForMethod(ref dependencies, factory, method);
-            }
-
             InlineableStringsResourceNode.AddDependenciesDueToResourceStringUse(ref dependencies, factory, method);
 
             GetDependenciesDueToMethodCodePresenceInternal(ref dependencies, factory, method, methodIL);
@@ -693,6 +738,11 @@ namespace ILCompiler
                     (GetMetadataCategory(method) & MetadataCategory.RuntimeMapping) != 0)
                     continue;
 
+                // If the method will be folded, no need to emit stack trace info for this one
+                ISymbolNode internedBody = factory.ObjectInterner.GetDeduplicatedSymbol(factory, methodBody);
+                if (internedBody != methodBody)
+                    continue;
+
                 MethodStackTraceVisibilityFlags stackVisibility = _stackTraceEmissionPolicy.GetMethodVisibility(method);
                 bool isHidden = (stackVisibility & MethodStackTraceVisibilityFlags.IsHidden) != 0;
 
@@ -726,10 +776,10 @@ namespace ILCompiler
 
             metadataBlob = ms.ToArray();
 
-            const int MaxAllowedMetadataOffset = 0xFFFFFF;
+            const int MaxAllowedMetadataOffset = 0x1FFFFFF;
             if (metadataBlob.Length > MaxAllowedMetadataOffset)
             {
-                // Offset portion of metadata handles is limited to 16 MB.
+                // Offset portion of metadata handles is limited to 32 MB.
                 throw new InvalidOperationException($"Metadata blob exceeded the addressing range (allowed: {MaxAllowedMetadataOffset}, actual: {metadataBlob.Length})");
             }
 
@@ -985,6 +1035,17 @@ namespace ILCompiler
             return _genericMethodHashtableEntries;
         }
 
+        public IEnumerable<MethodDesc> GetExactMethodHashtableEntries()
+        {
+            return _exactMethodHashtableEntries;
+        }
+
+        public bool IsInterfaceUsed(TypeDesc type)
+        {
+            Debug.Assert(type.IsTypeDefinition);
+            return _usedInterfaces.Contains(type);
+        }
+
         internal IEnumerable<IMethodBodyNode> GetCompiledMethodBodies()
         {
             return _methodBodiesGenerated;
@@ -1018,7 +1079,12 @@ namespace ILCompiler
                 case TypeFlags.Array:
                 case TypeFlags.Pointer:
                 case TypeFlags.ByRef:
-                    return IsReflectionBlocked(((ParameterizedType)type).ParameterType);
+                    TypeDesc parameterType = ((ParameterizedType)type).ParameterType;
+
+                    if (parameterType.IsCanonicalDefinitionType(CanonicalFormKind.Any))
+                        return false;
+
+                    return IsReflectionBlocked(parameterType);
 
                 case TypeFlags.FunctionPointer:
                     MethodSignature pointerSignature = ((FunctionPointerType)type).Signature;
@@ -1148,7 +1214,7 @@ namespace ILCompiler
             return null;
         }
 
-        public virtual void NoteOverridingMethod(MethodDesc baseMethod, MethodDesc overridingMethod)
+        public virtual void NoteOverridingMethod(MethodDesc baseMethod, MethodDesc overridingMethod, TypeSystemEntity origin = null)
         {
         }
     }

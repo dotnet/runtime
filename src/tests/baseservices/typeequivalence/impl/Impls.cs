@@ -135,3 +135,15 @@ public static class TestsExactTypeOptimizationsHelper
 {
     public static TestValueType[] s_arrayInstance;
 }
+
+public static class MethodCall
+{
+    // Include a generic type in the method signature before the type using type equivalence to ensure that
+    // processing of the generic type does not affect subsequent type processing during signature comparison.
+    public static System.Collections.Generic.List<int> InterfaceAfterGeneric(IEmptyType t) => null;
+    public static System.Collections.Generic.List<int> ValueTypeAfterGeneric(TestValueType t) => null;
+
+    // Generic type after the type using type equivalence should also not affect processing.
+    public static void InterfaceBeforeGeneric(IEmptyType t, System.Collections.Generic.List<int> l) { }
+    public static void ValueTypeBeforeGeneric(TestValueType t, System.Collections.Generic.List<int> l) { }
+}

@@ -96,56 +96,6 @@ void ECall::PopulateManagedStringConstructors()
     INDEBUG(fInitialized = true);
 }
 
-void ECall::PopulateManagedCastHelpers()
-{
-
-    STANDARD_VM_CONTRACT;
-
-    MethodDesc* pMD = CoreLibBinder::GetMethod((BinderMethodID)(METHOD__CASTHELPERS__ISINSTANCEOFANY));
-    PCODE pDest = pMD->GetMultiCallableAddrOfCode();
-    SetJitHelperFunction(CORINFO_HELP_ISINSTANCEOFANY, pDest);
-    // array cast uses the "ANY" helper
-    SetJitHelperFunction(CORINFO_HELP_ISINSTANCEOFARRAY, pDest);
-
-    pMD = CoreLibBinder::GetMethod((BinderMethodID)(METHOD__CASTHELPERS__ISINSTANCEOFINTERFACE));
-    pDest = pMD->GetMultiCallableAddrOfCode();
-    SetJitHelperFunction(CORINFO_HELP_ISINSTANCEOFINTERFACE, pDest);
-
-    pMD = CoreLibBinder::GetMethod((BinderMethodID)(METHOD__CASTHELPERS__ISINSTANCEOFCLASS));
-    pDest = pMD->GetMultiCallableAddrOfCode();
-    SetJitHelperFunction(CORINFO_HELP_ISINSTANCEOFCLASS, pDest);
-
-    pMD = CoreLibBinder::GetMethod((BinderMethodID)(METHOD__CASTHELPERS__CHKCASTANY));
-    pDest = pMD->GetMultiCallableAddrOfCode();
-    SetJitHelperFunction(CORINFO_HELP_CHKCASTANY, pDest);
-    // array cast uses the "ANY" helper
-    SetJitHelperFunction(CORINFO_HELP_CHKCASTARRAY, pDest);
-
-    pMD = CoreLibBinder::GetMethod((BinderMethodID)(METHOD__CASTHELPERS__CHKCASTINTERFACE));
-    pDest = pMD->GetMultiCallableAddrOfCode();
-    SetJitHelperFunction(CORINFO_HELP_CHKCASTINTERFACE, pDest);
-
-    pMD = CoreLibBinder::GetMethod((BinderMethodID)(METHOD__CASTHELPERS__CHKCASTCLASS));
-    pDest = pMD->GetMultiCallableAddrOfCode();
-    SetJitHelperFunction(CORINFO_HELP_CHKCASTCLASS, pDest);
-
-    pMD = CoreLibBinder::GetMethod((BinderMethodID)(METHOD__CASTHELPERS__CHKCASTCLASSSPECIAL));
-    pDest = pMD->GetMultiCallableAddrOfCode();
-    SetJitHelperFunction(CORINFO_HELP_CHKCASTCLASS_SPECIAL, pDest);
-
-    pMD = CoreLibBinder::GetMethod((BinderMethodID)(METHOD__CASTHELPERS__UNBOX));
-    pDest = pMD->GetMultiCallableAddrOfCode();
-    SetJitHelperFunction(CORINFO_HELP_UNBOX, pDest);
-
-    pMD = CoreLibBinder::GetMethod((BinderMethodID)(METHOD__CASTHELPERS__STELEMREF));
-    pDest = pMD->GetMultiCallableAddrOfCode();
-    SetJitHelperFunction(CORINFO_HELP_ARRADDR_ST, pDest);
-
-    pMD = CoreLibBinder::GetMethod((BinderMethodID)(METHOD__CASTHELPERS__LDELEMAREF));
-    pDest = pMD->GetMultiCallableAddrOfCode();
-    SetJitHelperFunction(CORINFO_HELP_LDELEMA_REF, pDest);
-}
-
 static CrstStatic gFCallLock;
 
 // This variable is used to force the compiler not to tailcall a function.
@@ -370,22 +320,20 @@ PCODE ECall::GetFCallImpl(MethodDesc * pMD, BOOL * pfSharedOrDynamicFCallImpl /*
     MethodTable * pMT = pMD->GetMethodTable();
 
     //
-    // Delegate constructors are FCalls for which the entrypoint points to the target of the delegate
-    // We have to intercept these and set the call target to the helper COMDelegate::DelegateConstruct
+    // Delegate constructors are QCalls for which the entrypoint points to the target of the delegate
+    // We have to intercept these and set the call target to the managed helper Delegate.DelegateConstruct
     //
     if (pMT->IsDelegate())
     {
         if (pfSharedOrDynamicFCallImpl)
             *pfSharedOrDynamicFCallImpl = TRUE;
 
-        // COMDelegate::DelegateConstruct is the only fcall used by user delegates.
-        // All the other gDelegateFuncs are only used by System.Delegate
         _ASSERTE(pMD->IsCtor());
 
         // We need to set up the ECFunc properly.  We don't want to use the pMD passed in,
         // since it may disappear.  Instead, use the stable one on Delegate.  Remember
-        // that this is 1:M between the FCall and the pMDs.
-        return GetFCallImpl(CoreLibBinder::GetMethod(METHOD__DELEGATE__CONSTRUCT_DELEGATE));
+        // that this is 1:M between the method and the constructors.
+        return CoreLibBinder::GetMethod(METHOD__DELEGATE__CONSTRUCT_DELEGATE)->GetMultiCallableAddrOfCode();
     }
 
     // COM imported classes have special constructors
@@ -446,7 +394,7 @@ PCODE ECall::GetFCallImpl(MethodDesc * pMD, BOOL * pfSharedOrDynamicFCallImpl /*
             *pfSharedOrDynamicFCallImpl = TRUE;
 
         pImplementation = g_FCDynamicallyAssignedImplementations[iDynamicID];
-        _ASSERTE(pImplementation != NULL);
+        _ASSERTE(pImplementation != (PCODE)NULL);
         return pImplementation;
     }
 
@@ -497,7 +445,7 @@ PCODE ECall::GetFCallImpl(MethodDesc * pMD, BOOL * pfSharedOrDynamicFCallImpl /*
     if (pfSharedOrDynamicFCallImpl)
         *pfSharedOrDynamicFCallImpl = FALSE;
 
-    _ASSERTE(pImplementation != NULL);
+    _ASSERTE(pImplementation != (PCODE)NULL);
     return pImplementation;
 }
 
@@ -507,9 +455,7 @@ BOOL ECall::IsSharedFCallImpl(PCODE pImpl)
 
     PCODE pNativeCode = pImpl;
 
-    return
-        (pNativeCode == GetEEFuncEntryPoint(FCComCtor)) ||
-        (pNativeCode == GetEEFuncEntryPoint(COMDelegate::DelegateConstruct));
+    return (pNativeCode == GetEEFuncEntryPoint(FCComCtor));
 }
 
 BOOL ECall::CheckUnusedECalls(SetSHash<DWORD>& usedIDs)
@@ -596,7 +542,6 @@ MethodDesc* ECall::MapTargetBackToMethod(PCODE pTarg, PCODE * ppAdjustedEntryPoi
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
-        HOST_NOCALLS;
         SUPPORTS_DAC;
     }
     CONTRACTL_END;

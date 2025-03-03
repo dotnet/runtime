@@ -93,7 +93,7 @@ void SpmiDumpHelper::FormatHandleArray(char*& pbuf, int& sizeOfBuffer, const Den
     sizeOfBuffer -= cch;
 
     const unsigned int maxHandleArrayDisplayElems = 5; // Don't display more than this.
-    const unsigned int handleArrayDisplayElems = min(maxHandleArrayDisplayElems, count);
+    const unsigned int handleArrayDisplayElems = min(maxHandleArrayDisplayElems, (unsigned int)count);
 
     bool first = true;
     for (DWORD i = startIndex; i < startIndex + handleArrayDisplayElems; i++)
@@ -233,7 +233,6 @@ std::string SpmiDumpHelper::DumpJitFlags(unsigned long long flags)
     AddFlag(OSR);
     AddFlag(ALT_JIT);
     AddFlag(FROZEN_ALLOC_ALLOWED);
-    AddFlag(MAKEFINALCODE);
     AddFlag(READYTORUN);
     AddFlag(PROF_ENTERLEAVE);
     AddFlag(PROF_NO_PINVOKE_INLINE);

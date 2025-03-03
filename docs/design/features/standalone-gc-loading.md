@@ -5,6 +5,10 @@ Author: Sean Gillespie (@swgillespie) - 2017
 This document aims to provide a specification for how a standalone GC is
 to be loaded and what is to happen in the case of version mismatches.
 
+**[Update June 2024] Warning** - The behavior described in this spec for how the CLR interprets environment variables
+is out-of-date. See the [public documentation](https://learn.microsoft.com/en-us/dotnet/core/runtime-config/garbage-collector#standalone-gc)
+if you want up-to-date instructions on how to configure standalone GC.
+
 ## Definitions
 
 Before diving in to the specification, it's useful to precisely define

@@ -17,7 +17,7 @@ namespace System.ComponentModel
         /// Initializes a new instance of the <see cref='System.ComponentModel.DesignerAttribute'/> class using the name of the type that
         /// provides design-time services.
         /// </summary>
-        public DesignerAttribute([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] string designerTypeName)
+        public DesignerAttribute(string designerTypeName)
         {
             ArgumentNullException.ThrowIfNull(designerTypeName);
 
@@ -29,7 +29,7 @@ namespace System.ComponentModel
         /// Initializes a new instance of the <see cref='System.ComponentModel.DesignerAttribute'/> class using the type that provides
         /// design-time services.
         /// </summary>
-        public DesignerAttribute([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] Type designerType)
+        public DesignerAttribute(Type designerType)
         {
             ArgumentNullException.ThrowIfNull(designerType);
 
@@ -41,9 +41,7 @@ namespace System.ComponentModel
         /// Initializes a new instance of the <see cref='System.ComponentModel.DesignerAttribute'/> class using the designer type and the
         /// base class for the designer.
         /// </summary>
-        public DesignerAttribute(
-            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] string designerTypeName,
-            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] string designerBaseTypeName)
+        public DesignerAttribute(string designerTypeName, string designerBaseTypeName)
         {
             ArgumentNullException.ThrowIfNull(designerTypeName);
 
@@ -55,9 +53,7 @@ namespace System.ComponentModel
         /// Initializes a new instance of the <see cref='System.ComponentModel.DesignerAttribute'/> class, using the name of the designer
         /// class and the base class for the designer.
         /// </summary>
-        public DesignerAttribute(
-            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] string designerTypeName,
-            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] Type designerBaseType)
+        public DesignerAttribute(string designerTypeName, Type designerBaseType)
         {
             ArgumentNullException.ThrowIfNull(designerTypeName);
             ArgumentNullException.ThrowIfNull(designerBaseType);
@@ -70,9 +66,7 @@ namespace System.ComponentModel
         /// Initializes a new instance of the <see cref='System.ComponentModel.DesignerAttribute'/> class using the types of the designer and
         /// designer base class.
         /// </summary>
-        public DesignerAttribute(
-            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] Type designerType,
-            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] Type designerBaseType)
+        public DesignerAttribute(Type designerType, Type designerBaseType)
         {
             ArgumentNullException.ThrowIfNull(designerType);
             ArgumentNullException.ThrowIfNull(designerBaseType);
@@ -85,13 +79,11 @@ namespace System.ComponentModel
         /// Gets the name of the base type of this designer.
         /// </summary>
         // Using PublicParameterlessConstructor to preserve the type. See https://github.com/mono/linker/issues/1878
-        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]
         public string DesignerBaseTypeName { get; }
 
         /// <summary>
         /// Gets the name of the designer type associated with this designer attribute.
         /// </summary>
-        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]
         public string DesignerTypeName { get; }
 
         /// <summary>

@@ -40,9 +40,8 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
 		[Kept]
 		[KeptAttributeAttribute (typeof (KeepsPublicMethodsAttribute))]
-		// Trimmer/NativeAot only for now - https://github.com/dotnet/linker/issues/2273
-		[ExpectedWarning ("IL2026", "--ClassWithKeptPublicMethods--", ProducedBy = Tool.Trimmer | Tool.NativeAot)]
-		[KeepsPublicMethods (TypeName = "Mono.Linker.Tests.Cases.DataFlow.AttributeFieldDataflow+ClassWithKeptPublicMethods")]
+		[ExpectedWarning ("IL2026", "--ClassWithKeptPublicMethods--", Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/runtime/issues/95118")]
+		[KeepsPublicMethods (TypeName = "Mono.Linker.Tests.Cases.DataFlow.AttributeFieldDataflow+ClassWithKeptPublicMethods, test")]
 		public static void TestKeepsPublicMethodsString ()
 		{
 			typeof (AttributeFieldDataflow).GetMethod (nameof (TestKeepsPublicMethodsString)).GetCustomAttribute (typeof (KeepsPublicMethodsAttribute));

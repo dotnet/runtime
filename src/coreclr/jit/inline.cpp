@@ -383,7 +383,7 @@ void InlineContext::Dump(bool verbose, unsigned indent)
 #if defined(DEBUG)
         calleeName = compiler->eeGetMethodFullName(m_Callee);
 #else
-        calleeName         = "callee";
+        calleeName = "callee";
 #endif // defined(DEBUG)
     }
 
@@ -1289,7 +1289,7 @@ InlineContext* InlineStrategy::NewContext(InlineContext* parentContext, Statemen
         context->m_Code             = info->methInfo.ILCode;
         context->m_ILSize           = info->methInfo.ILCodeSize;
         context->m_ActualCallOffset = info->ilOffset;
-        context->m_RuntimeContext   = info->exactContextHnd;
+        context->m_RuntimeContext   = info->exactContextHandle;
 
 #ifdef DEBUG
         // All inline candidates should get their own statements that have
@@ -1519,8 +1519,8 @@ void InlineStrategy::DumpDataContents(FILE* file)
     mdMethodDef currentMethodToken = info.compCompHnd->getMethodDefFromMethod(info.compMethodHnd);
 
     // Convert time spent jitting into microseconds
-    unsigned         microsecondsSpentJitting = 0;
-    unsigned __int64 compCycles               = m_Compiler->getInlineCycleCount();
+    unsigned microsecondsSpentJitting = 0;
+    uint64_t compCycles               = m_Compiler->getInlineCycleCount();
     if (compCycles > 0)
     {
         double countsPerSec      = CachedCyclesPerSecond();
@@ -1613,8 +1613,8 @@ void InlineStrategy::DumpXml(FILE* file, unsigned indent)
     unsigned hash = info.compMethodHash();
 
     // Convert time spent jitting into microseconds
-    unsigned         microsecondsSpentJitting = 0;
-    unsigned __int64 compCycles               = m_Compiler->getInlineCycleCount();
+    unsigned microsecondsSpentJitting = 0;
+    uint64_t compCycles               = m_Compiler->getInlineCycleCount();
     if (compCycles > 0)
     {
         double countsPerSec      = CachedCyclesPerSecond();
@@ -1765,7 +1765,7 @@ bool InlineStrategy::IsInliningDisabled()
 #if defined(DEBUG)
 
     static ConfigMethodRange range;
-    const WCHAR*             noInlineRange = JitConfig.JitNoInlineRange();
+    const char*              noInlineRange = JitConfig.JitNoInlineRange();
 
     if (noInlineRange == nullptr)
     {
@@ -1776,9 +1776,9 @@ bool InlineStrategy::IsInliningDisabled()
     // number of spaces in our config string to see if there are
     // more. Number of ranges we need is 2x that value.
     unsigned entryCount = 1;
-    for (const WCHAR* p = noInlineRange; *p != 0; p++)
+    for (const char* p = noInlineRange; *p != 0; p++)
     {
-        if (*p == L' ')
+        if (*p == ' ')
         {
             entryCount++;
         }

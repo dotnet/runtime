@@ -56,7 +56,7 @@ namespace System.CommandLine
 
         public static TargetOS GetTargetOS(string token)
         {
-            if(string.IsNullOrEmpty(token))
+            if (string.IsNullOrEmpty(token))
             {
                 if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
                     return TargetOS.Windows;
@@ -87,7 +87,7 @@ namespace System.CommandLine
 
         public static TargetArchitecture GetTargetArchitecture(string token)
         {
-            if(string.IsNullOrEmpty(token))
+            if (string.IsNullOrEmpty(token))
             {
                 return RuntimeInformation.ProcessArchitecture switch
                 {
@@ -96,7 +96,7 @@ namespace System.CommandLine
                     Architecture.Arm => TargetArchitecture.ARM,
                     Architecture.Arm64 => TargetArchitecture.ARM64,
                     Architecture.LoongArch64 => TargetArchitecture.LoongArch64,
-                    (Architecture)9 => TargetArchitecture.RiscV64, /* TODO: update with Architecture.RiscV64 */
+                    Architecture.RiscV64 => TargetArchitecture.RiscV64,
                     _ => throw new NotImplementedException()
                 };
             }

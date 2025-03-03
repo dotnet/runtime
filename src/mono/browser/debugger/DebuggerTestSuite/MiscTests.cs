@@ -1166,13 +1166,14 @@ namespace DebuggerTests
         public static TheoryData<int> CountToTen()
         {
             var data = new TheoryData<int>();
-            for(int i=0;i<10;i++)
+            for (int i=0;i<10;i++)
             {
                 data.Add(i);
             }
             return data;
         }
 
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/98110")]
         [ConditionalTheory(nameof(WasmMultiThreaded))]
         [MemberData(nameof(CountToTen))]
         public async Task TestDebugUsingMultiThreadedRuntime(int _attempt)
@@ -1198,6 +1199,25 @@ namespace DebuggerTests
             locals = await GetProperties(pause_location["callFrames"][0]["callFrameId"].Value<string>());
             Assert.Equal(locals[1]["value"]["type"], "number");
             Assert.Equal(locals[1]["name"], "currentThread");
+        }
+
+        [Fact]
+        public async Task InspectSpanByte()
+        {
+            var expression = $"{{ invoke_static_method('[debugger-test] SpanByte:Run'); }}";
+
+            await EvaluateAndCheck(
+                "window.setTimeout(function() {" + expression + "; }, 1);",
+                "dotnet://debugger-test.dll/debugger-test.cs", 1684, 8,
+                "SpanByte.Run",
+                wait_for_event_fn: async (pause_location) =>
+                {
+                    var id = pause_location["callFrames"][0]["callFrameId"].Value<string>();
+                    await EvaluateOnCallFrameAndCheck(id,
+                        ("span", TObject("System.Span<byte>", null))
+                    );
+                }
+            );
         }
     }
 }

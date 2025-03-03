@@ -53,6 +53,7 @@ if(CLR_CMAKE_TARGET_WIN32)
     list(APPEND SOURCES
         ../windows/gcenv.windows.cpp)
     add_definitions(-DUNICODE)
+    add_compile_definitions(NOMINMAX)
 else()
     list(APPEND SOURCES
         ../gcenv.unix.cpp)

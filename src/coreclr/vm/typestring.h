@@ -176,7 +176,7 @@ public:
     // instantiation info provided, instead of the instantiation in the TypeHandle.
     static void AppendType(SString& s, TypeHandle t, Instantiation typeInstantiation, DWORD format = FormatNamespace);
 
-    static void AppendTypeKey(SString& s, TypeKey *pTypeKey, DWORD format = FormatNamespace);
+    static void AppendTypeKey(SString& s, const TypeKey *pTypeKey, DWORD format = FormatNamespace);
 
     // Appends the method name and generic instantiation info.  This might
     // look like "Namespace.ClassName[T].Foo[U, V]()"
@@ -184,7 +184,7 @@ public:
 
     // Append a representation of the method m to the string s
     // The following flags in the FormatFlags argument are significant: FormatNamespace FormatFullInst FormatAssembly FormatSignature  FormatNoVersion
-    static void AppendMethodInternal(SString& s, MethodDesc *pMD, const DWORD format = FormatNamespace|FormatSignature|FormatStubInfo);
+    static void AppendMethodInternal(SString& s, MethodDesc *pMD, const DWORD format);
 
     // Append the field name and generic instantiation info.
     static void AppendField(SString& s, FieldDesc *pFD, Instantiation typeInstantiation, const DWORD format = FormatNamespace);
@@ -193,7 +193,7 @@ public:
     // as they may leave "s" in a bad state if there are any problems/exceptions.
     static void AppendMethodDebug(SString& s, MethodDesc *pMD);
     static void AppendTypeDebug(SString& s, TypeHandle t);
-    static void AppendTypeKeyDebug(SString& s, TypeKey* pTypeKey);
+    static void AppendTypeKeyDebug(SString& s, const TypeKey* pTypeKey);
 #endif
 
 private:
@@ -203,7 +203,7 @@ private:
     static void AppendNestedTypeDef(TypeNameBuilder& tnb, IMDInternalImport *pImport, mdTypeDef td, DWORD format = FormatNamespace);
     static void AppendInst(TypeNameBuilder& tnb, Instantiation inst, DWORD format = FormatNamespace);
     static void AppendType(TypeNameBuilder& tnb, TypeHandle t, Instantiation typeInstantiation, DWORD format = FormatNamespace); // ????
-    static void AppendTypeKey(TypeNameBuilder& tnb, TypeKey *pTypeKey, DWORD format = FormatNamespace);
+    static void AppendTypeKey(TypeNameBuilder& tnb, const TypeKey *pTypeKey, DWORD format = FormatNamespace);
     static void AppendParamTypeQualifier(TypeNameBuilder& tnb, CorElementType kind, DWORD rank);
     static void EscapeSimpleTypeName(SString* ssTypeName, SString* ssEscapedTypeName);
     static bool ContainsReservedChar(LPCWSTR pTypeName);

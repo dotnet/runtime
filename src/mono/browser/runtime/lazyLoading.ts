@@ -1,18 +1,44 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import { loaderHelpers, runtimeHelpers } from "./globals";
+import { loaderHelpers } from "./globals";
+import { load_lazy_assembly } from "./managed-exports";
 import { AssetEntry } from "./types";
 
-export async function loadLazyAssembly(assemblyNameToLoad: string): Promise<boolean> {
+export async function loadLazyAssembly (assemblyNameToLoad: string): Promise<boolean> {
     const resources = loaderHelpers.config.resources!;
     const lazyAssemblies = resources.lazyAssembly;
     if (!lazyAssemblies) {
         throw new Error("No assemblies have been marked as lazy-loadable. Use the 'BlazorWebAssemblyLazyLoad' item group in your project file to enable lazy loading an assembly.");
     }
 
+    let assemblyNameWithoutExtension = assemblyNameToLoad;
+    if (assemblyNameToLoad.endsWith(".dll"))
+        assemblyNameWithoutExtension = assemblyNameToLoad.substring(0, assemblyNameToLoad.length - 4);
+    else if (assemblyNameToLoad.endsWith(".wasm"))
+        assemblyNameWithoutExtension = assemblyNameToLoad.substring(0, assemblyNameToLoad.length - 5);
+
+    const assemblyNameToLoadDll = assemblyNameWithoutExtension + ".dll";
+    const assemblyNameToLoadWasm = assemblyNameWithoutExtension + ".wasm";
+    if (loaderHelpers.config.resources!.fingerprinting) {
+        const map = loaderHelpers.config.resources!.fingerprinting;
+        for (const fingerprintedName in map) {
+            const nonFingerprintedName = map[fingerprintedName];
+            if (nonFingerprintedName == assemblyNameToLoadDll || nonFingerprintedName == assemblyNameToLoadWasm) {
+                assemblyNameToLoad = fingerprintedName;
+                break;
+            }
+        }
+    }
+
     if (!lazyAssemblies[assemblyNameToLoad]) {
-        throw new Error(`${assemblyNameToLoad} must be marked with 'BlazorWebAssemblyLazyLoad' item group in your project file to allow lazy-loading.`);
+        if (lazyAssemblies[assemblyNameToLoadDll]) {
+            assemblyNameToLoad = assemblyNameToLoadDll;
+        } else if (lazyAssemblies[assemblyNameToLoadWasm]) {
+            assemblyNameToLoad = assemblyNameToLoadWasm;
+        } else {
+            throw new Error(`${assemblyNameToLoad} must be marked with 'BlazorWebAssemblyLazyLoad' item group in your project file to allow lazy-loading.`);
+        }
     }
 
     const dllAsset: AssetEntry = {
@@ -25,8 +51,22 @@ export async function loadLazyAssembly(assemblyNameToLoad: string): Promise<bool
         return false;
     }
 
-    const pdbNameToLoad = changeExtension(dllAsset.name, ".pdb");
-    const shouldLoadPdb = loaderHelpers.hasDebuggingEnabled(loaderHelpers.config) && Object.prototype.hasOwnProperty.call(lazyAssemblies, pdbNameToLoad);
+    let pdbNameToLoad = assemblyNameWithoutExtension + ".pdb";
+    let shouldLoadPdb = false;
+    if (loaderHelpers.config.debugLevel != 0 && loaderHelpers.isDebuggingSupported()) {
+        shouldLoadPdb = Object.prototype.hasOwnProperty.call(lazyAssemblies, pdbNameToLoad);
+        if (loaderHelpers.config.resources!.fingerprinting) {
+            const map = loaderHelpers.config.resources!.fingerprinting;
+            for (const fingerprintedName in map) {
+                const nonFingerprintedName = map[fingerprintedName];
+                if (nonFingerprintedName == pdbNameToLoad) {
+                    pdbNameToLoad = fingerprintedName;
+                    shouldLoadPdb = true;
+                    break;
+                }
+            }
+        }
+    }
 
     const dllBytesPromise = loaderHelpers.retrieve_asset_download(dllAsset);
 
@@ -51,15 +91,6 @@ export async function loadLazyAssembly(assemblyNameToLoad: string): Promise<bool
         pdb = null;
     }
 
-    runtimeHelpers.javaScriptExports.load_lazy_assembly(dll, pdb);
+    load_lazy_assembly(dll, pdb);
     return true;
-}
-
-function changeExtension(filename: string, newExtensionWithLeadingDot: string) {
-    const lastDotIndex = filename.lastIndexOf(".");
-    if (lastDotIndex < 0) {
-        throw new Error(`No extension to replace in '${filename}'`);
-    }
-
-    return filename.substring(0, lastDotIndex) + newExtensionWithLeadingDot;
 }

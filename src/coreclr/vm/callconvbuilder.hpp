@@ -24,7 +24,7 @@ public:
     struct State
     {
         CorInfoCallConvExtension CallConvBase;
-        CallConvModifiers CallConvModifiers;
+        enum CallConvModifiers CallConvModifiers;
     };
 
 private:

@@ -12,7 +12,9 @@ namespace System.Runtime.CompilerServices
     [StructLayout(LayoutKind.Sequential)]
     public struct StaticClassConstructionContext
     {
-        // Pointer to the code for the static class constructor method. Set to 0 .
+        // Pointer to the code for the static class constructor method. Set to 0 once the cctor has run.
+        // Volatile to insert memory barriers to order any writes executed as part of static class
+        // constructor with respect to this flag.
         public volatile IntPtr cctorMethodAddress;
     }
 }

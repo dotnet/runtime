@@ -172,6 +172,11 @@ namespace System.Collections.Generic
         public int Count => _size;
 
         /// <summary>
+        ///  Gets the total numbers of elements the queue's backing storage can hold without resizing.
+        /// </summary>
+        public int Capacity => _nodes.Length;
+
+        /// <summary>
         ///  Gets the priority comparer used by the <see cref="PriorityQueue{TElement, TPriority}"/>.
         /// </summary>
         public IComparer<TPriority> Comparer => _comparer ?? Comparer<TPriority>.Default;
@@ -470,7 +475,7 @@ namespace System.Collections.Generic
 
             if (_size == 0)
             {
-                // build using Heapify() if the queue is empty.
+                // If the queue is empty just append the elements since they all have the same priority.
 
                 int i = 0;
                 (TElement, TPriority)[] nodes = _nodes;
@@ -487,11 +492,6 @@ namespace System.Collections.Generic
 
                 _size = i;
                 _version++;
-
-                if (i > 1)
-                {
-                    Heapify();
-                }
             }
             else
             {
@@ -537,16 +537,30 @@ namespace System.Collections.Generic
             if (index < newSize)
             {
                 // We're removing an element from the middle of the heap.
-                // Pop the last element in the collection and sift downward from the removed index.
+                // Pop the last element in the collection and sift from the removed index.
                 (TElement Element, TPriority Priority) lastNode = nodes[newSize];
 
                 if (_comparer == null)
                 {
-                    MoveDownDefaultComparer(lastNode, index);
+                    if (Comparer<TPriority>.Default.Compare(lastNode.Priority, priority) < 0)
+                    {
+                        MoveUpDefaultComparer(lastNode, index);
+                    }
+                    else
+                    {
+                        MoveDownDefaultComparer(lastNode, index);
+                    }
                 }
                 else
                 {
-                    MoveDownCustomComparer(lastNode, index);
+                    if (_comparer.Compare(lastNode.Priority, priority) < 0)
+                    {
+                        MoveUpCustomComparer(lastNode, index);
+                    }
+                    else
+                    {
+                        MoveDownCustomComparer(lastNode, index);
+                    }
                 }
             }
 

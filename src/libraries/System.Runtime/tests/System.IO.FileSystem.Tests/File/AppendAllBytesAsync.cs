@@ -19,6 +19,7 @@ namespace System.IO.Tests
             string path = GetTestFilePath();
 
             await Assert.ThrowsAsync<ArgumentNullException>("path", async () => await File.AppendAllBytesAsync(null, new byte[0]));
+            await Assert.ThrowsAsync<ArgumentNullException>("path", async () => await File.AppendAllBytesAsync(null, ReadOnlyMemory<byte>.Empty));
             await Assert.ThrowsAsync<ArgumentNullException>("bytes", async () => await File.AppendAllBytesAsync(path, null));
         }
 
@@ -26,12 +27,14 @@ namespace System.IO.Tests
         public void NonExistentPathAsync()
         {
             Assert.ThrowsAsync<DirectoryNotFoundException>(() => File.AppendAllBytesAsync(Path.Combine(TestDirectory, GetTestFileName(), GetTestFileName()), new byte[0]));
+            Assert.ThrowsAsync<DirectoryNotFoundException>(() => File.AppendAllBytesAsync(Path.Combine(TestDirectory, GetTestFileName(), GetTestFileName()), ReadOnlyMemory<byte>.Empty));
         }
 
         [Fact]
         public async Task InvalidParametersAsync()
         {
             await Assert.ThrowsAsync<ArgumentException>("path", async () => await File.AppendAllBytesAsync(string.Empty, new byte[0]));
+            await Assert.ThrowsAsync<ArgumentException>("path", async () => await File.AppendAllBytesAsync(string.Empty, ReadOnlyMemory<byte>.Empty));
         }
 
         [Fact]
@@ -44,10 +47,11 @@ namespace System.IO.Tests
 
             await File.WriteAllBytesAsync(path, initialBytes);
             await File.AppendAllBytesAsync(path, additionalBytes);
+            await File.AppendAllBytesAsync(path, additionalBytes.AsMemory());
 
             byte[] result = await File.ReadAllBytesAsync(path);
 
-            byte[] expectedBytes = initialBytes.Concat(additionalBytes).ToArray();
+            byte[] expectedBytes = initialBytes.Concat(additionalBytes).Concat(additionalBytes).ToArray();
 
             Assert.True(result.SequenceEqual(expectedBytes));
         }
@@ -57,6 +61,7 @@ namespace System.IO.Tests
         {
             string path = GetTestFilePath();
             await File.AppendAllBytesAsync(path, new byte[0]);
+            await File.AppendAllBytesAsync(path, ReadOnlyMemory<byte>.Empty);
             Assert.True(File.Exists(path));
             Assert.Empty(await File.ReadAllBytesAsync(path));
         }
@@ -70,6 +75,7 @@ namespace System.IO.Tests
             using (File.Create(path))
             {
                 await Assert.ThrowsAsync<IOException>(async () => await File.AppendAllBytesAsync(path, bytes));
+                await Assert.ThrowsAsync<IOException>(async () => await File.AppendAllBytesAsync(path, bytes.AsMemory()));
             }
         }
 
@@ -91,11 +97,13 @@ namespace System.IO.Tests
                 if (PlatformDetection.IsNotWindows && PlatformDetection.IsPrivilegedProcess)
                 {
                     await File.AppendAllBytesAsync(path, dataToAppend);
-                    Assert.Equal(dataToAppend, await File.ReadAllBytesAsync(path));
+                    await File.AppendAllBytesAsync(path, dataToAppend.AsMemory());
+                    Assert.Equal(dataToAppend.Concat(dataToAppend), await File.ReadAllBytesAsync(path));
                 }
                 else
                 {
                     await Assert.ThrowsAsync<UnauthorizedAccessException>(async () => await File.AppendAllBytesAsync(path, dataToAppend));
+                    await Assert.ThrowsAsync<UnauthorizedAccessException>(async () => await File.AppendAllBytesAsync(path, dataToAppend.AsMemory()));
                 }
             }
             finally

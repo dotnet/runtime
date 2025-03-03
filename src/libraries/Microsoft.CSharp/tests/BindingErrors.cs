@@ -61,6 +61,10 @@ namespace Microsoft.CSharp.RuntimeBinder.Tests
             {
             }
 
+            public void DoSomething(float d)
+            {
+            }
+
             public static void DoSomething(int i)
             {
             }

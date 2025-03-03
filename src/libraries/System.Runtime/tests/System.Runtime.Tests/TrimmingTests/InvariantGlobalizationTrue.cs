@@ -4,6 +4,7 @@
 using System;
 using System.Globalization;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 
 /// <summary>
 /// Ensures setting InvariantGlobalization = true still works in a trimmed app.
@@ -26,6 +27,18 @@ class Program
         if ("i".ToUpper() != "I")
         {
             return -3;
+        }
+
+        // The rest of this code depends on a property of IL level trimming that keeps reflection
+        // metadata for anything that is statically reachable. It's not applicable if we're not doing that
+        // kind of trimming. Approximate what kind of trimming are we doing.
+        if (GetMethodSecretly(typeof(Program), nameof(GetCoreLibType)) == null)
+        {
+            // Sanity check: we only expect this for native AOT; IsDynamicCodeSupported approximates that.
+            if (RuntimeFeature.IsDynamicCodeSupported)
+                throw new Exception();
+
+            return 100;
         }
         
         // Ensure the internal GlobalizationMode class is trimmed correctly.
@@ -65,4 +78,8 @@ class Program
     // The intention of this method is to ensure the trimmer doesn't preserve the Type.
     private static Type GetCoreLibType(string name) =>
         typeof(object).Assembly.GetType(name, throwOnError: false);
+
+    // The intention is to look for a method on a type in a way that trimming cannot detect.
+    private static MethodBase GetMethodSecretly(Type type, string name) =>
+        type.GetMethod(name, BindingFlags.Static | BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
 }

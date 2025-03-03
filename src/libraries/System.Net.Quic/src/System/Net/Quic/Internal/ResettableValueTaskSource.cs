@@ -105,9 +105,7 @@ internal sealed class ResettableValueTaskSource : IValueTaskSource
                 _state = State.Awaiting;
             }
             // None, Ready, Completed: return the current task.
-            if (state == State.None ||
-                state == State.Ready ||
-                state == State.Completed)
+            if (state is State.None or State.Ready or State.Completed)
             {
                 // Remember that the value task with the current version is being given out.
                 _hasWaiter = true;
@@ -167,8 +165,7 @@ internal sealed class ResettableValueTaskSource : IValueTaskSource
 
                 // If the _valueTaskSource has already been set, we don't want to lose the result by overwriting it.
                 // So keep it as is and store the result in _finalTaskSource.
-                if (state == State.None ||
-                    state == State.Awaiting)
+                if (state is State.None or State.Awaiting)
                 {
                     _state = final ? State.Completed : State.Ready;
                 }
@@ -178,16 +175,14 @@ internal sealed class ResettableValueTaskSource : IValueTaskSource
                 {
                     // Set up the exception stack trace for the caller.
                     exception = exception.StackTrace is null ? ExceptionDispatchInfo.SetCurrentStackTrace(exception) : exception;
-                    if (state == State.None ||
-                        state == State.Awaiting)
+                    if (state is State.None or State.Awaiting)
                     {
                         _valueTaskSource.SetException(exception);
                     }
                 }
                 else
                 {
-                    if (state == State.None ||
-                        state == State.Awaiting)
+                    if (state is State.None or State.Awaiting)
                     {
                         _valueTaskSource.SetResult(final);
                     }
@@ -210,7 +205,7 @@ internal sealed class ResettableValueTaskSource : IValueTaskSource
             }
             finally
             {
-                // Un-root the the kept alive object in all cases.
+                // Un-root the kept alive object in all cases.
                 if (_keepAlive.IsAllocated)
                 {
                     _keepAlive.Free();
@@ -315,6 +310,13 @@ internal sealed class ResettableValueTaskSource : IValueTaskSource
         {
             if (_finalTaskSource is null)
             {
+                if (_isSignaled)
+                {
+                    return _exception is null
+                        ? Task.CompletedTask
+                        : Task.FromException(_exception);
+                }
+
                 _finalTaskSource = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
                 if (!_isCompleted)
                 {
@@ -323,10 +325,6 @@ internal sealed class ResettableValueTaskSource : IValueTaskSource
                     {
                         ((GCHandle)state!).Free();
                     }, handle, CancellationToken.None, TaskContinuationOptions.ExecuteSynchronously, TaskScheduler.Default);
-                }
-                if (_isSignaled)
-                {
-                    TrySignal(out _);
                 }
             }
             return _finalTaskSource.Task;

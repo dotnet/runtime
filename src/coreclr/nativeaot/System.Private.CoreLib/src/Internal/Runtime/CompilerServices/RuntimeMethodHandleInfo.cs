@@ -12,8 +12,8 @@ namespace Internal.Runtime.CompilerServices
 {
     public class MethodNameAndSignature
     {
-        public string Name { get; private set; }
-        public RuntimeSignature Signature { get; private set; }
+        public string Name { get; }
+        public RuntimeSignature Signature { get; }
 
         public MethodNameAndSignature(string name, RuntimeSignature signature)
         {
@@ -49,12 +49,5 @@ namespace Internal.Runtime.CompilerServices
     public unsafe struct RuntimeMethodHandleInfo
     {
         public IntPtr NativeLayoutInfoSignature;
-
-        public static unsafe RuntimeMethodHandle InfoToHandle(RuntimeMethodHandleInfo* info)
-        {
-            RuntimeMethodHandle returnValue = default(RuntimeMethodHandle);
-            *(RuntimeMethodHandleInfo**)&returnValue = info;
-            return returnValue;
-        }
     }
 }

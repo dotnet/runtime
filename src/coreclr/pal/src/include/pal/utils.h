@@ -194,7 +194,7 @@ class StringHolder
         StringHolder() : data(NULL) { }
         ~StringHolder()
         {
-            PAL_free( data);
+            free( data);
         }
 
         operator LPSTR () { return data;}

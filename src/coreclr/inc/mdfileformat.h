@@ -37,7 +37,7 @@
 #define FILE_VER_MINOR  1
 
 // These are the last legitimate 0.x version macros.  The file format has
-// sinced move up to 1.x (see macros above).  After COM+ 1.0/NT 5 RTM's, these
+// sinced move up to 1.x (see macros above).  After CLR 1.0/NT 5 RTM's, these
 // macros should no longer be required or ever seen.
 #define FILE_VER_MAJOR_v0   0
 
@@ -205,13 +205,13 @@ public:
     }
     inline LPCWSTR GetName(__inout_ecount (iMaxSize) LPWSTR szName, int iMaxSize)
     {
-        VERIFY(::WszMultiByteToWideChar(CP_ACP, 0, rcName, -1, szName, iMaxSize));
+        VERIFY(::MultiByteToWideChar(CP_ACP, 0, rcName, -1, szName, iMaxSize));
         return (szName);
     }
     inline void SetName(LPCWSTR szName)
     {
         int size;
-        size = WszWideCharToMultiByte(CP_ACP, 0, szName, -1, rcName, MAXSTREAMNAME, 0, 0);
+        size = WideCharToMultiByte(CP_ACP, 0, szName, -1, rcName, MAXSTREAMNAME, 0, 0);
         _ASSERTE(size > 0);
     }
 

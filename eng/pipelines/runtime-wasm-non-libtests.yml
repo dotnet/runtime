@@ -7,14 +7,14 @@ extends:
   template:  /eng/pipelines/common/templates/pipeline-with-resources.yml
   parameters:
     stages:
+    - ${{ if eq(variables['Build.Reason'], 'PullRequest') }}:
+      - stage: EvaluatePaths
+        displayName: Evaluate Paths
+        jobs:
+          - template: /eng/pipelines/common/evaluate-default-paths.yml
+
     - stage: Build
       jobs:
-
-      #
-      # Evaluate paths
-      #
-      - template: /eng/pipelines/common/evaluate-default-paths.yml
-
       - template: /eng/pipelines/extra-platforms/runtime-extra-platforms-wasm.yml
         parameters:
           isExtraPlatformsBuild: ${{ variables.isExtraPlatformsBuild }}

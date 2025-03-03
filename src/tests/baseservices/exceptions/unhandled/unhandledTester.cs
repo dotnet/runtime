@@ -14,14 +14,14 @@ namespace TestUnhandledExceptionTester
 {
     public class Program
     {
-        static void RunExternalProcess(string unhandledType)
+        static void RunExternalProcess(string unhandledType, string assembly)
         {
             List<string> lines = new List<string>();
 
             Process testProcess = new Process();
 
             testProcess.StartInfo.FileName = Path.Combine(Environment.GetEnvironmentVariable("CORE_ROOT"), "corerun");
-            testProcess.StartInfo.Arguments = Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), "unhandled.dll") + " " + unhandledType;
+            testProcess.StartInfo.Arguments = Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), assembly) + " " + unhandledType;
             testProcess.StartInfo.RedirectStandardError = true;
             // Disable creating dump since the target process is expected to fail with an unhandled exception
             testProcess.StartInfo.Environment.Remove("DOTNET_DbgEnableMiniDump");
@@ -37,6 +37,7 @@ namespace TestUnhandledExceptionTester
             testProcess.Start();
             testProcess.BeginErrorReadLine();
             testProcess.WaitForExit();
+            Console.WriteLine($"Test process {assembly} with argument {unhandledType} exited");
             testProcess.CancelErrorRead();
 
             int expectedExitCode;
@@ -88,7 +89,7 @@ namespace TestUnhandledExceptionTester
             }
             else
             {
-                if (unhandledType == "main")
+                if (unhandledType == "main" || unhandledType == "secondary")
                 {
                     if (lines[0] != "Unhandled exception. System.Exception: Test")
                     {
@@ -97,7 +98,8 @@ namespace TestUnhandledExceptionTester
                 }
                 else if (unhandledType == "foreign")
                 {
-                    if (!lines[0].StartsWith("Unhandled exception. System.DllNotFoundException:"))
+                    if (!lines[0].StartsWith("Unhandled exception. System.DllNotFoundException:") &&
+                        !lines[0].StartsWith("Unhandled exception. System.EntryPointNotFoundException: Unable to find an entry point named 'HelloCpp'"))
                     {
                         throw new Exception("Missing Unhandled exception header");
                     }
@@ -111,13 +113,25 @@ namespace TestUnhandledExceptionTester
                     throw new Exception("Missing exception source frame");
                 }
             }
+            else if (unhandledType == "secondary")
+            {
+                if (!lines[exceptionStackFrameLine].TrimStart().StartsWith("at TestUnhandledException.Program."))
+                {
+                    throw new Exception("Missing exception source frame");
+                }
+            }
+
+            Console.WriteLine("Test process exited with expected error code and produced expected output");
         }
 
         [Fact]
         public static void TestEntryPoint()
         {
-            RunExternalProcess("main");
-            RunExternalProcess("foreign");
+            RunExternalProcess("main", "unhandled.dll");
+            RunExternalProcess("secondary", "unhandled.dll");
+            RunExternalProcess("foreign", "unhandled.dll");
+            File.Delete(Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), "dependencytodelete.dll"));
+            RunExternalProcess("missingdependency", "unhandledmissingdependency.dll");
         }
     }
 }
