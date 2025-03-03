@@ -85,7 +85,7 @@
           BeforeTargets="PublishToAzureDevOpsArtifacts"
           AfterTargets="GenerateChecksumsFromArtifacts">
     <ItemGroup>
-      <Artifact Condition="'%(Artifact.PublishFlatContainer)' == 'true' and '%(Artifact.RelativeBlobPath)' == ''"
+      <Artifact Condition="'%(Artifact.Kind)' != 'Package' and '%(Artifact.RelativeBlobPath)' == ''"
                 RelativeBlobPath="Runtime/$(NonStableProductVersion)/%(Artifact.SubBlobFolder)%(Filename)%(Extension)" />
     </ItemGroup>
   </Target>

@@ -73,7 +73,8 @@
     This package name has the version in it, so we need to use a wildcard to discover the right name.
   -->
   <ItemGroup>
-    <AzureLinuxPrereqsRPM Include="$(ArtifactsPackagesDir)**/dotnet-runtime-deps-*-azl.3-*.rpm" />
+    <AzureLinuxRPM Include="$(ArtifactsPackagesDir)**/*-azl.*-*.rpm" />
+    <AzureLinuxRPM Include="$(ArtifactsPackagesDir)**/*-azl-*.rpm" />
     <FileSignInfo Include="@(AzureLinuxPrereqsRPM->'%(Filename)%(Extension)')" CertificateName="LinuxSignMariner" />
   </ItemGroup>
 
