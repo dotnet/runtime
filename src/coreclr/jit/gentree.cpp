@@ -2318,8 +2318,8 @@ int GenTreeCall::GetNonStandardAddedArgCount(Compiler* compiler) const
 bool GenTreeCall::IsDevirtualizationCandidate(Compiler* compiler) const
 {
     return (IsVirtual() && gtCallType == CT_USER_FUNC) ||
-           (gtCallType == CT_INDIRECT && (gtCallAddr->IsHelperCall(compiler, CORINFO_HELP_VIRTUAL_FUNC_PTR) ||
-                                          gtCallAddr->IsHelperCall(compiler, CORINFO_HELP_GVMLOOKUP_FOR_SLOT)));
+           // TODO: Support CORINFO_HELP_GVMLOOKUP_FOR_SLOT for NativeAOT
+           (gtCallType == CT_INDIRECT && gtCallAddr->IsHelperCall(compiler, CORINFO_HELP_VIRTUAL_FUNC_PTR));
 }
 
 //-------------------------------------------------------------------------

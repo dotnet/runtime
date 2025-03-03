@@ -7709,7 +7709,7 @@ CEEInfo::getMethodInfo(
         getMethodInfoHelper(cxt, methInfo, context);
         result = true;
     }
-    else if (!ftn->IsWrapperStub() && ftn->HasILHeader())
+    else if (!ftn->IsUnboxingStub() && ftn->HasILHeader())
     {
         COR_ILMETHOD_DECODER header(ftn->GetILHeader(), ftn->GetMDImport(), NULL);
         cxt.Header = &header;
@@ -8578,16 +8578,13 @@ bool CEEInfo::resolveVirtualMethodHelper(CORINFO_DEVIRTUALIZATION_INFO * info)
     memset(&info->resolvedTokenDevirtualizedMethod, 0, sizeof(info->resolvedTokenDevirtualizedMethod));
     memset(&info->resolvedTokenDevirtualizedUnboxedMethod, 0, sizeof(info->resolvedTokenDevirtualizedUnboxedMethod));
     info->isInstantiatingStub = false;
-    info->wasArrayInterfaceDevirt = false;
+    info->hasGenericMethodHandleContext = false;
 
     MethodDesc* pBaseMD = GetMethod(info->virtualMethod);
     MethodTable* pBaseMT = pBaseMD->GetMethodTable();
 
     // Method better be from a fully loaded class
     _ASSERTE(pBaseMT->IsFullyLoaded());
-
-    //@GENERICS: shouldn't be doing this for instantiated methods as they live elsewhere
-    _ASSERTE(!pBaseMD->HasMethodInstantiation());
 
     // Method better be virtual
     _ASSERTE(pBaseMD->IsVirtual());
@@ -8762,6 +8759,7 @@ bool CEEInfo::resolveVirtualMethodHelper(CORINFO_DEVIRTUALIZATION_INFO * info)
     MethodTable* pApproxMT = pDevirtMD->GetMethodTable();
     MethodTable* pExactMT = pApproxMT;
     bool isArray = false;
+    bool isGenericVirtual = false;
 
     if (pApproxMT->IsInterface())
     {
@@ -8779,22 +8777,40 @@ bool CEEInfo::resolveVirtualMethodHelper(CORINFO_DEVIRTUALIZATION_INFO * info)
         pExactMT = pDevirtMD->GetExactDeclaringType(pObjMT);
     }
 
+    // This is generic virtual method devirtualization.
+    if (!isArray && pBaseMD->HasMethodInstantiation())
+    {
+        // If we're in a shared context we'll devirt to a shared
+        // generic method and won't be able to inline, so just bail.
+        //
+        if (pExactMT->IsSharedByGenericInstantiations())
+        {
+            info->detail = CORINFO_DEVIRTUALIZATION_FAILED_CANON;
+            return false;
+        }
+
+        pDevirtMD = pDevirtMD->FindOrCreateAssociatedMethodDesc(
+            pDevirtMD, pExactMT, pExactMT->IsValueType() && !pDevirtMD->IsStatic(), pBaseMD->GetMethodInstantiation(), false);
+
+        isGenericVirtual = true;
+    }
+
     // Success! Pass back the results.
     //
-    if (isArray)
+    if (isArray || isGenericVirtual)
     {
         // Note if array devirtualization produced an instantiation stub
         // so jit can try and inline it.
         //
         info->isInstantiatingStub = pDevirtMD->IsInstantiatingStub();
         info->exactContext = MAKE_METHODCONTEXT((CORINFO_METHOD_HANDLE) pDevirtMD);
-        info->wasArrayInterfaceDevirt = true;
+        info->hasGenericMethodHandleContext = true;
     }
     else
     {
         info->exactContext = MAKE_CLASSCONTEXT((CORINFO_CLASS_HANDLE) pExactMT);
         info->isInstantiatingStub = false;
-        info->wasArrayInterfaceDevirt = false;
+        info->hasGenericMethodHandleContext = false;
     }
 
     info->devirtualizedMethod = (CORINFO_METHOD_HANDLE) pDevirtMD;
