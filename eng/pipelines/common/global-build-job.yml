@@ -36,7 +36,7 @@ parameters:
   templatePath: 'templates'
   templateContext: ''
   disableComponentGovernance: ''
-  officialBuildArtifactName: ''
+  officialBuildArtifactName: '$(osGroup)$(osSubGroup)_$(archType)_Artifacts'
 
 jobs:
 - template: /eng/common/${{ parameters.templatePath }}/job/job.yml
@@ -68,9 +68,9 @@ jobs:
           ${{ if eq(parameters.isOfficialBuild, true) }}:
             - output: pipelineArtifact
               displayName: 'Publish Pipeline Artifacts'
-              artifactName: ${{ coalesce(parameters.officialBuildArtifactName, '$(osGroup)$(osSubGroup)_$(archType)_Artifacts') }}
+              artifactName: ${{ parameters.officialBuildArtifactName }}
         ${{ if eq(parameters.isOfficialBuild, true) }}:
-          artifactName: ${{ coalesce(parameters.officialBuildArtifactName, '$(osGroup)$(osSubGroup)_$(archType)_Artifacts') }}
+          artifactName: ${{ parameters.officialBuildArtifactName }}
 
     artifacts:
       publish:
