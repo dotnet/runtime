@@ -1339,8 +1339,11 @@ AssertionIndex Compiler::optCreateAssertion(GenTree*         op1,
                         ssize_t iconVal = op2->AsIntCon()->IconValue();
                         if (varTypeIsSmall(lclVar) && op1->OperIs(GT_STORE_LCL_VAR))
                         {
-                            iconVal          = optCastConstantSmall(iconVal, lclVar->TypeGet());
-                            assertion.op2.vn = vnStore->VNForIntCon(static_cast<int>(iconVal));
+                            iconVal = optCastConstantSmall(iconVal, lclVar->TypeGet());
+                            if (!optLocalAssertionProp)
+                            {
+                                assertion.op2.vn = vnStore->VNForIntCon(static_cast<int>(iconVal));
+                            }
                         }
                         assertion.op2.u1.iconVal = iconVal;
                         assertion.op2.SetIconFlag(op2->GetIconHandleFlag(), op2->AsIntCon()->gtFieldSeq);
