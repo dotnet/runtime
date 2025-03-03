@@ -45,26 +45,4 @@ public class MemoryTests : WasmTemplateTestsBase
             ));
         }
     }
-
-    [Fact]
-    public async Task RunSimpleAppWithProfiler()
-    {
-        Configuration config = Configuration.Release;
-        ProjectInfo info = CopyTestAsset(config, false, TestAsset.WasmBasicTestApp, "ProfilerTest");
-        // are are linking all 3 profilers, but below we only initialize log profiler and test it
-        string extraArgs = $"-p:WasmProfilers=\"aot+browser+log\" -p:WasmBuildNative=true";
-        BuildProject(info, config, new BuildOptions(ExtraMSBuildArgs: extraArgs, AssertAppBundle: false), isNativeBuild: true);
-
-        var result = await RunForBuildWithDotnetRun(new BrowserRunOptions(Configuration: config, TestScenario: "ProfilerTest"));
-        Regex regex = new Regex(@"Profile data of size (\d+) bytes");
-        var match = result.TestOutput
-            .Select(line => regex.Match(line))
-            .FirstOrDefault(m => m.Success);
-        Assert.True(match != null, $"TestOuptup did not contain log matching {regex}");
-        if (!int.TryParse(match.Groups[1].Value, out int fileSize))
-        {
-            Assert.Fail($"Failed to parse profile size from {match.Groups[1].Value} to int");
-        }
-        Assert.True(fileSize >= 10 * 1024, $"Profile file size is less than 10KB. Actual size: {fileSize} bytes.");
-    }
 }

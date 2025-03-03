@@ -3,7 +3,7 @@
     <!-- Post Wasm MVP features -->
     <WasmEnableExceptionHandling Condition="'$(WasmEnableExceptionHandling)' == ''">true</WasmEnableExceptionHandling>
     <WasmEnableSIMD Condition="'$(WasmEnableSIMD)' == ''">$(WasmEnableExceptionHandling)</WasmEnableSIMD>
-    <FeaturePerfTracing Condition="'$(FeaturePerfTracing)' == '' and '$(Configuration)' == 'Debug'">true</FeaturePerfTracing>
+    <!-- we are not triggering FeaturePerfTracing in Debug automatically, because it would trigger re-link, making dev-loop slow -->
     <FeaturePerfTracing Condition="'$(FeaturePerfTracing)' == ''">false</FeaturePerfTracing>
   </PropertyGroup>
 
@@ -90,6 +90,7 @@
       <!-- If dotnet.{wasm,js} weren't added already (eg. AOT can add them), then add the default ones -->
       <WasmNativeAsset Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)dotnet.js" />
       <WasmNativeAsset Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)dotnet.runtime.js" />
+      <WasmNativeAsset Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)dotnet.diagnostics.js" Condition="'$(FeaturePerfTracing)' == 'true'" />
       <WasmNativeAsset Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)dotnet.native.wasm" Condition="'$(_HasDotnetWasm)' != 'true'" />
       <WasmNativeAsset Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)dotnet.native.js" Condition="'$(_HasDotnetNativeJs)' != 'true'" />
       <WasmNativeAsset Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)dotnet.native.worker.mjs" Condition="'$(_HasDotnetJsWorker)' != 'true' and Exists('$(MicrosoftNetCoreAppRuntimePackRidNativeDir)dotnet.native.worker.mjs')" />
@@ -101,6 +102,8 @@
                        Condition="'$(WasmEmitSourceMap)' != 'false'" />
       <WasmNativeAsset Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)dotnet.runtime.js.map"
                        Condition="'$(WasmEmitSourceMap)' != 'false'" />
+      <WasmNativeAsset Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)dotnet.diagnostics.js.map"
+                       Condition="'$(WasmEmitSourceMap)' != 'false' and '$(FeaturePerfTracing)' == 'true'" />
     </ItemGroup>
 
     <ItemGroup Condition="'$(InvariantGlobalization)' != 'true'">
@@ -113,6 +116,7 @@
 
     <Error Condition="'$(InvariantGlobalization)' != 'true' and '$(WasmIncludeFullIcuData)' != 'true' and '$(WasmIcuDataFileName)' != '' and !Exists('$(_WasmIcuDataFileName)')" Text="File in location %24(WasmIcuDataFileName)=$(WasmIcuDataFileName) cannot be found neither when used as absolute path nor a relative runtime pack path. You might want to pass one of the values: @(_IcuAvailableDataFiles->'%(Filename)')."/>
     <Error Condition="'$(InvariantGlobalization)' != 'true' and '$(WasmIncludeFullIcuData)' != 'true' and '$(WasmIcuDataFileName)' != '' and !$([System.IO.Path]::GetFileName('$(WasmIcuDataFileName)').StartsWith('icudt'))" Text="Custom ICU file name in path %24(WasmIcuDataFileName)=$(WasmIcuDataFileName) must start with 'icudt'."/>
+    <Error Condition="'$(WasmProfilers)' != '' and '$(FeaturePerfTracing)' != 'false'" Text="%24(WasmProfilers)=$(WasmProfilers) is not supported together with %24(FeaturePerfTracing)=$(FeaturePerfTracing)"/>
   </Target>
 
   <Target Name="_WasmGenerateAppBundle"
