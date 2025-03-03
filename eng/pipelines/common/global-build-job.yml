@@ -69,6 +69,7 @@ jobs:
             - output: pipelineArtifact
               displayName: 'Publish Pipeline Artifacts'
               artifactName: ${{ parameters.officialBuildArtifactName }}
+              targetPath: $(Build.SourceDirectory)/artifacts/staging
         ${{ if eq(parameters.isOfficialBuild, true) }}:
           artifactName: ${{ parameters.officialBuildArtifactName }}
 
