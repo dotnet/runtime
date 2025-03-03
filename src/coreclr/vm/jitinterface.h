@@ -824,7 +824,7 @@ public:
     uint32_t getExpectedTargetArchitecture() override final;
 
     void BackoutJitData(EECodeGenManager * jitMgr) override final;
-    void SetDebugInfo(PTR_BYTE pDebugInfo);
+    void SetDebugInfo(PTR_BYTE pDebugInfo) override final;
 
     void ResetForJitRetry()
     {
@@ -1084,7 +1084,7 @@ public:
     void WriteCode(EECodeGenManager * jitMgr) override final;
 
     void BackoutJitData(EECodeGenManager * jitMgr) override final;
-    void SetDebugInfo(PTR_BYTE pDebugInfo);
+    void SetDebugInfo(PTR_BYTE pDebugInfo) override final;
 
     void ResetForJitRetry()
     {
