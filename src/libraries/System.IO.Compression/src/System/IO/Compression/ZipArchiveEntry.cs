@@ -53,6 +53,11 @@ namespace System.IO.Compression
             _archive = archive;
 
             _originallyInArchive = true;
+            // It's possible for the CompressionMethod setter and DetectEntryNameVersion to update this, even without any explicit
+            // changes. This can occur if a ZipArchive instance runs in Update mode and opens a stream with invalid data. In such
+            // a situation, both the local file header and the central directory header will be rewritten (to prevent the headers
+            // from falling out of sync when the central directory header is rewritten.)
+            Changes = ZipArchive.ChangeState.Unchanged;
 
             _diskNumberStart = cd.DiskNumberStart;
             _versionMadeByPlatform = (ZipVersionMadeByPlatform)cd.VersionMadeByCompatibility;
@@ -88,8 +93,6 @@ namespace System.IO.Compression
             _fileComment = cd.FileComment;
 
             _compressionLevel = MapCompressionLevel(_generalPurposeBitFlag, CompressionMethod);
-
-            Changes = ZipArchive.ChangeState.Unchanged;
         }
 
         // Initializes a ZipArchiveEntry instance for a new archive entry with a specified compression level.
@@ -1243,10 +1246,12 @@ namespace System.IO.Compression
             if (_versionToExtract < value)
             {
                 _versionToExtract = value;
+                Changes |= ZipArchive.ChangeState.FixedLengthMetadata;
             }
             if (_versionMadeBySpecification < value)
             {
                 _versionMadeBySpecification = value;
+                Changes |= ZipArchive.ChangeState.FixedLengthMetadata;
             }
         }
 
