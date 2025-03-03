@@ -100,7 +100,7 @@ namespace System.Reflection.PortableExecutable
                 const Characteristics ImageOnlyCharacteristics = Characteristics.RelocsStripped | Characteristics.ExecutableImage;
                 // Because COFF files do not have a magic number, perform some additional checks to catch outright invalid files.
                 if (_coffHeader.SizeOfOptionalHeader != 0
-                    || _coffHeader.PointerToSymbolTable >= size
+                    || _coffHeader.PointerToSymbolTable >= actualSize
                     || (_coffHeader.Characteristics & ImageOnlyCharacteristics) != 0)
                 {
                     throw new BadImageFormatException(SR.UnknownFileFormat);
@@ -112,7 +112,7 @@ namespace System.Reflection.PortableExecutable
                 _peHeader = new PEHeader(ref reader);
             }
 
-            _sectionHeaders = ReadSectionHeaders(ref reader, size, isCoffOnly);
+            _sectionHeaders = ReadSectionHeaders(ref reader, actualSize, isCoffOnly);
 
             if (!isCoffOnly)
             {
