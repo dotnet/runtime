@@ -701,7 +701,7 @@ PTR_PEImageLayout PEImage::GetOrCreateLayoutInternal(DWORD imageLayoutMask)
 
 #ifdef TARGET_WINDOWS
         // on Windows we prefer to just load the file using OS loader
-        if (!IsInBundle() && bIsLoadedLayoutSuitable)
+        if (!IsInBundle() && IsFile() && bIsLoadedLayoutSuitable)
         {
             bIsLoadedLayoutPreferred = TRUE;
         }

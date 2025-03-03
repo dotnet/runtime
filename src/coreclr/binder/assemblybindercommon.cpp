@@ -855,12 +855,12 @@ namespace BINDER_SPACE
                     SString assemblyFileName(simpleName);
                     assemblyFileName.Append(candidates[i]);
 
-                    SString assemblyFilePath(Bundle::AppBundle->BasePath());
-                    assemblyFilePath.Append(assemblyFileName);
-
                     ProbeExtensionResult probeExtensionResult = AssemblyProbeExtension::Probe(assemblyFileName, /* pathIsBundleRelative */ true);
                     if (probeExtensionResult.IsValid())
                     {
+                        SString assemblyFilePath(Bundle::AppIsBundle() ? Bundle::AppBundle->BasePath() : SString::Empty());
+                        assemblyFilePath.Append(assemblyFileName);
+
                         hr = GetAssembly(assemblyFilePath,
                                          TRUE,  // fIsInTPA
                                          &pTPAAssembly,

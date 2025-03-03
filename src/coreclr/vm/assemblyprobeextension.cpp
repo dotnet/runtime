@@ -3,6 +3,7 @@
 
 #include "common.h"
 #include <bundle.h>
+#include <hostinformation.h>
 #include <sstring.h>
 
 /*static*/
@@ -10,13 +11,16 @@ bool AssemblyProbeExtension::IsEnabled()
 {
     LIMITED_METHOD_CONTRACT;
 
-    return Bundle::AppIsBundle();
+    return Bundle::AppIsBundle() || HostInformation::HasExternalProbe();
 }
 
 /*static*/
 ProbeExtensionResult AssemblyProbeExtension::Probe(const SString& path, bool pathIsBundleRelative)
 {
     STANDARD_VM_CONTRACT;
+
+    if (!Bundle::AppIsBundle() && !HostInformation::HasExternalProbe())
+        return ProbeExtensionResult::Invalid();
 
     if (Bundle::AppIsBundle())
     {
@@ -25,6 +29,13 @@ ProbeExtensionResult AssemblyProbeExtension::Probe(const SString& path, bool pat
         {
             return ProbeExtensionResult::Bundle(bundleLocation);
         }
+    }
+
+    void* data;
+    int64_t size;
+    if (HostInformation::ExternalAssemblyProbe(path, &data, &size))
+    {
+        return ProbeExtensionResult::External(data, size);
     }
 
     return ProbeExtensionResult::Invalid();
