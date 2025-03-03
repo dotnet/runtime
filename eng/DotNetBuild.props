@@ -85,12 +85,14 @@
       <InnerBuildArgs Condition="'$(ForceDryRunSigning)' != ''">$(InnerBuildArgs) /p:ForceDryRunSigning=$(ForceDryRunSigning)</InnerBuildArgs>
       <InnerBuildArgs Condition="'$(DefaultArtifactVisibility)' != ''">$(InnerBuildArgs) /p:DefaultArtifactVisibility=$(DefaultArtifactVisibility)</InnerBuildArgs>
       <InnerBuildArgs Condition="'$(DotNetEsrpToolPath)' != ''">$(InnerBuildArgs) /p:DotNetEsrpToolPath=$(DotNetEsrpToolPath)</InnerBuildArgs>
+      <InnerBuildArgs Condition="'$(DotNetBuildTests)' != ''">$(InnerBuildArgs) /p:DotNetBuildTests=$(DotNetBuildTests)</InnerBuildArgs>
 
       <!-- Pass locations for assets, packages and symbols -->
       <InnerBuildArgs Condition="'$(SourceBuiltAssetsDir)' != ''">$(InnerBuildArgs) /p:SourceBuiltAssetsDir=$(SourceBuiltAssetsDir)</InnerBuildArgs>
       <InnerBuildArgs Condition="'$(SourceBuiltShippingPackagesDir)' != ''">$(InnerBuildArgs) /p:SourceBuiltShippingPackagesDir=$(SourceBuiltShippingPackagesDir)</InnerBuildArgs>
       <InnerBuildArgs Condition="'$(SourceBuiltNonShippingPackagesDir)' != ''">$(InnerBuildArgs) /p:SourceBuiltNonShippingPackagesDir=$(SourceBuiltNonShippingPackagesDir)</InnerBuildArgs>
       <InnerBuildArgs Condition="'$(SourceBuiltAssetManifestsDir)' != ''">$(InnerBuildArgs) /p:SourceBuiltAssetManifestsDir=$(SourceBuiltAssetManifestsDir)</InnerBuildArgs>
+      <InnerBuildArgs Condition="'$(SourceBuiltPdbArtifactsDir)' != ''">$(InnerBuildArgs) /p:SourceBuiltPdbArtifactsDir=$(SourceBuiltPdbArtifactsDir)</InnerBuildArgs>
       <InnerBuildArgs Condition="'$(SourceBuiltSymbolsDir)' != ''">$(InnerBuildArgs) /p:SourceBuiltSymbolsDir=$(SourceBuiltSymbolsDir)</InnerBuildArgs>
       <InnerBuildArgs Condition="'$(GitHubRepositoryName)' != ''">$(InnerBuildArgs) /p:GitHubRepositoryName=$(GitHubRepositoryName)</InnerBuildArgs>
 

@@ -279,7 +279,8 @@ BasicBlock* CodeGen::genCallFinally(BasicBlock* block)
 
         // The last slot is reserved for ICodeManager::FixContext(ppEndRegion)
         unsigned filterEndOffsetSlotOffs;
-        filterEndOffsetSlotOffs = (unsigned)(compiler->lvaLclSize(compiler->lvaShadowSPslotsVar) - TARGET_POINTER_SIZE);
+        filterEndOffsetSlotOffs =
+            (unsigned)(compiler->lvaLclStackHomeSize(compiler->lvaShadowSPslotsVar) - TARGET_POINTER_SIZE);
 
         unsigned curNestingSlotOffs;
         curNestingSlotOffs = (unsigned)(filterEndOffsetSlotOffs - ((finallyNesting + 1) * TARGET_POINTER_SIZE));
@@ -2210,10 +2211,9 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
 
             // The last slot is reserved for ICodeManager::FixContext(ppEndRegion)
             unsigned filterEndOffsetSlotOffs;
-            PREFIX_ASSUME(compiler->lvaLclSize(compiler->lvaShadowSPslotsVar) > TARGET_POINTER_SIZE); // below doesn't
-                                                                                                      // underflow.
+            assert(compiler->lvaLclStackHomeSize(compiler->lvaShadowSPslotsVar) > TARGET_POINTER_SIZE);
             filterEndOffsetSlotOffs =
-                (unsigned)(compiler->lvaLclSize(compiler->lvaShadowSPslotsVar) - TARGET_POINTER_SIZE);
+                (unsigned)(compiler->lvaLclStackHomeSize(compiler->lvaShadowSPslotsVar) - TARGET_POINTER_SIZE);
 
             size_t curNestingSlotOffs;
             curNestingSlotOffs = filterEndOffsetSlotOffs - ((finallyNesting + 1) * TARGET_POINTER_SIZE);
@@ -7287,7 +7287,7 @@ void CodeGen::genIntToFloatCast(GenTree* treeNode)
 #endif
 
     var_types dstType = treeNode->CastToType();
-    var_types srcType = op1->TypeGet();
+    var_types srcType = genActualType(op1->TypeGet());
     assert(!varTypeIsFloating(srcType) && varTypeIsFloating(dstType));
 
     // Since xarch emitter doesn't handle reporting gc-info correctly while casting away gc-ness we
@@ -7301,15 +7301,6 @@ void CodeGen::genIntToFloatCast(GenTree* treeNode)
         noway_assert(op1->OperIs(GT_LCL_ADDR));
         srcType = TYP_I_IMPL;
     }
-
-    // At this point, we should not see a srcType that is not int or long.
-    // For conversions from byte/sbyte/int16/uint16 to float/double, we would expect
-    // either the front-end or lowering phase to have generated two levels of cast.
-    // The first one is for widening smaller int type to int32 and the second one is
-    // to the float/double.
-    // On 32-bit, we expect morph to replace long to float/double casts with helper calls,
-    // so we should only see int here.
-    noway_assert(varTypeIsIntOrI(srcType));
 
     // To convert integral type to floating, the cvt[u]si2ss/sd instruction is used
     // which does a partial write to lower 4/8 bytes of xmm register keeping the other
@@ -10752,10 +10743,8 @@ void CodeGen::genFnEpilog(BasicBlock* block)
 
         if (fCalleePop)
         {
-            noway_assert(compiler->compArgSize >= intRegState.rsCalleeRegArgCount * REGSIZE_BYTES);
-            stkArgSize = compiler->compArgSize - intRegState.rsCalleeRegArgCount * REGSIZE_BYTES;
-
-            noway_assert(compiler->compArgSize < 0x10000); // "ret" only has 2 byte operand
+            stkArgSize = compiler->lvaParameterStackSize;
+            noway_assert(stkArgSize < 0x10000); // "ret" only has 2 byte operand
         }
 
 #ifdef UNIX_X86_ABI

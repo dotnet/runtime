@@ -492,6 +492,8 @@ public static class Program
             GetDescriptor(contractVersion),
             [TargetPointer.Null, new TargetPointer(header->memoryBase + (nuint)((byte*)&header->moduleTable - (byte*)header))],
             (address, buffer) => ReadFromMemoryMappedLog(address, buffer, header),
+            (threadId, contextFlags, contextSize, bufferToFill) => throw new NotImplementedException("StressLogAnalyzer does not provide GetTargetThreadContext implementation"),
+            (out platform) => throw new NotImplementedException("StressLogAnalyzer does not provide GetTargetPlatform implementation"),
             true,
             nuint.Size);
     }

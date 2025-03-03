@@ -78,7 +78,7 @@ function createWasmImportStubsFrom(collection) {
 // we will replace them with the real implementation in replace_linker_placeholders
 function injectDependencies() {
     createWasmImportStubsFrom(methodIndexByName.mono_wasm_imports);
-    createWasmImportStubsFrom(methodIndexByName.mono_wasm_js_globalization_imports);
+    if (FEATURE_PERFTRACING) createWasmImportStubsFrom(methodIndexByName.mono_wasm_diagnostic_imports);
 
     #if USE_PTHREADS
     createWasmImportStubsFrom(methodIndexByName.mono_wasm_threads_imports);
@@ -90,6 +90,7 @@ function injectDependencies() {
         `enablePerfTracing: ${FEATURE_PERFTRACING ? "true" : "false"}, ` +
         `enableAotProfiler: ${ENABLE_AOT_PROFILER ? "true" : "false"}, ` +
         `enableBrowserProfiler: ${ENABLE_BROWSER_PROFILER ? "true" : "false"}, ` +
+        `enablePerfTracing: ${ENABLE_BROWSER_PROFILER ? "true" : "false"}, ` +
         `enableLogProfiler: ${ENABLE_LOG_PROFILER ? "true" : "false"}, ` +
         `runAOTCompilation: ${RUN_AOT_COMPILATION ? "true" : "false"}, ` +
         `wasmEnableThreads: ${USE_PTHREADS ? "true" : "false"}, ` +

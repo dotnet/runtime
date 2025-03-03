@@ -4785,7 +4785,7 @@ void CodeGen::genPutArgStk(GenTreePutArgStk* treeNode)
     if (treeNode->putInIncomingArgArea())
     {
         varNumOut    = getFirstArgWithStackSlot();
-        argOffsetMax = compiler->compArgSize;
+        argOffsetMax = compiler->lvaParameterStackSize;
 #if FEATURE_FASTTAILCALL
         // This must be a fast tail call.
         assert(treeNode->gtCall->IsFastTailCall());
@@ -7038,7 +7038,7 @@ void CodeGen::genPushCalleeSavedRegisters(regNumber initReg, bool* pInitRegZeroe
 
     if (leftFrameSize != 0)
     {
-        genStackPointerAdjustment(-leftFrameSize, REG_SCRATCH, nullptr, /* reportUnwindData */ true);
+        genStackPointerAdjustment(-leftFrameSize, REG_SCRATCH, nullptr, /* reportUnwindData */ false);
     }
 }
 

@@ -2,10 +2,10 @@
   <PropertyGroup>
     <BuildDebPackage>false</BuildDebPackage>
     <BuildRpmPackage>true</BuildRpmPackage>
-    <PackageTargetOS>rhel.8</PackageTargetOS>
+    <PackageTargetOS>sles.15</PackageTargetOS>
   </PropertyGroup>
 
   <ItemGroup>
-    <LinuxPackageDependency Include="openssl-libs;libicu;krb5-libs" />
+    <LinuxPackageDependency Include="libopenssl3;libicu;krb5" />
   </ItemGroup>
 </Project>
