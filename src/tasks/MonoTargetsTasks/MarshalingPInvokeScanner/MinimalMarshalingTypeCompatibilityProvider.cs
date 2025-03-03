@@ -108,7 +108,7 @@ namespace MonoTargetsTasks
                 if (baseTypeHandle.Kind == HandleKind.TypeReference)
                 {
                     TypeReference baseType = reader.GetTypeReference((TypeReferenceHandle)baseTypeHandle);
-                    if (reader.GetString(typeDef.Namespace) == "System" &&
+                    if (reader.GetString(baseType.Namespace) == "System" &&
                         reader.GetString(baseType.Name) == "Enum")
                         return Compatibility.Compatible;
                 }

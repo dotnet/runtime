@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Generic;
 using Xunit;
 
 namespace System.Numerics.Tests
@@ -151,6 +152,56 @@ namespace System.Numerics.Tests
             }
         }
 
+        [Fact]
+        public void RunSmallTests()
+        {
+            foreach (int i in new int[] {
+                    0,
+                    1,
+                    16,
+                    31,
+                    32,
+                    33,
+                    63,
+                    64,
+                    65,
+                    100,
+                    127,
+                    128,
+            })
+            {
+                foreach (int shift in new int[] {
+                    0,
+                    -1, 1,
+                    -16, 16,
+                    -31, 31,
+                    -32, 32,
+                    -33, 33,
+                    -63, 63,
+                    -64, 64,
+                    -65, 65,
+                    -100, 100,
+                    -127, 127,
+                    -128, 128,
+                })
+                {
+                    var num = Int128.One << i;
+                    for (int k = -1; k <= 1; k++)
+                    {
+                        foreach (int sign in new int[] { -1, +1 })
+                        {
+                            Int128 value128 = sign * (num + k);
+
+                            byte[] tempByteArray1 = GetRandomSmallByteArray(value128);
+                            byte[] tempByteArray2 = GetRandomSmallByteArray(shift);
+
+                            VerifyLeftShiftString(Print(tempByteArray2) + Print(tempByteArray1) + "b<<");
+                        }
+                    }
+                }
+            }
+        }
+
         private static void VerifyLeftShiftString(string opstring)
         {
             StackCalc sc = new StackCalc(opstring);
@@ -158,6 +209,19 @@ namespace System.Numerics.Tests
             {
                 Assert.Equal(sc.snCalc.Peek().ToString(), sc.myCalc.Peek().ToString());
             }
+        }
+
+        private static byte[] GetRandomSmallByteArray(Int128 num)
+        {
+            byte[] value = new byte[16];
+
+            for (int i = 0; i < value.Length; i++)
+            {
+                value[i] = (byte)num;
+                num >>= 8;
+            }
+
+            return value;
         }
 
         private static byte[] GetRandomByteArray(Random random)
