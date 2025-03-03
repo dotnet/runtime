@@ -7787,7 +7787,9 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac, bool* optA
             if (varTypeIsIntegral(tree) && op1->IsNeverNegative(this) && op2->IsNeverNegative(this))
             {
                 assert(tree->OperIs(GT_DIV));
+                GenTreeFlags preserveFlags = tree->gtFlags & GTF_DIV_MOD_NO_BY_ZERO;
                 tree->ChangeOper(GT_UDIV, GenTree::PRESERVE_VN);
+                tree->gtFlags |= preserveFlags;
                 return fgMorphSmpOp(tree, mac);
             }
 
@@ -8581,6 +8583,9 @@ DONE_MORPHING_CHILDREN:
 
                 if ((exSetFlags & ExceptionSetFlags::ArithmeticException) != ExceptionSetFlags::None)
                 {
+#ifdef TARGET_ARM64
+                    assert(!opts.OptimizationEnabled());
+#endif
                     fgAddCodeRef(compCurBB, SCK_OVERFLOW);
                 }
                 else
@@ -8590,6 +8595,9 @@ DONE_MORPHING_CHILDREN:
 
                 if ((exSetFlags & ExceptionSetFlags::DivideByZeroException) != ExceptionSetFlags::None)
                 {
+#ifdef TARGET_ARM64
+                    assert(!opts.OptimizationEnabled());
+#endif
                     fgAddCodeRef(compCurBB, SCK_DIV_BY_ZERO);
                 }
                 else
@@ -8607,6 +8615,9 @@ DONE_MORPHING_CHILDREN:
             ExceptionSetFlags exSetFlags = tree->OperExceptions(this);
             if ((exSetFlags & ExceptionSetFlags::DivideByZeroException) != ExceptionSetFlags::None)
             {
+#ifdef TARGET_ARM64
+                assert(!opts.OptimizationEnabled());
+#endif
                 fgAddCodeRef(compCurBB, SCK_DIV_BY_ZERO);
             }
             else

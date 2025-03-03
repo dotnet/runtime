@@ -7330,7 +7330,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
             case CEE_DIV_UN:
                 oper = (opcode == CEE_DIV) ? GT_DIV : GT_UDIV;
 #ifdef TARGET_ARM64
-                if (opts.OptimizationEnabled() && impImportDivisionWithChecks(oper))
+                if (opts.OptimizationEnabled() && impImportDivModWithChecks(oper))
                 {
                     break;
                 }
@@ -7338,11 +7338,14 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 goto MATH_MAYBE_CALL_NO_OVF;
 
             case CEE_REM:
-                oper = GT_MOD;
-                goto MATH_MAYBE_CALL_NO_OVF;
-
             case CEE_REM_UN:
-                oper = GT_UMOD;
+                oper = (opcode == CEE_REM) ? GT_MOD : GT_UMOD;
+#ifdef TARGET_ARM64
+                if (opts.OptimizationEnabled() && impImportDivModWithChecks(oper))
+                {
+                    break;
+                }
+#endif
                 goto MATH_MAYBE_CALL_NO_OVF;
 
             MATH_MAYBE_CALL_NO_OVF:
@@ -13878,14 +13881,15 @@ methodPointerInfo* Compiler::impAllocateMethodPointerInfo(const CORINFO_RESOLVED
 }
 
 #ifdef TARGET_ARM64
-// impImportDivision: Import a division operation, adding runtime checks for overflow/divide-by-zero if needed.
+// impImportDivModWithChecks: Import a division or modulo operation, adding runtime checks for overflow/divide-by-zero
+// if needed.
 //
 // Arguments:
 //    oper - Type of operation to create the tree for
 //
-bool Compiler::impImportDivisionWithChecks(genTreeOps oper)
+bool Compiler::impImportDivModWithChecks(genTreeOps oper)
 {
-    assert(oper == GT_DIV || oper == GT_UDIV);
+    assert(oper == GT_DIV || oper == GT_UDIV || oper == GT_MOD || oper == GT_UMOD);
 
     typeInfo tiRetVal = typeInfo();
 
@@ -13897,21 +13901,33 @@ bool Compiler::impImportDivisionWithChecks(genTreeOps oper)
         return false;
     }
 
+    bool isUnsigned = oper == GT_UDIV || oper == GT_UMOD;
+
     impBashVarAddrsToI(dividend, divisor);
 
-    var_types resultType = impProcessResultType(oper, oper == GT_UDIV, &dividend, &divisor);
+    var_types resultType = impProcessResultType(oper, isUnsigned, &dividend, &divisor);
 
     // The node is allocated as large because some optimizations may bash the node into a GT_CAST node in lowering.
     GenTree* divNode = gtNewLargeOperNode(oper, resultType, dividend, divisor);
 
-    if (oper == GT_UDIV)
+    if (isUnsigned)
         divNode->gtFlags |= GTF_UNSIGNED;
 
     divNode = gtFoldExpr(divNode);
 
     // Is is still a division after folding? If not - push the result and finish.
-    if (!divNode->OperIs(GT_DIV, GT_UDIV))
+    if (!divNode->OperIs(GT_DIV, GT_UDIV, GT_MOD, GT_UMOD))
     {
+        impPopStack();
+        impPopStack();
+        impPushOnStack(divNode, tiRetVal);
+        return true;
+    }
+
+    if (divisor->IsNeverZero() && divisor->IsNeverNegativeOne(this))
+    {
+        divNode->gtFlags |= (GTF_DIV_MOD_NO_OVERFLOW | GTF_DIV_MOD_NO_BY_ZERO);
+        assert(!divNode->OperMayThrow(this));
         impPopStack();
         impPopStack();
         impPushOnStack(divNode, tiRetVal);
@@ -13936,7 +13952,7 @@ bool Compiler::impImportDivisionWithChecks(genTreeOps oper)
     divNode->AsOp()->gtOp2 = divisor;
 
     // Expand division into QMark containing runtime checks.
-    if (oper == GT_DIV)
+    if (!isUnsigned)
     {
         assert(!(varTypeIsUnsigned(dividend) || varTypeIsUnsigned(divisor)));
 
