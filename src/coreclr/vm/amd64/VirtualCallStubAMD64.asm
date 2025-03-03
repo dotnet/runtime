@@ -102,7 +102,6 @@ NESTED_ENTRY JIT_InterfaceLookupForSlot, _TEXT
         RESTORE_FLOAT_ARGUMENT_REGISTERS __PWTB_FloatArgumentRegisters
         RESTORE_ARGUMENT_REGISTERS __PWTB_ArgumentRegisters
         EPILOG_WITH_TRANSITION_BLOCK_RETURN
-        TAILJMP_RAX
 
 NESTED_END JIT_InterfaceLookupForSlot, _TEXT
 
