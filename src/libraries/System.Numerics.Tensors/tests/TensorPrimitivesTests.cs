@@ -243,7 +243,7 @@ namespace System.Numerics.Tensors.Tests
         }
 
         [Fact]
-        public void Abs_ThrowsForOverlapppingInputsWithOutputs()
+        public void Abs_ThrowsForOverlappingInputsWithOutputs()
         {
             T[] array = new T[10];
             AssertExtensions.Throws<ArgumentException>("destination", () => Abs(array.AsSpan(1, 5), array.AsSpan(0, 5)));
@@ -314,7 +314,7 @@ namespace System.Numerics.Tensors.Tests
         }
 
         [Fact]
-        public void Add_TwoTensors_ThrowsForOverlapppingInputsWithOutputs()
+        public void Add_TwoTensors_ThrowsForOverlappingInputsWithOutputs()
         {
             T[] array = new T[10];
             AssertExtensions.Throws<ArgumentException>("destination", () => Add(array.AsSpan(1, 2), array.AsSpan(5, 2), array.AsSpan(0, 2)));
@@ -373,7 +373,7 @@ namespace System.Numerics.Tensors.Tests
         }
 
         [Fact]
-        public void Add_TensorScalar_ThrowsForOverlapppingInputsWithOutputs()
+        public void Add_TensorScalar_ThrowsForOverlappingInputsWithOutputs()
         {
             T[] array = new T[10];
             AssertExtensions.Throws<ArgumentException>("destination", () => Add(array.AsSpan(1, 2), default(T), array.AsSpan(0, 2)));
@@ -449,7 +449,7 @@ namespace System.Numerics.Tensors.Tests
         }
 
         [Fact]
-        public void AddMultiply_ThreeTensors_ThrowsForOverlapppingInputsWithOutputs()
+        public void AddMultiply_ThreeTensors_ThrowsForOverlappingInputsWithOutputs()
         {
             T[] array = new T[10];
             AssertExtensions.Throws<ArgumentException>("destination", () => AddMultiply(array.AsSpan(1, 2), array.AsSpan(4, 2), array.AsSpan(7, 2), array.AsSpan(0, 2)));
@@ -527,7 +527,7 @@ namespace System.Numerics.Tensors.Tests
         }
 
         [Fact]
-        public void AddMultiply_TensorTensorScalar_ThrowsForOverlapppingInputsWithOutputs()
+        public void AddMultiply_TensorTensorScalar_ThrowsForOverlappingInputsWithOutputs()
         {
             T[] array = new T[10];
             AssertExtensions.Throws<ArgumentException>("destination", () => AddMultiply(array.AsSpan(1, 2), array.AsSpan(4, 2), default(T), array.AsSpan(0, 2)));
@@ -603,7 +603,7 @@ namespace System.Numerics.Tensors.Tests
         }
 
         [Fact]
-        public void AddMultiply_TensorScalarTensor_ThrowsForOverlapppingInputsWithOutputs()
+        public void AddMultiply_TensorScalarTensor_ThrowsForOverlappingInputsWithOutputs()
         {
             T[] array = new T[10];
             AssertExtensions.Throws<ArgumentException>("destination", () => AddMultiply(array.AsSpan(1, 2), default(T), array.AsSpan(4, 2), array.AsSpan(0, 2)));
@@ -711,7 +711,7 @@ namespace System.Numerics.Tensors.Tests
         }
 
         [Fact]
-        public void Cosh_ThrowsForOverlapppingInputsWithOutputs()
+        public void Cosh_ThrowsForOverlappingInputsWithOutputs()
         {
             if (!IsFloatingPoint) return;
 
@@ -883,7 +883,7 @@ namespace System.Numerics.Tensors.Tests
         }
 
         [Fact]
-        public void Divide_TwoTensors_ThrowsForOverlapppingInputsWithOutputs()
+        public void Divide_TwoTensors_ThrowsForOverlappingInputsWithOutputs()
         {
             T[] array = new T[10];
             AssertExtensions.Throws<ArgumentException>("destination", () => Divide(array.AsSpan(1, 2), array.AsSpan(4, 2), array.AsSpan(0, 2)));
@@ -942,7 +942,7 @@ namespace System.Numerics.Tensors.Tests
         }
 
         [Fact]
-        public void Divide_TensorScalar_ThrowsForOverlapppingInputsWithOutputs()
+        public void Divide_TensorScalar_ThrowsForOverlappingInputsWithOutputs()
         {
             T[] array = new T[10];
             AssertExtensions.Throws<ArgumentException>("destination", () => Divide(array.AsSpan(1, 2), array.AsSpan(4, 2), array.AsSpan(0, 2)));
@@ -1073,7 +1073,7 @@ namespace System.Numerics.Tensors.Tests
         }
 
         [Fact]
-        public void Exp_ThrowsForOverlapppingInputsWithOutputs()
+        public void Exp_ThrowsForOverlappingInputsWithOutputs()
         {
             if (!IsFloatingPoint) return;
 
@@ -1417,7 +1417,7 @@ namespace System.Numerics.Tensors.Tests
         }
 
         [Fact]
-        public void Log_ThrowsForOverlapppingInputsWithOutputs()
+        public void Log_ThrowsForOverlappingInputsWithOutputs()
         {
             if (!IsFloatingPoint) return;
 
@@ -1502,7 +1502,7 @@ namespace System.Numerics.Tensors.Tests
         }
 
         [Fact]
-        public void Log2_ThrowsForOverlapppingInputsWithOutputs()
+        public void Log2_ThrowsForOverlappingInputsWithOutputs()
         {
             if (!IsFloatingPoint) return;
 
@@ -1689,7 +1689,7 @@ namespace System.Numerics.Tensors.Tests
         }
 
         [Fact]
-        public void Max_TwoTensors_ThrowsForOverlapppingInputsWithOutputs()
+        public void Max_TwoTensors_ThrowsForOverlappingInputsWithOutputs()
         {
             T[] array = new T[10];
             AssertExtensions.Throws<ArgumentException>("destination", () => Max(array.AsSpan(1, 2), array.AsSpan(4, 2), array.AsSpan(0, 2)));
@@ -1876,7 +1876,7 @@ namespace System.Numerics.Tensors.Tests
         }
 
         [Fact]
-        public void MaxMagnitude_TwoTensors_ThrowsForOverlapppingInputsWithOutputs()
+        public void MaxMagnitude_TwoTensors_ThrowsForOverlappingInputsWithOutputs()
         {
             T[] array = new T[10];
             AssertExtensions.Throws<ArgumentException>("destination", () => MaxMagnitude(array.AsSpan(1, 2), array.AsSpan(4, 2), array.AsSpan(0, 2)));
@@ -2063,7 +2063,7 @@ namespace System.Numerics.Tensors.Tests
         }
 
         [Fact]
-        public void Min_TwoTensors_ThrowsForOverlapppingInputsWithOutputs()
+        public void Min_TwoTensors_ThrowsForOverlappingInputsWithOutputs()
         {
             T[] array = new T[10];
             AssertExtensions.Throws<ArgumentException>("destination", () => Min(array.AsSpan(1, 2), array.AsSpan(4, 2), array.AsSpan(0, 2)));
@@ -2248,7 +2248,7 @@ namespace System.Numerics.Tensors.Tests
         }
 
         [Fact]
-        public void MinMagnitude_TwoTensors_ThrowsForOverlapppingInputsWithOutputs()
+        public void MinMagnitude_TwoTensors_ThrowsForOverlappingInputsWithOutputs()
         {
             T[] array = new T[10];
             AssertExtensions.Throws<ArgumentException>("destination", () => MinMagnitude(array.AsSpan(1, 2), array.AsSpan(4, 2), array.AsSpan(0, 2)));
@@ -2322,7 +2322,7 @@ namespace System.Numerics.Tensors.Tests
         }
 
         [Fact]
-        public void Multiply_TwoTensors_ThrowsForOverlapppingInputsWithOutputs()
+        public void Multiply_TwoTensors_ThrowsForOverlappingInputsWithOutputs()
         {
             T[] array = new T[10];
             AssertExtensions.Throws<ArgumentException>("destination", () => Multiply(array.AsSpan(1, 2), array.AsSpan(4, 2), array.AsSpan(0, 2)));
@@ -2381,7 +2381,7 @@ namespace System.Numerics.Tensors.Tests
         }
 
         [Fact]
-        public void Multiply_TensorScalar_ThrowsForOverlapppingInputsWithOutputs()
+        public void Multiply_TensorScalar_ThrowsForOverlappingInputsWithOutputs()
         {
             T[] array = new T[10];
             AssertExtensions.Throws<ArgumentException>("destination", () => Multiply(array.AsSpan(1, 2), default(T), array.AsSpan(0, 2)));
@@ -2457,7 +2457,7 @@ namespace System.Numerics.Tensors.Tests
         }
 
         [Fact]
-        public void MultiplyAdd_ThreeTensors_ThrowsForOverlapppingInputsWithOutputs()
+        public void MultiplyAdd_ThreeTensors_ThrowsForOverlappingInputsWithOutputs()
         {
             T[] array = new T[10];
             AssertExtensions.Throws<ArgumentException>("destination", () => MultiplyAdd(array.AsSpan(1, 2), array.AsSpan(4, 2), array.AsSpan(7, 2), array.AsSpan(0, 2)));
@@ -2520,7 +2520,7 @@ namespace System.Numerics.Tensors.Tests
         }
 
         [Fact]
-        public void MultiplyAdd_TensorTensorScalar_ThrowsForOverlapppingInputsWithOutputs()
+        public void MultiplyAdd_TensorTensorScalar_ThrowsForOverlappingInputsWithOutputs()
         {
             T[] array = new T[10];
             AssertExtensions.Throws<ArgumentException>("destination", () => MultiplyAdd(array.AsSpan(1, 2), array.AsSpan(4, 2), default(T), array.AsSpan(0, 2)));
@@ -2581,7 +2581,7 @@ namespace System.Numerics.Tensors.Tests
         }
 
         [Fact]
-        public void MultiplyAdd_TensorScalarTensor_ThrowsForOverlapppingInputsWithOutputs()
+        public void MultiplyAdd_TensorScalarTensor_ThrowsForOverlappingInputsWithOutputs()
         {
             T[] array = new T[10];
             AssertExtensions.Throws<ArgumentException>("destination", () => MultiplyAdd(array.AsSpan(1, 2), default(T), array.AsSpan(4, 2), array.AsSpan(0, 2)));
@@ -2639,7 +2639,7 @@ namespace System.Numerics.Tensors.Tests
         }
 
         [Fact]
-        public void Negate_ThrowsForOverlapppingInputsWithOutputs()
+        public void Negate_ThrowsForOverlappingInputsWithOutputs()
         {
             T[] array = new T[10];
             AssertExtensions.Throws<ArgumentException>("destination", () => Negate(array.AsSpan(1, 2), array.AsSpan(0, 2)));
@@ -2834,7 +2834,7 @@ namespace System.Numerics.Tensors.Tests
         }
 
         [Fact]
-        public void Sigmoid_ThrowsForOverlapppingInputsWithOutputs()
+        public void Sigmoid_ThrowsForOverlappingInputsWithOutputs()
         {
             if (!IsFloatingPoint) return;
 
@@ -2942,7 +2942,7 @@ namespace System.Numerics.Tensors.Tests
         }
 
         [Fact]
-        public void Sinh_ThrowsForOverlapppingInputsWithOutputs()
+        public void Sinh_ThrowsForOverlappingInputsWithOutputs()
         {
             if (!IsFloatingPoint) return;
 
@@ -3026,7 +3026,7 @@ namespace System.Numerics.Tensors.Tests
         }
 
         [Fact]
-        public void SoftMax_ThrowsForOverlapppingInputsWithOutputs()
+        public void SoftMax_ThrowsForOverlappingInputsWithOutputs()
         {
             if (!IsFloatingPoint) return;
 
@@ -3100,7 +3100,7 @@ namespace System.Numerics.Tensors.Tests
         }
 
         [Fact]
-        public void Subtract_TwoTensors_ThrowsForOverlapppingInputsWithOutputs()
+        public void Subtract_TwoTensors_ThrowsForOverlappingInputsWithOutputs()
         {
             T[] array = new T[10];
             AssertExtensions.Throws<ArgumentException>("destination", () => Subtract(array.AsSpan(1, 2), array.AsSpan(4, 2), array.AsSpan(0, 2)));
@@ -3159,7 +3159,7 @@ namespace System.Numerics.Tensors.Tests
         }
 
         [Fact]
-        public void Subtract_TensorScalar_ThrowsForOverlapppingInputsWithOutputs()
+        public void Subtract_TensorScalar_ThrowsForOverlappingInputsWithOutputs()
         {
             T[] array = new T[10];
             AssertExtensions.Throws<ArgumentException>("destination", () => Subtract(array.AsSpan(1, 2), default(T), array.AsSpan(0, 2)));
@@ -3324,7 +3324,7 @@ namespace System.Numerics.Tensors.Tests
         }
 
         [Fact]
-        public void Tanh_ThrowsForOverlapppingInputsWithOutputs()
+        public void Tanh_ThrowsForOverlappingInputsWithOutputs()
         {
             if (!IsFloatingPoint) return;
 
