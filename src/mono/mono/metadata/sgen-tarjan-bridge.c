@@ -785,8 +785,11 @@ create_scc (ScanData *data)
 
 		// Maybe we should make sure we are not adding duplicates here. It is not really a problem
 		// since we will get rid of duplicates before submitting the SCCs to the client in gather_xrefs
-		if (color_data)
+		if (color_data) {
 			add_other_colors (color_data, &other->xrefs);
+		} else {
+			g_assert (dyn_array_ptr_size (&other->xrefs) == 0);
+		}
 		dyn_array_ptr_uninit (&other->xrefs);
 
 		if (other == data) {
