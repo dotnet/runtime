@@ -93,6 +93,7 @@ namespace System.Numerics.Tensors.Tests
         #region Test Utilities
 
         public delegate void SpanDestinationDelegate(ReadOnlySpan<T> x, Span<T> destination);
+        public delegate void SpanDestinationDelegate<TInput, TOutput>(ReadOnlySpan<TInput> x, Span<TOutput> destination);
         public delegate void SpanSpanDestinationDelegate(ReadOnlySpan<T> x, ReadOnlySpan<T> y, Span<T> destination);
         public delegate void SpanScalarDestinationDelegate<T1, T2, T3>(ReadOnlySpan<T1> x, T2 y, Span<T3> destination);
         public delegate void ScalarSpanDestinationDelegate(T x, ReadOnlySpan<T> y, Span<T> destination);
@@ -100,6 +101,8 @@ namespace System.Numerics.Tensors.Tests
         public delegate void SpanSpanScalarDestinationDelegate(ReadOnlySpan<T> x, ReadOnlySpan<T> y, T z, Span<T> destination);
         public delegate void SpanScalarSpanDestinationDelegate(ReadOnlySpan<T> x, T y, ReadOnlySpan<T> z, Span<T> destination);
         public delegate void SpanDestinationDestinationDelegate(ReadOnlySpan<T> x, Span<T> destination1, Span<T> destination2);
+        public delegate void SpanDestinationIsDelegate(ReadOnlySpan<T> x, Span<bool> destination);
+        public delegate bool SpanIsAllAnyDelegate(ReadOnlySpan<T> x);
 
         protected virtual bool IsFloatingPoint => typeof(T) == typeof(float) || typeof(T) == typeof(double);
 
@@ -177,11 +180,15 @@ namespace System.Numerics.Tensors.Tests
             {
                 int pos = Random.Next(x.Length);
                 T orig = x[pos];
-                x[pos] = value;
-
-                action();
-
-                x[pos] = orig;
+                try
+                {
+                    x[pos] = value;
+                    action();
+                }
+                finally
+                {
+                    x[pos] = orig;
+                }
             });
         }
         #endregion
