@@ -21,7 +21,7 @@
 #include <wasm_simd128.h>
 #elif defined(_M_AMD64) || defined(_M_X64) || (_M_IX86_FP == 2) || defined(__SSE2__)
 #include <emmintrin.h>
-#elif defined(__ARM_NEON)
+#elif defined(__ARM_ARCH_ISA_A64)
 #include <arm_neon.h>
 #elif defined(__wasm)
 #define DN_SIMDHASH_USE_SCALAR_FALLBACK 1
@@ -116,7 +116,7 @@ find_first_matching_suffix_simd (
 	return ctz(wasm_i8x16_bitmask(wasm_i8x16_eq(needle.vec, haystack.vec)));
 #elif defined(_M_AMD64) || defined(_M_X64) || (_M_IX86_FP == 2) || defined(__SSE2__)
 	return ctz(_mm_movemask_epi8(_mm_cmpeq_epi8(needle.m128, haystack.m128)));
-#elif defined(__ARM_NEON)
+#elif defined(__ARM_ARCH_ISA_A64)
 	// See https://community.arm.com/arm-community-blogs/b/servers-and-cloud-computing-blog/posts/porting-x86-vector-bitmask-optimizations-to-arm-neon
 	uint16x8_t match_vector16 = vreinterpretq_u16_u8(vceqq_u8(needle.vec, haystack.vec));
 	uint8x8_t match_bits = vshrn_n_u16(match_vector16, 4);
