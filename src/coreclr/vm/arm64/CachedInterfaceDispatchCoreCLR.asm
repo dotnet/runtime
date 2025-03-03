@@ -17,27 +17,27 @@
 ;;
     LEAF_ENTRY RhpVTableOffsetDispatch
 
-        ;; r11 currently contains the indirection cell address.
-        ;; load r11 to point to the vtable offset (which is stored in the m_pCache field).
+        ;; x11 currently contains the indirection cell address.
+        ;; load x11 to point to the vtable offset (which is stored in the m_pCache field).
         ldr     x11, [x11, #OFFSETOF__InterfaceDispatchCell__m_pCache]
 
-        ;; r11 now contains the VTableOffset where the upper 32 bits are the offset to adjust
+        ;; x11 now contains the VTableOffset where the upper 32 bits are the offset to adjust
         ;; to get to the VTable chunk
         lsr     x10, x11, #32
 
-        ;; Load the MethodTable from the object instance in rcx, and add it to the vtable offset
+        ;; Load the MethodTable from the object instance in x0, and add it to the vtable offset
         ;; to get the address in the vtable chunk list of what we want to dereference
     ALTERNATE_ENTRY RhpVTableOffsetDispatchAVLocation
         ldr     x9, [x0]
         add     x9, x10, x9
 
-        ;; Load the target address of the vtable chunk into rax
+        ;; Load the target address of the vtable chunk into x9
         ldr     x9, [x9]
 
         ;; Compute the chunk offset
         ubfx    x10, x11, #16, #16
 
-        ;; Load the target address of the virtual function into rax
+        ;; Load the target address of the virtual function into x9
         ldr     x9, [x9, x10]
 
         EPILOG_BRANCH_REG  x9

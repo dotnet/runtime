@@ -1655,6 +1655,8 @@ BYTE* GenerateDispatchStubCellEntrySlot(LoaderAllocator *pLoaderAllocator, TypeH
 
 #if defined(FEATURE_CACHED_INTERFACE_DISPATCH) && defined(FEATURE_VIRTUAL_STUB_DISPATCH)
 inline bool UseCachedInterfaceDispatch() { return g_pConfig->UseCachedInterfaceDispatch(); }
+
+// INTERFACE_DISPATCH_CACHED_OR_VSD is a macro used to swap between cached interface dispatch and virtual stub dispatch.
 #define INTERFACE_DISPATCH_CACHED_OR_VSD(cachedDispatch, vsdDispath) if (UseCachedInterfaceDispatch()) { cachedDispatch; } else { vsdDispath; }
 #elif defined(FEATURE_CACHED_INTERFACE_DISPATCH)
 inline bool UseCachedInterfaceDispatch() { return true; }

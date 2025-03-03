@@ -3374,7 +3374,7 @@ EXTERN_C PCODE STDCALL ExternalMethodFixupWorker(TransitionBlock * pTransitionBl
                     // But we don't have the address of the initial R2R stub, as that is part of the R2R image
                     // However, we can rely on the detail that the cache value will never be 0 once it is updated
                     // So we read the indirection cell data, and if the cache portion is 0, we attempt to update the complete cell
-                    if (rgComparand[1] == 0 && PalInterlockedCompareExchange128((int64_t*)pIndirection, rgComparand[1], rgComparand[0], rgComparand))
+                    if (rgComparand[1] == 0 && PalInterlockedCompareExchange128((int64_t*)pIndirection, rgComparand[1], rgComparand[0], rgComparand) && rgComparand[1] == 0)
                     {
                         PalInterlockedCompareExchange128((int64_t*)pIndirection, pCache, addr, rgComparand);
                     }

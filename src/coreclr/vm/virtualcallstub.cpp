@@ -116,24 +116,8 @@ BYTE* GenerateDispatchStubCellEntryMethodDesc(LoaderAllocator *pLoaderAllocator,
 
 BYTE* GenerateDispatchStubCellEntrySlot(LoaderAllocator *pLoaderAllocator, TypeHandle ownerType, int methodSlot, LCGMethodResolver *pResolver)
 {
-    // Generate a dispatch stub and gather a slot.
-    //
-    // We generate an indirection so we don't have to write to the dictionary
-    // when we do updates, and to simplify stub indirect callsites.  Stubs stored in
-    // dictionaries use "RegisterIndirect" stub calling, e.g. "call [eax]",
-    // i.e. here the register "eax" would contain the value fetched from the dictionary,
-    // which in turn points to the stub indirection which holds the value the current stub
-    // address itself. If we just used "call eax" then we wouldn't know which stub indirection
-    // to update.  If we really wanted to avoid the extra indirection we could return the _address_ of the
-    // dictionary entry to the  caller, still using "call [eax]", and then the
-    // stub dispatch mechanism can update the dictitonary itself and we don't
-    // need an indirection.
-
     VirtualCallStubManager * pMgr = pLoaderAllocator->GetVirtualCallStubManager();
 
-    // We indirect through a cell so that updates can take place atomically.
-    // The call stub and the indirection cell have the same lifetime as the dictionary itself, i.e.
-    // are allocated in the domain of the dicitonary.
     DispatchToken token = VirtualCallStubManager::GetTokenFromOwnerAndSlot(ownerType, methodSlot);
 
     PCODE addr;
