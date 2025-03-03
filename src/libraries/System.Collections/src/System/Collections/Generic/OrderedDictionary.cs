@@ -793,7 +793,7 @@ namespace System.Collections.Generic
         }
 
         /// <summary>Sets the value for the key at the specified index.</summary>
-        /// <param name="index">The zero-based index of the element to get or set.</param>
+        /// <param name="index">The zero-based index at which to set the value.</param>
         /// <param name="value">The value to store at the specified index.</param>
         /// <exception cref="ArgumentOutOfRangeException"><paramref name="index"/> is less than 0 or greater than or equal to <see cref="Count"/>.</exception>
         public void SetAt(int index, TValue value)
@@ -809,7 +809,7 @@ namespace System.Collections.Generic
         }
 
         /// <summary>Sets the key/value pair at the specified index.</summary>
-        /// <param name="index">The zero-based index of the element to get or set.</param>
+        /// <param name="index">The zero-based index at which to set the key/value pair.</param>
         /// <param name="key">The key to store at the specified index.</param>
         /// <param name="value">The value to store at the specified index.</param>
         /// <exception cref="ArgumentNullException"><paramref name="key"/> is <see langword="null"/>.</exception>
