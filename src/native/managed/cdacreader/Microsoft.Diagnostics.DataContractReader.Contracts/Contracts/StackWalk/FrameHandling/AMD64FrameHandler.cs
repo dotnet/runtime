@@ -81,47 +81,31 @@ internal class AMD64FrameHandler(Target target, ContextHolder<AMD64Context> cont
         return true;
     }
 
-    private void UpdateFromCalleeSavedRegisters(TargetPointer calleeSavedRegisters)
+    private void UpdateFromCalleeSavedRegisters(TargetPointer calleeSavedRegistersPtr)
     {
-        bool unixAmd64Abi = _target.ReadGlobal<byte>(Constants.Globals.UnixAmd64ABI) != 0;
-        // Order of registers is hardcoded in the runtime. See vm/amd64/cgencpu.h CalleeSavedRegisters
-        if (unixAmd64Abi)
+        Data.CalleeSavedRegisters calleeSavedRegisters = _target.ProcessedData.GetOrAdd<Data.CalleeSavedRegisters>(calleeSavedRegistersPtr);
+        foreach ((string name, TargetNUInt value) in calleeSavedRegisters.Registers)
         {
-            _context.Context.R12 = _target.ReadPointer(calleeSavedRegisters + (ulong)_target.PointerSize * 0);
-            _context.Context.R13 = _target.ReadPointer(calleeSavedRegisters + (ulong)_target.PointerSize * 1);
-            _context.Context.R14 = _target.ReadPointer(calleeSavedRegisters + (ulong)_target.PointerSize * 2);
-            _context.Context.R15 = _target.ReadPointer(calleeSavedRegisters + (ulong)_target.PointerSize * 3);
-            _context.Context.Rbx = _target.ReadPointer(calleeSavedRegisters + (ulong)_target.PointerSize * 4);
-            _context.Context.Rbp = _target.ReadPointer(calleeSavedRegisters + (ulong)_target.PointerSize * 5);
-        }
-        else
-        {
-            _context.Context.Rdi = _target.ReadPointer(calleeSavedRegisters + (ulong)_target.PointerSize * 0);
-            _context.Context.Rsi = _target.ReadPointer(calleeSavedRegisters + (ulong)_target.PointerSize * 1);
-            _context.Context.Rbx = _target.ReadPointer(calleeSavedRegisters + (ulong)_target.PointerSize * 2);
-            _context.Context.Rbp = _target.ReadPointer(calleeSavedRegisters + (ulong)_target.PointerSize * 3);
-            _context.Context.R12 = _target.ReadPointer(calleeSavedRegisters + (ulong)_target.PointerSize * 4);
-            _context.Context.R13 = _target.ReadPointer(calleeSavedRegisters + (ulong)_target.PointerSize * 5);
-            _context.Context.R14 = _target.ReadPointer(calleeSavedRegisters + (ulong)_target.PointerSize * 6);
-            _context.Context.R15 = _target.ReadPointer(calleeSavedRegisters + (ulong)_target.PointerSize * 7);
+            if (!_context.TrySetField(name, value))
+            {
+                throw new InvalidOperationException($"Unexpected register {name} in callee saved registers");
+            }
         }
     }
 
     private void UpdateCalleeSavedRegistersFromOtherContext(ContextHolder<AMD64Context> otherContext)
     {
-        bool unixAmd64Abi = _target.ReadGlobal<byte>(Constants.Globals.UnixAmd64ABI) != 0;
-
-        if (!unixAmd64Abi)
+        foreach (string name in _target.GetTypeInfo(DataType.CalleeSavedRegisters).Fields.Keys)
         {
-            _context.Context.Rdi = otherContext.Context.Rdi;
-            _context.Context.Rsi = otherContext.Context.Rsi;
-        }
+            if (!otherContext.TryReadField(name, out TargetNUInt value))
+            {
+                throw new InvalidOperationException($"Unexpected register {name} in callee saved registers");
+            }
+            if (!_context.TrySetField(name, value))
+            {
+                throw new InvalidOperationException($"Unexpected register {name} in callee saved registers");
+            }
 
-        _context.Context.Rbx = otherContext.Context.Rbx;
-        _context.Context.Rbp = otherContext.Context.Rbp;
-        _context.Context.R12 = otherContext.Context.R12;
-        _context.Context.R13 = otherContext.Context.R13;
-        _context.Context.R14 = otherContext.Context.R14;
-        _context.Context.R15 = otherContext.Context.R15;
+        }
     }
 }

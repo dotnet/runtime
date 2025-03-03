@@ -684,6 +684,14 @@ CDAC_TYPE_FIELD(FaultingExceptionFrame, /*T_CONTEXT*/, TargetContext, cdac_data<
 #endif // FEATURE_EH_FUNCLETS
 CDAC_TYPE_END(FaultingExceptionFrame)
 
+CDAC_TYPE_BEGIN(CalleeSavedRegisters)
+CDAC_TYPE_SIZE(sizeof(CalleeSavedRegisters))
+#define CALLEE_SAVED_REGISTER(regname) \
+    CDAC_TYPE_FIELD(CalleeSavedRegisters, /*nuint*/, regname, offsetof(CalleeSavedRegisters, regname))
+ENUM_CALLEE_SAVED_REGISTERS()
+#undef CALLEE_SAVED_REGISTER
+CDAC_TYPE_END(CalleeSavedRegisters)
+
 CDAC_TYPES_END()
 
 CDAC_GLOBALS_BEGIN()
@@ -709,11 +717,6 @@ CDAC_GLOBAL(FeatureEHFunclets, uint8, 0)
 CDAC_GLOBAL(FeatureCOMInterop, uint8, 1)
 #else
 CDAC_GLOBAL(FeatureCOMInterop, uint8, 0)
-#endif
-#ifdef UNIX_AMD64_ABI
-CDAC_GLOBAL(UnixAmd64ABI, uint8, 1)
-#else
-CDAC_GLOBAL(UnixAmd64ABI, uint8, 0)
 #endif
 // See Object::GetGCSafeMethodTable
 #ifdef TARGET_64BIT

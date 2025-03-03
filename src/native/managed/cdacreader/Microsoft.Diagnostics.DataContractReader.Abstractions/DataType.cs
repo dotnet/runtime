@@ -91,6 +91,7 @@ public enum DataType
     GCCoverageInfo,
     TransitionBlock,
     DebuggerEval,
+    CalleeSavedRegisters,
 
     Frame,
     InlinedCallFrame,

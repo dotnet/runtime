@@ -91,36 +91,30 @@ internal class ARM64FrameHandler(Target target, ContextHolder<ARM64Context> cont
         _context.ReadFromAddress(_target, frame.TargetContextPtr);
         return true;
     }
-    private void UpdateFromCalleeSavedRegisters(TargetPointer calleeSavedRegisters)
+    private void UpdateFromCalleeSavedRegisters(TargetPointer calleeSavedRegistersPtr)
     {
-        // Order of registers is hardcoded in the runtime. See vm/arm64/cgencpu.h CalleeSavedRegisters
-        _context.Context.Fp = _target.ReadPointer(calleeSavedRegisters + (ulong)_target.PointerSize * 0);
-        _context.Context.Lr = _target.ReadPointer(calleeSavedRegisters + (ulong)_target.PointerSize * 1);
-        _context.Context.X19 = _target.ReadPointer(calleeSavedRegisters + (ulong)_target.PointerSize * 2);
-        _context.Context.X20 = _target.ReadPointer(calleeSavedRegisters + (ulong)_target.PointerSize * 3);
-        _context.Context.X21 = _target.ReadPointer(calleeSavedRegisters + (ulong)_target.PointerSize * 4);
-        _context.Context.X22 = _target.ReadPointer(calleeSavedRegisters + (ulong)_target.PointerSize * 5);
-        _context.Context.X23 = _target.ReadPointer(calleeSavedRegisters + (ulong)_target.PointerSize * 6);
-        _context.Context.X24 = _target.ReadPointer(calleeSavedRegisters + (ulong)_target.PointerSize * 7);
-        _context.Context.X25 = _target.ReadPointer(calleeSavedRegisters + (ulong)_target.PointerSize * 8);
-        _context.Context.X26 = _target.ReadPointer(calleeSavedRegisters + (ulong)_target.PointerSize * 9);
-        _context.Context.X27 = _target.ReadPointer(calleeSavedRegisters + (ulong)_target.PointerSize * 10);
-        _context.Context.X28 = _target.ReadPointer(calleeSavedRegisters + (ulong)_target.PointerSize * 11);
+        Data.CalleeSavedRegisters calleeSavedRegisters = _target.ProcessedData.GetOrAdd<Data.CalleeSavedRegisters>(calleeSavedRegistersPtr);
+        foreach ((string name, TargetNUInt value) in calleeSavedRegisters.Registers)
+        {
+            if (!_context.TrySetField(name, value))
+            {
+                throw new InvalidOperationException($"Unexpected register {name} in callee saved registers");
+            }
+        }
     }
 
     private void UpdateCalleeSavedRegistersFromOtherContext(ContextHolder<ARM64Context> otherContext)
     {
-        _context.Context.Fp = otherContext.Context.Fp;
-        _context.Context.Lr = otherContext.Context.Lr;
-        _context.Context.X19 = otherContext.Context.X19;
-        _context.Context.X20 = otherContext.Context.X20;
-        _context.Context.X21 = otherContext.Context.X21;
-        _context.Context.X22 = otherContext.Context.X22;
-        _context.Context.X23 = otherContext.Context.X23;
-        _context.Context.X24 = otherContext.Context.X24;
-        _context.Context.X25 = otherContext.Context.X25;
-        _context.Context.X26 = otherContext.Context.X26;
-        _context.Context.X27 = otherContext.Context.X27;
-        _context.Context.X28 = otherContext.Context.X28;
+        foreach (string name in _target.GetTypeInfo(DataType.CalleeSavedRegisters).Fields.Keys)
+        {
+            if (!otherContext.TryReadField(name, out TargetNUInt value))
+            {
+                throw new InvalidOperationException($"Unexpected register {name} in callee saved registers");
+            }
+            if (!_context.TrySetField(name, value))
+            {
+                throw new InvalidOperationException($"Unexpected register {name} in callee saved registers");
+            }
+        }
     }
 }
