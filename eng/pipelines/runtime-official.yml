@@ -46,7 +46,8 @@ extends:
             MirrorBranch: main
             LclSource: lclFilesfromPackage
             LclPackageId: 'LCL-JUNO-PROD-RUNTIME'
-    - stage: Source Index
+    - stage: Source_Index
+      displayName: Source Index
       jobs:
       #
       # Source Index Build
