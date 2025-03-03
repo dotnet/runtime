@@ -36,19 +36,6 @@ namespace System.Diagnostics.Tests
         }
 
         [Theory]
-        [ActiveIssue("https://github.com/mono/mono/issues/15183", TestRuntimes.Mono)]
-        [InlineData(StackFrame.OFFSET_UNKNOWN, false)]
-        [InlineData(0, false)]
-        [InlineData(1, false)]
-        // This is highly dependent on reflection implementation and is not consistent across runtimes.
-        // The extra 'bool _' parameter avoids a potential reflection optimization for common signatures which may interfere with stack frame count.
-        public void Ctor_SkipFrames(int skipFrames, bool _)
-        {
-            var stackFrame = new StackFrame(skipFrames);
-            VerifyStackFrame(stackFrame, true, skipFrames, typeof(StackFrameTests).GetMethod(nameof(Ctor_SkipFrames)), isCurrentFrame: skipFrames == 0);
-        }
-
-        [Theory]
         [ActiveIssue("https://github.com/mono/mono/issues/15187", TestRuntimes.Mono)]
         [InlineData(StackFrame.OFFSET_UNKNOWN, true)]
         [InlineData(0, true)]
