@@ -622,8 +622,6 @@ public:
             freeArrayInternal(m_pNativeVarInfo);
     }
 
-    void BackoutJitData(EECodeGenManager * jitMgr);
-
     void ResetForJitRetry()
     {
         CONTRACTL {
@@ -663,12 +661,15 @@ public:
         m_numRichOffsetMappings = 0;
     }
 
+    virtual void BackoutJitData(EECodeGenManager * jitMgr) = 0;
+
     // ICorDebugInfo stuff.
     void setBoundaries(CORINFO_METHOD_HANDLE ftn,
                        ULONG32 cMap, ICorDebugInfo::OffsetMapping *pMap) override final;
     void setVars(CORINFO_METHOD_HANDLE ftn, ULONG32 cVars,
                  ICorDebugInfo::NativeVarInfo *vars) override final;
     void CompressDebugInfo();
+    virtual void SetDebugInfo(PTR_BYTE pDebugInfo) = 0;
 
     virtual PatchpointInfo* GetPatchpointInfo()
     {
@@ -692,13 +693,14 @@ public:
 
 protected:
 
-    void allocMemWorker(AllocMemArgs *pArgs, size_t reserveForJumpStubs
-#ifdef FEATURE_EH_FUNCLETS
-                      , ULONG unwindInfoSize, ULONG unwindSize, BYTE** ppUnwindBlock
-#endif
-    );
+    template <typename TCodeHeader>
+    void setEHcountWorker(unsigned cEH);
 
-    void WriteCodeBytes();
+    template<class TCodeHeader>
+    void SetRealCodeHeader();
+
+    template<class TCodeHeader>
+    void NibbleMapSet();
 
     virtual void getEHinfo(
                             CORINFO_METHOD_HANDLE ftn,              /* IN  */
@@ -706,14 +708,11 @@ protected:
                             CORINFO_EH_CLAUSE* clause               /* OUT */
                           ) override final;
 
-    virtual void * allocGCInfo (size_t  size) override final;
-
-    virtual void setEHcount (unsigned cEH) override final;
-
-    virtual void setEHinfo (
-                            unsigned      EHnumber,
-                            const CORINFO_EH_CLAUSE* clause
-                           ) override final;
+    void setEHinfoWorker(
+                          EE_ILEXCEPTION* pEHInfo,
+                          unsigned      EHnumber,
+                          const CORINFO_EH_CLAUSE* clause
+                        );
 
     EECodeGenManager*       m_jitManager;   // responsible for allocating memory
     void*                   m_CodeHeader;   // descriptor for JITTED code - read/execute address
@@ -768,8 +767,15 @@ class CEEJitInfo : public CEECodeGenInfo
 public:
     // ICorJitInfo stuff
 
-    void allocMem (AllocMemArgs *pArgs) override final;
+    void allocMem(AllocMemArgs *pArgs) override final;
+    void * allocGCInfo(size_t  size) override final;
+    virtual void setEHcount (unsigned cEH) override final;
+    virtual void setEHinfo (
+        unsigned      EHnumber,
+        const CORINFO_EH_CLAUSE* clause
+       ) override final;
 
+    void WriteCodeBytes();
     void WriteCode(EECodeGenManager * jitMgr) override final;
 
     void reserveUnwindInfo(bool isFunclet, bool isColdCode, uint32_t unwindSize) override final;
@@ -816,6 +822,9 @@ public:
     uint16_t getRelocTypeHint(void * target) override final;
 
     uint32_t getExpectedTargetArchitecture() override final;
+
+    void BackoutJitData(EECodeGenManager * jitMgr) override final;
+    void SetDebugInfo(PTR_BYTE pDebugInfo);
 
     void ResetForJitRetry()
     {
@@ -1063,9 +1072,19 @@ public:
         } CONTRACTL_END;
     }
 
-    void allocMem (AllocMemArgs *pArgs) override final;
+    void allocMem(AllocMemArgs *pArgs) override final;
+    void * allocGCInfo(size_t  size) override final;
+    virtual void setEHcount (unsigned cEH) override final;
+    virtual void setEHinfo (
+        unsigned      EHnumber,
+        const CORINFO_EH_CLAUSE* clause
+       ) override final;
 
+    void WriteCodeBytes();
     void WriteCode(EECodeGenManager * jitMgr) override final;
+
+    void BackoutJitData(EECodeGenManager * jitMgr) override final;
+    void SetDebugInfo(PTR_BYTE pDebugInfo);
 
     void ResetForJitRetry()
     {

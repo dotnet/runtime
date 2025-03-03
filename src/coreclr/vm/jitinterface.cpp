@@ -10896,17 +10896,23 @@ void CEEJitInfo::GetProfilingHandle(bool                      *pbHookFunction,
     *pbIndirectedHandles = false;
 }
 
-/*********************************************************************/
-void CEECodeGenInfo::WriteCodeBytes()
+template<class TCodeHeader>
+void CEECodeGenInfo::SetRealCodeHeader()
 {
-    LIMITED_METHOD_CONTRACT;
-
     if (m_pRealCodeHeader != NULL)
     {
         // Restore the read only version of the real code header
-        m_jitManager->SetRealCodeHeader(m_CodeHeaderRW, m_pRealCodeHeader);
+        ((TCodeHeader*)m_CodeHeaderRW)->SetRealCodeHeader(m_pRealCodeHeader);
         m_pRealCodeHeader = NULL;
     }
+}
+
+/*********************************************************************/
+void CEEJitInfo::WriteCodeBytes()
+{
+    LIMITED_METHOD_CONTRACT;
+
+    SetRealCodeHeader<CodeHeader>();
 
     if (m_CodeHeaderRW != m_CodeHeader)
     {
@@ -10916,7 +10922,7 @@ void CEECodeGenInfo::WriteCodeBytes()
 }
 
 /*********************************************************************/
-void CEECodeGenInfo::BackoutJitData(EECodeGenManager * jitMgr)
+void CEEJitInfo::BackoutJitData(EECodeGenManager * jitMgr)
 {
     CONTRACTL {
         NOTHROW;
@@ -10927,9 +10933,24 @@ void CEECodeGenInfo::BackoutJitData(EECodeGenManager * jitMgr)
     // the code bytes to the target memory location.
     WriteCodeBytes();
 
-    void* pCodeHeader = m_CodeHeader;
+    CodeHeader* pCodeHeader = (CodeHeader*)m_CodeHeader;
     if (pCodeHeader)
         jitMgr->RemoveJitData(pCodeHeader, m_GCinfo_len, m_EHinfo_len);
+}
+
+template<class TCodeHeader>
+void CEECodeGenInfo::NibbleMapSet()
+{
+    CONTRACTL {
+        NOTHROW;
+        GC_NOTRIGGER;
+    } CONTRACTL_END;
+
+    TCodeHeader* pCodeHeader = (TCodeHeader*)m_CodeHeader;
+
+    // m_codeWriteBufferSize is the size of the code region + code header. The nibble map should only use
+    // the code region, therefore we subtract the size of the CodeHeader.
+    m_jitManager->NibbleMapSet(m_pCodeHeap, pCodeHeader->GetCodeStartAddress(), m_codeWriteBufferSize - sizeof(TCodeHeader));
 }
 
 /*********************************************************************/
@@ -10941,40 +10962,15 @@ void CEEJitInfo::WriteCode(EECodeGenManager * jitMgr)
     } CONTRACTL_END;
 
     WriteCodeBytes();
-
-    CodeHeader* pCodeHeader = (CodeHeader*)m_CodeHeader;
-
     // Now that the code header was written to the final location, publish the code via the nibble map
-    // m_codeWriteBufferSize is the size of the code region + code header. The nibble map should only use
-    // the code region, therefore we subtract the size of the CodeHeader.
-    jitMgr->NibbleMapSet(m_pCodeHeap, pCodeHeader->GetCodeStartAddress(), m_codeWriteBufferSize - sizeof(CodeHeader));
+    NibbleMapSet<CodeHeader>();
 
 #if defined(TARGET_AMD64)
     // Publish the new unwind information in a way that the ETW stack crawler can find
     _ASSERTE(m_usedUnwindInfos == m_totalUnwindInfos);
-    UnwindInfoTable::PublishUnwindInfoForMethod(m_moduleBase, pCodeHeader->GetUnwindInfo(0), m_totalUnwindInfos);
+    UnwindInfoTable::PublishUnwindInfoForMethod(m_moduleBase, ((CodeHeader*)m_CodeHeader)->GetUnwindInfo(0), m_totalUnwindInfos);
 #endif // defined(TARGET_AMD64)
 }
-
-#ifdef FEATURE_INTERPRETER
-/*********************************************************************/
-void CInterpreterJitInfo::WriteCode(EECodeGenManager * jitMgr)
-{
-    CONTRACTL {
-        THROWS;
-        GC_TRIGGERS;
-    } CONTRACTL_END;
-
-    WriteCodeBytes();
-
-    InterpreterCodeHeader* pCodeHeader = (InterpreterCodeHeader*)m_CodeHeader;
-
-    // Now that the code header was written to the final location, publish the code via the nibble map
-    // m_codeWriteBufferSize is the size of the code region + code header. The nibble map should only use
-    // the code region, therefore we subtract the size of the CodeHeader.
-    jitMgr->NibbleMapSet(m_pCodeHeap, pCodeHeader->GetCodeStartAddress(), m_codeWriteBufferSize - sizeof(InterpreterCodeHeader));
-}
-#endif // FEATURE_INTERPRETER
 
 /*********************************************************************/
 // Route jit information to the Jit Debug store.
@@ -11105,6 +11101,184 @@ PatchpointInfo* CEEJitInfo::getOSRInfo(unsigned* ilOffset)
     return result;
 }
 
+void CEEJitInfo::SetDebugInfo(PTR_BYTE pDebugInfo)
+{
+    ((CodeHeader*)m_CodeHeaderRW)->SetDebugInfo(pDebugInfo);
+}
+
+#ifdef FEATURE_INTERPRETER
+
+void CInterpreterJitInfo::allocMem(AllocMemArgs *pArgs)
+{
+    JIT_TO_EE_TRANSITION();
+
+    _ASSERTE(pArgs->coldCodeSize == 0);
+    _ASSERTE(pArgs->roDataSize == 0);
+
+    ULONG codeSize      = pArgs->hotCodeSize;
+    void **codeBlock    = &pArgs->hotCodeBlock;
+    void **codeBlockRW  = &pArgs->hotCodeBlockRW;
+    S_SIZE_T totalSize = S_SIZE_T(codeSize);
+
+    _ASSERTE(m_CodeHeader == 0 &&
+            // The jit-compiler sometimes tries to compile a method a second time
+            // if it failed the first time. In such a situation, m_CodeHeader may
+            // have already been assigned. Its OK to ignore this assert in such a
+            // situation - we will leak some memory, but that is acceptable
+            // since this should happen very rarely.
+            "Note that this may fire if the JITCompiler tries to recompile a method");
+    if( totalSize.IsOverflow() )
+    {
+        COMPlusThrowHR(CORJIT_OUTOFMEM);
+    }
+    if (ETW_EVENT_ENABLED(MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_DOTNET_Context, MethodJitMemoryAllocatedForCode))
+    {
+        ULONGLONG ullMethodIdentifier = 0;
+        ULONGLONG ullModuleID = 0;
+        if (m_pMethodBeingCompiled)
+        {
+            Module* pModule = m_pMethodBeingCompiled->GetModule();
+            ullModuleID = (ULONGLONG)(TADDR)pModule;
+            ullMethodIdentifier = (ULONGLONG)m_pMethodBeingCompiled;
+        }
+        FireEtwMethodJitMemoryAllocatedForCode(ullMethodIdentifier, ullModuleID,
+            pArgs->hotCodeSize, pArgs->roDataSize, totalSize.Value(), pArgs->flag, GetClrInstanceId());
+    }
+
+    m_jitManager->allocCode(m_pMethodBeingCompiled, totalSize.Value(), 0, pArgs->flag, &m_CodeHeader, &m_CodeHeaderRW, &m_codeWriteBufferSize, &m_pCodeHeap
+                          , &m_pRealCodeHeader
+#ifdef FEATURE_EH_FUNCLETS
+                          , 0
+#endif
+                          );
+
+    BYTE* current = (BYTE *)((InterpreterCodeHeader*)m_CodeHeader)->GetCodeStartAddress();
+
+    // Interpreter doesn't use executable memory, so the writeable pointer to the header is the same as the read only one
+    _ASSERTE(m_CodeHeaderRW == m_CodeHeader);
+
+    *codeBlock = current;
+    *codeBlockRW = current;
+
+    current += codeSize;
+
+    pArgs->coldCodeBlock = NULL;
+    pArgs->coldCodeBlockRW = NULL;
+    pArgs->roDataBlock = NULL;
+    pArgs->roDataBlockRW = NULL;
+
+    _ASSERTE((SIZE_T)(current - (BYTE *)((InterpreterCodeHeader*)m_CodeHeader)->GetCodeStartAddress()) <= totalSize.Value());
+
+#ifdef _DEBUG
+    m_codeSize = codeSize;
+#endif  // _DEBUG
+
+    EE_TO_JIT_TRANSITION();
+}
+
+void * CInterpreterJitInfo::allocGCInfo (size_t size)
+{
+    CONTRACTL {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_PREEMPTIVE;
+    } CONTRACTL_END;
+
+    void * block = NULL;
+
+    JIT_TO_EE_TRANSITION();
+
+    _ASSERTE(m_CodeHeaderRW != 0);
+    _ASSERTE(((InterpreterCodeHeader*)m_CodeHeaderRW)->GetGCInfo() == 0);
+
+#ifdef HOST_64BIT
+    if (size & 0xFFFFFFFF80000000LL)
+    {
+        COMPlusThrowHR(CORJIT_OUTOFMEM);
+    }
+#endif // HOST_64BIT
+
+    block = m_jitManager->allocGCInfo((InterpreterCodeHeader*)m_CodeHeaderRW,(DWORD)size, &m_GCinfo_len);
+    if (!block)
+    {
+        COMPlusThrowHR(CORJIT_OUTOFMEM);
+    }
+
+    _ASSERTE(((InterpreterCodeHeader*)m_CodeHeaderRW)->GetGCInfo() != 0 && block == ((InterpreterCodeHeader*)m_CodeHeaderRW)->GetGCInfo());
+
+    EE_TO_JIT_TRANSITION();
+
+    return block;
+}
+
+void CInterpreterJitInfo::setEHcount (
+        unsigned      cEH)
+{
+    WRAPPER_NO_CONTRACT;
+
+    setEHcountWorker<InterpreterCodeHeader>(cEH);
+}
+
+void CInterpreterJitInfo::setEHinfo (
+        unsigned      EHnumber,
+        const CORINFO_EH_CLAUSE* clause)
+{
+    CONTRACTL {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_PREEMPTIVE;
+    } CONTRACTL_END;
+
+    JIT_TO_EE_TRANSITION();
+
+    // <REVISIT_TODO> Fix make the Code Manager EH clauses EH_INFO+</REVISIT_TODO>
+    EE_ILEXCEPTION *pEHInfo = ((InterpreterCodeHeader*)m_CodeHeaderRW)->GetEHInfo();
+    setEHinfoWorker(pEHInfo, EHnumber, clause);
+
+    EE_TO_JIT_TRANSITION();
+}
+
+void CInterpreterJitInfo::WriteCodeBytes()
+{
+    LIMITED_METHOD_CONTRACT;
+
+    SetRealCodeHeader<InterpreterCodeHeader>();
+}
+
+void CInterpreterJitInfo::BackoutJitData(EECodeGenManager * jitMgr)
+{
+    CONTRACTL {
+        NOTHROW;
+        GC_TRIGGERS;
+    } CONTRACTL_END;
+
+    // The RemoveJitData call below requires the m_CodeHeader to be valid, so we need to write
+    // the code bytes to the target memory location.
+    WriteCodeBytes();
+
+    InterpreterCodeHeader* pCodeHeader = (InterpreterCodeHeader*)m_CodeHeader;
+    if (pCodeHeader)
+        jitMgr->RemoveJitData(pCodeHeader, m_GCinfo_len, m_EHinfo_len);
+}
+
+void CInterpreterJitInfo::WriteCode(EECodeGenManager * jitMgr)
+{
+    CONTRACTL {
+        THROWS;
+        GC_TRIGGERS;
+    } CONTRACTL_END;
+
+    WriteCodeBytes();
+    // Now that the code header was written to the final location, publish the code via the nibble map
+    NibbleMapSet<InterpreterCodeHeader>();
+}
+
+void CInterpreterJitInfo::SetDebugInfo(PTR_BYTE pDebugInfo)
+{
+    ((InterpreterCodeHeader*)m_CodeHeaderRW)->SetDebugInfo(pDebugInfo);
+}
+#endif // FEATURE_INTERPRETER
+
 void CEECodeGenInfo::CompressDebugInfo()
 {
     CONTRACTL {
@@ -11145,7 +11319,7 @@ void CEECodeGenInfo::CompressDebugInfo()
             writeFlagByte,
             m_pMethodBeingCompiled->GetLoaderAllocator()->GetLowFrequencyHeap());
 
-        m_jitManager->SetDebugInfo(m_CodeHeaderRW, pDebugInfo);
+        SetDebugInfo(pDebugInfo);
     }
     EX_CATCH
     {
@@ -12226,72 +12400,17 @@ HRESULT CEEJitInfo::getPgoInstrumentationResults(
 
 void CEEJitInfo::allocMem (AllocMemArgs *pArgs)
 {
-    CONTRACTL {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_PREEMPTIVE;
-    } CONTRACTL_END;
-
     JIT_TO_EE_TRANSITION();
-
-    allocMemWorker(pArgs, GetReserveForJumpStubs()
-#ifdef FEATURE_EH_FUNCLETS
-                 , m_totalUnwindInfos, m_totalUnwindSize, &m_theUnwindBlock
-#endif
-    );
-
-#ifdef FEATURE_EH_FUNCLETS
-    m_moduleBase = m_pCodeHeap->GetModuleBase();
-#endif
-
-    EE_TO_JIT_TRANSITION();
-}
-
-#ifdef FEATURE_INTERPRETER
-void CInterpreterJitInfo::allocMem(AllocMemArgs *pArgs)
-{
-    CONTRACTL {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_PREEMPTIVE;
-    } CONTRACTL_END;
-
-    JIT_TO_EE_TRANSITION();
-
-    allocMemWorker(pArgs, 0 /* reserveForJumpStubs */
-#ifdef FEATURE_EH_FUNCLETS
-                 , 0 /* unwindInfoCount */, 0 /* unwindSize */, NULL /* ppUnwindBlock */
-#endif
-    );
-
-    EE_TO_JIT_TRANSITION();
-}
-#endif // FEATURE_INTERPRETER
-
-void CEECodeGenInfo::allocMemWorker(AllocMemArgs *pArgs, size_t reserveForJumpStubs
-#ifdef FEATURE_EH_FUNCLETS
-                                  , ULONG unwindInfoCount, ULONG unwindSize, BYTE** ppUnwindBlock
-#endif    
-)
-{
-    CONTRACTL {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_PREEMPTIVE;
-    } CONTRACTL_END;
 
     _ASSERTE(pArgs->coldCodeSize == 0);
     if (pArgs->coldCodeBlock)
     {
         pArgs->coldCodeBlock = NULL;
     }
-
     ULONG codeSize      = pArgs->hotCodeSize;
     void **codeBlock    = &pArgs->hotCodeBlock;
     void **codeBlockRW  = &pArgs->hotCodeBlockRW;
-
     S_SIZE_T totalSize = S_SIZE_T(codeSize);
-
     size_t roDataAlignment = sizeof(void*);
     if ((pArgs->flag & CORJIT_ALLOCMEM_FLG_RODATA_64BYTE_ALIGN)!= 0)
     {
@@ -12312,7 +12431,6 @@ void CEECodeGenInfo::allocMemWorker(AllocMemArgs *pArgs, size_t reserveForJumpSt
     if (pArgs->roDataSize > 0)
     {
         size_t codeAlignment = sizeof(void*);
-
         if ((pArgs->flag & CORJIT_ALLOCMEM_FLG_32BYTE_ALIGN) != 0)
         {
             codeAlignment = 32;
@@ -12322,7 +12440,6 @@ void CEECodeGenInfo::allocMemWorker(AllocMemArgs *pArgs, size_t reserveForJumpSt
             codeAlignment = 16;
         }
         totalSize.AlignUp(codeAlignment);
-
         if (roDataAlignment > codeAlignment) {
             // Add padding to align read-only data.
             totalSize += (roDataAlignment - codeAlignment);
@@ -12331,11 +12448,8 @@ void CEECodeGenInfo::allocMemWorker(AllocMemArgs *pArgs, size_t reserveForJumpSt
     }
 
 #ifdef FEATURE_EH_FUNCLETS
-    if (unwindSize > 0)
-    {
-        totalSize.AlignUp(sizeof(DWORD));
-        totalSize += unwindSize;
-    }
+    totalSize.AlignUp(sizeof(DWORD));
+    totalSize += m_totalUnwindSize;
 #endif
 
     _ASSERTE(m_CodeHeader == 0 &&
@@ -12345,42 +12459,41 @@ void CEECodeGenInfo::allocMemWorker(AllocMemArgs *pArgs, size_t reserveForJumpSt
             // situation - we will leak some memory, but that is acceptable
             // since this should happen very rarely.
             "Note that this may fire if the JITCompiler tries to recompile a method");
-
     if( totalSize.IsOverflow() )
     {
         COMPlusThrowHR(CORJIT_OUTOFMEM);
     }
-
     if (ETW_EVENT_ENABLED(MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_DOTNET_Context, MethodJitMemoryAllocatedForCode))
     {
         ULONGLONG ullMethodIdentifier = 0;
         ULONGLONG ullModuleID = 0;
-
         if (m_pMethodBeingCompiled)
         {
             Module* pModule = m_pMethodBeingCompiled->GetModule();
             ullModuleID = (ULONGLONG)(TADDR)pModule;
             ullMethodIdentifier = (ULONGLONG)m_pMethodBeingCompiled;
         }
-
         FireEtwMethodJitMemoryAllocatedForCode(ullMethodIdentifier, ullModuleID,
             pArgs->hotCodeSize + pArgs->coldCodeSize, pArgs->roDataSize, totalSize.Value(), pArgs->flag, GetClrInstanceId());
     }
 
-    m_jitManager->allocCode(m_pMethodBeingCompiled, totalSize.Value(), reserveForJumpStubs, pArgs->flag, &m_CodeHeader, &m_CodeHeaderRW, &m_codeWriteBufferSize, &m_pCodeHeap
+    m_jitManager->allocCode(m_pMethodBeingCompiled, totalSize.Value(), GetReserveForJumpStubs(), pArgs->flag, &m_CodeHeader, &m_CodeHeaderRW, &m_codeWriteBufferSize, &m_pCodeHeap
                           , &m_pRealCodeHeader
 #ifdef FEATURE_EH_FUNCLETS
-                          , unwindInfoCount
+                          , m_totalUnwindInfos
 #endif
                           );
 
-    BYTE* current = (BYTE *)m_jitManager->GetCodeStartAddress(m_CodeHeader);
+#ifdef FEATURE_EH_FUNCLETS
+    m_moduleBase = m_pCodeHeap->GetModuleBase();
+#endif
+
+    BYTE* current = (BYTE *)((CodeHeader*)m_CodeHeader)->GetCodeStartAddress();
     size_t writeableOffset = (BYTE *)m_CodeHeaderRW - (BYTE *)m_CodeHeader;
 
     *codeBlock = current;
     *codeBlockRW = current + writeableOffset;
     current += codeSize;
-
     if (pArgs->roDataSize > 0)
     {
         current = (BYTE *)ALIGN_UP(current, roDataAlignment);
@@ -12396,22 +12509,22 @@ void CEECodeGenInfo::allocMemWorker(AllocMemArgs *pArgs, size_t reserveForJumpSt
 
 #ifdef FEATURE_EH_FUNCLETS
     current = (BYTE *)ALIGN_UP(current, sizeof(DWORD));
-    if (unwindSize > 0)
-    {
-        *ppUnwindBlock = current;
-        current += unwindSize;
-    }
+
+    m_theUnwindBlock = current;
+    current += m_totalUnwindSize;
 #endif
 
-    _ASSERTE((SIZE_T)(current - (BYTE *)m_jitManager->GetCodeStartAddress(m_CodeHeader)) <= totalSize.Value());
+    _ASSERTE((SIZE_T)(current - (BYTE *)((CodeHeader*)m_CodeHeader)->GetCodeStartAddress()) <= totalSize.Value());
 
 #ifdef _DEBUG
     m_codeSize = codeSize;
 #endif  // _DEBUG
+
+    EE_TO_JIT_TRANSITION();
 }
 
 /*********************************************************************/
-void * CEECodeGenInfo::allocGCInfo (size_t size)
+void * CEEJitInfo::allocGCInfo (size_t size)
 {
     CONTRACTL {
         THROWS;
@@ -12424,7 +12537,7 @@ void * CEECodeGenInfo::allocGCInfo (size_t size)
     JIT_TO_EE_TRANSITION();
 
     _ASSERTE(m_CodeHeaderRW != 0);
-    _ASSERTE(m_jitManager->GetGCInfo(m_CodeHeaderRW) == 0);
+    _ASSERTE(((CodeHeader*)m_CodeHeaderRW)->GetGCInfo() == 0);
 
 #ifdef HOST_64BIT
     if (size & 0xFFFFFFFF80000000LL)
@@ -12433,22 +12546,21 @@ void * CEECodeGenInfo::allocGCInfo (size_t size)
     }
 #endif // HOST_64BIT
 
-    block = m_jitManager->allocGCInfo(m_CodeHeaderRW,(DWORD)size, &m_GCinfo_len);
+    block = m_jitManager->allocGCInfo((CodeHeader*)m_CodeHeaderRW, (DWORD)size, &m_GCinfo_len);
     if (!block)
     {
         COMPlusThrowHR(CORJIT_OUTOFMEM);
     }
 
-    _ASSERTE(m_jitManager->GetGCInfo(m_CodeHeaderRW) != 0 && block == m_jitManager->GetGCInfo(m_CodeHeaderRW));
+    _ASSERTE(((CodeHeader*)m_CodeHeaderRW)->GetGCInfo() != 0 && block == ((CodeHeader*)m_CodeHeaderRW)->GetGCInfo());
 
     EE_TO_JIT_TRANSITION();
 
     return block;
 }
 
-/*********************************************************************/
-void CEECodeGenInfo::setEHcount (
-        unsigned      cEH)
+template <typename TCodeHeader>
+void CEECodeGenInfo::setEHcountWorker(unsigned cEH)
 {
     CONTRACTL {
         THROWS;
@@ -12460,20 +12572,28 @@ void CEECodeGenInfo::setEHcount (
 
     _ASSERTE(cEH != 0);
     _ASSERTE(m_CodeHeaderRW != 0);
-    _ASSERTE(m_jitManager->GetEHInfo(m_CodeHeaderRW) == 0);
+    _ASSERTE(((TCodeHeader*)m_CodeHeaderRW)->GetEHInfo() == 0);
 
     EE_ILEXCEPTION* ret;
-    ret = m_jitManager->allocEHInfo(m_CodeHeaderRW,cEH, &m_EHinfo_len);
+    ret = m_jitManager->allocEHInfo((TCodeHeader*)m_CodeHeaderRW, cEH, &m_EHinfo_len);
     _ASSERTE(ret);      // allocEHInfo throws if there's not enough memory
 
-    _ASSERTE(m_jitManager->GetEHInfo(m_CodeHeaderRW) != 0 && m_jitManager->GetEHInfo(m_CodeHeaderRW)->EHCount() == cEH);
+    _ASSERTE(((TCodeHeader*)m_CodeHeaderRW)->GetEHInfo() != 0 && ((TCodeHeader*)m_CodeHeaderRW)->GetEHInfo()->EHCount() == cEH);
 
     EE_TO_JIT_TRANSITION();
 }
 
 /*********************************************************************/
+void CEEJitInfo::setEHcount (
+        unsigned      cEH)
+{
+    WRAPPER_NO_CONTRACT;
 
-void CEECodeGenInfo::setEHinfo (
+    setEHcountWorker<CodeHeader>(cEH);
+}
+
+void CEECodeGenInfo::setEHinfoWorker(
+        EE_ILEXCEPTION *pEHInfo,
         unsigned      EHnumber,
         const CORINFO_EH_CLAUSE* clause)
 {
@@ -12483,10 +12603,6 @@ void CEECodeGenInfo::setEHinfo (
         MODE_PREEMPTIVE;
     } CONTRACTL_END;
 
-    JIT_TO_EE_TRANSITION();
-
-    // <REVISIT_TODO> Fix make the Code Manager EH clauses EH_INFO+</REVISIT_TODO>
-    EE_ILEXCEPTION *pEHInfo = m_jitManager->GetEHInfo(m_CodeHeaderRW);
     _ASSERTE(pEHInfo != 0 && EHnumber < pEHInfo->EHCount());
 
     EE_ILEXCEPTION_CLAUSE* pEHClause = pEHInfo->EHClause(EHnumber);
@@ -12517,10 +12633,26 @@ void CEECodeGenInfo::setEHinfo (
         SetHasCachedTypeHandle(pEHClause);
         LOG((LF_EH, LL_INFO1000000, "  CachedTypeHandle: 0x%08x  ->  %p\n",        clause->ClassToken,    pEHClause->TypeHandle));
     }
+}
+
+void CEEJitInfo::setEHinfo (
+        unsigned      EHnumber,
+        const CORINFO_EH_CLAUSE* clause)
+{
+    CONTRACTL {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_PREEMPTIVE;
+    } CONTRACTL_END;
+
+    JIT_TO_EE_TRANSITION();
+
+    // <REVISIT_TODO> Fix make the Code Manager EH clauses EH_INFO+</REVISIT_TODO>
+    EE_ILEXCEPTION *pEHInfo = ((CodeHeader*)m_CodeHeaderRW)->GetEHInfo();
+    setEHinfoWorker(pEHInfo, EHnumber, clause);
 
     EE_TO_JIT_TRANSITION();
 }
-
 
 /*********************************************************************/
 // get individual exception handler
