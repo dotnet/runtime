@@ -6270,7 +6270,6 @@ public:
     void fgMoveColdBlocks();
     void fgSearchImprovedLayout();
 
-    template <bool hasEH>
     class ThreeOptLayout
     {
         static bool EdgeCmp(const FlowEdge* left, const FlowEdge* right);
