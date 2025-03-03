@@ -10,9 +10,9 @@ namespace Wasm.Build.Tests;
 public abstract record MSBuildOptions
 (
     bool                            IsPublish,
+    string                          TargetFramework,
     bool                            AOT                             = false,
     NativeFilesType                 ExpectedFileType                = NativeFilesType.FromRuntimePack,
-    string                          TargetFramework                 = BuildTestBase.DefaultTargetFramework,
     GlobalizationMode               GlobalizationMode               = GlobalizationMode.Sharded,
     string                          CustomIcuFile                   = "",
     bool                            UseCache                        = true,
