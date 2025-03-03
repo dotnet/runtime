@@ -79,6 +79,15 @@ ctz (uint32_t value)
 	return (uint32_t)__builtin_ctz(value);
 }
 
+static DN_FORCEINLINE(uint64_t)
+ctzll (uint64_t value)
+{
+	// __builtin_ctzll is undefined for 0
+	if (value == 0)
+		return 64;
+	return (uint64_t)__builtin_ctzll(value);
+}
+
 static DN_FORCEINLINE(dn_simdhash_search_vector)
 build_search_vector (uint8_t needle)
 {
@@ -108,28 +117,14 @@ find_first_matching_suffix_simd (
 #elif defined(_M_AMD64) || defined(_M_X64) || (_M_IX86_FP == 2) || defined(__SSE2__)
 	return ctz(_mm_movemask_epi8(_mm_cmpeq_epi8(needle.m128, haystack.m128)));
 #elif defined(__ARM_NEON)
-	dn_simdhash_assert(!"Scalar fallback should be in use here");
-	return 32;
-	/*
-	dn_simdhash_suffixes match_vector;
-	// Completely untested.
-	static const dn_simdhash_suffixes byte_mask = {
-		{ 1, 2, 4, 8, 16, 32, 64, 128, 1, 2, 4, 8, 16, 32, 64, 128 }
-	};
-	union {
-		uint8_t b[4];
-		uint32_t u;
-	} msb;
-	match_vector.vec = vceqq_u8(needle.vec, haystack.vec);
-	dn_simdhash_suffixes masked;
-	masked.vec = vandq_u8(match_vector.vec, byte_mask.vec);
-	msb.b[0] = vaddv_u8(vget_low_u8(masked.vec));
-	msb.b[1] = vaddv_u8(vget_high_u8(masked.vec));
-	return ctz(msb.u);
-	*/
+	// See https://community.arm.com/arm-community-blogs/b/servers-and-cloud-computing-blog/posts/porting-x86-vector-bitmask-optimizations-to-arm-neon
+	uint16x8_t match_vector16 = vreinterpretq_u16_u8(vceqq_u8(needle.vec, haystack.vec));
+	uint8x8_t match_bits = vshrn_n_u16(match_vector16, 4);
+	uint64_t match_bits_scalar = vget_lane_u64(match_bits, 0);
+	return ctzll(match_bits_scalar) >> 2;
 #else
 	dn_simdhash_assert(!"Scalar fallback should be in use here");
-    return 32;
+	return 32;
 #endif
 }
 
