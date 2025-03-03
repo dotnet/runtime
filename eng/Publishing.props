@@ -5,28 +5,42 @@
     <AutoGenerateSymbolPackages>false</AutoGenerateSymbolPackages>
   </PropertyGroup>
 
-    <!--
-      Mark host-RID-targeting assets as Vertical visibility when building in the VMR.
-      We can't use NETCoreSdkRuntimeIdentifier here as the Arcade SDK projects don't import the .NET SDK.
-      Instead, just make sure we include the assets targeting "not the output rid", which will catch the host assets.
-    -->
-    <ItemGroup Condition="'$(EnableDefaultRidSpecificArtifacts)' != 'true' and '$(DotNetBuildOrchestrator)' == 'true'">
-      <_HostArtifact Include="$(ArtifactsPackagesDir)**\runtime.*.Microsoft.NETCore.ILAsm.*.nupkg"
-                      Exclude="$(ArtifactsPackagesDir)**\runtime.$(OutputRID).Microsoft.NETCore.ILAsm.*.nupkg" />
+  <PropertyGroup Condition="'$(DotNetFinalPublish)' != 'true' and '$(DotNetBuildOrchestrator)' != 'true'">
+    <PushToLocalStorage>true</PushToLocalStorage>
+    <PreserveRepoOrigin>true</PreserveRepoOrigin>
+    <ArtifactsStagingDir>$(ArtifactsDir)/staging/</ArtifactsStagingDir>
+    <SourceBuiltAssetsDir>$(ArtifactsStagingDir)/assets/$(Configuration)</SourceBuiltAssetsDir>
+    <SourceBuiltPdbArtifactsDir>$(ArtifactsStagingDir)/PDB/$(Configuration)</SourceBuiltPdbArtifactsDir>
+    <SourceBuiltShippingPackagesDir>$(ArtifactsStagingDir)/packages/$(Configuration)/Shipping</SourceBuiltShippingPackagesDir>
+    <SourceBuiltNonShippingPackagesDir>$(ArtifactsStagingDir)/packages/$(Configuration)/NonShipping</SourceBuiltNonShippingPackagesDir>
+    <PublishingUseHardlinksIfPossible>true</PublishingUseHardlinksIfPossible>
+    <!-- We don't use the asset manifest from the vertical dotnet/runtime legs outside of the VMR. Just dump it in a temp dir. -->
+    <SourceBuiltAssetManifestsDir>$(ArtifactsTmpDir)/manifests/$(Configuration)</SourceBuiltAssetManifestsDir>
+    <AssetManifestName>VerticalManifest.xml</AssetManifestName>
+  </PropertyGroup>
 
-      <_HostArtifact Include="$(ArtifactsPackagesDir)**\runtime.*.Microsoft.NETCore.ILDAsm.*.nupkg"
-                      Exclude="$(ArtifactsPackagesDir)**\runtime.$(OutputRID).Microsoft.NETCore.ILDAsm.*.nupkg" />
+  <!--
+    Mark host-RID-targeting assets as Vertical visibility when building in the VMR.
+    We can't use NETCoreSdkRuntimeIdentifier here as the Arcade SDK projects don't import the .NET SDK.
+    Instead, just make sure we include the assets targeting "not the output rid", which will catch the host assets.
+  -->
+  <ItemGroup Condition="'$(EnableDefaultRidSpecificArtifacts)' != 'true' and '$(DotNetBuildOrchestrator)' == 'true'">
+    <_HostArtifact Include="$(ArtifactsPackagesDir)**\runtime.*.Microsoft.NETCore.ILAsm.*.nupkg"
+                    Exclude="$(ArtifactsPackagesDir)**\runtime.$(OutputRID).Microsoft.NETCore.ILAsm.*.nupkg" />
 
-      <_HostArtifact Include="$(ArtifactsPackagesDir)**\runtime.*.Microsoft.DotNet.ILCompiler.*.nupkg"
-                      Exclude="$(ArtifactsPackagesDir)**\runtime.$(OutputRID).Microsoft.DotNet.ILCompiler.*.nupkg" />
+    <_HostArtifact Include="$(ArtifactsPackagesDir)**\runtime.*.Microsoft.NETCore.ILDAsm.*.nupkg"
+                    Exclude="$(ArtifactsPackagesDir)**\runtime.$(OutputRID).Microsoft.NETCore.ILDAsm.*.nupkg" />
 
-      <_HostArtifact Include="$(ArtifactsPackagesDir)**\Microsoft.NETCore.App.Crossgen2.*.nupkg"
-                      Exclude="$(ArtifactsPackagesDir)**\Microsoft.NETCore.App.Crossgen2.$(OutputRID).*.nupkg" />
+    <_HostArtifact Include="$(ArtifactsPackagesDir)**\runtime.*.Microsoft.DotNet.ILCompiler.*.nupkg"
+                    Exclude="$(ArtifactsPackagesDir)**\runtime.$(OutputRID).Microsoft.DotNet.ILCompiler.*.nupkg" />
 
-      <Artifact Update="@(_HostArtifact)"
-                Visibility="Vertical"
-                IsShipping="false" />
-    </ItemGroup>
+    <_HostArtifact Include="$(ArtifactsPackagesDir)**\Microsoft.NETCore.App.Crossgen2.*.nupkg"
+                    Exclude="$(ArtifactsPackagesDir)**\Microsoft.NETCore.App.Crossgen2.$(OutputRID).*.nupkg" />
+
+    <Artifact Update="@(_HostArtifact)"
+              Visibility="Vertical"
+              IsShipping="false" />
+  </ItemGroup>
 
   <Target Name="GetNonStableProductVersion">
     <!-- Retrieve the non-stable runtime pack product version.
@@ -84,9 +98,16 @@
           DependsOnTargets="GetNonStableProductVersion"
           BeforeTargets="PublishToAzureDevOpsArtifacts"
           AfterTargets="GenerateChecksumsFromArtifacts">
-    <ItemGroup>
+    <ItemGroup Condition="'$(DotNetFinalPublish)' == 'true' or '$(DotNetBuildOrchestrator)' == 'true'">
       <Artifact Condition="'%(Artifact.Kind)' != 'Package' and '%(Artifact.RelativeBlobPath)' == ''"
                 RelativeBlobPath="Runtime/$(NonStableProductVersion)/%(Artifact.SubBlobFolder)%(Filename)%(Extension)" />
+    </ItemGroup>
+    <!-- In vertical dotnet/runtime legs outside of the VMR, set the "relative blob path" to shipping vs non-shipping to make our download/upload work. -->
+    <ItemGroup Condition="'$(DotNetFinalPublish)' != 'true' and '$(DotNetBuildOrchestrator)' != 'true'">
+      <Artifact Condition="'%(Artifact.Kind)' != 'Package' and '%(Artifact.IsShipping)' == 'true'"
+                RelativeBlobPath="Shipping/%(Filename)%(Extension)" />
+      <Artifact Condition="'%(Artifact.Kind)' != 'Package' and '%(Artifact.IsShipping)' != 'true'"
+                RelativeBlobPath="NonShipping/%(Filename)%(Extension)" />
     </ItemGroup>
   </Target>
 </Project>

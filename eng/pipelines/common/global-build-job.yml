@@ -36,6 +36,8 @@ parameters:
   templatePath: 'templates'
   templateContext: ''
   disableComponentGovernance: ''
+  # In official builds, the expected artifact name
+  officialBuildArtifactName: ${{ parameters.osGroup }}${{ parameters.osSubgroup }}_${{ parameters.archType }}${{ replace(format('_{0}', parameters.runtimeVariant, 'normal'), '_normal', '') }}_Artifacts
 
 jobs:
 - template: /eng/common/${{ parameters.templatePath }}/job/job.yml
@@ -56,7 +58,20 @@ jobs:
     enableMicrobuildForMacAndLinux: ${{ parameters.isOfficialBuild }}
 
     ${{ if ne(parameters.templateContext, '') }}:
-      templateContext: ${{ parameters.templateContext }}
+      templateContext:
+        ${{ each pair in parameters.templateContext }}:
+          ${{ if notIn(pair.key, 'outputs') }}:
+            ${{ pair.key }}: ${{ pair.value }}
+        outputs:
+          ${{ if ne(parameters.templateContext.outputs, '') }}:
+            - ${{ each output in parameters.templateContext.outputs }}:
+              ${{ output.key }}: ${{ output.value }}
+          ${{ if eq(parameters.isOfficialBuild, true) }}:
+            - output: pipelineArtifact
+              displayName: 'Publish Pipeline Artifacts'
+              artifactName: ${{ parameters.officialBuildArtifactName }}
+        ${{ if eq(parameters.isOfficialBuild, true) }}:
+          artifactName: ${{ parameters.officialBuildArtifactName }}
 
     artifacts:
       publish:
