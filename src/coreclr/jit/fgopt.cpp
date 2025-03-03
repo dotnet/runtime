@@ -5263,6 +5263,13 @@ void Compiler::ThreeOptLayout::CompactHotJumps()
             edge = unlikelyEdge;
         }
 
+        // Don't interleave loop and non-loop blocks.
+        // We will leave it to 3-opt to determine if breaking up loop bodies is profitable.
+        if (compiler->m_loops->IsLoopExitEdge(edge))
+        {
+            continue;
+        }
+
         BasicBlock* const target = edge->getDestinationBlock();
         const unsigned    srcPos = i;
         const unsigned    dstPos = target->bbPreorderNum;
@@ -5295,7 +5302,7 @@ void Compiler::ThreeOptLayout::CompactHotJumps()
             for (unsigned pos = dstPos - 1; pos != srcPos; pos--)
             {
                 BasicBlock* const blockToMove = blockOrder[pos];
-                blockOrder[pos + offset]      = blockOrder[pos];
+                blockOrder[pos + offset]      = blockToMove;
                 blockToMove->bbPreorderNum += offset;
             }
 
@@ -5320,7 +5327,7 @@ void Compiler::ThreeOptLayout::CompactHotJumps()
             for (unsigned pos = srcPos - 1; pos >= dstPos; pos--)
             {
                 BasicBlock* const blockToMove = blockOrder[pos];
-                blockOrder[pos + 1]           = blockOrder[pos];
+                blockOrder[pos + 1]           = blockToMove;
                 blockToMove->bbPreorderNum++;
             }
 
