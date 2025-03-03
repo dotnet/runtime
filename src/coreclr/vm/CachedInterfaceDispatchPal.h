@@ -61,6 +61,15 @@ public:
     {
         if (CellType == DispatchCellType::VTableOffset)
         {
+            // The vtable offset is stored in a pointer sized field, but actually represents 2 values.
+            // 1. The offset of the first indirection to use. which is stored in the upper half of the
+            //    pointer sized field (bits 16-31 of a 32 bit pointer, or bits 32-63 of a 64 bit pointer).
+            //
+            // 2. The offset of the second indirection, which is a stored is the upper half of the lower
+            //    half of the pointer size field (bits 8-15 of a 32 bit pointer, or bits 16-31 of a 64
+            //    bit pointer) This second offset is always less than 255, so we only really need a single
+            //    byte, and the assembly code on some architectures may take a dependency on that
+            //    so the VTableOffsetToSlot function has a mask to ensure that it is only ever a single byte.
             uint32_t slot = Token.GetSlotNumber();
             unsigned offsetOfIndirection = MethodTable::GetVtableOffset() + MethodTable::GetIndexOfVtableIndirection(slot) * TARGET_POINTER_SIZE;
             unsigned offsetAfterIndirection = MethodTable::GetIndexAfterVtableIndirection(slot) * TARGET_POINTER_SIZE;
@@ -78,6 +87,7 @@ public:
 
     static unsigned VTableOffsetToSlot(uintptr_t vtableOffset)
     {
+        // See comment in GetVTableOffset() for what we're doing here.
         unsigned offsetOfIndirection = (unsigned)(vtableOffset >> ((TARGET_POINTER_SIZE * 8) / 2));
         unsigned offsetAfterIndirection = (unsigned)(vtableOffset >> ((TARGET_POINTER_SIZE * 8) / 4)) & 0xFF;
         unsigned slotGroupPerChunk = (offsetOfIndirection - MethodTable::GetVtableOffset()) / TARGET_POINTER_SIZE;

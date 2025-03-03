@@ -121,7 +121,10 @@ BYTE* GenerateDispatchStubCellEntrySlot(LoaderAllocator *pLoaderAllocator, TypeH
     DispatchToken token = VirtualCallStubManager::GetTokenFromOwnerAndSlot(ownerType, methodSlot);
 
     PCODE addr;
-    INTERFACE_DISPATCH_CACHED_OR_VSD(addr = (PCODE)RhpInitialInterfaceDispatch, addr = pMgr->GetCallStub(token))
+    INTERFACE_DISPATCH_CACHED_OR_VSD(
+        addr = (PCODE)RhpInitialInterfaceDispatch // Always use the initial dispatch stub for cached interface dispatch
+        ,
+        addr = pMgr->GetCallStub(token))          // Acquire a stub which is token specific in the VSD case
 
     BYTE* indcell = pMgr->GenerateStubIndirection(addr, token, pResolver != NULL);
 
@@ -1265,7 +1268,7 @@ BYTE *VirtualCallStubManager::GenerateStubIndirection(PCODE target, DispatchToke
             allocationSize += sizeof(CachedIndirectionCellBlockListNode);
         }
 #endif // FEATURE_CACHED_INTERFACE_DISPATCH
-        BYTE ** pBlock = (BYTE **) (void *) indcell_heap->AllocAlignedMem(cellsPerBlock * sizeOfIndCell, alignment);
+        BYTE ** pBlock = (BYTE **) (void *) indcell_heap->AllocAlignedMem(allocationSize, alignment);
 
 #ifdef FEATURE_CACHED_INTERFACE_DISPATCH
         if (m_loaderAllocator->IsCollectible() && UseCachedInterfaceDispatch())

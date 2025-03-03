@@ -3390,8 +3390,7 @@ EXTERN_C PCODE STDCALL ExternalMethodFixupWorker(TransitionBlock * pTransitionBl
 #endif
                 }
 
-                // We don't yet have a proper implementation for cached interface stubs in R2R code, so instead of finding stubs, simply do the resolution in pure C++
-                // and skip updating the indirection cell
+                // We lost the race or the R2R image was generated without cached interface dispatch support, simply do the resolution in pure C++
                 DispatchToken token;
                 if (pMT->IsInterface())
                 {
@@ -3413,10 +3412,7 @@ EXTERN_C PCODE STDCALL ExternalMethodFixupWorker(TransitionBlock * pTransitionBl
                 DispatchToken token;
                 if (pMT->IsInterface())
                 {
-                    if (pMT->IsInterface())
-                        token = pMT->GetLoaderAllocator()->GetDispatchToken(pMT->GetTypeID(), slot);
-                    else
-                        token = DispatchToken::CreateDispatchToken(slot);
+                    token = pMT->GetLoaderAllocator()->GetDispatchToken(pMT->GetTypeID(), slot);
 
                     StubCallSite callSite(pIndirection, pEMFrame->GetReturnAddress());
                     pCode = pMgr->ResolveWorker(&callSite, protectedObj, token, STUB_CODE_BLOCK_VSD_LOOKUP_STUB);
