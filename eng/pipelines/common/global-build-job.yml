@@ -36,8 +36,7 @@ parameters:
   templatePath: 'templates'
   templateContext: ''
   disableComponentGovernance: ''
-  # In official builds, the expected artifact name
-  officialBuildArtifactName: $(defaultOfficialBuildArtifactName)
+  officialBuildArtifactName: ''
 
 jobs:
 - template: /eng/common/${{ parameters.templatePath }}/job/job.yml
@@ -69,9 +68,9 @@ jobs:
           ${{ if eq(parameters.isOfficialBuild, true) }}:
             - output: pipelineArtifact
               displayName: 'Publish Pipeline Artifacts'
-              artifactName: ${{ parameters.officialBuildArtifactName }}
+              artifactName: ${{ coalesce(parameters.officialBuildArtifactName, format("{0}{1}_{2}{3}_Artifacts", parameters.osGroup, parameters.osSubgroup, parameters.archType, replace(format('_{0}', parameters.runtimeVariant, 'normal'), '_normal', ''))) }}
         ${{ if eq(parameters.isOfficialBuild, true) }}:
-          artifactName: ${{ parameters.officialBuildArtifactName }}
+          artifactName: ${{ coalesce(parameters.officialBuildArtifactName, format("{0}{1}_{2}{3}_Artifacts", parameters.osGroup, parameters.osSubgroup, parameters.archType, replace(format('_{0}', parameters.runtimeVariant, 'normal'), '_normal', ''))) }}
 
     artifacts:
       publish:
@@ -159,9 +158,6 @@ jobs:
       # Set no native sanitizers by default
       - name: _nativeSanitizersArg
         value: ''
-
-      - name: defaultOfficialBuildArtifactName
-        value: ${{ parameters.osGroup }}${{ parameters.osSubgroup }}_${{ parameters.archType }}${{ replace(format('_{0}', parameters.runtimeVariant, 'normal'), '_normal', '') }}_Artifacts
 
       - ${{ each variableTemplate in parameters.extraVariablesTemplates }}:
         - template: ${{ variableTemplate.template }}
