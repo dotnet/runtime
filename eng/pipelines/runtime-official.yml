@@ -32,7 +32,6 @@ variables:
 extends:
   template:  /eng/pipelines/official/pipeline.yml
   parameters:
-    isOfficialBuild: true
     otherStages:
     - stage: Localization
       jobs:
