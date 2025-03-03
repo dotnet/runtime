@@ -3043,61 +3043,61 @@ namespace System.Runtime.Intrinsics
         [Intrinsic]
         internal static Vector128<byte> ShuffleNativeFallback(Vector128<byte> vector, Vector128<byte> indices)
         {
-            Shuffle(vector, indices);
+            return Shuffle(vector, indices);
         }
 
         [Intrinsic]
         internal static Vector128<sbyte> ShuffleNativeFallback(Vector128<sbyte> vector, Vector128<sbyte> indices)
         {
-            Shuffle(vector, indices);
+            return Shuffle(vector, indices);
         }
 
         [Intrinsic]
         internal static Vector128<short> ShuffleNativeFallback(Vector128<short> vector, Vector128<short> indices)
         {
-            Shuffle(vector, indices);
+            return Shuffle(vector, indices);
         }
 
         [Intrinsic]
         internal static Vector128<ushort> ShuffleNativeFallback(Vector128<ushort> vector, Vector128<ushort> indices)
         {
-            Shuffle(vector, indices);
+            return Shuffle(vector, indices);
         }
 
         [Intrinsic]
         internal static Vector128<int> ShuffleNativeFallback(Vector128<int> vector, Vector128<int> indices)
         {
-            Shuffle(vector, indices);
+            return Shuffle(vector, indices);
         }
 
         [Intrinsic]
         internal static Vector128<uint> ShuffleNativeFallback(Vector128<uint> vector, Vector128<uint> indices)
         {
-            Shuffle(vector, indices);
+            return Shuffle(vector, indices);
         }
 
         [Intrinsic]
         internal static Vector128<float> ShuffleNativeFallback(Vector128<float> vector, Vector128<int> indices)
         {
-            Shuffle(vector, indices);
+            return Shuffle(vector, indices);
         }
 
         [Intrinsic]
         internal static Vector128<long> ShuffleNativeFallback(Vector128<long> vector, Vector128<long> indices)
         {
-            Shuffle(vector, indices);
+            return Shuffle(vector, indices);
         }
 
         [Intrinsic]
         internal static Vector128<ulong> ShuffleNativeFallback(Vector128<ulong> vector, Vector128<ulong> indices)
         {
-            Shuffle(vector, indices);
+            return Shuffle(vector, indices);
         }
 
         [Intrinsic]
         internal static Vector128<double> ShuffleNativeFallback(Vector128<double> vector, Vector128<long> indices)
         {
-            Shuffle(vector, indices);
+            return Shuffle(vector, indices);
         }
 
         /// <summary>Creates a new vector by selecting values from an input vector using a set of indices.</summary>

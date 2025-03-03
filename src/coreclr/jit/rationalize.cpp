@@ -369,7 +369,8 @@ void Rationalizer::RewriteHWIntrinsicAsUserCall(GenTree** use, ArrayStack<GenTre
 
             bool isShuffleNative = intrinsicId != NI_Vector128_Shuffle;
 #if defined(TARGET_XARCH)
-            isShuffleNative = isShuffleNative && (intrinsicId != NI_Vector256_Shuffle) && (intrinsicId != NI_Vector512_Shuffle);
+            isShuffleNative
+                = isShuffleNative && (intrinsicId != NI_Vector256_Shuffle) && (intrinsicId != NI_Vector512_Shuffle);
 #elif defined(TARGET_ARM64)
             isShuffleNative = isShuffleNative && (intrinsicId != NI_Vector64_Shuffle);
 #endif

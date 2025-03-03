@@ -3256,43 +3256,43 @@ namespace System.Runtime.Intrinsics
         [Intrinsic]
         internal static Vector64<byte> ShuffleNativeFallback(Vector64<byte> vector, Vector64<byte> indices)
         {
-            Shuffle(vector, indices);
+            return Shuffle(vector, indices);
         }
 
         [Intrinsic]
         internal static Vector64<sbyte> ShuffleNativeFallback(Vector64<sbyte> vector, Vector64<sbyte> indices)
         {
-            Shuffle(vector, indices);
+            return Shuffle(vector, indices);
         }
 
         [Intrinsic]
         internal static Vector64<short> ShuffleNativeFallback(Vector64<short> vector, Vector64<short> indices)
         {
-            Shuffle(vector, indices);
+            return Shuffle(vector, indices);
         }
 
         [Intrinsic]
         internal static Vector64<ushort> ShuffleNativeFallback(Vector64<ushort> vector, Vector64<ushort> indices)
         {
-            Shuffle(vector, indices);
+            return Shuffle(vector, indices);
         }
 
         [Intrinsic]
         internal static Vector64<int> ShuffleNativeFallback(Vector64<int> vector, Vector64<int> indices)
         {
-            Shuffle(vector, indices);
+            return Shuffle(vector, indices);
         }
 
         [Intrinsic]
         internal static Vector64<uint> ShuffleNativeFallback(Vector64<uint> vector, Vector64<uint> indices)
         {
-            Shuffle(vector, indices);
+            return Shuffle(vector, indices);
         }
 
         [Intrinsic]
         internal static Vector64<float> ShuffleNativeFallback(Vector64<float> vector, Vector64<int> indices)
         {
-            Shuffle(vector, indices);
+            return Shuffle(vector, indices);
         }
 
         /// <summary>Creates a new vector by selecting values from an input vector using a set of indices.</summary>
