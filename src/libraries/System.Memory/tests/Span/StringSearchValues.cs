@@ -417,9 +417,25 @@ namespace System.Memory.Tests.Span
                 Values_ImplementsSearchValuesBase(StringComparison.OrdinalIgnoreCase, valuesArray);
 
                 string values = string.Join(", ", valuesArray);
+                string text = valuesArray[0];
 
-                IndexOfAny(StringComparison.Ordinal, 0, valuesArray[0], values);
-                IndexOfAny(StringComparison.OrdinalIgnoreCase, 0, valuesArray[0], values);
+                IndexOfAny(StringComparison.Ordinal, 0, text, values);
+                IndexOfAny(StringComparison.OrdinalIgnoreCase, 0, text, values);
+
+                // Replace every position in the text with a different character.
+                foreach (StringComparison comparisonType in new[] { StringComparison.Ordinal, StringComparison.OrdinalIgnoreCase })
+                {
+                    SearchValues<string> stringValues = SearchValues.Create(valuesArray, comparisonType);
+
+                    for (int i = 0; i < text.Length - 1; i++)
+                    {
+                        foreach (char replacement in "AaBb _!\u00F6")
+                        {
+                            string newText = $"{text.AsSpan(0, i)}{replacement}{text.AsSpan(i + 1)}";
+                            Assert.Equal(IndexOfAnyReferenceImpl(newText, valuesArray, comparisonType), newText.IndexOfAny(stringValues));
+                        }
+                    }
+                }
             }
         }
 
