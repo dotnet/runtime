@@ -104,7 +104,7 @@ namespace MonoTargetsTasks
             }
         }
 
-        private bool IsDisableRuntimeMarshallingAttribute (MetadataReader mdtReader, StringHandle ns, StringHandle name)
+        private static bool IsDisableRuntimeMarshallingAttribute(MetadataReader mdtReader, StringHandle ns, StringHandle name)
         {
             return mdtReader.StringComparer.Equals(ns, "System.Runtime.CompilerServices") &&
                    mdtReader.StringComparer.Equals(name, "DisableRuntimeMarshallingAttribute");
@@ -133,7 +133,7 @@ namespace MonoTargetsTasks
                     if (IsDisableRuntimeMarshallingAttribute(mdtReader, td.Namespace, td.Name))
                         return false;
                 }
-                else if(attr.Constructor.Kind == HandleKind.MemberReference)
+                else if (attr.Constructor.Kind == HandleKind.MemberReference)
                 {
                     MemberReferenceHandle mrh = (MemberReferenceHandle)attr.Constructor;
                     MemberReference mr = mdtReader.GetMemberReference(mrh);
