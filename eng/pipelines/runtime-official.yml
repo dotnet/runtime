@@ -200,6 +200,7 @@ extends:
             nameSuffix: Mono_multithread
             isOfficialBuild: true
             runtimeVariant: multithread
+            officialBuildArtifactName: $(osGroup)$(osSubGroup)_$(archType)_multithread_Artifacts
 
       #
       # Build Mono LLVM runtime packs
@@ -219,6 +220,7 @@ extends:
                         /p:MonoEnableLLVM=true /p:MonoAOTEnableLLVM=true /p:MonoBundleLLVMOptimizer=true
             nameSuffix: Mono_LLVMAOT
             runtimeVariant: LLVMAOT
+            officialBuildArtifactName: $(osGroup)$(osSubGroup)_$(archType)_LLVMAOT_Artifacts
             isOfficialBuild: true
 
       #
