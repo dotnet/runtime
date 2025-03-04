@@ -801,6 +801,20 @@ void RangeCheck::MergeEdgeAssertions(Compiler*        comp,
                 cmpOper    = GT_LT;
                 limit      = Limit(Limit::keBinOpArray, lenVN, 0);
             }
+            else if ((normalLclVN == lenVN) && comp->vnStore->IsVNInt32Constant(indexVN))
+            {
+                // We have "Const < arr.Length" assertion, it means that "arr.Length >= Const"
+                int indexCns = comp->vnStore->GetConstantInt32(indexVN);
+                if (indexCns >= 0)
+                {
+                    cmpOper = GT_GE;
+                    limit   = Limit(Limit::keConstant, indexCns);
+                }
+                else
+                {
+                    continue;
+                }
+            }
             else
             {
                 continue;
@@ -977,6 +991,11 @@ void RangeCheck::MergeEdgeAssertions(Compiler*        comp,
                 if (!isUnsigned)
                 {
                     pRange->lLimit = limit;
+                    // INT32_MAX as the upper limit is better than UNKNOWN for a constant lower limit.
+                    if (limit.IsConstant() && pRange->UpperLimit().IsUnknown())
+                    {
+                        pRange->uLimit = Limit(Limit::keConstant, INT32_MAX);
+                    }
                 }
                 break;
 
