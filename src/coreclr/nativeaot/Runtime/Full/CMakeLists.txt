@@ -6,7 +6,7 @@ project(Runtime)
 # Include auto-generated files on include path
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
-if (CLR_CMAKE_TARGET_APPLE)
+if (CLR_CMAKE_TARGET_APPLE OR CLR_CMAKE_TARGET_WIN32)
   list(APPEND RUNTIME_SOURCES_ARCH_ASM
     ${ARCH_SOURCES_DIR}/ThunkPoolThunks.${ASM_SUFFIX}
   )
