@@ -120,7 +120,7 @@ find_first_matching_suffix_simd (
 	// See https://community.arm.com/arm-community-blogs/b/servers-and-cloud-computing-blog/posts/porting-x86-vector-bitmask-optimizations-to-arm-neon
 	uint16x8_t match_vector16 = vreinterpretq_u16_u8(vceqq_u8(needle.vec, haystack.vec));
 	uint8x8_t match_bits = vshrn_n_u16(match_vector16, 4);
-	uint64_t match_bits_scalar = vget_lane_u64(match_bits, 0);
+	uint64_t match_bits_scalar = vget_lane_u64(vreinterpret_u64_u8(match_bits), 0);
 	return ctzll(match_bits_scalar) >> 2;
 #else
 	dn_simdhash_assert(!"Scalar fallback should be in use here");
