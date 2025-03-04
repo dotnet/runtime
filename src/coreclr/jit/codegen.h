@@ -425,9 +425,7 @@ protected:
     void genOSRSaveRemainingCalleeSavedRegisters();
 #endif // TARGET_AMD64
 
-#if !defined(TARGET_RISCV64)
     void genAllocLclFrame(unsigned frameSize, regNumber initReg, bool* pInitRegZeroed, regMaskTP maskArgRegsLiveIn);
-#endif // TARGET_RISCV64
 
     void genPoisonFrame(regMaskTP bbRegLiveIn);
 
