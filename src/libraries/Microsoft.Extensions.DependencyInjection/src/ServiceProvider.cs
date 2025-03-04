@@ -112,7 +112,17 @@ namespace Microsoft.Extensions.DependencyInjection
             => GetKeyedService(serviceType, serviceKey, Root);
 
         internal object? GetKeyedService(Type serviceType, object? serviceKey, ServiceProviderEngineScope serviceProviderEngineScope)
-            => GetService(new ServiceIdentifier(serviceKey, serviceType), serviceProviderEngineScope);
+        {
+            if (serviceKey == KeyedService.AnyKey)
+            {
+                if (!serviceType.IsGenericType || serviceType.GetGenericTypeDefinition() != typeof(IEnumerable<>))
+                {
+                    ThrowHelper.ThrowInvalidOperationException_KeyedServiceAnyKeyUsedToResolveService();
+                }
+            }
+
+            return GetService(new ServiceIdentifier(serviceKey, serviceType), serviceProviderEngineScope);
+        }
 
         /// <summary>
         /// Gets the service object of the specified type.
@@ -122,7 +132,17 @@ namespace Microsoft.Extensions.DependencyInjection
         /// <returns>The keyed service.</returns>
         /// <exception cref="InvalidOperationException">The service wasn't found.</exception>
         public object GetRequiredKeyedService(Type serviceType, object? serviceKey)
-            => GetRequiredKeyedService(serviceType, serviceKey, Root);
+        {
+            if (serviceKey == KeyedService.AnyKey)
+            {
+                if (!serviceType.IsGenericType || serviceType.GetGenericTypeDefinition() != typeof(IEnumerable<>))
+                {
+                    ThrowHelper.ThrowInvalidOperationException_KeyedServiceAnyKeyUsedToResolveService();
+                }
+            }
+
+            return GetRequiredKeyedService(serviceType, serviceKey, Root);
+        }
 
         internal object GetRequiredKeyedService(Type serviceType, object? serviceKey, ServiceProviderEngineScope serviceProviderEngineScope)
         {

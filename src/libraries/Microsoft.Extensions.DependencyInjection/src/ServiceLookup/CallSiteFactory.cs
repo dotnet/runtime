@@ -282,11 +282,13 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
                 CallSiteResultCacheLocation cacheLocation = CallSiteResultCacheLocation.Root;
                 ServiceCallSite[] callSites;
 
+                var isAnyKeyLookup = serviceIdentifier.ServiceKey == KeyedService.AnyKey;
+
                 // If item type is not generic we can safely use descriptor cache
                 // Special case for KeyedService.AnyKey, we don't want to check the cache because a KeyedService.AnyKey registration
                 // will "hide" all the other service registration
                 if (!itemType.IsConstructedGenericType &&
-                    !KeyedService.AnyKey.Equals(cacheKey.ServiceKey) &&
+                    !isAnyKeyLookup &&
                     _descriptorLookup.TryGetValue(cacheKey, out ServiceDescriptorCacheItem descriptors))
                 {
                     callSites = new ServiceCallSite[descriptors.Count];
@@ -317,9 +319,12 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
                     int slot = 0;
                     for (int i = _descriptors.Length - 1; i >= 0; i--)
                     {
-                        if (KeysMatch(_descriptors[i].ServiceKey, cacheKey.ServiceKey))
+                        if (KeysMatch(cacheKey.ServiceKey, _descriptors[i].ServiceKey))
                         {
-                            if (TryCreateExact(_descriptors[i], cacheKey, callSiteChain, slot) is { } callSite)
+                            // Special case for AnyKey: we don't want to add in cache a mapping AnyKey -> specific type,
+                            // so we need to ask creation with the original identity of the descriptor
+                            var registrationKey = isAnyKeyLookup ? ServiceIdentifier.FromDescriptor(_descriptors[i]) : cacheKey;
+                            if (TryCreateExact(_descriptors[i], registrationKey, callSiteChain, slot) is { } callSite)
                             {
                                 AddCallSite(callSite, i);
                             }
@@ -327,9 +332,12 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
                     }
                     for (int i = _descriptors.Length - 1; i >= 0; i--)
                     {
-                        if (KeysMatch(_descriptors[i].ServiceKey, cacheKey.ServiceKey))
+                        if (KeysMatch(cacheKey.ServiceKey, _descriptors[i].ServiceKey))
                         {
-                            if (TryCreateOpenGeneric(_descriptors[i], cacheKey, callSiteChain, slot, throwOnConstraintViolation: false) is { } callSite)
+                            // Special case for AnyKey: we don't want to add in cache a mapping AnyKey -> specific type,
+                            // so we need to ask creation with the original identity of the descriptor
+                            var registrationKey = isAnyKeyLookup ? ServiceIdentifier.FromDescriptor(_descriptors[i]) : cacheKey;
+                            if (TryCreateOpenGeneric(_descriptors[i], registrationKey, callSiteChain, slot, throwOnConstraintViolation: false) is { } callSite)
                             {
                                 AddCallSite(callSite, i);
                             }
@@ -359,6 +367,32 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
             finally
             {
                 callSiteChain.Remove(serviceIdentifier);
+            }
+
+            static bool KeysMatch(object? lookupKey, object? descriptorKey)
+            {
+                if (lookupKey == null && descriptorKey == null)
+                {
+                    // Both are non keyed services
+                    return true;
+                }
+
+                if (lookupKey != null && descriptorKey != null)
+                {
+                    // Both are keyed services
+
+                    // We don't want to return AnyKey registration, so ignore it
+                    if (descriptorKey.Equals(KeyedService.AnyKey))
+                        return false;
+
+                    // Check if both keys are equal, or if the lookup key
+                    // should matches all keys (except AnyKey)
+                    return lookupKey.Equals(descriptorKey)
+                        || lookupKey.Equals(KeyedService.AnyKey);
+                }
+
+                // One is a keyed service, one is not
+                return false;
             }
         }
 
@@ -691,24 +725,6 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
                    serviceType == typeof(IServiceScopeFactory) ||
                    serviceType == typeof(IServiceProviderIsService) ||
                    serviceType == typeof(IServiceProviderIsKeyedService);
-        }
-
-        /// <summary>
-        /// Returns true if both keys are null or equals, or if key1 is KeyedService.AnyKey and key2 is not null
-        /// </summary>
-        private static bool KeysMatch(object? key1, object? key2)
-        {
-            if (key1 == null && key2 == null)
-                return true;
-
-            if (key1 != null && key2 != null)
-            {
-                return key1.Equals(key2)
-                    || key1.Equals(KeyedService.AnyKey)
-                    || key2.Equals(KeyedService.AnyKey);
-            }
-
-            return false;
         }
 
         private struct ServiceDescriptorCacheItem
