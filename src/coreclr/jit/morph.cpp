@@ -13388,47 +13388,22 @@ void Compiler::fgSetOptions()
         codeGen->setFramePointerRequired(true);
     }
 
-    // Assert that the EH table has been initialized by now. Note that
-    // compHndBBtabAllocCount never decreases; it is a high-water mark
-    // of table allocation. In contrast, compHndBBtabCount does shrink
-    // if we delete a dead EH region, and if it shrinks to zero, the
-    // table pointer compHndBBtab is unreliable.
-    assert(compHndBBtabAllocCount >= info.compXcptnsCount);
-
-#ifdef TARGET_X86
-
-    // Note: this case, and the !X86 case below, should both use the
-    // !X86 path. This would require a few more changes for X86 to use
-    // compHndBBtabCount (the current number of EH clauses) instead of
-    // info.compXcptnsCount (the number of EH clauses in IL), such as
-    // in ehNeedsShadowSPslots(). This is because sometimes the IL has
-    // an EH clause that we delete as statically dead code before we
-    // get here, leaving no EH clauses left, and thus no requirement
-    // to use a frame pointer because of EH. But until all the code uses
-    // the same test, leave info.compXcptnsCount here. Also test for
-    // CORINFO_FLG_SYNCH methods which are converted into try-finally
-    // with Monitor helper calls in funclet ABI and need to be treated
-    // as methods with EH.
-    if (info.compXcptnsCount > 0 || (UsesFunclets() && (info.compFlags & CORINFO_FLG_SYNCH)))
+    // If there is EH, we need a frame pointer.
+    // Note this may premature... we can eliminate all EH after morph, sometimes.
+    //
+    if (compHndBBtabCount > 0)
     {
         codeGen->setFramePointerRequiredEH(true);
 
+#ifdef TARGET_X86
         if (UsesFunclets())
         {
             assert(!codeGen->isGCTypeFixed());
             // Enforce fully interruptible codegen for funclet unwinding
             SetInterruptible(true);
         }
-    }
-
-#else // !TARGET_X86
-
-    if (compHndBBtabCount > 0)
-    {
-        codeGen->setFramePointerRequiredEH(true);
-    }
-
 #endif // TARGET_X86
+    }
 
     if (compMethodRequiresPInvokeFrame())
     {

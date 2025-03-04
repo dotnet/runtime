@@ -799,14 +799,24 @@ unsigned Compiler::ehGetMostNestedRegionIndex(BasicBlock* block, bool* inTryRegi
     return mostNestedRegion;
 }
 
-/*****************************************************************************
- * Returns the try index of the enclosing try, skipping all EH regions with the
- * same try region (that is, all 'mutual protect' regions). If there is no such
- * enclosing try, returns EHblkDsc::NO_ENCLOSING_INDEX.
- */
+//-------------------------------------------------------------
+// ehTrueEnclosingTryIndexIL: find the outermost enclosing try
+//   region that is not a mutual-protect try
+//
+// Arguments:
+//   regionIndex - index of interest
+//
+// Returns:
+//   Index of enclosng non-mutual protect try region, or EHblkDsc::NO_ENCLOSING_INDEX.
+//
+// Notes:
+//   Only safe to use during importation, before we have normalize the
+//   EH in the flow graph. Post importation use, the non-IL version.
+//
 unsigned Compiler::ehTrueEnclosingTryIndexIL(unsigned regionIndex)
 {
     assert(regionIndex != EHblkDsc::NO_ENCLOSING_INDEX);
+    assert(!fgImportDone);
 
     EHblkDsc* ehDscRoot = ehGetDsc(regionIndex);
     EHblkDsc* HBtab     = ehDscRoot;
@@ -822,6 +832,49 @@ unsigned Compiler::ehTrueEnclosingTryIndexIL(unsigned regionIndex)
 
         HBtab = ehGetDsc(regionIndex);
         if (!EHblkDsc::ebdIsSameILTry(ehDscRoot, HBtab))
+        {
+            // Found an enclosing 'try' that has a different 'try' region (is not mutually-protect with the
+            // original region). Return it.
+            break;
+        }
+    }
+
+    return regionIndex;
+}
+
+//-------------------------------------------------------------
+// ehTrueEnclosingTryIndex: find the closest enclosing try
+//   region that is not a mutual-protect try
+//
+// Arguments:
+//   regionIndex - index of interest
+//
+// Returns:
+//   Index of enclosng non-mutual protect try region, or EHblkDsc::NO_ENCLOSING_INDEX.
+//
+// Notes:
+//   Only safe to use after importation, once we have normalized the
+//   EH in the flow graph. For importation,  use the IL version.
+//
+unsigned Compiler::ehTrueEnclosingTryIndex(unsigned regionIndex)
+{
+    assert(regionIndex != EHblkDsc::NO_ENCLOSING_INDEX);
+    assert(fgImportDone);
+
+    EHblkDsc* ehDscRoot = ehGetDsc(regionIndex);
+    EHblkDsc* HBtab     = ehDscRoot;
+
+    for (;;)
+    {
+        regionIndex = HBtab->ebdEnclosingTryIndex;
+        if (regionIndex == EHblkDsc::NO_ENCLOSING_INDEX)
+        {
+            // No enclosing 'try'; we're done
+            break;
+        }
+
+        HBtab = ehGetDsc(regionIndex);
+        if (!EHblkDsc::ebdIsSameTry(ehDscRoot, HBtab))
         {
             // Found an enclosing 'try' that has a different 'try' region (is not mutually-protect with the
             // original region). Return it.
@@ -3614,8 +3667,8 @@ void Compiler::fgVerifyHandlerTab()
         // on the block.
         for (XTnum = 0, HBtab = compHndBBtab; XTnum < compHndBBtabCount; XTnum++, HBtab++)
         {
-            unsigned enclosingTryIndex = ehTrueEnclosingTryIndexIL(XTnum); // find the true enclosing try index,
-                                                                           // ignoring 'mutual protect' trys
+            unsigned enclosingTryIndex = ehTrueEnclosingTryIndex(XTnum); // find the true enclosing try index,
+                                                                         // ignoring 'mutual protect' trys
             if (enclosingTryIndex != EHblkDsc::NO_ENCLOSING_INDEX)
             {
                 // The handler funclet for 'XTnum' has a try index of 'enclosingTryIndex' (at least, the parts of the
