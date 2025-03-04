@@ -143,16 +143,9 @@
   #define REG_VAR_ORDER            REG_EAX,REG_EDX,REG_ECX,REG_ESI,REG_EDI,REG_EBX
   #define MAX_VAR_ORDER_SIZE       6
 
-  // The order here is fixed: it must agree with an order assumed in eetwain...
-  // NB: x86 GC decoder does not report return registers at call sites.
-  #define RBM_CALL_GC_REGS_ORDER   RBM_EDI,RBM_ESI,RBM_EBX,RBM_EBP
-  #define RBM_CALL_GC_REGS         (RBM_EDI|RBM_ESI|RBM_EBX|RBM_EBP)
-
   #define CNT_CALLEE_SAVED        (4)
   #define CNT_CALLEE_TRASH        (3)
   #define CNT_CALLEE_ENREG        (CNT_CALLEE_SAVED-1)
-  // NB: x86 GC decoder does not report return registers at call sites.
-  #define CNT_CALL_GC_REGS        (CNT_CALLEE_SAVED)
 
   #define CNT_CALLEE_SAVED_FLOAT  (0)
   #define CNT_CALLEE_TRASH_FLOAT  (6)

@@ -456,7 +456,9 @@ ConvertedImageLayout::ConvertedImageLayout(FlatImageLayout* source, bool disable
     LOG((LF_LOADER, LL_INFO100, "PEImage: Opening manually mapped stream\n"));
 
 #ifdef TARGET_WINDOWS
-    if (!disableMapping)
+    // LoadImageByMappingParts assumes the source has a file mapping handle created/managed by the runtime.
+    // This is not the case for non-file images (for example, external data). Only try to load by mapping for files.
+    if (!disableMapping && m_pOwner->IsFile())
     {
         loadedImage = source->LoadImageByMappingParts(this->m_imageParts);
         if (loadedImage == NULL)
@@ -710,7 +712,7 @@ FlatImageLayout::FlatImageLayout(PEImage* pOwner)
             if (anonMap == NULL)
                 ThrowLastError();
 
-            LPVOID anonView = CLRMapViewOfFile(anonMap, FILE_MAP_READ | FILE_MAP_WRITE, 0, 0, 0);
+            CLRMapViewHolder anonView = CLRMapViewOfFile(anonMap, FILE_MAP_READ | FILE_MAP_WRITE, 0, 0, 0);
             if (anonView == NULL)
                 ThrowLastError();
 
@@ -719,7 +721,7 @@ FlatImageLayout::FlatImageLayout(PEImage* pOwner)
             PAL_ZStream zStream;
             zStream.nextIn = (uint8_t*)addr;
             zStream.availIn = (uint32_t)size;
-            zStream.nextOut = (uint8_t*)anonView;
+            zStream.nextOut = (uint8_t*)(void*)anonView;
             zStream.availOut = (uint32_t)uncompressedSize;
 
             // we match the compression side here. 15 is the window sise, negative means no zlib header.
@@ -743,9 +745,8 @@ FlatImageLayout::FlatImageLayout(PEImage* pOwner)
             addr = anonView;
             size = uncompressedSize;
             // Replace file handles with the handles to anonymous map. This will release the handles to the original view and map.
-            m_FileView.Assign(anonView);
-            m_FileMap.Assign(anonMap);
-
+            m_FileView.Assign(anonView.Extract());
+            m_FileMap.Assign(anonMap.Extract());
 #else
             _ASSERTE(!"Failure extracting contents of the application bundle. Compressed files used with a standalone (not singlefile) apphost.");
             ThrowHR(E_FAIL); // we don't have any indication of what kind of failure. Possibly a corrupt image.
