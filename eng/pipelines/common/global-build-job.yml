@@ -71,7 +71,7 @@ jobs:
               artifactName: ${{ format('build_{0}{1}_{2}_{3}_{4}_Artifacts', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig, parameters.nameSuffix) }}
             ${{ if ne(parameters.hostedOs, '') }}:
               artifactName: ${{ format('build_{0}{1}_{2}_{3}_{4}_{5}_Artifacts', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.hostedOs, parameters.buildConfig, parameters.nameSuffix) }}
-            targetPath: $(Build.SourceDirectory)/artifacts/staging
+            targetPath: $(Build.SourcesDirectory)/artifacts/staging
 
     artifacts:
       publish:

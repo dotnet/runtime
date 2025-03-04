@@ -8,11 +8,12 @@
   <PropertyGroup Condition="'$(DotNetFinalPublish)' != 'true' and '$(DotNetBuildOrchestrator)' != 'true'">
     <PushToLocalStorage>true</PushToLocalStorage>
     <PreserveRepoOrigin>true</PreserveRepoOrigin>
-    <ArtifactsStagingDir>$(ArtifactsDir)/staging/</ArtifactsStagingDir>
-    <SourceBuiltAssetsDir>$(ArtifactsStagingDir)/assets/$(Configuration)</SourceBuiltAssetsDir>
-    <SourceBuiltPdbArtifactsDir>$(ArtifactsStagingDir)/PDB/$(Configuration)</SourceBuiltPdbArtifactsDir>
-    <SourceBuiltShippingPackagesDir>$(ArtifactsStagingDir)/packages/$(Configuration)/Shipping</SourceBuiltShippingPackagesDir>
-    <SourceBuiltNonShippingPackagesDir>$(ArtifactsStagingDir)/packages/$(Configuration)/NonShipping</SourceBuiltNonShippingPackagesDir>
+    <ArtifactsStagingDir>$(ArtifactsDir)staging/</ArtifactsStagingDir>
+    <SourceBuiltPdbArtifactsDir>$(ArtifactsStagingDir)SymStore</SourceBuiltPdbArtifactsDir>
+    <!-- Put blobs where we put packages so our regular globbing in our publish join job finds them. -->
+    <SourceBuiltAssetsDir>$(ArtifactsStagingDir)packages/</SourceBuiltAssetsDir>
+    <SourceBuiltShippingPackagesDir>$(SourceBuiltAssetsDir)Shipping</SourceBuiltShippingPackagesDir>
+    <SourceBuiltNonShippingPackagesDir>$(SourceBuiltAssetsDir)NonShipping</SourceBuiltNonShippingPackagesDir>
     <PublishingUseHardlinksIfPossible>true</PublishingUseHardlinksIfPossible>
     <!-- We don't use the asset manifest from the vertical dotnet/runtime legs outside of the VMR. Just dump it in a temp dir. -->
     <SourceBuiltAssetManifestsDir>$(ArtifactsTmpDir)/manifests/$(Configuration)</SourceBuiltAssetManifestsDir>
@@ -104,10 +105,14 @@
     </ItemGroup>
     <!-- In vertical dotnet/runtime legs outside of the VMR, set the "relative blob path" to shipping vs non-shipping to make our download/upload work. -->
     <ItemGroup Condition="'$(DotNetFinalPublish)' != 'true' and '$(DotNetBuildOrchestrator)' != 'true'">
-      <Artifact Condition="'%(Artifact.Kind)' != 'Package' and '%(Artifact.IsShipping)' == 'true'"
+      <Artifact Condition="'%(Artifact.Kind)' == 'Blob' and '%(Artifact.IsShipping)' == 'true'"
                 RelativeBlobPath="Shipping/%(Filename)%(Extension)" />
-      <Artifact Condition="'%(Artifact.Kind)' != 'Package' and '%(Artifact.IsShipping)' != 'true'"
+      <Artifact Condition="'%(Artifact.Kind)' == 'Blob' and '%(Artifact.IsShipping)' != 'true'"
                 RelativeBlobPath="NonShipping/%(Filename)%(Extension)" />
+      <ItemsToPushToBlobFeed Condition="'%(Artifact.Kind)' == 'Blob' and '%(Artifact.IsShipping)' == 'true'"
+                             RelativeBlobPath="Shipping/%(Filename)%(Extension)" />
+      <ItemsToPushToBlobFeed Condition="'%(Artifact.Kind)' == 'Blob' and '%(Artifact.IsShipping)' != 'true'"
+                             RelativeBlobPath="NonShipping/%(RecursiveDir)%(Filename)%(Extension)" />
     </ItemGroup>
   </Target>
 </Project>

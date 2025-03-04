@@ -36,7 +36,7 @@ jobs:
       - ${{ each job in parameters.buildStage.jobs }}:
         - input: pipelineArtifact
           artifactName: ${{ job.job }}_Artifacts
-          targetPath: $(Build.SourcesDirectory)\artifacts\packages\
+          targetPath: $(Build.SourcesDirectory)\artifacts
           itemPattern: |
             **/*
             !_manifest/**/*
