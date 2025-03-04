@@ -38,12 +38,18 @@ namespace System.Runtime.InteropServices
                 return Interop.OSReleaseFile.GetPrettyName();
             }
 
-            if (OperatingSystem.IsAndroid())
-            {
-                return $"Android (API {Environment.OSVersion.Version.Major})";
-            }
+            return OperatingSystem.IsAndroid() ? $"Android (API {Environment.OSVersion.Version.Major})" 
+                : OperatingSystem.IsMacOS() ? FormatApplePlatformOSDescription("macOS") 
+                : OperatingSystem.IsMacCatalyst() ? FormatApplePlatformOSDescription("Mac Catalyst")
+                : OperatingSystem.IsIOS() ? FormatApplePlatformOSDescription("iOS")
+                : OperatingSystem.IsTvOS() ? FormatApplePlatformOSDescription("tvOS")
+                : OperatingSystem.IsWatchOS() ? FormatApplePlatformOSDescription("watchOS")
+                : null;
+        }
 
-            return null;
+        private static string FormatApplePlatformOSDescription(string osName)
+        {
+            return $"{osName} ({Interop.Sys.GetUnixVersion()})";
         }
     }
 }
