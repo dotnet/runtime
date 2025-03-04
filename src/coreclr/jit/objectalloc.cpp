@@ -233,7 +233,7 @@ void ObjectAllocator::MarkEscapingVarsAndBuildConnGraph()
                 lclEscapes = false;
                 m_allocator->CheckForGuardedAllocationOrCopy(m_block, m_stmt, use, lclNum);
             }
-            else if (tree->OperIs(GT_LCL_VAR) && tree->TypeIs(TYP_REF, TYP_BYREF, TYP_I_IMPL))
+            else if (tree->OperIs(GT_LCL_VAR, GT_LCL_ADDR) && tree->TypeIs(TYP_REF, TYP_BYREF, TYP_I_IMPL, TYP_STRUCT))
             {
                 assert(tree == m_ancestors.Top());
                 if (!m_allocator->CanLclVarEscapeViaParentStack(&m_ancestors, lclNum, m_block))
@@ -265,7 +265,7 @@ void ObjectAllocator::MarkEscapingVarsAndBuildConnGraph()
     {
         var_types type = comp->lvaTable[lclNum].TypeGet();
 
-        if (type == TYP_REF || genActualType(type) == TYP_I_IMPL || type == TYP_BYREF)
+        if (type == TYP_REF || genActualType(type) == TYP_I_IMPL || type == TYP_BYREF || type == TYP_STRUCT)
         {
             m_ConnGraphAdjacencyMatrix[lclNum] = BitVecOps::MakeEmpty(&m_bitVecTraits);
 
@@ -1023,10 +1023,13 @@ bool ObjectAllocator::CanLclVarEscapeViaParentStack(ArrayStack<GenTree*>* parent
     assert(parentStack != nullptr);
     int parentIndex = 1;
 
-    bool keepChecking                  = true;
-    bool canLclVarEscapeViaParentStack = true;
-    bool isCopy                        = true;
-    bool isEnumeratorLocal             = comp->lvaGetDesc(lclNum)->lvIsEnumerator;
+    LclVarDsc* const lclDsc = comp->lvaGetDesc(lclNum);
+
+    bool       keepChecking                  = true;
+    bool       canLclVarEscapeViaParentStack = true;
+    bool       isCopy                        = true;
+    bool const isEnumeratorLocal             = lclDsc->lvIsEnumerator;
+    bool const isSpanLocal                   = lclDsc->IsSpan();
 
     while (keepChecking)
     {
@@ -1093,9 +1096,19 @@ bool ObjectAllocator::CanLclVarEscapeViaParentStack(ArrayStack<GenTree*>* parent
             case GT_ADD:
             case GT_SUB:
             case GT_FIELD_ADDR:
-                // Check whether the local escapes via its grandparent.
+                // Check whether the local escapes higher up
                 ++parentIndex;
                 keepChecking = true;
+                break;
+
+            case GT_LCL_ADDR:
+                if (isSpanLocal)
+                {
+                    // Check whether the local escapes higher up
+                    ++parentIndex;
+                    keepChecking = true;
+                    JITDUMP("... i'm good thanks\n");
+                }
                 break;
 
             case GT_BOX:
@@ -1119,11 +1132,43 @@ bool ObjectAllocator::CanLclVarEscapeViaParentStack(ArrayStack<GenTree*>* parent
             case GT_STOREIND:
             case GT_STORE_BLK:
             case GT_BLK:
-                if (tree != parent->AsIndir()->Addr())
+            {
+                GenTree* const addr = parent->AsIndir()->Addr();
+                if (tree != addr)
                 {
-                    // TODO-ObjectStackAllocation: track stores to fields.
+                    JITDUMP("... tree != addr\n");
+
+                    // Is this an array element address store to (the pointer) field of a span?
+                    // (note we can't yet handle cases where a span captures an object)
+                    //
+                    if (parent->OperIs(GT_STOREIND) && addr->OperIs(GT_FIELD_ADDR) && tree->OperIs(GT_INDEX_ADDR))
+                    {
+                        // Todo: mark the span pointer field addr like we mark IsSpanLength?
+                        // (for now we don't worry which field we store to)
+                        //
+                        GenTree* const base = addr->AsOp()->gtGetOp1();
+
+                        if (base->OperIs(GT_LCL_ADDR))
+                        {
+                            unsigned const   dstLclNum = base->AsLclVarCommon()->GetLclNum();
+                            LclVarDsc* const dstLclDsc = comp->lvaGetDesc(dstLclNum);
+
+                            if (dstLclDsc->IsSpan())
+                            {
+                                JITDUMP("... span ptr store\n");
+                                // Add an edge to the connection graph.
+                                AddConnGraphEdge(dstLclNum, lclNum);
+                                canLclVarEscapeViaParentStack = false;
+                            }
+                        }
+                    }
                     break;
                 }
+                else
+                {
+                    JITDUMP("... tree == addr\n");
+                }
+            }
                 FALLTHROUGH;
             case GT_IND:
                 // Address of the field/ind is not taken so the local doesn't escape.
@@ -1132,12 +1177,12 @@ bool ObjectAllocator::CanLclVarEscapeViaParentStack(ArrayStack<GenTree*>* parent
 
             case GT_CALL:
             {
-                GenTreeCall* const asCall = parent->AsCall();
+                GenTreeCall* const call = parent->AsCall();
 
-                if (asCall->IsHelperCall())
+                if (call->IsHelperCall())
                 {
                     canLclVarEscapeViaParentStack =
-                        !Compiler::s_helperCallProperties.IsNoEscape(comp->eeGetHelperNum(asCall->gtCallMethHnd));
+                        !Compiler::s_helperCallProperties.IsNoEscape(comp->eeGetHelperNum(call->gtCallMethHnd));
                 }
                 else if (asCall->IsSpecialIntrinsic())
                 {
@@ -1174,6 +1219,125 @@ bool ObjectAllocator::CanLclVarEscapeViaParentStack(ArrayStack<GenTree*>* parent
                 {
                     JITDUMP("Enumerator V%02u passed to call...\n", lclNum);
                     canLclVarEscapeViaParentStack = !CheckForGuardedUse(block, parent, lclNum);
+                }
+                else if (isSpanLocal && !call->CanTailCall())
+                {
+                    // A span argument can't escape, but the callee can pass its fields back via
+                    // return value and the return value may escape. (Todo: model this more precisely
+                    // -- see if we're assigning to a byref gc field)
+                    //
+                    JITDUMP("Span V%02u parent is call...\n", lclNum);
+
+                    CallArg* const retBufArg = call->gtArgs.GetRetBufferArg();
+                    if (retBufArg != nullptr)
+                    {
+                        GenTree* const retBuf = retBufArg->GetNode();
+
+                        // Is it possible to assign directly to a struct's struct field,
+                        // or is the retbuf always a standalone struct? Seems like it has
+                        // to be the latter to give proper no-alias guarantees.
+                        //
+                        if (retBuf->OperIs(GT_LCL_ADDR))
+                        {
+                            GenTreeLclVarCommon* const dstLocal = retBuf->AsLclVarCommon();
+
+                            if (dstLocal == tree)
+                            {
+                                JITDUMP(" ... span is local retbuf\n");
+                            }
+                            else
+                            {
+                                const unsigned   dstLclNum = dstLocal->GetLclNum();
+                                LclVarDsc* const dstLclDsc = comp->lvaGetDesc(dstLclNum);
+
+                                if (dstLclDsc->HasGCPtr())
+                                {
+                                    // Model as assignment of the argument to the return value local
+                                    //
+                                    JITDUMP(" ... (possible) byref return buffer. Modelling as V%02u <- V%02u\n",
+                                            dstLclNum, lclNum);
+                                    AddConnGraphEdge(dstLclNum, lclNum);
+                                }
+                                else
+                                {
+                                    JITDUMP(" ... non-byref return buffer\n");
+                                }
+                            }
+                            canLclVarEscapeViaParentStack = false;
+                        }
+                        else
+                        {
+                            JITDUMP(" ... retbuf is not a local\n");
+                        }
+                    }
+                    else if (call->TypeGet() == TYP_STRUCT)
+                    {
+                        CORINFO_CLASS_HANDLE retClsHnd = call->gtRetClsHnd;
+                        assert(retClsHnd != NO_CLASS_HANDLE);
+                        DWORD attrs = comp->info.compCompHnd->getClassAttribs(retClsHnd);
+
+                        if ((attrs & CORINFO_FLG_BYREF_LIKE) != 0)
+                        {
+                            JITDUMP(" ... byref return\n");
+                            // defer to parent.
+                            ++parentIndex;
+                            keepChecking = true;
+                        }
+                        else
+                        {
+                            JITDUMP(" ... non-byref return\n");
+                            canLclVarEscapeViaParentStack = false;
+                        }
+                    }
+                    else
+                    {
+                        JITDUMP(" ... non-struct return\n");
+                        canLclVarEscapeViaParentStack = false;
+                    }
+
+                    // The callee may also assign to any ref or out params.
+                    // Try and model this as an assignment, if possible.
+                    //
+                    for (CallArg& arg : call->gtArgs.Args())
+                    {
+                        if (!arg.IsUserArg())
+                        {
+                            continue;
+                        }
+
+                        GenTree* const argNode = arg.GetNode();
+
+                        if ((argNode != tree) && (argNode->TypeIs(TYP_BYREF)))
+                        {
+                            // Try and resolve to a local and model as an assignment.
+                            // (todo: could also be a field of a local)
+                            //
+                            if (argNode->OperIs(GT_LCL_ADDR))
+                            {
+                                GenTreeLclVarCommon* const argLocal  = argNode->AsLclVarCommon();
+                                const unsigned             argLclNum = argLocal->GetLclNum();
+                                LclVarDsc* const           argLclDsc = comp->lvaGetDesc(argLclNum);
+
+                                if (argLclDsc->HasGCPtr())
+                                {
+                                    // Model as assignment of the argument to the byref local
+                                    //
+                                    JITDUMP(" ... (possible) byref out param. Modelling as V%02u <- V%02u\n", argLclNum,
+                                            lclNum);
+                                    AddConnGraphEdge(argLclNum, lclNum);
+                                }
+                            }
+                            else
+                            {
+                                // Can't easily tell what this byref refers to, assume the worst.
+                                // (points-to analysis anyone)?
+                                // Would be nice to track byref referent types too.
+                                //
+                                JITDUMP(" ... byref arg [%06u]; assuming escape\n", comp->dspTreeID(argNode));
+                                canLclVarEscapeViaParentStack = true;
+                            }
+                        }
+                    }
                 }
                 break;
             }
@@ -1246,6 +1410,7 @@ void ObjectAllocator::UpdateAncestorTypes(GenTree* tree, ArrayStack<GenTree*>* p
             case GT_SUB:
             case GT_FIELD_ADDR:
             case GT_INDEX_ADDR:
+            case GT_LCL_ADDR:
                 if (parent->TypeGet() == TYP_REF)
                 {
                     parent->ChangeType(newType);
@@ -1283,17 +1448,18 @@ void ObjectAllocator::UpdateAncestorTypes(GenTree* tree, ArrayStack<GenTree*>* p
             case GT_STOREIND:
             case GT_STORE_BLK:
             case GT_BLK:
-                assert(tree == parent->AsIndir()->Addr());
-
-                // The new target could be *not* on the heap.
-                parent->gtFlags &= ~GTF_IND_TGT_HEAP;
-
-                if (newType != TYP_BYREF)
+                if (tree == parent->AsIndir()->Addr())
                 {
-                    // This indicates that a write barrier is not needed when writing
-                    // to this field/indirection since the address is not pointing to the heap.
-                    // It's either null or points to inside a stack-allocated object.
-                    parent->gtFlags |= GTF_IND_TGT_NOT_HEAP;
+                    // The new target could be *not* on the heap.
+                    parent->gtFlags &= ~GTF_IND_TGT_HEAP;
+
+                    if (newType != TYP_BYREF)
+                    {
+                        // This indicates that a write barrier is not needed when writing
+                        // to this field/indirection since the address is not pointing to the heap.
+                        // It's either null or points to inside a stack-allocated object.
+                        parent->gtFlags |= GTF_IND_TGT_NOT_HEAP;
+                    }
                 }
                 break;
 
@@ -1354,10 +1520,7 @@ void ObjectAllocator::RewriteUses()
             if ((lclNum < BitVecTraits::GetSize(&m_allocator->m_bitVecTraits)) &&
                 m_allocator->MayLclVarPointToStack(lclNum))
             {
-                // Analysis does not handle indirect access to pointer locals.
-                assert(tree->OperIsScalarLocal());
-
-                var_types newType;
+                var_types newType = TYP_UNDEF;
                 if (m_allocator->m_HeapLocalToStackLocalMap.TryGetValue(lclNum, &newLclNum))
                 {
                     assert(tree->OperIs(GT_LCL_VAR)); // Must be a use.
@@ -1374,12 +1537,33 @@ void ObjectAllocator::RewriteUses()
                     }
                 }
 
-                if (lclVarDsc->lvType != newType)
+                // For local structs, retype the GC fields.
+                //
+                if (lclVarDsc->lvType == TYP_STRUCT)
+                {
+                    // We should only see spans here.
+                    //
+                    assert(lclVarDsc->IsSpan());
+                    ClassLayout* const layout    = lclVarDsc->GetLayout();
+                    ClassLayout*       newLayout = nullptr;
+
+                    if (newType == TYP_I_IMPL)
+                    {
+                        // No GC refs remain, so now a block layout
+                        newLayout = m_compiler->typGetBlkLayout(layout->GetSize());
+                        JITDUMP("Changing layout of span V%02u to block\n", lclNum);
+                        lclVarDsc->ChangeLayout(newLayout);
+                    }
+                }
+                // For locals, retype the local
+                //
+                else if (lclVarDsc->lvType != newType)
                 {
                     JITDUMP("Changing the type of V%02u from %s to %s\n", lclNum, varTypeName(lclVarDsc->lvType),
                             varTypeName(newType));
                     lclVarDsc->lvType = newType;
                 }
+
                 m_allocator->UpdateAncestorTypes(tree, &m_ancestors, newType);
 
                 if (newLclNum != BAD_VAR_NUM)
