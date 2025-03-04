@@ -135,7 +135,7 @@ void PerfMap::Enable(PerfMapType type, bool sendExisting)
         {
             CodeVersionManager::LockHolder codeVersioningLockHolder;
 
-            EECodeGenManager::CodeHeapIterator heapIterator(ExecutionManager::GetEEJitManager(), nullptr);
+            EEJitManager::CodeHeapIterator heapIterator(nullptr);
             while (heapIterator.Next())
             {
                 MethodDesc * pMethod = heapIterator.GetMethod();

@@ -5221,7 +5221,7 @@ VOID ETW::MethodLog::SendEventsForJitMethodsHelper(LoaderAllocator *pLoaderAlloc
     MethodDescSet sentMethodDetailsSet;
     MethodDescSet* pSentMethodDetailsSet = fSendRichDebugInfoEvent ? &sentMethodDetailsSet : NULL;
 
-    EECodeGenManager::CodeHeapIterator heapIterator(ExecutionManager::GetEEJitManager(), pLoaderAllocatorFilter);
+    EEJitManager::CodeHeapIterator heapIterator(pLoaderAllocatorFilter);
     while (heapIterator.Next())
     {
         MethodDesc * pMD = heapIterator.GetMethod();
