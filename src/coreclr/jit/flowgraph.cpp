@@ -863,6 +863,9 @@ bool Compiler::fgAddrCouldBeNull(GenTree* addr)
         case GT_ARR_ADDR:
             return (addr->gtFlags & GTF_ARR_ADDR_NONNULL) == 0;
 
+        case GT_BOX:
+            return !addr->IsBoxedValue();
+
         case GT_LCL_VAR:
             return !lvaIsImplicitByRefLocal(addr->AsLclVar()->GetLclNum());
 
@@ -926,6 +929,42 @@ bool Compiler::fgAddrCouldBeNull(GenTree* addr)
     }
 
     return true; // default result: addr could be null.
+}
+
+//------------------------------------------------------------------------------
+// fgAddrCouldBeHeap: Check whether the address tree may represent a heap address.
+//
+// Arguments:
+//    addr - Address to check
+//
+// Return Value:
+//    True if address could be a heap address; false otherwise (i.e. stack, native memory, etc.)
+//
+bool Compiler::fgAddrCouldBeHeap(GenTree* addr)
+{
+    GenTree* op = addr;
+    while (op->OperIs(GT_FIELD_ADDR) && op->AsFieldAddr()->IsInstance())
+    {
+        op = op->AsFieldAddr()->GetFldObj();
+    }
+
+    target_ssize_t offset;
+    gtPeelOffsets(&op, &offset);
+
+    // Ignore the offset for locals
+
+    if (op->OperIs(GT_LCL_ADDR))
+    {
+        return false;
+    }
+
+    if (op->OperIsScalarLocal() && (op->AsLclVarCommon()->GetLclNum() == impInlineRoot()->info.compRetBuffArg))
+    {
+        // RetBuf is known to be on the stack
+        return false;
+    }
+
+    return true;
 }
 
 //------------------------------------------------------------------------------
@@ -3983,7 +4022,7 @@ PhaseStatus Compiler::fgSetBlockOrder()
     BasicBlock::s_nMaxTrees = 0;
 #endif
 
-    if (compCanEncodePtrArgCntMax() && fgHasCycleWithoutGCSafePoint())
+    if (fgHasCycleWithoutGCSafePoint())
     {
         JITDUMP("Marking method as fully interruptible\n");
         SetInterruptible(true);

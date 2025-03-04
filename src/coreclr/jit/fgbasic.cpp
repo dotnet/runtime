@@ -3513,13 +3513,6 @@ void Compiler::fgFindBasicBlocks()
             return;
         }
 
-        noway_assert(info.compXcptnsCount == 0);
-        compHndBBtab = impInlineInfo->InlinerCompiler->compHndBBtab;
-        compHndBBtabAllocCount =
-            impInlineInfo->InlinerCompiler->compHndBBtabAllocCount; // we probably only use the table, not add to it.
-        compHndBBtabCount    = impInlineInfo->InlinerCompiler->compHndBBtabCount;
-        info.compXcptnsCount = impInlineInfo->InlinerCompiler->info.compXcptnsCount;
-
         // Use a spill temp for the return value if there are multiple return blocks,
         // or if the inlinee has GC ref locals.
         if ((info.compRetNativeType != TYP_VOID) && ((fgReturnCount > 1) || impInlineInfo->HasGcRefLocals()))
@@ -4046,18 +4039,13 @@ void Compiler::fgFixEntryFlowForOSR()
 
     fgRedirectTargetEdge(fgFirstBB, fgOSREntryBB);
 
-    // We don't know the right weight for this block, since
-    // execution of the method was interrupted within the
-    // loop containing fgOSREntryBB.
-    //
-    // A plausible guess might be to sum the non-backedge
-    // weights of fgOSREntryBB and use those, but we don't
-    // have edge weights available yet. Note that might be
-    // an underestimate.
-    //
-    // For now we just guess that the loop will execute 100x.
-    //
-    fgFirstBB->inheritWeightPercentage(fgOSREntryBB, 1);
+    fgFirstBB->bbWeight = fgCalledCount;
+    fgFirstBB->CopyFlags(fgEntryBB, BBF_PROF_WEIGHT);
+
+    if (fgCalledCount == BB_ZERO_WEIGHT)
+    {
+        fgFirstBB->bbSetRunRarely();
+    }
 
     JITDUMP("OSR: redirecting flow at method entry from " FMT_BB " to OSR entry " FMT_BB " for the importer\n",
             fgFirstBB->bbNum, fgOSREntryBB->bbNum);

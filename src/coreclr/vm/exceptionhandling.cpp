@@ -939,18 +939,20 @@ ProcessCLRExceptionNew(IN     PEXCEPTION_RECORD   pExceptionRecord,
     if (!ExecutionManager::IsManagedCode((PCODE)pDispatcherContext->ControlPc) ||
         pThread->HasThreadStateNC(Thread::TSNC_ProcessedUnhandledException))
     {
-        if ((pExceptionRecord->ExceptionFlags & EXCEPTION_UNWINDING))
-        {
-            GCX_COOP();
-            PopExplicitFrames(pThread, (void*)pDispatcherContext->EstablisherFrame, (void*)GetSP(pDispatcherContext->ContextRecord));
-            ExInfo::PopExInfos(pThread, (void*)pDispatcherContext->EstablisherFrame);
-        }
         return ExceptionContinueSearch;
     }
 
 #ifndef HOST_UNIX
     if (!(pExceptionRecord->ExceptionFlags & EXCEPTION_UNWINDING))
     {
+        // If the exception is a breakpoint, let it go. The managed exception handling
+        // doesn't process breakpoints.
+        if ((pExceptionRecord->ExceptionCode == STATUS_BREAKPOINT) ||
+            (pExceptionRecord->ExceptionCode == STATUS_SINGLE_STEP))
+        {
+            return ExceptionContinueSearch;
+        }
+
         // Failfast if exception indicates corrupted process state
         if (IsProcessCorruptedStateException(pExceptionRecord->ExceptionCode, /* throwable */ NULL))
         {
@@ -6144,6 +6146,7 @@ BOOL IsSafeToUnwindFrameChain(Thread* pThread, LPVOID MemoryStackFpForFrameChain
     // Otherwise "unwind" to managed method
     REGDISPLAY rd;
     CONTEXT ctx;
+    ctx.ContextFlags = CONTEXT_CONTROL;
     SetIP(&ctx, 0);
     SetSP(&ctx, 0);
     FillRegDisplay(&rd, &ctx);
@@ -6189,9 +6192,16 @@ void CleanUpForSecondPass(Thread* pThread, bool fIsSO, LPVOID MemoryStackFpForFr
     // Instead, we rely on the END_SO_TOLERANT_CODE macro to call ClearExceptionStateAfterSO().  Of course,
     // we may leak in the UMThunkStubCommon() case where we don't have this macro lower on the stack
     // (stack grows up).
-    if (!fIsSO && !g_isNewExceptionHandlingEnabled)
+    if (!fIsSO)
     {
-        ExceptionTracker::PopTrackerIfEscaping(MemoryStackFp);
+        if (g_isNewExceptionHandlingEnabled)
+        {
+            ExInfo::PopExInfos(pThread, MemoryStackFp);
+        }
+        else
+        {
+            ExceptionTracker::PopTrackerIfEscaping(MemoryStackFp);
+        }
     }
 }
 
@@ -8597,8 +8607,12 @@ extern "C" bool QCALLTYPE SfiNext(StackFrameIterator* pThis, uint* uExCollideCla
             _ASSERTE(pThis->GetFrameState() != StackFrameIterator::SFITER_SKIPPED_FRAME_FUNCTION);
 
             pFrame = pThis->m_crawl.GetFrame();
-            // Check if there are any further managed frames on the stack, if not, the exception is unhandled.
-            if ((pFrame == FRAME_TOP) || IsTopmostDebuggerU2MCatchHandlerFrame(pFrame))
+
+            // Check if there are any further managed frames on the stack or a catch for all exceptions in native code (marked by
+            // DebuggerU2MCatchHandlerFrame with CatchesAllExceptions() returning true).
+            // If not, the exception is unhandled.
+            if ((pFrame == FRAME_TOP) ||
+                (IsTopmostDebuggerU2MCatchHandlerFrame(pFrame) && !((DebuggerU2MCatchHandlerFrame*)pFrame)->CatchesAllExceptions()))
             {
                 if (pTopExInfo->m_passNumber == 1)
                 {

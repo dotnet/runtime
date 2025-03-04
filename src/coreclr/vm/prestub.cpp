@@ -24,6 +24,9 @@
 #include "../debug/ee/debugger.h"
 
 #include "CachedInterfaceDispatchPal.h"
+#ifdef FEATURE_INTERPRETER
+#include "interpexec.h"
+#endif
 
 #ifdef FEATURE_COMINTEROP
 #include "clrtocomcall.h"
@@ -829,21 +832,23 @@ PCODE MethodDesc::JitCompileCodeLockedEventWrapper(PrepareCodeConfig* pConfig, J
     else
     {
         SString namespaceOrClassName, methodName, methodSignature;
-
+#ifdef FEATURE_EVENT_TRACE
         ETW::MethodLog::MethodJitting(this,
             pilHeader,
             &namespaceOrClassName,
             &methodName,
             &methodSignature);
+#endif //FEATURE_EVENT_TRACE
 
         pCode = JitCompileCodeLocked(pConfig, pilHeader, pEntry, &sizeOfCode);
-
+#ifdef FEATURE_EVENT_TRACE
         ETW::MethodLog::MethodJitted(this,
             &namespaceOrClassName,
             &methodName,
             &methodSignature,
             pCode,
             pConfig);
+#endif //FEATURE_EVENT_TRACE
     }
 
 #ifdef PROFILING_SUPPORTED
@@ -2738,14 +2743,17 @@ extern "C" PCODE STDCALL PreStubWorker(TransitionBlock* pTransitionBlock, Method
 #ifdef FEATURE_INTERPRETER
 extern "C" void STDCALL ExecuteInterpretedMethod(TransitionBlock* pTransitionBlock, TADDR byteCodeAddr)
 {
-    CodeHeader* pCodeHeader = EEJitManager::GetCodeHeaderFromStartAddress(byteCodeAddr);
-
-    EEJitManager *pManager = ExecutionManager::GetEEJitManager();
-    MethodDesc *pMD = pCodeHeader->GetMethodDesc();
-
-    // TODO-Interp: call the interpreter method execution entry point
     // Argument registers are in the TransitionBlock
     // The stack arguments are right after the pTransitionBlock
+    InterpThreadContext *threadContext = InterpGetThreadContext();
+    int8_t *sp = threadContext->pStackPointer;
+
+    InterpMethodContextFrame interpFrame = {0};
+    interpFrame.startIp = (int32_t*)byteCodeAddr;
+    interpFrame.pStack = sp;
+    interpFrame.pRetVal = sp;
+
+    InterpExecMethod(&interpFrame, threadContext);
 }
 #endif // FEATURE_INTERPRETER
 

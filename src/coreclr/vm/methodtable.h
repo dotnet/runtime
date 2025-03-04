@@ -1090,9 +1090,12 @@ public:
     {
         LIMITED_METHOD_DAC_CONTRACT;
 
-        // currently all ComObjects except
-        // for __ComObject have dynamic Interface maps
-        return GetNumInterfaces() > 0 && IsComObjectType() && !ParentEquals(g_pObjectClass);
+        // All ComObjects except for __ComObject
+        // have dynamic Interface maps
+        return GetNumInterfaces() > 0
+            && IsComObjectType()
+            && !ParentEquals(g_pObjectClass)
+            && this != g_pBaseCOMObject;
     }
 #endif // FEATURE_COMINTEROP
 
