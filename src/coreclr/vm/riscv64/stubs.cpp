@@ -467,30 +467,6 @@ void HelperMethodFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool update
     ClearRegDisplayArgumentAndScratchRegisters(pRD);
 }
 
-#ifndef DACCESS_COMPILE
-void ThisPtrRetBufPrecode::Init(MethodDesc* pMD, LoaderAllocator *pLoaderAllocator)
-{
-    WRAPPER_NO_CONTRACT;
-
-    //Initially
-    //a0 -This ptr
-    //a1 -ReturnBuffer
-    m_rgCode[0] = 0x00050f93; // addi  t6, a0, 0x0
-    m_rgCode[1] = 0x00058513; // addi  a0, a1, 0x0
-    m_rgCode[2] = 0x000f8593; // addi  a1, t6, 0x0
-    m_rgCode[3] = 0x00000f97; // auipc t6, 0
-    m_rgCode[4] = 0x00cfbf83; // ld    t6, 12(t6)
-    m_rgCode[5] = 0x000f8067; // jalr  x0, 0(t6)
-
-    _ASSERTE((UINT32*)&m_pTarget == &m_rgCode[6]);
-    _ASSERTE(6 == ARRAY_SIZE(m_rgCode));
-
-    m_pTarget = GetPreStubEntryPoint();
-    m_pMethodDesc = (TADDR)pMD;
-}
-
-#endif // !DACCESS_COMPILE
-
 void UpdateRegDisplayFromCalleeSavedRegisters(REGDISPLAY * pRD, CalleeSavedRegisters * pCalleeSaved)
 {
     LIMITED_METHOD_CONTRACT;
@@ -908,62 +884,6 @@ AdjustContextForVirtualStub(
     return TRUE;
 }
 #endif // !DACCESS_COMPILE
-
-UMEntryThunk * UMEntryThunk::Decode(void *pCallback)
-{
-    _ASSERTE(offsetof(UMEntryThunkCode, m_code) == 0);
-    UMEntryThunkCode * pCode = (UMEntryThunkCode*)pCallback;
-
-    // We may be called with an unmanaged external code pointer instead. So if it doesn't look like one of our
-    // stubs (see UMEntryThunkCode::Encode below) then we'll return NULL. Luckily in these scenarios our
-    // caller will perform a hash lookup on successful return to verify our result in case random unmanaged
-    // code happens to look like ours.
-    if ((pCode->m_code[0] == 0x00000f97) && // auipc t6, 0
-        (pCode->m_code[1] == 0x018fb383) && // ld    t2, 24(t6)
-        (pCode->m_code[2] == 0x010fbf83) && // ld    t6, 16(t6)
-        (pCode->m_code[3] == 0x000f8067))   // jalr  x0, 0(t6)
-    {
-        return (UMEntryThunk*)pCode->m_pvSecretParam;
-    }
-
-    return NULL;
-}
-
-void UMEntryThunkCode::Encode(UMEntryThunkCode *pEntryThunkCodeRX, BYTE* pTargetCode, void* pvSecretParam)
-{
-    // auipc t6, 0
-    // ld    t2, 24(t6)
-    // ld    t6, 16(t6)
-    // jalr  x0, 0(t6)
-    // m_pTargetCode data
-    // m_pvSecretParam data
-
-    m_code[0] = 0x00000f97; // auipc t6, 0
-    m_code[1] = 0x018fb383; // ld    t2, 24(t6)
-    m_code[2] = 0x010fbf83; // ld    t6, 16(t6)
-    m_code[3] = 0x000f8067; // jalr  x0, 0(t6)
-
-    m_pTargetCode = (TADDR)pTargetCode;
-    m_pvSecretParam = (TADDR)pvSecretParam;
-    FlushInstructionCache(GetCurrentProcess(),&pEntryThunkCodeRX->m_code,sizeof(m_code));
-}
-
-#ifndef DACCESS_COMPILE
-
-void UMEntryThunkCode::Poison()
-{
-    ExecutableWriterHolder<UMEntryThunkCode> thunkWriterHolder(this, sizeof(UMEntryThunkCode));
-    UMEntryThunkCode *pThisRW = thunkWriterHolder.GetRW();
-
-    pThisRW->m_pTargetCode = (TADDR)UMEntryThunk::ReportViolation;
-
-    // ld   a0, 24(t6)
-    pThisRW->m_code[1] = 0x018fb503;
-
-    ClrFlushInstructionCache(&m_code,sizeof(m_code));
-}
-
-#endif // DACCESS_COMPILE
 
 #if !defined(DACCESS_COMPILE)
 VOID ResetCurrentContext()

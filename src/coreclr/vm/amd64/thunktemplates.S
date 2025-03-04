@@ -11,7 +11,7 @@ STUB_PAGE_SIZE = 16384
 #define DATA_SLOT(stub, field) C_FUNC(stub##Code) + STUB_PAGE_SIZE + stub##Data__##field
 
 LEAF_ENTRY StubPrecodeCode, _TEXT
-        mov    r10, [rip + DATA_SLOT(StubPrecode, MethodDesc)]
+        mov    r10, [rip + DATA_SLOT(StubPrecode, SecretParam)]
         jmp    [rip + DATA_SLOT(StubPrecode, Target)]
 LEAF_END_MARKED StubPrecodeCode, _TEXT
 

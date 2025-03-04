@@ -409,7 +409,8 @@ static MethodDesc* getTargetMethodDesc(PCODE target)
 
     if (stubKind == STUB_CODE_BLOCK_STUBPRECODE)
     {
-        return (MethodDesc*)((StubPrecode*)PCODEToPINSTR(target))->GetMethodDesc();
+        Precode* pPrecode = Precode::GetPrecodeFromEntryPoint(target);
+        return pPrecode->GetMethodDesc();
     }
 
     if (stubKind == STUB_CODE_BLOCK_FIXUPPRECODE)
