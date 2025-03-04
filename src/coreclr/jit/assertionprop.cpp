@@ -1336,23 +1336,15 @@ AssertionIndex Compiler::optCreateAssertion(GenTree*         op1,
 
                     if (op2->gtOper == GT_CNS_INT)
                     {
-                        ssize_t iconVal = op2->AsIntCon()->gtIconVal;
-
-                        if (varTypeIsSmall(lclVar))
+                        ssize_t iconVal = op2->AsIntCon()->IconValue();
+                        if (varTypeIsSmall(lclVar) && op1->OperIs(GT_STORE_LCL_VAR))
                         {
                             iconVal = optCastConstantSmall(iconVal, lclVar->TypeGet());
+                            if (!optLocalAssertionProp)
+                            {
+                                assertion.op2.vn = vnStore->VNForIntCon(static_cast<int>(iconVal));
+                            }
                         }
-
-#ifdef TARGET_ARM
-                        // Do not Constant-Prop large constants for ARM
-                        // TODO-CrossBitness: we wouldn't need the cast below if GenTreeIntCon::gtIconVal had
-                        // target_ssize_t type.
-                        if (!codeGen->validImmForMov((target_ssize_t)iconVal))
-                        {
-                            goto DONE_ASSERTION; // Don't make an assertion
-                        }
-#endif // TARGET_ARM
-
                         assertion.op2.u1.iconVal = iconVal;
                         assertion.op2.SetIconFlag(op2->GetIconHandleFlag(), op2->AsIntCon()->gtFieldSeq);
                     }
