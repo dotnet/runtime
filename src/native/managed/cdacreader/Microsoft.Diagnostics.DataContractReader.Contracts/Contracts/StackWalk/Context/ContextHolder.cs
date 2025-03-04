@@ -69,7 +69,6 @@ public class ContextHolder<[DynamicallyAccessedMembers(DynamicallyAccessedMember
         return true;
     }
 
-    public override string? ToString() => Context.ToString();
     public bool Equals(ContextHolder<T>? other)
     {
         if (other is null)

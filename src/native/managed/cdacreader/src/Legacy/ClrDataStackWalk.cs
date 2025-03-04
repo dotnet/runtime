@@ -4,7 +4,6 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.IO;
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.Marshalling;
 using Microsoft.Diagnostics.DataContractReader.Contracts;
@@ -57,8 +56,6 @@ internal sealed unsafe partial class ClrDataStackWalk : IXCLRDataStackWalk
 #if DEBUG
         if (_legacyImpl is not null)
         {
-            using StreamWriter streamWriter = new(new FileStream("C:\\Users\\maxcharlamb\\OneDrive - Microsoft\\Desktop\\out.txt", FileMode.Append));
-            Console.SetOut(streamWriter);
             byte[] localContextBuf = new byte[contextBufSize];
             int hrLocal = _legacyImpl.GetContext(contextFlags, contextBufSize, null, localContextBuf);
             Debug.Assert(hrLocal == hr, $"cDAC: {hr:x}, DAC: {hrLocal:x}");
@@ -68,18 +65,7 @@ internal sealed unsafe partial class ClrDataStackWalk : IXCLRDataStackWalk
             contextStruct.FillFromBuffer(contextBuf);
             localContextStruct.FillFromBuffer(localContextBuf);
 
-            Console.WriteLine($"cDAC: {contextStruct}");
-            Console.WriteLine($"DAC: {localContextStruct}");
-
-            streamWriter.Flush();
-
             Debug.Assert(contextStruct.Equals(localContextStruct));
-
-            Debug.Assert(contextStruct.InstructionPointer == localContextStruct.InstructionPointer, $"cDAC IP: {contextStruct.InstructionPointer:x}, DAC IP: {localContextStruct.InstructionPointer:x}");
-            Debug.Assert(contextStruct.StackPointer == localContextStruct.StackPointer, $"cDAC SP: {contextStruct.StackPointer:x}, DAC SP: {localContextStruct.StackPointer:x}");
-            Debug.Assert(contextStruct.FramePointer == localContextStruct.FramePointer, $"cDAC FP: {contextStruct.FramePointer:x}, DAC FP: {localContextStruct.FramePointer:x}");
-
-            Console.SetOut(Console.Out);
         }
 #endif
 

@@ -10,7 +10,7 @@ namespace Microsoft.Diagnostics.DataContractReader.Contracts.StackWalkHelpers;
 /// AMD64-specific thread context.
 /// </summary>
 [StructLayout(LayoutKind.Explicit, Pack = 1)]
-public struct AMD64Context : IPlatformContext
+internal struct AMD64Context : IPlatformContext
 {
     [Flags]
     public enum ContextFlagsValues : uint
@@ -25,6 +25,7 @@ public struct AMD64Context : IPlatformContext
         CONTEXT_ALL = CONTEXT_CONTROL | CONTEXT_INTEGER | CONTEXT_SEGMENTS | CONTEXT_FLOATING_POINT | CONTEXT_DEBUG_REGISTERS,
         CONTEXT_XSTATE = CONTEXT_AMD | 0x40,
         CONTEXT_KERNEL_CET = CONTEXT_AMD | 0x80,
+
         CONTEXT_AREA_MASK = 0xFFFF,
     }
 
@@ -239,15 +240,4 @@ public struct AMD64Context : IPlatformContext
     [Register(RegisterType.Debug)]
     [FieldOffset(0x4c8)]
     public ulong LastExceptionFromRip;
-
-    public override readonly string ToString()
-    {
-        return $"P1Home: {P1Home}, P2Home: {P2Home}, P3Home: {P3Home}, P4Home: {P4Home}, P5Home: {P5Home}, P6Home: {P6Home}, " +
-               $"ContextFlags: {ContextFlags}, MxCsr: {MxCsr}, Cs: {Cs}, Ds: {Ds}, Es: {Es}, Fs: {Fs}, Gs: {Gs}, Ss: {Ss}, " +
-               $"EFlags: {EFlags}, Dr0: {Dr0}, Dr1: {Dr1}, Dr2: {Dr2}, Dr3: {Dr3}, Dr6: {Dr6}, Dr7: {Dr7}, " +
-               $"Rax: {Rax}, Rcx: {Rcx}, Rdx: {Rdx}, Rbx: {Rbx}, Rsp: {Rsp}, Rbp: {Rbp}, Rsi: {Rsi}, Rdi: {Rdi}, " +
-               $"R8: {R8}, R9: {R9}, R10: {R10}, R11: {R11}, R12: {R12}, R13: {R13}, R14: {R14}, R15: {R15}, Rip: {Rip}, " +
-               $"DebugControl: {DebugControl}, LastBranchToRip: {LastBranchToRip}, LastBranchFromRip: {LastBranchFromRip}, " +
-               $"LastExceptionToRip: {LastExceptionToRip}, LastExceptionFromRip: {LastExceptionFromRip}";
-    }
 }

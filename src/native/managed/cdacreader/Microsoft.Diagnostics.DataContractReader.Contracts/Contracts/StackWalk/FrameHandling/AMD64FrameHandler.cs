@@ -10,7 +10,7 @@ namespace Microsoft.Diagnostics.DataContractReader.Contracts.StackWalkHelpers;
 internal class AMD64FrameHandler(Target target, ContextHolder<AMD64Context> contextHolder) : IPlatformFrameHandler
 {
     private readonly Target _target = target;
-    private readonly ContextHolder<AMD64Context> _context = contextHolder;
+    private readonly ContextHolder<AMD64Context> _holder = contextHolder;
 
     bool IPlatformFrameHandler.HandleInlinedCallFrame(InlinedCallFrame inlinedCallFrame)
     {
@@ -21,9 +21,9 @@ internal class AMD64FrameHandler(Target target, ContextHolder<AMD64Context> cont
             return false;
         }
 
-        _context.InstructionPointer = inlinedCallFrame.CallerReturnAddress;
-        _context.StackPointer = inlinedCallFrame.CallSiteSP;
-        _context.FramePointer = inlinedCallFrame.CalleeSavedFP;
+        _holder.InstructionPointer = inlinedCallFrame.CallerReturnAddress;
+        _holder.StackPointer = inlinedCallFrame.CallSiteSP;
+        _holder.FramePointer = inlinedCallFrame.CalleeSavedFP;
 
         return true;
     }
@@ -35,16 +35,16 @@ internal class AMD64FrameHandler(Target target, ContextHolder<AMD64Context> cont
 
         UpdateCalleeSavedRegistersFromOtherContext(otherContextHolder);
 
-        _context.InstructionPointer = otherContextHolder.Context.InstructionPointer;
-        _context.StackPointer = otherContextHolder.Context.StackPointer;
+        _holder.InstructionPointer = otherContextHolder.Context.InstructionPointer;
+        _holder.StackPointer = otherContextHolder.Context.StackPointer;
 
         return true;
     }
 
     bool IPlatformFrameHandler.HandleTransitionFrame(FramedMethodFrame framedMethodFrame, TransitionBlock transitionBlock, uint transitionBlockSize)
     {
-        _context.InstructionPointer = transitionBlock.ReturnAddress;
-        _context.StackPointer = framedMethodFrame.TransitionBlockPtr + transitionBlockSize;
+        _holder.InstructionPointer = transitionBlock.ReturnAddress;
+        _holder.StackPointer = framedMethodFrame.TransitionBlockPtr + transitionBlockSize;
         UpdateFromCalleeSavedRegisters(transitionBlock.CalleeSavedRegisters);
 
         return true;
@@ -57,13 +57,13 @@ internal class AMD64FrameHandler(Target target, ContextHolder<AMD64Context> cont
         {
             return false;
         }
-        _context.ReadFromAddress(_target, debuggerEval.TargetContext);
+        _holder.ReadFromAddress(_target, debuggerEval.TargetContext);
         return true;
     }
 
     bool IPlatformFrameHandler.HandleResumableFrame(ResumableFrame frame)
     {
-        _context.ReadFromAddress(_target, frame.TargetContextPtr);
+        _holder.ReadFromAddress(_target, frame.TargetContextPtr);
         return true;
     }
 
@@ -73,11 +73,11 @@ internal class AMD64FrameHandler(Target target, ContextHolder<AMD64Context> cont
         {
             throw new InvalidOperationException("Unexpected null context pointer on FaultingExceptionFrame");
         }
-        _context.ReadFromAddress(_target, targetContext);
+        _holder.ReadFromAddress(_target, targetContext);
 
         // Clear the CONTEXT_XSTATE, since the AMD64Context contains just plain CONTEXT structure
         // that does not support holding any extended state.
-        _context.Context.ContextFlags &= ~(uint)(ContextFlagsValues.CONTEXT_XSTATE & ContextFlagsValues.CONTEXT_AREA_MASK);
+        _holder.Context.ContextFlags &= ~(uint)(ContextFlagsValues.CONTEXT_XSTATE & ContextFlagsValues.CONTEXT_AREA_MASK);
         return true;
     }
 
@@ -85,17 +85,17 @@ internal class AMD64FrameHandler(Target target, ContextHolder<AMD64Context> cont
     {
         HijackArgsAMD64 args = _target.ProcessedData.GetOrAdd<Data.HijackArgsAMD64>(frame.HijackArgsPtr);
 
-        _context.InstructionPointer = frame.ReturnAddress;
+        _holder.InstructionPointer = frame.ReturnAddress;
         if (args.Rsp is TargetPointer rsp)
         {
             // Windows case, Rsp is passed directly
-            _context.StackPointer = rsp;
+            _holder.StackPointer = rsp;
         }
         else
         {
             // Non-Windows case, the stack pointer is the address immediately following HijacksArgs
             uint hijackArgsSize = _target.GetTypeInfo(DataType.HijackArgs).Size ?? throw new InvalidOperationException("HijackArgs size is not set");
-            _context.StackPointer = frame.HijackArgsPtr + hijackArgsSize;
+            _holder.StackPointer = frame.HijackArgsPtr + hijackArgsSize;
         }
 
         UpdateFromCalleeSavedRegisters(args.CalleeSavedRegisters);
@@ -108,7 +108,7 @@ internal class AMD64FrameHandler(Target target, ContextHolder<AMD64Context> cont
         Data.CalleeSavedRegisters calleeSavedRegisters = _target.ProcessedData.GetOrAdd<Data.CalleeSavedRegisters>(calleeSavedRegistersPtr);
         foreach ((string name, TargetNUInt value) in calleeSavedRegisters.Registers)
         {
-            if (!_context.TrySetField(name, value))
+            if (!_holder.TrySetField(name, value))
             {
                 throw new InvalidOperationException($"Unexpected register {name} in callee saved registers");
             }
@@ -123,7 +123,7 @@ internal class AMD64FrameHandler(Target target, ContextHolder<AMD64Context> cont
             {
                 throw new InvalidOperationException($"Unexpected register {name} in callee saved registers");
             }
-            if (!_context.TrySetField(name, value))
+            if (!_holder.TrySetField(name, value))
             {
                 throw new InvalidOperationException($"Unexpected register {name} in callee saved registers");
             }
