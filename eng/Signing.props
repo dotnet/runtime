@@ -97,6 +97,7 @@
               Condition="Exists('$(ArtifactsDir)VSSetup')"
               Kind="Blob"
               ChecksumPath="%(FullPath).sha512"
+              IsVSSetup="true"
               SubBlobFolder="workloads/" />
   </ItemGroup>
 
