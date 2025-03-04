@@ -24366,6 +24366,12 @@ GenTree* Compiler::gtNewSimdMaxNode(
 #if defined(TARGET_XARCH)
     if (varTypeIsFloating(simdBaseType))
     {
+        if (compOpportunisticallyDependsOn(InstructionSet_AVX10v2))
+        {
+            NamedIntrinsic minMaxIntrinsic = (simdSize == 64) ? NI_AVX10v2_V512_MinMax : NI_AVX10v2_MinMax;
+            return gtNewSimdHWIntrinsicNode(type, op1, op2, gtNewIconNode(0x05), minMaxIntrinsic, simdBaseJitType,
+                                            simdSize);
+        }
         GenTree* op1Dup1 = fgMakeMultiUse(&op1);
         GenTree* op1Dup2 = gtCloneExpr(op1Dup1);
         GenTree* op1Dup3 = gtCloneExpr(op1Dup2);
@@ -24625,6 +24631,12 @@ GenTree* Compiler::gtNewSimdMinNode(
 #if defined(TARGET_XARCH)
     if (varTypeIsFloating(simdBaseType))
     {
+        if (compOpportunisticallyDependsOn(InstructionSet_AVX10v2))
+        {
+            NamedIntrinsic minMaxIntrinsic = (simdSize == 64) ? NI_AVX10v2_V512_MinMax : NI_AVX10v2_MinMax;
+            return gtNewSimdHWIntrinsicNode(type, op1, op2, gtNewIconNode(0x04), minMaxIntrinsic, simdBaseJitType,
+                                            simdSize);
+        }
         GenTree* op1Dup1 = fgMakeMultiUse(&op1);
         GenTree* op1Dup2 = gtCloneExpr(op1Dup1);
         GenTree* op1Dup3 = gtCloneExpr(op1Dup2);
