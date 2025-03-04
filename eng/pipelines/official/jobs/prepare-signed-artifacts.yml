@@ -12,7 +12,6 @@ jobs:
     # Disable SBOM at job template level
     skipComponentGovernanceDetection: true
     enableSbom: false
-    disableSbom: true
 
     pool:
       name: $(DncEngInternalBuildPool)
