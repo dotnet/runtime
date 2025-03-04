@@ -15,6 +15,7 @@ namespace System.Threading
         private static List<ThreadLocalNodeFinalizationHelper>? t_nodeFinalizationHelpers;
 
         private long _overflowCount;
+        private long _lastReturnedCount;
 
         // dummy node serving as a start and end of the ring list
         private readonly ThreadLocalNode _nodes;
@@ -29,6 +30,13 @@ namespace System.Threading
         {
             Debug.Assert(threadLocalCountObject is ThreadLocalNode);
             Unsafe.As<ThreadLocalNode>(threadLocalCountObject).Increment();
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void Decrement(object threadLocalCountObject)
+        {
+            Debug.Assert(threadLocalCountObject is ThreadLocalNode);
+            Unsafe.As<ThreadLocalNode>(threadLocalCountObject).Decrement();
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -75,6 +83,17 @@ namespace System.Threading
                     {
                         count += node.Count;
                         node = node._next;
+                    }
+
+                    // Ensure that the returned value is monotonically increasing
+                    long lastReturnedCount = _lastReturnedCount;
+                    if (count > lastReturnedCount)
+                    {
+                        _lastReturnedCount = count;
+                    }
+                    else
+                    {
+                        count = lastReturnedCount;
                     }
                 }
                 finally
@@ -134,6 +153,18 @@ namespace System.Threading
                 OnAddOverflow(1);
             }
 
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public void Decrement()
+            {
+                if (_count != 0)
+                {
+                    _count--;
+                    return;
+                }
+
+                OnAddOverflow(-1);
+            }
+
             public void Add(uint count)
             {
                 Debug.Assert(count != 0);
@@ -149,7 +180,7 @@ namespace System.Threading
             }
 
             [MethodImpl(MethodImplOptions.NoInlining)]
-            private void OnAddOverflow(uint count)
+            private void OnAddOverflow(long count)
             {
                 Debug.Assert(count != 0);
 
@@ -161,7 +192,7 @@ namespace System.Threading
                 counter._lock.Acquire();
                 try
                 {
-                    counter._overflowCount += (long)_count + count;
+                    counter._overflowCount += _count + count;
                     _count = 0;
                 }
                 finally
