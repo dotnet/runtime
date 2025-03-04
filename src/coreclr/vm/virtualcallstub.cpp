@@ -627,6 +627,8 @@ void VirtualCallStubManager::Init(LoaderAllocator *pLoaderAllocator)
                 indcell_heap_reserve_size += cPagesPerHeap * GetOsPageSize();
 #ifdef FEATURE_VIRTUAL_STUB_DISPATCH
                 cache_entry_heap_reserve_size += (cPagesPerHeap + cPagesRemainder) * GetOsPageSize();
+#else
+                indcell_heap_reserve_size += (cPagesPerHeap + cPagesRemainder) * GetOsPageSize();
 #endif // FEATURE_VIRTUAL_STUB_DISPATCH
             }
 
@@ -634,6 +636,8 @@ void VirtualCallStubManager::Init(LoaderAllocator *pLoaderAllocator)
             CONSISTENCY_CHECK((indcell_heap_reserve_size     +
                                cache_entry_heap_reserve_size)==
                               dwTotalReserveMemSize);
+#else
+            CONSISTENCY_CHECK(indcell_heap_reserve_size == dwTotalReserveMemSize);
 #endif // FEATURE_VIRTUAL_STUB_DISPATCH
         }
 
