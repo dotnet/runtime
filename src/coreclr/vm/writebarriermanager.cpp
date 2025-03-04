@@ -394,11 +394,7 @@ void WriteBarrierManager::Initialize()
 
     m_pWriteWatchTableImmediate = CALC_PATCH_LOCATION(JIT_WriteBarrier, Patch_Label_WriteWatchTable, 0);
     m_pRegionToGenTableImmediate = CALC_PATCH_LOCATION(JIT_WriteBarrier, Patch_Label_RegionToGeneration, 0);
-
-    // TODO: Only one of these!
     m_pRegionShrDest = CALC_PATCH_LOCATION(JIT_WriteBarrier, Patch_Label_RegionShr, 0);
-    m_pRegionShrSrc = CALC_PATCH_LOCATION(JIT_WriteBarrier, Patch_Label_RegionShr, 0);
-
     m_pLowerBoundImmediate = CALC_PATCH_LOCATION(JIT_WriteBarrier, Patch_Label_Lower, 0);
     m_pUpperBoundImmediate = CALC_PATCH_LOCATION(JIT_WriteBarrier, Patch_Label_Upper, 0);
     m_pCardTableImmediate = CALC_PATCH_LOCATION(JIT_WriteBarrier, Patch_Label_CardTable, 0);
@@ -661,7 +657,6 @@ int WriteBarrierManager::UpdateWriteWatchAndCardTableLocations(bool isRuntimeSus
 #else
     stompWBCompleteActions |= updateVariable<UINT64>(m_pRegionToGenTableImmediate, (size_t)g_region_to_generation_table);
     stompWBCompleteActions |= updateVariable<UINT8>(m_pRegionShrDest, g_region_shr);
-    stompWBCompleteActions |= updateVariable<UINT8>(m_pRegionShrSrc, g_region_shr);
 #endif //WRITE_BARRIER_VARS_INLINE
 
     stompWBCompleteActions |= updateVariable<UINT64>(m_pCardTableImmediate, (size_t)g_card_table);
