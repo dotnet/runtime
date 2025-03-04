@@ -3394,12 +3394,12 @@ HCIMPL3_RAW(void, JIT_ReversePInvokeEnterTrackTransitions, ReversePInvokeFrame* 
     {
         frame->currentThread = thread;
         
-        #ifdef PROFILING_SUPPORTED
+#ifdef PROFILING_SUPPORTED
         if (CORProfilerTrackTransitions())
         {
             ProfilerUnmanagedToManagedTransitionMD(frame->pMD, COR_PRF_TRANSITION_CALL);
         }
-        #endif
+#endif
         
         // Manually inline the fast path in Thread::DisablePreemptiveGC().
         thread->m_fPreemptiveGCDisabled.StoreWithoutBarrier(1);

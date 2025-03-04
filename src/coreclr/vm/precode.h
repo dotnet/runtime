@@ -78,7 +78,8 @@ struct StubPrecodeData
 {
     TADDR SecretParam;
     PCODE Target;
-    TADDR Type;
+    TADDR Type; // Use a TADDR here instead of just a byte, so that different offsets into the StubPrecode can't mistakenly
+                // match the Type field.  This is a defense-in-depth measure (and only matters for access from the debugger)
 };
 
 typedef DPTR(StubPrecodeData) PTR_StubPrecodeData;
@@ -136,17 +137,7 @@ struct StubPrecode
         return dac_cast<PTR_StubPrecodeData>(dac_cast<TADDR>(this) + GetStubCodePageSize());
     }
 
-    TADDR GetMethodDesc()
-    {
-        LIMITED_METHOD_DAC_CONTRACT;
-
-        if (GetType() == PRECODE_UMENTRY_THUNK_VALUE)
-        {
-            return 0;
-        }
-
-        return GetSecretParam();
-    }
+    TADDR GetMethodDesc();
 
 #ifndef DACCESS_COMPILE
     void SetSecretParam(TADDR secretParam)
@@ -171,13 +162,7 @@ struct StubPrecode
         return GetData()->Target;
     }
 
-    BYTE GetType()
-    {
-        LIMITED_METHOD_DAC_CONTRACT;
-        TADDR type = GetData()->Type;
-
-        return (BYTE)type;
-    }
+    BYTE GetType();
 
 #ifndef DACCESS_COMPILE
     static BOOL IsStubPrecodeByASM(PCODE addr);
@@ -438,6 +423,50 @@ enum PrecodeType {
 #endif // HAS_THISPTR_RETBUF_PRECODE
     PRECODE_UMENTRY_THUNK   = PRECODE_UMENTRY_THUNK_VALUE, // Set the value here and not in UMEntryThunk to avoid circular dependency
 };
+
+inline TADDR StubPrecode::GetMethodDesc()
+{
+    LIMITED_METHOD_DAC_CONTRACT;
+
+    switch (GetType())
+    {
+        case PRECODE_STUB:
+        case PRECODE_NDIRECT_IMPORT:
+            return GetSecretParam();
+
+        case PRECODE_UMENTRY_THUNK:
+#ifdef FEATURE_INTERPRETER
+        case PRECODE_INTERPRETER:
+#endif // FEATURE_INTERPRETER
+            return 0;
+    }
+
+    _ASSERTE(!"Unknown precode type");
+    return 0;
+}
+
+inline BYTE StubPrecode::GetType()
+{
+    LIMITED_METHOD_DAC_CONTRACT;
+    TADDR type = GetData()->Type;
+
+    // There are a limited number of valid bit patterns here. Restrict to those, so that the
+    // speculative variant of GetPrecodeFromEntryPoint is more robust. Type is stored as a TADDR
+    // so that a single byte matching is not enough to cause a false match.
+    switch (type)
+    {
+        case PRECODE_UMENTRY_THUNK:
+        case PRECODE_STUB:
+        case PRECODE_NDIRECT_IMPORT:
+#ifdef FEATURE_INTERPRETER
+        case PRECODE_INTERPRETER:
+#endif // FEATURE_INTERPRETER
+            return (BYTE)type;
+    }
+
+    return 0;
+}
+
 
 // For more details see. file:../../doc/BookOfTheRuntime/ClassLoader/MethodDescDesign.doc
 class Precode {

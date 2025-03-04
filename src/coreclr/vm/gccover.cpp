@@ -414,10 +414,6 @@ static MethodDesc* getTargetMethodDesc(PCODE target)
         {
             case PRECODE_STUB:
             case PRECODE_NDIRECT_IMPORT:
-#ifdef FEATURE_INTERPRETER
-            case PRECODE_INTERPRETER:
-#endif
-
                 return dac_cast<PTR_MethodDesc>(pPrecode->AsStubPrecode()->GetMethodDesc());
             default:
                 return nullptr;
