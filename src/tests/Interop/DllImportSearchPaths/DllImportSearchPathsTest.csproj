@@ -9,6 +9,7 @@
     <Compile Include="*.cs" />
     <Compile Include="../NativeLibrary/NativeLibraryToLoad/NativeLibraryToLoad.cs" />
     <CMakeProjectReference Include="../NativeLibrary/NativeLibraryToLoad/CMakeLists.txt" />
+    <CMakeProjectReference Include="NativeLibraryWithDependency/CMakeLists.txt" />
   </ItemGroup>
 
   <PropertyGroup>
@@ -18,7 +19,9 @@
   <Target Name="SetUpSubdirectoryNative" AfterTargets="CopyNativeProjectBinaries">
     <ItemGroup>
       <NativeLibrariesToMove Include="$(OutDir)/libNativeLibrary.*" />
+      <NativeLibrariesToMove Include="$(OutDir)/libNativeLibraryWithDependency.*" />
       <NativeLibrariesToMove Include="$(OutDir)/NativeLibrary.*" />
+      <NativeLibrariesToMove Include="$(OutDir)/NativeLibraryWithDependency.*" />
     </ItemGroup>
     <Move SourceFiles="@(NativeLibrariesToMove)" DestinationFiles="@(NativeLibrariesToMove -> '$(LibrarySubdirectory)/%(Filename)%(Extension)')"/>
   </Target>
