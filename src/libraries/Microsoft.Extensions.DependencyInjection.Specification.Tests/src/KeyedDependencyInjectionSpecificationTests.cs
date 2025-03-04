@@ -6,7 +6,6 @@ using System.Linq;
 using System.Security.Cryptography;
 using Microsoft.Extensions.DependencyInjection.Specification.Fakes;
 using Xunit;
-using static Microsoft.Extensions.DependencyInjection.Specification.KeyedDependencyInjectionSpecificationTests;
 
 namespace Microsoft.Extensions.DependencyInjection.Specification
 {
