@@ -2,11 +2,14 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Diagnostics.CodeAnalysis;
+using System.Reflection;
 using System.Runtime.InteropServices;
 
 namespace Microsoft.Diagnostics.DataContractReader.Contracts.StackWalkHelpers;
 
-public class CotnextHolder<T> : IPlatformAgnosticContext where T : unmanaged, IPlatformContext
+public class ContextHolder<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields)] T> : IPlatformAgnosticContext, IEquatable<ContextHolder<T>>
+    where T : unmanaged, IPlatformContext
 {
     public T Context;
 
@@ -42,7 +45,49 @@ public class CotnextHolder<T> : IPlatformAgnosticContext where T : unmanaged, IP
         Span<byte> byteSpan = MemoryMarshal.AsBytes(structSpan);
         return byteSpan.ToArray();
     }
-    public IPlatformAgnosticContext Clone() => new CotnextHolder<T>() { Context = Context };
+    public IPlatformAgnosticContext Clone() => new ContextHolder<T>() { Context = Context };
     public void Clear() => Context = default;
     public void Unwind(Target target) => Context.Unwind(target);
+
+    public bool TrySetField(string fieldName, TargetNUInt value)
+    {
+        FieldInfo? field = typeof(T).GetField(fieldName);
+        if (field is null) return false;
+        field.SetValueDirect(__makeref(Context), value.Value);
+        return true;
+    }
+
+    public bool TryReadField(string fieldName, out TargetNUInt value)
+    {
+        FieldInfo? field = typeof(T).GetField(fieldName);
+        if (field is null)
+        {
+            value = default;
+            return false;
+        }
+        value = new((ulong)field.GetValue(Context)!);
+        return true;
+    }
+
+    public bool Equals(ContextHolder<T>? other)
+    {
+        if (other is null)
+        {
+            return false;
+        }
+
+        if (GetType() != other.GetType())
+        {
+            return false;
+        }
+
+        return Context.Equals(other.Context);
+    }
+
+    public override bool Equals(object? obj)
+    {
+        return Equals(obj as ContextHolder<T>);
+    }
+
+    public override int GetHashCode() => Context.GetHashCode();
 }

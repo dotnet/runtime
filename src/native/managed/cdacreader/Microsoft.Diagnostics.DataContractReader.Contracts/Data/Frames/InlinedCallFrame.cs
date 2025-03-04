@@ -17,7 +17,7 @@ internal class InlinedCallFrame : IData<InlinedCallFrame>
         Address = address;
     }
 
-    public TargetPointer Address { get;}
+    public TargetPointer Address { get; }
     public TargetPointer CallSiteSP { get; }
     public TargetPointer CallerReturnAddress { get; }
     public TargetPointer CalleeSavedFP { get; }

@@ -28,10 +28,10 @@ public interface IPlatformAgnosticContext
             case Target.CorDebugPlatform.CORDB_PLATFORM_WINDOWS_AMD64:
             case Target.CorDebugPlatform.CORDB_PLATFORM_POSIX_AMD64:
             case Target.CorDebugPlatform.CORDB_PLATFORM_MAC_AMD64:
-                return new CotnextHolder<AMD64Context>();
+                return new ContextHolder<AMD64Context>();
             case Target.CorDebugPlatform.CORDB_PLATFORM_POSIX_ARM64:
             case Target.CorDebugPlatform.CORDB_PLATFORM_WINDOWS_ARM64:
-                return new CotnextHolder<ARM64Context>();
+                return new ContextHolder<ARM64Context>();
             default:
                 throw new InvalidOperationException($"Unsupported platform {target.Platform}");
         }
