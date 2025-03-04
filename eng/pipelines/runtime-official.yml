@@ -151,6 +151,28 @@ extends:
             nameSuffix: CrossDac
             isOfficialBuild: true
             timeoutInMinutes: 120
+            templateContext:
+              inputs:
+              - input: pipelineArtifact
+                artifactName: Build_linux_x64_release_AllRuntimes_Artifacts
+                targetPath: $(Build.SourcesDirectory)/artifacts/RuntimeDownload
+                itemPattern: |
+                  Microsoft.NETCore.App.Runtime.linux-x64*.nupkg
+              - input: pipelineArtifact
+                artifactName: Build_linux_arm64_release_AllRuntimes_Artifacts
+                targetPath: $(Build.SourcesDirectory)/artifacts/RuntimeDownload
+                itemPattern: |
+                  Microsoft.NETCore.App.Runtime.linux-arm64*.nupkg
+              - input: pipelineArtifact
+                artifactName: Build_linux_musl_x64_release_AllRuntimes_Artifacts
+                targetPath: $(Build.SourcesDirectory)/artifacts/RuntimeDownload
+                itemPattern: |
+                  Microsoft.NETCore.App.Runtime.linux-musl-x64*.nupkg
+              - input: pipelineArtifact
+                artifactName: Build_linux_musl_arm64_release_AllRuntimes_Artifacts
+                targetPath: $(Build.SourcesDirectory)/artifacts/RuntimeDownload
+                itemPattern: |
+                  Microsoft.NETCore.App.Runtime.linux-musl-arm64*.nupkg
             preBuildSteps:
             - task: DownloadPipelineArtifact@2
               displayName: Download runtime packs for CrossDac
@@ -281,7 +303,7 @@ extends:
             templateContext:
               inputs:
                 - input: pipelineArtifact
-                  artifactName: Build_Build_windows_x64_release_AllRuntimes_Artifacts
+                  artifactName: Build_windows_x64_release_AllRuntimes_Artifacts
                   targetPath: $(Build.SourcesDirectory)/artifacts/workloadPackages
                   itemPattern: |
                     Microsoft.NETCore.App.Runtime.AOT.win-x64.Cross.android-*.nupkg
@@ -341,7 +363,7 @@ extends:
                   targetPath: $(Build.SourcesDirectory)/artifacts/workloadPackages
                   itemPattern: |
                     Microsoft.NETCore.App.Runtime.Mono.multithread.browser-wasm*.nupkg
-                - input: pipelineArtifact 
+                - input: pipelineArtifact
                   artifactName: Build_wasi_wasm_Linux_release_AllRuntimes_Artifacts
                   targetPath: $(Build.SourcesDirectory)/artifacts/workloadPackages
                   itemPattern: |
