@@ -19948,12 +19948,13 @@ bool GenTree::IsArrayAddr(GenTreeArrAddr** pArrAddr)
 }
 
 //------------------------------------------------------------------------
-// SupportsSettingZeroFlag: Returns true if this is an arithmetic operation
-// whose codegen supports setting the "zero flag" as part of its operation.
+// SupportsSettingFlags: Returns true if this is an arithmetic operation
+// whose codegen supports setting flags as part of its operation.
+// This includes the "zero, negative, carry & overflow flags"
 //
 // Return Value:
 //    True if so. A false return does not imply that codegen for the node will
-//    not trash the zero flag.
+//    not trash the flags.
 //
 // Remarks:
 //    For example, for EQ (AND x y) 0, both xarch and arm64 can emit
@@ -19963,7 +19964,7 @@ bool GenTree::IsArrayAddr(GenTreeArrAddr** pArrAddr)
 //    The backend expects any node for which the flags will be consumed to be
 //    marked with GTF_SET_FLAGS.
 //
-bool GenTree::SupportsSettingZeroFlag()
+bool GenTree::SupportsSettingFlags()
 {
 #if defined(TARGET_XARCH)
     if (OperIs(GT_AND, GT_OR, GT_XOR, GT_ADD, GT_SUB, GT_NEG))
