@@ -38,6 +38,19 @@
     <ShortStack Condition="'$(DotNetBuildMonoEnableLLVM)' == 'true' or '$(DotNetBuildMonoAOTEnableLLVM)' == 'true'">true</ShortStack>
   </PropertyGroup>
 
+  <!--
+    Allow the VMR orchestrator to control whether or not to build rid-specific artifacts,
+    but provide defaults until the VMR orchestrator provides controls in all scenarios.
+  -->
+  <PropertyGroup Condition="'$(EnableDefaultRidSpecificArtifacts)' == ''">
+    <!-- Source-build always needs all artifacts to be published. -->
+    <EnableDefaultRidSpecificArtifacts Condition="'$(DotNetBuildSourceOnly)' != ''">false</EnableDefaultRidSpecificArtifacts>
+    <!-- Short-stack builds should always only publish RID-specific artifacts. -->
+    <EnableDefaultRidSpecificArtifacts Condition="'$(ShortStack)' == 'true'">true</EnableDefaultRidSpecificArtifacts>
+    <!-- If no override is specified, don't use RID-specific publishing. Instead, publish everything. -->
+    <EnableDefaultRidSpecificArtifacts Condition="'$(EnableDefaultRidSpecificArtifacts)' == ''">false</EnableDefaultRidSpecificArtifacts>
+  </PropertyGroup>
+
   <Target Name="GetRuntimeSourceBuildCommandConfiguration"
           BeforeTargets="GetSourceBuildCommandConfiguration">
     <PropertyGroup>
@@ -107,6 +120,8 @@
 
       <!-- Needed until https://github.com/dotnet/runtime/issues/109329 is fixed. -->
       <InnerBuildArgs Condition="'$(NetCoreAppToolCurrentVersion)' != ''">$(InnerBuildArgs) /p:NetCoreAppToolCurrentVersion=$(NetCoreAppToolCurrentVersion)</InnerBuildArgs>
+
+      <InnerBuildArgs Condition="'$(EnableDefaultRidSpecificArtifacts)' != ''">$(InnerBuildArgs) /p:EnableDefaultRidSpecificArtifacts=$(EnableDefaultRidSpecificArtifacts)</InnerBuildArgs>
     </PropertyGroup>
   </Target>
 
