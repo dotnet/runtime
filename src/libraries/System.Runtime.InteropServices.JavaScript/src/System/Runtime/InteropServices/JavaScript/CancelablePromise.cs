@@ -27,7 +27,9 @@ namespace System.Runtime.InteropServices.JavaScript
             Interop.Runtime.CancelPromise(holder.GCHandle);
 #else
 
+#if FEATURE_WASM_MANAGED_THREADS
             lock (holder.ProxyContext)
+#endif
             {
                 if (promise.IsCompleted || holder.IsDisposed || holder.ProxyContext._isDisposed)
                 {
