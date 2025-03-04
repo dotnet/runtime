@@ -78,7 +78,7 @@ namespace System
 
             if (rank == 1)
             {
-                return RuntimeImports.RhNewArray(elementType.MakeArrayType().TypeHandle.ToMethodTable(), pLengths[0]);
+                return RuntimeAugments.NewArray(elementType.MakeArrayType().TypeHandle, pLengths[0]);
             }
             else
             {
@@ -112,15 +112,15 @@ namespace System
                 }
             }
 
-            MethodTable* eeType = arrayType.TypeHandle.ToMethodTable();
             if (rank == 1)
             {
                 // Multidimensional array of rank 1 with 0 lower bounds gets actually allocated
                 // as an SzArray. SzArray is castable to MdArray rank 1.
-                if (!eeType->IsSzArray)
-                    eeType = arrayType.GetElementType().MakeArrayType().TypeHandle.ToMethodTable();
+                RuntimeTypeHandle arrayTypeHandle = arrayType.IsSZArray
+                    ? arrayType.TypeHandle
+                    : arrayType.GetElementType().MakeArrayType().TypeHandle;
 
-                return RuntimeImports.RhNewArray(eeType, pLengths[0]);
+                return RuntimeAugments.NewArray(arrayTypeHandle, pLengths[0]);
             }
             else
             {
@@ -129,6 +129,7 @@ namespace System
                 for (int i = 0; i < rank; i++)
                     pImmutableLengths[i] = pLengths[i];
 
+                MethodTable* eeType = arrayType.TypeHandle.ToMethodTable();
                 return NewMultiDimArray(eeType, pImmutableLengths, rank);
             }
         }
@@ -662,6 +663,7 @@ namespace System
             if (maxArrayDimensionLengthOverflow)
                 throw new OutOfMemoryException(); // "Array dimensions exceeded supported range."
 
+            Debug.Assert(eeType->NumVtableSlots != 0, "Compiler enforces we never have unconstructed MTs for multi-dim arrays since those can be template-constructed anytime");
             Array ret = RuntimeImports.RhNewArray(eeType, (int)totalLength);
 
             ref int bounds = ref ret.GetRawMultiDimArrayBounds();

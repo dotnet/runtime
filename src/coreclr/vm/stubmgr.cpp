@@ -1046,8 +1046,8 @@ BOOL PrecodeStubManager::DoTraceStub(PCODE stubStartAddress,
         Precode* pPrecode = NULL;
         if (RangeSectionStubManager::GetStubKind(stubStartAddress) == STUB_CODE_BLOCK_FIXUPPRECODE)
         {
-            Precode* pPrecode = Precode::GetPrecodeFromEntryPoint(stubStartAddress - FixupPrecode::FixupCodeOffset, TRUE /* speculative */);
-            if (pPrecode->GetType() != PRECODE_FIXUP)
+            pPrecode = Precode::GetPrecodeFromEntryPoint(stubStartAddress - FixupPrecode::FixupCodeOffset, TRUE /* speculative */);
+            if (pPrecode != NULL && pPrecode->GetType() != PRECODE_FIXUP)
             {
                 pPrecode = NULL;
             }

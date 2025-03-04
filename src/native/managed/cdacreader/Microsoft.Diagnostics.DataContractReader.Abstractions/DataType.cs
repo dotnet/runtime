@@ -41,6 +41,13 @@ public enum DataType
     TypeVarTypeDesc,
     FnPtrTypeDesc,
     DynamicMetadata,
+    StressLog,
+    StressLogModuleDesc,
+    StressLogHeader,
+    ThreadStressLog,
+    StressLogChunk,
+    StressMsg,
+    StressMsgHeader,
     Object,
     String,
     MethodDesc,
@@ -82,4 +89,8 @@ public enum DataType
     MethodImpl,
     NativeCodeSlot,
     GCCoverageInfo,
+
+    Frame,
+    InlinedCallFrame,
+    SoftwareExceptionFrame,
 }

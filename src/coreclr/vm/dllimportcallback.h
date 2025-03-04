@@ -276,19 +276,6 @@ public:
     }
 #endif // !DACCESS_COMPILE
 
-    OBJECTHANDLE GetObjectHandleSpeculative() const
-    {
-        CONTRACTL
-        {
-            NOTHROW;
-            GC_NOTRIGGER;
-            MODE_ANY;
-        }
-        CONTRACTL_END;
-
-        return GetData()->m_pObjectHandle;
-    }
-
     OBJECTHANDLE GetObjectHandle() const
     {
         CONTRACT (OBJECTHANDLE)
