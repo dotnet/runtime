@@ -1227,6 +1227,13 @@ VTableCallHolder* VirtualCallStubManager::GenerateVTableCallStub(DWORD slot)
 //              m_RecycledIndCellList when it is finalized.
 //
 //+----------------------------------------------------------------------------
+BYTE* GetStubIndirectionCell(BYTE** pBlocksStart, UINT32 index, UINT32 sizeOfIndCell)
+{
+    LIMITED_METHOD_CONTRACT;
+
+    return ((BYTE*)pBlocksStart) + (index * sizeOfIndCell);
+}
+
 BYTE *VirtualCallStubManager::GenerateStubIndirection(PCODE target, DispatchToken token, BOOL fUseRecycledCell /* = FALSE*/ )
 {
     CONTRACT (BYTE*) {
@@ -1289,23 +1296,19 @@ BYTE *VirtualCallStubManager::GenerateStubIndirection(PCODE target, DispatchToke
 
         // link all the cells together
         // we don't need to null terminate the linked list, InsertIntoFreeIndCellList will do it.
-        BYTE** pBlockCur = pBlock;
-        for (UINT32 i = 1; i < cellsPerBlock - 1; ++i)
+        for (UINT32 i = 1; i < cellsPerBlock - 1; ++i) // Setup linked list between entries 1 to n
         {
-            BYTE** pBlockNext = (BYTE**)(((BYTE*)pBlockCur) + sizeOfIndCell);
-            *pBlockCur = (BYTE *)pBlockNext;
-            pBlockCur = (BYTE**)pBlockNext;
+            *(BYTE**)GetStubIndirectionCell(pBlock, i, sizeOfIndCell) = GetStubIndirectionCell(pBlock, i + 1, sizeOfIndCell);
         }
 
         // insert the list into the free indcell list.
-        InsertIntoFreeIndCellList((((BYTE*)pBlock) + sizeOfIndCell), (((BYTE*)pBlock) + ((cellsPerBlock - 1) * sizeOfIndCell)));
+        InsertIntoFreeIndCellList(GetStubIndirectionCell(pBlock, 1, sizeOfIndCell), GetStubIndirectionCell(pBlock, cellsPerBlock - 1, sizeOfIndCell));
     }
 
     INTERFACE_DISPATCH_CACHED_OR_VSD(
         InterfaceDispatchCell * pCell = (InterfaceDispatchCell *)ret;
         pCell->m_pStub = target;
         pCell->m_pCache = DispatchToken::ToCachedInterfaceDispatchToken(token);
-        ret = (BYTE *)pCell;
         ,
         *((PCODE *)ret) = target;
     )

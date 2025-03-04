@@ -620,6 +620,16 @@ private:
             PRECONDITION(m_indCellLock.OwnedByCurrentThread());
         } CONTRACTL_END;
 
+#ifdef DEBUG
+        // Assert that head and tail are actually linked together
+        BYTE **p = (BYTE**)head;
+        while (p != (BYTE**)tail)
+        {
+            p = (BYTE **)*p;
+            _ASSERTE(p != NULL);
+        }
+#endif // DEBUG
+
         BYTE * temphead = *ppList;
         *((BYTE**)tail) = temphead;
         *ppList = head;
@@ -1657,13 +1667,13 @@ BYTE* GenerateDispatchStubCellEntrySlot(LoaderAllocator *pLoaderAllocator, TypeH
 inline bool UseCachedInterfaceDispatch() { return g_pConfig->UseCachedInterfaceDispatch(); }
 
 // INTERFACE_DISPATCH_CACHED_OR_VSD is a macro used to swap between cached interface dispatch and virtual stub dispatch.
-#define INTERFACE_DISPATCH_CACHED_OR_VSD(cachedDispatch, vsdDispath) if (UseCachedInterfaceDispatch()) { cachedDispatch; } else { vsdDispath; }
+#define INTERFACE_DISPATCH_CACHED_OR_VSD(cachedDispatch, vsdDispatch) if (UseCachedInterfaceDispatch()) { cachedDispatch; } else { vsdDispatch; }
 #elif defined(FEATURE_CACHED_INTERFACE_DISPATCH)
 inline bool UseCachedInterfaceDispatch() { return true; }
-#define INTERFACE_DISPATCH_CACHED_OR_VSD(cachedDispatch, vsdDispath) { cachedDispatch; }
+#define INTERFACE_DISPATCH_CACHED_OR_VSD(cachedDispatch, vsdDispatch) { cachedDispatch; }
 #elif defined(FEATURE_VIRTUAL_STUB_DISPATCH)
 inline bool UseCachedInterfaceDispatch() { return false; }
-#define INTERFACE_DISPATCH_CACHED_OR_VSD(cachedDispatch, vsdDispath) { vsdDispath; }
+#define INTERFACE_DISPATCH_CACHED_OR_VSD(cachedDispatch, vsdDispatch) { vsdDispatch; }
 #else
 #error "No dispatch mechanism defined"
 #endif
