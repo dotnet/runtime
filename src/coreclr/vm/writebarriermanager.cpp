@@ -442,20 +442,8 @@ int WriteBarrierManager::UpdateEphemeralBounds(bool isRuntimeSuspended)
 
 #else
 
-    size_t e_high = (size_t)g_ephemeral_high;
-    size_t e_low = (size_t)g_ephemeral_low;
-
-    // TODO: not required once we have separate functions
-#if defined(TARGET_ARM64)
-    if (GCHeapUtilities::IsServerHeap() && g_region_to_generation_table == nullptr)
-    {
-        e_high = 0;
-        e_low = 0;
-    }
-#endif // TARGET_ARM64
-
-    stompWBCompleteActions |= updateVariable<UINT64>(m_pUpperBoundImmediate, e_high);
-    stompWBCompleteActions |= updateVariable<UINT64>(m_pLowerBoundImmediate, e_low);
+    stompWBCompleteActions |= updateVariable<UINT64>(m_pUpperBoundImmediate, (size_t)g_ephemeral_high);
+    stompWBCompleteActions |= updateVariable<UINT64>(m_pLowerBoundImmediate, (size_t)g_ephemeral_low);
 #endif //WRITE_BARRIER_VARS_INLINE
 
 
