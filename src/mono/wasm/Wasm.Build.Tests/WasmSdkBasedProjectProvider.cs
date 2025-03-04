@@ -25,19 +25,26 @@ public class WasmSdkBasedProjectProvider : ProjectProviderBase
     protected override string BundleDirName { get { return "wwwroot"; } }
 
     protected override IReadOnlyDictionary<string, bool> GetAllKnownDotnetFilesToFingerprintMap(AssertBundleOptions assertOptions)
-        => new SortedDictionary<string, bool>()
-            {
-               { "dotnet.js", false },
-               { "dotnet.js.map", false },
-               { "dotnet.native.js", true },
-               { "dotnet.native.js.symbols", false },
-               { "dotnet.native.wasm", true },
-               { "dotnet.native.worker.mjs", true },
-               { "dotnet.runtime.js", true },
-               { "dotnet.runtime.js.map", false },
-               { "dotnet.diagnostics.js", true },
-               { "dotnet.diagnostics.js.map", false },
-            };
+    {
+        var result = new SortedDictionary<string, bool>()
+        {
+            { "dotnet.js", false },
+            { "dotnet.js.map", false },
+            { "dotnet.native.js", true },
+            { "dotnet.native.js.symbols", false },
+            { "dotnet.native.wasm", true },
+            { "dotnet.native.worker.mjs", true },
+            { "dotnet.runtime.js", true },
+            { "dotnet.runtime.js.map", false },
+            { "dotnet.diagnostics.js", true },
+            { "dotnet.diagnostics.js.map", false },
+        };
+
+        if (assertOptions.BuildOptions.BootConfigFileName.EndsWith(".js"))
+            result[assertOptions.BuildOptions.BootConfigFileName] = false;
+
+        return result;
+    }
 
     protected override IReadOnlySet<string> GetDotNetFilesExpectedSet(AssertBundleOptions assertOptions)
     {
@@ -68,6 +75,9 @@ public class WasmSdkBasedProjectProvider : ProjectProviderBase
             if (!assertOptions.BuildOptions.IsPublish)
                 res.Add("dotnet.diagnostics.js.map");
         }
+
+        if (assertOptions.BuildOptions.BootConfigFileName.EndsWith(".js"))
+            res.Add(assertOptions.BuildOptions.BootConfigFileName);
 
         return res;
     }

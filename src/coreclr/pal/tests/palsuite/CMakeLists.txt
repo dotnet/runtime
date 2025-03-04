@@ -523,3 +523,7 @@ target_link_libraries(paltests
 install (TARGETS paltests DESTINATION paltests COMPONENT paltests EXCLUDE_FROM_ALL)
 add_dependencies(paltests_install paltests)
 install (PROGRAMS runpaltests.sh runpaltestshelix.sh DESTINATION paltests COMPONENT paltests EXCLUDE_FROM_ALL)
+
+if(CLR_CMAKE_HOST_BROWSER)
+  install(FILES wasm/index.html paltestlist.txt DESTINATION ${CMAKE_CURRENT_BINARY_DIR} COMPONENT paltests EXCLUDE_FROM_ALL)
+endif(CLR_CMAKE_HOST_BROWSER)
