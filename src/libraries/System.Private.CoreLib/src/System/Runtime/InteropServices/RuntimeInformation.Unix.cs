@@ -49,7 +49,7 @@ namespace System.Runtime.InteropServices
 
         private static string FormatApplePlatformOSDescription(string osName)
         {
-            return $"{osName} ({Interop.Sys.GetUnixVersion()})";
+            return $"{osName} (darwin {Environment.OSVersion.Version})";
         }
     }
 }
