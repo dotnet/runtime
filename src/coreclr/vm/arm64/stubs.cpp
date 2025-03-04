@@ -13,8 +13,7 @@
 #include "virtualcallstub.h"
 #include "jitinterface.h"
 #include "ecall.h"
-
-extern WriteBarrierManager g_WriteBarrierManager;
+#include "writebarriermanager.h"
 
 #ifndef DACCESS_COMPILE
 //-----------------------------------------------------------------------

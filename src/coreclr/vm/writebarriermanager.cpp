@@ -13,18 +13,12 @@
 #include "eeconfig.h"
 #include "excep.h"
 #include "threadsuspend.h"
+#include "writebarriermanager.h"
 
 extern uint8_t* g_ephemeral_low;
 extern uint8_t* g_ephemeral_high;
 extern uint32_t* g_card_table;
 extern uint32_t* g_card_bundle_table;
-
-#if defined(TARGET_AMD64)
-// Write barrier variables are inlined into the assembly code
-#define WRITE_BARRIER_VARS_INLINE
-// Else: Write barrier variables are in a table separate to the asm code
-#endif
-
 
 // Patch Labels for the various write barriers
 
@@ -277,7 +271,7 @@ PBYTE WriteBarrierManager::CalculatePatchLocation(LPVOID base, LPVOID label, int
 
     PBYTE patchLocation = (patchBase + ((LPBYTE)GetEEFuncEntryPoint(label) - (LPBYTE)GetEEFuncEntryPoint(base)));
 #if defined(WRITE_BARRIER_VARS_INLINE)
-    patchLocation+=offset;
+    patchLocation += inlineOffset;
 #endif
     return patchLocation;
 }
@@ -304,7 +298,9 @@ int WriteBarrierManager::ChangeWriteBarrierTo(WriteBarrierType newWriteBarrier, 
         stompWBCompleteActions |= SWB_ICACHE_FLUSH;
     }
 
-    UpdatePatchLocations();
+#if defined(WRITE_BARRIER_VARS_INLINE)
+    UpdatePatchLocations(newWriteBarrier);
+#endif
 
     stompWBCompleteActions |= UpdateEphemeralBounds(true);
     stompWBCompleteActions |= UpdateWriteWatchAndCardTableLocations(true, false);
@@ -370,7 +366,7 @@ void WriteBarrierManager::Initialize()
 
 #endif // !WRITE_BARRIER_VARS_INLINE
 
-#if !defined(CODECOVERAGE)
+#if !defined(CODECOVERAGE) && defined(WRITE_BARRIER_VARS_INLINE)
     Validate();
 #endif
 }
@@ -696,6 +692,8 @@ int WriteBarrierManager::SwitchToNonWriteWatchBarrier(bool isRuntimeSuspended)
 #endif // FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
 
 
+#if defined(WRITE_BARRIER_VARS_INLINE)
+
 // Deactivate alignment validation for code coverage builds
 // because the instrumentation tool will not preserve alignment
 // constraints and we will fail.
@@ -703,7 +701,6 @@ int WriteBarrierManager::SwitchToNonWriteWatchBarrier(bool isRuntimeSuspended)
 
 void WriteBarrierManager::Validate()
 {
-#if defined(WRITE_BARRIER_VARS_INLINE)
     CONTRACTL
     {
         MODE_ANY;
@@ -860,16 +857,12 @@ void WriteBarrierManager::Validate()
 #endif
 
 #endif // FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
-
-#endif // WRITE_BARRIER_VARS_INLINE
 }
 
 #endif // CODECOVERAGE
 
-void WriteBarrierManager::UpdatePatchLocations()
+void WriteBarrierManager::UpdatePatchLocations(WriteBarrierType newWriteBarrier)
 {
-#if defined(WRITE_BARRIER_VARS_INLINE)
-
     switch (newWriteBarrier)
     {
         case WRITE_BARRIER_PREGROW64:
@@ -1077,8 +1070,10 @@ void WriteBarrierManager::UpdatePatchLocations()
         default:
             UNREACHABLE_MSG("unexpected write barrier type!");
     }
-#endif // WRITE_BARRIER_VARS_INLINE
 }
+
+#endif // WRITE_BARRIER_VARS_INLINE
+
 
 // This function bashes the super fast version of the JIT_WriteBarrier
 // helper.  It should be called by the GC whenever the ephermeral region
