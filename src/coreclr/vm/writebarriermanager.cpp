@@ -27,6 +27,7 @@ extern uint32_t* g_card_bundle_table;
 
 
 // Patch Labels for the various write barriers
+
 EXTERN_C void JIT_WriteBarrier_End();
 EXTERN_C void JIT_WriteBarrier_PreGrow64(Object **dst, Object *ref);
 EXTERN_C void JIT_WriteBarrier_PreGrow64_End();
@@ -56,7 +57,98 @@ EXTERN_C void JIT_WriteBarrier_WriteWatch_Bit_Region64_End();
 #endif // FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
 
 
-#if !defined(WRITE_BARRIER_VARS_INLINE)
+#if defined(WRITE_BARRIER_VARS_INLINE)
+
+EXTERN_C void JIT_WriteBarrier_PreGrow64_Patch_Label_Lower();
+EXTERN_C void JIT_WriteBarrier_PreGrow64_Patch_Label_CardTable();
+#ifdef FEATURE_MANUALLY_MANAGED_CARD_BUNDLES
+EXTERN_C void JIT_WriteBarrier_PreGrow64_Patch_Label_CardBundleTable();
+#endif
+
+EXTERN_C void JIT_WriteBarrier_PostGrow64_Patch_Label_Lower();
+EXTERN_C void JIT_WriteBarrier_PostGrow64_Patch_Label_Upper();
+EXTERN_C void JIT_WriteBarrier_PostGrow64_Patch_Label_CardTable();
+#ifdef FEATURE_MANUALLY_MANAGED_CARD_BUNDLES
+EXTERN_C void JIT_WriteBarrier_PostGrow64_Patch_Label_CardBundleTable();
+#endif
+
+#ifdef FEATURE_SVR_GC
+EXTERN_C void JIT_WriteBarrier_SVR64_PatchLabel_CardTable();
+#ifdef FEATURE_MANUALLY_MANAGED_CARD_BUNDLES
+EXTERN_C void JIT_WriteBarrier_SVR64_PatchLabel_CardBundleTable();
+#endif
+#endif // FEATURE_SVR_GC
+
+EXTERN_C void JIT_WriteBarrier_Byte_Region64_Patch_Label_RegionToGeneration();
+EXTERN_C void JIT_WriteBarrier_Byte_Region64_Patch_Label_RegionShrDest();
+EXTERN_C void JIT_WriteBarrier_Byte_Region64_Patch_Label_Lower();
+EXTERN_C void JIT_WriteBarrier_Byte_Region64_Patch_Label_Upper();
+EXTERN_C void JIT_WriteBarrier_Byte_Region64_Patch_Label_RegionShrSrc();
+EXTERN_C void JIT_WriteBarrier_Byte_Region64_Patch_Label_CardTable();
+#ifdef FEATURE_MANUALLY_MANAGED_CARD_BUNDLES
+EXTERN_C void JIT_WriteBarrier_Byte_Region64_Patch_Label_CardBundleTable();
+#endif
+
+EXTERN_C void JIT_WriteBarrier_Bit_Region64_Patch_Label_RegionToGeneration();
+EXTERN_C void JIT_WriteBarrier_Bit_Region64_Patch_Label_RegionShrDest();
+EXTERN_C void JIT_WriteBarrier_Bit_Region64_Patch_Label_Lower();
+EXTERN_C void JIT_WriteBarrier_Bit_Region64_Patch_Label_Upper();
+EXTERN_C void JIT_WriteBarrier_Bit_Region64_Patch_Label_RegionShrSrc();
+EXTERN_C void JIT_WriteBarrier_Bit_Region64_Patch_Label_CardTable();
+#ifdef FEATURE_MANUALLY_MANAGED_CARD_BUNDLES
+EXTERN_C void JIT_WriteBarrier_Bit_Region64_Patch_Label_CardBundleTable();
+#endif
+
+#ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
+EXTERN_C void JIT_WriteBarrier_WriteWatch_PreGrow64_Patch_Label_WriteWatchTable();
+EXTERN_C void JIT_WriteBarrier_WriteWatch_PreGrow64_Patch_Label_Lower();
+EXTERN_C void JIT_WriteBarrier_WriteWatch_PreGrow64_Patch_Label_CardTable();
+#ifdef FEATURE_MANUALLY_MANAGED_CARD_BUNDLES
+EXTERN_C void JIT_WriteBarrier_WriteWatch_PreGrow64_Patch_Label_CardBundleTable();
+#endif
+
+EXTERN_C void JIT_WriteBarrier_WriteWatch_PostGrow64_Patch_Label_WriteWatchTable();
+EXTERN_C void JIT_WriteBarrier_WriteWatch_PostGrow64_Patch_Label_Lower();
+EXTERN_C void JIT_WriteBarrier_WriteWatch_PostGrow64_Patch_Label_Upper();
+EXTERN_C void JIT_WriteBarrier_WriteWatch_PostGrow64_Patch_Label_CardTable();
+#ifdef FEATURE_MANUALLY_MANAGED_CARD_BUNDLES
+EXTERN_C void JIT_WriteBarrier_WriteWatch_PostGrow64_Patch_Label_CardBundleTable();
+#endif
+
+#ifdef FEATURE_SVR_GC
+EXTERN_C void JIT_WriteBarrier_WriteWatch_SVR64_PatchLabel_WriteWatchTable();
+EXTERN_C void JIT_WriteBarrier_WriteWatch_SVR64_PatchLabel_CardTable();
+#ifdef FEATURE_MANUALLY_MANAGED_CARD_BUNDLES
+EXTERN_C void JIT_WriteBarrier_WriteWatch_SVR64_PatchLabel_CardBundleTable();
+#endif
+#endif // FEATURE_SVR_GC
+
+EXTERN_C void JIT_WriteBarrier_WriteWatch_Byte_Region64_Patch_Label_WriteWatchTable();
+EXTERN_C void JIT_WriteBarrier_WriteWatch_Byte_Region64_Patch_Label_RegionToGeneration();
+EXTERN_C void JIT_WriteBarrier_WriteWatch_Byte_Region64_Patch_Label_RegionShrDest();
+EXTERN_C void JIT_WriteBarrier_WriteWatch_Byte_Region64_Patch_Label_Lower();
+EXTERN_C void JIT_WriteBarrier_WriteWatch_Byte_Region64_Patch_Label_Upper();
+EXTERN_C void JIT_WriteBarrier_WriteWatch_Byte_Region64_Patch_Label_RegionShrSrc();
+EXTERN_C void JIT_WriteBarrier_WriteWatch_Byte_Region64_Patch_Label_CardTable();
+#ifdef FEATURE_MANUALLY_MANAGED_CARD_BUNDLES
+EXTERN_C void JIT_WriteBarrier_WriteWatch_Byte_Region64_Patch_Label_CardBundleTable();
+#endif
+
+EXTERN_C void JIT_WriteBarrier_WriteWatch_Bit_Region64_Patch_Label_WriteWatchTable();
+EXTERN_C void JIT_WriteBarrier_WriteWatch_Bit_Region64_Patch_Label_RegionToGeneration();
+EXTERN_C void JIT_WriteBarrier_WriteWatch_Bit_Region64_Patch_Label_RegionShrDest();
+EXTERN_C void JIT_WriteBarrier_WriteWatch_Bit_Region64_Patch_Label_Lower();
+EXTERN_C void JIT_WriteBarrier_WriteWatch_Bit_Region64_Patch_Label_Upper();
+EXTERN_C void JIT_WriteBarrier_WriteWatch_Bit_Region64_Patch_Label_RegionShrSrc();
+EXTERN_C void JIT_WriteBarrier_WriteWatch_Bit_Region64_Patch_Label_CardTable();
+#ifdef FEATURE_MANUALLY_MANAGED_CARD_BUNDLES
+EXTERN_C void JIT_WriteBarrier_WriteWatch_Bit_Region64_Patch_Label_CardBundleTable();
+#endif
+
+#endif // FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
+
+#else // WRITE_BARRIER_VARS_INLINE
+
 EXTERN_C void JIT_WriteBarrier_Patch_Label_WriteWatchTable();
 EXTERN_C void JIT_WriteBarrier_Patch_Label_RegionToGeneration();
 EXTERN_C void JIT_WriteBarrier_Patch_Label_RegionShr();
@@ -75,7 +167,7 @@ EXTERN_C void JIT_WriteBarrier_Patch_Label_GCShadow();
 EXTERN_C void JIT_WriteBarrier_Patch_Label_GCShadowEnd();
 #endif // WRITE_BARRIER_CHECK
 #endif // TARGET_ARM64
-#endif // !WRITE_BARRIER_VARS_INLINE
+#endif // WRITE_BARRIER_VARS_INLINE
 
 // Use this somewhat hokey macro to concatenate the function start with the patch
 // label. This allows the code below to look relatively nice, but relies on the
@@ -84,6 +176,50 @@ EXTERN_C void JIT_WriteBarrier_Patch_Label_GCShadowEnd();
 
 
 WriteBarrierManager g_WriteBarrierManager;
+
+
+// This function bashes the super fast amd64 version of the JIT_WriteBarrier
+// helper.  It should be called by the GC whenever the ephermeral region
+// bounds get changed, but still remain on the top of the GC Heap.
+int StompWriteBarrierEphemeral(bool isRuntimeSuspended)
+{
+    WRAPPER_NO_CONTRACT;
+
+    return g_WriteBarrierManager.UpdateEphemeralBounds(isRuntimeSuspended);
+}
+
+// This function bashes the super fast amd64 versions of the JIT_WriteBarrier
+// helpers.  It should be called by the GC whenever the ephermeral region gets moved
+// from being at the top of the GC Heap, and/or when the cards table gets moved.
+int StompWriteBarrierResize(bool isRuntimeSuspended, bool bReqUpperBoundsCheck)
+{
+    WRAPPER_NO_CONTRACT;
+
+    return g_WriteBarrierManager.UpdateWriteWatchAndCardTableLocations(isRuntimeSuspended, bReqUpperBoundsCheck);
+}
+
+void FlushWriteBarrierInstructionCache()
+{
+    FlushInstructionCache(GetCurrentProcess(), GetWriteBarrierCodeLocation((PVOID)JIT_WriteBarrier), g_WriteBarrierManager.GetCurrentWriteBarrierSize());
+}
+
+#ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
+int SwitchToWriteWatchBarrier(bool isRuntimeSuspended)
+{
+    WRAPPER_NO_CONTRACT;
+
+    return g_WriteBarrierManager.SwitchToWriteWatchBarrier(isRuntimeSuspended);
+}
+
+int SwitchToNonWriteWatchBarrier(bool isRuntimeSuspended)
+{
+    WRAPPER_NO_CONTRACT;
+
+    return g_WriteBarrierManager.SwitchToNonWriteWatchBarrier(isRuntimeSuspended);
+}
+#endif // FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
+
+
 
 WriteBarrierManager::WriteBarrierManager() :
     m_currentWriteBarrier(WRITE_BARRIER_UNINITIALIZED)

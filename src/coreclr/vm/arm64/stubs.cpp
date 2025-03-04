@@ -1048,48 +1048,6 @@ LONG CLRNoCatchHandler(EXCEPTION_POINTERS* pExceptionInfo, PVOID pv)
     return EXCEPTION_CONTINUE_SEARCH;
 }
 
-// This function bashes the super fast amd64 version of the JIT_WriteBarrier
-// helper.  It should be called by the GC whenever the ephermeral region
-// bounds get changed, but still remain on the top of the GC Heap.
-int StompWriteBarrierEphemeral(bool isRuntimeSuspended)
-{
-    WRAPPER_NO_CONTRACT;
-
-    return g_WriteBarrierManager.UpdateEphemeralBounds(isRuntimeSuspended);
-}
-
-// This function bashes the super fast amd64 versions of the JIT_WriteBarrier
-// helpers.  It should be called by the GC whenever the ephermeral region gets moved
-// from being at the top of the GC Heap, and/or when the cards table gets moved.
-int StompWriteBarrierResize(bool isRuntimeSuspended, bool bReqUpperBoundsCheck)
-{
-    WRAPPER_NO_CONTRACT;
-
-    return g_WriteBarrierManager.UpdateWriteWatchAndCardTableLocations(isRuntimeSuspended, bReqUpperBoundsCheck);
-}
-
-void FlushWriteBarrierInstructionCache()
-{
-    FlushInstructionCache(GetCurrentProcess(), GetWriteBarrierCodeLocation((PVOID)JIT_WriteBarrier), g_WriteBarrierManager.GetCurrentWriteBarrierSize());
-}
-
-#ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
-int SwitchToWriteWatchBarrier(bool isRuntimeSuspended)
-{
-    WRAPPER_NO_CONTRACT;
-
-    return g_WriteBarrierManager.SwitchToWriteWatchBarrier(isRuntimeSuspended);
-}
-
-int SwitchToNonWriteWatchBarrier(bool isRuntimeSuspended)
-{
-    WRAPPER_NO_CONTRACT;
-
-    return g_WriteBarrierManager.SwitchToNonWriteWatchBarrier(isRuntimeSuspended);
-}
-#endif // FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
-
-
 #ifdef DACCESS_COMPILE
 BOOL GetAnyThunkTarget (T_CONTEXT *pctx, TADDR *pTarget, TADDR *pTargetMethodDesc)
 {
