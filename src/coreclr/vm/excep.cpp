@@ -4550,7 +4550,7 @@ lDone: ;
         char buffer[200];
         sprintf_s(buffer, 200, "\nInternal error: Uncaught exception was thrown from IP = %p in UnhandledExceptionFilter_Worker on thread 0x%08x\n",
                 param.ExceptionEIP, ((GetThreadNULLOk() == NULL) ? 0 : GetThread()->GetThreadId()));
-        PrintToStdErrA(buffer);
+        minipal_log_write_stderr(buffer);
         _ASSERTE(!"Unexpected exception in UnhandledExceptionFilter_Worker");
 #endif
         EEPOLICY_HANDLE_FATAL_ERROR(COR_E_EXECUTIONENGINE)
@@ -4756,8 +4756,6 @@ LONG __stdcall COMUnhandledExceptionFilter(     // EXCEPTION_CONTINUE_SEARCH or 
 #pragma code_seg(pop, uef)
 #endif // !TARGET_UNIX
 
-void PrintStackTraceToStdout();
-
 static SString GetExceptionMessageWrapper(Thread* pThread, OBJECTREF throwable)
 {
     STATIC_CONTRACT_THROWS;
@@ -4788,17 +4786,18 @@ DefaultCatchHandlerExceptionMessageWorker(Thread* pThread,
             wcsncpy_s(buf, buf_size, SZ_UNHANDLED_EXCEPTION, SZ_UNHANDLED_EXCEPTION_CHARLEN);
         }
 
-        PrintToStdErrW(buf);
-        PrintToStdErrA(" ");
+        SString message(buf);
+        SString exceptionMessage = GetExceptionMessageWrapper(pThread, throwable);
 
-        SString message = GetExceptionMessageWrapper(pThread, throwable);
-
-        if (!message.IsEmpty())
+        message.Append(W(" "));
+        if (!exceptionMessage.IsEmpty())
         {
-            PrintToStdErrW(message);
+            message.Append(exceptionMessage);
         }
+        message.Append(W("\n"));
 
-        PrintToStdErrA("\n");
+        MAKE_MULTIBYTE_FROMWIDE_BESTFIT(messageUTF8, message.GetUnicode(), CP_UTF8);
+        minipal_log_write_stderr(messageUTF8);
 
 #if defined(FEATURE_EVENT_TRACE) && !defined(TARGET_UNIX)
         // Send the log to Windows Event Log
@@ -4980,11 +4979,11 @@ DefaultCatchHandler(PEXCEPTION_POINTERS pExceptionPointers,
 
                     if (IsOutOfMemory)
                     {
-                        PrintToStdErrA("Out of memory.\n");
+                        minipal_log_write_stderr("Out of memory.\n");
                     }
                     else
                     {
-                        PrintToStdErrA("Stack overflow.\n");
+                        minipal_log_write_stderr("Stack overflow.\n");
                     }
                 }
                 else if (SentEvent || IsAsyncThreadException(&throwable))
@@ -5005,17 +5004,21 @@ DefaultCatchHandler(PEXCEPTION_POINTERS pExceptionPointers,
             EX_CATCH
             {
                 LOG((LF_EH, LL_INFO10, "Exception occurred while processing uncaught exception\n"));
-                UtilLoadStringRC(IDS_EE_EXCEPTION_TOSTRING_FAILED, buf, buf_size);
-                PrintToStdErrA("\n   ");
-                PrintToStdErrW(buf);
-                PrintToStdErrA("\n");
+
+                _ASSERTE(buf_size > 6);
+                wcscpy_s(buf, buf_size, W("\n   "));
+                UtilLoadStringRC(IDS_EE_EXCEPTION_TOSTRING_FAILED, buf + 4, buf_size - 6);
+                wcscat_s(buf, buf_size, W("\n"));
+
+                MAKE_MULTIBYTE_FROMWIDE_BESTFIT(bufUTF8, buf, CP_UTF8);
+                minipal_log_write_stderr(bufUTF8);
             }
             EX_END_CATCH(SwallowAllExceptions);
         }
         EX_CATCH
         {   // If we got here, we can't even print the localized error message.  Print non-localized.
             LOG((LF_EH, LL_INFO10, "Exception occurred while logging processing uncaught exception\n"));
-            PrintToStdErrA("\n   Error: Can't print exception string because Exception.ToString() failed.\n");
+            minipal_log_write_stderr("\n   Error: Can't print exception string because Exception.ToString() failed.\n");
         }
         EX_END_CATCH(SwallowAllExceptions);
     }

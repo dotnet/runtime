@@ -37,6 +37,7 @@ using std::nothrow;
 
 #include <stddef.h>
 #include <minipal/guid.h>
+#include <minipal/log.h>
 #include <dn-u16.h>
 
 #include "clrnt.h"
