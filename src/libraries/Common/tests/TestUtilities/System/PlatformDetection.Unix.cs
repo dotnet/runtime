@@ -55,6 +55,9 @@ namespace System
 
         public static bool IsOpenSsl3 => IsOpenSslVersionAtLeast(s_openssl3Version);
         public static bool IsOpenSsl3_4 => IsOpenSslVersionAtLeast(s_openssl3_4Version);
+        public static bool Is7zipAvailable => IsLinux && File.Exists("/usr/bin/7z");
+        public static bool IsZipAvailable => IsLinux && File.Exists("/usr/bin/zip");
+        public static bool IsUnZipAvailable => IsLinux && File.Exists("/usr/bin/unzip");
 
         /// <summary>
         /// If gnulibc is available, returns the release, such as "stable".
