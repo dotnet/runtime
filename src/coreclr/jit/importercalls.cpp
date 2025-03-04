@@ -7763,12 +7763,23 @@ void Compiler::impMarkInlineCandidateHelper(GenTreeCall*           call,
         return;
     }
 
-    // We cannot inline methods with EH into filter clauses, even if marked as aggressive inline
-    //
-    if ((inlineCandidateInfo->methInfo.EHcount > 0) && bbInFilterBBRange(compCurBB))
+    if (inlineCandidateInfo->methInfo.EHcount > 0)
     {
-        inlineResult->NoteFatal(InlineObservation::CALLSITE_IS_WITHIN_FILTER);
-        return;
+        // We cannot inline methods with EH into filter clauses, even if marked as aggressive inline
+        //
+        if (bbInFilterBBRange(compCurBB))
+        {
+            inlineResult->NoteFatal(InlineObservation::CALLSITE_IS_WITHIN_FILTER);
+            return;
+        }
+
+        // Do not inline pinvoke stubs with EH.
+        //
+        if ((methAttr & CORINFO_FLG_PINVOKE) != 0)
+        {
+            inlineResult->NoteFatal(InlineObservation::CALLEE_HAS_EH);
+            return;
+        }
     }
 
     // The old value should be null OR this call should be a guarded devirtualization candidate.
