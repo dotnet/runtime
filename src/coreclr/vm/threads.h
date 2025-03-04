@@ -6,7 +6,7 @@
 
 //
 //
-// Currently represents a logical and physical COM+ thread. Later, these concepts will be separated.
+// Currently represents a logical and physical CLR thread. Later, these concepts will be separated.
 //
 
 //
@@ -678,7 +678,7 @@ public:
     };
 
 public:
-    HRESULT DetachThread(BOOL fDLLThreadDetach);
+    HRESULT DetachThread(BOOL inTerminationCallback);
 
     void SetThreadState(ThreadState ts)
     {
@@ -2812,8 +2812,8 @@ private:
 
 private:
     // Stores the most recently thrown exception. We need to have a handle in case a GC occurs before
-    // we catch so we don't lose the object. Having a static allows others to catch outside of COM+ w/o leaking
-    // a handler and allows rethrow outside of COM+ too.
+    // we catch so we don't lose the object. Having a static allows others to catch outside of CLR w/o leaking
+    // a handler and allows rethrow outside of CLR too.
     // Differs from m_pThrowable in that it doesn't stack on nested exceptions.
     OBJECTHANDLE m_LastThrownObjectHandle;      // Unsafe to use directly.  Use accessors instead.
 
@@ -4428,19 +4428,19 @@ public:
         return result;
     }
 
-    Thread *IdToThreadWithValidation(DWORD id)
+    PTR_Thread IdToThreadWithValidation(DWORD id)
     {
         WRAPPER_NO_CONTRACT;
 
         CrstHolder ch(&m_Crst);
 
-        Thread *result = NULL;
+        PTR_Thread result = NULL;
         if (id <= m_highestId)
             result = m_idToThread[id];
         // m_idToThread may have Thread*, or the next free slot
-        if ((size_t)result <= m_idToThreadCapacity)
+        if (dac_cast<size_t>(result) <= m_idToThreadCapacity)
             result = NULL;
-        _ASSERTE(result == NULL || ((size_t)result & 0x3) == 0 || ((Thread*)result)->GetThreadId() == id);
+        _ASSERTE(result == NULL || (dac_cast<size_t>(result) & 0x3) == 0 || ((Thread*)result)->GetThreadId() == id);
         return result;
     }
 };
@@ -5669,7 +5669,7 @@ inline BOOL IsWriteBarrierCopyEnabled()
 #ifdef DACCESS_COMPILE
     return FALSE;
 #else // DACCESS_COMPILE
-#ifdef HOST_OSX
+#ifdef HOST_APPLE
     return TRUE;
 #else
     return ExecutableAllocator::IsWXORXEnabled();

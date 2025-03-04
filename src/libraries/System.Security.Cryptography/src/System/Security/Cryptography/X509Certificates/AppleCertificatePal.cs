@@ -393,6 +393,22 @@ namespace System.Security.Cryptography.X509Certificates
             }
         }
 
+        public byte[] ExportPkcs12(Pkcs12ExportPbeParameters exportParameters, SafePasswordHandle password)
+        {
+            using (IExportPal storePal = StorePal.FromCertificate(this))
+            {
+                return storePal.ExportPkcs12(exportParameters, password);
+            }
+        }
+
+        public byte[] ExportPkcs12(PbeParameters exportParameters, SafePasswordHandle password)
+        {
+            using (IExportPal storePal = StorePal.FromCertificate(this))
+            {
+                return storePal.ExportPkcs12(exportParameters, password);
+            }
+        }
+
         private void EnsureCertData()
         {
             if (_readCertData)

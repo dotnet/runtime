@@ -529,6 +529,7 @@ public:
     CORINFO_CLASS_HANDLE GetObjectType(ValueNum vn, bool* pIsExact, bool* pIsNonNull);
 
     void PeelOffsets(ValueNum* vn, target_ssize_t* offset);
+    void PeelOffsetsI32(ValueNum* vn, int* offset);
 
     typedef JitHashTable<ValueNum, JitSmallPrimitiveKeyFuncs<ValueNum>, bool> ValueNumSet;
 
@@ -1149,6 +1150,9 @@ public:
 
     // Check if "vn" is "new [] (type handle, size)"
     bool IsVNNewArr(ValueNum vn, VNFuncApp* funcApp);
+
+    // Check if "vn" is "new [] (type handle, size) [stack allocated]"
+    bool IsVNNewLocalArr(ValueNum vn, VNFuncApp* funcApp);
 
     // Check if "vn" IsVNNewArr and return false if arr size cannot be determined.
     bool TryGetNewArrSize(ValueNum vn, int* size);

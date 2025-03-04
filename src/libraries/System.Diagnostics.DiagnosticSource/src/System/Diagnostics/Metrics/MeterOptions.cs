@@ -18,15 +18,7 @@ namespace System.Diagnostics.Metrics
         public string Name
         {
             get => _name;
-            set
-            {
-                if (value is null)
-                {
-                    throw new ArgumentNullException(nameof(value));
-                }
-
-                _name = value;
-            }
+            set => _name = value ?? throw new ArgumentNullException(nameof(value));
         }
 
         /// <summary>
@@ -43,6 +35,12 @@ namespace System.Diagnostics.Metrics
         /// The optional opaque object to attach to the Meter. The scope object can be attached to multiple meters for scoping purposes.
         /// </summary>
         public object? Scope { get; set; }
+
+        /// <summary>
+        /// The optional schema URL specifies a location of a <see href="https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/schemas/file_format_v1.1.0.md">Schema File</see> that
+        /// can be retrieved using HTTP or HTTPS protocol.
+        /// </summary>
+        public string? TelemetrySchemaUrl { get; set; }
 
         /// <summary>
         /// Constructs a new instance of <see cref="MeterOptions"/>.

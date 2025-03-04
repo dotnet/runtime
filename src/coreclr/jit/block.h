@@ -464,13 +464,14 @@ enum BasicBlockFlags : uint64_t
     BBF_HAS_VALUE_PROFILE              = MAKE_BBFLAG(39), // Block has a node that needs a value probing
 
     BBF_HAS_NEWARR                     = MAKE_BBFLAG(40), // BB contains 'new' of an array type.
+    BBF_MAY_HAVE_BOUNDS_CHECKS         = MAKE_BBFLAG(41), // BB *likely* has a bounds check (after rangecheck phase).
 
     // The following are sets of flags.
 
     // Flags to update when two blocks are compacted
 
     BBF_COMPACT_UPD = BBF_GC_SAFE_POINT | BBF_NEEDS_GCPOLL | BBF_HAS_JMP | BBF_HAS_IDX_LEN | BBF_HAS_MD_IDX_LEN | BBF_BACKWARD_JUMP | \
-                      BBF_HAS_NEWOBJ | BBF_HAS_NEWARR | BBF_HAS_NULLCHECK | BBF_HAS_MDARRAYREF | BBF_LOOP_HEAD,
+                      BBF_HAS_NEWOBJ | BBF_HAS_NEWARR | BBF_HAS_NULLCHECK | BBF_HAS_MDARRAYREF | BBF_LOOP_HEAD | BBF_MAY_HAVE_BOUNDS_CHECKS,
 
     // Flags a block should not have had before it is split.
 
@@ -489,14 +490,14 @@ enum BasicBlockFlags : uint64_t
     // TODO: Should BBF_RUN_RARELY be added to BBF_SPLIT_GAINED ?
 
     BBF_SPLIT_GAINED = BBF_DONT_REMOVE | BBF_HAS_JMP | BBF_BACKWARD_JUMP | BBF_HAS_IDX_LEN | BBF_HAS_MD_IDX_LEN | BBF_PROF_WEIGHT | BBF_HAS_NEWARR | \
-                       BBF_HAS_NEWOBJ | BBF_KEEP_BBJ_ALWAYS | BBF_CLONED_FINALLY_END | BBF_HAS_NULLCHECK | BBF_HAS_HISTOGRAM_PROFILE | BBF_HAS_VALUE_PROFILE | BBF_HAS_MDARRAYREF | BBF_NEEDS_GCPOLL,
+                       BBF_HAS_NEWOBJ | BBF_KEEP_BBJ_ALWAYS | BBF_CLONED_FINALLY_END | BBF_HAS_NULLCHECK | BBF_HAS_HISTOGRAM_PROFILE | BBF_HAS_VALUE_PROFILE | BBF_HAS_MDARRAYREF | BBF_NEEDS_GCPOLL | BBF_MAY_HAVE_BOUNDS_CHECKS,
 
     // Flags that must be propagated to a new block if code is copied from a block to a new block. These are flags that
     // limit processing of a block if the code in question doesn't exist. This is conservative; we might not
     // have actually copied one of these type of tree nodes, but if we only copy a portion of the block's statements,
     // we don't know (unless we actually pay close attention during the copy).
 
-    BBF_COPY_PROPAGATE = BBF_HAS_NEWOBJ | BBF_HAS_NEWARR | BBF_HAS_NULLCHECK | BBF_HAS_IDX_LEN | BBF_HAS_MD_IDX_LEN | BBF_HAS_MDARRAYREF,
+    BBF_COPY_PROPAGATE = BBF_HAS_NEWOBJ | BBF_HAS_NEWARR | BBF_HAS_NULLCHECK | BBF_HAS_IDX_LEN | BBF_HAS_MD_IDX_LEN | BBF_HAS_MDARRAYREF | BBF_MAY_HAVE_BOUNDS_CHECKS,
 };
 
 FORCEINLINE
@@ -1197,6 +1198,18 @@ public:
     // getBBWeight -- get the normalized weight of this block
     weight_t getBBWeight(Compiler* comp) const;
 
+    // computeIncomingWeight -- sum the weights of the flow edges into this block
+    weight_t computeIncomingWeight() const
+    {
+        weight_t incomingWeight = BB_ZERO_WEIGHT;
+        for (FlowEdge* const predEdge : PredEdges())
+        {
+            incomingWeight += predEdge->getLikelyWeight();
+        }
+
+        return incomingWeight;
+    }
+
     // hasProfileWeight -- Returns true if this block's weight came from profile data
     bool hasProfileWeight() const
     {
@@ -1753,14 +1766,14 @@ public:
 
     bool endsWithJmpMethod(Compiler* comp) const;
 
-    bool endsWithTailCall(Compiler* comp,
-                          bool      fastTailCallsOnly,
-                          bool      tailCallsConvertibleToLoopOnly,
-                          GenTree** tailCall) const;
+    bool endsWithTailCall(Compiler*     comp,
+                          bool          fastTailCallsOnly,
+                          bool          tailCallsConvertibleToLoopOnly,
+                          GenTreeCall** tailCall) const;
 
     bool endsWithTailCallOrJmp(Compiler* comp, bool fastTailCallsOnly = false) const;
 
-    bool endsWithTailCallConvertibleToLoop(Compiler* comp, GenTree** tailCall) const;
+    bool endsWithTailCallConvertibleToLoop(Compiler* comp, GenTreeCall** tailCall) const;
 
     // Returns the first statement in the statement list of "this" that is
     // not an SSA definition (a lcl = phi(...) store).
