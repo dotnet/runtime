@@ -18,7 +18,7 @@
     MACRO
       WRITE_BARRIER_ENTRY $name
 
-      WRITE_BARRIER_ENTRY $name
+      LEAF_ENTRY $name
     MEND
 
     ; WRITE_BARRIER_END
@@ -28,13 +28,13 @@
     MACRO
       WRITE_BARRIER_END $__write_barrier_name
 
-      WRITE_BARRIER_END $__write_barrier_name
+      LEAF_END_MARKED $__write_barrier_name
 
     MEND
 
 ; ------------------------------------------------------------------
 ; Start of the writeable code region
-    WRITE_BARRIER_ENTRY JIT_PatchedCodeStart
+    LEAF_ENTRY JIT_PatchedCodeStart
         ret      lr
     LEAF_END
 
@@ -229,55 +229,9 @@ Exit
 
 ; ------------------------------------------------------------------
 ; End of the writeable code region
-    WRITE_BARRIER_ENTRY JIT_PatchedCodeLast
+    LEAF_ENTRY JIT_PatchedCodeLast
         ret      lr
     LEAF_END
-
-
-
-WRITE_BARRIER_ENTRY JIT_WriteBarrier_PreGrow64
-    nop
-WRITE_BARRIER_END JIT_WriteBarrier_PreGrow64
-
-
-WRITE_BARRIER_ENTRY JIT_WriteBarrier_PreGrow64
-    nop
-WRITE_BARRIER_END JIT_WriteBarrier_PreGrow64
-
-
-WRITE_BARRIER_ENTRY JIT_WriteBarrier_SVR64
-    nop
-WRITE_BARRIER_END JIT_WriteBarrier_SVR64
-
-
-WRITE_BARRIER_ENTRY JIT_WriteBarrier_Byte_Region64
-    nop
-WRITE_BARRIER_END JIT_WriteBarrier_Byte_Region64
-
-
-WRITE_BARRIER_ENTRY JIT_WriteBarrier_Bit_Region64
-    nop
-WRITE_BARRIER_END JIT_WriteBarrier_Bit_Region64
-
-
-WRITE_BARRIER_ENTRY JIT_WriteBarrier_WriteWatch_PreGrow64
-    nop
-WRITE_BARRIER_END JIT_WriteBarrier_WriteWatch_PreGrow64
-
-
-WRITE_BARRIER_ENTRY JIT_WriteBarrier_WriteWatch_SVR64
-    nop
-WRITE_BARRIER_END JIT_WriteBarrier_WriteWatch_SVR64
-
-
-WRITE_BARRIER_ENTRY JIT_WriteBarrier_WriteWatch_Byte_Region64
-    nop
-WRITE_BARRIER_END JIT_WriteBarrier_WriteWatch_Byte_Region64
-
-
-WRITE_BARRIER_ENTRY JIT_WriteBarrier_WriteWatch_Bit_Region64
-    nop
-WRITE_BARRIER_END JIT_WriteBarrier_WriteWatch_Bit_Region64
 
 ; Must be at very end of file
     END
