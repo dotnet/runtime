@@ -1996,6 +1996,15 @@ protected:
     TADDR               m_ReturnAddress;
     PTR_Thread          m_Thread;
     DPTR(HijackArgs)    m_Args;
+
+    friend struct ::cdac_data<HijackFrame>;
+};
+
+template<>
+struct cdac_data<HijackFrame>
+{
+    static constexpr size_t ReturnAddress = offsetof(HijackFrame, m_ReturnAddress);
+    static constexpr size_t HijackArgsPtr = offsetof(HijackFrame, m_Args);
 };
 
 #endif // FEATURE_HIJACK

@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Collections.Generic;
+using System.Diagnostics;
 using Microsoft.Diagnostics.DataContractReader.Data;
 using static Microsoft.Diagnostics.DataContractReader.Contracts.StackWalkHelpers.ARM64Context;
 
@@ -56,7 +58,9 @@ internal class ARM64FrameHandler(Target target, ContextHolder<ARM64Context> cont
     {
         _context.InstructionPointer = transitionBlock.ReturnAddress;
         _context.StackPointer = framedMethodFrame.TransitionBlockPtr + transitionBlockSize;
-        UpdateFromCalleeSavedRegisters(transitionBlock.CalleeSavedRegisters);
+
+        Data.CalleeSavedRegisters calleeSavedRegisters = _target.ProcessedData.GetOrAdd<Data.CalleeSavedRegisters>(transitionBlock.CalleeSavedRegisters);
+        UpdateFromRegisterDict(calleeSavedRegisters.Registers);
 
         return true;
     }
@@ -91,10 +95,27 @@ internal class ARM64FrameHandler(Target target, ContextHolder<ARM64Context> cont
         _context.ReadFromAddress(_target, frame.TargetContextPtr);
         return true;
     }
-    private void UpdateFromCalleeSavedRegisters(TargetPointer calleeSavedRegistersPtr)
+
+    bool IPlatformFrameHandler.HandleHijackFrame(HijackFrame frame)
     {
-        Data.CalleeSavedRegisters calleeSavedRegisters = _target.ProcessedData.GetOrAdd<Data.CalleeSavedRegisters>(calleeSavedRegistersPtr);
-        foreach ((string name, TargetNUInt value) in calleeSavedRegisters.Registers)
+        HijackArgsARM64 args = _target.ProcessedData.GetOrAdd<Data.HijackArgsARM64>(frame.HijackArgsPtr);
+
+        _context.InstructionPointer = frame.ReturnAddress;
+
+        // The stack pointer is the address immediately following HijacksArgs
+        uint hijackArgsSize = _target.GetTypeInfo(DataType.HijackArgs).Size ?? throw new InvalidOperationException("HijackArgs size is not set");
+        Debug.Assert(hijackArgsSize % 8 == 0, "HijackArgs contains register values and should be a multiple of 8");
+        // The stack must be multiple of 16. So if hijackArgsSize is not multiple of 16 then there must be padding of 8 bytes
+        hijackArgsSize += hijackArgsSize % 16;
+        _context.StackPointer = frame.HijackArgsPtr + hijackArgsSize;
+
+        UpdateFromRegisterDict(args.Registers);
+        return true;
+    }
+
+    private void UpdateFromRegisterDict(IReadOnlyDictionary<string, TargetNUInt> registers)
+    {
+        foreach ((string name, TargetNUInt value) in registers)
         {
             if (!_context.TrySetField(name, value))
             {

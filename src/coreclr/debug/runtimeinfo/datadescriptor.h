@@ -675,6 +675,42 @@ CDAC_TYPE_BEGIN(ResumableFrame)
 CDAC_TYPE_SIZE(sizeof(ResumableFrame))
 CDAC_TYPE_FIELD(ResumableFrame, /*pointer*/, TargetContextPtr, cdac_data<ResumableFrame>::TargetContextPtr)
 CDAC_TYPE_END(ResumableFrame)
+
+CDAC_TYPE_BEGIN(HijackFrame)
+CDAC_TYPE_SIZE(sizeof(HijackFrame))
+CDAC_TYPE_FIELD(HijackFrame, /*pointer*/, ReturnAddress, cdac_data<HijackFrame>::ReturnAddress)
+CDAC_TYPE_FIELD(HijackFrame, /*pointer*/, HijackArgsPtr, cdac_data<HijackFrame>::HijackArgsPtr)
+CDAC_TYPE_END(HijackFrame)
+
+// HijackArgs struct is different on each platform
+CDAC_TYPE_BEGIN(HijackArgs)
+CDAC_TYPE_SIZE(sizeof(HijackArgs))
+#if defined(TARGET_AMD64)
+
+CDAC_TYPE_FIELD(HijackArgs, /*CalleeSavedRegisters*/, CalleeSavedRegisters, offsetof(HijackArgs, Regs))
+#ifdef TARGET_WINDOWS
+CDAC_TYPE_FIELD(HijackArgs, /*pointer*/, Rsp, offsetof(HijackArgs, Rsp))
+#endif // TARGET_WINDOWS
+
+#elif defined(TARGET_ARM64)
+
+CDAC_TYPE_FIELD(HijackArgs, /*pointer*/, X0, offsetof(HijackArgs, X0))
+CDAC_TYPE_FIELD(HijackArgs, /*pointer*/, X1, offsetof(HijackArgs, X1))
+CDAC_TYPE_FIELD(HijackArgs, /*pointer*/, X19, offsetof(HijackArgs, X19))
+CDAC_TYPE_FIELD(HijackArgs, /*pointer*/, X20, offsetof(HijackArgs, X20))
+CDAC_TYPE_FIELD(HijackArgs, /*pointer*/, X21, offsetof(HijackArgs, X21))
+CDAC_TYPE_FIELD(HijackArgs, /*pointer*/, X22, offsetof(HijackArgs, X22))
+CDAC_TYPE_FIELD(HijackArgs, /*pointer*/, X23, offsetof(HijackArgs, X23))
+CDAC_TYPE_FIELD(HijackArgs, /*pointer*/, X24, offsetof(HijackArgs, X24))
+CDAC_TYPE_FIELD(HijackArgs, /*pointer*/, X25, offsetof(HijackArgs, X25))
+CDAC_TYPE_FIELD(HijackArgs, /*pointer*/, X26, offsetof(HijackArgs, X26))
+CDAC_TYPE_FIELD(HijackArgs, /*pointer*/, X27, offsetof(HijackArgs, X27))
+CDAC_TYPE_FIELD(HijackArgs, /*pointer*/, X28, offsetof(HijackArgs, X28))
+CDAC_TYPE_FIELD(HijackArgs, /*pointer*/, Fp, offsetof(HijackArgs, X29))
+CDAC_TYPE_FIELD(HijackArgs, /*pointer*/, Lr, offsetof(HijackArgs, X30))
+
+#endif
+CDAC_TYPE_END(HijackArgs)
 #endif // FEATURE_HIJACK
 
 CDAC_TYPE_BEGIN(FaultingExceptionFrame)

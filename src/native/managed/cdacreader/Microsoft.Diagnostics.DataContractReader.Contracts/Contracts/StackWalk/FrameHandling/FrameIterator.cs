@@ -31,6 +31,8 @@ internal sealed class FrameIterator
         RedirectedThreadFrame,
 
         FaultingExceptionFrame,
+
+        HijackFrame,
     }
 
     private readonly Target target;
@@ -105,6 +107,10 @@ internal sealed class FrameIterator
             case FrameType.FaultingExceptionFrame:
                 Data.FaultingExceptionFrame faultingExceptionFrame = target.ProcessedData.GetOrAdd<Data.FaultingExceptionFrame>(CurrentFrame.Address);
                 return GetFrameHandler(context).HandleFaultingExceptionFrame(faultingExceptionFrame);
+
+            case FrameType.HijackFrame:
+                Data.HijackFrame hijackFrame = target.ProcessedData.GetOrAdd<Data.HijackFrame>(CurrentFrame.Address);
+                return GetFrameHandler(context).HandleHijackFrame(hijackFrame);
             default:
                 return false;
         }

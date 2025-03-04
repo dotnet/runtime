@@ -81,6 +81,28 @@ internal class AMD64FrameHandler(Target target, ContextHolder<AMD64Context> cont
         return true;
     }
 
+    bool IPlatformFrameHandler.HandleHijackFrame(HijackFrame frame)
+    {
+        HijackArgsAMD64 args = _target.ProcessedData.GetOrAdd<Data.HijackArgsAMD64>(frame.HijackArgsPtr);
+
+        _context.InstructionPointer = frame.ReturnAddress;
+        if (args.Rsp is TargetPointer rsp)
+        {
+            // Windows case, Rsp is passed directly
+            _context.StackPointer = rsp;
+        }
+        else
+        {
+            // Non-Windows case, the stack pointer is the address immediately following HijacksArgs
+            uint hijackArgsSize = _target.GetTypeInfo(DataType.HijackArgs).Size ?? throw new InvalidOperationException("HijackArgs size is not set");
+            _context.StackPointer = frame.HijackArgsPtr + hijackArgsSize;
+        }
+
+        UpdateFromCalleeSavedRegisters(args.CalleeSavedRegisters);
+
+        return true;
+    }
+
     private void UpdateFromCalleeSavedRegisters(TargetPointer calleeSavedRegistersPtr)
     {
         Data.CalleeSavedRegisters calleeSavedRegisters = _target.ProcessedData.GetOrAdd<Data.CalleeSavedRegisters>(calleeSavedRegistersPtr);

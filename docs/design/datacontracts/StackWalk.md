@@ -47,12 +47,19 @@ This contract depends on the following descriptors:
 | `FuncEvalFrame` | `DebuggerEvalPtr` | Pointer to the Frame's DebuggerEval object |
 | `DebuggerEval` | `TargetContext` | Context saved inside DebuggerEval |
 | `DebuggerEval` | `EvalDuringException` | Flag used in processing FuncEvalFrame |
+| `ResumableFrame` | `TargetContextPtr` | Pointer to the Frame's Target Context |
+| `FaultingExceptionFrame` | `TargetContext` | Frame's Target Context |
+| `HijackFrame` | `ReturnAddress` | Frame's stored instruction pointer |
+| `HijackFrame` | `HijackArgsPtr` | Pointer to the Frame's stored HijackArgs |
+| `HijackArgs` (amd64) | `CalleeSavedRegisters` | CalleeSavedRegisters data structure |
+| `HijackArgs` (amd64 Windows) | `Rsp` | Saved stack pointer |
+| `HijackArgs` (arm64) | For each register `r` saved in HijackArgs, `r` | Register names associated with stored register values |
+| `CalleeSavedRegisters` | For each callee saved register `r`, `r` | Register names associated with stored register values |
 
 Global variables used:
 | Global Name | Type | Purpose |
 | --- | --- | --- |
 | For each FrameType `<frameType>`, `<frameType>##Identifier` | `FrameIdentifier` enum value | Identifier used to determine concrete type of Frames |
-| `UnixAmd64ABI` | `uint8` | Denotes if the Unix amd64 ABI is used. This changes which registers are volatile. |
 
 Contracts used:
 | Contract Name |
