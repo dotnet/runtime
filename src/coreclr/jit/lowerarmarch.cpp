@@ -3111,7 +3111,9 @@ void Lowering::ContainCheckCompare(GenTreeOp* cmp)
                 cast = op->gtGetOp1();
             }
             if (cast)
+            {
                 cast->AsCast()->CastOp()->ClearRegOptional();
+            }
         };
 
         if (IsContainableUnaryOrBinaryOp(cmp, op2))
