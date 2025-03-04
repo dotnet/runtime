@@ -707,7 +707,7 @@ CDAC_TYPE_FIELD(HijackArgs, /*pointer*/, X26, offsetof(HijackArgs, X26))
 CDAC_TYPE_FIELD(HijackArgs, /*pointer*/, X27, offsetof(HijackArgs, X27))
 CDAC_TYPE_FIELD(HijackArgs, /*pointer*/, X28, offsetof(HijackArgs, X28))
 CDAC_TYPE_FIELD(HijackArgs, /*pointer*/, Fp, offsetof(HijackArgs, X29))
-CDAC_TYPE_FIELD(HijackArgs, /*pointer*/, Lr, offsetof(HijackArgs, X30))
+CDAC_TYPE_FIELD(HijackArgs, /*pointer*/, Lr, offsetof(HijackArgs, Lr))
 
 #endif
 CDAC_TYPE_END(HijackArgs)
