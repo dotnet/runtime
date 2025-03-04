@@ -950,6 +950,8 @@ static PCODE SetupShuffleThunk(MethodTable * pDelMT, MethodDesc *pTargetMeth)
     return pShuffleThunk->GetEntryPoint();
 }
 
+extern "C" PCODE CID_VirtualOpenDelegateDispatch(TransitionBlock * pTransitionBlock);
+
 static PCODE GetVirtualCallStub(MethodDesc *method, TypeHandle scopeType)
 {
     CONTRACTL
@@ -967,12 +969,16 @@ static PCODE GetVirtualCallStub(MethodDesc *method, TypeHandle scopeType)
         COMPlusThrow(kNotSupportedException);
     }
 
-    // need to grab a virtual dispatch stub
-    // method can be on a canonical MethodTable, we need to allocate the stub on the loader allocator associated with the exact type instantiation.
-    VirtualCallStubManager *pVirtualStubManager = scopeType.GetMethodTable()->GetLoaderAllocator()->GetVirtualCallStubManager();
-    PCODE pTargetCall = pVirtualStubManager->GetCallStub(scopeType, method);
-    _ASSERTE(pTargetCall);
-    return pTargetCall;
+    INTERFACE_DISPATCH_CACHED_OR_VSD(
+        return (PCODE)CID_VirtualOpenDelegateDispatch;
+        ,
+        // need to grab a virtual dispatch stub
+        // method can be on a canonical MethodTable, we need to allocate the stub on the loader allocator associated with the exact type instantiation.
+        VirtualCallStubManager *pVirtualStubManager = scopeType.GetMethodTable()->GetLoaderAllocator()->GetVirtualCallStubManager();
+        PCODE pTargetCall = pVirtualStubManager->GetCallStub(scopeType, method);
+        _ASSERTE(pTargetCall);
+        return pTargetCall;
+        );
 }
 
 extern "C" BOOL QCALLTYPE Delegate_BindToMethodName(QCall::ObjectHandleOnStack d, QCall::ObjectHandleOnStack target,
@@ -1781,6 +1787,19 @@ extern "C" void QCALLTYPE Delegate_Construct(QCall::ObjectHandleOnStack _this, Q
     END_QCALL;
 }
 
+MethodDesc *COMDelegate::GetMethodDescForOpenVirtualDelegate(OBJECTREF orDelegate)
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+        MODE_COOPERATIVE;
+    }
+    CONTRACTL_END;
+
+    return (MethodDesc*)((DELEGATEREF)orDelegate)->GetInvocationCount();
+}
+
 MethodDesc *COMDelegate::GetMethodDesc(OBJECTREF orDelegate)
 {
     CONTRACTL
@@ -1834,7 +1853,7 @@ MethodDesc *COMDelegate::GetMethodDesc(OBJECTREF orDelegate)
         }
 
         if (fOpenVirtualDelegate)
-            pMethodHandle = (MethodDesc*)thisDel->GetInvocationCount();
+            pMethodHandle = GetMethodDescForOpenVirtualDelegate(thisDel);
         else
             pMethodHandle = FindDelegateInvokeMethod(thisDel->GetMethodTable());
     }

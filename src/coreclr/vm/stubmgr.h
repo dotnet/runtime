@@ -814,6 +814,21 @@ public:
 #endif
     }
 
+#if !defined(TARGET_X86)
+    static TADDR GetIndirectionCellArg(T_CONTEXT *pContext)
+    {
+#if defined(TARGET_AMD64)
+        return pContext->R11;
+#elif defined(TARGET_ARM)
+        return pContext->R4;
+#elif defined(TARGET_ARM64)
+        return pContext->X11;
+#else
+        PORTABILITY_ASSERT("StubManagerHelpers::GetIndirectionCellArg");
+        return (TADDR)NULL;
+#endif
+    }
+#endif // !defined(TARGET_X86)
 };
 
 #endif // !__stubmgr_h__
