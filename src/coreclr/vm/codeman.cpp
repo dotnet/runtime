@@ -52,6 +52,10 @@ SPTR_IMPL(EEJitManager, ExecutionManager, m_pEEJitManager);
 SPTR_IMPL(ReadyToRunJitManager, ExecutionManager, m_pReadyToRunJitManager);
 #endif
 
+#ifdef FEATURE_INTERPRETER
+SPTR_IMPL(InterpreterJitManager, ExecutionManager, m_pInterpreterJitManager);
+#endif
+
 SVAL_IMPL(RangeSectionMapData, ExecutionManager, g_codeRangeMap);
 VOLATILE_SVAL_IMPL_INIT(LONG, ExecutionManager, m_dwReaderCount, 0);
 VOLATILE_SVAL_IMPL_INIT(LONG, ExecutionManager, m_dwWriterLock, 0);
@@ -416,7 +420,7 @@ void UnwindInfoTable::AddToUnwindInfoTable(UnwindInfoTable** unwindInfoPtr, PT_R
         {
             // This cast is justified because only EEJitManager's have the code type above.
             EEJitManager* pJitMgr = (EEJitManager*)(pRS->_pjit);
-            CodeHeader * pHeader = pJitMgr->GetCodeHeaderFromStartAddress(entryPoint);
+            CodeHeader * pHeader = dac_cast<PTR_CodeHeader>(pJitMgr->GetCodeHeaderFromStartAddress(entryPoint));
             for(ULONG i = 0; i < pHeader->GetNumberOfUnwindInfos(); i++)
                 RemoveFromUnwindInfoTable(&pRS->_pUnwindInfoTable, pRS->_range.RangeStart(), pRS->_range.RangeStart() + pHeader->GetUnwindInfo(i)->BeginAddress);
         }
@@ -434,7 +438,7 @@ void UnwindInfoTable::AddToUnwindInfoTable(UnwindInfoTable** unwindInfoPtr, PT_R
     STANDARD_VM_CONTRACT;
     {
         // CodeHeapIterator holds the m_CodeHeapCritSec, which ensures code heaps don't get deallocated while being walked
-        EEJitManager::CodeHeapIterator heapIterator(NULL);
+        EECodeGenManager::CodeHeapIterator heapIterator(ExecutionManager::GetEEJitManager(), NULL);
 
         // Currently m_CodeHeapCritSec is given the CRST_UNSAFE_ANYMODE flag which allows it to be taken in a GC_NOTRIGGER
         // region but also disallows GC_TRIGGERS.  We need GC_TRIGGERS because we take another lock.   Ideally we would
@@ -455,7 +459,7 @@ void UnwindInfoTable::AddToUnwindInfoTable(UnwindInfoTable** unwindInfoPtr, PT_R
                 {
                     // This cast is justified because only EEJitManager's have the code type above.
                     EEJitManager* pJitMgr = (EEJitManager*)(pRS->_pjit);
-                    CodeHeader * pHeader = pJitMgr->GetCodeHeaderFromStartAddress(methodEntry);
+                    CodeHeader * pHeader = dac_cast<PTR_CodeHeader>(pJitMgr->GetCodeHeaderFromStartAddress(methodEntry));
                     int unwindInfoCount = pHeader->GetNumberOfUnwindInfos();
                     for(int i = 0; i < unwindInfoCount; i++)
                         AddToUnwindInfoTable(&pRS->_pUnwindInfoTable, pHeader->GetUnwindInfo(i), pRS->_range.RangeStart(), pRS->_range.RangeEndOpen());
@@ -507,10 +511,10 @@ void UnwindInfoTable::AddToUnwindInfoTable(UnwindInfoTable** unwindInfoPtr, PT_R
 
 /*-----------------------------------------------------------------------------
  This is a listing of which methods uses which synchronization mechanism
- in the EEJitManager.
+ in the EECodeGenManager.
 //-----------------------------------------------------------------------------
 
-Setters of EEJitManager::m_CodeHeapCritSec
+Setters of EECodeGenManager::m_CodeHeapCritSec
 -----------------------------------------------
 allocCode
 allocGCInfo
@@ -523,7 +527,7 @@ ReleaseReferenceToHeap
 JitCodeToMethodInfo
 
 
-Need EEJitManager::m_CodeHeapCritSec to be set
+Need EECodeGenManager::m_CodeHeapCritSec to be set
 -----------------------------------------------
 NewCodeHeap
 allocCodeRaw
@@ -537,8 +541,8 @@ DeleteJitHeapCache
 
 
 #if !defined(DACCESS_COMPILE)
-EEJitManager::CodeHeapIterator::CodeHeapIterator(LoaderAllocator *pLoaderAllocatorFilter)
-    : m_lockHolder(&(ExecutionManager::GetEEJitManager()->m_CodeHeapCritSec)), m_Iterator(NULL, 0, NULL, 0)
+EECodeGenManager::CodeHeapIterator::CodeHeapIterator(EECodeGenManager *pJitMgr, LoaderAllocator *pLoaderAllocatorFilter)
+    : m_lockHolder(&(pJitMgr->m_CodeHeapCritSec)), m_Iterator(NULL, 0, NULL, 0)
 {
     CONTRACTL
     {
@@ -550,12 +554,12 @@ EEJitManager::CodeHeapIterator::CodeHeapIterator(LoaderAllocator *pLoaderAllocat
 
     m_pHeapList = NULL;
     m_pLoaderAllocator = pLoaderAllocatorFilter;
-    m_pHeapList = ExecutionManager::GetEEJitManager()->GetCodeHeapList();
+    m_pHeapList = pJitMgr->GetCodeHeapList();
     if(m_pHeapList)
         new (&m_Iterator) MethodSectionIterator((const void *)m_pHeapList->mapBase, (COUNT_T)m_pHeapList->maxCodeHeapSize, m_pHeapList->pHdrMap, (COUNT_T)HEAP2MAPSIZE(ROUND_UP_TO_PAGE(m_pHeapList->maxCodeHeapSize)));
 };
 
-EEJitManager::CodeHeapIterator::~CodeHeapIterator()
+EECodeGenManager::CodeHeapIterator::~CodeHeapIterator()
 {
     CONTRACTL
     {
@@ -566,7 +570,7 @@ EEJitManager::CodeHeapIterator::~CodeHeapIterator()
     CONTRACTL_END;
 }
 
-BOOL EEJitManager::CodeHeapIterator::Next()
+BOOL EECodeGenManager::CodeHeapIterator::Next()
 {
     CONTRACTL
     {
@@ -1181,12 +1185,19 @@ PTR_VOID GetUnwindDataBlob(TADDR moduleBase, PTR_RUNTIME_FUNCTION pRuntimeFuncti
 //  EEJitManager
 //**********************************************************************************
 
-EEJitManager::EEJitManager()
+EECodeGenManager::EECodeGenManager()
     :
+    m_pCodeHeap(NULL),
+    m_cleanupList(NULL),
     // CRST_DEBUGGER_THREAD - We take this lock on debugger thread during EnC add method, among other things
     // CRST_TAKEN_DURING_SHUTDOWN - We take this lock during shutdown if ETW is on (to do rundown)
-    m_CodeHeapCritSec( CrstSingleUseLock,
-                        CrstFlags(CRST_UNSAFE_ANYMODE|CRST_DEBUGGER_THREAD|CRST_TAKEN_DURING_SHUTDOWN)),
+    m_CodeHeapCritSec( CrstSingleUseLock, CrstFlags(CRST_UNSAFE_ANYMODE|CRST_DEBUGGER_THREAD|CRST_TAKEN_DURING_SHUTDOWN)),
+    m_storeRichDebugInfo(false)
+{
+}
+
+EEJitManager::EEJitManager()
+    :
     m_CPUCompileFlags(),
     m_JitLoadCritSec( CrstSingleUseLock )
 {
@@ -1195,7 +1206,6 @@ EEJitManager::EEJitManager()
         GC_NOTRIGGER;
     } CONTRACTL_END;
 
-    m_pCodeHeap = NULL;
     m_jit = NULL;
     m_JITCompiler      = NULL;
 #ifdef TARGET_AMD64
@@ -1210,9 +1220,6 @@ EEJitManager::EEJitManager()
     m_AltJITCompiler   = NULL;
     m_AltJITRequired   = false;
 #endif
-
-    m_storeRichDebugInfo = false;
-    m_cleanupList = NULL;
 
     SetCpuInfo();
 }
@@ -1667,6 +1674,10 @@ struct JIT_LOAD_DATA
 
 // Here's the global data for JIT load and initialization state.
 JIT_LOAD_DATA g_JitLoadData;
+
+#ifdef FEATURE_INTERPRETER
+JIT_LOAD_DATA g_interpreterLoadData;
+#endif // FEATURE_INTERPRETER
 
 CORINFO_OS getClrVmOs();
 
@@ -2168,9 +2179,9 @@ void CodeFragmentHeap::RealBackoutMem(void *pMem
 
 //**************************************************************************
 
-LoaderCodeHeap::LoaderCodeHeap()
+LoaderCodeHeap::LoaderCodeHeap(bool fMakeExecutable)
     : m_LoaderHeap(NULL,                    // RangeList *pRangeList
-                   TRUE),                   // BOOL fMakeExecutable
+                   fMakeExecutable),
     m_cbMinNextPad(0)
 {
     WRAPPER_NO_CONTRACT;
@@ -2359,11 +2370,11 @@ HeapList* LoaderCodeHeap::CreateCodeHeap(CodeHeapRequestInfo *pInfo, LoaderHeap 
     }
 
     LOG((LF_JIT, LL_INFO100,
-         "Request new LoaderCodeHeap::CreateCodeHeap(%08x, %08x, for loader allocator" FMT_ADDR "in" FMT_ADDR ".." FMT_ADDR ")\n",
-         (DWORD) reserveSize, (DWORD) initialRequestSize, DBG_ADDR(pInfo->m_pAllocator), DBG_ADDR(loAddr), DBG_ADDR(hiAddr)
+         "Request new LoaderCodeHeap::CreateCodeHeap(%08x, %08x, %sexecutable, for loader allocator" FMT_ADDR "in" FMT_ADDR ".." FMT_ADDR ")\n",
+         (DWORD) reserveSize, (DWORD) initialRequestSize, pInfo->IsInterpreted() ? "non-" : "", DBG_ADDR(pInfo->m_pAllocator), DBG_ADDR(loAddr), DBG_ADDR(hiAddr)
                                 ));
 
-    NewHolder<LoaderCodeHeap> pCodeHeap(new LoaderCodeHeap());
+    NewHolder<LoaderCodeHeap> pCodeHeap(new LoaderCodeHeap(!pInfo->IsInterpreted() /* fMakeExecutable */));
 
     BYTE * pBaseAddr = NULL;
     DWORD dwSizeAcquiredFromInitialBlock = 0;
@@ -2371,7 +2382,10 @@ HeapList* LoaderCodeHeap::CreateCodeHeap(CodeHeapRequestInfo *pInfo, LoaderHeap 
 
     size_t allocationSize = pCodeHeap->m_LoaderHeap.AllocMem_TotalSize(initialRequestSize);
 #if defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
-    allocationSize += pCodeHeap->m_LoaderHeap.AllocMem_TotalSize(JUMP_ALLOCATE_SIZE);
+    if (!pInfo->IsInterpreted())
+    {
+        allocationSize += pCodeHeap->m_LoaderHeap.AllocMem_TotalSize(JUMP_ALLOCATE_SIZE);
+    }
 #endif
     pBaseAddr = (BYTE *)pInfo->m_pAllocator->GetCodeHeapInitialBlock(loAddr, hiAddr, (DWORD)allocationSize, &dwSizeAcquiredFromInitialBlock);
     if (pBaseAddr != NULL)
@@ -2428,7 +2442,15 @@ HeapList* LoaderCodeHeap::CreateCodeHeap(CodeHeapRequestInfo *pInfo, LoaderHeap 
     HeapList *pHp = new HeapList;
 
 #if defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
-    pHp->CLRPersonalityRoutine = (BYTE *)pCodeHeap->m_LoaderHeap.AllocMem(JUMP_ALLOCATE_SIZE);
+    if (pInfo->IsInterpreted())
+    {
+        pHp->CLRPersonalityRoutine = NULL;
+        pCodeHeap->m_LoaderHeap.ReservePages(1);
+    }
+    else
+    {
+        pHp->CLRPersonalityRoutine = (BYTE *)pCodeHeap->m_LoaderHeap.AllocMem(JUMP_ALLOCATE_SIZE);
+    }
 #else
     // Ensure that the heap has a reserved block of memory and so the GetReservedBytesFree()
     // and GetAllocPtr() calls below return nonzero values.
@@ -2438,13 +2460,19 @@ HeapList* LoaderCodeHeap::CreateCodeHeap(CodeHeapRequestInfo *pInfo, LoaderHeap 
     pHp->pHeap = pCodeHeap;
 
     size_t heapSize = pCodeHeap->m_LoaderHeap.GetReservedBytesFree();
-    size_t nibbleMapSize = HEAP2MAPSIZE(ROUND_UP_TO_PAGE(heapSize));
 
     pHp->startAddress = (TADDR)pCodeHeap->m_LoaderHeap.GetAllocPtr();
 
     pHp->endAddress      = pHp->startAddress;
     pHp->maxCodeHeapSize = heapSize;
-    pHp->reserveForJumpStubs = fAllocatedFromEmergencyJumpStubReserve ? pHp->maxCodeHeapSize : GetDefaultReserveForJumpStubs(pHp->maxCodeHeapSize);
+    if (pInfo->IsInterpreted())
+    {
+        pHp->reserveForJumpStubs = 0;
+    }
+    else
+    {
+        pHp->reserveForJumpStubs = fAllocatedFromEmergencyJumpStubReserve ? pHp->maxCodeHeapSize : GetDefaultReserveForJumpStubs(pHp->maxCodeHeapSize);
+    }
 
     _ASSERTE(heapSize >= initialRequestSize);
 
@@ -2452,7 +2480,15 @@ HeapList* LoaderCodeHeap::CreateCodeHeap(CodeHeapRequestInfo *pInfo, LoaderHeap 
     // Furthermore, if we avoid writing to it, these pages don't come into our working set
 
     pHp->mapBase         = ROUND_DOWN_TO_PAGE(pHp->startAddress);  // round down to next lower page align
+    size_t nibbleMapSize = HEAP2MAPSIZE(ROUND_UP_TO_PAGE(heapSize));
     pHp->pHdrMap         = (DWORD*)(void*)pJitMetaHeap->AllocMem(S_SIZE_T(nibbleMapSize));
+#ifdef TARGET_64BIT
+    if (pHp->CLRPersonalityRoutine != NULL)
+    {
+        ExecutableWriterHolder<BYTE> personalityRoutineWriterHolder(pHp->CLRPersonalityRoutine, 12);
+        emitJump(pHp->CLRPersonalityRoutine, personalityRoutineWriterHolder.GetRW(), (void *)ProcessCLRException);
+    }
+#endif // TARGET_64BIT
 
     pHp->pLoaderAllocator = pInfo->m_pAllocator;
 
@@ -2460,11 +2496,6 @@ HeapList* LoaderCodeHeap::CreateCodeHeap(CodeHeapRequestInfo *pInfo, LoaderHeap 
          "Created new CodeHeap(" FMT_ADDR ".." FMT_ADDR ")\n",
          DBG_ADDR(pHp->startAddress), DBG_ADDR(pHp->startAddress+pHp->maxCodeHeapSize)
          ));
-
-#ifdef TARGET_64BIT
-    ExecutableWriterHolder<BYTE> personalityRoutineWriterHolder(pHp->CLRPersonalityRoutine, 12);
-    emitJump(pHp->CLRPersonalityRoutine, personalityRoutineWriterHolder.GetRW(), (void *)ProcessCLRException);
-#endif // TARGET_64BIT
 
     pCodeHeap.SuppressRelease();
     RETURN pHp;
@@ -2551,7 +2582,7 @@ extern "C" PT_RUNTIME_FUNCTION GetRuntimeFunctionCallback(IN ULONG     ControlPc
 }
 #endif // FEATURE_EH_FUNCLETS
 
-HeapList* EEJitManager::NewCodeHeap(CodeHeapRequestInfo *pInfo, DomainCodeHeapList *pADHeapList)
+HeapList* EECodeGenManager::NewCodeHeap(CodeHeapRequestInfo *pInfo, DomainCodeHeapList *pADHeapList)
 {
     CONTRACT(HeapList *) {
         THROWS;
@@ -2583,7 +2614,10 @@ HeapList* EEJitManager::NewCodeHeap(CodeHeapRequestInfo *pInfo, DomainCodeHeapLi
     size_t reserveSize = initialRequestSize;
 
 #if defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
-    reserveSize += JUMP_ALLOCATE_SIZE;
+    if (!pInfo->IsInterpreted())
+    {
+        reserveSize += JUMP_ALLOCATE_SIZE;
+    }
 #endif
 
     if (reserveSize < minReserveSize)
@@ -2595,6 +2629,11 @@ HeapList* EEJitManager::NewCodeHeap(CodeHeapRequestInfo *pInfo, DomainCodeHeapLi
     HeapList *pHp = NULL;
 
     DWORD flags = RangeSection::RANGE_SECTION_CODEHEAP;
+
+    if (pInfo->IsInterpreted())
+    {
+        flags |= RangeSection::RANGE_SECTION_INTERPRETER;
+    }
 
     if (pInfo->IsDynamicDomain())
     {
@@ -2631,15 +2670,19 @@ HeapList* EEJitManager::NewCodeHeap(CodeHeapRequestInfo *pInfo, DomainCodeHeapLi
                                        this,
                                        (RangeSection::RangeSectionFlags)flags,
                                        pHp);
-        //
-        // add a table to cover each range in the range list
-        //
-        InstallEEFunctionTable(
-                  (PVOID)pStartRange,   // this is just an ID that gets passed to RtlDeleteFunctionTable;
-                  (PVOID)pStartRange,
-                  (ULONG)((ULONG64)pEndRange - (ULONG64)pStartRange),
-                  GetRuntimeFunctionCallback,
-                  this);
+
+        if (!pInfo->IsInterpreted())
+        {
+            //
+            // add a table to cover each range in the range list
+            //
+            InstallEEFunctionTable(
+                    (PVOID)pStartRange,   // this is just an ID that gets passed to RtlDeleteFunctionTable;
+                    (PVOID)pStartRange,
+                    (ULONG)((ULONG64)pEndRange - (ULONG64)pStartRange),
+                    GetRuntimeFunctionCallback,
+                    this);
+        }
     }
     EX_CATCH
     {
@@ -2666,9 +2709,9 @@ HeapList* EEJitManager::NewCodeHeap(CodeHeapRequestInfo *pInfo, DomainCodeHeapLi
     RETURN(pHp);
 }
 
-void* EEJitManager::allocCodeRaw(CodeHeapRequestInfo *pInfo,
-                                 size_t header, size_t blockSize, unsigned align,
-                                 HeapList ** ppCodeHeap)
+void* EECodeGenManager::allocCodeRaw(CodeHeapRequestInfo *pInfo,
+                                     size_t header, size_t blockSize, unsigned align,
+                                     HeapList ** ppCodeHeap)
 {
     CONTRACT(void *) {
         THROWS;
@@ -2686,13 +2729,29 @@ void* EEJitManager::allocCodeRaw(CodeHeapRequestInfo *pInfo,
     // Avoid going through the full list in the common case - try to use the most recently used codeheap
     if (pInfo->IsDynamicDomain())
     {
-        pCodeHeap = (HeapList *)pInfo->m_pAllocator->m_pLastUsedDynamicCodeHeap;
-        pInfo->m_pAllocator->m_pLastUsedDynamicCodeHeap = NULL;
+        if (pInfo->IsInterpreted())
+        {
+            pCodeHeap = (HeapList *)pInfo->m_pAllocator->m_pLastUsedInterpreterDynamicCodeHeap;
+            pInfo->m_pAllocator->m_pLastUsedInterpreterDynamicCodeHeap = NULL;
+        }
+        else
+        {
+            pCodeHeap = (HeapList *)pInfo->m_pAllocator->m_pLastUsedDynamicCodeHeap;
+            pInfo->m_pAllocator->m_pLastUsedDynamicCodeHeap = NULL;
+        }
     }
     else
     {
-        pCodeHeap = (HeapList *)pInfo->m_pAllocator->m_pLastUsedCodeHeap;
-        pInfo->m_pAllocator->m_pLastUsedCodeHeap = NULL;
+        if (pInfo->IsInterpreted())
+        {
+            pCodeHeap = (HeapList *)pInfo->m_pAllocator->m_pLastUsedInterpreterCodeHeap;
+            pInfo->m_pAllocator->m_pLastUsedInterpreterCodeHeap = NULL;
+        }
+        else
+        {
+            pCodeHeap = (HeapList *)pInfo->m_pAllocator->m_pLastUsedCodeHeap;
+            pInfo->m_pAllocator->m_pLastUsedCodeHeap = NULL;
+        }
     }
 
     // If we will use a cached code heap, ensure that the code heap meets the constraints
@@ -2747,11 +2806,25 @@ void* EEJitManager::allocCodeRaw(CodeHeapRequestInfo *pInfo,
 
     if (pInfo->IsDynamicDomain())
     {
-        pInfo->m_pAllocator->m_pLastUsedDynamicCodeHeap = pCodeHeap;
+        if (pInfo->IsInterpreted())
+        {
+            pInfo->m_pAllocator->m_pLastUsedInterpreterDynamicCodeHeap = pCodeHeap;
+        }
+        else
+        {
+            pInfo->m_pAllocator->m_pLastUsedDynamicCodeHeap = pCodeHeap;
+        }
     }
     else
     {
-        pInfo->m_pAllocator->m_pLastUsedCodeHeap = pCodeHeap;
+        if (pInfo->IsInterpreted())
+        {
+            pInfo->m_pAllocator->m_pLastUsedInterpreterCodeHeap = pCodeHeap;
+        }
+        else
+        {
+            pInfo->m_pAllocator->m_pLastUsedCodeHeap = pCodeHeap;
+        }
     }
 
     // Record the pCodeHeap value into ppCodeHeap
@@ -2768,13 +2841,13 @@ void* EEJitManager::allocCodeRaw(CodeHeapRequestInfo *pInfo,
     RETURN(mem);
 }
 
-void EEJitManager::allocCode(MethodDesc* pMD, size_t blockSize, size_t reserveForJumpStubs, CorJitAllocMemFlag flag, CodeHeader** ppCodeHeader, CodeHeader** ppCodeHeaderRW,
-                             size_t* pAllocatedSize, HeapList** ppCodeHeap
-                           , BYTE** ppRealHeader
+void EECodeGenManager::allocCode(MethodDesc* pMD, size_t blockSize, size_t reserveForJumpStubs, CorJitAllocMemFlag flag, void** ppCodeHeader, void** ppCodeHeaderRW,
+                                 size_t* pAllocatedSize, HeapList** ppCodeHeap
+                               , BYTE** ppRealHeader
 #ifdef FEATURE_EH_FUNCLETS
-                           , UINT nUnwindInfos
+                               , UINT nUnwindInfos
 #endif
-                           )
+                               )
 {
     CONTRACTL {
         THROWS;
@@ -2821,13 +2894,32 @@ void EEJitManager::allocCode(MethodDesc* pMD, size_t blockSize, size_t reserveFo
         requestInfo.SetDynamicDomain();
     }
 #endif
-    requestInfo.setReserveForJumpStubs(reserveForJumpStubs);
+
+    if (flag & CORJIT_ALLOCMEM_FLG_INTERPRETED)
+    {
+#ifdef FEATURE_EH_FUNCLETS
+        _ASSERTE(nUnwindInfos == 0);
+#endif
+        _ASSERTE(reserveForJumpStubs == 0);
+
+        requestInfo.SetInterpreted();
+    }
+
+    SIZE_T realHeaderSize;
+    if (requestInfo.IsInterpreted())
+    {
+        realHeaderSize = sizeof(InterpreterRealCodeHeader);
+    }
+    else
+    {
+        requestInfo.setReserveForJumpStubs(reserveForJumpStubs);
 
 #ifdef FEATURE_EH_FUNCLETS
-    SIZE_T realHeaderSize = offsetof(RealCodeHeader, unwindInfos[0]) + (sizeof(T_RUNTIME_FUNCTION) * nUnwindInfos);
+        realHeaderSize = offsetof(RealCodeHeader, unwindInfos[0]) + (sizeof(T_RUNTIME_FUNCTION) * nUnwindInfos);
 #else
-    SIZE_T realHeaderSize = sizeof(RealCodeHeader);
+        realHeaderSize = sizeof(RealCodeHeader);
 #endif
+    }
 
     // if this is a LCG method then we will be allocating the RealCodeHeader
     // following the code so that the code block can be removed easily by
@@ -2857,7 +2949,7 @@ void EEJitManager::allocCode(MethodDesc* pMD, size_t blockSize, size_t reserveFo
 
         *pAllocatedSize = sizeof(CodeHeader) + totalSize;
 
-        if (ExecutableAllocator::IsWXORXEnabled())
+        if (ExecutableAllocator::IsWXORXEnabled() && !requestInfo.IsInterpreted())
         {
             pCodeHdrRW = (CodeHeader *)new BYTE[*pAllocatedSize];
         }
@@ -2885,7 +2977,10 @@ void EEJitManager::allocCode(MethodDesc* pMD, size_t blockSize, size_t reserveFo
         pCodeHdrRW->SetGCInfo(NULL);
         pCodeHdrRW->SetMethodDesc(pMD);
 #ifdef FEATURE_EH_FUNCLETS
-        pCodeHdrRW->SetNumberOfUnwindInfos(nUnwindInfos);
+        if (!requestInfo.IsInterpreted())
+        {
+            ((CodeHeader*)pCodeHdrRW)->SetNumberOfUnwindInfos(nUnwindInfos);
+        }
 #endif
 
         if (requestInfo.IsDynamicDomain())
@@ -2902,7 +2997,7 @@ void EEJitManager::allocCode(MethodDesc* pMD, size_t blockSize, size_t reserveFo
     *ppCodeHeaderRW = pCodeHdrRW;
 }
 
-EEJitManager::DomainCodeHeapList *EEJitManager::GetCodeHeapList(CodeHeapRequestInfo *pInfo, LoaderAllocator *pAllocator, BOOL fDynamicOnly)
+EEJitManager::DomainCodeHeapList *EECodeGenManager::GetCodeHeapList(CodeHeapRequestInfo *pInfo, LoaderAllocator *pAllocator, BOOL fDynamicOnly)
 {
     CONTRACTL {
         NOTHROW;
@@ -2943,7 +3038,7 @@ EEJitManager::DomainCodeHeapList *EEJitManager::GetCodeHeapList(CodeHeapRequestI
     return pList;
 }
 
-bool EEJitManager::CanUseCodeHeap(CodeHeapRequestInfo *pInfo, HeapList *pCodeHeap)
+bool EECodeGenManager::CanUseCodeHeap(CodeHeapRequestInfo *pInfo, HeapList *pCodeHeap)
 {
     CONTRACTL {
         NOTHROW;
@@ -3037,7 +3132,7 @@ bool EEJitManager::CanUseCodeHeap(CodeHeapRequestInfo *pInfo, HeapList *pCodeHea
    return retVal;
 }
 
-EEJitManager::DomainCodeHeapList * EEJitManager::CreateCodeHeapList(CodeHeapRequestInfo *pInfo)
+EEJitManager::DomainCodeHeapList * EECodeGenManager::CreateCodeHeapList(CodeHeapRequestInfo *pInfo)
 {
     CONTRACTL {
         THROWS;
@@ -3058,7 +3153,7 @@ EEJitManager::DomainCodeHeapList * EEJitManager::CreateCodeHeapList(CodeHeapRequ
     return pNewList.Extract();
 }
 
-LoaderHeap *EEJitManager::GetJitMetaHeap(MethodDesc *pMD)
+LoaderHeap *EECodeGenManager::GetJitMetaHeap(MethodDesc *pMD)
 {
     CONTRACTL {
         NOTHROW;
@@ -3071,39 +3166,13 @@ LoaderHeap *EEJitManager::GetJitMetaHeap(MethodDesc *pMD)
     return pAllocator->GetLowFrequencyHeap();
 }
 
-BYTE* EEJitManager::allocGCInfo(CodeHeader* pCodeHeader, DWORD blockSize, size_t * pAllocationSize)
+void* EECodeGenManager::allocEHInfoRaw(MethodDesc* pMD, DWORD blockSize, size_t * pAllocationSize)
 {
     CONTRACTL {
         THROWS;
         GC_NOTRIGGER;
     } CONTRACTL_END;
 
-    MethodDesc* pMD = pCodeHeader->GetMethodDesc();
-    // sadly for light code gen I need the check in here. We should change GetJitMetaHeap
-    if (pMD->IsLCGMethod())
-    {
-        CrstHolder ch(&m_CodeHeapCritSec);
-        pCodeHeader->SetGCInfo((BYTE*)(void*)pMD->AsDynamicMethodDesc()->GetResolver()->GetJitMetaHeap()->New(blockSize));
-    }
-    else
-    {
-        pCodeHeader->SetGCInfo((BYTE*) (void*)GetJitMetaHeap(pMD)->AllocMem(S_SIZE_T(blockSize)));
-    }
-    _ASSERTE(pCodeHeader->GetGCInfo()); // AllocMem throws if there's not enough memory
-
-    * pAllocationSize = blockSize;  // Store the allocation size so we can backout later.
-
-    return(pCodeHeader->GetGCInfo());
-}
-
-void* EEJitManager::allocEHInfoRaw(CodeHeader* pCodeHeader, DWORD blockSize, size_t * pAllocationSize)
-{
-    CONTRACTL {
-        THROWS;
-        GC_NOTRIGGER;
-    } CONTRACTL_END;
-
-    MethodDesc* pMD = pCodeHeader->GetMethodDesc();
     void * mem = NULL;
 
     // sadly for light code gen I need the check in here. We should change GetJitMetaHeap
@@ -3123,28 +3192,6 @@ void* EEJitManager::allocEHInfoRaw(CodeHeader* pCodeHeader, DWORD blockSize, siz
     return(mem);
 }
 
-
-EE_ILEXCEPTION* EEJitManager::allocEHInfo(CodeHeader* pCodeHeader, unsigned numClauses, size_t * pAllocationSize)
-{
-    CONTRACTL {
-        THROWS;
-        GC_NOTRIGGER;
-    } CONTRACTL_END;
-
-    // Note - pCodeHeader->phdrJitEHInfo - sizeof(size_t) contains the number of EH clauses
-
-    DWORD temp =  EE_ILEXCEPTION::Size(numClauses);
-    DWORD blockSize = 0;
-    if (!ClrSafeInt<DWORD>::addition(temp, sizeof(size_t), blockSize))
-        COMPlusThrowOM();
-
-    BYTE *EHInfo = (BYTE*)allocEHInfoRaw(pCodeHeader, blockSize, pAllocationSize);
-
-    pCodeHeader->SetEHInfo((EE_ILEXCEPTION*) (EHInfo + sizeof(size_t)));
-    pCodeHeader->GetEHInfo()->Init(numClauses);
-    *((size_t *)EHInfo) = numClauses;
-    return(pCodeHeader->GetEHInfo());
-}
 
 JumpStubBlockHeader *  EEJitManager::allocJumpStubBlock(MethodDesc* pMD, DWORD numJumps,
                                                         BYTE * loAddr, BYTE * hiAddr,
@@ -3247,91 +3294,57 @@ void * EEJitManager::allocCodeFragmentBlock(size_t blockSize, unsigned alignment
     RETURN((void *)mem);
 }
 
-#endif // !DACCESS_COMPILE
-
-
-GCInfoToken EEJitManager::GetGCInfoToken(const METHODTOKEN& MethodToken)
+template<typename TCodeHeader>
+BYTE* EECodeGenManager::allocGCInfo(TCodeHeader* pCodeHeader, DWORD blockSize, size_t * pAllocationSize)
 {
     CONTRACTL {
-        NOTHROW;
-        GC_NOTRIGGER;
-        SUPPORTS_DAC;
-    } CONTRACTL_END;
-
-    // The JIT-ed code always has the current version of GCInfo
-    return{ GetCodeHeader(MethodToken)->GetGCInfo(), GCINFO_VERSION };
-}
-
-// creates an enumeration and returns the number of EH clauses
-unsigned EEJitManager::InitializeEHEnumeration(const METHODTOKEN& MethodToken, EH_CLAUSE_ENUMERATOR* pEnumState)
-{
-    LIMITED_METHOD_CONTRACT;
-    EE_ILEXCEPTION * EHInfo = GetCodeHeader(MethodToken)->GetEHInfo();
-
-    pEnumState->iCurrentPos = 0;     // since the EH info is not compressed, the clause number is used to do the enumeration
-    pEnumState->pExceptionClauseArray = 0;
-
-    if (!EHInfo)
-        return 0;
-
-    pEnumState->pExceptionClauseArray = dac_cast<TADDR>(EHInfo->EHClause(0));
-    return *(dac_cast<PTR_unsigned>(dac_cast<TADDR>(EHInfo) - sizeof(size_t)));
-}
-
-PTR_EXCEPTION_CLAUSE_TOKEN EEJitManager::GetNextEHClause(EH_CLAUSE_ENUMERATOR* pEnumState,
-                              EE_ILEXCEPTION_CLAUSE* pEHClauseOut)
-{
-    CONTRACTL {
-        NOTHROW;
+        THROWS;
         GC_NOTRIGGER;
     } CONTRACTL_END;
 
-    unsigned iCurrentPos = pEnumState->iCurrentPos;
-    pEnumState->iCurrentPos++;
-
-    EE_ILEXCEPTION_CLAUSE* pClause = &(dac_cast<PTR_EE_ILEXCEPTION_CLAUSE>(pEnumState->pExceptionClauseArray)[iCurrentPos]);
-    *pEHClauseOut = *pClause;
-    return dac_cast<PTR_EXCEPTION_CLAUSE_TOKEN>(pClause);
-}
-
-#ifndef DACCESS_COMPILE
-TypeHandle EEJitManager::ResolveEHClause(EE_ILEXCEPTION_CLAUSE* pEHClause,
-                                         CrawlFrame *pCf)
-{
-    // We don't want to use a runtime contract here since this codepath is used during
-    // the processing of a hard SO. Contracts use a significant amount of stack
-    // which we can't afford for those cases.
-    STATIC_CONTRACT_THROWS;
-    STATIC_CONTRACT_GC_TRIGGERS;
-
-    _ASSERTE(NULL != pCf);
-    _ASSERTE(NULL != pEHClause);
-    _ASSERTE(IsTypedHandler(pEHClause));
-
-
-    TypeHandle typeHnd = TypeHandle();
-    mdToken typeTok = mdTokenNil;
-
-    // CachedTypeHandle's are filled in at JIT time, and not cached when accessed multiple times
-    if (HasCachedTypeHandle(pEHClause))
+    MethodDesc* pMD = pCodeHeader->GetMethodDesc();
+    // sadly for light code gen I need the check in here. We should change GetJitMetaHeap
+    if (pMD->IsLCGMethod())
     {
-        return TypeHandle::FromPtr(pEHClause->TypeHandle);
+        CrstHolder ch(&m_CodeHeapCritSec);
+        pCodeHeader->SetGCInfo((BYTE*)(void*)pMD->AsDynamicMethodDesc()->GetResolver()->GetJitMetaHeap()->New(blockSize));
     }
     else
     {
-        typeTok = pEHClause->ClassToken;
+        pCodeHeader->SetGCInfo((BYTE*) (void*)GetJitMetaHeap(pMD)->AllocMem(S_SIZE_T(blockSize)));
     }
+    _ASSERTE(pCodeHeader->GetGCInfo()); // AllocMem throws if there's not enough memory
 
-    MethodDesc* pMD = pCf->GetFunction();
-    Module* pModule = pMD->GetModule();
-    PREFIX_ASSUME(pModule != NULL);
+    * pAllocationSize = blockSize;  // Store the allocation size so we can backout later.
 
-    SigTypeContext typeContext(pMD);
-    return ClassLoader::LoadTypeDefOrRefOrSpecThrowing(pModule, typeTok, &typeContext,
-                                                       ClassLoader::ReturnNullIfNotFound);
+    return(pCodeHeader->GetGCInfo());
 }
 
-void EEJitManager::RemoveJitData (CodeHeader * pCHdr, size_t GCinfo_len, size_t EHinfo_len)
+template<typename TCodeHeader>
+EE_ILEXCEPTION* EECodeGenManager::allocEHInfo(TCodeHeader* pCodeHeader, unsigned numClauses, size_t * pAllocationSize)
+{
+    CONTRACTL {
+        THROWS;
+        GC_NOTRIGGER;
+    } CONTRACTL_END;
+
+    // Note - pCodeHeader->phdrJitEHInfo - sizeof(size_t) contains the number of EH clauses
+
+    DWORD temp =  EE_ILEXCEPTION::Size(numClauses);
+    DWORD blockSize = 0;
+    if (!ClrSafeInt<DWORD>::addition(temp, sizeof(size_t), blockSize))
+        COMPlusThrowOM();
+
+    BYTE *EHInfo = (BYTE*)allocEHInfoRaw(pCodeHeader->GetMethodDesc(), blockSize, pAllocationSize);
+
+    pCodeHeader->SetEHInfo((EE_ILEXCEPTION*) (EHInfo + sizeof(size_t)));
+    pCodeHeader->GetEHInfo()->Init(numClauses);
+    *((size_t *)EHInfo) = numClauses;
+    return(pCodeHeader->GetEHInfo());
+}
+
+template<typename TCodeHeader>
+void EECodeGenManager::RemoveJitData(TCodeHeader * pCHdr, size_t GCinfo_len, size_t EHinfo_len)
 {
     CONTRACTL {
         NOTHROW;
@@ -3340,10 +3353,10 @@ void EEJitManager::RemoveJitData (CodeHeader * pCHdr, size_t GCinfo_len, size_t 
 
     MethodDesc* pMD = pCHdr->GetMethodDesc();
 
-    if (pMD->IsLCGMethod()) {
+    void * codeStart = (void*)pCHdr->GetCodeStartAddress();
 
-        void * codeStart = (pCHdr + 1);
-
+    if (pMD->IsLCGMethod())
+    {
         {
             CrstHolder ch(&m_CodeHeapCritSec);
 
@@ -3355,10 +3368,8 @@ void EEJitManager::RemoveJitData (CodeHeader * pCHdr, size_t GCinfo_len, size_t 
                 pResolver->m_recordCodePointer = NULL;
         }
 
-#if defined(TARGET_AMD64)
         // Remove the unwind information (if applicable)
-        UnwindInfoTable::UnpublishUnwindInfoForMethod((TADDR)codeStart);
-#endif // defined(TARGET_AMD64)
+        UnpublishUnwindInfoForMethod((TADDR)codeStart);
 
         HostCodeHeap* pHeap = HostCodeHeap::GetCodeHeap((TADDR)codeStart);
         FreeCodeMemory(pHeap, codeStart);
@@ -3374,7 +3385,7 @@ void EEJitManager::RemoveJitData (CodeHeader * pCHdr, size_t GCinfo_len, size_t 
         HeapList *pHp = GetCodeHeapList();
 
         while (pHp && ((pHp->startAddress > (TADDR)pCHdr) ||
-                        (pHp->endAddress < (TADDR)pCHdr + sizeof(CodeHeader))))
+                        (pHp->endAddress < (TADDR)codeStart)))
         {
             pHp = pHp->GetNext();
         }
@@ -3385,7 +3396,7 @@ void EEJitManager::RemoveJitData (CodeHeader * pCHdr, size_t GCinfo_len, size_t 
         if (pHp == NULL)
             return;
 
-        NibbleMapDeleteUnlocked(pHp, (TADDR)(pCHdr + 1));
+        NibbleMapDeleteUnlocked(pHp, (TADDR)codeStart);
     }
 
     // Backout the GCInfo
@@ -3422,6 +3433,153 @@ void EEJitManager::RemoveJitData (CodeHeader * pCHdr, size_t GCinfo_len, size_t 
     return;
 }
 
+// Explicit instantiation of the templates so that they can be used externally without the bodies of the methods
+// being in the header file. The bodies call methods of multiple data types that cannot be reasonably defined
+// before the codeman.h is included.
+
+template
+BYTE* EECodeGenManager::allocGCInfo<CodeHeader>(CodeHeader* pCodeHeader, DWORD blockSize, size_t * pAllocationSize);
+
+template
+EE_ILEXCEPTION* EECodeGenManager::allocEHInfo<CodeHeader>(CodeHeader* pCodeHeader, unsigned numClauses, size_t * pAllocationSize);
+
+template
+void EECodeGenManager::RemoveJitData<CodeHeader>(CodeHeader * pCHdr, size_t GCinfo_len, size_t EHinfo_len);
+
+#ifdef FEATURE_INTERPRETER
+template
+BYTE* EECodeGenManager::allocGCInfo<InterpreterCodeHeader>(InterpreterCodeHeader* pCodeHeader, DWORD blockSize, size_t * pAllocationSize);
+
+template
+EE_ILEXCEPTION* EECodeGenManager::allocEHInfo<InterpreterCodeHeader>(InterpreterCodeHeader* pCodeHeader, unsigned numClauses, size_t * pAllocationSize);
+
+template
+void EECodeGenManager::RemoveJitData<InterpreterCodeHeader>(InterpreterCodeHeader * pCHdr, size_t GCinfo_len, size_t EHinfo_len);
+#endif // FEATURE_INTERPRETER
+
+#endif // !DACCESS_COMPILE
+
+
+GCInfoToken EEJitManager::GetGCInfoToken(const METHODTOKEN& MethodToken)
+{
+    CONTRACTL {
+        NOTHROW;
+        GC_NOTRIGGER;
+        SUPPORTS_DAC;
+    } CONTRACTL_END;
+
+    // The JIT-ed code always has the current version of GCInfo
+    return{ GetCodeHeader(MethodToken)->GetGCInfo(), GCINFO_VERSION };
+}
+
+#ifdef FEATURE_INTERPRETER
+GCInfoToken InterpreterJitManager::GetGCInfoToken(const METHODTOKEN& MethodToken)
+{
+    CONTRACTL {
+        NOTHROW;
+        GC_NOTRIGGER;
+        SUPPORTS_DAC;
+    } CONTRACTL_END;
+
+    // The JIT-ed code always has the current version of GCInfo
+    return{ GetCodeHeader(MethodToken)->GetGCInfo(), GCINFO_VERSION };
+}
+#endif // FEATURE_INTERPRETER
+
+// creates an enumeration and returns the number of EH clauses
+unsigned EEJitManager::InitializeEHEnumeration(const METHODTOKEN& MethodToken, EH_CLAUSE_ENUMERATOR* pEnumState)
+{
+    LIMITED_METHOD_CONTRACT;
+    EE_ILEXCEPTION * EHInfo = GetCodeHeader(MethodToken)->GetEHInfo();
+
+    pEnumState->iCurrentPos = 0;     // since the EH info is not compressed, the clause number is used to do the enumeration
+    pEnumState->pExceptionClauseArray = 0;
+
+    if (!EHInfo)
+        return 0;
+
+    pEnumState->pExceptionClauseArray = dac_cast<TADDR>(EHInfo->EHClause(0));
+    return *(dac_cast<PTR_unsigned>(dac_cast<TADDR>(EHInfo) - sizeof(size_t)));
+}
+
+#ifdef FEATURE_INTERPRETER
+// creates an enumeration and returns the number of EH clauses
+unsigned InterpreterJitManager::InitializeEHEnumeration(const METHODTOKEN& MethodToken, EH_CLAUSE_ENUMERATOR* pEnumState)
+{
+    LIMITED_METHOD_CONTRACT;
+    EE_ILEXCEPTION * EHInfo = GetCodeHeader(MethodToken)->GetEHInfo();
+
+    pEnumState->iCurrentPos = 0;     // since the EH info is not compressed, the clause number is used to do the enumeration
+    pEnumState->pExceptionClauseArray = 0;
+
+    if (!EHInfo)
+        return 0;
+
+    pEnumState->pExceptionClauseArray = dac_cast<TADDR>(EHInfo->EHClause(0));
+    return *(dac_cast<PTR_unsigned>(dac_cast<TADDR>(EHInfo) - sizeof(size_t)));
+}
+#endif // FEATURE_INTERPRETER
+
+PTR_EXCEPTION_CLAUSE_TOKEN EECodeGenManager::GetNextEHClause(EH_CLAUSE_ENUMERATOR* pEnumState,
+                              EE_ILEXCEPTION_CLAUSE* pEHClauseOut)
+{
+    CONTRACTL {
+        NOTHROW;
+        GC_NOTRIGGER;
+    } CONTRACTL_END;
+
+    unsigned iCurrentPos = pEnumState->iCurrentPos;
+    pEnumState->iCurrentPos++;
+
+    EE_ILEXCEPTION_CLAUSE* pClause = &(dac_cast<PTR_EE_ILEXCEPTION_CLAUSE>(pEnumState->pExceptionClauseArray)[iCurrentPos]);
+    *pEHClauseOut = *pClause;
+    return dac_cast<PTR_EXCEPTION_CLAUSE_TOKEN>(pClause);
+}
+
+#ifndef DACCESS_COMPILE
+TypeHandle EECodeGenManager::ResolveEHClause(EE_ILEXCEPTION_CLAUSE* pEHClause,
+                                         CrawlFrame *pCf)
+{
+    // We don't want to use a runtime contract here since this codepath is used during
+    // the processing of a hard SO. Contracts use a significant amount of stack
+    // which we can't afford for those cases.
+    STATIC_CONTRACT_THROWS;
+    STATIC_CONTRACT_GC_TRIGGERS;
+
+    _ASSERTE(NULL != pCf);
+    _ASSERTE(NULL != pEHClause);
+    _ASSERTE(IsTypedHandler(pEHClause));
+
+
+    TypeHandle typeHnd = TypeHandle();
+    mdToken typeTok = mdTokenNil;
+
+    // CachedTypeHandle's are filled in at JIT time, and not cached when accessed multiple times
+    if (HasCachedTypeHandle(pEHClause))
+    {
+        return TypeHandle::FromPtr(pEHClause->TypeHandle);
+    }
+    else
+    {
+        typeTok = pEHClause->ClassToken;
+    }
+
+    MethodDesc* pMD = pCf->GetFunction();
+    Module* pModule = pMD->GetModule();
+    PREFIX_ASSUME(pModule != NULL);
+
+    SigTypeContext typeContext(pMD);
+    return ClassLoader::LoadTypeDefOrRefOrSpecThrowing(pModule, typeTok, &typeContext,
+                                                       ClassLoader::ReturnNullIfNotFound);
+}
+
+void EEJitManager::UnpublishUnwindInfoForMethod(TADDR codeStart)
+{
+#if defined(TARGET_AMD64)
+    UnwindInfoTable::UnpublishUnwindInfoForMethod((TADDR)codeStart);
+#endif // defined(TARGET_AMD64)
+}
+
 // appdomain is being unloaded, so delete any data associated with it. We have to do this in two stages.
 // On the first stage, we remove the elements from the list. On the second stage, which occurs after a GC
 // we know that only threads who were in preemptive mode prior to the GC could possibly still be looking
@@ -3429,7 +3587,7 @@ void EEJitManager::RemoveJitData (CodeHeader * pCHdr, size_t GCinfo_len, size_t 
 // count is 0, we can safely delete, otherwise we must add to the cleanup list to be deleted later. We know
 // there can only be one unload at a time, so we can use a single var to hold the unlinked, but not deleted,
 // elements.
-void EEJitManager::Unload(LoaderAllocator *pAllocator)
+void EECodeGenManager::Unload(LoaderAllocator *pAllocator)
 {
     CONTRACTL {
         NOTHROW;
@@ -3496,7 +3654,7 @@ EEJitManager::DomainCodeHeapList::~DomainCodeHeapList()
     LIMITED_METHOD_CONTRACT;
 }
 
-void EEJitManager::RemoveCodeHeapFromDomainList(CodeHeap *pHeap, LoaderAllocator *pAllocator)
+void EECodeGenManager::RemoveCodeHeapFromDomainList(CodeHeap *pHeap, LoaderAllocator *pAllocator)
 {
     CONTRACTL {
         NOTHROW;
@@ -3532,7 +3690,51 @@ void EEJitManager::RemoveCodeHeapFromDomainList(CodeHeap *pHeap, LoaderAllocator
     }
 }
 
-void EEJitManager::FreeCodeMemory(HostCodeHeap *pCodeHeap, void * codeStart)
+#ifdef FEATURE_INTERPRETER
+
+InterpreterJitManager::InterpreterJitManager() :
+    m_interpreter(NULL),
+    m_interpreterHandle(NULL),
+    m_interpreterLoadCritSec(CrstSingleUseLock)
+{
+    LIMITED_METHOD_CONTRACT;
+}
+
+BOOL InterpreterJitManager::LoadInterpreter()
+{
+    STANDARD_VM_CONTRACT;
+
+    // If the JIT is already loaded, don't take the lock.
+    if (IsInterpreterLoaded())
+        return TRUE;
+
+    // Use m_interpreterLoadCritSec to ensure that the interpreter is loaded on one thread only
+    CrstHolder chRead(&m_interpreterLoadCritSec);
+
+    // Did someone load the JIT before we got the lock?
+    if (IsInterpreterLoaded())
+        return TRUE;
+
+    m_storeRichDebugInfo = CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_RichDebugInfo) != 0;
+
+    ICorJitCompiler* newInterpreter = NULL;
+    m_interpreter = NULL;
+
+    g_interpreterLoadData.jld_id = JIT_LOAD_MAIN;
+    LPWSTR interpreterPath = NULL;
+#ifdef _DEBUG
+    IfFailThrow(CLRConfig::GetConfigValue(CLRConfig::INTERNAL_InterpreterPath, &interpreterPath));
+#endif
+    LoadAndInitializeJIT(ExecutionManager::GetInterpreterName() DEBUGARG(interpreterPath), &m_interpreterHandle, &newInterpreter, &g_interpreterLoadData, getClrVmOs());
+
+    // Publish the interpreter.
+    m_interpreter = newInterpreter;
+
+    return IsInterpreterLoaded();    
+}
+#endif // FEATURE_INTERPRETER
+
+void EECodeGenManager::FreeCodeMemory(HostCodeHeap *pCodeHeap, void * codeStart)
 {
     CONTRACTL
     {
@@ -3566,9 +3768,12 @@ void ExecutionManager::CleanupCodeHeaps()
     _ASSERTE (IsAtProcessExit() || (GCHeapUtilities::IsGCInProgress()  && ::IsGCThread()));
 
     GetEEJitManager()->CleanupCodeHeaps();
+#ifdef FEATURE_INTERPRETER
+    GetInterpreterJitManager()->CleanupCodeHeaps();
+#endif // FEATURE_INTERPRETER
 }
 
-void EEJitManager::CleanupCodeHeaps()
+void EECodeGenManager::CleanupCodeHeaps()
 {
     CONTRACTL
     {
@@ -3616,7 +3821,7 @@ void EEJitManager::CleanupCodeHeaps()
     }
 }
 
-void EEJitManager::RemoveFromCleanupList(HostCodeHeap *pCodeHeap)
+void EECodeGenManager::RemoveFromCleanupList(HostCodeHeap *pCodeHeap)
 {
     CONTRACTL {
         NOTHROW;
@@ -3646,7 +3851,7 @@ void EEJitManager::RemoveFromCleanupList(HostCodeHeap *pCodeHeap)
     }
 }
 
-void EEJitManager::AddToCleanupList(HostCodeHeap *pCodeHeap)
+void EECodeGenManager::AddToCleanupList(HostCodeHeap *pCodeHeap)
 {
     CONTRACTL {
         NOTHROW;
@@ -3676,7 +3881,7 @@ void EEJitManager::AddToCleanupList(HostCodeHeap *pCodeHeap)
     }
 }
 
-void EEJitManager::DeleteCodeHeap(HeapList *pHeapList)
+void EECodeGenManager::DeleteCodeHeap(HeapList *pHeapList)
 {
     CONTRACTL {
         NOTHROW;
@@ -3735,7 +3940,7 @@ static CodeHeader * GetCodeHeaderFromDebugInfoRequest(const DebugInfoRequest & r
 //-----------------------------------------------------------------------------
 // Get vars from Jit Store
 //-----------------------------------------------------------------------------
-BOOL EEJitManager::GetBoundariesAndVars(
+BOOL EECodeGenManager::GetBoundariesAndVars(
         const DebugInfoRequest & request,
         IN FP_IDS_NEW fpNew, IN void * pNewData,
         OUT ULONG32 * pcMap,
@@ -3781,7 +3986,7 @@ BOOL EEJitManager::GetBoundariesAndVars(
     return TRUE;
 }
 
-BOOL EEJitManager::GetRichDebugInfo(
+BOOL EECodeGenManager::GetRichDebugInfo(
     const DebugInfoRequest& request,
     IN FP_IDS_NEW fpNew, IN void* pNewData,
     OUT ICorDebugInfo::InlineTreeNode** ppInlineTree,
@@ -3845,10 +4050,32 @@ void CodeHeader::EnumMemoryRegions(CLRDataEnumMemoryFlags flags, IJitManager* pJ
     }
 }
 
+#ifdef FEATURE_INTERPRETER
+void InterpreterCodeHeader::EnumMemoryRegions(CLRDataEnumMemoryFlags flags, IJitManager* pJitMan)
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+        SUPPORTS_DAC;
+    }
+    CONTRACTL_END;
+
+    DAC_ENUM_DTHIS();
+
+    this->pRealCodeHeader.EnumMem();
+
+    if (this->GetDebugInfo() != NULL)
+    {
+        CompressDebugInfo::EnumMemoryRegions(flags, this->GetDebugInfo(), FALSE /* hasFlagByte */);
+    }
+}
+#endif // FEATURE_INTERPRETER
+
 //-----------------------------------------------------------------------------
 // Enumerate for minidumps.
 //-----------------------------------------------------------------------------
-void EEJitManager::EnumMemoryRegionsForMethodDebugInfo(CLRDataEnumMemoryFlags flags, MethodDesc * pMD)
+void EECodeGenManager::EnumMemoryRegionsForMethodDebugInfo(CLRDataEnumMemoryFlags flags, MethodDesc * pMD)
 {
     CONTRACTL
     {
@@ -3876,7 +4103,17 @@ PCODE EEJitManager::GetCodeAddressForRelOffset(const METHODTOKEN& MethodToken, D
     return pHeader->GetCodeStartAddress() + relOffset;
 }
 
-BOOL EEJitManager::JitCodeToMethodInfo(
+#ifdef FEATURE_INTERPRETER
+PCODE InterpreterJitManager::GetCodeAddressForRelOffset(const METHODTOKEN& MethodToken, DWORD relOffset)
+{
+    WRAPPER_NO_CONTRACT;
+
+    InterpreterCodeHeader * pHeader = GetCodeHeader(MethodToken);
+    return pHeader->GetCodeStartAddress() + relOffset;
+}
+#endif // FEATURE_INTERPRETER
+
+BOOL EECodeGenManager::JitCodeToMethodInfo(
         RangeSection * pRangeSection,
         PCODE currentPC,
         MethodDesc ** ppMethodDesc,
@@ -3893,7 +4130,7 @@ BOOL EEJitManager::JitCodeToMethodInfo(
     if (pRangeSection->_flags & RangeSection::RANGE_SECTION_RANGELIST)
         return FALSE;
 
-    TADDR start = dac_cast<PTR_EEJitManager>(pRangeSection->_pjit)->FindMethodCode(pRangeSection, currentPC);
+    TADDR start = dac_cast<PTR_EECodeGenManager>(pRangeSection->_pjit)->FindMethodCode(pRangeSection, currentPC);
     if (start == (TADDR)0)
         return FALSE;
 
@@ -3925,7 +4162,7 @@ BOOL EEJitManager::JitCodeToMethodInfo(
     return TRUE;
 }
 
-StubCodeBlockKind EEJitManager::GetStubCodeBlockKind(RangeSection * pRangeSection, PCODE currentPC)
+StubCodeBlockKind EECodeGenManager::GetStubCodeBlockKind(RangeSection * pRangeSection, PCODE currentPC)
 {
     CONTRACTL {
         NOTHROW;
@@ -3938,7 +4175,7 @@ StubCodeBlockKind EEJitManager::GetStubCodeBlockKind(RangeSection * pRangeSectio
         return pRangeSection->_pRangeList->GetCodeBlockKind();
     }
 
-    TADDR start = dac_cast<PTR_EEJitManager>(pRangeSection->_pjit)->FindMethodCode(pRangeSection, currentPC);
+    TADDR start = dac_cast<PTR_EECodeGenManager>(pRangeSection->_pjit)->FindMethodCode(pRangeSection, currentPC);
     if (start == (TADDR)0)
         return STUB_CODE_BLOCK_NOCODE;
     CodeHeader * pCHdr = PTR_CodeHeader(start - sizeof(CodeHeader));
@@ -3946,7 +4183,7 @@ StubCodeBlockKind EEJitManager::GetStubCodeBlockKind(RangeSection * pRangeSectio
 }
 
 
-TADDR EEJitManager::FindMethodCode(PCODE currentPC)
+TADDR EECodeGenManager::FindMethodCode(PCODE currentPC)
 {
     CONTRACTL {
         NOTHROW;
@@ -3957,13 +4194,13 @@ TADDR EEJitManager::FindMethodCode(PCODE currentPC)
     RangeSection * pRS = ExecutionManager::FindCodeRange(currentPC, ExecutionManager::GetScanFlags());
     if (pRS == NULL || (pRS->_flags & RangeSection::RANGE_SECTION_CODEHEAP) == 0)
         return STUB_CODE_BLOCK_NOCODE;
-    return dac_cast<PTR_EEJitManager>(pRS->_pjit)->FindMethodCode(pRS, currentPC);
+    return dac_cast<PTR_EECodeGenManager>(pRS->_pjit)->FindMethodCode(pRS, currentPC);
 }
 
 // Finds the header corresponding to the code at offset "delta".
 // Returns NULL if there is no header for the given "delta"
 // For implementation details, see comment in nibblemapmacros.h
-TADDR EEJitManager::FindMethodCode(RangeSection * pRangeSection, PCODE currentPC)
+TADDR EECodeGenManager::FindMethodCode(RangeSection * pRangeSection, PCODE currentPC)
 {
     using namespace NibbleMap;
 
@@ -4067,7 +4304,7 @@ TADDR EEJitManager::FindMethodCode(RangeSection * pRangeSection, PCODE currentPC
 
 #if !defined(DACCESS_COMPILE)
 
-void EEJitManager::NibbleMapSet(HeapList * pHp, TADDR pCode, size_t codeSize)
+void EECodeGenManager::NibbleMapSet(HeapList * pHp, TADDR pCode, size_t codeSize)
 {
     CONTRACTL {
         NOTHROW;
@@ -4079,7 +4316,7 @@ void EEJitManager::NibbleMapSet(HeapList * pHp, TADDR pCode, size_t codeSize)
 }
 
 // For implementation details, see comment in nibblemapmacros.h
-void EEJitManager::NibbleMapSetUnlocked(HeapList * pHp, TADDR pCode, size_t codeSize)
+void EECodeGenManager::NibbleMapSetUnlocked(HeapList * pHp, TADDR pCode, size_t codeSize)
 {
     using namespace NibbleMap;
 
@@ -4131,7 +4368,7 @@ void EEJitManager::NibbleMapSetUnlocked(HeapList * pHp, TADDR pCode, size_t code
 }
 
 // For implementation details, see comment in nibblemapmacros.h
-void EEJitManager::NibbleMapDelete(HeapList* pHp, TADDR pCode)
+void EECodeGenManager::NibbleMapDelete(HeapList* pHp, TADDR pCode)
 {
     CONTRACTL {
         NOTHROW;
@@ -4142,7 +4379,7 @@ void EEJitManager::NibbleMapDelete(HeapList* pHp, TADDR pCode)
     NibbleMapDeleteUnlocked(pHp, pCode);
 }
 
-void EEJitManager::NibbleMapDeleteUnlocked(HeapList* pHp, TADDR pCode)
+void EECodeGenManager::NibbleMapDeleteUnlocked(HeapList* pHp, TADDR pCode)
 {
     using namespace NibbleMap;
 
@@ -4205,7 +4442,7 @@ PTR_RUNTIME_FUNCTION EEJitManager::LazyGetFunctionEntry(EECodeInfo * pCodeInfo)
         return NULL;
     }
 
-    CodeHeader * pHeader = GetCodeHeader(pCodeInfo->GetMethodToken());
+    CodeHeader * pHeader = dac_cast<PTR_CodeHeader>(GetCodeHeader(pCodeInfo->GetMethodToken()));
 
     DWORD address = RUNTIME_FUNCTION__BeginAddress(pHeader->GetUnwindInfo(0)) + pCodeInfo->GetRelOffset();
 
@@ -4236,7 +4473,7 @@ DWORD EEJitManager::GetFuncletStartOffsets(const METHODTOKEN& MethodToken, DWORD
     }
     CONTRACTL_END;
 
-    CodeHeader * pCH = GetCodeHeader(MethodToken);
+    CodeHeader * pCH = dac_cast<PTR_CodeHeader>(GetCodeHeader(MethodToken));
     TADDR moduleBase = JitTokenToModuleBase(MethodToken);
 
     _ASSERTE(pCH->GetNumberOfUnwindInfos() >= 1);
@@ -4413,7 +4650,7 @@ Exit:
 
 #ifdef DACCESS_COMPILE
 
-void EEJitManager::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
+void EECodeGenManager::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
 {
     IJitManager::EnumMemoryRegions(flags);
 
@@ -4472,6 +4709,10 @@ void ExecutionManager::Init()
 
 #ifdef FEATURE_READYTORUN
     m_pReadyToRunJitManager = new ReadyToRunJitManager();
+#endif
+
+#ifdef FEATURE_INTERPRETER
+    m_pInterpreterJitManager = new InterpreterJitManager();
 #endif
 }
 
@@ -4629,7 +4870,7 @@ BOOL ExecutionManager::IsManagedCodeWorker(PCODE currentPC, RangeSectionLockStat
         // Typically if we find a Jit Manager we are inside a managed method
         // but on we could also be in a stub, so we check for that
         // as well and we don't consider stub to be real managed code.
-        TADDR start = dac_cast<PTR_EEJitManager>(pRS->_pjit)->FindMethodCode(pRS, currentPC);
+        TADDR start = dac_cast<PTR_EECodeGenManager>(pRS->_pjit)->FindMethodCode(pRS, currentPC);
         if (start == (TADDR)0)
             return FALSE;
         CodeHeader * pCHdr = PTR_CodeHeader(start - sizeof(CodeHeader));
@@ -4641,6 +4882,14 @@ BOOL ExecutionManager::IsManagedCodeWorker(PCODE currentPC, RangeSectionLockStat
     if (pRS->_pR2RModule != NULL)
     {
         if (dac_cast<PTR_ReadyToRunJitManager>(pRS->_pjit)->JitCodeToMethodInfo(pRS, currentPC, NULL, NULL))
+            return TRUE;
+    }
+#endif
+#ifdef FEATURE_INTERPRETER
+    else
+    if (pRS->_flags & RangeSection::RANGE_SECTION_INTERPRETER)
+    {
+        if (dac_cast<PTR_InterpreterJitManager>(pRS->_pjit)->JitCodeToMethodInfo(pRS, currentPC, NULL, NULL))
             return TRUE;
     }
 #endif
@@ -4712,7 +4961,30 @@ LPCWSTR ExecutionManager::GetJitName()
 
     return pwzJitName;
 }
+
 #endif // !FEATURE_MERGE_JIT_AND_ENGINE
+
+#ifdef FEATURE_INTERPRETER
+
+// This static method returns the name of the interpreter dll
+//
+LPCWSTR ExecutionManager::GetInterpreterName()
+{
+    STANDARD_VM_CONTRACT;
+
+    LPCWSTR  pwzInterpreterName = NULL;
+
+    // Try to obtain a name for the jit library from the env. variable
+    IfFailThrow(CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_InterpreterName, const_cast<LPWSTR *>(&pwzInterpreterName)));
+
+    if (NULL == pwzInterpreterName)
+    {
+        pwzInterpreterName = MAKEDLLNAME_W(W("clrinterpreter"));
+    }
+
+    return pwzInterpreterName;
+}
+#endif // FEATURE_INTERPRETER
 
 RangeSection* ExecutionManager::GetRangeSection(TADDR addr, RangeSectionLockState *pLockState)
 {
@@ -4971,6 +5243,9 @@ void ExecutionManager::Unload(LoaderAllocator *pLoaderAllocator)
     }
 
     GetEEJitManager()->Unload(pLoaderAllocator);
+#ifdef FEATURE_INTERPRETER
+    GetInterpreterJitManager()->Unload(pLoaderAllocator);
+#endif // FEATURE_INTERPRETER
 }
 
 // This method is used by the JIT and the runtime for PreStubs. It will return

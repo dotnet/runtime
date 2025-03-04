@@ -321,7 +321,7 @@ void DynamicMethodTable::LinkMethod(DynamicMethodDesc *pMethod)
 //
 // CodeHeap implementation
 //
-HeapList* HostCodeHeap::CreateCodeHeap(CodeHeapRequestInfo *pInfo, EEJitManager *pJitManager)
+HeapList* HostCodeHeap::CreateCodeHeap(CodeHeapRequestInfo *pInfo, EECodeGenManager *pJitManager)
 {
     CONTRACT (HeapList*)
     {
@@ -351,7 +351,7 @@ HeapList* HostCodeHeap::CreateCodeHeap(CodeHeapRequestInfo *pInfo, EEJitManager 
     RETURN pHp;
 }
 
-HostCodeHeap::HostCodeHeap(EEJitManager *pJitManager)
+HostCodeHeap::HostCodeHeap(EECodeGenManager *pJitManager)
 {
     CONTRACTL
     {
@@ -437,19 +437,29 @@ HeapList* HostCodeHeap::InitializeHeapList(CodeHeapRequestInfo *pInfo)
 
     TrackAllocation *pTracker = NULL;
 
+#ifdef FEATURE_INTERPRETER
+    if (pInfo->IsInterpreted())
+    {
+        pHp->CLRPersonalityRoutine = NULL;
+    }
+    else
+#endif // FEATURE_INTERPRETER
+    {
 #if defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
 
-    pTracker = AllocMemory_NoThrow(0, JUMP_ALLOCATE_SIZE, sizeof(void*), 0);
-    if (pTracker == NULL)
-    {
-        // This should only ever happen with fault injection
-        _ASSERTE(g_pConfig->ShouldInjectFault(INJECTFAULT_DYNAMICCODEHEAP));
-        delete pHp;
-        ThrowOutOfMemory();
-    }
+        pTracker = AllocMemory_NoThrow(0, JUMP_ALLOCATE_SIZE, sizeof(void*), 0);
+        if (pTracker == NULL)
+        {
+            // This should only ever happen with fault injection
+            _ASSERTE(g_pConfig->ShouldInjectFault(INJECTFAULT_DYNAMICCODEHEAP));
+            delete pHp;
+            ThrowOutOfMemory();
+        }
 
-    pHp->CLRPersonalityRoutine = (BYTE *)(pTracker + 1);
+        pHp->CLRPersonalityRoutine = (BYTE *)(pTracker + 1);
+
 #endif
+    }
 
     pHp->hpNext = NULL;
     pHp->pHeap = (PTR_CodeHeap)this;
@@ -469,8 +479,11 @@ HeapList* HostCodeHeap::InitializeHeapList(CodeHeapRequestInfo *pInfo)
     pHp->reserveForJumpStubs = 0;
 
 #ifdef HOST_64BIT
-    ExecutableWriterHolder<BYTE> personalityRoutineWriterHolder(pHp->CLRPersonalityRoutine, 12);
-    emitJump(pHp->CLRPersonalityRoutine, personalityRoutineWriterHolder.GetRW(), (void *)ProcessCLRException);
+    if (pHp->CLRPersonalityRoutine != NULL)
+    {
+        ExecutableWriterHolder<BYTE> personalityRoutineWriterHolder(pHp->CLRPersonalityRoutine, 12);
+        emitJump(pHp->CLRPersonalityRoutine, personalityRoutineWriterHolder.GetRW(), (void *)ProcessCLRException);
+    }
 #endif
 
     size_t nibbleMapSize = HEAP2MAPSIZE(ROUND_UP_TO_PAGE(pHp->maxCodeHeapSize));
