@@ -11,7 +11,7 @@
     <ArtifactsStagingDir>$(ArtifactsDir)staging/</ArtifactsStagingDir>
     <SourceBuiltPdbArtifactsDir>$(ArtifactsStagingDir)SymStore</SourceBuiltPdbArtifactsDir>
     <!-- Put blobs where we put packages so our regular globbing in our publish join job finds them. -->
-    <SourceBuiltAssetsDir>$(ArtifactsStagingDir)packages/</SourceBuiltAssetsDir>
+    <SourceBuiltAssetsDir>$(ArtifactsStagingDir)packages/$(Configuration)/</SourceBuiltAssetsDir>
     <SourceBuiltShippingPackagesDir>$(SourceBuiltAssetsDir)Shipping</SourceBuiltShippingPackagesDir>
     <SourceBuiltNonShippingPackagesDir>$(SourceBuiltAssetsDir)NonShipping</SourceBuiltNonShippingPackagesDir>
     <PublishingUseHardlinksIfPossible>true</PublishingUseHardlinksIfPossible>

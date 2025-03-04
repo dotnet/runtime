@@ -87,6 +87,7 @@
                        $(ArtifactsPackagesDir)**\*.exe;
                        $(ArtifactsPackagesDir)**\*.msi;"
               Exclude="$(ArtifactsPackagesDir)**\Symbols.runtime.tar.gz"
+              Kind="Blob"
               IsShipping="$([System.String]::Copy('%(RecursiveDir)').StartsWith('Shipping'))">
       <!-- Exclude wixpack.zip files from checksum generation -->
       <ChecksumPath Condition="$([System.String]::Copy('%(Filename)%(Extension)').EndsWith('.wixpack.zip')) != 'true'">%(FullPath).sha512</ChecksumPath>
@@ -94,7 +95,7 @@
 
     <Artifact Include="$(ArtifactsDir)VSSetup\**\*.zip"
               Condition="Exists('$(ArtifactsDir)VSSetup')"
-              IsShipping="false"
+              Kind="Blob"
               ChecksumPath="%(FullPath).sha512"
               SubBlobFolder="workloads/" />
   </ItemGroup>
