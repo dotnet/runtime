@@ -410,12 +410,7 @@ Initialize(
             // we use large numbers of threads or have many open files.
         }
 
-        if (!SharedMemoryManager::StaticInitialize())
-        {
-            ERROR("Shared memory static initialization failed!\n");
-            palError = ERROR_PALINIT_SHARED_MEMORY_MANAGER;
-            goto CLEANUP1;
-        }
+        SharedMemoryManager::StaticInitialize();
 
         //
         // Initialize global process data
