@@ -48,8 +48,6 @@ typedef uint8_t dn_simdhash_search_vector;
 typedef dn_simdhash_suffixes dn_simdhash_search_vector;
 #endif
 
-// Extracting lanes from a vector register on x86/x64 has horrible latency,
-//  so it's better to do regular byte loads from the stack
 #if defined(__wasm_simd128__)
 // For wasm with -msimd128, clang generates truly bizarre load/store code
 //  where it does two byte memory loads, then a vector load, then two
@@ -59,7 +57,15 @@ typedef dn_simdhash_suffixes dn_simdhash_search_vector;
 // Also see https://github.com/llvm/llvm-project/issues/88460
 #define dn_simdhash_extract_lane(suffixes, lane) \
 	suffixes.vec[lane]
+#elif defined(__ARM_ARCH_ISA_A64)
+// On Ampere ARM64, lane extracts are a single cheap opcode and by using lane
+//  extracts only the eager load of the suffixes does a single vector load instead of
+//  two 64bit low/high loads
+#define dn_simdhash_extract_lane(suffixes, lane) \
+	suffixes.vec[lane]
 #else
+// Extracting lanes from a vector register on x86/x64 has horrible latency,
+//  so it's better to do regular byte loads from the stack
 #define dn_simdhash_extract_lane(suffixes, lane) \
 	suffixes.values[lane]
 #endif
