@@ -4611,17 +4611,20 @@ GenTree* Compiler::optAssertionPropGlobal_RelOp(ASSERT_VALARG_TP assertions,
         return optAssertionProp_Update(newTree, tree, stmt);
     }
 
-    // See if we can fold "X relop CNS" using RangeCheck.
-    if (tree->OperIsCmpCompare() &&
-        // We can also use a more powerful SSA-based TryGetRange, but it's too expensive to call for every relop.
-        // Hence, the following checks are driven by TP/CQ balance:
-        op1->TypeIs(TYP_INT) && op2->IsIntCnsFitsInI32() && !op2->IsIntegralConst(0))
+    ValueNum op1VN = vnStore->VNConservativeNormalValue(op1->gtVNPair);
+    ValueNum op2VN = vnStore->VNConservativeNormalValue(op2->gtVNPair);
+
+    // See if we can fold "X relop CNS" using TryGetRangeFromAssertions.
+    int op2cns;
+    if (op1->TypeIs(TYP_INT) && op2->TypeIs(TYP_INT) &&
+        vnStore->IsVNIntegralConstant(op2VN, &op2cns)
+        // "op2cns != 0" is purely a TP quirk (such relops are handled by the code above):
+        && (op2cns != 0))
     {
         // NOTE: we can call TryGetRangeFromAssertions for op2 as well if we want, but it's not cheap.
         Range rng1 = Range(Limit(Limit::keUndef));
-        Range rng2 = Range(Limit(Limit::keConstant, static_cast<int>(op2->AsIntCon()->IconValue())));
+        Range rng2 = Range(Limit(Limit::keConstant, op2cns));
 
-        ValueNum op1VN = vnStore->VNConservativeNormalValue(op1->gtVNPair);
         if (RangeCheck::TryGetRangeFromAssertions(this, op1VN, assertions, &rng1))
         {
             RangeOps::RelationKind kind = RangeOps::EvalRelop(tree->OperGet(), tree->IsUnsigned(), rng1, rng2);
