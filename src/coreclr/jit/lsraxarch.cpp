@@ -2216,7 +2216,6 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
         bool isRMW = intrinsicTree->isRMWHWIntrinsic(compiler);
 #if defined(TARGET_AMD64)
         bool isEvexCompatible = intrinsicTree->isEvexCompatibleHWIntrinsic(compiler);
-        bool useEvex          = compiler->canUseEvexEncoding();
 #endif // TARGET_AMD64
 
         // Create internal temps, and handle any other special requirements.
@@ -2795,15 +2794,14 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
         if (buildUses)
         {
             SingleTypeRegSet op1RegCandidates = RBM_NONE;
+
 #if defined(TARGET_AMD64)
-            if (!isEvexCompatible)
+            op1RegCandidates = BuildApxIncompatibleGPRMask(op1, op1RegCandidates);
+            if (!isEvexCompatible && (op1RegCandidates == RBM_NONE))
             {
                 op1RegCandidates = BuildEvexIncompatibleMask(op1);
             }
-            if (!isEvexCompatible || !useEvex)
-            {
-                op1RegCandidates = BuildApxIncompatibleGPRMask(op1, op1RegCandidates);
-            }
+
 #endif // TARGET_AMD64
 
             if (intrinsicTree->OperIsMemoryLoadOrStore())
@@ -2825,14 +2823,11 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                 SingleTypeRegSet op2RegCandidates = RBM_NONE;
 
 #if defined(TARGET_AMD64)
+                op2RegCandidates = BuildApxIncompatibleGPRMask(op2, op2RegCandidates);
 
-                if (!isEvexCompatible)
+                if (!isEvexCompatible && (op2RegCandidates == RBM_NONE))
                 {
                     op2RegCandidates = BuildEvexIncompatibleMask(op2);
-                }
-                if (!isEvexCompatible || !useEvex)
-                {
-                    op2RegCandidates = BuildApxIncompatibleGPRMask(op2, op2RegCandidates);
                 }
 #endif // TARGET_AMD64
 
@@ -2875,13 +2870,10 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                     SingleTypeRegSet op3RegCandidates = RBM_NONE;
 
 #if defined(TARGET_AMD64)
-                    if (!isEvexCompatible)
+                    op3RegCandidates = BuildApxIncompatibleGPRMask(op3, op3RegCandidates);
+                    if (!isEvexCompatible && (op3RegCandidates == RBM_NONE))
                     {
                         op3RegCandidates = BuildEvexIncompatibleMask(op3);
-                    }
-                    if (!isEvexCompatible || !useEvex)
-                    {
-                        op3RegCandidates = BuildApxIncompatibleGPRMask(op3, op3RegCandidates);
                     }
 #endif // TARGET_AMD64
 
@@ -2894,6 +2886,7 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
 
 #if defined(TARGET_AMD64)
                         assert(isEvexCompatible);
+                        op4RegCandidates = BuildApxIncompatibleGPRMask(op4, op4RegCandidates);
 #endif // TARGET_AMD64
 
                         srcCount += isRMW ? BuildDelayFreeUses(op4, op1, op4RegCandidates)
@@ -2909,19 +2902,12 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
     if (dstCount == 1)
     {
 #if defined(TARGET_AMD64)
-        // TODO-xarch-apx: there might be some problem if we allow EGPR as the dst of some instructions.
         bool isEvexCompatible = intrinsicTree->isEvexCompatibleHWIntrinsic(compiler);
-        bool useEvex          = compiler->canUseEvexEncoding();
+        dstCandidates         = BuildApxIncompatibleGPRMask(intrinsicTree, dstCandidates);
 
-        if (!isEvexCompatible)
+        if (!isEvexCompatible && (dstCandidates == RBM_NONE))
         {
             dstCandidates = BuildEvexIncompatibleMask(intrinsicTree);
-        }
-
-        // TODO-xarch-apx: revisit this part to check if we can merge this 2 checks.
-        if (!isEvexCompatible || !useEvex)
-        {
-            dstCandidates = BuildApxIncompatibleGPRMask(intrinsicTree, dstCandidates);
         }
 #endif
 
