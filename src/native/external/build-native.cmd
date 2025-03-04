@@ -41,7 +41,7 @@ if /i [%1] == [rebuild] ( set __BuildTarget=rebuild&&shift&goto Arg_Loop)
 
 if /i [%1] == [msbuild] ( set __Ninja=0&&shift&goto Arg_Loop)
 
-if /i [%1] == [-cmakeargs] (set __ExtraCmakeParams=%__CMakeArgs% %2&shift&shift&goto Arg_Loop)
+if /i [%1] == [-cmakeargs] (set __ExtraCmakeParams=%__ExtraCmakeParams% %2&shift&shift&goto Arg_Loop)
 
 if /i [%1] == [-fsanitize] ( set __ExtraCmakeParams=%__ExtraCmakeParams% "-DCLR_CMAKE_ENABLE_SANITIZERS=$2"&&shift&&shift&goto Arg_Loop)
 
@@ -98,11 +98,6 @@ if NOT [%errorlevel%] == [0] goto :Failure
 
 :BuildNativeProj
 
-setlocal
-set CFLAGS=%CFLAGS% %EXTRA_CFLAGS%
-set CXXFLAGS=%CXXFLAGS% %EXTRA_CXXFLAGS%
-set LDFLAGS=%LDFLAGS% %EXTRA_LDFLAGS%
-set CL=%CL% %CFLAGS% %CXXFLAGS%
 :: Build the project created by Cmake
 set __generatorArgs=
 if [%__Ninja%] == [1] (
@@ -117,7 +112,6 @@ if [%__Ninja%] == [1] (
 
 call "%CMakePath%" --build "%__IntermediatesDir%" --target install --config %CMAKE_BUILD_TYPE% -- %__generatorArgs%
 
-endlocal
 IF ERRORLEVEL 1 (
     goto :Failure
 )

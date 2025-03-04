@@ -29,12 +29,17 @@
           Condition="'$(UsingMicrosoftTraversalSdk)' != 'true'">
     <PropertyGroup>
       <_CMakeArgs Condition="'@(CMakeArg)' != ''"> @(CMakeArg->'-cmakeargs &quot;%(Identity)&quot;',' ')</_CMakeArgs>
-      <_BuildNativeEnvironmentVariables>EXTRA_CFLAGS=@(CFlag->'%(Identity)',' ')</_BuildNativeEnvironmentVariables>
-      <_BuildNativeEnvironmentVariables>$(_BuildNativeEnvironmentVariables);EXTRA_CXXFLAGS=@(CXXFlag->'%(Identity)',' ')</_BuildNativeEnvironmentVariables>
-      <_BuildNativeEnvironmentVariables>$(_BuildNativeEnvironmentVariables);EXTRA_LDFLAGS=@(LDFlag->'%(Identity)',' ')</_BuildNativeEnvironmentVariables>
+      <_BuildNativeEnvironmentVariables>CFLAGS=@(CFlag->'%(Identity)',' ') $(CFLAGS)</_BuildNativeEnvironmentVariables>
+      <_BuildNativeEnvironmentVariables>$(_BuildNativeEnvironmentVariables);CXXFLAGS=@(CXXFlag->'%(Identity)',' ') $(CXXFLAGS)</_BuildNativeEnvironmentVariables>
+      <_BuildNativeEnvironmentVariables>$(_BuildNativeEnvironmentVariables);LDFLAGS=@(LDFlag->'%(Identity)',' ') $(LDFLAGS)</_BuildNativeEnvironmentVariables>
     </PropertyGroup>
+    <ItemGroup>
+      <_BuildNativeEnvironmentVariable Include="$(_BuildNativeEnvironmentVariables)" />
+    </ItemGroup>
     <!-- Run script that uses CMake to generate and build the native files. -->
     <Message Text="&quot;$(MSBuildThisFileDirectory)build-native.$(_BuildScriptExtension)&quot; $(_BuildNativeArgs)$(_CMakeArgs)" Importance="High"/>
+    <Message Importance="High" Text="  With Environment Variables:"/>
+    <Message Importance="High" Text="    %(_BuildNativeEnvironmentVariable.Identity)" />
     <Exec Command="&quot;$(MSBuildThisFileDirectory)build-native.$(_BuildScriptExtension)&quot; $(_BuildNativeArgs)$(_CMakeArgs)" EnvironmentVariables="$(_BuildNativeEnvironmentVariables)" />
   </Target>
 
