@@ -2305,6 +2305,25 @@ int GenTreeCall::GetNonStandardAddedArgCount(Compiler* compiler) const
 }
 
 //-------------------------------------------------------------------------
+// IsDevirtualizationCandidate: Determine if this GT_CALL node is a devirtualization candidate.
+//                              A call will be unmarked from devirtualization candidate if it
+//                              is devirtualized.
+//
+// Arguments:
+//     compiler - the compiler instance so that we can call eeFindHelper
+//
+// Return Value:
+//     Returns true if this GT_CALL node is a devirtualization candidate.
+//
+bool GenTreeCall::IsDevirtualizationCandidate(Compiler* compiler) const
+{
+    return (IsVirtual() && gtCallType == CT_USER_FUNC) ||
+           // TODO: Support R2R and NativeAOT (CORINFO_HELP_GVMLOOKUP_FOR_SLOT)
+           (!compiler->opts.IsReadyToRun() && gtCallType == CT_INDIRECT &&
+            gtCallAddr->IsHelperCall(compiler, CORINFO_HELP_VIRTUAL_FUNC_PTR));
+}
+
+//-------------------------------------------------------------------------
 // IsHelperCall: Determine if this GT_CALL node is a specific helper call.
 //
 // Arguments:
@@ -13103,6 +13122,8 @@ const char* Compiler::gtGetWellKnownArgNameForArgMsg(WellKnownArg arg)
             return "tail call";
         case WellKnownArg::StackArrayLocal:
             return "&lcl arr";
+        case WellKnownArg::RuntimeMethodHandle:
+            return "meth hnd";
         default:
             return nullptr;
     }

@@ -1082,8 +1082,8 @@ namespace Internal.JitInterface
         // - exactContext is set to wrapped CORINFO_CLASS_HANDLE of devirt'ed method table.
         // - detail describes the computation done by the jit host
         // - isInstantiatingStub is set to TRUE if the devirtualized method is a method instantiation stub
-        // - wasArrayInterfaceDevirt is set TRUE for array interface method devirtualization
-        //     (in which case the method handle and context will be a generic method)
+        // - hasGenericMethodHandleContext is set TRUE for cases where the method handle and context will be a generic method
+        //     (for array interface method or generic virtual method devirtualization)
         //
         public CORINFO_METHOD_STRUCT_* devirtualizedMethod;
         public CORINFO_CONTEXT_STRUCT* exactContext;
@@ -1092,8 +1092,8 @@ namespace Internal.JitInterface
         public CORINFO_RESOLVED_TOKEN resolvedTokenDevirtualizedUnboxedMethod;
         public byte _isInstantiatingStub;
         public bool isInstantiatingStub { get { return _isInstantiatingStub != 0; } set { _isInstantiatingStub = value ? (byte)1 : (byte)0; } }
-        public byte _wasArrayInterfaceDevirt;
-        public bool wasArrayInterfaceDevirt { get { return _wasArrayInterfaceDevirt != 0; } set { _wasArrayInterfaceDevirt = value ? (byte)1 : (byte)0; } }
+        public byte _hasGenericMethodHandleContext;
+        public bool hasGenericMethodHandleContext { get { return _hasGenericMethodHandleContext != 0; } set { _hasGenericMethodHandleContext = value ? (byte)1 : (byte)0; } }
     }
 
     //----------------------------------------------------------------------------
