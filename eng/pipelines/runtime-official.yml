@@ -174,13 +174,6 @@ extends:
                 itemPattern: |
                   Microsoft.NETCore.App.Runtime.linux-musl-arm64*.nupkg
             preBuildSteps:
-            - task: DownloadPipelineArtifact@2
-              displayName: Download runtime packs for CrossDac
-              inputs:
-                artifact: 'PackageArtifacts'
-                path: $(Build.SourcesDirectory)/artifacts/RuntimeDownload
-                itemPattern: |
-                  PackageArtifacts/linux_*/Shipping/Microsoft.NETCore.App.Runtime.linux-*.nupkg
             - powershell: $(Build.SourcesDirectory)/eng/extract-for-crossdac.ps1 -DownloadDirectory $(Build.SourcesDirectory)/artifacts/RuntimeDownload -ExtractDirectory $(CrossRuntimeExtractionRoot)
               displayName: Extract runtime packs
             - template: /eng/pipelines/coreclr/templates/install-diagnostic-certs.yml
