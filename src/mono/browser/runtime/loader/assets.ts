@@ -32,6 +32,7 @@ const jsRuntimeModulesAssetTypes: {
     "js-module-runtime": true,
     "js-module-dotnet": true,
     "js-module-native": true,
+    "js-module-diagnostics": true,
 };
 
 const jsModulesAssetTypes: {
@@ -119,16 +120,10 @@ function set_single_asset (asset: AssetEntryInternal) {
     }
 }
 
-function get_single_asset (behavior: SingleAssetBehaviors): AssetEntryInternal {
+export function try_resolve_single_asset_path (behavior: SingleAssetBehaviors): AssetEntryInternal|undefined {
     mono_assert(singleAssetTypes[behavior], `Unknown single asset behavior ${behavior}`);
     const asset = singleAssets.get(behavior);
-    mono_assert(asset, `Single asset for ${behavior} not found`);
-    return asset;
-}
-
-export function resolve_single_asset_path (behavior: SingleAssetBehaviors): AssetEntryInternal {
-    const asset = get_single_asset(behavior);
-    if (!asset.resolvedUrl) {
+    if (asset && !asset.resolvedUrl) {
         asset.resolvedUrl = loaderHelpers.locateFile(asset.name);
 
         if (jsRuntimeModulesAssetTypes[asset.behavior]) {
@@ -144,6 +139,12 @@ export function resolve_single_asset_path (behavior: SingleAssetBehaviors): Asse
             throw new Error(`Unknown single asset behavior ${behavior}`);
         }
     }
+    return asset;
+}
+
+export function resolve_single_asset_path (behavior: SingleAssetBehaviors): AssetEntryInternal {
+    const asset = try_resolve_single_asset_path(behavior);
+    mono_assert(asset, `Single asset for ${behavior} not found`);
     return asset;
 }
 
@@ -303,6 +304,9 @@ export function prepareAssets () {
         convert_single_asset(assetsToLoad, resources.wasmNative, "dotnetwasm");
         convert_single_asset(modulesAssets, resources.jsModuleNative, "js-module-native");
         convert_single_asset(modulesAssets, resources.jsModuleRuntime, "js-module-runtime");
+        if (resources.jsModuleDiagnostics) {
+            convert_single_asset(modulesAssets, resources.jsModuleDiagnostics, "js-module-diagnostics");
+        }
         if (WasmEnableThreads) {
             convert_single_asset(modulesAssets, resources.jsModuleWorker, "js-module-threads");
         }
@@ -828,6 +832,7 @@ export async function streamingCompileWasm () {
         loaderHelpers.wasmCompilePromise.promise_control.reject(err);
     }
 }
+
 export function preloadWorkers () {
     if (!WasmEnableThreads) return;
     const jsModuleWorker = resolve_single_asset_path("js-module-threads");

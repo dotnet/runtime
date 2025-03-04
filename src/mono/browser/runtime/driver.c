@@ -222,7 +222,9 @@ mono_wasm_load_runtime (int debug_level)
 	monovm_initialize (2, appctx_keys, appctx_values);
 
 #ifndef INVARIANT_TIMEZONE
-	mono_register_timezones_bundle ();
+	char* invariant_timezone = monoeg_g_getenv ("DOTNET_SYSTEM_TIMEZONE_INVARIANT");
+	if (strcmp(invariant_timezone, "true") != 0 && strcmp(invariant_timezone, "1") != 0)
+		mono_register_timezones_bundle ();
 #endif /* INVARIANT_TIMEZONE */
 
 	root_domain = mono_wasm_load_runtime_common (debug_level, wasm_trace_logger, interp_opts);
@@ -528,6 +530,22 @@ EMSCRIPTEN_KEEPALIVE const char * mono_wasm_method_get_name (MonoMethod *method)
 	const char *res;
 	MONO_ENTER_GC_UNSAFE;
 	res = mono_method_get_name (method);
+	MONO_EXIT_GC_UNSAFE;
+	return res;
+}
+
+EMSCRIPTEN_KEEPALIVE const char * mono_wasm_method_get_name_ex (MonoMethod *method) {
+	const char *res;
+	MONO_ENTER_GC_UNSAFE;
+	res = mono_method_get_name (method);
+	// starts with .ctor or .cctor
+	if (mono_method_get_flags (method, NULL) & 0x0800 /* METHOD_ATTRIBUTE_SPECIAL_NAME */ && strlen (res) < 7) {
+		char *res_ex = (char *) malloc (128);
+		snprintf (res_ex, 128,"%s.%s", mono_class_get_name (mono_method_get_class (method)), res);
+		res = res_ex;
+	} else {
+		res = strdup (res);
+	}
 	MONO_EXIT_GC_UNSAFE;
 	return res;
 }

@@ -355,6 +355,28 @@ bool Compiler::bbInFilterILRange(BasicBlock* blk)
 }
 
 //------------------------------------------------------------------------
+// bbInCatchHandlerBBRange:
+//     Check if this block is part of a catch handler.
+//
+// Arguments:
+//    blk - The block
+//
+// Return Value:
+//    True if the block is part of a catch handler clause. Otherwise false.
+//
+bool Compiler::bbInCatchHandlerBBRange(BasicBlock* blk)
+{
+    EHblkDsc* HBtab = ehGetBlockHndDsc(blk);
+
+    if (HBtab == nullptr)
+    {
+        return false;
+    }
+
+    return HBtab->HasCatchHandler() && HBtab->InHndRegionBBRange(blk);
+}
+
+//------------------------------------------------------------------------
 // bbInFilterBBRange:
 //     Check if this block is part of a filter.
 //
@@ -1254,61 +1276,23 @@ void Compiler::fgSetHndEnd(EHblkDsc* handlerTab, BasicBlock* newHndLast)
 }
 
 //-------------------------------------------------------------
-// fgRebuildEHRegions: After reordering blocks, make EH regions contiguous
-// while maintaining relative block order, and update each region's end pointer.
+// fgFindTryRegionEnds: Walk the main method body, and set each try region's end block.
 //
-void Compiler::fgRebuildEHRegions()
+void Compiler::fgFindTryRegionEnds()
 {
     assert(compHndBBtabCount != 0);
-    unsigned unsetTryEnds = compHndBBtabCount;
-    unsigned unsetHndEnds = compHndBBtabCount;
+    unsigned unsetTryEnds = 0;
 
-    // Null out try/handler end pointers to signify the given clause hasn't been visited yet.
+    // Null out try end pointers to signify the given clause hasn't been visited yet.
     for (EHblkDsc* const HBtab : EHClauses(this))
     {
-        HBtab->ebdTryLast = nullptr;
-        HBtab->ebdHndLast = nullptr;
-    }
-
-    // Walk the main method body, and move try blocks to re-establish contiguity.
-    for (BasicBlock *block = fgFirstBB, *next; block != fgFirstFuncletBB; block = next)
-    {
-        next            = block->Next();
-        EHblkDsc* HBtab = ehGetBlockTryDsc(block);
-        if (HBtab != nullptr)
+        // Ignore try regions inside handler regions.
+        if (!HBtab->ebdTryLast->hasHndIndex())
         {
-            // Move this block up to the previous block in the same try region.
-            BasicBlock* const insertionPoint = HBtab->ebdTryLast;
-            if ((insertionPoint != nullptr) && !insertionPoint->NextIs(block))
-            {
-                assert(block != HBtab->ebdTryLast);
-                fgUnlinkBlock(block);
-                fgInsertBBafter(HBtab->ebdTryLast, block);
-            }
-
-            // Update this try region's (and all parent try regions') end pointer with the last block visited
-            for (unsigned XTnum = block->getTryIndex(); XTnum != EHblkDsc::NO_ENCLOSING_INDEX;
-                 XTnum          = ehGetEnclosingTryIndex(XTnum))
-            {
-                HBtab = ehGetDsc(XTnum);
-                if (HBtab->ebdTryLast == nullptr)
-                {
-                    assert(HBtab->ebdTryBeg == block);
-                    assert(unsetTryEnds != 0);
-                    unsetTryEnds--;
-                    HBtab->ebdTryLast = block;
-                }
-                else if (HBtab->ebdTryLast->NextIs(block))
-                {
-                    HBtab->ebdTryLast = block;
-                }
-            }
+            HBtab->ebdTryLast = nullptr;
+            unsetTryEnds++;
         }
     }
-
-    // The above logic rebuilt the try regions in the main method body.
-    // Now, resolve the regions in the funclet section, if there is one.
-    assert((unsetTryEnds == 0) || (fgFirstFuncletBB != nullptr));
 
     // Updates the try region's (and all of its parent regions') end block to 'block,'
     // if the try region's end block hasn't been updated yet.
@@ -1330,29 +1314,8 @@ void Compiler::fgRebuildEHRegions()
         }
     };
 
-    // Updates the handler region's (and all of its parent regions') end block to 'block,'
-    // if the handler region's end block hasn't been updated yet.
-    auto setHndEnd = [this, &unsetHndEnds](BasicBlock* block) {
-        for (unsigned hndIndex = block->getHndIndex(); hndIndex != EHblkDsc::NO_ENCLOSING_INDEX;
-             hndIndex          = ehGetEnclosingHndIndex(hndIndex))
-        {
-            EHblkDsc* const HBtab = ehGetDsc(hndIndex);
-            if (HBtab->ebdHndLast == nullptr)
-            {
-                assert(unsetHndEnds != 0);
-                HBtab->ebdHndLast = block;
-                unsetHndEnds--;
-            }
-            else
-            {
-                break;
-            }
-        }
-    };
-
-    // If we have a funclet section, update the ends of any try regions nested in funclets
-    for (BasicBlock* block = fgLastBB; (unsetTryEnds != 0) && (block != fgLastBBInMainFunction());
-         block             = block->Prev())
+    // Iterate backwards through the main method body, and update each try region's end block.
+    for (BasicBlock* block = fgLastBBInMainFunction(); (unsetTryEnds != 0) && (block != nullptr); block = block->Prev())
     {
         if (block->hasTryIndex())
         {
@@ -1360,17 +1323,7 @@ void Compiler::fgRebuildEHRegions()
         }
     }
 
-    // Finally, update the handler regions' ends
-    for (BasicBlock* block = fgLastBB; (unsetHndEnds != 0) && (block != nullptr); block = block->Prev())
-    {
-        if (block->hasHndIndex())
-        {
-            setHndEnd(block);
-        }
-    }
-
     assert(unsetTryEnds == 0);
-    assert(unsetHndEnds == 0);
 }
 
 /*****************************************************************************
@@ -1491,6 +1444,7 @@ void Compiler::fgRemoveEHTableEntry(unsigned XTnum)
 {
     assert(compHndBBtabCount > 0);
     assert(XTnum < compHndBBtabCount);
+    assert(!ehTableFinalized);
 
     EHblkDsc* HBtab;
 
@@ -1705,6 +1659,8 @@ void Compiler::fgRemoveEHTableEntry(unsigned XTnum)
 //
 EHblkDsc* Compiler::fgTryAddEHTableEntries(unsigned XTnum, unsigned count, bool deferAdding)
 {
+    assert(!ehTableFinalized);
+
     bool           reallocate = false;
     bool const     insert     = (XTnum != compHndBBtabCount);
     unsigned const newCount   = compHndBBtabCount + count;
@@ -2638,7 +2594,7 @@ bool Compiler::fgCreateFiltersForGenericExceptions()
             filterBb->bbCodeOffs = handlerBb->bbCodeOffs;
             filterBb->bbHndIndex = handlerBb->bbHndIndex;
             filterBb->bbTryIndex = handlerBb->bbTryIndex;
-            filterBb->bbSetRunRarely();
+            filterBb->inheritWeightPercentage(handlerBb, 0);
             filterBb->SetFlags(BBF_INTERNAL | BBF_DONT_REMOVE);
 
             handlerBb->bbCatchTyp = BBCT_FILTER_HANDLER;

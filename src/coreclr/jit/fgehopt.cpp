@@ -175,6 +175,12 @@ PhaseStatus Compiler::fgRemoveEmptyFinally()
                     currentBlock->SetKind(BBJ_ALWAYS);
                     currentBlock->RemoveFlags(BBF_RETLESS_CALL); // no longer a BBJ_CALLFINALLY
 
+                    // Update profile data into postTryFinallyBlock
+                    if (currentBlock->hasProfileWeight())
+                    {
+                        postTryFinallyBlock->increaseBBProfileWeight(currentBlock->bbWeight);
+                    }
+
                     // Cleanup the postTryFinallyBlock
                     fgCleanupContinuation(postTryFinallyBlock);
 
@@ -608,9 +614,14 @@ PhaseStatus Compiler::fgRemoveEmptyTry()
             {
                 assert(block->isBBCallFinallyPair());
 
+                // In some cases we may have unreachable callfinallys.
+                // If so, skip the optimization; a later pass can catch this
+                // once unreachable blocks have been pruned.
+                //
                 if (block != callFinally)
                 {
-                    JITDUMP("EH#%u found unexpected callfinally " FMT_BB "; skipping.\n", XTnum, block->bbNum);
+                    JITDUMP("EH#%u found unexpected (likely unreachable) callfinally " FMT_BB "; skipping.\n", XTnum,
+                            block->bbNum);
                     verifiedSingleCallfinally = false;
                     break;
                 }
@@ -621,7 +632,6 @@ PhaseStatus Compiler::fgRemoveEmptyTry()
         {
             JITDUMP("EH#%u -- unexpectedly -- has multiple callfinallys; skipping.\n", XTnum);
             XTnum++;
-            assert(verifiedSingleCallfinally);
             continue;
         }
 
@@ -667,12 +677,6 @@ PhaseStatus Compiler::fgRemoveEmptyTry()
         // last block of the `try`, and that could affect the block iteration above.
         fgPrepareCallFinallyRetForRemoval(leave);
         fgRemoveBlock(leave, /* unreachable */ true);
-
-        // Remove profile weight into the continuation block
-        if (continuation->hasProfileWeight())
-        {
-            continuation->decreaseBBProfileWeight(leave->bbWeight);
-        }
 
         // (3) Convert the callfinally to a normal jump to the handler
         assert(callFinally->HasInitializedTarget());
@@ -1670,6 +1674,16 @@ PhaseStatus Compiler::fgCloneFinally()
             }
         }
 
+        // Update flow into normalCallFinallyReturn
+        if (normalCallFinallyReturn->hasProfileWeight())
+        {
+            normalCallFinallyReturn->bbWeight = BB_ZERO_WEIGHT;
+            for (FlowEdge* const predEdge : normalCallFinallyReturn->PredEdges())
+            {
+                normalCallFinallyReturn->increaseBBProfileWeight(predEdge->getLikelyWeight());
+            }
+        }
+
         // Done!
         JITDUMP("\nDone with EH#%u\n\n", XTnum);
         cloneCount++;
@@ -2538,6 +2552,7 @@ BasicBlock* Compiler::fgCloneTryRegion(BasicBlock* tryEntry, CloneTryInfo& info,
     auto addBlockToClone = [=, &blocks, &visited, &numberOfBlocksToClone](BasicBlock* block, const char* msg) {
         if (!BitVecOps::TryAddElemD(traits, visited, block->bbID))
         {
+            JITDUMP("[already seen]  %s block " FMT_BB "\n", msg, block->bbNum);
             return false;
         }
 
@@ -2747,19 +2762,27 @@ BasicBlock* Compiler::fgCloneTryRegion(BasicBlock* tryEntry, CloneTryInfo& info,
     // this is cheaper than any other insertion point, as no existing regions get renumbered.
     //
     unsigned insertBeforeIndex = enclosingTryIndex;
-    if (insertBeforeIndex == EHblkDsc::NO_ENCLOSING_INDEX)
+    if ((enclosingTryIndex == EHblkDsc::NO_ENCLOSING_INDEX) && (enclosingHndIndex == EHblkDsc::NO_ENCLOSING_INDEX))
     {
-        JITDUMP("Cloned EH clauses will go at the end of the EH table\n");
+        JITDUMP("No enclosing EH region; cloned EH clauses will go at the end of the EH table\n");
         insertBeforeIndex = compHndBBtabCount;
+    }
+    else if ((enclosingTryIndex == EHblkDsc::NO_ENCLOSING_INDEX) || (enclosingHndIndex < enclosingTryIndex))
+    {
+        JITDUMP("Cloned EH clauses will go before enclosing handler region EH#%02u\n", enclosingHndIndex);
+        insertBeforeIndex = enclosingHndIndex;
     }
     else
     {
-        JITDUMP("Cloned EH clauses will go before enclosing region EH#%02u\n", enclosingTryIndex);
+        JITDUMP("Cloned EH clauses will go before enclosing try region EH#%02u\n", enclosingTryIndex);
+        assert(insertBeforeIndex == enclosingTryIndex);
     }
 
     // Once we call fgTryAddEHTableEntries with deferCloning = false,
     // all the EH indicies at or above insertBeforeIndex will shift,
     // and the EH table may reallocate.
+    //
+    // This addition may also fail, if the table would become too large...
     //
     EHblkDsc* const clonedOutermostEbd =
         fgTryAddEHTableEntries(insertBeforeIndex, regionCount, /* deferAdding */ deferCloning);
@@ -2975,13 +2998,11 @@ BasicBlock* Compiler::fgCloneTryRegion(BasicBlock* tryEntry, CloneTryInfo& info,
             const unsigned originalTryIndex = block->getTryIndex();
             unsigned       cloneTryIndex    = originalTryIndex;
 
-            if (originalTryIndex <= outermostTryIndex)
+            if (originalTryIndex < enclosingTryIndex)
             {
                 cloneTryIndex += indexShift;
             }
 
-            EHblkDsc* const originalEbd = ehGetDsc(originalTryIndex);
-            EHblkDsc* const clonedEbd   = ehGetDsc(cloneTryIndex);
             newBlock->setTryIndex(cloneTryIndex);
             updateBlockReferences(cloneTryIndex);
         }
@@ -2989,11 +3010,13 @@ BasicBlock* Compiler::fgCloneTryRegion(BasicBlock* tryEntry, CloneTryInfo& info,
         if (block->hasHndIndex())
         {
             const unsigned originalHndIndex = block->getHndIndex();
+            unsigned       cloneHndIndex    = originalHndIndex;
 
-            // if (originalHndIndex ==
-            const unsigned  cloneHndIndex = originalHndIndex + indexShift;
-            EHblkDsc* const originalEbd   = ehGetDsc(originalHndIndex);
-            EHblkDsc* const clonedEbd     = ehGetDsc(cloneHndIndex);
+            if (originalHndIndex < enclosingHndIndex)
+            {
+                cloneHndIndex += indexShift;
+            }
+
             newBlock->setHndIndex(cloneHndIndex);
             updateBlockReferences(cloneHndIndex);
 

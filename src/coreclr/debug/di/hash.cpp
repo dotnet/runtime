@@ -201,7 +201,7 @@ void CordbHashTableEnum::BuildOrThrow(
     CordbBase * pOwnerObj,
     NeuterList * pOwnerList,
     CordbHashTable *pTable,
-    const _GUID &id,
+    const GUID &id,
     RSInitHolder<CordbHashTableEnum> * pHolder)
 {
     CordbHashTableEnum * pEnum = new CordbHashTableEnum(pOwnerObj, pOwnerList, pTable, id);

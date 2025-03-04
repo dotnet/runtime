@@ -203,7 +203,7 @@ namespace System.Numerics.Tensors
         public static ref readonly System.Numerics.Tensors.TensorSpan<T> AtanPi<T>(scoped in System.Numerics.Tensors.ReadOnlyTensorSpan<T> x, in System.Numerics.Tensors.TensorSpan<T> destination) where T : System.Numerics.ITrigonometricFunctions<T> { throw null; }
         public static System.Numerics.Tensors.Tensor<T> Atan<T>(in System.Numerics.Tensors.ReadOnlyTensorSpan<T> x) where T : System.Numerics.ITrigonometricFunctions<T> { throw null; }
         public static ref readonly System.Numerics.Tensors.TensorSpan<T> Atan<T>(scoped in System.Numerics.Tensors.ReadOnlyTensorSpan<T> x, in System.Numerics.Tensors.TensorSpan<T> destination) where T : System.Numerics.ITrigonometricFunctions<T> { throw null; }
-        public static T Average<T>(scoped in System.Numerics.Tensors.ReadOnlyTensorSpan<T> x) where T : System.Numerics.IFloatingPoint<T> { throw null; }
+        public static T Average<T>(scoped in System.Numerics.Tensors.ReadOnlyTensorSpan<T> x) where T : System.Numerics.INumberBase<T> { throw null; }
         public static System.Numerics.Tensors.Tensor<T> BitwiseAnd<T>(in System.Numerics.Tensors.ReadOnlyTensorSpan<T> x, in System.Numerics.Tensors.ReadOnlyTensorSpan<T> y) where T : System.Numerics.IBitwiseOperators<T, T, T> { throw null; }
         public static ref readonly System.Numerics.Tensors.TensorSpan<T> BitwiseAnd<T>(scoped in System.Numerics.Tensors.ReadOnlyTensorSpan<T> x, scoped in System.Numerics.Tensors.ReadOnlyTensorSpan<T> y, in System.Numerics.Tensors.TensorSpan<T> destination) where T : System.Numerics.IBitwiseOperators<T, T, T> { throw null; }
         public static System.Numerics.Tensors.Tensor<T> BitwiseAnd<T>(in System.Numerics.Tensors.ReadOnlyTensorSpan<T> x, T y) where T : System.Numerics.IBitwiseOperators<T, T, T> { throw null; }
@@ -487,7 +487,7 @@ namespace System.Numerics.Tensors
         public static ref readonly System.Numerics.Tensors.TensorSpan<T> StackAlongDimension<T>(scoped System.ReadOnlySpan<System.Numerics.Tensors.Tensor<T>> tensors, in System.Numerics.Tensors.TensorSpan<T> destination, int dimension) { throw null; }
         public static System.Numerics.Tensors.Tensor<T> Stack<T>(params scoped System.ReadOnlySpan<System.Numerics.Tensors.Tensor<T>> tensors) { throw null; }
         public static ref readonly System.Numerics.Tensors.TensorSpan<T> Stack<T>(scoped in System.ReadOnlySpan<System.Numerics.Tensors.Tensor<T>> tensors, in System.Numerics.Tensors.TensorSpan<T> destination) { throw null; }
-        public static T StdDev<T>(in System.Numerics.Tensors.ReadOnlyTensorSpan<T> x) where T : System.Numerics.IFloatingPoint<T>, System.Numerics.IPowerFunctions<T>, System.Numerics.IAdditionOperators<T, T, T>, System.Numerics.IAdditiveIdentity<T, T> { throw null; }
+        public static T StdDev<T>(in System.Numerics.Tensors.ReadOnlyTensorSpan<T> x) where T : System.Numerics.IRootFunctions<T> { throw null; }
         public static System.Numerics.Tensors.Tensor<T> Subtract<T>(in System.Numerics.Tensors.ReadOnlyTensorSpan<T> x, in System.Numerics.Tensors.ReadOnlyTensorSpan<T> y) where T : System.Numerics.ISubtractionOperators<T, T, T> { throw null; }
         public static ref readonly System.Numerics.Tensors.TensorSpan<T> Subtract<T>(scoped in System.Numerics.Tensors.ReadOnlyTensorSpan<T> x, scoped in System.Numerics.Tensors.ReadOnlyTensorSpan<T> y, in System.Numerics.Tensors.TensorSpan<T> destination) where T : System.Numerics.ISubtractionOperators<T, T, T> { throw null; }
         public static System.Numerics.Tensors.Tensor<T> Subtract<T>(in System.Numerics.Tensors.ReadOnlyTensorSpan<T> x, T y) where T : System.Numerics.ISubtractionOperators<T, T, T> { throw null; }
@@ -543,12 +543,22 @@ namespace System.Numerics.Tensors
         public static void Atanh<T>(System.ReadOnlySpan<T> x, System.Span<T> destination) where T : System.Numerics.IHyperbolicFunctions<T> { }
         public static void AtanPi<T>(System.ReadOnlySpan<T> x, System.Span<T> destination) where T : System.Numerics.ITrigonometricFunctions<T> { }
         public static void Atan<T>(System.ReadOnlySpan<T> x, System.Span<T> destination) where T : System.Numerics.ITrigonometricFunctions<T> { }
+        public static T Average<T>(System.ReadOnlySpan<T> x) where T : System.Numerics.INumberBase<T> { throw null; }
+        public static void BitDecrement<T>(System.ReadOnlySpan<T> x, System.Span<T> destination) where T : System.Numerics.IFloatingPointIeee754<T> { }
+        public static void BitIncrement<T>(System.ReadOnlySpan<T> x, System.Span<T> destination) where T : System.Numerics.IFloatingPointIeee754<T> { }
         public static void BitwiseAnd<T>(System.ReadOnlySpan<T> x, System.ReadOnlySpan<T> y, System.Span<T> destination) where T : System.Numerics.IBitwiseOperators<T, T, T> { }
         public static void BitwiseAnd<T>(System.ReadOnlySpan<T> x, T y, System.Span<T> destination) where T : System.Numerics.IBitwiseOperators<T, T, T> { }
         public static void BitwiseOr<T>(System.ReadOnlySpan<T> x, System.ReadOnlySpan<T> y, System.Span<T> destination) where T : System.Numerics.IBitwiseOperators<T, T, T> { }
         public static void BitwiseOr<T>(System.ReadOnlySpan<T> x, T y, System.Span<T> destination) where T : System.Numerics.IBitwiseOperators<T, T, T> { }
         public static void Cbrt<T>(System.ReadOnlySpan<T> x, System.Span<T> destination) where T : System.Numerics.IRootFunctions<T> { }
         public static void Ceiling<T>(System.ReadOnlySpan<T> x, System.Span<T> destination) where T : System.Numerics.IFloatingPoint<T> { }
+        public static void Clamp<T>(System.ReadOnlySpan<T> x, System.ReadOnlySpan<T> min, System.ReadOnlySpan<T> max, System.Span<T> destination) where T : System.Numerics.INumber<T> { }
+        public static void Clamp<T>(System.ReadOnlySpan<T> x, System.ReadOnlySpan<T> min, T max, System.Span<T> destination) where T : System.Numerics.INumber<T> { }
+        public static void Clamp<T>(System.ReadOnlySpan<T> x, T min, System.ReadOnlySpan<T> max, System.Span<T> destination) where T : System.Numerics.INumber<T> { }
+        public static void Clamp<T>(System.ReadOnlySpan<T> x, T min, T max, System.Span<T> destination) where T : System.Numerics.INumber<T> { }
+        public static void Clamp<T>(T x, System.ReadOnlySpan<T> min, System.ReadOnlySpan<T> max, System.Span<T> destination) where T : System.Numerics.INumber<T> { }
+        public static void Clamp<T>(T x, System.ReadOnlySpan<T> min, T max, System.Span<T> destination) where T : System.Numerics.INumber<T> { }
+        public static void Clamp<T>(T x, T min, System.ReadOnlySpan<T> max, System.Span<T> destination) where T : System.Numerics.INumber<T> { }
         public static void ConvertChecked<TFrom, TTo>(System.ReadOnlySpan<TFrom> source, System.Span<TTo> destination) where TFrom : System.Numerics.INumberBase<TFrom> where TTo : System.Numerics.INumberBase<TTo> { }
         public static void ConvertSaturating<TFrom, TTo>(System.ReadOnlySpan<TFrom> source, System.Span<TTo> destination) where TFrom : System.Numerics.INumberBase<TFrom> where TTo : System.Numerics.INumberBase<TTo> { }
         public static void ConvertTruncating<TFrom, TTo>(System.ReadOnlySpan<TFrom> source, System.Span<TTo> destination) where TFrom : System.Numerics.INumberBase<TFrom> where TTo : System.Numerics.INumberBase<TTo> { }
@@ -560,11 +570,15 @@ namespace System.Numerics.Tensors
         public static void Cos<T>(System.ReadOnlySpan<T> x, System.Span<T> destination) where T : System.Numerics.ITrigonometricFunctions<T> { }
         public static void Cosh<T>(System.ReadOnlySpan<T> x, System.Span<T> destination) where T : System.Numerics.IHyperbolicFunctions<T> { }
         public static T CosineSimilarity<T>(System.ReadOnlySpan<T> x, System.ReadOnlySpan<T> y) where T : System.Numerics.IRootFunctions<T> { throw null; }
+        public static void Decrement<T>(System.ReadOnlySpan<T> x, System.Span<T> destination) where T : System.Numerics.IDecrementOperators<T> { }
         public static void DegreesToRadians<T>(System.ReadOnlySpan<T> x, System.Span<T> destination) where T : System.Numerics.ITrigonometricFunctions<T> { }
         public static T Distance<T>(System.ReadOnlySpan<T> x, System.ReadOnlySpan<T> y) where T : System.Numerics.IRootFunctions<T> { throw null; }
         public static void Divide<T>(System.ReadOnlySpan<T> x, System.ReadOnlySpan<T> y, System.Span<T> destination) where T : System.Numerics.IDivisionOperators<T, T, T> { }
         public static void Divide<T>(System.ReadOnlySpan<T> x, T y, System.Span<T> destination) where T : System.Numerics.IDivisionOperators<T, T, T> { }
         public static void Divide<T>(T x, System.ReadOnlySpan<T> y, System.Span<T> destination) where T : System.Numerics.IDivisionOperators<T, T, T> { }
+        public static void DivRem<T>(System.ReadOnlySpan<T> x, System.ReadOnlySpan<T> y, System.Span<T> quotientDestination, System.Span<T> remainderDestination) where T : System.Numerics.IBinaryInteger<T> { }
+        public static void DivRem<T>(System.ReadOnlySpan<T> x, T y, System.Span<T> quotientDestination, System.Span<T> remainderDestination) where T : System.Numerics.IBinaryInteger<T> { }
+        public static void DivRem<T>(T x, System.ReadOnlySpan<T> y, System.Span<T> quotientDestination, System.Span<T> remainderDestination) where T : System.Numerics.IBinaryInteger<T> { }
         public static T Dot<T>(System.ReadOnlySpan<T> x, System.ReadOnlySpan<T> y) where T : System.Numerics.IAdditionOperators<T, T, T>, System.Numerics.IAdditiveIdentity<T, T>, System.Numerics.IMultiplyOperators<T, T, T>, System.Numerics.IMultiplicativeIdentity<T, T> { throw null; }
         public static void Exp<T>(System.ReadOnlySpan<T> x, System.Span<T> destination) where T : System.Numerics.IExponentialFunctions<T> { }
         public static void Exp10M1<T>(System.ReadOnlySpan<T> x, System.Span<T> destination) where T : System.Numerics.IExponentialFunctions<T> { }
@@ -583,10 +597,65 @@ namespace System.Numerics.Tensors
         public static void Ieee754Remainder<T>(System.ReadOnlySpan<T> x, T y, System.Span<T> destination) where T : System.Numerics.IFloatingPointIeee754<T> { }
         public static void Ieee754Remainder<T>(T x, System.ReadOnlySpan<T> y, System.Span<T> destination) where T : System.Numerics.IFloatingPointIeee754<T> { }
         public static void ILogB<T>(System.ReadOnlySpan<T> x, System.Span<int> destination) where T : System.Numerics.IFloatingPointIeee754<T> { }
+        public static void Increment<T>(System.ReadOnlySpan<T> x, System.Span<T> destination) where T : System.Numerics.IIncrementOperators<T> { }
         public static int IndexOfMaxMagnitude<T>(System.ReadOnlySpan<T> x) where T : System.Numerics.INumber<T> { throw null; }
         public static int IndexOfMax<T>(System.ReadOnlySpan<T> x) where T : System.Numerics.INumber<T> { throw null; }
         public static int IndexOfMinMagnitude<T>(System.ReadOnlySpan<T> x) where T : System.Numerics.INumber<T> { throw null; }
         public static int IndexOfMin<T>(System.ReadOnlySpan<T> x) where T : System.Numerics.INumber<T> { throw null; }
+        public static bool IsCanonicalAll<T>(System.ReadOnlySpan<T> x) where T : System.Numerics.INumberBase<T> { throw null; }
+        public static bool IsCanonicalAny<T>(System.ReadOnlySpan<T> x) where T : System.Numerics.INumberBase<T> { throw null; }
+        public static void IsCanonical<T>(System.ReadOnlySpan<T> x, System.Span<bool> destination) where T : System.Numerics.INumberBase<T> { }
+        public static bool IsComplexNumberAll<T>(System.ReadOnlySpan<T> x) where T : System.Numerics.INumberBase<T> { throw null; }
+        public static bool IsComplexNumberAny<T>(System.ReadOnlySpan<T> x) where T : System.Numerics.INumberBase<T> { throw null; }
+        public static void IsComplexNumber<T>(System.ReadOnlySpan<T> x, System.Span<bool> destination) where T : System.Numerics.INumberBase<T> { }
+        public static bool IsEvenIntegerAll<T>(System.ReadOnlySpan<T> x) where T : System.Numerics.INumberBase<T> { throw null; }
+        public static bool IsEvenIntegerAny<T>(System.ReadOnlySpan<T> x) where T : System.Numerics.INumberBase<T> { throw null; }
+        public static void IsEvenInteger<T>(System.ReadOnlySpan<T> x, System.Span<bool> destination) where T : System.Numerics.INumberBase<T> { }
+        public static bool IsFiniteAll<T>(System.ReadOnlySpan<T> x) where T : System.Numerics.INumberBase<T> { throw null; }
+        public static bool IsFiniteAny<T>(System.ReadOnlySpan<T> x) where T : System.Numerics.INumberBase<T> { throw null; }
+        public static void IsFinite<T>(System.ReadOnlySpan<T> x, System.Span<bool> destination) where T : System.Numerics.INumberBase<T> { }
+        public static bool IsImaginaryNumberAll<T>(System.ReadOnlySpan<T> x) where T : System.Numerics.INumberBase<T> { throw null; }
+        public static bool IsImaginaryNumberAny<T>(System.ReadOnlySpan<T> x) where T : System.Numerics.INumberBase<T> { throw null; }
+        public static void IsImaginaryNumber<T>(System.ReadOnlySpan<T> x, System.Span<bool> destination) where T : System.Numerics.INumberBase<T> { }
+        public static bool IsInfinityAll<T>(System.ReadOnlySpan<T> x) where T : System.Numerics.INumberBase<T> { throw null; }
+        public static bool IsInfinityAny<T>(System.ReadOnlySpan<T> x) where T : System.Numerics.INumberBase<T> { throw null; }
+        public static void IsInfinity<T>(System.ReadOnlySpan<T> x, System.Span<bool> destination) where T : System.Numerics.INumberBase<T> { }
+        public static bool IsIntegerAll<T>(System.ReadOnlySpan<T> x) where T : System.Numerics.INumberBase<T> { throw null; }
+        public static bool IsIntegerAny<T>(System.ReadOnlySpan<T> x) where T : System.Numerics.INumberBase<T> { throw null; }
+        public static void IsInteger<T>(System.ReadOnlySpan<T> x, System.Span<bool> destination) where T : System.Numerics.INumberBase<T> { }
+        public static bool IsNaNAll<T>(System.ReadOnlySpan<T> x) where T : System.Numerics.INumberBase<T> { throw null; }
+        public static bool IsNaNAny<T>(System.ReadOnlySpan<T> x) where T : System.Numerics.INumberBase<T> { throw null; }
+        public static void IsNaN<T>(System.ReadOnlySpan<T> x, System.Span<bool> destination) where T : System.Numerics.INumberBase<T> { }
+        public static bool IsNegativeAll<T>(System.ReadOnlySpan<T> x) where T : System.Numerics.INumberBase<T> { throw null; }
+        public static bool IsNegativeAny<T>(System.ReadOnlySpan<T> x) where T : System.Numerics.INumberBase<T> { throw null; }
+        public static bool IsNegativeInfinityAll<T>(System.ReadOnlySpan<T> x) where T : System.Numerics.INumberBase<T> { throw null; }
+        public static bool IsNegativeInfinityAny<T>(System.ReadOnlySpan<T> x) where T : System.Numerics.INumberBase<T> { throw null; }
+        public static void IsNegativeInfinity<T>(System.ReadOnlySpan<T> x, System.Span<bool> destination) where T : System.Numerics.INumberBase<T> { }
+        public static void IsNegative<T>(System.ReadOnlySpan<T> x, System.Span<bool> destination) where T : System.Numerics.INumberBase<T> { }
+        public static bool IsNormalAll<T>(System.ReadOnlySpan<T> x) where T : System.Numerics.INumberBase<T> { throw null; }
+        public static bool IsNormalAny<T>(System.ReadOnlySpan<T> x) where T : System.Numerics.INumberBase<T> { throw null; }
+        public static void IsNormal<T>(System.ReadOnlySpan<T> x, System.Span<bool> destination) where T : System.Numerics.INumberBase<T> { }
+        public static bool IsOddIntegerAll<T>(System.ReadOnlySpan<T> x) where T : System.Numerics.INumberBase<T> { throw null; }
+        public static bool IsOddIntegerAny<T>(System.ReadOnlySpan<T> x) where T : System.Numerics.INumberBase<T> { throw null; }
+        public static void IsOddInteger<T>(System.ReadOnlySpan<T> x, System.Span<bool> destination) where T : System.Numerics.INumberBase<T> { }
+        public static bool IsPositiveAll<T>(System.ReadOnlySpan<T> x) where T : System.Numerics.INumberBase<T> { throw null; }
+        public static bool IsPositiveAny<T>(System.ReadOnlySpan<T> x) where T : System.Numerics.INumberBase<T> { throw null; }
+        public static bool IsPositiveInfinityAll<T>(System.ReadOnlySpan<T> x) where T : System.Numerics.INumberBase<T> { throw null; }
+        public static bool IsPositiveInfinityAny<T>(System.ReadOnlySpan<T> x) where T : System.Numerics.INumberBase<T> { throw null; }
+        public static void IsPositiveInfinity<T>(System.ReadOnlySpan<T> x, System.Span<bool> destination) where T : System.Numerics.INumberBase<T> { }
+        public static void IsPositive<T>(System.ReadOnlySpan<T> x, System.Span<bool> destination) where T : System.Numerics.INumberBase<T> { }
+        public static bool IsPow2All<T>(System.ReadOnlySpan<T> x) where T : System.Numerics.IBinaryNumber<T> { throw null; }
+        public static bool IsPow2Any<T>(System.ReadOnlySpan<T> x) where T : System.Numerics.IBinaryNumber<T> { throw null; }
+        public static void IsPow2<T>(System.ReadOnlySpan<T> x, System.Span<bool> destination) where T : System.Numerics.IBinaryNumber<T> { }
+        public static bool IsRealNumberAll<T>(System.ReadOnlySpan<T> x) where T : System.Numerics.INumberBase<T> { throw null; }
+        public static bool IsRealNumberAny<T>(System.ReadOnlySpan<T> x) where T : System.Numerics.INumberBase<T> { throw null; }
+        public static void IsRealNumber<T>(System.ReadOnlySpan<T> x, System.Span<bool> destination) where T : System.Numerics.INumberBase<T> { }
+        public static bool IsSubnormalAll<T>(System.ReadOnlySpan<T> x) where T : System.Numerics.INumberBase<T> { throw null; }
+        public static bool IsSubnormalAny<T>(System.ReadOnlySpan<T> x) where T : System.Numerics.INumberBase<T> { throw null; }
+        public static void IsSubnormal<T>(System.ReadOnlySpan<T> x, System.Span<bool> destination) where T : System.Numerics.INumberBase<T> { }
+        public static bool IsZeroAll<T>(System.ReadOnlySpan<T> x) where T : System.Numerics.INumberBase<T> { throw null; }
+        public static bool IsZeroAny<T>(System.ReadOnlySpan<T> x) where T : System.Numerics.INumberBase<T> { throw null; }
+        public static void IsZero<T>(System.ReadOnlySpan<T> x, System.Span<bool> destination) where T : System.Numerics.INumberBase<T> { }
         public static void LeadingZeroCount<T>(System.ReadOnlySpan<T> x, System.Span<T> destination) where T : System.Numerics.IBinaryInteger<T> { }
         public static void Lerp<T>(System.ReadOnlySpan<T> x, System.ReadOnlySpan<T> y, System.ReadOnlySpan<T> amount, System.Span<T> destination) where T : System.Numerics.IFloatingPointIeee754<T> { }
         public static void Lerp<T>(System.ReadOnlySpan<T> x, System.ReadOnlySpan<T> y, T amount, System.Span<T> destination) where T : System.Numerics.IFloatingPointIeee754<T> { }
@@ -647,6 +716,9 @@ namespace System.Numerics.Tensors
         public static void ReciprocalSqrtEstimate<T>(System.ReadOnlySpan<T> x, System.Span<T> destination) where T : System.Numerics.IFloatingPointIeee754<T> { }
         public static void ReciprocalSqrt<T>(System.ReadOnlySpan<T> x, System.Span<T> destination) where T : System.Numerics.IFloatingPointIeee754<T> { }
         public static void Reciprocal<T>(System.ReadOnlySpan<T> x, System.Span<T> destination) where T : System.Numerics.IFloatingPoint<T> { }
+        public static void Remainder<T>(System.ReadOnlySpan<T> x, System.ReadOnlySpan<T> y, System.Span<T> destination) where T : System.Numerics.IModulusOperators<T, T, T> { }
+        public static void Remainder<T>(System.ReadOnlySpan<T> x, T y, System.Span<T> destination) where T : System.Numerics.IModulusOperators<T, T, T> { }
+        public static void Remainder<T>(T x, System.ReadOnlySpan<T> y, System.Span<T> destination) where T : System.Numerics.IModulusOperators<T, T, T> { }
         public static void RootN<T>(System.ReadOnlySpan<T> x, int n, System.Span<T> destination) where T : System.Numerics.IRootFunctions<T> { }
         public static void RotateLeft<T>(System.ReadOnlySpan<T> x, int rotateAmount, System.Span<T> destination) where T : System.Numerics.IBinaryInteger<T> { }
         public static void RotateRight<T>(System.ReadOnlySpan<T> x, int rotateAmount, System.Span<T> destination) where T : System.Numerics.IBinaryInteger<T> { }
@@ -659,6 +731,7 @@ namespace System.Numerics.Tensors
         public static void ShiftRightArithmetic<T>(System.ReadOnlySpan<T> x, int shiftAmount, System.Span<T> destination) where T : System.Numerics.IShiftOperators<T, int, T> { }
         public static void ShiftRightLogical<T>(System.ReadOnlySpan<T> x, int shiftAmount, System.Span<T> destination) where T : System.Numerics.IShiftOperators<T, int, T> { }
         public static void Sigmoid<T>(System.ReadOnlySpan<T> x, System.Span<T> destination) where T : System.Numerics.IExponentialFunctions<T> { }
+        public static void Sign<T>(System.ReadOnlySpan<T> x, System.Span<int> destination) where T : System.Numerics.INumber<T> { }
         public static void SinCosPi<T>(System.ReadOnlySpan<T> x, System.Span<T> sinPiDestination, System.Span<T> cosPiDestination) where T : System.Numerics.ITrigonometricFunctions<T> { }
         public static void SinCos<T>(System.ReadOnlySpan<T> x, System.Span<T> sinDestination, System.Span<T> cosDestination) where T : System.Numerics.ITrigonometricFunctions<T> { }
         public static void Sinh<T>(System.ReadOnlySpan<T> x, System.Span<T> destination) where T : System.Numerics.IHyperbolicFunctions<T> { }
@@ -666,6 +739,7 @@ namespace System.Numerics.Tensors
         public static void Sin<T>(System.ReadOnlySpan<T> x, System.Span<T> destination) where T : System.Numerics.ITrigonometricFunctions<T> { }
         public static void SoftMax<T>(System.ReadOnlySpan<T> x, System.Span<T> destination) where T : System.Numerics.IExponentialFunctions<T> { }
         public static void Sqrt<T>(System.ReadOnlySpan<T> x, System.Span<T> destination) where T : System.Numerics.IRootFunctions<T> { }
+        public static T StdDev<T>(System.ReadOnlySpan<T> x) where T : System.Numerics.IRootFunctions<T> { throw null; }
         public static void Subtract<T>(System.ReadOnlySpan<T> x, System.ReadOnlySpan<T> y, System.Span<T> destination) where T : System.Numerics.ISubtractionOperators<T, T, T> { }
         public static void Subtract<T>(System.ReadOnlySpan<T> x, T y, System.Span<T> destination) where T : System.Numerics.ISubtractionOperators<T, T, T> { }
         public static void Subtract<T>(T x, System.ReadOnlySpan<T> y, System.Span<T> destination) where T : System.Numerics.ISubtractionOperators<T, T, T> { }
