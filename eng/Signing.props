@@ -75,7 +75,7 @@
   <ItemGroup>
     <AzureLinuxRPM Include="$(ArtifactsPackagesDir)**/*-azl.*-*.rpm" />
     <AzureLinuxRPM Include="$(ArtifactsPackagesDir)**/*-azl-*.rpm" />
-    <FileSignInfo Include="@(AzureLinuxPrereqsRPM->'%(Filename)%(Extension)')" CertificateName="LinuxSignMariner" />
+    <FileSignInfo Include="@(AzureLinuxRPM->'%(Filename)%(Extension)')" CertificateName="LinuxSignMariner" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(EnableBlobArtifacts)' == 'true'">
