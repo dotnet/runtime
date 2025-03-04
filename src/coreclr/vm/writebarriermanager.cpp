@@ -75,7 +75,6 @@ EXTERN_C void JIT_WriteBarrier_Patch_Label_GCShadow();
 EXTERN_C void JIT_WriteBarrier_Patch_Label_GCShadowEnd();
 #endif // WRITE_BARRIER_CHECK
 #endif // TARGET_ARM64
-
 #endif // !WRITE_BARRIER_VARS_INLINE
 
 // Use this somewhat hokey macro to concatenate the function start with the patch
@@ -178,13 +177,18 @@ size_t WriteBarrierManager::GetCurrentWriteBarrierSize()
 }
 
 
-PBYTE WriteBarrierManager::CalculatePatchLocation(LPVOID base, LPVOID label, int offset)
+PBYTE WriteBarrierManager::CalculatePatchLocation(LPVOID base, LPVOID label, int inlineOffset)
 {
     // the label should always come after or at the entrypoint for this funtion
     _ASSERTE_ALL_BUILDS((LPBYTE)label >= (LPBYTE)base);
 
     BYTE* patchBase = GetWriteBarrierCodeLocation((void*)JIT_WriteBarrier);
-    return (patchBase + ((LPBYTE)GetEEFuncEntryPoint(label) - (LPBYTE)GetEEFuncEntryPoint(base) + offset));
+
+    PBYTE patchLocation = (patchBase + ((LPBYTE)GetEEFuncEntryPoint(label) - (LPBYTE)GetEEFuncEntryPoint(base)));
+#if defined(WRITE_BARRIER_VARS_INLINE)
+    patchLocation+=offset;
+#endif
+    return patchLocation;
 }
 
 
