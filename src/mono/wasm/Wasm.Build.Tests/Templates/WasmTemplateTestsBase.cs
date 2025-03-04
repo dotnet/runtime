@@ -244,8 +244,9 @@ public class WasmTemplateTestsBase : BuildTestBase
         }
     }
 
-    protected void UpdateBrowserMainJs(string targetFramework = DefaultTargetFramework, string runtimeAssetsRelativePath = DefaultRuntimeAssetsRelativePath)
+    protected void UpdateBrowserMainJs(string? targetFramework = null, string runtimeAssetsRelativePath = DefaultRuntimeAssetsRelativePath)
     {
+        targetFramework ??= DefaultTargetFramework;
         string mainJsPath = Path.Combine(_projectDir, "wwwroot", "main.js");
         string mainJsContent = File.ReadAllText(mainJsPath);
         Version targetFrameworkVersion = new Version(targetFramework.Replace("net", ""));
@@ -385,8 +386,8 @@ public class WasmTemplateTestsBase : BuildTestBase
         }
     }
 
-    public string GetBinFrameworkDir(Configuration config, bool forPublish, string framework = DefaultTargetFramework, string? projectDir = null) =>
-        _provider.GetBinFrameworkDir(config, forPublish, framework, projectDir);
+    public string GetBinFrameworkDir(Configuration config, bool forPublish, string? framework = null, string? projectDir = null) =>
+        _provider.GetBinFrameworkDir(config, forPublish, framework ?? DefaultTargetFramework, projectDir);
 
     public BuildPaths GetBuildPaths(Configuration config, bool forPublish) =>
         _provider.GetBuildPaths(config, forPublish);
