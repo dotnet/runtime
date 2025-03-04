@@ -121,7 +121,7 @@ public:
         MDInternalImportFlags flags = MDInternalImport_Default,
         ProbeExtensionResult probeExtensionResult = ProbeExtensionResult::Invalid());
 
-    static PTR_PEImage FindByPath(LPCWSTR pPath, BOOL isInBundle);
+    static PTR_PEImage FindByPath(LPCWSTR pPath, BOOL isInBundle, BOOL isExternalData);
     void AddToHashMap();
 #endif
 
@@ -138,6 +138,7 @@ public:
 
     BOOL IsFile();
     BOOL IsInBundle() const;
+    BOOL IsExternalData() const;
     void* GetExternalData(INT64* size);
     INT64 GetOffset() const;
     INT64 GetSize() const;
@@ -211,20 +212,22 @@ private:
 
     struct PEImageLocator
     {
-
         LPCWSTR m_pPath;
         BOOL m_bIsInBundle;
+        BOOL m_bIsExternalData;
 
-        PEImageLocator(LPCWSTR pPath, BOOL bIsInBundle)
-            : m_pPath(pPath),
-              m_bIsInBundle(bIsInBundle)
+        PEImageLocator(LPCWSTR pPath, BOOL bIsInBundle, BOOL bIsExternalData)
+            : m_pPath(pPath)
+            , m_bIsInBundle(bIsInBundle)
+            , m_bIsExternalData(bIsExternalData)
         {
         }
 
         PEImageLocator(PEImage * pImage)
             : m_pPath(pImage->m_path.GetUnicode())
+            , m_bIsInBundle(pImage->IsInBundle())
+            , m_bIsExternalData(pImage->IsExternalData())
         {
-            m_bIsInBundle = pImage->IsInBundle();
         }
     };
 

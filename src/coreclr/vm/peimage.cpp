@@ -240,9 +240,10 @@ BOOL PEImage::CompareImage(UPTR u1, UPTR u2)
     PEImage *pImage = (PEImage *) u2;
 
     if (pLocator->m_bIsInBundle != pImage->IsInBundle())
-    {
         return FALSE;
-    }
+
+    if (pLocator->m_bIsExternalData != pImage->IsExternalData())
+        return FALSE;
 
     BOOL ret = FALSE;
     HRESULT hr;

@@ -68,6 +68,13 @@ inline BOOL PEImage::IsInBundle() const
     return m_probeExtensionResult.Type == ProbeExtensionResult::Type::Bundle;
 }
 
+inline BOOL PEImage::IsExternalData() const
+{
+    LIMITED_METHOD_CONTRACT;
+
+    return m_probeExtensionResult.Type == ProbeExtensionResult::Type::External;
+}
+
 inline INT64 PEImage::GetSize() const
 {
     LIMITED_METHOD_CONTRACT;
@@ -304,7 +311,7 @@ inline void  PEImage::Init(ProbeExtensionResult probeExtensionResult)
 
 
 /*static*/
-inline PTR_PEImage PEImage::FindByPath(LPCWSTR pPath, BOOL isInBundle)
+inline PTR_PEImage PEImage::FindByPath(LPCWSTR pPath, BOOL isInBundle, BOOL isExternalData)
 {
     CONTRACTL
     {
@@ -318,7 +325,7 @@ inline PTR_PEImage PEImage::FindByPath(LPCWSTR pPath, BOOL isInBundle)
 
     int CaseHashHelper(const WCHAR *buffer, COUNT_T count);
 
-    PEImageLocator locator(pPath, isInBundle);
+    PEImageLocator locator(pPath, isInBundle, isExternalData);
     DWORD dwHash = CaseHashHelper(pPath, (COUNT_T) u16_strlen(pPath));
     return (PEImage *) s_Images->LookupValue(dwHash, &locator);
 }
@@ -336,7 +343,7 @@ inline PTR_PEImage PEImage::OpenImage(LPCWSTR pPath, MDInternalImportFlags flags
 
     CrstHolder holder(&s_hashLock);
 
-    PEImage* found = FindByPath(pPath, probeExtensionResult.IsValid());
+    PEImage* found = FindByPath(pPath, probeExtensionResult.Type == ProbeExtensionResult::Type::Bundle, probeExtensionResult.Type == ProbeExtensionResult::Type::External);
     if (found == (PEImage*) INVALIDENTRY)
     {
         // We did not find the entry in the Cache, and we've been asked to only use the cache.
