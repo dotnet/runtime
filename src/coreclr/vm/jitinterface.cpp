@@ -11145,12 +11145,12 @@ void CInterpreterJitInfo::allocMem(AllocMemArgs *pArgs)
             pArgs->hotCodeSize, pArgs->roDataSize, totalSize.Value(), pArgs->flag, GetClrInstanceId());
     }
 
-    m_jitManager->allocCode(m_pMethodBeingCompiled, totalSize.Value(), 0, pArgs->flag, &m_CodeHeader, &m_CodeHeaderRW, &m_codeWriteBufferSize, &m_pCodeHeap
-                          , &m_pRealCodeHeader
+    m_jitManager->allocCode<InterpreterCodeHeader>(m_pMethodBeingCompiled, totalSize.Value(), 0, pArgs->flag, &m_CodeHeader, &m_CodeHeaderRW, &m_codeWriteBufferSize, &m_pCodeHeap
+                                                 , &m_pRealCodeHeader
 #ifdef FEATURE_EH_FUNCLETS
-                          , 0
+                                                 , 0
 #endif
-                          );
+                                                  );
 
     BYTE* current = (BYTE *)((InterpreterCodeHeader*)m_CodeHeader)->GetCodeStartAddress();
 
@@ -12400,6 +12400,12 @@ HRESULT CEEJitInfo::getPgoInstrumentationResults(
 
 void CEEJitInfo::allocMem (AllocMemArgs *pArgs)
 {
+    CONTRACTL {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_PREEMPTIVE;
+    } CONTRACTL_END;
+
     JIT_TO_EE_TRANSITION();
 
     _ASSERTE(pArgs->coldCodeSize == 0);
@@ -12407,10 +12413,13 @@ void CEEJitInfo::allocMem (AllocMemArgs *pArgs)
     {
         pArgs->coldCodeBlock = NULL;
     }
+
     ULONG codeSize      = pArgs->hotCodeSize;
     void **codeBlock    = &pArgs->hotCodeBlock;
     void **codeBlockRW  = &pArgs->hotCodeBlockRW;
+
     S_SIZE_T totalSize = S_SIZE_T(codeSize);
+
     size_t roDataAlignment = sizeof(void*);
     if ((pArgs->flag & CORJIT_ALLOCMEM_FLG_RODATA_64BYTE_ALIGN)!= 0)
     {
@@ -12431,6 +12440,7 @@ void CEEJitInfo::allocMem (AllocMemArgs *pArgs)
     if (pArgs->roDataSize > 0)
     {
         size_t codeAlignment = sizeof(void*);
+
         if ((pArgs->flag & CORJIT_ALLOCMEM_FLG_32BYTE_ALIGN) != 0)
         {
             codeAlignment = 32;
@@ -12459,30 +12469,34 @@ void CEEJitInfo::allocMem (AllocMemArgs *pArgs)
             // situation - we will leak some memory, but that is acceptable
             // since this should happen very rarely.
             "Note that this may fire if the JITCompiler tries to recompile a method");
+
     if( totalSize.IsOverflow() )
     {
         COMPlusThrowHR(CORJIT_OUTOFMEM);
     }
+
     if (ETW_EVENT_ENABLED(MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_DOTNET_Context, MethodJitMemoryAllocatedForCode))
     {
         ULONGLONG ullMethodIdentifier = 0;
         ULONGLONG ullModuleID = 0;
+
         if (m_pMethodBeingCompiled)
         {
             Module* pModule = m_pMethodBeingCompiled->GetModule();
             ullModuleID = (ULONGLONG)(TADDR)pModule;
             ullMethodIdentifier = (ULONGLONG)m_pMethodBeingCompiled;
         }
+
         FireEtwMethodJitMemoryAllocatedForCode(ullMethodIdentifier, ullModuleID,
             pArgs->hotCodeSize + pArgs->coldCodeSize, pArgs->roDataSize, totalSize.Value(), pArgs->flag, GetClrInstanceId());
     }
 
-    m_jitManager->allocCode(m_pMethodBeingCompiled, totalSize.Value(), GetReserveForJumpStubs(), pArgs->flag, &m_CodeHeader, &m_CodeHeaderRW, &m_codeWriteBufferSize, &m_pCodeHeap
-                          , &m_pRealCodeHeader
+    m_jitManager->allocCode<CodeHeader>(m_pMethodBeingCompiled, totalSize.Value(), GetReserveForJumpStubs(), pArgs->flag, &m_CodeHeader, &m_CodeHeaderRW, &m_codeWriteBufferSize, &m_pCodeHeap
+                                      , &m_pRealCodeHeader
 #ifdef FEATURE_EH_FUNCLETS
-                          , m_totalUnwindInfos
+                                      , m_totalUnwindInfos
 #endif
-                          );
+                                       );
 
 #ifdef FEATURE_EH_FUNCLETS
     m_moduleBase = m_pCodeHeap->GetModuleBase();
@@ -12494,6 +12508,7 @@ void CEEJitInfo::allocMem (AllocMemArgs *pArgs)
     *codeBlock = current;
     *codeBlockRW = current + writeableOffset;
     current += codeSize;
+
     if (pArgs->roDataSize > 0)
     {
         current = (BYTE *)ALIGN_UP(current, roDataAlignment);
@@ -12559,7 +12574,7 @@ void * CEEJitInfo::allocGCInfo (size_t size)
     return block;
 }
 
-template <typename TCodeHeader>
+template<typename TCodeHeader>
 void CEECodeGenInfo::setEHcountWorker(unsigned cEH)
 {
     CONTRACTL {

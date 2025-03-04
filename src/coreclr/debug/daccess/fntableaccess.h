@@ -11,7 +11,7 @@
 #define _FN_TABLE_ACCESS_H
 
 
-struct FakeEECodeGenManager
+struct FakeEEJitManager
 {
     LPVOID      __VFN_table;
     LPVOID      m_runtimeSupport;
@@ -76,7 +76,7 @@ class CheckDuplicatedStructLayouts
 {
 #define CHECK_OFFSET(cls, fld) CPP_ASSERT(cls##fld, offsetof(Fake##cls, fld) == offsetof(cls, fld))
 
-    CHECK_OFFSET(EECodeGenManager, m_pCodeHeap);
+    CHECK_OFFSET(EEJitManager, m_pCodeHeap);
 
     CHECK_OFFSET(HeapList, hpNext);
     CHECK_OFFSET(HeapList, startAddress);

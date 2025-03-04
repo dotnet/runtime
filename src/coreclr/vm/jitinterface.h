@@ -767,7 +767,7 @@ class CEEJitInfo : public CEECodeGenInfo
 public:
     // ICorJitInfo stuff
 
-    void allocMem(AllocMemArgs *pArgs) override final;
+    void allocMem (AllocMemArgs *pArgs) override final;
     void * allocGCInfo(size_t  size) override final;
     virtual void setEHcount (unsigned cEH) override final;
     virtual void setEHinfo (

@@ -335,7 +335,7 @@ HeapList* HostCodeHeap::CreateCodeHeap(CodeHeapRequestInfo *pInfo, EECodeGenMana
     }
     CONTRACT_END;
 
-    NewHolder<HostCodeHeap> pCodeHeap(new HostCodeHeap(pJitManager));
+    NewHolder<HostCodeHeap> pCodeHeap(new HostCodeHeap(pJitManager, !pInfo->IsInterpreted()));
 
     HeapList *pHp = pCodeHeap->InitializeHeapList(pInfo);
     if (pHp == NULL)
@@ -353,7 +353,7 @@ HeapList* HostCodeHeap::CreateCodeHeap(CodeHeapRequestInfo *pInfo, EECodeGenMana
     RETURN pHp;
 }
 
-HostCodeHeap::HostCodeHeap(EECodeGenManager *pJitManager)
+HostCodeHeap::HostCodeHeap(EECodeGenManager *pJitManager, bool isExecutable)
 {
     CONTRACTL
     {
@@ -369,6 +369,7 @@ HostCodeHeap::HostCodeHeap(EECodeGenManager *pJitManager)
     m_TotalBytesAvailable = 0;
     m_ApproximateLargestBlock = 0;
     m_AllocationCount = 0;
+    m_isExecutable = isExecutable;
     m_pHeapList = NULL;
     m_pJitManager = (PTR_EEJitManager)pJitManager;
     m_pFreeList = NULL;
@@ -689,7 +690,7 @@ void* HostCodeHeap::AllocMemForCode_NoThrow(size_t header, size_t size, DWORD al
     }
     CONTRACTL_END;
 
-    _ASSERTE(header == sizeof(CodeHeader));
+    _ASSERTE(header == sizeof(CodeHeader) || header == sizeof(InterpreterCodeHeader));
     _ASSERTE(alignment <= HOST_CODEHEAP_SIZE_ALIGN);
 
     // The code allocator has to guarantee that there is only one entrypoint per nibble map entry.
@@ -707,7 +708,7 @@ void* HostCodeHeap::AllocMemForCode_NoThrow(size_t header, size_t size, DWORD al
     BYTE * pCode = ALIGN_UP((BYTE*)(pTracker + 1) + header, alignment);
 
     // Pointer to the TrackAllocation record is stored just before the code header
-    CodeHeader * pHdr = (CodeHeader *)pCode - 1;
+    void * pHdr = pCode - header;
     ExecutableWriterHolder<TrackAllocation *> trackerWriterHolder((TrackAllocation **)(pHdr) - 1, sizeof(TrackAllocation *));
     *trackerWriterHolder.GetRW() = pTracker;
 
@@ -770,7 +771,7 @@ HostCodeHeap::TrackAllocation* HostCodeHeap::AllocMemory_NoThrow(size_t header, 
 
         if (m_pLastAvailableCommittedAddr + sizeToCommit <= m_pBaseAddr + m_TotalBytesAvailable)
         {
-            if (NULL == ExecutableAllocator::Instance()->Commit(m_pLastAvailableCommittedAddr, sizeToCommit, true /* isExecutable */))
+            if (NULL == ExecutableAllocator::Instance()->Commit(m_pLastAvailableCommittedAddr, sizeToCommit, m_isExecutable))
             {
                 LOG((LF_BCL, LL_ERROR, "CodeHeap [0x%p] - VirtualAlloc failed\n", this));
                 return NULL;

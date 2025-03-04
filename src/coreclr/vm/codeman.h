@@ -155,15 +155,7 @@ public:
     // contains the number of EH clauses, See EEJitManager::allocEHInfo
     PTR_EE_ILEXCEPTION  phdrJitEHInfo;
     PTR_BYTE            phdrJitGCInfo;
-
-#if defined(FEATURE_GDBJIT)
-    VOID*            pCalledMethods;
-#endif
-
     PTR_MethodDesc      phdrMDesc;
-
-public:
-// if we're using the indirect codeheaders then all enumeration is done by the code header
 };
 
 struct CodeHeader
@@ -339,16 +331,18 @@ public:
         pRealCodeHeader->phdrMDesc = pMD;
     }
 
+    BOOL IsStubCodeBlock()
+    {
+        return FALSE;
+    }
+
 #ifdef DACCESS_COMPILE
     void EnumMemoryRegions(CLRDataEnumMemoryFlags flags, IJitManager* pJitMan);
 #endif  // DACCESS_COMPILE
-
 };
 
 
 typedef DPTR(InterpreterCodeHeader) PTR_InterpreterCodeHeader;
-
-static_assert(sizeof(InterpreterCodeHeader) == sizeof(CodeHeader), "InterpreterCodeHeader and CodeHeader must have the same size");
 
 #endif // FEATURE_INTERPRETER
 
@@ -1687,13 +1681,13 @@ public:
         OUT ICorDebugInfo::RichOffsetMapping** ppRichMappings,
         OUT ULONG32* pNumRichMappings) = 0;
 
-    virtual BOOL JitCodeToMethodInfo(
-            RangeSection * pRangeSection,
-            PCODE currentPC,
-            MethodDesc** ppMethodDesc,
-            OUT EECodeInfo * pCodeInfo) = 0;
-
     virtual PCODE GetCodeAddressForRelOffset(const METHODTOKEN& MethodToken, DWORD relOffset) = 0;
+
+    virtual BOOL JitCodeToMethodInfo(
+        RangeSection * pRangeSection,
+        PCODE currentPC,
+        MethodDesc** ppMethodDesc,
+        OUT EECodeInfo * pCodeInfo) = 0;
 
     virtual TADDR       JitTokenToStartAddress(const METHODTOKEN& MethodToken)=0;
     virtual void        JitTokenToMethodRegionInfo(const METHODTOKEN& MethodToken, MethodRegionInfo *methodRegionInfo) = 0;
@@ -1768,6 +1762,7 @@ class EECodeGenManager : public IJitManager
     friend class DacDbiInterfaceImpl;
 #endif
     friend class CheckDuplicatedStructLayouts;
+    friend class EECodeInfo;
 
     VPTR_ABSTRACT_VTABLE_CLASS(EECodeGenManager, IJitManager)
 
@@ -1785,32 +1780,8 @@ public:
     virtual ICorJitCompiler* GetCompiler() = 0;
     virtual ICorJitCompiler* GetAltCompiler() = 0;
 
-    // Used to read debug info.
-    virtual BOOL GetBoundariesAndVars(
-        const DebugInfoRequest & request,
-        IN FP_IDS_NEW fpNew, IN void * pNewData,
-        OUT ULONG32 * pcMap,
-        OUT ICorDebugInfo::OffsetMapping **ppMap,
-        OUT ULONG32 * pcVars,
-        OUT ICorDebugInfo::NativeVarInfo **ppVars);
-
-    virtual BOOL GetRichDebugInfo(
-        const DebugInfoRequest& request,
-        IN FP_IDS_NEW fpNew, IN void* pNewData,
-        OUT ICorDebugInfo::InlineTreeNode** ppInlineTree,
-        OUT ULONG32* pNumInlineTree,
-        OUT ICorDebugInfo::RichOffsetMapping** ppRichMappings,
-        OUT ULONG32* pNumRichMappings);
-
-    virtual BOOL JitCodeToMethodInfo(RangeSection * pRangeSection,
-                                     PCODE currentPC,
-                                     MethodDesc ** ppMethodDesc,
-                                     EECodeInfo * pCodeInfo);
-
     virtual PTR_EXCEPTION_CLAUSE_TOKEN GetNextEHClause(EH_CLAUSE_ENUMERATOR* pEnumState,
                                                        EE_ILEXCEPTION_CLAUSE* pEHclause);
-
-    virtual StubCodeBlockKind GetStubCodeBlockKind(RangeSection * pRangeSection, PCODE currentPC);
 
     static TADDR FindMethodCode(RangeSection * pRangeSection, PCODE currentPC);
     static TADDR FindMethodCode(PCODE currentPC);
@@ -1821,6 +1792,33 @@ public:
         return m_storeRichDebugInfo;
     }
 
+protected:
+    template<typename TCodeHeader>
+    BOOL GetBoundariesAndVarsWorker(
+        const DebugInfoRequest & request,
+        IN FP_IDS_NEW fpNew, IN void * pNewData,
+        OUT ULONG32 * pcMap,
+        OUT ICorDebugInfo::OffsetMapping **ppMap,
+        OUT ULONG32 * pcVars,
+        OUT ICorDebugInfo::NativeVarInfo **ppVars);
+
+    template<typename TCodeHeader>
+    BOOL GetRichDebugInfoWorker(
+        const DebugInfoRequest& request,
+        IN FP_IDS_NEW fpNew, IN void* pNewData,
+        OUT ICorDebugInfo::InlineTreeNode** ppInlineTree,
+        OUT ULONG32* pNumInlineTree,
+        OUT ICorDebugInfo::RichOffsetMapping** ppRichMappings,
+        OUT ULONG32* pNumRichMappings);
+
+    template<typename TCodeHeader>
+    BOOL JitCodeToMethodInfoWorker(
+        RangeSection * pRangeSection,
+        PCODE currentPC,
+        MethodDesc ** ppMethodDesc,
+        EECodeInfo * pCodeInfo);
+
+public:
 #ifndef DACCESS_COMPILE
     virtual TypeHandle ResolveEHClause(EE_ILEXCEPTION_CLAUSE* pEHClause,
                                        CrawlFrame *pCf);
@@ -1830,12 +1828,13 @@ public:
     void Unload(LoaderAllocator* pAllocator);
     void CleanupCodeHeaps();
 
+    template<typename TCodeHeader>
     void allocCode(MethodDesc* pMD, size_t blockSize, size_t reserveForJumpStubs, CorJitAllocMemFlag flag, void** ppCodeHeader, void** ppCodeHeaderRW,
                    size_t* pAllocatedSize, HeapList** ppCodeHeap , BYTE** ppRealHeader
 #ifdef FEATURE_EH_FUNCLETS
                  , UINT nUnwindInfos
 #endif
-      );
+                  );
 
     template<typename TCodeHeader>
     inline BYTE *allocGCInfo(TCodeHeader* pCodeHeader, DWORD blockSize, size_t * pAllocationSize);
@@ -1862,6 +1861,7 @@ protected:
     void* allocCodeRaw(CodeHeapRequestInfo *pInfo, size_t header, size_t blockSize, unsigned align, HeapList ** ppCodeHeap);
     void* allocEHInfoRaw(MethodDesc *pMD, DWORD blockSize, size_t * pAllocationSize);
     virtual void UnpublishUnwindInfoForMethod(TADDR codeStart) = 0;
+    virtual void DeleteFunctionTable(PVOID pvTableID) = 0;
 
     DomainCodeHeapList *GetCodeHeapList(CodeHeapRequestInfo *pInfo, LoaderAllocator *pAllocator, BOOL fDynamicOnly = FALSE);
     DomainCodeHeapList* CreateCodeHeapList(CodeHeapRequestInfo *pInfo);
@@ -1872,35 +1872,11 @@ protected:
         return m_pCodeHeap;
     }
 
-public:
-    class CodeHeapIterator
-    {
-        CrstHolder m_lockHolder;
-        HeapList *m_pHeapList;
-        LoaderAllocator *m_pLoaderAllocator;
-        MethodSectionIterator m_Iterator;
-        MethodDesc *m_pCurrent;
-
-    public:
-        CodeHeapIterator(EECodeGenManager *pJitMgr, LoaderAllocator *pLoaderAllocatorFilter = NULL);
-        ~CodeHeapIterator();
-        BOOL Next();
-
-        MethodDesc *GetMethod()
-        {
-            LIMITED_METHOD_CONTRACT;
-            return m_pCurrent;
-        }
-
-        TADDR GetMethodCode()
-        {
-            LIMITED_METHOD_CONTRACT;
-            return (TADDR)m_Iterator.GetMethodCode();
-        }
-    };
 #else // !DACCESS_COMPILE
     virtual void EnumMemoryRegions(CLRDataEnumMemoryFlags flags);
-    virtual void EnumMemoryRegionsForMethodDebugInfo(CLRDataEnumMemoryFlags flags, MethodDesc * pMD);
+protected:
+    template<typename TCodeHeader>
+    void EnumMemoryRegionsForMethodDebugInfoWorker(CLRDataEnumMemoryFlags flags, MethodDesc * pMD);
 #endif // !DACCESS_COMPILE
 
 private:
@@ -1976,7 +1952,6 @@ class EEJitManager final : public EECodeGenManager
     VPTR_VTABLE_CLASS(EEJitManager, EECodeGenManager)
 
 public:
-
     virtual ICorJitCompiler* GetCompiler()
     {
         return m_jit;
@@ -2030,15 +2005,40 @@ public:
         return (miManaged | miIL);
     }
 
+    // Used to read debug info.
+    virtual BOOL GetBoundariesAndVars(
+        const DebugInfoRequest & request,
+        IN FP_IDS_NEW fpNew, IN void * pNewData,
+        OUT ULONG32 * pcMap,
+        OUT ICorDebugInfo::OffsetMapping **ppMap,
+        OUT ULONG32 * pcVars,
+        OUT ICorDebugInfo::NativeVarInfo **ppVars);
+
+    virtual BOOL GetRichDebugInfo(
+        const DebugInfoRequest& request,
+        IN FP_IDS_NEW fpNew, IN void* pNewData,
+        OUT ICorDebugInfo::InlineTreeNode** ppInlineTree,
+        OUT ULONG32* pNumInlineTree,
+        OUT ICorDebugInfo::RichOffsetMapping** ppRichMappings,
+        OUT ULONG32* pNumRichMappings);
+
+    virtual PCODE GetCodeAddressForRelOffset(const METHODTOKEN& MethodToken, DWORD relOffset);
+
+    virtual BOOL JitCodeToMethodInfo(RangeSection * pRangeSection,
+                                     PCODE currentPC,
+                                     MethodDesc ** ppMethodDesc,
+                                     EECodeInfo * pCodeInfo);
+
     virtual TADDR       JitTokenToStartAddress(const METHODTOKEN& MethodToken);
     virtual void        JitTokenToMethodRegionInfo(const METHODTOKEN& MethodToken, MethodRegionInfo *methodRegionInfo);
 
-    static CodeHeader * GetCodeHeaderFromStartAddress(TADDR methodStartAddress);
-    static CodeHeader * GetCodeHeader(const METHODTOKEN& MethodToken);
+    virtual unsigned    InitializeEHEnumeration(const METHODTOKEN& MethodToken, EH_CLAUSE_ENUMERATOR* pEnumState);
 
-    GCInfoToken GetGCInfoToken(const METHODTOKEN& MethodToken);
-    virtual unsigned InitializeEHEnumeration(const METHODTOKEN& MethodToken, EH_CLAUSE_ENUMERATOR* pEnumState);
-    virtual PCODE GetCodeAddressForRelOffset(const METHODTOKEN& MethodToken, DWORD relOffset);
+    GCInfoToken         GetGCInfoToken(const METHODTOKEN& MethodToken);
+
+#ifdef DACCESS_COMPILE
+    virtual void EnumMemoryRegionsForMethodDebugInfo(CLRDataEnumMemoryFlags flags, MethodDesc * pMD);
+#endif // DACCESS_COMPILE
 
 #if !defined DACCESS_COMPILE
     BOOL                LoadJIT();
@@ -2049,8 +2049,10 @@ public:
                                             bool throwOnOutOfMemoryWithinRange);
 
     void *              allocCodeFragmentBlock(size_t blockSize, unsigned alignment, LoaderAllocator *pLoaderAllocator, StubCodeBlockKind kind);
-
 #endif // !DACCESS_COMPILE
+
+    static CodeHeader * GetCodeHeader(const METHODTOKEN& MethodToken);
+    static CodeHeader * GetCodeHeaderFromStartAddress(TADDR methodStartAddress);
 
 #if defined(FEATURE_EH_FUNCLETS)
     // Compute function entry lazily. Do not call directly. Use EECodeInfo::GetFunctionEntry instead.
@@ -2058,6 +2060,8 @@ public:
 
     virtual DWORD                   GetFuncletStartOffsets(const METHODTOKEN& MethodToken, DWORD* pStartFuncletOffsets, DWORD dwLength);
 #endif // FEATURE_EH_FUNCLETS
+
+    virtual StubCodeBlockKind       GetStubCodeBlockKind(RangeSection * pRangeSection, PCODE currentPC);
 
 #if defined(FEATURE_EH_FUNCLETS)
     // Enumerate the memory necessary to retrieve the unwind info for a specific method
@@ -2072,7 +2076,34 @@ public:
 #endif // FEATURE_EH_FUNCLETS
 
 #if !defined DACCESS_COMPILE
+    class CodeHeapIterator
+    {
+        CrstHolder m_lockHolder;
+        HeapList *m_pHeapList;
+        LoaderAllocator *m_pLoaderAllocator;
+        MethodSectionIterator m_Iterator;
+        MethodDesc *m_pCurrent;
+
+    public:
+        CodeHeapIterator(LoaderAllocator *pLoaderAllocatorFilter = NULL);
+        ~CodeHeapIterator();
+        BOOL Next();
+
+        MethodDesc *GetMethod()
+        {
+            LIMITED_METHOD_CONTRACT;
+            return m_pCurrent;
+        }
+
+        TADDR GetMethodCode()
+        {
+            LIMITED_METHOD_CONTRACT;
+            return (TADDR)m_Iterator.GetMethodCode();
+        }
+    };
+protected:
     virtual void UnpublishUnwindInfoForMethod(TADDR codeStart);
+    virtual void DeleteFunctionTable(PVOID pvTableID);
 #endif // !DACCESS_COMPILE
 
 private:
@@ -2090,7 +2121,6 @@ public:
     }
 
 private :
-    //When EH Clauses are resolved we need to atomically update the TypeHandle
     Crst                m_JitLoadCritSec;
 
 #ifdef TARGET_AMD64
@@ -2619,7 +2649,7 @@ public:
     }
 
     BOOL LoadInterpreter();
-    
+
     BOOL IsInterpreterLoaded()
     {
         LIMITED_METHOD_CONTRACT;
@@ -2646,6 +2676,28 @@ public:
 
     static InterpreterCodeHeader * GetCodeHeaderFromStartAddress(TADDR methodStartAddress);
     static InterpreterCodeHeader * GetCodeHeader(const METHODTOKEN& MethodToken);
+
+    virtual BOOL JitCodeToMethodInfo(RangeSection * pRangeSection,
+        PCODE currentPC,
+        MethodDesc ** ppMethodDesc,
+        EECodeInfo * pCodeInfo);
+
+    // Used to read debug info.
+    virtual BOOL GetBoundariesAndVars(
+        const DebugInfoRequest & request,
+        IN FP_IDS_NEW fpNew, IN void * pNewData,
+        OUT ULONG32 * pcMap,
+        OUT ICorDebugInfo::OffsetMapping **ppMap,
+        OUT ULONG32 * pcVars,
+        OUT ICorDebugInfo::NativeVarInfo **ppVars);
+
+    virtual BOOL GetRichDebugInfo(
+        const DebugInfoRequest& request,
+        IN FP_IDS_NEW fpNew, IN void* pNewData,
+        OUT ICorDebugInfo::InlineTreeNode** ppInlineTree,
+        OUT ULONG32* pNumInlineTree,
+        OUT ICorDebugInfo::RichOffsetMapping** ppRichMappings,
+        OUT ULONG32* pNumRichMappings);
 
 #if defined(FEATURE_EH_FUNCLETS)
     virtual PTR_RUNTIME_FUNCTION LazyGetFunctionEntry(EECodeInfo * pCodeInfo)
@@ -2675,7 +2727,12 @@ protected:
     {
         // Nothing to do for the interpreter
     }
-    
+
+    virtual void DeleteFunctionTable(PVOID pvTableID)
+    {
+        // Nothing to do for the interpreter
+    }
+
 public:
 #endif // !DACCESS_COMPILE
 
@@ -2687,6 +2744,8 @@ public:
     }
 
 #if defined(DACCESS_COMPILE)
+
+    virtual void EnumMemoryRegionsForMethodDebugInfo(CLRDataEnumMemoryFlags flags, MethodDesc * pMD);
 
 #if defined(FEATURE_EH_FUNCLETS)
     virtual void EnumMemoryRegionsForMethodUnwindInfo(CLRDataEnumMemoryFlags flags, EECodeInfo * pCodeInfo)
@@ -2714,7 +2773,10 @@ private :
 //
 class EECodeInfo
 {
-    friend BOOL EECodeGenManager::JitCodeToMethodInfo(RangeSection * pRangeSection, PCODE currentPC, MethodDesc** ppMethodDesc, EECodeInfo * pCodeInfo);
+    friend BOOL EECodeGenManager::JitCodeToMethodInfoWorker<CodeHeader>(RangeSection * pRangeSection, PCODE currentPC, MethodDesc** ppMethodDesc, EECodeInfo * pCodeInfo);
+#ifdef FEATURE_INTERPRETER
+    friend BOOL EECodeGenManager::JitCodeToMethodInfoWorker<InterpreterCodeHeader>(RangeSection * pRangeSection, PCODE currentPC, MethodDesc** ppMethodDesc, EECodeInfo * pCodeInfo);
+#endif
 #ifdef FEATURE_READYTORUN
     friend BOOL ReadyToRunJitManager::JitCodeToMethodInfo(RangeSection * pRangeSection, PCODE currentPC, MethodDesc** ppMethodDesc, EECodeInfo * pCodeInfo);
 #endif
@@ -2862,7 +2924,7 @@ inline InterpreterCodeHeader * InterpreterJitManager::GetCodeHeaderFromStartAddr
     LIMITED_METHOD_DAC_CONTRACT;
     _ASSERTE(methodStartAddress != (TADDR)NULL);
     ARM_ONLY(_ASSERTE((methodStartAddress & THUMB_CODE) == 0));
-    return dac_cast<PTR_InterpreterCodeHeader>(methodStartAddress - sizeof(CodeHeader));
+    return dac_cast<PTR_InterpreterCodeHeader>(methodStartAddress - sizeof(InterpreterCodeHeader));
 }
 
 inline TADDR InterpreterJitManager::JitTokenToStartAddress(const METHODTOKEN& MethodToken)

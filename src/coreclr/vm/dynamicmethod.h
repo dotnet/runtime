@@ -288,6 +288,7 @@ private:
     size_t m_ApproximateLargestBlock;
     // Heap ref count
     DWORD m_AllocationCount;
+    bool m_isExecutable;
 
     // data to track free list and pointers into this heap
     // - on an used block this struct has got a pointer back to the CodeHeap, size and start of aligned allocation
@@ -309,7 +310,7 @@ public:
     static HeapList* CreateCodeHeap(CodeHeapRequestInfo *pInfo, EECodeGenManager *pJitManager);
 
 private:
-    HostCodeHeap(EECodeGenManager *pJitManager);
+    HostCodeHeap(EECodeGenManager *pJitManager, bool isExecutable);
     HeapList* InitializeHeapList(CodeHeapRequestInfo *pInfo);
     TrackAllocation* AllocFromFreeList(size_t header, size_t size, DWORD alignment, size_t reserveForJumpStubs);
     void AddToFreeList(TrackAllocation *pBlockToInsert, TrackAllocation *pBlockToInsertRW);

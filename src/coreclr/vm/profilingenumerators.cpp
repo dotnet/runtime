@@ -47,7 +47,7 @@ BOOL ProfilerFunctionEnum::Init(BOOL fWithReJITIDs)
 
     } CONTRACTL_END;
 
-    EECodeGenManager::CodeHeapIterator heapIterator(ExecutionManager::GetEEJitManager());
+    EEJitManager::CodeHeapIterator heapIterator;
     while(heapIterator.Next())
     {
         MethodDesc *pMD = heapIterator.GetMethod();

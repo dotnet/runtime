@@ -95,7 +95,7 @@ CorJitResult CILInterp::compileMethod(ICorJitInfo*         compHnd,
     args.coldCodeSize = 0;
     args.roDataSize = 0;
     args.xcptnsCount = 0;
-    args.flag = CORJIT_ALLOCMEM_DEFAULT_CODE_ALIGN | CORJIT_ALLOCMEM_FLG_INTERPRETED;
+    args.flag = CORJIT_ALLOCMEM_DEFAULT_CODE_ALIGN;
     compHnd->allocMem(&args);
 
     // We store first the InterpMethod pointer as the code header, followed by the actual code
