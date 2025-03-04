@@ -278,16 +278,10 @@ namespace System.Runtime.InteropServices.RuntimeInformationTests
             Assert.Contains("Mac Catalyst", RuntimeInformation.OSDescription, StringComparison.OrdinalIgnoreCase);
         }
 
-        [Fact, PlatformSpecific(TestPlatforms.TvOS)]  // Checks tvOS name in RuntimeInformation
+        [Fact, PlatformSpecific(TestPlatforms.tvOS)]  // Checks tvOS name in RuntimeInformation
         public void VerifyTvOSName()
         {
             Assert.Contains("tvOS", RuntimeInformation.OSDescription, StringComparison.OrdinalIgnoreCase);
-        }
-
-        [Fact, PlatformSpecific(TestPlatforms.WatchOS)]  // Checks watchOS name in RuntimeInformation
-        public void VerifyWatchOSName()
-        {
-            Assert.Contains("watchOS", RuntimeInformation.OSDescription, StringComparison.OrdinalIgnoreCase);
         }
     }
 }
