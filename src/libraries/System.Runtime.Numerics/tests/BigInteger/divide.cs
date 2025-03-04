@@ -26,6 +26,22 @@ namespace System.Numerics.Tests
         }
 
         [Fact]
+        public static void RunDivideOneLargeOneHalfBI()
+        {
+            byte[] tempByteArray1 = new byte[0];
+            byte[] tempByteArray2 = new byte[0];
+
+            // Divide Method - Two Large BigIntegers
+            for (int i = -1; i <= 1; i++)
+                for (int j = -1; j <= 1; j++)
+                {
+                    tempByteArray1 = GetRandomByteArray(s_random, 512 + i);
+                    tempByteArray2 = GetRandomByteArray(s_random, 256 + j);
+                    VerifyDivideString(Print(tempByteArray1) + Print(tempByteArray2) + "bDivide");
+                }
+        }
+
+        [Fact]
         public static void RunDivideTwoSmallBI()
         {
             byte[] tempByteArray1 = new byte[0];
@@ -150,6 +166,31 @@ namespace System.Numerics.Tests
         }
 
         [Fact]
+        public static void RunDivideLarge()
+        {
+            byte[] tempByteArray1 = new byte[0];
+            byte[] tempByteArray2 = new byte[0];
+
+            for (int i = 1; i < 15; i += 3)
+            {
+                var num = 1 << i;
+                tempByteArray1 = GetRandomByteArray(s_random, num);
+                tempByteArray2 = GetRandomByteArray(s_random, num / 2);
+                VerifyDivideString(Print(tempByteArray1) + Print(tempByteArray2) + "bDivide");
+            }
+
+            // Divide Method - Two Large BigIntegers
+            for (int i = -1; i <= 1; i++)
+                for (int j = -1; j <= 1; j++)
+                {
+                    int num = (1 << 13) + i;
+                    tempByteArray1 = GetRandomByteArray(s_random, num);
+                    tempByteArray2 = GetRandomByteArray(s_random, num / 3 + j);
+                    VerifyDivideString(Print(tempByteArray1) + Print(tempByteArray2) + "bDivide");
+                }
+        }
+
+        [Fact]
         public static void RunOverflow()
         {
             // these values lead to an "overflow", if dividing digit by digit
@@ -159,6 +200,21 @@ namespace System.Numerics.Tests
             var z = new BigInteger(new byte[] { 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0 });
 
             Assert.Equal(z, BigInteger.Divide(x, y));
+        }
+
+        [Fact]
+        public void D3n2nBound()
+        {
+            var right = (BigInteger.One << (BigIntegerCalculator.DivideBurnikelZieglerThreshold * 4 * 32 - 1))
+                + (BigInteger.One << (BigIntegerCalculator.DivideBurnikelZieglerThreshold * 2 * 32)) - 1;
+            var rem = right - 1;
+
+            var qi = BigIntegerCalculator.DivideBurnikelZieglerThreshold * 8 * 32 * 4 - 1;
+            var q = (BigInteger.One << qi) - 1;
+            var left = q * right + rem;
+
+            var q2 = BigInteger.Divide(left, right);
+            Assert.Equal(q, q2);
         }
 
         private static void VerifyDivideString(string opstring)

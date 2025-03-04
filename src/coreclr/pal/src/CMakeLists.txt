@@ -1,8 +1,8 @@
-if(CLR_CMAKE_TARGET_OSX OR CLR_CMAKE_TARGET_FREEBSD OR CLR_CMAKE_TARGET_HAIKU)
+if(CLR_CMAKE_TARGET_APPLE OR CLR_CMAKE_TARGET_FREEBSD OR CLR_CMAKE_TARGET_HAIKU)
   # On OSX and *BSD, we use the libunwind that's part of the OS
   # On Haiku, we used a special port of libunwind
   set(CLR_CMAKE_USE_SYSTEM_LIBUNWIND 1)
-endif(CLR_CMAKE_TARGET_OSX OR CLR_CMAKE_TARGET_FREEBSD OR CLR_CMAKE_TARGET_HAIKU)
+endif(CLR_CMAKE_TARGET_APPLE OR CLR_CMAKE_TARGET_FREEBSD OR CLR_CMAKE_TARGET_HAIKU)
 
 if(NOT DEFINED ENV{ROOTFS_DIR})
   include_directories(SYSTEM /usr/local/include)
@@ -10,18 +10,18 @@ elseif (CLR_CMAKE_TARGET_FREEBSD)
   include_directories(SYSTEM $ENV{ROOTFS_DIR}/usr/local/include)
 endif()
 
-if(NOT CLR_CMAKE_USE_SYSTEM_LIBUNWIND)
+if(NOT CLR_CMAKE_USE_SYSTEM_LIBUNWIND AND NOT CLR_CMAKE_TARGET_ARCH_WASM)
   include_directories(${CLR_SRC_NATIVE_DIR}/external/libunwind/include)
   include_directories(${CLR_SRC_NATIVE_DIR}/external/libunwind/include/tdep)
   include_directories(${CLR_ARTIFACTS_OBJ_DIR}/external/libunwind/include)
   include_directories(${CLR_ARTIFACTS_OBJ_DIR}/external/libunwind/include/tdep)
 
   add_subdirectory(${CLR_SRC_NATIVE_DIR}/external/libunwind_extras ${CLR_ARTIFACTS_OBJ_DIR}/external/libunwind)
-elseif(NOT CLR_CMAKE_TARGET_OSX)
+elseif(NOT CLR_CMAKE_TARGET_APPLE)
   find_unwind_libs(UNWIND_LIBS)
 else()
   add_subdirectory(${CLR_SRC_NATIVE_DIR}/external/libunwind_extras ${CLR_ARTIFACTS_OBJ_DIR}/external/libunwind)
-endif(NOT CLR_CMAKE_USE_SYSTEM_LIBUNWIND)
+endif(NOT CLR_CMAKE_USE_SYSTEM_LIBUNWIND AND NOT CLR_CMAKE_TARGET_ARCH_WASM)
 
 include(configure.cmake)
 
@@ -59,6 +59,8 @@ elseif(CLR_CMAKE_HOST_ARCH_S390X)
   set(PAL_ARCH_SOURCES_DIR s390x)
 elseif(CLR_CMAKE_HOST_ARCH_POWERPC64)
   set(PAL_ARCH_SOURCES_DIR ppc64le)
+elseif(CLR_CMAKE_HOST_ARCH_WASM)
+  set(PAL_ARCH_SOURCES_DIR wasm)
 endif()
 
 if(CLR_CMAKE_USE_SYSTEM_LIBUNWIND)
@@ -70,13 +72,16 @@ if(CLR_CMAKE_TARGET_OSX)
   if(CLR_CMAKE_HOST_ARCH_AMD64)
     add_definitions(-DXSTATE_SUPPORTED)
   endif()
+endif()
+
+if(CLR_CMAKE_TARGET_APPLE)
   set(PLATFORM_SOURCES
     arch/${PAL_ARCH_SOURCES_DIR}/context.S
     arch/${PAL_ARCH_SOURCES_DIR}/dispatchexceptionwrapper.S
     exception/machexception.cpp
     exception/machmessage.cpp
   )
-endif(CLR_CMAKE_TARGET_OSX)
+endif(CLR_CMAKE_TARGET_APPLE)
 
 if (FEATURE_ENABLE_NO_ADDRESS_SPACE_RANDOMIZATION)
   add_definitions(-DFEATURE_ENABLE_NO_ADDRESS_SPACE_RANDOMIZATION)
@@ -110,18 +115,26 @@ endif(CLR_CMAKE_TARGET_HAIKU)
 # turn off capability to remove unused functions (which was enabled in debug build with sanitizers)
 set(CMAKE_SHARED_LINKER_FLAGS_DEBUG "${CMAKE_SHARED_LINKER_FLAGS_DEBUG} -Wl,--no-gc-sections")
 
-set(ARCH_SOURCES
-  arch/${PAL_ARCH_SOURCES_DIR}/context2.S
-  arch/${PAL_ARCH_SOURCES_DIR}/debugbreak.S
-  arch/${PAL_ARCH_SOURCES_DIR}/exceptionhelper.S
-)
+if (NOT CLR_CMAKE_TARGET_ARCH_WASM)
+  set(ARCH_SOURCES
+    arch/${PAL_ARCH_SOURCES_DIR}/context2.S
+    arch/${PAL_ARCH_SOURCES_DIR}/debugbreak.S
+    arch/${PAL_ARCH_SOURCES_DIR}/exceptionhelper.S
+  )
+endif()
 
-if(NOT CLR_CMAKE_TARGET_OSX)
+if (CLR_CMAKE_TARGET_ARCH_WASM)
+  set(PLATFORM_SOURCES
+  arch/${PAL_ARCH_SOURCES_DIR}/stubs.cpp
+  )
+endif()
+
+if(NOT CLR_CMAKE_TARGET_APPLE AND NOT CLR_CMAKE_TARGET_ARCH_WASM)
   list(APPEND PLATFORM_SOURCES
     arch/${PAL_ARCH_SOURCES_DIR}/callsignalhandlerwrapper.S
     arch/${PAL_ARCH_SOURCES_DIR}/signalhandlerhelper.cpp
   )
-endif(NOT CLR_CMAKE_TARGET_OSX)
+endif(NOT CLR_CMAKE_TARGET_APPLE AND NOT CLR_CMAKE_TARGET_ARCH_WASM)
 
 if(CLR_CMAKE_HOST_ARCH_ARM)
   if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
@@ -207,9 +220,9 @@ set_source_files_properties(
     INCLUDE_DIRECTORIES ${CMAKE_CURRENT_SOURCE_DIR}/../inc/rt
 )
 
-if(NOT CLR_CMAKE_USE_SYSTEM_LIBUNWIND)
+if(NOT CLR_CMAKE_USE_SYSTEM_LIBUNWIND AND NOT CLR_CMAKE_TARGET_ARCH_WASM)
   set(LIBUNWIND_OBJECTS $<TARGET_OBJECTS:libunwind>)
-endif(NOT CLR_CMAKE_USE_SYSTEM_LIBUNWIND)
+endif(NOT CLR_CMAKE_USE_SYSTEM_LIBUNWIND AND NOT CLR_CMAKE_TARGET_ARCH_WASM)
 
 add_library(coreclrpal
   STATIC
@@ -220,7 +233,7 @@ add_library(coreclrpal
 )
 
 # Build separate pal library for DAC (addition to regular pal library)
-if(CLR_CMAKE_TARGET_OSX)
+if(CLR_CMAKE_TARGET_APPLE)
   set(LIBUNWIND_DAC_OBJECTS $<TARGET_OBJECTS:libunwind_dac>)
 
   add_library(coreclrpal_dac STATIC
@@ -242,7 +255,7 @@ else()
       exception/remote-unwind.cpp
     )
   endif(NOT FEATURE_CROSSBITNESS)
-endif(CLR_CMAKE_TARGET_OSX)
+endif(CLR_CMAKE_TARGET_APPLE)
 
 # There is only one function exported in 'tracepointprovider.cpp' namely 'PAL_InitializeTracing',
 # which is guarded with '#if defined(__linux__)'. On macOS, Xcode issues the following warning:
@@ -297,8 +310,7 @@ if(CLR_CMAKE_TARGET_LINUX)
   else(NOT CLR_CMAKE_TARGET_ANDROID)
     target_link_libraries(coreclrpal
       PUBLIC
-      ${ANDROID_GLOB}
-      ${LZMA})
+      ${ANDROID_GLOB})
   endif(NOT CLR_CMAKE_TARGET_ANDROID)
 
   target_link_libraries(coreclrpal

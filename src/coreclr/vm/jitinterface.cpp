@@ -6611,7 +6611,11 @@ void CEEInfo::setMethodAttribs (
         ftn->SetNotInline(true);
     }
 
-    if (attribs & (CORINFO_FLG_SWITCHED_TO_OPTIMIZED | CORINFO_FLG_SWITCHED_TO_MIN_OPT))
+    if (attribs & (CORINFO_FLG_SWITCHED_TO_OPTIMIZED | CORINFO_FLG_SWITCHED_TO_MIN_OPT
+#ifdef FEATURE_INTERPRETER
+     | CORINFO_FLG_INTERPRETER
+#endif // FEATURE_INTERPRETER
+     ))
     {
         PrepareCodeConfig *config = GetThread()->GetCurrentPrepareCodeConfig();
         if (config != nullptr)
@@ -6621,6 +6625,12 @@ void CEEInfo::setMethodAttribs (
                 _ASSERTE(!ftn->IsJitOptimizationDisabled());
                 config->SetJitSwitchedToMinOpt();
             }
+#ifdef FEATURE_INTERPRETER
+            else if (attribs & CORINFO_FLG_INTERPRETER)
+            {
+                config->SetIsInterpreterCode();
+            }
+#endif // FEATURE_INTERPRETER
 #ifdef FEATURE_TIERED_COMPILATION
             else if (attribs & CORINFO_FLG_SWITCHED_TO_OPTIMIZED)
             {
@@ -8200,7 +8210,7 @@ bool CEEInfo::canTailCall (CORINFO_METHOD_HANDLE hCaller,
 
         if (!pCaller->IsNoMetadata())
         {
-            // Do not tailcall from methods that are marked as noinline (people often use no-inline
+            // Do not tailcall from methods that are marked as NoInlining (people often use no-inline
             // to mean "I want to always see this method in stacktrace")
             DWORD dwImplFlags = 0;
             IfFailThrow(pCaller->GetMDImport()->GetMethodImplProps(callerToken, NULL, &dwImplFlags));
@@ -8208,9 +8218,12 @@ bool CEEInfo::canTailCall (CORINFO_METHOD_HANDLE hCaller,
             if (IsMiNoInlining(dwImplFlags))
             {
                 result = false;
-                szFailReason = "Caller is marked as no inline";
+                szFailReason = "Caller is marked as NoInlining";
                 goto exit;
             }
+
+            // NOTE: we don't have to handle NoOptimization here, because JIT is not expected
+            // to emit fast tail calls if optimizations are disabled.
         }
 
         // Methods with StackCrawlMark depend on finding their caller on the stack.
@@ -10129,25 +10142,23 @@ void InlinedCallFrame::GetEEInfo(CORINFO_EE_INFO::InlinedCallFrameInfo *pInfo)
 {
     LIMITED_METHOD_CONTRACT;
 
-    pInfo->size                          = sizeof(GSCookie) + sizeof(InlinedCallFrame);
-    pInfo->sizeWithSecretStubArg         = sizeof(GSCookie) + sizeof(InlinedCallFrame) + sizeof(PTR_VOID);
+    pInfo->size                          = sizeof(InlinedCallFrame);
+    pInfo->sizeWithSecretStubArg         = sizeof(InlinedCallFrame) + sizeof(PTR_VOID);
 
-    pInfo->offsetOfGSCookie              = 0;
-    pInfo->offsetOfFrameVptr             = sizeof(GSCookie);
-    pInfo->offsetOfFrameLink             = sizeof(GSCookie) + Frame::GetOffsetOfNextLink();
-    pInfo->offsetOfCallSiteSP            = sizeof(GSCookie) + offsetof(InlinedCallFrame, m_pCallSiteSP);
-    pInfo->offsetOfCalleeSavedFP         = sizeof(GSCookie) + offsetof(InlinedCallFrame, m_pCalleeSavedFP);
-    pInfo->offsetOfCallTarget            = sizeof(GSCookie) + offsetof(InlinedCallFrame, m_Datum);
-    pInfo->offsetOfReturnAddress         = sizeof(GSCookie) + offsetof(InlinedCallFrame, m_pCallerReturnAddress);
-    pInfo->offsetOfSecretStubArg         = sizeof(GSCookie) + sizeof(InlinedCallFrame);
+    pInfo->offsetOfFrameLink             = Frame::GetOffsetOfNextLink();
+    pInfo->offsetOfCallSiteSP            = offsetof(InlinedCallFrame, m_pCallSiteSP);
+    pInfo->offsetOfCalleeSavedFP         = offsetof(InlinedCallFrame, m_pCalleeSavedFP);
+    pInfo->offsetOfCallTarget            = offsetof(InlinedCallFrame, m_Datum);
+    pInfo->offsetOfReturnAddress         = offsetof(InlinedCallFrame, m_pCallerReturnAddress);
+    pInfo->offsetOfSecretStubArg         = sizeof(InlinedCallFrame);
 #ifdef TARGET_ARM
-    pInfo->offsetOfSPAfterProlog         = sizeof(GSCookie) + offsetof(InlinedCallFrame, m_pSPAfterProlog);
+    pInfo->offsetOfSPAfterProlog         = offsetof(InlinedCallFrame, m_pSPAfterProlog);
 #endif // TARGET_ARM
 }
 
 CORINFO_OS getClrVmOs()
 {
-#ifdef TARGET_OSX
+#ifdef TARGET_APPLE
     return CORINFO_APPLE;
 #elif defined(TARGET_UNIX)
     return CORINFO_UNIX;
@@ -12613,8 +12624,8 @@ CorJitResult invokeCompileMethod(EEJitManager *jitMgr,
              flags.Set(CORJIT_FLAGS::CORJIT_FLAG_MIN_OPT);
          }
 
-         // Always emit frames for methods marked no-inline (see #define ETW_EBP_FRAMED in the JIT)
-         if (IsMiNoInlining(dwImplFlags))
+         // Always emit frames for methods marked NoInlining or NoOptimization (see #define ETW_EBP_FRAMED in the JIT)
+         if (IsMiNoInlining(dwImplFlags) || IsMiNoOptimization(dwImplFlags))
          {
              flags.Set(CORJIT_FLAGS::CORJIT_FLAG_FRAMED);
          }
@@ -14534,7 +14545,7 @@ TADDR EECodeInfo::GetSavedMethodCode()
     return GetStartAddress();
 }
 
-TADDR EECodeInfo::GetStartAddress()
+TADDR EECodeInfo::GetStartAddress() const
 {
     CONTRACTL {
         NOTHROW;
@@ -14545,7 +14556,7 @@ TADDR EECodeInfo::GetStartAddress()
     return m_pJM->JitTokenToStartAddress(m_methodToken);
 }
 
-NativeCodeVersion EECodeInfo::GetNativeCodeVersion()
+NativeCodeVersion EECodeInfo::GetNativeCodeVersion() const
 {
     CONTRACTL
     {

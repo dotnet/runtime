@@ -226,6 +226,14 @@ namespace System.Net
             PrivateAddress = (uint)newAddress;
         }
 
+        /// <summary>Determines whether the provided span contains a valid <see cref="IPAddress"/>.</summary>
+        /// <param name="ipSpan">The text to parse.</param>
+        public static bool IsValid(ReadOnlySpan<char> ipSpan) => IPAddressParser.IsValid(ipSpan);
+
+        /// <summary>Determines whether the provided span contains a valid <see cref="IPAddress"/>.</summary>
+        /// <param name="utf8Text">The text to parse.</param>
+        public static bool IsValidUtf8(ReadOnlySpan<byte> utf8Text) => IPAddressParser.IsValid(utf8Text);
+
         /// <devdoc>
         ///   <para>
         ///     Converts an IP address string to an <see cref='System.Net.IPAddress'/> instance.

@@ -683,7 +683,9 @@ namespace System.IO.Compression.Tests
         /// Deflate 0x08, _uncompressedSize 0, _compressedSize 2, compressed data: 0x0300 (\u0003 ETX)
         /// 2. EmptyFileCompressedWrongSize has
         /// Deflate 0x08, _uncompressedSize 0, _compressedSize 4, compressed data: 0xBAAD0300 (just bad data)
-        /// ZipArchive is expected to change compression method to Stored (0x00) and ignore "bad" compressed size
+        /// ZipArchive is not expected to make any changes to the compression method of an archive entry unless
+        /// it's been changed. If it has been changed, ZipArchive is expected to change compression method to
+        /// Stored (0x00) and ignore "bad" compressed size
         /// </summary>
         [Theory]
         [MemberData(nameof(EmptyFiles))]
@@ -692,13 +694,29 @@ namespace System.IO.Compression.Tests
             using (var testStream = new MemoryStream(fileBytes))
             {
                 const string ExpectedFileName = "xl/customProperty2.bin";
-                // open archive with zero-length file that is compressed (Deflate = 0x8)
+
+                byte firstEntryCompressionMethod = fileBytes[8];
+
+                // first attempt: open archive with zero-length file that is compressed (Deflate = 0x8)
                 using (var zip = new ZipArchive(testStream, ZipArchiveMode.Update, leaveOpen: true))
                 {
-                    // dispose without making any changes will rewrite the archive
+                    // dispose without making any changes will make no changes to the input stream
                 }
 
                 byte[] fileContent = testStream.ToArray();
+
+                // compression method should not have changed
+                Assert.Equal(firstEntryCompressionMethod, fileBytes[8]);
+
+                testStream.Seek(0, SeekOrigin.Begin);
+                // second attempt: open archive with zero-length file that is compressed (Deflate = 0x8)
+                using (var zip = new ZipArchive(testStream, ZipArchiveMode.Update, leaveOpen: true))
+                using (var zipEntryStream = zip.Entries[0].Open())
+                {
+                    // dispose after opening an entry will rewrite the archive
+                }
+
+                fileContent = testStream.ToArray();
 
                 // compression method should change to "uncompressed" (Stored = 0x0)
                 Assert.Equal(0, fileContent[8]);
@@ -869,6 +887,24 @@ namespace System.IO.Compression.Tests
             var exception = Record.Exception(() => archive.Entries.First());
 
             Assert.Null(exception);
+        }
+
+        /// <summary>
+        /// This test checks that an InvalidDataException will be thrown when consuming a zip with bad Huffman data.
+        /// </summary>
+        [Fact]
+        public static async Task ZipArchive_InvalidHuffmanData()
+        {
+            string filename = bad("HuffmanTreeException.zip");
+            using (ZipArchive archive = new ZipArchive(await StreamHelpers.CreateTempCopyStream(filename), ZipArchiveMode.Read))
+            {
+                ZipArchiveEntry e = archive.Entries[0];
+                using (MemoryStream ms = new MemoryStream())
+                using (Stream s = e.Open())
+                {
+                    Assert.Throws<InvalidDataException>(() => s.CopyTo(ms)); //"Should throw on creating Huffman tree"
+                }
+            }
         }
 
         private static readonly byte[] s_slightlyIncorrectZip64 =

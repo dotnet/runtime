@@ -86,12 +86,14 @@
       <RuntimeFiles Include="@(HostPolicyFile)" Condition="Exists('@(HostPolicyFile)')" />
       <RuntimeFiles Include="@(_HostSymbols)" Condition="Exists('@(_HostSymbols)')" IsNative="true" />
       <!-- CoreRun is not used for testing anymore, but we still use it for benchmarking and profiling -->
-      <RuntimeFiles Include="$(CoreCLRArtifactsPath)\corerun*" />
-      <RuntimeFiles Include="$(CoreCLRArtifactsPath)\PDB\corerun*" />
+      <RuntimeFiles Include="$(CoreCLRArtifactsPath)\corerun*" Condition="'$(TargetsAndroid)' != 'true'" />
+      <RuntimeFiles Include="$(CoreCLRArtifactsPath)\PDB\corerun*" Condition="'$(TargetsAndroid)' != 'true'" />
       <!-- Include cDAC reader library
            TODO: [cdac] Remove once cdacreader is added to shipping shared framework -->
       <RuntimeFiles Include="$(CoreCLRArtifactsPath)\*cdacreader*" />
       <RuntimeFiles Include="$(CoreCLRArtifactsPath)\PDB\*cdacreader*" />
+      <RuntimeFiles Include="$(CoreCLRArtifactsPath)\cdaclibs\*unwinder_cdac*" />
+      <RuntimeFiles Include="$(CoreCLRArtifactsPath)\cdaclibs\PDB\*unwinder_cdac*" />
     </ItemGroup>
     <!-- If the build has native sanitizers, copy over the non-sanitized diagnostic binaries so they can be loaded by a debugger -->
     <ItemGroup Condition="'$(EnableNativeSanitizers)' != ''">

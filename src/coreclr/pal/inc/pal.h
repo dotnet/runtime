@@ -2077,7 +2077,6 @@ typedef struct _KNONVOLATILE_CONTEXT_POINTERS {
     PDWORD64 S7;
     PDWORD64 S8;
     PDWORD64 Fp;
-    PDWORD64 Tp;
     PDWORD64 Ra;
 
     PDWORD64 F24;
@@ -2470,6 +2469,26 @@ typedef struct _KNONVOLATILE_CONTEXT_POINTERS {
     //
 
 } KNONVOLATILE_CONTEXT_POINTERS, *PKNONVOLATILE_CONTEXT_POINTERS;
+#elif defined(HOST_WASM)
+#define CONTEXT_CONTROL 0
+#define CONTEXT_INTEGER 0
+#define CONTEXT_FLOATING_POINT 0
+#define CONTEXT_FULL 0
+
+#define CONTEXT_XSTATE 0
+
+#define CONTEXT_EXCEPTION_ACTIVE 0x8000000L
+#define CONTEXT_SERVICE_ACTIVE 0x10000000L
+#define CONTEXT_EXCEPTION_REQUEST 0x40000000L
+#define CONTEXT_EXCEPTION_REPORTING 0x80000000L
+
+typedef struct _CONTEXT {
+    ULONG ContextFlags;
+} CONTEXT, *PCONTEXT, *LPCONTEXT;
+
+typedef struct _KNONVOLATILE_CONTEXT_POINTERS {
+    DWORD none;
+} KNONVOLATILE_CONTEXT_POINTERS, *PKNONVOLATILE_CONTEXT_POINTERS;
 
 #else
 #error Unknown architecture for defining CONTEXT.
@@ -2601,6 +2620,8 @@ PALIMPORT BOOL PALAPI PAL_GetUnwindInfoSize(SIZE_T baseAddress, ULONG64 ehFrameH
 #define PAL_CS_NATIVE_DATA_SIZE 96
 #elif defined(__HAIKU__) && defined(__x86_64__)
 #define PAL_CS_NATIVE_DATA_SIZE 56
+#elif defined(HOST_WASM)
+#define PAL_CS_NATIVE_DATA_SIZE 76
 #else
 #error  PAL_CS_NATIVE_DATA_SIZE is not defined for this architecture
 #endif
@@ -2871,14 +2892,14 @@ VirtualFree(
         IN DWORD dwFreeType);
 
 
-#if defined(HOST_OSX) && defined(HOST_ARM64)
+#if defined(HOST_APPLE) && defined(HOST_ARM64)
 
 PALIMPORT
 VOID
 PALAPI
 PAL_JitWriteProtect(bool writeEnable);
 
-#endif // defined(HOST_OSX) && defined(HOST_ARM64)
+#endif // defined(HOST_APPLE) && defined(HOST_ARM64)
 
 
 PALIMPORT

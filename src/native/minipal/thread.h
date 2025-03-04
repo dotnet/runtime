@@ -43,7 +43,7 @@ extern "C" {
  */
 static inline size_t minipal_get_current_thread_id(void)
 {
-#ifdef __wasm
+#if defined(__wasm) && defined(MONO_WASM_MT)
     return 0;
 #else
 #if defined(__GNUC__) && !defined(__clang__) && defined(__cplusplus)
