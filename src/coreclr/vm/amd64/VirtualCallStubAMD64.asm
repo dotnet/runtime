@@ -7,6 +7,7 @@ include AsmConstants.inc
 CHAIN_SUCCESS_COUNTER  equ ?g_dispatch_cache_chain_success_counter@@3_KA
 
         extern  VSD_ResolveWorker:proc
+        extern  VSD_ResolveWorkerForInterfaceLookupSlot:proc
         extern  CHAIN_SUCCESS_COUNTER:dword
 
 BACKPATCH_FLAG                  equ    1        ;; Also known as SDF_ResolveBackPatch    in the EE
@@ -82,5 +83,25 @@ Fail:
         jmp    ResolveWorkerAsmStub
 
 LEAF_END ResolveWorkerChainLookupAsmStub, _TEXT
+
+;; On Input:
+;;    rcx                    contains object 'this' pointer
+;;    r11                    contains the address of the indirection cell (with the flags in the low bits)
+;;
+;; Preserves all argument registers
+NESTED_ENTRY JIT_InterfaceLookupForSlot, _TEXT
+
+        PROLOG_WITH_TRANSITION_BLOCK
+        
+        lea             rcx, [rsp + __PWTB_TransitionBlock]         ; pTransitionBlock
+        mov             rdx, r11                                    ; indirection cell
+
+        call            VSD_ResolveWorkerForInterfaceLookupSlot
+
+        RESTORE_FLOAT_ARGUMENT_REGISTERS __PWTB_FloatArgumentRegisters
+        RESTORE_ARGUMENT_REGISTERS __PWTB_ArgumentRegisters
+        EPILOG_WITH_TRANSITION_BLOCK_RETURN
+
+NESTED_END JIT_InterfaceLookupForSlot, _TEXT
 
         end
