@@ -424,22 +424,8 @@ template <typename T> int updateVariable(PBYTE loc, T value)
 {
     if (*(T*)loc != value)
     {
-// #if defined(WRITE_BARRIER_VARS_INLINE)
         ExecutableWriterHolder<T> varWriterHolder((T*)loc, sizeof(T));
         *varWriterHolder.GetRW() = value;
-// #else
-
-//     BYTE *writeBarrierCodeStart = GetWriteBarrierCodeLocation((void*)JIT_PatchedCodeStart);
-//     BYTE *writeBarrierCodeStartRW = writeBarrierCodeStart;
-//     ExecutableWriterHolderNoLog<BYTE> writeBarrierWriterHolder;
-//     if (IsWriteBarrierCopyEnabled())
-//     {
-//         writeBarrierWriterHolder.AssignExecutableWriterHolder(writeBarrierCodeStart, (BYTE*)JIT_PatchedCodeLast - (BYTE*)JIT_PatchedCodeStart);
-//         writeBarrierCodeStartRW = writeBarrierWriterHolder.GetRW();
-//     }
-
-//     *loc = value;
-// #endif
         return SWB_ICACHE_FLUSH;
     }
     return SWB_PASS;
@@ -452,7 +438,6 @@ bool WriteBarrierManager::NeedDifferentWriteBarrier(bool bReqUpperBoundsCheck, b
     //
     // The actual JIT_WriteBarrier routine will only be called in free builds, but we keep this code (that
     // modifies it) around in debug builds to check that it works (with assertions).
-
 
     WriteBarrierType writeBarrierType = m_currentWriteBarrier;
 
