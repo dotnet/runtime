@@ -125,6 +125,7 @@ private:
 
     //-------------------------------------------------------------------------
 
+    bool     genLocallocUsed;  // true if we have used localloc in the method
     bool     genUseBlockInit;  // true if we plan to block-initialize the local stack frame
     unsigned genInitStkLclCnt; // The count of local variables that we need to zero init
 
