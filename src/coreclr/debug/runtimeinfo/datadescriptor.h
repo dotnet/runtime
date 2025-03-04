@@ -709,7 +709,7 @@ CDAC_TYPE_FIELD(HijackArgs, /*pointer*/, X28, offsetof(HijackArgs, X28))
 CDAC_TYPE_FIELD(HijackArgs, /*pointer*/, Fp, offsetof(HijackArgs, X29))
 CDAC_TYPE_FIELD(HijackArgs, /*pointer*/, Lr, offsetof(HijackArgs, Lr))
 
-#endif
+#endif // Platform switch
 CDAC_TYPE_END(HijackArgs)
 #endif // FEATURE_HIJACK
 
@@ -720,12 +720,32 @@ CDAC_TYPE_FIELD(FaultingExceptionFrame, /*T_CONTEXT*/, TargetContext, cdac_data<
 #endif // FEATURE_EH_FUNCLETS
 CDAC_TYPE_END(FaultingExceptionFrame)
 
+// CalleeSavedRegisters struct is different on each platform
 CDAC_TYPE_BEGIN(CalleeSavedRegisters)
 CDAC_TYPE_SIZE(sizeof(CalleeSavedRegisters))
+#if defined(TARGET_AMD64)
+
 #define CALLEE_SAVED_REGISTER(regname) \
     CDAC_TYPE_FIELD(CalleeSavedRegisters, /*nuint*/, regname, offsetof(CalleeSavedRegisters, regname))
 ENUM_CALLEE_SAVED_REGISTERS()
 #undef CALLEE_SAVED_REGISTER
+
+#elif defined(TARGET_ARM64)
+
+CDAC_TYPE_FIELD(CalleeSavedRegisters, /*nuint*/, X19, offsetof(CalleeSavedRegisters, x19))
+CDAC_TYPE_FIELD(CalleeSavedRegisters, /*nuint*/, X20, offsetof(CalleeSavedRegisters, x20))
+CDAC_TYPE_FIELD(CalleeSavedRegisters, /*nuint*/, X21, offsetof(CalleeSavedRegisters, x21))
+CDAC_TYPE_FIELD(CalleeSavedRegisters, /*nuint*/, X22, offsetof(CalleeSavedRegisters, x22))
+CDAC_TYPE_FIELD(CalleeSavedRegisters, /*nuint*/, X23, offsetof(CalleeSavedRegisters, x23))
+CDAC_TYPE_FIELD(CalleeSavedRegisters, /*nuint*/, X24, offsetof(CalleeSavedRegisters, x24))
+CDAC_TYPE_FIELD(CalleeSavedRegisters, /*nuint*/, X25, offsetof(CalleeSavedRegisters, x25))
+CDAC_TYPE_FIELD(CalleeSavedRegisters, /*nuint*/, X26, offsetof(CalleeSavedRegisters, x26))
+CDAC_TYPE_FIELD(CalleeSavedRegisters, /*nuint*/, X27, offsetof(CalleeSavedRegisters, x27))
+CDAC_TYPE_FIELD(CalleeSavedRegisters, /*nuint*/, X28, offsetof(CalleeSavedRegisters, x28))
+CDAC_TYPE_FIELD(CalleeSavedRegisters, /*nuint*/, Fp, offsetof(CalleeSavedRegisters, x29))
+CDAC_TYPE_FIELD(CalleeSavedRegisters, /*nuint*/, Lr, offsetof(CalleeSavedRegisters, x30))
+
+#endif // Platform switch
 CDAC_TYPE_END(CalleeSavedRegisters)
 
 CDAC_TYPES_END()
