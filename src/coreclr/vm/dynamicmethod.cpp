@@ -699,6 +699,7 @@ void* HostCodeHeap::AllocMemForCode_NoThrow(size_t header, size_t size, DWORD al
     // Assert the later fact here.
     _ASSERTE(HOST_CODEHEAP_SIZE_ALIGN >= BYTES_PER_BUCKET);
 
+    size_t codeHeaderSize = header;
     header += sizeof(TrackAllocation*);
 
     TrackAllocation* pTracker = AllocMemory_NoThrow(header, size, alignment, reserveForJumpStubs);
@@ -708,7 +709,7 @@ void* HostCodeHeap::AllocMemForCode_NoThrow(size_t header, size_t size, DWORD al
     BYTE * pCode = ALIGN_UP((BYTE*)(pTracker + 1) + header, alignment);
 
     // Pointer to the TrackAllocation record is stored just before the code header
-    void * pHdr = pCode - header;
+    void * pHdr = pCode - codeHeaderSize;
     ExecutableWriterHolder<TrackAllocation *> trackerWriterHolder((TrackAllocation **)(pHdr) - 1, sizeof(TrackAllocation *));
     *trackerWriterHolder.GetRW() = pTracker;
 
