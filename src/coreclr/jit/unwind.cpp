@@ -399,6 +399,11 @@ void Compiler::DumpCfiInfo(bool                  isHotCode,
                 assert(dwarfReg == DWARF_REG_ILLEGAL);
                 printf("    CodeOffset: 0x%02X Op: AdjustCfaOffset Offset:0x%X\n", codeOffset, offset);
                 break;
+            case CFI_NEGATE_RA_STATE:
+                assert(dwarfReg == DWARF_REG_ILLEGAL);
+                assert(offset == 0);
+                printf("    CodeOffset: 0x%02X Op: NegateRAState\n", codeOffset);
+                break;
             default:
                 printf("    Unrecognized CFI_CODE: 0x%llX\n", *(UINT64*)pCode);
                 break;
