@@ -338,7 +338,7 @@ inline UINT64 AlignUp(UINT64 value, UINT alignment)
     return (value+alignment-1)&~(UINT64)(alignment-1);
 }
 
-#ifdef __APPLE__
+#if defined(__APPLE__) || defined(__wasm__)
 inline SIZE_T AlignUp(SIZE_T value, UINT alignment)
 {
     STATIC_CONTRACT_LEAF;
