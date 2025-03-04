@@ -169,57 +169,12 @@ EXTERN_C void JIT_WriteBarrier_Patch_Label_GCShadowEnd();
 #endif // TARGET_ARM64
 #endif // WRITE_BARRIER_VARS_INLINE
 
+WriteBarrierManager g_WriteBarrierManager;
+
 // Use this somewhat hokey macro to concatenate the function start with the patch
 // label. This allows the code below to look relatively nice, but relies on the
 // naming convention which we have established for these helpers.
 #define CALC_PATCH_LOCATION(func,label,offset)      CalculatePatchLocation((PVOID)func, (PVOID)func##_##label, offset)
-
-
-WriteBarrierManager g_WriteBarrierManager;
-
-
-// This function bashes the super fast amd64 version of the JIT_WriteBarrier
-// helper.  It should be called by the GC whenever the ephermeral region
-// bounds get changed, but still remain on the top of the GC Heap.
-int StompWriteBarrierEphemeral(bool isRuntimeSuspended)
-{
-    WRAPPER_NO_CONTRACT;
-
-    return g_WriteBarrierManager.UpdateEphemeralBounds(isRuntimeSuspended);
-}
-
-// This function bashes the super fast amd64 versions of the JIT_WriteBarrier
-// helpers.  It should be called by the GC whenever the ephermeral region gets moved
-// from being at the top of the GC Heap, and/or when the cards table gets moved.
-int StompWriteBarrierResize(bool isRuntimeSuspended, bool bReqUpperBoundsCheck)
-{
-    WRAPPER_NO_CONTRACT;
-
-    return g_WriteBarrierManager.UpdateWriteWatchAndCardTableLocations(isRuntimeSuspended, bReqUpperBoundsCheck);
-}
-
-void FlushWriteBarrierInstructionCache()
-{
-    FlushInstructionCache(GetCurrentProcess(), GetWriteBarrierCodeLocation((PVOID)JIT_WriteBarrier), g_WriteBarrierManager.GetCurrentWriteBarrierSize());
-}
-
-#ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
-int SwitchToWriteWatchBarrier(bool isRuntimeSuspended)
-{
-    WRAPPER_NO_CONTRACT;
-
-    return g_WriteBarrierManager.SwitchToWriteWatchBarrier(isRuntimeSuspended);
-}
-
-int SwitchToNonWriteWatchBarrier(bool isRuntimeSuspended)
-{
-    WRAPPER_NO_CONTRACT;
-
-    return g_WriteBarrierManager.SwitchToNonWriteWatchBarrier(isRuntimeSuspended);
-}
-#endif // FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
-
-
 
 WriteBarrierManager::WriteBarrierManager() :
     m_currentWriteBarrier(WRITE_BARRIER_UNINITIALIZED)
@@ -439,6 +394,7 @@ bool WriteBarrierManager::NeedDifferentWriteBarrier(bool bReqUpperBoundsCheck, b
     // The actual JIT_WriteBarrier routine will only be called in free builds, but we keep this code (that
     // modifies it) around in debug builds to check that it works (with assertions).
 
+
     WriteBarrierType writeBarrierType = m_currentWriteBarrier;
 
     for(;;)
@@ -599,7 +555,6 @@ int WriteBarrierManager::UpdateWriteWatchAndCardTableLocations(bool isRuntimeSus
     if (m_currentWriteBarrier == WRITE_BARRIER_UNINITIALIZED)
         return stompWBCompleteActions;
 #endif
-
 
 #ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
 #if defined(WRITE_BARRIER_VARS_INLINE)
@@ -1124,3 +1079,44 @@ void WriteBarrierManager::UpdatePatchLocations()
     }
 #endif // WRITE_BARRIER_VARS_INLINE
 }
+
+// This function bashes the super fast version of the JIT_WriteBarrier
+// helper.  It should be called by the GC whenever the ephermeral region
+// bounds get changed, but still remain on the top of the GC Heap.
+int StompWriteBarrierEphemeral(bool isRuntimeSuspended)
+{
+    WRAPPER_NO_CONTRACT;
+
+    return g_WriteBarrierManager.UpdateEphemeralBounds(isRuntimeSuspended);
+}
+
+// This function bashes the super fast versions of the JIT_WriteBarrier
+// helpers.  It should be called by the GC whenever the ephermeral region gets moved
+// from being at the top of the GC Heap, and/or when the cards table gets moved.
+int StompWriteBarrierResize(bool isRuntimeSuspended, bool bReqUpperBoundsCheck)
+{
+    WRAPPER_NO_CONTRACT;
+
+    return g_WriteBarrierManager.UpdateWriteWatchAndCardTableLocations(isRuntimeSuspended, bReqUpperBoundsCheck);
+}
+
+void FlushWriteBarrierInstructionCache()
+{
+    FlushInstructionCache(GetCurrentProcess(), GetWriteBarrierCodeLocation((PVOID)JIT_WriteBarrier), g_WriteBarrierManager.GetCurrentWriteBarrierSize());
+}
+
+#ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
+int SwitchToWriteWatchBarrier(bool isRuntimeSuspended)
+{
+    WRAPPER_NO_CONTRACT;
+
+    return g_WriteBarrierManager.SwitchToWriteWatchBarrier(isRuntimeSuspended);
+}
+
+int SwitchToNonWriteWatchBarrier(bool isRuntimeSuspended)
+{
+    WRAPPER_NO_CONTRACT;
+
+    return g_WriteBarrierManager.SwitchToNonWriteWatchBarrier(isRuntimeSuspended);
+}
+#endif // FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
