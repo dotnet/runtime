@@ -354,7 +354,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
                 ResultCache resultCache = (cacheLocation == CallSiteResultCacheLocation.Scope || cacheLocation == CallSiteResultCacheLocation.Root)
                     ? new ResultCache(cacheLocation, callSiteKey)
                     : new ResultCache(CallSiteResultCacheLocation.None, callSiteKey);
-                return _callSiteCache[callSiteKey] = new IEnumerableCallSite(resultCache, itemType, callSites);
+                return _callSiteCache[callSiteKey] = new IEnumerableCallSite(resultCache, itemType, callSites, serviceIdentifier.ServiceKey);
             }
             finally
             {
@@ -381,7 +381,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
                 var lifetime = new ResultCache(descriptor.Lifetime, serviceIdentifier, slot);
                 if (descriptor.HasImplementationInstance())
                 {
-                    callSite = new ConstantCallSite(descriptor.ServiceType, descriptor.GetImplementationInstance());
+                    callSite = new ConstantCallSite(descriptor.ServiceType, descriptor.GetImplementationInstance(), descriptor.ServiceKey);
                 }
                 else if (!descriptor.IsKeyedService && descriptor.ImplementationFactory != null)
                 {
@@ -399,7 +399,6 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
                 {
                     throw new InvalidOperationException(SR.InvalidServiceDescriptor);
                 }
-                callSite.Key = descriptor.ServiceKey;
 
                 return _callSiteCache[callSiteKey] = callSite;
             }
@@ -478,7 +477,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
                     ParameterInfo[] parameters = constructor.GetParameters();
                     if (parameters.Length == 0)
                     {
-                        return new ConstructorCallSite(lifetime, serviceIdentifier.ServiceType, constructor);
+                        return new ConstructorCallSite(lifetime, serviceIdentifier.ServiceType, constructor, serviceIdentifier.ServiceKey);
                     }
 
                     parameterCallSites = CreateArgumentCallSites(
@@ -488,7 +487,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
                         parameters,
                         throwIfCallSiteNotFound: true)!;
 
-                    return new ConstructorCallSite(lifetime, serviceIdentifier.ServiceType, constructor, parameterCallSites);
+                    return new ConstructorCallSite(lifetime, serviceIdentifier.ServiceType, constructor, parameterCallSites, serviceIdentifier.ServiceKey);
                 }
 
                 Array.Sort(constructors,
@@ -552,7 +551,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
                 else
                 {
                     Debug.Assert(parameterCallSites != null);
-                    return new ConstructorCallSite(lifetime, serviceIdentifier.ServiceType, bestConstructor, parameterCallSites);
+                    return new ConstructorCallSite(lifetime, serviceIdentifier.ServiceType, bestConstructor, parameterCallSites, serviceIdentifier.ServiceKey);
                 }
             }
             finally

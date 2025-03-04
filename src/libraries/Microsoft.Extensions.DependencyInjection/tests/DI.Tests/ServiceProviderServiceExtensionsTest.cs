@@ -276,6 +276,58 @@ namespace Microsoft.Extensions.DependencyInjection
             return serviceCollection.BuildServiceProvider();
         }
 
+        [Fact]
+        public async Task GetService_ReturnsGenericUnkeyedInstance_AfterUsingGetKeyedService()
+        {
+            // Arrange
+            var services = new ServiceCollection();
+
+            services.AddTransient(typeof(IGenericService<>), typeof(UnkeyedGenericService<>));
+            services.AddKeyedTransient(typeof(IGenericService<>), "someKey", typeof(PrimaryKeyedGenericService<>));
+
+            await using var serviceProvider = services.BuildServiceProvider();
+
+            // Act
+            _ = serviceProvider.GetKeyedService<IGenericService<object>>("someKey");
+            _ = serviceProvider.GetKeyedService<IGenericService<object>>("someKey");
+
+            // Wait for DynamicServiceProviderEngine's background cache update to complete.
+            await Task.Delay(100).ConfigureAwait(false);
+
+            var result = serviceProvider.GetService<IGenericService<object>>();
+
+            // Assert
+            Assert.IsType<UnkeyedGenericService<object>>(result);
+        }
+
+        [Fact]
+        public async Task GetServices_ReturnsExpectedNumberOfGenericKeyedAndUnkeyedInstances_AfterUsingGetKeyedServices()
+        {
+            // Arrange
+            var services = new ServiceCollection();
+
+            services.AddTransient<IGenericService<object>, UnkeyedGenericService<object>>();
+            services.AddKeyedTransient<IGenericService<object>, PrimaryKeyedGenericService<object>>("someKey");
+            services.AddKeyedTransient<IGenericService<object>, SecondaryKeyedGenericService<object>>("someKey");
+
+            await using var serviceProvider = services.BuildServiceProvider();
+
+            // Act
+            _ = serviceProvider.GetKeyedServices<IGenericService<object>>("someKey");
+            _ = serviceProvider.GetKeyedServices<IGenericService<object>>("someKey");
+
+            // Wait for DynamicServiceProviderEngine's background cache update to complete.
+            await Task.Delay(100).ConfigureAwait(false);
+
+            var unkeyedServices = serviceProvider.GetServices<IGenericService<object>>();
+            var keyedServices = serviceProvider.GetKeyedServices<IGenericService<object>>("someKey");
+
+            // Assert
+            Assert.Single(unkeyedServices);
+            Assert.Single(keyedServices.OfType<PrimaryKeyedGenericService<object>>());
+            Assert.Single(keyedServices.OfType<SecondaryKeyedGenericService<object>>());
+        }
+
         public interface IFoo { }
 
         public class Foo1 : IFoo { }
@@ -287,6 +339,14 @@ namespace Microsoft.Extensions.DependencyInjection
         public class Bar1 : IBar { }
 
         public class Bar2 : IBar { }
+
+        private interface IGenericService<T>;
+
+        private class UnkeyedGenericService<T> : IGenericService<T>;
+
+        private class PrimaryKeyedGenericService<T> : IGenericService<T>;
+
+        private class SecondaryKeyedGenericService<T> : IGenericService<T>;
 
         private class RequiredServiceSupportingProvider : IServiceProvider, ISupportRequiredService
         {
