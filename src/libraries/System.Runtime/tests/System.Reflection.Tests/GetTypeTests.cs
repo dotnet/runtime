@@ -369,7 +369,6 @@ namespace System.Reflection.Tests
         }
 
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/45033", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoRuntime))]
         [MemberData(nameof(GetTypesThatRequireEscaping))]
         public void TypeNamesThatRequireEscaping(Type type, Assembly assembly)
         {
@@ -381,7 +380,6 @@ namespace System.Reflection.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/45033", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoRuntime))]
         public void EscapingCharacterThatDoesNotRequireEscapingIsTreatedAsError()
         {
             for (char character = (char)0; character <= 255; character++)
@@ -454,7 +452,6 @@ namespace System.Reflection.Tests
         }
 
         [Theory]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/45033", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoRuntime))]
         [MemberData(nameof(AllWhitespacesArguments))]
         public void AllWhitespaces(string input, Type? expectedType)
             => Assert.Equal(expectedType, Type.GetType(input));
