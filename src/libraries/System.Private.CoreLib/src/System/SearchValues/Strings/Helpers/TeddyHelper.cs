@@ -306,7 +306,7 @@ namespace System.Buffers
         [CompExactlyDependsOn(typeof(AdvSimd.Arm64))]
         private static Vector128<byte> Shuffle(Vector128<byte> maskLow, Vector128<byte> maskHigh, Vector128<byte> low, Vector128<byte> high)
         {
-            return Vector128.ShuffleUnsafe(maskLow, low) & Vector128.ShuffleUnsafe(maskHigh, high);
+            return SearchValues.ShuffleNativeModified(maskLow, low) & Vector128.ShuffleNative(maskHigh, high);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
