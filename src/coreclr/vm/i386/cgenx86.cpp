@@ -972,49 +972,6 @@ void ResumeAtJit(PCONTEXT pContext, LPVOID oldESP)
 #pragma warning (default : 4731)
 #endif // !FEATURE_METADATA_UPDATER
 
-
-void UMEntryThunkCode::Encode(UMEntryThunkCode *pEntryThunkCodeRX, BYTE* pTargetCode, void* pvSecretParam)
-{
-    LIMITED_METHOD_CONTRACT;
-
-#ifdef _DEBUG
-    m_alignpad[0] = X86_INSTR_INT3;
-    m_alignpad[1] = X86_INSTR_INT3;
-#endif // _DEBUG
-    m_movEAX     = X86_INSTR_MOV_EAX_IMM32;
-    m_uet        = pvSecretParam;
-    m_jmp        = X86_INSTR_JMP_REL32;
-    m_execstub   = (BYTE*) ((pTargetCode) - (4+((BYTE*)&pEntryThunkCodeRX->m_execstub)));
-
-    ClrFlushInstructionCache(pEntryThunkCodeRX->GetEntryPoint(),sizeof(UMEntryThunkCode) - GetEntryPointOffset(), /* hasCodeExecutedBefore */ true);
-}
-
-void UMEntryThunkCode::Poison()
-{
-    LIMITED_METHOD_CONTRACT;
-
-    ExecutableWriterHolder<UMEntryThunkCode> thunkWriterHolder(this, sizeof(UMEntryThunkCode));
-    UMEntryThunkCode *pThisRW = thunkWriterHolder.GetRW();
-
-    pThisRW->m_execstub = (BYTE*) ((BYTE*)UMEntryThunk::ReportViolation - (4+((BYTE*)&m_execstub)));
-
-    // mov ecx, imm32
-    pThisRW->m_movEAX = 0xb9;
-
-    ClrFlushInstructionCache(GetEntryPoint(),sizeof(UMEntryThunkCode) - GetEntryPointOffset(), /* hasCodeExecutedBefore */ true);
-}
-
-UMEntryThunk* UMEntryThunk::Decode(LPVOID pCallback)
-{
-    LIMITED_METHOD_CONTRACT;
-
-    if (*((BYTE*)pCallback) != X86_INSTR_MOV_EAX_IMM32 ||
-        ( ((size_t)pCallback) & 3) != 2) {
-        return NULL;
-    }
-    return *(UMEntryThunk**)( 1 + (BYTE*)pCallback );
-}
-
 #ifdef FEATURE_READYTORUN
 
 //

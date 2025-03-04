@@ -763,9 +763,6 @@ BOOL GenerateShuffleArray(MethodDesc* pInvoke, MethodDesc *pTargetMeth, SArray<S
 }
 
 static ShuffleThunkCache* s_pShuffleThunkCache = NULL;
-static CrstStatic s_DelegateToFPtrHashCrst;         // Lock for the following hash.
-static PtrHashMap* s_pDelegateToFPtrHash = NULL;    // Hash table containing the Delegate->FPtr pairs
-                                                    // passed out to unmanaged code.
 
 // One time init.
 void COMDelegate::Init()
@@ -777,13 +774,6 @@ void COMDelegate::Init()
         MODE_ANY;
     }
     CONTRACTL_END;
-
-    s_DelegateToFPtrHashCrst.Init(CrstDelegateToFPtrHash, CRST_UNSAFE_ANYMODE);
-
-    s_pDelegateToFPtrHash = ::new PtrHashMap();
-
-    LockOwner lock = {&s_DelegateToFPtrHashCrst, IsOwnerOfCrst};
-    s_pDelegateToFPtrHash->Init(TRUE, &lock);
 
     s_pShuffleThunkCache = new ShuffleThunkCache(SystemDomain::GetGlobalLoaderAllocator()->GetStubHeap());
 }
@@ -1349,16 +1339,14 @@ LPVOID COMDelegate::ConvertToCallback(OBJECTREF pDelegateObj)
             {
                 GCX_PREEMP();
 
-                pUMThunkMarshInfo = (UMThunkMarshInfo*)(void*)pMT->GetLoaderAllocator()->GetStubHeap()->AllocMem(S_SIZE_T(sizeof(UMThunkMarshInfo)));
-
-                ExecutableWriterHolder<UMThunkMarshInfo> uMThunkMarshInfoWriterHolder(pUMThunkMarshInfo, sizeof(UMThunkMarshInfo));
-                uMThunkMarshInfoWriterHolder.GetRW()->LoadTimeInit(pInvokeMeth);
+                pUMThunkMarshInfo = (UMThunkMarshInfo*)(void*)pMT->GetLoaderAllocator()->GetLowFrequencyHeap()->AllocMem(S_SIZE_T(sizeof(UMThunkMarshInfo)));
+                pUMThunkMarshInfo->LoadTimeInit(pInvokeMeth);
 
                 if (InterlockedCompareExchangeT(&(pClass->m_pUMThunkMarshInfo),
                                                         pUMThunkMarshInfo,
                                                         NULL ) != NULL)
                 {
-                    pMT->GetLoaderAllocator()->GetStubHeap()->BackoutMem(pUMThunkMarshInfo, sizeof(UMThunkMarshInfo));
+                    pMT->GetLoaderAllocator()->GetLowFrequencyHeap()->BackoutMem(pUMThunkMarshInfo, sizeof(UMThunkMarshInfo));
                     pUMThunkMarshInfo = pClass->m_pUMThunkMarshInfo;
                 }
             }
@@ -1377,11 +1365,8 @@ LPVOID COMDelegate::ConvertToCallback(OBJECTREF pDelegateObj)
             // This target should not ever be used. We are storing it in the thunk for better diagnostics of "call on collected delegate" crashes.
             PCODE pManagedTargetForDiagnostics = (pDelegate->GetMethodPtrAux() != (PCODE)NULL) ? pDelegate->GetMethodPtrAux() : pDelegate->GetMethodPtr();
 
-            ExecutableWriterHolder<UMEntryThunk> uMEntryThunkWriterHolder(pUMEntryThunk, sizeof(UMEntryThunk));
-
             // MethodDesc is passed in for profiling to know the method desc of target
-            uMEntryThunkWriterHolder.GetRW()->LoadTimeInit(
-                pUMEntryThunk,
+            pUMEntryThunk->LoadTimeInit(
                 pManagedTargetForDiagnostics,
                 objhnd,
                 pUMThunkMarshInfo, pInvokeMeth);
@@ -1393,16 +1378,6 @@ LPVOID COMDelegate::ConvertToCallback(OBJECTREF pDelegateObj)
             else
             {
                 umHolder.SuppressRelease();
-                // Insert the delegate handle / UMEntryThunk* into the hash
-                LPVOID key = (LPVOID)pUMEntryThunk;
-
-                // Assert that the entry isn't already in the hash.
-                _ASSERTE((LPVOID)INVALIDENTRY == s_pDelegateToFPtrHash->LookupValue((UPTR)key, 0));
-
-                {
-                    CrstHolder ch(&s_DelegateToFPtrHashCrst);
-                    s_pDelegateToFPtrHash->InsertValue((UPTR)key, pUMEntryThunk->GetObjectHandle());
-                }
             }
 
             _ASSERTE(pUMEntryThunk != NULL);
@@ -1434,19 +1409,30 @@ OBJECTREF COMDelegate::ConvertToDelegate(LPVOID pCallback, MethodTable* pMT)
     // Check if this callback was originally a managed method passed out to unmanaged code.
     //
 
-    UMEntryThunk* pUMEntryThunk = UMEntryThunk::Decode(pCallback);
+    UMEntryThunk* pUMEntryThunk = NULL;
+
+    auto stubKind = RangeSectionStubManager::GetStubKind((PCODE)pCallback);
+    if (stubKind == STUB_CODE_BLOCK_STUBPRECODE)
+    {
+        Precode* pPrecode = Precode::GetPrecodeFromEntryPoint((PCODE)pCallback);
+        if (pPrecode->GetType() == PRECODE_UMENTRY_THUNK)
+        {
+            pUMEntryThunk = pPrecode->AsUMEntryThunk();
+        }
+    }
+
 
     // Lookup the callsite in the hash, if found, we can map this call back to its managed function.
     // Otherwise, we'll treat this as an unmanaged callsite.
     // Make sure that the pointer doesn't have the value of 1 which is our hash table deleted item marker.
-    LPVOID DelegateHnd = (pUMEntryThunk != NULL) && ((UPTR)pUMEntryThunk != (UPTR)1)
-        ? s_pDelegateToFPtrHash->LookupValue((UPTR)pUMEntryThunk, 0)
-        : (LPVOID)INVALIDENTRY;
+    OBJECTHANDLE DelegateHnd = (pUMEntryThunk != NULL)
+        ? pUMEntryThunk->GetObjectHandle()
+        : (OBJECTHANDLE)NULL;
 
-    if (DelegateHnd != (LPVOID)INVALIDENTRY)
+    if (DelegateHnd != (OBJECTHANDLE)NULL)
     {
         // Found a managed callsite
-        return ObjectFromHandle((OBJECTHANDLE)DelegateHnd);
+        return ObjectFromHandle(DelegateHnd);
     }
 
     // Validate the MethodTable is a delegate type
@@ -1567,15 +1553,6 @@ MethodDesc* COMDelegate::GetILStubMethodDesc(EEImplMethodDesc* pDelegateMD, DWOR
 
     PInvokeStaticSigInfo sigInfo(pDelegateMD);
     return NDirect::CreateCLRToNativeILStub(&sigInfo, dwStubFlags, pDelegateMD);
-}
-
-void COMDelegate::RemoveEntryFromFPtrHash(UPTR key)
-{
-    WRAPPER_NO_CONTRACT;
-
-    // Remove this entry from the lookup hash.
-    CrstHolder ch(&s_DelegateToFPtrHashCrst);
-    s_pDelegateToFPtrHash->DeleteValue(key, NULL);
 }
 
 extern "C" void QCALLTYPE Delegate_InitializeVirtualCallStub(QCall::ObjectHandleOnStack d, PCODE method)
