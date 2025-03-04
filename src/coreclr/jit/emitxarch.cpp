@@ -1718,7 +1718,7 @@ bool emitter::TakesEvexPrefix(const instrDesc* id) const
 #ifdef TARGET_AMD64
         // A special case here is KMOV, the original KMOV introduced in Avx512 can only be encoded in VEX, APX promoted
         // them to EVEX, so only return true when APX is available.
-        if ((ins == INS_kmovb_msk) || (ins == INS_kmovw_msk) || (ins == INS_kmovd_msk) || (ins == INS_kmovq_msk))
+        if ((ins == INS_kmovb_msk) || (ins == INS_kmovw_msk) || (ins == INS_kmovd_msk) || (ins == INS_kmovq_msk) || (ins == INS_kmovb_gpr) || (ins == INS_kmovw_gpr) || (ins == INS_kmovd_gpr) || (ins == INS_kmovq_gpr))
         {
             // Use EVEX only when needed.
             return HasExtendedGPReg(id);
@@ -2421,7 +2421,7 @@ bool emitter::HasMaskReg(const instrDesc* id) const
     if (isMaskReg(id->idReg2()))
     {
         assert(IsKInstruction(id->idIns()));
-        assert(UsePromotedEVEXEncoding());
+        return UsePromotedEVEXEncoding();
     }
 
     if (!id->idIsSmallDsc())
