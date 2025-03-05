@@ -108,5 +108,18 @@ namespace System.Security.Cryptography.Encryption.TripleDes.Tests
                 Assert.Equal(new byte[] { 1, 2, 3, 4, 5 }, decrypted);
             }
         }
+
+        [Fact]
+        public static void SetKey_SetsKey()
+        {
+            using (TripleDES des = TripleDESFactory.Create())
+            {
+                byte[] key = new byte[des.KeySize / 8];
+                RandomNumberGenerator.Fill(key);
+
+                des.SetKey(key);
+                Assert.Equal(key, des.Key);
+            }
+        }
     }
 }

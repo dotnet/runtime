@@ -210,6 +210,54 @@ namespace System.Security.Cryptography
             }
         }
 
+        /// <summary>
+        ///   Sets the key for this instance.
+        /// </summary>
+        /// <param name="key">The new key for this instance.</param>
+        /// <exception cref="CryptographicException">
+        ///   <para>
+        ///     The key size is invalid.
+        ///   </para>
+        ///   <para>-or-</para>
+        ///   <para>
+        ///     An error occurred while setting the key.
+        ///   </para>
+        /// </exception>
+        public void SetKey(ReadOnlySpan<byte> key)
+        {
+            long bitLength = key.Length * 8L;
+
+            if (bitLength > int.MaxValue || !ValidKeySize((int)bitLength))
+            {
+                throw new CryptographicException(SR.Cryptography_InvalidKeySize);
+            }
+
+            SetKeyCore(key);
+        }
+
+        /// <summary>
+        ///   Sets the key for this instance.
+        /// </summary>
+        /// <param name="key">The new key for this instance.</param>
+        /// <exception cref="CryptographicException">
+        ///   An error occurred while setting the key.
+        /// </exception>
+        /// <remarks>
+        ///   <para>
+        ///     When called by the base class, the length of <paramref name="key"/> will already have
+        ///     been validated against <see cref="LegalKeySizes"/>.
+        ///     Derived types are expected to perform similar validation before calling this method.
+        ///   </para>
+        ///   <para>
+        ///     The base class implementation is to assign the <see cref="Key"/> property.
+        ///     Derived types should override this method to avoid copying the key into a new array.
+        ///   </para>
+        /// </remarks>
+        protected virtual void SetKeyCore(ReadOnlySpan<byte> key)
+        {
+            Key = key.ToArray();
+        }
+
         public abstract void GenerateIV();
 
         public abstract void GenerateKey();
