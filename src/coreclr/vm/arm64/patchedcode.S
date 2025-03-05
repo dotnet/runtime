@@ -135,8 +135,6 @@ PATCH_LABEL JIT_WriteBarrier_Patch_Label_RegionToGeneration
     .quad 0
 PATCH_LABEL JIT_WriteBarrier_Patch_Label_RegionShr
     .word 0
-PATCH_LABEL JIT_WriteBarrier_Patch_Label_UseBitwiseWriteBarrier
-    .word 0
 #ifdef WRITE_BARRIER_CHECK
 PATCH_LABEL JIT_WriteBarrier_Patch_Label_GCShadow
     .quad 0

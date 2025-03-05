@@ -153,7 +153,6 @@ EXTERN_C void JIT_WriteBarrier_Patch_Label_CardTable();
 EXTERN_C void JIT_WriteBarrier_Patch_Label_CardBundleTable();
 #endif
 #if defined(TARGET_ARM64)
-EXTERN_C void JIT_WriteBarrier_Patch_Label_UseBitwiseWriteBarrier();
 EXTERN_C void JIT_WriteBarrier_Patch_Label_LowestAddress();
 EXTERN_C void JIT_WriteBarrier_Patch_Label_HighestAddress();
 #if defined(WRITE_BARRIER_CHECK)
@@ -354,15 +353,12 @@ void WriteBarrierManager::Initialize()
     m_pCardBundleTableImmediate = CALC_PATCH_LOCATION(JIT_WriteBarrier, Patch_Label_CardBundleTable, 0);
 #endif
 
-#if defined(TARGET_ARM64)
-    m_pRegionUseBitwiseWriteBarrier = CALC_PATCH_LOCATION(JIT_WriteBarrier, Patch_Label_UseBitwiseWriteBarrier, 0);
-#if defined(WRITE_BARRIER_CHECK)
+#if defined(TARGET_ARM64) && defined(WRITE_BARRIER_CHECK)
     m_pGCShadow = CALC_PATCH_LOCATION(JIT_WriteBarrier, Patch_Label_GCShadow, 0);
     m_pGCShadowEnd = CALC_PATCH_LOCATION(JIT_WriteBarrier, Patch_Label_GCShadowEnd, 0);
     m_lowestAddress = CALC_PATCH_LOCATION(JIT_WriteBarrier, Patch_Label_LowestAddress, 0);
     m_highestAddress = CALC_PATCH_LOCATION(JIT_WriteBarrier, Patch_Label_HighestAddress, 0);
-#endif // WRITE_BARRIER_CHECK
-#endif // TARGET_ARM64
+#endif // TARGET_ARM64 && WRITE_BARRIER_CHECK
 
 #endif // !WRITE_BARRIER_VARS_INLINE
 
@@ -521,7 +517,6 @@ int WriteBarrierManager::UpdateEphemeralBounds(bool isRuntimeSuspended)
 
 
 #if defined(TARGET_ARM64)
-    stompWBCompleteActions |= updateVariable<UINT8>(m_pRegionUseBitwiseWriteBarrier, g_region_use_bitwise_write_barrier);
     stompWBCompleteActions |= updateVariable<UINT64>(m_lowestAddress, (size_t)g_lowest_address);
     stompWBCompleteActions |= updateVariable<UINT64>(m_highestAddress, (size_t)g_highest_address);
 #if defined(WRITE_BARRIER_CHECK)
@@ -601,7 +596,6 @@ int WriteBarrierManager::UpdateWriteWatchAndCardTableLocations(bool isRuntimeSus
 #endif
 
 #if defined(TARGET_ARM64)
-    stompWBCompleteActions |= updateVariable<UINT8>(m_pRegionUseBitwiseWriteBarrier, g_region_use_bitwise_write_barrier);
     stompWBCompleteActions |= updateVariable<UINT64>(m_lowestAddress, (size_t)g_lowest_address);
     stompWBCompleteActions |= updateVariable<UINT64>(m_highestAddress, (size_t)g_highest_address);
 #if defined(WRITE_BARRIER_CHECK)

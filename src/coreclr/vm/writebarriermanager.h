@@ -83,7 +83,6 @@ private:
     PBYTE   m_pRegionShrSrc;                //         |          |     | WRITE_WATCH | RETION
 
 #if defined(TARGET_ARM64)
-    PBYTE   m_pRegionUseBitwiseWriteBarrier;
     PBYTE   m_lowestAddress;
     PBYTE   m_highestAddress;
 #if defined(WRITE_BARRIER_CHECK)
