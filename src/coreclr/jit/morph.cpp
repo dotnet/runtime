@@ -2322,8 +2322,8 @@ bool Compiler::fgTryMorphStructArg(CallArg* arg)
     if (argNode->OperIs(GT_LCL_VAR))
     {
         GenTreeLclVar* lclNode = argNode->AsLclVar();
-        unsigned             lclNum  = lclNode->GetLclNum();
-        LclVarDsc*           varDsc  = lvaGetDesc(lclNum);
+        unsigned       lclNum  = lclNode->GetLclNum();
+        LclVarDsc*     varDsc  = lvaGetDesc(lclNum);
 
         if (!arg->AbiInfo.HasExactlyOneRegisterSegment())
         {

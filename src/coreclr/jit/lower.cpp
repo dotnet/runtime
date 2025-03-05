@@ -4766,9 +4766,9 @@ void Lowering::LowerFieldListToFieldListOfRegisters(GenTreeFieldList* fieldList)
 
     for (unsigned i = 0; i < numRegs; i++)
     {
-        unsigned regStart = retDesc.GetReturnFieldOffset(i);
-        var_types regType = genActualType(retDesc.GetReturnRegType(i));
-        unsigned regEnd = regStart + genTypeSize(regType);
+        unsigned  regStart = retDesc.GetReturnFieldOffset(i);
+        var_types regType  = genActualType(retDesc.GetReturnRegType(i));
+        unsigned  regEnd   = regStart + genTypeSize(regType);
 
         GenTreeFieldList::Use* regEntry = use;
 
@@ -4788,14 +4788,15 @@ void Lowering::LowerFieldListToFieldListOfRegisters(GenTreeFieldList* fieldList)
             }
 
             var_types fieldType = use->GetType();
-            GenTree* value = use->GetNode();
+            GenTree*  value     = use->GetNode();
 
-            unsigned insertOffset = fieldStart - regStart;
-            GenTreeFieldList::Use* nextUse = use->GetNext();
+            unsigned               insertOffset = fieldStart - regStart;
+            GenTreeFieldList::Use* nextUse      = use->GetNext();
 
             // First ensure the value does not have upper bits set that
             // interfere with the next field.
-            if ((nextUse != nullptr) && (nextUse->GetOffset() < regEnd) && (fieldStart + genTypeSize(genActualType(fieldType)) > nextUse->GetOffset()))
+            if ((nextUse != nullptr) && (nextUse->GetOffset() < regEnd) &&
+                (fieldStart + genTypeSize(genActualType(fieldType)) > nextUse->GetOffset()))
             {
                 assert(varTypeIsSmall(fieldType));
                 // This value may interfere with the next field. Ensure that doesn't happen.
@@ -4811,7 +4812,7 @@ void Lowering::LowerFieldListToFieldListOfRegisters(GenTreeFieldList* fieldList)
             {
                 assert((genTypeSize(value) == 4) || (genTypeSize(value) == 8));
                 var_types castType = genTypeSize(value) == 4 ? TYP_INT : TYP_LONG;
-                value = comp->gtNewBitCastNode(castType, value);
+                value              = comp->gtNewBitCastNode(castType, value);
                 BlockRange().InsertBefore(fieldList, value);
             }
 
@@ -4824,7 +4825,7 @@ void Lowering::LowerFieldListToFieldListOfRegisters(GenTreeFieldList* fieldList)
             if (fieldStart != regStart)
             {
                 GenTree* shiftAmount = comp->gtNewIconNode((ssize_t)insertOffset * BITS_PER_BYTE);
-                value = comp->gtNewOperNode(GT_LSH, genActualType(value), value, shiftAmount);
+                value                = comp->gtNewOperNode(GT_LSH, genActualType(value), value, shiftAmount);
                 BlockRange().InsertBefore(fieldList, shiftAmount, value);
             }
 
@@ -4888,9 +4889,9 @@ bool Lowering::IsFieldListCompatibleWithReturn(GenTreeFieldList* fieldList)
     GenTreeFieldList::Use* use = fieldList->Uses().GetHead();
     for (unsigned i = 0; i < numRetRegs; i++)
     {
-        unsigned regStart = retDesc.GetReturnFieldOffset(i);
-        var_types regType = retDesc.GetReturnRegType(i);
-        unsigned regEnd = regStart + genTypeSize(regType);
+        unsigned  regStart = retDesc.GetReturnFieldOffset(i);
+        var_types regType  = retDesc.GetReturnRegType(i);
+        unsigned  regEnd   = regStart + genTypeSize(regType);
 
         // TODO-CQ: Could just create a 0 for this.
         if (use == nullptr)
@@ -4926,7 +4927,8 @@ bool Lowering::IsFieldListCompatibleWithReturn(GenTreeFieldList* fieldList)
             // float -> float insertions are not yet supported
             if (varTypeUsesFloatReg(use->GetNode()) && varTypeUsesFloatReg(regType) && (fieldStart != regStart))
             {
-                JITDUMP("it is not; field [%06u] requires an insertion into register %u\n", Compiler::dspTreeID(use->GetNode()), i);
+                JITDUMP("it is not; field [%06u] requires an insertion into register %u\n",
+                        Compiler::dspTreeID(use->GetNode()), i);
                 return false;
             }
 
