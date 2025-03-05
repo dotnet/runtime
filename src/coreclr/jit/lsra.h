@@ -1676,6 +1676,8 @@ private:
     RefPosition* killHead;
     // Tail slot of linked list of RefTypeKill ref positions
     RefPosition** killTail;
+    // During allocation, gives the next RefTypeKill RefPosition.
+    RefPosition* nextKill;
 
     // Per-block variable location mappings: an array indexed by block number that yields a
     // pointer to an array of regNumber, one per variable.
@@ -1815,20 +1817,11 @@ private:
     }
     SingleTypeRegSet getMatchingConstants(SingleTypeRegSet mask, Interval* currentInterval, RefPosition* refPosition);
 
+    // Mask of registers that may have an upcoming RefTypeFixedReg.
     regMaskTP    fixedRegs;
     LsraLocation nextFixedRef[REG_COUNT];
-    void         updateNextFixedRef(RegRecord* regRecord, RefPosition* nextRefPosition, RefPosition* nextKill);
-    LsraLocation getNextFixedRef(regNumber regNum, var_types regType)
-    {
-        LsraLocation loc = nextFixedRef[regNum];
-#ifdef TARGET_ARM
-        if (regType == TYP_DOUBLE)
-        {
-            loc = Min(loc, nextFixedRef[regNum + 1]);
-        }
-#endif
-        return loc;
-    }
+    void         updateNextFixedRef(RegRecord* regRecord);
+    LsraLocation getNextFixedRef(regNumber regNum, var_types regType = TYP_UNDEF);
 
     LsraLocation nextIntervalRef[REG_COUNT];
     LsraLocation getNextIntervalRef(regNumber regNum, var_types regType)
