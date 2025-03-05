@@ -41,31 +41,30 @@
         ; Begin patchable literal pool
         ALIGN 64  ; Align to power of two at least as big as patchable literal pool so that it fits optimally in cache line
     WRITE_BARRIER_ENTRY JIT_WriteBarrier_Table
-wbs_begin
-PATCH_LABEL JIT_WriteBarrier_Patch_Label_CardTable
-        DCQ 0
-PATCH_LABEL JIT_WriteBarrier_Patch_Label_CardBundleTable
-        DCQ 0
-PATCH_LABEL JIT_WriteBarrier_Patch_Label_WriteWatchTable
-        DCQ 0
-PATCH_LABEL JIT_WriteBarrier_Patch_Label_Lower
-        DCQ 0
-PATCH_LABEL JIT_WriteBarrier_Patch_Label_Upper
-        DCQ 0
+        PATCH_LABEL JIT_WriteBarrier_Patch_Label_CardTable
+            DCQ 0
+        PATCH_LABEL JIT_WriteBarrier_Patch_Label_CardBundleTable
+            DCQ 0
+        PATCH_LABEL JIT_WriteBarrier_Patch_Label_WriteWatchTable
+            DCQ 0
+        PATCH_LABEL JIT_WriteBarrier_Patch_Label_Lower
+            DCQ 0
+        PATCH_LABEL JIT_WriteBarrier_Patch_Label_Upper
+            DCQ 0
 wbs_lowest_address
-PATCH_LABEL JIT_WriteBarrier_Patch_Label_LowestAddress
-        DCQ 0
+        PATCH_LABEL JIT_WriteBarrier_Patch_Label_LowestAddress
+            DCQ 0
 wbs_highest_address
-PATCH_LABEL JIT_WriteBarrier_Patch_Label_HighestAddress
-        DCQ 0
-PATCH_LABEL JIT_WriteBarrier_Patch_Label_RegionToGeneration
-        DCQ 0
-PATCH_LABEL JIT_WriteBarrier_Patch_Label_RegionShr
-        DCW 0
+        PATCH_LABEL JIT_WriteBarrier_Patch_Label_HighestAddress
+            DCQ 0
+        PATCH_LABEL JIT_WriteBarrier_Patch_Label_RegionToGeneration
+            DCQ 0
+        PATCH_LABEL JIT_WriteBarrier_Patch_Label_RegionShr
+            DCW 0
 ifdef WRITE_BARRIER_CHECK
-PATCH_LABEL JIT_WriteBarrier_Patch_Label_GCShadow
-        DCQ 0
-PATCH_LABEL JIT_WriteBarrier_Patch_Label_GCShadowEnd
+        PATCH_LABEL JIT_WriteBarrier_Patch_Label_GCShadow
+            DCQ 0
+        PATCH_LABEL JIT_WriteBarrier_Patch_Label_GCShadowEnd
         DCQ 0
 endif
     WRITE_BARRIER_END JIT_WriteBarrier_Table
