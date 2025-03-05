@@ -1,7 +1,5 @@
 project(System.IO.Compression.Native C)
 
-include(${CMAKE_CURRENT_LIST_DIR}/extra_libs.cmake)
-
 find_library(BROTLIDEC brotlidec REQUIRED)
 find_library(BROTLIENC brotlienc REQUIRED)
 find_library(BROTLICOMMON brotlicommon)
@@ -41,9 +39,6 @@ if (NOT CLR_CMAKE_TARGET_BROWSER AND NOT CLR_CMAKE_TARGET_WASI)
 endif ()
 
 if (CLR_CMAKE_TARGET_UNIX OR CLR_CMAKE_TARGET_BROWSER OR CLR_CMAKE_TARGET_WASI)
-    set(NATIVE_LIBS_EXTRA)
-    append_extra_compression_libs(NATIVE_LIBS_EXTRA)
-
     # Disable implicit fallthrough warning for Zlib and Brotli
     set(FLAGS -Wno-implicit-fallthrough)
 
@@ -60,7 +55,7 @@ if (CLR_CMAKE_TARGET_UNIX OR CLR_CMAKE_TARGET_BROWSER OR CLR_CMAKE_TARGET_WASI)
 
         target_link_libraries(System.IO.Compression.Native
             PUBLIC
-            ${NATIVE_LIBS_EXTRA}
+            ZLIB::ZLIB
         )
 
         target_include_directories(System.IO.Compression.Native PRIVATE ${BROTLI_INCLUDE_DIRS})
@@ -101,10 +96,6 @@ if (CLR_CMAKE_TARGET_UNIX OR CLR_CMAKE_TARGET_BROWSER OR CLR_CMAKE_TARGET_WASI)
         ZLIB::ZLIB)
 
     set_target_properties(System.IO.Compression.Native-Static PROPERTIES OUTPUT_NAME System.IO.Compression.Native CLEAN_DIRECT_OUTPUT 1)
-    target_link_libraries(System.IO.Compression.Native-Static
-        PUBLIC
-        ${NATIVE_LIBS_EXTRA}
-    )
 
     target_include_directories(System.IO.Compression.Native-Static PUBLIC ${BROTLI_INCLUDE_DIRS})
     target_link_libraries(System.IO.Compression.Native-Static PUBLIC ${BROTLI_LIBRARIES})
@@ -117,8 +108,6 @@ if (CLR_CMAKE_TARGET_UNIX OR CLR_CMAKE_TARGET_BROWSER OR CLR_CMAKE_TARGET_WASI)
         install (PROGRAMS ${ZLIB_NOIPO} DESTINATION ${STATIC_LIB_DESTINATION} COMPONENT libs)
     endif()
 else ()
-    set(NATIVE_LIBS_EXTRA)
-    append_extra_compression_libs(NATIVE_LIBS_EXTRA)
 
     if (GEN_SHARED_LIB)
         include (GenerateExportHeader)
@@ -189,7 +178,7 @@ else ()
             install (PROGRAMS ${BROTLI_LIB} DESTINATION aotsdk COMPONENT nativeaot)
         endforeach()
         if (${ZLIB_NOIPO})
-            install (PROGRAMS ${ZLIB_NOIPO} DESTINATION aotsdk COMPONENT nativeaot)
+            install (PROGRAMS ${ZLIB_NOIPO} RENAME zlibstatic.lib DESTINATION aotsdk COMPONENT nativeaot)
         endif()
     endif()
 
