@@ -55,9 +55,9 @@ namespace ILCompiler.DependencyAnalysis
                 dependencies.Add(factory.MethodEntrypoint(invokeStub), "Reflection invoke");
 
                 var signature = method.Signature;
-                AddSignatureDependency(ref dependencies, factory, signature.ReturnType, "Reflection invoke", isOut: true);
+                AddSignatureDependency(ref dependencies, factory, method, signature.ReturnType, "Reflection invoke", isOut: true);
                 foreach (var parameterType in signature)
-                    AddSignatureDependency(ref dependencies, factory, parameterType, "Reflection invoke", isOut: false);
+                    AddSignatureDependency(ref dependencies, factory, method, parameterType, "Reflection invoke", isOut: false);
             }
 
             if (method.OwningType.IsValueType && !method.Signature.IsStatic)
@@ -96,7 +96,7 @@ namespace ILCompiler.DependencyAnalysis
             ReflectionVirtualInvokeMapNode.GetVirtualInvokeMapDependencies(ref dependencies, factory, method);
         }
 
-        internal static void AddSignatureDependency(ref DependencyList dependencies, NodeFactory factory, TypeDesc type, string reason, bool isOut)
+        internal static void AddSignatureDependency(ref DependencyList dependencies, NodeFactory factory, TypeSystemEntity referent, TypeDesc type, string reason, bool isOut)
         {
             if (type.IsByRef)
             {
@@ -112,15 +112,26 @@ namespace ILCompiler.DependencyAnalysis
             if (type.IsPrimitive || type.IsVoid)
                 return;
 
-            // Reflection might need to create boxed instances of valuetypes as part of reflection invocation.
-            // Non-valuetypes are only needed for the purposes of casting/type checks.
-            // If this is a non-exact type, we need the type loader template to get the type handle.
-            if (type.IsCanonicalSubtype(CanonicalFormKind.Any))
-                GenericTypesTemplateMap.GetTemplateTypeDependencies(ref dependencies, factory, type.NormalizeInstantiation());
-            else if (isOut && !type.IsGCPointer)
-                dependencies.Add(factory.MaximallyConstructableType(type.NormalizeInstantiation()), reason);
-            else
-                dependencies.Add(factory.NecessaryTypeSymbol(type.NormalizeInstantiation()), reason);
+            try
+            {
+                factory.TypeSystemContext.DetectGenericCycles(type, referent);
+
+                // Reflection might need to create boxed instances of valuetypes as part of reflection invocation.
+                // Non-valuetypes are only needed for the purposes of casting/type checks.
+                // If this is a non-exact type, we need the type loader template to get the type handle.
+                if (type.IsCanonicalSubtype(CanonicalFormKind.Any))
+                    GenericTypesTemplateMap.GetTemplateTypeDependencies(ref dependencies, factory, type.NormalizeInstantiation());
+                else if (isOut && !type.IsGCPointer)
+                    dependencies.Add(factory.MaximallyConstructableType(type.NormalizeInstantiation()), reason);
+                else
+                    dependencies.Add(factory.NecessaryTypeSymbol(type.NormalizeInstantiation()), reason);
+            }
+            catch (TypeSystemException)
+            {
+                // It's fine to continue compiling if there's a problem getting these. There's going to be a MissingMetadata
+                // exception when actually trying to invoke this and the exception will be different than the one we'd get with
+                // a JIT, but that's fine, we don't need to be bug-for-bug compatible.
+            }
         }
 
         public override ObjectData GetData(NodeFactory factory, bool relocsOnly = false)
