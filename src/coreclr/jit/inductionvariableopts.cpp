@@ -1392,7 +1392,6 @@ class StrengthReductionContext
     BasicBlock* FindPostUseUpdateInsertionPoint(ArrayStack<CursorInfo>* cursors,
                                                 BasicBlock*             backEdgeDominator,
                                                 Statement**             afterStmt);
-    Statement*  LatestStatement(Statement* stmt1, Statement* stmt2);
     bool        InsertionPointPostDominatesUses(BasicBlock* insertionPoint, ArrayStack<CursorInfo>* cursors);
 
     bool StressProfitability()
@@ -2615,7 +2614,7 @@ BasicBlock* StrengthReductionContext::FindPostUseUpdateInsertionPoint(ArrayStack
             }
             else
             {
-                latestStmt = LatestStatement(latestStmt, cursor.Stmt);
+                latestStmt = m_comp->gtLatestStatement(latestStmt, cursor.Stmt);
             }
         }
 
@@ -2630,44 +2629,6 @@ BasicBlock* StrengthReductionContext::FindPostUseUpdateInsertionPoint(ArrayStack
     }
 
     return nullptr;
-}
-
-//------------------------------------------------------------------------
-// LatestStatement: Given two statements in the same basic block, return the
-// latter of the two.
-//
-// Parameters:
-//   stmt1 - First statement
-//   stmt2 - Second statement
-//
-// Returns:
-//   Latter of the statements.
-//
-Statement* StrengthReductionContext::LatestStatement(Statement* stmt1, Statement* stmt2)
-{
-    if (stmt1 == stmt2)
-    {
-        return stmt1;
-    }
-
-    Statement* cursor1 = stmt1->GetNextStmt();
-    Statement* cursor2 = stmt2->GetNextStmt();
-
-    while (true)
-    {
-        if ((cursor1 == stmt2) || (cursor2 == nullptr))
-        {
-            return stmt2;
-        }
-
-        if ((cursor2 == stmt1) || (cursor1 == nullptr))
-        {
-            return stmt1;
-        }
-
-        cursor1 = cursor1->GetNextStmt();
-        cursor2 = cursor2->GetNextStmt();
-    }
 }
 
 //------------------------------------------------------------------------

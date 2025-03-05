@@ -83,6 +83,9 @@ namespace System.Reflection.Metadata
             return decoder.DecodeFieldSignature(ref blob);
         }
 
+        /// <summary>
+        /// Returns a handle to the type that declares this field.
+        /// </summary>
         public TypeDefinitionHandle GetDeclaringType()
         {
             return _reader.GetDeclaringType(Handle);
