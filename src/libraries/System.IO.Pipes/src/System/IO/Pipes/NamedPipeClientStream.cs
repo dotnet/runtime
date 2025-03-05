@@ -92,6 +92,11 @@ namespace System.IO.Pipes
         public NamedPipeClientStream(PipeDirection direction, bool isAsync, bool isConnected, SafePipeHandle safePipeHandle)
             : base(direction, 0)
         {
+            if (!isConnected)
+            {
+                throw new ArgumentOutOfRangeException(nameof(isConnected));
+            }
+
             ArgumentNullException.ThrowIfNull(safePipeHandle);
 
             if (safePipeHandle.IsInvalid)
@@ -101,10 +106,7 @@ namespace System.IO.Pipes
             ValidateHandleIsPipe(safePipeHandle);
 
             InitializeHandle(safePipeHandle, true, isAsync);
-            if (isConnected)
-            {
-                State = PipeState.Connected;
-            }
+            State = PipeState.Connected;
         }
 
         ~NamedPipeClientStream()
