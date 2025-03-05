@@ -538,13 +538,14 @@ GenTree* Lowering::LowerNode(GenTree* node)
 
         case GT_CAST:
         {
-            GenTree* nextNode = LowerCast(node);
-#if defined(TARGET_XARCH)
-            if (nextNode != nullptr)
+            if (!TryRemoveCast(node->AsCast()))
             {
-                return nextNode;
+                GenTree* nextNode = LowerCast(node);
+                if (nextNode != nullptr)
+                {
+                    return nextNode;
+                }
             }
-#endif // TARGET_XARCH
         }
         break;
 
@@ -4859,18 +4860,7 @@ void Lowering::LowerFieldListToFieldListOfRegisters(GenTreeFieldList* fieldList)
 
         if (fieldListPrev->gtNext != fieldList)
         {
-            GenTree* cur = fieldListPrev->gtNext;
-            GenTree* last = fieldList->gtPrev;
-
-            while (true)
-            {
-                GenTree* next = LowerNode(cur);
-                if (cur == last)
-                    break;
-
-                cur = next;
-                assert(cur != nullptr);
-            }
+            LowerRange(fieldListPrev->gtNext, fieldList->gtPrev);
         }
     }
 
@@ -8920,6 +8910,45 @@ void Lowering::ContainCheckRet(GenTreeUnOp* ret)
         }
     }
 #endif // FEATURE_MULTIREG_RET
+}
+
+//------------------------------------------------------------------------
+// TryRemoveCast:
+//   Try to remove a cast node by changing its operand.
+//
+// Arguments:
+//    node - Cast node
+//
+// Returns:
+//   True if the cast was removed.
+//
+bool Lowering::TryRemoveCast(GenTreeCast* node)
+{
+    if (comp->opts.OptimizationDisabled())
+    {
+        return false;
+    }
+
+    if (node->gtOverflow())
+    {
+        return false;
+    }
+
+    GenTree* op = node->CastOp();
+    if (!op->OperIsConst())
+    {
+        return false;
+    }
+
+    GenTree* folded = comp->gtFoldExprConst(node);
+    assert(folded == node);
+    if (folded->OperIs(GT_CAST))
+    {
+        return false;
+    }
+
+    op->SetUnusedValue();
+    return true;
 }
 
 //------------------------------------------------------------------------
