@@ -5,6 +5,7 @@ parameters:
     windows_x86: false
     linux_arm64: false
     windows_arm64: false
+    coreclrAndroid: false
 
 jobs:
   - ${{ if or(eq(parameters.linux_x64, true), eq(parameters.windows_x64, true), eq(parameters.windows_x86, true), eq(parameters.linux_musl_x64, true), eq(parameters.linux_arm64, true), eq(parameters.windows_arm64, true)) }}:
@@ -40,3 +41,21 @@ jobs:
               tarCompression: $(tarCompression)
               artifactName: BuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)_coreclr
               displayName: Build Assets
+
+  - ${{ if eq(parameters.coreclrAndroid, true) }}:
+    # build CoreCLR Android scenarios
+    - template: /eng/pipelines/common/platform-matrix.yml
+      parameters:
+        jobTemplate: /eng/pipelines/common/global-build-job.yml
+        buildConfig: release
+        runtimeFlavor: coreclr
+        platforms:
+        - android_arm64
+        jobParameters:
+          buildArgs: -s clr.runtime+clr.alljits+clr.corelib+clr.nativecorelib+clr.tools+clr.packages+libs -c $(_BuildConfig)
+          nameSuffix: AndroidCoreCLR
+          isOfficialBuild: false
+          postBuildSteps:
+            - template: /eng/pipelines/performance/templates/build-perf-sample-apps.yml
+              parameters:
+                runtimeType: coreclr
