@@ -279,7 +279,6 @@ LOCAL_LABEL(WriteWatchForGCHeapEnd\@):
 
 
 .macro WRITE_BARRIER_CHECK_CARD_TABLE_STUB start exit
-LOCAL_LABEL(CheckCardTable\@):
     // Check if we need to update the card table
     ldr  x12, WRITE_BARRIER_CONSTANT_OFFSET(\start, JIT_WriteBarrier_Patch_Label_CardTable)
     add  x15, x12, x14, lsr #11
