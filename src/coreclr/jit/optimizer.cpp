@@ -2866,7 +2866,7 @@ bool Compiler::optCreatePreheader(FlowGraphNaturalLoop* loop)
             {
                 // Preheader should be in the true enclosing region of the header.
                 //
-                preheaderEHRegion    = ehTrueEnclosingTryIndexIL(preheaderEHRegion);
+                preheaderEHRegion    = ehTrueEnclosingTryIndex(preheaderEHRegion);
                 inSameRegionAsHeader = false;
                 break;
             }
@@ -5208,7 +5208,7 @@ void Compiler::fgSetEHRegionForNewPreheaderOrExit(BasicBlock* block)
     {
         // `next` is the beginning of a try block. Figure out the EH region to use.
         assert(next->hasTryIndex());
-        unsigned newTryIndex = ehTrueEnclosingTryIndexIL(next->getTryIndex());
+        unsigned newTryIndex = ehTrueEnclosingTryIndex(next->getTryIndex());
         if (newTryIndex == EHblkDsc::NO_ENCLOSING_INDEX)
         {
             // No EH try index.
