@@ -28,5 +28,11 @@ namespace System.Tests
         {
             AssertExtensions.Throws<ArgumentNullException>("name", () => AppContext.SetData(null, 123));
         }
+
+        [Fact]
+        public void BaseDirectory_PathRooted()
+        {
+            Assert.True(Path.IsPathRooted(AppContext.BaseDirectory), "BaseDirectory should be a rooted path");
+        }
     }
 }
