@@ -915,7 +915,8 @@ void Compiler::optPrintAssertion(AssertionDsc* curAssertion, AssertionIndex asse
                 }
                 else
                 {
-                    var_types op1Type = lvaGetDesc(curAssertion->op1.lcl.lclNum)->lvType;
+                    var_types op1Type = curAssertion->op1.kind == O1K_VN ? vnStore->TypeOfVN(curAssertion->op1.vn)
+                                                                         : lvaGetRealType(curAssertion->op1.lcl.lclNum);
                     if (op1Type == TYP_REF)
                     {
                         if (curAssertion->op2.u1.iconVal == 0)
@@ -3436,10 +3437,6 @@ GenTree* Compiler::optConstantAssertionProp(AssertionDsc*        curAssertion,
             // and insert casts in morph, which would be problematic to track
             // here).
             assert(tree->TypeGet() == lvaGetDesc(lclNum)->TypeGet());
-            // Assertions for small-typed locals should have been normalized
-            // when the assertion was created.
-            assert(!varTypeIsSmall(tree) || (curAssertion->op2.u1.iconVal ==
-                                             optCastConstantSmall(curAssertion->op2.u1.iconVal, tree->TypeGet())));
 
             if (curAssertion->op2.HasIconFlag())
             {
@@ -4609,6 +4606,32 @@ GenTree* Compiler::optAssertionPropGlobal_RelOp(ASSERT_VALARG_TP assertions,
         newTree = gtWrapWithSideEffects(newTree, tree, GTF_ALL_EFFECT);
         DISPTREE(newTree);
         return optAssertionProp_Update(newTree, tree, stmt);
+    }
+
+    ValueNum op1VN = vnStore->VNConservativeNormalValue(op1->gtVNPair);
+    ValueNum op2VN = vnStore->VNConservativeNormalValue(op2->gtVNPair);
+
+    // See if we can fold "X relop CNS" using TryGetRangeFromAssertions.
+    int op2cns;
+    if (op1->TypeIs(TYP_INT) && op2->TypeIs(TYP_INT) &&
+        vnStore->IsVNIntegralConstant(op2VN, &op2cns)
+        // "op2cns != 0" is purely a TP quirk (such relops are handled by the code above):
+        && (op2cns != 0))
+    {
+        // NOTE: we can call TryGetRangeFromAssertions for op2 as well if we want, but it's not cheap.
+        Range rng1 = Range(Limit(Limit::keUndef));
+        Range rng2 = Range(Limit(Limit::keConstant, op2cns));
+
+        if (RangeCheck::TryGetRangeFromAssertions(this, op1VN, assertions, &rng1))
+        {
+            RangeOps::RelationKind kind = RangeOps::EvalRelop(tree->OperGet(), tree->IsUnsigned(), rng1, rng2);
+            if ((kind != RangeOps::RelationKind::Unknown))
+            {
+                newTree = kind == RangeOps::RelationKind::AlwaysTrue ? gtNewTrue() : gtNewFalse();
+                newTree = gtWrapWithSideEffects(newTree, tree, GTF_ALL_EFFECT);
+                return optAssertionProp_Update(newTree, tree, stmt);
+            }
+        }
     }
 
     // Else check if we have an equality check involving a local or an indir
