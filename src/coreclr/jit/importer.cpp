@@ -4501,10 +4501,17 @@ GenTree* Compiler::impFixupStructReturnType(GenTree* op)
 
     if (compMethodReturnsMultiRegRetType() || op->IsMultiRegNode())
     {
-        // We can use any local with multiple registers, except for implicit
-        // byrefs (they may turn into indirections).
+        // We can use any local with multiple registers (it will be forced to memory on mismatch),
+        // except for implicit byrefs (they may turn into indirections).
         if (op->OperIs(GT_LCL_VAR) && !lvaIsImplicitByRefLocal(op->AsLclVar()->GetLclNum()))
         {
+            // Note that this is a multi-reg return.
+            unsigned lclNum                  = op->AsLclVarCommon()->GetLclNum();
+            lvaTable[lclNum].lvIsMultiRegRet = true;
+
+            // TODO-1stClassStructs: Handle constant propagation and CSE-ing of multireg returns.
+            op->gtFlags |= GTF_DONT_CSE;
+
             return op;
         }
 
@@ -4530,6 +4537,7 @@ GenTree* Compiler::impFixupStructReturnType(GenTree* op)
         }
 
         // The backend does not support other struct-producing nodes (e. g. OBJs) as sources of multi-reg returns.
+        // It also does not support assembling a multi-reg node into one register (for RETURN nodes at least).
         return impStoreMultiRegValueToVar(op, info.compMethodInfo->args.retTypeClass DEBUGARG(info.compCallConv));
     }
 

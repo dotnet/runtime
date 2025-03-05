@@ -7390,6 +7390,7 @@ void CodeGen::genStructReturn(GenTree* treeNode)
     {
         GenTreeLclVar* lclNode = actualOp1->AsLclVar();
         LclVarDsc*     varDsc  = compiler->lvaGetDesc(lclNode);
+        assert(varDsc->lvIsMultiRegRet);
 
 #if defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
         var_types type   = retTypeDesc.GetReturnRegType(0);
