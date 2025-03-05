@@ -223,7 +223,7 @@ namespace System.Text.Json
             Debug.Assert(dictionary.Comparer is IAlternateEqualityComparer<ReadOnlySpan<char>, string>);
 
             Dictionary<string, TValue>.AlternateLookup<ReadOnlySpan<char>> spanLookup =
-                dictionary.GetAlternateLookup<string, TValue, ReadOnlySpan<char>>();
+                dictionary.GetAlternateLookup<ReadOnlySpan<char>>();
 
             char[]? rentedBuffer = null;
 

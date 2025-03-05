@@ -564,6 +564,7 @@ namespace System.Diagnostics.Tests
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/105686", typeof(PlatformDetection), nameof(PlatformDetection.IsQemuLinux))]
         public void TestMaxWorkingSet()
         {
             CreateDefaultProcess();
@@ -619,6 +620,7 @@ namespace System.Diagnostics.Tests
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/105686", typeof(PlatformDetection), nameof(PlatformDetection.IsQemuLinux))]
         public void TestMinWorkingSet()
         {
             CreateDefaultProcess();
@@ -2262,7 +2264,6 @@ namespace System.Diagnostics.Tests
         }
 
         [PlatformSpecific(TestPlatforms.AnyUnix)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/29330", TestPlatforms.OSX)]
         [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/52852", TestPlatforms.MacCatalyst)]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/53095", TestPlatforms.Android)]
@@ -2292,6 +2293,10 @@ namespace System.Diagnostics.Tests
 
             using (Process px = Process.Start(sleepCommandPathFileName, "600"))
             {
+                // Reading of long process names is flaky during process startup and shutdown.
+                // Wait a bit to skip over the period where the ProcessName is not reliable.
+                Thread.Sleep(100);
+
                 Process[] runningProcesses = Process.GetProcesses();
                 try
                 {

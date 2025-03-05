@@ -422,13 +422,20 @@ namespace ILCompiler.ObjectWriter
                         n == node ? currentSymbolName : GetMangledName(n),
                         n.Offset + thumbBit,
                         n.Offset == 0 && isMethod ? nodeContents.Data.Length : 0);
-                    if (_nodeFactory.GetSymbolAlternateName(n) is string alternateName)
+                    if (_nodeFactory.GetSymbolAlternateName(n, out bool isHidden) is string alternateName)
                     {
+                        string alternateCName = ExternCName(alternateName);
                         sectionWriter.EmitSymbolDefinition(
-                            ExternCName(alternateName),
+                            alternateCName,
                             n.Offset + thumbBit,
                             n.Offset == 0 && isMethod ? nodeContents.Data.Length : 0,
-                            global: true);
+                            global: !isHidden);
+
+                        if (n is IMethodNode)
+                        {
+                            // https://github.com/dotnet/runtime/issues/105330: consider exports CFG targets
+                            EmitReferencedMethod(alternateCName);
+                        }
                     }
                 }
 

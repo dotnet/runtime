@@ -2,13 +2,12 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
-using Xunit;
 
-namespace Microsoft.Diagnostics.DataContractReader.UnitTests;
+namespace Microsoft.Diagnostics.DataContractReader.Tests;
 
 public class MockTarget
 {
-    public struct Architecture
+    public record struct Architecture
     {
         public bool IsLittleEndian { get; init; }
         public bool Is64Bit { get; init; }

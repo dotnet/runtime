@@ -49,9 +49,7 @@ set(COMMON_RUNTIME_SOURCES
     ${GC_DIR}/handletablescan.cpp
     ${GC_DIR}/objecthandle.cpp
     ${GC_DIR}/softwarewritewatch.cpp
-
-    ${CLR_SRC_NATIVE_DIR}/minipal/cpufeatures.c
-    ${CLR_SRC_NATIVE_DIR}/minipal/time.c
+    ${CLR_SRC_NATIVE_DIR}/minipal/xoshiro128pp.c
 )
 
 set(SERVER_GC_SOURCES
@@ -165,7 +163,7 @@ else()
   list(APPEND FULL_RUNTIME_SOURCES
     unix/cgroupcpu.cpp
     unix/HardwareExceptions.cpp
-    unix/UnixContext.cpp
+    unix/NativeContext.cpp
     unix/UnixSignals.cpp
     unix/UnwindHelpers.cpp
     unix/UnixNativeCodeManager.cpp
@@ -238,7 +236,7 @@ endif()
 
 add_definitions(-DFEATURE_BASICFREEZE)
 add_definitions(-DFEATURE_CONSERVATIVE_GC)
-if(CLR_CMAKE_TARGET_ARCH_AMD64 OR CLR_CMAKE_TARGET_ARCH_ARM64)
+if(CLR_CMAKE_TARGET_ARCH_AMD64 OR CLR_CMAKE_TARGET_ARCH_ARM64 OR CLR_CMAKE_TARGET_ARCH_RISCV64)
   add_definitions(-DFEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP)
   add_definitions(-DFEATURE_MANUALLY_MANAGED_CARD_BUNDLES)
 endif()
@@ -276,7 +274,6 @@ else()
     add_definitions(-DFEATURE_READONLY_GS_COOKIE)
   endif()
   include(unix/configure.cmake)
-  include(${CLR_SRC_NATIVE_DIR}/minipal/configure.cmake)
   include_directories(${CMAKE_CURRENT_BINARY_DIR})
 endif()
 

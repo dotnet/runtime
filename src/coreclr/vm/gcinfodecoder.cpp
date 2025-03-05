@@ -1,7 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+#ifndef SOS_INCLUDE
 #include "common.h"
+#endif
 
 #include "gcinfodecoder.h"
 
@@ -89,9 +91,7 @@ bool GcInfoDecoder::PredecodeFatHeader(int remainingFlags)
     int numFlagBits = (m_Version == 1) ? GC_INFO_FLAGS_BIT_SIZE_VERSION_1 : GC_INFO_FLAGS_BIT_SIZE;
     m_headerFlags = (GcInfoHeaderFlags)m_Reader.Read(numFlagBits);
 
-    m_ReturnKind = (ReturnKind)((UINT32)m_Reader.Read(SIZE_OF_RETURN_KIND_IN_FAT_HEADER));
-
-    remainingFlags &= ~(DECODE_RETURN_KIND | DECODE_VARARG);
+    remainingFlags &= ~DECODE_VARARG;
 #if defined(TARGET_ARM) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
     remainingFlags &= ~DECODE_HAS_TAILCALLS;
 #endif
@@ -257,7 +257,6 @@ GcInfoDecoder::GcInfoDecoder(
             : m_Reader(dac_cast<PTR_CBYTE>(gcInfoToken.Info))
             , m_InstructionOffset(breakOffset)
             , m_IsInterruptible(false)
-            , m_ReturnKind(RT_Illegal)
 #ifdef _DEBUG
             , m_Flags( flags )
             , m_GcInfoAddress(dac_cast<PTR_CBYTE>(gcInfoToken.Info))
@@ -297,9 +296,7 @@ GcInfoDecoder::GcInfoDecoder(
             m_StackBaseRegister = NO_STACK_BASE_REGISTER;
         }
 
-        m_ReturnKind = (ReturnKind)((UINT32)m_Reader.Read(SIZE_OF_RETURN_KIND_IN_SLIM_HEADER));
-
-        remainingFlags &= ~(DECODE_RETURN_KIND | DECODE_VARARG);
+        remainingFlags &= ~DECODE_VARARG;
 #if defined(TARGET_ARM) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
         remainingFlags &= ~DECODE_HAS_TAILCALLS;
 #endif
@@ -367,11 +364,7 @@ GcInfoDecoder::GcInfoDecoder(
     {
         if(m_NumSafePoints)
         {
-            // Safepoints are encoded with a -1 adjustment
-            // DECODE_GC_LIFETIMES adjusts the offset accordingly, but DECODE_INTERRUPTIBILITY does not
-            // adjust here
-            UINT32 offset = flags & DECODE_INTERRUPTIBILITY ? m_InstructionOffset - 1 : m_InstructionOffset;
-            m_SafePointIndex = FindSafePoint(offset);
+            m_SafePointIndex = FindSafePoint(m_InstructionOffset);
         }
     }
     else if(flags & DECODE_FOR_RANGES_CALLBACK)
@@ -415,24 +408,14 @@ bool GcInfoDecoder::IsSafePoint()
     return m_SafePointIndex != m_NumSafePoints;
 }
 
-bool GcInfoDecoder::AreSafePointsInterruptible()
-{
-    return m_Version >= 3;
-}
-
-bool GcInfoDecoder::IsInterruptibleSafePoint()
-{
-    return IsSafePoint() && AreSafePointsInterruptible();
-}
-
-bool GcInfoDecoder::CouldBeInterruptibleSafePoint()
+bool GcInfoDecoder::CouldBeSafePoint()
 {
     // This is used in asserts. Ideally it would return false
     // if current location canot possibly be a safepoint.
     // However in some cases we optimize away "boring" callsites when no variables are tracked.
     // So there is no way to tell precisely that a point is indeed not a safe point.
     // Thus we do what we can here, but this could be better if we could have more data
-    return AreSafePointsInterruptible() && m_NumInterruptibleRanges == 0;
+    return m_NumInterruptibleRanges == 0;
 }
 
 bool GcInfoDecoder::HasMethodDescGenericsInstContext()
@@ -449,7 +432,7 @@ bool GcInfoDecoder::HasMethodTableGenericsInstContext()
 
 #ifdef PARTIALLY_INTERRUPTIBLE_GC_SUPPORTED
 
-// This is used for gccoverage: is the given offset
+// This is used for gcinfodumper: is the given offset
 //  a call-return offset with partially-interruptible GC info?
 bool GcInfoDecoder::IsSafePoint(UINT32 codeOffset)
 {
@@ -457,10 +440,6 @@ bool GcInfoDecoder::IsSafePoint(UINT32 codeOffset)
     if(m_NumSafePoints == 0)
         return false;
 
-#if defined(TARGET_AMD64) || defined(TARGET_ARM) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
-    // Safepoints are encoded with a -1 adjustment
-    codeOffset--;
-#endif
     size_t savedPos = m_Reader.GetCurrentPos();
     UINT32 safePointIndex = FindSafePoint(codeOffset);
     m_Reader.SetCurrentPos(savedPos);
@@ -507,32 +486,26 @@ UINT32 GcInfoDecoder::FindSafePoint(UINT32 breakOffset)
     const size_t savedPos = m_Reader.GetCurrentPos();
     const UINT32 numBitsPerOffset = CeilOfLog2(NORMALIZE_CODE_OFFSET(m_CodeLength));
 
-#if defined(TARGET_ARM) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
-    // Safepoints are encoded with a -1 adjustment
-    if ((breakOffset & 1) != 0)
-#endif
+    const UINT32 normBreakOffset = NORMALIZE_CODE_OFFSET(breakOffset);
+    UINT32 linearSearchStart = 0;
+    UINT32 linearSearchEnd = m_NumSafePoints;
+    if (linearSearchEnd - linearSearchStart > MAX_LINEAR_SEARCH)
     {
-        const UINT32 normBreakOffset = NORMALIZE_CODE_OFFSET(breakOffset);
-        UINT32 linearSearchStart = 0;
-        UINT32 linearSearchEnd = m_NumSafePoints;
-        if (linearSearchEnd - linearSearchStart > MAX_LINEAR_SEARCH)
+        linearSearchStart = NarrowSafePointSearch(savedPos, normBreakOffset, &linearSearchEnd);
+    }
+
+    for (UINT32 i = linearSearchStart; i < linearSearchEnd; i++)
+    {
+        UINT32 spOffset = (UINT32)m_Reader.Read(numBitsPerOffset);
+        if (spOffset == normBreakOffset)
         {
-            linearSearchStart = NarrowSafePointSearch(savedPos, normBreakOffset, &linearSearchEnd);
+            result = i;
+            break;
         }
 
-        for (UINT32 i = linearSearchStart; i < linearSearchEnd; i++)
+        if (spOffset > normBreakOffset)
         {
-            UINT32 spOffset = (UINT32)m_Reader.Read(numBitsPerOffset);
-            if (spOffset == normBreakOffset)
-            {
-                result = i;
-                break;
-            }
-
-            if (spOffset > normBreakOffset)
-            {
-                break;
-            }
+            break;
         }
     }
 
@@ -553,13 +526,7 @@ void GcInfoDecoder::EnumerateSafePoints(EnumerateSafePointsCallback *pCallback, 
     for(UINT32 i = 0; i < m_NumSafePoints; i++)
     {
         UINT32 normOffset = (UINT32)m_Reader.Read(numBitsPerOffset);
-        UINT32 offset = DENORMALIZE_CODE_OFFSET(normOffset) + 2;
-
-#if defined(TARGET_AMD64) || defined(TARGET_ARM) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
-        // Safepoints are encoded with a -1 adjustment
-        offset--;
-#endif
-
+        UINT32 offset = DENORMALIZE_CODE_OFFSET(normOffset);
         pCallback(this, offset, hCallback);
     }
 }
@@ -666,13 +633,6 @@ UINT32 GcInfoDecoder::GetCodeLength()
     return m_CodeLength;
 }
 
-ReturnKind GcInfoDecoder::GetReturnKind()
-{
-    //    SUPPORTS_DAC;
-    _ASSERTE( m_Flags & DECODE_RETURN_KIND );
-    return m_ReturnKind;
-}
-
 UINT32  GcInfoDecoder::GetStackBaseRegister()
 {
     return m_StackBaseRegister;
@@ -728,15 +688,6 @@ bool GcInfoDecoder::EnumerateLiveSlots(
         LOG((LF_GCROOTS, LL_INFO100000, "Not reporting this frame because it was already reported via another funclet.\n"));
         return true;
     }
-
-    //
-    // If this is a non-leaf frame and we are executing a call, the unwinder has given us the PC
-    //  of the call instruction. We should adjust it to the PC of the instruction after the call in order to
-    //  obtain transition information for scratch slots. However, we always assume scratch slots to be
-    //  dead for non-leaf frames (except for ResumableFrames), so we don't need to adjust the PC.
-    // If this is a non-leaf frame and we are not executing a call (i.e.: a fault occurred in the function),
-    //  then it would be incorrect to adjust the PC
-    //
 
     _ASSERTE(GC_SLOT_INTERIOR == GC_CALL_INTERIOR);
     _ASSERTE(GC_SLOT_PINNED == GC_CALL_PINNED);
@@ -1802,7 +1753,7 @@ void GcInfoDecoder::ReportRegisterToGC( // ARM64
     LOG((LF_GCROOTS, LL_INFO1000, "Reporting " FMT_REG, regNum ));
 
     OBJECTREF* pObjRef = GetRegisterSlot( regNum, pRD );
-#if defined(TARGET_UNIX) && !defined(FEATURE_NATIVEAOT) && !defined(SOS_TARGET_AMD64)
+#if defined(TARGET_UNIX) && !defined(FEATURE_NATIVEAOT) && !defined(SOS_TARGET_ARM64)
     // On PAL, we don't always have the context pointers available due to
     // a limitation of an unwinding library. In such case, the context
     // pointers for some nonvolatile registers are NULL.
@@ -1955,7 +1906,7 @@ void GcInfoDecoder::ReportRegisterToGC(
     LOG((LF_GCROOTS, LL_INFO1000, "Reporting " FMT_REG, regNum ));
 
     OBJECTREF* pObjRef = GetRegisterSlot( regNum, pRD );
-#if defined(TARGET_UNIX) && !defined(FEATURE_NATIVEAOT) && !defined(SOS_TARGET_AMD64)
+#if defined(TARGET_UNIX) && !defined(FEATURE_NATIVEAOT) && !defined(SOS_TARGET_LOONGARCH64)
 
     // On PAL, we don't always have the context pointers available due to
     // a limitation of an unwinding library. In such case, the context
@@ -1976,7 +1927,7 @@ void GcInfoDecoder::ReportRegisterToGC(
 
         gcFlags |= GC_CALL_PINNED;
     }
-#endif // TARGET_UNIX && !SOS_TARGET_ARM64
+#endif // TARGET_UNIX && !SOS_TARGET_LOONGARCH64
 
 #ifdef _DEBUG
     if(IsScratchRegister(regNum, pRD))
@@ -2093,7 +2044,7 @@ void GcInfoDecoder::ReportRegisterToGC(
     LOG((LF_GCROOTS, LL_INFO1000, "Reporting " FMT_REG, regNum ));
 
     OBJECTREF* pObjRef = GetRegisterSlot( regNum, pRD );
-#if defined(TARGET_UNIX) && !defined(FEATURE_NATIVEAOT) && !defined(SOS_TARGET_AMD64)
+#if defined(TARGET_UNIX) && !defined(FEATURE_NATIVEAOT) && !defined(SOS_TARGET_RISCV64)
 
     // On PAL, we don't always have the context pointers available due to
     // a limitation of an unwinding library. In such case, the context
@@ -2114,7 +2065,7 @@ void GcInfoDecoder::ReportRegisterToGC(
 
         gcFlags |= GC_CALL_PINNED;
     }
-#endif // TARGET_UNIX && !SOS_TARGET_ARM64
+#endif // TARGET_UNIX && !SOS_TARGET_RISCV64
 
 #ifdef _DEBUG
     if(IsScratchRegister(regNum, pRD))

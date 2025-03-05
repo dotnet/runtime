@@ -8,9 +8,11 @@
 
 // because we can't pass custom define symbols to acorn optimizer, we use environment variables to pass other build options
 const WASM_ENABLE_SIMD = process.env.WASM_ENABLE_SIMD === "1";
+const FEATURE_PERFTRACING = process.env.FEATURE_PERFTRACING === "1";
 const WASM_ENABLE_EH = process.env.WASM_ENABLE_EH === "1";
 const ENABLE_BROWSER_PROFILER = process.env.ENABLE_BROWSER_PROFILER === "1";
 const ENABLE_AOT_PROFILER = process.env.ENABLE_AOT_PROFILER === "1";
+const ENABLE_LOG_PROFILER = process.env.ENABLE_LOG_PROFILER === "1";
 const RUN_AOT_COMPILATION = process.env.RUN_AOT_COMPILATION === "1";
 var methodIndexByName = undefined;
 var gitHash = undefined;
@@ -76,8 +78,7 @@ function createWasmImportStubsFrom(collection) {
 // we will replace them with the real implementation in replace_linker_placeholders
 function injectDependencies() {
     createWasmImportStubsFrom(methodIndexByName.mono_wasm_imports);
-    // mono_wasm_hybrid_globalization_imports is empty in non-hybrid globalization mode
-    createWasmImportStubsFrom(methodIndexByName.mono_wasm_hybrid_globalization_imports);
+    if (FEATURE_PERFTRACING) createWasmImportStubsFrom(methodIndexByName.mono_wasm_diagnostic_imports);
 
     #if USE_PTHREADS
     createWasmImportStubsFrom(methodIndexByName.mono_wasm_threads_imports);
@@ -86,8 +87,11 @@ function injectDependencies() {
     DotnetSupportLib["$DOTNET__postset"] = `DOTNET.setup({ ` +
         `wasmEnableSIMD: ${WASM_ENABLE_SIMD ? "true" : "false"},` +
         `wasmEnableEH: ${WASM_ENABLE_EH ? "true" : "false"},` +
+        `enablePerfTracing: ${FEATURE_PERFTRACING ? "true" : "false"}, ` +
         `enableAotProfiler: ${ENABLE_AOT_PROFILER ? "true" : "false"}, ` +
         `enableBrowserProfiler: ${ENABLE_BROWSER_PROFILER ? "true" : "false"}, ` +
+        `enablePerfTracing: ${ENABLE_BROWSER_PROFILER ? "true" : "false"}, ` +
+        `enableLogProfiler: ${ENABLE_LOG_PROFILER ? "true" : "false"}, ` +
         `runAOTCompilation: ${RUN_AOT_COMPILATION ? "true" : "false"}, ` +
         `wasmEnableThreads: ${USE_PTHREADS ? "true" : "false"}, ` +
         `gitHash: "${gitHash}", ` +

@@ -77,7 +77,7 @@ inline static Enum_StdInterfaces GetStdInterfaceKind(PTR_IUnknown pUnk)
 
 // IUnknown is part of IDispatch
 // Common vtables for well-known COM interfaces
-// shared by all COM+ callable wrappers.
+// shared by all CLR callable wrappers.
 extern const StdInterfaceDesc<3>  g_InnerUnknown;
 extern const StdInterfaceDesc<4>  g_IProvideClassInfo;
 extern const StdInterfaceDesc<9>  g_IMarshal;

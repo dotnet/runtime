@@ -7,8 +7,7 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.CodeAnalysis" Version="$(RoslynApiVersion)" />
-
-    <ProjectReference Include="..\..\src\System.Text.Json.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Composition\src\System.Composition.csproj" />
   </ItemGroup>
 
   <ItemGroup>
@@ -20,6 +19,10 @@
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">
+    <ProjectReference Include="..\..\src\System.Text.Json.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.IO.Pipelines\src\System.IO.Pipelines.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Reflection.Metadata\src\System.Reflection.Metadata.csproj" />
+
     <Reference Include="System" />
   </ItemGroup>
 

@@ -56,17 +56,7 @@ namespace JIT.HardwareIntrinsics.Arm
                 test.RunStructFldScenario();
 
                 // Validates using inside ConditionalSelect with value falseValue
-                // Currently, using this operation in ConditionalSelect() gives incorrect result
-                // when falseReg == targetReg because this instruction uses Pg/Z to update the targetReg
-                // instead of Pg/M to merge it. As such, the value of falseReg is lost. Ideally, such
-                // instructions should be marked similar to RMW (a different flag name) to make sure that
-                // we do not assign falseReg/targetReg same. Then, we would do something like this:
-                //
-                // ldnf1sh target, pg/z, [x0]
-                // sel mask, target, target, falseReg
-                //
-                // This needs more careful thinking, so disabling it for now.
-                // test.ConditionalSelect_FalseOp();
+                test.ConditionalSelect_FalseOp();
 
                 // Validates using inside ConditionalSelect with zero falseValue
                 test.ConditionalSelect_ZeroOp();
@@ -462,17 +452,7 @@ namespace JIT.HardwareIntrinsics.Arm
 
         private void ValidateResult({Op1BaseType}[] firstOp, {Op2BaseType}[] secondOp, {RetBaseType}[] result, [CallerMemberName] string method = "")
         {
-            bool succeeded = true;
-
-            for (var i = 0; i < RetElementCount; i++)
-            {
-                {RetBaseType} gatherResult = ({RetBaseType})(firstOp[i] == 0 ? 0 : *({ExtendedElementType}*)(secondOp[i]));
-                if (result[i] != gatherResult)
-                {
-                    succeeded = false;
-                    break;
-                }
-            }
+            var succeeded = Helpers.CheckGatherVectorBasesBehavior<{Op1BaseType}, {Op2BaseType}, {ExtendedElementType}>(firstOp, secondOp, result);
 
             if (!succeeded)
             {
@@ -556,18 +536,7 @@ namespace JIT.HardwareIntrinsics.Arm
 
         private void ValidateConditionalSelectResult_TrueValue({RetBaseType}[] maskOp, {Op1BaseType}[] firstOp, {Op2BaseType}[] secondOp, {RetBaseType}[] falseOp, {RetBaseType}[] result, [CallerMemberName] string method = "")
         {
-            bool succeeded = true;
-
-            for (var i = 0; i < RetElementCount; i++)
-            {
-                {RetBaseType} gatherResult = ({RetBaseType})(firstOp[i] == 0 ? 0 : *({ExtendedElementType}*)(secondOp[i]));
-                {RetBaseType} iterResult = (maskOp[i] != 0) ? gatherResult : falseOp[i];
-                if (iterResult != result[i])
-                {
-                    succeeded = false;
-                    break;
-                }
-            }
+            var succeeded = Helpers.CheckGatherVectorBasesConditionalSelectBehavior<{Op1BaseType}, {Op2BaseType}, {ExtendedElementType}>(maskOp, firstOp, secondOp, falseOp, result);
 
             if (!succeeded)
             {
@@ -602,21 +571,7 @@ namespace JIT.HardwareIntrinsics.Arm
 
         private void ValidateConditionalSelectResult_FalseValue({RetBaseType}[] maskOp, {Op1BaseType}[] firstOp, {Op2BaseType}[] secondOp, {RetBaseType}[] trueOp, {RetBaseType}[] result, [CallerMemberName] string method = "")
         {
-            bool succeeded = true;
-
-            for (var i = 0; i < RetElementCount; i++)
-            {
-                {RetBaseType} gatherResult = ({RetBaseType})(firstOp[i] == 0 ? 0 : *({ExtendedElementType}*)(secondOp[i]));
-                {RetBaseType} iterResult = (maskOp[i] != 0) ? trueOp[i] : gatherResult;
-                if (maskOp[i] != 0)
-                {
-                    if (iterResult != result[i])
-                    {
-                        succeeded = false;
-                        break;
-                    }
-                }
-            }
+            var succeeded = Helpers.CheckGatherVectorBasesConditionalSelectTrueBehavior<{Op1BaseType}, {Op2BaseType}, {ExtendedElementType}>(maskOp, firstOp, secondOp, trueOp, result);
 
             if (!succeeded)
             {

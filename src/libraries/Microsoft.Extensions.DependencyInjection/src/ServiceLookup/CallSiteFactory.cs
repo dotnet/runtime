@@ -574,6 +574,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
             for (int index = 0; index < parameters.Length; index++)
             {
                 ServiceCallSite? callSite = null;
+                bool isKeyedParameter = false;
                 Type parameterType = parameters[index].ParameterType;
                 foreach (var attribute in parameters[index].GetCustomAttributes(true))
                 {
@@ -591,11 +592,15 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
                     {
                         var parameterSvcId = new ServiceIdentifier(keyed.Key, parameterType);
                         callSite = GetCallSite(parameterSvcId, callSiteChain);
+                        isKeyedParameter = true;
                         break;
                     }
                 }
 
-                callSite ??= GetCallSite(ServiceIdentifier.FromServiceType(parameterType), callSiteChain);
+                if (!isKeyedParameter)
+                {
+                    callSite ??= GetCallSite(ServiceIdentifier.FromServiceType(parameterType), callSiteChain);
+                }
 
                 if (callSite == null && ParameterDefaultValue.TryGetDefaultValue(parameters[index], out object? defaultValue))
                 {

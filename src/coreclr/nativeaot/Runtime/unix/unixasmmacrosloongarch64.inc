@@ -158,15 +158,9 @@ C_FUNC(\Name):
     st.d  $ra, $sp, -0x8
     addi.d  $sp, $sp, -16
 
-    // This sequence of instructions is recognized and potentially patched
+    // This instruction is recognized and potentially patched
     // by the linker (GD->IE/LE relaxation).
-    // TODO-LOONGARCH64: Fix once TLSDESC is supported by LLVM
-    //la.local  $a0, \var
-    //ld.d  \target, $a0, 0
-    //.tlsdesccall \var
-    //jirl  $ra, \target, 0
-    la.tls.ie   $a0, \var
-    // End of the sequence
+    la.tls.desc  $a0, \var
 
     ori  \target, $tp, 0
     add.d  \target, \target, $a0
@@ -179,77 +173,6 @@ C_FUNC(\Name):
 // Inlined version of RhpGetThread. Target cannot be a0.
 .macro INLINE_GETTHREAD target
     INLINE_GET_TLS_VAR  \target, C_FUNC(tls_CurrentThread)
-.endm
-
-// Do not use these ETLS macros in functions that already create a stack frame.
-// Creating two stack frames in one function can confuse the unwinder/debugger
-
-.macro GETTHREAD_ETLS_1
-    PROLOG_SAVE_REG_PAIR_INDEXED   22, 1, 32          // ;; Push down stack pointer and store FP and RA
-    st.d  $a0, $sp, 0x10
-
-    bl  C_FUNC(RhpGetThread)
-    ori  $a1, $a0, 0
-
-    ld.d  $a0, $sp, 0x10
-    EPILOG_RESTORE_REG_PAIR_INDEXED   22, 1, 32
-.endm
-
-.macro GETTHREAD_ETLS_2
-    PROLOG_SAVE_REG_PAIR_INDEXED  22, 1, 32           // ;; Push down stack pointer and store FP and RA
-    st.d  $a0, $sp, 0x10
-    st.d  $a1, $sp, 0x18
-
-    bl  C_FUNC(RhpGetThread)
-    ori  $a2, $a0, 0
-
-    ld.d  $a0, $sp, 0x10
-    ld.d  $a1, $sp, 0x18
-    EPILOG_RESTORE_REG_PAIR_INDEXED  22, 1, 32
-.endm
-
-.macro GETTHREAD_ETLS_3
-    PROLOG_SAVE_REG_PAIR_INDEXED  22, 1, 48           // ;; Push down stack pointer and store FP and RA
-    st.d  $a0, $sp, 0x10
-    st.d  $a1, $sp, 0x18
-    st.d  $a2, $sp, 0x20
-
-    bl  C_FUNC(RhpGetThread)
-    ori  $a3, $a0, 0
-
-    ld.d  $a0, $sp, 0x10
-    ld.d  $a1, $sp, 0x18
-    ld.d  $a2, $sp, 0x20
-    EPILOG_RESTORE_REG_PAIR_INDEXED  22, 1, 48
-.endm
-
-.macro GETTHUNKDATA_ETLS_9
-    PROLOG_SAVE_REG_PAIR_INDEXED  22, 1, 96           // ;; Push down stack pointer and store FP and RA
-    st.d  $a0, $sp, 0x10
-    st.d  $a1, $sp, 0x18
-    st.d  $a2, $sp, 0x20
-    st.d  $a3, $sp, 0x28
-    st.d  $a4, $sp, 0x30
-    st.d  $a5, $sp, 0x38
-    st.d  $a6, $sp, 0x40
-    st.d  $a7, $sp, 0x48
-    st.d  $t6, $sp, 0x50
-    st.d  $t7, $sp, 0x58
-
-    bl  RhpGetThunkData
-    ori  $t0, $a0, 0
-
-    ld.d  $a0, $sp, 0x10
-    ld.d  $a1, $sp, 0x18
-    ld.d  $a2, $sp, 0x20
-    ld.d  $a3, $sp, 0x28
-    ld.d  $a4, $sp, 0x30
-    ld.d  $a5, $sp, 0x38
-    ld.d  $a6, $sp, 0x40
-    ld.d  $a7, $sp, 0x48
-    ld.d  $t6, $sp, 0x50
-    ld.d  $t7, $sp, 0x58
-    EPILOG_RESTORE_REG_PAIR_INDEXED  22, 1, 96
 .endm
 
 .macro  InterlockedOperationBarrier
@@ -271,16 +194,17 @@ C_FUNC(\Name):
 .endm
 
 // Note: these must match the defs in PInvokeTransitionFrameFlags
-PTFF_SAVE_SP            = 0x00000200
-PTFF_SAVE_R4            = 0x00001000
-PTFF_SAVE_R5            = 0x00002000
-PTFF_SAVE_ALL_PRESERVED = 0x000001FF // NOTE: r23-r31
+#define PTFF_SAVE_SP            0x00000200
+#define PTFF_SAVE_R4            0x00000800
+#define PTFF_SAVE_R5            0x00001000
+#define PTFF_SAVE_ALL_PRESERVED 0x000001FF // NOTE: r23-r31
+#define PTFF_THREAD_HIJACK_HI   0x00000002 // upper 32 bits of the PTFF_THREAD_HIJACK
 
-DEFAULT_FRAME_SAVE_FLAGS = PTFF_SAVE_ALL_PRESERVED + PTFF_SAVE_SP
+#define DEFAULT_FRAME_SAVE_FLAGS (PTFF_SAVE_ALL_PRESERVED + PTFF_SAVE_SP)
 
 .macro PUSH_COOP_PINVOKE_FRAME trashReg
 
-    PROLOG_SAVE_REG_PAIR_INDEXED  22, 1, 0x80 // Push down stack pointer and store FP and RA
+    PROLOG_SAVE_REG_PAIR_INDEXED  22, 1, 0x78 // Push down stack pointer and store FP and RA
 
     // 0x10 bytes reserved for Thread* and flags
 
@@ -289,11 +213,11 @@ DEFAULT_FRAME_SAVE_FLAGS = PTFF_SAVE_ALL_PRESERVED + PTFF_SAVE_SP
     PROLOG_SAVE_REG_PAIR   25, 26, 0x30
     PROLOG_SAVE_REG_PAIR   27, 28, 0x40
     PROLOG_SAVE_REG_PAIR   29, 30, 0x50
-    PROLOG_SAVE_REG_PAIR   31,  2, 0x60
+    PROLOG_SAVE_REG        31,     0x60
 
     // Save the value of SP before stack allocation to the last slot in the frame (slot #15)
-    addi.d  \trashReg, $sp, 0x80
-    st.d  \trashReg, $sp, 0x70
+    addi.d  \trashReg, $sp, 0x78
+    st.d  \trashReg, $sp, 0x68
 
     // Record the bitmask of saved registers in the frame (slot #3)
     ori  \trashReg, $zero, DEFAULT_FRAME_SAVE_FLAGS
@@ -310,12 +234,12 @@ DEFAULT_FRAME_SAVE_FLAGS = PTFF_SAVE_ALL_PRESERVED + PTFF_SAVE_SP
     EPILOG_RESTORE_REG_PAIR  25, 26, 0x30
     EPILOG_RESTORE_REG_PAIR  27, 28, 0x40
     EPILOG_RESTORE_REG_PAIR  29, 30, 0x50
-    EPILOG_RESTORE_REG_PAIR  31,  2, 0x60
-    EPILOG_RESTORE_REG_PAIR_INDEXED  22, 1, 0x80
+    EPILOG_RESTORE_REG       31,     0x60
+    EPILOG_RESTORE_REG_PAIR_INDEXED  22, 1, 0x78
 .endm
 
-// Bit position for the flags above, to be used with andi+beq/bne instructions
-PTFF_THREAD_ABORT_BIT = 36
+// Bit position for the flags above, to be used with bstrpick.d+beq/bne instructions
+#define PTFF_THREAD_ABORT_BIT 31
 
 //
 // CONSTANTS -- INTEGER
@@ -325,9 +249,9 @@ PTFF_THREAD_ABORT_BIT = 36
 #define TSF_DoNotTriggerGc              0x10
 #define TSF_SuppressGcStress__OR__TSF_DoNotTriggerGC 0x18
 
-// Bit position for the flags above, to be used with andi+beq/bne instructions
-TrapThreadsFlags_AbortInProgress_Bit = 0
-TrapThreadsFlags_TrapThreads_Bit     = 1
+// Bit position for the flags above, to be used with bstrpick.d+beq/bne instructions
+#define TrapThreadsFlags_AbortInProgress_Bit 0
+#define TrapThreadsFlags_TrapThreads_Bit     1
 
 // These must match the TrapThreadsFlags enum
 #define TrapThreadsFlags_None            0

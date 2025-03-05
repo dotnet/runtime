@@ -211,7 +211,7 @@ export interface ResourceGroups {
     pdb?: ResourceList;
 
     jsModuleWorker?: ResourceList;
-    jsModuleGlobalization?: ResourceList;
+    jsModuleDiagnostics?: ResourceList;
     jsModuleNative: ResourceList;
     jsModuleRuntime: ResourceList;
     wasmSymbols?: ResourceList;
@@ -244,7 +244,11 @@ export type ResourceList = { [name: string]: string | null | "" };
  * @returns A URI string or a Response promise to override the loading process, or null/undefined to allow the default loading behavior.
  * When returned string is not qualified with `./` or absolute URL, it will be resolved against the application base URI.
  */
-export type LoadBootResourceCallback = (type: WebAssemblyBootResourceType, name: string, defaultUri: string, integrity: string, behavior: AssetBehaviors) => string | Promise<Response> | null | undefined;
+export type LoadBootResourceCallback = (type: WebAssemblyBootResourceType, name: string, defaultUri: string, integrity: string, behavior: AssetBehaviors) => string | Promise<Response> | Promise<BootModule> | null | undefined;
+
+export type BootModule = {
+    config: MonoConfig
+}
 
 export interface LoadingResource {
     name: string;
@@ -319,6 +323,10 @@ export type SingleAssetBehaviors =
      */
     | "js-module-threads"
     /**
+     * The javascript module for diagnostic server and client.
+     */
+    | "js-module-diagnostics"
+    /**
      * The javascript module for runtime.
      */
     | "js-module-runtime"
@@ -327,10 +335,6 @@ export type SingleAssetBehaviors =
      */
     | "js-module-native"
     /**
-     * The javascript module for hybrid globalization.
-     */
-    | "js-module-globalization"
-    /**
      * Typically blazor.boot.json
      */
     | "manifest"
@@ -338,10 +342,6 @@ export type SingleAssetBehaviors =
      * The debugging symbols
      */
     | "symbols"
-    /**
-     * Load segmentation rules file for Hybrid Globalization.
-     */
-    | "segmentation-rules";
 
 export type AssetBehaviors = SingleAssetBehaviors |
     /**
@@ -389,11 +389,7 @@ export const enum GlobalizationMode {
     /**
      * Use user defined icu file.
      */
-    Custom = "custom",
-    /**
-     * Operate in hybrid globalization mode with small ICU files, using native platform functions.
-     */
-    Hybrid = "hybrid"
+    Custom = "custom"
 }
 
 export type DotnetModuleConfig = {

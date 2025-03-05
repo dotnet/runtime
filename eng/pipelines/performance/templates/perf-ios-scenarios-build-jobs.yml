@@ -1,0 +1,41 @@
+parameters:
+  hybridGlobalization: true
+  mono: true
+  nativeAot: true
+
+jobs:
+  - ${{ if eq(parameters.mono, true) }}:
+    # build mono iOS scenarios HybridGlobalization
+    - template: /eng/pipelines/common/platform-matrix.yml
+      parameters:
+        jobTemplate: /eng/pipelines/common/global-build-job.yml
+        buildConfig: release
+        runtimeFlavor: mono
+        platforms:
+        - ios_arm64
+        jobParameters:
+          buildArgs: -s mono+libs+host+packs -c $(_BuildConfig)
+          nameSuffix: iOSMono
+          isOfficialBuild: false
+          postBuildSteps:
+            - template: /eng/pipelines/performance/templates/build-perf-sample-apps.yml
+              parameters:
+                hybridGlobalization: ${{ parameters.hybridGlobalization }}
+
+  - ${{ if eq(parameters.nativeAot, true) }}:
+    # build NativeAOT iOS scenarios HybridGlobalization
+    - template: /eng/pipelines/common/platform-matrix.yml
+      parameters:
+        jobTemplate: /eng/pipelines/common/global-build-job.yml
+        buildConfig: release
+        runtimeFlavor: coreclr
+        platforms:
+        - ios_arm64
+        jobParameters:
+          buildArgs: --cross -s clr.alljits+clr.tools+clr.nativeaotruntime+clr.nativeaotlibs+libs -c $(_BuildConfig)
+          nameSuffix: iOSNativeAOT
+          isOfficialBuild: false
+          postBuildSteps:
+            - template: /eng/pipelines/performance/templates/build-perf-sample-apps.yml
+              parameters:
+                hybridGlobalization: ${{ parameters.hybridGlobalization }}

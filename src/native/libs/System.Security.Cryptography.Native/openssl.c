@@ -7,6 +7,7 @@
 #include "pal_safecrt.h"
 #include "pal_x509.h"
 #include "pal_ssl.h"
+#include "memory_debug.h"
 #include "openssl.h"
 
 #ifdef FEATURE_DISTRO_AGNOSTIC_SSL
@@ -449,40 +450,6 @@ int32_t CryptoNative_GetX509NameRawBytes(X509_NAME* x509Name, uint8_t* pBuf, int
 
     memcpy_s(pBuf, Int32ToSizeT(cBuf), nameBuf, Int32ToSizeT(length));
     return 1;
-}
-
-/*
-Function:
-GetX509EkuFieldCount
-
-Used by System.Security.Cryptography.X509Certificates' OpenSslX509Encoder to identify the
-number of Extended Key Usage OIDs present in the EXTENDED_KEY_USAGE structure.
-
-Return values:
-0 if the field count cannot be determined, or the count of OIDs present in the EKU.
-Note that 0 does not always indicate an error, merely that GetX509EkuField should not be called.
-*/
-int32_t CryptoNative_GetX509EkuFieldCount(EXTENDED_KEY_USAGE* eku)
-{
-    // No error queue impact.
-    return sk_ASN1_OBJECT_num(eku);
-}
-
-/*
-Function:
-GetX509EkuField
-
-Used by System.Security.Cryptography.X509Certificates' OpenSslX509Encoder to get a pointer to the
-ASN1_OBJECT structure which represents the OID in a particular spot in the EKU.
-
-Return values:
-NULL if eku is NULL or loc is out of bounds, otherwise a pointer to the ASN1_OBJECT structure encoding
-that particular OID.
-*/
-ASN1_OBJECT* CryptoNative_GetX509EkuField(EXTENDED_KEY_USAGE* eku, int32_t loc)
-{
-    // No error queue impact.
-    return sk_ASN1_OBJECT_value(eku, loc);
 }
 
 /*
@@ -1542,7 +1509,12 @@ static int32_t EnsureOpenSslInitializedCore(void)
     // Otherwise call the 1.1 one.
 #ifdef FEATURE_DISTRO_AGNOSTIC_SSL
     InitializeOpenSSLShim();
+#endif
+    // This needs to be done before any allocation is done e.g. EnsureOpenSsl* is called.
+    // And it also needs to be after the pointers are loaded for DISTRO_AGNOSTIC_SSL
+    InitializeMemoryDebug();
 
+#ifdef FEATURE_DISTRO_AGNOSTIC_SSL
     if (API_EXISTS(SSL_state))
     {
         ret = EnsureOpenSsl10Initialized();

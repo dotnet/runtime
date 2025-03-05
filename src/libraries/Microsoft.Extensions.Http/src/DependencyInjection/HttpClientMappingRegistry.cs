@@ -18,7 +18,5 @@ namespace Microsoft.Extensions.DependencyInjection
         public Dictionary<string, HttpClientKeyedLifetime> KeyedLifetimeMap { get; } = new();
 
         public HttpClientKeyedLifetime? DefaultKeyedLifetime { get; set; }
-
-        public ServiceDescriptor? EmptyNameHttpClientDescriptor { get; set; }
     }
 }

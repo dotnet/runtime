@@ -4,7 +4,6 @@
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
     <DefineConstants>$(DefineConstants);WINHTTPHANDLER_TEST</DefineConstants>
     <EnablePreviewFeatures>true</EnablePreviewFeatures>
-    <NoWarn>$(NoWarn);SYSLIB0057</NoWarn>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="$(CommonTestPath)System\Net\Configuration.cs"
@@ -41,8 +40,6 @@
              Link="Common\System\Net\VerboseTestLogging.cs" />
     <Compile Include="$(CommonTestPath)System\Net\TestWebProxies.cs"
              Link="Common\System\Net\TestWebProxies.cs" />
-    <Compile Include="$(CommonTestPath)System\Net\StreamArrayExtensions.cs"
-             Link="Common\System\Net\StreamArrayExtensions.cs" />
     <Compile Include="$(CommonTestPath)System\Net\Http\ByteAtATimeContent.cs"
              Link="Common\System\Net\Http\ByteAtATimeContent.cs" />
     <Compile Include="$(CommonTestPath)System\Net\Http\ChannelBindingAwareContent.cs"
@@ -144,6 +141,9 @@
     <Compile Include="TrailingHeadersTest.cs" />
     <Compile Include="BidirectionStreamingTest.cs" />
   </ItemGroup>
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
+    <Compile Include="$(CommonPath)System\IO\StreamExtensions.netstandard.cs" Link="Common\System\IO\StreamExtensions.netstandard.cs" />
+  </ItemGroup>
   <ItemGroup>
     <PackageReference Include="System.Net.TestData" Version="$(SystemNetTestDataVersion)" />
     <ProjectReference Include="..\..\src\System.Net.Http.WinHttpHandler.csproj" />
@@ -155,5 +155,6 @@
     <Reference Include="System.DirectoryServices.Protocols" />
     <Reference Include="System.Net.Http" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.Net.Http.Json\src\System.Net.Http.Json.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Bcl.Cryptography\src\Microsoft.Bcl.Cryptography.csproj" />
   </ItemGroup>
 </Project>

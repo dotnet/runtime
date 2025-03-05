@@ -298,35 +298,37 @@ namespace System.Text.Json.Serialization.Metadata
                     supportContinuation: true,
                     supportAsync: false);
 
-                using var bufferWriter = new PooledByteBufferWriter(Options.DefaultBufferSize);
-                using var writer = new Utf8JsonWriter(bufferWriter, Options.GetWriterOptions());
+                Utf8JsonWriter writer = Utf8JsonWriterCache.RentWriterAndBuffer(Options, out PooledByteBufferWriter bufferWriter);
+                Debug.Assert(bufferWriter.CanGetUnflushedBytes);
 
-                if (!bufferWriter.CanGetUnflushedBytes)
+                try
                 {
-                    ThrowHelper.ThrowInvalidOperationException_PipeWriterDoesNotImplementUnflushedBytes(bufferWriter);
+                    state.PipeWriter = bufferWriter;
+                    state.FlushThreshold = (int)(bufferWriter.Capacity * JsonSerializer.FlushThreshold);
+
+                    do
+                    {
+                        isFinalBlock = EffectiveConverter.WriteCore(writer, rootValue, Options, ref state);
+                        writer.Flush();
+
+                        bufferWriter.WriteToStream(utf8Json);
+                        bufferWriter.Clear();
+
+                        Debug.Assert(state.PendingTask == null);
+                    } while (!isFinalBlock);
+
+                    if (CanUseSerializeHandler)
+                    {
+                        // On successful serialization, record the serialization size
+                        // to determine potential suitability of the type for
+                        // fast-path serialization in streaming methods.
+                        Debug.Assert(writer.BytesPending == 0);
+                        OnRootLevelAsyncSerializationCompleted(writer.BytesCommitted);
+                    }
                 }
-
-                state.PipeWriter = bufferWriter;
-                state.FlushThreshold = (int)(bufferWriter.Capacity * JsonSerializer.FlushThreshold);
-
-                do
+                finally
                 {
-                    isFinalBlock = EffectiveConverter.WriteCore(writer, rootValue, Options, ref state);
-                    writer.Flush();
-
-                    bufferWriter.WriteToStream(utf8Json);
-                    bufferWriter.Clear();
-
-                    Debug.Assert(state.PendingTask == null);
-                } while (!isFinalBlock);
-
-                if (CanUseSerializeHandler)
-                {
-                    // On successful serialization, record the serialization size
-                    // to determine potential suitability of the type for
-                    // fast-path serialization in streaming methods.
-                    Debug.Assert(writer.BytesPending == 0);
-                    OnRootLevelAsyncSerializationCompleted(writer.BytesCommitted);
+                    Utf8JsonWriterCache.ReturnWriterAndBuffer(writer, bufferWriter);
                 }
             }
         }

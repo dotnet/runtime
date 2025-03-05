@@ -33,18 +33,16 @@ namespace System.Diagnostics.Metrics
         private MeasurementCallback<double>  _doubleMeasurementCallback  = (instrument, measurement, tags, state) => { /* no-op */ };
         private MeasurementCallback<decimal> _decimalMeasurementCallback = (instrument, measurement, tags, state) => { /* no-op */ };
 
-        static MeterListener()
-        {
-#if NET9_0_OR_GREATER
-            // This ensures that the static Meter gets created before any listeners exist.
-            _ = RuntimeMetrics.IsEnabled();
-#endif
-        }
-
         /// <summary>
         /// Creates a MeterListener object.
         /// </summary>
-        public MeterListener() { }
+        public MeterListener()
+        {
+#if NET9_0_OR_GREATER
+            // This ensures that the static Meter gets created before any listeners exist.
+            RuntimeMetrics.EnsureInitialized();
+#endif
+        }
 
         /// <summary>
         /// Callbacks to get notification when an instrument is published.

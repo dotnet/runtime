@@ -141,7 +141,7 @@ public class ResourcesData
     public ResourceHashesByNameDictionary jsModuleWorker { get; set; }
 
     [DataMember(EmitDefaultValue = false)]
-    public ResourceHashesByNameDictionary jsModuleGlobalization { get; set; }
+    public ResourceHashesByNameDictionary jsModuleDiagnostics { get; set; }
 
     [DataMember(EmitDefaultValue = false)]
     public ResourceHashesByNameDictionary jsModuleNative { get; set; }
@@ -252,11 +252,6 @@ public enum GlobalizationMode : int
     /// Load custom icu file provided by the developer.
     /// </summary>
     Custom = 3,
-
-    /// <summary>
-    /// Use the reduced icudt_hybrid.dat file
-    /// </summary>
-    Hybrid = 4,
 }
 
 [DataContract]

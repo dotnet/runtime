@@ -94,7 +94,7 @@ int LinearScan::BuildNode(GenTree* tree)
             {
                 // We need an internal register different from targetReg in which 'tree' produces its result
                 // because both targetReg and internal reg will be in use at the same time.
-                buildInternalFloatRegisterDefForNode(tree, allSIMDRegs());
+                buildInternalIntRegisterDefForNode(tree);
                 setInternalRegsDelayFree = true;
                 buildInternalRegisterUses();
             }
@@ -143,10 +143,22 @@ int LinearScan::BuildNode(GenTree* tree)
 
         case GT_CNS_DBL:
         {
-            // There is no instruction for loading float/double imm directly into FPR.
-            // Reserve int to load constant from memory (IF_LARGELDC)
-            buildInternalIntRegisterDefForNode(tree);
-            buildInternalRegisterUses();
+            emitAttr size = emitActualTypeSize(tree);
+
+            double constValue = tree->AsDblCon()->DconValue();
+            if (!FloatingPointUtils::isPositiveZero(constValue))
+            {
+                int64_t bits =
+                    (size == EA_4BYTE)
+                        ? (int32_t)BitOperations::SingleToUInt32Bits(FloatingPointUtils::convertToSingle(constValue))
+                        : (int64_t)BitOperations::DoubleToUInt64Bits(constValue);
+                bool fitsInLui = ((bits & 0xfff) == 0) && emitter::isValidSimm20(bits >> 12);
+                if (fitsInLui || emitter::isValidSimm12(bits)) // can we synthesize bits with a single instruction?
+                {
+                    buildInternalIntRegisterDefForNode(tree);
+                    buildInternalRegisterUses();
+                }
+            }
         }
             FALLTHROUGH;
 
@@ -394,21 +406,7 @@ int LinearScan::BuildNode(GenTree* tree)
         case GT_GT:
         {
             var_types op1Type = genActualType(tree->gtGetOp1()->TypeGet());
-            if (varTypeIsFloating(op1Type))
-            {
-                bool isUnordered = (tree->gtFlags & GTF_RELOP_NAN_UN) != 0;
-                if (isUnordered)
-                {
-                    if (tree->OperIs(GT_EQ))
-                        buildInternalIntRegisterDefForNode(tree);
-                }
-                else
-                {
-                    if (tree->OperIs(GT_NE))
-                        buildInternalIntRegisterDefForNode(tree);
-                }
-            }
-            else
+            if (!varTypeIsFloating(op1Type))
             {
                 emitAttr cmpSize = EA_ATTR(genTypeSize(op1Type));
                 if (tree->gtGetOp2()->isContainedIntOrIImmed())
@@ -1284,7 +1282,7 @@ int LinearScan::BuildBlockStore(GenTreeBlk* blkNode)
 int LinearScan::BuildCast(GenTreeCast* cast)
 {
     enum CodeGen::GenIntCastDesc::CheckKind kind = CodeGen::GenIntCastDesc(cast).CheckKind();
-    if ((kind != CodeGen::GenIntCastDesc::CHECK_NONE) && (kind != CodeGen::GenIntCastDesc::CHECK_POSITIVE))
+    if ((kind != CodeGen::GenIntCastDesc::CHECK_NONE))
     {
         buildInternalIntRegisterDefForNode(cast);
     }

@@ -225,7 +225,12 @@ namespace System.Net.Http
 
                 // Processing the incoming frames before sending the client preface and SETTINGS is necessary when using a NamedPipe as a transport.
                 // If the preface and SETTINGS coming from the server are not read first the below WriteAsync and the ProcessIncomingFramesAsync fall into a deadlock.
-                _ = ProcessIncomingFramesAsync();
+                // Avoid capturing the initial request's ExecutionContext for the entire lifetime of the new connection.
+                using (ExecutionContext.SuppressFlow())
+                {
+                    _ = ProcessIncomingFramesAsync();
+                }
+
                 await _stream.WriteAsync(_outgoingBuffer.ActiveMemory, cancellationToken).ConfigureAwait(false);
                 _rttEstimator.OnInitialSettingsSent();
                 _outgoingBuffer.ClearAndReturnBuffer();
@@ -249,7 +254,11 @@ namespace System.Net.Http
                 throw new IOException(SR.net_http_http2_connection_not_established, e);
             }
 
-            _ = ProcessOutgoingFramesAsync();
+            // Avoid capturing the initial request's ExecutionContext for the entire lifetime of the new connection.
+            using (ExecutionContext.SuppressFlow())
+            {
+                _ = ProcessOutgoingFramesAsync();
+            }
         }
 
         private void Shutdown()
@@ -288,11 +297,6 @@ namespace System.Net.Http
 
                 if (_streamsInUse < _maxConcurrentStreams)
                 {
-                    if (_streamsInUse == 0)
-                    {
-                        MarkConnectionAsNotIdle();
-                    }
-
                     _streamsInUse++;
                     return true;
                 }
@@ -324,8 +328,6 @@ namespace System.Net.Http
 
                 if (_streamsInUse == 0)
                 {
-                    MarkConnectionAsIdle();
-
                     if (_shutdown)
                     {
                         FinalTeardown();
@@ -1606,6 +1608,11 @@ namespace System.Net.Http
                     ThrowRetry(SR.net_http_request_aborted);
                 }
 
+                if (_httpStreams.Count == 0)
+                {
+                    MarkConnectionAsNotIdle();
+                }
+
                 // Now that we're holding the lock, configure the stream.  The lock must be held while
                 // assigning the stream ID to ensure only one stream gets an ID, and it must be held
                 // across setting the initial window size (available credit) and storing the stream into
@@ -2071,6 +2078,11 @@ namespace System.Net.Http
                 {
                     Debug.Fail($"Stream {http2Stream.StreamId} not found in dictionary during RemoveStream???");
                     return;
+                }
+
+                if (_httpStreams.Count == 0)
+                {
+                    MarkConnectionAsIdle();
                 }
             }
 

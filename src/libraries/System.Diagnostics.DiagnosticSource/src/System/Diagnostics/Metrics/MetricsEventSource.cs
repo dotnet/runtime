@@ -46,6 +46,11 @@ namespace System.Diagnostics.Metrics
     {
         public static readonly MetricsEventSource Log = new();
 
+        // Although this API isn't public, it is invoked via reflection from System.Private.CoreLib and needs the same back-compat
+        // consideration as a public API. See EventSource.InitializeDefaultEventSources() in System.Private.CoreLib source for more
+        // details. We have a unit test GetInstanceMethodIsReflectable that verifies this method isn't accidentally removed or renamed.
+        public static MetricsEventSource GetInstance() { return Log; }
+
         private const string SharedSessionId = "SHARED";
         private const string ClientIdKey = "ClientId";
         private const string MaxHistogramsKey = "MaxHistograms";
@@ -148,7 +153,7 @@ namespace System.Diagnostics.Metrics
         // Sent when we begin to monitor the value of a instrument, either because new session filter arguments changed subscriptions
         // or because an instrument matching the pre-existing filter has just been created. This event precedes all *MetricPublished events
         // for the same named instrument.
-        [Event(7, Keywords = Keywords.TimeSeriesValues, Version = 2)]
+        [Event(7, Keywords = Keywords.TimeSeriesValues, Version = 3)]
 #if !NET8_0_OR_GREATER
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
                                       Justification = "This calls WriteEvent with all primitive arguments which is safe. Primitives are always serialized properly.")]
@@ -164,15 +169,16 @@ namespace System.Diagnostics.Metrics
                         string instrumentTags,
                         string meterTags,
                         string meterScopeHash,
-                        int instrumentId)
+                        int instrumentId,
+                        string? meterTelemetrySchemaUrl)
         {
             WriteEvent(7, sessionId, meterName, meterVersion ?? "", instrumentName, instrumentType, unit ?? "", description ?? "",
-                    instrumentTags, meterTags, meterScopeHash, instrumentId);
+                    instrumentTags, meterTags, meterScopeHash, instrumentId, meterTelemetrySchemaUrl);
         }
 
         // Sent when we stop monitoring the value of a instrument, either because new session filter arguments changed subscriptions
         // or because the Meter has been disposed.
-        [Event(8, Keywords = Keywords.TimeSeriesValues, Version = 2)]
+        [Event(8, Keywords = Keywords.TimeSeriesValues, Version = 3)]
 #if !NET8_0_OR_GREATER
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
                                       Justification = "This calls WriteEvent with all primitive arguments which is safe. Primitives are always serialized properly.")]
@@ -188,10 +194,11 @@ namespace System.Diagnostics.Metrics
                         string instrumentTags,
                         string meterTags,
                         string meterScopeHash,
-                        int instrumentId)
+                        int instrumentId,
+                        string? meterTelemetrySchemaUrl)
         {
             WriteEvent(8, sessionId, meterName, meterVersion ?? "", instrumentName, instrumentType, unit ?? "", description ?? "",
-                    instrumentTags, meterTags, meterScopeHash, instrumentId);
+                    instrumentTags, meterTags, meterScopeHash, instrumentId, meterTelemetrySchemaUrl);
         }
 
         [Event(9, Keywords = Keywords.TimeSeriesValues | Keywords.Messages | Keywords.InstrumentPublishing)]
@@ -206,7 +213,7 @@ namespace System.Diagnostics.Metrics
             WriteEvent(10, sessionId);
         }
 
-        [Event(11, Keywords = Keywords.InstrumentPublishing, Version = 2)]
+        [Event(11, Keywords = Keywords.InstrumentPublishing, Version = 3)]
 #if !NET8_0_OR_GREATER
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
                                       Justification = "This calls WriteEvent with all primitive arguments which is safe. Primitives are always serialized properly.")]
@@ -222,10 +229,11 @@ namespace System.Diagnostics.Metrics
                         string instrumentTags,
                         string meterTags,
                         string meterScopeHash,
-                        int instrumentId)
+                        int instrumentId,
+                        string? meterTelemetrySchemaUrl)
         {
             WriteEvent(11, sessionId, meterName, meterVersion ?? "", instrumentName, instrumentType, unit ?? "", description ?? "",
-                    instrumentTags, meterTags, meterScopeHash, instrumentId);
+                    instrumentTags, meterTags, meterScopeHash, instrumentId, meterTelemetrySchemaUrl);
         }
 
         [Event(12, Keywords = Keywords.TimeSeriesValues)]
@@ -273,11 +281,28 @@ namespace System.Diagnostics.Metrics
         }
 
         /// <summary>
+        /// Used to send version information.
+        /// </summary>
+        [Event(18, Keywords = Keywords.Messages)]
+        public void Version(int Major, int Minor, int Patch)
+        {
+            WriteEvent(18, Major, Minor, Patch);
+        }
+
+        /// <summary>
         /// Called when the EventSource gets a command from a EventListener or ETW.
         /// </summary>
         [NonEvent]
         protected override void OnEventCommand(EventCommandEventArgs command)
         {
+            if (command.Command == EventCommand.Enable)
+            {
+                Version(
+                    ThisAssembly.AssemblyFileVersion.Major,
+                    ThisAssembly.AssemblyFileVersion.Minor,
+                    ThisAssembly.AssemblyFileVersion.Build);
+            }
+
             lock (this)
             {
                 Handler.OnEventCommand(command);
@@ -314,7 +339,7 @@ namespace System.Diagnostics.Metrics
                 try
                 {
 #if OS_ISBROWSER_SUPPORT
-                    if (OperatingSystem.IsBrowser())
+                    if (OperatingSystem.IsBrowser() || OperatingSystem.IsWasi())
                     {
                         // AggregationManager uses a dedicated thread to avoid losing data for apps experiencing threadpool starvation
                         // and browser doesn't support Thread.Start()
@@ -322,7 +347,7 @@ namespace System.Diagnostics.Metrics
                         // This limitation shouldn't really matter because browser also doesn't support out-of-proc EventSource communication
                         // which is the intended scenario for this EventSource. If it matters in the future AggregationManager can be
                         // modified to have some other fallback path that works for browser.
-                        Parent.Error("", "System.Diagnostics.Metrics EventSource not supported on browser");
+                        Parent.Error("", "System.Diagnostics.Metrics EventSource not supported on browser and wasi");
                         return;
                     }
 #endif
@@ -441,11 +466,11 @@ namespace System.Diagnostics.Metrics
                             beginCollection: (startIntervalTime, endIntervalTime) => Parent.CollectionStart(sessionId, startIntervalTime, endIntervalTime),
                             endCollection: (startIntervalTime, endIntervalTime) => Parent.CollectionStop(sessionId, startIntervalTime, endIntervalTime),
                             beginInstrumentMeasurements: (i, state) => Parent.BeginInstrumentReporting(sessionId, i.Meter.Name, i.Meter.Version, i.Name, i.GetType().Name, i.Unit, i.Description,
-                                    Helpers.FormatTags(i.Tags), Helpers.FormatTags(i.Meter.Tags), Helpers.FormatObjectHash(i.Meter.Scope), state.ID),
+                                    Helpers.FormatTags(i.Tags), Helpers.FormatTags(i.Meter.Tags), Helpers.FormatObjectHash(i.Meter.Scope), state.ID, i.Meter.TelemetrySchemaUrl),
                             endInstrumentMeasurements: (i, state) => Parent.EndInstrumentReporting(sessionId, i.Meter.Name, i.Meter.Version, i.Name, i.GetType().Name, i.Unit, i.Description,
-                                    Helpers.FormatTags(i.Tags), Helpers.FormatTags(i.Meter.Tags), Helpers.FormatObjectHash(i.Meter.Scope), state.ID),
+                                    Helpers.FormatTags(i.Tags), Helpers.FormatTags(i.Meter.Tags), Helpers.FormatObjectHash(i.Meter.Scope), state.ID, i.Meter.TelemetrySchemaUrl),
                             instrumentPublished: (i, state) => Parent.InstrumentPublished(sessionId, i.Meter.Name, i.Meter.Version, i.Name, i.GetType().Name, i.Unit, i.Description,
-                                    Helpers.FormatTags(i.Tags), Helpers.FormatTags(i.Meter.Tags), Helpers.FormatObjectHash(i.Meter.Scope), state is null ? 0 : state.ID),
+                                    Helpers.FormatTags(i.Tags), Helpers.FormatTags(i.Meter.Tags), Helpers.FormatObjectHash(i.Meter.Scope), state is null ? 0 : state.ID, i.Meter.TelemetrySchemaUrl),
                             initialInstrumentEnumerationComplete: () => Parent.InitialInstrumentEnumerationComplete(sessionId),
                             collectionError: e => Parent.Error(sessionId, e.ToString()),
                             timeSeriesLimitReached: () => Parent.TimeSeriesLimitReached(sessionId),
@@ -653,6 +678,19 @@ namespace System.Diagnostics.Metrics
                     {
                         _aggregationManager!.Include(spec.MeterName, spec.InstrumentName);
                     }
+                    else if (spec.MeterName.Length > 0
+                        && spec.MeterName[spec.MeterName.Length - 1] == '*')
+                    {
+                        if (spec.MeterName.Length == 1)
+                        {
+                            _aggregationManager!.IncludeAll();
+                        }
+                        else
+                        {
+                            _aggregationManager!.IncludePrefix(
+                                spec.MeterName.Substring(0, spec.MeterName.Length - 1));
+                        }
+                    }
                     else
                     {
                         _aggregationManager!.Include(spec.MeterName);
@@ -680,6 +718,11 @@ namespace System.Diagnostics.Metrics
                 {
                     Log.GaugeValuePublished(sessionId, instrument.Meter.Name, instrument.Meter.Version, instrument.Name, instrument.Unit, Helpers.FormatTags(stats.Labels),
                         lastValueStats.LastValue.HasValue ? lastValueStats.LastValue.Value.ToString(CultureInfo.InvariantCulture) : "", instrumentId);
+                }
+                else if (stats.AggregationStatistics is SynchronousLastValueStatistics synchronousLastValueStats)
+                {
+                    Log.GaugeValuePublished(sessionId, instrument.Meter.Name, instrument.Meter.Version, instrument.Name, instrument.Unit, Helpers.FormatTags(stats.Labels),
+                        synchronousLastValueStats.LastValue.ToString(CultureInfo.InvariantCulture), instrumentId);
                 }
                 else if (stats.AggregationStatistics is HistogramStatistics histogramStats)
                 {

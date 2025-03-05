@@ -951,7 +951,7 @@ get_rttype_ins_relation (MonoCompile *cfg, MonoInst *ins1, MonoInst *ins2, gbool
 
 		/* Common case in gshared BCL code: t1 is a gshared type like T_INT, and t2 is a concrete type */
 		if (mono_class_is_gparam (k1)) {
-			MonoGenericParam *gparam = t1->data.generic_param;
+			MonoGenericParam *gparam = m_type_data_get_generic_param (t1);
 			constraint1 = gparam->gshared_constraint;
 		}
 		if (constraint1) {
@@ -1522,11 +1522,34 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 		else if (strcmp (cmethod->name, "Exchange") == 0 && fsig->param_count == 2 && m_type_is_byref (fsig->params [0])) {
 			MonoInst *f2i = NULL, *i2f;
 			guint32 opcode, f2i_opcode = 0, i2f_opcode = 0;
-			gboolean is_ref = byref_arg_is_reference (fsig->params [0]);
-			gboolean is_float = fsig->params [0]->type == MONO_TYPE_R4 || fsig->params [0]->type == MONO_TYPE_R8;
+			// params[1] is byval, use it to decide what kind of op to do
+			// get the underlying type so enums and bool work too.
+			MonoType *param_type = mini_get_underlying_type (fsig->params[1]);
+			gboolean is_ref = mini_type_is_reference (param_type);
+			gboolean is_float = param_type->type == MONO_TYPE_R4 || param_type->type == MONO_TYPE_R8;
+			guint32 u2i_result_opcode = 0;
+			MonoInst *u2i_result = NULL;
 
-			if (fsig->params [0]->type == MONO_TYPE_I4 ||
-			    fsig->params [0]->type == MONO_TYPE_R4) {
+			// For small types .NET stack temps are always i4, so we need to zext or
+			// sext the output
+			if (param_type->type == MONO_TYPE_I1) {
+				opcode = OP_ATOMIC_EXCHANGE_U1;
+				u2i_result_opcode = OP_ICONV_TO_I1;
+			}
+			else if (param_type->type == MONO_TYPE_U1) {
+				opcode = OP_ATOMIC_EXCHANGE_U1;
+				u2i_result_opcode = OP_ICONV_TO_U1;
+			}
+			else if (param_type->type == MONO_TYPE_I2) {
+				opcode = OP_ATOMIC_EXCHANGE_U2;
+				u2i_result_opcode = OP_ICONV_TO_I2;
+			}
+			else if (param_type->type == MONO_TYPE_U2) {
+				opcode = OP_ATOMIC_EXCHANGE_U2;
+				u2i_result_opcode = OP_ICONV_TO_U2;
+			}
+			else if (param_type->type == MONO_TYPE_I4 ||
+			    param_type->type == MONO_TYPE_R4) {
 				opcode = OP_ATOMIC_EXCHANGE_I4;
 				f2i_opcode = OP_MOVE_F_TO_I4;
 				i2f_opcode = OP_MOVE_I4_TO_F;
@@ -1577,7 +1600,11 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 			ins->sreg2 = is_float ? f2i->dreg : args [1]->dreg;
 			MONO_ADD_INS (cfg->cbb, ins);
 
-			switch (fsig->params [0]->type) {
+			switch (param_type->type) {
+			case MONO_TYPE_U1:
+			case MONO_TYPE_I1:
+			case MONO_TYPE_U2:
+			case MONO_TYPE_I2:
 			case MONO_TYPE_I4:
 				ins->type = STACK_I4;
 				break;
@@ -1611,6 +1638,13 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 				MONO_ADD_INS (cfg->cbb, i2f);
 
 				ins = i2f;
+			} else if (u2i_result_opcode) {
+				MONO_INST_NEW (cfg, u2i_result, u2i_result_opcode);
+				u2i_result->dreg = mono_alloc_ireg (cfg);
+				u2i_result->sreg1 = ins->dreg;
+				MONO_ADD_INS (cfg->cbb, u2i_result);
+
+				ins = u2i_result;
 			}
 
 			if (cfg->gen_write_barriers && is_ref)
@@ -1619,11 +1653,43 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 		else if ((strcmp (cmethod->name, "CompareExchange") == 0) && fsig->param_count == 3) {
 			MonoInst *f2i_new = NULL, *f2i_cmp = NULL, *i2f;
 			guint32 opcode, f2i_opcode = 0, i2f_opcode = 0;
-			gboolean is_ref = mini_type_is_reference (fsig->params [1]);
-			gboolean is_float = fsig->params [1]->type == MONO_TYPE_R4 || fsig->params [1]->type == MONO_TYPE_R8;
+			MonoType *param1_type = mini_get_underlying_type (fsig->params[1]);
+			gboolean is_ref = mini_type_is_reference (param1_type);
+			gboolean is_float = param1_type->type == MONO_TYPE_R4 || param1_type->type == MONO_TYPE_R8;
+			guint32 i2u_cmp_opcode = 0, u2i_result_opcode = 0;
+			MonoInst *i2u_cmp = NULL, *u2i_result = NULL;
 
-			if (fsig->params [1]->type == MONO_TYPE_I4 ||
-			    fsig->params [1]->type == MONO_TYPE_R4) {
+			// For small types the "compare" part of CAS is done on zero extended. For
+			// the result, .NET stack temps are always i4, so we need to zext or sext
+			// the output
+			if (param1_type->type == MONO_TYPE_U1) {
+				opcode = OP_ATOMIC_CAS_U1;
+				i2u_cmp_opcode = 0;
+				// zext the result
+				u2i_result_opcode = OP_ICONV_TO_U1;
+			}
+			else if (param1_type->type == MONO_TYPE_I1) {
+				opcode = OP_ATOMIC_CAS_U1;
+				// zero extend expected comparand
+				i2u_cmp_opcode = OP_ICONV_TO_U1;
+				// sign extend result
+				u2i_result_opcode = OP_ICONV_TO_I1;
+			}
+			else if (param1_type->type == MONO_TYPE_U2) {
+				opcode = OP_ATOMIC_CAS_U2;
+				i2u_cmp_opcode = 0;
+				// zext the result
+				u2i_result_opcode = OP_ICONV_TO_U2;
+			}
+			else if (param1_type->type == MONO_TYPE_I2) {
+				opcode = OP_ATOMIC_CAS_U2;
+				// zero extend expected comparand
+				i2u_cmp_opcode = OP_ICONV_TO_U2;
+				// sign extend result
+				u2i_result_opcode = OP_ICONV_TO_I2;
+			}
+			else if (param1_type->type == MONO_TYPE_I4 ||
+			    param1_type->type == MONO_TYPE_R4) {
 				opcode = OP_ATOMIC_CAS_I4;
 				f2i_opcode = OP_MOVE_F_TO_I4;
 				i2f_opcode = OP_MOVE_I4_TO_F;
@@ -1631,15 +1697,15 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 			}
 #if SIZEOF_REGISTER == 8
 			else if (is_ref ||
-			         fsig->params [1]->type == MONO_TYPE_I8 ||
-			         fsig->params [1]->type == MONO_TYPE_R8 ||
-			         fsig->params [1]->type == MONO_TYPE_I) {
+			         param1_type->type == MONO_TYPE_I8 ||
+			         param1_type->type == MONO_TYPE_R8 ||
+			         param1_type->type == MONO_TYPE_I) {
 				opcode = OP_ATOMIC_CAS_I8;
 				f2i_opcode = OP_MOVE_F_TO_I8;
 				i2f_opcode = OP_MOVE_I8_TO_F;
 			}
 #else
-			else if (is_ref || fsig->params [1]->type == MONO_TYPE_I) {
+			else if (is_ref || param1_type->type == MONO_TYPE_I) {
 				opcode = OP_ATOMIC_CAS_I4;
 				cfg->has_atomic_cas_i4 = TRUE;
 			}
@@ -1670,6 +1736,13 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 				MONO_ADD_INS (cfg->cbb, f2i_cmp);
 			}
 
+			if (i2u_cmp_opcode) {
+				MONO_INST_NEW (cfg, i2u_cmp, i2u_cmp_opcode);
+				i2u_cmp->dreg = mono_alloc_ireg (cfg);
+				i2u_cmp->sreg1 = args[2]->dreg;
+				MONO_ADD_INS (cfg->cbb, i2u_cmp);
+			}
+
 			if (is_ref && !mini_debug_options.weak_memory_model)
 				mini_emit_memory_barrier (cfg, MONO_MEMORY_BARRIER_REL);
 
@@ -1677,11 +1750,25 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 			MONO_INST_NEW (cfg, ins, opcode);
 			ins->dreg = is_ref ? alloc_ireg_ref (cfg) : alloc_ireg (cfg);
 			ins->sreg1 = args [0]->dreg;
-			ins->sreg2 = is_float ? f2i_new->dreg : args [1]->dreg;
-			ins->sreg3 = is_float ? f2i_cmp->dreg : args [2]->dreg;
+			if (is_float) {
+				ins->sreg2 = f2i_new->dreg;
+				ins->sreg3 = f2i_cmp->dreg;
+			} else if (i2u_cmp_opcode) {
+				ins->sreg2 = args[1]->dreg;
+				ins->sreg3 = i2u_cmp->dreg;
+			} else {
+				ins->sreg2 = args[1]->dreg;
+				ins->sreg3 = args[2]->dreg;
+			}
 			MONO_ADD_INS (cfg->cbb, ins);
 
-			switch (fsig->params [1]->type) {
+			switch (param1_type->type) {
+			case MONO_TYPE_U1:
+			case MONO_TYPE_I1:
+			case MONO_TYPE_U2:
+			case MONO_TYPE_I2:
+				ins->type = STACK_I4;
+				break;
 			case MONO_TYPE_I4:
 				ins->type = STACK_I4;
 				break;
@@ -1702,7 +1789,7 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 				ins->type = STACK_R8;
 				break;
 			default:
-				g_assert (mini_type_is_reference (fsig->params [1]));
+				g_assert (mini_type_is_reference (param1_type));
 				ins->type = STACK_OBJ;
 				break;
 			}
@@ -1718,42 +1805,17 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 
 				ins = i2f;
 			}
+			if (u2i_result_opcode) {
+				MONO_INST_NEW (cfg, u2i_result, u2i_result_opcode);
+				u2i_result->dreg = mono_alloc_ireg (cfg);
+				u2i_result->sreg1 = ins->dreg;
+				MONO_ADD_INS (cfg->cbb, u2i_result);
+
+				ins = u2i_result;
+			}
 
 			if (cfg->gen_write_barriers && is_ref)
 				mini_emit_write_barrier (cfg, args [0], args [1]);
-		}
-		else if ((strcmp (cmethod->name, "CompareExchange") == 0) && fsig->param_count == 4 &&
-		         fsig->params [1]->type == MONO_TYPE_I4) {
-			MonoInst *cmp, *ceq;
-
-			if (!mono_arch_opcode_supported (OP_ATOMIC_CAS_I4))
-				return NULL;
-
-			/* int32 r = CAS (location, value, comparand); */
-			MONO_INST_NEW (cfg, ins, OP_ATOMIC_CAS_I4);
-			ins->dreg = alloc_ireg (cfg);
-			ins->sreg1 = args [0]->dreg;
-			ins->sreg2 = args [1]->dreg;
-			ins->sreg3 = args [2]->dreg;
-			ins->type = STACK_I4;
-			MONO_ADD_INS (cfg->cbb, ins);
-
-			/* bool result = r == comparand; */
-			MONO_INST_NEW (cfg, cmp, OP_ICOMPARE);
-			cmp->sreg1 = ins->dreg;
-			cmp->sreg2 = args [2]->dreg;
-			cmp->type = STACK_I4;
-			MONO_ADD_INS (cfg->cbb, cmp);
-
-			MONO_INST_NEW (cfg, ceq, OP_ICEQ);
-			ceq->dreg = alloc_ireg (cfg);
-			ceq->type = STACK_I4;
-			MONO_ADD_INS (cfg->cbb, ceq);
-
-			/* *success = result; */
-			MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STOREI1_MEMBASE_REG, args [3]->dreg, 0, ceq->dreg);
-
-			cfg->has_atomic_cas_i4 = TRUE;
 		}
 		else if (strcmp (cmethod->name, "MemoryBarrier") == 0 && fsig->param_count == 0)
 			ins = mini_emit_memory_barrier (cfg, MONO_MEMORY_BARRIER_SEQ);
@@ -1895,6 +1957,12 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 				if (cfg->gen_write_barriers && is_ref)
 					mini_emit_write_barrier (cfg, args [0], args [1]);
 			}
+		}
+
+		if (strcmp (cmethod->name, "ReadBarrier") == 0 && fsig->param_count == 0) {
+			return mini_emit_memory_barrier (cfg, MONO_MEMORY_BARRIER_ACQ);
+		} else if (strcmp (cmethod->name, "WriteBarrier") == 0 && fsig->param_count == 0) {
+			return mini_emit_memory_barrier (cfg, MONO_MEMORY_BARRIER_REL);
 		}
 
 		if (ins)
@@ -2138,7 +2206,7 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 
 			/* Common case in gshared BCL code: t1 is a gshared type like T_INT */
 			if (mono_class_is_gparam (k1)) {
-				MonoGenericParam *gparam = t1->data.generic_param;
+				MonoGenericParam *gparam = m_type_data_get_generic_param (t1);
 				constraint1 = gparam->gshared_constraint;
 				if (constraint1) {
 					if (constraint1->type == MONO_TYPE_OBJECT) {
@@ -2156,11 +2224,7 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 			}
 		}
 		return NULL;
-	} else if (((!strcmp (cmethod_klass_image->assembly->aname.name, "Xamarin.iOS") ||
-				 !strcmp (cmethod_klass_image->assembly->aname.name, "Xamarin.TVOS") ||
-				 !strcmp (cmethod_klass_image->assembly->aname.name, "Xamarin.MacCatalyst") ||
-				 !strcmp (cmethod_klass_image->assembly->aname.name, "Xamarin.Mac") ||
-				 !strcmp (cmethod_klass_image->assembly->aname.name, "Microsoft.iOS") ||
+	} else if (((!strcmp (cmethod_klass_image->assembly->aname.name, "Microsoft.iOS") ||
 				 !strcmp (cmethod_klass_image->assembly->aname.name, "Microsoft.tvOS") ||
 				 !strcmp (cmethod_klass_image->assembly->aname.name, "Microsoft.MacCatalyst") ||
 				 !strcmp (cmethod_klass_image->assembly->aname.name, "Microsoft.macOS")) &&
@@ -2258,6 +2322,64 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 				return ins;
 			}
 		}
+	} else if ((cmethod->klass == mono_defaults.double_class) || (cmethod->klass == mono_defaults.single_class)) {
+		MonoGenericContext *method_context = mono_method_get_context (cmethod);
+		bool isDouble = cmethod->klass == mono_defaults.double_class;
+		if (!strcmp (cmethod->name, "ConvertToIntegerNative") &&
+				method_context != NULL &&
+				method_context->method_inst->type_argc == 1) {
+			int opcode = 0;
+			MonoTypeEnum tto_type = method_context->method_inst->type_argv [0]->type;
+			MonoStackType tto_stack = STACK_I4;
+			switch (tto_type) {
+				case MONO_TYPE_I1:
+					opcode = isDouble ? OP_FCONV_TO_I1 : OP_RCONV_TO_I1;
+					break;
+				case MONO_TYPE_I2:
+					opcode = isDouble ? OP_FCONV_TO_I2 : OP_RCONV_TO_I2;
+					break;
+#if TARGET_SIZEOF_VOID_P == 4
+				case MONO_TYPE_I:
+#endif
+				case MONO_TYPE_I4:
+					opcode = isDouble ? OP_FCONV_TO_I4 : OP_RCONV_TO_I4;
+					break;
+#if TARGET_SIZEOF_VOID_P == 8
+				case MONO_TYPE_I:
+#endif
+				case MONO_TYPE_I8:
+					opcode = isDouble ? OP_FCONV_TO_I8 : OP_RCONV_TO_I8;
+					tto_stack = STACK_I8;
+					break;
+				case MONO_TYPE_U1:
+					opcode = isDouble ? OP_FCONV_TO_U1 : OP_RCONV_TO_U1;
+					break;
+				case MONO_TYPE_U2:
+					opcode = isDouble ? OP_FCONV_TO_U2 : OP_RCONV_TO_U2;
+					break;
+#if TARGET_SIZEOF_VOID_P == 4
+				case MONO_TYPE_U:
+#endif
+				case MONO_TYPE_U4:
+					opcode = isDouble ? OP_FCONV_TO_U4 : OP_RCONV_TO_U4;
+					break;
+#if TARGET_SIZEOF_VOID_P == 8
+				case MONO_TYPE_U:
+#endif
+				case MONO_TYPE_U8:
+					opcode = isDouble ? OP_FCONV_TO_U8 : OP_RCONV_TO_U8;
+					tto_stack = STACK_I8;
+					break;
+				default: return NULL;
+			}
+			
+			if (opcode != 0) {
+				int ireg = mono_alloc_ireg (cfg);
+				EMIT_NEW_UNALU (cfg, ins, opcode, ireg, args [0]->dreg);
+				ins->type = tto_stack;
+				return mono_decompose_opcode(cfg, ins);
+			}
+		}
 	}
 
 	ins = mono_emit_simd_intrinsics (cfg, cmethod, fsig, args);
@@ -2272,7 +2394,25 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 	if (in_corlib &&
 		((!strcmp ("System.Numerics", cmethod_klass_name_space) && !strcmp ("Vector", cmethod_klass_name)) ||
 		!strncmp ("System.Runtime.Intrinsics", cmethod_klass_name_space, 25))) {
-		if (!strcmp (cmethod->name, "get_IsHardwareAccelerated")) {
+		const char* cmethod_name = cmethod->name;
+
+		if (strncmp(cmethod_name, "System.Runtime.Intrinsics.ISimdVector<System.Runtime.Intrinsics.Vector", 70) == 0) {
+			// We want explicitly implemented ISimdVector<TSelf, T> APIs to still be expanded where possible
+			// but, they all prefix the qualified name of the interface first, so we'll check for that and
+			// skip the prefix before trying to resolve the method.
+
+			if (strncmp(cmethod_name + 70, "<T>,T>.", 7) == 0) {
+				cmethod_name += 77;
+			} else if (strncmp(cmethod_name + 70, "64<T>,T>.", 9) == 0) {
+				cmethod_name += 79;
+			} else if ((strncmp(cmethod_name + 70, "128<T>,T>.", 10) == 0) ||
+				(strncmp(cmethod_name + 70, "256<T>,T>.", 10) == 0) ||
+				(strncmp(cmethod_name + 70, "512<T>,T>.", 10) == 0)) {
+				cmethod_name += 80;
+			}
+		}
+
+		if (!strcmp (cmethod_name, "get_IsHardwareAccelerated")) {
 			EMIT_NEW_ICONST (cfg, ins, 0);
 			ins->type = STACK_I4;
 			return ins;

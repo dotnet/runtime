@@ -53,10 +53,6 @@ namespace Mono.Linker.Tests.Cases.Reflection
 
 			DataFlowUnusedGetType.Test ();
 
-			NullValue.Test ();
-			NoValue.Test ();
-			UnknownValue.Test ();
-
 			PrivateMembersOnBaseTypesAppliedToDerived.Test ();
 
 			IsInstOf.Test ();
@@ -698,7 +694,7 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods | DynamicallyAccessedMemberTypes.NonPublicMethods)]
 			interface IAnnotatedInterface
 			{
-				[Kept]
+				[Kept (By = Tool.Trimmer /* The method is not a target of reflection */)]
 				void InterfaceMethod ();
 			}
 
@@ -748,7 +744,7 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods | DynamicallyAccessedMemberTypes.NonPublicMethods)]
 			interface IAnnotatedInterface
 			{
-				[Kept] // Kept because it's implemented on the class
+				[Kept (By = Tool.Trimmer /* The method is not a target of reflection */)] // Kept because it's implemented on the class
 				void InterfaceMethod ();
 
 				// Annotation will not be applied to the interface, since nothing
@@ -801,14 +797,14 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods | DynamicallyAccessedMemberTypes.NonPublicMethods)]
 			interface IAnnotatedInterface
 			{
-				[Kept] // Kept because it's implemented on the class
+				[Kept (By = Tool.Trimmer /* The method is not a target of reflection */)] // Kept because it's implemented on the class
 				void InterfaceMethod ();
 
 				// Annotation applied to the interface since that's what reflection asked about
-				[Kept]
+				[Kept (By = Tool.Trimmer /* The method is not a target of reflection */)]
 				static void DoSomething () { }
 
-				[Kept]
+				[Kept (By = Tool.Trimmer /* The method is not a target of reflection */)]
 				void DefaultInterfaceMethod () { }
 			}
 
@@ -847,12 +843,12 @@ namespace Mono.Linker.Tests.Cases.Reflection
 		[Kept]
 		class AllAnnotationsAreApplied
 		{
-			[Kept]
-			[KeptAttributeAttribute (typeof (DynamicallyAccessedMembersAttribute))]
+			[Kept (By = Tool.Trimmer /* The interface is not actually used */)]
+			[KeptAttributeAttribute (typeof (DynamicallyAccessedMembersAttribute), By = Tool.Trimmer)]
 			[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)]
 			interface IMethodsAnnotatedInterface
 			{
-				[Kept]
+				[Kept (By = Tool.Trimmer)]
 				void InterfaceMethod ();
 			}
 
@@ -862,14 +858,14 @@ namespace Mono.Linker.Tests.Cases.Reflection
 				bool Property { get; }
 			}
 
-			[Kept]
-			[KeptAttributeAttribute (typeof (DynamicallyAccessedMembersAttribute))]
+			[Kept (By = Tool.Trimmer /* The interface is not actually used */)]
+			[KeptAttributeAttribute (typeof (DynamicallyAccessedMembersAttribute), By = Tool.Trimmer)]
 			[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicEvents)]
 			interface IEventsAnnotatedInterface
 			{
-				[Kept]
-				[KeptEventAddMethod]
-				[KeptEventRemoveMethod]
+				[Kept(By = Tool.Trimmer)]
+				[KeptEventAddMethod(By = Tool.Trimmer)]
+				[KeptEventRemoveMethod(By = Tool.Trimmer)]
 				event EventHandler MyEvent;
 			}
 
@@ -1041,12 +1037,12 @@ namespace Mono.Linker.Tests.Cases.Reflection
 		[Kept]
 		class DiamondShapeWithAnnotatedInterface
 		{
-			[Kept]
-			[KeptAttributeAttribute (typeof (DynamicallyAccessedMembersAttribute))]
+			[Kept (By = Tool.Trimmer /* The interface is not actually used */)]
+			[KeptAttributeAttribute (typeof (DynamicallyAccessedMembersAttribute), By = Tool.Trimmer)]
 			[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)]
 			interface IAnnotatedCommon
 			{
-				[Kept] // Due to the annotation
+				[Kept (By = Tool.Trimmer)] // Due to the annotation
 				void InterfaceMethod ();
 			}
 
@@ -1162,8 +1158,8 @@ namespace Mono.Linker.Tests.Cases.Reflection
 		[Kept]
 		class ApplyingAnnotationIntroducesTypesToApplyAnnotationToViaInterfaces
 		{
-			[Kept]
-			[KeptAttributeAttribute (typeof (DynamicallyAccessedMembersAttribute))]
+			[Kept (By = Tool.Trimmer /* The interface is not actually used */)]
+			[KeptAttributeAttribute (typeof(DynamicallyAccessedMembersAttribute), By = Tool.Trimmer)]
 			[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicFields)]
 			interface IAnnotatedInterface
 			{
@@ -1192,7 +1188,7 @@ namespace Mono.Linker.Tests.Cases.Reflection
 				public NestedFieldType _nestedField;
 
 				[Kept]
-				public class NestedFieldType
+				public struct NestedFieldType
 				{
 				}
 			}
@@ -1234,11 +1230,11 @@ namespace Mono.Linker.Tests.Cases.Reflection
 				void PrivateMethod () { }
 			}
 
-			[Kept]
-			[KeptBaseType (typeof (MethodAnnotatedBase))]
+			[Kept(By = Tool.Trimmer /* only used in a method signature, not legitimate to keep beyond IL-level trimming */)]
+			[KeptBaseType (typeof (MethodAnnotatedBase), By = Tool.Trimmer)]
 			class AnotherMethodsDerived : MethodAnnotatedBase
 			{
-				[Kept]
+				[Kept(By = Tool.Trimmer)]
 				public static void PublicStaticMethod (DerivedFromPropertiesBase p) { }
 
 				static void PrivateStaticMethod () { }
@@ -1252,27 +1248,27 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			{
 			}
 
-			[Kept]
-			[KeptBaseType (typeof (PropertiesAnnotatedBase))]
+			[Kept (By = Tool.Trimmer /* only used in a method signature, not legitimate to keep beyond IL-level trimming */)]
+			[KeptBaseType (typeof (PropertiesAnnotatedBase), By = Tool.Trimmer)]
 			class DerivedFromPropertiesBase : PropertiesAnnotatedBase
 			{
-				[Kept]
-				public static AnotherPropertiesDerived PublicProperty { [Kept] get => null; }
+				[Kept (By = Tool.Trimmer)]
+				public static AnotherPropertiesDerived PublicProperty { [Kept (By = Tool.Trimmer)] get => null; }
 
 				private static UnusedType PrivateProperty { get => null; }
 			}
 
-			[Kept]
-			[KeptBaseType (typeof (PropertiesAnnotatedBase))]
+			[Kept (By = Tool.Trimmer /* only used in a method signature, not legitimate to keep beyond IL-level trimming */)]
+			[KeptBaseType (typeof (PropertiesAnnotatedBase), By = Tool.Trimmer)]
 			class AnotherPropertiesDerived : PropertiesAnnotatedBase
 			{
-				[Kept]
-				public static UsedType PublicProperty { [Kept] get => null; }
+				[Kept(By = Tool.Trimmer)]
+				public static UsedType PublicProperty { [Kept(By = Tool.Trimmer)] get => null; }
 
 				private static UnusedType PrivateProperty { get => null; }
 			}
 
-			[Kept]
+			[Kept (By = Tool.Trimmer /* only used in a method signature, not legitimate to keep beyond IL-level trimming */)]
 			class UsedType { }
 
 			class UnusedType { }
@@ -1347,12 +1343,12 @@ namespace Mono.Linker.Tests.Cases.Reflection
 				void InterfaceMethod ();
 			}
 
-			[Kept]
-			[KeptMember (".ctor()")]
-			[KeptBaseType (typeof (AnnotatedBase))]
+			[Kept (By = Tool.Trimmer /* only used in a method signature, not legitimate to keep beyond IL-level trimming */)]
+			[KeptMember (".ctor()", By = Tool.Trimmer)]
+			[KeptBaseType (typeof (AnnotatedBase), By = Tool.Trimmer)]
 			class AnotherAnnotatedType : AnnotatedBase
 			{
-				[Kept]
+				[Kept (By = Tool.Trimmer)]
 				int _field;
 			}
 
@@ -1400,8 +1396,7 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			[KeptMember (".ctor()")]
 			class Derived : AnnotatedBase
 			{
-				// https://github.com/dotnet/runtime/issues/93719
-				// [Kept]
+				[Kept]
 				public void Method () { }
 			}
 
@@ -1409,7 +1404,6 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			static IEnumerable<AnnotatedBase> GetInstances () => new AnnotatedBase[] { new Derived () };
 
 			[Kept]
-			[UnexpectedWarning ("IL2075", nameof (Type.GetType), Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/runtime/issues/93719")]
 			public static void Test ()
 			{
 				foreach (var instance in GetInstances ()) {
@@ -1427,6 +1421,7 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)]
 			class AnnotatedType
 			{
+				[ExpectedWarning ("IL2112", Tool.Analyzer, "Analyzer warns about DAM on type access to members even without call to object.GetType().")]
 				[RequiresUnreferencedCode ("AnnotatedType.Method")]
 				public void Method () { }
 			}
@@ -1444,6 +1439,7 @@ namespace Mono.Linker.Tests.Cases.Reflection
 
 			class DerivedFromAnnotatedBase : AnnotatedBase
 			{
+				[ExpectedWarning ("IL2112", Tool.Analyzer, "Analyzer warns about DAM on type access to members even without call to object.GetType().")]
 				[RequiresUnreferencedCode ("DerivedFromAnnotatedBase.Method")]
 				public void Method () { }
 			}
@@ -1464,60 +1460,6 @@ namespace Mono.Linker.Tests.Cases.Reflection
 				if (GetBaseInstance ().GetType () is DerivedFromAnnotatedBase) {
 					Console.WriteLine ("Never get here");
 				}
-			}
-		}
-
-		[Kept]
-		class NullValue
-		{
-			[Kept]
-			class TestType
-			{
-			}
-
-			[Kept]
-			[ExpectedWarning ("IL2072", nameof (DataFlowTypeExtensions.RequiresAll) + "(Type)", nameof (Object.GetType) + "()")]
-			public static void Test ()
-			{
-				TestType nullInstance = null;
-				// Even though this throws at runtime, we warn about the return value of GetType
-				nullInstance.GetType ().RequiresAll ();
-			}
-		}
-
-		[Kept]
-		class NoValue
-		{
-			[Kept]
-			[ExpectedWarning ("IL2072", nameof (DataFlowTypeExtensions.RequiresAll) + "(Type)", nameof (Object.GetType) + "()")]
-			public static void Test ()
-			{
-				Type t = null;
-				Type noValue = Type.GetTypeFromHandle (t.TypeHandle);
-				// Even though the above throws at runtime, we warn about the return value of GetType
-				noValue.GetType ().RequiresAll ();
-			}
-		}
-
-		[Kept]
-		class UnknownValue
-		{
-			[Kept]
-			[KeptMember (".ctor()")]
-			class TestType
-			{
-			}
-
-			[Kept]
-			static TestType GetInstance () => new TestType ();
-
-			[Kept]
-			[ExpectedWarning ("IL2072", nameof (DataFlowTypeExtensions.RequiresAll) + "(Type)", nameof (Object.GetType) + "()")]
-			public static void Test ()
-			{
-				TestType unknownValue = GetInstance ();
-				// Should warn about the return value of GetType
-				unknownValue.GetType ().RequiresAll ();
 			}
 		}
 
@@ -1584,7 +1526,7 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			}
 
 			[Kept]
-			[UnexpectedWarning ("IL2072", Tool.TrimmerAnalyzerAndNativeAot, "https://github.com/dotnet/runtime/issues/93720")]
+			[UnexpectedWarning ("IL2072", Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/runtime/issues/93720")]
 			static void TestIsInstOf (object o)
 			{
 				if (o is Target t) {
@@ -1593,10 +1535,20 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			}
 
 			[Kept]
+			[ExpectedWarning ("IL2072", Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/runtime/issues/93720")]
+			static void TestIsInstOfMismatch (object o)
+			{
+				if (o is Target t) {
+					t.GetType ().RequiresPublicMethods ();
+				}
+			}
+
+			[Kept]
 			public static void Test ()
 			{
 				var target = new Target ();
 				TestIsInstOf (target);
+				TestIsInstOfMismatch (target);
 			}
 		}
 
@@ -1605,17 +1557,17 @@ namespace Mono.Linker.Tests.Cases.Reflection
 		{
 			class AnnotatedBase
 			{
-				[Kept]
-				[KeptAttributeAttribute (typeof (DynamicallyAccessedMembersAttribute))]
+				[Kept (By = Tool.Trimmer /* https://github.com/dotnet/runtime/issues/110563 */)]
+				[KeptAttributeAttribute (typeof (DynamicallyAccessedMembersAttribute), By = Tool.Trimmer)]
 				[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)]
 				class Base
 				{
-					[Kept]
+					[Kept (By = Tool.Trimmer)]
 					public void Method () { }
 				}
 
-				[Kept]
-				[KeptBaseType (typeof (Base))]
+				[Kept (By = Tool.Trimmer /* https://github.com/dotnet/runtime/issues/110563 */)]
+				[KeptBaseType (typeof (Base), By = Tool.Trimmer)]
 				class Derived : Base
 				{
 				}
@@ -1626,22 +1578,52 @@ namespace Mono.Linker.Tests.Cases.Reflection
 				[Kept]
 				public static void Test ()
 				{
+					derivedInstance.GetType ().RequiresPublicMethods ();
+				}
+			}
+
+			class AnnotatedBaseInstantiated
+			{
+				[Kept]
+				[KeptAttributeAttribute (typeof (DynamicallyAccessedMembersAttribute))]
+				[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)]
+				[KeptMember (".ctor()")]
+				class Base
+				{
+					[Kept]
+					public void Method () { }
+				}
+
+				[Kept]
+				[KeptBaseType (typeof (Base), By = Tool.Trimmer)]
+				[KeptMember (".ctor()")]
+				class Derived : Base
+				{
+				}
+
+				[Kept]
+				static Derived derivedInstance;
+
+				[Kept]
+				public static void Test ()
+				{
+					derivedInstance = new Derived ();
 					derivedInstance.GetType ().RequiresPublicMethods ();
 				}
 			}
 
 			class AnnotatedDerived
 			{
-				[Kept]
+				[Kept (By = Tool.Trimmer /* https://github.com/dotnet/runtime/issues/110563 */)]
 				class Base
 				{
-					[Kept]
+					[Kept (By = Tool.Trimmer /* https://github.com/dotnet/runtime/issues/110563 */)]
 					public void Method () { }
 				}
 
-				[Kept]
-				[KeptBaseType (typeof (Base))]
-				[KeptAttributeAttribute (typeof (DynamicallyAccessedMembersAttribute))]
+				[Kept (By = Tool.Trimmer /* https://github.com/dotnet/runtime/issues/110563 */)]
+				[KeptBaseType (typeof (Base), By = Tool.Trimmer)]
+				[KeptAttributeAttribute (typeof (DynamicallyAccessedMembersAttribute), By = Tool.Trimmer)]
 				[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)]
 				class Derived : Base
 				{
@@ -1657,7 +1639,66 @@ namespace Mono.Linker.Tests.Cases.Reflection
 				}
 			}
 
+			class AnnotatedDerivedInstantiated
+			{
+				[Kept]
+				[KeptMember (".ctor()")]
+				class Base
+				{
+					[Kept]
+					public void Method () { }
+				}
+
+				[Kept]
+				[KeptBaseType (typeof (Base))]
+				[KeptAttributeAttribute (typeof (DynamicallyAccessedMembersAttribute))]
+				[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)]
+				[KeptMember (".ctor()")]
+				class Derived : Base
+				{
+				}
+
+				[Kept]
+				static Derived derivedInstance;
+
+				[Kept]
+				public static void Test ()
+				{
+					derivedInstance = new Derived ();
+					derivedInstance.GetType ().RequiresPublicMethods ();
+				}
+			}
+
 			class AnnotatedInterface
+			{
+				[Kept (By = Tool.Trimmer /* https://github.com/dotnet/runtime/issues/110563 */)]
+				[KeptAttributeAttribute (typeof (DynamicallyAccessedMembersAttribute), By = Tool.Trimmer)]
+				[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.All)]
+				interface IBase
+				{
+					[Kept (By = Tool.Trimmer /* https://github.com/dotnet/runtime/issues/110563 */)]
+					public void Method () { }
+				}
+
+				[Kept (By = Tool.Trimmer /* https://github.com/dotnet/runtime/issues/110563 */)]
+				[KeptMember (".ctor()", By = Tool.Trimmer)]
+				[KeptInterface (typeof (IBase), By = Tool.Trimmer)]
+				class Implementation : IBase
+				{
+				}
+
+				[Kept]
+				static Implementation implementationInstance;
+
+				[Kept]
+				public static void Test ()
+				{
+					var a = implementationInstance as IBase;
+					implementationInstance.GetType ().RequiresPublicMethods ();
+				}
+			}
+
+			class AnnotatedInterfaceInstantiated
 			{
 				[Kept]
 				[KeptAttributeAttribute (typeof (DynamicallyAccessedMembersAttribute))]
@@ -1689,6 +1730,35 @@ namespace Mono.Linker.Tests.Cases.Reflection
 
 			class AnnotatedImplementation
 			{
+				[Kept (By = Tool.Trimmer /* https://github.com/dotnet/runtime/issues/110563 */)]
+				interface IBase
+				{
+					[Kept (By = Tool.Trimmer /* https://github.com/dotnet/runtime/issues/110563 */)]
+					public void Method () { }
+				}
+
+				[Kept (By = Tool.Trimmer /* https://github.com/dotnet/runtime/issues/110563 */)]
+				[KeptMember (".ctor()", By = Tool.Trimmer)]
+				[KeptInterface (typeof (IBase), By = Tool.Trimmer)]
+				[KeptAttributeAttribute (typeof (DynamicallyAccessedMembersAttribute), By = Tool.Trimmer)]
+				[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.All)]
+				class Implementation : IBase
+				{
+				}
+
+				[Kept]
+				static Implementation implementationInstance;
+
+				[Kept]
+				public static void Test ()
+				{
+					var a = implementationInstance as IBase;
+					implementationInstance.GetType ().RequiresPublicMethods ();
+				}
+			}
+
+			class AnnotatedImplementationInstantiated
+			{
 				[Kept]
 				interface IBase
 				{
@@ -1720,10 +1790,14 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			[Kept]
 			public static void Test ()
 			{
-				AnnotatedBase.Test (); ;
+				AnnotatedBase.Test ();
+				AnnotatedBaseInstantiated.Test ();
 				AnnotatedDerived.Test ();
+				AnnotatedDerivedInstantiated.Test ();
 				AnnotatedInterface.Test ();
+				AnnotatedInterfaceInstantiated.Test ();
 				AnnotatedImplementation.Test ();
+				AnnotatedImplementationInstantiated.Test ();
 			}
 		}
 	}

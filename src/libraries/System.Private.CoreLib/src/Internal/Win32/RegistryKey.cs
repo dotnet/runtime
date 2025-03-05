@@ -143,7 +143,7 @@ namespace Internal.Win32
             return names.ToArray();
         }
 
-        public unsafe string[] GetValueNames()
+        public string[] GetValueNames()
         {
             var names = new List<string>();
 

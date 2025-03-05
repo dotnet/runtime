@@ -8,7 +8,7 @@ using Microsoft.Extensions.Logging.Abstractions;
 namespace Microsoft.Extensions.Logging.Console
 {
     /// <summary>
-    /// Allows custom log messages formatting
+    /// Allows custom log messages formatting.
     /// </summary>
     public abstract class ConsoleFormatter
     {

@@ -182,23 +182,6 @@ NESTED_END OnHijackTripThread, _TEXT
 
 #endif // FEATURE_HIJACK
 
-LEAF_ENTRY SinglecastDelegateInvokeStub, _TEXT
-
-        test    rdi, rdi
-        jz      NullObject
-
-
-        mov     rax, [rdi + OFFSETOF__DelegateObject___methodPtr]
-        mov     rdi, [rdi + OFFSETOF__DelegateObject___target]  // replace "this" pointer
-
-        jmp     rax
-
-NullObject:
-        mov     rdi, CORINFO_NullReferenceException_ASM
-        jmp     C_FUNC(JIT_InternalThrow)
-
-LEAF_END SinglecastDelegateInvokeStub, _TEXT
-
 #ifdef FEATURE_TIERED_COMPILATION
 
 NESTED_ENTRY OnCallCountThresholdReachedStub, _TEXT, NoHandler
@@ -211,5 +194,21 @@ NESTED_ENTRY OnCallCountThresholdReachedStub, _TEXT, NoHandler
         EPILOG_WITH_TRANSITION_BLOCK_TAILCALL
         TAILJMP_RAX
 NESTED_END OnCallCountThresholdReachedStub, _TEXT
+
+NESTED_ENTRY JIT_Patchpoint, _TEXT, NoHandler
+        PROLOG_WITH_TRANSITION_BLOCK
+
+        lea     rdi, [rsp + __PWTB_TransitionBlock] // TransitionBlock *
+        call    C_FUNC(JIT_PatchpointWorkerWorkerWithPolicy)
+
+        EPILOG_WITH_TRANSITION_BLOCK_RETURN
+NESTED_END JIT_Patchpoint, _TEXT
+
+// first arg register holds iloffset, which needs to be moved to the second register, and the first register filled with NULL
+LEAF_ENTRY JIT_PartialCompilationPatchpoint, _TEXT
+        mov rsi, rdi
+        xor rdi, rdi
+        jmp C_FUNC(JIT_Patchpoint)
+LEAF_END JIT_PartialCompilationPatchpoint, _TEXT
 
 #endif // FEATURE_TIERED_COMPILATION

@@ -32,7 +32,6 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			instance.PropertyPublicParameterlessConstructorWithExplicitAccessors = null;
 			instance.PropertyPublicConstructorsWithExplicitAccessors = null;
 			instance.PropertyNonPublicConstructorsWithExplicitAccessors = null;
-			_ = PropertyWithUnsupportedType;
 
 			TestAutomaticPropagation ();
 
@@ -49,6 +48,8 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
 			ExplicitIndexerAccess.Test ();
 			ImplicitIndexerAccess.Test ();
+
+			AnnotationOnUnsupportedType.Test ();
 		}
 
 		[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicConstructors)]
@@ -57,9 +58,6 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicConstructors)]
 		static Type StaticPropertyWithPublicConstructor { get; set; }
 
-		[ExpectedWarning ("IL2099", nameof (PropertyWithUnsupportedType))]
-		[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicFields)]
-		static object PropertyWithUnsupportedType { get; set; }
 
 		[ExpectedWarning ("IL2072", nameof (DataFlowTypeExtensions) + "." + nameof (DataFlowTypeExtensions.RequiresNonPublicConstructors))]
 		private void ReadFromInstanceProperty ()
@@ -865,6 +863,53 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				TestNullCoalescingAssignment ();
 				TestSpanIndexerAccess ();
 				IndexWithTypeWithDam.Test ();
+			}
+		}
+
+		class AnnotationOnUnsupportedType
+		{
+			[ExpectedWarning ("IL2099", nameof (PropertyWithUnsupportedType))]
+			[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicFields)]
+			static object PropertyWithUnsupportedType { get; set; }
+
+			class StringRefProperty
+			{
+				string f;
+
+				ref string RefString => ref f;
+
+				[ExpectedWarning ("IL2098")]
+				static void RequirePublicFields (
+					[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicFields)]
+					ref string s)
+				{
+				}
+
+				public static void Test ()
+				{
+					var instance = new StringRefProperty ();
+					ref var s = ref instance.RefString;
+					RequirePublicFields (ref s);
+				}
+			}
+
+			[ExpectedWarning ("IL2099")]
+			[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicFields)]
+			static object UnsupportedPropertyAnnotationMismatch {
+				[ExpectedWarning ("IL2106")]
+				[return: DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)]
+				get;
+				[ExpectedWarning ("IL2098")]
+				[param: DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)]
+				set;
+			}
+
+			public static void Test ()
+			{
+				_ = PropertyWithUnsupportedType;
+				StringRefProperty.Test ();
+				_ = UnsupportedPropertyAnnotationMismatch;
+				UnsupportedPropertyAnnotationMismatch = null;
 			}
 		}
 

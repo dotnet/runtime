@@ -104,7 +104,7 @@ namespace System.Diagnostics.Tracing
             ulong sessionID = EventPipeInternal.Enable(null, EventPipeSerializationFormat.NetTrace, DefaultEventListenerCircularMBSize, providerConfiguration);
             if (sessionID == 0)
             {
-                throw new EventSourceException(SR.EventSource_CouldNotEnableEventPipe);
+                return;
             }
 
             // Get the session information that is required to properly dispatch events.
@@ -131,6 +131,11 @@ namespace System.Diagnostics.Tracing
 
         private void StartDispatchTask(ulong sessionID, DateTime syncTimeUtc, long syncTimeQPC, long timeQPCFrequency)
         {
+            if (OperatingSystem.IsBrowser() || OperatingSystem.IsWasi())
+            {
+                throw new PlatformNotSupportedException();
+            }
+
             Debug.Assert(Monitor.IsEntered(m_dispatchControlLock));
             Debug.Assert(sessionID != 0);
 

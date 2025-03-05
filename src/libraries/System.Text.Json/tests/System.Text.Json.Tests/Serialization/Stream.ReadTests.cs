@@ -220,11 +220,14 @@ namespace System.Text.Json.Serialization.Tests
             void VerifyElement(int index)
             {
                 Assert.Equal(JsonValueKind.Object, value[index].GetProperty("Test").ValueKind);
+                Assert.Equal(0, value[index].GetProperty("Test").GetPropertyCount());
                 Assert.False(value[index].GetProperty("Test").EnumerateObject().MoveNext());
                 Assert.Equal(JsonValueKind.Array, value[index].GetProperty("Test2").ValueKind);
                 Assert.Equal(0, value[index].GetProperty("Test2").GetArrayLength());
                 Assert.Equal(JsonValueKind.Object, value[index].GetProperty("Test3").ValueKind);
                 Assert.Equal(JsonValueKind.Object, value[index].GetProperty("Test3").GetProperty("Value").ValueKind);
+                Assert.Equal(1, value[index].GetProperty("Test3").GetPropertyCount());
+                Assert.Equal(0, value[index].GetProperty("Test3").GetProperty("Value").GetPropertyCount());
                 Assert.False(value[index].GetProperty("Test3").GetProperty("Value").EnumerateObject().MoveNext());
                 Assert.Equal(0, value[index].GetProperty("PersonType").GetInt32());
                 Assert.Equal(2, value[index].GetProperty("Id").GetInt32());

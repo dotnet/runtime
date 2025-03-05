@@ -31,10 +31,10 @@ JitInstance* JitInstance::InitJit(char*                         nameOfJit,
     // or to force it on, then propagate that to the jit flags.
     jit->forceClearAltJitFlag = false;
     jit->forceSetAltJitFlag = false;
-    const WCHAR* altJitFlag = jit->getForceOption(W("AltJit"));
+    const char* altJitFlag = jit->getForceOption("AltJit");
     if (altJitFlag != nullptr)
     {
-        if (u16_strcmp(altJitFlag, W("")) == 0)
+        if (strcmp(altJitFlag, "") == 0)
         {
             jit->forceClearAltJitFlag = true;
         }
@@ -43,10 +43,10 @@ JitInstance* JitInstance::InitJit(char*                         nameOfJit,
             jit->forceSetAltJitFlag = true;
         }
     }
-    const WCHAR* altJitNgenFlag = jit->getForceOption(W("AltJitNgen"));
+    const char* altJitNgenFlag = jit->getForceOption("AltJitNgen");
     if (altJitNgenFlag != nullptr)
     {
-        if (u16_strcmp(altJitNgenFlag, W("")) == 0)
+        if (strcmp(altJitNgenFlag, "") == 0)
         {
             jit->forceClearAltJitFlag = true;
         }
@@ -222,7 +222,16 @@ HRESULT JitInstance::StartUp(char* PathToJit, bool copyJit, bool breakOnDebugBre
         // Mismatched version ID. Fail the load.
         pJitInstance = NULL;
 
-        LogError("Jit Compiler has wrong version identifier");
+        GUID expected = JITEEVersionIdentifier;
+        GUID actual = versionId;
+        LogError("Jit Compiler has wrong version identifier. Expected: %08x-%04x-%04x-%02x%02x-%02x%02x%02x%02x%02x%02x. Actual: %08x-%04x-%04x-%02x%02x-%02x%02x%02x%02x%02x%02x.",
+                 expected.Data1, expected.Data2, expected.Data3,
+                 expected.Data4[0], expected.Data4[1], expected.Data4[2], expected.Data4[3],
+                 expected.Data4[4], expected.Data4[5], expected.Data4[6], expected.Data4[7],
+                 actual.Data1, actual.Data2, actual.Data3,
+                 actual.Data4[0], actual.Data4[1], actual.Data4[2], actual.Data4[3],
+                 actual.Data4[4], actual.Data4[5], actual.Data4[6], actual.Data4[7]);
+
         return -1;
     }
 
@@ -409,8 +418,6 @@ ReplayResults JitInstance::CompileMethod(MethodContext* MethodToCompile, int mcI
             pParam->pThis->mc->cr->recAllocGCInfoCapture();
 
             pParam->pThis->mc->cr->recMessageLog(jitResult == CORJIT_OK ? "Successful Compile" : "Successful Compile (BADCODE)");
-
-            pParam->results.NumCodeBytes = NCodeSizeBlock;
         }
         else
         {
@@ -510,31 +517,31 @@ void JitInstance::timeResult(CORINFO_METHOD_INFO info, unsigned flags)
 
 /*-------------------------- Misc ---------------------------------------*/
 
-const WCHAR* JitInstance::getForceOption(const WCHAR* key)
+const char* JitInstance::getForceOption(const char* key)
 {
     return getOption(key, forceOptions);
 }
 
-const WCHAR* JitInstance::getOption(const WCHAR* key)
+const char* JitInstance::getOption(const char* key)
 {
     return getOption(key, options);
 }
 
-const WCHAR* JitInstance::getOption(const WCHAR* key, LightWeightMap<DWORD, DWORD>* options)
+const char* JitInstance::getOption(const char* key, LightWeightMap<DWORD, DWORD>* options)
 {
     if (options == nullptr)
     {
         return nullptr;
     }
 
-    size_t keyLenInBytes = sizeof(WCHAR) * (u16_strlen(key) + 1);
+    size_t keyLenInBytes = sizeof(char) * (strlen(key) + 1);
     int    keyIndex      = options->Contains((unsigned char*)key, (unsigned int)keyLenInBytes);
     if (keyIndex == -1)
     {
         return nullptr;
     }
 
-    return (const WCHAR*)options->GetBuffer(options->Get(keyIndex));
+    return (const char*)options->GetBuffer(options->Get(keyIndex));
 }
 
 // Used to allocate memory that needs to handed to the EE.

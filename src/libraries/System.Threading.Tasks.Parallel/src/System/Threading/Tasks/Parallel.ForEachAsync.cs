@@ -20,8 +20,8 @@ namespace System.Threading.Tasks
         public static Task ForAsync<T>(T fromInclusive, T toExclusive, Func<T, CancellationToken, ValueTask> body)
             where T : notnull, IBinaryInteger<T>
         {
-            if (fromInclusive is null) throw new ArgumentNullException(nameof(fromInclusive));
-            if (toExclusive is null) throw new ArgumentNullException(nameof(toExclusive));
+            ArgumentNullException.ThrowIfNull(fromInclusive);
+            ArgumentNullException.ThrowIfNull(toExclusive);
             ArgumentNullException.ThrowIfNull(body);
 
             return ForAsync(fromInclusive, toExclusive, DefaultDegreeOfParallelism, TaskScheduler.Default, default, body);
@@ -38,8 +38,8 @@ namespace System.Threading.Tasks
         public static Task ForAsync<T>(T fromInclusive, T toExclusive, CancellationToken cancellationToken, Func<T, CancellationToken, ValueTask> body)
             where T : notnull, IBinaryInteger<T>
         {
-            if (fromInclusive is null) throw new ArgumentNullException(nameof(fromInclusive));
-            if (toExclusive is null) throw new ArgumentNullException(nameof(toExclusive));
+            ArgumentNullException.ThrowIfNull(fromInclusive);
+            ArgumentNullException.ThrowIfNull(toExclusive);
             ArgumentNullException.ThrowIfNull(body);
 
             return ForAsync(fromInclusive, toExclusive, DefaultDegreeOfParallelism, TaskScheduler.Default, cancellationToken, body);
@@ -56,8 +56,8 @@ namespace System.Threading.Tasks
         public static Task ForAsync<T>(T fromInclusive, T toExclusive, ParallelOptions parallelOptions, Func<T, CancellationToken, ValueTask> body)
             where T : notnull, IBinaryInteger<T>
         {
-            if (fromInclusive is null) throw new ArgumentNullException(nameof(fromInclusive));
-            if (toExclusive is null) throw new ArgumentNullException(nameof(toExclusive));
+            ArgumentNullException.ThrowIfNull(fromInclusive);
+            ArgumentNullException.ThrowIfNull(toExclusive);
             ArgumentNullException.ThrowIfNull(parallelOptions);
             ArgumentNullException.ThrowIfNull(body);
 
