@@ -157,26 +157,26 @@ extends:
                 artifactName: Build_linux_x64_release_AllRuntimes_Artifacts
                 targetPath: $(Build.ArtifactStagingDirectory)/artifacts/RuntimeDownload
                 itemPattern: |
-                  **/Microsoft.NETCore.App.Runtime.linux-x64*.nupkg
-                  !**/*.symbols.nupkg
+                  packages/Release/Shipping/Microsoft.NETCore.App.Runtime.linux-x64.*.nupkg
+                  !packages/Release/Shipping/Microsoft.NETCore.App.Runtime.linux-x64.*.symbols.nupkg
               - input: pipelineArtifact
                 artifactName: Build_linux_arm64_release_AllRuntimes_Artifacts
                 targetPath: $(Build.ArtifactStagingDirectory)/artifacts/RuntimeDownload
                 itemPattern: |
-                  **/Microsoft.NETCore.App.Runtime.linux-arm64*.nupkg
-                  !**/*.symbols.nupkg
+                  packages/Release/Shipping/Microsoft.NETCore.App.Runtime.linux-arm64.*.nupkg
+                  !packages/Release/Shipping/Microsoft.NETCore.App.Runtime.linux-arm64.*.symbols.nupkg
               - input: pipelineArtifact
                 artifactName: Build_linux_musl_x64_release_AllRuntimes_Artifacts
                 targetPath: $(Build.ArtifactStagingDirectory)/artifacts/RuntimeDownload
                 itemPattern: |
-                  **/Microsoft.NETCore.App.Runtime.linux-musl-x64*.nupkg
-                  !**/*.symbols.nupkg
+                  packages/Release/Shipping/Microsoft.NETCore.App.Runtime.linux-musl-x64.*.nupkg
+                  !packages/Release/Shipping/Microsoft.NETCore.App.Runtime.linux-musl-x64.*.symbols.nupkg
               - input: pipelineArtifact
                 artifactName: Build_linux_musl_arm64_release_AllRuntimes_Artifacts
                 targetPath: $(Build.ArtifactStagingDirectory)/artifacts/RuntimeDownload
                 itemPattern: |
-                  **/Microsoft.NETCore.App.Runtime.linux-musl-arm64*.nupkg
-                  !**/*.symbols.nupkg
+                  packages/Release/Shipping/Microsoft.NETCore.App.Runtime.linux-musl-arm64.*.nupkg
+                  !packages/Release/Shipping/Microsoft.NETCore.App.Runtime.linux-musl-arm64.*.symbols.nupkg
             preBuildSteps:
             - powershell: $(Build.SourcesDirectory)/eng/extract-for-crossdac.ps1 -DownloadDirectory $(Build.ArtifactStagingDirectory)/artifacts/RuntimeDownload -ExtractDirectory $(CrossRuntimeExtractionRoot)
               displayName: Extract runtime packs
@@ -412,8 +412,8 @@ extends:
               displayName: Flatten packages
               inputs:
                 sourceFolder: $(Build.ArtifactStagingDirectory)/artifacts/workloadPackages
-                contents: '*/Shipping/*.nupkg'
-                cleanTargetFolder: false
+                contents: 'packages/Release/Shipping/*.nupkg'
+                cleanTargetFolder: true
                 targetFolder: $(Build.SourcesDirectory)/artifacts/workloadPackages
                 flattenFolders: true
 
