@@ -223,15 +223,15 @@ LOCAL_LABEL(WriteWatchForGCHeapEnd\@):
 
 
 .macro WRITE_BARRIER_CHECK_EPHEMERAL_LOW_STUB start exit
-    // Branch to Exit if the reference is not in the heap
+    // Branch to Exit if the reference is not in the ephemeral generations.
     ldr  x12, WRITE_BARRIER_CONSTANT_OFFSET(\start, JIT_WriteBarrier_Patch_Label_Lower)
     cmp  x15, x12
-    bhs  LOCAL_LABEL(\exit)
+    blo  LOCAL_LABEL(\exit)
 .endm
 
 
 .macro WRITE_BARRIER_CHECK_EPHEMERAL_LOW_AND_HIGH_STUB start exit
-    // Branch to Exit if the reference is not in the Gen0 heap
+    // Branch to Exit if the reference is not in the ephemeral generations.
     ldr  x12, WRITE_BARRIER_CONSTANT_OFFSET(\start, JIT_WriteBarrier_Patch_Label_Lower)
     ldr  x17, WRITE_BARRIER_CONSTANT_OFFSET(\start, JIT_WriteBarrier_Patch_Label_Upper)
     cmp  x15, x12
