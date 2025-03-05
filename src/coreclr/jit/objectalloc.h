@@ -125,6 +125,7 @@ class ObjectAllocator final : public Phase
     // Data members
     bool         m_IsObjectStackAllocationEnabled;
     bool         m_AnalysisDone;
+    unsigned     m_initialLocalCount;
     BitVecTraits m_bitVecTraits;
     BitVec       m_EscapingPointers;
     // We keep the set of possibly-stack-pointing pointers as a superset of the set of
@@ -141,6 +142,9 @@ class ObjectAllocator final : public Phase
     unsigned        m_maxPseudoLocals;
     unsigned        m_numPseudoLocals;
     unsigned        m_regionsToClone;
+
+    // Struct fields
+    bool m_trackFields;
 
     //===============================================================================
     // Methods
@@ -160,6 +164,8 @@ protected:
     virtual PhaseStatus DoPhase() override;
 
 private:
+    bool         IsTrackedType(var_types type);
+    bool         IsTrackedLocal(unsigned lclNum);
     bool         CanLclVarEscape(unsigned int lclNum);
     void         MarkLclVarAsPossiblyStackPointing(unsigned int lclNum);
     void         MarkLclVarAsDefinitelyStackPointing(unsigned int lclNum);
@@ -220,6 +226,7 @@ inline ObjectAllocator::ObjectAllocator(Compiler* comp)
     : Phase(comp, PHASE_ALLOCATE_OBJECTS)
     , m_IsObjectStackAllocationEnabled(false)
     , m_AnalysisDone(false)
+    , m_initialLocalCount(comp->lvaCount)
     , m_bitVecTraits(BitVecTraits(comp->lvaCount, comp))
     , m_HeapLocalToStackLocalMap(comp->getAllocator(CMK_ObjectAllocator))
     , m_EnumeratorLocalToPseudoLocalMap(comp->getAllocator(CMK_ObjectAllocator))
@@ -227,7 +234,7 @@ inline ObjectAllocator::ObjectAllocator(Compiler* comp)
     , m_maxPseudoLocals(0)
     , m_numPseudoLocals(0)
     , m_regionsToClone(0)
-
+    , m_trackFields(false)
 {
     // If we are going to do any conditional escape analysis, allocate
     // extra BV space for the "pseudo" locals we'll need.
@@ -284,6 +291,7 @@ inline ObjectAllocator::ObjectAllocator(Compiler* comp)
     m_ConnGraphAdjacencyMatrix        = nullptr;
 
     m_StackAllocMaxSize = (unsigned)JitConfig.JitObjectStackAllocationSize();
+    m_trackFields       = JitConfig.JitObjectStackAllocationTrackFields() > 0;
 }
 
 //------------------------------------------------------------------------

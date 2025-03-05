@@ -414,17 +414,79 @@ ClassLayout* Compiler::typGetBlkLayout(unsigned blockSize)
     return typGetCustomLayout(ClassLayoutBuilder(this, blockSize));
 }
 
-unsigned Compiler::typGetArrayLayoutNum(CORINFO_CLASS_HANDLE classHandle, unsigned length)
-{
-    ClassLayoutBuilder b = ClassLayoutBuilder::BuildArray(this, classHandle, length);
-    return typGetCustomLayoutNum(b);
-}
-
 ClassLayout* Compiler::typGetArrayLayout(CORINFO_CLASS_HANDLE classHandle, unsigned length)
 {
     ClassLayoutBuilder b = ClassLayoutBuilder::BuildArray(this, classHandle, length);
     return typGetCustomLayout(b);
 }
+
+ClassLayout* Compiler::typGetNonGCLayout(ClassLayout* layout)
+{
+    assert(layout->HasGCPtr());
+    ClassLayoutBuilder b(this, layout->GetSize());
+    b.CopyPaddingFrom(0, layout);
+
+#ifdef DEBUG
+    b.CopyNameFrom(layout, "[nongc] ");
+#endif
+
+    return typGetCustomLayout(b);
+}
+
+ClassLayout* Compiler::typGetByrefLayout(ClassLayout* layout)
+{
+    assert(layout->HasGCPtr());
+    ClassLayoutBuilder b(this, layout->GetSize());
+    b.CopyPaddingFrom(0, layout);
+    b.CopyGCInfoFromMakeByref(0, layout);
+
+#ifdef DEBUG
+    b.CopyNameFrom(layout, "[byref] ");
+#endif
+
+    return typGetCustomLayout(b);
+}
+
+#ifdef DEBUG
+//------------------------------------------------------------------------
+// CopyNameFrom: Copy layout names, with optional prefix.
+//
+// Parameters:
+//   layout      - layout to copy from
+//   prefix      - prefix to add (or nullptr)
+//
+void ClassLayoutBuilder::CopyNameFrom(ClassLayout* layout, const char* prefix)
+{
+    const char* layoutName      = layout->GetClassName();
+    const char* layoutShortName = layout->GetShortClassName();
+
+    if (prefix != nullptr)
+    {
+        char* newName      = nullptr;
+        char* newShortName = nullptr;
+
+        if (layoutName != nullptr)
+        {
+            size_t len = strlen(prefix) + strlen(layoutName) + 1;
+            newName    = m_compiler->getAllocator(CMK_DebugOnly).allocate<char>(len);
+            sprintf_s(newName, len, "%s%s", prefix, layoutShortName);
+        }
+
+        if (layoutShortName != nullptr)
+        {
+            size_t len   = strlen(prefix) + strlen(layoutName) + 1;
+            newShortName = m_compiler->getAllocator(CMK_DebugOnly).allocate<char>(len);
+            sprintf_s(newShortName, len, "%s%s", prefix, layoutShortName);
+        }
+
+        SetName(newName, newShortName);
+    }
+    else
+    {
+        SetName(layoutName, layoutShortName);
+    }
+}
+#endif // DEBUG
 
 //------------------------------------------------------------------------
 // Create: Create a ClassLayout from an EE side class handle.
@@ -646,8 +708,8 @@ const SegmentList& ClassLayout::GetNonPadding(Compiler* comp)
 // AreCompatible: check if 2 layouts are the same for copying.
 //
 // Arguments:
-//    layout1 - the first layout;
-//    layout2 - the second layout.
+//    layout1 - the first layout (copy destination)
+//    layout2 - the second layout (copy source)
 //
 // Return value:
 //    true if compatible, false otherwise.
@@ -706,8 +768,8 @@ bool ClassLayout::AreCompatible(const ClassLayout* layout1, const ClassLayout* l
         return true;
     }
 
-    assert(clsHnd1 != NO_CLASS_HANDLE);
-    assert(clsHnd2 != NO_CLASS_HANDLE);
+    // assert(clsHnd1 != NO_CLASS_HANDLE);
+    // assert(clsHnd2 != NO_CLASS_HANDLE);
     assert(layout1->HasGCPtr() && layout2->HasGCPtr());
 
     if (layout1->GetGCPtrCount() != layout2->GetGCPtrCount())
@@ -722,6 +784,13 @@ bool ClassLayout::AreCompatible(const ClassLayout* layout1, const ClassLayout* l
     {
         if (layout1->GetGCPtrType(i) != layout2->GetGCPtrType(i))
         {
+            // Allow a source GC_REF to match a custom GC_BYREF
+            //
+            if ((layout2->GetGCPtrType(i) == TYP_REF) && (layout1->GetGCPtrType(i) == TYP_BYREF) &&
+                layout1->IsCustomLayout())
+            {
+                continue;
+            }
             return false;
         }
     }
@@ -791,7 +860,7 @@ ClassLayoutBuilder ClassLayoutBuilder::BuildArray(Compiler* compiler, CORINFO_CL
             unsigned offset = OFFSETOF__CORINFO_Array__data;
             for (unsigned i = 0; i < length; i++)
             {
-                builder.CopyInfoFrom(offset, elementLayout, /* copy padding */ false);
+                builder.CopyGCInfoFrom(offset, elementLayout);
                 offset += elementSize;
             }
         }
@@ -896,14 +965,13 @@ void ClassLayoutBuilder::SetGCPtrType(unsigned slot, var_types type)
 }
 
 //------------------------------------------------------------------------
-// CopyInfoFrom: Copy GC pointers and padding information from another layout.
+// CopyInfoGCFrom: Copy GC pointers from another layout.
 //
 // Arguments:
 //   offset      - Offset in this builder to start copy information into.
 //   layout      - Layout to get information from.
-//   copyPadding - Whether padding info should also be copied from the layout.
 //
-void ClassLayoutBuilder::CopyInfoFrom(unsigned offset, ClassLayout* layout, bool copyPadding)
+void ClassLayoutBuilder::CopyGCInfoFrom(unsigned offset, ClassLayout* layout)
 {
     assert(offset + layout->GetSize() <= m_size);
 
@@ -916,15 +984,50 @@ void ClassLayoutBuilder::CopyInfoFrom(unsigned offset, ClassLayout* layout, bool
             SetGCPtr(startSlot + slot, layout->GetGCPtr(slot));
         }
     }
+}
 
-    if (copyPadding)
+//------------------------------------------------------------------------
+// CopyInfoGCFromMakeByref: Copy GC pointers from another layout,and change
+//   all gc references to be TYP_BYREF (TYPE_GC_BYREF)
+//
+// Arguments:
+//   offset      - Offset in this builder to start copy information into.
+//   layout      - Layout to get information from.
+//
+void ClassLayoutBuilder::CopyGCInfoFromMakeByref(unsigned offset, ClassLayout* layout)
+{
+    assert(offset + layout->GetSize() <= m_size);
+
+    if (layout->GetGCPtrCount() > 0)
     {
-        AddPadding(SegmentList::Segment(offset, offset + layout->GetSize()));
-
-        for (const SegmentList::Segment& nonPadding : layout->GetNonPadding(m_compiler))
+        assert(offset % TARGET_POINTER_SIZE == 0);
+        unsigned startSlot = offset / TARGET_POINTER_SIZE;
+        for (unsigned slot = 0; slot < layout->GetSlotCount(); slot++)
         {
-            RemovePadding(SegmentList::Segment(offset + nonPadding.Start, offset + nonPadding.End));
+            CorInfoGCType gcType = layout->GetGCPtr(slot);
+            if (gcType == TYPE_GC_REF)
+            {
+                gcType = TYPE_GC_BYREF;
+            }
+            SetGCPtr(startSlot + slot, gcType);
         }
+    }
+}
+
+//------------------------------------------------------------------------
+// CopyInfoPaddingFrom: Copy padding from another layout.
+//
+// Arguments:
+//   offset      - Offset in this builder to start copy information into.
+//   layout      - Layout to get information from.
+//
+void ClassLayoutBuilder::CopyPaddingFrom(unsigned offset, ClassLayout* layout)
+{
+    AddPadding(SegmentList::Segment(offset, offset + layout->GetSize()));
+
+    for (const SegmentList::Segment& nonPadding : layout->GetNonPadding(m_compiler))
+    {
+        RemovePadding(SegmentList::Segment(offset + nonPadding.Start, offset + nonPadding.End));
     }
 }
 

@@ -81,6 +81,19 @@ namespace ObjectStackAllocation
         public SimpleStruct s;
     }
 
+    struct GCStruct
+    {
+        public int i;
+        public int[] o1;
+        public int[] o2;
+    }
+
+    struct GCStruct2
+    {
+        public string[] a;
+        public string[] b;
+    }
+
     enum AllocationKind
     {
         Heap,
@@ -115,7 +128,8 @@ namespace ObjectStackAllocation
         public static int TestEntryPoint()
         {
             AllocationKind expectedAllocationKind = AllocationKind.Stack;
-            if (GCStressEnabled()) {
+            if (GCStressEnabled())
+            {
                 Console.WriteLine("GCStress is enabled");
                 expectedAllocationKind = AllocationKind.Undefined;
             }
@@ -169,14 +183,18 @@ namespace ObjectStackAllocation
             CallTestAndVerifyAllocation(AllocateArrayT<int>, 84, expectedAllocationKind);
             CallTestAndVerifyAllocation(AllocateArrayT<string>, 84, expectedAllocationKind);
 
-            // Span captures
+            // Spans
             CallTestAndVerifyAllocation(SpanCaptureArray1, 41, expectedAllocationKind);
             CallTestAndVerifyAllocation(SpanCaptureArray2, 25, expectedAllocationKind);
             CallTestAndVerifyAllocation(SpanCaptureArrayT<int>, 37, expectedAllocationKind);
             CallTestAndVerifyAllocation(SpanCaptureArrayT<string>, 37, expectedAllocationKind);
 
+            // Other structs with GC fields.
+            CallTestAndVerifyAllocation(StructReferredObjects, 25, expectedAllocationKind);
+
             // The remaining tests currently never allocate on the stack
-            if (expectedAllocationKind == AllocationKind.Stack) {
+            if (expectedAllocationKind == AllocationKind.Stack)
+            {
                 expectedAllocationKind = AllocationKind.Heap;
             }
 
@@ -193,6 +211,14 @@ namespace ObjectStackAllocation
             CallTestAndVerifyAllocation(SpanEscapeArrayArgCopy, 42, expectedAllocationKind);
             CallTestAndVerifyAllocation(SpanEscapeArrayOutParam, 22, expectedAllocationKind);
             CallTestAndVerifyAllocation(SpanEscapeArrayOutParam2, 22, expectedAllocationKind);
+            CallTestAndVerifyAllocation(SpanEscapeRef, 55, expectedAllocationKind);
+
+            // Structs
+            CallTestAndVerifyAllocation(StructReferredObjectEscape1, 33, expectedAllocationKind);
+            CallTestAndVerifyAllocation(StructReferredObjectEscape2, 33, expectedAllocationKind);
+            CallTestAndVerifyAllocation(StructReferredObjectEscape3, 41, expectedAllocationKind);
+            CallTestAndVerifyAllocation(StructReferredObjectEscape4, 41, expectedAllocationKind);
+            CallTestAndVerifyAllocation(StructReferredObjectEscape5, 5, expectedAllocationKind);
 
             // This test calls CORINFO_HELP_OVERFLOW
             CallTestAndVerifyAllocation(AllocateArrayWithNonGCElementsOutOfRangeLeft, 0, expectedAllocationKind, true);
@@ -223,27 +249,34 @@ namespace ObjectStackAllocation
                 int testResult = test();
                 long allocatedBytesAfter = GC.GetAllocatedBytesForCurrentThread();
 
-                if (testResult != expectedResult) {
+                if (testResult != expectedResult)
+                {
                     Console.WriteLine($"FAILURE ({methodName}): expected {expectedResult}, got {testResult}");
                     methodResult = -1;
                 }
-                else if ((expectedAllocationsKind == AllocationKind.Stack) && (allocatedBytesBefore != allocatedBytesAfter)) {
+                else if ((expectedAllocationsKind == AllocationKind.Stack) && (allocatedBytesBefore != allocatedBytesAfter))
+                {
                     Console.WriteLine($"FAILURE ({methodName}): unexpected allocation of {allocatedBytesAfter - allocatedBytesBefore} bytes");
                     methodResult = -1;
                 }
-                else if ((expectedAllocationsKind == AllocationKind.Heap) && (allocatedBytesBefore == allocatedBytesAfter)) {
+                else if ((expectedAllocationsKind == AllocationKind.Heap) && (allocatedBytesBefore == allocatedBytesAfter))
+                {
                     Console.WriteLine($"FAILURE ({methodName}): unexpected stack allocation");
                     methodResult = -1;
                 }
-                else {
+                else
+                {
                     Console.WriteLine($"SUCCESS ({methodName})");
                 }
             }
-            catch {
-                if (throws) {
+            catch
+            {
+                if (throws)
+                {
                     Console.WriteLine($"SUCCESS ({methodName})");
                 }
-                else {
+                else
+                {
                     throw;
                 }
             }
@@ -452,6 +485,7 @@ namespace ObjectStackAllocation
         static int SpanCaptureArrayT<T>()
         {
             Span<T> span = new T[37];
+            Use<T>(span[0]);
             return span.Length;
         }
 
@@ -464,7 +498,7 @@ namespace ObjectStackAllocation
             return y[42];
         }
 
-       [MethodImpl(MethodImplOptions.NoInlining)]
+        [MethodImpl(MethodImplOptions.NoInlining)]
         static int SpanEscapeArrayArgCopy()
         {
             Span<int> x = new int[100];
@@ -501,7 +535,7 @@ namespace ObjectStackAllocation
             a = new Span<int>(new int[44]);
             a[10] = 22;
         }
-   
+
         [MethodImpl(MethodImplOptions.NoInlining)]
         static int SpanEscapeArrayOutParam2()
         {
@@ -519,6 +553,22 @@ namespace ObjectStackAllocation
             b.span = x;
             b.a = 1;
             b.b = 2;
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static int SpanEscapeRef()
+        {
+            ref int q = ref SpanEscapeRef(55);
+            TrashStack();
+            return q;
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static ref int SpanEscapeRef(int n)
+        {
+            Span<int> x = new int[100];
+            x[99] = n;
+            return ref x[99];
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
@@ -574,6 +624,126 @@ namespace ObjectStackAllocation
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
+        static int StructReferredObjects()
+        {
+            int[] a1 = new int[10];
+            int[] a2 = new int[10];
+
+            a1[3] = 7;
+            a2[4] = 8;
+
+            GCStruct s = new GCStruct() { i = 10, o1 = a1, o2 = a2 };
+
+            return s.i + s.o1[3] + s.o2[4];
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static int StructReferredObjectEscape1() => StructReferredObjectEscape1Helper()[3];
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static int[] StructReferredObjectEscape1Helper()
+        {
+            int[] a1 = new int[10];
+            int[] a2 = a1;
+
+            a1[3] = 33;
+            a2[4] = 8;
+
+            GCStruct s = new GCStruct() { i = 10, o1 = a1, o2 = a2 };
+
+            return s.o2;
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static int StructReferredObjectEscape2()
+        {
+            ref int a = ref StructReferredObjectEscape2Helper();
+            TrashStack();
+            return a;
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static ref int StructReferredObjectEscape2Helper()
+        {
+            int[] a1 = new int[10];
+            int[] a2 = a1;
+
+            a1[3] = 33;
+            a2[4] = 8;
+
+            GCStruct s = new GCStruct() { i = 10, o1 = a1, o2 = a2 };
+            return ref s.o2[3];
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static int StructReferredObjectEscape3()
+        {
+            GCStruct s = StructReferredObjectEscape3Helper();
+            return s.o1[3] + s.o2[4];
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static GCStruct StructReferredObjectEscape3Helper()
+        {
+            int[] a1 = new int[10];
+            int[] a2 = a1;
+
+            a1[3] = 33;
+            a2[4] = 8;
+
+            GCStruct s = new GCStruct() { i = 10, o1 = a1, o2 = a2 };
+            return s;
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static int StructReferredObjectEscape4()
+        {
+            GCStruct s;
+            StructReferredObjectEscape4Helper(out s);
+            return s.o1[3] + s.o2[4];
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static void StructReferredObjectEscape4Helper(out GCStruct s)
+        {
+            int[] a1 = new int[10];
+            int[] a2 = a1;
+
+            a1[3] = 33;
+            a2[4] = 8;
+
+            s = new GCStruct() { i = 10, o1 = a1, o2 = a2 };
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public static int StructReferredObjectEscape5()
+        {
+            string[] s = StructReferredObjectEscape5Helper(0);
+            TrashStack();
+            return s[0].Length;
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public static string[] StructReferredObjectEscape5Helper(int n)
+        {
+            GCStruct2 g = new GCStruct2();
+            g.a = new string[10];
+            g.b = new string[10];
+
+            g.a[0] = "Goodbye";
+            g.b[0] = "Hello";
+
+            ref string[] rs = ref g.b;
+
+            if (n > 0)
+            {
+                rs = ref g.a;
+            }
+
+            return rs;
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
         static void Use(ref int v)
         {
             v = 42;
@@ -589,6 +759,12 @@ namespace ObjectStackAllocation
         static void Use(Span<int> span)
         {
             span[42] = 42;
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static void Use<T>(T t)
+        {
+
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
