@@ -12,14 +12,14 @@ namespace System.Security.Cryptography
         private MLDsaImplementation(MLDsaAlgorithm algorithm)
             : base(algorithm)
         {
-            MLDsa.ThrowIfNotSupported();
+            ThrowIfNotSupported();
         }
 
         internal static partial bool SupportsAny();
 
         internal static partial MLDsa GenerateKey(MLDsaAlgorithm algorithm);
-        internal static partial MLDsa ImportPublicKey(MLDsa.ParameterSetInfo info, ReadOnlySpan<byte> source);
-        internal static partial MLDsa ImportPkcs8PrivateKeyValue(MLDsa.ParameterSetInfo info, ReadOnlySpan<byte> source);
+        internal static partial MLDsa ImportPublicKey(ParameterSetInfo info, ReadOnlySpan<byte> source);
+        internal static partial MLDsa ImportPkcs8PrivateKeyValue(ParameterSetInfo info, ReadOnlySpan<byte> source);
         internal static partial MLDsa ImportSecretKey(ParameterSetInfo info, ReadOnlySpan<byte> source);
         internal static partial MLDsa ImportSeed(ParameterSetInfo info, ReadOnlySpan<byte> source);
     }
