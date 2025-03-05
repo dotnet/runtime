@@ -617,8 +617,8 @@ namespace System.Text
         {
             get
             {
-                (ushort FamilyCodePage, byte CodePageFlags) item = EncodingTable.GetCodePageItem(CodePage);
-                return (item.CodePageFlags & EncodingTable.MIMECONTF_SAVABLE_MAILNEWS) != 0;
+                (ushort _, byte codePageFlags) = EncodingTable.GetCodePageItem(CodePage);
+                return (codePageFlags & EncodingTable.MIMECONTF_SAVABLE_MAILNEWS) != 0;
             }
         }
     }
