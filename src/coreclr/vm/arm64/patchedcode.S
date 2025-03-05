@@ -85,6 +85,10 @@ WRITE_BARRIER_END JIT_CheckedWriteBarrier
 
 //-----------------------------------------------------------------------------
 // void JIT_WriteBarrier(Object** dst, Object* src)
+//
+// Empty function which at runtime is patched with one JIT_WriteBarrier_
+// functions below.
+//
 // On entry:
 //   x14  : the destination address (LHS of the assignment)
 //   x15  : the object reference (RHS of the assignment)
@@ -99,161 +103,26 @@ WRITE_BARRIER_END JIT_CheckedWriteBarrier
 //         if you add more trashed registers.
 //
 WRITE_BARRIER_ENTRY JIT_WriteBarrier
-PATCH_LABEL JIT_WriteBarrier_Label
-    stlr  x15, [x14]
-
-#ifdef WRITE_BARRIER_CHECK
-    // Update GC Shadow Heap
-
-    // Do not perform the work if g_GCShadow is 0
-    ldr  x12, LOCAL_LABEL(wbs_GCShadow)
-    cbz  x12, LOCAL_LABEL(ShadowUpdateEnd)
-
-    // Compute address of shadow heap location:
-    //   pShadow = g_GCShadow + (x14 - g_lowest_address)
-    ldr  x17, LOCAL_LABEL(wbs_lowest_address)
-    sub  x17, x14, x17
-    add  x12, x17, x12
-
-    // if (pShadow >= g_GCShadowEnd) goto end
-    ldr  x17, LOCAL_LABEL(wbs_GCShadowEnd)
-    cmp  x12, x17
-    bhs  LOCAL_LABEL(ShadowUpdateEnd)
-
-    // *pShadow = x15
-    str  x15, [x12]
-
-    // Ensure that the write to the shadow heap occurs before the read from the GC heap so that race
-    // conditions are caught by INVALIDGCVALUE.
-    dmb  ish
-
-    // if ([x14] == x15) goto end
-    ldr  x17, [x14]
-    cmp  x17, x15
-    beq LOCAL_LABEL(ShadowUpdateEnd)
-
-    // *pShadow = INVALIDGCVALUE (0xcccccccd)
-    movz x17, #0xcccd
-    movk x17, #0xcccc, LSL #16
-    str  x17, [x12]
-
-LOCAL_LABEL(ShadowUpdateEnd):
-#endif
-
-#ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
-    // Update the write watch table if necessary
-    ldr  x12, LOCAL_LABEL(wbs_sw_ww_table)
-    cbz  x12, LOCAL_LABEL(CheckCardTableBounds)
-    add  x12, x12, x14, lsr #0xc  // SoftwareWriteWatch::AddressToTableByteIndexShift
-    ldrb w17, [x12]
-    cbnz x17, LOCAL_LABEL(CheckCardTableBounds)
-    mov  w17, #0xFF
-    strb w17, [x12]
-#endif
-
-LOCAL_LABEL(CheckCardTableBounds):
-    // Branch to Exit if the reference is not in the Gen0 heap
-    ldr  x12, LOCAL_LABEL(wbs_ephemeral_low)
-    ldr  x17, LOCAL_LABEL(wbs_ephemeral_high)
-    cmp  x15, x12
-    ccmp x15, x17, #0x2, hs
-    bhs  LOCAL_LABEL(Exit)
-
-    // Region Checks
-
-    // Check if using regions
-    ldr  x17, LOCAL_LABEL(wbs_region_to_generation_table)
-    cbz  x17, LOCAL_LABEL(CheckCardTable)
-
-    // Calculate region locations
-    ldr  w12, LOCAL_LABEL(wbs_region_shr)
-    lsr  x15, x15, x12
-    add  x15, x15, x17 // x15 = (RHS >> wbs_region_shr) + wbs_region_to_generation_table
-    lsr  x12, x14, x12
-    add  x12, x12, x17 // x12 = (LHS >> wbs_region_shr) + wbs_region_to_generation_table
-
-    // Check whether the region we're storing into is gen 0 - nothing to do in this case
-    ldrb w12, [x12]
-    cbz  w12, LOCAL_LABEL(Exit)
-
-    // Check this is going from old to young
-    ldrb w15, [x15]
-    cmp  w15, w12
-    bhs  LOCAL_LABEL(Exit)
-
-    // Bitwise write barriers only
-    ldr  w17, LOCAL_LABEL(wbs_region_use_bitwise_write_barrier)
-    cbz  w17, LOCAL_LABEL(CheckCardTable)
-
-    // Check if we need to update the card table
-    lsr w17, w14, 8
-    and w17, w17, 7
-    movz w15, 1
-    lsl w17, w15, w17  // w17 = 1 << (LHS >> 8 && 7)
-    ldr  x12, LOCAL_LABEL(wbs_card_table)
-    add  x15, x12, x14, lsr #11
-    ldrb w12, [x15]  // w12 = [(LHS >> 11) + g_card_table]
-    tst  w12, w17
-    bne  LOCAL_LABEL(Exit)
-
-    // Atomically update the card table
-    // Requires LSE, but the code is only compiled for 8.0
-    .word 0x383131FF // stsetb w17, [x15]
-    b  LOCAL_LABEL(CheckCardBundleTable)
-
-    // End of Region Checks
-
-LOCAL_LABEL(CheckCardTable):
-    // Check if we need to update the card table
-    ldr  x12, LOCAL_LABEL(wbs_card_table)
-    add  x15, x12, x14, lsr #11
-    ldrb w12, [x15]  // w12 = [(LHS >> 11) + g_card_table]
-    cmp  x12, 0xFF
-    beq  LOCAL_LABEL(Exit)
-
-    // Update the card table
-    mov  x12, 0xFF
-    strb w12, [x15]
-
-LOCAL_LABEL(CheckCardBundleTable):
-#ifdef FEATURE_MANUALLY_MANAGED_CARD_BUNDLES
-    // Check if we need to update the card bundle table
-    ldr  x12, LOCAL_LABEL(wbs_card_bundle_table)
-    add  x15, x12, x14, lsr #21
-    ldrb w12, [x15]
-    cmp  x12, 0xFF
-    beq  LOCAL_LABEL(Exit)
-
-    // Update the card bundle
-    mov  x12, 0xFF
-    strb w12, [x15]
-#endif
-
-LOCAL_LABEL(Exit):
-    // Increment by 8 to implement JIT_ByRefWriteBarrier contract.
-    // TODO: Consider duplicating the logic to get rid of this redundant 'add'
-    // for JIT_WriteBarrier/JIT_CheckedWriteBarrier
-    add  x14, x14, 8
-    ret  lr
+    // This must be greater than the largest JIT_WriteBarrier_ function.
+    .space (232*4), 0
 WRITE_BARRIER_END JIT_WriteBarrier
 
-    // Begin patchable literal pool
+//-----------------------------------------------------------------------------
+// JIT_WriteBarrier_Table
+// 
+// Patchable literal pool
+//
     .balign 64  // Align to power of two at least as big as patchable literal pool so that it fits optimally in cache line
 WRITE_BARRIER_ENTRY JIT_WriteBarrier_Table
 LOCAL_LABEL(wbs_begin):
-LOCAL_LABEL(wbs_card_table):
 PATCH_LABEL JIT_WriteBarrier_Patch_Label_CardTable
     .quad 0
-LOCAL_LABEL(wbs_card_bundle_table):
 PATCH_LABEL JIT_WriteBarrier_Patch_Label_CardBundleTable
     .quad 0
-LOCAL_LABEL(wbs_sw_ww_table):
 PATCH_LABEL JIT_WriteBarrier_Patch_Label_WriteWatchTable
     .quad 0
-LOCAL_LABEL(wbs_ephemeral_low):
 PATCH_LABEL JIT_WriteBarrier_Patch_Label_Lower
     .quad 0
-LOCAL_LABEL(wbs_ephemeral_high):
 PATCH_LABEL JIT_WriteBarrier_Patch_Label_Upper
     .quad 0
 LOCAL_LABEL(wbs_lowest_address):
@@ -262,20 +131,15 @@ PATCH_LABEL JIT_WriteBarrier_Patch_Label_LowestAddress
 LOCAL_LABEL(wbs_highest_address):
 PATCH_LABEL JIT_WriteBarrier_Patch_Label_HighestAddress
     .quad 0
-LOCAL_LABEL(wbs_region_to_generation_table):
 PATCH_LABEL JIT_WriteBarrier_Patch_Label_RegionToGeneration
     .quad 0
-LOCAL_LABEL(wbs_region_shr):
 PATCH_LABEL JIT_WriteBarrier_Patch_Label_RegionShr
     .word 0
-LOCAL_LABEL(wbs_region_use_bitwise_write_barrier):
 PATCH_LABEL JIT_WriteBarrier_Patch_Label_UseBitwiseWriteBarrier
     .word 0
 #ifdef WRITE_BARRIER_CHECK
-LOCAL_LABEL(wbs_GCShadow):
 PATCH_LABEL JIT_WriteBarrier_Patch_Label_GCShadow
     .quad 0
-LOCAL_LABEL(wbs_GCShadowEnd):
 PATCH_LABEL JIT_WriteBarrier_Patch_Label_GCShadowEnd
     .quad 0
 #endif
@@ -291,7 +155,7 @@ LEAF_END JIT_PatchedCodeLast, _TEXT
 
 
 //-----------------------------------------------------------------------------
-// The following Macros are used by the different writebarrier implementations
+// The following Macros are used by the different JIT_WriteBarrier_ functions.
 //
 //
 
