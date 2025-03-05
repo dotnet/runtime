@@ -1098,6 +1098,7 @@ namespace System.Security.Cryptography
         public static MLDsa ImportMLDsaPublicKey(MLDsaAlgorithm algorithm, ReadOnlySpan<byte> source)
         {
             ThrowIfNotSupported();
+            ArgumentNullException.ThrowIfNull(algorithm);
 
             ParameterSetInfo info = ParameterSetInfo.GetParameterSetInfo(algorithm);
 
@@ -1137,6 +1138,7 @@ namespace System.Security.Cryptography
         public static MLDsa ImportMLDsaSecretKey(MLDsaAlgorithm algorithm, ReadOnlySpan<byte> source)
         {
             ThrowIfNotSupported();
+            ArgumentNullException.ThrowIfNull(algorithm);
 
             ParameterSetInfo info = ParameterSetInfo.GetParameterSetInfo(algorithm);
 
@@ -1385,6 +1387,9 @@ namespace System.Security.Cryptography
 
         internal sealed class ParameterSetInfo
         {
+            // TODO: If MLDsaAlgorithm is a class, this class can be merged into it.
+            // TODO: Some of the information maybe then becomes public on MLDsaAlgorithm, rather than MLDsa?
+
             internal int SecretKeySizeInBytes { get; }
             internal int PublicKeySizeInBytes { get; }
             internal int SignatureSizeInBytes { get; }
@@ -1420,6 +1425,8 @@ namespace System.Security.Cryptography
 
             internal static ParameterSetInfo GetParameterSetInfo(MLDsaAlgorithm algorithm)
             {
+                ArgumentNullException.ThrowIfNull(algorithm);
+
                 return algorithm.Name switch
                 {
                     "ML-DSA-44" => MLDsa44,
