@@ -51,6 +51,7 @@ public class PrecodeStubsTests
         // #endif // TARGET_AMD64
         public required byte StubPrecode { get; init; }
         public required int StubPrecodeSize { get; init; }
+        public byte ThisPtrRetBufPrecode => 0x08;
         public PrecodeTestDescriptor(string name) {
             Name = name;
         }
@@ -184,10 +185,13 @@ public class PrecodeStubsTests
 
         public TargetPointer MachineDescriptorAddress;
         public CodePointerFlags CodePointerFlags {get; private set;}
-        public PrecodeBuilder(MockTarget.Architecture arch) : this(DefaultAllocationRange, new MockMemorySpace.Builder(new TargetTestHelpers(arch))) {
+
+        public int PrecodesVersion { get; }
+        public PrecodeBuilder(MockTarget.Architecture arch, int precodesVersion) : this(DefaultAllocationRange, new MockMemorySpace.Builder(new TargetTestHelpers(arch)), precodesVersion) {
         }
-        public PrecodeBuilder(AllocationRange allocationRange, MockMemorySpace.Builder builder, Dictionary<DataType, Target.TypeInfo>? typeInfoCache = null) {
+        public PrecodeBuilder(AllocationRange allocationRange, MockMemorySpace.Builder builder, int precodesVersion, Dictionary<DataType, Target.TypeInfo>? typeInfoCache = null) {
             Builder = builder;
+            PrecodesVersion = precodesVersion;
             PrecodeAllocator = builder.CreateAllocator(allocationRange.PrecodeDescriptorStart, allocationRange.PrecodeDescriptorEnd);
             StubDataPageAllocator = builder.CreateAllocator(allocationRange.StubDataPageStart, allocationRange.StubDataPageEnd);
             Types = typeInfoCache ?? GetTypes(Builder.TargetTestHelpers);
@@ -210,14 +214,33 @@ public class PrecodeStubsTests
                 Fields = layout.Fields,
                 Size = layout.Stride,
             };
-            layout = targetTestHelpers.LayoutFields([
-                new(nameof(Data.StubPrecodeData.Type), DataType.uint8),
-                new(nameof(Data.StubPrecodeData.MethodDesc), DataType.pointer),
-            ]);
+
+            if (PrecodesVersion == 1) {
+                layout = targetTestHelpers.LayoutFields([
+                    new(nameof(Data.StubPrecodeData_1.Type), DataType.uint8),
+                    new(nameof(Data.StubPrecodeData_1.MethodDesc), DataType.pointer),
+                ]);
+            } else {
+                layout = targetTestHelpers.LayoutFields([
+                    new(nameof(Data.StubPrecodeData_2.Type), DataType.uint8),
+                    new(nameof(Data.StubPrecodeData_2.SecretParam), DataType.pointer),
+                ]);
+            }
             types[DataType.StubPrecodeData] = new Target.TypeInfo() {
                 Fields = layout.Fields,
                 Size = layout.Stride,
             };
+
+            if (PrecodesVersion >= 2)
+            {
+                layout = targetTestHelpers.LayoutFields([
+                    new(nameof(Data.ThisPtrRetBufPrecodeData.MethodDesc), DataType.pointer),
+                ]);
+                types[DataType.ThisPtrRetBufPrecodeData] = new Target.TypeInfo() {
+                    Fields = layout.Fields,
+                    Size = layout.Stride,
+                };
+            }
             return types;
         }
 
@@ -241,6 +264,7 @@ public class PrecodeStubsTests
             Builder.TargetTestHelpers.Write(desc.Slice(typeInfo.Fields[nameof(Data.PrecodeMachineDescriptor.ShiftOfPrecodeType)].Offset, sizeof(byte)), (byte)descriptor.ShiftOfPrecodeType);
             Builder.TargetTestHelpers.Write(desc.Slice(typeInfo.Fields[nameof(Data.PrecodeMachineDescriptor.StubCodePageSize)].Offset, sizeof(uint)), descriptor.StubCodePageSize);
             Builder.TargetTestHelpers.Write(desc.Slice(typeInfo.Fields[nameof(Data.PrecodeMachineDescriptor.StubPrecodeType)].Offset, sizeof(byte)), descriptor.StubPrecode);
+            Builder.TargetTestHelpers.Write(desc.Slice(typeInfo.Fields[nameof(Data.PrecodeMachineDescriptor.ThisPointerRetBufPrecodeType)].Offset, sizeof(byte)), descriptor.ThisPtrRetBufPrecode);
             // FIXME: set the other fields
         }
 
@@ -248,7 +272,7 @@ public class PrecodeStubsTests
             // TODO[cdac]: allow writing other kinds of stub precode subtypes
             ulong stubCodeSize = (ulong)test.StubPrecodeSize;
             var stubDataTypeInfo  = Types[DataType.StubPrecodeData];
-            MockMemorySpace.HeapFragment stubDataFragment = StubDataPageAllocator.Allocate((ulong)stubDataTypeInfo.Size, $"Stub data for {name} on {test.Name}");
+            MockMemorySpace.HeapFragment stubDataFragment = StubDataPageAllocator.Allocate(Math.Max((ulong)stubDataTypeInfo.Size, (ulong)stubCodeSize), $"Stub data for {name} on {test.Name}");
             Builder.AddHeapFragment(stubDataFragment);
             // allocate the code one page before the stub data
             ulong stubCodeStart = stubDataFragment.Address - test.StubCodePageSize;
@@ -261,8 +285,49 @@ public class PrecodeStubsTests
             Builder.AddHeapFragment(stubCodeFragment);
 
             Span<byte> stubData = Builder.BorrowAddressRange(stubDataFragment.Address, (int)stubDataTypeInfo.Size);
-            Builder.TargetTestHelpers.Write(stubData.Slice(stubDataTypeInfo.Fields[nameof(Data.StubPrecodeData.Type)].Offset, sizeof(byte)), test.StubPrecode);
-            Builder.TargetTestHelpers.WritePointer(stubData.Slice(stubDataTypeInfo.Fields[nameof(Data.StubPrecodeData.MethodDesc)].Offset, Builder.TargetTestHelpers.PointerSize), methodDesc);
+            if (PrecodesVersion == 1) {
+                Builder.TargetTestHelpers.Write(stubData.Slice(stubDataTypeInfo.Fields[nameof(Data.StubPrecodeData_1.Type)].Offset, sizeof(byte)), test.StubPrecode);
+                Builder.TargetTestHelpers.WritePointer(stubData.Slice(stubDataTypeInfo.Fields[nameof(Data.StubPrecodeData_1.MethodDesc)].Offset, Builder.TargetTestHelpers.PointerSize), methodDesc);
+            } else {
+                Builder.TargetTestHelpers.Write(stubData.Slice(stubDataTypeInfo.Fields[nameof(Data.StubPrecodeData_2.Type)].Offset, sizeof(byte)), test.StubPrecode);
+                Builder.TargetTestHelpers.WritePointer(stubData.Slice(stubDataTypeInfo.Fields[nameof(Data.StubPrecodeData_2.SecretParam)].Offset, Builder.TargetTestHelpers.PointerSize), methodDesc);
+            }
+            TargetCodePointer address = stubCodeFragment.Address;
+            if (test.IsThumb) {
+                address = new TargetCodePointer(address.Value | 1);
+            }
+            return address;
+        }
+
+        public TargetCodePointer AddThisPtrRetBufPrecodeEntry(string name, PrecodeTestDescriptor test, TargetPointer methodDesc) {
+            ulong stubCodeSize = (ulong)test.StubPrecodeSize;
+            var stubDataTypeInfo  = Types[DataType.StubPrecodeData];
+            MockMemorySpace.HeapFragment stubDataFragment = StubDataPageAllocator.Allocate(Math.Max((ulong)stubDataTypeInfo.Size, (ulong)stubCodeSize), $"Stub data for {name} on {test.Name}");
+            Builder.AddHeapFragment(stubDataFragment);
+
+            var thisPtrRetBufDataTypeInfo  = Types[DataType.ThisPtrRetBufPrecodeData];
+            MockMemorySpace.HeapFragment thisPtrRetBufStubDataFragment = StubDataPageAllocator.Allocate((ulong)thisPtrRetBufDataTypeInfo.Size, $"ThisPtrRetBufData stub data for {name} on {test.Name}");
+            Builder.AddHeapFragment(thisPtrRetBufStubDataFragment);
+
+            // allocate the code one page before the stub data
+            ulong stubCodeStart = stubDataFragment.Address - test.StubCodePageSize;
+            MockMemorySpace.HeapFragment stubCodeFragment = new MockMemorySpace.HeapFragment {
+                Address = stubCodeStart,
+                Data = new byte[stubCodeSize],
+                Name = $"Stub code for {name} on {test.Name} with data at 0x{stubDataFragment.Address:x}",
+            };
+            test.WritePrecodeType(test.StubPrecode, Builder.TargetTestHelpers, stubCodeFragment.Data);
+            Builder.AddHeapFragment(stubCodeFragment);
+
+            Span<byte> thisPtrStubData = Builder.BorrowAddressRange(thisPtrRetBufStubDataFragment.Address, (int)thisPtrRetBufDataTypeInfo.Size);
+            
+            Builder.TargetTestHelpers.WritePointer(thisPtrStubData.Slice(thisPtrRetBufDataTypeInfo.Fields[nameof(Data.ThisPtrRetBufPrecodeData.MethodDesc)].Offset, Builder.TargetTestHelpers.PointerSize), methodDesc);
+
+            Span<byte> stubData = Builder.BorrowAddressRange(stubDataFragment.Address, (int)stubDataTypeInfo.Size);
+            
+            Builder.TargetTestHelpers.Write(stubData.Slice(stubDataTypeInfo.Fields[nameof(Data.StubPrecodeData_2.Type)].Offset, sizeof(byte)), test.ThisPtrRetBufPrecode);
+            Builder.TargetTestHelpers.WritePointer(stubData.Slice(stubDataTypeInfo.Fields[nameof(Data.StubPrecodeData_2.SecretParam)].Offset, Builder.TargetTestHelpers.PointerSize), thisPtrRetBufStubDataFragment.Address);
+
             TargetCodePointer address = stubCodeFragment.Address;
             if (test.IsThumb) {
                 address = new TargetCodePointer(address.Value | 1);
@@ -288,7 +353,7 @@ public class PrecodeStubsTests
         // to set it up such that it will only be created after the target's targets are set up
         Mock<ContractRegistry> reg = new();
         reg.SetupGet(c => c.PlatformMetadata).Returns(platformMetadata.Object);
-        reg.SetupGet(c => c.PrecodeStubs).Returns(() => precodeFactory.CreateContract(target, 1));
+        reg.SetupGet(c => c.PrecodeStubs).Returns(() => precodeFactory.CreateContract(target, precodeBuilder.PrecodesVersion));
         target.SetContracts(reg.Object);
 
         return target;
@@ -296,9 +361,9 @@ public class PrecodeStubsTests
 
     [Theory]
     [MemberData(nameof(PrecodeTestDescriptorData))]
-    public void TestPrecodeStubPrecodeExpectedMethodDesc(PrecodeTestDescriptor test)
+    public void TestPrecodeStubPrecodeExpectedMethodDesc_1(PrecodeTestDescriptor test)
     {
-        var builder = new PrecodeBuilder(test.Arch);
+        var builder = new PrecodeBuilder(test.Arch, /* Test version 1 of the contract */1);
         builder.AddPlatformMetadata(test);
 
         TargetPointer expectedMethodDesc = new TargetPointer(0xeeee_eee0u); // arbitrary
@@ -313,5 +378,31 @@ public class PrecodeStubsTests
 
         var actualMethodDesc = precodeContract.GetMethodDescFromStubAddress(stub1);
         Assert.Equal(expectedMethodDesc, actualMethodDesc);
+    }
+
+    [Theory]
+    [MemberData(nameof(PrecodeTestDescriptorData))]
+    public void TestPrecodeStubPrecodeExpectedMethodDesc_2(PrecodeTestDescriptor test)
+    {
+        var builder = new PrecodeBuilder(test.Arch, /* Test version 2 of the contract */ 2);
+        builder.AddPlatformMetadata(test);
+
+        TargetPointer expectedMethodDesc = new TargetPointer(0xeeee_eee0u); // arbitrary
+        TargetPointer expectedMethodDesc2 = new TargetPointer(0xfafa_eee0u); // arbitrary
+        TargetCodePointer stub1 = builder.AddStubPrecodeEntry("Stub 1", test, expectedMethodDesc);
+        TargetCodePointer stub2 = builder.AddThisPtrRetBufPrecodeEntry("Stub 2", test, expectedMethodDesc2);
+
+        var target = CreateTarget(builder);
+        Assert.NotNull(target);
+
+        var precodeContract = target.Contracts.PrecodeStubs;
+
+        Assert.NotNull(precodeContract);
+
+        var actualMethodDesc = precodeContract.GetMethodDescFromStubAddress(stub1);
+        Assert.Equal(expectedMethodDesc, actualMethodDesc);
+
+        var actualMethodDesc2 = precodeContract.GetMethodDescFromStubAddress(stub2);
+        Assert.Equal(expectedMethodDesc2, actualMethodDesc2);
     }
 }

@@ -94,6 +94,9 @@ extern "C" void InterpreterStub();
 #endif
 
 class UMEntryThunk;
+
+struct ThisPtrRetBufPrecode;
+
 typedef DPTR(class UMEntryThunk) PTR_UMEntryThunk;
 #define PRECODE_UMENTRY_THUNK_VALUE 0x7 // Define the value here and not in UMEntryThunk to avoid circular dependency with the dllimportcallback.h header
 
@@ -138,6 +141,10 @@ struct StubPrecode
     }
 
     TADDR GetMethodDesc();
+
+#ifdef HAS_THISPTR_RETBUF_PRECODE
+    ThisPtrRetBufPrecode* AsThisPtrRetBufPrecode();
+#endif // HAS_THISPTR_RETBUF_PRECODE
 
 #ifndef DACCESS_COMPILE
     void SetSecretParam(TADDR secretParam)
@@ -307,6 +314,13 @@ struct ThisPtrRetBufPrecode : StubPrecode
     }
 };
 typedef DPTR(ThisPtrRetBufPrecode) PTR_ThisPtrRetBufPrecode;
+
+inline ThisPtrRetBufPrecode* StubPrecode::AsThisPtrRetBufPrecode()
+{
+    LIMITED_METHOD_CONTRACT;
+    SUPPORTS_DAC;
+    return dac_cast<PTR_ThisPtrRetBufPrecode>(this);
+}
 
 #endif // HAS_THISPTR_RETBUF_PRECODE
 
@@ -514,6 +528,9 @@ inline TADDR StubPrecode::GetMethodDesc()
         case PRECODE_INTERPRETER:
 #endif // FEATURE_INTERPRETER
             return 0;
+
+        case PRECODE_THISPTR_RETBUF:
+            return AsThisPtrRetBufPrecode()->GetMethodDesc();
     }
 
     _ASSERTE(!"Unknown precode type");
@@ -533,6 +550,7 @@ inline BYTE StubPrecode::GetType()
         case PRECODE_UMENTRY_THUNK:
         case PRECODE_STUB:
         case PRECODE_NDIRECT_IMPORT:
+        case PRECODE_THISPTR_RETBUF:
 #ifdef FEATURE_INTERPRETER
         case PRECODE_INTERPRETER:
 #endif // FEATURE_INTERPRETER
