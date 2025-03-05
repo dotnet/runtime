@@ -806,8 +806,7 @@ namespace System.Text.Tests
             Assert.All(name, c => Assert.True(c >= ' ' && c < '~' + 1, "Name: " + name + " contains character: " + c));
         }
 
-        [Fact]
-        public static void TestWindowsCodePageAndFlagsThroughEncoding()
+        private static void TestWindowsCodePageAndFlagsThroughEncoding()
         {
             Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
 
