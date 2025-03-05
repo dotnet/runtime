@@ -76,9 +76,13 @@ namespace System.Security.Cryptography
 
         protected sealed override void Dispose(bool disposing)
         {
+            if (disposing)
+            {
+                _keyBox?.Dispose();
+                _keyBox = null;
+            }
+
             base.Dispose(disposing);
-            _keyBox?.Dispose();
-            _keyBox = null;
         }
 
         protected override void SetKeyCore(ReadOnlySpan<byte> key)
