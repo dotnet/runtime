@@ -401,12 +401,6 @@ static MethodDesc* getTargetMethodDesc(PCODE target)
         }
     }
 
-    if (stubKind == STUB_CODE_BLOCK_PRECODE)
-    {
-        // The address looks like a value stub, try to get the method descriptor.
-        return MethodDesc::GetMethodDescFromStubAddr(target, TRUE);
-    }
-
     if (stubKind == STUB_CODE_BLOCK_STUBPRECODE)
     {
         Precode* pPrecode = Precode::GetPrecodeFromEntryPoint(target);
@@ -414,6 +408,7 @@ static MethodDesc* getTargetMethodDesc(PCODE target)
         {
             case PRECODE_STUB:
             case PRECODE_NDIRECT_IMPORT:
+            case PRECODE_THISPTR_RETBUF:
                 return dac_cast<PTR_MethodDesc>(pPrecode->AsStubPrecode()->GetMethodDesc());
             default:
                 return nullptr;
