@@ -19,6 +19,8 @@ configuration:
       - isOpen
       - isNotLabeledWith:
           label: backlog-cleanup-candidate
+      - isNotLabeledWith:
+          label: area-codegen-coreclr
       actions:
       - addReply:
           reply: >-
