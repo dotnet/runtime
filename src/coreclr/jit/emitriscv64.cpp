@@ -92,7 +92,6 @@ size_t emitter::emitSizeOfInsDsc(instrDesc* id) const
                 return sizeof(instrDesc);
             }
 
-        case INS_OPTS_I:
         case INS_OPTS_RC:
         case INS_OPTS_RL:
         case INS_OPTS_RELOC:
@@ -2963,56 +2962,6 @@ BYTE* emitter::emitOutputInstr_OptsReloc(BYTE* dst, const instrDesc* id, instruc
     return dst;
 }
 
-BYTE* emitter::emitOutputInstr_OptsI(BYTE* dst, const instrDesc* id)
-{
-    ssize_t         immediate = reinterpret_cast<ssize_t>(id->idAddr()->iiaAddr);
-    const regNumber reg1      = id->idReg1();
-
-    switch (id->idCodeSize())
-    {
-        case 8:
-            return emitOutputInstr_OptsI8(dst, id, immediate, reg1);
-        case 32:
-            return emitOutputInstr_OptsI32(dst, immediate, reg1);
-        default:
-            break;
-    }
-    unreached();
-    return nullptr;
-}
-
-BYTE* emitter::emitOutputInstr_OptsI8(BYTE* dst, const instrDesc* id, ssize_t immediate, regNumber reg1)
-{
-    if (id->idReg2())
-    {
-        // special for INT64_MAX or UINT32_MAX
-        dst += emitOutput_ITypeInstr(dst, INS_addi, reg1, REG_R0, WordMask(12));
-        const unsigned shiftValue = (immediate == INT64_MAX) ? 1 : 32;
-        dst += emitOutput_ITypeInstr(dst, INS_srli, reg1, reg1, shiftValue);
-    }
-    else
-    {
-        dst += emitOutput_UTypeInstr(dst, INS_lui, reg1, UpperNBitsOfWordSignExtend<20>(immediate));
-        dst += emitOutput_ITypeInstr(dst, INS_addi, reg1, reg1, LowerNBitsOfWord<12>(immediate));
-    }
-    return dst;
-}
-
-BYTE* emitter::emitOutputInstr_OptsI32(BYTE* dst, ssize_t immediate, regNumber reg1)
-{
-    const unsigned upperWord = UpperWordOfDoubleWord(immediate);
-    dst += emitOutput_UTypeInstr(dst, INS_lui, reg1, UpperNBitsOfWordSignExtend<20>(upperWord));
-    dst += emitOutput_ITypeInstr(dst, INS_addi, reg1, reg1, LowerNBitsOfWord<12>(upperWord));
-    const unsigned lowerWord = LowerWordOfDoubleWord(immediate);
-    dst += emitOutput_ITypeInstr(dst, INS_slli, reg1, reg1, 11);
-    dst += emitOutput_ITypeInstr(dst, INS_addi, reg1, reg1, LowerNBitsOfWord<11>(lowerWord >> 21));
-    dst += emitOutput_ITypeInstr(dst, INS_slli, reg1, reg1, 11);
-    dst += emitOutput_ITypeInstr(dst, INS_addi, reg1, reg1, LowerNBitsOfWord<11>(lowerWord >> 10));
-    dst += emitOutput_ITypeInstr(dst, INS_slli, reg1, reg1, 10);
-    dst += emitOutput_ITypeInstr(dst, INS_addi, reg1, reg1, LowerNBitsOfWord<10>(lowerWord));
-    return dst;
-}
-
 BYTE* emitter::emitOutputInstr_OptsRc(BYTE* dst, const instrDesc* id, instruction* ins)
 {
     assert(id->idAddr()->iiaIsJitDataOffset());
@@ -3265,11 +3214,6 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
     {
         case INS_OPTS_RELOC:
             dst = emitOutputInstr_OptsReloc(dst, id, &ins);
-            sz  = sizeof(instrDesc);
-            break;
-        case INS_OPTS_I:
-            dst = emitOutputInstr_OptsI(dst, id);
-            ins = INS_addi;
             sz  = sizeof(instrDesc);
             break;
         case INS_OPTS_RC:
