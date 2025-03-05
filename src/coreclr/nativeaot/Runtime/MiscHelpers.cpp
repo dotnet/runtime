@@ -483,6 +483,12 @@ FCIMPL0(int32_t, RhGetProcessCpuCount)
 }
 FCIMPLEND
 
+FCIMPL0(FC_BOOL_RET, RhGetIsCpuQuotaLimited)
+{
+    FC_RETURN_BOOL(PalGetIsCpuQuotaLimited());
+}
+FCIMPLEND
+
 FCIMPL2(uint32_t, RhGetKnobValues, char *** pResultKeys, char *** pResultValues)
 {
     *pResultKeys = g_pRhConfig->GetKnobNames();

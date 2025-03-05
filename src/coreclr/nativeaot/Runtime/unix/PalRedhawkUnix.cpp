@@ -377,7 +377,10 @@ void InitializeCurrentProcessCpuCount()
 
         uint32_t cpuLimit;
         if (GetCpuLimit(&cpuLimit) && cpuLimit < count)
+        {
             count = cpuLimit;
+            g_RhIsCpuQuotaLimited = true;
+        }
     }
 
     _ASSERTE(count > 0);
@@ -1117,11 +1120,19 @@ extern "C" int32_t _stricmp(const char *string1, const char *string2)
 }
 
 uint32_t g_RhNumberOfProcessors;
+bool g_RhIsCpuQuotaLimited = false;
 
 REDHAWK_PALEXPORT int32_t PalGetProcessCpuCount()
 {
     ASSERT(g_RhNumberOfProcessors > 0);
     return g_RhNumberOfProcessors;
+}
+
+REDHAWK_PALEXPORT bool PalGetIsCpuQuotaLimited()
+{
+    // The number of processors should have been set by the time this is called
+    ASSERT(g_RhNumberOfProcessors > 0);
+    return g_RhIsCpuQuotaLimited;
 }
 
 __thread void* pStackHighOut = NULL;

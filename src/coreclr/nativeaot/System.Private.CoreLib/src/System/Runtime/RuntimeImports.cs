@@ -264,6 +264,10 @@ namespace System.Runtime
         [RuntimeImport(RuntimeLibrary, "RhGetProcessCpuCount")]
         internal static extern int RhGetProcessCpuCount();
 
+        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        [RuntimeImport(RuntimeLibrary, "RhGetIsCpuQuotaLimited")]
+        internal static extern bool RhGetIsCpuQuotaLimited();
+
         //
         // calls for GCHandle.
         // These methods are needed to implement GCHandle class like functionality (optional)
