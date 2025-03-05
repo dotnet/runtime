@@ -19955,7 +19955,8 @@ bool GenTree::IsArrayAddr(GenTreeArrAddr** pArrAddr)
 //
 bool GenTree::SupportsSettingZeroFlag()
 {
-    if (SupportsSettingResultFlags()) {
+    if (SupportsSettingResultFlags())
+    {
         return true;
     }
 
