@@ -244,9 +244,10 @@ namespace System.Security.Cryptography
         /// </exception>
         /// <remarks>
         ///   <para>
-        ///     When called by the base class, the length of <paramref name="key"/> will already have
-        ///     been validated against <see cref="LegalKeySizes"/>.
-        ///     Derived types are expected to perform similar validation before calling this method.
+        ///     <see cref="SymmetricAlgorithm" /> will only call this method after validating the
+        ///     length of <paramref name="key"/> against <see cref="LegalKeySizes"/>.
+        ///     Other callers are expected to similarly ensure that this method is only called with
+        ///     validly-sized inputs.
         ///   </para>
         ///   <para>
         ///     The base class implementation is to assign the <see cref="Key"/> property.

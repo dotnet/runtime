@@ -71,12 +71,13 @@ namespace System.Security.Cryptography
         {
             Span<byte> key = stackalloc byte[KeySize / BitsPerByte];
             RandomNumberGenerator.Fill(key);
-            SetKey(key);
+            SetKeyCore(key);
         }
 
         protected sealed override void Dispose(bool disposing)
         {
             base.Dispose(disposing);
+            _keyBox?.Dispose();
         }
 
         protected override void SetKeyCore(ReadOnlySpan<byte> key)
