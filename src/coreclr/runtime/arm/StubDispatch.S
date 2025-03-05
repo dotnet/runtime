@@ -77,30 +77,6 @@ DEFINE_INTERFACE_DISPATCH_STUB 16
 DEFINE_INTERFACE_DISPATCH_STUB 32
 DEFINE_INTERFACE_DISPATCH_STUB 64
 
-// Stub dispatch routine for dispatch to a vtable slot
-LEAF_ENTRY RhpVTableOffsetDispatch, _TEXT
-        // On input we have the indirection cell data structure in r12. But we need more scratch registers and
-        // we may A/V on a null this. Both of these suggest we need a real prolog and epilog.
-        PROLOG_PUSH {r1}
-
-        // r12 currently holds the indirection cell address. We need to update it to point to the vtable
-        // offset instead.
-        ldr         r12, [r12, #OFFSETOF__InterfaceDispatchCell__m_pCache]
-
-        // Load the MethodTable from the object instance in r0.
-        ALTERNATE_ENTRY RhpVTableOffsetDispatchAVLocation
-        ldr         r1, [r0]
-
-        // add the vtable offset to the MethodTable pointer
-        add         r12, r1, r12
-
-        // Load the target address of the vtable into r12
-        ldr         r12, [r12]
-
-        EPILOG_POP  {r1}
-        EPILOG_BRANCH_REG r12
-LEAF_END RhpVTableOffsetDispatch, _TEXT
-
 // Initial dispatch on an interface when we don't have a cache yet.
 LEAF_ENTRY RhpInitialInterfaceDispatch, _TEXT
         // Just tail call to the cache miss helper.
