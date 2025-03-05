@@ -147,7 +147,7 @@ extends:
           - windows_x64
           jobParameters:
             templatePath: 'templates-official'
-            buildArgs: -s crossdacpack -restore -build -publish -c $(_BuildConfig) /p:CrossRuntimeExtractionRoot=$(CrossRuntimeExtractionRoot) $(_SignDiagnosticFilesArgs)
+            buildArgs: -s crossdacpack -restore -build -publish -c $(_BuildConfig) /p:EnableDefaultRidSpecificArtifacts=false /p:CrossRuntimeExtractionRoot=$(CrossRuntimeExtractionRoot) $(_SignDiagnosticFilesArgs)
             nameSuffix: CrossDac
             isOfficialBuild: true
             timeoutInMinutes: 120
