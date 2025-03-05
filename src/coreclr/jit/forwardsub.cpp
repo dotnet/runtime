@@ -788,9 +788,7 @@ bool Compiler::fgForwardSubStatement(Statement* stmt)
         dstVarDsc->lvIsMultiRegRet = true;
     }
 
-    // If a method returns a multi-reg type, only forward sub locals,
-    // and ensure the local and operand have the required markup.
-    // (see eg impFixupStructReturnType).
+    // If a method returns a multi-reg type only forward sub locals.
     //
     // TODO-Cleanup: this constraint only exists for multi-reg **struct**
     // returns, it does not exist for LONGs. However, enabling substitution
@@ -817,26 +815,6 @@ bool Compiler::fgForwardSubStatement(Statement* stmt)
                 JITDUMP(" parent is multi-reg struct return, fwd sub node is not lcl var\n");
                 return false;
             }
-        }
-        else if (varTypeIsStruct(fwdSubNode))
-        {
-            GenTreeLclVar* const fwdSubNodeLocal = fwdSubNode->AsLclVar();
-            unsigned const       fwdLclNum       = fwdSubNodeLocal->GetLclNum();
-
-            // These may later turn into indirections and the backend does not support
-            // those as sources of multi-reg returns.
-            //
-            if (lvaIsImplicitByRefLocal(fwdLclNum))
-            {
-                JITDUMP(" parent is multi-reg return; fwd sub node is implicit byref\n");
-                return false;
-            }
-
-            LclVarDsc* const fwdVarDsc = lvaGetDesc(fwdLclNum);
-
-            JITDUMP(" [marking V%02u as multi-reg-ret]", fwdLclNum);
-            fwdVarDsc->lvIsMultiRegRet = true;
-            fwdSubNodeLocal->gtFlags |= GTF_DONT_CSE;
         }
     }
 

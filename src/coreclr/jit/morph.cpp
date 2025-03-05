@@ -5473,11 +5473,6 @@ GenTree* Compiler::fgCreateCallDispatcherAndGetResult(GenTreeCall*          orig
 
         lvaSetVarAddrExposed(newRetLcl DEBUGARG(AddressExposedReason::DISPATCH_RET_BUF));
 
-        if (varTypeIsStruct(origCall) && compMethodReturnsMultiRegRetType())
-        {
-            lvaGetDesc(newRetLcl)->lvIsMultiRegRet = true;
-        }
-
         retValArg = gtNewLclVarAddrNode(newRetLcl);
         retVal    = gtNewLclvNode(newRetLcl, genActualType(lvaTable[newRetLcl].lvType));
     }

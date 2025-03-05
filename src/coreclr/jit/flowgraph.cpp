@@ -2046,11 +2046,6 @@ private:
             if (varTypeIsStruct(retLclType))
             {
                 comp->lvaSetStruct(retLclNum, comp->info.compMethodInfo->args.retTypeClass, false);
-
-                if (comp->compMethodReturnsMultiRegRetType())
-                {
-                    retVarDsc->lvIsMultiRegRet = true;
-                }
             }
             else
             {
