@@ -25,7 +25,7 @@ JIT_WriteBarrier(Object **dst, Object *ref)
             if *ww_table_dst != 0:
                 *ww_table_dst =  0xff
 
-    // Return if the reference is not in Gen 0
+    // Return if the reference is not in ephemeral generations.
     if ref < g_ephemeral_low || ref >= g_ephemeral_high:
         return
 
@@ -93,4 +93,4 @@ JIT_CheckedWriteBarrier(Object **dst, Object *ref)
 
 ## WritebarrierManager
 
-On AMD64, there several different implementations of the write barrier function. Each implementation assumes different state and so can skip certain checks. The actual write barrier that is called is a copy of one of these implementations. The WritebarrierManager keeps track of which implementation is currently being used. As internal state changes, the WritebarrierManager updates the copy to the correct implementation. In practice, most of the internal state is fixed on startup, with only changes to/from use of write watch barriers changing during runtime.
+On AMD64 and Arm64, there several different implementations of the write barrier function. Each implementation assumes different state and so can skip certain checks. The actual write barrier that is called is a copy of one of these implementations. The WritebarrierManager keeps track of which implementation is currently being used. As internal state changes, the WritebarrierManager updates the copy to the correct implementation. In practice, most of the internal state is fixed on startup, with only changes to/from use of write watch barriers changing during runtime.
