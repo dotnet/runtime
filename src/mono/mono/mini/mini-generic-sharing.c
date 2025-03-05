@@ -952,7 +952,6 @@ class_type_info (MonoMemoryManager *mem_manager, MonoClass *klass, MonoRgctxInfo
 		/*First slot is the cache itself, the second the vtable.*/
 		gpointer **cache_data = (gpointer **)mono_mem_manager_alloc0 (mem_manager, sizeof (gpointer) * 2);
 		cache_data [1] = (gpointer *)klass;
-		mono_memory_barrier ();
 		return cache_data;
 	}
 	case MONO_RGCTX_INFO_ARRAY_ELEMENT_SIZE:

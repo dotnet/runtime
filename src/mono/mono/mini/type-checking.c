@@ -36,9 +36,6 @@ emit_cached_check_args (MonoCompile *cfg, MonoInst *obj, MonoClass *klass, int c
 		/* klass - it's the second element of the cache entry*/
 		EMIT_NEW_LOAD_MEMBASE (cfg, args [1], OP_LOAD_MEMBASE, alloc_preg (cfg), cache_ins->dreg, TARGET_SIZEOF_VOID_P);
 
-		/* klass nullcheck */
-		MONO_EMIT_EXPLICIT_NULL_CHECK (cfg, args [1]->dreg);
-
 		args [2] = cache_ins; /* cache */
 	} else {
 		int idx;
