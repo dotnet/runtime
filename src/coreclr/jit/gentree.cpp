@@ -19955,6 +19955,10 @@ bool GenTree::IsArrayAddr(GenTreeArrAddr** pArrAddr)
 //
 bool GenTree::SupportsSettingZeroFlag()
 {
+    if (SupportsSettingResultFlags()) {
+        return true;
+    }
+
 #if defined(TARGET_XARCH)
     if (OperIs(GT_AND, GT_OR, GT_XOR, GT_ADD, GT_SUB, GT_NEG))
     {
@@ -19967,13 +19971,36 @@ bool GenTree::SupportsSettingZeroFlag()
         return true;
     }
 #endif
-#elif defined(TARGET_ARM64)
+#endif
+
+    return false;
+}
+
+//------------------------------------------------------------------------
+// SupportsSettingResultFlags: Returns true if this is an arithmetic operation
+// whose codegen supports setting the carry, overflow, zero and sign flags based
+// on the result of the operation.
+//
+// Return Value:
+//    True if so. A false return does not imply that codegen for the node will
+//    not trash the result flags.
+//
+// Remarks:
+//    For example, for GT (AND x y) 0, arm64 can emit instructions that
+//    directly set the flags after the 'AND' and thus no comparison is needed.
+//
+//    The backend expects any node for which the flags will be consumed to be
+//    marked with GTF_SET_FLAGS.
+//
+bool GenTree::SupportsSettingResultFlags()
+{
+#if defined(TARGET_ARM64)
     if (OperIs(GT_AND, GT_AND_NOT, GT_NEG))
     {
         return true;
     }
 
-    // We do not support setting zero flag for madd/msub.
+    // We do not support setting result flags for madd/msub.
     if (OperIs(GT_ADD, GT_SUB) && (!gtGetOp2()->OperIs(GT_MUL) || !gtGetOp2()->isContained()))
     {
         return true;
