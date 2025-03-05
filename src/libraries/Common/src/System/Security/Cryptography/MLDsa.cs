@@ -6,7 +6,6 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Formats.Asn1;
 using System.Security.Cryptography.Asn1;
-using System.Security.Cryptography.X509Certificates;
 
 // The type being internal is making unused parameter warnings fire for
 // not-implemented methods. Suppress those warnings.
@@ -789,185 +788,6 @@ namespace System.Security.Cryptography
         }
 
         /// <summary>
-        ///   Attempts to import an ML-DSA public key from an X.509 SubjectPublicKeyInfo structure.
-        /// </summary>
-        /// <param name="source">
-        ///   The bytes of an X.509 SubjectPublicKeyInfo structure in the ASN.1-DER encoding.
-        /// </param>
-        /// <param name="imported">
-        ///   When this method returns, contains a value that represents the imported key, or <see langword="null"/>
-        ///   if the SubjectPublicKeyInfo value did not represent an ML-DSA key.
-        /// </param>
-        /// <returns>
-        ///   <see langword="false" /> if the SubjectPublicKeyInfo value indicates an algorithm other than a known ML-DSA algorithm;
-        ///   <see langword="true" /> if the value indicates an ML-DSA key and it was successfully imported;
-        ///   otherwise, an exception is thrown.
-        /// </returns>
-        /// <exception cref="CryptographicException">
-        ///   <para>
-        ///     The contents of <paramref name="source"/> do not represent an ASN.1-DER-encoded X.509 SubjectPublicKeyInfo structure.
-        ///   </para>
-        ///   <para>-or-</para>
-        ///   <para>
-        ///     The algorithm-specific import failed.
-        ///   </para>
-        /// </exception>
-        public static bool TryImportSubjectPublicKeyInfo(ReadOnlySpan<byte> source, [NotNullWhen(true)] out MLDsa? imported)
-        {
-            ThrowIfNotSupported();
-
-            return TryImportSubjectPublicKeyInfo(source, out imported, out _);
-        }
-
-        /// <summary>
-        ///   Attempts to import an ML-DSA private key from a PKCS#8 PrivateKeyInfo structure.
-        /// </summary>
-        /// <param name="source">
-        ///   The bytes of a PKCS#8 PrivateKeyInfo structure in the ASN.1-BER encoding.
-        /// </param>
-        /// <param name="imported">
-        ///   When this method returns, contains a value that represents the imported key, or <see langword="null"/>
-        ///   if the PrivateKeyInfo value did not represent an ML-DSA key.
-        /// </param>
-        /// <returns>
-        ///   <see langword="false" /> if the PrivateKeyInfo value indicates an algorithm other than a known ML-DSA algorithm;
-        ///   <see langword="true" /> if the value indicates an ML-DSA key and it was successfully imported;
-        ///   otherwise, an exception is thrown.
-        /// </returns>
-        /// <exception cref="CryptographicException">
-        ///   <para>
-        ///     The contents of <paramref name="source"/> do not represent an ASN.1-BER-encoded PKCS#8 PrivateKeyInfo structure.
-        ///   </para>
-        ///   <para>-or-</para>
-        ///   <para>
-        ///     The algorithm-specific import failed.
-        ///   </para>
-        /// </exception>
-        public static bool TryImportPkcs8PrivateKey(ReadOnlySpan<byte> source, [NotNullWhen(true)] out MLDsa? imported)
-        {
-            ThrowIfNotSupported();
-
-            return TryImportPkcs8PrivateKey(source, out imported, out _);
-        }
-
-        /// <summary>
-        ///   Attempts to import an ML-DSA private key from a PKCS#8 EncryptedPrivateKeyInfo structure.
-        /// </summary>
-        /// <param name="passwordBytes">
-        ///   The bytes to use as a password when decrypting the key material.
-        /// </param>
-        /// <param name="source">
-        ///   The bytes of a PKCS#8 EncryptedPrivateKeyInfo structure in the ASN.1-BER encoding.
-        /// </param>
-        /// <param name="imported">
-        ///   When this method returns, contains a value that represents the imported key, or <see langword="null"/>
-        ///   if the decrypted PrivateKeyInfo value did not represent an ML-DSA key.
-        /// </param>
-        /// <returns>
-        ///   <see langword="false" /> if the decrypted PrivateKeyInfo value indicates an algorithm other than a known ML-DSA algorithm;
-        ///   <see langword="true" /> if the value indicates an ML-DSA key and it was successfully imported;
-        ///   otherwise, an exception is thrown.
-        /// </returns>
-        /// <exception cref="CryptographicException">
-        ///   <para>
-        ///     The contents of <paramref name="source"/> do not represent an ASN.1-BER-encoded PKCS#8 EncryptedPrivateKeyInfo structure.
-        ///   </para>
-        ///   <para>-or-</para>
-        ///   <para>
-        ///     The specified password is incorrect.
-        ///   </para>
-        ///   <para>-or-</para>
-        ///   <para>
-        ///     The EncryptedPrivateKeyInfo indicates the Key Derivation Function (KDF) to apply is the legacy PKCS#12 KDF,
-        ///     which requires <see cref="char"/>-based passwords.
-        ///   </para>
-        ///   <para>-or-</para>
-        ///   <para>
-        ///     The algorithm-specific import failed.
-        ///   </para>
-        /// </exception>
-        public static bool TryImportEncryptedPkcs8PrivateKey(
-            ReadOnlySpan<byte> passwordBytes,
-            ReadOnlySpan<byte> source,
-            [NotNullWhen(true)] out MLDsa? imported)
-        {
-            ThrowIfNotSupported();
-
-            MLDsa? tmp = KeyFormatHelper.DecryptPkcs8(
-                passwordBytes,
-                source,
-                static span =>
-                {
-                    if (!TryImportPkcs8PrivateKey(span, out MLDsa? imported))
-                    {
-                        imported = null;
-                    }
-
-                    return imported;
-                },
-                out _);
-
-            imported = tmp;
-            return tmp is not null;
-        }
-
-        /// <summary>
-        ///   Attempts to import an ML-DSA private key from a PKCS#8 EncryptedPrivateKeyInfo structure.
-        /// </summary>
-        /// <param name="password">
-        ///   The password to use when decrypting the key material.
-        /// </param>
-        /// <param name="source">
-        ///   The bytes of a PKCS#8 EncryptedPrivateKeyInfo structure in the ASN.1-BER encoding.
-        /// </param>
-        /// <param name="imported">
-        ///   When this method returns, contains a value that represents the imported key, or <see langword="null"/>
-        ///   if the decrypted PrivateKeyInfo value did not represent an ML-DSA key.
-        /// </param>
-        /// <returns>
-        ///   <see langword="false" /> if the decrypted PrivateKeyInfo value indicates an algorithm other than a known ML-DSA algorithm;
-        ///   <see langword="true" /> if the value indicates an ML-DSA key and it was successfully imported;
-        ///   otherwise, an exception is thrown.
-        /// </returns>
-        /// <exception cref="CryptographicException">
-        ///   <para>
-        ///     The contents of <paramref name="source"/> do not represent an ASN.1-BER-encoded PKCS#8 EncryptedPrivateKeyInfo structure.
-        ///   </para>
-        ///   <para>-or-</para>
-        ///   <para>
-        ///     The specified password is incorrect.
-        ///   </para>
-        ///   <para>-or-</para>
-        ///   <para>
-        ///     The algorithm-specific import failed.
-        ///   </para>
-        /// </exception>
-        public static bool TryImportEncryptedPkcs8PrivateKey(
-            ReadOnlySpan<char> password,
-            ReadOnlySpan<byte> source,
-            [NotNullWhen(true)] out MLDsa? imported)
-        {
-            ThrowIfNotSupported();
-
-            MLDsa? tmp = KeyFormatHelper.DecryptPkcs8(
-                password,
-                source,
-                static span =>
-                {
-                    if (!TryImportPkcs8PrivateKey(span, out MLDsa? imported))
-                    {
-                        imported = null;
-                    }
-
-                    return imported;
-                },
-                out _);
-
-            imported = tmp;
-            return tmp is not null;
-        }
-
-        /// <summary>
         ///  Imports an ML-DSA public key from an X.509 SubjectPublicKeyInfo structure.
         /// </summary>
         /// <param name="source">
@@ -993,14 +813,29 @@ namespace System.Security.Cryptography
         {
             ThrowIfNotSupported();
 
-            if (!TryImportSubjectPublicKeyInfo(source, out MLDsa? imported, out string? algorithmId, computeAlgorithmId: true))
+            unsafe
             {
-                Debug.Assert(algorithmId is not null);
-                ThrowAlgorithmUnknown(algorithmId);
-            }
+                fixed (byte* pointer = source)
+                {
+                    using (PointerMemoryManager<byte> manager = new(pointer, source.Length))
+                    {
+                        AsnValueReader reader = new AsnValueReader(source, AsnEncodingRules.DER);
+                        SubjectPublicKeyInfoAsn.Decode(ref reader, manager.Memory, out SubjectPublicKeyInfoAsn spki);
 
-            Debug.Assert(imported is not null);
-            return imported;
+                        ParameterSetInfo info = ParameterSetInfo.GetParameterSetInfoFromOid(spki.Algorithm.Algorithm);
+
+                        if (spki.Algorithm.Parameters.HasValue)
+                        {
+                            AsnWriter writer = new AsnWriter(AsnEncodingRules.DER);
+                            spki.Algorithm.Encode(writer);
+                            ThrowAlgorithmUnknown(writer);
+                            Debug.Fail("Execution should have halted in the throw-helper.");
+                        }
+
+                        return MLDsaImplementation.ImportPublicKey(info, spki.SubjectPublicKey.Span);
+                    }
+                }
+            }
         }
 
         /// <summary>
@@ -1029,14 +864,29 @@ namespace System.Security.Cryptography
         {
             ThrowIfNotSupported();
 
-            if (!TryImportPkcs8PrivateKey(source, out MLDsa? imported, out string? algorithmId, computeAlgorithmId: true))
+            unsafe
             {
-                Debug.Assert(algorithmId is not null);
-                ThrowAlgorithmUnknown(algorithmId);
-            }
+                fixed (byte* pointer = source)
+                {
+                    using (PointerMemoryManager<byte> manager = new(pointer, source.Length))
+                    {
+                        AsnValueReader reader = new AsnValueReader(source, AsnEncodingRules.DER);
+                        PrivateKeyInfoAsn.Decode(ref reader, manager.Memory, out PrivateKeyInfoAsn pki);
 
-            Debug.Assert(imported is not null);
-            return imported;
+                        ParameterSetInfo info = ParameterSetInfo.GetParameterSetInfoFromOid(pki.PrivateKeyAlgorithm.Algorithm);
+
+                        if (pki.PrivateKeyAlgorithm.Parameters.HasValue)
+                        {
+                            AsnWriter writer = new AsnWriter(AsnEncodingRules.DER);
+                            pki.PrivateKeyAlgorithm.Encode(writer);
+                            ThrowAlgorithmUnknown(writer);
+                            Debug.Fail("Execution should have halted in the throw-helper.");
+                        }
+
+                        return MLDsaImplementation.ImportPkcs8PrivateKeyValue(info, pki.PrivateKey.Span);
+                    }
+                }
+            }
         }
 
         /// <summary>
@@ -1125,50 +975,6 @@ namespace System.Security.Cryptography
         }
 
         /// <summary>
-        ///   Attempts to import an ML-DSA key from an RFC 7468 PEM-encoded string.
-        /// </summary>
-        /// <param name="source">
-        ///   The text of the PEM key to import.
-        /// </param>
-        /// <param name="imported">
-        ///   When this method returns, contains a value that represents the imported key, or <see langword="null"/>
-        ///   if the input did not contain a PEM-encoded ML-DSA key.
-        /// </param>
-        /// <returns>
-        ///   <see langword="false" /> if the source did not contain a PEM-encoded ML-DSA key;
-        ///   <see langword="true" /> if the source contains an ML-DSA key and it was successfully imported;
-        ///   otherwise, an exception is thrown.
-        /// </returns>
-        /// <exception cref="ArgumentException">
-        ///   <para><paramref name="source" /> contains an encrypted PEM-encoded key.</para>
-        ///   <para>-or-</para>
-        ///   <para><paramref name="source" /> contains multiple PEM-encoded ML-DSA keys.</para>
-        /// </exception>
-        /// <exception cref="CryptographicException">
-        ///   An error occurred while importing the key.
-        /// </exception>
-        public static bool TryImportFromPem(ReadOnlySpan<char> source, [NotNullWhen(true)] out MLDsa? imported)
-        {
-            ThrowIfNotSupported();
-
-            // TODO, probably in PemKeyHelper.
-            // * If the PEM ever contains a valid envelope with the label "ENCRYPTED PUBLIC KEY", throw ArgumentException.
-            // * Otherwise
-            //   * for each known label, send it to the TryImport method.
-            //     * If only one returns true, emit the imported key and return true
-            //     * If a second one returns true, dispose the first (without ever assigning it to the public out) and throw
-            //     * Be aware
-            //       * Subsequent TryImport calls may throw, so dispose the first import if that happens.
-            //       * The TryImport methods ignore trailing data.  This must not.
-            //         * Maybe we want both the no-out (lax?) import and an out bytesRead version?
-            // * If nothing returned true (or threw), return false.
-
-            // Alternatively, if we feel this method is to loosey-goosey, we can cut it.
-
-            throw new NotImplementedException();
-        }
-
-        /// <summary>
         ///  Imports an ML-DSA key from an RFC 7468 PEM-encoded string.
         /// </summary>
         /// <param name="source">
@@ -1191,99 +997,8 @@ namespace System.Security.Cryptography
         {
             ThrowIfNotSupported();
 
-            // TODO: Decide if we want different exceptions for "no known PEM labels" and
-            // "there were known PEM labels, but none of them matched"
-            // Since the Try won't make a distinction, we probably don't want to here.
-            if (!TryImportFromPem(source, out MLDsa? imported))
-            {
-                // TODO: Give this a string and bind it to the source parameter.
-                throw new ArgumentException();
-            }
-
-            return imported;
-        }
-
-        /// <summary>
-        ///   Attempts to import an ML-DSA key from an RFC 7468 PEM-encoded string.
-        /// </summary>
-        /// <param name="source">
-        ///   The text of the PEM key to import.
-        /// </param>
-        /// <param name="password">
-        ///  The password to use when decrypting the key material.
-        /// </param>
-        /// <param name="imported">
-        ///   When this method returns, contains a value that represents the imported key, or <see langword="null"/>
-        ///   if the input did not contain a PEM-encoded ML-DSA key.
-        /// </param>
-        /// <returns>
-        ///   <see langword="false" /> if the source did not contain a PEM-encoded ML-DSA key;
-        ///   <see langword="true" /> if the source contains an ML-DSA key and it was successfully imported;
-        ///   otherwise, an exception is thrown.
-        /// </returns>
-        /// <exception cref="ArgumentException">
-        ///   <para><paramref name="source" /> contains an encrypted PEM-encoded key.</para>
-        ///   <para>-or-</para>
-        ///   <para><paramref name="source" /> contains multiple PEM-encoded ML-DSA keys.</para>
-        /// </exception>
-        /// <exception cref="CryptographicException">
-        ///   An error occurred while importing the key.
-        /// </exception>
-        public static bool TryImportFromEncryptedPem(
-            ReadOnlySpan<char> source,
-            ReadOnlySpan<char> password,
-            [NotNullWhen(true)] out MLDsa? imported)
-        {
-            ThrowIfNotSupported();
-
-            // TODO (probably in PemKeyHelper)
-            // * Ignore any PEM values that are not ENCRYPTED PRIVATE KEY
-            // * If exactly one TryImportEncryptedPkcs8PrivateKey succeeds, emit that key and return true.
-            // * Throw exceptions similar to the non-encrypted version.
-            // * return false when necessary.
-
-            throw new NotImplementedException();
-        }
-
-        /// <summary>
-        ///   Attempts to import an ML-DSA key from an RFC 7468 PEM-encoded string.
-        /// </summary>
-        /// <param name="source">
-        ///   The text of the PEM key to import.
-        /// </param>
-        /// <param name="passwordBytes">
-        ///  The bytes to use as a password when decrypting the key material.
-        /// </param>
-        /// <param name="imported">
-        ///   When this method returns, contains a value that represents the imported key, or <see langword="null"/>
-        ///   if the input did not contain a PEM-encoded ML-DSA key.
-        /// </param>
-        /// <returns>
-        ///   <see langword="false" /> if the source did not contain a PEM-encoded ML-DSA key;
-        ///   <see langword="true" /> if the source contains an ML-DSA key and it was successfully imported;
-        ///   otherwise, an exception is thrown.
-        /// </returns>
-        /// <exception cref="ArgumentException">
-        ///   <para><paramref name="source" /> contains an encrypted PEM-encoded key.</para>
-        ///   <para>-or-</para>
-        ///   <para><paramref name="source" /> contains multiple PEM-encoded ML-DSA keys.</para>
-        /// </exception>
-        /// <exception cref="CryptographicException">
-        ///   An error occurred while importing the key.
-        /// </exception>
-        public static bool TryImportFromEncryptedPem(
-            ReadOnlySpan<char> source,
-            ReadOnlySpan<byte> passwordBytes,
-            [NotNullWhen(true)] out MLDsa? imported)
-        {
-            ThrowIfNotSupported();
-
-            // TODO (probably in PemKeyHelper)
-            // * Ignore any PEM values that are not ENCRYPTED PRIVATE KEY
-            // * If exactly one TryImportEncryptedPkcs8PrivateKey succeeds, emit that key and return true.
-            // * Throw exceptions similar to the non-encrypted version.
-            // * return false when necessary.
-
+            // TODO: Match the behavior of ECDsa.ImportFromPem.
+            // Double-check that the base64-decoded data has no trailing contents.
             throw new NotImplementedException();
         }
 
@@ -1313,16 +1028,10 @@ namespace System.Security.Cryptography
         /// </exception>
         public static MLDsa ImportFromEncryptedPem(ReadOnlySpan<char> source, ReadOnlySpan<char> password)
         {
-            // TODO: Decide if we want different exceptions for "no known PEM labels" and
-            // "there were known PEM labels, but none of them matched"
-            // Since the Try won't make a distinction, we probably don't want to here.
-            if (!TryImportFromEncryptedPem(source, password, out MLDsa? imported))
-            {
-                // TODO: Give this a string and bind it to the source parameter.
-                throw new ArgumentException();
-            }
+            ThrowIfNotSupported();
 
-            return imported;
+            // TODO: Match the behavior of ECDsa.ImportFromEncryptedPem.
+            throw new NotImplementedException();
         }
 
         /// <summary>
@@ -1351,16 +1060,10 @@ namespace System.Security.Cryptography
         /// </exception>
         public static MLDsa ImportFromEncryptedPem(ReadOnlySpan<char> source, ReadOnlySpan<byte> passwordBytes)
         {
-            // TODO: Decide if we want different exceptions for "no known PEM labels" and
-            // "there were known PEM labels, but none of them matched"
-            // Since the Try won't make a distinction, we probably don't want to here.
-            if (!TryImportFromEncryptedPem(source, passwordBytes, out MLDsa? imported))
-            {
-                // TODO: Give this a string and bind it to the source parameter.
-                throw new ArgumentException();
-            }
+            ThrowIfNotSupported();
 
-            return imported;
+            // TODO: Match the behavior of ECDsa.ImportFromEncryptedPem.
+            throw new NotImplementedException();
         }
 
         /// <summary>
@@ -1554,97 +1257,6 @@ namespace System.Security.Cryptography
         /// </param>
         protected abstract void ExportMLDsaPrivateSeedCore(Span<byte> destination);
 
-        private static bool TryImportSubjectPublicKeyInfo(
-            ReadOnlySpan<byte> source,
-            [NotNullWhen(true)] out MLDsa? imported,
-            out string? algorithmId,
-            bool computeAlgorithmId = false)
-        {
-            ThrowIfNotSupported();
-            algorithmId = null;
-
-            unsafe
-            {
-                fixed (byte* pointer = source)
-                {
-                    using (PointerMemoryManager<byte> manager = new(pointer, source.Length))
-                    {
-                        AsnValueReader reader = new AsnValueReader(source, AsnEncodingRules.DER);
-                        SubjectPublicKeyInfoAsn.Decode(ref reader, manager.Memory, out SubjectPublicKeyInfoAsn spki);
-
-                        if (ParameterSetInfo.TryGetParameterSetInfo(spki.Algorithm.Algorithm, out ParameterSetInfo? info))
-                        {
-                            if (!spki.Algorithm.Parameters.HasValue)
-                            {
-                                imported = MLDsaImplementation.ImportPublicKey(info, spki.SubjectPublicKey.Span);
-                                return true;
-                            }
-
-                            if (computeAlgorithmId)
-                            {
-                                AsnWriter writer = new AsnWriter(AsnEncodingRules.DER);
-                                spki.Algorithm.Encode(writer);
-                                algorithmId = Convert.ToHexString(writer.Encode());
-                            }
-                        }
-                        else
-                        {
-                            algorithmId = spki.Algorithm.Algorithm;
-                        }
-
-                        imported = null;
-                        return false;
-                    }
-                }
-            }
-        }
-
-        private static bool TryImportPkcs8PrivateKey(
-            ReadOnlySpan<byte> source,
-            [NotNullWhen(true)] out MLDsa? imported,
-            out string? algorithmId,
-            bool computeAlgorithmId = false)
-        {
-            ThrowIfNotSupported();
-            algorithmId = null;
-
-            unsafe
-            {
-                fixed (byte* pointer = source)
-                {
-                    using (PointerMemoryManager<byte> manager = new(pointer, source.Length))
-                    {
-                        AsnValueReader reader = new AsnValueReader(source, AsnEncodingRules.DER);
-                        PrivateKeyInfoAsn.Decode(ref reader, manager.Memory, out PrivateKeyInfoAsn pki);
-
-                        if (ParameterSetInfo.TryGetParameterSetInfo(pki.PrivateKeyAlgorithm.Algorithm, out ParameterSetInfo? info))
-                        {
-                            if (!pki.PrivateKeyAlgorithm.Parameters.HasValue)
-                            {
-                                imported = MLDsaImplementation.ImportPkcs8PrivateKeyValue(info, pki.PrivateKey.Span);
-                                return true;
-                            }
-
-                            if (computeAlgorithmId)
-                            {
-                                AsnWriter writer = new AsnWriter(AsnEncodingRules.DER);
-                                pki.PrivateKeyAlgorithm.Encode(writer);
-                                // TODO: Use callback and span support for this in .NET 9.
-                                algorithmId = Convert.ToHexString(writer.Encode());
-                            }
-                        }
-                        else
-                        {
-                            algorithmId = pki.PrivateKeyAlgorithm.Algorithm;
-                        }
-
-                        imported = null;
-                        return false;
-                    }
-                }
-            }
-        }
-
         private AsnWriter ExportSubjectPublicKeyInfoCore()
         {
             ThrowIfDisposed();
@@ -1747,6 +1359,20 @@ namespace System.Security.Cryptography
             }
         }
 
+        [DoesNotReturn]
+        private static void ThrowAlgorithmUnknown(AsnWriter encodedId)
+        {
+#if NET9_0_OR_GREATER
+            throw encodedId.Encode(static encoded =>
+                new CryptographicException(
+                    SR.Format(SR.Cryptography_UnknownAlgorithmIdentifier, Convert.ToHexString(encoded))));
+#else
+            throw new CryptographicException(
+                SR.Format(SR.Cryptography_UnknownAlgorithmIdentifier, Convert.ToHexString(encodedId.Encode())));
+#endif
+        }
+
+        [DoesNotReturn]
         private static ParameterSetInfo ThrowAlgorithmUnknown(string algorithmId)
         {
             throw new CryptographicException(
@@ -1799,17 +1425,15 @@ namespace System.Security.Cryptography
                 };
             }
 
-            internal static bool TryGetParameterSetInfo(string oid, [NotNullWhen(true)] out ParameterSetInfo? info)
+            internal static ParameterSetInfo GetParameterSetInfoFromOid(string oid)
             {
-                info = oid switch
+                return oid switch
                 {
                     Oids.MLDsa44 => MLDsa44,
                     Oids.MLDsa65 => MLDsa65,
                     Oids.MLDsa87 => MLDsa87,
-                    _ => default,
+                    _ => ThrowAlgorithmUnknown(oid),
                 };
-
-                return info != null;
             }
         }
     }
