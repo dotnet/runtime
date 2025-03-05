@@ -729,23 +729,7 @@ namespace System.Reflection.Emit
 
             for (int i = 0; i < parameterTypes.Length; i++)
             {
-                Type? argType = argumentTypes[i];
-                Type? paramType = parameterTypes[i];
-
-                if (argType.IsArray != paramType.IsArray ||
-                    argType.IsByRef != paramType.IsByRef ||
-                    argType.IsPointer != argType.IsPointer)
-                {
-                    return false;
-                }
-
-                if (argType.HasElementType || paramType.HasElementType)
-                {
-                    argType = argType.GetElementType();
-                    paramType = paramType.GetElementType();
-                }
-
-                if (argType == null || !argType.Equals(paramType))
+                if (!argumentTypes[i].Equals(parameterTypes[i]))
                 {
                     return false;
                 }
@@ -993,7 +977,7 @@ namespace System.Reflection.Emit
 
             List<Type> interfaces = _interfaces ?? [];
 
-            if(_typeParent != null)
+            if (_typeParent != null)
             {
                 interfaces.AddRange(_typeParent.GetInterfaces());
             }

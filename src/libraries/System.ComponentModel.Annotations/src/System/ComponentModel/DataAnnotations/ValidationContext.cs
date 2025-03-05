@@ -170,27 +170,6 @@ namespace System.ComponentModel.DataAnnotations
         /// </value>
         public IDictionary<object, object?> Items => _items;
 
-        internal Type? MemberType
-        {
-            [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
-                Justification = "The ctors are marked with RequiresUnreferencedCode.")]
-            get
-            {
-                Type? propertyType = _propertyType;
-
-                if (propertyType is null && MemberName != null)
-                {
-                    _propertyType = propertyType = ValidationAttributeStore.Instance.GetPropertyType(this);
-                }
-
-                return propertyType;
-            }
-
-            set => _propertyType = value;
-        }
-
-        private Type? _propertyType;
-
         #endregion
 
         #region Methods
