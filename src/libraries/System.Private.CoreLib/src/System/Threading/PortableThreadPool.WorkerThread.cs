@@ -53,11 +53,13 @@ namespace System.Threading
                 new LowLevelLifoSemaphore(
                     0,
                     MaxPossibleThreadCount,
-                    AppContextConfigHelper.GetInt32ComPlusOrDotNetConfig(
-                        "System.Threading.ThreadPool.UnfairSemaphoreSpinLimit",
-                        "ThreadPool_UnfairSemaphoreSpinLimit",
-                        SemaphoreSpinCountDefault,
-                        false),
+                    !Thread.ShouldSpinWait
+                        ? 0 :
+                        AppContextConfigHelper.GetInt32ComPlusOrDotNetConfig(
+                            "System.Threading.ThreadPool.UnfairSemaphoreSpinLimit",
+                            "ThreadPool_UnfairSemaphoreSpinLimit",
+                            SemaphoreSpinCountDefault,
+                            false),
                     onWait: () =>
                     {
                         if (NativeRuntimeEventSource.Log.IsEnabled())

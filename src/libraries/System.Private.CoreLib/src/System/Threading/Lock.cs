@@ -669,7 +669,7 @@ namespace System.Threading
 
         private static short DetermineMaxSpinCount()
         {
-            if (IsSingleProcessor)
+            if (!Thread.ShouldSpinWait)
             {
                 return 0;
             }
