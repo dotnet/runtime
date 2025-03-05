@@ -45,7 +45,7 @@
     <CoreClrSourceRoot>..\..\..\..\</CoreClrSourceRoot>
     <NativeAotSourceRoot>$(CoreClrSourceRoot)nativeaot\</NativeAotSourceRoot>
     <ArtifactsRoot>$(CoreClrSourceRoot)..\..\artifacts\</ArtifactsRoot>
-    <Win32SDKLibs>advapi32.lib;bcrypt.lib;crypt32.lib;iphlpapi.lib;kernel32.lib;mswsock.lib;ncrypt.lib;normaliz.lib;ntdll.lib;ole32.lib;oleaut32.lib;secur32.lib;user32.lib;version.lib;ws2_32.lib</Win32SDKLibs>
+    <Win32SDKLibs>advapi32.lib;bcrypt.lib;crypt32.lib;iphlpapi.lib;kernel32.lib;mswsock.lib;ncrypt.lib;normaliz.lib;ntdll.lib;ole32.lib;oleaut32.lib;secur32.lib;user32.lib;version.lib;ws2_32.lib;WindowsApp.lib</Win32SDKLibs>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
@@ -191,6 +191,7 @@
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalDependencies>$(ArtifactsRoot)bin\repro\x64\Debug\repro.obj;$(Win32SDKLibs);%(AdditionalDependencies);$(ArtifactsRoot)bin\coreclr\windows.x64.Debug\aotsdk\Runtime.WorkstationGC.lib;$(ArtifactsRoot)bin\coreclr\windows.x64.Debug\aotsdk\System.Globalization.Native.Aot.lib;$(ArtifactsRoot)bin\coreclr\windows.x64.Debug\aotsdk\System.IO.Compression.Native.Aot.lib;$(ArtifactsRoot)bin\coreclr\windows.x64.Debug\aotsdk\eventpipe-disabled.lib;$(ArtifactsRoot)bin\coreclr\windows.x64.Debug\aotsdk\Runtime.VxsortDisabled.lib;$(ArtifactsRoot)bin\coreclr\windows.x64.Debug\aotsdk\standalonegc-disabled.lib;$(ArtifactsRoot)bin\coreclr\windows.x64.Debug\aotsdk\aotminipal.lib</AdditionalDependencies>
+      <AdditionalOptions>/SECTIONLAYOUT:@$(NativeAotSourceRoot)BuildIntegration\sectionlayout.txt %(AdditionalOptions)</AdditionalOptions>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|ARM64'">
@@ -209,6 +210,7 @@
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalDependencies>$(ArtifactsRoot)bin\repro\Arm64\Debug\repro.obj;$(Win32SDKLibs);%(AdditionalDependencies);$(ArtifactsRoot)bin\coreclr\windows.Arm64.Debug\aotsdk\Runtime.WorkstationGC.lib;$(ArtifactsRoot)bin\coreclr\windows.Arm64.Debug\aotsdk\System.Globalization.Native.Aot.lib;$(ArtifactsRoot)bin\coreclr\windows.Arm64.Debug\aotsdk\System.IO.Compression.Native.Aot.lib;$(ArtifactsRoot)bin\coreclr\windows.Arm64.Debug\aotsdk\eventpipe-disabled.lib;$(ArtifactsRoot)bin\coreclr\windows.Arm64.Debug\aotsdk\standalonegc-disabled.lib;$(ArtifactsRoot)bin\coreclr\windows.Arm64.Debug\aotsdk\aotminipal.lib</AdditionalDependencies>
+      <AdditionalOptions>/SECTIONLAYOUT:@$(NativeAotSourceRoot)BuildIntegration\sectionlayout.txt %(AdditionalOptions)</AdditionalOptions>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
@@ -228,6 +230,7 @@
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalDependencies>$(ArtifactsRoot)bin\repro\x86\Debug\repro.obj;$(Win32SDKLibs);%(AdditionalDependencies);$(ArtifactsRoot)bin\coreclr\windows.x86.Debug\aotsdk\Runtime.WorkstationGC.lib;$(ArtifactsRoot)bin\coreclr\windows.x86.Debug\aotsdk\System.Globalization.Native.Aot.lib;$(ArtifactsRoot)bin\coreclr\windows.x86.Debug\aotsdk\System.IO.Compression.Native.Aot.lib;$(ArtifactsRoot)bin\coreclr\windows.x86.Debug\aotsdk\eventpipe-disabled.lib;$(ArtifactsRoot)bin\coreclr\windows.x86.Debug\aotsdk\standalonegc-disabled.lib;$(ArtifactsRoot)bin\coreclr\windows.x86.Debug\aotsdk\aotminipal.lib</AdditionalDependencies>
+      <AdditionalOptions>/SECTIONLAYOUT:@$(NativeAotSourceRoot)BuildIntegration\sectionlayout.txt %(AdditionalOptions)</AdditionalOptions>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Checked|x64'">
@@ -248,6 +251,7 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <AdditionalDependencies>$(ArtifactsRoot)bin\repro\x64\Checked\repro.obj;$(Win32SDKLibs);%(AdditionalDependencies);$(ArtifactsRoot)bin\coreclr\windows.x64.Checked\aotsdk\Runtime.WorkstationGC.lib;$(ArtifactsRoot)bin\coreclr\windows.x64.Checked\aotsdk\System.Globalization.Native.Aot.lib;$(ArtifactsRoot)bin\coreclr\windows.x64.Checked\aotsdk\System.IO.Compression.Native.Aot.lib;$(ArtifactsRoot)bin\coreclr\windows.x64.Checked\aotsdk\eventpipe-disabled.lib;$(ArtifactsRoot)bin\coreclr\windows.x64.Checked\aotsdk\Runtime.VxsortDisabled.lib;$(ArtifactsRoot)bin\coreclr\windows.x64.Checked\aotsdk\standalonegc-disabled.lib;;$(ArtifactsRoot)bin\coreclr\windows.x64.Checked\aotsdk\aotminipal.lib</AdditionalDependencies>
+      <AdditionalOptions>/SECTIONLAYOUT:@$(NativeAotSourceRoot)BuildIntegration\sectionlayout.txt %(AdditionalOptions)</AdditionalOptions>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Checked|ARM64'">
@@ -268,6 +272,7 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <AdditionalDependencies>$(ArtifactsRoot)bin\repro\Arm64\Checked\repro.obj;$(Win32SDKLibs);%(AdditionalDependencies);$(ArtifactsRoot)bin\coreclr\windows.Arm64.Checked\aotsdk\Runtime.WorkstationGC.lib;$(ArtifactsRoot)bin\coreclr\windows.Arm64.Checked\aotsdk\System.Globalization.Native.Aot.lib;$(ArtifactsRoot)bin\coreclr\windows.Arm64.Checked\aotsdk\System.IO.Compression.Native.Aot.lib;$(ArtifactsRoot)bin\coreclr\windows.Arm64.Checked\aotsdk\eventpipe-disabled.lib;$(ArtifactsRoot)bin\coreclr\windows.Arm64.Checked\aotsdk\standalonegc-disabled.lib;$(ArtifactsRoot)bin\coreclr\windows.Arm64.Checked\aotsdk\aotminipal.lib</AdditionalDependencies>
+      <AdditionalOptions>/SECTIONLAYOUT:@$(NativeAotSourceRoot)BuildIntegration\sectionlayout.txt %(AdditionalOptions)</AdditionalOptions>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Checked|Win32'">
@@ -289,6 +294,7 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <AdditionalDependencies>$(ArtifactsRoot)bin\repro\x86\Checked\repro.obj;$(Win32SDKLibs);%(AdditionalDependencies);$(ArtifactsRoot)bin\coreclr\windows.x86.Checked\aotsdk\Runtime.WorkstationGC.lib;$(ArtifactsRoot)bin\coreclr\windows.x86.Checked\aotsdk\System.Globalization.Native.Aot.lib;$(ArtifactsRoot)bin\coreclr\windows.x86.Checked\aotsdk\System.IO.Compression.Native.Aot.lib;$(ArtifactsRoot)bin\coreclr\windows.x86.Checked\aotsdk\eventpipe-disabled.lib;$(ArtifactsRoot)bin\coreclr\windows.x86.Checked\aotsdk\standalonegc-disabled.lib;$(ArtifactsRoot)bin\coreclr\windows.x86.Checked\aotsdk\aotminipal.lib</AdditionalDependencies>
+      <AdditionalOptions>/SECTIONLAYOUT:@$(NativeAotSourceRoot)BuildIntegration\sectionlayout.txt %(AdditionalOptions)</AdditionalOptions>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -309,6 +315,7 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <AdditionalDependencies>$(ArtifactsRoot)bin\repro\x64\Release\repro.obj;$(Win32SDKLibs);%(AdditionalDependencies);$(ArtifactsRoot)bin\coreclr\windows.x64.Release\aotsdk\Runtime.WorkstationGC.lib;$(ArtifactsRoot)bin\coreclr\windows.x64.Release\aotsdk\System.Globalization.Native.Aot.lib;$(ArtifactsRoot)bin\coreclr\windows.x64.Release\aotsdk\System.IO.Compression.Native.Aot.lib;$(ArtifactsRoot)bin\coreclr\windows.x64.Release\aotsdk\eventpipe-disabled.lib;$(ArtifactsRoot)bin\coreclr\windows.x64.Release\aotsdk\Runtime.VxsortDisabled.lib;$(ArtifactsRoot)bin\coreclr\windows.x64.Release\aotsdk\standalonegc-disabled.lib;$(ArtifactsRoot)bin\coreclr\windows.x64.Release\aotsdk\aotminipal.lib</AdditionalDependencies>
+      <AdditionalOptions>/SECTIONLAYOUT:@$(NativeAotSourceRoot)BuildIntegration\sectionlayout.txt %(AdditionalOptions)</AdditionalOptions>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|ARM64'">
@@ -329,6 +336,7 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <AdditionalDependencies>$(ArtifactsRoot)bin\repro\Arm64\Release\repro.obj;$(Win32SDKLibs);%(AdditionalDependencies);$(ArtifactsRoot)bin\coreclr\windows.Arm64.Release\aotsdk\Runtime.WorkstationGC.lib;$(ArtifactsRoot)bin\coreclr\windows.Arm64.Release\aotsdk\System.Globalization.Native.Aot.lib;$(ArtifactsRoot)bin\coreclr\windows.Arm64.Release\aotsdk\System.IO.Compression.Native.Aot.lib;$(ArtifactsRoot)bin\coreclr\windows.Arm64.Release\aotsdk\eventpipe-disabled.lib;$(ArtifactsRoot)bin\coreclr\windows.Arm64.Release\aotsdk\standalonegc-disabled.lib;$(ArtifactsRoot)bin\coreclr\windows.Arm64.Release\aotsdk\aotminipal.lib</AdditionalDependencies>
+      <AdditionalOptions>/SECTIONLAYOUT:@$(NativeAotSourceRoot)BuildIntegration\sectionlayout.txt %(AdditionalOptions)</AdditionalOptions>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -350,6 +358,7 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <AdditionalDependencies>$(ArtifactsRoot)bin\repro\x86\Release\repro.obj;$(Win32SDKLibs);%(AdditionalDependencies);$(ArtifactsRoot)bin\coreclr\windows.x86.Release\aotsdk\Runtime.WorkstationGC.lib;$(ArtifactsRoot)bin\coreclr\windows.x86.Release\aotsdk\System.Globalization.Native.Aot.lib;$(ArtifactsRoot)bin\coreclr\windows.x86.Release\aotsdk\System.IO.Compression.Native.Aot.lib;$(ArtifactsRoot)bin\coreclr\windows.x86.Release\aotsdk\eventpipe-disabled.lib;$(ArtifactsRoot)bin\coreclr\windows.x86.Release\aotsdk\standalonegc-disabled.lib;$(ArtifactsRoot)bin\coreclr\windows.x86.Release\aotsdk\aotminipal.lib</AdditionalDependencies>
+      <AdditionalOptions>/SECTIONLAYOUT:@$(NativeAotSourceRoot)BuildIntegration\sectionlayout.txt %(AdditionalOptions)</AdditionalOptions>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>

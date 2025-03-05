@@ -1,0 +1,54 @@
+;;
+;; section layout file
+;;
+
+;;
+;; The first thunks section should be 64K aligned because it can get
+;; mapped multiple  times in memory, and mapping works on allocation
+;; granularity boundaries (we don't want to map more than what we need)
+;;
+;; The easiest way to do so is by having the thunks section at the 
+;; first 64K aligned virtual address in the binary. We provide this section
+;; layout file to the linker to tell it how to layout the thunks sections
+;; that we care about.
+;;
+;; The PE spec says images cannot have gaps between sections (other 
+;; than what is required by the section alignment value in the header),
+;; therefore we need a couple of padding data sections (otherwise the
+;; OS will not load the image).
+;;
+
+.pad0
+.pad1
+.pad2
+.pad3
+.pad4
+.pad5
+.pad6
+.pad7
+.pad8
+.pad9
+.pad10
+.pad11
+.pad12
+.pad13
+.pad14
+.tks0 10000
+.tkd0 11000             
+.tks1 12000
+.tkd1 13000
+.tks2 14000
+.tkd2 15000
+.tks3 16000
+.tkd3 17000
+.tks4 18000
+.tkd4 19000
+.tks5 1A000
+.tkd5 1B000
+.tks6 1C000
+.tkd6 1D000
+.tks7 1E000
+.tkd7 1F000
+
+;; All other sections: handled automatically by linker. No need to
+;; explicitly list them

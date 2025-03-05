@@ -291,9 +291,46 @@ REDHAWK_PALEXPORT UInt32_BOOL REDHAWK_PALAPI PalMarkThunksAsValidCallTargets(
     int thunkBlockSize,
     int thunkBlocksPerMapping)
 {
-    // We are using RWX pages so there is no need for this API for now.
-    // Once we have a scenario for non-RWX pages we should be able to put the implementation here
-    return TRUE;
+    HANDLE hProcess = GetCurrentProcess();
+
+    // Check to see if the process has CFG enabled. 
+    // If it doesn't have CFG, there is no need to call SetProcessValidCallTargets
+    // We only call this every 1000-ish thunks so there is no need for caching either
+    PROCESS_MITIGATION_CONTROL_FLOW_GUARD_POLICY cfgPolicy;
+    if (!GetProcessMitigationPolicy(hProcess, (PROCESS_MITIGATION_POLICY) ProcessControlFlowGuardPolicy, (PVOID) &cfgPolicy, sizeof(cfgPolicy)))
+        return FALSE;
+
+    if (cfgPolicy.EnableControlFlowGuard == 0)
+        return TRUE;
+
+    int totalThunks = thunkBlocksPerMapping * thunksPerBlock;
+    int totalSize = thunkBlocksPerMapping * thunkBlockSize;
+    NewArrayHolder<CFG_CALL_TARGET_INFO> pOffsets = new (nothrow) CFG_CALL_TARGET_INFO[totalThunks];
+
+    // fill in offsets to the thunks
+    // Offset is relative to pThunkMap and naturally starts with 0
+    int blockOffset = 0;
+    int thunkOffset = 0;
+
+    CFG_CALL_TARGET_INFO *pCallTargetInfo = pOffsets;
+
+    for (int block = 0; block < thunkBlocksPerMapping; ++block)
+    {
+        thunkOffset = blockOffset;
+
+        for (int thunk = 0; thunk < thunksPerBlock; ++thunk)
+        {
+            pCallTargetInfo->Offset = (ULONG_PTR) thunkOffset;
+            pCallTargetInfo->Flags = CFG_CALL_TARGET_VALID;
+
+            pCallTargetInfo++;
+            thunkOffset += thunkSize;
+        }
+
+        blockOffset += thunkBlockSize;
+    }
+
+    return SetProcessValidCallTargets(hProcess, virtualAddress, totalSize, totalThunks, pOffsets);
 }
 
 REDHAWK_PALEXPORT uint32_t REDHAWK_PALAPI PalCompatibleWaitAny(UInt32_BOOL alertable, uint32_t timeout, uint32_t handleCount, HANDLE* pHandles, UInt32_BOOL allowReentrantWait)
