@@ -108,6 +108,9 @@ namespace Microsoft.Extensions.DependencyInjection
         /// <param name="serviceType">The type of the service to get.</param>
         /// <param name="serviceKey">The key of the service to get.</param>
         /// <returns>The keyed service.</returns>
+        /// <exception cref="InvalidOperationException">The <see cref="KeyedService.AnyKey"/> value is used for <paramref name="serviceKey"/>
+        /// when <paramref name="serviceType"/> is not an enumerable based on <see cref="IEnumerable{T}"/>.
+        /// </exception>
         public object? GetKeyedService(Type serviceType, object? serviceKey)
             => GetKeyedService(serviceType, serviceKey, Root);
 
@@ -130,7 +133,9 @@ namespace Microsoft.Extensions.DependencyInjection
         /// <param name="serviceType">The type of the service to get.</param>
         /// <param name="serviceKey">The key of the service to get.</param>
         /// <returns>The keyed service.</returns>
-        /// <exception cref="InvalidOperationException">The service wasn't found.</exception>
+        /// <exception cref="InvalidOperationException">The service wasn't found or the <see cref="KeyedService.AnyKey"/> value is used
+        /// for <paramref name="serviceKey"/> when <paramref name="serviceType"/> is not an enumerable based on <see cref="IEnumerable{T}"/>.
+        /// </exception>
         public object GetRequiredKeyedService(Type serviceType, object? serviceKey)
         {
             if (serviceKey == KeyedService.AnyKey)
