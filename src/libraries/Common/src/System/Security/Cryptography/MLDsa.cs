@@ -198,6 +198,8 @@ namespace System.Security.Cryptography
             return SignatureSizeInBytes;
         }
 
+        // TODO: SignPreHash
+
         /// <summary>
         ///   Verifies that the specified signature is valid for this key and the provided data.
         /// </summary>
@@ -245,6 +247,8 @@ namespace System.Security.Cryptography
 
             return VerifyDataCore(data, context, signature);
         }
+
+        // TODO: VerifyPreHash
 
         /// <summary>
         ///  Exports the public-key portion of the current key in the X.509 SubjectPublicKeyInfo format.
