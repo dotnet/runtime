@@ -690,7 +690,11 @@ void* HostCodeHeap::AllocMemForCode_NoThrow(size_t header, size_t size, DWORD al
     }
     CONTRACTL_END;
 
+#ifdef FEATURE_INTERPRETER
     _ASSERTE(header == sizeof(CodeHeader) || header == sizeof(InterpreterCodeHeader));
+#else
+    _ASSERTE(header == sizeof(CodeHeader));
+#endif
     _ASSERTE(alignment <= HOST_CODEHEAP_SIZE_ALIGN);
 
     // The code allocator has to guarantee that there is only one entrypoint per nibble map entry.
