@@ -13422,6 +13422,8 @@ namespace System.Runtime.CompilerServices
         public void AppendFormatted<T>(T value, int alignment, string? format) { }
         public void AppendFormatted<T>(T value, string? format) { }
         public void AppendLiteral(string value) { }
+        public void Clear() { }
+        public System.ReadOnlySpan<char> Text { get { throw null; } }
         public override string ToString() { throw null; }
         public string ToStringAndClear() { throw null; }
     }

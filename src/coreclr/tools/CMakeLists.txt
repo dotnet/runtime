@@ -1,2 +1,5 @@
 add_subdirectory(SOS)
-add_subdirectory(superpmi)
+
+if (NOT CLR_CMAKE_TARGET_BROWSER)
+  add_subdirectory(superpmi)
+endif()
