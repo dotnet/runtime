@@ -235,6 +235,36 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
             }
         }
 
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public static void ReadKeyAfterDispose(bool setProperty)
+        {
+            using (Aes aes = AesFactory.Create())
+            {
+                byte[] key = new byte[aes.KeySize / 8];
+                RandomNumberGenerator.Fill(key);
+
+                if (setProperty)
+                {
+                    aes.Key = key;
+                }
+                else
+                {
+                    aes.SetKey(key);
+                }
+
+                aes.Dispose();
+
+                // Asking for the key after dispose just makes a new key be generated.
+                byte[] key2 = aes.Key;
+                Assert.NotEqual(key, key2);
+
+                // The new key won't be all zero:
+                Assert.NotEqual(-1, key2.AsSpan().IndexOfAnyExcept((byte)0));
+            }
+        }
+
         [Fact]
         public static void VerifyKeyGeneration_Default()
         {

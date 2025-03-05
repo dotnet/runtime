@@ -78,6 +78,7 @@ namespace System.Security.Cryptography
         {
             base.Dispose(disposing);
             _keyBox?.Dispose();
+            _keyBox = null;
         }
 
         protected override void SetKeyCore(ReadOnlySpan<byte> key)
