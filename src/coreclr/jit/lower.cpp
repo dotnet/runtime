@@ -4760,24 +4760,37 @@ void Lowering::LowerFieldListToFieldListOfRegisters(GenTreeFieldList* fieldList)
     const ReturnTypeDesc& retDesc = comp->compRetTypeDesc;
     unsigned              numRegs = retDesc.GetReturnRegCount();
 
+    GenTreeFieldList::Use* use = fieldList->Uses().GetHead();
     assert(fieldList->Uses().IsSorted());
 
-    GenTree* fieldListPrev = fieldList->gtPrev;
-
-    // In the first pass we convert all fields into register compatible types
-    // that do not interfere with other fields.
     for (unsigned i = 0; i < numRegs; i++)
     {
         unsigned regStart = retDesc.GetReturnFieldOffset(i);
         var_types regType = genActualType(retDesc.GetReturnRegType(i));
         unsigned regEnd = regStart + genTypeSize(regType);
 
-        for (GenTreeFieldList::Use& use : fieldList->Uses())
+        GenTreeFieldList::Use* regEntry = use;
+
+        assert(use != nullptr);
+
+        GenTree* fieldListPrev = fieldList->gtPrev;
+
+        do
         {
-            unsigned fieldStart = use.GetOffset();
-            var_types fieldType = use.GetType();
-            GenTreeFieldList::Use* nextUse = use.GetNext();
-            GenTree*& value = use.NodeRef();
+            unsigned fieldStart = use->GetOffset();
+
+            assert(fieldStart >= regStart);
+
+            if (fieldStart >= regEnd)
+            {
+                break;
+            }
+
+            var_types fieldType = use->GetType();
+            GenTree* value = use->GetNode();
+
+            unsigned insertOffset = fieldStart - regStart;
+            GenTreeFieldList::Use* nextUse = use->GetNext();
 
             // First ensure the value does not have upper bits set that
             // interfere with the next field.
@@ -4800,49 +4813,6 @@ void Lowering::LowerFieldListToFieldListOfRegisters(GenTreeFieldList* fieldList)
                 value = comp->gtNewBitCastNode(castType, value);
                 BlockRange().InsertBefore(fieldList, value);
             }
-        }
-    }
-
-    // Lower the work we just did, which may fold some of the nodes we just
-    // inserted.
-    if (fieldListPrev->gtNext != fieldList)
-    {
-        LowerRange(fieldListPrev->gtNext, fieldList->gtPrev);
-    }
-
-    // Now combine the fields into a field for each register.
-    GenTreeFieldList::Use* use = fieldList->Uses().GetHead();
-    for (unsigned i = 0; i < numRegs; i++)
-    {
-        unsigned regStart = retDesc.GetReturnFieldOffset(i);
-        var_types regType = genActualType(retDesc.GetReturnRegType(i));
-        unsigned regEnd = regStart + genTypeSize(regType);
-
-        GenTreeFieldList::Use* regEntry = use;
-
-        assert(use != nullptr);
-
-        fieldListPrev = fieldList->gtPrev;
-
-        do
-        {
-            unsigned fieldStart = use->GetOffset();
-
-            assert(fieldStart >= regStart);
-
-            if (fieldStart >= regEnd)
-            {
-                break;
-            }
-
-            var_types fieldType = use->GetType();
-            GenTree* value = use->GetNode();
-
-            GenTreeFieldList::Use* nextUse = use->GetNext();
-
-            // See if we can optimize this
-
-            unsigned insertOffset = fieldStart - regStart;
 
             if (insertOffset + genTypeSize(fieldType) > genTypeSize(genActualType(value)))
             {
@@ -4889,7 +4859,18 @@ void Lowering::LowerFieldListToFieldListOfRegisters(GenTreeFieldList* fieldList)
 
         if (fieldListPrev->gtNext != fieldList)
         {
-            LowerRange(fieldListPrev->gtNext, fieldList->gtPrev);
+            GenTree* cur = fieldListPrev->gtNext;
+            GenTree* last = fieldList->gtPrev;
+
+            while (true)
+            {
+                GenTree* next = LowerNode(cur);
+                if (cur == last)
+                    break;
+
+                cur = next;
+                assert(cur != nullptr);
+            }
         }
     }
 
@@ -4952,7 +4933,7 @@ bool Lowering::IsFieldListCompatibleWithReturn(GenTreeFieldList* fieldList)
                 return false;
             }
 
-            // TODO-CQ: float -> float insertions are not yet supported
+            // float -> float insertions are not yet supported
             if (varTypeUsesFloatReg(use->GetNode()) && varTypeUsesFloatReg(regType) && (fieldStart != regStart))
             {
                 JITDUMP("it is not; field [%06u] requires an insertion into register %u\n", Compiler::dspTreeID(use->GetNode()), i);
