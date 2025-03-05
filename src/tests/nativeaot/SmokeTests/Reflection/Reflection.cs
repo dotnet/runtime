@@ -92,6 +92,7 @@ internal static class ReflectionTest
         TestAssemblyLoad.Run();
         TestBaseOnlyUsedFromCode.Run();
         TestEntryPoint.Run();
+        TestGenericAttributesOnEnum.Run();
 
         return 100;
     }
@@ -805,6 +806,18 @@ internal static class ReflectionTest
             public override int GetHashCode() => 500;
         }
 
+        class NeverAllocatedButUsedInGenericMethod<T>
+        {
+        }
+
+        class Atom;
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static Type GetNeverAllocatedButUsedInGenericMethod() => typeof(NeverAllocatedButUsedInGenericMethod<>);
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public static object GenericMethod<T>() => null;
+
         public static void Run()
         {
             Console.WriteLine(nameof(TestGetUninitializedObject));
@@ -818,6 +831,31 @@ internal static class ReflectionTest
             // Check that the vtable of a type passed to GetUninitializedObject is intact.
             var obj2 = RuntimeHelpers.GetUninitializedObject(typeof(AlsoNeverAllocated));
             if (obj2.GetHashCode() != 500)
+                throw new Exception();
+
+            // Do what's needed so that we force an unconstructed MT for NeverAllocatedButUsedInGenericMethod<Atom> into the program
+            // 1. Statically call the method
+            // 2. Make the method visible target of reflection
+            // This will force the compiler to place the method generic dictionary into a hashtable addressable using the instantiation.
+            GenericMethod<NeverAllocatedButUsedInGenericMethod<Atom>>();
+            typeof(TestGetUninitializedObject).GetMethod(nameof(GenericMethod));
+
+            Type t1 = GetNeverAllocatedButUsedInGenericMethod().MakeGenericType(typeof(Atom));
+            _ = t1.TypeHandle; // Type handle is only suitable for casting but we can get it
+
+            bool thrown = true;
+            try
+            {
+                // Needs to throw, the MT is only a necessary MT, not constructed MT
+                RuntimeHelpers.GetUninitializedObject(t1);
+                thrown = false;
+            }
+            catch (NotSupportedException e)
+            {
+                if (!e.Message.Contains("ReflectionTest+TestGetUninitializedObject+NeverAllocatedButUsedInGenericMethod`1[ReflectionTest+TestGetUninitializedObject+Atom]"))
+                    throw new Exception();
+            }
+            if (!thrown)
                 throw new Exception();
         }
     }
@@ -1932,17 +1970,24 @@ internal static class ReflectionTest
     class TypeConstructionTest
     {
         struct Atom { }
+        struct ArrayElementUsedInGenericDictionary { }
 
         class Gen<T> { }
 
         static Type s_atom = typeof(Atom);
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static Type GetArrayElementUsedInGenericDictionary() => typeof(ArrayElementUsedInGenericDictionary);
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public static object GenericMethod<T>() => null;
 
         public static void Run()
         {
             string message1 = "";
             try
             {
-                typeof(Gen<>).MakeGenericType(s_atom);
+                _ = typeof(Gen<>).MakeGenericType(s_atom).TypeHandle;
             }
             catch (Exception ex)
             {
@@ -1954,7 +1999,7 @@ internal static class ReflectionTest
             string message2 = "";
             try
             {
-                s_atom.MakeArrayType();
+                _ = s_atom.MakeArrayType().TypeHandle;
             }
             catch (Exception ex)
             {
@@ -1973,6 +2018,24 @@ internal static class ReflectionTest
                 message3 = ex.Message;
             }
             if (!message3.Contains("ReflectionTest+TypeConstructionTest+Atom[]"))
+                throw new Exception();
+
+            // Do what's needed so that we force an unconstructed MT for ArrayElementUsedInGenericDictionary[] into the program
+            // 1. Statically call the method
+            // 2. Make the method visible target of reflection
+            // This will force the compiler to place the method generic dictionary into a hashtable addressable using the instantiation.
+            GenericMethod<ArrayElementUsedInGenericDictionary[]>();
+            typeof(TestGetUninitializedObject).GetMethod(nameof(GenericMethod));
+            string message4 = "";
+            try
+            {
+                Array.CreateInstance(GetArrayElementUsedInGenericDictionary(), 10);
+            }
+            catch (Exception ex)
+            {
+                message4 = ex.Message;
+            }
+            if (!message4.Contains("ReflectionTest+TypeConstructionTest+ArrayElementUsedInGenericDictionary[]"))
                 throw new Exception();
         }
     }
@@ -2182,7 +2245,7 @@ internal static class ReflectionTest
             bool exists = false;
             try
             {
-                typeof(GenericClass<>).MakeGenericType(GetAtom3());
+                _ = typeof(GenericClass<>).MakeGenericType(GetAtom3()).TypeHandle;
                 exists = true;
             }
             catch
@@ -2697,6 +2760,24 @@ internal static class ReflectionTest
             ReflectionInLocalFunction();
             ReflectionInAsync();
             ReflectionInLambdaAsync();
+        }
+    }
+
+    // Regression test for https://github.com/dotnet/runtime/issues/111578
+    class TestGenericAttributesOnEnum
+    {
+        class MyAttribute<T> : Attribute { }
+
+        [My<int>]
+        enum MyEnum { A = 1, B = 2 }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static object GetVal() => MyEnum.A | MyEnum.B;
+
+        public static void Run()
+        {
+            if (GetVal().ToString() != "3")
+                throw new Exception();
         }
     }
 

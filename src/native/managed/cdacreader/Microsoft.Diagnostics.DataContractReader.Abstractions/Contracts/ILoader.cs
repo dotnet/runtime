@@ -6,24 +6,24 @@ using System.Collections.Generic;
 
 namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 
-internal readonly struct ModuleHandle
+public readonly struct ModuleHandle
 {
-    internal ModuleHandle(TargetPointer address)
+    public ModuleHandle(TargetPointer address)
     {
         Address = address;
     }
 
-    internal TargetPointer Address { get; }
+    public TargetPointer Address { get; }
 }
 
 [Flags]
-internal enum ModuleFlags
+public enum ModuleFlags
 {
     EditAndContinue = 0x00000008,   // Edit and Continue is enabled for this module
     ReflectionEmit = 0x00000040,    // Reflection.Emit was used to create this module
 }
 
-internal record struct ModuleLookupTables(
+public record struct ModuleLookupTables(
     TargetPointer FieldDefToDesc,
     TargetPointer ManifestModuleReferences,
     TargetPointer MemberRefToDesc,
@@ -32,7 +32,7 @@ internal record struct ModuleLookupTables(
     TargetPointer TypeRefToMethodTable,
     TargetPointer MethodDefToILCodeVersioningState);
 
-internal interface ILoader : IContract
+public interface ILoader : IContract
 {
     static string IContract.Name => nameof(Loader);
 
@@ -52,7 +52,7 @@ internal interface ILoader : IContract
     public virtual bool IsCollectible(ModuleHandle handle) => throw new NotImplementedException();
 }
 
-internal readonly struct Loader : ILoader
+public readonly struct Loader : ILoader
 {
     // Everything throws NotImplementedException
 }

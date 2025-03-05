@@ -19,10 +19,7 @@ trigger:
     - LICENSE.TXT
     - PATENTS.TXT
     - THIRD-PARTY-NOTICES.TXT
-    - eng/pipelines/coreclr/perf*yml
-    - eng/pipelines/coreclr/templates/build-perf*
-    - eng/pipelines/coreclr/templates/perf-job.yml
-    - eng/pipelines/coreclr/templates/run-perf*
+    - eng/pipelines/performance/*
     - eng/testing/performance/*
 
 schedules:
@@ -114,6 +111,21 @@ extends:
           jobParameters:
             nameSuffix: AllSubsets_CoreCLR
             buildArgs: -s clr+libs+host+packs -rc Release -c Release -lc $(_BuildConfig)
+            timeoutInMinutes: 120
+            condition: >-
+              or(
+                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_non_mono_and_wasm.containsChange'], true),
+                eq(variables['isRollingBuild'], true))
+
+      - template: /eng/pipelines/common/platform-matrix.yml
+        parameters:
+          jobTemplate: /eng/pipelines/common/global-build-job.yml
+          buildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
+          platforms:
+          - browser_wasm
+          jobParameters:
+            nameSuffix: AllSubsets_CoreCLR
+            buildArgs: -s mono.emsdk+clr.paltests -rc Release -c Release -lc $(_BuildConfig)
             timeoutInMinutes: 120
             condition: >-
               or(
@@ -436,7 +448,7 @@ extends:
                 eq(variables['isRollingBuild'], true))
 
       #
-      # Build CoreCLR with no R2R
+      # Build CoreCLR and run crossgen on S.P.CoreLib
       #
       - template: /eng/pipelines/common/platform-matrix.yml
         parameters:
@@ -448,8 +460,8 @@ extends:
           - linux_x86
           jobParameters:
             testScope: innerloop
-            nameSuffix: CoreCLR_NoR2R
-            buildArgs: -s clr.runtime+clr.jit+clr.iltools+clr.spmi+clr.corelib -c $(_BuildConfig)
+            nameSuffix: CoreCLR
+            buildArgs: -s clr.runtime+clr.jit+clr.iltools+clr.spmi+clr.corelib+clr.nativecorelib -c $(_BuildConfig)
             timeoutInMinutes: 120
             condition: >-
               or(
@@ -492,9 +504,27 @@ extends:
           - linux_loongarch64
           jobParameters:
             testScope: innerloop
-            nameSuffix: CoreCLR
-            buildArgs: -s clr+libs+host -c $(_BuildConfig) -rc Checked
+            nameSuffix: CoreCLR_TwoStage
+            buildArgs: -s clr+libs+host -c $(_BuildConfig) -rc Checked -p:StageOneBuild=true
             timeoutInMinutes: 120
+            postBuildSteps:
+              - script: |
+                  echo Running $(Build.SourcesDirectory)/build$(scriptExt)  \
+                    ${{ variables.debugOnPrReleaseOnRolling }}              \
+                    -s clr.tools+packs -rc Checked -cross                   \
+                    -os $(osGroup)                                          \
+                    -a $(archType)                                          \
+                    -c $(_BuildConfig)                                      \
+                    -p:StageTwoBuild=true
+
+                  $(Build.SourcesDirectory)/build$(scriptExt)  \
+                    ${{ variables.debugOnPrReleaseOnRolling }} \
+                    -s clr.tools+packs -rc Checked -cross      \
+                    -os $(osGroup)                             \
+                    -a $(archType)                             \
+                    -c $(_BuildConfig)                         \
+                    -p:StageTwoBuild=true
+                displayName: Build clr.tools and packs
             condition: >-
               or(
                 eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
@@ -594,7 +624,6 @@ extends:
           - osx_x64
           - linux_arm64
           - windows_arm64
-          - osx_arm64
           variables:
           - name: timeoutPerTestInMinutes
             value: 60
@@ -808,20 +837,6 @@ extends:
           scenarios:
             - WasmTestOnChrome
 
-      # Library tests with full threading
-      - template: /eng/pipelines/common/templates/wasm-library-tests.yml
-        parameters:
-          platforms:
-            - browser_wasm
-            #- browser_wasm_win
-          nameSuffix: _Threading
-          extraBuildArgs: /p:WasmEnableThreads=true /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
-          extraHelixArguments: /p:WasmEnableThreads=true
-          alwaysRun: ${{ variables.isRollingBuild }}
-          shouldRunSmokeOnly: onLibrariesAndIllinkChanges
-          scenarios:
-            - WasmTestOnChrome
-
       # EAT Library tests - only run on linux
       - template: /eng/pipelines/common/templates/wasm-library-aot-tests.yml
         parameters:
@@ -887,18 +902,6 @@ extends:
 
       # WASI/WASM
 
-      - template: /eng/pipelines/common/templates/wasm-library-tests.yml
-        parameters:
-          platforms:
-            - wasi_wasm
-            - wasi_wasm_win
-          nameSuffix: '_Smoke'
-          extraBuildArgs: /p:EnableAggressiveTrimming=true /p:RunWasmSamples=true /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
-          shouldRunSmokeOnly: true
-          alwaysRun: ${{ variables.isRollingBuild }}
-          scenarios:
-            - WasmTestOnWasmtime
-
       - template: /eng/pipelines/common/templates/simple-wasm-build-tests.yml
         parameters:
           platforms:
@@ -947,6 +950,48 @@ extends:
                     or(
                     eq(variables['librariesContainsChange'], true),
                     eq(variables['monoContainsChange'], true),
+                    eq(variables['isRollingBuild'], true))
+
+      #
+      # Android arm64 devices and x64 emulators
+      # Build the whole product using CoreCLR and run functional tests
+      #
+      - template: /eng/pipelines/common/platform-matrix.yml
+        parameters:
+          jobTemplate: /eng/pipelines/common/global-build-job.yml
+          helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
+          buildConfig: Release
+          runtimeFlavor: coreclr
+          platforms:
+          - android_x64
+          - android_arm64
+          variables:
+            # map dependencies variables to local variables
+            - name: librariesContainsChange
+              value: $[ stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_libraries.containsChange'] ]
+            - name: coreclrContainsChange
+              value: $[ stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'] ]
+          jobParameters:
+            testGroup: innerloop
+            nameSuffix: AllSubsets_CoreCLR
+            buildArgs: -s clr.runtime+clr.alljits+clr.corelib+clr.nativecorelib+clr.tools+clr.packages+libs++libs.tests+host+packs -c $(_BuildConfig) /p:ArchiveTests=true /p:TestAssemblies=false
+            timeoutInMinutes: 480
+            condition: >-
+              or(
+                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
+                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
+                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_installer.containsChange'], true),
+                eq(variables['isRollingBuild'], true))
+            # extra steps, run tests
+            postBuildSteps:
+              - template: /eng/pipelines/libraries/helix.yml
+                parameters:
+                  creator: dotnet-bot
+                  testRunNamePrefixSuffix: CoreCLR_$(_BuildConfig)
+                  condition: >-
+                    or(
+                    eq(variables['librariesContainsChange'], true),
+                    eq(variables['coreclrContainsChange'], true),
                     eq(variables['isRollingBuild'], true))
 
       #
@@ -1214,7 +1259,7 @@ extends:
           platforms:
           - windows_x64
           jobParameters:
-            buildArgs: -test -s tools+libs+libs.tests -pack -c $(_BuildConfig) /p:TestAssemblies=false /p:TestPackages=true
+            buildArgs: -test -s tools.illink+libs+libs.tests -pack -c $(_BuildConfig) /p:TestAssemblies=false /p:TestPackages=true
             nameSuffix: Libraries_WithPackages
             timeoutInMinutes: 150
             condition: >-

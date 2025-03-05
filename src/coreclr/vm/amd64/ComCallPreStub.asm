@@ -9,7 +9,6 @@ include asmconstants.inc
 ; extern "C" const BYTE* ComPreStubWorker(ComPrestubMethodFrame *pPFrame, UINT64 *pErrorResult)
 extern ComPreStubWorker:proc
 extern JIT_FailFast:proc
-extern s_gsCookie:qword
 
 
 ; extern "C" VOID ComCallPreStub()
@@ -27,9 +26,8 @@ NESTED_ENTRY ComCallPreStub, _TEXT
 ; ComPrestubMethodFrame::m_ReturnAddress
 ; ComPrestubMethodFrame::m_pFuncDesc
 ; Frame::m_Next
-; __VFN_table                                   <-- rsp + ComCallPreStub_ComPrestubMethodFrame_OFFSET
-; gsCookie
-; HRESULT                                       <-- rsp + ComCallPreStub_HRESULT_OFFSET
+; FrameIdentifier::ComPrestubMethodFrame        <-- rsp + ComCallPreStub_ComPrestubMethodFrame_OFFSET
+; HRESULT                                       <-- rsp + ComCallPreStub_ERRORRETVAL_OFFSET
 ; (optional padding to qword align xmm save area)
 ; xmm3
 ; xmm2
@@ -52,9 +50,6 @@ ComCallPreStub_ComPrestubMethodFrame_NEGOFFSET = ComCallPreStub_STACK_FRAME_SIZE
 ComCallPreStub_STACK_FRAME_SIZE = ComCallPreStub_STACK_FRAME_SIZE + 8*8
 ComCallPreStub_CalleeSavedRegisters_NEGOFFSET = ComCallPreStub_STACK_FRAME_SIZE
 
-; GSCookie MUST be immediately below CalleeSavedRegisters
-ComCallPreStub_STACK_FRAME_SIZE = ComCallPreStub_STACK_FRAME_SIZE + SIZEOF_GSCookie
-
 ; UINT64 (out param to ComPreStubWorker)
 ComCallPreStub_STACK_FRAME_SIZE = ComCallPreStub_STACK_FRAME_SIZE + 8
 ComCallPreStub_ERRORRETVAL_NEGOFFSET = ComCallPreStub_STACK_FRAME_SIZE
@@ -74,7 +69,6 @@ ComCallPreStub_STACK_FRAME_SIZE = ComCallPreStub_STACK_FRAME_SIZE + 20h
 ; Now we have the full size of the stack frame.  The offsets have been computed relative to the
 ; top, so negate them to make them relative to the post-prologue rsp.
 ComCallPreStub_ComPrestubMethodFrame_OFFSET = ComCallPreStub_STACK_FRAME_SIZE - ComCallPreStub_ComPrestubMethodFrame_NEGOFFSET
-OFFSETOF_GSCookie                           = ComCallPreStub_ComPrestubMethodFrame_OFFSET - SIZEOF_GSCookie
 ComCallPreStub_ERRORRETVAL_OFFSET           = ComCallPreStub_STACK_FRAME_SIZE - ComCallPreStub_ERRORRETVAL_NEGOFFSET
 ComCallPreStub_XMM_SAVE_OFFSET              = ComCallPreStub_STACK_FRAME_SIZE - ComCallPreStub_XMM_SAVE_NEGOFFSET
 
@@ -104,8 +98,6 @@ ComCallPreStub_XMM_SAVE_OFFSET              = ComCallPreStub_STACK_FRAME_SIZE - 
 
         END_PROLOGUE
 
-        mov             rcx, s_gsCookie
-        mov             [rsp + OFFSETOF_GSCookie], rcx
         ;
         ; Resolve target.
         ;
@@ -114,14 +106,6 @@ ComCallPreStub_XMM_SAVE_OFFSET              = ComCallPreStub_STACK_FRAME_SIZE - 
         call            ComPreStubWorker
         test            rax, rax
         jz              ExitError
-
-ifdef _DEBUG
-        mov             rcx, s_gsCookie
-        cmp             [rsp + OFFSETOF_GSCookie], rcx
-        je              GoodGSCookie
-        call            JIT_FailFast
-GoodGSCookie:
-endif ; _DEBUG
 
         ;
         ; Restore FP parameters

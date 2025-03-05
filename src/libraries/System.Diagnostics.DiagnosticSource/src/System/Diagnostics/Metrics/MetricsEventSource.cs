@@ -153,7 +153,7 @@ namespace System.Diagnostics.Metrics
         // Sent when we begin to monitor the value of a instrument, either because new session filter arguments changed subscriptions
         // or because an instrument matching the pre-existing filter has just been created. This event precedes all *MetricPublished events
         // for the same named instrument.
-        [Event(7, Keywords = Keywords.TimeSeriesValues, Version = 2)]
+        [Event(7, Keywords = Keywords.TimeSeriesValues, Version = 3)]
 #if !NET8_0_OR_GREATER
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
                                       Justification = "This calls WriteEvent with all primitive arguments which is safe. Primitives are always serialized properly.")]
@@ -169,15 +169,16 @@ namespace System.Diagnostics.Metrics
                         string instrumentTags,
                         string meterTags,
                         string meterScopeHash,
-                        int instrumentId)
+                        int instrumentId,
+                        string? meterTelemetrySchemaUrl)
         {
             WriteEvent(7, sessionId, meterName, meterVersion ?? "", instrumentName, instrumentType, unit ?? "", description ?? "",
-                    instrumentTags, meterTags, meterScopeHash, instrumentId);
+                    instrumentTags, meterTags, meterScopeHash, instrumentId, meterTelemetrySchemaUrl);
         }
 
         // Sent when we stop monitoring the value of a instrument, either because new session filter arguments changed subscriptions
         // or because the Meter has been disposed.
-        [Event(8, Keywords = Keywords.TimeSeriesValues, Version = 2)]
+        [Event(8, Keywords = Keywords.TimeSeriesValues, Version = 3)]
 #if !NET8_0_OR_GREATER
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
                                       Justification = "This calls WriteEvent with all primitive arguments which is safe. Primitives are always serialized properly.")]
@@ -193,10 +194,11 @@ namespace System.Diagnostics.Metrics
                         string instrumentTags,
                         string meterTags,
                         string meterScopeHash,
-                        int instrumentId)
+                        int instrumentId,
+                        string? meterTelemetrySchemaUrl)
         {
             WriteEvent(8, sessionId, meterName, meterVersion ?? "", instrumentName, instrumentType, unit ?? "", description ?? "",
-                    instrumentTags, meterTags, meterScopeHash, instrumentId);
+                    instrumentTags, meterTags, meterScopeHash, instrumentId, meterTelemetrySchemaUrl);
         }
 
         [Event(9, Keywords = Keywords.TimeSeriesValues | Keywords.Messages | Keywords.InstrumentPublishing)]
@@ -211,7 +213,7 @@ namespace System.Diagnostics.Metrics
             WriteEvent(10, sessionId);
         }
 
-        [Event(11, Keywords = Keywords.InstrumentPublishing, Version = 2)]
+        [Event(11, Keywords = Keywords.InstrumentPublishing, Version = 3)]
 #if !NET8_0_OR_GREATER
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
                                       Justification = "This calls WriteEvent with all primitive arguments which is safe. Primitives are always serialized properly.")]
@@ -227,10 +229,11 @@ namespace System.Diagnostics.Metrics
                         string instrumentTags,
                         string meterTags,
                         string meterScopeHash,
-                        int instrumentId)
+                        int instrumentId,
+                        string? meterTelemetrySchemaUrl)
         {
             WriteEvent(11, sessionId, meterName, meterVersion ?? "", instrumentName, instrumentType, unit ?? "", description ?? "",
-                    instrumentTags, meterTags, meterScopeHash, instrumentId);
+                    instrumentTags, meterTags, meterScopeHash, instrumentId, meterTelemetrySchemaUrl);
         }
 
         [Event(12, Keywords = Keywords.TimeSeriesValues)]
@@ -463,11 +466,11 @@ namespace System.Diagnostics.Metrics
                             beginCollection: (startIntervalTime, endIntervalTime) => Parent.CollectionStart(sessionId, startIntervalTime, endIntervalTime),
                             endCollection: (startIntervalTime, endIntervalTime) => Parent.CollectionStop(sessionId, startIntervalTime, endIntervalTime),
                             beginInstrumentMeasurements: (i, state) => Parent.BeginInstrumentReporting(sessionId, i.Meter.Name, i.Meter.Version, i.Name, i.GetType().Name, i.Unit, i.Description,
-                                    Helpers.FormatTags(i.Tags), Helpers.FormatTags(i.Meter.Tags), Helpers.FormatObjectHash(i.Meter.Scope), state.ID),
+                                    Helpers.FormatTags(i.Tags), Helpers.FormatTags(i.Meter.Tags), Helpers.FormatObjectHash(i.Meter.Scope), state.ID, i.Meter.TelemetrySchemaUrl),
                             endInstrumentMeasurements: (i, state) => Parent.EndInstrumentReporting(sessionId, i.Meter.Name, i.Meter.Version, i.Name, i.GetType().Name, i.Unit, i.Description,
-                                    Helpers.FormatTags(i.Tags), Helpers.FormatTags(i.Meter.Tags), Helpers.FormatObjectHash(i.Meter.Scope), state.ID),
+                                    Helpers.FormatTags(i.Tags), Helpers.FormatTags(i.Meter.Tags), Helpers.FormatObjectHash(i.Meter.Scope), state.ID, i.Meter.TelemetrySchemaUrl),
                             instrumentPublished: (i, state) => Parent.InstrumentPublished(sessionId, i.Meter.Name, i.Meter.Version, i.Name, i.GetType().Name, i.Unit, i.Description,
-                                    Helpers.FormatTags(i.Tags), Helpers.FormatTags(i.Meter.Tags), Helpers.FormatObjectHash(i.Meter.Scope), state is null ? 0 : state.ID),
+                                    Helpers.FormatTags(i.Tags), Helpers.FormatTags(i.Meter.Tags), Helpers.FormatObjectHash(i.Meter.Scope), state is null ? 0 : state.ID, i.Meter.TelemetrySchemaUrl),
                             initialInstrumentEnumerationComplete: () => Parent.InitialInstrumentEnumerationComplete(sessionId),
                             collectionError: e => Parent.Error(sessionId, e.ToString()),
                             timeSeriesLimitReached: () => Parent.TimeSeriesLimitReached(sessionId),

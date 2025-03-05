@@ -2294,13 +2294,7 @@ void DecomposeLongs::TryPromoteLongVar(unsigned lclNum)
             fieldVarDsc->lvIsParam = true;
             m_compiler->lvaSetVarDoNotEnregister(fieldLclNum DEBUGARG(DoNotEnregisterReason::LongParamField));
 
-#if FEATURE_MULTIREG_ARGS
-            if (varDsc->lvIsRegArg)
-            {
-                fieldVarDsc->lvIsRegArg = 1; // Longs are never split.
-                fieldVarDsc->SetArgReg((index == 0) ? varDsc->GetArgReg() : varDsc->GetOtherArgReg());
-            }
-#endif // FEATURE_MULTIREG_ARGS
+            fieldVarDsc->lvIsRegArg = varDsc->lvIsRegArg;
         }
     }
 }

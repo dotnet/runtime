@@ -21,14 +21,9 @@
   <ItemGroup>
     <!-- SDK pins this to a lower version https://github.com/dotnet/sdk/issues/43325 -->
     <PackageReference Include="System.Reflection.Metadata" Version="$(SystemReflectionMetadataToolsetVersion)" />
-    <!-- The SDK distributes the live version of Json we can't reference that https://github.com/dotnet/runtime/issues/108262 -->
-    <PackageReference Include="System.Text.Json" Version="$(SystemTextJsonToolsetVersion)" />
     <PackageReference Include="System.Memory" Version="$(SystemMemoryVersion)" />
-  </ItemGroup>
 
-  <!-- Suppress System.Text.Json/8.0.4 advisory as desktop msbuild doesn't yet provide binding redirects for the non-vulnerable version (8.0.5). -->
-  <ItemGroup> 
-    <NuGetAuditSuppress Include="https://github.com/advisories/GHSA-8g4q-xg66-9fp4" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Text.Json\src\System.Text.Json.csproj" />
   </ItemGroup>
 
   <ItemGroup>

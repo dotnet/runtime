@@ -9,29 +9,6 @@
   <Import Project="$(MSBuildThisFileDirectory)/Common/disableversioncheck.targets"
           Condition="'$(DisableVersionCheckImported)' != 'true'" />
 
-  <PropertyGroup Condition="'$(TargetsAppleMobile)' == 'true' and '$(RuntimeFlavor)' == 'mono'">
-    <OSPlatformConfig>$(TargetOS).AnyCPU.$(Configuration)</OSPlatformConfig>
-    <TestArchiveRoot>$(ArtifactsDir)helix/</TestArchiveRoot>
-    <TestArchiveTestsRoot>$(TestArchiveRoot)tests/</TestArchiveTestsRoot>
-    <TestArchiveTestsDir>$(TestArchiveTestsRoot)$(OSPlatformConfig)/</TestArchiveTestsDir>
-    <TestArchiveRuntimeRoot>$(TestArchiveRoot)runtime/</TestArchiveRuntimeRoot>
-
-    <PublishTestAsSelfContainedDependsOn>BuildMonoiOSApp</PublishTestAsSelfContainedDependsOn>
-    <PublishTestAsSelfContainedAfterTargets>BuildMonoiOSApp</PublishTestAsSelfContainedAfterTargets>
-    <BundleTestAppleAppDependsOn>GenerateRunScript</BundleTestAppleAppDependsOn>
-
-    <IsRuntimeTests>true</IsRuntimeTests>
-  </PropertyGroup>
-
-  <Import Project="$(RepositoryEngineeringDir)testing\tests.targets"
-          Condition="'$(TargetsAppleMobile)' == 'true' and '$(RuntimeFlavor)' == 'mono'" />
-
-  <Target Name="_SetRunScriptOutputDirectory" Condition="'$(TargetsAppleMobile)' == 'true' and '$(RuntimeFlavor)' == 'mono' and '$(IsRuntimeTests)' == 'true'" BeforeTargets="GenerateRunScript">
-    <PropertyGroup>
-      <RunScriptOutputDirectory>$(ArtifactsDir)/tests/coreclr/obj/$(TargetOS).$(Platform).$(Configuration)/Managed/build/iOSApps/$(TestProjectName)/AppBundle</RunScriptOutputDirectory>
-    </PropertyGroup>
-  </Target>
-
   <!-- Default priority building values. -->
   <PropertyGroup>
     <DisableProjectBuild Condition="'$(IsMergedTestRunnerAssembly)' == 'true' and '$(BuildAllTestsAsStandalone)' == 'true' and '$(HasMergedInTests)' != 'true'">true</DisableProjectBuild>
@@ -43,6 +20,8 @@
 
     <!-- Merged test runner assemblies might not have any non-generated sources, and that's okay -->
     <NoWarn Condition="'$(IsMergedTestRunnerAssembly)' == 'true'">$(NoWarn);CS2008</NoWarn>
+
+    <IncludesTestRunner Condition="'$(TargetsAppleMobile)' == 'true'">false</IncludesTestRunner>
   </PropertyGroup>
 
   <!-- All CLRTests need to be of a certain "kind". These kinds are enumerated below.
@@ -565,8 +544,7 @@
 
     <IlcTreatWarningsAsErrors>false</IlcTreatWarningsAsErrors>
 
-    <IlcToolsPath>$(CoreCLRILCompilerDir)</IlcToolsPath>
-    <IlcToolsPath Condition="'$(TargetArchitecture)' != '$(BuildArchitecture)' or '$(TargetOS)' != '$(HostOS)' or '$(EnableNativeSanitizers)' != ''">$(CoreCLRCrossILCompilerDir)</IlcToolsPath>
+    <IlcToolsPath>$(CoreCLRCrossILCompilerDir)</IlcToolsPath>
     <IlcBuildTasksPath>$(CoreCLRILCompilerDir)netstandard/ILCompiler.Build.Tasks.dll</IlcBuildTasksPath>
     <IlcSdkPath>$(CoreCLRAotSdkDir)</IlcSdkPath>
     <IlcFrameworkPath>$(MicrosoftNetCoreAppRuntimePackRidLibTfmDir)</IlcFrameworkPath>
@@ -586,9 +564,6 @@
   <ItemGroup Condition="'$(TestBuildMode)' == 'nativeaot'">
     <CustomLinkerArg Condition="'$(CrossBuild)' == 'true' and '$(_hostArchitecture)' == '$(_targetArchitecture)' and '$(_hostOS)' != 'windows'" Include="--gcc-toolchain=$(ROOTFS_DIR)/usr" />
     <IlcReference Include="$(TargetingPackPath)/*.dll" />
-
-    <!-- xunit calls MakeGenericType to check if something is IEquatable -->
-    <IlcArg Condition="'$(EagerlyValidateTypeConstruction)' != 'false'" Include="--feature:System.Reflection.IsTypeConstructionEagerlyValidated=false" />
 
     <!-- Bump the generic cycle tolerance. There's at least one test with a cycle that is reachable at runtime to depth 6 -->
     <IlcArg Include="--maxgenericcycle:7" />
