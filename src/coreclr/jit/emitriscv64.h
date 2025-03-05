@@ -68,7 +68,7 @@ void emitDispBranchOffset(const instrDesc* id, const insGroup* ig) const;
 void emitDispBranchLabel(const instrDesc* id) const;
 bool emitDispBranchInstrType(unsigned opcode2, bool is_zero_reg, bool& print_second_reg) const;
 void emitDispIllegalInstruction(code_t instructionCode);
-void emitDispImmediate(ssize_t imm, bool newLine = true, unsigned offsetRegNum = REG_ZERO);
+void emitDispImmediate(ssize_t imm, bool newLine = true, unsigned regBase = REG_ZERO);
 
 emitter::code_t emitInsCode(instruction ins /*, insFormat fmt*/) const;
 
