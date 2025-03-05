@@ -1000,7 +1000,8 @@ void emitter::emitIns_R_C(
 
     id->idSmallCns(offs); // usually is 0.
     id->idInsOpt(INS_OPTS_RC);
-    if (emitComp->opts.compReloc)
+    // Load constant with auipc if constant size is 64 bits
+    if ((emitComp->eeIsJitDataOffs(fldHnd) && (EA_SIZE(attr) == EA_8BYTE || EA_SIZE(attr) == EA_PTRSIZE)) || emitComp->opts.compReloc)
     {
         id->idSetIsDspReloc();
         id->idCodeSize(8);
@@ -1289,7 +1290,13 @@ void emitter::emitLoadImmediate(emitAttr size, regNumber reg, ssize_t imm)
         return;
     }
 
-    // TODO-RISCV64: maybe optimized via emitDataConst(), check #86790
+    // Optimize via emitDataConst if data size is 64 bits
+    if (size == EA_PTRSIZE || size == EA_8BYTE)
+    {
+        auto constAddr = emitDataConst(&imm, sizeof(long), sizeof(long), TYP_LONG);
+        emitIns_R_C(INS_ld, EA_PTRSIZE, reg, REG_NA, emitComp->eeFindJitDataOffs(constAddr), 0);
+        return;
+    }
 
     UINT32 msb = BitOperations::BitScanReverse((uint64_t)imm);
     UINT32 high31;
