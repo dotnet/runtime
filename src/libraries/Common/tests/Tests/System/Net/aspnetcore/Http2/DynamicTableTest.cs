@@ -185,7 +185,7 @@ namespace System.Net.Http.Unit.Tests.HPack
                 headers.Add(dynamicTable[i]);
             }
 
-            dynamicTable.Resize(finalMaxSize);
+            dynamicTable.UpdateMaxSize(finalMaxSize);
 
             int expectedCount = Math.Min(finalMaxSize / 64, headers.Count);
             Assert.Equal(expectedCount, dynamicTable.Count);
@@ -206,7 +206,7 @@ namespace System.Net.Http.Unit.Tests.HPack
 
             VerifyTableEntries(dynamicTable, _header2, _header1);
 
-            dynamicTable.Resize(_header2.Length);
+            dynamicTable.UpdateMaxSize(_header2.Length);
 
             VerifyTableEntries(dynamicTable, _header2);
         }
@@ -218,7 +218,7 @@ namespace System.Net.Http.Unit.Tests.HPack
             dynamicTable.Insert(_header1.Name, _header1.Value);
             dynamicTable.Insert(_header2.Name, _header2.Value);
 
-            dynamicTable.Resize(0);
+            dynamicTable.UpdateMaxSize(0);
 
             Assert.Equal(0, dynamicTable.Count);
             Assert.Equal(0, dynamicTable.Size);
@@ -237,7 +237,7 @@ namespace System.Net.Http.Unit.Tests.HPack
             Assert.Equal(0, dynamicTable.Count);
             Assert.Equal(0, dynamicTable.Size);
 
-            dynamicTable.Resize(dynamicTable.MaxSize + _header2.Length);
+            dynamicTable.UpdateMaxSize(dynamicTable.MaxSize + _header2.Length);
             dynamicTable.Insert(_header2.Name, _header2.Value);
 
             VerifyTableEntries(dynamicTable, _header2);

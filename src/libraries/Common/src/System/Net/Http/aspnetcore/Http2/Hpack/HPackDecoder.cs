@@ -675,7 +675,7 @@ namespace System.Net.Http.HPack
                 throw new HPackDecodingException(SR.Format(SR.net_http_hpack_large_table_size_update, size, _maxDynamicTableSize));
             }
 
-            _dynamicTable.Resize(size);
+            _dynamicTable.UpdateMaxSize(size);
         }
     }
 }

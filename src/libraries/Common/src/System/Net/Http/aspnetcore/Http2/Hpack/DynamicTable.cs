@@ -104,7 +104,7 @@ namespace System.Net.Http.HPack
             _count++;
         }
 
-        public void Resize(int maxSize)
+        public void UpdateMaxSize(int maxSize)
         {
             int previousMax = _maxSize;
             _maxSize = maxSize;
