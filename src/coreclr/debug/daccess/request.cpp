@@ -1783,7 +1783,6 @@ ClrDataAccess::GetModuleData(CLRDATA_ADDRESS addr, struct DacpModuleData *Module
     ModuleData->dwModuleIndex = 0; // CoreCLR no longer has this concept
     ModuleData->dwTransientFlags = pModule->m_dwTransientFlags;
     ModuleData->LoaderAllocator = HOST_CDADDR(pModule->m_loaderAllocator);
-    ModuleData->ThunkHeap = HOST_CDADDR(pModule->m_pThunkHeap);
 
     EX_TRY
     {
@@ -2143,7 +2142,7 @@ ClrDataAccess::GetFrameName(CLRDATA_ADDRESS vtable, unsigned int count, _Inout_u
 
     SOSDacEnter();
 
-    PWSTR pszName = DacGetVtNameW(CLRDATA_ADDRESS_TO_TADDR(vtable));
+    LPCSTR pszName = Frame::GetFrameTypeName((FrameIdentifier)CLRDATA_ADDRESS_TO_TADDR(vtable));
     if (pszName == NULL)
     {
         hr = E_INVALIDARG;
@@ -2151,11 +2150,19 @@ ClrDataAccess::GetFrameName(CLRDATA_ADDRESS vtable, unsigned int count, _Inout_u
     else
     {
         // Turn from bytes to wide characters
-        unsigned int len = (unsigned int)u16_strlen(pszName);
+        unsigned int len = (unsigned int)strlen(pszName);
 
         if (frameName)
         {
-            wcsncpy_s(frameName, count, pszName, _TRUNCATE);
+            if (count != 0)
+            {
+                unsigned truncatedLength = min(len, count - 1);
+                for (unsigned i = 0; i < truncatedLength; i++)
+                {
+                    frameName[i] = pszName[i];
+                }
+                frameName[truncatedLength] = '\0';
+            }
 
             if (pNeeded)
             {
@@ -2921,7 +2928,7 @@ ClrDataAccess::GetGCDynamicAdaptationMode(int* pDynamicAdaptationMode)
     {
         *pDynamicAdaptationMode = -1;
         hr = S_FALSE;
-    }    
+    }
     SOSDacLeave();
     return hr;
 }

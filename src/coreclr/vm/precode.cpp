@@ -9,6 +9,7 @@
 
 
 #include "common.h"
+#include "dllimportcallback.h"
 
 #ifdef FEATURE_PERFMAP
 #include "perfmap.h"
@@ -33,10 +34,19 @@ BOOL Precode::IsValidType(PrecodeType t)
 #ifdef HAS_THISPTR_RETBUF_PRECODE
     case PRECODE_THISPTR_RETBUF:
 #endif // HAS_THISPTR_RETBUF_PRECODE
+    case PRECODE_UMENTRY_THUNK:
         return TRUE;
     default:
         return FALSE;
     }
+}
+
+UMEntryThunk* Precode::AsUMEntryThunk()
+{
+    LIMITED_METHOD_CONTRACT;
+    SUPPORTS_DAC;
+
+    return dac_cast<PTR_UMEntryThunk>(this);
 }
 
 SIZE_T Precode::SizeOf(PrecodeType t)
@@ -184,6 +194,26 @@ PCODE Precode::TryToSkipFixupPrecode(PCODE addr)
 
 #ifndef DACCESS_COMPILE
 
+#ifdef FEATURE_INTERPRETER
+InterpreterPrecode* Precode::AllocateInterpreterPrecode(PCODE byteCode,
+                                                        LoaderAllocator *  pLoaderAllocator,
+                                                        AllocMemTracker *  pamTracker)
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_NOTRIGGER;
+        MODE_ANY;
+    }
+    CONTRACTL_END;
+
+    SIZE_T size = sizeof(InterpreterPrecode);
+    InterpreterPrecode* pPrecode = (InterpreterPrecode*)pamTracker->Track(pLoaderAllocator->GetNewStubPrecodeHeap()->AllocAlignedMem(size, 1));
+    pPrecode->Init(pPrecode, byteCode);
+    return pPrecode;
+}
+#endif // FEATURE_INTERPRETER
+
 Precode* Precode::Allocate(PrecodeType t, MethodDesc* pMD,
                            LoaderAllocator *  pLoaderAllocator,
                            AllocMemTracker *  pamTracker)
@@ -227,7 +257,7 @@ void Precode::Init(Precode* pPrecodeRX, PrecodeType t, MethodDesc* pMD, LoaderAl
 
     switch (t) {
     case PRECODE_STUB:
-        ((StubPrecode*)this)->Init((StubPrecode*)pPrecodeRX, pMD, pLoaderAllocator);
+        ((StubPrecode*)this)->Init((StubPrecode*)pPrecodeRX, (TADDR)pMD, pLoaderAllocator);
         break;
 #ifdef HAS_NDIRECT_IMPORT_PRECODE
     case PRECODE_NDIRECT_IMPORT:
@@ -368,8 +398,8 @@ void FixupPrecode::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
 
 #ifndef DACCESS_COMPILE
 
-void StubPrecode::Init(StubPrecode* pPrecodeRX, MethodDesc* pMD, LoaderAllocator *pLoaderAllocator /* = NULL */,
-    BYTE type /* = StubPrecode::Type */, TADDR target /* = NULL */)
+void StubPrecode::Init(StubPrecode* pPrecodeRX, TADDR secretParam, LoaderAllocator *pLoaderAllocator /* = NULL */,
+    TADDR type /* = StubPrecode::Type */, TADDR target /* = NULL */)
 {
     WRAPPER_NO_CONTRACT;
 
@@ -384,7 +414,7 @@ void StubPrecode::Init(StubPrecode* pPrecodeRX, MethodDesc* pMD, LoaderAllocator
         pStubData->Target = target;
     }
 
-    pStubData->MethodDesc = pMD;
+    pStubData->SecretParam = secretParam;
     pStubData->Type = type;
 }
 
@@ -454,7 +484,7 @@ void StubPrecode::GenerateCodePage(BYTE* pageBase, BYTE* pageBaseRX, SIZE_T page
         BYTE* pTargetSlot = pageBaseRX + i + pageSize + offsetof(StubPrecodeData, Target);
         *(BYTE**)(pageBase + i + SYMBOL_VALUE(StubPrecodeCode_Target_Offset)) = pTargetSlot;
 
-        BYTE* pMethodDescSlot = pageBaseRX + i + pageSize + offsetof(StubPrecodeData, MethodDesc);
+        BYTE* pMethodDescSlot = pageBaseRX + i + pageSize + offsetof(StubPrecodeData, SecretParam);
         *(BYTE**)(pageBase + i + SYMBOL_VALUE(StubPrecodeCode_MethodDesc_Offset)) = pMethodDescSlot;
     }
 #else // TARGET_X86
@@ -467,7 +497,7 @@ BOOL StubPrecode::IsStubPrecodeByASM(PCODE addr)
     BYTE *pInstr = (BYTE*)PCODEToPINSTR(addr);
 #ifdef TARGET_X86
     return *pInstr == *(BYTE*)(StubPrecodeCode) &&
-            *(DWORD*)(pInstr + SYMBOL_VALUE(StubPrecodeCode_MethodDesc_Offset)) == (DWORD)(pInstr + GetStubCodePageSize() + offsetof(StubPrecodeData, MethodDesc)) &&
+            *(DWORD*)(pInstr + SYMBOL_VALUE(StubPrecodeCode_MethodDesc_Offset)) == (DWORD)(pInstr + GetStubCodePageSize() + offsetof(StubPrecodeData, SecretParam)) &&
             *(WORD*)(pInstr + 5) == *(WORD*)((BYTE*)StubPrecodeCode + 5) &&
             *(DWORD*)(pInstr + SYMBOL_VALUE(StubPrecodeCode_Target_Offset)) == (DWORD)(pInstr + GetStubCodePageSize() + offsetof(StubPrecodeData, Target));
 #else // TARGET_X86
@@ -483,12 +513,24 @@ BOOL StubPrecode::IsStubPrecodeByASM(PCODE addr)
 #endif // TARGET_X86
 }
 
+#ifdef FEATURE_INTERPRETER
+void InterpreterPrecode::Init(InterpreterPrecode* pPrecodeRX, TADDR byteCodeAddr)
+{
+    WRAPPER_NO_CONTRACT;
+    InterpreterPrecodeData *pStubData = GetData();
+
+    pStubData->Target = (PCODE)InterpreterStub;
+    pStubData->ByteCodeAddr = byteCodeAddr;
+    pStubData->Type = InterpreterPrecode::Type;
+}
+#endif // FEATURE_INTERPRETER
+
 #ifdef HAS_NDIRECT_IMPORT_PRECODE
 
 void NDirectImportPrecode::Init(NDirectImportPrecode* pPrecodeRX, MethodDesc* pMD, LoaderAllocator *pLoaderAllocator)
 {
     WRAPPER_NO_CONTRACT;
-    StubPrecode::Init(pPrecodeRX, pMD, pLoaderAllocator, NDirectImportPrecode::Type, GetEEFuncEntryPoint(NDirectImportThunk));
+    StubPrecode::Init(pPrecodeRX, (TADDR)pMD, pLoaderAllocator, NDirectImportPrecode::Type, GetEEFuncEntryPoint(NDirectImportThunk));
 }
 
 #endif // HAS_NDIRECT_IMPORT_PRECODE

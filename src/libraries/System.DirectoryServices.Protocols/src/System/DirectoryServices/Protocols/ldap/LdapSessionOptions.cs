@@ -757,6 +757,12 @@ namespace System.DirectoryServices.Protocols
             }
         }
 
+        public int ProtocolVersion
+        {
+            get => GetIntValueHelper(LdapOption.LDAP_OPT_VERSION);
+            set => SetIntValueHelper(LdapOption.LDAP_OPT_VERSION, value);
+        }
+
         private int GetIntValueHelper(LdapOption option)
         {
             if (_connection._disposed)

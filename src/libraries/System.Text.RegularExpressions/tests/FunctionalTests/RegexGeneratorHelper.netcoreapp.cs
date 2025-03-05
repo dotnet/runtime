@@ -134,6 +134,12 @@ namespace System.Text.RegularExpressions.Tests
             return results[0];
         }
 
+        private static readonly CultureInfo s_cultureWithMinusNegativeSign = new CultureInfo("")
+        {
+            // To validate that generation still succeeds even when something other than '-' is used.
+            NumberFormat = new NumberFormatInfo() { NegativeSign = $"{(char)0x2212}" }
+        };
+
         internal static async Task<Regex[]> SourceGenRegexAsync(
             (string pattern, CultureInfo? culture, RegexOptions? options, TimeSpan? matchTimeout)[] regexes, CancellationToken cancellationToken = default)
         {
@@ -214,13 +220,24 @@ namespace System.Text.RegularExpressions.Tests
             comp = comp.ReplaceSyntaxTree(comp.SyntaxTrees.First(), CSharpSyntaxTree.ParseText(SourceText.From(code.ToString(), Encoding.UTF8), s_previewParseOptions));
 
             // Run the generator
-            GeneratorDriverRunResult generatorResults = s_generatorDriver.RunGenerators(comp!, cancellationToken).GetRunResult();
-            ImmutableArray<Diagnostic> generatorDiagnostics = generatorResults.Diagnostics.RemoveAll(d => d.Severity <= DiagnosticSeverity.Hidden);
-            if (generatorDiagnostics.Length != 0)
+            CultureInfo origCulture = CultureInfo.CurrentCulture;
+            CultureInfo.CurrentCulture = s_cultureWithMinusNegativeSign;
+            GeneratorDriverRunResult generatorResults;
+            ImmutableArray<Diagnostic> generatorDiagnostics;
+            try
             {
-                throw new ArgumentException(
-                    string.Join(Environment.NewLine, generatorResults.GeneratedTrees.Select(t => NumberLines(t.ToString()))) + Environment.NewLine +
-                    string.Join(Environment.NewLine, generatorDiagnostics));
+                generatorResults = s_generatorDriver.RunGenerators(comp!, cancellationToken).GetRunResult();
+                generatorDiagnostics = generatorResults.Diagnostics.RemoveAll(d => d.Severity <= DiagnosticSeverity.Hidden);
+                if (generatorDiagnostics.Length != 0)
+                {
+                    throw new ArgumentException(
+                        string.Join(Environment.NewLine, generatorResults.GeneratedTrees.Select(t => NumberLines(t.ToString()))) + Environment.NewLine +
+                        string.Join(Environment.NewLine, generatorDiagnostics));
+                }
+            }
+            finally
+            {
+                CultureInfo.CurrentCulture = origCulture;
             }
 
             // Compile the assembly to a stream

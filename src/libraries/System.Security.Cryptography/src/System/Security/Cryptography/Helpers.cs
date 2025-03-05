@@ -10,11 +10,18 @@ using System.Globalization;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
+using System.Security.Cryptography.X509Certificates;
 
 namespace Internal.Cryptography
 {
     internal static partial class Helpers
     {
+        internal static readonly PbeParameters Windows3desPbe =
+            new PbeParameters(PbeEncryptionAlgorithm.TripleDes3KeyPkcs12, HashAlgorithmName.SHA1, 2000);
+
+        internal static readonly PbeParameters WindowsAesPbe =
+            new PbeParameters(PbeEncryptionAlgorithm.Aes256Cbc, HashAlgorithmName.SHA256, 2000);
+
         internal static void AddRange<T>(this ICollection<T> coll, IEnumerable<T> newData)
         {
             foreach (T datum in newData)
@@ -385,6 +392,67 @@ namespace Internal.Cryptography
             else
             {
                 throw new ArgumentOutOfRangeException(nameof(hashAlgorithmName));
+            }
+        }
+
+        internal static PbeParameters MapExportParametersToPbeParameters(Pkcs12ExportPbeParameters exportParameters)
+        {
+            return exportParameters switch
+            {
+                Pkcs12ExportPbeParameters.Pkcs12TripleDesSha1 => Windows3desPbe,
+                Pkcs12ExportPbeParameters.Default or Pkcs12ExportPbeParameters.Pbes2Aes256Sha256 => WindowsAesPbe,
+                _ => throw new CryptographicException(),
+            };
+        }
+
+        internal static void ThrowIfInvalidPkcs12ExportParameters(Pkcs12ExportPbeParameters exportParameters)
+        {
+            if (exportParameters is < Pkcs12ExportPbeParameters.Default or > Pkcs12ExportPbeParameters.Pbes2Aes256Sha256)
+            {
+                throw new ArgumentOutOfRangeException(nameof(exportParameters));
+            }
+        }
+
+        internal static void ThrowIfInvalidPkcs12ExportParameters(PbeParameters exportParameters)
+        {
+            if (exportParameters.EncryptionAlgorithm is
+                PbeEncryptionAlgorithm.Aes128Cbc or PbeEncryptionAlgorithm.Aes192Cbc or PbeEncryptionAlgorithm.Aes256Cbc)
+            {
+                switch (exportParameters.HashAlgorithm.Name)
+                {
+                    case HashAlgorithmNames.SHA1:
+                    case HashAlgorithmNames.SHA256:
+                    case HashAlgorithmNames.SHA384:
+                    case HashAlgorithmNames.SHA512:
+                        return;
+                    case null or "":
+                        throw new CryptographicException(SR.Cryptography_HashAlgorithmNameNullOrEmpty);
+                    default:
+                        // Let SHA-3 fall in to default since SHA-3 has not been brought up for PKCS12.
+                        throw new CryptographicException(SR.Format(SR.Cryptography_UnknownAlgorithmIdentifier, exportParameters.HashAlgorithm.Name));
+                }
+            }
+            else if (exportParameters.EncryptionAlgorithm is PbeEncryptionAlgorithm.TripleDes3KeyPkcs12)
+            {
+                switch (exportParameters.HashAlgorithm.Name)
+                {
+                    case HashAlgorithmNames.SHA1:
+                        return;
+                    case null or "":
+                        throw new CryptographicException(SR.Cryptography_HashAlgorithmNameNullOrEmpty);
+                    default:
+                        throw new CryptographicException(SR.Format(SR.Cryptography_UnknownAlgorithmIdentifier, exportParameters.HashAlgorithm.Name));
+                }
+            }
+
+            throw new CryptographicException(SR.Format(SR.Cryptography_UnknownAlgorithmIdentifier, exportParameters.EncryptionAlgorithm));
+        }
+
+        internal static void ThrowIfPasswordContainsNullCharacter(string? password)
+        {
+            if (password is not null && password.Contains('\0'))
+            {
+                throw new ArgumentException(SR.Argument_PasswordNullChars, nameof(password));
             }
         }
     }

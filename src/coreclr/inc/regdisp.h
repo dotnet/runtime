@@ -421,7 +421,6 @@ inline void FillContextPointers(PT_KNONVOLATILE_CONTEXT_POINTERS pCtxPtrs, PT_CO
     *(&pCtxPtrs->S6) = &pCtx->S6;
     *(&pCtxPtrs->S7) = &pCtx->S7;
     *(&pCtxPtrs->S8) = &pCtx->S8;
-    *(&pCtxPtrs->Tp) = &pCtx->Tp;
     *(&pCtxPtrs->Fp) = &pCtx->Fp;
     *(&pCtxPtrs->Ra) = &pCtx->Ra;
 #elif defined(TARGET_ARM) // TARGET_LOONGARCH64

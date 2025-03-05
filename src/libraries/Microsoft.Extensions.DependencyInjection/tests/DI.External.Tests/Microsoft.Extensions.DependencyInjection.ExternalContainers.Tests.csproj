@@ -4,9 +4,6 @@
     <TargetFrameworks>$(NetCoreAppCurrent);$(NetFrameworkMinimum)</TargetFrameworks>
     <EnableDefaultItems>true</EnableDefaultItems>
     <NoWarn>$(NoWarn);CS8002</NoWarn>
-
-    <!-- third party DI containers bring in NS1.x dependencies -->
-    <FlagNetStandard1XDependencies>false</FlagNetStandard1XDependencies>
   </PropertyGroup>
 
   <!-- DesignTimeBuild requires all the TargetFramework Derived Properties to not be present in the first property group. -->
@@ -23,16 +20,11 @@
     <PackageReference Include="LightInject.Microsoft.DependencyInjection" Version="3.7.1" />
     <PackageReference Include="Grace.DependencyInjection.Extensions" Version="7.1.0" />
     <PackageReference Include="Stashbox.Extensions.Dependencyinjection" Version="4.2.3" />
-    <PackageReference Include="System.Text.Json" Version="$(SystemTextJsonVersion)" />
   </ItemGroup>
 
   <!-- These packages don't support .NETFramework -->
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
     <PackageReference Include="Lamar.Microsoft.DependencyInjection" Version="8.0.1" />
-    <!-- Lamar depends on System.Runtime.Loader which brings in 1.x packages. 
-         Those have audit warnings when runtime.* packages are brought in for RID-specific restore.
-         Avoid by referencing the latest Microsoft.NETCore.Targets which will prevent all 1.x runtime.* packages from being referenced. -->
-    <PackageReference Include="Microsoft.NETCore.Targets" Version="5.0.0" />
   </ItemGroup>
 
 </Project>

@@ -68,7 +68,7 @@
 #error The Volatile type is currently only defined for Visual C++ and GNU C++
 #endif
 
-#if defined(__GNUC__) && !defined(HOST_X86) && !defined(HOST_AMD64) && !defined(HOST_ARM) && !defined(HOST_ARM64) && !defined(HOST_LOONGARCH64) && !defined(HOST_RISCV64) && !defined(HOST_S390X) && !defined(HOST_POWERPC64)
+#if defined(__GNUC__) && !defined(HOST_X86) && !defined(HOST_AMD64) && !defined(HOST_ARM) && !defined(HOST_ARM64) && !defined(HOST_LOONGARCH64) && !defined(HOST_RISCV64) && !defined(HOST_S390X) && !defined(HOST_POWERPC64) && !defined(HOST_WASM)
 #error The Volatile type is currently only defined for GCC when targeting x86, AMD64, ARM, ARM64, LOONGARCH64, RISCV64, PPC64LE, or S390X CPUs
 #endif
 
