@@ -343,7 +343,7 @@ async function readBootConfigResponse (loadConfigResponse: Response): Promise<Mo
     const config = loaderHelpers.config;
     const loadedConfig: MonoConfig = await loadConfigResponse.json();
 
-    if (!config.applicationEnvironment) {
+    if (!config.applicationEnvironment && !loadedConfig.applicationEnvironment) {
         loadedConfig.applicationEnvironment = loadConfigResponse.headers.get("Blazor-Environment") || loadConfigResponse.headers.get("DotNet-Environment") || undefined;
     }
 

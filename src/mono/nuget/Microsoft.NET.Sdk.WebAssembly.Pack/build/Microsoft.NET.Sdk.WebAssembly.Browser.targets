@@ -325,6 +325,8 @@ Copyright (c) .NET Foundation. All rights reserved.
   <Target Name="_GenerateBuildWasmBootJson" DependsOnTargets="$(GenerateBuildWasmBootJsonDependsOn)">
     <PropertyGroup>
       <_WasmBuildBootJsonPath>$(IntermediateOutputPath)$(_WasmBootConfigFileName)</_WasmBuildBootJsonPath>
+      <_WasmBuildApplicationEnvironmentName>$(WasmApplicationEnvironmentName)</_WasmBuildApplicationEnvironmentName>
+      <_WasmBuildApplicationEnvironmentName Condition="'$(_WasmBuildApplicationEnvironmentName)' == ''">Development</_WasmBuildApplicationEnvironmentName>
     </PropertyGroup>
 
     <ItemGroup>
@@ -359,6 +361,7 @@ Copyright (c) .NET Foundation. All rights reserved.
 
     <GenerateWasmBootJson
       AssemblyPath="@(IntermediateAssembly)"
+      ApplicationEnvironment="$(_WasmBuildApplicationEnvironmentName)"
       Resources="@(WasmStaticWebAsset);@(_WasmJsModuleCandidatesForBuild)"
       Endpoints="@(_WasmResolvedEndpoints)"
       DebugBuild="true"
@@ -617,6 +620,9 @@ Copyright (c) .NET Foundation. All rights reserved.
   </Target>
 
   <Target Name="GeneratePublishWasmBootJson" DependsOnTargets="$(GeneratePublishWasmBootJsonDependsOn)">
+    <PropertyGroup>
+      <_WasmPublishApplicationEnvironmentName>$(WasmApplicationEnvironmentName)</_WasmPublishApplicationEnvironmentName>
+    </PropertyGroup>
     <ItemGroup>
       <_WasmPublishAsset
         Include="@(StaticWebAsset)"
@@ -649,6 +655,7 @@ Copyright (c) .NET Foundation. All rights reserved.
 
     <GenerateWasmBootJson
       AssemblyPath="@(IntermediateAssembly)"
+      ApplicationEnvironment="$(_WasmPublishApplicationEnvironmentName)"
       Resources="@(_WasmPublishAsset);@(_WasmJsModuleCandidatesForPublish)"
       Endpoints="@(_WasmResolvedEndpointsForPublish)"
       DebugBuild="false"

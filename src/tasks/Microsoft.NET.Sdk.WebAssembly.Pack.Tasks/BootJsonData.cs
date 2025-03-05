@@ -24,6 +24,8 @@ public class BootJsonData
 
     public string mainAssemblyName { get; set; }
 
+    public string applicationEnvironment { get; set; }
+
     /// <summary>
     /// Gets the set of resources needed to boot the application. This includes the transitive
     /// closure of .NET assemblies (including the entrypoint assembly), the dotnet.wasm file,

@@ -84,6 +84,8 @@ public class GenerateWasmBootJson : Task
 
     public bool FingerprintAssets { get; set; }
 
+    public string ApplicationEnvironment { get; set; }
+
     public override bool Execute()
     {
         var entryAssemblyName = AssemblyName.GetAssemblyName(AssemblyPath).Name;
@@ -108,6 +110,7 @@ public class GenerateWasmBootJson : Task
         {
             resources = new ResourcesData(),
             startupMemoryCache = helper.ParseOptionalBool(StartupMemoryCache),
+            applicationEnvironment = ApplicationEnvironment
         };
 
         if (IsTargeting80OrLater())
