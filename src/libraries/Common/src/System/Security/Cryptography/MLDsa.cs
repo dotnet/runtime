@@ -1300,16 +1300,17 @@ namespace System.Security.Cryptography
             ThrowIfDisposed();
 
             // TODO: Determine a more appropriate maximum size once the format is actually known.
-            int initialSize = _parameterSetInfo.SecretKeySizeInBytes * 2;
+            int size = _parameterSetInfo.SecretKeySizeInBytes * 2;
             // The buffer is only being passed out as a span, so the derived type can't meaningfully
             // hold on to it without being malicious.
-            byte[] rented = CryptoPool.Rent(initialSize);
+            byte[] rented = CryptoPool.Rent(size);
             int written;
 
             while (!TryExportPkcs8PrivateKey(rented, out written))
             {
+                size = rented.Length;
                 CryptoPool.Return(rented, 0);
-                rented = CryptoPool.Rent(rented.Length * 2);
+                rented = CryptoPool.Rent(size * 2);
             }
 
             AsnWriter tmp = new AsnWriter(AsnEncodingRules.BER);

@@ -284,12 +284,12 @@ namespace System.Security.Cryptography
             {
                 using (PointerMemoryManager<byte> manager = new(pointer, source.Length))
                 {
-                    ArraySegment<byte> decrypted = KeyFormatHelper.DecryptPkcs8(password, manager.Memory, out bytesRead);
-                    AsnValueReader reader = new(decrypted, AsnEncodingRules.BER);
-                    reader.ReadEncodedValue();
+                    ArraySegment<byte> decrypted = DecryptPkcs8(password, manager.Memory, out bytesRead);
 
                     try
                     {
+                        AsnValueReader reader = new(decrypted, AsnEncodingRules.BER);
+                        reader.ReadEncodedValue();
                         reader.ThrowIfNotEmpty();
                         return keyReader(decrypted);
                     }
