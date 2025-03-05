@@ -7,9 +7,19 @@
 
   <ItemGroup>
     <SystemLib Include="$(SystemLibList)" />
+    <!--
+      Some platforms are opted-out from using the in-tree zlib-ng by default:
+      - Android and iOS-like platforms: concerns about extra binary size
+      - Armv6: zlib-ng has build breaks
+    -->
+    <SystemLib Include="zlib" Condition="'$(TargetsAppleMobile)' == 'true' or '$(TargetsAndroid)' == 'true' or '$(TargetArchitecture)' == 'armv6'" />
   </ItemGroup>
   <ItemGroup Condition="'@(SystemLib->AnyWithMetadataValue('Identity','brotli'))' != 'true'">
     <ProjectReference Include="brotli.proj" />
     <ProjectReference Include="brotli.proj" AdditionalProperties="BuildFlavor=NOIPO" />
+  </ItemGroup>
+  <ItemGroup Condition="'@(SystemLib->AnyWithMetadataValue('Identity','zlib'))' != 'true'">
+    <ProjectReference Include="zlib-ng.proj" />
+    <ProjectReference Include="zlib-ng.proj" AdditionalProperties="BuildFlavor=NOIPO" />
   </ItemGroup>
 </Project>

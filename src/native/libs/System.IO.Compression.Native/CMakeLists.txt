@@ -2,35 +2,27 @@ project(System.IO.Compression.Native C)
 
 include(${CMAKE_CURRENT_LIST_DIR}/extra_libs.cmake)
 
-if (NOT CLR_CMAKE_USE_SYSTEM_ZLIB)
-    include(${CLR_SRC_NATIVE_DIR}/external/zlib-ng.cmake)
-endif()
-
 find_library(BROTLIDEC brotlidec REQUIRED)
 find_library(BROTLIENC brotlienc REQUIRED)
 find_library(BROTLICOMMON brotlicommon)
 find_path(BROTLI_INCLUDE_DIRS "brotli/decode.h")
+find_package(ZLIB REQUIRED)
 
 set(BROTLI_LIBRARIES ${BROTLIDEC} ${BROTLIENC})
 if (BROTLICOMMON)
     list(APPEND BROTLI_LIBRARIES ${BROTLICOMMON})
 endif()
+
+# Resolve the NOIPO variants of libraries when we aren't using the system ones.
+set (CMAKE_PREFIX_PATH ${CMAKE_PREFIX_PATH}/NOIPO/)
 if (NOT CLR_CMAKE_USE_SYSTEM_BROTLI)
-    set (CMAKE_PREFIX_PATH ${CMAKE_PREFIX_PATH}/NOIPO/)
     find_library(BROTLIDEC_NOIPO brotlidec REQUIRED)
     find_library(BROTLIENC_NOIPO brotlienc REQUIRED)
     find_library(BROTLICOMMON_NOIPO brotlicommon REQUIRED)
     set (BROTLI_LIBRARIES_NOIPO ${BROTLIDEC_NOIPO} ${BROTLIENC_NOIPO} ${BROTLICOMMON_NOIPO})
 endif()
-
-if (STATIC_LIBS_ONLY)
-    # For every vendored library that we're actually vendoring (and not referencing the system one)
-    # mark it as "no interprocedural optimization" so that it's compatible with our NativeAOT shipping story.
-    foreach(VENDORED_LIB IN ITEMS zlib)
-        if (TARGET ${VENDORED_LIB})
-            set_target_properties(${VENDORED_LIB} PROPERTIES INTERPROCEDURAL_OPTIMIZATION OFF)
-        endif()
-    endforeach()
+if (NOT CLR_CMAKE_USE_SYSTEM_ZLIB)
+    find_library(ZLIB_NOIPO NAMES zlib zlibstatic zlibstaticd REQUIRED)
 endif()
 
 configure_file(
@@ -67,7 +59,7 @@ if (CLR_CMAKE_TARGET_UNIX OR CLR_CMAKE_TARGET_BROWSER OR CLR_CMAKE_TARGET_WASI)
         )
 
         target_link_libraries(System.IO.Compression.Native
-            PRIVATE
+            PUBLIC
             ${NATIVE_LIBS_EXTRA}
         )
 
@@ -104,9 +96,9 @@ if (CLR_CMAKE_TARGET_UNIX OR CLR_CMAKE_TARGET_BROWSER OR CLR_CMAKE_TARGET_WASI)
         ${NATIVECOMPRESSION_SOURCES}
     )
 
-    if (NOT CLR_CMAKE_USE_SYSTEM_ZLIB)
-        target_link_libraries(System.IO.Compression.Native-Static PRIVATE zlibstatic)
-    endif()
+    target_link_libraries(System.IO.Compression.Native-Static
+        PUBLIC
+        ZLIB::ZLIB)
 
     set_target_properties(System.IO.Compression.Native-Static PROPERTIES OUTPUT_NAME System.IO.Compression.Native CLEAN_DIRECT_OUTPUT 1)
     target_link_libraries(System.IO.Compression.Native-Static
@@ -121,8 +113,8 @@ if (CLR_CMAKE_TARGET_UNIX OR CLR_CMAKE_TARGET_BROWSER OR CLR_CMAKE_TARGET_WASI)
         install (PROGRAMS ${BROTLI_LIB} DESTINATION ${STATIC_LIB_DESTINATION} COMPONENT libs)
     endforeach()
 
-    if (NOT CLR_CMAKE_USE_SYSTEM_ZLIB)
-        install (TARGETS zlib DESTINATION ${STATIC_LIB_DESTINATION} COMPONENT libs)
+    if (ZLIB_NOIPO)
+        install (PROGRAMS ${ZLIB_NOIPO} DESTINATION ${STATIC_LIB_DESTINATION} COMPONENT libs)
     endif()
 else ()
     set(NATIVE_LIBS_EXTRA)
@@ -141,9 +133,9 @@ else ()
             ${VERSION_FILE_RC_PATH}
         )
 
-        if (NOT CLR_CMAKE_USE_SYSTEM_ZLIB)
-            target_link_libraries(System.IO.Compression.Native PRIVATE zlib)
-        endif()
+        target_link_libraries(System.IO.Compression.Native-Static
+            PUBLIC
+            ZLIB::ZLIB)
 
         target_include_directories(System.IO.Compression.Native PUBLIC ${BROTLI_INCLUDE_DIRS})
         target_link_libraries(System.IO.Compression.Native PUBLIC ${BROTLI_LIBRARIES})
@@ -158,10 +150,9 @@ else ()
         ${NATIVECOMPRESSION_SOURCES}
     )
 
-    if (NOT CLR_CMAKE_USE_SYSTEM_ZLIB)
-        target_link_libraries(System.IO.Compression.Native-Static PRIVATE zlibstatic)
-    endif()
-
+    target_link_libraries(System.IO.Compression.Native-Static
+        PUBLIC
+        ZLIB::ZLIB)
     target_include_directories(System.IO.Compression.Native-Static PUBLIC ${BROTLI_INCLUDE_DIRS})
     target_link_libraries(System.IO.Compression.Native-Static PUBLIC ${BROTLI_LIBRARIES})
 
@@ -171,9 +162,9 @@ else ()
             ${NATIVECOMPRESSION_SOURCES}
         )
 
-        if (NOT CLR_CMAKE_USE_SYSTEM_ZLIB)
-            target_link_libraries(System.IO.Compression.Native.Aot PRIVATE zlibstatic)
-        endif()
+        target_link_libraries(System.IO.Compression.Native-Static
+            PUBLIC
+            ZLIB::ZLIB)
 
         target_include_directories(System.IO.Compression.Native.Aot PUBLIC ${BROTLI_INCLUDE_DIRS})
         target_link_libraries(System.IO.Compression.Native.Aot PUBLIC ${BROTLI_LIBRARIES})
@@ -195,10 +186,10 @@ else ()
     if(STATIC_LIBS_ONLY)
         install_static_library(System.IO.Compression.Native.Aot aotsdk nativeaot)
         foreach(BROTLI_LIB ${BROTLI_LIBRARIES_NOIPO})
-            install (PROGRAMS ${BROTLI_LIB} DESTINATION ${STATIC_LIB_DESTINATION} COMPONENT libs)
+            install (PROGRAMS ${BROTLI_LIB} DESTINATION aotsdk COMPONENT nativeaot)
         endforeach()
-        if (NOT CLR_CMAKE_USE_SYSTEM_ZLIB)
-            install_static_library(zlib aotsdk nativeaot)
+        if (${ZLIB_NOIPO})
+            install (PROGRAMS ${ZLIB_NOIPO} DESTINATION aotsdk COMPONENT nativeaot)
         endif()
     endif()
 

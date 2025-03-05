@@ -156,10 +156,6 @@ if(CLR_CMAKE_TARGET_WIN32)
         delayimp.lib
     )
 
-    # additional requirements for System.IO.Compression.Native
-    include(${CLR_SRC_NATIVE_DIR}/libs/System.IO.Compression.Native/extra_libs.cmake)
-    append_extra_compression_libs(NATIVE_LIBS)
-
     set(RUNTIMEINFO_LIB runtimeinfo)
 
 else()
@@ -195,7 +191,7 @@ else()
         LIST(APPEND NATIVE_LIBS
             eventprovider
         )
-    endif(FEATURE_EVENT_TRACE) 
+    endif(FEATURE_EVENT_TRACE)
     LIST(APPEND NATIVE_LIBS
         nativeresourcestring
     )

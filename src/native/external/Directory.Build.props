@@ -3,6 +3,8 @@
   <ItemGroup Condition="'$(HostOS)' == 'windows'">
     <CFlag Include="/guard:cf" />
     <CFlag Include="/guard:ehcont" />
+    <CMakeArg Condition="'$(Configuration)' == 'Debug' or '$(Configuration)' == 'Checked'" Include="-DCMAKE_MSVC_RUNTIME_LIBRARY=MultiThreadedDebug" />
+    <CMakeArg Condition="'$(Configuration)' == 'Release'" Include="-DCMAKE_MSVC_RUNTIME_LIBRARY=MultiThreaded" />
   </ItemGroup>
   <ItemGroup Condition="'$(HostOS)' == 'windows'">
     <LDFlag Include="/guard:ehcont" />
