@@ -4756,6 +4756,93 @@ void Lowering::LowerRetFieldList(GenTreeOp* ret, GenTreeFieldList* fieldList)
     LowerFieldListToFieldListOfRegisters(fieldList);
 }
 
+//----------------------------------------------------------------------------------------------
+// IsFieldListCompatibleWithReturn:
+//   Check if the fields of a FIELD_LIST are compatible with the registers
+//   being returned.
+//
+// Arguments:
+//   fieldList - The FIELD_LIST node
+//
+// Returns:
+//   True if the fields of the FIELD_LIST are all direct insertions into the
+//   return registers.
+//
+bool Lowering::IsFieldListCompatibleWithReturn(GenTreeFieldList* fieldList)
+{
+    JITDUMP("Checking if field list [%06u] is compatible with return ABI: ", Compiler::dspTreeID(fieldList));
+    const ReturnTypeDesc& retDesc    = comp->compRetTypeDesc;
+    unsigned              numRetRegs = retDesc.GetReturnRegCount();
+
+    GenTreeFieldList::Use* use = fieldList->Uses().GetHead();
+    for (unsigned i = 0; i < numRetRegs; i++)
+    {
+        unsigned  regStart = retDesc.GetReturnFieldOffset(i);
+        var_types regType  = retDesc.GetReturnRegType(i);
+        unsigned  regEnd   = regStart + genTypeSize(regType);
+
+        // TODO-CQ: Could just create a 0 for this.
+        if (use == nullptr)
+        {
+            JITDUMP("it is not; register %u has no corresponding field\n", i);
+            return false;
+        }
+
+        do
+        {
+            unsigned fieldStart = use->GetOffset();
+
+            if (fieldStart < regStart)
+            {
+                // Not fully contained in a register.
+                // TODO-CQ: Could just remove these fields if they don't partially overlap with the next register.
+                JITDUMP("it is not; field [%06u] starts before register %u\n", Compiler::dspTreeID(use->GetNode()), i);
+                return false;
+            }
+
+            if (fieldStart >= regEnd)
+            {
+                break;
+            }
+
+            unsigned fieldEnd = fieldStart + genTypeSize(use->GetType());
+            if (fieldEnd > regEnd)
+            {
+                JITDUMP("it is not; field [%06u] ends after register %u\n", Compiler::dspTreeID(use->GetNode()), i);
+                return false;
+            }
+
+            // float -> float insertions are not yet supported
+            if (varTypeUsesFloatReg(use->GetNode()) && varTypeUsesFloatReg(regType) && (fieldStart != regStart))
+            {
+                JITDUMP("it is not; field [%06u] requires an insertion into register %u\n",
+                        Compiler::dspTreeID(use->GetNode()), i);
+                return false;
+            }
+
+            use = use->GetNext();
+        } while (use != nullptr);
+    }
+
+    if (use != nullptr)
+    {
+        // TODO-CQ: Could just remove these fields.
+        JITDUMP("it is not; field [%06u] corresponds to no register\n", Compiler::dspTreeID(use->GetNode()));
+        return false;
+    }
+
+    JITDUMP("it is\n");
+    return true;
+}
+
+//----------------------------------------------------------------------------------------------
+// LowerFieldListToFieldListOfRegisters:
+//   Lower the specified field list into one that is compatible with the return
+//   registers.
+//
+// Arguments:
+//     fieldList - The field list
+//
 void Lowering::LowerFieldListToFieldListOfRegisters(GenTreeFieldList* fieldList)
 {
     const ReturnTypeDesc& retDesc = comp->compRetTypeDesc;
@@ -4866,85 +4953,6 @@ void Lowering::LowerFieldListToFieldListOfRegisters(GenTreeFieldList* fieldList)
     }
 
     assert(use == nullptr);
-}
-
-//----------------------------------------------------------------------------------------------
-// IsFieldListCompatibleWithReturn:
-//   Check if the fields of a FIELD_LIST are compatible with the registers
-//   being returned.
-//
-// Arguments:
-//   fieldList - The FIELD_LIST node
-//
-// Returns:
-//   True if the fields of the FIELD_LIST are all direct insertions into the
-//   return registers.
-//
-bool Lowering::IsFieldListCompatibleWithReturn(GenTreeFieldList* fieldList)
-{
-    JITDUMP("Checking if field list [%06u] is compatible with return ABI: ", Compiler::dspTreeID(fieldList));
-    const ReturnTypeDesc& retDesc    = comp->compRetTypeDesc;
-    unsigned              numRetRegs = retDesc.GetReturnRegCount();
-
-    GenTreeFieldList::Use* use = fieldList->Uses().GetHead();
-    for (unsigned i = 0; i < numRetRegs; i++)
-    {
-        unsigned  regStart = retDesc.GetReturnFieldOffset(i);
-        var_types regType  = retDesc.GetReturnRegType(i);
-        unsigned  regEnd   = regStart + genTypeSize(regType);
-
-        // TODO-CQ: Could just create a 0 for this.
-        if (use == nullptr)
-        {
-            JITDUMP("it is not; register %u has no corresponding field\n", i);
-            return false;
-        }
-
-        do
-        {
-            unsigned fieldStart = use->GetOffset();
-
-            if (fieldStart < regStart)
-            {
-                // Not fully contained in a register.
-                // TODO-CQ: Could just remove these fields if they don't partially overlap with the next register.
-                JITDUMP("it is not; field [%06u] starts before register %u\n", Compiler::dspTreeID(use->GetNode()), i);
-                return false;
-            }
-
-            if (fieldStart >= regEnd)
-            {
-                break;
-            }
-
-            unsigned fieldEnd = fieldStart + genTypeSize(use->GetType());
-            if (fieldEnd > regEnd)
-            {
-                JITDUMP("it is not; field [%06u] ends after register %u\n", Compiler::dspTreeID(use->GetNode()), i);
-                return false;
-            }
-
-            // float -> float insertions are not yet supported
-            if (varTypeUsesFloatReg(use->GetNode()) && varTypeUsesFloatReg(regType) && (fieldStart != regStart))
-            {
-                JITDUMP("it is not; field [%06u] requires an insertion into register %u\n",
-                        Compiler::dspTreeID(use->GetNode()), i);
-                return false;
-            }
-
-            use = use->GetNext();
-        } while (use != nullptr);
-    }
-
-    if (use != nullptr)
-    {
-        // TODO-CQ: Could just remove these fields.
-        JITDUMP("it is not; field [%06u] corresponds to no register\n", Compiler::dspTreeID(use->GetNode()));
-        return false;
-    }
-
-    JITDUMP("it is\n");
-    return true;
 }
 
 //----------------------------------------------------------------------------------------------
