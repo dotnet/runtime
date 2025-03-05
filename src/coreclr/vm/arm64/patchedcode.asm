@@ -42,26 +42,32 @@
         ALIGN 64  ; Align to power of two at least as big as patchable literal pool so that it fits optimally in cache line
     WRITE_BARRIER_ENTRY JIT_WriteBarrier_Table
 wbs_begin
-wbs_card_table
+PATCH_LABEL JIT_WriteBarrier_Patch_Label_CardTable
         DCQ 0
-wbs_card_bundle_table
+PATCH_LABEL JIT_WriteBarrier_Patch_Label_CardBundleTable
         DCQ 0
-wbs_sw_ww_table
+PATCH_LABEL JIT_WriteBarrier_Patch_Label_WriteWatchTable
         DCQ 0
-wbs_ephemeral_low
+PATCH_LABEL JIT_WriteBarrier_Patch_Label_Lower
         DCQ 0
-wbs_ephemeral_high
+PATCH_LABEL JIT_WriteBarrier_Patch_Label_Upper
         DCQ 0
 wbs_lowest_address
+PATCH_LABEL JIT_WriteBarrier_Patch_Label_LowestAddress
         DCQ 0
 wbs_highest_address
+PATCH_LABEL JIT_WriteBarrier_Patch_Label_HighestAddress
         DCQ 0
-#ifdef WRITE_BARRIER_CHECK
-wbs_GCShadow
+PATCH_LABEL JIT_WriteBarrier_Patch_Label_RegionToGeneration
         DCQ 0
-wbs_GCShadowEnd
+PATCH_LABEL JIT_WriteBarrier_Patch_Label_RegionShr
+        DCW 0
+ifdef WRITE_BARRIER_CHECK
+PATCH_LABEL JIT_WriteBarrier_Patch_Label_GCShadow
         DCQ 0
-#endif
+PATCH_LABEL JIT_WriteBarrier_Patch_Label_GCShadowEnd
+        DCQ 0
+endif
     WRITE_BARRIER_END JIT_WriteBarrier_Table
 
 ;-----------------------------------------------------------------------------
@@ -117,6 +123,9 @@ NotInHeap
 
 ;-----------------------------------------------------------------------------
 ; void JIT_WriteBarrier(Object** dst, Object* src)
+;
+; Empty function which at runtime is patched with one of the JIT_WriteBarrier_
+; functions below.
 ; On entry:
 ;   x14  : the destination address (LHS of the assignment)
 ;   x15  : the object reference (RHS of the assignment)
@@ -131,100 +140,8 @@ NotInHeap
 ;         if you add more trashed registers.
 ;
     WRITE_BARRIER_ENTRY JIT_WriteBarrier
-        stlr     x15, [x14]
-
-#ifdef WRITE_BARRIER_CHECK
-        ; Update GC Shadow Heap
-
-        ; Do not perform the work if g_GCShadow is 0
-        ldr      x12, wbs_GCShadow
-        cbz      x12, ShadowUpdateEnd
-
-        ; Compute address of shadow heap location:
-        ;   pShadow = $g_GCShadow + (x14 - g_lowest_address)
-        ldr      x17, wbs_lowest_address
-        sub      x17, x14, x17
-        add      x12, x17, x12
-
-        ; if (pShadow >= $g_GCShadowEnd) goto end
-        ldr      x17, wbs_GCShadowEnd
-        cmp      x12, x17
-        bhs      ShadowUpdateEnd
-
-        ; *pShadow = x15
-        str      x15, [x12]
-
-        ; Ensure that the write to the shadow heap occurs before the read from the GC heap so that race
-        ; conditions are caught by INVALIDGCVALUE.
-        dmb      ish
-
-        ; if ([x14] == x15) goto end
-        ldr      x17, [x14]
-        cmp      x17, x15
-        beq      ShadowUpdateEnd
-
-        ; *pShadow = INVALIDGCVALUE (0xcccccccd)
-        movz     x17, #0xcccd
-        movk     x17, #0xcccc, LSL #16
-        str      x17, [x12]
-
-ShadowUpdateEnd
-#endif
-
-#ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
-        ; Update the write watch table if necessary
-        ldr      x12,  wbs_sw_ww_table
-        cbz      x12,  CheckCardTable
-        add      x12,  x12, x14, LSR #0xC  // SoftwareWriteWatch::AddressToTableByteIndexShift
-        ldrb     w17,  [x12]
-        cbnz     x17,  CheckCardTable
-        mov      w17,  0xFF
-        strb     w17,  [x12]
-#endif
-
-CheckCardTable
-        ; Branch to Exit if the reference is not in the Gen0 heap
-        ldr      x12,  wbs_ephemeral_low
-        ldr      x17,  wbs_ephemeral_high
-        cmp      x15,  x12
-        ccmp     x15,  x17, #0x2, hs
-        bhs      Exit
-
-        ; Check if we need to update the card table
-        ldr      x12, wbs_card_table
-
-        ; x15 := pointer into card table
-        add      x15, x12, x14, lsr #11
-
-        ldrb     w12, [x15]
-        cmp      x12, 0xFF
-        beq      Exit
-
-        ; Update the card table
-        mov      x12, 0xFF
-        strb     w12, [x15]
-
-#ifdef FEATURE_MANUALLY_MANAGED_CARD_BUNDLES
-        ; Check if we need to update the card bundle table
-        ldr      x12, wbs_card_bundle_table
-
-        ; x15 := pointer into card bundle table
-        add      x15, x12, x14, lsr #21
-
-        ldrb     w12, [x15]
-        cmp      x12, 0xFF
-        beq      Exit
-
-        mov      x12, 0xFF
-        strb     w12, [x15]
-#endif
-
-Exit
-        ; Increment by 8 to implement JIT_ByRefWriteBarrier contract.
-        ; TODO: Consider duplicating the logic to get rid of this redundant 'add'
-        ; for JIT_WriteBarrier/JIT_CheckedWriteBarrier
-        add      x14, x14, 8
-        ret      lr
+; This must be greater than the largest JIT_WriteBarrier_ function.
+        space (232*4), 0
     WRITE_BARRIER_END JIT_WriteBarrier
 
 ; ------------------------------------------------------------------
@@ -235,3 +152,355 @@ Exit
 
 ; Must be at very end of file
     END
+
+
+
+;-----------------------------------------------------------------------------
+; The following Macros are used by the different JIT_WriteBarrier_ functions.
+;
+;
+
+#define WRITE_BARRIER_CONSTANT_OFFSET(start, constlabel) (constlabel - C_FUNC(JIT_WriteBarrier) + start)
+
+
+WRITE_BARRIER_ENTRY_STUB macro start
+start
+    stlr  x15, [x14]
+endm
+
+
+WRITE_BARRIER_SHADOW_UPDATE_STUB macro start
+ifdef WRITE_BARRIER_CHECK
+; Update GC Shadow Heap
+
+; Do not perform the work if g_GCShadow is 0
+    ldr  x12, WRITE_BARRIER_CONSTANT_OFFSET(start, JIT_WriteBarrier_Patch_Label_GCShadow)
+    cbz  x12, ShadowUpdateEnd
+
+; Compute address of shadow heap location:
+;   pShadow = g_GCShadow + (x14 - g_lowest_address)
+    ldr  x17, WRITE_BARRIER_CONSTANT_OFFSET(start, JIT_WriteBarrier_Patch_Label_LowestAddress)
+    sub  x17, x14, x17
+    add  x12, x17, x12
+
+; if (pShadow >= g_GCShadowEnd) goto end
+    ldr  x17, WRITE_BARRIER_CONSTANT_OFFSET(start, JIT_WriteBarrier_Patch_Label_GCShadowEnd)
+    cmp  x12, x17
+    bhs  ShadowUpdateEnd
+
+; *pShadow = x15
+    str  x15, [x12]
+
+; Ensure that the write to the shadow heap occurs before the read from the GC heap so that race
+; conditions are caught by INVALIDGCVALUE.
+    dmb  ish
+
+; if ([x14] == x15) goto end
+    ldr  x17, [x14]
+    cmp  x17, x15
+    beq ShadowUpdateEnd
+
+; *pShadow = INVALIDGCVALUE (0xcccccccd)
+    movz x17, #0xcccd
+    movk x17, #0xcccc, LSL #16
+    str  x17, [x12]
+endif
+ShadowUpdateEnd
+endm
+
+
+
+WRITE_BARRIER_WRITE_WATCH_FOR_GC_HEAP_STUB macro start exit
+ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
+; Update the write watch table if necessary
+    ldr  x12, WRITE_BARRIER_CONSTANT_OFFSET(start, JIT_WriteBarrier_Patch_Label_WriteWatchTable)
+; SoftwareWriteWatch::AddressToTableByteIndexShift
+    add  x12, x12, x14, lsr #0xc
+    ldrb w17, [x12]
+    cbnz x17, WriteWatchForGCHeapEnd
+    mov  w17, #0xFF
+    strb w17, [x12]
+WriteWatchForGCHeapEnd
+endif
+endm
+
+
+WRITE_BARRIER_CHECK_EPHEMERAL_LOW_STUB macro start exit
+; Branch to Exit if the reference is not in the ephemeral generations.
+    ldr  x12, WRITE_BARRIER_CONSTANT_OFFSET(start, JIT_WriteBarrier_Patch_Label_Lower)
+    cmp  x15, x12
+    blo  exit
+endm
+
+
+WRITE_BARRIER_CHECK_EPHEMERAL_LOW_AND_HIGH_STUB macro start exit
+; Branch to Exit if the reference is not in the ephemeral generations.
+    ldr  x12, WRITE_BARRIER_CONSTANT_OFFSET(start, JIT_WriteBarrier_Patch_Label_Lower)
+    ldr  x17, WRITE_BARRIER_CONSTANT_OFFSET(start, JIT_WriteBarrier_Patch_Label_Upper)
+    cmp  x15, x12
+    ccmp x15, x17, #0x2, hs
+    bhs  exit
+endm
+
+
+WRITE_BARRIER_REGION_CHECK_STUB macro start exit
+; Calculate region locations
+    ldr  x17, WRITE_BARRIER_CONSTANT_OFFSET(start, JIT_WriteBarrier_Patch_Label_RegionToGeneration)
+    ldr  w12, WRITE_BARRIER_CONSTANT_OFFSET(start, JIT_WriteBarrier_Patch_Label_RegionShr)
+    lsr  x15, x15, x12
+    add  x15, x15, x17 ; x15 = (RHS >> wbs_region_shr) + wbs_region_to_generation_table
+    lsr  x12, x14, x12
+    add  x12, x12, x17 ; x12 = (LHS >> wbs_region_shr) + wbs_region_to_generation_table
+
+; Check whether the region we're storing into is gen 0 - nothing to do in this case
+    ldrb w12, [x12]
+    cbz  w12, exit
+
+; Check this is going from old to young
+    ldrb w15, [x15]
+    cmp  w15, w12
+    bhs  exit
+endm
+
+
+WRITE_BARRIER_CHECK_BIT_REGIONS_CARD_TABLE_STUB macro start exit
+; Check if we need to update the card table
+    lsr w17, w14, 8
+    and w17, w17, 7
+    movz w15, 1
+    lsl w17, w15, w17  ; w17 = 1 << (LHS >> 8 && 7)
+    ldr  x12, WRITE_BARRIER_CONSTANT_OFFSET(start, JIT_WriteBarrier_Patch_Label_CardTable)
+    add  x15, x12, x14, lsr #11
+    ldrb w12, [x15]  ; w12 = [(LHS >> 11) + g_card_table]
+    tst  w12, w17
+    bne  exit
+
+; Atomically update the card table
+; Requires LSE, but the code is only compiled for 8.0
+; stsetb w17, [x15]
+    word 0x383131FF
+endm
+
+
+WRITE_BARRIER_CHECK_CARD_TABLE_STUB macro start exit
+; Check if we need to update the card table
+    ldr  x12, WRITE_BARRIER_CONSTANT_OFFSET(start, JIT_WriteBarrier_Patch_Label_CardTable)
+    add  x15, x12, x14, lsr #11
+; w12 = [(RHS >> 11) + g_card_table]
+    ldrb w12, [x15]
+    cmp  x12, 0xFF
+    beq  exit
+
+; Update the card table
+    mov  x12, 0xFF
+    strb w12, [x15]
+endm
+
+
+WRITE_BARRIER_CHECK_CARD_BUNDLE_TABLE_STUB macro start exit
+ifdef FEATURE_MANUALLY_MANAGED_CARD_BUNDLES
+; Check if we need to update the card bundle table
+    ldr  x12, WRITE_BARRIER_CONSTANT_OFFSET(start, JIT_WriteBarrier_Patch_Label_CardBundleTable)
+    add  x15, x12, x14, lsr #21
+    ldrb w12, [x15]
+    cmp  x12, 0xFF
+    beq  exit
+
+; Update the card bundle
+    mov  x12, 0xFF
+    strb w12, [x15]
+endif
+endm
+
+
+WRITE_BARRIER_RETURN_STUB macro exit
+exit
+; Increment by 8 to implement JIT_ByRefWriteBarrier contract.
+; TODO: Consider duplicating the logic to get rid of this redundant 'add'
+; for JIT_WriteBarrier/JIT_CheckedWriteBarrier
+    add  x14, x14, 8
+    ret  lr
+endm
+
+;-----------------------------------------------------------------------------
+; void JIT_WriteBarrier_PreGrow64(Object** dst, Object* src)
+;
+; Skipped functionality:
+;      Does not update the write watch table
+;      Does not check wbs_ephemeral_high
+;      No region checks
+;
+LEAF_ENTRY JIT_WriteBarrier_PreGrow64, _TEXT
+    WRITE_BARRIER_ENTRY_STUB Start_PreGrow64
+    WRITE_BARRIER_SHADOW_UPDATE_STUB Start_PreGrow64
+    WRITE_BARRIER_CHECK_EPHEMERAL_LOW_STUB Start_PreGrow64 Exit_PreGrow64
+    WRITE_BARRIER_CHECK_CARD_TABLE_STUB Start_PreGrow64 Exit_PreGrow64
+    WRITE_BARRIER_CHECK_CARD_BUNDLE_TABLE_STUB Start_PreGrow64 Exit_PreGrow64
+    WRITE_BARRIER_RETURN_STUB Exit_PreGrow64
+LEAF_END_MARKED JIT_WriteBarrier_PreGrow64, _TEXT
+
+
+;-----------------------------------------------------------------------------
+; void JIT_WriteBarrier_PostGrow64(Object** dst, Object* src)
+;
+; Skipped functionality:
+;      Does not update the write watch table
+;      No region checks
+;
+LEAF_ENTRY JIT_WriteBarrier_PostGrow64, _TEXT
+    WRITE_BARRIER_ENTRY_STUB Start_PostGrow64
+    WRITE_BARRIER_SHADOW_UPDATE_STUB Start_PostGrow64
+    WRITE_BARRIER_CHECK_EPHEMERAL_LOW_AND_HIGH_STUB Start_PostGrow64 Exit_PostGrow64
+    WRITE_BARRIER_CHECK_CARD_TABLE_STUB Start_PostGrow64 Exit_PostGrow64
+    WRITE_BARRIER_CHECK_CARD_BUNDLE_TABLE_STUB Start_PostGrow64 Exit_PostGrow64
+    WRITE_BARRIER_RETURN_STUB Exit_PostGrow64
+LEAF_END_MARKED JIT_WriteBarrier_PostGrow64, _TEXT
+
+
+;-----------------------------------------------------------------------------
+; void JIT_WriteBarrier_SVR64(Object** dst, Object* src)
+;
+; SVR GC has multiple heaps, so it cannot provide one single ephemeral region to bounds check
+; against, so we just skip the bounds checking all together and do our card table update unconditionally.
+;
+; Skipped functionality:
+;      Does not update the write watch table
+;      Does not check wbs_ephemeral_high or wbs_ephemeral_low
+;      No region checks
+;
+LEAF_ENTRY JIT_WriteBarrier_SVR64, _TEXT
+    WRITE_BARRIER_ENTRY_STUB Start_SVR64
+    WRITE_BARRIER_SHADOW_UPDATE_STUB Start_SVR64
+    WRITE_BARRIER_CHECK_CARD_TABLE_STUB Start_SVR64 Exit_SVR64
+    WRITE_BARRIER_CHECK_CARD_BUNDLE_TABLE_STUB Start_SVR64 Exit_SVR64
+    WRITE_BARRIER_RETURN_STUB Exit_SVR64
+LEAF_END_MARKED JIT_WriteBarrier_SVR64, _TEXT
+
+
+;-----------------------------------------------------------------------------
+; void JIT_WriteBarrier_Byte_Region64(Object** dst, Object* src)
+;
+; Skipped functionality:
+;      Does not update the write watch table
+;      Bitwise updates for region checks
+;
+LEAF_ENTRY JIT_WriteBarrier_Byte_Region64, _TEXT
+    WRITE_BARRIER_ENTRY_STUB Start_Byte_Region64
+    WRITE_BARRIER_SHADOW_UPDATE_STUB Start_Byte_Region64
+    WRITE_BARRIER_CHECK_EPHEMERAL_LOW_AND_HIGH_STUB Start_Byte_Region64 Exit_Byte_Region64
+    WRITE_BARRIER_REGION_CHECK_STUB Start_Byte_Region64 Exit_Byte_Region64
+    WRITE_BARRIER_CHECK_CARD_TABLE_STUB Start_Byte_Region64 Exit_Byte_Region64
+    WRITE_BARRIER_CHECK_CARD_BUNDLE_TABLE_STUB Start_Byte_Region64 Exit_Byte_Region64
+    WRITE_BARRIER_RETURN_STUB Exit_Byte_Region64
+LEAF_END_MARKED JIT_WriteBarrier_Byte_Region64, _TEXT
+
+
+;-----------------------------------------------------------------------------
+; void JIT_WriteBarrier_Bit_Region64(Object** dst, Object* src)
+;
+; Skipped functionality:
+;      Does not update the write watch table
+;      Does not call check card table stub
+;
+LEAF_ENTRY JIT_WriteBarrier_Bit_Region64, _TEXT
+    WRITE_BARRIER_ENTRY_STUB Start_Bit_Region64
+    WRITE_BARRIER_SHADOW_UPDATE_STUB Start_Bit_Region64
+    WRITE_BARRIER_CHECK_EPHEMERAL_LOW_AND_HIGH_STUB Start_Bit_Region64 Exit_Bit_Region64
+    WRITE_BARRIER_REGION_CHECK_STUB Start_Bit_Region64 Exit_Bit_Region64
+    WRITE_BARRIER_CHECK_BIT_REGIONS_CARD_TABLE_STUB Start_Bit_Region64 Exit_Bit_Region64
+    WRITE_BARRIER_CHECK_CARD_BUNDLE_TABLE_STUB Start_Bit_Region64 Exit_Bit_Region64
+    WRITE_BARRIER_RETURN_STUB Exit_Bit_Region64
+LEAF_END_MARKED JIT_WriteBarrier_Bit_Region64, _TEXT
+
+
+;-----------------------------------------------------------------------------
+; void JIT_WriteBarrier_WriteWatch_PreGrow64(Object** dst, Object* src)
+;
+; Skipped functionality:
+;      Does not check wbs_ephemeral_high
+;      No region checks
+;
+LEAF_ENTRY JIT_WriteBarrier_WriteWatch_PreGrow64, _TEXT
+    WRITE_BARRIER_ENTRY_STUB Start_WriteWatch_PreGrow64
+    WRITE_BARRIER_SHADOW_UPDATE_STUB Start_WriteWatch_PreGrow64
+    WRITE_BARRIER_WRITE_WATCH_FOR_GC_HEAP_STUB Start_WriteWatch_PreGrow64 Exit_WriteWatch_PreGrow64
+    WRITE_BARRIER_CHECK_EPHEMERAL_LOW_STUB Start_WriteWatch_PreGrow64 Exit_WriteWatch_PreGrow64
+    WRITE_BARRIER_CHECK_CARD_TABLE_STUB Start_WriteWatch_PreGrow64 Exit_WriteWatch_PreGrow64
+    WRITE_BARRIER_CHECK_CARD_BUNDLE_TABLE_STUB Start_WriteWatch_PreGrow64 Exit_WriteWatch_PreGrow64
+    WRITE_BARRIER_RETURN_STUB Exit_WriteWatch_PreGrow64
+LEAF_END_MARKED JIT_WriteBarrier_WriteWatch_PreGrow64, _TEXT
+
+
+;-----------------------------------------------------------------------------
+; void JIT_WriteBarrier_WriteWatch_PostGrow64(Object** dst, Object* src)
+;
+; Skipped functionality:
+;      No region checks
+;
+LEAF_ENTRY JIT_WriteBarrier_WriteWatch_PostGrow64, _TEXT
+    WRITE_BARRIER_ENTRY_STUB Start_WriteWatch_PostGrow64
+    WRITE_BARRIER_SHADOW_UPDATE_STUB Start_WriteWatch_PostGrow64
+    WRITE_BARRIER_WRITE_WATCH_FOR_GC_HEAP_STUB Start_WriteWatch_PostGrow64 Exit_WriteWatch_PostGrow64
+    WRITE_BARRIER_CHECK_EPHEMERAL_LOW_AND_HIGH_STUB Start_WriteWatch_PostGrow64 Exit_WriteWatch_PostGrow64
+    WRITE_BARRIER_CHECK_CARD_TABLE_STUB Start_WriteWatch_PostGrow64 Exit_WriteWatch_PostGrow64
+    WRITE_BARRIER_CHECK_CARD_BUNDLE_TABLE_STUB Start_WriteWatch_PostGrow64 Exit_WriteWatch_PostGrow64
+    WRITE_BARRIER_RETURN_STUB Exit_WriteWatch_PostGrow64
+LEAF_END_MARKED JIT_WriteBarrier_WriteWatch_PostGrow64, _TEXT
+
+
+;-----------------------------------------------------------------------------
+; void JIT_WriteBarrier_WriteWatch_SVR64(Object** dst, Object* src)
+;
+; SVR GC has multiple heaps, so it cannot provide one single ephemeral region to bounds check
+; against, so we just skip the bounds checking all together and do our card table update unconditionally.
+;
+; Skipped functionality:
+;      Does not check wbs_ephemeral_high or wbs_ephemeral_low
+;      No region checks
+;
+LEAF_ENTRY JIT_WriteBarrier_WriteWatch_SVR64, _TEXT
+    WRITE_BARRIER_ENTRY_STUB Start_WriteWatch_SVR64
+    WRITE_BARRIER_SHADOW_UPDATE_STUB Start_WriteWatch_SVR64
+    WRITE_BARRIER_WRITE_WATCH_FOR_GC_HEAP_STUB Start_WriteWatch_SVR64 Exit_WriteWatch_SVR64
+    WRITE_BARRIER_CHECK_CARD_TABLE_STUB Start_WriteWatch_SVR64 Exit_WriteWatch_SVR64
+    WRITE_BARRIER_CHECK_CARD_BUNDLE_TABLE_STUB Start_WriteWatch_SVR64 Exit_WriteWatch_SVR64
+    WRITE_BARRIER_RETURN_STUB Exit_WriteWatch_SVR64
+LEAF_END_MARKED JIT_WriteBarrier_WriteWatch_SVR64, _TEXT
+
+
+;-----------------------------------------------------------------------------
+; void JIT_WriteBarrier_WriteWatch_Byte_Region64(Object** dst, Object* src)
+;
+; Skipped functionality:
+;      Bitwise updates for region checks
+;
+LEAF_ENTRY JIT_WriteBarrier_WriteWatch_Byte_Region64, _TEXT
+JIT_WriteBarrier_WriteWatch_Byte_Region64Start
+    WRITE_BARRIER_ENTRY_STUB Start_WriteWatch_Byte_Region64
+    WRITE_BARRIER_SHADOW_UPDATE_STUB Start_WriteWatch_Byte_Region64
+    WRITE_BARRIER_WRITE_WATCH_FOR_GC_HEAP_STUB Start_WriteWatch_Byte_Region64 Exit_WriteWatch_Byte_Region64
+    WRITE_BARRIER_CHECK_EPHEMERAL_LOW_AND_HIGH_STUB Start_WriteWatch_Byte_Region64 Exit_WriteWatch_Byte_Region64
+    WRITE_BARRIER_REGION_CHECK_STUB Start_WriteWatch_Byte_Region64 Exit_WriteWatch_Byte_Region64
+    WRITE_BARRIER_CHECK_CARD_TABLE_STUB Start_WriteWatch_Byte_Region64 Exit_WriteWatch_Byte_Region64
+    WRITE_BARRIER_CHECK_CARD_BUNDLE_TABLE_STUB Start_WriteWatch_Byte_Region64 Exit_WriteWatch_Byte_Region64
+    WRITE_BARRIER_RETURN_STUB Exit_WriteWatch_Byte_Region64
+LEAF_END_MARKED JIT_WriteBarrier_WriteWatch_Byte_Region64, _TEXT
+
+
+;-----------------------------------------------------------------------------
+; void JIT_WriteBarrier_WriteWatch_Bit_Region64(Object** dst, Object* src)
+;
+; Skipped functionality:
+;      Does not call check card table stub
+;
+LEAF_ENTRY JIT_WriteBarrier_WriteWatch_Bit_Region64, _TEXT
+JIT_WriteBarrier_WriteWatch_Bit_Region64Start
+    WRITE_BARRIER_ENTRY_STUB Start_WriteWatch_Bit_Region64
+    WRITE_BARRIER_SHADOW_UPDATE_STUB Start_WriteWatch_Bit_Region64
+    WRITE_BARRIER_WRITE_WATCH_FOR_GC_HEAP_STUB Start_WriteWatch_Bit_Region64 Exit_WriteWatch_Bit_Region64
+    WRITE_BARRIER_CHECK_EPHEMERAL_LOW_AND_HIGH_STUB Start_WriteWatch_Bit_Region64 Exit_WriteWatch_Bit_Region64
+    WRITE_BARRIER_REGION_CHECK_STUB Start_WriteWatch_Bit_Region64 Exit_WriteWatch_Bit_Region64
+    WRITE_BARRIER_CHECK_BIT_REGIONS_CARD_TABLE_STUB Start_WriteWatch_Bit_Region64 Exit_WriteWatch_Bit_Region64
+    WRITE_BARRIER_CHECK_CARD_BUNDLE_TABLE_STUB Start_WriteWatch_Bit_Region64 Exit_WriteWatch_Bit_Region64
+    WRITE_BARRIER_RETURN_STUB Exit_WriteWatch_Bit_Region64
+LEAF_END_MARKED JIT_WriteBarrier_WriteWatch_Bit_Region64, _TEXT

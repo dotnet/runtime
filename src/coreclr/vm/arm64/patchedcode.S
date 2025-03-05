@@ -86,7 +86,7 @@ WRITE_BARRIER_END JIT_CheckedWriteBarrier
 //-----------------------------------------------------------------------------
 // void JIT_WriteBarrier(Object** dst, Object* src)
 //
-// Empty function which at runtime is patched with one JIT_WriteBarrier_
+// Empty function which at runtime is patched with one of the JIT_WriteBarrier_
 // functions below.
 //
 // On entry:
