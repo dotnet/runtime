@@ -19938,13 +19938,12 @@ bool GenTree::IsArrayAddr(GenTreeArrAddr** pArrAddr)
 }
 
 //------------------------------------------------------------------------
-// SupportsSettingFlags: Returns true if this is an arithmetic operation
-// whose codegen supports setting flags as part of its operation.
-// This includes the "zero, negative, carry & overflow flags"
+// SupportsSettingZeroFlag: Returns true if this is an arithmetic operation
+// whose codegen supports setting the "zero flag" as part of its operation.
 //
 // Return Value:
 //    True if so. A false return does not imply that codegen for the node will
-//    not trash the flags.
+//    not trash the zero flag.
 //
 // Remarks:
 //    For example, for EQ (AND x y) 0, both xarch and arm64 can emit
@@ -19954,7 +19953,7 @@ bool GenTree::IsArrayAddr(GenTreeArrAddr** pArrAddr)
 //    The backend expects any node for which the flags will be consumed to be
 //    marked with GTF_SET_FLAGS.
 //
-bool GenTree::SupportsSettingFlags()
+bool GenTree::SupportsSettingZeroFlag()
 {
 #if defined(TARGET_XARCH)
     if (OperIs(GT_AND, GT_OR, GT_XOR, GT_ADD, GT_SUB, GT_NEG))
@@ -19975,6 +19974,40 @@ bool GenTree::SupportsSettingFlags()
     }
 
     // We do not support setting zero flag for madd/msub.
+    if (OperIs(GT_ADD, GT_SUB) && (!gtGetOp2()->OperIs(GT_MUL) || !gtGetOp2()->isContained()))
+    {
+        return true;
+    }
+#endif
+
+    return false;
+}
+
+//------------------------------------------------------------------------
+// SupportsSettingResultFlags: Returns true if this is an arithmetic operation
+// whose codegen supports setting "result flags" as part of its operation
+// other than the "zero flag"
+//
+// Return Value:
+//    True if so. A false return does not imply that codegen for the node will
+//    not trash the result flags.
+//
+// Remarks:
+//    For example, for GT (AND x y) 0, both arm64 can emit instructions that
+//    directly set the flags after the 'AND' and thus no comparison is needed.
+//
+//    The backend expects any node for which the flags will be consumed to be
+//    marked with GTF_SET_FLAGS.
+//
+bool GenTree::SupportsSettingResultFlags()
+{
+#if defined(TARGET_ARM64)
+    if (OperIs(GT_AND, GT_AND_NOT, GT_NEG))
+    {
+        return true;
+    }
+
+    // We do not support setting result flags for madd/msub.
     if (OperIs(GT_ADD, GT_SUB) && (!gtGetOp2()->OperIs(GT_MUL) || !gtGetOp2()->isContained()))
     {
         return true;
