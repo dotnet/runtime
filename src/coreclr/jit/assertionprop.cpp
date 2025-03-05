@@ -4611,6 +4611,32 @@ GenTree* Compiler::optAssertionPropGlobal_RelOp(ASSERT_VALARG_TP assertions,
         return optAssertionProp_Update(newTree, tree, stmt);
     }
 
+    ValueNum op1VN = vnStore->VNConservativeNormalValue(op1->gtVNPair);
+    ValueNum op2VN = vnStore->VNConservativeNormalValue(op2->gtVNPair);
+
+    // See if we can fold "X relop CNS" using TryGetRangeFromAssertions.
+    int op2cns;
+    if (op1->TypeIs(TYP_INT) && op2->TypeIs(TYP_INT) &&
+        vnStore->IsVNIntegralConstant(op2VN, &op2cns)
+        // "op2cns != 0" is purely a TP quirk (such relops are handled by the code above):
+        && (op2cns != 0))
+    {
+        // NOTE: we can call TryGetRangeFromAssertions for op2 as well if we want, but it's not cheap.
+        Range rng1 = Range(Limit(Limit::keUndef));
+        Range rng2 = Range(Limit(Limit::keConstant, op2cns));
+
+        if (RangeCheck::TryGetRangeFromAssertions(this, op1VN, assertions, &rng1))
+        {
+            RangeOps::RelationKind kind = RangeOps::EvalRelop(tree->OperGet(), tree->IsUnsigned(), rng1, rng2);
+            if ((kind != RangeOps::RelationKind::Unknown))
+            {
+                newTree = kind == RangeOps::RelationKind::AlwaysTrue ? gtNewTrue() : gtNewFalse();
+                newTree = gtWrapWithSideEffects(newTree, tree, GTF_ALL_EFFECT);
+                return optAssertionProp_Update(newTree, tree, stmt);
+            }
+        }
+    }
+
     // Else check if we have an equality check involving a local or an indir
     if (!tree->OperIs(GT_EQ, GT_NE))
     {
