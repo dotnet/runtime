@@ -3438,13 +3438,6 @@ GenTree* Compiler::optConstantAssertionProp(AssertionDsc*        curAssertion,
             // here).
             assert(tree->TypeGet() == lvaGetDesc(lclNum)->TypeGet());
 
-            // Validate normalize-on-store locals for small types
-            if (varTypeIsSmall(tree) && tree->OperIs(GT_STORE_LCL_VAR))
-            {
-                assert((curAssertion->op2.u1.iconVal ==
-                        optCastConstantSmall(curAssertion->op2.u1.iconVal, tree->TypeGet())));
-            }
-
             if (curAssertion->op2.HasIconFlag())
             {
                 // Here we have to allocate a new 'large' node to replace the old one
