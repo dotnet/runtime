@@ -517,6 +517,7 @@ if (CLR_CMAKE_TARGET_ANDROID OR CLR_CMAKE_TARGET_MACCATALYST OR CLR_CMAKE_TARGET
     # Some platforms are opted-out from using the in-tree zlib-ng by default:
     # - Android and iOS-like platforms: concerns about extra binary size
     # - Armv6: zlib-ng has build breaks
+    # Keep in sync with the conditions in src/native/external/vendored-libs.proj
     set(CLR_CMAKE_USE_SYSTEM_ZLIB 1)
 endif()
 
