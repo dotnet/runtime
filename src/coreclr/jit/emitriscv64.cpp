@@ -3471,7 +3471,23 @@ bool emitter::emitDispBranch(
 
 void emitter::emitDispIllegalInstruction(code_t instructionCode)
 {
+    assert(false);
     printf("RISCV64 illegal instruction: 0x%08X\n", instructionCode);
+}
+
+void emitter::emitDispImmediate(ssize_t imm, bool newLine /*= true*/, unsigned regBase /*= REG_ZERO*/)
+{
+    if (emitComp->opts.disDiffable && (regBase != REG_FP) && (regBase != REG_SP))
+    {
+        printf("<diffable>");
+    }
+    else
+    {
+        printf("%li", imm);
+    }
+
+    if (newLine)
+        printf("\n");
 }
 
 //----------------------------------------------------------------------------------------
@@ -3520,7 +3536,8 @@ void emitter::emitDispInsName(
             {
                 imm20 |= 0xfff00000;
             }
-            printf("lui            %s, %d\n", rd, imm20);
+            printf("lui            %s, ", rd);
+            emitDispImmediate(imm20);
             return;
         }
         case 0x17: // AUIPC
@@ -3531,7 +3548,8 @@ void emitter::emitDispInsName(
             {
                 imm20 |= 0xfff00000;
             }
-            printf("auipc          %s, %d\n", rd, imm20);
+            printf("auipc          %s, ", rd);
+            emitDispImmediate(imm20);
             return;
         }
         case 0x13:
@@ -3617,10 +3635,18 @@ void emitter::emitDispInsName(
             assert(printLength > 0);
             int paddingLength = kMaxInstructionLength - printLength;
 
-            printf("%*s %s, %s", paddingLength, "", RegNames[rd], RegNames[rs1]);
+            printf("%*s %s, %s, ", paddingLength, "", RegNames[rd], RegNames[rs1]);
             if (hasImmediate)
             {
-                printf(isHex ? ", 0x%x" : ", %d", imm12);
+                if (opcode2 == 0x0) // ADDI
+                {
+                    assert(!isHex);
+                    emitDispImmediate(imm12, false, rs1);
+                }
+                else
+                {
+                    printf(isHex ? "0x%x" : "%d", imm12);
+                }
             }
             printf("\n");
 
@@ -3631,11 +3657,7 @@ void emitter::emitDispInsName(
             unsigned int opcode2 = (code >> 12) & 0x7;
             const char*  rd      = RegNames[(code >> 7) & 0x1f];
             const char*  rs1     = RegNames[(code >> 15) & 0x1f];
-            int          imm12   = (((int)code) >> 20); // & 0xfff;
-            // if (imm12 & 0x800)
-            //{
-            //    imm12 |= 0xfffff000;
-            //}
+            int          imm12   = (((int)code) >> 20);
             switch (opcode2)
             {
                 case 0x0: // ADDIW & SEXT.W
@@ -3645,7 +3667,8 @@ void emitter::emitDispInsName(
                     }
                     else
                     {
-                        printf("addiw          %s, %s, %d\n", rd, rs1, imm12);
+                        printf("addiw          %s, %s, ", rd, rs1);
+                        emitDispImmediate(imm12);
                     }
                     return;
                 case 0x1: // SLLIW
@@ -3845,44 +3868,29 @@ void emitter::emitDispInsName(
         case 0x23:
         {
             unsigned int opcode2 = (code >> 12) & 0x7;
-            const char*  rs1     = RegNames[(code >> 15) & 0x1f];
-            const char*  rs2     = RegNames[(code >> 20) & 0x1f];
-            int          offset  = (((code >> 25) & 0x7f) << 5) | ((code >> 7) & 0x1f);
+            if (opcode2 >= 4)
+                return emitDispIllegalInstruction(code);
+
+            unsigned    rs1Num = (code >> 15) & 0x1f;
+            const char* rs1    = RegNames[rs1Num];
+            const char* rs2    = RegNames[(code >> 20) & 0x1f];
+            int         offset = (((code >> 25) & 0x7f) << 5) | ((code >> 7) & 0x1f);
             if (offset & 0x800)
             {
                 offset |= 0xfffff000;
             }
 
-            switch (opcode2)
-            {
-                case 0: // SB
-                    printf("sb             %s, %d(%s)\n", rs2, offset, rs1);
-                    return;
-                case 1: // SH
-                    printf("sh             %s, %d(%s)\n", rs2, offset, rs1);
-                    return;
-                case 2: // SW
-                    printf("sw             %s, %d(%s)\n", rs2, offset, rs1);
-                    return;
-                case 3: // SD
-                    printf("sd             %s, %d(%s)\n", rs2, offset, rs1);
-                    return;
-                default:
-                    printf("RISCV64 illegal instruction: 0x%08X\n", code);
-                    return;
-            }
+            char width = "bhwd"[opcode2];
+            printf("s%c             %s, ", width, rs2);
+            emitDispImmediate(offset, false, rs1Num);
+            printf("(%s)\n", rs1);
+            return;
         }
         case 0x63: // BRANCH
         {
             unsigned opcode2 = (code >> 12) & 0x7;
             unsigned rs1     = (code >> 15) & 0x1f;
             unsigned rs2     = (code >> 20) & 0x1f;
-            // int offset = (((code >> 31) & 0x1) << 12) | (((code >> 7) & 0x1) << 11) | (((code >> 25) & 0x3f) << 5) |
-            //              (((code >> 8) & 0xf) << 1);
-            // if (offset & 0x800)
-            // {
-            //     offset |= 0xfffff000;
-            // }
             if (!emitDispBranch(opcode2, rs1, rs2, id, ig))
             {
                 emitDispIllegalInstruction(code);
@@ -3892,7 +3900,8 @@ void emitter::emitDispInsName(
         case 0x03:
         {
             unsigned int opcode2 = (code >> 12) & 0x7;
-            const char*  rs1     = RegNames[(code >> 15) & 0x1f];
+            unsigned     rs1Num  = (code >> 15) & 0x1f;
+            const char*  rs1     = RegNames[rs1Num];
             const char*  rd      = RegNames[(code >> 7) & 0x1f];
             int          offset  = ((code >> 20) & 0xfff);
             if (offset & 0x800)
@@ -3900,33 +3909,15 @@ void emitter::emitDispInsName(
                 offset |= 0xfffff000;
             }
 
-            switch (opcode2)
-            {
-                case 0: // LB
-                    printf("lb             %s, %d(%s)\n", rd, offset, rs1);
-                    return;
-                case 1: // LH
-                    printf("lh             %s, %d(%s)\n", rd, offset, rs1);
-                    return;
-                case 2: // LW
-                    printf("lw             %s, %d(%s)\n", rd, offset, rs1);
-                    return;
-                case 3: // LD
-                    printf("ld             %s, %d(%s)\n", rd, offset, rs1);
-                    return;
-                case 4: // LBU
-                    printf("lbu            %s, %d(%s)\n", rd, offset, rs1);
-                    return;
-                case 5: // LHU
-                    printf("lhu            %s, %d(%s)\n", rd, offset, rs1);
-                    return;
-                case 6: // LWU
-                    printf("lwu            %s, %d(%s)\n", rd, offset, rs1);
-                    return;
-                default:
-                    printf("RISCV64 illegal instruction: 0x%08X\n", code);
-                    return;
-            }
+            char width  = "bhwd"[opcode2 & 0b011];
+            char unsign = ((opcode2 & 0b100) != 0) ? 'u' : ' ';
+            if (width == 'd' && unsign == 'u')
+                return emitDispIllegalInstruction(code);
+
+            printf("l%c%c            %s, ", width, unsign, rd);
+            emitDispImmediate(offset, false, rs1Num);
+            printf("(%s)\n", rs1);
+            return;
         }
         case 0x67:
         {
@@ -3938,13 +3929,23 @@ void emitter::emitDispInsName(
                 offset |= 0xfffff000;
             }
 
-            if ((rs1 == REG_RA) && (rd == REG_ZERO))
+            if ((offset == 0) && (rs1 == REG_RA) && (rd == REG_ZERO))
             {
                 printf("ret");
                 return;
             }
 
-            printf("jalr           %s, %d(%s)", RegNames[rd], offset, RegNames[rs1]);
+            if ((offset == 0) && ((rd == REG_RA) || (rd == REG_ZERO)))
+            {
+                const char* name = (rd == REG_RA) ? "jalr" : "jr  ";
+                printf("%s           %s", name, RegNames[rs1]);
+            }
+            else
+            {
+                printf("jalr           %s, ", RegNames[rd]);
+                emitDispImmediate(offset, false);
+                printf("(%s)", RegNames[rs1]);
+            }
             CORINFO_METHOD_HANDLE handle = (CORINFO_METHOD_HANDLE)id->idDebugOnlyInfo()->idMemCookie;
             // Target for ret call is unclear, e.g.:
             //   jalr zero, 0(ra)
@@ -3967,9 +3968,10 @@ void emitter::emitDispInsName(
             {
                 offset |= 0xfff00000;
             }
-            if (rd == REG_ZERO)
+            if ((rd == REG_ZERO) || (rd == REG_RA))
             {
-                printf("j              ");
+                const char* name = (rd == REG_RA) ? "jal" : "j  ";
+                printf("%s            ", name);
 
                 if (id->idIsBound())
                 {
@@ -3977,12 +3979,15 @@ void emitter::emitDispInsName(
                 }
                 else
                 {
-                    printf("pc%+d instructions", offset >> 2);
+                    printf("pc%+");
+                    emitDispImmediate(offset / sizeof(code_t));
+                    printf(" instructions");
                 }
             }
             else
             {
-                printf("jal            %s, %d", RegNames[rd], offset);
+                printf("jal            %s, ", RegNames[rd]);
+                emitDispImmediate(offset, false);
             }
             CORINFO_METHOD_HANDLE handle = (CORINFO_METHOD_HANDLE)id->idDebugOnlyInfo()->idMemCookie;
             if (handle != 0)
@@ -4359,50 +4364,43 @@ void emitter::emitDispInsName(
         case 0x27:
         {
             unsigned int opcode2 = (code >> 12) & 0x7;
+            if ((opcode2 != 2) && (opcode2 != 3))
+                return emitDispIllegalInstruction(code);
 
-            const char* rs1    = RegNames[(code >> 15) & 0x1f];
+            unsigned    rs1Num = (code >> 15) & 0x1f;
+            const char* rs1    = RegNames[rs1Num];
             const char* rs2    = RegNames[((code >> 20) & 0x1f) | 0x20];
             int         offset = (((code >> 25) & 0x7f) << 5) | ((code >> 7) & 0x1f);
             if (offset & 0x800)
             {
                 offset |= 0xfffff000;
             }
-            if (opcode2 == 2) // FSW
-            {
-                printf("fsw            %s, %d(%s)\n", rs2, offset, rs1);
-            }
-            else if (opcode2 == 3) // FSD
-            {
-                printf("fsd            %s, %d(%s)\n", rs2, offset, rs1);
-            }
-            else
-            {
-                NYI_RISCV64("illegal ins within emitDisInsName!");
-            }
+
+            char width = "bhwd"[opcode2];
+            printf("fs%c            %s, ", width, rs2);
+            emitDispImmediate(offset, false, rs1Num);
+            printf("(%s)\n", rs1);
             return;
         }
         case 0x7:
         {
             unsigned int opcode2 = (code >> 12) & 0x7;
-            const char*  rs1     = RegNames[(code >> 15) & 0x1f];
-            const char*  rd      = RegNames[((code >> 7) & 0x1f) | 0x20];
-            int          offset  = ((code >> 20) & 0xfff);
+            if ((opcode2 != 2) && (opcode2 != 3))
+                return emitDispIllegalInstruction(code);
+
+            unsigned    rs1Num = (code >> 15) & 0x1f;
+            const char* rs1    = RegNames[rs1Num];
+            const char* rd     = RegNames[((code >> 7) & 0x1f) | 0x20];
+            int         offset = ((code >> 20) & 0xfff);
             if (offset & 0x800)
             {
                 offset |= 0xfffff000;
             }
-            if (opcode2 == 2) // FLW
-            {
-                printf("flw            %s, %d(%s)\n", rd, offset, rs1);
-            }
-            else if (opcode2 == 3) // FLD
-            {
-                printf("fld            %s, %d(%s)\n", rd, offset, rs1);
-            }
-            else
-            {
-                NYI_RISCV64("illegal ins within emitDisInsName!");
-            }
+
+            char width = "bhwd"[opcode2];
+            printf("fl%c            %s, ", width, rd);
+            emitDispImmediate(offset, false, rs1Num);
+            printf("(%s)\n", rs1);
             return;
         }
         case 0x2f: // AMO - atomic memory operation
