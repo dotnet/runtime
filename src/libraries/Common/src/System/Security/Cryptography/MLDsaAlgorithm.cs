@@ -9,7 +9,7 @@ namespace System.Security.Cryptography
     ///   Represents a specific algorithm within the ML-DSA family.
     /// </summary>
     [Experimental(Experimentals.PostQuantumCryptographyDiagId)]
-    internal class MLDsaAlgorithm
+    internal sealed class MLDsaAlgorithm
     {
         /// <summary>
         ///   Gets the underlying string representation of the algorithm name.
