@@ -92,6 +92,7 @@
 
         // Load the MethodTable from the object instance in a0, and add it to the vtable offset
         // to get the address in the vtable of what we want to dereference
+    ALTERNATE_ENTRY RhpVTableOffsetDispatchAVLocation
         ld.d  $t4, $a0, 0
         add.d  $t3, $t3, $t4
 
