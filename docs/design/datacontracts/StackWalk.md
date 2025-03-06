@@ -231,7 +231,9 @@ private static void bar()
 
 ### Capital 'F' Frame Handling
 
-Capital 'F' Frame's store context data in a number of different ways. Of the couple dozen Frame types defined in `src/coreclr/vm/frames.h` a several do not store any context data or update the context signified by `NeedsUpdateRegDisplay_Impl() == false`. Of that Frames that do update the context, several share implementations of `UpdateRegDisplay_Impl` through inheritance. This leaves us with 9 distinct mechanisms to update the context that will be detailed below. Each mechanism is referred to using the Frame class that implements the mechanism and may be used by subclasses.
+Capital 'F' Frame's store context data in a number of different ways. Of the couple dozen Frame types defined in `src/coreclr/vm/frames.h` several do not store any context data or update the context, signified by `NeedsUpdateRegDisplay_Impl() == false`. Of that Frames that do update the context, several share implementations of `UpdateRegDisplay_Impl` through inheritance. This leaves us with 9 distinct mechanisms to update the context that will be detailed below. Each mechanism is referred to using the Frame class that implements the mechanism and may be used by subclasses.
+
+Most of the handlers are implemented in `BaseFrameHandler`. Platform specific components are implemented/overridden in `<arch>FrameHandler`.
 
 #### InlinedCallFrame
 
