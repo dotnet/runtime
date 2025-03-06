@@ -43,8 +43,8 @@ namespace System.Buffers
                 ? PackedSpanHelpers.IndexOfAnyInRange(ref MemoryMarshal.GetReference(span), _lowInclusive, _rangeInclusive, span.Length)
                 : SpanHelpers.NonPackedIndexOfAnyInRangeUnsignedNumber<ushort, SpanHelpers.DontNegate<ushort>>(
                     ref Unsafe.As<char, ushort>(ref MemoryMarshal.GetReference(span)),
-                    Unsafe.As<char, ushort>(ref _lowInclusive),
-                    Unsafe.As<char, ushort>(ref _highInclusive),
+                    _lowInclusive,
+                    _highInclusive,
                     span.Length);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -53,8 +53,8 @@ namespace System.Buffers
                 ? PackedSpanHelpers.IndexOfAnyExceptInRange(ref MemoryMarshal.GetReference(span), _lowInclusive, _rangeInclusive, span.Length)
                 : SpanHelpers.NonPackedIndexOfAnyInRangeUnsignedNumber<ushort, SpanHelpers.Negate<ushort>>(
                     ref Unsafe.As<char, ushort>(ref MemoryMarshal.GetReference(span)),
-                    Unsafe.As<char, ushort>(ref _lowInclusive),
-                    Unsafe.As<char, ushort>(ref _highInclusive),
+                    _lowInclusive,
+                    _highInclusive,
                     span.Length);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

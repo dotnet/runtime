@@ -314,6 +314,7 @@ collect_parser.add_argument("-mch_files", metavar="MCH_FILE", nargs='+', help="P
 collect_parser.add_argument("--disable_r2r", action="store_true", help="Sets DOTNET_ReadyToRun=0 when doing collection to cause ReadyToRun images to not be used, and thus causes JIT compilation and SuperPMI collection of these methods.")
 collect_parser.add_argument("--tiered_compilation", action="store_true", help="Sets DOTNET_TieredCompilation=1 when doing collections.")
 collect_parser.add_argument("--tiered_pgo", action="store_true", help="Sets DOTNET_TieredCompilation=1 and DOTNET_TieredPGO=1 when doing collections.")
+collect_parser.add_argument("--jitoptrepeat_all", action="store_true", help="Sets DOTNET_JitOptRepeat=* when doing collections.")
 collect_parser.add_argument("--ci", action="store_true", help="Special collection mode for handling zero-sized files in Azure DevOps + Helix pipelines collections.")
 
 # Allow for continuing a collection in progress
@@ -864,6 +865,9 @@ class SuperPMICollect:
             else:
                 dotnet_env["TieredCompilation"] = "0"
 
+            if self.coreclr_args.jitoptrepeat_all:
+                dotnet_env["JitOptRepeat"] = "*"
+
             if self.coreclr_args.disable_r2r:
                 dotnet_env["ReadyToRun"] = "0"
 
@@ -1207,6 +1211,9 @@ class SuperPMICollect:
                         if line.startswith("--exportsfile:"):
                             arg_path = os.path.join(test_native_directory, os.path.basename(line[len("--exportsfile:"):]))
                             return f"--exportsfile:{arg_path}"
+                        elif line.startswith("--sourcelink:"):
+                            arg_path = os.path.join(test_native_directory, os.path.basename(line[len("--sourcelink:"):]))
+                            return f"--sourcelink:{arg_path}"
                         elif line.startswith("--descriptor:"):
                             arg_path = os.path.join(test_directory, os.path.basename(line[len("--descriptor:"):]))
                             return f"--descriptor:{arg_path}"
@@ -4354,8 +4361,8 @@ def process_base_jit_path_arg(coreclr_args):
             baseline_hash = coreclr_args.base_git_hash
 
         if coreclr_args.base_git_hash is None:
-            # Enumerate the last 20 changes, starting with the baseline, that included JIT changes.
-            command = [ "git", "log", "--pretty=format:%H", baseline_hash, "-20", "--", "src/coreclr/jit/*" ]
+            # Enumerate the last 20 changes, starting with the baseline, that included JIT and JIT-EE GUID changes.
+            command = [ "git", "log", "--pretty=format:%H", baseline_hash, "-20", "--", "src/coreclr/jit/*", "src/coreclr/inc/jiteeversionguid.h" ]
             logging.debug("Invoking: %s", " ".join(command))
             proc = subprocess.Popen(command, stdout=subprocess.PIPE)
             stdout_change_list, _ = proc.communicate()
@@ -4907,6 +4914,11 @@ def setup_args(args):
                             "tiered_pgo",
                             lambda unused: True,
                             "Unable to set tiered_pgo")
+
+        coreclr_args.verify(args,
+                            "jitoptrepeat_all",
+                            lambda unused: True,
+                            "Unable to set jitoptrepeat_all")
 
         coreclr_args.verify(args,
                             "pmi_path",

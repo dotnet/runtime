@@ -409,13 +409,6 @@ public:
                                     GcSlotState slotState
                                     );
 
-
-    //------------------------------------------------------------------------
-    // ReturnKind
-    //------------------------------------------------------------------------
-
-    void SetReturnKind(ReturnKind returnKind);
-
     //------------------------------------------------------------------------
     // Miscellaneous method information
     //------------------------------------------------------------------------
@@ -509,7 +502,6 @@ private:
     INT32  m_PSPSymStackSlot;
     INT32  m_GenericsInstContextStackSlot;
     GENERIC_CONTEXTPARAM_TYPE m_contextParamType;
-    ReturnKind m_ReturnKind;
     UINT32 m_CodeLength;
     UINT32 m_StackBaseRegister;
     UINT32 m_SizeOfEditAndContinuePreservedArea;
@@ -549,10 +541,6 @@ private:
     UINT32 SizeofSlotStateVarLengthVector(const BitArray& vector, UINT32 baseSkip, UINT32 baseRun);
     void SizeofSlotStateVarLengthVector(const BitArray& vector, UINT32 baseSkip, UINT32 baseRun, UINT32 * pSizeofSimple, UINT32 * pSizeofRLE, UINT32 * pSizeofRLENeg);
     UINT32 WriteSlotStateVarLengthVector(BitStreamWriter &writer, const BitArray& vector, UINT32 baseSkip, UINT32 baseRun);
-
-#ifdef PARTIALLY_INTERRUPTIBLE_GC_SUPPORTED
-    bool DoNotTrackInPartiallyInterruptible(GcSlotDesc &slot);
-#endif // PARTIALLY_INTERRUPTIBLE_GC_SUPPORTED
 
     // Assumes that "*ppTransitions" is has size "numTransitions", is sorted by CodeOffset then by SlotId,
     // and that "*ppEndTransitions" points one beyond the end of the array.  If "*ppTransitions" contains

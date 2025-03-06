@@ -57,8 +57,6 @@ public:
 
     static void ValidateDelegatePInvoke(MethodDesc* pMD);
 
-    static void RemoveEntryFromFPtrHash(UPTR key);
-
     // Decides if pcls derives from Delegate.
     static BOOL IsDelegate(MethodTable *pMT);
 
@@ -69,6 +67,7 @@ public:
     static Stub* GetInvokeMethodStub(EEImplMethodDesc* pMD);
 
     static MethodDesc * __fastcall GetMethodDesc(OBJECTREF obj);
+    static MethodDesc* GetMethodDescForOpenVirtualDelegate(OBJECTREF orDelegate);
     static OBJECTREF GetTargetObject(OBJECTREF obj);
 
     static BOOL IsTrueMulticastDelegate(OBJECTREF delegate);

@@ -185,6 +185,7 @@ inline void CheckObjectSize(size_t alloc_size)
 
 void FireAllocationSampled(GC_ALLOC_FLAGS flags, size_t size, size_t samplingBudgetOffset, Object* orObject)
 {
+#ifdef FEATURE_EVENT_TRACE
     // Note: this code is duplicated from GCToCLREventSink::FireGCAllocationTick_V4
     void* typeId = nullptr;
     const WCHAR* name = nullptr;
@@ -212,6 +213,7 @@ void FireAllocationSampled(GC_ALLOC_FLAGS flags, size_t size, size_t samplingBud
             0;  // SOH
         FireEtwAllocationSampled(allocKind, GetClrInstanceId(), typeId, name, (BYTE*)orObject, size, samplingBudgetOffset);
     }
+#endif //FEATURE_EVENT_TRACE
 }
 
 inline Object* Alloc(ee_alloc_context* pEEAllocContext, size_t size, GC_ALLOC_FLAGS flags)
@@ -1059,7 +1061,7 @@ void AllocateComClassObject(ComClassFactory* pComClsFac, OBJECTREF* ppRefClass)
         PRECONDITION(CheckPointer(ppRefClass));
     } CONTRACTL_END;
 
-    // Create a COM+ Class object.
+    // Create a CLR Class object.
     MethodTable *pMT = g_pRuntimeTypeClass;
     _ASSERTE(pMT != NULL);
     *ppRefClass= AllocateObject(pMT);

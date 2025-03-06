@@ -723,7 +723,7 @@ UINT32 STDCALL CLRToCOMWorker(TransitionBlock * pTransitionBlock, CLRToCOMCallMe
 
     MAKE_CURRENT_THREAD_AVAILABLE();
 
-    FrameWithCookie<CLRToCOMMethodFrame> frame(pTransitionBlock, pMD);
+    CLRToCOMMethodFrame frame(pTransitionBlock, pMD);
     CLRToCOMMethodFrame * pFrame = &frame;
 
     //we need to zero out the return value buffer because we will report it during GC
@@ -818,7 +818,7 @@ TADDR CLRToCOMCall::GetFrameCallIP(FramedMethodFrame *frame)
     {
         //
         // This is being called from the debug helper thread.
-        // Unfortunately this doesn't bode well for the COM+ IP
+        // Unfortunately this doesn't bode well for the CLR IP
         // mapping code - it expects to be called from the appropriate
         // context.
         //
@@ -853,7 +853,7 @@ TADDR CLRToCOMCall::GetFrameCallIP(FramedMethodFrame *frame)
     RETURN ip;
 }
 
-void CLRToCOMMethodFrame::GetUnmanagedCallSite(TADDR* ip,
+void CLRToCOMMethodFrame::GetUnmanagedCallSite_Impl(TADDR* ip,
                                               TADDR* returnIP,
                                               TADDR* returnSP)
 {
@@ -894,7 +894,7 @@ void CLRToCOMMethodFrame::GetUnmanagedCallSite(TADDR* ip,
 
 
 
-BOOL CLRToCOMMethodFrame::TraceFrame(Thread *thread, BOOL fromPatch,
+BOOL CLRToCOMMethodFrame::TraceFrame_Impl(Thread *thread, BOOL fromPatch,
                                     TraceDestination *trace, REGDISPLAY *regs)
 {
     CONTRACTL

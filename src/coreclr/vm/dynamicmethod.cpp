@@ -15,6 +15,8 @@
 #include "nibblemapmacros.h"
 #include "stringliteralmap.h"
 #include "virtualcallstub.h"
+#include "CachedInterfaceDispatchPal.h"
+#include "CachedInterfaceDispatch.h"
 
 
 #ifndef DACCESS_COMPILE
@@ -112,7 +114,7 @@ void DynamicMethodTable::MakeMethodTable(AllocMemTracker *pamTracker)
     }
     CONTRACTL_END;
 
-    m_pMethodTable = CreateMinimalMethodTable(m_Module, m_pDomain->GetLoaderAllocator(), pamTracker);
+    m_pMethodTable = CreateMinimalMethodTable(m_Module, m_Module->GetLoaderAllocator(), pamTracker);
 }
 
 void DynamicMethodTable::Destroy()
@@ -954,6 +956,19 @@ void LCGMethodResolver::RecycleIndCells()
             cellcurr = list->indcell;
             _ASSERTE(cellcurr != NULL);
 
+#if defined (FEATURE_CACHED_INTERFACE_DISPATCH)
+            // Cached dispatch dispatch uses dynamically allocated caches that need to be freed individually
+            if (UseCachedInterfaceDispatch())
+            {
+                InterfaceDispatchCell *pDispatchCell = (InterfaceDispatchCell*)cellcurr;
+                InterfaceDispatchCacheHeader* cellCacheHeader = pDispatchCell->GetCache();
+                if (cellCacheHeader != NULL)
+                {
+                    InterfaceDispatch_DiscardCacheHeader(cellCacheHeader);
+                    pDispatchCell->m_pCache = 0;
+                }
+            }
+#endif
             if (cellprev)
                 *((BYTE**)cellprev) = cellcurr;
 

@@ -479,6 +479,45 @@ extern "C" void QCALLTYPE ExceptionNative_ThrowEntryPointNotFoundException(
     END_QCALL;
 }
 
+extern "C" void QCALLTYPE ExceptionNative_ThrowMethodAccessException(MethodDesc* caller, MethodDesc* callee)
+{
+    QCALL_CONTRACT;
+
+    BEGIN_QCALL;
+
+    _ASSERTE(caller != NULL);
+    AccessCheckContext accessContext(caller);
+    ThrowMethodAccessException(&accessContext, callee);
+
+    END_QCALL;
+}
+
+extern "C" void QCALLTYPE ExceptionNative_ThrowFieldAccessException(MethodDesc* caller, FieldDesc* callee)
+{
+    QCALL_CONTRACT;
+
+    BEGIN_QCALL;
+
+    _ASSERTE(caller != NULL);
+    AccessCheckContext accessContext(caller);
+    ThrowFieldAccessException(&accessContext, callee);
+
+    END_QCALL;
+}
+
+extern "C" void QCALLTYPE ExceptionNative_ThrowClassAccessException(MethodDesc* caller, EnregisteredTypeHandle callee)
+{
+    QCALL_CONTRACT;
+
+    BEGIN_QCALL;
+
+    _ASSERTE(caller != NULL);
+    AccessCheckContext accessContext(caller);
+    ThrowTypeAccessException(&accessContext, TypeHandle::FromPtr(callee).GetMethodTable());
+
+    END_QCALL;
+}
+
 extern "C" void QCALLTYPE Buffer_Clear(void *dst, size_t length)
 {
     QCALL_CONTRACT;

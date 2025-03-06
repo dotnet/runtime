@@ -567,12 +567,13 @@ emit_sri_vector128 (TransformData *td, MonoMethod *cmethod, MonoMethodSignature 
 			if (atype == MONO_TYPE_U1) simd_intrins = INTERP_SIMD_INTRINSIC_V128_U1_NARROW;
 			break;
 		case SN_ShiftLeft:
-			g_assert (scalar_arg == 1);
-			simd_opcode = MINT_SIMD_INTRINS_P_PP;
-			if (arg_size == 1) simd_intrins = INTERP_SIMD_INTRINSIC_V128_I1_LEFT_SHIFT;
-			else if (arg_size == 2) simd_intrins = INTERP_SIMD_INTRINSIC_V128_I2_LEFT_SHIFT;
-			else if (arg_size == 4) simd_intrins = INTERP_SIMD_INTRINSIC_V128_I4_LEFT_SHIFT;
-			else if (arg_size == 8) simd_intrins = INTERP_SIMD_INTRINSIC_V128_I8_LEFT_SHIFT;
+			if (scalar_arg == 1) {
+				simd_opcode = MINT_SIMD_INTRINS_P_PP;
+				if (arg_size == 1) simd_intrins = INTERP_SIMD_INTRINSIC_V128_I1_LEFT_SHIFT;
+				else if (arg_size == 2) simd_intrins = INTERP_SIMD_INTRINSIC_V128_I2_LEFT_SHIFT;
+				else if (arg_size == 4) simd_intrins = INTERP_SIMD_INTRINSIC_V128_I4_LEFT_SHIFT;
+				else if (arg_size == 8) simd_intrins = INTERP_SIMD_INTRINSIC_V128_I8_LEFT_SHIFT;
+			}
 			break;
 		case SN_ShiftRightLogical:
 			g_assert (scalar_arg == 1);
@@ -639,7 +640,7 @@ emit_sri_vector128_t (TransformData *td, MonoMethod *cmethod, MonoMethodSignatur
 			explicitly_implemented = true;
 		}
 	}
-	
+
 	int id = lookup_intrins (sri_vector128_t_methods, sizeof (sri_vector128_t_methods), cmethod->name);
 	if (id == -1) {
 		if (explicitly_implemented) {
@@ -688,7 +689,7 @@ emit_sn_vector_t (TransformData *td, MonoMethod *cmethod, MonoMethodSignature *c
 			cmethod_name += 77;
 		}
 	}
-	
+
 	int id = lookup_intrins (sn_vector_t_methods, sizeof (sn_vector_t_methods), cmethod_name);
 	if (id == -1)
 		return FALSE;
@@ -905,7 +906,7 @@ lookup_packedsimd_intrinsic (const char *name, MonoType *arg1)
 	if (m_class_is_simd_type (vector_klass)) {
 		arg_type = mono_class_get_context (vector_klass)->class_inst->type_argv [0];
 	} else if (arg1->type == MONO_TYPE_PTR) {
-		arg_type = arg1->data.type;
+		arg_type = m_type_data_get_type_unchecked (arg1);
 	} else {
 		// g_printf ("%s arg1 type was not pointer or simd type: %s\n", name, m_class_get_name (vector_klass));
 		return FALSE;

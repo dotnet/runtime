@@ -218,14 +218,14 @@ namespace Internal.Reflection.Execution
             return TypeLoaderEnvironment.Instance.TryGetConstructedGenericTypeForComponents(genericTypeDefinitionHandle, genericTypeArgumentHandles, out runtimeTypeHandle);
         }
 
-        public sealed override MethodBaseInvoker TryGetMethodInvoker(RuntimeTypeHandle declaringTypeHandle, QMethodDefinition methodHandle, RuntimeTypeHandle[] genericMethodTypeArgumentHandles)
+        public sealed override void ValidateGenericMethodConstraints(MethodInfo method)
+        {
+            ConstraintValidator.EnsureSatisfiesClassConstraints(method);
+        }
+
+        public sealed override MethodBaseInvoker TryGetMethodInvokerNoConstraintCheck(RuntimeTypeHandle declaringTypeHandle, QMethodDefinition methodHandle, RuntimeTypeHandle[] genericMethodTypeArgumentHandles)
         {
             MethodBase methodInfo = ExecutionDomain.GetMethod(declaringTypeHandle, methodHandle, genericMethodTypeArgumentHandles);
-
-            // Validate constraints first. This is potentially useless work if the method already exists, but it prevents bad
-            // inputs to reach the type loader (we don't have support to e.g. represent pointer types within the type loader)
-            if (genericMethodTypeArgumentHandles != null && genericMethodTypeArgumentHandles.Length > 0)
-                ConstraintValidator.EnsureSatisfiesClassConstraints((MethodInfo)methodInfo);
 
             MethodSignatureComparer methodSignatureComparer = new MethodSignatureComparer(methodHandle);
 
@@ -719,7 +719,7 @@ namespace Internal.Reflection.Execution
                 QTypeDefinition qTypeDefinition = GetMetadataForNamedType(declaringTypeHandleDefinition);
 
                 MethodHandle nativeFormatMethodHandle =
-                    (((int)HandleType.Method << 24) | (int)entryMethodHandleOrNameAndSigRaw).AsMethodHandle();
+                    (((int)HandleType.Method << 25) | (int)entryMethodHandleOrNameAndSigRaw).AsMethodHandle();
 
                 methodHandle = new QMethodDefinition(qTypeDefinition.NativeFormatReader, nativeFormatMethodHandle);
             }

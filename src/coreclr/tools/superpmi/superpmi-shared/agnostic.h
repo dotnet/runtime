@@ -173,8 +173,6 @@ struct Agnostic_CORINFO_EE_INFO
     {
         DWORD size;
         DWORD sizeWithSecretStubArg;
-        DWORD offsetOfGSCookie;
-        DWORD offsetOfFrameVptr;
         DWORD offsetOfFrameLink;
         DWORD offsetOfCallSiteSP;
         DWORD offsetOfCalleeSavedFP;

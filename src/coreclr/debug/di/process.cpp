@@ -441,6 +441,12 @@ IMDInternalImport * CordbProcess::LookupMetaDataFromDebuggerForSingleFile(
 {
     INTERNAL_DAC_CALLBACK(this);
 
+    // If the debugger didn't supply a metadata locator interface, fail
+    if (m_pMetaDataLocator == nullptr)
+    {
+        return nullptr;
+    }
+
     ULONG32 cchLocalImagePath = MAX_LONGPATH;
     ULONG32 cchLocalImagePathRequired;
     NewArrayHolder<WCHAR> pwszLocalFilePath = NULL;
@@ -7184,7 +7190,7 @@ HRESULT CordbProcess::WriteMemory(CORDB_ADDRESS address, DWORD size,
             CONSISTENCY_CHECK_MSGF(false,
                 ("You're using ICorDebugProcess::WriteMemory() to write an 'int3' (1 byte 0xCC) at address 0x%p.\n"
                 "If you're trying to set a breakpoint, you should be using ICorDebugProcess::SetUnmanagedBreakpoint() instead.\n"
-                "(This assert is only enabled under the COM+ knob DbgCheckInt3.)\n",
+                "(This assert is only enabled under the CLR knob DbgCheckInt3.)\n",
                 CORDB_ADDRESS_TO_PTR(address)));
         }
 #endif // TARGET_X86 || TARGET_AMD64
@@ -7201,7 +7207,7 @@ HRESULT CordbProcess::WriteMemory(CORDB_ADDRESS address, DWORD size,
                 ("You're using ICorDebugProcess::WriteMemory() to write an 'opcode (0x%x)' at address 0x%p.\n"
                 "There's already a native patch at that address from ICorDebugProcess::SetUnmanagedBreakpoint().\n"
                 "If you're trying to remove the breakpoint, use ICDProcess::ClearUnmanagedBreakpoint() instead.\n"
-                "(This assert is only enabled under the COM+ knob DbgCheckInt3.)\n",
+                "(This assert is only enabled under the CLR knob DbgCheckInt3.)\n",
                 (DWORD) (buffer[0]), CORDB_ADDRESS_TO_PTR(address)));
             }
         }

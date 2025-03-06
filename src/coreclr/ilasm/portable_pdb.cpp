@@ -4,6 +4,7 @@
 #include "portable_pdb.h"
 #include <time.h>
 #include "assembler.h"
+#include "sha256.h"
 
 //*****************************************************************************
 // Document
@@ -92,7 +93,7 @@ HRESULT PortablePdbWriter::Init(IMetaDataDispenserEx2* mdDispenser)
     time_t now;
     time(&now);
     m_pdbStream.id.pdbTimeStamp = (ULONG)now;
-    if (!minipal_guid_v4_create(reinterpret_cast<minipal_guid_t*>(&m_pdbStream.id.pdbGuid)))
+    if (!minipal_guid_v4_create(&m_pdbStream.id.pdbGuid))
     {
         hr = E_FAIL;
         goto exit;
@@ -103,6 +104,10 @@ HRESULT PortablePdbWriter::Init(IMetaDataDispenserEx2* mdDispenser)
         0,
         IID_IMetaDataEmit3,
         (IUnknown**)&m_pdbEmitter);
+
+    if (FAILED(hr)) goto exit;
+
+    hr = m_pdbEmitter->QueryInterface(IID_IILAsmPortablePdbWriter, (void**)&m_ilasmPdbWriter);
 exit:
     return hr;
 }
@@ -120,6 +125,16 @@ GUID* PortablePdbWriter::GetGuid()
 ULONG PortablePdbWriter::GetTimestamp()
 {
     return m_pdbStream.id.pdbTimeStamp;
+}
+
+void PortablePdbWriter::SetGuid(REFGUID newGuid)
+{
+    m_pdbStream.id.pdbGuid = newGuid;
+}
+
+void PortablePdbWriter::SetTimestamp(const ULONG newTimestamp)
+{
+    m_pdbStream.id.pdbTimeStamp = newTimestamp;
 }
 
 Document* PortablePdbWriter::GetCurrentDocument()
@@ -143,6 +158,17 @@ HRESULT PortablePdbWriter::BuildPdbStream(IMetaDataEmit3* peEmitter, mdMethodDef
 
 exit:
     return hr;
+}
+
+HRESULT PortablePdbWriter::ComputeSha256PdbStreamChecksum(BYTE(&checksum)[32])
+{
+    return m_ilasmPdbWriter->ComputeSha256PdbStreamChecksum(Sha256Hash, checksum);
+}
+
+HRESULT PortablePdbWriter::ChangePdbStreamGuid(REFGUID newGuid)
+{
+    m_pdbStream.id.pdbGuid = newGuid;
+    return m_ilasmPdbWriter->ChangePdbStreamGuid(newGuid);
 }
 
 HRESULT PortablePdbWriter::DefineDocument(char* name, GUID* language)

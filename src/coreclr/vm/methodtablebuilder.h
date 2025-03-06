@@ -2961,11 +2961,13 @@ private:
 
     static ExplicitFieldTrust::TrustLevel CheckValueClassLayout(
         MethodTable * pMT,
-        bmtFieldLayoutTag* pFieldLayout);
+        bmtFieldLayoutTag* pFieldLayout,
+        UINT fieldBaseOffset);
 
     static ExplicitFieldTrust::TrustLevel CheckByRefLikeValueClassLayout(
         MethodTable * pMT,
-        bmtFieldLayoutTag* pFieldLayout);
+        bmtFieldLayoutTag* pFieldLayout,
+        UINT fieldBaseOffset);
 
     static ExplicitFieldTrust::TrustLevel MarkTagType(
         bmtFieldLayoutTag* field,

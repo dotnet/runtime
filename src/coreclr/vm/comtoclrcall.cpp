@@ -470,9 +470,8 @@ extern "C" UINT64 __stdcall COMToCLRWorker(ComMethodFrame* pFrame)
             goto ErrorExit;
     }
 
-    // Initialize the frame's VPTR and GS cookie.
-    *((TADDR*)pFrame) = ComMethodFrame::GetMethodFrameVPtr();
-    *pFrame->GetGSCookiePtr() = GetProcessGSCookie();
+    // Initialize the frame's identifier.
+    *((TADDR*)pFrame) = (TADDR)FrameIdentifier::ComMethodFrame;
     // Link frame into the chain.
     pFrame->Push(pThread);
 

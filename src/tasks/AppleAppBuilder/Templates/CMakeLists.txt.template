@@ -28,8 +28,8 @@ endif()
 
 %Defines%
 
-if(NOT %UseNativeAOTRuntime%)
-    include_directories("%MonoInclude%")
+if(%HasMonoIncludes%)
+    include_directories(%MonoInclude%)
 endif()
 
 set_target_properties(%ProjectName% %AotTargetsList% PROPERTIES

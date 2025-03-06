@@ -15,7 +15,7 @@ PhaseStatus Compiler::fgSsaBuild()
     // If this is not the first invocation, reset data structures for SSA.
     if (fgSsaPassesCompleted > 0)
     {
-        fgResetForSsa();
+        fgResetForSsa(/* deepClean */ true);
     }
 
     SsaBuilder builder(this);
@@ -29,21 +29,36 @@ PhaseStatus Compiler::fgSsaBuild()
     return PhaseStatus::MODIFIED_EVERYTHING;
 }
 
-void Compiler::fgResetForSsa()
+//------------------------------------------------------------------------
+// fgResetForSsa: remove SSA artifacts
+//
+// Arguments:
+//   deepClean - if true, remove all SSA artifacts
+//               if false, just remove PHIs
+//
+// Notes:
+//   deepCleaning is needed in order to rebuild SSA.
+//
+void Compiler::fgResetForSsa(bool deepClean)
 {
-    for (unsigned i = 0; i < lvaCount; ++i)
-    {
-        lvaTable[i].lvPerSsaData.Reset();
-    }
-    lvMemoryPerSsaData.Reset();
-    for (MemoryKind memoryKind : allMemoryKinds())
-    {
-        m_memorySsaMap[memoryKind] = nullptr;
-    }
+    JITDUMP("Removing %s\n", deepClean ? "all SSA artifacts" : "PHI functions");
 
-    if (m_outlinedCompositeSsaNums != nullptr)
+    if (deepClean)
     {
-        m_outlinedCompositeSsaNums->Reset();
+        for (unsigned i = 0; i < lvaCount; ++i)
+        {
+            lvaTable[i].lvPerSsaData.Reset();
+        }
+        lvMemoryPerSsaData.Reset();
+        for (MemoryKind memoryKind : allMemoryKinds())
+        {
+            m_memorySsaMap[memoryKind] = nullptr;
+        }
+
+        if (m_outlinedCompositeSsaNums != nullptr)
+        {
+            m_outlinedCompositeSsaNums->Reset();
+        }
     }
 
     for (BasicBlock* const blk : Blocks())
@@ -63,13 +78,16 @@ void Compiler::fgResetForSsa()
             }
         }
 
-        for (Statement* const stmt : blk->Statements())
+        if (deepClean)
         {
-            for (GenTree* const tree : stmt->TreeList())
+            for (Statement* const stmt : blk->Statements())
             {
-                if (tree->IsAnyLocal())
+                for (GenTree* const tree : stmt->TreeList())
                 {
-                    tree->AsLclVarCommon()->SetSsaNum(SsaConfig::RESERVED_SSA_NUM);
+                    if (tree->IsAnyLocal())
+                    {
+                        tree->AsLclVarCommon()->SetSsaNum(SsaConfig::RESERVED_SSA_NUM);
+                    }
                 }
             }
         }
@@ -639,7 +657,14 @@ void SsaBuilder::AddDefToEHSuccessorPhis(BasicBlock* block, unsigned lclNum, uns
                 break;
             }
         }
-        assert(phiFound);
+
+#ifdef DEBUG
+        // If 'succ' is the handler of an unreachable try it is possible for
+        // 'block' to dominate it, in which case we will not find any phi.
+        // Tolerate this case.
+        EHblkDsc* ehDsc = m_pCompiler->ehGetBlockHndDsc(succ);
+        assert(phiFound || ((ehDsc != nullptr) && !m_pCompiler->m_dfsTree->Contains(ehDsc->ebdTryBeg)));
+#endif
 
         return BasicBlockVisit::Continue;
     });
@@ -1530,7 +1555,7 @@ bool IncrementalSsaBuilder::FindReachingDefInBlock(const UseDefLocation& use, Ba
         }
 
         if ((candidate.Block == use.Block) && (use.Stmt != nullptr) &&
-            (LatestStatement(use.Stmt, candidate.Stmt) != use.Stmt))
+            (m_comp->gtLatestStatement(use.Stmt, candidate.Stmt) != use.Stmt))
         {
             // Def is after use
             continue;
@@ -1540,7 +1565,8 @@ bool IncrementalSsaBuilder::FindReachingDefInBlock(const UseDefLocation& use, Ba
         {
             latestTree = nullptr;
         }
-        else if ((latestDefStmt == nullptr) || (LatestStatement(candidate.Stmt, latestDefStmt) == candidate.Stmt))
+        else if ((latestDefStmt == nullptr) ||
+                 (m_comp->gtLatestStatement(candidate.Stmt, latestDefStmt) == candidate.Stmt))
         {
             latestDefStmt = candidate.Stmt;
             latestTree    = candidate.Tree;
@@ -1592,44 +1618,6 @@ bool IncrementalSsaBuilder::FindReachingDefInSameStatement(const UseDefLocation&
     }
 
     return false;
-}
-
-//------------------------------------------------------------------------
-// LatestStatement: Given two statements in the same block, find the latest one
-// of them.
-//
-// Parameters:
-//   stmt1 - The first statement
-//   stmt2 - The second statement
-//
-// Returns:
-//   Latest of the two statements.
-//
-Statement* IncrementalSsaBuilder::LatestStatement(Statement* stmt1, Statement* stmt2)
-{
-    if (stmt1 == stmt2)
-    {
-        return stmt1;
-    }
-
-    Statement* cursor1 = stmt1->GetNextStmt();
-    Statement* cursor2 = stmt2->GetNextStmt();
-
-    while (true)
-    {
-        if ((cursor1 == stmt2) || (cursor2 == nullptr))
-        {
-            return stmt2;
-        }
-
-        if ((cursor2 == stmt1) || (cursor1 == nullptr))
-        {
-            return stmt1;
-        }
-
-        cursor1 = cursor1->GetNextStmt();
-        cursor2 = cursor2->GetNextStmt();
-    }
 }
 
 //------------------------------------------------------------------------

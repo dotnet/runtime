@@ -57,7 +57,7 @@ namespace System.Reflection.Emit
 
         internal void AddExceptionBlocks()
         {
-            foreach(ExceptionHandlerInfo eb in _exceptionBlocks)
+            foreach (ExceptionHandlerInfo eb in _exceptionBlocks)
             {
                 switch (eb.Kind)
                 {

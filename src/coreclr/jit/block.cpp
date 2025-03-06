@@ -1433,8 +1433,8 @@ bool BasicBlock::endsWithJmpMethod(Compiler* comp) const
 //
 bool BasicBlock::endsWithTailCallOrJmp(Compiler* comp, bool fastTailCallsOnly /*=false*/) const
 {
-    GenTree* tailCall                       = nullptr;
-    bool     tailCallsConvertibleToLoopOnly = false;
+    GenTreeCall* tailCall                       = nullptr;
+    bool         tailCallsConvertibleToLoopOnly = false;
     return endsWithJmpMethod(comp) ||
            endsWithTailCall(comp, fastTailCallsOnly, tailCallsConvertibleToLoopOnly, &tailCall);
 }
@@ -1455,10 +1455,10 @@ bool BasicBlock::endsWithTailCallOrJmp(Compiler* comp, bool fastTailCallsOnly /*
 // Notes:
 //    At most one of fastTailCallsOnly and tailCallsConvertibleToLoopOnly flags can be true.
 //
-bool BasicBlock::endsWithTailCall(Compiler* comp,
-                                  bool      fastTailCallsOnly,
-                                  bool      tailCallsConvertibleToLoopOnly,
-                                  GenTree** tailCall) const
+bool BasicBlock::endsWithTailCall(Compiler*     comp,
+                                  bool          fastTailCallsOnly,
+                                  bool          tailCallsConvertibleToLoopOnly,
+                                  GenTreeCall** tailCall) const
 {
     assert(!fastTailCallsOnly || !tailCallsConvertibleToLoopOnly);
     *tailCall   = nullptr;
@@ -1525,7 +1525,7 @@ bool BasicBlock::endsWithTailCall(Compiler* comp,
 // Return Value:
 //    true if the block ends with a tail call convertible to loop.
 //
-bool BasicBlock::endsWithTailCallConvertibleToLoop(Compiler* comp, GenTree** tailCall) const
+bool BasicBlock::endsWithTailCallConvertibleToLoop(Compiler* comp, GenTreeCall** tailCall) const
 {
     bool fastTailCallsOnly              = false;
     bool tailCallsConvertibleToLoopOnly = true;

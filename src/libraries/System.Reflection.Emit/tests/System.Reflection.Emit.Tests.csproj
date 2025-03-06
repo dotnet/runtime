@@ -1,9 +1,11 @@
 <Project Sdk="Microsoft.NET.Sdk">
+
   <PropertyGroup>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
     <TestRuntime>true</TestRuntime>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
   </PropertyGroup>
+
   <ItemGroup>
     <Compile Include="AssemblyBuilderTests.cs" />
     <Compile Include="OpCodesTests.cs" />
@@ -71,6 +73,7 @@
     <Compile Include="PersistedAssemblyBuilder\AssemblySaveTypeBuilderAPIsTests.cs" />
     <Compile Include="PersistedAssemblyBuilder\AssemblySaveModuleBuilderTests.cs" />
     <Compile Include="PersistedAssemblyBuilder\AssemblySavePropertyBuilderTests.cs" />
+    <Compile Include="PersistedAssemblyBuilder\AssemblySaveResourceTests.cs" />
     <Compile Include="PersistedAssemblyBuilder\AssemblySaveTools.cs" />
     <Compile Include="PersistedAssemblyBuilder\AssemblySaveTypeBuilderTests.cs" />
     <Compile Include="PortablePdb\ILGeneratorScopesAndSequencePointsTests.cs" />
@@ -129,8 +132,9 @@
     <Compile Include="Utilities.cs" />
     <Compile Include="$(CommonTestPath)System\IO\TempFile.cs" Link="Common\System\IO\TempFile.cs" />
   </ItemGroup>
+
   <ItemGroup>
-    <ProjectReference Include="..\src\System.Reflection.Emit.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.Reflection.MetadataLoadContext\src\System.Reflection.MetadataLoadContext.csproj" />
   </ItemGroup>
+
 </Project>

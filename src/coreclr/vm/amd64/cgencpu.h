@@ -505,43 +505,6 @@ inline PCODE decodeBackToBackJump(PCODE pCode)
 extern "C" void setFPReturn(int fpSize, INT64 retVal);
 extern "C" void getFPReturn(int fpSize, INT64 *retval);
 
-
-#include <pshpack1.h>
-struct DECLSPEC_ALIGN(8) UMEntryThunkCode
-{
-    // padding                  // CC CC CC CC
-    // mov r10, pUMEntryThunk   // 49 ba xx xx xx xx xx xx xx xx    // METHODDESC_REGISTER
-    // mov rax, pJmpDest        // 48 b8 xx xx xx xx xx xx xx xx    // need to ensure this imm64 is qword aligned
-    // TAILJMP_RAX              // 48 FF E0
-
-    BYTE            m_padding[4];
-    BYTE            m_movR10[2];    // MOV R10,
-    LPVOID          m_uet;          //          pointer to start of this structure
-    BYTE            m_movRAX[2];    // MOV RAX,
-    DECLSPEC_ALIGN(8)
-    const BYTE*     m_execstub;     //          pointer to destination code // ensure this is qword aligned
-    BYTE            m_jmpRAX[3];    // JMP RAX
-    BYTE            m_padding2[5];
-
-    void Encode(UMEntryThunkCode *pEntryThunkCodeRX, BYTE* pTargetCode, void* pvSecretParam);
-    void Poison();
-
-    LPCBYTE GetEntryPoint() const
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        return (LPCBYTE)&m_movR10;
-    }
-
-    static int GetEntryPointOffset()
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        return offsetof(UMEntryThunkCode, m_movR10);
-    }
-};
-#include <poppack.h>
-
 struct HijackArgs
 {
 #ifndef FEATURE_MULTIREG_RETURN

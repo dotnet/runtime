@@ -1740,6 +1740,9 @@ CSE_HeuristicCommon::CSE_HeuristicCommon(Compiler* pCompiler)
     madeChanges    = false;
     codeOptKind    = m_pCompiler->compCodeOpt();
     enableConstCSE = Compiler::optConstantCSEEnabled();
+#if defined(TARGET_AMD64)
+    cntCalleeTrashInt = pCompiler->get_CNT_CALLEE_TRASH_INT();
+#endif // TARGET_AMD64
 
 #ifdef DEBUG
     // Track the order of CSEs done (candidate number)
@@ -4035,7 +4038,7 @@ void CSE_Heuristic::Initialize()
 
         if (onStack)
         {
-            frameSize += m_pCompiler->lvaLclSize(lclNum);
+            frameSize += m_pCompiler->lvaLclStackHomeSize(lclNum);
         }
         else
         {
