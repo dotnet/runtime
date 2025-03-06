@@ -3154,6 +3154,10 @@ bool LinearScan::isSpillCandidate(Interval* current, RefPosition* refPosition, R
     assert(!refPosition->isFixedRefOfRegMask(candidateBit));
     // We shouldn't be calling this if there is a fixed reference at the same location
     // (and it's not due to this reference), as checked above.
+    if (conflictingFixedRegReference(physRegRecord->regNum, refPosition))
+    {
+        JITDUMP("conflictingFixedRegReference\n");
+    }
     assert(!conflictingFixedRegReference(physRegRecord->regNum, refPosition));
 
     bool canSpill;
@@ -4836,7 +4840,6 @@ void LinearScan::allocateRegistersMinimal()
 #endif // DEBUG
 
     BasicBlock* currentBlock = nullptr;
-    nextKill                 = killHead;
 
     LsraLocation prevLocation            = MinLocation;
     regMaskTP    regsToFree              = RBM_NONE;
@@ -5524,7 +5527,6 @@ void LinearScan::allocateRegisters()
 #endif // DEBUG
 
     BasicBlock* currentBlock = nullptr;
-    nextKill                 = killHead;
 
     LsraLocation prevLocation            = MinLocation;
     regMaskTP    regsToFree              = RBM_NONE;
@@ -13561,6 +13563,8 @@ SingleTypeRegSet LinearScan::RegisterSelection::select(Interval*                
         }
 
         SingleTypeRegSet checkConflictMask = candidates & linearScan->fixedRegs.GetRegSetForType(regType);
+        JITDUMP("*** Candidates = %d, fixedRegs = %d\n", (int)candidates,
+                (int)linearScan->fixedRegs.GetRegSetForType(regType));
         while (checkConflictMask != RBM_NONE)
         {
             regNumber        checkConflictReg = genFirstRegNumFromMask(checkConflictMask, regType);
@@ -13568,15 +13572,22 @@ SingleTypeRegSet LinearScan::RegisterSelection::select(Interval*                
             checkConflictMask ^= checkConflictBit;
             RegRecord* regRecord = linearScan->getRegisterRecord(checkConflictReg);
             assert(regRecord != nullptr);
-            RefPosition* nextRefPos = regRecord->recentRefPosition == nullptr
-                                          ? regRecord->firstRefPosition
-                                          : regRecord->recentRefPosition->nextRefPosition;
+            LsraLocation checkConflictLocation = linearScan->nextFixedRef[checkConflictReg];
+            RefPosition* nextRefPos            = regRecord->recentRefPosition == nullptr
+                                                     ? regRecord->firstRefPosition
+                                                     : regRecord->recentRefPosition->nextRefPosition;
             if (nextRefPos == nullptr)
             {
                 linearScan->fixedRegs &= ~genRegMask(checkConflictReg);
             }
             else if (nextRefPos->nodeLocation <= eliminateLoc)
             {
+                candidates &= ~checkConflictBit;
+                INDEBUG(inUseOrBusyRegsMask |= checkConflictReg);
+            }
+            else if (refPosition->delayRegFree && (checkConflictLocation == eliminateLoc))
+            {
+                JITDUMP("\n Maybe this?\n");
                 candidates &= ~checkConflictBit;
                 INDEBUG(inUseOrBusyRegsMask |= checkConflictReg);
             }
@@ -13901,6 +13912,7 @@ SingleTypeRegSet LinearScan::RegisterSelection::selectMinimal(
         checkConflictMask ^= checkConflictBit;
         RegRecord* regRecord = linearScan->getRegisterRecord(checkConflictReg);
         assert(regRecord != nullptr);
+        LsraLocation checkConflictLocation = linearScan->nextFixedRef[checkConflictReg];
         RefPosition* nextRefPos = regRecord->recentRefPosition == nullptr
                                       ? regRecord->firstRefPosition
                                       : regRecord->recentRefPosition->nextRefPosition;
@@ -13909,6 +13921,10 @@ SingleTypeRegSet LinearScan::RegisterSelection::selectMinimal(
             linearScan->fixedRegs &= ~genRegMask(checkConflictReg);
         }
         else if (nextRefPos->nodeLocation <= eliminateLoc)
+        {
+            candidates &= ~checkConflictBit;
+        }
+        else if (checkConflictLocation == eliminateLoc)
         {
             candidates &= ~checkConflictBit;
         }
