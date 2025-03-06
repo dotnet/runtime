@@ -27,17 +27,6 @@ internal class ARM64FrameHandler(Target target, ContextHolder<ARM64Context> cont
         _holder.StackPointer = inlinedCallFrame.CallSiteSP;
         _holder.FramePointer = inlinedCallFrame.CalleeSavedFP;
 
-        _holder.Context.X19 = 0;
-        _holder.Context.X20 = 0;
-        _holder.Context.X21 = 0;
-        _holder.Context.X22 = 0;
-        _holder.Context.X23 = 0;
-        _holder.Context.X24 = 0;
-        _holder.Context.X25 = 0;
-        _holder.Context.X26 = 0;
-        _holder.Context.X27 = 0;
-        _holder.Context.X28 = 0;
-
         return true;
     }
 
