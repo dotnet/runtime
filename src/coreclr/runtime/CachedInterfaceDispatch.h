@@ -7,10 +7,10 @@
 //
 // ============================================================================
 
-#ifdef FEATURE_CACHED_INTERFACE_DISPATCH
+#ifndef __CACHEDINTERFACEDISPATCH_H__
+#define __CACHEDINTERFACEDISPATCH_H__
 
-bool InitializeInterfaceDispatch();
-void ReclaimUnusedInterfaceDispatchCaches();
+#ifdef FEATURE_CACHED_INTERFACE_DISPATCH
 
 // Interface dispatch caches contain an array of these entries. An instance of a cache is paired with a stub
 // that implicitly knows how many entries are contained. These entries must be aligned to twice the alignment
@@ -46,4 +46,30 @@ struct InterfaceDispatchCache
 };
 #pragma warning(pop)
 
+bool InterfaceDispatch_Initialize();
+PCODE InterfaceDispatch_UpdateDispatchCellCache(InterfaceDispatchCell * pCell, PCODE pTargetCode, MethodTable* pInstanceType, DispatchCellInfo *pNewCellInfo);
+void InterfaceDispatch_ReclaimUnusedInterfaceDispatchCaches();
+void InterfaceDispatch_DiscardCache(InterfaceDispatchCache * pCache);
+inline void InterfaceDispatch_DiscardCacheHeader(InterfaceDispatchCacheHeader * pCache)
+{
+    return InterfaceDispatch_DiscardCache((InterfaceDispatchCache*)pCache);
+}
+
+inline PCODE InterfaceDispatch_SearchDispatchCellCache(InterfaceDispatchCell * pCell, MethodTable* pInstanceType)
+{
+    // This function must be implemented in native code so that we do not take a GC while walking the cache
+    InterfaceDispatchCache * pCache = (InterfaceDispatchCache*)pCell->GetCache();
+    if (pCache != NULL)
+    {
+        InterfaceDispatchCacheEntry * pCacheEntry = pCache->m_rgEntries;
+        for (uint32_t i = 0; i < pCache->m_cEntries; i++, pCacheEntry++)
+            if (pCacheEntry->m_pInstanceType == pInstanceType)
+                return pCacheEntry->m_pTargetCode;
+    }
+
+    return (PCODE)nullptr;
+}
+
 #endif // FEATURE_CACHED_INTERFACE_DISPATCH
+
+#endif // __CACHEDINTERFACEDISPATCH_H__
