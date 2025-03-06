@@ -60,6 +60,42 @@ void __stdcall FiberDetachCallback(void* lpFlsData)
     RuntimeThreadShutdown(lpFlsData);
 }
 
+REDHAWK_PALEXPORT void REDHAWK_PALAPI PalInitComAndFlsSlot()
+{
+    // Making finalizer thread MTA early ensures that COM is initialized before we initialize our thread
+    // termination callback.
+    CoInitializeEx(NULL, COINIT_MULTITHREADED);
+
+    // We use fiber detach callbacks to run our thread shutdown code because the fiber detach
+    // callback is made without the OS loader lock
+    g_flsIndex = FlsAlloc(FiberDetachCallback);
+    if (g_flsIndex == FLS_OUT_OF_INDEXES)
+    {
+        ASSERT_UNCONDITIONALLY("Could not allocate an FLS slot.");
+        RhFailFast();
+    }
+}
+
+// Register the thread with OS to be notified when thread is about to be destroyed
+// It fails fast if a different thread was already registered with the current fiber.
+// Parameters:
+//  thread        - thread to attach
+REDHAWK_PALEXPORT void REDHAWK_PALAPI PalAttachThread(void* thread)
+{
+    void* threadFromCurrentFiber = FlsGetValue(g_flsIndex);
+
+    if (threadFromCurrentFiber != NULL)
+    {
+        ASSERT_UNCONDITIONALLY("Multiple threads encountered from a single fiber");
+        RhFailFast();
+    }
+
+    // Associate the current fiber with the current thread.  This makes the current fiber the thread's "home"
+    // fiber.  This fiber is the only fiber allowed to execute managed code on this thread.  When this fiber
+    // is destroyed, we consider the thread to be destroyed.
+    FlsSetValue(g_flsIndex, thread);
+}
+
 static HMODULE LoadKernel32dll()
 {
     return LoadLibraryExW(L"kernel32", NULL, LOAD_LIBRARY_SEARCH_SYSTEM32);
@@ -157,14 +193,6 @@ void InitializeCurrentProcessCpuCount()
 // initialization and false on failure.
 REDHAWK_PALEXPORT bool REDHAWK_PALAPI PalInit()
 {
-    // We use fiber detach callbacks to run our thread shutdown code because the fiber detach
-    // callback is made without the OS loader lock
-    g_flsIndex = FlsAlloc(FiberDetachCallback);
-    if (g_flsIndex == FLS_OUT_OF_INDEXES)
-    {
-        return false;
-    }
-
     GCConfig::Initialize();
 
     if (!GCToOSInterface::Initialize())
@@ -175,26 +203,6 @@ REDHAWK_PALEXPORT bool REDHAWK_PALAPI PalInit()
     InitializeCurrentProcessCpuCount();
 
     return true;
-}
-
-// Register the thread with OS to be notified when thread is about to be destroyed
-// It fails fast if a different thread was already registered with the current fiber.
-// Parameters:
-//  thread        - thread to attach
-REDHAWK_PALEXPORT void REDHAWK_PALAPI PalAttachThread(void* thread)
-{
-    void* threadFromCurrentFiber = FlsGetValue(g_flsIndex);
-
-    if (threadFromCurrentFiber != NULL)
-    {
-        ASSERT_UNCONDITIONALLY("Multiple threads encountered from a single fiber");
-        RhFailFast();
-    }
-
-    // Associate the current fiber with the current thread.  This makes the current fiber the thread's "home"
-    // fiber.  This fiber is the only fiber allowed to execute managed code on this thread.  When this fiber
-    // is destroyed, we consider the thread to be destroyed.
-    FlsSetValue(g_flsIndex, thread);
 }
 
 extern "C" uint64_t PalQueryPerformanceCounter()

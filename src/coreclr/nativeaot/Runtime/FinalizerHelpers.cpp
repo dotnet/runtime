@@ -31,12 +31,19 @@ static HANDLE g_lowMemoryNotification = NULL;
 
 EXTERN_C void QCALLTYPE ProcessFinalizers();
 
-// Unmanaged front-end to the finalizer thread. We require this because at the point the GC creates the
-// finalizer thread we can't run managed code. Instead this method waits
+// Unmanaged front-end to the finalizer thread. We require this because at the point when this thread is
+// created we can't run managed code. Instead this method waits
 // for the first finalization request (by which time everything must be up and running) and kicks off the
 // managed portion of the thread at that point
 uint32_t WINAPI FinalizerStart(void* pContext)
 {
+#ifdef TARGET_WINDOWS
+    PalInitComAndFlsSlot();
+    // handshake with EE initialization, as now we can attach Thread objects to native threads.
+    UInt32_BOOL res = PalSetEvent(g_FinalizerDoneEvent.GetOSEvent());
+    ASSERT(res);
+#endif // DEBUG
+
     HANDLE hFinalizerEvent = (HANDLE)pContext;
 
     PalSetCurrentThreadName(".NET Finalizer");
@@ -85,6 +92,14 @@ bool RhInitializeFinalization()
 
     return true;
 }
+
+#ifdef TARGET_WINDOWS
+void RhWaitForFinalizerThreadStart()
+{
+    g_FinalizerDoneEvent.Wait(INFINITE,FALSE);
+    g_FinalizerDoneEvent.Reset();
+}
+#endif
 
 void RhEnableFinalization()
 {
