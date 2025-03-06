@@ -16,27 +16,6 @@ typedef struct dn_simdhash_ght_data {
 	dn_simdhash_ght_destroy_func value_destroy_func;
 } dn_simdhash_ght_data;
 
-static inline uint32_t
-dn_simdhash_ght_hash (dn_simdhash_ght_data data, void * key)
-{
-	dn_simdhash_ght_hash_func hash_func = data.hash_func;
-	if (hash_func)
-		return (uint32_t)hash_func(key);
-	else
-		// FIXME: Seed
-		return MurmurHash3_32_ptr(key, 0);
-}
-
-static inline int32_t
-dn_simdhash_ght_equals (dn_simdhash_ght_data data, void * lhs, void * rhs)
-{
-	dn_simdhash_ght_equal_func equal_func = data.key_equal_func;
-	if (equal_func)
-		return equal_func(lhs, rhs);
-	else
-		return lhs == rhs;
-}
-
 static inline void
 dn_simdhash_ght_removed (dn_simdhash_ght_data data, void * key, void * value)
 {
@@ -68,8 +47,23 @@ dn_simdhash_ght_replaced (dn_simdhash_ght_data data, void * old_key, void * new_
 #define DN_SIMDHASH_KEY_T void *
 #define DN_SIMDHASH_VALUE_T void *
 #define DN_SIMDHASH_INSTANCE_DATA_T dn_simdhash_ght_data
-#define DN_SIMDHASH_KEY_HASHER dn_simdhash_ght_hash
-#define DN_SIMDHASH_KEY_EQUALS dn_simdhash_ght_equals
+
+#define DN_SIMDHASH_SCAN_DATA_T dn_simdhash_ght_equal_func
+#define DN_SIMDHASH_GET_SCAN_DATA(data) data.key_equal_func
+
+#define DN_SIMDHASH_KEY_HASHER(data, key) ( \
+    data.hash_func \
+        ? (uint32_t)data.hash_func(key) \
+        /* FIXME: seed */ \
+        : MurmurHash3_32_ptr(key, 0) \
+    )
+
+#define DN_SIMDHASH_KEY_EQUALS(scan_data, lhs, rhs) ( \
+    scan_data \
+        ? scan_data(lhs, rhs) \
+        : (lhs == rhs) \
+    )
+
 #define DN_SIMDHASH_ON_REMOVE dn_simdhash_ght_removed
 #define DN_SIMDHASH_ON_REPLACE dn_simdhash_ght_replaced
 #if SIZEOF_VOID_P == 8
