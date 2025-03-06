@@ -1,10 +1,8 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
+using System.Runtime.ExceptionServices;
 using System.Threading.Tasks;
 
 namespace System.Threading.RateLimiting
@@ -26,10 +24,12 @@ namespace System.Threading.RateLimiting
         public override RateLimiterStatistics? GetStatistics()
         {
             ThrowIfDisposed();
+
             long lowestAvailablePermits = long.MaxValue;
             long currentQueuedCount = 0;
             long totalFailedLeases = 0;
             long innerMostSuccessfulLeases = 0;
+
             foreach (RateLimiter limiter in _limiters)
             {
                 if (limiter.GetStatistics() is { } statistics)
@@ -38,11 +38,13 @@ namespace System.Threading.RateLimiting
                     {
                         lowestAvailablePermits = statistics.CurrentAvailablePermits;
                     }
+
                     currentQueuedCount += statistics.CurrentQueuedCount;
                     totalFailedLeases += statistics.TotalFailedLeases;
                     innerMostSuccessfulLeases = statistics.TotalSuccessfulLeases;
                 }
             }
+
             return new RateLimiterStatistics()
             {
                 CurrentAvailablePermits = lowestAvailablePermits,
@@ -57,7 +59,9 @@ namespace System.Threading.RateLimiting
             get
             {
                 ThrowIfDisposed();
+
                 TimeSpan? lowestIdleDuration = null;
+
                 foreach (RateLimiter limiter in _limiters)
                 {
                     if (limiter.IdleDuration is { } idleDuration)
@@ -68,6 +72,7 @@ namespace System.Threading.RateLimiting
                         }
                     }
                 }
+
                 return lowestIdleDuration;
             }
         }
@@ -75,11 +80,14 @@ namespace System.Threading.RateLimiting
         protected override RateLimitLease AttemptAcquireCore(int permitCount)
         {
             ThrowIfDisposed();
+
             RateLimitLease[]? leases = null;
+
             for (int i = 0; i < _limiters.Length; i++)
             {
                 RateLimitLease? lease = null;
                 Exception? exception = null;
+
                 try
                 {
                     lease = _limiters[i].AttemptAcquire(permitCount);
@@ -88,7 +96,9 @@ namespace System.Threading.RateLimiting
                 {
                     exception = ex;
                 }
+
                 RateLimitLease? notAcquiredLease = CommonAcquireLogic(exception, lease, ref leases, i, _limiters.Length);
+
                 if (notAcquiredLease is not null)
                 {
                     return notAcquiredLease;
@@ -101,11 +111,14 @@ namespace System.Threading.RateLimiting
         protected override async ValueTask<RateLimitLease> AcquireAsyncCore(int permitCount, CancellationToken cancellationToken)
         {
             ThrowIfDisposed();
+
             RateLimitLease[]? leases = null;
+
             for (int i = 0; i < _limiters.Length; i++)
             {
                 RateLimitLease? lease = null;
                 Exception? exception = null;
+
                 try
                 {
                     lease = await _limiters[i].AcquireAsync(permitCount, cancellationToken).ConfigureAwait(false);
@@ -114,7 +127,9 @@ namespace System.Threading.RateLimiting
                 {
                     exception = ex;
                 }
+
                 RateLimitLease? notAcquiredLease = CommonAcquireLogic(exception, lease, ref leases, i, _limiters.Length);
+
                 if (notAcquiredLease is not null)
                 {
                     return notAcquiredLease;
@@ -142,6 +157,7 @@ namespace System.Threading.RateLimiting
             if (ex is not null)
             {
                 AggregateException? innerEx = CommonDispose(leases, index);
+
                 if (innerEx is not null)
                 {
                     Exception[] exceptions = new Exception[innerEx.InnerExceptions.Count + 1];
@@ -149,7 +165,8 @@ namespace System.Threading.RateLimiting
                     exceptions[exceptions.Length - 1] = ex;
                     throw new AggregateException(exceptions);
                 }
-                throw ex;
+
+                ExceptionDispatchInfo.Capture(ex).Throw();
             }
 
             if (!lease!.IsAcquired)
@@ -166,16 +183,18 @@ namespace System.Threading.RateLimiting
         private static AggregateException? CommonDispose(RateLimitLease[]? leases, int i)
         {
             List<Exception>? exceptions = null;
+
             while (i > 0)
             {
                 i--;
+
                 try
                 {
                     leases![i].Dispose();
                 }
                 catch (Exception ex)
                 {
-                    exceptions ??= new List<Exception>();
+                    exceptions ??= [];
                     exceptions.Add(ex);
                 }
             }

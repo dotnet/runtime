@@ -29,7 +29,7 @@ namespace System.Threading.RateLimiting
 
                 if (_metadataNames is null)
                 {
-                    _metadataNames = new HashSet<string>();
+                    _metadataNames = [];
                     foreach (RateLimitLease lease in _leases)
                     {
                         foreach (string metadataName in lease.MetadataNames)
@@ -38,6 +38,7 @@ namespace System.Threading.RateLimiting
                         }
                     }
                 }
+
                 return _metadataNames;
             }
         }

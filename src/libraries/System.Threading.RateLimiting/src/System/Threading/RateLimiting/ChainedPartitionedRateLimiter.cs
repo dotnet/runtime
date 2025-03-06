@@ -26,10 +26,12 @@ namespace System.Threading.RateLimiting
         public override RateLimiterStatistics? GetStatistics(TResource resource)
         {
             ThrowIfDisposed();
+
             long lowestAvailablePermits = long.MaxValue;
             long currentQueuedCount = 0;
             long totalFailedLeases = 0;
             long innerMostSuccessfulLeases = 0;
+
             foreach (PartitionedRateLimiter<TResource> limiter in _limiters)
             {
                 if (limiter.GetStatistics(resource) is { } statistics)
@@ -38,11 +40,13 @@ namespace System.Threading.RateLimiting
                     {
                         lowestAvailablePermits = statistics.CurrentAvailablePermits;
                     }
+
                     currentQueuedCount += statistics.CurrentQueuedCount;
                     totalFailedLeases += statistics.TotalFailedLeases;
                     innerMostSuccessfulLeases = statistics.TotalSuccessfulLeases;
                 }
             }
+
             return new RateLimiterStatistics()
             {
                 CurrentAvailablePermits = lowestAvailablePermits,
@@ -55,11 +59,14 @@ namespace System.Threading.RateLimiting
         protected override RateLimitLease AttemptAcquireCore(TResource resource, int permitCount)
         {
             ThrowIfDisposed();
+
             RateLimitLease[]? leases = null;
+
             for (int i = 0; i < _limiters.Length; i++)
             {
                 RateLimitLease? lease = null;
                 Exception? exception = null;
+
                 try
                 {
                     lease = _limiters[i].AttemptAcquire(resource, permitCount);
@@ -68,7 +75,9 @@ namespace System.Threading.RateLimiting
                 {
                     exception = ex;
                 }
+
                 RateLimitLease? notAcquiredLease = ChainedRateLimiter.CommonAcquireLogic(exception, lease, ref leases, i, _limiters.Length);
+
                 if (notAcquiredLease is not null)
                 {
                     return notAcquiredLease;
@@ -81,11 +90,14 @@ namespace System.Threading.RateLimiting
         protected override async ValueTask<RateLimitLease> AcquireAsyncCore(TResource resource, int permitCount, CancellationToken cancellationToken)
         {
             ThrowIfDisposed();
+
             RateLimitLease[]? leases = null;
+
             for (int i = 0; i < _limiters.Length; i++)
             {
                 RateLimitLease? lease = null;
                 Exception? exception = null;
+
                 try
                 {
                     lease = await _limiters[i].AcquireAsync(resource, permitCount, cancellationToken).ConfigureAwait(false);
@@ -94,7 +106,9 @@ namespace System.Threading.RateLimiting
                 {
                     exception = ex;
                 }
+
                 RateLimitLease? notAcquiredLease = ChainedRateLimiter.CommonAcquireLogic(exception, lease, ref leases, i, _limiters.Length);
+
                 if (notAcquiredLease is not null)
                 {
                     return notAcquiredLease;
