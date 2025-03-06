@@ -4749,6 +4749,13 @@ bool Compiler::ThreeOptLayout::ConsiderEdge(FlowEdge* edge)
         return false;
     }
 
+    // Avoid converting bottom-tested loops into top-tested loops
+    // by creating fallthrough along conditional loop backedges.
+    if (srcBlk->KindIs(BBJ_COND) && edge->isLoopBackEdge())
+    {
+        return false;
+    }
+
     if (addToQueue)
     {
         edge->markVisited();
@@ -5247,25 +5254,19 @@ void Compiler::ThreeOptLayout::CompactHotJumps()
         // Ensure we won't break any ordering invariants by creating fallthrough on this edge.
         if (!ConsiderEdge</* addToQueue */ false>(edge))
         {
-            continue;
-        }
-
-        if (block->KindIs(BBJ_COND) && isBackwardJump(block, edge->getDestinationBlock()))
-        {
-            // This could be a loop exit, so don't bother moving this block up.
-            // Instead, try moving the unlikely target up to create fallthrough.
-            if (!ConsiderEdge</* addToQueue */ false>(unlikelyEdge) ||
-                isBackwardJump(block, unlikelyEdge->getDestinationBlock()))
+            // If this is a conditional block, try considering the other successor edge.
+            if (block->KindIs(BBJ_COND) && ConsiderEdge</* addToQueue */ false>(unlikelyEdge))
+            {
+                edge = unlikelyEdge;
+            }
+            else
             {
                 continue;
             }
-
-            edge = unlikelyEdge;
         }
 
-        // Don't interleave loop and non-loop blocks.
-        // We will leave it to 3-opt to determine if breaking up loop bodies is profitable.
-        if (compiler->m_loops->IsLoopExitEdge(edge))
+        // Don't interleave loop and non-loop blocks by creating fallthrough along exit edges.
+        if (edge->isLoopExitEdge())
         {
             continue;
         }
@@ -5372,6 +5373,22 @@ PhaseStatus Compiler::fgSearchImprovedLayout()
     else
     {
         assert(m_loops != nullptr);
+    }
+
+    // Checking if an edge is a loop back/exit edge requires iterating up to every back/exit edge in the method,
+    // which we don't want to do during reordering.
+    // Instead, find and mark all loop back/exit edges up front.
+    for (FlowGraphNaturalLoop* const loop : m_loops->InReversePostOrder())
+    {
+        for (FlowEdge* const backEdge : loop->BackEdges())
+        {
+            backEdge->markLoopBackEdge();
+        }
+
+        for (FlowEdge* const exitEdge : loop->ExitEdges())
+        {
+            exitEdge->markLoopExitEdge();
+        }
     }
 
     BasicBlock** const initialLayout = new (this, CMK_BasicBlock) BasicBlock*[m_dfsTree->GetPostOrderCount()];

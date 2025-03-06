@@ -600,6 +600,12 @@ private:
     // Convenience flag for phases that need to track edge visitation
     bool m_visited;
 
+    // Convenience flag for phases that need to cache loop back edges
+    bool m_isLoopBackEdge;
+
+    // Convenience flag for phases that need to cache loop exit edges
+    bool m_isLoopExitEdge;
+
     // True if likelihood has been set
     INDEBUG(bool m_likelihoodSet);
 
@@ -611,6 +617,8 @@ public:
         , m_likelihood(0)
         , m_dupCount(0)
         , m_visited(false)
+        , m_isLoopBackEdge(false)
+        , m_isLoopExitEdge(false)
 #ifdef DEBUG
         , m_likelihoodSet(false)
 #endif // DEBUG
@@ -711,6 +719,26 @@ public:
     {
         assert(visited());
         m_visited = false;
+    }
+
+    bool isLoopBackEdge() const
+    {
+        return m_isLoopBackEdge;
+    }
+
+    void markLoopBackEdge()
+    {
+        m_isLoopBackEdge = true;
+    }
+
+    bool isLoopExitEdge() const
+    {
+        return m_isLoopExitEdge;
+    }
+
+    void markLoopExitEdge()
+    {
+        m_isLoopExitEdge = true;
     }
 };
 
