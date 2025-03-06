@@ -1554,7 +1554,7 @@ BOOL ObjHeader::TryEnterObjMonitor(INT32 timeOut)
 
 extern DWORD g_currentProcessCpuCount;
 
-extern BOOL g_isCpuQuotaLimited;
+extern BOOL g_currentProcessIsCpuQuotaLimited;
 
 AwareLock::EnterHelperResult ObjHeader::EnterObjMonitorHelperSpin(Thread* pCurThread)
 {
@@ -1571,14 +1571,14 @@ AwareLock::EnterHelperResult ObjHeader::EnterObjMonitorHelperSpin(Thread* pCurTh
         return AwareLock::EnterHelperResult_Contention;
     }
 
-    // Initialize g_currentProcessCpuCount and g_isCpuQuotaLimited if they haven't been initialized yet
+    // Initialize g_currentProcessCpuCount and g_currentProcessIsCpuQuotaLimited if they haven't been initialized yet
     if (g_currentProcessCpuCount == 0)
     {
         GetCurrentProcessCpuCount();
     }
 
     _ASSERTE(g_currentProcessCpuCount > 0);
-    if (g_isCpuQuotaLimited)
+    if (g_currentProcessIsCpuQuotaLimited)
     {
         g_SpinConstants.dwMonitorSpinCount = 0;
         return AwareLock::EnterHelperResult_Contention;

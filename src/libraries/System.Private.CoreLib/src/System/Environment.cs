@@ -37,7 +37,7 @@ namespace System
 
         public static int ProcessorCount { get; } = GetProcessorCount();
 
-        public static bool IsCpuQuotaLimited { get; } = GetIsCpuQuotaLimited();
+        internal static bool IsCpuQuotaLimited { get; } = GetIsCpuQuotaLimited();
 
         /// <summary>
         /// Gets whether the current machine has only a single processor.

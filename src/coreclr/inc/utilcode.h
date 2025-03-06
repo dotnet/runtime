@@ -807,7 +807,7 @@ int GetTotalProcessorCount();
 //******************************************************************************
 int GetCurrentProcessCpuCount();
 
-BOOL GetIsCpuQuotaLimited();
+BOOL GetCurrentProcessIsCpuQuotaLimited();
 
 uint32_t GetOsPageSize();
 
