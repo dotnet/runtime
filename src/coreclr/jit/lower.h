@@ -53,28 +53,7 @@ private:
     {
         LowerRange(range.FirstNode(), range.LastNode());
     }
-    void LowerRange(GenTree* firstNode, GenTree* lastNode)
-    {
-        assert(lastNode != nullptr);
-
-        // Lower nodes until we get to the node after the last node expected to
-        // be lowered. This is the most robust way to do this since LowerNode
-        // can both remove nodes or replace a node by a new range of nodes.
-        // Note that stopNode can be null if lastNode was truly the last node
-        // of the block, which is ok.
-        GenTree* stopNode = lastNode->gtNext;
-
-        for (GenTree* cur = firstNode; cur != stopNode;)
-        {
-            cur = LowerNode(cur);
-
-            if ((stopNode != nullptr) && (cur == nullptr))
-            {
-                assert(!"Ran out of nodes before getting to stop node");
-                break;
-            }
-        }
-    }
+    void LowerRange(GenTree* firstNode, GenTree* lastNode);
 
     // ContainCheckRange handles new code that is introduced by or after Lowering,
     // and that is known to be already in Lowered form.
@@ -640,6 +619,7 @@ private:
     unsigned              vtableCallTemp;       // local variable we use as a temp for vtable calls
     mutable SideEffectSet m_scratchSideEffects; // SideEffectSet used for IsSafeToContainMem and isRMWIndirCandidate
     BasicBlock*           m_block;
+    GenTree*              m_stopNodeSentinel = nullptr;
 
 #ifdef FEATURE_FIXED_OUT_ARGS
     unsigned m_outgoingArgSpaceSize = 0;

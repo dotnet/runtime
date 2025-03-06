@@ -394,6 +394,43 @@ bool Lowering::IsSafeToMarkRegOptional(GenTree* parentNode, GenTree* childNode) 
 }
 
 //------------------------------------------------------------------------
+// LowerRange:
+//   Lower a range of nodes (including nodes created in the range during that
+//   lowering).
+//
+// Arguments:
+//    firstNode - First node of the range
+//    lastNode  - Last node of the range
+//
+void Lowering::LowerRange(GenTree* firstNode, GenTree* lastNode)
+{
+    assert(lastNode != nullptr);
+
+    // Multiple possible behaviors of LowerNode need to be handled here:
+    // 1. The node being lowered may be removed
+    // 2. The node being lowered may be replaced by a new region of nodes and
+    //    ask lowering to go back to those nodes
+    // 3. The node being lowered may have its user removed
+    //
+    // The easiest way to ensure we lower the exact region expected is to
+    // insert a sentinel node after the last node and stop when we get to it.
+    //
+    if (m_stopNodeSentinel == nullptr)
+    {
+        m_stopNodeSentinel = comp->gtNewNothingNode();
+    }
+
+    BlockRange().InsertAfter(lastNode, m_stopNodeSentinel);
+
+    for (GenTree* cur = firstNode; cur != m_stopNodeSentinel;)
+    {
+        cur = LowerNode(cur);
+    }
+
+    BlockRange().Remove(m_stopNodeSentinel);
+}
+
+//------------------------------------------------------------------------
 // LowerNode: this is the main entry point for Lowering.
 //
 // Arguments:
