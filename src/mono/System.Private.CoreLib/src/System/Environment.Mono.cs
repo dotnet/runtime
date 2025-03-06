@@ -22,10 +22,10 @@ namespace System
         }
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        private static extern int GetProcessorCount();
+        private static extern bool GetIsCpuQuotaLimited();
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        private static extern bool GetIsCpuQuotaLimited();
+        private static extern int GetProcessorCount();
 
         public static extern int TickCount
         {

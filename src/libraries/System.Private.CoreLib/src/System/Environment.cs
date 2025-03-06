@@ -35,9 +35,9 @@ namespace System
             public TimeSpan TotalTime => UserTime + PrivilegedTime;
         }
 
-        public static int ProcessorCount { get; } = GetProcessorCount();
-
         internal static bool IsCpuQuotaLimited { get; } = GetIsCpuQuotaLimited();
+
+        public static int ProcessorCount { get; } = GetProcessorCount();
 
         /// <summary>
         /// Gets whether the current machine has only a single processor.
