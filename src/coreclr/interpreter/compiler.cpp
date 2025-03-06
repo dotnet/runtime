@@ -1352,6 +1352,31 @@ int32_t InterpCompiler::GetMethodDataItemIndex(CORINFO_METHOD_HANDLE mHandle)
     return GetDataItemIndex((void*)data);
 }
 
+bool InterpCompiler::EmitCallIntrinsics(CORINFO_METHOD_HANDLE method, CORINFO_SIG_INFO sig)
+{
+    const char *className = NULL;
+    const char *namespaceName = NULL;
+    const char *methodName = m_compHnd->getMethodNameFromMetadata(method, &className, &namespaceName, NULL, 0);
+    int32_t opcode = -1;
+
+    if (namespaceName && !strcmp(namespaceName, "System"))
+    {
+        if (className && !strcmp(className, "Environment"))
+        {
+            if (methodName && !strcmp(methodName, "FailFast"))
+                opcode = INTOP_FAILFAST; // to be removed, not really an intrisic
+        }
+    }
+
+    if (opcode != -1)
+    {
+        AddIns(opcode);
+        return true;
+    }
+
+    return false;
+}
+
 void InterpCompiler::EmitCall(CORINFO_CLASS_HANDLE constrainedClass, bool readonly, bool tailcall)
 {
     uint32_t token = getU4LittleEndian(m_ip + 1);
@@ -1367,6 +1392,12 @@ void InterpCompiler::EmitCall(CORINFO_CLASS_HANDLE constrainedClass, bool readon
 
     CORINFO_SIG_INFO targetSignature;
     m_compHnd->getMethodSig(targetMethod, &targetSignature);
+
+    if (EmitCallIntrinsics(targetMethod, targetSignature))
+    {
+        m_ip += 5;
+        return;
+    }
 
     // Process sVars
     int numArgs = targetSignature.numArgs + targetSignature.hasThis();
@@ -1597,6 +1628,12 @@ retry_emit:
                 PushStackType(StackTypeI4, NULL);
                 m_pLastIns->SetDVar(m_pStackPointer[-1].var);
                 m_ip += 2;
+                break;
+            case CEE_LDNULL:
+                AddIns(INTOP_LDNULL);
+                PushStackType(StackTypeO, NULL);
+                m_pLastIns->SetDVar(m_pStackPointer[-1].var);
+                m_ip++;
                 break;
 
             case CEE_LDARG_S:

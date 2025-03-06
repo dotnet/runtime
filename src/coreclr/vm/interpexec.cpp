@@ -52,6 +52,14 @@ MAIN_LOOP:
                 LOCAL_VAR(ip[1], int32_t) = ip[2];
                 ip += 3;
                 break;
+            case INTOP_LDC_I4_0:
+                LOCAL_VAR(ip[1], int32_t) = 0;
+                ip += 2;
+                break;
+            case INTOP_LDC_I8_0:
+                LOCAL_VAR(ip[1], int64_t) = 0;
+                ip += 2;
+                break;
             case INTOP_RET:
                 // Return stack slot sized value
                 *(int64_t*)pFrame->pRetVal = LOCAL_VAR(ip[1], int64_t);
@@ -726,6 +734,9 @@ MAIN_LOOP:
                 pThreadContext->pStackPointer = stack + pMethod->allocaSize;
                 break;
             }
+            case INTOP_FAILFAST:
+                assert(0);
+                break;
             default:
                 assert(0);
                 break;
