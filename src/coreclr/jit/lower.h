@@ -67,6 +67,12 @@ private:
         for (GenTree* cur = firstNode; cur != stopNode;)
         {
             cur = LowerNode(cur);
+
+            if ((stopNode != nullptr) && (cur == nullptr))
+            {
+                assert(!"Ran out of nodes before getting to stop node");
+                break;
+            }
         }
     }
 
