@@ -11,26 +11,6 @@
     EXTERN RhpUniversalTransition_DebugStepTailCall
 
 ;;
-;; Stub dispatch routine for dispatch to a vtable slot
-;;
-    LEAF_ENTRY RhpVTableOffsetDispatch
-        ;; x11 contains the interface dispatch cell address.
-        ;; load x12 to point to the vtable offset (which is stored in the m_pCache field).
-        ldr     x12, [x11, #OFFSETOF__InterfaceDispatchCell__m_pCache]
-
-        ;; Load the MethodTable from the object instance in x0, and add it to the vtable offset
-        ;; to get the address in the vtable of what we want to dereference
-    ALTERNATE_ENTRY RhpVTableOffsetDispatchAVLocation
-        ldr     x13, [x0]
-        add     x12, x12, x13
-
-        ;; Load the target address of the vtable into x12
-        ldr     x12, [x12]
-
-        br      x12
-    LEAF_END RhpVTableOffsetDispatch
-
-;;
 ;; Cache miss case, call the runtime to resolve the target and update the cache.
 ;; Use universal transition helper to allow an exception to flow out of resolution.
 ;;
