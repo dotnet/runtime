@@ -1,0 +1,77 @@
+parameters:
+  filesToSign: []
+  timeoutInMinutes: '30'
+
+steps:
+  - task: UseDotNet@2
+    displayName: Install .NET 6 SDK for signing.
+    inputs:
+      packageType: 'sdk'
+      version: '6.0.x'
+      installationPath: '$(Agent.TempDirectory)/dotnet'
+
+  - ${{ each file in parameters.filesToSign }}:
+    - task: CopyFiles@2
+      displayName: 'Copy entitled file ${{ file.name }}'
+      inputs:
+        contents: '${{ file.path }}/${{ file.name }}'
+        targetFolder: '$(Build.ArtifactStagingDirectory)/mac_entitled'
+        overWrite: true
+
+  - task: ArchiveFiles@2
+    displayName: 'Zip MacOS files for signing'
+    inputs:
+      rootFolderOrFile:  '$(Build.ArtifactStagingDirectory)/mac_entitled'
+      archiveFile:       '$(Build.ArtifactStagingDirectory)/mac_entitled_to_sign.zip'
+      archiveType:       zip
+      includeRootFolder: true
+      replaceExistingArchive: true
+
+  - task: EsrpCodeSigning@5
+    displayName: 'ESRP CodeSigning'
+    inputs:
+      ConnectedServiceName: 'DotNet-Engineering-Services_KeyVault'
+      AppRegistrationClientId: '28ec6507-2167-4eaa-a294-34408cf5dd0e'
+      AppRegistrationTenantId: '72f988bf-86f1-41af-91ab-2d7cd011db47'
+      AuthAKVName: 'EngKeyVault'
+      AuthCertName: 'DotNetCore-ESRP-AuthCert'
+      AuthSignCertName: 'DotNetCore-ESRP-AuthSignCert'
+      FolderPath: '$(Build.ArtifactStagingDirectory)/'
+      Pattern: 'mac_entitled_to_sign.zip'
+      UseMinimatch: true
+      signConfigType: inlineSignParams
+      inlineOperation: |
+        [
+          {
+            "keyCode": "CP-401337-Apple",
+            "operationCode": "MacAppDeveloperSign",
+            "parameters" : {
+              "hardening": "Enable"
+            },
+            "toolName": "sign",
+            "toolVersion": "1.0"
+          }
+        ]
+      SessionTimeout: ${{ parameters.timeoutInMinutes }}
+      MaxConcurrency: '50'
+      MaxRetryAttempts: '5'
+      PendingAnalysisWaitTimeoutMinutes: '5'
+    env:
+      DOTNET_MULTILEVEL_LOOKUP: 0
+      DOTNET_ROOT: '$(Agent.TempDirectory)/dotnet'
+      DOTNET_MSBUILD_SDK_RESOLVER_CLI_DIR: '$(Agent.TempDirectory)/dotnet'
+
+  - task: ExtractFiles@1
+    displayName: 'Extract MacOS after signing'
+    inputs:
+      archiveFilePatterns: '$(Build.ArtifactStagingDirectory)/mac_entitled_to_sign.zip'
+      destinationFolder: '$(Build.ArtifactStagingDirectory)/mac_entitled_signed'
+
+  - ${{ each file in parameters.filesToSign }}:
+    - task: CopyFiles@2
+      displayName: 'Copy ${{ file.name }} to destination'
+      inputs:
+        contents: ${{ file.name }}
+        sourceFolder: '$(Build.ArtifactStagingDirectory)/mac_entitled_signed'
+        targetFolder: '${{ file.path }}'
+        overWrite: true

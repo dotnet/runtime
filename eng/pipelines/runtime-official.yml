@@ -97,7 +97,52 @@ extends:
                 isOfficialBuild: true
 
       #
-      # Build all runtime packs for MacOS, Linux, Linux musl, and mobile
+      # Build all runtime packs
+      # Mac x64/arm64
+      # Sign and entitle createdump and corerun after native build.
+      #
+      - template: /eng/pipelines/common/platform-matrix.yml
+        parameters:
+          jobTemplate: /eng/pipelines/common/global-build-job.yml
+          buildConfig: release
+          platforms:
+          - osx_arm64
+          - osx_x64
+          jobParameters:
+            templatePath: 'templates-official'
+            buildArgs: -s clr.corelib+clr.nativecorelib+clr.nativeaotlibs+clr.tools+clr.packages+mono+libs+host.tools+host.pkg+packs -c $(_BuildConfig) /p:DotNetBuildAllRuntimePacks=true
+            nameSuffix: AllRuntimes
+            isOfficialBuild: ${{ variables.isOfficialBuild }}
+            timeoutInMinutes: 120
+            preBuildSteps:
+              # Build our native assets first so we can sign them.
+              - template: /eng/pipelines/common/templates/global-build-step.yml
+                parameters:
+                  buildArgs: -s clr.runtime+clr.alljits+clr.nativeaotruntime+host.native -c $(_BuildConfig) /bl:$(Build.SourcesDirectory)/artifacts/logs/$(_BuildConfig)/CoreClrNativeBuild.binlog
+                  displayName: Build managed CoreCLR and host components, Mono, all libraries, and packs
+              - ${{ if and(ne(variables['System.TeamProject'], 'public'), notin(variables['Build.Reason'], 'PullRequest')) }}:
+                - template: /eng/pipelines/common/macos-sign-with-entitlements.yml
+                  parameters:
+                    filesToSign:
+                    - name: createdump
+                      path: $(Build.SourcesDirectory)/artifacts/bin/coreclr/$(osGroup).$(archType).$(_BuildConfig)
+                    - name: corerun
+                      path: $(Build.SourcesDirectory)/artifacts/bin/coreclr/$(osGroup).$(archType).$(_BuildConfig)
+                    - name: dotnet
+                      path: $(Build.SourcesDirectory)/artifacts/bin/$(osGroup)-$(archType).$(_BuildConfig)/corehost
+                    - name: apphost
+                      path: $(Build.SourcesDirectory)/artifacts/bin/$(osGroup)-$(archType).$(_BuildConfig)/corehost
+
+                - task: CopyFiles@2
+                  displayName: 'Copy signed createdump to sharedFramework'
+                  inputs:
+                    contents: createdump
+                    sourceFolder: $(Build.SourcesDirectory)/artifacts/bin/coreclr/$(osGroup).$(archType).$(_BuildConfig)
+                    targetFolder: $(Build.SourcesDirectory)/artifacts/bin/coreclr/$(osGroup).$(archType).$(_BuildConfig)/sharedFramework
+                    overWrite: true
+
+      #
+      # Build all runtime packs for Linux, Linux musl, and mobile
       #
       - template: /eng/pipelines/common/platform-matrix.yml
         parameters:
