@@ -68,33 +68,36 @@ internal sealed class PInvokeCollector {
 
     public void CollectPInvokes(List<PInvoke> pinvokes, List<PInvokeCallback> callbacks, HashSet<string> signatures, Type type)
     {
-        foreach (var method in type.GetMethods(BindingFlags.DeclaredOnly | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static | BindingFlags.Instance))
+        try
         {
-            try
+            foreach (var method in type.GetMethods(BindingFlags.DeclaredOnly | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static | BindingFlags.Instance))
             {
                 CollectPInvokesForMethod(method);
-                if (DoesMethodHaveCallbacks(method, Log))
+                if (DoesMethodHaveCallbacks(method))
                     callbacks.Add(new PInvokeCallback(method));
             }
-            catch (Exception ex) when (ex is not LogAsErrorException)
+
+            if (PInvokeTableGenerator.HasAttribute(type, "System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute"))
             {
-                Log.Warning("WASM0001", $"Could not get pinvoke, or callbacks for method '{type.FullName}::{method.Name}' because '{ex}'");
+                var method = type.GetMethod("Invoke");
+
+                if (method != null)
+                    AddSignatureForMethod(method);
             }
         }
-
-        if (HasAttribute(type, "System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute"))
+        catch (Exception ex)
         {
-            var method = type.GetMethod("Invoke");
+            Log.Warning("WASM0001", $"Skipping type '{type.FullName}' because processing it caused an exception: {ex}");
+        }
 
-            if (method != null)
-            {
-                string? signature = SignatureMapper.MethodToSignature(method!, Log);
-                if (signature == null)
-                    throw new NotSupportedException($"Unsupported parameter type in method '{type.FullName}.{method.Name}'");
+        void AddSignatureForMethod(MethodInfo method)
+        {
+            string? signature = SignatureMapper.MethodToSignature(method, Log);
 
-                if (signatures.Add(signature))
-                    Log.LogMessage(MessageImportance.Low, $"Adding pinvoke signature {signature} for method '{type.FullName}.{method.Name}'");
-            }
+            if (signature == null)
+                Log.Warning("WASM0001", $"Skipping method '{type.FullName}.{method.Name}' because the pinvoke signature couldn't be determined.");
+            else if (signatures.Add(signature))
+                Log.LogMessage(MessageImportance.Low, $"Adding pinvoke signature {signature} for method '{type.FullName}.{method.Name}'");
         }
 
         void CollectPInvokesForMethod(MethodInfo method)
@@ -107,25 +110,18 @@ internal sealed class PInvokeCollector {
                 var entrypoint = (string)dllimport.NamedArguments.First(arg => arg.MemberName == "EntryPoint").TypedValue.Value!;
                 pinvokes.Add(new PInvoke(entrypoint, module, method, wasmLinkage));
 
-                string? signature = SignatureMapper.MethodToSignature(method, Log);
-                if (signature == null)
-                {
-                    throw new NotSupportedException($"Unsupported parameter type in method '{type.FullName}.{method.Name}'");
-                }
-
-                if (signatures.Add(signature))
-                    Log.LogMessage(MessageImportance.Low, $"Adding pinvoke signature {signature} for method '{type.FullName}.{method.Name}'");
+                AddSignatureForMethod(method);
             }
         }
 
-        bool DoesMethodHaveCallbacks(MethodInfo method, LogAdapter log)
+        bool DoesMethodHaveCallbacks(MethodInfo method)
         {
             if (!MethodHasCallbackAttributes(method))
                 return false;
 
-            if (TryIsMethodGetParametersUnsupported(method, out string? reason))
+            if (PInvokeTableGenerator.TryIsMethodGetParametersUnsupported(method, out string? reason))
             {
-                Log.Warning("WASM0001", $"Skipping callback '{method.DeclaringType!.FullName}::{method.Name}' because '{reason}'.");
+                Log.Warning("WASM0001", $"Skipping callback '{type.FullName}.{method.Name}' because '{reason}'.");
                 return false;
             }
 
@@ -135,13 +131,19 @@ internal sealed class PInvokeCollector {
             // No DisableRuntimeMarshalling attribute, so check if the params/ret-type are
             // blittable
             bool isVoid = method.ReturnType.FullName == "System.Void";
-            if (!isVoid && !IsBlittable(method.ReturnType, log))
-                Error($"The return type '{method.ReturnType.FullName}' of pinvoke callback method '{method}' needs to be blittable.");
+            if (!isVoid && !PInvokeTableGenerator.IsBlittable(method.ReturnType, Log))
+            {
+                Log.Warning("WASM0001", $"Skipping callback '{type.FullName}.{method.Name}' because the return type '{method.ReturnType.FullName}' isn't blittable.");
+                return false;
+            }
 
             foreach (var p in method.GetParameters())
             {
-                if (!IsBlittable(p.ParameterType, log))
-                    Error("Parameter types of pinvoke callback method '" + method + "' needs to be blittable.");
+                if (!PInvokeTableGenerator.IsBlittable(p.ParameterType, Log))
+                {
+                    Log.Warning("WASM0001", $"Skipping callback '{type.FullName}.{method.Name}' because the parameter type '{p.ParameterType.FullName}' isn't blittable.");
+                    return false;
+                }
             }
 
             return true;
@@ -167,32 +169,6 @@ internal sealed class PInvokeCollector {
 
             return false;
         }
-    }
-
-    public static bool IsBlittable(Type type, LogAdapter log) => PInvokeTableGenerator.IsBlittable(type, log);
-
-    private static void Error(string msg) => throw new LogAsErrorException(msg);
-
-    internal static bool HasAttribute(MemberInfo element, params string[] attributeNames) => PInvokeTableGenerator.HasAttribute(element, attributeNames);
-
-    private static bool TryIsMethodGetParametersUnsupported(MethodInfo method, [NotNullWhen(true)] out string? reason)
-    {
-        try
-        {
-            method.GetParameters();
-        }
-        catch (NotSupportedException nse)
-        {
-            reason = nse.Message;
-            return true;
-        }
-        catch
-        {
-            // not concerned with other exceptions
-        }
-
-        reason = null;
-        return false;
     }
 
     private bool HasAssemblyDisableRuntimeMarshallingAttribute(Assembly assembly)
