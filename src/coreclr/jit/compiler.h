@@ -695,6 +695,15 @@ public:
     unsigned char lvAllDefsAreNoGc       : 1; // For pinned locals: true if all defs of this local are no-gc
     unsigned char lvStackAllocatedObject : 1; // Local is a stack allocated object (class, box, array, ...)
 
+    bool IsImplicitByRef()
+    {
+#if FEATURE_IMPLICIT_BYREFS
+        return lvIsImplicitByRef;
+#else
+        return false;
+#endif
+    }
+
     // lvIsMultiRegArgOrRet()
     //     returns true if this is a multireg LclVar struct used in an argument context
     //               or if this is a multireg LclVar struct assigned from a multireg call

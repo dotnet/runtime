@@ -974,6 +974,15 @@ LEAF_ENTRY JIT_PartialCompilationPatchpoint, _TEXT
     j C_FUNC(JIT_Patchpoint)
 LEAF_END JIT_PartialCompilationPatchpoint, _TEXT
 
+NESTED_ENTRY JIT_ResumeOSR, _TEXT, NoHandler
+    PROLOG_WITH_TRANSITION_BLOCK
+
+    addi  a0, sp, __PWTB_TransitionBlock // TransitionBlock *
+    call  C_FUNC(JIT_ResumeOSRWorker)
+
+    EPILOG_WITH_TRANSITION_BLOCK_RETURN
+NESTED_END JIT_ResumeOSR, _TEXT
+
 #endif // FEATURE_TIERED_COMPILATION
 
 // ------------------------------------------------------------------

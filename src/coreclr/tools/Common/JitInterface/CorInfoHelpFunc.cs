@@ -270,6 +270,7 @@ namespace Internal.JitInterface
 
         CORINFO_HELP_PATCHPOINT,                // Notify runtime that code has reached a patchpoint
         CORINFO_HELP_PARTIAL_COMPILATION_PATCHPOINT,  // Notify runtime that code has reached a part of the method that wasn't originally jitted.
+        CORINFO_HELP_RESUME_OSR,                // Resume in an OSR version of the code for the specified IL offset
 
         CORINFO_HELP_CLASSPROFILE32,            // Update 32-bit class profile for a call site
         CORINFO_HELP_CLASSPROFILE64,            // Update 64-bit class profile for a call site
@@ -286,6 +287,8 @@ namespace Internal.JitInterface
         CORINFO_HELP_DISPATCH_INDIRECT_CALL,    // CFG: Validate and dispatch to pointer
 
         CORINFO_HELP_ALLOC_CONTINUATION,
+        CORINFO_HELP_ALLOC_CONTINUATION_METHOD,
+        CORINFO_HELP_ALLOC_CONTINUATION_CLASS,
 
         CORINFO_HELP_COUNT,
     }

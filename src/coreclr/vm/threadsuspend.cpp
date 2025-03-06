@@ -4910,13 +4910,13 @@ void STDCALL OnHijackWorker(HijackArgs * pArgs)
 
 static bool GetReturnAddressHijackInfo(EECodeInfo *pCodeInfo X86_ARG(ReturnKind * returnKind) X86_ARG(bool* hasAsyncRet))
 {
-    *hasAsyncRet = false;
+    X86_ONLY(*hasAsyncRet = false);
     GCInfoToken gcInfoToken = pCodeInfo->GetGCInfoToken();
     if (!pCodeInfo->GetCodeManager()->GetReturnAddressHijackInfo(gcInfoToken X86_ARG(pReturnKind)))
         return false;
 
     MethodDesc* pMD = pCodeInfo->GetMethodDesc();
-    *hasAsyncRet = pMD->IsAsync2Method();
+    X86_ONLY(*hasAsyncRet = pMD->IsAsync2Method());
 
     return true;
 }

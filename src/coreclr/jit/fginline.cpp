@@ -2090,7 +2090,7 @@ Statement* Compiler::fgInlinePrependStatements(InlineInfo* inlineInfo)
         }
 
         assert(argInfo != nullptr);
-        fgInsertInlineeArgument(*argInfo, block, &afterStmt, &newStmt, callDI);
+        fgInsertInlineeArgument(inlineInfo, *argInfo, block, &afterStmt, &newStmt, callDI);
     }
 
     // Add the CCTOR check if asked for.

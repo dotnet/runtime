@@ -106,6 +106,7 @@ BOOL LoadDynamicInfoEntry(Module *currentModule,
 // These must be implemented in assembly and generate a TransitionBlock then calling JIT_PatchpointWorkerWithPolicy in order to actually be used.
 EXTERN_C FCDECL2(void, JIT_Patchpoint, int* counter, int ilOffset);
 EXTERN_C FCDECL1(void, JIT_PartialCompilationPatchpoint, int ilOffset);
+EXTERN_C FCDECL1(void, JIT_ResumeOSR, int ilOffset);
 
 //
 // JIT HELPER ALIASING FOR PORTABILITY.

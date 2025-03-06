@@ -376,7 +376,7 @@ void Compiler::lvaInitArgs(bool hasRetBuffArg)
     // and shared generic struct instance methods
     lvaInitGenericsCtxt(&varNum);
 
-    lvaInitAsyncContinuation(varDscInfo);
+    lvaInitAsyncContinuation(&varNum);
 
     /* If the method is varargs, process the varargs cookie */
     lvaInitVarArgsHandle(&varNum);
@@ -391,7 +391,7 @@ void Compiler::lvaInitArgs(bool hasRetBuffArg)
     // and shared generic struct instance methods
     lvaInitGenericsCtxt(&varNum);
 
-    lvaInitAsyncContinuation(varDscInfo);
+    lvaInitAsyncContinuation(&varNum);
 
     /* If the method is varargs, process the varargs cookie */
     lvaInitVarArgsHandle(&varNum);
@@ -685,59 +685,24 @@ void Compiler::lvaInitGenericsCtxt(unsigned* curVarNum)
     (*curVarNum)++;
 }
 
-void Compiler::lvaInitAsyncContinuation(InitVarDscInfo* varDscInfo)
+void Compiler::lvaInitAsyncContinuation(unsigned* curVarNum)
 {
     if (!compIsAsync2())
     {
         return;
     }
 
-    lvaAsyncContinuationArg = varDscInfo->varNum;
-    LclVarDsc* varDsc       = varDscInfo->varDsc;
+    lvaAsyncContinuationArg = *curVarNum;
+    LclVarDsc* varDsc       = lvaGetDesc(*curVarNum);
     varDsc->lvType          = TYP_REF;
     varDsc->lvIsParam       = true;
 
     // The final home for this incoming register might be our local stack frame
     varDsc->lvOnFrame = true;
 
-#ifdef DEBUG
-    varDsc->lvReason = "Async continuation arg";
-#endif
+    INDEBUG(varDsc->lvReason = "Async continuation arg");
 
-    if (varDscInfo->canEnreg(TYP_REF))
-    {
-        // Passed in register
-
-        varDsc->lvIsRegArg = 1;
-        varDsc->SetArgReg(
-            genMapRegArgNumToRegNum(varDscInfo->regArgNum(TYP_INT), varDsc->TypeGet(), info.compCallConv));
-#if FEATURE_MULTIREG_ARGS
-        varDsc->SetOtherArgReg(REG_NA);
-#endif
-
-        varDscInfo->intRegArgNum++;
-
-        JITDUMP("'AsyncContinuation' passed in register %s\n", getRegName(varDsc->GetArgReg()));
-    }
-    else
-    {
-// We need to mark these as being on the stack, as this is not done elsewhere in the case that canEnreg
-// returns false.
-#if FEATURE_FASTTAILCALL
-        varDsc->SetStackOffset(varDscInfo->stackArgSize);
-        varDscInfo->stackArgSize += TARGET_POINTER_SIZE;
-#endif // FEATURE_FASTTAILCALL
-    }
-
-    compArgSize += TARGET_POINTER_SIZE;
-
-#if defined(TARGET_X86)
-    if (info.compIsVarArgs)
-        varDsc->SetStackOffset(compArgSize);
-#endif // TARGET_X86
-
-    varDscInfo->varNum++;
-    varDscInfo->varDsc++;
+    (*curVarNum)++;
 }
 
 /*****************************************************************************/

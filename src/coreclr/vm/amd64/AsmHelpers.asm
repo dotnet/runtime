@@ -471,6 +471,18 @@ LEAF_ENTRY JIT_PartialCompilationPatchpoint, _TEXT
         jmp JIT_Patchpoint
 LEAF_END JIT_PartialCompilationPatchpoint, _TEXT
 
+extern JIT_ResumeOSRWorker:proc
+
+NESTED_ENTRY JIT_ResumeOSR, _TEXT
+        PROLOG_WITH_TRANSITION_BLOCK
+
+        lea     rcx, [rsp + __PWTB_TransitionBlock] ; TransitionBlock *
+        call    JIT_ResumeOSRWorker
+
+        EPILOG_WITH_TRANSITION_BLOCK_RETURN
+        TAILJMP_RAX
+NESTED_END JIT_ResumeOSR, _TEXT
+
 endif ; FEATURE_TIERED_COMPILATION
 
 LEAF_ENTRY JIT_PollGC, _TEXT

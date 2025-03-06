@@ -946,21 +946,8 @@ GenTree* Compiler::impStoreStruct(GenTree*         store,
             // now returns void, not a struct
             src->gtType = TYP_VOID;
 
-            if (retbufSpillLcl != BAD_VAR_NUM)
-            {
-                assert(pAfterStmt == nullptr);
-                impAppendTree(src, curLevel, usedDI);
-
-                store->Data() = gtNewLclVarNode(retbufSpillLcl, genActualType(store));
-                impAppendTree(store, curLevel, usedDI);
-
-                return gtNewNothingNode();
-            }
-            else
-            {
-                // return the morphed call node
-                return src;
-            }
+            // return the morphed call node
+            return src;
         }
 
 #ifdef UNIX_AMD64_ABI
@@ -1009,17 +996,6 @@ GenTree* Compiler::impStoreStruct(GenTree*         store,
             // now returns void, not a struct
             src->gtType  = TYP_VOID;
             call->gtType = TYP_VOID;
-
-            if (retbufSpillLcl != BAD_VAR_NUM)
-            {
-                assert(pAfterStmt == nullptr);
-                impAppendTree(src, curLevel, usedDI);
-
-                store->Data() = gtNewLclVarNode(retbufSpillLcl, genActualType(store));
-                impAppendTree(store, curLevel, usedDI);
-
-                return gtNewNothingNode();
-            }
 
             // We already have appended the write to 'dest' GT_CALL's args
             // So now we just return an empty node (pruning the GT_RET_EXPR)
@@ -13374,7 +13350,6 @@ void Compiler::impInlineInitVars(InlineInfo* pInlineInfo)
             argInfo->argHasGlobRef    = true;
             argInfo->argHasSideEff    = true;
         }
->>>>>>> upstream-main/main
     }
 
 #ifdef FEATURE_SIMD

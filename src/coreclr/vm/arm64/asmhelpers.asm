@@ -1172,6 +1172,17 @@ __HelperNakedFuncName SETS "$helper":CC:"Naked"
         b JIT_Patchpoint
     LEAF_END
 
+    IMPORT JIT_ResumeOSRWorker
+
+    NESTED_ENTRY JIT_ResumeOSR
+        PROLOG_WITH_TRANSITION_BLOCK
+
+        add     x0, sp, #__PWTB_TransitionBlock ; TransitionBlock *
+        bl      JIT_ResumeOSRWorker
+
+        EPILOG_WITH_TRANSITION_BLOCK_RETURN
+    NESTED_END
+
 #endif ; FEATURE_TIERED_COMPILATION
 
     LEAF_ENTRY  JIT_ValidateIndirectCall
