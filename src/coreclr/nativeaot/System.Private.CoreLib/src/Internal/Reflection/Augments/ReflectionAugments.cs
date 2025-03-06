@@ -135,9 +135,8 @@ namespace Internal.Reflection.Augments
                 throw new ArgumentException(SR.Argument_InvalidHandle);
 
             MethodBase methodBase = ExecutionDomain.GetMethod(declaringTypeHandle, methodHandle, genericMethodTypeArgumentHandles);
-            Type? declaringType = methodBase?.DeclaringType;
-            if (declaringType != null && declaringType.IsGenericType)  // For compat with desktop, insist that the caller pass us the declaring type to resolve members of generic types.
-                throw new ArgumentException(SR.Format(SR.Argument_MethodDeclaringTypeGeneric, methodBase, declaringType.GetGenericTypeDefinition()));
+            if (methodBase.DeclaringType.IsConstructedGenericType)  // For compat with desktop, insist that the caller pass us the declaring type to resolve members of generic types.
+                throw new ArgumentException(SR.Format(SR.Argument_MethodDeclaringTypeGeneric, methodBase, methodBase.DeclaringType.GetGenericTypeDefinition()));
             return methodBase;
         }
 
