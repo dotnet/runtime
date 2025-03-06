@@ -345,12 +345,12 @@ namespace GcInfoEncoderExt
 }
 
 template <typename GcInfoEncoding>
-class GcInfoEncoder
+class TGcInfoEncoder
 {
 public:
     typedef void (*NoMemoryFunction)(void);
 
-    GcInfoEncoder(
+    TGcInfoEncoder(
             ICorJitInfo*                pCorJitInfo,
             CORINFO_METHOD_INFO*        pMethodInfo,
             IAllocator*                 pJitAllocator,
@@ -566,5 +566,7 @@ private:
     GcInfoSize m_CurrentMethodSize;
 #endif
 };
+
+typedef TGcInfoEncoder<TargetGcInfoEncoding> GcInfoEncoder;
 
 #endif // !__GCINFOENCODER_H__

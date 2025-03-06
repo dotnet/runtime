@@ -510,12 +510,12 @@ private:
 
 #ifdef USE_GC_INFO_DECODER
 template <typename GcInfoEncoding>
-class GcInfoDecoder
+class TGcInfoDecoder
 {
 public:
 
     // If you are not interested in interruptibility or gc lifetime information, pass 0 as instructionOffset
-    GcInfoDecoder(
+    TGcInfoDecoder(
             GCInfoToken gcInfoToken,
             GcInfoDecoderFlags flags = DECODE_EVERYTHING,
             UINT32 instructionOffset = 0
@@ -535,7 +535,7 @@ public:
     // This is used for gcinfodumper
     bool IsSafePoint(UINT32 codeOffset);
 
-    typedef void EnumerateSafePointsCallback (GcInfoDecoder<TargetGcInfoEncoding> * decoder, UINT32 offset, void * hCallback);
+    typedef void EnumerateSafePointsCallback (TGcInfoDecoder<GcInfoEncoding> * decoder, UINT32 offset, void * hCallback);
     void EnumerateSafePoints(EnumerateSafePointsCallback * pCallback, void * hCallback);
 
 #endif
@@ -749,6 +749,9 @@ private:
         }
     }
 };
+
+typedef TGcInfoDecoder<TargetGcInfoEncoding> GcInfoDecoder;
+
 #endif // USE_GC_INFO_DECODER
 
 
