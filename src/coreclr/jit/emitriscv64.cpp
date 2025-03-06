@@ -918,7 +918,11 @@ void emitter::emitIns_R_R_R(
         {
             code |= 0x7 << 12;
         }
-        else if (INS_lr_w <= ins && ins <= INS_amomaxu_d)
+        else if (ins == INS_sc_w || ins == INS_sc_d)
+        {
+            code |= 0b10 << 25; // release ordering, it ends the lr-sc loop
+        }
+        else if ((ins == INS_lr_w || ins == INS_lr_d) || (INS_amoswap_w <= ins && ins <= INS_amomaxu_d))
         {
             // For now all atomics are seq. consistent as Interlocked.* APIs don't expose acquire/release ordering
             code |= 0b11 << 25;
