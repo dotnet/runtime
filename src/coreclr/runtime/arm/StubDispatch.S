@@ -88,6 +88,7 @@ LEAF_ENTRY RhpVTableOffsetDispatch, _TEXT
         ldr         r12, [r12, #OFFSETOF__InterfaceDispatchCell__m_pCache]
 
         // Load the MethodTable from the object instance in r0.
+        ALTERNATE_ENTRY RhpVTableOffsetDispatchAVLocation
         ldr         r1, [r0]
 
         // add the vtable offset to the MethodTable pointer
