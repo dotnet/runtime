@@ -61,7 +61,7 @@ internal sealed class FrameIterator
             return false;
 
         currentFramePointer = CurrentFrame.Next;
-        return true;
+        return currentFramePointer != terminator;
     }
 
     public bool TryUpdateContext(IPlatformAgnosticContext context)
