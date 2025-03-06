@@ -3643,35 +3643,6 @@ PhaseStatus Compiler::lvaMarkLocalVars()
 
     unsigned const lvaCountOrig = lvaCount;
 
-#if defined(FEATURE_EH_WINDOWS_X86)
-
-    // Grab space for exception handling
-
-    if (!UsesFunclets() && ehNeedsShadowSPslots())
-    {
-        // The first slot is reserved for ICodeManager::FixContext(ppEndRegion)
-        // ie. the offset of the end-of-last-executed-filter
-        unsigned slotsNeeded = 1;
-
-        unsigned handlerNestingLevel = ehMaxHndNestingCount;
-
-        if (opts.compDbgEnC && (handlerNestingLevel < (unsigned)MAX_EnC_HANDLER_NESTING_LEVEL))
-            handlerNestingLevel = (unsigned)MAX_EnC_HANDLER_NESTING_LEVEL;
-
-        slotsNeeded += handlerNestingLevel;
-
-        // For a filter (which can be active at the same time as a catch/finally handler)
-        slotsNeeded++;
-        // For zero-termination of the shadow-Stack-pointer chain
-        slotsNeeded++;
-
-        lvaShadowSPslotsVar = lvaGrabTempWithImplicitUse(false DEBUGARG("lvaShadowSPslotsVar"));
-        lvaSetStruct(lvaShadowSPslotsVar, typGetBlkLayout(slotsNeeded * TARGET_POINTER_SIZE), false);
-        lvaSetVarAddrExposed(lvaShadowSPslotsVar DEBUGARG(AddressExposedReason::EXTERNALLY_VISIBLE_IMPLICITLY));
-    }
-
-#endif // FEATURE_EH_WINDOWS_X86
-
 #ifdef JIT32_GCENCODER
     // LocAllocSPvar is only required by the implicit frame layout expected by the VM on x86. Whether
     // a function contains a Localloc is conveyed in the GC information, in the InfoHdrSmall.localloc
