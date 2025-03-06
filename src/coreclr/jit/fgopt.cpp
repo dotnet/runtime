@@ -2768,15 +2768,18 @@ bool Compiler::fgOptimizeBranch(BasicBlock* bJump)
     FlowEdge* const destFalseEdge = bDest->GetFalseEdge();
     FlowEdge* const destTrueEdge  = bDest->GetTrueEdge();
 
-    // bJump now falls through into the next block
+    // bJump now falls through into the next block.
+    // Note that we're deriving the false edge's likelihood from 'destTrueEdge',
+    // because the comparison in 'bJump' is flipped.
+    // Similarly, we will derive the true edge's likelihood from 'destFalseEdge'.
     //
     BasicBlock* const bDestFalseTarget = bJump->Next();
-    FlowEdge* const   falseEdge        = fgAddRefPred(bDestFalseTarget, bJump, destFalseEdge);
+    FlowEdge* const   falseEdge        = fgAddRefPred(bDestFalseTarget, bJump, destTrueEdge);
 
     // bJump now jumps to bDest's normal jump target
     //
     fgRedirectTargetEdge(bJump, bDestNormalTarget);
-    bJump->GetTargetEdge()->setLikelihood(destTrueEdge->getLikelihood());
+    bJump->GetTargetEdge()->setLikelihood(destFalseEdge->getLikelihood());
 
     bJump->SetCond(bJump->GetTargetEdge(), falseEdge);
 
@@ -2787,18 +2790,16 @@ bool Compiler::fgOptimizeBranch(BasicBlock* bJump)
         // bJump no longer flows into bDest
         //
         bDest->decreaseBBProfileWeight(bJump->bbWeight);
-        bDestNormalTarget->decreaseBBProfileWeight(bJump->bbWeight * destFalseEdge->getLikelihood());
-        bDestFalseTarget->decreaseBBProfileWeight(bJump->bbWeight * destTrueEdge->getLikelihood());
 
         // Propagate bJump's weight into its new successors
         //
-        bDestNormalTarget->increaseBBProfileWeight(bJump->GetTrueEdge()->getLikelyWeight());
-        bDestFalseTarget->increaseBBProfileWeight(falseEdge->getLikelyWeight());
+        bDestNormalTarget->setBBProfileWeight(bDestNormalTarget->computeIncomingWeight());
+        bDestFalseTarget->setBBProfileWeight(bDestFalseTarget->computeIncomingWeight());
 
         if ((bDestNormalTarget->NumSucc() > 0) || (bDestFalseTarget->NumSucc() > 0))
         {
             JITDUMP("fgOptimizeBranch: New flow out of " FMT_BB " needs to be propagated. Data %s inconsistent.\n",
-                    fgPgoConsistent ? "is now" : "was already");
+                    bJump->bbNum, fgPgoConsistent ? "is now" : "was already");
             fgPgoConsistent = false;
         }
     }
