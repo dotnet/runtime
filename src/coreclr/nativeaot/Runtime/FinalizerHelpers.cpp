@@ -106,11 +106,6 @@ void RhEnableFinalization()
     g_FinalizerEvent.Set();
 }
 
-EXTERN_C void QCALLTYPE RhInitializeFinalizerThread()
-{
-    g_FinalizerEvent.Set();
-}
-
 static int32_t g_fullGcCountSeenByFinalization;
 
 // Indicate that the current round of finalizations is complete.
