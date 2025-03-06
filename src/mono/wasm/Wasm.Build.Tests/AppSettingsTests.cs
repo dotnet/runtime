@@ -35,7 +35,7 @@ public class AppSettingsTests : WasmTemplateTestsBase
         PublishProject(
             info, 
             config,
-            new (ExtraMSBuildArgs: $"-p:WasmApplicationEnvironmentName={msBuildApplicationEnvironment}")
+            new PublishOptions(ExtraMSBuildArgs: $"-p:WasmApplicationEnvironmentName={msBuildApplicationEnvironment}")
         );
         BrowserRunOptions options = new(
             config,
