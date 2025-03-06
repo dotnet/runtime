@@ -69,6 +69,12 @@ namespace Microsoft.NET.HostModel.Bundle
                 // See https://github.com/dotnet/runtime/issues/41832.
                 AssemblyAlignment = 4096;
             }
+            else if (Arch == (Architecture)6 /* Architecture.LoongArch64 */)
+            {
+                // We align assemblies in the bundle at 16K so that we can use mmap on Unix without changing the page alignment of LOONGARCH64 R2R code.
+                // This is only necessary for R2R assemblies, but we do it for all assemblies for simplicity.
+                AssemblyAlignment = 16384;
+            }
             else
             {
                 // Otherwise, assemblies are 64 bytes aligned, so that their sections can be memory-mapped cache aligned.
