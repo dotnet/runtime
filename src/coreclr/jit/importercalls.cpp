@@ -10906,8 +10906,7 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
                             }
                             else if (strcmp(methodName, "Await") == 0)
                             {
-                                result =
-                                    NI_System_Runtime_CompilerServices_RuntimeHelpers_Await;
+                                result = NI_System_Runtime_CompilerServices_RuntimeHelpers_Await;
                             }
                             else if (strcmp(methodName, "SuspendAsync2") == 0)
                             {

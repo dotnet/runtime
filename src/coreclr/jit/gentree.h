@@ -4728,7 +4728,7 @@ class CallArgs
 #endif
     bool m_hasThisPointer           : 1;
     bool m_hasRetBuffer             : 1;
-    bool m_hasAsyncContinuation        : 1;
+    bool m_hasAsyncContinuation     : 1;
     bool m_isVarArgs                : 1;
     bool m_abiInformationDetermined : 1;
     bool m_hasAddedFinalArgs        : 1;

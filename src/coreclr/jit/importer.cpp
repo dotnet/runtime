@@ -846,7 +846,8 @@ GenTree* Compiler::impStoreStruct(GenTree*         store,
 
             // Make sure we don't pass something other than a local address to the return buffer arg.
             // It is allowed to pass current's method return buffer as it is a local too.
-            if ((fgAddrCouldBeHeap(destAddr) && !eeIsByrefLike(srcCall->gtRetClsHnd)) || (compIsAsync2() && !destAddr->OperIs(GT_LCL_ADDR)))
+            if ((fgAddrCouldBeHeap(destAddr) && !eeIsByrefLike(srcCall->gtRetClsHnd)) ||
+                (compIsAsync2() && !destAddr->OperIs(GT_LCL_ADDR)))
             {
                 unsigned tmp = lvaGrabTemp(false DEBUGARG("stack copy for value returned via return buffer"));
                 lvaSetStruct(tmp, srcCall->gtRetClsHnd, false);
@@ -972,7 +973,8 @@ GenTree* Compiler::impStoreStruct(GenTree*         store,
 
             // Make sure we don't pass something other than a local address to the return buffer arg.
             // It is allowed to pass current's method return buffer as it is a local too.
-            if (fgAddrCouldBeHeap(destAddr) && !eeIsByrefLike(call->gtRetClsHnd) || (compIsAsync2() && !destAddr->OperIs(GT_LCL_ADDR)))
+            if (fgAddrCouldBeHeap(destAddr) && !eeIsByrefLike(call->gtRetClsHnd) ||
+                (compIsAsync2() && !destAddr->OperIs(GT_LCL_ADDR)))
             {
                 unsigned tmp = lvaGrabTemp(false DEBUGARG("stack copy for value returned via return buffer"));
                 lvaSetStruct(tmp, call->gtRetClsHnd, false);
@@ -9038,7 +9040,8 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
                             // check if it is an Await intrinsic
                             if (eeIsIntrinsic(nextCallTok.hMethod) &&
-                                lookupNamedIntrinsic(nextCallTok.hMethod) == NI_System_Runtime_CompilerServices_RuntimeHelpers_Await)
+                                lookupNamedIntrinsic(nextCallTok.hMethod) ==
+                                    NI_System_Runtime_CompilerServices_RuntimeHelpers_Await)
                             {
                                 // yes, this is an Await
                                 isAwait = true;
@@ -9057,9 +9060,9 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                         }
                         else
                         {
-                            // This can happen in rare cases when the Task-returning method is not a runtime Async function.
-                            // For example "T M1<T>(T arg) => arg" when called with a Task argument.
-                            // Treat that as a regualr call that is Awaited
+                            // This can happen in rare cases when the Task-returning method is not a runtime Async
+                            // function. For example "T M1<T>(T arg) => arg" when called with a Task argument. Treat
+                            // that as a regualr call that is Awaited
                             _impResolveToken(CORINFO_TOKENKIND_Method);
                         }
                     }

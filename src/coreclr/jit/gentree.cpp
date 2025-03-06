@@ -9933,8 +9933,8 @@ GenTreeCall* Compiler::gtCloneExprCallHelper(GenTreeCall* tree)
     copy->gtLateDevirtualizationInfo = tree->gtLateDevirtualizationInfo;
 
     copy->gtIsAsyncCall = tree->gtIsAsyncCall;
-    copy->gtCallType   = tree->gtCallType;
-    copy->gtReturnType = tree->gtReturnType;
+    copy->gtCallType    = tree->gtCallType;
+    copy->gtReturnType  = tree->gtReturnType;
 
 #if FEATURE_MULTIREG_RET
     copy->gtReturnTypeDesc = tree->gtReturnTypeDesc;
