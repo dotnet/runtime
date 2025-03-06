@@ -741,7 +741,6 @@ namespace System
             return spanSuccess;
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveOptimization)]
         private static unsafe string? FormatBigInteger(
             bool targetSpan, BigInteger value,
             string? formatString, ReadOnlySpan<char> formatSpan,
@@ -801,21 +800,33 @@ namespace System
             for (int iuSrc = cuSrc; --iuSrc >= 0;)
             {
                 uint uCarry = value._bits[iuSrc];
-                for (int iuDst = 0; iuDst < cuDst; iuDst++)
-                {
-                    Debug.Assert(base1E9Buffer[iuDst] < TenPowMaxPartial);
+                BitsToBase1E9(base1E9Buffer, ref cuDst, ref uCarry);
 
-                    // Use X86Base.DivRem when stable
-                    ulong uuRes = NumericsHelpers.MakeUInt64(base1E9Buffer[iuDst], uCarry);
-                    (ulong quo, ulong rem) = Math.DivRem(uuRes, TenPowMaxPartial);
-                    uCarry = (uint)quo;
-                    base1E9Buffer[iuDst] = (uint)rem;
-                }
-                if (uCarry != 0)
+                static void BitsToBase1E9(Span<uint> base1E9Buffer, ref int cuDst, ref uint uCarry)
                 {
-                    (uCarry, base1E9Buffer[cuDst++]) = Math.DivRem(uCarry, TenPowMaxPartial);
+                    // This method is designed to make the nested loop more JIT-friendly. A simple nested
+                    // loop tends to remain in tier-0 execution, leading to performance regression. By
+                    // separating the inner loop into a distinct method, JIT optimizations can be applied
+                    // more effectively.
+                    // https://github.com/dotnet/runtime/issues/111708
+
+                    Span<uint> base1E9 = base1E9Buffer.Slice(0, cuDst);
+                    for (int iuDst = 0; iuDst < base1E9.Length; iuDst++)
+                    {
+                        Debug.Assert(base1E9[iuDst] < TenPowMaxPartial);
+
+                        // Use X86Base.DivRem when stable
+                        ulong uuRes = NumericsHelpers.MakeUInt64(base1E9[iuDst], uCarry);
+                        (ulong quo, ulong rem) = Math.DivRem(uuRes, TenPowMaxPartial);
+                        uCarry = (uint)quo;
+                        base1E9[iuDst] = (uint)rem;
+                    }
                     if (uCarry != 0)
-                        base1E9Buffer[cuDst++] = uCarry;
+                    {
+                        (uCarry, base1E9Buffer[cuDst++]) = Math.DivRem(uCarry, TenPowMaxPartial);
+                        if (uCarry != 0)
+                            base1E9Buffer[cuDst++] = uCarry;
+                    }
                 }
             }
 
