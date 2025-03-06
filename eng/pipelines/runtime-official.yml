@@ -155,8 +155,6 @@ extends:
           - linux_musl_x64
           - linux_musl_arm
           - linux_musl_arm64
-          - osx_arm64
-          - osx_x64
           - android_x64
           - android_x86
           - android_arm
