@@ -965,14 +965,14 @@ bool OptBoolsDsc::optOptimizeCompareChainCondBlock()
     assert((m_b1 != nullptr) && (m_b2 != nullptr));
     m_t3 = nullptr;
 
-    bool foundEndOfOrConditions = false;
+    bool reverseFirstCondition = false;
     if (m_b3 == nullptr)
     {
         if (m_b1->FalseTargetIs(m_b2) && m_b2->FalseTargetIs(m_b1->GetTrueTarget()))
         {
             // Found the end of two (or more) conditions being ORed together.
             // The final condition has been inverted.
-            foundEndOfOrConditions = true;
+            reverseFirstCondition = true;
         }
         else if (m_b1->FalseTargetIs(m_b2) && m_b1->TrueTargetIs(m_b2->GetTrueTarget()))
         {
@@ -981,6 +981,18 @@ bool OptBoolsDsc::optOptimizeCompareChainCondBlock()
         else
         {
             return false;
+        }
+    }
+    else
+    {
+        GenTree* root = m_b3->firstStmt()->GetRootNode();
+        if (root->OperIsSimple())
+        {
+            GenTree* op1 = root->gtGetOp1();
+            if (op1 && op1->IsIntegralConst(0))
+            {
+                reverseFirstCondition = true;
+            }
         }
     }
 
@@ -1051,14 +1063,14 @@ bool OptBoolsDsc::optOptimizeCompareChainCondBlock()
     m_comp->fgRemoveStmt(m_b1, s1 DEBUGARG(isUnlink));
 
     // Invert the condition.
-    if (foundEndOfOrConditions)
+    if (reverseFirstCondition)
     {
         GenTree* revCond = m_comp->gtReverseCond(cond1);
         assert(cond1 == revCond); // Ensure `gtReverseCond` did not create a new node.
     }
 
     // Join the two conditions together
-    genTreeOps chainedOper       = foundEndOfOrConditions ? GT_AND : GT_OR;
+    genTreeOps chainedOper       = reverseFirstCondition ? GT_AND : GT_OR;
     GenTree*   chainedConditions = m_comp->gtNewOperNode(chainedOper, TYP_INT, cond1, cond2);
     cond1->gtFlags &= ~GTF_RELOP_JMP_USED;
     cond2->gtFlags &= ~GTF_RELOP_JMP_USED;
