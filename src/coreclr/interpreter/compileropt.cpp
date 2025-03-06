@@ -54,6 +54,8 @@ void InterpCompiler::InitializeGlobalVar(int32_t var, int bbIndex)
     {
         AllocGlobalVarOffset(var);
         m_pVars[var].global = true;
+        if (m_verbose)
+            printf("alloc global var %d to offset %d\n", var, m_pVars[var].offset);
     }
 }
 
@@ -82,6 +84,8 @@ void InterpCompiler::InitializeGlobalVars()
                 {
                     AllocGlobalVarOffset(var);
                     m_pVars[var].global = true;
+                    if (m_verbose)
+                        printf("alloc global var %d to offset %d\n", var, m_pVars[var].offset);
                 }
             }
             ForEachInsVar(pIns, (void*)(size_t)pBB->index, &InterpCompiler::InitializeGlobalVarCB);
@@ -215,6 +219,9 @@ void InterpCompiler::AllocOffsets()
 
     InitializeGlobalVars();
 
+    if (m_verbose)
+        printf("\nAllocating var offsets\n");
+
     int finalVarsStackSize = m_totalVarsStackSize;
 
     // We now have the top of stack offset. All local regs are allocated after this offset, with each basic block
@@ -222,6 +229,9 @@ void InterpCompiler::AllocOffsets()
     {
         InterpInst *pIns;
         int insIndex = 0;
+
+        if (m_verbose)
+            printf("BB%d\n", pBB->index);
 
         // All data structs should be left empty after a bblock iteration
         assert(m_pActiveVars->GetSize() == 0);
@@ -232,6 +242,7 @@ void InterpCompiler::AllocOffsets()
         {
             if (pIns->opcode == INTOP_NOP)
                 continue;
+
             // TODO NewObj will be marked as noCallArgs
             if (pIns->flags & INTERP_INST_FLAG_CALL)
             {
@@ -289,6 +300,12 @@ void InterpCompiler::AllocOffsets()
             if (opcode == INTOP_NOP)
                 continue;
 
+            if (m_verbose)
+            {
+                printf("\tins_index %d\t", insIndex);
+                PrintIns(pIns);
+            }
+
             // Expire source vars. We first mark them as not alive and then compact the array
             for (int i = 0; i < g_interpOpSVars[opcode]; i++)
             {
@@ -327,6 +344,8 @@ void InterpCompiler::AllocOffsets()
                 else if (!m_pVars[var].global && m_pVars[var].offset == -1)
                 {
                     AllocVarOffset(var, &currentOffset);
+                    if (m_verbose)
+                        printf("alloc var %d to offset %d\n", var, m_pVars[var].offset);
 
                     if (currentOffset > finalVarsStackSize)
                         finalVarsStackSize = currentOffset;
@@ -343,6 +362,18 @@ void InterpCompiler::AllocOffsets()
                         currentOffset = m_pVars[var].offset;
                     }
                 }
+            }
+
+            if (m_verbose)
+            {
+                printf("active vars:");
+                for (int i = 0; i < m_pActiveVars->GetSize(); i++)
+                {
+                    int32_t var = m_pActiveVars->Get(i);
+                    if (m_pVars[var].alive)
+                        printf(" %d (end %d),", var, m_pVars[var].liveEnd);
+                }
+                printf("\n");
             }
             insIndex++;
         }

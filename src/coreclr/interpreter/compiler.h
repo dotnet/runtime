@@ -211,12 +211,14 @@ private:
     CORINFO_MODULE_HANDLE m_compScopeHnd;
     COMP_HANDLE m_compHnd;
     CORINFO_METHOD_INFO* m_methodInfo;
+    bool m_verbose;
 
     static int32_t InterpGetMovForType(InterpType interpType, bool signExtend);
 
     uint8_t* m_ip;
     uint8_t* m_pILCode;
     int32_t m_ILCodeSize;
+    int32_t m_currentILOffset;
 
     // FIXME during compilation this should be a hashtable for fast lookup of duplicates
     TArray<void*> m_dataItems;
@@ -323,7 +325,7 @@ private:
 
     // Passes
     int32_t* m_pMethodCode;
-    int32_t m_MethodCodeSize; // in int32_t
+    int32_t m_methodCodeSize; // in int32_t
 
     void AllocOffsets();
     int32_t ComputeCodeSize();
@@ -332,9 +334,19 @@ private:
     void PatchRelocations(TArray<Reloc*> *relocs);
     InterpMethod* CreateInterpMethod();
     bool CreateBasicBlocks(CORINFO_METHOD_INFO* methodInfo);
+
+    // Debug
+    void PrintClassName(CORINFO_CLASS_HANDLE cls);
+    void PrintMethodName(CORINFO_METHOD_HANDLE method);
+    void PrintCode();
+    void PrintBBCode(InterpBasicBlock *pBB);
+    void PrintIns(InterpInst *ins);
+    void PrintInsData(InterpInst *ins, int32_t offset, const int32_t *pData, int32_t opcode);
+    void PrintCompiledCode();
+    void PrintCompiledIns(const int32_t *ip, const int32_t *start);
 public:
 
-    InterpCompiler(COMP_HANDLE compHnd, CORINFO_METHOD_INFO* methodInfo);
+    InterpCompiler(COMP_HANDLE compHnd, CORINFO_METHOD_INFO* methodInfo, bool verbose);
 
     InterpMethod* CompileMethod();
 

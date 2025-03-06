@@ -29,6 +29,8 @@ static const InterpType g_interpTypeFromStackType[] =
     InterpTypeI,        // F
 };
 
+static const char *g_stackTypeString[] = { "I4", "I8", "R4", "R8", "O ", "VT", "MP", "F " };
+
 // FIXME Use specific allocators for their intended purpose
 // Allocator for data that is kept alive throughout application execution,
 // being freed only if the associated method gets freed.
@@ -107,7 +109,7 @@ InterpInst* InterpCompiler::NewIns(int opcode, int dataLen)
     InterpInst *ins = (InterpInst*)AllocMemPool(insSize);
     memset(ins, 0, insSize);
     ins->opcode = opcode;
-    ins->ilOffset = -1;
+    ins->ilOffset = m_currentILOffset;
     m_pLastIns = ins;
     return ins;
 }
@@ -683,7 +685,7 @@ void InterpCompiler::EmitCode()
         }
     }
 
-    m_MethodCodeSize = (int32_t)(ip - m_pMethodCode);
+    m_methodCodeSize = (int32_t)(ip - m_pMethodCode);
 
     PatchRelocations(&relocs);
 }
@@ -703,28 +705,52 @@ InterpMethod* InterpCompiler::CreateInterpMethod()
 
 int32_t* InterpCompiler::GetCode(int32_t *pCodeSize)
 {
-    *pCodeSize = m_MethodCodeSize;
+    *pCodeSize = m_methodCodeSize;
     return m_pMethodCode;
 }
 
 InterpCompiler::InterpCompiler(COMP_HANDLE compHnd,
-                               CORINFO_METHOD_INFO* methodInfo)
+                                CORINFO_METHOD_INFO* methodInfo,
+                                bool verbose)
 {
     m_methodHnd = methodInfo->ftn;
     m_compScopeHnd = methodInfo->scope;
     m_compHnd = compHnd;
     m_methodInfo = methodInfo;
+    m_verbose = verbose;
 }
 
 InterpMethod* InterpCompiler::CompileMethod()
 {
+    if (m_verbose)
+    {
+        printf("Interpreter compile method ");
+        PrintMethodName(m_methodHnd);
+        printf("\n");
+    }
+
     CreateILVars();
 
     GenerateCode(m_methodInfo);
 
+    if (m_verbose)
+    {
+        printf("\nUnoptimized IR:\n");
+        PrintCode();
+    }
+
     AllocOffsets();
 
     EmitCode();
+
+    if (m_verbose)
+    {
+        printf("\nCompiled method: ");
+        PrintMethodName(m_methodHnd);
+        printf("\nLocals size %d\n", m_totalVarsStackSize);
+        PrintCompiledCode();
+        printf("\n");
+    }
 
     return CreateInterpMethod();
 }
@@ -828,6 +854,9 @@ void InterpCompiler::CreateILVars()
 
     offset = 0;
 
+    if (m_verbose)
+        printf("\nCreate IL Vars:\n");
+
     CORINFO_ARG_LIST_HANDLE sigArg = m_methodInfo->args.args;
     for (int i = 0; i < numArgs; i++) {
         InterpType interpType;
@@ -857,6 +886,8 @@ void InterpCompiler::CreateILVars()
         m_pVars[i].size = size;
         offset = ALIGN_UP_TO(offset, align);
         m_pVars[i].offset = offset;
+        if (m_verbose)
+            printf("alloc arg var %d to offset %d\n", i, offset);
         offset += size;
     }
 
@@ -881,6 +912,8 @@ void InterpCompiler::CreateILVars()
         m_pVars[index].size = size;
         offset = ALIGN_UP_TO(offset, align);
         m_pVars[index].offset = offset;
+        if (m_verbose)
+            printf("alloc local var %d to offset %d\n", index, offset);
         offset += size;
         sigArg = m_compHnd->getArgNext(sigArg);
     }
@@ -1423,9 +1456,13 @@ retry_emit:
             goto exit_bad_code;
 
         int32_t insOffset = (int32_t)(m_ip - m_pILCode);
+        m_currentILOffset = insOffset;
+
         InterpBasicBlock *pNewBB = m_ppOffsetToBB[insOffset];
         if (pNewBB != NULL && m_pCBB != pNewBB)
         {
+            if (m_verbose)
+                printf("BB%d (IL_%04x):\n", pNewBB->index, pNewBB->ilOffset);
             // If we were emitting into previous bblock, we are finished now
             if (m_pCBB->emitState == BBStateEmitting)
                 m_pCBB->emitState = BBStateEmitted;
@@ -1492,6 +1529,8 @@ retry_emit:
                 }
                 else
                 {
+                    if (m_verbose)
+                        printf("BB%d without initialized stack\n", pNewBB->index);
                     assert(pNewBB->emitState == BBStateNotEmitted);
                     needsRetryEmit = true;
                     // linking to its next bblock, if its the case, will only happen
@@ -1515,6 +1554,20 @@ retry_emit:
         }
 
         m_ppOffsetToBB[insOffset] = m_pCBB;
+
+        if (m_verbose)
+        {
+            const uint8_t *ip = m_ip;
+            printf("IL_%04x %-10s, sp %d, %s",
+                (int32_t)(m_ip - m_pILCode),
+                CEEOpName(CEEDecodeOpcode(&ip)), (int32_t)(m_pStackPointer - m_pStackBase),
+                m_pStackPointer > m_pStackBase ? g_stackTypeString[m_pStackPointer[-1].type] : "  ");
+            if (m_pStackPointer > m_pStackBase &&
+                    (m_pStackPointer[-1].type == StackTypeO || m_pStackPointer[-1].type == StackTypeVT) &&
+                    m_pStackPointer[-1].clsHnd != NULL)
+                PrintClassName(m_pStackPointer[-1].clsHnd);
+            printf("\n");
+        }
 
         uint8_t opcode = *m_ip;
         switch (opcode)
@@ -2208,6 +2261,8 @@ retry_emit:
 
         linkBBlocks = false;
         needsRetryEmit = false;
+        if (m_verbose)
+            printf("retry emit\n");
         goto retry_emit;
     }
 
@@ -2237,4 +2292,169 @@ void InterpCompiler::UnlinkUnreachableBBlocks()
             nextBB = nextBB->pNextBB;
         }
     }
+}
+
+void InterpCompiler::PrintClassName(CORINFO_CLASS_HANDLE cls)
+{
+    char className[100];
+    m_compHnd->printClassName(cls, className, 100);
+    printf("%s", className);
+}
+
+void InterpCompiler::PrintMethodName(CORINFO_METHOD_HANDLE method)
+{
+    char methodName[100];
+
+    CORINFO_CLASS_HANDLE cls = m_compHnd->getMethodClass(method);
+    PrintClassName(cls);
+
+    m_compHnd->printMethodName(method, methodName, 100);
+    printf(".%s", methodName);
+}
+
+void InterpCompiler::PrintCode()
+{
+    for (InterpBasicBlock *pBB = m_pEntryBB; pBB != NULL; pBB = pBB->pNextBB)
+        PrintBBCode(pBB);
+}
+
+void InterpCompiler::PrintBBCode(InterpBasicBlock *pBB)
+{
+    printf("BB%d:\n", pBB->index);
+    for (InterpInst *ins = pBB->pFirstIns; ins != NULL; ins = ins->pNext)
+        PrintIns(ins);
+}
+
+void InterpCompiler::PrintIns(InterpInst *ins)
+{
+    int32_t opcode = ins->opcode;
+    if (ins->ilOffset == -1)
+        printf("IL_----: %-14s", InterpOpName(opcode));
+    else
+        printf("IL_%04x: %-14s", ins->ilOffset, InterpOpName(opcode));
+
+    if (g_interpOpDVars[opcode] > 0)
+        printf(" [%d <-", ins->dVar);
+    else
+        printf(" [nil <-");
+
+    if (g_interpOpSVars[opcode] > 0)
+    {
+        for (int i = 0; i < g_interpOpSVars[opcode]; i++)
+        {
+            if (ins->sVars[i] == CALL_ARGS_SVAR)
+            {
+                printf(" c:");
+                if (ins->info.pCallInfo && ins->info.pCallInfo->pCallArgs)
+                {
+                    int *callArgs = ins->info.pCallInfo->pCallArgs;
+                    while (*callArgs != -1)
+                    {
+                        printf(" %d", *callArgs);
+                        callArgs++;
+                    }
+                }
+            }
+            else
+            {
+                printf(" %d", ins->sVars[i]);
+            }
+        }
+        printf("],");
+    }
+    else
+    {
+        printf(" nil],");
+    }
+
+    // LDLOCA has special semantics, it has data in sVars[0], but it doesn't have any sVars
+    if (opcode == INTOP_LDLOCA)
+        printf(" %d", ins->sVars[0]);
+    else
+        PrintInsData(ins, ins->ilOffset, &ins->data[0], ins->opcode);
+    printf("\n");
+}
+
+void InterpCompiler::PrintInsData(InterpInst *ins, int32_t insOffset, const int32_t *pData, int32_t opcode)
+{
+    switch (g_interpOpArgType[opcode]) {
+        case InterpOpNoArgs:
+            break;
+        case InterpOpInt:
+            printf(" %d", *pData);
+            break;
+        case InterpOpBranch:
+            if (ins)
+                printf(" BB%d", ins->info.pTargetBB->index);
+            else
+                printf(" IR_%04x", insOffset + *pData);
+            break;
+        case InterpOpSwitch:
+        {
+            int32_t n = *pData;
+            printf(" (");
+            for (int i = 0; i < n; i++)
+            {
+                if (i > 0)
+                    printf(", ");
+
+                if (ins)
+                    printf("BB%d", ins->info.ppTargetBBTable[i]->index);
+                else
+                    printf("IR_%04x", insOffset + 3 + i + *(pData + 1 + i));
+            }
+            printf(")");
+            break;
+        }
+        case InterpOpMethodToken:
+        {
+            CORINFO_METHOD_HANDLE mh = (CORINFO_METHOD_HANDLE)((size_t)m_dataItems.Get(*pData) & ~INTERP_METHOD_DESC_TAG);
+            printf(" ");
+            PrintMethodName(mh);
+            break;
+        }
+        default:
+            assert(0);
+            break;
+    }
+}
+
+void InterpCompiler::PrintCompiledCode()
+{
+    const int32_t *ip = m_pMethodCode;
+    const int32_t *end = m_pMethodCode + m_methodCodeSize;
+
+    while (ip < end)
+    {
+        PrintCompiledIns(ip, m_pMethodCode);
+        ip = InterpNextOp(ip);
+    }
+}
+
+void InterpCompiler::PrintCompiledIns(const int32_t *ip, const int32_t *start)
+{
+    int32_t opcode = *ip;
+    int32_t insOffset = (int32_t)(ip - start);
+
+    printf("IR_%04x: %-14s", insOffset, InterpOpName(opcode));
+    ip++;
+
+    if (g_interpOpDVars[opcode] > 0)
+        printf(" [%d <-", *ip++);
+    else
+        printf(" [nil <-");
+
+    if (g_interpOpSVars[opcode] > 0)
+    {
+        for (int i = 0; i < g_interpOpSVars[opcode]; i++)
+            printf(" %d", *ip++);
+        printf("],");
+    }
+    else
+    {
+        printf(" nil],");
+    }
+
+    PrintInsData(NULL, insOffset, ip, opcode);
+    printf("\n");
 }

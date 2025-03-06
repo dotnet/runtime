@@ -50,9 +50,15 @@ const InterpOpArgType g_interpOpArgType[] = {
 #undef OPDEF
 };
 
-const uint8_t* InterpNextOp(const uint8_t *ip)
+const int32_t* InterpNextOp(const int32_t *ip)
 {
     int len = g_interpOpLen[*ip];
+    if (len == 0)
+    {
+        assert(*ip == INTOP_SWITCH);
+        len = 3 + ip[2];
+    }
+
     return ip + len;
 }
 
