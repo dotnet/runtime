@@ -10,14 +10,14 @@
 #include "dn-simdhash.h"
 
 #if defined(_M_AMD64) || defined(_M_X64) || (_M_IX86_FP == 2) || defined(__SSE2__)
-#define SIMDHASH_USE_SSE2 1
+#define DN_SIMDHASH_USE_SSE2 1
 #endif
 
 #if defined(__clang__) || defined (__GNUC__) // use vector intrinsics
 
 #if defined(__wasm_simd128__)
 #include <wasm_simd128.h>
-#elif SIMDHASH_USE_SSE2
+#elif DN_SIMDHASH_USE_SSE2
 #include <emmintrin.h>
 #elif defined(__ARM_ARCH_ISA_A64)
 #include <arm_neon.h>
@@ -40,7 +40,7 @@
 typedef uint8_t dn_u8x16 __attribute__ ((vector_size (DN_SIMDHASH_VECTOR_WIDTH), aligned(DN_SIMDHASH_VECTOR_WIDTH)));
 typedef union {
 	_Alignas(DN_SIMDHASH_VECTOR_WIDTH) dn_u8x16 vec;
-#if SIMDHASH_USE_SSE2
+#if DN_SIMDHASH_USE_SSE2
 	_Alignas(DN_SIMDHASH_VECTOR_WIDTH) __m128i m128;
 #endif
 	_Alignas(DN_SIMDHASH_VECTOR_WIDTH) uint8_t values[DN_SIMDHASH_VECTOR_WIDTH];
@@ -121,7 +121,7 @@ find_first_matching_suffix_simd (
     return 32;
 #elif defined(__wasm_simd128__)
 	return ctz(wasm_i8x16_bitmask(wasm_i8x16_eq(needle.vec, haystack.vec)));
-#elif SIMDHASH_USE_SSE2
+#elif DN_SIMDHASH_USE_SSE2
 	return ctz(_mm_movemask_epi8(_mm_cmpeq_epi8(needle.m128, haystack.m128)));
 #elif defined(__ARM_ARCH_ISA_A64)
 	// See https://community.arm.com/arm-community-blogs/b/servers-and-cloud-computing-blog/posts/porting-x86-vector-bitmask-optimizations-to-arm-neon
@@ -134,7 +134,7 @@ find_first_matching_suffix_simd (
 #endif
 }
 
-#elif SIMDHASH_USE_SSE2
+#elif DN_SIMDHASH_USE_SSE2
 // neither clang or gcc, but we have SSE2 available, so assume this is MSVC on x86 or x86-64
 // msvc neon intrinsics don't seem to expose a 128-bit wide vector so there's no neon in here
 #include <intrin.h> // for _BitScanForward
