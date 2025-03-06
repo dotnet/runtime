@@ -4836,7 +4836,6 @@ void LinearScan::allocateRegistersMinimal()
 #endif // DEBUG
 
     BasicBlock* currentBlock = nullptr;
-    nextKill                 = killHead;
 
     LsraLocation prevLocation            = MinLocation;
     regMaskTP    regsToFree              = RBM_NONE;
@@ -5524,7 +5523,6 @@ void LinearScan::allocateRegisters()
 #endif // DEBUG
 
     BasicBlock* currentBlock = nullptr;
-    nextKill                 = killHead;
 
     LsraLocation prevLocation            = MinLocation;
     regMaskTP    regsToFree              = RBM_NONE;
@@ -13561,6 +13559,8 @@ SingleTypeRegSet LinearScan::RegisterSelection::select(Interval*                
         }
 
         SingleTypeRegSet checkConflictMask = candidates & linearScan->fixedRegs.GetRegSetForType(regType);
+        JITDUMP("*** Candidates = %d, fixedRegs = %d\n", (int)candidates,
+                (int)linearScan->fixedRegs.GetRegSetForType(regType));
         while (checkConflictMask != RBM_NONE)
         {
             regNumber        checkConflictReg = genFirstRegNumFromMask(checkConflictMask, regType);
@@ -13568,14 +13568,15 @@ SingleTypeRegSet LinearScan::RegisterSelection::select(Interval*                
             checkConflictMask ^= checkConflictBit;
             RegRecord* regRecord = linearScan->getRegisterRecord(checkConflictReg);
             assert(regRecord != nullptr);
-            RefPosition* nextRefPos = regRecord->recentRefPosition == nullptr
-                                          ? regRecord->firstRefPosition
-                                          : regRecord->recentRefPosition->nextRefPosition;
+            LsraLocation checkConflictLocation = linearScan->getNextFixedRef(checkConflictReg);
+            RefPosition* nextRefPos            = regRecord->recentRefPosition == nullptr
+                                                     ? regRecord->firstRefPosition
+                                                     : regRecord->recentRefPosition->nextRefPosition;
             if (nextRefPos == nullptr)
             {
                 linearScan->fixedRegs &= ~genRegMask(checkConflictReg);
             }
-            else if (nextRefPos->nodeLocation <= eliminateLoc)
+            else if (checkConflictLocation == eliminateLoc)
             {
                 candidates &= ~checkConflictBit;
                 INDEBUG(inUseOrBusyRegsMask |= checkConflictReg);
@@ -13901,14 +13902,15 @@ SingleTypeRegSet LinearScan::RegisterSelection::selectMinimal(
         checkConflictMask ^= checkConflictBit;
         RegRecord* regRecord = linearScan->getRegisterRecord(checkConflictReg);
         assert(regRecord != nullptr);
-        RefPosition* nextRefPos = regRecord->recentRefPosition == nullptr
-                                      ? regRecord->firstRefPosition
-                                      : regRecord->recentRefPosition->nextRefPosition;
+        LsraLocation checkConflictLocation = linearScan->getNextFixedRef(checkConflictReg);
+        RefPosition* nextRefPos            = regRecord->recentRefPosition == nullptr
+                                                 ? regRecord->firstRefPosition
+                                                 : regRecord->recentRefPosition->nextRefPosition;
         if (nextRefPos == nullptr)
         {
             linearScan->fixedRegs &= ~genRegMask(checkConflictReg);
         }
-        else if (nextRefPos->nodeLocation <= eliminateLoc)
+        else if (checkConflictLocation == eliminateLoc)
         {
             candidates &= ~checkConflictBit;
         }
