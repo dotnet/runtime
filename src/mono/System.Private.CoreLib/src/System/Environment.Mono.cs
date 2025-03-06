@@ -24,6 +24,9 @@ namespace System
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private static extern int GetProcessorCount();
 
+        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        private static extern bool GetIsCpuQuotaLimited();
+
         public static extern int TickCount
         {
             [MethodImplAttribute(MethodImplOptions.InternalCall)]

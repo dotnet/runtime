@@ -1552,9 +1552,9 @@ BOOL ObjHeader::TryEnterObjMonitor(INT32 timeOut)
     return GetSyncBlock()->TryEnterMonitor(timeOut);
 }
 
-extern DWORD g_currentProcessCpuCount = 0;
+extern DWORD g_currentProcessCpuCount;
 
-extern BOOL g_isCpuQuotaLimited = false;
+extern BOOL g_isCpuQuotaLimited;
 
 AwareLock::EnterHelperResult ObjHeader::EnterObjMonitorHelperSpin(Thread* pCurThread)
 {

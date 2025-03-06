@@ -979,10 +979,10 @@ int GetTotalProcessorCount()
 }
 
 // The cached number of CPUs available for the current process
-static DWORD g_currentProcessCpuCount = 0;
+DWORD g_currentProcessCpuCount = 0;
 
 // The cached flag indicating whether there is a cpu quota limit
-static BOOL g_isCpuQuotaLimited = false;
+BOOL g_isCpuQuotaLimited = false;
 
 //******************************************************************************
 // Returns the number of processors that a process has been configured to run on

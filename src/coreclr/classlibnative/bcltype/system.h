@@ -53,6 +53,8 @@ extern "C" void QCALLTYPE Environment_FailFast(QCall::StackCrawlMarkHandle mark,
 // Returns the number of logical processors that can be used by managed code
 extern "C" INT32 QCALLTYPE Environment_GetProcessorCount();
 
+extern "C" BOOL QCALLTYPE Environment_GetIsCpuQuotaLimited();
+
 #if defined(TARGET_X86) || defined(TARGET_AMD64)
 extern "C" void QCALLTYPE X86BaseCpuId(int cpuInfo[4], int functionId, int subFunctionId);
 #endif // defined(TARGET_X86) || defined(TARGET_AMD64)
