@@ -108,15 +108,13 @@ Passing/returning structs according to hardware floating-point calling conventio
 
 ## Return buffers
 
-The same applies to some return buffers. See `MethodTable::IsStructRequiringStackAllocRetBuf()`. When that returns `false`, the return buffer might be on the heap, either due to reflection/remoting code paths mentioned previously or due to a JIT optimization where a call with a return buffer that then assigns to a field (on the GC heap) are changed into passing the field reference as the return buffer. Conversely, when it returns true, the JIT does not need to use a write barrier when storing to the return buffer, but it is still not guaranteed to be a compiler temp, and as such the JIT should not introduce spurious writes to the return buffer.
-
-NOTE: This optimization is now disabled for all platforms (`IsStructRequiringStackAllocRetBuf()` always returns `false`).
+Since .NET 10, return buffers must always be allocated on the stack by the caller. After the call, the caller is responsible for copying the return buffer to the final destination using write barriers if necessary. The JIT can assume that the return buffer is always on the stack and may optimize accordingly, such as by omitting write barriers when writing GC pointers to the return buffer. In addition, the buffer is allowed to be used for temporary storage within the method since its content must not be aliased or cross-thread visible.
 
 ARM64-only: When a method returns a structure that is larger than 16 bytes the caller reserves a return buffer of sufficient size and alignment to hold the result. The address of the buffer is passed as an argument to the method in `R8` (defined in the JIT as `REG_ARG_RET_BUFF`). The callee isn't required to preserve the value stored in `R8`.
 
 ## Hidden parameters
 
-*Stub dispatch* - when a virtual call uses a VSD stub, rather than back-patching the calling code (or disassembling it), the JIT must place the address of the stub used to load the call target, the "stub indirection cell", in (x86) `EAX` / (AMD64) `R11` / (AMD64 NativeAOT ABI) `R10` / (ARM) `R4` / (ARM NativeAOT ABI) `R12` / (ARM64) `R11`. In the JIT, this is encapsulated in the `VirtualStubParamInfo` class.
+*Stub dispatch* - when a virtual call uses a VSD stub, rather than back-patching the calling code (or disassembling it), the JIT must place the address of the stub used to load the call target, the "stub indirection cell", in (x86) `EAX` / (AMD64) `R11` / (ARM) `R4` / (ARM NativeAOT ABI) `R12` / (ARM64) `R11`. In the JIT, this is encapsulated in the `VirtualStubParamInfo` class.
 
 *Calli Pinvoke* - The VM wants the address of the PInvoke in (AMD64) `R10` / (ARM) `R12` / (ARM64) `R14` (In the JIT: `REG_PINVOKE_TARGET_PARAM`), and the signature (the pinvoke cookie) in (AMD64) `R11` / (ARM) `R4` / (ARM64) `R15` (in the JIT: `REG_PINVOKE_COOKIE_PARAM`).
 
@@ -778,9 +776,7 @@ The return value is handled as follows:
 1. Floating-point values are returned on the top of the hardware FP stack.
 2. Integers up to 32 bits long are returned in EAX.
 3. 64-bit integers are passed with EAX holding the least significant 32 bits and EDX holding the most significant 32 bits.
-4. All other cases require the use of a return buffer, through which the value is returned.
-
-In addition, there is a guarantee that if a return buffer is used a value is stored there only upon ordinary exit from the method. The buffer is not allowed to be used for temporary storage within the method and its contents will be unaltered if an exception occurs while executing the method.
+4. All other cases require the use of a return buffer, through which the value is returned. See [Return buffers](#return-buffers).
 
 # Control Flow Guard (CFG) support on Windows
 
@@ -816,7 +812,7 @@ Therefore it will expand all indirect calls via the validation helper and a manu
 ## CFG details for x64
 
 On x64, `CORINFO_HELP_VALIDATE_INDIRECT_CALL` takes the call address in `rcx`.
-In addition to the usual registers it also preserves all float registers and `rcx` and `r10`; furthermore, shadow stack space is not required to be allocated.
+In addition to the usual registers it also preserves all float registers, `rcx`, and `r10`; furthermore, shadow stack space is not required to be allocated.
 
 `CORINFO_HELP_DISPATCH_INDIRECT_CALL` takes the call address in `rax` and it reserves the right to use and trash `r10` and `r11`.
 The JIT uses the dispatch helper on x64 whenever possible as it is expected that the code size benefits outweighs the less accurate branch prediction.

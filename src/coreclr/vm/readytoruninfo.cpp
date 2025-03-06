@@ -485,7 +485,7 @@ static bool AcquireImage(Module * pModule, PEImageLayout * pLayout, READYTORUN_H
 
         // Found an eager fixup section. Check the signature of each fixup in this section.
         PVOID *pFixups = (PVOID *)((PBYTE)pLayout->GetBase() + pCurSection->Section.VirtualAddress);
-        DWORD nFixups = pCurSection->Section.Size / TARGET_POINTER_SIZE;
+        DWORD nFixups = pCurSection->Section.Size / pCurSection->EntrySize;
         DWORD *pSignatures = (DWORD *)((PBYTE)pLayout->GetBase() + pCurSection->Signatures);
         for (DWORD i = 0; i < nFixups; i++)
         {

@@ -25,7 +25,7 @@ System.Diagnostics.DiagnosticSource</PackageDescription>
 
   <ItemGroup>
     <ILLinkSubstitutionsXmls Include="ILLink/ILLink.Substitutions.Shared.xml" />
-    <Content Include="ILLink\ILLink.Descriptors.LibraryBuild.xml" />
+    <None Include="ILLink\ILLink.Descriptors.LibraryBuild.xml" />
   </ItemGroup>
 
   <ItemGroup>
@@ -40,6 +40,7 @@ System.Diagnostics.DiagnosticSource</PackageDescription>
     <Compile Include="System\Diagnostics\ActivityLink.cs" />
     <Compile Include="System\Diagnostics\ActivityListener.cs" />
     <Compile Include="System\Diagnostics\ActivitySource.cs" />
+    <Compile Include="System\Diagnostics\ActivitySourceOptions.cs" />
     <Compile Include="System\Diagnostics\DiagnosticSource.cs" />
     <Compile Include="System\Diagnostics\DiagnosticSourceActivity.cs" />
     <Compile Include="System\Diagnostics\DiagnosticListener.cs" />

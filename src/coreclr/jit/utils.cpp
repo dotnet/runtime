@@ -1669,6 +1669,13 @@ void HelperCallProperties::init()
                 isPure     = true;
                 break;
 
+            case CORINFO_HELP_MEMCPY:
+            case CORINFO_HELP_MEMZERO:
+            case CORINFO_HELP_MEMSET:
+            case CORINFO_HELP_NATIVE_MEMSET:
+                isNoEscape = true;
+                break;
+
             case CORINFO_HELP_LDELEMA_REF:
                 isPure = true;
                 break;
