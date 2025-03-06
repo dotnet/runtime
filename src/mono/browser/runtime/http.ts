@@ -177,17 +177,20 @@ export function http_wasm_fetch (controller: HttpController, url: string, header
     }
     // make the fetch cancellable
     controller.responsePromise = wrap_as_cancelable_promise(() => {
-        return loaderHelpers.fetch_like(url, options);
+        return loaderHelpers.fetch_like(url, options).then((res: Response) => {
+            controller.response = res;
+            return null;// drop the response from the promise chain
+        }).catch(err => {
+            throw err;
+        });
     });
     // avoid processing headers if the fetch is canceled
-    controller.responsePromise.then((res: Response) => {
-        controller.response = res;
+    controller.responsePromise.then(() => {
         mono_assert(controller.response, "expected response");
         controller.responseHeaderNames = [];
         controller.responseHeaderValues = [];
-        if (res.headers && (<any>res.headers).entries) {
-            const entries: Iterable<string[]> = (<any>res.headers).entries();
-
+        if (controller.response.headers && (<any>controller.response.headers).entries) {
+            const entries: Iterable<string[]> = (<any>controller.response.headers).entries();
             for (const pair of entries) {
                 controller.responseHeaderNames.push(pair[0]);
                 controller.responseHeaderValues.push(pair[1]);
