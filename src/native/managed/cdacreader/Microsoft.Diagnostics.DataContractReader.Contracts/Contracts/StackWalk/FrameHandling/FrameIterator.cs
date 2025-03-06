@@ -64,17 +64,19 @@ internal sealed class FrameIterator
         return currentFramePointer != terminator;
     }
 
-    public bool TryUpdateContext(IPlatformAgnosticContext context)
+    public void UpdateContextFromFrame(IPlatformAgnosticContext context)
     {
         switch (GetFrameType(CurrentFrame))
         {
             case FrameType.InlinedCallFrame:
                 Data.InlinedCallFrame inlinedCallFrame = target.ProcessedData.GetOrAdd<Data.InlinedCallFrame>(CurrentFrame.Address);
-                return GetFrameHandler(context).HandleInlinedCallFrame(inlinedCallFrame);
+                GetFrameHandler(context).HandleInlinedCallFrame(inlinedCallFrame);
+                return;
 
             case FrameType.SoftwareExceptionFrame:
                 Data.SoftwareExceptionFrame softwareExceptionFrame = target.ProcessedData.GetOrAdd<Data.SoftwareExceptionFrame>(CurrentFrame.Address);
-                return GetFrameHandler(context).HandleSoftwareExceptionFrame(softwareExceptionFrame);
+                GetFrameHandler(context).HandleSoftwareExceptionFrame(softwareExceptionFrame);
+                return;
 
             // TransitionFrame type frames
             case FrameType.FramedMethodFrame:
@@ -86,33 +88,32 @@ internal sealed class FrameIterator
             case FrameType.ExternalMethodFrame:
             case FrameType.DynamicHelperFrame:
                 Data.FramedMethodFrame framedMethodFrame = target.ProcessedData.GetOrAdd<Data.FramedMethodFrame>(CurrentFrame.Address);
-                Data.TransitionBlock transitionBlock = target.ProcessedData.GetOrAdd<Data.TransitionBlock>(framedMethodFrame.TransitionBlockPtr);
-                if (target.GetTypeInfo(DataType.TransitionBlock).Size is not uint transitionBlockSize)
-                {
-                    throw new InvalidOperationException("TransitionBlock size is not set");
-                }
-                return GetFrameHandler(context).HandleTransitionFrame(framedMethodFrame, transitionBlock, transitionBlockSize);
+                GetFrameHandler(context).HandleTransitionFrame(framedMethodFrame);
+                return;
 
             case FrameType.FuncEvalFrame:
                 Data.FuncEvalFrame funcEvalFrame = target.ProcessedData.GetOrAdd<Data.FuncEvalFrame>(CurrentFrame.Address);
-                Data.DebuggerEval debuggerEval = target.ProcessedData.GetOrAdd<Data.DebuggerEval>(funcEvalFrame.DebuggerEvalPtr);
-                return GetFrameHandler(context).HandleFuncEvalFrame(funcEvalFrame, debuggerEval);
+                GetFrameHandler(context).HandleFuncEvalFrame(funcEvalFrame);
+                return;
 
             // ResumableFrame type frames
             case FrameType.ResumableFrame:
             case FrameType.RedirectedThreadFrame:
                 Data.ResumableFrame resumableFrame = target.ProcessedData.GetOrAdd<Data.ResumableFrame>(CurrentFrame.Address);
-                return GetFrameHandler(context).HandleResumableFrame(resumableFrame);
+                GetFrameHandler(context).HandleResumableFrame(resumableFrame);
+                return;
 
             case FrameType.FaultingExceptionFrame:
                 Data.FaultingExceptionFrame faultingExceptionFrame = target.ProcessedData.GetOrAdd<Data.FaultingExceptionFrame>(CurrentFrame.Address);
-                return GetFrameHandler(context).HandleFaultingExceptionFrame(faultingExceptionFrame);
+                GetFrameHandler(context).HandleFaultingExceptionFrame(faultingExceptionFrame);
+                return;
 
             case FrameType.HijackFrame:
                 Data.HijackFrame hijackFrame = target.ProcessedData.GetOrAdd<Data.HijackFrame>(CurrentFrame.Address);
-                return GetFrameHandler(context).HandleHijackFrame(hijackFrame);
+                GetFrameHandler(context).HandleHijackFrame(hijackFrame);
+                return;
             default:
-                return false;
+                throw new InvalidOperationException($"Unknown frame type with identifier {CurrentFrame.Identifier}");
         }
     }
 
@@ -135,7 +136,7 @@ internal sealed class FrameIterator
             {
                 // not all Frames are in all builds, so we need to catch the exception
                 typeVptr = target.ReadGlobalPointer(frameType.ToString() + "Identifier");
-                if (frame.VPtr == typeVptr)
+                if (frame.Identifier == typeVptr)
                 {
                     return frameType;
                 }

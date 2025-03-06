@@ -8,15 +8,14 @@ namespace Microsoft.Diagnostics.DataContractReader.Contracts.StackWalkHelpers;
 
 /// <summary>
 /// Interface for handling platform-specific frames.
-/// Methods return true if the context was updated from the Frame. False otherwise.
 /// </summary>
 internal interface IPlatformFrameHandler
 {
-    bool HandleInlinedCallFrame(Data.InlinedCallFrame frame);
-    bool HandleSoftwareExceptionFrame(Data.SoftwareExceptionFrame frame);
-    bool HandleTransitionFrame(Data.FramedMethodFrame frame, Data.TransitionBlock transitionBlock, uint transitionBlockSize);
-    bool HandleFuncEvalFrame(Data.FuncEvalFrame frame, Data.DebuggerEval debuggerEval);
-    bool HandleResumableFrame(Data.ResumableFrame frame);
-    bool HandleFaultingExceptionFrame(Data.FaultingExceptionFrame frame);
-    bool HandleHijackFrame(Data.HijackFrame frame);
+    void HandleInlinedCallFrame(Data.InlinedCallFrame frame);
+    void HandleSoftwareExceptionFrame(Data.SoftwareExceptionFrame frame);
+    void HandleTransitionFrame(Data.FramedMethodFrame frame);
+    void HandleFuncEvalFrame(Data.FuncEvalFrame frame);
+    void HandleResumableFrame(Data.ResumableFrame frame);
+    void HandleFaultingExceptionFrame(Data.FaultingExceptionFrame frame);
+    void HandleHijackFrame(Data.HijackFrame frame);
 }
