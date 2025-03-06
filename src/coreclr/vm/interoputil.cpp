@@ -3892,8 +3892,7 @@ VOID LogInteropQI(IUnknown* pItf, REFIID iid, HRESULT hrArg, _In_z_ LPCSTR szMsg
     LPVOID              pCurrCtx    = NULL;
     HRESULT             hr          = S_OK;
     SafeComHolder<IUnknown> pUnk        = NULL;
-    int                 cch         = 0;
-    CHAR                szIID[GUID_STR_BUFFER_LEN];
+    CHAR                szIID[MINIPAL_GUID_BUFFER_LEN];
 
     hr = SafeQueryInterface(pItf, IID_IUnknown, &pUnk);
 
@@ -3901,8 +3900,7 @@ VOID LogInteropQI(IUnknown* pItf, REFIID iid, HRESULT hrArg, _In_z_ LPCSTR szMsg
     {
         pCurrCtx = GetCurrentCtxCookie();
 
-        cch = GuidToLPSTR(iid, szIID);
-        _ASSERTE(cch > 0);
+        minipal_guid_as_string(iid, szIID, MINIPAL_GUID_BUFFER_LEN);
 
         if (SUCCEEDED(hrArg))
         {
