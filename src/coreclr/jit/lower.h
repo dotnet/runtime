@@ -55,18 +55,18 @@ private:
     }
     void LowerRange(GenTree* firstNode, GenTree* lastNode)
     {
-        GenTree* cur = firstNode;
+        assert(lastNode != nullptr);
 
-        while (true)
+        // Lower nodes until we get to the node after the last node expected to
+        // be lowered. This is the most robust way to do this since LowerNode
+        // can both remove nodes or replace a node by a new range of nodes.
+        // Note that stopNode can be null if lastNode was truly the last node
+        // of the block, which is ok.
+        GenTree* stopNode = lastNode->gtNext;
+
+        for (GenTree* cur = firstNode; cur != stopNode;)
         {
-            GenTree* next = LowerNode(cur);
-            if (cur == lastNode)
-            {
-                break;
-            }
-
-            cur = next;
-            assert(cur != nullptr);
+            cur = LowerNode(cur);
         }
     }
 
