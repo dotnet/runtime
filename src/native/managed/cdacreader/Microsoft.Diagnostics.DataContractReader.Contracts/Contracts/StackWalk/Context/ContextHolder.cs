@@ -49,24 +49,38 @@ public class ContextHolder<[DynamicallyAccessedMembers(DynamicallyAccessedMember
     public void Clear() => Context = default;
     public void Unwind(Target target) => Context.Unwind(target);
 
-    public bool TrySetField(string fieldName, TargetNUInt value)
+    public bool TrySetRegister(Target target, string fieldName, TargetNUInt value)
     {
-        FieldInfo? field = typeof(T).GetField(fieldName);
-        if (field is null) return false;
-        field.SetValueDirect(__makeref(Context), value.Value);
-        return true;
+        if (typeof(T).GetField(fieldName) is not FieldInfo field) return false;
+        switch (field.FieldType)
+        {
+            case Type t when t == typeof(ulong) && target.PointerSize == sizeof(ulong):
+                field.SetValueDirect(__makeref(Context), value.Value);
+                return true;
+            case Type t when t == typeof(uint) && target.PointerSize == sizeof(uint):
+                field.SetValueDirect(__makeref(Context), (uint)value.Value);
+                return true;
+            default:
+                return false;
+        }
     }
 
-    public bool TryReadField(string fieldName, out TargetNUInt value)
+    public bool TryReadRegister(Target target, string fieldName, out TargetNUInt value)
     {
-        FieldInfo? field = typeof(T).GetField(fieldName);
-        if (field is null)
+        value = default;
+        if (typeof(T).GetField(fieldName) is not FieldInfo field) return false;
+        if (field.GetValue(Context) is not object fieldValue) return false;
+        if (fieldValue is ulong ul && target.PointerSize == sizeof(ulong))
         {
-            value = default;
-            return false;
+            value = new(ul);
+            return true;
         }
-        value = new((ulong)field.GetValue(Context)!);
-        return true;
+        if (fieldValue is uint ui && target.PointerSize == sizeof(uint))
+        {
+            value = new(ui);
+            return true;
+        }
+        return false;
     }
 
     public bool Equals(ContextHolder<T>? other)

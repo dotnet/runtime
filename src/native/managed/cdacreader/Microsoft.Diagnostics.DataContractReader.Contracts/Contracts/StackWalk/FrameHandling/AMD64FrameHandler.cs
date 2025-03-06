@@ -108,7 +108,7 @@ internal class AMD64FrameHandler(Target target, ContextHolder<AMD64Context> cont
         Data.CalleeSavedRegisters calleeSavedRegisters = _target.ProcessedData.GetOrAdd<Data.CalleeSavedRegisters>(calleeSavedRegistersPtr);
         foreach ((string name, TargetNUInt value) in calleeSavedRegisters.Registers)
         {
-            if (!_holder.TrySetField(name, value))
+            if (!_holder.TrySetRegister(_target, name, value))
             {
                 throw new InvalidOperationException($"Unexpected register {name} in callee saved registers");
             }
@@ -119,11 +119,11 @@ internal class AMD64FrameHandler(Target target, ContextHolder<AMD64Context> cont
     {
         foreach (string name in _target.GetTypeInfo(DataType.CalleeSavedRegisters).Fields.Keys)
         {
-            if (!otherContext.TryReadField(name, out TargetNUInt value))
+            if (!otherContext.TryReadRegister(_target, name, out TargetNUInt value))
             {
                 throw new InvalidOperationException($"Unexpected register {name} in callee saved registers");
             }
-            if (!_holder.TrySetField(name, value))
+            if (!_holder.TrySetRegister(_target, name, value))
             {
                 throw new InvalidOperationException($"Unexpected register {name} in callee saved registers");
             }
