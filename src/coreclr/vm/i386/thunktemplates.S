@@ -28,7 +28,7 @@ PAGE_SIZE = 16384
 .endm
 
 LEAF_ENTRY StubPrecodeCode
-        mov     eax, dword ptr [DATA_SLOT(StubPrecode, MethodDesc)]
+        mov     eax, dword ptr [DATA_SLOT(StubPrecode, SecretParam)]
 SLOT_ADDRESS_PATCH_LABEL StubPrecode, MethodDesc
         INDJMP DATA_SLOT(StubPrecode, Target)
 SLOT_ADDRESS_PATCH_LABEL StubPrecode, Target

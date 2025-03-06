@@ -5,7 +5,7 @@ import BuildConfiguration from "consts:configuration";
 import WasmEnableThreads from "consts:wasmEnableThreads";
 
 import { type DotnetModuleInternal, type MonoConfigInternal, JSThreadBlockingMode } from "../types/internal";
-import type { DotnetModuleConfig, MonoConfig, ResourceGroups, ResourceList } from "../types";
+import type { BootModule, DotnetModuleConfig, MonoConfig, ResourceGroups, ResourceList } from "../types";
 import { exportedRuntimeAPI, loaderHelpers, runtimeHelpers } from "./globals";
 import { mono_log_error, mono_log_debug } from "./logging";
 import { importLibraryInitializers, invokeLibraryInitializers } from "./libraryInitializers";
@@ -70,6 +70,9 @@ function deep_merge_resources (target: ResourceGroups, source: ResourceGroups): 
     }
     if (providedResources.jsModuleNative !== undefined) {
         providedResources.jsModuleNative = { ...(target.jsModuleNative || {}), ...(providedResources.jsModuleNative || {}) };
+    }
+    if (providedResources.jsModuleDiagnostics !== undefined) {
+        providedResources.jsModuleDiagnostics = { ...(target.jsModuleDiagnostics || {}), ...(providedResources.jsModuleDiagnostics || {}) };
     }
     if (providedResources.jsModuleRuntime !== undefined) {
         providedResources.jsModuleRuntime = { ...(target.jsModuleRuntime || {}), ...(providedResources.jsModuleRuntime || {}) };
@@ -167,6 +170,9 @@ export function normalizeConfig () {
                 case "js-module-native":
                     toMerge.jsModuleNative = resource;
                     break;
+                case "js-module-diagnostics":
+                    toMerge.jsModuleDiagnostics = resource;
+                    break;
                 case "js-module-dotnet":
                     // don't merge loader
                     break;
@@ -234,7 +240,10 @@ export async function mono_wasm_load_config (module: DotnetModuleInternal): Prom
     try {
         if (!module.configSrc && (!loaderHelpers.config || Object.keys(loaderHelpers.config).length === 0 || (!loaderHelpers.config.assets && !loaderHelpers.config.resources))) {
             // if config file location nor assets are provided
-            module.configSrc = "./blazor.boot.json";
+            // Temporal way for tests to opt-in for using boot.js
+            module.configSrc = (globalThis as any)["__DOTNET_INTERNAL_BOOT_CONFIG_SRC"]
+                ?? globalThis.window?.document?.documentElement?.getAttribute("data-dotnet_internal_boot_config_src")
+                ?? "blazor.boot.json";
         }
 
         configFilePath = module.configSrc;
@@ -281,26 +290,48 @@ export function isDebuggingSupported (): boolean {
 }
 
 async function loadBootConfig (module: DotnetModuleInternal): Promise<void> {
-    const defaultConfigSrc = loaderHelpers.locateFile(module.configSrc!);
+    const defaultConfigSrc = module.configSrc!;
+    const defaultConfigUrl = loaderHelpers.locateFile(defaultConfigSrc);
 
-    const loaderResponse = loaderHelpers.loadBootResource !== undefined ?
-        loaderHelpers.loadBootResource("manifest", "blazor.boot.json", defaultConfigSrc, "", "manifest") :
-        defaultLoadBootConfig(defaultConfigSrc);
-
-    let loadConfigResponse: Response;
-
-    if (!loaderResponse) {
-        loadConfigResponse = await defaultLoadBootConfig(appendUniqueQuery(defaultConfigSrc, "manifest"));
-    } else if (typeof loaderResponse === "string") {
-        loadConfigResponse = await defaultLoadBootConfig(makeURLAbsoluteWithApplicationBase(loaderResponse));
-    } else {
-        loadConfigResponse = await loaderResponse;
+    let loaderResponse = null;
+    if (loaderHelpers.loadBootResource !== undefined) {
+        loaderResponse = loaderHelpers.loadBootResource("manifest", defaultConfigSrc, defaultConfigUrl, "", "manifest");
     }
 
-    const loadedConfig: MonoConfig = await readBootConfigResponse(loadConfigResponse);
+    let loadedConfigResponse: Response | null = null;
+    let loadedConfig: MonoConfig;
+    if (!loaderResponse) {
+        if (defaultConfigUrl.includes(".json")) {
+            loadedConfigResponse = await fetchBootConfig(appendUniqueQuery(defaultConfigUrl, "manifest"));
+            loadedConfig = await readBootConfigResponse(loadedConfigResponse);
+        } else {
+            loadedConfig = (await import(appendUniqueQuery(defaultConfigUrl, "manifest"))).config;
+        }
+    } else if (typeof loaderResponse === "string") {
+        if (loaderResponse.includes(".json")) {
+            loadedConfigResponse = await fetchBootConfig(makeURLAbsoluteWithApplicationBase(loaderResponse));
+            loadedConfig = await readBootConfigResponse(loadedConfigResponse);
+        } else {
+            loadedConfig = (await import(makeURLAbsoluteWithApplicationBase(loaderResponse))).config;
+        }
+    } else {
+        const loadedResponse = await loaderResponse;
+        if (typeof (loadedResponse as Response).json == "function") {
+            loadedConfigResponse = loadedResponse as Response;
+            loadedConfig = await readBootConfigResponse(loadedConfigResponse);
+        } else {
+            // If the response doesn't contain .json(), consider it an imported module.
+            loadedConfig = (loadedResponse as BootModule).config;
+        }
+    }
+
     deep_merge_config(loaderHelpers.config, loadedConfig);
 
-    function defaultLoadBootConfig (url: string): Promise<Response> {
+    if (!loaderHelpers.config.applicationEnvironment) {
+        loaderHelpers.config.applicationEnvironment = "Production";
+    }
+
+    function fetchBootConfig (url: string): Promise<Response> {
         return loaderHelpers.fetch_like(url, {
             method: "GET",
             credentials: "include",
@@ -314,7 +345,7 @@ async function readBootConfigResponse (loadConfigResponse: Response): Promise<Mo
     const loadedConfig: MonoConfig = await loadConfigResponse.json();
 
     if (!config.applicationEnvironment) {
-        loadedConfig.applicationEnvironment = loadConfigResponse.headers.get("Blazor-Environment") || loadConfigResponse.headers.get("DotNet-Environment") || "Production";
+        loadedConfig.applicationEnvironment = loadConfigResponse.headers.get("Blazor-Environment") || loadConfigResponse.headers.get("DotNet-Environment") || undefined;
     }
 
     if (!loadedConfig.environmentVariables)

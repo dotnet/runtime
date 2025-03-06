@@ -89,6 +89,23 @@ struct VariantMarshalTest
     }
 };
 
+class InterfaceImpl :
+    public UnknownImpl,
+    public IInterface2
+{
+public: // IInterface1
+public: // IInterface2
+public: // IUnknown
+    STDMETHOD(QueryInterface)(
+        /* [in] */ REFIID riid,
+        /* [iid_is][out] */ _COM_Outptr_ void __RPC_FAR *__RPC_FAR *ppvObject)
+    {
+        return DoQueryInterface(riid, ppvObject, static_cast<IInterface1 *>(this), static_cast<IInterface2 *>(this));
+    }
+
+    DEFINE_REF_COUNTING();
+};
+
 void ValidationTests()
 {
     ::printf(__FUNCTION__ "() through CoCreateInstance...\n");
@@ -330,6 +347,16 @@ void ValidationTests()
         V_VT(&args.Input) = (VARENUM)0x8888;
         HRESULT hr = miscTypesTesting->Marshal_Variant(args.Input, &args.Result);
         THROW_FAIL_IF_FALSE(hr == 0x80131531); // COR_E_INVALIDOLEVARIANTTYPE
+    }
+
+    ::printf("-- Interfaces...\n");
+    {
+        ComSmartPtr<InterfaceImpl> iface;
+        iface.Attach(new InterfaceImpl());
+
+        ComSmartPtr<IInterface2> result;
+        HRESULT hr = miscTypesTesting->Marshal_Interface(iface, &result);
+        THROW_IF_FAILED(hr);
     }
 }
 
