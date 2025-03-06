@@ -791,7 +791,7 @@ struct TargetGcInfoEncoding {
     static const int LIVESTATE_RLE_SKIP_ENCBASE = 4;
 };
 
-#elif defined(TARGET_LOONGARCH64) && 0
+#elif defined(TARGET_LOONGARCH64)
 #ifndef TARGET_POINTER_SIZE
 #define TARGET_POINTER_SIZE 8    // equal to sizeof(void*) and the managed pointer size in bytes for this target
 #endif
@@ -850,7 +850,7 @@ struct TargetGcInfoEncoding {
     static const int LIVESTATE_RLE_SKIP_ENCBASE = 4;
 };
 
-#elif defined(TARGET_RISCV64) && 0
+#elif defined(TARGET_RISCV64)
 #ifndef TARGET_POINTER_SIZE
 #define TARGET_POINTER_SIZE 8    // equal to sizeof(void*) and the managed pointer size in bytes for this target
 #endif

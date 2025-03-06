@@ -208,7 +208,7 @@ template <typename GcInfoEncoding> bool GcInfoDecoder<GcInfoEncoding>::Predecode
     {
         m_SizeOfEditAndContinuePreservedArea = (UINT32)m_Reader.DecodeVarLengthUnsigned(GcInfoEncoding::SIZE_OF_EDIT_AND_CONTINUE_PRESERVED_AREA_ENCBASE);
 #ifdef TARGET_ARM64
-        m_SizeOfEditAndContinueFixedStackFrame = (UINT32)m_Reader.DecodeVarLengthUnsigned(SIZE_OF_EDIT_AND_CONTINUE_FIXED_STACK_FRAME_ENCBASE);
+        m_SizeOfEditAndContinueFixedStackFrame = (UINT32)m_Reader.DecodeVarLengthUnsigned(GcInfoEncoding::SIZE_OF_EDIT_AND_CONTINUE_FIXED_STACK_FRAME_ENCBASE);
 #endif
     }
     else
