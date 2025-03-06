@@ -27,3 +27,4 @@ extends:
             name: $(DncEngInternalBuildPool)
             demands: ImageOverride -equals 1es-windows-2022
           symbolPublishingAdditionalParameters: '/p:PublishSpecialClrFiles=true'
+          dependsOn: PrepareSignedArtifacts
