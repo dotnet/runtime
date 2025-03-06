@@ -315,15 +315,13 @@ private:
 typedef UINT32 GcSlotId;
 
 
-inline UINT32 GetNormCodeOffsetChunk(UINT32 normCodeOffset)
-{
-    return normCodeOffset / NUM_NORM_CODE_OFFSETS_PER_CHUNK;
-}
-
+// FIXME: Dead code that breaks with these definitions moved into a traits type
+/*
 inline UINT32 GetCodeOffsetChunk(UINT32 codeOffset)
 {
-    return (NORMALIZE_CODE_OFFSET(codeOffset)) / NUM_NORM_CODE_OFFSETS_PER_CHUNK;
+  return (NORMALIZE_CODE_OFFSET(codeOffset)) / NUM_NORM_CODE_OFFSETS_PER_CHUNK;
 }
+*/
 
 enum GENERIC_CONTEXTPARAM_TYPE
 {
@@ -335,6 +333,18 @@ enum GENERIC_CONTEXTPARAM_TYPE
 
 extern void DECLSPEC_NORETURN ThrowOutOfMemory();
 
+namespace GcInfoEncoderExt
+{
+    struct LifetimeTransition
+    {
+        UINT32 CodeOffset;
+        GcSlotId SlotId;
+        BYTE BecomesLive;
+        BYTE IsDeleted;
+    };
+}
+
+template <typename GcInfoEncoding>
 class GcInfoEncoder
 {
 public:
@@ -346,15 +356,6 @@ public:
             IAllocator*                 pJitAllocator,
             NoMemoryFunction            pNoMem = ::ThrowOutOfMemory
             );
-
-    struct LifetimeTransition
-    {
-        UINT32 CodeOffset;
-        GcSlotId SlotId;
-        BYTE BecomesLive;
-        BYTE IsDeleted;
-    };
-
 
 #ifdef PARTIALLY_INTERRUPTIBLE_GC_SUPPORTED
     void DefineCallSites(UINT32* pCallSites, BYTE* pCallSiteSizes, UINT32 numCallSites);
@@ -488,7 +489,7 @@ private:
     BitStreamWriter     m_Info2;    // Used for chunk encodings
 
     GcInfoArrayList<InterruptibleRange, 8> m_InterruptibleRanges;
-    GcInfoArrayList<LifetimeTransition, 64> m_LifetimeTransitions;
+    GcInfoArrayList<GcInfoEncoderExt::LifetimeTransition, 64> m_LifetimeTransitions;
 
     bool   m_IsVarArg;
 #if defined(TARGET_AMD64)
@@ -548,9 +549,14 @@ private:
     // new array, and copying the non-removed elements into it.  If it does this, sets "*ppTransitions" to
     // point to the new array, "*pNumTransitions" to its shorted length, and "*ppEndTransitions" to
     // point one beyond the used portion of this array.
-    void EliminateRedundantLiveDeadPairs(LifetimeTransition** ppTransitions,
+    void EliminateRedundantLiveDeadPairs(GcInfoEncoderExt::LifetimeTransition** ppTransitions,
                                          size_t* pNumTransitions,
-                                         LifetimeTransition** ppEndTransitions);
+                                         GcInfoEncoderExt::LifetimeTransition** ppEndTransitions);
+
+    static inline UINT32 GetNormCodeOffsetChunk(UINT32 normCodeOffset)
+    {
+        return normCodeOffset / GcInfoEncoding::NUM_NORM_CODE_OFFSETS_PER_CHUNK;
+    }
 
 #ifdef _DEBUG
     bool m_IsSlotTableFrozen;

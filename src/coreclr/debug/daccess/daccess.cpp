@@ -7900,7 +7900,7 @@ void DacStackReferenceWalker::GCEnumCallbackFunc(LPVOID hCallback, OBJECTREF *pO
     if (dsc->pList == nullptr)
         return;
 
-    // Yuck.  The GcInfoDecoder reports a local pointer for registers (as it's reading out of the REGDISPLAY
+    // Yuck.  The GcInfoDecoder<TargetGcInfoEncoding> reports a local pointer for registers (as it's reading out of the REGDISPLAY
     // in the stack walk), and it reports a TADDR for stack locations.  This is architecturally difficulty
     // to fix, so we are leaving it for now.
     TADDR addr = 0;

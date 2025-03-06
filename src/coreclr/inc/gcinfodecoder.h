@@ -465,6 +465,8 @@ struct GcSlotDesc
     GcSlotFlags Flags;
 };
 
+
+template <typename GcInfoEncoding>
 class GcSlotDecoder
 {
 public:
@@ -507,6 +509,7 @@ private:
 };
 
 #ifdef USE_GC_INFO_DECODER
+template <typename GcInfoEncoding>
 class GcInfoDecoder
 {
 public:
@@ -532,7 +535,7 @@ public:
     // This is used for gcinfodumper
     bool IsSafePoint(UINT32 codeOffset);
 
-    typedef void EnumerateSafePointsCallback (GcInfoDecoder* decoder, UINT32 offset, void * hCallback);
+    typedef void EnumerateSafePointsCallback (GcInfoDecoder<TargetGcInfoEncoding> * decoder, UINT32 offset, void * hCallback);
     void EnumerateSafePoints(EnumerateSafePointsCallback * pCallback, void * hCallback);
 
 #endif
@@ -661,7 +664,7 @@ private:
     bool IsScratchStackSlot(INT32 spOffset, GcStackSlotBase spBase, PREGDISPLAY pRD);
 
     void ReportUntrackedSlots(
-                GcSlotDecoder&      slotDecoder,
+                GcSlotDecoder<GcInfoEncoding>&      slotDecoder,
                 PREGDISPLAY         pRD,
                 unsigned            flags,
                 GCEnumCallback      pCallBack,
@@ -689,7 +692,7 @@ private:
 
 
     inline void ReportSlotToGC(
-                    GcSlotDecoder&      slotDecoder,
+                    GcSlotDecoder<GcInfoEncoding>&      slotDecoder,
                     UINT32              slotIndex,
                     PREGDISPLAY         pRD,
                     bool                reportScratchSlots,

@@ -676,14 +676,14 @@ HRESULT EditAndContinueModule::ResumeInUpdatedFunction(
 
 #ifdef TARGET_ARM64
     // GCInfo for old method
-    GcInfoDecoder oldGcDecoder(
+    GcInfoDecoder<TargetGcInfoEncoding> oldGcDecoder(
         oldCodeInfo.GetGCInfoToken(),
         GcInfoDecoderFlags(DECODE_EDIT_AND_CONTINUE),
         0       // Instruction offset (not needed)
         );
 
     // GCInfo for new method
-    GcInfoDecoder newGcDecoder(
+    GcInfoDecoder<TargetGcInfoEncoding> newGcDecoder(
         newCodeInfo.GetGCInfoToken(),
         GcInfoDecoderFlags(DECODE_EDIT_AND_CONTINUE),
         0       // Instruction offset (not needed)

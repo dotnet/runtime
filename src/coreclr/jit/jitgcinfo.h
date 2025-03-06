@@ -214,7 +214,7 @@ public:
     // used to contain GC references, and whether those locations contain byrefs or pinning references,
     // building up mappings from tuples of <offset X byref/pinning> to the corresponding slot id.
     // In the "do work" mode, we use these slot ids to actually declare live ranges to the encoder.
-    void gcMakeVarPtrTable(GcInfoEncoder* gcInfoEncoder, MakeRegPtrMode mode);
+    void gcMakeVarPtrTable(GcInfoEncoder<TargetGcInfoEncoding>* gcInfoEncoder, MakeRegPtrMode mode);
 
     // At instruction offset "instrOffset," the set of registers indicated by "regMask" is becoming live or dead,
     // depending on whether "newState" is "GC_SLOT_DEAD" or "GC_SLOT_LIVE".  The subset of registers whose corresponding
@@ -222,7 +222,7 @@ public:
     // registers currently known to contain pointers.  If "mode" is "ASSIGN_SLOTS", computes and records slot
     // ids for the registers.  If "mode" is "DO_WORK", informs "gcInfoEncoder" about the state transition,
     // using the previously assigned slot ids, and updates "*pPtrRegs" appropriately.
-    void gcInfoRecordGCRegStateChange(GcInfoEncoder* gcInfoEncoder,
+    void gcInfoRecordGCRegStateChange(GcInfoEncoder<TargetGcInfoEncoding>* gcInfoEncoder,
                                       MakeRegPtrMode mode,
                                       unsigned       instrOffset,
                                       regMaskSmall   regMask,
@@ -231,11 +231,11 @@ public:
                                       regMaskSmall*  pPtrRegs);
 
     // regPtrDsc is also used to encode writes to the outgoing argument space (as if they were pushes)
-    void gcInfoRecordGCStackArgLive(GcInfoEncoder* gcInfoEncoder, MakeRegPtrMode mode, regPtrDsc* genStackPtr);
+    void gcInfoRecordGCStackArgLive(GcInfoEncoder<TargetGcInfoEncoding>* gcInfoEncoder, MakeRegPtrMode mode, regPtrDsc* genStackPtr);
 
     // Walk all the pushes between genStackPtrFirst (inclusive) and genStackPtrLast (exclusive)
     // and mark them as going dead at instrOffset
-    void gcInfoRecordGCStackArgsDead(GcInfoEncoder* gcInfoEncoder,
+    void gcInfoRecordGCStackArgsDead(GcInfoEncoder<TargetGcInfoEncoding>* gcInfoEncoder,
                                      unsigned       instrOffset,
                                      regPtrDsc*     genStackPtrFirst,
                                      regPtrDsc*     genStackPtrLast);
@@ -302,7 +302,7 @@ public:
     // references, building up mappings from tuples of <reg/offset X byref/pinning> to the corresponding
     // slot id (in the two member fields declared above).  In the "do work" mode, we use these slot ids to
     // actually declare live ranges to the encoder.
-    void gcMakeRegPtrTable(GcInfoEncoder* gcInfoEncoder,
+    void gcMakeRegPtrTable(GcInfoEncoder<TargetGcInfoEncoding>* gcInfoEncoder,
                            unsigned       codeSize,
                            unsigned       prologSize,
                            MakeRegPtrMode mode,
@@ -364,7 +364,7 @@ public:
 private:
     static size_t gcRecordEpilog(void* pCallBackData, unsigned offset);
 #else // JIT32_GCENCODER
-    void gcInfoBlockHdrSave(GcInfoEncoder* gcInfoEncoder, unsigned methodSize, unsigned prologSize);
+    void gcInfoBlockHdrSave(GcInfoEncoder<TargetGcInfoEncoding>* gcInfoEncoder, unsigned methodSize, unsigned prologSize);
 
 #endif // JIT32_GCENCODER
 

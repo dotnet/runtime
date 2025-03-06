@@ -302,14 +302,14 @@ HRESULT EECodeManager::FixContextForEnC(PCONTEXT         pCtx,
     // this region.
 
     // GCInfo for old method
-    GcInfoDecoder oldGcDecoder(
+    GcInfoDecoder<TargetGcInfoEncoding> oldGcDecoder(
         pOldCodeInfo->GetGCInfoToken(),
         GcInfoDecoderFlags(DECODE_SECURITY_OBJECT | DECODE_PSP_SYM | DECODE_EDIT_AND_CONTINUE),
         0       // Instruction offset (not needed)
         );
 
     // GCInfo for new method
-    GcInfoDecoder newGcDecoder(
+    GcInfoDecoder<TargetGcInfoEncoding> newGcDecoder(
         pNewCodeInfo->GetGCInfoToken(),
         GcInfoDecoderFlags(DECODE_SECURITY_OBJECT | DECODE_PSP_SYM | DECODE_EDIT_AND_CONTINUE),
         0       // Instruction offset (not needed)
@@ -837,7 +837,7 @@ bool EECodeManager::IsGcSafe( EECodeInfo     *pCodeInfo,
 
     GCInfoToken gcInfoToken = pCodeInfo->GetGCInfoToken();
 
-    GcInfoDecoder gcInfoDecoder(
+    GcInfoDecoder<TargetGcInfoEncoding> gcInfoDecoder(
             gcInfoToken,
             DECODE_INTERRUPTIBILITY,
             dwRelOffset
@@ -862,7 +862,7 @@ bool EECodeManager::HasTailCalls( EECodeInfo     *pCodeInfo)
 
     GCInfoToken gcInfoToken = pCodeInfo->GetGCInfoToken();
 
-    GcInfoDecoder gcInfoDecoder(
+    GcInfoDecoder<TargetGcInfoEncoding> gcInfoDecoder(
             gcInfoToken,
             DECODE_HAS_TAILCALLS,
             0
@@ -930,7 +930,7 @@ unsigned EECodeManager::FindEndOfLastInterruptibleRegion(unsigned curOffset,
                                                          GCInfoToken gcInfoToken)
 {
 #ifndef DACCESS_COMPILE
-    GcInfoDecoder gcInfoDecoder(
+    GcInfoDecoder<TargetGcInfoEncoding> gcInfoDecoder(
             gcInfoToken,
             DECODE_FOR_RANGES_CALLBACK
             );
@@ -1417,7 +1417,7 @@ bool EECodeManager::EnumGcRefs( PREGDISPLAY     pRD,
 #ifdef _DEBUG
     if (flags & ActiveStackFrame)
     {
-        GcInfoDecoder _gcInfoDecoder(
+        GcInfoDecoder<TargetGcInfoEncoding> _gcInfoDecoder(
                             gcInfoToken,
                             DECODE_INTERRUPTIBILITY,
                             curOffs
@@ -1431,7 +1431,7 @@ bool EECodeManager::EnumGcRefs( PREGDISPLAY     pRD,
     {
         // We've been given an override offset for GC Info
 #ifdef _DEBUG
-        GcInfoDecoder _gcInfoDecoder(
+        GcInfoDecoder<TargetGcInfoEncoding> _gcInfoDecoder(
                             gcInfoToken,
                             DECODE_CODE_LENGTH
                       );
@@ -1473,7 +1473,7 @@ bool EECodeManager::EnumGcRefs( PREGDISPLAY     pRD,
     reportScratchSlots = (flags & ActiveStackFrame) != 0;
 
 
-    GcInfoDecoder gcInfoDecoder(
+    GcInfoDecoder<TargetGcInfoEncoding> gcInfoDecoder(
                         gcInfoToken,
                         GcInfoDecoderFlags (DECODE_GC_LIFETIMES | DECODE_SECURITY_OBJECT | DECODE_VARARG),
                         curOffs
@@ -1753,7 +1753,7 @@ GenericParamContextType EECodeManager::GetParamContextType(PREGDISPLAY     pCont
 #else // !USE_GC_INFO_DECODER
     GCInfoToken gcInfoToken = pCodeInfo->GetGCInfoToken();
 
-    GcInfoDecoder gcInfoDecoder(
+    GcInfoDecoder<TargetGcInfoEncoding> gcInfoDecoder(
             gcInfoToken,
             GcInfoDecoderFlags (DECODE_GENERICS_INST_CONTEXT)
             );
@@ -1836,7 +1836,7 @@ PTR_VOID EECodeManager::GetExactGenericsToken(SIZE_T          baseStackSlot,
 
     GCInfoToken gcInfoToken = pCodeInfo->GetGCInfoToken();
 
-    GcInfoDecoder gcInfoDecoder(
+    GcInfoDecoder<TargetGcInfoEncoding> gcInfoDecoder(
             gcInfoToken,
             GcInfoDecoderFlags (DECODE_PSP_SYM | DECODE_GENERICS_INST_CONTEXT)
             );
@@ -1953,7 +1953,7 @@ void * EECodeManager::GetGSCookieAddr(PREGDISPLAY     pContext,
     }
 
 #else // !USE_GC_INFO_DECODER
-    GcInfoDecoder gcInfoDecoder(
+    GcInfoDecoder<TargetGcInfoEncoding> gcInfoDecoder(
             gcInfoToken,
             DECODE_GS_COOKIE
             );
@@ -2053,7 +2053,7 @@ size_t EECodeManager::GetFunctionSize(GCInfoToken gcInfoToken)
     return info.methodSize;
 #else // !USE_GC_INFO_DECODER
 
-    GcInfoDecoder gcInfoDecoder(
+    GcInfoDecoder<TargetGcInfoEncoding> gcInfoDecoder(
             gcInfoToken,
             DECODE_CODE_LENGTH
             );
@@ -2095,7 +2095,7 @@ bool EECodeManager::GetReturnAddressHijackInfo(GCInfoToken gcInfoToken X86_ARG(R
     return true;
 #else // !USE_GC_INFO_DECODER
 
-    GcInfoDecoder gcInfoDecoder(gcInfoToken, GcInfoDecoderFlags(DECODE_REVERSE_PINVOKE_VAR));
+    GcInfoDecoder<TargetGcInfoEncoding> gcInfoDecoder(gcInfoToken, GcInfoDecoderFlags(DECODE_REVERSE_PINVOKE_VAR));
 
     if (gcInfoDecoder.GetReversePInvokeFrameStackSlot() != NO_REVERSE_PINVOKE_FRAME)
     {

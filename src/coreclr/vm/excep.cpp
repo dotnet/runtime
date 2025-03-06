@@ -6931,7 +6931,7 @@ bool IsIPInProlog(EECodeInfo *pCodeInfo)
 
 #ifdef USE_GC_INFO_DECODER
 
-    GcInfoDecoder gcInfoDecoder(
+    GcInfoDecoder<TargetGcInfoEncoding> gcInfoDecoder(
         gcInfoToken,
         DECODE_PROLOG_LENGTH
     );

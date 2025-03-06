@@ -940,7 +940,7 @@ void DoGcStress (PCONTEXT regs, NativeCodeVersion nativeCodeVersion)
 /////////////////////////////////////////////////////////////////////////////
 
 #ifdef PARTIALLY_INTERRUPTIBLE_GC_SUPPORTED
-void replaceSafePointInstructionWithGcStressInstr(GcInfoDecoder* decoder, UINT32 safePointOffset, LPVOID pGCCover)
+void replaceSafePointInstructionWithGcStressInstr(GcInfoDecoder<TargetGcInfoEncoding> * decoder, UINT32 safePointOffset, LPVOID pGCCover)
 {
     PCODE pCode = (PCODE)NULL;
     IJitManager::MethodRegionInfo *ptr = &(((GCCoverageInfo*)pGCCover)->methodRegion);
@@ -1117,7 +1117,7 @@ void GCCoverageInfo::SprinkleBreakpoints(
         }
     }
 
-    GcInfoDecoder safePointDecoder(gcInfoToken, (GcInfoDecoderFlags)0, 0);
+    GcInfoDecoder<TargetGcInfoEncoding> safePointDecoder(gcInfoToken, (GcInfoDecoderFlags)0, 0);
 
     assert(methodRegion.hotSize > 0);
 
@@ -1340,7 +1340,7 @@ BOOL OnGcCoverageInterrupt(PCONTEXT regs)
         RemoveGcCoverageInterrupt(instrPtr, savedInstrPtr, gcCover, offset);
         return TRUE;
     }
-    
+
     // The thread is in preemptive mode. Normally, it should not be able to trigger GC.
     // Besides the GC may be already happening and scanning our stack.
     if (!pThread->PreemptiveGCDisabled())

@@ -599,6 +599,7 @@ function(add_jit jitName)
     endif(CLR_CMAKE_TARGET_WIN32)
 
     target_include_directories(${jitName} PRIVATE ${JIT_SOURCE_DIR})
+    # FIXME: This compiles jitpch.h with the wrong defines i.e. TARGET_AMD64 is not set on amd64
     target_precompile_headers(${jitName} PRIVATE "$<$<COMPILE_LANGUAGE:CXX>:jitpch.h>")
 
     add_dependencies(${jitName} jit_exports)

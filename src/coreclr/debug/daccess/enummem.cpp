@@ -985,7 +985,7 @@ HRESULT ClrDataAccess::EnumMemWalkStackHelper(CLRDataEnumMemoryFlags flags,
                                     PTR_BYTE pGCInfo = dac_cast<PTR_BYTE>(gcInfoToken.Info);
                                     if (pGCInfo != NULL)
                                     {
-                                        GcInfoDecoder gcDecoder(gcInfoToken, DECODE_PSP_SYM, 0);
+                                        GcInfoDecoder<TargetGcInfoEncoding> gcDecoder(gcInfoToken, DECODE_PSP_SYM, 0);
                                         DacEnumMemoryRegion(dac_cast<TADDR>(pGCInfo), gcDecoder.GetNumBytesRead(), true);
                                     }
                                 }
