@@ -17,7 +17,8 @@
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' != 'browser'">
     <Compile Include="SslStreamExtensions.cs" />
     <Compile Include="TestConfiguration.cs" />
-    <Compile Include="TestHelper.cs" />
+    <Compile Include="$(CommonTestPath)System\Net\Security\TestConfiguration.cs" />
+    <Compile Include="$(CommonTestPath)System\Net\Security\TestHelper.cs" />
     <!-- SslStream Tests -->
     <Compile Include="CertificateValidationClientServer.cs" />
     <Compile Include="CertificateValidationRemoteServer.cs" />

@@ -71,3 +71,30 @@ PALEXPORT EC_KEY* CryptoNative_EcKeyCreateByExplicitParameters(
     uint8_t* order, int32_t nLength,
     uint8_t* cofactor, int32_t hLength,
     uint8_t* seed, int32_t sLength);
+
+/*
+Returns the ECC curve parameters of the given EVP_PKEY.
+
+Seed should be freed using CryptoNative_BufferFree.
+*/
+PALEXPORT int32_t CryptoNative_EvpPKeyGetEcCurveParameters(
+    const EVP_PKEY* pkey,
+    int32_t includePrivate,
+    ECCurveType* curveType,
+    BIGNUM** qx, int32_t* cbQx,
+    BIGNUM** qy, int32_t* cbQy,
+    BIGNUM** d, int32_t* cbD,
+    BIGNUM** p, int32_t* cbP,
+    BIGNUM** a, int32_t* cbA,
+    BIGNUM** b, int32_t* cbB,
+    BIGNUM** gx, int32_t* cbGx,
+    BIGNUM** gy, int32_t* cbGy,
+    BIGNUM** order, int32_t* cbOrder,
+    BIGNUM** cofactor, int32_t* cbCofactor,
+    unsigned char** seed, int32_t* cbSeed);
+
+/*
+Frees the given buffer allocated with OPENSSL_malloc and family.
+This is a wrapper for OPENSSL_free.
+*/
+PALEXPORT void CryptoNative_BufferFree(char* ptr);

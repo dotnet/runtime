@@ -10,11 +10,8 @@ using Xunit;
 
 namespace System.Net.Security.Tests
 {
-    internal static class TestConfiguration
+    internal static partial class TestConfiguration
     {
-        public const int PassingTestTimeoutMilliseconds = 1 * 60 * 1000;
-        public static TimeSpan PassingTestTimeout => TimeSpan.FromMilliseconds(PassingTestTimeoutMilliseconds);
-
         public const string Realm = "TEST.COREFX.NET";
         public const string KerberosUser = "krb_user";
         public const string DefaultPassword = "password";
