@@ -113,7 +113,9 @@ internal sealed class FrameIterator
                 GetFrameHandler(context).HandleHijackFrame(hijackFrame);
                 return;
             default:
-                throw new InvalidOperationException($"Unknown frame type with identifier {CurrentFrame.Identifier}");
+                // Unknown Frame type. This could either be a Frame that we don't know how to handle,
+                // or a Frame that does not update the context.
+                return;
         }
     }
 
