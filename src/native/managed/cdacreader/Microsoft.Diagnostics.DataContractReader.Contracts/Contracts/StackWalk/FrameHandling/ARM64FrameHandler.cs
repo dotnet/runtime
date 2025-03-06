@@ -84,7 +84,7 @@ internal class ARM64FrameHandler(Target target, ContextHolder<ARM64Context> cont
         }
         _holder.ReadFromAddress(_target, targetContext);
 
-        // Clear the CONTEXT_XSTATE, since the AMD64Context contains just plain CONTEXT structure
+        // Clear the CONTEXT_XSTATE, since the ARM64Context contains just plain CONTEXT structure
         // that does not support holding any extended state.
         _holder.Context.ContextFlags &= ~(uint)(ContextFlagsValues.CONTEXT_XSTATE & ContextFlagsValues.CONTEXT_AREA_MASK);
         return true;
@@ -119,7 +119,7 @@ internal class ARM64FrameHandler(Target target, ContextHolder<ARM64Context> cont
         {
             if (!_holder.TrySetRegister(_target, name, value))
             {
-                throw new InvalidOperationException($"Unexpected register {name} in callee saved registers");
+                throw new InvalidOperationException($"Unexpected register {name} found when trying to update context");
             }
         }
     }

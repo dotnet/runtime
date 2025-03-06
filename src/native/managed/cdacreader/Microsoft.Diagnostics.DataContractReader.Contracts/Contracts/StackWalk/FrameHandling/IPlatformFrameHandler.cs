@@ -12,11 +12,11 @@ namespace Microsoft.Diagnostics.DataContractReader.Contracts.StackWalkHelpers;
 /// </summary>
 internal interface IPlatformFrameHandler
 {
-    public abstract bool HandleInlinedCallFrame(Data.InlinedCallFrame frame);
-    public abstract bool HandleSoftwareExceptionFrame(Data.SoftwareExceptionFrame frame);
-    public abstract bool HandleTransitionFrame(Data.FramedMethodFrame frame, Data.TransitionBlock transitionBlock, uint transitionBlockSize);
-    public abstract bool HandleFuncEvalFrame(Data.FuncEvalFrame frame, Data.DebuggerEval debuggerEval);
-    public abstract bool HandleResumableFrame(Data.ResumableFrame frame);
-    public abstract bool HandleFaultingExceptionFrame(Data.FaultingExceptionFrame frame);
-    public abstract bool HandleHijackFrame(Data.HijackFrame frame);
+    bool HandleInlinedCallFrame(Data.InlinedCallFrame frame);
+    bool HandleSoftwareExceptionFrame(Data.SoftwareExceptionFrame frame);
+    bool HandleTransitionFrame(Data.FramedMethodFrame frame, Data.TransitionBlock transitionBlock, uint transitionBlockSize);
+    bool HandleFuncEvalFrame(Data.FuncEvalFrame frame, Data.DebuggerEval debuggerEval);
+    bool HandleResumableFrame(Data.ResumableFrame frame);
+    bool HandleFaultingExceptionFrame(Data.FaultingExceptionFrame frame);
+    bool HandleHijackFrame(Data.HijackFrame frame);
 }
