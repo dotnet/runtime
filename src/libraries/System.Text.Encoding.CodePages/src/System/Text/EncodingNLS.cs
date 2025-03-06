@@ -581,7 +581,7 @@ namespace System.Text
         {
             get
             {
-                (ushort FamilyCodePage, byte CodePageFlags) item = EncodingTable.GetCodePageItem(CodePage);
+                (ushort FamilyCodePage, byte _) item = EncodingTable.GetCodePageItem(CodePage);
                 return item.FamilyCodePage;
             }
         }
@@ -590,7 +590,7 @@ namespace System.Text
         {
             get
             {
-                (ushort FamilyCodePage, byte CodePageFlags) item = EncodingTable.GetCodePageItem(CodePage);
+                (ushort _, byte CodePageFlags) item = EncodingTable.GetCodePageItem(CodePage);
                 return (item.CodePageFlags & EncodingTable.MIMECONTF_BROWSER) != 0;
             }
         }
@@ -599,7 +599,7 @@ namespace System.Text
         {
             get
             {
-                (ushort FamilyCodePage, byte CodePageFlags) item = EncodingTable.GetCodePageItem(CodePage);
+                (ushort _, byte CodePageFlags) item = EncodingTable.GetCodePageItem(CodePage);
                 return (item.CodePageFlags & EncodingTable.MIMECONTF_SAVABLE_BROWSER) != 0;
             }
         }
@@ -608,7 +608,7 @@ namespace System.Text
         {
             get
             {
-                (ushort FamilyCodePage, byte CodePageFlags) item = EncodingTable.GetCodePageItem(CodePage);
+                (ushort _, byte CodePageFlags) item = EncodingTable.GetCodePageItem(CodePage);
                 return (item.CodePageFlags & EncodingTable.MIMECONTF_MAILNEWS) != 0;
             }
         }
