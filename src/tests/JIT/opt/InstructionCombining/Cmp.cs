@@ -164,7 +164,7 @@ namespace TestCompare
         static bool CmpOptimizeBoolsReturn(int a, int lower, int upper)
         {
             //ARM64-FULL-LINE: cmp {{w[0-9]+}}, {{w[0-9]+}}
-            //ARM64-FULL-LINE: ccmp {{w[0-9]+}}, {{w[0-9]+}}, nzc, ge
+            //ARM64-FULL-LINE: ccmp {{w[0-9]+}}, {{w[0-9]+}}, 0, ge
             //ARM64-FULL-LINE: cset {{x[0-9]+}}, le
             return a >= lower && a <= upper;
         }
@@ -209,7 +209,7 @@ namespace TestCompare
         {
             //ARM64-FULL-LINE: cmp {{w[0-9]+}}, {{w[0-9]+}}
             //ARM64-FULL-LINE: ccmp {{w[0-9]+}}, {{w[0-9]+}}, 0, lt
-            //ARM64-FULL-LINE: ccmp {{w[0-9]+}}, {{w[0-9]+}}, 0, le
+            //ARM64-FULL-LINE: ccmp {{w[0-9]+}}, {{w[0-9]+}}, nzc, le
             //ARM64-FULL-LINE: cset {{x[0-9]+}}, gt
             return (a < b) && (c <= d) && (e > f);
         }
