@@ -132,6 +132,30 @@ static void destroy_instance_ght (void *data) {
     g_hash_table_destroy((GHashTable *)data);
 }
 
+
+static void * create_instance_dnght () {
+    if (!random_u32s)
+        init_data();
+
+    return dn_simdhash_ght_new(NULL, NULL, 0, NULL);
+}
+
+static void * create_instance_dnght_random_values () {
+    if (!random_u32s)
+        init_data();
+
+    dn_simdhash_ght_t *result = dn_simdhash_ght_new(NULL, NULL, INNER_COUNT, NULL);
+    for (int i = 0; i < INNER_COUNT; i++) {
+        uint32_t key = *dn_vector_index_t(random_u32s, uint32_t, i);
+        dn_simdhash_ght_try_add(result, (gpointer)(size_t)key, (gpointer)(size_t)i);
+    }
+    return result;
+}
+
+static void destroy_instance_dnght (void *data) {
+    dn_simdhash_free((dn_simdhash_ght_t *)data);
+}
+
 #endif // MEASUREMENTS_IMPLEMENTATION
 
 // These go outside the guard because we include this file multiple times.
@@ -215,5 +239,22 @@ MEASUREMENT(ght_find_missing_key, GHashTable *, create_instance_ght_random_value
     for (int i = 0; i < INNER_COUNT; i++) {
         uint32_t key = *dn_vector_index_t(random_unused_u32s, uint32_t, i);
         dn_simdhash_assert(g_hash_table_lookup(data, (gpointer)(size_t)key) == NULL);
+    }
+})
+
+MEASUREMENT(dnght_find_random_keys, dn_simdhash_ght_t *, create_instance_dnght_random_values, destroy_instance_dnght, {
+    for (int i = 0; i < INNER_COUNT; i++) {
+        uint32_t key = *dn_vector_index_t(random_u32s, uint32_t, i);
+        gpointer value;
+        dn_simdhash_assert(dn_simdhash_ght_try_get_value(data, (gpointer)(size_t)key, &value));
+        dn_simdhash_assert(value == (gpointer)(size_t)i);
+    }
+})
+
+MEASUREMENT(dnght_find_missing_key, dn_simdhash_ght_t *, create_instance_dnght_random_values, destroy_instance_dnght, {
+    for (int i = 0; i < INNER_COUNT; i++) {
+        uint32_t key = *dn_vector_index_t(random_unused_u32s, uint32_t, i);
+        gpointer value;
+        dn_simdhash_assert(!dn_simdhash_ght_try_get_value(data, (gpointer)(size_t)key, &value));
     }
 })
