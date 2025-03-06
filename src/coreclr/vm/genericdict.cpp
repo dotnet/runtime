@@ -1041,7 +1041,8 @@ Dictionary::PopulateEntry(
 
             if (fRequiresDispatchStub)
             {
-                // Generate a dispatch stub and store it in the dictionary.
+                LoaderAllocator * pDictLoaderAllocator = (pMT != NULL) ? pMT->GetLoaderAllocator() : pMD->GetLoaderAllocator();
+                // Generate a dispatch stub and gather a slot.
                 //
                 // We generate an indirection so we don't have to write to the dictionary
                 // when we do updates, and to simplify stub indirect callsites.  Stubs stored in
@@ -1053,16 +1054,12 @@ Dictionary::PopulateEntry(
                 // dictionary entry to the  caller, still using "call [eax]", and then the
                 // stub dispatch mechanism can update the dictitonary itself and we don't
                 // need an indirection.
-                LoaderAllocator * pDictLoaderAllocator = (pMT != NULL) ? pMT->GetLoaderAllocator() : pMD->GetLoaderAllocator();
-
-                VirtualCallStubManager * pMgr = pDictLoaderAllocator->GetVirtualCallStubManager();
-
+                //
                 // We indirect through a cell so that updates can take place atomically.
                 // The call stub and the indirection cell have the same lifetime as the dictionary itself, i.e.
-                // are allocated in the domain of the dicitonary.
-                PCODE addr = pMgr->GetCallStub(ownerType, methodSlot);
+                // are allocated in the domain of the dictionary.
 
-                result = (CORINFO_GENERIC_HANDLE)pMgr->GenerateStubIndirection(addr);
+                result = (CORINFO_GENERIC_HANDLE)GenerateDispatchStubCellEntrySlot(pDictLoaderAllocator, ownerType, methodSlot, NULL);
                 break;
             }
 

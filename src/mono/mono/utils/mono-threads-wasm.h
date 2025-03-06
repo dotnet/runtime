@@ -88,8 +88,8 @@ mono_wasm_atomic_wait_i32 (volatile int32_t *addr, int32_t expected, int32_t tim
 }
 
 #else /* DISABLE_THREADS */
-extern GSList *jobs;
 void mono_background_exec (void);
+void mono_wasm_ds_exec (void);
 #endif /* DISABLE_THREADS */
 
 void
