@@ -22,21 +22,31 @@ public class AppSettingsTests : WasmTemplateTestsBase
     }
 
     [Theory]
-    [InlineData("Development")]
-    [InlineData("Production")]
-    public async Task LoadAppSettingsBasedOnApplicationEnvironment(string applicationEnvironment)
+    [InlineData("Development", null)]
+    [InlineData("Production", null)]
+    [InlineData(null, "Development")]
+    [InlineData(null, "Production")]
+    [InlineData("Production", "Development")]
+    [InlineData("Development", "Production")]
+    public async Task LoadAppSettingsBasedOnApplicationEnvironment(string msBuildApplicationEnvironment, string queryApplicationEnvironment)
     {
         Configuration config = Configuration.Debug;
         ProjectInfo info = CopyTestAsset(config, aot: false, TestAsset.WasmBasicTestApp, "AppSettingsTest");
-        PublishProject(info, config);
+        PublishProject(
+            info, 
+            config,
+            new (ExtraMSBuildArgs: $"-p:WasmApplicationEnvironmentName={msBuildApplicationEnvironment}")
+        );
         BrowserRunOptions options = new(
             config,
             TestScenario: "AppSettingsTest",
-            BrowserQueryString: new NameValueCollection { { "applicationEnvironment", applicationEnvironment } }
+            BrowserQueryString: new NameValueCollection { { "applicationEnvironment", queryApplicationEnvironment } }
         );
         RunResult result = await RunForPublishWithWebServer(options);
+
+        string effectiveApplicationEnvironment = queryApplicationEnvironment ?? msBuildApplicationEnvironment;
         Assert.Contains(result.TestOutput, m => m.Contains("'/appsettings.json' exists 'True'"));
-        Assert.Contains(result.TestOutput, m => m.Contains($"'/appsettings.Development.json' exists '{applicationEnvironment == "Development"}'"));
-        Assert.Contains(result.TestOutput, m => m.Contains($"'/appsettings.Production.json' exists '{applicationEnvironment == "Production"}'"));
+        Assert.Contains(result.TestOutput, m => m.Contains($"'/appsettings.Development.json' exists '{effectiveApplicationEnvironment == "Development"}'"));
+        Assert.Contains(result.TestOutput, m => m.Contains($"'/appsettings.Production.json' exists '{effectiveApplicationEnvironment == "Production"}'"));
     }
 }
