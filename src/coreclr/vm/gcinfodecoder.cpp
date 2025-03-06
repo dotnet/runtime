@@ -2224,6 +2224,7 @@ template <typename GcInfoEncoding> void GcInfoDecoder<GcInfoEncoding>::ReportSta
     pCallBack(hCallBack, pObjRef, gcFlags DAC_ARG(DacSlotLocation(GetStackReg(spBase), spOffset, true)));
 }
 
+// Instantiate the decoder so other files can use it
+template class GcInfoDecoder<TargetGcInfoEncoding>;
 
 #endif // USE_GC_INFO_DECODER
-

@@ -4004,7 +4004,7 @@ void GCInfo::gcInfoBlockHdrSave(GcInfoEncoder<TargetGcInfoEncoding>* gcInfoEncod
 #if defined(DEBUG) || DUMP_GC_TABLES
 #define Encoder GcInfoEncoderWithLogging
 #else
-#define Encoder GcInfoEncoder
+#define Encoder GcInfoEncoder<TargetGcInfoEncoding>
 #endif
 
 // Small helper class to handle the No-GC-Interrupt callbacks
