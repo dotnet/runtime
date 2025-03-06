@@ -352,7 +352,7 @@ size_t      GCDump::DumpGCTable(PTR_CBYTE      gcInfoBlock,
                                 bool           verifyGCTables)
 {
     GCInfoToken gcInfoToken = { dac_cast<PTR_VOID>(gcInfoBlock), gcInfoVersion };
-    GcInfoDecoder<TargetGcInfoEncoding> hdrdecoder(gcInfoToken,
+    GcInfoDecoder hdrdecoder(gcInfoToken,
                              (GcInfoDecoderFlags)(  DECODE_SECURITY_OBJECT
                                                   | DECODE_GS_COOKIE
                                                   | DECODE_CODE_LENGTH

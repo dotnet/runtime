@@ -409,7 +409,7 @@ bool CoffNativeCodeManager::IsSafePoint(PTR_VOID pvAddress)
     uint32_t codeOffset = GetCodeOffset(&pMethodInfo, pvAddress, &gcInfo);
 
 #ifdef USE_GC_INFO_DECODER
-    GcInfoDecoder<TargetGcInfoEncoding> decoder(
+    GcInfoDecoder decoder(
         GCInfoToken(gcInfo),
         GcInfoDecoderFlags(DECODE_INTERRUPTIBILITY),
         codeOffset
@@ -453,7 +453,7 @@ void CoffNativeCodeManager::EnumGcRefs(MethodInfo *    pMethodInfo,
 
 #ifdef USE_GC_INFO_DECODER
 
-    GcInfoDecoder<TargetGcInfoEncoding> decoder(
+    GcInfoDecoder decoder(
         GCInfoToken(gcInfo),
         GcInfoDecoderFlags(DECODE_GC_LIFETIMES | DECODE_SECURITY_OBJECT | DECODE_VARARG),
         codeOffset
@@ -513,7 +513,7 @@ uintptr_t CoffNativeCodeManager::GetConservativeUpperBoundForOutgoingArgs(Method
             p += sizeof(int32_t);
 
 #ifdef USE_GC_INFO_DECODER
-        GcInfoDecoder<TargetGcInfoEncoding> decoder(GCInfoToken(p), DECODE_REVERSE_PINVOKE_VAR);
+        GcInfoDecoder decoder(GCInfoToken(p), DECODE_REVERSE_PINVOKE_VAR);
         INT32 slot = decoder.GetReversePInvokeFrameStackSlot();
         assert(slot != NO_REVERSE_PINVOKE_FRAME);
 
@@ -650,7 +650,7 @@ bool CoffNativeCodeManager::UnwindStackFrame(MethodInfo *    pMethodInfo,
             p += sizeof(int32_t);
 
 #ifdef USE_GC_INFO_DECODER
-        GcInfoDecoder<TargetGcInfoEncoding> decoder(GCInfoToken(p), DECODE_REVERSE_PINVOKE_VAR);
+        GcInfoDecoder decoder(GCInfoToken(p), DECODE_REVERSE_PINVOKE_VAR);
         INT32 slot = decoder.GetReversePInvokeFrameStackSlot();
         assert(slot != NO_REVERSE_PINVOKE_FRAME);
 
@@ -892,7 +892,7 @@ bool CoffNativeCodeManager::GetReturnAddressHijackInfo(MethodInfo *    pMethodIn
 
     // Decode the GC info for the current method to determine if there are tailcalls
     GcInfoDecoderFlags flags = DECODE_HAS_TAILCALLS;
-    GcInfoDecoder<TargetGcInfoEncoding> decoder(GCInfoToken(p), flags);
+    GcInfoDecoder decoder(GCInfoToken(p), flags);
     if (decoder.HasTailCalls())
     {
         // Do not hijack functions that have tail calls, since there are two problems:
@@ -972,7 +972,7 @@ bool CoffNativeCodeManager::GetReturnAddressHijackInfo(MethodInfo *    pMethodIn
 
     *ppvRetAddrLocation = (PTR_PTR_VOID)registerSet.PCTAddr;
     return true;
-#endif
+#endif 
 }
 
 #ifdef TARGET_X86

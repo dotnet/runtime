@@ -187,7 +187,7 @@ bool UnixNativeCodeManager::IsSafePoint(PTR_VOID pvAddress)
     PTR_uint8_t gcInfo;
     uint32_t codeOffset = GetCodeOffset(&pMethodInfo, pvAddress, &gcInfo);
 
-    GcInfoDecoder<TargetGcInfoEncoding> decoder(
+    GcInfoDecoder decoder(
         GCInfoToken(gcInfo),
         GcInfoDecoderFlags(DECODE_INTERRUPTIBILITY),
         codeOffset
@@ -217,7 +217,7 @@ void UnixNativeCodeManager::EnumGcRefs(MethodInfo *    pMethodInfo,
     ASSERT(((uintptr_t)codeOffset & 1) == 0);
 #endif
 
-    GcInfoDecoder<TargetGcInfoEncoding> decoder(
+    GcInfoDecoder decoder(
         GCInfoToken(gcInfo),
         GcInfoDecoderFlags(DECODE_GC_LIFETIMES | DECODE_SECURITY_OBJECT | DECODE_VARARG),
         codeOffset
@@ -268,7 +268,7 @@ uintptr_t UnixNativeCodeManager::GetConservativeUpperBoundForOutgoingArgs(Method
         if ((unwindBlockFlags & UBF_FUNC_HAS_EHINFO) != 0)
             p += sizeof(int32_t);
 
-        GcInfoDecoder<TargetGcInfoEncoding> decoder(GCInfoToken(p), DECODE_REVERSE_PINVOKE_VAR);
+        GcInfoDecoder decoder(GCInfoToken(p), DECODE_REVERSE_PINVOKE_VAR);
         INT32 slot = decoder.GetReversePInvokeFrameStackSlot();
         assert(slot != NO_REVERSE_PINVOKE_FRAME);
 
@@ -330,7 +330,7 @@ bool UnixNativeCodeManager::UnwindStackFrame(MethodInfo *    pMethodInfo,
         if ((unwindBlockFlags & UBF_FUNC_HAS_EHINFO) != 0)
             p += sizeof(int32_t);
 
-        GcInfoDecoder<TargetGcInfoEncoding> decoder(GCInfoToken(p), DECODE_REVERSE_PINVOKE_VAR);
+        GcInfoDecoder decoder(GCInfoToken(p), DECODE_REVERSE_PINVOKE_VAR);
         INT32 slot = decoder.GetReversePInvokeFrameStackSlot();
         assert(slot != NO_REVERSE_PINVOKE_FRAME);
 
@@ -417,7 +417,7 @@ bool UnixNativeCodeManager::IsUnwindable(PTR_VOID pvAddress)
 
 // ADD{S}<c>.W FP, SP, #<const>
 // 1111 0x01 000x 1101 0xxx 1011 xxxx xxxx
-#define ADD_W_FP_SP_BITS 0xF10D0B00
+#define ADD_W_FP_SP_BITS 0xF10D0B00 
 #define ADD_W_FP_SP_MASK 0xFBEF8F00
 
 // PUSH<c> <registers>
@@ -790,7 +790,7 @@ int UnixNativeCodeManager::TrailingEpilogueInstructionsCount(MethodInfo * pMetho
     // For details see similar code in OOPStackUnwinderAMD64::UnwindEpilogue
     //
     //
-    //
+    //    
     // A canonical epilogue sequence consists of the following operations:
     //
     // 1. Optional cleanup of fixed and dynamic stack allocations, which is
@@ -994,7 +994,7 @@ int UnixNativeCodeManager::TrailingEpilogueInstructionsCount(MethodInfo * pMetho
 
     // Since we stop on branches, the search is roughly limited by the containing basic block.
     // We typically examine just 1-5 instructions and in rare cases up to 30.
-    //
+    // 
     // TODO: we can also limit the search by the longest possible epilogue length, but
     // we must be sure the longest length considers all possibilities,
     // which is somewhat nontrivial to derive/prove.
@@ -1002,7 +1002,7 @@ int UnixNativeCodeManager::TrailingEpilogueInstructionsCount(MethodInfo * pMetho
     for (uint32_t* pInstr = (uint32_t*)pvAddress - 1; pInstr > start; pInstr--)
     {
         uint32_t instr = *pInstr;
-
+    
         // check for Branches, Exception Generating and System instruction group.
         // If we see such instruction before seeing FP or LR restored, we are not in an epilog.
         // Note: this includes RET, BRK, branches, calls, tailcalls, fences, etc...
@@ -1327,7 +1327,7 @@ bool UnixNativeCodeManager::GetReturnAddressHijackInfo(MethodInfo *    pMethodIn
 
     // Decode the GC info for the current method to determine if there are tailcalls
     GcInfoDecoderFlags flags = DECODE_HAS_TAILCALLS;
-    GcInfoDecoder<TargetGcInfoEncoding> decoder(GCInfoToken(p), flags);
+    GcInfoDecoder decoder(GCInfoToken(p), flags);
     if (decoder.HasTailCalls())
     {
         // Do not hijack functions that have tail calls, since there are two problems:

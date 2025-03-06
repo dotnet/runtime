@@ -60,7 +60,7 @@ unsigned FindFirstInterruptiblePoint(CrawlFrame* pCF, unsigned offs, unsigned en
 {
 #ifdef USE_GC_INFO_DECODER
     GCInfoToken gcInfoToken = pCF->GetGCInfoToken();
-    GcInfoDecoder<TargetGcInfoEncoding> gcInfoDecoder(gcInfoToken, DECODE_FOR_RANGES_CALLBACK);
+    GcInfoDecoder gcInfoDecoder(gcInfoToken, DECODE_FOR_RANGES_CALLBACK);
 
     FindFirstInterruptiblePointState state;
     state.offs = offs;
@@ -124,7 +124,7 @@ inline bool SafeToReportGenericParamContext(CrawlFrame* pCF)
 
 #else  // USE_GC_INFO_DECODER
 
-    GcInfoDecoder<TargetGcInfoEncoding> gcInfoDecoder(pCF->GetGCInfoToken(),
+    GcInfoDecoder gcInfoDecoder(pCF->GetGCInfoToken(),
             DECODE_PROLOG_LENGTH);
     UINT32 prologLength = gcInfoDecoder.GetPrologSize();
     if (pCF->GetRelOffset() < prologLength)
@@ -326,7 +326,7 @@ StackWalkAction GcStackCrawlCallBack(CrawlFrame* pCF, VOID* pData)
             if (pCF->ShouldParentToFuncletUseUnwindTargetLocationForGCReporting())
             {
                 GCInfoToken gcInfoToken = pCF->GetGCInfoToken();
-                GcInfoDecoder<TargetGcInfoEncoding> _gcInfoDecoder(
+                GcInfoDecoder _gcInfoDecoder(
                                     gcInfoToken,
                                     DECODE_CODE_LENGTH
                                     );

@@ -3648,11 +3648,11 @@ static const char* const GcSlotFlagsNames[] = {"",
 // I'm making a local wrapper class for GcInfoEncoder so that can add logging of my own (DLD).
 class GcInfoEncoderWithLogging
 {
-    GcInfoEncoder<TargetGcInfoEncoding>* m_gcInfoEncoder;
+    GcInfoEncoder* m_gcInfoEncoder;
     bool           m_doLogging;
 
 public:
-    GcInfoEncoderWithLogging(GcInfoEncoder<TargetGcInfoEncoding>* gcInfoEncoder, bool verbose)
+    GcInfoEncoderWithLogging(GcInfoEncoder* gcInfoEncoder, bool verbose)
         : m_gcInfoEncoder(gcInfoEncoder)
         , m_doLogging(verbose INDEBUG(|| JitConfig.JitGCInfoLogging() != 0))
     {
@@ -3816,11 +3816,11 @@ public:
 
 #else // !(defined(DEBUG) || DUMP_GC_TABLES)
 
-#define GCENCODER_WITH_LOGGING(withLog, realEncoder) GcInfoEncoder<TargetGcInfoEncoding>* withLog = realEncoder;
+#define GCENCODER_WITH_LOGGING(withLog, realEncoder) GcInfoEncoder* withLog = realEncoder;
 
 #endif // !(defined(DEBUG) || DUMP_GC_TABLES)
 
-void GCInfo::gcInfoBlockHdrSave(GcInfoEncoder<TargetGcInfoEncoding>* gcInfoEncoder, unsigned methodSize, unsigned prologSize)
+void GCInfo::gcInfoBlockHdrSave(GcInfoEncoder* gcInfoEncoder, unsigned methodSize, unsigned prologSize)
 {
 #ifdef DEBUG
     if (compiler->verbose)
@@ -4004,7 +4004,7 @@ void GCInfo::gcInfoBlockHdrSave(GcInfoEncoder<TargetGcInfoEncoding>* gcInfoEncod
 #if defined(DEBUG) || DUMP_GC_TABLES
 #define Encoder GcInfoEncoderWithLogging
 #else
-#define Encoder GcInfoEncoder<TargetGcInfoEncoding>
+#define Encoder GcInfoEncoder
 #endif
 
 // Small helper class to handle the No-GC-Interrupt callbacks
@@ -4061,7 +4061,7 @@ public:
 };
 
 void GCInfo::gcMakeRegPtrTable(
-    GcInfoEncoder<TargetGcInfoEncoding>* gcInfoEncoder, unsigned codeSize, unsigned prologSize, MakeRegPtrMode mode, unsigned* callCntRef)
+    GcInfoEncoder* gcInfoEncoder, unsigned codeSize, unsigned prologSize, MakeRegPtrMode mode, unsigned* callCntRef)
 {
     GCENCODER_WITH_LOGGING(gcInfoEncoderWithLog, gcInfoEncoder);
 
@@ -4612,7 +4612,7 @@ void GCInfo::gcMakeRegPtrTable(
     }
 }
 
-void GCInfo::gcInfoRecordGCRegStateChange(GcInfoEncoder<TargetGcInfoEncoding>* gcInfoEncoder,
+void GCInfo::gcInfoRecordGCRegStateChange(GcInfoEncoder* gcInfoEncoder,
                                           MakeRegPtrMode mode,
                                           unsigned       instrOffset,
                                           regMaskSmall   regMask,
@@ -4690,7 +4690,7 @@ void GCInfo::gcInfoRecordGCRegStateChange(GcInfoEncoder<TargetGcInfoEncoding>* g
  **************************************************************************
  */
 
-void GCInfo::gcMakeVarPtrTable(GcInfoEncoder<TargetGcInfoEncoding>* gcInfoEncoder, MakeRegPtrMode mode)
+void GCInfo::gcMakeVarPtrTable(GcInfoEncoder* gcInfoEncoder, MakeRegPtrMode mode)
 {
     GCENCODER_WITH_LOGGING(gcInfoEncoderWithLog, gcInfoEncoder);
 
@@ -4778,7 +4778,7 @@ void GCInfo::gcMakeVarPtrTable(GcInfoEncoder<TargetGcInfoEncoding>* gcInfoEncode
     }
 }
 
-void GCInfo::gcInfoRecordGCStackArgLive(GcInfoEncoder<TargetGcInfoEncoding>* gcInfoEncoder, MakeRegPtrMode mode, regPtrDsc* genStackPtr)
+void GCInfo::gcInfoRecordGCStackArgLive(GcInfoEncoder* gcInfoEncoder, MakeRegPtrMode mode, regPtrDsc* genStackPtr)
 {
     // On non-x86 platforms, don't have pointer argument push/pop/kill declarations.
     // But we use the same mechanism to record writes into the outgoing argument space...
@@ -4811,7 +4811,7 @@ void GCInfo::gcInfoRecordGCStackArgLive(GcInfoEncoder<TargetGcInfoEncoding>* gcI
     }
 }
 
-void GCInfo::gcInfoRecordGCStackArgsDead(GcInfoEncoder<TargetGcInfoEncoding>* gcInfoEncoder,
+void GCInfo::gcInfoRecordGCStackArgsDead(GcInfoEncoder* gcInfoEncoder,
                                          unsigned       instrOffset,
                                          regPtrDsc*     genStackPtrFirst,
                                          regPtrDsc*     genStackPtrLast)

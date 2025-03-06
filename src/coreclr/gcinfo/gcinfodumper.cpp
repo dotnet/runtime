@@ -602,7 +602,7 @@ GcInfoDumper::EnumerateStateChangesResults GcInfoDumper::EnumerateStateChanges (
     //
     // Decode header information
     //
-    GcInfoDecoder<TargetGcInfoEncoding> hdrdecoder(m_gcTable,
+    GcInfoDecoder hdrdecoder(m_gcTable,
                              (GcInfoDecoderFlags)(  DECODE_SECURITY_OBJECT
                                                   | DECODE_CODE_LENGTH
                                                   | DECODE_GC_LIFETIMES
@@ -808,11 +808,11 @@ PORTABILITY_ASSERT("GcInfoDumper::EnumerateStateChanges is not implemented on th
     //
 
 #ifdef PARTIALLY_INTERRUPTIBLE_GC_SUPPORTED
-    GcInfoDecoder<TargetGcInfoEncoding> safePointDecoder(m_gcTable, (GcInfoDecoderFlags)0, 0);
+    GcInfoDecoder safePointDecoder(m_gcTable, (GcInfoDecoderFlags)0, 0);
 #endif
 
     {
-        GcInfoDecoder<TargetGcInfoEncoding> untrackedDecoder(m_gcTable, DECODE_GC_LIFETIMES, 0);
+        GcInfoDecoder untrackedDecoder(m_gcTable, DECODE_GC_LIFETIMES, 0);
         untrackedDecoder.EnumerateUntrackedSlots(&regdisp,
                     0,
                     &LivePointerCallback,
@@ -837,7 +837,7 @@ PORTABILITY_ASSERT("GcInfoDumper::EnumerateStateChanges is not implemented on th
     {
         BOOL fNewInterruptible = FALSE;
 
-        GcInfoDecoder<TargetGcInfoEncoding> decoder1(m_gcTable,
+        GcInfoDecoder decoder1(m_gcTable,
                                (GcInfoDecoderFlags)(  DECODE_SECURITY_OBJECT
                                                     | DECODE_CODE_LENGTH
                                                     | DECODE_VARARG
@@ -875,7 +875,7 @@ PORTABILITY_ASSERT("GcInfoDumper::EnumerateStateChanges is not implemented on th
         }
 #endif
 
-        GcInfoDecoder<TargetGcInfoEncoding> decoder2(m_gcTable,
+        GcInfoDecoder decoder2(m_gcTable,
                                (GcInfoDecoderFlags)(  DECODE_SECURITY_OBJECT
                                                     | DECODE_CODE_LENGTH
                                                     | DECODE_VARARG
