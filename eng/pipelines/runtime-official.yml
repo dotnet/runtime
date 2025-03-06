@@ -110,7 +110,7 @@ extends:
           - osx_x64
           jobParameters:
             templatePath: 'templates-official'
-            buildArgs: -s clr.corelib+clr.nativecorelib+clr.nativeaotlibs+clr.tools+clr.packages+mono+libs+host.tools+host.pkg+packs -c $(_BuildConfig) /p:DotNetBuildAllRuntimePacks=true
+            buildArgs: -s clr.corelib+clr.nativecorelib+clr.nativeaotlibs+clr.tools+clr.packages+mono+libs+host.tools+host.pkg+packs -restore -build -publish -c $(_BuildConfig) /p:DotNetBuildAllRuntimePacks=true
             nameSuffix: AllRuntimes
             isOfficialBuild: ${{ variables.isOfficialBuild }}
             timeoutInMinutes: 120
@@ -119,7 +119,7 @@ extends:
               - template: /eng/pipelines/common/templates/global-build-step.yml
                 parameters:
                   buildArgs: -s clr.runtime+clr.alljits+clr.nativeaotruntime+host.native -c $(_BuildConfig) /bl:$(Build.SourcesDirectory)/artifacts/logs/$(_BuildConfig)/CoreClrNativeBuild.binlog
-                  displayName: Build managed CoreCLR and host components, Mono, all libraries, and packs
+                  displayName: Build native CoreCLR and host components
               - ${{ if and(ne(variables['System.TeamProject'], 'public'), notin(variables['Build.Reason'], 'PullRequest')) }}:
                 - template: /eng/pipelines/common/macos-sign-with-entitlements.yml
                   parameters:
