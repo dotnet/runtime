@@ -156,16 +156,16 @@ namespace ObjectStackAllocation
             // Stack allocation of boxed structs is now enabled
             CallTestAndVerifyAllocation(BoxSimpleStructAndAddFields, 12, expectedAllocationKind);
 
-            // Fixed-sized stack array cases
-            CallTestAndVerifyAllocation(AllocateArrayWithNonGCElements, 84, expectedAllocationKind);
-            CallTestAndVerifyAllocation(AllocateArrayWithGCElements, 84, expectedAllocationKind);
-            CallTestAndVerifyAllocation(AllocateArrayT<int>, 84, expectedAllocationKind);
-            CallTestAndVerifyAllocation(AllocateArrayT<string>, 84, expectedAllocationKind);
-
             // The remaining tests currently never allocate on the stack
             if (expectedAllocationKind == AllocationKind.Stack) {
                 expectedAllocationKind = AllocationKind.Heap;
             }
+
+            // Fixed-sized stack array cases (allocate in 10p2 because we've disabled array stack allocation)
+            CallTestAndVerifyAllocation(AllocateArrayWithNonGCElements, 84, expectedAllocationKind);
+            CallTestAndVerifyAllocation(AllocateArrayWithGCElements, 84, expectedAllocationKind);
+            CallTestAndVerifyAllocation(AllocateArrayT<int>, 84, expectedAllocationKind);
+            CallTestAndVerifyAllocation(AllocateArrayT<string>, 84, expectedAllocationKind);
 
             // This test calls CORINFO_HELP_ISINSTANCEOFCLASS
             CallTestAndVerifyAllocation(AllocateSimpleClassAndCheckTypeHelper, 1, expectedAllocationKind);
