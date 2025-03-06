@@ -7,7 +7,7 @@
       By default, we will use RID-specific package publishing.
       Every job will publish their RID-specific packages.
       Some RIDs also have OS or arch-specific packages that are published by that RID.
-      
+
       For jobs that don't meet the above rules, we have various controls:
 
       - A job can specify EnableDefaultRidSpecificArtifacts=false as a global property to publish all packages it produces.
@@ -78,20 +78,33 @@
     <FileSignInfo Include="@(AzureLinuxRPM->'%(Filename)%(Extension)')" CertificateName="LinuxSignMariner" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(EnableBlobArtifacts)' == 'true'">
-    <Artifact Include="$(ArtifactsPackagesDir)**\*.tar.gz;
-                       $(ArtifactsPackagesDir)**\*.zip;
-                       $(ArtifactsPackagesDir)**\*.deb;
-                       $(ArtifactsPackagesDir)**\*.rpm;
-                       $(ArtifactsPackagesDir)**\*.pkg;
-                       $(ArtifactsPackagesDir)**\*.exe;
-                       $(ArtifactsPackagesDir)**\*.msi;"
-              Exclude="$(ArtifactsPackagesDir)**\Symbols.runtime.tar.gz"
-              Kind="Blob"
-              IsShipping="$([System.String]::Copy('%(RecursiveDir)').StartsWith('Shipping'))">
+  <ItemGroup Condition="'$(DotNetFinalPublish)' != 'true'">
+    <BlobArtifact Include="$(ArtifactsPackagesDir)**\*.tar.gz;
+                           $(ArtifactsPackagesDir)**\*.zip;
+                           $(ArtifactsPackagesDir)**\*.deb;
+                           $(ArtifactsPackagesDir)**\*.rpm;
+                           $(ArtifactsPackagesDir)**\*.pkg;
+                           $(ArtifactsPackagesDir)**\*.exe;
+                           $(ArtifactsPackagesDir)**\*.msi;"
+                  Exclude="$(ArtifactsPackagesDir)**\Symbols.runtime.tar.gz"
+                  Kind="Blob"
+                  IsShipping="$([System.String]::Copy('%(RecursiveDir)').StartsWith('Shipping'))">
       <!-- Exclude wixpack.zip files from checksum generation -->
       <ChecksumPath Condition="$([System.String]::Copy('%(Filename)%(Extension)').EndsWith('.wixpack.zip')) != 'true'">%(FullPath).sha512</ChecksumPath>
-    </Artifact>
+    </BlobArtifact>
+  </ItemGroup>
+
+  <!-- In the runtime official build, we only sign a subset of files. -->
+  <ItemGroup Condition="'$(DotNetFinalPublish)' == 'true'">
+    <BlobArtifact Include="$(DownloadDirectory)**\*.msi;
+                    $(DownloadDirectory)**\*.exe;
+                    $(DownloadDirectory)**\*.nupkg;
+                    $(DownloadDirectory)**\*.zip"
+          SkipPublish="true" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(EnableBlobArtifacts)' == 'true'">
+    <Artifact Include="@(BlobArtifact)" />
 
     <Artifact Include="$(ArtifactsDir)VSSetup\**\*.zip"
               Condition="Exists('$(ArtifactsDir)VSSetup')"

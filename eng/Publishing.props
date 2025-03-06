@@ -20,6 +20,23 @@
     <AssetManifestName>VerticalManifest.xml</AssetManifestName>
   </PropertyGroup>
 
+  <!-- In the runtime official build, we only sign a subset of files. Add all of our blob artifacts here again for publishing -->
+  <ItemGroup Condition="'$(DotNetFinalPublish)' == 'true'">
+    <BlobArtifact Include="$(ArtifactsPackagesDir)**\*.tar.gz;
+                           $(ArtifactsPackagesDir)**\*.zip;
+                           $(ArtifactsPackagesDir)**\*.deb;
+                           $(ArtifactsPackagesDir)**\*.rpm;
+                           $(ArtifactsPackagesDir)**\*.pkg;
+                           $(ArtifactsPackagesDir)**\*.exe;
+                           $(ArtifactsPackagesDir)**\*.msi;"
+                  Exclude="$(ArtifactsPackagesDir)**\Symbols.runtime.tar.gz"
+                  Kind="Blob"
+                  IsShipping="$([System.String]::Copy('%(RecursiveDir)').StartsWith('Shipping'))">
+      <!-- Exclude wixpack.zip files from checksum generation -->
+      <ChecksumPath Condition="$([System.String]::Copy('%(Filename)%(Extension)').EndsWith('.wixpack.zip')) != 'true'">%(FullPath).sha512</ChecksumPath>
+    </BlobArtifact>
+  </ItemGroup>
+
   <!--
     Mark host-RID-targeting assets as Vertical visibility when building in the VMR.
     We can't use NETCoreSdkRuntimeIdentifier here as the Arcade SDK projects don't import the .NET SDK.
