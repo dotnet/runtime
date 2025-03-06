@@ -34,12 +34,14 @@ jobs:
         clean: true
         fetchDepth: 20
       - ${{ each job in parameters.buildStage.jobs }}:
-        - input: pipelineArtifact
-          artifactName: ${{ job.job }}_Artifacts
-          targetPath: $(Build.SourcesDirectory)\artifacts
-          itemPattern: |
-            **/*
-            !_manifest/**/*
+        # Source Build publishes itself, so we don't need to publish it
+        - ${{ if notIn(job.job, 'Source_Build_Linux_x64')}}:
+          - input: pipelineArtifact
+            artifactName: ${{ job.job }}_Artifacts
+            targetPath: $(Build.SourcesDirectory)\artifacts
+            itemPattern: |
+              **/*
+              !_manifest/**/*
       outputs:
       - output: pipelineArtifact
         displayName: 'Publish BuildLogs'

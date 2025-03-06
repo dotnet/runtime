@@ -192,7 +192,7 @@ extends:
           - windows_x64
           jobParameters:
             templatePath: 'templates-official'
-            buildArgs: -s crossdacpack -c $(_BuildConfig) /p:CrossRuntimeExtractionRoot=$(CrossRuntimeExtractionRoot) $(_SignDiagnosticFilesArgs)
+            buildArgs: -s crossdacpack -restore -build -publish -c $(_BuildConfig) /p:EnableDefaultRidSpecificArtifacts=false /p:CrossRuntimeExtractionRoot=$(CrossRuntimeExtractionRoot) $(_SignDiagnosticFilesArgs)
             nameSuffix: CrossDac
             isOfficialBuild: true
             timeoutInMinutes: 120
@@ -222,6 +222,18 @@ extends:
                 itemPattern: |
                   packages/Release/Shipping/Microsoft.NETCore.App.Runtime.linux-musl-arm64.*.nupkg
                   !packages/Release/Shipping/Microsoft.NETCore.App.Runtime.linux-musl-arm64.*.symbols.nupkg
+              - input: pipelineArtifact
+                artifactName: Build_linux_arm_release_AllRuntimes_Artifacts
+                targetPath: $(Build.ArtifactStagingDirectory)/artifacts/RuntimeDownload
+                itemPattern: |
+                  packages/Release/Shipping/Microsoft.NETCore.App.Runtime.linux-arm.*.nupkg
+                  !packages/Release/Shipping/Microsoft.NETCore.App.Runtime.linux-arm.*.symbols.nupkg
+              - input: pipelineArtifact
+                artifactName: Build_linux_musl_arm_release_AllRuntimes_Artifacts
+                targetPath: $(Build.ArtifactStagingDirectory)/artifacts/RuntimeDownload
+                itemPattern: |
+                  packages/Release/Shipping/Microsoft.NETCore.App.Runtime.linux-musl-arm.*.nupkg
+                  !packages/Release/Shipping/Microsoft.NETCore.App.Runtime.linux-musl-arm.*.symbols.nupkg
             preBuildSteps:
             - powershell: $(Build.SourcesDirectory)/eng/extract-for-crossdac.ps1 -DownloadDirectory $(Build.ArtifactStagingDirectory)/artifacts/RuntimeDownload -ExtractDirectory $(CrossRuntimeExtractionRoot)
               displayName: Extract runtime packs
