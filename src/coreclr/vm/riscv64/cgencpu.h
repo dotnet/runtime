@@ -390,32 +390,6 @@ public:
 // preferred alignment for data
 #define DATA_ALIGNMENT 8
 
-// TODO RISCV64
-struct DECLSPEC_ALIGN(16) UMEntryThunkCode
-{
-    DWORD        m_code[4];
-
-    TADDR       m_pTargetCode;
-    TADDR       m_pvSecretParam;
-
-    void Encode(UMEntryThunkCode *pEntryThunkCodeRX, BYTE* pTargetCode, void* pvSecretParam);
-    void Poison();
-
-    LPCBYTE GetEntryPoint() const
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        return (LPCBYTE)this;
-    }
-
-    static int GetEntryPointOffset()
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        return 0;
-    }
-};
-
 struct HijackArgs
 {
     DWORD64 Fp; // frame pointer

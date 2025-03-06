@@ -2745,10 +2745,6 @@ void Compiler::fgMakeOutgoingStructArgCopy(GenTreeCall* call, CallArg* arg)
         // Here We don't need unsafe value cls check, since the addr of this temp is used only in copyblk.
         tmp = lvaGrabTemp(true DEBUGARG("by-value struct argument"));
         lvaSetStruct(tmp, copyBlkClass, false);
-        if (call->IsVarargs())
-        {
-            lvaSetStructUsedAsVarArg(tmp);
-        }
     }
 
     if (fgUsedSharedTemps != nullptr)
@@ -3346,10 +3342,8 @@ GenTree* Compiler::fgMorphExpandStackArgForVarArgs(GenTreeLclVarCommon* lclNode)
 
     GenTree* argsBaseAddr = gtNewLclvNode(lvaVarargsBaseOfStkArgs, TYP_I_IMPL);
     ssize_t  offset       = (ssize_t)abiInfo.Segment(0).GetStackOffset() - lclNode->GetLclOffs();
-    assert(abiInfo.Segment(0).GetStackOffset() ==
-           (varDsc->GetStackOffset() - codeGen->intRegState.rsCalleeRegArgCount * REGSIZE_BYTES));
-    GenTree* offsetNode = gtNewIconNode(offset, TYP_I_IMPL);
-    GenTree* argAddr    = gtNewOperNode(GT_SUB, TYP_I_IMPL, argsBaseAddr, offsetNode);
+    GenTree* offsetNode   = gtNewIconNode(offset, TYP_I_IMPL);
+    GenTree* argAddr      = gtNewOperNode(GT_SUB, TYP_I_IMPL, argsBaseAddr, offsetNode);
 
     GenTree* argNode;
     if (lclNode->OperIsLocalStore())
@@ -4167,10 +4161,14 @@ bool Compiler::fgCanFastTailCall(GenTreeCall* callee, const char** failReason)
 #endif // TARGET_ARM || TARGET_RISCV64
 
 #if defined(TARGET_ARM) || defined(TARGET_RISCV64)
-    if (compHasSplitParam)
+    for (unsigned lclNum = 0; lclNum < info.compArgsCount; lclNum++)
     {
-        reportFastTailCallDecision("Argument splitting in caller is not supported on " TARGET_READABLE_NAME);
-        return false;
+        const ABIPassingInformation& abiInfo = lvaGetParameterABIInfo(lclNum);
+        if (abiInfo.IsSplitAcrossRegistersAndStack())
+        {
+            reportFastTailCallDecision("Argument splitting in caller is not supported on " TARGET_READABLE_NAME);
+            return false;
+        }
     }
 #endif // TARGET_ARM || TARGET_RISCV64
 
@@ -5864,7 +5862,6 @@ void Compiler::fgMorphTailCallViaJitHelper(GenTreeCall* call)
         call->gtArgs.Remove(thisArg);
     }
 
-    assert(lvaParameterStackSize == (compArgSize - codeGen->intRegState.rsCalleeRegArgCount * REGSIZE_BYTES));
     unsigned nOldStkArgsWords = lvaParameterStackSize / REGSIZE_BYTES;
     GenTree* arg3Node         = gtNewIconNode((ssize_t)nOldStkArgsWords, TYP_I_IMPL);
     CallArg* arg3 =
@@ -10836,6 +10833,14 @@ GenTree* Compiler::fgMorphHWIntrinsic(GenTreeHWIntrinsic* tree)
         tree->AddAllEffectsFlags(operand);
     }
 
+#ifdef TARGET_XARCH
+    if (intrinsicId == NI_Vector128_op_Division || intrinsicId == NI_Vector256_op_Division)
+    {
+        fgAddCodeRef(compCurBB, SCK_DIV_BY_ZERO);
+        fgAddCodeRef(compCurBB, SCK_OVERFLOW);
+    }
+#endif // TARGET_XARCH
+
     if (opts.OptimizationEnabled())
     {
         var_types   retType         = tree->TypeGet();
@@ -13383,47 +13388,22 @@ void Compiler::fgSetOptions()
         codeGen->setFramePointerRequired(true);
     }
 
-    // Assert that the EH table has been initialized by now. Note that
-    // compHndBBtabAllocCount never decreases; it is a high-water mark
-    // of table allocation. In contrast, compHndBBtabCount does shrink
-    // if we delete a dead EH region, and if it shrinks to zero, the
-    // table pointer compHndBBtab is unreliable.
-    assert(compHndBBtabAllocCount >= info.compXcptnsCount);
-
-#ifdef TARGET_X86
-
-    // Note: this case, and the !X86 case below, should both use the
-    // !X86 path. This would require a few more changes for X86 to use
-    // compHndBBtabCount (the current number of EH clauses) instead of
-    // info.compXcptnsCount (the number of EH clauses in IL), such as
-    // in ehNeedsShadowSPslots(). This is because sometimes the IL has
-    // an EH clause that we delete as statically dead code before we
-    // get here, leaving no EH clauses left, and thus no requirement
-    // to use a frame pointer because of EH. But until all the code uses
-    // the same test, leave info.compXcptnsCount here. Also test for
-    // CORINFO_FLG_SYNCH methods which are converted into try-finally
-    // with Monitor helper calls in funclet ABI and need to be treated
-    // as methods with EH.
-    if (info.compXcptnsCount > 0 || (UsesFunclets() && (info.compFlags & CORINFO_FLG_SYNCH)))
+    // If there is EH, we need a frame pointer.
+    // Note this may premature... we can eliminate all EH after morph, sometimes.
+    //
+    if (compHndBBtabCount > 0)
     {
         codeGen->setFramePointerRequiredEH(true);
 
+#ifdef TARGET_X86
         if (UsesFunclets())
         {
             assert(!codeGen->isGCTypeFixed());
             // Enforce fully interruptible codegen for funclet unwinding
             SetInterruptible(true);
         }
-    }
-
-#else // !TARGET_X86
-
-    if (compHndBBtabCount > 0)
-    {
-        codeGen->setFramePointerRequiredEH(true);
-    }
-
 #endif // TARGET_X86
+    }
 
     if (compMethodRequiresPInvokeFrame())
     {
@@ -14175,14 +14155,12 @@ PhaseStatus Compiler::fgMarkImplicitByRefCopyOmissionCandidates()
                     continue;
                 }
 
-                unsigned structSize =
-                    argNode->TypeIs(TYP_STRUCT) ? argNode->GetLayout(m_compiler)->GetSize() : genTypeSize(argNode);
+                if (!call->gtArgs.IsAbiInformationDetermined())
+                {
+                    call->gtArgs.DetermineABIInfo(m_compiler, call);
+                }
 
-                Compiler::structPassingKind passKind;
-                m_compiler->getArgTypeForStruct(arg.GetSignatureClassHandle(), &passKind, call->IsVarargs(),
-                                                structSize);
-
-                if (passKind != SPK_ByReference)
+                if (!arg.AbiInfo.IsPassedByReference())
                 {
                     continue;
                 }
@@ -14263,10 +14241,6 @@ PhaseStatus Compiler::fgRetypeImplicitByRefArgs()
                 varDsc = lvaGetDesc(lclNum);
 
                 lvaSetStruct(newLclNum, varDsc->GetLayout(), true);
-                if (info.compIsVarArgs)
-                {
-                    lvaSetStructUsedAsVarArg(newLclNum);
-                }
 
                 // Copy the struct promotion annotations to the new temp.
                 LclVarDsc* newVarDsc       = lvaGetDesc(newLclNum);
@@ -14363,10 +14337,6 @@ PhaseStatus Compiler::fgRetypeImplicitByRefArgs()
                     // the parameter which is really a pointer to the struct.
                     fieldVarDsc->lvIsRegArg      = false;
                     fieldVarDsc->lvIsMultiRegArg = false;
-                    fieldVarDsc->SetArgReg(REG_NA);
-#if FEATURE_MULTIREG_ARGS
-                    fieldVarDsc->SetOtherArgReg(REG_NA);
-#endif
                     // Promoted fields of implicit byrefs can't be OSR locals.
                     //
                     if (fieldVarDsc->lvIsOSRLocal)

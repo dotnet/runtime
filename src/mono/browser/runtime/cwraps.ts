@@ -16,7 +16,6 @@ import { mono_assert } from "./globals";
 type SigLine = [lazyOrSkip: boolean | (() => boolean), name: string, returnType: string | null, argTypes?: string[], opts?: any];
 
 const threading_cwraps: SigLine[] = WasmEnableThreads ? [
-    // MONO.diagnostics
     [false, "mono_wasm_init_finalizer_thread", null, []],
     [false, "mono_wasm_invoke_jsexport_async_post", "void", ["number", "number", "number"]],
     [false, "mono_wasm_invoke_jsexport_sync_send", "void", ["number", "number", "number"]],
@@ -139,7 +138,6 @@ const fn_signatures: SigLine[] = [
 ];
 
 export interface t_ThreadingCwraps {
-    // MONO.diagnostics
     mono_wasm_init_finalizer_thread(): void;
     mono_wasm_invoke_jsexport_async_post(targetTID: PThreadPtr, method: MonoMethod, args: VoidPtr): void;
     mono_wasm_invoke_jsexport_sync_send(targetTID: PThreadPtr, method: MonoMethod, args: VoidPtr): void;
