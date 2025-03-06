@@ -19,7 +19,7 @@ namespace System
         {
             // Fallback path for hosts that do not set APP_CONTEXT_BASE_DIRECTORY explicitly
 #if NATIVEAOT
-            string? path = GetRuntimeModulePath();
+            string? path = Environment.ProcessPath;
 #else
             string? path = Assembly.GetEntryAssembly()?.Location;
 #endif
