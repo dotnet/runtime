@@ -1715,7 +1715,6 @@ bool emitter::TakesEvexPrefix(const instrDesc* id) const
     if (HasHighSIMDReg(id) || (id->idOpSize() == EA_64BYTE) || HasMaskReg(id))
     {
         // Requires the EVEX encoding due to used registers
-#ifdef TARGET_AMD64
         // A special case here is KMOV, the original KMOV introduced in Avx512 can only be encoded in VEX, APX promoted
         // them to EVEX, so only return true when APX is available.
         if ((ins == INS_kmovb_msk) || (ins == INS_kmovw_msk) || (ins == INS_kmovd_msk) || (ins == INS_kmovq_msk) ||
@@ -1724,7 +1723,6 @@ bool emitter::TakesEvexPrefix(const instrDesc* id) const
             // Use EVEX only when needed.
             return HasExtendedGPReg(id);
         }
-#endif // TARGET_AMD64
         return true;
     }
 
