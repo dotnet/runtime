@@ -7230,26 +7230,7 @@ void CodeGen::genReturn(GenTree* treeNode)
 
     if (treeNode->OperIs(GT_RETURN, GT_SWIFT_ERROR_RET))
     {
-        const ReturnTypeDesc& retTypeDesc = compiler->compRetTypeDesc;
-
-        if (compiler->compMethodReturnsRetBufAddr())
-        {
-            gcInfo.gcMarkRegPtrVal(REG_INTRET, TYP_BYREF);
-        }
-        else
-        {
-            unsigned retRegCount = retTypeDesc.GetReturnRegCount();
-            for (unsigned i = 0; i < retRegCount; ++i)
-            {
-                gcInfo.gcMarkRegPtrVal(retTypeDesc.GetABIReturnReg(i, compiler->info.compCallConv),
-                                       retTypeDesc.GetReturnRegType(i));
-            }
-        }
-
-        if (compiler->compIsAsync2())
-        {
-            gcInfo.gcMarkRegPtrVal(REG_ASYNC_CONTINUATION_RET, TYP_REF);
-        }
+        genMarkReturnGCInfo();
     }
 
 #ifdef PROFILING_SUPPORTED
@@ -7333,6 +7314,32 @@ void CodeGen::genReturnSuspend(GenTreeUnOp* treeNode)
             regNumber returnReg = retTypeDesc.GetABIReturnReg(i, compiler->info.compCallConv);
             instGen_Set_Reg_To_Zero(EA_PTRSIZE, returnReg);
         }
+    }
+
+    genMarkReturnGCInfo();
+}
+
+void CodeGen::genMarkReturnGCInfo()
+{
+    const ReturnTypeDesc& retTypeDesc = compiler->compRetTypeDesc;
+
+    if (compiler->compMethodReturnsRetBufAddr())
+    {
+        gcInfo.gcMarkRegPtrVal(REG_INTRET, TYP_BYREF);
+    }
+    else
+    {
+        unsigned retRegCount = retTypeDesc.GetReturnRegCount();
+        for (unsigned i = 0; i < retRegCount; ++i)
+        {
+            gcInfo.gcMarkRegPtrVal(retTypeDesc.GetABIReturnReg(i, compiler->info.compCallConv),
+                                   retTypeDesc.GetReturnRegType(i));
+        }
+    }
+
+    if (compiler->compIsAsync2())
+    {
+        gcInfo.gcMarkRegPtrVal(REG_ASYNC_CONTINUATION_RET, TYP_REF);
     }
 }
 

@@ -1376,6 +1376,7 @@ protected:
 
     void genReturn(GenTree* treeNode);
     void genReturnSuspend(GenTreeUnOp* treeNode);
+    void genMarkReturnGCInfo();
 
 #ifdef SWIFT_SUPPORT
     void genSwiftErrorReturn(GenTree* treeNode);
