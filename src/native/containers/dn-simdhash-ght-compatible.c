@@ -56,9 +56,8 @@ dn_simdhash_ght_replaced (dn_simdhash_ght_data data, void * old_key, void * new_
 
 #define DN_SIMDHASH_ON_REMOVE dn_simdhash_ght_removed
 #define DN_SIMDHASH_ON_REPLACE dn_simdhash_ght_replaced
-// perfect cache alignment. 128-byte buckets for 64-bit pointers, 64-byte buckets for 32-bit pointers
 #if SIZEOF_VOID_P == 8
-#define DN_SIMDHASH_BUCKET_CAPACITY 14
+#define DN_SIMDHASH_BUCKET_CAPACITY 11
 #else
 #define DN_SIMDHASH_BUCKET_CAPACITY 12
 #endif
