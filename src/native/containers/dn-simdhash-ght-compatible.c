@@ -65,13 +65,13 @@ dn_simdhash_ght_replaced (dn_simdhash_ght_data data, void * old_key, void * new_
 
 #include "dn-simdhash-specialization.h"
 
-unsigned int
+static unsigned int
 dn_simdhash_ght_default_hash (const void * key)
 {
 	return (unsigned int)(size_t)key;
 }
 
-int32_t
+static int32_t
 dn_simdhash_ght_default_comparer (const void * a, const void * b)
 {
 	return a == b;
