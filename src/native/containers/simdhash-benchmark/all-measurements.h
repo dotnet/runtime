@@ -245,16 +245,13 @@ MEASUREMENT(ght_find_missing_key, GHashTable *, create_instance_ght_random_value
 MEASUREMENT(dnght_find_random_keys, dn_simdhash_ght_t *, create_instance_dnght_random_values, destroy_instance_dnght, {
     for (int i = 0; i < INNER_COUNT; i++) {
         uint32_t key = *dn_vector_index_t(random_u32s, uint32_t, i);
-        gpointer value;
-        dn_simdhash_assert(dn_simdhash_ght_try_get_value(data, (gpointer)(size_t)key, &value));
-        dn_simdhash_assert(value == (gpointer)(size_t)i);
+        dn_simdhash_assert(dn_simdhash_ght_get_value_or_default(data, (gpointer)(size_t)key) == (gpointer)(size_t)i);
     }
 })
 
 MEASUREMENT(dnght_find_missing_key, dn_simdhash_ght_t *, create_instance_dnght_random_values, destroy_instance_dnght, {
     for (int i = 0; i < INNER_COUNT; i++) {
         uint32_t key = *dn_vector_index_t(random_unused_u32s, uint32_t, i);
-        gpointer value;
-        dn_simdhash_assert(!dn_simdhash_ght_try_get_value(data, (gpointer)(size_t)key, &value));
+        dn_simdhash_assert(!dn_simdhash_ght_get_value_or_default(data, (gpointer)(size_t)key));
     }
 })

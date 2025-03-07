@@ -3355,7 +3355,7 @@ mono_metadata_get_inflated_signature (MonoMethodSignature *sig, MonoGenericConte
 		mm->gsignature_cache = dn_simdhash_ght_new_full (inflated_signature_hash, inflated_signature_equal, NULL, (GDestroyNotify)free_inflated_signature, 256, NULL);
 
 	// FIXME: The lookup is done on the newly allocated sig so it always fails
-	dn_simdhash_ght_try_get_value (mm->gsignature_cache, &helper, (gpointer *)&res);
+	res = dn_simdhash_ght_get_value_or_default (mm->gsignature_cache, &helper);
 	if (!res) {
 		res = mono_mem_manager_alloc0 (mm, sizeof (MonoInflatedMethodSignature));
 		// FIXME: sig is an inflated signature not owned by the mem manager
@@ -3498,8 +3498,7 @@ mono_metadata_get_canonical_generic_inst (MonoGenericInst *candidate)
 	if (!mm->ginst_cache)
 		mm->ginst_cache = dn_simdhash_ght_new_full (mono_metadata_generic_inst_hash, mono_metadata_generic_inst_equal, NULL, (GDestroyNotify)free_generic_inst, 0, NULL);
 
-	MonoGenericInst *ginst = NULL;
-	dn_simdhash_ght_try_get_value (mm->ginst_cache, candidate, (void **)&ginst);
+	MonoGenericInst *ginst = dn_simdhash_ght_get_value_or_default (mm->ginst_cache, candidate);
 	if (!ginst) {
 		int size = MONO_SIZEOF_GENERIC_INST + type_argc * sizeof (MonoType *);
 		ginst = (MonoGenericInst *)mono_mem_manager_alloc0 (mm, size);
