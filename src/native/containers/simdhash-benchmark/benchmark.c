@@ -122,9 +122,6 @@ void foreach_measurement (const char *name, void *_info, void *_args) {
     if (!match)
         return;
 
-    printf("%s: ", name);
-    fflush(stdout);
-
     run_measurement(100, info->setup, info->func, info->teardown);
 
     int64_t overhead = run_measurement(1, info->setup, info->func, info->teardown);
@@ -136,6 +133,9 @@ void foreach_measurement (const char *name, void *_info, void *_args) {
         warmup_until = get_100ns_ticks() + warmup_duration,
         warmup_elapsed_total = 0,
         warmup_count = 0;
+
+    printf("%s: ", name);
+    fflush(stdout);
 
     do {
         warmup_elapsed_total += run_measurement(warmup_iterations, info->setup, info->func, info->teardown) - overhead;
@@ -201,6 +201,14 @@ int main (int argc, char* argv[]) {
         case 1:
             // no benchmarks run
             fprintf(stderr, "No benchmarks run. List of all benchmarks follows:\n");
+
+
+#undef MEASUREMENT
+#define MEASUREMENT(name, data_type, setup, teardown, body) \
+    fprintf(stderr, "  %s\n", #name);
+
+#include "all-measurements.h"
+
             break;
         default:
             fprintf(stderr, "Unknown failure!\n");
