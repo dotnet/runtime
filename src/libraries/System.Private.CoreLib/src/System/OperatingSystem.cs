@@ -242,8 +242,12 @@ namespace System
             false;
 #endif
 
-        internal static bool IsApplePlatform() =>
-#if TARGET_OSX || TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
+        /// <summary>
+        /// Indicates whether the current application is running on Apple platforms, including macOS, iOS, tvOS, watchOS, and Mac Catalyst.
+        /// </summary>
+        [NonVersionable]
+        public static bool IsApplePlatform() =>
+#if TARGET_OSX || TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS || TARGET_WATCHOS
             true;
 #else
             false;
