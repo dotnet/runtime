@@ -1606,12 +1606,15 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
                         }
                     }
                 }
-                else if (resolveTokens && (methodSig.retType != CORINFO_TYPE_CLASS ||
-                                           info.compCompHnd->isExactType(methodSig.retTypeClass)))
+                else if (resolveTokens && !exactSigRet && methodSig.retType != CORINFO_TYPE_VOID)
                 {
-                    // The method returns an object of an exact class.
-                    pushedStack.PushExactClass();
-                    handled = true;
+                    if (methodSig.retType != CORINFO_TYPE_CLASS ||
+                        info.compCompHnd->isExactType(methodSig.retTypeClass))
+                    {
+                        // The method returns an object of an exact class.
+                        pushedStack.PushExactClass();
+                        handled = true;
+                    }
                 }
 
                 if ((codeAddr < codeEndp - sz) && (OPCODE)getU1LittleEndian(codeAddr + sz) == CEE_RET)
