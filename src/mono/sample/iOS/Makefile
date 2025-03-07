@@ -42,6 +42,7 @@ build-appbundle: clean appbuilder
 	/p:StripDebugSymbols=$(STRIP_DEBUG_SYMBOLS) \
 	/p:DeployAndRun=false \
 	/p:HybridGlobalization=$(HYBRID_GLOBALIZATION) \
+    /clp:Summary \
 	/bl
 
 run: clean appbuilder

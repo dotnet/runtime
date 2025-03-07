@@ -57,6 +57,7 @@ run: appbuilder
 	/p:RuntimeFlavor=$(RUNTIME_FLAVOR) \
 	/p:PublishReadyToRun=$(R2R) \
 	/p:PublishReadyToRunComposite=$(R2R_COMPOSITE) \
+    /clp:Summary \
 	/bl
 clean:
 	rm -rf $(REPO_DIR)/artifacts/bin/AndroidSampleApp
