@@ -328,6 +328,10 @@ void DefaultPolicy::NoteBool(InlineObservation obs, bool value)
                 m_ArgFeedsIsKnownConst = true;
                 break;
 
+            case InlineObservation::CALLEE_MORE_DERIVED_RETURNS:
+                m_CalleeReturnsDerivedType = true;
+                break;
+
             case InlineObservation::CALLEE_UNSUPPORTED_OPCODE:
                 propagate = true;
                 break;
@@ -714,6 +718,14 @@ double DefaultPolicy::DetermineMultiplier()
         JITDUMP("\nmultiplier in instance constructors increased to %g.", multiplier);
     }
 
+    // Bump up the multiplier for methods that return a more derived type
+
+    if (m_CalleeReturnsDerivedType)
+    {
+        multiplier += 4;
+        JITDUMP("\nmultiplier in methods that return a more derived type increased to %g.", multiplier);
+    }
+
     // Bump up the multiplier for methods in promotable struct
 
     if (m_IsFromPromotableValueClass)
@@ -1042,6 +1054,7 @@ void DefaultPolicy::OnDumpXml(FILE* file, unsigned indent) const
     XATTR_B(m_IsNoReturn)
     XATTR_B(m_IsNoReturnKnown)
     XATTR_B(m_InsideThrowBlock)
+    XATTR_B(m_CalleeReturnsDerivedType)
 }
 #endif
 
@@ -1524,6 +1537,12 @@ double ExtendedDefaultPolicy::DetermineMultiplier()
     {
         multiplier += 1.5;
         JITDUMP("\nmultiplier in instance constructors increased to %g.", multiplier);
+    }
+
+    if (m_CalleeReturnsDerivedType)
+    {
+        multiplier += 4.0;
+        JITDUMP("\nmultiplier in methods that return a more derived type increased to %g.", multiplier);
     }
 
     if (m_IsFromValueClass)
@@ -2708,6 +2727,7 @@ void DiscretionaryPolicy::DumpSchema(FILE* file) const
     fprintf(file, ",CalleeDoesNotReturn");
     fprintf(file, ",CalleeHasGCStruct");
     fprintf(file, ",CallsiteDepth");
+    fprintf(file, ",CalleeReturnsDerivedType");
 }
 
 //------------------------------------------------------------------------
@@ -2792,6 +2812,7 @@ void DiscretionaryPolicy::DumpData(FILE* file) const
     fprintf(file, ",%u", m_IsNoReturn ? 1 : 0);
     fprintf(file, ",%u", m_CalleeHasGCStruct ? 1 : 0);
     fprintf(file, ",%u", m_CallsiteDepth);
+    fprintf(file, ",%u", m_CalleeReturnsDerivedType ? 1 : 0);
 }
 
 #endif // defined(DEBUG)

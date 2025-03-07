@@ -113,6 +113,7 @@ public:
         , m_ConstArgFeedsIsKnownConst(false)
         , m_ArgFeedsIsKnownConst(false)
         , m_InsideThrowBlock(false)
+        , m_CalleeReturnsDerivedType(false)
     {
         // empty
     }
@@ -189,6 +190,7 @@ protected:
     bool                    m_ConstArgFeedsIsKnownConst  : 1;
     bool                    m_ArgFeedsIsKnownConst       : 1;
     bool                    m_InsideThrowBlock           : 1;
+    bool                    m_CalleeReturnsDerivedType   : 1;
 };
 
 // ExtendedDefaultPolicy is a slightly more aggressive variant of
