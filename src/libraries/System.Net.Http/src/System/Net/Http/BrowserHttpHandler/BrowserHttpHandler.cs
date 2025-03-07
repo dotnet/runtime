@@ -9,6 +9,7 @@ using System.Net.Security;
 using System.Runtime.InteropServices.JavaScript;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Net.Http
 {
@@ -133,6 +134,9 @@ namespace System.Net.Http
         private static readonly HttpRequestOptionsKey<bool> EnableStreamingRequest = new HttpRequestOptionsKey<bool>("WebAssemblyEnableStreamingRequest");
         private static readonly HttpRequestOptionsKey<bool> EnableStreamingResponse = new HttpRequestOptionsKey<bool>("WebAssemblyEnableStreamingResponse");
         private static readonly HttpRequestOptionsKey<IDictionary<string, object>> FetchOptions = new HttpRequestOptionsKey<IDictionary<string, object>>("WebAssemblyFetchOptions");
+
+        [FeatureSwitchDefinition("System.Net.Http.WasmEnableStreamingResponse")]
+        internal static bool FeatureEnableStreamingResponse { get; } = AppContextConfigHelper.GetBooleanConfig("System.Net.Http.WasmEnableStreamingResponse", "DOTNET_WASM_ENABLE_STREAMING_RESPONSE", defaultValue: true);
 
         internal readonly JSObject _jsController;
         private readonly CancellationTokenRegistration _abortRegistration;
@@ -314,7 +318,17 @@ namespace System.Net.Http
                     responseMessage.SetReasonPhraseWithoutValidation(responseType);
                 }
 
-                responseMessage.Content = (_request.Options.TryGetValue(EnableStreamingResponse, out var streamingResponseEnabled) ? streamingResponseEnabled : true) && BrowserHttpInterop.SupportsStreamingResponse()
+                bool streamingResponseEnabled = FeatureEnableStreamingResponse;
+                if (_request.Options.TryGetValue(EnableStreamingResponse, out var reqStreamingResponseEnabled))
+                {
+                    streamingResponseEnabled = reqStreamingResponseEnabled;
+                }
+                if (streamingResponseEnabled && !BrowserHttpInterop.SupportsStreamingResponse())
+                {
+                    throw new PlatformNotSupportedException("Streaming response is not supported in this browser.");
+                }
+
+                responseMessage.Content = streamingResponseEnabled
                     ? new StreamContent(new BrowserHttpReadStream(this))
                     : new BrowserHttpContent(this);
 
@@ -575,5 +589,25 @@ namespace System.Net.Http
             throw new NotSupportedException();
         }
         #endregion
+    }
+
+    internal static class AppContextConfigHelper
+    {
+        internal static bool GetBooleanConfig(string switchName, string envVariable, bool defaultValue = false)
+        {
+            string? str = Environment.GetEnvironmentVariable(envVariable);
+            if (str != null)
+            {
+                if (str == "1" || str.Equals("true", StringComparison.OrdinalIgnoreCase))
+                {
+                    return true;
+                }
+                if (str == "0" || str.Equals("false", StringComparison.OrdinalIgnoreCase))
+                {
+                    return false;
+                }
+            }
+            return AppContext.TryGetSwitch(switchName, out bool value) ? value : defaultValue;
+        }
     }
 }

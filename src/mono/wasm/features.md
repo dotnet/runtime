@@ -55,6 +55,14 @@ Because web browsers do not expose direct access to sockets, we are unable to pr
 
 A prominent limitation is that your application must obey `Cross-Origin Resource Sharing` (CORS) rules in order to perform network requests successfully - see [CORS on MDN](https://developer.mozilla.org/en-US/docs/Web/HTTP/CORS) for more information.
 
+Since Net 10 Preview 3 the HTTP client supports [streaming HTTP response](https://developer.mozilla.org/en-US/docs/Web/API/Streams_API/Using_readable_streams#consuming_a_fetch_as_a_stream) by default because all evergreen browsers now support it.
+
+This is a breaking change because the `response.Content.ReadAsStreamAsync()` is no longer `MemoryStream` but `BrowserHttpReadStream` which doesn't support synchronous operations like `Stream.Read(Span<Byte>)`. If your code uses synchronous operations, you can disable the feature or copy the stream into `MemoryStream` yourself.
+
+If you need to disable it, you can use `<WasmEnableStreamingResponse>false</WasmEnableStreamingResponse>` or `DOTNET_WASM_ENABLE_STREAMING_RESPONSE` env variable to do it for all HTTP requests.
+
+Or you can use `request.Options.Set(new HttpRequestOptionsKey<bool>("WebAssemblyEnableStreamingResponse"), true);` for individual request.
+
 ### WebSocket
 Applications using the [WebSocketClient](https://learn.microsoft.com/dotnet/api/system.net.websockets.clientwebsocket) managed API will require the browser to support the [WebSocket](https://developer.mozilla.org/en-US/docs/Web/API/WebSockets_API) API.
 
