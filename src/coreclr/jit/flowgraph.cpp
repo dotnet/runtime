@@ -1864,10 +1864,6 @@ private:
     // merged constant return blocks.
     INT64 returnConstants[ReturnCountHardLimit];
 
-    // Indicators of where in the lexical block list we'd like to place
-    // each constant return block.
-    BasicBlock* insertionPoints[ReturnCountHardLimit];
-
     // Number of return blocks allowed
     PhasedVar<unsigned> maxReturns;
 
@@ -2137,13 +2133,6 @@ private:
                     assert(returnBlock->lastStmt()->GetRootNode()->OperIs(GT_RETURN));
                     assert(returnBlock->lastStmt()->GetRootNode()->gtGetOp1()->IsIntegralConst());
                     comp->fgRemoveStmt(returnBlock, returnBlock->lastStmt());
-
-                    // Using 'returnBlock' as the insertion point for 'mergedReturnBlock'
-                    // will give it a chance to use fallthrough rather than BBJ_ALWAYS.
-                    // Resetting this after each merge ensures that any branches to the
-                    // merged return block are lexically forward.
-
-                    insertionPoints[index] = returnBlock;
 
                     // Update profile information in the mergedReturnBlock to
                     // reflect the additional flow.
