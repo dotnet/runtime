@@ -69,7 +69,9 @@ dn_simdhash_ght_replaced (dn_simdhash_ght_data data, void * old_key, void * new_
 static unsigned int
 dn_simdhash_ght_default_hash (const void * key)
 {
-	return (unsigned int)(size_t)key;
+    // You might think we should avalanche the key bits but in my testing, it doesn't help.
+    // Right now the default hash function is rarely used anyway
+    return (unsigned int)(size_t)key;
 }
 
 static int32_t
