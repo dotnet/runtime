@@ -98,6 +98,7 @@ CompPhaseNameMacro(PHASE_VN_COPY_PROP,               "VN based copy prop",      
 CompPhaseNameMacro(PHASE_VN_BASED_INTRINSIC_EXPAND,  "VN based intrinsic expansion",   false, -1, false)
 CompPhaseNameMacro(PHASE_OPTIMIZE_BRANCHES,          "Redundant branch opts",          false, -1, false)
 CompPhaseNameMacro(PHASE_ASSERTION_PROP_MAIN,        "Assertion prop",                 false, -1, false)
+CompPhaseNameMacro(PHASE_RANGE_CHECK_CLONING,        "Clone blocks with range checks", false, -1, false)
 CompPhaseNameMacro(PHASE_IF_CONVERSION,              "If conversion",                  false, -1, false)
 CompPhaseNameMacro(PHASE_VN_BASED_DEAD_STORE_REMOVAL,"VN-based dead store removal",    false, -1, false)
 CompPhaseNameMacro(PHASE_EMPTY_FINALLY_3,            "Remove empty finally 3",         false, -1, false)
@@ -114,6 +115,7 @@ CompPhaseNameMacro(PHASE_INSERT_GC_POLLS,            "Insert GC Polls",         
 CompPhaseNameMacro(PHASE_CREATE_THROW_HELPERS,       "Create throw helper blocks",     false, -1, true)
 CompPhaseNameMacro(PHASE_DETERMINE_FIRST_COLD_BLOCK, "Determine first cold block",     false, -1, true)
 CompPhaseNameMacro(PHASE_RATIONALIZE,                "Rationalize IR",                 false, -1, false)
+CompPhaseNameMacro(PHASE_REPAIR_PROFILE,             "Repair profile",                 false, -1, false)
 
 CompPhaseNameMacro(PHASE_LCLVARLIVENESS,             "Local var liveness",             true,  -1, false)
 CompPhaseNameMacro(PHASE_LCLVARLIVENESS_INIT,        "Local var liveness init",        false, PHASE_LCLVARLIVENESS, false)

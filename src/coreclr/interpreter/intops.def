@@ -1,0 +1,13 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license
+
+// OPDEF (opsymbol, opstring, oplength, numDestVars (0 or 1), numSourceVars, optype)
+// Currently, opcode, dvar offset, svar offsets as well as any additional instruction data
+// are stored in uint32_t slots in the instruction stream for simplicity. In the future
+// we should add compact opcodes where all data is in uint16_t slots.
+
+OPDEF(INTOP_NOP, "nop", 1, 0, 0, InterpOpNoArgs)
+OPDEF(INTOP_RET, "ret", 2, 0, 1, InterpOpNoArgs)
+OPDEF(INTOP_RET_VOID, "ret.void", 1, 0, 0, InterpOpNoArgs)
+
+OPDEF(INTOP_LDC_I4, "ldc.i4", 3, 1, 0, InterpOpInt)
