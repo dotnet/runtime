@@ -2889,8 +2889,7 @@ public:
                         (OBJECTREF*)&(ObjRefStruct),                    \
                         sizeof(ObjRefStruct)/sizeof(OBJECTREF),         \
                         FALSE);                                         \
-                /* work around unreachable code warning */              \
-                if (true) { DEBUG_ASSURE_NO_RETURN_BEGIN(GCPROTECT)
+                {
 
 #define GCPROTECT_BEGIN_THREAD(pThread, ObjRefStruct)           do {    \
                 GCFrame __gcframe(                                      \
@@ -2898,16 +2897,14 @@ public:
                         (OBJECTREF*)&(ObjRefStruct),                    \
                         sizeof(ObjRefStruct)/sizeof(OBJECTREF),         \
                         FALSE);                                         \
-                /* work around unreachable code warning */              \
-                if (true) { DEBUG_ASSURE_NO_RETURN_BEGIN(GCPROTECT)
+                {
 
 #define GCPROTECT_ARRAY_BEGIN(ObjRefArray,cnt) do {                     \
                 GCFrame __gcframe(                                      \
                         (OBJECTREF*)&(ObjRefArray),                     \
                         cnt * sizeof(ObjRefArray) / sizeof(OBJECTREF),  \
                         FALSE);                                         \
-                /* work around unreachable code warning */              \
-                if (true) { DEBUG_ASSURE_NO_RETURN_BEGIN(GCPROTECT)
+                {
 
 #define GCPROTECT_BEGININTERIOR(ObjRefStruct)           do {            \
                 /* work around Wsizeof-pointer-div warning as we */     \
@@ -2917,20 +2914,18 @@ public:
                         (OBJECTREF*)&(ObjRefStruct),                    \
                         subjectSize/sizeof(OBJECTREF),                  \
                         TRUE);                                          \
-                /* work around unreachable code warning */              \
-                if (true) { DEBUG_ASSURE_NO_RETURN_BEGIN(GCPROTECT)
+                {
 
 #define GCPROTECT_BEGININTERIOR_ARRAY(ObjRefArray,cnt) do {             \
                 GCFrame __gcframe(                                      \
                         (OBJECTREF*)&(ObjRefArray),                     \
                         cnt,                                            \
                         TRUE);                                          \
-                /* work around unreachable code warning */              \
-                if (true) { DEBUG_ASSURE_NO_RETURN_BEGIN(GCPROTECT)
+                {
 
 
 #define GCPROTECT_END()                                                 \
-                DEBUG_ASSURE_NO_RETURN_END(GCPROTECT) }                 \
+                }                                                       \
                 } while(0)
 
 
