@@ -8408,16 +8408,8 @@ public:
             reg     = REG_EAX;
             regMask = RBM_EAX;
 #elif defined(TARGET_AMD64)
-            if (isNativeAOT)
-            {
-                reg     = REG_R10;
-                regMask = RBM_R10;
-            }
-            else
-            {
-                reg     = REG_R11;
-                regMask = RBM_R11;
-            }
+            reg     = REG_R11;
+            regMask = RBM_R11;
 #elif defined(TARGET_ARM)
             if (isNativeAOT)
             {
