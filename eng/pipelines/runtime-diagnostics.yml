@@ -9,6 +9,8 @@ resources:
 
 variables:
   - template: /eng/pipelines/common/variables.yml
+  - name: diagJobTemplate
+    value: /eng/common/templates/job/job.yml
 
 schedules:
 - cron: "30 2 * * *"
@@ -37,7 +39,7 @@ extends:
             timeoutInMinutes: 360
       - template: /eng/pipelines/build.yml@diagnostics
         parameters:
-          jobTemplate: /eng/common/templates/job/job.yml@diagnostics
+          jobTemplate: ${{ variables.diagJobTemplate }}
           name: Windows
           osGroup: Windows_NT
           buildConfigs:
