@@ -14,6 +14,63 @@ namespace Microsoft.Extensions.DependencyInjection.Specification
         protected abstract IServiceProvider CreateServiceProvider(IServiceCollection collection);
 
         [Fact]
+        public void QueryWithIEnumerable()
+        {
+            Service service = new();
+            Service keyedService = new();
+            Service anykeyService = new();
+            Service nullkeyService = new();
+
+            ServiceCollection serviceCollection = new();
+            serviceCollection.AddSingleton<IService>(service);
+            serviceCollection.AddSingleton<IService>(service);
+            serviceCollection.AddKeyedSingleton<IService>("keyedService", keyedService);
+            serviceCollection.AddKeyedSingleton<IService>("keyedService", keyedService);
+            serviceCollection.AddKeyedSingleton<IService>(KeyedService.AnyKey, anykeyService);
+            serviceCollection.AddKeyedSingleton<IService>(KeyedService.AnyKey, anykeyService);
+            serviceCollection.AddKeyedSingleton<IService>(null, nullkeyService);
+            serviceCollection.AddKeyedSingleton<IService>(null, nullkeyService);
+
+            IServiceProvider provider = CreateServiceProvider(serviceCollection);
+
+            /*
+             * Table for what results are included in GetServices()\GetKeyedServices():
+             *
+             * Query                     | Keyed? | Unkeyed? | AnyKey? | nullkey?
+             * -------------------------------------------------------------------
+             * GetServices(Type)         | no     | yes      | no      | yes
+             * GetKeyedServices(null)    | no     | yes      | no      | yes
+             * GetKeyedServices(AnyKey)  | yes    | no       | no      | no
+             * GetKeyedServices(key)     | yes    | no       | no      | no
+             *
+             * Summary:
+             * - A null key is the same as unkeyed. This allows the KeyServices APIs to support both keyed and unkeyed.
+             * - AnyKey is a special case of Keyed.
+             * - It is not possible to query for AnyKey registrations using IEnumerable; a singleton query resolves.
+             */
+
+            // Query with unkeyed (which is really keyed by Type).
+            Assert.Equal(
+                new[] { service, service, nullkeyService, nullkeyService },
+                provider.GetServices<IService>());
+
+            // Query with null key.
+            Assert.Equal(
+                new[] { service, service, nullkeyService, nullkeyService },
+                provider.GetKeyedServices<IService>(null));
+
+            // Query with AnyKey.
+            Assert.Equal(
+                new[] { keyedService, keyedService },
+                provider.GetKeyedServices<IService>(KeyedService.AnyKey));
+
+            // Query with standard keyed.
+            Assert.Equal(
+                new[] { keyedService, keyedService },
+                provider.GetKeyedServices<IService>("keyedService"));
+        }
+
+        [Fact]
         public void ResolveKeyedService()
         {
             var service1 = new Service();
