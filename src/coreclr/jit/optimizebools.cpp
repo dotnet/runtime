@@ -998,6 +998,7 @@ bool OptBoolsDsc::optOptimizeCompareChainCondBlock()
 
     if (m_b3 != nullptr)
     {
+        assert(m_b1->FalseTargetIs(m_b2) && m_b1->TrueTargetIs(m_b3));
         GenTree* root = m_b3->firstStmt()->GetRootNode();
         assert(root->OperIs(GT_RETURN));
         GenTree* op1 = root->gtGetOp1();
