@@ -372,11 +372,11 @@ void Async2Transformation::Transform(
             ClassLayout* layout = dsc->GetLayout();
             assert(!layout->HasGCByRef());
 
-            if (layout->IsBlockLayout())
+            if (layout->IsCustomLayout())
             {
                 inf.Alignment   = 1;
                 inf.DataSize    = layout->GetSize();
-                inf.GCDataCount = 0;
+                inf.GCDataCount = layout->GetGCPtrCount();
             }
             else
             {
