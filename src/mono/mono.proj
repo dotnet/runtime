@@ -799,6 +799,10 @@ JS_ENGINES = [NODE_JS]
       <AotHostOS Condition="'$(AotHostOS)' == ''">$(HostOS)</AotHostOS>
     </PropertyGroup>
 
+    <ItemGroup>
+      <MonoAOTCMakeArgs Include="-DCMAKE_PREFIX_PATH=$(VendoredLibraryRootPath.TrimEnd('\\'))" />
+    </ItemGroup>
+
     <!-- iOS/tvOS specific options -->
     <PropertyGroup Condition="'$(TargetstvOS)' == 'true' or '$(TargetsiOS)' == 'true'">
       <!-- FIXME: Disable for simulator -->
@@ -809,8 +813,6 @@ JS_ENGINES = [NODE_JS]
       <MonoAotCMakeSysroot Condition="'$(TargetstvOS)' == 'true' and '$(TargetstvOSSimulator)' == 'true'">$(XcodeDir)/Platforms/AppleTVSimulator.platform/Developer/SDKs/AppleTVSimulator$(tvOSVersion).sdk</MonoAotCMakeSysroot>
       <MonoAotAbi Condition="'$(Platform)' == 'arm64'">aarch64-apple-darwin10</MonoAotAbi>
       <MonoAotAbi Condition="'$(Platform)' == 'x64'">x86_64-apple-darwin10</MonoAotAbi>
-
-      <MonoAOTCMakeArgs Include="-DCMAKE_PREFIX_PATH=$(VendoredLibraryRootPath.TrimEnd('\\'))" />
     </PropertyGroup>
 
     <!-- Catalyst specific options -->
