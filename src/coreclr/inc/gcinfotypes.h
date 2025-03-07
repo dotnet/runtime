@@ -865,7 +865,7 @@ struct LoongArch64GcInfoEncoding {
 #define TARGET_POINTER_SIZE 8    // equal to sizeof(void*) and the managed pointer size in bytes for this target
 #endif
 
-#define TargetGcInfoEncoding RISCVGcInfoEncoding
+#define TargetGcInfoEncoding RISCV64GcInfoEncoding
 
 struct RISCV64GcInfoEncoding {
     static const uint16_t NUM_NORM_CODE_OFFSETS_PER_CHUNK = (64);
