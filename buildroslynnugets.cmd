@@ -1,7 +1,7 @@
 setlocal ENABLEEXTENSIONS
 pushd %~dp0
-set ASYNC_ROSLYN_COMMIT=c1d47ed4bdbd28137fce8fbb350771677aa4cf15
-set ASYNC_SUFFIX=async-12
+set ASYNC_ROSLYN_COMMIT=22232ae7939c97984d1158f4f371b0d89ea3db08
+set ASYNC_SUFFIX=async-13
 set ASYNC_ROSLYN_BRANCH=demos/async2-experiment1
 
 cd ..
@@ -26,9 +26,9 @@ pushd %~dp0
 
 md roslynpackages
 
-copy ..\async-roslyn-repo\artifacts\packages\Release\Shipping\Microsoft.Net.Compilers.Toolset.4.13.0-%ASYNC_SUFFIX%.nupkg roslynpackages
-copy ..\async-roslyn-repo\artifacts\packages\Release\Shipping\Microsoft.CodeAnalysis.Workspaces.Common.4.13.0-%ASYNC_SUFFIX%.nupkg roslynpackages
-copy ..\async-roslyn-repo\artifacts\packages\Release\Shipping\Microsoft.CodeAnalysis.CSharp.Workspaces.4.13.0-%ASYNC_SUFFIX%.nupkg roslynpackages
-copy ..\async-roslyn-repo\artifacts\packages\Release\Shipping\Microsoft.CodeAnalysis.CSharp.4.13.0-%ASYNC_SUFFIX%.nupkg roslynpackages
-copy ..\async-roslyn-repo\artifacts\packages\Release\Shipping\Microsoft.CodeAnalysis.Common.4.13.0-%ASYNC_SUFFIX%.nupkg roslynpackages
+copy ..\async-roslyn-repo\artifacts\packages\Release\Shipping\Microsoft.Net.Compilers.Toolset.4.14.0-%ASYNC_SUFFIX%.nupkg roslynpackages
+copy ..\async-roslyn-repo\artifacts\packages\Release\Shipping\Microsoft.CodeAnalysis.Workspaces.Common.4.14.0-%ASYNC_SUFFIX%.nupkg roslynpackages
+copy ..\async-roslyn-repo\artifacts\packages\Release\Shipping\Microsoft.CodeAnalysis.CSharp.Workspaces.4.14.0-%ASYNC_SUFFIX%.nupkg roslynpackages
+copy ..\async-roslyn-repo\artifacts\packages\Release\Shipping\Microsoft.CodeAnalysis.CSharp.4.14.0-%ASYNC_SUFFIX%.nupkg roslynpackages
+copy ..\async-roslyn-repo\artifacts\packages\Release\Shipping\Microsoft.CodeAnalysis.Common.4.14.0-%ASYNC_SUFFIX%.nupkg roslynpackages
 
