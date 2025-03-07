@@ -1073,6 +1073,13 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
                         }
                     }
                 }
+
+                if (preciseScan && FgStack::IsExactClass(pushedStack.Top()))
+                {
+                    // Box a struct results in an exact class
+                    handled = true;
+                }
+
                 break;
             }
 
