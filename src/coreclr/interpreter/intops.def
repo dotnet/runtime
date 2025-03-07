@@ -8,6 +8,7 @@
 
 OPDEF(INTOP_NOP, "nop", 1, 0, 0, InterpOpNoArgs)
 OPDEF(INTOP_RET, "ret", 2, 0, 1, InterpOpNoArgs)
+OPDEF(INTOP_RET_VT, "ret.vt", 3, 0, 1, InterpOpInt)
 OPDEF(INTOP_RET_VOID, "ret.void", 1, 0, 0, InterpOpNoArgs)
 
 OPDEF(INTOP_LDC_I4, "ldc.i4", 3, 1, 0, InterpOpInt)

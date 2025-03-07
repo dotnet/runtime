@@ -808,6 +808,8 @@ static InterpType GetInterpType(CorInfoType corInfoType)
         case CORINFO_TYPE_VALUECLASS:
         case CORINFO_TYPE_REFANY:
             return InterpTypeVT;
+        case CORINFO_TYPE_VOID:
+            return InterpTypeVoid;
         default:
             assert(0);
             break;
@@ -1629,6 +1631,13 @@ retry_emit:
                 m_pLastIns->SetDVar(m_pStackPointer[-1].var);
                 m_ip += 2;
                 break;
+            case CEE_LDC_I4:
+                AddIns(INTOP_LDC_I4);
+                m_pLastIns->data[0] = getI4LittleEndian(m_ip + 1);
+                PushStackType(StackTypeI4, NULL);
+                m_pLastIns->SetDVar(m_pStackPointer[-1].var);
+                m_ip += 5;
+                break;
             case CEE_LDNULL:
                 AddIns(INTOP_LDNULL);
                 PushStackType(StackTypeO, NULL);
@@ -1677,21 +1686,27 @@ retry_emit:
             case CEE_RET:
             {
                 CORINFO_SIG_INFO sig = methodInfo->args;
-                if (sig.retType == CORINFO_TYPE_VOID)
+                InterpType retType = GetInterpType(sig.retType);
+
+                if (retType == InterpTypeVoid)
                 {
                     AddIns(INTOP_RET_VOID);
                 }
-                else if (sig.retType == CORINFO_TYPE_INT)
+                else if (retType == InterpTypeVT)
+                {
+                    CHECK_STACK(1);
+                    AddIns(INTOP_RET_VT);
+                    m_pStackPointer--;
+                    int32_t retVar = m_pStackPointer[0].var;
+                    m_pLastIns->SetSVar(retVar);
+                    m_pLastIns->data[0] = m_pVars[retVar].size;
+                }
+                else
                 {
                     CHECK_STACK(1);
                     AddIns(INTOP_RET);
                     m_pStackPointer--;
                     m_pLastIns->SetSVar(m_pStackPointer[0].var);
-                }
-                else
-                {
-                    // FIXME
-                    assert(0);
                 }
                 m_ip++;
                 break;

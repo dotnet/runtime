@@ -64,6 +64,9 @@ MAIN_LOOP:
                 // Return stack slot sized value
                 *(int64_t*)pFrame->pRetVal = LOCAL_VAR(ip[1], int64_t);
                 goto EXIT_FRAME;
+            case INTOP_RET_VT:
+                memmove(pFrame->pRetVal, stack + ip[1], ip[2]);
+                goto EXIT_FRAME;
             case INTOP_RET_VOID:
                 goto EXIT_FRAME;
 
