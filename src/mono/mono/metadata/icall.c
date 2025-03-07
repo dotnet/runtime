@@ -7268,12 +7268,6 @@ ves_icall_System_Environment_get_ProcessorCount (void)
 	return mono_cpu_limit ();
 }
 
-MonoBoolean
-ves_icall_System_Environment_get_IsCpuQuotaLimited (void)
-{
-	return FALSE;
-}
-
 void
 ves_icall_System_Diagnostics_StackTrace_GetTrace (MonoObjectHandleOnStack ex_handle, MonoObjectHandleOnStack res, int skip_frames, MonoBoolean need_file_info)
 {

@@ -21,8 +21,8 @@ namespace System
             set;
         }
 
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        private static extern bool GetIsCpuQuotaLimited();
+        // GetIsCpuQuotaLimited() is implemented in CoreCLR/NativeAOT
+        private static bool GetIsCpuQuotaLimited() => false;
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private static extern int GetProcessorCount();

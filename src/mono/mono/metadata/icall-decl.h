@@ -118,7 +118,6 @@ ICALL_EXPORT double ves_icall_System_Math_FusedMultiplyAdd (double, double, doub
 ICALL_EXPORT float ves_icall_System_MathF_Log2 (float);
 ICALL_EXPORT float ves_icall_System_MathF_FusedMultiplyAdd (float, float, float);
 ICALL_EXPORT gint32 ves_icall_System_Environment_get_ProcessorCount (void);
-ICALL_EXPORT MonoBoolean ves_icall_System_Environment_get_IsCpuQuotaLimited (void);
 ICALL_EXPORT gint32 ves_icall_System_Environment_get_TickCount (void);
 ICALL_EXPORT gint64 ves_icall_System_Environment_get_TickCount64 (void);
 ICALL_EXPORT gint64 ves_icall_System_GC_GetTotalMemory (MonoBoolean forceCollection);
