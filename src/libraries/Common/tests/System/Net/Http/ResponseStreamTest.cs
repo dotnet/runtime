@@ -311,7 +311,7 @@ namespace System.Net.Http.Functional.Tests
                 req.Content = new StringContent("hello world");
             }
 
-            HttpClient client = CreateHttpClientForRemoteServer(Configuration.Http.RemoteHttp11Server);
+            using HttpClient client = CreateHttpClientForRemoteServer(Configuration.Http.RemoteHttp11Server);
             if (abort == "abortDuringBody")
             {
                 using var res = await client.SendAsync(req, HttpCompletionOption.ResponseHeadersRead);
