@@ -1594,6 +1594,43 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
             }
             break;
 
+            case CEE_NEWARR:
+            case CEE_NEWOBJ:
+            case CEE_INITOBJ:
+            {
+                if (makeInlineObservations && (codeAddr < codeEndp - sz))
+                {
+                    BYTE*  codeAddrNext = (BYTE*)codeAddr + sz;
+                    OPCODE opcodeNext   = (OPCODE)getU1LittleEndian(codeAddrNext);
+                    if (opcodeNext == CEE_LDLOC_0 || opcodeNext == CEE_LDLOC_1 || opcodeNext == CEE_LDLOC_2 ||
+                        opcodeNext == CEE_LDLOC_3 || opcodeNext == CEE_LDLOC_S)
+                    {
+                        codeAddrNext += opcodeSizes[opcodeNext] + sizeof(int8_t);
+                        if (codeAddrNext >= codeEndp)
+                        {
+                            break;
+                        }
+                        opcodeNext = (OPCODE)getU1LittleEndian(codeAddrNext);
+                    }
+                    if (opcodeNext == CEE_BOX)
+                    {
+                        codeAddrNext += opcodeSizes[opcodeNext] + sizeof(int8_t);
+                        if (codeAddrNext >= codeEndp)
+                        {
+                            break;
+                        }
+                        opcodeNext = (OPCODE)getU1LittleEndian(codeAddrNext);
+                    }
+                    if (opcodeNext == CEE_RET)
+                    {
+                        // Assume it is a wrapper method if we see
+                        // newobj/newarr/initobj followed by {ldloc, box}, ret.
+                        compInlineResult->Note(InlineObservation::CALLEE_LOOKS_LIKE_WRAPPER);
+                    }
+                }
+                break;
+            }
+
             case CEE_LDIND_I1:
             case CEE_LDIND_U1:
             case CEE_LDIND_I2:
