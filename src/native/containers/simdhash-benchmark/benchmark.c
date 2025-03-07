@@ -103,6 +103,9 @@ typedef struct {
     int result;
 } main_args;
 
+static void dummy_measurement_func (void *data) {
+}
+
 void foreach_measurement (const char *name, void *_info, void *_args) {
     measurement_info *info = _info;
     main_args *args = _args;
@@ -122,10 +125,6 @@ void foreach_measurement (const char *name, void *_info, void *_args) {
     if (!match)
         return;
 
-    run_measurement(100, info->setup, info->func, info->teardown);
-
-    int64_t overhead = run_measurement(1, info->setup, info->func, info->teardown);
-
     int64_t warmup_duration = 20000000,
         target_step_duration = 10000000,
         target_duration = warmup_duration * 10,
@@ -133,6 +132,8 @@ void foreach_measurement (const char *name, void *_info, void *_args) {
         warmup_until = get_100ns_ticks() + warmup_duration,
         warmup_elapsed_total = 0,
         warmup_count = 0;
+
+    int64_t overhead = run_measurement(1, info->setup, info->func, info->teardown);
 
     printf("%s: ", name);
     fflush(stdout);
@@ -154,6 +155,9 @@ void foreach_measurement (const char *name, void *_info, void *_args) {
         necessary_iterations = 16;
     // HACK: Reduce minor variation in iteration count
     necessary_iterations = next_power_of_two((uint32_t)necessary_iterations);
+
+    // Now that we know our iteration count calculate actual overhead for that iteration count
+    overhead = run_measurement(necessary_iterations, 0, dummy_measurement_func, 0);
 
     printf(
         "Warmed %" PRId64 " time(s). Running %" PRId64 " iterations... ",
