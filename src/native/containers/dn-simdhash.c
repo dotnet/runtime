@@ -238,6 +238,8 @@ dn_simdhash_ensure_capacity_internal (dn_simdhash_t *hash, uint32_t capacity)
 	size_t grow_at_count = value_count;
 	grow_at_count *= 100;
 	grow_at_count /= DN_SIMDHASH_SIZING_PERCENTAGE;
+    if (grow_at_count < value_count)
+        grow_at_count = value_count;
 	hash->grow_at_count = (uint32_t)grow_at_count;
 	hash->buffers.buckets_length = (uint32_t)bucket_count;
 	hash->buffers.values_length = (uint32_t)value_count;
