@@ -329,14 +329,14 @@ endm
 ;      Does not check wbs_ephemeral_high
 ;      No region checks
 ;
-LEAF_ENTRY JIT_WriteBarrier_PreGrow64, _TEXT
+LEAF_ENTRY JIT_WriteBarrier_PreGrow64
     WRITE_BARRIER_ENTRY_STUB Start_PreGrow64
     WRITE_BARRIER_SHADOW_UPDATE_STUB Start_PreGrow64
     WRITE_BARRIER_CHECK_EPHEMERAL_LOW_STUB Start_PreGrow64 Exit_PreGrow64
     WRITE_BARRIER_CHECK_CARD_TABLE_STUB Start_PreGrow64 Exit_PreGrow64
     WRITE_BARRIER_CHECK_CARD_BUNDLE_TABLE_STUB Start_PreGrow64 Exit_PreGrow64
     WRITE_BARRIER_RETURN_STUB Exit_PreGrow64
-LEAF_END_MARKED JIT_WriteBarrier_PreGrow64, _TEXT
+LEAF_END_MARKED JIT_WriteBarrier_PreGrow64
 
 
 ;-----------------------------------------------------------------------------
@@ -346,14 +346,14 @@ LEAF_END_MARKED JIT_WriteBarrier_PreGrow64, _TEXT
 ;      Does not update the write watch table
 ;      No region checks
 ;
-LEAF_ENTRY JIT_WriteBarrier_PostGrow64, _TEXT
+LEAF_ENTRY JIT_WriteBarrier_PostGrow64
     WRITE_BARRIER_ENTRY_STUB Start_PostGrow64
     WRITE_BARRIER_SHADOW_UPDATE_STUB Start_PostGrow64
     WRITE_BARRIER_CHECK_EPHEMERAL_LOW_AND_HIGH_STUB Start_PostGrow64 Exit_PostGrow64
     WRITE_BARRIER_CHECK_CARD_TABLE_STUB Start_PostGrow64 Exit_PostGrow64
     WRITE_BARRIER_CHECK_CARD_BUNDLE_TABLE_STUB Start_PostGrow64 Exit_PostGrow64
     WRITE_BARRIER_RETURN_STUB Exit_PostGrow64
-LEAF_END_MARKED JIT_WriteBarrier_PostGrow64, _TEXT
+LEAF_END_MARKED JIT_WriteBarrier_PostGrow64
 
 
 ;-----------------------------------------------------------------------------
@@ -367,13 +367,13 @@ LEAF_END_MARKED JIT_WriteBarrier_PostGrow64, _TEXT
 ;      Does not check wbs_ephemeral_high or wbs_ephemeral_low
 ;      No region checks
 ;
-LEAF_ENTRY JIT_WriteBarrier_SVR64, _TEXT
+LEAF_ENTRY JIT_WriteBarrier_SVR64
     WRITE_BARRIER_ENTRY_STUB Start_SVR64
     WRITE_BARRIER_SHADOW_UPDATE_STUB Start_SVR64
     WRITE_BARRIER_CHECK_CARD_TABLE_STUB Start_SVR64 Exit_SVR64
     WRITE_BARRIER_CHECK_CARD_BUNDLE_TABLE_STUB Start_SVR64 Exit_SVR64
     WRITE_BARRIER_RETURN_STUB Exit_SVR64
-LEAF_END_MARKED JIT_WriteBarrier_SVR64, _TEXT
+LEAF_END_MARKED JIT_WriteBarrier_SVR64
 
 
 ;-----------------------------------------------------------------------------
@@ -383,7 +383,7 @@ LEAF_END_MARKED JIT_WriteBarrier_SVR64, _TEXT
 ;      Does not update the write watch table
 ;      Bitwise updates for region checks
 ;
-LEAF_ENTRY JIT_WriteBarrier_Byte_Region64, _TEXT
+LEAF_ENTRY JIT_WriteBarrier_Byte_Region64
     WRITE_BARRIER_ENTRY_STUB Start_Byte_Region64
     WRITE_BARRIER_SHADOW_UPDATE_STUB Start_Byte_Region64
     WRITE_BARRIER_CHECK_EPHEMERAL_LOW_AND_HIGH_STUB Start_Byte_Region64 Exit_Byte_Region64
@@ -391,7 +391,7 @@ LEAF_ENTRY JIT_WriteBarrier_Byte_Region64, _TEXT
     WRITE_BARRIER_CHECK_CARD_TABLE_STUB Start_Byte_Region64 Exit_Byte_Region64
     WRITE_BARRIER_CHECK_CARD_BUNDLE_TABLE_STUB Start_Byte_Region64 Exit_Byte_Region64
     WRITE_BARRIER_RETURN_STUB Exit_Byte_Region64
-LEAF_END_MARKED JIT_WriteBarrier_Byte_Region64, _TEXT
+LEAF_END_MARKED JIT_WriteBarrier_Byte_Region64
 
 
 ;-----------------------------------------------------------------------------
@@ -401,7 +401,7 @@ LEAF_END_MARKED JIT_WriteBarrier_Byte_Region64, _TEXT
 ;      Does not update the write watch table
 ;      Does not call check card table stub
 ;
-LEAF_ENTRY JIT_WriteBarrier_Bit_Region64, _TEXT
+LEAF_ENTRY JIT_WriteBarrier_Bit_Region64
     WRITE_BARRIER_ENTRY_STUB Start_Bit_Region64
     WRITE_BARRIER_SHADOW_UPDATE_STUB Start_Bit_Region64
     WRITE_BARRIER_CHECK_EPHEMERAL_LOW_AND_HIGH_STUB Start_Bit_Region64 Exit_Bit_Region64
@@ -409,7 +409,7 @@ LEAF_ENTRY JIT_WriteBarrier_Bit_Region64, _TEXT
     WRITE_BARRIER_CHECK_BIT_REGIONS_CARD_TABLE_STUB Start_Bit_Region64 Exit_Bit_Region64
     WRITE_BARRIER_CHECK_CARD_BUNDLE_TABLE_STUB Start_Bit_Region64 Exit_Bit_Region64
     WRITE_BARRIER_RETURN_STUB Exit_Bit_Region64
-LEAF_END_MARKED JIT_WriteBarrier_Bit_Region64, _TEXT
+LEAF_END_MARKED JIT_WriteBarrier_Bit_Region64
 
 
 ;-----------------------------------------------------------------------------
@@ -419,7 +419,7 @@ LEAF_END_MARKED JIT_WriteBarrier_Bit_Region64, _TEXT
 ;      Does not check wbs_ephemeral_high
 ;      No region checks
 ;
-LEAF_ENTRY JIT_WriteBarrier_WriteWatch_PreGrow64, _TEXT
+LEAF_ENTRY JIT_WriteBarrier_WriteWatch_PreGrow64
     WRITE_BARRIER_ENTRY_STUB Start_WriteWatch_PreGrow64
     WRITE_BARRIER_SHADOW_UPDATE_STUB Start_WriteWatch_PreGrow64
     WRITE_BARRIER_WRITE_WATCH_FOR_GC_HEAP_STUB Start_WriteWatch_PreGrow64 Exit_WriteWatch_PreGrow64
@@ -427,7 +427,7 @@ LEAF_ENTRY JIT_WriteBarrier_WriteWatch_PreGrow64, _TEXT
     WRITE_BARRIER_CHECK_CARD_TABLE_STUB Start_WriteWatch_PreGrow64 Exit_WriteWatch_PreGrow64
     WRITE_BARRIER_CHECK_CARD_BUNDLE_TABLE_STUB Start_WriteWatch_PreGrow64 Exit_WriteWatch_PreGrow64
     WRITE_BARRIER_RETURN_STUB Exit_WriteWatch_PreGrow64
-LEAF_END_MARKED JIT_WriteBarrier_WriteWatch_PreGrow64, _TEXT
+LEAF_END_MARKED JIT_WriteBarrier_WriteWatch_PreGrow64
 
 
 ;-----------------------------------------------------------------------------
@@ -436,7 +436,7 @@ LEAF_END_MARKED JIT_WriteBarrier_WriteWatch_PreGrow64, _TEXT
 ; Skipped functionality:
 ;      No region checks
 ;
-LEAF_ENTRY JIT_WriteBarrier_WriteWatch_PostGrow64, _TEXT
+LEAF_ENTRY JIT_WriteBarrier_WriteWatch_PostGrow64
     WRITE_BARRIER_ENTRY_STUB Start_WriteWatch_PostGrow64
     WRITE_BARRIER_SHADOW_UPDATE_STUB Start_WriteWatch_PostGrow64
     WRITE_BARRIER_WRITE_WATCH_FOR_GC_HEAP_STUB Start_WriteWatch_PostGrow64 Exit_WriteWatch_PostGrow64
@@ -444,7 +444,7 @@ LEAF_ENTRY JIT_WriteBarrier_WriteWatch_PostGrow64, _TEXT
     WRITE_BARRIER_CHECK_CARD_TABLE_STUB Start_WriteWatch_PostGrow64 Exit_WriteWatch_PostGrow64
     WRITE_BARRIER_CHECK_CARD_BUNDLE_TABLE_STUB Start_WriteWatch_PostGrow64 Exit_WriteWatch_PostGrow64
     WRITE_BARRIER_RETURN_STUB Exit_WriteWatch_PostGrow64
-LEAF_END_MARKED JIT_WriteBarrier_WriteWatch_PostGrow64, _TEXT
+LEAF_END_MARKED JIT_WriteBarrier_WriteWatch_PostGrow64
 
 
 ;-----------------------------------------------------------------------------
@@ -457,14 +457,14 @@ LEAF_END_MARKED JIT_WriteBarrier_WriteWatch_PostGrow64, _TEXT
 ;      Does not check wbs_ephemeral_high or wbs_ephemeral_low
 ;      No region checks
 ;
-LEAF_ENTRY JIT_WriteBarrier_WriteWatch_SVR64, _TEXT
+LEAF_ENTRY JIT_WriteBarrier_WriteWatch_SVR64
     WRITE_BARRIER_ENTRY_STUB Start_WriteWatch_SVR64
     WRITE_BARRIER_SHADOW_UPDATE_STUB Start_WriteWatch_SVR64
     WRITE_BARRIER_WRITE_WATCH_FOR_GC_HEAP_STUB Start_WriteWatch_SVR64 Exit_WriteWatch_SVR64
     WRITE_BARRIER_CHECK_CARD_TABLE_STUB Start_WriteWatch_SVR64 Exit_WriteWatch_SVR64
     WRITE_BARRIER_CHECK_CARD_BUNDLE_TABLE_STUB Start_WriteWatch_SVR64 Exit_WriteWatch_SVR64
     WRITE_BARRIER_RETURN_STUB Exit_WriteWatch_SVR64
-LEAF_END_MARKED JIT_WriteBarrier_WriteWatch_SVR64, _TEXT
+LEAF_END_MARKED JIT_WriteBarrier_WriteWatch_SVR64
 
 
 ;-----------------------------------------------------------------------------
@@ -473,7 +473,7 @@ LEAF_END_MARKED JIT_WriteBarrier_WriteWatch_SVR64, _TEXT
 ; Skipped functionality:
 ;      Bitwise updates for region checks
 ;
-LEAF_ENTRY JIT_WriteBarrier_WriteWatch_Byte_Region64, _TEXT
+LEAF_ENTRY JIT_WriteBarrier_WriteWatch_Byte_Region64
 JIT_WriteBarrier_WriteWatch_Byte_Region64Start
     WRITE_BARRIER_ENTRY_STUB Start_WriteWatch_Byte_Region64
     WRITE_BARRIER_SHADOW_UPDATE_STUB Start_WriteWatch_Byte_Region64
@@ -483,7 +483,7 @@ JIT_WriteBarrier_WriteWatch_Byte_Region64Start
     WRITE_BARRIER_CHECK_CARD_TABLE_STUB Start_WriteWatch_Byte_Region64 Exit_WriteWatch_Byte_Region64
     WRITE_BARRIER_CHECK_CARD_BUNDLE_TABLE_STUB Start_WriteWatch_Byte_Region64 Exit_WriteWatch_Byte_Region64
     WRITE_BARRIER_RETURN_STUB Exit_WriteWatch_Byte_Region64
-LEAF_END_MARKED JIT_WriteBarrier_WriteWatch_Byte_Region64, _TEXT
+LEAF_END_MARKED JIT_WriteBarrier_WriteWatch_Byte_Region64
 
 
 ;-----------------------------------------------------------------------------
@@ -492,7 +492,7 @@ LEAF_END_MARKED JIT_WriteBarrier_WriteWatch_Byte_Region64, _TEXT
 ; Skipped functionality:
 ;      Does not call check card table stub
 ;
-LEAF_ENTRY JIT_WriteBarrier_WriteWatch_Bit_Region64, _TEXT
+LEAF_ENTRY JIT_WriteBarrier_WriteWatch_Bit_Region64
 JIT_WriteBarrier_WriteWatch_Bit_Region64Start
     WRITE_BARRIER_ENTRY_STUB Start_WriteWatch_Bit_Region64
     WRITE_BARRIER_SHADOW_UPDATE_STUB Start_WriteWatch_Bit_Region64
@@ -502,4 +502,4 @@ JIT_WriteBarrier_WriteWatch_Bit_Region64Start
     WRITE_BARRIER_CHECK_BIT_REGIONS_CARD_TABLE_STUB Start_WriteWatch_Bit_Region64 Exit_WriteWatch_Bit_Region64
     WRITE_BARRIER_CHECK_CARD_BUNDLE_TABLE_STUB Start_WriteWatch_Bit_Region64 Exit_WriteWatch_Bit_Region64
     WRITE_BARRIER_RETURN_STUB Exit_WriteWatch_Bit_Region64
-LEAF_END_MARKED JIT_WriteBarrier_WriteWatch_Bit_Region64, _TEXT
+LEAF_END_MARKED JIT_WriteBarrier_WriteWatch_Bit_Region64
