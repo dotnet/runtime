@@ -1626,7 +1626,8 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
             case CEE_NEWOBJ:
             case CEE_INITOBJ:
             {
-                if (makeInlineObservations && (codeAddr < codeEndp - sz) && doesMethodLookLikeWrapper(codeAddr + sz, codeEndp))
+                if (makeInlineObservations && (codeAddr < codeEndp - sz) &&
+                    doesMethodLookLikeWrapper(codeAddr + sz, codeEndp))
                 {
                     compInlineResult->Note(InlineObservation::CALLEE_LOOKS_LIKE_WRAPPER);
                 }
