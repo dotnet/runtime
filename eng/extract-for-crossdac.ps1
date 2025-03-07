@@ -20,6 +20,6 @@ foreach ($file in Get-ChildItem $DownloadDirectory -Recurse -Filter '*.nupkg') {
         Write-Host "Extracting Package: $id $ver to $ExtractDirectory/$($id.ToLowerInvariant())/$ver"
         [System.IO.Compression.ZipFile]::ExtractToDirectory($file.FullName, "$ExtractDirectory/$($id.ToLowerInvariant())/$ver")
     } else {
-        throw "Unexpected file name: $($file.Name)"
+        Write-Host "Skipping non-runtime pack: $($file.Name)"
     }
 }

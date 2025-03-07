@@ -69,6 +69,9 @@ SET_DEFAULT_DEBUG_CHANNEL(PROCESS); // some headers have code with asserts, so d
 #define membarrier(...) syscall(__NR_membarrier, __VA_ARGS__)
 #elif HAVE_SYS_MEMBARRIER_H
 #include <sys/membarrier.h>
+#ifdef TARGET_BROWSER
+#define membarrier(cmd, flags, cpu_id) 0 // browser/wasm is currently single threaded
+#endif
 #endif
 
 #ifdef __APPLE__
