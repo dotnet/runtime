@@ -2881,27 +2881,28 @@ extern "C" void JIT_ResumeOSRWorker(TransitionBlock * pTransitionBlock)
     PCODE ip = *pReturnAddress;
     int ilOffset = *(int*)GetFirstArgumentRegisterValuePtr(pTransitionBlock);
 
-    // Fetch or setup patchpoint info for this patchpoint.
-    EECodeInfo codeInfo(ip);
-    MethodDesc* pMD = codeInfo.GetMethodDesc();
-    LoaderAllocator* allocator = pMD->GetLoaderAllocator();
-    OnStackReplacementManager* manager = allocator->GetOnStackReplacementManager();
+    // Find OSR method code for this IL offset.
 
-    PCODE tier0EntryAddr = (PCODE)codeInfo.GetStartAddress();
-    CodeVersionManager* codeVersionManager = pMD->GetCodeVersionManager();
-    CodeVersionManager::LockHolder lock;
-    NativeCodeVersionCollection nativeCodeVersions = codeVersionManager->GetNativeCodeVersions(pMD);
     PCODE osrMethodCode = NULL;
-    for (NativeCodeVersionIterator itr = nativeCodeVersions.Begin(), end = nativeCodeVersions.End(); itr != end; itr++)
+
     {
-        if (itr->GetOptimizationTier() == NativeCodeVersion::OptimizationTier1OSR)
+        EECodeInfo codeInfo(ip);
+        MethodDesc* pMD = codeInfo.GetMethodDesc();
+        PCODE tier0EntryAddr = (PCODE)codeInfo.GetStartAddress();
+        CodeVersionManager* codeVersionManager = pMD->GetCodeVersionManager();
+        CodeVersionManager::LockHolder lock;
+        NativeCodeVersionCollection nativeCodeVersions = codeVersionManager->GetNativeCodeVersions(pMD);
+        for (NativeCodeVersionIterator itr = nativeCodeVersions.Begin(), end = nativeCodeVersions.End(); itr != end; itr++)
         {
-            unsigned versionILOffset;
-            PatchpointInfo* ppi = itr->GetOSRInfo(&versionILOffset);
-            if (ppi->GetTier0EntryPoint() == tier0EntryAddr && versionILOffset == (unsigned)ilOffset)
+            if (itr->GetOptimizationTier() == NativeCodeVersion::OptimizationTier1OSR)
             {
-                osrMethodCode = itr->GetNativeCode();
-                break;
+                unsigned versionILOffset;
+                PatchpointInfo* ppi = itr->GetOSRInfo(&versionILOffset);
+                if (ppi->GetTier0EntryPoint() == tier0EntryAddr && versionILOffset == (unsigned)ilOffset)
+                {
+                    osrMethodCode = itr->GetNativeCode();
+                    break;
+                }
             }
         }
     }
