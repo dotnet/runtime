@@ -32,3 +32,32 @@ extends:
     stages:
     - stage: Build
       jobs:
+      - template: /eng/pipelines/common/platform-matrix.yml
+        parameters:
+          jobTemplate: /eng/pipelines/common/global-build-job.yml
+          buildConfig: release
+          platforms:
+          - windows_x64
+          jobParameters:
+            buildArgs: -s clr+libs+host+packs -c $(_BuildConfig)
+            nameSuffix: AllSubsets_CoreCLR
+            isOfficialBuild: ${{ variables.isOfficialBuild }}
+            timeoutInMinutes: 360
+      - template: /eng/pipelines/build.yml@diagnostics
+        parameters:
+          jobTemplate: /eng/common/templates/job/job.yml@diagnostics
+          name: Windows
+          osGroup: Windows_NT
+          buildConfigs:
+          - configuration: Debug
+            architecture: x64
+          - configuration: Release
+            architecture: x64
+            artifactUploadPath: bin
+          - configuration: Release
+            architecture: x86
+            artifactUploadPath: bin/Windows_NT.x86.Release
+          - ${{ if ne(variables['System.TeamProject'], 'public') }}:
+            - configuration: Release
+              architecture: arm64
+              artifactUploadPath: bin/Windows_NT.arm64.Release
