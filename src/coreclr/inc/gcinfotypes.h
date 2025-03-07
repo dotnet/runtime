@@ -746,16 +746,16 @@ struct ARM64GcInfoEncoding {
     static const uint32_t NUM_NORM_CODE_OFFSETS_PER_CHUNK = (64);
     static const uint32_t NUM_NORM_CODE_OFFSETS_PER_CHUNK_LOG2 = (6);
     // GC Pointers are 8-bytes aligned
-    static inline constexpr uint32_t NORMALIZE_STACK_SLOT (uint32_t x) { return ((x)>>3); }
-    static inline constexpr uint32_t DENORMALIZE_STACK_SLOT (uint32_t x) { return ((x)<<3); }
+    static inline constexpr SSIZE_T NORMALIZE_STACK_SLOT (SSIZE_T x) { return ((x)>>3); }
+    static inline constexpr SSIZE_T DENORMALIZE_STACK_SLOT (SSIZE_T x) { return ((x)<<3); }
     // All Instructions are 4 bytes long
     static inline constexpr uint32_t NORMALIZE_CODE_LENGTH (uint32_t x) { return ((x)>>2); }
     static inline constexpr uint32_t DENORMALIZE_CODE_LENGTH (uint32_t x) { return ((x)<<2); }
     // Encode Frame pointer X29 as zero
-    static inline constexpr uint32_t NORMALIZE_STACK_BASE_REGISTER (uint32_t x) { return ((x)^29); }
-    static inline constexpr uint32_t DENORMALIZE_STACK_BASE_REGISTER (uint32_t x) { return ((x)^29); }
-    static inline constexpr uint32_t NORMALIZE_SIZE_OF_STACK_AREA (uint32_t x) { return ((x)>>3); }
-    static inline constexpr uint32_t DENORMALIZE_SIZE_OF_STACK_AREA (uint32_t x) { return ((x)<<3); }
+    static inline constexpr size_t NORMALIZE_STACK_BASE_REGISTER (size_t x) { return ((x)^29); }
+    static inline constexpr size_t DENORMALIZE_STACK_BASE_REGISTER (size_t x) { return ((x)^29); }
+    static inline constexpr size_t NORMALIZE_SIZE_OF_STACK_AREA (size_t x) { return ((x)>>3); }
+    static inline constexpr size_t DENORMALIZE_SIZE_OF_STACK_AREA (size_t x) { return ((x)<<3); }
     static const uint32_t CODE_OFFSETS_NEED_NORMALIZATION = 1;
     // Instructions are 4 bytes long
     static inline constexpr uint32_t NORMALIZE_CODE_OFFSET (uint32_t x) { return ((x)>>2); }
