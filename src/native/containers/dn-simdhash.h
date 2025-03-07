@@ -22,7 +22,7 @@
 #define DN_SIMDHASH_MIN_BUCKET_COUNT 1
 // User-specified capacity values will be increased to this percentage in order
 //  to maintain an ideal load factor. FIXME: 120 isn't right
-#define DN_SIMDHASH_SIZING_PERCENTAGE 130
+#define DN_SIMDHASH_SIZING_PERCENTAGE 120
 // If set, bucket count will be a power of two. If unset, we will use spaced primes.
 // Spaced primes give much better collision resistance for bad hashes, but worsen perf for optimal hashes.
 #define DN_SIMDHASH_POWER_OF_TWO_BUCKETS 0
