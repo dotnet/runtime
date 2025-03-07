@@ -241,12 +241,14 @@ static uint32_t CacheSizeToIndex(uint32_t cCacheEntries)
 // address of the interface dispatch stub associated with this size of cache is returned.
 static uintptr_t AllocateCache(uint32_t cCacheEntries, InterfaceDispatchCache * pExistingCache, const DispatchCellInfo *pNewCellInfo, void ** ppStub)
 {
+#ifndef FEATURE_NATIVEAOT
     if (pNewCellInfo->CellType == DispatchCellType::VTableOffset)
     {
         *ppStub = (void *)&RhpVTableOffsetDispatch;
         ASSERT(!InterfaceDispatchCell::IsCache(pNewCellInfo->GetVTableOffset()));
         return pNewCellInfo->GetVTableOffset();
     }
+#endif
 
     ASSERT((cCacheEntries >= 1) && (cCacheEntries <= CID_MAX_CACHE_SIZE));
     ASSERT((pExistingCache == NULL) || (pExistingCache->m_cEntries < cCacheEntries));
