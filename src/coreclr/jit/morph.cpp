@@ -8431,7 +8431,9 @@ void Compiler::fgTryReplaceStructLocalWithFields(GenTree** use)
         return;
     }
 
-    if (lvaGetDesc((*use)->AsLclVar())->lvPromoted)
+    LclVarDsc* varDsc = lvaGetDesc((*use)->AsLclVar());
+
+    if (!varDsc->lvDoNotEnregister && varDsc->lvPromoted)
     {
         *use = fgMorphLclToFieldList((*use)->AsLclVar());
     }
