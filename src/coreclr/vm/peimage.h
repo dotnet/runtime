@@ -142,7 +142,7 @@ public:
     void* GetExternalData(INT64* size);
     INT64 GetOffset() const;
     INT64 GetSize() const;
-    INT64 GetUncompressedSize() const;
+    BOOL IsCompressed(INT64* uncompressedSize = NULL) const;
 
     HANDLE GetFileHandle();
     HRESULT TryOpenFile(bool takeLock = false);

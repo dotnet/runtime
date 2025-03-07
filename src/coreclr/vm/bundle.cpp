@@ -88,12 +88,12 @@ BundleFileLocation Bundle::Probe(const SString& path, bool pathIsBundleRelative)
         if (compressedSize)
         {
             loc.Size = compressedSize;
-            loc.UncompresedSize = fileSize;
+            loc.UncompressedSize = fileSize;
         }
         else
         {
             loc.Size = fileSize;
-            loc.UncompresedSize = 0;
+            loc.UncompressedSize = 0;
         }
 
         return loc;

@@ -44,7 +44,7 @@ inline void* PEImage::GetExternalData(INT64* size)
     LIMITED_METHOD_CONTRACT;
 
     _ASSERTE(size != nullptr);
-    if (m_probeExtensionResult.Type != ProbeExtensionResult::Type::External)
+    if (!IsExternalData())
     {
         *size = 0;
         return nullptr;
@@ -58,7 +58,7 @@ inline INT64 PEImage::GetOffset() const
 {
     LIMITED_METHOD_CONTRACT;
 
-    return m_probeExtensionResult.BundleLocation.Offset;
+    return IsInBundle() ? m_probeExtensionResult.BundleLocation.Offset : 0;
 }
 
 inline BOOL PEImage::IsInBundle() const
@@ -77,14 +77,24 @@ inline BOOL PEImage::IsExternalData() const
 
 inline INT64 PEImage::GetSize() const
 {
-    LIMITED_METHOD_CONTRACT;
-    return m_probeExtensionResult.BundleLocation.Size;
+    if (IsInBundle())
+        return m_probeExtensionResult.BundleLocation.Size;
+
+    if (IsExternalData())
+        return m_probeExtensionResult.ExternalData.Size;
+
+    // Size is not specified
+    return 0;
 }
 
-inline INT64 PEImage::GetUncompressedSize() const
+inline BOOL PEImage::IsCompressed(INT64* uncompressedSize) const
 {
     LIMITED_METHOD_CONTRACT;
-    return m_probeExtensionResult.BundleLocation.UncompresedSize;
+
+    if (uncompressedSize != NULL)
+        *uncompressedSize = IsInBundle() ? m_probeExtensionResult.BundleLocation.UncompressedSize : 0;
+
+    return IsInBundle() && m_probeExtensionResult.BundleLocation.UncompressedSize != 0;
 }
 
 inline void PEImage::SetModuleFileNameHintForDAC()
@@ -120,7 +130,7 @@ inline const SString &PEImage::GetModuleFileNameHintForDAC()
 inline BOOL PEImage::IsFile()
 {
     WRAPPER_NO_CONTRACT;
-    return m_probeExtensionResult.Type != ProbeExtensionResult::Type::External && !GetPathToLoad().IsEmpty();
+    return !IsExternalData() && !GetPathToLoad().IsEmpty();
 }
 
 //
