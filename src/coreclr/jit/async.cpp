@@ -51,6 +51,11 @@ public:
         }
 #endif
 
+        if (lclNum == m_comp->info.compRetBuffArg)
+        {
+            return true;
+        }
+
         if (lclNum == m_comp->lvaGSSecurityCookie)
         {
             // Initialized in prolog
