@@ -4754,6 +4754,105 @@ namespace System
             }
         }
 
+        /// <summary>
+        /// Copies <paramref name="source"/> to <paramref name="destination"/>, replacing all occurrences of any of the
+        /// elements in <paramref name="values"/> with <paramref name="newValue"/>.
+        /// </summary>
+        /// <typeparam name="T">The type of the elements in the spans.</typeparam>
+        /// <param name="source">The span to copy.</param>
+        /// <param name="destination">The span into which the copied and replaced values should be written.</param>
+        /// <param name="values">The values to be replaced with <paramref name="newValue"/>.</param>
+        /// <param name="newValue">The value to replace all occurrences of any of the elements in <paramref name="values"/>.</param>
+        /// <exception cref="ArgumentException">The <paramref name="destination"/> span was shorter than the <paramref name="source"/> span.</exception>
+        /// <exception cref="ArgumentException">
+        /// The <paramref name="source"/> and <paramref name="destination"/> were overlapping but not referring to the same starting location.
+        /// </exception>
+        /// <exception cref="ArgumentNullException"><paramref name="values"/> is <see langword="null"/>.</exception>
+        public static void ReplaceAny<T>(this ReadOnlySpan<T> source, Span<T> destination, SearchValues<T> values, T newValue) where T : IEquatable<T>?
+        {
+            if (source.Length > destination.Length)
+            {
+                ThrowHelper.ThrowArgumentException_DestinationTooShort();
+            }
+
+            if (!Unsafe.AreSame(ref source._reference, ref destination._reference) &&
+                source.Overlaps(destination))
+            {
+                ThrowHelper.ThrowArgumentException(ExceptionResource.InvalidOperation_SpanOverlappedOperation);
+            }
+
+            source.CopyTo(destination);
+            ReplaceAny(destination.Slice(0, source.Length), values, newValue);
+        }
+
+        /// <summary>
+        /// Replaces in <paramref name="span"/> all occurrences of any of the
+        /// elements in <paramref name="values"/> with <paramref name="newValue"/>.
+        /// </summary>
+        /// <typeparam name="T">The type of the elements in the spans.</typeparam>
+        /// <param name="span">The span to edit.</param>
+        /// <param name="values">The values to be replaced with <paramref name="newValue"/>.</param>
+        /// <param name="newValue">The value to replace all occurrences of any of the elements in <paramref name="values"/>.</param>
+        /// <exception cref="ArgumentNullException"><paramref name="values"/> is <see langword="null"/>.</exception>
+        public static void ReplaceAny<T>(this Span<T> span, SearchValues<T> values, T newValue) where T : IEquatable<T>?
+        {
+            int pos;
+            while ((pos = span.IndexOfAny(values)) >= 0)
+            {
+                span[pos] = newValue;
+                span = span.Slice(pos + 1);
+            }
+        }
+
+        /// <summary>
+        /// Copies <paramref name="source"/> to <paramref name="destination"/>, replacing all occurrences of any of the
+        /// elements other than those in <paramref name="values"/> with <paramref name="newValue"/>.
+        /// </summary>
+        /// <typeparam name="T">The type of the elements in the spans.</typeparam>
+        /// <param name="source">The span to copy.</param>
+        /// <param name="destination">The span into which the copied and replaced values should be written.</param>
+        /// <param name="values">The values to be excluded from replacement with <paramref name="newValue"/>.</param>
+        /// <param name="newValue">The value to replace all occurrences of any elements other than those in <paramref name="values"/>.</param>
+        /// <exception cref="ArgumentException">The <paramref name="destination"/> span was shorter than the <paramref name="source"/> span.</exception>
+        /// <exception cref="ArgumentException">
+        /// The <paramref name="source"/> and <paramref name="destination"/> were overlapping but not referring to the same starting location.
+        /// </exception>
+        /// <exception cref="ArgumentNullException"><paramref name="values"/> is <see langword="null"/>.</exception>
+        public static void ReplaceAnyExcept<T>(this ReadOnlySpan<T> source, Span<T> destination, SearchValues<T> values, T newValue) where T : IEquatable<T>?
+        {
+            if (source.Length > destination.Length)
+            {
+                ThrowHelper.ThrowArgumentException_DestinationTooShort();
+            }
+
+            if (!Unsafe.AreSame(ref source._reference, ref destination._reference) &&
+                source.Overlaps(destination))
+            {
+                ThrowHelper.ThrowArgumentException(ExceptionResource.InvalidOperation_SpanOverlappedOperation);
+            }
+
+            source.CopyTo(destination);
+            ReplaceAnyExcept(destination.Slice(0, source.Length), values, newValue);
+        }
+
+        /// <summary>
+        /// Replaces in <paramref name="span"/> all elements, other than those in <paramref name="values"/>, with <paramref name="newValue"/>.
+        /// </summary>
+        /// <typeparam name="T">The type of the elements in the spans.</typeparam>
+        /// <param name="span">The span to edit.</param>
+        /// <param name="values">The values to be excluded from replacement with <paramref name="newValue"/>.</param>
+        /// <param name="newValue">The value to replace all occurrences of any elements other than those in <paramref name="values"/>.</param>
+        /// <exception cref="ArgumentNullException"><paramref name="values"/> is <see langword="null"/>.</exception>
+        public static void ReplaceAnyExcept<T>(this Span<T> span, SearchValues<T> values, T newValue) where T : IEquatable<T>?
+        {
+            int pos;
+            while ((pos = span.IndexOfAnyExcept(values)) >= 0)
+            {
+                span[pos] = newValue;
+                span = span.Slice(pos + 1);
+            }
+        }
+
         /// <summary>Finds the length of any common prefix shared between <paramref name="span"/> and <paramref name="other"/>.</summary>
         /// <typeparam name="T">The type of the elements in the spans.</typeparam>
         /// <param name="span">The first sequence to compare.</param>
@@ -5458,6 +5557,72 @@ namespace System
                     return count;
             }
         }
+
+        /// <summary>Counts the number of times any of the specified <paramref name="values"/> occurs in the <paramref name="span"/>.</summary>
+        /// <typeparam name="T">The element type of the span.</typeparam>
+        /// <param name="span">The span to search.</param>
+        /// <param name="values">The set of values for which to search.</param>
+        /// <returns>The number of times any of the <typeparamref name="T"/> elements in <paramref name="values"/> was found in the <paramref name="span"/>.</returns>
+        /// <remarks>If <paramref name="values"/> is empty, 0 is returned.</remarks>
+        /// <exception cref="ArgumentNullException"><paramref name="values"/> is <see langword="null"/>.</exception>
+        public static int CountAny<T>(this ReadOnlySpan<T> span, SearchValues<T> values) where T : IEquatable<T>?
+        {
+            int count = 0;
+
+            int pos;
+            while ((pos = span.IndexOfAny(values)) >= 0)
+            {
+                count++;
+                span = span.Slice(pos + 1);
+            }
+
+            return count;
+        }
+
+        /// <summary>Counts the number of times any of the specified <paramref name="values"/> occurs in the <paramref name="span"/>.</summary>
+        /// <typeparam name="T">The element type of the span.</typeparam>
+        /// <param name="span">The span to search.</param>
+        /// <param name="values">The set of values for which to search.</param>
+        /// <returns>The number of times any of the <typeparamref name="T"/> elements in <paramref name="values"/> was found in the <paramref name="span"/>.</returns>
+        /// <remarks>If <paramref name="values"/> is empty, 0 is returned.</remarks>
+        public static int CountAny<T>(this ReadOnlySpan<T> span, params ReadOnlySpan<T> values) where T : IEquatable<T>?
+        {
+            int count = 0;
+
+            int pos;
+            while ((pos = span.IndexOfAny(values)) >= 0)
+            {
+                count++;
+                span = span.Slice(pos + 1);
+            }
+
+            return count;
+        }
+
+        /// <summary>Counts the number of times any of the specified <paramref name="values"/> occurs in the <paramref name="span"/>.</summary>
+        /// <typeparam name="T">The element type of the span.</typeparam>
+        /// <param name="span">The span to search.</param>
+        /// <param name="values">The set of values for which to search.</param>
+        /// <param name="comparer">
+        /// The <see cref="IEqualityComparer{T}"/> implementation to use when comparing elements, or <see langword="null"/> to use the
+        /// default <see cref="IEqualityComparer{T}"/> for the type of an element.
+        /// </param>
+        /// <returns>The number of times any of the <typeparamref name="T"/> elements in <paramref name="values"/> was found in the <paramref name="span"/>.</returns>
+        /// <remarks>If <paramref name="values"/> is empty, 0 is returned.</remarks>
+        public static int CountAny<T>(this ReadOnlySpan<T> span, ReadOnlySpan<T> values, IEqualityComparer<T>? comparer = null)
+        {
+            int count = 0;
+
+            int pos;
+            while ((pos = span.IndexOfAny(values, comparer)) >= 0)
+            {
+                count++;
+                span = span.Slice(pos + 1);
+            }
+
+            return count;
+        }
+
 
         /// <summary>Writes the specified interpolated string to the character span.</summary>
         /// <param name="destination">The span to which the interpolated string should be formatted.</param>

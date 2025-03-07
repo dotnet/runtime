@@ -1588,10 +1588,7 @@ size_t GCInfo::gcInfoBlockHdrSave(
         assert(header->revPInvokeOffset != INVALID_REV_PINVOKE_OFFSET);
     }
 
-    assert((compiler->compArgSize & 0x3) == 0);
-
-    size_t argCount =
-        (compiler->compArgSize - (compiler->codeGen->intRegState.rsCalleeRegArgCount * REGSIZE_BYTES)) / REGSIZE_BYTES;
+    size_t argCount = compiler->lvaParameterStackSize / REGSIZE_BYTES;
     assert(argCount <= MAX_USHORT_SIZE_T);
     header->argCount = static_cast<unsigned short>(argCount);
 
@@ -3202,9 +3199,24 @@ size_t GCInfo::gcMakeRegPtrTable(BYTE* dest, int mask, const InfoHdr& header, un
 
                     callArgCnt = genRegPtrTemp->rpdPtrArg;
 
-                    unsigned gcrefRegMask = genRegPtrTemp->rpdCallGCrefRegs;
+                    unsigned gcrefRegMask = 0;
 
-                    byrefRegMask = genRegPtrTemp->rpdCallByrefRegs;
+                    byrefRegMask = 0;
+
+                    // The order here is fixed: it must agree with the order assumed in eetwain.
+                    // NB: x86 GC decoder does not report return registers at call sites.
+                    static const regNumber calleeSaveOrder[] = {REG_EDI, REG_ESI, REG_EBX, REG_EBP};
+                    for (unsigned i = 0; i < ArrLen(calleeSaveOrder); i++)
+                    {
+                        if ((genRegPtrTemp->rpdCallGCrefRegs & (1 << (calleeSaveOrder[i] - REG_INT_FIRST))) != 0)
+                        {
+                            gcrefRegMask |= 1u << i;
+                        }
+                        if ((genRegPtrTemp->rpdCallByrefRegs & (1 << (calleeSaveOrder[i] - REG_INT_FIRST))) != 0)
+                        {
+                            byrefRegMask |= 1u << i;
+                        }
+                    }
 
                     assert((gcrefRegMask & byrefRegMask) == 0);
 
@@ -4468,8 +4480,8 @@ void GCInfo::gcMakeRegPtrTable(
             assert(call->u1.cdArgMask == 0 && call->cdArgCnt == 0);
 
             // Other than that, we just have to deal with the regmasks.
-            regMaskSmall gcrefRegMask = call->cdGCrefRegs & RBM_CALL_GC_REGS.GetIntRegSet();
-            regMaskSmall byrefRegMask = call->cdByrefRegs & RBM_CALL_GC_REGS.GetIntRegSet();
+            regMaskSmall gcrefRegMask = call->cdGCrefRegs;
+            regMaskSmall byrefRegMask = call->cdByrefRegs;
 
             assert((gcrefRegMask & byrefRegMask) == 0);
 
@@ -4555,11 +4567,8 @@ void GCInfo::gcMakeRegPtrTable(
                 {
                     // This is a true call site.
 
-                    regMaskSmall gcrefRegMask =
-                        genRegMaskFromCalleeSavedMask(genRegPtrTemp->rpdCallGCrefRegs).GetIntRegSet();
-
-                    regMaskSmall byrefRegMask =
-                        genRegMaskFromCalleeSavedMask(genRegPtrTemp->rpdCallByrefRegs).GetIntRegSet();
+                    regMaskSmall gcrefRegMask = regMaskSmall(genRegPtrTemp->rpdCallGCrefRegs << REG_INT_FIRST);
+                    regMaskSmall byrefRegMask = regMaskSmall(genRegPtrTemp->rpdCallByrefRegs << REG_INT_FIRST);
 
                     assert((gcrefRegMask & byrefRegMask) == 0);
 

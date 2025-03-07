@@ -1893,7 +1893,7 @@ void CodeGen::genPutArgStkFieldList(GenTreePutArgStk* putArgStk, unsigned outArg
 // We can't write beyond the arg area unless this is a tail call, in which case we use
 // the first stack arg as the base of the incoming arg area.
 #ifdef DEBUG
-        unsigned areaSize = compiler->lvaLclSize(outArgVarNum);
+        unsigned areaSize = compiler->lvaLclStackHomeSize(outArgVarNum);
 #if FEATURE_FASTTAILCALL
         if (putArgStk->gtCall->IsFastTailCall())
         {

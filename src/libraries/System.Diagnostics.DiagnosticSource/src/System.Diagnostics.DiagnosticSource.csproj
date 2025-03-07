@@ -40,6 +40,7 @@ System.Diagnostics.DiagnosticSource</PackageDescription>
     <Compile Include="System\Diagnostics\ActivityLink.cs" />
     <Compile Include="System\Diagnostics\ActivityListener.cs" />
     <Compile Include="System\Diagnostics\ActivitySource.cs" />
+    <Compile Include="System\Diagnostics\ActivitySourceOptions.cs" />
     <Compile Include="System\Diagnostics\DiagnosticSource.cs" />
     <Compile Include="System\Diagnostics\DiagnosticSourceActivity.cs" />
     <Compile Include="System\Diagnostics\DiagnosticListener.cs" />

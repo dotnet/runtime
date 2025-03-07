@@ -7167,6 +7167,16 @@ bool GenTree::OperMayThrow(Compiler* comp)
         {
             return true;
         }
+
+#ifdef TARGET_XARCH
+        NamedIntrinsic intrinsicId = this->AsHWIntrinsic()->GetHWIntrinsicId();
+        if (intrinsicId == NI_Vector128_op_Division || intrinsicId == NI_Vector256_op_Division ||
+            intrinsicId == NI_Vector512_op_Division)
+        {
+            assert(varTypeIsInt(AsHWIntrinsic()->GetSimdBaseType()));
+            return true;
+        }
+#endif // TARGET_XARCH
     }
 #endif // FEATURE_HW_INTRINSICS
 
@@ -14450,7 +14460,7 @@ GenTree* Compiler::gtFoldExprSpecial(GenTree* tree)
                         compareResult = 1;
                     }
 
-                    GenTree* newTree = gtNewIconNode(compareResult);
+                    GenTree* newTree = NewMorphedIntConNode(compareResult);
                     if (wrapEffects)
                     {
                         newTree = gtWrapWithSideEffects(newTree, op, GTF_ALL_EFFECT);
@@ -21145,6 +21155,26 @@ GenTree* Compiler::gtNewSimdBinOpNode(
             }
         }
 #endif // TARGET_XARCH
+#if defined(TARGET_XARCH) && defined(FEATURE_HW_INTRINSICS)
+        case GT_DIV:
+        {
+            if (simdBaseType == TYP_INT)
+            {
+                assert(compOpportunisticallyDependsOn(InstructionSet_AVX) ||
+                       compOpportunisticallyDependsOn(InstructionSet_AVX512F));
+
+                assert(simdSize == 16 || simdSize == 32);
+
+                NamedIntrinsic divIntrinsic     = simdSize == 16 ? NI_Vector128_op_Division : NI_Vector256_op_Division;
+                unsigned int   divideOpSimdSize = simdSize * 2;
+
+                GenTree* divOp =
+                    gtNewSimdHWIntrinsicNode(op1->TypeGet(), op1, op2, divIntrinsic, simdBaseJitType, divideOpSimdSize);
+                return divOp;
+            }
+            unreached();
+        }
+#endif // defined(TARGET_XARCH) && defined(FEATURE_HW_INTRINSICS)
 
         case GT_MUL:
         {
@@ -24336,6 +24366,12 @@ GenTree* Compiler::gtNewSimdMaxNode(
 #if defined(TARGET_XARCH)
     if (varTypeIsFloating(simdBaseType))
     {
+        if (compOpportunisticallyDependsOn(InstructionSet_AVX10v2))
+        {
+            NamedIntrinsic minMaxIntrinsic = (simdSize == 64) ? NI_AVX10v2_V512_MinMax : NI_AVX10v2_MinMax;
+            return gtNewSimdHWIntrinsicNode(type, op1, op2, gtNewIconNode(0x05), minMaxIntrinsic, simdBaseJitType,
+                                            simdSize);
+        }
         GenTree* op1Dup1 = fgMakeMultiUse(&op1);
         GenTree* op1Dup2 = gtCloneExpr(op1Dup1);
         GenTree* op1Dup3 = gtCloneExpr(op1Dup2);
@@ -24595,6 +24631,12 @@ GenTree* Compiler::gtNewSimdMinNode(
 #if defined(TARGET_XARCH)
     if (varTypeIsFloating(simdBaseType))
     {
+        if (compOpportunisticallyDependsOn(InstructionSet_AVX10v2))
+        {
+            NamedIntrinsic minMaxIntrinsic = (simdSize == 64) ? NI_AVX10v2_V512_MinMax : NI_AVX10v2_MinMax;
+            return gtNewSimdHWIntrinsicNode(type, op1, op2, gtNewIconNode(0x04), minMaxIntrinsic, simdBaseJitType,
+                                            simdSize);
+        }
         GenTree* op1Dup1 = fgMakeMultiUse(&op1);
         GenTree* op1Dup2 = gtCloneExpr(op1Dup1);
         GenTree* op1Dup3 = gtCloneExpr(op1Dup2);
@@ -27052,9 +27094,9 @@ GenTree* Compiler::gtNewSimdWithElementNode(
 //
 GenTreeFieldList* Compiler::gtConvertTableOpToFieldList(GenTree* op, unsigned fieldCount)
 {
-    LclVarDsc* opVarDsc  = lvaGetDesc(op->AsLclVar());
-    unsigned   lclNum    = lvaGetLclNum(opVarDsc);
-    unsigned   fieldSize = opVarDsc->lvSize() / fieldCount;
+    unsigned   lclNum    = op->AsLclVar()->GetLclNum();
+    LclVarDsc* opVarDsc  = lvaGetDesc(lclNum);
+    unsigned   fieldSize = opVarDsc->lvExactSize() / fieldCount;
     var_types  fieldType = Compiler::getSIMDTypeForSize(fieldSize);
 
     GenTreeFieldList* fieldList = new (this, GT_FIELD_LIST) GenTreeFieldList();
@@ -27083,9 +27125,9 @@ GenTreeFieldList* Compiler::gtConvertTableOpToFieldList(GenTree* op, unsigned fi
 //
 GenTreeFieldList* Compiler::gtConvertParamOpToFieldList(GenTree* op, unsigned fieldCount, CORINFO_CLASS_HANDLE clsHnd)
 {
-    LclVarDsc*           opVarDsc  = lvaGetDesc(op->AsLclVar());
-    unsigned             lclNum    = lvaGetLclNum(opVarDsc);
-    unsigned             fieldSize = opVarDsc->lvSize() / fieldCount;
+    unsigned             lclNum    = op->AsLclVar()->GetLclNum();
+    LclVarDsc*           opVarDsc  = lvaGetDesc(lclNum);
+    unsigned             fieldSize = opVarDsc->lvExactSize() / fieldCount;
     GenTreeFieldList*    fieldList = new (this, GT_FIELD_LIST) GenTreeFieldList();
     int                  offset    = 0;
     unsigned             sizeBytes = 0;
@@ -28099,6 +28141,13 @@ void GenTreeHWIntrinsic::Initialize(NamedIntrinsic intrinsicId)
                 gtFlags |= (GTF_CALL | GTF_GLOB_REF);
                 break;
             }
+
+            case NI_Vector128_op_Division:
+            case NI_Vector256_op_Division:
+            {
+                gtFlags |= GTF_EXCEPT;
+                break;
+            }
 #endif // TARGET_XARCH
 
 #if defined(TARGET_ARM64)
@@ -29016,26 +29065,33 @@ NamedIntrinsic GenTreeHWIntrinsic::GetHWIntrinsicIdForBinOp(Compiler*  comp,
 
         case GT_DIV:
         {
+#if defined(TARGET_XARCH)
+            assert(varTypeIsFloating(simdBaseType) || varTypeIsInt(simdBaseType));
+#else
             assert(varTypeIsFloating(simdBaseType));
+#endif
             assert(op2->TypeIs(simdType));
 
 #if defined(TARGET_XARCH)
-            if (simdSize == 64)
+            if (varTypeIsFloating(simdBaseType))
             {
-                id = NI_AVX512F_Divide;
-            }
-            else if (simdSize == 32)
-            {
-                id = NI_AVX_Divide;
-            }
-            else if (simdBaseType == TYP_FLOAT)
-            {
-                id = isScalar ? NI_SSE_DivideScalar : NI_SSE_Divide;
-            }
-            else
-            {
-                assert(comp->compIsaSupportedDebugOnly(InstructionSet_SSE2));
-                id = isScalar ? NI_SSE2_DivideScalar : NI_SSE2_Divide;
+                if (simdSize == 64)
+                {
+                    id = NI_AVX512F_Divide;
+                }
+                else if (simdSize == 32)
+                {
+                    id = NI_AVX_Divide;
+                }
+                else if (simdBaseType == TYP_FLOAT)
+                {
+                    id = isScalar ? NI_SSE_DivideScalar : NI_SSE_Divide;
+                }
+                else
+                {
+                    assert(comp->compIsaSupportedDebugOnly(InstructionSet_SSE2));
+                    id = isScalar ? NI_SSE2_DivideScalar : NI_SSE2_Divide;
+                }
             }
 #elif defined(TARGET_ARM64)
             if ((simdSize == 8) && (isScalar || (simdBaseType == TYP_DOUBLE)))

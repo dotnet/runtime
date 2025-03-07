@@ -1119,6 +1119,11 @@ bool CodeGen::genCreateAddrMode(GenTree*  addr,
             [reg1 + reg2]
             [reg1 + reg2 * natural-scale]
 
+        The following indirections are valid address modes on riscv64:
+
+            [reg]
+            [reg  + icon]
+
      */
 
     /* All indirect address modes require the address to be an addition */
@@ -1269,7 +1274,7 @@ AGAIN:
 
     switch (op1->gtOper)
     {
-#ifdef TARGET_XARCH
+#if defined(TARGET_XARCH) || defined(TARGET_RISCV64)
         // TODO-ARM-CQ: For now we don't try to create a scaled index.
         case GT_ADD:
 
@@ -1291,7 +1296,7 @@ AGAIN:
                 }
             }
             break;
-#endif // TARGET_XARCH
+#endif // TARGET_XARCH || TARGET_RISCV64
 
         case GT_MUL:
 
@@ -1347,7 +1352,7 @@ AGAIN:
     noway_assert(op2);
     switch (op2->gtOper)
     {
-#ifdef TARGET_XARCH
+#if defined(TARGET_XARCH) || defined(TARGET_RISCV64)
         // TODO-ARM64-CQ, TODO-ARM-CQ: For now we only handle MUL and LSH because
         // arm doesn't support both scale and offset at the same. Offset is handled
         // at the emitter as a peephole optimization.
@@ -1370,7 +1375,7 @@ AGAIN:
                 }
             }
             break;
-#endif // TARGET_XARCH
+#endif // TARGET_XARCH || TARGET_RISCV64
 
         case GT_MUL:
 
@@ -1428,6 +1433,9 @@ AGAIN:
 #endif
 
 FOUND_AM:
+#ifdef TARGET_RISCV64
+    assert(mul == 0 || mul == 1);
+#endif
 
     if (rv2)
     {
@@ -1827,11 +1835,14 @@ void CodeGen::genGenerateMachineCode()
         printf(" for ");
 
 #if defined(TARGET_X86)
-        if (compiler->canUseEvexEncoding())
+        // Check ISA directly here instead of using
+        // compOpportunisticallyDependsOn to avoid JIT-EE calls that could make
+        // us miss in SPMI
+        if (compiler->opts.compSupportsISA.HasInstructionSet(InstructionSet_EVEX))
         {
-            if (compiler->compOpportunisticallyDependsOn(InstructionSet_AVX10v2))
+            if (compiler->opts.compSupportsISA.HasInstructionSet(InstructionSet_AVX10v2))
             {
-                if (compiler->compOpportunisticallyDependsOn(InstructionSet_AVX10v2_V512))
+                if (compiler->opts.compSupportsISA.HasInstructionSet(InstructionSet_AVX10v2_V512))
                 {
                     printf("X86 with AVX10.2/512");
                 }
@@ -1840,9 +1851,9 @@ void CodeGen::genGenerateMachineCode()
                     printf("X86 with AVX10.2/256");
                 }
             }
-            else if (compiler->compOpportunisticallyDependsOn(InstructionSet_AVX10v1))
+            else if (compiler->opts.compSupportsISA.HasInstructionSet(InstructionSet_AVX10v1))
             {
-                if (compiler->compOpportunisticallyDependsOn(InstructionSet_AVX10v1_V512))
+                if (compiler->opts.compSupportsISA.HasInstructionSet(InstructionSet_AVX10v1_V512))
                 {
                     printf("X86 with AVX10.1/512");
                 }
@@ -1857,7 +1868,7 @@ void CodeGen::genGenerateMachineCode()
                 printf("X86 with AVX512");
             }
         }
-        else if (compiler->canUseVexEncoding())
+        else if (compiler->opts.compSupportsISA.HasInstructionSet(InstructionSet_AVX))
         {
             printf("X86 with AVX");
         }
@@ -1866,11 +1877,11 @@ void CodeGen::genGenerateMachineCode()
             printf("generic X86");
         }
 #elif defined(TARGET_AMD64)
-        if (compiler->canUseEvexEncoding())
+        if (compiler->opts.compSupportsISA.HasInstructionSet(InstructionSet_EVEX))
         {
-            if (compiler->compOpportunisticallyDependsOn(InstructionSet_AVX10v2))
+            if (compiler->opts.compSupportsISA.HasInstructionSet(InstructionSet_AVX10v2))
             {
-                if (compiler->compOpportunisticallyDependsOn(InstructionSet_AVX10v2_V512))
+                if (compiler->opts.compSupportsISA.HasInstructionSet(InstructionSet_AVX10v2_V512))
                 {
                     printf("X64 with AVX10.2/512");
                 }
@@ -1879,9 +1890,9 @@ void CodeGen::genGenerateMachineCode()
                     printf("X64 with AVX10.2/256");
                 }
             }
-            else if (compiler->compOpportunisticallyDependsOn(InstructionSet_AVX10v1))
+            else if (compiler->opts.compSupportsISA.HasInstructionSet(InstructionSet_AVX10v1))
             {
-                if (compiler->compOpportunisticallyDependsOn(InstructionSet_AVX10v1_V512))
+                if (compiler->opts.compSupportsISA.HasInstructionSet(InstructionSet_AVX10v1_V512))
                 {
                     printf("X64 with AVX10.1/512");
                 }
@@ -1896,7 +1907,7 @@ void CodeGen::genGenerateMachineCode()
                 printf("X64 with AVX512");
             }
         }
-        else if (compiler->canUseVexEncoding())
+        else if (compiler->opts.compSupportsISA.HasInstructionSet(InstructionSet_AVX))
         {
             printf("X64 with AVX");
         }
@@ -2352,8 +2363,8 @@ void CodeGen::genReportEH()
     {
         for (XTnum = 0; XTnum < compiler->compHndBBtabCount; XTnum++)
         {
-            for (enclosingTryIndex = compiler->ehTrueEnclosingTryIndexIL(XTnum); // find the true enclosing try index,
-                                                                                 // ignoring 'mutual protect' trys
+            for (enclosingTryIndex = compiler->ehTrueEnclosingTryIndex(XTnum); // find the true enclosing try index,
+                                                                               // ignoring 'mutual protect' trys
                  enclosingTryIndex != EHblkDsc::NO_ENCLOSING_INDEX;
                  enclosingTryIndex = compiler->ehGetEnclosingTryIndex(enclosingTryIndex))
             {
@@ -2659,8 +2670,8 @@ void CodeGen::genReportEH()
 
             EHblkDsc* fletTab = compiler->ehGetDsc(XTnum2);
 
-            for (enclosingTryIndex = compiler->ehTrueEnclosingTryIndexIL(XTnum2); // find the true enclosing try index,
-                                                                                  // ignoring 'mutual protect' trys
+            for (enclosingTryIndex = compiler->ehTrueEnclosingTryIndex(XTnum2); // find the true enclosing try index,
+                                                                                // ignoring 'mutual protect' trys
                  enclosingTryIndex != EHblkDsc::NO_ENCLOSING_INDEX;
                  enclosingTryIndex = compiler->ehGetEnclosingTryIndex(enclosingTryIndex))
             {
@@ -3820,7 +3831,7 @@ void CodeGen::genCheckUseBlockInit()
                             {
                                 // Var is on the stack at entry.
                                 initStkLclCnt +=
-                                    roundUp(compiler->lvaLclSize(varNum), TARGET_POINTER_SIZE) / sizeof(int);
+                                    roundUp(compiler->lvaLclStackHomeSize(varNum), TARGET_POINTER_SIZE) / sizeof(int);
                                 counted = true;
                             }
                         }
@@ -3869,7 +3880,8 @@ void CodeGen::genCheckUseBlockInit()
 
                     if (!counted)
                     {
-                        initStkLclCnt += roundUp(compiler->lvaLclSize(varNum), TARGET_POINTER_SIZE) / sizeof(int);
+                        initStkLclCnt +=
+                            roundUp(compiler->lvaLclStackHomeSize(varNum), TARGET_POINTER_SIZE) / sizeof(int);
                         counted = true;
                     }
                 }
@@ -4130,7 +4142,7 @@ void CodeGen::genZeroInitFrame(int untrLclHi, int untrLclLo, regNumber initReg, 
                 (varDsc->lvExactSize() >= TARGET_POINTER_SIZE))
             {
                 // We only initialize the GC variables in the TYP_STRUCT
-                const unsigned slots  = (unsigned)compiler->lvaLclSize(varNum) / REGSIZE_BYTES;
+                const unsigned slots  = (unsigned)compiler->lvaLclStackHomeSize(varNum) / REGSIZE_BYTES;
                 ClassLayout*   layout = varDsc->GetLayout();
 
                 for (unsigned i = 0; i < slots; i++)
@@ -4147,7 +4159,7 @@ void CodeGen::genZeroInitFrame(int untrLclHi, int untrLclLo, regNumber initReg, 
                 regNumber zeroReg = genGetZeroReg(initReg, pInitRegZeroed);
 
                 // zero out the whole thing rounded up to a single stack slot size
-                unsigned lclSize = roundUp(compiler->lvaLclSize(varNum), (unsigned)sizeof(int));
+                unsigned lclSize = roundUp(compiler->lvaLclStackHomeSize(varNum), (unsigned)sizeof(int));
                 unsigned i;
                 for (i = 0; i + REGSIZE_BYTES <= lclSize; i += REGSIZE_BYTES)
                 {
@@ -4492,7 +4504,6 @@ void CodeGen::genHomeStackPartOfSplitParameter(regNumber initReg, bool* initRegS
         const ABIPassingInformation& abiInfo = compiler->lvaGetParameterABIInfo(lclNum);
         if (abiInfo.IsSplitAcrossRegistersAndStack())
         {
-            assert(var->lvIsSplit);
             JITDUMP("Homing stack part of split parameter V%02u\n", lclNum);
 
             assert(abiInfo.NumSegments == 2);
@@ -4589,21 +4600,6 @@ void CodeGen::genReportGenericContextArg(regNumber initReg, bool* pInitRegZeroed
     }
     else
     {
-        if (isFramePointerUsed())
-        {
-#if defined(TARGET_ARM)
-            // GetStackOffset() is always valid for incoming stack-arguments, even if the argument
-            // will become enregistered.
-            // On Arm compiler->compArgSize doesn't include r11 and lr sizes and hence we need to add 2*REGSIZE_BYTES
-            noway_assert((2 * REGSIZE_BYTES <= varDsc->GetStackOffset()) &&
-                         (size_t(varDsc->GetStackOffset()) < compiler->compArgSize + 2 * REGSIZE_BYTES));
-#else
-            // GetStackOffset() is always valid for incoming stack-arguments, even if the argument
-            // will become enregistered.
-            noway_assert((0 < varDsc->GetStackOffset()) && (size_t(varDsc->GetStackOffset()) < compiler->compArgSize));
-#endif
-        }
-
         // We will just use the initReg since it is an available register
         // and we are probably done using it anyway...
         reg             = initReg;
@@ -5212,7 +5208,7 @@ void CodeGen::genFnProlog()
         }
 
         signed int loOffs = varDsc->GetStackOffset();
-        signed int hiOffs = varDsc->GetStackOffset() + compiler->lvaLclSize(varNum);
+        signed int hiOffs = varDsc->GetStackOffset() + compiler->lvaLclStackHomeSize(varNum);
 
         /* We need to know the offset range of tracked stack GC refs */
         /* We assume that the GC reference can be anywhere in the TYP_STRUCT */
@@ -5669,7 +5665,7 @@ void CodeGen::genFnProlog()
         {
             // The last slot is reserved for ICodeManager::FixContext(ppEndRegion)
             unsigned filterEndOffsetSlotOffs =
-                compiler->lvaLclSize(compiler->lvaShadowSPslotsVar) - TARGET_POINTER_SIZE;
+                compiler->lvaLclStackHomeSize(compiler->lvaShadowSPslotsVar) - TARGET_POINTER_SIZE;
 
             // Zero out the slot for nesting level 0
             unsigned firstSlotOffs = filterEndOffsetSlotOffs - TARGET_POINTER_SIZE;
@@ -7880,12 +7876,13 @@ void CodeGen::genMultiRegStoreToLocal(GenTreeLclVar* lclNode)
             offset += genTypeSize(srcType);
 
 #ifdef DEBUG
+            unsigned stackHomeSize = compiler->lvaLclStackHomeSize(lclNum);
 #ifdef TARGET_64BIT
-            assert(offset <= varDsc->lvSize());
+            assert(offset <= stackHomeSize);
 #else  // !TARGET_64BIT
             if (varTypeIsStruct(varDsc))
             {
-                assert(offset <= varDsc->lvSize());
+                assert(offset <= stackHomeSize);
             }
             else
             {
@@ -8200,7 +8197,7 @@ void CodeGen::genPoisonFrame(regMaskTP regLiveIn)
 
         assert(varDsc->lvOnFrame);
 
-        unsigned int size = compiler->lvaLclSize(varNum);
+        unsigned int size = compiler->lvaLclStackHomeSize(varNum);
         if ((size / TARGET_POINTER_SIZE) > 16)
         {
             // This will require more than 16 instructions, switch to rep stosd/memset call.
