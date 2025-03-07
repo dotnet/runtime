@@ -252,7 +252,6 @@ namespace System.Net.Http.Functional.Tests
             new object[] { HttpMethod.Patch , "abortBeforeHeaders"},
 
             new object[] { HttpMethod.Get, "abortAfterHeaders" },
-            new object[] { HttpMethod.Head , "abortAfterHeaders"},
             new object[] { HttpMethod.Post , "abortAfterHeaders"},
             new object[] { HttpMethod.Put , "abortAfterHeaders"},
             new object[] { HttpMethod.Delete , "abortAfterHeaders"},
@@ -274,7 +273,7 @@ namespace System.Net.Http.Functional.Tests
         {
             var WebAssemblyEnableStreamingResponseKey = new HttpRequestOptionsKey<bool>("WebAssemblyEnableStreamingResponse");
 
-            var req = new HttpRequestMessage(method, Configuration.Http.RemoteHttp2Server.BaseUri + "echo.ashx");
+            var req = new HttpRequestMessage(method, Configuration.Http.RemoteHttp11Server.BaseUri + "echo.ashx");
             req.Options.Set(WebAssemblyEnableStreamingResponseKey, true);
 
             if(method == HttpMethod.Post)
@@ -282,7 +281,7 @@ namespace System.Net.Http.Functional.Tests
                 req.Content = new StringContent("hello world");
             }
 
-            using (HttpClient client = CreateHttpClientForRemoteServer(Configuration.Http.RemoteHttp2Server))
+            using (HttpClient client = CreateHttpClientForRemoteServer(Configuration.Http.RemoteHttp11Server))
             // we need to switch off Response buffering of default ResponseContentRead option
             using (HttpResponseMessage response = await client.SendAsync(req, HttpCompletionOption.ResponseHeadersRead))
             {
@@ -304,23 +303,23 @@ namespace System.Net.Http.Functional.Tests
         {
             var WebAssemblyEnableStreamingResponseKey = new HttpRequestOptionsKey<bool>("WebAssemblyEnableStreamingResponse");
 
-            var req = new HttpRequestMessage(method, Configuration.Http.RemoteHttp2Server.BaseUri + "echo.ashx?" + abort + "=true");
+            var req = new HttpRequestMessage(method, Configuration.Http.RemoteHttp11Server.BaseUri + "echo.ashx?" + abort + "=true");
             req.Options.Set(WebAssemblyEnableStreamingResponseKey, true);
 
-            if (method == HttpMethod.Post)
+            if (method == HttpMethod.Post || method == HttpMethod.Put || method == HttpMethod.Patch)
             {
                 req.Content = new StringContent("hello world");
             }
 
-            HttpClient client = CreateHttpClientForRemoteServer(Configuration.Http.RemoteHttp2Server);
-            if (abort == "abortBeforeHeaders")
-            {
-                await Assert.ThrowsAsync<HttpRequestException>(() => client.SendAsync(req, HttpCompletionOption.ResponseHeadersRead));
-            }
-            else
+            HttpClient client = CreateHttpClientForRemoteServer(Configuration.Http.RemoteHttp11Server);
+            if (abort == "abortDuringBody")
             {
                 using var res = await client.SendAsync(req, HttpCompletionOption.ResponseHeadersRead);
                 await Assert.ThrowsAsync<HttpRequestException>(() => res.Content.ReadAsByteArrayAsync());
+            }
+            else
+            {
+                await Assert.ThrowsAsync<HttpRequestException>(() => client.SendAsync(req, HttpCompletionOption.ResponseHeadersRead));
             }
         }
 

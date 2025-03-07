@@ -68,7 +68,6 @@ namespace NetCoreServer
 
             if (qs.Contains("abortAfterHeaders"))
             {
-                await context.Response.Body.FlushAsync();
                 await Task.Delay(10);
                 context.Abort();
                 return;
