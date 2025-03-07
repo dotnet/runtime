@@ -139,7 +139,7 @@ static uint32_t spaced_primes[] = {
     1992825643,
 };
 
-uint32_t
+static uint32_t
 next_prime_number (uint32_t x)
 {
 	int i, c = (sizeof(spaced_primes)/sizeof(spaced_primes[0]));
