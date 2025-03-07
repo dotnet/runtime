@@ -9,6 +9,12 @@
 // HACK: for better language server parsing
 #include "dn-simdhash.h"
 
+// FIXME: Temporary workaround until the NEON path is replaced with an optimized one.
+// See https://github.com/dotnet/runtime/issues/113074
+#ifdef __ARM_ARCH
+#define DN_SIMDHASH_USE_SCALAR_FALLBACK 1
+#endif
+
 #if defined(__clang__) || defined (__GNUC__) // use vector intrinsics
 
 #if defined(__wasm_simd128__)
@@ -102,6 +108,9 @@ find_first_matching_suffix_simd (
 #elif defined(_M_AMD64) || defined(_M_X64) || (_M_IX86_FP == 2) || defined(__SSE2__)
 	return ctz(_mm_movemask_epi8(_mm_cmpeq_epi8(needle.m128, haystack.m128)));
 #elif defined(__ARM_NEON)
+	dn_simdhash_assert(!"Scalar fallback should be in use here");
+	return 32;
+	/*
 	dn_simdhash_suffixes match_vector;
 	// Completely untested.
 	static const dn_simdhash_suffixes byte_mask = {
@@ -117,6 +126,7 @@ find_first_matching_suffix_simd (
 	msb.b[0] = vaddv_u8(vget_low_u8(masked.vec));
 	msb.b[1] = vaddv_u8(vget_high_u8(masked.vec));
 	return ctz(msb.u);
+	*/
 #else
 	dn_simdhash_assert(!"Scalar fallback should be in use here");
     return 32;

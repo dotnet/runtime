@@ -406,21 +406,7 @@ int LinearScan::BuildNode(GenTree* tree)
         case GT_GT:
         {
             var_types op1Type = genActualType(tree->gtGetOp1()->TypeGet());
-            if (varTypeIsFloating(op1Type))
-            {
-                bool isUnordered = (tree->gtFlags & GTF_RELOP_NAN_UN) != 0;
-                if (isUnordered)
-                {
-                    if (tree->OperIs(GT_EQ))
-                        buildInternalIntRegisterDefForNode(tree);
-                }
-                else
-                {
-                    if (tree->OperIs(GT_NE))
-                        buildInternalIntRegisterDefForNode(tree);
-                }
-            }
-            else
+            if (!varTypeIsFloating(op1Type))
             {
                 emitAttr cmpSize = EA_ATTR(genTypeSize(op1Type));
                 if (tree->gtGetOp2()->isContainedIntOrIImmed())

@@ -915,7 +915,8 @@ void Compiler::optPrintAssertion(AssertionDsc* curAssertion, AssertionIndex asse
                 }
                 else
                 {
-                    var_types op1Type = lvaGetDesc(curAssertion->op1.lcl.lclNum)->lvType;
+                    var_types op1Type = curAssertion->op1.kind == O1K_VN ? vnStore->TypeOfVN(curAssertion->op1.vn)
+                                                                         : lvaGetRealType(curAssertion->op1.lcl.lclNum);
                     if (op1Type == TYP_REF)
                     {
                         if (curAssertion->op2.u1.iconVal == 0)
@@ -1336,23 +1337,15 @@ AssertionIndex Compiler::optCreateAssertion(GenTree*         op1,
 
                     if (op2->gtOper == GT_CNS_INT)
                     {
-                        ssize_t iconVal = op2->AsIntCon()->gtIconVal;
-
-                        if (varTypeIsSmall(lclVar))
+                        ssize_t iconVal = op2->AsIntCon()->IconValue();
+                        if (varTypeIsSmall(lclVar) && op1->OperIs(GT_STORE_LCL_VAR))
                         {
                             iconVal = optCastConstantSmall(iconVal, lclVar->TypeGet());
+                            if (!optLocalAssertionProp)
+                            {
+                                assertion.op2.vn = vnStore->VNForIntCon(static_cast<int>(iconVal));
+                            }
                         }
-
-#ifdef TARGET_ARM
-                        // Do not Constant-Prop large constants for ARM
-                        // TODO-CrossBitness: we wouldn't need the cast below if GenTreeIntCon::gtIconVal had
-                        // target_ssize_t type.
-                        if (!codeGen->validImmForMov((target_ssize_t)iconVal))
-                        {
-                            goto DONE_ASSERTION; // Don't make an assertion
-                        }
-#endif // TARGET_ARM
-
                         assertion.op2.u1.iconVal = iconVal;
                         assertion.op2.SetIconFlag(op2->GetIconHandleFlag(), op2->AsIntCon()->gtFieldSeq);
                     }
@@ -3444,10 +3437,6 @@ GenTree* Compiler::optConstantAssertionProp(AssertionDsc*        curAssertion,
             // and insert casts in morph, which would be problematic to track
             // here).
             assert(tree->TypeGet() == lvaGetDesc(lclNum)->TypeGet());
-            // Assertions for small-typed locals should have been normalized
-            // when the assertion was created.
-            assert(!varTypeIsSmall(tree) || (curAssertion->op2.u1.iconVal ==
-                                             optCastConstantSmall(curAssertion->op2.u1.iconVal, tree->TypeGet())));
 
             if (curAssertion->op2.HasIconFlag())
             {
@@ -4034,11 +4023,15 @@ GenTree* Compiler::optAssertionProp_BlockStore(ASSERT_VALARG_TP assertions, GenT
 // Arguments:
 //    assertions         - set of live assertions
 //    tree               - the integral tree to analyze
+//    stmt               - statement containing "tree"
+//    block              - block containing "stmt"
 //    isKnownNonZero     - [OUT] set to true if the tree is known to be non-zero
 //    isKnownNonNegative - [OUT] set to true if the tree is known to be non-negative
 //
 void Compiler::optAssertionProp_RangeProperties(ASSERT_VALARG_TP assertions,
                                                 GenTree*         tree,
+                                                Statement*       stmt,
+                                                BasicBlock*      block,
                                                 bool*            isKnownNonZero,
                                                 bool*            isKnownNonNegative)
 {
@@ -4170,7 +4163,10 @@ void Compiler::optAssertionProp_RangeProperties(ASSERT_VALARG_TP assertions,
         {
             Range    rng = Range(Limit(Limit::keDependent));
             ValueNum vn  = vnStore->VNConservativeNormalValue(tree->gtGetOp1()->gtVNPair);
-            RangeCheck::MergeEdgeAssertions(this, vn, ValueNumStore::NoVN, assertions, &rng, false);
+            if (!RangeCheck::TryGetRangeFromAssertions(this, vn, assertions, &rng))
+            {
+                return;
+            }
 
             int cns = static_cast<int>(tree->gtGetOp2()->AsIntCon()->IconValue());
             rng.LowerLimit().AddConstant(cns);
@@ -4203,18 +4199,20 @@ void Compiler::optAssertionProp_RangeProperties(ASSERT_VALARG_TP assertions,
         }
         else
         {
-            Range rng = Range(Limit(Limit::keDependent));
-            RangeCheck::MergeEdgeAssertions(this, treeVN, ValueNumStore::NoVN, assertions, &rng, false);
-            Limit lowerBound = rng.LowerLimit();
-            if (lowerBound.IsConstant())
+            Range rng = Range(Limit(Limit::keUnknown));
+            if (RangeCheck::TryGetRangeFromAssertions(this, treeVN, assertions, &rng))
             {
-                if (lowerBound.GetConstant() >= 0)
+                Limit lowerBound = rng.LowerLimit();
+                if (lowerBound.IsConstant())
                 {
-                    *isKnownNonNegative = true;
-                }
-                if (lowerBound.GetConstant() > 0)
-                {
-                    *isKnownNonZero = true;
+                    if (lowerBound.GetConstant() >= 0)
+                    {
+                        *isKnownNonNegative = true;
+                    }
+                    if (lowerBound.GetConstant() > 0)
+                    {
+                        *isKnownNonZero = true;
+                    }
                 }
             }
         }
@@ -4231,11 +4229,15 @@ void Compiler::optAssertionProp_RangeProperties(ASSERT_VALARG_TP assertions,
 //    assertions - set of live assertions
 //    tree       - the DIV/UDIV/MOD/UMOD node to optimize
 //    stmt       - statement containing DIV/UDIV/MOD/UMOD
+//    block      - the block containing the statement
 //
 // Returns:
 //    Updated DIV/UDIV/MOD/UMOD node, or nullptr
 //
-GenTree* Compiler::optAssertionProp_ModDiv(ASSERT_VALARG_TP assertions, GenTreeOp* tree, Statement* stmt)
+GenTree* Compiler::optAssertionProp_ModDiv(ASSERT_VALARG_TP assertions,
+                                           GenTreeOp*       tree,
+                                           Statement*       stmt,
+                                           BasicBlock*      block)
 {
     GenTree* op1 = tree->gtGetOp1();
     GenTree* op2 = tree->gtGetOp2();
@@ -4244,8 +4246,8 @@ GenTree* Compiler::optAssertionProp_ModDiv(ASSERT_VALARG_TP assertions, GenTreeO
     bool op2IsNotZero;
     bool op1IsNotNegative;
     bool op2IsNotNegative;
-    optAssertionProp_RangeProperties(assertions, op1, &op1IsNotZero, &op1IsNotNegative);
-    optAssertionProp_RangeProperties(assertions, op2, &op2IsNotZero, &op2IsNotNegative);
+    optAssertionProp_RangeProperties(assertions, op1, stmt, block, &op1IsNotZero, &op1IsNotNegative);
+    optAssertionProp_RangeProperties(assertions, op2, stmt, block, &op2IsNotZero, &op2IsNotNegative);
 
     bool changed = false;
     if (op1IsNotNegative && op2IsNotNegative && tree->OperIs(GT_DIV, GT_MOD))
@@ -4455,14 +4457,17 @@ AssertionIndex Compiler::optGlobalAssertionIsEqualOrNotEqualZero(ASSERT_VALARG_T
  *  Returns the modified tree, or nullptr if no assertion prop took place
  */
 
-GenTree* Compiler::optAssertionProp_RelOp(ASSERT_VALARG_TP assertions, GenTree* tree, Statement* stmt)
+GenTree* Compiler::optAssertionProp_RelOp(ASSERT_VALARG_TP assertions,
+                                          GenTree*         tree,
+                                          Statement*       stmt,
+                                          BasicBlock*      block)
 {
     assert(tree->OperIsCompare());
 
     if (!optLocalAssertionProp)
     {
         // If global assertion prop then use value numbering.
-        return optAssertionPropGlobal_RelOp(assertions, tree, stmt);
+        return optAssertionPropGlobal_RelOp(assertions, tree, stmt, block);
     }
 
     //
@@ -4525,11 +4530,15 @@ Compiler::AssertVisit Compiler::optVisitReachingAssertions(ValueNum vn, TAssertV
 //   assertions  - set of live assertions
 //   tree        - tree to possibly optimize
 //   stmt        - statement containing the tree
+//   block       - the block containing the statement
 //
 // Returns:
 //   The modified tree, or nullptr if no assertion prop took place.
 //
-GenTree* Compiler::optAssertionPropGlobal_RelOp(ASSERT_VALARG_TP assertions, GenTree* tree, Statement* stmt)
+GenTree* Compiler::optAssertionPropGlobal_RelOp(ASSERT_VALARG_TP assertions,
+                                                GenTree*         tree,
+                                                Statement*       stmt,
+                                                BasicBlock*      block)
 {
     assert(!optLocalAssertionProp);
 
@@ -4541,7 +4550,7 @@ GenTree* Compiler::optAssertionPropGlobal_RelOp(ASSERT_VALARG_TP assertions, Gen
     if (op2->IsIntegralConst(0) && tree->OperIsCmpCompare())
     {
         bool isNonZero, isNeverNegative;
-        optAssertionProp_RangeProperties(assertions, op1, &isNonZero, &isNeverNegative);
+        optAssertionProp_RangeProperties(assertions, op1, stmt, block, &isNonZero, &isNeverNegative);
 
         if (tree->OperIs(GT_GE, GT_LT) && isNeverNegative)
         {
@@ -4597,6 +4606,32 @@ GenTree* Compiler::optAssertionPropGlobal_RelOp(ASSERT_VALARG_TP assertions, Gen
         newTree = gtWrapWithSideEffects(newTree, tree, GTF_ALL_EFFECT);
         DISPTREE(newTree);
         return optAssertionProp_Update(newTree, tree, stmt);
+    }
+
+    ValueNum op1VN = vnStore->VNConservativeNormalValue(op1->gtVNPair);
+    ValueNum op2VN = vnStore->VNConservativeNormalValue(op2->gtVNPair);
+
+    // See if we can fold "X relop CNS" using TryGetRangeFromAssertions.
+    int op2cns;
+    if (op1->TypeIs(TYP_INT) && op2->TypeIs(TYP_INT) &&
+        vnStore->IsVNIntegralConstant(op2VN, &op2cns)
+        // "op2cns != 0" is purely a TP quirk (such relops are handled by the code above):
+        && (op2cns != 0))
+    {
+        // NOTE: we can call TryGetRangeFromAssertions for op2 as well if we want, but it's not cheap.
+        Range rng1 = Range(Limit(Limit::keUndef));
+        Range rng2 = Range(Limit(Limit::keConstant, op2cns));
+
+        if (RangeCheck::TryGetRangeFromAssertions(this, op1VN, assertions, &rng1))
+        {
+            RangeOps::RelationKind kind = RangeOps::EvalRelop(tree->OperGet(), tree->IsUnsigned(), rng1, rng2);
+            if ((kind != RangeOps::RelationKind::Unknown))
+            {
+                newTree = kind == RangeOps::RelationKind::AlwaysTrue ? gtNewTrue() : gtNewFalse();
+                newTree = gtWrapWithSideEffects(newTree, tree, GTF_ALL_EFFECT);
+                return optAssertionProp_Update(newTree, tree, stmt);
+            }
+        }
     }
 
     // Else check if we have an equality check involving a local or an indir
@@ -4928,11 +4963,15 @@ GenTree* Compiler::optAssertionPropLocal_RelOp(ASSERT_VALARG_TP assertions, GenT
 //    assertions - the set of live assertions
 //    cast       - the cast for which to propagate the assertions
 //    stmt       - statement "cast" is a part of, "nullptr" for local prop
+//    block      - the block containing the statement
 //
 // Return Value:
 //    The, possibly modified, cast tree or "nullptr" if no propagation took place.
 //
-GenTree* Compiler::optAssertionProp_Cast(ASSERT_VALARG_TP assertions, GenTreeCast* cast, Statement* stmt)
+GenTree* Compiler::optAssertionProp_Cast(ASSERT_VALARG_TP assertions,
+                                         GenTreeCast*     cast,
+                                         Statement*       stmt,
+                                         BasicBlock*      block)
 {
     GenTree* op1 = cast->CastOp();
 
@@ -4951,7 +4990,7 @@ GenTree* Compiler::optAssertionProp_Cast(ASSERT_VALARG_TP assertions, GenTreeCas
     {
         bool isKnownNonZero;
         bool isKnownNonNegative;
-        optAssertionProp_RangeProperties(assertions, lcl, &isKnownNonZero, &isKnownNonNegative);
+        optAssertionProp_RangeProperties(assertions, lcl, stmt, block, &isKnownNonZero, &isKnownNonNegative);
         if (isKnownNonNegative)
         {
             cast->SetUnsigned();
@@ -5716,7 +5755,7 @@ GenTree* Compiler::optAssertionProp(ASSERT_VALARG_TP assertions, GenTree* tree, 
         case GT_DIV:
         case GT_UMOD:
         case GT_UDIV:
-            return optAssertionProp_ModDiv(assertions, tree->AsOp(), stmt);
+            return optAssertionProp_ModDiv(assertions, tree->AsOp(), stmt, block);
 
         case GT_BLK:
         case GT_IND:
@@ -5731,7 +5770,7 @@ GenTree* Compiler::optAssertionProp(ASSERT_VALARG_TP assertions, GenTree* tree, 
             return optAssertionProp_Comma(assertions, tree, stmt);
 
         case GT_CAST:
-            return optAssertionProp_Cast(assertions, tree->AsCast(), stmt);
+            return optAssertionProp_Cast(assertions, tree->AsCast(), stmt, block);
 
         case GT_CALL:
             return optAssertionProp_Call(assertions, tree->AsCall(), stmt);
@@ -5742,7 +5781,7 @@ GenTree* Compiler::optAssertionProp(ASSERT_VALARG_TP assertions, GenTree* tree, 
         case GT_LE:
         case GT_GT:
         case GT_GE:
-            return optAssertionProp_RelOp(assertions, tree, stmt);
+            return optAssertionProp_RelOp(assertions, tree, stmt, block);
 
         case GT_JTRUE:
             if (block != nullptr)
