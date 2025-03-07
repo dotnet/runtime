@@ -96,11 +96,11 @@
 
   <!-- In the runtime official build, we only sign a subset of files. -->
   <ItemGroup Condition="'$(DotNetFinalPublish)' == 'true'">
-    <BlobArtifact Include="$(DownloadDirectory)**\*.msi;
-                    $(DownloadDirectory)**\*.exe;
-                    $(DownloadDirectory)**\*.nupkg;
-                    $(DownloadDirectory)**\*.zip"
-          SkipPublish="true" />
+    <BlobArtifact Include="$(ArtifactsPackagesDir)**\*.msi;
+                    $(ArtifactsPackagesDir)**\*.exe;
+                    $(ArtifactsPackagesDir)**\*.nupkg;
+                    $(ArtifactsPackagesDir)**\*.zip"
+                  SkipPublish="true" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(EnableBlobArtifacts)' == 'true'">
