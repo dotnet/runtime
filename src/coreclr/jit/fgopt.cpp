@@ -312,7 +312,7 @@ PhaseStatus Compiler::fgPostImportationCleanup()
         // spill temp is single def or was freshly created for this inlinee
         if (fgNeedReturnSpillTemp())
         {
-            CORINFO_CLASS_HANDLE retExprClassHnd = impInlineInfo->retExprClassHnd;
+            CORINFO_CLASS_HANDLE retExprClassHnd = impInlineInfo->inlineContext->retExprClassHnd;
             if (retExprClassHnd != nullptr)
             {
                 LclVarDsc* returnSpillVarDsc = lvaGetDesc(lvaInlineeReturnSpillTemp);
@@ -320,8 +320,8 @@ PhaseStatus Compiler::fgPostImportationCleanup()
                 if (returnSpillVarDsc->lvType == TYP_REF &&
                     (returnSpillVarDsc->lvSingleDef || lvaInlineeReturnSpillTempFreshlyCreated))
                 {
-                    lvaUpdateClass(lvaInlineeReturnSpillTemp, retExprClassHnd, impInlineInfo->retExprClassHndIsExact,
-                                   false);
+                    lvaUpdateClass(lvaInlineeReturnSpillTemp, retExprClassHnd,
+                                   impInlineInfo->inlineContext->retExprClassHndIsExact, false);
                 }
             }
         }
