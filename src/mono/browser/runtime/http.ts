@@ -180,8 +180,6 @@ export function http_wasm_fetch (controller: HttpController, url: string, header
         return loaderHelpers.fetch_like(url, options).then((res: Response) => {
             controller.response = res;
             return null;// drop the response from the promise chain
-        }).catch(err => {
-            throw err;
         });
     });
     // avoid processing headers if the fetch is canceled
