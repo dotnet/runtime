@@ -276,7 +276,7 @@ namespace System.Net.Http.Functional.Tests
             var req = new HttpRequestMessage(method, Configuration.Http.RemoteHttp11Server.BaseUri + "echo.ashx");
             req.Options.Set(WebAssemblyEnableStreamingResponseKey, true);
 
-            if(method == HttpMethod.Post)
+            if (method == HttpMethod.Post)
             {
                 req.Content = new StringContent("hello world");
             }
