@@ -189,6 +189,24 @@ static void * create_instance_dnght_random_values_bad_hash () {
 }
 
 
+static void * create_instance_ght_sequential_keys () {
+    GHashTable *result = g_hash_table_new(bad_hash_func, NULL);
+    for (int i = 0; i < INNER_COUNT; i++) {
+        uint32_t key = i;
+        g_hash_table_insert(result, (gpointer)(size_t)key, (gpointer)(size_t)i);
+    }
+    return result;
+}
+
+static void * create_instance_dnght_sequential_keys () {
+    dn_simdhash_ght_t *result = dn_simdhash_ght_new(bad_hash_func, NULL, INNER_COUNT, NULL);
+    for (int i = 0; i < INNER_COUNT; i++) {
+        uint32_t key = i;
+        dn_simdhash_ght_try_add(result, (gpointer)(size_t)key, (gpointer)(size_t)i);
+    }
+    return result;
+}
+
 #endif // MEASUREMENTS_IMPLEMENTATION
 
 // These go outside the guard because we include this file multiple times.
@@ -319,5 +337,21 @@ MEASUREMENT(dnght_find_missing_key_bad_hash, dn_simdhash_ght_t *, create_instanc
     for (int i = 0; i < BH_INNER_COUNT; i++) {
         uint32_t key = *dn_vector_index_t(random_unused_u32s, uint32_t, i);
         dn_simdhash_assert(!dn_simdhash_ght_get_value_or_default(data, (gpointer)(size_t)key));
+    }
+})
+
+
+MEASUREMENT(ght_find_sequential_keys, GHashTable *, create_instance_ght_sequential_keys, destroy_instance_ght, {
+    for (int i = 0; i < INNER_COUNT; i++) {
+        uint32_t key = i;
+        dn_simdhash_assert(g_hash_table_lookup(data, (gpointer)(size_t)key) == (gpointer)(size_t)i);
+    }
+})
+
+
+MEASUREMENT(dnght_find_sequential_keys, dn_simdhash_ght_t *, create_instance_dnght_sequential_keys, destroy_instance_dnght, {
+    for (int i = 0; i < INNER_COUNT; i++) {
+        uint32_t key = i;
+        dn_simdhash_assert(dn_simdhash_ght_get_value_or_default(data, (gpointer)(size_t)key) == (gpointer)(size_t)i);
     }
 })
