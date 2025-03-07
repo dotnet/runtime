@@ -505,8 +505,13 @@ void CodeGen::genCodeForBBlist()
             }
         }
 
+        if (compiler->compIsAsync2())
+        {
+            nonVarPtrRegs &= ~RBM_ASYNC_CONTINUATION_RET;
+        }
+
         // For a tailcall arbitrary argument registers may be live into the
-        // prolog. Skip validating those.
+        // epilog. Skip validating those.
         if (block->HasFlag(BBF_HAS_JMP))
         {
             nonVarPtrRegs &= ~fullIntArgRegMask(CorInfoCallConvExtension::Managed);
