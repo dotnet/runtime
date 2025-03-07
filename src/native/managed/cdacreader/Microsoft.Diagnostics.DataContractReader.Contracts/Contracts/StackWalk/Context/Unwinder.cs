@@ -109,7 +109,15 @@ internal static unsafe partial class Unwinder
             return -1;
         }
         Span<byte> span = new Span<byte>(pBuffer, bufferSize);
-        callbackContext.Target.ReadBuffer(address, span);
+        try
+        {
+            callbackContext.Target.ReadBuffer(address, span);
+        }
+        catch (InvalidOperationException)
+        {
+            // if the read fails, the unwinder behavior changes. Return failing HR instead of throwing
+            return -1;
+        }
         return 0;
     }
 
