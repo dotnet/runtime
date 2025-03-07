@@ -1204,6 +1204,9 @@ namespace System.Threading
             Interlocked.MemoryBarrier();
             if (!_workItems.TryDequeue(out T workItem))
             {
+                // Discount a work item here to avoid counting this queue processing work item
+                ThreadInt64PersistentCounter.Decrement(
+                    ThreadPoolWorkQueueThreadLocals.threadLocals!.threadLocalCompletionCountObject!);
                 return;
             }
 
@@ -1247,7 +1250,11 @@ namespace System.Threading
                 currentThread.ResetThreadPoolThread();
             }
 
-            ThreadInt64PersistentCounter.Add(tl.threadLocalCompletionCountObject!, completedCount);
+            // Discount a work item here to avoid counting this queue processing work item
+            if (completedCount > 1)
+            {
+                ThreadInt64PersistentCounter.Add(tl.threadLocalCompletionCountObject!, completedCount - 1);
+            }
         }
     }
 
