@@ -651,14 +651,10 @@ bool RangeCheck::TryGetRangeFromAssertions(Compiler* comp, ValueNum num, ASSERT_
 //    assertions       - the assertions to use
 //    pRange           - the range to tighten with assertions
 //
-void RangeCheck::MergeEdgeAssertions(Compiler*        comp,
-                                     ValueNum         normalLclVN,
-                                     ValueNum         preferredBoundVN,
-                                     ASSERT_VALARG_TP assertions,
-                                     Range*           pRange,
-                                     bool             log)
+void RangeCheck::MergeEdgeAssertions(
+    Compiler* comp, ValueNum normalLclVN, ValueNum preferredBoundVN, ASSERT_VALARG_TP assertions, Range* pRange)
 {
-    Range range = Range(Limit(Limit::keDependent));
+    Range assertedRange = Range(Limit(Limit::keUnknown));
     if (BitVecOps::IsEmpty(comp->apTraits, assertions))
     {
         return;
@@ -903,10 +899,10 @@ void RangeCheck::MergeEdgeAssertions(Compiler*        comp,
         {
             case GT_LT:
             case GT_LE:
-                range.uLimit = limit;
+                assertedRange.uLimit = limit;
                 if (isUnsigned)
                 {
-                    range.lLimit = Limit(Limit::keConstant, 0);
+                    assertedRange.lLimit = Limit(Limit::keConstant, 0);
                 }
                 break;
 
@@ -916,13 +912,13 @@ void RangeCheck::MergeEdgeAssertions(Compiler*        comp,
                 // using single Range object.
                 if (!isUnsigned)
                 {
-                    range.lLimit = limit;
+                    assertedRange.lLimit = limit;
                 }
                 break;
 
             case GT_EQ:
-                range.uLimit = limit;
-                range.lLimit = limit;
+                assertedRange.uLimit = limit;
+                assertedRange.lLimit = limit;
                 break;
 
             default:
@@ -931,20 +927,26 @@ void RangeCheck::MergeEdgeAssertions(Compiler*        comp,
         }
 
         // We have two ranges - we need to merge (tighten) them.
-        auto tightenLimit = [](Limit l1, Limit l2, ValueNum preferredBound, bool isLower) -> Limit {
-            // 1) if one the limits is completely unknown, use the other one.
-            if (l1.IsUndef() || l1.IsUnknown() || l2.IsUndef() || l2.IsUnknown())
-            {
-                return (l1.IsUndef() || l1.IsUnknown()) ? l2 : l1;
-            }
 
-            // 2) If one limit is dependent and the other is not, use the non-dependent one.
+        auto tightenLimit = [](Limit l1, Limit l2, ValueNum preferredBound, bool isLower) -> Limit {
+            // 1) One of the limits is undef, unknown or dependent
+            if (l1.IsUndef() || l2.IsUndef())
+            {
+                // Anything is better than undef.
+                return l1.IsUndef() ? l2 : l1;
+            }
+            if (l1.IsUnknown() || l2.IsUnknown())
+            {
+                // Anything is better than unknown.
+                return l1.IsUnknown() ? l2 : l1;
+            }
             if (l1.IsDependent() || l2.IsDependent())
             {
+                // Anything is better than dependent.
                 return l1.IsDependent() ? l2 : l1;
             }
 
-            // 3) Both limits are constant
+            // 2) Both limits are constants
             if (l1.IsConstant() && l2.IsConstant())
             {
                 //  isLower: whatever is higher is better.
@@ -952,10 +954,10 @@ void RangeCheck::MergeEdgeAssertions(Compiler*        comp,
                 return isLower ? (l1.cns > l2.cns ? l1 : l2) : (l1.cns < l2.cns ? l1 : l2);
             }
 
-            // 4) Both limits are of the form "len + cns"
+            // 3) Both limits are BinOpArray (which is "arrLen + cns")
             if (l1.IsBinOpArray() && l2.IsBinOpArray())
             {
-                // First, if one of them is preferredBound and the other is not, use the preferredBound.
+                // If one of them is preferredBound and the other is not, use the preferredBound.
                 if (preferredBound != ValueNumStore::NoVN)
                 {
                     if ((l1.vn == preferredBound) && (l2.vn != preferredBound))
@@ -969,14 +971,14 @@ void RangeCheck::MergeEdgeAssertions(Compiler*        comp,
                 }
 
                 // Otherwise, just use the one with the higher/lower constant.
-                // even if they use different arrLen - what else can we do?
+                // even if they use different arrLen.
                 return isLower ? (l1.cns > l2.cns ? l1 : l2) : (l1.cns < l2.cns ? l1 : l2);
             }
 
-            // 5) One limit is constant and the other is of the form "len + cns"
+            // 4) One of the limits is a constant and the other is BinOpArray
             if ((l1.IsConstant() && l2.IsBinOpArray()) || (l2.IsConstant() && l1.IsBinOpArray()))
             {
-                // swap them so that l1 is BinOpArray and l2 is constant.
+                // l1 - BinOpArray, l2 - constant
                 if (l1.IsConstant())
                 {
                     std::swap(l1, l2);
@@ -984,7 +986,8 @@ void RangeCheck::MergeEdgeAssertions(Compiler*        comp,
 
                 if (((preferredBound == ValueNumStore::NoVN) || (l1.vn != preferredBound)))
                 {
-                    // if we don't have a preferred bound or it doesn't match l1.vn, use l2.
+                    // if we don't have a preferred bound,
+                    // or it doesn't match l1.vn, use the constant (l2).
                     return l2;
                 }
 
@@ -994,16 +997,13 @@ void RangeCheck::MergeEdgeAssertions(Compiler*        comp,
             unreached();
         };
 
-        if (log)
-        {
-            JITDUMP("Tightening ranges [%s] and [%s] into ", range.ToString(comp), pRange->ToString(comp));
-        }
-        pRange->lLimit = tightenLimit(range.lLimit, pRange->lLimit, preferredBoundVN, true);
-        pRange->uLimit = tightenLimit(range.uLimit, pRange->uLimit, preferredBoundVN, false);
-        if (log)
-        {
-            JITDUMP("[%s]\n", pRange->ToString(comp));
-        }
+        JITDUMP("Tightening pRange: [%s] with assertedRange: [%s] into ", pRange->ToString(comp),
+                assertedRange.ToString(comp));
+
+        pRange->lLimit = tightenLimit(assertedRange.lLimit, pRange->lLimit, preferredBoundVN, true);
+        pRange->uLimit = tightenLimit(assertedRange.uLimit, pRange->uLimit, preferredBoundVN, false);
+
+        JITDUMP("[%s]\n", pRange->ToString(comp));
     }
 }
 
