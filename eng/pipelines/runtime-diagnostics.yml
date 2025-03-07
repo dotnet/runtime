@@ -1,13 +1,5 @@
 trigger: none
 
-schedules:
-  - cron: "0 10 * * *" # run at 10:00 (UTC) which is 2:00 (PST).
-    displayName: Runtime Diagnostics scheduled run
-    branches:
-      include:
-      - main
-    always: true
-
 resources:
   repositories:
     - repository: diagnostics
