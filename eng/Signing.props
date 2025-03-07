@@ -98,7 +98,6 @@
   <ItemGroup Condition="'$(DotNetFinalPublish)' == 'true'">
     <BlobArtifact Include="$(ArtifactsPackagesDir)**\*.msi;
                     $(ArtifactsPackagesDir)**\*.exe;
-                    $(ArtifactsPackagesDir)**\*.nupkg;
                     $(ArtifactsPackagesDir)**\*.zip"
                   SkipPublish="true" />
   </ItemGroup>
