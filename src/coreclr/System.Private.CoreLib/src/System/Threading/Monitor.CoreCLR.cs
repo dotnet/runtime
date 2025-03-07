@@ -231,7 +231,7 @@ namespace System.Threading
 
             ArgumentNullException.ThrowIfNull(obj);
 
-            TryEnter_WithLockTaken(obj, ref lockTaken);
+            TryEnter_Timeout_WithLockTaken(obj, 0, ref lockTaken);
         }
 
         /*=========================================================================
