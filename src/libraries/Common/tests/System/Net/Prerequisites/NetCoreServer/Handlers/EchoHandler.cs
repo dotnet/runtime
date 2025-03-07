@@ -73,7 +73,7 @@ namespace NetCoreServer
                 return;
             }
 
-            if (context.Request.Method == "HEAD")
+            if (HttpMethods.IsHead(context.Request.Method))
             {
                 return;
             }
