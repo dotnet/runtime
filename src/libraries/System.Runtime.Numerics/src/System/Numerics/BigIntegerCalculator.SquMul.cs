@@ -201,33 +201,16 @@ namespace System.Numerics
             bits[i] = (uint)carry;
         }
 
-        /// <summary>
-        /// A wrapper of <see cref="MultiplyImpl(ReadOnlySpan{uint}, ReadOnlySpan{uint}, Span{uint})"/>.
-        /// </summary>
-        /// /// <remarks>
-        /// The order of <paramref name="left"/> and <paramref name="right"/> does not matter.
-        /// The method internally swaps them if necessary to ensure correct computation.
-        /// </remarks>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void Multiply(ReadOnlySpan<uint> left, ReadOnlySpan<uint> right, Span<uint> bits)
         {
-            Debug.Assert(!bits.ContainsAnyExcept(0u));
-
             if (left.Length < right.Length)
             {
-                if (left.Length > 0)
-                    MultiplyImpl(right, left, bits);
+                ReadOnlySpan<uint> tmp = right;
+                right = left;
+                left = tmp;
             }
-            else
-            {
-                if (right.Length > 0)
-                    MultiplyImpl(left, right, bits);
-            }
-        }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void MultiplyImpl(ReadOnlySpan<uint> left, ReadOnlySpan<uint> right, Span<uint> bits)
-        {
             Debug.Assert(left.Length >= right.Length);
             Debug.Assert(right.Length >= 0);
             Debug.Assert(right.IsEmpty || bits.Length >= left.Length + right.Length);
@@ -510,7 +493,7 @@ namespace System.Numerics
                 Span<uint> bitsHigh = bits.Slice(n);
 
                 // ... compute low
-                MultiplyImpl(leftLow, right, bitsLow);
+                Multiply(leftLow, right, bitsLow);
 
                 int carryLength = right.Length;
                 uint[]? carryFromPool = null;
