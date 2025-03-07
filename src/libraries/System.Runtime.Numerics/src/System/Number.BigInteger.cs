@@ -1029,11 +1029,16 @@ namespace System
                 for (int iuSrc = bits.Length; --iuSrc >= 0;)
                 {
                     uint uCarry = bits[iuSrc];
-                    for (int iuDst = 0; iuDst < leadingWritten; iuDst++)
+                    Span<uint> base1E9 = base1E9Buffer.Slice(0, leadingWritten);
+                    for (int iuDst = 0; iuDst < base1E9.Length; iuDst++)
                     {
-                        Debug.Assert(base1E9Buffer[iuDst] < PowersOf1e9.TenPowMaxPartial);
+                        Debug.Assert(base1E9[iuDst] < PowersOf1e9.TenPowMaxPartial);
 
-                        (uCarry, base1E9Buffer[iuDst]) = DivRemTenPowMaxPartial(base1E9Buffer[iuDst], uCarry);
+                        // Use X86Base.DivRem when stable
+                        ulong uuRes = NumericsHelpers.MakeUInt64(base1E9[iuDst], uCarry);
+                        (ulong quo, ulong rem) = Math.DivRem(uuRes, PowersOf1e9.TenPowMaxPartial);
+                        uCarry = (uint)quo;
+                        base1E9[iuDst] = (uint)rem;
                     }
                     if (uCarry != 0)
                     {
@@ -1041,15 +1046,6 @@ namespace System
                         if (uCarry != 0)
                             base1E9Buffer[leadingWritten++] = uCarry;
                     }
-                }
-
-                [MethodImpl(MethodImplOptions.AggressiveInlining)]
-                static (uint, uint) DivRemTenPowMaxPartial(uint hi, uint lo)
-                {
-                    // Use X86Base.DivRem when stable
-                    ulong v = NumericsHelpers.MakeUInt64(hi, lo);
-                    (ulong quo, ulong rem) = Math.DivRem(v, PowersOf1e9.TenPowMaxPartial);
-                    return ((uint)quo, (uint)rem);
                 }
             }
         }
