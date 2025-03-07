@@ -61,12 +61,12 @@ wbs_highest_address
             DCQ 0
         PATCH_LABEL JIT_WriteBarrier_Patch_Label_RegionShr
             DCW 0
-ifdef WRITE_BARRIER_CHECK
+#ifdef WRITE_BARRIER_CHECK
         PATCH_LABEL JIT_WriteBarrier_Patch_Label_GCShadow
             DCQ 0
         PATCH_LABEL JIT_WriteBarrier_Patch_Label_GCShadowEnd
         DCQ 0
-endif
+#endif
     WRITE_BARRIER_END JIT_WriteBarrier_Table
 
 ;-----------------------------------------------------------------------------
@@ -169,7 +169,7 @@ endm
 
 
 WRITE_BARRIER_SHADOW_UPDATE_STUB macro start
-ifdef WRITE_BARRIER_CHECK
+#ifdef WRITE_BARRIER_CHECK
 ; Update GC Shadow Heap
 
 ; Do not perform the work if g_GCShadow is 0
@@ -203,14 +203,14 @@ ifdef WRITE_BARRIER_CHECK
     movz x17, #0xcccd
     movk x17, #0xcccc, LSL #16
     str  x17, [x12]
-endif
+#endif
 ShadowUpdateEnd
 endm
 
 
 
 WRITE_BARRIER_WRITE_WATCH_FOR_GC_HEAP_STUB macro start exit
-ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
+#ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
 ; Update the write watch table if necessary
     ldr  x12, WRITE_BARRIER_CONSTANT_OFFSET(start, JIT_WriteBarrier_Patch_Label_WriteWatchTable)
 ; SoftwareWriteWatch::AddressToTableByteIndexShift
@@ -220,7 +220,7 @@ ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
     mov  w17, #0xFF
     strb w17, [x12]
 WriteWatchForGCHeapEnd
-endif
+#endif
 endm
 
 
@@ -297,7 +297,7 @@ endm
 
 
 WRITE_BARRIER_CHECK_CARD_BUNDLE_TABLE_STUB macro start exit
-ifdef FEATURE_MANUALLY_MANAGED_CARD_BUNDLES
+#ifdef FEATURE_MANUALLY_MANAGED_CARD_BUNDLES
 ; Check if we need to update the card bundle table
     ldr  x12, WRITE_BARRIER_CONSTANT_OFFSET(start, JIT_WriteBarrier_Patch_Label_CardBundleTable)
     add  x15, x12, x14, lsr #21
@@ -308,7 +308,7 @@ ifdef FEATURE_MANUALLY_MANAGED_CARD_BUNDLES
 ; Update the card bundle
     mov  x12, 0xFF
     strb w12, [x15]
-endif
+#endif
 endm
 
 
