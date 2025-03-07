@@ -124,6 +124,10 @@ public:
     }
 #endif // FEATURE_GDBJIT && _DEBUG
 
+#if defined(FEATURE_CACHED_INTERFACE_DISPATCH) && defined(FEATURE_VIRTUAL_STUB_DISPATCH)
+    bool UseCachedInterfaceDispatch() const { LIMITED_METHOD_CONTRACT; return fUseCachedInterfaceDispatch; }
+#endif // defined(FEATURE_CACHED_INTERFACE_DISPATCH) && defined(FEATURE_VIRTUAL_STUB_DISPATCH)
+
 #if defined(FEATURE_GDBJIT_FRAME)
     inline bool ShouldEmitDebugFrame(void) const {LIMITED_METHOD_CONTRACT; return fGDBJitEmitDebugFrame;}
 #endif // FEATURE_GDBJIT_FRAME
@@ -643,7 +647,10 @@ private: //----------------------------------------------------------------
     bool fGDBJitEmitDebugFrame;
 #endif
 
-    bool runtimeAsyncViaJitGeneratedStateMachines;
+#if defined(FEATURE_CACHED_INTERFACE_DISPATCH) && defined(FEATURE_VIRTUAL_STUB_DISPATCH)
+    bool fUseCachedInterfaceDispatch;
+#endif // defined(FEATURE_CACHED_INTERFACE_DISPATCH) && defined(FEATURE_VIRTUAL_STUB_DISPATCH)
+
 public:
 
     enum BitForMask {

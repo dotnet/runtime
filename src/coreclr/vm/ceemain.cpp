@@ -185,10 +185,6 @@
 #include "profilinghelper.h"
 #endif // PROFILING_SUPPORTED
 
-#ifdef FEATURE_INTERPRETER
-#include "interpreter.h"
-#endif // FEATURE_INTERPRETER
-
 #ifdef FEATURE_PERFMAP
 #include "perfmap.h"
 #endif
@@ -733,8 +729,6 @@ void EEStartupHelper()
 
         InitGSCookie();
 
-        Frame::Init();
-
 #ifdef LOGGING
         InitializeLogging();
 #endif
@@ -794,10 +788,6 @@ void EEStartupHelper()
         // Monitors, Crsts, and SimpleRWLocks all use the same spin heuristics
         // Cache the (potentially user-overridden) values now so they are accessible from asm routines
         InitializeSpinConstants();
-
-#ifdef FEATURE_INTERPRETER
-        Interpreter::Initialize();
-#endif // FEATURE_INTERPRETER
 
         StubManager::InitializeStubManagers();
 
@@ -882,6 +872,10 @@ void EEStartupHelper()
         }
 #endif
 
+        // This isn't done as part of InitializeGarbageCollector() above because
+        // debugger must be initialized before creating EE thread objects 
+        FinalizerThread::FinalizerThreadCreate();
+
         InitPreStubManager();
 
 #ifdef FEATURE_COMINTEROP
@@ -918,10 +912,6 @@ void EEStartupHelper()
         EventPipeAdapter::FinishInitialize();
 #endif // FEATURE_PERFTRACING
         GenAnalysis::Initialize();
-
-        // This isn't done as part of InitializeGarbageCollector() above because thread
-        // creation requires AppDomains to have been set up.
-        FinalizerThread::FinalizerThreadCreate();
 
         // Now we really have fully initialized the garbage collector
         SetGarbageCollectorFullyInitialized();
@@ -974,6 +964,12 @@ void EEStartupHelper()
                                                 g_MiniMetaDataBuffMaxSize, MEM_COMMIT, PAGE_READWRITE);
 #endif // FEATURE_MINIMETADATA_IN_TRIAGEDUMPS
 
+#ifdef TARGET_WINDOWS
+        // By now finalizer thread should have initialized FLS slot for thread cleanup notifications.
+        // And ensured that COM is initialized (must happen before allocating FLS slot).
+        // Make sure that this was done.
+        FinalizerThread::WaitForFinalizerThreadStart();
+#endif
         g_fEEStarted = TRUE;
         g_EEStartupStatus = S_OK;
         hr = S_OK;
@@ -1267,10 +1263,6 @@ void STDMETHODCALLTYPE EEShutDownHelper(BOOL fIsDllUnloading)
 
         ceeInf.JitProcessShutdownWork();  // Do anything JIT-related that needs to happen at shutdown.
 
-#ifdef FEATURE_INTERPRETER
-        // This will check a flag and do nothing if not enabled.
-        Interpreter::PrintPostMortemData();
-#endif // FEATURE_INTERPRETER
         VirtualCallStubManager::LogFinalStats();
 
 #ifdef PROFILING_SUPPORTED
@@ -1739,20 +1731,27 @@ static void RuntimeThreadShutdown(void* thread)
 // Index for the fiber local storage of the attached thread pointer
 static uint32_t g_flsIndex = FLS_OUT_OF_INDEXES;
 
+#define FLS_STATE_CLEAR 0
+#define FLS_STATE_ARMED 1
+#define FLS_STATE_INVOKED 2
+
+static __declspec(thread) byte t_flsState;
+
 // This is called when each *fiber* is destroyed. When the home fiber of a thread is destroyed,
 // it means that the thread itself is destroyed.
 // Since we receive that notification outside of the Loader Lock, it allows us to safely acquire
 // the ThreadStore lock in the RuntimeThreadShutdown.
 static void __stdcall FiberDetachCallback(void* lpFlsData)
 {
-    ASSERT(g_flsIndex != FLS_OUT_OF_INDEXES);
-    ASSERT(lpFlsData == FlsGetValue(g_flsIndex));
+    _ASSERTE(g_flsIndex != FLS_OUT_OF_INDEXES);
+    _ASSERTE(lpFlsData);
 
-    if (lpFlsData != NULL)
+    if (t_flsState == FLS_STATE_ARMED)
     {
-        // The current fiber is the home fiber of a thread, so the thread is shutting down
         RuntimeThreadShutdown(lpFlsData);
     }
+
+    t_flsState = FLS_STATE_INVOKED;
 }
 
 void InitFlsSlot()
@@ -1772,16 +1771,17 @@ void InitFlsSlot()
 //  thread        - thread to attach
 static void OsAttachThread(void* thread)
 {
-    void* threadFromCurrentFiber = FlsGetValue(g_flsIndex);
-
-    if (threadFromCurrentFiber != NULL)
+    if (t_flsState == FLS_STATE_INVOKED)
     {
-        _ASSERTE_ALL_BUILDS(!"Multiple threads encountered from a single fiber");
+        _ASSERTE_ALL_BUILDS(!"Attempt to execute managed code after the .NET runtime thread state has been destroyed.");
     }
+
+    t_flsState = FLS_STATE_ARMED;
 
     // Associate the current fiber with the current thread.  This makes the current fiber the thread's "home"
     // fiber.  This fiber is the only fiber allowed to execute managed code on this thread.  When this fiber
     // is destroyed, we consider the thread to be destroyed.
+    _ASSERTE(thread != NULL);
     FlsSetValue(g_flsIndex, thread);
 }
 
@@ -1789,8 +1789,6 @@ static void OsAttachThread(void* thread)
 // It fails fast if some other thread value was attached to the current fiber.
 // Parameters:
 //  thread        - thread to detach
-// Return:
-//  true if the thread was detached, false if there was no attached thread
 void OsDetachThread(void* thread)
 {
     ASSERT(g_flsIndex != FLS_OUT_OF_INDEXES);
@@ -1798,8 +1796,10 @@ void OsDetachThread(void* thread)
 
     if (threadFromCurrentFiber == NULL)
     {
-        // we've seen this thread, but not this fiber.  It must be a "foreign" fiber that was
-        // borrowing this thread.
+        // Thread is not attached.
+        // This could come from DestroyThread called when refcount reaches 0
+        // and the thread may have already been detached or never attached.
+        // We leave t_flsState as-is to keep track whether our callback has been called.
         return;
     }
 
@@ -1808,7 +1808,9 @@ void OsDetachThread(void* thread)
         _ASSERTE_ALL_BUILDS(!"Detaching a thread from the wrong fiber");
     }
 
-    FlsSetValue(g_flsIndex, NULL);
+    // Leave the existing FLS value, to keep the callback "armed" so that we could observe the termination callback.
+    // After that we will not allow to attach as we will no longer be able to clean up.
+    t_flsState = FLS_STATE_CLEAR;
 }
 
 void EnsureTlsDestructionMonitor()
@@ -1848,7 +1850,7 @@ void EnsureTlsDestructionMonitor()
 
 #ifdef DEBUGGING_SUPPORTED
 //
-// InitializeDebugger initialized the Runtime-side COM+ Debugging Services
+// InitializeDebugger initialized the Runtime-side CLR Debugging Services
 //
 static void InitializeDebugger(void)
 {
@@ -1931,7 +1933,7 @@ static void InitializeDebugger(void)
 
 
 //
-// TerminateDebugger shuts down the Runtime-side COM+ Debugging Services
+// TerminateDebugger shuts down the Runtime-side CLR Debugging Services
 // InitializeDebugger will call this if it fails.
 // This may be called even if the debugger is partially initialized.
 // This can be called multiple times.

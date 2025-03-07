@@ -42,6 +42,7 @@
     <Compile Include="BigInteger\op_multiply.cs" />
     <Compile Include="BigInteger\op_not.cs" />
     <Compile Include="BigInteger\op_or.cs" />
+    <Compile Include="BigInteger\Rotate.cs" />
     <Compile Include="BigInteger\op_rightshift.cs" />
     <Compile Include="BigInteger\op_xor.cs" />
     <Compile Include="BigInteger\parse.cs" />

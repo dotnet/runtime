@@ -143,7 +143,7 @@ static void ScanStackRoots(Thread * pThread, promote_func* fn, ScanContext* sc)
     if (InlinedCallFrame::FrameHasActiveCall(pTopFrame))
     {
         // It is an InlinedCallFrame with active call. Get SP from it.
-        InlinedCallFrame* pInlinedFrame = (InlinedCallFrame*)pTopFrame;
+        InlinedCallFrame* pInlinedFrame = dac_cast<PTR_InlinedCallFrame>(pTopFrame);
         topStack = (Object **)pInlinedFrame->GetCallSiteSP();
     }
 #endif // FEATURE_CONSERVATIVE_GC || USE_FEF
@@ -1724,6 +1724,7 @@ void GCToEEInterface::AnalyzeSurvivorsFinished(size_t gcIndex, int condemnedGene
         {
             if (gcGenAnalysisTrace)
             {
+#ifdef FEATURE_PERFTRACING
                 EventPipeAdapter::ResumeSession(gcGenAnalysisEventPipeSession);
                 FireEtwGenAwareBegin((int)gcIndex, GetClrInstanceId());
                 s_forcedGCInProgress = true;
@@ -1732,6 +1733,7 @@ void GCToEEInterface::AnalyzeSurvivorsFinished(size_t gcIndex, int condemnedGene
                 reportGenerationBounds();
                 FireEtwGenAwareEnd((int)gcIndex, GetClrInstanceId());
                 EventPipeAdapter::PauseSession(gcGenAnalysisEventPipeSession);
+#endif //FEATURE_PERFTRACING
             }
             if (gcGenAnalysisDump)
             {

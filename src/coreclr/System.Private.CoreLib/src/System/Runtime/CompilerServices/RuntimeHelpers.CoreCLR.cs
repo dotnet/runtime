@@ -320,7 +320,7 @@ namespace System.Runtime.CompilerServices
         }
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern unsafe bool ContentEquals(object o1, object o2);
+        private static extern bool ContentEquals(object o1, object o2);
 
         [Obsolete("OffsetToStringData has been deprecated. Use string.GetPinnableReference() instead.")]
         public static int OffsetToStringData
@@ -448,7 +448,7 @@ namespace System.Runtime.CompilerServices
 
         // Returns pointer to the multi-dimensional array bounds.
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static unsafe ref int GetMultiDimensionalArrayBounds(Array array)
+        internal static ref int GetMultiDimensionalArrayBounds(Array array)
         {
             Debug.Assert(GetMultiDimensionalArrayRank(array) > 0);
             // See comment on RawArrayData for details
@@ -866,7 +866,7 @@ namespace System.Runtime.CompilerServices
         /// <exception cref="ArgumentNullException">The specified type handle is <c>null</c>.</exception>
         /// <exception cref="ArgumentException">The specified type cannot have a boxed instance of itself created.</exception>
         /// <exception cref="NotSupportedException">The passed in type is a by-ref-like type.</exception>
-        public static unsafe object? Box(ref byte target, RuntimeTypeHandle type)
+        public static object? Box(ref byte target, RuntimeTypeHandle type)
         {
             if (type.IsNullHandle())
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.type);
@@ -887,7 +887,7 @@ namespace System.Runtime.CompilerServices
         /// <remarks>
         /// This API returns the same value as <see cref="Unsafe.SizeOf{T}"/> for the type that <paramref name="type"/> represents.
         /// </remarks>
-        public static unsafe int SizeOf(RuntimeTypeHandle type)
+        public static int SizeOf(RuntimeTypeHandle type)
         {
             if (type.IsNullHandle())
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.type);
@@ -1249,6 +1249,22 @@ namespace System.Runtime.CompilerServices
         public extern IntPtr GetLoaderAllocatorHandle();
     }
 
+    // Subset of src\vm\typedesc.h
+    [StructLayout(LayoutKind.Sequential)]
+    internal unsafe struct TypeDesc
+    {
+        private uint _typeAndFlags;
+        private nint _exposedClassObject;
+
+        public RuntimeType? ExposedClassObject
+        {
+            get
+            {
+                return *(RuntimeType*)Unsafe.AsPointer(ref _exposedClassObject);
+            }
+        }
+    }
+
     [StructLayout(LayoutKind.Sequential)]
     internal unsafe ref struct DynamicStaticsInfo
     {
@@ -1268,11 +1284,11 @@ namespace System.Runtime.CompilerServices
             }
         }
 
-        internal unsafe MethodTable* _methodTable;
+        internal MethodTable* _methodTable;
     }
 
     [StructLayout(LayoutKind.Sequential)]
-    internal unsafe ref struct GenericsStaticsInfo
+    internal ref struct GenericsStaticsInfo
     {
         // Pointer to field descs for statics
         internal IntPtr _pFieldDescs;
@@ -1280,7 +1296,7 @@ namespace System.Runtime.CompilerServices
     }
 
     [StructLayout(LayoutKind.Sequential)]
-    internal unsafe ref struct ThreadStaticsInfo
+    internal ref struct ThreadStaticsInfo
     {
         internal int _nonGCTlsIndex;
         internal int _gcTlsIndex;
@@ -1405,6 +1421,18 @@ namespace System.Runtime.CompilerServices
             Debug.Assert(!IsTypeDesc);
 
             return (MethodTable*)m_asTAddr;
+        }
+
+        /// <summary>
+        /// Gets the <see cref="TypeDesc"/> pointer wrapped by the current instance.
+        /// </summary>
+        /// <remarks>This is only safe to call if <see cref="IsTypeDesc"/> returned <see langword="true"/>.</remarks>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public TypeDesc* AsTypeDesc()
+        {
+            Debug.Assert(IsTypeDesc);
+
+            return (TypeDesc*)((nint)m_asTAddr & ~2); // Drop the second lowest bit.
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

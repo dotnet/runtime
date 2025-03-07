@@ -552,7 +552,7 @@ PCODE EditAndContinueModule::JitUpdatedFunction( MethodDesc *pMD,
     // so that gc can crawl the stack and do the right thing.
     _ASSERTE(pOrigContext);
     Thread *pCurThread = GetThread();
-    FrameWithCookie<ResumableFrame> resFrame(pOrigContext);
+    ResumableFrame resFrame(pOrigContext);
     resFrame.Push(pCurThread);
 
     CONTEXT *pCtxTemp = NULL;

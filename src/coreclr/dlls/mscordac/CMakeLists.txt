@@ -31,9 +31,9 @@ else(CLR_CMAKE_HOST_WIN32)
     # Add dependency on export file
     add_custom_target(mscordaccore_exports DEPENDS ${EXPORTS_FILE})
 
-    if(CLR_CMAKE_HOST_OSX OR CLR_CMAKE_HOST_FREEBSD OR CLR_CMAKE_HOST_NETBSD OR CLR_CMAKE_HOST_SUNOS OR CLR_CMAKE_HOST_HAIKU)
+    if(CLR_CMAKE_HOST_APPLE OR CLR_CMAKE_HOST_FREEBSD OR CLR_CMAKE_HOST_NETBSD OR CLR_CMAKE_HOST_SUNOS OR CLR_CMAKE_HOST_HAIKU)
         generate_exports_file(${DEF_SOURCES} ${EXPORTS_FILE})
-    endif(CLR_CMAKE_HOST_OSX OR CLR_CMAKE_HOST_FREEBSD OR CLR_CMAKE_HOST_NETBSD OR CLR_CMAKE_HOST_SUNOS OR CLR_CMAKE_HOST_HAIKU)
+    endif(CLR_CMAKE_HOST_APPLE OR CLR_CMAKE_HOST_FREEBSD OR CLR_CMAKE_HOST_NETBSD OR CLR_CMAKE_HOST_SUNOS OR CLR_CMAKE_HOST_HAIKU)
 
     if(CORECLR_SET_RPATH AND CLR_CMAKE_HOST_OSX AND CLR_CMAKE_HOST_ARCH_ARM64)
       set(CMAKE_BUILD_WITH_INSTALL_NAME_DIR ON)
@@ -45,7 +45,11 @@ else(CLR_CMAKE_HOST_WIN32)
         # Generate DAC export file with the DAC_ prefix
         generate_exports_file_prefix(${DEF_SOURCES} ${EXPORTS_FILE} DAC_)
 
-        set(REDEFINES_FILE_SCRIPT ${CMAKE_SOURCE_DIR}/generateredefinesfile.sh)
+        if (CMAKE_HOST_SYSTEM_NAME STREQUAL "Windows")
+            set(REDEFINES_FILE_SCRIPT ${CMAKE_SOURCE_DIR}/generateredefinesfile.ps1)
+        else()
+            set(REDEFINES_FILE_SCRIPT ${CMAKE_SOURCE_DIR}/generateredefinesfile.sh)
+        endif()
 
         if (CLR_CMAKE_HOST_ARCH_ARM OR CLR_CMAKE_HOST_ARCH_ARM64 OR CLR_CMAKE_HOST_ARCH_LOONGARCH64)
             set(JUMP_INSTRUCTION b)
@@ -57,23 +61,46 @@ else(CLR_CMAKE_HOST_WIN32)
 
         # Generate the palredefines.inc file to map from the imported prefixed APIs (foo to DAC_foo)
         set(PAL_REDEFINES_INC ${GENERATED_INCLUDE_DIR}/palredefines.inc)
-        add_custom_command(
-            OUTPUT ${PAL_REDEFINES_INC}
-            COMMAND ${REDEFINES_FILE_SCRIPT} ${DEF_SOURCES} ${JUMP_INSTRUCTION} "" DAC_ > ${PAL_REDEFINES_INC}
-            DEPENDS ${DEF_SOURCES} ${REDEFINES_FILE_SCRIPT}
-            COMMENT "Generating PAL redefines file -> ${PAL_REDEFINES_INC}"
-            VERBATIM
-        )
+
+        # Win32 may be false when cross compiling
+        if (CMAKE_HOST_SYSTEM_NAME STREQUAL "Windows")
+            add_custom_command(
+                OUTPUT ${PAL_REDEFINES_INC}
+                COMMAND powershell -NoProfile -ExecutionPolicy ByPass -File \"${REDEFINES_FILE_SCRIPT}\" -filename \"${DEF_SOURCES}\" -jump ${JUMP_INSTRUCTION} -prefix1 \"\" -prefix2 \"DAC_\" > ${PAL_REDEFINES_INC}
+                DEPENDS ${DEF_SOURCES} ${REDEFINES_FILE_SCRIPT}
+                COMMENT "Generating PAL redefines file -> ${PAL_REDEFINES_INC}"
+            )
+        else()
+            add_custom_command(
+                OUTPUT ${PAL_REDEFINES_INC}
+                COMMAND ${REDEFINES_FILE_SCRIPT} ${DEF_SOURCES} ${JUMP_INSTRUCTION} "" DAC_ > ${PAL_REDEFINES_INC}
+                DEPENDS ${DEF_SOURCES} ${REDEFINES_FILE_SCRIPT}
+                COMMENT "Generating PAL redefines file -> ${PAL_REDEFINES_INC}"
+                VERBATIM
+            )
+        endif()
         add_custom_target(pal_redefines_file DEPENDS ${PAL_REDEFINES_INC})
 
         # Generate the libredefines.inc file for the DAC to export the prefixed APIs (DAC_foo to foo)
         set(LIB_REDEFINES_INC ${GENERATED_INCLUDE_DIR}/libredefines.inc)
-        add_custom_command(
-            OUTPUT ${LIB_REDEFINES_INC}
-            COMMAND ${REDEFINES_FILE_SCRIPT} ${DEF_SOURCES} ${JUMP_INSTRUCTION} DAC_ > ${LIB_REDEFINES_INC}
-            DEPENDS ${DEF_SOURCES} ${REDEFINES_FILE_SCRIPT}
-            COMMENT "Generating DAC export redefines file -> ${LIB_REDEFINES_INC}"
-        )
+
+        # Win32 may be false when cross compiling
+        if (CMAKE_HOST_SYSTEM_NAME STREQUAL "Windows")
+            add_custom_command(
+                OUTPUT ${LIB_REDEFINES_INC}
+                COMMAND powershell -NoProfile -ExecutionPolicy ByPass -File \"${REDEFINES_FILE_SCRIPT}\" -filename \"${DEF_SOURCES}\" -jump ${JUMP_INSTRUCTION} -prefix1 \"DAC_\" > ${LIB_REDEFINES_INC}
+                DEPENDS ${DEF_SOURCES} ${REDEFINES_FILE_SCRIPT}
+                COMMENT "Generating DAC export redefines file -> ${LIB_REDEFINES_INC}"
+            )
+        else()
+            add_custom_command(
+                OUTPUT ${LIB_REDEFINES_INC}
+                COMMAND ${REDEFINES_FILE_SCRIPT} ${DEF_SOURCES} ${JUMP_INSTRUCTION} DAC_ > ${LIB_REDEFINES_INC}
+                DEPENDS ${DEF_SOURCES} ${REDEFINES_FILE_SCRIPT}
+                COMMENT "Generating DAC export redefines file -> ${LIB_REDEFINES_INC}"
+                VERBATIM
+            )
+        endif()
         add_custom_target(lib_redefines_inc DEPENDS ${LIB_REDEFINES_INC})
 
         # Add lib redefines file to DAC
@@ -194,6 +221,8 @@ endif(CLR_CMAKE_HOST_UNIX)
 
 target_link_libraries(mscordaccore PRIVATE ${COREDAC_LIBRARIES})
 
+esrp_sign(mscordaccore)
+
 # add the install targets
 install_clr(TARGETS mscordaccore DESTINATIONS . sharedFramework COMPONENT debug)
 
@@ -216,10 +245,6 @@ if(CLR_CMAKE_HOST_WIN32)
     # debuggers and the runtime. This long form supports postmortem cross-architecture diagnostic scenarios.
     # It doesn't make sense to complicate install_clr for this purpose, so keep it self-contained here.
     set(LONG_NAME_BASE mscordaccore_${LONG_NAME_HOST_ARCH}_${LONG_NAME_TARGET_ARCH}_${FILE_VERSION})
-    install(PROGRAMS $<TARGET_FILE:mscordaccore> RENAME ${LONG_NAME_BASE}.dll DESTINATION sharedFramework COMPONENT runtime)
-    install(FILES $<TARGET_PDB_FILE:mscordaccore> RENAME ${LONG_NAME_BASE}.pdb DESTINATION sharedFramework/PDB COMPONENT runtime)
-    if (NOT FEATURE_CROSSBITNESS)
-        install(PROGRAMS $<TARGET_FILE:mscordaccore> RENAME ${LONG_NAME_BASE}.dll DESTINATION sharedFramework COMPONENT crosscomponents)
-        install(FILES $<TARGET_PDB_FILE:mscordaccore> RENAME ${LONG_NAME_BASE}.pdb DESTINATION sharedFramework/PDB COMPONENT crosscomponents)
-    endif()
+    install(PROGRAMS $<TARGET_FILE:mscordaccore> RENAME ${LONG_NAME_BASE}.dll DESTINATION sharedFramework COMPONENT debug)
+    install(FILES $<TARGET_PDB_FILE:mscordaccore> RENAME ${LONG_NAME_BASE}.pdb DESTINATION sharedFramework/PDB COMPONENT debug)
 endif()

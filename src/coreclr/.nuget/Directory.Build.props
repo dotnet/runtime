@@ -12,21 +12,7 @@
     <MinOSForArch Condition="'$(PackagePlatform)' == 'arm'">win8</MinOSForArch>
     <MinOSForArch Condition="'$(PackagePlatform)' == 'arm64'">win10</MinOSForArch>
     <PackagePlatform>AnyCPU</PackagePlatform>
-
-    <PackageIndexFile>$(MSBuildThisFileDirectory)packageIndex.json</PackageIndexFile>
-
-    <!-- coreclr doesn't currently use the index so don't force it to be in sync -->
-    <SkipIndexCheck>true</SkipIndexCheck>
   </PropertyGroup>
-
-  <!-- CoreCLR nuget packages shouldn't be published during servicing. -->
-  <PropertyGroup Condition="'$(PreReleaseVersionLabel)' == 'servicing'">
-    <IsShipping>false</IsShipping>
-  </PropertyGroup>
-
-  <ItemGroup>
-    <PackageIndex Condition="'$(MSBuildProjectExtension)' == '.pkgproj'" Include="$(PackageIndexFile)" />
-  </ItemGroup>
 
   <PropertyGroup>
     <!-- build the transport package which includes product and symbols in addition to standard packages

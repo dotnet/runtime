@@ -72,156 +72,92 @@ namespace System.Linq.Tests
         [Fact]
         public void SourceEmptyCountPositive()
         {
-            var source = new int[] { };
-            Assert.Empty(source.Take(5));
+            foreach (IEnumerable<int> source in CreateSources<int>([]))
+            {
+                Assert.Empty(source.Take(5));
 
-            Assert.Empty(source.Take(0..5));
-            Assert.Empty(source.Take(^5..5));
-            Assert.Empty(source.Take(0..^0));
-            Assert.Empty(source.Take(^5..^0));
-        }
-
-        [Fact]
-        public void SourceEmptyCountPositiveNotIList()
-        {
-            var source = NumberRangeGuaranteedNotCollectionType(0, 0);
-            Assert.Empty(source.Take(5));
-
-            Assert.Empty(source.Take(0..5));
-            Assert.Empty(source.Take(^5..5));
-            Assert.Empty(source.Take(0..^0));
-            Assert.Empty(source.Take(^5..^0));
+                Assert.Empty(source.Take(0..5));
+                Assert.Empty(source.Take(^5..5));
+                Assert.Empty(source.Take(0..^0));
+                Assert.Empty(source.Take(^5..^0));
+            }
         }
 
         [Fact]
         public void SourceNonEmptyCountNegative()
         {
-            var source = new[] { 2, 5, 9, 1 };
-            Assert.Empty(source.Take(-5));
-
-            Assert.Empty(source.Take(^9..0));
-        }
-
-        [Fact]
-        public void SourceNonEmptyCountNegativeNotIList()
-        {
-            var source = ForceNotCollection(new[] { 2, 5, 9, 1 });
-            Assert.Empty(source.Take(-5));
-
-            Assert.Empty(source.Take(^9..0));
+            foreach (IEnumerable<int> source in CreateSources([2, 5, 9, 1]))
+            {
+                Assert.Empty(source.Take(-5));
+                Assert.Empty(source.Take(^9..0));
+            }
         }
 
         [Fact]
         public void SourceNonEmptyCountZero()
         {
-            var source = new[] { 2, 5, 9, 1 };
-            Assert.Empty(source.Take(0));
+            foreach (IEnumerable<int> source in CreateSources([2, 5, 9, 1]))
+            {
+                Assert.Empty(source.Take(0));
 
-            Assert.Empty(source.Take(0..0));
-            Assert.Empty(source.Take(^4..0));
-            Assert.Empty(source.Take(0..^4));
-            Assert.Empty(source.Take(^4..^4));
-        }
-
-        [Fact]
-        public void SourceNonEmptyCountZeroNotIList()
-        {
-            var source = ForceNotCollection(new[] { 2, 5, 9, 1 });
-            Assert.Empty(source.Take(0));
-
-            Assert.Empty(source.Take(0..0));
-            Assert.Empty(source.Take(^4..0));
-            Assert.Empty(source.Take(0..^4));
-            Assert.Empty(source.Take(^4..^4));
+                Assert.Empty(source.Take(0..0));
+                Assert.Empty(source.Take(^4..0));
+                Assert.Empty(source.Take(0..^4));
+                Assert.Empty(source.Take(^4..^4));
+            }
         }
 
         [Fact]
         public void SourceNonEmptyCountOne()
         {
-            var source = new[] { 2, 5, 9, 1 };
-            int[] expected = { 2 };
+            int[] expected = [2];
 
-            Assert.Equal(expected, source.Take(1));
+            foreach (IEnumerable<int> source in CreateSources([2, 5, 9, 1]))
+            {
+                Assert.Equal(expected, source.Take(1));
 
-            Assert.Equal(expected, source.Take(0..1));
-            Assert.Equal(expected, source.Take(^4..1));
-            Assert.Equal(expected, source.Take(0..^3));
-            Assert.Equal(expected, source.Take(^4..^3));
-        }
-
-        [Fact]
-        public void SourceNonEmptyCountOneNotIList()
-        {
-            var source = ForceNotCollection(new[] { 2, 5, 9, 1 });
-            int[] expected = { 2 };
-
-            Assert.Equal(expected, source.Take(1));
-
-            Assert.Equal(expected, source.Take(0..1));
-            Assert.Equal(expected, source.Take(^4..1));
-            Assert.Equal(expected, source.Take(0..^3));
-            Assert.Equal(expected, source.Take(^4..^3));
+                Assert.Equal(expected, source.Take(0..1));
+                Assert.Equal(expected, source.Take(^4..1));
+                Assert.Equal(expected, source.Take(0..^3));
+                Assert.Equal(expected, source.Take(^4..^3));
+            }
         }
 
         [Fact]
         public void SourceNonEmptyTakeAllExactly()
         {
-            var source = new[] { 2, 5, 9, 1 };
+            foreach (IEnumerable<int> source in CreateSources([2, 5, 9, 1]))
+            {
+                Assert.Equal(source, source.Take(4));
 
-            Assert.Equal(source, source.Take(source.Length));
-
-            Assert.Equal(source, source.Take(0..source.Length));
-            Assert.Equal(source, source.Take(^source.Length..source.Length));
-            Assert.Equal(source, source.Take(0..^0));
-            Assert.Equal(source, source.Take(^source.Length..^0));
-        }
-
-        [Fact]
-        public void SourceNonEmptyTakeAllExactlyNotIList()
-        {
-            var source = ForceNotCollection(new[] { 2, 5, 9, 1 });
-
-            Assert.Equal(source, source.Take(source.Count()));
-
-            Assert.Equal(source, source.Take(0..source.Count()));
-            Assert.Equal(source, source.Take(^source.Count()..source.Count()));
-            Assert.Equal(source, source.Take(0..^0));
-            Assert.Equal(source, source.Take(^source.Count()..^0));
+                Assert.Equal(source, source.Take(0..4));
+                Assert.Equal(source, source.Take(^4..4));
+                Assert.Equal(source, source.Take(0..^0));
+                Assert.Equal(source, source.Take(^4..^0));
+            }
         }
 
         [Fact]
         public void SourceNonEmptyTakeAllButOne()
         {
-            var source = new[] { 2, 5, 9, 1 };
-            int[] expected = { 2, 5, 9 };
+            int[] expected = [2, 5, 9];
 
-            Assert.Equal(expected, source.Take(3));
+            foreach (IEnumerable<int> source in CreateSources([2, 5, 9, 1]))
+            {
+                Assert.Equal(expected, source.Take(3));
 
-            Assert.Equal(expected, source.Take(0..3));
-            Assert.Equal(expected, source.Take(^4..3));
-            Assert.Equal(expected, source.Take(0..^1));
-            Assert.Equal(expected, source.Take(^4..^1));
+                Assert.Equal(expected, source.Take(0..3));
+                Assert.Equal(expected, source.Take(^4..3));
+                Assert.Equal(expected, source.Take(0..^1));
+                Assert.Equal(expected, source.Take(^4..^1));
+            }
         }
 
         [Fact]
         public void RunOnce()
         {
             var source = new[] { 2, 5, 9, 1 };
-            int[] expected = { 2, 5, 9 };
-
-            Assert.Equal(expected, source.RunOnce().Take(3));
-
-            Assert.Equal(expected, source.RunOnce().Take(0..3));
-            Assert.Equal(expected, source.RunOnce().Take(^4..3));
-            Assert.Equal(expected, source.RunOnce().Take(0..^1));
-            Assert.Equal(expected, source.RunOnce().Take(^4..^1));
-        }
-
-        [Fact]
-        public void SourceNonEmptyTakeAllButOneNotIList()
-        {
-            var source = ForceNotCollection(new[] { 2, 5, 9, 1 });
-            int[] expected = { 2, 5, 9 };
+            int[] expected = [2, 5, 9];
 
             Assert.Equal(expected, source.RunOnce().Take(3));
 
@@ -234,23 +170,13 @@ namespace System.Linq.Tests
         [Fact]
         public void SourceNonEmptyTakeExcessive()
         {
-            var source = new int?[] { 2, 5, null, 9, 1 };
+            foreach (IEnumerable<int?> source in CreateSources<int?>([2, 5, null, 9, 1]))
+            {
+                Assert.Equal(source, source.Take(5));
 
-            Assert.Equal(source, source.Take(source.Length + 1));
-
-            Assert.Equal(source, source.Take(0..(source.Length + 1)));
-            Assert.Equal(source, source.Take(^(source.Length + 1)..(source.Length + 1)));
-        }
-
-        [Fact]
-        public void SourceNonEmptyTakeExcessiveNotIList()
-        {
-            var source = ForceNotCollection(new int?[] { 2, 5, null, 9, 1 });
-
-            Assert.Equal(source, source.Take(source.Count() + 1));
-
-            Assert.Equal(source, source.Take(0..(source.Count() + 1)));
-            Assert.Equal(source, source.Take(^(source.Count() + 1)..(source.Count() + 1)));
+                Assert.Equal(source, source.Take(0..5));
+                Assert.Equal(source, source.Take(^6..6));
+            }
         }
 
         [Fact]
@@ -342,744 +268,408 @@ namespace System.Linq.Tests
         [Fact]
         public void FollowWithTake()
         {
-            var source = new[] { 5, 6, 7, 8 };
             var expected = new[] { 5, 6 };
-            Assert.Equal(expected, source.Take(5).Take(3).Take(2).Take(40));
 
-            Assert.Equal(expected, source.Take(0..5).Take(0..3).Take(0..2).Take(0..40));
-            Assert.Equal(expected, source.Take(^4..5).Take(^4..3).Take(^3..2).Take(^2..40));
-            Assert.Equal(expected, source.Take(0..^0).Take(0..^1).Take(0..^1).Take(0..^0));
-            Assert.Equal(expected, source.Take(^4..^0).Take(^4..^1).Take(^3..^1).Take(^2..^0));
-        }
+            foreach (IEnumerable<int> source in CreateSources([5, 6, 7, 8]))
+            {
+                Assert.Equal(expected, source.Take(5).Take(3).Take(2).Take(40));
 
-        [Fact]
-        public void FollowWithTakeNotIList()
-        {
-            var source = NumberRangeGuaranteedNotCollectionType(5, 4);
-            var expected = new[] { 5, 6 };
-            Assert.Equal(expected, source.Take(5).Take(3).Take(2));
-
-            Assert.Equal(expected, source.Take(0..5).Take(0..3).Take(0..2));
-            Assert.Equal(expected, source.Take(^4..5).Take(^4..3).Take(^3..2));
-            Assert.Equal(expected, source.Take(0..^0).Take(0..^1).Take(0..^1));
-            Assert.Equal(expected, source.Take(^4..^0).Take(^4..^1).Take(^3..^1));
+                Assert.Equal(expected, source.Take(0..5).Take(0..3).Take(0..2).Take(0..40));
+                Assert.Equal(expected, source.Take(^4..5).Take(^4..3).Take(^3..2).Take(^2..40));
+                Assert.Equal(expected, source.Take(0..^0).Take(0..^1).Take(0..^1).Take(0..^0));
+                Assert.Equal(expected, source.Take(^4..^0).Take(^4..^1).Take(^3..^1).Take(^2..^0));
+            }
         }
 
         [Fact]
         public void FollowWithSkip()
         {
-            var source = new[] { 1, 2, 3, 4, 5, 6 };
             var expected = new[] { 3, 4, 5 };
-            Assert.Equal(expected, source.Take(5).Skip(2).Skip(-4));
 
-            Assert.Equal(expected, source.Take(0..5).Skip(2).Skip(-4));
-            Assert.Equal(expected, source.Take(^6..5).Skip(2).Skip(-4));
-            Assert.Equal(expected, source.Take(0..^1).Skip(2).Skip(-4));
-            Assert.Equal(expected, source.Take(^6..^1).Skip(2).Skip(-4));
-        }
+            foreach (IEnumerable<int> source in CreateSources([1, 2, 3, 4, 5, 6]))
+            {
+                Assert.Equal(expected, source.Take(5).Skip(2).Skip(-4));
 
-        [Fact]
-        public void FollowWithSkipNotIList()
-        {
-            var source = NumberRangeGuaranteedNotCollectionType(1, 6);
-            var expected = new[] { 3, 4, 5 };
-            Assert.Equal(expected, source.Take(5).Skip(2).Skip(-4));
-
-            Assert.Equal(expected, source.Take(0..5).Skip(2).Skip(-4));
-            Assert.Equal(expected, source.Take(^6..5).Skip(2).Skip(-4));
-            Assert.Equal(expected, source.Take(0..^1).Skip(2).Skip(-4));
-            Assert.Equal(expected, source.Take(^6..^1).Skip(2).Skip(-4));
+                Assert.Equal(expected, source.Take(0..5).Skip(2).Skip(-4));
+                Assert.Equal(expected, source.Take(^6..5).Skip(2).Skip(-4));
+                Assert.Equal(expected, source.Take(0..^1).Skip(2).Skip(-4));
+                Assert.Equal(expected, source.Take(^6..^1).Skip(2).Skip(-4));
+            }
         }
 
         [Fact]
         public void ElementAt()
         {
-            var source = new[] { 1, 2, 3, 4, 5, 6 };
-            var taken0 = source.Take(3);
-            Assert.Equal(1, taken0.ElementAt(0));
-            Assert.Equal(3, taken0.ElementAt(2));
-            Assert.Throws<ArgumentOutOfRangeException>("index", () => taken0.ElementAt(-1));
-            Assert.Throws<ArgumentOutOfRangeException>("index", () => taken0.ElementAt(3));
+            foreach (IEnumerable<int> source in CreateSources([1, 2, 3, 4, 5, 6]))
+            {
+                var taken0 = source.Take(3);
+                Assert.Equal(1, taken0.ElementAt(0));
+                Assert.Equal(3, taken0.ElementAt(2));
+                Assert.Throws<ArgumentOutOfRangeException>("index", () => taken0.ElementAt(-1));
+                Assert.Throws<ArgumentOutOfRangeException>("index", () => taken0.ElementAt(3));
 
-            var taken1 = source.Take(0..3);
-            Assert.Equal(1, taken1.ElementAt(0));
-            Assert.Equal(3, taken1.ElementAt(2));
-            Assert.Throws<ArgumentOutOfRangeException>("index", () => taken1.ElementAt(-1));
-            Assert.Throws<ArgumentOutOfRangeException>("index", () => taken1.ElementAt(3));
+                var taken1 = source.Take(0..3);
+                Assert.Equal(1, taken1.ElementAt(0));
+                Assert.Equal(3, taken1.ElementAt(2));
+                Assert.Throws<ArgumentOutOfRangeException>("index", () => taken1.ElementAt(-1));
+                Assert.Throws<ArgumentOutOfRangeException>("index", () => taken1.ElementAt(3));
 
-            var taken2 = source.Take(^6..3);
-            Assert.Equal(1, taken2.ElementAt(0));
-            Assert.Equal(3, taken2.ElementAt(2));
-            Assert.Throws<ArgumentOutOfRangeException>("index", () => taken2.ElementAt(-1));
-            Assert.Throws<ArgumentOutOfRangeException>("index", () => taken2.ElementAt(3));
+                var taken2 = source.Take(^6..3);
+                Assert.Equal(1, taken2.ElementAt(0));
+                Assert.Equal(3, taken2.ElementAt(2));
+                Assert.Throws<ArgumentOutOfRangeException>("index", () => taken2.ElementAt(-1));
+                Assert.Throws<ArgumentOutOfRangeException>("index", () => taken2.ElementAt(3));
 
-            var taken3 = source.Take(0..^3);
-            Assert.Equal(1, taken3.ElementAt(0));
-            Assert.Equal(3, taken3.ElementAt(2));
-            Assert.Throws<ArgumentOutOfRangeException>("index", () => taken3.ElementAt(-1));
-            Assert.Throws<ArgumentOutOfRangeException>("index", () => taken3.ElementAt(3));
+                var taken3 = source.Take(0..^3);
+                Assert.Equal(1, taken3.ElementAt(0));
+                Assert.Equal(3, taken3.ElementAt(2));
+                Assert.Throws<ArgumentOutOfRangeException>("index", () => taken3.ElementAt(-1));
+                Assert.Throws<ArgumentOutOfRangeException>("index", () => taken3.ElementAt(3));
 
-            var taken4 = source.Take(^6..^3);
-            Assert.Equal(1, taken4.ElementAt(0));
-            Assert.Equal(3, taken4.ElementAt(2));
-            Assert.Throws<ArgumentOutOfRangeException>("index", () => taken4.ElementAt(-1));
-            Assert.Throws<ArgumentOutOfRangeException>("index", () => taken4.ElementAt(3));
-        }
-
-        [Fact]
-        public void ElementAtNotIList()
-        {
-            var source = ForceNotCollection(new[] { 1, 2, 3, 4, 5, 6 });
-            var taken0 = source.Take(3);
-            Assert.Equal(1, taken0.ElementAt(0));
-            Assert.Equal(3, taken0.ElementAt(2));
-            Assert.Throws<ArgumentOutOfRangeException>("index", () => taken0.ElementAt(-1));
-            Assert.Throws<ArgumentOutOfRangeException>("index", () => taken0.ElementAt(3));
-
-            var taken1 = source.Take(0..3);
-            Assert.Equal(1, taken1.ElementAt(0));
-            Assert.Equal(3, taken1.ElementAt(2));
-            Assert.Throws<ArgumentOutOfRangeException>("index", () => taken1.ElementAt(-1));
-            Assert.Throws<ArgumentOutOfRangeException>("index", () => taken1.ElementAt(3));
-
-            var taken2 = source.Take(^6..3);
-            Assert.Equal(1, taken2.ElementAt(0));
-            Assert.Equal(3, taken2.ElementAt(2));
-            Assert.Throws<ArgumentOutOfRangeException>("index", () => taken2.ElementAt(-1));
-            Assert.Throws<ArgumentOutOfRangeException>("index", () => taken2.ElementAt(3));
-
-            var taken3 = source.Take(0..^3);
-            Assert.Equal(1, taken3.ElementAt(0));
-            Assert.Equal(3, taken3.ElementAt(2));
-            Assert.Throws<ArgumentOutOfRangeException>("index", () => taken3.ElementAt(-1));
-            Assert.Throws<ArgumentOutOfRangeException>("index", () => taken3.ElementAt(3));
-
-            var taken4 = source.Take(^6..^3);
-            Assert.Equal(1, taken4.ElementAt(0));
-            Assert.Equal(3, taken4.ElementAt(2));
-            Assert.Throws<ArgumentOutOfRangeException>("index", () => taken4.ElementAt(-1));
-            Assert.Throws<ArgumentOutOfRangeException>("index", () => taken4.ElementAt(3));
+                var taken4 = source.Take(^6..^3);
+                Assert.Equal(1, taken4.ElementAt(0));
+                Assert.Equal(3, taken4.ElementAt(2));
+                Assert.Throws<ArgumentOutOfRangeException>("index", () => taken4.ElementAt(-1));
+                Assert.Throws<ArgumentOutOfRangeException>("index", () => taken4.ElementAt(3));
+            }
         }
 
         [Fact]
         public void ElementAtOrDefault()
         {
-            var source = new[] { 1, 2, 3, 4, 5, 6 };
-            var taken0 = source.Take(3);
-            Assert.Equal(1, taken0.ElementAtOrDefault(0));
-            Assert.Equal(3, taken0.ElementAtOrDefault(2));
-            Assert.Equal(0, taken0.ElementAtOrDefault(-1));
-            Assert.Equal(0, taken0.ElementAtOrDefault(3));
+            foreach (IEnumerable<int> source in CreateSources([1, 2, 3, 4, 5, 6]))
+            {
+                var taken0 = source.Take(3);
+                Assert.Equal(1, taken0.ElementAtOrDefault(0));
+                Assert.Equal(3, taken0.ElementAtOrDefault(2));
+                Assert.Equal(0, taken0.ElementAtOrDefault(-1));
+                Assert.Equal(0, taken0.ElementAtOrDefault(3));
 
-            var taken1 = source.Take(0..3);
-            Assert.Equal(1, taken1.ElementAtOrDefault(0));
-            Assert.Equal(3, taken1.ElementAtOrDefault(2));
-            Assert.Equal(0, taken1.ElementAtOrDefault(-1));
-            Assert.Equal(0, taken1.ElementAtOrDefault(3));
+                var taken1 = source.Take(0..3);
+                Assert.Equal(1, taken1.ElementAtOrDefault(0));
+                Assert.Equal(3, taken1.ElementAtOrDefault(2));
+                Assert.Equal(0, taken1.ElementAtOrDefault(-1));
+                Assert.Equal(0, taken1.ElementAtOrDefault(3));
 
-            var taken2 = source.Take(^6..3);
-            Assert.Equal(1, taken2.ElementAtOrDefault(0));
-            Assert.Equal(3, taken2.ElementAtOrDefault(2));
-            Assert.Equal(0, taken2.ElementAtOrDefault(-1));
-            Assert.Equal(0, taken2.ElementAtOrDefault(3));
+                var taken2 = source.Take(^6..3);
+                Assert.Equal(1, taken2.ElementAtOrDefault(0));
+                Assert.Equal(3, taken2.ElementAtOrDefault(2));
+                Assert.Equal(0, taken2.ElementAtOrDefault(-1));
+                Assert.Equal(0, taken2.ElementAtOrDefault(3));
 
-            var taken3 = source.Take(0..^3);
-            Assert.Equal(1, taken3.ElementAtOrDefault(0));
-            Assert.Equal(3, taken3.ElementAtOrDefault(2));
-            Assert.Equal(0, taken3.ElementAtOrDefault(-1));
-            Assert.Equal(0, taken3.ElementAtOrDefault(3));
+                var taken3 = source.Take(0..^3);
+                Assert.Equal(1, taken3.ElementAtOrDefault(0));
+                Assert.Equal(3, taken3.ElementAtOrDefault(2));
+                Assert.Equal(0, taken3.ElementAtOrDefault(-1));
+                Assert.Equal(0, taken3.ElementAtOrDefault(3));
 
-            var taken4 = source.Take(^6..^3);
-            Assert.Equal(1, taken4.ElementAtOrDefault(0));
-            Assert.Equal(3, taken4.ElementAtOrDefault(2));
-            Assert.Equal(0, taken4.ElementAtOrDefault(-1));
-            Assert.Equal(0, taken4.ElementAtOrDefault(3));
-        }
-
-        [Fact]
-        public void ElementAtOrDefaultNotIList()
-        {
-            var source = ForceNotCollection(new[] { 1, 2, 3, 4, 5, 6 });
-            var taken0 = source.Take(3);
-            Assert.Equal(1, taken0.ElementAtOrDefault(0));
-            Assert.Equal(3, taken0.ElementAtOrDefault(2));
-            Assert.Equal(0, taken0.ElementAtOrDefault(-1));
-            Assert.Equal(0, taken0.ElementAtOrDefault(3));
-
-            var taken1 = source.Take(0..3);
-            Assert.Equal(1, taken1.ElementAtOrDefault(0));
-            Assert.Equal(3, taken1.ElementAtOrDefault(2));
-            Assert.Equal(0, taken1.ElementAtOrDefault(-1));
-            Assert.Equal(0, taken1.ElementAtOrDefault(3));
-
-            var taken2 = source.Take(^6..3);
-            Assert.Equal(1, taken2.ElementAtOrDefault(0));
-            Assert.Equal(3, taken2.ElementAtOrDefault(2));
-            Assert.Equal(0, taken2.ElementAtOrDefault(-1));
-            Assert.Equal(0, taken2.ElementAtOrDefault(3));
-
-            var taken3 = source.Take(0..^3);
-            Assert.Equal(1, taken3.ElementAtOrDefault(0));
-            Assert.Equal(3, taken3.ElementAtOrDefault(2));
-            Assert.Equal(0, taken3.ElementAtOrDefault(-1));
-            Assert.Equal(0, taken3.ElementAtOrDefault(3));
-
-            var taken4 = source.Take(^6..^3);
-            Assert.Equal(1, taken4.ElementAtOrDefault(0));
-            Assert.Equal(3, taken4.ElementAtOrDefault(2));
-            Assert.Equal(0, taken4.ElementAtOrDefault(-1));
-            Assert.Equal(0, taken4.ElementAtOrDefault(3));
+                var taken4 = source.Take(^6..^3);
+                Assert.Equal(1, taken4.ElementAtOrDefault(0));
+                Assert.Equal(3, taken4.ElementAtOrDefault(2));
+                Assert.Equal(0, taken4.ElementAtOrDefault(-1));
+                Assert.Equal(0, taken4.ElementAtOrDefault(3));
+            }
         }
 
         [Fact]
         public void First()
         {
-            var source = new[] { 1, 2, 3, 4, 5 };
-            Assert.Equal(1, source.Take(1).First());
-            Assert.Equal(1, source.Take(4).First());
-            Assert.Equal(1, source.Take(40).First());
-            Assert.Throws<InvalidOperationException>(() => source.Take(0).First());
-            Assert.Throws<InvalidOperationException>(() => source.Skip(5).Take(10).First());
+            foreach (IEnumerable<int> source in CreateSources([1, 2, 3, 4, 5]))
+            {
+                Assert.Equal(1, source.Take(1).First());
+                Assert.Equal(1, source.Take(4).First());
+                Assert.Equal(1, source.Take(40).First());
+                Assert.Throws<InvalidOperationException>(() => source.Take(0).First());
+                Assert.Throws<InvalidOperationException>(() => source.Skip(5).Take(10).First());
 
-            Assert.Equal(1, source.Take(0..1).First());
-            Assert.Equal(1, source.Take(0..4).First());
-            Assert.Equal(1, source.Take(0..40).First());
-            Assert.Throws<InvalidOperationException>(() => source.Take(0..0).First());
-            Assert.Throws<InvalidOperationException>(() => source.Skip(5).Take(0..10).First());
+                Assert.Equal(1, source.Take(0..1).First());
+                Assert.Equal(1, source.Take(0..4).First());
+                Assert.Equal(1, source.Take(0..40).First());
+                Assert.Throws<InvalidOperationException>(() => source.Take(0..0).First());
+                Assert.Throws<InvalidOperationException>(() => source.Skip(5).Take(0..10).First());
 
-            Assert.Equal(1, source.Take(^5..1).First());
-            Assert.Equal(1, source.Take(^5..4).First());
-            Assert.Equal(1, source.Take(^5..40).First());
-            Assert.Throws<InvalidOperationException>(() => source.Take(^5..0).First());
-            Assert.Throws<InvalidOperationException>(() => source.Skip(5).Take(^5..10).First());
+                Assert.Equal(1, source.Take(^5..1).First());
+                Assert.Equal(1, source.Take(^5..4).First());
+                Assert.Equal(1, source.Take(^5..40).First());
+                Assert.Throws<InvalidOperationException>(() => source.Take(^5..0).First());
+                Assert.Throws<InvalidOperationException>(() => source.Skip(5).Take(^5..10).First());
 
-            Assert.Equal(1, source.Take(0..^4).First());
-            Assert.Equal(1, source.Take(0..^1).First());
-            Assert.Equal(1, source.Take(0..^0).First());
-            Assert.Throws<InvalidOperationException>(() => source.Take(0..^5).First());
-            Assert.Throws<InvalidOperationException>(() => source.Skip(5).Take(0..^5).First());
+                Assert.Equal(1, source.Take(0..^4).First());
+                Assert.Equal(1, source.Take(0..^1).First());
+                Assert.Equal(1, source.Take(0..^0).First());
+                Assert.Throws<InvalidOperationException>(() => source.Take(0..^5).First());
+                Assert.Throws<InvalidOperationException>(() => source.Skip(5).Take(0..^5).First());
 
-            Assert.Equal(1, source.Take(^5..^4).First());
-            Assert.Equal(1, source.Take(^5..^1).First());
-            Assert.Equal(1, source.Take(^5..^0).First());
-            Assert.Throws<InvalidOperationException>(() => source.Take(^5..^5).First());
-            Assert.Throws<InvalidOperationException>(() => source.Skip(5).Take(^10..^0).First());
-        }
-
-        [Fact]
-        public void FirstNotIList()
-        {
-            var source = ForceNotCollection(new[] { 1, 2, 3, 4, 5 });
-            Assert.Equal(1, source.Take(1).First());
-            Assert.Equal(1, source.Take(4).First());
-            Assert.Equal(1, source.Take(40).First());
-            Assert.Throws<InvalidOperationException>(() => source.Take(0).First());
-            Assert.Throws<InvalidOperationException>(() => source.Skip(5).Take(10).First());
-
-            Assert.Equal(1, source.Take(0..1).First());
-            Assert.Equal(1, source.Take(0..4).First());
-            Assert.Equal(1, source.Take(0..40).First());
-            Assert.Throws<InvalidOperationException>(() => source.Take(0..0).First());
-            Assert.Throws<InvalidOperationException>(() => source.Skip(5).Take(0..10).First());
-
-            Assert.Equal(1, source.Take(^5..1).First());
-            Assert.Equal(1, source.Take(^5..4).First());
-            Assert.Equal(1, source.Take(^5..40).First());
-            Assert.Throws<InvalidOperationException>(() => source.Take(^5..0).First());
-            Assert.Throws<InvalidOperationException>(() => source.Skip(5).Take(^5..10).First());
-
-            Assert.Equal(1, source.Take(0..^4).First());
-            Assert.Equal(1, source.Take(0..^1).First());
-            Assert.Equal(1, source.Take(0..^0).First());
-            Assert.Throws<InvalidOperationException>(() => source.Take(0..^5).First());
-            Assert.Throws<InvalidOperationException>(() => source.Skip(5).Take(0..^5).First());
-
-            Assert.Equal(1, source.Take(^5..^4).First());
-            Assert.Equal(1, source.Take(^5..^1).First());
-            Assert.Equal(1, source.Take(^5..^0).First());
-            Assert.Throws<InvalidOperationException>(() => source.Take(^5..^5).First());
-            Assert.Throws<InvalidOperationException>(() => source.Skip(5).Take(^10..^0).First());
+                Assert.Equal(1, source.Take(^5..^4).First());
+                Assert.Equal(1, source.Take(^5..^1).First());
+                Assert.Equal(1, source.Take(^5..^0).First());
+                Assert.Throws<InvalidOperationException>(() => source.Take(^5..^5).First());
+                Assert.Throws<InvalidOperationException>(() => source.Skip(5).Take(^10..^0).First());
+            }
         }
 
         [Fact]
         public void FirstOrDefault()
         {
-            var source = new[] { 1, 2, 3, 4, 5 };
-            Assert.Equal(1, source.Take(1).FirstOrDefault());
-            Assert.Equal(1, source.Take(4).FirstOrDefault());
-            Assert.Equal(1, source.Take(40).FirstOrDefault());
-            Assert.Equal(0, source.Take(0).FirstOrDefault());
-            Assert.Equal(0, source.Skip(5).Take(10).FirstOrDefault());
+            foreach (IEnumerable<int> source in CreateSources([1, 2, 3, 4, 5]))
+            {
+                Assert.Equal(1, source.Take(1).FirstOrDefault());
+                Assert.Equal(1, source.Take(4).FirstOrDefault());
+                Assert.Equal(1, source.Take(40).FirstOrDefault());
+                Assert.Equal(0, source.Take(0).FirstOrDefault());
+                Assert.Equal(0, source.Skip(5).Take(10).FirstOrDefault());
 
-            Assert.Equal(1, source.Take(0..1).FirstOrDefault());
-            Assert.Equal(1, source.Take(0..4).FirstOrDefault());
-            Assert.Equal(1, source.Take(0..40).FirstOrDefault());
-            Assert.Equal(0, source.Take(0..0).FirstOrDefault());
-            Assert.Equal(0, source.Skip(5).Take(0..10).FirstOrDefault());
+                Assert.Equal(1, source.Take(0..1).FirstOrDefault());
+                Assert.Equal(1, source.Take(0..4).FirstOrDefault());
+                Assert.Equal(1, source.Take(0..40).FirstOrDefault());
+                Assert.Equal(0, source.Take(0..0).FirstOrDefault());
+                Assert.Equal(0, source.Skip(5).Take(0..10).FirstOrDefault());
 
-            Assert.Equal(1, source.Take(^5..1).FirstOrDefault());
-            Assert.Equal(1, source.Take(^5..4).FirstOrDefault());
-            Assert.Equal(1, source.Take(^5..40).FirstOrDefault());
-            Assert.Equal(0, source.Take(^5..0).FirstOrDefault());
-            Assert.Equal(0, source.Skip(5).Take(^10..10).FirstOrDefault());
+                Assert.Equal(1, source.Take(^5..1).FirstOrDefault());
+                Assert.Equal(1, source.Take(^5..4).FirstOrDefault());
+                Assert.Equal(1, source.Take(^5..40).FirstOrDefault());
+                Assert.Equal(0, source.Take(^5..0).FirstOrDefault());
+                Assert.Equal(0, source.Skip(5).Take(^10..10).FirstOrDefault());
 
-            Assert.Equal(1, source.Take(0..^4).FirstOrDefault());
-            Assert.Equal(1, source.Take(0..^1).FirstOrDefault());
-            Assert.Equal(1, source.Take(0..^0).FirstOrDefault());
-            Assert.Equal(0, source.Take(0..^5).FirstOrDefault());
-            Assert.Equal(0, source.Skip(5).Take(0..^10).FirstOrDefault());
+                Assert.Equal(1, source.Take(0..^4).FirstOrDefault());
+                Assert.Equal(1, source.Take(0..^1).FirstOrDefault());
+                Assert.Equal(1, source.Take(0..^0).FirstOrDefault());
+                Assert.Equal(0, source.Take(0..^5).FirstOrDefault());
+                Assert.Equal(0, source.Skip(5).Take(0..^10).FirstOrDefault());
 
-            Assert.Equal(1, source.Take(^5..^4).FirstOrDefault());
-            Assert.Equal(1, source.Take(^5..^1).FirstOrDefault());
-            Assert.Equal(1, source.Take(^5..^0).FirstOrDefault());
-            Assert.Equal(0, source.Take(^5..^5).FirstOrDefault());
-            Assert.Equal(0, source.Skip(5).Take(^10..^0).FirstOrDefault());
-        }
-
-        [Fact]
-        public void FirstOrDefaultNotIList()
-        {
-            var source = ForceNotCollection(new[] { 1, 2, 3, 4, 5 });
-            Assert.Equal(1, source.Take(1).FirstOrDefault());
-            Assert.Equal(1, source.Take(4).FirstOrDefault());
-            Assert.Equal(1, source.Take(40).FirstOrDefault());
-            Assert.Equal(0, source.Take(0).FirstOrDefault());
-            Assert.Equal(0, source.Skip(5).Take(10).FirstOrDefault());
-
-            Assert.Equal(1, source.Take(0..1).FirstOrDefault());
-            Assert.Equal(1, source.Take(0..4).FirstOrDefault());
-            Assert.Equal(1, source.Take(0..40).FirstOrDefault());
-            Assert.Equal(0, source.Take(0..0).FirstOrDefault());
-            Assert.Equal(0, source.Skip(5).Take(0..10).FirstOrDefault());
-
-            Assert.Equal(1, source.Take(^5..1).FirstOrDefault());
-            Assert.Equal(1, source.Take(^5..4).FirstOrDefault());
-            Assert.Equal(1, source.Take(^5..40).FirstOrDefault());
-            Assert.Equal(0, source.Take(^5..0).FirstOrDefault());
-            Assert.Equal(0, source.Skip(5).Take(^10..10).FirstOrDefault());
-
-            Assert.Equal(1, source.Take(0..^4).FirstOrDefault());
-            Assert.Equal(1, source.Take(0..^1).FirstOrDefault());
-            Assert.Equal(1, source.Take(0..^0).FirstOrDefault());
-            Assert.Equal(0, source.Take(0..^5).FirstOrDefault());
-            Assert.Equal(0, source.Skip(5).Take(0..^10).FirstOrDefault());
-
-            Assert.Equal(1, source.Take(^5..^4).FirstOrDefault());
-            Assert.Equal(1, source.Take(^5..^1).FirstOrDefault());
-            Assert.Equal(1, source.Take(^5..^0).FirstOrDefault());
-            Assert.Equal(0, source.Take(^5..^5).FirstOrDefault());
-            Assert.Equal(0, source.Skip(5).Take(^10..^0).FirstOrDefault());
+                Assert.Equal(1, source.Take(^5..^4).FirstOrDefault());
+                Assert.Equal(1, source.Take(^5..^1).FirstOrDefault());
+                Assert.Equal(1, source.Take(^5..^0).FirstOrDefault());
+                Assert.Equal(0, source.Take(^5..^5).FirstOrDefault());
+                Assert.Equal(0, source.Skip(5).Take(^10..^0).FirstOrDefault());
+            }
         }
 
         [Fact]
         public void Last()
         {
-            var source = new[] { 1, 2, 3, 4, 5 };
-            Assert.Equal(1, source.Take(1).Last());
-            Assert.Equal(5, source.Take(5).Last());
-            Assert.Equal(5, source.Take(40).Last());
-            Assert.Throws<InvalidOperationException>(() => source.Take(0).Last());
-            Assert.Throws<InvalidOperationException>(() => Array.Empty<int>().Take(40).Last());
+            foreach (var source in CreateSources([1, 2, 3, 4, 5]))
+            {
+                Assert.Equal(1, source.Take(1).Last());
+                Assert.Equal(2, source.Take(2).Last());
+                Assert.Equal(3, source.Take(3).Last());
+                Assert.Equal(4, source.Take(4).Last());
+                Assert.Equal(5, source.Take(5).Last());
+                Assert.Equal(5, source.Take(6).Last());
+                Assert.Equal(5, source.Take(40).Last());
+                Assert.Throws<InvalidOperationException>(() => source.Take(0).Last());
+                Assert.Throws<InvalidOperationException>(() => Array.Empty<int>().Take(40).Last());
 
-            Assert.Equal(1, source.Take(0..1).Last());
-            Assert.Equal(5, source.Take(0..5).Last());
-            Assert.Equal(5, source.Take(0..40).Last());
-            Assert.Throws<InvalidOperationException>(() => source.Take(0..0).Last());
-            Assert.Throws<InvalidOperationException>(() => Array.Empty<int>().Take(0..40).Last());
+                Assert.Equal(1, source.Take(0..1).Last());
+                Assert.Equal(5, source.Take(0..5).Last());
+                Assert.Equal(5, source.Take(0..40).Last());
+                Assert.Throws<InvalidOperationException>(() => source.Take(0..0).Last());
+                Assert.Throws<InvalidOperationException>(() => Array.Empty<int>().Take(0..40).Last());
 
-            Assert.Equal(1, source.Take(^5..1).Last());
-            Assert.Equal(5, source.Take(^5..5).Last());
-            Assert.Equal(5, source.Take(^5..40).Last());
-            Assert.Throws<InvalidOperationException>(() => source.Take(^5..0).Last());
-            Assert.Throws<InvalidOperationException>(() => Array.Empty<int>().Take(^5..40).Last());
+                Assert.Equal(1, source.Take(^5..1).Last());
+                Assert.Equal(5, source.Take(^5..5).Last());
+                Assert.Equal(5, source.Take(^5..40).Last());
+                Assert.Throws<InvalidOperationException>(() => source.Take(^5..0).Last());
+                Assert.Throws<InvalidOperationException>(() => Array.Empty<int>().Take(^5..40).Last());
 
-            Assert.Equal(1, source.Take(0..^4).Last());
-            Assert.Equal(5, source.Take(0..^0).Last());
-            Assert.Equal(5, source.Take(3..^0).Last());
-            Assert.Throws<InvalidOperationException>(() => source.Take(0..^5).Last());
-            Assert.Throws<InvalidOperationException>(() => Array.Empty<int>().Take(0..^0).Last());
+                Assert.Equal(1, source.Take(0..^4).Last());
+                Assert.Equal(5, source.Take(0..^0).Last());
+                Assert.Equal(5, source.Take(3..^0).Last());
+                Assert.Throws<InvalidOperationException>(() => source.Take(0..^5).Last());
+                Assert.Throws<InvalidOperationException>(() => Array.Empty<int>().Take(0..^0).Last());
 
-            Assert.Equal(1, source.Take(^5..^4).Last());
-            Assert.Equal(5, source.Take(^5..^0).Last());
-            Assert.Equal(5, source.Take(^5..^0).Last());
-            Assert.Throws<InvalidOperationException>(() => source.Take(^5..^5).Last());
-            Assert.Throws<InvalidOperationException>(() => Array.Empty<int>().Take(^40..^0).Last());
-        }
-
-        [Fact]
-        public void LastNotIList()
-        {
-            var source = ForceNotCollection(new[] { 1, 2, 3, 4, 5 });
-            Assert.Equal(1, source.Take(1).Last());
-            Assert.Equal(5, source.Take(5).Last());
-            Assert.Equal(5, source.Take(40).Last());
-            Assert.Throws<InvalidOperationException>(() => source.Take(0).Last());
-            Assert.Throws<InvalidOperationException>(() => ForceNotCollection(Array.Empty<int>()).Take(40).Last());
-
-            Assert.Equal(1, source.Take(0..1).Last());
-            Assert.Equal(5, source.Take(0..5).Last());
-            Assert.Equal(5, source.Take(0..40).Last());
-            Assert.Throws<InvalidOperationException>(() => source.Take(0..0).Last());
-            Assert.Throws<InvalidOperationException>(() => ForceNotCollection(Array.Empty<int>()).Take(0..40).Last());
-
-            Assert.Equal(1, source.Take(^5..1).Last());
-            Assert.Equal(5, source.Take(^5..5).Last());
-            Assert.Equal(5, source.Take(^5..40).Last());
-            Assert.Throws<InvalidOperationException>(() => source.Take(^5..0).Last());
-            Assert.Throws<InvalidOperationException>(() => ForceNotCollection(Array.Empty<int>()).Take(^5..40).Last());
-
-            Assert.Equal(1, source.Take(0..^4).Last());
-            Assert.Equal(5, source.Take(0..^0).Last());
-            Assert.Equal(5, source.Take(3..^0).Last());
-            Assert.Throws<InvalidOperationException>(() => source.Take(0..^5).Last());
-            Assert.Throws<InvalidOperationException>(() => ForceNotCollection(Array.Empty<int>()).Take(0..^0).Last());
-
-            Assert.Equal(1, source.Take(^5..^4).Last());
-            Assert.Equal(5, source.Take(^5..^0).Last());
-            Assert.Equal(5, source.Take(^5..^0).Last());
-            Assert.Throws<InvalidOperationException>(() => source.Take(^5..^5).Last());
-            Assert.Throws<InvalidOperationException>(() => ForceNotCollection(Array.Empty<int>()).Take(^40..^0).Last());
+                Assert.Equal(1, source.Take(^5..^4).Last());
+                Assert.Equal(5, source.Take(^5..^0).Last());
+                Assert.Equal(5, source.Take(^5..^0).Last());
+                Assert.Throws<InvalidOperationException>(() => source.Take(^5..^5).Last());
+                Assert.Throws<InvalidOperationException>(() => Array.Empty<int>().Take(^40..^0).Last());
+            }
         }
 
         [Fact]
         public void LastOrDefault()
         {
-            var source = new[] { 1, 2, 3, 4, 5 };
-            Assert.Equal(1, source.Take(1).LastOrDefault());
-            Assert.Equal(5, source.Take(5).LastOrDefault());
-            Assert.Equal(5, source.Take(40).LastOrDefault());
-            Assert.Equal(0, source.Take(0).LastOrDefault());
-            Assert.Equal(0, Array.Empty<int>().Take(40).LastOrDefault());
+            foreach (var source in CreateSources([1, 2, 3, 4, 5]))
+            {
+                Assert.Equal(1, source.Take(1).LastOrDefault());
+                Assert.Equal(2, source.Take(2).LastOrDefault());
+                Assert.Equal(3, source.Take(3).LastOrDefault());
+                Assert.Equal(4, source.Take(4).LastOrDefault());
+                Assert.Equal(5, source.Take(5).LastOrDefault());
+                Assert.Equal(5, source.Take(6).LastOrDefault());
+                Assert.Equal(5, source.Take(40).LastOrDefault());
+                Assert.Equal(0, source.Take(0).LastOrDefault());
+                Assert.Equal(0, Array.Empty<int>().Take(40).LastOrDefault());
 
-            Assert.Equal(1, source.Take(0..1).LastOrDefault());
-            Assert.Equal(5, source.Take(0..5).LastOrDefault());
-            Assert.Equal(5, source.Take(0..40).LastOrDefault());
-            Assert.Equal(0, source.Take(0..0).LastOrDefault());
-            Assert.Equal(0, Array.Empty<int>().Take(0..40).LastOrDefault());
+                Assert.Equal(1, source.Take(0..1).LastOrDefault());
+                Assert.Equal(5, source.Take(0..5).LastOrDefault());
+                Assert.Equal(5, source.Take(0..40).LastOrDefault());
+                Assert.Equal(0, source.Take(0..0).LastOrDefault());
+                Assert.Equal(0, Array.Empty<int>().Take(0..40).LastOrDefault());
 
-            Assert.Equal(1, source.Take(^5..1).LastOrDefault());
-            Assert.Equal(5, source.Take(^5..5).LastOrDefault());
-            Assert.Equal(5, source.Take(^5..40).LastOrDefault());
-            Assert.Equal(0, source.Take(^5..0).LastOrDefault());
-            Assert.Equal(0, Array.Empty<int>().Take(^5..40).LastOrDefault());
+                Assert.Equal(1, source.Take(^5..1).LastOrDefault());
+                Assert.Equal(5, source.Take(^5..5).LastOrDefault());
+                Assert.Equal(5, source.Take(^5..40).LastOrDefault());
+                Assert.Equal(0, source.Take(^5..0).LastOrDefault());
+                Assert.Equal(0, Array.Empty<int>().Take(^5..40).LastOrDefault());
 
-            Assert.Equal(1, source.Take(0..^4).LastOrDefault());
-            Assert.Equal(5, source.Take(0..^0).LastOrDefault());
-            Assert.Equal(5, source.Take(3..^0).LastOrDefault());
-            Assert.Equal(0, source.Take(0..^5).LastOrDefault());
-            Assert.Equal(0, Array.Empty<int>().Take(0..^0).LastOrDefault());
+                Assert.Equal(1, source.Take(0..^4).LastOrDefault());
+                Assert.Equal(5, source.Take(0..^0).LastOrDefault());
+                Assert.Equal(5, source.Take(3..^0).LastOrDefault());
+                Assert.Equal(0, source.Take(0..^5).LastOrDefault());
+                Assert.Equal(0, Array.Empty<int>().Take(0..^0).LastOrDefault());
 
-            Assert.Equal(1, source.Take(^5..^4).LastOrDefault());
-            Assert.Equal(5, source.Take(^5..^0).LastOrDefault());
-            Assert.Equal(5, source.Take(^40..^0).LastOrDefault());
-            Assert.Equal(0, source.Take(^5..^5).LastOrDefault());
-            Assert.Equal(0, Array.Empty<int>().Take(^40..^0).LastOrDefault());
-        }
-
-        [Fact]
-        public void LastOrDefaultNotIList()
-        {
-            var source = ForceNotCollection(new[] { 1, 2, 3, 4, 5 });
-            Assert.Equal(1, source.Take(1).LastOrDefault());
-            Assert.Equal(5, source.Take(5).LastOrDefault());
-            Assert.Equal(5, source.Take(40).LastOrDefault());
-            Assert.Equal(0, source.Take(0).LastOrDefault());
-            Assert.Equal(0, ForceNotCollection(Array.Empty<int>()).Take(40).LastOrDefault());
-
-            Assert.Equal(1, source.Take(0..1).LastOrDefault());
-            Assert.Equal(5, source.Take(0..5).LastOrDefault());
-            Assert.Equal(5, source.Take(0..40).LastOrDefault());
-            Assert.Equal(0, source.Take(0..0).LastOrDefault());
-            Assert.Equal(0, ForceNotCollection(Array.Empty<int>()).Take(0..40).LastOrDefault());
-
-            Assert.Equal(1, source.Take(^5..1).LastOrDefault());
-            Assert.Equal(5, source.Take(^5..5).LastOrDefault());
-            Assert.Equal(5, source.Take(^5..40).LastOrDefault());
-            Assert.Equal(0, source.Take(^5..0).LastOrDefault());
-            Assert.Equal(0, ForceNotCollection(Array.Empty<int>()).Take(^5..40).LastOrDefault());
-
-            Assert.Equal(1, source.Take(0..^4).LastOrDefault());
-            Assert.Equal(5, source.Take(0..^0).LastOrDefault());
-            Assert.Equal(5, source.Take(3..^0).LastOrDefault());
-            Assert.Equal(0, source.Take(0..^5).LastOrDefault());
-            Assert.Equal(0, ForceNotCollection(Array.Empty<int>()).Take(0..^0).LastOrDefault());
-
-            Assert.Equal(1, source.Take(^5..^4).LastOrDefault());
-            Assert.Equal(5, source.Take(^5..^0).LastOrDefault());
-            Assert.Equal(5, source.Take(^40..^0).LastOrDefault());
-            Assert.Equal(0, source.Take(^5..^5).LastOrDefault());
-            Assert.Equal(0, ForceNotCollection(Array.Empty<int>()).Take(^40..^0).LastOrDefault());
+                Assert.Equal(1, source.Take(^5..^4).LastOrDefault());
+                Assert.Equal(5, source.Take(^5..^0).LastOrDefault());
+                Assert.Equal(5, source.Take(^40..^0).LastOrDefault());
+                Assert.Equal(0, source.Take(^5..^5).LastOrDefault());
+                Assert.Equal(0, Array.Empty<int>().Take(^40..^0).LastOrDefault());
+            }
         }
 
         [Fact]
         public void ToArray()
         {
-            var source = new[] { 1, 2, 3, 4, 5 };
-            Assert.Equal(new[] { 1, 2, 3, 4, 5 }, source.Take(5).ToArray());
-            Assert.Equal(new[] { 1, 2, 3, 4, 5 }, source.Take(6).ToArray());
-            Assert.Equal(new[] { 1, 2, 3, 4, 5 }, source.Take(40).ToArray());
-            Assert.Equal(new[] { 1, 2, 3, 4 }, source.Take(4).ToArray());
-            Assert.Equal(1, source.Take(1).ToArray().Single());
-            Assert.Empty(source.Take(0).ToArray());
-            Assert.Empty(source.Take(-10).ToArray());
+            foreach (var source in CreateSources([1, 2, 3, 4, 5]))
+            {
+                Assert.Equal(new[] { 1, 2, 3, 4, 5 }, source.Take(5).ToArray());
+                Assert.Equal(new[] { 1, 2, 3, 4, 5 }, source.Take(6).ToArray());
+                Assert.Equal(new[] { 1, 2, 3, 4, 5 }, source.Take(40).ToArray());
+                Assert.Equal(new[] { 1, 2, 3, 4 }, source.Take(4).ToArray());
+                Assert.Equal(1, source.Take(1).ToArray().Single());
+                Assert.Empty(source.Take(0).ToArray());
+                Assert.Empty(source.Take(-10).ToArray());
 
-            Assert.Equal(new[] { 1, 2, 3, 4, 5 }, source.Take(0..5).ToArray());
-            Assert.Equal(new[] { 1, 2, 3, 4, 5 }, source.Take(0..6).ToArray());
-            Assert.Equal(new[] { 1, 2, 3, 4, 5 }, source.Take(0..40).ToArray());
-            Assert.Equal(new[] { 1, 2, 3, 4 }, source.Take(0..4).ToArray());
-            Assert.Equal(1, source.Take(0..1).ToArray().Single());
-            Assert.Empty(source.Take(0..0).ToArray());
+                Assert.Equal(new[] { 1, 2, 3, 4, 5 }, source.Take(0..5).ToArray());
+                Assert.Equal(new[] { 1, 2, 3, 4, 5 }, source.Take(0..6).ToArray());
+                Assert.Equal(new[] { 1, 2, 3, 4, 5 }, source.Take(0..40).ToArray());
+                Assert.Equal(new[] { 1, 2, 3, 4 }, source.Take(0..4).ToArray());
+                Assert.Equal(1, source.Take(0..1).ToArray().Single());
+                Assert.Empty(source.Take(0..0).ToArray());
 
-            Assert.Equal(new[] { 1, 2, 3, 4, 5 }, source.Take(^5..5).ToArray());
-            Assert.Equal(new[] { 1, 2, 3, 4, 5 }, source.Take(^5..6).ToArray());
-            Assert.Equal(new[] { 1, 2, 3, 4, 5 }, source.Take(^5..40).ToArray());
-            Assert.Equal(new[] { 1, 2, 3, 4 }, source.Take(^5..4).ToArray());
-            Assert.Equal(1, source.Take(^5..1).ToArray().Single());
-            Assert.Empty(source.Take(^5..0).ToArray());
-            Assert.Empty(source.Take(^15..0).ToArray());
+                Assert.Equal(new[] { 1, 2, 3, 4, 5 }, source.Take(^5..5).ToArray());
+                Assert.Equal(new[] { 1, 2, 3, 4, 5 }, source.Take(^5..6).ToArray());
+                Assert.Equal(new[] { 1, 2, 3, 4, 5 }, source.Take(^5..40).ToArray());
+                Assert.Equal(new[] { 1, 2, 3, 4 }, source.Take(^5..4).ToArray());
+                Assert.Equal(1, source.Take(^5..1).ToArray().Single());
+                Assert.Empty(source.Take(^5..0).ToArray());
+                Assert.Empty(source.Take(^15..0).ToArray());
 
-            Assert.Equal(new[] { 1, 2, 3, 4, 5 }, source.Take(0..^0).ToArray());
-            Assert.Equal(new[] { 1, 2, 3, 4 }, source.Take(0..^1).ToArray());
-            Assert.Equal(1, source.Take(0..^4).ToArray().Single());
-            Assert.Empty(source.Take(0..^5).ToArray());
-            Assert.Empty(source.Take(0..^15).ToArray());
+                Assert.Equal(new[] { 1, 2, 3, 4, 5 }, source.Take(0..^0).ToArray());
+                Assert.Equal(new[] { 1, 2, 3, 4 }, source.Take(0..^1).ToArray());
+                Assert.Equal(1, source.Take(0..^4).ToArray().Single());
+                Assert.Empty(source.Take(0..^5).ToArray());
+                Assert.Empty(source.Take(0..^15).ToArray());
 
-            Assert.Equal(new[] { 1, 2, 3, 4, 5 }, source.Take(^5..^0).ToArray());
-            Assert.Equal(new[] { 1, 2, 3, 4, 5 }, source.Take(^6..^0).ToArray());
-            Assert.Equal(new[] { 1, 2, 3, 4, 5 }, source.Take(^45..^0).ToArray());
-            Assert.Equal(new[] { 1, 2, 3, 4 }, source.Take(^5..^1).ToArray());
-            Assert.Equal(1, source.Take(^5..^4).ToArray().Single());
-            Assert.Empty(source.Take(^5..^5).ToArray());
-            Assert.Empty(source.Take(^15..^5).ToArray());
-        }
-
-        [Fact]
-        public void ToArrayNotList()
-        {
-            var source = ForceNotCollection(new[] { 1, 2, 3, 4, 5 });
-            Assert.Equal(new[] { 1, 2, 3, 4, 5 }, source.Take(5).ToArray());
-            Assert.Equal(new[] { 1, 2, 3, 4, 5 }, source.Take(6).ToArray());
-            Assert.Equal(new[] { 1, 2, 3, 4, 5 }, source.Take(40).ToArray());
-            Assert.Equal(new[] { 1, 2, 3, 4 }, source.Take(4).ToArray());
-            Assert.Equal(1, source.Take(1).ToArray().Single());
-            Assert.Empty(source.Take(0).ToArray());
-            Assert.Empty(source.Take(-10).ToArray());
-
-            Assert.Equal(new[] { 1, 2, 3, 4, 5 }, source.Take(0..5).ToArray());
-            Assert.Equal(new[] { 1, 2, 3, 4, 5 }, source.Take(0..6).ToArray());
-            Assert.Equal(new[] { 1, 2, 3, 4, 5 }, source.Take(0..40).ToArray());
-            Assert.Equal(new[] { 1, 2, 3, 4 }, source.Take(0..4).ToArray());
-            Assert.Equal(1, source.Take(0..1).ToArray().Single());
-            Assert.Empty(source.Take(0..0).ToArray());
-
-            Assert.Equal(new[] { 1, 2, 3, 4, 5 }, source.Take(^5..5).ToArray());
-            Assert.Equal(new[] { 1, 2, 3, 4, 5 }, source.Take(^5..6).ToArray());
-            Assert.Equal(new[] { 1, 2, 3, 4, 5 }, source.Take(^5..40).ToArray());
-            Assert.Equal(new[] { 1, 2, 3, 4 }, source.Take(^5..4).ToArray());
-            Assert.Equal(1, source.Take(^5..1).ToArray().Single());
-            Assert.Empty(source.Take(^5..0).ToArray());
-            Assert.Empty(source.Take(^15..0).ToArray());
-
-            Assert.Equal(new[] { 1, 2, 3, 4, 5 }, source.Take(0..^0).ToArray());
-            Assert.Equal(new[] { 1, 2, 3, 4 }, source.Take(0..^1).ToArray());
-            Assert.Equal(1, source.Take(0..^4).ToArray().Single());
-            Assert.Empty(source.Take(0..^5).ToArray());
-            Assert.Empty(source.Take(0..^15).ToArray());
-
-            Assert.Equal(new[] { 1, 2, 3, 4, 5 }, source.Take(^5..^0).ToArray());
-            Assert.Equal(new[] { 1, 2, 3, 4, 5 }, source.Take(^6..^0).ToArray());
-            Assert.Equal(new[] { 1, 2, 3, 4, 5 }, source.Take(^45..^0).ToArray());
-            Assert.Equal(new[] { 1, 2, 3, 4 }, source.Take(^5..^1).ToArray());
-            Assert.Equal(1, source.Take(^5..^4).ToArray().Single());
-            Assert.Empty(source.Take(^5..^5).ToArray());
-            Assert.Empty(source.Take(^15..^5).ToArray());
+                Assert.Equal(new[] { 1, 2, 3, 4, 5 }, source.Take(^5..^0).ToArray());
+                Assert.Equal(new[] { 1, 2, 3, 4, 5 }, source.Take(^6..^0).ToArray());
+                Assert.Equal(new[] { 1, 2, 3, 4, 5 }, source.Take(^45..^0).ToArray());
+                Assert.Equal(new[] { 1, 2, 3, 4 }, source.Take(^5..^1).ToArray());
+                Assert.Equal(1, source.Take(^5..^4).ToArray().Single());
+                Assert.Empty(source.Take(^5..^5).ToArray());
+                Assert.Empty(source.Take(^15..^5).ToArray());
+            }
         }
 
         [Fact]
         public void ToList()
         {
-            var source = new[] { 1, 2, 3, 4, 5 };
-            Assert.Equal(new[] { 1, 2, 3, 4, 5 }, source.Take(5).ToList());
-            Assert.Equal(new[] { 1, 2, 3, 4, 5 }, source.Take(6).ToList());
-            Assert.Equal(new[] { 1, 2, 3, 4, 5 }, source.Take(40).ToList());
-            Assert.Equal(new[] { 1, 2, 3, 4 }, source.Take(4).ToList());
-            Assert.Equal(1, source.Take(1).ToList().Single());
-            Assert.Empty(source.Take(0).ToList());
-            Assert.Empty(source.Take(-10).ToList());
+            foreach (var source in CreateSources([1, 2, 3, 4, 5]))
+            {
+                Assert.Equal(new[] { 1, 2, 3, 4, 5 }, source.Take(5).ToList());
+                Assert.Equal(new[] { 1, 2, 3, 4, 5 }, source.Take(6).ToList());
+                Assert.Equal(new[] { 1, 2, 3, 4, 5 }, source.Take(40).ToList());
+                Assert.Equal(new[] { 1, 2, 3, 4 }, source.Take(4).ToList());
+                Assert.Equal(1, source.Take(1).ToList().Single());
+                Assert.Empty(source.Take(0).ToList());
+                Assert.Empty(source.Take(-10).ToList());
 
-            Assert.Equal(new[] { 1, 2, 3, 4, 5 }, source.Take(0..5).ToList());
-            Assert.Equal(new[] { 1, 2, 3, 4, 5 }, source.Take(0..6).ToList());
-            Assert.Equal(new[] { 1, 2, 3, 4, 5 }, source.Take(0..40).ToList());
-            Assert.Equal(new[] { 1, 2, 3, 4 }, source.Take(0..4).ToList());
-            Assert.Equal(1, source.Take(0..1).ToList().Single());
-            Assert.Empty(source.Take(0..0).ToList());
+                Assert.Equal(new[] { 1, 2, 3, 4, 5 }, source.Take(0..5).ToList());
+                Assert.Equal(new[] { 1, 2, 3, 4, 5 }, source.Take(0..6).ToList());
+                Assert.Equal(new[] { 1, 2, 3, 4, 5 }, source.Take(0..40).ToList());
+                Assert.Equal(new[] { 1, 2, 3, 4 }, source.Take(0..4).ToList());
+                Assert.Equal(1, source.Take(0..1).ToList().Single());
+                Assert.Empty(source.Take(0..0).ToList());
 
-            Assert.Equal(new[] { 1, 2, 3, 4, 5 }, source.Take(^5..5).ToList());
-            Assert.Equal(new[] { 1, 2, 3, 4, 5 }, source.Take(^5..6).ToList());
-            Assert.Equal(new[] { 1, 2, 3, 4, 5 }, source.Take(^5..40).ToList());
-            Assert.Equal(new[] { 1, 2, 3, 4 }, source.Take(^5..4).ToList());
-            Assert.Equal(1, source.Take(^5..1).ToList().Single());
-            Assert.Empty(source.Take(^5..0).ToList());
-            Assert.Empty(source.Take(^15..0).ToList());
+                Assert.Equal(new[] { 1, 2, 3, 4, 5 }, source.Take(^5..5).ToList());
+                Assert.Equal(new[] { 1, 2, 3, 4, 5 }, source.Take(^5..6).ToList());
+                Assert.Equal(new[] { 1, 2, 3, 4, 5 }, source.Take(^5..40).ToList());
+                Assert.Equal(new[] { 1, 2, 3, 4 }, source.Take(^5..4).ToList());
+                Assert.Equal(1, source.Take(^5..1).ToList().Single());
+                Assert.Empty(source.Take(^5..0).ToList());
+                Assert.Empty(source.Take(^15..0).ToList());
 
-            Assert.Equal(new[] { 1, 2, 3, 4, 5 }, source.Take(0..^0).ToList());
-            Assert.Equal(new[] { 1, 2, 3, 4 }, source.Take(0..^1).ToList());
-            Assert.Equal(1, source.Take(0..^4).ToList().Single());
-            Assert.Empty(source.Take(0..^5).ToList());
-            Assert.Empty(source.Take(0..^15).ToList());
+                Assert.Equal(new[] { 1, 2, 3, 4, 5 }, source.Take(0..^0).ToList());
+                Assert.Equal(new[] { 1, 2, 3, 4 }, source.Take(0..^1).ToList());
+                Assert.Equal(1, source.Take(0..^4).ToList().Single());
+                Assert.Empty(source.Take(0..^5).ToList());
+                Assert.Empty(source.Take(0..^15).ToList());
 
-            Assert.Equal(new[] { 1, 2, 3, 4, 5 }, source.Take(^5..^0).ToList());
-            Assert.Equal(new[] { 1, 2, 3, 4, 5 }, source.Take(^6..^0).ToList());
-            Assert.Equal(new[] { 1, 2, 3, 4, 5 }, source.Take(^45..^0).ToList());
-            Assert.Equal(new[] { 1, 2, 3, 4 }, source.Take(^5..^1).ToList());
-            Assert.Equal(1, source.Take(^5..^4).ToList().Single());
-            Assert.Empty(source.Take(^5..^5).ToList());
-            Assert.Empty(source.Take(^15..^5).ToList());
-        }
-
-        [Fact]
-        public void ToListNotList()
-        {
-            var source = ForceNotCollection(new[] { 1, 2, 3, 4, 5 });
-            Assert.Equal(new[] { 1, 2, 3, 4, 5 }, source.Take(5).ToList());
-            Assert.Equal(new[] { 1, 2, 3, 4, 5 }, source.Take(6).ToList());
-            Assert.Equal(new[] { 1, 2, 3, 4, 5 }, source.Take(40).ToList());
-            Assert.Equal(new[] { 1, 2, 3, 4 }, source.Take(4).ToList());
-            Assert.Equal(1, source.Take(1).ToList().Single());
-            Assert.Empty(source.Take(0).ToList());
-            Assert.Empty(source.Take(-10).ToList());
-
-            Assert.Equal(new[] { 1, 2, 3, 4, 5 }, source.Take(0..5).ToList());
-            Assert.Equal(new[] { 1, 2, 3, 4, 5 }, source.Take(0..6).ToList());
-            Assert.Equal(new[] { 1, 2, 3, 4, 5 }, source.Take(0..40).ToList());
-            Assert.Equal(new[] { 1, 2, 3, 4 }, source.Take(0..4).ToList());
-            Assert.Equal(1, source.Take(0..1).ToList().Single());
-            Assert.Empty(source.Take(0..0).ToList());
-
-            Assert.Equal(new[] { 1, 2, 3, 4, 5 }, source.Take(^5..5).ToList());
-            Assert.Equal(new[] { 1, 2, 3, 4, 5 }, source.Take(^5..6).ToList());
-            Assert.Equal(new[] { 1, 2, 3, 4, 5 }, source.Take(^5..40).ToList());
-            Assert.Equal(new[] { 1, 2, 3, 4 }, source.Take(^5..4).ToList());
-            Assert.Equal(1, source.Take(^5..1).ToList().Single());
-            Assert.Empty(source.Take(^5..0).ToList());
-            Assert.Empty(source.Take(^15..0).ToList());
-
-            Assert.Equal(new[] { 1, 2, 3, 4, 5 }, source.Take(0..^0).ToList());
-            Assert.Equal(new[] { 1, 2, 3, 4 }, source.Take(0..^1).ToList());
-            Assert.Equal(1, source.Take(0..^4).ToList().Single());
-            Assert.Empty(source.Take(0..^5).ToList());
-            Assert.Empty(source.Take(0..^15).ToList());
-
-            Assert.Equal(new[] { 1, 2, 3, 4, 5 }, source.Take(^5..^0).ToList());
-            Assert.Equal(new[] { 1, 2, 3, 4, 5 }, source.Take(^6..^0).ToList());
-            Assert.Equal(new[] { 1, 2, 3, 4, 5 }, source.Take(^45..^0).ToList());
-            Assert.Equal(new[] { 1, 2, 3, 4 }, source.Take(^5..^1).ToList());
-            Assert.Equal(1, source.Take(^5..^4).ToList().Single());
-            Assert.Empty(source.Take(^5..^5).ToList());
-            Assert.Empty(source.Take(^15..^5).ToList());
+                Assert.Equal(new[] { 1, 2, 3, 4, 5 }, source.Take(^5..^0).ToList());
+                Assert.Equal(new[] { 1, 2, 3, 4, 5 }, source.Take(^6..^0).ToList());
+                Assert.Equal(new[] { 1, 2, 3, 4, 5 }, source.Take(^45..^0).ToList());
+                Assert.Equal(new[] { 1, 2, 3, 4 }, source.Take(^5..^1).ToList());
+                Assert.Equal(1, source.Take(^5..^4).ToList().Single());
+                Assert.Empty(source.Take(^5..^5).ToList());
+                Assert.Empty(source.Take(^15..^5).ToList());
+            }
         }
 
         [Fact]
         public void TakeCanOnlyBeOneList()
         {
-            var source = new[] { 2, 4, 6, 8, 10 };
-            Assert.Equal(new[] { 2 }, source.Take(1));
-            Assert.Equal(new[] { 4 }, source.Skip(1).Take(1));
-            Assert.Equal(new[] { 6 }, source.Take(3).Skip(2));
-            Assert.Equal(new[] { 2 }, source.Take(3).Take(1));
+            foreach (var source in CreateSources([2, 4, 6, 8, 10]))
+            {
+                Assert.Equal([2], source.Take(1));
+                Assert.Equal([4], source.Skip(1).Take(1));
+                Assert.Equal([6], source.Take(3).Skip(2));
+                Assert.Equal([2], source.Take(3).Take(1));
 
-            Assert.Equal(new[] { 2 }, source.Take(0..1));
-            Assert.Equal(new[] { 4 }, source.Skip(1).Take(0..1));
-            Assert.Equal(new[] { 6 }, source.Take(0..3).Skip(2));
-            Assert.Equal(new[] { 2 }, source.Take(0..3).Take(0..1));
+                Assert.Equal([2], source.Take(0..1));
+                Assert.Equal([4], source.Skip(1).Take(0..1));
+                Assert.Equal([6], source.Take(0..3).Skip(2));
+                Assert.Equal([2], source.Take(0..3).Take(0..1));
 
-            Assert.Equal(new[] { 2 }, source.Take(^5..1));
-            Assert.Equal(new[] { 4 }, source.Skip(1).Take(^4..1));
-            Assert.Equal(new[] { 6 }, source.Take(^5..3).Skip(2));
-            Assert.Equal(new[] { 2 }, source.Take(^5..3).Take(^4..1));
+                Assert.Equal([2], source.Take(^5..1));
+                Assert.Equal([4], source.Skip(1).Take(^4..1));
+                Assert.Equal([6], source.Take(^5..3).Skip(2));
+                Assert.Equal([2], source.Take(^5..3).Take(^4..1));
 
-            Assert.Equal(new[] { 2 }, source.Take(0..^4));
-            Assert.Equal(new[] { 4 }, source.Skip(1).Take(0..^3));
-            Assert.Equal(new[] { 6 }, source.Take(0..^2).Skip(2));
-            Assert.Equal(new[] { 2 }, source.Take(0..^2).Take(0..^2));
+                Assert.Equal([2], source.Take(0..^4));
+                Assert.Equal([4], source.Skip(1).Take(0..^3));
+                Assert.Equal([6], source.Take(0..^2).Skip(2));
+                Assert.Equal([2], source.Take(0..^2).Take(0..^2));
 
-            Assert.Equal(new[] { 2 }, source.Take(^5..^4));
-            Assert.Equal(new[] { 4 }, source.Skip(1).Take(^4..^3));
-            Assert.Equal(new[] { 6 }, source.Take(^5..^2).Skip(2));
-            Assert.Equal(new[] { 2 }, source.Take(^5..^2).Take(^4..^2));
-        }
-
-        [Fact]
-        public void TakeCanOnlyBeOneNotList()
-        {
-            var source = ForceNotCollection(new[] { 2, 4, 6, 8, 10 });
-            Assert.Equal(new[] { 2 }, source.Take(1));
-            Assert.Equal(new[] { 4 }, source.Skip(1).Take(1));
-            Assert.Equal(new[] { 6 }, source.Take(3).Skip(2));
-            Assert.Equal(new[] { 2 }, source.Take(3).Take(1));
-
-            Assert.Equal(new[] { 2 }, source.Take(0..1));
-            Assert.Equal(new[] { 4 }, source.Skip(1).Take(0..1));
-            Assert.Equal(new[] { 6 }, source.Take(0..3).Skip(2));
-            Assert.Equal(new[] { 2 }, source.Take(0..3).Take(0..1));
-
-            Assert.Equal(new[] { 2 }, source.Take(^5..1));
-            Assert.Equal(new[] { 4 }, source.Skip(1).Take(^4..1));
-            Assert.Equal(new[] { 6 }, source.Take(^5..3).Skip(2));
-            Assert.Equal(new[] { 2 }, source.Take(^5..3).Take(^4..1));
-
-            Assert.Equal(new[] { 2 }, source.Take(0..^4));
-            Assert.Equal(new[] { 4 }, source.Skip(1).Take(0..^3));
-            Assert.Equal(new[] { 6 }, source.Take(0..^2).Skip(2));
-            Assert.Equal(new[] { 2 }, source.Take(0..^2).Take(0..^2));
-
-            Assert.Equal(new[] { 2 }, source.Take(^5..^4));
-            Assert.Equal(new[] { 4 }, source.Skip(1).Take(^4..^3));
-            Assert.Equal(new[] { 6 }, source.Take(^5..^2).Skip(2));
-            Assert.Equal(new[] { 2 }, source.Take(^5..^2).Take(^4..^2));
+                Assert.Equal([2], source.Take(^5..^4));
+                Assert.Equal([4], source.Skip(1).Take(^4..^3));
+                Assert.Equal([6], source.Take(^5..^2).Skip(2));
+                Assert.Equal([2], source.Take(^5..^2).Take(^4..^2));
+            }
         }
 
         [Fact]
         public void RepeatEnumerating()
         {
-            var source = new[] { 1, 2, 3, 4, 5 };
-            var taken1 = source.Take(3);
-            Assert.Equal(taken1, taken1);
+            foreach (var source in CreateSources([1, 2, 3, 4, 5]))
+            {
+                var taken1 = source.Take(3);
+                Assert.Equal(taken1, taken1);
 
-            var taken2 = source.Take(0..3);
-            Assert.Equal(taken2, taken2);
+                var taken2 = source.Take(0..3);
+                Assert.Equal(taken2, taken2);
 
-            var taken3 = source.Take(^5..3);
-            Assert.Equal(taken3, taken3);
+                var taken3 = source.Take(^5..3);
+                Assert.Equal(taken3, taken3);
 
-            var taken4 = source.Take(0..^2);
-            Assert.Equal(taken4, taken4);
+                var taken4 = source.Take(0..^2);
+                Assert.Equal(taken4, taken4);
 
-            var taken5 = source.Take(^5..^2);
-            Assert.Equal(taken5, taken5);
+                var taken5 = source.Take(^5..^2);
+                Assert.Equal(taken5, taken5);
+            }
         }
 
-        [Fact]
-        public void RepeatEnumeratingNotList()
-        {
-            var source = ForceNotCollection(new[] { 1, 2, 3, 4, 5 });
-            var taken1 = source.Take(3);
-            Assert.Equal(taken1, taken1);
-
-            var taken2 = source.Take(0..3);
-            Assert.Equal(taken2, taken2);
-
-            var taken3 = source.Take(^5..3);
-            Assert.Equal(taken3, taken3);
-
-            var taken4 = source.Take(0..^2);
-            Assert.Equal(taken4, taken4);
-
-            var taken5 = source.Take(^5..^2);
-            Assert.Equal(taken5, taken5);
-        }
-
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsSpeedOptimized))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsLinqSpeedOptimized))]
         [InlineData(1000)]
         [InlineData(1000000)]
         [InlineData(int.MaxValue)]
@@ -1307,7 +897,7 @@ namespace System.Linq.Tests
                 },
                 5);
 
-            IEnumerator<int> iterator0 = source[0].Take(count).GetEnumerator();
+            using IEnumerator<int> iterator0 = source[0].Take(count).GetEnumerator();
             int iteratorCount0 = Math.Min(sourceCount, Math.Max(0, count));
             Assert.All(Enumerable.Range(0, iteratorCount0), _ => Assert.True(iterator0.MoveNext()));
 
@@ -1320,7 +910,7 @@ namespace System.Linq.Tests
             Assert.Equal(isItertorNotEmpty0, isIteratorDisposed[0]);
 
             int end = Math.Max(0, count);
-            IEnumerator<int> iterator1 = source[1].Take(0..end).GetEnumerator();
+            using IEnumerator<int> iterator1 = source[1].Take(0..end).GetEnumerator();
             Assert.All(Enumerable.Range(0, Math.Min(sourceCount, Math.Max(0, count))), _ => Assert.True(iterator1.MoveNext()));
             Assert.False(iterator1.MoveNext());
             // When startIndex end and endIndex are both not from end and startIndex >= endIndex, Take(Range) returns an empty array.
@@ -1330,19 +920,19 @@ namespace System.Linq.Tests
             int startIndexFromEnd = Math.Max(sourceCount, end);
             int endIndexFromEnd = Math.Max(0, sourceCount - end);
 
-            IEnumerator<int> iterator2 = source[2].Take(^startIndexFromEnd..end).GetEnumerator();
+            using IEnumerator<int> iterator2 = source[2].Take(^startIndexFromEnd..end).GetEnumerator();
             Assert.All(Enumerable.Range(0, Math.Min(sourceCount, Math.Max(0, count))), _ => Assert.True(iterator2.MoveNext()));
             Assert.False(iterator2.MoveNext());
             // When startIndex is ^0, Take(Range) returns an empty array.
             bool isIteratorNotEmpty2 = startIndexFromEnd != 0;
             Assert.Equal(isIteratorNotEmpty2, isIteratorDisposed[2]);
 
-            IEnumerator<int> iterator3 = source[3].Take(0..^endIndexFromEnd).GetEnumerator();
+            using IEnumerator<int> iterator3 = source[3].Take(0..^endIndexFromEnd).GetEnumerator();
             Assert.All(Enumerable.Range(0, Math.Min(sourceCount, Math.Max(0, count))), _ => Assert.True(iterator3.MoveNext()));
             Assert.False(iterator3.MoveNext());
             Assert.True(isIteratorDisposed[3]);
 
-            IEnumerator<int> iterator4 = source[4].Take(^startIndexFromEnd..^endIndexFromEnd).GetEnumerator();
+            using IEnumerator<int> iterator4 = source[4].Take(^startIndexFromEnd..^endIndexFromEnd).GetEnumerator();
             Assert.All(Enumerable.Range(0, Math.Min(sourceCount, Math.Max(0, count))), _ => Assert.True(iterator4.MoveNext()));
             Assert.False(iterator4.MoveNext());
             // When startIndex is ^0,
@@ -1396,13 +986,13 @@ namespace System.Linq.Tests
         [Fact]
         public void OutOfBoundNoException()
         {
-            Func<int[]> source = () => new[] { 1, 2, 3, 4, 5 };
+            Func<int[]> source = () => [1, 2, 3, 4, 5];
 
             Assert.Equal(source(), source().Take(0..6));
             Assert.Equal(source(), source().Take(0..int.MaxValue));
 
-            Assert.Equal(new int[] { 1, 2, 3, 4 }, source().Take(^10..4));
-            Assert.Equal(new int[] { 1, 2, 3, 4 }, source().Take(^int.MaxValue..4));
+            Assert.Equal([1, 2, 3, 4], source().Take(^10..4));
+            Assert.Equal([1, 2, 3, 4], source().Take(^int.MaxValue..4));
             Assert.Equal(source(), source().Take(^10..6));
             Assert.Equal(source(), source().Take(^int.MaxValue..6));
             Assert.Equal(source(), source().Take(^10..int.MaxValue));
@@ -1417,8 +1007,8 @@ namespace System.Linq.Tests
             Assert.Empty(source().Take(int.MaxValue..^6));
             Assert.Empty(source().Take(int.MaxValue..^int.MaxValue));
 
-            Assert.Equal(new int[] { 1, 2, 3, 4 }, source().Take(^10..^1));
-            Assert.Equal(new int[] { 1, 2, 3, 4 }, source().Take(^int.MaxValue..^1));
+            Assert.Equal([1, 2, 3, 4], source().Take(^10..^1));
+            Assert.Equal([1, 2, 3, 4], source().Take(^int.MaxValue..^1));
             Assert.Empty(source().Take(^0..^6));
             Assert.Empty(source().Take(^1..^6));
             Assert.Empty(source().Take(^6..^6));
@@ -1438,8 +1028,8 @@ namespace System.Linq.Tests
             Assert.Equal(source, ForceNotCollection(source).Take(0..6));
             Assert.Equal(source, ForceNotCollection(source).Take(0..int.MaxValue));
 
-            Assert.Equal(new int[] { 1, 2, 3, 4 }, ForceNotCollection(source).Take(^10..4));
-            Assert.Equal(new int[] { 1, 2, 3, 4 }, ForceNotCollection(source).Take(^int.MaxValue..4));
+            Assert.Equal([1, 2, 3, 4], ForceNotCollection(source).Take(^10..4));
+            Assert.Equal([1, 2, 3, 4], ForceNotCollection(source).Take(^int.MaxValue..4));
             Assert.Equal(source, ForceNotCollection(source).Take(^10..6));
             Assert.Equal(source, ForceNotCollection(source).Take(^int.MaxValue..6));
             Assert.Equal(source, ForceNotCollection(source).Take(^10..int.MaxValue));
@@ -1454,8 +1044,8 @@ namespace System.Linq.Tests
             Assert.Empty(ForceNotCollection(source).Take(int.MaxValue..^6));
             Assert.Empty(ForceNotCollection(source).Take(int.MaxValue..^int.MaxValue));
 
-            Assert.Equal(new int[] { 1, 2, 3, 4 }, ForceNotCollection(source).Take(^10..^1));
-            Assert.Equal(new int[] { 1, 2, 3, 4 }, ForceNotCollection(source).Take(^int.MaxValue..^1));
+            Assert.Equal([1, 2, 3, 4], ForceNotCollection(source).Take(^10..^1));
+            Assert.Equal([1, 2, 3, 4], ForceNotCollection(source).Take(^int.MaxValue..^1));
             Assert.Empty(ForceNotCollection(source).Take(^0..^6));
             Assert.Empty(ForceNotCollection(source).Take(^1..^6));
             Assert.Empty(ForceNotCollection(source).Take(^6..^6));
@@ -1475,8 +1065,8 @@ namespace System.Linq.Tests
             Assert.Equal(source, ListPartitionOrEmpty(source).Take(0..6));
             Assert.Equal(source, ListPartitionOrEmpty(source).Take(0..int.MaxValue));
 
-            Assert.Equal(new int[] { 1, 2, 3, 4 }, ListPartitionOrEmpty(source).Take(^10..4));
-            Assert.Equal(new int[] { 1, 2, 3, 4 }, ListPartitionOrEmpty(source).Take(^int.MaxValue..4));
+            Assert.Equal([1, 2, 3, 4], ListPartitionOrEmpty(source).Take(^10..4));
+            Assert.Equal([1, 2, 3, 4], ListPartitionOrEmpty(source).Take(^int.MaxValue..4));
             Assert.Equal(source, ListPartitionOrEmpty(source).Take(^10..6));
             Assert.Equal(source, ListPartitionOrEmpty(source).Take(^int.MaxValue..6));
             Assert.Equal(source, ListPartitionOrEmpty(source).Take(^10..int.MaxValue));
@@ -1491,8 +1081,8 @@ namespace System.Linq.Tests
             Assert.Empty(ListPartitionOrEmpty(source).Take(int.MaxValue..^6));
             Assert.Empty(ListPartitionOrEmpty(source).Take(int.MaxValue..^int.MaxValue));
 
-            Assert.Equal(new int[] { 1, 2, 3, 4 }, ListPartitionOrEmpty(source).Take(^10..^1));
-            Assert.Equal(new int[] { 1, 2, 3, 4 }, ListPartitionOrEmpty(source).Take(^int.MaxValue..^1));
+            Assert.Equal([1, 2, 3, 4], ListPartitionOrEmpty(source).Take(^10..^1));
+            Assert.Equal([1, 2, 3, 4], ListPartitionOrEmpty(source).Take(^int.MaxValue..^1));
             Assert.Empty(ListPartitionOrEmpty(source).Take(^0..^6));
             Assert.Empty(ListPartitionOrEmpty(source).Take(^1..^6));
             Assert.Empty(ListPartitionOrEmpty(source).Take(^6..^6));
@@ -1512,8 +1102,8 @@ namespace System.Linq.Tests
             Assert.Equal(source, EnumerablePartitionOrEmpty(source).Take(0..6));
             Assert.Equal(source, EnumerablePartitionOrEmpty(source).Take(0..int.MaxValue));
 
-            Assert.Equal(new int[] { 1, 2, 3, 4 }, EnumerablePartitionOrEmpty(source).Take(^10..4));
-            Assert.Equal(new int[] { 1, 2, 3, 4 }, EnumerablePartitionOrEmpty(source).Take(^int.MaxValue..4));
+            Assert.Equal([1, 2, 3, 4], EnumerablePartitionOrEmpty(source).Take(^10..4));
+            Assert.Equal([1, 2, 3, 4], EnumerablePartitionOrEmpty(source).Take(^int.MaxValue..4));
             Assert.Equal(source, EnumerablePartitionOrEmpty(source).Take(^10..6));
             Assert.Equal(source, EnumerablePartitionOrEmpty(source).Take(^int.MaxValue..6));
             Assert.Equal(source, EnumerablePartitionOrEmpty(source).Take(^10..int.MaxValue));
@@ -1528,8 +1118,8 @@ namespace System.Linq.Tests
             Assert.Empty(EnumerablePartitionOrEmpty(source).Take(int.MaxValue..^6));
             Assert.Empty(EnumerablePartitionOrEmpty(source).Take(int.MaxValue..^int.MaxValue));
 
-            Assert.Equal(new int[] { 1, 2, 3, 4 }, EnumerablePartitionOrEmpty(source).Take(^10..^1));
-            Assert.Equal(new int[] { 1, 2, 3, 4 }, EnumerablePartitionOrEmpty(source).Take(^int.MaxValue..^1));
+            Assert.Equal([1, 2, 3, 4], EnumerablePartitionOrEmpty(source).Take(^10..^1));
+            Assert.Equal([1, 2, 3, 4], EnumerablePartitionOrEmpty(source).Take(^int.MaxValue..^1));
             Assert.Empty(EnumerablePartitionOrEmpty(source).Take(^0..^6));
             Assert.Empty(EnumerablePartitionOrEmpty(source).Take(^1..^6));
             Assert.Empty(EnumerablePartitionOrEmpty(source).Take(^6..^6));
@@ -1547,26 +1137,26 @@ namespace System.Linq.Tests
             var source1 = new List<int>() { 0, 1, 2, 3, 4 };
             var query1 = source1.Take(3);
             source1.RemoveAt(0);
-            source1.InsertRange(2, new[] { -1, -2 });
-            Assert.Equal(new[] { 1, 2, -1 }, query1);
+            source1.InsertRange(2, [-1, -2]);
+            Assert.Equal([1, 2, -1], query1);
 
             var source2 = new List<int>() { 0, 1, 2, 3, 4 };
             var query2 = source2.Take(0..3);
             source2.RemoveAt(0);
-            source2.InsertRange(2, new[] { -1, -2 });
-            Assert.Equal(new[] { 1, 2, -1 }, query2);
+            source2.InsertRange(2, [-1, -2]);
+            Assert.Equal([1, 2, -1], query2);
 
             var source3 = new List<int>() { 0, 1, 2, 3, 4 };
             var query3 = source3.Take(^6..3);
             source3.RemoveAt(0);
-            source3.InsertRange(2, new[] { -1, -2 });
-            Assert.Equal(new[] { 1, 2, -1 }, query3);
+            source3.InsertRange(2, [-1, -2]);
+            Assert.Equal([1, 2, -1], query3);
 
             var source4 = new List<int>() { 0, 1, 2, 3, 4 };
             var query4 = source4.Take(^6..^3);
             source4.RemoveAt(0);
-            source4.InsertRange(2, new[] { -1, -2 });
-            Assert.Equal(new[] { 1, 2, -1 }, query4);
+            source4.InsertRange(2, [-1, -2]);
+            Assert.Equal([1, 2, -1], query4);
         }
 
         [Fact]
@@ -1575,32 +1165,32 @@ namespace System.Linq.Tests
             var source1 = new List<int>() { 0, 1, 2, 3, 4 };
             var query1 = ForceNotCollection(source1).Select(i => i).Take(3);
             source1.RemoveAt(0);
-            source1.InsertRange(2, new[] { -1, -2 });
-            Assert.Equal(new[] { 1, 2, -1 }, query1);
+            source1.InsertRange(2, [-1, -2]);
+            Assert.Equal([1, 2, -1], query1);
 
             var source2 = new List<int>() { 0, 1, 2, 3, 4 };
             var query2 = ForceNotCollection(source2).Select(i => i).Take(0..3);
             source2.RemoveAt(0);
-            source2.InsertRange(2, new[] { -1, -2 });
-            Assert.Equal(new[] { 1, 2, -1 }, query2);
+            source2.InsertRange(2, [-1, -2]);
+            Assert.Equal([1, 2, -1], query2);
 
             var source3 = new List<int>() { 0, 1, 2, 3, 4 };
             var query3 = ForceNotCollection(source3).Select(i => i).Take(^6..3);
             source3.RemoveAt(0);
-            source3.InsertRange(2, new[] { -1, -2 });
-            Assert.Equal(new[] { 1, 2, -1 }, query3);
+            source3.InsertRange(2, [-1, -2]);
+            Assert.Equal([1, 2, -1], query3);
 
             var source4 = new List<int>() { 0, 1, 2, 3, 4 };
             var query4 = ForceNotCollection(source4).Select(i => i).Take(^6..^3);
             source4.RemoveAt(0);
-            source4.InsertRange(2, new[] { -1, -2 });
-            Assert.Equal(new[] { 1, 2, -1 }, query4);
+            source4.InsertRange(2, [-1, -2]);
+            Assert.Equal([1, 2, -1], query4);
         }
 
         [Fact]
         public void NonEmptySource_ConsistencyWithCountable()
         {
-            Func<int[]> source = () => new[] { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 };
+            Func<int[]> source = () => [0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
 
             // Multiple elements in the middle.
             Assert.Equal(source()[^9..5], source().Take(^9..5));
@@ -1646,7 +1236,7 @@ namespace System.Linq.Tests
         [Fact]
         public void NonEmptySource_ConsistencyWithCountable_NotList()
         {
-            int[] source = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 };
+            int[] source = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
 
             // Multiple elements in the middle.
             Assert.Equal(source[^9..5], ForceNotCollection(source).Take(^9..5));
@@ -1692,7 +1282,7 @@ namespace System.Linq.Tests
         [Fact]
         public void NonEmptySource_ConsistencyWithCountable_ListPartition()
         {
-            int[] source = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 };
+            int[] source = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
 
             // Multiple elements in the middle.
             Assert.Equal(source[^9..5], ListPartitionOrEmpty(source).Take(^9..5));
@@ -1738,7 +1328,7 @@ namespace System.Linq.Tests
         [Fact]
         public void NonEmptySource_ConsistencyWithCountable_EnumerablePartition()
         {
-            int[] source = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 };
+            int[] source = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
 
             // Multiple elements in the middle.
             Assert.Equal(source[^9..5], EnumerablePartitionOrEmpty(source).Take(^9..5));
@@ -1784,7 +1374,7 @@ namespace System.Linq.Tests
         [Fact]
         public void NonEmptySource_DoNotThrowException()
         {
-            Func<int[]> source = () => new[] { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 };
+            Func<int[]> source = () => [0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
 
             Assert.Empty(source().Take(3..2));
             Assert.Empty(source().Take(6..^5));
@@ -1795,7 +1385,7 @@ namespace System.Linq.Tests
         [Fact]
         public void NonEmptySource_DoNotThrowException_NotList()
         {
-            int[] source = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 };
+            int[] source = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
 
             Assert.Empty(ForceNotCollection(source).Take(3..2));
             Assert.Empty(ForceNotCollection(source).Take(6..^5));
@@ -1806,7 +1396,7 @@ namespace System.Linq.Tests
         [Fact]
         public void NonEmptySource_DoNotThrowException_ListPartition()
         {
-            int[] source = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 };
+            int[] source = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
 
             Assert.Empty(ListPartitionOrEmpty(source).Take(3..2));
             Assert.Empty(ListPartitionOrEmpty(source).Take(6..^5));
@@ -1817,7 +1407,7 @@ namespace System.Linq.Tests
         [Fact]
         public void NonEmptySource_DoNotThrowException_EnumerablePartition()
         {
-            int[] source = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 };
+            int[] source = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
 
             Assert.Empty(EnumerablePartitionOrEmpty(source).Take(3..2));
             Assert.Empty(EnumerablePartitionOrEmpty(source).Take(6..^5));
@@ -1828,7 +1418,7 @@ namespace System.Linq.Tests
         [Fact]
         public void EmptySource_DoNotThrowException()
         {
-            Func<int[]> source = () => new int[] { };
+            Func<int[]> source = () => [];
 
             // Multiple elements in the middle.
             Assert.Empty(source().Take(^9..5));
@@ -1880,7 +1470,7 @@ namespace System.Linq.Tests
         [Fact]
         public void EmptySource_DoNotThrowException_NotList()
         {
-            int[] source = { };
+            int[] source = [];
 
             // Multiple elements in the middle.
             Assert.Empty(ForceNotCollection(source).Take(^9..5));
@@ -1932,7 +1522,7 @@ namespace System.Linq.Tests
         [Fact]
         public void EmptySource_DoNotThrowException_ListPartition()
         {
-            int[] source = { };
+            int[] source = [];
 
             // Multiple elements in the middle.
             Assert.Empty(ListPartitionOrEmpty(source).Take(^9..5));
@@ -1984,7 +1574,7 @@ namespace System.Linq.Tests
         [Fact]
         public void EmptySource_DoNotThrowException_EnumerablePartition()
         {
-            int[] source = { };
+            int[] source = [];
 
             // Multiple elements in the middle.
             Assert.Empty(EnumerablePartitionOrEmpty(source).Take(^9..5));
@@ -2033,7 +1623,7 @@ namespace System.Linq.Tests
             Assert.Empty(EnumerablePartitionOrEmpty(source).Take(^6..^7));
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsSpeedOptimized))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsLinqSpeedOptimized))]
         public void SkipTakeOnIListIsIList()
         {
             IList<int> list = new ReadOnlyCollection<int>(Enumerable.Range(0, 100).ToList());

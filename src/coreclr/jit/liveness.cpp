@@ -1942,7 +1942,8 @@ void Compiler::fgInterBlockLocalVarLiveness()
             // liveness of such locals will bubble to the top (fgFirstBB)
             // in fgInterBlockLocalVarLiveness()
 
-            if (!varDsc->lvIsParam && VarSetOps::IsMember(this, fgFirstBB->bbLiveIn, varDsc->lvVarIndex) &&
+            if (!varDsc->lvIsParam && !varDsc->lvIsParamRegTarget &&
+                VarSetOps::IsMember(this, fgFirstBB->bbLiveIn, varDsc->lvVarIndex) &&
                 (info.compInitMem || varTypeIsGC(varDsc->TypeGet())) && !fieldOfDependentlyPromotedStruct)
             {
                 varDsc->lvMustInit = true;
@@ -1963,7 +1964,7 @@ void Compiler::fgInterBlockLocalVarLiveness()
                 if (isFinallyVar)
                 {
                     // Set lvMustInit only if we have a non-arg, GC pointer.
-                    if (!varDsc->lvIsParam && varTypeIsGC(varDsc->TypeGet()))
+                    if (!varDsc->lvIsParam && !varDsc->lvIsParamRegTarget && varTypeIsGC(varDsc->TypeGet()))
                     {
                         varDsc->lvMustInit = true;
                     }

@@ -39,6 +39,16 @@ inline const SString& PEImage::GetPathToLoad()
     return IsInBundle() ? m_bundleFileLocation.Path() : m_path;
 }
 
+inline void* PEImage::GetExternalData(INT64* size)
+{
+    LIMITED_METHOD_CONTRACT;
+
+    _ASSERTE(size != nullptr);
+
+    *size = m_bundleFileLocation.Size;
+    return m_bundleFileLocation.DataStart;
+}
+
 inline INT64 PEImage::GetOffset() const
 {
     LIMITED_METHOD_CONTRACT;
@@ -98,8 +108,7 @@ inline const SString &PEImage::GetModuleFileNameHintForDAC()
 inline BOOL PEImage::IsFile()
 {
     WRAPPER_NO_CONTRACT;
-
-    return !GetPathToLoad().IsEmpty();
+    return m_bundleFileLocation.DataStart == nullptr && !GetPathToLoad().IsEmpty();
 }
 
 //

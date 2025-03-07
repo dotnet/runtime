@@ -51,6 +51,11 @@ public:
         }
 #endif
 
+        if (lclNum == m_comp->info.compRetBuffArg)
+        {
+            return true;
+        }
+
         if (lclNum == m_comp->lvaGSSecurityCookie)
         {
             // Initialized in prolog
@@ -292,10 +297,6 @@ PhaseStatus Async2Transformation::Run()
     return PhaseStatus::MODIFIED_EVERYTHING;
 }
 
-const weight_t RESUME_SUSPEND_LIKELIHOOD = 0.01;
-const weight_t RETHROW_LIKELIHOOD        = 0.01;
-const weight_t RESUME_IN_OSR_LIKELIHOOD  = 0.001;
-
 void Async2Transformation::Transform(
     BasicBlock* block, GenTreeCall* call, jitstd::vector<GenTree*>& defs, AsyncLiveness& life, BasicBlock** pRemainder)
 {
@@ -372,11 +373,11 @@ void Async2Transformation::Transform(
             ClassLayout* layout = dsc->GetLayout();
             assert(!layout->HasGCByRef());
 
-            if (layout->IsBlockLayout())
+            if (layout->IsCustomLayout())
             {
                 inf.Alignment   = 1;
                 inf.DataSize    = layout->GetSize();
-                inf.GCDataCount = 0;
+                inf.GCDataCount = layout->GetGCPtrCount();
             }
             else
             {
@@ -582,9 +583,9 @@ void Async2Transformation::Transform(
     }
 
     BasicBlock* suspendBB = m_comp->fgNewBBafter(BBJ_RETURN, m_lastSuspensionBB, false);
-    suspendBB->bbSetRunRarely();
     suspendBB->clearTryIndex();
     suspendBB->clearHndIndex();
+    suspendBB->inheritWeightPercentage(block, 0);
     m_lastSuspensionBB = suspendBB;
 
     if (m_sharedReturnBB != nullptr)
@@ -597,8 +598,8 @@ void Async2Transformation::Transform(
     FlowEdge* retBBEdge = m_comp->fgAddRefPred(suspendBB, block);
     block->SetCond(retBBEdge, block->GetTargetEdge());
 
-    block->GetTrueEdge()->setLikelihood(RESUME_SUSPEND_LIKELIHOOD);
-    block->GetFalseEdge()->setLikelihood(1 - RESUME_SUSPEND_LIKELIHOOD);
+    block->GetTrueEdge()->setLikelihood(0);
+    block->GetFalseEdge()->setLikelihood(1);
 
     // Allocate continuation
     returnedContinuation = m_comp->gtNewLclvNode(m_returnedContinuationVar, TYP_REF);
@@ -811,8 +812,11 @@ void Async2Transformation::Transform(
     BasicBlock* resumeBB      = m_comp->fgNewBBafter(BBJ_ALWAYS, m_lastResumptionBB, true);
     FlowEdge*   remainderEdge = m_comp->fgAddRefPred(remainder, resumeBB);
 
+    // It does not really make sense to inherit from the target, but given this
+    // is always 0% this just propagates the profile weight flag + sets
+    // BBF_RUN_RARELY.
+    resumeBB->inheritWeightPercentage(remainder, 0);
     resumeBB->SetTargetEdge(remainderEdge);
-    resumeBB->bbSetRunRarely();
     resumeBB->clearTryIndex();
     resumeBB->clearHndIndex();
     resumeBB->SetFlags(BBF_ASYNC_RESUMPTION);
@@ -963,8 +967,10 @@ void Async2Transformation::Transform(
             assert(resumeBB->KindIs(BBJ_ALWAYS));
 
             resumeBB->SetCond(rethrowEdge, storeResultEdge);
-            rethrowEdge->setLikelihood(RETHROW_LIKELIHOOD);
-            storeResultEdge->setLikelihood(1 - RETHROW_LIKELIHOOD);
+            rethrowEdge->setLikelihood(0);
+            storeResultEdge->setLikelihood(1);
+            rethrowExceptionBB->inheritWeightPercentage(resumeBB, 0);
+            storeResultBB->inheritWeightPercentage(resumeBB, 100);
             JITDUMP("  Resumption " FMT_BB " becomes BBJ_COND to check for non-null exception\n", resumeBB->bbNum);
 
             m_comp->fgRemoveRefPred(remainderEdge);
@@ -1306,21 +1312,8 @@ void Async2Transformation::LiftLIREdges(BasicBlock*                    block,
 
 void Async2Transformation::CreateResumptionSwitch()
 {
-    BasicBlock* newEntryBB = BasicBlock::New(m_comp, BBJ_ALWAYS);
-
-    if (m_comp->fgFirstBB->hasProfileWeight())
-    {
-        newEntryBB->inheritWeight(m_comp->fgFirstBB);
-    }
-    m_comp->fgFirstBB->bbRefs--;
-
-    FlowEdge* toPrevEntryEdge = m_comp->fgAddRefPred(m_comp->fgFirstBB, newEntryBB);
-    toPrevEntryEdge->setLikelihood(1);
-
-    JITDUMP("  Inserting new entry " FMT_BB " before old entry " FMT_BB "\n", newEntryBB->bbNum,
-            m_comp->fgFirstBB->bbNum);
-
-    m_comp->fgInsertBBbefore(m_comp->fgFirstBB, newEntryBB);
+    m_comp->fgCreateNewInitBB();
+    BasicBlock* newEntryBB = m_comp->fgFirstBB;
 
     GenTree* continuationArg = m_comp->gtNewLclvNode(m_comp->lvaAsyncContinuationArg, TYP_REF);
     GenTree* null            = m_comp->gtNewNull();
@@ -1339,7 +1332,7 @@ void Async2Transformation::CreateResumptionSwitch()
     else if (m_resumptionBBs.size() == 2)
     {
         BasicBlock* condBB = m_comp->fgNewBBbefore(BBJ_COND, m_resumptionBBs[0], true);
-        condBB->bbSetRunRarely();
+        condBB->inheritWeightPercentage(newEntryBB, 0);
 
         FlowEdge* to0 = m_comp->fgAddRefPred(m_resumptionBBs[0], condBB);
         FlowEdge* to1 = m_comp->fgAddRefPred(m_resumptionBBs[1], condBB);
@@ -1367,7 +1360,7 @@ void Async2Transformation::CreateResumptionSwitch()
     else
     {
         BasicBlock* switchBB = m_comp->fgNewBBbefore(BBJ_SWITCH, m_resumptionBBs[0], true);
-        switchBB->bbSetRunRarely();
+        switchBB->inheritWeightPercentage(newEntryBB, 0);
 
         resumingEdge = m_comp->fgAddRefPred(switchBB, newEntryBB);
 
@@ -1385,7 +1378,7 @@ void Async2Transformation::CreateResumptionSwitch()
 
         m_comp->fgHasSwitch = true;
 
-        //// Default case. TODO-CQ: Support bbsHasDefault = false before lowering.
+        // Default case. TODO-CQ: Support bbsHasDefault = false before lowering.
         m_resumptionBBs.push_back(m_resumptionBBs[0]);
         BBswtDesc* swtDesc     = new (m_comp, CMK_BasicBlock) BBswtDesc;
         swtDesc->bbsCount      = (unsigned)m_resumptionBBs.size();
@@ -1402,9 +1395,9 @@ void Async2Transformation::CreateResumptionSwitch()
         switchBB->SetSwitch(swtDesc);
     }
 
-    newEntryBB->SetCond(resumingEdge, toPrevEntryEdge);
-    resumingEdge->setLikelihood(RESUME_SUSPEND_LIKELIHOOD);
-    toPrevEntryEdge->setLikelihood(1 - RESUME_SUSPEND_LIKELIHOOD);
+    newEntryBB->SetCond(resumingEdge, newEntryBB->GetTargetEdge());
+    resumingEdge->setLikelihood(0);
+    newEntryBB->GetFalseEdge()->setLikelihood(1);
 
     if (m_comp->doesMethodHavePatchpoints())
     {
@@ -1428,13 +1421,15 @@ void Async2Transformation::CreateResumptionSwitch()
 
         FlowEdge* toCheckILOffsetBB = m_comp->fgAddRefPred(checkILOffsetBB, newEntryBB);
         newEntryBB->SetTrueEdge(toCheckILOffsetBB);
-        toCheckILOffsetBB->setLikelihood(RESUME_SUSPEND_LIKELIHOOD);
+        toCheckILOffsetBB->setLikelihood(0);
+        checkILOffsetBB->inheritWeightPercentage(newEntryBB, 0);
 
         FlowEdge* toOnContinuationBB = m_comp->fgAddRefPred(onContinuationBB, checkILOffsetBB);
         FlowEdge* toCallHelperBB     = m_comp->fgAddRefPred(callHelperBB, checkILOffsetBB);
         checkILOffsetBB->SetCond(toCallHelperBB, toOnContinuationBB);
-        toCallHelperBB->setLikelihood(RESUME_IN_OSR_LIKELIHOOD);
-        toOnContinuationBB->setLikelihood(1 - RESUME_IN_OSR_LIKELIHOOD);
+        toCallHelperBB->setLikelihood(0);
+        toOnContinuationBB->setLikelihood(1);
+        callHelperBB->inheritWeightPercentage(checkILOffsetBB, 0);
 
         // We need to dispatch to the OSR version if the IL offset is non-negative.
         continuationArg           = m_comp->gtNewLclvNode(m_comp->lvaAsyncContinuationArg, TYP_REF);
@@ -1477,7 +1472,8 @@ void Async2Transformation::CreateResumptionSwitch()
         m_comp->fgRemoveRefPred(newEntryBB->GetTrueEdge());
         FlowEdge* toCheckILOffset = m_comp->fgAddRefPred(checkILOffsetBB, newEntryBB);
         newEntryBB->SetTrueEdge(toCheckILOffset);
-        toCheckILOffset->setLikelihood(RESUME_SUSPEND_LIKELIHOOD);
+        toCheckILOffset->setLikelihood(0);
+        checkILOffsetBB->inheritWeightPercentage(newEntryBB, 0);
 
         // Make checkILOffsetBB ->(true)  onNoContinuationBB
         //                      ->(false) onContinuationBB
@@ -1485,8 +1481,8 @@ void Async2Transformation::CreateResumptionSwitch()
         FlowEdge* toOnContinuationBB   = m_comp->fgAddRefPred(onContinuationBB, checkILOffsetBB);
         FlowEdge* toOnNoContinuationBB = m_comp->fgAddRefPred(onNoContinuationBB, checkILOffsetBB);
         checkILOffsetBB->SetCond(toOnNoContinuationBB, toOnContinuationBB);
-        toOnContinuationBB->setLikelihood(RESUME_SUSPEND_LIKELIHOOD);
-        toOnNoContinuationBB->setLikelihood(1 - RESUME_SUSPEND_LIKELIHOOD);
+        toOnContinuationBB->setLikelihood(0);
+        toOnNoContinuationBB->setLikelihood(1);
 
         JITDUMP("    Created " FMT_BB " to check for Tier-0 continuations\n", checkILOffsetBB->bbNum);
 

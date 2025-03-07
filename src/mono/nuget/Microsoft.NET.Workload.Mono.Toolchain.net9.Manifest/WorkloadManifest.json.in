@@ -35,7 +35,7 @@
       "extends": [ "microsoft-net-runtime-mono-tooling-net9" ],
       "platforms": [ "win-x64", "win-arm64", "linux-x64", "linux-arm64", "linux-musl-x64", "linux-musl-arm64", "osx-x64", "osx-arm64" ]
     },
-    "mobile-librarybuilder-net9.0": {
+    "mobile-librarybuilder-net9": {
       "description": "Mobile SDK for building a self-contained .NET native library in net9.0",
       "packs": [
         "Microsoft.NET.Runtime.LibraryBuilder.Sdk.net9"
@@ -115,8 +115,8 @@
       "packs": [
         "Microsoft.NETCore.App.Runtime.Mono.net9.osx-arm64",
         "Microsoft.NETCore.App.Runtime.Mono.net9.osx-x64",
-        "Microsoft.NETCore.App.Runtime.osx-arm64",
-        "Microsoft.NETCore.App.Runtime.osx-x64"
+        "Microsoft.NETCore.App.Runtime.net9.osx-arm64",
+        "Microsoft.NETCore.App.Runtime.net9.osx-x64"
       ],
       "extends": [ "microsoft-net-runtime-mono-tooling-net9" ],
       "platforms": [ "osx-arm64", "osx-x64" ]

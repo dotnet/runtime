@@ -78,8 +78,8 @@ ASMCONSTANTS_C_ASSERT(SIZEOF_CalleeSavedRegisters == sizeof(CalleeSavedRegisters
 ASMCONSTANTS_C_ASSERT(SIZEOF_CalleeSavedRegisters == sizeof(CalleeSavedRegisters));
 #endif
 
-#define SIZEOF_GSCookie                             0x8
-ASMCONSTANTS_C_ASSERT(SIZEOF_GSCookie == sizeof(GSCookie));
+#define FRAMETYPE_InlinedCallFrame 0x1
+ASMCONSTANTS_C_ASSERT(FRAMETYPE_InlinedCallFrame == (int)FrameIdentifier::InlinedCallFrame)
 
 #define               OFFSETOF__Frame____VFN_table  0
 
@@ -433,7 +433,7 @@ ASMCONSTANTS_C_ASSERT(OFFSET__TEB__ThreadLocalStoragePointer == offsetof(TEB, Th
 #define REDIRECTSTUB_ESTABLISHER_OFFSET_RBP 0
 #define REDIRECTSTUB_RBP_OFFSET_CONTEXT     0x20
 
-#define THROWSTUB_ESTABLISHER_OFFSET_FaultingExceptionFrame 0x30
+#define THROWSTUB_ESTABLISHER_OFFSET_FaultingExceptionFrame 0x20
 
 #ifdef FEATURE_SPECIAL_USER_MODE_APC
 #define OFFSETOF__APC_CALLBACK_DATA__ContextRecord 0x8
@@ -526,8 +526,8 @@ ASMCONSTANTS_C_ASSERT(FixupPrecodeData__PrecodeFixupThunk == offsetof(FixupPreco
 #define StubPrecodeData__Target 0x08
 ASMCONSTANTS_C_ASSERT(StubPrecodeData__Target            == offsetof(StubPrecodeData, Target))
 
-#define StubPrecodeData__MethodDesc 0x00
-ASMCONSTANTS_C_ASSERT(StubPrecodeData__MethodDesc        == offsetof(StubPrecodeData, MethodDesc))
+#define StubPrecodeData__SecretParam 0x00
+ASMCONSTANTS_C_ASSERT(StubPrecodeData__SecretParam        == offsetof(StubPrecodeData, SecretParam))
 
 #define CallCountingStubData__RemainingCallCountCell 0x00
 ASMCONSTANTS_C_ASSERT(CallCountingStubData__RemainingCallCountCell == offsetof(CallCountingStubData, RemainingCallCountCell))
@@ -537,6 +537,14 @@ ASMCONSTANTS_C_ASSERT(CallCountingStubData__TargetForMethod == offsetof(CallCoun
 
 #define CallCountingStubData__TargetForThresholdReached 0x10
 ASMCONSTANTS_C_ASSERT(CallCountingStubData__TargetForThresholdReached == offsetof(CallCountingStubData, TargetForThresholdReached))
+
+#ifdef FEATURE_CACHED_INTERFACE_DISPATCH
+#define OFFSETOF__InterfaceDispatchCache__m_rgEntries 0x20
+ASMCONSTANTS_C_ASSERT(OFFSETOF__InterfaceDispatchCache__m_rgEntries == offsetof(InterfaceDispatchCache, m_rgEntries))
+
+#define OFFSETOF__InterfaceDispatchCell__m_pCache 0x08
+ASMCONSTANTS_C_ASSERT(OFFSETOF__InterfaceDispatchCell__m_pCache == offsetof(InterfaceDispatchCell, m_pCache))
+#endif // FEATURE_CACHED_INTERFACE_DISPATCH
 
 #ifdef PROFILING_SUPPORTED
 #define PROFILE_ENTER        0x1

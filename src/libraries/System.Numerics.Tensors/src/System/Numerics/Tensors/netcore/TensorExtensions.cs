@@ -45,20 +45,6 @@ namespace System.Numerics.Tensors
         public static TensorSpan<T> AsTensorSpan<T>(this T[]? array, params scoped ReadOnlySpan<nint> lengths) => new(array, 0, lengths, default);
         #endregion
 
-        #region Average
-        /// <summary>
-        /// Returns the average of the elements in the <paramref name="x"/> tensor.
-        /// </summary>
-        /// <param name="x">The <see cref="TensorSpan{T}"/> to take the mean of.</param>
-        /// <returns><typeparamref name="T"/> representing the mean.</returns>
-        public static T Average<T>(scoped in ReadOnlyTensorSpan<T> x)
-            where T : IFloatingPoint<T>
-        {
-            T sum = Sum(x);
-            return T.CreateChecked(sum / T.CreateChecked(x.FlattenedLength));
-        }
-        #endregion
-
         #region Broadcast
         /// <summary>
         /// Broadcast the data from <paramref name="source"/> to the smallest broadcastable shape compatible with <paramref name="lengthsSource"/>. Creates a new <see cref="Tensor{T}"/> and allocates new memory.
@@ -3501,37 +3487,7 @@ namespace System.Numerics.Tensors
             {
                 outputs[i] = Tensor.Unsqueeze(tensors[i], dimension);
             }
-            return ref Tensor.ConcatenateOnDimension<T>(dimension, tensors, destination);
-        }
-        #endregion
-
-        #region StdDev
-        /// <summary>
-        /// Returns the standard deviation of the elements in the <paramref name="x"/> tensor.
-        /// </summary>
-        /// <param name="x">The <see cref="TensorSpan{T}"/> to take the standard deviation of.</param>
-        /// <returns><typeparamref name="T"/> representing the standard deviation.</returns>
-        public static T StdDev<T>(in ReadOnlyTensorSpan<T> x)
-            where T : IFloatingPoint<T>, IPowerFunctions<T>, IAdditionOperators<T, T, T>, IAdditiveIdentity<T, T>
-        {
-            T mean = Average(x);
-            Span<T> span = MemoryMarshal.CreateSpan(ref x._reference, (int)x._shape._memoryLength);
-            Span<T> output = new T[x.FlattenedLength];
-            TensorPrimitives.Subtract(span, mean, output);
-            TensorPrimitives.Abs(output, output);
-            TensorPrimitives.Pow((ReadOnlySpan<T>)output, T.CreateChecked(2), output);
-            T sum = TensorPrimitives.Sum((ReadOnlySpan<T>)output);
-            T variance = sum / T.CreateChecked(x._shape._memoryLength);
-
-            if (typeof(T) == typeof(float))
-            {
-                return T.CreateChecked(MathF.Sqrt(float.CreateChecked(variance)));
-            }
-            if (typeof(T) == typeof(double))
-            {
-                return T.CreateChecked(Math.Sqrt(double.CreateChecked(variance)));
-            }
-            return T.Pow(variance, T.CreateChecked(0.5));
+            return ref Tensor.ConcatenateOnDimension<T>(dimension, outputs, destination);
         }
         #endregion
 
@@ -4269,6 +4225,19 @@ namespace System.Numerics.Tensors
             where T : ITrigonometricFunctions<T>
         {
             return ref TensorPrimitivesHelperSpanInSpanOut(x, destination, TensorPrimitives.AtanPi);
+        }
+        #endregion
+
+        #region Average
+        /// <summary>
+        /// Returns the average of the elements in the <paramref name="x"/> tensor.
+        /// </summary>
+        /// <param name="x">The <see cref="TensorSpan{T}"/> to take the mean of.</param>
+        /// <returns><typeparamref name="T"/> representing the mean.</returns>
+        public static T Average<T>(scoped in ReadOnlyTensorSpan<T> x)
+            where T : INumberBase<T>
+        {
+            return TensorPrimitivesHelperSpanInTOut(x, TensorPrimitives.Average);
         }
         #endregion
 
@@ -6565,6 +6534,19 @@ namespace System.Numerics.Tensors
         }
         #endregion
 
+        #region StdDev
+        /// <summary>
+        /// Returns the standard deviation of the elements in the <paramref name="x"/> tensor.
+        /// </summary>
+        /// <param name="x">The <see cref="TensorSpan{T}"/> to take the standard deviation of.</param>
+        /// <returns><typeparamref name="T"/> representing the standard deviation.</returns>
+        public static T StdDev<T>(in ReadOnlyTensorSpan<T> x)
+            where T : IRootFunctions<T>
+        {
+            return TensorPrimitivesHelperSpanInTOut(x, TensorPrimitives.StdDev);
+        }
+        #endregion
+
         #region Subtract
         /// <summary>
         /// Subtracts <paramref name="y"/> from each element of <paramref name="x"/> and returns a new <see cref="Tensor{T}"/> with the result.
@@ -6661,6 +6643,19 @@ namespace System.Numerics.Tensors
             where T : IAdditionOperators<T, T, T>, IAdditiveIdentity<T, T>
         {
             return TensorPrimitivesHelperSpanInTOut(x, TensorPrimitives.Sum);
+        }
+        #endregion
+
+        #region SumOfSquares
+        /// <summary>
+        /// Sums the squared elements of the specified tensor.
+        /// </summary>
+        /// <param name="x">Tensor to sum squares of</param>
+        /// <returns></returns>
+        internal static T SumOfSquares<T>(scoped in ReadOnlyTensorSpan<T> x)
+            where T : IAdditionOperators<T, T, T>, IAdditiveIdentity<T, T>, IMultiplyOperators<T, T, T>
+        {
+            return TensorPrimitivesHelperSpanInTOut(x, TensorPrimitives.SumOfSquares);
         }
         #endregion
 

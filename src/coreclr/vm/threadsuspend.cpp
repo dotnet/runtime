@@ -613,8 +613,8 @@ static StackWalkAction TAStackCrawlCallBackWorker(CrawlFrame* pCf, StackCrawlCon
     #endif
     if (pData->fWriteToStressLog)
     {
-        STRESS_LOG5(LF_EH, LL_INFO100, "TAStackCrawlCallBack: STACKCRAWL method:%pM ('%s'), offset %x, Frame:%p, FrameVtable = %pV\n",
-            pMD, METHODNAME(pMD), pCf->IsFrameless()?pCf->GetRelOffset():0, pFrame, pCf->IsFrameless()?0:(*(void**)pFrame));
+        STRESS_LOG5(LF_EH, LL_INFO100, "TAStackCrawlCallBack: STACKCRAWL method:%pM ('%s'), offset %x, Frame:%p, FrameIdentifier = %s\n",
+            pMD, METHODNAME(pMD), pCf->IsFrameless()?pCf->GetRelOffset():0, pFrame, pCf->IsFrameless()?0:Frame::GetFrameTypeName(pFrame->GetFrameIdentifier()));
     }
     #undef METHODNAME
 
@@ -2512,7 +2512,7 @@ bool ThreadStore::IsTrappingThreadsForSuspension()
 
 #ifdef FEATURE_HIJACK
 
-void RedirectedThreadFrame::ExceptionUnwind()
+void RedirectedThreadFrame::ExceptionUnwind_Impl()
 {
     CONTRACTL
     {
@@ -2671,7 +2671,7 @@ void Thread::RestoreContextSimulated(Thread* pThread, CONTEXT* pCtx, void* pFram
         RaiseException(EXCEPTION_HIJACK, 0, 0, NULL);
     }
     __except (++filter_count == 1
-            ? RedirectedHandledJITCaseExceptionFilter(GetExceptionInformation(), (RedirectedThreadFrame*)pFrame, pCtx, dwLastError)
+            ? RedirectedHandledJITCaseExceptionFilter(GetExceptionInformation(), dac_cast<PTR_RedirectedThreadFrame>(pFrame), pCtx, dwLastError)
             : EXCEPTION_CONTINUE_SEARCH)
     {
         _ASSERTE(!"Reached body of __except in Thread::RedirectedHandledJITCase");
@@ -2699,7 +2699,7 @@ void __stdcall Thread::RedirectedHandledJITCase(RedirectReason reason)
     INDEBUG(Thread::ObjectRefFlush(pThread));
 
     // Create a frame on the stack
-    FrameWithCookie<RedirectedThreadFrame> frame(pCtx);
+    RedirectedThreadFrame frame(pCtx);
 
     STRESS_LOG5(LF_SYNC, LL_INFO1000, "In RedirectedHandledJITcase reason 0x%x pFrame = %p pc = %p sp = %p fp = %p", reason, &frame, GetIP(pCtx), GetSP(pCtx), GetFP(pCtx));
 
@@ -3675,7 +3675,7 @@ int RedirectedThrowControlExceptionFilter(
 
     STRESS_LOG0(LF_SYNC, LL_INFO100, "In RedirectedThrowControlExceptionFilter\n");
 
-    // If we get here via COM+ exception, gc-mode is unknown.  We need it to
+    // If we get here via CLR exception, gc-mode is unknown.  We need it to
     // be cooperative for this function.
     _ASSERTE (pThread->PreemptiveGCDisabled());
 
@@ -3766,10 +3766,9 @@ ThrowControlForThread(
     }
 
 #if defined(FEATURE_EH_FUNCLETS)
-    *(TADDR*)pfef = FaultingExceptionFrame::GetMethodFrameVPtr();
-    *pfef->GetGSCookiePtr() = GetProcessGSCookie();
+    ((Frame*)pfef)->Init(FrameIdentifier::FaultingExceptionFrame);
 #else // FEATURE_EH_FUNCLETS
-    FrameWithCookie<FaultingExceptionFrame> fef;
+    FaultingExceptionFrame fef;
     FaultingExceptionFrame *pfef = &fef;
 #endif // FEATURE_EH_FUNCLETS
     pfef->InitAndLink(pThread->m_OSContext);
@@ -4546,15 +4545,13 @@ struct ExecutionState
 };
 
 // Client is responsible for suspending the thread before calling
-void Thread::HijackThread(ReturnKind returnKind, bool hasAsyncRet, ExecutionState *esb)
+void Thread::HijackThread(ExecutionState *esb X86_ARG(ReturnKind returnKind) X86_ARG(bool hasAsyncRet))
 {
     CONTRACTL {
         NOTHROW;
         GC_NOTRIGGER;
     }
     CONTRACTL_END;
-
-    _ASSERTE(IsValidReturnKind(returnKind));
 
     VOID *pvHijackAddr = reinterpret_cast<VOID *>(OnHijackTripThread);
 
@@ -4567,10 +4564,13 @@ void Thread::HijackThread(ReturnKind returnKind, bool hasAsyncRet, ExecutionStat
 #endif // TARGET_WINDOWS
 
 #ifdef TARGET_X86
+    _ASSERTE(IsValidReturnKind(returnKind));
     if (returnKind == RT_Float)
     {
         pvHijackAddr = reinterpret_cast<VOID *>(OnHijackFPTripThread);
     }
+
+    SetHijackReturnKind(returnKind, hasAsyncRet);
 #endif // TARGET_X86
 
     // Don't hijack if are in the first level of running a filter/finally/catch.
@@ -4589,8 +4589,6 @@ void Thread::HijackThread(ReturnKind returnKind, bool hasAsyncRet, ExecutionStat
         STRESS_LOG3(LF_SYNC, LL_INFO100, "Thread::HijackThread(%p to %p): Early out - !hijackLockHolder.Acquired. State=%x.\n", this, pvHijackAddr, (ThreadState)m_State);
         return;
     }
-
-    SetHijackReturnKind(returnKind, hasAsyncRet);
 
     if (m_State & TS_Hijacked)
         UnhijackThread();
@@ -4844,7 +4842,8 @@ StackWalkAction SWCB_GetExecutionState(CrawlFrame *pCF, VOID *pData)
 }
 
 HijackFrame::HijackFrame(LPVOID returnAddress, Thread *thread, HijackArgs *args)
-           : m_ReturnAddress((TADDR)returnAddress),
+           : Frame(FrameIdentifier::HijackFrame),
+             m_ReturnAddress((TADDR)returnAddress),
              m_Thread(thread),
              m_Args(args)
 {
@@ -4880,7 +4879,7 @@ void STDCALL OnHijackWorker(HijackArgs * pArgs)
 
     // Build a frame so that stack crawling can proceed from here back to where
     // we will resume execution.
-    FrameWithCookie<HijackFrame> frame((void *)pArgs->ReturnAddress, thread, pArgs);
+    HijackFrame frame((void *)pArgs->ReturnAddress, thread, pArgs);
 
 #ifdef _DEBUG
     BOOL GCOnTransition = FALSE;
@@ -4909,17 +4908,15 @@ void STDCALL OnHijackWorker(HijackArgs * pArgs)
 #endif // HIJACK_NONINTERRUPTIBLE_THREADS
 }
 
-static bool GetReturnAddressHijackInfo(EECodeInfo *pCodeInfo, ReturnKind *pReturnKind, bool* hasAsyncRet)
+static bool GetReturnAddressHijackInfo(EECodeInfo *pCodeInfo X86_ARG(ReturnKind * returnKind) X86_ARG(bool* hasAsyncRet))
 {
+    X86_ONLY(*hasAsyncRet = false);
     GCInfoToken gcInfoToken = pCodeInfo->GetGCInfoToken();
-    if (!pCodeInfo->GetCodeManager()->GetReturnAddressHijackInfo(gcInfoToken, pReturnKind))
+    if (!pCodeInfo->GetCodeManager()->GetReturnAddressHijackInfo(gcInfoToken X86_ARG(pReturnKind)))
         return false;
 
-    // TODO: Expand return kind to include this?
-    *hasAsyncRet = false;
-
     MethodDesc* pMD = pCodeInfo->GetMethodDesc();
-    *hasAsyncRet = pMD->IsAsync2Method();
+    X86_ONLY(*hasAsyncRet = pMD->IsAsync2Method());
 
     return true;
 }
@@ -5321,12 +5318,11 @@ BOOL Thread::HandledJITCase()
             // it or not.
             EECodeInfo codeInfo(ip);
 
-            ReturnKind returnKind;
-            bool hasAsyncRet;
-
-            if (GetReturnAddressHijackInfo(&codeInfo, &returnKind, &hasAsyncRet))
+            X86_ONLY(ReturnKind returnKind;)
+            X86_ONLY(bool hasAsyncRet;)
+            if (GetReturnAddressHijackInfo(&codeInfo X86_ARG(&returnKind) X86_ARG(&hasAsyncRet)))
             {
-                HijackThread(returnKind, hasAsyncRet, &esb);
+                HijackThread(&esb X86_ARG(returnKind) X86_ARG(hasAsyncRet));
             }
         }
     }
@@ -5817,7 +5813,7 @@ void HandleSuspensionForInterruptedThread(CONTEXT *interruptedContext)
     {
         // If the thread is at a GC safe point, push a RedirectedThreadFrame with
         // the interrupted context and pulse the GC mode so that GC can proceed.
-        FrameWithCookie<RedirectedThreadFrame> frame(interruptedContext);
+        RedirectedThreadFrame frame(interruptedContext);
 
         frame.Push(pThread);
 
@@ -5862,10 +5858,9 @@ void HandleSuspensionForInterruptedThread(CONTEXT *interruptedContext)
         if (executionState.m_ppvRetAddrPtr == NULL)
             return;
 
-        ReturnKind returnKind;
-        bool hasAsyncRet;
-
-        if (!GetReturnAddressHijackInfo(&codeInfo, &returnKind, &hasAsyncRet))
+        X86_ONLY(ReturnKind returnKind;)
+        X86_ONLY(bool hasAsyncRet;)
+        if (!GetReturnAddressHijackInfo(&codeInfo X86_ARG(&returnKind) X86_ARG(&hasAsyncRet)))
         {
             return;
         }
@@ -5879,7 +5874,7 @@ void HandleSuspensionForInterruptedThread(CONTEXT *interruptedContext)
         StackWalkerWalkingThreadHolder threadStackWalking(pThread);
 
         // Hijack the return address to point to the appropriate routine based on the method's return type.
-        pThread->HijackThread(returnKind, hasAsyncRet, &executionState);
+        pThread->HijackThread(&executionState X86_ARG(returnKind) X86_ARG(hasAsyncRet));
     }
 }
 
