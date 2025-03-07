@@ -28,6 +28,14 @@ namespace System
         public static void ThrowArgument_InputAndDestinationSpanMustNotOverlap() =>
             throw new ArgumentException(SR.Argument_InputAndDestinationSpanMustNotOverlap, "destination");
 
+        public static void ThrowIfArrayTypeMismatch<T>(Array? array)
+        {
+            if ((array is not null) && !typeof(T).IsValueType && (array.GetType() != typeof(T[])))
+            {
+                ThrowArrayTypeMismatchException();
+            }
+        }
+
         [DoesNotReturn]
         public static void ThrowArgument_DestinationSpansMustNotOverlap() =>
             throw new ArgumentException(SR.Argument_DestinationSpansMustNotOverlap);
@@ -64,6 +72,18 @@ namespace System
 
         [DoesNotReturn]
         public static void ThrowArgument_LengthsMustEqualArrayLength()
+        {
+            throw new ArgumentOutOfRangeException();
+        }
+
+        [DoesNotReturn]
+        public static void ThrowArgument_LengthIsNegativeOrZero()
+        {
+            throw new ArgumentOutOfRangeException();
+        }
+
+        [DoesNotReturn]
+        public static void ThrowArgument_StartIndexOutOfBounds()
         {
             throw new ArgumentOutOfRangeException();
         }
@@ -204,13 +224,19 @@ namespace System
         }
 
         [DoesNotReturn]
-        public static void ThrowArgument_InvalidStridesAndLengths()
+        public static void ThrowArgument_InvalidTensorShape()
         {
             throw new ArgumentException(SR.ThrowArgument_InvalidStridesAndLengths);
         }
 
         [DoesNotReturn]
-        public static void ThrowArgument_StrideLessThan0()
+        public static void ThrowArgument_LengthIsNonZeroForNullReference()
+        {
+            throw new ArgumentOutOfRangeException(SR.ThrowArgument_LengthIsNonZeroForNullReference);
+        }
+
+        [DoesNotReturn]
+        public static void ThrowArgument_StrideIsNegative()
         {
             throw new ArgumentOutOfRangeException(SR.ThrowArgument_StrideLessThan0);
         }
