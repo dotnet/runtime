@@ -211,7 +211,7 @@ DN_SIMDHASH_SCAN_BUCKET_INTERNAL (DN_SIMDHASH_T_PTR hash, bucket_t *restrict buc
 #undef bucket_suffixes
 
 	if (DN_LIKELY(index < count)) {
-        DN_SIMDHASH_SCAN_DATA_T scan_data = DN_SIMDHASH_GET_SCAN_DATA(DN_SIMDHASH_GET_DATA(hash));
+		DN_SIMDHASH_SCAN_DATA_T scan_data = DN_SIMDHASH_GET_SCAN_DATA(DN_SIMDHASH_GET_DATA(hash));
 		DN_SIMDHASH_KEY_T *key = &bucket->keys[index];
 		do {
 			if (DN_SIMDHASH_KEY_EQUALS(scan_data, needle, *key))
