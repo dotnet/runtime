@@ -82,25 +82,6 @@
     LEAF_END RhpInitialInterfaceDispatch, _TEXT
 
     //
-    // Stub dispatch routine for dispatch to a vtable slot
-    //
-    LEAF_ENTRY RhpVTableOffsetDispatch, _TEXT
-        // t2 contains the interface dispatch cell address.
-        // Load t3 to point to the vtable offset (which is stored in the m_pCache field).
-        ld  t3, OFFSETOF__InterfaceDispatchCell__m_pCache(t2)
-
-        // Load the MethodTable from the object instance in a0, and add it to the vtable offset
-        // to get the address in the vtable of what we want to dereference
-        ld    t4, 0(a0)
-        add   t3, t3, t4
-
-        // Load the target address of the vtable into t3
-        ld    t3, 0(t3)
-
-        jr  t3
-    LEAF_END RhpVTableOffsetDispatch, _TEXT
-
-    //
     // Cache miss case, call the runtime to resolve the target and update the cache.
     // Use universal transition helper to allow an exception to flow out of resolution.
     //
