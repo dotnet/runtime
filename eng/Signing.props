@@ -169,7 +169,5 @@
                   Kind="Package" />
       </ItemGroup>
     </When>
-    <Otherwise>
-    </Otherwise>
   </Choose>
 </Project>
