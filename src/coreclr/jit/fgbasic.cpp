@@ -962,8 +962,7 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
         }
         if (opcodeNext == CEE_RET)
         {
-            // Assume it is a wrapper method if we see
-            // newobj/newarr/initobj followed by {ldloc, box}, ret.
+            // Assume it is a wrapper method if it is followed by {ldloc, box}, ret.
             return true;
         }
         return false;
