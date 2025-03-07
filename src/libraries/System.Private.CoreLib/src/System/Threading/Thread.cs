@@ -381,14 +381,11 @@ namespace System.Threading
         // However it's possible to spin wait in those scenarios by enabling the SpinWaitWhenCpuQuotaIsLimited config setting.
         private static bool DetermineShouldSpinWait()
         {
-            if (Environment.IsSingleProcessor)
-            {
-                return false;
-            }
-            return !Environment.IsCpuQuotaLimited ||
-                AppContextConfigHelper.GetBooleanConfig(
-                "System.Threading.ThreadPool.SpinWaitWhenCpuQuotaIsLimited",
-                "DOTNET_ThreadPool_SpinWaitWhenCpuQuotaIsLimited");
+            return !Environment.IsSingleProcessor &&
+                        (!Environment.IsCpuQuotaLimited ||
+                        AppContextConfigHelper.GetBooleanConfig(
+                        "System.Threading.ThreadPool.SpinWaitWhenCpuQuotaIsLimited",
+                        "DOTNET_ThreadPool_SpinWaitWhenCpuQuotaIsLimited"));
         }
 
         public ExecutionContext? ExecutionContext => ExecutionContext.Capture();
