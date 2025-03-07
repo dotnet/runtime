@@ -930,13 +930,13 @@ namespace System
         public const
 #endif
             int ToStringNaiveThreshold = BigIntegerCalculator.DivideBurnikelZieglerThreshold;
-        private static void BigIntegerToBase1E9(ReadOnlySpan<uint> bits, Span<uint> base1E9Buffer, out int leadingWritten)
+        private static void BigIntegerToBase1E9(ReadOnlySpan<uint> bits, Span<uint> base1E9Buffer, out int base1E9Written)
         {
             Debug.Assert(ToStringNaiveThreshold >= 2);
 
             if (bits.Length <= ToStringNaiveThreshold)
             {
-                Naive(bits, base1E9Buffer, out leadingWritten);
+                Naive(bits, base1E9Buffer, out base1E9Written);
                 return;
             }
 
@@ -950,21 +950,21 @@ namespace System
 
             PowersOf1e9 powersOf1e9 = new PowersOf1e9(powersOf1e9Buffer);
 
-            DivideAndConquer(powersOf1e9, maxIndex, bits, base1E9Buffer, out leadingWritten);
+            DivideAndConquer(powersOf1e9, maxIndex, bits, base1E9Buffer, out base1E9Written);
 
             if (powersOf1e9BufferFromPool != null)
             {
                 ArrayPool<uint>.Shared.Return(powersOf1e9BufferFromPool);
             }
 
-            static void DivideAndConquer(in PowersOf1e9 powersOf1e9, int powersIndex, ReadOnlySpan<uint> bits, Span<uint> base1E9Buffer, out int leadingWritten)
+            static void DivideAndConquer(in PowersOf1e9 powersOf1e9, int powersIndex, ReadOnlySpan<uint> bits, Span<uint> base1E9Buffer, out int base1E9Written)
             {
                 Debug.Assert(bits.Length == 0 || bits[^1] != 0);
                 Debug.Assert(powersIndex >= 0);
 
                 if (bits.Length <= ToStringNaiveThreshold)
                 {
-                    Naive(bits, base1E9Buffer, out leadingWritten);
+                    Naive(bits, base1E9Buffer, out base1E9Written);
                     return;
                 }
 
@@ -1014,22 +1014,22 @@ namespace System
                     powersIndex - 1,
                     upper.Slice(0, BigIntegerCalculator.ActualLength(upper)),
                     base1E9Buffer.Slice(lower1E9Length),
-                    out leadingWritten);
+                    out base1E9Written);
 
                 if (upperFromPool != null)
                     ArrayPool<uint>.Shared.Return(upperFromPool);
 
-                leadingWritten += lower1E9Length;
+                base1E9Written += lower1E9Length;
             }
 
-            static void Naive(ReadOnlySpan<uint> bits, Span<uint> base1E9Buffer, out int leadingWritten)
+            static void Naive(ReadOnlySpan<uint> bits, Span<uint> base1E9Buffer, out int base1E9Written)
             {
-                leadingWritten = 0;
+                base1E9Written = 0;
 
                 for (int iuSrc = bits.Length; --iuSrc >= 0;)
                 {
                     uint uCarry = bits[iuSrc];
-                    Span<uint> base1E9 = base1E9Buffer.Slice(0, leadingWritten);
+                    Span<uint> base1E9 = base1E9Buffer.Slice(0, base1E9Written);
                     for (int iuDst = 0; iuDst < base1E9.Length; iuDst++)
                     {
                         Debug.Assert(base1E9[iuDst] < PowersOf1e9.TenPowMaxPartial);
@@ -1042,9 +1042,9 @@ namespace System
                     }
                     if (uCarry != 0)
                     {
-                        (uCarry, base1E9Buffer[leadingWritten++]) = Math.DivRem(uCarry, PowersOf1e9.TenPowMaxPartial);
+                        (uCarry, base1E9Buffer[base1E9Written++]) = Math.DivRem(uCarry, PowersOf1e9.TenPowMaxPartial);
                         if (uCarry != 0)
-                            base1E9Buffer[leadingWritten++] = uCarry;
+                            base1E9Buffer[base1E9Written++] = uCarry;
                     }
                 }
             }
