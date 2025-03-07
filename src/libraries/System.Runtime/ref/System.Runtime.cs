@@ -4913,6 +4913,7 @@ namespace System
         public static bool IsMacCatalystVersionAtLeast(int major, int minor = 0, int build = 0) { throw null; }
         public static bool IsMacOS() { throw null; }
         public static bool IsMacOSVersionAtLeast(int major, int minor = 0, int build = 0) { throw null; }
+        public static bool IsApplePlatform() { throw null; }
         public static bool IsOSPlatform(string platform) { throw null; }
         public static bool IsOSPlatformVersionAtLeast(string platform, int major, int minor = 0, int build = 0, int revision = 0) { throw null; }
         public static bool IsTvOS() { throw null; }
