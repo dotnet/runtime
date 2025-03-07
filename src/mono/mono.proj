@@ -118,6 +118,10 @@
                       GeneratePathProperty="true" />
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="$(RepoRoot)/src/native/external/vendored-libs.proj" />
+  </ItemGroup>
+
   <!--
     Like Wasm, Wasi needs a 64-bit python on windows to pinvoke into libClang.dll for offset generation.
     Only wasi doesn't come with its own python and windows uses 32-bit python, so refer to the transport pack instead.
@@ -423,6 +427,7 @@ JS_ENGINES = [NODE_JS]
       <_MonoCMakeArgs Include="-DGC_SUSPEND=$(MonoThreadSuspend)" />
       <_MonoCMakeArgs Include="-DMONO_LIB_NAME=$(MonoLibName)" />
       <_MonoCMakeArgs Include="-DMONO_SHARED_LIB_NAME=$(MonoSharedLibName)" />
+      <_MonoCMakeArgs Include="-DCMAKE_PREFIX_PATH=$(VendoredLibraryRootPath.TrimEnd('\\'))" />
     </ItemGroup>
 
     <ItemGroup Condition="'$(HostOS)' == 'Linux' and '$(MonoEnableLLVM)' == 'true' and '$(TargetArchitecture)' != 'wasm' and '$(MonoUseLibCxx)' == 'true'">
@@ -804,6 +809,8 @@ JS_ENGINES = [NODE_JS]
       <MonoAotCMakeSysroot Condition="'$(TargetstvOS)' == 'true' and '$(TargetstvOSSimulator)' == 'true'">$(XcodeDir)/Platforms/AppleTVSimulator.platform/Developer/SDKs/AppleTVSimulator$(tvOSVersion).sdk</MonoAotCMakeSysroot>
       <MonoAotAbi Condition="'$(Platform)' == 'arm64'">aarch64-apple-darwin10</MonoAotAbi>
       <MonoAotAbi Condition="'$(Platform)' == 'x64'">x86_64-apple-darwin10</MonoAotAbi>
+
+      <MonoAOTCMakeArgs Include="-DCMAKE_PREFIX_PATH=$(VendoredLibraryRootPath.TrimEnd('\\'))" />
     </PropertyGroup>
 
     <!-- Catalyst specific options -->
