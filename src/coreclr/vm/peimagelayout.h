@@ -81,11 +81,7 @@ class FlatImageLayout : public PEImageLayout
 {
     VPTR_VTABLE_CLASS(FlatImageLayout, PEImageLayout)
         VPTR_UNIQUE(0x59)
-protected:
-    CLRMapViewHolder m_FileView;
 public:
-    HandleHolder m_FileMap;
-
 #ifndef DACCESS_COMPILE
     FlatImageLayout(PEImage* pOwner);
     FlatImageLayout(PEImage* pOwner, const BYTE* array, COUNT_T size);
@@ -94,6 +90,12 @@ public:
     void* LoadImageByMappingParts(SIZE_T* m_imageParts) const;
 #endif
 #endif
+
+private:
+    // Handles for the mapped image.
+    // These will be null if the image data is not mapped by the runtime (for example, provided via an external assembly probe).
+    CLRMapViewHolder m_FileView;
+    HandleHolder m_FileMap;
 };
 
 // ConvertedImageView is for the case when we construct a loaded

@@ -97,6 +97,13 @@ namespace System.Security.Cryptography
         internal const string ECDsaWithSha3_384 = "2.16.840.1.101.3.4.3.11";
         internal const string ECDsaWithSha3_512 = "2.16.840.1.101.3.4.3.12";
 
+        internal const string MLDsa44 = "2.16.840.1.101.3.4.3.17";
+        internal const string MLDsa65 = "2.16.840.1.101.3.4.3.18";
+        internal const string MLDsa87 = "2.16.840.1.101.3.4.3.19";
+        internal const string MLDsa44PreHashSha512 = "2.16.840.1.101.3.4.3.32";
+        internal const string MLDsa65PreHashSha512 = "2.16.840.1.101.3.4.3.33";
+        internal const string MLDsa87PreHashSha512 = "2.16.840.1.101.3.4.3.34";
+
         internal const string Mgf1 = "1.2.840.113549.1.1.8";
         internal const string PSpecified = "1.2.840.113549.1.1.9";
 
