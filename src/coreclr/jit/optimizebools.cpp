@@ -983,18 +983,6 @@ bool OptBoolsDsc::optOptimizeCompareChainCondBlock()
             return false;
         }
     }
-    else
-    {
-        GenTree* root = m_b3->firstStmt()->GetRootNode();
-        if (root->OperIsSimple())
-        {
-            GenTree* op1 = root->gtGetOp1();
-            if (op1 && op1->IsIntegralConst(0))
-            {
-                reverseFirstCondition = true;
-            }
-        }
-    }
 
     Statement* const s1 = optOptimizeBoolsChkBlkCond();
     if (s1 == nullptr)
@@ -1007,6 +995,17 @@ bool OptBoolsDsc::optOptimizeCompareChainCondBlock()
     GenTree* cond1 = m_testInfo1.testTree->gtGetOp1();
     assert(m_testInfo2.testTree->OperIs((m_b3 == nullptr) ? GT_JTRUE : GT_RETURN));
     GenTree* cond2 = m_testInfo2.testTree->gtGetOp1();
+
+    if (m_b3 != nullptr)
+    {
+        GenTree* root = m_b3->firstStmt()->GetRootNode();
+        assert(root->OperIs(GT_RETURN));
+        GenTree* op1 = root->gtGetOp1();
+        if (op1 && op1->IsIntegralConst(0))
+        {
+            reverseFirstCondition = true;
+        }
+    }
 
     // Ensure both conditions are suitable.
     if (!cond1->OperIsCompare() || !cond2->OperIsCompare())
@@ -1172,7 +1171,7 @@ Statement* OptBoolsDsc::optOptimizeBoolsChkBlkCond()
     }
     else
     {
-        if (!testTree2->OperIs(GT_RETURN, GT_SWIFT_ERROR_RET))
+        if (!testTree2->OperIs(GT_RETURN))
         {
             return nullptr;
         }
@@ -1184,7 +1183,7 @@ Statement* OptBoolsDsc::optOptimizeBoolsChkBlkCond()
         }
 
         GenTree* testTree3 = s3->GetRootNode();
-        if (!testTree3->OperIs(GT_RETURN, GT_SWIFT_ERROR_RET))
+        if (!testTree3->OperIs(GT_RETURN))
         {
             return nullptr;
         }
