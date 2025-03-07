@@ -10933,6 +10933,13 @@ public:
 
     bool compObjectStackAllocation()
     {
+        if (compIsAsync2())
+        {
+            // Object stack allocation takes the address of locals around
+            // suspension points. Disable entirely for now.
+            return false;
+        }
+
         return (JitConfig.JitObjectStackAllocation() != 0);
     }
 
