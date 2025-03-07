@@ -30,6 +30,9 @@
 #define DBG_FRE(dbg,fre) fre
 #endif
 
+#define FRAMETYPE_InlinedCallFrame 0x1
+ASMCONSTANTS_C_ASSERT(FRAMETYPE_InlinedCallFrame == (int)FrameIdentifier::InlinedCallFrame)
+
 #define DynamicHelperFrameFlags_Default     0
 #define DynamicHelperFrameFlags_ObjectArg   1
 #define DynamicHelperFrameFlags_ObjectArg2  2
@@ -80,10 +83,10 @@ ASMCONSTANTS_C_ASSERT(FpStruct__BothFloat == (int)FpStruct::BothFloat)
 ASMCONSTANTS_C_ASSERT(MachState__captureCalleeSavedRegisters == offsetof(MachState, captureCalleeSavedRegisters))
 
 // Offset of the array containing the address of preserved registers in MachState
-#define MachState__ptrCalleeSavedRegisters 0x58
+#define MachState__ptrCalleeSavedRegisters 0x50
 ASMCONSTANTS_C_ASSERT(MachState__ptrCalleeSavedRegisters == offsetof(MachState, ptrCalleeSavedRegisters))
 
-#define MachState__isValid 0xc0
+#define MachState__isValid 0xb0
 ASMCONSTANTS_C_ASSERT(MachState__isValid == offsetof(MachState, _isValid))
 
 #define LazyMachState_captureCalleeSavedRegisters MachState__captureCalleeSavedRegisters
@@ -97,9 +100,6 @@ ASMCONSTANTS_C_ASSERT(LazyMachState_captureIp == offsetof(LazyMachState, capture
 
 #define VASigCookie__pNDirectILStub 0x8
 ASMCONSTANTS_C_ASSERT(VASigCookie__pNDirectILStub == offsetof(VASigCookie, pNDirectILStub))
-
-#define SIZEOF__GSCookie 0x8
-ASMCONSTANTS_C_ASSERT(SIZEOF__GSCookie == sizeof(GSCookie));
 
 #define SIZEOF__Frame                 0x10
 ASMCONSTANTS_C_ASSERT(SIZEOF__Frame == sizeof(Frame));
@@ -207,8 +207,8 @@ ASMCONSTANTS_C_ASSERT(FixupPrecodeData__PrecodeFixupThunk == offsetof(FixupPreco
 #define StubPrecodeData__Target 0x08
 ASMCONSTANTS_C_ASSERT(StubPrecodeData__Target            == offsetof(StubPrecodeData, Target))
 
-#define StubPrecodeData__MethodDesc 0x00
-ASMCONSTANTS_C_ASSERT(StubPrecodeData__MethodDesc        == offsetof(StubPrecodeData, MethodDesc))
+#define StubPrecodeData__SecretParam 0x00
+ASMCONSTANTS_C_ASSERT(StubPrecodeData__SecretParam        == offsetof(StubPrecodeData, SecretParam))
 
 #define CallCountingStubData__RemainingCallCountCell 0x00
 ASMCONSTANTS_C_ASSERT(CallCountingStubData__RemainingCallCountCell == offsetof(CallCountingStubData, RemainingCallCountCell))

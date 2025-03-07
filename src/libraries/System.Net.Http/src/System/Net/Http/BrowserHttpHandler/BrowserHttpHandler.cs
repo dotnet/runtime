@@ -254,7 +254,7 @@ namespace System.Net.Http
                             var closePromise = BrowserHttpInterop.TransformStreamClose(_jsController);
                             await BrowserHttpInterop.CancellationHelper(closePromise, _cancellationToken, _jsController).ConfigureAwait(false);
                         }
-                        catch(JSException jse) when (jse.Message.Contains("BrowserHttpWriteStream.Rejected", StringComparison.Ordinal))
+                        catch (JSException jse) when (jse.Message.Contains("BrowserHttpWriteStream.Rejected", StringComparison.Ordinal))
                         {
                             // any error from pushing bytes will also appear in the fetch promise result
                         }

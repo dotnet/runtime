@@ -1587,6 +1587,18 @@ namespace System.Linq
                     Expression.Constant(comparer, typeof(IEqualityComparer<TSource>))));
         }
 
+        [DynamicDependency("Shuffle`1", typeof(Enumerable))]
+        public static IQueryable<TSource> Shuffle<TSource>(this IQueryable<TSource> source)
+        {
+            ArgumentNullException.ThrowIfNull(source);
+
+            return source.Provider.CreateQuery<TSource>(
+                Expression.Call(
+                    null,
+                    new Func<IQueryable<TSource>, IQueryable<TSource>>(Shuffle).Method,
+                    source.Expression));
+        }
+
         [DynamicDependency("Any`1", typeof(Enumerable))]
         public static bool Any<TSource>(this IQueryable<TSource> source)
         {

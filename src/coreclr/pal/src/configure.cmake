@@ -14,7 +14,7 @@ elseif(CLR_CMAKE_TARGET_SUNOS)
   set(CMAKE_REQUIRED_INCLUDES /opt/local/include)
 endif()
 
-if(CLR_CMAKE_TARGET_OSX)
+if(CLR_CMAKE_TARGET_APPLE)
   set(CMAKE_REQUIRED_DEFINITIONS -D_XOPEN_SOURCE)
 elseif(NOT CLR_CMAKE_TARGET_FREEBSD AND NOT CLR_CMAKE_TARGET_NETBSD)
   set(CMAKE_REQUIRED_DEFINITIONS "-D_BSD_SOURCE -D_SVID_SOURCE -D_DEFAULT_SOURCE -D_POSIX_C_SOURCE=200809L")
@@ -40,6 +40,7 @@ check_include_files(procfs.h HAVE_PROCFS_H)
 check_include_files(crt_externs.h HAVE_CRT_EXTERNS_H)
 check_include_files(sys/time.h HAVE_SYS_TIME_H)
 check_include_files(pthread_np.h HAVE_PTHREAD_NP_H)
+check_include_files(sys/membarrier.h HAVE_SYS_MEMBARRIER_H)
 check_include_files(sys/lwp.h HAVE_SYS_LWP_H)
 check_include_files(lwp.h HAVE_LWP_H)
 check_include_files(runetype.h HAVE_RUNETYPE_H)
@@ -512,6 +513,7 @@ int main(void)
 
   exit(ret != 1);
 }" ONE_SHARED_MAPPING_PER_FILEREGION_PER_PROCESS)
+
 set(CMAKE_REQUIRED_LIBRARIES pthread)
 check_cxx_source_runs("
 #include <errno.h>
@@ -904,7 +906,7 @@ if(NOT CLR_CMAKE_HOST_ARCH_ARM AND NOT CLR_CMAKE_HOST_ARCH_ARM64)
   set(CMAKE_REQUIRED_LIBRARIES)
 endif()
 
-if(CLR_CMAKE_TARGET_OSX)
+if(CLR_CMAKE_TARGET_APPLE)
   set(HAVE__NSGETENVIRON 1)
   set(DEADLOCK_WHEN_THREAD_IS_SUSPENDED_WHILE_BLOCKED_ON_MUTEX 1)
   set(PAL_PTRACE "ptrace((cmd), (pid), (caddr_t)(addr), (data))")
@@ -935,15 +937,19 @@ elseif(CLR_CMAKE_TARGET_HAIKU)
   # Haiku does not have ptrace.
   set(DEADLOCK_WHEN_THREAD_IS_SUSPENDED_WHILE_BLOCKED_ON_MUTEX 0)
   set(HAVE_SCHED_OTHER_ASSIGNABLE 1)
+elseif(CLR_CMAKE_TARGET_BROWSER)
+  set(DEADLOCK_WHEN_THREAD_IS_SUSPENDED_WHILE_BLOCKED_ON_MUTEX 0)
+  set(HAVE_SCHED_OTHER_ASSIGNABLE 0)
 else() # Anything else is Linux
-  if(NOT HAVE_LTTNG_TRACEPOINT_H AND FEATURE_EVENT_TRACE)
+  # LTTNG is not available on Android, so don't error out
+  if(NOT HAVE_LTTNG_TRACEPOINT_H AND NOT CLR_CMAKE_TARGET_ANDROID AND FEATURE_EVENT_TRACE)
     unset(HAVE_LTTNG_TRACEPOINT_H CACHE)
     message(FATAL_ERROR "Cannot find liblttng-ust-dev. Try installing liblttng-ust-dev  (or the appropriate packages for your platform)")
   endif()
   set(DEADLOCK_WHEN_THREAD_IS_SUSPENDED_WHILE_BLOCKED_ON_MUTEX 0)
   set(PAL_PTRACE "ptrace((cmd), (pid), (void*)(addr), (data))")
   set(HAVE_SCHED_OTHER_ASSIGNABLE 1)
-endif(CLR_CMAKE_TARGET_OSX)
+endif(CLR_CMAKE_TARGET_APPLE)
 
 check_struct_has_member(
     "struct statfs"

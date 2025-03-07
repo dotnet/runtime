@@ -5283,31 +5283,17 @@ void CEEInfo::getCallInfo(
             // We shouldn't be using GetLoaderAllocator here because for LCG, we need to get the
             // VirtualCallStubManager from where the stub will be used.
             // For normal methods there is no difference.
+
             LoaderAllocator *pLoaderAllocator = m_pMethodBeingCompiled->GetLoaderAllocator();
-            VirtualCallStubManager *pMgr = pLoaderAllocator->GetVirtualCallStubManager();
-
-            PCODE addr = pMgr->GetCallStub(exactType, pTargetMD);
-
-            // Now we want to indirect through a cell so that updates can take place atomically.
+            LCGMethodResolver *pResolver = NULL;
             if (m_pMethodBeingCompiled->IsLCGMethod())
             {
-                // LCG methods should use recycled indcells to prevent leaks.
-                indcell = pMgr->GenerateStubIndirection(addr, TRUE);
-
-                // Add it to the per DM list so that we can recycle them when the resolver is finalized
-                LCGMethodResolver *pResolver = m_pMethodBeingCompiled->AsDynamicMethodDesc()->GetLCGMethodResolver();
-                pResolver->AddToUsedIndCellList(indcell);
-            }
-            else
-            {
-                // Normal methods should avoid recycled cells to preserve the locality of all indcells
-                // used by one method.
-                indcell = pMgr->GenerateStubIndirection(addr, FALSE);
+                pResolver = m_pMethodBeingCompiled->AsDynamicMethodDesc()->GetLCGMethodResolver();
             }
 
             // We use an indirect call
             pResult->stubLookup.constLookup.accessType = IAT_PVALUE;
-            pResult->stubLookup.constLookup.addr = indcell;
+            pResult->stubLookup.constLookup.addr = GenerateDispatchStubCellEntryMethodDesc(m_pMethodBeingCompiled->GetLoaderAllocator(), exactType, pTargetMD, pResolver);
         }
 #endif // STUB_DISPATCH_PORTABLE
     }
@@ -6611,7 +6597,11 @@ void CEEInfo::setMethodAttribs (
         ftn->SetNotInline(true);
     }
 
-    if (attribs & (CORINFO_FLG_SWITCHED_TO_OPTIMIZED | CORINFO_FLG_SWITCHED_TO_MIN_OPT))
+    if (attribs & (CORINFO_FLG_SWITCHED_TO_OPTIMIZED | CORINFO_FLG_SWITCHED_TO_MIN_OPT
+#ifdef FEATURE_INTERPRETER
+     | CORINFO_FLG_INTERPRETER
+#endif // FEATURE_INTERPRETER
+     ))
     {
         PrepareCodeConfig *config = GetThread()->GetCurrentPrepareCodeConfig();
         if (config != nullptr)
@@ -6621,6 +6611,12 @@ void CEEInfo::setMethodAttribs (
                 _ASSERTE(!ftn->IsJitOptimizationDisabled());
                 config->SetJitSwitchedToMinOpt();
             }
+#ifdef FEATURE_INTERPRETER
+            else if (attribs & CORINFO_FLG_INTERPRETER)
+            {
+                config->SetIsInterpreterCode();
+            }
+#endif // FEATURE_INTERPRETER
 #ifdef FEATURE_TIERED_COMPILATION
             else if (attribs & CORINFO_FLG_SWITCHED_TO_OPTIMIZED)
             {
@@ -10132,25 +10128,23 @@ void InlinedCallFrame::GetEEInfo(CORINFO_EE_INFO::InlinedCallFrameInfo *pInfo)
 {
     LIMITED_METHOD_CONTRACT;
 
-    pInfo->size                          = sizeof(GSCookie) + sizeof(InlinedCallFrame);
-    pInfo->sizeWithSecretStubArg         = sizeof(GSCookie) + sizeof(InlinedCallFrame) + sizeof(PTR_VOID);
+    pInfo->size                          = sizeof(InlinedCallFrame);
+    pInfo->sizeWithSecretStubArg         = sizeof(InlinedCallFrame) + sizeof(PTR_VOID);
 
-    pInfo->offsetOfGSCookie              = 0;
-    pInfo->offsetOfFrameVptr             = sizeof(GSCookie);
-    pInfo->offsetOfFrameLink             = sizeof(GSCookie) + Frame::GetOffsetOfNextLink();
-    pInfo->offsetOfCallSiteSP            = sizeof(GSCookie) + offsetof(InlinedCallFrame, m_pCallSiteSP);
-    pInfo->offsetOfCalleeSavedFP         = sizeof(GSCookie) + offsetof(InlinedCallFrame, m_pCalleeSavedFP);
-    pInfo->offsetOfCallTarget            = sizeof(GSCookie) + offsetof(InlinedCallFrame, m_Datum);
-    pInfo->offsetOfReturnAddress         = sizeof(GSCookie) + offsetof(InlinedCallFrame, m_pCallerReturnAddress);
-    pInfo->offsetOfSecretStubArg         = sizeof(GSCookie) + sizeof(InlinedCallFrame);
+    pInfo->offsetOfFrameLink             = Frame::GetOffsetOfNextLink();
+    pInfo->offsetOfCallSiteSP            = offsetof(InlinedCallFrame, m_pCallSiteSP);
+    pInfo->offsetOfCalleeSavedFP         = offsetof(InlinedCallFrame, m_pCalleeSavedFP);
+    pInfo->offsetOfCallTarget            = offsetof(InlinedCallFrame, m_Datum);
+    pInfo->offsetOfReturnAddress         = offsetof(InlinedCallFrame, m_pCallerReturnAddress);
+    pInfo->offsetOfSecretStubArg         = sizeof(InlinedCallFrame);
 #ifdef TARGET_ARM
-    pInfo->offsetOfSPAfterProlog         = sizeof(GSCookie) + offsetof(InlinedCallFrame, m_pSPAfterProlog);
+    pInfo->offsetOfSPAfterProlog         = offsetof(InlinedCallFrame, m_pSPAfterProlog);
 #endif // TARGET_ARM
 }
 
 CORINFO_OS getClrVmOs()
 {
-#ifdef TARGET_OSX
+#ifdef TARGET_APPLE
     return CORINFO_APPLE;
 #elif defined(TARGET_UNIX)
     return CORINFO_UNIX;
@@ -13669,25 +13663,6 @@ BOOL LoadDynamicInfoEntry(Module *currentModule,
         }
         break;
 
-    case ENCODE_VIRTUAL_ENTRY_SLOT:
-        {
-            DWORD slot = CorSigUncompressData(pBlob);
-
-            TypeHandle ownerType = ZapSig::DecodeType(currentModule, pInfoModule, pBlob);
-
-            LOG((LF_ZAP, LL_INFO100000, "     Fixup stub dispatch\n"));
-
-            VirtualCallStubManager * pMgr = currentModule->GetLoaderAllocator()->GetVirtualCallStubManager();
-
-            // <REVISIT_TODO>
-            // We should be generating a stub indirection here, but the zapper already uses one level
-            // of indirection, i.e. we would have to return IAT_PPVALUE to the JIT, and on the whole the JITs
-            // aren't quite set up to accept that. Furthermore the call sequences would be different - at
-            // the moment an indirection cell uses "call [cell-addr]" on x86, and instead we would want the
-            // euqivalent of "call [[call-addr]]".  This could perhaps be implemented as "call [eax]" </REVISIT_TODO>
-            result = pMgr->GetCallStub(ownerType, slot);
-        }
-        break;
 #ifdef FEATURE_READYTORUN
     case ENCODE_READYTORUN_HELPER:
         {
@@ -14537,7 +14512,7 @@ TADDR EECodeInfo::GetSavedMethodCode()
     return GetStartAddress();
 }
 
-TADDR EECodeInfo::GetStartAddress()
+TADDR EECodeInfo::GetStartAddress() const
 {
     CONTRACTL {
         NOTHROW;
@@ -14548,7 +14523,7 @@ TADDR EECodeInfo::GetStartAddress()
     return m_pJM->JitTokenToStartAddress(m_methodToken);
 }
 
-NativeCodeVersion EECodeInfo::GetNativeCodeVersion()
+NativeCodeVersion EECodeInfo::GetNativeCodeVersion() const
 {
     CONTRACTL
     {

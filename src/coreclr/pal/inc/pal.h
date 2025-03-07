@@ -2077,7 +2077,6 @@ typedef struct _KNONVOLATILE_CONTEXT_POINTERS {
     PDWORD64 S7;
     PDWORD64 S8;
     PDWORD64 Fp;
-    PDWORD64 Tp;
     PDWORD64 Ra;
 
     PDWORD64 F24;
@@ -2470,6 +2469,26 @@ typedef struct _KNONVOLATILE_CONTEXT_POINTERS {
     //
 
 } KNONVOLATILE_CONTEXT_POINTERS, *PKNONVOLATILE_CONTEXT_POINTERS;
+#elif defined(HOST_WASM)
+#define CONTEXT_CONTROL 0
+#define CONTEXT_INTEGER 0
+#define CONTEXT_FLOATING_POINT 0
+#define CONTEXT_FULL 0
+
+#define CONTEXT_XSTATE 0
+
+#define CONTEXT_EXCEPTION_ACTIVE 0x8000000L
+#define CONTEXT_SERVICE_ACTIVE 0x10000000L
+#define CONTEXT_EXCEPTION_REQUEST 0x40000000L
+#define CONTEXT_EXCEPTION_REPORTING 0x80000000L
+
+typedef struct _CONTEXT {
+    ULONG ContextFlags;
+} CONTEXT, *PCONTEXT, *LPCONTEXT;
+
+typedef struct _KNONVOLATILE_CONTEXT_POINTERS {
+    DWORD none;
+} KNONVOLATILE_CONTEXT_POINTERS, *PKNONVOLATILE_CONTEXT_POINTERS;
 
 #else
 #error Unknown architecture for defining CONTEXT.
@@ -2601,6 +2620,8 @@ PALIMPORT BOOL PALAPI PAL_GetUnwindInfoSize(SIZE_T baseAddress, ULONG64 ehFrameH
 #define PAL_CS_NATIVE_DATA_SIZE 96
 #elif defined(__HAIKU__) && defined(__x86_64__)
 #define PAL_CS_NATIVE_DATA_SIZE 56
+#elif defined(HOST_WASM)
+#define PAL_CS_NATIVE_DATA_SIZE 76
 #else
 #error  PAL_CS_NATIVE_DATA_SIZE is not defined for this architecture
 #endif
@@ -2871,14 +2892,14 @@ VirtualFree(
         IN DWORD dwFreeType);
 
 
-#if defined(HOST_OSX) && defined(HOST_ARM64)
+#if defined(HOST_APPLE) && defined(HOST_ARM64)
 
 PALIMPORT
 VOID
 PALAPI
 PAL_JitWriteProtect(bool writeEnable);
 
-#endif // defined(HOST_OSX) && defined(HOST_ARM64)
+#endif // defined(HOST_APPLE) && defined(HOST_ARM64)
 
 
 PALIMPORT
@@ -3616,6 +3637,27 @@ Define_InterlockMethod(
 
 #define InterlockedCompareExchangePointer(Destination, ExChange, Comperand) \
     ((PVOID)(UINT_PTR)InterlockedCompareExchange((PLONG)(UINT_PTR)(Destination), (LONG)(UINT_PTR)(ExChange), (LONG)(UINT_PTR)(Comperand)))
+#endif
+
+#if defined(HOST_64BIT) && defined(FEATURE_CACHED_INTERFACE_DISPATCH)
+FORCEINLINE uint8_t _InterlockedCompareExchange128(int64_t volatile *pDst, int64_t iValueHigh, int64_t iValueLow, int64_t *pComparandAndResult)
+{
+    __int128_t iComparand = ((__int128_t)pComparandAndResult[1] << 64) + (uint64_t)pComparandAndResult[0];
+    // TODO-LOONGARCH64: the 128-bit CAS is supported starting from the 3A6000 CPU (ISA1.1).
+    // When running on older hardware that doesn't support native CAS-128, the system falls back
+    // to a mutex-based approach via libatomic, which is not suitable for runtime requirements.
+    //
+    // TODO-RISCV64: double-check if libatomic's emulated CAS-128 works as expected once AOT applications are
+    // functional on linux-riscv64: https://github.com/dotnet/runtime/issues/106223.
+    // CAS-128 is natively supported starting with the Zacas extension in Linux 6.8; however, hardware support
+    // for RVA23 profile is not available at the time of writing.
+    //
+    // See https://github.com/dotnet/runtime/issues/109276.
+    __int128_t iResult = __sync_val_compare_and_swap((__int128_t volatile*)pDst, iComparand, ((__int128_t)iValueHigh << 64) + (uint64_t)iValueLow);
+    PAL_InterlockedOperationBarrier();
+    pComparandAndResult[0] = (int64_t)iResult; pComparandAndResult[1] = (int64_t)(iResult >> 64);
+    return iComparand == iResult;
+}
 #endif
 
 /*++

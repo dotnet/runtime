@@ -14,7 +14,7 @@ internal sealed class ComposeCommand : CliCommand
     private readonly CliOption<string> outputFile = new("-o") { Arity = ArgumentArity.ExactlyOne, HelpName = "OUTPUT", Required = true, Description = "Output file" };
     private readonly CliOption<string[]> contractFile = new("-c") { Arity = ArgumentArity.ZeroOrMore, HelpName = "CONTRACT", Description = "Contract file (may be specified multiple times)" };
     private readonly CliOption<string> baselinePath = new("-b", "--baseline") { Arity = ArgumentArity.ExactlyOne, HelpName = "BASELINEPATH", Description = "Directory containing the baseline contracts"};
-    private readonly CliOption<string> templateFile = new ("-i", "--input-template") { Arity = ArgumentArity.ExactlyOne, HelpName = "TEMPLATE", Description = "Contract descriptor template to be filled in" };
+    private readonly CliOption<string> templateFile = new("-i", "--input-template") { Arity = ArgumentArity.ExactlyOne, HelpName = "TEMPLATE", Description = "Contract descriptor template to be filled in" };
     private readonly CliOption<bool> _verboseOption;
     public ComposeCommand(CliOption<bool> verboseOption) : base("compose")
     {
