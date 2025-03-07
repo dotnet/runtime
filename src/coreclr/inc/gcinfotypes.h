@@ -621,56 +621,56 @@ void FASTCALL decodeCallPattern(int         pattern,
 #define TargetGcInfoEncoding AMD64GcInfoEncoding
 
 struct AMD64GcInfoEncoding {
-    static const uint16_t NUM_NORM_CODE_OFFSETS_PER_CHUNK = (64);
+    static const uint32_t NUM_NORM_CODE_OFFSETS_PER_CHUNK = (64);
 
-    static const uint16_t NUM_NORM_CODE_OFFSETS_PER_CHUNK_LOG2 = (6);
-    template <typename T> static inline constexpr T NORMALIZE_STACK_SLOT (T x) { return ((x)>>3); }
-    template <typename T> static inline constexpr T DENORMALIZE_STACK_SLOT (T x) { return ((x)<<3); }
-    template <typename T> static inline constexpr T NORMALIZE_CODE_LENGTH (T x) { return (x); }
-    template <typename T> static inline constexpr T DENORMALIZE_CODE_LENGTH (T x) { return (x); }
+    static const uint32_t NUM_NORM_CODE_OFFSETS_PER_CHUNK_LOG2 = (6);
+    static inline constexpr SSIZE_T NORMALIZE_STACK_SLOT (SSIZE_T x) { return ((x)>>3); }
+    static inline constexpr SSIZE_T DENORMALIZE_STACK_SLOT (SSIZE_T x) { return ((x)<<3); }
+    static inline constexpr uint32_t NORMALIZE_CODE_LENGTH (uint32_t x) { return (x); }
+    static inline constexpr uint32_t DENORMALIZE_CODE_LENGTH (uint32_t x) { return (x); }
 
     // Encode RBP as 0
-    template <typename T> static inline constexpr T NORMALIZE_STACK_BASE_REGISTER (T x) { return ((x) ^ 5); }
-    template <typename T> static inline constexpr T DENORMALIZE_STACK_BASE_REGISTER (T x) { return ((x) ^ 5); }
-    template <typename T> static inline constexpr T NORMALIZE_SIZE_OF_STACK_AREA (T x) { return ((x)>>3); }
-    template <typename T> static inline constexpr T DENORMALIZE_SIZE_OF_STACK_AREA (T x) { return ((x)<<3); }
-    static const uint16_t CODE_OFFSETS_NEED_NORMALIZATION = 0;
-    template <typename T> static inline constexpr T NORMALIZE_CODE_OFFSET (T x) { return (x); }
-    template <typename T> static inline constexpr T DENORMALIZE_CODE_OFFSET (T x) { return (x); }
-    template <typename T> static inline constexpr T NORMALIZE_REGISTER (T x) { return (x); }
-    template <typename T> static inline constexpr T DENORMALIZE_REGISTER (T x) { return (x); }
-    template <typename T> static inline constexpr T NORMALIZE_NUM_SAFE_POINTS (T x) { return (x); }
-    template <typename T> static inline constexpr T DENORMALIZE_NUM_SAFE_POINTS (T x) { return (x); }
-    template <typename T> static inline constexpr T NORMALIZE_NUM_INTERRUPTIBLE_RANGES (T x) { return (x); }
-    template <typename T> static inline constexpr T DENORMALIZE_NUM_INTERRUPTIBLE_RANGES (T x) { return (x); }
+    static inline constexpr size_t NORMALIZE_STACK_BASE_REGISTER (size_t x) { return ((x) ^ 5); }
+    static inline constexpr size_t DENORMALIZE_STACK_BASE_REGISTER (size_t x) { return ((x) ^ 5); }
+    static inline constexpr size_t NORMALIZE_SIZE_OF_STACK_AREA (size_t x) { return ((x)>>3); }
+    static inline constexpr size_t DENORMALIZE_SIZE_OF_STACK_AREA (size_t x) { return ((x)<<3); }
+    static const int CODE_OFFSETS_NEED_NORMALIZATION = 0;
+    static inline constexpr uint32_t NORMALIZE_CODE_OFFSET (uint32_t x) { return (x); }
+    static inline constexpr uint32_t DENORMALIZE_CODE_OFFSET (uint32_t x) { return (x); }
+    static inline constexpr uint32_t NORMALIZE_REGISTER (uint32_t x) { return (x); }
+    static inline constexpr uint32_t DENORMALIZE_REGISTER (uint32_t x) { return (x); }
+    static inline constexpr size_t NORMALIZE_NUM_SAFE_POINTS (size_t x) { return (x); }
+    static inline constexpr size_t DENORMALIZE_NUM_SAFE_POINTS (size_t x) { return (x); }
+    static inline constexpr size_t NORMALIZE_NUM_INTERRUPTIBLE_RANGES (size_t x) { return (x); }
+    static inline constexpr size_t DENORMALIZE_NUM_INTERRUPTIBLE_RANGES (size_t x) { return (x); }
 
-    static const uint16_t PSP_SYM_STACK_SLOT_ENCBASE = 6;
-    static const uint16_t GENERICS_INST_CONTEXT_STACK_SLOT_ENCBASE = 6;
-    static const uint16_t SECURITY_OBJECT_STACK_SLOT_ENCBASE = 6;
-    static const uint16_t GS_COOKIE_STACK_SLOT_ENCBASE = 6;
-    static const uint16_t CODE_LENGTH_ENCBASE = 8;
-    static const uint16_t STACK_BASE_REGISTER_ENCBASE = 3;
-    static const uint16_t SIZE_OF_STACK_AREA_ENCBASE = 3;
-    static const uint16_t SIZE_OF_EDIT_AND_CONTINUE_PRESERVED_AREA_ENCBASE = 4;
-    static const uint16_t REVERSE_PINVOKE_FRAME_ENCBASE = 6;
-    static const uint16_t NUM_REGISTERS_ENCBASE = 2;
-    static const uint16_t NUM_STACK_SLOTS_ENCBASE = 2;
-    static const uint16_t NUM_UNTRACKED_SLOTS_ENCBASE = 1;
-    static const uint16_t NORM_PROLOG_SIZE_ENCBASE = 5;
-    static const uint16_t NORM_EPILOG_SIZE_ENCBASE = 3;
-    static const uint16_t NORM_CODE_OFFSET_DELTA_ENCBASE = 3;
-    static const uint16_t INTERRUPTIBLE_RANGE_DELTA1_ENCBASE = 6;
-    static const uint16_t INTERRUPTIBLE_RANGE_DELTA2_ENCBASE = 6;
-    static const uint16_t REGISTER_ENCBASE = 3;
-    static const uint16_t REGISTER_DELTA_ENCBASE = 2;
-    static const uint16_t STACK_SLOT_ENCBASE = 6;
-    static const uint16_t STACK_SLOT_DELTA_ENCBASE = 4;
-    static const uint16_t NUM_SAFE_POINTS_ENCBASE = 2;
-    static const uint16_t NUM_INTERRUPTIBLE_RANGES_ENCBASE = 1;
-    static const uint16_t NUM_EH_CLAUSES_ENCBASE = 2;
-    static const uint16_t POINTER_SIZE_ENCBASE = 3;
-    static const uint16_t LIVESTATE_RLE_RUN_ENCBASE = 2;
-    static const uint16_t LIVESTATE_RLE_SKIP_ENCBASE = 4;
+    static const int PSP_SYM_STACK_SLOT_ENCBASE = 6;
+    static const int GENERICS_INST_CONTEXT_STACK_SLOT_ENCBASE = 6;
+    static const int SECURITY_OBJECT_STACK_SLOT_ENCBASE = 6;
+    static const int GS_COOKIE_STACK_SLOT_ENCBASE = 6;
+    static const int CODE_LENGTH_ENCBASE = 8;
+    static const int STACK_BASE_REGISTER_ENCBASE = 3;
+    static const int SIZE_OF_STACK_AREA_ENCBASE = 3;
+    static const int SIZE_OF_EDIT_AND_CONTINUE_PRESERVED_AREA_ENCBASE = 4;
+    static const int REVERSE_PINVOKE_FRAME_ENCBASE = 6;
+    static const int NUM_REGISTERS_ENCBASE = 2;
+    static const int NUM_STACK_SLOTS_ENCBASE = 2;
+    static const int NUM_UNTRACKED_SLOTS_ENCBASE = 1;
+    static const int NORM_PROLOG_SIZE_ENCBASE = 5;
+    static const int NORM_EPILOG_SIZE_ENCBASE = 3;
+    static const int NORM_CODE_OFFSET_DELTA_ENCBASE = 3;
+    static const int INTERRUPTIBLE_RANGE_DELTA1_ENCBASE = 6;
+    static const int INTERRUPTIBLE_RANGE_DELTA2_ENCBASE = 6;
+    static const int REGISTER_ENCBASE = 3;
+    static const int REGISTER_DELTA_ENCBASE = 2;
+    static const int STACK_SLOT_ENCBASE = 6;
+    static const int STACK_SLOT_DELTA_ENCBASE = 4;
+    static const int NUM_SAFE_POINTS_ENCBASE = 2;
+    static const int NUM_INTERRUPTIBLE_RANGES_ENCBASE = 1;
+    static const int NUM_EH_CLAUSES_ENCBASE = 2;
+    static const int POINTER_SIZE_ENCBASE = 3;
+    static const int LIVESTATE_RLE_RUN_ENCBASE = 2;
+    static const int LIVESTATE_RLE_SKIP_ENCBASE = 4;
 };
 
 #elif defined(TARGET_ARM)
@@ -682,56 +682,56 @@ struct AMD64GcInfoEncoding {
 #define TargetGcInfoEncoding ARM32GcInfoEncoding
 
 struct ARM32GcInfoEncoding {
-    static const uint16_t NUM_NORM_CODE_OFFSETS_PER_CHUNK = (64);
-    static const uint16_t NUM_NORM_CODE_OFFSETS_PER_CHUNK_LOG2 = (6);
-    template <typename T> static inline constexpr T NORMALIZE_STACK_SLOT (T x) { return ((x)>>2); }
-    template <typename T> static inline constexpr T DENORMALIZE_STACK_SLOT (T x) { return ((x)<<2); }
-    template <typename T> static inline constexpr T NORMALIZE_CODE_LENGTH (T x) { return ((x)>>1); }
-    template <typename T> static inline constexpr T DENORMALIZE_CODE_LENGTH (T x) { return ((x)<<1); }
+    static const uint32_t NUM_NORM_CODE_OFFSETS_PER_CHUNK = (64);
+    static const uint32_t NUM_NORM_CODE_OFFSETS_PER_CHUNK_LOG2 = (6);
+    static inline constexpr SSIZE_T NORMALIZE_STACK_SLOT (SSIZE_T x) { return ((x)>>2); }
+    static inline constexpr SSIZE_T DENORMALIZE_STACK_SLOT (SSIZE_T x) { return ((x)<<2); }
+    static inline constexpr uint32_t NORMALIZE_CODE_LENGTH (uint32_t x) { return ((x)>>1); }
+    static inline constexpr uint32_t DENORMALIZE_CODE_LENGTH (uint32_t x) { return ((x)<<1); }
     // Encode R11 as zero
-    template <typename T> static inline constexpr T NORMALIZE_STACK_BASE_REGISTER (T x) { return ((((x) - 4) & 7) ^ 7); }
-    template <typename T> static inline constexpr T DENORMALIZE_STACK_BASE_REGISTER (T x) { return (((x) ^ 7) + 4); }
-    template <typename T> static inline constexpr T NORMALIZE_SIZE_OF_STACK_AREA (T x) { return ((x)>>2); }
-    template <typename T> static inline constexpr T DENORMALIZE_SIZE_OF_STACK_AREA (T x) { return ((x)<<2); }
-    static const uint16_t CODE_OFFSETS_NEED_NORMALIZATION = 1;
-    template <typename T> static inline constexpr T NORMALIZE_CODE_OFFSET (T x) { return ((x)>>1)   /* Instructions are 2/4 bytes long in Thumb/ARM states */; }
-    template <typename T> static inline constexpr T DENORMALIZE_CODE_OFFSET (T x) { return ((x)<<1); }
-    template <typename T> static inline constexpr T NORMALIZE_REGISTER (T x) { return (x); }
-    template <typename T> static inline constexpr T DENORMALIZE_REGISTER (T x) { return (x); }
-    template <typename T> static inline constexpr T NORMALIZE_NUM_SAFE_POINTS (T x) { return (x); }
-    template <typename T> static inline constexpr T DENORMALIZE_NUM_SAFE_POINTS (T x) { return (x); }
-    template <typename T> static inline constexpr T NORMALIZE_NUM_INTERRUPTIBLE_RANGES (T x) { return (x); }
-    template <typename T> static inline constexpr T DENORMALIZE_NUM_INTERRUPTIBLE_RANGES (T x) { return (x); }
+    static inline constexpr size_t NORMALIZE_STACK_BASE_REGISTER (size_t x) { return ((((x) - 4) & 7) ^ 7); }
+    static inline constexpr size_t DENORMALIZE_STACK_BASE_REGISTER (size_t x) { return (((x) ^ 7) + 4); }
+    static inline constexpr size_t NORMALIZE_SIZE_OF_STACK_AREA (size_t x) { return ((x)>>2); }
+    static inline constexpr size_t DENORMALIZE_SIZE_OF_STACK_AREA (size_t x) { return ((x)<<2); }
+    static const int CODE_OFFSETS_NEED_NORMALIZATION = 1;
+    static inline constexpr uint32_t NORMALIZE_CODE_OFFSET (uint32_t x) { return ((x)>>1)   /* Instructions are 2/4 bytes long in Thumb/ARM states */; }
+    static inline constexpr uint32_t DENORMALIZE_CODE_OFFSET (uint32_t x) { return ((x)<<1); }
+    static inline constexpr uint32_t NORMALIZE_REGISTER (uint32_t x) { return (x); }
+    static inline constexpr uint32_t DENORMALIZE_REGISTER (uint32_t x) { return (x); }
+    static inline constexpr size_t NORMALIZE_NUM_SAFE_POINTS (size_t x) { return (x); }
+    static inline constexpr size_t DENORMALIZE_NUM_SAFE_POINTS (size_t x) { return (x); }
+    static inline constexpr size_t NORMALIZE_NUM_INTERRUPTIBLE_RANGES (size_t x) { return (x); }
+    static inline constexpr size_t DENORMALIZE_NUM_INTERRUPTIBLE_RANGES (size_t x) { return (x); }
 
     // The choices of these encoding bases only affects space overhead
     // and performance, not semantics/correctness.
-    static const uint16_t PSP_SYM_STACK_SLOT_ENCBASE = 5;
-    static const uint16_t GENERICS_INST_CONTEXT_STACK_SLOT_ENCBASE = 5;
-    static const uint16_t SECURITY_OBJECT_STACK_SLOT_ENCBASE = 5;
-    static const uint16_t GS_COOKIE_STACK_SLOT_ENCBASE = 5;
-    static const uint16_t CODE_LENGTH_ENCBASE = 7;
-    static const uint16_t STACK_BASE_REGISTER_ENCBASE = 1;
-    static const uint16_t SIZE_OF_STACK_AREA_ENCBASE = 3;
-    static const uint16_t SIZE_OF_EDIT_AND_CONTINUE_PRESERVED_AREA_ENCBASE = 3;
-    static const uint16_t REVERSE_PINVOKE_FRAME_ENCBASE = 5;
-    static const uint16_t NUM_REGISTERS_ENCBASE = 2;
-    static const uint16_t NUM_STACK_SLOTS_ENCBASE = 3;
-    static const uint16_t NUM_UNTRACKED_SLOTS_ENCBASE = 3;
-    static const uint16_t NORM_PROLOG_SIZE_ENCBASE = 5;
-    static const uint16_t NORM_EPILOG_SIZE_ENCBASE = 3;
-    static const uint16_t NORM_CODE_OFFSET_DELTA_ENCBASE = 3;
-    static const uint16_t INTERRUPTIBLE_RANGE_DELTA1_ENCBASE = 4;
-    static const uint16_t INTERRUPTIBLE_RANGE_DELTA2_ENCBASE = 6;
-    static const uint16_t REGISTER_ENCBASE = 2;
-    static const uint16_t REGISTER_DELTA_ENCBASE = 1;
-    static const uint16_t STACK_SLOT_ENCBASE = 6;
-    static const uint16_t STACK_SLOT_DELTA_ENCBASE = 4;
-    static const uint16_t NUM_SAFE_POINTS_ENCBASE = 3;
-    static const uint16_t NUM_INTERRUPTIBLE_RANGES_ENCBASE = 2;
-    static const uint16_t NUM_EH_CLAUSES_ENCBASE = 3;
-    static const uint16_t POINTER_SIZE_ENCBASE = 3;
-    static const uint16_t LIVESTATE_RLE_RUN_ENCBASE = 2;
-    static const uint16_t LIVESTATE_RLE_SKIP_ENCBASE = 4;
+    static const int PSP_SYM_STACK_SLOT_ENCBASE = 5;
+    static const int GENERICS_INST_CONTEXT_STACK_SLOT_ENCBASE = 5;
+    static const int SECURITY_OBJECT_STACK_SLOT_ENCBASE = 5;
+    static const int GS_COOKIE_STACK_SLOT_ENCBASE = 5;
+    static const int CODE_LENGTH_ENCBASE = 7;
+    static const int STACK_BASE_REGISTER_ENCBASE = 1;
+    static const int SIZE_OF_STACK_AREA_ENCBASE = 3;
+    static const int SIZE_OF_EDIT_AND_CONTINUE_PRESERVED_AREA_ENCBASE = 3;
+    static const int REVERSE_PINVOKE_FRAME_ENCBASE = 5;
+    static const int NUM_REGISTERS_ENCBASE = 2;
+    static const int NUM_STACK_SLOTS_ENCBASE = 3;
+    static const int NUM_UNTRACKED_SLOTS_ENCBASE = 3;
+    static const int NORM_PROLOG_SIZE_ENCBASE = 5;
+    static const int NORM_EPILOG_SIZE_ENCBASE = 3;
+    static const int NORM_CODE_OFFSET_DELTA_ENCBASE = 3;
+    static const int INTERRUPTIBLE_RANGE_DELTA1_ENCBASE = 4;
+    static const int INTERRUPTIBLE_RANGE_DELTA2_ENCBASE = 6;
+    static const int REGISTER_ENCBASE = 2;
+    static const int REGISTER_DELTA_ENCBASE = 1;
+    static const int STACK_SLOT_ENCBASE = 6;
+    static const int STACK_SLOT_DELTA_ENCBASE = 4;
+    static const int NUM_SAFE_POINTS_ENCBASE = 3;
+    static const int NUM_INTERRUPTIBLE_RANGES_ENCBASE = 2;
+    static const int NUM_EH_CLAUSES_ENCBASE = 3;
+    static const int POINTER_SIZE_ENCBASE = 3;
+    static const int LIVESTATE_RLE_RUN_ENCBASE = 2;
+    static const int LIVESTATE_RLE_SKIP_ENCBASE = 4;
 };
 
 #elif defined(TARGET_ARM64)
@@ -756,16 +756,16 @@ struct ARM64GcInfoEncoding {
     static inline constexpr size_t DENORMALIZE_STACK_BASE_REGISTER (size_t x) { return ((x)^29); }
     static inline constexpr size_t NORMALIZE_SIZE_OF_STACK_AREA (size_t x) { return ((x)>>3); }
     static inline constexpr size_t DENORMALIZE_SIZE_OF_STACK_AREA (size_t x) { return ((x)<<3); }
-    static const uint32_t CODE_OFFSETS_NEED_NORMALIZATION = 1;
+    static const int CODE_OFFSETS_NEED_NORMALIZATION = 1;
     // Instructions are 4 bytes long
     static inline constexpr uint32_t NORMALIZE_CODE_OFFSET (uint32_t x) { return ((x)>>2); }
     static inline constexpr uint32_t DENORMALIZE_CODE_OFFSET (uint32_t x) { return ((x)<<2); }
-    template <typename T> static inline constexpr T NORMALIZE_REGISTER (T x) { return (x); }
-    template <typename T> static inline constexpr T DENORMALIZE_REGISTER (T x) { return (x); }
-    template <typename T> static inline constexpr T NORMALIZE_NUM_SAFE_POINTS (T x) { return (x); }
-    template <typename T> static inline constexpr T DENORMALIZE_NUM_SAFE_POINTS (T x) { return (x); }
-    template <typename T> static inline constexpr T NORMALIZE_NUM_INTERRUPTIBLE_RANGES (T x) { return (x); }
-    template <typename T> static inline constexpr T DENORMALIZE_NUM_INTERRUPTIBLE_RANGES (T x) { return (x); }
+    static inline constexpr uint32_t NORMALIZE_REGISTER (uint32_t x) { return (x); }
+    static inline constexpr uint32_t DENORMALIZE_REGISTER (uint32_t x) { return (x); }
+    static inline constexpr size_t NORMALIZE_NUM_SAFE_POINTS (size_t x) { return (x); }
+    static inline constexpr size_t DENORMALIZE_NUM_SAFE_POINTS (size_t x) { return (x); }
+    static inline constexpr size_t NORMALIZE_NUM_INTERRUPTIBLE_RANGES (size_t x) { return (x); }
+    static inline constexpr size_t DENORMALIZE_NUM_INTERRUPTIBLE_RANGES (size_t x) { return (x); }
 
     static const int PSP_SYM_STACK_SLOT_ENCBASE = 6;
     static const int GENERICS_INST_CONTEXT_STACK_SLOT_ENCBASE = 6;
@@ -806,58 +806,58 @@ struct ARM64GcInfoEncoding {
 #define TargetGcInfoEncoding LoongArch64GcInfoEncoding
 
 struct LoongArch64GcInfoEncoding {
-    static const uint16_t NUM_NORM_CODE_OFFSETS_PER_CHUNK = (64);
-    static const uint16_t NUM_NORM_CODE_OFFSETS_PER_CHUNK_LOG2 = (6);
+    static const uint32_t NUM_NORM_CODE_OFFSETS_PER_CHUNK = (64);
+    static const uint32_t NUM_NORM_CODE_OFFSETS_PER_CHUNK_LOG2 = (6);
     // GC Pointers are 8-bytes aligned
-    template <typename T> static inline constexpr T NORMALIZE_STACK_SLOT (T x) { return ((x)>>3); }
-    template <typename T> static inline constexpr T DENORMALIZE_STACK_SLOT (T x) { return ((x)<<3); }
+    static inline constexpr SSIZE_T NORMALIZE_STACK_SLOT (SSIZE_T x) { return ((x)>>3); }
+    static inline constexpr SSIZE_T DENORMALIZE_STACK_SLOT (SSIZE_T x) { return ((x)<<3); }
     // All Instructions are 4 bytes long
-    template <typename T> static inline constexpr T NORMALIZE_CODE_LENGTH (T x) { return ((x)>>2); }
-    template <typename T> static inline constexpr T DENORMALIZE_CODE_LENGTH (T x) { return ((x)<<2); }
+    static inline constexpr uint32_t NORMALIZE_CODE_LENGTH (uint32_t x) { return ((x)>>2); }
+    static inline constexpr uint32_t DENORMALIZE_CODE_LENGTH (uint32_t x) { return ((x)<<2); }
     // Encode Frame pointer fp=$22 as zero
-    template <typename T> static inline constexpr T NORMALIZE_STACK_BASE_REGISTER (T x) { return ((x) == 22 ? 0u : 1u); }
-    template <typename T> static inline constexpr T DENORMALIZE_STACK_BASE_REGISTER (T x) { return ((x) == 0 ? 22u : 3u); }
-    template <typename T> static inline constexpr T NORMALIZE_SIZE_OF_STACK_AREA (T x) { return ((x)>>3); }
-    template <typename T> static inline constexpr T DENORMALIZE_SIZE_OF_STACK_AREA (T x) { return ((x)<<3); }
-    static const uint16_t CODE_OFFSETS_NEED_NORMALIZATION = 1;
+    static inline constexpr size_t NORMALIZE_STACK_BASE_REGISTER (size_t x) { return ((x) == 22 ? 0u : 1u); }
+    static inline constexpr size_t DENORMALIZE_STACK_BASE_REGISTER (size_t x) { return ((x) == 0 ? 22u : 3u); }
+    static inline constexpr size_t NORMALIZE_SIZE_OF_STACK_AREA (size_t x) { return ((x)>>3); }
+    static inline constexpr size_t DENORMALIZE_SIZE_OF_STACK_AREA (size_t x) { return ((x)<<3); }
+    static const int CODE_OFFSETS_NEED_NORMALIZATION = 1;
     // Instructions are 4 bytes long
-    template <typename T> static inline constexpr T NORMALIZE_CODE_OFFSET (T x) { return ((x)>>2); }
-    template <typename T> static inline constexpr T DENORMALIZE_CODE_OFFSET (T x) { return ((x)<<2); }
-    template <typename T> static inline constexpr T NORMALIZE_REGISTER (T x) { return (x); }
-    template <typename T> static inline constexpr T DENORMALIZE_REGISTER (T x) { return (x); }
-    template <typename T> static inline constexpr T NORMALIZE_NUM_SAFE_POINTS (T x) { return (x); }
-    template <typename T> static inline constexpr T DENORMALIZE_NUM_SAFE_POINTS (T x) { return (x); }
-    template <typename T> static inline constexpr T NORMALIZE_NUM_INTERRUPTIBLE_RANGES (T x) { return (x); }
-    template <typename T> static inline constexpr T DENORMALIZE_NUM_INTERRUPTIBLE_RANGES (T x) { return (x); }
+    static inline constexpr uint32_t NORMALIZE_CODE_OFFSET (uint32_t x) { return ((x)>>2); }
+    static inline constexpr uint32_t DENORMALIZE_CODE_OFFSET (uint32_t x) { return ((x)<<2); }
+    static inline constexpr uint32_t NORMALIZE_REGISTER (uint32_t x) { return (x); }
+    static inline constexpr uint32_t DENORMALIZE_REGISTER (uint32_t x) { return (x); }
+    static inline constexpr size_t NORMALIZE_NUM_SAFE_POINTS (size_t x) { return (x); }
+    static inline constexpr size_t DENORMALIZE_NUM_SAFE_POINTS (size_t x) { return (x); }
+    static inline constexpr size_t NORMALIZE_NUM_INTERRUPTIBLE_RANGES (size_t x) { return (x); }
+    static inline constexpr size_t DENORMALIZE_NUM_INTERRUPTIBLE_RANGES (size_t x) { return (x); }
 
-    static const uint16_t PSP_SYM_STACK_SLOT_ENCBASE = 6;
-    static const uint16_t GENERICS_INST_CONTEXT_STACK_SLOT_ENCBASE = 6;
-    static const uint16_t SECURITY_OBJECT_STACK_SLOT_ENCBASE = 6;
-    static const uint16_t GS_COOKIE_STACK_SLOT_ENCBASE = 6;
-    static const uint16_t CODE_LENGTH_ENCBASE = 8;
+    static const int PSP_SYM_STACK_SLOT_ENCBASE = 6;
+    static const int GENERICS_INST_CONTEXT_STACK_SLOT_ENCBASE = 6;
+    static const int SECURITY_OBJECT_STACK_SLOT_ENCBASE = 6;
+    static const int GS_COOKIE_STACK_SLOT_ENCBASE = 6;
+    static const int CODE_LENGTH_ENCBASE = 8;
     // FP/SP encoded as 0 or 1.
-    static const uint16_t STACK_BASE_REGISTER_ENCBASE = 2;
-    static const uint16_t SIZE_OF_STACK_AREA_ENCBASE = 3;
-    static const uint16_t SIZE_OF_EDIT_AND_CONTINUE_PRESERVED_AREA_ENCBASE = 4;
-    static const uint16_t REVERSE_PINVOKE_FRAME_ENCBASE = 6;
-    static const uint16_t NUM_REGISTERS_ENCBASE = 3;
-    static const uint16_t NUM_STACK_SLOTS_ENCBASE = 2;
-    static const uint16_t NUM_UNTRACKED_SLOTS_ENCBASE = 1;
-    static const uint16_t NORM_PROLOG_SIZE_ENCBASE = 5;
-    static const uint16_t NORM_EPILOG_SIZE_ENCBASE = 3;
-    static const uint16_t NORM_CODE_OFFSET_DELTA_ENCBASE = 3;
-    static const uint16_t INTERRUPTIBLE_RANGE_DELTA1_ENCBASE = 6;
-    static const uint16_t INTERRUPTIBLE_RANGE_DELTA2_ENCBASE = 6;
-    static const uint16_t REGISTER_ENCBASE = 3;
-    static const uint16_t REGISTER_DELTA_ENCBASE = 2;
-    static const uint16_t STACK_SLOT_ENCBASE = 6;
-    static const uint16_t STACK_SLOT_DELTA_ENCBASE = 4;
-    static const uint16_t NUM_SAFE_POINTS_ENCBASE = 3;
-    static const uint16_t NUM_INTERRUPTIBLE_RANGES_ENCBASE = 1;
-    static const uint16_t NUM_EH_CLAUSES_ENCBASE = 2;
-    static const uint16_t POINTER_SIZE_ENCBASE = 3;
-    static const uint16_t LIVESTATE_RLE_RUN_ENCBASE = 2;
-    static const uint16_t LIVESTATE_RLE_SKIP_ENCBASE = 4;
+    static const int STACK_BASE_REGISTER_ENCBASE = 2;
+    static const int SIZE_OF_STACK_AREA_ENCBASE = 3;
+    static const int SIZE_OF_EDIT_AND_CONTINUE_PRESERVED_AREA_ENCBASE = 4;
+    static const int REVERSE_PINVOKE_FRAME_ENCBASE = 6;
+    static const int NUM_REGISTERS_ENCBASE = 3;
+    static const int NUM_STACK_SLOTS_ENCBASE = 2;
+    static const int NUM_UNTRACKED_SLOTS_ENCBASE = 1;
+    static const int NORM_PROLOG_SIZE_ENCBASE = 5;
+    static const int NORM_EPILOG_SIZE_ENCBASE = 3;
+    static const int NORM_CODE_OFFSET_DELTA_ENCBASE = 3;
+    static const int INTERRUPTIBLE_RANGE_DELTA1_ENCBASE = 6;
+    static const int INTERRUPTIBLE_RANGE_DELTA2_ENCBASE = 6;
+    static const int REGISTER_ENCBASE = 3;
+    static const int REGISTER_DELTA_ENCBASE = 2;
+    static const int STACK_SLOT_ENCBASE = 6;
+    static const int STACK_SLOT_DELTA_ENCBASE = 4;
+    static const int NUM_SAFE_POINTS_ENCBASE = 3;
+    static const int NUM_INTERRUPTIBLE_RANGES_ENCBASE = 1;
+    static const int NUM_EH_CLAUSES_ENCBASE = 2;
+    static const int POINTER_SIZE_ENCBASE = 3;
+    static const int LIVESTATE_RLE_RUN_ENCBASE = 2;
+    static const int LIVESTATE_RLE_SKIP_ENCBASE = 4;
 };
 
 #elif defined(TARGET_RISCV64)
@@ -868,59 +868,59 @@ struct LoongArch64GcInfoEncoding {
 #define TargetGcInfoEncoding RISCV64GcInfoEncoding
 
 struct RISCV64GcInfoEncoding {
-    static const uint16_t NUM_NORM_CODE_OFFSETS_PER_CHUNK = (64);
-    static const uint16_t NUM_NORM_CODE_OFFSETS_PER_CHUNK_LOG2 = (6);
+    static const uint32_t NUM_NORM_CODE_OFFSETS_PER_CHUNK = (64);
+    static const uint32_t NUM_NORM_CODE_OFFSETS_PER_CHUNK_LOG2 = (6);
     // GC Pointers are 8-bytes aligned
-    template <typename T> static inline constexpr T NORMALIZE_STACK_SLOT (T x) { return ((x)>>3); }
-    template <typename T> static inline constexpr T DENORMALIZE_STACK_SLOT (T x) { return ((x)<<3); }
+    static inline constexpr SSIZE_T NORMALIZE_STACK_SLOT (SSIZE_T x) { return ((x)>>3); }
+    static inline constexpr SSIZE_T DENORMALIZE_STACK_SLOT (SSIZE_T x) { return ((x)<<3); }
     // All Instructions are 4 bytes long
-    template <typename T> static inline constexpr T NORMALIZE_CODE_LENGTH (T x) { return ((x)>>2); }
-    template <typename T> static inline constexpr T DENORMALIZE_CODE_LENGTH (T x) { return ((x)<<2); }
+    static inline constexpr uint32_t NORMALIZE_CODE_LENGTH (uint32_t x) { return ((x)>>2); }
+    static inline constexpr uint32_t DENORMALIZE_CODE_LENGTH (uint32_t x) { return ((x)<<2); }
     // Encode Frame pointer X8 as zero, sp/x2 as 1
-    template <typename T> static inline constexpr T NORMALIZE_STACK_BASE_REGISTER (T x) { return ((x) == 8 ? 0u : 1u); }
-    template <typename T> static inline constexpr T DENORMALIZE_STACK_BASE_REGISTER (T x) { return ((x) == 0 ? 8u : 2u); }
-    template <typename T> static inline constexpr T NORMALIZE_SIZE_OF_STACK_AREA (T x) { return ((x)>>3); }
-    template <typename T> static inline constexpr T DENORMALIZE_SIZE_OF_STACK_AREA (T x) { return ((x)<<3); }
-    static const uint16_t CODE_OFFSETS_NEED_NORMALIZATION = 1;
+    static inline constexpr size_t NORMALIZE_STACK_BASE_REGISTER (size_t x) { return ((x) == 8 ? 0u : 1u); }
+    static inline constexpr size_t DENORMALIZE_STACK_BASE_REGISTER (size_t x) { return ((x) == 0 ? 8u : 2u); }
+    static inline constexpr size_t NORMALIZE_SIZE_OF_STACK_AREA (size_t x) { return ((x)>>3); }
+    static inline constexpr size_t DENORMALIZE_SIZE_OF_STACK_AREA (size_t x) { return ((x)<<3); }
+    static const int CODE_OFFSETS_NEED_NORMALIZATION = 1;
     // Instructions are 4 bytes long
-    template <typename T> static inline constexpr T NORMALIZE_CODE_OFFSET (T x) { return ((x)>>2); }
-    template <typename T> static inline constexpr T DENORMALIZE_CODE_OFFSET (T x) { return ((x)<<2); }
-    template <typename T> static inline constexpr T NORMALIZE_REGISTER (T x) { return (x); }
-    template <typename T> static inline constexpr T DENORMALIZE_REGISTER (T x) { return (x); }
-    template <typename T> static inline constexpr T NORMALIZE_NUM_SAFE_POINTS (T x) { return (x); }
-    template <typename T> static inline constexpr T DENORMALIZE_NUM_SAFE_POINTS (T x) { return (x); }
-    template <typename T> static inline constexpr T NORMALIZE_NUM_INTERRUPTIBLE_RANGES (T x) { return (x); }
-    template <typename T> static inline constexpr T DENORMALIZE_NUM_INTERRUPTIBLE_RANGES (T x) { return (x); }
+    static inline constexpr uint32_t NORMALIZE_CODE_OFFSET (uint32_t x) { return ((x)>>2); }
+    static inline constexpr uint32_t DENORMALIZE_CODE_OFFSET (uint32_t x) { return ((x)<<2); }
+    static inline constexpr uint32_t NORMALIZE_REGISTER (uint32_t x) { return (x); }
+    static inline constexpr uint32_t DENORMALIZE_REGISTER (uint32_t x) { return (x); }
+    static inline constexpr size_t NORMALIZE_NUM_SAFE_POINTS (size_t x) { return (x); }
+    static inline constexpr size_t DENORMALIZE_NUM_SAFE_POINTS (size_t x) { return (x); }
+    static inline constexpr size_t NORMALIZE_NUM_INTERRUPTIBLE_RANGES (size_t x) { return (x); }
+    static inline constexpr size_t DENORMALIZE_NUM_INTERRUPTIBLE_RANGES (size_t x) { return (x); }
 
-    static const uint16_t PSP_SYM_STACK_SLOT_ENCBASE = 6;
-    static const uint16_t GENERICS_INST_CONTEXT_STACK_SLOT_ENCBASE = 6;
-    static const uint16_t SECURITY_OBJECT_STACK_SLOT_ENCBASE = 6;
-    static const uint16_t GS_COOKIE_STACK_SLOT_ENCBASE = 6;
-    static const uint16_t CODE_LENGTH_ENCBASE = 8;
-    static const uint16_t STACK_BASE_REGISTER_ENCBASE = 2;
+    static const int PSP_SYM_STACK_SLOT_ENCBASE = 6;
+    static const int GENERICS_INST_CONTEXT_STACK_SLOT_ENCBASE = 6;
+    static const int SECURITY_OBJECT_STACK_SLOT_ENCBASE = 6;
+    static const int GS_COOKIE_STACK_SLOT_ENCBASE = 6;
+    static const int CODE_LENGTH_ENCBASE = 8;
+    static const int STACK_BASE_REGISTER_ENCBASE = 2;
     // FP encoded as 0, SP as 1
-    static const uint16_t SIZE_OF_STACK_AREA_ENCBASE = 3;
-    static const uint16_t SIZE_OF_EDIT_AND_CONTINUE_PRESERVED_AREA_ENCBASE = 4;
-    static const uint16_t SIZE_OF_EDIT_AND_CONTINUE_FIXED_STACK_FRAME_ENCBASE = 4;
-    static const uint16_t REVERSE_PINVOKE_FRAME_ENCBASE = 6;
-    static const uint16_t NUM_REGISTERS_ENCBASE = 3;
-    static const uint16_t NUM_STACK_SLOTS_ENCBASE = 2;
-    static const uint16_t NUM_UNTRACKED_SLOTS_ENCBASE = 1;
-    static const uint16_t NORM_PROLOG_SIZE_ENCBASE = 5;
-    static const uint16_t NORM_EPILOG_SIZE_ENCBASE = 3;
-    static const uint16_t NORM_CODE_OFFSET_DELTA_ENCBASE = 3;
-    static const uint16_t INTERRUPTIBLE_RANGE_DELTA1_ENCBASE = 6;
-    static const uint16_t INTERRUPTIBLE_RANGE_DELTA2_ENCBASE = 6;
-    static const uint16_t REGISTER_ENCBASE = 3;
-    static const uint16_t REGISTER_DELTA_ENCBASE = 2;
-    static const uint16_t STACK_SLOT_ENCBASE = 6;
-    static const uint16_t STACK_SLOT_DELTA_ENCBASE = 4;
-    static const uint16_t NUM_SAFE_POINTS_ENCBASE = 3;
-    static const uint16_t NUM_INTERRUPTIBLE_RANGES_ENCBASE = 1;
-    static const uint16_t NUM_EH_CLAUSES_ENCBASE = 2;
-    static const uint16_t POINTER_SIZE_ENCBASE = 3;
-    static const uint16_t LIVESTATE_RLE_RUN_ENCBASE = 2;
-    static const uint16_t LIVESTATE_RLE_SKIP_ENCBASE = 4;
+    static const int SIZE_OF_STACK_AREA_ENCBASE = 3;
+    static const int SIZE_OF_EDIT_AND_CONTINUE_PRESERVED_AREA_ENCBASE = 4;
+    static const int SIZE_OF_EDIT_AND_CONTINUE_FIXED_STACK_FRAME_ENCBASE = 4;
+    static const int REVERSE_PINVOKE_FRAME_ENCBASE = 6;
+    static const int NUM_REGISTERS_ENCBASE = 3;
+    static const int NUM_STACK_SLOTS_ENCBASE = 2;
+    static const int NUM_UNTRACKED_SLOTS_ENCBASE = 1;
+    static const int NORM_PROLOG_SIZE_ENCBASE = 5;
+    static const int NORM_EPILOG_SIZE_ENCBASE = 3;
+    static const int NORM_CODE_OFFSET_DELTA_ENCBASE = 3;
+    static const int INTERRUPTIBLE_RANGE_DELTA1_ENCBASE = 6;
+    static const int INTERRUPTIBLE_RANGE_DELTA2_ENCBASE = 6;
+    static const int REGISTER_ENCBASE = 3;
+    static const int REGISTER_DELTA_ENCBASE = 2;
+    static const int STACK_SLOT_ENCBASE = 6;
+    static const int STACK_SLOT_DELTA_ENCBASE = 4;
+    static const int NUM_SAFE_POINTS_ENCBASE = 3;
+    static const int NUM_INTERRUPTIBLE_RANGES_ENCBASE = 1;
+    static const int NUM_EH_CLAUSES_ENCBASE = 2;
+    static const int POINTER_SIZE_ENCBASE = 3;
+    static const int LIVESTATE_RLE_RUN_ENCBASE = 2;
+    static const int LIVESTATE_RLE_SKIP_ENCBASE = 4;
 };
 
 #else // defined(TARGET_xxx)
@@ -938,53 +938,53 @@ PORTABILITY_WARNING("Please specialize these definitions for your platform!")
 #define TargetGcInfoEncoding X86GcInfoEncoding
 
 struct X86GcInfoEncoding {
-    static const uint16_t NUM_NORM_CODE_OFFSETS_PER_CHUNK = (64);
-    static const uint16_t NUM_NORM_CODE_OFFSETS_PER_CHUNK_LOG2 = (6);
-    template <typename T> static inline constexpr T NORMALIZE_STACK_SLOT (T x) { return (x); }
-    template <typename T> static inline constexpr T DENORMALIZE_STACK_SLOT (T x) { return (x); }
-    template <typename T> static inline constexpr T NORMALIZE_CODE_LENGTH (T x) { return (x); }
-    template <typename T> static inline constexpr T DENORMALIZE_CODE_LENGTH (T x) { return (x); }
-    template <typename T> static inline constexpr T NORMALIZE_STACK_BASE_REGISTER (T x) { return (x); }
-    template <typename T> static inline constexpr T DENORMALIZE_STACK_BASE_REGISTER (T x) { return (x); }
-    template <typename T> static inline constexpr T NORMALIZE_SIZE_OF_STACK_AREA (T x) { return (x); }
-    template <typename T> static inline constexpr T DENORMALIZE_SIZE_OF_STACK_AREA (T x) { return (x); }
-    static const uint16_t CODE_OFFSETS_NEED_NORMALIZATION = 0;
-    template <typename T> static inline constexpr T NORMALIZE_CODE_OFFSET (T x) { return (x); }
-    template <typename T> static inline constexpr T DENORMALIZE_CODE_OFFSET (T x) { return (x); }
-    template <typename T> static inline constexpr T NORMALIZE_REGISTER (T x) { return (x); }
-    template <typename T> static inline constexpr T DENORMALIZE_REGISTER (T x) { return (x); }
-    template <typename T> static inline constexpr T NORMALIZE_NUM_SAFE_POINTS (T x) { return (x); }
-    template <typename T> static inline constexpr T DENORMALIZE_NUM_SAFE_POINTS (T x) { return (x); }
-    template <typename T> static inline constexpr T NORMALIZE_NUM_INTERRUPTIBLE_RANGES (T x) { return (x); }
-    template <typename T> static inline constexpr T DENORMALIZE_NUM_INTERRUPTIBLE_RANGES (T x) { return (x); }
+    static const uint32_t NUM_NORM_CODE_OFFSETS_PER_CHUNK = (64);
+    static const uint32_t NUM_NORM_CODE_OFFSETS_PER_CHUNK_LOG2 = (6);
+    static inline constexpr SSIZE_T NORMALIZE_STACK_SLOT (SSIZE_T x) { return (x); }
+    static inline constexpr SSIZE_T DENORMALIZE_STACK_SLOT (SSIZE_T x) { return (x); }
+    static inline constexpr uint32_t NORMALIZE_CODE_LENGTH (uint32_t x) { return (x); }
+    static inline constexpr uint32_t DENORMALIZE_CODE_LENGTH (uint32_t x) { return (x); }
+    static inline constexpr size_t NORMALIZE_STACK_BASE_REGISTER (size_t x) { return (x); }
+    static inline constexpr size_t DENORMALIZE_STACK_BASE_REGISTER (size_t x) { return (x); }
+    static inline constexpr size_t NORMALIZE_SIZE_OF_STACK_AREA (size_t x) { return (x); }
+    static inline constexpr size_t DENORMALIZE_SIZE_OF_STACK_AREA (size_t x) { return (x); }
+    static const int CODE_OFFSETS_NEED_NORMALIZATION = 0;
+    static inline constexpr uint32_t NORMALIZE_CODE_OFFSET (uint32_t x) { return (x); }
+    static inline constexpr uint32_t DENORMALIZE_CODE_OFFSET (uint32_t x) { return (x); }
+    static inline constexpr uint32_t NORMALIZE_REGISTER (uint32_t x) { return (x); }
+    static inline constexpr uint32_t DENORMALIZE_REGISTER (uint32_t x) { return (x); }
+    static inline constexpr size_t NORMALIZE_NUM_SAFE_POINTS (size_t x) { return (x); }
+    static inline constexpr size_t DENORMALIZE_NUM_SAFE_POINTS (size_t x) { return (x); }
+    static inline constexpr size_t NORMALIZE_NUM_INTERRUPTIBLE_RANGES (size_t x) { return (x); }
+    static inline constexpr size_t DENORMALIZE_NUM_INTERRUPTIBLE_RANGES (size_t x) { return (x); }
 
-    static const uint16_t PSP_SYM_STACK_SLOT_ENCBASE = 6;
-    static const uint16_t GENERICS_INST_CONTEXT_STACK_SLOT_ENCBASE = 6;
-    static const uint16_t SECURITY_OBJECT_STACK_SLOT_ENCBASE = 6;
-    static const uint16_t GS_COOKIE_STACK_SLOT_ENCBASE = 6;
-    static const uint16_t CODE_LENGTH_ENCBASE = 6;
-    static const uint16_t STACK_BASE_REGISTER_ENCBASE = 3;
-    static const uint16_t SIZE_OF_STACK_AREA_ENCBASE = 6;
-    static const uint16_t SIZE_OF_EDIT_AND_CONTINUE_PRESERVED_AREA_ENCBASE = 3;
-    static const uint16_t REVERSE_PINVOKE_FRAME_ENCBASE = 6;
-    static const uint16_t NUM_REGISTERS_ENCBASE = 3;
-    static const uint16_t NUM_STACK_SLOTS_ENCBASE = 5;
-    static const uint16_t NUM_UNTRACKED_SLOTS_ENCBASE = 5;
-    static const uint16_t NORM_PROLOG_SIZE_ENCBASE = 4;
-    static const uint16_t NORM_EPILOG_SIZE_ENCBASE = 3;
-    static const uint16_t NORM_CODE_OFFSET_DELTA_ENCBASE = 3;
-    static const uint16_t INTERRUPTIBLE_RANGE_DELTA1_ENCBASE = 5;
-    static const uint16_t INTERRUPTIBLE_RANGE_DELTA2_ENCBASE = 5;
-    static const uint16_t REGISTER_ENCBASE = 3;
-    static const uint16_t REGISTER_DELTA_ENCBASE = REGISTER_ENCBASE;
-    static const uint16_t STACK_SLOT_ENCBASE = 6;
-    static const uint16_t STACK_SLOT_DELTA_ENCBASE = 4;
-    static const uint16_t NUM_SAFE_POINTS_ENCBASE = 4;
-    static const uint16_t NUM_INTERRUPTIBLE_RANGES_ENCBASE = 1;
-    static const uint16_t NUM_EH_CLAUSES_ENCBASE = 2;
-    static const uint16_t POINTER_SIZE_ENCBASE = 3;
-    static const uint16_t LIVESTATE_RLE_RUN_ENCBASE = 2;
-    static const uint16_t LIVESTATE_RLE_SKIP_ENCBASE = 4;
+    static const int PSP_SYM_STACK_SLOT_ENCBASE = 6;
+    static const int GENERICS_INST_CONTEXT_STACK_SLOT_ENCBASE = 6;
+    static const int SECURITY_OBJECT_STACK_SLOT_ENCBASE = 6;
+    static const int GS_COOKIE_STACK_SLOT_ENCBASE = 6;
+    static const int CODE_LENGTH_ENCBASE = 6;
+    static const int STACK_BASE_REGISTER_ENCBASE = 3;
+    static const int SIZE_OF_STACK_AREA_ENCBASE = 6;
+    static const int SIZE_OF_EDIT_AND_CONTINUE_PRESERVED_AREA_ENCBASE = 3;
+    static const int REVERSE_PINVOKE_FRAME_ENCBASE = 6;
+    static const int NUM_REGISTERS_ENCBASE = 3;
+    static const int NUM_STACK_SLOTS_ENCBASE = 5;
+    static const int NUM_UNTRACKED_SLOTS_ENCBASE = 5;
+    static const int NORM_PROLOG_SIZE_ENCBASE = 4;
+    static const int NORM_EPILOG_SIZE_ENCBASE = 3;
+    static const int NORM_CODE_OFFSET_DELTA_ENCBASE = 3;
+    static const int INTERRUPTIBLE_RANGE_DELTA1_ENCBASE = 5;
+    static const int INTERRUPTIBLE_RANGE_DELTA2_ENCBASE = 5;
+    static const int REGISTER_ENCBASE = 3;
+    static const int REGISTER_DELTA_ENCBASE = REGISTER_ENCBASE;
+    static const int STACK_SLOT_ENCBASE = 6;
+    static const int STACK_SLOT_DELTA_ENCBASE = 4;
+    static const int NUM_SAFE_POINTS_ENCBASE = 4;
+    static const int NUM_INTERRUPTIBLE_RANGES_ENCBASE = 1;
+    static const int NUM_EH_CLAUSES_ENCBASE = 2;
+    static const int POINTER_SIZE_ENCBASE = 3;
+    static const int LIVESTATE_RLE_RUN_ENCBASE = 2;
+    static const int LIVESTATE_RLE_SKIP_ENCBASE = 4;
 };
 
 #endif // defined(TARGET_xxx)
