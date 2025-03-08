@@ -38,6 +38,7 @@
 #include <mono/utils/atomic.h>
 #include <mono/utils/unlocked.h>
 #include <mono/utils/mono-logger-internals.h>
+#include "../native/containers/dn-simdhash-utils.h"
 
 /* Auxiliary structure used for caching inflated signatures */
 typedef struct {
@@ -1874,18 +1875,21 @@ mono_type_equal (gconstpointer ka, gconstpointer kb)
 guint
 mono_metadata_generic_inst_hash (gconstpointer data)
 {
+	// Custom MurmurHash3 for generic instances to produce a high quality hash
 	const MonoGenericInst *ginst = (const MonoGenericInst *) data;
-	guint hash = 0;
 	g_assert (ginst);
 	g_assert (ginst->type_argv);
 
+	uint32_t h1 = ginst->type_argc;
+
 	for (guint i = 0; i < ginst->type_argc; ++i) {
-		hash *= 13;
 		g_assert (ginst->type_argv [i]);
-		hash += mono_metadata_type_hash (ginst->type_argv [i]);
+		MURMUR3_HASH_BLOCK ((uint32_t) mono_metadata_type_hash (ginst->type_argv [i]));
 	}
 
-	return hash ^ (ginst->is_open << 8);
+	h1 ^= ginst->is_open;
+
+	return (guint)murmur3_fmix32 (h1);
 }
 
 static gboolean
