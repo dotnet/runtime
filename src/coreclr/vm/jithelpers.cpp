@@ -133,197 +133,6 @@ extern "C" HCIMPL0(void, JIT_ThrowDivideByZero)
 }
 HCIMPLEND
 
-#if defined(TARGET_32BIT) && !(defined(TARGET_X86) && defined(TARGET_WINDOWS))
-HCIMPL2(INT32, JIT_Div, INT32 dividend, INT32 divisor)
-{
-    FCALL_CONTRACT;
-
-    RuntimeExceptionKind ehKind;
-
-    if (((UINT32) (divisor + 1)) <= 1)  // Unsigned test for divisor in [-1 .. 0]
-    {
-        if (divisor == 0)
-        {
-            [[clang::musttail]] return JIT_ThrowDivideByZero();
-        }
-        else if (divisor == -1)
-        {
-            if (dividend == INT32_MIN)
-            {
-                [[clang::musttail]] return JIT_ThrowOverflow();
-            }
-            return -dividend;
-        }
-    }
-
-    return(dividend / divisor);
-}
-HCIMPLEND
-
-/*********************************************************************/
-HCIMPL2(INT32, JIT_Mod, INT32 dividend, INT32 divisor)
-{
-    FCALL_CONTRACT;
-
-    RuntimeExceptionKind ehKind;
-
-    if (((UINT32) (divisor + 1)) <= 1)  // Unsigned test for divisor in [-1 .. 0]
-    {
-        if (divisor == 0)
-        {
-            [[clang::musttail]] return JIT_ThrowDivideByZero();
-        }
-        else if (divisor == -1)
-        {
-            if (dividend == INT32_MIN)
-            {
-                [[clang::musttail]] return JIT_ThrowOverflow();
-            }
-            return 0;
-        }
-    }
-
-    return(dividend % divisor);
-
-ThrowExcep:
-    FCThrow(ehKind);
-}
-HCIMPLEND
-
-/*********************************************************************/
-HCIMPL2(UINT32, JIT_UDiv, UINT32 dividend, UINT32 divisor)
-{
-    FCALL_CONTRACT;
-
-    if (divisor == 0)
-        [[clang::musttail]] return JIT_ThrowDivideByZero();
-
-    return(dividend / divisor);
-}
-HCIMPLEND
-
-/*********************************************************************/
-HCIMPL2(UINT32, JIT_UMod, UINT32 dividend, UINT32 divisor)
-{
-    FCALL_CONTRACT;
-
-    if (divisor == 0)
-        [[clang::musttail]] return JIT_ThrowDivideByZero();
-
-    return(dividend % divisor);
-}
-HCIMPLEND
-
-/*********************************************************************/
-HCIMPL2_VV(INT64, JIT_LDiv, INT64 divisor, INT64 dividend)
-{
-    FCALL_CONTRACT;
-
-    RuntimeExceptionKind ehKind;
-
-    if (Is32BitSigned(divisor))
-    {
-        if ((INT32)divisor == 0)
-        {
-            [[clang::musttail]] return JIT_ThrowDivideByZero();
-        }
-
-        if ((INT32)divisor == -1)
-        {
-            if ((UINT64) dividend == UI64(0x8000000000000000))
-            {
-                [[clang::musttail]] return JIT_ThrowOverflow();
-            }
-            return -dividend;
-        }
-
-        // Check for -ive or +ive numbers in the range -2**31 to 2**31
-        if (Is32BitSigned(dividend))
-            return((INT32)dividend / (INT32)divisor);
-    }
-
-    // For all other combinations fallback to int64 div.
-    return(dividend / divisor);
-
-ThrowExcep:
-    FCThrow(ehKind);
-}
-HCIMPLEND
-
-/*********************************************************************/
-HCIMPL2_VV(INT64, JIT_LMod, INT64 divisor, INT64 dividend)
-{
-    FCALL_CONTRACT;
-
-    RuntimeExceptionKind ehKind;
-
-    if (Is32BitSigned(divisor))
-    {
-        if ((INT32)divisor == 0)
-        {
-            [[clang::musttail]] return JIT_ThrowDivideByZero();
-        }
-
-        if ((INT32)divisor == -1)
-        {
-            // <TODO>TODO, we really should remove this as it lengthens the code path
-            // and the spec really says that it should not throw an exception. </TODO>
-            if ((UINT64) dividend == UI64(0x8000000000000000))
-            {
-                [[clang::musttail]] return JIT_ThrowOverflow();
-            }
-            return 0;
-        }
-
-        // Check for -ive or +ive numbers in the range -2**31 to 2**31
-        if (Is32BitSigned(dividend))
-            return((INT32)dividend % (INT32)divisor);
-    }
-
-    // For all other combinations fallback to int64 div.
-    return(dividend % divisor);
-
-ThrowExcep:
-    FCThrow(ehKind);
-}
-HCIMPLEND
-
-/*********************************************************************/
-HCIMPL2_VV(UINT64, JIT_ULDiv, UINT64 divisor, UINT64 dividend)
-{
-    FCALL_CONTRACT;
-
-    if (Hi32Bits(divisor) == 0)
-    {
-        if ((UINT32)(divisor) == 0)
-            [[clang::musttail]] return JIT_ThrowDivideByZero();
-
-        if (Hi32Bits(dividend) == 0)
-            return((UINT32)dividend / (UINT32)divisor);
-    }
-
-    return(dividend / divisor);
-}
-HCIMPLEND
-
-/*********************************************************************/
-HCIMPL2_VV(UINT64, JIT_ULMod, UINT64 divisor, UINT64 dividend)
-{
-    FCALL_CONTRACT;
-
-    if (Hi32Bits(divisor) == 0)
-    {
-        if ((UINT32)(divisor) == 0)
-            [[clang::musttail]] return JIT_ThrowDivideByZero();
-
-        if (Hi32Bits(dividend) == 0)
-            return((UINT32)dividend % (UINT32)divisor);
-    }
-
-    return(dividend % divisor);
-}
-HCIMPLEND
-#else
 extern "C" FCDECL2(INT32, JIT_Div, INT32 dividend, INT32 divisor);
 extern "C" FCDECL2(INT32, JIT_Mod, INT32 dividend, INT32 divisor);
 extern "C" FCDECL2(INT32, JIT_UDiv, INT32 dividend, INT32 divisor);
@@ -332,7 +141,6 @@ extern "C" FCDECL2_VV(INT64, JIT_LDiv, INT64 divisor, INT64 dividend);
 extern "C" FCDECL2_VV(INT64, JIT_LMod, INT64 divisor, INT64 dividend);
 extern "C" FCDECL2_VV(UINT64, JIT_ULDiv, UINT64 divisor, UINT64 dividend);
 extern "C" FCDECL2_VV(UINT64, JIT_ULMod, UINT64 divisor, UINT64 dividend);
-#endif // defined(TARGET_32BIT) && !(defined(TARGET_X86) && defined(TARGET_WINDOWS))
 
 #if !defined(HOST_64BIT) && !defined(TARGET_X86)
 /*********************************************************************/
@@ -3658,3 +3466,250 @@ void InitJITHelpers2()
     SetJitHelperFunction(CORINFO_HELP_INIT_PINVOKE_FRAME, (void *)GenerateInitPInvokeFrameHelper()->GetEntryPoint());
 #endif // TARGET_X86 || TARGET_ARM
 }
+
+
+#if defined(TARGET_32BIT) && !(defined(TARGET_X86) && defined(TARGET_WINDOWS))
+
+// Using the musttail attribute requires that we disble our protection against using return in the wrong place
+#ifdef return
+#undef return
+#endif
+
+extern "C" HCIMPL0(INT32, JIT_ThrowOverflow_RetInt)
+{
+    FCALL_CONTRACT;
+
+    FCThrow(kOverflowException);
+}
+HCIMPLEND
+
+extern "C" HCIMPL0(INT32, JIT_ThrowDivideByZero_RetInt)
+{
+    FCALL_CONTRACT;
+
+    FCThrow(kDivideByZeroException);
+}
+HCIMPLEND
+
+extern "C" HCIMPL0(UINT32, JIT_ThrowDivideByZero_RetUInt)
+{
+    FCALL_CONTRACT;
+
+    FCThrow(kDivideByZeroException);
+}
+HCIMPLEND
+
+extern "C" HCIMPL0(INT64, JIT_ThrowOverflow_RetInt64)
+{
+    FCALL_CONTRACT;
+
+    FCThrow(kOverflowException);
+}
+HCIMPLEND
+
+extern "C" HCIMPL0(INT32, JIT_ThrowDivideByZero_RetInt64)
+{
+    FCALL_CONTRACT;
+
+    FCThrow(kDivideByZeroException);
+}
+HCIMPLEND
+
+extern "C" HCIMPL0(UINT32, JIT_ThrowDivideByZero_RetUInt64)
+{
+    FCALL_CONTRACT;
+
+    FCThrow(kDivideByZeroException);
+}
+HCIMPLEND
+
+HCIMPL2(INT32, JIT_Div, INT32 dividend, INT32 divisor)
+{
+    FCALL_CONTRACT;
+
+    RuntimeExceptionKind ehKind;
+
+    if (((UINT32) (divisor + 1)) <= 1)  // Unsigned test for divisor in [-1 .. 0]
+    {
+        if (divisor == 0)
+        {
+            [[clang::musttail]] return JIT_ThrowDivideByZero_RetInt();
+        }
+        else if (divisor == -1)
+        {
+            if (dividend == INT32_MIN)
+            {
+                [[clang::musttail]] return JIT_ThrowOverflow_RetInt();
+            }
+            return -dividend;
+        }
+    }
+
+    return(dividend / divisor);
+}
+HCIMPLEND
+
+/*********************************************************************/
+HCIMPL2(INT32, JIT_Mod, INT32 dividend, INT32 divisor)
+{
+    FCALL_CONTRACT;
+
+    RuntimeExceptionKind ehKind;
+
+    if (((UINT32) (divisor + 1)) <= 1)  // Unsigned test for divisor in [-1 .. 0]
+    {
+        if (divisor == 0)
+        {
+            [[clang::musttail]] return JIT_ThrowDivideByZero_RetInt();
+        }
+        else if (divisor == -1)
+        {
+            if (dividend == INT32_MIN)
+            {
+                [[clang::musttail]] return JIT_ThrowOverflow_RetInt();
+            }
+            return 0;
+        }
+    }
+
+    return(dividend % divisor);
+
+ThrowExcep:
+    FCThrow(ehKind);
+}
+HCIMPLEND
+
+/*********************************************************************/
+HCIMPL2(UINT32, JIT_UDiv, UINT32 dividend, UINT32 divisor)
+{
+    FCALL_CONTRACT;
+
+    if (divisor == 0)
+        [[clang::musttail]] return JIT_ThrowDivideByZero_RetUInt();
+
+    return(dividend / divisor);
+}
+HCIMPLEND
+
+/*********************************************************************/
+HCIMPL2(UINT32, JIT_UMod, UINT32 dividend, UINT32 divisor)
+{
+    FCALL_CONTRACT;
+
+    if (divisor == 0)
+        [[clang::musttail]] return JIT_ThrowDivideByZero_RetUInt();
+
+    return(dividend % divisor);
+}
+HCIMPLEND
+
+/*********************************************************************/
+HCIMPL2_VV(INT64, JIT_LDiv, INT64 divisor, INT64 dividend)
+{
+    FCALL_CONTRACT;
+
+    RuntimeExceptionKind ehKind;
+
+    if (Is32BitSigned(divisor))
+    {
+        if ((INT32)divisor == 0)
+        {
+            [[clang::musttail]] return JIT_ThrowDivideByZero_RetInt64();
+        }
+
+        if ((INT32)divisor == -1)
+        {
+            if ((UINT64) dividend == UI64(0x8000000000000000))
+            {
+                [[clang::musttail]] return JIT_ThrowOverflow_RetInt64();
+            }
+            return -dividend;
+        }
+
+        // Check for -ive or +ive numbers in the range -2**31 to 2**31
+        if (Is32BitSigned(dividend))
+            return((INT32)dividend / (INT32)divisor);
+    }
+
+    // For all other combinations fallback to int64 div.
+    return(dividend / divisor);
+
+ThrowExcep:
+    FCThrow(ehKind);
+}
+HCIMPLEND
+
+/*********************************************************************/
+HCIMPL2_VV(INT64, JIT_LMod, INT64 divisor, INT64 dividend)
+{
+    FCALL_CONTRACT;
+
+    RuntimeExceptionKind ehKind;
+
+    if (Is32BitSigned(divisor))
+    {
+        if ((INT32)divisor == 0)
+        {
+            [[clang::musttail]] return JIT_ThrowDivideByZero_RetInt64();
+        }
+
+        if ((INT32)divisor == -1)
+        {
+            // <TODO>TODO, we really should remove this as it lengthens the code path
+            // and the spec really says that it should not throw an exception. </TODO>
+            if ((UINT64) dividend == UI64(0x8000000000000000))
+            {
+                [[clang::musttail]] return JIT_ThrowOverflow_RetInt64();
+            }
+            return 0;
+        }
+
+        // Check for -ive or +ive numbers in the range -2**31 to 2**31
+        if (Is32BitSigned(dividend))
+            return((INT32)dividend % (INT32)divisor);
+    }
+
+    // For all other combinations fallback to int64 div.
+    return(dividend % divisor);
+
+ThrowExcep:
+    FCThrow(ehKind);
+}
+HCIMPLEND
+
+/*********************************************************************/
+HCIMPL2_VV(UINT64, JIT_ULDiv, UINT64 divisor, UINT64 dividend)
+{
+    FCALL_CONTRACT;
+
+    if (Hi32Bits(divisor) == 0)
+    {
+        if ((UINT32)(divisor) == 0)
+            [[clang::musttail]] return JIT_ThrowDivideByZero_RetUInt64();
+
+        if (Hi32Bits(dividend) == 0)
+            return((UINT32)dividend / (UINT32)divisor);
+    }
+
+    return(dividend / divisor);
+}
+HCIMPLEND
+
+/*********************************************************************/
+HCIMPL2_VV(UINT64, JIT_ULMod, UINT64 divisor, UINT64 dividend)
+{
+    FCALL_CONTRACT;
+
+    if (Hi32Bits(divisor) == 0)
+    {
+        if ((UINT32)(divisor) == 0)
+            [[clang::musttail]] return JIT_ThrowDivideByZero_RetUInt64();
+
+        if (Hi32Bits(dividend) == 0)
+            return((UINT32)dividend % (UINT32)divisor);
+    }
+
+    return(dividend % divisor);
+}
+HCIMPLEND
+#endif // defined(TARGET_32BIT) && !(defined(TARGET_X86) && defined(TARGET_WINDOWS))
