@@ -135,6 +135,26 @@ namespace TestAdd
                 fail = true;
             }
 
+            if (!AddsGreaterThan(1, 2))
+            {
+                fail = true;
+            }
+
+            if (!AddsGreaterThanEq(-2, 2))
+            {
+                fail = true;
+            }
+
+            if (!AddsLessThan(4, -5))
+            {
+                fail = true;
+            }
+
+            if (!AddsLessThanEq(-6, 6))
+            {
+                fail = true;
+            }
+
             if (fail)
             {
                 return 101;
@@ -335,6 +355,34 @@ namespace TestAdd
             //ARM64-FULL-LINE: adds {{w[0-9]+}}, {{w[0-9]+}}, {{w[0-9]+}}
             //ARM64-FULL-LINE: adds {{w[0-9]+}}, {{w[0-9]+}}, {{w[0-9]+}}
             return (a + b == 0) | (c + d == 0);
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static bool AddsGreaterThan(int a, int b)
+        {
+            //ARM64-FULL-LINE: adds {{w[0-9]+}}, {{w[0-9]+}}, {{w[0-9]+}}
+            return a + b > 0;
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static bool AddsGreaterThanEq(int a, int b)
+        {
+            //ARM64-FULL-LINE: adds {{w[0-9]+}}, {{w[0-9]+}}, {{w[0-9]+}}
+            return a + b >= 0;
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static bool AddsLessThan(int a, int b)
+        {
+            //ARM64-FULL-LINE: adds {{w[0-9]+}}, {{w[0-9]+}}, {{w[0-9]+}}
+            return a + b < 0;
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static bool AddsLessThanEq(int a, int b)
+        {
+            //ARM64-FULL-LINE: adds {{w[0-9]+}}, {{w[0-9]+}}, {{w[0-9]+}}
+            return a + b <= 0;
         }
     }
 }
