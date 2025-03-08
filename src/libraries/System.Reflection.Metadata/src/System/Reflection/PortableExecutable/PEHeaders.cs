@@ -90,6 +90,12 @@ namespace System.Reflection.PortableExecutable
 
             SkipDosHeader(ref reader, out bool isCoffOnly);
 
+            if (isCoffOnly && isLoadedImage)
+            {
+                // Only images can be loaded.
+                throw new BadImageFormatException(SR.InvalidPESignature);
+            }
+
             _coffHeaderStartOffset = reader.Offset;
             _coffHeader = new CoffHeader(ref reader);
 
@@ -392,16 +398,8 @@ namespace System.Reflection.PortableExecutable
                     return;
                 }
 
-                if (_isLoadedImage)
-                {
-                    start = SectionHeaders[cormeta].VirtualAddress;
-                    size = SectionHeaders[cormeta].VirtualSize;
-                }
-                else
-                {
-                    start = SectionHeaders[cormeta].PointerToRawData;
-                    size = SectionHeaders[cormeta].SizeOfRawData;
-                }
+                start = SectionHeaders[cormeta].PointerToRawData;
+                size = SectionHeaders[cormeta].SizeOfRawData;
             }
             else if (_corHeader == null)
             {

@@ -68,6 +68,13 @@ namespace System.Reflection.PortableExecutable.Tests
         }
 
         [Fact]
+        public void Ctor_CoffFileLoadedImage()
+        {
+            byte[] file = new byte[CoffHeader.Size];
+            Assert.Throws<BadImageFormatException>(() => new PEHeaders(new MemoryStream(file), file.Length, isLoadedImage: true));
+        }
+
+        [Fact]
         public void FromEmptyStream()
         {
             Assert.Throws<BadImageFormatException>(() => new PEHeaders(new MemoryStream()));
