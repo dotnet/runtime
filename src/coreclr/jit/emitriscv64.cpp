@@ -1001,7 +1001,8 @@ void emitter::emitIns_R_C(
     id->idSmallCns(offs); // usually is 0.
     id->idInsOpt(INS_OPTS_RC);
     // Load constant with auipc if constant size is 64 bits
-    if ((emitComp->eeIsJitDataOffs(fldHnd) && (EA_SIZE(attr) == EA_8BYTE || EA_SIZE(attr) == EA_PTRSIZE)) || emitComp->opts.compReloc)
+    if ((emitComp->eeIsJitDataOffs(fldHnd) && (EA_SIZE(attr) == EA_8BYTE || EA_SIZE(attr) == EA_PTRSIZE)) ||
+        emitComp->opts.compReloc)
     {
         id->idSetIsDspReloc();
         id->idCodeSize(8);
@@ -1264,85 +1265,229 @@ void emitter::emitIns_J_cond_la(instruction ins, BasicBlock* dst, regNumber reg1
     appendToCurIG(id);
 }
 
+#define MAX_NUM_OF_LOAD_IMM_INS 5
 /*****************************************************************************
  *
  *  Emits load of 64-bit constant to register.
  *
  */
+
+int msb(uint64_t val)
+{
+    return (val >> 63) & 0b1;
+}
+
+int lsb(uint64_t val)
+{
+    return val & 0b1;
+}
+
+int lastZeroPositionFromMsb(uint64_t val)
+{
+    return 63 - __builtin_clzll(val) + 1;
+}
+
+int lastZeroPositionFromLsb(uint64_t val)
+{
+    return __builtin_ctzll(val) - 1;
+}
+
+int lastOnePositionFromMsb(uint64_t val)
+{
+    return lastZeroPositionFromMsb(~val);
+}
+
+int lastOnePositionFromLsb(uint64_t val)
+{
+    return lastZeroPositionFromLsb(~val);
+}
+
+uint64_t mask(int val)
+{
+    return ~(~((uint64_t)1 << val) + 1);
+}
+
+int32_t SignExtendUImm20(uint32_t val)
+{
+    return ((val >> 19) & 0b1) ? val + 0xFFF00000 : val;
+}
+
 void emitter::emitLoadImmediate(emitAttr size, regNumber reg, ssize_t imm)
 {
-    // In the worst case a sequence of 8 instructions will be used:
-    //   LUI + ADDIW + SLLI + ADDI + SLLI + ADDI + SLLI + ADDI
-    //
-    // First 2 instructions (LUI + ADDIW) load up to 31 bit. And followed
-    // sequence of (SLLI + ADDI) is used for loading remaining part by batches
-    // of up to 11 bits.
-    //
-    // Note that LUI, ADDI/W use sign extension so that's why we have to work
-    // with 31 and 11 bit batches there.
-
     assert(!EA_IS_RELOC(size));
     assert(isGeneralRegister(reg));
 
-    if (isValidSimm12(imm))
+    if (imm == 0)
     {
-        emitIns_R_R_I(INS_addi, size, reg, REG_R0, imm & 0xFFF);
-        return;
+        emitIns_R_R_I(INS_addi, size, reg, REG_R0, 0);
     }
 
-    // Optimize via emitDataConst if data size is 64 bits
-    if (size == EA_PTRSIZE || size == EA_8BYTE)
-    {
-        auto constAddr = emitDataConst(&imm, sizeof(long), sizeof(long), TYP_LONG);
-        emitIns_R_C(INS_ld, EA_PTRSIZE, reg, REG_NA, emitComp->eeFindJitDataOffs(constAddr), 0);
-        return;
-    }
+    // The following algorithm works based on the following equation:
+    // `imm = high32 + offset1` OR `imm = high32 - offset2`
+    //
+    // high32 will be loaded with `lui + addiw`, while offset
+    // will be loaded with `slli + addi` in 11-bits chunks
+    //
+    // First, determine at which position to partition imm into high32 and offset,
+    // so that it yields the least instruction.
+    // Where high32 = imm[y:x] and imm[63:y] are all zeroes or all ones.
+    //
+    // From the above equation, the value of offset1 & offset2 are:
+    // -> offset1 = imm[x-1:0]
+    // -> offset2 = ~(imm[x-1:0] - 1)
+    // The smaller offset should yield the least instruction. (is this correct?)
 
-    UINT32 msb = BitOperations::BitScanReverse((uint64_t)imm);
-    UINT32 high31;
-    if (msb > 30)
+    int x;
+    int y;
+    if (msb(imm) == 1)
     {
-        high31 = (imm >> (msb - 30)) & 0x7FffFFff;
+        y = lastOnePositionFromMsb(imm);
     }
     else
     {
-        high31 = imm & 0x7FffFFff;
+        y = lastZeroPositionFromMsb(imm);
+    }
+    if (lsb(imm) == 1)
+    {
+        x = lastOnePositionFromLsb(imm) + 1;
+    }
+    else
+    {
+        x = lastZeroPositionFromLsb(imm) + 1;
+    }
+    if (y < 32)
+    {
+        y = 31;
+        x = 0;
+    }
+    else if (y - x < 31)
+    {
+        y = x + 31;
+    }
+    else
+    {
+        x = y - 31;
     }
 
-    // Since ADDIW use sign extension fo immediate
-    // we have to adjust higher 19 bit loaded by LUI
-    // for case when low part is bigger than 0x800.
-    INT32 high19 = ((int32_t)(high31 + 0x800)) >> 12;
-
-    emitIns_R_I(INS_lui, size, reg, high19);
-    if (high31 & 0xFFF)
+    uint32_t high32         = ((int64_t)imm >> x) & mask(32);
+    uint32_t offset1        = imm & mask(x);
+    uint32_t offset2        = ~(offset1 - 1) & mask(x);
+    uint32_t offset         = offset1;
+    bool     isSubtractMode = false;
+    if (offset2 < offset1)
     {
-        emitIns_R_R_I(INS_addiw, size, reg, reg, high31 & 0xFFF);
+        offset         = offset2;
+        isSubtractMode = true;
+        high32         = (high32 + 1) & mask(32);
     }
 
-    // And load remaining part part by batches of 11 bits size.
-    INT32 remainingShift = msb - 30;
+    assert(MAX_NUM_OF_LOAD_IMM_INS >= 2);
+    int         numberOfInstructions = 0;
+    instruction ins[MAX_NUM_OF_LOAD_IMM_INS];
+    int32_t     values[MAX_NUM_OF_LOAD_IMM_INS];
 
-    UINT32 shiftAccumulator = 0;
-    while (remainingShift > 0)
+    // Load high32
+    uint32_t upper    = (high32 >> 12) & mask(20);
+    uint32_t lower    = high32 & mask(12);
+    int      lowerMsb = (lower >> 11) & 0b1;
+    if (lowerMsb == 1)
     {
-        UINT32 shift = remainingShift >= 11 ? 11 : remainingShift % 11;
-        UINT32 mask  = 0x7ff >> (11 - shift);
-        remainingShift -= shift;
-        ssize_t low11 = (imm >> remainingShift) & mask;
-        shiftAccumulator += shift;
+        upper += 1;
+        upper &= mask(20);
+    }
+    if (upper != 0)
+    {
+        ins[numberOfInstructions]    = INS_lui;
+        values[numberOfInstructions] = SignExtendUImm20(upper);
+        numberOfInstructions += 1;
+    }
+    if (lower != 0)
+    {
+        ins[numberOfInstructions]    = INS_addiw;
+        values[numberOfInstructions] = lower;
+        numberOfInstructions += 1;
+    }
 
-        if (low11)
+    // Load offset in 11-bits chunks
+    int chunkLsbPos = x < 11 ? 0 : x - 11;
+    int shift       = x < 11 ? x : 11;
+    int chunkMask   = x < 11 ? mask(x) : mask(11);
+    while (true)
+    {
+        uint32_t chunk = (offset >> chunkLsbPos) & chunkMask;
+        if (chunk != 0)
         {
-            emitIns_R_R_I(INS_slli, size, reg, reg, shiftAccumulator);
-            shiftAccumulator = 0;
-
-            emitIns_R_R_I(INS_addi, size, reg, reg, low11);
+            numberOfInstructions += 2;
+            if (numberOfInstructions > MAX_NUM_OF_LOAD_IMM_INS)
+            {
+                break;
+            }
+            ins[numberOfInstructions - 2]    = INS_slli;
+            values[numberOfInstructions - 2] = shift;
+            if (isSubtractMode)
+            {
+                ins[numberOfInstructions - 1]    = INS_addi;
+                values[numberOfInstructions - 1] = -chunk;
+            }
+            else
+            {
+                ins[numberOfInstructions - 1]    = INS_addi;
+                values[numberOfInstructions - 1] = chunk;
+            }
+            shift = 0;
+        }
+        if (chunkLsbPos == 0)
+        {
+            break;
+        }
+        shift += chunkLsbPos < 11 ? chunkLsbPos : 11;
+        chunkMask = chunkLsbPos < 11 ? chunkMask >> (11 - chunkLsbPos) : mask(11);
+        chunkLsbPos -= chunkLsbPos < 11 ? chunkLsbPos : 11;
+    }
+    if (shift > 0)
+    {
+        numberOfInstructions += 1;
+        if (numberOfInstructions <= MAX_NUM_OF_LOAD_IMM_INS)
+        {
+            ins[numberOfInstructions - 1]    = INS_slli;
+            values[numberOfInstructions - 1] = shift;
         }
     }
-    if (shiftAccumulator)
+
+    if (numberOfInstructions <= MAX_NUM_OF_LOAD_IMM_INS)
     {
-        emitIns_R_R_I(INS_slli, size, reg, reg, shiftAccumulator);
+        for (int i = 0; i < numberOfInstructions; i++)
+        {
+            if (i == 0 && ins[0] == INS_lui)
+            {
+                emitIns_R_I(ins[i], size, reg, values[i]);
+            }
+            else if (i == 0 && (ins[0] == INS_addiw || ins[0] == INS_addi))
+            {
+                emitIns_R_R_I(ins[i], size, reg, REG_R0, values[i]);
+            }
+            else if (i == 0)
+            {
+                assert(false && "First instruction must be lui / addiw / addi");
+            }
+            else if (ins[i] == INS_addi || ins[i] == INS_addiw || ins[i] == INS_slli)
+            {
+                emitIns_R_R_I(ins[i], size, reg, reg, values[i]);
+            }
+            else
+            {
+                assert(false && "Remainding instructions must be addi / addiw / slli");
+            }
+        }
+    }
+    else if (size == EA_8BYTE || size == EA_PTRSIZE)
+    {
+        auto constAddr = emitDataConst(&imm, sizeof(long), sizeof(long), TYP_LONG);
+        emitIns_R_C(INS_ld, EA_PTRSIZE, reg, REG_NA, emitComp->eeFindJitDataOffs(constAddr), 0);
+    }
+    else
+    {
+        assert(false && "If number of instruction exceeds MAX_NUM_OF_LOAD_IMM_INS, imm must be 8 bytes");
     }
 }
 
