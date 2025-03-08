@@ -1067,7 +1067,9 @@ interp_emit_simd_intrinsics (TransformData *td, MonoMethod *cmethod, MonoMethodS
 		else if (!strcmp (class_name, "Vector128`1"))
 			return emit_sri_vector128_t (td, cmethod, csignature);
 	} else if (!strcmp (class_ns, "System.Numerics")) {
-		if (!strcmp (class_name, "Vector`1"))
+		if (!strcmp (class_name, "Vector"))
+			return emit_sri_vector128 (td, cmethod, csignature);
+		else if (!strcmp (class_name, "Vector`1"))
 			return emit_sn_vector_t (td, cmethod, csignature, newobj);
 		else if (!strcmp (class_name, "Vector4"))
 			return emit_sn_vector4 (td, cmethod, csignature, newobj);
