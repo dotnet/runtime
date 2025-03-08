@@ -51,16 +51,9 @@ private:
     // LowerRange handles new code that is introduced by or after Lowering.
     void LowerRange(LIR::ReadOnlyRange& range)
     {
-        for (GenTree* newNode : range)
-        {
-            LowerNode(newNode);
-        }
+        LowerRange(range.FirstNode(), range.LastNode());
     }
-    void LowerRange(GenTree* firstNode, GenTree* lastNode)
-    {
-        LIR::ReadOnlyRange range(firstNode, lastNode);
-        LowerRange(range);
-    }
+    void LowerRange(GenTree* firstNode, GenTree* lastNode);
 
     // ContainCheckRange handles new code that is introduced by or after Lowering,
     // and that is known to be already in Lowered form.
@@ -626,6 +619,7 @@ private:
     unsigned              vtableCallTemp;       // local variable we use as a temp for vtable calls
     mutable SideEffectSet m_scratchSideEffects; // SideEffectSet used for IsSafeToContainMem and isRMWIndirCandidate
     BasicBlock*           m_block;
+    GenTree*              m_stopNodeSentinel = nullptr;
 
 #ifdef FEATURE_FIXED_OUT_ARGS
     unsigned m_outgoingArgSpaceSize = 0;
