@@ -135,8 +135,8 @@ HCIMPLEND
 
 extern "C" FCDECL2(INT32, JIT_Div, INT32 dividend, INT32 divisor);
 extern "C" FCDECL2(INT32, JIT_Mod, INT32 dividend, INT32 divisor);
-extern "C" FCDECL2(INT32, JIT_UDiv, INT32 dividend, INT32 divisor);
-extern "C" FCDECL2(INT32, JIT_UMod, INT32 dividend, INT32 divisor);
+extern "C" FCDECL2(UINT32, JIT_UDiv, UINT32 dividend, UINT32 divisor);
+extern "C" FCDECL2(UINT32, JIT_UMod, UINT32 dividend, UINT32 divisor);
 extern "C" FCDECL2_VV(INT64, JIT_LDiv, INT64 divisor, INT64 dividend);
 extern "C" FCDECL2_VV(INT64, JIT_LMod, INT64 divisor, INT64 dividend);
 extern "C" FCDECL2_VV(UINT64, JIT_ULDiv, UINT64 divisor, UINT64 dividend);
