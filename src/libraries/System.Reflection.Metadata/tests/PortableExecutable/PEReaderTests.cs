@@ -820,10 +820,7 @@ namespace System.Reflection.PortableExecutable.Tests
             Assert.Throws<ObjectDisposedException>(() => reader.ReadDebugDirectory());
             Assert.Throws<ObjectDisposedException>(() => reader.ReadCodeViewDebugDirectoryData(ddCodeView));
             Assert.Throws<ObjectDisposedException>(() => reader.ReadEmbeddedPortablePdbDebugDirectoryData(ddEmbedded));
-
-            MetadataReaderProvider __;
-            string ___;
-            Assert.Throws<ObjectDisposedException>(() => reader.TryOpenAssociatedPortablePdb(@"x", _ => null, out __, out ___));
+            Assert.Throws<ObjectDisposedException>(() => reader.TryOpenAssociatedPortablePdb(@"x", _ => null, out _, out _));
 
             // ok to use providers after PEReader disposed:
             var pdbReader = pdbProvider.GetMetadataReader();
