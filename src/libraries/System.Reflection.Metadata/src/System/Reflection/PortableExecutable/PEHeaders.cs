@@ -95,13 +95,8 @@ namespace System.Reflection.PortableExecutable
 
             if (isCoffOnly)
             {
-                // These characteristics bits are documented in https://learn.microsoft.com/en-us/windows/win32/debug/pe-format#coff-file-header-object-and-image
-                // that should be set only on image files.
-                const Characteristics ImageOnlyCharacteristics = Characteristics.RelocsStripped | Characteristics.ExecutableImage;
-                // Because COFF files do not have a magic number, perform some additional checks to catch outright invalid files.
-                if (_coffHeader.SizeOfOptionalHeader != 0
-                    || _coffHeader.PointerToSymbolTable >= actualSize
-                    || (_coffHeader.Characteristics & ImageOnlyCharacteristics) != 0)
+                // In COFF files the size of the optional header must be zero.
+                if (_coffHeader.SizeOfOptionalHeader != 0)
                 {
                     throw new BadImageFormatException(SR.UnknownFileFormat);
                 }
@@ -112,7 +107,7 @@ namespace System.Reflection.PortableExecutable
                 _peHeader = new PEHeader(ref reader);
             }
 
-            _sectionHeaders = ReadSectionHeaders(ref reader, actualSize, isCoffOnly);
+            _sectionHeaders = ReadSectionHeaders(ref reader, actualSize);
 
             if (!isCoffOnly)
             {
@@ -302,7 +297,7 @@ namespace System.Reflection.PortableExecutable
             }
         }
 
-        private ImmutableArray<SectionHeader> ReadSectionHeaders(ref PEBinaryReader reader, int size, bool isCoffOnly)
+        private ImmutableArray<SectionHeader> ReadSectionHeaders(ref PEBinaryReader reader, int size)
         {
             int numberOfSections = _coffHeader.NumberOfSections;
             if (numberOfSections < 0 || numberOfSections * SectionHeader.Size > size - reader.Offset)
@@ -314,12 +309,7 @@ namespace System.Reflection.PortableExecutable
 
             for (int i = 0; i < numberOfSections; i++)
             {
-                var sectionHeader = new SectionHeader(ref reader);
-                if (isCoffOnly && sectionHeader.VirtualSize != 0)
-                {
-                    throw new BadImageFormatException(SR.UnknownFileFormat);
-                }
-                builder.Add(sectionHeader);
+                builder.Add(new SectionHeader(ref reader));
             }
 
             return builder.MoveToImmutable();
