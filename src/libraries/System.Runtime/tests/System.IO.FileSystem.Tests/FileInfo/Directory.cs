@@ -53,6 +53,13 @@ namespace System.IO.Tests
             var directory = Directory(new string(Path.DirectorySeparatorChar, 2) + Path.Combine("Machine", "Directory", "File"));
             Assert.Equal(new string(Path.DirectorySeparatorChar, 2) + Path.Combine("Machine", "Directory"), directory);
         }
+
+        [Fact]
+        public void LeadingSpacesTrimmed()
+        {
+            var directory = Directory(Path.Combine(" leading-space", "trailing-space "));
+            Assert.Equal(Path.Combine("leading-space", "trailing-space"), directory);
+        }
     }
 
     public class FileInfo_DirectoryName : FileInfo_Directory
