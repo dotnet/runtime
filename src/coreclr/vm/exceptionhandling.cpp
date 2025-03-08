@@ -5662,11 +5662,18 @@ VOID DECLSPEC_NORETURN DispatchManagedException(OBJECTREF throwable, CONTEXT* pE
     ULONG_PTR hr = GetHRFromThrowable(throwable);
 
     EXCEPTION_RECORD newExceptionRecord;
-    newExceptionRecord.ExceptionCode = EXCEPTION_COMPLUS;
-    newExceptionRecord.ExceptionFlags = EXCEPTION_NONCONTINUABLE | EXCEPTION_SOFTWARE_ORIGINATE;
-    newExceptionRecord.ExceptionAddress = (void *)(void (*)(OBJECTREF))&DispatchManagedException;
-    newExceptionRecord.NumberParameters = MarkAsThrownByUs(newExceptionRecord.ExceptionInformation, hr);
-    newExceptionRecord.ExceptionRecord = NULL;
+    if (pExceptionRecord != NULL)
+    {
+        newExceptionRecord = *pExceptionRecord;
+    }
+    else
+    {
+        newExceptionRecord.ExceptionCode = EXCEPTION_COMPLUS;
+        newExceptionRecord.ExceptionFlags = EXCEPTION_NONCONTINUABLE | EXCEPTION_SOFTWARE_ORIGINATE;
+        newExceptionRecord.ExceptionAddress = (void *)(void (*)(OBJECTREF))&DispatchManagedException;
+        newExceptionRecord.NumberParameters = MarkAsThrownByUs(newExceptionRecord.ExceptionInformation, hr);
+        newExceptionRecord.ExceptionRecord = NULL;
+    }
 
     ExInfo exInfo(pThread, &newExceptionRecord, pExceptionContext, ExKind::Throw);
 
@@ -7716,6 +7723,13 @@ VOID DECLSPEC_NORETURN PropagateLongJmpThroughNativeFrames(jmp_buf *pJmpBuf, int
     WRAPPER_NO_CONTRACT;
     longjmp(*pJmpBuf, retVal);
 }
+
+VOID DECLSPEC_NORETURN PropagateForeignExceptionThroughNativeFrames(EXCEPTION_RECORD *pExceptionRecord)
+{
+    GCX_PREEMP_NO_DTOR();
+    RaiseException(pExceptionRecord->ExceptionCode, pExceptionRecord->ExceptionFlags, pExceptionRecord->NumberParameters, pExceptionRecord->ExceptionInformation);
+}
+
 #endif // HOST_WINDOWS
 
 extern "C" void * QCALLTYPE CallCatchFunclet(QCall::ObjectHandleOnStack exceptionObj, BYTE* pHandlerIP, REGDISPLAY* pvRegDisplay, ExInfo* exInfo)
@@ -7784,6 +7798,7 @@ extern "C" void * QCALLTYPE CallCatchFunclet(QCall::ObjectHandleOnStack exceptio
 #ifdef HOST_WINDOWS
     jmp_buf* pLongJmpBuf = pExInfo->m_pLongJmpBuf;
     int longJmpReturnValue = pExInfo->m_longJmpReturnValue;
+    static __declspec(thread) EXCEPTION_RECORD t_lastExceptionRecord = *pExInfo->m_ptrs.ExceptionRecord;
 #endif // HOST_WINDOWS
 
 #ifdef HOST_UNIX
@@ -7934,6 +7949,11 @@ extern "C" void * QCALLTYPE CallCatchFunclet(QCall::ObjectHandleOnStack exceptio
             SetIP(pvRegDisplay->pCurrentContext, (PCODE)PropagateLongJmpThroughNativeFrames);
             pvRegDisplay->pCurrentContext->FIRST_ARG_REG = (size_t)pLongJmpBuf;
             pvRegDisplay->pCurrentContext->SECOND_ARG_REG = (size_t)longJmpReturnValue;
+        }
+        else if (!IsComPlusException(&t_lastExceptionRecord) && MapWin32FaultToCOMPlusException(&t_lastExceptionRecord) == kSEHException)
+        {
+            SetIP(pvRegDisplay->pCurrentContext, (PCODE)PropagateForeignExceptionThroughNativeFrames);
+            pvRegDisplay->pCurrentContext->FIRST_ARG_REG = (size_t)&t_lastExceptionRecord;
         }
         else
 #endif
