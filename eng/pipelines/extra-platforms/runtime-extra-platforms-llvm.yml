@@ -34,7 +34,7 @@ jobs:
 - template: /eng/pipelines/common/platform-matrix.yml
   parameters:
     jobTemplate: /eng/pipelines/common/global-build-job.yml
-    buildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
+    buildConfig: Release
     runtimeFlavor: mono
     platforms:
     - osx_x64
