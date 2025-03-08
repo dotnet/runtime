@@ -145,7 +145,7 @@ namespace System.Reflection
                         VerifyTarget(obj);
                         Debug.Assert(obj != null);
                         return Pointer.Box(
-                            (void*)Unsafe.As<byte, IntPtr>(ref Unsafe.AddByteOffset(ref obj.GetRawData(), _addressOrOffset)),
+                            (void*)Unsafe.ReadUnaligned<IntPtr>(ref Unsafe.AddByteOffset(ref obj.GetRawData(), _addressOrOffset)),
                             _fieldInfo.FieldType);
 
                     case FieldAccessorType.StaticReferenceType:
@@ -237,7 +237,7 @@ namespace System.Reflection
                         Debug.Assert(obj != null);
                         Volatile.Write(
                             ref Unsafe.As<byte, short>(ref Unsafe.AddByteOffset(ref obj.GetRawData(), _addressOrOffset)),
-                            Unsafe.As<byte, short>(ref value!.GetRawData()));
+                            Unsafe.ReadUnaligned<short>(ref value!.GetRawData()));
                         return;
 
                     case FieldAccessorType.InstanceValueTypeSize4:
@@ -245,7 +245,7 @@ namespace System.Reflection
                         Debug.Assert(obj != null);
                         Volatile.Write(
                             ref Unsafe.As<byte, int>(ref Unsafe.AddByteOffset(ref obj.GetRawData(), _addressOrOffset)),
-                            Unsafe.As<byte, int>(ref value!.GetRawData()));
+                            Unsafe.ReadUnaligned<int>(ref value!.GetRawData()));
                         return;
 
                     case FieldAccessorType.InstanceValueTypeSize8:
@@ -253,7 +253,7 @@ namespace System.Reflection
                         Debug.Assert(obj != null);
                         Volatile.Write(
                             ref Unsafe.As<byte, long>(ref Unsafe.AddByteOffset(ref obj.GetRawData(), _addressOrOffset)),
-                            Unsafe.As<byte, long>(ref value!.GetRawData()));
+                            Unsafe.ReadUnaligned<long>(ref value!.GetRawData()));
                         return;
 
                     case FieldAccessorType.StaticReferenceType:
@@ -272,21 +272,21 @@ namespace System.Reflection
                         VerifyStaticField(ref value, invokeAttr, binder, culture);
                         Volatile.Write(
                             ref Unsafe.AsRef<short>(_addressOrOffset.ToPointer()),
-                            Unsafe.As<byte, short>(ref value!.GetRawData()));
+                            Unsafe.ReadUnaligned<short>(ref value!.GetRawData()));
                         return;
 
                     case FieldAccessorType.StaticValueTypeSize4:
                         VerifyStaticField(ref value, invokeAttr, binder, culture);
                         Volatile.Write(
                             ref Unsafe.AsRef<int>(_addressOrOffset.ToPointer()),
-                            Unsafe.As<byte, int>(ref value!.GetRawData()));
+                            Unsafe.ReadUnaligned<int>(ref value!.GetRawData()));
                         return;
 
                     case FieldAccessorType.StaticValueTypeSize8:
                         VerifyStaticField(ref value, invokeAttr, binder, culture);
                         Volatile.Write(
                             ref Unsafe.AsRef<long>(_addressOrOffset.ToPointer()),
-                            Unsafe.As<byte, long>(ref value!.GetRawData()));
+                            Unsafe.ReadUnaligned<long>(ref value!.GetRawData()));
                         return;
 
                     case FieldAccessorType.SlowPathUntilClassInitialized:

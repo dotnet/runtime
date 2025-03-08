@@ -418,22 +418,22 @@ namespace System
                 case CorElementType.ELEMENT_TYPE_I2:
                 case CorElementType.ELEMENT_TYPE_U2:
                     {
-                        ushort flagsValue = Unsafe.As<byte, ushort>(ref pFlagsValue);
-                        return (Unsafe.As<byte, ushort>(ref pThisValue) & flagsValue) == flagsValue;
+                        ushort flagsValue = Unsafe.ReadUnaligned<ushort>(ref pFlagsValue);
+                        return (Unsafe.ReadUnaligned<ushort>(ref pThisValue) & flagsValue) == flagsValue;
                     }
 
                 case CorElementType.ELEMENT_TYPE_I4:
                 case CorElementType.ELEMENT_TYPE_U4:
                     {
-                        uint flagsValue = Unsafe.As<byte, uint>(ref pFlagsValue);
-                        return (Unsafe.As<byte, uint>(ref pThisValue) & flagsValue) == flagsValue;
+                        uint flagsValue = Unsafe.ReadUnaligned<uint>(ref pFlagsValue);
+                        return (Unsafe.ReadUnaligned<uint>(ref pThisValue) & flagsValue) == flagsValue;
                     }
 
                 case CorElementType.ELEMENT_TYPE_I8:
                 case CorElementType.ELEMENT_TYPE_U8:
                     {
-                        ulong flagsValue = Unsafe.As<byte, ulong>(ref pFlagsValue);
-                        return (Unsafe.As<byte, ulong>(ref pThisValue) & flagsValue) == flagsValue;
+                        ulong flagsValue = Unsafe.ReadUnaligned<ulong>(ref pFlagsValue);
+                        return (Unsafe.ReadUnaligned<ulong>(ref pThisValue) & flagsValue) == flagsValue;
                     }
 
 #if RARE_ENUMS
@@ -1166,21 +1166,21 @@ namespace System
             ref byte data = ref this.GetRawData();
             return InternalGetCorElementType() switch
             {
-                CorElementType.ELEMENT_TYPE_I1 => Unsafe.As<byte, sbyte>(ref data),
+                CorElementType.ELEMENT_TYPE_I1 => Unsafe.ReadUnaligned<sbyte>(ref data),
                 CorElementType.ELEMENT_TYPE_U1 => data,
-                CorElementType.ELEMENT_TYPE_I2 => Unsafe.As<byte, short>(ref data),
-                CorElementType.ELEMENT_TYPE_U2 => Unsafe.As<byte, ushort>(ref data),
-                CorElementType.ELEMENT_TYPE_I4 => Unsafe.As<byte, int>(ref data),
-                CorElementType.ELEMENT_TYPE_U4 => Unsafe.As<byte, uint>(ref data),
-                CorElementType.ELEMENT_TYPE_I8 => Unsafe.As<byte, long>(ref data),
-                CorElementType.ELEMENT_TYPE_U8 => Unsafe.As<byte, ulong>(ref data),
+                CorElementType.ELEMENT_TYPE_I2 => Unsafe.ReadUnaligned<short>(ref data),
+                CorElementType.ELEMENT_TYPE_U2 => Unsafe.ReadUnaligned<ushort>(ref data),
+                CorElementType.ELEMENT_TYPE_I4 => Unsafe.ReadUnaligned<int>(ref data),
+                CorElementType.ELEMENT_TYPE_U4 => Unsafe.ReadUnaligned<uint>(ref data),
+                CorElementType.ELEMENT_TYPE_I8 => Unsafe.ReadUnaligned<long>(ref data),
+                CorElementType.ELEMENT_TYPE_U8 => Unsafe.ReadUnaligned<ulong>(ref data),
 #if RARE_ENUMS
-                CorElementType.ELEMENT_TYPE_R4 => Unsafe.As<byte, float>(ref data),
-                CorElementType.ELEMENT_TYPE_R8 => Unsafe.As<byte, double>(ref data),
-                CorElementType.ELEMENT_TYPE_I => Unsafe.As<byte, IntPtr>(ref data),
-                CorElementType.ELEMENT_TYPE_U => Unsafe.As<byte, UIntPtr>(ref data),
-                CorElementType.ELEMENT_TYPE_CHAR => Unsafe.As<byte, char>(ref data),
-                CorElementType.ELEMENT_TYPE_BOOLEAN => Unsafe.As<byte, bool>(ref data),
+                CorElementType.ELEMENT_TYPE_R4 => Unsafe.ReadUnaligned<float>(ref data),
+                CorElementType.ELEMENT_TYPE_R8 => Unsafe.ReadUnaligned<double>(ref data),
+                CorElementType.ELEMENT_TYPE_I => Unsafe.ReadUnaligned<IntPtr>(ref data),
+                CorElementType.ELEMENT_TYPE_U => Unsafe.ReadUnaligned<UIntPtr>(ref data),
+                CorElementType.ELEMENT_TYPE_CHAR => Unsafe.ReadUnaligned<char>(ref data),
+                CorElementType.ELEMENT_TYPE_BOOLEAN => Unsafe.ReadUnaligned<bool>(ref data),
 #endif
                 _ => throw CreateUnknownEnumTypeException(),
             };
@@ -1209,15 +1209,15 @@ namespace System
 
                 case CorElementType.ELEMENT_TYPE_I2:
                 case CorElementType.ELEMENT_TYPE_U2:
-                    return Unsafe.As<byte, ushort>(ref pThisValue) == Unsafe.As<byte, ushort>(ref pOtherValue);
+                    return Unsafe.ReadUnaligned<ushort>(ref pThisValue) == Unsafe.ReadUnaligned<ushort>(ref pOtherValue);
 
                 case CorElementType.ELEMENT_TYPE_I4:
                 case CorElementType.ELEMENT_TYPE_U4:
-                    return Unsafe.As<byte, uint>(ref pThisValue) == Unsafe.As<byte, uint>(ref pOtherValue);
+                    return Unsafe.ReadUnaligned<uint>(ref pThisValue) == Unsafe.ReadUnaligned<uint>(ref pOtherValue);
 
                 case CorElementType.ELEMENT_TYPE_I8:
                 case CorElementType.ELEMENT_TYPE_U8:
-                    return Unsafe.As<byte, ulong>(ref pThisValue) == Unsafe.As<byte, ulong>(ref pOtherValue);
+                    return Unsafe.ReadUnaligned<ulong>(ref pThisValue) == Unsafe.ReadUnaligned<ulong>(ref pOtherValue);
 
 #if RARE_ENUMS
                 case CorElementType.ELEMENT_TYPE_BOOLEAN:
@@ -1256,21 +1256,21 @@ namespace System
             ref byte data = ref this.GetRawData();
             return InternalGetCorElementType() switch
             {
-                CorElementType.ELEMENT_TYPE_I1 => Unsafe.As<byte, sbyte>(ref data).GetHashCode(),
+                CorElementType.ELEMENT_TYPE_I1 => Unsafe.ReadUnaligned<sbyte>(ref data).GetHashCode(),
                 CorElementType.ELEMENT_TYPE_U1 => data.GetHashCode(),
-                CorElementType.ELEMENT_TYPE_I2 => Unsafe.As<byte, short>(ref data).GetHashCode(),
-                CorElementType.ELEMENT_TYPE_U2 => Unsafe.As<byte, ushort>(ref data).GetHashCode(),
-                CorElementType.ELEMENT_TYPE_I4 => Unsafe.As<byte, int>(ref data).GetHashCode(),
-                CorElementType.ELEMENT_TYPE_U4 => Unsafe.As<byte, uint>(ref data).GetHashCode(),
-                CorElementType.ELEMENT_TYPE_I8 => Unsafe.As<byte, long>(ref data).GetHashCode(),
-                CorElementType.ELEMENT_TYPE_U8 => Unsafe.As<byte, ulong>(ref data).GetHashCode(),
+                CorElementType.ELEMENT_TYPE_I2 => Unsafe.ReadUnaligned<short>(ref data).GetHashCode(),
+                CorElementType.ELEMENT_TYPE_U2 => Unsafe.ReadUnaligned<ushort>(ref data).GetHashCode(),
+                CorElementType.ELEMENT_TYPE_I4 => Unsafe.ReadUnaligned<int>(ref data).GetHashCode(),
+                CorElementType.ELEMENT_TYPE_U4 => Unsafe.ReadUnaligned<uint>(ref data).GetHashCode(),
+                CorElementType.ELEMENT_TYPE_I8 => Unsafe.ReadUnaligned<long>(ref data).GetHashCode(),
+                CorElementType.ELEMENT_TYPE_U8 => Unsafe.ReadUnaligned<ulong>(ref data).GetHashCode(),
 #if RARE_ENUMS
-                CorElementType.ELEMENT_TYPE_R4 => Unsafe.As<byte, float>(ref data).GetHashCode(),
-                CorElementType.ELEMENT_TYPE_R8 => Unsafe.As<byte, double>(ref data).GetHashCode(),
-                CorElementType.ELEMENT_TYPE_I => Unsafe.As<byte, IntPtr>(ref data).GetHashCode(),
-                CorElementType.ELEMENT_TYPE_U => Unsafe.As<byte, UIntPtr>(ref data).GetHashCode(),
-                CorElementType.ELEMENT_TYPE_CHAR => Unsafe.As<byte, char>(ref data).GetHashCode(),
-                CorElementType.ELEMENT_TYPE_BOOLEAN => Unsafe.As<byte, bool>(ref data).GetHashCode(),
+                CorElementType.ELEMENT_TYPE_R4 => Unsafe.ReadUnaligned<float>(ref data).GetHashCode(),
+                CorElementType.ELEMENT_TYPE_R8 => Unsafe.ReadUnaligned<double>(ref data).GetHashCode(),
+                CorElementType.ELEMENT_TYPE_I => Unsafe.ReadUnaligned<IntPtr>(ref data).GetHashCode(),
+                CorElementType.ELEMENT_TYPE_U => Unsafe.ReadUnaligned<UIntPtr>(ref data).GetHashCode(),
+                CorElementType.ELEMENT_TYPE_CHAR => Unsafe.ReadUnaligned<char>(ref data).GetHashCode(),
+                CorElementType.ELEMENT_TYPE_BOOLEAN => Unsafe.ReadUnaligned<bool>(ref data).GetHashCode(),
 #endif
                 _ => throw CreateUnknownEnumTypeException(),
             };
@@ -1294,35 +1294,35 @@ namespace System
             switch (InternalGetCorElementType())
             {
                 case CorElementType.ELEMENT_TYPE_I1:
-                    return Unsafe.As<byte, sbyte>(ref pThisValue).CompareTo(Unsafe.As<byte, sbyte>(ref pTargetValue));
+                    return Unsafe.ReadUnaligned<sbyte>(ref pThisValue).CompareTo(Unsafe.ReadUnaligned<sbyte>(ref pTargetValue));
 
                 case CorElementType.ELEMENT_TYPE_U1:
                     return pThisValue.CompareTo(pTargetValue);
 
                 case CorElementType.ELEMENT_TYPE_I2:
-                    return Unsafe.As<byte, short>(ref pThisValue).CompareTo(Unsafe.As<byte, short>(ref pTargetValue));
+                    return Unsafe.ReadUnaligned<short>(ref pThisValue).CompareTo(Unsafe.ReadUnaligned<short>(ref pTargetValue));
 
                 case CorElementType.ELEMENT_TYPE_U2:
-                    return Unsafe.As<byte, ushort>(ref pThisValue).CompareTo(Unsafe.As<byte, ushort>(ref pTargetValue));
+                    return Unsafe.ReadUnaligned<ushort>(ref pThisValue).CompareTo(Unsafe.ReadUnaligned<ushort>(ref pTargetValue));
 
                 case CorElementType.ELEMENT_TYPE_I4:
-                    return Unsafe.As<byte, int>(ref pThisValue).CompareTo(Unsafe.As<byte, int>(ref pTargetValue));
+                    return Unsafe.ReadUnaligned<int>(ref pThisValue).CompareTo(Unsafe.ReadUnaligned<int>(ref pTargetValue));
 
                 case CorElementType.ELEMENT_TYPE_U4:
-                    return Unsafe.As<byte, uint>(ref pThisValue).CompareTo(Unsafe.As<byte, uint>(ref pTargetValue));
+                    return Unsafe.ReadUnaligned<uint>(ref pThisValue).CompareTo(Unsafe.ReadUnaligned<uint>(ref pTargetValue));
 
                 case CorElementType.ELEMENT_TYPE_I8:
-                    return Unsafe.As<byte, long>(ref pThisValue).CompareTo(Unsafe.As<byte, long>(ref pTargetValue));
+                    return Unsafe.ReadUnaligned<long>(ref pThisValue).CompareTo(Unsafe.ReadUnaligned<long>(ref pTargetValue));
 
                 case CorElementType.ELEMENT_TYPE_U8:
-                    return Unsafe.As<byte, ulong>(ref pThisValue).CompareTo(Unsafe.As<byte, ulong>(ref pTargetValue));
+                    return Unsafe.ReadUnaligned<ulong>(ref pThisValue).CompareTo(Unsafe.ReadUnaligned<ulong>(ref pTargetValue));
 
 #if RARE_ENUMS
                 case CorElementType.ELEMENT_TYPE_R4:
-                    return Unsafe.As<byte, float>(ref pThisValue).CompareTo(Unsafe.As<byte, float>(ref pTargetValue));
+                    return Unsafe.ReadUnaligned<float>(ref pThisValue).CompareTo(Unsafe.ReadUnaligned<float>(ref pTargetValue));
 
                 case CorElementType.ELEMENT_TYPE_R8:
-                    return Unsafe.As<byte, double>(ref pThisValue).CompareTo(Unsafe.As<byte, double>(ref pTargetValue));
+                    return Unsafe.ReadUnaligned<double>(ref pThisValue).CompareTo(Unsafe.ReadUnaligned<double>(ref pTargetValue));
 
                 case CorElementType.ELEMENT_TYPE_BOOLEAN:
                     goto case CorElementType.ELEMENT_TYPE_U1;
@@ -1466,7 +1466,7 @@ namespace System
         {
             AssertValidGenerics<TUnderlying, TStorage>();
 
-            TStorage value = Unsafe.As<byte, TStorage>(ref rawData);
+            TStorage value = Unsafe.ReadUnaligned<TStorage>(ref rawData);
 
             EnumInfo<TStorage> enumInfo = GetEnumInfo<TStorage>(enumType);
             string? result = enumInfo.HasFlagsAttribute ?
@@ -1496,7 +1496,7 @@ namespace System
         {
             AssertValidGenerics<TUnderlying, TStorage>();
 
-            TStorage value = Unsafe.As<byte, TStorage>(ref rawData);
+            TStorage value = Unsafe.ReadUnaligned<TStorage>(ref rawData);
 
             string? result;
             switch (format | 0x20)
@@ -1563,7 +1563,7 @@ namespace System
                          typeof(TStorage) == typeof(short) ||
                          typeof(TStorage) == typeof(char))
                 {
-                    ushort value = Unsafe.As<byte, ushort>(ref data);
+                    ushort value = Unsafe.ReadUnaligned<ushort>(ref data);
                     HexConverter.ToCharsBuffer((byte)(value >> 8), destination);
                     HexConverter.ToCharsBuffer((byte)value, destination, 2);
                 }
@@ -1574,7 +1574,7 @@ namespace System
 #endif
                          typeof(TStorage) == typeof(int))
                 {
-                    uint value = Unsafe.As<byte, uint>(ref data);
+                    uint value = Unsafe.ReadUnaligned<uint>(ref data);
                     HexConverter.ToCharsBuffer((byte)(value >> 24), destination);
                     HexConverter.ToCharsBuffer((byte)(value >> 16), destination, 2);
                     HexConverter.ToCharsBuffer((byte)(value >> 8), destination, 4);
@@ -1587,7 +1587,7 @@ namespace System
 #endif
                          typeof(TStorage) == typeof(long))
                 {
-                    ulong value = Unsafe.As<byte, ulong>(ref data);
+                    ulong value = Unsafe.ReadUnaligned<ulong>(ref data);
                     HexConverter.ToCharsBuffer((byte)(value >> 56), destination);
                     HexConverter.ToCharsBuffer((byte)(value >> 48), destination, 2);
                     HexConverter.ToCharsBuffer((byte)(value >> 40), destination, 4);
@@ -1694,20 +1694,20 @@ namespace System
             {
                 return corElementType switch
                 {
-                    CorElementType.ELEMENT_TYPE_I1 => TryFormatPrimitiveDefault<sbyte, byte>(enumType, (sbyte)rawData, destination, out charsWritten),
+                    CorElementType.ELEMENT_TYPE_I1 => TryFormatPrimitiveDefault<sbyte, byte>(enumType, Unsafe.ReadUnaligned<sbyte>(ref rawData), destination, out charsWritten),
                     CorElementType.ELEMENT_TYPE_U1 => TryFormatPrimitiveDefault<byte, byte>(enumType, rawData, destination, out charsWritten),
-                    CorElementType.ELEMENT_TYPE_I2 => TryFormatPrimitiveDefault<short, ushort>(enumType, Unsafe.As<byte, short>(ref rawData), destination, out charsWritten),
-                    CorElementType.ELEMENT_TYPE_U2 => TryFormatPrimitiveDefault<ushort, ushort>(enumType, Unsafe.As<byte, ushort>(ref rawData), destination, out charsWritten),
-                    CorElementType.ELEMENT_TYPE_I4 => TryFormatPrimitiveDefault<int, uint>(enumType, Unsafe.As<byte, int>(ref rawData), destination, out charsWritten),
-                    CorElementType.ELEMENT_TYPE_U4 => TryFormatPrimitiveDefault<uint, uint>(enumType, Unsafe.As<byte, uint>(ref rawData), destination, out charsWritten),
-                    CorElementType.ELEMENT_TYPE_I8 => TryFormatPrimitiveDefault<long, ulong>(enumType, Unsafe.As<byte, long>(ref rawData), destination, out charsWritten),
-                    CorElementType.ELEMENT_TYPE_U8 => TryFormatPrimitiveDefault<ulong, ulong>(enumType, Unsafe.As<byte, ulong>(ref rawData), destination, out charsWritten),
+                    CorElementType.ELEMENT_TYPE_I2 => TryFormatPrimitiveDefault<short, ushort>(enumType, Unsafe.ReadUnaligned<short>(ref rawData), destination, out charsWritten),
+                    CorElementType.ELEMENT_TYPE_U2 => TryFormatPrimitiveDefault<ushort, ushort>(enumType, Unsafe.ReadUnaligned<ushort>(ref rawData), destination, out charsWritten),
+                    CorElementType.ELEMENT_TYPE_I4 => TryFormatPrimitiveDefault<int, uint>(enumType, Unsafe.ReadUnaligned<int>(ref rawData), destination, out charsWritten),
+                    CorElementType.ELEMENT_TYPE_U4 => TryFormatPrimitiveDefault<uint, uint>(enumType, Unsafe.ReadUnaligned<uint>(ref rawData), destination, out charsWritten),
+                    CorElementType.ELEMENT_TYPE_I8 => TryFormatPrimitiveDefault<long, ulong>(enumType, Unsafe.ReadUnaligned<long>(ref rawData), destination, out charsWritten),
+                    CorElementType.ELEMENT_TYPE_U8 => TryFormatPrimitiveDefault<ulong, ulong>(enumType, Unsafe.ReadUnaligned<ulong>(ref rawData), destination, out charsWritten),
 #if RARE_ENUMS
-                    CorElementType.ELEMENT_TYPE_R4 => TryFormatPrimitiveDefault<float, float>(enumType, Unsafe.As<byte, float>(ref rawData), destination, out charsWritten),
-                    CorElementType.ELEMENT_TYPE_R8 => TryFormatPrimitiveDefault<double, double>(enumType, Unsafe.As<byte, double>(ref rawData), destination, out charsWritten),
-                    CorElementType.ELEMENT_TYPE_I => TryFormatPrimitiveDefault<nint, nuint>(enumType, Unsafe.As<byte, nint>(ref rawData), destination, out charsWritten),
-                    CorElementType.ELEMENT_TYPE_U => TryFormatPrimitiveDefault<nuint, nuint>(enumType, Unsafe.As<byte, nuint>(ref rawData), destination, out charsWritten),
-                    CorElementType.ELEMENT_TYPE_CHAR => TryFormatPrimitiveDefault<char, char>(enumType, Unsafe.As<byte, char>(ref rawData), destination, out charsWritten),
+                    CorElementType.ELEMENT_TYPE_R4 => TryFormatPrimitiveDefault<float, float>(enumType, Unsafe.ReadUnaligned<float>(ref rawData), destination, out charsWritten),
+                    CorElementType.ELEMENT_TYPE_R8 => TryFormatPrimitiveDefault<double, double>(enumType, Unsafe.ReadUnaligned<double>(ref rawData), destination, out charsWritten),
+                    CorElementType.ELEMENT_TYPE_I => TryFormatPrimitiveDefault<nint, nuint>(enumType, Unsafe.ReadUnaligned<nint>(ref rawData), destination, out charsWritten),
+                    CorElementType.ELEMENT_TYPE_U => TryFormatPrimitiveDefault<nuint, nuint>(enumType, Unsafe.ReadUnaligned<nuint>(ref rawData), destination, out charsWritten),
+                    CorElementType.ELEMENT_TYPE_CHAR => TryFormatPrimitiveDefault<char, char>(enumType, Unsafe.ReadUnaligned<char>(ref rawData), destination, out charsWritten),
 #endif
                     _ => throw CreateUnknownEnumTypeException(),
                 };
@@ -1718,18 +1718,18 @@ namespace System
                 {
                     CorElementType.ELEMENT_TYPE_I1 => TryFormatPrimitiveNonDefault<sbyte, byte>(enumType, (sbyte)rawData, destination, out charsWritten, format),
                     CorElementType.ELEMENT_TYPE_U1 => TryFormatPrimitiveNonDefault<byte, byte>(enumType, rawData, destination, out charsWritten, format),
-                    CorElementType.ELEMENT_TYPE_I2 => TryFormatPrimitiveNonDefault<short, ushort>(enumType, Unsafe.As<byte, short>(ref rawData), destination, out charsWritten, format),
-                    CorElementType.ELEMENT_TYPE_U2 => TryFormatPrimitiveNonDefault<ushort, ushort>(enumType, Unsafe.As<byte, ushort>(ref rawData), destination, out charsWritten, format),
-                    CorElementType.ELEMENT_TYPE_I4 => TryFormatPrimitiveNonDefault<int, uint>(enumType, Unsafe.As<byte, int>(ref rawData), destination, out charsWritten, format),
-                    CorElementType.ELEMENT_TYPE_U4 => TryFormatPrimitiveNonDefault<uint, uint>(enumType, Unsafe.As<byte, uint>(ref rawData), destination, out charsWritten, format),
-                    CorElementType.ELEMENT_TYPE_I8 => TryFormatPrimitiveNonDefault<long, ulong>(enumType, Unsafe.As<byte, long>(ref rawData), destination, out charsWritten, format),
-                    CorElementType.ELEMENT_TYPE_U8 => TryFormatPrimitiveNonDefault<ulong, ulong>(enumType, Unsafe.As<byte, ulong>(ref rawData), destination, out charsWritten, format),
+                    CorElementType.ELEMENT_TYPE_I2 => TryFormatPrimitiveNonDefault<short, ushort>(enumType, Unsafe.ReadUnaligned<short>(ref rawData), destination, out charsWritten, format),
+                    CorElementType.ELEMENT_TYPE_U2 => TryFormatPrimitiveNonDefault<ushort, ushort>(enumType, Unsafe.ReadUnaligned<ushort>(ref rawData), destination, out charsWritten, format),
+                    CorElementType.ELEMENT_TYPE_I4 => TryFormatPrimitiveNonDefault<int, uint>(enumType, Unsafe.ReadUnaligned<int>(ref rawData), destination, out charsWritten, format),
+                    CorElementType.ELEMENT_TYPE_U4 => TryFormatPrimitiveNonDefault<uint, uint>(enumType, Unsafe.ReadUnaligned<uint>(ref rawData), destination, out charsWritten, format),
+                    CorElementType.ELEMENT_TYPE_I8 => TryFormatPrimitiveNonDefault<long, ulong>(enumType, Unsafe.ReadUnaligned<long>(ref rawData), destination, out charsWritten, format),
+                    CorElementType.ELEMENT_TYPE_U8 => TryFormatPrimitiveNonDefault<ulong, ulong>(enumType, Unsafe.ReadUnaligned<ulong>(ref rawData), destination, out charsWritten, format),
 #if RARE_ENUMS
-                    CorElementType.ELEMENT_TYPE_R4 => TryFormatPrimitiveNonDefault<float, float>(enumType, Unsafe.As<byte, float>(ref rawData), destination, out charsWritten, format),
-                    CorElementType.ELEMENT_TYPE_R8 => TryFormatPrimitiveNonDefault<double, double>(enumType, Unsafe.As<byte, double>(ref rawData), destination, out charsWritten, format),
-                    CorElementType.ELEMENT_TYPE_I => TryFormatPrimitiveNonDefault<nint, nuint>(enumType, Unsafe.As<byte, nint>(ref rawData), destination, out charsWritten, format),
-                    CorElementType.ELEMENT_TYPE_U => TryFormatPrimitiveNonDefault<nuint, nuint>(enumType, Unsafe.As<byte, nuint>(ref rawData), destination, out charsWritten, format),
-                    CorElementType.ELEMENT_TYPE_CHAR => TryFormatPrimitiveNonDefault<char, char>(enumType, Unsafe.As<byte, char>(ref rawData), destination, out charsWritten, format),
+                    CorElementType.ELEMENT_TYPE_R4 => TryFormatPrimitiveNonDefault<float, float>(enumType, Unsafe.ReadUnaligned<float>(ref rawData), destination, out charsWritten, format),
+                    CorElementType.ELEMENT_TYPE_R8 => TryFormatPrimitiveNonDefault<double, double>(enumType, Unsafe.ReadUnaligned<double>(ref rawData), destination, out charsWritten, format),
+                    CorElementType.ELEMENT_TYPE_I => TryFormatPrimitiveNonDefault<nint, nuint>(enumType, Unsafe.ReadUnaligned<nint>(ref rawData), destination, out charsWritten, format),
+                    CorElementType.ELEMENT_TYPE_U => TryFormatPrimitiveNonDefault<nuint, nuint>(enumType, Unsafe.ReadUnaligned<nuint>(ref rawData), destination, out charsWritten, format),
+                    CorElementType.ELEMENT_TYPE_CHAR => TryFormatPrimitiveNonDefault<char, char>(enumType, Unsafe.ReadUnaligned<char>(ref rawData), destination, out charsWritten, format),
 #endif
                     _ => throw CreateUnknownEnumTypeException(),
                 };

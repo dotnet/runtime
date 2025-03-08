@@ -246,7 +246,7 @@ namespace Internal.Runtime.Augments
             if (fieldType.ToMethodTable()->IsFunctionPointer)
                 return RuntimeExports.RhBox(MethodTable.Of<IntPtr>(), ref address);
 
-            return ReflectionPointer.Box((void*)Unsafe.As<byte, IntPtr>(ref address), Type.GetTypeFromHandle(fieldType));
+            return ReflectionPointer.Box((void*)Unsafe.ReadUnaligned<IntPtr>(ref address), Type.GetTypeFromHandle(fieldType));
         }
 
         public static unsafe void StoreReferenceTypeField(IntPtr address, object fieldValue)
@@ -268,7 +268,7 @@ namespace Internal.Runtime.Augments
         public static object LoadReferenceTypeField(object obj, int fieldOffset)
         {
             ref byte address = ref Unsafe.AddByteOffset(ref obj.GetRawData(), new IntPtr(fieldOffset - ObjectHeaderSize));
-            return Unsafe.As<byte, object>(ref address);
+            return Unsafe.ReadUnaligned<object>(ref address);
         }
 
         [CLSCompliant(false)]
@@ -293,7 +293,7 @@ namespace Internal.Runtime.Augments
         {
             Debug.Assert(TypedReference.TargetTypeToken(typedReference).ToMethodTable()->IsValueType);
 
-            Unsafe.As<byte, object>(ref Unsafe.Add<byte>(ref typedReference.Value, fieldOffset)) = fieldValue;
+            Unsafe.WriteUnaligned(ref Unsafe.Add<byte>(ref typedReference.Value, fieldOffset), fieldValue);
         }
 
         [CLSCompliant(false)]
@@ -301,7 +301,7 @@ namespace Internal.Runtime.Augments
         {
             Debug.Assert(TypedReference.TargetTypeToken(typedReference).ToMethodTable()->IsValueType);
 
-            return Unsafe.As<byte, object>(ref Unsafe.Add<byte>(ref typedReference.Value, fieldOffset));
+            return Unsafe.ReadUnaligned<object>(ref Unsafe.Add<byte>(ref typedReference.Value, fieldOffset));
         }
 
         [CLSCompliant(false)]

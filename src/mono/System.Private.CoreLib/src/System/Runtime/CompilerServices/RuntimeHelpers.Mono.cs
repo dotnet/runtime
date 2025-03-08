@@ -246,7 +246,7 @@ namespace System.Runtime.CompilerServices
 
             if (!rtType.IsValueType)
             {
-                return Unsafe.As<byte, object?>(ref target);
+                return Unsafe.ReadUnaligned<object?>(ref target);
             }
 
             if (rtType.IsByRefLike)

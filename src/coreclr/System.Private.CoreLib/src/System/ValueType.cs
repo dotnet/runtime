@@ -123,15 +123,15 @@ namespace System
                 switch (GetHashCodeStrategy(pMT, ObjectHandleOnStack.Create(ref thisRef), out uint fieldOffset, out uint fieldSize, out MethodTable* fieldMT))
                 {
                     case ValueTypeHashCodeStrategy.ReferenceField:
-                        hashCode.Add(Unsafe.As<byte, object>(ref Unsafe.AddByteOffset(ref rawData, fieldOffset)).GetHashCode());
+                        hashCode.Add(Unsafe.ReadUnaligned<object>(ref Unsafe.AddByteOffset(ref rawData, fieldOffset)).GetHashCode());
                         break;
 
                     case ValueTypeHashCodeStrategy.DoubleField:
-                        hashCode.Add(Unsafe.As<byte, double>(ref Unsafe.AddByteOffset(ref rawData, fieldOffset)).GetHashCode());
+                        hashCode.Add(Unsafe.ReadUnaligned<double>(ref Unsafe.AddByteOffset(ref rawData, fieldOffset)).GetHashCode());
                         break;
 
                     case ValueTypeHashCodeStrategy.SingleField:
-                        hashCode.Add(Unsafe.As<byte, float>(ref Unsafe.AddByteOffset(ref rawData, fieldOffset)).GetHashCode());
+                        hashCode.Add(Unsafe.ReadUnaligned<float>(ref Unsafe.AddByteOffset(ref rawData, fieldOffset)).GetHashCode());
                         break;
 
                     case ValueTypeHashCodeStrategy.FastGetHashCode:

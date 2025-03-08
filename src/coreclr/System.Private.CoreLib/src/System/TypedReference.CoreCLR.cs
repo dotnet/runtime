@@ -66,7 +66,7 @@ namespace System
             }
             else
             {
-                result = Unsafe.As<byte, object>(ref value._value);
+                result = Unsafe.ReadUnaligned<object>(ref value._value);
             }
 
             return result;

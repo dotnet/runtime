@@ -101,39 +101,39 @@ namespace System
             switch (elementType)
             {
                 case EETypeElementType.Char:
-                    result = (ulong)(long)Unsafe.As<byte, char>(ref pValue);
+                    result = (ulong)(long)Unsafe.ReadUnaligned<char>(ref pValue);
                     return true;
 
                 case EETypeElementType.SByte:
-                    result = (ulong)(long)Unsafe.As<byte, sbyte>(ref pValue);
+                    result = (ulong)(long)Unsafe.ReadUnaligned<sbyte>(ref pValue);
                     return true;
 
                 case EETypeElementType.Byte:
-                    result = (ulong)(long)Unsafe.As<byte, byte>(ref pValue);
+                    result = (ulong)(long)Unsafe.ReadUnaligned<byte>(ref pValue);
                     return true;
 
                 case EETypeElementType.Int16:
-                    result = (ulong)(long)Unsafe.As<byte, short>(ref pValue);
+                    result = (ulong)(long)Unsafe.ReadUnaligned<short>(ref pValue);
                     return true;
 
                 case EETypeElementType.UInt16:
-                    result = (ulong)(long)Unsafe.As<byte, ushort>(ref pValue);
+                    result = (ulong)(long)Unsafe.ReadUnaligned<ushort>(ref pValue);
                     return true;
 
                 case EETypeElementType.Int32:
-                    result = (ulong)(long)Unsafe.As<byte, int>(ref pValue);
+                    result = (ulong)(long)Unsafe.ReadUnaligned<int>(ref pValue);
                     return true;
 
                 case EETypeElementType.UInt32:
-                    result = (ulong)(long)Unsafe.As<byte, uint>(ref pValue);
+                    result = (ulong)(long)Unsafe.ReadUnaligned<uint>(ref pValue);
                     return true;
 
                 case EETypeElementType.Int64:
-                    result = (ulong)(long)Unsafe.As<byte, long>(ref pValue);
+                    result = (ulong)(long)Unsafe.ReadUnaligned<long>(ref pValue);
                     return true;
 
                 case EETypeElementType.UInt64:
-                    result = (ulong)(long)Unsafe.As<byte, ulong>(ref pValue);
+                    result = (ulong)(long)Unsafe.ReadUnaligned<ulong>(ref pValue);
                     return true;
 
                 default:

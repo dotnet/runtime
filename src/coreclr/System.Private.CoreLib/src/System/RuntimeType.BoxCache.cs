@@ -69,7 +69,7 @@ namespace System
                 {
                     // If the allocator is null, then we shouldn't allocate and make a copy,
                     // we should return the data as the object it currently is.
-                    return Unsafe.As<byte, object>(ref data);
+                    return Unsafe.ReadUnaligned<object>(ref data);
                 }
 
                 ref byte source = ref data;

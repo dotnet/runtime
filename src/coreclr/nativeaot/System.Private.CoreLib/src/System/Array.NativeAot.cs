@@ -773,7 +773,7 @@ namespace System
             else
             {
                 Debug.Assert(!pElementEEType->IsPointer && !pElementEEType->IsFunctionPointer);
-                return Unsafe.As<byte, object>(ref element);
+                return Unsafe.ReadUnaligned<object>(ref element);
             }
         }
 
@@ -809,7 +809,7 @@ namespace System
                 {
                     throw new InvalidCastException(SR.InvalidCast_StoreArrayElement);
                 }
-                Unsafe.As<byte, object?>(ref element) = value;
+                Unsafe.WriteUnaligned(ref element, value);
             }
         }
 
