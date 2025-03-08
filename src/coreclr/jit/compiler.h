@@ -6590,7 +6590,7 @@ private:
 #endif // FEATURE_SIMD
     GenTree* fgMorphIndexAddr(GenTreeIndexAddr* tree);
     GenTree* fgMorphExpandCast(GenTreeCast* tree);
-    GenTreeFieldList* fgMorphLclArgToFieldList(GenTreeLclVarCommon* lcl);
+    GenTreeFieldList* fgMorphLclToFieldList(GenTreeLclVar* lcl);
     GenTreeCall* fgMorphArgs(GenTreeCall* call);
 
     void fgMakeOutgoingStructArgCopy(GenTreeCall* call, CallArg* arg);
@@ -6665,7 +6665,7 @@ public:
     GenTree* fgMorphCopyBlock(GenTree* tree);
 private:
     GenTree* fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac, bool* optAssertionPropDone = nullptr);
-    void fgTryReplaceStructLocalWithField(GenTree* tree);
+    void fgTryReplaceStructLocalWithFields(GenTree** use);
     GenTree* fgMorphFinalizeIndir(GenTreeIndir* indir);
     GenTree* fgOptimizeCast(GenTreeCast* cast);
     GenTree* fgOptimizeCastOnStore(GenTree* store);

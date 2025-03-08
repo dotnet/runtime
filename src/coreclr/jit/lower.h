@@ -51,15 +51,23 @@ private:
     // LowerRange handles new code that is introduced by or after Lowering.
     void LowerRange(LIR::ReadOnlyRange& range)
     {
-        for (GenTree* newNode : range)
-        {
-            LowerNode(newNode);
-        }
+        LowerRange(range.FirstNode(), range.LastNode());
     }
     void LowerRange(GenTree* firstNode, GenTree* lastNode)
     {
-        LIR::ReadOnlyRange range(firstNode, lastNode);
-        LowerRange(range);
+        GenTree* cur = firstNode;
+
+        while (true)
+        {
+            GenTree* next = LowerNode(cur);
+            if (cur == lastNode)
+            {
+                break;
+            }
+
+            cur = next;
+            assert(cur != nullptr);
+        }
     }
 
     // ContainCheckRange handles new code that is introduced by or after Lowering,
@@ -171,6 +179,7 @@ private:
     void       LowerRetSingleRegStructLclVar(GenTreeUnOp* ret);
     void       LowerRetFieldList(GenTreeOp* ret, GenTreeFieldList* fieldList);
     bool       IsFieldListCompatibleWithReturn(GenTreeFieldList* fieldList);
+    void       LowerFieldListToFieldListOfRegisters(GenTreeFieldList* fieldList);
     void       LowerCallStruct(GenTreeCall* call);
     void       LowerStoreSingleRegCallStruct(GenTreeBlk* store);
 #if !defined(WINDOWS_AMD64_ABI)
@@ -387,6 +396,7 @@ private:
     void     LowerPutArgStkOrSplit(GenTreePutArgStk* putArgNode);
     GenTree* LowerArrLength(GenTreeArrCommon* node);
 
+    bool TryRemoveCast(GenTreeCast* node);
     bool TryRemoveBitCast(GenTreeUnOp* node);
 
 #ifdef TARGET_XARCH
