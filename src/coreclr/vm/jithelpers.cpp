@@ -121,7 +121,7 @@ extern "C" HCIMPL0(void, JIT_ThrowOverflow)
 {
     FCALL_CONTRACT;
 
-    FCThrow(kOverflowException);
+    FCThrowRetVoid(kOverflowException);
 }
 HCIMPLEND
 
@@ -129,7 +129,7 @@ extern "C" HCIMPL0(void, JIT_ThrowDivideByZero)
 {
     FCALL_CONTRACT;
 
-    FCThrow(kDivideByZeroException);
+    FCThrowRetVoid(kDivideByZeroException);
 }
 HCIMPLEND
 
@@ -3499,7 +3499,7 @@ extern "C" HCIMPL2(UINT32, JIT_ThrowDivideByZero_RetUInt, UINT32 a, UINT32 b)
 }
 HCIMPLEND
 
-extern "C" HCIMPL2(INT64, JIT_ThrowOverflow_RetInt64. INT64 a, INT64 b)
+extern "C" HCIMPL2(INT64, JIT_ThrowOverflow_RetInt64, INT64 a, INT64 b)
 {
     FCALL_CONTRACT;
 
@@ -3507,7 +3507,7 @@ extern "C" HCIMPL2(INT64, JIT_ThrowOverflow_RetInt64. INT64 a, INT64 b)
 }
 HCIMPLEND
 
-extern "C" HCIMPL2(INT64, JIT_ThrowDivideByZero_RetInt64. INT64 a, INT64 b)
+extern "C" HCIMPL2(INT64, JIT_ThrowDivideByZero_RetInt64, INT64 a, INT64 b)
 {
     FCALL_CONTRACT;
 
@@ -3515,7 +3515,7 @@ extern "C" HCIMPL2(INT64, JIT_ThrowDivideByZero_RetInt64. INT64 a, INT64 b)
 }
 HCIMPLEND
 
-extern "C" HCIMPL2(UINT64, JIT_ThrowDivideByZero_RetUInt64. UINT64 a, UINT64 b)
+extern "C" HCIMPL2(UINT64, JIT_ThrowDivideByZero_RetUInt64, UINT64 a, UINT64 b)
 {
     FCALL_CONTRACT;
 
