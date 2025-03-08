@@ -12,7 +12,7 @@ namespace System.Runtime.InteropServices
 
         public static string OSDescription => s_osDescription ??=
 #if TARGET_ANDROID
-            $"Android (API {Environment.OSVersion.Version.Major})";
+            $"Android (API level {Environment.OSVersion.Version.Major})";
 #elif TARGET_OSX
             $"macOS {Environment.OSVersion.Version}";
 #elif TARGET_MACCATALYST
