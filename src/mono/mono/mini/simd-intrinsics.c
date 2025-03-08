@@ -1911,15 +1911,15 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 		// but, they all prefix the qualified name of the interface first, so we'll check for that and
 		// skip the prefix before trying to resolve the method.
 
-		if (strncmp(cmethod_name + 70, "<T>,T>.", 7) == 0) {
-			cmethod_name += 77;
-		} else if (strncmp(cmethod_name + 70, "64<T>,T>.", 9) == 0) {
+		if (strncmp(cmethod_name + 70, "64<T>,T>.", 9) == 0) {
 			cmethod_name += 79;
 		} else if ((strncmp(cmethod_name + 70, "128<T>,T>.", 10) == 0) ||
 			(strncmp(cmethod_name + 70, "256<T>,T>.", 10) == 0) ||
 			(strncmp(cmethod_name + 70, "512<T>,T>.", 10) == 0)) {
 			cmethod_name += 80;
 		}
+	} else if (strncmp(cmethod_name, "System.Runtime.Intrinsics.ISimdVector<System.Numerics.Vector<T>,T>.", 67) == 0) {
+		cmethod_name += 67;
 	}
 
 	int id = lookup_intrins (sri_vector_methods, sizeof (sri_vector_methods), cmethod_name);
@@ -3376,10 +3376,7 @@ emit_sri_vector_t (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *f
 		// but, they all prefix the qualified name of the interface first, so we'll check for that and
 		// skip the prefix before trying to resolve the method.
 
-		if (strncmp(cmethod_name + 70, "<T>,T>.", 7) == 0) {
-			cmethod_name += 77;
-			explicitly_implemented = true;
-		} else if (strncmp(cmethod_name + 70, "64<T>,T>.", 9) == 0) {
+		if (strncmp(cmethod_name + 70, "64<T>,T>.", 9) == 0) {
 			cmethod_name += 79;
 			explicitly_implemented = true;
 		} else if ((strncmp(cmethod_name + 70, "128<T>,T>.", 10) == 0) ||
@@ -3388,6 +3385,9 @@ emit_sri_vector_t (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *f
 			cmethod_name += 80;
 			explicitly_implemented = true;
 		}
+	} else if (strncmp(cmethod_name, "System.Runtime.Intrinsics.ISimdVector<System.Numerics.Vector<T>,T>.", 67) == 0) {
+		cmethod_name += 67;
+		explicitly_implemented = true;
 	}
 
 	int id = lookup_intrins (sri_vector_t_methods, sizeof (sri_vector_t_methods), cmethod_name);
