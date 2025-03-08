@@ -3475,7 +3475,7 @@ void InitJITHelpers2()
 #undef return
 #endif
 
-extern "C" HCIMPL0(INT32, JIT_ThrowOverflow_RetInt)
+extern "C" HCIMPL2(INT32, JIT_ThrowOverflow_RetInt, INT32 a, INT32 b)
 {
     FCALL_CONTRACT;
 
@@ -3483,7 +3483,7 @@ extern "C" HCIMPL0(INT32, JIT_ThrowOverflow_RetInt)
 }
 HCIMPLEND
 
-extern "C" HCIMPL0(INT32, JIT_ThrowDivideByZero_RetInt)
+extern "C" HCIMPL2(INT32, JIT_ThrowDivideByZero_RetInt, INT32 a, INT32 b)
 {
     FCALL_CONTRACT;
 
@@ -3491,7 +3491,7 @@ extern "C" HCIMPL0(INT32, JIT_ThrowDivideByZero_RetInt)
 }
 HCIMPLEND
 
-extern "C" HCIMPL0(UINT32, JIT_ThrowDivideByZero_RetUInt)
+extern "C" HCIMPL2(UINT32, JIT_ThrowDivideByZero_RetUInt, UINT32 a, UINT32 b)
 {
     FCALL_CONTRACT;
 
@@ -3499,7 +3499,7 @@ extern "C" HCIMPL0(UINT32, JIT_ThrowDivideByZero_RetUInt)
 }
 HCIMPLEND
 
-extern "C" HCIMPL0(INT64, JIT_ThrowOverflow_RetInt64)
+extern "C" HCIMPL2(INT64, JIT_ThrowOverflow_RetInt64. INT64 a, INT64 b)
 {
     FCALL_CONTRACT;
 
@@ -3507,7 +3507,7 @@ extern "C" HCIMPL0(INT64, JIT_ThrowOverflow_RetInt64)
 }
 HCIMPLEND
 
-extern "C" HCIMPL0(INT32, JIT_ThrowDivideByZero_RetInt64)
+extern "C" HCIMPL2(INT64, JIT_ThrowDivideByZero_RetInt64. INT64 a, INT64 b)
 {
     FCALL_CONTRACT;
 
@@ -3515,7 +3515,7 @@ extern "C" HCIMPL0(INT32, JIT_ThrowDivideByZero_RetInt64)
 }
 HCIMPLEND
 
-extern "C" HCIMPL0(UINT32, JIT_ThrowDivideByZero_RetUInt64)
+extern "C" HCIMPL2(UINT64, JIT_ThrowDivideByZero_RetUInt64. UINT64 a, UINT64 b)
 {
     FCALL_CONTRACT;
 
@@ -3533,13 +3533,13 @@ HCIMPL2(INT32, JIT_Div, INT32 dividend, INT32 divisor)
     {
         if (divisor == 0)
         {
-            [[clang::musttail]] return JIT_ThrowDivideByZero_RetInt();
+            [[clang::musttail]] return JIT_ThrowDivideByZero_RetInt(dividend, divisor);
         }
         else if (divisor == -1)
         {
             if (dividend == INT32_MIN)
             {
-                [[clang::musttail]] return JIT_ThrowOverflow_RetInt();
+                [[clang::musttail]] return JIT_ThrowOverflow_RetInt(dividend, divisor);
             }
             return -dividend;
         }
@@ -3560,22 +3560,19 @@ HCIMPL2(INT32, JIT_Mod, INT32 dividend, INT32 divisor)
     {
         if (divisor == 0)
         {
-            [[clang::musttail]] return JIT_ThrowDivideByZero_RetInt();
+            [[clang::musttail]] return JIT_ThrowDivideByZero_RetInt(dividend, divisor);
         }
         else if (divisor == -1)
         {
             if (dividend == INT32_MIN)
             {
-                [[clang::musttail]] return JIT_ThrowOverflow_RetInt();
+                [[clang::musttail]] return JIT_ThrowOverflow_RetInt(dividend, divisor);
             }
             return 0;
         }
     }
 
     return(dividend % divisor);
-
-ThrowExcep:
-    FCThrow(ehKind);
 }
 HCIMPLEND
 
@@ -3585,7 +3582,7 @@ HCIMPL2(UINT32, JIT_UDiv, UINT32 dividend, UINT32 divisor)
     FCALL_CONTRACT;
 
     if (divisor == 0)
-        [[clang::musttail]] return JIT_ThrowDivideByZero_RetUInt();
+        [[clang::musttail]] return JIT_ThrowDivideByZero_RetUInt(dividend, divisor);
 
     return(dividend / divisor);
 }
@@ -3597,7 +3594,7 @@ HCIMPL2(UINT32, JIT_UMod, UINT32 dividend, UINT32 divisor)
     FCALL_CONTRACT;
 
     if (divisor == 0)
-        [[clang::musttail]] return JIT_ThrowDivideByZero_RetUInt();
+        [[clang::musttail]] return JIT_ThrowDivideByZero_RetUInt(dividend, divisor);
 
     return(dividend % divisor);
 }
@@ -3614,14 +3611,14 @@ HCIMPL2_VV(INT64, JIT_LDiv, INT64 divisor, INT64 dividend)
     {
         if ((INT32)divisor == 0)
         {
-            [[clang::musttail]] return JIT_ThrowDivideByZero_RetInt64();
+            [[clang::musttail]] return JIT_ThrowDivideByZero_RetInt64(divisor, dividend);
         }
 
         if ((INT32)divisor == -1)
         {
             if ((UINT64) dividend == UI64(0x8000000000000000))
             {
-                [[clang::musttail]] return JIT_ThrowOverflow_RetInt64();
+                [[clang::musttail]] return JIT_ThrowOverflow_RetInt64(divisor, dividend);
             }
             return -dividend;
         }
@@ -3633,9 +3630,6 @@ HCIMPL2_VV(INT64, JIT_LDiv, INT64 divisor, INT64 dividend)
 
     // For all other combinations fallback to int64 div.
     return(dividend / divisor);
-
-ThrowExcep:
-    FCThrow(ehKind);
 }
 HCIMPLEND
 
@@ -3650,7 +3644,7 @@ HCIMPL2_VV(INT64, JIT_LMod, INT64 divisor, INT64 dividend)
     {
         if ((INT32)divisor == 0)
         {
-            [[clang::musttail]] return JIT_ThrowDivideByZero_RetInt64();
+            [[clang::musttail]] return JIT_ThrowDivideByZero_RetInt64(divisor, dividend);
         }
 
         if ((INT32)divisor == -1)
@@ -3659,7 +3653,7 @@ HCIMPL2_VV(INT64, JIT_LMod, INT64 divisor, INT64 dividend)
             // and the spec really says that it should not throw an exception. </TODO>
             if ((UINT64) dividend == UI64(0x8000000000000000))
             {
-                [[clang::musttail]] return JIT_ThrowOverflow_RetInt64();
+                [[clang::musttail]] return JIT_ThrowOverflow_RetInt64(divisor, dividend);
             }
             return 0;
         }
@@ -3671,9 +3665,6 @@ HCIMPL2_VV(INT64, JIT_LMod, INT64 divisor, INT64 dividend)
 
     // For all other combinations fallback to int64 div.
     return(dividend % divisor);
-
-ThrowExcep:
-    FCThrow(ehKind);
 }
 HCIMPLEND
 
@@ -3685,7 +3676,7 @@ HCIMPL2_VV(UINT64, JIT_ULDiv, UINT64 divisor, UINT64 dividend)
     if (Hi32Bits(divisor) == 0)
     {
         if ((UINT32)(divisor) == 0)
-            [[clang::musttail]] return JIT_ThrowDivideByZero_RetUInt64();
+            [[clang::musttail]] return JIT_ThrowDivideByZero_RetUInt64(divisor, dividend);
 
         if (Hi32Bits(dividend) == 0)
             return((UINT32)dividend / (UINT32)divisor);
@@ -3703,7 +3694,7 @@ HCIMPL2_VV(UINT64, JIT_ULMod, UINT64 divisor, UINT64 dividend)
     if (Hi32Bits(divisor) == 0)
     {
         if ((UINT32)(divisor) == 0)
-            [[clang::musttail]] return JIT_ThrowDivideByZero_RetUInt64();
+            [[clang::musttail]] return JIT_ThrowDivideByZero_RetUInt64(divisor, dividend);
 
         if (Hi32Bits(dividend) == 0)
             return((UINT32)dividend % (UINT32)divisor);
