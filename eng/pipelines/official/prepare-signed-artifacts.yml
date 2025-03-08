@@ -1,7 +1,9 @@
 parameters:
-  PublishRidAgnosticPackagesFromPlatform: ''
-  isOfficialBuild: false
-  logArtifactName: 'Logs-PrepareSignedArtifacts_Attempt$(System.JobAttempt)'
+  - name: logArtifactName
+    type: string
+    default: 'Logs-PrepareSignedArtifacts_Attempt$(System.JobAttempt)'
+  - name: buildStage
+    type: stage
 
 jobs:
 - template: /eng/common/templates-official/job/job.yml
@@ -31,9 +33,15 @@ jobs:
         repository: self
         clean: true
         fetchDepth: 20
-      - input: pipelineArtifact
-        artifactName: IntermediateArtifacts
-        targetPath: $(Build.SourcesDirectory)\artifacts\PackageDownload\IntermediateArtifacts
+      - ${{ each job in parameters.buildStage.jobs }}:
+        # Source Build publishes itself, so we don't need to publish it
+        - ${{ if notIn(job.job, 'Source_Build_Linux_x64')}}:
+          - input: pipelineArtifact
+            artifactName: ${{ job.job }}_Artifacts
+            targetPath: $(Build.SourcesDirectory)\artifacts
+            itemPattern: |
+              **/*
+              !_manifest/**/*
       outputs:
       - output: pipelineArtifact
         displayName: 'Publish BuildLogs'
@@ -45,12 +53,11 @@ jobs:
     - script: >-
         build.cmd -restore -sign -publish -ci -configuration Release
         /p:RestoreToolsetOnly=true
-        /p:PublishRidAgnosticPackagesFromPlatform=${{ parameters.PublishRidAgnosticPackagesFromPlatform }}
-        /p:DownloadDirectory=$(Build.SourcesDirectory)\artifacts\PackageDownload\
         /p:OfficialBuildId=$(Build.BuildNumber)
         /p:SignType=$(_SignType)
         /p:DotNetSignType=$(_SignType)
         /p:DotNetPublishUsingPipelines=true
+        /p:DotNetFinalPublish=true
         /bl:$(Build.SourcesDirectory)\prepare-artifacts.binlog
       displayName: Prepare artifacts and upload to build
     

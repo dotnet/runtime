@@ -52,9 +52,26 @@ jobs:
     timeoutInMinutes: ${{ parameters.timeoutInMinutes }}
     enablePublishTestResults: ${{ parameters.enablePublishTestResults }}
     testResultsFormat: ${{ parameters.testResultsFormat }}
+    enableMicrobuild: ${{ parameters.isOfficialBuild }}
+    enableMicrobuildForMacAndLinux: ${{ parameters.isOfficialBuild }}
 
-    ${{ if ne(parameters.templateContext, '') }}:
-      templateContext: ${{ parameters.templateContext }}
+    templateContext:
+      ${{ if ne(parameters.templateContext, '') }}:
+        ${{ each pair in parameters.templateContext }}:
+          ${{ if notIn(pair.key, 'outputs') }}:
+            ${{ pair.key }}: ${{ pair.value }}
+      outputs:
+        - ${{ if ne(parameters.templateContext.outputs, '') }}:
+          - ${{ each output in parameters.templateContext.outputs }}:
+            ${{ output.key }}: ${{ output.value }}
+        - ${{ if eq(parameters.isOfficialBuild, true) }}:
+          - output: pipelineArtifact
+            displayName: 'Publish Pipeline Artifacts'
+            ${{ if eq(parameters.hostedOs, '') }}:
+              artifactName: ${{ format('build_{0}{1}_{2}_{3}_{4}_Artifacts', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig, parameters.nameSuffix) }}
+            ${{ if ne(parameters.hostedOs, '') }}:
+              artifactName: ${{ format('build_{0}{1}_{2}_{3}_{4}_{5}_Artifacts', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.hostedOs, parameters.buildConfig, parameters.nameSuffix) }}
+            targetPath: $(Build.SourcesDirectory)/artifacts/staging
 
     artifacts:
       publish:
@@ -90,6 +107,12 @@ jobs:
       - name: _archParameter
         value: -arch ${{ parameters.archType }}
 
+      - name: _AssetManifestName
+        value: ${{ parameters.osGroup }}${{ parameters.osSubgroup }}_${{ parameters.archType }}_${{ parameters.nameSuffix }}
+
+      - name: _SignType
+        value: $[ coalesce(variables.OfficialSignType, 'real') ]
+
       - ${{ if and(eq(parameters.osGroup, 'linux'), eq(parameters.osSubGroup, '_bionic')) }}:
         - name: _osParameter
           value: -os linux-bionic
@@ -117,13 +140,13 @@ jobs:
       - ${{ if ne(parameters.cxxAbiLibrary, '') }}:
         - name: CxxAbiLibraryArg
           value: /p:TargetCxxAbiLibrary=${{ parameters.cxxAbiLibrary }}
-      
+
       - name: TargetCxxLibraryConfigurationArgs
         value: $(CxxStandardLibraryArg) $(CxxStandardLibraryStaticArg) $(CxxAbiLibraryArg)
 
       - name: _officialBuildParameter
         ${{ if eq(parameters.isOfficialBuild, true) }}:
-          value: /p:OfficialBuildId=$(Build.BuildNumber)
+          value: /p:OfficialBuildId=$(Build.BuildNumber) /p:DotNetPublishUsingPipelines=true /p:SignType=$(_SignType) /p:DotNetSignType=$(_SignType)
         ${{ if ne(parameters.isOfficialBuild, true) }}:
           value: ''
 
