@@ -1404,6 +1404,7 @@ endif ; FEATURE_TIERED_COMPILATION
 
 ; Dividend is in ecx
 ; Divisor is in edx
+ALIGN 16
 FASTCALL_FUNC JIT_Div, 8
     lea     eax,[edx+1]
     cmp     eax,1
@@ -1411,8 +1412,6 @@ FASTCALL_FUNC JIT_Div, 8
 
     test    edx,edx
     je      @JIT_ThrowDivideByZero@0
-
-JIT_Div_CheckForDivisorIsMinus1:
     cmp     edx,0FFFFFFFFh
     jne     JIT_Div_DoIDIV
 
@@ -1421,7 +1420,7 @@ JIT_Div_CheckForDivisorIsMinus1:
     neg     ecx
     mov     eax,ecx
     ret
-
+ALIGN 16
 JIT_Div_DoIDIV:
     mov     eax,ecx
     mov     ecx,edx
@@ -1432,6 +1431,7 @@ FASTCALL_ENDFUNC
 
 ; Dividend is in ecx
 ; Divisor is in edx
+ALIGN 16
 FASTCALL_FUNC JIT_Mod, 8
     lea     eax,[edx+1]
     cmp     eax,1
@@ -1439,8 +1439,6 @@ FASTCALL_FUNC JIT_Mod, 8
 
     test    edx,edx
     je      @JIT_ThrowDivideByZero@0
-
-JIT_Mod_CheckForDivisorIsMinus1:
     cmp     edx,0FFFFFFFFh
     jne     JIT_Div_DoIDIV
 
@@ -1449,6 +1447,7 @@ JIT_Mod_CheckForDivisorIsMinus1:
     xor     eax,eax
     ret
 
+ALIGN 16
 JIT_Mod_DoIDIV:
     mov     eax,ecx
     mov     ecx,edx
@@ -1460,6 +1459,7 @@ FASTCALL_ENDFUNC
 
 ; Dividend is in ecx
 ; Divisor is in edx
+ALIGN 16
 FASTCALL_FUNC JIT_UDiv, 8
     test    edx,edx
     je      @JIT_ThrowDivideByZero@0
@@ -1473,6 +1473,7 @@ FASTCALL_ENDFUNC
 
 ; Dividend is in ecx
 ; Divisor is in edx
+ALIGN 16
 FASTCALL_FUNC JIT_UMod, 8
     test    edx,edx
     je      @JIT_ThrowDivideByZero@0
@@ -1496,6 +1497,7 @@ FASTCALL_ENDFUNC
 ;; dividend (hi 32 bits)
 ;; dividend (lo 32 bits)
 ;; return address
+ALIGN 16
 FASTCALL_FUNC JIT_LDiv, 16
     mov     eax,dword ptr [esp + DivisorLow32BitsOffset]
     cdq
@@ -1516,6 +1518,7 @@ JIT_LDiv_DoNegate:
     adc     edx,0
     neg     edx
     ret     10h
+ALIGN 16
 JIT_LDiv_DoDivideBy32BitDivisor:
     ; First check to see if dividend is also 32 bits
     mov     ecx, eax ; Put divisor in ecx
@@ -1534,6 +1537,7 @@ FASTCALL_ENDFUNC
 ;; dividend (hi 32 bits)
 ;; dividend (lo 32 bits)
 ;; return address
+ALIGN 16
 FASTCALL_FUNC JIT_LMod, 16
     mov     eax,dword ptr [esp + DivisorLow32BitsOffset]
     cdq
@@ -1553,6 +1557,7 @@ JIT_LMod_ReturnZero:
     xor     eax, eax
     xor     edx, edx
     ret     10h
+ALIGN 16
 JIT_LMod_DoDivideBy32BitDivisor:
     ; First check to see if dividend is also 32 bits
     mov     ecx, eax ; Put divisor in ecx
@@ -1572,6 +1577,7 @@ FASTCALL_ENDFUNC
 ;; dividend (hi 32 bits)
 ;; dividend (lo 32 bits)
 ;; return address
+ALIGN 16
 FASTCALL_FUNC JIT_ULDiv, 16
     mov     eax,dword ptr [esp + DivisorLow32BitsOffset]
     cmp     dword ptr [esp + DivisorHi32BitsOffset], 0
@@ -1595,6 +1601,7 @@ FASTCALL_ENDFUNC
 ;; dividend (hi 32 bits)
 ;; dividend (lo 32 bits)
 ;; return address
+ALIGN 16
 FASTCALL_FUNC JIT_ULMod, 16
     mov     eax,dword ptr [esp + DivisorLow32BitsOffset]
     cdq
