@@ -7452,8 +7452,19 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac, bool* optA
                 return fgMorphTree(tree);
             }
         }
+            switch (helper)
+            {
+                case CORINFO_HELP_LDIV:
+                case CORINFO_HELP_LMOD:
+                case CORINFO_HELP_ULDIV:
+                case CORINFO_HELP_ULMOD:
+                    // On Windows X86, the helpers here can be written more efficiently with a reversed order
+                    // and it doesn't matter on other platforms
+                    return fgMorphIntoHelperCall(tree, helper, true /* morphArgs */, op2, op1);
+                default:
+                    return fgMorphIntoHelperCall(tree, helper, true /* morphArgs */, op1, op2);
+            }
 
-            return fgMorphIntoHelperCall(tree, helper, true /* morphArgs */, op1, op2);
 
         case GT_RETURN:
         case GT_SWIFT_ERROR_RET:

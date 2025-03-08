@@ -59,6 +59,14 @@ EXTERN @ProfileEnter@8:PROC
 EXTERN @ProfileLeave@8:PROC
 EXTERN @ProfileTailcall@8:PROC
 
+EXTERN __alldiv:PROC
+EXTERN __allrem:PROC
+EXTERN __aulldiv:PROC
+EXTERN __aullrem:PROC
+
+EXTERN @JIT_ThrowDivideByZero@0:PROC
+EXTERN @JIT_ThrowOverflow@0:PROC
+
 UNREFERENCED macro arg
     local unref
     unref equ size arg
@@ -1393,5 +1401,231 @@ _OnCallCountThresholdReachedStub@0 proc public
 _OnCallCountThresholdReachedStub@0 endp
 
 endif ; FEATURE_TIERED_COMPILATION
+
+; Dividend is in ecx
+; Divisor is in edx
+FASTCALL_FUNC JIT_Div, 8
+    lea     eax,[edx+1]
+    cmp     eax,1
+    ja      JIT_Div_DoIDIV
+
+    test    edx,edx
+    je      @JIT_ThrowDivideByZero@0
+
+JIT_Div_CheckForDivisorIsMinus1:
+    cmp     edx,0FFFFFFFFh
+    jne     JIT_Div_DoIDIV
+
+    cmp     ecx,80000000h
+    je      @JIT_ThrowOverflow@0
+    neg     ecx
+    mov     eax,ecx
+    ret
+
+JIT_Div_DoIDIV:
+    mov     eax,ecx
+    mov     ecx,edx
+    cdq
+    idiv    ecx
+    ret
+FASTCALL_ENDFUNC
+
+; Dividend is in ecx
+; Divisor is in edx
+FASTCALL_FUNC JIT_Mod, 8
+    lea     eax,[edx+1]
+    cmp     eax,1
+    ja      JIT_Mod_DoIDIV
+
+    test    edx,edx
+    je      @JIT_ThrowDivideByZero@0
+
+JIT_Mod_CheckForDivisorIsMinus1:
+    cmp     edx,0FFFFFFFFh
+    jne     JIT_Div_DoIDIV
+
+    cmp     ecx,80000000h
+    je      @JIT_ThrowOverflow@0
+    xor     eax,eax
+    ret
+
+JIT_Mod_DoIDIV:
+    mov     eax,ecx
+    mov     ecx,edx
+    cdq
+    idiv    ecx
+    mov     eax,edx
+    ret
+FASTCALL_ENDFUNC
+
+; Dividend is in ecx
+; Divisor is in edx
+FASTCALL_FUNC JIT_UDiv, 8
+    test    edx,edx
+    je      @JIT_ThrowDivideByZero@0
+
+    mov     eax,ecx
+    mov     ecx,edx
+    xor     edx, edx
+    div     ecx
+    ret
+FASTCALL_ENDFUNC
+
+; Dividend is in ecx
+; Divisor is in edx
+FASTCALL_FUNC JIT_UMod, 8
+    test    edx,edx
+    je      @JIT_ThrowDivideByZero@0
+
+    mov     eax,ecx
+    mov     ecx,edx
+    xor     edx, edx
+    div     ecx
+    mov     eax,edx
+    ret
+FASTCALL_ENDFUNC
+
+    DivisorLow32BitsOffset     equ 0Ch
+    DivisorHi32BitsOffset     equ 10h
+    DividendLow32BitsOffset     equ 4h
+    DividendHi32BitsOffset     equ 8h
+
+;; Stack on entry
+;; divisor (hi 32 bits)
+;; divisor (lo 32 bits)
+;; dividend (hi 32 bits)
+;; dividend (lo 32 bits)
+;; return address
+FASTCALL_FUNC JIT_LDiv, 16
+    mov     eax,dword ptr [esp + DivisorLow32BitsOffset]
+    cdq
+    cmp     edx,dword ptr [esp + DivisorHi32BitsOffset]
+    jne     __alldiv ; Tail call the CRT Helper routine for 64 bit divide
+    test    eax, eax
+    je      JIT_ThrowDivideByZero_Pop16BytesOffStack
+    cmp     eax,0FFFFFFFFh
+    jne     JIT_LDiv_DoDivideBy32BitDivisor
+    mov     eax,dword  ptr [esp + DividendLow32BitsOffset]
+    test    eax, eax
+    jne     JIT_LDiv_DoNegate
+    mov     edx,dword  ptr [esp + DividendHi32BitsOffset]
+    cmp     edx,80000000h
+    je      JIT_ThrowOverflow_Pop16BytesOffStack
+JIT_LDiv_DoNegate:
+    neg     eax
+    adc     edx,0
+    neg     edx
+    ret     10h
+JIT_LDiv_DoDivideBy32BitDivisor:
+    ; First check to see if dividend is also 32 bits
+    mov     ecx, eax ; Put divisor in ecx
+    mov     eax, dword ptr  [esp + DividendLow32BitsOffset]
+    cdq
+    cmp     edx, dword ptr [esp + DividendHi32BitsOffset]
+    jne     __alldiv ; Tail call the CRT Helper routine for 64 bit divide
+    idiv    ecx
+    cdq
+    ret     10h
+FASTCALL_ENDFUNC
+
+;; Stack on entry
+;; divisor (hi 32 bits)
+;; divisor (lo 32 bits)
+;; dividend (hi 32 bits)
+;; dividend (lo 32 bits)
+;; return address
+FASTCALL_FUNC JIT_LMod, 16
+    mov     eax,dword ptr [esp + DivisorLow32BitsOffset]
+    cdq
+    cmp     edx,dword ptr [esp + DivisorHi32BitsOffset]
+    jne     __allrem ; Tail call the CRT Helper routine for 64 bit modulus
+    test    eax, eax
+    je      JIT_ThrowDivideByZero_Pop16BytesOffStack
+    cmp     eax,0FFFFFFFFh
+    jne     JIT_LMod_DoDivideBy32BitDivisor
+    mov     eax,dword  ptr [esp + DividendLow32BitsOffset]
+    test    eax, eax
+    jne     JIT_LMod_ReturnZero
+    mov     edx,dword  ptr [esp + DividendHi32BitsOffset]
+    cmp     edx,80000000h
+    je      JIT_ThrowOverflow_Pop16BytesOffStack
+JIT_LMod_ReturnZero:
+    xor     eax, eax
+    xor     edx, edx
+    ret     10h
+JIT_LMod_DoDivideBy32BitDivisor:
+    ; First check to see if dividend is also 32 bits
+    mov     ecx, eax ; Put divisor in ecx
+    mov     eax, dword ptr [esp + DividendLow32BitsOffset]
+    cdq
+    cmp     edx, dword ptr [esp + DividendHi32BitsOffset]
+    jne     __allrem ; Tail call the CRT Helper routine for 64 bit modulus
+    idiv    ecx
+    mov     eax,edx
+    cdq
+    ret     10h
+FASTCALL_ENDFUNC
+
+;; Stack on entry
+;; divisor (hi 32 bits)
+;; divisor (lo 32 bits)
+;; dividend (hi 32 bits)
+;; dividend (lo 32 bits)
+;; return address
+FASTCALL_FUNC JIT_ULDiv, 16
+    mov     eax,dword ptr [esp + DivisorLow32BitsOffset]
+    cmp     dword ptr [esp + DivisorHi32BitsOffset], 0
+    jne     __aulldiv ; Tail call the CRT Helper routine for 64 bit divide
+    test    eax, eax
+    je      JIT_ThrowDivideByZero_Pop16BytesOffStack
+    ; First check to see if dividend is also 32 bits
+    mov     ecx, eax ; Put divisor in ecx
+    cmp     dword ptr [esp + DividendHi32BitsOffset], 0
+    jne     __aulldiv ; Tail call the CRT Helper routine for 64 bit divide
+    mov     eax, dword ptr [esp + DividendLow32BitsOffset]
+    xor     edx, edx
+    div     ecx
+    xor     edx, edx
+    ret     10h
+FASTCALL_ENDFUNC
+
+;; Stack on entry
+;; divisor (hi 32 bits)
+;; divisor (lo 32 bits)
+;; dividend (hi 32 bits)
+;; dividend (lo 32 bits)
+;; return address
+FASTCALL_FUNC JIT_ULMod, 16
+    mov     eax,dword ptr [esp + DivisorLow32BitsOffset]
+    cdq
+    cmp     dword ptr [esp + DivisorHi32BitsOffset], 0
+    jne     __aullrem ; Tail call the CRT Helper routine for 64 bit modulus
+    test    eax, eax
+    je      JIT_ThrowDivideByZero_Pop16BytesOffStack
+    ; First check to see if dividend is also 32 bits
+    mov     ecx, eax ; Put divisor in ecx
+    cmp     dword ptr [esp + DividendHi32BitsOffset], 0
+    jne     __aullrem ; Tail call the CRT Helper routine for 64 bit modulus
+    mov     eax, dword ptr [esp + DividendLow32BitsOffset]
+    xor     edx, edx
+    div     ecx
+    mov     eax, edx
+    xor     edx, edx
+    ret     10h
+FASTCALL_ENDFUNC
+
+JIT_ThrowDivideByZero_Pop16BytesOffStack proc public
+    pop eax ; Pop return address into eax
+    add esp, 10h
+    push eax ; Fix return address
+    jmp @JIT_ThrowDivideByZero@0
+JIT_ThrowDivideByZero_Pop16BytesOffStack endp
+
+JIT_ThrowOverflow_Pop16BytesOffStack proc public
+    pop eax ; Pop return address into eax
+    add esp, 10h
+    push eax ; Fix return address
+    jmp @JIT_ThrowOverflow@0
+JIT_ThrowOverflow_Pop16BytesOffStack endp
 
     end

@@ -117,6 +117,23 @@ HCIMPLEND
 #endif // !TARGET_X86 || TARGET_UNIX
 
 /*********************************************************************/
+extern "C" HCIMPL0(void, JIT_ThrowOverflow)
+{
+    FCALL_CONTRACT;
+
+    FCThrow(kOverflowException);
+}
+HCIMPLEND
+
+extern "C" HCIMPL0(void, JIT_ThrowDivideByZero)
+{
+    FCALL_CONTRACT;
+
+    FCThrow(kDivideByZeroException);
+}
+HCIMPLEND
+
+#if defined(TARGET_32BIT) && !(defined(TARGET_X86) && defined(TARGET_WINDOWS))
 HCIMPL2(INT32, JIT_Div, INT32 dividend, INT32 divisor)
 {
     FCALL_CONTRACT;
@@ -127,24 +144,19 @@ HCIMPL2(INT32, JIT_Div, INT32 dividend, INT32 divisor)
     {
         if (divisor == 0)
         {
-            ehKind = kDivideByZeroException;
-            goto ThrowExcep;
+            [[clang::musttail]] return JIT_ThrowDivideByZero();
         }
         else if (divisor == -1)
         {
             if (dividend == INT32_MIN)
             {
-                ehKind = kOverflowException;
-                goto ThrowExcep;
+                [[clang::musttail]] return JIT_ThrowOverflow();
             }
             return -dividend;
         }
     }
 
     return(dividend / divisor);
-
-ThrowExcep:
-    FCThrow(ehKind);
 }
 HCIMPLEND
 
@@ -159,15 +171,13 @@ HCIMPL2(INT32, JIT_Mod, INT32 dividend, INT32 divisor)
     {
         if (divisor == 0)
         {
-            ehKind = kDivideByZeroException;
-            goto ThrowExcep;
+            [[clang::musttail]] return JIT_ThrowDivideByZero();
         }
         else if (divisor == -1)
         {
             if (dividend == INT32_MIN)
             {
-                ehKind = kOverflowException;
-                goto ThrowExcep;
+                [[clang::musttail]] return JIT_ThrowOverflow();
             }
             return 0;
         }
@@ -186,7 +196,7 @@ HCIMPL2(UINT32, JIT_UDiv, UINT32 dividend, UINT32 divisor)
     FCALL_CONTRACT;
 
     if (divisor == 0)
-        FCThrow(kDivideByZeroException);
+        [[clang::musttail]] return JIT_ThrowDivideByZero();
 
     return(dividend / divisor);
 }
@@ -198,14 +208,14 @@ HCIMPL2(UINT32, JIT_UMod, UINT32 dividend, UINT32 divisor)
     FCALL_CONTRACT;
 
     if (divisor == 0)
-        FCThrow(kDivideByZeroException);
+        [[clang::musttail]] return JIT_ThrowDivideByZero();
 
     return(dividend % divisor);
 }
 HCIMPLEND
 
 /*********************************************************************/
-HCIMPL2_VV(INT64, JIT_LDiv, INT64 dividend, INT64 divisor)
+HCIMPL2_VV(INT64, JIT_LDiv, INT64 divisor, INT64 dividend)
 {
     FCALL_CONTRACT;
 
@@ -215,16 +225,14 @@ HCIMPL2_VV(INT64, JIT_LDiv, INT64 dividend, INT64 divisor)
     {
         if ((INT32)divisor == 0)
         {
-            ehKind = kDivideByZeroException;
-            goto ThrowExcep;
+            [[clang::musttail]] return JIT_ThrowDivideByZero();
         }
 
         if ((INT32)divisor == -1)
         {
             if ((UINT64) dividend == UI64(0x8000000000000000))
             {
-                ehKind = kOverflowException;
-                goto ThrowExcep;
+                [[clang::musttail]] return JIT_ThrowOverflow();
             }
             return -dividend;
         }
@@ -243,7 +251,7 @@ ThrowExcep:
 HCIMPLEND
 
 /*********************************************************************/
-HCIMPL2_VV(INT64, JIT_LMod, INT64 dividend, INT64 divisor)
+HCIMPL2_VV(INT64, JIT_LMod, INT64 divisor, INT64 dividend)
 {
     FCALL_CONTRACT;
 
@@ -253,8 +261,7 @@ HCIMPL2_VV(INT64, JIT_LMod, INT64 dividend, INT64 divisor)
     {
         if ((INT32)divisor == 0)
         {
-            ehKind = kDivideByZeroException;
-            goto ThrowExcep;
+            [[clang::musttail]] return JIT_ThrowDivideByZero();
         }
 
         if ((INT32)divisor == -1)
@@ -263,8 +270,7 @@ HCIMPL2_VV(INT64, JIT_LMod, INT64 dividend, INT64 divisor)
             // and the spec really says that it should not throw an exception. </TODO>
             if ((UINT64) dividend == UI64(0x8000000000000000))
             {
-                ehKind = kOverflowException;
-                goto ThrowExcep;
+                [[clang::musttail]] return JIT_ThrowOverflow();
             }
             return 0;
         }
@@ -283,14 +289,14 @@ ThrowExcep:
 HCIMPLEND
 
 /*********************************************************************/
-HCIMPL2_VV(UINT64, JIT_ULDiv, UINT64 dividend, UINT64 divisor)
+HCIMPL2_VV(UINT64, JIT_ULDiv, UINT64 divisor, UINT64 dividend)
 {
     FCALL_CONTRACT;
 
     if (Hi32Bits(divisor) == 0)
     {
         if ((UINT32)(divisor) == 0)
-        FCThrow(kDivideByZeroException);
+            [[clang::musttail]] return JIT_ThrowDivideByZero();
 
         if (Hi32Bits(dividend) == 0)
             return((UINT32)dividend / (UINT32)divisor);
@@ -301,14 +307,14 @@ HCIMPL2_VV(UINT64, JIT_ULDiv, UINT64 dividend, UINT64 divisor)
 HCIMPLEND
 
 /*********************************************************************/
-HCIMPL2_VV(UINT64, JIT_ULMod, UINT64 dividend, UINT64 divisor)
+HCIMPL2_VV(UINT64, JIT_ULMod, UINT64 divisor, UINT64 dividend)
 {
     FCALL_CONTRACT;
 
     if (Hi32Bits(divisor) == 0)
     {
         if ((UINT32)(divisor) == 0)
-        FCThrow(kDivideByZeroException);
+            [[clang::musttail]] return JIT_ThrowDivideByZero();
 
         if (Hi32Bits(dividend) == 0)
             return((UINT32)dividend % (UINT32)divisor);
@@ -317,6 +323,16 @@ HCIMPL2_VV(UINT64, JIT_ULMod, UINT64 dividend, UINT64 divisor)
     return(dividend % divisor);
 }
 HCIMPLEND
+#else
+extern "C" FCDECL2(INT32, JIT_Div, INT32 dividend, INT32 divisor);
+extern "C" FCDECL2(INT32, JIT_Mod, INT32 dividend, INT32 divisor);
+extern "C" FCDECL2(INT32, JIT_UDiv, INT32 dividend, INT32 divisor);
+extern "C" FCDECL2(INT32, JIT_UMod, INT32 dividend, INT32 divisor);
+extern "C" FCDECL2_VV(INT64, JIT_LDiv, INT64 divisor, INT64 dividend);
+extern "C" FCDECL2_VV(INT64, JIT_LMod, INT64 divisor, INT64 dividend);
+extern "C" FCDECL2_VV(UINT64, JIT_ULDiv, UINT64 divisor, UINT64 dividend);
+extern "C" FCDECL2_VV(UINT64, JIT_ULMod, UINT64 divisor, UINT64 dividend);
+#endif // defined(TARGET_32BIT) && !(defined(TARGET_X86) && defined(TARGET_WINDOWS))
 
 #if !defined(HOST_64BIT) && !defined(TARGET_X86)
 /*********************************************************************/
