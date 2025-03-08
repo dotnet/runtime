@@ -40,9 +40,20 @@ DataFlow::DataFlow(Compiler* pCompiler)
 PhaseStatus Compiler::optSetBlockWeights()
 {
     noway_assert(opts.OptimizationEnabled());
+    assert(m_dfsTree != nullptr);
+    const bool usingProfileWeights = fgIsUsingProfileWeights();
+
+    // Rely on profile synthesis to propagate weights when we have PGO data.
+    // TODO: Replace optSetBlockWeights with profile synthesis entirely.
+    if (usingProfileWeights)
+    {
+        // Leave breadcrumb for loop alignment
+        fgHasLoops = m_dfsTree->HasCycle();
+        return PhaseStatus::MODIFIED_NOTHING;
+    }
+
     bool madeChanges = false;
 
-    assert(m_dfsTree != nullptr);
     if (m_domTree == nullptr)
     {
         m_domTree = FlowGraphDominatorTree::Build(m_dfsTree);
@@ -59,8 +70,7 @@ PhaseStatus Compiler::optSetBlockWeights()
         optFindAndScaleGeneralLoopBlocks();
     }
 
-    bool       firstBBDominatesAllReturns = true;
-    const bool usingProfileWeights        = fgIsUsingProfileWeights();
+    bool firstBBDominatesAllReturns = true;
 
     fgComputeReturnBlocks();
 
@@ -92,7 +102,7 @@ PhaseStatus Compiler::optSetBlockWeights()
     for (BasicBlock* const block : Blocks())
     {
         // Blocks that can't be reached via the first block are rarely executed
-        if (!m_reachabilitySets->CanReach(fgFirstBB, block) && !block->isRunRarely())
+        if (!m_reachabilitySets->CanReach(fgFirstBB, block) && !block->isRunRarely() && !block->hasProfileWeight())
         {
             madeChanges = true;
             block->bbSetRunRarely();
@@ -2230,11 +2240,6 @@ bool Compiler::optInvertWhileLoop(BasicBlock* block)
     //
     bNewCond->inheritWeight(block);
 
-    if (haveProfileWeights)
-    {
-        bTest->decreaseBBProfileWeight(block->bbWeight);
-    }
-
     // Move all predecessor edges that look like loop entry edges to point to the new cloned condition
     // block, not the existing condition block. The idea is that if we only move `block` to point to
     // `bNewCond`, but leave other `bTest` predecessors still pointing to `bTest`, when we eventually
@@ -2269,14 +2274,6 @@ bool Compiler::optInvertWhileLoop(BasicBlock* block)
             case BBJ_SWITCH:
             case BBJ_EHFINALLYRET:
                 fgReplaceJumpTarget(predBlock, bTest, bNewCond);
-
-                // Redirect profile weight, too
-                if (haveProfileWeights)
-                {
-                    const weight_t edgeWeight = predEdge->getLikelyWeight();
-                    bNewCond->increaseBBProfileWeight(edgeWeight);
-                    bTest->decreaseBBProfileWeight(edgeWeight);
-                }
                 break;
 
             case BBJ_EHCATCHRET:
@@ -2287,6 +2284,23 @@ bool Compiler::optInvertWhileLoop(BasicBlock* block)
             default:
                 assert(!"Unexpected bbKind for predecessor block");
                 break;
+        }
+    }
+
+    if (haveProfileWeights)
+    {
+        // The above change should have moved some flow out of 'bTest', and into 'bNewCond'.
+        // Check that no extraneous flow was lost or gained in the process.
+        //
+        const weight_t totalWeight = bTest->bbWeight;
+        bTest->setBBProfileWeight(bTest->computeIncomingWeight());
+        bNewCond->setBBProfileWeight(bNewCond->computeIncomingWeight());
+
+        if (!fgProfileWeightsConsistent(totalWeight, bTest->bbWeight + bNewCond->bbWeight))
+        {
+            JITDUMP("Redirecting flow from " FMT_BB " to " FMT_BB " introduced inconsistency. Data %s inconsistent.\n",
+                    bTest->bbNum, bNewCond->bbNum, fgPgoConsistent ? "is now" : "was already");
+            fgPgoConsistent = false;
         }
     }
 
@@ -2381,30 +2395,24 @@ PhaseStatus Compiler::optOptimizeFlow()
 }
 
 //-----------------------------------------------------------------------------
-// optOptimizeLayout: reorder blocks to reduce cost of control flow
+// optOptimizePreLayout: Optimizes flow before reordering blocks.
 //
 // Returns:
 //   suitable phase status
 //
-// Notes:
-//   Reorders using profile data, if available.
-//
-PhaseStatus Compiler::optOptimizeLayout()
+PhaseStatus Compiler::optOptimizePreLayout()
 {
-    noway_assert(opts.OptimizationEnabled());
+    assert(opts.OptimizationEnabled());
 
-    fgUpdateFlowGraph(/* doTailDuplication */ false);
-    fgReorderBlocks(/* useProfile */ true);
-    fgUpdateFlowGraph(/* doTailDuplication */ false, /* isPhase */ false);
+    bool modified = fgUpdateFlowGraph();
 
-    // fgReorderBlocks can cause IR changes even if it does not modify
-    // the flow graph. It calls gtPrepareCost which can cause operand swapping.
-    // Work around this for now.
-    //
-    // Note phase status only impacts dumping and checking done post-phase,
-    // it has no impact on a release build.
-    //
-    return PhaseStatus::MODIFIED_EVERYTHING;
+    // TODO: Always rely on profile synthesis to identify cold blocks.
+    if (!fgIsUsingProfileWeights())
+    {
+        modified |= fgExpandRarelyRunBlocks();
+    }
+
+    return modified ? PhaseStatus::MODIFIED_EVERYTHING : PhaseStatus::MODIFIED_NOTHING;
 }
 
 //-----------------------------------------------------------------------------
@@ -2852,7 +2860,7 @@ bool Compiler::optCreatePreheader(FlowGraphNaturalLoop* loop)
             {
                 // Preheader should be in the true enclosing region of the header.
                 //
-                preheaderEHRegion    = ehTrueEnclosingTryIndexIL(preheaderEHRegion);
+                preheaderEHRegion    = ehTrueEnclosingTryIndex(preheaderEHRegion);
                 inSameRegionAsHeader = false;
                 break;
             }
@@ -5194,7 +5202,7 @@ void Compiler::fgSetEHRegionForNewPreheaderOrExit(BasicBlock* block)
     {
         // `next` is the beginning of a try block. Figure out the EH region to use.
         assert(next->hasTryIndex());
-        unsigned newTryIndex = ehTrueEnclosingTryIndexIL(next->getTryIndex());
+        unsigned newTryIndex = ehTrueEnclosingTryIndex(next->getTryIndex());
         if (newTryIndex == EHblkDsc::NO_ENCLOSING_INDEX)
         {
             // No EH try index.

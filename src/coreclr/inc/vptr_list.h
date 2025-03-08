@@ -24,7 +24,6 @@ VPTR_CLASS(ReflectionModule)
 VPTR_CLASS(PrecodeStubManager)
 VPTR_CLASS(StubLinkStubManager)
 VPTR_CLASS(ThePreStubManager)
-VPTR_CLASS(ThunkHeapStubManager)
 VPTR_CLASS(VirtualCallStubManager)
 VPTR_CLASS(VirtualCallStubManagerManager)
 VPTR_CLASS(JumpStubStubManager)
@@ -40,52 +39,6 @@ VPTR_CLASS(PEImageLayout)
 VPTR_CLASS(ConvertedImageLayout)
 VPTR_CLASS(LoadedImageLayout)
 VPTR_CLASS(FlatImageLayout)
-
-#ifdef FEATURE_COMINTEROP
-VPTR_CLASS(ComMethodFrame)
-VPTR_CLASS(CLRToCOMMethodFrame)
-VPTR_CLASS(ComPrestubMethodFrame)
-#endif // FEATURE_COMINTEROP
-
-VPTR_CLASS(DebuggerClassInitMarkFrame)
-VPTR_CLASS(DebuggerExitFrame)
-VPTR_CLASS(DebuggerU2MCatchHandlerFrame)
-VPTR_CLASS(FaultingExceptionFrame)
-#ifdef FEATURE_EH_FUNCLETS
-VPTR_CLASS(SoftwareExceptionFrame)
-#endif // FEATURE_EH_FUNCLETS
-VPTR_CLASS(FuncEvalFrame)
-VPTR_CLASS(HelperMethodFrame)
-VPTR_CLASS(HelperMethodFrame_1OBJ)
-VPTR_CLASS(HelperMethodFrame_2OBJ)
-VPTR_CLASS(HelperMethodFrame_3OBJ)
-VPTR_CLASS(HelperMethodFrame_PROTECTOBJ)
-#ifdef FEATURE_HIJACK
-VPTR_CLASS(HijackFrame)
-#endif
-VPTR_CLASS(InlinedCallFrame)
-VPTR_CLASS(PInvokeCalliFrame)
-VPTR_CLASS(PrestubMethodFrame)
-VPTR_CLASS(ProtectByRefsFrame)
-VPTR_CLASS(ProtectValueClassFrame)
-#ifdef FEATURE_HIJACK
-VPTR_CLASS(ResumableFrame)
-VPTR_CLASS(RedirectedThreadFrame)
-#endif
-VPTR_CLASS(StubDispatchFrame)
-VPTR_CLASS(CallCountingHelperFrame)
-VPTR_CLASS(ExternalMethodFrame)
-#ifdef FEATURE_READYTORUN
-VPTR_CLASS(DynamicHelperFrame)
-#endif
-#if defined(TARGET_X86) && !defined(UNIX_X86_ABI)
-VPTR_CLASS(TailCallFrame)
-#endif
-VPTR_CLASS(ExceptionFilterFrame)
-
-#ifdef _DEBUG
-VPTR_CLASS(AssumeByrefFromJITStack)
-#endif
 
 #ifdef DEBUGGING_SUPPORTED
 VPTR_CLASS(Debugger)

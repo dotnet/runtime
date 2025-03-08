@@ -283,7 +283,7 @@ namespace DebuggerTests
             // Hit resume to skip
             int count = 0;
             var taskWait = insp.WaitFor(Inspector.APP_READY);
-            while(true)
+            while (true)
             {
                 await cli.SendCommand("Debugger.resume", null, token);
                 count++;

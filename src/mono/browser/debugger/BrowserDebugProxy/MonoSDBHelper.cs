@@ -973,7 +973,7 @@ namespace Microsoft.WebAssembly.Diagnostics
         }
 
         public void ResetTypes() {
-            this.types = new ();
+            this.types = new();
         }
 
         public async Task<AssemblyInfo> GetAssemblyInfo(int assemblyId, CancellationToken token)

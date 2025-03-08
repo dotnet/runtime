@@ -30,33 +30,33 @@ variables:
     teamName: dotnet-core-acquisition
 
 extends:
-  template:  /eng/pipelines/common/templates/pipeline-with-resources.yml
+  template:  /eng/pipelines/official/pipeline.yml
   parameters:
-    isOfficialBuild: true
-    stages:
-    - stage: Build
-      jobs:
-
-      #
-      # Localization build
-      #
-
-      - ${{ if eq(variables['Build.SourceBranch'], 'refs/heads/release/9.0') }}:
+    otherStages:
+    - ${{ if eq(variables['Build.SourceBranch'], 'refs/heads/main') }}:
+      - stage: Localization
+        jobs:
+        #
+        # Localization build
+        #
         - template: /eng/common/templates-official/job/onelocbuild.yml
           parameters:
             MirrorRepo: runtime
-            MirrorBranch: release/9.0
+            MirrorBranch: main
             LclSource: lclFilesfromPackage
             LclPackageId: 'LCL-JUNO-PROD-RUNTIME'
-
-      #
-      # Source Index Build
-      #
-      - ${{ if eq(variables['Build.SourceBranch'], 'refs/heads/main') }}:
-        - template: /eng/common/templates-official/job/source-index-stage1.yml
-          parameters:
-            sourceIndexBuildCommand: build.cmd -subset libs.sfx+libs.oob -binarylog -os linux -ci /p:SkipLibrariesNativeRuntimePackages=true
-
+      - stage: Source_Index
+        displayName: Source Index
+        jobs:
+        #
+        # Source Index Build
+        #
+          - template: /eng/common/templates-official/job/source-index-stage1.yml
+            parameters:
+              sourceIndexBuildCommand: build.cmd -subset libs.sfx+libs.oob -binarylog -os linux -ci /p:SkipLibrariesNativeRuntimePackages=true
+    buildStage:
+      stage: Build
+      jobs:
       #
       # Build CoreCLR runtime packs
       # Windows x64/arm64
@@ -70,28 +70,31 @@ extends:
           - windows_x64
           - windows_x86
           - windows_arm64
+          variables:
+            - name: _SignDiagnosticFilesArgs
+              value: ''
+            - name: _EnableDefaultArtifactsArg
+              value: $[iif(and(eq(variables.osGroup, 'windows'), eq(variables.archType, 'x64')),'/p:EnableDefaultRidSpecificArtifacts=false','')]
           jobParameters:
             templatePath: 'templates-official'
-            buildArgs: -s clr.runtime+clr.alljits+clr.nativeaotruntime -c $(_BuildConfig) /bl:$(Build.SourcesDirectory)/artifacts/logs/$(_BuildConfig)/CoreClrNativeBuild.binlog
+            preBuildSteps:
+            - template: /eng/pipelines/coreclr/templates/install-diagnostic-certs.yml
+              parameters:
+                isOfficialBuild: true
+                certNames:
+                - 'dotnetesrp-diagnostics-aad-ssl-cert'
+                - 'dotnet-diagnostics-esrp-pki-onecert'
+                vaultName: 'clrdiag-esrp-id'
+                azureSubscription: 'diagnostics-esrp-kvcertuser'
+
+            buildArgs: -c $(_BuildConfig) -restore -build -publish /p:DotNetBuildAllRuntimePacks=true $(_SignDiagnosticFilesArgs) $(_EnableDefaultArtifactsArg)
             nameSuffix: AllRuntimes
-            isOfficialBuild: ${{ variables.isOfficialBuild }}
+            isOfficialBuild: true
             timeoutInMinutes: 120
             postBuildSteps:
-            - template: /eng/pipelines/coreclr/templates/sign-diagnostic-files.yml
+            - template: /eng/pipelines/coreclr/templates/remove-diagnostic-certs.yml
               parameters:
-                basePath: $(Build.SourcesDirectory)/artifacts/bin/coreclr
-                isOfficialBuild: ${{ variables.isOfficialBuild }}
-                timeoutInMinutes: 30
-            # Now that we've signed the diagnostic files, do the rest of the build.
-            - template: /eng/pipelines/common/templates/global-build-step.yml
-              parameters:
-                buildArgs: -s clr.corelib+clr.nativecorelib+clr.nativeaotlibs+clr.tools+clr.packages+mono+libs+host+packs -c $(_BuildConfig) /p:DotNetBuildAllRuntimePacks=true
-                displayName: Build managed CoreCLR components, Mono, all libraries, hosts, and packs
-
-            # Upload the results.
-            - template: /eng/pipelines/common/upload-intermediate-artifacts-step.yml
-              parameters:
-                name: $(osGroup)$(osSubgroup)_$(archType)
+                isOfficialBuild: true
 
       #
       # Build all runtime packs
@@ -107,11 +110,16 @@ extends:
           - osx_x64
           jobParameters:
             templatePath: 'templates-official'
-            buildArgs: -s clr.runtime+clr.alljits+clr.nativeaotruntime+host.native -c $(_BuildConfig) /bl:$(Build.SourcesDirectory)/artifacts/logs/$(_BuildConfig)/CoreClrNativeBuild.binlog
+            buildArgs: -s clr.corelib+clr.nativecorelib+clr.nativeaotlibs+clr.tools+clr.packages+mono+libs+host.tools+host.pkg+packs -restore -build -publish -c $(_BuildConfig) /p:DotNetBuildAllRuntimePacks=true
             nameSuffix: AllRuntimes
             isOfficialBuild: ${{ variables.isOfficialBuild }}
             timeoutInMinutes: 120
-            postBuildSteps:
+            preBuildSteps:
+              # Build our native assets first so we can sign them.
+              - template: /eng/pipelines/common/templates/global-build-step.yml
+                parameters:
+                  buildArgs: -s clr.runtime+clr.alljits+clr.nativeaotruntime+host.native -c $(_BuildConfig) /bl:$(Build.SourcesDirectory)/artifacts/logs/$(_BuildConfig)/CoreClrNativeBuild.binlog
+                  displayName: Build native CoreCLR and host components
               - ${{ if and(ne(variables['System.TeamProject'], 'public'), notin(variables['Build.Reason'], 'PullRequest')) }}:
                 - template: /eng/pipelines/common/macos-sign-with-entitlements.yml
                   parameters:
@@ -125,28 +133,16 @@ extends:
                     - name: apphost
                       path: $(Build.SourcesDirectory)/artifacts/bin/$(osGroup)-$(archType).$(_BuildConfig)/corehost
 
-              - task: CopyFiles@2
-                displayName: 'Copy signed createdump to sharedFramework'
-                inputs:
-                  contents: createdump
-                  sourceFolder: $(Build.SourcesDirectory)/artifacts/bin/coreclr/$(osGroup).$(archType).$(_BuildConfig)
-                  targetFolder: $(Build.SourcesDirectory)/artifacts/bin/coreclr/$(osGroup).$(archType).$(_BuildConfig)/sharedFramework
-                  overWrite: true
-
-              # Now that we've entitled and signed createdump, we can build the rest.
-              - template: /eng/pipelines/common/templates/global-build-step.yml
-                parameters:
-                  buildArgs: -s clr.corelib+clr.nativecorelib+clr.nativeaotlibs+clr.tools+clr.packages+mono+libs+host.tools+host.pkg+packs -c $(_BuildConfig) /p:DotNetBuildAllRuntimePacks=true
-                  displayName: Build managed CoreCLR and host components, Mono, all libraries, and packs
-
-              # Upload the results.
-              - template: /eng/pipelines/common/upload-intermediate-artifacts-step.yml
-                parameters:
-                  name: $(osGroup)$(osSubgroup)_$(archType)
+                - task: CopyFiles@2
+                  displayName: 'Copy signed createdump to sharedFramework'
+                  inputs:
+                    contents: createdump
+                    sourceFolder: $(Build.SourcesDirectory)/artifacts/bin/coreclr/$(osGroup).$(archType).$(_BuildConfig)
+                    targetFolder: $(Build.SourcesDirectory)/artifacts/bin/coreclr/$(osGroup).$(archType).$(_BuildConfig)/sharedFramework
+                    overWrite: true
 
       #
-      # Build all runtime packs for Linux and Linux musl
-      # Upload CoreCLR runtime for CrossDac packaging
+      # Build all runtime packs for Linux, Linux musl, and mobile
       #
       - template: /eng/pipelines/common/platform-matrix.yml
         parameters:
@@ -159,102 +155,6 @@ extends:
           - linux_musl_x64
           - linux_musl_arm
           - linux_musl_arm64
-          jobParameters:
-            templatePath: 'templates-official'
-            buildArgs: -c $(_BuildConfig) /p:DotNetBuildAllRuntimePacks=true
-            nameSuffix: AllRuntimes
-            isOfficialBuild: ${{ variables.isOfficialBuild }}
-            timeoutInMinutes: 120
-            postBuildSteps:
-              # Upload libcoreclr.so for CrossDac packaging
-              - task: CopyFiles@2
-                displayName: Gather runtime for CrossDac
-                inputs:
-                  SourceFolder: $(Build.SourcesDirectory)/artifacts/bin/coreclr/$(osGroup).$(archType).$(_BuildConfig)
-                  Contents: libcoreclr.so
-                  TargetFolder: $(Build.SourcesDirectory)/artifacts/CoreCLRCrossDacArtifacts/$(osGroup)$(osSubgroup).$(archType).$(_BuildConfig)/$(crossDacHostArch)
-              - task: 1ES.PublishBuildArtifacts@1
-                displayName: Publish runtime for CrossDac
-                inputs:
-                  PathtoPublish: $(Build.SourcesDirectory)/artifacts/CoreCLRCrossDacArtifacts
-                  PublishLocation: Container
-                  ArtifactName: CoreCLRCrossDacArtifacts
-
-              # Upload the results.
-              - template: /eng/pipelines/common/upload-intermediate-artifacts-step.yml
-                parameters:
-                  name: $(osGroup)$(osSubgroup)_$(archType)
-            extraVariablesTemplates:
-              - template: /eng/pipelines/coreclr/templates/crossdac-hostarch.yml
-
-      #
-      # Build and Pack CrossDac
-      #
-      - template: /eng/pipelines/common/platform-matrix.yml
-        parameters:
-          jobTemplate: /eng/pipelines/common/global-build-job.yml
-          buildConfig: release
-          platforms:
-          - windows_x64
-          jobParameters:
-            templatePath: 'templates-official'
-            buildArgs: -s crossdacpack -c $(_BuildConfig) /p:CrossDacArtifactsDir=$(crossDacArtifactsPath)
-            nameSuffix: CrossDac
-            isOfficialBuild: ${{ variables.isOfficialBuild }}
-            timeoutInMinutes: 120
-            preBuildSteps:
-            - task: DownloadBuildArtifacts@0
-              displayName: Download Runtimes for CrossDac packaging
-              inputs:
-                artifactName: $(crossDacArtifactsContainer)
-                downloadPath: $(crossDacArtifactsBasePath)
-                checkDownloadedFiles: true
-            - template: /eng/pipelines/common/templates/global-build-step.yml
-              parameters:
-                buildArgs: -s linuxdac+alpinedac -c $(_BuildConfig)
-                archParameter: -arch x64,x86,arm,arm64
-            - task: CopyFiles@2
-              displayName: Gather CrossDacs
-              inputs:
-                SourceFolder: $(Build.SourcesDirectory)/artifacts/bin/coreclr
-                Contents: |
-                  **
-                  !**\sharedFramework\**
-                TargetFolder: $(crossDacArtifactsPath)
-            - template: /eng/pipelines/coreclr/templates/sign-diagnostic-files.yml
-              parameters:
-                basePath: $(crossDacArtifactsPath)
-                isOfficialBuild: ${{ variables.isOfficialBuild }}
-                timeoutInMinutes: 30
-            postBuildSteps:
-            # Save packages using the prepare-signed-artifacts format.
-            # CrossDac packages are expected to be in the windows_x64 folder.
-            - template: /eng/pipelines/common/upload-intermediate-artifacts-step.yml
-              parameters:
-                name: windows_x64
-            dependsOn:
-            - build_linux_x64_release_AllRuntimes
-            - build_linux_arm_release_AllRuntimes
-            - build_linux_arm64_release_AllRuntimes
-            - build_linux_musl_x64_release_AllRuntimes
-            - build_linux_musl_arm_release_AllRuntimes
-            - build_linux_musl_arm64_release_AllRuntimes
-          variables:
-          - name: crossDacArtifactsContainer
-            value: CoreCLRCrossDacArtifacts
-          - name: crossDacArtifactsBasePath
-            value: $(Build.StagingDirectory)/CrossDac
-          - name: crossDacArtifactsPath
-            value: $(crossDacArtifactsBasePath)/$(crossDacArtifactsContainer)
-
-      #
-      # Build All runtime packs for mobile platforms
-      #
-      - template: /eng/pipelines/common/platform-matrix.yml
-        parameters:
-          jobTemplate: /eng/pipelines/common/global-build-job.yml
-          buildConfig: release
-          platforms:
           - android_x64
           - android_x86
           - android_arm
@@ -270,49 +170,95 @@ extends:
           - linux_bionic_x64
           - linux_bionic_arm
           - linux_bionic_arm64
-          jobParameters:
-            templatePath: 'templates-official'
-            buildArgs: -c $(_BuildConfig) /p:BuildMonoAOTCrossCompiler=false /p:DotNetBuildAllRuntimePacks=true
-            nameSuffix: AllRuntimes
-            isOfficialBuild: ${{ variables.isOfficialBuild }}
-            postBuildSteps:
-              # delete duplicate RIDless packages to prevent upload conflict
-              - task: DeleteFiles@1
-                displayName: 'Delete Microsoft.NETCore.App.Ref and Microsoft.NETCore.App.HostModel package'
-                inputs:
-                  SourceFolder: $(Build.SourcesDirectory)/artifacts/packages/$(_BuildConfig)/Shipping
-                  Contents: |
-                    'Microsoft.NETCore.App.Ref.*.nupkg'
-                    'Microsoft.NET.HostModel.*.nupkg'
-              - template: /eng/pipelines/common/upload-intermediate-artifacts-step.yml
-                parameters:
-                  name: MobileRuntimePacks
-
-      - template: /eng/pipelines/common/platform-matrix.yml
-        parameters:
-          jobTemplate: /eng/pipelines/common/global-build-job.yml
-          buildConfig: release
-          runtimeFlavor: mono
-          platforms:
           - browser_wasm
           - wasi_wasm
           jobParameters:
             templatePath: 'templates-official'
-            buildArgs: -s mono+libs+host+packs -c $(_BuildConfig) /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
-            nameSuffix: Mono
-            isOfficialBuild: ${{ variables.isOfficialBuild }}
+            buildArgs: -c $(_BuildConfig) -restore -build -publish /p:DotNetBuildAllRuntimePacks=true
+            nameSuffix: AllRuntimes
+            isOfficialBuild: true
+            timeoutInMinutes: 120
+
+      #
+      # Build and Pack CrossDac
+      #
+      - template: /eng/pipelines/common/platform-matrix.yml
+        parameters:
+          jobTemplate: /eng/pipelines/common/global-build-job.yml
+          buildConfig: release
+          platforms:
+          - windows_x64
+          jobParameters:
+            templatePath: 'templates-official'
+            buildArgs: -s crossdacpack -restore -build -publish -c $(_BuildConfig) /p:EnableDefaultRidSpecificArtifacts=false /p:CrossRuntimeExtractionRoot=$(CrossRuntimeExtractionRoot) $(_SignDiagnosticFilesArgs)
+            nameSuffix: CrossDac
+            isOfficialBuild: true
+            timeoutInMinutes: 120
+            templateContext:
+              inputs:
+              - input: pipelineArtifact
+                artifactName: Build_linux_x64_release_AllRuntimes_Artifacts
+                targetPath: $(Build.ArtifactStagingDirectory)/artifacts/RuntimeDownload
+                itemPattern: |
+                  packages/Release/Shipping/Microsoft.NETCore.App.Runtime.linux-x64.*.nupkg
+                  !packages/Release/Shipping/Microsoft.NETCore.App.Runtime.linux-x64.*.symbols.nupkg
+              - input: pipelineArtifact
+                artifactName: Build_linux_arm64_release_AllRuntimes_Artifacts
+                targetPath: $(Build.ArtifactStagingDirectory)/artifacts/RuntimeDownload
+                itemPattern: |
+                  packages/Release/Shipping/Microsoft.NETCore.App.Runtime.linux-arm64.*.nupkg
+                  !packages/Release/Shipping/Microsoft.NETCore.App.Runtime.linux-arm64.*.symbols.nupkg
+              - input: pipelineArtifact
+                artifactName: Build_linux_musl_x64_release_AllRuntimes_Artifacts
+                targetPath: $(Build.ArtifactStagingDirectory)/artifacts/RuntimeDownload
+                itemPattern: |
+                  packages/Release/Shipping/Microsoft.NETCore.App.Runtime.linux-musl-x64.*.nupkg
+                  !packages/Release/Shipping/Microsoft.NETCore.App.Runtime.linux-musl-x64.*.symbols.nupkg
+              - input: pipelineArtifact
+                artifactName: Build_linux_musl_arm64_release_AllRuntimes_Artifacts
+                targetPath: $(Build.ArtifactStagingDirectory)/artifacts/RuntimeDownload
+                itemPattern: |
+                  packages/Release/Shipping/Microsoft.NETCore.App.Runtime.linux-musl-arm64.*.nupkg
+                  !packages/Release/Shipping/Microsoft.NETCore.App.Runtime.linux-musl-arm64.*.symbols.nupkg
+              - input: pipelineArtifact
+                artifactName: Build_linux_arm_release_AllRuntimes_Artifacts
+                targetPath: $(Build.ArtifactStagingDirectory)/artifacts/RuntimeDownload
+                itemPattern: |
+                  packages/Release/Shipping/Microsoft.NETCore.App.Runtime.linux-arm.*.nupkg
+                  !packages/Release/Shipping/Microsoft.NETCore.App.Runtime.linux-arm.*.symbols.nupkg
+              - input: pipelineArtifact
+                artifactName: Build_linux_musl_arm_release_AllRuntimes_Artifacts
+                targetPath: $(Build.ArtifactStagingDirectory)/artifacts/RuntimeDownload
+                itemPattern: |
+                  packages/Release/Shipping/Microsoft.NETCore.App.Runtime.linux-musl-arm.*.nupkg
+                  !packages/Release/Shipping/Microsoft.NETCore.App.Runtime.linux-musl-arm.*.symbols.nupkg
+            preBuildSteps:
+            - powershell: $(Build.SourcesDirectory)/eng/extract-for-crossdac.ps1 -DownloadDirectory $(Build.ArtifactStagingDirectory)/artifacts/RuntimeDownload -ExtractDirectory $(CrossRuntimeExtractionRoot)
+              displayName: Extract runtime packs
+            - template: /eng/pipelines/coreclr/templates/install-diagnostic-certs.yml
+              parameters:
+                isOfficialBuild: true
+                certNames:
+                - 'dotnetesrp-diagnostics-aad-ssl-cert'
+                - 'dotnet-diagnostics-esrp-pki-onecert'
+                vaultName: 'clrdiag-esrp-id'
+                azureSubscription: 'diagnostics-esrp-kvcertuser'
             postBuildSteps:
-              # delete duplicate RIDless packages to prevent upload conflict
-              - task: DeleteFiles@1
-                displayName: 'Delete Microsoft.NETCore.App.Ref and Microsoft.NETCore.App.HostModel package'
-                inputs:
-                  SourceFolder: $(Build.SourcesDirectory)/artifacts/packages/$(_BuildConfig)/Shipping
-                  Contents: |
-                    'Microsoft.NETCore.App.Ref.*.nupkg'
-                    'Microsoft.NET.HostModel.*.nupkg'
-              - template: /eng/pipelines/common/upload-intermediate-artifacts-step.yml
-                parameters:
-                  name: MobileRuntimePacks
+            - template: /eng/pipelines/coreclr/templates/remove-diagnostic-certs.yml
+              parameters:
+                isOfficialBuild: true
+            dependsOn:
+            - build_linux_x64_release_AllRuntimes
+            - build_linux_arm_release_AllRuntimes
+            - build_linux_arm64_release_AllRuntimes
+            - build_linux_musl_x64_release_AllRuntimes
+            - build_linux_musl_arm_release_AllRuntimes
+            - build_linux_musl_arm64_release_AllRuntimes
+          variables:
+          - name: CrossRuntimeExtractionRoot
+            value: $(Build.SourcesDirectory)/artifacts/CrossDac
+          - name: _SignDiagnosticFilesArgs
+            value: ''
 
       - template: /eng/pipelines/common/platform-matrix.yml
         parameters:
@@ -323,22 +269,10 @@ extends:
           - browser_wasm
           jobParameters:
             templatePath: 'templates-official'
-            buildArgs: -s mono+libs+host+packs -c $(_BuildConfig) /p:WasmEnableThreads=true /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
+            buildArgs: -c $(_BuildConfig) -restore -build -publish /p:DotNetBuildAllRuntimePacks=true /p:WasmEnableThreads=true
             nameSuffix: Mono_multithread
-            isOfficialBuild: ${{ variables.isOfficialBuild }}
+            isOfficialBuild: true
             runtimeVariant: multithread
-            postBuildSteps:
-              # delete duplicate RIDless packages to prevent upload conflict
-              - task: DeleteFiles@1
-                displayName: 'Delete Microsoft.NETCore.App.Ref and Microsoft.NETCore.App.HostModel package'
-                inputs:
-                  SourceFolder: $(Build.SourcesDirectory)/artifacts/packages/$(_BuildConfig)/Shipping
-                  Contents: |
-                    'Microsoft.NETCore.App.Ref.*.nupkg'
-                    'Microsoft.NET.HostModel.*.nupkg'
-              - template: /eng/pipelines/common/upload-intermediate-artifacts-step.yml
-                parameters:
-                  name: MobileRuntimePacks
 
       #
       # Build Mono LLVM runtime packs
@@ -354,23 +288,11 @@ extends:
           runtimeFlavor: mono
           jobParameters:
             templatePath: 'templates-official'
-            buildArgs: -s mono+libs+host+packs -c $(_BuildConfig)
+            buildArgs: -s mono+libs+host+packs -c $(_BuildConfig) -restore -build -publish
                         /p:MonoEnableLLVM=true /p:MonoAOTEnableLLVM=true /p:MonoBundleLLVMOptimizer=true
             nameSuffix: Mono_LLVMAOT
             runtimeVariant: LLVMAOT
-            isOfficialBuild: ${{ variables.isOfficialBuild }}
-            postBuildSteps:
-              # delete duplicate RIDless packages to prevent upload conflict
-              - task: DeleteFiles@1
-                displayName: 'Delete Microsoft.NETCore.App.Ref and Microsoft.NETCore.App.HostModel package'
-                inputs:
-                  SourceFolder: $(Build.SourcesDirectory)/artifacts/packages/$(_BuildConfig)/Shipping
-                  Contents: |
-                    'Microsoft.NETCore.App.Ref.*.nupkg'
-                    'Microsoft.NET.HostModel.*.nupkg'
-              - template: /eng/pipelines/common/upload-intermediate-artifacts-step.yml
-                parameters:
-                  name: $(osGroup)$(osSubgroup)_$(archType)
+            isOfficialBuild: true
 
       #
       # Build libraries (all TFMs) and packages
@@ -383,13 +305,9 @@ extends:
           - windows_x64
           jobParameters:
             templatePath: 'templates-official'
-            buildArgs: -s tools+libs -pack -c $(_BuildConfig) /p:TestAssemblies=false /p:TestPackages=true
+            buildArgs: -s tools.illink+libs -restore -build -pack -publish -c $(_BuildConfig) /p:TestAssemblies=false /p:TestPackages=true /p:EnableDefaultRidSpecificArtifacts=false
             nameSuffix: Libraries_WithPackages
-            isOfficialBuild: ${{ variables.isOfficialBuild }}
-            postBuildSteps:
-              - template: /eng/pipelines/common/upload-intermediate-artifacts-step.yml
-                parameters:
-                  name: Libraries_WithPackages
+            isOfficialBuild: true
             timeoutInMinutes: 95
       #
       # Build SourceBuild packages
@@ -417,13 +335,9 @@ extends:
           - linux_arm64
           jobParameters:
             templatePath: 'templates-official'
-            buildArgs: -s clr.native+clr.corelib+clr.tools+clr.nativecorelib+libs+host+packs -c $(_BuildConfig) -pgoinstrument /p:SkipLibrariesNativeRuntimePackages=true
-            isOfficialBuild: ${{ variables.isOfficialBuild }}
+            buildArgs: -s clr.native+clr.corelib+clr.tools+clr.nativecorelib+libs+host+packs -c $(_BuildConfig) -restore -build -publish -pgoinstrument /p:SkipLibrariesNativeRuntimePackages=true
+            isOfficialBuild: true
             nameSuffix: PGO
-            postBuildSteps:
-              - template: /eng/pipelines/common/upload-intermediate-artifacts-step.yml
-                parameters:
-                  name: PGO
             timeoutInMinutes: 95
 
       #
@@ -438,96 +352,137 @@ extends:
           jobParameters:
             templatePath: 'templates-official'
             nameSuffix: Workloads
-            preBuildSteps:
-            - task: DownloadPipelineArtifact@2
+            templateContext:
               inputs:
-                artifact: 'IntermediateArtifacts'
-                path: $(Build.SourcesDirectory)/artifacts/workloadPackages
-                patterns: |
-                  IntermediateArtifacts/windows_x64/Shipping/Microsoft.NETCore.App.Runtime.AOT.win-x64.Cross.android-*.nupkg
-                  IntermediateArtifacts/windows_arm64/Shipping/Microsoft.NETCore.App.Runtime.AOT.win-arm64.Cross.android-*.nupkg
-                  IntermediateArtifacts/windows_x64/Shipping/Microsoft.NETCore.App.Runtime.AOT.win-x64.Cross.browser-wasm*.nupkg
-                  IntermediateArtifacts/windows_arm64/Shipping/Microsoft.NETCore.App.Runtime.AOT.win-arm64.Cross.browser-wasm*.nupkg
-                  IntermediateArtifacts/windows_x64/Shipping/Microsoft.NETCore.App.Runtime.AOT.win-x64.Cross.wasi-wasm*.nupkg
-                  IntermediateArtifacts/windows_arm64/Shipping/Microsoft.NETCore.App.Runtime.AOT.win-arm64.Cross.wasi-wasm*.nupkg
-                  IntermediateArtifacts/MobileRuntimePacks/Shipping/Microsoft.NETCore.App.Runtime.Mono.android-*.nupkg
-                  IntermediateArtifacts/MobileRuntimePacks/Shipping/Microsoft.NETCore.App.Runtime.Mono.browser-wasm*.nupkg
-                  IntermediateArtifacts/MobileRuntimePacks/Shipping/Microsoft.NETCore.App.Runtime.Mono.multithread.browser-wasm*.nupkg
-                  IntermediateArtifacts/MobileRuntimePacks/Shipping/Microsoft.NETCore.App.Runtime.Mono.ios-*.nupkg
-                  IntermediateArtifacts/MobileRuntimePacks/Shipping/Microsoft.NETCore.App.Runtime.Mono.iossimulator-*.nupkg
-                  IntermediateArtifacts/MobileRuntimePacks/Shipping/Microsoft.NETCore.App.Runtime.Mono.maccatalyst-*.nupkg
-                  IntermediateArtifacts/MobileRuntimePacks/Shipping/Microsoft.NETCore.App.Runtime.Mono.multithread.browser-wasm*.nupkg
-                  IntermediateArtifacts/MobileRuntimePacks/Shipping/Microsoft.NETCore.App.Runtime.Mono.tvos-*.nupkg
-                  IntermediateArtifacts/MobileRuntimePacks/Shipping/Microsoft.NETCore.App.Runtime.Mono.tvossimulator-*.nupkg
-                  IntermediateArtifacts/MobileRuntimePacks/Shipping/Microsoft.NETCore.App.Runtime.Mono.wasi-wasm*.nupkg
-                  IntermediateArtifacts/MobileRuntimePacks/Shipping/Microsoft.NET.Workload.Mono.ToolChain.Current.Manifest*.nupkg
-                  IntermediateArtifacts/MobileRuntimePacks/Shipping/Microsoft.NET.Workload.Mono.ToolChain.net6.Manifest*.nupkg
-                  IntermediateArtifacts/MobileRuntimePacks/Shipping/Microsoft.NET.Workload.Mono.ToolChain.net7.Manifest*.nupkg
-                  IntermediateArtifacts/MobileRuntimePacks/Shipping/Microsoft.NET.Workload.Mono.ToolChain.net8.Manifest*.nupkg
-                  IntermediateArtifacts/MobileRuntimePacks/Shipping/Microsoft.NET.Workload.Mono.ToolChain.net9.Manifest*.nupkg
-                  IntermediateArtifacts/MobileRuntimePacks/Shipping/Microsoft.NET.Runtime.MonoTargets.Sdk*.nupkg
-                  IntermediateArtifacts/MobileRuntimePacks/Shipping/Microsoft.NET.Runtime.MonoAOTCompiler.Task*.nupkg
-                  IntermediateArtifacts/MobileRuntimePacks/Shipping/Microsoft.NET.Runtime.WebAssembly.Sdk*.nupkg
-                  IntermediateArtifacts/MobileRuntimePacks/Shipping/Microsoft.NET.Runtime.WebAssembly.Wasi*.nupkg
-                  IntermediateArtifacts/MobileRuntimePacks/Shipping/Microsoft.NET.Runtime.WebAssembly.Templates*.nupkg
-                  IntermediateArtifacts/windows_arm64/Shipping/Microsoft.NETCore.App.Runtime.win-arm64*.nupkg
-                  IntermediateArtifacts/windows_x64/Shipping/Microsoft.NETCore.App.Runtime.win-x64*.nupkg
-                  IntermediateArtifacts/windows_x86/Shipping/Microsoft.NETCore.App.Runtime.win-x86*.nupkg
-                  IntermediateArtifacts/MobileRuntimePacks/Shipping/Microsoft.NET.Sdk.WebAssembly.Pack*.nupkg
+                - input: pipelineArtifact
+                  artifactName: Build_windows_x64_release_AllRuntimes_Artifacts
+                  targetPath: $(Build.ArtifactStagingDirectory)/artifacts/workloadPackages
+                  itemPattern: |
+                    **/Microsoft.NETCore.App.Runtime.AOT.win-x64.Cross.android-*.nupkg
+                    **/Microsoft.NETCore.App.Runtime.AOT.win-x64.Cross.browser-wasm*.nupkg
+                    **/Microsoft.NETCore.App.Runtime.AOT.win-x64.Cross.wasi-wasm*.nupkg
+                    **/Microsoft.NETCore.App.Runtime.win-x64*.nupkg
+                - input: pipelineArtifact
+                  artifactName: Build_windows_arm64_release_AllRuntimes_Artifacts
+                  targetPath: $(Build.ArtifactStagingDirectory)/artifacts/workloadPackages
+                  itemPattern: |
+                    **/Microsoft.NETCore.App.Runtime.AOT.win-arm64.Cross.android-*.nupkg
+                    **/Microsoft.NETCore.App.Runtime.AOT.win-arm64.Cross.browser-wasm*.nupkg
+                    **/Microsoft.NETCore.App.Runtime.AOT.win-arm64.Cross.wasi-wasm*.nupkg
+                    **/Microsoft.NETCore.App.Runtime.win-arm64*.nupkg
+                - input: pipelineArtifact
+                  artifactName: Build_windows_x86_release_AllRuntimes_Artifacts
+                  targetPath: $(Build.ArtifactStagingDirectory)/artifacts/workloadPackages
+                  itemPattern: |
+                    **/Microsoft.NETCore.App.Runtime.win-x86*.nupkg
+                - input: pipelineArtifact
+                  artifactName: Build_android_x64_release_AllRuntimes_Artifacts
+                  targetPath: $(Build.ArtifactStagingDirectory)/artifacts/workloadPackages
+                  itemPattern: |
+                    **/Microsoft.NETCore.App.Runtime.Mono.android-*.nupkg
+                - input: pipelineArtifact
+                  artifactName: Build_android_x86_release_AllRuntimes_Artifacts
+                  targetPath: $(Build.ArtifactStagingDirectory)/artifacts/workloadPackages
+                  itemPattern: |
+                    **/Microsoft.NETCore.App.Runtime.Mono.android-*.nupkg
+                - input: pipelineArtifact
+                  artifactName: Build_android_arm_release_AllRuntimes_Artifacts
+                  targetPath: $(Build.ArtifactStagingDirectory)/artifacts/workloadPackages
+                  itemPattern: |
+                    **/Microsoft.NETCore.App.Runtime.Mono.android-*.nupkg
+                - input: pipelineArtifact
+                  artifactName: Build_android_arm64_release_AllRuntimes_Artifacts
+                  targetPath: $(Build.ArtifactStagingDirectory)/artifacts/workloadPackages
+                  itemPattern: |
+                    **/Microsoft.NETCore.App.Runtime.Mono.android-*.nupkg
+                - input: pipelineArtifact
+                  artifactName: Build_browser_wasm_Linux_release_AllRuntimes_Artifacts
+                  targetPath: $(Build.ArtifactStagingDirectory)/artifacts/workloadPackages
+                  itemPattern: |
+                    **/Microsoft.NET.Runtime.MonoAOTCompiler.Task*.nupkg
+                    **/Microsoft.NETCore.App.Runtime.Mono.browser-wasm*.nupkg
+                    **/Microsoft.NET.Workload.Mono.ToolChain.Current.Manifest*.nupkg
+                    **/Microsoft.NET.Workload.Mono.ToolChain.net6.Manifest*.nupkg
+                    **/Microsoft.NET.Workload.Mono.ToolChain.net7.Manifest*.nupkg
+                    **/Microsoft.NET.Workload.Mono.ToolChain.net8.Manifest*.nupkg
+                    **/Microsoft.NET.Workload.Mono.ToolChain.net9.Manifest*.nupkg
+                    **/Microsoft.NET.Runtime.MonoTargets.Sdk*.nupkg
+                    **/Microsoft.NET.Runtime.WebAssembly.Sdk*.nupkg
+                    **/Microsoft.NET.Runtime.WebAssembly.Templates*.nupkg
+                    **/Microsoft.NET.Sdk.WebAssembly.Pack*.nupkg
+                - input: pipelineArtifact
+                  artifactName: build_browser_wasm_linux_release_Mono_multithread_Artifacts
+                  targetPath: $(Build.ArtifactStagingDirectory)/artifacts/workloadPackages
+                  itemPattern: |
+                    **/Microsoft.NETCore.App.Runtime.Mono.multithread.browser-wasm*.nupkg
+                - input: pipelineArtifact
+                  artifactName: Build_wasi_wasm_Linux_release_AllRuntimes_Artifacts
+                  targetPath: $(Build.ArtifactStagingDirectory)/artifacts/workloadPackages
+                  itemPattern: |
+                    **/Microsoft.NET.Runtime.WebAssembly.Wasi*.nupkg
+                    **/Microsoft.NETCore.App.Runtime.Mono.wasi-wasm*.nupkg
+                - input: pipelineArtifact
+                  artifactName: Build_ios_arm64_release_AllRuntimes_Artifacts
+                  targetPath: $(Build.ArtifactStagingDirectory)/artifacts/workloadPackages
+                  itemPattern: |
+                    **/Microsoft.NETCore.App.Runtime.Mono.ios-*.nupkg
+                - input: pipelineArtifact
+                  artifactName: Build_iossimulator_x64_release_AllRuntimes_Artifacts
+                  targetPath: $(Build.ArtifactStagingDirectory)/artifacts/workloadPackages
+                  itemPattern: |
+                    **/Microsoft.NETCore.App.Runtime.Mono.iossimulator-*.nupkg
+                - input: pipelineArtifact
+                  artifactName: Build_iossimulator_arm64_release_AllRuntimes_Artifacts
+                  targetPath: $(Build.ArtifactStagingDirectory)/artifacts/workloadPackages
+                  itemPattern: |
+                    **/Microsoft.NETCore.App.Runtime.Mono.iossimulator-*.nupkg
+                - input: pipelineArtifact
+                  artifactName: Build_maccatalyst_x64_release_AllRuntimes_Artifacts
+                  targetPath: $(Build.ArtifactStagingDirectory)/artifacts/workloadPackages
+                  itemPattern: |
+                    **/Microsoft.NETCore.App.Runtime.Mono.maccatalyst-*.nupkg
+                - input: pipelineArtifact
+                  artifactName: Build_maccatalyst_arm64_release_AllRuntimes_Artifacts
+                  targetPath: $(Build.ArtifactStagingDirectory)/artifacts/workloadPackages
+                  itemPattern: |
+                    **/Microsoft.NETCore.App.Runtime.Mono.maccatalyst-*.nupkg
+                - input: pipelineArtifact
+                  artifactName: Build_tvos_arm64_release_AllRuntimes_Artifacts
+                  targetPath: $(Build.ArtifactStagingDirectory)/artifacts/workloadPackages
+                  itemPattern: |
+                    **/Microsoft.NETCore.App.Runtime.Mono.tvos-*.nupkg
+                - input: pipelineArtifact
+                  artifactName: Build_tvossimulator_x64_release_AllRuntimes_Artifacts
+                  targetPath: $(Build.ArtifactStagingDirectory)/artifacts/workloadPackages
+                  itemPattern: |
+                    **/Microsoft.NETCore.App.Runtime.Mono.tvossimulator-*.nupkg
+                - input: pipelineArtifact
+                  artifactName: Build_tvossimulator_arm64_release_AllRuntimes_Artifacts
+                  targetPath: $(Build.ArtifactStagingDirectory)/artifacts/workloadPackages
+                  itemPattern: |
+                    **/Microsoft.NETCore.App.Runtime.Mono.tvossimulator-*.nupkg
 
+            preBuildSteps:
             - task: CopyFiles@2
               displayName: Flatten packages
               inputs:
-                sourceFolder: $(Build.SourcesDirectory)/artifacts/workloadPackages
-                contents: '*/Shipping/*.nupkg'
-                cleanTargetFolder: false
+                sourceFolder: $(Build.ArtifactStagingDirectory)/artifacts/workloadPackages
+                contents: 'packages/Release/Shipping/*.nupkg'
+                cleanTargetFolder: true
                 targetFolder: $(Build.SourcesDirectory)/artifacts/workloadPackages
                 flattenFolders: true
 
-            buildArgs: -s mono.workloads -c $(_BuildConfig) /p:PackageSource=$(Build.SourcesDirectory)/artifacts/workloadPackages /p:WorkloadOutputPath=$(Build.SourcesDirectory)/artifacts/workloads
+            buildArgs: -s mono.workloads -c $(_BuildConfig) -restore -build -publish /p:PackageSource=$(Build.SourcesDirectory)/artifacts/workloadPackages /p:WorkloadOutputPath=$(Build.SourcesDirectory)/artifacts/workloads /p:ShouldGenerateProductVersionFiles=true /p:EnableDefaultRidSpecificArtifacts=false
 
-            postBuildSteps:
-            # Prepare packages wrapping msis
-            - task: CopyFiles@2
-              displayName: Prepare package artifacts
-              inputs:
-                SourceFolder: '$(Build.SourcesDirectory)/artifacts/packages/$(_BuildConfig)'
-                Contents: |
-                  Shipping/**/*
-                  NonShipping/**/*
-                TargetFolder: '$(Build.ArtifactStagingDirectory)/IntermediateArtifacts1/workloads'
-                CleanTargetFolder: true
-
-            # Prepare artifacts to be used for generating VS components
-            - task: CopyFiles@2
-              displayName: Prepare VS Insertion artifacts
-              inputs:
-                SourceFolder: '$(Build.SourcesDirectory)/artifacts/VSSetup/$(_BuildConfig)'
-                Contents: |
-                  Insertion/**/*
-                TargetFolder: '$(Build.ArtifactStagingDirectory)/IntermediateArtifacts2/workloads-vs'
-                CleanTargetFolder: true
-
-            templateContext:
-              outputs:
-              - output: buildArtifacts
-                PathtoPublish: '$(Build.ArtifactStagingDirectory)/IntermediateArtifacts1'
-                ArtifactName: IntermediateArtifacts
-                displayName: 'Publish workload packages'
-              - output: buildArtifacts
-                PathtoPublish: '$(Build.ArtifactStagingDirectory)/IntermediateArtifacts2'
-                ArtifactName: IntermediateArtifacts
-                displayName: 'Publish workload VS Insertion artifacts'
-
-            isOfficialBuild: ${{ variables.isOfficialBuild }}
+            isOfficialBuild: true
             timeoutInMinutes: 120
             dependsOn:
             - Build_android_arm_release_AllRuntimes
             - Build_android_arm64_release_AllRuntimes
             - Build_android_x86_release_AllRuntimes
             - Build_android_x64_release_AllRuntimes
-            - Build_browser_wasm_Linux_release_Mono
-            - Build_wasi_wasm_linux_release_Mono
+            - Build_browser_wasm_Linux_release_AllRuntimes
+            - Build_wasi_wasm_linux_release_AllRuntimes
             - Build_ios_arm64_release_AllRuntimes
             - Build_iossimulator_x64_release_AllRuntimes
             - Build_iossimulator_arm64_release_AllRuntimes
@@ -539,8 +494,4 @@ extends:
             - Build_windows_x64_release_AllRuntimes
             - Build_windows_x86_release_AllRuntimes
             - Build_windows_arm64_release_AllRuntimes
-
-    - ${{ if eq(variables.isOfficialBuild, true) }}:
-      - template: /eng/pipelines/official/stages/publish.yml
-        parameters:
-          isOfficialBuild: ${{ variables.isOfficialBuild }}
+            - build_browser_wasm_linux_release_Mono_multithread

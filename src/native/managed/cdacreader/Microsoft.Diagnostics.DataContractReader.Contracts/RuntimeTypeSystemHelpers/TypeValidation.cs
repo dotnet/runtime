@@ -6,7 +6,7 @@ using Microsoft.Diagnostics.DataContractReader.Data;
 
 namespace Microsoft.Diagnostics.DataContractReader.RuntimeTypeSystemHelpers;
 
-internal class TypeValidation
+internal sealed class TypeValidation
 {
     private readonly Target _target;
 

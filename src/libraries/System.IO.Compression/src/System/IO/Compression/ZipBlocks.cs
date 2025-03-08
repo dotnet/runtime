@@ -340,28 +340,33 @@ namespace System.IO.Compression
         public void WriteBlock(Stream stream)
         {
             Span<byte> extraFieldData = stackalloc byte[TotalSize];
+            int startOffset = ZipGenericExtraField.FieldLocations.DynamicData;
 
             BinaryPrimitives.WriteUInt16LittleEndian(extraFieldData[FieldLocations.Tag..], TagConstant);
             BinaryPrimitives.WriteUInt16LittleEndian(extraFieldData[FieldLocations.Size..], _size);
 
             if (_uncompressedSize != null)
             {
-                BinaryPrimitives.WriteInt64LittleEndian(extraFieldData[FieldLocations.UncompressedSize..], _uncompressedSize.Value);
+                BinaryPrimitives.WriteInt64LittleEndian(extraFieldData[startOffset..], _uncompressedSize.Value);
+                startOffset += FieldLengths.UncompressedSize;
             }
 
             if (_compressedSize != null)
             {
-                BinaryPrimitives.WriteInt64LittleEndian(extraFieldData[FieldLocations.CompressedSize..], _compressedSize.Value);
+                BinaryPrimitives.WriteInt64LittleEndian(extraFieldData[startOffset..], _compressedSize.Value);
+                startOffset += FieldLengths.CompressedSize;
             }
 
             if (_localHeaderOffset != null)
             {
-                BinaryPrimitives.WriteInt64LittleEndian(extraFieldData[FieldLocations.LocalHeaderOffset..], _localHeaderOffset.Value);
+                BinaryPrimitives.WriteInt64LittleEndian(extraFieldData[startOffset..], _localHeaderOffset.Value);
+                startOffset += FieldLengths.LocalHeaderOffset;
             }
 
             if (_startDiskNumber != null)
             {
-                BinaryPrimitives.WriteUInt32LittleEndian(extraFieldData[FieldLocations.StartDiskNumber..], _startDiskNumber.Value);
+                BinaryPrimitives.WriteUInt32LittleEndian(extraFieldData[startOffset..], _startDiskNumber.Value);
+                startOffset += FieldLengths.StartDiskNumber;
             }
 
             stream.Write(extraFieldData);
@@ -374,8 +379,8 @@ namespace System.IO.Compression
         // ZIP files store values in little endian, so this is reversed.
         public static ReadOnlySpan<byte> SignatureConstantBytes => [0x50, 0x4B, 0x06, 0x07];
 
-        private const int BlockConstantSectionSize = 20;
-        public const int SizeOfBlockWithoutSignature = 16;
+        public static readonly int TotalSize = FieldLocations.TotalNumberOfDisks + FieldLengths.TotalNumberOfDisks;
+        public static readonly int SizeOfBlockWithoutSignature = TotalSize - FieldLengths.Signature;
 
         public uint NumberOfDiskWithZip64EOCD;
         public ulong OffsetOfZip64EOCD;
@@ -383,13 +388,13 @@ namespace System.IO.Compression
 
         public static bool TryReadBlock(Stream stream, out Zip64EndOfCentralDirectoryLocator zip64EOCDLocator)
         {
-            Span<byte> blockContents = stackalloc byte[BlockConstantSectionSize];
+            Span<byte> blockContents = stackalloc byte[TotalSize];
             int bytesRead;
 
             zip64EOCDLocator = default;
             bytesRead = stream.Read(blockContents);
 
-            if (bytesRead < BlockConstantSectionSize)
+            if (bytesRead < TotalSize)
             {
                 return false;
             }
@@ -408,7 +413,7 @@ namespace System.IO.Compression
 
         public static void WriteBlock(Stream stream, long zip64EOCDRecordStart)
         {
-            Span<byte> blockContents = stackalloc byte[BlockConstantSectionSize];
+            Span<byte> blockContents = stackalloc byte[TotalSize];
 
             SignatureConstantBytes.CopyTo(blockContents[FieldLocations.Signature..]);
             // number of disk with start of zip64 eocd
@@ -429,6 +434,7 @@ namespace System.IO.Compression
 
         private const int BlockConstantSectionSize = 56;
         private const ulong NormalSize = 0x2C; // the size of the data excluding the size/signature fields if no extra data included
+        public const long TotalSize = (long)NormalSize + 12;    // total size of the entire block
 
         public ulong SizeOfThisRecord;
         public ushort VersionMadeBy;
@@ -743,9 +749,10 @@ namespace System.IO.Compression
         // ZIP files store values in little endian, so this is reversed.
         public static ReadOnlySpan<byte> SignatureConstantBytes => [0x50, 0x4B, 0x05, 0x06];
 
+        // This also assumes a zero-length comment.
+        public static readonly int TotalSize = FieldLocations.ArchiveCommentLength + FieldLengths.ArchiveCommentLength;
         // These are the minimum possible size, assuming the zip file comments variable section is empty
-        private const int BlockConstantSectionSize = 22;
-        public const int SizeOfBlockWithoutSignature = 18;
+        public static readonly int SizeOfBlockWithoutSignature = TotalSize - FieldLengths.Signature;
 
         // The end of central directory can have a variable size zip file comment at the end, but its max length can be 64K
         // The Zip File Format Specification does not explicitly mention a max size for this field, but we are assuming this
@@ -763,7 +770,7 @@ namespace System.IO.Compression
 
         public static void WriteBlock(Stream stream, long numberOfEntries, long startOfCentralDirectory, long sizeOfCentralDirectory, byte[] archiveComment)
         {
-            Span<byte> blockContents = stackalloc byte[BlockConstantSectionSize];
+            Span<byte> blockContents = stackalloc byte[TotalSize];
 
             ushort numberOfEntriesTruncated = numberOfEntries > ushort.MaxValue ?
                                                         ZipHelper.Mask16Bit : (ushort)numberOfEntries;
@@ -799,13 +806,13 @@ namespace System.IO.Compression
 
         public static bool TryReadBlock(Stream stream, out ZipEndOfCentralDirectoryBlock eocdBlock)
         {
-            Span<byte> blockContents = stackalloc byte[BlockConstantSectionSize];
+            Span<byte> blockContents = stackalloc byte[TotalSize];
             int bytesRead;
 
             eocdBlock = default;
             bytesRead = stream.Read(blockContents);
 
-            if (bytesRead < BlockConstantSectionSize)
+            if (bytesRead < TotalSize)
             {
                 return false;
             }

@@ -230,6 +230,61 @@ protected:
 
     void genExitCode(BasicBlock* block);
 
+#if defined(TARGET_ARM64)
+    BasicBlock* genGetThrowHelper(SpecialCodeKind codeKind);
+
+    // genEmitInlineThrow: Generate code for an inline exception.
+    void genEmitInlineThrow(SpecialCodeKind codeKind)
+    {
+        genEmitHelperCall(compiler->acdHelper(codeKind), 0, EA_UNKNOWN);
+    }
+
+    // throwCodeFn callback follows concept -> void(*)(BasicBlock* target, bool isInline)
+    //
+    // For conditional jumps:
+    //     If `isInline`, invert the condition for throw and fall into the exception block.
+    //     Otherwise emit compare and jump with the normal throw condition.
+    // For unconditional jumps:
+    //     Only emit the unconditional jump when `isInline == false`.
+    //     When `isInline == true` the code will fallthrough to throw without any jump added.
+    //
+    // Parameter `target` gives a label to jump to, which is the throw block if
+    // `isInline == false`, else the continuation.
+    template <typename throwCodeFn>
+    void genJumpToThrowHlpBlk(SpecialCodeKind codeKind, throwCodeFn emitJumpCode, BasicBlock* throwBlock = nullptr)
+    {
+        if (!throwBlock)
+        {
+            // If caller didn't supply a target block, then try to find a helper block.
+            throwBlock = genGetThrowHelper(codeKind);
+        }
+
+        if (throwBlock)
+        {
+            // check:
+            //   if (checkPassed)
+            //     goto throw;
+            //   ...
+            // throw:
+            //   throw();
+            emitJumpCode(throwBlock, false);
+        }
+        else
+        {
+            // check:
+            //   if (!checkPassed)
+            //     goto continue;
+            //   throw();
+            // continue:
+            //   ...
+            BasicBlock* over = genCreateTempLabel();
+            emitJumpCode(over, true);
+            genEmitInlineThrow(codeKind);
+            genDefineTempLabel(over);
+        }
+    }
+#endif
+
     void genJumpToThrowHlpBlk(emitJumpKind jumpKind, SpecialCodeKind codeKind, BasicBlock* failBlk = nullptr);
 
 #if defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
@@ -388,6 +443,8 @@ protected:
     void      genPushFltRegs(regMaskTP regMask);
     void      genPopFltRegs(regMaskTP regMask);
     regMaskTP genStackAllocRegisterMask(unsigned frameSize, regMaskTP maskCalleeSavedFloat);
+
+    regMaskTP genPrespilledUnmappedRegs();
 
     regMaskTP genJmpCallArgMask();
 
@@ -650,6 +707,8 @@ protected:
 #if defined(TARGET_AMD64)
     void genAmd64EmitterUnitTestsSse2();
     void genAmd64EmitterUnitTestsApx();
+    void genAmd64EmitterUnitTestsAvx10v2();
+    void genAmd64EmitterUnitTestsCCMP();
 #endif
 
 #endif // defined(DEBUG)
@@ -1136,12 +1195,10 @@ protected:
     void      genSetBlockSrc(GenTreeBlk* blkNode, regNumber srcReg);
     void      genConsumeBlockOp(GenTreeBlk* blkNode, regNumber dstReg, regNumber srcReg, regNumber sizeReg);
 
-#ifdef FEATURE_PUT_STRUCT_ARG_STK
     void genConsumePutStructArgStk(GenTreePutArgStk* putArgStkNode,
                                    regNumber         dstReg,
                                    regNumber         srcReg,
                                    regNumber         sizeReg);
-#endif // FEATURE_PUT_STRUCT_ARG_STK
 #if FEATURE_ARG_SPLIT
     void genConsumeArgSplitStruct(GenTreePutArgSplit* putArgNode);
 #endif // FEATURE_ARG_SPLIT
@@ -1229,7 +1286,6 @@ protected:
     void genPutArgStkFieldList(GenTreePutArgStk* putArgStk, unsigned outArgVarNum);
 #endif // !TARGET_X86
 
-#ifdef FEATURE_PUT_STRUCT_ARG_STK
 #ifdef TARGET_X86
     bool genAdjustStackForPutArgStk(GenTreePutArgStk* putArgStk);
     void genPushReg(var_types type, regNumber srcReg);
@@ -1251,7 +1307,6 @@ protected:
 #else
     void genStructPutArgPartialRepMovs(GenTreePutArgStk* putArgStkNode);
 #endif
-#endif // FEATURE_PUT_STRUCT_ARG_STK
 
     void     genCodeForStoreBlk(GenTreeBlk* storeBlkNode);
     void     genCodeForInitBlkLoop(GenTreeBlk* initBlkNode);
@@ -1284,6 +1339,8 @@ protected:
 #endif
 #if defined(TARGET_ARM64)
     void genCodeForJumpCompare(GenTreeOpCC* tree);
+    void genCompareImmAndJump(
+        GenCondition::Code cond, regNumber reg, ssize_t compareImm, emitAttr size, BasicBlock* target);
     void genCodeForBfiz(GenTreeOp* tree);
 #endif // TARGET_ARM64
 
@@ -1298,7 +1355,7 @@ protected:
     // Codegen for multi-register struct returns.
     bool isStructReturn(GenTree* treeNode);
 #ifdef FEATURE_SIMD
-    void genSIMDSplitReturn(GenTree* src, ReturnTypeDesc* retTypeDesc);
+    void genSIMDSplitReturn(GenTree* src, const ReturnTypeDesc* retTypeDesc);
 #endif
     void genStructReturn(GenTree* treeNode);
 
@@ -1343,14 +1400,12 @@ protected:
         return compiler->lvaGetDesc(tree->AsLclVarCommon())->lvIsRegCandidate();
     }
 
-#ifdef FEATURE_PUT_STRUCT_ARG_STK
 #ifdef TARGET_X86
     bool m_pushStkArg;
 #else  // !TARGET_X86
     unsigned m_stkArgVarNum;
     unsigned m_stkArgOffset;
 #endif // !TARGET_X86
-#endif // !FEATURE_PUT_STRUCT_ARG_STK
 
 #if defined(DEBUG) && defined(TARGET_XARCH)
     void genStackPointerCheck(bool      doStackPointerCheck,
@@ -1622,11 +1677,7 @@ public:
 
     instruction ins_Copy(var_types dstType);
     instruction ins_Copy(regNumber srcReg, var_types dstType);
-#if defined(TARGET_XARCH)
-    instruction ins_FloatConv(var_types to, var_types from, emitAttr attr);
-#elif defined(TARGET_ARM)
     instruction ins_FloatConv(var_types to, var_types from);
-#endif
     instruction ins_MathOp(genTreeOps oper, var_types type);
 
     void instGen_Return(unsigned stkArgSize);

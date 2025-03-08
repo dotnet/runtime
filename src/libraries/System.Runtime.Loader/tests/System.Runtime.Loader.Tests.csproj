@@ -5,8 +5,6 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <TestRuntime>true</TestRuntime>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
-    <!-- Some tests rely on no deps.json file being present. -->
-    <GenerateDependencyFile>false</GenerateDependencyFile>
     <!-- EnC tests on targets without a remote executor need the environment variable set before launching the test -->
     <!-- Also ask Mono to use make sequence points even without a debugger attached to match "dotnet watch" behavior -->
     <WasmXHarnessMonoArgs>--setenv=DOTNET_MODIFIABLE_ASSEMBLIES=debug --setenv=MONO_DEBUG=gen-seq-points</WasmXHarnessMonoArgs>

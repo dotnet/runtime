@@ -58,7 +58,7 @@ void ClearRegDisplayArgumentAndScratchRegisters(REGDISPLAY * pRD)
     pContextPointers->R11 = NULL;
 }
 
-void TransitionFrame::UpdateRegDisplay(const PREGDISPLAY pRD, bool updateFloats)
+void TransitionFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFloats)
 {
     LIMITED_METHOD_CONTRACT;
 
@@ -81,10 +81,10 @@ void TransitionFrame::UpdateRegDisplay(const PREGDISPLAY pRD, bool updateFloats)
 
     SyncRegDisplayToCurrentContext(pRD);
 
-    LOG((LF_GCROOTS, LL_INFO100000, "STACKWALK    TransitionFrame::UpdateRegDisplay(rip:%p, rsp:%p)\n", pRD->ControlPC, pRD->SP));
+    LOG((LF_GCROOTS, LL_INFO100000, "STACKWALK    TransitionFrame::UpdateRegDisplay_Impl(rip:%p, rsp:%p)\n", pRD->ControlPC, pRD->SP));
 }
 
-void InlinedCallFrame::UpdateRegDisplay(const PREGDISPLAY pRD, bool updateFloats)
+void InlinedCallFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFloats)
 {
     CONTRACTL
     {
@@ -135,10 +135,10 @@ void InlinedCallFrame::UpdateRegDisplay(const PREGDISPLAY pRD, bool updateFloats
 
     SyncRegDisplayToCurrentContext(pRD);
 
-    LOG((LF_GCROOTS, LL_INFO100000, "STACKWALK    InlinedCallFrame::UpdateRegDisplay(rip:%p, rsp:%p)\n", pRD->ControlPC, pRD->SP));
+    LOG((LF_GCROOTS, LL_INFO100000, "STACKWALK    InlinedCallFrame::UpdateRegDisplay_Impl(rip:%p, rsp:%p)\n", pRD->ControlPC, pRD->SP));
 }
 
-void HelperMethodFrame::UpdateRegDisplay(const PREGDISPLAY pRD, bool updateFloats)
+void HelperMethodFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFloats)
 {
     CONTRACTL
     {
@@ -225,7 +225,7 @@ void HelperMethodFrame::UpdateRegDisplay(const PREGDISPLAY pRD, bool updateFloat
     ClearRegDisplayArgumentAndScratchRegisters(pRD);
 }
 
-void FaultingExceptionFrame::UpdateRegDisplay(const PREGDISPLAY pRD, bool updateFloats)
+void FaultingExceptionFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFloats)
 {
     LIMITED_METHOD_DAC_CONTRACT;
 
@@ -264,13 +264,13 @@ void FaultingExceptionFrame::UpdateRegDisplay(const PREGDISPLAY pRD, bool update
 }
 
 #ifdef FEATURE_HIJACK
-TADDR ResumableFrame::GetReturnAddressPtr()
+TADDR ResumableFrame::GetReturnAddressPtr_Impl()
 {
     LIMITED_METHOD_DAC_CONTRACT;
     return dac_cast<TADDR>(m_Regs) + offsetof(CONTEXT, Rip);
 }
 
-void ResumableFrame::UpdateRegDisplay(const PREGDISPLAY pRD, bool updateFloats)
+void ResumableFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFloats)
 {
     CONTRACT_VOID
     {
@@ -310,7 +310,7 @@ void ResumableFrame::UpdateRegDisplay(const PREGDISPLAY pRD, bool updateFloats)
 }
 
 // The HijackFrame has to know the registers that are pushed by OnHijackTripThread
-void HijackFrame::UpdateRegDisplay(const PREGDISPLAY pRD, bool updateFloats)
+void HijackFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFloats)
 {
     CONTRACTL {
         NOTHROW;
@@ -551,77 +551,6 @@ void emitJump(LPBYTE pBufferRX, LPBYTE pBufferRW, LPVOID target)
     pBufferRW[11] = 0xE0;
 
     _ASSERTE(DbgIsExecutable(pBufferRX, 12));
-}
-
-void UMEntryThunkCode::Encode(UMEntryThunkCode *pEntryThunkCodeRX, BYTE* pTargetCode, void* pvSecretParam)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-    // padding                  // CC CC CC CC
-    // mov r10, pUMEntryThunk   // 49 ba xx xx xx xx xx xx xx xx    // METHODDESC_REGISTER
-    // mov rax, pJmpDest        // 48 b8 xx xx xx xx xx xx xx xx    // need to ensure this imm64 is qword aligned
-    // TAILJMP_RAX              // 48 FF E0
-
-#ifdef _DEBUG
-    m_padding[0] = X86_INSTR_INT3;
-    m_padding[1] = X86_INSTR_INT3;
-    m_padding[2] = X86_INSTR_INT3;
-    m_padding[3] = X86_INSTR_INT3;
-#endif // _DEBUG
-    m_movR10[0]  = REX_PREFIX_BASE | REX_OPERAND_SIZE_64BIT | REX_OPCODE_REG_EXT;
-    m_movR10[1]  = 0xBA;
-    m_uet        = pvSecretParam;
-    m_movRAX[0]  = REX_PREFIX_BASE | REX_OPERAND_SIZE_64BIT;
-    m_movRAX[1]  = 0xB8;
-    m_execstub   = pTargetCode;
-    m_jmpRAX[0]  = REX_PREFIX_BASE | REX_OPERAND_SIZE_64BIT;
-    m_jmpRAX[1]  = 0xFF;
-    m_jmpRAX[2]  = 0xE0;
-
-    _ASSERTE(DbgIsExecutable(&pEntryThunkCodeRX->m_movR10[0], &pEntryThunkCodeRX->m_jmpRAX[3]-&pEntryThunkCodeRX->m_movR10[0]));
-    FlushInstructionCache(GetCurrentProcess(),pEntryThunkCodeRX,sizeof(UMEntryThunkCode));
-}
-
-void UMEntryThunkCode::Poison()
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-    ExecutableWriterHolder<UMEntryThunkCode> thunkWriterHolder(this, sizeof(UMEntryThunkCode));
-    UMEntryThunkCode *pThisRW = thunkWriterHolder.GetRW();
-
-    pThisRW->m_execstub    = (BYTE *)UMEntryThunk::ReportViolation;
-
-    pThisRW->m_movR10[0]  = REX_PREFIX_BASE | REX_OPERAND_SIZE_64BIT;
-#ifdef _WIN32
-    // mov rcx, pUMEntryThunk // 48 b9 xx xx xx xx xx xx xx xx
-    pThisRW->m_movR10[1]  = 0xB9;
-#else
-    // mov rdi, pUMEntryThunk // 48 bf xx xx xx xx xx xx xx xx
-    pThisRW->m_movR10[1]  = 0xBF;
-#endif
-
-    ClrFlushInstructionCache(&m_movR10[0], &m_jmpRAX[3]-&m_movR10[0], /* hasCodeExecutedBefore */ true);
-}
-
-UMEntryThunk* UMEntryThunk::Decode(LPVOID pCallback)
-{
-    LIMITED_METHOD_CONTRACT;
-
-    UMEntryThunkCode *pThunkCode = (UMEntryThunkCode*)((BYTE*)pCallback - UMEntryThunkCode::GetEntryPointOffset());
-
-    return (UMEntryThunk*)pThunkCode->m_uet;
 }
 
 INT32 rel32UsingJumpStub(INT32 UNALIGNED * pRel32, PCODE target, MethodDesc *pMethod,

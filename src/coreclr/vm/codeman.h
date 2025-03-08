@@ -90,16 +90,18 @@ class EECodeInfo;
 
 enum StubCodeBlockKind : int
 {
-    STUB_CODE_BLOCK_UNKNOWN,
-    STUB_CODE_BLOCK_JUMPSTUB,
-    STUB_CODE_BLOCK_PRECODE,
-    STUB_CODE_BLOCK_DYNAMICHELPER,
-    STUB_CODE_BLOCK_STUBPRECODE,
-    STUB_CODE_BLOCK_FIXUPPRECODE,
-    STUB_CODE_BLOCK_VSD_DISPATCH_STUB,
-    STUB_CODE_BLOCK_VSD_RESOLVE_STUB,
-    STUB_CODE_BLOCK_VSD_LOOKUP_STUB,
-    STUB_CODE_BLOCK_VSD_VTABLE_STUB,
+    STUB_CODE_BLOCK_UNKNOWN = 0,
+    STUB_CODE_BLOCK_JUMPSTUB = 1,
+    STUB_CODE_BLOCK_PRECODE = 2,
+    STUB_CODE_BLOCK_DYNAMICHELPER = 3,
+    STUB_CODE_BLOCK_STUBPRECODE = 4,
+    STUB_CODE_BLOCK_FIXUPPRECODE = 5,
+#ifdef FEATURE_VIRTUAL_STUB_DISPATCH
+    STUB_CODE_BLOCK_VSD_DISPATCH_STUB = 6,
+    STUB_CODE_BLOCK_VSD_RESOLVE_STUB = 7,
+    STUB_CODE_BLOCK_VSD_LOOKUP_STUB = 8,
+    STUB_CODE_BLOCK_VSD_VTABLE_STUB = 9,
+#endif // FEATURE_VIRTUAL_STUB_DISPATCH
     // Last valid value. Note that the definition is duplicated in debug\daccess\fntableaccess.cpp
     STUB_CODE_BLOCK_LAST = 0xF,
     // Placeholders returned by code:GetStubCodeBlockKind
@@ -2477,7 +2479,7 @@ public:
 
     TADDR       GetSavedMethodCode();
 
-    TADDR       GetStartAddress();
+    TADDR       GetStartAddress() const;
 
     BOOL        IsValid()
     {
@@ -2505,15 +2507,15 @@ public:
     }
 
     // This returns a pointer to the start of an instruction; conceptually, a PINSTR.
-    TADDR       GetCodeAddress()
+    TADDR       GetCodeAddress() const
     {
         LIMITED_METHOD_DAC_CONTRACT;
         return PCODEToPINSTR(m_codeAddress);
     }
 
-    NativeCodeVersion GetNativeCodeVersion();
+    NativeCodeVersion GetNativeCodeVersion() const;
 
-    MethodDesc * GetMethodDesc()
+    MethodDesc * GetMethodDesc() const
     {
         LIMITED_METHOD_DAC_CONTRACT;
         return m_pMD;
