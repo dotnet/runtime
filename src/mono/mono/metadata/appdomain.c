@@ -762,7 +762,7 @@ mono_domain_assembly_search (MonoAssemblyLoadContext *alc, MonoAssembly *request
 }
 
 MonoReflectionAssemblyHandle
-ves_icall_System_Reflection_Assembly_InternalLoad (MonoStringHandle name_handle, MonoStackCrawlMark *stack_mark, gpointer load_Context, MonoError *error)
+ves_icall_System_Reflection_Assembly_InternalLoad (MonoStringHandle name_handle, MonoQCallAssemblyHandle requesting_assembly_h, gpointer load_Context, MonoError *error)
 {
 	error_init (error);
 	MonoAssembly *ass = NULL;
@@ -772,7 +772,7 @@ ves_icall_System_Reflection_Assembly_InternalLoad (MonoStringHandle name_handle,
 	gboolean parsed;
 	char *name;
 
-	MonoAssembly *requesting_assembly = mono_runtime_get_caller_from_stack_mark (stack_mark);
+	MonoAssembly *requesting_assembly = requesting_assembly_h.assembly;
 	MonoAssemblyLoadContext *alc = (MonoAssemblyLoadContext *)load_Context;
 
 	if (!alc)

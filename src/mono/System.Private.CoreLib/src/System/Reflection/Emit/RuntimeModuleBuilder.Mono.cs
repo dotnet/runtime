@@ -46,9 +46,9 @@ namespace System.Reflection.Emit
     [StructLayout(LayoutKind.Sequential)]
     internal sealed partial class RuntimeModuleBuilder : ModuleBuilder
     {
-#region Sync with MonoReflectionModuleBuilder in object-internals.h
+        #region Sync with MonoReflectionModuleBuilder in object-internals.h
 
-#region This class inherits from Module, but the runtime expects it to have the same layout as RuntimeModule
+        #region This class inherits from Module, but the runtime expects it to have the same layout as RuntimeModule
         internal IntPtr _impl; /* a pointer to a MonoImage */
         internal Assembly assembly;
         internal string fqname;
@@ -56,7 +56,7 @@ namespace System.Reflection.Emit
         internal string scopename;
         internal bool is_resource;
         internal int token;
-#endregion
+        #endregion
 
         private UIntPtr dynamic_image; /* GC-tracked */
         private int num_types;
@@ -70,13 +70,15 @@ namespace System.Reflection.Emit
         private object? resources;
         private IntPtr unparented_classes;
         private int[]? table_indexes;
-#endregion
+        #endregion
 
-        private byte[] guid;
+        private Guid guid;
         private RuntimeTypeBuilder? global_type;
         private bool global_type_created;
         // name_cache keys are display names
-        private Dictionary<ITypeName, RuntimeTypeBuilder> name_cache;
+        private Dictionary<string, RuntimeTypeBuilder> name_cache;
+        // nested types are not included in unescaped_name_cache
+        private Dictionary<string, RuntimeTypeBuilder> unescaped_name_cache;
         private Dictionary<string, int> us_string_cache;
         private ModuleBuilderTokenGenerator? token_gen;
 
@@ -92,9 +94,10 @@ namespace System.Reflection.Emit
             this.name = this.scopename = name;
             this.fqname = name;
             this.assembly = this.assemblyb = assb;
-            guid = Guid.NewGuid().ToByteArray();
+            guid = Guid.NewGuid();
             table_idx = get_next_table_index(0x00, 1);
-            name_cache = new Dictionary<ITypeName, RuntimeTypeBuilder>();
+            name_cache = new Dictionary<string, RuntimeTypeBuilder>();
+            unescaped_name_cache = new Dictionary<string, RuntimeTypeBuilder>();
             us_string_cache = new Dictionary<string, int>(512);
             this.global_type_created = false;
 
@@ -147,8 +150,20 @@ namespace System.Reflection.Emit
             return DefineDataImpl(name, size, attributes & ~FieldAttributes.ReservedMask);
         }
 
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
-            Justification = "Reflection.Emit is not subject to trimming")]
+        internal Type DefineDataType(int size)
+        {
+            string typeName = $"$ArrayType${size}";
+            if (unescaped_name_cache.TryGetValue(typeName, out RuntimeTypeBuilder? datablobtype))
+            {
+                return datablobtype;
+            }
+
+            TypeBuilder tb = DefineType(typeName,
+                    TypeAttributes.Public | TypeAttributes.ExplicitLayout | TypeAttributes.Sealed,
+                                             typeof(ValueType), null, RuntimeFieldBuilder.RVADataPackingSize(size), size);
+            return tb.CreateType();
+        }
+
         private FieldBuilder DefineDataImpl(string name, int size, FieldAttributes attributes)
         {
             ArgumentException.ThrowIfNullOrEmpty(name);
@@ -159,16 +174,7 @@ namespace System.Reflection.Emit
 
             CreateGlobalType();
 
-            string typeName = "$ArrayType$" + size;
-            Type? datablobtype = GetType(typeName, false, false);
-            if (datablobtype == null)
-            {
-                TypeBuilder tb = DefineType(typeName,
-                    TypeAttributes.Public | TypeAttributes.ExplicitLayout | TypeAttributes.Sealed,
-                                             typeof(ValueType), null, RuntimeFieldBuilder.RVADataPackingSize(size), size);
-                tb.CreateType();
-                datablobtype = tb;
-            }
+            Type? datablobtype = DefineDataType(size);
             FieldBuilder fb = global_type!.DefineField(name, datablobtype, attributes | FieldAttributes.Static);
 
             if (global_fields != null)
@@ -228,7 +234,7 @@ namespace System.Reflection.Emit
             return mb;
         }
 
-        private void AddType(RuntimeTypeBuilder tb)
+        internal void AddType(RuntimeTypeBuilder tb)
         {
             if (types != null)
             {
@@ -245,32 +251,28 @@ namespace System.Reflection.Emit
             }
             types[num_types] = tb;
             num_types++;
+            name_cache.Add(tb.FullName, tb);
+            if (!tb.IsNested)
+            {
+                unescaped_name_cache.Add(tb.FullNameUnescaped, tb);
+            }
+        }
+
+        internal void CheckTypeNameConflict(string name, Type? enclosingType)
+        {
+            if (name_cache.TryGetValue(name, out RuntimeTypeBuilder? foundType) &&
+                ReferenceEquals(foundType.DeclaringType, enclosingType))
+            {
+                // Cannot have two types with the same name
+                throw new ArgumentException(SR.Argument_DuplicateTypeName);
+            }
         }
 
         private RuntimeTypeBuilder DefineType(string name, TypeAttributes attr, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type? parent, Type[]? interfaces, PackingSize packingSize, int typesize)
         {
             Debug.Assert(name is not null);
-            ITypeIdentifier ident = TypeIdentifiers.FromInternal(name);
-            if (name_cache.ContainsKey(ident))
-                throw new ArgumentException(SR.Argument_DuplicateTypeName);
-            RuntimeTypeBuilder res = new RuntimeTypeBuilder(this, name, attr, parent, interfaces, packingSize, typesize, null);
-            AddType(res);
 
-            name_cache.Add(ident, res);
-
-            return res;
-        }
-
-        internal void RegisterTypeName(RuntimeTypeBuilder tb, ITypeName name)
-        {
-            name_cache.Add(name, tb);
-        }
-
-        internal RuntimeTypeBuilder? GetRegisteredType(ITypeName name)
-        {
-            RuntimeTypeBuilder? result;
-            name_cache.TryGetValue(name, out result);
-            return result;
+            return new RuntimeTypeBuilder(this, name, attr, parent, interfaces, packingSize, typesize, null);
         }
 
         protected override TypeBuilder DefineTypeCore(string name, TypeAttributes attr, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type? parent, Type[]? interfaces, PackingSize packingSize, int typesize)
@@ -285,15 +287,7 @@ namespace System.Reflection.Emit
 
         protected override EnumBuilder DefineEnumCore(string name, TypeAttributes visibility, Type underlyingType)
         {
-            ITypeIdentifier ident = TypeIdentifiers.FromInternal(name);
-            if (name_cache.ContainsKey(ident))
-                throw new ArgumentException(SR.Argument_DuplicateTypeName);
-
-            RuntimeEnumBuilder eb = new RuntimeEnumBuilder(this, name, visibility, underlyingType);
-            RuntimeTypeBuilder res = eb.GetTypeBuilder();
-            AddType(res);
-            name_cache.Add(ident, res);
-            return eb;
+            return new RuntimeEnumBuilder(this, name, visibility, underlyingType);
         }
 
         [RequiresUnreferencedCode("Types might be removed by trimming. If the type name is a string literal, consider using Type.GetType instead.")]
@@ -308,103 +302,44 @@ namespace System.Reflection.Emit
             return GetType(className, false, ignoreCase);
         }
 
-        private static RuntimeTypeBuilder? search_in_array(RuntimeTypeBuilder[] arr, int validElementsInArray, ITypeName className)
-        {
-            int i;
-            for (i = 0; i < validElementsInArray; ++i)
-            {
-                if (string.Compare(className.DisplayName, arr[i].FullName, true, CultureInfo.InvariantCulture) == 0)
-                {
-                    return arr[i];
-                }
-            }
-            return null;
-        }
-
-        private static RuntimeTypeBuilder? search_nested_in_array(RuntimeTypeBuilder[] arr, int validElementsInArray, ITypeName className)
-        {
-            int i;
-            for (i = 0; i < validElementsInArray; ++i)
-            {
-                if (string.Compare(className.DisplayName, arr[i].Name, true, CultureInfo.InvariantCulture) == 0)
-                    return arr[i];
-            }
-            return null;
-        }
-
-        private static RuntimeTypeBuilder? GetMaybeNested(RuntimeTypeBuilder t, IEnumerable<ITypeName> nested)
-        {
-            RuntimeTypeBuilder? result = t;
-
-            foreach (ITypeName pname in nested)
-            {
-                if (result.subtypes == null)
-                    return null;
-                result = search_nested_in_array(result.subtypes, result.subtypes.Length, pname);
-                if (result == null)
-                    return null;
-            }
-            return result;
-        }
-
         [RequiresUnreferencedCode("Types might be removed by trimming. If the type name is a string literal, consider using Type.GetType instead.")]
         public override Type? GetType(string className, bool throwOnError, bool ignoreCase)
         {
             ArgumentException.ThrowIfNullOrEmpty(className);
 
+            return assemblyb.GetType(className, throwOnError, ignoreCase);
+        }
+
+        [RequiresUnreferencedCode("Types might be removed by trimming. If the type name is a string literal, consider using Type.GetType instead.")]
+        internal Type? GetTypeCore(string unescapedName, ReadOnlySpan<string> nestedTypeNames, bool ignoreCase)
+        {
             RuntimeTypeBuilder? result = null;
-
-            if (types == null && throwOnError)
-                throw new TypeLoadException(className);
-
-            TypeSpec ts = TypeSpec.Parse(className);
 
             if (!ignoreCase)
             {
-                ITypeName displayNestedName = ts.TypeNameWithoutModifiers();
-                name_cache.TryGetValue(displayNestedName, out result);
+                unescaped_name_cache.TryGetValue(unescapedName, out result);
             }
             else
             {
-                if (types != null)
-                    result = search_in_array(types, num_types, ts.Name!);
-                if (!ts.IsNested && result != null)
+                foreach (KeyValuePair<string, RuntimeTypeBuilder> kvp in unescaped_name_cache)
                 {
-                    result = GetMaybeNested(result, ts.Nested);
-                }
-            }
-            if ((result == null) && throwOnError)
-                throw new TypeLoadException(className);
-            if (result != null && (ts.HasModifiers || ts.IsByRef))
-            {
-                Type mt = result;
-                if (result is RuntimeTypeBuilder tb)
-                {
-                    if (tb.is_created)
-                        mt = tb.CreateType()!;
-                }
-                foreach (IModifierSpec mod in ts.Modifiers)
-                {
-                    if (mod is PointerSpec)
-                        mt = mt.MakePointerType()!;
-                    else if (mod is IArraySpec)
+                    if (string.Equals(kvp.Key, unescapedName, StringComparison.OrdinalIgnoreCase))
                     {
-                        var spec = (mod as IArraySpec)!;
-                        if (spec.IsBound)
-                            return null;
-                        if (spec.Rank == 1)
-                            mt = mt.MakeArrayType();
-                        else
-                            mt = mt.MakeArrayType(spec.Rank);
+                        result = kvp.Value;
+                        break;
                     }
                 }
-                if (ts.IsByRef)
-                    mt = mt.MakeByRefType();
-                result = mt as RuntimeTypeBuilder;
-                if (result == null)
-                    return mt;
             }
-            if (result != null && result.is_created)
+            BindingFlags bindingFlags = BindingFlags.NonPublic | BindingFlags.Public;
+            if (ignoreCase)
+                bindingFlags |= BindingFlags.IgnoreCase;
+            for (int i = 0; i < nestedTypeNames.Length; i++)
+            {
+                if (result is null)
+                    break;
+                result = result.GetNestedType(nestedTypeNames[i], bindingFlags, ignoreAmbiguousMatch: true);
+            }
+            if (result is not null && result.is_created)
                 return result.CreateType();
             else
                 return result;
@@ -760,13 +695,7 @@ namespace System.Reflection.Emit
             get { return name; }
         }
 
-        public override Guid ModuleVersionId
-        {
-            get
-            {
-                return new Guid(guid);
-            }
-        }
+        public override Guid ModuleVersionId => guid;
 
         public override bool IsResource()
         {

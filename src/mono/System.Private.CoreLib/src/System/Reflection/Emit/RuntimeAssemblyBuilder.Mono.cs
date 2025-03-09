@@ -41,149 +41,30 @@ using System.IO;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Loader;
+using System.Threading;
 
 namespace System.Reflection.Emit
 {
-    internal sealed class GenericInstanceKey
-    {
-        private Type gtd;
-        internal Type[] args;
-        private int hash_code;
-
-        internal GenericInstanceKey(Type gtd, Type[] args)
-        {
-            this.gtd = gtd;
-            this.args = args;
-
-            hash_code = gtd.GetHashCode();
-            for (int i = 0; i < args.Length; ++i)
-                hash_code ^= args[i].GetHashCode();
-        }
-
-        private static bool IsBoundedVector(Type type)
-        {
-            if (type is SymbolType st && st.IsArray)
-                return st.GetArrayRank() == 1;
-            return type.ToString().EndsWith("[*]", StringComparison.Ordinal); /*Super uggly hack, SR doesn't allow one to query for it */
-        }
-
-        private static bool TypeEquals(Type a, Type b)
-        {
-            if (a == b)
-                return true;
-
-            if (a.HasElementType)
-            {
-                if (!b.HasElementType)
-                    return false;
-                if (!TypeEquals(a.GetElementType()!, b.GetElementType()!))
-                    return false;
-                if (a.IsArray)
-                {
-                    if (!b.IsArray)
-                        return false;
-                    int rank = a.GetArrayRank();
-                    if (rank != b.GetArrayRank())
-                        return false;
-                    if (rank == 1 && IsBoundedVector(a) != IsBoundedVector(b))
-                        return false;
-                }
-                else if (a.IsByRef)
-                {
-                    if (!b.IsByRef)
-                        return false;
-                }
-                else if (a.IsPointer)
-                {
-                    if (!b.IsPointer)
-                        return false;
-                }
-                return true;
-            }
-
-            if (a.IsGenericType)
-            {
-                if (!b.IsGenericType)
-                    return false;
-                if (a.IsGenericParameter)
-                    return a == b;
-                if (a.IsGenericParameter) //previous test should have caught it
-                    return false;
-
-                if (a.IsGenericTypeDefinition)
-                {
-                    if (!b.IsGenericTypeDefinition)
-                        return false;
-                }
-                else
-                {
-                    if (b.IsGenericTypeDefinition)
-                        return false;
-                    if (!TypeEquals(a.GetGenericTypeDefinition(), b.GetGenericTypeDefinition()))
-                        return false;
-
-                    Type[] argsA = a.GetGenericArguments();
-                    Type[] argsB = b.GetGenericArguments();
-                    for (int i = 0; i < argsA.Length; ++i)
-                    {
-                        if (!TypeEquals(argsA[i], argsB[i]))
-                            return false;
-                    }
-                }
-            }
-
-            /*
-            Now only non-generic, non compound types are left. To properly deal with user
-            types we would have to call UnderlyingSystemType, but we let them have their
-            own instantiation as this is MS behavior and mcs (pre C# 4.0, at least) doesn't
-            depend on proper UT canonicalization.
-            */
-            return a == b;
-        }
-
-        public override bool Equals(object? obj)
-        {
-            GenericInstanceKey? other = obj as GenericInstanceKey;
-            if (other == null)
-                return false;
-            if (gtd != other.gtd)
-                return false;
-            for (int i = 0; i < args.Length; ++i)
-            {
-                Type a = args[i];
-                Type b = other.args[i];
-                /*
-                We must canonicalize as much as we can. Using equals means that some resulting types
-                won't have the exact same types as the argument ones.
-                For example, flyweight types used array, pointer and byref will should this behavior.
-                MCS seens to be resilient to this problem so hopefully this won't show up.
-                */
-                if (a != b && !a.Equals(b))
-                    return false;
-            }
-            return true;
-        }
-
-        public override int GetHashCode()
-        {
-            return hash_code;
-        }
-    }
-
     public partial class AssemblyBuilder
     {
         [RequiresDynamicCode("Defining a dynamic assembly requires dynamic code.")]
+        [System.Security.DynamicSecurityMethod] // Methods containing StackCrawlMark local var has to be marked DynamicSecurityMethod
         public static AssemblyBuilder DefineDynamicAssembly(AssemblyName name, AssemblyBuilderAccess access)
         {
             ArgumentNullException.ThrowIfNull(name);
 
-            return new RuntimeAssemblyBuilder(name, access);
+            StackCrawlMark stackMark = StackCrawlMark.LookForMyCaller;
+            return new RuntimeAssemblyBuilder(name, access, GetExecutingAssembly(ref stackMark));
         }
 
         [RequiresDynamicCode("Defining a dynamic assembly requires dynamic code.")]
+        [System.Security.DynamicSecurityMethod] // Methods containing StackCrawlMark local var has to be marked DynamicSecurityMethod
         public static AssemblyBuilder DefineDynamicAssembly(AssemblyName name, AssemblyBuilderAccess access, IEnumerable<CustomAttributeBuilder>? assemblyAttributes)
         {
-            AssemblyBuilder ab = DefineDynamicAssembly(name, access);
+            ArgumentNullException.ThrowIfNull(name);
+
+            StackCrawlMark stackMark = StackCrawlMark.LookForMyCaller;
+            AssemblyBuilder ab = new RuntimeAssemblyBuilder(name, access, GetExecutingAssembly(ref stackMark));
             if (assemblyAttributes != null)
             {
                 foreach (CustomAttributeBuilder attr in assemblyAttributes)
@@ -221,19 +102,19 @@ namespace System.Reflection.Emit
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         [DynamicDependency("RuntimeResolve", typeof(RuntimeModuleBuilder))]
-        private static extern void basic_init(RuntimeAssemblyBuilder ab);
+        private static extern void basic_init(RuntimeAssemblyBuilder ab, IntPtr alc_ptr);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private static extern void UpdateNativeCustomAttributes(RuntimeAssemblyBuilder ab);
 
         [DynamicDependency(nameof(access))] // Automatically keeps all previous fields too due to StructLayout
-        internal RuntimeAssemblyBuilder(AssemblyName n, AssemblyBuilderAccess access)
+        internal RuntimeAssemblyBuilder(AssemblyName n, AssemblyBuilderAccess access, Assembly callingAssembly)
         {
             EnsureDynamicCodeSupported();
 
             aname = (AssemblyName)n.Clone();
 
-            if (!Enum.IsDefined(typeof(AssemblyBuilderAccess), access))
+            if (!Enum.IsDefined(access))
                 throw new ArgumentException(SR.Format(CultureInfo.InvariantCulture,
                     SR.Arg_EnumIllegalVal, (int)access),
                     nameof(access));
@@ -251,7 +132,8 @@ namespace System.Reflection.Emit
             }
             public_key_token = n.GetPublicKeyToken();
 
-            basic_init(this);
+            AssemblyLoadContext alc = AssemblyLoadContext.CurrentContextualReflectionContext ?? AssemblyLoadContext.GetLoadContext(callingAssembly)!;
+            basic_init(this, alc.NativeALC);
 
             // Netcore only allows one module per assembly
             manifest_module = new RuntimeModuleBuilder(this, "RefEmit_InMemoryManifestModule");
@@ -327,14 +209,14 @@ namespace System.Reflection.Emit
         {
             ArgumentException.ThrowIfNullOrEmpty(name);
 
-            Type res = InternalGetType(null, name, throwOnError, ignoreCase);
-            if (res is TypeBuilder)
-            {
-                if (throwOnError)
-                    throw new TypeLoadException(SR.Format(SR.ClassLoad_General, name, this.name));
-                return null;
-            }
-            return res;
+            return TypeNameResolver.GetType(name, throwOnError, ignoreCase, this);
+        }
+
+        /// <inheritdoc cref="RuntimeAssembly.GetTypeCore"/>
+        [RequiresUnreferencedCode("Types might be removed by trimming. If the type name is a string literal, consider using Type.GetType instead.")]
+        internal Type? GetTypeCore(string unescapedName, ReadOnlySpan<string> nestedTypeNames, bool ignoreCase)
+        {
+            return manifest_module.GetTypeCore(unescapedName, nestedTypeNames, ignoreCase);
         }
 
         public override Module? GetModule(string name)
