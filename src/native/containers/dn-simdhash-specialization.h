@@ -23,6 +23,13 @@
 #error Expected DN_SIMDHASH_VALUE_T definition i.e. int
 #endif
 
+// If specified, this data will be precalculated/prefetched at the start of scans
+//  and passed to your KEY_EQUALS macro as its first parameter
+#ifndef DN_SIMDHASH_SCAN_DATA_T
+#define DN_SIMDHASH_SCAN_DATA_T uint8_t
+#define DN_SIMDHASH_GET_SCAN_DATA(data) 0
+#endif
+
 // If specified, we pass instance data to the handlers by-value, otherwise we
 //  pass the pointer to the hash itself by-value. This is enough to allow clang
 //  to hoist the load of the instance data out of the key scan loop, though it
@@ -204,11 +211,13 @@ DN_SIMDHASH_SCAN_BUCKET_INTERNAL (DN_SIMDHASH_T_PTR hash, bucket_t *restrict buc
 #undef bucket_suffixes
 
 	if (DN_LIKELY(index < count)) {
+		DN_SIMDHASH_SCAN_DATA_T scan_data = DN_SIMDHASH_GET_SCAN_DATA(DN_SIMDHASH_GET_DATA(hash));
+		// HACK: Suppress unused variable warning for specializations that don't use scan_data
+		(void)(scan_data);
+
 		DN_SIMDHASH_KEY_T *key = &bucket->keys[index];
 		do {
-			// FIXME: Could be profitable to manually hoist the data load outside of the loop,
-			//  if not out of SCAN_BUCKET_INTERNAL entirely. Clang appears to do LICM on it.
-			if (DN_SIMDHASH_KEY_EQUALS(DN_SIMDHASH_GET_DATA(hash), needle, *key))
+			if (DN_SIMDHASH_KEY_EQUALS(scan_data, needle, *key))
 				return index;
 			key++;
 			index++;
