@@ -803,16 +803,6 @@ void Compiler::optPrintAssertion(AssertionDsc* curAssertion, AssertionIndex asse
         printf("Oper_Bnd");
         vnStore->vnDump(this, curAssertion->op1.vn);
     }
-    else if (curAssertion->op1.kind == O1K_CONSTANT_LOOP_BND)
-    {
-        printf("Const_Loop_Bnd");
-        vnStore->vnDump(this, curAssertion->op1.vn);
-    }
-    else if (curAssertion->op1.kind == O1K_CONSTANT_LOOP_BND_UN)
-    {
-        printf("Const_Loop_Bnd_Un");
-        vnStore->vnDump(this, curAssertion->op1.vn);
-    }
     else
     {
         printf("?op1.kind?");
@@ -900,9 +890,7 @@ void Compiler::optPrintAssertion(AssertionDsc* curAssertion, AssertionIndex asse
                     }
                     assert(curAssertion->op2.HasIconFlag());
                 }
-                else if ((curAssertion->op1.kind == O1K_BOUND_OPER_BND) ||
-                         (curAssertion->op1.kind == O1K_CONSTANT_LOOP_BND) ||
-                         (curAssertion->op1.kind == O1K_CONSTANT_LOOP_BND_UN))
+                else if (curAssertion->op1.kind == O1K_BOUND_OPER_BND)
                 {
                     assert(!optLocalAssertionProp);
                     vnStore->vnDump(this, curAssertion->op2.vn);
@@ -1866,8 +1854,6 @@ void Compiler::optDebugCheckAssertion(AssertionDsc* assertion)
             break;
         case O1K_VN:
         case O1K_BOUND_OPER_BND:
-        case O1K_CONSTANT_LOOP_BND:
-        case O1K_CONSTANT_LOOP_BND_UN:
             assert(!optLocalAssertionProp);
             break;
         default:
@@ -1963,9 +1949,7 @@ void Compiler::optCreateComplementaryAssertion(AssertionIndex assertionIndex,
     }
 
     AssertionDsc& candidateAssertion = *optGetAssertion(assertionIndex);
-    if ((candidateAssertion.op1.kind == O1K_BOUND_OPER_BND) ||
-        (candidateAssertion.op1.kind == O1K_CONSTANT_LOOP_BND) ||
-        (candidateAssertion.op1.kind == O1K_CONSTANT_LOOP_BND_UN))
+    if ((candidateAssertion.op1.kind == O1K_BOUND_OPER_BND) || (candidateAssertion.op1.kind == O1K_VN))
     {
         AssertionDsc dsc  = candidateAssertion;
         dsc.assertionKind = dsc.assertionKind == OAK_EQUAL ? OAK_NOT_EQUAL : OAK_EQUAL;
@@ -2169,25 +2153,11 @@ AssertionInfo Compiler::optCreateJTrueBoundsAssertion(GenTree* tree)
     // Cases where op1 holds the lhs of the condition op2 holds rhs.
     // Loop condition like "i < 100"
     // Assertion: "i < 100 != 0"
-    else if (vnStore->IsVNConstantBound(relopVN))
+    else if (vnStore->IsVNConstantBound(relopVN) || vnStore->IsVNConstantBoundUnsigned(relopVN))
     {
         AssertionDsc dsc;
         dsc.assertionKind  = OAK_NOT_EQUAL;
-        dsc.op1.kind       = O1K_CONSTANT_LOOP_BND;
-        dsc.op1.vn         = relopVN;
-        dsc.op2.kind       = O2K_CONST_INT;
-        dsc.op2.vn         = vnStore->VNZeroForType(TYP_INT);
-        dsc.op2.u1.iconVal = 0;
-        dsc.op2.SetIconFlag(GTF_EMPTY);
-        AssertionIndex index = optAddAssertion(&dsc);
-        optCreateComplementaryAssertion(index, nullptr, nullptr);
-        return index;
-    }
-    else if (vnStore->IsVNConstantBoundUnsigned(relopVN))
-    {
-        AssertionDsc dsc;
-        dsc.assertionKind  = OAK_NOT_EQUAL;
-        dsc.op1.kind       = O1K_CONSTANT_LOOP_BND_UN;
+        dsc.op1.kind       = O1K_VN;
         dsc.op1.vn         = relopVN;
         dsc.op2.kind       = O2K_CONST_INT;
         dsc.op2.vn         = vnStore->VNZeroForType(TYP_INT);
@@ -4081,7 +4051,7 @@ void Compiler::optAssertionProp_RangeProperties(ASSERT_VALARG_TP assertions,
 
         // OAK_[NOT]_EQUAL assertion with op1 being O1K_CONSTANT_LOOP_BND
         // representing "(X relop CNS) ==/!= 0" assertion.
-        if (!curAssertion->IsConstantBound() && !curAssertion->IsConstantBoundUnsigned())
+        if (!curAssertion->IsRelopInt32ConstantBound(this))
         {
             continue;
         }

@@ -693,12 +693,12 @@ void RangeCheck::MergeEdgeAssertions(
                 if (normalLclVN == info.cmpOp)
                 {
                     cmpOper = (genTreeOps)info.cmpOper;
-                    limit = Limit(Limit::keBinOpArray, info.vnBound, 0);
+                    limit   = Limit(Limit::keBinOpArray, info.vnBound, 0);
                 }
                 else if (normalLclVN == info.vnBound)
                 {
                     cmpOper = GenTree::SwapRelop((genTreeOps)info.cmpOper);
-                    limit = Limit(Limit::keBinOpArray, info.cmpOp, 0);
+                    limit   = Limit(Limit::keBinOpArray, info.cmpOp, 0);
                 }
                 else
                 {
@@ -720,12 +720,12 @@ void RangeCheck::MergeEdgeAssertions(
                 }
 
                 int cons = comp->vnStore->ConstantValue<int>(info.arrOp);
-                limit = Limit(Limit::keBinOpArray, info.vnBound, info.arrOper == GT_SUB ? -cons : cons);
-                cmpOper = (genTreeOps)info.cmpOper;
+                limit    = Limit(Limit::keBinOpArray, info.vnBound, info.arrOper == GT_SUB ? -cons : cons);
+                cmpOper  = (genTreeOps)info.cmpOper;
             }
         }
         // Current assertion is of the form (i < 100) != 0
-        else if (curAssertion->IsConstantBound() || curAssertion->IsConstantBoundUnsigned())
+        else if (curAssertion->IsRelopInt32ConstantBound(comp))
         {
             ValueNumStore::ConstantBoundInfo info;
 

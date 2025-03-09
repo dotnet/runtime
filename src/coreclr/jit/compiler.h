@@ -7721,8 +7721,6 @@ public:
         O1K_VN,
         O1K_ARR_BND,
         O1K_BOUND_OPER_BND,
-        O1K_CONSTANT_LOOP_BND,
-        O1K_CONSTANT_LOOP_BND_UN,
         O1K_EXACT_TYPE,
         O1K_SUBTYPE,
         O1K_COUNT
@@ -7816,16 +7814,6 @@ public:
         {
             return ((assertionKind == OAK_EQUAL || assertionKind == OAK_NOT_EQUAL) && op1.kind == O1K_BOUND_OPER_BND);
         }
-        bool IsConstantBound()
-        {
-            return ((assertionKind == OAK_EQUAL || assertionKind == OAK_NOT_EQUAL) &&
-                    (op1.kind == O1K_CONSTANT_LOOP_BND));
-        }
-        bool IsConstantBoundUnsigned()
-        {
-            return ((assertionKind == OAK_EQUAL || assertionKind == OAK_NOT_EQUAL) &&
-                    (op1.kind == O1K_CONSTANT_LOOP_BND_UN));
-        }
         bool IsBoundsCheckNoThrow()
         {
             return ((assertionKind == OAK_NO_THROW) && (op1.kind == O1K_ARR_BND));
@@ -7840,6 +7828,37 @@ public:
         {
             return ((assertionKind == OAK_EQUAL) || (assertionKind == OAK_NOT_EQUAL)) && (op2.kind == O2K_CONST_INT) &&
                    ((op1.kind == O1K_LCLVAR) || (op1.kind == O1K_VN));
+        }
+
+        bool IsRelopInt32ConstantBound(Compiler* comp)
+        {
+            if (assertionKind == OAK_EQUAL || assertionKind == OAK_NOT_EQUAL)
+            {
+                if (op1.kind == O1K_VN && op2.kind == O2K_CONST_INT && op2.u1.iconVal == 0)
+                {
+                    VNFuncApp funcAttr;
+                    if (!comp->vnStore->GetVNFunc(op1.vn, &funcAttr))
+                    {
+                        return false;
+                    }
+
+                    switch (funcAttr.m_func)
+                    {
+                        case VNF_GE:
+                        case VNF_GT:
+                        case VNF_LE:
+                        case VNF_LT:
+                        case VNF_GE_UN:
+                        case VNF_GT_UN:
+                        case VNF_LE_UN:
+                        case VNF_LT_UN:
+                            return true;
+                        default:
+                            break;
+                    }
+                }
+            }
+            return false;
         }
 
         bool CanPropLclVar()
