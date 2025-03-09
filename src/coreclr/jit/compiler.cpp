@@ -611,6 +611,47 @@ bool Compiler::isNativePrimitiveStructType(CORINFO_CLASS_HANDLE clsHnd)
     return strcmp(typeName, "CLong") == 0 || strcmp(typeName, "CULong") == 0 || strcmp(typeName, "NFloat") == 0;
 }
 
+//---------------------------------------------------------------------------
+// mapNativePrimitiveStructType:
+//   If a struct layout represents a native primitive struct type then map it
+//   to a JIT primitive type.
+//
+// Arguments:
+//   layout - Layout
+//
+// Return Value:
+//   TYP_UNDEF is the layout is something other than
+//   System.Runtime.InteropServices.CLong/CUlong/NFloat; otherwise the
+//   primitive type corresponding to the layout.
+//
+var_types Compiler::mapNativePrimitiveStructType(ClassLayout* layout)
+{
+    if (!isIntrinsicType(layout->GetClassHandle()))
+    {
+        return TYP_UNDEF;
+    }
+
+    const char* namespaceName = nullptr;
+    const char* typeName      = getClassNameFromMetadata(layout->GetClassHandle(), &namespaceName);
+
+    if (strcmp(namespaceName, "System.Runtime.InteropServices") != 0)
+    {
+        return TYP_UNDEF;
+    }
+
+    if ((strcmp(typeName, "CLong") == 0) || (strcmp(typeName, "CULong") == 0))
+    {
+        return layout->GetSize() == 4 ? TYP_INT : TYP_LONG;
+    }
+
+    if (strcmp(typeName, "NFloat") == 0)
+    {
+        return layout->GetSize() == 4 ? TYP_FLOAT : TYP_DOUBLE;
+    }
+
+    return TYP_UNDEF;
+}
+
 //-----------------------------------------------------------------------------
 // getPrimitiveTypeForStruct:
 //     Get the "primitive" type that is used for a struct
@@ -1061,6 +1102,95 @@ var_types Compiler::getReturnTypeForStruct(CORINFO_CLASS_HANDLE     clsHnd,
     }
 
     return useType;
+}
+
+//-----------------------------------------------------------------------------
+// ClassifyReturnABI:
+//   Classify how a value should be returned under the specified calling
+//   convention.
+//
+// Parameters:
+//   type         - JIT type for the parameter
+//   structLayout - If varTypeIsStruct(type) the (non-custom) layout of the struct
+//   callConv     - Calling convention to classify for
+//
+// Return Value:
+//   Information for the return value.
+//
+ABIReturningInformation Compiler::ClassifyReturnABI(var_types                type,
+                                                    ClassLayout*             structLayout,
+                                                    CorInfoCallConvExtension callConv)
+{
+    if (type == TYP_VOID)
+    {
+        return ABIReturningInformation::Void();
+    }
+
+    if ((callConv != CorInfoCallConvExtension::Managed) && (type == TYP_STRUCT))
+    {
+        // TODO-Bug: Should be done for parameters too? E.g. NFloat is probably
+        // handled incorrectly on most ABIs.
+        var_types mappedType = mapNativePrimitiveStructType(structLayout);
+        if (mappedType != TYP_UNDEF)
+        {
+            type         = mappedType;
+            structLayout = nullptr;
+        }
+    }
+
+    ReturnClassifierInfo info;
+    info.CallConv = callConv;
+
+#if defined(SWIFT_SUPPORT)
+    if (callConv == CorInfoCallConvExtension::Swift)
+    {
+        SwiftABIReturnClassifier retClassifier(info);
+        return retClassifier.Classify(this, type, structLayout);
+    }
+#endif
+
+#if !defined(TARGET_LOONGARCH64) && !defined(TARGET_RISCV64)
+    PlatformReturnClassifier retClassifier(info);
+    return retClassifier.Classify(this, type, structLayout);
+#else
+    return ABIReturningInformation::Void();
+#endif
+}
+
+//-----------------------------------------------------------------------------
+// ClassifyReturnABI:
+//   Classify how a value should be returned under the specified calling
+//   convention.
+//
+// Parameters:
+//   type         - JIT type for the parameter
+//   structLayout - If varTypeIsStruct(type) the (non-custom) layout of the struct
+//   callConv     - Calling convention to classify for
+//
+// Return Value:
+//   Information for the return value.
+//
+void Compiler::CompareReturnABI(const ReturnTypeDesc&          desc,
+                                CorInfoCallConvExtension       callConv,
+                                const ABIReturningInformation& abiInfo)
+{
+#if defined(DEBUG) && !defined(TARGET_LOONGARCH64) && !defined(TARGET_RISCV64)
+    assert(abiInfo.NumRegisters == desc.GetReturnRegCount());
+    for (unsigned i = 0; i < abiInfo.NumRegisters; i++)
+    {
+        const ABIReturningSegment& seg    = abiInfo.Segment(i);
+        regNumber                  oldReg = desc.GetABIReturnReg(i, callConv);
+#ifdef TARGET_X86
+        // For floats/doubles the old info reports eax, new info reports xmm0,
+        // and the real answer is st(0). Ignore these mismatches.
+        if ((seg.GetRegister() == REG_XMM0) && (oldReg == REG_EAX))
+        {
+            continue;
+        }
+#endif
+        assert(seg.GetRegister() == oldReg);
+    }
+#endif
 }
 
 ///////////////////////////////////////////////////////////////////////////////

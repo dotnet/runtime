@@ -5903,6 +5903,8 @@ public:
     // for the unmanaged calling conventions.
     bool isNativePrimitiveStructType(CORINFO_CLASS_HANDLE clsHnd);
 
+    var_types mapNativePrimitiveStructType(ClassLayout* layout);
+
     enum structPassingKind
     {
         SPK_Unknown,       // Invalid value, never returned
@@ -5932,6 +5934,9 @@ public:
                                      CorInfoCallConvExtension callConv,
                                      structPassingKind*       wbPassStruct = nullptr,
                                      unsigned                 structSize   = 0);
+
+    ABIReturningInformation ClassifyReturnABI(var_types returnType, ClassLayout* layout, CorInfoCallConvExtension callConv);
+    void CompareReturnABI(const ReturnTypeDesc& desc, CorInfoCallConvExtension callConv, const ABIReturningInformation& abiInfo);
 
 #ifdef DEBUG
     // Print a representation of "vnp" or "vn" on standard output.
@@ -10815,7 +10820,8 @@ public:
     }
 #endif // DEBUG
 
-    ReturnTypeDesc compRetTypeDesc; // ABI return type descriptor for the method
+    ReturnTypeDesc          compRetTypeDesc; // ABI return type descriptor for the method
+    ABIReturningInformation compRetTypeInfo;
 
     //------------------------------------------------------------------------
     // compMethodHasRetVal: Does this method return some kind of value?
