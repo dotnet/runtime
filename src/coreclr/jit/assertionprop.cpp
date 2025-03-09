@@ -1713,12 +1713,16 @@ AssertionIndex Compiler::optAddAssertion(AssertionDsc* newAssertion)
         return NO_ASSERTION_INDEX;
     }
 
+    // Don't add VN-based assertions with NoVN
+    //
     if ((newAssertion->op1.kind == O1K_VN) && (newAssertion->op1.vn == ValueNumStore::NoVN))
     {
         JITDUMP("O1K_VN assertion with op1.vn being NoVN.\n");
         return NO_ASSERTION_INDEX;
     }
 
+    // O1K_ARR_BND is also VN-only
+    //
     if ((newAssertion->op1.kind == O1K_ARR_BND) &&
         ((newAssertion->op1.bnd.vnIdx == ValueNumStore::NoVN) || (newAssertion->op1.bnd.vnLen == ValueNumStore::NoVN)))
     {
@@ -2086,18 +2090,16 @@ AssertionInfo Compiler::optCreateJTrueBoundsAssertion(GenTree* tree)
     }
 
     GenTree* relop = tree->gtGetOp1();
-    if (!relop->OperIsCompare())
+    if (!relop->OperIs(GT_GE, GT_GT, GT_LE, GT_LT))
     {
         return NO_ASSERTION_INDEX;
     }
+
     GenTree* op2     = relop->gtGetOp2();
     ValueNum relopVN = vnStore->VNConservativeNormalValue(relop->gtVNPair);
 
-    ValueNumStore::UnsignedCompareCheckedBoundInfo unsignedCompareBnd;
-
-    // Cases where op1 holds the lhs of the condition and op2 holds the bound arithmetic.
-    // Loop condition like: "i < bnd +/-k"
-    // Assertion: "i < bnd +/- k != 0"
+    // Relop: "i relop bnd +/- CNS" where CNS can be 0
+    // Assertion: "O1K_VN" ==/!= 0 where O1K_VN is the relopVN
     if (vnStore->IsVNCompareCheckedBoundArith(relopVN) || vnStore->IsVNCompareCheckedBound(relopVN))
     {
         AssertionDsc dsc;
@@ -2112,9 +2114,11 @@ AssertionInfo Compiler::optCreateJTrueBoundsAssertion(GenTree* tree)
         optCreateComplementaryAssertion(index, nullptr, nullptr);
         return index;
     }
-    // Loop condition like "(uint)i < (uint)bnd" or equivalent
+
+    // Relop: "(uint)i < (uint)bnd"
     // Assertion: "no throw" since this condition guarantees that i is both >= 0 and < bnd (on the appropriate edge)
-    else if (vnStore->IsVNUnsignedCompareCheckedBound(relopVN, &unsignedCompareBnd))
+    ValueNumStore::UnsignedCompareCheckedBoundInfo unsignedCompareBnd;
+    if (vnStore->IsVNUnsignedCompareCheckedBound(relopVN, &unsignedCompareBnd))
     {
         assert(unsignedCompareBnd.vnIdx != ValueNumStore::NoVN);
         assert((unsignedCompareBnd.cmpOper == VNF_LT_UN) || (unsignedCompareBnd.cmpOper == VNF_GE_UN));
@@ -2138,9 +2142,10 @@ AssertionInfo Compiler::optCreateJTrueBoundsAssertion(GenTree* tree)
         }
         return index;
     }
-    // "op relop CNS" (either signed or unsigned).
-    // TYP_INT only for now as we don't have consumers for TYP_LONG assertions.
-    else if (vnStore->IsVNRelopConstantBound(relopVN, TYP_INT))
+
+    // Relop: "i relop CNS" for TYP_INT (can be enabled for other types if beneficial)
+    // Assertion: "O1K_VN" ==/!= 0 where O1K_VN is the relopVN
+    if (vnStore->IsVNRelopConstantBound(relopVN, TYP_INT))
     {
         AssertionDsc dsc;
         dsc.assertionKind  = OAK_NOT_EQUAL;
@@ -2154,6 +2159,7 @@ AssertionInfo Compiler::optCreateJTrueBoundsAssertion(GenTree* tree)
         optCreateComplementaryAssertion(index, nullptr, nullptr);
         return index;
     }
+
     return NO_ASSERTION_INDEX;
 }
 
@@ -2169,8 +2175,6 @@ AssertionInfo Compiler::optAssertionGenJtrue(GenTree* tree)
         return NO_ASSERTION_INDEX;
     }
 
-    Compiler::optAssertionKind assertionKind = OAK_INVALID;
-
     AssertionInfo info = optCreateJTrueBoundsAssertion(tree);
     if (info.HasAssertion())
     {
@@ -2183,6 +2187,7 @@ AssertionInfo Compiler::optAssertionGenJtrue(GenTree* tree)
     }
 
     // Find assertion kind.
+    optAssertionKind assertionKind = OAK_INVALID;
     switch (relop->gtOper)
     {
         case GT_EQ:

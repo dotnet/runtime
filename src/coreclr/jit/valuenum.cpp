@@ -7027,31 +7027,25 @@ bool ValueNumStore::IsVNRelop(ValueNum vn)
     }
 }
 
-bool ValueNumStore::IsVNRelopConstantBound(ValueNum vn, var_types type, bool* isUnsigned)
+bool ValueNumStore::IsVNRelopConstantBound(ValueNum vn, var_types type)
 {
     VNFuncApp funcApp;
     if ((vn != NoVN) && GetVNFunc(vn, &funcApp))
     {
+        bool isUnsigned = false;
         switch (funcApp.m_func)
         {
             case VNF_LT_UN:
             case VNF_LE_UN:
             case VNF_GE_UN:
             case VNF_GT_UN:
-                if (isUnsigned != nullptr)
-                {
-                    *isUnsigned = true;
-                }
+                isUnsigned = true;
                 break;
 
             case VNF_LT:
             case VNF_LE:
             case VNF_GE:
             case VNF_GT:
-                if (isUnsigned != nullptr)
-                {
-                    *isUnsigned = false;
-                }
                 break;
 
             default:
@@ -7064,13 +7058,12 @@ bool ValueNumStore::IsVNRelopConstantBound(ValueNum vn, var_types type, bool* is
         // One of the operands must be a constant.
         if (op1IsConst != op2IsConst)
         {
-            // For unsigned comparisons, the constant must not be negative.
-            // We probably shouldn't care about it here, but the previous logic
-            // was checking for it.
+            // Ignore negative constants for unsigned comparisons.
+            // We shouldn't care about it here, but it is what the previous logic did.
             if (isUnsigned)
             {
-                ValueNum       vnConst = op1IsConst ? funcApp.m_args[0] : funcApp.m_args[1];
-                target_ssize_t cns;
+                ValueNum vnConst = op1IsConst ? funcApp.m_args[0] : funcApp.m_args[1];
+                ssize_t  cns;
                 return IsVNIntegralConstant(vnConst, &cns) && (cns >= 0);
             }
             return true;

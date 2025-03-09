@@ -1163,7 +1163,7 @@ public:
     // If "vn" is VN(a.Length) or VN(a.GetLength(n)) then return VN(a); NoVN if VN(a) can't be determined.
     ValueNum GetArrForLenVn(ValueNum vn);
 
-    bool IsVNRelopConstantBound(ValueNum vn, var_types type = TYP_INT, bool* isUnsigned = nullptr);
+    bool IsVNRelopConstantBound(ValueNum vn, var_types type);
 
     // If "vn" is constant bound, then populate the "info" fields for constVal, cmpOp, cmpOper.
     void GetConstantBoundInfo(ValueNum vn, ConstantBoundInfo* info);
