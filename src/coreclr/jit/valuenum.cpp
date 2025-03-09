@@ -7324,6 +7324,14 @@ bool ValueNumStore::IsVNCompareCheckedBoundArith(ValueNum vn)
 
 void ValueNumStore::GetCompareCheckedBoundArithInfo(ValueNum vn, CompareCheckedBoundArithInfo* info)
 {
+    // if it's not "i relop bound +/- var" then it's just "i relop bound"
+    if (!IsVNCompareCheckedBoundArith(vn))
+    {
+        assert(IsVNCompareCheckedBound(vn));
+        GetCompareCheckedBound(vn, info);
+        return;
+    }
+
     assert(IsVNCompareCheckedBoundArith(vn));
 
     VNFuncApp funcAttr;

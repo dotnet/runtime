@@ -687,49 +687,41 @@ void RangeCheck::MergeEdgeAssertions(
             // Get i, len, cns and < as "info."
             comp->vnStore->GetCompareCheckedBoundArithInfo(curAssertion->op1.vn, &info);
 
-            // If we don't have the same variable we are comparing against, bail.
-            if (normalLclVN != info.cmpOp)
-            {
-                continue;
-            }
-
             if ((info.arrOper != GT_ADD) && (info.arrOper != GT_SUB))
             {
-                continue;
-            }
-
-            // If the operand that operates on the bound is not constant, then done.
-            if (!comp->vnStore->IsVNInt32Constant(info.arrOp))
-            {
-                continue;
-            }
-
-            int cons = comp->vnStore->ConstantValue<int>(info.arrOp);
-            limit    = Limit(Limit::keBinOpArray, info.vnBound, info.arrOper == GT_SUB ? -cons : cons);
-            cmpOper  = (genTreeOps)info.cmpOper;
-        }
-        // Current assertion is of the form (i < len) != 0
-        else if (curAssertion->IsCheckedBoundBound())
-        {
-            ValueNumStore::CompareCheckedBoundArithInfo info;
-
-            // Get the info as "i", "<" and "len"
-            comp->vnStore->GetCompareCheckedBound(curAssertion->op1.vn, &info);
-
-            // If we don't have the same variable we are comparing against, bail.
-            if (normalLclVN == info.cmpOp)
-            {
-                cmpOper = (genTreeOps)info.cmpOper;
-                limit   = Limit(Limit::keBinOpArray, info.vnBound, 0);
-            }
-            else if (normalLclVN == info.vnBound)
-            {
-                cmpOper = GenTree::SwapRelop((genTreeOps)info.cmpOper);
-                limit   = Limit(Limit::keBinOpArray, info.cmpOp, 0);
+                // If we don't have the same variable we are comparing against, bail.
+                if (normalLclVN == info.cmpOp)
+                {
+                    cmpOper = (genTreeOps)info.cmpOper;
+                    limit = Limit(Limit::keBinOpArray, info.vnBound, 0);
+                }
+                else if (normalLclVN == info.vnBound)
+                {
+                    cmpOper = GenTree::SwapRelop((genTreeOps)info.cmpOper);
+                    limit = Limit(Limit::keBinOpArray, info.cmpOp, 0);
+                }
+                else
+                {
+                    continue;
+                }
             }
             else
             {
-                continue;
+                // If we don't have the same variable we are comparing against, bail.
+                if (normalLclVN != info.cmpOp)
+                {
+                    continue;
+                }
+
+                // If the operand that operates on the bound is not constant, then done.
+                if (!comp->vnStore->IsVNInt32Constant(info.arrOp))
+                {
+                    continue;
+                }
+
+                int cons = comp->vnStore->ConstantValue<int>(info.arrOp);
+                limit = Limit(Limit::keBinOpArray, info.vnBound, info.arrOper == GT_SUB ? -cons : cons);
+                cmpOper = (genTreeOps)info.cmpOper;
             }
         }
         // Current assertion is of the form (i < 100) != 0
