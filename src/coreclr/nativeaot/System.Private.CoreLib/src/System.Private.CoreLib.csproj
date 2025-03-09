@@ -201,7 +201,6 @@
     <Compile Include="System\Runtime\GCSettings.NativeAot.cs" />
     <Compile Include="System\Runtime\TypeLoaderExports.cs" />
     <Compile Include="System\Runtime\ThunkPool.cs" />
-    <Compile Include="System\Runtime\InitializeFinalizerThread.cs" />
     <Compile Include="System\Runtime\InteropServices\ComEventsHelper.NativeAot.cs" Condition="'$(FeatureCominterop)' == 'true'" />
     <Compile Include="System\Runtime\InteropServices\ComWrappers.NativeAot.cs" Condition="'$(FeatureComWrappers)' == 'true'" />
     <Compile Include="System\Runtime\InteropServices\GCHandle.NativeAot.cs" />
