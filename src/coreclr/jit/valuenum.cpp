@@ -7062,7 +7062,19 @@ bool ValueNumStore::IsVNRelopConstantBound(ValueNum vn, var_types type, bool* is
         const bool op2IsConst = IsVNConstant(funcApp.m_args[1]) && (TypeOfVN(funcApp.m_args[1]) == type);
 
         // One of the operands must be a constant.
-        return op1IsConst != op2IsConst;
+        if (op1IsConst != op2IsConst)
+        {
+            // For unsigned comparisons, the constant must not be negative.
+            // We probably shouldn't care about it here, but the previous logic
+            // was checking for it.
+            if (isUnsigned)
+            {
+                ValueNum       vnConst = op1IsConst ? funcApp.m_args[0] : funcApp.m_args[1];
+                target_ssize_t cns;
+                return IsVNIntegralConstant(vnConst, &cns) && (cns >= 0);
+            }
+            return true;
+        }
     }
     return false;
 }

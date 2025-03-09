@@ -1098,24 +1098,14 @@ AssertionIndex Compiler::optCreateAssertion(GenTree*         op1,
     AssertionDsc assertion = {OAK_INVALID};
     assert(assertion.assertionKind == OAK_INVALID);
 
-    if (op1->OperIs(GT_BOUNDS_CHECK))
+    if (op1->OperIs(GT_BOUNDS_CHECK) && (assertionKind == OAK_NO_THROW))
     {
-        if (assertionKind == OAK_NO_THROW)
-        {
-            GenTreeBoundsChk* arrBndsChk = op1->AsBoundsChk();
-            assertion.assertionKind      = assertionKind;
-            assertion.op1.kind           = O1K_ARR_BND;
-            assertion.op1.bnd.vnIdx      = optConservativeNormalVN(arrBndsChk->GetIndex());
-            assertion.op1.bnd.vnLen      = optConservativeNormalVN(arrBndsChk->GetArrayLength());
-
-            if ((assertion.op1.bnd.vnIdx == ValueNumStore::NoVN) || (assertion.op1.bnd.vnLen == ValueNumStore::NoVN))
-            {
-                // Don't make an assertion if one of the operands has no VN
-                return NO_ASSERTION_INDEX;
-            }
-
-            goto DONE_ASSERTION;
-        }
+        GenTreeBoundsChk* arrBndsChk = op1->AsBoundsChk();
+        assertion.assertionKind      = assertionKind;
+        assertion.op1.kind           = O1K_ARR_BND;
+        assertion.op1.bnd.vnIdx      = optConservativeNormalVN(arrBndsChk->GetIndex());
+        assertion.op1.bnd.vnLen      = optConservativeNormalVN(arrBndsChk->GetArrayLength());
+        goto DONE_ASSERTION;
     }
 
     //
@@ -1723,6 +1713,19 @@ AssertionIndex Compiler::optAddAssertion(AssertionDsc* newAssertion)
         return NO_ASSERTION_INDEX;
     }
 
+    if ((newAssertion->op1.kind == O1K_VN) && (newAssertion->op1.vn == ValueNumStore::NoVN))
+    {
+        JITDUMP("O1K_VN assertion with op1.vn being NoVN.\n");
+        return NO_ASSERTION_INDEX;
+    }
+
+    if ((newAssertion->op1.kind == O1K_ARR_BND) &&
+        ((newAssertion->op1.bnd.vnIdx == ValueNumStore::NoVN) || (newAssertion->op1.bnd.vnLen == ValueNumStore::NoVN)))
+    {
+        JITDUMP("O1K_ARR_BND assertion with either op1.vn or op2.vn being NoVN.\n");
+        return NO_ASSERTION_INDEX;
+    }
+
     // See if we already have this assertion in the table.
     //
     // For local assertion prop we can speed things up by checking the dep vector.
@@ -1838,11 +1841,13 @@ void Compiler::optDebugCheckAssertion(AssertionDsc* assertion)
                    lvaGetDesc(assertion->op1.lcl.lclNum)->lvPerSsaData.IsValidSsaNum(assertion->op1.lcl.ssaNum));
             break;
         case O1K_ARR_BND:
-            // It would be good to check that bnd.vnIdx and bnd.vnLen are valid value numbers.
+            assert(assertion->op1.bnd.vnIdx != ValueNumStore::NoVN);
+            assert(assertion->op1.bnd.vnLen != ValueNumStore::NoVN);
             assert(!optLocalAssertionProp);
             assert(assertion->assertionKind == OAK_NO_THROW);
             break;
         case O1K_VN:
+            assert(assertion->op1.vn != ValueNumStore::NoVN);
             assert(!optLocalAssertionProp);
             break;
         default:
@@ -2123,12 +2128,6 @@ AssertionInfo Compiler::optCreateJTrueBoundsAssertion(GenTree* tree)
         dsc.op1.bnd.vnLen = vnStore->VNNormalValue(unsignedCompareBnd.vnBound);
         dsc.op2.kind      = O2K_INVALID;
         dsc.op2.vn        = ValueNumStore::NoVN;
-
-        if ((dsc.op1.bnd.vnIdx == ValueNumStore::NoVN) || (dsc.op1.bnd.vnLen == ValueNumStore::NoVN))
-        {
-            // Don't make an assertion if one of the operands has no VN
-            return NO_ASSERTION_INDEX;
-        }
 
         AssertionIndex index = optAddAssertion(&dsc);
         if (unsignedCompareBnd.cmpOper == VNF_GE_UN)
