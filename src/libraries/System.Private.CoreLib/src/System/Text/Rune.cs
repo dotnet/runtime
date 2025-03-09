@@ -1490,7 +1490,11 @@ namespace System.Text
                 return this.CompareTo(other);
             }
 
+#if SYSTEM_PRIVATE_CORLIB
             throw new ArgumentException(SR.Arg_MustBeRune);
+#else
+            throw new ArgumentException();
+#endif
         }
     }
 }
