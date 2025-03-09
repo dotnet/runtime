@@ -4123,8 +4123,8 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
                     break;
                 }
 #if defined(TARGET_RISCV64)
-                // CAS for small types is natively supported starting with the Zacas extension in Linux 6.8; however, hardware support
-                // for RVA23 profile is not available at the time of writing.
+                // CAS for small types is natively supported starting with the Zacas extension in Linux 6.8; however,
+                // hardware support for RVA23 profile is not available at the time of writing.
                 else if (genTypeSize(retType) < 4)
                 {
                     mustExpand = false;
@@ -4168,8 +4168,8 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
                     break;
                 }
 #if defined(TARGET_RISCV64)
-                // CAS for small types is natively supported starting with the Zacas extension in Linux 6.8; however, hardware support
-                // for RVA23 profile is not available at the time of writing.
+                // CAS for small types is natively supported starting with the Zacas extension in Linux 6.8; however,
+                // hardware support for RVA23 profile is not available at the time of writing.
                 else if (genTypeSize(retType) < 4)
                 {
                     mustExpand = false;
