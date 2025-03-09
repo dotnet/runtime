@@ -1551,17 +1551,7 @@ void EEJitManager::SetCpuInfo()
 
 #if defined(TARGET_X86) || defined(TARGET_AMD64)
 
-    // Clean up mutually exclusive ISAs
-    if (CPUCompileFlags.IsSet(InstructionSet_VectorT512))
-    {
-        CPUCompileFlags.Clear(InstructionSet_VectorT256);
-        CPUCompileFlags.Clear(InstructionSet_VectorT128);
-    }
-    else if (CPUCompileFlags.IsSet(InstructionSet_VectorT256))
-    {
-        CPUCompileFlags.Clear(InstructionSet_VectorT128);
-    }
-
+    bool throttleVector512 = false;
     int cpuidInfo[4];
 
     const int CPUID_EAX = 0;
@@ -1614,7 +1604,7 @@ void EEJitManager::SetCpuInfo()
                     // * Cascade Lake
                     // * Cooper Lake
 
-                    CPUCompileFlags.Set(CORJIT_FLAGS::CORJIT_FLAG_VECTOR512_THROTTLING);
+                    throttleVector512 = true;
                 }
             }
             else if (xarchCpuInfo.ExtendedModelId == 0x06)
@@ -1623,11 +1613,54 @@ void EEJitManager::SetCpuInfo()
                 {
                     // * Cannon Lake
 
-                    CPUCompileFlags.Set(CORJIT_FLAGS::CORJIT_FLAG_VECTOR512_THROTTLING);
+                    throttleVector512 = true;
                 }
             }
         }
     }
+
+    // If we have a PreferredVectorBitWidth, we will pass that to JIT in the form of a virtual vector ISA of the
+    // appropriate size. We will also clamp the max Vector<T> size to be no larger than PreferredVectorBitWidth,
+    // because JIT maps Vector<T> to the fixed-width vector of matching size for the purposes of intrinsic
+    // resolution. We want to avoid a situation where e.g. Vector.IsHardwareAccelerated returns false
+    // because Vector512.IsHardwareAccelerated returns false due to config or automatic throttling.
+
+    uint32_t preferredVectorBitWidth = (CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_PreferredVectorBitWidth) / 128) * 128;
+
+    if ((preferredVectorBitWidth == 0) && throttleVector512)
+    {
+        preferredVectorBitWidth = 256;
+    }
+
+    if (preferredVectorBitWidth >= 512)
+    {
+        CPUCompileFlags.Set(InstructionSet_Vector512);
+    }
+    else if (preferredVectorBitWidth >= 256)
+    {
+        CPUCompileFlags.Set(InstructionSet_Vector256);
+        CPUCompileFlags.Clear(InstructionSet_VectorT512);
+    }
+    else if (preferredVectorBitWidth != 0)
+    {
+        CPUCompileFlags.Set(InstructionSet_Vector128);
+        CPUCompileFlags.Clear(InstructionSet_VectorT512);
+        CPUCompileFlags.Clear(InstructionSet_VectorT256);
+    }
+
+    // Only one VectorT ISA can be set, and we have validated that anything left in the flags is supported
+    // by both the hardware and the config. Remove everything less than the largest supported.
+
+    if (CPUCompileFlags.IsSet(InstructionSet_VectorT512))
+    {
+        CPUCompileFlags.Clear(InstructionSet_VectorT256);
+        CPUCompileFlags.Clear(InstructionSet_VectorT128);
+    }
+    else if (CPUCompileFlags.IsSet(InstructionSet_VectorT256))
+    {
+        CPUCompileFlags.Clear(InstructionSet_VectorT128);
+    }
+
 #endif // TARGET_X86 || TARGET_AMD64
 
     m_CPUCompileFlags = CPUCompileFlags;
