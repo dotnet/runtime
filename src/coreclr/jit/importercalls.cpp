@@ -4112,7 +4112,7 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
             }
 #endif // defined(TARGET_ARM64) || defined(TARGET_RISCV64)
 
-#if defined(TARGET_XARCH) || defined(TARGET_ARM64) || defined(TARGET_RISCV64)
+#if defined(TARGET_64BIT)
             // TODO-ARM-CQ: reenable treating InterlockedCmpXchg32 operation as intrinsic
             case NI_System_Threading_Interlocked_CompareExchange:
             {
@@ -4122,12 +4122,15 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
                 {
                     break;
                 }
-#if !defined(TARGET_XARCH) && !defined(TARGET_ARM64)
+#if defined(TARGET_RISCV64)
+                // CAS for small types is natively supported starting with the Zacas extension in Linux 6.8; however, hardware support
+                // for RVA23 profile is not available at the time of writing.
                 else if (genTypeSize(retType) < 4)
                 {
+                    mustExpand = false;
                     break;
                 }
-#endif // !defined(TARGET_XARCH) && !defined(TARGET_ARM64)
+#endif // defined(TARGET_RISCV64)
 
                 if ((retType == TYP_REF) &&
                     (impStackTop(1).val->IsIntegralConst(0) || impStackTop(1).val->IsIconHandle(GTF_ICON_OBJ_HDL)))
@@ -4164,12 +4167,15 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
                 {
                     break;
                 }
-#if !defined(TARGET_XARCH) && !defined(TARGET_ARM64)
+#if defined(TARGET_RISCV64)
+                // CAS for small types is natively supported starting with the Zacas extension in Linux 6.8; however, hardware support
+                // for RVA23 profile is not available at the time of writing.
                 else if (genTypeSize(retType) < 4)
                 {
+                    mustExpand = false;
                     break;
                 }
-#endif // !defined(TARGET_XARCH) && !defined(TARGET_ARM64)
+#endif // defined(TARGET_RISCV64)
 
                 if ((retType == TYP_REF) &&
                     (impStackTop().val->IsIntegralConst(0) || impStackTop().val->IsIconHandle(GTF_ICON_OBJ_HDL)))
@@ -4199,7 +4205,7 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
                                           callType, op1, op2);
                 break;
             }
-#endif // defined(TARGET_XARCH) || defined(TARGET_ARM64) || defined(TARGET_RISCV64)
+#endif // defined(TARGET_64BIT)
 
             case NI_System_Threading_Interlocked_MemoryBarrier:
             {
