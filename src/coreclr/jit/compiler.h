@@ -7693,6 +7693,7 @@ public:
     bool          optRelopTryInferWithOneEqualOperand(const VNFuncApp&      domApp,
                                                       const VNFuncApp&      treeApp,
                                                       RelopImplicationInfo* rii);
+    bool optRelopTryInferWithTreePlusOne(const VNFuncApp& domApp, const VNFuncApp& treeApp, RelopImplicationInfo* rii);
 
     /**************************************************************************
      *               Value/Assertion propagation
