@@ -14,6 +14,63 @@ namespace Microsoft.Extensions.DependencyInjection.Specification
         protected abstract IServiceProvider CreateServiceProvider(IServiceCollection collection);
 
         [Fact]
+        public void QueryWithIEnumerable()
+        {
+            Service service = new();
+            Service keyedService = new();
+            Service anykeyService = new();
+            Service nullkeyService = new();
+
+            ServiceCollection serviceCollection = new();
+            serviceCollection.AddSingleton<IService>(service);
+            serviceCollection.AddSingleton<IService>(service);
+            serviceCollection.AddKeyedSingleton<IService>("keyedService", keyedService);
+            serviceCollection.AddKeyedSingleton<IService>("keyedService", keyedService);
+            serviceCollection.AddKeyedSingleton<IService>(KeyedService.AnyKey, anykeyService);
+            serviceCollection.AddKeyedSingleton<IService>(KeyedService.AnyKey, anykeyService);
+            serviceCollection.AddKeyedSingleton<IService>(null, nullkeyService);
+            serviceCollection.AddKeyedSingleton<IService>(null, nullkeyService);
+
+            IServiceProvider provider = CreateServiceProvider(serviceCollection);
+
+            /*
+             * Table for what results are included in GetServices()\GetKeyedServices():
+             *
+             * Query                     | Keyed? | Unkeyed? | AnyKey? | nullkey?
+             * -------------------------------------------------------------------
+             * GetServices(Type)         | no     | yes      | no      | yes
+             * GetKeyedServices(null)    | no     | yes      | no      | yes
+             * GetKeyedServices(AnyKey)  | yes    | no       | no      | no
+             * GetKeyedServices(key)     | yes    | no       | no      | no
+             *
+             * Summary:
+             * - A null key is the same as unkeyed. This allows the KeyServices APIs to support both keyed and unkeyed.
+             * - AnyKey is a special case of Keyed.
+             * - It is not possible to query for AnyKey registrations using IEnumerable; a singleton query resolves.
+             */
+
+            // Query with unkeyed (which is really keyed by Type).
+            Assert.Equal(
+                new[] { service, service, nullkeyService, nullkeyService },
+                provider.GetServices<IService>());
+
+            // Query with null key.
+            Assert.Equal(
+                new[] { service, service, nullkeyService, nullkeyService },
+                provider.GetKeyedServices<IService>(null));
+
+            // Query with AnyKey.
+            Assert.Equal(
+                new[] { keyedService, keyedService },
+                provider.GetKeyedServices<IService>(KeyedService.AnyKey));
+
+            // Query with standard keyed.
+            Assert.Equal(
+                new[] { keyedService, keyedService },
+                provider.GetKeyedServices<IService>("keyedService"));
+        }
+
+        [Fact]
         public void ResolveKeyedService()
         {
             var service1 = new Service();
@@ -158,10 +215,54 @@ namespace Microsoft.Extensions.DependencyInjection.Specification
             _ = provider.GetKeyedService<IService>("something-else");
             _ = provider.GetKeyedService<IService>("something-else-again");
 
-            // Return all services registered with a non null key, but not the one "created" with KeyedService.AnyKey
+            // Return all services registered with a non null key, but not the one "created" with KeyedService.AnyKey,
+            // nor the KeyedService.AnyKey registration
             var allServices = provider.GetKeyedServices<IService>(KeyedService.AnyKey).ToList();
-            Assert.Equal(5, allServices.Count);
-            Assert.Equal(new[] { service1, service2, service3, service4 }, allServices.Skip(1));
+            Assert.Equal(4, allServices.Count);
+            Assert.Equal(new[] { service1, service2, service3, service4 }, allServices);
+
+            var someKeyedServices = provider.GetKeyedServices<IService>("service").ToList();
+            Assert.Equal(new[] { service2, service3, service4 }, someKeyedServices);
+
+            var unkeyedServices = provider.GetServices<IService>().ToList();
+            Assert.Equal(new[] { service5, service6 }, unkeyedServices);
+        }
+
+        [Fact]
+        public void ResolveKeyedServicesAnyKeyConsistency()
+        {
+            var serviceCollection = new ServiceCollection();
+            var service = new Service("first-service");
+            serviceCollection.AddKeyedSingleton<IService>("first-service", service);
+
+            var provider1 = CreateServiceProvider(serviceCollection);
+            Assert.Throws<InvalidOperationException>(() => provider1.GetKeyedService<IService>(KeyedService.AnyKey));
+            // We don't return KeyedService.AnyKey registration when listing services
+            Assert.Equal(new[] { service }, provider1.GetKeyedServices<IService>(KeyedService.AnyKey));
+
+            var provider2 = CreateServiceProvider(serviceCollection);
+            Assert.Equal(new[] { service }, provider2.GetKeyedServices<IService>(KeyedService.AnyKey));
+            Assert.Throws<InvalidOperationException>(() => provider2.GetKeyedService<IService>(KeyedService.AnyKey));
+        }
+
+        [Fact]
+        public void ResolveKeyedServicesAnyKeyConsistencyWithAnyKeyRegistration()
+        {
+            var serviceCollection = new ServiceCollection();
+            var service = new Service("first-service");
+            var any = new Service("any");
+            serviceCollection.AddKeyedSingleton<IService>("first-service", service);
+            serviceCollection.AddKeyedSingleton<IService>(KeyedService.AnyKey, (sp, key) => any);
+
+            var provider1 = CreateServiceProvider(serviceCollection);
+            Assert.Equal(new[] { service }, provider1.GetKeyedServices<IService>(KeyedService.AnyKey));
+
+            // Check twice in different order to check caching
+            var provider2 = CreateServiceProvider(serviceCollection);
+            Assert.Equal(new[] { service }, provider2.GetKeyedServices<IService>(KeyedService.AnyKey));
+            Assert.Same(any, provider2.GetKeyedService<IService>(new object()));
+
+            Assert.Throws<InvalidOperationException>(() => provider2.GetKeyedService<IService>(KeyedService.AnyKey));
         }
 
         [Fact]
@@ -250,7 +351,7 @@ namespace Microsoft.Extensions.DependencyInjection.Specification
             var provider = CreateServiceProvider(serviceCollection);
 
             var services = provider.GetKeyedServices<IFakeOpenGenericService<PocoClass>>("some-key").ToList();
-            Assert.Equal(new[] { service1, service2 }, services);
+            Assert.Equal(new[] { service2 }, services);
         }
 
         [Fact]
@@ -504,6 +605,9 @@ namespace Microsoft.Extensions.DependencyInjection.Specification
             Assert.Null(scopeA.ServiceProvider.GetService<IService>());
             Assert.Null(scopeB.ServiceProvider.GetService<IService>());
 
+            Assert.Throws<InvalidOperationException>(() => scopeA.ServiceProvider.GetKeyedService<IService>(KeyedService.AnyKey));
+            Assert.Throws<InvalidOperationException>(() => scopeB.ServiceProvider.GetKeyedService<IService>(KeyedService.AnyKey));
+
             var serviceA1 = scopeA.ServiceProvider.GetKeyedService<IService>("key");
             var serviceA2 = scopeA.ServiceProvider.GetKeyedService<IService>("key");
 
@@ -527,6 +631,9 @@ namespace Microsoft.Extensions.DependencyInjection.Specification
 
             Assert.Null(scopeA.ServiceProvider.GetService<IService>());
             Assert.Null(scopeB.ServiceProvider.GetService<IService>());
+
+            Assert.Throws<InvalidOperationException>(() => scopeA.ServiceProvider.GetKeyedService<IService>(KeyedService.AnyKey));
+            Assert.Throws<InvalidOperationException>(() => scopeB.ServiceProvider.GetKeyedService<IService>(KeyedService.AnyKey));
 
             var serviceA1 = scopeA.ServiceProvider.GetKeyedService<IService>("key");
             var serviceA2 = scopeA.ServiceProvider.GetKeyedService<IService>("key");
