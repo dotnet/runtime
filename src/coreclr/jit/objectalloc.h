@@ -340,8 +340,8 @@ inline bool ObjectAllocator::CanAllocateLclVarOnStack(unsigned int         lclNu
 #ifdef DEBUG
     enableBoxedValueClasses = (JitConfig.JitObjectStackAllocationBoxedValueClass() != 0);
     enableRefClasses        = (JitConfig.JitObjectStackAllocationRefClass() != 0);
-    enableArrays            = (JitConfig.JitObjectStackAllocationArray() != 0);
 #endif
+    enableArrays            = (JitConfig.JitObjectStackAllocationArray() != 0);
 
     unsigned classSize = 0;
 
