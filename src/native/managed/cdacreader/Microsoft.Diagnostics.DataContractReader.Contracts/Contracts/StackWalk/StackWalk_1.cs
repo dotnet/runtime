@@ -82,7 +82,7 @@ internal readonly struct StackWalk_1 : IStackWalk
                 handle.FrameIter.Next();
                 break;
             case StackWalkState.SW_FRAME:
-                handle.FrameIter.TryUpdateContext(handle.Context);
+                handle.FrameIter.UpdateContextFromFrame(handle.Context);
                 if (!handle.FrameIter.IsInlineCallFrameWithActiveCall())
                 {
                     handle.FrameIter.Next();
