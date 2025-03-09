@@ -3,5 +3,8 @@
     <type fullname="System.Net.Http.DiagnosticsHandler">
       <method signature="System.Boolean IsGloballyEnabled()" body="stub" value="false" feature="System.Net.Http.EnableActivityPropagation" featurevalue="false" />
     </type>
+    <type fullname="System.Net.Http.BrowserHttpController">
+      <method signature="System.Boolean get_FeatureEnableStreamingResponse()" body="stub" value="false" feature="System.Net.Http.WebAssemblyEnableStreamingResponse" featurevalue="false" />
+    </type>
   </assembly>
 </linker>
