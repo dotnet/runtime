@@ -73,7 +73,7 @@
 
 #include <olectl.h>
 
-#ifdef HOST_AMD64
+#if defined(HOST_AMD64) || defined(HOST_X86)
 #include <xmmintrin.h>
 #endif
 
