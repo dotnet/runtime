@@ -44,11 +44,19 @@ REDHAWK_PALEXPORT void REDHAWK_PALAPI PalGetModuleBounds(HANDLE hOsHandle, _Out_
 }
 
 uint32_t g_RhNumberOfProcessors;
+bool g_RhIsCpuQuotaLimited = false;
 
 REDHAWK_PALEXPORT int32_t REDHAWK_PALAPI PalGetProcessCpuCount()
 {
     ASSERT(g_RhNumberOfProcessors > 0);
     return g_RhNumberOfProcessors;
+}
+
+REDHAWK_PALEXPORT bool REDHAWK_PALAPI PalGetIsCpuQuotaLimited()
+{
+    // The number of processors should have been set by the time this is called
+    ASSERT(g_RhNumberOfProcessors > 0);
+    return g_RhIsCpuQuotaLimited;
 }
 
 // Retrieves the entire range of memory dedicated to the calling thread's stack.  This does

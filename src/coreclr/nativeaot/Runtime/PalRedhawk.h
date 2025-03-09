@@ -182,6 +182,7 @@ typedef enum _EXCEPTION_DISPOSITION {
 #endif // !DACCESS_COMPILE
 
 extern uint32_t g_RhNumberOfProcessors;
+extern bool g_RhIsCpuQuotaLimited;
 
 #ifdef TARGET_UNIX
 #define REDHAWK_PALIMPORT extern "C"
@@ -227,6 +228,7 @@ REDHAWK_PALIMPORT void REDHAWK_PALAPI PopulateControlSegmentRegisters(CONTEXT * 
 #endif
 
 REDHAWK_PALIMPORT int32_t REDHAWK_PALAPI PalGetProcessCpuCount();
+REDHAWK_PALIMPORT bool REDHAWK_PALAPI PalGetIsCpuQuotaLimited();
 
 // Retrieves the entire range of memory dedicated to the calling thread's stack.  This does
 // not get the current dynamic bounds of the stack, which can be significantly smaller than

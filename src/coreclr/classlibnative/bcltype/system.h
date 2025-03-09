@@ -44,6 +44,8 @@ public:
     static FCDECL0(INT32, GetExitCode);
 
     static FCDECL0(FC_BOOL_RET, IsServerGC);
+
+    static FCDECL0(FC_BOOL_RET, GetIsCpuQuotaLimited);
 };
 
 extern "C" void QCALLTYPE Environment_Exit(INT32 exitcode);

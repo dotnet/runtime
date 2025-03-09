@@ -35,6 +35,8 @@ namespace System
             public TimeSpan TotalTime => UserTime + PrivilegedTime;
         }
 
+        internal static bool IsCpuQuotaLimited { get; } = GetIsCpuQuotaLimited();
+
         public static int ProcessorCount { get; } = GetProcessorCount();
 
         /// <summary>

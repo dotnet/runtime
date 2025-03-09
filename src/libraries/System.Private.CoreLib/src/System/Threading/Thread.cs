@@ -374,6 +374,20 @@ namespace System.Threading
         internal static ulong CurrentOSThreadId => GetCurrentOSThreadId();
 #endif
 
+        internal static bool ShouldSpinWait { get; } = DetermineShouldSpinWait();
+
+        // In cases where the cpu is limited due to cpu quota limits or there's only a single processor
+        // choosing not to spin wait might allow for more actual work to be done.
+        // However it's possible to spin wait in those scenarios by enabling the SpinWaitWhenCpuQuotaIsLimited config setting.
+        private static bool DetermineShouldSpinWait()
+        {
+            return !Environment.IsSingleProcessor &&
+                        (!Environment.IsCpuQuotaLimited ||
+                        AppContextConfigHelper.GetBooleanConfig(
+                        "System.Threading.ThreadPool.SpinWaitWhenCpuQuotaIsLimited",
+                        "DOTNET_ThreadPool_SpinWaitWhenCpuQuotaIsLimited"));
+        }
+
         public ExecutionContext? ExecutionContext => ExecutionContext.Capture();
 
         public string? Name
