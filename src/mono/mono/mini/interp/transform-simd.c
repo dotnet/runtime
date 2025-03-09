@@ -424,8 +424,6 @@ emit_sri_vector128 (TransformData *td, MonoMethod *cmethod, MonoMethodSignature 
 		if (strncmp(cmethod_name + 70, "128<T>,T>.", 10) == 0) {
 			cmethod_name += 80;
 		}
-	} else if (strncmp(cmethod_name, "System.Runtime.Intrinsics.ISimdVector<System.Numerics.Vector<T>,T>.", 67) == 0) {
-		cmethod_name += 67;
 	}
 
 	int id = lookup_intrins (sri_vector128_methods, sizeof (sri_vector128_methods), cmethod_name);
@@ -681,6 +679,7 @@ static gboolean
 emit_sn_vector_t (TransformData *td, MonoMethod *cmethod, MonoMethodSignature *csignature, gboolean newobj)
 {
 	const char *cmethod_name = cmethod->name;
+	bool explicitly_implemented = false;
 
 	if (strncmp(cmethod_name, "System.Runtime.Intrinsics.ISimdVector<System.Numerics.Vector<T>,T>.", 67) == 0) {
 		// We want explicitly implemented ISimdVector<TSelf, T> APIs to still be expanded where possible
@@ -688,9 +687,18 @@ emit_sn_vector_t (TransformData *td, MonoMethod *cmethod, MonoMethodSignature *c
 		// skip the prefix before trying to resolve the method.
 
 		cmethod_name += 67;
+		explicitly_implemented = true;
 	}
 
 	int id = lookup_intrins (sn_vector_t_methods, sizeof (sn_vector_t_methods), cmethod_name);
+	if (id == -1) {
+		if (explicitly_implemented) {
+			return emit_sri_vector128 (td, cmethod, csignature);
+		} else {
+			return FALSE;
+		}
+	}
+
 	if (id == -1)
 		return FALSE;
 
@@ -1067,9 +1075,7 @@ interp_emit_simd_intrinsics (TransformData *td, MonoMethod *cmethod, MonoMethodS
 		else if (!strcmp (class_name, "Vector128`1"))
 			return emit_sri_vector128_t (td, cmethod, csignature);
 	} else if (!strcmp (class_ns, "System.Numerics")) {
-		if (!strcmp (class_name, "Vector"))
-			return emit_sri_vector128 (td, cmethod, csignature);
-		else if (!strcmp (class_name, "Vector`1"))
+		if (!strcmp (class_name, "Vector`1"))
 			return emit_sn_vector_t (td, cmethod, csignature, newobj);
 		else if (!strcmp (class_name, "Vector4"))
 			return emit_sn_vector4 (td, cmethod, csignature, newobj);
