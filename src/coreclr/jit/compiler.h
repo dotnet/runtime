@@ -7720,7 +7720,6 @@ public:
         O1K_LCLVAR,
         O1K_VN,
         O1K_ARR_BND,
-        O1K_BOUND_OPER_BND,
         O1K_EXACT_TYPE,
         O1K_SUBTYPE,
         O1K_COUNT
@@ -7810,9 +7809,19 @@ public:
             }
         } op2;
 
-        bool IsCheckedBoundArithBound()
+        bool IsBoolean()
         {
-            return ((assertionKind == OAK_EQUAL || assertionKind == OAK_NOT_EQUAL) && op1.kind == O1K_BOUND_OPER_BND);
+            return (assertionKind == OAK_EQUAL || assertionKind == OAK_NOT_EQUAL) && (op2.kind == O2K_CONST_INT) &&
+                   (op2.u1.iconVal == 0);
+        }
+        bool IsCheckedBoundArithBound(Compiler* comp)
+        {
+            if (!IsBoolean() || (op1.kind != O1K_VN))
+            {
+                return false;
+            }
+            return comp->vnStore->IsVNCompareCheckedBoundArith(op1.vn) ||
+                   comp->vnStore->IsVNCompareCheckedBound(op1.vn);
         }
         bool IsBoundsCheckNoThrow()
         {
@@ -7832,33 +7841,11 @@ public:
 
         bool IsRelopInt32ConstantBound(Compiler* comp)
         {
-            if (assertionKind == OAK_EQUAL || assertionKind == OAK_NOT_EQUAL)
+            if (!IsBoolean() || (op1.kind != O1K_VN))
             {
-                if (op1.kind == O1K_VN && op2.kind == O2K_CONST_INT && op2.u1.iconVal == 0)
-                {
-                    VNFuncApp funcAttr;
-                    if (!comp->vnStore->GetVNFunc(op1.vn, &funcAttr))
-                    {
-                        return false;
-                    }
-
-                    switch (funcAttr.m_func)
-                    {
-                        case VNF_GE:
-                        case VNF_GT:
-                        case VNF_LE:
-                        case VNF_LT:
-                        case VNF_GE_UN:
-                        case VNF_GT_UN:
-                        case VNF_LE_UN:
-                        case VNF_LT_UN:
-                            return true;
-                        default:
-                            break;
-                    }
-                }
+                return false;
             }
-            return false;
+            return comp->vnStore->IsVNRelopConstantBound(op1.vn, TYP_INT);
         }
 
         bool CanPropLclVar()

@@ -680,7 +680,7 @@ void RangeCheck::MergeEdgeAssertions(
         bool       isUnsigned          = false;
 
         // Current assertion is of the form (i < len - cns) != 0
-        if (curAssertion->IsCheckedBoundArithBound())
+        if (curAssertion->IsCheckedBoundArithBound(comp))
         {
             ValueNumStore::CompareCheckedBoundArithInfo info;
 

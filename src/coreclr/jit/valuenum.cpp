@@ -7027,26 +7027,10 @@ bool ValueNumStore::IsVNRelop(ValueNum vn)
     }
 }
 
-bool ValueNumStore::IsVNConstantBound(ValueNum vn)
+bool ValueNumStore::IsVNRelopConstantBound(ValueNum vn, var_types type, bool* isUnsigned)
 {
     VNFuncApp funcApp;
     if ((vn != NoVN) && GetVNFunc(vn, &funcApp))
-    {
-        if ((funcApp.m_func == (VNFunc)GT_LE) || (funcApp.m_func == (VNFunc)GT_GE) ||
-            (funcApp.m_func == (VNFunc)GT_LT) || (funcApp.m_func == (VNFunc)GT_GT))
-        {
-            const bool op1IsConst = IsVNInt32Constant(funcApp.m_args[0]);
-            const bool op2IsConst = IsVNInt32Constant(funcApp.m_args[1]);
-            return op1IsConst != op2IsConst;
-        }
-    }
-    return false;
-}
-
-bool ValueNumStore::IsVNConstantBoundUnsigned(ValueNum vn)
-{
-    VNFuncApp funcApp;
-    if (GetVNFunc(vn, &funcApp))
     {
         switch (funcApp.m_func)
         {
@@ -7054,21 +7038,43 @@ bool ValueNumStore::IsVNConstantBoundUnsigned(ValueNum vn)
             case VNF_LE_UN:
             case VNF_GE_UN:
             case VNF_GT_UN:
-                return IsVNPositiveInt32Constant(funcApp.m_args[0]) != IsVNPositiveInt32Constant(funcApp.m_args[1]);
-            default:
+                if (isUnsigned != nullptr)
+                {
+                    *isUnsigned = true;
+                }
                 break;
+
+            case VNF_LT:
+            case VNF_LE:
+            case VNF_GE:
+            case VNF_GT:
+                if (isUnsigned != nullptr)
+                {
+                    *isUnsigned = false;
+                }
+                break;
+
+            default:
+                return false;
         }
+
+        const bool op1IsConst = IsVNConstant(funcApp.m_args[0]) && (TypeOfVN(funcApp.m_args[0]) == type);
+        const bool op2IsConst = IsVNConstant(funcApp.m_args[1]) && (TypeOfVN(funcApp.m_args[1]) == type);
+
+        // One of the operands must be a constant.
+        return op1IsConst != op2IsConst;
     }
     return false;
 }
 
 void ValueNumStore::GetConstantBoundInfo(ValueNum vn, ConstantBoundInfo* info)
 {
-    assert(IsVNConstantBound(vn) || IsVNConstantBoundUnsigned(vn));
-    assert(info);
+    assert(IsVNRelopConstantBound(vn, TYP_INT));
+    assert(info != nullptr);
 
     VNFuncApp funcAttr;
-    GetVNFunc(vn, &funcAttr);
+    bool      funcFound = GetVNFunc(vn, &funcAttr);
+    assert(funcFound);
 
     bool       isUnsigned = true;
     genTreeOps op;
