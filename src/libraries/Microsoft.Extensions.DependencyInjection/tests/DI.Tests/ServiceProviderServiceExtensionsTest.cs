@@ -291,8 +291,8 @@ namespace Microsoft.Extensions.DependencyInjection
             _ = serviceProvider.GetKeyedService<IGenericService<object>>("someKey");
             _ = serviceProvider.GetKeyedService<IGenericService<object>>("someKey");
 
-            // Wait for DynamicServiceProviderEngine's background cache update to complete.
-            await Task.Delay(100).ConfigureAwait(false);
+            // Wait for the DynamicServiceProviderEngine's background cache update to complete.
+            await Task.Delay(10000).ConfigureAwait(false);
 
             var result = serviceProvider.GetService<IGenericService<object>>();
 
@@ -316,8 +316,8 @@ namespace Microsoft.Extensions.DependencyInjection
             _ = serviceProvider.GetKeyedServices<IGenericService<object>>("someKey");
             _ = serviceProvider.GetKeyedServices<IGenericService<object>>("someKey");
 
-            // Wait for DynamicServiceProviderEngine's background cache update to complete.
-            await Task.Delay(100).ConfigureAwait(false);
+            // Wait for the DynamicServiceProviderEngine's background cache update to complete.
+            await Task.Delay(10000).ConfigureAwait(false);
 
             var unkeyedServices = serviceProvider.GetServices<IGenericService<object>>();
             var keyedServices = serviceProvider.GetKeyedServices<IGenericService<object>>("someKey");
@@ -326,6 +326,30 @@ namespace Microsoft.Extensions.DependencyInjection
             Assert.Single(unkeyedServices);
             Assert.Single(keyedServices.OfType<PrimaryKeyedGenericService<object>>());
             Assert.Single(keyedServices.OfType<SecondaryKeyedGenericService<object>>());
+        }
+
+        [Fact]
+        public async Task GetService_ReturnsNonGenericUnkeyedInstance_AfterUsingGetKeyedService()
+        {
+            // Arrange
+            var services = new ServiceCollection();
+
+            services.AddTransient(typeof(SomeService));
+            services.AddKeyedTransient(typeof(SomeService), "someKey", typeof(SomeOtherService));
+
+            await using var serviceProvider = services.BuildServiceProvider();
+
+            // Act
+            _ = serviceProvider.GetKeyedService<SomeService>("someKey");
+            _ = serviceProvider.GetKeyedService<SomeService>("someKey");
+
+            // Wait for the DynamicServiceProviderEngine's background cache update to complete.
+            await Task.Delay(10000).ConfigureAwait(false);
+
+            var result = serviceProvider.GetService<SomeService>();
+
+            // Assert
+            Assert.IsType<SomeService>(result);
         }
 
         public interface IFoo { }
@@ -347,6 +371,10 @@ namespace Microsoft.Extensions.DependencyInjection
         private class PrimaryKeyedGenericService<T> : IGenericService<T>;
 
         private class SecondaryKeyedGenericService<T> : IGenericService<T>;
+
+        private class SomeService;
+
+        private class SomeOtherService : SomeService;
 
         private class RequiredServiceSupportingProvider : IServiceProvider, ISupportRequiredService
         {
