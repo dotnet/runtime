@@ -245,12 +245,24 @@ namespace System.Collections.Tests
 
         public static IEnumerable<object[]> Shift_Data()
         {
-            foreach (int size in new[] { 0, 1, BitsPerInt32 / 2, BitsPerInt32, BitsPerInt32 + 1, 2 * BitsPerInt32, 2 * BitsPerInt32 + 1 })
+            foreach (int size in new[] {
+                0,
+                1,
+                BitsPerInt32 / 2,
+                BitsPerInt32,
+                BitsPerInt32 + 1,
+                2 * BitsPerInt32,
+                2 * BitsPerInt32 + 1,
+                1023,
+                1024,
+                1025,
+            })
             {
                 foreach (int shift in new[] { 0, 1, size / 2, size - 1, size }.Where(s => s >= 0).Distinct())
                 {
                     yield return new object[] { size, new int[] { /* deliberately empty */ }, shift };
                     yield return new object[] { size, Enumerable.Range(0, size), shift };
+                    yield return new object[] { size, Enumerable.Range(0, size / 3).Select(v => v * 3), shift };
 
                     if (size > 1)
                     {
