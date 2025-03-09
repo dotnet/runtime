@@ -162,18 +162,18 @@ class AwareLock
     friend class SyncBlock;
 
 public:
-    enum EnterHelperResult {
-        EnterHelperResult_Entered,
-        EnterHelperResult_Contention,
-        EnterHelperResult_UseSlowPath
+    enum class EnterHelperResult : INT32 {
+        Contention,
+        Entered,
+        UseSlowPath
     };
 
-    enum LeaveHelperAction {
-        LeaveHelperAction_None,
-        LeaveHelperAction_Signal,
-        LeaveHelperAction_Yield,
-        LeaveHelperAction_Contention,
-        LeaveHelperAction_Error,
+    enum class LeaveHelperAction : INT32 {
+        None,
+        Signal,
+        Yield,
+        Contention,
+        Error,
     };
 
 private:
