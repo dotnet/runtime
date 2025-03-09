@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.Build.NoTargets">
+  <PropertyGroup>
+    <LibraryName>brotli</LibraryName>
+  </PropertyGroup>
+
+  <ItemGroup Condition="'$(HostOS)' != 'windows'">
+    <CFlag Include="-Wno-implicit-fallthrough" />
+  </ItemGroup>
+  <ItemGroup>
+    <CFlag Include="-DBROTLI_SHARED_COMPILATION" />
+    <CFlag Include="-DBROTLICOMMON_SHARED_COMPILATION" />
+    <CFlag Include="-DBROTLIENC_SHARED_COMPILATION" />
+    <CFlag Include="-DBROTLIDEC_SHARED_COMPILATION" />
+    <CMakeArg Include="-DBROTLI_DISABLE_TESTS=1" />
+    <CMakeArg Include="-DBUILD_SHARED_LIBS=0" />
+  </ItemGroup>
+</Project>

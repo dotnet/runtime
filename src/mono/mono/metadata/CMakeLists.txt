@@ -203,9 +203,6 @@ if(HOST_WIN32 AND NOT DISABLE_SHARED_LIBS)
     
     set(METADATAOBJECTSSHARED_LINKABLE_LIBS "")
     list(APPEND METADATAOBJECTSSHARED_LINKABLE_LIBS monoapi eglib_api utils_objects_shared)
-    if (NOT CLR_CMAKE_USE_SYSTEM_ZLIB)
-        list(APPEND METADATAOBJECTSSHARED_LINKABLE_LIBS zlib)
-    endif()
     target_link_libraries(metadata_objects_shared PRIVATE ${METADATAOBJECTSSHARED_LINKABLE_LIBS})
     
     # note: metadata_objects is an object library, so this doesn't force linking with sgen,
@@ -222,9 +219,6 @@ target_compile_definitions(metadata_objects PRIVATE ${metadata_compile_definitio
 
 set(METADATAOBJECTS_LINKABLE_LIBS "")
 list(APPEND METADATAOBJECTS_LINKABLE_LIBS monoapi eglib_api utils_objects)
-if (NOT CLR_CMAKE_USE_SYSTEM_ZLIB)
-    list(APPEND METADATAOBJECTS_LINKABLE_LIBS zlib)
-endif()
 target_link_libraries(metadata_objects PRIVATE ${METADATAOBJECTS_LINKABLE_LIBS})
 
 # note: metadata_objects is an object library, so this doesn't force linking with sgen,
