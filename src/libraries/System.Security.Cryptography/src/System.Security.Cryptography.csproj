@@ -489,11 +489,9 @@
     <Compile Include="System\Security\Cryptography\CngUIProtectionLevels.cs" />
     <Compile Include="System\Security\Cryptography\ConcurrencyBlock.cs" />
     <Compile Include="System\Security\Cryptography\ConcurrentSafeKmac.cs" />
-    <Compile Include="System\Security\Cryptography\CryptoConfigForwarder.cs" />
+    <Compile Include="System\Security\Cryptography\CryptoConfig.cs" />
     <Compile Include="System\Security\Cryptography\CryptographicOperations.cs" />
     <Compile Include="System\Security\Cryptography\CryptographicUnexpectedOperationException.cs" />
-    <Compile Include="System\Security\Cryptography\CryptoConfig.cs" />
-    <Compile Include="System\Security\Cryptography\CryptoConfig.Common.cs" />
     <Compile Include="System\Security\Cryptography\CryptoStream.cs" />
     <Compile Include="System\Security\Cryptography\CryptoStreamMode.cs" />
     <Compile Include="System\Security\Cryptography\CspParameters.cs" />
@@ -1943,7 +1941,7 @@
     <Reference Include="System.Threading.Thread" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(TargetPlatformIdentifier)' != '' and '$(TargetPlatformIdentifier)' != 'windows' and '$(TargetPlatformIdentifier' != 'browser'">
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' != '' and '$(TargetPlatformIdentifier)' != 'windows' and '$(TargetPlatformIdentifier)' != 'browser'">
     <Reference Include="System.Console" Condition="'$(Configuration)' == 'Debug'" />
   </ItemGroup>
 
