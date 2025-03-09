@@ -775,3 +775,120 @@ EVP_PKEY_CTX* EvpPKeyCtxCreateFromPKey(EVP_PKEY* pkey, void* extraHandle)
         return EVP_PKEY_CTX_new(pkey, NULL);
     }
 }
+
+int EvpPKeyGetCurveType(const EVP_PKEY *pkey)
+{
+    if (!pkey || EVP_PKEY_get_base_id(pkey) != EVP_PKEY_EC)
+        return NID_undef;
+
+#ifdef FEATURE_DISTRO_AGNOSTIC_SSL
+    if (!API_EXISTS(EVP_PKEY_get_utf8_string_param))
+    {
+        return NID_undef;
+    }
+#endif
+
+#ifdef NEED_OPENSSL_3_0
+    // Retrieve the textual name of the EC group (e.g., "prime256v1")
+    // In all known cases this should be exactly 10 characters + 1 null byte but leaving some room in case it changes in the future
+    // versions of OpenSSL. This length also matches with what OpenSSL uses in their demo code:
+    // https://github.com/openssl/openssl/blob/ac80e1e15dcd13c61392a706170c427250c7bb69/demos/pkey/EVP_PKEY_EC_keygen.c#L88
+    char curveName[80] = {0};
+
+    if (!EVP_PKEY_get_utf8_string_param(pkey, OSSL_PKEY_PARAM_GROUP_NAME, curveName, sizeof(curveName), NULL))
+        return NID_undef;
+
+    return OBJ_txt2nid(curveName);
+#else
+    return NID_undef;
+#endif
+}
+
+ASN1_OBJECT* CryptoNative_EvpPKeyGetEcGroupOid(EVP_PKEY *pkey)
+{
+    int nid = EvpPKeyGetCurveType(pkey);
+    if (nid == NID_undef)
+    {
+        return NULL;
+    }
+
+    return OBJ_nid2obj(nid);
+}
+
+int32_t CryptoNative_EvpPKeyGetEcKeyParameters(
+    const EVP_PKEY* pkey,
+    int32_t includePrivate,
+    BIGNUM** qx, int32_t* cbQx,
+    BIGNUM** qy, int32_t* cbQy,
+    BIGNUM** d, int32_t* cbD)
+{
+    assert(qx != NULL);
+    assert(cbQx != NULL);
+    assert(qy != NULL);
+    assert(cbQy != NULL);
+    assert(d != NULL);
+    assert(cbD != NULL);
+
+#ifdef FEATURE_DISTRO_AGNOSTIC_SSL
+    if (!API_EXISTS(EVP_PKEY_get_bn_param))
+    {
+        *cbQx = *cbQy = 0;
+        *qx = *qy = 0;
+        if (d) *d = NULL;
+        if (cbD) *cbD = 0;
+        return 0;
+    }
+#endif
+
+    int rc = 0;
+    BIGNUM *xBn = NULL;
+    BIGNUM *yBn = NULL;
+    BIGNUM *dBn = NULL;
+
+#ifdef NEED_OPENSSL_3_0
+    // Ensure we have an EC key
+    if (EVP_PKEY_get_base_id(pkey) != EVP_PKEY_EC)
+        goto error;
+
+    ERR_clear_error();
+
+    if (!EVP_PKEY_get_bn_param(pkey, OSSL_PKEY_PARAM_EC_PUB_X, &xBn))
+        goto error;
+    if (!EVP_PKEY_get_bn_param(pkey, OSSL_PKEY_PARAM_EC_PUB_Y, &yBn))
+        goto error;
+
+    *qx = xBn;
+    *cbQx = BN_num_bytes(xBn);
+    *qy = yBn;
+    *cbQy = BN_num_bytes(yBn);
+
+    if (includePrivate)
+    {
+        if (!EVP_PKEY_get_bn_param(pkey, OSSL_PKEY_PARAM_PRIV_KEY, &dBn))
+            goto error;
+
+        *d = dBn;
+        *cbD = BN_num_bytes(dBn);
+    }
+    else
+    {
+        *d = NULL;
+        *cbD = 0;
+    }
+
+    // success
+    return 1;
+
+error:
+#else
+    (void)pkey;
+    (void)includePrivate;
+#endif
+    *cbQx = *cbQy = 0;
+    *qx = *qy = 0;
+    if (d) *d = NULL;
+    if (cbD) *cbD = 0;
+    if (xBn) BN_free(xBn);
+    if (yBn) BN_free(yBn);
+    return rc;
+}
