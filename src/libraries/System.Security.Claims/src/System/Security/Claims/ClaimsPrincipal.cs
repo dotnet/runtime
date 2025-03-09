@@ -28,7 +28,7 @@ namespace System.Security.Claims
         private readonly byte[]? _userSerializationData;
 
         private static Func<IEnumerable<ClaimsIdentity>, ClaimsIdentity?> s_identitySelector = SelectPrimaryIdentity;
-        private static Func<ClaimsPrincipal> s_principalSelector = ClaimsPrincipalSelector;
+        private static Func<ClaimsPrincipal?>? s_principalSelector;
 
         private static ClaimsPrincipal? SelectClaimsPrincipal()
         {
@@ -74,26 +74,14 @@ namespace System.Security.Claims
 
         public static Func<IEnumerable<ClaimsIdentity>, ClaimsIdentity?> PrimaryIdentitySelector
         {
-            get
-            {
-                return s_identitySelector;
-            }
-            set
-            {
-                s_identitySelector = value;
-            }
+            get => s_identitySelector;
+            set => s_identitySelector = value;
         }
 
-        public static Func<ClaimsPrincipal> ClaimsPrincipalSelector
+        public static Func<ClaimsPrincipal?>? ClaimsPrincipalSelector
         {
-            get
-            {
-                return s_principalSelector;
-            }
-            set
-            {
-                s_principalSelector = value;
-            }
+            get => s_principalSelector;
+            set => s_principalSelector = value;
         }
 
         /// <summary>

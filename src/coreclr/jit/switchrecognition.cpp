@@ -12,20 +12,22 @@
 #define SWITCH_MIN_TESTS    3
 
 //-----------------------------------------------------------------------------
-//  optSwitchRecognition: Optimize range check for `x == cns1 || x == cns2 || x == cns3 ...`
-//      pattern and convert it to Switch block (jump table) which is then *might* be converted
+//  optRecognizeAndOptimizeSwitchJumps: Optimize range check for `x == cns1 || x == cns2 || x == cns3 ...`
+//      pattern and convert it to a BBJ_SWITCH block (jump table), which then *might* be converted
 //      to a bitmap test via TryLowerSwitchToBitTest.
+//      If we have PGO data, try peeling switches with dominant cases.
 //      TODO: recognize general jump table patterns.
 //
 //  Return Value:
-//      MODIFIED_EVERYTHING if the optimization was applied.
+//      MODIFIED_EVERYTHING if any switches were newly identified and/or optimized, false otherwise
 //
-PhaseStatus Compiler::optSwitchRecognition()
+PhaseStatus Compiler::optRecognizeAndOptimizeSwitchJumps()
 {
+    bool modified = false;
+
 // Limit to XARCH, ARM is already doing a great job with such comparisons using
 // a series of ccmp instruction (see ifConvert phase).
 #ifdef TARGET_XARCH
-    bool modified = false;
     for (BasicBlock* block = fgFirstBB; block != nullptr; block = block->Next())
     {
         // block->KindIs(BBJ_COND) check is for better throughput.
@@ -35,13 +37,16 @@ PhaseStatus Compiler::optSwitchRecognition()
             modified = true;
         }
     }
-
-    if (modified)
-    {
-        return PhaseStatus::MODIFIED_EVERYTHING;
-    }
 #endif
-    return PhaseStatus::MODIFIED_NOTHING;
+
+    // When we have profile data, we can identify a switch's dominant case.
+    // Try peeling the dominant case by checking for it up front.
+    if (fgIsUsingProfileWeights())
+    {
+        modified |= fgOptimizeSwitchJumps();
+    }
+
+    return modified ? PhaseStatus::MODIFIED_EVERYTHING : PhaseStatus::MODIFIED_NOTHING;
 }
 
 //------------------------------------------------------------------------------
