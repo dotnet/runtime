@@ -8416,7 +8416,7 @@ void Lowering::CheckNode(Compiler* compiler, GenTree* node)
 #endif // FEATURE_SIMD && TARGET_64BIT
             if (varDsc->lvPromoted)
             {
-                assert(varDsc->lvDoNotEnregister || varDsc->lvIsMultiRegRet);
+                assert(varDsc->lvDoNotEnregister || (node->OperIs(GT_STORE_LCL_VAR) && varDsc->lvIsMultiRegDest));
             }
         }
         break;

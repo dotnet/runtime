@@ -6447,6 +6447,10 @@ void Compiler::lvaDumpEntry(unsigned lclNum, FrameLayoutState curState, size_t r
         {
             printf("R");
         }
+        if (varDsc->lvIsMultiRegDest)
+        {
+            printf("M");
+        }
 #ifdef JIT32_GCENCODER
         if (varDsc->lvPinned)
             printf("P");
@@ -6461,6 +6465,10 @@ void Compiler::lvaDumpEntry(unsigned lclNum, FrameLayoutState curState, size_t r
     if (varDsc->lvIsMultiRegRet)
     {
         printf(" multireg-ret");
+    }
+    if (varDsc->lvIsMultiRegDest)
+    {
+        printf(" multireg-dest");
     }
     if (varDsc->lvMustInit)
     {
