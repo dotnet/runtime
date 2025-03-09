@@ -4116,6 +4116,12 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
             // TODO-ARM-CQ: reenable treating InterlockedCmpXchg32 operation as intrinsic
             case NI_System_Threading_Interlocked_CompareExchange:
             {
+#if defined(TARGET_LOONGARCH64)
+                // GT_CMPXCHG is NYI in lsraloongarch64
+                mustExpand = false;
+                break;
+#endif
+
                 var_types retType = JITtype2varType(sig->retType);
 
                 if (genTypeSize(retType) > TARGET_POINTER_SIZE)
@@ -4161,6 +4167,12 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
             case NI_System_Threading_Interlocked_Exchange:
             case NI_System_Threading_Interlocked_ExchangeAdd:
             {
+#if defined(TARGET_LOONGARCH64)
+                // GT_XADD and GT_XCHG are NYI in lsraloongarch64
+                mustExpand = false;
+                break;
+#endif
+
                 var_types retType = JITtype2varType(sig->retType);
 
                 if (genTypeSize(retType) > TARGET_POINTER_SIZE)
