@@ -16,27 +16,6 @@ typedef struct dn_simdhash_ght_data {
 	dn_simdhash_ght_destroy_func value_destroy_func;
 } dn_simdhash_ght_data;
 
-static inline uint32_t
-dn_simdhash_ght_hash (dn_simdhash_ght_data data, void * key)
-{
-	dn_simdhash_ght_hash_func hash_func = data.hash_func;
-	if (hash_func)
-		return (uint32_t)hash_func(key);
-	else
-		// FIXME: Seed
-		return MurmurHash3_32_ptr(key, 0);
-}
-
-static inline int32_t
-dn_simdhash_ght_equals (dn_simdhash_ght_data data, void * lhs, void * rhs)
-{
-	dn_simdhash_ght_equal_func equal_func = data.key_equal_func;
-	if (equal_func)
-		return equal_func(lhs, rhs);
-	else
-		return lhs == rhs;
-}
-
 static inline void
 dn_simdhash_ght_removed (dn_simdhash_ght_data data, void * key, void * value)
 {
@@ -68,8 +47,13 @@ dn_simdhash_ght_replaced (dn_simdhash_ght_data data, void * old_key, void * new_
 #define DN_SIMDHASH_KEY_T void *
 #define DN_SIMDHASH_VALUE_T void *
 #define DN_SIMDHASH_INSTANCE_DATA_T dn_simdhash_ght_data
-#define DN_SIMDHASH_KEY_HASHER dn_simdhash_ght_hash
-#define DN_SIMDHASH_KEY_EQUALS dn_simdhash_ght_equals
+
+#define DN_SIMDHASH_SCAN_DATA_T dn_simdhash_ght_equal_func
+#define DN_SIMDHASH_GET_SCAN_DATA(data) data.key_equal_func
+
+#define DN_SIMDHASH_KEY_HASHER(data, key) (uint32_t)data.hash_func(key)
+#define DN_SIMDHASH_KEY_EQUALS(scan_data, lhs, rhs) scan_data(lhs, rhs)
+
 #define DN_SIMDHASH_ON_REMOVE dn_simdhash_ght_removed
 #define DN_SIMDHASH_ON_REPLACE dn_simdhash_ght_replaced
 #if SIZEOF_VOID_P == 8
@@ -81,6 +65,18 @@ dn_simdhash_ght_replaced (dn_simdhash_ght_data data, void * old_key, void * new_
 
 #include "dn-simdhash-specialization.h"
 
+static unsigned int
+dn_simdhash_ght_default_hash (const void * key)
+{
+	return (unsigned int)(size_t)key;
+}
+
+static int32_t
+dn_simdhash_ght_default_comparer (const void * a, const void * b)
+{
+	return a == b;
+}
+
 dn_simdhash_ght_t *
 dn_simdhash_ght_new (
 	dn_simdhash_ght_hash_func hash_func, dn_simdhash_ght_equal_func key_equal_func,
@@ -88,6 +84,13 @@ dn_simdhash_ght_new (
 )
 {
 	dn_simdhash_ght_t *hash = dn_simdhash_new_internal(&DN_SIMDHASH_T_META, DN_SIMDHASH_T_VTABLE, capacity, allocator);
+	// Most users of dn_simdhash_ght are passing a custom comparer, and always doing an indirect call ends up being faster
+	//  than conditionally doing a fast inline check when there's no comparer set. Somewhat counter-intuitive, but true
+	//  on both x64 and arm64. Probably due to the smaller code size and reduced branch predictor pressure.
+	if (!hash_func)
+		hash_func = dn_simdhash_ght_default_hash;
+	if (!key_equal_func)
+		key_equal_func = dn_simdhash_ght_default_comparer;
 	dn_simdhash_instance_data(dn_simdhash_ght_data, hash).hash_func = hash_func;
 	dn_simdhash_instance_data(dn_simdhash_ght_data, hash).key_equal_func = key_equal_func;
 	return hash;
@@ -101,6 +104,10 @@ dn_simdhash_ght_new_full (
 )
 {
 	dn_simdhash_ght_t *hash = dn_simdhash_new_internal(&DN_SIMDHASH_T_META, DN_SIMDHASH_T_VTABLE, capacity, allocator);
+	if (!hash_func)
+		hash_func = dn_simdhash_ght_default_hash;
+	if (!key_equal_func)
+		key_equal_func = dn_simdhash_ght_default_comparer;
 	dn_simdhash_instance_data(dn_simdhash_ght_data, hash).hash_func = hash_func;
 	dn_simdhash_instance_data(dn_simdhash_ght_data, hash).key_equal_func = key_equal_func;
 	dn_simdhash_instance_data(dn_simdhash_ght_data, hash).key_destroy_func = key_destroy_func;
@@ -144,4 +151,18 @@ dn_simdhash_ght_insert_replace (
 			assert(0);
 			return;
 	}
+}
+
+void *
+dn_simdhash_ght_get_value_or_default (
+	dn_simdhash_ght_t *hash, void * key
+)
+{
+	check_self(hash);
+	uint32_t key_hash = DN_SIMDHASH_KEY_HASHER(DN_SIMDHASH_GET_DATA(hash), key);
+	DN_SIMDHASH_VALUE_T *value_ptr = DN_SIMDHASH_FIND_VALUE_INTERNAL(hash, key, key_hash);
+	if (value_ptr)
+		return *value_ptr;
+	else
+		return NULL;
 }
