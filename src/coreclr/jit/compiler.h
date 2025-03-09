@@ -609,8 +609,9 @@ public:
     unsigned char lvIsStructField : 1; // Is this local var a field of a promoted struct local?
     unsigned char lvContainsHoles : 1; // Is this a promoted struct whose fields do not cover the struct local?
 
-    unsigned char lvIsMultiRegArg : 1; // true if this is a multireg LclVar struct used in an argument context
-    unsigned char lvIsMultiRegRet : 1; // true if this is a multireg LclVar struct assigned from a multireg call
+    unsigned char lvIsMultiRegArg  : 1; // true if this is a multireg LclVar struct used in an argument context
+    unsigned char lvIsMultiRegRet  : 1; // true if this is a multireg LclVar struct assigned from a multireg call
+    unsigned char lvIsMultiRegDest : 1; // true if this is a multireg LclVar struct that is stored from a multireg node
 
 #ifdef DEBUG
     unsigned char lvHiddenBufferStructArg : 1; // True when this struct (or its field) are passed as hidden buffer
@@ -701,6 +702,13 @@ public:
     bool lvIsMultiRegArgOrRet()
     {
         return lvIsMultiRegArg || lvIsMultiRegRet;
+    }
+
+    void SetIsMultiRegDest()
+    {
+        lvIsMultiRegDest = true;
+        // TODO-Quirk: Set the old lvIsMultiRegRet, which is used for heuristics
+        lvIsMultiRegRet = true;
     }
 
     bool IsStackAllocatedObject() const

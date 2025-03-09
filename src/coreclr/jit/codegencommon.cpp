@@ -7749,7 +7749,7 @@ void CodeGen::genMultiRegStoreToLocal(GenTreeLclVar* lclNode)
     if (actualOp1->OperIs(GT_CALL))
     {
         assert(regCount <= MAX_RET_REG_COUNT);
-        noway_assert(varDsc->lvIsMultiRegRet);
+        noway_assert(varDsc->lvIsMultiRegDest);
     }
 
 #ifdef FEATURE_SIMD
