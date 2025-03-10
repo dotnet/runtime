@@ -200,7 +200,7 @@ mono_droid_runtime_init (const char* executable)
 
     chdir (g_bundle_path);
 
-    struct host_runtime_contract host_contract = {
+    static struct host_runtime_contract host_contract = {
         sizeof(struct host_runtime_contract),
         NULL,    // context
         NULL,    // get_runtime_property
