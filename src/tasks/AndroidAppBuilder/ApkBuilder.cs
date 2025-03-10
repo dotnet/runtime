@@ -448,7 +448,20 @@ public partial class ApkBuilder
         }
         else
         {
-            dynamicLibs.AddRange(Directory.GetFiles(AppDir, "*.so").Where(file => Path.GetFileName(file) != "libmonodroid.so"));
+            var excludedLibs = new HashSet<string> { "libmonodroid.so" };
+            if (IsCoreCLR)
+            {
+                // exclude standalone GC libs
+                excludedLibs.Add("libclrgc.so");
+                excludedLibs.Add("libclrgcexp.so");
+                if (StripDebugSymbols)
+                {
+                    // exclude debugger support libs
+                    excludedLibs.Add("libmscordbi.so");
+                    excludedLibs.Add("libmscordaccore.so");
+                }
+            }
+            dynamicLibs.AddRange(Directory.GetFiles(AppDir, "*.so").Where(file => !excludedLibs.Contains(Path.GetFileName(file))));
         }
 
         // add all *.so files to lib/%abi%/
