@@ -8,7 +8,7 @@ It typically suits scenario where you need more than a plain template app. If th
 The app reads `test` query parameter and uses it to switch between test cases. Entrypoint is `main.js`.
 There is common unit, then switch based on test case for modifying app startup, then app starts and executes next switch based on test case for actually running code.
 
-Some test cases passes additional parameters to differentiate behavior, see `src/mono/wasm/Wasm.Build.Tests/TestAppScenarios`.
+Some test cases passes additional parameters to differentiate behavior, see `src/mono/wasm/Wasm.Build.Tests`.
 
 ### Running out side of WBT
 

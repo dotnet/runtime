@@ -325,6 +325,11 @@ async function loadBootConfig (module: DotnetModuleInternal): Promise<void> {
         }
     }
 
+    // Prefer user-defined application environment
+    if (loaderHelpers.config.applicationEnvironment) {
+        loadedConfig.applicationEnvironment = loaderHelpers.config.applicationEnvironment;
+    }
+
     deep_merge_config(loaderHelpers.config, loadedConfig);
 
     if (!loaderHelpers.config.applicationEnvironment) {
@@ -344,7 +349,7 @@ async function readBootConfigResponse (loadConfigResponse: Response): Promise<Mo
     const config = loaderHelpers.config;
     const loadedConfig: MonoConfig = await loadConfigResponse.json();
 
-    if (!config.applicationEnvironment) {
+    if (!config.applicationEnvironment && !loadedConfig.applicationEnvironment) {
         loadedConfig.applicationEnvironment = loadConfigResponse.headers.get("Blazor-Environment") || loadConfigResponse.headers.get("DotNet-Environment") || undefined;
     }
 
