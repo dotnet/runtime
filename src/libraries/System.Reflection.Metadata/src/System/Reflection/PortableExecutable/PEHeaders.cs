@@ -93,13 +93,21 @@ namespace System.Reflection.PortableExecutable
             _coffHeaderStartOffset = reader.Offset;
             _coffHeader = new CoffHeader(ref reader);
 
-            if (!isCoffOnly)
+            if (isCoffOnly)
+            {
+                // In COFF files the size of the optional header must be zero.
+                if (_coffHeader.SizeOfOptionalHeader != 0)
+                {
+                    throw new BadImageFormatException(SR.UnknownFileFormat);
+                }
+            }
+            else
             {
                 _peHeaderStartOffset = reader.Offset;
                 _peHeader = new PEHeader(ref reader);
             }
 
-            _sectionHeaders = ReadSectionHeaders(ref reader);
+            _sectionHeaders = ReadSectionHeaders(ref reader, actualSize);
 
             if (!isCoffOnly)
             {
@@ -289,10 +297,10 @@ namespace System.Reflection.PortableExecutable
             }
         }
 
-        private ImmutableArray<SectionHeader> ReadSectionHeaders(ref PEBinaryReader reader)
+        private ImmutableArray<SectionHeader> ReadSectionHeaders(ref PEBinaryReader reader, int size)
         {
             int numberOfSections = _coffHeader.NumberOfSections;
-            if (numberOfSections < 0)
+            if (numberOfSections < 0 || numberOfSections * SectionHeader.Size > size - reader.Offset)
             {
                 throw new BadImageFormatException(SR.InvalidNumberOfSections);
             }
