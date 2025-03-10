@@ -7796,9 +7796,7 @@ bool Lowering::TryFoldBinop(GenTreeOp* node)
     GenTree* op1 = node->gtGetOp1();
     GenTree* op2 = node->gtGetOp2();
 
-    if (op1->IsIntegralConst() && op2->IsIntegralConst() &&
-        op1->AsIntConCommon()->ImmedValCanBeFolded(comp, node->gtOper) &&
-        op2->AsIntConCommon()->ImmedValCanBeFolded(comp, node->gtOper))
+    if (op1->IsIntegralConst() && op2->IsIntegralConst())
     {
         GenTree* folded = comp->gtFoldExprConst(node);
         assert(folded == node);
@@ -7807,8 +7805,8 @@ bool Lowering::TryFoldBinop(GenTreeOp* node)
             return false;
         }
 
-        op1->SetUnusedValue();
-        op2->SetUnusedValue();
+        BlockRange().Remove(op1);
+        BlockRange().Remove(op2);
         return true;
     }
 
