@@ -420,7 +420,7 @@ ep_session_suspend_write_event (EventPipeSession *session)
 
 	if (session->buffer_manager)
 		// Convert all buffers to read only to ensure they get flushed
-		ep_buffer_manager_suspend_write_event (session->buffer_manager, session->index);
+		ep_buffer_manager_suspend_write_event (session->buffer_manager);
 }
 
 void
