@@ -1565,12 +1565,16 @@ namespace System.Net.Http.Functional.Tests
                 Task clientTask = TestAsync ? client.SendAsync(request) : Task.Run(() => client.Send(request));
 
                 HttpRequestData requestData = await server.AcceptConnectionSendResponseAndCloseAsync(statusCode: HttpStatusCode.InternalServerError);
+
+                // On the first send DiagnosticsHandler should keep user-supplied headers.
                 string traceparent = GetHeaderValue(requestData, "traceparent");
                 string tracestate = GetHeaderValue(requestData, "tracestate");
                 Assert.Equal(FirstTraceParent, traceparent);
                 Assert.Equal(FirstTraceState, tracestate);
 
                 requestData = await server.AcceptConnectionSendResponseAndCloseAsync(statusCode: HttpStatusCode.InternalServerError);
+
+                // Headers should be overridden on each subsequent send.
                 AssertHeadersAreInjected(requestData, parent1);
                 requestData = await server.AcceptConnectionSendResponseAndCloseAsync(statusCode: HttpStatusCode.OK);
                 AssertHeadersAreInjected(requestData, parent2);
