@@ -135,17 +135,17 @@ namespace System.Reflection
                         case CorElementType.ELEMENT_TYPE_CHAR:
                         case CorElementType.ELEMENT_TYPE_I2:
                         case CorElementType.ELEMENT_TYPE_U2:
-                            Unsafe.As<byte, ushort>(ref destElement) = srcElement; break;
+                            Unsafe.WriteUnaligned(ref destElement, (ushort)srcElement); break;
                         case CorElementType.ELEMENT_TYPE_I4:
                         case CorElementType.ELEMENT_TYPE_U4:
-                            Unsafe.As<byte, uint>(ref destElement) = srcElement; break;
+                            Unsafe.WriteUnaligned(ref destElement, (uint)srcElement); break;
                         case CorElementType.ELEMENT_TYPE_I8:
                         case CorElementType.ELEMENT_TYPE_U8:
-                            Unsafe.As<byte, ulong>(ref destElement) = srcElement; break;
+                            Unsafe.WriteUnaligned(ref destElement, (ulong)srcElement); break;
                         case CorElementType.ELEMENT_TYPE_R4:
-                            Unsafe.As<byte, float>(ref destElement) = srcElement; break;
+                            Unsafe.WriteUnaligned(ref destElement, (float)srcElement); break;
                         case CorElementType.ELEMENT_TYPE_R8:
-                            Unsafe.As<byte, double>(ref destElement) = srcElement; break;
+                            Unsafe.WriteUnaligned(ref destElement, (double)srcElement); break;
                         default:
                             Debug.Fail("Expected to be unreachable"); break;
                     }
@@ -155,15 +155,15 @@ namespace System.Reflection
                     switch (destElType)
                     {
                         case CorElementType.ELEMENT_TYPE_I2:
-                            Unsafe.As<byte, short>(ref destElement) = Unsafe.As<byte, sbyte>(ref srcElement); break;
+                            Unsafe.WriteUnaligned(ref destElement, (short)(sbyte)srcElement); break;
                         case CorElementType.ELEMENT_TYPE_I4:
-                            Unsafe.As<byte, int>(ref destElement) = Unsafe.As<byte, sbyte>(ref srcElement); break;
+                            Unsafe.WriteUnaligned(ref destElement, (int)(sbyte)srcElement); break;
                         case CorElementType.ELEMENT_TYPE_I8:
-                            Unsafe.As<byte, long>(ref destElement) = Unsafe.As<byte, sbyte>(ref srcElement); break;
+                            Unsafe.WriteUnaligned(ref destElement, (long)(sbyte)srcElement); break;
                         case CorElementType.ELEMENT_TYPE_R4:
-                            Unsafe.As<byte, float>(ref destElement) = Unsafe.As<byte, sbyte>(ref srcElement); break;
+                            Unsafe.WriteUnaligned(ref destElement, (float)(sbyte)srcElement); break;
                         case CorElementType.ELEMENT_TYPE_R8:
-                            Unsafe.As<byte, double>(ref destElement) = Unsafe.As<byte, sbyte>(ref srcElement); break;
+                            Unsafe.WriteUnaligned(ref destElement, (double)(sbyte)srcElement); break;
                         default:
                             Debug.Fail("Array.Copy from I1 to another type hit unsupported widening conversion"); break;
                     }
@@ -176,17 +176,17 @@ namespace System.Reflection
                         case CorElementType.ELEMENT_TYPE_U2:
                         case CorElementType.ELEMENT_TYPE_CHAR:
                             // U2 and CHAR are identical in conversion
-                            Unsafe.As<byte, ushort>(ref destElement) = Unsafe.As<byte, ushort>(ref srcElement); break;
+                            Unsafe.WriteUnaligned(ref destElement, Unsafe.ReadUnaligned<ushort>(ref srcElement)); break;
                         case CorElementType.ELEMENT_TYPE_I4:
                         case CorElementType.ELEMENT_TYPE_U4:
-                            Unsafe.As<byte, uint>(ref destElement) = Unsafe.As<byte, ushort>(ref srcElement); break;
+                            Unsafe.WriteUnaligned(ref destElement, (uint)Unsafe.ReadUnaligned<ushort>(ref srcElement)); break;
                         case CorElementType.ELEMENT_TYPE_I8:
                         case CorElementType.ELEMENT_TYPE_U8:
-                            Unsafe.As<byte, ulong>(ref destElement) = Unsafe.As<byte, ushort>(ref srcElement); break;
+                            Unsafe.WriteUnaligned(ref destElement, (ulong)Unsafe.ReadUnaligned<ushort>(ref srcElement)); break;
                         case CorElementType.ELEMENT_TYPE_R4:
-                            Unsafe.As<byte, float>(ref destElement) = Unsafe.As<byte, ushort>(ref srcElement); break;
+                            Unsafe.WriteUnaligned(ref destElement, (float)Unsafe.ReadUnaligned<ushort>(ref srcElement)); break;
                         case CorElementType.ELEMENT_TYPE_R8:
-                            Unsafe.As<byte, double>(ref destElement) = Unsafe.As<byte, ushort>(ref srcElement); break;
+                            Unsafe.WriteUnaligned(ref destElement, (double)Unsafe.ReadUnaligned<ushort>(ref srcElement)); break;
                         default:
                             Debug.Fail("Array.Copy from U2 to another type hit unsupported widening conversion"); break;
                     }
@@ -196,13 +196,13 @@ namespace System.Reflection
                     switch (destElType)
                     {
                         case CorElementType.ELEMENT_TYPE_I4:
-                            Unsafe.As<byte, int>(ref destElement) = Unsafe.As<byte, short>(ref srcElement); break;
+                            Unsafe.WriteUnaligned(ref destElement, (int)Unsafe.ReadUnaligned<short>(ref srcElement)); break;
                         case CorElementType.ELEMENT_TYPE_I8:
-                            Unsafe.As<byte, long>(ref destElement) = Unsafe.As<byte, short>(ref srcElement); break;
+                            Unsafe.WriteUnaligned(ref destElement, (long)Unsafe.ReadUnaligned<short>(ref srcElement)); break;
                         case CorElementType.ELEMENT_TYPE_R4:
-                            Unsafe.As<byte, float>(ref destElement) = Unsafe.As<byte, short>(ref srcElement); break;
+                            Unsafe.WriteUnaligned(ref destElement, (float)Unsafe.ReadUnaligned<short>(ref srcElement)); break;
                         case CorElementType.ELEMENT_TYPE_R8:
-                            Unsafe.As<byte, double>(ref destElement) = Unsafe.As<byte, short>(ref srcElement); break;
+                            Unsafe.WriteUnaligned(ref destElement, (double)Unsafe.ReadUnaligned<short>(ref srcElement)); break;
                         default:
                             Debug.Fail("Array.Copy from I2 to another type hit unsupported widening conversion"); break;
                     }
@@ -213,11 +213,11 @@ namespace System.Reflection
                     {
                         case CorElementType.ELEMENT_TYPE_I8:
                         case CorElementType.ELEMENT_TYPE_U8:
-                            Unsafe.As<byte, ulong>(ref destElement) = Unsafe.As<byte, uint>(ref srcElement); break;
+                            Unsafe.WriteUnaligned(ref destElement, (ulong)Unsafe.ReadUnaligned<uint>(ref srcElement)); break;
                         case CorElementType.ELEMENT_TYPE_R4:
-                            Unsafe.As<byte, float>(ref destElement) = Unsafe.As<byte, uint>(ref srcElement); break;
+                            Unsafe.WriteUnaligned(ref destElement, (float)Unsafe.ReadUnaligned<uint>(ref srcElement)); break;
                         case CorElementType.ELEMENT_TYPE_R8:
-                            Unsafe.As<byte, double>(ref destElement) = Unsafe.As<byte, uint>(ref srcElement); break;
+                            Unsafe.WriteUnaligned(ref destElement, (double)Unsafe.ReadUnaligned<uint>(ref srcElement)); break;
                         default:
                             Debug.Fail("Array.Copy from U4 to another type hit unsupported widening conversion"); break;
                     }
@@ -227,11 +227,11 @@ namespace System.Reflection
                     switch (destElType)
                     {
                         case CorElementType.ELEMENT_TYPE_I8:
-                            Unsafe.As<byte, long>(ref destElement) = Unsafe.As<byte, int>(ref srcElement); break;
+                            Unsafe.WriteUnaligned(ref destElement, (long)Unsafe.ReadUnaligned<int>(ref srcElement)); break;
                         case CorElementType.ELEMENT_TYPE_R4:
-                            Unsafe.As<byte, float>(ref destElement) = Unsafe.As<byte, int>(ref srcElement); break;
+                            Unsafe.WriteUnaligned(ref destElement, (float)Unsafe.ReadUnaligned<int>(ref srcElement)); break;
                         case CorElementType.ELEMENT_TYPE_R8:
-                            Unsafe.As<byte, double>(ref destElement) = Unsafe.As<byte, int>(ref srcElement); break;
+                            Unsafe.WriteUnaligned(ref destElement, (double)Unsafe.ReadUnaligned<int>(ref srcElement)); break;
                         default:
                             Debug.Fail("Array.Copy from I4 to another type hit unsupported widening conversion"); break;
                     }
@@ -241,9 +241,9 @@ namespace System.Reflection
                     switch (destElType)
                     {
                         case CorElementType.ELEMENT_TYPE_R4:
-                            Unsafe.As<byte, float>(ref destElement) = Unsafe.As<byte, ulong>(ref srcElement); break;
+                            Unsafe.WriteUnaligned(ref destElement, (float)Unsafe.ReadUnaligned<ulong>(ref srcElement)); break;
                         case CorElementType.ELEMENT_TYPE_R8:
-                            Unsafe.As<byte, double>(ref destElement) = Unsafe.As<byte, ulong>(ref srcElement); break;
+                            Unsafe.WriteUnaligned(ref destElement, (double)Unsafe.ReadUnaligned<ulong>(ref srcElement)); break;
                         default:
                             Debug.Fail("Array.Copy from U8 to another type hit unsupported widening conversion"); break;
                     }
@@ -253,9 +253,9 @@ namespace System.Reflection
                     switch (destElType)
                     {
                         case CorElementType.ELEMENT_TYPE_R4:
-                            Unsafe.As<byte, float>(ref destElement) = Unsafe.As<byte, long>(ref srcElement); break;
+                            Unsafe.WriteUnaligned(ref destElement, (float)Unsafe.ReadUnaligned<long>(ref srcElement)); break;
                         case CorElementType.ELEMENT_TYPE_R8:
-                            Unsafe.As<byte, double>(ref destElement) = Unsafe.As<byte, long>(ref srcElement); break;
+                            Unsafe.WriteUnaligned(ref destElement, (double)Unsafe.ReadUnaligned<long>(ref srcElement)); break;
                         default:
                             Debug.Fail("Array.Copy from I8 to another type hit unsupported widening conversion"); break;
                     }
@@ -263,7 +263,7 @@ namespace System.Reflection
 
                 case CorElementType.ELEMENT_TYPE_R4:
                     Debug.Assert(destElType == CorElementType.ELEMENT_TYPE_R8);
-                    Unsafe.As<byte, double>(ref destElement) = Unsafe.As<byte, float>(ref srcElement); break;
+                    Unsafe.WriteUnaligned(ref destElement, (double)Unsafe.ReadUnaligned<float>(ref srcElement)); break;
 
                 default:
                     Debug.Fail("Fell through outer switch in PrimitiveWiden!  Unknown primitive type for source array!"); break;
