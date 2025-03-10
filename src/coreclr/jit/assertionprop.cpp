@@ -1335,7 +1335,7 @@ AssertionIndex Compiler::optCreateAssertion(GenTree* op1, GenTree* op2, optAsser
                 {
                     if (!optLocalAssertionProp)
                     {
-                        // Currently not useful for global assertion prop
+                        // O2K_LCLVAR_COPY is not useful for global assertion prop
                         goto DONE_ASSERTION;
                     }
 
