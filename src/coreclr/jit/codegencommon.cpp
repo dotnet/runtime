@@ -3197,7 +3197,6 @@ public:
     //
     void Validate()
     {
-        // Validate that there are no conflicts
         for (int i = 0; i < m_nodes.Height(); i++)
         {
             RegNode* regNode = m_nodes.Bottom(i);
