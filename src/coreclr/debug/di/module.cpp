@@ -4250,12 +4250,12 @@ HRESULT CordbNativeCode::GetILToNativeMapping(ULONG32                    cMap,
         LoadNativeInfo();
 
         SequencePoints * pSeqPts = GetSequencePoints();
-        DebuggerILToNativeMap * rgMapInt = pSeqPts->GetMapAddr();
         ULONG32 cMapIntCount = pSeqPts->GetEntryCount();
 
         // If they gave us space to copy into...
-        if (map != NULL)
+        if (map != NULL && cMapIntCount != 0)
         {
+            DebuggerILToNativeMap * rgMapInt = pSeqPts->GetMapAddr();
             // Only copy as much as either they gave us or we have to copy.
             ULONG32 cMapToCopy = min(cMap, cMapIntCount);
 
