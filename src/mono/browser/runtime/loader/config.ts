@@ -326,7 +326,7 @@ async function loadBootConfig (module: DotnetModuleInternal): Promise<void> {
 
     // Prefer user-defined application environment
     if (loaderHelpers.config.applicationEnvironment) {
-        loadedConfig.applicationEnvironment = undefined;
+        loadedConfig.applicationEnvironment = loaderHelpers.config.applicationEnvironment;
     }
 
     deep_merge_config(loaderHelpers.config, loadedConfig);
