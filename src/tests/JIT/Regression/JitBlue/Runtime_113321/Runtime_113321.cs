@@ -46,5 +46,5 @@ public interface IRuntime
 public class Runtime : IRuntime
 {
     public int Code;
-    public void Check<T>(T value) => Code = (short)(object)value == 1 ? 100 : 101;
+    public void Check<T>(T value) => Code = (short)(object)value == 0 ? 100 : 101;
 }
