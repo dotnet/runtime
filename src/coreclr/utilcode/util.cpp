@@ -1071,17 +1071,13 @@ int GetCurrentProcessCpuCount()
 
             if (0 < maxRate && maxRate < MAXIMUM_CPU_RATE)
             {
-                // The cpu limit is actually maxRate * GetTotalProcessorCount() / MAXIMUM_CPU_RATE
-                // but don't divide yet to avoid using floating point math.
-                DWORD cpuLimit = maxRate * GetTotalProcessorCount();
+                double cpuLimit = (double) (maxRate * GetTotalProcessorCount()) / MAXIMUM_CPU_RATE;
 
-                // Test if (maxRate * GetTotalProcessorCount() / MAXIMUM_CPU_RATE) < count
-                // to determine if there is a cpu quota limit.
-                if (cpuLimit < count * MAXIMUM_CPU_RATE)
+                if (cpuLimit < count)
                 {
                     g_currentProcessIsCpuQuotaLimited = true;
                     // Round up to the next integer
-                    count = (cpuLimit + MAXIMUM_CPU_RATE - 1) / MAXIMUM_CPU_RATE;
+                    count = (DWORD)(cpuLimit + 0.999999999);
                 }
             }
         }

@@ -144,17 +144,13 @@ void InitializeCurrentProcessCpuCount()
 
             if (0 < maxRate && maxRate < MAXIMUM_CPU_RATE)
             {
-                // The cpu limit is actually maxRate * GCToOSInterface::GetTotalProcessorCount() / MAXIMUM_CPU_RATE
-                // but don't divide yet to avoid using floating point math.
-                DWORD cpuLimit = (maxRate * GCToOSInterface::GetTotalProcessorCount());
+                double cpuLimit = (double) (maxRate * GCToOSInterface::GetTotalProcessorCount()) / MAXIMUM_CPU_RATE;
 
-                // Test if (maxRate * GCToOSInterface::GetTotalProcessorCount() / MAXIMUM_CPU_RATE) < count
-                // to determine if there is a cpu quota limit.
-                if (cpuLimit < count * MAXIMUM_CPU_RATE)
+                if (cpuLimit < count)
                 {
                     g_RhIsCpuQuotaLimited = true;
                     // Round cpu limit up to the next integer
-                    count = (cpuLimit + MAXIMUM_CPU_RATE - 1) / MAXIMUM_CPU_RATE;
+                    count = (DWORD)(cpuLimit + 0.999999999);
                 }
             }
         }
