@@ -2295,11 +2295,6 @@ bool ReplaceVisitor::ReplaceReturnedStructLocal(GenTreeOp* ret, GenTreeLclVarCom
         return false;
     }
 
-    if (!IsReturnProfitableAsFieldList(value))
-    {
-        return false;
-    }
-
     StructDeaths      deaths    = m_liveness->GetDeathsForStructLocal(value);
     GenTreeFieldList* fieldList = m_compiler->gtNewFieldList();
 
@@ -2334,49 +2329,6 @@ bool ReplaceVisitor::ReplaceReturnedStructLocal(GenTreeOp* ret, GenTreeLclVarCom
     ret->SetReturnValue(fieldList);
 
     m_madeChanges = true;
-    return true;
-}
-
-//------------------------------------------------------------------------
-// IsReturnProfitableAsFieldList:
-//   Check if a returned local is expected to be profitable to turn into a
-//   FIELD_LIST.
-//
-// Parameters:
-//   value - The struct local
-//
-// Returns:
-//   True if so.
-//
-bool ReplaceVisitor::IsReturnProfitableAsFieldList(GenTreeLclVarCommon* value)
-{
-    // Currently the backend requires all fields to map cleanly to registers to
-    // efficiently return them. Otherwise they will be spilled, and we are
-    // better off decomposing the store here.
-    auto fieldMapsCleanly = [=](Replacement& rep) {
-        const ReturnTypeDesc& retDesc     = m_compiler->compRetTypeDesc;
-        unsigned              fieldOffset = rep.Offset - value->GetLclOffs();
-        unsigned              numRegs     = retDesc.GetReturnRegCount();
-        for (unsigned i = 0; i < numRegs; i++)
-        {
-            unsigned  offset  = retDesc.GetReturnFieldOffset(i);
-            var_types regType = retDesc.GetReturnRegType(i);
-            if ((fieldOffset == offset) && (genTypeSize(rep.AccessType) == genTypeSize(regType)))
-            {
-                return true;
-            }
-        }
-
-        return false;
-    };
-
-    unsigned size = value->GetLayout(m_compiler)->GetSize();
-    if (!VisitOverlappingReplacements(value->GetLclNum(), value->GetLclOffs(), size, fieldMapsCleanly))
-    {
-        // Aborted early, so a field did not map
-        return false;
-    }
-
     return true;
 }
 
