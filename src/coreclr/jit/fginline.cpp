@@ -1035,6 +1035,19 @@ void Compiler::fgMorphCallInlineHelper(GenTreeCall* call, InlineResult* result, 
     // Don't expect any surprises here.
     assert(result->IsCandidate());
 
+#if defined(DEBUG)
+    // Fail if we're inlining and we've reached the acceptance limit.
+    //
+    int      limit   = JitConfig.JitInlineLimit();
+    unsigned current = m_inlineStrategy->GetInlineCount();
+
+    if ((limit >= 0) && (current >= static_cast<unsigned>(limit)))
+    {
+        result->NoteFatal(InlineObservation::CALLSITE_OVER_INLINE_LIMIT);
+        return;
+    }
+#endif // defined(DEBUG)
+
     if (lvaCount >= MAX_LV_NUM_COUNT_FOR_INLINING)
     {
         // For now, attributing this to call site, though it's really
