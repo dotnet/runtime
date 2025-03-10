@@ -42,7 +42,7 @@ public class AppSettingsTests : WasmTemplateTestsBase
 
     [Theory]
     [MemberData(nameof(LoadAppSettingsBasedOnApplicationEnvironmentData))]
-    public async Task LoadAppSettingsBasedOnApplicationEnvironment(bool publish, string msBuildApplicationEnvironment, string queryApplicationEnvironment, string expectedApplicationEnvironment)
+    public async Task LoadAppSettingsBasedOnApplicationEnvironment(bool publish, string? msBuildApplicationEnvironment, string? queryApplicationEnvironment, string expectedApplicationEnvironment)
     {
         Configuration config = Configuration.Debug;
         ProjectInfo info = CopyTestAsset(config, aot: false, TestAsset.WasmBasicTestApp, "AppSettingsTest");

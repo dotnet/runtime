@@ -60,7 +60,7 @@ public class WasmTemplateTestsBase : BuildTestBase
         Configuration config,
         bool aot,
         string idPrefix = "wbt",
-        bool appendUnicodeToPath = true,
+        bool? appendUnicodeToPath = null,
         string extraArgs = "",
         bool runAnalyzers = true,
         bool addFrameworkArg = false,
@@ -69,7 +69,7 @@ public class WasmTemplateTestsBase : BuildTestBase
         string insertAtEnd = "")
     {
         (string projectName, string logPath, string nugetDir) =
-            InitProjectLocation(idPrefix, config, aot, appendUnicodeToPath);
+            InitProjectLocation(idPrefix, config, aot, appendUnicodeToPath ?? s_buildEnv.IsRunningOnCI);
 
         if (addFrameworkArg)
             extraArgs += $" -f {DefaultTargetFramework}";
