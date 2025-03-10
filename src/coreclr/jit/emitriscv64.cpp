@@ -3486,15 +3486,15 @@ bool emitter::emitDispBranch(
 
 void emitter::emitDispIllegalInstruction(code_t instructionCode)
 {
-    assert(false);
     printf("RISCV64 illegal instruction: 0x%08X\n", instructionCode);
+    assert(false);
 }
 
 void emitter::emitDispImmediate(ssize_t imm, bool newLine /*= true*/, unsigned regBase /*= REG_ZERO*/)
 {
     if (emitComp->opts.disDiffable && (regBase != REG_FP) && (regBase != REG_SP))
     {
-        printf("<diffable>");
+        printf("0xd1ffab1e");
     }
     else
     {
