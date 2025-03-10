@@ -247,7 +247,7 @@ typedef DPTR(NDirectImportPrecode) PTR_NDirectImportPrecode;
 struct ThisPtrRetBufPrecodeData
 {
     PCODE Target;
-    MethodDesc *MethodDesc;
+    class MethodDesc *MethodDesc;
 };
 
 typedef DPTR(ThisPtrRetBufPrecodeData) PTR_ThisPtrRetBufPrecodeData;
