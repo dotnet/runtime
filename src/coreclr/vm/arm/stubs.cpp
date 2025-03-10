@@ -287,6 +287,9 @@ struct WriteBarrierDescriptor
     DWORD   m_dw_g_ephemeral_low_offset;    // Offset of the instruction reading g_ephemeral_low
     DWORD   m_dw_g_ephemeral_high_offset;   // Offset of the instruction reading g_ephemeral_high
     DWORD   m_dw_g_card_table_offset;       // Offset of the instruction reading g_card_table
+#ifdef FEATURE_MANUALLY_MANAGED_CARD_BUNDLES
+    DWORD   m_dw_g_card_bundle_table_offset; //Offset of the instruction reading g_card_bundle_table_offset
+#endif
 };
 
 // Infrastructure used for mapping of the source and destination of current WB patching
@@ -455,6 +458,9 @@ void UpdateGCWriteBarriers(bool postGrow = false)
             GWB_PATCH_OFFSET(g_ephemeral_low);
             GWB_PATCH_OFFSET(g_ephemeral_high);
             GWB_PATCH_OFFSET(g_card_table);
+#ifdef FEATURE_MANUALLY_MANAGED_CARD_BUNDLES
+            GWB_PATCH_OFFSET(g_card_bundle_table);
+#endif
         }
 
         pDesc++;
@@ -502,7 +508,6 @@ void FlushWriteBarrierInstructionCache()
     ComputeWriteBarrierRange(&pbAlteredRange, &cbAlteredRange);
     FlushInstructionCache(GetCurrentProcess(), pbAlteredRange, cbAlteredRange);
 }
-
 
 #endif // !DACCESS_COMPILE
 
