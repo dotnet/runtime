@@ -14278,24 +14278,37 @@ bool Compiler::fgValueNumberHelperCall(GenTreeCall* call)
                 break;
 
             case CORINFO_HELP_DIV:
-            case CORINFO_HELP_LDIV:
                 vnpExc = fgValueNumberDivisionExceptions(GT_DIV, call->gtArgs.GetUserArgByIndex(0)->GetNode(),
                                                          call->gtArgs.GetUserArgByIndex(1)->GetNode());
                 break;
             case CORINFO_HELP_MOD:
-            case CORINFO_HELP_LMOD:
                 vnpExc = fgValueNumberDivisionExceptions(GT_MOD, call->gtArgs.GetUserArgByIndex(0)->GetNode(),
                                                          call->gtArgs.GetUserArgByIndex(1)->GetNode());
                 break;
             case CORINFO_HELP_UDIV:
-            case CORINFO_HELP_ULDIV:
                 vnpExc = fgValueNumberDivisionExceptions(GT_UDIV, call->gtArgs.GetUserArgByIndex(0)->GetNode(),
                                                          call->gtArgs.GetUserArgByIndex(1)->GetNode());
                 break;
             case CORINFO_HELP_UMOD:
-            case CORINFO_HELP_ULMOD:
                 vnpExc = fgValueNumberDivisionExceptions(GT_UMOD, call->gtArgs.GetUserArgByIndex(0)->GetNode(),
                                                          call->gtArgs.GetUserArgByIndex(1)->GetNode());
+                break;
+
+            case CORINFO_HELP_LDIV:
+                vnpExc = fgValueNumberDivisionExceptions(GT_DIV, call->gtArgs.GetUserArgByIndex(1)->GetNode(),
+                                                         call->gtArgs.GetUserArgByIndex(0)->GetNode());
+                break;
+            case CORINFO_HELP_LMOD:
+                vnpExc = fgValueNumberDivisionExceptions(GT_MOD, call->gtArgs.GetUserArgByIndex(1)->GetNode(),
+                                                         call->gtArgs.GetUserArgByIndex(0)->GetNode());
+                break;
+            case CORINFO_HELP_ULDIV:
+                vnpExc = fgValueNumberDivisionExceptions(GT_UDIV, call->gtArgs.GetUserArgByIndex(1)->GetNode(),
+                                                         call->gtArgs.GetUserArgByIndex(0)->GetNode());
+                break;
+            case CORINFO_HELP_ULMOD:
+                vnpExc = fgValueNumberDivisionExceptions(GT_UMOD, call->gtArgs.GetUserArgByIndex(1)->GetNode(),
+                                                         call->gtArgs.GetUserArgByIndex(0)->GetNode());
                 break;
 
             default:
