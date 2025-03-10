@@ -18,14 +18,14 @@
 #define DN_SIMDHASH_CASCADED_SLOT (DN_SIMDHASH_MAX_BUCKET_CAPACITY + 1)
 // We always use 16-byte-wide vectors (I've tested this, 32-byte vectors are slower)
 #define DN_SIMDHASH_VECTOR_WIDTH 16
-// We need to make sure suffixes are never zero. A bad hash is more likely to collide
-//  at the top bit than at the bottom.
-#define DN_SIMDHASH_SUFFIX_SALT 0b10000000
 // Set a minimum number of buckets when created, regardless of requested capacity
 #define DN_SIMDHASH_MIN_BUCKET_COUNT 1
 // User-specified capacity values will be increased to this percentage in order
 //  to maintain an ideal load factor. FIXME: 120 isn't right
-#define DN_SIMDHASH_SIZING_PERCENTAGE 120
+#define DN_SIMDHASH_SIZING_PERCENTAGE 130
+// If set, bucket count will be a power of two. If unset, we will use spaced primes.
+// Spaced primes give much better collision resistance for bad hashes, but worsen perf for optimal hashes.
+#define DN_SIMDHASH_POWER_OF_TWO_BUCKETS 0
 
 typedef struct dn_simdhash_void_data_t {
 	// HACK: Empty struct or 0-element array produce a MSVC warning and break the build.
@@ -103,15 +103,22 @@ typedef struct dn_simdhash_t {
 static DN_FORCEINLINE(uint8_t)
 dn_simdhash_select_suffix (uint32_t key_hash)
 {
-	// Extract top 8 bits, then trash the highest one.
+	// Extract low 8 bits and ensure that the suffix isn't 0.
 	// The lowest bits of the hash are used to select the bucket index.
-	return (key_hash >> 24) | DN_SIMDHASH_SUFFIX_SALT;
+	uint8_t result = key_hash & 0xFF;
+	// F14 uses a bitwise or, but this will compile down to a cmov which is (in testing) typically just as good,
+	//  and gives us nearly twice as many possible suffixes.
+	return result ? result : 0xFF;
 }
 
 // This relies on bucket count being a power of two.
+#if DN_SIMDHASH_POWER_OF_TWO_BUCKETS
 #define dn_simdhash_select_bucket_index(buffers, key_hash) \
 	((key_hash) & ((buffers).buckets_length - 1))
-
+#else
+#define dn_simdhash_select_bucket_index(buffers, key_hash) \
+	((key_hash) % ((buffers).buckets_length))
+#endif
 
 // Creates a simdhash with the provided configuration metadata, vtable, size, and allocator.
 // Be sure you know what you're doing.
