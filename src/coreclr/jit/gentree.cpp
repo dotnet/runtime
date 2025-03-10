@@ -18446,7 +18446,7 @@ bool Compiler::IsValidForShuffle(
         {
             // the variable implementation for Vector128 Shuffle always needs SSSE3
             // however, this can become valid later if it becomes constant
-            if (canBecomeValid)
+            if (canBecomeValid != nullptr)
             {
                 *canBecomeValid = true;
             }
@@ -25685,7 +25685,7 @@ GenTree* Compiler::gtNewSimdShuffleVariableNode(
             // 6. we can use a conditional select to get the appropriate value if we know what mask to use.
             // 7. we can use the following mask:
             //        (indices ^ V256.Create(V128.Create((byte)0), V128.Create((byte)0x10))) > V256.Create((byte)0x0F)
-            //        since this detects whether the index value is in the same lane as V256<byte>.Idices
+            //        since this detects whether the index value is in the same lane as V256<byte>.Indices
             //        would be (which we know we can always use vector for). this is because it normalises the 0x10 bit
             //        to mean '0 = in vector, 1 = in vectorSwapped', and then we can use > 0x0F to detect when this is
             //        the case (we use > on sbyte, since it is the primitive operation on x86/x64 avx2 hardware).
@@ -25813,6 +25813,9 @@ GenTree* Compiler::gtNewSimdShuffleVariableNode(
             assert(simdSize == 16);
             assert(elementSize > 1);
 
+            // we want to convert our non-byte indices to byte indices,
+            // e.g., 3 2 1 0 (int) -> 12 13 14 15 8 9 10 11 4 5 6 7 0 1 2 3 (byte)
+
             // the below is implemented for integral types
             if (varTypeIsFloating(simdBaseType))
             {
@@ -25881,6 +25884,7 @@ GenTree* Compiler::gtNewSimdShuffleVariableNode(
     // if we have short / int / long, then we want to VectorTableLookup the least-significant byte to all bytes of that
     // index element, and then shift left by the applicable amount, then or on the bits for the elements
     // if it's not ShuffleNative, we also need to then fix-up the out-of-range indices (only for non-byte though)
+    // e.g., 3 2 1 0 (int) -> 12 13 14 15 8 9 10 11 4 5 6 7 0 1 2 3 (byte)
     if (elementSize > 1)
     {
         // AdvSimd.ShiftLeftLogical is only valid on integral types, excluding Vector128<int>
@@ -25922,6 +25926,7 @@ GenTree* Compiler::gtNewSimdShuffleVariableNode(
 
         op2 = gtNewSimdHWIntrinsicNode(type, op2, cnsNode, lookupIntrinsic, simdBaseJitType, simdSize);
 
+        // or the relevant bits
         simd_t orCns = {};
         for (size_t index = 0; index < simdSize; index++)
         {
