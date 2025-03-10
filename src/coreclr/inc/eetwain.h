@@ -646,6 +646,283 @@ struct CodeManStateBuf
 
 #endif
 
+#ifdef FEATURE_INTERPRETER
+
+class InterpreterCodeManager : public ICodeManager {
+
+    VPTR_VTABLE_CLASS_AND_CTOR(InterpreterCodeManager, ICodeManager)
+
+public:
+
+
+#ifndef DACCESS_COMPILE
+#ifndef FEATURE_EH_FUNCLETS
+/*
+    Last chance for the runtime support to do fixups in the context
+    before execution continues inside a filter, catch handler, or finally
+*/
+virtual
+void FixContext(ContextType     ctxType,
+                EHContext      *ctx,
+                EECodeInfo     *pCodeInfo,
+                DWORD           dwRelOffset,
+                DWORD           nestingLevel,
+                OBJECTREF       thrownObject,
+                CodeManState   *pState,
+                size_t       ** ppShadowSP,             // OUT
+                size_t       ** ppEndRegion)            // OUT
+{
+    _ASSERTE(FALSE);
+}
+#endif // !FEATURE_EH_FUNCLETS
+#endif // !DACCESS_COMPILE
+
+#ifdef TARGET_X86
+/*
+    Gets the ambient stack pointer value at the given nesting level within
+    the method.
+*/
+virtual
+TADDR GetAmbientSP(PREGDISPLAY     pContext,
+                   EECodeInfo     *pCodeInfo,
+                   DWORD           dwRelOffset,
+                   DWORD           nestingLevel,
+                   CodeManState   *pState)
+{
+    _ASSERTE(FALSE);
+    return NULL;
+}
+#endif // TARGET_X86
+
+/*
+    Get the number of bytes used for stack parameters.
+    This is currently only used on x86.
+*/
+virtual
+ULONG32 GetStackParameterSize(EECodeInfo* pCodeInfo)
+{
+    _ASSERTE(FALSE);
+    return 0;
+}
+
+/*
+    Unwind the current stack frame, i.e. update the virtual register
+    set in pContext. This will be similar to the state after the function
+    returns back to caller (IP points to after the call, Frame and Stack
+    pointer has been reset, callee-saved registers restored
+    (if UpdateAllRegs), callee-UNsaved registers are trashed)
+    Returns success of operation.
+*/
+virtual
+bool UnwindStackFrame(
+                PREGDISPLAY     pContext,
+                EECodeInfo     *pCodeInfo,
+                unsigned        flags,
+                CodeManState   *pState);
+
+/*
+    Is the function currently at a "GC safe point" ?
+    Can call EnumGcRefs() successfully
+*/
+virtual
+bool IsGcSafe(  EECodeInfo     *pCodeInfo,
+                DWORD           dwRelOffset);
+
+#if defined(TARGET_ARM) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
+virtual
+bool HasTailCalls(EECodeInfo *pCodeInfo)
+{
+    _ASSERTE(FALSE);
+    return false;
+}
+#endif // TARGET_ARM || TARGET_ARM64 || TARGET_LOONGARCH64 || defined(TARGET_RISCV64)
+
+#if defined(TARGET_AMD64) && defined(_DEBUG)
+/*
+    Locates the end of the last interruptible region in the given code range.
+    Returns 0 if the entire range is uninterruptible.  Returns the end point
+    if the entire range is interruptible.
+*/
+virtual
+unsigned FindEndOfLastInterruptibleRegion(unsigned curOffset,
+                                          unsigned endOffset,
+                                          GCInfoToken gcInfoToken)
+{
+    _ASSERTE(FALSE);
+    return 0;
+}
+#endif // TARGET_AMD64 && _DEBUG
+
+/*
+    Enumerate all live object references in that function using
+    the virtual register set. Same reference location cannot be enumerated
+    multiple times (but all differenct references pointing to the same
+    object have to be individually enumerated).
+    Returns success of operation.
+*/
+virtual
+bool EnumGcRefs(PREGDISPLAY     pContext,
+                EECodeInfo     *pCodeInfo,
+                unsigned        flags,
+                GCEnumCallback  pCallback,
+                LPVOID          hCallBack,
+                DWORD           relOffsetOverride = NO_OVERRIDE_OFFSET);
+
+virtual
+OBJECTREF GetInstance(
+                PREGDISPLAY     pContext,
+                EECodeInfo *    pCodeInfo);
+
+/*
+    Returns the extra argument passed to shared generic code if it is still alive.
+    Returns NULL in all other cases.
+*/
+virtual
+PTR_VOID GetParamTypeArg(PREGDISPLAY     pContext,
+                         EECodeInfo *    pCodeInfo);
+
+// Returns the type of the context parameter (this, methodtable, methoddesc, or none)
+virtual GenericParamContextType GetParamContextType(PREGDISPLAY     pContext,
+                                                    EECodeInfo *    pCodeInfo);
+
+/*
+    Returns the offset of the GuardStack cookie if it exists.
+    Returns NULL if there is no cookie.
+*/
+virtual
+void * GetGSCookieAddr(PREGDISPLAY     pContext,
+                       EECodeInfo    * pCodeInfo,
+                       unsigned        flags,
+                       CodeManState  * pState)
+{
+    _ASSERTE(FALSE);
+    return NULL;
+}
+
+
+#ifndef USE_GC_INFO_DECODER
+/*
+  Returns true if the given IP is in the given method's prolog or an epilog.
+*/
+virtual
+bool IsInPrologOrEpilog(
+                DWORD       relOffset,
+                GCInfoToken gcInfoToken,
+                size_t*     prologSize)
+{
+    _ASSERTE(FALSE);
+    return false;
+}
+
+/*
+  Returns true if the given IP is in the synchronized region of the method (valid for synchronized functions only)
+*/
+virtual
+bool IsInSynchronizedRegion(
+                DWORD       relOffset,
+                GCInfoToken gcInfoToken,
+                unsigned    flags)
+{
+    _ASSERTE(FALSE);
+    return false;
+}
+#endif // !USE_GC_INFO_DECODER
+
+/*
+  Returns the size of a given function.
+*/
+virtual
+size_t GetFunctionSize(GCInfoToken gcInfoToken);
+
+/*
+*  Get information necessary for return address hijacking of the method represented by the gcInfoToken.
+*  If it can be hijacked, it sets the returnKind output parameter to the kind of the return value and
+*  returns true.
+*  If hijacking is not possible for some reason, it return false.
+*/
+virtual bool GetReturnAddressHijackInfo(GCInfoToken gcInfoToken X86_ARG(ReturnKind * returnKind))
+{
+    _ASSERTE(FALSE);
+    return false;
+}
+
+#ifndef USE_GC_INFO_DECODER
+/*
+  Returns the size of the frame (barring localloc)
+*/
+virtual
+unsigned int GetFrameSize(GCInfoToken gcInfoToken)
+{
+    _ASSERTE(FALSE);
+    return 0;
+}
+#endif // USE_GC_INFO_DECODER
+
+#ifndef DACCESS_COMPILE
+
+#ifndef FEATURE_EH_FUNCLETS
+virtual const BYTE* GetFinallyReturnAddr(PREGDISPLAY pReg)
+{
+    _ASSERTE(FALSE);
+    return NULL;
+}
+
+virtual BOOL IsInFilter(GCInfoToken gcInfoToken,
+                        unsigned offset,
+                        PCONTEXT pCtx,
+                        DWORD curNestLevel)
+{
+    _ASSERTE(FALSE);
+    return FALSE;
+}
+virtual BOOL LeaveFinally(GCInfoToken gcInfoToken,
+                          unsigned offset,
+                          PCONTEXT pCtx)
+{
+    _ASSERTE(FALSE);
+    return FALSE;
+}
+
+virtual void LeaveCatch(GCInfoToken gcInfoToken,
+                         unsigned offset,
+                         PCONTEXT pCtx)
+{
+    _ASSERTE(FALSE);
+}
+#endif // FEATURE_EH_FUNCLETS
+
+#ifdef FEATURE_REMAP_FUNCTION
+/*
+    Last chance for the runtime support to do fixups in the context
+    before execution continues inside an EnC updated function.
+*/
+virtual
+HRESULT FixContextForEnC(PCONTEXT        pCtx,
+                            EECodeInfo    * pOldCodeInfo,
+       const ICorDebugInfo::NativeVarInfo * oldMethodVars,
+                            SIZE_T          oldMethodVarsCount,
+                            EECodeInfo    * pNewCodeInfo,
+       const ICorDebugInfo::NativeVarInfo * newMethodVars,
+                            SIZE_T          newMethodVarsCount)
+{
+    _ASSERTE(FALSE);
+    return E_NOTIMPL;
+}
+#endif // FEATURE_REMAP_FUNCTION
+
+#endif // !DACCESS_COMPILE
+
+#ifdef DACCESS_COMPILE
+    virtual void EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
+    {
+        // Nothing to do
+    }
+#endif
+
+};
+
+#endif // FEATURE_INTERPRETER
+
 //*****************************************************************************
 #endif // _EETWAIN_H
 //*****************************************************************************
