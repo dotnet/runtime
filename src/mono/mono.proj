@@ -118,6 +118,10 @@
                       GeneratePathProperty="true" />
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="$(RepoRoot)/src/native/external/vendored-libs.proj" />
+  </ItemGroup>
+
   <!--
     Like Wasm, Wasi needs a 64-bit python on windows to pinvoke into libClang.dll for offset generation.
     Only wasi doesn't come with its own python and windows uses 32-bit python, so refer to the transport pack instead.
@@ -423,6 +427,7 @@ JS_ENGINES = [NODE_JS]
       <_MonoCMakeArgs Include="-DGC_SUSPEND=$(MonoThreadSuspend)" />
       <_MonoCMakeArgs Include="-DMONO_LIB_NAME=$(MonoLibName)" />
       <_MonoCMakeArgs Include="-DMONO_SHARED_LIB_NAME=$(MonoSharedLibName)" />
+      <_MonoCMakeArgs Include="-DCMAKE_PREFIX_PATH=$(VendoredLibraryRootPath.TrimEnd('\\'))" />
     </ItemGroup>
 
     <ItemGroup Condition="'$(HostOS)' == 'Linux' and '$(MonoEnableLLVM)' == 'true' and '$(TargetArchitecture)' != 'wasm' and '$(MonoUseLibCxx)' == 'true'">
@@ -793,6 +798,10 @@ JS_ENGINES = [NODE_JS]
       <AotHostArchitecture Condition="'$(AotHostArchitecture)' == ''">$(BuildArchitecture)</AotHostArchitecture>
       <AotHostOS Condition="'$(AotHostOS)' == ''">$(HostOS)</AotHostOS>
     </PropertyGroup>
+
+    <ItemGroup>
+      <MonoAOTCMakeArgs Include="-DCMAKE_PREFIX_PATH=$(VendoredLibraryRootPath.TrimEnd('\\'))" />
+    </ItemGroup>
 
     <!-- iOS/tvOS specific options -->
     <PropertyGroup Condition="'$(TargetstvOS)' == 'true' or '$(TargetsiOS)' == 'true'">

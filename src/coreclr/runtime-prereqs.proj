@@ -14,9 +14,9 @@
   <Import Project="$(RepositoryEngineeringDir)nativepgo.targets" />
 
   <Target Name="BuildPrereqs" BeforeTargets="Build" DependsOnTargets="GenerateRuntimeVersionFile;GenerateNativeSourcelinkFile;OutputPgoPathForCI" />
-  
-  <!-- 
-    This is a workaround when cross-compiling on Windows for Android. 
+
+  <!--
+    This is a workaround when cross-compiling on Windows for Android.
 
     https://github.com/dotnet/arcade/issues/15496
   -->
@@ -39,4 +39,8 @@
   <PropertyGroup>
     <DebugType>Portable</DebugType>
   </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="$(RepoRoot)/src/native/external/vendored-libs.proj" />
+  </ItemGroup>
 </Project>
