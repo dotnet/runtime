@@ -5,11 +5,11 @@ using System;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices.JavaScript;
 
-public partial class ProfilerTest
+public partial class LogProfilerTest
 {
     [JSExport]
     [MethodImpl(MethodImplOptions.NoInlining)]
-     public static void TakeHeapshot() { }
+    public static void TakeHeapshot() { }
 
     [JSExport]
     public static int TestMeaning()
