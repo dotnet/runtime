@@ -63,7 +63,7 @@ public:
         free(s_cpu_cgroup_path);
     }
 
-    static bool GetCpuLimit(uint32_t *val)
+    static bool GetCpuLimit(double *val)
     {
         if (s_cgroup_version == 0)
             return false;
@@ -345,7 +345,7 @@ private:
         return cgroup_path;
     }
 
-    static bool GetCGroup1CpuLimit(uint32_t *val)
+    static bool GetCGroup1CpuLimit(double *val)
     {
         long long quota;
         long long period;
@@ -363,7 +363,7 @@ private:
         return true;
     }
 
-    static bool GetCGroup2CpuLimit(uint32_t *val)
+    static bool GetCGroup2CpuLimit(double *val)
     {
         char *filename = nullptr;
         FILE *file = nullptr;
@@ -434,7 +434,7 @@ private:
         return result;
     }
 
-    static void ComputeCpuLimit(long long period, long long quota, uint32_t *val)
+    static void ComputeCpuLimit(long long period, long long quota, double *val)
     {
         // Cannot have less than 1 CPU
         if (quota <= period)
@@ -443,9 +443,8 @@ private:
             return;
         }
 
-        // Calculate cpu count based on quota and round it up
-        double cpu_count = (double) quota / period  + 0.999999999;
-        *val = (cpu_count < UINT32_MAX) ? (uint32_t)cpu_count : UINT32_MAX;
+        // Calculate cpu count based on quota
+        double cpu_count = (double) quota / period;
     }
 
     static long long ReadCpuCGroupValue(const char* subsystemFilename){
@@ -503,7 +502,7 @@ void InitializeCpuCGroup()
     CGroup::Initialize();
 }
 
-bool GetCpuLimit(uint32_t* val)
+bool GetCpuLimit(double* val)
 {
     if (val == nullptr)
         return false;

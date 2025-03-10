@@ -375,10 +375,10 @@ void InitializeCurrentProcessCpuCount()
         count = GCToOSInterface::GetTotalProcessorCount();
 #endif // HAVE_SCHED_GETAFFINITY
 
-        uint32_t cpuLimit;
+        double cpuLimit;
         if (GetCpuLimit(&cpuLimit) && cpuLimit < count)
         {
-            count = cpuLimit;
+            count = (uint32_t)(cpuLimit + 0.999999999);
             g_RhIsCpuQuotaLimited = true;
         }
     }

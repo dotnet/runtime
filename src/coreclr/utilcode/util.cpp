@@ -1071,22 +1071,28 @@ int GetCurrentProcessCpuCount()
 
             if (0 < maxRate && maxRate < MAXIMUM_CPU_RATE)
             {
-                DWORD cpuLimit = (maxRate * GetTotalProcessorCount() + MAXIMUM_CPU_RATE - 1) / MAXIMUM_CPU_RATE;
-                if (cpuLimit < count)
+                // The cpu limit is actually maxRate * GetTotalProcessorCount() / MAXIMUM_CPU_RATE
+                // but don't divide yet to avoid using floating point math.
+                DWORD cpuLimit = maxRate * GetTotalProcessorCount();
+
+                // Test if (maxRate * GetTotalProcessorCount() / MAXIMUM_CPU_RATE) < count
+                // to determine if there is a cpu quota limit.
+                if (cpuLimit < count * MAXIMUM_CPU_RATE)
                 {
-                    count = cpuLimit;
                     g_currentProcessIsCpuQuotaLimited = true;
+                    // Round up to the next integer
+                    count = (cpuLimit + MAXIMUM_CPU_RATE - 1) / MAXIMUM_CPU_RATE;
                 }
             }
         }
 
 #else // HOST_WINDOWS
         count = PAL_GetLogicalCpuCountFromOS();
-
-        uint32_t cpuLimit;
+        double cpuLimit;
         if (PAL_GetCpuLimit(&cpuLimit) && cpuLimit < count)
         {
-            count = cpuLimit;
+            // Round up to the next integer
+            count = (DWORD)(cpuLimit + + 0.999999999);
             g_currentProcessIsCpuQuotaLimited = true;
         }
 #endif // HOST_WINDOWS

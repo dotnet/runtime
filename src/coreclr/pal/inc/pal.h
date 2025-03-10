@@ -2570,7 +2570,7 @@ PAL_GetTotalCpuCount();
 PALIMPORT
 BOOL
 PALAPI
-PAL_GetCpuLimit(UINT* val);
+PAL_GetCpuLimit(double* val);
 
 typedef BOOL(*UnwindReadMemoryCallback)(PVOID address, PVOID buffer, SIZE_T size);
 
