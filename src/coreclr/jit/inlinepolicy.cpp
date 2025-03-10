@@ -722,7 +722,7 @@ double DefaultPolicy::DetermineMultiplier()
 
     if (m_CalleeReturnsDerivedType)
     {
-        multiplier += 4;
+        multiplier += 2;
         JITDUMP("\nmultiplier in methods that return a more derived type increased to %g.", multiplier);
     }
 
@@ -1541,7 +1541,7 @@ double ExtendedDefaultPolicy::DetermineMultiplier()
 
     if (m_CalleeReturnsDerivedType)
     {
-        multiplier += 4.0;
+        multiplier += 2.0;
         JITDUMP("\nmultiplier in methods that return a more derived type increased to %g.", multiplier);
     }
 

@@ -1643,14 +1643,6 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
                     pushedStack.PushExactClass();
                     handled = true;
                 }
-
-                if (makeInlineObservations && (codeAddr < codeEndp - sz) &&
-                    (OPCODE)getU1LittleEndian(codeAddr + sz) == CEE_RET)
-                {
-                    // If the method has a newobj/newarr/initobj followed by a ret, assume that
-                    // it is a wrapper method.
-                    compInlineResult->Note(InlineObservation::CALLEE_LOOKS_LIKE_WRAPPER);
-                }
                 break;
             }
 
