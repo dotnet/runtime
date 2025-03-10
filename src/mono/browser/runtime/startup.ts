@@ -537,14 +537,11 @@ export async function start_runtime () {
         if (runtimeHelpers.config.runtimeOptions)
             mono_wasm_set_runtime_options(runtimeHelpers.config.runtimeOptions);
 
-        if (runtimeHelpers.config.aotProfilerOptions)
-            mono_wasm_init_aot_profiler(runtimeHelpers.config.aotProfilerOptions);
+        mono_wasm_init_aot_profiler(runtimeHelpers.config.aotProfilerOptions || {});
 
-        if (runtimeHelpers.config.browserProfilerOptions)
-            mono_wasm_init_browser_profiler(runtimeHelpers.config.browserProfilerOptions);
+        mono_wasm_init_browser_profiler(runtimeHelpers.config.browserProfilerOptions || {});
 
-        if (runtimeHelpers.config.logProfilerOptions)
-            mono_wasm_init_log_profiler(runtimeHelpers.config.logProfilerOptions);
+        mono_wasm_init_log_profiler(runtimeHelpers.config.logProfilerOptions || {});
 
         mono_wasm_load_runtime();
 

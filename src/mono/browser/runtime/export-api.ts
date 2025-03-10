@@ -9,6 +9,7 @@ import { getB32, getB8, getF32, getF64, getI16, getI32, getI52, getI64Big, getI8
 import { mono_run_main, mono_run_main_and_exit } from "./run";
 import { mono_wasm_setenv } from "./startup";
 import { loaderHelpers, runtimeHelpers } from "./globals";
+import { mono_log_warn } from "./logging";
 
 export function export_api (): any {
     const api: APIType = {
@@ -57,6 +58,11 @@ export function export_api (): any {
         localHeapViewI64Big: localHeapViewI64Big,
         localHeapViewF32: localHeapViewF32,
         localHeapViewF64: localHeapViewF64,
+        collectTrace:load_diag_module_hint, // lazy
     };
     return api;
+}
+
+async function load_diag_module_hint () {
+    mono_log_warn("Call loadDiagnosticServer() to load the diagnostic server module first.");
 }

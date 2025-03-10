@@ -21,15 +21,15 @@ public class DiagnosticsTests : WasmTemplateTestsBase
     }
 
     [Fact]
-    public async Task RunSimpleAppWithProfiler()
+    public async Task RunSimpleAppWithLogProfiler()
     {
         Configuration config = Configuration.Release;
-        ProjectInfo info = CopyTestAsset(config, false, TestAsset.WasmBasicTestApp, "ProfilerTest");
-        // are are linking all 3 profilers, but below we only initialize log profiler and test it
-        string extraArgs = $"-p:WasmProfilers=\"aot+browser+log\"";
+        ProjectInfo info = CopyTestAsset(config, false, TestAsset.WasmBasicTestApp, "LogProfilerTest");
+
+        string extraArgs = $"-p:WasmProfilers=\"log\"";
         BuildProject(info, config, new BuildOptions(ExtraMSBuildArgs: extraArgs, AssertAppBundle: false, WasmPerfTracing: true), isNativeBuild: true);
 
-        var result = await RunForBuildWithDotnetRun(new BrowserRunOptions(Configuration: config, TestScenario: "ProfilerTest"));
+        var result = await RunForBuildWithDotnetRun(new BrowserRunOptions(Configuration: config, TestScenario: "LogProfilerTest"));
         Regex regex = new Regex(@"Profile data of size (\d+) bytes");
         var match = result.TestOutput
             .Select(line => regex.Match(line))
@@ -40,5 +40,18 @@ public class DiagnosticsTests : WasmTemplateTestsBase
             Assert.Fail($"Failed to parse profile size from {match.Groups[1].Value} to int");
         }
         Assert.True(fileSize >= 10 * 1024, $"Profile file size is less than 10KB. Actual size: {fileSize} bytes.");
+    }
+
+    [Fact]
+    public async Task RunSimpleAppWithBrowserProfiler()
+    {
+        Configuration config = Configuration.Release;
+        ProjectInfo info = CopyTestAsset(config, false, TestAsset.WasmBasicTestApp, "BrowserProfilerTest");
+
+        string extraArgs = $"-p:WasmProfilers=\"browser\"";
+        BuildProject(info, config, new BuildOptions(ExtraMSBuildArgs: extraArgs, AssertAppBundle: false, WasmPerfTracing: true), isNativeBuild: true);
+
+        var result = await RunForBuildWithDotnetRun(new BrowserRunOptions(Configuration: config, TestScenario: "BrowserProfilerTest"));
+        Assert.Contains("performance.measure: TestMeaning", result.TestOutput);
     }
 }

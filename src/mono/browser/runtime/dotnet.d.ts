@@ -629,6 +629,10 @@ type APIType = {
      * Returns a short term view of the WASM linear memory. Don't store the reference, don't use it after await.
      */
     localHeapViewF64: () => Float64Array;
+    /**
+     * creates diagnostic trace file and downloads it from the browser. Only after loadDiagnosticServer() is called.
+     */
+    collectTrace(): Promise<void>;
 };
 type RuntimeAPI = {
     INTERNAL: any;

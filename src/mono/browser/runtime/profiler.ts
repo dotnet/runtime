@@ -18,7 +18,9 @@ import { free } from "./memory";
 // DumpAotProfileData stores the data into INTERNAL.aotProfileData.
 //
 export function mono_wasm_init_aot_profiler (options: AOTProfilerOptions): void {
-    mono_assert(runtimeHelpers.emscriptenBuildOptions.enableAotProfiler, "AOT profiler is not enabled, please use <WasmProfilers>aot;</WasmProfilers> in your project file.");
+    if (!runtimeHelpers.emscriptenBuildOptions.enableAotProfiler) {
+        return;
+    }
     if (options == null)
         options = {};
     if (!("writeAt" in options))
@@ -30,7 +32,9 @@ export function mono_wasm_init_aot_profiler (options: AOTProfilerOptions): void 
 }
 
 export function mono_wasm_init_browser_profiler (options: BrowserProfilerOptions): void {
-    mono_assert(runtimeHelpers.emscriptenBuildOptions.enableBrowserProfiler, "Browser profiler is not enabled, please use <WasmProfilers>browser;</WasmProfilers> in your project file.");
+    if (!runtimeHelpers.emscriptenBuildOptions.enableBrowserProfiler) {
+        return;
+    }
     if (options == null)
         options = {};
     let arg = "browser:";
@@ -44,9 +48,18 @@ export function mono_wasm_init_browser_profiler (options: BrowserProfilerOptions
 }
 
 export function mono_wasm_init_log_profiler (options: LogProfilerOptions): void {
-    mono_assert(runtimeHelpers.emscriptenBuildOptions.enableLogProfiler, "Log profiler is not enabled, please use <WasmProfilers>log;</WasmProfilers> in your project file.");
+    if (!runtimeHelpers.emscriptenBuildOptions.enableLogProfiler) {
+        return;
+    }
     mono_assert(options.takeHeapshot, "Log profiler is not enabled, the takeHeapshot method must be defined in LogProfilerOptions.takeHeapshot");
-    cwraps.mono_wasm_profiler_init_log( (options.configuration || "log:alloc,output=output.mlpd") + `,take-heapshot-method=${options.takeHeapshot}`);
+    if (!options.configuration) {
+        options.configuration = "log:alloc,output=output.mlpd";
+    }
+    if (options.takeHeapshot) {
+        cwraps.mono_wasm_profiler_init_log(`${options.configuration},take-heapshot-method=${options.takeHeapshot}`);
+    } else {
+        cwraps.mono_wasm_profiler_init_log(options.configuration);
+    }
 }
 
 export const enum MeasuredBlock {
