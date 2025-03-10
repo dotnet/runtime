@@ -259,8 +259,8 @@ dotnet.cmd pack src\libraries\System.Text.Json\src\ -c Release
 
 ## APICompat
 
-If changes to the library include any API incompatibilities, calling `dotnet build` (if the project isn't packable) or `dotnet pack` (if the project is packable) will result in API compatibility errors.
+If changes to the library include any API incompatibilities, calling `dotnet build` or `dotnet pack` may result in API compatibility errors.
 
-In rare cases where these are expected (e.g. updating APIs previously shipped only in preview or as experimental), the errors may be suppressed. This can be done by following the directions in the error to re-invoke `dotnet build` (if the project isn't packable) or `dotnet pack` (if the project is packable) with an additional `/p:ApiCompatGenerateSuppressionFile=true` argument.
+In rare cases where these are expected (e.g. updating APIs previously shipped only in preview or as experimental), the errors may be suppressed. This can be done by following the directions in the error to invoke `dotnet build` (if the project isn't packable) or `dotnet pack` (if the project is packable) with an additional `/p:ApiCompatGenerateSuppressionFile=true` argument.
 
 See https://learn.microsoft.com/dotnet/fundamentals/apicompat/overview for more details.
