@@ -9,6 +9,9 @@ VPTR_CLASS(EEJitManager)
 #ifdef FEATURE_READYTORUN
 VPTR_CLASS(ReadyToRunJitManager)
 #endif
+#ifdef FEATURE_INTERPRETER
+VPTR_CLASS(InterpreterJitManager)
+#endif
 VPTR_CLASS(EECodeManager)
 
 VPTR_CLASS(RangeList)
