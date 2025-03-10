@@ -1,10 +1,18 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Generic;
+using System.IO;
 using System.Linq;
+using System.Net.Security;
+using System.Net.Security.Tests;
+using System.Security.Authentication;
+using System.Security.Cryptography.X509Certificates;
+using System.Threading.Tasks;
 using System.Text;
 using Test.Cryptography;
 using Xunit;
+using Microsoft.DotNet.XUnitExtensions;
 using TempFileHolder = System.Security.Cryptography.X509Certificates.Tests.TempFileHolder;
 
 namespace System.Security.Cryptography.Tests
@@ -20,8 +28,7 @@ namespace System.Security.Cryptography.Tests
         private const string TpmEnvVarPrefix = EnvVarPrefix + "TPM_";
         private const string TpmEcDsaKeyHandleEnvVarName = TpmEnvVarPrefix + "ECDSA_KEY_HANDLE";
         private const string TpmEcDhKeyHandleEnvVarName = TpmEnvVarPrefix + "ECDH_KEY_HANDLE";
-        private const string TpmRsaSignKeyHandleEnvVarName = TpmEnvVarPrefix + "RSA_SIGN_KEY_HANDLE";
-        private const string TpmRsaDecryptKeyHandleEnvVarName = TpmEnvVarPrefix + "RSA_DECRYPT_KEY_HANDLE";
+        private const string TpmRsaKeyHandleEnvVarName = TpmEnvVarPrefix + "RSA_KEY_HANDLE";
 
         private const string NonExistingEngineName = "dntestnonexisting";
         private const string NonExistingEngineOrProviderKeyName = "nonexisting";
@@ -38,11 +45,8 @@ namespace System.Security.Cryptography.Tests
         private static string TpmEcDhKeyHandle { get; } = Environment.GetEnvironmentVariable(TpmEcDhKeyHandleEnvVarName);
         private static string TpmEcDhKeyHandleUri { get; } = GetHandleKeyUri(TpmEcDhKeyHandle);
 
-        private static string TpmRsaSignKeyHandle { get; } = Environment.GetEnvironmentVariable(TpmRsaSignKeyHandleEnvVarName);
-        private static string TpmRsaSignKeyHandleUri { get; } = GetHandleKeyUri(TpmRsaSignKeyHandle);
-
-        private static string TpmRsaDecryptKeyHandle { get; } = Environment.GetEnvironmentVariable(TpmRsaDecryptKeyHandleEnvVarName);
-        private static string TpmRsaDecryptKeyHandleUri { get; } = GetHandleKeyUri(TpmRsaDecryptKeyHandle);
+        private static string TpmRsaKeyHandle { get; } = Environment.GetEnvironmentVariable(TpmRsaKeyHandleEnvVarName);
+        private static string TpmRsaKeyHandleUri { get; } = GetHandleKeyUri(TpmRsaKeyHandle);
 
         public static bool ShouldRunEngineTests { get; } = PlatformDetection.OpenSslPresentOnSystem && StringToBool(Environment.GetEnvironmentVariable(TestEngineEnabledEnvVarName));
 
@@ -50,19 +54,18 @@ namespace System.Security.Cryptography.Tests
         public static bool ProvidersNotSupported => !ProvidersSupported;
         public static bool ShouldRunProviderEcDsaTests { get; } = ProvidersSupported && !string.IsNullOrEmpty(TpmEcDsaKeyHandleUri);
         public static bool ShouldRunProviderEcDhTests { get; } = ProvidersSupported && !string.IsNullOrEmpty(TpmEcDhKeyHandleUri);
-        public static bool ShouldRunProviderRsaSignTests { get; } = ProvidersSupported && !string.IsNullOrEmpty(TpmRsaSignKeyHandleUri);
-        public static bool ShouldRunProviderRsaDecryptTests { get; } = ProvidersSupported && !string.IsNullOrEmpty(TpmRsaDecryptKeyHandleUri);
-        public static bool ShouldRunAnyProviderTests => ShouldRunProviderEcDsaTests || ShouldRunProviderEcDhTests || ShouldRunProviderRsaSignTests || ShouldRunProviderRsaDecryptTests;
+        public static bool ShouldRunProviderRsaTests { get; } = ProvidersSupported && !string.IsNullOrEmpty(TpmRsaKeyHandleUri);
+        public static bool ShouldRunAnyProviderTests => ShouldRunProviderEcDsaTests || ShouldRunProviderEcDhTests || ShouldRunProviderRsaTests;
 
         public static bool ShouldRunTpmTssTests => ShouldRunEngineTests && !string.IsNullOrEmpty(TpmEcDsaKeyHandle);
 
-        private static readonly string AnyProviderKeyUri = TpmEcDsaKeyHandleUri ?? TpmEcDhKeyHandleUri ?? TpmRsaSignKeyHandleUri ?? TpmRsaDecryptKeyHandleUri ?? "test";
+        private static readonly string AnyProviderKeyUri = TpmEcDsaKeyHandleUri ?? TpmEcDhKeyHandleUri ?? TpmRsaKeyHandleUri ?? "test";
 
         private static bool StringToBool(string? value)
             => "true".Equals(value, StringComparison.OrdinalIgnoreCase) || value == "1";
 
         private static string GetHandleKeyUri(string handle)
-            => handle != null ? $"handle:{handle}" : null;
+            => string.IsNullOrEmpty(handle) ? null : $"handle:{handle}";
 
         // PKCS#1 format
         private static readonly byte[] s_rsaPrivateKey = (
@@ -426,13 +429,24 @@ namespace System.Security.Cryptography.Tests
             }
         }
 
-        [ConditionalFact(nameof(ShouldRunProviderRsaSignTests))]
-        [ActiveIssue("https://github.com/tpm2-software/tpm2-openssl/issues/115")]
-        // or a workaround API proposal
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/104080")]
-        public static void Provider_TPM2SignRsa()
+        public static IEnumerable<object[]> SignaturePaddingValues()
         {
-            using SafeEvpPKeyHandle priKeyHandle = SafeEvpPKeyHandle.OpenKeyFromProvider(Tpm2ProviderName, TpmRsaSignKeyHandleUri);
+            yield return new object[] { RSASignaturePadding.Pkcs1 };
+            yield return new object[] { RSASignaturePadding.Pss };
+        }
+
+        [ConditionalTheory(nameof(ShouldRunProviderRsaTests))]
+        [MemberData(nameof(SignaturePaddingValues))]
+        public static void Provider_TPM2SignRsa(RSASignaturePadding signaturePadding)
+        {
+            if (signaturePadding == RSASignaturePadding.Pss)
+            {
+                //[ActiveIssue("https://github.com/dotnet/runtime/issues/104080")]
+                //[ActiveIssue("https://github.com/tpm2-software/tpm2-openssl/issues/115")]
+                throw new SkipTestException("Salt Length is ignored by tpm2 provider and differs from .NET defaults");
+            }
+
+            using SafeEvpPKeyHandle priKeyHandle = SafeEvpPKeyHandle.OpenKeyFromProvider(Tpm2ProviderName, TpmRsaKeyHandleUri);
             using RSA rsaPri = new RSAOpenSsl(priKeyHandle);
             byte[] rsaPubBytes = rsaPri.ExportSubjectPublicKeyInfo();
             RSA rsaPub = RSA.Create();
@@ -443,26 +457,26 @@ namespace System.Security.Cryptography.Tests
             rsaBad.KeySize = rsaPri.KeySize;
 
             byte[] data = new byte[] { 1, 2, 3, 1, 1, 2, 3 };
-            byte[] badSignature = rsaBad.SignData(data, HashAlgorithmName.SHA256, RSASignaturePadding.Pss);
+            byte[] badSignature = rsaBad.SignData(data, HashAlgorithmName.SHA256, signaturePadding);
 
             // can use same key more than once
             for (int i = 0; i < 10; i++)
             {
                 data[0] = (byte)i;
-                byte[] signature = rsaPri.SignData(data, HashAlgorithmName.SHA256, RSASignaturePadding.Pss);
-                Assert.True(rsaPub.VerifyData(data, signature, HashAlgorithmName.SHA256, RSASignaturePadding.Pss), "signature does not verify with the right key");
-                Assert.False(rsaPub.VerifyData(data, badSignature, HashAlgorithmName.SHA256, RSASignaturePadding.Pss), "signature should not verify with the wrong key");
+                byte[] signature = rsaPri.SignData(data, HashAlgorithmName.SHA256, signaturePadding);
+                Assert.True(rsaPub.VerifyData(data, signature, HashAlgorithmName.SHA256, signaturePadding), "signature does not verify with the right key");
+                Assert.False(rsaPub.VerifyData(data, badSignature, HashAlgorithmName.SHA256, signaturePadding), "signature should not verify with the wrong key");
 
                 signature[12] ^= 1;
-                Assert.False(rsaPub.VerifyData(data, signature, HashAlgorithmName.SHA256, RSASignaturePadding.Pss), "tampered signature should not verify");
+                Assert.False(rsaPub.VerifyData(data, signature, HashAlgorithmName.SHA256, signaturePadding), "tampered signature should not verify");
 
                 // TPM key is intended for sign only, we could theoretically make verify work without needing to export/import by forcing 'default' provider
                 // for this operation it's most likely misusage on user part and tpm2 provider intentionally didn't allow it so we will follow this logic.
-                Assert.ThrowsAny<CryptographicException>(() => rsaPri.VerifyData(data, signature, HashAlgorithmName.SHA256, RSASignaturePadding.Pss));
+                Assert.ThrowsAny<CryptographicException>(() => rsaPri.VerifyData(data, signature, HashAlgorithmName.SHA256, signaturePadding));
             }
         }
 
-        [ConditionalTheory(nameof(ShouldRunProviderRsaDecryptTests))]
+        [ConditionalTheory(nameof(ShouldRunProviderRsaTests))]
         [InlineData(RSAEncryptionPaddingMode.Pkcs1)]
         [InlineData(RSAEncryptionPaddingMode.Oaep)]
         public static void Provider_TPM2DecryptRsa(RSAEncryptionPaddingMode mode)
@@ -481,7 +495,7 @@ namespace System.Security.Cryptography.Tests
                     throw new ArgumentOutOfRangeException(nameof(mode));
             }
 
-            using SafeEvpPKeyHandle priKeyHandle = SafeEvpPKeyHandle.OpenKeyFromProvider(Tpm2ProviderName, TpmRsaDecryptKeyHandleUri);
+            using SafeEvpPKeyHandle priKeyHandle = SafeEvpPKeyHandle.OpenKeyFromProvider(Tpm2ProviderName, TpmRsaKeyHandleUri);
             using RSA rsaPri = new RSAOpenSsl(priKeyHandle);
             byte[] rsaPubBytes = rsaPri.ExportSubjectPublicKeyInfo();
             RSA rsaPub = RSA.Create();
@@ -517,13 +531,13 @@ namespace System.Security.Cryptography.Tests
             }
         }
 
-        [ConditionalFact(nameof(ShouldRunProviderRsaDecryptTests))]
+        [ConditionalFact(nameof(ShouldRunProviderRsaTests))]
         public static void Provider_TPM2DecryptRsa_ExportParameters()
         {
             // TPM2 OAEP support was added in the second half of 2023 therefore we only test Pkcs1 padding
             // See: https://github.com/tpm2-software/tpm2-openssl/issues/89
             RSAEncryptionPadding padding = RSAEncryptionPadding.Pkcs1;
-            using SafeEvpPKeyHandle priKeyHandle = SafeEvpPKeyHandle.OpenKeyFromProvider(Tpm2ProviderName, TpmRsaDecryptKeyHandleUri);
+            using SafeEvpPKeyHandle priKeyHandle = SafeEvpPKeyHandle.OpenKeyFromProvider(Tpm2ProviderName, TpmRsaKeyHandleUri);
             using RSA rsaPri = new RSAOpenSsl(priKeyHandle);
 
             RSA rsaPub = RSA.Create();
@@ -535,6 +549,155 @@ namespace System.Security.Cryptography.Tests
             byte[] encrypted = rsaPub.Encrypt(data, padding);
             Assert.NotEqual(encrypted, data);
             Assert.Equal(data, rsaPri.Decrypt(encrypted, padding));
+        }
+
+        [ConditionalFact(nameof(ShouldRunProviderEcDsaTests))]
+        public static void Provider_TPM2SslStream_ServerCertIsTpmEcDsa()
+        {
+            using X509Certificate2 serverCert = CreateSelfSignedEcDsaCertificate();
+            CreateDefaultTlsOptions(serverCert, out SslServerAuthenticationOptions serverOptions, out SslClientAuthenticationOptions clientOptions);
+            TestTls(serverOptions, clientOptions);
+        }
+
+        [ConditionalTheory(nameof(ShouldRunProviderRsaTests))]
+        [MemberData(nameof(SignaturePaddingValues))]
+        public static void Provider_TPM2SslStream_ServerCertIsTpmRsa(RSASignaturePadding padding)
+        {
+            using X509Certificate2 serverCert = CreateSelfSignedRsaCertificate(padding);
+            CreateTlsOptionsForRsa(serverCert, out SslServerAuthenticationOptions serverOptions, out SslClientAuthenticationOptions clientOptions);
+            TestTls(serverOptions, clientOptions);
+        }
+
+        private static void TestTls(SslServerAuthenticationOptions serverOptions, SslClientAuthenticationOptions clientOptions)
+        {
+            (Stream clientStream, Stream serverStream) = TestHelper.GetConnectedStreams();
+
+            using (clientStream)
+            using (serverStream)
+            {
+                using SslStream server = new SslStream(serverStream, leaveInnerStreamOpen: false);
+                using SslStream client = new SslStream(clientStream, leaveInnerStreamOpen: false);
+
+                Exception failure = TestHelper.WaitForSecureConnection(client, clientOptions, server, serverOptions).WaitAsync(TestConfiguration.PassingTestTimeoutMilliseconds).GetAwaiter().GetResult();
+                if (failure is not null)
+                {
+                    throw failure;
+                }
+
+                byte[] testData = [1, 2, 3];
+                byte[] receivedData = new byte[testData.Length];
+                Span<byte> receivedDataSpan = receivedData;
+
+                // server can write to the client
+                server.Write(testData);
+                client.ReadExactly(receivedData);
+                Assert.True(testData.SequenceEqual(receivedData));
+
+                // client can write to the server
+                receivedDataSpan.Fill(0);
+                client.Write(testData);
+                server.ReadExactly(receivedData);
+                Assert.True(testData.SequenceEqual(receivedData));
+            }
+        }
+
+        private static X509Certificate2 CreateSelfSignedEcDsaCertificate()
+        {
+            Assert.True(ShouldRunProviderEcDsaTests);
+
+            // We do a bit of a dance here to make sure the lifetime and export utilities are fine.
+            // We will get rid of original handle and make sure X509Certificate2's duplicate is still working.
+            X509Certificate2 serverCert;
+            using (SafeEvpPKeyHandle priKeyHandle = SafeEvpPKeyHandle.OpenKeyFromProvider(Tpm2ProviderName, TpmEcDsaKeyHandleUri))
+            using (ECDsa ecdsaPri = new ECDsaOpenSsl(priKeyHandle))
+            {
+                byte[] x509 = CreateSelfSignedCertificate(ecdsaPri);
+
+                using (X509Certificate2 serverCertPub = new X509Certificate2(x509))
+                {
+                    serverCert = serverCertPub.CopyWithPrivateKey(ecdsaPri);
+                }
+            }
+
+            return serverCert;
+        }
+
+        private static X509Certificate2 CreateSelfSignedRsaCertificate(RSASignaturePadding padding)
+        {
+            Assert.True(ShouldRunProviderRsaTests);
+
+            // We do a bit of a dance here to make sure the lifetime and export utilities are fine.
+            // We will get rid of original handle and make sure X509Certificate2's duplicate is still working.
+            X509Certificate2 serverCert;
+            using (SafeEvpPKeyHandle priKeyHandle = SafeEvpPKeyHandle.OpenKeyFromProvider(Tpm2ProviderName, TpmRsaKeyHandleUri))
+            using (RSA rsaPri = new RSAOpenSsl(priKeyHandle))
+            {
+                byte[] x509 = CreateSelfSignedCertificate(rsaPri, padding);
+
+                using (X509Certificate2 serverCertPub = new X509Certificate2(x509))
+                {
+                    serverCert = serverCertPub.CopyWithPrivateKey(rsaPri);
+                }
+            }
+
+            return serverCert;
+        }
+
+        private static byte[] CreateSelfSignedCertificate(ECDsa ecdsa)
+        {
+            var certReq = new CertificateRequest("CN=testservereku.contoso.com", ecdsa, HashAlgorithmName.SHA256);
+            return FinishCertCreation(certReq);
+        }
+
+        private static byte[] CreateSelfSignedCertificate(RSA rsa, RSASignaturePadding padding)
+        {
+            var certReq = new CertificateRequest("CN=testservereku.contoso.com", rsa, HashAlgorithmName.SHA256, padding);
+            return FinishCertCreation(certReq);
+        }
+
+        private static byte[] FinishCertCreation(CertificateRequest certificateRequest)
+        {
+            certificateRequest.CertificateExtensions.Add(new X509BasicConstraintsExtension(false, false, 0, false));
+
+            using (X509Certificate2 cert = certificateRequest.CreateSelfSigned(DateTimeOffset.UtcNow.AddMonths(-1), DateTimeOffset.UtcNow.AddMonths(1)))
+            {
+                return cert.RawData;
+            }
+        }
+
+        private static RemoteCertificateValidationCallback CreateRemoteCertificateValidationCallback(byte[] expectedCert)
+        {
+            return (object sender, X509Certificate? certificate, X509Chain? chain, SslPolicyErrors sslPolicyErrors) =>
+            {
+                X509Certificate2? cert = certificate as X509Certificate2;
+                return cert != null && cert.RawData.SequenceEqual(expectedCert);
+            };
+        }
+
+        private static void CreateTlsOptionsForRsa(X509Certificate2 serverCert, out SslServerAuthenticationOptions serverOptions, out SslClientAuthenticationOptions clientOptions)
+        {
+            CreateDefaultTlsOptions(serverCert, out serverOptions, out clientOptions);
+            serverOptions.EnabledSslProtocols = SslProtocols.Tls12;
+            serverOptions.CipherSuitesPolicy = new CipherSuitesPolicy(new[]
+            {
+                TlsCipherSuite.TLS_RSA_WITH_AES_128_GCM_SHA256,
+            });
+
+            clientOptions.EnabledSslProtocols = SslProtocols.Tls12;
+        }
+
+        private static void CreateDefaultTlsOptions(X509Certificate2 serverCert, out SslServerAuthenticationOptions serverOptions, out SslClientAuthenticationOptions clientOptions)
+        {
+            serverOptions = new SslServerAuthenticationOptions()
+            {
+                ServerCertificate = serverCert,
+            };
+
+            clientOptions = new SslClientAuthenticationOptions()
+            {
+                TargetHost = "test",
+                RemoteCertificateValidationCallback = CreateRemoteCertificateValidationCallback(serverCert.RawData),
+            };
         }
     }
 }

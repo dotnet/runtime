@@ -124,3 +124,28 @@ It's a wrapper for EVP_PKEY_CTX_new_from_pkey and EVP_PKEY_CTX_new
 which handles extraHandle.
 */
 EVP_PKEY_CTX* EvpPKeyCtxCreateFromPKey(EVP_PKEY* pkey, void* extraHandle);
+
+/*
+Retrieve the ASN1_OBJECT (the OID) that corresponds to the EC group
+in the given EVP_PKEY.
+
+Returns a pointer to an internal OpenSSL ASN1_OBJECT on success
+(do not free it).
+Returns NULL on failure.
+ */
+PALEXPORT ASN1_OBJECT* CryptoNative_EvpPKeyGetEcGroupOid(EVP_PKEY *pkey);
+
+/*
+Gets curve type as NID.
+*/
+int EvpPKeyGetCurveType(const EVP_PKEY *pkey);
+
+/*
+Returns the EC curve type of the given EVP_PKEY.
+*/
+PALEXPORT int32_t CryptoNative_EvpPKeyGetEcKeyParameters(
+    const EVP_PKEY* pkey,
+    int32_t includePrivate,
+    BIGNUM** qx, int32_t* cbQx,
+    BIGNUM** qy, int32_t* cbQy,
+    BIGNUM** d, int32_t* cbD);
