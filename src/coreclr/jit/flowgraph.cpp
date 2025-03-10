@@ -1866,10 +1866,6 @@ private:
     // merged constant return blocks.
     INT64 returnConstants[ReturnCountHardLimit];
 
-    // Indicators of where in the lexical block list we'd like to place
-    // each constant return block.
-    BasicBlock* insertionPoints[ReturnCountHardLimit];
-
     // Number of return blocks allowed
     PhasedVar<unsigned> maxReturns;
 
@@ -1908,7 +1904,7 @@ public:
     //    cases, `fgReturnCount` and the merged return block's profile information
     //    will be updated to reflect or anticipate the rewrite of `returnBlock`.
     //
-    void Record(BasicBlock* returnBlock)
+    bool Record(BasicBlock* returnBlock)
     {
         // Add this return to our tally
         unsigned oldReturnCount = comp->fgReturnCount++;
@@ -1919,7 +1915,7 @@ public:
             {
                 // No need to merge just yet; simply record this return.
                 returnBlocks[oldReturnCount] = returnBlock;
-                return;
+                return false;
             }
 
             // We've reached our threshold
@@ -1941,6 +1937,7 @@ public:
         // Search limit is new return count minus one (to exclude this block).
         unsigned searchLimit = comp->fgReturnCount - 1;
         Merge(returnBlock, searchLimit);
+        return true;
     }
 
     //------------------------------------------------------------------------
@@ -1953,54 +1950,6 @@ public:
     {
         mergingReturns = true;
         return Merge(nullptr, 0);
-    }
-
-    //------------------------------------------------------------------------
-    // PlaceReturns: Move any generated const return blocks to an appropriate
-    //    spot in the lexical block list.
-    //
-    // Returns:
-    //    True if any returns were impacted.
-    //
-    // Notes:
-    //    The goal is to set things up favorably for a reasonable layout without
-    //    putting too much burden on fgReorderBlocks; in particular, since that
-    //    method doesn't (currently) shuffle non-profile, non-rare code to create
-    //    fall-through and reduce gotos, this method places each const return
-    //    block immediately after its last predecessor, so that the flow from
-    //    there to it can become fallthrough without requiring any motion to be
-    //    performed by fgReorderBlocks.
-    //
-    bool PlaceReturns()
-    {
-        if (!mergingReturns)
-        {
-            // No returns generated => no returns to place.
-            return false;
-        }
-
-        for (unsigned index = 0; index < comp->fgReturnCount; ++index)
-        {
-            BasicBlock* returnBlock    = returnBlocks[index];
-            BasicBlock* genReturnBlock = comp->genReturnBB;
-            if (returnBlock == genReturnBlock)
-            {
-                continue;
-            }
-
-            BasicBlock* insertionPoint = insertionPoints[index];
-            assert(insertionPoint != nullptr);
-
-            comp->fgUnlinkBlock(returnBlock);
-            comp->fgMoveBlocksAfter(returnBlock, returnBlock, insertionPoint);
-            // Treat the merged return block as belonging to the same EH region
-            // as the insertion point block, to make sure we don't break up
-            // EH regions; since returning a constant won't throw, this won't
-            // affect program behavior.
-            comp->fgExtendEHRegionAfter(insertionPoint);
-        }
-
-        return true;
     }
 
 private:
@@ -2186,13 +2135,6 @@ private:
                     assert(returnBlock->lastStmt()->GetRootNode()->OperIs(GT_RETURN));
                     assert(returnBlock->lastStmt()->GetRootNode()->gtGetOp1()->IsIntegralConst());
                     comp->fgRemoveStmt(returnBlock, returnBlock->lastStmt());
-
-                    // Using 'returnBlock' as the insertion point for 'mergedReturnBlock'
-                    // will give it a chance to use fallthrough rather than BBJ_ALWAYS.
-                    // Resetting this after each merge ensures that any branches to the
-                    // merged return block are lexically forward.
-
-                    insertionPoints[index] = returnBlock;
 
                     // Update profile information in the mergedReturnBlock to
                     // reflect the additional flow.
@@ -2427,6 +2369,7 @@ PhaseStatus Compiler::fgAddInternal()
         // will expect to find it.
         BasicBlock* mergedReturn = merger.EagerCreate();
         assert(mergedReturn == genReturnBB);
+        madeChanges = true;
     }
     else
     {
@@ -2456,11 +2399,9 @@ PhaseStatus Compiler::fgAddInternal()
     {
         if (block->KindIs(BBJ_RETURN) && !block->HasFlag(BBF_HAS_JMP))
         {
-            merger.Record(block);
+            madeChanges |= merger.Record(block);
         }
     }
-
-    madeChanges |= merger.PlaceReturns();
 
     if (compMethodRequiresPInvokeFrame())
     {
