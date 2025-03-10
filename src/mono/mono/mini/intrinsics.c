@@ -2396,20 +2396,22 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 		!strncmp ("System.Runtime.Intrinsics", cmethod_klass_name_space, 25))) {
 		const char* cmethod_name = cmethod->name;
 
-		if (strncmp(cmethod_name, "System.Runtime.Intrinsics.ISimdVector<System.Runtime.Intrinsics.Vector", 70) == 0) {
-			// We want explicitly implemented ISimdVector<TSelf, T> APIs to still be expanded where possible
-			// but, they all prefix the qualified name of the interface first, so we'll check for that and
-			// skip the prefix before trying to resolve the method.
+		if (strncmp(cmethod_name, "System.Runtime.Intrinsics.ISimdVector<", 38) == 0) {
+			if (strncmp(cmethod_name + 38, "System.Runtime.Intrinsics.Vector", 32) == 0) {
+				// We want explicitly implemented ISimdVector<TSelf, T> APIs to still be expanded where possible
+				// but, they all prefix the qualified name of the interface first, so we'll check for that and
+				// skip the prefix before trying to resolve the method.
 
-			if (strncmp(cmethod_name + 70, "64<T>,T>.", 9) == 0) {
-				cmethod_name += 79;
-			} else if ((strncmp(cmethod_name + 70, "128<T>,T>.", 10) == 0) ||
-				(strncmp(cmethod_name + 70, "256<T>,T>.", 10) == 0) ||
-				(strncmp(cmethod_name + 70, "512<T>,T>.", 10) == 0)) {
-				cmethod_name += 80;
+				if (strncmp(cmethod_name + 70, "64<T>,T>.", 9) == 0) {
+					cmethod_name += 79;
+				} else if ((strncmp(cmethod_name + 70, "128<T>,T>.", 10) == 0) ||
+					(strncmp(cmethod_name + 70, "256<T>,T>.", 10) == 0) ||
+					(strncmp(cmethod_name + 70, "512<T>,T>.", 10) == 0)) {
+					cmethod_name += 80;
+				}
+			} else if (strncmp(cmethod_name + 38, "System.Numerics.Vector<T>,T>.", 29) == 0) {
+				cmethod_name += 67;
 			}
-		} else if (strncmp(cmethod_name, "System.Runtime.Intrinsics.ISimdVector<System.Numerics.Vector<T>,T>.", 67) == 0) {
-			cmethod_name += 67;
 		}
 
 		if (!strcmp (cmethod_name, "get_IsHardwareAccelerated")) {
