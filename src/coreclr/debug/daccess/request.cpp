@@ -1783,7 +1783,6 @@ ClrDataAccess::GetModuleData(CLRDATA_ADDRESS addr, struct DacpModuleData *Module
     ModuleData->dwModuleIndex = 0; // CoreCLR no longer has this concept
     ModuleData->dwTransientFlags = pModule->m_dwTransientFlags;
     ModuleData->LoaderAllocator = HOST_CDADDR(pModule->m_loaderAllocator);
-    ModuleData->ThunkHeap = HOST_CDADDR(pModule->m_pThunkHeap);
 
     EX_TRY
     {
@@ -2143,7 +2142,7 @@ ClrDataAccess::GetFrameName(CLRDATA_ADDRESS vtable, unsigned int count, _Inout_u
 
     SOSDacEnter();
 
-    PWSTR pszName = DacGetFrameNameW(CLRDATA_ADDRESS_TO_TADDR(vtable));
+    LPCSTR pszName = Frame::GetFrameTypeName((FrameIdentifier)CLRDATA_ADDRESS_TO_TADDR(vtable));
     if (pszName == NULL)
     {
         hr = E_INVALIDARG;
@@ -2151,11 +2150,19 @@ ClrDataAccess::GetFrameName(CLRDATA_ADDRESS vtable, unsigned int count, _Inout_u
     else
     {
         // Turn from bytes to wide characters
-        unsigned int len = (unsigned int)u16_strlen(pszName);
+        unsigned int len = (unsigned int)strlen(pszName);
 
         if (frameName)
         {
-            wcsncpy_s(frameName, count, pszName, _TRUNCATE);
+            if (count != 0)
+            {
+                unsigned truncatedLength = min(len, count - 1);
+                for (unsigned i = 0; i < truncatedLength; i++)
+                {
+                    frameName[i] = pszName[i];
+                }
+                frameName[truncatedLength] = '\0';
+            }
 
             if (pNeeded)
             {
@@ -3613,14 +3620,19 @@ ClrDataAccess::TraverseVirtCallStubHeap(CLRDATA_ADDRESS pAppDomain, VCSHeapType 
                 break;
 
             case CacheEntryHeap:
+#ifdef FEATURE_VIRTUAL_STUB_DISPATCH
+                // The existence of the CacheEntryHeap is part of the SOS api surface, but currently
+                // when FEATURE_VIRTUAL_STUB_DISPATCH is not defined, the CacheEntryHeap is not created
+                // so its commented out in that situation, but is not considered to be a E_INVALIDARG.
                 pLoaderHeap = pVcsMgr->cache_entry_heap;
+#endif // FEATURE_VIRTUAL_STUB_DISPATCH
                 break;
 
             default:
                 hr = E_INVALIDARG;
         }
 
-        if (SUCCEEDED(hr))
+        if (SUCCEEDED(hr) && (pLoaderHeap != NULL))
         {
             hr = TraverseLoaderHeapBlock(pLoaderHeap->m_pFirstBlock, pFunc);
         }
@@ -3663,7 +3675,9 @@ static const char *LoaderAllocatorLoaderHeapNames[] =
     "FixupPrecodeHeap",
     "NewStubPrecodeHeap",
     "IndcellHeap",
+#ifdef FEATURE_VIRTUAL_STUB_DISPATCH
     "CacheEntryHeap",
+#endif // FEATURE_VIRTUAL_STUB_DISPATCH
 };
 
 
@@ -3707,7 +3721,9 @@ HRESULT ClrDataAccess::GetLoaderAllocatorHeaps(CLRDATA_ADDRESS loaderAllocatorAd
             else
             {
                 pLoaderHeaps[i++] = HOST_CDADDR(pVcsMgr->indcell_heap);
+#ifdef FEATURE_VIRTUAL_STUB_DISPATCH
                 pLoaderHeaps[i++] = HOST_CDADDR(pVcsMgr->cache_entry_heap);
+#endif // FEATURE_VIRTUAL_STUB_DISPATCH
             }
 
             // All of the above are "LoaderHeap" and not the ExplicitControl version.

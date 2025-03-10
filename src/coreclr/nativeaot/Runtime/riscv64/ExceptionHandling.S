@@ -4,7 +4,7 @@
 #include <unixasmmacros.inc>
 #include "AsmOffsets.inc"
 
-#define STACKSIZEOF_ExInfo ((SIZEOF__ExInfo + 15)&(~15))
+#define STACKSIZEOF_ExInfo ((SIZEOF__ExInfo + 7) & ~7)
 
 #define HARDWARE_EXCEPTION 1
 #define SOFTWARE_EXCEPTION 0

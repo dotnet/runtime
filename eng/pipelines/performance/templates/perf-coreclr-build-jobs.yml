@@ -1,0 +1,61 @@
+parameters:
+    linux_x64: false
+    linux_musl_x64: false
+    windows_x64: false
+    windows_x86: false
+    linux_arm64: false
+    windows_arm64: false
+    coreclrAndroid: false
+
+jobs:
+  - ${{ if or(eq(parameters.linux_x64, true), eq(parameters.windows_x64, true), eq(parameters.windows_x86, true), eq(parameters.linux_musl_x64, true), eq(parameters.linux_arm64, true), eq(parameters.windows_arm64, true)) }}:
+    # build coreclr and libraries
+    - template: /eng/pipelines/common/platform-matrix.yml
+      parameters:
+        jobTemplate: /eng/pipelines/common/global-build-job.yml
+        buildConfig: release
+        platforms:
+        - ${{ if eq(parameters.linux_x64, true) }}:
+          - linux_x64
+        - ${{ if eq(parameters.windows_x64, true) }}:
+          - windows_x64
+        - ${{ if eq(parameters.windows_x86, true) }}:
+          - windows_x86
+        - ${{ if eq(parameters.linux_musl_x64, true) }}:
+          - linux_musl_x64
+        - ${{ if eq(parameters.linux_arm64, true) }}:
+          - linux_arm64
+        - ${{ if eq(parameters.windows_arm64, true) }}:
+          - windows_arm64
+        jobParameters:
+          nameSuffix: coreclr
+          buildArgs: -s clr+libs+host+packs -c $(_BuildConfig)
+          isOfficialBuild: false
+          postBuildSteps:
+          - template: /eng/pipelines/common/upload-artifact-step.yml
+            parameters:
+              rootFolder: $(Build.SourcesDirectory)/artifacts/bin
+              includeRootFolder: false
+              archiveType: $(archiveType)
+              archiveExtension: $(archiveExtension)
+              tarCompression: $(tarCompression)
+              artifactName: BuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)_coreclr
+              displayName: Build Assets
+
+  - ${{ if eq(parameters.coreclrAndroid, true) }}:
+    # build CoreCLR Android scenarios
+    - template: /eng/pipelines/common/platform-matrix.yml
+      parameters:
+        jobTemplate: /eng/pipelines/common/global-build-job.yml
+        buildConfig: release
+        runtimeFlavor: coreclr
+        platforms:
+        - android_arm64
+        jobParameters:
+          buildArgs: -s clr.runtime+clr.alljits+clr.corelib+clr.nativecorelib+clr.tools+clr.packages+libs -c $(_BuildConfig)
+          nameSuffix: AndroidCoreCLR
+          isOfficialBuild: false
+          postBuildSteps:
+            - template: /eng/pipelines/performance/templates/build-perf-sample-apps.yml
+              parameters:
+                runtimeType: coreclr

@@ -29,7 +29,7 @@ if(CORECLR_SET_RPATH)
     set(MACOSX_RPATH ON)
 endif(CORECLR_SET_RPATH)
 
-if(CLR_CMAKE_HOST_MACCATALYST OR CLR_CMAKE_HOST_IOS OR CLR_CMAKE_HOST_TVOS)
+if(CLR_CMAKE_HOST_MACCATALYST OR CLR_CMAKE_HOST_IOS OR CLR_CMAKE_HOST_TVOS OR CLR_CMAKE_HOST_BROWSER)
   set(FEATURE_STANDALONE_GC 0)
 endif()
 
@@ -148,8 +148,9 @@ endif()
 include_directories("pal/prebuilt/inc")
 include_directories(${CLR_ARTIFACTS_OBJ_DIR})
 
-add_subdirectory(tools/aot/jitinterface)
-
+if (NOT CLR_CMAKE_TARGET_BROWSER)
+  add_subdirectory(tools/aot/jitinterface)
+endif (NOT CLR_CMAKE_TARGET_BROWSER)
 
 if(NOT CLR_CROSS_COMPONENTS_BUILD)
   # NativeAOT only buildable for a subset of CoreCLR-supported configurations
@@ -193,6 +194,8 @@ include_directories("classlibnative/inc")
 include_directories("${GENERATED_INCLUDE_DIR}")
 include_directories("hosts/inc")
 include_directories("minipal")
+
+add_subdirectory(interpreter)
 
 if(CLR_CMAKE_TARGET_WIN32 AND FEATURE_EVENT_TRACE)
     include_directories("${GENERATED_INCLUDE_DIR}/etw")
@@ -260,7 +263,7 @@ if(CLR_CMAKE_HOST_UNIX)
   add_subdirectory(nativeresources)
 endif(CLR_CMAKE_HOST_UNIX)
 
-if(NOT CLR_CMAKE_HOST_TVOS)
+if(NOT CLR_CMAKE_HOST_TVOS AND NOT CLR_CMAKE_HOST_BROWSER)
   add_subdirectory(utilcode)
   add_subdirectory(inc)
 
@@ -278,7 +281,7 @@ if(NOT CLR_CMAKE_HOST_TVOS)
   add_subdirectory(dlls)
   add_subdirectory(unwinder)
   add_subdirectory(interop)
-endif()
+endif(NOT CLR_CMAKE_HOST_TVOS AND NOT CLR_CMAKE_HOST_BROWSER)
 
 if(NOT CLR_CMAKE_HOST_MACCATALYST AND NOT CLR_CMAKE_HOST_IOS AND NOT CLR_CMAKE_HOST_TVOS)
   add_subdirectory(tools)

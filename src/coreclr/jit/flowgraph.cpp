@@ -590,6 +590,8 @@ PhaseStatus Compiler::fgImport()
         INDEBUG(fgPgoDeferredInconsistency = false);
     }
 
+    fgImportDone = true;
+
     return PhaseStatus::MODIFIED_EVERYTHING;
 }
 
@@ -862,6 +864,9 @@ bool Compiler::fgAddrCouldBeNull(GenTree* addr)
 
         case GT_ARR_ADDR:
             return (addr->gtFlags & GTF_ARR_ADDR_NONNULL) == 0;
+
+        case GT_BOX:
+            return !addr->IsBoxedValue();
 
         case GT_LCL_VAR:
             return !lvaIsImplicitByRefLocal(addr->AsLclVar()->GetLclNum());
@@ -4019,7 +4024,7 @@ PhaseStatus Compiler::fgSetBlockOrder()
     BasicBlock::s_nMaxTrees = 0;
 #endif
 
-    if (compCanEncodePtrArgCntMax() && fgHasCycleWithoutGCSafePoint())
+    if (fgHasCycleWithoutGCSafePoint())
     {
         JITDUMP("Marking method as fully interruptible\n");
         SetInterruptible(true);
@@ -6137,7 +6142,7 @@ bool FlowGraphNaturalLoop::CanDuplicateWithEH(INDEBUG(const char** reason))
             //
             const bool headerInTry         = header->hasTryIndex();
             unsigned   blockIndex          = block->getTryIndex();
-            unsigned   outermostBlockIndex = comp->ehTrueEnclosingTryIndexIL(blockIndex);
+            unsigned   outermostBlockIndex = comp->ehTrueEnclosingTryIndex(blockIndex);
 
             if ((headerInTry && (outermostBlockIndex == header->getTryIndex())) ||
                 (!headerInTry && (outermostBlockIndex == EHblkDsc::NO_ENCLOSING_INDEX)))

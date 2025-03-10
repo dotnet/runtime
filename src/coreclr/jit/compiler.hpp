@@ -1189,8 +1189,6 @@ inline bool isRegParamType(var_types type)
 //    type      - the basic jit var_type for the item being queried
 //    typeClass - the handle for the struct when 'type' is TYP_STRUCT
 //    typeSize  - Out param (if non-null) is updated with the size of 'type'.
-//    forReturn - this is true when we asking about a GT_RETURN context;
-//                this is false when we are asking about an argument context
 //    isVarArg  - whether or not this is a vararg fixed arg or variable argument
 //              - if so on arm64 windows getArgTypeForStruct will ignore HFA
 //              - types
@@ -1199,7 +1197,6 @@ inline bool isRegParamType(var_types type)
 inline bool Compiler::VarTypeIsMultiByteAndCanEnreg(var_types                type,
                                                     CORINFO_CLASS_HANDLE     typeClass,
                                                     unsigned*                typeSize,
-                                                    bool                     forReturn,
                                                     bool                     isVarArg,
                                                     CorInfoCallConvExtension callConv)
 {
@@ -1210,16 +1207,8 @@ inline bool Compiler::VarTypeIsMultiByteAndCanEnreg(var_types                typ
     {
         assert(typeClass != nullptr);
         size = info.compCompHnd->getClassSize(typeClass);
-        if (forReturn)
-        {
-            structPassingKind howToReturnStruct;
-            type = getReturnTypeForStruct(typeClass, callConv, &howToReturnStruct, size);
-        }
-        else
-        {
-            structPassingKind howToPassStruct;
-            type = getArgTypeForStruct(typeClass, &howToPassStruct, isVarArg, size);
-        }
+        structPassingKind howToReturnStruct;
+        type = getReturnTypeForStruct(typeClass, callConv, &howToReturnStruct, size);
         if (type != TYP_UNKNOWN)
         {
             result = true;
@@ -1411,14 +1400,14 @@ inline Statement* Compiler::gtNewStmt(GenTree* expr, const DebugInfo& di)
     return stmt;
 }
 
-inline GenTree* Compiler::gtNewOperNode(genTreeOps oper, var_types type, GenTree* op1)
+inline GenTreeUnOp* Compiler::gtNewOperNode(genTreeOps oper, var_types type, GenTree* op1)
 {
     assert((GenTree::OperKind(oper) & (GTK_UNOP | GTK_BINOP)) != 0);
     assert((GenTree::OperKind(oper) & GTK_EXOP) == 0); // Can't use this to construct any types that extend unary/binary
                                                        // operator.
     assert(op1 != nullptr || oper == GT_RETFILT || (oper == GT_RETURN && type == TYP_VOID));
 
-    GenTree* node = new (this, oper) GenTreeOp(oper, type, op1, nullptr);
+    GenTreeUnOp* node = new (this, oper) GenTreeOp(oper, type, op1, nullptr);
 
     return node;
 }
@@ -2493,21 +2482,17 @@ inline void LclVarDsc::incRefCnts(weight_t weight, Compiler* comp, RefCountState
 #endif
 }
 
-/*****************************************************************************
- Is this a synchronized instance method? If so, we will need to report "this"
- in the GC information, so that the EE can release the object lock
- in case of an exception
-
- We also need to report "this" and keep it alive for all shared generic
- code that gets the actual generic context from the "this" pointer and
- has exception handlers.
-
- For example, if List<T>::m() is shared between T = object and T = string,
- then inside m() an exception handler "catch E<T>" needs to be able to fetch
- the 'this' pointer to find out what 'T' is in order to tell if we
- should catch the exception or not.
- */
-
+//------------------------------------------------------------------------
+// lvaKeepAliveAndReportThis: check if there implicit references to this during method execution
+//
+// Returns:
+//    true if this must remain alive throughout the method, even if unreferenced
+//
+// Notes:
+//  In a synchronized instance method we need to report "this"
+//  in the GC information, so that the EE can release the object lock
+//  in case of an exception
+//
 inline bool Compiler::lvaKeepAliveAndReportThis()
 {
     if (info.compIsStatic || (lvaTable[0].TypeGet() != TYP_REF))
@@ -2518,17 +2503,11 @@ inline bool Compiler::lvaKeepAliveAndReportThis()
     const bool genericsContextIsThis = (info.compMethodInfo->options & CORINFO_GENERICS_CTXT_FROM_THIS) != 0;
 
 #ifdef JIT32_GCENCODER
-
     if (info.compFlags & CORINFO_FLG_SYNCH)
         return true;
 
     if (genericsContextIsThis)
     {
-        // TODO: Check if any of the exception clauses are
-        // typed using a generic type. Else, we do not need to report this.
-        if (info.compXcptnsCount > 0)
-            return true;
-
         if (opts.compDbgCode)
             return true;
 
@@ -3023,20 +3002,6 @@ XX                                                                           XX
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 */
-
-inline bool Compiler::compCanEncodePtrArgCntMax()
-{
-#ifdef JIT32_GCENCODER
-    // DDB 204533:
-    // The GC encoding for fully interruptible methods does not
-    // support more than 1023 pushed arguments, so we have to
-    // use a partially interruptible GC info/encoding.
-    //
-    return (fgPtrArgCntMax < MAX_PTRARG_OFS);
-#else // JIT32_GCENCODER
-    return true;
-#endif
-}
 
 /*****************************************************************************
  *
@@ -4099,6 +4064,17 @@ inline bool Compiler::impIsPrimitive(CorInfoType jitType)
 
 inline Compiler::lvaPromotionType Compiler::lvaGetPromotionType(const LclVarDsc* varDsc)
 {
+    // TODO-Review: Sometimes we get called on ARM with HFA struct variables that have been promoted,
+    // where the struct itself is no longer used because all access is via its member fields.
+    // When that happens, the struct is marked as unused and its type has been changed to
+    // TYP_INT (to keep the GC tracking code from looking at it).
+    // See Compiler::raAssignVars() for details. For example:
+    //      N002 (  4,  3) [00EA067C] -------------               return    struct $346
+    //      N001 (  3,  2) [00EA0628] -------------                  lclVar    struct(U) V03 loc2
+    //                                                                        float  V03.f1 (offs=0x00) -> V12 tmp7
+    //                                                                        f8 (last use) (last use) $345
+    // Here, the "struct(U)" shows that the "V03 loc2" variable is unused. Not shown is that V03
+    // is now TYP_INT in the local variable table. It's not really unused, because it's in the tree.
     assert(!varDsc->lvPromoted || varTypeIsPromotable(varDsc) || varDsc->lvUnusedStruct);
 
     if (!varDsc->lvPromoted)
@@ -4336,19 +4312,20 @@ bool Compiler::fgVarNeedsExplicitZeroInit(unsigned varNum, bool bbInALoop, bool 
             return false;
         }
 
-// Below conditions guarantee block initialization, which will initialize
-// all struct fields. If the logic for block initialization in CodeGen::genCheckUseBlockInit()
-// changes, these conditions need to be updated.
+        // Below conditions guarantee block initialization, which will initialize
+        // all struct fields. If the logic for block initialization in CodeGen::genCheckUseBlockInit()
+        // changes, these conditions need to be updated.
+        unsigned stackHomeSize = lvaLclStackHomeSize(varNum);
 #ifdef TARGET_64BIT
 #if defined(TARGET_AMD64)
         // We can clear using aligned SIMD so the threshold is lower,
         // and clears in order which is better for auto-prefetching
-        if (roundUp(varDsc->lvSize(), TARGET_POINTER_SIZE) / sizeof(int) > 4)
+        if (roundUp(stackHomeSize, TARGET_POINTER_SIZE) / sizeof(int) > 4)
 #else // !defined(TARGET_AMD64)
-        if (roundUp(varDsc->lvSize(), TARGET_POINTER_SIZE) / sizeof(int) > 8)
+        if (roundUp(stackHomeSize, TARGET_POINTER_SIZE) / sizeof(int) > 8)
 #endif
 #else
-        if (roundUp(varDsc->lvSize(), TARGET_POINTER_SIZE) / sizeof(int) > 4)
+        if (roundUp(stackHomeSize, TARGET_POINTER_SIZE) / sizeof(int) > 4)
 #endif
         {
             return false;

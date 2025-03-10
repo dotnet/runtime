@@ -7,6 +7,7 @@ using System.Diagnostics;
 using System.Formats.Asn1;
 using System.Linq;
 using System.Security.Cryptography.Asn1;
+using System.Security.Cryptography.Asn1.Pkcs7;
 using System.Security.Cryptography.Pkcs.Asn1;
 using System.Security.Cryptography.X509Certificates;
 using System.Security.Cryptography.Xml;
@@ -671,11 +672,7 @@ namespace System.Security.Cryptography.Pkcs
                         writer.PopSetOf();
 
 #if NET9_0_OR_GREATER
-                        writer.Encode(hasher, static (hasher, encoded) =>
-                        {
-                            hasher.AppendData(encoded);
-                            return (object?)null;
-                        });
+                        writer.Encode(hasher, static (hasher, encoded) => hasher.AppendData(encoded));
 #else
                         hasher.AppendData(writer.Encode());
 #endif

@@ -1283,7 +1283,7 @@ int LinearScan::BuildCall(GenTreeCall* call)
     {
         for (CallArg& arg : call->gtArgs.LateArgs())
         {
-            for (const ABIPassingSegment& seg : arg.NewAbiInfo.Segments())
+            for (const ABIPassingSegment& seg : arg.AbiInfo.Segments())
             {
                 if (seg.IsPassedInRegister() && genIsValidFloatReg(seg.GetRegister()))
                 {
@@ -2775,6 +2775,23 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                 assert(op5->isContained());
 
                 // get a tmp register for mask that will be cleared by gather instructions
+                buildInternalFloatRegisterDefForNode(intrinsicTree, lowSIMDRegs());
+                setInternalRegsDelayFree = true;
+
+                buildUses = false;
+                break;
+            }
+
+            case NI_Vector128_op_Division:
+            case NI_Vector256_op_Division:
+            {
+                srcCount = BuildOperandUses(op1, lowSIMDRegs());
+                srcCount += BuildOperandUses(op2, lowSIMDRegs());
+
+                // get a tmp register for div-by-zero check
+                buildInternalFloatRegisterDefForNode(intrinsicTree, lowSIMDRegs());
+
+                // get a tmp register for overflow check
                 buildInternalFloatRegisterDefForNode(intrinsicTree, lowSIMDRegs());
                 setInternalRegsDelayFree = true;
 
