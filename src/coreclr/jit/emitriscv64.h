@@ -68,6 +68,7 @@ void emitDispBranchOffset(const instrDesc* id, const insGroup* ig) const;
 void emitDispBranchLabel(const instrDesc* id) const;
 bool emitDispBranchInstrType(unsigned opcode2, bool is_zero_reg, bool& print_second_reg) const;
 void emitDispIllegalInstruction(code_t instructionCode);
+void emitDispImmediate(ssize_t imm, bool newLine = true, unsigned regBase = REG_ZERO);
 
 emitter::code_t emitInsCode(instruction ins /*, insFormat fmt*/) const;
 
@@ -119,9 +120,6 @@ unsigned emitOutput_BTypeInstr_InvertComparation(
 unsigned emitOutput_JTypeInstr(BYTE* dst, instruction ins, regNumber rd, unsigned imm21) const;
 
 BYTE* emitOutputInstr_OptsReloc(BYTE* dst, const instrDesc* id, instruction* ins);
-BYTE* emitOutputInstr_OptsI(BYTE* dst, const instrDesc* id);
-BYTE* emitOutputInstr_OptsI8(BYTE* dst, const instrDesc* id, ssize_t immediate, regNumber reg1);
-BYTE* emitOutputInstr_OptsI32(BYTE* dst, ssize_t immediate, regNumber reg1);
 BYTE* emitOutputInstr_OptsRc(BYTE* dst, const instrDesc* id, instruction* ins);
 BYTE* emitOutputInstr_OptsRcReloc(BYTE* dst, instruction* ins, unsigned offset, regNumber reg1);
 BYTE* emitOutputInstr_OptsRcNoReloc(BYTE* dst, instruction* ins, unsigned offset, regNumber reg1);
