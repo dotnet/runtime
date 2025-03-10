@@ -2265,6 +2265,12 @@ public:
 
 #ifdef FEATURE_INTERPRETER
     static LPCWSTR         GetInterpreterName();
+
+    static ICodeManager*   GetInterpreterCodeManager()
+    {
+        LIMITED_METHOD_CONTRACT;
+        return (ICodeManager *)m_pInterpreterCodeMan;
+    }
 #endif // FEATURE_INTERPRETER
 
     static void           Unload(LoaderAllocator *pLoaderAllocator);
@@ -2326,8 +2332,9 @@ private:
 #ifdef FEATURE_READYTORUN
     SPTR_DECL(ReadyToRunJitManager, m_pReadyToRunJitManager);
 #endif
-#ifdef FEATURE_READYTORUN
+#ifdef FEATURE_INTERPRETER
     SPTR_DECL(InterpreterJitManager, m_pInterpreterJitManager);
+    SPTR_DECL(InterpreterCodeManager, m_pInterpreterCodeMan);
 #endif
 
     static CrstStatic       m_JumpStubCrst;

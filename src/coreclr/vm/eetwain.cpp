@@ -2394,3 +2394,60 @@ ULONG32 EECodeManager::GetStackParameterSize(EECodeInfo * pCodeInfo)
 #endif // TARGET_X86
 }
 
+#ifdef FEATURE_INTERPRETER
+
+bool InterpreterCodeManager::UnwindStackFrame(PREGDISPLAY     pContext,
+                                              EECodeInfo     *pCodeInfo,
+                                              unsigned        flags,
+                                              CodeManState   *pState)
+{
+    // Interpreter-TODO: Implement this
+    return false;
+}
+
+bool InterpreterCodeManager::IsGcSafe(EECodeInfo *pCodeInfo,
+                                      DWORD       dwRelOffset)
+{
+    // Interpreter-TODO: Implement this
+    return true;
+}
+
+bool InterpreterCodeManager::EnumGcRefs(PREGDISPLAY     pContext,
+                                        EECodeInfo     *pCodeInfo,
+                                        unsigned        flags,
+                                        GCEnumCallback  pCallback,
+                                        LPVOID          hCallBack,
+                                        DWORD           relOffsetOverride)
+{
+    // Interpreter-TODO: Implement this
+    return false;
+}
+
+OBJECTREF InterpreterCodeManager::GetInstance(PREGDISPLAY     pContext,
+                                              EECodeInfo *    pCodeInfo)
+{
+    // Interpreter-TODO: Implement this
+    return NULL;
+}
+
+PTR_VOID InterpreterCodeManager::GetParamTypeArg(PREGDISPLAY     pContext,
+                                                 EECodeInfo *    pCodeInfo)
+{
+    // Interpreter-TODO: Implement this
+    return NULL;
+}
+
+GenericParamContextType InterpreterCodeManager::GetParamContextType(PREGDISPLAY     pContext,
+                                            EECodeInfo *    pCodeInfo)
+{
+    // Interpreter-TODO: Implement this
+    return GENERIC_PARAM_CONTEXT_NONE;
+}
+
+size_t InterpreterCodeManager::GetFunctionSize(GCInfoToken gcInfoToken)
+{
+    // Interpreter-TODO: Implement this
+    return 0;
+}
+
+#endif // FEATURE_INTERPRETER

@@ -11,6 +11,7 @@ VPTR_CLASS(ReadyToRunJitManager)
 #endif
 #ifdef FEATURE_INTERPRETER
 VPTR_CLASS(InterpreterJitManager)
+VPTR_CLASS(InterpreterCodeManager)
 #endif
 VPTR_CLASS(EECodeManager)
 

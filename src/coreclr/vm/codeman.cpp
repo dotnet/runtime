@@ -55,6 +55,7 @@ SPTR_IMPL(ReadyToRunJitManager, ExecutionManager, m_pReadyToRunJitManager);
 
 #ifdef FEATURE_INTERPRETER
 SPTR_IMPL(InterpreterJitManager, ExecutionManager, m_pInterpreterJitManager);
+SPTR_IMPL(InterpreterCodeManager, ExecutionManager, m_pInterpreterCodeMan);
 #endif
 
 SVAL_IMPL(RangeSectionMapData, ExecutionManager, g_codeRangeMap);
@@ -2731,14 +2732,14 @@ void* EECodeGenManager::allocCodeRaw(CodeHeapRequestInfo *pInfo,
     // Avoid going through the full list in the common case - try to use the most recently used codeheap
     if (pInfo->IsDynamicDomain())
     {
-#ifdef FEATURE_INTERPRETER        
+#ifdef FEATURE_INTERPRETER
         if (pInfo->IsInterpreted())
         {
             pCodeHeap = (HeapList *)pInfo->m_pAllocator->m_pLastUsedInterpreterDynamicCodeHeap;
             pInfo->m_pAllocator->m_pLastUsedInterpreterDynamicCodeHeap = NULL;
         }
         else
-#endif // FEATURE_INTERPRETER        
+#endif // FEATURE_INTERPRETER
         {
             pCodeHeap = (HeapList *)pInfo->m_pAllocator->m_pLastUsedDynamicCodeHeap;
             pInfo->m_pAllocator->m_pLastUsedDynamicCodeHeap = NULL;
@@ -2746,14 +2747,14 @@ void* EECodeGenManager::allocCodeRaw(CodeHeapRequestInfo *pInfo,
     }
     else
     {
-#ifdef FEATURE_INTERPRETER        
+#ifdef FEATURE_INTERPRETER
         if (pInfo->IsInterpreted())
         {
             pCodeHeap = (HeapList *)pInfo->m_pAllocator->m_pLastUsedInterpreterCodeHeap;
             pInfo->m_pAllocator->m_pLastUsedInterpreterCodeHeap = NULL;
         }
         else
-#endif // FEATURE_INTERPRETER        
+#endif // FEATURE_INTERPRETER
         {
             pCodeHeap = (HeapList *)pInfo->m_pAllocator->m_pLastUsedCodeHeap;
             pInfo->m_pAllocator->m_pLastUsedCodeHeap = NULL;
@@ -2812,20 +2813,20 @@ void* EECodeGenManager::allocCodeRaw(CodeHeapRequestInfo *pInfo,
 
     if (pInfo->IsDynamicDomain())
     {
-#ifdef FEATURE_INTERPRETER        
+#ifdef FEATURE_INTERPRETER
         if (pInfo->IsInterpreted())
         {
             pInfo->m_pAllocator->m_pLastUsedInterpreterDynamicCodeHeap = pCodeHeap;
         }
         else
-#endif // FEATURE_INTERPRETER        
+#endif // FEATURE_INTERPRETER
         {
             pInfo->m_pAllocator->m_pLastUsedDynamicCodeHeap = pCodeHeap;
         }
     }
     else
     {
-#ifdef FEATURE_INTERPRETER        
+#ifdef FEATURE_INTERPRETER
         if (pInfo->IsInterpreted())
         {
             pInfo->m_pAllocator->m_pLastUsedInterpreterCodeHeap = pCodeHeap;
@@ -2907,7 +2908,7 @@ void EECodeGenManager::allocCode(MethodDesc* pMD, size_t blockSize, size_t reser
 #endif
 
     SIZE_T realHeaderSize;
-#ifdef FEATURE_INTERPRETER    
+#ifdef FEATURE_INTERPRETER
     if (std::is_same<TCodeHeader, InterpreterCodeHeader>::value)
     {
 #ifdef FEATURE_EH_FUNCLETS
@@ -2919,7 +2920,7 @@ void EECodeGenManager::allocCode(MethodDesc* pMD, size_t blockSize, size_t reser
         realHeaderSize = sizeof(InterpreterRealCodeHeader);
     }
     else
-#endif // FEATURE_INTERPRETER    
+#endif // FEATURE_INTERPRETER
     {
         requestInfo.setReserveForJumpStubs(reserveForJumpStubs);
 
@@ -3734,6 +3735,7 @@ InterpreterJitManager::InterpreterJitManager() :
     m_interpreterLoadCritSec(CrstSingleUseLock)
 {
     LIMITED_METHOD_CONTRACT;
+    SetCodeManager(ExecutionManager::GetInterpreterCodeManager());
 }
 
 BOOL InterpreterJitManager::LoadInterpreter()
@@ -4882,6 +4884,7 @@ void ExecutionManager::Init()
 #endif
 
 #ifdef FEATURE_INTERPRETER
+    m_pInterpreterCodeMan = new InterpreterCodeManager();
     m_pInterpreterJitManager = new InterpreterJitManager();
 #endif
 }
@@ -5385,6 +5388,10 @@ void ExecutionManager::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
 
     GetCodeRangeMap().EnumMem();
     m_pDefaultCodeMan.EnumMem();
+
+#ifdef FEATURE_INTERPRETER
+    m_pInterpreterCodeMan.EnumMem();
+#endif // FEATURE_INTERPRETER
 
     //
     // Walk structures and report.
