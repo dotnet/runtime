@@ -35,8 +35,8 @@ dn_simdhash_str_hash (dn_simdhash_str_key v1)
 #define DN_SIMDHASH_T dn_simdhash_string_ptr
 #define DN_SIMDHASH_KEY_T dn_simdhash_str_key
 #define DN_SIMDHASH_VALUE_T void *
-#define DN_SIMDHASH_KEY_HASHER(hash, key) dn_simdhash_str_hash(key)
-#define DN_SIMDHASH_KEY_EQUALS(hash, lhs, rhs) dn_simdhash_str_equal(lhs, rhs)
+#define DN_SIMDHASH_KEY_HASHER(data, key) dn_simdhash_str_hash(key)
+#define DN_SIMDHASH_KEY_EQUALS(data, lhs, rhs) dn_simdhash_str_equal(lhs, rhs)
 #define DN_SIMDHASH_ACCESSOR_SUFFIX _raw
 
 // perfect cache alignment. 32-bit ptrs: 8-byte keys. 64-bit: 16-byte keys.
