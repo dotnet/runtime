@@ -6191,7 +6191,6 @@ public:
     PhaseStatus fgComputeBlockWeights();
     bool fgComputeMissingBlockWeights();
 
-    bool fgReorderBlocks(bool useProfile);
     PhaseStatus fgSearchImprovedLayout();
 
     template <bool hasEH>
