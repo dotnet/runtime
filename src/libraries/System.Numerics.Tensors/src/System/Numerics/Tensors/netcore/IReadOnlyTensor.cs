@@ -57,6 +57,12 @@ namespace System.Numerics.Tensors
         /// </summary>
         /// <param name="indexes">The indexes to be used.</param>
         object this[params scoped ReadOnlySpan<NIndex> indexes] { get; }
+
+        /// <summary>
+        /// Pins and gets a <see cref="MemoryHandle"/> to the backing memory.
+        /// </summary>
+        /// <returns><see cref="MemoryHandle"/></returns>
+        MemoryHandle GetPinnedHandle();
     }
 
     /// <summary>
