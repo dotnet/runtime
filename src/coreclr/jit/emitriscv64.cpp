@@ -3472,7 +3472,7 @@ bool emitter::emitDispBranch(
 void emitter::emitDispIllegalInstruction(code_t instructionCode)
 {
     printf("RISCV64 illegal instruction: 0x%08X\n", instructionCode);
-    assert("!RISCV64 illegal instruction");
+    assert(!"RISCV64 illegal instruction");
 }
 
 void emitter::emitDispImmediate(ssize_t imm, bool newLine /*= true*/, unsigned regBase /*= REG_ZERO*/)
