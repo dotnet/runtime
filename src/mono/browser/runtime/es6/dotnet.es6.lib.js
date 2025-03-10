@@ -85,15 +85,14 @@ function injectDependencies() {
     #endif
 
     DotnetSupportLib["$DOTNET__postset"] = `DOTNET.setup({ ` +
-        `wasmEnableSIMD: ${WASM_ENABLE_SIMD ? "true" : "false"},` +
-        `wasmEnableEH: ${WASM_ENABLE_EH ? "true" : "false"},` +
-        `enablePerfTracing: ${WASM_PERFTRACING ? "true" : "false"}, ` +
-        `enableAotProfiler: ${ENABLE_AOT_PROFILER ? "true" : "false"}, ` +
-        `enableBrowserProfiler: ${ENABLE_BROWSER_PROFILER ? "true" : "false"}, ` +
-        `enablePerfTracing: ${ENABLE_BROWSER_PROFILER ? "true" : "false"}, ` +
-        `enableLogProfiler: ${ENABLE_LOG_PROFILER ? "true" : "false"}, ` +
-        `runAOTCompilation: ${RUN_AOT_COMPILATION ? "true" : "false"}, ` +
-        `wasmEnableThreads: ${USE_PTHREADS ? "true" : "false"}, ` +
+        `wasmEnableSIMD: ${WASM_ENABLE_SIMD},` +
+        `wasmEnableEH: ${WASM_ENABLE_EH},` +
+        `enableAotProfiler: ${ENABLE_AOT_PROFILER}, ` +
+        `enableBrowserProfiler: ${ENABLE_BROWSER_PROFILER}, ` +
+        `enableLogProfiler: ${ENABLE_LOG_PROFILER}, ` +
+        `enablePerfTracing: ${WASM_PERFTRACING}, ` +
+        `runAOTCompilation: ${RUN_AOT_COMPILATION}, ` +
+        `wasmEnableThreads: ${!!USE_PTHREADS}, ` +
         `gitHash: "${gitHash}", ` +
         `});`;
 

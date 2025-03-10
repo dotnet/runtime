@@ -30,10 +30,12 @@ const logLevel = params.get("MONO_LOG_LEVEL");
 const logMask = params.get("MONO_LOG_MASK");
 if (logLevel !== null && logMask !== null) {
     dotnet.withDiagnosticTracing(true); // enable JavaScript tracing
-    dotnet.withConfig({environmentVariables: {
-        "MONO_LOG_LEVEL": logLevel,
-        "MONO_LOG_MASK": logMask,
-    }});
+    dotnet.withConfig({
+        environmentVariables: {
+            "MONO_LOG_LEVEL": logLevel,
+            "MONO_LOG_MASK": logMask,
+        }
+    });
 }
 
 // Modify runtime start based on test case
@@ -150,13 +152,15 @@ switch (testCase) {
             }
         })
         break;
-    case "ProfilerTest":
+    case "LogProfilerTest":
         dotnet.withConfig({
             logProfilerOptions: {
-                takeHeapshot: "ProfilerTest::TakeHeapshot",
+                takeHeapshot: "LogProfilerTest::TakeHeapshot",
                 configuration: "log:alloc,output=output.mlpd"
             }
         })
+        break;
+    case "BrowserProfilerTest":
         break;
     case "OverrideBootConfigName":
         dotnet.withConfigSrc("boot.json");
@@ -246,11 +250,11 @@ try {
             exports.MemoryTest.Run();
             exit(0);
             break;
-        case "ProfilerTest":
+        case "LogProfilerTest":
             console.log("not ready yet")
             const myExports = await getAssemblyExports(config.mainAssemblyName);
-            const testMeaning = myExports.ProfilerTest.TestMeaning;
-            const takeHeapshot = myExports.ProfilerTest.TakeHeapshot;
+            const testMeaning = myExports.LogProfilerTest.TestMeaning;
+            const takeHeapshot = myExports.LogProfilerTest.TakeHeapshot;
             console.log("ready");
 
             dotnet.run();
@@ -264,6 +268,24 @@ try {
 
             let exit_code = ret == 42 ? 0 : 1;
             exit(exit_code);
+            break;
+        case "BrowserProfilerTest":
+            console.log("not ready yet")
+            const origMeasure = globalThis.performance.measure
+            globalThis.performance.measure = (method, options) => {
+                console.log(`performance.measure: ${method}`);
+                origMeasure(method, options);
+            };
+            const myExportsB = await getAssemblyExports(config.mainAssemblyName);
+            const testMeaningB = myExportsB.BrowserProfilerTest.TestMeaning;
+            console.log("ready");
+
+            const retB = testMeaningB();
+            document.getElementById("out").innerHTML = retB;
+            console.debug(`ret: ${retB}`);
+
+            exit(retB == 42 ? 0 : 1);
+
             break;
         case "OverrideBootConfigName":
             testOutput("ConfigSrc: " + Module.configSrc);
