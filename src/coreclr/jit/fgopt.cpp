@@ -3310,13 +3310,6 @@ bool Compiler::fgReorderBlocks(bool useProfile)
     // First let us expand the set of run rarely blocks
     newRarelyRun |= fgExpandRarelyRunBlocks();
 
-#if defined(FEATURE_EH_WINDOWS_X86)
-    if (!UsesFunclets())
-    {
-        movedBlocks |= fgRelocateEHRegions();
-    }
-#endif // FEATURE_EH_WINDOWS_X86
-
     //
     // If we are using profile weights we can change some
     // switch jumps into conditional test and jump
