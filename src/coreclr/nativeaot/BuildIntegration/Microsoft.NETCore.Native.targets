@@ -38,6 +38,7 @@ The .NET Foundation licenses this file to you under the MIT license.
     <EventSourceSupport Condition="$(EventSourceSupport) == ''">false</EventSourceSupport>
     <UseWindowsThreadPool Condition="'$(UseWindowsThreadPool)' == '' and '$(_targetOS)' == 'win'">true</UseWindowsThreadPool>
     <DynamicCodeSupport Condition="'$(DynamicCodeSupport)' == ''">false</DynamicCodeSupport>
+    <UseSizeOptimizedLinq Condition="'$(UseSizeOptimizedLinq)' == ''">true</UseSizeOptimizedLinq>
   </PropertyGroup>
 
   <!-- Configure LINQ expressions -->
