@@ -49,6 +49,8 @@ namespace System
 
         private static int GetProcessorCount() => Runtime.RuntimeImports.RhGetProcessCpuCount();
 
+        private static bool GetIsCpuQuotaLimited() => Runtime.RuntimeImports.RhGetIsCpuQuotaLimited();
+
         internal static void ShutdownCore()
         {
 #if !TARGET_BROWSER // WASMTODO Be careful what happens here as if the code has called emscripten_set_main_loop then the main loop method will normally be called repeatedly after this method
