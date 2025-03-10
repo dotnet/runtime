@@ -257,6 +257,10 @@ Same as for `dotnet build` or `dotnet publish`, you can specify the desired conf
 dotnet.cmd pack src\libraries\System.Text.Json\src\ -c Release
 ```
 
-If changes to the library include any API incompatibilities, calling `dotnet pack` will result in API compatibility errors.
-In rare cases where these are expected (e.g. updating APIs previously shipped only in preview or as experimental), the errors may be suppressed
-by following the directions in the error and re-invoking `dotnet pack` with the additional `/p:ApiCompatGenerateSuppressionFile=true` argument.
+## APICompat
+
+If changes to the library include any API incompatibilities, calling `dotnet build` (if the project isn't packable) or `dotnet pack` will result in API compatibility errors.
+
+In rare cases where these are expected (e.g. updating APIs previously shipped only in preview or as experimental), the errors may be suppressed. This can be done by following the directions in the error and re-invoking `dotnet build` (if the project isn't packable) or `dotnet pack` with the additional `/p:ApiCompatGenerateSuppressionFile=true` argument.
+
+See https://learn.microsoft.com/dotnet/fundamentals/apicompat/overview for more details.
