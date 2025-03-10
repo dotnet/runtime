@@ -217,17 +217,6 @@ virtual bool IsGcSafe(EECodeInfo     *pCodeInfo,
 virtual bool HasTailCalls(EECodeInfo *pCodeInfo) = 0;
 #endif // TARGET_ARM || TARGET_ARM64 || TARGET_LOONGARCH64 || TARGET_RISCV64
 
-#if defined(TARGET_AMD64) && defined(_DEBUG)
-/*
-    Locates the end of the last interruptible region in the given code range.
-    Returns 0 if the entire range is uninterruptible.  Returns the end point
-    if the entire range is interruptible.
-*/
-virtual unsigned FindEndOfLastInterruptibleRegion(unsigned curOffset,
-                                                  unsigned endOffset,
-                                                  GCInfoToken gcInfoToken) = 0;
-#endif // TARGET_AMD64 && _DEBUG
-
 /*
     Enumerate all live object references in that function using
     the virtual register set. Same reference location cannot be enumerated
@@ -320,11 +309,6 @@ virtual unsigned int GetFrameSize(GCInfoToken gcInfoToken) = 0;
 
 #ifndef FEATURE_EH_FUNCLETS
 virtual const BYTE*     GetFinallyReturnAddr(PREGDISPLAY pReg)=0;
-
-virtual BOOL            IsInFilter(GCInfoToken gcInfoToken,
-                                   unsigned offset,
-                                   PCONTEXT pCtx,
-                                   DWORD curNestLevel) = 0;
 
 virtual BOOL            LeaveFinally(GCInfoToken gcInfoToken,
                                      unsigned offset,
@@ -462,18 +446,6 @@ virtual
 bool HasTailCalls(EECodeInfo *pCodeInfo);
 #endif // TARGET_ARM || TARGET_ARM64 || TARGET_LOONGARCH64 || defined(TARGET_RISCV64)
 
-#if defined(TARGET_AMD64) && defined(_DEBUG)
-/*
-    Locates the end of the last interruptible region in the given code range.
-    Returns 0 if the entire range is uninterruptible.  Returns the end point
-    if the entire range is interruptible.
-*/
-virtual
-unsigned FindEndOfLastInterruptibleRegion(unsigned curOffset,
-                                          unsigned endOffset,
-                                          GCInfoToken gcInfoToken);
-#endif // TARGET_AMD64 && _DEBUG
-
 /*
     Enumerate all live object references in that function using
     the virtual register set. Same reference location cannot be enumerated
@@ -588,10 +560,6 @@ unsigned int GetFrameSize(GCInfoToken gcInfoToken);
 
 #ifndef FEATURE_EH_FUNCLETS
 virtual const BYTE* GetFinallyReturnAddr(PREGDISPLAY pReg);
-virtual BOOL IsInFilter(GCInfoToken gcInfoToken,
-                        unsigned offset,
-                        PCONTEXT pCtx,
-                          DWORD curNestLevel);
 virtual BOOL LeaveFinally(GCInfoToken gcInfoToken,
                           unsigned offset,
                           PCONTEXT pCtx);
@@ -737,22 +705,6 @@ bool HasTailCalls(EECodeInfo *pCodeInfo)
 }
 #endif // TARGET_ARM || TARGET_ARM64 || TARGET_LOONGARCH64 || defined(TARGET_RISCV64)
 
-#if defined(TARGET_AMD64) && defined(_DEBUG)
-/*
-    Locates the end of the last interruptible region in the given code range.
-    Returns 0 if the entire range is uninterruptible.  Returns the end point
-    if the entire range is interruptible.
-*/
-virtual
-unsigned FindEndOfLastInterruptibleRegion(unsigned curOffset,
-                                          unsigned endOffset,
-                                          GCInfoToken gcInfoToken)
-{
-    _ASSERTE(FALSE);
-    return 0;
-}
-#endif // TARGET_AMD64 && _DEBUG
-
 /*
     Enumerate all live object references in that function using
     the virtual register set. Same reference location cannot be enumerated
@@ -867,14 +819,6 @@ virtual const BYTE* GetFinallyReturnAddr(PREGDISPLAY pReg)
     return NULL;
 }
 
-virtual BOOL IsInFilter(GCInfoToken gcInfoToken,
-                        unsigned offset,
-                        PCONTEXT pCtx,
-                        DWORD curNestLevel)
-{
-    _ASSERTE(FALSE);
-    return FALSE;
-}
 virtual BOOL LeaveFinally(GCInfoToken gcInfoToken,
                           unsigned offset,
                           PCONTEXT pCtx)
