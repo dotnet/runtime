@@ -22,7 +22,7 @@ namespace Internal.Runtime.CompilerHelpers
         [SuppressGCTransition]
         private static partial ulong RhpULMod(ulong dividend, ulong divisor);
 
-        public static ulong ULMod(ulong divisor, ulong dividend)
+        public static ulong ULMod(ulong dividend, ulong divisor)
         {
             if (divisor == 0)
                 ThrowHelper.ThrowDivideByZeroException();
@@ -34,7 +34,7 @@ namespace Internal.Runtime.CompilerHelpers
         [SuppressGCTransition]
         private static partial long RhpLMod(long dividend, long divisor);
 
-        public static long LMod(long divisor, long dividend)
+        public static long LMod(long dividend, long divisor)
         {
             if (divisor == 0)
                 ThrowHelper.ThrowDivideByZeroException();
@@ -48,7 +48,7 @@ namespace Internal.Runtime.CompilerHelpers
         [SuppressGCTransition]
         private static partial ulong RhpULDiv(ulong dividend, ulong divisor);
 
-        public static ulong ULDiv(ulong divisor, ulong dividend)
+        public static ulong ULDiv(ulong dividend, ulong divisor)
         {
             if (divisor == 0)
                 ThrowHelper.ThrowDivideByZeroException();
@@ -60,7 +60,7 @@ namespace Internal.Runtime.CompilerHelpers
         [SuppressGCTransition]
         private static partial long RhpLDiv(long dividend, long divisor);
 
-        public static long LDiv(long divisor, long dividend)
+        public static long LDiv(long dividend, long divisor)
         {
             if (divisor == 0)
                 ThrowHelper.ThrowDivideByZeroException();

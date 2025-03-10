@@ -137,10 +137,10 @@ extern "C" FCDECL2(INT32, JIT_Div, INT32 dividend, INT32 divisor);
 extern "C" FCDECL2(INT32, JIT_Mod, INT32 dividend, INT32 divisor);
 extern "C" FCDECL2(UINT32, JIT_UDiv, UINT32 dividend, UINT32 divisor);
 extern "C" FCDECL2(UINT32, JIT_UMod, UINT32 dividend, UINT32 divisor);
-extern "C" FCDECL2_VV(INT64, JIT_LDiv, INT64 divisor, INT64 dividend);
-extern "C" FCDECL2_VV(INT64, JIT_LMod, INT64 divisor, INT64 dividend);
-extern "C" FCDECL2_VV(UINT64, JIT_ULDiv, UINT64 divisor, UINT64 dividend);
-extern "C" FCDECL2_VV(UINT64, JIT_ULMod, UINT64 divisor, UINT64 dividend);
+extern "C" FCDECL2_VV(INT64, JIT_LDiv, INT64 dividend, INT64 divisor);
+extern "C" FCDECL2_VV(INT64, JIT_LMod, INT64 dividend, INT64 divisor);
+extern "C" FCDECL2_VV(UINT64, JIT_ULDiv, UINT64 dividend, UINT64 divisor);
+extern "C" FCDECL2_VV(UINT64, JIT_ULMod, UINT64 dividend, UINT64 divisor);
 
 #if !defined(HOST_64BIT) && !defined(TARGET_X86)
 /*********************************************************************/
@@ -3601,7 +3601,7 @@ HCIMPL2(UINT32, JIT_UMod, UINT32 dividend, UINT32 divisor)
 HCIMPLEND
 
 /*********************************************************************/
-HCIMPL2_VV(INT64, JIT_LDiv, INT64 divisor, INT64 dividend)
+HCIMPL2_VV(INT64, JIT_LDiv, INT64 dividend, INT64 divisor)
 {
     FCALL_CONTRACT;
 
@@ -3634,7 +3634,7 @@ HCIMPL2_VV(INT64, JIT_LDiv, INT64 divisor, INT64 dividend)
 HCIMPLEND
 
 /*********************************************************************/
-HCIMPL2_VV(INT64, JIT_LMod, INT64 divisor, INT64 dividend)
+HCIMPL2_VV(INT64, JIT_LMod, INT64 dividend, INT64 divisor)
 {
     FCALL_CONTRACT;
 
@@ -3669,7 +3669,7 @@ HCIMPL2_VV(INT64, JIT_LMod, INT64 divisor, INT64 dividend)
 HCIMPLEND
 
 /*********************************************************************/
-HCIMPL2_VV(UINT64, JIT_ULDiv, UINT64 divisor, UINT64 dividend)
+HCIMPL2_VV(UINT64, JIT_ULDiv, UINT64 dividend, UINT64 divisor)
 {
     FCALL_CONTRACT;
 
@@ -3687,7 +3687,7 @@ HCIMPL2_VV(UINT64, JIT_ULDiv, UINT64 divisor, UINT64 dividend)
 HCIMPLEND
 
 /*********************************************************************/
-HCIMPL2_VV(UINT64, JIT_ULMod, UINT64 divisor, UINT64 dividend)
+HCIMPL2_VV(UINT64, JIT_ULMod, UINT64 dividend, UINT64 divisor)
 {
     FCALL_CONTRACT;
 

@@ -29,28 +29,33 @@
 #define DYNAMICJITHELPER_NOINDIRECT(code,fn,binderId) DYNAMICJITHELPER(code,fn,binderId)
 #endif
 
+#if defined(TARGET_32BIT) && defined (TARGET_ARM)
+#define USE_HELPERS_FOR_INT_DIV
+#endif
+
 // pfnHelper is set to NULL if it is a stubbed helper.
 // It will be set in InitJITHelpers2
 
     JITHELPER(CORINFO_HELP_UNDEF,               NULL,               METHOD__NIL)
 
-    // CORINFO_HELP_DBL2INT, CORINFO_HELP_DBL2UINT, and CORINFO_HELP_DBL2LONG get
-    // patched for CPUs that support SSE2 (P4 and above).
-#ifdef TARGET_32BIT
     // Arithmetic
+#ifdef USE_HELPERS_FOR_INT_DIV
     JITHELPER(CORINFO_HELP_DIV,                 JIT_Div,            METHOD__NIL)
     JITHELPER(CORINFO_HELP_MOD,                 JIT_Mod,            METHOD__NIL)
     JITHELPER(CORINFO_HELP_UDIV,                JIT_UDiv,           METHOD__NIL)
     JITHELPER(CORINFO_HELP_UMOD,                JIT_UMod,           METHOD__NIL)
-
-    JITHELPER(CORINFO_HELP_LLSH,                JIT_LLsh,           METHOD__NIL)
-    JITHELPER(CORINFO_HELP_LRSH,                JIT_LRsh,           METHOD__NIL)
-    JITHELPER(CORINFO_HELP_LRSZ,                JIT_LRsz,           METHOD__NIL)
-#else // TARGET_32BIT
+#else
     JITHELPER(CORINFO_HELP_DIV,          NULL,               METHOD__NIL)
     JITHELPER(CORINFO_HELP_MOD,          NULL,               METHOD__NIL)
     JITHELPER(CORINFO_HELP_UDIV,         NULL,               METHOD__NIL)
     JITHELPER(CORINFO_HELP_UMOD,         NULL,               METHOD__NIL)
+#endif
+
+#ifdef TARGET_32BIT
+    JITHELPER(CORINFO_HELP_LLSH,                JIT_LLsh,           METHOD__NIL)
+    JITHELPER(CORINFO_HELP_LRSH,                JIT_LRsh,           METHOD__NIL)
+    JITHELPER(CORINFO_HELP_LRSZ,                JIT_LRsz,           METHOD__NIL)
+#else // TARGET_32BIT
 
     JITHELPER(CORINFO_HELP_LLSH,                NULL,               METHOD__NIL)
     JITHELPER(CORINFO_HELP_LRSH,                NULL,               METHOD__NIL)
