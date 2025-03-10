@@ -1582,12 +1582,12 @@ namespace System.Numerics.Tensors.Tests
             Assert.Equal(0, slice[1, 0]);
             Assert.Equal(0, slice[1, 1]);
 
-            // Since Tensor.Slice does a copy the original tensor shouldn't be modified
-            Assert.Equal(1, tensor[0, 0]);
-            Assert.Equal(2, tensor[0, 1]);
+            // Since Tensor.Slice does do a copy the original tensor should be modified but only in the slice we took.
+            Assert.Equal(0, tensor[0, 0]);
+            Assert.Equal(0, tensor[0, 1]);
             Assert.Equal(3, tensor[0, 2]);
-            Assert.Equal(4, tensor[1, 0]);
-            Assert.Equal(5, tensor[1, 1]);
+            Assert.Equal(0, tensor[1, 0]);
+            Assert.Equal(0, tensor[1, 1]);
             Assert.Equal(6, tensor[1, 2]);
             Assert.Equal(7, tensor[2, 0]);
             Assert.Equal(8, tensor[2, 1]);
@@ -1609,8 +1609,8 @@ namespace System.Numerics.Tensors.Tests
             slice.Clear();
             Assert.Equal(0, slice[0]);
 
-            // Since Tensor.Slice does a copy the original tensor shouldn't be modified
-            Assert.Equal(1, tensor[0]);
+            // Since Tensor.Slice does do a copy the original tensor should be modified but only in the slice we took.
+            Assert.Equal(0, tensor[0]);
             Assert.Equal(2, tensor[1]);
             Assert.Equal(3, tensor[2]);
             Assert.Equal(4, tensor[3]);
