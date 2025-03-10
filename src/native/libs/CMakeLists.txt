@@ -119,6 +119,10 @@ if (CLR_CMAKE_TARGET_UNIX OR CLR_CMAKE_TARGET_BROWSER OR CLR_CMAKE_TARGET_WASI)
         add_subdirectory(System.IO.Ports.Native)
     endif ()
 
+    if (MONO_WASM_MT)
+        add_definitions(-DMONO_WASM_MT)
+    endif()
+
     if (CMAKE_C_COMPILER_ID MATCHES "Clang")
         add_compile_options(-Weverything)
         add_compile_options(-Wno-format-nonliteral)

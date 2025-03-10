@@ -47,7 +47,7 @@ public class AppleAppBuilderTask : Task
     /// <summary>
     /// Path to Mono public headers (*.h)
     /// </summary>
-    public string MonoRuntimeHeaders { get; set; } = ""!;
+    public string[] MonoRuntimeHeaders { get; set; } = [];
 
     /// <summary>
     /// This library will be used as an entry point (e.g. TestRunner.dll). Can
@@ -201,7 +201,7 @@ public class AppleAppBuilderTask : Task
 
         if (targetRuntime == TargetRuntime.NativeAOT || targetRuntime == TargetRuntime.CoreCLR)
         {
-            if (!string.IsNullOrEmpty(MonoRuntimeHeaders))
+            if (MonoRuntimeHeaders.Length != 0)
                 throw new ArgumentException($"Property \"{nameof(MonoRuntimeHeaders)}\" is not supported with {Runtime} runtime and will be ignored.");
 
             if (!string.IsNullOrEmpty(MainLibraryFileName) && targetRuntime == TargetRuntime.NativeAOT)
@@ -224,7 +224,7 @@ public class AppleAppBuilderTask : Task
         }
         else
         {
-            if (string.IsNullOrEmpty(MonoRuntimeHeaders))
+            if (MonoRuntimeHeaders.Length == 0)
                 throw new ArgumentException($"The \"{nameof(AppleAppBuilderTask)}\" task was not given a value for the required parameter \"{nameof(MonoRuntimeHeaders)}\" when using Mono runtime.");
         }
     }

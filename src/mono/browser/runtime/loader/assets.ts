@@ -4,7 +4,7 @@
 import WasmEnableThreads from "consts:wasmEnableThreads";
 
 import { PThreadPtrNull, type AssetEntryInternal, type PThreadWorker, type PromiseAndController } from "../types/internal";
-import { type AssetBehaviors, type AssetEntry, type LoadingResource, type ResourceList, type SingleAssetBehaviors as SingleAssetBehaviors, type WebAssemblyBootResourceType } from "../types";
+import { BootModule, type AssetBehaviors, type AssetEntry, type LoadingResource, type ResourceList, type SingleAssetBehaviors as SingleAssetBehaviors, type WebAssemblyBootResourceType } from "../types";
 import { ENVIRONMENT_IS_NODE, ENVIRONMENT_IS_SHELL, ENVIRONMENT_IS_WEB, ENVIRONMENT_IS_WORKER, loaderHelpers, mono_assert, runtimeHelpers } from "./globals";
 import { createPromiseController } from "./promise-controller";
 import { mono_log_debug, mono_log_warn } from "./logging";
@@ -725,7 +725,7 @@ function fetchResource (asset: AssetEntryInternal): Promise<Response> {
         const customLoadResult = invokeLoadBootResource(asset);
         if (customLoadResult instanceof Promise) {
             // They are supplying an entire custom response, so just use that
-            return customLoadResult;
+            return customLoadResult as Promise<Response>;
         } else if (typeof customLoadResult === "string") {
             url = customLoadResult;
         }
@@ -766,7 +766,7 @@ const monoToBlazorAssetTypeMap: { [key: string]: WebAssemblyBootResourceType | u
     "js-module-threads": "dotnetjs"
 };
 
-function invokeLoadBootResource (asset: AssetEntryInternal): string | Promise<Response> | null | undefined {
+function invokeLoadBootResource (asset: AssetEntryInternal): string | Promise<Response> | Promise<BootModule> | null | undefined {
     if (loaderHelpers.loadBootResource) {
         const requestHash = asset.hash ?? "";
         const url = asset.resolvedUrl!;

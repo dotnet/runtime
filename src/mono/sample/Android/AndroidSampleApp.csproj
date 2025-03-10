@@ -19,6 +19,7 @@
 
   <ItemGroup>
     <RuntimeComponents Condition="'$(RuntimeFlavor)' == 'Mono' and '$(DiagnosticPorts)' != ''" Include="diagnostics_tracing" />
+    <RuntimeHeaders Include="$(SharedNativeRoot)" Condition="'$(RuntimeFlavor)' != 'Mono'"/>
   </ItemGroup>
 
   <Import Project="$(MonoProjectRoot)\msbuild\android\build\AndroidBuild.props" />

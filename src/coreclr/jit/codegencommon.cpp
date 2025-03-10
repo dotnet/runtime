@@ -1119,6 +1119,11 @@ bool CodeGen::genCreateAddrMode(GenTree*  addr,
             [reg1 + reg2]
             [reg1 + reg2 * natural-scale]
 
+        The following indirections are valid address modes on riscv64:
+
+            [reg]
+            [reg  + icon]
+
      */
 
     /* All indirect address modes require the address to be an addition */
@@ -1269,7 +1274,7 @@ AGAIN:
 
     switch (op1->gtOper)
     {
-#ifdef TARGET_XARCH
+#if defined(TARGET_XARCH) || defined(TARGET_RISCV64)
         // TODO-ARM-CQ: For now we don't try to create a scaled index.
         case GT_ADD:
 
@@ -1291,7 +1296,7 @@ AGAIN:
                 }
             }
             break;
-#endif // TARGET_XARCH
+#endif // TARGET_XARCH || TARGET_RISCV64
 
         case GT_MUL:
 
@@ -1347,7 +1352,7 @@ AGAIN:
     noway_assert(op2);
     switch (op2->gtOper)
     {
-#ifdef TARGET_XARCH
+#if defined(TARGET_XARCH) || defined(TARGET_RISCV64)
         // TODO-ARM64-CQ, TODO-ARM-CQ: For now we only handle MUL and LSH because
         // arm doesn't support both scale and offset at the same. Offset is handled
         // at the emitter as a peephole optimization.
@@ -1370,7 +1375,7 @@ AGAIN:
                 }
             }
             break;
-#endif // TARGET_XARCH
+#endif // TARGET_XARCH || TARGET_RISCV64
 
         case GT_MUL:
 
@@ -1428,6 +1433,9 @@ AGAIN:
 #endif
 
 FOUND_AM:
+#ifdef TARGET_RISCV64
+    assert(mul == 0 || mul == 1);
+#endif
 
     if (rv2)
     {
@@ -2355,8 +2363,8 @@ void CodeGen::genReportEH()
     {
         for (XTnum = 0; XTnum < compiler->compHndBBtabCount; XTnum++)
         {
-            for (enclosingTryIndex = compiler->ehTrueEnclosingTryIndexIL(XTnum); // find the true enclosing try index,
-                                                                                 // ignoring 'mutual protect' trys
+            for (enclosingTryIndex = compiler->ehTrueEnclosingTryIndex(XTnum); // find the true enclosing try index,
+                                                                               // ignoring 'mutual protect' trys
                  enclosingTryIndex != EHblkDsc::NO_ENCLOSING_INDEX;
                  enclosingTryIndex = compiler->ehGetEnclosingTryIndex(enclosingTryIndex))
             {
@@ -2662,8 +2670,8 @@ void CodeGen::genReportEH()
 
             EHblkDsc* fletTab = compiler->ehGetDsc(XTnum2);
 
-            for (enclosingTryIndex = compiler->ehTrueEnclosingTryIndexIL(XTnum2); // find the true enclosing try index,
-                                                                                  // ignoring 'mutual protect' trys
+            for (enclosingTryIndex = compiler->ehTrueEnclosingTryIndex(XTnum2); // find the true enclosing try index,
+                                                                                // ignoring 'mutual protect' trys
                  enclosingTryIndex != EHblkDsc::NO_ENCLOSING_INDEX;
                  enclosingTryIndex = compiler->ehGetEnclosingTryIndex(enclosingTryIndex))
             {

@@ -50,10 +50,6 @@
 
   <ItemGroup Condition="'$(TestNativeAot)' == 'true'">
     <RdXmlFile Include="$(MSBuildThisFileDirectory)default.rd.xml" />
-
-    <!-- xunit calls MakeGenericType to check if something is IEquatable -->
-    <IlcArg Include="--feature:System.Reflection.IsTypeConstructionEagerlyValidated=false" />
-
     <TrimmerRootAssembly Include="TestUtilities" />
   </ItemGroup>
 

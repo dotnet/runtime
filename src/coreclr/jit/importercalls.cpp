@@ -9657,6 +9657,42 @@ GenTree* Compiler::impMinMaxIntrinsic(CORINFO_METHOD_HANDLE method,
     GenTree* op2 = impImplicitR4orR8Cast(impStackTop().val, callType);
     GenTree* op1 = impImplicitR4orR8Cast(impStackTop(1).val, callType);
 
+#if defined(FEATURE_HW_INTRINSICS) && defined(TARGET_XARCH)
+    // If Avx10.2 is enabled, the min/max operations can be done using the
+    // new minmax instructions which is faster than using the combination
+    // of instructions for lower ISAs. We can use the minmax instructions
+
+    if (compOpportunisticallyDependsOn(InstructionSet_AVX10v2))
+    {
+        impPopStack();
+        impPopStack();
+        /**
+         * ctrlByte   A control byte (imm8) that specifies the type of min/max operation and sign behavior:
+         *            - Bits [1:0] (Op-select): Determines the operation performed:
+         *              - 0b00: minimum - Returns x if x ≤ y, otherwise y; NaN handling applies.
+         *              - 0b01: maximum - Returns x if x ≥ y, otherwise y; NaN handling applies.
+         *              - 0b10: minimumMagnitude - Compares absolute values, returns the smaller magnitude.
+         *              - 0b11: maximumMagnitude - Compares absolute values, returns the larger magnitude.
+         *            - Bit  [4] (min/max mode): Determines whether the instruction follows IEEE-compliant NaN handling:
+         *              - 0: Standard min/max (propagates NaNs).
+         *              - 1: Number-preferential min/max (ignores signaling NaNs).
+         *            - Bits [3:2] (Sign control): Defines how the result’s sign is determined:
+         *              - 0b00: Select sign from the first operand (src1).
+         *              - 0b01: Select sign from the comparison result.
+         *              - 0b10: Force result sign to 0 (positive).
+         *              - 0b11: Force result sign to 1 (negative).
+         */
+        uint8_t ctrlByte = 0x04; // Select sign from comparison result
+        ctrlByte |= isMax ? 0x01 : 0x00;
+        ctrlByte |= isMagnitude ? 0x02 : 0x00;
+        ctrlByte |= isNumber ? 0x10 : 0x00;
+
+        GenTree* retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, op2, gtNewIconNode(ctrlByte),
+                                                    NI_AVX10v2_MinMaxScalar, callJitType, 16);
+        return gtNewSimdToScalarNode(genActualType(callType), retNode, callJitType, 16);
+    }
+#endif // FEATURE_HW_INTRINSICS && TARGET_XARCH
+
     if (op2->IsCnsFltOrDbl())
     {
         cnsNode   = op2->AsDblCon();

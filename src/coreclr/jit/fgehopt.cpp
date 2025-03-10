@@ -2736,7 +2736,7 @@ BasicBlock* Compiler::fgCloneTryRegion(BasicBlock* tryEntry, CloneTryInfo& info,
                 break;
             }
             outermostEbd = ehGetDsc(enclosingTryIndex);
-            if (!EHblkDsc::ebdIsSameILTry(outermostEbd, tryEbd))
+            if (!EHblkDsc::ebdIsSameTry(outermostEbd, tryEbd))
             {
                 break;
             }

@@ -38,28 +38,28 @@ enum CrstType
     CrstDebuggerHeapLock = 20,
     CrstDebuggerJitInfo = 21,
     CrstDebuggerMutex = 22,
-    CrstDelegateToFPtrHash = 23,
-    CrstDynamicIL = 24,
-    CrstDynamicMT = 25,
-    CrstEtwTypeLogHash = 26,
-    CrstEventPipe = 27,
-    CrstEventStore = 28,
-    CrstException = 29,
-    CrstExecutableAllocatorLock = 30,
-    CrstFCall = 31,
-    CrstFrozenObjectHeap = 32,
-    CrstFuncPtrStubs = 33,
-    CrstFusionAppCtx = 34,
-    CrstGCCover = 35,
-    CrstGenericDictionaryExpansion = 36,
-    CrstGlobalStrLiteralMap = 37,
-    CrstHandleTable = 38,
-    CrstIbcProfile = 39,
-    CrstIJWFixupData = 40,
-    CrstIJWHash = 41,
-    CrstILStubGen = 42,
-    CrstInlineTrackingMap = 43,
-    CrstInstMethodHashTable = 44,
+    CrstDynamicIL = 23,
+    CrstDynamicMT = 24,
+    CrstEtwTypeLogHash = 25,
+    CrstEventPipe = 26,
+    CrstEventStore = 27,
+    CrstException = 28,
+    CrstExecutableAllocatorLock = 29,
+    CrstFCall = 30,
+    CrstFrozenObjectHeap = 31,
+    CrstFuncPtrStubs = 32,
+    CrstFusionAppCtx = 33,
+    CrstGCCover = 34,
+    CrstGenericDictionaryExpansion = 35,
+    CrstGlobalStrLiteralMap = 36,
+    CrstHandleTable = 37,
+    CrstIbcProfile = 38,
+    CrstIJWFixupData = 39,
+    CrstIJWHash = 40,
+    CrstILStubGen = 41,
+    CrstInlineTrackingMap = 42,
+    CrstInstMethodHashTable = 43,
+    CrstInterfaceDispatchGlobalLists = 44,
     CrstInterop = 45,
     CrstInteropData = 46,
     CrstIsJMCMethod = 47,
@@ -153,7 +153,6 @@ int g_rgCrstLevelMap[] =
     0,          // CrstDebuggerHeapLock
     3,          // CrstDebuggerJitInfo
     12,         // CrstDebuggerMutex
-    0,          // CrstDelegateToFPtrHash
     0,          // CrstDynamicIL
     9,          // CrstDynamicMT
     0,          // CrstEtwTypeLogHash
@@ -175,6 +174,7 @@ int g_rgCrstLevelMap[] =
     6,          // CrstILStubGen
     2,          // CrstInlineTrackingMap
     18,         // CrstInstMethodHashTable
+    0,          // CrstInterfaceDispatchGlobalLists
     21,         // CrstInterop
     9,          // CrstInteropData
     0,          // CrstIsJMCMethod
@@ -262,7 +262,6 @@ LPCSTR g_rgCrstNameMap[] =
     "CrstDebuggerHeapLock",
     "CrstDebuggerJitInfo",
     "CrstDebuggerMutex",
-    "CrstDelegateToFPtrHash",
     "CrstDynamicIL",
     "CrstDynamicMT",
     "CrstEtwTypeLogHash",
@@ -284,6 +283,7 @@ LPCSTR g_rgCrstNameMap[] =
     "CrstILStubGen",
     "CrstInlineTrackingMap",
     "CrstInstMethodHashTable",
+    "CrstInterfaceDispatchGlobalLists",
     "CrstInterop",
     "CrstInteropData",
     "CrstIsJMCMethod",

@@ -296,7 +296,6 @@ private:
 
     bool ReplaceStructLocal(GenTree* user, GenTreeLclVarCommon* value);
     bool ReplaceReturnedStructLocal(GenTreeOp* ret, GenTreeLclVarCommon* value);
-    bool IsReturnProfitableAsFieldList(GenTreeLclVarCommon* value);
     bool ReplaceCallArgWithFieldList(GenTreeCall* call, GenTreeLclVarCommon* callArg);
     bool CanReplaceCallArgWithFieldListOfReplacements(GenTreeCall* call, CallArg* callArg, GenTreeLclVarCommon* lcl);
     void ReadBackAfterCall(GenTreeCall* call, GenTree* user);

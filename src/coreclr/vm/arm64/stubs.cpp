@@ -960,26 +960,45 @@ AdjustContextForVirtualStub(
 
     PCODE f_IP = GetIP(pContext);
 
-    StubCodeBlockKind sk = RangeSectionStubManager::GetStubKind(f_IP);
+    bool isVirtualStubNullCheck = false;
+#ifdef FEATURE_CACHED_INTERFACE_DISPATCH
+    if (VirtualCallStubManager::isCachedInterfaceDispatchStubAVLocation(f_IP))
+    {
+        isVirtualStubNullCheck = true; 
+    }
+#endif // FEATURE_CACHED_INTERFACE_DISPATCH
+#ifdef FEATURE_VIRTUAL_STUB_DISPATCH
+    if (!isVirtualStubNullCheck)
+    {
+        StubCodeBlockKind sk = RangeSectionStubManager::GetStubKind(f_IP);
 
-    if (sk == STUB_CODE_BLOCK_VSD_DISPATCH_STUB)
-    {
-        if (*PTR_DWORD(f_IP) != DISPATCH_STUB_FIRST_DWORD)
+        if (sk == STUB_CODE_BLOCK_VSD_DISPATCH_STUB)
         {
-            _ASSERTE(!"AV in DispatchStub at unknown instruction");
-            return FALSE;
+            if (*PTR_DWORD(f_IP) != DISPATCH_STUB_FIRST_DWORD)
+            {
+                _ASSERTE(!"AV in DispatchStub at unknown instruction");
+            }
+            else
+            {
+                isVirtualStubNullCheck = true;
+            }
+        }
+        else
+        if (sk == STUB_CODE_BLOCK_VSD_RESOLVE_STUB)
+        {
+            if (*PTR_DWORD(f_IP) != RESOLVE_STUB_FIRST_DWORD)
+            {
+                _ASSERTE(!"AV in ResolveStub at unknown instruction");
+            }
+            else
+            {
+                isVirtualStubNullCheck = true;
+            }
         }
     }
-    else
-    if (sk == STUB_CODE_BLOCK_VSD_RESOLVE_STUB)
-    {
-        if (*PTR_DWORD(f_IP) != RESOLVE_STUB_FIRST_DWORD)
-        {
-            _ASSERTE(!"AV in ResolveStub at unknown instruction");
-            return FALSE;
-        }
-    }
-    else
+#endif // FEATURE_VIRTUAL_STUB_DISPATCH
+
+    if (!isVirtualStubNullCheck)
     {
         return FALSE;
     }
@@ -998,62 +1017,6 @@ AdjustContextForVirtualStub(
     return TRUE;
 }
 #endif // !DACCESS_COMPILE
-
-UMEntryThunk * UMEntryThunk::Decode(void *pCallback)
-{
-    _ASSERTE(offsetof(UMEntryThunkCode, m_code) == 0);
-    UMEntryThunkCode * pCode = (UMEntryThunkCode*)pCallback;
-
-    // We may be called with an unmanaged external code pointer instead. So if it doesn't look like one of our
-    // stubs (see UMEntryThunkCode::Encode below) then we'll return NULL. Luckily in these scenarios our
-    // caller will perform a hash lookup on successful return to verify our result in case random unmanaged
-    // code happens to look like ours.
-    if ((pCode->m_code[0] == 0x1000008c) &&
-        (pCode->m_code[1] == 0xa9403190) &&
-        (pCode->m_code[2] == 0xd61f0200))
-    {
-        return (UMEntryThunk*)pCode->m_pvSecretParam;
-    }
-
-    return NULL;
-}
-
-void UMEntryThunkCode::Encode(UMEntryThunkCode *pEntryThunkCodeRX, BYTE* pTargetCode, void* pvSecretParam)
-{
-    // adr x12, _label
-    // ldp x16, x12, [x12]
-    // br x16
-    // 4bytes padding
-    // _label
-    // m_pTargetCode data
-    // m_pvSecretParam data
-
-    m_code[0] = 0x1000008c;
-    m_code[1] = 0xa9403190;
-    m_code[2] = 0xd61f0200;
-
-
-    m_pTargetCode = (TADDR)pTargetCode;
-    m_pvSecretParam = (TADDR)pvSecretParam;
-    FlushInstructionCache(GetCurrentProcess(),&pEntryThunkCodeRX->m_code,sizeof(m_code));
-}
-
-#ifndef DACCESS_COMPILE
-
-void UMEntryThunkCode::Poison()
-{
-    ExecutableWriterHolder<UMEntryThunkCode> thunkWriterHolder(this, sizeof(UMEntryThunkCode));
-    UMEntryThunkCode *pThisRW = thunkWriterHolder.GetRW();
-
-    pThisRW->m_pTargetCode = (TADDR)UMEntryThunk::ReportViolation;
-
-    // ldp x16, x0, [x12]
-    pThisRW->m_code[1] = 0xa9400190;
-
-    ClrFlushInstructionCache(&m_code,sizeof(m_code));
-}
-
-#endif // DACCESS_COMPILE
 
 #if !defined(DACCESS_COMPILE)
 VOID ResetCurrentContext()

@@ -1091,31 +1091,23 @@ void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, GenTre
             double   constValue = tree->AsDblCon()->DconValue();
 
             assert(emitter::isFloatReg(targetReg));
-
-            // Make sure we use "fmv.w.x reg, zero" only for positive zero (0.0) and not for negative zero (-0.0)
-            if (FloatingPointUtils::isPositiveZero(constValue))
+            int64_t bits;
+            if (emitter::isSingleInstructionFpImm(constValue, size, &bits))
             {
-                // A faster/smaller way to generate 0.0
-                // We will just zero out the entire register for both float and double
-                emit->emitIns_R_R(size == EA_4BYTE ? INS_fmv_w_x : INS_fmv_d_x, size, targetReg, REG_R0);
-                break;
-            }
-
-            int64_t bits =
-                (size == EA_4BYTE)
-                    ? (int32_t)BitOperations::SingleToUInt32Bits(FloatingPointUtils::convertToSingle(constValue))
-                    : (int64_t)BitOperations::DoubleToUInt64Bits(constValue);
-            bool fitsInLui = ((bits & 0xfff) == 0) && emitter::isValidSimm20(bits >> 12);
-            if (fitsInLui || emitter::isValidSimm12(bits)) // can we synthesize bits with a single instruction?
-            {
-                regNumber temp = internalRegisters.GetSingle(tree);
-                if (fitsInLui)
+                regNumber temp = REG_ZERO;
+                if (bits != 0)
                 {
-                    emit->emitIns_R_I(INS_lui, size, temp, bits >> 12);
-                }
-                else
-                {
-                    emit->emitIns_R_R_I(INS_addi, size, temp, REG_ZERO, bits);
+                    temp = internalRegisters.GetSingle(tree);
+                    if (emitter::isValidSimm12(bits))
+                    {
+                        emit->emitIns_R_R_I(INS_addi, size, temp, REG_ZERO, bits);
+                    }
+                    else
+                    {
+                        int64_t upperBits = bits >> 12;
+                        assert((upperBits << 12) == bits);
+                        emit->emitIns_R_I(INS_lui, size, temp, upperBits);
+                    }
                 }
 
                 emit->emitIns_R_R(size == EA_4BYTE ? INS_fmv_w_x : INS_fmv_d_x, size, targetReg, temp);
@@ -2371,12 +2363,12 @@ void CodeGen::genLockedInstructions(GenTreeOp* treeNode)
 
     GenTree*  data      = treeNode->AsOp()->gtOp2;
     GenTree*  addr      = treeNode->AsOp()->gtOp1;
-    regNumber dataReg   = data->GetRegNum();
+    regNumber dataReg   = !data->isContained() ? data->GetRegNum() : REG_ZERO;
     regNumber addrReg   = addr->GetRegNum();
     regNumber targetReg = treeNode->GetRegNum();
     if (targetReg == REG_NA)
     {
-        targetReg = REG_R0;
+        targetReg = REG_ZERO;
     }
 
     genConsumeAddress(addr);
@@ -2384,8 +2376,6 @@ void CodeGen::genLockedInstructions(GenTreeOp* treeNode)
 
     emitAttr dataSize = emitActualTypeSize(data);
     bool     is4      = (dataSize == EA_4BYTE);
-
-    assert(!data->isContainedIntOrIImmed());
 
     instruction ins = INS_none;
     switch (treeNode->gtOper)
@@ -2407,7 +2397,7 @@ void CodeGen::genLockedInstructions(GenTreeOp* treeNode)
     }
     GetEmitter()->emitIns_R_R_R(ins, dataSize, targetReg, addrReg, dataReg);
 
-    if (targetReg != REG_R0)
+    if (targetReg != REG_ZERO)
     {
         genProduceReg(treeNode);
     }
@@ -2430,9 +2420,19 @@ void CodeGen::genCodeForCmpXchg(GenTreeCmpXchg* treeNode)
 
     regNumber target    = treeNode->GetRegNum();
     regNumber loc       = locOp->GetRegNum();
-    regNumber val       = valOp->GetRegNum();
-    regNumber comparand = comparandOp->GetRegNum();
-    regNumber storeErr  = internalRegisters.Extract(treeNode, RBM_ALLINT);
+    regNumber val       = !valOp->isContained() ? valOp->GetRegNum() : REG_ZERO;
+    regNumber comparand = REG_ZERO;
+    if (!comparandOp->isContained())
+    {
+        comparand = comparandOp->GetRegNum();
+        if (comparandOp->TypeIs(TYP_INT, TYP_UINT))
+        {
+            regNumber signExtendedComparand = internalRegisters.Extract(treeNode);
+            GetEmitter()->emitIns_R_R(INS_sext_w, EA_4BYTE, signExtendedComparand, comparand);
+            comparand = signExtendedComparand;
+        }
+    }
+    regNumber storeErr = internalRegisters.GetSingle(treeNode);
 
     // Register allocator should have extended the lifetimes of all input and internal registers
     // They should all be different
@@ -2443,15 +2443,11 @@ void CodeGen::genCodeForCmpXchg(GenTreeCmpXchg* treeNode)
     noway_assert(loc != val);
     noway_assert(loc != comparand);
     noway_assert(loc != storeErr);
-    noway_assert(val != comparand);
+    noway_assert((val != comparand) || (val == REG_ZERO));
     noway_assert(val != storeErr);
     noway_assert(comparand != storeErr);
     noway_assert(target != REG_NA);
     noway_assert(storeErr != REG_NA);
-
-    assert(locOp->isUsedFromReg());
-    assert(valOp->isUsedFromReg());
-    assert(!comparandOp->isUsedFromMemory());
 
     genConsumeAddress(locOp);
     genConsumeRegs(valOp);
@@ -3240,7 +3236,6 @@ void CodeGen::genCodeForCompare(GenTreeOp* tree)
 
         if (isUnordered)
         {
-            BasicBlock* skipLabel = nullptr;
             if (tree->OperIs(GT_LT))
             {
                 emit->emitIns_R_R_R(cmpSize == EA_4BYTE ? INS_fle_s : INS_fle_d, cmpSize, targetReg, regOp2, regOp1);
@@ -3248,19 +3243,6 @@ void CodeGen::genCodeForCompare(GenTreeOp* tree)
             else if (tree->OperIs(GT_LE))
             {
                 emit->emitIns_R_R_R(cmpSize == EA_4BYTE ? INS_flt_s : INS_flt_d, cmpSize, targetReg, regOp2, regOp1);
-            }
-            else if (tree->OperIs(GT_EQ))
-            {
-                regNumber tempReg = internalRegisters.GetSingle(tree);
-                skipLabel         = genCreateTempLabel();
-                emit->emitIns_R_R(cmpSize == EA_4BYTE ? INS_fclass_s : INS_fclass_d, cmpSize, targetReg, regOp1);
-                emit->emitIns_R_R(cmpSize == EA_4BYTE ? INS_fclass_s : INS_fclass_d, cmpSize, tempReg, regOp2);
-                emit->emitIns_R_R_R(INS_or, EA_8BYTE, tempReg, targetReg, tempReg);
-                emit->emitIns_R_R_I(INS_andi, EA_8BYTE, tempReg, tempReg, 0x300);
-                emit->emitIns_R_R_I(INS_addi, EA_8BYTE, targetReg, REG_R0, 1);
-                emit->emitIns_J(INS_bnez, skipLabel, tempReg);
-                emit->emitIns_R_R_R(cmpSize == EA_4BYTE ? INS_feq_s : INS_feq_d, cmpSize, targetReg, regOp1, regOp2);
-                genDefineTempLabel(skipLabel);
             }
             else if (tree->OperIs(GT_NE))
             {
@@ -3274,11 +3256,11 @@ void CodeGen::genCodeForCompare(GenTreeOp* tree)
             {
                 emit->emitIns_R_R_R(cmpSize == EA_4BYTE ? INS_flt_s : INS_flt_d, cmpSize, targetReg, regOp1, regOp2);
             }
-            if (skipLabel == nullptr)
+            else
             {
-                emit->emitIns_R_R_R(INS_sub, EA_8BYTE, targetReg, REG_R0, targetReg);
-                emit->emitIns_R_R_I(INS_addi, EA_8BYTE, targetReg, targetReg, 1);
+                unreached();
             }
+            emit->emitIns_R_R_I(INS_xori, EA_8BYTE, targetReg, targetReg, 1);
         }
         else
         {
@@ -3294,21 +3276,6 @@ void CodeGen::genCodeForCompare(GenTreeOp* tree)
             {
                 emit->emitIns_R_R_R(cmpSize == EA_4BYTE ? INS_feq_s : INS_feq_d, cmpSize, targetReg, regOp1, regOp2);
             }
-            else if (tree->OperIs(GT_NE))
-            {
-                regNumber tempReg = internalRegisters.GetSingle(tree);
-                emit->emitIns_R_R(cmpSize == EA_4BYTE ? INS_fclass_s : INS_fclass_d, cmpSize, targetReg, regOp1);
-                emit->emitIns_R_R(cmpSize == EA_4BYTE ? INS_fclass_s : INS_fclass_d, cmpSize, tempReg, regOp2);
-                emit->emitIns_R_R_R(INS_or, EA_8BYTE, tempReg, targetReg, tempReg);
-                emit->emitIns_R_R_I(INS_andi, EA_8BYTE, tempReg, tempReg, 0x300);
-                emit->emitIns_R_R_I(INS_addi, EA_8BYTE, targetReg, REG_R0, 0);
-                BasicBlock* skipLabel = genCreateTempLabel();
-                emit->emitIns_J(INS_bnez, skipLabel, tempReg);
-                emit->emitIns_R_R_R(cmpSize == EA_4BYTE ? INS_feq_s : INS_feq_d, cmpSize, targetReg, regOp1, regOp2);
-                emit->emitIns_R_R_R(INS_sub, EA_8BYTE, targetReg, REG_R0, targetReg);
-                emit->emitIns_R_R_I(INS_addi, EA_8BYTE, targetReg, targetReg, 1);
-                genDefineTempLabel(skipLabel);
-            }
             else if (tree->OperIs(GT_GT))
             {
                 emit->emitIns_R_R_R(cmpSize == EA_4BYTE ? INS_flt_s : INS_flt_d, cmpSize, targetReg, regOp2, regOp1);
@@ -3316,6 +3283,10 @@ void CodeGen::genCodeForCompare(GenTreeOp* tree)
             else if (tree->OperIs(GT_GE))
             {
                 emit->emitIns_R_R_R(cmpSize == EA_4BYTE ? INS_fle_s : INS_fle_d, cmpSize, targetReg, regOp2, regOp1);
+            }
+            else
+            {
+                unreached();
             }
         }
     }

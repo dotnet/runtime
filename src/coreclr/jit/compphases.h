@@ -65,6 +65,7 @@ CompPhaseNameMacro(PHASE_MERGE_THROWS,               "Merge throw blocks",      
 CompPhaseNameMacro(PHASE_INVERT_LOOPS,               "Invert loops",                   false, -1, false)
 CompPhaseNameMacro(PHASE_HEAD_TAIL_MERGE2,           "Post-morph head and tail merge", false, -1, false)
 CompPhaseNameMacro(PHASE_OPTIMIZE_FLOW,              "Optimize control flow",          false, -1, false)
+CompPhaseNameMacro(PHASE_OPTIMIZE_PRE_LAYOUT,        "Optimize pre-layout",            false, -1, false)
 CompPhaseNameMacro(PHASE_OPTIMIZE_LAYOUT,            "Optimize layout",                false, -1, false)
 CompPhaseNameMacro(PHASE_OPTIMIZE_POST_LAYOUT,       "Optimize post-layout",           false, -1, false)
 CompPhaseNameMacro(PHASE_COMPUTE_DOMINATORS,         "Compute dominators",             false, -1, false)

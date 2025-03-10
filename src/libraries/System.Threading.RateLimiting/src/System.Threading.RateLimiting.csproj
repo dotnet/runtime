@@ -13,7 +13,9 @@ System.Threading.RateLimiting.RateLimitLease</PackageDescription>
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Include="System\Threading\RateLimiting\ChainedRateLimiter.cs" />
     <Compile Include="System\Threading\RateLimiting\ChainedPartitionedRateLimiter.cs" />
+    <Compile Include="System\Threading\RateLimiting\CombinedRateLimitLease.cs" />
     <Compile Include="System\Threading\RateLimiting\ConcurrencyLimiter.cs" />
     <Compile Include="System\Threading\RateLimiting\ConcurrencyLimiterOptions.cs" />
     <Compile Include="System\Threading\RateLimiting\DefaultPartitionedRateLimiter.cs" />

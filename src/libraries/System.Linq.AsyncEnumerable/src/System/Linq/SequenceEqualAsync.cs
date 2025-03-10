@@ -16,8 +16,8 @@ namespace System.Linq
         /// <param name="comparer">An <see cref="IEqualityComparer{T}"/> to use to compare elements.</param>
         /// <param name="cancellationToken">The <see cref="CancellationToken"/> to monitor for cancellation requests. The default is <see cref="CancellationToken.None"/>.</param>
         /// <returns>
-        /// true if the two source sequences are of equal length and their corresponding
-        /// elements compare equal according to comparer; otherwise, false.
+        /// <see langword="true"/> if the two source sequences are of equal length and their corresponding
+        /// elements compare equal according to comparer; otherwise, <see langword="false"/>.
         /// </returns>
         public static ValueTask<bool> SequenceEqualAsync<TSource>(
             this IAsyncEnumerable<TSource> first,

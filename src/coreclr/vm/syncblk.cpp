@@ -115,7 +115,6 @@ void InteropSyncBlockInfo::FreeUMEntryThunk()
         void *pUMEntryThunk = GetUMEntryThunk();
         if (pUMEntryThunk != NULL)
         {
-            COMDelegate::RemoveEntryFromFPtrHash((UPTR)pUMEntryThunk);
             UMEntryThunk::FreeUMEntryThunk((UMEntryThunk *)pUMEntryThunk);
         }
     }

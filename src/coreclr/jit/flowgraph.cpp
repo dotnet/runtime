@@ -590,6 +590,8 @@ PhaseStatus Compiler::fgImport()
         INDEBUG(fgPgoDeferredInconsistency = false);
     }
 
+    fgImportDone = true;
+
     return PhaseStatus::MODIFIED_EVERYTHING;
 }
 
@@ -6140,7 +6142,7 @@ bool FlowGraphNaturalLoop::CanDuplicateWithEH(INDEBUG(const char** reason))
             //
             const bool headerInTry         = header->hasTryIndex();
             unsigned   blockIndex          = block->getTryIndex();
-            unsigned   outermostBlockIndex = comp->ehTrueEnclosingTryIndexIL(blockIndex);
+            unsigned   outermostBlockIndex = comp->ehTrueEnclosingTryIndex(blockIndex);
 
             if ((headerInTry && (outermostBlockIndex == header->getTryIndex())) ||
                 (!headerInTry && (outermostBlockIndex == EHblkDsc::NO_ENCLOSING_INDEX)))

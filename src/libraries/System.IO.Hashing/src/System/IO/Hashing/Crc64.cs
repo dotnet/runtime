@@ -38,6 +38,16 @@ namespace System.IO.Hashing
         {
         }
 
+        /// <summary>Initializes a new instance of the <see cref="Crc64"/> class using the state from another instance.</summary>
+        private Crc64(ulong crc) : base(Size)
+        {
+            _crc = crc;
+        }
+
+        /// <summary>Returns a clone of the current instance, with a copy of the current instance's internal state.</summary>
+        /// <returns>A new instance that will produce the same sequence of values as the current instance.</returns>
+        public Crc64 Clone() => new(_crc);
+
         /// <summary>
         ///   Appends the contents of <paramref name="source"/> to the data already
         ///   processed for the current hash computation.

@@ -16,8 +16,8 @@ namespace System.Linq
         /// <param name="predicate">A function to test each element for a condition.</param>
         /// <param name="cancellationToken">The <see cref="CancellationToken"/> to monitor for cancellation requests. The default is <see cref="CancellationToken.None"/>.</param>
         /// <returns>
-        /// true if every element of the source sequence passes the test in the specified predicate,
-        /// or if the sequence is empty; otherwise, false.
+        /// <see langword="true"/> if every element of the source sequence passes the test in the specified predicate,
+        /// or if the sequence is empty; otherwise, <see langword="false"/>.
         /// </returns>
         /// <exception cref="ArgumentNullException"><paramref name="source"/> is <see langword="null"/>.</exception>
         /// <exception cref="ArgumentNullException"><paramref name="predicate"/> is <see langword="null"/>.</exception>
@@ -53,8 +53,8 @@ namespace System.Linq
         /// <param name="predicate">A function to test each element for a condition.</param>
         /// <param name="cancellationToken">The <see cref="CancellationToken"/> to monitor for cancellation requests. The default is <see cref="CancellationToken.None"/>.</param>
         /// <returns>
-        /// true if every element of the source sequence passes the test in the specified predicate,
-        /// or if the sequence is empty; otherwise, false.
+        /// <see langword="true"/> if every element of the source sequence passes the test in the specified predicate,
+        /// or if the sequence is empty; otherwise, <see langword="false"/>.
         /// </returns>
         /// <exception cref="ArgumentNullException"><paramref name="source"/> is <see langword="null"/>.</exception>
         /// <exception cref="ArgumentNullException"><paramref name="predicate"/> is <see langword="null"/>.</exception>

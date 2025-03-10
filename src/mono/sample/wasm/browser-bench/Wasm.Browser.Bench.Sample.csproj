@@ -58,7 +58,7 @@
 
   <Target Name="SetNugetConfigContent">
     <GetNugetConfigTask
-      InputFile="$(MonoProjectRoot)wasm/Wasm.Build.Tests/data/nuget10.config"
+      InputFile="$(MonoProjectRoot)wasm\Wasm.Build.Tests\data\nuget.config"
       ArtifactsDir="$(ArtifactsDir)"
       Configuration="$(Configuration)">
       <Output TaskParameter="NugetConfigContent" PropertyName="NugetConfigContent"/>

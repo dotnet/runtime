@@ -34,9 +34,11 @@ public class WasmRunOutOfAppBundleTests : WasmTemplateTestsBase
         string relativeMainJsPath = "./wwwroot/main.js";
         if (!File.Exists(indexHtmlPath))
         {
-            var html = $@"<!DOCTYPE html><html><body><script type=""module"" src=""{relativeMainJsPath}""></script></body></html>";
+            var html = $@"<!DOCTYPE html><html><head></head><body><script type=""module"" src=""{relativeMainJsPath}""></script></body></html>";
             File.WriteAllText(indexHtmlPath, html);
         }
+
+        UpdateBootJsInHtmlFile(indexHtmlPath);
 
         RunResult result = await RunForPublishWithWebServer(new BrowserRunOptions(
                 config,

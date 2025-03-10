@@ -385,9 +385,9 @@ function mono_wasm_lookup_js_import (function_name: string, js_module_name: stri
     if (js_module_name) {
         scope = importedModules.get(js_module_name);
         if (WasmEnableThreads) {
-            mono_assert(scope, () => `ES6 module ${js_module_name} was not imported yet, please call JSHost.ImportAsync() on the UI or JSWebWorker thread first.`);
+            mono_assert(scope, () => `ES6 module ${js_module_name} was not imported yet, please call JSHost.ImportAsync() on the UI or JSWebWorker thread first in order to invoke ${function_name}.`);
         } else {
-            mono_assert(scope, () => `ES6 module ${js_module_name} was not imported yet, please call JSHost.ImportAsync() first.`);
+            mono_assert(scope, () => `ES6 module ${js_module_name} was not imported yet, please call JSHost.ImportAsync() first in order to invoke ${function_name}.`);
         }
     } else if (parts[0] === "INTERNAL") {
         scope = INTERNAL;

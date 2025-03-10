@@ -86,12 +86,11 @@ public class GenerateWasmBootJson : Task
 
     public override bool Execute()
     {
-        using var fileStream = File.Create(OutputPath);
         var entryAssemblyName = AssemblyName.GetAssemblyName(AssemblyPath).Name;
 
         try
         {
-            WriteBootJson(fileStream, entryAssemblyName);
+            WriteBootConfig(entryAssemblyName);
         }
         catch (Exception ex)
         {
@@ -101,8 +100,7 @@ public class GenerateWasmBootJson : Task
         return !Log.HasLoggedErrors;
     }
 
-    // Internal for tests
-    public void WriteBootJson(Stream output, string entryAssemblyName)
+    private void WriteBootConfig(string entryAssemblyName)
     {
         var helper = new BootJsonBuilderHelper(Log, DebugLevel, IsMultiThreaded, IsPublish);
 
@@ -423,7 +421,18 @@ public class GenerateWasmBootJson : Task
         }
 
         helper.ComputeResourcesHash(result);
-        JsonSerializer.Serialize(output, result, jsonOptions);
+
+        if (Path.GetExtension(OutputPath) == ".js")
+        {
+            var jsonOutput = JsonSerializer.Serialize(result, jsonOptions);
+            var jsOutput = $"export const config = /*json-start*/{jsonOutput}/*json-end*/;";
+            File.WriteAllText(OutputPath, jsOutput);
+        }
+        else
+        {
+            using var output = File.Create(OutputPath);
+            JsonSerializer.Serialize(output, result, jsonOptions);
+        }
 
         void AddResourceToList(ITaskItem resource, ResourceHashesByNameDictionary resourceList, string resourceKey)
         {

@@ -323,12 +323,6 @@ FCIMPL0(void, RhpInterfaceDispatch64)
 }
 FCIMPLEND
 
-FCIMPL0(void, RhpVTableOffsetDispatch)
-{
-    ASSERT_UNCONDITIONALLY("NYI");
-}
-FCIMPLEND
-
 // @TODO Implement UniversalTransition
 EXTERN_C void * ReturnFromUniversalTransition;
 void * ReturnFromUniversalTransition;

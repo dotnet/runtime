@@ -10386,6 +10386,12 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                             break;
                         }
 
+                        case NI_Vector128_op_Division:
+                        case NI_Vector256_op_Division:
+                        {
+                            break;
+                        }
+
                         default:
                         {
                             assert(!"Unhandled containment for helper binary hardware intrinsic");

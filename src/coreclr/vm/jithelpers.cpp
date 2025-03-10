@@ -3379,40 +3379,40 @@ HCIMPL3_RAW(void, JIT_ReversePInvokeEnterTrackTransitions, ReversePInvokeFrame* 
     MethodDesc* pMD = GetMethod(handle);
     if (pMD->IsILStub() && secretArg != NULL)
     {
-        pMD = ((UMEntryThunk*)secretArg)->GetMethod();
+        pMD = ((UMEntryThunkData*)secretArg)->m_pMD;
     }
     frame->pMD = pMD;
 
     Thread* thread = GetThreadNULLOk();
-
+    
     // If a thread instance exists and is in the
     // correct GC mode attempt a quick transition.
     if (thread != NULL
         && !thread->PreemptiveGCDisabled())
     {
         frame->currentThread = thread;
-
+        
 #ifdef PROFILING_SUPPORTED
         if (CORProfilerTrackTransitions())
         {
             ProfilerUnmanagedToManagedTransitionMD(frame->pMD, COR_PRF_TRANSITION_CALL);
         }
 #endif
-
+        
         // Manually inline the fast path in Thread::DisablePreemptiveGC().
         thread->m_fPreemptiveGCDisabled.StoreWithoutBarrier(1);
         if (g_TrapReturningThreads != 0)
         {
             // If we're in an IL stub, we want to trace the address of the target method,
             // not the next instruction in the stub.
-            JIT_ReversePInvokeEnterRare2(frame, _ReturnAddress(), GetMethod(handle)->IsILStub() ? (UMEntryThunk*)secretArg : (UMEntryThunk*)NULL);
+            JIT_ReversePInvokeEnterRare2(frame, _ReturnAddress(), GetMethod(handle)->IsILStub() ? ((UMEntryThunkData*)secretArg)->m_pUMEntryThunk : (UMEntryThunk*)NULL);
         }
     }
     else
     {
         // If we're in an IL stub, we want to trace the address of the target method,
         // not the next instruction in the stub.
-        JIT_ReversePInvokeEnterRare(frame, _ReturnAddress(), GetMethod(handle)->IsILStub() ? (UMEntryThunk*)secretArg  : (UMEntryThunk*)NULL);
+        JIT_ReversePInvokeEnterRare(frame, _ReturnAddress(), GetMethod(handle)->IsILStub() ? ((UMEntryThunkData*)secretArg)->m_pUMEntryThunk  : (UMEntryThunk*)NULL);
     }
 
 #ifndef FEATURE_EH_FUNCLETS

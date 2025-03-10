@@ -3,8 +3,8 @@
     <!-- Post Wasm MVP features -->
     <WasmEnableExceptionHandling Condition="'$(WasmEnableExceptionHandling)' == ''">true</WasmEnableExceptionHandling>
     <WasmEnableSIMD Condition="'$(WasmEnableSIMD)' == ''">$(WasmEnableExceptionHandling)</WasmEnableSIMD>
-    <!-- we are not triggering FeaturePerfTracing in Debug automatically, because it would trigger re-link, making dev-loop slow -->
-    <FeaturePerfTracing Condition="'$(FeaturePerfTracing)' == ''">false</FeaturePerfTracing>
+    <!-- we are not triggering WasmPerfTracing in Debug automatically, because it would trigger re-link, making dev-loop slow -->
+    <WasmPerfTracing Condition="'$(WasmPerfTracing)' == ''">false</WasmPerfTracing>
   </PropertyGroup>
 
   <Import Project="$(WasmCommonTargetsPath)WasmApp.Common.targets" />
@@ -90,7 +90,7 @@
       <!-- If dotnet.{wasm,js} weren't added already (eg. AOT can add them), then add the default ones -->
       <WasmNativeAsset Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)dotnet.js" />
       <WasmNativeAsset Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)dotnet.runtime.js" />
-      <WasmNativeAsset Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)dotnet.diagnostics.js" Condition="'$(FeaturePerfTracing)' == 'true'" />
+      <WasmNativeAsset Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)dotnet.diagnostics.js" Condition="'$(WasmPerfTracing)' == 'true'" />
       <WasmNativeAsset Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)dotnet.native.wasm" Condition="'$(_HasDotnetWasm)' != 'true'" />
       <WasmNativeAsset Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)dotnet.native.js" Condition="'$(_HasDotnetNativeJs)' != 'true'" />
       <WasmNativeAsset Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)dotnet.native.worker.mjs" Condition="'$(_HasDotnetJsWorker)' != 'true' and Exists('$(MicrosoftNetCoreAppRuntimePackRidNativeDir)dotnet.native.worker.mjs')" />
@@ -103,7 +103,7 @@
       <WasmNativeAsset Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)dotnet.runtime.js.map"
                        Condition="'$(WasmEmitSourceMap)' != 'false'" />
       <WasmNativeAsset Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)dotnet.diagnostics.js.map"
-                       Condition="'$(WasmEmitSourceMap)' != 'false' and '$(FeaturePerfTracing)' == 'true'" />
+                       Condition="'$(WasmEmitSourceMap)' != 'false' and '$(WasmPerfTracing)' == 'true'" />
     </ItemGroup>
 
     <ItemGroup Condition="'$(InvariantGlobalization)' != 'true'">
@@ -116,7 +116,7 @@
 
     <Error Condition="'$(InvariantGlobalization)' != 'true' and '$(WasmIncludeFullIcuData)' != 'true' and '$(WasmIcuDataFileName)' != '' and !Exists('$(_WasmIcuDataFileName)')" Text="File in location %24(WasmIcuDataFileName)=$(WasmIcuDataFileName) cannot be found neither when used as absolute path nor a relative runtime pack path. You might want to pass one of the values: @(_IcuAvailableDataFiles->'%(Filename)')."/>
     <Error Condition="'$(InvariantGlobalization)' != 'true' and '$(WasmIncludeFullIcuData)' != 'true' and '$(WasmIcuDataFileName)' != '' and !$([System.IO.Path]::GetFileName('$(WasmIcuDataFileName)').StartsWith('icudt'))" Text="Custom ICU file name in path %24(WasmIcuDataFileName)=$(WasmIcuDataFileName) must start with 'icudt'."/>
-    <Error Condition="'$(WasmProfilers)' != '' and '$(FeaturePerfTracing)' != 'false'" Text="%24(WasmProfilers)=$(WasmProfilers) is not supported together with %24(FeaturePerfTracing)=$(FeaturePerfTracing)"/>
+    <Error Condition="'$(WasmProfilers)' != '' and '$(WasmPerfTracing)' != 'false'" Text="%24(WasmProfilers)=$(WasmProfilers) is not supported together with %24(WasmPerfTracing)=$(WasmPerfTracing)"/>
   </Target>
 
   <Target Name="_WasmGenerateAppBundle"
@@ -369,8 +369,8 @@
       <EmscriptenEnvVars Include="ENABLE_JS_INTEROP_BY_VALUE=0" Condition="'$(WasmEnableJsInteropByValue)' != 'true'" />
       <EmscriptenEnvVars Include="WASM_ENABLE_SIMD=1" Condition="'$(WasmEnableSIMD)' != 'false'" />
       <EmscriptenEnvVars Include="WASM_ENABLE_SIMD=0" Condition="'$(WasmEnableSIMD)' == 'false'" />
-      <EmscriptenEnvVars Include="FEATURE_PERFTRACING=1" Condition="'$(FeaturePerfTracing)' == 'true'" />
-      <EmscriptenEnvVars Include="FEATURE_PERFTRACING=0" Condition="'$(FeaturePerfTracing)' != 'true'" />
+      <EmscriptenEnvVars Include="WASM_PERFTRACING=1" Condition="'$(WasmPerfTracing)' == 'true'" />
+      <EmscriptenEnvVars Include="WASM_PERFTRACING=0" Condition="'$(WasmPerfTracing)' != 'true'" />
       <EmscriptenEnvVars Include="WASM_ENABLE_EH=1" Condition="'$(WasmEnableExceptionHandling)' != 'false'" />
       <EmscriptenEnvVars Include="WASM_ENABLE_EH=0" Condition="'$(WasmEnableExceptionHandling)' == 'false'" />
       <EmscriptenEnvVars Include="ENABLE_AOT_PROFILER=$([System.Convert]::ToInt32($(WasmProfilers.Contains('aot'))))" />
@@ -446,8 +446,8 @@
 
     <ItemGroup>
       <_MonoRuntimeComponentDontLink Include="wasm-bundled-timezones.a" Condition="'$(InvariantTimezone)' == 'true'"/>
-      <_MonoRuntimeComponentDontLink Include="libmono-component-diagnostics_tracing-static.a" Condition="'$(FeaturePerfTracing)' != 'true'" />
-      <_MonoRuntimeComponentDontLink Include="libmono-component-diagnostics_tracing-stub-static.lib" Condition="'$(FeaturePerfTracing)' == 'true'" />
+      <_MonoRuntimeComponentDontLink Include="libmono-component-diagnostics_tracing-static.a" Condition="'$(WasmPerfTracing)' != 'true'" />
+      <_MonoRuntimeComponentDontLink Include="libmono-component-diagnostics_tracing-stub-static.lib" Condition="'$(WasmPerfTracing)' == 'true'" />
     </ItemGroup>
 
     <ItemGroup>

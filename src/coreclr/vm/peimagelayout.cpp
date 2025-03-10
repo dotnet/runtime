@@ -456,7 +456,9 @@ ConvertedImageLayout::ConvertedImageLayout(FlatImageLayout* source, bool disable
     LOG((LF_LOADER, LL_INFO100, "PEImage: Opening manually mapped stream\n"));
 
 #ifdef TARGET_WINDOWS
-    if (!disableMapping)
+    // LoadImageByMappingParts assumes the source has a file mapping handle created/managed by the runtime.
+    // This is not the case for non-file images (for example, external data). Only try to load by mapping for files.
+    if (!disableMapping && m_pOwner->IsFile())
     {
         loadedImage = source->LoadImageByMappingParts(this->m_imageParts);
         if (loadedImage == NULL)

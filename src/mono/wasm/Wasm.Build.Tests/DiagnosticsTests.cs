@@ -27,7 +27,7 @@ public class DiagnosticsTests : WasmTemplateTestsBase
         ProjectInfo info = CopyTestAsset(config, false, TestAsset.WasmBasicTestApp, "ProfilerTest");
         // are are linking all 3 profilers, but below we only initialize log profiler and test it
         string extraArgs = $"-p:WasmProfilers=\"aot+browser+log\"";
-        BuildProject(info, config, new BuildOptions(ExtraMSBuildArgs: extraArgs, AssertAppBundle: false, FeaturePerfTracing: true), isNativeBuild: true);
+        BuildProject(info, config, new BuildOptions(ExtraMSBuildArgs: extraArgs, AssertAppBundle: false, WasmPerfTracing: true), isNativeBuild: true);
 
         var result = await RunForBuildWithDotnetRun(new BrowserRunOptions(Configuration: config, TestScenario: "ProfilerTest"));
         Regex regex = new Regex(@"Profile data of size (\d+) bytes");

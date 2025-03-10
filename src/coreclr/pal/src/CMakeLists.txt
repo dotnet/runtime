@@ -10,7 +10,7 @@ elseif (CLR_CMAKE_TARGET_FREEBSD)
   include_directories(SYSTEM $ENV{ROOTFS_DIR}/usr/local/include)
 endif()
 
-if(NOT CLR_CMAKE_USE_SYSTEM_LIBUNWIND)
+if(NOT CLR_CMAKE_USE_SYSTEM_LIBUNWIND AND NOT CLR_CMAKE_TARGET_ARCH_WASM)
   include_directories(${CLR_SRC_NATIVE_DIR}/external/libunwind/include)
   include_directories(${CLR_SRC_NATIVE_DIR}/external/libunwind/include/tdep)
   include_directories(${CLR_ARTIFACTS_OBJ_DIR}/external/libunwind/include)
@@ -21,7 +21,7 @@ elseif(NOT CLR_CMAKE_TARGET_APPLE)
   find_unwind_libs(UNWIND_LIBS)
 else()
   add_subdirectory(${CLR_SRC_NATIVE_DIR}/external/libunwind_extras ${CLR_ARTIFACTS_OBJ_DIR}/external/libunwind)
-endif(NOT CLR_CMAKE_USE_SYSTEM_LIBUNWIND)
+endif(NOT CLR_CMAKE_USE_SYSTEM_LIBUNWIND AND NOT CLR_CMAKE_TARGET_ARCH_WASM)
 
 include(configure.cmake)
 
@@ -59,6 +59,8 @@ elseif(CLR_CMAKE_HOST_ARCH_S390X)
   set(PAL_ARCH_SOURCES_DIR s390x)
 elseif(CLR_CMAKE_HOST_ARCH_POWERPC64)
   set(PAL_ARCH_SOURCES_DIR ppc64le)
+elseif(CLR_CMAKE_HOST_ARCH_WASM)
+  set(PAL_ARCH_SOURCES_DIR wasm)
 endif()
 
 if(CLR_CMAKE_USE_SYSTEM_LIBUNWIND)
@@ -113,18 +115,26 @@ endif(CLR_CMAKE_TARGET_HAIKU)
 # turn off capability to remove unused functions (which was enabled in debug build with sanitizers)
 set(CMAKE_SHARED_LINKER_FLAGS_DEBUG "${CMAKE_SHARED_LINKER_FLAGS_DEBUG} -Wl,--no-gc-sections")
 
-set(ARCH_SOURCES
-  arch/${PAL_ARCH_SOURCES_DIR}/context2.S
-  arch/${PAL_ARCH_SOURCES_DIR}/debugbreak.S
-  arch/${PAL_ARCH_SOURCES_DIR}/exceptionhelper.S
-)
+if (NOT CLR_CMAKE_TARGET_ARCH_WASM)
+  set(ARCH_SOURCES
+    arch/${PAL_ARCH_SOURCES_DIR}/context2.S
+    arch/${PAL_ARCH_SOURCES_DIR}/debugbreak.S
+    arch/${PAL_ARCH_SOURCES_DIR}/exceptionhelper.S
+  )
+endif()
 
-if(NOT CLR_CMAKE_TARGET_APPLE)
+if (CLR_CMAKE_TARGET_ARCH_WASM)
+  set(PLATFORM_SOURCES
+  arch/${PAL_ARCH_SOURCES_DIR}/stubs.cpp
+  )
+endif()
+
+if(NOT CLR_CMAKE_TARGET_APPLE AND NOT CLR_CMAKE_TARGET_ARCH_WASM)
   list(APPEND PLATFORM_SOURCES
     arch/${PAL_ARCH_SOURCES_DIR}/callsignalhandlerwrapper.S
     arch/${PAL_ARCH_SOURCES_DIR}/signalhandlerhelper.cpp
   )
-endif(NOT CLR_CMAKE_TARGET_APPLE)
+endif(NOT CLR_CMAKE_TARGET_APPLE AND NOT CLR_CMAKE_TARGET_ARCH_WASM)
 
 if(CLR_CMAKE_HOST_ARCH_ARM)
   if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
@@ -210,9 +220,9 @@ set_source_files_properties(
     INCLUDE_DIRECTORIES ${CMAKE_CURRENT_SOURCE_DIR}/../inc/rt
 )
 
-if(NOT CLR_CMAKE_USE_SYSTEM_LIBUNWIND)
+if(NOT CLR_CMAKE_USE_SYSTEM_LIBUNWIND AND NOT CLR_CMAKE_TARGET_ARCH_WASM)
   set(LIBUNWIND_OBJECTS $<TARGET_OBJECTS:libunwind>)
-endif(NOT CLR_CMAKE_USE_SYSTEM_LIBUNWIND)
+endif(NOT CLR_CMAKE_USE_SYSTEM_LIBUNWIND AND NOT CLR_CMAKE_TARGET_ARCH_WASM)
 
 add_library(coreclrpal
   STATIC

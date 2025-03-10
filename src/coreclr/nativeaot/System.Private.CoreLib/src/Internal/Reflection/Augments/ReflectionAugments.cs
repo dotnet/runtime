@@ -136,7 +136,7 @@ namespace Internal.Reflection.Augments
 
             MethodBase methodBase = ExecutionDomain.GetMethod(declaringTypeHandle, methodHandle, genericMethodTypeArgumentHandles);
             if (methodBase.DeclaringType.IsConstructedGenericType)  // For compat with desktop, insist that the caller pass us the declaring type to resolve members of generic types.
-                throw new ArgumentException(SR.Format(SR.Argument_MethodDeclaringTypeGeneric, methodBase));
+                throw new ArgumentException(SR.Format(SR.Argument_MethodDeclaringTypeGeneric, methodBase, methodBase.DeclaringType.GetGenericTypeDefinition()));
             return methodBase;
         }
 

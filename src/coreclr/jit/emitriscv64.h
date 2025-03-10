@@ -141,6 +141,31 @@ static unsigned TrimSignedToImm13(ssize_t imm13);
 static unsigned TrimSignedToImm20(ssize_t imm20);
 static unsigned TrimSignedToImm21(ssize_t imm21);
 
+// Major opcode of a 32-bit instruction as per "The RISC-V Instruction Set Manual", Chapter "RV32/64G Instruction Set
+// Listings", Table "RISC-V base opcode map"
+enum class MajorOpcode
+{
+    // clang-format off
+    // inst[4:2]    000,    001,     010,      011,     100,    101,   110,          111 (>32Bit)
+    /* inst[6:5] */
+    /*        00 */ Load,   LoadFp,  Custom0,  MiscMem, OpImm,  Auipc, OpImm32,      Encoding48Bit1,
+    /*        01 */ Store,  StoreFp, Custom1,  Amo,     Op,     Lui,   Op32,         Encoding64Bit,
+    /*        11 */ MAdd,   MSub,    NmSub,    NmAdd,   OpFp,   OpV,   Custom2Rv128, Encoding48Bit2,
+    /*        11 */ Branch, Jalr,    Reserved, Jal,     System, OpVe,  Custom3Rv128, Encoding80Bit,
+    // clang-format on
+};
+
+//------------------------------------------------------------------------
+// GetMajorOpcode: extracts major opcode from an instruction
+//
+// Arguments:
+//    instr - instruction encoded in 32-bit format
+//
+// Return Value:
+//    Major opcode
+//
+static MajorOpcode GetMajorOpcode(code_t instr);
+
 /************************************************************************/
 /*           Public inline informational methods                        */
 /************************************************************************/
@@ -198,6 +223,26 @@ static bool isValidSimm21(ssize_t value)
 static bool isValidSimm32(ssize_t value)
 {
     return (-(((ssize_t)1) << 31) - 0x800) <= value && value < (((ssize_t)1) << 31) - 0x800;
+}
+
+//------------------------------------------------------------------------
+// isSingleInstructionFpImm: checks if the floating-point constant can be synthesized with one instruction
+//
+// Arguments:
+//    value   - the constant to be imm'ed
+//    size    - size of the target immediate
+//    outBits - [out] the bits of the immediate
+//
+// Return Value:
+//    Whether the floating-point immediate can be synthesized with one instruction
+//
+static bool isSingleInstructionFpImm(double value, emitAttr size, int64_t* outBits)
+{
+    assert(size == EA_4BYTE || size == EA_8BYTE);
+    *outBits = (size == EA_4BYTE)
+                   ? (int32_t)BitOperations::SingleToUInt32Bits(FloatingPointUtils::convertToSingle(value))
+                   : (int64_t)BitOperations::DoubleToUInt64Bits(value);
+    return isValidSimm12(*outBits) || (((*outBits & 0xfff) == 0) && isValidSimm20(*outBits >> 12));
 }
 
 // Returns the number of bits used by the given 'size'.
