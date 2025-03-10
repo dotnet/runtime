@@ -3781,13 +3781,6 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
         {
             assert(sig->numArgs == 1);
 
-            if ((simdSize == 32) && !varTypeIsFloating(simdBaseType) &&
-                !compOpportunisticallyDependsOn(InstructionSet_AVX2))
-            {
-                // We can't deal with TYP_SIMD32 for integral types if the compiler doesn't support AVX2
-                break;
-            }
-
 #if defined(TARGET_X86)
             if (varTypeIsLong(simdBaseType) && !compOpportunisticallyDependsOn(InstructionSet_SSE41))
             {
