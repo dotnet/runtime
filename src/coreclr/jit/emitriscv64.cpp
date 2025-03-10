@@ -3479,7 +3479,7 @@ void emitter::emitDispImmediate(ssize_t imm, bool newLine /*= true*/, unsigned r
 {
     if (emitComp->opts.disDiffable && (regBase != REG_FP) && (regBase != REG_SP))
     {
-        printf("0xd1ffab1e");
+        printf("0xD1FFAB1E");
     }
     else
     {
