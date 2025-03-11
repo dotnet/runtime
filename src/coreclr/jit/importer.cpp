@@ -12552,9 +12552,7 @@ void Compiler::impImport()
 
     // If the method had EH, we may be missing some pred edges
     // (notably those from BBJ_EHFINALLYRET blocks). Add them.
-    // Only needed for the root method, since inlinees can't have EH.
     //
-    // TODO --------------- if haseh...
     if (info.compXcptnsCount > 0)
     {
         impFixPredLists();

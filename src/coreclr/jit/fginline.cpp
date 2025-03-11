@@ -1615,29 +1615,31 @@ void Compiler::fgInsertInlineeBlocks(InlineInfo* pInlineInfo)
                 //   inlinee eh0 -> eh1
                 //   inlinee eh1 -> eh2
                 //
-                //   root eh0 remains as is
+                //   root eh0 -> eh0
                 //
                 inlineeIndexShift = compHndBBtabCount;
                 insertBeforeIndex = compHndBBtabCount;
             }
             else
             {
-                // enclosingRegion is shifted up by one, eg EH#0 will report as 1..
-                //
-                //
                 // The call site is in an EH region, so we can put the inlinee EH clauses
                 // just before the enclosing region
                 //
+                // Note enclosingRegion is region index + 1. So EH#0 will be represented by 1 here.
+                //
                 // For example, if the enclosing EH regions are try#2 and hnd#3, and the inlinee has 2 eh clauses
                 //
-                //   enclosingRegion   will be 3
+                //   enclosingRegion   will be 3  (try2 + 1)
                 //   inlineeIndexShift will be 2
                 //   insertBeforeIndex will be 2
                 //
                 //   inlinee eh0 -> eh2
                 //   inlinee eh1 -> eh3
                 //
-                //   root eh2 -> eh4;
+                //   root eh0 -> eh0
+                //   root eh1 -> eh1
+                //
+                //   root eh2 -> eh4
                 //   root eh3 -> eh5
                 //
                 inlineeIndexShift = enclosingRegion - 1;
@@ -1939,9 +1941,6 @@ void Compiler::fgInsertInlineeBlocks(InlineInfo* pInlineInfo)
 
     // If the call site is not in a try and the callee has a throw,
     // we may introduce inconsistency.
-    //
-    // Technically we should check if the callee has a throw not in a try, but since
-    // we can't inline methods with EH yet we don't see those.
     //
     if (InlineeCompiler->fgThrowCount > 0)
     {

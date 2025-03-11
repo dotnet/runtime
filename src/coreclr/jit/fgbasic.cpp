@@ -3425,21 +3425,33 @@ void Compiler::fgFindBasicBlocks()
 
     unsigned XTnum;
 
-    /* Are there any exception handlers? */
-
+    // Are there any exception handlers?
+    //
     if (info.compXcptnsCount > 0)
     {
         assert(!compIsForInlining() || opts.compInlineMethodsWithEH);
 
-        /* Check and mark all the exception handlers */
+        if (compIsForInlining())
+        {
+            // Verify we can expand the EH table as needed to incorporate the callee's EH clauses.
+            // Failing here should be extremely rare.
+            //
+            EHblkDsc* const dsc = fgTryAddEHTableEntries(0, info.compXcptnsCount, /* deferAdding */ true);
+            if (dsc == nullptr)
+            {
+                compInlineResult->NoteFatal(InlineObservation::CALLSITE_EH_TABLE_FULL);
+            }
+        }
 
+        // Check and mark all the exception handlers
+        //
         for (XTnum = 0; XTnum < info.compXcptnsCount; XTnum++)
         {
             CORINFO_EH_CLAUSE clause;
             info.compCompHnd->getEHinfo(info.compMethodHnd, XTnum, &clause);
             noway_assert(clause.HandlerLength != (unsigned)-1);
 
-            // If we're inlining, and the inlinee hasa catch, we are currently
+            // If we're inlining, and the inlinee has a catch clause, we are currently
             // unable to convey the type of the catch properly, as it is represented
             // by a token. So, abandon inlining.
             //
