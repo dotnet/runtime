@@ -8378,7 +8378,7 @@ unsigned Lowering::TryReuseLocalForParameterAccess(const LIR::Use& use, const Lo
 
     LclVarDsc* destLclDsc = comp->lvaGetDesc(useNode->AsLclVarCommon());
 
-    if (destLclDsc->lvIsParamRegTarget)
+    if (destLclDsc->lvIsParam || destLclDsc->lvIsParamRegTarget)
     {
         return BAD_VAR_NUM;
     }
