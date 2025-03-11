@@ -262,8 +262,6 @@ try {
             const dumpVariables = myExportsEnv.EnvVariablesTest.DumpVariables;
             console.log("ready");
 
-            dotnet.run();
-
             const retVars = dumpVariables();
             document.getElementById("out").innerHTML = retVars;
             console.debug(`ret: ${retVars}`);
@@ -276,8 +274,6 @@ try {
             const testMeaning = myExports.LogProfilerTest.TestMeaning;
             const takeHeapshot = myExports.LogProfilerTest.TakeHeapshot;
             console.log("ready");
-
-            dotnet.run();
 
             const ret = testMeaning();
             document.getElementById("out").innerHTML = ret;
