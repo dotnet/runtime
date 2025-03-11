@@ -6184,7 +6184,7 @@ public:
 
     bool fgOptimizeSwitchBranches(BasicBlock* block);
 
-    bool fgOptimizeSwitchJumps();
+    void fgPeelSwitch(BasicBlock* block);
 #ifdef DEBUG
     void fgPrintEdgeWeights();
 #endif
