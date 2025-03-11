@@ -13594,6 +13594,7 @@ namespace System.Runtime.CompilerServices
         PreserveSig = 128,
         AggressiveInlining = 256,
         AggressiveOptimization = 512,
+        Async = 1024,
         InternalCall = 4096,
     }
     [System.AttributeUsageAttribute(System.AttributeTargets.Method, Inherited=false)]

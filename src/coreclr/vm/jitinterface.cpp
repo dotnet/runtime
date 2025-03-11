@@ -432,7 +432,7 @@ enum ConvToJitSigFlags : int
 // localSig     - Is it a local variables declaration, or a method signature (with return type, etc).
 // contextType  - The type with any instantiaton information
 //
-AsyncTaskMethod ClassifyAsyncMethodCore(SigPointer sig, Module* pModule, PCCOR_SIGNATURE initialSig, ULONG* offsetOfAsyncDetails, bool *isValueTask);
+AsyncMethodSignatureKind ClassifyAsyncMethodSignatureCore(SigPointer sig, Module* pModule, PCCOR_SIGNATURE initialSig, ULONG* offsetOfAsyncDetails, bool *isValueTask);
 
 static void ConvToJitSig(
     SigPointer            sig,
@@ -513,8 +513,8 @@ static void ConvToJitSig(
         sigRet->retType = CEEInfo::asCorInfoType(type, typeHnd, &sigRet->retTypeClass);
         sigRet->retTypeSigClass = CORINFO_CLASS_HANDLE(typeHnd.AsPtr());
 
-        auto asyncMethodClassification = ClassifyAsyncMethodCore(sig, module, NULL, NULL, NULL);
-        if (IsAsyncTaskMethodAsync2Method(asyncMethodClassification))
+        auto asyncMethodClassification = ClassifyAsyncMethodSignatureCore(sig, module, NULL, NULL, NULL);
+        if (IsAsyncSigAsync2(asyncMethodClassification))
         {
             sigRet->callConv = (CorInfoCallConv)(sigRet->callConv | CORINFO_CALLCONV_ASYNCCALL);
         }
@@ -3233,9 +3233,9 @@ NoSpecialCase:
 
                 methodFlags |= ENCODE_METHOD_SIG_SlotInsteadOfToken;
             }
-            if (pTemplateMD->IsAsyncHelperMethod())
+            if (pTemplateMD->IsAsync2VariantMethod())
             {
-                methodFlags |= ENCODE_METHOD_SIG_AsyncHelper;
+                methodFlags |= ENCODE_METHOD_SIG_Async2Variant;
             }
 
             sigBuilder.AppendData(methodFlags);

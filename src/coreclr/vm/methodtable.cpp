@@ -7779,7 +7779,7 @@ namespace
             MethodDesc* pMD = it.GetMethodDesc();
             if (pMD->GetMemberDef() == tkMethod
                 && pMD->GetModule() == mod
-                && pMD->IsAsyncHelperMethod() == pDefMD->IsAsyncHelperMethod())
+                && pMD->IsAsync2VariantMethod() == pDefMD->IsAsync2VariantMethod())
             {
                 return pMD;
             }
@@ -7810,11 +7810,11 @@ MethodDesc* MethodTable::GetParallelMethodDesc(MethodDesc* pDefMD, AsyncVariantL
     }
     else
     {
-        // Slow path for finding the asyncThunk (or not the AsyncThunk)
+        // Slow path for finding the Async2 variant (or not-Async2 variant, if we start from Async2 one)
         // This could be optimized with some trickery around slot numbers, but doing so is ... confusing, so I'm not implementing this yet
         mdMethodDef tkMethod = pDefMD->GetMemberDef();
         Module* mod = pDefMD->GetModule();
-        bool isAsyncHelperMethod = pDefMD->IsAsyncHelperMethod();
+        bool isAsync2VariantMethod = pDefMD->IsAsync2VariantMethod();
 
         MethodTable::IntroducedMethodIterator it(this);
         for (; it.IsValid(); it.Next())
@@ -7822,7 +7822,7 @@ MethodDesc* MethodTable::GetParallelMethodDesc(MethodDesc* pDefMD, AsyncVariantL
             MethodDesc* pMD = it.GetMethodDesc();
             if (pMD->GetMemberDef() == tkMethod
                 && pMD->GetModule() == mod
-                && pMD->IsAsyncHelperMethod() != isAsyncHelperMethod)
+                && pMD->IsAsync2VariantMethod() != isAsync2VariantMethod)
             {
                 return pMD;
             }
@@ -8211,7 +8211,7 @@ MethodTable::TryResolveVirtualStaticMethodOnThisType(MethodTable* pInterfaceType
         {
             if (pMethodDecl->GetMemberDef() == pInterfaceMD->GetMemberDef() && 
                 pMethodDecl->GetModule() == pInterfaceMD->GetModule() &&
-                pMethodDecl->IsAsyncHelperMethod() != pInterfaceMD->IsAsyncHelperMethod())
+                pMethodDecl->IsAsync2VariantMethod() != pInterfaceMD->IsAsync2VariantMethod())
             {
                 differsByAsyncVariant = true;
                 pMethodDecl = pMethodDecl->GetAsyncOtherVariant();

@@ -179,7 +179,7 @@ namespace System.Runtime.CompilerServices
 #if !NATIVEAOT
         [Intrinsic]
         [BypassReadyToRun]
-        [MethodImpl(MethodImplOptions.NoInlining | (MethodImplOptions)0x0400)]  // NoInlining | Async
+        [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.Async]
         public static void AwaitAwaiterFromRuntimeAsync<TAwaiter>(TAwaiter awaiter) where TAwaiter : INotifyCompletion
         {
             ref RuntimeAsyncAwaitState state = ref t_runtimeAsyncAwaitState;
@@ -195,7 +195,7 @@ namespace System.Runtime.CompilerServices
         // recognized as an async2 call.
         [Intrinsic]
         [BypassReadyToRun]
-        [MethodImpl(MethodImplOptions.NoInlining | (MethodImplOptions)0x0400)]  // NoInlining | Async
+        [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.Async]
         public static void UnsafeAwaitAwaiterFromRuntimeAsync<TAwaiter>(TAwaiter awaiter) where TAwaiter : ICriticalNotifyCompletion
         {
             ref RuntimeAsyncAwaitState state = ref t_runtimeAsyncAwaitState;
@@ -211,7 +211,7 @@ namespace System.Runtime.CompilerServices
         // recognized as an async2 call.
         [Intrinsic]
         [BypassReadyToRun]
-        [MethodImpl(MethodImplOptions.NoInlining | (MethodImplOptions)0x0400)]  // NoInlining | Async
+        [MethodImpl(MethodImplOptions.Async]
         public static T Await<T>(Task<T> task)
         {
             TaskAwaiter<T> awaiter = task.GetAwaiter();
@@ -227,7 +227,7 @@ namespace System.Runtime.CompilerServices
         // recognized as an async2 call.
         [Intrinsic]
         [BypassReadyToRun]
-        [MethodImpl(MethodImplOptions.NoInlining | (MethodImplOptions)0x0400)]  // NoInlining | Async
+        [MethodImpl(MethodImplOptions.Async]
         public static void Await(Task task)
         {
             TaskAwaiter awaiter = task.GetAwaiter();
@@ -243,7 +243,7 @@ namespace System.Runtime.CompilerServices
         // recognized as an async2 call.
         [Intrinsic]
         [BypassReadyToRun]
-        [MethodImpl(MethodImplOptions.NoInlining | (MethodImplOptions)0x0400)]  // NoInlining | Async
+        [MethodImpl(MethodImplOptions.Async]
         public static T Await<T>(ValueTask<T> task)
         {
             ValueTaskAwaiter<T> awaiter = task.GetAwaiter();
@@ -259,7 +259,7 @@ namespace System.Runtime.CompilerServices
         // recognized as an async2 call.
         [Intrinsic]
         [BypassReadyToRun]
-        [MethodImpl(MethodImplOptions.NoInlining | (MethodImplOptions)0x0400)]  // NoInlining | Async
+        [MethodImpl(MethodImplOptions.Async]
         public static void Await(ValueTask task)
         {
             ValueTaskAwaiter awaiter = task.GetAwaiter();

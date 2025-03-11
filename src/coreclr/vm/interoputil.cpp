@@ -2280,7 +2280,7 @@ ULONG GetStringizedClassItfDef(TypeHandle InterfaceType, CQuickArray<BYTE> &rDef
                 {
                     pDeclaringMT = pProps->pMeth->GetMethodTable();
                     tkMb = pProps->pMeth->GetMemberDef();
-                    if (pProps->pMeth->IsAsyncHelperMethod())
+                    if (pProps->pMeth->IsAsync2Method())
                     {
                         ThrowHR(COR_E_NOTSUPPORTED);
                     }
@@ -2494,7 +2494,7 @@ BOOL IsMethodVisibleFromCom(MethodDesc *pMD)
     mdProperty  pd;
     LPCUTF8     pPropName;
     ULONG       uSemantic;
-    if (pMD->IsAsyncHelperMethod())
+    if (pMD->IsAsync2Method())
         return false;
         
     mdMethodDef md = pMD->GetMemberDef();

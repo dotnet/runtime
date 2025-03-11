@@ -921,7 +921,7 @@ MethodDesc *ZapSig::DecodeMethod(ModuleBase *pInfoModule,
     // in non-generic structs.
     BOOL isInstantiatingStub = (methodFlags & ENCODE_METHOD_SIG_InstantiatingStub);
     BOOL isUnboxingStub = (methodFlags & ENCODE_METHOD_SIG_UnboxingStub);
-    bool isAsyncHelper = (methodFlags & ENCODE_METHOD_SIG_AsyncHelper) != 0;
+    bool isAsync2Variant = (methodFlags & ENCODE_METHOD_SIG_Async2Variant) != 0;
 
     pMethod = MethodDesc::FindOrCreateAssociatedMethodDesc(pMethod, thOwner.GetMethodTable(),
                                                             isUnboxingStub,
@@ -929,7 +929,7 @@ MethodDesc *ZapSig::DecodeMethod(ModuleBase *pInfoModule,
                                                             !(isInstantiatingStub || isUnboxingStub) && !actualOwnerRequired,
                                                             actualOwnerRequired,
                                                             TRUE,
-                                                            isAsyncHelper == pMethod->IsAsyncHelperMethod() ? AsyncVariantLookup::MatchingAsyncVariant : AsyncVariantLookup::AsyncOtherVariant);
+                                                            isAsync2Variant == pMethod->IsAsync2VariantMethod() ? AsyncVariantLookup::MatchingAsyncVariant : AsyncVariantLookup::AsyncOtherVariant);
 
     if (methodFlags & ENCODE_METHOD_SIG_Constrained)
     {
@@ -1219,8 +1219,8 @@ BOOL ZapSig::EncodeMethod(
         methodFlags |= ENCODE_METHOD_SIG_InstantiatingStub;
     if (fMethodNeedsInstantiation)
         methodFlags |= ENCODE_METHOD_SIG_MethodInstantiation;
-    if (pMethod->IsAsyncHelperMethod())
-        methodFlags |= ENCODE_METHOD_SIG_AsyncHelper;
+    if (pMethod->IsAsync2VariantMethod())
+        methodFlags |= ENCODE_METHOD_SIG_Async2Variant;
 
     // Assume that the owner type is going to be needed
     methodFlags |= ENCODE_METHOD_SIG_OwnerType;

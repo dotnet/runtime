@@ -105,7 +105,7 @@ StubSigDesc::StubSigDesc(MethodDesc *pMD)
     m_sig           = pMD->GetSignature();
     m_pModule       = pMD->GetModule();         // Used for token resolution.
 
-    _ASSERTE(!pMD->IsAsyncHelperMethod());
+    _ASSERTE(!pMD->IsAsync2Method());
 
     m_tkMethodDef = pMD->GetMemberDef();
     SigTypeContext::InitTypeContext(pMD, &m_typeContext);
@@ -134,7 +134,7 @@ StubSigDesc::StubSigDesc(MethodDesc* pMD, const Signature& sig, Module* pModule,
 
     if (pMD != NULL)
     {
-        _ASSERTE(!pMD->IsAsyncHelperMethod());
+        _ASSERTE(!pMD->IsAsync2Method());
         m_tkMethodDef = pMD->GetMemberDef();
         SigTypeContext::InitTypeContext(pMD, &m_typeContext);
         m_pMetadataModule = pMD->GetModule();
@@ -1090,7 +1090,7 @@ public:
         DWORD dwToken = 0;
         if (pTargetMD)
         {
-            _ASSERTE(!pTargetMD->IsAsyncHelperMethod());
+            _ASSERTE(!pTargetMD->IsAsync2VariantMethod());
             dwToken = pTargetMD->GetMemberDef();
         }
 
@@ -2716,7 +2716,7 @@ void PInvokeStaticSigInfo::DllImportInit(
     IMDInternalImport  *pInternalImport = pMD->GetMDImport();
     CorPinvokeMap mappingFlags = pmMaxValue;
     mdModuleRef modref = mdModuleRefNil;
-    if (pMD->IsAsyncHelperMethod())
+    if (pMD->IsAsync2Method())
     {
         ThrowHR(COR_E_NOTSUPPORTED);
     }
@@ -2997,7 +2997,7 @@ namespace
         CorInfoCallConvExtension callConvLocal;
         IMDInternalImport* pInternalImport = pMD->GetMDImport();
         CorPinvokeMap mappingFlags = pmMaxValue;
-        if (pMD->IsAsyncHelperMethod())
+        if (pMD->IsAsync2Method())
         {
             ThrowHR(COR_E_NOTSUPPORTED);
         }
@@ -3261,7 +3261,7 @@ BOOL NDirect::MarshalingRequired(
     mdMethodDef methodToken = mdMethodDefNil;
     if (pMD != NULL)
     {
-        if (pMD->IsAsyncHelperMethod())
+        if (pMD->IsAsync2Method())
         {
             ThrowHR(COR_E_NOTSUPPORTED);
         }
@@ -6059,7 +6059,7 @@ PCODE GetILStubForCalli(VASigCookie *pVASigCookie, MethodDesc *pMD)
     {
         PInvokeStaticSigInfo sigInfo(pMD);
 
-        if (pMD->IsAsyncHelperMethod())
+        if (pMD->IsAsync2Method())
         {
             ThrowHR(COR_E_NOTSUPPORTED);
         }

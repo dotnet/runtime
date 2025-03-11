@@ -735,7 +735,7 @@ namespace
         // For async method the methoddef represents a thunk with runtime-provided implementation,
         // while the default IL logically belongs to the implementation method desc.
         // If config returned no IL for an implementation method desc, then ask the method desc itself.
-        if (ilHeader == NULL && pMD->IsAsyncHelperMethod() && !pMD->IsAsyncThunkMethod())
+        if (ilHeader == NULL && pMD->IsAsync2VariantMethod() && !pMD->IsAsyncThunkMethod())
         {
             ilHeader = pMD->GetILHeader();
         }
@@ -2807,7 +2807,7 @@ PrepareCodeConfigBuffer::PrepareCodeConfigBuffer(NativeCodeVersion codeVersion)
 
 // CreateDerivedTargetSigWithExtraParams:
 // This method is used to create the signature of the target of the ILStub for
-// instantiating, unboxing, and async helper stubs, when/where we need to
+// instantiating, unboxing, and async variant stubs, when/where we need to
 // introduce a generic context/async continuation.
 // And since the generic context/async continuations are hidden parameters,
 // we're creating a signature that looks like non-generic but with additional

@@ -673,7 +673,7 @@ private:
 
         //-----------------------------------------------------------------------------------------
         // This constructor can be used with hard-coded signatures that are used for
-        // representing async helper methods
+        // representing async2 variant methods
         MethodSignature(
             Module *             pModule,
             mdToken              tok,
@@ -1062,8 +1062,8 @@ private:
 
         bool IsAsyncThunk() const
         {
-            return GetAsyncMethodKind() == AsyncMethodKind::AsyncThunkHelper ||
-                GetAsyncMethodKind() == AsyncMethodKind::AsyncImplHelper;
+            return GetAsyncMethodKind() == AsyncMethodKind::Async2VariantThunk ||
+                GetAsyncMethodKind() == AsyncMethodKind::Async2VariantImpl;
         }
 
         bool IsAsync2() const

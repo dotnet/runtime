@@ -110,7 +110,7 @@ public:
                                BOOL unboxingStub,
                                Instantiation inst,
                                BOOL getSharedNotStub,
-                               bool isAsyncHelper);
+                               bool isAsync2Variant);
 
     BOOL ContainsMethodDesc(MethodDesc* pMD);
 

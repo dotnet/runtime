@@ -230,7 +230,7 @@ I4ARRAYREF SetUpWrapperInfo(MethodDesc *pMD)
 
         GCX_PREEMP();
 
-        if (pMD->IsAsyncHelperMethod())
+        if (pMD->IsAsync2Method())
         {
             ThrowHR(COR_E_NOTSUPPORTED);
         }
@@ -509,7 +509,7 @@ UINT32 CLRToCOMLateBoundWorker(
     LPCUTF8 strMemberName;
     ULONG uSemantic;
 
-    if (pItfMD->IsAsyncHelperMethod())
+    if (pItfMD->IsAsync2Method())
     {
         ThrowHR(COR_E_NOTSUPPORTED);
     }

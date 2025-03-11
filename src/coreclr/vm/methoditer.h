@@ -34,7 +34,7 @@ class LoadedMethodDescIterator
     mdMethodDef  m_md;
     MethodDesc * m_mainMD;
     AppDomain *  m_pAppDomain;
-    bool         m_fIsAsyncThunk;
+    bool         m_fIsAsync2Variant;
 
 
     // The following hold the state of the iteration....
@@ -70,7 +70,7 @@ public:
     void Start(AppDomain * pAppDomain,
                Module *pModule,
                mdMethodDef md,
-               bool fIsAsyncThunk,
+               bool fIsAsync2Variant,
                AssemblyIterationFlags assemIterationFlags = (AssemblyIterationFlags)(kIncludeLoaded | kIncludeExecution));
     void Start(AppDomain * pAppDomain, Module *pModule, mdMethodDef md, MethodDesc *pDesc);
 
@@ -78,7 +78,7 @@ public:
         AppDomain * pAppDomain,
         Module *pModule,
         mdMethodDef md,
-        bool fIsAsyncThunk,
+        bool fIsAsync2Variant,
         AssemblyIterationFlags assemblyIterationFlags = (AssemblyIterationFlags)(kIncludeLoaded | kIncludeExecution))
     {
         LIMITED_METHOD_CONTRACT;
