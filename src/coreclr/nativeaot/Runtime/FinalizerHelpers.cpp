@@ -29,6 +29,10 @@ CLREventStatic g_FinalizerDoneEvent;
 
 static HANDLE g_lowMemoryNotification = NULL;
 
+#ifdef TARGET_WINDOWS
+static bool g_FlsInitSucceeded = false;
+#endif
+
 EXTERN_C void QCALLTYPE ProcessFinalizers();
 
 // Unmanaged front-end to the finalizer thread. We require this because at the point when this thread is
@@ -38,7 +42,7 @@ EXTERN_C void QCALLTYPE ProcessFinalizers();
 uint32_t WINAPI FinalizerStart(void* pContext)
 {
 #ifdef TARGET_WINDOWS
-    PalInitComAndFlsSlot();
+    g_FlsInitSucceeded = PalInitComAndFlsSlot();
     // handshake with EE initialization, as now we can attach Thread objects to native threads.
     UInt32_BOOL res = PalSetEvent(g_FinalizerDoneEvent.GetOSEvent());
     ASSERT(res);
@@ -94,10 +98,11 @@ bool RhInitializeFinalization()
 }
 
 #ifdef TARGET_WINDOWS
-void RhWaitForFinalizerThreadStart()
+bool RhWaitForFinalizerThreadStart()
 {
     g_FinalizerDoneEvent.Wait(INFINITE,FALSE);
     g_FinalizerDoneEvent.Reset();
+    return g_FlsInitSucceeded;
 }
 #endif
 

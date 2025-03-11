@@ -44,7 +44,7 @@ GPTR_IMPL(Thread, g_pFinalizerThread);
 
 bool RhInitializeFinalization();
 #ifdef TARGET_WINDOWS
-void RhWaitForFinalizerThreadStart();
+bool RhWaitForFinalizerThreadStart();
 #endif
 
 // Perform any runtime-startup initialization needed by the GC, HandleTable or environmental code in gcenv.ee.
@@ -93,7 +93,8 @@ bool InitializeGC()
     // By now finalizer thread should have initialized FLS slot for thread cleanup notifications.
     // And ensured that COM is initialized (must happen before allocating FLS slot).
     // Make sure that this was done.
-    RhWaitForFinalizerThreadStart();
+    if (!RhWaitForFinalizerThreadStart())
+        return false;
 #endif
     return true;
 }

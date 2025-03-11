@@ -295,7 +295,7 @@ typedef uint32_t (__stdcall *BackgroundCallback)(_In_opt_ void* pCallbackContext
 REDHAWK_PALIMPORT bool REDHAWK_PALAPI PalSetCurrentThreadName(const char* name);
 #ifdef TARGET_WINDOWS
 REDHAWK_PALIMPORT bool REDHAWK_PALAPI PalSetCurrentThreadNameW(const WCHAR* name);
-REDHAWK_PALIMPORT void REDHAWK_PALAPI PalInitComAndFlsSlot();
+REDHAWK_PALIMPORT bool REDHAWK_PALAPI PalInitComAndFlsSlot();
 #endif
 REDHAWK_PALIMPORT bool REDHAWK_PALAPI PalStartBackgroundGCThread(_In_ BackgroundCallback callback, _In_opt_ void* pCallbackContext);
 REDHAWK_PALIMPORT bool REDHAWK_PALAPI PalStartFinalizerThread(_In_ BackgroundCallback callback, _In_opt_ void* pCallbackContext);

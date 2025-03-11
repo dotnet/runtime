@@ -60,8 +60,10 @@ void __stdcall FiberDetachCallback(void* lpFlsData)
     RuntimeThreadShutdown(lpFlsData);
 }
 
-REDHAWK_PALEXPORT void REDHAWK_PALAPI PalInitComAndFlsSlot()
+REDHAWK_PALEXPORT bool REDHAWK_PALAPI PalInitComAndFlsSlot()
 {
+    ASSERT(g_flsIndex == FLS_OUT_OF_INDEXES);
+
     // Making finalizer thread MTA early ensures that COM is initialized before we initialize our thread
     // termination callback.
     CoInitializeEx(NULL, COINIT_MULTITHREADED);
@@ -69,11 +71,7 @@ REDHAWK_PALEXPORT void REDHAWK_PALAPI PalInitComAndFlsSlot()
     // We use fiber detach callbacks to run our thread shutdown code because the fiber detach
     // callback is made without the OS loader lock
     g_flsIndex = FlsAlloc(FiberDetachCallback);
-    if (g_flsIndex == FLS_OUT_OF_INDEXES)
-    {
-        ASSERT_UNCONDITIONALLY("Could not allocate an FLS slot.");
-        RhFailFast();
-    }
+    return g_flsIndex != FLS_OUT_OF_INDEXES;
 }
 
 // Register the thread with OS to be notified when thread is about to be destroyed
