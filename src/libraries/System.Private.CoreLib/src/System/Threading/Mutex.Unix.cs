@@ -20,21 +20,7 @@ namespace System.Threading
         {
             if (!string.IsNullOrEmpty(name))
             {
-                if (options.WasSpecified)
-                {
-                    name = options.GetNameWithSessionPrefix(name);
-                }
-
-                if (name.StartsWith(NamedWaitHandleOptionsInternal.CurrentSessionPrefix) &&
-                    name.Length > NamedWaitHandleOptionsInternal.CurrentSessionPrefix.Length)
-                {
-                    name = name.Substring(NamedWaitHandleOptionsInternal.CurrentSessionPrefix.Length);
-                }
-
-                if (options.WasSpecified && options.CurrentUserOnly)
-                {
-                    name = @"User\" + name;
-                }
+                name = BuildNameForOptions(name, options);
 
                 SafeWaitHandle? safeWaitHandle = WaitSubsystem.CreateNamedMutex(initiallyOwned, name, out createdNew);
                 if (safeWaitHandle == null)
@@ -56,6 +42,15 @@ namespace System.Threading
         {
             ArgumentException.ThrowIfNullOrEmpty(name);
 
+            name = BuildNameForOptions(name, options);
+
+            OpenExistingResult status = WaitSubsystem.OpenNamedMutex(name, out SafeWaitHandle? safeWaitHandle);
+            result = status == OpenExistingResult.Success ? new Mutex(safeWaitHandle!) : null;
+            return status;
+        }
+
+        private static string BuildNameForOptions(string name, NamedWaitHandleOptionsInternal options)
+        {
             if (options.WasSpecified)
             {
                 name = options.GetNameWithSessionPrefix(name);
@@ -72,9 +67,7 @@ namespace System.Threading
                 name = @"User\" + name;
             }
 
-            OpenExistingResult status = WaitSubsystem.OpenNamedMutex(name, out SafeWaitHandle? safeWaitHandle);
-            result = status == OpenExistingResult.Success ? new Mutex(safeWaitHandle!) : null;
-            return status;
+            return name;
         }
 
         public void ReleaseMutex()
