@@ -7132,6 +7132,7 @@ ExceptionSetFlags GenTree::OperExceptions(Compiler* comp)
                 flags |= ExceptionSetFlags::NullReferenceException;
             }
 
+#ifdef TARGET_XARCH
             NamedIntrinsic intrinsicId = hwIntrinsicNode->GetHWIntrinsicId();
             if ((intrinsicId == NI_Vector128_op_Division) || (intrinsicId == NI_Vector256_op_Division) ||
                 (intrinsicId == NI_Vector512_op_Division))
@@ -7141,6 +7142,7 @@ ExceptionSetFlags GenTree::OperExceptions(Compiler* comp)
                 assert(varTypeIsInt(AsHWIntrinsic()->GetSimdBaseType()));
                 flags |= ExceptionSetFlags::OverflowException | ExceptionSetFlags::DivideByZeroException;
             }
+#endif
 
             return flags;
         }
