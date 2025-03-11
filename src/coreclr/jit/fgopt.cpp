@@ -3283,13 +3283,6 @@ bool Compiler::fgReorderBlocks(bool useProfile)
     // First let us expand the set of run rarely blocks
     newRarelyRun |= fgExpandRarelyRunBlocks();
 
-#if defined(FEATURE_EH_WINDOWS_X86)
-    if (!UsesFunclets())
-    {
-        movedBlocks |= fgRelocateEHRegions();
-    }
-#endif // FEATURE_EH_WINDOWS_X86
-
     if (useProfile)
     {
         // Don't run the new layout until we get to the backend,
