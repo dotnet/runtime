@@ -18,7 +18,6 @@ namespace Microsoft.Extensions.Options
         /// <param name="action">The action to register.</param>
         public PostConfigureOptions(string? name, Action<TOptions>? action)
         {
-            // test
             Name = name;
             Action = action;
         }
