@@ -3491,7 +3491,7 @@ void CodeGen::genCodeForNegNot(GenTree* tree)
 
     GenTree* operand = tree->gtGetOp1();
     // The src must be a register.
-    if (tree->OperIs(GT_NEG, GT_NOT) && operand->isContained())
+    if (tree->OperIs(GT_NEG, GT_NOT) && operand->isContained() && ((tree->gtFlags & GTF_SET_FLAGS) == 0))
     {
         genTreeOps oper = operand->OperGet();
         switch (oper)
