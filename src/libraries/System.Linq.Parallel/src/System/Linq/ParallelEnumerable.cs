@@ -4964,18 +4964,17 @@ namespace System.Linq
             // comparer may be null. In that case, the Dictionary constructor will use the default comparer.
             Dictionary<TKey, TSource> result = new Dictionary<TKey, TSource>(comparer);
 
-            QueryOperator<TSource>? op = source as QueryOperator<TSource>;
-            IEnumerator<TSource> input = (op == null) ? source.GetEnumerator() : op.GetEnumerator(ParallelMergeOptions.FullyBuffered, true);
+            ParallelQuery<KeyValuePair<TKey, TSource>> keyValuePairs = source.Select(item => KeyValuePair.Create(keySelector(item), item));
+            Debug.Assert(keyValuePairs is QueryOperator<KeyValuePair<TKey, TSource>>);
+            IEnumerator<KeyValuePair<TKey, TSource>> input = ((QueryOperator<KeyValuePair<TKey, TSource>>)keyValuePairs).GetEnumerator(ParallelMergeOptions.FullyBuffered, true);
 
             using (input)
             {
                 while (input.MoveNext())
                 {
-                    TKey key;
-                    TSource val = input.Current;
+                    var (key, val) = input.Current;
                     try
                     {
-                        key = keySelector(val);
                         result.Add(key, val);
                     }
                     catch (Exception ex)
@@ -5062,18 +5061,19 @@ namespace System.Linq
             // comparer may be null. In that case, the Dictionary constructor will use the default comparer.
             Dictionary<TKey, TElement> result = new Dictionary<TKey, TElement>(comparer);
 
-            QueryOperator<TSource>? op = source as QueryOperator<TSource>;
-            IEnumerator<TSource> input = (op == null) ? source.GetEnumerator() : op.GetEnumerator(ParallelMergeOptions.FullyBuffered, true);
+            ParallelQuery<KeyValuePair<TKey, TElement>> keyValuePairs = source.Select(item => KeyValuePair.Create(keySelector(item), elementSelector(item)));
+            Debug.Assert(keyValuePairs is QueryOperator<KeyValuePair<TKey, TElement>>);
+            IEnumerator<KeyValuePair<TKey, TElement>> input = ((QueryOperator<KeyValuePair<TKey, TElement>>)keyValuePairs).GetEnumerator(ParallelMergeOptions.FullyBuffered, true);
 
             using (input)
             {
                 while (input.MoveNext())
                 {
-                    TSource src = input.Current;
+                    var (key, val) = input.Current;
 
                     try
                     {
-                        result.Add(keySelector(src), elementSelector(src));
+                        result.Add(key, val);
                     }
                     catch (Exception ex)
                     {
