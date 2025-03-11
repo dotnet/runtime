@@ -25,6 +25,8 @@
     <!-- Set the TargetRid property to our PackageRID, which is the right RID to use for selecting packages from our repo. -->
     <TargetRid>$(PackageRID)</TargetRid>
 
+    <!-- The final stage of the runtime official build should publish everything. -->
+    <EnableDefaultRidSpecificArtifacts Condition="'$(DotNetFinalPublish)' != ''">false</EnableDefaultRidSpecificArtifacts>
     <EnableDefaultRidSpecificArtifacts Condition="'$(EnableDefaultRidSpecificArtifacts)' == ''">true</EnableDefaultRidSpecificArtifacts>
 
     <UseDotNetCertificate>true</UseDotNetCertificate>

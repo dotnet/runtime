@@ -44,7 +44,10 @@ switch (testCase) {
         }
         break;
     case "AppSettingsTest":
-        dotnet.withApplicationEnvironment(params.get("applicationEnvironment"));
+        const applicationEnvironment = params.get("applicationEnvironment");
+        if (applicationEnvironment) {
+            dotnet.withApplicationEnvironment(applicationEnvironment);
+        }
         break;
     case "LazyLoadingTest":
         dotnet.withDiagnosticTracing(true);
