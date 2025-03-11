@@ -417,7 +417,7 @@ public class WasmAppBuilder : WasmAppBuilderBaseTask
         {
             bootConfig.environmentVariables ??= new();
             string name = env.ItemSpec;
-            bootConfig.environmentVariables.Add(name, env.GetMetadata("Value"));
+            bootConfig.environmentVariables[name] = env.GetMetadata("Value");
         }
 
         if (extraConfiguration.Count > 0)

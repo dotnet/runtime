@@ -160,6 +160,9 @@ switch (testCase) {
             }
         })
         break;
+    case "EnvVariablesTest":
+        dotnet.withEnvironmentVariable("foo", "bar");
+        break;
     case "BrowserProfilerTest":
         break;
     case "OverrideBootConfigName":
@@ -249,6 +252,20 @@ try {
             });
             exports.MemoryTest.Run();
             exit(0);
+            break;
+        case "EnvVariablesTest":
+            console.log("not ready yet")
+            const myExportsEnv = await getAssemblyExports(config.mainAssemblyName);
+            const dumpVariables = myExportsEnv.EnvVariablesTest.DumpVariables;
+            console.log("ready");
+
+            dotnet.run();
+
+            const retVars = dumpVariables();
+            document.getElementById("out").innerHTML = retVars;
+            console.debug(`ret: ${retVars}`);
+
+            exit(retVars == 42 ? 0 : 1);
             break;
         case "LogProfilerTest":
             console.log("not ready yet")
