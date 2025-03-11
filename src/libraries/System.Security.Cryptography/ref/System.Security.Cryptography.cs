@@ -2743,6 +2743,8 @@ namespace System.Security.Cryptography
         public int GetCiphertextLengthCbc(int plaintextLength, System.Security.Cryptography.PaddingMode paddingMode = System.Security.Cryptography.PaddingMode.PKCS7) { throw null; }
         public int GetCiphertextLengthCfb(int plaintextLength, System.Security.Cryptography.PaddingMode paddingMode = System.Security.Cryptography.PaddingMode.None, int feedbackSizeInBits = 8) { throw null; }
         public int GetCiphertextLengthEcb(int plaintextLength, System.Security.Cryptography.PaddingMode paddingMode) { throw null; }
+        public void SetKey(System.ReadOnlySpan<byte> key) { }
+        protected virtual void SetKeyCore(System.ReadOnlySpan<byte> key) { }
         public bool TryDecryptCbc(System.ReadOnlySpan<byte> ciphertext, System.ReadOnlySpan<byte> iv, System.Span<byte> destination, out int bytesWritten, System.Security.Cryptography.PaddingMode paddingMode = System.Security.Cryptography.PaddingMode.PKCS7) { throw null; }
         protected virtual bool TryDecryptCbcCore(System.ReadOnlySpan<byte> ciphertext, System.ReadOnlySpan<byte> iv, System.Span<byte> destination, System.Security.Cryptography.PaddingMode paddingMode, out int bytesWritten) { throw null; }
         public bool TryDecryptCfb(System.ReadOnlySpan<byte> ciphertext, System.ReadOnlySpan<byte> iv, System.Span<byte> destination, out int bytesWritten, System.Security.Cryptography.PaddingMode paddingMode = System.Security.Cryptography.PaddingMode.None, int feedbackSizeInBits = 8) { throw null; }
@@ -2906,6 +2908,12 @@ namespace System.Security.Cryptography.X509Certificates
         MaxAllowed = 2,
         OpenExistingOnly = 4,
         IncludeArchived = 8,
+    }
+    public enum Pkcs12ExportPbeParameters
+    {
+        Default = 0,
+        Pkcs12TripleDesSha1 = 1,
+        Pbes2Aes256Sha256 = 2,
     }
     public sealed partial class Pkcs12LoaderLimits
     {
@@ -3143,6 +3151,8 @@ namespace System.Security.Cryptography.X509Certificates
         [System.CLSCompliantAttribute(false)]
         public virtual byte[] Export(System.Security.Cryptography.X509Certificates.X509ContentType contentType, System.Security.SecureString? password) { throw null; }
         public virtual byte[] Export(System.Security.Cryptography.X509Certificates.X509ContentType contentType, string? password) { throw null; }
+        public byte[] ExportPkcs12(System.Security.Cryptography.PbeParameters exportParameters, string? password) { throw null; }
+        public byte[] ExportPkcs12(System.Security.Cryptography.X509Certificates.Pkcs12ExportPbeParameters exportParameters, string? password) { throw null; }
         protected static string FormatDate(System.DateTime date) { throw null; }
         public virtual byte[] GetCertHash() { throw null; }
         public virtual byte[] GetCertHash(System.Security.Cryptography.HashAlgorithmName hashAlgorithm) { throw null; }
@@ -3314,6 +3324,8 @@ namespace System.Security.Cryptography.X509Certificates
         public byte[]? Export(System.Security.Cryptography.X509Certificates.X509ContentType contentType) { throw null; }
         public byte[]? Export(System.Security.Cryptography.X509Certificates.X509ContentType contentType, string? password) { throw null; }
         public string ExportCertificatePems() { throw null; }
+        public byte[] ExportPkcs12(System.Security.Cryptography.PbeParameters exportParameters, string? password) { throw null; }
+        public byte[] ExportPkcs12(System.Security.Cryptography.X509Certificates.Pkcs12ExportPbeParameters exportParameters, string? password) { throw null; }
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("ios")]
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("tvos")]
         public string ExportPkcs7Pem() { throw null; }

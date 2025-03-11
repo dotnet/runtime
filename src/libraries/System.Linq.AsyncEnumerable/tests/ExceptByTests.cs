@@ -22,6 +22,13 @@ namespace System.Linq.Tests
             AssertExtensions.Throws<ArgumentNullException>("keySelector", () => AsyncEnumerable.ExceptBy(AsyncEnumerable.Empty<string>(), AsyncEnumerable.Empty<int>(), (Func<string, CancellationToken, ValueTask<int>>)null));
         }
 
+        [Fact]
+        public void Empty_ProducesEmpty() // validating an optimization / implementation detail
+        {
+            Assert.Same(AsyncEnumerable.Empty<int>(), AsyncEnumerable.Empty<int>().ExceptBy(CreateSource(1, 2, 3), i => i));
+            Assert.Same(AsyncEnumerable.Empty<int>(), AsyncEnumerable.Empty<int>().ExceptBy(CreateSource(1, 2, 3), async (i, ct) => i));
+        }
+
 #if NET
         [Theory]
         [InlineData(new int[0], new int[0])]

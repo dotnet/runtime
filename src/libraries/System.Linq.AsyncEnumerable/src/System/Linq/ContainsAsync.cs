@@ -16,7 +16,7 @@ namespace System.Linq
         /// <param name="value">The value to locate in the sequence.</param>
         /// <param name="comparer">An equality comparer to compare values.</param>
         /// <param name="cancellationToken">The <see cref="CancellationToken"/> to monitor for cancellation requests. The default is <see cref="CancellationToken.None"/>.</param>
-        /// <returns>true if the source sequence contains an element that has the specified value; otherwise, false.</returns>
+        /// <returns><see langword="true"/> if the source sequence contains an element that has the specified value; otherwise, <see langword="false"/>.</returns>
         /// <exception cref="ArgumentNullException"><paramref name="source"/> is <see langword="null"/>.</exception>
         public static ValueTask<bool> ContainsAsync<TSource>(
             this IAsyncEnumerable<TSource> source,

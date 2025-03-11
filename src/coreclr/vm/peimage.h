@@ -138,6 +138,7 @@ public:
 
     BOOL IsFile();
     BOOL IsInBundle() const;
+    void* GetExternalData(INT64* size);
     INT64 GetOffset() const;
     INT64 GetSize() const;
     INT64 GetUncompressedSize() const;
@@ -237,7 +238,6 @@ public:
         Crst            m_lock;
         void*           m_base;
         DWORD           m_flags;
-        PTR_LoaderHeap  m_DllThunkHeap;
 
         // the fixup for the next iteration in FixupVTables
         // we use it to make sure that we do not try to fix up the same entry twice
@@ -251,19 +251,15 @@ public:
 
     public:
         IJWFixupData(void* pBase);
-        ~IJWFixupData();
         void* GetBase() { LIMITED_METHOD_CONTRACT; return m_base; }
         Crst* GetLock() { LIMITED_METHOD_CONTRACT; return &m_lock; }
         BOOL IsFixedUp() { LIMITED_METHOD_CONTRACT; return m_flags & e_FIXED_UP; }
         void SetIsFixedUp() { LIMITED_METHOD_CONTRACT; m_flags |= e_FIXED_UP; }
-        PTR_LoaderHeap  GetThunkHeap();
         void MarkMethodFixedUp(COUNT_T iFixup, COUNT_T iMethod);
         BOOL IsMethodFixedUp(COUNT_T iFixup, COUNT_T iMethod);
     };
 
     static IJWFixupData* GetIJWData(void* pBase);
-    static PTR_LoaderHeap GetDllThunkHeap(void* pBase);
-    static void UnloadIJWModule(void* pBase);
 
 private:
 

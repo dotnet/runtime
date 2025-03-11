@@ -29,7 +29,7 @@ if(CORECLR_SET_RPATH)
     set(MACOSX_RPATH ON)
 endif(CORECLR_SET_RPATH)
 
-if(CLR_CMAKE_HOST_MACCATALYST OR CLR_CMAKE_HOST_IOS OR CLR_CMAKE_HOST_TVOS)
+if(CLR_CMAKE_HOST_MACCATALYST OR CLR_CMAKE_HOST_IOS OR CLR_CMAKE_HOST_TVOS OR CLR_CMAKE_HOST_BROWSER)
   set(FEATURE_STANDALONE_GC 0)
 endif()
 
@@ -148,8 +148,9 @@ endif()
 include_directories("pal/prebuilt/inc")
 include_directories(${CLR_ARTIFACTS_OBJ_DIR})
 
-add_subdirectory(tools/aot/jitinterface)
-
+if (NOT CLR_CMAKE_TARGET_BROWSER)
+  add_subdirectory(tools/aot/jitinterface)
+endif (NOT CLR_CMAKE_TARGET_BROWSER)
 
 if(NOT CLR_CROSS_COMPONENTS_BUILD)
   # NativeAOT only buildable for a subset of CoreCLR-supported configurations
@@ -171,6 +172,10 @@ endif(CLR_CMAKE_HOST_WIN32)
 #  - all clr specific feature variable should also be added in this file
 #----------------------------------
 include(clrdefinitions.cmake)
+
+if(FEATURE_STANDALONE_GC)
+  add_definitions(-DFEATURE_STANDALONE_GC)
+endif(FEATURE_STANDALONE_GC)
 
 add_subdirectory(gc)
 
@@ -194,6 +199,8 @@ include_directories("${GENERATED_INCLUDE_DIR}")
 include_directories("hosts/inc")
 include_directories("minipal")
 
+add_subdirectory(interpreter)
+
 if(CLR_CMAKE_TARGET_WIN32 AND FEATURE_EVENT_TRACE)
     include_directories("${GENERATED_INCLUDE_DIR}/etw")
 endif(CLR_CMAKE_TARGET_WIN32 AND FEATURE_EVENT_TRACE)
@@ -215,7 +222,13 @@ if(CLR_CMAKE_HOST_UNIX)
 
   set (NATIVE_RESOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/nativeresources)
   include_directories(${NATIVE_RESOURCE_DIR})
-  set (PROCESS_RC_SCRIPT ${NATIVE_RESOURCE_DIR}/processrc.sh)
+
+  # Win32 may be false when cross compiling
+  if (CMAKE_HOST_SYSTEM_NAME STREQUAL "Windows")
+    set (PROCESS_RC_SCRIPT ${NATIVE_RESOURCE_DIR}/processrc.ps1)
+  else()
+    set (PROCESS_RC_SCRIPT ${NATIVE_RESOURCE_DIR}/processrc.sh)
+  endif()
   set (RESOURCE_STRING_HEADER_DIR ${NATIVE_RESOURCE_DIR})
 
   # Create a command to create a C++ source file containing an array of
@@ -230,22 +243,31 @@ if(CLR_CMAKE_HOST_UNIX)
 
     set(RESOURCE_ENTRY_ARRAY_CPP ${CMAKE_CURRENT_BINARY_DIR}/${TARGET_NAME}.cpp)
 
-    add_custom_command(
-      OUTPUT ${RESOURCE_ENTRY_ARRAY_CPP}
-      # Convert the preprocessed .rc file to a C++ file which will be used to make a static lib.
-      COMMAND ${PROCESS_RC_SCRIPT} ${PREPROCESSED_SOURCE} ${TARGET_NAME} >${RESOURCE_ENTRY_ARRAY_CPP}
-            DEPENDS ${PREPROCESSED_SOURCE} ${PROCESS_RC_SCRIPT}
-    )
+    # Win32 may be false when cross compiling
+    if (CMAKE_HOST_SYSTEM_NAME STREQUAL "Windows")
+      add_custom_command(
+        OUTPUT ${RESOURCE_ENTRY_ARRAY_CPP}
+        # Convert the preprocessed .rc file to a C++ file which will be used to make a static lib.
+        COMMAND powershell -NoProfile -ExecutionPolicy ByPass -File \"${PROCESS_RC_SCRIPT}\" ${PREPROCESSED_SOURCE} ${TARGET_NAME} >${RESOURCE_ENTRY_ARRAY_CPP}
+        DEPENDS ${PREPROCESSED_SOURCE} ${PROCESS_RC_SCRIPT}
+      )
+    else()
+      add_custom_command(
+        OUTPUT ${RESOURCE_ENTRY_ARRAY_CPP}
+        # Convert the preprocessed .rc file to a C++ file which will be used to make a static lib.
+        COMMAND ${PROCESS_RC_SCRIPT} ${PREPROCESSED_SOURCE} ${TARGET_NAME} >${RESOURCE_ENTRY_ARRAY_CPP}
+        DEPENDS ${PREPROCESSED_SOURCE} ${PROCESS_RC_SCRIPT}
+      )
+    endif()
 
     include_directories(${RESOURCE_STRING_HEADER_DIR})
     set(${TARGET_FILE} ${RESOURCE_ENTRY_ARRAY_CPP} PARENT_SCOPE)
-
   endfunction()
 
   add_subdirectory(nativeresources)
 endif(CLR_CMAKE_HOST_UNIX)
 
-if(NOT CLR_CMAKE_HOST_TVOS)
+if(NOT CLR_CMAKE_HOST_TVOS AND NOT CLR_CMAKE_HOST_BROWSER)
   add_subdirectory(utilcode)
   add_subdirectory(inc)
 
@@ -263,7 +285,7 @@ if(NOT CLR_CMAKE_HOST_TVOS)
   add_subdirectory(dlls)
   add_subdirectory(unwinder)
   add_subdirectory(interop)
-endif()
+endif(NOT CLR_CMAKE_HOST_TVOS AND NOT CLR_CMAKE_HOST_BROWSER)
 
 if(NOT CLR_CMAKE_HOST_MACCATALYST AND NOT CLR_CMAKE_HOST_IOS AND NOT CLR_CMAKE_HOST_TVOS)
   add_subdirectory(tools)
