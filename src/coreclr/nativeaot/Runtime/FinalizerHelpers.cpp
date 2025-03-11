@@ -30,7 +30,7 @@ CLREventStatic g_FinalizerDoneEvent;
 static HANDLE g_lowMemoryNotification = NULL;
 
 #ifdef TARGET_WINDOWS
-static bool g_FlsInitSucceeded = false;
+static bool g_ComAndFlsInitSucceeded = false;
 #endif
 
 EXTERN_C void QCALLTYPE ProcessFinalizers();
@@ -42,10 +42,15 @@ EXTERN_C void QCALLTYPE ProcessFinalizers();
 uint32_t WINAPI FinalizerStart(void* pContext)
 {
 #ifdef TARGET_WINDOWS
-    g_FlsInitSucceeded = PalInitComAndFlsSlot();
+    g_ComAndFlsInitSucceeded = PalInitComAndFlsSlot();
     // handshake with EE initialization, as now we can attach Thread objects to native threads.
     UInt32_BOOL res = PalSetEvent(g_FinalizerDoneEvent.GetOSEvent());
     ASSERT(res);
+
+    // if FLS initialization failed do not attach the current thread and just exit instead.
+    // we are going to fail the runtime initialization.
+    if (!g_ComAndFlsInitSucceeded)
+        return 0;
 #endif // DEBUG
 
     HANDLE hFinalizerEvent = (HANDLE)pContext;
@@ -102,7 +107,7 @@ bool RhWaitForFinalizerThreadStart()
 {
     g_FinalizerDoneEvent.Wait(INFINITE,FALSE);
     g_FinalizerDoneEvent.Reset();
-    return g_FlsInitSucceeded;
+    return g_ComAndFlsInitSucceeded;
 }
 #endif
 
