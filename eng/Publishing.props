@@ -22,19 +22,19 @@
 
   <!-- In the runtime official build, we only sign a subset of files. Add all of our blob artifacts here again for publishing -->
   <ItemGroup Condition="'$(DotNetFinalPublish)' == 'true'">
-    <BlobArtifact Include="$(ArtifactsPackagesDir)**\*.tar.gz;
-                           $(ArtifactsPackagesDir)**\*.zip;
-                           $(ArtifactsPackagesDir)**\*.deb;
-                           $(ArtifactsPackagesDir)**\*.rpm;
-                           $(ArtifactsPackagesDir)**\*.pkg;
-                           $(ArtifactsPackagesDir)**\*.exe;
-                           $(ArtifactsPackagesDir)**\*.msi;"
-                  Exclude="$(ArtifactsPackagesDir)**\Symbols.runtime.tar.gz"
-                  Kind="Blob"
-                  IsShipping="$([System.String]::Copy('%(RecursiveDir)').StartsWith('Shipping'))">
+    <Artifact Include="$(ArtifactsPackagesDir)**\*.tar.gz;
+                       $(ArtifactsPackagesDir)**\*.zip;
+                       $(ArtifactsPackagesDir)**\*.deb;
+                       $(ArtifactsPackagesDir)**\*.rpm;
+                       $(ArtifactsPackagesDir)**\*.pkg;
+                       $(ArtifactsPackagesDir)**\*.exe;
+                       $(ArtifactsPackagesDir)**\*.msi;"
+              Exclude="$(ArtifactsPackagesDir)**\Symbols.runtime.tar.gz"
+              Kind="Blob"
+              IsShipping="$([System.String]::Copy('%(RecursiveDir)').StartsWith('Shipping'))">
       <!-- Exclude wixpack.zip files from checksum generation -->
       <ChecksumPath Condition="$([System.String]::Copy('%(Filename)%(Extension)').EndsWith('.wixpack.zip')) != 'true'">%(FullPath).sha512</ChecksumPath>
-    </BlobArtifact>
+    </Artifact>
   </ItemGroup>
 
   <!--
@@ -129,9 +129,9 @@
                 RelativeBlobPath="packages/$(Configuration)/Shipping/%(Filename)%(Extension)" />
       <Artifact Condition="'%(Artifact.Kind)' == 'Blob' and '%(Artifact.IsShipping)' != 'true'"
                 RelativeBlobPath="packages/$(Configuration)/NonShipping/%(Filename)%(Extension)" />
-      <ItemsToPushToBlobFeed Condition="'%(Artifact.Kind)' == 'Blob' and '%(Artifact.IsShipping)' == 'true'"
+      <ItemsToPushToBlobFeed Condition="'%(ItemsToPushToBlobFeed.Kind)' == 'Blob' and '%(ItemsToPushToBlobFeed.IsShipping)' == 'true'"
                              RelativeBlobPath="packages/$(Configuration)/Shipping/%(Filename)%(Extension)" />
-      <ItemsToPushToBlobFeed Condition="'%(Artifact.Kind)' == 'Blob' and '%(Artifact.IsShipping)' != 'true'"
+      <ItemsToPushToBlobFeed Condition="'%(ItemsToPushToBlobFeed.Kind)' == 'Blob' and '%(ItemsToPushToBlobFeed.IsShipping)' != 'true'"
                              RelativeBlobPath="packages/$(Configuration)/NonShipping/%(RecursiveDir)%(Filename)%(Extension)" />
     </ItemGroup>
   </Target>
