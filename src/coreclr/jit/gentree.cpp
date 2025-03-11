@@ -19984,7 +19984,7 @@ bool GenTree::SupportsSettingZeroFlag()
     }
 
     // We do not support setting zero flag for madd/msub.
-    if (OperIs(GT_ADD, GT_SUB) && (!gtGetOp2()->OperIs(GT_MUL) || !gtGetOp2()->isContained()))
+    if (OperIs(GT_ADD, GT_SUB, GT_NEG) && (!gtGetOp2()->OperIs(GT_MUL) || !gtGetOp2()->isContained()))
     {
         return true;
     }
