@@ -329,6 +329,7 @@ inline PTR_PEImage PEImage::FindByPath(LPCWSTR pPath, BOOL isInBundle, BOOL isEx
         GC_TRIGGERS;
         MODE_ANY;
         PRECONDITION(CheckPointer(pPath));
+        PRECONDITION(!(isInBundle && isExternalData));
         PRECONDITION(s_hashLock.OwnedByCurrentThread());
     }
     CONTRACTL_END;
