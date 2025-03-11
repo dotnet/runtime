@@ -78,7 +78,6 @@ function createWasmImportStubsFrom(collection) {
 // we will replace them with the real implementation in replace_linker_placeholders
 function injectDependencies() {
     createWasmImportStubsFrom(methodIndexByName.mono_wasm_imports);
-    if (WASM_PERFTRACING) createWasmImportStubsFrom(methodIndexByName.mono_wasm_diagnostic_imports);
 
     #if USE_PTHREADS
     createWasmImportStubsFrom(methodIndexByName.mono_wasm_threads_imports);
