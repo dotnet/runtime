@@ -2372,8 +2372,19 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
             if (!varTypeIsFloating(simdBaseType))
             {
-                // We can't trivially handle division for integral types using SIMD
+#if defined(TARGET_XARCH) && defined(FEATURE_HW_INTRINSICS)
+                // Check to see if it is possible to emulate the integer division
+                if (!(simdBaseType == TYP_INT &&
+                      ((simdSize == 16 && compOpportunisticallyDependsOn(InstructionSet_AVX)) ||
+                       (simdSize == 32 && compOpportunisticallyDependsOn(InstructionSet_AVX512F)))))
+                {
+                    break;
+                }
+                impSpillSideEffect(true, stackState.esStackDepth -
+                                             2 DEBUGARG("Spilling op1 side effects for vector integer division"));
+#else
                 break;
+#endif // defined(TARGET_XARCH) && defined(FEATURE_HW_INTRINSICS)
             }
 
             CORINFO_ARG_LIST_HANDLE arg1     = sig->args;
@@ -2388,45 +2399,38 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             op1     = getArgForHWIntrinsic(argType, argClass);
 
             retNode = gtNewSimdBinOpNode(GT_DIV, retType, op1, op2, simdBaseJitType, simdSize);
+
             break;
         }
 
         case NI_Vector128_Dot:
         case NI_Vector256_Dot:
+        case NI_Vector512_Dot:
         {
             assert(sig->numArgs == 2);
             var_types simdType = getSIMDTypeForSize(simdSize);
 
-            if (varTypeIsByte(simdBaseType) || varTypeIsLong(simdBaseType))
+            if ((simdSize == 32) && !varTypeIsFloating(simdBaseType) &&
+                !compOpportunisticallyDependsOn(InstructionSet_AVX2))
             {
-                // TODO-XARCH-CQ: We could support dot product for 8-bit and
-                // 64-bit integers if we support multiplication for the same
+                // We can't deal with TYP_SIMD32 for integral types if the compiler doesn't support AVX2
                 break;
-            }
-
-            if (simdSize == 32)
-            {
-                if (!varTypeIsFloating(simdBaseType) && !compOpportunisticallyDependsOn(InstructionSet_AVX2))
-                {
-                    // We can't deal with TYP_SIMD32 for integral types if the compiler doesn't support AVX2
-                    break;
-                }
-            }
-            else if ((simdBaseType == TYP_INT) || (simdBaseType == TYP_UINT))
-            {
-                if (!compOpportunisticallyDependsOn(InstructionSet_SSE41))
-                {
-                    // TODO-XARCH-CQ: We can support 32-bit integers if we updating multiplication
-                    // to be lowered rather than imported as the relevant operations.
-                    break;
-                }
             }
 
             op2 = impSIMDPopStack();
             op1 = impSIMDPopStack();
 
+            if ((simdSize == 64) || varTypeIsByte(simdBaseType) || varTypeIsLong(simdBaseType) ||
+                (varTypeIsInt(simdBaseType) && !compOpportunisticallyDependsOn(InstructionSet_SSE41)))
+            {
+                // The lowering for Dot doesn't handle these cases, so import as Sum(left * right)
+                retNode = gtNewSimdBinOpNode(GT_MUL, simdType, op1, op2, simdBaseJitType, simdSize);
+                retNode = gtNewSimdSumNode(retType, retNode, simdBaseJitType, simdSize);
+                break;
+            }
+
             retNode = gtNewSimdDotProdNode(simdType, op1, op2, simdBaseJitType, simdSize);
-            retNode = gtNewSimdGetElementNode(retType, retNode, gtNewIconNode(0), simdBaseJitType, simdSize);
+            retNode = gtNewSimdToScalarNode(retType, retNode, simdBaseJitType, simdSize);
             break;
         }
 
@@ -3286,24 +3290,6 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                 break;
             }
 
-            if (varTypeIsLong(simdBaseType))
-            {
-
-                if ((simdSize == 32) && compOpportunisticallyDependsOn(InstructionSet_AVX2))
-                {
-                    // Emulate NI_AVX512DQ_VL_MultiplyLow with AVX2 for SIMD32
-                }
-                else if ((simdSize == 16) && compOpportunisticallyDependsOn(InstructionSet_SSE41))
-                {
-                    // Emulate NI_AVX512DQ_VL_MultiplyLow with SSE41 for SIMD16
-                }
-                else if (simdSize != 64)
-                {
-                    // Software fallback
-                    break;
-                }
-            }
-
             CORINFO_ARG_LIST_HANDLE arg1     = sig->args;
             CORINFO_ARG_LIST_HANDLE arg2     = info.compCompHnd->getArgNext(arg1);
             var_types               argType  = TYP_UNKNOWN;
@@ -3335,23 +3321,6 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             {
                 // We can't deal with TYP_SIMD32 for integral types if the compiler doesn't support AVX2
                 break;
-            }
-
-            if (varTypeIsLong(simdBaseType))
-            {
-                if ((simdSize == 32) && compOpportunisticallyDependsOn(InstructionSet_AVX2))
-                {
-                    // Emulate NI_AVX512DQ_VL_MultiplyLow with AVX2 for SIMD32
-                }
-                else if ((simdSize == 16) && compOpportunisticallyDependsOn(InstructionSet_SSE41))
-                {
-                    // Emulate NI_AVX512DQ_VL_MultiplyLow with SSE41 for SIMD16
-                }
-                else if (simdSize != 64)
-                {
-                    // Software fallback
-                    break;
-                }
             }
 
             op3 = impSIMDPopStack();
@@ -3731,16 +3700,6 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
         case NI_Vector512_Sum:
         {
             assert(sig->numArgs == 1);
-
-            if ((simdSize == 32) && !compOpportunisticallyDependsOn(InstructionSet_AVX2))
-            {
-                // Vector256 requires AVX2
-                break;
-            }
-            else if ((simdSize == 16) && !compOpportunisticallyDependsOn(InstructionSet_SSE2))
-            {
-                break;
-            }
 
             op1     = impSIMDPopStack();
             retNode = gtNewSimdSumNode(retType, op1, simdBaseJitType, simdSize);

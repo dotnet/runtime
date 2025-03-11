@@ -3095,6 +3095,19 @@ struct GenTreeOp : public GenTreeUnOp
     // then sets the flag GTF_DIV_BY_CNS_OPT and GTF_DONT_CSE on the constant
     void CheckDivideByConstOptimized(Compiler* comp);
 
+    GenTree*& ReturnValueRef()
+    {
+        assert(OperIs(GT_RETURN, GT_RETFILT, GT_SWIFT_ERROR_RET));
+#ifdef SWIFT_SUPPORT
+        if (OperIs(GT_SWIFT_ERROR_RET))
+        {
+            return gtOp2;
+        }
+#endif // SWIFT_SUPPORT
+
+        return gtOp1;
+    }
+
     GenTree* GetReturnValue() const
     {
         assert(OperIs(GT_RETURN, GT_RETFILT, GT_SWIFT_ERROR_RET));
@@ -6774,20 +6787,20 @@ struct GenTreeVecCon : public GenTree
             case TYP_LONG:
             case TYP_ULONG:
             {
-                if (arg->OperIs(GT_CNS_INT, GT_CNS_LNG))
+                if (arg->IsIntegralConst())
                 {
                     simdVal.i64[argIdx] = arg->AsIntConCommon()->IntegralValue();
                     return true;
                 }
 #if !defined(TARGET_64BIT)
-                else if (arg->OperIsLong() && arg->AsOp()->gtOp1->IsCnsIntOrI() && arg->AsOp()->gtOp2->IsCnsIntOrI())
+                else if (arg->OperIsLong() && arg->gtGetOp1()->IsCnsIntOrI() && arg->gtGetOp2()->IsCnsIntOrI())
                 {
                     // 32-bit targets may decompose GT_CNS_LNG into two GT_CNS_INT
                     // We need to reconstruct the 64-bit value in order to handle this
 
-                    INT64 gtLconVal = arg->AsOp()->gtOp2->AsIntCon()->gtIconVal;
+                    INT64 gtLconVal = arg->gtGetOp2()->AsIntCon()->gtIconVal;
                     gtLconVal <<= 32;
-                    gtLconVal |= static_cast<uint32_t>(arg->AsOp()->gtOp1->AsIntCon()->gtIconVal);
+                    gtLconVal |= static_cast<uint32_t>(arg->gtGetOp1()->AsIntCon()->gtIconVal);
 
                     simdVal.i64[argIdx] = gtLconVal;
                     return true;
