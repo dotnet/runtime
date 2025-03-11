@@ -47,7 +47,7 @@ namespace
             if (!fExplicitOffsets)
             {
                 LPCUTF8 szFieldName;
-                if (FAILED(pInternalImport->GetNameOfFieldDef(pFieldInfoArray[i].m_MD, &szFieldName)))
+                if (FAILED(pInternalImport->GetNameOfFieldDef(pfwalk->m_MD, &szFieldName)))
                 {
                     szFieldName = "Invalid FieldDef record";
                 }
