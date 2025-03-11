@@ -122,9 +122,6 @@
     </ItemGroup>
     <!-- In vertical dotnet/runtime legs outside of the VMR, set the "relative blob path" to shipping vs non-shipping to make our download/upload work. -->
     <ItemGroup Condition="'$(DotNetFinalPublish)' != 'true' and '$(DotNetBuildOrchestrator)' != 'true'">
-      <Artifact Condition="'%(Artifact.IsVSSetup)' == 'true'"
-                RelativeBlobPath="VSSetup/%(Filename)%(Extension)" />
-
       <Artifact Condition="'%(Artifact.Kind)' == 'Blob' and '%(Artifact.IsShipping)' == 'true'"
                 RelativeBlobPath="packages/$(Configuration)/Shipping/%(Filename)%(Extension)" />
       <Artifact Condition="'%(Artifact.Kind)' == 'Blob' and '%(Artifact.IsShipping)' != 'true'"
@@ -132,7 +129,10 @@
       <ItemsToPushToBlobFeed Condition="'%(ItemsToPushToBlobFeed.Kind)' == 'Blob' and '%(ItemsToPushToBlobFeed.IsShipping)' == 'true'"
                              RelativeBlobPath="packages/$(Configuration)/Shipping/%(Filename)%(Extension)" />
       <ItemsToPushToBlobFeed Condition="'%(ItemsToPushToBlobFeed.Kind)' == 'Blob' and '%(ItemsToPushToBlobFeed.IsShipping)' != 'true'"
-                             RelativeBlobPath="packages/$(Configuration)/NonShipping/%(RecursiveDir)%(Filename)%(Extension)" />
+                             RelativeBlobPath="packages/$(Configuration)/NonShipping/%(Filename)%(Extension)" />
+
+      <Artifact Condition="'%(Artifact.IsVSSetup)' == 'true'"
+                RelativeBlobPath="VSSetup/%(Filename)%(Extension)" />
     </ItemGroup>
   </Target>
 </Project>
