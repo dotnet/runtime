@@ -432,6 +432,7 @@ private:
     GenTree* LowerStoreLoc(GenTreeLclVarCommon* tree);
     void     LowerRotate(GenTree* tree);
     void     LowerShift(GenTreeOp* shift);
+    bool     TryFoldBinop(GenTreeOp* node);
 #ifdef FEATURE_HW_INTRINSICS
     GenTree* LowerHWIntrinsic(GenTreeHWIntrinsic* node);
     void     LowerHWIntrinsicCC(GenTreeHWIntrinsic* node, NamedIntrinsic newIntrinsicId, GenCondition condition);
