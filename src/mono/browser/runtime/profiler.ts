@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+import type { CharPtr, VoidPtr } from "./types/emscripten";
+
 import { ENVIRONMENT_IS_WEB, mono_assert, runtimeHelpers } from "./globals";
 import { MonoMethod, AOTProfilerOptions, BrowserProfilerOptions, LogProfilerOptions } from "./types/internal";
 import { profiler_c_functions as cwraps } from "./cwraps";
