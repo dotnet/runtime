@@ -67,11 +67,13 @@ REDHAWK_PALEXPORT bool REDHAWK_PALAPI PalInitComAndFlsSlot()
     // Making finalizer thread MTA early ensures that COM is initialized before we initialize our thread
     // termination callback.
     HRESULT hr = CoInitializeEx(NULL, COINIT_MULTITHREADED);
+    if (FAILED(hr))
+        return false;
 
     // We use fiber detach callbacks to run our thread shutdown code because the fiber detach
     // callback is made without the OS loader lock
     g_flsIndex = FlsAlloc(FiberDetachCallback);
-    return SUCCEEDED(hr) && g_flsIndex != FLS_OUT_OF_INDEXES;
+    return g_flsIndex != FLS_OUT_OF_INDEXES;
 }
 
 // Register the thread with OS to be notified when thread is about to be destroyed
