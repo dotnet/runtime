@@ -19993,6 +19993,7 @@ bool GenTree::SupportsSettingZeroFlag()
     {
         return true;
     }
+#endif
 
     return false;
 }
