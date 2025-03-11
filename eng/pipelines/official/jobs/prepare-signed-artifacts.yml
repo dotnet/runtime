@@ -62,6 +62,7 @@ jobs:
       parameters:
         BuildDropPath: $(Build.SourcesDirectory)\artifacts
         PackageVersion: $(Version)
+        Verbosity: Debug
 
     - task: CopyFiles@2
       displayName: Copy Files to $(Build.StagingDirectory)\BuildLogs
