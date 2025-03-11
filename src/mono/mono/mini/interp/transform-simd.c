@@ -699,9 +699,6 @@ emit_sn_vector_t (TransformData *td, MonoMethod *cmethod, MonoMethodSignature *c
 		}
 	}
 
-	if (id == -1)
-		return FALSE;
-
 	gint16 simd_opcode = -1;
 	gint16 simd_intrins = -1;
 
