@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Microsoft.Extensions.DependencyInjection.Tests;
 using Xunit;
 
 namespace Microsoft.Extensions.DependencyInjection
@@ -285,7 +286,7 @@ namespace Microsoft.Extensions.DependencyInjection
             services.AddTransient(typeof(IGenericService<>), typeof(UnkeyedGenericService<>));
             services.AddKeyedTransient(typeof(IGenericService<>), "someKey", typeof(PrimaryKeyedGenericService<>));
 
-            await using var serviceProvider = services.BuildServiceProvider();
+            await using var serviceProvider = services.BuildServiceProvider(ServiceProviderMode.Dynamic);
 
             // Act
             _ = serviceProvider.GetKeyedService<IGenericService<object>>("someKey");
@@ -310,7 +311,7 @@ namespace Microsoft.Extensions.DependencyInjection
             services.AddKeyedTransient<IGenericService<object>, PrimaryKeyedGenericService<object>>("someKey");
             services.AddKeyedTransient<IGenericService<object>, SecondaryKeyedGenericService<object>>("someKey");
 
-            await using var serviceProvider = services.BuildServiceProvider();
+            await using var serviceProvider = services.BuildServiceProvider(ServiceProviderMode.Dynamic);
 
             // Act
             _ = serviceProvider.GetKeyedServices<IGenericService<object>>("someKey");
@@ -337,7 +338,7 @@ namespace Microsoft.Extensions.DependencyInjection
             services.AddTransient(typeof(SomeService));
             services.AddKeyedTransient(typeof(SomeService), "someKey", typeof(SomeOtherService));
 
-            await using var serviceProvider = services.BuildServiceProvider();
+            await using var serviceProvider = services.BuildServiceProvider(ServiceProviderMode.Dynamic);
 
             // Act
             _ = serviceProvider.GetKeyedService<SomeService>("someKey");
