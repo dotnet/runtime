@@ -1,3 +1,5 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
 using System;
 using System.Numerics;
 using System.Runtime.Intrinsics;
@@ -5,7 +7,7 @@ using System.Runtime.Intrinsics.Arm;
 using System.Runtime.CompilerServices;
 using Xunit;
 
-public class Program
+public class Runtime_113337
 {
     static sbyte[] s_7;
 
@@ -25,15 +27,20 @@ public class Program
     [MethodImpl(MethodImplOptions.NoInlining)]
     static void issue2()
     {
-        s_3 ^= (2021486855 != (-(long)s_2[0][0]));
+        try
+        {
+            s_3 ^= (2021486855 != (-(long)s_2[0][0]));
+        }
+        catch (NullReferenceException e)
+        {
+        }
     }
 
     [Fact]
-    public static int TestEntryPoint()
+    public static void TestEntryPoint()
     {
         // Checking for successful compilation
         issue1();
         issue2();
-        return 100;
     }
 }

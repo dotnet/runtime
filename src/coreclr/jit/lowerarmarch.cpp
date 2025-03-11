@@ -404,7 +404,10 @@ bool Lowering::IsContainableUnaryOrBinaryOp(GenTree* parentNode, GenTree* childN
                 return false;
             }
 
-            if (childNode->gtGetOp1()->OperIs(GT_CAST) && !parentNode->gtGetOp2()->IsIntegralConst())
+            GenTree* otherNode =
+                (childNode == parentNode->gtGetOp2()) ? parentNode->gtGetOp1() : parentNode->gtGetOp2();
+
+            if (childNode->gtGetOp1()->OperIs(GT_CAST) && !otherNode->IsIntegralConst())
             {
                 // Grab the cast as well, we can contain this with cmn (extended-register).
                 GenTreeCast* cast = childNode->gtGetOp1()->AsCast();
