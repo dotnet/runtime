@@ -112,7 +112,7 @@ void ThreadStore::AttachCurrentThread(bool fAcquireThreadStoreLock)
 
     if (pAttachingThread->IsDetached())
     {
-        ASSERT_UNCONDITIONALLY("The thread has been detached already");
+        ASSERT_UNCONDITIONALLY("Attempt to execute managed code after the .NET runtime thread state has been destroyed.");
         RhFailFast();
     }
 
