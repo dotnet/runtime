@@ -3068,7 +3068,10 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 					if (!is_SIMD_feature_supported (cfg, MONO_CPU_X86_SSSE3)) {
 						return NULL;
 					}
-					return emit_simd_ins_for_sig (cfg, klass, OP_XOP_OVR_X_X_X, INTRINS_SSE_PSHUFB, 0, fsig, args);
+					op_etype = m_class_get_byval_arg (mono_defaults.byte_class);
+					op_klass = create_class_instance ("System.Runtime.Intrinsics", "Vector128`1", op_etype);
+					MonoInst *ins = emit_simd_ins_for_sig (cfg, op_klass, OP_XOP_X_X_X, INTRINS_SSE_PSHUFB, 0, fsig, args);
+					return emit_simd_ins (cfg, klass, OP_XCAST, ins->dreg, -1);
 				}
 			}
 			g_assert ((ecount == 2) || (ecount == 4) || (ecount == 8) || (ecount == 16));
