@@ -1117,6 +1117,12 @@ int32_t CryptoNative_SslSetTlsExtHostName(SSL* ssl, uint8_t* name)
     return (int32_t)SSL_set_tlsext_host_name(ssl, name);
 }
 
+int32_t CryptoNative_SslSetSigalgs(SSL* ssl, uint8_t* str)
+{
+    ERR_clear_error();
+    return (int32_t) SSL_ctrl(ssl, SSL_CTRL_SET_SIGALGS_LIST, 0, (void*)str);
+}
+
 int32_t CryptoNative_SslGetCurrentCipherId(SSL* ssl, int32_t* cipherId)
 {
     // No error queue impact.
