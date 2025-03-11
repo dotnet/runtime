@@ -4936,13 +4936,13 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
         //
         DoPhase(this, PHASE_IF_CONVERSION, &Compiler::optIfConversion);
 
-        // Optimize block order
+        // Conditional to switch conversion, and switch peeling
         //
-        DoPhase(this, PHASE_OPTIMIZE_LAYOUT, &Compiler::optOptimizeLayout);
+        DoPhase(this, PHASE_SWITCH_RECOGNITION, &Compiler::optRecognizeAndOptimizeSwitchJumps);
 
-        // Conditional to Switch conversion
+        // Run flow optimizations before reordering blocks
         //
-        DoPhase(this, PHASE_SWITCH_RECOGNITION, &Compiler::optSwitchRecognition);
+        DoPhase(this, PHASE_OPTIMIZE_PRE_LAYOUT, &Compiler::optOptimizePreLayout);
 
         // Run profile repair
         //
@@ -5001,6 +5001,8 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     stackLevelSetter.Run();
     m_pLowering->FinalizeOutgoingArgSpace();
 
+    FinalizeEH();
+
     // We can not add any new tracked variables after this point.
     lvaTrackedFixed = true;
 
@@ -5021,30 +5023,7 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
         //
         if (JitConfig.JitDoReversePostOrderLayout())
         {
-            auto lateLayoutPhase = [this] {
-                // Skip preliminary reordering passes to create more work for 3-opt layout
-                if (compStressCompile(STRESS_THREE_OPT_LAYOUT, 10))
-                {
-                    m_dfsTree = fgComputeDfs</* useProfile */ true>();
-                }
-                else
-                {
-                    fgDoReversePostOrderLayout();
-                    fgMoveColdBlocks();
-                }
-
-                fgSearchImprovedLayout();
-                fgInvalidateDfsTree();
-
-                if (compHndBBtabCount != 0)
-                {
-                    fgRebuildEHRegions();
-                }
-
-                return PhaseStatus::MODIFIED_EVERYTHING;
-            };
-
-            DoPhase(this, PHASE_OPTIMIZE_LAYOUT, lateLayoutPhase);
+            DoPhase(this, PHASE_OPTIMIZE_LAYOUT, &Compiler::fgSearchImprovedLayout);
         }
         else
         {
@@ -5154,6 +5133,85 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
         fflush(compJitFuncInfoFile);
     }
 #endif // FUNC_INFO_LOGGING
+}
+
+//----------------------------------------------------------------------------------------------
+// FinalizeEH: Finalize EH information
+//
+void Compiler::FinalizeEH()
+{
+#if defined(FEATURE_EH_WINDOWS_X86)
+
+    // Grab space for exception handling info on the frame
+    //
+    if (!UsesFunclets() && ehNeedsShadowSPslots())
+    {
+        // Recompute the handler nesting levels, as they may have changed.
+        //
+        unsigned const oldHandlerNestingCount = ehMaxHndNestingCount;
+        ehMaxHndNestingCount                  = 0;
+
+        if (compHndBBtabCount > 0)
+        {
+            for (int XTnum = compHndBBtabCount - 1; XTnum >= 0; XTnum--)
+            {
+                EHblkDsc* const HBtab             = &compHndBBtab[XTnum];
+                unsigned const  enclosingHndIndex = HBtab->ebdEnclosingHndIndex;
+
+                if (enclosingHndIndex != EHblkDsc::NO_ENCLOSING_INDEX)
+                {
+                    EHblkDsc* const enclosingHBtab  = &compHndBBtab[enclosingHndIndex];
+                    unsigned const  newNestingLevel = enclosingHBtab->ebdHandlerNestingLevel + 1;
+                    HBtab->ebdHandlerNestingLevel   = (unsigned short)newNestingLevel;
+
+                    if (newNestingLevel > ehMaxHndNestingCount)
+                    {
+                        ehMaxHndNestingCount = newNestingLevel;
+                    }
+                }
+                else
+                {
+                    HBtab->ebdHandlerNestingLevel = 0;
+                }
+            }
+
+            // When there is EH, we need to record nesting level + 1
+            //
+            ehMaxHndNestingCount++;
+        }
+
+        if (oldHandlerNestingCount != ehMaxHndNestingCount)
+        {
+            JITDUMP("Finalize EH: max handler nesting count now %u (was %u)\n", oldHandlerNestingCount,
+                    ehMaxHndNestingCount);
+        }
+
+        // The first slot is reserved for ICodeManager::FixContext(ppEndRegion)
+        // ie. the offset of the end-of-last-executed-filter
+        unsigned slotsNeeded = 1;
+
+        unsigned handlerNestingLevel = ehMaxHndNestingCount;
+
+        if (opts.compDbgEnC && (handlerNestingLevel < (unsigned)MAX_EnC_HANDLER_NESTING_LEVEL))
+            handlerNestingLevel = (unsigned)MAX_EnC_HANDLER_NESTING_LEVEL;
+
+        slotsNeeded += handlerNestingLevel;
+
+        // For a filter (which can be active at the same time as a catch/finally handler)
+        slotsNeeded++;
+        // For zero-termination of the shadow-Stack-pointer chain
+        slotsNeeded++;
+
+        lvaShadowSPslotsVar = lvaGrabTempWithImplicitUse(false DEBUGARG("lvaShadowSPslotsVar"));
+        lvaSetStruct(lvaShadowSPslotsVar, typGetBlkLayout(slotsNeeded * TARGET_POINTER_SIZE), false);
+        lvaSetVarAddrExposed(lvaShadowSPslotsVar DEBUGARG(AddressExposedReason::EXTERNALLY_VISIBLE_IMPLICITLY));
+    }
+
+#endif // FEATURE_EH_WINDOWS_X86
+
+    // We should not make any more alterations to the EH table structure.
+    //
+    ehTableFinalized = true;
 }
 
 #if FEATURE_LOOP_ALIGN

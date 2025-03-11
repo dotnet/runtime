@@ -56,6 +56,7 @@ internal class Program
         TestStaticInterfaceMethod.Run();
         TestConstrainedCall.Run();
         TestTypeHandles.Run();
+        TestPreinitDefinition.Run();
         TestIsValueType.Run();
         TestIndirectLoads.Run();
         TestInitBlock.Run();
@@ -1332,6 +1333,22 @@ class TestTypeHandles
         Assert.IsPreinitialized(typeof(CharHolder));
         Assert.IsPreinitialized(typeof(IsChar));
         Assert.True(IsChar.Is);
+    }
+}
+
+class TestPreinitDefinition
+{
+    class Gen<T>;
+
+    class PreinitHolder
+    {
+        public readonly static Type TheType = typeof(Gen<>);
+    }
+
+    public static void Run()
+    {
+        Assert.IsPreinitialized(typeof(PreinitHolder));
+        Assert.AreEqual("Gen`1", PreinitHolder.TheType.Name);
     }
 }
 

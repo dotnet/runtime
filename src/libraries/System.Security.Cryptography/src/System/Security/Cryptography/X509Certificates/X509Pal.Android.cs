@@ -160,12 +160,7 @@ namespace System.Security.Cryptography.X509Certificates
 
                 try
                 {
-                    writer.Encode(dsa, static (dsa, encoded) =>
-                    {
-                        dsa.ImportSubjectPublicKeyInfo(encoded, out _);
-                        return (object?)null;
-                    });
-
+                    writer.Encode(dsa, static (dsa, encoded) => dsa.ImportSubjectPublicKeyInfo(encoded, out _));
                     toDispose = null;
                     return dsa;
                 }
