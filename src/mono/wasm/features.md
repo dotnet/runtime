@@ -61,7 +61,7 @@ This is a breaking change because the `response.Content.ReadAsStreamAsync()` is 
 
 If you need to disable it, you can use `<WasmEnableStreamingResponse>false</WasmEnableStreamingResponse>` or `DOTNET_WASM_ENABLE_STREAMING_RESPONSE` env variable to do it for all HTTP requests.
 
-Or you can use `request.Options.Set(new HttpRequestOptionsKey<bool>("WebAssemblyEnableStreamingResponse"), true);` for individual request.
+Or you can use `request.Options.Set(new HttpRequestOptionsKey<bool>("WebAssemblyEnableStreamingResponse"), false);` for individual request.
 
 ### WebSocket
 Applications using the [WebSocketClient](https://learn.microsoft.com/dotnet/api/system.net.websockets.clientwebsocket) managed API will require the browser to support the [WebSocket](https://developer.mozilla.org/en-US/docs/Web/API/WebSockets_API) API.
