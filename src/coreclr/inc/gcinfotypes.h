@@ -634,7 +634,7 @@ struct AMD64GcInfoEncoding {
     template <typename T> static inline constexpr T DENORMALIZE_STACK_BASE_REGISTER (T x) { return ((x) ^ 5); }
     template <typename T> static inline constexpr T NORMALIZE_SIZE_OF_STACK_AREA (T x) { return ((x)>>3); }
     template <typename T> static inline constexpr T DENORMALIZE_SIZE_OF_STACK_AREA (T x) { return ((x)<<3); }
-    static const int CODE_OFFSETS_NEED_NORMALIZATION = 0;
+    static const bool CODE_OFFSETS_NEED_NORMALIZATION = 0;
     template <typename T> static inline constexpr T NORMALIZE_CODE_OFFSET (T x) { return (x); }
     template <typename T> static inline constexpr T DENORMALIZE_CODE_OFFSET (T x) { return (x); }
     template <typename T> static inline constexpr T NORMALIZE_REGISTER (T x) { return (x); }
@@ -693,7 +693,7 @@ struct ARM32GcInfoEncoding {
     template <typename T> static inline constexpr T DENORMALIZE_STACK_BASE_REGISTER (T x) { return (((x) ^ 7) + 4); }
     template <typename T> static inline constexpr T NORMALIZE_SIZE_OF_STACK_AREA (T x) { return ((x)>>2); }
     template <typename T> static inline constexpr T DENORMALIZE_SIZE_OF_STACK_AREA (T x) { return ((x)<<2); }
-    static const int CODE_OFFSETS_NEED_NORMALIZATION = 1;
+    static const bool CODE_OFFSETS_NEED_NORMALIZATION = 1;
     template <typename T> static inline constexpr T NORMALIZE_CODE_OFFSET (T x) { return ((x)>>1)   /* Instructions are 2/4 bytes long in Thumb/ARM states */; }
     template <typename T> static inline constexpr T DENORMALIZE_CODE_OFFSET (T x) { return ((x)<<1); }
     template <typename T> static inline constexpr T NORMALIZE_REGISTER (T x) { return (x); }
@@ -756,7 +756,7 @@ struct ARM64GcInfoEncoding {
     template <typename T> static inline constexpr T DENORMALIZE_STACK_BASE_REGISTER (T x) { return ((x)^29); }
     template <typename T> static inline constexpr T NORMALIZE_SIZE_OF_STACK_AREA (T x) { return ((x)>>3); }
     template <typename T> static inline constexpr T DENORMALIZE_SIZE_OF_STACK_AREA (T x) { return ((x)<<3); }
-    static const int CODE_OFFSETS_NEED_NORMALIZATION = 1;
+    static const bool CODE_OFFSETS_NEED_NORMALIZATION = 1;
     // Instructions are 4 bytes long
     template <typename T> static inline constexpr T NORMALIZE_CODE_OFFSET (T x) { return ((x)>>2); }
     template <typename T> static inline constexpr T DENORMALIZE_CODE_OFFSET (T x) { return ((x)<<2); }
@@ -819,7 +819,7 @@ struct LoongArch64GcInfoEncoding {
     template <typename T> static inline constexpr T DENORMALIZE_STACK_BASE_REGISTER (T x) { return ((x) == 0 ? 22u : 3u); }
     template <typename T> static inline constexpr T NORMALIZE_SIZE_OF_STACK_AREA (T x) { return ((x)>>3); }
     template <typename T> static inline constexpr T DENORMALIZE_SIZE_OF_STACK_AREA (T x) { return ((x)<<3); }
-    static const int CODE_OFFSETS_NEED_NORMALIZATION = 1;
+    static const bool CODE_OFFSETS_NEED_NORMALIZATION = 1;
     // Instructions are 4 bytes long
     template <typename T> static inline constexpr T NORMALIZE_CODE_OFFSET (T x) { return ((x)>>2); }
     template <typename T> static inline constexpr T DENORMALIZE_CODE_OFFSET (T x) { return ((x)<<2); }
@@ -881,7 +881,7 @@ struct RISCV64GcInfoEncoding {
     template <typename T> static inline constexpr T DENORMALIZE_STACK_BASE_REGISTER (T x) { return ((x) == 0 ? 8u : 2u); }
     template <typename T> static inline constexpr T NORMALIZE_SIZE_OF_STACK_AREA (T x) { return ((x)>>3); }
     template <typename T> static inline constexpr T DENORMALIZE_SIZE_OF_STACK_AREA (T x) { return ((x)<<3); }
-    static const int CODE_OFFSETS_NEED_NORMALIZATION = 1;
+    static const bool CODE_OFFSETS_NEED_NORMALIZATION = 1;
     // Instructions are 4 bytes long
     template <typename T> static inline constexpr T NORMALIZE_CODE_OFFSET (T x) { return ((x)>>2); }
     template <typename T> static inline constexpr T DENORMALIZE_CODE_OFFSET (T x) { return ((x)<<2); }
@@ -948,7 +948,7 @@ struct X86GcInfoEncoding {
     template <typename T> static inline constexpr T DENORMALIZE_STACK_BASE_REGISTER (T x) { return (x); }
     template <typename T> static inline constexpr T NORMALIZE_SIZE_OF_STACK_AREA (T x) { return (x); }
     template <typename T> static inline constexpr T DENORMALIZE_SIZE_OF_STACK_AREA (T x) { return (x); }
-    static const int CODE_OFFSETS_NEED_NORMALIZATION = 0;
+    static const bool CODE_OFFSETS_NEED_NORMALIZATION = 0;
     template <typename T> static inline constexpr T NORMALIZE_CODE_OFFSET (T x) { return (x); }
     template <typename T> static inline constexpr T DENORMALIZE_CODE_OFFSET (T x) { return (x); }
     template <typename T> static inline constexpr T NORMALIZE_REGISTER (T x) { return (x); }

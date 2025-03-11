@@ -1264,14 +1264,14 @@ template <typename GcInfoEncoding> void TGcInfoEncoder<GcInfoEncoding>::Build()
 #endif
     }
 
-#if CODE_OFFSETS_NEED_NORMALIZATION
-    // Do a pass to normalize transition offsets
-    for(pCurrent = pTransitions; pCurrent < pEndTransitions; pCurrent++)
-    {
-        _ASSERTE(pCurrent->CodeOffset <= m_CodeLength);
-        pCurrent->CodeOffset = GcInfoEncoding::NORMALIZE_CODE_OFFSET(pCurrent->CodeOffset);
+    if (GcInfoEncoding::CODE_OFFSETS_NEED_NORMALIZATION) {
+        // Do a pass to normalize transition offsets
+        for(pCurrent = pTransitions; pCurrent < pEndTransitions; pCurrent++)
+        {
+            _ASSERTE(pCurrent->CodeOffset <= m_CodeLength);
+            pCurrent->CodeOffset = GcInfoEncoding::NORMALIZE_CODE_OFFSET(pCurrent->CodeOffset);
+        }
     }
-#endif
 
     ///////////////////////////////////////////////////////////////////
     // Find out which slots are really used
