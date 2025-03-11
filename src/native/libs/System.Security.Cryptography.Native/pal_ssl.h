@@ -523,6 +523,11 @@ Shims the SSL_set_tlsext_host_name method.
 PALEXPORT int32_t CryptoNative_SslSetTlsExtHostName(SSL* ssl, uint8_t* name);
 
 /*
+Shims the SSL_set1_sigalgs_list method.
+*/
+PALEXPORT int32_t CryptoNative_SslSetSigalgs(SSL* ssl, uint8_t* str);
+
+/*
 Shims the SSL_get_current_cipher and SSL_CIPHER_get_id.
 */
 PALEXPORT int32_t CryptoNative_SslGetCurrentCipherId(SSL* ssl, int32_t* cipherId);

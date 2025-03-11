@@ -414,6 +414,13 @@ internal static partial class Interop
                     sslHandle.SslContextHandle = sslCtxHandle;
                 }
 
+                if (Environment.GetEnvironmentVariable("DOTNET_SIGALGS") is string s)
+                {
+                    byte[] utf8Bytes = System.Text.Encoding.UTF8.GetBytes(s);
+                    int result = Interop.Ssl.SslSetSigalgs(sslHandle, utf8Bytes);
+                    Debug.Assert(result == 1);
+                }
+
                 if (sslAuthenticationOptions.ApplicationProtocols != null && sslAuthenticationOptions.ApplicationProtocols.Count != 0)
                 {
                     if (sslAuthenticationOptions.IsServer)
