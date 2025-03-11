@@ -33,5 +33,12 @@ namespace System.IO.Tests
             var info = new FileInfo(Path.DirectorySeparatorChar + Path.Combine("Directory", "File"));
             Assert.Equal("File", info.Name);
         }
+
+        [Fact]
+        public void TrimmedName()
+        {
+            var info = new FileInfo(Path.Combine(" leading-space", "trailing-space "));
+            Assert.Equal("trailing-space", info.Name);
+        }
     }
 }
