@@ -2825,140 +2825,113 @@ bool Compiler::fgOptimizeBranch(BasicBlock* bJump)
 }
 
 //-----------------------------------------------------------------------------
-// fgOptimizeSwitchJump: see if a switch has a dominant case, and modify to
-//   check for that case up front (aka switch peeling).
+// fgPeelSwitch: Modify a switch to check for its dominant case up front.
 //
-// Returns:
-//    True if the switch now has an upstream check for the dominant case.
+// Parameters:
+//   block - The switch block with a dominant case
 //
-bool Compiler::fgOptimizeSwitchJumps()
+void Compiler::fgPeelSwitch(BasicBlock* block)
 {
-    if (!fgHasSwitch)
+    assert(block->KindIs(BBJ_SWITCH));
+    assert(block->GetSwitchTargets()->bbsHasDominantCase);
+    assert(!block->isRunRarely());
+
+    // Lowering expands switches, so calling this method on lowered IR
+    // does not make sense.
+    //
+    assert(!block->IsLIR());
+
+    // We currently will only see dominant cases with PGO.
+    //
+    assert(block->hasProfileWeight());
+
+    const unsigned dominantCase = block->GetSwitchTargets()->bbsDominantCase;
+    JITDUMP(FMT_BB " has switch with dominant case %u, considering peeling\n", block->bbNum, dominantCase);
+
+    // The dominant case should not be the default case, as we already peel that one.
+    //
+    assert(dominantCase < (block->GetSwitchTargets()->bbsCount - 1));
+    BasicBlock* const dominantTarget = block->GetSwitchTargets()->bbsDstTab[dominantCase]->getDestinationBlock();
+    Statement* const  switchStmt     = block->lastStmt();
+    GenTree* const    switchTree     = switchStmt->GetRootNode();
+    assert(switchTree->OperIs(GT_SWITCH));
+    GenTree* const switchValue = switchTree->gtGetOp1();
+
+    // Split the switch block just before at the switch.
+    //
+    // After this, newBlock is the switch block, and
+    // block is the upstream block.
+    //
+    BasicBlock* newBlock = nullptr;
+
+    if (block->firstStmt() == switchStmt)
     {
-        return false;
+        newBlock = fgSplitBlockAtBeginning(block);
+    }
+    else
+    {
+        newBlock = fgSplitBlockAfterStatement(block, switchStmt->GetPrevStmt());
     }
 
-    bool modified = false;
+    // Set up a compare in the upstream block, "stealing" the switch value tree.
+    //
+    GenTree* const   dominantCaseCompare = gtNewOperNode(GT_EQ, TYP_INT, switchValue, gtNewIconNode(dominantCase));
+    GenTree* const   jmpTree             = gtNewOperNode(GT_JTRUE, TYP_VOID, dominantCaseCompare);
+    Statement* const jmpStmt             = fgNewStmtFromTree(jmpTree, switchStmt->GetDebugInfo());
+    fgInsertStmtAtEnd(block, jmpStmt);
 
-    for (BasicBlock* const block : Blocks())
+    // Reattach switch value to the switch. This may introduce a comma
+    // in the upstream compare tree, if the switch value expression is complex.
+    //
+    switchTree->AsOp()->gtOp1 = fgMakeMultiUse(&dominantCaseCompare->AsOp()->gtOp1);
+
+    // Update flags
+    //
+    switchTree->gtFlags = switchTree->gtGetOp1()->gtFlags & GTF_ALL_EFFECT;
+    dominantCaseCompare->gtFlags |= dominantCaseCompare->gtGetOp1()->gtFlags & GTF_ALL_EFFECT;
+    jmpTree->gtFlags |= dominantCaseCompare->gtFlags & GTF_ALL_EFFECT;
+    dominantCaseCompare->gtFlags |= GTF_RELOP_JMP_USED | GTF_DONT_CSE;
+
+    // Wire up the new control flow.
+    //
+    FlowEdge* const blockToTargetEdge   = fgAddRefPred(dominantTarget, block);
+    FlowEdge* const blockToNewBlockEdge = newBlock->bbPreds;
+    block->SetCond(blockToTargetEdge, blockToNewBlockEdge);
+
+    // Update profile data
+    //
+    const weight_t fraction            = newBlock->GetSwitchTargets()->bbsDominantFraction;
+    const weight_t blockToTargetWeight = block->bbWeight * fraction;
+
+    newBlock->decreaseBBProfileWeight(blockToTargetWeight);
+
+    blockToTargetEdge->setLikelihood(fraction);
+    blockToNewBlockEdge->setLikelihood(max(0.0, 1.0 - fraction));
+
+    JITDUMP("fgPeelSwitch: Updated flow into " FMT_BB " needs to be propagated. Data %s inconsistent.\n",
+            newBlock->bbNum, fgPgoConsistent ? "is now" : "was already");
+    fgPgoConsistent = false;
+
+    // For now we leave the switch as is, since there's no way
+    // to indicate that one of the cases is now unreachable.
+    //
+    // But it no longer has a dominant case.
+    //
+    newBlock->GetSwitchTargets()->bbsHasDominantCase = false;
+
+    if (fgNodeThreading == NodeThreading::AllTrees)
     {
-        // Lowering expands switches, so calling this method on lowered IR
-        // does not make sense.
-        //
-        assert(!block->IsLIR());
+        // The switch tree has been modified.
+        JITDUMP("Rethreading " FMT_STMT "\n", switchStmt->GetID());
+        gtSetStmtInfo(switchStmt);
+        fgSetStmtSeq(switchStmt);
 
-        if (!block->KindIs(BBJ_SWITCH))
-        {
-            continue;
-        }
-
-        if (block->isRunRarely())
-        {
-            continue;
-        }
-
-        if (!block->GetSwitchTargets()->bbsHasDominantCase)
-        {
-            continue;
-        }
-
-        // We currently will only see dominant cases with PGO.
-        //
-        assert(block->hasProfileWeight());
-
-        const unsigned dominantCase = block->GetSwitchTargets()->bbsDominantCase;
-
-        JITDUMP(FMT_BB " has switch with dominant case %u, considering peeling\n", block->bbNum, dominantCase);
-
-        // The dominant case should not be the default case, as we already peel that one.
-        //
-        assert(dominantCase < (block->GetSwitchTargets()->bbsCount - 1));
-        BasicBlock* const dominantTarget = block->GetSwitchTargets()->bbsDstTab[dominantCase]->getDestinationBlock();
-        Statement* const  switchStmt     = block->lastStmt();
-        GenTree* const    switchTree     = switchStmt->GetRootNode();
-        assert(switchTree->OperIs(GT_SWITCH));
-        GenTree* const switchValue = switchTree->AsOp()->gtGetOp1();
-
-        // Split the switch block just before at the switch.
-        //
-        // After this, newBlock is the switch block, and
-        // block is the upstream block.
-        //
-        BasicBlock* newBlock = nullptr;
-
-        if (block->firstStmt() == switchStmt)
-        {
-            newBlock = fgSplitBlockAtBeginning(block);
-        }
-        else
-        {
-            newBlock = fgSplitBlockAfterStatement(block, switchStmt->GetPrevStmt());
-        }
-
-        // Set up a compare in the upstream block, "stealing" the switch value tree.
-        //
-        GenTree* const   dominantCaseCompare = gtNewOperNode(GT_EQ, TYP_INT, switchValue, gtNewIconNode(dominantCase));
-        GenTree* const   jmpTree             = gtNewOperNode(GT_JTRUE, TYP_VOID, dominantCaseCompare);
-        Statement* const jmpStmt             = fgNewStmtFromTree(jmpTree, switchStmt->GetDebugInfo());
-        fgInsertStmtAtEnd(block, jmpStmt);
-
-        // Reattach switch value to the switch. This may introduce a comma
-        // in the upstream compare tree, if the switch value expression is complex.
-        //
-        switchTree->AsOp()->gtOp1 = fgMakeMultiUse(&dominantCaseCompare->AsOp()->gtOp1);
-
-        // Update flags
-        //
-        switchTree->gtFlags = switchTree->AsOp()->gtOp1->gtFlags & GTF_ALL_EFFECT;
-        dominantCaseCompare->gtFlags |= dominantCaseCompare->AsOp()->gtOp1->gtFlags & GTF_ALL_EFFECT;
-        jmpTree->gtFlags |= dominantCaseCompare->gtFlags & GTF_ALL_EFFECT;
-        dominantCaseCompare->gtFlags |= GTF_RELOP_JMP_USED | GTF_DONT_CSE;
-
-        // Wire up the new control flow.
-        //
-        FlowEdge* const blockToTargetEdge   = fgAddRefPred(dominantTarget, block);
-        FlowEdge* const blockToNewBlockEdge = newBlock->bbPreds;
-        block->SetCond(blockToTargetEdge, blockToNewBlockEdge);
-
-        // Update profile data
-        //
-        const weight_t fraction            = newBlock->GetSwitchTargets()->bbsDominantFraction;
-        const weight_t blockToTargetWeight = block->bbWeight * fraction;
-
-        newBlock->decreaseBBProfileWeight(blockToTargetWeight);
-
-        blockToTargetEdge->setLikelihood(fraction);
-        blockToNewBlockEdge->setLikelihood(max(0.0, 1.0 - fraction));
-
-        JITDUMP("fgOptimizeSwitchJumps: Updated flow into " FMT_BB " needs to be propagated. Data %s inconsistent.\n",
-                newBlock->bbNum, fgPgoConsistent ? "is now" : "was already");
-        fgPgoConsistent = false;
-
-        // For now we leave the switch as is, since there's no way
-        // to indicate that one of the cases is now unreachable.
-        //
-        // But it no longer has a dominant case.
-        //
-        newBlock->GetSwitchTargets()->bbsHasDominantCase = false;
-
-        if (fgNodeThreading == NodeThreading::AllTrees)
-        {
-            // The switch tree has been modified.
-            JITDUMP("Rethreading " FMT_STMT "\n", switchStmt->GetID());
-            gtSetStmtInfo(switchStmt);
-            fgSetStmtSeq(switchStmt);
-
-            // fgNewStmtFromTree() already threaded the tree, but calling fgMakeMultiUse() might have
-            // added new nodes if a COMMA was introduced.
-            JITDUMP("Rethreading " FMT_STMT "\n", jmpStmt->GetID());
-            gtSetStmtInfo(jmpStmt);
-            fgSetStmtSeq(jmpStmt);
-        }
-
-        modified = true;
+        // fgNewStmtFromTree() already threaded the tree, but calling fgMakeMultiUse() might have
+        // added new nodes if a COMMA was introduced.
+        JITDUMP("Rethreading " FMT_STMT "\n", jmpStmt->GetID());
+        gtSetStmtInfo(jmpStmt);
+        fgSetStmtSeq(jmpStmt);
     }
-
-    return modified;
 }
 
 //-----------------------------------------------------------------------------
@@ -3309,26 +3282,6 @@ bool Compiler::fgReorderBlocks(bool useProfile)
 
     // First let us expand the set of run rarely blocks
     newRarelyRun |= fgExpandRarelyRunBlocks();
-
-#if defined(FEATURE_EH_WINDOWS_X86)
-    if (!UsesFunclets())
-    {
-        movedBlocks |= fgRelocateEHRegions();
-    }
-#endif // FEATURE_EH_WINDOWS_X86
-
-    //
-    // If we are using profile weights we can change some
-    // switch jumps into conditional test and jump
-    //
-    if (fgIsUsingProfileWeights())
-    {
-        optimizedSwitches = fgOptimizeSwitchJumps();
-        if (optimizedSwitches)
-        {
-            fgUpdateFlowGraph();
-        }
-    }
 
     if (useProfile)
     {
