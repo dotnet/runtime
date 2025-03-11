@@ -5021,17 +5021,7 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
         // We won't introduce new blocks from here on out,
         // so run the new block layout.
         //
-        if (JitConfig.JitDoReversePostOrderLayout())
-        {
-            DoPhase(this, PHASE_OPTIMIZE_LAYOUT, &Compiler::fgSearchImprovedLayout);
-        }
-        else
-        {
-            // If we didn't run 3-opt, we might still have a profile-aware DFS tree computed during LSRA available.
-            // This tree's presence can trigger asserts if pre/postorder numbers are recomputed,
-            // so invalidate the tree either way.
-            fgInvalidateDfsTree();
-        }
+        DoPhase(this, PHASE_OPTIMIZE_LAYOUT, &Compiler::fgSearchImprovedLayout);
 
         // Now that the flowgraph is finalized, run post-layout optimizations.
         //
