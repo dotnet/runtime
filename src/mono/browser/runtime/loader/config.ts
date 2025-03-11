@@ -243,7 +243,7 @@ export async function mono_wasm_load_config (module: DotnetModuleInternal): Prom
             // Temporal way for tests to opt-in for using boot.js
             module.configSrc = (globalThis as any)["__DOTNET_INTERNAL_BOOT_CONFIG_SRC"]
                 ?? globalThis.window?.document?.documentElement?.getAttribute("data-dotnet_internal_boot_config_src")
-                ?? "blazor.boot.json";
+                ?? "dotnet.boot.js";
         }
 
         configFilePath = module.configSrc;
