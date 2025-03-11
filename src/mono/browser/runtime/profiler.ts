@@ -119,3 +119,24 @@ export function mono_wasm_profiler_record (method: MonoMethod, start: number): v
     }
     globalThis.performance.measure(methodName, options);
 }
+
+/* eslint-disable @typescript-eslint/no-unused-vars */
+export function ds_rt_websocket_create (urlPtr :CharPtr):number {
+    throw new Error("TODO");
+}
+
+export function ds_rt_websocket_send (client_socket :number, buffer:VoidPtr, bytes_to_write:number):number {
+    throw new Error("TODO");
+}
+
+export function ds_rt_websocket_poll (client_socket :number):number {
+    throw new Error("TODO");
+}
+
+export function ds_rt_websocket_recv (client_socket :number, buffer:VoidPtr, bytes_to_read:number):number {
+    throw new Error("TODO");
+}
+
+export function ds_rt_websocket_close (client_socket :number):number {
+    throw new Error("TODO");
+}
