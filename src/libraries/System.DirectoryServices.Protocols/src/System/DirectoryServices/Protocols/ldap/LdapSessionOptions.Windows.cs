@@ -10,6 +10,13 @@ namespace System.DirectoryServices.Protocols
     {
         private static void PALCertFreeCRLContext(IntPtr certPtr) => Interop.Ldap.CertFreeCRLContext(certPtr);
 
+        [UnsupportedOSPlatform("windows")]
+        public string TrustedCertificatesDirectory
+        {
+            get => throw new PlatformNotSupportedException();
+            set => throw new PlatformNotSupportedException();
+        }
+
         public bool SecureSocketLayer
         {
             get
@@ -23,6 +30,9 @@ namespace System.DirectoryServices.Protocols
                 SetIntValueHelper(LdapOption.LDAP_OPT_SSL, temp);
             }
         }
+
+        [UnsupportedOSPlatform("windows")]
+        public void StartNewTlsSessionContext() => throw new PlatformNotSupportedException();
 
         public int ProtocolVersion
         {
