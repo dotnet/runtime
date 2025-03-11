@@ -1317,6 +1317,7 @@ void emitter::emitLoadImmediate(emitAttr size, regNumber reg, ssize_t imm)
     assert(!EA_IS_RELOC(size));
     assert(isGeneralRegister(reg));
 
+    // Handle corner case: the following algorithm will not generate any instruction if imm == 0
     if (imm == 0)
     {
         emitIns_R_R_I(INS_addi, size, reg, REG_R0, 0);
@@ -1374,11 +1375,32 @@ void emitter::emitLoadImmediate(emitAttr size, regNumber reg, ssize_t imm)
     uint32_t offset2        = ~(offset1 - 1) & mask(x);
     uint32_t offset         = offset1;
     bool     isSubtractMode = false;
-    if (offset2 < offset1)
+
+    if (high32 == 0x7FFFFFFF && y != 63)
     {
-        offset         = offset2;
+        /* Handle corner case: we cannot do subtract mode if high32 == 0x7FFFFFFF
+         * Since adding 1 to it will change the sign bit. Instead, shift x and y
+         * to the left by one. */
+        int      newX       = x + 1;
+        uint32_t newOffset1 = imm & mask(newX);
+        uint32_t newOffset2 = ~(newOffset1 - 1) & mask(newX);
+        if (newOffset2 < offset1)
+        {
+            x              = newX;
+            high32         = ((int64_t)imm >> (x)) & mask(32);
+            offset2        = newOffset2;
+            isSubtractMode = true;
+        }
+    }
+    else if (offset2 < offset1)
+    {
         isSubtractMode = true;
-        high32         = (high32 + 1) & mask(32);
+    }
+
+    if (isSubtractMode)
+    {
+        offset = offset2;
+        high32 = (high32 + 1) & mask(32);
     }
 
     assert(MAX_NUM_OF_LOAD_IMM_INS >= 2);
