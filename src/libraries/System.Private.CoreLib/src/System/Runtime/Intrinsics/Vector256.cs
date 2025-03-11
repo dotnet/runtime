@@ -3125,6 +3125,7 @@ namespace System.Runtime.Intrinsics
         [CLSCompliant(false)]
         public static Vector256<ulong> ShiftRightLogical(Vector256<ulong> vector, int shiftCount) => vector >>> shiftCount;
 
+#if !MONO
         // These fallback methods only exist so that ShuffleNative has the same behaviour when called directly or via
         // reflection - reflecting into internal runtime methods is not supported, so we don't worry about others
         // reflecting into these. TODO: figure out if this can be solved in a nicer way.
@@ -3188,6 +3189,7 @@ namespace System.Runtime.Intrinsics
         {
             return Shuffle(vector, indices);
         }
+#endif
 
         /// <summary>Creates a new vector by selecting values from an input vector using a set of indices.</summary>
         /// <param name="vector">The input vector from which values are selected.</param>
@@ -3244,10 +3246,18 @@ namespace System.Runtime.Intrinsics
         /// <param name="indices">The per-element indices used to select a value from <paramref name="vector" />.</param>
         /// <returns>A new vector containing the values from <paramref name="vector" /> selected by the given <paramref name="indices" />.</returns>
         /// <remarks>Unlike Shuffle, this method delegates to the underlying hardware intrinsic without ensuring that <paramref name="indices"/> are normalized to [0, 31].</remarks>
+#if !MONO
         [Intrinsic]
+#else
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+#endif
         public static Vector256<byte> ShuffleNative(Vector256<byte> vector, Vector256<byte> indices)
         {
+#if !MONO
             return ShuffleNativeFallback(vector, indices);
+#else
+            return Shuffle(vector, indices);
+#endif
         }
 
         /// <summary>Creates a new vector by selecting values from an input vector using a set of indices.
@@ -3256,11 +3266,19 @@ namespace System.Runtime.Intrinsics
         /// <param name="indices">The per-element indices used to select a value from <paramref name="vector" />.</param>
         /// <returns>A new vector containing the values from <paramref name="vector" /> selected by the given <paramref name="indices" />.</returns>
         /// <remarks>Unlike Shuffle, this method delegates to the underlying hardware intrinsic without ensuring that <paramref name="indices"/> are normalized to [0, 31].</remarks>
+#if !MONO
         [Intrinsic]
+#else
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+#endif
         [CLSCompliant(false)]
         public static Vector256<sbyte> ShuffleNative(Vector256<sbyte> vector, Vector256<sbyte> indices)
         {
+#if !MONO
             return ShuffleNativeFallback(vector, indices);
+#else
+            return Shuffle(vector, indices);
+#endif
         }
 
         /// <summary>Creates a new vector by selecting values from an input vector using a set of indices.</summary>
@@ -3317,10 +3335,18 @@ namespace System.Runtime.Intrinsics
         /// <param name="indices">The per-element indices used to select a value from <paramref name="vector" />.</param>
         /// <returns>A new vector containing the values from <paramref name="vector" /> selected by the given <paramref name="indices" />.</returns>
         /// <remarks>Unlike Shuffle, this method delegates to the underlying hardware intrinsic without ensuring that <paramref name="indices"/> are normalized to [0, 15].</remarks>
+#if !MONO
         [Intrinsic]
+#else
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+#endif
         public static Vector256<short> ShuffleNative(Vector256<short> vector, Vector256<short> indices)
         {
+#if !MONO
             return ShuffleNativeFallback(vector, indices);
+#else
+            return Shuffle(vector, indices);
+#endif
         }
 
         /// <summary>Creates a new vector by selecting values from an input vector using a set of indices.</summary>
@@ -3328,11 +3354,19 @@ namespace System.Runtime.Intrinsics
         /// <param name="indices">The per-element indices used to select a value from <paramref name="vector" />.</param>
         /// <returns>A new vector containing the values from <paramref name="vector" /> selected by the given <paramref name="indices" />.</returns>
         /// <remarks>Unlike Shuffle, this method delegates to the underlying hardware intrinsic without ensuring that <paramref name="indices"/> are normalized to [0, 15].</remarks>
+#if !MONO
         [Intrinsic]
+#else
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+#endif
         [CLSCompliant(false)]
         public static Vector256<ushort> ShuffleNative(Vector256<ushort> vector, Vector256<ushort> indices)
         {
+#if !MONO
             return ShuffleNativeFallback(vector, indices);
+#else
+            return Shuffle(vector, indices);
+#endif
         }
 
         /// <summary>Creates a new vector by selecting values from an input vector using a set of indices.</summary>
@@ -3413,10 +3447,18 @@ namespace System.Runtime.Intrinsics
         /// <param name="indices">The per-element indices used to select a value from <paramref name="vector" />.</param>
         /// <returns>A new vector containing the values from <paramref name="vector" /> selected by the given <paramref name="indices" />.</returns>
         /// <remarks>Unlike Shuffle, this method delegates to the underlying hardware intrinsic without ensuring that <paramref name="indices"/> are normalized to [0, 7].</remarks>
+#if !MONO
         [Intrinsic]
+#else
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+#endif
         public static Vector256<int> ShuffleNative(Vector256<int> vector, Vector256<int> indices)
         {
+#if !MONO
             return ShuffleNativeFallback(vector, indices);
+#else
+            return Shuffle(vector, indices);
+#endif
         }
 
         /// <summary>Creates a new vector by selecting values from an input vector using a set of indices.</summary>
@@ -3424,11 +3466,19 @@ namespace System.Runtime.Intrinsics
         /// <param name="indices">The per-element indices used to select a value from <paramref name="vector" />.</param>
         /// <returns>A new vector containing the values from <paramref name="vector" /> selected by the given <paramref name="indices" />.</returns>
         /// <remarks>Unlike Shuffle, this method delegates to the underlying hardware intrinsic without ensuring that <paramref name="indices"/> are normalized to [0, 7].</remarks>
+#if !MONO
         [Intrinsic]
+#else
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+#endif
         [CLSCompliant(false)]
         public static Vector256<uint> ShuffleNative(Vector256<uint> vector, Vector256<uint> indices)
         {
+#if !MONO
             return ShuffleNativeFallback(vector, indices);
+#else
+            return Shuffle(vector, indices);
+#endif
         }
 
         /// <summary>Creates a new vector by selecting values from an input vector using a set of indices.</summary>
@@ -3436,10 +3486,18 @@ namespace System.Runtime.Intrinsics
         /// <param name="indices">The per-element indices used to select a value from <paramref name="vector" />.</param>
         /// <returns>A new vector containing the values from <paramref name="vector" /> selected by the given <paramref name="indices" />.</returns>
         /// <remarks>Unlike Shuffle, this method delegates to the underlying hardware intrinsic without ensuring that <paramref name="indices"/> are normalized to [0, 7].</remarks>
+#if !MONO
         [Intrinsic]
+#else
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+#endif
         public static Vector256<float> ShuffleNative(Vector256<float> vector, Vector256<int> indices)
         {
+#if !MONO
             return ShuffleNativeFallback(vector, indices);
+#else
+            return Shuffle(vector, indices);
+#endif
         }
 
         /// <summary>Creates a new vector by selecting values from an input vector using a set of indices.</summary>
@@ -3520,10 +3578,18 @@ namespace System.Runtime.Intrinsics
         /// <param name="indices">The per-element indices used to select a value from <paramref name="vector" />.</param>
         /// <returns>A new vector containing the values from <paramref name="vector" /> selected by the given <paramref name="indices" />.</returns>
         /// <remarks>Unlike Shuffle, this method delegates to the underlying hardware intrinsic without ensuring that <paramref name="indices"/> are normalized to [0, 3].</remarks>
+#if !MONO
         [Intrinsic]
+#else
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+#endif
         public static Vector256<long> ShuffleNative(Vector256<long> vector, Vector256<long> indices)
         {
+#if !MONO
             return ShuffleNativeFallback(vector, indices);
+#else
+            return Shuffle(vector, indices);
+#endif
         }
 
         /// <summary>Creates a new vector by selecting values from an input vector using a set of indices.</summary>
@@ -3531,11 +3597,19 @@ namespace System.Runtime.Intrinsics
         /// <param name="indices">The per-element indices used to select a value from <paramref name="vector" />.</param>
         /// <returns>A new vector containing the values from <paramref name="vector" /> selected by the given <paramref name="indices" />.</returns>
         /// <remarks>Unlike Shuffle, this method delegates to the underlying hardware intrinsic without ensuring that <paramref name="indices"/> are normalized to [0, 3].</remarks>
+#if !MONO
         [Intrinsic]
+#else
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+#endif
         [CLSCompliant(false)]
         public static Vector256<ulong> ShuffleNative(Vector256<ulong> vector, Vector256<ulong> indices)
         {
+#if !MONO
             return ShuffleNativeFallback(vector, indices);
+#else
+            return Shuffle(vector, indices);
+#endif
         }
 
         /// <summary>Creates a new vector by selecting values from an input vector using a set of indices.</summary>
@@ -3543,10 +3617,18 @@ namespace System.Runtime.Intrinsics
         /// <param name="indices">The per-element indices used to select a value from <paramref name="vector" />.</param>
         /// <returns>A new vector containing the values from <paramref name="vector" /> selected by the given <paramref name="indices" />.</returns>
         /// <remarks>Unlike Shuffle, this method delegates to the underlying hardware intrinsic without ensuring that <paramref name="indices"/> are normalized to [0, 3].</remarks>
+#if !MONO
         [Intrinsic]
+#else
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+#endif
         public static Vector256<double> ShuffleNative(Vector256<double> vector, Vector256<long> indices)
         {
+#if !MONO
             return ShuffleNativeFallback(vector, indices);
+#else
+            return Shuffle(vector, indices);
+#endif
         }
 
         /// <inheritdoc cref="Vector128.Sin(Vector128{double})" />
