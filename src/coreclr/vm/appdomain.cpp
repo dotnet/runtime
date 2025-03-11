@@ -3410,7 +3410,7 @@ void AppDomain::RaiseLoadingAssemblyEvent(Assembly *pAssembly)
     EX_END_CATCH(SwallowAllExceptions);
 }
 
-BOOL AppDomain::OnUnhandledException(OBJECTREF *pThrowable, BOOL isTerminating/*=TRUE*/)
+BOOL AppDomain::OnUnhandledException(OBJECTREF *pThrowable)
 {
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_TRIGGERS;
@@ -3422,7 +3422,7 @@ BOOL AppDomain::OnUnhandledException(OBJECTREF *pThrowable, BOOL isTerminating/*
 
     EX_TRY
     {
-        retVal = GetAppDomain()->RaiseUnhandledExceptionEvent(pThrowable, isTerminating);
+        retVal = GetAppDomain()->RaiseUnhandledExceptionEvent(pThrowable);
     }
     EX_CATCH
     {
@@ -3451,7 +3451,7 @@ void AppDomain::RaiseExitProcessEvent()
 }
 
 BOOL
-AppDomain::RaiseUnhandledExceptionEvent(OBJECTREF *pThrowable, BOOL isTerminating)
+AppDomain::RaiseUnhandledExceptionEvent(OBJECTREF *pThrowable)
 {
     CONTRACTL
     {
@@ -3478,7 +3478,7 @@ AppDomain::RaiseUnhandledExceptionEvent(OBJECTREF *pThrowable, BOOL isTerminatin
     GCPROTECT_BEGIN(gc);
     if (orDelegate != NULL)
     {
-        DistributeUnhandledExceptionReliably(&gc.Delegate, &gc.Sender, pThrowable, isTerminating);
+        DistributeUnhandledExceptionReliably(&gc.Delegate, &gc.Sender, pThrowable);
     }
     GCPROTECT_END();
     return TRUE;

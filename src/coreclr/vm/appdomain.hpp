@@ -1145,7 +1145,7 @@ public:
     // in a lazy fashion so executables do not take the perf hit unless the load other
     // assemblies
 #ifndef DACCESS_COMPILE
-    static BOOL OnUnhandledException(OBJECTREF *pThrowable, BOOL isTerminating = TRUE);
+    static BOOL OnUnhandledException(OBJECTREF *pThrowable);
 
 #endif
 
@@ -1343,7 +1343,7 @@ private:
     friend class Assembly;
 
 private:
-    BOOL RaiseUnhandledExceptionEvent(OBJECTREF *pThrowable, BOOL isTerminating);
+    BOOL RaiseUnhandledExceptionEvent(OBJECTREF *pThrowable);
 
     enum Stage {
         STAGE_CREATING,
