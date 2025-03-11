@@ -1173,7 +1173,7 @@ AssertionIndex Compiler::optCreateAssertion(GenTree* op1, GenTree* op2, optAsser
             }
         }
 
-        if (!fgIsBigOffset(offset) && op1->OperIs(GT_LCL_VAR))
+        if (!fgIsBigOffset(offset) && op1->OperIs(GT_LCL_VAR) && !lvaVarAddrExposed(op1->AsLclVar()->GetLclNum()))
         {
             assertion.op1.kind       = O1K_LCLVAR;
             assertion.op1.lcl.lclNum = op1->AsLclVarCommon()->GetLclNum();
