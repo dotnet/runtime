@@ -20,14 +20,14 @@ namespace System.DirectoryServices.Protocols
     }
     public partial class AsqRequestControl : System.DirectoryServices.Protocols.DirectoryControl
     {
-        public AsqRequestControl() : base (default(string), default(byte[]), default(bool), default(bool)) { }
-        public AsqRequestControl(string attributeName) : base (default(string), default(byte[]), default(bool), default(bool)) { }
+        public AsqRequestControl() : base(default(string), default(byte[]), default(bool), default(bool)) { }
+        public AsqRequestControl(string attributeName) : base(default(string), default(byte[]), default(bool), default(bool)) { }
         public string AttributeName { get { throw null; } set { } }
         public override byte[] GetValue() { throw null; }
     }
     public partial class AsqResponseControl : System.DirectoryServices.Protocols.DirectoryControl
     {
-        internal AsqResponseControl() : base (default(string), default(byte[]), default(bool), default(bool)) { }
+        internal AsqResponseControl() : base(default(string), default(byte[]), default(bool), default(bool)) { }
         public System.DirectoryServices.Protocols.ResultCode Result { get { throw null; } }
     }
     public enum AuthType
@@ -75,8 +75,8 @@ namespace System.DirectoryServices.Protocols
     }
     public partial class CrossDomainMoveControl : System.DirectoryServices.Protocols.DirectoryControl
     {
-        public CrossDomainMoveControl() : base (default(string), default(byte[]), default(bool), default(bool)) { }
-        public CrossDomainMoveControl(string targetDomainController) : base (default(string), default(byte[]), default(bool), default(bool)) { }
+        public CrossDomainMoveControl() : base(default(string), default(byte[]), default(bool), default(bool)) { }
+        public CrossDomainMoveControl(string targetDomainController) : base(default(string), default(byte[]), default(bool), default(bool)) { }
         public string TargetDomainController { get { throw null; } set { } }
         public override byte[] GetValue() { throw null; }
     }
@@ -208,7 +208,7 @@ namespace System.DirectoryServices.Protocols
     }
     public partial class DirectoryNotificationControl : System.DirectoryServices.Protocols.DirectoryControl
     {
-        public DirectoryNotificationControl() : base (default(string), default(byte[]), default(bool), default(bool)) { }
+        public DirectoryNotificationControl() : base(default(string), default(byte[]), default(bool), default(bool)) { }
     }
     public abstract partial class DirectoryOperation
     {
@@ -261,10 +261,10 @@ namespace System.DirectoryServices.Protocols
     }
     public partial class DirSyncRequestControl : System.DirectoryServices.Protocols.DirectoryControl
     {
-        public DirSyncRequestControl() : base (default(string), default(byte[]), default(bool), default(bool)) { }
-        public DirSyncRequestControl(byte[] cookie) : base (default(string), default(byte[]), default(bool), default(bool)) { }
-        public DirSyncRequestControl(byte[] cookie, System.DirectoryServices.Protocols.DirectorySynchronizationOptions option) : base (default(string), default(byte[]), default(bool), default(bool)) { }
-        public DirSyncRequestControl(byte[] cookie, System.DirectoryServices.Protocols.DirectorySynchronizationOptions option, int attributeCount) : base (default(string), default(byte[]), default(bool), default(bool)) { }
+        public DirSyncRequestControl() : base(default(string), default(byte[]), default(bool), default(bool)) { }
+        public DirSyncRequestControl(byte[] cookie) : base(default(string), default(byte[]), default(bool), default(bool)) { }
+        public DirSyncRequestControl(byte[] cookie, System.DirectoryServices.Protocols.DirectorySynchronizationOptions option) : base(default(string), default(byte[]), default(bool), default(bool)) { }
+        public DirSyncRequestControl(byte[] cookie, System.DirectoryServices.Protocols.DirectorySynchronizationOptions option, int attributeCount) : base(default(string), default(byte[]), default(bool), default(bool)) { }
         public int AttributeCount { get { throw null; } set { } }
         public byte[] Cookie { get { throw null; } set { } }
         public System.DirectoryServices.Protocols.DirectorySynchronizationOptions Option { get { throw null; } set { } }
@@ -272,14 +272,14 @@ namespace System.DirectoryServices.Protocols
     }
     public partial class DirSyncResponseControl : System.DirectoryServices.Protocols.DirectoryControl
     {
-        internal DirSyncResponseControl() : base (default(string), default(byte[]), default(bool), default(bool)) { }
+        internal DirSyncResponseControl() : base(default(string), default(byte[]), default(bool), default(bool)) { }
         public byte[] Cookie { get { throw null; } }
         public bool MoreData { get { throw null; } }
         public int ResultSize { get { throw null; } }
     }
     public partial class DomainScopeControl : System.DirectoryServices.Protocols.DirectoryControl
     {
-        public DomainScopeControl() : base (default(string), default(byte[]), default(bool), default(bool)) { }
+        public DomainScopeControl() : base(default(string), default(byte[]), default(bool), default(bool)) { }
     }
     public partial class DsmlAuthRequest : System.DirectoryServices.Protocols.DirectoryRequest
     {
@@ -289,8 +289,8 @@ namespace System.DirectoryServices.Protocols
     }
     public partial class ExtendedDNControl : System.DirectoryServices.Protocols.DirectoryControl
     {
-        public ExtendedDNControl() : base (default(string), default(byte[]), default(bool), default(bool)) { }
-        public ExtendedDNControl(System.DirectoryServices.Protocols.ExtendedDNFlag flag) : base (default(string), default(byte[]), default(bool), default(bool)) { }
+        public ExtendedDNControl() : base(default(string), default(byte[]), default(bool), default(bool)) { }
+        public ExtendedDNControl(System.DirectoryServices.Protocols.ExtendedDNFlag flag) : base(default(string), default(byte[]), default(bool), default(bool)) { }
         public System.DirectoryServices.Protocols.ExtendedDNFlag Flag { get { throw null; } set { } }
         public override byte[] GetValue() { throw null; }
     }
@@ -315,7 +315,7 @@ namespace System.DirectoryServices.Protocols
     }
     public partial class LazyCommitControl : System.DirectoryServices.Protocols.DirectoryControl
     {
-        public LazyCommitControl() : base (default(string), default(byte[]), default(bool), default(bool)) { }
+        public LazyCommitControl() : base(default(string), default(byte[]), default(bool), default(bool)) { }
     }
     public partial class LdapConnection : System.DirectoryServices.Protocols.DirectoryConnection, System.IDisposable
     {
@@ -461,16 +461,16 @@ namespace System.DirectoryServices.Protocols
     public delegate bool NotifyOfNewConnectionCallback(System.DirectoryServices.Protocols.LdapConnection primaryConnection, System.DirectoryServices.Protocols.LdapConnection referralFromConnection, string newDistinguishedName, System.DirectoryServices.Protocols.LdapDirectoryIdentifier identifier, System.DirectoryServices.Protocols.LdapConnection newConnection, System.Net.NetworkCredential credential, long currentUserToken, int errorCodeFromBind);
     public partial class PageResultRequestControl : System.DirectoryServices.Protocols.DirectoryControl
     {
-        public PageResultRequestControl() : base (default(string), default(byte[]), default(bool), default(bool)) { }
-        public PageResultRequestControl(byte[] cookie) : base (default(string), default(byte[]), default(bool), default(bool)) { }
-        public PageResultRequestControl(int pageSize) : base (default(string), default(byte[]), default(bool), default(bool)) { }
+        public PageResultRequestControl() : base(default(string), default(byte[]), default(bool), default(bool)) { }
+        public PageResultRequestControl(byte[] cookie) : base(default(string), default(byte[]), default(bool), default(bool)) { }
+        public PageResultRequestControl(int pageSize) : base(default(string), default(byte[]), default(bool), default(bool)) { }
         public byte[] Cookie { get { throw null; } set { } }
         public int PageSize { get { throw null; } set { } }
         public override byte[] GetValue() { throw null; }
     }
     public partial class PageResultResponseControl : System.DirectoryServices.Protocols.DirectoryControl
     {
-        internal PageResultResponseControl() : base (default(string), default(byte[]), default(bool), default(bool)) { }
+        internal PageResultResponseControl() : base(default(string), default(byte[]), default(bool), default(bool)) { }
         public byte[] Cookie { get { throw null; } }
         public int TotalCount { get { throw null; } }
     }
@@ -490,15 +490,15 @@ namespace System.DirectoryServices.Protocols
     }
     public partial class PermissiveModifyControl : System.DirectoryServices.Protocols.DirectoryControl
     {
-        public PermissiveModifyControl() : base (default(string), default(byte[]), default(bool), default(bool)) { }
+        public PermissiveModifyControl() : base(default(string), default(byte[]), default(bool), default(bool)) { }
     }
     public delegate System.Security.Cryptography.X509Certificates.X509Certificate QueryClientCertificateCallback(System.DirectoryServices.Protocols.LdapConnection connection, byte[][] trustedCAs);
     public delegate System.DirectoryServices.Protocols.LdapConnection QueryForConnectionCallback(System.DirectoryServices.Protocols.LdapConnection primaryConnection, System.DirectoryServices.Protocols.LdapConnection referralFromConnection, string newDistinguishedName, System.DirectoryServices.Protocols.LdapDirectoryIdentifier identifier, System.Net.NetworkCredential credential, long currentUserToken);
     [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
     public partial class QuotaControl : System.DirectoryServices.Protocols.DirectoryControl
     {
-        public QuotaControl() : base (default(string), default(byte[]), default(bool), default(bool)) { } 
-        public QuotaControl(System.Security.Principal.SecurityIdentifier querySid) : base (default(string), default(byte[]), default(bool), default(bool)) { }
+        public QuotaControl() : base(default(string), default(byte[]), default(bool), default(bool)) { }
+        public QuotaControl(System.Security.Principal.SecurityIdentifier querySid) : base(default(string), default(byte[]), default(bool), default(bool)) { }
         public System.Security.Principal.SecurityIdentifier QuerySid { get { throw null; } set { } }
         public override byte[] GetValue() { throw null; }
     }
@@ -570,8 +570,8 @@ namespace System.DirectoryServices.Protocols
     }
     public partial class SearchOptionsControl : System.DirectoryServices.Protocols.DirectoryControl
     {
-        public SearchOptionsControl() : base (default(string), default(byte[]), default(bool), default(bool)) { }
-        public SearchOptionsControl(System.DirectoryServices.Protocols.SearchOption flags) : base (default(string), default(byte[]), default(bool), default(bool)) { }
+        public SearchOptionsControl() : base(default(string), default(byte[]), default(bool), default(bool)) { }
+        public SearchOptionsControl(System.DirectoryServices.Protocols.SearchOption flags) : base(default(string), default(byte[]), default(bool), default(bool)) { }
         public System.DirectoryServices.Protocols.SearchOption SearchOption { get { throw null; } set { } }
         public override byte[] GetValue() { throw null; }
     }
@@ -645,8 +645,8 @@ namespace System.DirectoryServices.Protocols
     }
     public partial class SecurityDescriptorFlagControl : System.DirectoryServices.Protocols.DirectoryControl
     {
-        public SecurityDescriptorFlagControl() : base (default(string), default(byte[]), default(bool), default(bool)) { }
-        public SecurityDescriptorFlagControl(System.DirectoryServices.Protocols.SecurityMasks masks) : base (default(string), default(byte[]), default(bool), default(bool)) { }
+        public SecurityDescriptorFlagControl() : base(default(string), default(byte[]), default(bool), default(bool)) { }
+        public SecurityDescriptorFlagControl(System.DirectoryServices.Protocols.SecurityMasks masks) : base(default(string), default(byte[]), default(bool), default(bool)) { }
         public System.DirectoryServices.Protocols.SecurityMasks SecurityMasks { get { throw null; } set { } }
         public override byte[] GetValue() { throw null; }
     }
@@ -663,27 +663,27 @@ namespace System.DirectoryServices.Protocols
     {
         internal SecurityPackageContextConnectionInformation() { }
 #if NET10_0_OR_GREATER
-        [Obsolete("KeyExchangeAlgorithm, KeyExchangeStrength, CipherAlgorithm, CipherAlgorithmStrength, HashAlgorithm and HashStrength properties of SslStream are obsolete. Use NegotiatedCipherSuite instead.", DiagnosticId = "SYSLIB0058", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+        [Obsolete("KeyExchangeAlgorithm, KeyExchangeStrength, CipherAlgorithm, CipherStrength, HashAlgorithm and HashStrength properties of SslStream are obsolete. Use NegotiatedCipherSuite instead.", DiagnosticId = "SYSLIB0058", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
 #endif
         public System.Security.Authentication.CipherAlgorithmType AlgorithmIdentifier { get { throw null; } }
 #if NET10_0_OR_GREATER
-        [Obsolete("KeyExchangeAlgorithm, KeyExchangeStrength, CipherAlgorithm, CipherAlgorithmStrength, HashAlgorithm and HashStrength properties of SslStream are obsolete. Use NegotiatedCipherSuite instead.", DiagnosticId = "SYSLIB0058", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+        [Obsolete("KeyExchangeAlgorithm, KeyExchangeStrength, CipherAlgorithm, CipherStrength, HashAlgorithm and HashStrength properties of SslStream are obsolete. Use NegotiatedCipherSuite instead.", DiagnosticId = "SYSLIB0058", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
 #endif
         public int CipherStrength { get { throw null; } }
 #if NET10_0_OR_GREATER
-        [Obsolete("KeyExchangeAlgorithm, KeyExchangeStrength, CipherAlgorithm, CipherAlgorithmStrength, HashAlgorithm and HashStrength properties of SslStream are obsolete. Use NegotiatedCipherSuite instead.", DiagnosticId = "SYSLIB0058", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+        [Obsolete("KeyExchangeAlgorithm, KeyExchangeStrength, CipherAlgorithm, CipherStrength, HashAlgorithm and HashStrength properties of SslStream are obsolete. Use NegotiatedCipherSuite instead.", DiagnosticId = "SYSLIB0058", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
 #endif
         public int ExchangeStrength { get { throw null; } }
 #if NET10_0_OR_GREATER
-        [Obsolete("KeyExchangeAlgorithm, KeyExchangeStrength, CipherAlgorithm, CipherAlgorithmStrength, HashAlgorithm and HashStrength properties of SslStream are obsolete. Use NegotiatedCipherSuite instead.", DiagnosticId = "SYSLIB0058", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+        [Obsolete("KeyExchangeAlgorithm, KeyExchangeStrength, CipherAlgorithm, CipherStrength, HashAlgorithm and HashStrength properties of SslStream are obsolete. Use NegotiatedCipherSuite instead.", DiagnosticId = "SYSLIB0058", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
 #endif
         public System.Security.Authentication.HashAlgorithmType Hash { get { throw null; } }
 #if NET10_0_OR_GREATER
-        [Obsolete("KeyExchangeAlgorithm, KeyExchangeStrength, CipherAlgorithm, CipherAlgorithmStrength, HashAlgorithm and HashStrength properties of SslStream are obsolete. Use NegotiatedCipherSuite instead.", DiagnosticId = "SYSLIB0058", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+        [Obsolete("KeyExchangeAlgorithm, KeyExchangeStrength, CipherAlgorithm, CipherStrength, HashAlgorithm and HashStrength properties of SslStream are obsolete. Use NegotiatedCipherSuite instead.", DiagnosticId = "SYSLIB0058", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
 #endif
         public int HashStrength { get { throw null; } }
 #if NET10_0_OR_GREATER
-        [Obsolete("KeyExchangeAlgorithm, KeyExchangeStrength, CipherAlgorithm, CipherAlgorithmStrength, HashAlgorithm and HashStrength properties of SslStream are obsolete. Use NegotiatedCipherSuite instead.", DiagnosticId = "SYSLIB0058", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+        [Obsolete("KeyExchangeAlgorithm, KeyExchangeStrength, CipherAlgorithm, CipherStrength, HashAlgorithm and HashStrength properties of SslStream are obsolete. Use NegotiatedCipherSuite instead.", DiagnosticId = "SYSLIB0058", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
 #endif
         public int KeyExchangeAlgorithm { get { throw null; } }
         public System.DirectoryServices.Protocols.SecurityProtocol Protocol { get { throw null; } }
@@ -701,7 +701,7 @@ namespace System.DirectoryServices.Protocols
     }
     public partial class ShowDeletedControl : System.DirectoryServices.Protocols.DirectoryControl
     {
-        public ShowDeletedControl() : base (default(string), default(byte[]), default(bool), default(bool)) { }
+        public ShowDeletedControl() : base(default(string), default(byte[]), default(bool), default(bool)) { }
     }
     public partial class SortKey
     {
@@ -713,15 +713,15 @@ namespace System.DirectoryServices.Protocols
     }
     public partial class SortRequestControl : System.DirectoryServices.Protocols.DirectoryControl
     {
-        public SortRequestControl(params System.DirectoryServices.Protocols.SortKey[] sortKeys) : base (default(string), default(byte[]), default(bool), default(bool)) { }
-        public SortRequestControl(string attributeName, bool reverseOrder) : base (default(string), default(byte[]), default(bool), default(bool)) { }
-        public SortRequestControl(string attributeName, string matchingRule, bool reverseOrder) : base (default(string), default(byte[]), default(bool), default(bool)) { }
+        public SortRequestControl(params System.DirectoryServices.Protocols.SortKey[] sortKeys) : base(default(string), default(byte[]), default(bool), default(bool)) { }
+        public SortRequestControl(string attributeName, bool reverseOrder) : base(default(string), default(byte[]), default(bool), default(bool)) { }
+        public SortRequestControl(string attributeName, string matchingRule, bool reverseOrder) : base(default(string), default(byte[]), default(bool), default(bool)) { }
         public System.DirectoryServices.Protocols.SortKey[] SortKeys { get { throw null; } set { } }
         public override byte[] GetValue() { throw null; }
     }
     public partial class SortResponseControl : System.DirectoryServices.Protocols.DirectoryControl
     {
-        internal SortResponseControl() : base (default(string), default(byte[]), default(bool), default(bool)) { }
+        internal SortResponseControl() : base(default(string), default(byte[]), default(bool), default(bool)) { }
         public string AttributeName { get { throw null; } }
         public System.DirectoryServices.Protocols.ResultCode Result { get { throw null; } }
     }
@@ -741,13 +741,13 @@ namespace System.DirectoryServices.Protocols
     }
     public partial class TreeDeleteControl : System.DirectoryServices.Protocols.DirectoryControl
     {
-        public TreeDeleteControl() : base (default(string), default(byte[]), default(bool), default(bool)) { }
+        public TreeDeleteControl() : base(default(string), default(byte[]), default(bool), default(bool)) { }
     }
     public partial class VerifyNameControl : System.DirectoryServices.Protocols.DirectoryControl
     {
-        public VerifyNameControl() : base (default(string), default(byte[]), default(bool), default(bool)) { }
-        public VerifyNameControl(string serverName) : base (default(string), default(byte[]), default(bool), default(bool)) { }
-        public VerifyNameControl(string serverName, int flag) : base (default(string), default(byte[]), default(bool), default(bool)) { }
+        public VerifyNameControl() : base(default(string), default(byte[]), default(bool), default(bool)) { }
+        public VerifyNameControl(string serverName) : base(default(string), default(byte[]), default(bool), default(bool)) { }
+        public VerifyNameControl(string serverName, int flag) : base(default(string), default(byte[]), default(bool), default(bool)) { }
         public int Flag { get { throw null; } set { } }
         public string ServerName { get { throw null; } set { } }
         public override byte[] GetValue() { throw null; }
@@ -755,10 +755,10 @@ namespace System.DirectoryServices.Protocols
     public delegate bool VerifyServerCertificateCallback(System.DirectoryServices.Protocols.LdapConnection connection, System.Security.Cryptography.X509Certificates.X509Certificate certificate);
     public partial class VlvRequestControl : System.DirectoryServices.Protocols.DirectoryControl
     {
-        public VlvRequestControl() : base (default(string), default(byte[]), default(bool), default(bool)) { }
-        public VlvRequestControl(int beforeCount, int afterCount, byte[] target) : base (default(string), default(byte[]), default(bool), default(bool)) { }
-        public VlvRequestControl(int beforeCount, int afterCount, int offset) : base (default(string), default(byte[]), default(bool), default(bool)) { }
-        public VlvRequestControl(int beforeCount, int afterCount, string target) : base (default(string), default(byte[]), default(bool), default(bool)) { }
+        public VlvRequestControl() : base(default(string), default(byte[]), default(bool), default(bool)) { }
+        public VlvRequestControl(int beforeCount, int afterCount, byte[] target) : base(default(string), default(byte[]), default(bool), default(bool)) { }
+        public VlvRequestControl(int beforeCount, int afterCount, int offset) : base(default(string), default(byte[]), default(bool), default(bool)) { }
+        public VlvRequestControl(int beforeCount, int afterCount, string target) : base(default(string), default(byte[]), default(bool), default(bool)) { }
         public int AfterCount { get { throw null; } set { } }
         public int BeforeCount { get { throw null; } set { } }
         public byte[] ContextId { get { throw null; } set { } }
@@ -769,7 +769,7 @@ namespace System.DirectoryServices.Protocols
     }
     public partial class VlvResponseControl : System.DirectoryServices.Protocols.DirectoryControl
     {
-        internal VlvResponseControl() : base (default(string), default(byte[]), default(bool), default(bool)) { }
+        internal VlvResponseControl() : base(default(string), default(byte[]), default(bool), default(bool)) { }
         public int ContentCount { get { throw null; } }
         public byte[] ContextId { get { throw null; } }
         public System.DirectoryServices.Protocols.ResultCode Result { get { throw null; } }
