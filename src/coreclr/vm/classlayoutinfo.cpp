@@ -46,6 +46,17 @@ namespace
 
             if (!fExplicitOffsets)
             {
+                LPCUTF8 szFieldName;
+                if (FAILED(pInternalImport->GetNameOfFieldDef(pFieldInfoArray[i].m_MD, &szFieldName)))
+                {
+                    szFieldName = "Invalid FieldDef record";
+                }
+
+                pModule->GetAssembly()->ThrowTypeLoadException(pInternalImport,
+                    cl,
+                    szFieldName,
+                    IDS_CLASSLOAD_SEQ_STRUCT_EXPLICIT_OFFSET);
+
                 // ulOffset is the sequence
                 pfwalk->m_sequence = ulOffset;
             }
