@@ -3070,7 +3070,10 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 					}
 					op_etype = m_class_get_byval_arg (mono_defaults.byte_class);
 					op_klass = create_class_instance ("System.Runtime.Intrinsics", "Vector128`1", op_etype);
-					MonoInst *ins = emit_simd_ins_for_sig (cfg, op_klass, OP_XOP_X_X_X, INTRINS_SSE_PSHUFB, 0, fsig, args);
+					MonoInst *new_args[3];
+					new_args [0] = emit_simd_ins (cfg, op_klass, OP_XCAST, args [0]->dreg, -1);
+					new_args [1] = emit_simd_ins (cfg, op_klass, OP_XCAST, args [1]->dreg, -1);
+					MonoInst *ins = emit_simd_ins_for_sig (cfg, op_klass, OP_XOP_X_X_X, INTRINS_SSE_PSHUFB, 0, fsig, new_args);
 					return emit_simd_ins (cfg, klass, OP_XCAST, ins->dreg, -1);
 				}
 			}
