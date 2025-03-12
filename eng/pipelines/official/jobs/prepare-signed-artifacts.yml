@@ -10,7 +10,6 @@ jobs:
     displayName: 'Prepare Signed Artifacts'
     
     # Disable SBOM at job template level
-    skipComponentGovernanceDetection: true
     enableSbom: false
 
     pool:
@@ -28,7 +27,6 @@ jobs:
     variables:
       - name: '_SignType'
         value: $[ coalesce(variables.OfficialSignType, 'real') ]
-      - DISABLE_SBOM: 'true'
       
     templateContext:
       inputs:
@@ -61,7 +59,6 @@ jobs:
     - template: /eng/common/templates-official/steps/generate-sbom.yml
       parameters:
         BuildDropPath: $(Build.SourcesDirectory)\artifacts
-        PackageVersion: $(Version)
         Verbosity: Debug
 
     - task: CopyFiles@2
