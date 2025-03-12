@@ -177,11 +177,8 @@ namespace System.Net
             }
             set
             {
-                m_domain = value ?? string.Empty;
+                SetDomainAndKey(value ?? string.Empty);
                 m_domain_implicit = false;
-
-                // Given Domain is explicit now, it is necessary to initialize DomainKey for correct GetHashCode() behavior.
-                InitDomainKey();
             }
         }
 
@@ -310,8 +307,9 @@ namespace System.Net
             return clonedCookie;
         }
 
-        private void InitDomainKey()
+        private void SetDomainAndKey(string domain)
         {
+            m_domain = domain;
             m_domainKey = CookieComparer.StripLeadingDot(m_domain).ToString().ToLowerInvariant();
         }
 
@@ -356,10 +354,7 @@ namespace System.Net
         // We also check the validity of all attributes based on the version and variant (read RFC)
         //
         // To work properly this function must be called after cookie construction with
-        // default (response) URI AND setDefault == true
-        //
-        // Afterwards, the function can be called many times with other URIs and
-        // setDefault == false to check whether this cookie matches given uri
+        // default (response) URI.
         internal void VerifyAndSetDefaults(CookieVariant variant, Uri uri)
         {
             string host = uri.Host;
@@ -414,8 +409,7 @@ namespace System.Net
             // If domain is implicit => assume a) uri is valid, b) just set domain to uri hostname.
             if (m_domain_implicit)
             {
-                m_domain = host;
-                InitDomainKey();
+                SetDomainAndKey(host);
             }
             else
             {
