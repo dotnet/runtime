@@ -11,9 +11,15 @@
   </ItemGroup>
 
   <ItemGroup Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net462'))">
-    <!-- These assemblies and their dependencies are made available by MSBuild on .NET Framework -->
-    <PackageReference Include="System.Reflection.Metadata" Version="$(SystemReflectionMetadataToolsetVersion)" ExcludeAssets="Runtime" PrivateAssets="All" />
-    <PackageReference Include="System.Text.Json" Version="$(SystemTextJsonToolsetVersion)" ExcludeAssets="Runtime" PrivateAssets="All" />
+    <!-- These assemblies are made available by MSBuild on .NET Framework -->
+    <PackageDownloadAndReference Include="Microsoft.Bcl.AsyncInterfaces" Version="$(MicrosoftBclAsyncInterfacesToolsetVersion)" Folder="lib/net462" />
+    <PackageDownloadAndReference Include="System.Buffers" Version="$(SystemBuffersToolsetVersion)" Folder="lib/net461" />
+    <PackageDownloadAndReference Include="System.Collections.Immutable" Version="$(SystemCollectionsImmutableToolsetVersion)" Folder="lib/net462" />
+    <PackageDownloadAndReference Include="System.Memory" Version="$(SystemMemoryToolsetVersion)" Folder="lib/net461" />
+    <PackageDownloadAndReference Include="System.Reflection.Metadata" Version="$(SystemReflectionMetadataToolsetVersion)" Folder="lib/net462" />
+    <PackageDownloadAndReference Include="System.Text.Encodings.Web" Version="$(SystemTextEncodingsWebToolsetVersion)" Folder="lib/net462" />
+    <PackageDownloadAndReference Include="System.Text.Json" Version="$(SystemTextJsonToolsetVersion)" Folder="lib/net462" />
+    <PackageDownloadAndReference Include="System.Threading.Tasks.Extensions" Version="$(SystemThreadingTasksExtensionsToolsetVersion)" Folder="lib/net461" />
   </ItemGroup>
 
   <Import Project="$(RepositoryEngineeringDir)PackageDownloadAndReference.targets" />
