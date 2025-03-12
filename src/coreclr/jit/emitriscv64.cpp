@@ -1445,20 +1445,20 @@ void emitter::emitLoadImmediate(emitAttr size, regNumber reg, ssize_t imm)
     {
         uint32_t chunk = (offset >> chunkLsbPos) & chunkMask;
 
-        /* We could move our 11 bit chunk window to the right for as many as the
-         * leading zeros.*/
-        int leadingZerosOn11BitsChunk = 11 - (64 - __builtin_clzll(chunk));
-        if (leadingZerosOn11BitsChunk > 0)
-        {
-            int maxAdditionalShift =
-                (chunkLsbPos < leadingZerosOn11BitsChunk - 1) ? chunkLsbPos : leadingZerosOn11BitsChunk - 1;
-            chunkLsbPos -= maxAdditionalShift;
-            shift += maxAdditionalShift;
-            chunk = (offset >> chunkLsbPos) & chunkMask;
-        }
-
         if (chunk != 0)
         {
+            /* We could move our 11 bit chunk window to the right for as many as the
+             * leading zeros.*/
+            int leadingZerosOn11BitsChunk = 11 - (64 - __builtin_clzll(chunk));
+            if (leadingZerosOn11BitsChunk > 0)
+            {
+                int maxAdditionalShift =
+                    (chunkLsbPos < leadingZerosOn11BitsChunk) ? chunkLsbPos : leadingZerosOn11BitsChunk;
+                chunkLsbPos -= maxAdditionalShift;
+                shift += maxAdditionalShift;
+                chunk = (offset >> chunkLsbPos) & chunkMask;
+            }
+
             numberOfInstructions += 2;
             if (numberOfInstructions > maxInsCount)
             {
