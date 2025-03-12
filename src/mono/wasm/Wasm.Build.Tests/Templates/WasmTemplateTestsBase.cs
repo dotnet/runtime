@@ -80,26 +80,9 @@ public class WasmTemplateTestsBase : BuildTestBase
             .ExecuteWithCapturedOutput($"new {template.ToString().ToLower()} {extraArgs}")
             .EnsureSuccessful();
 
-        UpdateBootJsInHtmlFiles();
-
         string projectFilePath = Path.Combine(_projectDir, $"{projectName}.csproj");
         UpdateProjectFile(projectFilePath, runAnalyzers, extraProperties, extraItems, insertAtEnd);
         return new ProjectInfo(projectName, projectFilePath, logPath, nugetDir);
-    }
-
-    protected void UpdateBootJsInHtmlFiles()
-    {
-        foreach (var filePath in Directory.EnumerateFiles(_projectDir, "*.html", SearchOption.AllDirectories))
-        {
-            UpdateBootJsInHtmlFile(filePath);
-        }
-    }
-
-    protected void UpdateBootJsInHtmlFile(string filePath)
-    {
-        string fileContent = File.ReadAllText(filePath);
-        fileContent = StringReplaceWithAssert(fileContent, "<head>", "<head><script>window['__DOTNET_INTERNAL_BOOT_CONFIG_SRC'] = 'dotnet.boot.js';</script>");
-        File.WriteAllText(filePath, fileContent);
     }
 
     protected ProjectInfo CopyTestAsset(
