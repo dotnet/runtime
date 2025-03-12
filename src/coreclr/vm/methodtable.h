@@ -40,7 +40,6 @@ class    EEClass;
 class    EnCFieldDesc;
 class FieldDesc;
 class JIT_TrialAlloc;
-struct LayoutRawFieldInfo;
 class MetaSig;
 class    MethodDesc;
 class    MethodDescChunk;
