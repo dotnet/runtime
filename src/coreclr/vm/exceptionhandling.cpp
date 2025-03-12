@@ -7724,10 +7724,29 @@ VOID DECLSPEC_NORETURN PropagateLongJmpThroughNativeFrames(jmp_buf *pJmpBuf, int
     longjmp(*pJmpBuf, retVal);
 }
 
-VOID DECLSPEC_NORETURN PropagateForeignExceptionThroughNativeFrames(EXCEPTION_RECORD *pExceptionRecord)
+// This is a personality routine that the RtlRestoreContext calls when it is called with
+// pExceptionRecord->ExceptionCode == STATUS_UNWIND_CONSOLIDATE.
+// Before calling this function, it creates a machine frame that hides all the frames
+// upto the frame described by the pContextRecord. This allows us to raise the exception
+// from the target context without removing the frames from the stack. Those frames
+// can contain e.g. a C++ exception object that needs to be preserved during the exception
+// propagation.
+EXTERN_C EXCEPTION_DISPOSITION
+PropagateForeignExceptionThroughNativeFrames(IN     PEXCEPTION_RECORD   pExceptionRecord,
+                    IN     PVOID               pEstablisherFrame,
+                    IN OUT PCONTEXT            pContextRecord,
+                    IN OUT PDISPATCHER_CONTEXT pDispatcherContext
+                    )
 {
+    STATIC_CONTRACT_MODE_COOPERATIVE;
+    STATIC_CONTRACT_GC_TRIGGERS;
+    STATIC_CONTRACT_THROWS;
+
+    _ASSERTE(pExceptionRecord->NumberParameters == 2);
+    EXCEPTION_RECORD *pExceptionToPropagateRecord = (EXCEPTION_RECORD*)pExceptionRecord->ExceptionInformation[1];
     GCX_PREEMP_NO_DTOR();
-    RaiseException(pExceptionRecord->ExceptionCode, pExceptionRecord->ExceptionFlags, pExceptionRecord->NumberParameters, pExceptionRecord->ExceptionInformation);
+    RaiseException(pExceptionToPropagateRecord->ExceptionCode, pExceptionToPropagateRecord->ExceptionFlags, pExceptionToPropagateRecord->NumberParameters, pExceptionToPropagateRecord->ExceptionInformation);
+    UNREACHABLE();
 }
 
 #endif // HOST_WINDOWS
@@ -7798,7 +7817,7 @@ extern "C" void * QCALLTYPE CallCatchFunclet(QCall::ObjectHandleOnStack exceptio
 #ifdef HOST_WINDOWS
     jmp_buf* pLongJmpBuf = pExInfo->m_pLongJmpBuf;
     int longJmpReturnValue = pExInfo->m_longJmpReturnValue;
-    static __declspec(thread) EXCEPTION_RECORD t_lastExceptionRecord = *pExInfo->m_ptrs.ExceptionRecord;
+    EXCEPTION_RECORD lastExceptionRecord = *pExInfo->m_ptrs.ExceptionRecord;
 #endif // HOST_WINDOWS
 
 #ifdef HOST_UNIX
@@ -7900,6 +7919,23 @@ extern "C" void * QCALLTYPE CallCatchFunclet(QCall::ObjectHandleOnStack exceptio
         }
 #endif // HOST_UNIX
         // Throw exception from the caller context
+
+#ifdef HOST_WINDOWS
+        if (!IsComPlusException(&lastExceptionRecord) && MapWin32FaultToCOMPlusException(&lastExceptionRecord) == kSEHException)
+        {
+            // Propagate an external exception to the caller context. This is done in a special way, since the native stack
+            // frames below the caller context may contain e.g. C++ exception object that the external exception references.
+            // So we rely on a special mode of the RtlRestoreContext with EXCEPTION_RECORD passed in with STATUS_UNWIND_CONSOLIDATE
+            // exception code to create a machine frame that hides all the frames upto the caller context before rasing the exception.
+            EXCEPTION_RECORD exceptionRecord;
+            exceptionRecord.ExceptionCode = STATUS_UNWIND_CONSOLIDATE;
+            exceptionRecord.NumberParameters = 2;
+            exceptionRecord.ExceptionInformation[0] = (ULONG_PTR)PropagateForeignExceptionThroughNativeFrames;
+            exceptionRecord.ExceptionInformation[1] = (ULONG_PTR)&lastExceptionRecord;
+            RtlRestoreContext(pvRegDisplay->pCurrentContext, &exceptionRecord);
+        }
+#endif // HOST_WINDOWS
+
 #if defined(HOST_AMD64)
         ULONG64* returnAddress = (ULONG64*)targetSp;
         *returnAddress = pvRegDisplay->pCurrentContext->Rip;
@@ -7949,11 +7985,6 @@ extern "C" void * QCALLTYPE CallCatchFunclet(QCall::ObjectHandleOnStack exceptio
             SetIP(pvRegDisplay->pCurrentContext, (PCODE)PropagateLongJmpThroughNativeFrames);
             pvRegDisplay->pCurrentContext->FIRST_ARG_REG = (size_t)pLongJmpBuf;
             pvRegDisplay->pCurrentContext->SECOND_ARG_REG = (size_t)longJmpReturnValue;
-        }
-        else if (!IsComPlusException(&t_lastExceptionRecord) && MapWin32FaultToCOMPlusException(&t_lastExceptionRecord) == kSEHException)
-        {
-            SetIP(pvRegDisplay->pCurrentContext, (PCODE)PropagateForeignExceptionThroughNativeFrames);
-            pvRegDisplay->pCurrentContext->FIRST_ARG_REG = (size_t)&t_lastExceptionRecord;
         }
         else
 #endif
