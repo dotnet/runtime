@@ -3202,7 +3202,7 @@ namespace System.Runtime.Intrinsics
 #else
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [CompExactlyDependsOn(typeof(Ssse3))]
-#endifd
+#endif
         public static Vector128<byte> ShuffleNative(Vector128<byte> vector, Vector128<byte> indices)
         {
 #if !MONO
