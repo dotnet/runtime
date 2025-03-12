@@ -278,6 +278,7 @@ namespace Microsoft.Extensions.DependencyInjection
         }
 
         [Fact]
+        [OuterLoop] // Includes a long Task.Delay
         public async Task GetService_ReturnsGenericUnkeyedInstance_AfterUsingGetKeyedService()
         {
             // Arrange
@@ -302,6 +303,7 @@ namespace Microsoft.Extensions.DependencyInjection
         }
 
         [Fact]
+        [OuterLoop] // Includes a long Task.Delay
         public async Task GetServices_ReturnsExpectedNumberOfGenericKeyedAndUnkeyedInstances_AfterUsingGetKeyedServices()
         {
             // Arrange
@@ -330,6 +332,7 @@ namespace Microsoft.Extensions.DependencyInjection
         }
 
         [Fact]
+        [OuterLoop] // Includes a long Task.Delay
         public async Task GetService_ReturnsNonGenericUnkeyedInstance_AfterUsingGetKeyedService()
         {
             // Arrange
