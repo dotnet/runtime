@@ -28,6 +28,7 @@ namespace System.ComponentModel.DataAnnotations
         : IServiceProvider
     {
         internal const string InstanceTypeNotStaticallyDiscovered = "The Type of instance cannot be statically discovered and the Type's properties can be trimmed.";
+        internal const string TrimSafeConstructorJustification = "This constructor is safe to trim because it does not use reflection to resolve the Type of the instance to support setting the DisplayName.";
 
         #region Member Fields
 
@@ -96,6 +97,36 @@ namespace System.ComponentModel.DataAnnotations
 
             _items = items != null ? new Dictionary<object, object?>(items) : new Dictionary<object, object?>();
             ObjectInstance = instance;
+        }
+
+        /// <summary>
+        ///     Construct a <see cref="ValidationContext" /> for a given object instance with
+        ///     a <paramref name="displayName" />, an optional <paramref name="serviceProvider" />,
+        ///     and an optional property bag of <paramref name="items" />.
+        /// </summary>
+        /// <param name="instance">The object instance being validated.  It cannot be null.</param>
+        /// <param name="displayName">The display name associated with the object instance.</param>
+        /// <param name="serviceProvider">
+        ///     Optional <see cref="IServiceProvider" /> to use when <see cref="GetService" /> is called.
+        ///     If it is null, <see cref="GetService" /> will always return null.
+        /// </param>
+        /// <param name="items">
+        ///     Optional set of key/value pairs to make available to consumers via <see cref="Items" />.
+        ///     If null, an empty dictionary will be created.  If not null, the set of key/value pairs will be copied into a
+        ///     new dictionary, preventing consumers from modifying the original dictionary.
+        /// </param>
+        /// <exception cref="ArgumentNullException">When <paramref name="instance" /> is <c>null</c></exception>
+        /// <remarks>
+        ///     This constructor is trim-safe because it does not use reflection to resolve
+        ///     the Type of the <paramref name="instance" /> to support setting the DisplayName.
+        /// </remarks>
+        [UnconditionalSuppressMessage("Trimming", "IL2026", Justification = TrimSafeConstructorJustification)]
+        public ValidationContext(object instance, string displayName, IServiceProvider? serviceProvider, IDictionary<object, object?>? items)
+            : this(instance, serviceProvider, items)
+        {
+            ArgumentException.ThrowIfNullOrEmpty(displayName);
+
+            _displayName = displayName;
         }
 
         #endregion

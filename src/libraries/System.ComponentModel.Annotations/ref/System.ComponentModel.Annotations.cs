@@ -347,6 +347,8 @@ namespace System.ComponentModel.DataAnnotations
         public ValidationContext(object instance, System.Collections.Generic.IDictionary<object, object?>? items) { }
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The Type of instance cannot be statically discovered and the Type's properties can be trimmed.")]
         public ValidationContext(object instance, System.IServiceProvider? serviceProvider, System.Collections.Generic.IDictionary<object, object?>? items) { }
+        [System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessage("Trimming", "IL2026", Justification = "This constructor is safe to trim because it does not use reflection to resolve the Type of the instance to support setting the DisplayName.")]
+        public ValidationContext(object instance, string displayName, System.IServiceProvider? serviceProvider, System.Collections.Generic.IDictionary<object, object?>? items) { }
         public string DisplayName { get { throw null; } set { } }
         public System.Collections.Generic.IDictionary<object, object?> Items { get { throw null; } }
         public string? MemberName { get { throw null; } set { } }
