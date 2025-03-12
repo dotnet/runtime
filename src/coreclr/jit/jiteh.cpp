@@ -1728,8 +1728,9 @@ EHblkDsc* Compiler::fgTryAddEHTableEntries(unsigned XTnum, unsigned count, bool 
     if (deferAdding)
     {
         // We can add count entries...
+        // (we may not have allocated a table, so return a dummy non-null entry)
         //
-        return compHndBBtab;
+        return (EHblkDsc*)(0x1);
     }
 
     if (newCount > compHndBBtabAllocCount)
