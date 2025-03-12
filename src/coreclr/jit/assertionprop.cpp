@@ -1132,7 +1132,7 @@ AssertionIndex Compiler::optCreateAssertion(GenTree* op1, GenTree* op2, optAsser
         GenTreeBoundsChk* arrBndsChk = op1->AsBoundsChk();
         ValueNum          vnIdx      = optConservativeNormalVN(arrBndsChk->GetIndex());
         ValueNum          vnLen      = optConservativeNormalVN(arrBndsChk->GetArrayLength());
-        if ((vnIdx == ValueNumStore::NoVN) && (vnLen == ValueNumStore::NoVN))
+        if ((vnIdx == ValueNumStore::NoVN) || (vnLen == ValueNumStore::NoVN))
         {
             return NO_ASSERTION_INDEX;
         }
