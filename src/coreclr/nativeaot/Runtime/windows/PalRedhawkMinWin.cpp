@@ -149,6 +149,7 @@ void InitializeCurrentProcessCpuCount()
                 if (cpuLimit < count)
                 {
                     g_RhIsCpuQuotaLimited = true;
+
                     // Round cpu limit up to the next integer
                     count = (DWORD)(cpuLimit + 0.999999999);
                 }

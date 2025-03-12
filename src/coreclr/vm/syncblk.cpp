@@ -1554,7 +1554,7 @@ BOOL ObjHeader::TryEnterObjMonitor(INT32 timeOut)
 
 extern DWORD g_currentProcessCpuCount;
 
-extern BOOL g_currentProcessIsCpuQuotaLimited;
+extern bool g_currentProcessIsCpuQuotaLimited;
 
 AwareLock::EnterHelperResult ObjHeader::EnterObjMonitorHelperSpin(Thread* pCurThread)
 {

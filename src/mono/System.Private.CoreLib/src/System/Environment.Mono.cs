@@ -21,7 +21,6 @@ namespace System
             set;
         }
 
-        // GetIsCpuQuotaLimited() is implemented in CoreCLR/NativeAOT
         private static bool GetIsCpuQuotaLimited() => false;
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]

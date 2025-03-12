@@ -360,9 +360,7 @@ private:
         if (period <= 0)
             return false;
 
-        ComputeCpuLimit(period, quota, val);
-
-        return true;
+        return ComputeCpuLimit(period, quota, val);
     }
 
     static bool GetCGroup2CpuLimit(double *val)
@@ -424,8 +422,7 @@ private:
         if (period_string == endptr || errno != 0)
             goto done;
 
-        ComputeCpuLimit(period, quota, val);
-        result = true;
+        result = ComputeCpuLimit(period, quota, val);
 
     done:
         if (file)
@@ -436,17 +433,17 @@ private:
         return result;
     }
 
-    static void ComputeCpuLimit(long long period, long long quota, double *val)
+    static bool ComputeCpuLimit(long long period, long long quota, double *val)
     {
-        // Cannot have less than 1 CPU
-        if (quota <= period)
+        if (quota <= 0 || period <= 0)
         {
-            *val = 1;
-            return;
+            // A CPU limit is not in effect, see https://www.kernel.org/doc/html/v5.9/scheduler/sched-bwc.html
+            return false;
         }
 
         // Calculate cpu count based on quota
         *val = (double) quota / period;
+        return true;
     }
 
     static long long ReadCpuCGroupValue(const char* subsystemFilename){

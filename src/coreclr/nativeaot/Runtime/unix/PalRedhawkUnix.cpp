@@ -378,8 +378,10 @@ void InitializeCurrentProcessCpuCount()
         double cpuLimit;
         if (GetCpuLimit(&cpuLimit) && cpuLimit < count)
         {
-            count = (uint32_t)(cpuLimit + 0.999999999);
             g_RhIsCpuQuotaLimited = true;
+
+            // Round up to the next integer
+            count = (uint32_t)(cpuLimit + 0.999999999);
         }
     }
 

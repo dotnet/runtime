@@ -982,7 +982,7 @@ int GetTotalProcessorCount()
 DWORD g_currentProcessCpuCount = 0;
 
 // The cached flag indicating whether there is a cpu quota limit
-BOOL g_currentProcessIsCpuQuotaLimited = false;
+bool g_currentProcessIsCpuQuotaLimited = false;
 
 //******************************************************************************
 // Returns the number of processors that a process has been configured to run on
@@ -1076,6 +1076,7 @@ int GetCurrentProcessCpuCount()
                 if (cpuLimit < count)
                 {
                     g_currentProcessIsCpuQuotaLimited = true;
+
                     // Round up to the next integer
                     count = (DWORD)(cpuLimit + 0.999999999);
                 }
@@ -1087,9 +1088,10 @@ int GetCurrentProcessCpuCount()
         double cpuLimit;
         if (PAL_GetCpuLimit(&cpuLimit) && cpuLimit < count)
         {
-            // Round up to the next integer
-            count = (DWORD)(cpuLimit + + 0.999999999);
             g_currentProcessIsCpuQuotaLimited = true;
+
+            // Round up to the next integer
+            count = (DWORD)(cpuLimit + 0.999999999);
         }
 #endif // HOST_WINDOWS
     }
@@ -1100,15 +1102,11 @@ int GetCurrentProcessCpuCount()
     return count;
 }
 
-BOOL GetCurrentProcessIsCpuQuotaLimited()
+bool GetCurrentProcessIsCpuQuotaLimited()
 {
-    CONTRACTL
-    {
-        NOTHROW;
-        CANNOT_TAKE_LOCK;
-    }
-    CONTRACTL_END;
+    WRAPPER_NO_CONTRACT;
 
+    // The Environment class ensures that the CPU count is initialized before this is called
     _ASSERTE(g_currentProcessCpuCount > 0);
 
     return g_currentProcessIsCpuQuotaLimited;
