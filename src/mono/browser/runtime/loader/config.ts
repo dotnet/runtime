@@ -243,7 +243,7 @@ export async function mono_wasm_load_config (module: DotnetModuleInternal): Prom
             // Temporal way for tests to opt-in for using boot.js
             module.configSrc = (globalThis as any)["__DOTNET_INTERNAL_BOOT_CONFIG_SRC"]
                 ?? globalThis.window?.document?.documentElement?.getAttribute("data-dotnet_internal_boot_config_src")
-                ?? "./blazor.boot.json";
+                ?? "blazor.boot.json";
         }
 
         configFilePath = module.configSrc;
@@ -290,21 +290,22 @@ export function isDebuggingSupported (): boolean {
 }
 
 async function loadBootConfig (module: DotnetModuleInternal): Promise<void> {
-    const defaultConfigSrc = loaderHelpers.locateFile(module.configSrc!);
+    const defaultConfigSrc = module.configSrc!;
+    const defaultConfigUrl = loaderHelpers.locateFile(defaultConfigSrc);
 
     let loaderResponse = null;
     if (loaderHelpers.loadBootResource !== undefined) {
-        loaderResponse = loaderHelpers.loadBootResource("manifest", "blazor.boot.json", defaultConfigSrc, "", "manifest");
+        loaderResponse = loaderHelpers.loadBootResource("manifest", defaultConfigSrc, defaultConfigUrl, "", "manifest");
     }
 
     let loadedConfigResponse: Response | null = null;
     let loadedConfig: MonoConfig;
     if (!loaderResponse) {
-        if (defaultConfigSrc.includes(".json")) {
-            loadedConfigResponse = await fetchBootConfig(appendUniqueQuery(defaultConfigSrc, "manifest"));
+        if (defaultConfigUrl.includes(".json")) {
+            loadedConfigResponse = await fetchBootConfig(appendUniqueQuery(defaultConfigUrl, "manifest"));
             loadedConfig = await readBootConfigResponse(loadedConfigResponse);
         } else {
-            loadedConfig = (await import(appendUniqueQuery(defaultConfigSrc, "manifest"))).config;
+            loadedConfig = (await import(appendUniqueQuery(defaultConfigUrl, "manifest"))).config;
         }
     } else if (typeof loaderResponse === "string") {
         if (loaderResponse.includes(".json")) {
@@ -322,6 +323,11 @@ async function loadBootConfig (module: DotnetModuleInternal): Promise<void> {
             // If the response doesn't contain .json(), consider it an imported module.
             loadedConfig = (loadedResponse as BootModule).config;
         }
+    }
+
+    // Prefer user-defined application environment
+    if (loaderHelpers.config.applicationEnvironment) {
+        loadedConfig.applicationEnvironment = loaderHelpers.config.applicationEnvironment;
     }
 
     deep_merge_config(loaderHelpers.config, loadedConfig);
@@ -343,7 +349,7 @@ async function readBootConfigResponse (loadConfigResponse: Response): Promise<Mo
     const config = loaderHelpers.config;
     const loadedConfig: MonoConfig = await loadConfigResponse.json();
 
-    if (!config.applicationEnvironment) {
+    if (!config.applicationEnvironment && !loadedConfig.applicationEnvironment) {
         loadedConfig.applicationEnvironment = loadConfigResponse.headers.get("Blazor-Environment") || loadConfigResponse.headers.get("DotNet-Environment") || undefined;
     }
 

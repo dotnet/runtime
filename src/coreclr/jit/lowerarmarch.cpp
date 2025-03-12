@@ -3095,11 +3095,32 @@ void Lowering::ContainCheckCompare(GenTreeOp* cmp)
 #ifdef TARGET_ARM64
     if (comp->opts.OptimizationEnabled() && (cmp->OperIsCompare() || cmp->OperIs(GT_CMP)))
     {
+        auto forceCastOpInRegister = [](GenTree* op) {
+            // If the compare contains a cast, make sure that cast node definitely does not become
+            // a memory operation, as we won't be able to contain it in CodeGen if this happens.
+            // The node being cast must have a register assigned.
+            GenTree* cast = nullptr;
+            if (op->OperIs(GT_CAST))
+            {
+                // cmp (extended-register): GT_EQ -> GT_CAST -> ...
+                cast = op;
+            }
+            else if (op->OperIs(GT_NEG) && op->gtGetOp1()->OperIs(GT_CAST))
+            {
+                // cmn (extended-register): GT_EQ -> GT_NEG -> GT_CAST -> ...
+                cast = op->gtGetOp1();
+            }
+            if (cast)
+            {
+                cast->AsCast()->CastOp()->ClearRegOptional();
+            }
+        };
+
         if (IsContainableUnaryOrBinaryOp(cmp, op2))
         {
-            if (cmp->OperIsCmpCompare() && op2->OperIs(GT_CAST))
+            if (cmp->OperIsCmpCompare())
             {
-                op2->AsCast()->CastOp()->ClearRegOptional();
+                forceCastOpInRegister(op2);
             }
 
             MakeSrcContained(cmp, op2);
@@ -3108,9 +3129,9 @@ void Lowering::ContainCheckCompare(GenTreeOp* cmp)
 
         if (IsContainableUnaryOrBinaryOp(cmp, op1))
         {
-            if (cmp->OperIsCmpCompare() && op1->OperIs(GT_CAST))
+            if (cmp->OperIsCmpCompare())
             {
-                op1->AsCast()->CastOp()->ClearRegOptional();
+                forceCastOpInRegister(op1);
             }
 
             MakeSrcContained(cmp, op1);

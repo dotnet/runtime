@@ -123,6 +123,9 @@
   <data name="Argument_InvalidValue" xml:space="preserve">
     <value>Value was invalid.</value>
   </data>
+  <data name="Argument_SignatureContextTooLong255" xml:space="preserve">
+    <value>The specified signature context exceeds the maximum length of 255 bytes.</value>
+  </data>
   <data name="Argument_StreamNotReadable" xml:space="preserve">
     <value>Stream was not readable.</value>
   </data>
@@ -488,6 +491,9 @@
   </data>
   <data name="Cryptography_KeyTooSmall" xml:space="preserve">
     <value>The key is too small for the requested operation.</value>
+  </data>
+  <data name="Cryptography_KeyWrongSizeForAlgorithm" xml:space="preserve">
+    <value>The specified key is not the correct size for the indicated algorithm.</value>
   </data>
   <data name="Cryptography_MatchBlockSize" xml:space="preserve">
     <value>The specified plaintext size is not valid for the padding and block size.</value>

@@ -138,6 +138,14 @@ bool emitter::emitInsWritesToLclVarStackLoc(instrDesc* id)
 };
 // clang-format on
 
+emitter::MajorOpcode emitter::GetMajorOpcode(code_t code)
+{
+    assert((code & 0b11) == 0b11); // 16-bit instructions unsupported
+    code_t opcode = (code >> 2) & 0b11111;
+    assert((opcode & 0b111) != 0b111); // 48-bit and larger instructions unsupported
+    return (MajorOpcode)opcode;
+}
+
 inline bool emitter::emitInsMayWriteToGCReg(instruction ins)
 {
     assert(ins != INS_invalid);
@@ -148,25 +156,28 @@ inline bool emitter::emitInsMayWriteToGCReg(instruction ins)
         return true;
 
     code_t code = emitInsCode(ins);
-    assert((code & 0b11) == 0b11); // 16-bit instructions unsupported
-    code_t majorOpcode = (code >> 2) & 0b11111;
-    assert((majorOpcode & 0b111) != 0b111); // 48-bit and larger instructions unsupported
-    switch (majorOpcode)
+    switch (GetMajorOpcode(code))
     {
-        // Opcodes with no destination register or a floating-point destination register
-        case 0b00001: // LOAD-FP
-        case 0b01000: // STORE
-        case 0b01001: // STORE-FP
-        case 0b00011: // MISC-MEM
-        case 0b10000: // MADD
-        case 0b10001: // MSUB
-        case 0b10010: // NMSUB
-        case 0b10011: // NMADD
-        case 0b11000: // BRANCH
-        case 0b11100: // SYSTEM
+        // Opcodes with no destination register
+        case MajorOpcode::Store:
+        case MajorOpcode::StoreFp:
+        case MajorOpcode::MiscMem:
+        case MajorOpcode::Branch:
+        // Opcodes with a floating-point destination register
+        case MajorOpcode::LoadFp:
+        case MajorOpcode::MAdd:
+        case MajorOpcode::MSub:
+        case MajorOpcode::NmSub:
+        case MajorOpcode::NmAdd:
             return false;
 
-        case 0b10100: // OP-FP
+        case MajorOpcode::System:
+        {
+            code_t funct3 = (code >> 12) & 0b111;
+            return (funct3 != 0); // CSR read/writes
+        }
+
+        case MajorOpcode::OpFp:
         {
             // Lowest 2 bits of funct7 distinguish single, double, half, and quad floats; we don't care
             code_t funct7 = code >> (25 + 2);
@@ -181,13 +192,13 @@ inline bool emitter::emitInsMayWriteToGCReg(instruction ins)
             }
         }
 
-        case 0b00010: // custom-0
-        case 0b01010: // custom-1
-        case 0b10101: // OP-V
-        case 0b10110: // custom-2/rv128
-        case 0b11110: // custom-3/rv128
-        case 0b11010: // reserved
-        case 0b11101: // reserved
+        case MajorOpcode::Custom0:
+        case MajorOpcode::Custom1:
+        case MajorOpcode::Custom2Rv128:
+        case MajorOpcode::Custom3Rv128:
+        case MajorOpcode::OpV:
+        case MajorOpcode::OpVe:
+        case MajorOpcode::Reserved:
             assert(!"unsupported major opcode");
             FALLTHROUGH;
 
@@ -919,7 +930,11 @@ void emitter::emitIns_R_R_R(
         {
             code |= 0x7 << 12;
         }
-        else if (INS_lr_w <= ins && ins <= INS_amomaxu_d)
+        else if (ins == INS_sc_w || ins == INS_sc_d)
+        {
+            code |= 0b10 << 25; // release ordering, it ends the lr-sc loop
+        }
+        else if ((ins == INS_lr_w || ins == INS_lr_d) || (INS_amoswap_w <= ins && ins <= INS_amomaxu_d))
         {
             // For now all atomics are seq. consistent as Interlocked.* APIs don't expose acquire/release ordering
             code |= 0b11 << 25;
@@ -2230,7 +2245,7 @@ static inline void assertCodeLength(size_t code, uint8_t size)
  *
  *  Emit a 32-bit RISCV64 R-Type instruction
  *
- *  Note: Instruction types as per RISC-V Spec, Chapter 24 RV32/64G Instruction Set Listings
+ *  Note: Instruction types as per RISC-V Spec, Chapter "RV32/64G Instruction Set Listings"
  *  R-Type layout:
  *  31-------25-24---20-19--15-14------12-11-----------7-6------------0
  *  | funct7   |  rs2  | rs1  |  funct3  |      rd      |   opcode    |
@@ -2254,7 +2269,7 @@ static inline void assertCodeLength(size_t code, uint8_t size)
  *
  *  Emit a 32-bit RISCV64 I-Type instruction
  *
- *  Note: Instruction types as per RISC-V Spec, Chapter 24 RV32/64G Instruction Set Listings
+ *  Note: Instruction types as per RISC-V Spec, Chapter "RV32/64G Instruction Set Listings"
  *  I-Type layout:
  *  31------------20-19-----15-14------12-11-----------7-6------------0
  *  |   imm[11:0]   |   rs1   |  funct3  |      rd      |   opcode    |
@@ -2278,7 +2293,7 @@ static inline void assertCodeLength(size_t code, uint8_t size)
  *
  *  Emit a 32-bit RISCV64 S-Type instruction
  *
- *  Note: Instruction types as per RISC-V Spec, Chapter 24 RV32/64G Instruction Set Listings
+ *  Note: Instruction types as per RISC-V Spec, Chapter "RV32/64G Instruction Set Listings"
  *  S-Type layout:
  *  31-------25-24---20-19--15-14------12-11-----------7-6------------0
  *  |imm[11:5] |  rs2  | rs1  |  funct3  |   imm[4:0]   |   opcode    |
@@ -2308,7 +2323,7 @@ static inline void assertCodeLength(size_t code, uint8_t size)
  *
  *  Emit a 32-bit RISCV64 U-Type instruction
  *
- *  Note: Instruction types as per RISC-V Spec, Chapter 24 RV32/64G Instruction Set Listings
+ *  Note: Instruction types as per RISC-V Spec, Chapter "RV32/64G Instruction Set Listings"
  *  U-Type layout:
  *  31---------------------------------12-11-----------7-6------------0
  *  |             imm[31:12]             |      rd      |   opcode    |
@@ -2329,7 +2344,7 @@ static inline void assertCodeLength(size_t code, uint8_t size)
  *
  *  Emit a 32-bit RISCV64 B-Type instruction
  *
- *  Note: Instruction types as per RISC-V Spec, Chapter 24 RV32/64G Instruction Set Listings
+ *  Note: Instruction types as per RISC-V Spec, Chapter "RV32/64G Instruction Set Listings"
  *  B-Type layout:
  *  31-------30-----25-24-20-19-15-14--12-11-------8----7----6--------0
  *  |imm[12]|imm[10:5]| rs2 | rs1 |funct3|  imm[4:1]|imm[11]| opcode  |
@@ -2365,7 +2380,7 @@ static inline void assertCodeLength(size_t code, uint8_t size)
  *
  *  Emit a 32-bit RISCV64 J-Type instruction
  *
- *  Note: Instruction types as per RISC-V Spec, Chapter 24 RV32/64G Instruction Set Listings
+ *  Note: Instruction types as per RISC-V Spec, Chapter "RV32/64G Instruction Set Listings"
  *  J-Type layout:
  *  31-------30--------21----20---19----------12-11----7-6------------0
  *  |imm[20]| imm[10:1]  |imm[11]|  imm[19:12]  |  rd   |   opcode    |
@@ -3554,10 +3569,6 @@ void emitter::emitDispInsName(
     static constexpr int kMaxInstructionLength = 14;
 
     const BYTE* insAdr = addr - writeableOffset;
-
-    unsigned int opcode = code & 0x7f;
-    assert((opcode & 0x3) == 0x3); // only 32-bit encodings supported
-
     emitDispInsAddr(insAdr);
     emitDispInsOffs(insOffset, doffs);
 
@@ -3566,9 +3577,9 @@ void emitter::emitDispInsName(
 
     printf("      ");
 
-    switch (opcode)
+    switch (GetMajorOpcode(code))
     {
-        case 0x37: // LUI
+        case MajorOpcode::Lui:
         {
             const char* rd    = RegNames[(code >> 7) & 0x1f];
             int         imm20 = (code >> 12) & 0xfffff;
@@ -3579,7 +3590,7 @@ void emitter::emitDispInsName(
             printf("lui            %s, %d\n", rd, imm20);
             return;
         }
-        case 0x17: // AUIPC
+        case MajorOpcode::Auipc:
         {
             const char* rd    = RegNames[(code >> 7) & 0x1f];
             int         imm20 = (code >> 12) & 0xfffff;
@@ -3590,7 +3601,7 @@ void emitter::emitDispInsName(
             printf("auipc          %s, %d\n", rd, imm20);
             return;
         }
-        case 0x13:
+        case MajorOpcode::OpImm:
         {
             unsigned opcode2      = (code >> 12) & 0x7;
             unsigned rd           = (code >> 7) & 0x1f;
@@ -3682,7 +3693,7 @@ void emitter::emitDispInsName(
 
             return;
         }
-        case 0x1b:
+        case MajorOpcode::OpImm32:
         {
             unsigned int opcode2 = (code >> 12) & 0x7;
             const char*  rd      = RegNames[(code >> 7) & 0x1f];
@@ -3744,7 +3755,7 @@ void emitter::emitDispInsName(
                     return emitDispIllegalInstruction(code);
             }
         }
-        case 0x33:
+        case MajorOpcode::Op:
         {
             unsigned int opcode2 = (code >> 25) & 0x7f;
             unsigned int opcode3 = (code >> 12) & 0x7;
@@ -3833,7 +3844,7 @@ void emitter::emitDispInsName(
                     return emitDispIllegalInstruction(code);
             }
         }
-        case 0x3b:
+        case MajorOpcode::Op32:
         {
             unsigned int opcode2 = (code >> 25) & 0x7f;
             unsigned int opcode3 = (code >> 12) & 0x7;
@@ -3898,7 +3909,7 @@ void emitter::emitDispInsName(
                     return emitDispIllegalInstruction(code);
             }
         }
-        case 0x23:
+        case MajorOpcode::Store:
         {
             unsigned int opcode2 = (code >> 12) & 0x7;
             const char*  rs1     = RegNames[(code >> 15) & 0x1f];
@@ -3928,7 +3939,7 @@ void emitter::emitDispInsName(
                     return;
             }
         }
-        case 0x63: // BRANCH
+        case MajorOpcode::Branch:
         {
             unsigned opcode2 = (code >> 12) & 0x7;
             unsigned rs1     = (code >> 15) & 0x1f;
@@ -3945,7 +3956,7 @@ void emitter::emitDispInsName(
             }
             return;
         }
-        case 0x03:
+        case MajorOpcode::Load:
         {
             unsigned int opcode2 = (code >> 12) & 0x7;
             const char*  rs1     = RegNames[(code >> 15) & 0x1f];
@@ -3984,7 +3995,7 @@ void emitter::emitDispInsName(
                     return;
             }
         }
-        case 0x67:
+        case MajorOpcode::Jalr:
         {
             const unsigned rs1    = (code >> 15) & 0x1f;
             const unsigned rd     = (code >> 7) & 0x1f;
@@ -4014,7 +4025,7 @@ void emitter::emitDispInsName(
             printf("\n");
             return;
         }
-        case 0x6f:
+        case MajorOpcode::Jal:
         {
             unsigned rd = (code >> 7) & 0x1f;
             int offset  = (((code >> 31) & 0x1) << 20) | (((code >> 12) & 0xff) << 12) | (((code >> 20) & 0x1) << 11) |
@@ -4050,14 +4061,14 @@ void emitter::emitDispInsName(
             printf("\n");
             return;
         }
-        case 0x0f:
+        case MajorOpcode::MiscMem:
         {
             int pred = ((code) >> 24) & 0xf;
             int succ = ((code) >> 20) & 0xf;
             printf("fence          %d, %d\n", pred, succ);
             return;
         }
-        case 0x73:
+        case MajorOpcode::System:
         {
             unsigned int opcode2 = (code >> 12) & 0x7;
             if (opcode2 != 0)
@@ -4108,13 +4119,17 @@ void emitter::emitDispInsName(
             {
                 printf("ebreak\n");
             }
+            else if (code == emitInsCode(INS_ecall))
+            {
+                printf("ecall\n");
+            }
             else
             {
                 NYI_RISCV64("illegal ins within emitDisInsName!");
             }
             return;
         }
-        case 0x53:
+        case MajorOpcode::OpFp:
         {
             unsigned int opcode2 = (code >> 25) & 0x7f;
             unsigned int opcode3 = (code >> 20) & 0x1f;
@@ -4412,7 +4427,7 @@ void emitter::emitDispInsName(
             }
             return;
         }
-        case 0x27:
+        case MajorOpcode::StoreFp:
         {
             unsigned int opcode2 = (code >> 12) & 0x7;
 
@@ -4437,7 +4452,7 @@ void emitter::emitDispInsName(
             }
             return;
         }
-        case 0x7:
+        case MajorOpcode::LoadFp:
         {
             unsigned int opcode2 = (code >> 12) & 0x7;
             const char*  rs1     = RegNames[(code >> 15) & 0x1f];
@@ -4461,7 +4476,7 @@ void emitter::emitDispInsName(
             }
             return;
         }
-        case 0x2f: // AMO - atomic memory operation
+        case MajorOpcode::Amo:
         {
             bool        hasDataReg = true;
             const char* name;
@@ -5248,7 +5263,8 @@ unsigned emitter::get_curTotalCodeSize()
 
 //----------------------------------------------------------------------------------------
 // getInsExecutionCharacteristics:
-//    Returns the current instruction execution characteristics
+//    Returns the current instruction execution characteristics based on the SiFive U74 core:
+//    https://www.starfivetech.com/uploads/u74_core_complex_manual_21G1.pdf
 //
 // Arguments:
 //    id  - The current instruction descriptor to be evaluated
@@ -5261,12 +5277,178 @@ unsigned emitter::get_curTotalCodeSize()
 //    are NOT accurate and just a function feature.
 emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(instrDesc* id)
 {
-    insExecutionCharacteristics result;
+    insExecutionCharacteristics result = {
+        .insThroughput       = PERFSCORE_LATENCY_1C,
+        .insLatency          = PERFSCORE_THROUGHPUT_1C,
+        .insMemoryAccessKind = PERFSCORE_MEMORY_NONE,
+    };
 
-    // TODO-RISCV64: support this function.
-    result.insThroughput       = PERFSCORE_THROUGHPUT_ZERO;
-    result.insLatency          = PERFSCORE_LATENCY_ZERO;
-    result.insMemoryAccessKind = PERFSCORE_MEMORY_NONE;
+    unsigned codeSize = id->idCodeSize();
+    assert((codeSize >= 4) && (codeSize % sizeof(code_t) == 0));
+    // Some instructions like jumps or loads may have not-yet-known simple auxilliary instructions (lui, addi, slli,
+    // etc) for building immediates, assume cost of one each.
+    float immediateBuildingCost = ((codeSize / sizeof(code_t)) - 1) * PERFSCORE_LATENCY_1C;
+
+    instruction ins = id->idIns();
+    assert(ins != INS_invalid);
+    if (ins == INS_lea)
+    {
+        result.insLatency += immediateBuildingCost;
+        result.insThroughput += immediateBuildingCost;
+        return result;
+    }
+
+    MajorOpcode opcode = GetMajorOpcode(emitInsCode(ins));
+    switch (opcode)
+    {
+        case MajorOpcode::OpImm:
+        case MajorOpcode::OpImm32:
+        case MajorOpcode::Lui:
+        case MajorOpcode::Auipc:
+            result.insLatency    = PERFSCORE_LATENCY_1C;
+            result.insThroughput = PERFSCORE_THROUGHPUT_2X;
+            break;
+
+        case MajorOpcode::Op:
+        case MajorOpcode::Op32:
+            if (id->idInsIs(INS_mul, INS_mulh, INS_mulhu, INS_mulhsu, INS_mulw))
+            {
+                result.insLatency = PERFSCORE_LATENCY_3C;
+            }
+            else if (id->idInsIs(INS_div, INS_divu, INS_rem, INS_remu))
+            {
+                result.insLatency = result.insThroughput = (6.0f + 68.0f) / 2;
+            }
+            else if (id->idInsIs(INS_divw, INS_divuw, INS_remw, INS_remuw))
+            {
+                result.insLatency = result.insThroughput = (6.0f + 36.0f) / 2;
+            }
+            else
+            {
+                result.insThroughput = PERFSCORE_THROUGHPUT_2X;
+            }
+            break;
+
+        case MajorOpcode::MAdd:
+        case MajorOpcode::MSub:
+        case MajorOpcode::NmAdd:
+        case MajorOpcode::NmSub:
+        case MajorOpcode::OpFp:
+            if (id->idInsIs(INS_fadd_s, INS_fsub_s, INS_fmul_s, INS_fmadd_s, INS_fmsub_s, INS_fnmadd_s, INS_fnmsub_s))
+            {
+                result.insLatency = PERFSCORE_LATENCY_5C;
+            }
+            else if (id->idInsIs(INS_fadd_d, INS_fsub_d, INS_fmul_d, INS_fmadd_d, INS_fmsub_d, INS_fnmadd_d,
+                                 INS_fnmsub_d))
+            {
+                result.insLatency = PERFSCORE_LATENCY_7C;
+            }
+            else if (id->idInsIs(INS_fdiv_s))
+            {
+                result.insLatency    = (9.0f + 36.0f) / 2;
+                result.insThroughput = (8.0f + 33.0f) / 2;
+            }
+            else if (id->idInsIs(INS_fsqrt_s))
+            {
+                result.insLatency    = (9.0f + 28.0f) / 2;
+                result.insThroughput = (8.0f + 33.0f) / 2;
+            }
+            else if (id->idInsIs(INS_fdiv_d))
+            {
+                result.insLatency    = (9.0f + 58.0f) / 2;
+                result.insThroughput = (8.0f + 58.0f) / 2;
+            }
+            else if (id->idInsIs(INS_fsqrt_d))
+            {
+                result.insLatency    = (9.0f + 57.0f) / 2;
+                result.insThroughput = (8.0f + 58.0f) / 2;
+            }
+            else if (id->idInsIs(INS_feq_s, INS_fle_s, INS_flt_s, INS_fclass_s, INS_feq_d, INS_fle_d, INS_flt_d,
+                                 INS_fclass_d, INS_fcvt_w_s, INS_fcvt_l_s, INS_fcvt_s_l, INS_fcvt_wu_s, INS_fcvt_lu_s,
+                                 INS_fcvt_s_lu, INS_fcvt_w_d, INS_fcvt_l_d, INS_fcvt_wu_d, INS_fcvt_lu_d))
+            {
+                result.insLatency = PERFSCORE_LATENCY_4C;
+            }
+            else if (id->idInsIs(INS_fcvt_d_l, INS_fcvt_d_lu, INS_fmv_d_x))
+            {
+                result.insLatency = PERFSCORE_LATENCY_6C;
+            }
+            else if (id->idInsIs(INS_fmv_x_w, INS_fmv_x_d))
+            {
+                result.insLatency = PERFSCORE_LATENCY_1C;
+            }
+            else
+            {
+                result.insLatency = PERFSCORE_LATENCY_2C;
+            }
+            break;
+
+        case MajorOpcode::Amo:
+            result.insLatency = result.insThroughput = PERFSCORE_LATENCY_5C;
+            result.insMemoryAccessKind               = PERFSCORE_MEMORY_READ_WRITE;
+            break;
+
+        case MajorOpcode::Branch:
+            result.insLatency = result.insThroughput =
+                immediateBuildingCost + (PERFSCORE_LATENCY_1C + PERFSCORE_LATENCY_6C) / 2;
+            break;
+
+        case MajorOpcode::Jalr:
+            result.insLatency = result.insThroughput =
+                immediateBuildingCost + (PERFSCORE_LATENCY_1C + PERFSCORE_LATENCY_5C) / 2;
+            break;
+
+        case MajorOpcode::Jal:
+            result.insLatency = result.insThroughput =
+                immediateBuildingCost + (PERFSCORE_LATENCY_1C + PERFSCORE_LATENCY_2C) / 2;
+            break;
+
+        case MajorOpcode::System:
+        {
+            code_t code   = id->idAddr()->iiaGetInstrEncode();
+            code_t funct3 = (code >> 12) & 0b111;
+            if (funct3 != 0)
+            {
+                bool isCsrrw      = ((funct3 & 0b11) == 0b01);
+                bool isZero       = (((code >> 15) & 0b11111) == 0); // source register or 5-bit immediate is zero
+                bool isWrite      = (isCsrrw || !isZero);
+                result.insLatency = isWrite ? PERFSCORE_LATENCY_7C : PERFSCORE_LATENCY_1C;
+            }
+            break;
+        }
+
+        case MajorOpcode::Load:
+        case MajorOpcode::Store:
+        case MajorOpcode::LoadFp:
+        case MajorOpcode::StoreFp:
+        {
+            bool isLoad = (opcode == MajorOpcode::Load || opcode == MajorOpcode::LoadFp);
+
+            result.insLatency = isLoad ? PERFSCORE_LATENCY_2C : PERFSCORE_LATENCY_4C;
+            if (isLoad)
+            {
+                code_t log2Size = (emitInsCode(ins) >> 12) & 0b11;
+                if (log2Size < 2) // sub-word loads
+                    result.insLatency += PERFSCORE_LATENCY_1C;
+            }
+
+            regNumber baseReg = id->idReg2();
+            if (baseReg != REG_SP || baseReg != REG_FP)
+                result.insLatency += PERFSCORE_LATENCY_1C; // assume non-stack load/stores are more likely to cache-miss
+
+            result.insThroughput += immediateBuildingCost;
+            result.insMemoryAccessKind = isLoad ? PERFSCORE_MEMORY_READ : PERFSCORE_MEMORY_WRITE;
+            break;
+        }
+
+        case MajorOpcode::MiscMem:
+            result.insLatency    = PERFSCORE_LATENCY_5C;
+            result.insThroughput = PERFSCORE_THROUGHPUT_5C;
+            break;
+
+        default:
+            perfScoreUnhandledInstruction(id, &result);
+    }
 
     return result;
 }
