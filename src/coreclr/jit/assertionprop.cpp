@@ -2338,7 +2338,7 @@ void Compiler::optAssertionGen(GenTree* tree)
         case GT_MDARR_LENGTH:
         case GT_MDARR_LOWER_BOUND:
             // These indirs (esp. GT_IND and GT_STOREIND) are the most popular sources of assertions.
-            if ((tree->gtFlags & GTF_EXCEPT) != 0)
+            if (tree->IndirMayFault(this))
             {
                 assertionInfo = optCreateAssertion(tree->GetIndirOrArrMetaDataAddr(), nullptr, OAK_NOT_EQUAL);
             }
