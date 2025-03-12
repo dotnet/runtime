@@ -7,6 +7,7 @@ using System.Diagnostics;
 using System.IO;
 using System.IO.Strategies;
 using System.Runtime.InteropServices;
+using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Threading.Tasks.Sources;
@@ -41,8 +42,8 @@ namespace Microsoft.Win32.SafeHandles
             private CancellationToken _cancellationToken;
             // Used by simple reads and writes. Will be unsafely cast to a memory when performing a read.
             private ReadOnlyMemory<byte> _singleSegment;
-            private IReadOnlyList<Memory<byte>>? _readScatterBuffers;
-            private IReadOnlyList<ReadOnlyMemory<byte>>? _writeGatherBuffers;
+            // Both, read and write scatter/gather buffers.
+            private object? _buffers;
 
             internal ThreadPoolValueTaskSource(SafeFileHandle fileHandle)
             {
@@ -102,12 +103,12 @@ namespace Microsoft.Win32.SafeHandles
                                 RandomAccess.WriteAtOffset(_fileHandle, _singleSegment.Span, _fileOffset);
                                 break;
                             case Operation.ReadScatter:
-                                Debug.Assert(_readScatterBuffers != null);
-                                result = RandomAccess.ReadScatterAtOffset(_fileHandle, _readScatterBuffers, _fileOffset);
+                                Debug.Assert(_buffers != null);
+                                result = RandomAccess.ReadScatterAtOffset(_fileHandle, Unsafe.As<IReadOnlyList<Memory<byte>>>(_buffers), _fileOffset);
                                 break;
                             case Operation.WriteGather:
-                                Debug.Assert(_writeGatherBuffers != null);
-                                RandomAccess.WriteGatherAtOffset(_fileHandle, _writeGatherBuffers, _fileOffset);
+                                Debug.Assert(_buffers != null);
+                                RandomAccess.WriteGatherAtOffset(_fileHandle, Unsafe.As<IReadOnlyList<ReadOnlyMemory<byte>>>(_buffers), _fileOffset);
                                 break;
                         }
                     }
@@ -136,8 +137,7 @@ namespace Microsoft.Win32.SafeHandles
                     _strategy = null;
                     _cancellationToken = default;
                     _singleSegment = default;
-                    _readScatterBuffers = null;
-                    _writeGatherBuffers = null;
+                    _buffers = null;
                 }
 
                 if (exception == null)
@@ -201,7 +201,7 @@ namespace Microsoft.Win32.SafeHandles
                 ValidateInvariants();
 
                 _operation = Operation.ReadScatter;
-                _readScatterBuffers = buffers;
+                _buffers = buffers;
                 _fileOffset = fileOffset;
                 _cancellationToken = cancellationToken;
                 QueueToThreadPool();
@@ -214,7 +214,7 @@ namespace Microsoft.Win32.SafeHandles
                 ValidateInvariants();
 
                 _operation = Operation.WriteGather;
-                _writeGatherBuffers = buffers;
+                _buffers = buffers;
                 _fileOffset = fileOffset;
                 _cancellationToken = cancellationToken;
                 QueueToThreadPool();
