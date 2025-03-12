@@ -2536,7 +2536,7 @@ finished:
         //
 
         if (FinalPcFromLr) {
-            ContextRecord->Pc = ContextRecord->Lr;
+            ContextRecord->Pc = ContextRecord->Lr & 0x0000FFFFFFFFFFFF;
         }
         *EstablisherFrame = ContextRecord->Sp;
 
