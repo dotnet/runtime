@@ -1109,7 +1109,7 @@ namespace System.Net
                     }
                     _requestStream = new RequestStream(await getStreamTask.ConfigureAwait(false), completeTcs);
                 }
-                catch (OperationCanceledException)
+                catch (TimeoutException)
                 {
                     throw new WebException(SR.net_timeout, WebExceptionStatus.Timeout);
                 }
