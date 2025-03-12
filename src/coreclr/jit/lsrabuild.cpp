@@ -841,8 +841,9 @@ regMaskTP LinearScan::getKillSetForCall(GenTreeCall* call)
     }
 
     // if there is no FP used, we can ignore the FP kills
-    if (!compiler->compFloatingPointUsed)
+    if (!needToKillFloatRegs)
     {
+        assert(!compiler->compFloatingPointUsed || !enregisterLocalVars);
 #if defined(TARGET_XARCH)
 
 #ifdef TARGET_AMD64
@@ -2066,7 +2067,7 @@ void LinearScan::insertZeroInitRefPositions()
         while (iter.NextElem(&varIndex))
         {
             LclVarDsc* varDsc = compiler->lvaGetDescByTrackedIndex(varIndex);
-            if (!varDsc->lvIsParam && isCandidateVar(varDsc))
+            if (!varDsc->lvIsParam && !varDsc->lvIsParamRegTarget && isCandidateVar(varDsc))
             {
                 JITDUMP("V%02u is a finally var:", compiler->lvaTrackedIndexToLclNum(varIndex));
                 Interval* interval = getIntervalForLocalVar(varIndex);
@@ -2188,6 +2189,7 @@ void LinearScan::buildIntervals()
     // locals we are expecting to store the registers into in the prolog.
     for (unsigned lclNum = 0; lclNum < compiler->info.compArgsCount; lclNum++)
     {
+        LclVarDsc*                   lcl     = compiler->lvaGetDesc(lclNum);
         const ABIPassingInformation& abiInfo = compiler->lvaGetParameterABIInfo(lclNum);
         for (const ABIPassingSegment& seg : abiInfo.Segments())
         {
@@ -2199,18 +2201,35 @@ void LinearScan::buildIntervals()
             const ParameterRegisterLocalMapping* mapping =
                 compiler->FindParameterRegisterLocalMappingByRegister(seg.GetRegister());
 
-            unsigned mappedLclNum = mapping != nullptr ? mapping->LclNum : lclNum;
-            JITDUMP("Arg V%02u in reg %s\n", mappedLclNum, getRegName(seg.GetRegister()));
-            LclVarDsc* argDsc = compiler->lvaGetDesc(mappedLclNum);
-            if (argDsc->lvTracked && !compiler->compJmpOpUsed && (argDsc->lvRefCnt() == 0) &&
-                !compiler->opts.compDbgCode)
+            bool isParameterLive = !lcl->lvTracked || compiler->compJmpOpUsed || (lcl->lvRefCnt() != 0);
+            bool isLive;
+            if (mapping != nullptr)
             {
-                // Not live
-                continue;
+                LclVarDsc* mappedLcl = compiler->lvaGetDesc(mapping->LclNum);
+                bool isMappedLclLive = !mappedLcl->lvTracked || compiler->compJmpOpUsed || (mappedLcl->lvRefCnt() != 0);
+                if (mappedLcl->lvIsStructField)
+                {
+                    // Struct fields are not saved into their parameter local
+                    isLive = isMappedLclLive;
+                }
+                else
+                {
+                    isLive = isParameterLive || isMappedLclLive;
+                }
+            }
+            else
+            {
+                isLive = isParameterLive;
             }
 
-            RegState* regState = genIsValidFloatReg(seg.GetRegister()) ? floatRegState : intRegState;
-            regState->rsCalleeRegArgMaskLiveIn |= seg.GetRegisterMask();
+            JITDUMP("Arg V%02u is %s in reg %s\n", mapping != nullptr ? mapping->LclNum : lclNum,
+                    isLive ? "live" : "dead", getRegName(seg.GetRegister()));
+
+            if (isLive)
+            {
+                RegState* regState = genIsValidFloatReg(seg.GetRegister()) ? floatRegState : intRegState;
+                regState->rsCalleeRegArgMaskLiveIn |= seg.GetRegisterMask();
+            }
         }
     }
 
@@ -2248,7 +2267,12 @@ void LinearScan::buildIntervals()
         }
         else if (lclDsc->lvIsParam)
         {
-            if (lclDsc->lvIsStructField)
+            if (compiler->opts.IsOSR())
+            {
+                // Fall through with no preferred register since parameter are
+                // not passed in registers for OSR
+            }
+            else if (lclDsc->lvIsStructField)
             {
                 // All fields passed in registers should be assigned via the
                 // lvIsParamRegTarget mechanism, so this must be a stack
@@ -2303,7 +2327,6 @@ void LinearScan::buildIntervals()
     numPlacedArgLocals = 0;
     placedArgRegs      = RBM_NONE;
 
-    BasicBlock* predBlock = nullptr;
     BasicBlock* prevBlock = nullptr;
 
     // Initialize currentLiveVars to the empty set.  We will set it to the current
@@ -2316,19 +2339,19 @@ void LinearScan::buildIntervals()
         JITDUMP("\nNEW BLOCK " FMT_BB "\n", block->bbNum);
         compiler->compCurBB = block;
 
-        bool predBlockIsAllocated = false;
-        predBlock                 = findPredBlockForLiveIn(block, prevBlock DEBUGARG(&predBlockIsAllocated));
-        if (predBlock != nullptr)
-        {
-            JITDUMP("\n\nSetting " FMT_BB " as the predecessor for determining incoming variable registers of " FMT_BB
-                    "\n",
-                    predBlock->bbNum, block->bbNum);
-            assert(predBlock->bbNum <= bbNumMaxBeforeResolution);
-            blockInfo[block->bbNum].predBBNum = predBlock->bbNum;
-        }
-
         if (localVarsEnregistered)
         {
+            needToKillFloatRegs                    = compiler->compFloatingPointUsed;
+            bool              predBlockIsAllocated = false;
+            BasicBlock* const predBlock = findPredBlockForLiveIn(block, prevBlock DEBUGARG(&predBlockIsAllocated));
+            if (predBlock != nullptr)
+            {
+                JITDUMP("\n\nSetting " FMT_BB
+                        " as the predecessor for determining incoming variable registers of " FMT_BB "\n",
+                        predBlock->bbNum, block->bbNum);
+                assert(predBlock->bbNum <= bbNumMaxBeforeResolution);
+                blockInfo[block->bbNum].predBBNum = predBlock->bbNum;
+            }
             VarSetOps::AssignNoCopy(compiler, currentLiveVars,
                                     VarSetOps::Intersection(compiler, registerCandidateVars, block->bbLiveIn));
 
@@ -2387,6 +2410,11 @@ void LinearScan::buildIntervals()
                     }
                 }
             }
+        }
+        else
+        {
+            // If state isn't live across blocks, set FP register kill switch per block.
+            needToKillFloatRegs = false;
         }
 
         // Add a dummy RefPosition to mark the block boundary.
@@ -2985,6 +3013,7 @@ RefPosition* LinearScan::BuildDef(GenTree* tree, SingleTypeRegSet dstCandidates,
     if (!varTypeUsesIntReg(type))
     {
         compiler->compFloatingPointUsed = true;
+        needToKillFloatRegs             = true;
     }
 
     Interval* interval = newInterval(type);
@@ -3097,7 +3126,7 @@ int LinearScan::BuildCallArgUses(GenTreeCall* call)
             continue;
         }
 
-        assert(!arg.NewAbiInfo.HasAnyRegisterSegment());
+        assert(!arg.AbiInfo.HasAnyRegisterSegment());
         assert(argNode->OperIs(GT_PUTARG_STK));
     }
 
@@ -4369,6 +4398,22 @@ int LinearScan::BuildReturn(GenTree* tree)
                 return 1;
             }
         }
+        else if (!tree->TypeIs(TYP_VOID) && op1->OperIsFieldList())
+        {
+            const ReturnTypeDesc& retDesc = compiler->compRetTypeDesc;
+
+            unsigned regIndex = 0;
+            for (const GenTreeFieldList::Use& use : op1->AsFieldList()->Uses())
+            {
+                GenTree*  tree   = use.GetNode();
+                regNumber retReg = retDesc.GetABIReturnReg(regIndex, compiler->info.compCallConv);
+                BuildUse(tree, genSingleTypeRegMask(retReg));
+
+                regIndex++;
+            }
+
+            return regIndex;
+        }
         else
         {
             // In other cases we require the incoming operand to be in the
@@ -4468,7 +4513,7 @@ int LinearScan::BuildPutArgReg(GenTreeUnOp* node)
     SingleTypeRegSet argMask = genSingleTypeRegMask(argReg);
     RefPosition*     use     = BuildUse(op1, argMask);
 
-    // Record that this register is occupied by a register now.
+    // Record that this register is occupied by an argument now.
     placedArgRegs.AddRegNumInMask(argReg);
 
     if (supportsSpecialPutArg() && isCandidateLocalRef(op1) && ((op1->gtFlags & GTF_VAR_DEATH) == 0))

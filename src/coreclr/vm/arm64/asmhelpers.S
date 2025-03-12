@@ -426,8 +426,8 @@ NESTED_ENTRY CallEHFilterFunclet, _TEXT, NoHandler
 
 NESTED_END CallEHFilterFunclet, _TEXT
 
-#define FaultingExceptionFrame_StackAlloc (SIZEOF__GSCookie + SIZEOF__FaultingExceptionFrame)
-#define FaultingExceptionFrame_FrameOffset SIZEOF__GSCookie
+#define FaultingExceptionFrame_StackAlloc (SIZEOF__FaultingExceptionFrame)
+#define FaultingExceptionFrame_FrameOffset 0
 
 .macro GenerateRedirectedStubWithFrame stub, target
 
@@ -522,6 +522,7 @@ GenerateRedirectedStubWithFrame RedirectForThreadAbort, RedirectForThreadAbort2
 //   x12       contains our contract (DispatchToken)
 //   x16,x17   will be trashed
 //
+#ifdef FEATURE_VIRTUAL_STUB_DISPATCH
 
 #define BACKPATCH_FLAG      1
 #define PROMOTE_CHAIN_FLAG  2
@@ -586,7 +587,7 @@ NESTED_ENTRY ResolveWorkerAsmStub, _TEXT, NoHandler
     EPILOG_BRANCH_REG  x9
 
 NESTED_END ResolveWorkerAsmStub, _TEXT
-
+#endif // FEATURE_VIRTUAL_STUB_DISPATCH
 #ifdef FEATURE_READYTORUN
 
 NESTED_ENTRY DelayLoad_MethodCall_FakeProlog, _TEXT, NoHandler
@@ -835,3 +836,18 @@ LOCAL_LABEL(JIT_PollGCRarePath):
         ldr     x9, [x9]
         br x9
 LEAF_END  JIT_PollGC, _TEXT
+
+#ifdef FEATURE_INTERPRETER
+NESTED_ENTRY InterpreterStub, _TEXT, NoHandler
+
+    PROLOG_WITH_TRANSITION_BLOCK
+
+    add x0, sp, #__PWTB_TransitionBlock // pTransitionBlock
+    mov x1, METHODDESC_REGISTER // pMethodDesc
+
+    bl  C_FUNC(ExecuteInterpretedMethod)
+
+    EPILOG_WITH_TRANSITION_BLOCK_RETURN
+
+NESTED_END InterpreterStub, _TEXT
+#endif // FEATURE_INTERPRETER

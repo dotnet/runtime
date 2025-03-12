@@ -85,28 +85,27 @@ namespace Microsoft.Extensions.Hosting.Internal
                 cancellationToken.ThrowIfCancellationRequested();
 
                 List<Exception> exceptions = new();
-                _hostedServices ??= Services.GetRequiredService<IEnumerable<IHostedService>>();
-                _hostedLifecycleServices = GetHostLifecycles(_hostedServices);
                 _hostStarting = true;
                 bool concurrent = _options.ServicesStartConcurrently;
                 bool abortOnFirstException = !concurrent;
 
-                // Call startup validators.
-                IStartupValidator? validator = Services.GetService<IStartupValidator>();
-                if (validator is not null)
+                try
                 {
-                    try
-                    {
-                        validator.Validate();
-                    }
-                    catch (Exception ex)
-                    {
-                        exceptions.Add(ex);
+                    _hostedServices ??= Services.GetRequiredService<IEnumerable<IHostedService>>();
+                    _hostedLifecycleServices = GetHostLifecycles(_hostedServices);
 
-                        // Validation errors cause startup to be aborted.
-                        LogAndRethrow();
-                    }
+                    // Call startup validators.
+                    IStartupValidator? validator = Services.GetService<IStartupValidator>();
+                    validator?.Validate();
                 }
+                catch (Exception ex)
+                {
+                    // service factory or validation failed, abort startup.
+                    exceptions.Add(ex);
+                    LogAndRethrow();
+                    return; // unreachable
+                }
+
 
                 // Call StartingAsync().
                 if (_hostedLifecycleServices is not null)

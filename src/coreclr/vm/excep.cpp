@@ -3053,14 +3053,17 @@ void StackTraceInfo::AppendElement(OBJECTHANDLE hThrowable, UINT_PTR currentIP, 
     // This is a workaround to fix the generation of stack traces from exception objects so that
     // they point to the line that actually generated the exception instead of the line
     // following.
-    if (pCf->IsIPadjusted())
+    if (pCf != NULL)
     {
-        stackTraceElem.flags |= STEF_IP_ADJUSTED;
-    }
-    else if (!pCf->HasFaulted() && stackTraceElem.ip != 0)
-    {
-        stackTraceElem.ip -= STACKWALK_CONTROLPC_ADJUST_OFFSET;
-        stackTraceElem.flags |= STEF_IP_ADJUSTED;
+        if (pCf->IsIPadjusted())
+        {
+            stackTraceElem.flags |= STEF_IP_ADJUSTED;
+        }
+        else if (!pCf->HasFaulted() && stackTraceElem.ip != 0)
+        {
+            stackTraceElem.ip -= STACKWALK_CONTROLPC_ADJUST_OFFSET;
+            stackTraceElem.flags |= STEF_IP_ADJUSTED;
+        }
     }
 
 #ifndef TARGET_UNIX // Watson is supported on Windows only
@@ -6022,6 +6025,12 @@ BOOL IsIPinVirtualStub(PCODE f_IP)
         return FALSE;
     }
 
+#ifdef FEATURE_CACHED_INTERFACE_DISPATCH
+    if (VirtualCallStubManager::isCachedInterfaceDispatchStubAVLocation(f_IP))
+        return TRUE;
+#endif
+
+#ifdef FEATURE_VIRTUAL_STUB_DISPATCH
     StubCodeBlockKind sk = RangeSectionStubManager::GetStubKind(f_IP);
 
     if (sk == STUB_CODE_BLOCK_VSD_DISPATCH_STUB)
@@ -6036,6 +6045,9 @@ BOOL IsIPinVirtualStub(PCODE f_IP)
     else {
         return FALSE;
     }
+#else // FEATURE_VIRTUAL_STUB_DISPATCH
+    return FALSE;
+#endif // FEATURE_VIRTUAL_STUB_DISPATCH
 }
 
 // Check if the passed in instruction pointer is in one of the
@@ -6258,11 +6270,8 @@ void HandleManagedFaultNew(EXCEPTION_RECORD* pExceptionRecord, CONTEXT* pContext
 {
     WRAPPER_NO_CONTRACT;
 
-    FrameWithCookie<FaultingExceptionFrame> frameWithCookie;
-    FaultingExceptionFrame *frame = &frameWithCookie;
-#if defined(FEATURE_EH_FUNCLETS)
-    *frame->GetGSCookiePtr() = GetProcessGSCookie();
-#endif // FEATURE_EH_FUNCLETS
+    FaultingExceptionFrame fef;
+    FaultingExceptionFrame *frame = &fef;
     frame->InitAndLink(pContext);
 
     Thread *pThread = GetThread();
@@ -6297,11 +6306,8 @@ void HandleManagedFault(EXCEPTION_RECORD* pExceptionRecord, CONTEXT* pContext)
     WRAPPER_NO_CONTRACT;
 
     // Ok.  Now we have a brand new fault in jitted code.
-    FrameWithCookie<FaultingExceptionFrame> frameWithCookie;
-    FaultingExceptionFrame *frame = &frameWithCookie;
-#if defined(FEATURE_EH_FUNCLETS)
-    *frame->GetGSCookiePtr() = GetProcessGSCookie();
-#endif // FEATURE_EH_FUNCLETS
+    FaultingExceptionFrame fef;
+    FaultingExceptionFrame *frame = &fef;
     frame->InitAndLink(pContext);
 
     HandleManagedFaultFilterParam param;
@@ -6527,7 +6533,7 @@ VEH_ACTION WINAPI CLRVectoredExceptionHandler(PEXCEPTION_POINTERS pExceptionInfo
         // That IP is an interruptible safe point, so we can suspend right there.
         interruptedContext->Rip = (uintptr_t)pThread->GetHijackedReturnAddress();
 
-        FrameWithCookie<ResumableFrame> frame(pExceptionInfo->ContextRecord);
+        ResumableFrame frame(pExceptionInfo->ContextRecord);
         frame.Push(pThread);
         CommonTripThread();
         frame.Pop(pThread);
@@ -11511,7 +11517,7 @@ MethodDesc * GetUserMethodForILStub(Thread * pThread, UINT_PTR uStubSP, MethodDe
         // should be present further up the stack. Normally, the ComMethodFrame in question is
         // simply the next stack frame; however, there are situations where there may be other
         // stack frames present (such as an inlined stack frame from a QCall in the IL stub).
-        while (pCurFrame->GetVTablePtr() != ComMethodFrame::GetMethodFrameVPtr())
+        while (pCurFrame->GetFrameIdentifier() != FrameIdentifier::ComMethodFrame)
         {
             pCurFrame = pCurFrame->PtrNextFrame();
         }
@@ -11519,7 +11525,7 @@ MethodDesc * GetUserMethodForILStub(Thread * pThread, UINT_PTR uStubSP, MethodDe
         ComMethodFrame * pComFrame = (ComMethodFrame *)pCurFrame;
         _ASSERTE((UINT_PTR)pComFrame > uStubSP);
 
-        CONSISTENCY_CHECK_MSG(pComFrame->GetVTablePtr() == ComMethodFrame::GetMethodFrameVPtr(),
+        CONSISTENCY_CHECK_MSG(pComFrame->GetFrameIdentifier() == FrameIdentifier::ComMethodFrame,
                               "Expected to find a ComMethodFrame.");
 
         ComCallMethodDesc * pCMD = pComFrame->GetComCallMethodDesc();
@@ -11537,7 +11543,7 @@ MethodDesc * GetUserMethodForILStub(Thread * pThread, UINT_PTR uStubSP, MethodDe
 
 #ifdef FEATURE_EH_FUNCLETS
 
-void SoftwareExceptionFrame::UpdateRegDisplay(const PREGDISPLAY pRD, bool updateFloats)
+void SoftwareExceptionFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFloats)
 {
     LIMITED_METHOD_DAC_CONTRACT;
 

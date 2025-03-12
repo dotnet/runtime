@@ -18,6 +18,7 @@
     <_ServeMimeTypes>$(_ServeMimeTypes) --mime .cjs=text/javascript</_ServeMimeTypes>
     <_ServeMimeTypes>$(_ServeMimeTypes) --mime .js=text/javascript</_ServeMimeTypes>
     <_ServeMimeTypes>$(_ServeMimeTypes) --mime .webcil=application/octet-stream</_ServeMimeTypes>
+    <WasmPerfTracing Condition="'$(WasmPerfTracing)' == '' and '$(WasmProfilers)' == '' and '$(WasmBuildNative)' != 'false'">true</WasmPerfTracing>
   </PropertyGroup>
 
   <Target Name="BuildSampleInTree"
@@ -45,6 +46,9 @@
       <NestedBuildProperty Include="InvariantGlobalization" />
       <NestedBuildProperty Include="UsingNativeAOT" />
       <NestedBuildProperty Include="WasmEnableThreads" />
+      <NestedBuildProperty Include="WasmPerfTracing" />
+      <NestedBuildProperty Include="WasmEmitSourceMap" />
+      <NestedBuildProperty Include="WasmEmitSymbolMap" />
       <NestedBuildPropertyValue Include="/p:%(NestedBuildProperty.Identity)=$(%(NestedBuildProperty.Identity))" Condition="'$(%(NestedBuildProperty.Identity))' != '%(NestedBuildProperty.DefaultValue)'" />
     </ItemGroup>
     <Exec Command="$(_Dotnet) publish -bl:publish-browser.binlog /p:Configuration=$(Configuration) /p:TargetArchitecture=wasm /p:TargetOS=browser @(NestedBuildPropertyValue, ' ') $(_SampleProject) $(BuildAdditionalArgs)" />

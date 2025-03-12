@@ -32,6 +32,14 @@
 #define DBG_FRE(dbg,fre) fre
 #endif
 
+#define FRAMETYPE_InlinedCallFrame 0x1
+ASMCONSTANTS_C_ASSERT(FRAMETYPE_InlinedCallFrame == (int)FrameIdentifier::InlinedCallFrame)
+
+#if defined(TARGET_X86) && !defined(UNIX_X86_ABI)
+#define FRAMETYPE_TailCallFrame 0x2
+ASMCONSTANTS_C_ASSERT(FRAMETYPE_TailCallFrame == (int)FrameIdentifier::TailCallFrame)
+#endif
+
 #define INITIAL_SUCCESS_COUNT               0x100
 
 #define DynamicHelperFrameFlags_Default     0
@@ -147,8 +155,6 @@ ASMCONSTANTS_C_ASSERT(VASigCookie__StubOffset == offsetof(VASigCookie, pNDirectI
 ASMCONSTANTS_C_ASSERT(SIZEOF_TailCallFrame == sizeof(TailCallFrame))
 #endif // !UNIX_X86_ABI
 
-#define SIZEOF_GSCookie 4
-
 // ICodeManager::SHADOW_SP_IN_FILTER from clr/src/inc/eetwain.h
 #define SHADOW_SP_IN_FILTER_ASM 0x1
 ASMCONSTANTS_C_ASSERT(SHADOW_SP_IN_FILTER_ASM == ICodeManager::SHADOW_SP_IN_FILTER)
@@ -254,12 +260,6 @@ ASMCONSTANTS_C_ASSERT(CallDescrData__fpReturnSize         == offsetof(CallDescrD
 ASMCONSTANTS_C_ASSERT(CallDescrData__pTarget              == offsetof(CallDescrData, pTarget))
 ASMCONSTANTS_C_ASSERT(CallDescrData__returnValue          == offsetof(CallDescrData, returnValue))
 
-#define               UMEntryThunk__m_pUMThunkMarshInfo     0x0C
-ASMCONSTANTS_C_ASSERT(UMEntryThunk__m_pUMThunkMarshInfo == offsetof(UMEntryThunk, m_pUMThunkMarshInfo))
-
-#define               UMThunkMarshInfo__m_pILStub           0x00
-ASMCONSTANTS_C_ASSERT(UMThunkMarshInfo__m_pILStub == offsetof(UMThunkMarshInfo, m_pILStub))
-
 // For JIT_PInvokeBegin and JIT_PInvokeEnd helpers
 #define               Frame__m_Next 0x04
 ASMCONSTANTS_C_ASSERT(Frame__m_Next == offsetof(Frame, m_Next));
@@ -296,8 +296,8 @@ ASMCONSTANTS_C_ASSERT(FixupPrecodeData__PrecodeFixupThunk == offsetof(FixupPreco
 
 #define StubPrecodeData__Target 0x04
 ASMCONSTANTS_C_ASSERT(StubPrecodeData__Target            == offsetof(StubPrecodeData, Target))
-#define StubPrecodeData__MethodDesc 0x00
-ASMCONSTANTS_C_ASSERT(StubPrecodeData__MethodDesc        == offsetof(StubPrecodeData, MethodDesc))
+#define StubPrecodeData__SecretParam 0x00
+ASMCONSTANTS_C_ASSERT(StubPrecodeData__SecretParam        == offsetof(StubPrecodeData, SecretParam))
 
 #define CallCountingStubData__RemainingCallCountCell 0x00
 ASMCONSTANTS_C_ASSERT(CallCountingStubData__RemainingCallCountCell == offsetof(CallCountingStubData, RemainingCallCountCell))

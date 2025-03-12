@@ -409,7 +409,15 @@ static MethodDesc* getTargetMethodDesc(PCODE target)
 
     if (stubKind == STUB_CODE_BLOCK_STUBPRECODE)
     {
-        return (MethodDesc*)((StubPrecode*)PCODEToPINSTR(target))->GetMethodDesc();
+        Precode* pPrecode = Precode::GetPrecodeFromEntryPoint(target);
+        switch (pPrecode->GetType())
+        {
+            case PRECODE_STUB:
+            case PRECODE_NDIRECT_IMPORT:
+                return dac_cast<PTR_MethodDesc>(pPrecode->AsStubPrecode()->GetMethodDesc());
+            default:
+                return nullptr;
+        }
     }
 
     if (stubKind == STUB_CODE_BLOCK_FIXUPPRECODE)
@@ -864,7 +872,7 @@ void DoGcStress (PCONTEXT regs, NativeCodeVersion nativeCodeVersion)
     // If we redirect for gc stress, we don't need this frame on the stack,
     // the redirection will push a resumable frame.
     //
-    FrameWithCookie<ResumableFrame> frame(regs);
+    ResumableFrame frame(regs);
     if (!Thread::UseRedirectForGcStress())
     {
         frame.Push(pThread);
@@ -1179,7 +1187,7 @@ void DoGcStress (PCONTEXT regs, NativeCodeVersion nativeCodeVersion)
     // If we redirect for gc stress, we don't need this frame on the stack,
     // the redirection will push a resumable frame.
     //
-    FrameWithCookie<ResumableFrame> frame(regs);
+    ResumableFrame frame(regs);
     if (!Thread::UseRedirectForGcStress())
     {
         frame.Push(pThread);
