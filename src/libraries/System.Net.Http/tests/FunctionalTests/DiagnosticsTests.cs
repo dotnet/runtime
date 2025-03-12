@@ -1543,7 +1543,7 @@ namespace System.Net.Http.Functional.Tests
             }   
         }
 
-        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [Fact]
         public async Task SendAsync_ReuseRequestInHandler_ResetsHeadersForEachReuse()
         {
             Activity parent0 = new Activity("parent0");
