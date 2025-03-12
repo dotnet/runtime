@@ -1339,8 +1339,8 @@ void Compiler::fgFindTryRegionEnds()
     // Null out try end pointers to signify the given clause hasn't been visited yet.
     for (EHblkDsc* const HBtab : EHClauses(this))
     {
-        // Ignore try regions inside handler regions.
-        if (!HBtab->ebdTryLast->hasHndIndex())
+        // Ignore try regions inside funclet regions.
+        if (!UsesFunclets() || !HBtab->ebdTryLast->hasHndIndex())
         {
             HBtab->ebdTryLast = nullptr;
             unsetTryEnds++;
