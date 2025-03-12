@@ -8293,7 +8293,8 @@ GenTreeCall* Compiler::gtNewCallNode(gtCallTypes           callType,
     {
         node->ClearInlineInfo();
     }
-    node->gtReturnType = type;
+    node->gtReturnType      = type;
+    node->gtReturnClassInfo = nullptr;
 
 #ifdef FEATURE_READYTORUN
     node->gtEntryPoint.addr       = nullptr;
@@ -19150,8 +19151,17 @@ CORINFO_CLASS_HANDLE Compiler::gtGetClassHandle(GenTree* tree, bool* pIsExact, b
                 }
                 else
                 {
-                    assert(sig.retType == CORINFO_TYPE_CLASS);
-                    objClass = sig.retTypeClass;
+                    if ((call->gtCallMoreFlags & GTF_CALL_M_HAS_RET_CLASS) == GTF_CALL_M_HAS_RET_CLASS)
+                    {
+                        assert(call->gtReturnClassInfo != nullptr);
+                        objClass  = call->gtReturnClassInfo->clsHandle;
+                        *pIsExact = call->gtReturnClassInfo->isExact;
+                    }
+                    else
+                    {
+                        assert(sig.retType == CORINFO_TYPE_CLASS);
+                        objClass = sig.retTypeClass;
+                    }
                 }
             }
             else if (call->IsHelperCall())
