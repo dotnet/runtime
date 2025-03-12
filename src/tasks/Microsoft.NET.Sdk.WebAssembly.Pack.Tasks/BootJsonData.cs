@@ -103,7 +103,7 @@ public class BootJsonData
     /// <summary>
     /// Gets or sets environment variables.
     /// </summary>
-    public object environmentVariables { get; set; }
+    public System.Collections.Generic.Dictionary<string, string> environmentVariables { get; set; }
 
     /// <summary>
     /// Gets or sets diagnostic tracing.

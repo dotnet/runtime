@@ -7124,15 +7124,27 @@ ExceptionSetFlags GenTree::OperExceptions(Compiler* comp)
 
             GenTreeHWIntrinsic* hwIntrinsicNode = this->AsHWIntrinsic();
 
+            ExceptionSetFlags flags = ExceptionSetFlags::None;
             if (hwIntrinsicNode->OperIsMemoryLoadOrStore())
             {
                 // TODO-CQ: We should use comp->fgAddrCouldBeNull on the address operand
                 // to determine if this can actually produce an NRE or not
-
-                return ExceptionSetFlags::NullReferenceException;
+                flags |= ExceptionSetFlags::NullReferenceException;
             }
 
-            return ExceptionSetFlags::None;
+#ifdef TARGET_XARCH
+            NamedIntrinsic intrinsicId = hwIntrinsicNode->GetHWIntrinsicId();
+            if ((intrinsicId == NI_Vector128_op_Division) || (intrinsicId == NI_Vector256_op_Division) ||
+                (intrinsicId == NI_Vector512_op_Division))
+            {
+                // We currently don't try to avoid setting these flags and GTF_EXCEPT when
+                // we know that the operation in fact cannot overflow/divide by zero.
+                assert(varTypeIsInt(AsHWIntrinsic()->GetSimdBaseType()));
+                flags |= ExceptionSetFlags::OverflowException | ExceptionSetFlags::DivideByZeroException;
+            }
+#endif
+
+            return flags;
         }
 #endif // FEATURE_HW_INTRINSICS
 
@@ -19978,12 +19990,17 @@ bool GenTree::SupportsSettingZeroFlag()
     }
 #endif
 #elif defined(TARGET_ARM64)
-    if (OperIs(GT_AND, GT_AND_NOT, GT_NEG))
+    if (OperIs(GT_AND, GT_AND_NOT))
     {
         return true;
     }
 
     // We do not support setting zero flag for madd/msub.
+    if (OperIs(GT_NEG) && (!gtGetOp1()->OperIs(GT_MUL) || !gtGetOp1()->isContained()))
+    {
+        return true;
+    }
+
     if (OperIs(GT_ADD, GT_SUB) && (!gtGetOp2()->OperIs(GT_MUL) || !gtGetOp2()->isContained()))
     {
         return true;

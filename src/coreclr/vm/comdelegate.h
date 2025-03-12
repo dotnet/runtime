@@ -132,8 +132,7 @@ void DistributeEvent(OBJECTREF *pDelegate,
 
 void DistributeUnhandledExceptionReliably(OBJECTREF *pDelegate,
                                           OBJECTREF *pDomain,
-                                          OBJECTREF *pThrowable,
-                                          BOOL       isTerminating);
+                                          OBJECTREF *pThrowable);
 
 // Want no unused bits in ShuffleEntry since unused bits can make
 // equivalent ShuffleEntry arrays look unequivalent and deoptimize our
