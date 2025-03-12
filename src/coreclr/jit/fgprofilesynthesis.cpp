@@ -1408,12 +1408,19 @@ void ProfileSynthesis::GaussSeidelSolver()
             countVector[block->bbNum] = newWeight;
 
             // Remember max absolute and relative change
-            // (note rel residual will be infinite at times, that's ok)
+            // (note rel residual will be as large as 1e9 at times, that's ok)
             //
             // Note we are using a "point" bound here ("infinity norm") rather than say
             // computing the L2-norm of the entire residual vector.
             //
-            weight_t const blockRelResidual = change / oldWeight;
+            weight_t const smallFractionOfChange = 1e-9 * change;
+            weight_t       relDivisor            = oldWeight;
+            if (relDivisor < smallFractionOfChange)
+            {
+                relDivisor = smallFractionOfChange;
+            }
+
+            weight_t const blockRelResidual = change / relDivisor;
 
             if ((relResidualBlock == nullptr) || (blockRelResidual > relResidual))
             {
