@@ -428,14 +428,6 @@ namespace Internal.NativeFormat
             return Unify(vertex);
         }
 
-        public Vertex GetMethodNameAndSigSignature(string name, Vertex signature)
-        {
-            MethodNameAndSigSignature sig = new MethodNameAndSigSignature(
-                GetStringConstant(name),
-                GetRelativeOffsetSignature(signature));
-            return Unify(sig);
-        }
-
         public Vertex GetStringConstant(string value)
         {
             StringConstant vertex = new StringConstant(value);
@@ -460,9 +452,9 @@ namespace Internal.NativeFormat
             return Unify(sig);
         }
 
-        public Vertex GetMethodSignature(uint flags, uint fptrReferenceId, Vertex containingType, Vertex methodNameAndSig, Vertex[] args)
+        public Vertex GetMethodSignature(uint flags, uint fptrReferenceId, Vertex containingType, int token, Vertex[] args)
         {
-            MethodSignature sig = new MethodSignature(flags, fptrReferenceId, containingType, methodNameAndSig, args);
+            MethodSignature sig = new MethodSignature(flags, fptrReferenceId, containingType, token, args);
             return Unify(sig);
         }
 
@@ -764,43 +756,6 @@ namespace Internal.NativeFormat
 #else
     internal
 #endif
-    class MethodNameAndSigSignature : Vertex
-    {
-        private Vertex _methodName;
-        private Vertex _signature;
-
-        public MethodNameAndSigSignature(Vertex methodName, Vertex signature)
-        {
-            _methodName = methodName;
-            _signature = signature;
-        }
-
-        internal override void Save(NativeWriter writer)
-        {
-            _methodName.Save(writer);
-            _signature.Save(writer);
-        }
-
-        public override int GetHashCode()
-        {
-            return 509 * 197 + _methodName.GetHashCode() + 647 * _signature.GetHashCode();
-        }
-
-        public override bool Equals(object obj)
-        {
-            MethodNameAndSigSignature other = obj as MethodNameAndSigSignature;
-            if (other == null)
-                return false;
-
-            return Equals(_methodName, other._methodName) && Equals(_signature, other._signature);
-        }
-    }
-
-#if NATIVEFORMAT_PUBLICWRITER
-    public
-#else
-    internal
-#endif
     class StringConstant : Vertex
     {
         private string _value;
@@ -952,15 +907,15 @@ namespace Internal.NativeFormat
         private uint _flags;
         private uint _fptrReferenceId;
         private Vertex _containingType;
-        private Vertex _methodNameAndSig;
+        private int _token;
         private Vertex[] _args;
 
-        public MethodSignature(uint flags, uint fptrReferenceId, Vertex containingType, Vertex methodNameAndSig, Vertex[] args)
+        public MethodSignature(uint flags, uint fptrReferenceId, Vertex containingType, int token, Vertex[] args)
         {
             _flags = flags;
             _fptrReferenceId = fptrReferenceId;
             _containingType = containingType;
-            _methodNameAndSig = methodNameAndSig;
+            _token = token;
             _args = args;
 
             if ((flags & (uint)MethodFlags.HasInstantiation) != 0)
@@ -975,7 +930,7 @@ namespace Internal.NativeFormat
             if ((_flags & (uint)MethodFlags.HasFunctionPointer) != 0)
                 writer.WriteUnsigned(_fptrReferenceId);
             _containingType.Save(writer);
-            _methodNameAndSig.Save(writer);
+            writer.WriteUnsigned((uint)_token);
             if ((_flags & (uint)MethodFlags.HasInstantiation) != 0)
             {
                 writer.WriteUnsigned((uint)_args.Length);
@@ -992,7 +947,7 @@ namespace Internal.NativeFormat
             hash += (hash << 5) + _containingType.GetHashCode();
             for (uint iArg = 0; _args != null && iArg < _args.Length; iArg++)
                 hash += (hash << 5) + _args[iArg].GetHashCode();
-            hash += (hash << 5) + _methodNameAndSig.GetHashCode();
+            hash += (hash << 5) + _token.GetHashCode();
             return hash;
         }
 
@@ -1005,8 +960,8 @@ namespace Internal.NativeFormat
             if (!(
                 _flags == other._flags &&
                 _fptrReferenceId == other._fptrReferenceId &&
-                Equals(_containingType, other._containingType) &&
-                Equals(_methodNameAndSig, other._methodNameAndSig)))
+                _token == other._token &&
+                Equals(_containingType, other._containingType)))
             {
                 return false;
             }

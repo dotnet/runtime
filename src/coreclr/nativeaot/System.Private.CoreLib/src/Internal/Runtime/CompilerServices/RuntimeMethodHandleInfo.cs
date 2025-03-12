@@ -6,19 +6,27 @@ using System.Diagnostics;
 using System.Reflection;
 using System.Runtime.InteropServices;
 
+using Internal.Metadata.NativeFormat;
 using Internal.Runtime.Augments;
 
 namespace Internal.Runtime.CompilerServices
 {
+    [CLSCompliant(false)]
     public class MethodNameAndSignature
     {
-        public string Name { get; }
-        public RuntimeSignature Signature { get; }
+        public MetadataReader Reader { get; }
+        public MethodHandle Handle { get; }
 
-        public MethodNameAndSignature(string name, RuntimeSignature signature)
+        public MethodNameAndSignature(MetadataReader reader, MethodHandle handle)
         {
-            Name = name;
-            Signature = signature;
+            Reader = reader;
+            Handle = handle;
+        }
+
+        public string GetName()
+        {
+            Method method = Reader.GetMethod(Handle);
+            return Reader.GetString(method.Name);
         }
 
         public override bool Equals(object? compare)
@@ -30,24 +38,17 @@ namespace Internal.Runtime.CompilerServices
             if (other == null)
                 return false;
 
-            if (Name != other.Name)
+            if (GetName() != other.GetName())
                 return false;
 
-            return Signature.Equals(other.Signature);
+            // Comparing handles is enough if there's only one metadata blob
+            Debug.Assert(Reader == other.Reader);
+            return Reader.GetMethod(Handle).Signature.Equals(other.Reader.GetMethod(other.Handle).Signature);
         }
 
         public override int GetHashCode()
         {
-            int hash = Name.GetHashCode();
-
-            return hash;
+            return Handle.GetHashCode();
         }
-    }
-
-    [StructLayout(LayoutKind.Sequential)]
-    [CLSCompliant(false)]
-    public unsafe struct RuntimeMethodHandleInfo
-    {
-        public IntPtr NativeLayoutInfoSignature;
     }
 }

@@ -50,6 +50,7 @@ namespace ILCompiler
         private List<MetadataMapping<FieldDesc>> _fieldMappings;
         private Dictionary<FieldDesc, int> _fieldHandleMap;
         private List<MetadataMapping<MethodDesc>> _methodMappings;
+        private Dictionary<MethodDesc, int> _methodHandleMap;
         private List<StackTraceMapping> _stackTraceMappings;
         protected readonly string _metadataLogFile;
         protected readonly StackTraceEmissionPolicy _stackTraceEmissionPolicy;
@@ -443,16 +444,6 @@ namespace ILCompiler
 
         public void GetDependenciesDueToGenericDictionary(ref DependencyList dependencies, NodeFactory factory, MethodDesc method)
         {
-            MetadataCategory category = GetMetadataCategory(method.GetCanonMethodTarget(CanonicalFormKind.Specific));
-
-            if ((category & MetadataCategory.RuntimeMapping) != 0)
-            {
-                // If the method is visible from reflection, we need to keep track of this statically generated
-                // dictionary to make sure MakeGenericMethod works even without a type loader template
-                dependencies ??= new DependencyList();
-                dependencies.Add(factory.GenericMethodsHashtableEntry(method), "Reflection visible dictionary");
-            }
-
             if (method.Signature.IsStatic && method.IsSynchronized)
             {
                 dependencies ??= new DependencyList();
@@ -535,6 +526,11 @@ namespace ILCompiler
             // MetadataManagers can override this to provide additional dependencies caused by the emission of metadata
             // (E.g. dependencies caused by the method having custom attributes applied to it: making sure we compile the attribute constructor
             // and property setters)
+        }
+
+        public virtual void GetNativeLayoutMetadataDependencies(ref DependencyList dependencies, NodeFactory factory, MethodDesc method)
+        {
+            // MetadataManagers can override this to provide additional dependencies caused by the emission of metadata
         }
 
         protected virtual void GetMetadataDependenciesDueToReflectability(ref DependencyList dependencies, NodeFactory factory, FieldDesc field)
@@ -692,11 +688,7 @@ namespace ILCompiler
             if (_metadataBlob != null)
                 return;
 
-            ComputeMetadata(factory, out _metadataBlob, out _typeMappings, out _methodMappings, out _fieldMappings, out _stackTraceMappings);
-
-            _fieldHandleMap = new Dictionary<FieldDesc, int>();
-            foreach (var fieldMapEntry in _fieldMappings)
-                _fieldHandleMap[fieldMapEntry.Entity.GetTypicalFieldDefinition()] = fieldMapEntry.MetadataHandle;
+            ComputeMetadata(factory, out _metadataBlob, out _typeMappings, out _methodMappings, out _methodHandleMap, out _fieldMappings, out _fieldHandleMap, out _stackTraceMappings);
         }
 
         void ICompilationRootProvider.AddCompilationRoots(IRootingServiceProvider rootProvider)
@@ -709,7 +701,9 @@ namespace ILCompiler
                                                 out byte[] metadataBlob,
                                                 out List<MetadataMapping<MetadataType>> typeMappings,
                                                 out List<MetadataMapping<MethodDesc>> methodMappings,
+                                                out Dictionary<MethodDesc, int> methodMetadataMappings,
                                                 out List<MetadataMapping<FieldDesc>> fieldMappings,
+                                                out Dictionary<FieldDesc, int> fieldMetadataMappings,
                                                 out List<StackTraceMapping> stackTraceMapping);
 
         protected void ComputeMetadata<TPolicy>(
@@ -718,7 +712,9 @@ namespace ILCompiler
             out byte[] metadataBlob,
             out List<MetadataMapping<MetadataType>> typeMappings,
             out List<MetadataMapping<MethodDesc>> methodMappings,
+            out Dictionary<MethodDesc, int> methodMetadataMappings,
             out List<MetadataMapping<FieldDesc>> fieldMappings,
+            out Dictionary<FieldDesc, int> fieldMetadataMappings,
             out List<StackTraceMapping> stackTraceMapping) where TPolicy : struct, IMetadataPolicy
         {
             var transformed = MetadataTransform.Run(policy, GetCompilationModulesWithMetadata());
@@ -790,7 +786,9 @@ namespace ILCompiler
 
             typeMappings = new List<MetadataMapping<MetadataType>>();
             methodMappings = new List<MetadataMapping<MethodDesc>>();
+            methodMetadataMappings = new Dictionary<MethodDesc, int>();
             fieldMappings = new List<MetadataMapping<FieldDesc>>();
+            fieldMetadataMappings = new Dictionary<FieldDesc, int>();
             stackTraceMapping = new List<StackTraceMapping>();
 
             // Generate type definition mappings
@@ -810,8 +808,15 @@ namespace ILCompiler
                     typeMappings.Add(new MetadataMapping<MetadataType>(definition, writer.GetRecordHandle(record)));
             }
 
+            foreach (var methodMapping in transformed.GetTransformedMethodDefinitions())
+                methodMetadataMappings[methodMapping.Key] = writer.GetRecordHandle(methodMapping.Value);
+
             foreach (var method in GetReflectableMethods())
             {
+                MetadataRecord record = transformed.GetTransformedMethodDefinition(method.GetTypicalMethodDefinition());
+                if (record == null)
+                    continue;
+
                 if (method.IsGenericMethodDefinition || method.OwningType.IsGenericDefinition)
                 {
                     // Generic definitions don't have runtime artifacts we would need to map to.
@@ -830,15 +835,17 @@ namespace ILCompiler
                 if ((GetMetadataCategory(method) & MetadataCategory.RuntimeMapping) == 0)
                     continue;
 
-                MetadataRecord record = transformed.GetTransformedMethodDefinition(method.GetTypicalMethodDefinition());
-
-                if (record != null)
-                    methodMappings.Add(new MetadataMapping<MethodDesc>(method, writer.GetRecordHandle(record)));
+                methodMappings.Add(new MetadataMapping<MethodDesc>(method, writer.GetRecordHandle(record)));
             }
 
             HashSet<FieldDesc> canonicalFields = new HashSet<FieldDesc>();
             foreach (var field in GetFieldsWithRuntimeMapping())
             {
+                Field record = transformed.GetTransformedFieldDefinition(field.GetTypicalFieldDefinition());
+                Debug.Assert(record != null);
+
+                fieldMetadataMappings[field.GetTypicalFieldDefinition()] = writer.GetRecordHandle(record);
+
                 FieldDesc fieldToAdd = field;
                 TypeDesc canonOwningType = field.OwningType.ConvertToCanonForm(CanonicalFormKind.Specific);
                 if (canonOwningType.IsCanonicalSubtype(CanonicalFormKind.Any))
@@ -852,9 +859,7 @@ namespace ILCompiler
                     fieldToAdd = canonField;
                 }
 
-                Field record = transformed.GetTransformedFieldDefinition(fieldToAdd.GetTypicalFieldDefinition());
-                if (record != null)
-                    fieldMappings.Add(new MetadataMapping<FieldDesc>(fieldToAdd, writer.GetRecordHandle(record)));
+                fieldMappings.Add(new MetadataMapping<FieldDesc>(fieldToAdd, writer.GetRecordHandle(record)));
             }
 
             // Generate stack trace metadata mapping
@@ -952,6 +957,12 @@ namespace ILCompiler
         {
             EnsureMetadataGenerated(factory);
             return _methodMappings;
+        }
+
+        public int GetMetadataHandleForMethod(NodeFactory factory, MethodDesc method)
+        {
+            EnsureMetadataGenerated(factory);
+            return _methodHandleMap[method];
         }
 
         public IEnumerable<MetadataMapping<FieldDesc>> GetFieldMapping(NodeFactory factory)

@@ -5,6 +5,7 @@ using System.ComponentModel;
 using System.Runtime.InteropServices;
 using System.Runtime.Serialization;
 
+using Internal.Metadata.NativeFormat;
 using Internal.Reflection.Augments;
 using Internal.Runtime.Augments;
 using Internal.Runtime.CompilerServices;
@@ -40,7 +41,7 @@ namespace System
                 return false;
 
             RuntimeTypeHandle declaringType1, declaringType2;
-            MethodNameAndSignature nameAndSignature1, nameAndSignature2;
+            MethodHandle nameAndSignature1, nameAndSignature2;
             RuntimeTypeHandle[] genericArgs1, genericArgs2;
 
             RuntimeAugments.TypeLoaderCallbacks.GetRuntimeMethodHandleComponents(this, out declaringType1, out nameAndSignature1, out genericArgs1);
@@ -72,12 +73,12 @@ namespace System
                 return 0;
 
             RuntimeTypeHandle declaringType;
-            MethodNameAndSignature nameAndSignature;
+            MethodHandle nameAndSignature;
             RuntimeTypeHandle[] genericArgs;
             RuntimeAugments.TypeLoaderCallbacks.GetRuntimeMethodHandleComponents(this, out declaringType, out nameAndSignature, out genericArgs);
 
             int hashcode = declaringType.GetHashCode();
-            hashcode = (hashcode + int.RotateLeft(hashcode, 13)) ^ nameAndSignature.Name.GetHashCode();
+            hashcode = (hashcode + int.RotateLeft(hashcode, 13)) ^ nameAndSignature.GetHashCode();
             if (genericArgs != null)
             {
                 for (int i = 0; i < genericArgs.Length; i++)

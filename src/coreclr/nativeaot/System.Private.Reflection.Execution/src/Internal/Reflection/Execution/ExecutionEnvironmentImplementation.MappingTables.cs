@@ -227,8 +227,6 @@ namespace Internal.Reflection.Execution
         {
             MethodBase methodInfo = ExecutionDomain.GetMethod(declaringTypeHandle, methodHandle, genericMethodTypeArgumentHandles);
 
-            MethodSignatureComparer methodSignatureComparer = new MethodSignatureComparer(methodHandle);
-
             MethodInvokeInfo methodInvokeInfo;
 #if GENERICS_FORCE_USG
             // Stress mode to force the usage of universal canonical method targets for reflection invokes.
@@ -244,12 +242,12 @@ namespace Internal.Reflection.Execution
                     methodInfo, ref methodSignatureComparer, CanonicalFormKind.Universal);
 #else
             methodInvokeInfo = TryGetMethodInvokeInfo(declaringTypeHandle, methodHandle, genericMethodTypeArgumentHandles,
-                methodInfo, ref methodSignatureComparer, CanonicalFormKind.Specific);
+                methodInfo, CanonicalFormKind.Specific);
 
             // If we failed to get a MethodInvokeInfo for an exact method, or a canonically equivalent method, check if there is a universal canonically
             // equivalent entry that could be used (it will be much slower, and require a calling convention converter)
             methodInvokeInfo ??= TryGetMethodInvokeInfo(declaringTypeHandle, methodHandle, genericMethodTypeArgumentHandles,
-                    methodInfo, ref methodSignatureComparer, CanonicalFormKind.Universal);
+                    methodInfo, CanonicalFormKind.Universal);
 #endif
 
             if (methodInvokeInfo == null)
@@ -280,12 +278,10 @@ namespace Internal.Reflection.Execution
             return result;
         }
 
-        private static IntPtr TryGetVirtualResolveData(NativeFormatModuleInfo module,
-            RuntimeTypeHandle methodHandleDeclaringType, QMethodDefinition methodHandle, RuntimeTypeHandle[] genericArgs,
-            ref MethodSignatureComparer methodSignatureComparer)
+        private static IntPtr TryGetVirtualResolveData(RuntimeTypeHandle methodHandleDeclaringType, QMethodDefinition methodHandle, RuntimeTypeHandle[] genericArgs)
         {
             TypeLoaderEnvironment.VirtualResolveDataResult lookupResult;
-            bool success = TypeLoaderEnvironment.TryGetVirtualResolveData(module, methodHandleDeclaringType, genericArgs, ref methodSignatureComparer, out lookupResult);
+            bool success = TypeLoaderEnvironment.TryGetVirtualResolveData(methodHandleDeclaringType, methodHandle, genericArgs, out lookupResult);
             if (!success)
                 return IntPtr.Zero;
             else
@@ -311,7 +307,6 @@ namespace Internal.Reflection.Execution
         /// <param name="methodHandle">Handle of method to look up</param>
         /// <param name="genericMethodTypeArgumentHandles">Runtime handles of generic method arguments</param>
         /// <param name="methodInfo">MethodInfo of method to look up</param>
-        /// <param name="methodSignatureComparer">Helper structure used for comparing signatures</param>
         /// <param name="canonFormKind">Requested canon form</param>
         /// <returns>Constructed method invoke info, null on failure</returns>
         private static unsafe MethodInvokeInfo TryGetMethodInvokeInfo(
@@ -319,7 +314,6 @@ namespace Internal.Reflection.Execution
             QMethodDefinition methodHandle,
             RuntimeTypeHandle[] genericMethodTypeArgumentHandles,
             MethodBase methodInfo,
-            ref MethodSignatureComparer methodSignatureComparer,
             CanonicalFormKind canonFormKind)
         {
             MethodInvokeMetadata methodInvokeMetadata;
@@ -328,7 +322,6 @@ namespace Internal.Reflection.Execution
                 declaringTypeHandle,
                 methodHandle,
                 genericMethodTypeArgumentHandles,
-                ref methodSignatureComparer,
                 canonFormKind,
                 out methodInvokeMetadata))
             {
@@ -351,9 +344,7 @@ namespace Internal.Reflection.Execution
             IntPtr resolver = IntPtr.Zero;
             if ((methodInvokeMetadata.InvokeTableFlags & InvokeTableFlags.HasVirtualInvoke) != 0)
             {
-                resolver = TryGetVirtualResolveData(ModuleList.Instance.GetModuleInfoForMetadataReader(methodHandle.NativeFormatReader),
-                    declaringTypeHandle, methodHandle, genericMethodTypeArgumentHandles,
-                    ref methodSignatureComparer);
+                resolver = TryGetVirtualResolveData(declaringTypeHandle, methodHandle, genericMethodTypeArgumentHandles);
 
                 // Unable to find virtual resolution information, cannot return valid MethodInvokeInfo
                 if (resolver == IntPtr.Zero)
@@ -854,12 +845,7 @@ namespace Internal.Reflection.Execution
         //
         public sealed override unsafe bool TryGetMethodFromHandle(RuntimeMethodHandle runtimeMethodHandle, out RuntimeTypeHandle declaringTypeHandle, out QMethodDefinition methodHandle, out RuntimeTypeHandle[] genericMethodTypeArgumentHandles)
         {
-            MethodNameAndSignature nameAndSignature;
-            methodHandle = default(QMethodDefinition);
-            if (!TypeLoaderEnvironment.Instance.TryGetRuntimeMethodHandleComponents(runtimeMethodHandle, out declaringTypeHandle, out nameAndSignature, out genericMethodTypeArgumentHandles))
-                return false;
-
-            return TypeLoaderEnvironment.Instance.TryGetMetadataForTypeMethodNameAndSignature(declaringTypeHandle, nameAndSignature, out methodHandle);
+            return TypeLoaderEnvironment.Instance.TryGetRuntimeMethodHandleComponents(runtimeMethodHandle, out declaringTypeHandle, out methodHandle, out genericMethodTypeArgumentHandles);
         }
 
         //

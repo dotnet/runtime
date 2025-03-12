@@ -68,22 +68,8 @@ namespace ILCompiler.DependencyAnalysis
                 dependencies.Add(factory.AddressTakenMethodEntrypoint(method), "Body of a reflectable method");
             }
 
-            // If the method is defined in a different module than this one, a metadata token isn't known for performing the reference
-            // Use a name/sig reference instead.
-            if (!factory.MetadataManager.WillUseMetadataTokenToReferenceMethod(method))
-            {
-                dependencies.Add(factory.NativeLayout.PlacedSignatureVertex(factory.NativeLayout.MethodNameAndSignatureVertex(method.GetTypicalMethodDefinition())),
-                    "Non metadata-local method reference");
-            }
-
             if (method.HasInstantiation)
             {
-                if (method.IsCanonicalMethod(CanonicalFormKind.Any))
-                {
-                    dependencies.Add(factory.NativeLayout.PlacedSignatureVertex(factory.NativeLayout.MethodNameAndSignatureVertex(method.GetTypicalMethodDefinition())),
-                        "Signature of canonical method");
-                }
-
                 if (!method.IsCanonicalMethod(CanonicalFormKind.Universal))
                 {
                     foreach (var instArg in method.Instantiation)
@@ -206,8 +192,8 @@ namespace ILCompiler.DependencyAnalysis
                 }
                 else
                 {
-                    var nameAndSig = factory.NativeLayout.PlacedSignatureVertex(factory.NativeLayout.MethodNameAndSignatureVertex(method.GetTypicalMethodDefinition()));
-                    vertex = writer.GetTuple(vertex, writer.GetUnsignedConstant((uint)nameAndSig.SavedVertex.VertexOffset));
+                    // Dead code
+                    throw new NotImplementedException();
                 }
 
                 // Go with a necessary type symbol. It will be upgraded to a constructed one if a constructed was emitted.
@@ -232,12 +218,6 @@ namespace ILCompiler.DependencyAnalysis
 
                 if ((flags & InvokeTableFlags.IsGenericMethod) != 0)
                 {
-                    if ((flags & InvokeTableFlags.RequiresInstArg) != 0)
-                    {
-                        var nameAndSigGenericMethod = factory.NativeLayout.PlacedSignatureVertex(factory.NativeLayout.MethodNameAndSignatureVertex(method.GetTypicalMethodDefinition()));
-                        vertex = writer.GetTuple(vertex, writer.GetUnsignedConstant((uint)nameAndSigGenericMethod.SavedVertex.VertexOffset));
-                    }
-
                     if ((flags & InvokeTableFlags.IsUniversalCanonicalEntry) == 0)
                     {
                         VertexSequence args = new VertexSequence();
