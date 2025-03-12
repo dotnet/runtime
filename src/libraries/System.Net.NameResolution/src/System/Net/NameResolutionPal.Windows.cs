@@ -199,6 +199,7 @@ namespace System.Net
         {
             GetAddrInfoExState state = GetAddrInfoExState.FromHandleAndFree(context->QueryStateHandle);
 
+            object? result = null;
             try
             {
                 CancellationToken cancellationToken = state.UnregisterAndGetCancellationToken();
@@ -206,27 +207,33 @@ namespace System.Net
                 if (errorCode == SocketError.Success)
                 {
                     IPAddress[] addresses = ParseAddressInfoEx(context->Result, state.JustAddresses, out string? hostName);
-                    state.SetResult(state.JustAddresses ? (object)
+                    result = state.JustAddresses ?
                         addresses :
                         new IPHostEntry
                         {
                             HostName = hostName ?? state.HostName,
                             Aliases = Array.Empty<string>(),
                             AddressList = addresses
-                        });
+                        };
                 }
                 else
                 {
                     Exception ex = (errorCode == (SocketError)Interop.Winsock.WSA_E_CANCELLED && cancellationToken.IsCancellationRequested)
-                        ? (Exception)new OperationCanceledException(cancellationToken)
+                        ? new OperationCanceledException(cancellationToken)
                         : new SocketException((int)errorCode);
-                    state.SetResult(ExceptionDispatchInfo.SetCurrentStackTrace(ex));
+                    result = ExceptionDispatchInfo.SetCurrentStackTrace(ex);
                 }
+            }
+            catch (Exception ex)
+            {
+                result = ex;
             }
             finally
             {
                 state.Dispose();
             }
+
+            state.SetResult(result);
         }
 
         private static unsafe IPAddress[] ParseAddressInfo(Interop.Winsock.AddressInfo* addressInfoPtr, bool justAddresses, out string? hostName)
