@@ -85,7 +85,6 @@ int minipal_log_vprint(minipal_log_flags flags, const char* fmt, va_list args)
 
 void minipal_log_flush(minipal_log_flags flags)
 {
-    ;
 }
 
 static size_t log_write_line(minipal_log_flags flags, const char* msg, size_t msg_len)
@@ -155,7 +154,6 @@ int minipal_log_write(minipal_log_flags flags, const char* msg)
 
 void minipal_log_sync(minipal_log_flags flags)
 {
-    ;
 }
 #else
 #include <stdio.h>

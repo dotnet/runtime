@@ -320,9 +320,13 @@ int vflogf(FILE* file, const char* fmt, va_list args)
     if (fmt[0] == '\0')
     {
         if (file == procstdout())
+        {
             minipal_log_flush_verbose();
+        }
         else
+        {
             fflush(file);
+        }
         return 0;
     }
 
@@ -336,9 +340,13 @@ int vflogf(FILE* file, const char* fmt, va_list args)
     }
 
     if (file == procstdout())
+    {
         minipal_log_write_verbose(buffer);
+    }
     else
+    {
         fputs(&buffer[0], file);
+    }
 
     return written;
 }

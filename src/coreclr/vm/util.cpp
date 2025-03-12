@@ -116,6 +116,39 @@ LPVOID CQuickHeap::Alloc(UINT sz)
     }
 }
 
+//----------------------------------------------------------------------------
+// Output functions that avoid the crt's.
+//----------------------------------------------------------------------------
+
+void PrintToStdErrA(const char *pszString)
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+        FORBID_FAULT;
+    }
+    CONTRACTL_END
+
+    minipal_log_write_stderr(pszString);
+}
+
+void PrintToStdErrW(const WCHAR *pwzString)
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_NOTRIGGER;
+        INJECT_FAULT(COMPlusThrowOM(););
+    }
+    CONTRACTL_END
+
+    MAKE_MULTIBYTE_FROMWIDE_BESTFIT(pStr, pwzString, GetConsoleOutputCP());
+
+    PrintToStdErrA(pStr);
+}
+//----------------------------------------------------------------------------
+
 //*****************************************************************************
 // Compare VarLoc's
 //*****************************************************************************
