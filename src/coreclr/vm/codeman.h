@@ -2563,6 +2563,10 @@ public:
     }
 #endif // TARGET_X86
 
+#if defined(TARGET_WASM)
+ULONG       GetFixedStackSize();
+#endif
+
 #if defined(TARGET_AMD64)
     BOOL        HasFrameRegister();
     ULONG       GetFixedStackSize();

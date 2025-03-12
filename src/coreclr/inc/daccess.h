@@ -1104,7 +1104,7 @@ public:
     {
         return DPtrType(DacTAddrOffset(m_addr, val, sizeof(type)));
     }
-#if defined (HOST_64BIT)
+#if defined (HOST_64BIT) || defined(HOST_WASM)
     DPtrType operator+(unsigned int val)
     {
         return DPtrType(DacTAddrOffset(m_addr, val, sizeof(type)));
@@ -1148,7 +1148,7 @@ public:
     {
         return DPtrType(m_addr - val * sizeof(type));
     }
-#ifdef HOST_64BIT
+#if defined(HOST_64BIT) || defined(HOST_WASM)
     DPtrType operator-(unsigned int val)
     {
         return DPtrType(m_addr - val * sizeof(type));

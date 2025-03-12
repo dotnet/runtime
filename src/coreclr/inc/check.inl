@@ -200,7 +200,6 @@ inline CHECK CheckOverflow(SIZE_T value1, SIZE_T value2)
 }
 #endif
 
-#ifndef __wasm__
 inline CHECK CheckOverflow(PTR_CVOID address, UINT offset)
 {
     TADDR targetAddr = dac_cast<TADDR>(address);
@@ -212,7 +211,6 @@ inline CHECK CheckOverflow(PTR_CVOID address, UINT offset)
 
     CHECK_OK;
 }
-#endif
 
 #if defined(_MSC_VER)
 inline CHECK CheckOverflow(const void *address, ULONG offset)
@@ -239,7 +237,7 @@ inline CHECK CheckOverflow(const void *address, UINT64 offset)
     CHECK_OK;
 }
 
-#ifdef __APPLE__
+#if defined(__APPLE__) || defined(__wasm__)
 inline CHECK CheckOverflow(const void *address, SIZE_T offset)
 {
     CHECK((UINT64) address + offset >= (UINT64) address);
